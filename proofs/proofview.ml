@@ -36,10 +36,11 @@ let proofview p =
 let init sigma =
   let rec aux = function
   | [] ->  [], { solution = sigma; comb = []; }
-  | (env, typ) :: l ->
+  | (env, (typ,ctx)) :: l ->
     let ret, { solution = sol; comb = comb } = aux l in
     let (new_defs , econstr) = Evarutil.new_evar sol env typ in
     let (e, _) = Term.destEvar econstr in
+    let new_defs = Evd.merge_context_set Evd.univ_rigid new_defs ctx in
     let gl = Goal.build e in
     let entry = (econstr, typ) :: ret in
     entry, { solution = new_defs; comb = gl::comb; }
@@ -87,6 +88,12 @@ let partial_proof entry pv = List.map (return_constr pv) (List.map fst entry)
 
 let emit_side_effects eff x =
   { x with solution = Evd.emit_side_effects eff x.solution }
+
+(* let return { initial=init; solution=defs }  = *)
+(*   let evdref = ref defs in *)
+(*   let nf,subst = Evarutil.e_nf_evars_and_universes evdref in *)
+(*   ((List.map (fun (c,t) -> (nf c, nf t)) init, subst), *)
+(*    Evd.universe_context !evdref) *)
 
 (* spiwack: this function should probably go in the Util section,
     but I'd rather have Util (or a separate module for lists)

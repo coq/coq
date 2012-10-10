@@ -37,7 +37,7 @@ type entry
 
 (* Initialises a proofview, the argument is a list of environement, 
    conclusion types, creating that many initial goals. *)
-val init : Evd.evar_map -> (Environ.env * Term.types) list -> entry * proofview
+val init : Evd.evar_map -> (Environ.env * Term.types Univ.in_universe_context_set) list -> entry * proofview
 
 type telescope =
   | TNil

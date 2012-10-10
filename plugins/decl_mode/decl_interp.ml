@@ -144,26 +144,26 @@ let intern_proof_instr globs instr=
 (* INTERP *)
 
 let interp_justification_items sigma env =
-    Option.map (List.map (fun c ->understand sigma env (fst c)))
+    Option.map (List.map (fun c -> fst (*FIXME*)(understand sigma env (fst c))))
 
 let interp_constr check_sort sigma env c =
   if check_sort then
-    understand sigma env ~expected_type:IsType (fst c)
+    fst (understand sigma env ~expected_type:IsType (fst c) (* FIXME *))
   else
-    understand sigma env (fst c)
+    fst (understand sigma env (fst c))
 
 let special_whd env =
   let infos=Closure.create_clos_infos Closure.betadeltaiota env in
     (fun t -> Closure.whd_val infos (Closure.inject t))
 
-let _eq = Globnames.constr_of_global (Coqlib.glob_eq)
+let _eq = lazy (Universes.constr_of_global (Coqlib.glob_eq))
 
 let decompose_eq env id =
   let typ = Environ.named_type id env in
   let whd = special_whd env typ in
     match kind_of_term whd with
 	App (f,args)->
-	  if eq_constr f _eq && Int.equal (Array.length args) 3
+	  if eq_constr f (Lazy.force _eq) && Int.equal (Array.length args) 3
 	  then args.(0)
 	  else error "Previous step is not an equality."
       | _ -> error "Previous step is not an equality."
@@ -173,7 +173,7 @@ let get_eq_typ info env =
     typ
 
 let interp_constr_in_type typ sigma env c =
-  understand sigma env (fst c) ~expected_type:(OfType typ)
+  fst (understand sigma env (fst c) ~expected_type:(OfType typ))(*FIXME*)
 
 let interp_statement interp_it sigma env st =
   {st_label=st.st_label;
@@ -213,7 +213,7 @@ let rec match_hyps blend names constr = function
 	qhyp::rhyps,head
 
 let interp_hyps_gen inject blend sigma env hyps head =
-  let constr=understand sigma env (glob_constr_of_hyps inject hyps head) in
+  let constr= fst(*FIXME*) (understand sigma env (glob_constr_of_hyps inject hyps head)) in
     match_hyps blend [] constr hyps
 
 let interp_hyps sigma env hyps = fst (interp_hyps_gen fst (fun x _ -> x) sigma env hyps glob_prop)
@@ -246,7 +246,7 @@ let rec glob_of_pat =
 	    add_params (pred n) (GHole(Loc.ghost,
 				       Evar_kinds.TomatchTypeParameter(ind,n), None)::q) in
 	    let args = List.map glob_of_pat lpat in
-	      glob_app(loc,GRef(Loc.ghost,Globnames.ConstructRef cstr),
+	      glob_app(loc,GRef(Loc.ghost,Globnames.ConstructRef cstr,None),
 		   add_params mind.Declarations.mind_nparams args)
 
 let prod_one_hyp = function
@@ -333,7 +333,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	     (if Int.equal expected 0 then str "none" else int expected) ++ spc () ++
 	     str "expected.") in
   let app_ind =
-    let rind = GRef (Loc.ghost,Globnames.IndRef pinfo.per_ind) in
+    let rind = GRef (Loc.ghost,Globnames.IndRef pinfo.per_ind,None) in
     let rparams = List.map detype_ground pinfo.per_params in
     let rparams_rec =
       List.map
@@ -365,7 +365,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
   let term3=List.fold_right let_in_one_alias aliases term2 in
   let term4=List.fold_right prod_one_id loc_ids term3 in
   let term5=List.fold_right prod_one_hyp params term4 in
-  let constr = understand  sigma env term5 in
+  let constr = fst (understand  sigma env term5)(*FIXME*) in
   let tparams,nam4,rest4 = match_args destProd [] constr params in
   let tpatvars,nam3,rest3 = match_args destProd nam4 rest4 loc_ids in
   let taliases,nam2,rest2 = match_aliases nam3 rest3 aliases in
@@ -409,7 +409,7 @@ let interp_suffices_clause sigma env (hyps,cot)=
     nenv,res
 
 let interp_casee sigma env = function
-    Real c -> Real (understand sigma env (fst c))
+    Real c -> Real (fst (understand sigma env (fst c)))(*FIXME*)
   | Virtual cut -> Virtual (interp_cut (interp_no_bind (interp_statement (interp_constr true))) sigma env cut)
 
 let abstract_one_arg = function
@@ -425,7 +425,7 @@ let glob_constr_of_fun args body =
   List.fold_right abstract_one_arg args (fst body)
 
 let interp_fun sigma env args body =
-  let constr=understand sigma env (glob_constr_of_fun args body) in
+  let constr=fst (*FIXME*) (understand sigma env (glob_constr_of_fun args body)) in
     match_args destLambda [] constr args
 
 let rec interp_bare_proof_instr info (sigma:Evd.evar_map) (env:Environ.env) = function
@@ -448,7 +448,7 @@ let rec interp_bare_proof_instr info (sigma:Evd.evar_map) (env:Environ.env) = fu
       let tparams,tpat,thyps = interp_cases info sigma env params pat hyps in
 	Pcase (tparams,tpat,thyps)
   | Ptake witl ->
-      Ptake (List.map (fun c -> understand sigma env (fst c)) witl)
+      Ptake (List.map (fun c -> fst (*FIXME*) (understand sigma env (fst c))) witl)
   | Pconsider (c,hyps) -> Pconsider (interp_constr false sigma env c,
 				     interp_hyps sigma env hyps)
   | Pper (et,c) -> Pper (et,interp_casee sigma env c)

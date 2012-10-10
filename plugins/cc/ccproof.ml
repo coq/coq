@@ -20,7 +20,7 @@ type rule=
   | Refl of term
   | Trans of proof*proof
   | Congr of proof*proof
-  | Inject of proof*constructor*int*int
+  | Inject of proof*pconstructor*int*int
 and proof =
     {p_lhs:term;p_rhs:term;p_rule:rule}
 

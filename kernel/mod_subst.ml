@@ -271,7 +271,7 @@ let progress f x ~orelse =
   let y = f x in
   if y != x then y else orelse
 
-let subst_ind sub mind =
+let subst_mind sub mind =
   let mpu,dir,l = MutInd.repr3 mind in
   let mpc = KerName.modpath (MutInd.canonical mind) in
   try
@@ -284,7 +284,14 @@ let subst_ind sub mind =
     MutInd.make knu knc'
   with No_subst -> mind
 
-let subst_con0 sub cst =
+let subst_ind sub (ind,i as indi) =
+  let ind' = subst_mind sub ind in
+    if ind' == ind then indi else ind',i
+
+let subst_pind sub (ind,u) =
+  (subst_ind sub ind, u)
+
+let subst_con0 sub (cst,u) =
   let mpu,dir,l = Constant.repr3 cst in
   let mpc = KerName.modpath (Constant.canonical cst) in
   let mpu,mpc,resolve,user = subst_dual_mp sub mpu mpc in
@@ -299,11 +306,28 @@ let subst_con0 sub cst =
         progress (kn_of_delta resolve) (if user then knu else knc) ~orelse:knc
       in
       let cst' = Constant.make knu knc' in
-      cst', mkConst cst'
+      cst', mkConstU (cst',u)
 
 let subst_con sub cst =
   try subst_con0 sub cst
-  with No_subst -> cst, mkConst cst
+  with No_subst -> fst cst, mkConstU cst
+
+let subst_con_kn sub con =
+  subst_con sub (con,Univ.Instance.empty)
+
+let subst_pcon sub (con,u as pcon) = 
+  try let con', can = subst_con0 sub pcon in 
+	con',u
+  with No_subst -> pcon
+
+let subst_pcon_term sub (con,u as pcon) = 
+  try let con', can = subst_con0 sub pcon in 
+	(con',u), can
+  with No_subst -> pcon, mkConstU pcon
+
+let subst_constant sub con =
+  try fst (subst_con0 sub (con,Univ.Instance.empty))
+  with No_subst -> con
 
 (* Here the semantics is completely unclear.
    What does "Hint Unfold t" means when "t" is a parameter?
@@ -312,18 +336,25 @@ let subst_con sub cst =
    interpretation (i.e. an evaluable reference is never expanded). *)
 let subst_evaluable_reference subst = function
   | EvalVarRef id -> EvalVarRef id
-  | EvalConstRef kn -> EvalConstRef (fst (subst_con subst kn))
+  | EvalConstRef kn -> EvalConstRef (subst_constant subst kn)
 
 let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind_of_term c with
       | Const kn -> (try snd (f' kn) with No_subst -> c)
-      | Ind (kn,i) ->
+      | Proj (kn,t) -> 
+          let kn' = try fst (f' (kn,Univ.Instance.empty))
+	    with No_subst -> kn 
+	  in
+	  let t' = func t in
+	    if kn' == kn && t' == t then c
+	    else mkProj (kn', t')
+      | Ind ((kn,i),u) ->
 	  let kn' = f kn in
-	  if kn'==kn then c else mkInd (kn',i)
-      | Construct ((kn,i),j) ->
+	  if kn'==kn then c else mkIndU ((kn',i),u)
+      | Construct (((kn,i),j),u) ->
 	  let kn' = f kn in
-	  if kn'==kn then c else mkConstruct ((kn',i),j)
+	  if kn'==kn then c else mkConstructU (((kn',i),j),u)
       | Case (ci,p,ct,l) ->
 	  let ci_ind =
             let (kn,i) = ci.ci_ind in
@@ -382,7 +413,7 @@ let rec map_kn f f' c =
 
 let subst_mps sub c =
   if is_empty_subst sub then c
-  else map_kn (subst_ind sub) (subst_con0 sub) c
+  else map_kn (subst_mind sub) (subst_con0 sub) c
 
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with

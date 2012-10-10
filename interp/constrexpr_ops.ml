@@ -91,10 +91,16 @@ and cases_pattern_notation_substitution_eq (s1, n1) (s2, n2) =
   List.equal cases_pattern_expr_eq s1 s2 &&
   List.equal (List.equal cases_pattern_expr_eq) n1 n2
 
+let eq_universes u1 u2 =
+  match u1, u2 with
+  | None, None -> true
+  | Some l, Some l' -> l = l'
+  | _, _ -> false
+
 let rec constr_expr_eq e1 e2 =
   if e1 == e2 then true
   else match e1, e2 with
-  | CRef r1, CRef r2 -> eq_reference r1 r2
+  | CRef (r1,u1), CRef (r2,u2) -> eq_reference r1 r2 && eq_universes u1 u2
   | CFix(_,id1,fl1), CFix(_,id2,fl2) ->
       eq_located Id.equal id1 id2 &&
       List.equal fix_expr_eq fl1 fl2
@@ -111,7 +117,7 @@ let rec constr_expr_eq e1 e2 =
       Name.equal na1 na2 &&
       constr_expr_eq a1 a2 &&
       constr_expr_eq b1 b2
-  | CAppExpl(_,(proj1,r1),al1), CAppExpl(_,(proj2,r2),al2) ->
+  | CAppExpl(_,(proj1,r1,_),al1), CAppExpl(_,(proj2,r2,_),al2) ->
       Option.equal Int.equal proj1 proj2 &&
       eq_reference r1 r2 &&
       List.equal constr_expr_eq al1 al2
@@ -221,8 +227,8 @@ and constr_notation_substitution_eq (e1, el1, bl1) (e2, el2, bl2) =
   List.equal (List.equal local_binder_eq) bl1 bl2
 
 let constr_loc = function
-  | CRef (Ident (loc,_)) -> loc
-  | CRef (Qualid (loc,_)) -> loc
+  | CRef (Ident (loc,_),_) -> loc
+  | CRef (Qualid (loc,_),_) -> loc
   | CFix (loc,_,_) -> loc
   | CCoFix (loc,_,_) -> loc
   | CProdN (loc,_,_) -> loc
@@ -272,8 +278,8 @@ let local_binders_loc bll = match bll with
 
 (** Pseudo-constructors *)
 
-let mkIdentC id  = CRef (Ident (Loc.ghost, id))
-let mkRefC r     = CRef r
+let mkIdentC id  = CRef (Ident (Loc.ghost, id),None)
+let mkRefC r     = CRef (r,None)
 let mkCastC (a,k)  = CCast (Loc.ghost,a,k)
 let mkLambdaC (idl,bk,a,b) = CLambdaN (Loc.ghost,[idl,bk,a],b)
 let mkLetInC (id,a,b)   = CLetIn (Loc.ghost,id,a,b)
@@ -324,13 +330,13 @@ let coerce_reference_to_id = function
         str "This expression should be a simple identifier.")
 
 let coerce_to_id = function
-  | CRef (Ident (loc,id)) -> (loc,id)
+  | CRef (Ident (loc,id),_) -> (loc,id)
   | a -> Errors.user_err_loc
         (constr_loc a,"coerce_to_id",
          str "This expression should be a simple identifier.")
 
 let coerce_to_name = function
-  | CRef (Ident (loc,id)) -> (loc,Name id)
+  | CRef (Ident (loc,id),_) -> (loc,Name id)
   | CHole (loc,_,_) -> (loc,Anonymous)
   | a -> Errors.user_err_loc
         (constr_loc a,"coerce_to_name",

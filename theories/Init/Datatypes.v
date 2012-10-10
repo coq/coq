@@ -143,6 +143,8 @@ Arguments S _%nat.
 (********************************************************************)
 (** * Container datatypes *)
 
+Set Universe Polymorphism.
+
 (** [option A] is the extension of [A] with an extra element [None] *)
 
 Inductive option (A:Type) : Type :=
@@ -182,7 +184,8 @@ Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
 Arguments pair {A B} _ _.
 
 Section projections.
-  Variables A B : Type.
+  Context {A : Type} {B : Type}.
+
   Definition fst (p:A * B) := match p with
 				| (x, y) => x
                               end.
@@ -244,8 +247,10 @@ Definition app (A : Type) : list A -> list A -> list A :=
    | a :: l1 => a :: app l1 m
   end.
 
+
 Infix "++" := app (right associativity, at level 60) : list_scope.
 
+Unset Universe Polymorphism.
 
 (********************************************************************)
 (** * The comparison datatype *)
@@ -310,6 +315,7 @@ Defined.
 
 Definition CompSpec {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Prop :=
  CompareSpec (eq x y) (lt x y) (lt y x).
+
 Definition CompSpecT {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Type :=
  CompareSpecT (eq x y) (lt x y) (lt y x).
 Hint Unfold CompSpec CompSpecT.
@@ -336,8 +342,11 @@ Arguments identity_rect [A] a P f y i.
 
 (** Identity type *)
 
-Definition ID := forall A:Type, A -> A.
-Definition id : ID := fun A x => x.
+Polymorphic Definition ID := forall A:Type, A -> A.
+Polymorphic Definition id : ID := fun A x => x.
+
+Definition IDProp := forall A:Prop, A -> A.
+Definition idProp : IDProp := fun A x => x.
 
 
 (* begin hide *)

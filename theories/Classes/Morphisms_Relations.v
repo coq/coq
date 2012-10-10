@@ -30,8 +30,6 @@ Instance relation_disjunction_morphism : Proper (relation_equivalence (A:=A) ==>
 
 (* Predicate equivalence is exactly the same as the pointwise lifting of [iff]. *)
 
-Require Import List.
-
 Lemma predicate_equivalence_pointwise (l : Tlist) :
   Proper (@predicate_equivalence l ==> pointwise_lifting iff l) id.
 Proof. do 2 red. unfold predicate_equivalence. auto. Qed.
@@ -52,6 +50,6 @@ Instance subrelation_pointwise :
 Proof. intro. apply (predicate_implication_pointwise (Tcons A (Tcons A Tnil))). Qed.
 
 
-Lemma inverse_pointwise_relation A (R : relation A) :
-  relation_equivalence (pointwise_relation A (inverse R)) (inverse (pointwise_relation A R)).
+Lemma flip_pointwise_relation A (R : relation A) :
+  relation_equivalence (pointwise_relation A (flip R)) (flip (pointwise_relation A R)).
 Proof. intros. split; firstorder. Qed.

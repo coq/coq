@@ -66,7 +66,7 @@ let explain_coercion_error g = function
 (* Verifications pour l'ajout d'une classe *)
 
 let check_reference_arity ref =
-  if not (Reductionops.is_arity (Global.env()) Evd.empty (Global.type_of_global ref)) then
+  if not (Reductionops.is_arity (Global.env()) Evd.empty (Global.type_of_global_unsafe ref)) then
     raise (CoercionError (NotAClass ref))
 
 let check_arity = function
@@ -118,19 +118,19 @@ l'indice de la classe source dans la liste lp
 let get_source lp source =
   match source with
     | None ->
-	let (cl1,lv1) =
+	let (cl1,u1,lv1) =
           match lp with
 	    | [] -> raise Not_found
             | t1::_ -> find_class_type Evd.empty t1
         in
-	(cl1,lv1,1)
+	(cl1,u1,lv1,1)
     | Some cl ->
 	let rec aux = function
 	  | [] -> raise Not_found
 	  | t1::lt ->
 	      try
-		let cl1,lv1 = find_class_type Evd.empty t1 in
-		if cl_typ_eq cl cl1 then cl1,lv1,(List.length lt+1)
+		let cl1,u1,lv1 = find_class_type Evd.empty t1 in
+		if cl_typ_eq cl cl1 then cl1,u1,lv1,(List.length lt+1)
 		else raise Not_found
               with Not_found -> aux lt
 	in aux (List.rev lp)
@@ -139,7 +139,7 @@ let get_target t ind =
   if (ind > 1) then
     CL_FUN
   else
-    fst (find_class_type Evd.empty t)
+    pi1 (find_class_type Evd.empty t)
 
 let prods_of t =
   let rec aux acc d = match kind_of_term d with
@@ -177,12 +177,12 @@ let error_not_transparent source =
   errorlabstrm "build_id_coercion"
     (pr_class source ++ str " must be a transparent constant.")
 
-let build_id_coercion idf_opt source =
+let build_id_coercion idf_opt source poly =
   let env = Global.env () in
-  let vs = match source with
-    | CL_CONST sp -> mkConst sp
+  let vs, ctx = match source with
+    | CL_CONST sp -> Universes.fresh_global_instance env (ConstRef sp)
     | _ -> error_not_transparent source in
-  let c = match constant_opt_value env (destConst vs) with
+  let c = match constant_opt_value_in env (destConst vs) with
     | Some c -> c
     | None -> error_not_transparent source in
   let lams,t = decompose_lam_assum c in
@@ -211,7 +211,7 @@ let build_id_coercion idf_opt source =
     match idf_opt with
       | Some idf -> idf
       | None ->
-	  let cl,_ = find_class_type Evd.empty t in
+	  let cl,u,_ = find_class_type Evd.empty t in
 	  Id.of_string ("Id_"^(ident_key_of_class source)^"_"^
                         (ident_key_of_class cl))
   in
@@ -221,6 +221,9 @@ let build_id_coercion idf_opt source =
           (mkCast (val_f, DEFAULTcast, typ_f),Declareops.no_seff);
         const_entry_secctx = None;
 	const_entry_type = Some typ_f;
+	const_entry_proj = None;
+	const_entry_polymorphic = poly;
+	const_entry_universes = Univ.ContextSet.to_context ctx;
         const_entry_opaque = false;
         const_entry_inline_code = true;
         const_entry_feedback = None;
@@ -244,14 +247,14 @@ booleen "coercion identite'?"
 lorque source est None alors target est None aussi.
 *)
 
-let add_new_coercion_core coef stre source target isid =
+let add_new_coercion_core coef stre poly source target isid =
   check_source source;
-  let t = Global.type_of_global coef in
+  let t = Global.type_of_global_unsafe coef in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
   let tg,lp = prods_of t in
   let llp = List.length lp in
   if Int.equal llp 0 then raise (CoercionError NotAFunction);
-  let (cls,lvs,ind) =
+  let (cls,us,lvs,ind) =
     try
       get_source lp source
     with Not_found ->
@@ -275,44 +278,45 @@ let add_new_coercion_core coef stre source target isid =
   in
   declare_coercion coef ~local ~isid ~src:cls ~target:clt ~params:(List.length lvs)
 
-let try_add_new_coercion_core ref ~local c d e =
-  try add_new_coercion_core ref (loc_of_bool local) c d e
+
+let try_add_new_coercion_core ref ~local c d e f =
+  try add_new_coercion_core ref (loc_of_bool local) c d e f
   with CoercionError e ->
       errorlabstrm "try_add_new_coercion_core"
         (explain_coercion_error ref e ++ str ".")
 
-let try_add_new_coercion ref ~local =
-  try_add_new_coercion_core ref ~local None None false
+let try_add_new_coercion ref ~local poly =
+  try_add_new_coercion_core ref ~local poly None None false
 
-let try_add_new_coercion_subclass cl ~local =
-  let coe_ref = build_id_coercion None cl in
-  try_add_new_coercion_core coe_ref ~local (Some cl) None true
+let try_add_new_coercion_subclass cl ~local poly =
+  let coe_ref = build_id_coercion None cl poly in
+  try_add_new_coercion_core coe_ref ~local poly (Some cl) None true
 
-let try_add_new_coercion_with_target ref ~local ~source ~target =
-  try_add_new_coercion_core ref ~local (Some source) (Some target) false
+let try_add_new_coercion_with_target ref ~local poly ~source ~target =
+  try_add_new_coercion_core ref ~local poly (Some source) (Some target) false
 
-let try_add_new_identity_coercion id ~local ~source ~target =
-  let ref = build_id_coercion (Some id) source in
-  try_add_new_coercion_core ref ~local (Some source) (Some target) true
+let try_add_new_identity_coercion id ~local poly ~source ~target =
+  let ref = build_id_coercion (Some id) source poly in
+  try_add_new_coercion_core ref ~local poly (Some source) (Some target) true
 
-let try_add_new_coercion_with_source ref ~local ~source =
-  try_add_new_coercion_core ref ~local (Some source) None false
+let try_add_new_coercion_with_source ref ~local poly ~source =
+  try_add_new_coercion_core ref ~local poly (Some source) None false
 
-let add_coercion_hook local ref =
+let add_coercion_hook poly local ref =
   let stre = match local with
   | Local -> true
   | Global -> false
   | Discharge -> assert false
   in
-  let () = try_add_new_coercion ref stre in
+  let () = try_add_new_coercion ref stre poly in
   let msg = pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
   Flags.if_verbose msg_info msg
 
-let add_subclass_hook local ref =
+let add_subclass_hook poly local ref =
   let stre = match local with
   | Local -> true
   | Global -> false
   | Discharge -> assert false
   in
   let cl = class_of_global ref in
-  try_add_new_coercion_subclass cl stre
+  try_add_new_coercion_subclass cl stre poly

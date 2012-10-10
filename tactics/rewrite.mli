@@ -41,10 +41,6 @@ val cl_rewrite_clause :
   interp_sign * (glob_constr_and_expr * glob_constr_and_expr bindings) ->
   bool -> Locus.occurrences -> Id.t option -> tactic
 
-val cl_rewrite_clause_newtac' :
-  interp_sign * (glob_constr_and_expr * glob_constr_and_expr bindings) ->
-  bool -> Locus.occurrences -> Id.t option -> unit Proofview.tactic
-
 val is_applied_rewrite_relation :
   env -> evar_map -> Context.rel_context -> constr -> types option
 
@@ -60,12 +56,6 @@ val add_morphism_infer : bool -> constr_expr -> Id.t -> unit
 
 val add_morphism :
   bool -> local_binder list -> constr_expr -> constr_expr -> Id.t -> unit
-
-val get_reflexive_proof : env -> evar_map -> constr -> constr -> constr
-
-val get_symmetric_proof : env -> evar_map -> constr -> constr -> constr
-
-val get_transitive_proof : env -> evar_map -> constr -> constr -> constr
 
 val default_morphism :
   (types * constr option) option list * (types * types option) option ->

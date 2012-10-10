@@ -28,9 +28,11 @@ Arguments JMeq_refl {A x} , [A] x.
 
 Hint Resolve JMeq_refl.
 
+Definition JMeq_hom {A : Type} (x y : A) := JMeq x y.
+
 Lemma JMeq_sym : forall (A B:Type) (x:A) (y:B), JMeq x y -> JMeq y x.
-Proof.
-destruct 1; trivial.
+Proof. 
+intros; destruct H; trivial.
 Qed.
 
 Hint Immediate JMeq_sym.

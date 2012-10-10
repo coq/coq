@@ -118,6 +118,12 @@ let pr_name = pr_name
 let pr_qualid = pr_qualid
 let pr_patvar = pr_id
 
+let pr_universe_instance l =
+  pr_opt (pr_in_comment Univ.Instance.pr) l
+
+let pr_cref ref us =
+  pr_reference ref ++ pr_universe_instance us
+
 let pr_expl_args pr (a,expl) =
   match expl with
   | None -> pr (lapp,L) a
@@ -397,9 +403,10 @@ let pr_simple_return_type pr na po =
 let pr_proj pr pr_app a f l =
   hov 0 (pr (lproj,E) a ++ cut() ++ str ".(" ++ pr_app pr f l ++ str ")")
 
-let pr_appexpl pr f l =
+let pr_appexpl pr (f,us) l =
       hov 2 (
 	str "@" ++ pr_reference f ++
+	pr_universe_instance us ++
 	prlist (pr_sep_com spc (pr (lapp,L))) l)
 
 let pr_app pr a l =
@@ -421,7 +428,7 @@ let pr_dangling_with_for sep pr inherited a =
 
 let pr pr sep inherited a =
   let (strm,prec) = match a with
-  | CRef r -> pr_reference r, latom
+  | CRef (r,us) -> pr_cref r us, latom
   | CFix (_,id,fix) ->
       hov 0 (str"fix " ++
              pr_recursive
@@ -458,19 +465,19 @@ let pr pr sep inherited a =
                pr spc ltop a ++ str " in") ++
         pr spc ltop b),
       lletin
-  | CAppExpl (_,(Some i,f),l) ->
+  | CAppExpl (_,(Some i,f,us),l) ->
       let l1,l2 = List.chop i l in
       let c,l1 = List.sep_last l1 in
-      let p = pr_proj (pr mt) pr_appexpl c f l1 in
+      let p = pr_proj (pr mt) pr_appexpl c (f,us) l1 in
       if not (List.is_empty l2) then
 	p ++ prlist (pr spc (lapp,L)) l2, lapp
       else
 	p, lproj
-  | CAppExpl (_,(None,Ident (_,var)),[t])
-  | CApp (_,(_,CRef(Ident(_,var))),[t,None])
+  | CAppExpl (_,(None,Ident (_,var),us),[t])
+  | CApp (_,(_,CRef(Ident(_,var),us)),[t,None])
         when Id.equal var Notation_ops.ldots_var ->
       hov 0 (str ".." ++ pr spc (latom,E) t ++ spc () ++ str ".."), larg
-  | CAppExpl (_,(None,f),l) -> pr_appexpl (pr mt) f l, lapp
+  | CAppExpl (_,(None,f,us),l) -> pr_appexpl (pr mt) (f,us) l, lapp
   | CApp (_,(Some i,f),l) ->
       let l1,l2 = List.chop i l in
       let c,l1 = List.sep_last l1 in
@@ -567,7 +574,7 @@ let rec fix rf x =rf (fix rf) x
 let pr = fix modular_constr_pr mt
 
 let pr_simpleconstr = function
-  | CAppExpl (_,(None,f),[]) -> str "@" ++ pr_reference f
+  | CAppExpl (_,(None,f,us),[]) -> str "@" ++ pr_cref f us
   | c -> pr lsimpleconstr c
 
 let default_term_pr = {

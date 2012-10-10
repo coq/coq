@@ -33,12 +33,18 @@ val add_constraints : Univ.constraints -> unit
 
 (** Variables, Local definitions, constants, inductive types *)
 
-val push_named_assum : (Id.t * Term.types) -> Univ.constraints
-val push_named_def   : (Id.t * Entries.definition_entry) -> Univ.constraints
+val push_named_assum : (Id.t * Constr.types) Univ.in_universe_context_set -> unit
+val push_named_def   : (Id.t * Entries.definition_entry) -> unit
+
 val add_constant :
   DirPath.t -> Id.t -> Safe_typing.global_declaration -> constant
 val add_mind :
   DirPath.t -> Id.t -> Entries.mutual_inductive_entry -> mutual_inductive
+
+val add_constraints : Univ.constraints -> unit
+
+val push_context : Univ.universe_context -> unit
+val push_context_set : Univ.universe_context_set -> unit
 
 (** Non-interactive modules and module types *)
 
@@ -72,6 +78,8 @@ val lookup_named     : variable -> Context.named_declaration
 val lookup_constant  : constant -> Declarations.constant_body
 val lookup_inductive : inductive ->
   Declarations.mutual_inductive_body * Declarations.one_inductive_body
+val lookup_pinductive : Constr.pinductive -> 
+  Declarations.mutual_inductive_body * Declarations.one_inductive_body
 val lookup_mind      : mutual_inductive -> Declarations.mutual_inductive_body
 val lookup_module    : module_path -> Declarations.module_body
 val lookup_modtype   : module_path -> Declarations.module_type_body
@@ -94,11 +102,14 @@ val import :
 (** Function to get an environment from the constants part of the global
  * environment and a given context. *)
 
-val type_of_global : Globnames.global_reference -> Term.types
 val env_of_context : Environ.named_context_val -> Environ.env
 
 val join_safe_environment : unit -> unit
 
+val is_polymorphic : Globnames.global_reference -> bool
+
+(* val type_of_global : Globnames.global_reference -> types Univ.in_universe_context_set *)
+val type_of_global_unsafe : Globnames.global_reference -> Constr.types 
 
 (** {6 Retroknowledge } *)
 
@@ -109,5 +120,10 @@ val register_inline : constant -> unit
 
 (** {6 Oracle } *)
 
-val set_strategy : 'a Names.tableKey -> Conv_oracle.level -> unit
+val set_strategy : Names.constant Names.tableKey -> Conv_oracle.level -> unit
 
+(* Modifies the global state, registering new universes *)
+
+val current_dirpath : unit -> Names.dir_path
+
+val with_global : (Environ.env -> Names.dir_path -> 'a Univ.in_universe_context_set) -> 'a

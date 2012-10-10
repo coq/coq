@@ -69,14 +69,9 @@ let abstract_inductive hyps nparams inds =
   in (params',ind'')
 
 let refresh_polymorphic_type_of_inductive (_,mip) =
-  match mip.mind_arity with
-  | Monomorphic s ->
-      s.mind_user_arity
-  | Polymorphic ar ->
-      let ctx = List.rev mip.mind_arity_ctxt in
-      mkArity (List.rev ctx,Termops.new_Type_sort())
+  mip.mind_arity.mind_user_arity
 
-let process_inductive sechyps modlist mib =
+let process_inductive (sechyps,abs_ctx) modlist mib =
   let nparams = mib.mind_nparams in
   let inds =
     Array.map_to_list
@@ -90,7 +85,11 @@ let process_inductive sechyps modlist mib =
       mib.mind_packets in
   let sechyps' = map_named_context (expmod_constr modlist) sechyps in
   let (params',inds') = abstract_inductive sechyps' nparams inds in
-  { mind_entry_record = mib.mind_record;
+  let univs = Univ.UContext.union abs_ctx mib.mind_universes in
+  { mind_entry_record = mib.mind_record <> None;
     mind_entry_finite = mib.mind_finite;
     mind_entry_params = params';
-    mind_entry_inds = inds' }
+    mind_entry_inds = inds';
+    mind_entry_polymorphic = mib.mind_polymorphic;
+    mind_entry_universes = univs
+  }

@@ -30,12 +30,13 @@ type cbv_value =
   | LAM of int * (Name.t * constr) list * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
-  | CONSTR of constructor * cbv_value array
+  | CONSTR of constructor puniverses * cbv_value array
 
 and cbv_stack =
   | TOP
   | APP of cbv_value array * cbv_stack
   | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
+  | PROJ of projection * Declarations.projection_body * cbv_stack
 
 val shift_value : int -> cbv_value -> cbv_value
 

@@ -77,7 +77,7 @@ let push_rec_types (lna,typarray,_) env =
 
 (* Universe constraints *)
 let add_constraints c env =
-  if c == empty_constraint then
+  if c == Constraint.empty then
     env
   else
     let s = env.env_stratification in

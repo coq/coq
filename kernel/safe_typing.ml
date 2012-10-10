@@ -139,7 +139,7 @@ let empty_environment =
     modlabels = Label.Set.empty;
     objlabels = Label.Set.empty;
     future_cst = [];
-    univ = Univ.empty_constraint;
+    univ = Univ.Constraint.empty;
     engagement = None;
     imports = [];
     loads = [];
@@ -197,7 +197,10 @@ let add_constraints cst senv =
   | Now cst ->
   { senv with
     env = Environ.add_constraints cst senv.env;
-    univ = Univ.union_constraints cst senv.univ }
+    univ = Univ.Constraint.union cst senv.univ }
+
+let push_context_set ctx = add_constraints (Now (Univ.ContextSet.constraints ctx))
+let push_context ctx = add_constraints (Now (Univ.UContext.constraints ctx))
 
 let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false
@@ -291,22 +294,22 @@ let safe_push_named (id,_,_ as d) env =
     with Not_found -> () in
   Environ.push_named d env
 
-let push_named_def (id,de) senv =
-  let (c,typ,cst) = Term_typing.translate_local_def senv.env id de in
-  let c,cst' = match c with
-    | Def c -> Mod_subst.force_constr c, Univ.empty_constraint
-    | OpaqueDef o -> Opaqueproof.force_proof o, Opaqueproof.force_constraints o
-    | _ -> assert false in
-  let senv = add_constraints (Now cst') senv in
-  let senv' = add_constraints (Now cst) senv in
-  let env'' = safe_push_named (id,Some c,typ) senv'.env in
-  (Univ.union_constraints cst cst', {senv' with env=env''})
 
-let push_named_assum (id,t) senv =
-  let (t,cst) = Term_typing.translate_local_assum senv.env t in
-  let senv' = add_constraints (Now cst) senv in
+let push_named_def (id,de) senv =
+  let c,typ,univs = Term_typing.translate_local_def senv.env id de in
+  let c = match c with
+    | Def c -> Mod_subst.force_constr c
+    | OpaqueDef o -> Opaqueproof.force_proof o
+    | _ -> assert false in
+  let senv' = push_context de.Entries.const_entry_universes senv in
+  let env'' = safe_push_named (id,Some c,typ) senv'.env in
+    {senv' with env=env''}
+
+let push_named_assum ((id,t),ctx) senv =
+  let senv' = push_context_set ctx senv in
+  let t = Term_typing.translate_local_assum senv'.env t in
   let env'' = safe_push_named (id,None,t) senv'.env in
-  (cst, {senv' with env=env''})
+    {senv' with env=env''}
 
 
 (** {6 Insertion of new declarations to current environment } *)
@@ -324,20 +327,35 @@ let labels_of_mib mib =
   Array.iter visit_mip mib.mind_packets;
   get ()
 
-let constraints_of_sfb = function
-  | SFBmind mib -> [Now mib.mind_constraints]
-  | SFBmodtype mtb -> [Now mtb.typ_constraints]
-  | SFBmodule mb -> [Now mb.mod_constraints]
-  | SFBconst cb -> [Now cb.const_constraints] @
-      match cb.const_body with
-      | (Undef _ | Def _) -> []
-      | OpaqueDef lc ->
-          match Opaqueproof.get_constraints lc with
-          | None -> []
-          | Some fc ->
-              match Future.peek_val fc with
-              | None -> [Later fc]
-              | Some c -> [Now c]
+let globalize_constant_universes cb =
+  if cb.const_polymorphic then
+    Now Univ.Constraint.empty
+  else
+    (match Future.peek_val cb.const_universes with
+    | Some c -> Now (Univ.UContext.constraints c)
+    | None -> Later (Future.chain ~pure:true cb.const_universes Univ.UContext.constraints))
+      
+let globalize_mind_universes mb =
+  if mb.mind_polymorphic then
+    Now Univ.Constraint.empty
+  else
+    Now (Univ.UContext.constraints mb.mind_universes)
+
+let constraints_of_sfb sfb = 
+  match sfb with
+  | SFBconst cb -> globalize_constant_universes cb
+  | SFBmind mib -> globalize_mind_universes mib
+  | SFBmodtype mtb -> Now mtb.typ_constraints
+  | SFBmodule mb -> Now mb.mod_constraints
+
+(* let add_constraints cst senv = *)
+(*   { senv with *)
+(*     env = Environ.add_constraints cst senv.env; *)
+(*     univ = Univ.Constraint.union cst senv.univ } *)
+
+(* let next_universe senv = *)
+(*   let univ = senv.max_univ in *)
+(*     univ + 1, { senv with max_univ = univ + 1 } *)
 
 (** A generic function for adding a new field in a same environment.
     It also performs the corresponding [add_constraints]. *)
@@ -358,7 +376,8 @@ let add_field ((l,sfb) as field) gn senv =
     | SFBmodule _ | SFBmodtype _ ->
       check_modlabel l senv; (Label.Set.singleton l, Label.Set.empty)
   in
-  let senv = List.fold_right add_constraints (constraints_of_sfb sfb) senv in
+  let cst = constraints_of_sfb sfb in
+  let senv = add_constraints cst senv in
   let env' = match sfb, gn with
     | SFBconst cb, C con -> Environ.add_constant con cb senv.env
     | SFBmind mib, I mind -> Environ.add_mind mind mib senv.env
@@ -377,7 +396,6 @@ let add_field ((l,sfb) as field) gn senv =
 let update_resolver f senv = { senv with modresolver = f senv.modresolver }
 
 (** Insertion of constants and parameters in environment *)
-
 type global_declaration =
   | ConstantEntry of Entries.constant_entry
   | GlobalRecipe of Cooking.recipe
@@ -548,8 +566,8 @@ let propagate_senv newdef newenv newresolver senv oldsenv =
     modlabels = Label.Set.add (fst newdef) oldsenv.modlabels;
     univ =
       List.fold_left (fun acc cst ->
-        Univ.union_constraints acc (Future.force cst))
-      (Univ.union_constraints senv.univ oldsenv.univ)
+        Univ.Constraint.union acc (Future.force cst))
+      (Univ.Constraint.union senv.univ oldsenv.univ)
       now_cst;
     future_cst = later_cst @ oldsenv.future_cst;
     (* engagement is propagated to the upper level *)
@@ -571,7 +589,7 @@ let end_module l restype senv =
   let senv'=
     propagate_loads { senv with
       env = newenv;
-      univ = Univ.union_constraints senv.univ mb.mod_constraints} in
+      univ = Univ.Constraint.union senv.univ mb.mod_constraints} in
   let newenv = Environ.add_constraints mb.mod_constraints senv'.env in
   let newenv = Modops.add_module mb newenv in
   let newresolver =
@@ -637,7 +655,7 @@ let add_include me is_module inl senv =
       { typ_mp = mp_sup;
 	typ_expr = NoFunctor (List.rev senv.revstruct);
 	typ_expr_alg = None;
-	typ_constraints = Univ.empty_constraint;
+	typ_constraints = Univ.Constraint.empty;
 	typ_delta = senv.modresolver } in
     compute_sign sign mtb resolver senv
   in
@@ -671,6 +689,10 @@ type compiled_library = {
 }
 
 type native_library = Nativecode.global list
+
+(** FIXME: MS: remove?*)
+let current_modpath senv = senv.modpath
+let current_dirpath senv = Names.ModPath.dp (current_modpath senv)
 
 let start_library dir senv =
   check_initial senv;
@@ -747,10 +769,7 @@ type judgment = Environ.unsafe_judgment
 let j_val j = j.Environ.uj_val
 let j_type j = j.Environ.uj_type
 
-let safe_infer senv = Typeops.infer (env_of_senv senv)
-
-let typing senv = Typeops.typing (env_of_senv senv)
-
+let typing senv = Typeops.infer (env_of_senv senv)
 
 (** {6 Retroknowledge / native compiler } *)
 

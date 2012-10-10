@@ -438,7 +438,7 @@ Instance sqrt_up_wd : Proper (eq==>eq) sqrt_up.
 Proof.
  assert (Proper (eq==>eq==>Logic.eq) compare).
   intros x x' Hx y y' Hy. do 2 case compare_spec; trivial; order.
- intros x x' Hx. unfold sqrt_up. rewrite Hx. case compare; now rewrite ?Hx.
+ intros x x' Hx; unfold sqrt_up; rewrite Hx; case compare; now rewrite ?Hx.
 Qed.
 
 (** The spec of [sqrt_up] indeed determines it *)

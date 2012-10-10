@@ -627,7 +627,7 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  assert (Hz := spec_irred_zero nx dy).
  assert (Hz':= spec_irred_zero ny dx).
  destruct irred as (n1,d1); destruct irred as (n2,d2).
- simpl snd in *; destruct Hg as [Hg1 Hg2]; destruct Hg' as [Hg1' Hg2'].
+ simpl @snd in *; destruct Hg as [Hg1 Hg2]; destruct Hg' as [Hg1' Hg2'].
  rewrite spec_norm_denum.
  qsimpl.
 
@@ -665,7 +665,7 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
  assert (Hgc := strong_spec_irred nx dy).
  assert (Hgc' := strong_spec_irred ny dx).
  destruct irred as (n1,d1); destruct irred as (n2,d2).
- simpl snd in *; destruct Hg as [Hg1 Hg2]; destruct Hg' as [Hg1' Hg2'].
+ simpl @snd in *; destruct Hg as [Hg1 Hg2]; destruct Hg' as [Hg1' Hg2'].
 
  unfold norm_denum; qsimpl.
 

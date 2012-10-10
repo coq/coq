@@ -63,12 +63,12 @@ let cache_structure o =
   load_structure 1 o
 
 let subst_structure (subst,((kn,i),id,kl,projs as obj)) = 
-  let kn' = subst_ind subst kn in
+  let kn' = subst_mind subst kn in
   let projs' =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
    (* the first component of subst_con.                                   *)
    List.smartmap
-     (Option.smartmap (fun kn -> fst (subst_con subst kn)))
+     (Option.smartmap (fun kn -> fst (subst_con_kn subst kn)))
     projs
   in
   let id' = fst (subst_constructor subst id) in
@@ -132,6 +132,7 @@ that maps the pair (Li,ci) to the following data
 
 type obj_typ = {
   o_DEF : constr;
+  o_CTX : Univ.ContextSet.t;
   o_INJ : int;      (* position of trivial argument (negative= none) *)
   o_TABS : constr list;    (* ordered *)
   o_TPARAMS : constr list; (* ordered *)
@@ -189,9 +190,13 @@ let cs_pattern_of_constr t =
 
 (* Intended to always succeed *)
 let compute_canonical_projections (con,ind) =
-  let v = mkConst con in
-  let c = Environ.constant_value (Global.env()) con in
-  let lt,t = Reductionops.splay_lam (Global.env()) Evd.empty c in
+  let env = Global.env () in
+  let ctx = Environ.constant_context env con in
+  let u = Univ.UContext.instance ctx in
+  let v = (mkConstU (con,u)) in
+  let ctx = Univ.ContextSet.of_context ctx in
+  let c = Environ.constant_value_in env (con,u) in
+  let lt,t = Reductionops.splay_lam env Evd.empty c in
   let lt = List.rev_map snd lt in
   let args = snd (decompose_app t) in
   let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } =
@@ -221,7 +226,7 @@ let compute_canonical_projections (con,ind) =
       [] lps in
   List.map (fun (refi,c,inj,argj) ->
     (refi,c),
-    {o_DEF=v; o_INJ=inj; o_TABS=lt;
+    {o_DEF=v; o_CTX=ctx; o_INJ=inj; o_TABS=lt;
      o_TPARAMS=params; o_NPARAMS=List.length params; o_TCOMPS=argj})
     comp
 
@@ -256,8 +261,8 @@ let cache_canonical_structure o =
 let subst_canonical_structure (subst,(cst,ind as obj)) =
   (* invariant: cst is an evaluable reference. Thus we can take *)
   (* the first component of subst_con.                                   *)
-  let cst' = fst (subst_con subst cst) in
-  let ind' = Inductiveops.subst_inductive subst ind in
+  let cst' = subst_constant subst cst in
+  let ind' = subst_ind subst ind in
   if cst' == cst && ind' == ind then obj else (cst',ind')
 
 let discharge_canonical_structure (_,(cst,ind)) =
@@ -282,7 +287,9 @@ let error_not_structure ref =
 let check_and_decompose_canonical_structure ref =
   let sp = match ref with ConstRef sp -> sp | _ -> error_not_structure ref in
   let env = Global.env () in
-  let vc = match Environ.constant_opt_value env sp with
+  let ctx = Environ.constant_context env sp in
+  let u = Univ.UContext.instance ctx in
+  let vc = match Environ.constant_opt_value_in env (sp, u) with
     | Some vc -> vc
     | None -> error_not_structure ref in
   let body = snd (splay_lam (Global.env()) Evd.empty vc) in
@@ -290,7 +297,7 @@ let check_and_decompose_canonical_structure ref =
     | App (f,args) -> f,args
     | _ -> error_not_structure ref in
   let indsp = match kind_of_term f with
-    | Construct (indsp,1) -> indsp
+    | Construct ((indsp,1),u) -> indsp
     | _ -> error_not_structure ref in
   let s = try lookup_structure indsp with Not_found -> error_not_structure ref in
   let ntrue_projs = List.length (List.filter (fun (_, x) -> x) s.s_PROJKIND) in
@@ -303,6 +310,9 @@ let declare_canonical_structure ref =
 
 let lookup_canonical_conversion (proj,pat) =
   List.assoc_f eq_cs_pattern pat (Refmap.find proj !object_table)
+
+  (* let cst, u' = destConst cs.o_DEF in *)
+  (*   { cs with o_DEF = mkConstU (cst, u) } *)
 
 let is_open_canonical_projection env sigma (c,args) =
   try

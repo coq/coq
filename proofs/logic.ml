@@ -324,6 +324,7 @@ let collect_meta_variables c =
     | Meta mv -> if deep then error_unsupported_deep_meta () else mv::acc
     | Cast(c,_,_) -> collrec deep acc c
     | (App _| Case _) -> fold_constr (collrec deep) acc c
+    | Proj (_, c) -> collrec deep acc c
     | _ -> fold_constr (collrec true) acc c
   in
   List.rev (collrec false [] c)
@@ -333,12 +334,15 @@ let check_meta_variables c =
     raise (RefinerError (NonLinearProof c))
 
 let check_conv_leq_goal env sigma arg ty conclty =
-  if !check && not (is_conv_leq env sigma ty conclty) then
-    raise (RefinerError (BadType (arg,ty,conclty)))
+  if !check then
+    let evm, b = Reductionops.infer_conv env sigma ty conclty in
+      if b then evm 
+      else raise (RefinerError (BadType (arg,ty,conclty)))
+  else sigma
 
 let goal_type_of env sigma c =
   if !check then type_of env sigma c
-  else Retyping.get_type_of ~refresh:true env sigma c
+  else Retyping.get_type_of env sigma c
 
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = Goal.V82.env sigma goal in
@@ -346,17 +350,22 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
   let mk_goal hyps concl =
     Goal.V82.mk_goal sigma hyps concl (Goal.V82.extra sigma goal)
   in
-  match kind_of_term trm with
-    | Meta _ ->
+    if (not !check) && not (occur_meta trm) then
+      let t'ty = Retyping.get_type_of env sigma trm in
+      let sigma = check_conv_leq_goal env sigma trm t'ty conclty in
+        (goalacc,t'ty,sigma,trm)
+    else
+      match kind_of_term trm with
+      | Meta _ ->
 	let conclty = nf_betaiota sigma conclty in
 	  if !check && occur_meta conclty then
 	    raise (RefinerError (MetaInType conclty));
 	  let (gl,ev,sigma) = mk_goal hyps conclty in
 	  gl::goalacc, conclty, sigma, ev
 
-    | Cast (t,k, ty) ->
+      | Cast (t,k, ty) ->
 	check_typability env sigma ty;
-	check_conv_leq_goal env sigma trm ty conclty;
+        let sigma = check_conv_leq_goal env sigma trm ty conclty in
 	let res = mk_refgoals sigma goal goalacc ty t in
 	(** we keep the casts (in particular VMcast and NATIVEcast) except
 	    when they are annotating metas *)
@@ -368,11 +377,11 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
           let ans = if ans == t then trm else mkCast(ans,k,ty) in
 	  (gls,cty,sigma,ans)
 
-    | App (f,l) ->
+      | App (f,l) ->
 	let (acc',hdty,sigma,applicand) =
 	  match kind_of_term f with
 	    | Ind _ | Const _
-		when (isInd f || has_polymorphic_type (destConst f)) ->
+		when (isInd f || has_polymorphic_type (fst (destConst f))) ->
 		(* Sort-polymorphism of definition and inductive types *)
 		goalacc,
                 type_of_global_reference_knowing_conclusion env sigma f conclty,
@@ -381,13 +390,19 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 		mk_hdgoals sigma goal goalacc f
 	in
 	let ((acc'',conclty',sigma), args) = mk_arggoals sigma goal acc' hdty l in
-	check_conv_leq_goal env sigma trm conclty' conclty;
+        let sigma = check_conv_leq_goal env sigma trm conclty' conclty in
         let ans = if applicand == f && args == l then trm else Term.mkApp (applicand, args) in
         (acc'',conclty',sigma, ans)
 
-    | Case (ci,p,c,lf) ->
+      | Proj (p,c) ->
+	let (acc',cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
+	let c = mkProj (p, c') in
+	let ty = get_type_of env sigma c in
+	  (acc',ty,sigma,c)
+
+      | Case (ci,p,c,lf) ->
 	let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
-	check_conv_leq_goal env sigma trm conclty' conclty;
+	let sigma = check_conv_leq_goal env sigma trm conclty' conclty in
 	let (acc'',sigma, rbranches) =
 	  Array.fold_left2
             (fun (lacc,sigma,bacc) ty fi ->
@@ -401,13 +416,12 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
         in
 	(acc'',conclty',sigma, ans)
 
-    | _ ->
+      | _ ->
 	if occur_meta trm then
 	  anomaly (Pp.str "refiner called with a meta in non app/case subterm");
-
-      	let t'ty = goal_type_of env sigma trm in
-	check_conv_leq_goal env sigma trm t'ty conclty;
-        (goalacc,t'ty,sigma, trm)
+	let t'ty = goal_type_of env sigma trm in
+	let sigma = check_conv_leq_goal env sigma trm t'ty conclty in
+          (goalacc,t'ty,sigma, trm)
 
 (* Same as mkREFGOALS but without knowing the type of the term. Therefore,
  * Metas should be casted. *)
@@ -453,6 +467,12 @@ and mk_hdgoals sigma goal goalacc trm =
           else Term.mkCase (ci,p',c',lf')
 	in
 	(acc'',conclty',sigma, ans)
+
+    | Proj (p,c) ->
+         let (acc',cty,sigma,c') = mk_hdgoals sigma goal goalacc c in
+	 let c = mkProj (p, c') in
+         let ty = get_type_of env sigma c in
+	   (acc',ty,sigma,c)
 
     | _ ->
 	if !check && occur_meta trm then
@@ -569,12 +589,12 @@ let prim_refiner r sigma goal =
 		  check_ind (push_rel (na,None,c1) env) (k-1) b
             | _ -> error "Not enough products."
 	in
-	let (sp,_) = check_ind env n cl in
+	let ((sp,_),u) = check_ind env n cl in
 	let firsts,lasts = List.chop j rest in
 	let all = firsts@(f,n,cl)::lasts in
      	let rec mk_sign sign = function
 	  | (f,n,ar)::oth ->
-	      let (sp',_)  = check_ind env n ar in
+	      let ((sp',_),u')  = check_ind env n ar in
 	      if not (eq_mind sp sp') then
 		error ("Fixpoints should be on the same " ^
 		       "mutual inductive declaration.");
@@ -652,13 +672,11 @@ let prim_refiner r sigma goal =
     (* Conversion rules *)
     | Convert_concl (cl',k) ->
 	check_typability env sigma cl';
-	if (not !check) || is_conv_leq env sigma cl' cl then
-          let (sg,ev,sigma) = mk_goal sign cl' in
-	  let ev = if k != DEFAULTcast then mkCast(ev,k,cl) else ev in
-	  let sigma = Goal.V82.partial_solution sigma goal ev in
+        let (sg,ev,sigma) = mk_goal sign cl' in
+	let sigma = check_conv_leq_goal env sigma cl' cl' cl in
+	let ev = if k != DEFAULTcast then mkCast(ev,k,cl) else ev in
+	let sigma = Goal.V82.partial_solution sigma goal ev in
           ([sg], sigma)
-	else
-	  error "convert-concl rule passed non-converting term"
 
     | Convert_hyp (id,copt,ty) ->
 	let (gl,ev,sigma) = mk_goal (convert_hyp sign sigma (id,copt,ty)) cl in

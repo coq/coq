@@ -54,7 +54,7 @@ Hint Resolve le_0_n le_Sn_0: arith v62.
 
 Theorem le_n_0_eq : forall n, n <= 0 -> 0 = n.
 Proof.
-  induction n; auto with arith.
+  induction n. auto with arith.  idtac. auto with arith.
   intro; contradiction le_Sn_0 with n.
 Qed.
 Hint Immediate le_n_0_eq: arith v62.

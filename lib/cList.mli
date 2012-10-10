@@ -127,7 +127,8 @@ sig
       there is none. *)
 
   val uniquize : 'a list -> 'a list
-  (** Return the list of elements without duplicates. *)
+  (** Return the list of elements without duplicates.
+      This is the list unchanged if there was none. *)
 
   val sort_uniquize : 'a cmp -> 'a list -> 'a list
   (** Return a sorted and de-duplicated version of a list,

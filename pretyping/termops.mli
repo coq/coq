@@ -13,18 +13,6 @@ open Context
 open Environ
 open Locus
 
-(** TODO: merge this with Term *)
-
-(** Universes *)
-val new_univ_level : unit -> Univ.universe_level
-val set_remote_new_univ_level : Univ.universe_level RemoteCounter.installer
-val new_univ : unit -> Univ.universe
-val new_sort_in_family : sorts_family -> sorts
-val new_Type : unit -> types
-val new_Type_sort : unit -> sorts
-val refresh_universes : types -> types
-val refresh_universes_strict : types -> types
-
 (** printers *)
 val print_sort : sorts -> std_ppcmds
 val pr_sort_family : sorts_family -> std_ppcmds
@@ -120,6 +108,8 @@ val free_rels : constr -> Int.Set.t
 (** [dependent m t] tests whether [m] is a subterm of [t] *)
 val dependent : constr -> constr -> bool
 val dependent_no_evar : constr -> constr -> bool
+val dependent_univs : constr -> constr -> bool
+val dependent_univs_no_evar : constr -> constr -> bool
 val count_occurrences : constr -> constr -> int
 val collect_metas : constr -> int list
 val collect_vars : constr -> Id.Set.t (** for visible vars only *)
@@ -168,7 +158,7 @@ val subst_closed_term_occ_gen :
     required too *)
 
 type 'a testing_function = {
-  match_fun : constr -> 'a;
+  match_fun : 'a -> constr -> 'a;
   merge_fun : 'a -> 'a -> 'a;
   mutable testing_state : 'a;
   mutable last_found : ((Id.t * hyp_location_flag) option * int * constr) option
@@ -290,5 +280,5 @@ val on_judgment_value : (types -> types) -> unsafe_judgment -> unsafe_judgment
 val on_judgment_type  : (types -> types) -> unsafe_judgment -> unsafe_judgment
 
 (** {6 Functions to deal with impossible cases } *)
-val set_impossible_default_clause : constr * types -> unit
-val coq_unit_judge : unit -> unsafe_judgment
+val set_impossible_default_clause : (unit -> (constr * types) Univ.in_universe_context_set) -> unit
+val coq_unit_judge : unit -> unsafe_judgment Univ.in_universe_context_set

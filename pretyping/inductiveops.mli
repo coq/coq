@@ -16,19 +16,20 @@ open Evd
 (** The following three functions are similar to the ones defined in
    Inductive, but they expect an env *)
 
-val type_of_inductive    : env -> inductive -> types
+val type_of_inductive    : env -> pinductive -> types
 
 (** Return type as quoted by the user *)
-val type_of_constructor  : env -> constructor -> types
-val type_of_constructors : env -> inductive -> types array
+val type_of_constructor  : env -> pconstructor -> types
+val type_of_constructor_in_ctx  : env -> constructor -> types Univ.in_universe_context
+val type_of_constructors : env -> pinductive -> types array
 
 (** Return constructor types in normal form *)
-val arities_of_constructors : env -> inductive -> types array
+val arities_of_constructors : env -> pinductive -> types array
 
 (** An inductive type with its parameters *)
 type inductive_family
-val make_ind_family : inductive * constr list -> inductive_family
-val dest_ind_family : inductive_family -> inductive * constr list
+val make_ind_family : inductive puniverses * constr list -> inductive_family
+val dest_ind_family : inductive_family -> inductive puniverses * constr list
 val map_ind_family : (constr -> constr) -> inductive_family -> inductive_family
 val liftn_inductive_family : int -> int -> inductive_family -> inductive_family
 val lift_inductive_family  : int -> inductive_family -> inductive_family
@@ -49,7 +50,7 @@ val mis_is_recursive_subset : int list -> wf_paths -> bool
 val mis_is_recursive :
   inductive * mutual_inductive_body * one_inductive_body -> bool
 val mis_nf_constructor_type :
-  inductive * mutual_inductive_body * one_inductive_body -> int -> constr
+  pinductive * mutual_inductive_body * one_inductive_body -> int -> constr
 
 (** {6 Extract information from an inductive name}
 
@@ -69,6 +70,7 @@ val inductive_nargs_env : env -> inductive -> int * int
 
 (** @return nb of params without letin *)
 val inductive_nparams : inductive -> int
+val inductive_params_ctxt : pinductive -> rel_context
 
 (** @return param + args without letin *)
 val mis_constructor_nargs : constructor -> int
@@ -88,14 +90,14 @@ val constructor_nrealhyps : constructor -> int
 val mis_constructor_has_local_defs : constructor -> bool
 val inductive_has_local_defs : inductive -> bool
 
-val get_full_arity_sign : env -> inductive -> rel_context
+val get_full_arity_sign : env -> pinductive -> rel_context
 
 val allowed_sorts : env -> inductive -> sorts_family list
 
 (** Extract information from an inductive family *)
 
 type constructor_summary = {
-  cs_cstr : constructor;    (* internal name of the constructor *)
+  cs_cstr : pconstructor;    (* internal name of the constructor plus universes *)
   cs_params : constr list;  (* parameters of the constructor in current ctx *)
   cs_nargs : int;           (* length of arguments signature (letin included) *)
   cs_args : rel_context;    (* signature of the arguments (letin included) *)
@@ -103,7 +105,7 @@ type constructor_summary = {
 }
 val lift_constructor : int -> constructor_summary -> constructor_summary
 val get_constructor :
-  inductive * mutual_inductive_body * one_inductive_body * constr list ->
+  pinductive * mutual_inductive_body * one_inductive_body * constr list ->
   int -> constructor_summary
 val get_arity        : env -> inductive_family -> rel_context * sorts_family
 val get_constructors : env -> inductive_family -> constructor_summary array
@@ -114,11 +116,11 @@ val make_arity : env -> bool -> inductive_family -> sorts -> types
 val build_branch_type : env -> bool -> constr -> constructor_summary -> types
 
 (** Raise [Not_found] if not given an valid inductive type *)
-val extract_mrectype : constr -> inductive * constr list
-val find_mrectype    : env -> evar_map -> types -> inductive * constr list
+val extract_mrectype : constr -> pinductive * constr list
+val find_mrectype    : env -> evar_map -> types -> pinductive * constr list
 val find_rectype     : env -> evar_map -> types -> inductive_type
-val find_inductive   : env -> evar_map -> types -> inductive * constr list
-val find_coinductive : env -> evar_map -> types -> inductive * constr list
+val find_inductive   : env -> evar_map -> types -> pinductive * constr list
+val find_coinductive : env -> evar_map -> types -> pinductive * constr list
 
 (********************)
 
@@ -127,7 +129,7 @@ val arity_of_case_predicate :
   env -> inductive_family -> bool -> sorts -> types
 
 val type_case_branches_with_names :
-  env -> inductive * constr list -> constr -> constr ->
+  env -> pinductive * constr list -> constr -> constr ->
     types array * types
 
 (** Annotation for cases *)
@@ -140,9 +142,7 @@ i*)
 (********************)
 
 val type_of_inductive_knowing_conclusion :
-  env -> one_inductive_body -> types -> types
+  env -> Inductive.mind_specif puniverses -> types -> types
 
 (********************)
 val control_only_guard : env -> types -> unit
-
-val subst_inductive : Mod_subst.substitution -> inductive -> inductive

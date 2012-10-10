@@ -38,7 +38,7 @@ let functional_induction with_clean c princl pat =
 	| None -> (* No principle is given let's find the good one *)
 	    begin
 	      match kind_of_term f with
-		| Const c' ->
+		| Const (c',u) ->
 		    let princ_option =
 		      let finfo = (* we first try to find out a graph on f *)
 			try find_Function_infos c'
@@ -148,7 +148,7 @@ let build_newrecursive
     List.fold_left
       (fun (env,impls) ((_,recname),bl,arityc,_) ->
         let arityc = Constrexpr_ops.prod_constr_expr arityc bl in
-        let arity = Constrintern.interp_type sigma env0 arityc in
+        let arity,ctx = Constrintern.interp_type sigma env0 arityc in
 	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity [] in
         (Environ.push_named (recname,None,arity) env, Id.Map.add recname impl impls))
       (env0,Constrintern.empty_internalization_env) lnameargsardef in
@@ -182,6 +182,7 @@ let is_rec names =
     | GVar(_,id) -> check_id id names
     | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ -> false
     | GCast(_,b,_) -> lookup names b
+    | GProj _ -> error "GProj not handled"
     | GRec _ -> error "GRec not handled"
     | GIf(_,b,_,lhs,rhs) ->
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
@@ -222,7 +223,7 @@ let derive_inversion fix_names =
   try
     (* we first transform the fix_names identifier into their corresponding constant *)
     let fix_names_as_constant =
-      List.map (fun id -> destConst (Constrintern.global_reference id)) fix_names
+      List.map (fun id -> fst (destConst (Constrintern.global_reference id))) fix_names
     in
     (*
        Then we check that the graphs have been defined
@@ -239,7 +240,7 @@ let derive_inversion fix_names =
 	  Ensures by : register_built
 	  i*)
 	(List.map
-	   (fun id -> destInd (Constrintern.global_reference (mk_rel_id id)))
+	   (fun id -> fst (destInd (Constrintern.global_reference (mk_rel_id id))))
 	   fix_names
 	)
     with e when Errors.noncritical e ->
@@ -326,9 +327,8 @@ let generate_principle  on_error
 	let _ =
 	  List.map_i
 	    (fun i x ->
-	       let princ = destConst (Indrec.lookup_eliminator (ind_kn,i) (InProp)) in
-	       let princ_type = Typeops.type_of_constant (Global.env()) princ
-	       in
+	       let princ = Indrec.lookup_eliminator (ind_kn,i) (InProp) in
+	       let princ_type = Global.type_of_global_unsafe princ in
 	       Functional_principles_types.generate_functional_principle
 		 interactive_proof
 		 princ_type
@@ -351,10 +351,10 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
   match fixpoint_exprl with
     | [((_,fname),_,bl,ret_type,body),_] when not is_rec ->
       let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
-	Command.do_definition fname (Decl_kinds.Global,Decl_kinds.Definition)
+	Command.do_definition fname (Decl_kinds.Global,(*FIXME*)false,Decl_kinds.Definition)
 	  bl None body (Some ret_type) (fun _ _ -> ())
     | _ ->
-	Command.do_fixpoint Global fixpoint_exprl
+	Command.do_fixpoint Global false(*FIXME*) fixpoint_exprl
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
@@ -385,7 +385,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
     let f_app_args =
       Constrexpr.CAppExpl
 	(Loc.ghost,
-	 (None,(Ident (Loc.ghost,fname))) ,
+	 (None,(Ident (Loc.ghost,fname)),None) ,
 	 (List.map
 	    (function
 	       | _,Anonymous -> assert false
@@ -399,7 +399,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Constrexpr_ops.prod_constr_expr unbounded_eq args in
-  let hook f_ref tcc_lemma_ref functional_ref eq_ref rec_arg_num rec_arg_type
+  let hook (f_ref,_) tcc_lemma_ref (functional_ref,_) (eq_ref,_) rec_arg_num rec_arg_type
       nb_args relation =
     try
       pre_hook
@@ -536,7 +536,7 @@ let rebuild_bl (aux,assoc) bl typ = rebuild_bl (aux,assoc) bl typ
 
 let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) = 
   let fixl,ntns = Command.extract_fixpoint_components false fixpoint_exprl in
-  let ((_,_,typel),_) = Command.interp_fixpoint fixl ntns in
+  let ((_,_,typel),_,_) = Command.interp_fixpoint fixl ntns in
   let constr_expr_typel = 
     with_full_print (List.map (Constrextern.extern_constr false (Global.env ()))) typel in 
   let fixpoint_exprl_with_new_bl = 
@@ -631,10 +631,10 @@ let do_generate_principle on_error register_built interactive_proof
 
 let rec add_args id new_args b =
   match b with
-  | CRef r ->
+  | CRef (r,_) ->
       begin      match r with
 	| Libnames.Ident(loc,fname) when Id.equal fname id ->
-	    CAppExpl(Loc.ghost,(None,r),new_args)
+	    CAppExpl(Loc.ghost,(None,r,None),new_args)
 	| _ -> b
       end
   | CFix  _  | CCoFix _ -> anomaly ~label:"add_args " (Pp.str "todo")
@@ -648,12 +648,12 @@ let rec add_args id new_args b =
 	       add_args id new_args  b1)
   | CLetIn(loc,na,b1,b2) ->
       CLetIn(loc,na,add_args id new_args b1,add_args id new_args b2)
-  | CAppExpl(loc,(pf,r),exprl) ->
+  | CAppExpl(loc,(pf,r,us),exprl) ->
       begin
 	match r with
 	| Libnames.Ident(loc,fname) when Id.equal fname id ->
-	    CAppExpl(loc,(pf,r),new_args@(List.map (add_args id new_args) exprl))
-	| _ -> CAppExpl(loc,(pf,r),List.map (add_args id new_args) exprl)
+	    CAppExpl(loc,(pf,r,us),new_args@(List.map (add_args id new_args) exprl))
+	| _ -> CAppExpl(loc,(pf,r,us),List.map (add_args id new_args) exprl)
       end
   | CApp(loc,(pf,b),bl) ->
       CApp(loc,(pf,add_args id new_args b),
@@ -767,11 +767,10 @@ let make_graph (f_ref:global_reference) =
      | Some body ->
 	 let env = Global.env () in
 	 let extern_body,extern_type =
-	   with_full_print
-	     (fun () ->
+	   with_full_print (fun () ->
 		(Constrextern.extern_constr false env body,
 		 Constrextern.extern_type false env
-                   (Typeops.type_of_constant_type env c_body.const_type)
+                   ((*FIXNE*) c_body.const_type)
 		)
 	     )
 	     ()
@@ -792,7 +791,7 @@ let make_graph (f_ref:global_reference) =
 				  | Constrexpr.LocalRawAssum (nal,_,_) ->
 				      List.map
 					(fun (loc,n) ->
-					   CRef(Libnames.Ident(loc, Nameops.out_name n)))
+					   CRef(Libnames.Ident(loc, Nameops.out_name n),None))
 					nal
 			       )
 			       nal_tas

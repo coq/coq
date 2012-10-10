@@ -23,6 +23,9 @@ type clausenv = {
 				    out *)
   templtyp : constr freelisted (** its type *)}
 
+
+val map_clenv : (constr -> constr) -> clausenv -> clausenv
+
 (** subject of clenv (instantiated) *)
 val clenv_value     : clausenv -> constr
 
@@ -40,6 +43,9 @@ val mk_clenv_from_n :
   Goal.goal sigma -> int option -> constr * types -> clausenv
 val mk_clenv_type_of : Goal.goal sigma -> constr -> clausenv
 val mk_clenv_from_env : env -> evar_map -> int option -> constr * types -> clausenv
+
+(** Refresh the universes in a clenv *)
+val refresh_undefined_univs : clausenv -> clausenv * Univ.universe_level_subst
 
 (** {6 linking of clenvs } *)
 

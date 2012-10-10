@@ -100,6 +100,10 @@ val profile7 :
   profile_key ->
   ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h)
     -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h
+val profile8 :
+  profile_key ->
+  ('a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i)
+    -> 'a -> 'b -> 'c -> 'd -> 'e -> 'f -> 'g -> 'h -> 'i
 
 
 (** Some utilities to compute the logical and physical sizes and depth

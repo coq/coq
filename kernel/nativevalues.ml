@@ -60,6 +60,7 @@ type atom =
   | Aprod of name * t * (t -> t)
   | Ameta of metavariable * t
   | Aevar of existential * t
+  | Aproj of constant * accumulator
 
 let accumulate_tag = 0
 
@@ -127,6 +128,9 @@ let mk_meta_accu mv ty =
 
 let mk_evar_accu ev ty =
   mk_accu (Aevar (ev,ty))
+
+let mk_proj_accu kn c = 
+  mk_accu (Aproj (kn,c))
 
 let atom_of_accu (k:accumulator) =
   (Obj.magic (Obj.field (Obj.magic k) 2) : atom)

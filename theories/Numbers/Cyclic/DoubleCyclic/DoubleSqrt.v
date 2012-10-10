@@ -692,7 +692,7 @@ intros x; case x; simpl ww_is_even.
  intros x y H; unfold ww_sqrt2.
  repeat match goal with |- context[split ?x] =>
    generalize (spec_split x); case (split x)
- end; simpl fst; simpl snd.
+ end; simpl @fst; simpl @snd.
  intros w0 w1 Hw0 w2 w3 Hw1.
  assert (U: wB/4 <= [|w2|]).
  case (Z.le_gt_cases (wB / 4) [|w2|]); auto; intros H1.
@@ -1193,7 +1193,7 @@ Qed.
   rewrite <- wwB_4_wB_4; auto.
   generalize (@spec_w_sqrt2 w0 w1 V);auto with zarith.
   case (w_sqrt2 w0 w1); intros w2 c.
-  simpl ww_to_Z; simpl fst.
+  simpl ww_to_Z; simpl @fst.
   case c; unfold interp_carry; autorewrite with rm10.
   intros w3 (H6, H7); rewrite H6.
   assert (V1 := spec_to_Z w3);auto with zarith.
@@ -1256,7 +1256,7 @@ Qed.
   generalize (@spec_w_sqrt2 w0 w1 V);auto with zarith.
   case (w_sqrt2 w0 w1); intros w2 c.
   case (spec_to_Z w2); intros HH1 HH2.
-  simpl ww_to_Z; simpl fst.
+  simpl ww_to_Z; simpl @fst.
   assert (Hv3: [[ww_pred ww_zdigits]]
                  = Zpos (xO w_digits) - 1).
     rewrite spec_ww_pred; rewrite spec_ww_zdigits.

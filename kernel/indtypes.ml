@@ -20,6 +20,15 @@ open Environ
 open Reduction
 open Typeops
 open Entries
+open Pp
+
+(* Tell if indices (aka real arguments) contribute to size of inductive type *)
+(* If yes, this is compatible with the univalent model *)
+
+let indices_matter = ref false
+
+let enforce_indices_matter () = indices_matter := true
+let is_indices_matter () = !indices_matter
 
 (* Same as noccur_between but may perform reductions.
    Could be refined more...  *)
@@ -107,26 +116,22 @@ let is_logic_constr infos = List.for_all (fun (logic,small) -> logic) infos
 *)
 let is_unit constrsinfos =
   match constrsinfos with  (* One info = One constructor *)
-   | [constrinfos] -> is_logic_constr constrinfos
+   | [level] -> is_type0m_univ level
    | [] -> (* type without constructors *) true
    | _ -> false
 
-let rec infos_and_sort env t =
-  let t = whd_betadeltaiota env t in
-  match kind_of_term t with
-    | Prod (name,c1,c2) ->
-        let (varj,_) = infer_type env c1 in
+let infos_and_sort env ctx t =
+  let rec aux env ctx t max =
+    let t = whd_betadeltaiota env t in
+      match kind_of_term t with
+      | Prod (name,c1,c2) ->
+        let varj = infer_type env c1 in
 	let env1 = Environ.push_rel (name,None,varj.utj_val) env in
-	let logic = is_logic_type varj in
-	let small = Term.is_small varj.utj_type in
-	(logic,small) :: (infos_and_sort env1 c2)
-    | _ when is_constructor_head t -> []
-    | _ -> (* don't fail if not positive, it is tested later *) []
-
-let small_unit constrsinfos =
-  let issmall = List.for_all is_small constrsinfos
-  and isunit = is_unit constrsinfos in
-  issmall, isunit
+	let max = Universe.sup max (univ_of_sort varj.utj_type) in
+	  aux env1 ctx c2 max
+    | _ when is_constructor_head t -> max
+    | _ -> (* don't fail if not positive, it is tested later *) max
+  in aux env ctx t Universe.type0m
 
 (* Computing the levels of polymorphic inductive types
 
@@ -148,40 +153,52 @@ let small_unit constrsinfos =
    w1,w2,w3 <= u3
 *)
 
-let extract_level (_,_,_,lc,lev) =
+let extract_level (_,_,lc,(_,lev)) =
   (* Enforce that the level is not in Prop if more than one constructor *)
-  if Array.length lc >= 2 then sup type0_univ lev else lev
+  (* if Array.length lc >= 2 then sup type0_univ lev else lev *)
+  lev
 
 let inductive_levels arities inds =
-  let levels = Array.map pi3 arities in
   let cstrs_levels = Array.map extract_level inds in
   (* Take the transitive closure of the system of constructors *)
   (* level constraints and remove the recursive dependencies *)
-  solve_constraints_system levels cstrs_levels
+    cstrs_levels
 
 (* This (re)computes informations relevant to extraction and the sort of an
    arity or type constructor; we do not to recompute universes constraints *)
 
-let constraint_list_union =
-  List.fold_left union_constraints empty_constraint
+let context_set_list_union =
+  List.fold_left ContextSet.union ContextSet.empty
 
-let infer_constructor_packet env_ar_par params lc =
+let infer_constructor_packet env_ar_par ctx params lc =
   (* type-check the constructors *)
-  let jlc,cstl = List.split (List.map (infer_type env_ar_par) lc) in
-  let cst = constraint_list_union cstl in
+  let jlc = List.map (infer_type env_ar_par) lc in
   let jlc = Array.of_list jlc in
   (* generalize the constructor over the parameters *)
   let lc'' = Array.map (fun j -> it_mkProd_or_LetIn j.utj_val params) jlc in
-  (* compute the max of the sorts of the products of the constructor type *)
-  let level = max_inductive_sort (Array.map (fun j -> j.utj_type) jlc) in
-  (* compute *)
-  let info = small_unit (List.map (infos_and_sort env_ar_par) lc) in
+  (* compute the max of the sorts of the products of the constructors types *)
+  let levels = List.map (infos_and_sort env_ar_par ctx) lc in
+  let level = List.fold_left (fun max l -> Universe.sup max l) Universe.type0m levels in
+  (lc'',(is_unit levels,level))
 
-  (info,lc'',level,cst)
+(* If indices matter *)
+let cumulate_arity_large_levels env sign =
+  fst (List.fold_right
+    (fun (_,_,t as d) (lev,env) ->
+      let tj = infer_type env t in
+      let u = univ_of_sort tj.utj_type in
+	(Universe.sup u lev, push_rel d env))
+    sign (Universe.type0m,env))
+
+let is_impredicative env u =
+  is_type0m_univ u || (is_type0_univ u && engagement env = Some ImpredicativeSet)
 
 (* Type-check an inductive definition. Does not check positivity
    conditions. *)
-let typecheck_inductive env mie =
+(* TODO check that we don't overgeneralize construcors/inductive arities with
+   universes that are absent from them. Is it possible? 
+*)
+let typecheck_inductive env ctx mie =
   let () = match mie.mind_entry_inds with
   | [] -> anomaly (Pp.str "empty inductive types declaration")
   | _ -> ()
@@ -189,116 +206,103 @@ let typecheck_inductive env mie =
   (* Check unicity of names *)
   mind_check_names mie;
   (* Params are typed-checked here *)
-  let env_params, params, cst1 = infer_local_decls env mie.mind_entry_params in
+  let env' = push_context ctx env in
+  let (env_params, params) = infer_local_decls env' mie.mind_entry_params in
   (* We first type arity of each inductive definition *)
   (* This allows to build the environment of arities and to share *)
   (* the set of constraints *)
-  let cst, env_arities, rev_arity_list =
+  let env_arities, rev_arity_list =
     List.fold_left
-      (fun (cst,env_ar,l) ind ->
+      (fun (env_ar,l) ind ->
          (* Arities (without params) are typed-checked here *)
-	 let arity, cst2 = infer_type env_params ind.mind_entry_arity in
+         let arity = 
+	   if isArity ind.mind_entry_arity then
+	     let (ctx,s) = destArity ind.mind_entry_arity in
+	       match s with
+	       | Type u when Univ.universe_level u = None ->
+	         (** We have an algebraic universe as the conclusion of the arity,
+		     typecheck the dummy Π ctx, Prop and do a special case for the conclusion.
+		 *)
+	         let proparity = infer_type env_params (mkArity (ctx, prop_sort)) in
+		 let (cctx, _) = destArity proparity.utj_val in
+		   (* Any universe is well-formed, we don't need to check [s] here *)
+		   mkArity (cctx, s)
+	       | _ -> let arity = infer_type env_params ind.mind_entry_arity in
+			arity.utj_val
+	   else let arity = infer_type env_params ind.mind_entry_arity in
+		  arity.utj_val
+	 in
+	 let (sign, deflev) = dest_arity env_params arity in
+	 let inflev = 
+	   (* The level of the inductive includes levels of indices if 
+	      in indices_matter mode *)
+	     if !indices_matter 
+	     then Some (cumulate_arity_large_levels env_params sign)
+	     else None
+	 in
 	 (* We do not need to generate the universe of full_arity; if
 	    later, after the validation of the inductive definition,
 	    full_arity is used as argument or subject to cast, an
 	    upper universe will be generated *)
-	 let full_arity = it_mkProd_or_LetIn arity.utj_val params in
-	 let cst = union_constraints cst cst2 in
+	 let full_arity = it_mkProd_or_LetIn arity params in
 	 let id = ind.mind_entry_typename in
 	 let env_ar' =
-           push_rel (Name id, None, full_arity)
-             (add_constraints cst2 env_ar) in
-	 let lev =
-	   (* Decide that if the conclusion is not explicitly Type *)
-	   (* then the inductive type is not polymorphic *)
-	   match kind_of_term ((strip_prod_assum arity.utj_val)) with
-	   | Sort (Type u) -> Some u
-	   | _ -> None in
-         (cst,env_ar',(id,full_arity,lev)::l))
-      (cst1,env,[])
+           push_rel (Name id, None, full_arity) env_ar in
+             (* (add_constraints cst2 env_ar) in *)
+	   (env_ar', (id,full_arity,sign @ params,deflev,inflev)::l))
+      (env',[])
       mie.mind_entry_inds in
 
   let arity_list = List.rev rev_arity_list in
 
   (* builds the typing context "Gamma, I1:A1, ... In:An, params" *)
-  let env_ar_par =
-    push_rel_context params (add_constraints cst1 env_arities) in
+  let env_ar_par = push_rel_context params env_arities in
 
   (* Now, we type the constructors (without params) *)
-  let inds,cst =
+  let inds =
     List.fold_right2
-      (fun ind arity_data (inds,cst) ->
-	 let (info,lc',cstrs_univ,cst') =
-	   infer_constructor_packet env_ar_par params ind.mind_entry_lc in
+      (fun ind arity_data inds ->
+	 let (lc',cstrs_univ) =
+	   infer_constructor_packet env_ar_par ContextSet.empty
+	     params ind.mind_entry_lc in
 	 let consnames = ind.mind_entry_consnames in
-	 let ind' = (arity_data,consnames,info,lc',cstrs_univ) in
-	 (ind'::inds, union_constraints cst cst'))
+	 let ind' = (arity_data,consnames,lc',cstrs_univ) in
+	   ind'::inds)
       mie.mind_entry_inds
       arity_list
-      ([],cst) in
+    ([]) in
 
   let inds = Array.of_list inds in
-  let arities = Array.of_list arity_list in
-  let has_some_univ u = function
-    | Some v when Universe.equal u v -> true
-    | _ -> false
-  in
-  let remove_some_univ u = function
-    | Some v when Universe.equal u v -> None
-    | x -> x
-  in
-  let fold l (_, b, p) = match b with
-  | None ->
-    (* Parameter contributes to polymorphism only if explicit Type *)
-    let c = strip_prod_assum p in
-    (* Add Type levels to the ordered list of parameters contributing to *)
-    (* polymorphism unless there is aliasing (i.e. non distinct levels) *)
-    begin match kind_of_term c with
-    | Sort (Type u) ->
-      if List.exists (has_some_univ u) l then
-        None :: List.map (remove_some_univ u) l
-      else
-        Some u :: l
-    | _ ->
-      None :: l
-    end
-  | _ -> l
-  in
-  let param_ccls = List.fold_left fold [] params in
 
   (* Compute/check the sorts of the inductive types *)
-  let ind_min_levels = inductive_levels arities inds in
-  let inds, cst =
-    Array.fold_map2' (fun ((id,full_arity,ar_level),cn,info,lc,_) lev cst ->
-      let sign, s =
-        try dest_arity env full_arity
-        with NotArity -> raise (InductiveError (NotAnArity (env, full_arity)))
-      in
-      let status,cst = match s with
-      | Type u when ar_level != None (* Explicitly polymorphic *)
-            && no_upper_constraints u cst ->
-	  (* The polymorphic level is a function of the level of the *)
-	  (* conclusions of the parameters *)
-          (* We enforce [u >= lev] in case [lev] has a strict upper *)
-          (* constraints over [u] *)
-	  Inr (param_ccls, lev), enforce_leq lev u cst
-      | Type u (* Not an explicit occurrence of Type *) ->
-	  Inl (info,full_arity,s), enforce_leq lev u cst
-      | Prop Pos when
-        begin match engagement env with
-        | Some ImpredicativeSet -> false
-        | _ -> true
-        end ->
-	  (* Predicative set: check that the content is indeed predicative *)
-	  if not (is_type0m_univ lev) && not (is_type0_univ lev) then
-	    raise (InductiveError LargeNonPropInductiveNotInType);
-	  Inl (info,full_arity,s), cst
-      | Prop _ ->
-	  Inl (info,full_arity,s), cst in
-      (id,cn,lc,(sign,status)),cst)
-      inds ind_min_levels cst in
 
-  (env_arities, params, inds, cst)
+  let inds =
+    Array.map (fun ((id,full_arity,sign,def_level,inf_level),cn,lc,(is_unit,clev))  ->
+      let defu = Term.univ_of_sort def_level in
+      let infu = 
+	(** Inferred level, with parameters and constructors. *)
+	match inf_level with
+	| Some alev -> Universe.sup clev alev
+	| None -> clev
+      in
+      let is_natural =
+	check_leq (universes env') infu defu && 
+	not (is_type0m_univ defu && not is_unit)
+      in
+      let _ =
+	(** Impredicative sort, always allow *)
+	if is_impredicative env defu then ()
+	else (** Predicative case: the inferred level must be lower or equal to the
+		 declared level. *)
+	  if not is_natural then
+	    anomaly ~label:"check_inductive" 
+	    (Pp.str"Incorrect universe " ++
+	     Universe.pr defu ++ Pp.str " declared for inductive type, inferred level is "
+	     ++ Universe.pr infu)
+      in
+	(id,cn,lc,(sign,(not is_natural,full_arity,defu))))
+    inds
+  in (env_arities, params, inds)
 
 (************************************************************************)
 (************************************************************************)
@@ -387,7 +391,7 @@ if Int.equal nmr 0 then 0 else
   in find 0 (n-1) (lpar,List.rev hyps)
 
 let lambda_implicit_lift n a =
-  let level = UniverseLevel.make (DirPath.make [Id.of_string "implicit"]) 0 in
+  let level = Level.make (DirPath.make [Id.of_string "implicit"]) 0 in
   let implicit_sort = mkType (Universe.make level) in
   let lambda_implicit a = mkLambda (Anonymous, implicit_sort, a) in
   iterate lambda_implicit n (lift n a)
@@ -413,12 +417,13 @@ let abstract_mind_lc env ntyps npars lc =
 let ienv_push_var (env, n, ntypes, lra) (x,a,ra) =
  (push_rel (x,None,a) env, n+1, ntypes, (Norec,ra)::lra)
 
-let ienv_push_inductive (env, n, ntypes, ra_env) (mi,lpar) =
+let ienv_push_inductive (env, n, ntypes, ra_env) ((mi,u),lpar) =
   let auxntyp = 1 in
-  let specif = lookup_mind_specif env mi in
+  let specif = (lookup_mind_specif env mi, u) in
+  let ty = type_of_inductive env specif in
   let env' =
     push_rel (Anonymous,None,
-              hnf_prod_applist env (type_of_inductive env specif) lpar) env in
+              hnf_prod_applist env ty lpar) env in
   let ra_env' =
     (Imbr mi,(Rtree.mk_rec_calls 1).(0)) ::
     List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in
@@ -476,7 +481,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
 	    else failwith_non_pos_list n ntypes (x::largs)
 
   (* accesses to the environment are not factorised, but is it worth? *)
-  and check_positive_nested (env,n,ntypes,ra_env as ienv) nmr (mi, largs) =
+  and check_positive_nested (env,n,ntypes,ra_env as ienv) nmr ((mi,u), largs) =
     let (mib,mip) = lookup_mind_specif env mi in
     let auxnpar = mib.mind_nparams_rec in
     let nonrecpar = mib.mind_nparams - auxnpar in
@@ -495,7 +500,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
 	let auxlcvect = abstract_mind_lc env auxntyp auxnpar mip.mind_nf_lc in
 	  (* Extends the environment with a variable corresponding to
 	     the inductive def *)
-	let (env',_,_,_ as ienv') = ienv_push_inductive ienv (mi,lpar) in
+	let (env',_,_,_ as ienv') = ienv_push_inductive ienv ((mi,u),lpar) in
 	  (* Parameters expressed in env' *)
 	let lpar' = List.map (lift auxntyp) lpar in
 	let irecargs_nmr =
@@ -586,40 +591,72 @@ let all_sorts = [InProp;InSet;InType]
 let small_sorts = [InProp;InSet]
 let logical_sorts = [InProp]
 
-let allowed_sorts issmall isunit s =
-  match family_of_sort s with
-  (* Type: all elimination allowed *)
-  | InType -> all_sorts
-
-  (* Small Set is predicative: all elimination allowed *)
-  | InSet when issmall -> all_sorts
-
-  (* Large Set is necessarily impredicative: forbids large elimination *)
-  | InSet -> small_sorts
-
-  (* Unitary/empty Prop: elimination to all sorts are realizable *)
-  (* unless the type is large. If it is large, forbids large elimination *)
-  (* which otherwise allows to simulate the inconsistent system Type:Type *)
-  | InProp when isunit -> if issmall then all_sorts else small_sorts
-
-  (* Other propositions: elimination only to Prop *)
-  | InProp -> logical_sorts
+let allowed_sorts is_smashed s =
+  if not is_smashed 
+  then (** Naturally in the defined sort.
+	   If [s] is Prop, it must be small and unitary.
+	   Unsmashed, predicative Type and Set: all elimination allowed
+	   as well. *)
+      all_sorts
+  else 
+    match family_of_sort s with
+    (* Type: all elimination allowed: above and below *)
+    | InType -> all_sorts
+    (* Smashed Set is necessarily impredicative: forbids large elimination *)
+    | InSet -> small_sorts
+    (* Smashed to Prop, no informative eliminations allowed *)
+    | InProp -> logical_sorts
+    
+(* Previous comment: *)
+(* Unitary/empty Prop: elimination to all sorts are realizable *)
+(* unless the type is large. If it is large, forbids large elimination *)
+(* which otherwise allows to simulate the inconsistent system Type:Type. *)
+(* -> this is now handled by is_smashed: *)
+(* - all_sorts in case of small, unitary Prop (not smashed) *)
+(* - logical_sorts in case of large, unitary Prop (smashed) *)
 
 let fold_inductive_blocks f =
-  let concl = function
-    | Inr _ -> mkSet (* dummy *)
-    | Inl (_,ar,_) -> ar
-  in
-    Array.fold_left (fun acc (_,_,lc,(arsign,ar)) ->
-      f (Array.fold_left f acc lc) (it_mkProd_or_LetIn (concl ar) arsign))
+  Array.fold_left (fun acc (_,_,lc,(arsign,ar)) ->
+    f (Array.fold_left f acc lc) (it_mkProd_or_LetIn (pi2 ar) arsign))
 
 let used_section_variables env inds =
   let ids = fold_inductive_blocks
     (fun l c -> Id.Set.union (Environ.global_vars_set env c) l)
       Id.Set.empty inds in
   keep_hyps env ids
+let lift_decl n d = 
+  map_rel_declaration (lift n) d
 
-let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
+let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
+let rel_list n m = Array.to_list (rel_vect n m)
+let rel_appvect n m = rel_vect n (List.length m)
+
+exception UndefinableExpansion
+
+(** From a rel context describing the constructor arguments,
+    build an expansion function.
+    The term built is expecting to be substituted first by 
+    a substitution of the form [params, x : ind params] *)
+let compute_expansion ((kn, _ as ind), u) params ctx =
+  let mp, dp, l = repr_mind kn in
+  let make_proj id = Constant.make1 (KerName.make mp dp (Label.of_id id)) in
+  let rec projections acc (na, b, t) =
+    match b with
+    | Some c -> acc
+    | None -> 
+      match na with
+      | Name id -> make_proj id :: acc
+      | Anonymous -> raise UndefinableExpansion
+  in
+  let projs = List.fold_left projections [] ctx in
+  let projarr = Array.of_list projs in
+  let exp = 
+    mkApp (mkConstructU ((ind, 1),u),
+	   Array.append (rel_appvect 1 params)
+ 	     (Array.map (fun p -> mkProj (p, mkRel 1)) projarr))
+   in exp, projarr
+
+let build_inductive env p ctx env_ar params kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
   let hyps =  used_section_variables env inds in
@@ -637,18 +674,13 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
       Array.map (fun (d,_) -> rel_context_nhyps d - rel_context_nhyps params)
 	splayed_lc in
     (* Elimination sorts *)
-    let arkind,kelim = match ar_kind with
-      | Inr (param_levels,lev) ->
-	  Polymorphic {
-	      poly_param_levels = param_levels;
-	      poly_level = lev;
-	    }, all_sorts
-      | Inl ((issmall,isunit),ar,s) ->
-	  let kelim = allowed_sorts issmall isunit s in
-	    Monomorphic {
-		mind_user_arity = ar;
-		mind_sort = s;
-	      }, kelim in
+    let arkind,kelim = 
+      let (info,ar,defs) = ar_kind in
+      let s = sort_of_univ defs in
+      let kelim = allowed_sorts info s in
+	{ mind_user_arity = ar;
+	  mind_sort = s;
+	}, kelim in
     (* Assigning VM tags to constructors *)
     let nconst, nblock = ref 0, ref 0 in
     let transf num =
@@ -681,6 +713,19 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
 	mind_reloc_tbl = rtbl;
       } in
   let packets = Array.map2 build_one_packet inds recargs in
+  let isrecord = 
+    let pkt = packets.(0) in
+      if isrecord (* || (Array.length pkt.mind_consnames = 1 &&  *)
+        (* inductive_sort_family pkt <> InProp) *) then
+	let rctx, _ = decompose_prod_assum pkt.mind_nf_lc.(0) in
+	let u = if p then Univ.UContext.instance ctx else Univ.Instance.empty in
+	try 
+	  let exp = compute_expansion ((kn, 0), u) params 
+	    (List.firstn pkt.mind_consnrealdecls.(0) rctx) 
+	  in Some exp
+	with UndefinableExpansion -> None
+      else None
+  in
     (* Build the mutual inductive *)
     { mind_record = isrecord;
       mind_ntypes = ntypes;
@@ -690,7 +735,8 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
       mind_nparams_rec = nmr;
       mind_params_ctxt = params;
       mind_packets = packets;
-      mind_constraints = cst
+      mind_polymorphic = p;
+      mind_universes = ctx;
     }
 
 (************************************************************************)
@@ -698,9 +744,14 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
 
 let check_inductive env kn mie =
   (* First type-check the inductive definition *)
-  let (env_ar, params, inds, cst) = typecheck_inductive env mie in
+  let env = push_context mie.mind_entry_universes env in
+  let (env_ar, params, inds) = 
+    typecheck_inductive env mie.mind_entry_universes mie 
+  in
   (* Then check positivity conditions *)
   let (nmr,recargs) = check_positivity kn env_ar params inds in
   (* Build the inductive packets *)
-    build_inductive env env_ar params mie.mind_entry_record mie.mind_entry_finite
-      inds nmr recargs cst
+    build_inductive env mie.mind_entry_polymorphic 
+      mie.mind_entry_universes
+      env_ar params kn mie.mind_entry_record mie.mind_entry_finite
+      inds nmr recargs

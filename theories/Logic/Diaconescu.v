@@ -99,7 +99,7 @@ Lemma AC_bool_subset_to_bool :
 Proof.
   destruct (guarded_rel_choice _ _
    (fun Q:bool -> Prop =>  exists y : _, Q y)
-   (fun (Q:bool -> Prop) (y:bool) => Q y)) as (R,(HRsub,HR)).
+   (fun (Q:bool -> Prop) (y:bool) => Q y)) as (R,(HRsub,HR)). 
     exact (fun _ H => H).
   exists R; intros P HP.
   destruct (HR P HP) as (y,(Hy,Huni)).
@@ -172,7 +172,7 @@ Variables a1 a2 : A.
 
 (** We build the subset [A'] of [A] made of [a1] and [a2] *)
 
-Definition A' := sigT (fun x => x=a1 \/ x=a2).
+Definition A' := @sigT A (fun x => x=a1 \/ x=a2).
 
 Definition a1':A'.
 exists a1 ; auto.

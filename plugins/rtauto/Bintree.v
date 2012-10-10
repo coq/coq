@@ -198,7 +198,7 @@ Theorem get_Full_Gt : forall S, Full S ->
 Proof.
 intros S W;induction W.
 unfold empty,index,get,contents;intros;apply Tget_Tempty.
-unfold index,get,push;simpl contents.
+unfold index,get,push. simpl @contents.
 intros i e;rewrite Tget_Tadd.
 rewrite (Gt_Psucc _ _ e).
 unfold get in IHW.
@@ -209,7 +209,7 @@ Theorem get_Full_Eq : forall S, Full S -> get (index S) S = PNone.
 intros [index0 contents0] F.
 case F.
 unfold empty,index,get,contents;intros;apply Tget_Tempty.
-unfold index,get,push;simpl contents.
+unfold push,index,get;simpl @contents.
 intros a S.
 rewrite Tget_Tadd.
 rewrite Psucc_Gt.
@@ -231,12 +231,12 @@ Proof.
 intros i a S F.
 case_eq (i ?= index S).
 intro e;rewrite (Pos.compare_eq _ _ e).
-destruct S;unfold get,push,index;simpl contents;rewrite Tget_Tadd.
+destruct S;unfold get,push,index;simpl @contents;rewrite Tget_Tadd.
 rewrite Pos.compare_refl;reflexivity.
-intros;destruct S;unfold get,push,index;simpl contents;rewrite Tget_Tadd.
-simpl index in H;rewrite H;reflexivity.
+intros;destruct S;unfold get,push,index;simpl @contents;rewrite Tget_Tadd.
+simpl @index in H;rewrite H;reflexivity.
 intro H;generalize H;clear H.
-unfold get,push;simpl index;simpl contents.
+unfold get,push;simpl.
 rewrite Tget_Tadd;intro e;rewrite e.
 change (get i S=PNone).
 apply get_Full_Gt;auto.
@@ -260,7 +260,7 @@ Qed.
 Lemma Full_index_one_empty : forall S, Full S -> index S = 1 -> S=empty.
 intros [ind cont] F one; inversion F.
 reflexivity.
-simpl index in one;assert (h:=Pos.succ_not_1 (index S)).
+simpl @index in one;assert (h:=Pos.succ_not_1 (index S)).
 congruence.
 Qed.
 

@@ -324,8 +324,13 @@ pr "
 
  Lemma spec_zeron : forall n, ZnZ.to_Z (zeron n) = 0%%Z.
  Proof.
-  do_size (destruct n; [exact ZnZ.spec_0|]).
-  destruct n; auto. simpl. rewrite make_op_S. exact ZnZ.spec_0.
+   do_size (destruct n;
+            [match goal with
+             |- @eq Z (_ (zeron ?n)) _ => 
+               apply (ZnZ.spec_0 (Specs:=dom_spec n))
+             end|]).
+  destruct n; auto. simpl. rewrite make_op_S. fold word. 
+  apply (ZnZ.spec_0 (Specs:=wn_spec (SizePlus 0))).
  Qed.
 
  (** * Digits *)

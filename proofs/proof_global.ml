@@ -68,6 +68,7 @@ type proof_object = {
   id : Names.Id.t;
   entries : Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
+  opt_subst : Universes.universe_opt_subst;
 }
 
 type proof_ending =
@@ -77,6 +78,10 @@ type proof_ending =
               proof_object
 type proof_terminator = proof_ending -> unit
 type closed_proof = proof_object * proof_terminator
+
+type 'a proof_decl_hook =
+  Universes.universe_opt_subst Univ.in_universe_context -> 
+  Decl_kinds.locality -> Globnames.global_reference -> 'a
 
 type pstate = {
   pid : Id.t;
@@ -264,18 +269,29 @@ let get_open_goals () =
 let close_proof ?feedback_id ~now fpl =
   let { pid; section_vars; strength; proof; terminator } = cur_pstate () in
   let initial_goals = Proof.initial_goals proof in
-  let entries =
-    Future.map2 (fun p (c, t) -> { Entries.
-      const_entry_body = p;
-      const_entry_secctx = section_vars;
-      const_entry_feedback = feedback_id;
-      const_entry_type  = Some t;
-      const_entry_inline_code = false;
-      const_entry_opaque = true })
-    fpl initial_goals in
+  let evdref = ref (Proof.return proof) in
+  let nf,subst = Evarutil.e_nf_evars_and_universes evdref in
+  let initial_goals = List.map (fun (c,t) -> (nf c, nf t)) initial_goals in
+  let ctx = Evd.universe_context !evdref in
+  let entries = Future.map2 (fun p (c, t) ->
+    let univs = 
+      Univ.LSet.union (Universes.universes_of_constr c)
+	(Universes.universes_of_constr t)
+    in 
+    let ctx = Universes.restrict_universe_context (Univ.ContextSet.of_context ctx) univs in
+    { Entries.
+    const_entry_body = p;
+    const_entry_secctx = section_vars;
+    const_entry_type  = Some t;
+    const_entry_feedback = feedback_id;
+    const_entry_inline_code = false;
+    const_entry_opaque = true;
+    const_entry_universes = Univ.ContextSet.to_context ctx;
+    const_entry_polymorphic = pi2 strength;
+    const_entry_proj = None}) fpl initial_goals in
   if now then
-    List.iter (fun x ->ignore(Future.force x.Entries.const_entry_body)) entries;
-  { id = pid; entries = entries; persistence = strength },
+    List.iter (fun x -> ignore(Future.force x.Entries.const_entry_body)) entries;
+  { id = pid; entries = entries; persistence = strength; opt_subst = subst },
   Ephemeron.get terminator
 
 let return_proof () =
@@ -311,6 +327,9 @@ let set_terminator hook =
   match !pstates with
   | [] -> raise NoCurrentProof
   | p :: ps -> pstates := { p with terminator = Ephemeron.create hook } :: ps
+
+
+
 
 (**********************************************************)
 (*                                                        *)

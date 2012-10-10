@@ -19,6 +19,7 @@ open Names
 open Term
 open Declarations
 open Environ
+open Univ
 
 (*s Cooking the constants. *)
 
@@ -56,27 +57,36 @@ end
 
 module RefTable = Hashtbl.Make(RefHash)
 
+let instantiate_my_gr gr u =
+  match gr with
+  | ConstRef c -> mkConstU (c, u)
+  | IndRef i -> mkIndU (i, u)
+  | ConstructRef c -> mkConstructU (c, u)
+
 let share cache r (cstl,knl) =
   try RefTable.find cache r
   with Not_found ->
-  let f,l =
+  let f,(u,l) =
     match r with
     | IndRef (kn,i) ->
-	mkInd (pop_mind kn,i), Mindmap.find kn knl
+	IndRef (pop_mind kn,i), Mindmap.find kn knl
     | ConstructRef ((kn,i),j) ->
-	mkConstruct ((pop_mind kn,i),j), Mindmap.find kn knl
+	ConstructRef ((pop_mind kn,i),j), Mindmap.find kn knl
     | ConstRef cst ->
-	mkConst (pop_con cst), Cmap.find cst cstl in
-  let c = mkApp (f, Array.map mkVar l) in
+	ConstRef (pop_con cst), Cmap.find cst cstl in
+  let c = (f, (u, Array.map mkVar l)) in
   RefTable.add cache r c;
   c
+
+let share_univs cache r u l =
+  let r', (u', args) = share cache r l in
+    mkApp (instantiate_my_gr r' (Instance.append u' u), args)
 
 let update_case_info cache ci modlist =
   try
     let ind, n =
-      match kind_of_term (share cache (IndRef ci.ci_ind) modlist) with
-      | App (f,l) -> (destInd f, Array.length l)
-      | Ind ind -> ind, 0
+      match share cache (IndRef ci.ci_ind) modlist with
+      | (IndRef f,(u,l)) -> (f, Array.length l)
       | _ -> assert false in
     { ci with ci_ind = ind; ci_npar = ci.ci_npar + n }
   with Not_found ->
@@ -86,30 +96,42 @@ let is_empty_modlist (cm, mm) =
   Cmap.is_empty cm && Mindmap.is_empty mm
 
 let expmod_constr cache modlist c =
-  let share = share cache in
+  let share_univs = share_univs cache in
   let update_case_info = update_case_info cache in
   let rec substrec c =
     match kind_of_term c with
       | Case (ci,p,t,br) ->
 	  map_constr substrec (mkCase (update_case_info ci modlist,p,t,br))
 
-      | Ind ind ->
+      | Ind (ind,u) ->
 	  (try
-	    share (IndRef ind) modlist
+	    share_univs (IndRef ind) u modlist
 	   with
 	    | Not_found -> map_constr substrec c)
 
-      | Construct cstr ->
+      | Construct (cstr,u) ->
 	  (try
-	    share (ConstructRef cstr) modlist
+	     share_univs (ConstructRef cstr) u modlist
 	   with
 	    | Not_found -> map_constr substrec c)
 
-      | Const cst ->
+      | Const (cst,u) ->
 	  (try
-	    share (ConstRef cst) modlist
+	    share_univs (ConstRef cst) u modlist
 	   with
 	    | Not_found -> map_constr substrec c)
+
+      | Proj (p, c') ->
+          (try 
+	     let p' = share_univs (ConstRef p) Univ.Instance.empty modlist in
+	     match kind_of_term p' with
+	     | Const (p',_) -> mkProj (p', substrec c')
+	     | App (f, args) -> 
+	       (match kind_of_term f with 
+	       | Const (p', _) -> mkProj (p', substrec c')
+	       | _ -> assert false)
+	     | _ -> assert false
+	   with Not_found -> map_constr substrec c)
 
   | _ -> map_constr substrec c
 
@@ -127,7 +149,8 @@ type recipe = { from : constant_body; info : Opaqueproof.cooking_info }
 type inline = bool
 
 type result =
-  constant_def * constant_type * Univ.constraints * inline
+  constant_def * constant_type * projection_body option * 
+    bool * constant_universes * inline
     * Context.section_context option
 
 let on_body ml hy f = function
@@ -142,15 +165,17 @@ let constr_of_def = function
   | Def cs -> Mod_subst.force_constr cs
   | OpaqueDef lc -> Opaqueproof.force_proof lc
 
+
 let cook_constr { Opaqueproof.modlist ; abstract } c =
   let cache = RefTable.create 13 in
-  let hyps = Context.map_named_context (expmod_constr cache modlist) abstract in
+  let hyps = Context.map_named_context (expmod_constr cache modlist) (fst abstract) in
   abstract_constant_body (expmod_constr cache modlist c) hyps
 
 let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
   let cache = RefTable.create 13 in
+  let abstract, abs_ctx = abstract in 
   let hyps = Context.map_named_context (expmod_constr cache modlist) abstract in
-  let body = on_body modlist hyps
+  let body = on_body modlist (hyps, abs_ctx)
     (fun c -> abstract_constant_body (expmod_constr cache modlist c) hyps)
     cb.const_body
   in
@@ -158,18 +183,43 @@ let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
     Context.fold_named_context (fun (h,_,_) hyps ->
       List.filter (fun (id,_,_) -> not (Id.equal id h)) hyps)
       hyps ~init:cb.const_hyps in
-  let typ = match cb.const_type with
-    | NonPolymorphicType t ->
-	let typ =
-          abstract_constant_type (expmod_constr cache modlist t) hyps in
-	NonPolymorphicType typ
-    | PolymorphicArity (ctx,s) ->
-	let t = mkArity (ctx,Type s.poly_level) in
-	let typ =
-          abstract_constant_type (expmod_constr cache modlist t) hyps in
-	let j = make_judge (constr_of_def body) typ in
-	Typeops.make_polymorphic_if_constant_for_ind env j
+
+  (* let typ = match cb.const_type with *)
+  (*   | NonPolymorphicType t -> *)
+  (* 	let typ = *)
+  (*         abstract_constant_type (expmod_constr cache r.d_modlist t) hyps in *)
+  (* 	NonPolymorphicType typ *)
+  (*   | PolymorphicArity (ctx,s) -> *)
+  (* 	let t = mkArity (ctx,Type s.poly_level) in *)
+  (* 	let typ = *)
+  (*         abstract_constant_type (expmod_constr cache r.d_modlist t) hyps in *)
+  (* 	let j = make_judge (constr_of_def body) typ in *)
+  (* 	Typeops.make_polymorphic_if_constant_for_ind env j *)
+  (* in *)
+  let typ = 
+    abstract_constant_type (expmod_constr cache modlist cb.const_type) hyps 
   in
-  (body, typ, cb.const_constraints, cb.const_inline_code, Some const_hyps)
+  let projection pb =
+    let c' = abstract_constant_body (expmod_constr cache modlist pb.proj_body) hyps in
+    let ((mind, _), _), n' =
+      try 
+	let c' = share_univs cache (IndRef (pb.proj_ind,0)) Univ.Instance.empty modlist in
+	  match kind_of_term c' with
+	  | App (f,l) -> (destInd f, Array.length l)
+	  | Ind ind -> ind, 0
+	  | _ -> assert false 
+      with Not_found -> (((pb.proj_ind,0),Univ.Instance.empty), 0)
+    in 
+    let ctx, ty' = decompose_prod_n (n' + pb.proj_npars + 1) typ in
+      { proj_ind = mind; proj_npars = pb.proj_npars + n'; proj_arg = pb.proj_arg;
+	proj_type = ty'; proj_body = c' }
+  in
+  let univs = Future.from_val (UContext.union abs_ctx (Future.force cb.const_universes)) in
+    (body, typ, Option.map projection cb.const_proj, 
+     cb.const_polymorphic, univs, cb.const_inline_code, 
+     Some const_hyps)
+
+(* let cook_constant_key = Profile.declare_profile "cook_constant" *)
+(* let cook_constant = Profile.profile2 cook_constant_key cook_constant *)
 
 let expmod_constr modlist c = expmod_constr (RefTable.create 13) modlist c

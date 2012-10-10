@@ -110,7 +110,7 @@ let type_of_global_ref gr =
 	"var" ^ type_of_logical_kind (Decls.variable_kind v)
     | Globnames.IndRef ind ->
 	let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
-	  if mib.Declarations.mind_record then
+	  if mib.Declarations.mind_record <> None then
 	    if mib.Declarations.mind_finite then "rec"
 	    else "corec"
 	  else if mib.Declarations.mind_finite then "ind"

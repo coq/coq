@@ -67,7 +67,7 @@ type inversion_status = Dep of constr option | NoDep
 let compute_eqn env sigma n i ai =
   (mkRel (n-i),get_type_of env sigma (mkRel (n-i)))
 
-let make_inv_predicate env sigma indf realargs id status concl =
+let make_inv_predicate env evd indf realargs id status concl =
   let nrealargs = List.length realargs in
   let (hyps,concl) =
     match status with
@@ -86,11 +86,12 @@ let make_inv_predicate env sigma indf realargs id status concl =
             match dflt_concl with
               | Some concl -> concl (*assumed it's some [x1..xn,H:I(x1..xn)]C*)
               | None ->
-		let sort = get_sort_family_of env sigma concl in
-		let p = make_arity env true indf (new_sort_in_family sort) in
-		fst (Unification.abstract_list_all env
-                       (Evd.create_evar_defs sigma)
-		       p concl (realargs@[mkVar id])) in
+		let sort = get_sort_family_of env !evd concl in
+		let sort = Evarutil.evd_comb1 (Evd.fresh_sort_in_family env) evd sort in
+		let p = make_arity env true indf sort in
+		let evd',(p,ptyp) = Unification.abstract_list_all env
+                  !evd p concl (realargs@[mkVar id])
+		in evd := evd'; p in
 	  let hyps,bodypred = decompose_lam_n_assum (nrealargs+1) pred in
 	  (* We lift to make room for the equations *)
 	  (hyps,lift nrealargs bodypred)
@@ -102,21 +103,25 @@ let make_inv_predicate env sigma indf realargs id status concl =
   (* Now, we can recurse down this list, for each ai,(mkRel k) whether to
      push <Ai>(mkRel k)=ai (when   Ai is closed).
    In any case, we carry along the rest of pairs *)
+  let eqdata = Coqlib.build_coq_eq_data () in
   let rec build_concl eqns args n = function
     | [] -> it_mkProd concl eqns, Array.rev_of_list args
     | ai :: restlist ->
         let ai = lift nhyps ai in
-        let (xi, ti) = compute_eqn env' sigma nhyps n ai in
+        let (xi, ti) = compute_eqn env' !evd nhyps n ai in
         let (lhs,eqnty,rhs) =
           if closed0 ti then
 	    (xi,ti,ai)
           else
-	    make_iterated_tuple env' sigma ai (xi,ti)
+	    let sigma, res = make_iterated_tuple env' !evd ai (xi,ti) in
+	      evd := sigma; res
 	in
-        let eq_term = Coqlib.build_coq_eq () in
-        let eqn = applist (eq_term ,[eqnty;lhs;rhs]) in
+        let eq_term = eqdata.Coqlib.eq in
+	let eq = Evarutil.evd_comb1 (Evd.fresh_global env) evd eq_term in
+        let eqn = applist (eq,[eqnty;lhs;rhs]) in
         let eqns = (Anonymous, lift n eqn) :: eqns in
-        let refl_term = Coqlib.build_coq_eq_refl () in
+        let refl_term = eqdata.Coqlib.refl in
+	let refl_term = Evarutil.evd_comb1 (Evd.fresh_global env) evd refl_term in
         let refl = mkApp (refl_term, [|eqnty; rhs|]) in
         let args = refl :: args in
         build_concl eqns args (succ n) restlist
@@ -455,8 +460,10 @@ let raw_inversion inv_kind id status names =
         Errors.errorlabstrm "" msg
     in
     let IndType (indf,realargs) = find_rectype env sigma t in
+    let evdref = ref sigma in
     let (elim_predicate, args) =
-      make_inv_predicate env sigma indf realargs id status concl in
+      make_inv_predicate env evdref indf realargs id status concl in
+    let sigma = !evdref in
     let (cut_concl,case_tac) =
       if status != NoDep && (dependent c concl) then
         Reduction.beta_appvect elim_predicate (Array.of_list (realargs@[c])),
@@ -470,12 +477,13 @@ let raw_inversion inv_kind id status names =
       Proofview.Refine.refine (fun h -> h, prf)
     in
     let neqns = List.length realargs in
-    tclTHENS
+    tclTHEN (Proofview.V82.tclEVARS sigma)
+      (tclTHENS
         (assert_tac Anonymous cut_concl)
         [case_tac names
             (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
             (Some elim_predicate) ind (c, t);
-        onLastHypId (fun id -> tclTHEN (refined id) reflexivity)]
+        onLastHypId (fun id -> tclTHEN (refined id) reflexivity)])
   end
 
 (* Error messages of the inversion tactics *)
@@ -486,7 +494,7 @@ let wrap_inv_error id = function
 	(strbrk "Inversion would require case analysis on sort " ++
 	pr_sort k ++
 	strbrk " which is not allowed for inductive definition " ++
-	pr_inductive (Global.env()) i ++ str ".")))
+	pr_inductive (Global.env()) (fst i) ++ str ".")))
   | e -> Proofview.tclZERO e
 
 (* The most general inversion tactic *)

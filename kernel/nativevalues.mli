@@ -52,6 +52,7 @@ type atom =
   | Aprod of name * t * (t -> t)
   | Ameta of metavariable * t
   | Aevar of existential * t
+  | Aproj of constant * accumulator
 
 (* Constructors *)
 
@@ -68,6 +69,7 @@ val mk_fix_accu : rec_pos  -> int -> t array -> t array -> t
 val mk_cofix_accu : int -> t array -> t array -> t
 val mk_meta_accu : metavariable -> t
 val mk_evar_accu : existential -> t -> t
+val mk_proj_accu : constant -> accumulator -> t
 val upd_cofix : t -> t -> unit
 val force_cofix : t -> t 
 val mk_const : tag -> t

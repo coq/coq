@@ -211,8 +211,7 @@ Section DoubleDiv32.
  Variable w_div21       : w -> w -> w -> w*w.
  Variable ww_sub_c      : zn2z w -> zn2z w -> carry (zn2z w).
 
- Definition w_div32 a1 a2 a3 b1 b2 :=
-  Eval lazy beta iota delta [ww_add_c_cont ww_add] in
+ Definition w_div32_body a1 a2 a3 b1 b2 :=
   match w_compare a1 b1 with
   | Lt =>
     let (q,r) := w_div21 a1 a2 b1 in
@@ -232,6 +231,10 @@ Section DoubleDiv32.
     (WW (w_sub a2 b2) a3) (WW b1 b2)
   | Gt => (w_0, W0) (* cas absurde *)
   end.
+
+ Definition w_div32 a1 a2 a3 b1 b2 :=
+  Eval lazy beta iota delta [ww_add_c_cont ww_add w_div32_body] in
+     w_div32_body a1 a2 a3 b1 b2.
 
  (* Proof *)
 
@@ -312,26 +315,8 @@ Section DoubleDiv32.
    assert (U:= lt_0_wB w_digits); assert (U1:= lt_0_wwB w_digits).
    Spec_w_to_Z a1;Spec_w_to_Z a2;Spec_w_to_Z a3;Spec_w_to_Z b1;Spec_w_to_Z b2.
    rewrite wwB_wBwB; rewrite Z.pow_2_r; rewrite Z.mul_assoc;rewrite <- Z.mul_add_distr_r.
-   change (w_div32 a1 a2 a3 b1 b2) with
-    match w_compare a1 b1 with
-    | Lt =>
-     let (q,r) := w_div21 a1 a2 b1 in
-     match ww_sub_c (w_WW r a3) (w_mul_c q b2) with
-     | C0 r1 => (q,r1)
-     | C1 r1 =>
-      let q := w_pred q in
-      ww_add_c_cont w_WW w_add_c w_add_carry_c
-      (fun r2=>(w_pred q, ww_add w_add_c w_add w_add_carry r2 (WW b1 b2)))
-      (fun r2 => (q,r2))
-      r1 (WW b1 b2)
-     end
-    | Eq =>
-     ww_add_c_cont w_WW w_add_c w_add_carry_c
-     (fun r => (w_Bm2, ww_add w_add_c w_add w_add_carry r (WW b1 b2)))
-     (fun r => (w_Bm1,r))
-     (WW (w_sub a2 b2) a3) (WW b1 b2)
-    | Gt => (w_0, W0) (* cas absurde *)
-    end.
+   change (w_div32 a1 a2 a3 b1 b2) with (w_div32_body a1 a2 a3 b1 b2).
+   unfold w_div32_body.
    rewrite spec_compare. case Z.compare_spec; intro Hcmp.
    simpl in Hlt.
    rewrite Hcmp in Hlt;assert ([|a2|] < [|b2|]). omega.

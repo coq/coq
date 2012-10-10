@@ -353,7 +353,7 @@ let rec str_const c =
   | App(f,args) ->
       begin
 	match kind_of_term f with
-	| Construct((kn,j),i) -> 
+	| Construct(((kn,j),i),u) -> 
             begin
 	    let oib = lookup_mind kn !global_env in
 	    let oip = oib.mind_packets.(j) in
@@ -422,8 +422,8 @@ let rec str_const c =
               end
 	| _ -> Bconstr c
       end
-  | Ind ind -> Bstrconst (Const_ind ind)
-  | Construct ((kn,j),i) ->  
+  | Ind (ind,u) -> Bstrconst (Const_ind ind)
+  | Construct (((kn,j),i),u) ->  
       begin
       (* spiwack: tries first to apply the run-time compilation
            behavior of the constructor, as in 2/ above *)
@@ -487,11 +487,11 @@ let rec compile_fv reloc l sz cont =
 (* Compiling constants *)
 
 let rec get_allias env kn =
-  let tps = (lookup_constant kn env).const_body_code in
-  match Cemitcodes.force tps with
-  | BCallias kn' -> get_allias env kn'
-  | _ -> kn
-
+  let cb = lookup_constant kn env in
+  let tps = cb.const_body_code in
+    (match Cemitcodes.force tps with
+    | BCallias kn' -> get_allias env kn'
+    | _ -> kn)
 
 (* Compiling expressions *)
 
@@ -499,12 +499,19 @@ let rec compile_constr reloc c sz cont =
   match kind_of_term c with
   | Meta _ -> invalid_arg "Cbytegen.compile_constr : Meta"
   | Evar _ -> invalid_arg "Cbytegen.compile_constr : Evar"
+  | Proj (p,c) -> 
+    (* compile_const reloc p [|c|] sz cont *)
+    let cb = lookup_constant p !global_env in
+      (* TODO: better representation of projections *)
+    let pb = Option.get cb.const_proj in
+    let args = Array.make pb.proj_npars mkProp in
+      compile_const reloc p Univ.Instance.empty (Array.append args [|c|]) sz cont
 
   | Cast(c,_,_) -> compile_constr reloc c sz cont
 
   | Rel i -> pos_rel i reloc sz :: cont
   | Var id -> pos_named id reloc :: cont
-  | Const kn -> compile_const reloc kn [||] sz cont
+  | Const (kn,u) -> compile_const reloc kn u [||] sz cont
   | Sort _  | Ind _ | Construct _ ->
       compile_str_cst reloc (str_const c) sz cont
 
@@ -531,7 +538,7 @@ let rec compile_constr reloc c sz cont =
       begin
 	match kind_of_term f with
 	| Construct _ -> compile_str_cst reloc (str_const c) sz cont
-        | Const kn -> compile_const reloc kn args sz cont
+        | Const (kn,u) -> compile_const reloc kn u args sz cont
 	| _ -> comp_app compile_constr compile_constr reloc f args sz cont
       end
   | Fix ((rec_args,init),(_,type_bodies,rec_bodies)) ->
@@ -682,14 +689,14 @@ and compile_str_cst reloc sc sz cont =
 (* spiwack : compilation of constants with their arguments.
    Makes a special treatment with 31-bit integer addition *)
 and compile_const =
-  fun reloc-> fun  kn -> fun args -> fun sz -> fun cont ->
+  fun reloc-> fun  kn u -> fun args -> fun sz -> fun cont ->
   let nargs = Array.length args in
   (* spiwack: checks if there is a specific way to compile the constant
               if there is not, Not_found is raised, and the function
               falls back on its normal behavior *)
   try
     Retroknowledge.get_vm_compiling_info (!global_env).retroknowledge
-                  (mkConst kn) reloc args sz cont
+                  (mkConstU (kn,u)) reloc args sz cont
   with Not_found ->
     if Int.equal nargs 0 then
       Kgetglobal (get_allias !global_env kn) :: cont
@@ -723,7 +730,7 @@ let compile_constant_body env = function
       match kind_of_term body with
 	| Const kn' ->
 	    (* we use the canonical name of the constant*)
-	    let con= constant_of_kn (canonical_con kn') in
+	    let con= constant_of_kn (canonical_con (Univ.out_punivs kn')) in
 	      BCallias (get_allias env con)
 	| _ ->
 	    let res = compile env body in
@@ -751,7 +758,7 @@ let compile_structured_int31 fc args =
   Const_b0
     (Array.fold_left
        (fun temp_i -> fun t -> match kind_of_term t with
-          | Construct (_,d) -> 2*temp_i+d-1
+          | Construct ((_,d),_) -> 2*temp_i+d-1
           | _ -> raise NotClosed)
        0 args
     )

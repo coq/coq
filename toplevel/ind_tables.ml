@@ -27,12 +27,17 @@ open Decl_kinds
 (**********************************************************************)
 (* Registering schemes in the environment *)
 
-type mutual_scheme_object_function = mutual_inductive -> constr array * Declareops.side_effects
-type individual_scheme_object_function = inductive -> constr * Declareops.side_effects
+
+type mutual_scheme_object_function =
+  mutual_inductive -> constr array Evd.in_evar_universe_context * Declareops.side_effects
+type individual_scheme_object_function =
+  inductive -> constr Evd.in_evar_universe_context * Declareops.side_effects
 
 type 'a scheme_kind = string
 
 let scheme_map = Summary.ref Indmap.empty ~name:"Schemes"
+
+let pr_scheme_kind = Pp.str
 
 let cache_one_scheme kind (ind,const) =
   let map = try Indmap.find ind !scheme_map with Not_found -> String.Map.empty in
@@ -41,9 +46,9 @@ let cache_one_scheme kind (ind,const) =
 let cache_scheme (_,(kind,l)) =
   Array.iter (cache_one_scheme kind) l
 
-let subst_one_scheme subst ((mind,i),const) =
+let subst_one_scheme subst (ind,const) =
   (* Remark: const is a def: the result of substitution is a constant *)
-  ((subst_ind subst mind,i),fst (subst_con subst const))
+  (subst_ind subst ind,subst_constant subst const)
 
 let subst_scheme (subst,(kind,l)) =
   (kind,Array.map (subst_one_scheme subst) l)
@@ -67,8 +72,8 @@ type individual
 type mutual
 
 type scheme_object_function =
-  | MutualSchemeFunction of (mutual_inductive -> constr array * Declareops.side_effects)
-  | IndividualSchemeFunction of (inductive -> constr * Declareops.side_effects)
+  | MutualSchemeFunction of mutual_scheme_object_function
+  | IndividualSchemeFunction of individual_scheme_object_function
 
 let scheme_object_table =
   (Hashtbl.create 17 : (string, string * scheme_object_function) Hashtbl.t)
@@ -111,31 +116,37 @@ let compute_name internal id =
   | KernelSilent ->
       Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
 
-let define internal id c =
+let define internal id c p univs =
   let fd = declare_constant ~internal in
   let id = compute_name internal id in
+  let ctx = Evd.normalize_evar_universe_context univs in
+  let c = Vars.subst_univs_fn_constr 
+    (Universes.make_opt_subst (Evd.evar_universe_context_subst ctx)) c in
   let entry = {
     const_entry_body = Future.from_val (c,Declareops.no_seff);
     const_entry_secctx = None;
     const_entry_type = None;
+    const_entry_proj = None;
+    const_entry_polymorphic = p;
+    const_entry_universes = Evd.evar_context_universe_context ctx;
     const_entry_opaque = false;
     const_entry_inline_code = false;
     const_entry_feedback = None;
   } in
   let kn = fd id (DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
   let () = match internal with
-  | KernelSilent -> ()
-  | _-> definition_message id
+    | KernelSilent -> ()
+    | _-> definition_message id
   in
   kn
 
 let define_individual_scheme_base kind suff f internal idopt (mind,i as ind) =
-  let c, eff = f ind in
+  let (c, ctx), eff = f ind in
   let mib = Global.lookup_mind mind in
   let id = match idopt with
     | Some id -> id
     | None -> add_suffix mib.mind_packets.(i).mind_typename suff in
-  let const = define internal id c in
+  let const = define internal id c mib.mind_polymorphic ctx in
   declare_scheme kind [|ind,const|];
   const, Declareops.cons_side_effects
      (Safe_typing.sideff_of_scheme kind (Global.safe_env()) [ind,const]) eff
@@ -147,12 +158,14 @@ let define_individual_scheme kind internal names (mind,i as ind) =
       define_individual_scheme_base kind s f internal names ind
 
 let define_mutual_scheme_base kind suff f internal names mind =
-  let cl, eff = f mind in
+  let (cl, ctx), eff = f mind in
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
       try Int.List.assoc i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
-  let consts = Array.map2 (define internal) ids cl in
+
+  let consts = Array.map2 (fun id cl -> 
+     define internal id cl mib.mind_polymorphic ctx) ids cl in
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in
   declare_scheme kind schemes;
   consts,
@@ -185,4 +198,3 @@ let find_scheme kind (mind,i as ind) =
 let check_scheme kind ind =
   try let _ = find_scheme_on_env_too kind ind in true
   with Not_found -> false
-

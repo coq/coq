@@ -15,6 +15,8 @@
    Institution: LRI, CNRS UMR 8623 - University Paris Sud
 *)
 
+Set Universe Polymorphism.
+
 (** The polymorphic identity function is defined in [Datatypes]. *)
 
 Arguments id {A} x.
@@ -45,7 +47,7 @@ Definition const {A B} (a : A) := fun _ : B => a.
 
 (** The [flip] combinator reverses the first two arguments of a function. *)
 
-Definition flip {A B C} (f : A -> B -> C) x y := f y x.
+Monomorphic Definition flip {A B C} (f : A -> B -> C) x y := f y x.
 
 (** Application as a combinator. *)
 

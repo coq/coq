@@ -623,7 +623,7 @@ Section Basics.
  rewrite i2l_length; omega.
  generalize (firstn_length (size-n) (i2l x)).
  rewrite i2l_length.
- intros H0 H1; rewrite H1 in H0.
+ intros H0 H1. rewrite H1 in H0.
  rewrite min_l in H0 by omega.
  simpl length in H0.
  omega.
@@ -882,16 +882,16 @@ Section Basics.
  destruct p; simpl snd.
 
  specialize IHn with p.
- destruct (p2ibis n p). simpl snd in *.
-rewrite nshiftr_S_tail.
+ destruct (p2ibis n p). simpl @snd in *.
+ rewrite nshiftr_S_tail.
  destruct (le_lt_dec size n).
  rewrite nshiftr_above_size; auto.
  assert (H:=nshiftr_0_firstl _ _ l IHn).
  replace (shiftr (twice_plus_one i)) with i; auto.
- destruct i; simpl in *; rewrite H; auto.
+ destruct i; simpl in *. rewrite H; auto.
 
  specialize IHn with p.
- destruct (p2ibis n p); simpl snd in *.
+ destruct (p2ibis n p); simpl @snd in *.
  rewrite nshiftr_S_tail.
  destruct (le_lt_dec size n).
  rewrite nshiftr_above_size; auto.
@@ -945,7 +945,7 @@ rewrite nshiftr_S_tail.
  intros.
  simpl p2ibis; destruct p; [ | | red; auto];
   specialize IHn with p;
-  destruct (p2ibis n p); simpl snd in *; simpl phi_inv_positive;
+  destruct (p2ibis n p); simpl @snd in *; simpl phi_inv_positive;
   rewrite ?EqShiftL_twice_plus_one, ?EqShiftL_twice;
   replace (S (size - S n))%nat with (size - n)%nat by omega;
   apply IHn; omega.
@@ -1629,7 +1629,7 @@ Section Int31_Specs.
  Lemma spec_pos_mod : forall w p,
        [|ZnZ.pos_mod p w|] = [|w|] mod (2 ^ [|p|]).
  Proof.
- unfold ZnZ.pos_mod, int31_ops, compare31.
+ unfold int31_ops, ZnZ.pos_mod, compare31.
  change [|31|] with 31%Z.
  assert (forall w p, 31<=p -> [|w|] = [|w|] mod 2^p).
   intros.
@@ -1959,7 +1959,7 @@ Section Int31_Specs.
 
  Lemma div31_phi i j: 0 < [|j|] -> [|fst (i/j)%int31|] = [|i|]/[|j|].
  intros Hj; generalize (spec_div i j Hj).
- case div31; intros q r; simpl fst.
+ case div31; intros q r; simpl @fst.
  intros (H1,H2); apply Zdiv_unique with [|r|]; auto with zarith.
  rewrite H1; ring.
  Qed.
@@ -2094,7 +2094,7 @@ Section Int31_Specs.
  generalize (spec_div21 ih il j Hj Hj1).
  case div3121; intros q r (Hq, Hr).
  apply Zdiv_unique with (phi r); auto with zarith.
- simpl fst; apply eq_trans with (1 := Hq); ring.
+ simpl @fst; apply eq_trans with (1 := Hq); ring.
  Qed.
 
  Lemma sqrt312_step_correct rec ih il j:
@@ -2214,6 +2214,9 @@ Section Int31_Specs.
  apply Z.le_trans with (2 ^Z.of_nat n + [|j2|])%Z; auto with zarith.
  apply Nat2Z.is_nonneg.
  Qed.
+
+ (* Avoid expanding [iter312_sqrt] before variables in the context. *)
+ Strategy 1 [iter312_sqrt].
 
  Lemma spec_sqrt2 : forall x y,
        wB/ 4 <= [|x|] ->

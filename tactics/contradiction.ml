@@ -34,6 +34,7 @@ let absurd c gls =
                    exact_no_check (mkApp(mkVar idna,[|mkVar ida|])) gl)));
             tclIDTAC]));
        tclIDTAC])) { gls with Evd.sigma; }
+
 let absurd c = Proofview.V82.tactic (absurd c)
 
 (* Contradiction *)

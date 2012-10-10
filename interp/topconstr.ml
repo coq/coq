@@ -101,7 +101,7 @@ let rec fold_local_binders g f n acc b = function
       f n acc b
 
 let fold_constr_expr_with_binders g f n acc = function
-  | CAppExpl (loc,(_,_),l) -> List.fold_left (f n) acc l
+  | CAppExpl (loc,(_,_,_),l) -> List.fold_left (f n) acc l
   | CApp (loc,(_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
   | CProdN (_,l,b) | CLambdaN (_,l,b) -> fold_constr_expr_binders g f n acc b l
   | CLetIn (_,na,a,b) -> fold_constr_expr_binders g f n acc b [[na],default_binder_kind,a]
@@ -141,7 +141,7 @@ let fold_constr_expr_with_binders g f n acc = function
 
 let free_vars_of_constr_expr c =
   let rec aux bdvars l = function
-  | CRef (Ident (_,id)) -> if Id.List.mem id bdvars then l else Id.Set.add id l
+  | CRef (Ident (_,id),_) -> if Id.List.mem id bdvars then l else Id.Set.add id l
   | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
   in aux [] Id.Set.empty c
 
@@ -250,8 +250,8 @@ let map_constr_expr_with_binders g f e = function
 
 (* Used in constrintern *)
 let rec replace_vars_constr_expr l = function
-  | CRef (Ident (loc,id)) as x ->
-      (try CRef (Ident (loc,Id.Map.find id l)) with Not_found -> x)
+  | CRef (Ident (loc,id),us) as x ->
+      (try CRef (Ident (loc,Id.Map.find id l),us) with Not_found -> x)
   | c -> map_constr_expr_with_binders Id.Map.remove
            replace_vars_constr_expr l c
 

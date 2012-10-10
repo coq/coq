@@ -1,3 +1,9 @@
+Record foo (A : Type) := { B :> Type }.
+
+Lemma bar (f : foo nat) (x : f) : x = x.
+  destruct f. simpl B. simpl B in x.
+Abort.
+
 Structure S : Type :=  {Dom : Type; Op : Dom -> Dom -> Dom}.
 
 Check (fun s : S => Dom s).

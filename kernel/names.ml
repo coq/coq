@@ -309,6 +309,11 @@ module ModPath = struct
 
   let initial = MPfile DirPath.initial
 
+  let rec dp = function
+  | MPfile sl -> sl
+  | MPbound (_,_,dp) -> dp
+  | MPdot (mp,l) -> dp mp
+
   module Self_Hashcons = struct
     type t = module_path
     type u = (DirPath.t -> DirPath.t) * (MBId.t -> MBId.t) *
@@ -424,7 +429,6 @@ module KerName = struct
   let hcons =
     Hashcons.simple_hcons HashKN.generate
       (ModPath.hcons,DirPath.hcons,String.hcons)
-
 end
 
 module KNmap = HMap.Make(KerName)
@@ -567,6 +571,7 @@ let constr_modpath (ind,_) = ind_modpath ind
 
 let ith_mutual_inductive (mind, _) i = (mind, i)
 let ith_constructor_of_inductive ind i = (ind, i)
+let ith_constructor_of_pinductive (ind,u) i = ((ind,i),u)
 let inductive_of_constructor (ind, i) = ind
 let index_of_constructor (ind, i) = i
 
@@ -663,8 +668,7 @@ let hcons_mind = Hashcons.simple_hcons MutInd.HashKP.generate KerName.hcons
 let hcons_ind = Hashcons.simple_hcons Hind.generate hcons_mind
 let hcons_construct = Hashcons.simple_hcons Hconstruct.generate hcons_ind
 
-
-(*******)
+(*****************)
 
 type transparent_state = Id.Pred.t * Cpred.t
 
@@ -674,24 +678,25 @@ let var_full_transparent_state = (Id.Pred.full, Cpred.empty)
 let cst_full_transparent_state = (Id.Pred.empty, Cpred.full)
 
 type 'a tableKey =
-  | ConstKey of Constant.t
+  | ConstKey of 'a
   | VarKey of Id.t
-  | RelKey of 'a
-
+  | RelKey of Int.t
 
 type inv_rel_key = int (* index in the [rel_context] part of environment
 			  starting by the end, {\em inverse}
 			  of de Bruijn indice *)
 
-type id_key = inv_rel_key tableKey
+type id_key = Constant.t tableKey
 
-let eq_id_key ik1 ik2 =
+let eq_table_key f ik1 ik2 =
   if ik1 == ik2 then true
   else match ik1,ik2 with
-  | ConstKey c1, ConstKey c2 -> Constant.UserOrd.equal c1 c2
+  | ConstKey c1, ConstKey c2 -> f c1 c2
   | VarKey id1, VarKey id2 -> Id.equal id1 id2
   | RelKey k1, RelKey k2 -> Int.equal k1 k2
   | _ -> false
+
+let eq_id_key = eq_table_key Constant.UserOrd.equal
 
 let eq_con_chk = Constant.UserOrd.equal
 let eq_mind_chk = MutInd.UserOrd.equal
@@ -777,6 +782,7 @@ let kn_ord = KerName.compare
 (** Compatibility layer for [Constant] *)
 
 type constant = Constant.t
+type projection = constant
 
 let constant_of_kn = Constant.make1
 let constant_of_kn_equiv = Constant.make
@@ -787,6 +793,7 @@ let user_con = Constant.user
 let con_label = Constant.label
 let con_modpath = Constant.modpath
 let eq_constant = Constant.equal
+let eq_constant_key = Constant.UserOrd.equal
 let con_ord = Constant.CanOrd.compare
 let con_user_ord = Constant.UserOrd.compare
 let string_of_con = Constant.to_string

@@ -119,11 +119,10 @@ let _ = Termops.set_print_constr pr_lconstr_env
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 let pr_univ_cstr (c:Univ.constraints) =
-  if !Detyping.print_universes && not (Univ.is_empty_constraint c) then
+  if !Detyping.print_universes && not (Univ.Constraint.is_empty c) then
     fnl()++pr_in_comment (fun c -> v 0 (Univ.pr_constraints c)) c
   else
     mt()
-
 
 (** Term printers resilient to [Nametab] errors *)
 
@@ -179,6 +178,11 @@ let safe_pr_constr_env = safe_gen pr_constr_env
 let safe_pr_lconstr t = safe_pr_lconstr_env (Global.env()) t
 let safe_pr_constr t = safe_pr_constr_env (Global.env()) t
 
+let pr_universe_ctx c =
+  if !Detyping.print_universes && not (Univ.UContext.is_empty c) then
+    fnl()++pr_in_comment (fun c -> v 0 (Univ.pr_universe_context c)) c
+  else
+    mt()
 
 (**********************************************************************)
 (* Global references *)
@@ -186,11 +190,21 @@ let safe_pr_constr t = safe_pr_constr_env (Global.env()) t
 let pr_global_env = pr_global_env
 let pr_global = pr_global_env Id.Set.empty
 
+let pr_puniverses f env (c,u) =
+  f env c ++ 
+  (if !Constrextern.print_universes then
+    str"(*" ++ Univ.Instance.pr u ++ str"*)"
+   else mt ())
+
 let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)
 let pr_existential_key evk = str (string_of_existential evk)
 let pr_existential env ev = pr_lconstr_env env (mkEvar ev)
 let pr_inductive env ind = pr_lconstr_env env (mkInd ind)
 let pr_constructor env cstr = pr_lconstr_env env (mkConstruct cstr)
+
+let pr_pconstant = pr_puniverses pr_constant
+let pr_pinductive = pr_puniverses pr_inductive
+let pr_pconstructor = pr_puniverses pr_constructor
 
 let pr_evaluable_reference ref =
   pr_global (Tacred.global_of_evaluable_reference ref)
@@ -713,6 +727,17 @@ let pr_assumptionset env s =
     ] in
     prlist_with_sep fnl (fun x -> x) (Option.List.flatten assums)
 
+open Typeclasses
+
+let xor a b = 
+  (a && not b) || (not a && b)
+
+let pr_polymorphic b = 
+  let print = xor (Flags.is_universe_polymorphism ()) b in
+  if print then
+    if b then str"Polymorphic " else str"Monomorphic "
+  else mt ()
+
 (** Inductive declarations *)
 
 open Termops
@@ -730,17 +755,17 @@ let print_constructors envpar names types =
   hv 0 (str "  " ++ pc)
 
 let build_ind_type env mip =
-  match mip.mind_arity with
-    | Monomorphic ar -> ar.mind_user_arity
-    | Polymorphic ar ->
-      it_mkProd_or_LetIn (mkSort (Type ar.poly_level)) mip.mind_arity_ctxt
+  mip.mind_arity.mind_user_arity
 
 let print_one_inductive env mib ((_,i) as ind) =
   let mip = mib.mind_packets.(i) in
   let params = mib.mind_params_ctxt in
   let args = extended_rel_list 0 params in
   let arity = hnf_prod_applist env (build_ind_type env mip) args in
-  let cstrtypes = Inductive.type_of_constructors ind (mib,mip) in
+  let u = if mib.mind_polymorphic then 
+      Univ.UContext.instance mib.mind_universes 
+    else Univ.Instance.empty in
+  let cstrtypes = Inductive.type_of_constructors (ind,u) (mib,mip) in
   let cstrtypes = Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
   let envpar = push_rel_context params env in
   hov 0 (
@@ -751,11 +776,11 @@ let print_one_inductive env mib ((_,i) as ind) =
 let print_mutual_inductive env mind mib =
   let inds = List.init (Array.length mib.mind_packets) (fun x -> (mind, x))
   in
-  hov 0 (
+  hov 0 (pr_polymorphic mib.mind_polymorphic ++
     str (if mib.mind_finite then "Inductive " else "CoInductive ") ++
     prlist_with_sep (fun () -> fnl () ++ str"  with ")
       (print_one_inductive env mib) inds ++
-      pr_univ_cstr mib.mind_constraints)
+      pr_universe_ctx mib.mind_universes)
 
 let get_fields =
   let rec prodec_rec l subst c =
@@ -774,13 +799,17 @@ let print_record env mind mib =
   let mip = mib.mind_packets.(0) in
   let params = mib.mind_params_ctxt in
   let args = extended_rel_list 0 params in
+  let u = if mib.mind_polymorphic then 
+      Univ.UContext.instance mib.mind_universes 
+    else Univ.Instance.empty in
   let arity = hnf_prod_applist env (build_ind_type env mip) args in
-  let cstrtypes = Inductive.type_of_constructors (mind,0) (mib,mip) in
+  let cstrtypes = Inductive.type_of_constructors ((mind,0),u) (mib,mip) in
   let cstrtype = hnf_prod_applist env cstrtypes.(0) args in
   let fields = get_fields cstrtype in
   let envpar = push_rel_context params env in
   hov 0 (
     hov 0 (
+      pr_polymorphic mib.mind_polymorphic ++
       str "Record " ++ pr_id mip.mind_typename ++ brk(1,4) ++
       print_params env params ++
       str ": " ++ pr_lconstr_env envpar arity ++ brk(1,2) ++
@@ -791,10 +820,10 @@ let print_record env mind mib =
         (fun (id,b,c) ->
 	  pr_id id ++ str (if b then " : " else " := ") ++
 	  pr_lconstr_env envpar c) fields) ++ str" }" ++
-      pr_univ_cstr mib.mind_constraints)
+      pr_universe_ctx mib.mind_universes)
 
 let pr_mutual_inductive_body env mind mib =
-  if mib.mind_record && not !Flags.raw_print then
+  if mib.mind_record <> None && not !Flags.raw_print then
     print_record env mind mib
   else
     print_mutual_inductive env mind mib

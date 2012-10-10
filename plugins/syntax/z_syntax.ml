@@ -41,9 +41,9 @@ let glob_xO = ConstructRef path_of_xO
 let glob_xH = ConstructRef path_of_xH
 
 let pos_of_bignat dloc x =
-  let ref_xI = GRef (dloc, glob_xI) in
-  let ref_xH = GRef (dloc, glob_xH) in
-  let ref_xO = GRef (dloc, glob_xO) in
+  let ref_xI = GRef (dloc, glob_xI, None) in
+  let ref_xH = GRef (dloc, glob_xH, None) in
+  let ref_xO = GRef (dloc, glob_xO, None) in
   let rec pos_of x =
     match div2_with_rest x with
       | (q,false) -> GApp (dloc, ref_xO,[pos_of q])
@@ -65,9 +65,9 @@ let interp_positive dloc n =
 (**********************************************************************)
 
 let rec bignat_of_pos = function
-  | GApp (_, GRef (_,b),[a]) when Globnames.eq_gr b glob_xO -> mult_2(bignat_of_pos a)
-  | GApp (_, GRef (_,b),[a]) when Globnames.eq_gr b glob_xI -> add_1(mult_2(bignat_of_pos a))
-  | GRef (_, a) when Globnames.eq_gr a glob_xH -> Bigint.one
+  | GApp (_, GRef (_,b,_),[a]) when Globnames.eq_gr b glob_xO -> mult_2(bignat_of_pos a)
+  | GApp (_, GRef (_,b,_),[a]) when Globnames.eq_gr b glob_xI -> add_1(mult_2(bignat_of_pos a))
+  | GRef (_, a, _) when Globnames.eq_gr a glob_xH -> Bigint.one
   | _ -> raise Non_closed_number
 
 let uninterp_positive p =
@@ -83,9 +83,9 @@ let uninterp_positive p =
 let _ = Notation.declare_numeral_interpreter "positive_scope"
   (positive_path,binnums)
   interp_positive
-  ([GRef (Loc.ghost, glob_xI);
-    GRef (Loc.ghost, glob_xO);
-    GRef (Loc.ghost, glob_xH)],
+  ([GRef (Loc.ghost, glob_xI, None);
+    GRef (Loc.ghost, glob_xO, None);
+    GRef (Loc.ghost, glob_xH, None)],
    uninterp_positive,
    true)
 
@@ -104,9 +104,9 @@ let n_path = make_path binnums "N"
 
 let n_of_binnat dloc pos_or_neg n =
   if not (Bigint.equal n zero) then
-    GApp(dloc, GRef (dloc,glob_Npos), [pos_of_bignat dloc n])
+    GApp(dloc, GRef (dloc,glob_Npos,None), [pos_of_bignat dloc n])
   else
-    GRef (dloc, glob_N0)
+    GRef (dloc, glob_N0, None)
 
 let error_negative dloc =
   user_err_loc (dloc, "interp_N", str "No negative numbers in type \"N\".")
@@ -120,8 +120,8 @@ let n_of_int dloc n =
 (**********************************************************************)
 
 let bignat_of_n = function
-  | GApp (_, GRef (_,b),[a]) when Globnames.eq_gr b glob_Npos -> bignat_of_pos a
-  | GRef (_, a) when Globnames.eq_gr a glob_N0 -> Bigint.zero
+  | GApp (_, GRef (_,b,_),[a]) when Globnames.eq_gr b glob_Npos -> bignat_of_pos a
+  | GRef (_, a,_) when Globnames.eq_gr a glob_N0 -> Bigint.zero
   | _ -> raise Non_closed_number
 
 let uninterp_n p =
@@ -134,8 +134,8 @@ let uninterp_n p =
 let _ = Notation.declare_numeral_interpreter "N_scope"
   (n_path,binnums)
   n_of_int
-  ([GRef (Loc.ghost, glob_N0);
-    GRef (Loc.ghost, glob_Npos)],
+  ([GRef (Loc.ghost, glob_N0, None);
+    GRef (Loc.ghost, glob_Npos, None)],
   uninterp_n,
   true)
 
@@ -157,18 +157,18 @@ let z_of_int dloc n =
   if not (Bigint.equal n zero) then
     let sgn, n =
       if is_pos_or_zero n then glob_POS, n else glob_NEG, Bigint.neg n in
-    GApp(dloc, GRef (dloc,sgn), [pos_of_bignat dloc n])
+    GApp(dloc, GRef (dloc,sgn,None), [pos_of_bignat dloc n])
   else
-    GRef (dloc, glob_ZERO)
+    GRef (dloc, glob_ZERO, None)
 
 (**********************************************************************)
 (* Printing Z via scopes                                              *)
 (**********************************************************************)
 
 let bigint_of_z = function
-  | GApp (_, GRef (_,b),[a]) when Globnames.eq_gr b glob_POS -> bignat_of_pos a
-  | GApp (_, GRef (_,b),[a]) when Globnames.eq_gr b glob_NEG -> Bigint.neg (bignat_of_pos a)
-  | GRef (_, a) when Globnames.eq_gr a glob_ZERO -> Bigint.zero
+  | GApp (_, GRef (_,b,_),[a]) when Globnames.eq_gr b glob_POS -> bignat_of_pos a
+  | GApp (_, GRef (_,b,_),[a]) when Globnames.eq_gr b glob_NEG -> Bigint.neg (bignat_of_pos a)
+  | GRef (_, a, _) when Globnames.eq_gr a glob_ZERO -> Bigint.zero
   | _ -> raise Non_closed_number
 
 let uninterp_z p =
@@ -182,8 +182,8 @@ let uninterp_z p =
 let _ = Notation.declare_numeral_interpreter "Z_scope"
   (z_path,binnums)
   z_of_int
-  ([GRef (Loc.ghost, glob_ZERO);
-    GRef (Loc.ghost, glob_POS);
-    GRef (Loc.ghost, glob_NEG)],
+  ([GRef (Loc.ghost, glob_ZERO, None, None);
+    GRef (Loc.ghost, glob_POS, None, None);
+    GRef (Loc.ghost, glob_NEG, None, None)],
   uninterp_z,
   true)

@@ -159,7 +159,7 @@ GEXTEND Gram
   ;
   constr:
     [ [ c = operconstr LEVEL "8" -> c
-      | "@"; f=global -> CAppExpl(!@loc,(None,f),[]) ] ]
+      | "@"; f=global -> CAppExpl(!@loc,(None,f,None),[]) ] ]
   ;
   operconstr:
     [ "200" RIGHTA
@@ -183,20 +183,20 @@ GEXTEND Gram
     | "90" RIGHTA [ ]
     | "10" LEFTA
       [ f=operconstr; args=LIST1 appl_arg -> CApp(!@loc,(None,f),args)
-      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(!@loc,(None,f),args)
+      | "@"; f=global; args=LIST0 NEXT -> CAppExpl(!@loc,(None,f,None),args)
       | "@"; (locid,id) = pattern_identref; args=LIST1 identref ->
-          let args = List.map (fun x -> CRef (Ident x), None) args in
+          let args = List.map (fun x -> CRef (Ident x,None), None) args in
           CApp(!@loc,(None,CPatVar(locid,(true,id))),args) ]
     | "9"
         [ ".."; c = operconstr LEVEL "0"; ".." ->
-          CAppExpl (!@loc,(None,Ident (!@loc,ldots_var)),[c]) ]
+          CAppExpl (!@loc,(None,Ident (!@loc,ldots_var),None),[c]) ]
     | "8" [ ]
     | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
-	CApp(!@loc,(Some (List.length args+1),CRef f),args@[c,None])
+	CApp(!@loc,(Some (List.length args+1),CRef (f,None)),args@[c,None])
       | c=operconstr; ".("; "@"; f=global;
         args=LIST0 (operconstr LEVEL "9"); ")" ->
-        CAppExpl(!@loc,(Some (List.length args+1),f),args@[c])
+        CAppExpl(!@loc,(Some (List.length args+1),f,None),args@[c])
       | c=operconstr; "%"; key=IDENT -> CDelimiters (!@loc,key,c) ]
     | "0"
       [ c=atomic_constr -> c
@@ -277,7 +277,7 @@ GEXTEND Gram
       | c=operconstr LEVEL "9" -> (c,None) ] ]
   ;
   atomic_constr:
-    [ [ g=global -> CRef g
+    [ [ g=global -> CRef (g,None)
       | s=sort -> CSort (!@loc,s)
       | n=INT -> CPrim (!@loc, Numeral (Bigint.of_string n))
       | s=string -> CPrim (!@loc, String s)

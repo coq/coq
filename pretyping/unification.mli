@@ -27,11 +27,11 @@ type unify_flags = {
   allow_K_in_toplevel_higher_order_unification : bool
 }
 
-val default_unify_flags : unify_flags
-val default_no_delta_unify_flags : unify_flags
+val default_unify_flags : unit -> unify_flags
+val default_no_delta_unify_flags : unit -> unify_flags
 
-val elim_flags : unify_flags
-val elim_no_delta_flags : unify_flags
+val elim_flags : unit -> unify_flags
+val elim_no_delta_flags : unit -> unify_flags
 
 (** The "unique" unification fonction *)
 val w_unify :
@@ -59,8 +59,7 @@ val w_coerce_to_type : env -> evar_map -> constr -> types -> types ->
    abstracts the terms in l over c to get a term of type t
    (exported for inv.ml) *)
 val abstract_list_all :
-  env -> evar_map -> constr -> constr -> constr list -> constr * types
-
+  env -> evar_map -> constr -> constr -> constr list -> evar_map * (constr * types)
 
 (* For tracing *)
 
@@ -70,6 +69,18 @@ val w_merge : env -> bool -> unify_flags -> evar_map *
 
 val unify_0 :            Environ.env ->
            Evd.evar_map ->
+           Evd.conv_pb ->
+           unify_flags ->
+           Term.types ->
+           Term.types ->
+           Evd.evar_map * Evd.metabinding list *
+           (Environ.env * Term.types Term.pexistential * Term.constr) list
+
+val unify_0_with_initial_metas : 
+           Evd.evar_map * Evd.metabinding list *
+           (Environ.env * Term.types Term.pexistential * Term.constr) list ->
+           bool ->
+           Environ.env ->
            Evd.conv_pb ->
            unify_flags ->
            Term.types ->

@@ -67,12 +67,11 @@ let judge_of_relative env n =
 (* Type of constants *)
 
 let type_of_constant_knowing_parameters env t paramtyps =
-  match t with
-  | NonPolymorphicType t -> t
-  | PolymorphicArity (sign,ar) ->
-      let ctx = List.rev sign in
-      let ctx,s = instantiate_universes env ctx ar paramtyps in
-      mkArity (List.rev ctx,s)
+  t
+  (* | PolymorphicArity (sign,ar) -> *)
+  (*     let ctx = List.rev sign in *)
+  (*     let ctx,s = instantiate_universes env ctx ar paramtyps in *)
+  (*     mkArity (List.rev ctx,s) *)
 
 let type_of_constant_type env t =
   type_of_constant_knowing_parameters env t [||]
@@ -220,14 +219,14 @@ let type_fixpoint env lna lar lbody vdefj =
 (************************************************************************)
 
 
-let refresh_arity env ar =
-  let ctxt, hd = decompose_prod_assum ar in
-  match hd with
-      Sort (Type u) when not (is_univ_variable u) ->
-        let u' = fresh_local_univ() in
-        let env' = add_constraints (enforce_leq u u' empty_constraint) env in
-        env', mkArity (ctxt,Type u')
-    | _ -> env, ar
+(* let refresh_arity env ar = *)
+(*   let ctxt, hd = decompose_prod_assum ar in *)
+(*   match hd with *)
+(*       Sort (Type u) when not (is_univ_variable u) -> *)
+(*         let u' = fresh_local_univ() in *)
+(*         let env' = add_constraints (enforce_leq u u' empty_constraint) env in *)
+(*         env', mkArity (ctxt,Type u') *)
+(*     | _ -> env, ar *)
 
 
 (* The typing machine. *)
@@ -282,7 +281,7 @@ let rec execute env cstr =
         (* /!\ c2 can be an inferred type => refresh
            (but the pushed type is still c2) *)
         let _ =
-          let env',c2' = refresh_arity env c2 in
+          let env',c2' = (* refresh_arity env *) env, c2 in
           let _ = execute_type env' c2' in
           judge_of_cast env' (c1,j1) DEFAULTcast c2' in
         let env1 = push_rel (name,Some c1,c2) env in
@@ -365,14 +364,14 @@ let check_kind env ar u =
   if snd (dest_prod env ar) = Sort(Type u) then ()
   else failwith "not the correct sort"
 
-let check_polymorphic_arity env params par =
-  let pl = par.poly_param_levels in
-  let rec check_p env pl params =
-    match pl, params with
-        Some u::pl, (na,None,ty)::params ->
-          check_kind env ty u;
-          check_p (push_rel (na,None,ty) env) pl params
-      | None::pl,d::params -> check_p (push_rel d env) pl params
-      | [], _ -> ()
-      | _ -> failwith "check_poly: not the right number of params" in
-  check_p env pl (List.rev params)
+(* let check_polymorphic_arity env params par = *)
+(*   let pl = par.poly_param_levels in *)
+(*   let rec check_p env pl params = *)
+(*     match pl, params with *)
+(*         Some u::pl, (na,None,ty)::params -> *)
+(*           check_kind env ty u; *)
+(*           check_p (push_rel (na,None,ty) env) pl params *)
+(*       | None::pl,d::params -> check_p (push_rel d env) pl params *)
+(*       | [], _ -> () *)
+(*       | _ -> failwith "check_poly: not the right number of params" in *)
+(*   check_p env pl (List.rev params) *)

@@ -130,7 +130,7 @@ Section Wf_Lexicographic_Exponentiation.
     match goal with [ |- clos_refl_trans ?A ?R ?x ?y ] => cut (clos_refl A R x y) end.
     intros; inversion H8; subst; [apply rt_step|apply rt_refl]; assumption.
     generalize H1.
-    rewrite H4; intro.
+    setoid_rewrite H4; intro.
 
     generalize (app_inj_tail _ _ _ _ H8); simple induction 1.
     intros.
@@ -182,7 +182,8 @@ Section Wf_Lexicographic_Exponentiation.
           Descl x0 /\ Descl y0).
 
     intro.
-    generalize (app_nil_end x1); simple induction 1; simple induction 1.
+    generalize (app_nil_end x1).
+    simple induction 1; simple induction 1. 
     split. apply d_conc; auto with sets.
 
     apply d_nil.

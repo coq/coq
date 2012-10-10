@@ -24,7 +24,7 @@ Set Implicit Arguments.
 Unset Strict Implicit.
 
 Generalizable Variables A R eqA B S eqB.
-Local Obligation Tactic := simpl_relation.
+Local Obligation Tactic := try solve [simpl_relation].
 
 Local Open Scope signature_scope.
 
@@ -56,8 +56,8 @@ Program Instance equiv_symmetric `(sa : Equivalence A) : Symmetric equiv.
 Program Instance equiv_transitive `(sa : Equivalence A) : Transitive equiv.
 
   Next Obligation.
-  Proof.
-    transitivity y ; auto.
+  Proof. intros A R sa x y z Hxy Hyz.
+         now transitivity y.
   Qed.
 
 (** Use the [substitute] command which substitutes an equivalence in every hypothesis. *)
@@ -116,8 +116,9 @@ Section Respecting.
   Solve Obligations with unfold respecting in * ; simpl_relation ; program_simpl.
 
   Next Obligation.
-  Proof.
-    unfold respecting in *. program_simpl. transitivity (y y0); auto. apply H0. reflexivity.
+  Proof. 
+    intros. intros f g h H H' x y Rxy.
+    unfold respecting in *. program_simpl. transitivity (g y); auto. firstorder.
   Qed.
 
 End Respecting.

@@ -25,9 +25,9 @@ type ('a,'b) sum = Left of 'a | Right of 'b
 
 type counter = bool -> metavariable
 
-val construct_nhyps : inductive -> Proof_type.goal Tacmach.sigma -> int array
+val construct_nhyps : pinductive -> Proof_type.goal Tacmach.sigma -> int array
 
-val ind_hyps : int -> inductive -> constr list ->
+val ind_hyps : int -> pinductive -> constr list ->
   Proof_type.goal Tacmach.sigma -> rel_context array
 
 type atoms = {positive:constr list;negative:constr list}
@@ -49,19 +49,19 @@ type right_pattern =
 
 type left_arrow_pattern=
     LLatom
-  | LLfalse of inductive*constr list
-  | LLand of inductive*constr list
-  | LLor of inductive*constr list
+  | LLfalse of pinductive*constr list
+  | LLand of pinductive*constr list
+  | LLor of pinductive*constr list
   | LLforall of constr
-  | LLexists of inductive*constr list
+  | LLexists of pinductive*constr list
   | LLarrow of constr*constr*constr
 
 type left_pattern=
     Lfalse
-  | Land of inductive
-  | Lor of inductive
+  | Land of pinductive
+  | Lor of pinductive
   | Lforall of metavariable*constr*bool
-  | Lexists of inductive
+  | Lexists of pinductive
   | LA of constr*left_arrow_pattern
 
 type t={id: global_reference;

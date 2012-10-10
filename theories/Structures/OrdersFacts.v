@@ -31,7 +31,7 @@ Module Type CompareFacts (Import O:DecStrOrder').
 
  Lemma compare_lt_iff x y : (x ?= y) = Lt <-> x<y.
  Proof.
- case compare_spec; intro H; split; try easy; intro LT;
+  case compare_spec; intro H; split; try easy; intro LT;
   contradict LT; rewrite H; apply irreflexivity.
  Qed.
 
@@ -90,7 +90,7 @@ Module Type OrderedTypeFullFacts (Import O:OrderedTypeFull').
  Instance le_order : PartialOrder eq le.
  Proof. compute; iorder. Qed.
 
- Instance le_antisym : Antisymmetric _ eq le.
+ Instance le_antisym : Antisymmetric eq le.
  Proof. apply partial_order_antisym; auto with *. Qed.
 
  Lemma le_not_gt_iff : forall x y, x<=y <-> ~y<x.

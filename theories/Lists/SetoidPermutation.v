@@ -7,6 +7,7 @@
 (***********************************************************************)
 
 Require Import SetoidList.
+Set Universe Polymorphism.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -88,7 +89,7 @@ Lemma PermutationA_cons_app l l₁ l₂ x :
   PermutationA l (l₁ ++ l₂) -> PermutationA (x :: l) (l₁ ++ x :: l₂).
 Proof.
  intros E. rewrite E.
- now rewrite app_comm_cons, PermutationA_cons_append, <-app_assoc.
+ now rewrite app_comm_cons, (PermutationA_cons_append l₁ x), <- app_assoc.
 Qed.
 
 Lemma PermutationA_middle l₁ l₂ x :

@@ -809,7 +809,7 @@ refine
  refine (@spec_ww_sqrt t w_is_even w_0 w_1 w_Bm1
            w_sub w_add_mul_div w_digits w_zdigits _ww_zdigits
                w_sqrt2 pred add_mul_div head0 compare
-            _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _); wwauto.
+            _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _); wwauto.
  exact ZnZ.spec_zdigits.
  exact ZnZ.spec_more_than_1_digit.
  exact ZnZ.spec_is_even.
@@ -846,7 +846,7 @@ refine
   intros (Hn,Hn').
   assert (E : ZnZ.to_Z y = [|WW x y|] mod wB).
   { simpl; symmetry.
-    rewrite Z.add_comm, Z.mod_add; auto with zarith.
+    rewrite Z.add_comm, Z.mod_add; auto with zarith nocore.
     apply Z.mod_small; eauto with ZnZ zarith. }
   rewrite E.
   unfold wB, base. symmetry. apply Z.mod_pow2_bits_low; auto.
@@ -922,6 +922,7 @@ refine
  Qed.
 
 End Z_2nZ.
+
 
 Section MulAdd.
 

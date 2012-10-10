@@ -80,14 +80,20 @@ val unfold_side_red : reds
 val unfold_red : evaluable_global_reference -> reds
 
 (***********************************************************************)
-type table_key = id_key
+type table_key = constant puniverses tableKey
 
-type 'a infos
+type 'a infos_cache
+type 'a infos = { 
+  i_flags : reds;
+  i_cache : 'a infos_cache }
+
 val ref_value_cache: 'a infos -> table_key -> 'a option
-val info_flags: 'a infos -> reds
 val create: ('a infos -> constr -> 'a) -> reds -> env ->
   (existential -> constr option) -> 'a infos
-val evar_value : 'a infos -> existential -> constr option
+val evar_value : 'a infos_cache -> existential -> constr option
+
+val info_env : 'a infos -> env
+val info_flags: 'a infos -> reds
 
 (***********************************************************************
   s Lazy reduction. *)
@@ -104,9 +110,10 @@ type fterm =
   | FAtom of constr (** Metas and Sorts *)
   | FCast of fconstr * cast_kind * fconstr
   | FFlex of table_key
-  | FInd of inductive
-  | FConstruct of constructor
+  | FInd of inductive puniverses
+  | FConstruct of constructor puniverses
   | FApp of fconstr * fconstr array
+  | FProj of constant * fconstr
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCases of case_info * fconstr * fconstr * fconstr array
@@ -126,6 +133,7 @@ type fterm =
 type stack_member =
   | Zapp of fconstr array
   | Zcase of case_info * fconstr * fconstr array
+  | Zproj of int * int * constant
   | Zfix of fconstr * stack
   | Zshift of int
   | Zupdate of fconstr
@@ -159,10 +167,12 @@ val destFLambda :
   (fconstr subs -> constr -> fconstr) -> fconstr -> Name.t * fconstr * fconstr
 
 (** Global and local constant cache *)
-type clos_infos
+type clos_infos = fconstr infos
 val create_clos_infos :
   ?evars:(existential->constr option) -> reds -> env -> clos_infos
 val oracle_of_infos : clos_infos -> Conv_oracle.oracle
+
+val infos_with_reds : clos_infos -> reds -> clos_infos
 
 (** Reduction function *)
 
@@ -176,6 +186,12 @@ val whd_val : clos_infos -> fconstr -> constr
    stops whenever a reduction is blocked. *)
 val whd_stack :
   clos_infos -> fconstr -> stack -> fconstr * stack
+
+val eta_expand_ind_stack : env -> lift -> pinductive -> fconstr -> stack -> 
+  (lift * (fconstr * stack)) -> lift * (fconstr * stack)
+ 
+val eta_expand_ind_stacks : env -> inductive -> fconstr -> stack -> 
+   (fconstr * stack) -> stack * stack
 
 (** Conversion auxiliary functions to do step by step normalisation *)
 

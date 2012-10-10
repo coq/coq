@@ -18,7 +18,7 @@ let dloc = <:expr< Loc.ghost >>
 
 let apply_ref f l =
   <:expr<
-    Glob_term.GApp ($dloc$, Glob_term.GRef ($dloc$, Lazy.force $f$), $mlexpr_of_list (fun x -> x) l$)
+    Glob_term.GApp ($dloc$, Glob_term.GRef ($dloc$, Lazy.force $f$, None), $mlexpr_of_list (fun x -> x) l$)
   >>
 
 EXTEND
@@ -74,7 +74,7 @@ EXTEND
       | "?"; id = ident -> <:expr< Glob_term.GPatVar($dloc$,(False,$id$)) >>
       | "{"; c1 = constr; "}"; "+"; "{"; c2 = constr; "}" ->
           apply_ref <:expr< coq_sumbool_ref >> [c1;c2]
-      | "%"; e = string -> <:expr< Glob_term.GRef ($dloc$,Lazy.force $lid:e$) >>
+      | "%"; e = string -> <:expr< Glob_term.GRef ($dloc$,Lazy.force $lid:e$, None) >>
       | c = match_constr -> c
       | "("; c = constr LEVEL "200"; ")" -> c ] ]
   ;

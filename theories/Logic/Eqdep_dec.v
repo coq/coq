@@ -35,6 +35,7 @@ Table of contents:
 (** * Streicher's K and injectivity of dependent pair hold on decidable types *)
 
 Set Implicit Arguments.
+Set Universe Polymorphism.
 
 Section EqdepDec.
 
@@ -203,7 +204,7 @@ Unset Implicit Arguments.
 
 Module Type DecidableType.
 
-  Parameter U:Type.
+  Monomorphic Parameter U:Type.
   Axiom eq_dec : forall x y:U, {x = y} + {x <> y}.
 
 End DecidableType.
@@ -271,7 +272,7 @@ End DecidableEqDep.
 
 Module Type DecidableSet.
 
-  Parameter U:Type.
+  Parameter U:Set.
   Axiom eq_dec : forall x y:U, {x = y} + {x <> y}.
 
 End DecidableSet.
@@ -294,23 +295,23 @@ Module DecidableEqDepSet (M:DecidableSet).
 
   Theorem eq_dep_eq :
     forall (P:U->Type) (p:U) (x y:P p), eq_dep U P p x p y -> x = y.
-  Proof N.eq_dep_eq.
+  Proof (eq_rect_eq__eq_dep_eq U eq_rect_eq).
 
   (** Uniqueness of Identity Proofs (UIP) *)
 
   Lemma UIP : forall (x y:U) (p1 p2:x = y), p1 = p2.
-  Proof N.UIP.
+  Proof (eq_dep_eq__UIP U eq_dep_eq).
 
   (** Uniqueness of Reflexive Identity Proofs *)
 
   Lemma UIP_refl : forall (x:U) (p:x = x), p = eq_refl x.
-  Proof N.UIP_refl.
+  Proof (UIP__UIP_refl U UIP).
 
   (** Streicher's axiom K *)
 
   Lemma Streicher_K :
     forall (x:U) (P:x = x -> Prop), P (eq_refl x) -> forall p:x = x, P p.
-  Proof N.Streicher_K.
+  Proof (K_dec_type eq_dec).
 
   (** Proof-irrelevance on subsets of decidable sets *)
 
@@ -350,7 +351,7 @@ Qed.
 
 Lemma UIP_refl_unit (x : tt = tt) : x = eq_refl tt.
 Proof.
-  change (match tt as b return tt = b -> Type with
+  change (match tt as b return tt = b -> Prop with
           | tt => fun x => x = eq_refl tt
           end x).
   destruct x; reflexivity.

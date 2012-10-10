@@ -56,6 +56,7 @@ type cs_pattern =
 
 type obj_typ = {
   o_DEF : constr;
+  o_CTX : Univ.ContextSet.t;
   o_INJ : int;      (** position of trivial argument *)
   o_TABS : constr list;    (** ordered *)
   o_TPARAMS : constr list; (** ordered *)

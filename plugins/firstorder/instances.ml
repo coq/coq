@@ -101,6 +101,8 @@ let dummy_constr=mkMeta (-1)
 
 let dummy_bvid=Id.of_string "x"
 
+let constr_of_global = Universes.constr_of_global
+
 let mk_open_instance id gl m t=
   let env=pf_env gl in
   let evmap=Refiner.project gl in
@@ -128,7 +130,7 @@ let mk_open_instance id gl m t=
 	      GLambda(loc,name,k,GHole (Loc.ghost,Evar_kinds.BinderType name,None),t1)
 	| _-> anomaly (Pp.str "can't happen") in
   let ntt=try
-    Pretyping.understand evmap env (raux m rawt)
+    fst (Pretyping.understand evmap env (raux m rawt))(*FIXME*)
   with e when Errors.noncritical e ->
     error "Untypable instance, maybe higher-order non-prenex quantification" in
     decompose_lam_n_assum m ntt

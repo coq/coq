@@ -80,7 +80,9 @@ val pr_sort                : sorts -> std_ppcmds
 
 (** Universe constraints *)
 
+val pr_polymorphic         : bool -> std_ppcmds
 val pr_univ_cstr           : Univ.constraints -> std_ppcmds
+val pr_universe_ctx        : Univ.universe_context -> std_ppcmds
 
 (** Printing global references using names as short as possible *)
 
@@ -93,6 +95,11 @@ val pr_existential         : env -> existential -> std_ppcmds
 val pr_constructor         : env -> constructor -> std_ppcmds
 val pr_inductive           : env -> inductive -> std_ppcmds
 val pr_evaluable_reference : evaluable_global_reference -> std_ppcmds
+
+val pr_pconstant           : env -> pconstant -> std_ppcmds
+val pr_pinductive          : env -> pinductive -> std_ppcmds
+val pr_pconstructor        : env -> pconstructor -> std_ppcmds
+
 
 (** Contexts *)
 

@@ -95,7 +95,7 @@ Proof.
  intros.
  generalize (Even_or_Odd n) (Even_Odd_False n).
  rewrite <- even_spec, <- odd_spec.
- destruct (odd n), (even n); simpl; intuition.
+ destruct (odd n), (even n) ; simpl; intuition.
 Qed.
 
 Lemma negb_even : forall n, negb (even n) = odd n.

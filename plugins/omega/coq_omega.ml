@@ -170,7 +170,7 @@ let hide_constr,find_constr,clear_constr_tables,dump_tables =
   let l = ref ([]:(constr * (Id.t * Id.t * bool)) list) in
   (fun h id eg b -> l := (h,(id,eg,b)):: !l),
   (fun h ->
-    try List.assoc_f Constr.equal h !l with Not_found -> failwith "find_contr"),
+    try List.assoc_f eq_constr_nounivs h !l with Not_found -> failwith "find_contr"),
   (fun () -> l := []),
   (fun () -> !l)
 
@@ -350,7 +350,7 @@ let coq_iff = lazy (constant "iff")
 
 (* For unfold *)
 let evaluable_ref_of_constr s c = match kind_of_term (Lazy.force c) with
-  | Const kn when Tacred.is_evaluable (Global.env()) (EvalConstRef kn) ->
+  | Const (kn,u) when Tacred.is_evaluable (Global.env()) (EvalConstRef kn) ->
       EvalConstRef kn
   | _ -> anomaly ~label:"Coq_omega" (Pp.str (s^" is not an evaluable constant"))
 
@@ -367,15 +367,16 @@ let mk_var v = mkVar (Id.of_string v)
 let mk_plus t1 t2 = mkApp (Lazy.force coq_Zplus, [| t1; t2 |])
 let mk_times t1 t2 = mkApp (Lazy.force coq_Zmult, [| t1; t2 |])
 let mk_minus t1 t2 = mkApp (Lazy.force coq_Zminus, [| t1;t2 |])
-let mk_eq t1 t2 = mkApp (build_coq_eq (), [| Lazy.force coq_Z; t1; t2 |])
+let mk_eq t1 t2 = mkApp (Universes.constr_of_global (build_coq_eq ()),
+			 [| Lazy.force coq_Z; t1; t2 |])
 let mk_le t1 t2 = mkApp (Lazy.force coq_Zle, [| t1; t2 |])
 let mk_gt t1 t2 = mkApp (Lazy.force coq_Zgt, [| t1; t2 |])
 let mk_inv t = mkApp (Lazy.force coq_Zopp, [| t |])
 let mk_and t1 t2 =  mkApp (build_coq_and (), [| t1; t2 |])
 let mk_or t1 t2 =  mkApp (build_coq_or (), [| t1; t2 |])
 let mk_not t = mkApp (build_coq_not (), [| t |])
-let mk_eq_rel t1 t2 = mkApp (build_coq_eq (),
-			      [| Lazy.force coq_comparison; t1; t2 |])
+let mk_eq_rel t1 t2 = mkApp (Universes.constr_of_global (build_coq_eq ()),
+			     [| Lazy.force coq_comparison; t1; t2 |])
 let mk_inj t = mkApp (Lazy.force coq_Z_of_nat, [| t |])
 
 let mk_integer n =
@@ -419,7 +420,7 @@ type result =
 let destructurate_prop t =
   let c, args = decompose_app t in
   match kind_of_term c, args with
-    | _, [_;_;_] when eq_constr c (build_coq_eq ()) -> Kapp (Eq,args)
+    | _, [_;_;_] when eq_constr c (Universes.constr_of_global (build_coq_eq ())) -> Kapp (Eq,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_neq) -> Kapp (Neq,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zne) -> Kapp (Zne,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zle) -> Kapp (Zle,args)
@@ -436,11 +437,11 @@ let destructurate_prop t =
     | _, [_;_] when eq_constr c (Lazy.force coq_lt) -> Kapp (Lt,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_ge) -> Kapp (Ge,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_gt) -> Kapp (Gt,args)
-    | Const sp, args ->
+    | Const (sp,_), args ->
 	Kapp (Other (string_of_path (path_of_global (ConstRef sp))),args)
-    | Construct csp , args ->
+    | Construct (csp,_) , args ->
 	Kapp (Other (string_of_path (path_of_global (ConstructRef csp))), args)
-    | Ind isp, args ->
+    | Ind (isp,_), args ->
 	Kapp (Other (string_of_path (path_of_global (IndRef isp))),args)
     | Var id,[] -> Kvar id
     | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
@@ -1081,7 +1082,8 @@ let replay_history tactic_normalisation =
 	  let p_initial = [P_APP 2;P_TYPE] in
 	  let tac = shuffle_cancel p_initial e1.body in
 	  let solve_le =
-            let not_sup_sup = mkApp (build_coq_eq (), [|
+            let not_sup_sup = mkApp (Universes.constr_of_global (build_coq_eq ()),
+				     [|
 					Lazy.force coq_comparison;
 					Lazy.force coq_Gt;
 					Lazy.force coq_Gt |])

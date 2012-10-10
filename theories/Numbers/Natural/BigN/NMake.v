@@ -242,8 +242,8 @@ Module Make (W0:CyclicType) <: NType.
  Definition comparen_m n :
   forall m, word (dom_t n) (S m) -> dom_t n -> comparison :=
   let op := dom_op n in
-  let zero := @ZnZ.zero _ op in
-  let compare := @ZnZ.compare _ op in
+  let zero := ZnZ.zero (Ops:=op) in
+  let compare := ZnZ.compare (Ops:=op) in
   let compare0 := compare zero in
   fun m => compare_mn_1 (dom_t n) (dom_t n) zero compare compare0 compare (S m).
 
@@ -273,7 +273,7 @@ Module Make (W0:CyclicType) <: NType.
 
  Local Notation compare_folded :=
    (iter_sym _
-      (fun n => @ZnZ.compare _ (dom_op n))
+      (fun n => ZnZ.compare (Ops:=dom_op n))
       comparen_m
       comparenm
       CompOpp).
@@ -358,13 +358,13 @@ Module Make (W0:CyclicType) <: NType.
 
  Definition wn_mul n : forall m, word (dom_t n) (S m) -> dom_t n -> t :=
   let op := dom_op n in
-  let zero := @ZnZ.zero _ op in
-  let succ := @ZnZ.succ _ op in
-  let add_c := @ZnZ.add_c _ op in
-  let mul_c := @ZnZ.mul_c _ op in
+  let zero := ZnZ.zero in
+  let succ := ZnZ.succ (Ops:=op) in
+  let add_c := ZnZ.add_c (Ops:=op) in
+  let mul_c := ZnZ.mul_c (Ops:=op) in
   let ww := @ZnZ.WW _ op in
   let ow := @ZnZ.OW _ op in
-  let eq0 := @ZnZ.eq0 _ op in
+  let eq0 := ZnZ.eq0 in
   let mul_add := @DoubleMul.w_mul_add _ zero succ add_c mul_c in
   let mul_add_n1 := @DoubleMul.double_mul_add_n1 _ zero ww ow mul_add in
   fun m x y =>
@@ -464,13 +464,13 @@ Module Make (W0:CyclicType) <: NType.
  Definition wn_divn1 n :=
   let op := dom_op n in
   let zd := ZnZ.zdigits op in
-  let zero := @ZnZ.zero _ op in
-  let ww := @ZnZ.WW _ op in
-  let head0 := @ZnZ.head0 _ op in
-  let add_mul_div := @ZnZ.add_mul_div _ op in
-  let div21 := @ZnZ.div21 _ op in
-  let compare := @ZnZ.compare _ op in
-  let sub := @ZnZ.sub _ op in
+  let zero := ZnZ.zero in
+  let ww := ZnZ.WW in
+  let head0 := ZnZ.head0 in
+  let add_mul_div := ZnZ.add_mul_div in
+  let div21 := ZnZ.div21 in
+  let compare := ZnZ.compare in
+  let sub := ZnZ.sub in
   let ddivn1 :=
     DoubleDivn1.double_divn1 zd zero ww head0 add_mul_div div21 compare sub in
   fun m x y => let (u,v) := ddivn1 (S m) x y in (mk_t_w' n m u, mk_t n v).
@@ -633,12 +633,12 @@ Module Make (W0:CyclicType) <: NType.
  Definition wn_modn1 n :=
   let op := dom_op n in
   let zd := ZnZ.zdigits op in
-  let zero := @ZnZ.zero _ op in
-  let head0 := @ZnZ.head0 _ op in
-  let add_mul_div := @ZnZ.add_mul_div _ op in
-  let div21 := @ZnZ.div21 _ op in
-  let compare := @ZnZ.compare _ op in
-  let sub := @ZnZ.sub _ op in
+  let zero := ZnZ.zero in
+  let head0 := ZnZ.head0 in
+  let add_mul_div := ZnZ.add_mul_div in
+  let div21 := ZnZ.div21 in
+  let compare := ZnZ.compare in
+  let sub := ZnZ.sub in
   let dmodn1 :=
     DoubleDivn1.double_modn1 zd zero head0 add_mul_div div21 compare sub in
   fun m x y => reduce n (dmodn1 (S m) x y).

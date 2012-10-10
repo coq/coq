@@ -328,7 +328,7 @@ Module KeyOrderedType(O:OrderedType).
   Proof. split; eauto. Qed.
 
   Global Instance ltk_strorder : StrictOrder ltk.
-  Proof. constructor; eauto. intros x; apply (irreflexivity (x:=fst x)). Qed.
+  Proof. constructor; eauto. intros x; apply (irreflexivity (fst x)). Qed.
 
   Global Instance ltk_compat : Proper (eqk==>eqk==>iff) ltk.
   Proof.

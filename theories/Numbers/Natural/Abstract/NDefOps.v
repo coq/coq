@@ -133,7 +133,6 @@ Proof.
 intros m n; unfold ltb at 1.
 f_equiv.
 rewrite recursion_succ; f_equiv'.
-reflexivity.
 Qed.
 
 (* Above, we rewrite applications of function. Is it possible to rewrite

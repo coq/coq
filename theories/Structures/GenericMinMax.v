@@ -440,7 +440,7 @@ Qed.
 
 Lemma max_min_antimono f :
  Proper (eq==>eq) f ->
- Proper (le==>inverse le) f ->
+ Proper (le==>flip le) f ->
  forall x y, max (f x) (f y) == f (min x y).
 Proof.
  intros Eqf Lef x y.
@@ -452,7 +452,7 @@ Qed.
 
 Lemma min_max_antimono f :
  Proper (eq==>eq) f ->
- Proper (le==>inverse le) f ->
+ Proper (le==>flip le) f ->
  forall x y, min (f x) (f y) == f (max x y).
 Proof.
  intros Eqf Lef x y.
@@ -557,11 +557,11 @@ Module UsualMinMaxLogicalProperties
   forall x y, min (f x) (f y) = f (min x y).
  Proof. intros; apply min_mono; auto. congruence. Qed.
 
- Lemma min_max_antimonotone f : Proper (le ==> inverse le) f ->
+ Lemma min_max_antimonotone f : Proper (le ==> flip le) f ->
   forall x y, min (f x) (f y) = f (max x y).
  Proof. intros; apply min_max_antimono; auto. congruence. Qed.
 
- Lemma max_min_antimonotone f : Proper (le ==> inverse le) f ->
+ Lemma max_min_antimonotone f : Proper (le ==> flip le) f ->
   forall x y, max (f x) (f y) = f (min x y).
  Proof. intros; apply max_min_antimono; auto. congruence. Qed.
 

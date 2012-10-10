@@ -442,7 +442,7 @@ Proof.
   apply (Rabs_pos_lt _ H0).
   ring.
   assert (H6 := Req_dec x0 (x0 + h)); elim H6; intro.
-  intro; rewrite <- H7; unfold dist, R_met; unfold R_dist;
+  intro; rewrite <- H7. unfold R_met, dist; unfold R_dist;
     unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0;
       apply Rabs_pos_lt.
   unfold Rdiv; apply prod_neq_R0;

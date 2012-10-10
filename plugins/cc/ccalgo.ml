@@ -123,7 +123,7 @@ module PacMap=Map.Make(PacOrd)
 module PafMap=Map.Make(PafOrd)
 
 type cinfo=
-    {ci_constr: constructor; (* inductive type *)
+    {ci_constr: pconstructor; (* inductive type *)
      ci_arity: int;     (* # args *)
      ci_nhyps: int}     (* # projectable args *)
 
@@ -142,13 +142,13 @@ type term=
 
 let rec term_equal t1 t2 =
   match t1, t2 with
-    | Symb c1, Symb c2 -> eq_constr c1 c2
+    | Symb c1, Symb c2 -> eq_constr_nounivs c1 c2
     | Product (s1, t1), Product (s2, t2) -> family_eq s1 s2 && family_eq t1 t2
     | Eps i1, Eps i2 -> Id.equal i1 i2
     | Appli (t1, u1), Appli (t2, u2) -> term_equal t1 t2 && term_equal u1 u2
-    | Constructor {ci_constr=c1; ci_arity=i1; ci_nhyps=j1},
-      Constructor {ci_constr=c2; ci_arity=i2; ci_nhyps=j2} ->
-      Int.equal i1 i2 && Int.equal j1 j2 && eq_constructor c1 c2
+    | Constructor {ci_constr=(c1,u1); ci_arity=i1; ci_nhyps=j1},
+      Constructor {ci_constr=(c2,u2); ci_arity=i2; ci_nhyps=j2} ->
+      Int.equal i1 i2 && Int.equal j1 j2 && eq_constructor c1 c2 (* FIXME check eq? *)
     | _ -> false
 
 open Hashset.Combine
@@ -163,7 +163,7 @@ let rec hash_term = function
   | Product (s1, s2) -> combine3 2 (hash_sorts_family s1) (hash_sorts_family s2)
   | Eps i -> combine 3 (Id.hash i)
   | Appli (t1, t2) -> combine3 4 (hash_term t1) (hash_term t2)
-  | Constructor {ci_constr=c; ci_arity=i; ci_nhyps=j} -> combine4 5 (constructor_hash c) i j
+  | Constructor {ci_constr=(c,u); ci_arity=i; ci_nhyps=j} -> combine4 5 (constructor_hash c) i j
 
 type ccpattern =
     PApp of term * ccpattern list (* arguments are reversed *)
@@ -234,7 +234,7 @@ type node =
 
 module Constrhash = Hashtbl.Make
   (struct type t = constr
-	  let equal = eq_constr
+	  let equal = eq_constr_nounivs
 	  let hash = hash_constr
    end)
 module Typehash = Constrhash
@@ -404,32 +404,50 @@ let _B_ = Name (Id.of_string "A")
 let _body_ =  mkProd(Anonymous,mkRel 2,mkRel 2)
 
 let cc_product s1 s2 =
-  mkLambda(_A_,mkSort(Termops.new_sort_in_family s1),
-	   mkLambda(_B_,mkSort(Termops.new_sort_in_family s2),_body_))
+  mkLambda(_A_,mkSort(Universes.new_sort_in_family s1),
+	   mkLambda(_B_,mkSort(Universes.new_sort_in_family s2),_body_))
 
 let rec constr_of_term = function
-    Symb s->s
+    Symb s-> applist_projection s []
   | Product(s1,s2) -> cc_product s1 s2
   | Eps id -> mkVar id
-  | Constructor cinfo -> mkConstruct cinfo.ci_constr
+  | Constructor cinfo -> mkConstructU cinfo.ci_constr
   | Appli (s1,s2)->
       make_app [(constr_of_term s2)] s1
 and make_app l=function
     Appli (s1,s2)->make_app ((constr_of_term s2)::l) s1
-  | other -> applistc (constr_of_term other) l
+  | other -> 
+    applist_proj other l
+and applist_proj c l =
+  match c with
+  | Symb s -> applist_projection s l
+  | _ -> applistc (constr_of_term c) l
+and applist_projection c l =
+  match kind_of_term c with
+  | Const c when Environ.is_projection (fst c) (Global.env()) ->
+    (match l with 
+    | [] -> (* Expand the projection *)
+      let kn = fst c in
+      let ty,_ = Typeops.type_of_constant (Global.env ()) c in
+      let pb = Environ.lookup_projection kn (Global.env()) in
+      let ctx,_ = Term.decompose_prod_n_assum (pb.Declarations.proj_npars + 1) ty in
+	it_mkLambda_or_LetIn (mkProj(kn,mkRel 1)) ctx
+    | hd :: tl ->
+      applistc (mkProj (fst c, hd)) tl)
+  | _ -> applistc c l
 
 let rec canonize_name c =
   let func =  canonize_name in
     match kind_of_term c with
-      | Const kn ->
+      | Const (kn,u) ->
 	  let canon_const = constant_of_kn (canonical_con kn) in 
-	    (mkConst canon_const)
-      | Ind (kn,i) ->
+	    (mkConstU (canon_const,u))
+      | Ind ((kn,i),u) ->
 	  let canon_mind = mind_of_kn (canonical_mind kn) in
-	    (mkInd (canon_mind,i))
-      | Construct ((kn,i),j) ->
+	    (mkIndU ((canon_mind,i),u))
+      | Construct (((kn,i),j),u) ->
 	  let canon_mind = mind_of_kn (canonical_mind kn) in
-	    mkConstruct ((canon_mind,i),j) 
+	    mkConstructU (((canon_mind,i),j),u)
       | Prod (na,t,ct) ->
 	  mkProd (na,func t, func ct)
       | Lambda (na,t,ct) ->
@@ -438,6 +456,9 @@ let rec canonize_name c =
 	  mkLetIn (na, func b,func t,func ct)
       | App (ct,l) ->
 	  mkApp (func ct,Array.smartmap func l)
+      | Proj(kn,c) ->
+        let canon_const = constant_of_kn (canonical_con kn) in 
+	  (mkProj (canon_const, func c))
       | _ -> c
 
 (* rebuild a term from a pattern and a substitution *)
@@ -469,7 +490,7 @@ let rec add_term state t=
     try Termhash.find uf.syms t with
 	Not_found ->
 	  let b=next uf in
-          let trm = Termops.refresh_universes (constr_of_term t) in
+          let trm = constr_of_term t in
 	  let typ = pf_type_of state.gls trm in
 	  let typ = canonize_name typ in
 	  let new_node=

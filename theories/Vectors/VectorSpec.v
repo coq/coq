@@ -105,7 +105,7 @@ Proof.
 assert (forall n h (v: t B n) a, fold_left f (f a h) v = f (fold_left f a v) h).
   induction v0.
     now simpl.
-    intros; simpl. rewrite<- IHv0. now f_equal.
+    intros; simpl. rewrite<- IHv0, assoc. now f_equal.
   induction v.
     reflexivity.
     simpl. intros; now rewrite<- (IHv).

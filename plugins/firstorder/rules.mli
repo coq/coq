@@ -33,19 +33,19 @@ val or_tac : seqtac with_backtracking
 
 val arrow_tac : seqtac with_backtracking
 
-val left_and_tac : inductive -> lseqtac with_backtracking
+val left_and_tac : pinductive -> lseqtac with_backtracking
 
-val left_or_tac : inductive -> lseqtac with_backtracking
+val left_or_tac : pinductive -> lseqtac with_backtracking
 
 val left_false_tac : global_reference -> tactic
 
-val ll_ind_tac : inductive -> constr list -> lseqtac with_backtracking
+val ll_ind_tac : pinductive -> constr list -> lseqtac with_backtracking
 
 val ll_arrow_tac : constr -> constr -> constr -> lseqtac with_backtracking
 
 val forall_tac : seqtac with_backtracking
 
-val left_exists_tac : inductive -> lseqtac with_backtracking
+val left_exists_tac : pinductive -> lseqtac with_backtracking
 
 val ll_forall_tac : types -> lseqtac with_backtracking
 

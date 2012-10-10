@@ -138,12 +138,13 @@ let intern_ltac_variable ist = function
 
 let intern_constr_reference strict ist = function
   | Ident (_,id) as r when not strict && find_hyp id ist ->
-      GVar (dloc,id), Some (CRef r)
+      GVar (dloc,id), Some (CRef (r,None))
   | Ident (_,id) as r when find_ctxvar id ist ->
-      GVar (dloc,id), if strict then None else Some (CRef r)
+      GVar (dloc,id), if strict then None else Some (CRef (r,None))
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
-      GRef (loc,locate_global_with_alias lqid), if strict then None else Some (CRef r)
+      GRef (loc,locate_global_with_alias lqid,None), 
+	if strict then None else Some (CRef (r,None))
 
 let intern_move_location ist = function
   | MoveAfter id -> MoveAfter (intern_hyp_or_metaid ist id)
@@ -278,7 +279,7 @@ let intern_induction_arg ist = function
   | ElimOnIdent (loc,id) ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
-	match intern_constr ist (CRef (Ident (dloc,id))) with
+	match intern_constr ist (CRef (Ident (dloc,id), None)) with
 	| GVar (loc,id),_ -> ElimOnIdent (loc,id)
 	| c -> ElimOnConstr (c,NoBindings)
       else

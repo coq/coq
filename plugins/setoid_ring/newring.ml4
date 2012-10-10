@@ -74,7 +74,7 @@ and mk_clos_app_but f_map subs f args n =
       | None -> mk_clos_app_but f_map subs f args (n+1)
 
 let interp_map l t =
-  try Some(List.assoc_f eq_constr t l) with Not_found -> None
+  try Some(List.assoc_f eq_constr_nounivs t l) with Not_found -> None
 
 let protect_maps = ref String.Map.empty
 let add_map s m = protect_maps := String.Map.add s m !protect_maps
@@ -104,7 +104,7 @@ END;;
 (****************************************************************************)
 
 let closed_term t l =
-  let l = List.map constr_of_global l in
+  let l = List.map Universes.constr_of_global l in
   let cs = List.fold_right Quote.ConstrSet.add l Quote.ConstrSet.empty in
   if Quote.closed_under cs t then tclIDTAC else tclFAIL 0 (mt())
 ;;
@@ -141,15 +141,24 @@ let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
 
 let ic c =
   let env = Global.env() and sigma = Evd.empty in
-  Constrintern.interp_constr sigma env c
+  Constrintern.interp_open_constr sigma env c
+
+let ic_unsafe c = (*FIXME remove *)
+  let env = Global.env() and sigma = Evd.empty in
+    fst (Constrintern.interp_constr sigma env c)
 
 let ty c = Typing.type_of (Global.env()) Evd.empty c
 
-let decl_constant na c =
+let decl_constant na ctx c =
+  let vars = Universes.universes_of_constr c in
+  let ctx = Universes.restrict_universe_context (Univ.ContextSet.of_context ctx) vars in
   mkConst(declare_constant (Id.of_string na) (DefinitionEntry
-    { const_entry_body = c;
+    { const_entry_body = Future.from_val (c, Declareops.no_seff);
       const_entry_secctx = None;
       const_entry_type = None;
+      const_entry_polymorphic = false;
+      const_entry_universes = Univ.ContextSet.to_context ctx;
+      const_entry_proj = None;
       const_entry_opaque = true;
       const_entry_inline_code = false;
       const_entry_feedback = None;
@@ -182,7 +191,11 @@ let dummy_goal env =
     Goal.V82.mk_goal Evd.empty (named_context_val env) mkProp Evd.Store.empty in
   {Evd.it = gl; Evd.sigma = sigma}
 
-let exec_tactic env n f args =
+let constr_of v = match Value.to_constr v with
+  | Some c -> c
+  | None -> failwith "Ring.exec_tactic: anomaly"
+
+let exec_tactic env evd n f args =
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
   let res = ref [||] in
   let get_res ist =
@@ -192,13 +205,14 @@ let exec_tactic env n f args =
   let getter =
     Tacexp(TacFun(List.map(fun id -> Some id) lid,
                   Tacintern.glob_tactic(tacticIn get_res))) in
-  let _ =
-    Proofview.V82.of_tactic (Tacinterp.eval_tactic(ltac_call f (args@[getter]))) (dummy_goal env) in
-  !res
-
-let constr_of v = match Value.to_constr v with
-  | Some c -> c
-  | None -> failwith "Ring.exec_tactic: anomaly"
+  let gls =
+    (fun gl -> 
+      let sigma = gl.Evd.sigma in
+	tclTHEN (Refiner.tclEVARS (Evd.merge sigma evd))
+	  (Proofview.V82.of_tactic (Tacinterp.eval_tactic(ltac_call f (args@[getter])))) gl)
+      (dummy_goal env) in
+  let evd, nf = Evarutil.nf_evars_and_universes (Refiner.project gls) in
+    Array.map (fun x -> nf (constr_of x)) !res, Evd.universe_context evd
 
 let stdlib_modules =
   [["Coq";"Setoids";"Setoid"];
@@ -209,6 +223,8 @@ let stdlib_modules =
 
 let coq_constant c =
   lazy (Coqlib.gen_constant_in_modules "Ring" stdlib_modules c)
+let coq_reference c =
+  lazy (Coqlib.gen_reference_in_modules "Ring" stdlib_modules c)
 
 let coq_mk_Setoid = coq_constant "Build_Setoid_Theory"
 let coq_cons = coq_constant "cons"
@@ -217,7 +233,14 @@ let coq_None = coq_constant "None"
 let coq_Some = coq_constant "Some"
 let coq_eq = coq_constant "eq"
 
+let coq_pcons = coq_reference "cons"
+let coq_pnil = coq_reference "nil"
+
 let lapp f args = mkApp(Lazy.force f,args)
+
+let plapp evd f args = 
+  let fc = Evarutil.e_new_global evd (Lazy.force f) in
+    mkApp(fc,args)
 
 let dest_rel0 t =
   match kind_of_term t with
@@ -247,6 +270,8 @@ let plugin_modules =
 
 let my_constant c =
   lazy (Coqlib.gen_constant_in_modules "Ring" plugin_modules c)
+let my_reference c =
+  lazy (Coqlib.gen_reference_in_modules "Ring" plugin_modules c)
 
 let new_ring_path =
   DirPath.make (List.map Id.of_string ["Ring_tac";plugin_dir;"Coq"])
@@ -266,9 +291,9 @@ let pol_cst s = mk_cst [plugin_dir;"Ring_polynom"] s ;;
 let coq_almost_ring_theory = my_constant "almost_ring_theory"
 
 (* setoid and morphism utilities *)
-let coq_eq_setoid = my_constant "Eqsth"
-let coq_eq_morph = my_constant "Eq_ext"
-let coq_eq_smorph = my_constant "Eq_s_ext"
+let coq_eq_setoid = my_reference "Eqsth"
+let coq_eq_morph = my_reference "Eq_ext"
+let coq_eq_smorph = my_reference "Eq_s_ext"
 
 (* ring -> almost_ring utilities *)
 let coq_ring_theory = my_constant "ring_theory"
@@ -295,8 +320,8 @@ let ltac_inv_morph_nothing = zltac"inv_morph_nothing"
 let coq_pow_N_pow_N = my_constant "pow_N_pow_N"
 
 (* hypothesis *)
-let coq_mkhypo = my_constant "mkhypo"
-let coq_hypo = my_constant "hypo"
+let coq_mkhypo = my_reference "mkhypo"
+let coq_hypo = my_reference "hypo"
 
 (* Equality: do not evaluate but make recursive call on both sides *)
 let map_with_eq arg_map c =
@@ -415,14 +440,14 @@ let theory_to_obj : ring_info -> obj =
       classify_function = (fun x -> Substitute x)}
 
 
-let setoid_of_relation env a r =
-  let evm = Evd.empty in
+let setoid_of_relation env evd a r =
   try
-    lapp coq_mk_Setoid
-      [|a ; r ;
-	Rewrite.get_reflexive_proof env evm a r ;
-	Rewrite.get_symmetric_proof env evm a r ;
-	Rewrite.get_transitive_proof env evm a r |]
+    let evm = !evd, Int.Set.empty in
+    let evm, refl = Rewrite.PropGlobal.get_reflexive_proof env evm a r in
+    let evm, sym = Rewrite.PropGlobal.get_symmetric_proof env evm a r in
+    let evm, trans = Rewrite.PropGlobal.get_transitive_proof env evm a r in
+      evd := fst evm;
+      lapp coq_mk_Setoid [|a ; r ; refl; sym; trans |]
   with Not_found ->
     error "cannot find setoid relation"
 
@@ -435,7 +460,7 @@ let op_smorph r add mul req m1 m2 =
 (* let default_ring_equality (r,add,mul,opp,req) = *)
 (*   let is_setoid = function *)
 (*       {rel_refl=Some _; rel_sym=Some _;rel_trans=Some _;rel_aeq=rel} -> *)
-(*         eq_constr req rel (\* Qu: use conversion ? *\) *)
+(*         eq_constr_nounivs req rel (\* Qu: use conversion ? *\) *)
 (*     | _ -> false in *)
 (*   match default_relation_for_carrier ~filter:is_setoid r with *)
 (*       Leibniz _ -> *)
@@ -450,7 +475,7 @@ let op_smorph r add mul req m1 m2 =
 (*         let is_endomorphism = function *)
 (*             { args=args } -> List.for_all *)
 (*                 (function (var,Relation rel) -> *)
-(*                   var=None && eq_constr req rel *)
+(*                   var=None && eq_constr_nounivs req rel *)
 (*                   | _ -> false) args in *)
 (*         let add_m = *)
 (*           try default_morphism ~filter:is_endomorphism add *)
@@ -485,17 +510,19 @@ let op_smorph r add mul req m1 m2 =
 (*             op_smorph r add mul req add_m.lem mul_m.lem) in *)
 (*         (setoid,op_morph) *)
 
-let ring_equality (r,add,mul,opp,req) =
+let ring_equality env evd (r,add,mul,opp,req) =
   match kind_of_term req with
-    | App (f, [| _ |]) when eq_constr f (Lazy.force coq_eq) ->
-	let setoid = lapp coq_eq_setoid [|r|] in
+    | App (f, [| _ |]) when eq_constr_nounivs f (Lazy.force coq_eq) ->
+	let setoid = plapp evd coq_eq_setoid [|r|] in
 	let op_morph =
 	  match opp with
-              Some opp -> lapp coq_eq_morph [|r;add;mul;opp|]
-            | None -> lapp coq_eq_smorph [|r;add;mul|] in
+              Some opp -> plapp evd coq_eq_morph [|r;add;mul;opp|]
+            | None -> plapp evd coq_eq_smorph [|r;add;mul|] in
+	let setoid = Typing.solve_evars env evd setoid in
+	let op_morph = Typing.solve_evars env evd op_morph in
 	  (setoid,op_morph)
     | _ ->
-	let setoid = setoid_of_relation (Global.env ()) r req in
+	let setoid = setoid_of_relation (Global.env ()) evd r req in
 	let signature = [Some (r,Some req);Some (r,Some req)],Some(r,Some req) in
 	let add_m, add_m_lem =
 	  try Rewrite.default_morphism signature add
@@ -532,22 +559,22 @@ let ring_equality (r,add,mul,opp,req) =
 		 op_smorph r add mul req add_m_lem mul_m_lem) in
           (setoid,op_morph)
 
-let build_setoid_params r add mul opp req eqth =
+let build_setoid_params env evd r add mul opp req eqth =
   match eqth with
       Some th -> th
-    | None -> ring_equality (r,add,mul,opp,req)
+    | None -> ring_equality env evd (r,add,mul,opp,req)
 
 let dest_ring env sigma th_spec =
   let th_typ = Retyping.get_type_of env sigma th_spec in
   match kind_of_term th_typ with
       App(f,[|r;zero;one;add;mul;sub;opp;req|])
-        when eq_constr f (Lazy.force coq_almost_ring_theory) ->
+        when eq_constr_nounivs f (Lazy.force coq_almost_ring_theory) ->
           (None,r,zero,one,add,mul,Some sub,Some opp,req)
     | App(f,[|r;zero;one;add;mul;req|])
-        when eq_constr f (Lazy.force coq_semi_ring_theory) ->
+        when eq_constr_nounivs f (Lazy.force coq_semi_ring_theory) ->
         (Some true,r,zero,one,add,mul,None,None,req)
     | App(f,[|r;zero;one;add;mul;sub;opp;req|])
-        when eq_constr f (Lazy.force coq_ring_theory) ->
+        when eq_constr_nounivs f (Lazy.force coq_ring_theory) ->
         (Some false,r,zero,one,add,mul,Some sub,Some opp,req)
     | _ -> error "bad ring structure"
 
@@ -557,10 +584,10 @@ let dest_morph env sigma m_spec =
   match kind_of_term m_typ with
       App(f,[|r;zero;one;add;mul;sub;opp;req;
               c;czero;cone;cadd;cmul;csub;copp;ceqb;phi|])
-        when eq_constr f (Lazy.force coq_ring_morph) ->
+        when eq_constr_nounivs f (Lazy.force coq_ring_morph) ->
           (c,czero,cone,cadd,cmul,Some csub,Some copp,ceqb,phi)
     | App(f,[|r;zero;one;add;mul;req;c;czero;cone;cadd;cmul;ceqb;phi|])
-        when eq_constr f (Lazy.force coq_semi_morph) ->
+        when eq_constr_nounivs f (Lazy.force coq_semi_morph) ->
         (c,czero,cone,cadd,cmul,None,None,ceqb,phi)
     | _ -> error "bad morphism structure"
 
@@ -591,18 +618,22 @@ let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
         let t = ArgArg(Loc.ghost,Lazy.force ltac_inv_morph_nothing) in
               TacArg(Loc.ghost,TacCall(Loc.ghost,t,[]))
 
-let make_hyp env c =
-  let t = Retyping.get_type_of env Evd.empty c in
-  lapp coq_mkhypo [|t;c|]
+let make_hyp env evd c =
+  let t = Retyping.get_type_of env !evd c in
+   plapp evd coq_mkhypo [|t;c|]
 
-let make_hyp_list env lH =
-  let carrier = Lazy.force coq_hypo in
-  List.fold_right
-    (fun c l -> lapp coq_cons [|carrier; (make_hyp env c); l|]) lH
-    (lapp coq_nil [|carrier|])
+let make_hyp_list env evd lH =
+  let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
+  let l = 
+    List.fold_right
+      (fun c l -> plapp evd coq_pcons [|carrier; (make_hyp env evd c); l|]) lH
+      (plapp evd coq_pnil [|carrier|])
+  in 
+  let l' = Typing.solve_evars env evd l in
+    Evarutil.nf_evars_universes !evd l'
 
-let interp_power env pow =
-  let carrier = Lazy.force coq_hypo in
+let interp_power env evd pow =
+  let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
   match pow with
   | None ->
       let t = ArgArg(Loc.ghost, Lazy.force ltac_inv_morph_nothing) in
@@ -613,47 +644,47 @@ let interp_power env pow =
         | CstTac t -> Tacintern.glob_tactic t
         | Closed lc ->
             closed_term_ast (List.map Smartlocate.global_with_alias lc) in
-      let spec = make_hyp env (ic spec) in
+      let spec = make_hyp env evd (ic_unsafe spec) in
       (tac, lapp coq_Some [|carrier; spec|])
 
-let interp_sign env sign =
-  let carrier = Lazy.force coq_hypo in
+let interp_sign env evd sign =
+  let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
   match sign with
   | None -> lapp coq_None [|carrier|]
   | Some spec ->
-      let spec = make_hyp env (ic spec) in
+      let spec = make_hyp env evd (ic_unsafe spec) in
       lapp coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
-let interp_div env div =
-  let carrier = Lazy.force coq_hypo in
+let interp_div env evd div =
+  let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
   match div with
   | None -> lapp coq_None [|carrier|]
   | Some spec ->
-      let spec = make_hyp env (ic spec) in
+      let spec = make_hyp env evd (ic_unsafe spec) in
       lapp coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
-let add_theory name rth eqth morphth cst_tac (pre,post) power sign div =
+let add_theory name (sigma,rth) eqth morphth cst_tac (pre,post) power sign div =
   check_required_library (cdir@["Ring_base"]);
   let env = Global.env() in
-  let sigma = Evd.empty in
   let (kind,r,zero,one,add,mul,sub,opp,req) = dest_ring env sigma rth in
-  let (sth,ext) = build_setoid_params r add mul opp req eqth in
-  let (pow_tac, pspec) = interp_power env power in
-  let sspec = interp_sign env sign in
-  let dspec = interp_div env div in
+  let evd = ref sigma in
+  let (sth,ext) = build_setoid_params env evd r add mul opp req eqth in
+  let (pow_tac, pspec) = interp_power env evd power in
+  let sspec = interp_sign env evd sign in
+  let dspec = interp_div env evd div in
   let rk = reflect_coeff morphth in
-  let params =
-    exec_tactic env 5 (zltac "ring_lemmas")
+  let params,ctx =
+    exec_tactic env !evd 5 (zltac "ring_lemmas")
       (List.map carg[sth;ext;rth;pspec;sspec;dspec;rk]) in
-  let lemma1 = constr_of params.(3) in
-  let lemma2 = constr_of params.(4) in
+  let lemma1 = params.(3) in
+  let lemma2 = params.(4) in
 
   let lemma1 =
-    decl_constant (Id.to_string name^"_ring_lemma1") (Future.from_val ( lemma1,Declareops.no_seff)) in
+    decl_constant (Id.to_string name^"_ring_lemma1") ctx (Future.from_val ( lemma1,Declareops.no_seff)) in
   let lemma2 =
-    decl_constant (Id.to_string name^"_ring_lemma2") (Future.from_val ( lemma2,Declareops.no_seff)) in
+    decl_constant (Id.to_string name^"_ring_lemma2") ctx (Future.from_val ( lemma2,Declareops.no_seff)) in
   let cst_tac =
     interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
@@ -670,9 +701,9 @@ let add_theory name rth eqth morphth cst_tac (pre,post) power sign div =
         { ring_carrier = r;
           ring_req = req;
           ring_setoid = sth;
-          ring_ext = constr_of params.(1);
-          ring_morph = constr_of params.(2);
-          ring_th = constr_of params.(0);
+          ring_ext = params.(1);
+          ring_morph = params.(2);
+          ring_th = params.(0);
           ring_cst_tac = cst_tac;
 	  ring_pow_tac = pow_tac;
           ring_lemma1 = lemma1;
@@ -692,16 +723,11 @@ type 'constr ring_mod =
   | Sign_spec of Constrexpr.constr_expr
   | Div_spec of Constrexpr.constr_expr
 
-let ic_coeff_spec = function
-  | Computational t -> Computational (ic t)
-  | Morphism t -> Morphism (ic t)
-  | Abstract -> Abstract
-
 
 VERNAC ARGUMENT EXTEND ring_mod
-  | [ "decidable" constr(eq_test) ] -> [ Ring_kind(Computational eq_test) ]
+  | [ "decidable" constr(eq_test) ] -> [ Ring_kind(Computational (ic_unsafe eq_test)) ]
   | [ "abstract" ] -> [ Ring_kind Abstract ]
-  | [ "morphism" constr(morph) ] -> [ Ring_kind(Morphism morph) ]
+  | [ "morphism" constr(morph) ] -> [ Ring_kind(Morphism (ic_unsafe morph)) ]
   | [ "constants" "[" tactic(cst_tac) "]" ] -> [ Const_tac(CstTac cst_tac) ]
   | [ "closed" "[" ne_global_list(l) "]" ] -> [ Const_tac(Closed l) ]
   | [ "preprocess" "[" tactic(pre) "]" ] -> [ Pre_tac pre ]
@@ -732,11 +758,11 @@ let process_ring_mods l =
     | Const_tac t -> set_once "tactic recognizing constants" cst_tac t
     | Pre_tac t -> set_once "preprocess tactic" pre t
     | Post_tac t -> set_once "postprocess tactic" post t
-    | Setoid(sth,ext) -> set_once "setoid" set (ic sth,ic ext)
+    | Setoid(sth,ext) -> set_once "setoid" set (ic_unsafe sth,ic_unsafe ext)
     | Pow_spec(t,spec) -> set_once "power" power (t,spec)
     | Sign_spec t -> set_once "sign" sign t
     | Div_spec t -> set_once "div" div t) l;
-  let k = match !kind with Some k -> ic_coeff_spec k | None -> Abstract in
+  let k = match !kind with Some k -> k | None -> Abstract in
   (k, !set, !cst_tac, !pre, !post, !power, !sign, !div)
 
 VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
@@ -762,10 +788,11 @@ let make_args_list rl t =
   | [] -> let (_,t1,t2) = dest_rel0 t in [t1;t2]
   | _ -> rl
 
-let make_term_list carrier rl =
-  List.fold_right
-    (fun x l -> lapp coq_cons [|carrier;x;l|]) rl
-    (lapp coq_nil [|carrier|])
+let make_term_list env evd carrier rl =
+  let l = List.fold_right
+    (fun x l -> plapp evd coq_pcons [|carrier;x;l|]) rl
+    (plapp evd coq_pnil [|carrier|])
+  in Typing.solve_evars env evd l
 
 let ltac_ring_structure e =
   let req = carg e.ring_req in
@@ -786,12 +813,15 @@ let ring_lookup (f:glob_tactic_expr) lH rl t =
   Proofview.Goal.raw_enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
-    let rl = make_args_list rl t in
-    let e = find_ring_structure env sigma rl in
-    let rl = carg (make_term_list e.ring_carrier rl) in
-    let lH = carg (make_hyp_list env lH) in
-    let ring = ltac_ring_structure e in
-    ltac_apply f (ring@[lH;rl])
+    try (* find_ring_strucure can raise an exception *)
+      let evdref = ref sigma in
+      let rl = make_args_list rl t in
+      let e = find_ring_structure env sigma rl in
+      let rl = carg (make_term_list env evdref e.ring_carrier rl) in
+      let lH = carg (make_hyp_list env evdref lH) in
+      let ring = ltac_ring_structure e in
+      Proofview.tclTHEN (Proofview.V82.tclEVARS !evdref) (ltac_apply f (ring@[lH;rl]))
+    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 
 TACTIC EXTEND ring_lookup
@@ -850,26 +880,26 @@ let _ = Redexpr.declare_reduction "simpl_field_expr"
 let afield_theory = my_constant "almost_field_theory"
 let field_theory = my_constant "field_theory"
 let sfield_theory = my_constant "semi_field_theory"
-let af_ar = my_constant"AF_AR"
-let f_r = my_constant"F_R"
-let sf_sr = my_constant"SF_SR"
-let dest_field env sigma th_spec =
-  let th_typ = Retyping.get_type_of env sigma th_spec in
+let af_ar = my_reference"AF_AR"
+let f_r = my_reference"F_R"
+let sf_sr = my_reference"SF_SR"
+let dest_field env evd th_spec =
+  let th_typ = Retyping.get_type_of env !evd th_spec in
   match kind_of_term th_typ with
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when eq_constr f (Lazy.force afield_theory) ->
-        let rth = lapp af_ar
+        when eq_constr_nounivs f (Lazy.force afield_theory) ->
+        let rth = plapp evd af_ar
           [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (None,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when eq_constr f (Lazy.force field_theory) ->
+        when eq_constr_nounivs f (Lazy.force field_theory) ->
         let rth =
-          lapp f_r
+          plapp evd f_r
             [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (Some false,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;div;inv;req|])
-        when eq_constr f (Lazy.force sfield_theory) ->
-        let rth = lapp sf_sr
+        when eq_constr_nounivs f (Lazy.force sfield_theory) ->
+        let rth = plapp evd sf_sr
           [|r;zero;one;add;mul;div;inv;req;th_spec|] in
         (Some true,r,zero,one,add,mul,None,None,div,inv,req,rth)
     | _ -> error "bad field structure"
@@ -960,12 +990,12 @@ let ftheory_to_obj : field_info -> obj =
       subst_function = subst_th;
       classify_function = (fun x -> Substitute x) }
 
-let field_equality r inv req =
+let field_equality evd r inv req =
   match kind_of_term req with
-    | App (f, [| _ |]) when eq_constr f (Lazy.force coq_eq) ->
-        mkApp((Coqlib.build_coq_eq_data()).congr,[|r;r;inv|])
+    | App (f, [| _ |]) when eq_constr_nounivs f (Lazy.force coq_eq) ->
+        mkApp(Universes.constr_of_global (Coqlib.build_coq_eq_data()).congr,[|r;r;inv|])
     | _ ->
-	let _setoid = setoid_of_relation (Global.env ()) r req in
+	let _setoid = setoid_of_relation (Global.env ()) evd r req in
 	let signature = [Some (r,Some req)],Some(r,Some req) in
 	let inv_m, inv_m_lem =
 	  try Rewrite.default_morphism signature inv
@@ -973,36 +1003,41 @@ let field_equality r inv req =
             error "field inverse should be declared as a morphism" in
 	  inv_m_lem
 
-let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign odiv =
+let add_field_theory name (sigma,fth) eqth morphth cst_tac inj (pre,post) power sign odiv =
   check_required_library (cdir@["Field_tac"]);
   let env = Global.env() in
-  let sigma = Evd.empty in
+  let evd = ref sigma in
   let (kind,r,zero,one,add,mul,sub,opp,div,inv,req,rth) =
-    dest_field env sigma fth in
-  let (sth,ext) = build_setoid_params r add mul opp req eqth in
+    dest_field env evd fth in
+  let (sth,ext) = build_setoid_params env evd r add mul opp req eqth in
   let eqth = Some(sth,ext) in
-  let _ = add_theory name rth eqth morphth cst_tac (None,None) power sign odiv in
-  let (pow_tac, pspec) = interp_power env power in
-  let sspec = interp_sign env sign in
-  let dspec = interp_div env odiv in
-  let inv_m = field_equality r inv req in
+  let _ = add_theory name (!evd,rth) eqth morphth cst_tac (None,None) power sign odiv in
+  let (pow_tac, pspec) = interp_power env evd power in
+  let sspec = interp_sign env evd sign in
+  let dspec = interp_div env evd odiv in
+  let inv_m = field_equality evd r inv req in
   let rk = reflect_coeff morphth in
-  let params =
-    exec_tactic env 9 (field_ltac"field_lemmas")
+  let params,ctx =
+    exec_tactic env !evd 9 (field_ltac"field_lemmas")
       (List.map carg[sth;ext;inv_m;fth;pspec;sspec;dspec;rk]) in
-  let lemma1 = constr_of params.(3) in
-  let lemma2 = constr_of params.(4) in
-  let lemma3 = constr_of params.(5) in
-  let lemma4 = constr_of params.(6) in
+  let lemma1 = params.(3) in
+  let lemma2 = params.(4) in
+  let lemma3 = params.(5) in
+  let lemma4 = params.(6) in
   let cond_lemma =
     match inj with
       | Some thm -> mkApp(constr_of params.(8),[|thm|])
       | None -> constr_of params.(7) in
-  let lemma1 = decl_constant (Id.to_string name^"_field_lemma1") (Future.from_val (lemma1,Declareops.no_seff)) in
-  let lemma2 = decl_constant (Id.to_string name^"_field_lemma2") (Future.from_val (lemma2,Declareops.no_seff)) in
-  let lemma3 = decl_constant (Id.to_string name^"_field_lemma3") (Future.from_val (lemma3,Declareops.no_seff)) in
-  let lemma4 = decl_constant (Id.to_string name^"_field_lemma4") (Future.from_val (lemma4,Declareops.no_seff)) in
-  let cond_lemma = decl_constant (Id.to_string name^"_lemma5") (Future.from_val (cond_lemma,Declareops.no_seff)) in
+  let lemma1 = decl_constant (Id.to_string name^"_field_lemma1")
+    ctx (Future.from_val (lemma1,Declareops.no_seff)) in
+  let lemma2 = decl_constant (Id.to_string name^"_field_lemma2") 
+    ctx (Future.from_val (lemma2,Declareops.no_seff)) in
+  let lemma3 = decl_constant (Id.to_string name^"_field_lemma3") 
+    ctx (Future.from_val (lemma3,Declareops.no_seff)) in
+  let lemma4 = decl_constant (Id.to_string name^"_field_lemma4") 
+    ctx (Future.from_val (lemma4,Declareops.no_seff)) in
+  let cond_lemma = decl_constant (Id.to_string name^"_lemma5") 
+    ctx (Future.from_val (cond_lemma,Declareops.no_seff)) in
   let cst_tac =
     interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
@@ -1053,12 +1088,12 @@ let process_field_mods l =
         set_once "tactic recognizing constants" cst_tac t
     | Ring_mod(Pre_tac t) -> set_once "preprocess tactic" pre t
     | Ring_mod(Post_tac t) -> set_once "postprocess tactic" post t
-    | Ring_mod(Setoid(sth,ext)) -> set_once "setoid" set (ic sth,ic ext)
+    | Ring_mod(Setoid(sth,ext)) -> set_once "setoid" set (ic_unsafe sth,ic_unsafe ext)
     | Ring_mod(Pow_spec(t,spec)) -> set_once "power" power (t,spec)
     | Ring_mod(Sign_spec t) -> set_once "sign" sign t
     | Ring_mod(Div_spec t) -> set_once "div" div t
-    | Inject i -> set_once "infinite property" inj (ic i)) l;
-  let k = match !kind with Some k -> ic_coeff_spec k | None -> Abstract in
+    | Inject i -> set_once "infinite property" inj (ic_unsafe i)) l;
+  let k = match !kind with Some k -> k | None -> Abstract in
   (k, !set, !inj, !cst_tac, !pre, !post, !power, !sign, !div)
 
 VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
@@ -1094,12 +1129,15 @@ let field_lookup (f:glob_tactic_expr) lH rl t =
   Proofview.Goal.raw_enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
-    let rl = make_args_list rl t in
-    let e = find_field_structure env sigma rl in
-    let rl = carg (make_term_list e.field_carrier rl) in
-    let lH = carg (make_hyp_list env lH) in
-    let field = ltac_field_structure e in
-    ltac_apply f (field@[lH;rl])
+    try
+      let evdref = ref sigma in
+      let rl = make_args_list rl t in
+      let e = find_field_structure env sigma rl in
+      let rl = carg (make_term_list env evdref e.field_carrier rl) in
+      let lH = carg (make_hyp_list env evdref lH) in
+      let field = ltac_field_structure e in
+      Proofview.tclTHEN (Proofview.V82.tclEVARS !evdref) (ltac_apply f (field@[lH;rl]))
+    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 
 

@@ -38,8 +38,12 @@ val get_constraints : opaque -> Univ.constraints Future.computation option
 val subst_opaque : substitution -> opaque -> opaque
 val iter_direct_opaque : (constr -> unit) -> opaque -> opaque
 
-type work_list = Id.t array Cmap.t * Id.t array Mindmap.t
-type cooking_info = { modlist : work_list; abstract : Context.named_context } 
+type work_list = (Univ.Instance.t * Id.t array) Cmap.t * 
+  (Univ.Instance.t * Id.t array) Mindmap.t
+
+type cooking_info = { 
+  modlist : work_list; 
+  abstract : Context.named_context Univ.in_universe_context } 
 
 (* The type has two caveats:
    1) cook_constr is defined after

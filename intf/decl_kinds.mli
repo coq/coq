@@ -12,6 +12,8 @@ type locality = Discharge | Local | Global
 
 type binding_kind = Explicit | Implicit
 
+type polymorphic = bool
+
 type theorem_kind =
   | Theorem
   | Lemma
@@ -45,9 +47,9 @@ type assumption_object_kind = Definitional | Logical | Conjectural
    Logical      |  Hypothesis | Axiom
 
 *)
-type assumption_kind = locality * assumption_object_kind
+type assumption_kind = locality * polymorphic * assumption_object_kind
 
-type definition_kind = locality * definition_object_kind
+type definition_kind = locality * polymorphic * definition_object_kind
 
 (** Kinds used in proofs *)
 
@@ -55,7 +57,7 @@ type goal_object_kind =
   | DefinitionBody of definition_object_kind
   | Proof of theorem_kind
 
-type goal_kind = locality * goal_object_kind
+type goal_kind = locality * polymorphic * goal_object_kind
 
 (** Kinds used in library *)
 

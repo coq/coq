@@ -27,6 +27,10 @@ let refiner pr goal_sigma =
   let (sgl,sigma') = prim_refiner pr goal_sigma.sigma goal_sigma.it in
   { it = sgl; sigma = sigma'; }
 
+(* Profiling refiner *)
+(* let refiner_key = Profile.declare_profile "refiner" *)
+(* let refiner = Profile.profile2 refiner_key refiner *)
+
 (*********************)
 (*   Tacticals       *)
 (*********************)
@@ -317,6 +321,19 @@ let rec tclREPEAT_MAIN t g =
 
 (* Change evars *)
 let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}
+
+(* Push universe context *)
+let tclPUSHCONTEXT rigid ctx tac gl = 
+  tclTHEN (tclEVARS (Evd.merge_context_set rigid (project gl) ctx)) tac gl
+
+let tclPUSHEVARUNIVCONTEXT ctx gl = 
+  tclEVARS (Evd.merge_universe_context (project gl) ctx) gl
+
+let tclPUSHCONSTRAINTS cst gl = 
+  tclEVARS (Evd.add_constraints (project gl) cst) gl
+
+let tclPUSHUNIVERSECONSTRAINTS cst gl = 
+  tclEVARS (Evd.add_universe_constraints (project gl) cst) gl
 
 (* Check that holes in arguments have been resolved *)
 

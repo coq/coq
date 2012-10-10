@@ -86,8 +86,10 @@ let pf_unfoldn ubinds            = pf_reduce (unfoldn ubinds)
 let pf_type_of                   = pf_reduce type_of
 let pf_get_type_of               = pf_reduce Retyping.get_type_of
 
-let pf_conv_x                   = pf_reduce is_conv
-let pf_conv_x_leq               = pf_reduce is_conv_leq
+let pf_conv_x gl                = pf_reduce test_conversion gl Reduction.CONV
+let pf_conv_x_leq gl            = pf_reduce test_conversion gl Reduction.CUMUL
+let pf_const_value              = pf_reduce (fun env _ -> constant_value_in env)
+
 let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
 let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 

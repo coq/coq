@@ -139,14 +139,12 @@ let typecheck_arity env params inds =
   let nparamargs = rel_context_nhyps params in
   let nparamdecls = rel_context_length params in
   let check_arity arctxt = function
-      Monomorphic mar ->
-        let ar = mar.mind_user_arity in
-        let _ = infer_type env ar in
-        conv env (it_mkProd_or_LetIn (Sort mar.mind_sort) arctxt) ar;
-        ar
-    | Polymorphic par ->
-        check_polymorphic_arity env params par;
-        it_mkProd_or_LetIn (Sort(Type par.poly_level)) arctxt in
+      mar ->
+        let _ = infer_type env mar in
+          mar in
+    (* | Polymorphic par -> *)
+    (*     check_polymorphic_arity env params par; *)
+    (*     it_mkProd_or_LetIn (Sort(Type par.poly_level)) arctxt in *)
   let env_arities =
     Array.fold_left
       (fun env_ar ind ->
@@ -178,11 +176,11 @@ let typecheck_arity env params inds =
 let check_predicativity env s small level =
   match s, engagement env with
       Type u, _ ->
-        let u' = fresh_local_univ () in
-        let cst =
-          merge_constraints (enforce_leq u u' empty_constraint)
-            (universes env) in
-        if not (check_leq cst level u') then
+        (* let u' = fresh_local_univ () in *)
+        (* let cst = *)
+        (*   merge_constraints (enforce_leq u u' empty_constraint) *)
+        (*     (universes env) in *)
+        if not (check_leq (universes env) level u) then
           failwith "impredicative Type inductive type"
     | Prop Pos, Some ImpredicativeSet -> ()
     | Prop Pos, _ ->
@@ -191,8 +189,8 @@ let check_predicativity env s small level =
 
 
 let sort_of_ind = function
-    Monomorphic mar -> mar.mind_sort
-  | Polymorphic par -> Type par.poly_level
+    mar -> snd (destArity mar)
+  (* | Polymorphic par -> Type par.poly_level *)
 
 let all_sorts = [InProp;InSet;InType]
 let small_sorts = [InProp;InSet]

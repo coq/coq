@@ -42,6 +42,7 @@ val gen_reference :  message -> string list -> string -> global_reference
 
 (** Search in several modules (not prefixed by "Coq") *)
 val gen_constant_in_modules : string->string list list-> string -> constr
+val gen_reference_in_modules : string->string list list-> string -> global_reference
 val arith_modules : string list list
 val zarith_base_modules : string list list
 val init_modules : string list list
@@ -101,43 +102,49 @@ val build_bool_type : coq_bool_data delayed
 
 (** {6 For Equality tactics } *)
 type coq_sigma_data = {
-  proj1 : constr;
-  proj2 : constr;
-  elim  : constr;
-  intro : constr;
-  typ   : constr }
+  proj1 : global_reference;
+  proj2 : global_reference;
+  elim  : global_reference;
+  intro : global_reference;
+  typ   : global_reference }
 
 val build_sigma_set : coq_sigma_data delayed
 val build_sigma_type : coq_sigma_data delayed
 val build_sigma : coq_sigma_data delayed
 
+(* val build_sigma_type_in : Environ.env -> coq_sigma_data Univ.in_universe_context_set *)
+(* val build_sigma_in : Environ.env -> coq_sigma_data Univ.in_universe_context_set *)
+(* val build_prod_in : Environ.env -> coq_sigma_data Univ.in_universe_context_set *)
+(* val build_coq_eq_data_in : Environ.env -> coq_eq_data Univ.in_universe_context_set *)
+
 (** Non-dependent pairs in Set from Datatypes *)
 val build_prod : coq_sigma_data delayed
 
 type coq_eq_data = {
-  eq   : constr;
-  ind  : constr;
-  refl : constr;
-  sym  : constr;
-  trans: constr;
-  congr: constr }
+  eq   : global_reference;
+  ind  : global_reference;
+  refl : global_reference;
+  sym  : global_reference;
+  trans: global_reference;
+  congr: global_reference }
 
 val build_coq_eq_data : coq_eq_data delayed
+
 val build_coq_identity_data : coq_eq_data delayed
 val build_coq_jmeq_data : coq_eq_data delayed
 
-val build_coq_eq       : constr delayed (** = [(build_coq_eq_data()).eq] *)
-val build_coq_eq_refl  : constr delayed (** = [(build_coq_eq_data()).refl] *)
-val build_coq_eq_sym   : constr delayed (** = [(build_coq_eq_data()).sym] *)
-val build_coq_f_equal2 : constr delayed
+val build_coq_eq       : global_reference delayed (** = [(build_coq_eq_data()).eq] *)
+val build_coq_eq_refl  : global_reference delayed (** = [(build_coq_eq_data()).refl] *)
+val build_coq_eq_sym   : global_reference delayed (** = [(build_coq_eq_data()).sym] *)
+val build_coq_f_equal2 : global_reference delayed
 
 (** Data needed for discriminate and injection *)
 
 type coq_inversion_data = {
-  inv_eq   : constr; (** : forall params, args -> Prop *)
-  inv_ind  : constr; (** : forall params P (H : P params) args, eq params args 
+  inv_eq   : global_reference; (** : forall params, args -> Prop *)
+  inv_ind  : global_reference; (** : forall params P (H : P params) args, eq params args 
 			 ->  P args *)
-  inv_congr: constr  (** : forall params B (f:t->B) args, eq params args -> 
+  inv_congr: global_reference  (** : forall params B (f:t->B) args, eq params args -> 
 			 f params = f args *)
 }
 

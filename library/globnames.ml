@@ -38,19 +38,31 @@ let destConstRef = function ConstRef ind -> ind | _ -> failwith "destConstRef"
 let destIndRef = function IndRef ind -> ind | _ -> failwith "destIndRef"
 let destConstructRef = function ConstructRef ind -> ind | _ -> failwith "destConstructRef"
 
-let subst_constructor subst ((kn,i),j as ref) =
-  let kn' = subst_ind subst kn in
-    if kn==kn' then ref, mkConstruct ref
-    else ((kn',i),j), mkConstruct ((kn',i),j)
+let subst_constructor subst (ind,j as ref) =
+  let ind' = subst_ind subst ind in
+    if ind==ind' then ref, mkConstruct ref
+    else (ind',j), mkConstruct (ind',j)
+
+let subst_global_reference subst ref = match ref with
+  | VarRef var -> ref
+  | ConstRef kn ->
+    let kn' = subst_constant subst kn in
+      if kn==kn' then ref else ConstRef kn'
+  | IndRef ind ->
+    let ind' = subst_ind subst ind in
+      if ind==ind' then ref else IndRef ind'
+  | ConstructRef ((kn,i),j as c) ->
+    let c',t = subst_constructor subst c in
+      if c'==c then ref else ConstructRef c'
 
 let subst_global subst ref = match ref with
   | VarRef var -> ref, mkVar var
   | ConstRef kn ->
-     let kn',t = subst_con subst kn in
+     let kn',t = subst_con_kn subst kn in
       if kn==kn' then ref, mkConst kn else ConstRef kn', t
-  | IndRef (kn,i) ->
-      let kn' = subst_ind subst kn in
-      if kn==kn' then ref, mkInd (kn,i) else IndRef(kn',i), mkInd (kn',i)
+  | IndRef ind ->
+      let ind' = subst_ind subst ind in
+      if ind==ind' then ref, mkInd ind else IndRef ind', mkInd ind'
   | ConstructRef ((kn,i),j as c) ->
       let c',t = subst_constructor subst c in
 	if c'==c then ref,t else ConstructRef c', t
@@ -62,19 +74,26 @@ let canonical_gr = function
   | VarRef id -> VarRef id
 
 let global_of_constr c = match kind_of_term c with
-  | Const sp -> ConstRef sp
-  | Ind ind_sp -> IndRef ind_sp
-  | Construct cstr_cp -> ConstructRef cstr_cp
+  | Const (sp,u) -> ConstRef sp
+  | Ind (ind_sp,u) -> IndRef ind_sp
+  | Construct (cstr_cp,u) -> ConstructRef cstr_cp
   | Var id -> VarRef id
   |  _ -> raise Not_found
 
-let constr_of_global = function
+let is_global c t =
+  match c, kind_of_term t with
+  | ConstRef c, Const (c', _) -> eq_constant c c'
+  | IndRef i, Ind (i', _) -> eq_ind i i'
+  | ConstructRef i, Construct (i', _) -> eq_constructor i i'
+  | VarRef id, Var id' -> id_eq id id'
+  | _ -> false
+
+let printable_constr_of_global = function
   | VarRef id -> mkVar id
   | ConstRef sp -> mkConst sp
   | ConstructRef sp -> mkConstruct sp
   | IndRef sp -> mkInd sp
 
-let constr_of_reference = constr_of_global
 let reference_of_constr = global_of_constr
 
 let global_eq_gen eq_cst eq_ind eq_cons x y =
@@ -178,10 +197,6 @@ end
 type global_reference_or_constr = 
   | IsGlobal of global_reference
   | IsConstr of constr
-
-let constr_of_global_or_constr = function
-  | IsConstr c -> c
-  | IsGlobal gr -> constr_of_global gr
 
 (** {6 Temporary function to brutally form kernel names from section paths } *)
 

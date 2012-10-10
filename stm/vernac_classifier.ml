@@ -66,6 +66,7 @@ let rec classify_vernac e =
     (* Nested vernac exprs *)
     | VernacProgram e -> classify_vernac e
     | VernacLocal (_,e) -> classify_vernac e
+    | VernacPolymorphic (b, e) -> classify_vernac e
     | VernacTimeout (_,e) -> classify_vernac e
     | VernacTime e -> classify_vernac e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)

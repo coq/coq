@@ -121,7 +121,7 @@ Program Instance bool_function_eqdec `(! EqDec (eq_setoid A))
       else in_right
     else in_right.
 
-  Solve Obligations with try red ; unfold equiv, complement ; program_simpl.
+  Solve Obligations with try red ; unfold complement ; program_simpl.
 
   Next Obligation.
   Proof.

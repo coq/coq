@@ -14,9 +14,9 @@ open Declarations
 open Entries
 
 val translate_local_def : env -> Id.t -> definition_entry ->
-  constant_def * types * Univ.constraints
+  constant_def * types * constant_universes
 
-val translate_local_assum : env -> types -> types * constraints
+val translate_local_assum : env -> types -> types
 
 (* returns the same definition_entry but with side effects turned into
  * let-ins or beta redexes. it is meant to get a term out of a not yet
@@ -32,7 +32,9 @@ val translate_recipe : env -> constant -> Cooking.recipe -> constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 
-val infer_declaration : env -> constant_entry -> Cooking.result
+val infer_declaration : env -> constant option -> 
+  constant_entry -> Cooking.result
+
 val build_constant_declaration :
   constant -> env -> Cooking.result -> constant_body
 

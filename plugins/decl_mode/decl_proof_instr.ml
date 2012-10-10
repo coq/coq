@@ -292,13 +292,13 @@ let rec replace_in_list m l = function
 let enstack_subsubgoals env se stack gls=
   let hd,params = decompose_app (special_whd gls se.se_type) in
     match kind_of_term hd with
-	Ind ind when is_good_inductive env ind ->
+	Ind (ind,u as indu) when is_good_inductive env ind -> (* MS: FIXME *)
 	  let mib,oib=
 	    Inductive.lookup_mind_specif env ind in
           let gentypes=
-            Inductive.arities_of_constructors ind (mib,oib) in
+            Inductive.arities_of_constructors indu (mib,oib) in
 	  let process i gentyp =
-	    let constructor = mkConstruct(ind,succ i)
+	    let constructor = mkConstructU ((ind,succ i),u)
 	      (* constructors numbering*) in
 	    let appterm = applist (constructor,params) in
 	    let apptype = prod_applist gentyp params in
@@ -357,7 +357,7 @@ let find_subsubgoal c ctyp skip submetas gls =
       try
 	let unifier =
 	  Unification.w_unify env se.se_evd Reduction.CUMUL
-	    ~flags:Unification.elim_flags ctyp se.se_type in
+	    ~flags:(Unification.elim_flags ()) ctyp se.se_type in
 	  if n <= 0 then
 	      {se with
 		 se_evd=meta_assign se.se_meta
@@ -488,14 +488,14 @@ let instr_cut mkstat _thus _then cut gls0 =
 
 
 (* iterated equality *)
-let _eq = Globnames.constr_of_global (Coqlib.glob_eq)
+let _eq = lazy (Universes.constr_of_global (Coqlib.glob_eq))
 
 let decompose_eq id gls =
   let typ = pf_get_hyp_typ gls id in
   let whd =  (special_whd gls typ) in
     match kind_of_term whd with
 	App (f,args)->
-	  if eq_constr f _eq && Int.equal (Array.length args) 3
+	  if eq_constr f (Lazy.force _eq) && Int.equal (Array.length args) 3
 	  then (args.(0),
 		args.(1),
 		args.(2))
@@ -530,14 +530,14 @@ let instr_rew _thus rew_side cut gls0 =
     else tclIDTAC gls in
     match rew_side with
 	Lhs ->
-	  let new_eq = mkApp(_eq,[|typ;cut.cut_stat.st_it;rhs|]) in
+	  let new_eq = mkApp(Lazy.force _eq,[|typ;cut.cut_stat.st_it;rhs|]) in
 	    tclTHENS (Proofview.V82.of_tactic (assert_postpone c_id new_eq))
 	      [tclTHEN tcl_erase_info
 		 (tclTHENS (Proofview.V82.of_tactic (transitivity lhs))
 		    [just_tac;exact_check (mkVar last_id)]);
 	       thus_tac new_eq] gls0
       | Rhs ->
-	  let new_eq = mkApp(_eq,[|typ;lhs;cut.cut_stat.st_it|]) in
+	  let new_eq = mkApp(Lazy.force _eq,[|typ;lhs;cut.cut_stat.st_it|]) in
 	    tclTHENS (Proofview.V82.of_tactic (assert_postpone c_id new_eq))
 	      [tclTHEN tcl_erase_info
 		 (tclTHENS (Proofview.V82.of_tactic (transitivity rhs))
@@ -663,11 +663,11 @@ let conjunction_arity id gls =
   let hd,params = decompose_app (special_whd gls typ) in
   let env =pf_env gls in
     match kind_of_term hd with
-	Ind ind when is_good_inductive env ind ->
+	Ind (ind,u as indu) when is_good_inductive env ind ->
 	  let mib,oib=
 	    Inductive.lookup_mind_specif env ind in
           let gentypes=
-            Inductive.arities_of_constructors ind (mib,oib) in
+            Inductive.arities_of_constructors indu (mib,oib) in
 	  let _ = if not (Int.equal (Array.length gentypes) 1) then raise Not_found in
 	  let apptype = prod_applist gentypes.(0) params in
 	  let rc,_ = Reduction.dest_prod env apptype in
@@ -832,7 +832,7 @@ let build_per_info etype casee gls =
   let ctyp=pf_type_of gls casee in
   let is_dep = dependent casee concl in
   let hd,args = decompose_app (special_whd gls ctyp) in
-  let ind =
+  let (ind,u as indu) =
     try
       destInd hd
     with DestKO ->
@@ -1031,7 +1031,7 @@ let rec st_assoc id = function
 let thesis_for obj typ per_info env=
   let rc,hd1=decompose_prod typ in
   let cind,all_args=decompose_app typ in
-  let ind = destInd cind in
+  let ind,u = destInd cind in
   let _ = if not (eq_ind ind per_info.per_ind) then
     errorlabstrm "thesis_for"
       ((Printer.pr_constr_env env obj) ++ spc () ++
@@ -1166,7 +1166,7 @@ let hrec_for fix_id per_info gls obj_id =
   let typ=pf_get_hyp_typ gls obj_id in
   let rc,hd1=decompose_prod typ in
   let cind,all_args=decompose_app typ in
-  let ind = destInd cind in assert (eq_ind ind per_info.per_ind);
+  let ind,u = destInd cind in assert (eq_ind ind per_info.per_ind);
   let params,args= List.chop per_info.per_nparams all_args in
   assert begin
     try List.for_all2 eq_constr params per_info.per_params with
@@ -1205,7 +1205,8 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	let env=pf_env gls in
 	let ctyp=pf_type_of gls casee in
 	let hd,all_args = decompose_app (special_whd gls ctyp) in
-	let _ = assert (eq_ind (destInd hd) ind) in (* just in case *)
+	let ind', u = destInd hd in
+	let _ = assert (eq_ind ind' ind) in (* just in case *)
 	let params,real_args = List.chop nparams all_args in
 	let abstract_obj c body =
 	  let typ=pf_type_of gls c in
@@ -1213,7 +1214,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	let elim_pred = List.fold_right abstract_obj
 	  real_args (lambda_create env (ctyp,subst_term casee concl)) in
 	let case_info = Inductiveops.make_case_info env ind RegularStyle in
-	let gen_arities = Inductive.arities_of_constructors ind spec in
+	let gen_arities = Inductive.arities_of_constructors (ind,u) spec in
 	let f_ids typ =
 	  let sign =
 	    (prod_assum (prod_applist typ params)) in

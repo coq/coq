@@ -43,7 +43,7 @@ let rec nb_prod_after n c=
     | _ -> 0
 
 let construct_nhyps ind gls =
-  let nparams = (fst (Global.lookup_inductive ind)).mind_nparams in
+  let nparams = (fst (Global.lookup_inductive (fst ind))).mind_nparams in
   let constr_types = Inductiveops.arities_of_constructors (pf_env gls) ind in
   let hyp = nb_prod_after nparams in
     Array.map hyp constr_types
@@ -67,10 +67,10 @@ let special_whd gl=
 
 type kind_of_formula=
     Arrow of constr*constr
-  | False of inductive*constr list
-  | And of inductive*constr list*bool
-  | Or of inductive*constr list*bool
-  | Exists of inductive*constr list
+  | False of pinductive*constr list
+  | And of pinductive*constr list*bool
+  | Or of pinductive*constr list*bool
+  | Exists of pinductive*constr list
   | Forall of constr*constr
   | Atom of constr
 
@@ -85,11 +85,11 @@ let kind_of_formula gl term =
 	   |_->
 	      match match_with_nodep_ind cciterm with
 		  Some (i,l,n)->
-		    let ind=destInd i in
+		    let ind,u=destInd i in
 		    let (mib,mip) = Global.lookup_inductive ind in
 		    let nconstr=Array.length mip.mind_consnames in
 		      if Int.equal nconstr 0 then
-			False(ind,l)
+			False((ind,u),l)
 		      else
 			let has_realargs=(n>0) in
 			let is_trivial=
@@ -102,9 +102,9 @@ let kind_of_formula gl term =
 			    Atom cciterm
 			  else
 			    if Int.equal nconstr 1 then
-			      And(ind,l,is_trivial)
+			      And((ind,u),l,is_trivial)
 			    else
-			      Or(ind,l,is_trivial)
+			      Or((ind,u),l,is_trivial)
 		| _ ->
 		    match match_with_sigma_type cciterm with
 			Some (i,l)-> Exists((destInd i),l)
@@ -186,19 +186,19 @@ type right_pattern =
 
 type left_arrow_pattern=
     LLatom
-  | LLfalse of inductive*constr list
-  | LLand of inductive*constr list
-  | LLor of inductive*constr list
+  | LLfalse of pinductive*constr list
+  | LLand of pinductive*constr list
+  | LLor of pinductive*constr list
   | LLforall of constr
-  | LLexists of inductive*constr list
+  | LLexists of pinductive*constr list
   | LLarrow of constr*constr*constr
 
 type left_pattern=
     Lfalse
-  | Land of inductive
-  | Lor of inductive
+  | Land of pinductive
+  | Lor of pinductive
   | Lforall of metavariable*constr*bool
-  | Lexists of inductive
+  | Lexists of pinductive
   | LA of constr*left_arrow_pattern
 
 type t={id:global_reference;

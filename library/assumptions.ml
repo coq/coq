@@ -204,7 +204,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st (* t *) =
 	| Case (_,e1,e2,e_array) -> (iter e1)**(iter e2)**(iter_array e_array)
 	| Fix (_,(_, e1_array, e2_array)) | CoFix (_,(_,e1_array, e2_array)) ->
           (iter_array e1_array) ** (iter_array e2_array)
-	| Const kn -> do_memoize_kn kn
+	| Const (kn,_) -> do_memoize_kn kn
 	| _ -> identity2 (* closed atomic types + rel *)
     and iter_array a = Array.fold_right (fun e f -> (iter e)**f) a identity2
     in iter t s acc
@@ -222,11 +222,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st (* t *) =
   and add_kn kn s acc =
     let cb = lookup_constant kn in
     let do_type cst =
-      let ctype =
-	match cb.Declarations.const_type with
-	| PolymorphicArity (ctx,a) -> mkArity (ctx, Type a.poly_level)
-	| NonPolymorphicType t -> t
-      in
+      let ctype = cb.Declarations.const_type in
 	(s,ContextObjectMap.add cst ctype acc)
     in
     let (s,acc) =

@@ -252,11 +252,7 @@ let print_namespace ns =
     print_list pr_id qn
   in
   let print_constant k body =
-    let t =
-      match body.Declarations.const_type with
-      | Declarations.PolymorphicArity (ctx,a) -> mkArity (ctx, Term.Type a.Declarations.poly_level)
-      | Declarations.NonPolymorphicType t -> t
-    in
+    let t = body.Declarations.const_type in
     print_kn k ++ str":" ++ spc() ++ Printer.pr_type t
   in
   let matches mp = match match_modulepath ns mp with
@@ -457,22 +453,22 @@ let start_proof_and_print k l hook =
 
 let no_hook _ _ = ()
 
-let vernac_definition_hook = function
-| Coercion -> Class.add_coercion_hook
-| CanonicalStructure -> (fun _ -> Recordops.declare_canonical_structure)
-| SubClass -> Class.add_subclass_hook
+let vernac_definition_hook p = function
+| Coercion -> Class.add_coercion_hook p
+| CanonicalStructure -> fun _ -> Recordops.declare_canonical_structure
+| SubClass -> Class.add_subclass_hook p
 | _ -> no_hook
 
-let vernac_definition locality (local,k) (loc,id as lid) def =
+let vernac_definition locality p (local,k) (loc,id as lid) def =
   let local = enforce_locality_exp locality local in
-  let hook = vernac_definition_hook k in
+  let hook = vernac_definition_hook p k in
   let () = match local with
   | Discharge -> Dumpglob.dump_definition lid true "var"
   | Local | Global -> Dumpglob.dump_definition lid false "def"
   in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
- 	  start_proof_and_print (local,DefinitionBody Definition)
+ 	  start_proof_and_print (local,p,DefinitionBody Definition)
 	    [Some lid, (bl,t,None)] no_hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
@@ -480,9 +476,9 @@ let vernac_definition locality (local,k) (loc,id as lid) def =
           | Some r ->
 	      let (evc,env)= get_current_context () in
  		Some (snd (interp_redexp env evc r)) in
-	do_definition id (local,k) bl red_option c typ_opt hook)
+	do_definition id (local,p,k) bl red_option c typ_opt hook)
 
-let vernac_start_proof kind l lettop =
+let vernac_start_proof p kind l lettop =
   if Dumpglob.dump () then
     List.iter (fun (id, _) ->
       match id with
@@ -492,7 +488,7 @@ let vernac_start_proof kind l lettop =
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode.");
-  start_proof_and_print (Global, Proof kind) l no_hook
+  start_proof_and_print (Global, p, Proof kind) l no_hook
 
 let qed_display_script = ref true
 
@@ -512,10 +508,10 @@ let vernac_exact_proof c =
   save_proof (Vernacexpr.Proved(true,None));
   if not status then Pp.feedback Interface.AddedAxiom
 
-let vernac_assumption locality (local, kind) l nl =
+let vernac_assumption locality poly (local, kind) l nl =
   let local = enforce_locality_exp locality local in
   let global = local == Global in
-  let kind = local, kind in
+  let kind = local, poly, kind in
   List.iter (fun (is_coe,(idl,c)) ->
     if Dumpglob.dump () then
       List.iter (fun lid ->
@@ -524,7 +520,7 @@ let vernac_assumption locality (local, kind) l nl =
   let status = do_assumptions kind nl l in
   if not status then Pp.feedback Interface.AddedAxiom
 
-let vernac_record k finite infer struc binders sort nameopt cfs =
+let vernac_record k poly finite infer struc binders sort nameopt cfs =
   let const = match nameopt with
     | None -> add_prefix "Build_" (snd (snd struc))
     | Some (_,id as lid) ->
@@ -535,9 +531,9 @@ let vernac_record k finite infer struc binders sort nameopt cfs =
 	match x with
 	| Vernacexpr.AssumExpr ((loc, Name id), _) -> Dumpglob.dump_definition (loc,id) false "proj"
 	| _ -> ()) cfs);
-    ignore(Record.definition_structure (k,finite,infer,struc,binders,cfs,const,sort))
+    ignore(Record.definition_structure (k,poly,finite,infer,struc,binders,cfs,const,sort))
 
-let vernac_inductive finite infer indl =
+let vernac_inductive poly finite infer indl =
   if Dumpglob.dump () then
     List.iter (fun (((coe,lid), _, _, _, cstrs), _) ->
       match cstrs with
@@ -550,13 +546,13 @@ let vernac_inductive finite infer indl =
   match indl with
   | [ ( id , bl , c , b, RecordDecl (oc,fs) ), [] ] ->
       vernac_record (match b with Class true -> Class false | _ -> b)
-	finite infer id bl c oc fs
+	poly finite infer id bl c oc fs
   | [ ( id , bl , c , Class true, Constructors [l]), _ ] ->
       let f =
 	let (coe, ((loc, id), ce)) = l in
 	let coe' = if coe then Some true else None in
 	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
-      in vernac_record (Class true) finite infer id bl c None [f]
+      in vernac_record (Class true) poly finite infer id bl c None [f]
   | [ ( id , bl , c , Class true, _), _ ] ->
       Errors.error "Definitional classes must have a single method"
   | [ ( id , bl , c , Class false, Constructors _), _ ] ->
@@ -568,19 +564,19 @@ let vernac_inductive finite infer indl =
       | _ -> Errors.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
-    do_mutual_inductive indl (finite != CoFinite)
+    do_mutual_inductive indl poly (finite != CoFinite)
 
-let vernac_fixpoint locality local l =
+let vernac_fixpoint locality poly local l =
   let local = enforce_locality_exp locality local in
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_fixpoint local l
+  do_fixpoint local poly l
 
-let vernac_cofixpoint locality local l =
+let vernac_cofixpoint locality poly local l =
   let local = enforce_locality_exp locality local in
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_cofixpoint local l
+  do_cofixpoint local poly l
 
 let vernac_scheme l =
   if Dumpglob.dump () then
@@ -766,27 +762,26 @@ let vernac_require import qidl =
 let vernac_canonical r =
   Recordops.declare_canonical_structure (smart_global r)
 
-let vernac_coercion locality local ref qids qidt =
+let vernac_coercion locality poly local ref qids qidt =
   let local = enforce_locality locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
-  Class.try_add_new_coercion_with_target ref' ~local ~source ~target;
+  Class.try_add_new_coercion_with_target ref' ~local poly ~source ~target;
   if_verbose msg_info (pr_global ref' ++ str " is now a coercion")
 
-let vernac_identity_coercion locality local id qids qidt =
+let vernac_identity_coercion locality poly local id qids qidt =
   let local = enforce_locality locality local in
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  Class.try_add_new_identity_coercion id ~local ~source ~target
+  Class.try_add_new_identity_coercion id ~local poly ~source ~target
 
 (* Type classes *)
 
-let vernac_instance abst locality sup inst props pri =
+let vernac_instance abst locality poly sup inst props pri =
   let global = not (make_section_locality locality) in
   Dumpglob.dump_constraint inst false "inst";
-  ignore(Classes.new_instance 
-    ~abstract:abst ~global sup inst props pri)
+  ignore(Classes.new_instance ~abstract:abst ~global poly sup inst props pri)
 
 let vernac_context l =
   if not (Classes.context l) then Pp.feedback Interface.AddedAxiom
@@ -909,9 +904,9 @@ let vernac_remove_hints locality dbs ids =
   let local = make_module_locality locality in
   Auto.remove_hints local dbs (List.map Smartlocate.global_with_alias ids)
 
-let vernac_hints locality local lb h =
+let vernac_hints locality poly local lb h =
   let local = enforce_module_locality locality local in
-  Auto.add_hints local lb (Auto.interp_hints h)
+  Auto.add_hints local lb (Auto.interp_hints poly h)
 
 let vernac_syntactic_definition locality lid x local y =
   Dumpglob.dump_definition lid false "syndef";
@@ -938,7 +933,8 @@ let vernac_declare_arguments locality r l nargs flags =
   then error "Arguments names must be distinct.";
   let sr = smart_global r in
   let inf_names =
-    Impargs.compute_implicits_names (Global.env()) (Global.type_of_global sr) in
+    let ty = Global.type_of_global_unsafe sr in
+      Impargs.compute_implicits_names (Global.env ()) ty in
   let string_of_name = function Anonymous -> "_" | Name id -> Id.to_string id in
   let rec check li ld ls = match li, ld, ls with
     | [], [], [] -> ()
@@ -1051,7 +1047,7 @@ let default_env () = {
 
 let vernac_reserve bl =
   let sb_decl = (fun (idl,c) ->
-    let t = Constrintern.interp_type Evd.empty (Global.env()) c in
+    let t,ctx = Constrintern.interp_type Evd.empty (Global.env()) c in
     let t = Detyping.detype false [] [] t in
     let t = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
     Reserve.declare_reserved_type idl t)
@@ -1218,6 +1214,15 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
+      optname  = "universe polymorphism";
+      optkey   = ["Universe"; "Polymorphism"];
+      optread  = Flags.is_universe_polymorphism;
+      optwrite = Flags.make_universe_polymorphism }
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
       optname  = "use of virtual machine inside the kernel";
       optkey   = ["Virtual";"Machine"];
       optread  = (fun () -> Vconv.use_vm ());
@@ -1378,7 +1383,10 @@ let get_current_context_of_args = function
 let vernac_check_may_eval redexp glopt rc =
   let (sigma, env) = get_current_context_of_args glopt in
   let sigma', c = interp_open_constr sigma env rc in
-  Evarconv.check_problems_are_solved sigma';
+  let sigma' = Evarconv.consider_remaining_unif_problems env sigma' in
+  Evarconv.check_problems_are_solved env sigma';
+  let sigma',nf = Evarutil.nf_evars_and_universes sigma' in
+  let c = nf c in
   let j =
     try
       Evarutil.check_evars env sigma sigma' c;
@@ -1402,8 +1410,9 @@ let vernac_declare_reduction locality s r =
 let vernac_global_check c =
   let evmap = Evd.empty in
   let env = Global.env() in
-  let c = interp_constr evmap env c in
+  let c,ctx = interp_constr evmap env c in
   let senv = Global.safe_env() in
+  let senv = Safe_typing.add_constraints (snd ctx) senv in
   let j = Safe_typing.typing senv c in
   msg_notice (print_safe_judgment env j)
 
@@ -1453,7 +1462,7 @@ let vernac_print = function
     dump_global qid; msg_notice (print_impargs qid)
   | PrintAssumptions (o,t,r) ->
       (* Prints all the axioms and section variables used by a term *)
-      let cstr = constr_of_global (smart_global r) in
+      let cstr = printable_constr_of_global (smart_global r) in
       let st = Conv_oracle.get_transp_state (Environ.oracle (Global.env())) in
       let nassums =
 	Assumptions.assumptions st ~add_opaque:o ~add_transparent:t cstr in
@@ -1522,7 +1531,7 @@ let vernac_register id r =
     error "Register inline: a constant is expected";
   let kn = destConst t in
   match r with
-  | RegisterInline -> Global.register_inline kn
+  | RegisterInline -> Global.register_inline (Univ.out_punivs kn)
 
 (********************)
 (* Proof management *)
@@ -1651,7 +1660,7 @@ let vernac_load interp fname =
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility *)
-let interp ?proof locality c =
+let interp ?proof locality poly c =
   prerr_endline ("interpreting: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac c));
   match c with
   (* Done later in this file *)
@@ -1678,14 +1687,14 @@ let interp ?proof locality c =
       vernac_notation locality local c infpl sc
 
   (* Gallina *)
-  | VernacDefinition (k,lid,d) -> vernac_definition locality k lid d
-  | VernacStartTheoremProof (k,l,top) -> vernac_start_proof k l top
+  | VernacDefinition (k,lid,d) -> vernac_definition locality poly k lid d
+  | VernacStartTheoremProof (k,l,top) -> vernac_start_proof poly k l top
   | VernacEndProof e -> vernac_end_proof ?proof e
   | VernacExactProof c -> vernac_exact_proof c
-  | VernacAssumption (stre,nl,l) -> vernac_assumption locality stre l nl
-  | VernacInductive (finite,infer,l) -> vernac_inductive finite infer l
-  | VernacFixpoint (local, l) -> vernac_fixpoint locality local l
-  | VernacCoFixpoint (local, l) -> vernac_cofixpoint locality local l
+  | VernacAssumption (stre,nl,l) -> vernac_assumption locality poly stre l nl
+  | VernacInductive (finite,infer,l) -> vernac_inductive poly finite infer l
+  | VernacFixpoint (local, l) -> vernac_fixpoint locality poly local l
+  | VernacCoFixpoint (local, l) -> vernac_cofixpoint locality poly local l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
 
@@ -1706,13 +1715,13 @@ let interp ?proof locality c =
   | VernacRequire (export, qidl) -> vernac_require export qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid
-  | VernacCoercion (local,r,s,t) -> vernac_coercion locality local r s t
+  | VernacCoercion (local,r,s,t) -> vernac_coercion locality poly local r s t
   | VernacIdentityCoercion (local,(_,id),s,t) ->
-      vernac_identity_coercion locality local id s t
+      vernac_identity_coercion locality poly local id s t
 
   (* Type classes *)
   | VernacInstance (abst, sup, inst, props, pri) ->
-      vernac_instance abst locality sup inst props pri
+      vernac_instance abst locality poly sup inst props pri
   | VernacContext sup -> vernac_context sup
   | VernacDeclareInstances (ids, pri) -> vernac_declare_instances locality ids pri
   | VernacDeclareClass id -> vernac_declare_class id
@@ -1744,7 +1753,7 @@ let interp ?proof locality c =
   | VernacCreateHintDb (dbname,b) -> vernac_create_hintdb locality dbname b
   | VernacRemoveHints (dbnames,ids) -> vernac_remove_hints locality dbnames ids
   | VernacHints (local,dbnames,hints) ->
-      vernac_hints locality local dbnames hints
+      vernac_hints locality poly local dbnames hints
   | VernacSyntacticDefinition (id,c,local,b) ->
       vernac_syntactic_definition locality  id c local b
   | VernacDeclareImplicits (qid,l) ->
@@ -1772,7 +1781,7 @@ let interp ?proof locality c =
   | VernacNop -> ()
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof Theorem [None,([],t,None)] false
+  | VernacGoal t -> vernac_start_proof poly Theorem [None,([],t,None)] false
   | VernacAbort id -> anomaly (str "VernacAbort not handled by Stm")
   | VernacAbortAll -> anomaly (str "VernacAbortAll not handled by Stm")
   | VernacRestart -> anomaly (str "VernacRestart not handled by Stm")
@@ -1801,6 +1810,7 @@ let interp ?proof locality c =
 
   (* Handled elsewhere *)
   | VernacProgram _
+  | VernacPolymorphic _
   | VernacLocal _ -> assert false
 
 (* Vernaculars that take a locality flag *)
@@ -1826,6 +1836,24 @@ let check_vernac_supports_locality c l =
     | VernacDeclareReduction _
     | VernacExtend _ ) -> ()
   | Some _, _ -> Errors.error "This command does not support Locality"
+
+(* Vernaculars that take a polymorphism flag *)
+let check_vernac_supports_polymorphism c p =
+  match p, c with
+  | None, _ -> ()
+  | Some _, (
+      VernacDefinition _ | VernacFixpoint _ | VernacCoFixpoint _
+    | VernacAssumption _ | VernacInductive _ 
+    | VernacStartTheoremProof _
+    | VernacCoercion _ | VernacIdentityCoercion _
+    | VernacInstance _ | VernacDeclareInstances _
+    | VernacHints _
+    | VernacExtend _ ) -> ()
+  | Some _, _ -> Errors.error "This command does not support Polymorphism"
+
+let enforce_polymorphism = function
+  | None -> Flags.is_universe_polymorphism ()
+  | Some b -> b
 
 (** A global default timeout, controled by option "Set Default Timeout n".
     Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
@@ -1883,13 +1911,17 @@ exception HasFailed of string
 
 let interp ?(verbosely=true) ?proof (loc,c) =
   let orig_program_mode = Flags.is_program_mode () in
-  let rec aux ?locality isprogcmd = function
-    | VernacProgram c when not isprogcmd -> aux ?locality true c
+  let rec aux ?locality ?polymorphism isprogcmd = function
+    | VernacProgram c when not isprogcmd -> aux ?locality ?polymorphism true c
     | VernacProgram _ -> Errors.error "Program mode specified twice"
-    | VernacLocal (b, c) when Option.is_empty locality -> aux ~locality:b isprogcmd c
+    | VernacLocal (b, c) when Option.is_empty locality -> 
+      aux ~locality:b ?polymorphism isprogcmd c
+    | VernacPolymorphic (b, c) when polymorphism = None -> 
+      aux ?locality ~polymorphism:b isprogcmd c
+    | VernacPolymorphic (b, c) -> Errors.error "Polymorphism specified twice"
     | VernacLocal _ -> Errors.error "Locality specified twice"
-    | VernacStm (Command c) -> aux ?locality isprogcmd c
-    | VernacStm (PGLast c) -> aux ?locality isprogcmd c
+    | VernacStm (Command c) -> aux ?locality ?polymorphism isprogcmd c
+    | VernacStm (PGLast c) -> aux ?locality ?polymorphism isprogcmd c
     | VernacStm _ -> assert false (* Done by Stm *)
     | VernacFail v ->
 	begin try
@@ -1899,7 +1931,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
 	  Future.purify
 	    (fun v ->
                try
-                 aux ?locality isprogcmd v;
+                 aux ?locality ?polymorphism isprogcmd v;
                  raise HasNotFailed
                with
                | HasNotFailed as e -> raise e
@@ -1919,10 +1951,10 @@ let interp ?(verbosely=true) ?proof (loc,c) =
 	end
     | VernacTimeout (n,v) ->
         current_timeout := Some n;
-        aux ?locality isprogcmd v
+        aux ?locality ?polymorphism isprogcmd v
     | VernacTime v ->
 	let tstart = System.get_time() in
-        aux ?locality isprogcmd v;
+        aux ?locality ?polymorphism isprogcmd v;
 	let tend = System.get_time() in
 	let msg = if !Flags.time then "" else "Finished transaction in " in
         msg_info (str msg ++ System.fmt_time_difference tstart tend)
@@ -1930,11 +1962,13 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     | VernacLoad (_,fname) -> vernac_load (aux false) fname
     | c -> 
         check_vernac_supports_locality c locality;
+        check_vernac_supports_polymorphism c polymorphism;
+	let poly = enforce_polymorphism polymorphism in
         Obligations.set_program_mode isprogcmd;
         let psh = default_set_timeout () in
         try
-          if verbosely then Flags.verbosely (interp ?proof locality) c
-                       else Flags.silently  (interp ?proof locality) c;
+          if verbosely then Flags.verbosely (interp ?proof locality poly) c
+                       else Flags.silently  (interp ?proof locality poly) c;
           restore_timeout psh;
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
             Flags.program_mode := orig_program_mode

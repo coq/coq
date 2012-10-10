@@ -232,7 +232,7 @@ module PatternMatching (E:StaticEnvironment) = struct
       matchings of [term] with the pattern [pat => lhs]. If refresh is
       true, refreshes the universes of [term]. *)
   let pattern_match_term refresh pat term lhs = 
-    let term = if refresh then Termops.refresh_universes_strict term else term in
+(*     let term = if refresh then Termops.refresh_universes_strict term else term in *)
     match pat with
     | Term p ->
         begin 

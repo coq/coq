@@ -74,7 +74,7 @@ open Printer
 let subst_global_reference subst =
  let subst_global ref =
   let ref',t' = subst_global subst ref in
-   if not (eq_constr (constr_of_global ref') t') then
+   if not (eq_constr (Universes.constr_of_global ref') t') then
     msg_warning (strbrk "The reference " ++ pr_global ref ++ str " is not " ++
           str " expanded to \"" ++ pr_lconstr t' ++ str "\", but to " ++
           pr_global ref') ;
@@ -175,7 +175,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacDecomposeAnd c -> TacDecomposeAnd (subst_glob_constr subst c)
   | TacDecomposeOr c -> TacDecomposeOr (subst_glob_constr subst c)
   | TacDecompose (l,c) ->
-      let l = List.map (subst_or_var (subst_inductive subst)) l in
+      let l = List.map (subst_or_var (subst_ind subst)) l in
       TacDecompose (l,subst_glob_constr subst c)
   | TacSpecialize (n,l) -> TacSpecialize (n,subst_glob_with_bindings subst l)
   | TacLApply c -> TacLApply (subst_glob_constr subst c)

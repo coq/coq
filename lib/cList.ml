@@ -479,14 +479,14 @@ let rec find_map f = function
 
 let uniquize l =
   let visited = Hashtbl.create 23 in
-  let rec aux acc = function
-    | h::t -> if Hashtbl.mem visited h then aux acc t else
+  let rec aux acc changed = function
+    | h::t -> if Hashtbl.mem visited h then aux acc true t else
           begin
             Hashtbl.add visited h h;
-            aux (h::acc) t
+            aux (h::acc) changed t
           end
-    | [] -> List.rev acc
-  in aux [] l
+    | [] -> if changed then List.rev acc else l
+  in aux [] false l
 
 (** [sort_uniquize] might be an alternative to the hashtbl-based
     [uniquize], when the order of the elements is irrelevant *)

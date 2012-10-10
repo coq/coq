@@ -645,7 +645,7 @@ let implicits_of_global r =
  try Refmap'.find r !implicits_table with Not_found -> []
 
 let add_implicits r l =
-  let typ = Global.type_of_global r in
+  let typ = Global.type_of_global_unsafe r in
   let rels,_ =
     decompose_prod (Reduction.whd_betadeltaiota (Global.env ()) typ) in
   let names = List.rev_map fst rels in
@@ -816,7 +816,7 @@ let extract_constant_inline inline r ids s =
   match g with
     | ConstRef kn ->
 	let env = Global.env () in
-	let typ = Typeops.type_of_constant env kn in
+	let typ = (Environ.lookup_constant kn env).const_type in
 	let typ = Reduction.whd_betadeltaiota env typ in
 	if Reduction.is_arity env typ
 	  then begin

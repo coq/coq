@@ -104,20 +104,20 @@ let rec make_form atom_env gls term =
 	    make_atom atom_env (normalize term)
       | Cast(a,_,_) ->
 	  make_form atom_env gls a
-      | Ind ind ->
-	  if Names.eq_ind ind (Lazy.force li_False) then
+      | Ind (ind, _) ->
+	  if Names.eq_ind ind (fst (Lazy.force li_False)) then
 	    Bot
 	  else
 	    make_atom atom_env (normalize term)
       | App(hd,argv) when Int.equal (Array.length argv) 2 ->
 	  begin
 	    try
-	      let ind = destInd hd in
-		if Names.eq_ind ind (Lazy.force li_and) then
+	      let ind, _ = destInd hd in
+		if Names.eq_ind ind (fst (Lazy.force li_and)) then
 		  let fa=make_form atom_env gls argv.(0) in
 		  let fb=make_form atom_env gls argv.(1) in
 		    Conjunct (fa,fb)
-		else if Names.eq_ind ind (Lazy.force li_or) then
+		else if Names.eq_ind ind (fst (Lazy.force li_or)) then
 		  let fa=make_form atom_env gls argv.(0) in
 		  let fb=make_form atom_env gls argv.(1) in
 		    Disjunct (fa,fb)

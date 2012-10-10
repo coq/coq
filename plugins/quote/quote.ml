@@ -196,9 +196,9 @@ let coerce_meta_in n =
 
 let compute_lhs typ i nargsi =
   match kind_of_term typ with
-    | Ind(sp,0) ->
+    | Ind((sp,0),u) ->
         let argsi = Array.init nargsi (fun j -> mkMeta (nargsi - j)) in
-        mkApp (mkConstruct ((sp,0),i+1), argsi)
+        mkApp (mkConstructU (((sp,0),i+1),u), argsi)
     | _ -> i_can't_do_that ()
 
 (*s This function builds the pattern from the RHS. Recursive calls are
@@ -221,7 +221,7 @@ let compute_rhs bodyi index_of_f =
 
 let compute_ivs f cs gl =
   let cst = try destConst f with DestKO -> i_can't_do_that () in
-  let body = Environ.constant_value (Global.env()) cst in
+  let body = Environ.constant_value_in (Global.env()) cst in
   match decomp_term body with
     | Fix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->
         let (args3, body3) = decompose_lam body2 in

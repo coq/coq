@@ -80,13 +80,13 @@ Module KeyDecidableType(D:DecidableType).
   Lemma InA_eqke_eqk :
      forall x m, InA eqke x m -> InA eqk x m.
   Proof.
-    unfold eqke; induction 1; intuition.
+    unfold eqke; induction 1; intuition. 
   Qed.
   Hint Resolve InA_eqke_eqk.
 
   Lemma InA_eqk : forall p q m, eqk p q -> InA eqk p m -> InA eqk q m.
   Proof.
-   intros; apply InA_eqA with p; auto with *.
+   intros; apply InA_eqA with p; auto with *. 
   Qed.
 
   Definition MapsTo (k:key)(e:elt):= InA eqke (k,e).

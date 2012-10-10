@@ -70,7 +70,7 @@ and conv_atom pb lvl a1 a2 cu =
 	if not (eq_constant c1 c2) then raise NotConvertible;
 	cu
     | Asort s1, Asort s2 -> 
-	sort_cmp pb s1 s2 cu
+	ignore(sort_cmp_universes pb s1 s2 (cu, None)); cu
     | Avar id1, Avar id2 ->
 	if not (Id.equal id1 id2) then raise NotConvertible;
 	cu
@@ -131,9 +131,9 @@ let native_conv pb sigma env t1 t2 =
     vm_conv pb env t1 t2
   end
   else
-  let env = Environ.pre_env env in 
+  let penv = Environ.pre_env env in 
   let ml_filename, prefix = get_ml_filename () in
-  let code, upds = mk_conv_code env sigma prefix t1 t2 in
+  let code, upds = mk_conv_code penv sigma prefix t1 t2 in
   match compile ml_filename code with
   | (0,fn) ->
       begin
@@ -144,7 +144,7 @@ let native_conv pb sigma env t1 t2 =
         let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
         if !Flags.debug then Pp.msg_debug (Pp.str time_info);
         (* TODO change 0 when we can have deBruijn *)
-        conv_val pb 0 !rt1 !rt2 empty_constraint
+        ignore(conv_val pb 0 !rt1 !rt2 (Environ.universes env))
       end
   | _ -> anomaly (Pp.str "Compilation failure") 
 

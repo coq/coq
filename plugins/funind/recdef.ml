@@ -52,29 +52,21 @@ let find_reference sl s =
   let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
   locate (make_qualid dp (Id.of_string s))
 
-let (declare_fun : Id.t -> logical_kind -> constr -> global_reference) =
-  fun f_id kind value ->
-    let ce = {const_entry_body = Future.from_val
-                (value, Declareops.no_seff);
-              const_entry_secctx = None;
-	      const_entry_type = None;
-          const_entry_opaque = false;
-          const_entry_inline_code = false;
-          const_entry_feedback = None;
-    } in
-      ConstRef(declare_constant f_id (DefinitionEntry ce, kind));;
+let declare_fun f_id kind ?(ctx=Univ.UContext.empty) value =
+  let ce = definition_entry ~univs:ctx value (*FIXME *) in
+    ConstRef(declare_constant f_id (DefinitionEntry ce, kind));;
 
 let defined () = Lemmas.save_proof (Vernacexpr.Proved (false,None))
 
 let def_of_const t =
    match (kind_of_term t) with
     Const sp ->
-      (try (match body_of_constant (Global.lookup_constant sp) with
+      (try (match constant_opt_value_in (Global.env ()) sp with
              | Some c -> c
 	     | _ -> raise Not_found)
        with Not_found ->
 	 anomaly (str "Cannot find definition of constant " ++
-		    (Id.print (Label.to_id (con_label sp))))
+		    (Id.print (Label.to_id (con_label (fst sp)))))
       )
      |_ -> assert false
 
@@ -83,6 +75,7 @@ let type_of_const t =
     Const sp -> Typeops.type_of_constant (Global.env()) sp
     |_ -> assert false
 
+let constr_of_global = Universes.constr_of_global
 
 let constant sl s = constr_of_global (find_reference sl s)
 
@@ -188,7 +181,7 @@ let (value_f:constr list -> global_reference -> constr) =
     let glob_body =
       GCases
 	(d0,RegularStyle,None,
-	 [GApp(d0, GRef(d0,fterm), List.rev_map (fun x_id -> GVar(d0, x_id)) rev_x_id_l),
+	 [GApp(d0, GRef(d0,fterm,None), List.rev_map (fun x_id -> GVar(d0, x_id)) rev_x_id_l),
 	  (Anonymous,None)],
 	 [d0, [v_id], [PatCstr(d0,(destIndRef
 				     (delayed_force coq_sig_ref),1),
@@ -197,7 +190,7 @@ let (value_f:constr list -> global_reference -> constr) =
 			       Anonymous)],
 	  GVar(d0,v_id)])
     in
-    let body = understand Evd.empty env glob_body in
+    let body = fst (understand Evd.empty env glob_body)(*FIXME*) in
     it_mkLambda_or_LetIn body context
 
 let (declare_f : Id.t -> logical_kind -> constr list -> global_reference -> global_reference) =
@@ -302,6 +295,7 @@ let check_not_nested forbidden e =
       | Lambda(_,t,b) -> check_not_nested t;check_not_nested b
       | LetIn(_,v,t,b) -> check_not_nested t;check_not_nested b;check_not_nested v
       | App(f,l) -> check_not_nested f;Array.iter check_not_nested l
+      | Proj (p,c) -> check_not_nested c
       | Const _ -> ()
       | Ind _ -> ()
       | Construct _ -> ()
@@ -412,6 +406,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
 let rec travel_aux jinfo continuation_tac (expr_info:constr infos) =
   match kind_of_term expr_info.info with 
     | CoFix _ | Fix _ -> error "Function cannot treat local fixpoint or cofixpoint"
+    | Proj _ -> error "Function cannot treat projections"
     | LetIn(na,b,t,e) -> 
       begin
 	let new_continuation_tac = 
@@ -640,7 +635,16 @@ let terminate_letin (na,b,t,e) expr_info continuation_tac info =
   in
   continuation_tac {info with info = new_e; forbidden_ids = new_forbidden} 
 
+let pf_type c tac gl = 
+  let evars, ty = Typing.e_type_of (pf_env gl) (project gl) c in
+    tclTHEN (Refiner.tclEVARS evars) (tac ty) gl
 
+let pf_typel l tac =
+  let rec aux tys l =
+    match l with
+    | [] -> tac (List.rev tys)
+    | hd :: tl -> pf_type hd (fun ty -> aux (ty::tys) tl)
+  in aux [] l
 
 (* This is like the previous one except that it also rewrite on all
   hypotheses except the ones given in the first argument.  All the
@@ -660,12 +664,13 @@ let mkDestructEq :
   let type_of_expr = pf_type_of g expr in
   let new_hyps = mkApp(Lazy.force refl_equal, [|type_of_expr; expr|])::
            to_revert_constr in
+    pf_typel new_hyps (fun _ ->
     tclTHENLIST
      [Simple.generalize new_hyps;
       (fun g2 ->
 	change_in_concl None
 	  (pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) Evd.empty (pf_concl g2)) g2);
-      Proofview.V82.of_tactic (simplest_case expr)], to_revert
+      Proofview.V82.of_tactic (simplest_case expr)]), to_revert
 
 
 let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
@@ -1167,7 +1172,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
 let get_current_subgoals_types () =
   let p = Proof_global.give_me_the_proof () in
   let { Evd.it=sgs ; sigma=sigma } = Proof.V82.subgoals p in
-  List.map (Goal.V82.abstract_type sigma) sgs
+    sigma, List.map (Goal.V82.abstract_type sigma) sgs
 
 let build_and_l l =
   let and_constr =  Coqlib.build_coq_and () in
@@ -1225,12 +1230,12 @@ let clear_goals =
 
 
 let build_new_goal_type () =
-  let sub_gls_types = get_current_subgoals_types () in
-  (* Pp.msgnl (str "sub_gls_types1 := " ++ Pp.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
+  let sigma, sub_gls_types = get_current_subgoals_types () in
+  (* Pp.msgnl (str "sub_gls_types1 := " ++ Util.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
   let sub_gls_types = clear_goals sub_gls_types in
   (* Pp.msgnl (str "sub_gls_types2 := " ++ Pp.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
   let res = build_and_l sub_gls_types in
-  res
+    sigma, res
 
 let is_opaque_constant c =
   let cb = Global.lookup_constant c in
@@ -1239,7 +1244,7 @@ let is_opaque_constant c =
     | Declarations.Undef _ -> true
     | Declarations.Def _ -> false
 
-let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
+let open_new_goal build_proof ctx using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
   (* Pp.msgnl (str "gls_type := " ++ Printer.pr_lconstr gls_type); *)
   let current_proof_name = get_current_proof_name () in
   let name = match goal_name with
@@ -1265,7 +1270,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     let lid = ref [] in
     let h_num = ref (-1) in
     Proof_global.discard_all ();
-    build_proof
+    build_proof (Univ.ContextSet.empty)
       (  fun gls ->
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
 	   tclTHENSEQ
@@ -1312,8 +1317,8 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
   in
   Lemmas.start_proof
     na
-    (Decl_kinds.Global, Decl_kinds.Proof Decl_kinds.Lemma)
-    gls_type
+    (Decl_kinds.Global, false (* FIXME *), Decl_kinds.Proof Decl_kinds.Lemma)
+    (gls_type, ctx)
     hook;
   if Indfun_common.is_strict_tcc  ()
   then
@@ -1330,7 +1335,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 	 	     (fun c ->
 	 		tclTHENSEQ
 	 		  [Proofview.V82.of_tactic intros;
-	 		   Simple.apply (interp_constr Evd.empty (Global.env()) c);
+	 		   Simple.apply (fst (interp_constr Evd.empty (Global.env()) c)) (*FIXME*);
 	 		   tclCOMPLETE (Proofview.V82.of_tactic Auto.default_auto)
 	 		  ]
 	 	     )
@@ -1354,22 +1359,24 @@ let com_terminate
     relation
     rec_arg_num
     thm_name using_lemmas
-    nb_args
+    nb_args ctx
     hook =
-  let start_proof (tac_start:tactic) (tac_end:tactic) =
+  let ctx = Univ.ContextSet.of_context ctx in
+  let start_proof ctx (tac_start:tactic) (tac_end:tactic) =
     let (evmap, env) = Lemmas.get_current_context() in
     Lemmas.start_proof thm_name
-      (Global, Proof Lemma) ~sign:(Environ.named_context_val env)
-      (compute_terminate_type nb_args fonctional_ref) hook;
+      (Global, false (* FIXME *), Proof Lemma) ~sign:(Environ.named_context_val env)
+      (compute_terminate_type nb_args fonctional_ref, ctx) hook;
 
     ignore (by (Proofview.V82.tactic (observe_tac (str "starting_tac") tac_start)));
     ignore (by (Proofview.V82.tactic (observe_tac (str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
     				   input_type relation rec_arg_num ))))
   in
-  start_proof tclIDTAC tclIDTAC;
+  start_proof ctx tclIDTAC tclIDTAC;
   try
-    let new_goal_type = build_new_goal_type () in
-    open_new_goal start_proof using_lemmas tcc_lemma_ref
+    let sigma, new_goal_type = build_new_goal_type () in
+    open_new_goal start_proof (Evd.get_universe_context_set sigma)
+      using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name)
       (new_goal_type);
   with Failure "empty list of subgoals!" ->
@@ -1384,7 +1391,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
   (cont_tactic:Id.t list -> tactic) g =
   let ids = pf_ids_of_hyps g in
   let terminate_constr = constr_of_global term_f in
-  let nargs = nb_prod (type_of_const terminate_constr) in
+  let nargs = nb_prod (fst (type_of_const terminate_constr)) (*FIXME*) in
   let x = n_x_id ids nargs in
   tclTHENLIST [
     h_intros x;
@@ -1406,8 +1413,8 @@ let (com_eqn : int -> Id.t ->
     let (evmap, env) = Lemmas.get_current_context() in
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
-    (Lemmas.start_proof eq_name (Global, Proof Lemma)
-       ~sign:(Environ.named_context_val env) equation_lemma_type (fun _ _ -> ());
+    (Lemmas.start_proof eq_name (Global, false, Proof Lemma)
+       ~sign:(Environ.named_context_val env) (equation_lemma_type, (*FIXME*)Univ.ContextSet.empty) (fun _ _ -> ());
      ignore (by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref
 	  (fun  x ->
@@ -1445,13 +1452,15 @@ let (com_eqn : int -> Id.t ->
 
 let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq
     generate_induction_principle using_lemmas : unit =
-  let function_type = interp_constr Evd.empty (Global.env()) type_of_f in
-  let env = push_named (function_name,None,function_type) (Global.env()) in
+  let env = Global.env() in
+  let evd = ref (Evd.from_env env) in
+  let function_type = interp_type_evars evd env type_of_f in
+  let env = push_named (function_name,None,function_type) env in
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
-  let equation_lemma_type = 
-    nf_betaiotazeta
-      (interp_constr Evd.empty env ~impls:rec_impls eq)
-  in
+  let ty = interp_type_evars evd env ~impls:rec_impls eq in
+  let evm, nf = Evarutil.nf_evars_and_universes !evd in
+  let equation_lemma_type = nf_betaiotazeta (nf ty) in
+  let function_type = nf function_type in
  (* Pp.msgnl (str "lemma type := " ++ Printer.pr_lconstr equation_lemma_type ++ fnl ()); *)
   let res_vars,eq' = decompose_prod equation_lemma_type in
   let env_eq' = Environ.push_rel_context (List.map (fun (x,y) -> (x,None,y)) res_vars) env in
@@ -1471,13 +1480,14 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let equation_id = add_suffix function_name "_equation" in
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
-  let functional_ref = declare_fun functional_id (IsDefinition Decl_kinds.Definition) res in
+  let ctx = Evd.universe_context evm in
+  let functional_ref = declare_fun functional_id (IsDefinition Decl_kinds.Definition) ~ctx res in
   let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> (x,None,t)) pre_rec_args) env in  
   let relation =
-    interp_constr
+    fst (*FIXME*)(interp_constr
       Evd.empty
       env_with_pre_rec_args
-      r
+      r)
   in
   let tcc_lemma_name = add_suffix function_name "_tcc" in
   let tcc_lemma_constr = ref None in
@@ -1524,6 +1534,5 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       term_id
       using_lemmas
       (List.length res_vars)
-      hook)
+      ctx hook)
     ()
-

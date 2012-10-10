@@ -64,7 +64,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
        T.Meta n ->
         Errors.error
          "DoubleTypeInference.double_type_of: found a non-instanciated goal"
-
+    | T.Proj _ -> assert false
      | T.Evar ((n,l) as ev) ->
         let ty = Unshare.unshare (Evd.existential_type sigma ev) in
         let jty = execute env sigma ty None in
@@ -99,7 +99,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
         Typeops.judge_of_variable env id
 
      | T.Const c ->
-        E.make_judge cstr (Typeops.type_of_constant env c)
+        E.make_judge cstr (fst (Typeops.type_of_constant env c))
 
      | T.Ind ind ->
         E.make_judge cstr (Inductiveops.type_of_inductive env ind)
@@ -112,15 +112,14 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
          Reduction.whd_betadeltaiota env (Retyping.get_type_of env sigma c) in
         let cj = execute env sigma c (Some expectedtype) in
         let pj = execute env sigma p None in
-        let (expectedtypes,_,_) =
+        let (expectedtypes,_) =
          let indspec = Inductive.find_rectype env cj.Environ.uj_type in
           Inductive.type_case_branches env indspec pj cj.Environ.uj_val
         in
         let lfj =
          execute_array env sigma lf
           (Array.map (function x -> Some x) expectedtypes) in
-        let (j,_) = Typeops.judge_of_case env ci pj cj lfj in
-         j
+          Typeops.judge_of_case env ci pj cj lfj 
 
      | T.Fix ((vn,i as vni),recdef) ->
         let (_,tys,_ as recdef') = execute_recdef env sigma recdef in
@@ -141,10 +140,10 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
 (*CSC: again once Judicael will introduce his non-bugged algebraic       *)
 (*CSC: universes.                                                        *)
 (try
-        Typeops.judge_of_type u
+         (*FIXME*) (Typeops.judge_of_type u)
  with _ -> (* Successor of a non universe-variable universe anomaly *)
   Pp.msg_warning (Pp.str "Universe refresh performed!!!");
-  Typeops.judge_of_type (Termops.new_univ ())
+   (*FIXME*) (Typeops.judge_of_type (Universes.new_univ Names.empty_dirpath))
 )
 
      | T.App (f,args) ->
@@ -165,7 +164,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
           Array.of_list (aux j.Environ.uj_type (Array.to_list args))
         in
         let jl = execute_array env sigma args expected_args in
-        let (j,_) = Typeops.judge_of_apply env j jl in
+        let j = Typeops.judge_of_apply env j jl in
          j
 
      | T.Lambda (name,c1,c2) ->
@@ -212,7 +211,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
         let cj = execute env sigma c (Some (Reductionops.nf_beta sigma t)) in
         let tj = execute env sigma t None in
 	let tj = type_judgment env sigma tj in
-        let j, _ = Typeops.judge_of_cast env cj k tj in
+        let j = Typeops.judge_of_cast env cj k tj in
 	 j
     in
      let synthesized = E.j_type judgement in

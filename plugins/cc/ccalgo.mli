@@ -11,7 +11,7 @@ open Term
 open Names
 
 type cinfo =
-    {ci_constr: constructor; (* inductive type *)
+    {ci_constr: pconstructor; (* inductive type *)
      ci_arity: int;     (* # args *)
      ci_nhyps: int}     (* # projectable args *)
 

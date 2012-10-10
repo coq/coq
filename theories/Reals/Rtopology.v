@@ -339,7 +339,7 @@ Proof.
   unfold neighbourhood in H4; elim H4; intros del H5.
   exists (pos del); split.
   apply (cond_pos del).
-  intros; unfold included in H5; apply H5; elim H6; intros; apply H8.
+  intros. unfold included in H5; apply H5; elim H6; intros; apply H8.
   unfold disc; unfold Rminus; rewrite Rplus_opp_r;
     rewrite Rabs_R0; apply H0.
   apply disc_P1.

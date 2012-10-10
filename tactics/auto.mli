@@ -21,16 +21,17 @@ open Vernacexpr
 open Mod_subst
 open Misctypes
 open Pp
+open Decl_kinds
 
 (** Auto and related automation tactics *)
 
 type 'a auto_tactic =
-  | Res_pf     of constr * 'a    (** Hint Apply *)
-  | ERes_pf    of constr * 'a    (** Hint EApply *)
-  | Give_exact of constr
-  | Res_pf_THEN_trivial_fail of constr * 'a (** Hint Immediate *)
-  | Unfold_nth of evaluable_global_reference          (** Hint Unfold *)
-  | Extern     of Tacexpr.glob_tactic_expr   (** Hint Extern *)
+  | Res_pf     of 'a (* Hint Apply *)
+  | ERes_pf    of 'a (* Hint EApply *)
+  | Give_exact of 'a
+  | Res_pf_THEN_trivial_fail of 'a (* Hint Immediate *)
+  | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
+  | Extern     of Tacexpr.glob_tactic_expr       (* Hint Extern *)
 
 type hints_path_atom = 
   | PathHints of global_reference list
@@ -38,20 +39,20 @@ type hints_path_atom =
 
 type 'a gen_auto_tactic = {
   pri   : int;            (** A number between 0 and 4, 4 = lower priority *)
+  poly  : polymorphic;    (** Is the hint polymorpic and hence should be refreshed at each application *)
   pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
   name  : hints_path_atom; (** A potential name to refer to the hint *) 
   code  : 'a auto_tactic; (** the tactic to apply when the concl matches pat *)
 }
 
-type pri_auto_tactic = clausenv gen_auto_tactic
-
-type stored_data = int * clausenv gen_auto_tactic
+type pri_auto_tactic = (constr * clausenv) gen_auto_tactic
 
 type search_entry
 
 (** The head may not be bound. *)
 
-type hint_entry = global_reference option * types gen_auto_tactic
+type hint_entry = global_reference option * 
+  (constr * types * Univ.universe_context_set) gen_auto_tactic
 
 type hints_path =
   | PathAtom of hints_path_atom
@@ -94,9 +95,16 @@ type hint_db_name = string
 
 type hint_db = Hint_db.t
 
+type hnf = bool
+
+type hint_term =
+  | IsGlobRef of global_reference
+  | IsConstr of constr * Univ.universe_context_set
+
 type hints_entry =
-  | HintsResolveEntry of (int option * bool * hints_path_atom * global_reference_or_constr) list
-  | HintsImmediateEntry of (hints_path_atom * global_reference_or_constr) list
+  | HintsResolveEntry of (int option * polymorphic * hnf * hints_path_atom * 
+			  hint_term) list
+  | HintsImmediateEntry of (hints_path_atom * polymorphic * hint_term) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
@@ -118,11 +126,12 @@ val remove_hints : bool -> hint_db_name list -> global_reference list -> unit
 
 val current_db_names : unit -> String.Set.t
 
-val interp_hints : hints_expr -> hints_entry
+val interp_hints : polymorphic -> hints_expr -> hints_entry
 
 val add_hints : locality_flag -> hint_db_name list -> hints_entry -> unit
 
-val prepare_hint : env -> open_constr -> constr
+val prepare_hint : bool (* Check no remaining evars *) -> env -> evar_map -> 
+  open_constr -> hint_term
 
 val pr_searchtable : unit -> std_ppcmds
 val pr_applicable_hint : unit -> std_ppcmds
@@ -134,7 +143,8 @@ val pr_hint_db : Hint_db.t -> std_ppcmds
    [c] is the term given as an exact proof to solve the goal;
    [ctyp] is the type of [c]. *)
 
-val make_exact_entry : evar_map -> int option -> ?name:hints_path_atom -> constr * constr -> hint_entry
+val make_exact_entry : env -> evar_map -> int option -> polymorphic -> ?name:hints_path_atom -> 
+  (constr * types * Univ.universe_context_set) -> hint_entry
 
 (** [make_apply_entry (eapply,hnf,verbose) pri (c,cty)].
    [eapply] is true if this hint will be used only with EApply;
@@ -144,8 +154,8 @@ val make_exact_entry : evar_map -> int option -> ?name:hints_path_atom -> constr
    [cty] is the type of [c]. *)
 
 val make_apply_entry :
-  env -> evar_map -> bool * bool * bool -> int option -> ?name:hints_path_atom -> 
-  constr * constr -> hint_entry
+  env -> evar_map -> bool * bool * bool -> int option -> polymorphic -> ?name:hints_path_atom -> 
+  (constr * types * Univ.universe_context_set) -> hint_entry
 
 (** A constr which is Hint'ed will be:
    - (1) used as an Exact, if it does not start with a product
@@ -155,8 +165,8 @@ val make_apply_entry :
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool * bool * bool -> int option -> ?name:hints_path_atom -> 
-  constr -> hint_entry list
+  env -> evar_map -> bool * bool * bool -> int option -> polymorphic -> ?name:hints_path_atom -> 
+  hint_term -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].
    used to add an hypothesis to the local hint database;
@@ -194,9 +204,9 @@ val default_search_depth : int ref
 val auto_unif_flags : Unification.unify_flags
 
 (** Try unification with the precompiled clause, then use registered Apply *)
-val unify_resolve_nodelta : (constr * clausenv) -> tactic
+val unify_resolve_nodelta : polymorphic -> (constr * clausenv) -> tactic
 
-val unify_resolve : Unification.unify_flags -> (constr * clausenv) -> tactic
+val unify_resolve : polymorphic -> Unification.unify_flags -> (constr * clausenv) -> tactic
 
 (** [ConclPattern concl pat tacast]:
    if the term concl matches the pattern pat, (in sense of
@@ -255,7 +265,7 @@ val full_trivial : ?debug:Tacexpr.debug ->
 val h_trivial : ?debug:Tacexpr.debug ->
   open_constr list -> hint_db_name list option -> unit Proofview.tactic
 
-val pr_autotactic : 'a auto_tactic -> Pp.std_ppcmds
+val pr_autotactic : (constr * 'a) auto_tactic -> Pp.std_ppcmds
 
 (** Hook for changing the initialization of auto *)
 

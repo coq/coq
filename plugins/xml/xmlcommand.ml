@@ -175,16 +175,17 @@ let find_hyps t =
     | Term.Meta _
     | Term.Evar _
     | Term.Sort _ -> l
+    | Term.Proj _ -> ignore(Errors.todo "Proj in find_hyps"); assert false
     | Term.Cast (te,_, ty) -> aux (aux l te) ty
     | Term.Prod (_,s,t) -> aux (aux l s) t
     | Term.Lambda (_,s,t) -> aux (aux l s) t
     | Term.LetIn (_,s,_,t) -> aux (aux l s) t
     | Term.App (he,tl) -> Array.fold_left (fun i x -> aux i x) (aux l he) tl
-    | Term.Const con ->
+    | Term.Const (con, _) ->
        let hyps = (Global.lookup_constant con).Declarations.const_hyps in
         map_and_filter l hyps @ l
-    | Term.Ind ind
-    | Term.Construct (ind,_) ->
+    | Term.Ind (ind,_)
+    | Term.Construct ((ind,_),_) ->
        let hyps = (fst (Global.lookup_inductive ind)).Declarations.mind_hyps in
         map_and_filter l hyps @ l
     | Term.Case (_,t1,t2,b) ->
@@ -243,8 +244,8 @@ let mk_inductive_obj sp mib packs variables nparams hyps finite =
        let {Declarations.mind_consnames=consnames ;
             Declarations.mind_typename=typename } = p
        in
-        let arity = Inductive.type_of_inductive (Global.env()) (mib,p) in
-        let lc = Inductiveops.arities_of_constructors (Global.env ()) (sp,!tyno) in
+        let arity = Inductive.type_of_inductive (Global.env()) ((mib,p),Univ.Instance.empty)(*FIXME*) in
+        let lc = Inductiveops.arities_of_constructors (Global.env ()) ((sp,!tyno),Univ.Instance.empty)(*FIXME*) in
         let cons =
          (Array.fold_right (fun (name,lc) i -> (name,lc)::i)
           (Array.mapi
@@ -379,7 +380,7 @@ let print internal glob_ref kind xml_library_root =
        let val0 = Declareops.body_of_constant cb in
        let typ = cb.Declarations.const_type in
        let hyps = cb.Declarations.const_hyps in
-       let typ = Typeops.type_of_constant_type (Global.env()) typ in
+       let typ = (* Typeops.type_of_constant_type (Global.env()) *) typ in
         Cic2acic.Constant kn,mk_constant_obj id val0 typ variables hyps
     | Globnames.IndRef (kn,_) ->
        let mib = Global.lookup_mind kn in

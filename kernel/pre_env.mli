@@ -7,10 +7,10 @@
 (************************************************************************)
 
 open Names
-open Univ
 open Term
 open Context
 open Declarations
+open Univ
 
 (** The type of environments. *)
 

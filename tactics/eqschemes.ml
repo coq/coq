@@ -63,11 +63,13 @@ let hid = Id.of_string "H"
 let xid = Id.of_string "X"
 let default_id_of_sort = function InProp | InSet -> hid | InType -> xid
 let fresh env id = next_global_ident_away id []
+let with_context_set ctx (b, ctx') = 
+  (b, Univ.ContextSet.union ctx ctx')
 
 let build_dependent_inductive ind (mib,mip) =
   let realargs,_ = List.chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
   applist
-    (mkInd ind,
+    (mkIndU ind,
        extended_rel_list mip.mind_nrealargs_ctxt mib.mind_params_ctxt
        @ extended_rel_list 0 realargs)
 
@@ -76,12 +78,13 @@ let my_it_mkProd_or_LetIn s c = it_mkProd_or_LetIn c s
 let my_it_mkLambda_or_LetIn_name s c =
   it_mkLambda_or_LetIn_name (Global.env()) c s
 
-let get_coq_eq () =
+let get_coq_eq ctx =
   try
     let eq = Globnames.destIndRef Coqlib.glob_eq in
-    let _ = Global.lookup_inductive eq in
     (* Do not force the lazy if they are not defined *)
-    mkInd eq, Coqlib.build_coq_eq_refl ()
+    let eq, ctx = with_context_set ctx 
+      (Universes.fresh_inductive_instance (Global.env ()) eq) in
+      mkIndU eq, mkConstructUi (eq,1), ctx
   with Not_found ->
     error "eq not found."
 
@@ -94,12 +97,14 @@ let get_coq_eq () =
 (* in which case, a symmetry lemma is definable                       *)
 (**********************************************************************)
 
-let get_sym_eq_data env ind =
+let get_sym_eq_data env (ind,u) =
   let (mib,mip as specif) = lookup_mind_specif env ind in
   if not (Int.equal (Array.length mib.mind_packets) 1) ||
     not (Int.equal (Array.length mip.mind_nf_lc) 1) then
     error "Not an inductive type with a single constructor.";
-  let realsign,_ = List.chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
+  let subst = Inductive.make_inductive_subst mib u in
+  let arityctxt = Vars.subst_univs_context subst mip.mind_arity_ctxt in
+  let realsign,_ = List.chop mip.mind_nrealargs_ctxt arityctxt in
   if List.exists (fun (_,b,_) -> not (Option.is_empty b)) realsign then
     error "Inductive equalities with local definitions in arity not supported.";
   let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
@@ -110,12 +115,13 @@ let get_sym_eq_data env ind =
   if mip.mind_nrealargs > mib.mind_nparams then
     error "Constructors arguments must repeat the parameters.";
   let _,params2 = List.chop (mib.mind_nparams-mip.mind_nrealargs) params in
+  let paramsctxt = Vars.subst_univs_context subst mib.mind_params_ctxt in
   let paramsctxt1,_ =
-    List.chop (mib.mind_nparams-mip.mind_nrealargs) mib.mind_params_ctxt in
+    List.chop (mib.mind_nparams-mip.mind_nrealargs) paramsctxt in
   if not (List.equal eq_constr params2 constrargs) then
     error "Constructors arguments must repeat the parameters.";
   (* nrealargs_ctxt and nrealargs are the same here *)
-  (specif,mip.mind_nrealargs,realsign,mib.mind_params_ctxt,paramsctxt1)
+  (specif,mip.mind_nrealargs,realsign,paramsctxt,paramsctxt1)
 
 (**********************************************************************)
 (* Check if an inductive type [ind] has the form                      *)
@@ -127,12 +133,14 @@ let get_sym_eq_data env ind =
 (* such that symmetry is a priori definable                           *)
 (**********************************************************************)
 
-let get_non_sym_eq_data env ind =
+let get_non_sym_eq_data env (ind,u) =
   let (mib,mip as specif) = lookup_mind_specif env ind in
   if not (Int.equal (Array.length mib.mind_packets) 1) ||
     not (Int.equal (Array.length mip.mind_nf_lc) 1) then
     error "Not an inductive type with a single constructor.";
-  let realsign,_ = List.chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
+  let subst = Inductive.make_inductive_subst mib u in
+  let arityctxt = Vars.subst_univs_context subst mip.mind_arity_ctxt in
+  let realsign,_ = List.chop mip.mind_nrealargs_ctxt arityctxt in
   if List.exists (fun (_,b,_) -> not (Option.is_empty b)) realsign then
     error "Inductive equalities with local definitions in arity not supported";
   let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
@@ -140,7 +148,9 @@ let get_non_sym_eq_data env ind =
   if not (Int.equal (rel_context_length constrsign) (rel_context_length mib.mind_params_ctxt)) then
     error "Constructor must have no arguments";
   let _,constrargs = List.chop mib.mind_nparams constrargs in
-  (specif,constrargs,realsign,mip.mind_nrealargs)
+  let constrargs = List.map (Vars.subst_univs_constr subst) constrargs in
+  let paramsctxt = Vars.subst_univs_context subst mib.mind_params_ctxt in
+  (specif,constrargs,realsign,paramsctxt,mip.mind_nrealargs)
 
 (**********************************************************************)
 (* Build the symmetry lemma associated to an inductive type           *)
@@ -157,30 +167,35 @@ let get_non_sym_eq_data env ind =
 (**********************************************************************)
 
 let build_sym_scheme env ind =
+  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
-    get_sym_eq_data env ind in
+    get_sym_eq_data env indu in
   let cstr n =
-    mkApp (mkConstruct(ind,1),extended_rel_vect n mib.mind_params_ctxt) in
+    mkApp (mkConstructUi(indu,1),extended_rel_vect n mib.mind_params_ctxt) in
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
-  let applied_ind = build_dependent_inductive ind specif in
+  let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
     name_context env ((Name varH,None,applied_ind)::realsign) in
   let ci = make_case_info (Global.env()) ind RegularStyle in
+  let c = 
   (my_it_mkLambda_or_LetIn mib.mind_params_ctxt
   (my_it_mkLambda_or_LetIn_name realsign_ind
   (mkCase (ci,
      my_it_mkLambda_or_LetIn_name
        (lift_rel_context (nrealargs+1) realsign_ind)
-       (mkApp (mkInd ind,Array.concat
+       (mkApp (mkIndU indu,Array.concat
 	  [extended_rel_vect (3*nrealargs+2) paramsctxt1;
 	   rel_vect 1 nrealargs;
 	   rel_vect (2*nrealargs+2) nrealargs])),
      mkRel 1 (* varH *),
        [|cstr (nrealargs+1)|]))))
+  in c, Evd.evar_universe_context_of ctx
 
 let sym_scheme_kind =
   declare_individual_scheme_object "_sym_internal"
-  (fun ind -> build_sym_scheme (Global.env() (* side-effect! *)) ind, Declareops.no_seff)
+  (fun ind -> 
+    let c, ctx = build_sym_scheme (Global.env() (* side-effect! *)) ind in
+      (c, ctx), Declareops.no_seff)
 
 (**********************************************************************)
 (* Build the involutivity of symmetry for an inductive type           *)
@@ -198,51 +213,59 @@ let sym_scheme_kind =
 (*                                                                    *)
 (**********************************************************************)
 
+let const_of_scheme kind env ind ctx = 
+  let sym_scheme, eff = (find_scheme kind ind) in
+  let sym, ctx = with_context_set ctx 
+    (Universes.fresh_constant_instance (Global.env()) sym_scheme) in
+    mkConstU sym, ctx, eff
+
 let build_sym_involutive_scheme env ind =
+  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
-    get_sym_eq_data env ind in
-  let c, eff = find_scheme sym_scheme_kind ind in
-  let sym = mkConst c in
-  let (eq,eqrefl) = get_coq_eq () in
-  let cstr n = mkApp (mkConstruct(ind,1),extended_rel_vect n paramsctxt) in
+    get_sym_eq_data env indu in
+  let eq,eqrefl,ctx = get_coq_eq ctx in
+  let sym, ctx, eff = const_of_scheme sym_scheme_kind env ind ctx in
+  let cstr n = mkApp (mkConstructUi (indu,1),extended_rel_vect n paramsctxt) in
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
-  let applied_ind = build_dependent_inductive ind specif in
+  let applied_ind = build_dependent_inductive indu specif in
   let applied_ind_C =
     mkApp
-      (mkInd ind, Array.append
+      (mkIndU indu, Array.append
          (extended_rel_vect (nrealargs+1) mib.mind_params_ctxt)
          (rel_vect (nrealargs+1) nrealargs)) in
   let realsign_ind =
     name_context env ((Name varH,None,applied_ind)::realsign) in
   let ci = make_case_info (Global.env()) ind RegularStyle in
-  (my_it_mkLambda_or_LetIn paramsctxt
-  (my_it_mkLambda_or_LetIn_name realsign_ind
-  (mkCase (ci,
-     my_it_mkLambda_or_LetIn_name
-       (lift_rel_context (nrealargs+1) realsign_ind)
-       (mkApp (eq,[|
-	 mkApp
-	   (mkInd ind, Array.concat
-	     [extended_rel_vect (3*nrealargs+2) paramsctxt1;
-	      rel_vect (2*nrealargs+2) nrealargs;
-	      rel_vect 1 nrealargs]);
-         mkApp (sym,Array.concat
-	   [extended_rel_vect (3*nrealargs+2) paramsctxt1;
-            rel_vect 1 nrealargs;
-            rel_vect (2*nrealargs+2) nrealargs;
-            [|mkApp (sym,Array.concat
-	      [extended_rel_vect (3*nrealargs+2) paramsctxt1;
-	       rel_vect (2*nrealargs+2) nrealargs;
-	       rel_vect 1 nrealargs;
-	       [|mkRel 1|]])|]]);
-	 mkRel 1|])),
-     mkRel 1 (* varH *),
-       [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|])))),
-  eff
+  let c = 
+    (my_it_mkLambda_or_LetIn paramsctxt
+     (my_it_mkLambda_or_LetIn_name realsign_ind
+      (mkCase (ci,
+	       my_it_mkLambda_or_LetIn_name
+	       (lift_rel_context (nrealargs+1) realsign_ind)
+	       (mkApp (eq,[|
+	       mkApp
+	       (mkIndU indu, Array.concat
+	       [extended_rel_vect (3*nrealargs+2) paramsctxt1;
+		rel_vect (2*nrealargs+2) nrealargs;
+		rel_vect 1 nrealargs]);
+               mkApp (sym,Array.concat
+	       [extended_rel_vect (3*nrealargs+2) paramsctxt1;
+		rel_vect 1 nrealargs;
+		rel_vect (2*nrealargs+2) nrealargs;
+		[|mkApp (sym,Array.concat
+		[extended_rel_vect (3*nrealargs+2) paramsctxt1;
+		 rel_vect (2*nrealargs+2) nrealargs;
+		 rel_vect 1 nrealargs;
+		 [|mkRel 1|]])|]]);
+	       mkRel 1|])),
+	       mkRel 1 (* varH *),
+	       [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|]))))
+  in (c, Evd.evar_universe_context_of ctx), eff
 
 let sym_involutive_scheme_kind =
   declare_individual_scheme_object "_sym_involutive"
-  (fun ind -> build_sym_involutive_scheme (Global.env() (* side-effect! *)) ind)
+  (fun ind -> 
+    build_sym_involutive_scheme (Global.env() (* side-effect! *)) ind)
 
 (**********************************************************************)
 (* Build the left-to-right rewriting lemma for conclusion associated  *)
@@ -305,28 +328,27 @@ let sym_involutive_scheme_kind =
 (**********************************************************************)
 
 let build_l2r_rew_scheme dep env ind kind =
+  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
-    get_sym_eq_data env ind in
-  let c, eff = find_scheme sym_scheme_kind ind in
-  let sym = mkConst c in
-  let c, eff' = find_scheme sym_involutive_scheme_kind ind in
-  let sym_involutive = mkConst c in
-  let (eq,eqrefl) = get_coq_eq () in
+    get_sym_eq_data env indu in
+  let sym, ctx, eff = const_of_scheme sym_scheme_kind env ind ctx in
+  let sym_involutive, ctx, eff' = const_of_scheme sym_involutive_scheme_kind env ind ctx in
+  let eq,eqrefl,ctx = get_coq_eq ctx in
   let cstr n p =
-    mkApp (mkConstruct(ind,1),
+    mkApp (mkConstructUi(indu,1),
       Array.concat [extended_rel_vect n paramsctxt1;
                     rel_vect p nrealargs]) in
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
   let varHC = fresh env (Id.of_string "HC") in
   let varP = fresh env (Id.of_string "P") in
-  let applied_ind = build_dependent_inductive ind specif in
+  let applied_ind = build_dependent_inductive indu specif in
   let applied_ind_P =
-    mkApp (mkInd ind, Array.concat
+    mkApp (mkIndU indu, Array.concat
        [extended_rel_vect (3*nrealargs) paramsctxt1;
         rel_vect 0 nrealargs;
         rel_vect nrealargs nrealargs]) in
   let applied_ind_G =
-    mkApp (mkInd ind, Array.concat
+    mkApp (mkIndU indu, Array.concat
        [extended_rel_vect (3*nrealargs+3) paramsctxt1;
         rel_vect (nrealargs+3) nrealargs;
         rel_vect 0 nrealargs]) in
@@ -345,9 +367,11 @@ let build_l2r_rew_scheme dep env ind kind =
                      rel_vect (nrealargs+4) nrealargs;
                      rel_vect 1 nrealargs;
 		     [|mkRel 1|]]) in
-  let s = mkSort (new_sort_in_family kind) in
+  let s, ctx' = Universes.fresh_sort_in_family (Global.env ()) kind in
+  let ctx = Univ.ContextSet.union ctx ctx' in
+  let s = mkSort s in
   let ci = make_case_info (Global.env()) ind RegularStyle in
-  let cieq = make_case_info (Global.env()) (destInd eq) RegularStyle in
+  let cieq = make_case_info (Global.env()) (fst (destInd eq)) RegularStyle in
   let applied_PC =
     mkApp (mkVar varP,Array.append (extended_rel_vect 1 realsign)
            (if dep then [|cstr (2*nrealargs+1) 1|] else [||])) in
@@ -372,6 +396,7 @@ let build_l2r_rew_scheme dep env ind kind =
       my_it_mkLambda_or_LetIn_name realsign_ind_G applied_PG,
       applied_sym_C 3,
       [|mkVar varHC|]) in
+  let c = 
   (my_it_mkLambda_or_LetIn mib.mind_params_ctxt
   (my_it_mkLambda_or_LetIn_name realsign
   (mkNamedLambda varP
@@ -388,8 +413,8 @@ let build_l2r_rew_scheme dep env ind kind =
          Array.append (extended_rel_vect 3 mip.mind_arity_ctxt) [|mkVar varH|]),
        [|main_body|])
    else
-     main_body)))))),
-  Declareops.union_side_effects eff' eff
+     main_body))))))
+  in (c, Evd.evar_universe_context_of ctx), Declareops.union_side_effects eff' eff
 
 (**********************************************************************)
 (* Build the left-to-right rewriting lemma for hypotheses associated  *)
@@ -418,23 +443,24 @@ let build_l2r_rew_scheme dep env ind kind =
 (**********************************************************************)
 
 let build_l2r_forward_rew_scheme dep env ind kind =
+  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
-    get_sym_eq_data env ind in
+    get_sym_eq_data env indu in
   let cstr n p =
-    mkApp (mkConstruct(ind,1),
+    mkApp (mkConstructUi(indu,1),
       Array.concat [extended_rel_vect n paramsctxt1;
                     rel_vect p nrealargs]) in
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
   let varHC = fresh env (Id.of_string "HC") in
   let varP = fresh env (Id.of_string "P") in
-  let applied_ind = build_dependent_inductive ind specif in
+  let applied_ind = build_dependent_inductive indu specif in
   let applied_ind_P =
-    mkApp (mkInd ind, Array.concat
+    mkApp (mkIndU indu, Array.concat
        [extended_rel_vect (4*nrealargs+2) paramsctxt1;
         rel_vect 0 nrealargs;
         rel_vect (nrealargs+1) nrealargs]) in
   let applied_ind_P' =
-    mkApp (mkInd ind, Array.concat
+    mkApp (mkIndU indu, Array.concat
        [extended_rel_vect (3*nrealargs+1) paramsctxt1;
         rel_vect 0 nrealargs;
         rel_vect (2*nrealargs+1) nrealargs]) in
@@ -443,7 +469,9 @@ let build_l2r_forward_rew_scheme dep env ind kind =
     name_context env ((Name varH,None,applied_ind)::realsign) in
   let realsign_ind_P n aP =
     name_context env ((Name varH,None,aP)::realsign_P n) in
-  let s = mkSort (new_sort_in_family kind) in
+  let s, ctx' = Universes.fresh_sort_in_family (Global.env ()) kind in
+  let ctx = Univ.ContextSet.union ctx ctx' in
+  let s = mkSort s in
   let ci = make_case_info (Global.env()) ind RegularStyle in
   let applied_PC =
     mkApp (mkVar varP,Array.append
@@ -457,6 +485,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
   let applied_PG =
     mkApp (mkVar varP,Array.append (rel_vect 3 nrealargs)
            (if dep then [|cstr (3*nrealargs+4) 3|] else [||])) in
+  let c = 
   (my_it_mkLambda_or_LetIn mib.mind_params_ctxt
   (my_it_mkLambda_or_LetIn_name realsign
   (mkNamedLambda varH applied_ind
@@ -473,6 +502,7 @@ let build_l2r_forward_rew_scheme dep env ind kind =
 	  (if dep then realsign_ind_P 1 applied_ind_P' else realsign_P 2) s)
       (mkNamedLambda varHC applied_PC'
 	(mkVar varHC))|])))))
+  in c, Evd.evar_universe_context_of ctx
 
 (**********************************************************************)
 (* Build the right-to-left rewriting lemma for hypotheses associated  *)
@@ -504,19 +534,22 @@ let build_l2r_forward_rew_scheme dep env ind kind =
 (* statement but no need for symmetry of the equality.                *)
 (**********************************************************************)
 
-let build_r2l_forward_rew_scheme dep env ind kind =
-  let ((mib,mip as specif),constrargs,realsign,nrealargs) =
-    get_non_sym_eq_data env ind in
+let build_r2l_forward_rew_scheme dep env ind kind = 
+  let (ind,u as indu), ctx = Universes.fresh_inductive_instance env ind in
+  let ((mib,mip as specif),constrargs,realsign,paramsctxt,nrealargs) =
+    get_non_sym_eq_data env indu in
   let cstr n =
-    mkApp (mkConstruct(ind,1),extended_rel_vect n mib.mind_params_ctxt) in
+    mkApp (mkConstructUi(indu,1),extended_rel_vect n mib.mind_params_ctxt) in
   let constrargs_cstr = constrargs@[cstr 0] in
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
   let varHC = fresh env (Id.of_string "HC") in
   let varP = fresh env (Id.of_string "P") in
-  let applied_ind = build_dependent_inductive ind specif in
+  let applied_ind = build_dependent_inductive indu specif in
   let realsign_ind =
     name_context env ((Name varH,None,applied_ind)::realsign) in
-  let s = mkSort (new_sort_in_family kind) in
+  let s, ctx' = Universes.fresh_sort_in_family (Global.env ()) kind in
+  let ctx = Univ.ContextSet.union ctx ctx' in
+  let s = mkSort s in
   let ci = make_case_info (Global.env()) ind RegularStyle in
   let applied_PC =
     applist (mkVar varP,if dep then constrargs_cstr else constrargs) in
@@ -524,7 +557,8 @@ let build_r2l_forward_rew_scheme dep env ind kind =
     mkApp (mkVar varP,
            if dep then extended_rel_vect 0 realsign_ind
 	   else extended_rel_vect 1 realsign) in
-  (my_it_mkLambda_or_LetIn mib.mind_params_ctxt
+  let c = 
+  (my_it_mkLambda_or_LetIn paramsctxt
   (my_it_mkLambda_or_LetIn_name realsign_ind
   (mkNamedLambda varP
     (my_it_mkProd_or_LetIn (lift_rel_context (nrealargs+1)
@@ -541,6 +575,7 @@ let build_r2l_forward_rew_scheme dep env ind kind =
 	   lift (nrealargs+3) applied_PC,
 	   mkRel 1)|]),
     [|mkVar varHC|]))))))
+  in c, Evd.evar_universe_context_of ctx
 
 (**********************************************************************)
 (* This function "repairs" the non-dependent r2l forward rewriting    *)
@@ -558,11 +593,12 @@ let build_r2l_forward_rew_scheme dep env ind kind =
 (*                                                                    *)
 (**********************************************************************)
 
-let fix_r2l_forward_rew_scheme c =
+let fix_r2l_forward_rew_scheme (c, ctx') =
   let t = Retyping.get_type_of (Global.env()) Evd.empty c in
   let ctx,_ = decompose_prod_assum t in
   match ctx with
   | hp :: p :: ind :: indargs ->
+     let c' = 
       my_it_mkLambda_or_LetIn indargs
 	(mkLambda_or_LetIn (map_rel_declaration (liftn (-1) 1) p)
 	  (mkLambda_or_LetIn (map_rel_declaration (liftn (-1) 2) hp)
@@ -570,6 +606,7 @@ let fix_r2l_forward_rew_scheme c =
 	      (Reductionops.whd_beta Evd.empty
 		(applist (c,
 	          extended_rel_list 3 indargs @ [mkRel 1;mkRel 3;mkRel 2]))))))
+      in c', ctx'
   | _ -> anomaly (Pp.str "Ill-formed non-dependent left-to-right rewriting scheme")
 
 (**********************************************************************)
@@ -592,9 +629,16 @@ let fix_r2l_forward_rew_scheme c =
 (*          (H:I q1..qm a1..an),                                      *)
 (*          P b1..bn C -> P a1..an H                                  *)
 (**********************************************************************)
-
+ 
 let build_r2l_rew_scheme dep env ind k =
-  build_case_analysis_scheme env Evd.empty ind dep k
+  let sigma, indu = Evd.fresh_inductive_instance env (Evd.from_env env) ind in
+  let sigma', c = build_case_analysis_scheme env sigma indu dep k in
+    c, Evd.evar_universe_context sigma'
+
+let build_l2r_rew_scheme = build_l2r_rew_scheme
+let build_l2r_forward_rew_scheme = build_l2r_forward_rew_scheme
+let build_r2l_rew_scheme = build_r2l_rew_scheme
+let build_r2l_forward_rew_scheme = build_r2l_forward_rew_scheme
 
 (**********************************************************************)
 (* Register the rewriting schemes                                     *)
@@ -681,17 +725,22 @@ let rew_r2l_scheme_kind =
 
 (* TODO: extend it to types with more than one index *)
 
-let build_congr env (eq,refl) ind =
+let build_congr env (eq,refl,ctx) ind =
+  let (ind,u as indu), ctx = with_context_set ctx 
+    (Universes.fresh_inductive_instance env ind) in
   let (mib,mip) = lookup_mind_specif env ind in
+  let subst = Inductive.make_inductive_subst mib u in
   if not (Int.equal (Array.length mib.mind_packets) 1) || not (Int.equal (Array.length mip.mind_nf_lc) 1) then
     error "Not an inductive type with a single constructor.";
   if not (Int.equal mip.mind_nrealargs 1) then
     error "Expect an inductive type with one predicate parameter.";
   let i = 1 in
-  let realsign,_ = List.chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
+  let arityctxt = Vars.subst_univs_context subst mip.mind_arity_ctxt in
+  let paramsctxt = Vars.subst_univs_context subst mib.mind_params_ctxt in
+  let realsign,_ = List.chop mip.mind_nrealargs_ctxt arityctxt in
   if List.exists (fun (_,b,_) -> not (Option.is_empty b)) realsign then
     error "Inductive equalities with local definitions in arity not supported.";
-  let env_with_arity = push_rel_context mip.mind_arity_ctxt env in
+  let env_with_arity = push_rel_context arityctxt env in
   let (_,_,ty) = lookup_rel (mip.mind_nrealargs - i + 1) env_with_arity in
   let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
@@ -702,14 +751,16 @@ let build_congr env (eq,refl) ind =
   let varH = fresh env (Id.of_string "H") in
   let varf = fresh env (Id.of_string "f") in
   let ci = make_case_info (Global.env()) ind RegularStyle in
-  my_it_mkLambda_or_LetIn mib.mind_params_ctxt
-     (mkNamedLambda varB (new_Type ())
+  let uni, ctx = Universes.extend_context (Universes.new_global_univ ()) ctx in
+  let c = 
+  my_it_mkLambda_or_LetIn paramsctxt
+     (mkNamedLambda varB (mkSort (Type uni))
      (mkNamedLambda varf (mkArrow (lift 1 ty) (mkVar varB))
      (my_it_mkLambda_or_LetIn_name (lift_rel_context 2 realsign)
      (mkNamedLambda varH
         (applist
-           (mkInd ind,
-	    extended_rel_list (mip.mind_nrealargs+2) mib.mind_params_ctxt @
+           (mkIndU indu,
+	    extended_rel_list (mip.mind_nrealargs+2) paramsctxt @
 	    extended_rel_list 0 realsign))
      (mkCase (ci,
        my_it_mkLambda_or_LetIn_name
@@ -717,9 +768,9 @@ let build_congr env (eq,refl) ind =
          (mkLambda
            (Anonymous,
             applist
-             (mkInd ind,
+             (mkIndU indu,
 	        extended_rel_list (2*mip.mind_nrealargs_ctxt+3)
-		  mib.mind_params_ctxt
+		  paramsctxt
 	        @ extended_rel_list 0 realsign),
             mkApp (eq,
 	      [|mkVar varB;
@@ -729,8 +780,9 @@ let build_congr env (eq,refl) ind =
        [|mkApp (refl,
           [|mkVar varB;
 	    mkApp (mkVar varf, [|lift (mip.mind_nrealargs+3) b|])|])|]))))))
+  in c, Evd.evar_universe_context_of ctx
 
 let congr_scheme_kind = declare_individual_scheme_object "_congr"
   (fun ind ->
     (* May fail if equality is not defined *)
-          build_congr (Global.env()) (get_coq_eq ()) ind, Declareops.no_seff)
+    build_congr (Global.env()) (get_coq_eq Univ.ContextSet.empty) ind, Declareops.no_seff)

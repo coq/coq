@@ -21,7 +21,7 @@ type unification_error =
   | ConversionFailed of env * constr * constr
   | MetaOccurInBody of existential_key
   | InstanceNotSameType of existential_key * env * types * types
-  | UnifUnivInconsistency
+  | UnifUnivInconsistency of Univ.univ_inconsistency
 
 type pretype_error =
   (* Old Case *)

@@ -210,7 +210,7 @@ and subst_structure sub do_delta sign =
       let cb' = subst_const_body sub cb in
       if cb==cb' then orig else (l,SFBconst cb')
     |SFBmind mib ->
-      let mib' = subst_mind sub mib in
+      let mib' = subst_mind_body sub mib in
       if mib==mib' then orig else (l,SFBmind mib')
     |SFBmodule mb ->
       let mb' = subst_module sub do_delta mb in
@@ -460,7 +460,7 @@ and strengthen_and_subst_struct str subst mp_from mp_to alias incl reso =
 	     because reso' contains mp_to maps to reso(mp_from) *)
 	  reso', item'::rest'
     | (l,SFBmind mib) :: rest ->
-	let item' = l,SFBmind (subst_mind subst mib) in
+	let item' = l,SFBmind (subst_mind_body subst mib) in
 	let reso',rest' =
 	  strengthen_and_subst_struct rest subst mp_from mp_to alias incl reso
         in

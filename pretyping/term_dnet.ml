@@ -261,9 +261,9 @@ struct
     | Rel _          -> Term DRel
     | Sort _         -> Term DSort
     | Var i          -> Term (DRef (VarRef i))
-    | Const c        -> Term (DRef (ConstRef c))
-    | Ind i          -> Term (DRef (IndRef i))
-    | Construct c    -> Term (DRef (ConstructRef c))
+    | Const (c,u)    -> Term (DRef (ConstRef c))
+    | Ind (i,u)      -> Term (DRef (IndRef i))
+    | Construct (c,u)-> Term (DRef (ConstructRef c))
     | Term.Meta _    -> assert false
     | Evar (i,_)     ->
       let meta =
@@ -287,6 +287,8 @@ struct
     | App (f,ca)     ->
       Array.fold_left (fun c a -> Term (DApp (c,a)))
         (pat_of_constr f) (Array.map pat_of_constr ca)
+    | Proj (p,c) -> 
+        Term (DApp (Term (DRef (ConstRef p)), pat_of_constr c))
 
     and ctx_of_constr ctx c = match kind_of_term c with
     | Prod (_,t,c)   -> ctx_of_constr (Term(DCons((pat_of_constr t,None),ctx))) c

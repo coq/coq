@@ -24,7 +24,7 @@ Inductive t : nat -> Set :=
 
 Section SCHEMES.
 Definition case0 P (p: t 0): P p :=
-  match p with | F1 | FS  _ => fun devil => False_rect (@ID) devil (* subterm !!! *) end.
+  match p with | F1 | FS  _ => fun devil => False_rect (@IDProp) devil (* subterm !!! *) end.
 
 Definition caseS (P: forall {n}, t (S n) -> Type)
   (P1: forall n, @P n F1) (PS : forall {n} (p: t n), P (FS p))

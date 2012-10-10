@@ -179,7 +179,7 @@ let rec interp_xml_constr = function
   | XmlTag (loc,"META",al,xl) ->
       GEvar (loc, get_xml_no al, Some (List.map interp_xml_substitution xl))
   | XmlTag (loc,"CONST",al,[]) ->
-      GRef (loc, ConstRef (get_xml_constant al))
+      GRef (loc, ConstRef (get_xml_constant al), None)
   | XmlTag (loc,"MUTCASE",al,x::y::yl) ->
       let ind = get_xml_inductive al in
       let p = interp_xml_patternsType x in
@@ -192,9 +192,9 @@ let rec interp_xml_constr = function
       let nal,rtn = return_type_of_predicate ind n p in
       GCases (loc,RegularStyle,rtn,[tm,nal],mat)
   | XmlTag (loc,"MUTIND",al,[]) ->
-      GRef (loc, IndRef (get_xml_inductive al))
+      GRef (loc, IndRef (get_xml_inductive al), None)
   | XmlTag (loc,"MUTCONSTRUCT",al,[]) ->
-      GRef (loc, ConstructRef (get_xml_constructor al))
+      GRef (loc, ConstructRef (get_xml_constructor al), None)
   | XmlTag (loc,"FIX",al,xl) ->
       let li,lnct = List.split (List.map interp_xml_FixFunction xl) in
       let ln,lc,lt = List.split3 lnct in

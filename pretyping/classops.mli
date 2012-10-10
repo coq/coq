@@ -53,9 +53,9 @@ val class_info : cl_typ -> (cl_index * cl_info_typ)
 
 val class_info_from_index : cl_index -> cl_typ * cl_info_typ
 
-(** [find_class_type env sigma c] returns the head reference of [c] and its
-   arguments *)
-val find_class_type : evar_map -> types -> cl_typ * constr list
+(** [find_class_type env sigma c] returns the head reference of [c],
+    its universe instance and its arguments *)
+val find_class_type : evar_map -> types -> cl_typ * Univ.universe_instance * constr list
 
 (** raises [Not_found] if not convertible to a class *)
 val class_of : env -> evar_map -> types -> types * cl_index
@@ -73,7 +73,7 @@ val declare_coercion :
 (** {6 Access to coercions infos } *)
 val coercion_exists : coe_typ -> bool
 
-val coercion_value : coe_index -> (unsafe_judgment * bool)
+val coercion_value : coe_index -> (unsafe_judgment * bool * bool) Univ.in_universe_context_set
 
 (** {6 Lookup functions for coercion paths } *)
 

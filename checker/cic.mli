@@ -163,14 +163,7 @@ type engagement = ImpredicativeSet
 
 (** {6 Representation of constants (Definition/Axiom) } *)
 
-type polymorphic_arity = {
-  poly_param_levels : Univ.universe option list;
-  poly_level : Univ.universe;
-}
-
-type constant_type =
-  | NonPolymorphicType of constr
-  | PolymorphicArity of rel_context * polymorphic_arity
+type constant_type = constr
 
 (** Inlining level of parameters at functor applications.
     This is ignored by the checker. *)
@@ -203,15 +196,6 @@ type recarg =
 
 type wf_paths = recarg Rtree.t
 
-type monomorphic_inductive_arity = {
-  mind_user_arity : constr;
-  mind_sort : sorts;
-}
-
-type inductive_arity =
-| Monomorphic of monomorphic_inductive_arity
-| Polymorphic of polymorphic_arity
-
 type one_inductive_body = {
 (** {8 Primitive datas } *)
 
@@ -219,7 +203,7 @@ type one_inductive_body = {
 
     mind_arity_ctxt : rel_context; (** Arity context of [Ii] with parameters: [forall params, Ui] *)
 
-    mind_arity : inductive_arity; (** Arity sort and original user arity if monomorphic *)
+    mind_arity : constr; (** Arity sort and original user arity if monomorphic *)
 
     mind_consnames : Id.t array; (** Names of the constructors: [cij] *)
 

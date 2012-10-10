@@ -20,8 +20,9 @@ let body_of_constant cb = match cb.const_body with
   | Def c -> Some (force_constr c)
   | OpaqueDef o -> Some (Opaqueproof.force_proof o)
 
-let constraints_of_constant cb = Univ.union_constraints cb.const_constraints
- (match cb.const_body with
+let constraints_of_constant cb = Univ.Constraint.union 
+  (Univ.UContext.constraints (Future.force cb.const_universes))
+  (match cb.const_body with
   | Undef _ -> Univ.empty_constraint
   | Def c -> Univ.empty_constraint
   | OpaqueDef o -> Opaqueproof.force_constraints o)
@@ -43,21 +44,29 @@ let subst_rel_declaration sub (id,copt,t as x) =
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
-let subst_const_type sub arity = match arity with
-  | NonPolymorphicType s ->
-    let s' = subst_mps sub s in
-    if s==s' then arity else NonPolymorphicType s'
-  | PolymorphicArity (ctx,s) ->
-    let ctx' = subst_rel_context sub ctx in
-    if ctx==ctx' then arity else PolymorphicArity (ctx',s)
+(* let subst_const_type sub arity = match arity with *)
+(*   | NonPolymorphicType s -> *)
+(*     let s' = subst_mps sub s in *)
+(*     if s==s' then arity else NonPolymorphicType s' *)
+(*   | PolymorphicArity (ctx,s) -> *)
+(*     let ctx' = subst_rel_context sub ctx in *)
+(*     if ctx==ctx' then arity else PolymorphicArity (ctx',s) *)
+
+let subst_const_type sub arity =
+  if is_empty_subst sub then arity
+  else subst_mps sub arity
 
 (** No need here to check for physical equality after substitution,
     at least for Def due to the delayed substitution [subst_constr_subst]. *)
-
 let subst_const_def sub def = match def with
   | Undef _ -> def
   | Def c -> Def (subst_constr sub c)
   | OpaqueDef o -> OpaqueDef (Opaqueproof.subst_opaque sub o)
+
+let subst_const_proj sub pb =
+  { pb with proj_ind = subst_mind sub pb.proj_ind;
+    proj_type = subst_mps sub pb.proj_type;
+    proj_body = subst_const_type sub pb.proj_body }
 
 let subst_const_body sub cb =
   assert (List.is_empty cb.const_hyps); (* we're outside sections *)
@@ -65,14 +74,18 @@ let subst_const_body sub cb =
   else
     let body' = subst_const_def sub cb.const_body in
     let type' = subst_const_type sub cb.const_type in
-    if body' == cb.const_body && type' == cb.const_type then cb
+    let proj' = Option.smartmap (subst_const_proj sub) cb.const_proj in
+    if body' == cb.const_body && type' == cb.const_type
+      && proj' == cb.const_proj then cb
     else
       { const_hyps = [];
         const_body = body';
         const_type = type';
+        const_proj = proj';
         const_body_code =
           Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
-        const_constraints = cb.const_constraints;
+        const_polymorphic = cb.const_polymorphic;
+        const_universes = cb.const_universes;
         const_inline_code = cb.const_inline_code }
 
 (** {7 Hash-consing of constants } *)
@@ -89,16 +102,7 @@ let hcons_rel_decl ((n,oc,t) as d) =
 
 let hcons_rel_context l = List.smartmap hcons_rel_decl l
 
-let hcons_polyarity ar =
-  { poly_param_levels =
-      List.smartmap (Option.smartmap Univ.hcons_univ) ar.poly_param_levels;
-    poly_level = Univ.hcons_univ ar.poly_level }
-
-let hcons_const_type = function
-  | NonPolymorphicType t ->
-    NonPolymorphicType (Term.hcons_constr t)
-  | PolymorphicArity (ctx,s) ->
-    PolymorphicArity (hcons_rel_context ctx, hcons_polyarity s)
+let hcons_const_type t = Term.hcons_constr t
 
 let hcons_const_def = function
   | Undef inl -> Undef inl
@@ -111,7 +115,11 @@ let hcons_const_body cb =
   { cb with
     const_body = hcons_const_def cb.const_body;
     const_type = hcons_const_type cb.const_type;
-    const_constraints = Univ.hcons_constraints cb.const_constraints; }
+    const_universes =
+      if Future.is_val cb.const_universes then
+        Future.from_val
+          (Univ.hcons_universe_context (Future.force cb.const_universes))
+      else (* FIXME: Why not? *) cb.const_universes }
 
 (** {6 Inductive types } *)
 
@@ -124,10 +132,10 @@ let eq_recarg r1 r2 = match r1, r2 with
 let subst_recarg sub r = match r with
   | Norec -> r
   | Mrec (kn,i) ->
-    let kn' = subst_ind sub kn in
+    let kn' = subst_mind sub kn in
     if kn==kn' then r else Mrec (kn',i)
   | Imbr (kn,i) ->
-    let kn' = subst_ind sub kn in
+    let kn' = subst_mind sub kn in
     if kn==kn' then r else Imbr (kn',i)
 
 let mk_norec = Rtree.mk_node Norec [||]
@@ -156,63 +164,108 @@ let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
 
 (** {7 Substitution of inductive declarations } *)
 
-let subst_indarity sub ar = match ar with
-  | Monomorphic s ->
-    let uar' = subst_mps sub s.mind_user_arity in
-    if uar' == s.mind_user_arity then ar
-    else Monomorphic { mind_user_arity = uar'; mind_sort = s.mind_sort }
-  | Polymorphic _ -> ar
+(* OLD POLYMORPHISM *)
+(* let subst_indarity sub ar = match ar with *)
+(*   | Monomorphic s -> *)
+(*     let uar' = subst_mps sub s.mind_user_arity in *)
+(*     if uar' == s.mind_user_arity then ar *)
+(*     else Monomorphic { mind_user_arity = uar'; mind_sort = s.mind_sort } *)
+(*   | Polymorphic _ -> ar *)
 
-let subst_mind_packet sub mip =
-  let { mind_nf_lc = nf;
-        mind_user_lc = user;
-        mind_arity_ctxt = ctxt;
-        mind_arity = ar;
-        mind_recargs = ra } = mip
-  in
-  let nf' = Array.smartmap (subst_mps sub) nf in
-  let user' =
-    (* maintain sharing of [mind_user_lc] and [mind_nf_lc] *)
-    if user==nf then nf'
-    else Array.smartmap (subst_mps sub) user
-  in
-  let ctxt' = subst_rel_context sub ctxt in
-  let ar' = subst_indarity sub ar in
-  let ra' = subst_wf_paths sub ra in
-  if nf==nf' && user==user' && ctxt==ctxt' && ar==ar' && ra==ra'
-  then mip
-  else
-    { mip with
-      mind_nf_lc = nf';
-      mind_user_lc = user';
-      mind_arity_ctxt = ctxt';
-      mind_arity = ar';
-      mind_recargs = ra' }
+(* let subst_mind_packet sub mip = *)
+(*   let { mind_nf_lc = nf; *)
+(*         mind_user_lc = user; *)
+(*         mind_arity_ctxt = ctxt; *)
+(*         mind_arity = ar; *)
+(*         mind_recargs = ra } = mip *)
+(*   in *)
+(*   let nf' = Array.smartmap (subst_mps sub) nf in *)
+(*   let user' = *)
+(*     (\* maintain sharing of [mind_user_lc] and [mind_nf_lc] *\) *)
+(*     if user==nf then nf' *)
+(*     else Array.smartmap (subst_mps sub) user *)
+(*   in *)
+(*   let ctxt' = subst_rel_context sub ctxt in *)
+(*   let ar' = subst_indarity sub ar in *)
+(*   let ra' = subst_wf_paths sub ra in *)
+(*   if nf==nf' && user==user' && ctxt==ctxt' && ar==ar' && ra==ra' *)
+(*   then mip *)
+(*   else *)
+(*     { mip with *)
+(*       mind_nf_lc = nf'; *)
+(*       mind_user_lc = user'; *)
+(*       mind_arity_ctxt = ctxt'; *)
+(*       mind_arity = ar'; *)
+(*       mind_recargs = ra' } *)
 
-let subst_mind sub mib =
-  assert (List.is_empty mib.mind_hyps); (* we're outside sections *)
-  if is_empty_subst sub then mib
-  else
-    let params = mib.mind_params_ctxt in
-    let params' = Context.map_rel_context (subst_mps sub) params in
-    let packets = mib.mind_packets in
-    let packets' = Array.smartmap (subst_mind_packet sub) packets in
-    if params==params' && packets==packets' then mib
-    else
-      { mib with
-        mind_params_ctxt = params';
-        mind_packets = packets' }
+(* let subst_mind sub mib = *)
+(*   assert (List.is_empty mib.mind_hyps); (\* we're outside sections *\) *)
+(*   if is_empty_subst sub then mib *)
+(*   else *)
+(*     let params = mib.mind_params_ctxt in *)
+(*     let params' = Context.map_rel_context (subst_mps sub) params in *)
+(*     let packets = mib.mind_packets in *)
+(*     let packets' = Array.smartmap (subst_mind_packet sub) packets in *)
+(*     if params==params' && packets==packets' then mib *)
+(*     else *)
+(*       { mib with *)
+(*         mind_params_ctxt = params'; *)
+(*         mind_packets = packets'; *)
+(*         mind_native_name = ref NotLinked } *)
 
-(** {6 Hash-consing of inductive declarations } *)
+(* (\** {6 Hash-consing of inductive declarations } *\) *)
 
-(** Just as for constants, this hash-consing is quite partial *)
+(* (\** Just as for constants, this hash-consing is quite partial *\) *)
 
-let hcons_indarity = function
-  | Monomorphic a ->
-    Monomorphic
-      { mind_user_arity = Term.hcons_constr a.mind_user_arity;
-        mind_sort = Term.hcons_sorts a.mind_sort }
-  | Polymorphic a -> Polymorphic (hcons_polyarity a)
+(* let hcons_indarity = function *)
+(*   | Monomorphic a -> *)
+(*     Monomorphic *)
+(*       { mind_user_arity = Term.hcons_constr a.mind_user_arity; *)
+(*         mind_sort = Term.hcons_sorts a.mind_sort } *)
+(*   | Polymorphic a -> Polymorphic (hcons_polyarity a) *)
+
+(** Substitution of inductive declarations *)
+
+let subst_indarity sub s =
+  { mind_user_arity = subst_mps sub s.mind_user_arity;
+    mind_sort = s.mind_sort;
+  }
+
+let subst_mind_packet sub mbp =
+  { mind_consnames = mbp.mind_consnames;
+    mind_consnrealdecls = mbp.mind_consnrealdecls;
+    mind_consnrealargs = mbp.mind_consnrealargs;
+    mind_typename = mbp.mind_typename;
+    mind_nf_lc = Array.smartmap (subst_mps sub) mbp.mind_nf_lc;
+    mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
+    mind_arity = subst_indarity sub mbp.mind_arity;
+    mind_user_lc = Array.smartmap (subst_mps sub) mbp.mind_user_lc;
+    mind_nrealargs = mbp.mind_nrealargs;
+    mind_nrealargs_ctxt = mbp.mind_nrealargs_ctxt;
+    mind_kelim = mbp.mind_kelim;
+    mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*);
+    mind_nb_constant = mbp.mind_nb_constant;
+    mind_nb_args = mbp.mind_nb_args;
+    mind_reloc_tbl = mbp.mind_reloc_tbl }
+
+let subst_mind_body sub mib =
+  { mind_record = mib.mind_record ;
+    mind_finite = mib.mind_finite ;
+    mind_ntypes = mib.mind_ntypes ;
+    mind_hyps = (match mib.mind_hyps with [] -> [] | _ -> assert false);
+    mind_nparams = mib.mind_nparams;
+    mind_nparams_rec = mib.mind_nparams_rec;
+    mind_params_ctxt =
+      Context.map_rel_context (subst_mps sub) mib.mind_params_ctxt;
+    mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
+    mind_polymorphic = mib.mind_polymorphic;
+    mind_universes = mib.mind_universes }
+
+(** Hash-consing of inductive declarations *)
+
+let hcons_indarity a =
+  { mind_user_arity = Term.hcons_constr a.mind_user_arity;
+    mind_sort = Term.hcons_sorts a.mind_sort }
 
 let hcons_mind_packet oib =
   let user = Array.smartmap Term.hcons_types oib.mind_user_lc in
@@ -231,11 +284,12 @@ let hcons_mind mib =
   { mib with
     mind_packets = Array.smartmap hcons_mind_packet mib.mind_packets;
     mind_params_ctxt = hcons_rel_context mib.mind_params_ctxt;
-    mind_constraints = Univ.hcons_constraints mib.mind_constraints }
+    mind_universes = Univ.hcons_universe_context mib.mind_universes }
 
 (** {6 Stm machinery } *)
 
 let join_constant_body cb =
+  ignore(Future.join cb.const_universes);
   match cb.const_body with
   | OpaqueDef o -> Opaqueproof.join_opaque o
   | _ -> ()

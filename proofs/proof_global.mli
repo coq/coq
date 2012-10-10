@@ -46,6 +46,10 @@ exception NoCurrentProof
 val give_me_the_proof : unit -> Proof.proof
 (** @raise NoCurrentProof when outside proof mode. *)
 
+type 'a proof_decl_hook =
+  Universes.universe_opt_subst Univ.in_universe_context -> 
+  Decl_kinds.locality -> Globnames.global_reference -> 'a
+
 (** When a proof is closed, it is reified into a [proof_object], where
     [id] is the name of the proof, [entries] the list of the proof terms
     (in a form suitable for definitions). Together with the [terminator]
@@ -57,6 +61,7 @@ type proof_object = {
   id : Names.Id.t;
   entries : Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
+  opt_subst : Universes.universe_opt_subst;
 }
 
 type proof_ending =
@@ -74,7 +79,7 @@ type closed_proof = proof_object * proof_terminator
     closing commands and the xml plugin); [terminator] is used at the
     end of the proof to close the proof. *)
 val start_proof :
-  Names.Id.t -> Decl_kinds.goal_kind -> (Environ.env * Term.types) list  ->
+  Names.Id.t -> Decl_kinds.goal_kind -> (Environ.env * Term.types Univ.in_universe_context_set) list  ->
     proof_terminator -> unit
 
 (** Like [start_proof] except that there may be dependencies between

@@ -7,14 +7,14 @@
 (************************************************************************)
 
 let interp_init_def_and_relation env sigma init_def r =
-  let init_def = Constrintern.interp_constr sigma env init_def in
+  let init_def, _ = Constrintern.interp_constr sigma env init_def in
   let init_type = Typing.type_of env sigma init_def in
 
   let r_type =
     let open Term in
     mkProd (Names.Anonymous,init_type, mkProd (Names.Anonymous,init_type,mkProp))
   in
-  let r = Constrintern.interp_casted_constr sigma env r r_type in
+  let r, _ = Constrintern.interp_casted_constr sigma env r r_type in
   init_def , init_type , r
   
 
@@ -23,7 +23,7 @@ let interp_init_def_and_relation env sigma init_def r =
     [lemma] as the proof. *)
 let start_deriving f init_def r lemma =
   let env = Global.env () in
-  let kind = Decl_kinds.(Global,DefinitionBody Definition) in
+  let kind = Decl_kinds.(Global,false,DefinitionBody Definition) in
   let ( init_def , init_type , r ) =
     interp_init_def_and_relation env Evd.empty init_def r
   in

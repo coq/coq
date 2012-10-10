@@ -3,7 +3,7 @@ let contrib_name = "btauto"
 
 let init_constant dir s =
   let find_constant contrib dir s =
-    Globnames.constr_of_global (Coqlib.find_reference contrib dir s)
+    Universes.constr_of_global (Coqlib.find_reference contrib dir s)
   in
   find_constant contrib_name dir s
 

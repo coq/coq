@@ -80,8 +80,13 @@ let solveNoteqBranch side =
 
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
+let make_eq () =
+(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq ())
+let make_eq_refl () =
+(*FIXME*) Universes.constr_of_global (Coqlib.build_coq_eq_refl ())
+
 let mkDecideEqGoal eqonleft op rectype c1 c2 =
-  let equality    = mkApp(build_coq_eq(), [|rectype; c1; c2|]) in
+  let equality    = mkApp(make_eq(), [|rectype; c1; c2|]) in
   let disequality = mkApp(build_coq_not (), [|equality|]) in
   if eqonleft then mkApp(op, [|equality; disequality |])
   else mkApp(op, [|disequality; equality |])
@@ -173,7 +178,7 @@ let decideGralEquality =
         match_eqdec concl >>= fun (eqonleft,_,c1,c2,typ) ->
         let headtyp = hd_app (pf_compute gl typ) in
         begin match kind_of_term headtyp with
-        | Ind mi -> Proofview.tclUNIT mi
+        | Ind (mi,_) -> Proofview.tclUNIT mi
         | _ -> tclZEROMSG (Pp.str"This decision procedure only works for inductive objects.")
         end >>= fun rectype ->
           (tclTHEN

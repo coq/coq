@@ -120,7 +120,7 @@ let parse_args () =
       |"-dont-load-proofs"|"-load-proofs"|"-force-load-proofs"
       |"-impredicative-set"|"-vm"|"-no-native-compiler"
       |"-verbose-compat-notations"|"-no-compat-notations"
-      |"-quick"
+      |"-indices-matter"|"-quick"
       as o) :: rem ->
 	parse (cfiles,o::args) rem
 
@@ -157,8 +157,6 @@ let parse_args () =
           CList.split_when (fun x -> String.length x > 1 && x.[0] = '-') rem in
         extra_arg_needed := false;
         parse (cfiles, List.rev nodash @ s :: o :: args) rem
-
-(* Anything else is interpreted as a file *)
 
     | f :: rem ->
 	if Sys.file_exists f then

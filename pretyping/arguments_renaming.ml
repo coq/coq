@@ -41,12 +41,12 @@ let section_segment_of_reference = function
   | ConstRef con -> Lib.section_segment_of_constant con
   | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
       Lib.section_segment_of_mutual_inductive kn
-  | _ -> []
+  | _ -> [], Univ.UContext.empty
 
 let discharge_rename_args = function
   | _, (ReqGlobal (c, names), _ as req) ->
      (try 
-       let vars = section_segment_of_reference c in
+       let vars,_ = section_segment_of_reference c in
        let c' = pop_global_reference c in
        let var_names = List.map (fun (id, _,_,_) -> Name id) vars in
        let names' = List.map (fun l -> var_names @ l) names in
@@ -87,22 +87,24 @@ let rename_type ty ref =
   with Not_found -> ty
 
 let rename_type_of_constant env c =
-  let ty = Typeops.type_of_constant env c in
-  rename_type ty (ConstRef c)
+  let ty = Typeops.type_of_constant_in env c in
+  rename_type ty (ConstRef (fst c))
 
 let rename_type_of_inductive env ind =
   let ty = Inductiveops.type_of_inductive env ind in
-  rename_type ty (IndRef ind)
+  rename_type ty (IndRef (fst ind))
 
 let rename_type_of_constructor env cstruct =
   let ty = Inductiveops.type_of_constructor env cstruct in
-  rename_type ty (ConstructRef cstruct)
+  rename_type ty (ConstructRef (fst cstruct))
 
 let rename_typing env c =
-  let j = Typeops.typing env c in
-  match kind_of_term c with
-  | Const c -> { j with uj_type = rename_type j.uj_type (ConstRef c) }
-  | Ind i -> { j with uj_type = rename_type j.uj_type (IndRef i) }
-  | Construct k -> { j with uj_type = rename_type j.uj_type (ConstructRef k) }
-  | _ -> j
+  let j = Typeops.infer env c in
+  let j' =
+    match kind_of_term c with
+    | Const (c,u) -> { j with uj_type = rename_type j.uj_type (ConstRef c) }
+    | Ind (i,u) -> { j with uj_type = rename_type j.uj_type (IndRef i) }
+    | Construct (k,u) -> { j with uj_type = rename_type j.uj_type (ConstructRef k) }
+    | _ -> j
+  in j'
 

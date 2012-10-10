@@ -28,7 +28,7 @@ type cases_pattern =
       (** [PatCstr(p,C,l,x)] = "|'C' 'l' as 'x'" *)
 
 type glob_constr =
-  | GRef of (Loc.t * global_reference)
+  | GRef of (Loc.t * global_reference * Univ.universe_instance option)
   | GVar of (Loc.t * Id.t)
   | GEvar of Loc.t * existential_key * glob_constr list option
   | GPatVar of Loc.t * (bool * patvar) (** Used for patterns only *)
@@ -39,7 +39,7 @@ type glob_constr =
   | GCases of Loc.t * case_style * glob_constr option * tomatch_tuples * cases_clauses
       (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in
 	  [MatchStyle]) *)
-
+  | GProj of Loc.t * projection * glob_constr
   | GLetTuple of Loc.t * Name.t list * (Name.t * glob_constr option) *
       glob_constr * glob_constr
   | GIf of Loc.t * glob_constr * (Name.t * glob_constr option) * glob_constr * glob_constr

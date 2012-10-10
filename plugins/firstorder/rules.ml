@@ -53,7 +53,7 @@ let clear_global=function
     VarRef id->clear [id]
   | _->tclIDTAC
 
-
+let constr_of_global = Universes.constr_of_global
 (* connection rules *)
 
 let axiom_tac t seq=
@@ -117,14 +117,14 @@ let left_false_tac id=
 
 (* We use this function for false, and, or, exists *)
 
-let ll_ind_tac ind largs backtrack id continue seq gl=
-     let rcs=ind_hyps 0 ind largs gl in
+let ll_ind_tac (ind,u as indu) largs backtrack id continue seq gl=
+     let rcs=ind_hyps 0 indu largs gl in
      let vargs=Array.of_list largs in
 	     (* construire le terme  H->B, le generaliser etc *)
      let myterm i=
        let rc=rcs.(i) in
        let p=List.length rc in
-       let cstr=mkApp ((mkConstruct (ind,(i+1))),vargs) in
+       let cstr=mkApp ((mkConstructU ((ind,(i+1)),u)),vargs) in
        let vars=Array.init p (fun j->mkRel (p-j)) in
        let capply=mkApp ((lift p cstr),vars) in
        let head=mkApp ((lift p (constr_of_global id)),[|capply|]) in
@@ -204,8 +204,8 @@ let ll_forall_tac prod backtrack id continue seq=
 let constant str = Coqlib.gen_constant "User" ["Init";"Logic"] str
 
 let defined_connectives=lazy
-  [AllOccurrences,EvalConstRef (destConst (constant "not"));
-   AllOccurrences,EvalConstRef (destConst (constant "iff"))]
+  [AllOccurrences,EvalConstRef (fst (destConst (constant "not")));
+   AllOccurrences,EvalConstRef (fst (destConst (constant "iff")))]
 
 let normalize_evaluables=
   onAllHypsAndConcl

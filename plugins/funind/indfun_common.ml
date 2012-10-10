@@ -114,7 +114,7 @@ let const_of_id id =
 let def_of_const t =
    match (Term.kind_of_term t) with
     Term.Const sp ->
-      (try (match Declareops.body_of_constant (Global.lookup_constant sp) with
+      (try (match Environ.constant_opt_value_in (Global.env()) sp with
              | Some c -> c
 	     | _ -> assert false)
        with Not_found -> assert false)
@@ -146,7 +146,7 @@ let get_locality = function
 | Local -> true
 | Global -> false
 
-let save with_clean id const (locality,kind) hook =
+let save with_clean id const (locality,_,kind) hook =
   let l,r = match locality with
     | Discharge when Lib.sections_are_opened () ->
         let k = Kindops.logical_kind_of_goal_kind kind in
@@ -177,7 +177,8 @@ let get_proof_clean do_reduce =
 let with_full_print f a =
   let old_implicit_args = Impargs.is_implicit_args ()
   and old_strict_implicit_args =  Impargs.is_strict_implicit_args ()
-  and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () in
+  and old_contextual_implicit_args = Impargs.is_contextual_implicit_args () 
+  in
   let old_rawprint = !Flags.raw_print in
   Flags.raw_print := true;
   Impargs.make_implicit_args false;
@@ -259,8 +260,8 @@ let cache_Function (_,finfos) =
 
 let load_Function _  = cache_Function
 let subst_Function (subst,finfos) =
-  let do_subst_con c = fst (Mod_subst.subst_con subst c)
-  and do_subst_ind (kn,i) = (Mod_subst.subst_ind subst kn,i)
+  let do_subst_con c = Mod_subst.subst_constant subst c
+  and do_subst_ind i = Mod_subst.subst_ind subst i
   in
   let function_constant' = do_subst_con finfos.function_constant in
   let graph_ind' = do_subst_ind finfos.graph_ind in
@@ -336,7 +337,7 @@ let pr_info f_info =
   str "function_constant_type := " ++
   (try
      Printer.pr_lconstr
-       (Global.type_of_global (ConstRef f_info.function_constant))
+       (Global.type_of_global_unsafe (ConstRef f_info.function_constant))
    with e when Errors.noncritical e -> mt ()) ++ fnl () ++
   str "equation_lemma := " ++ pr_ocst f_info.equation_lemma ++ fnl () ++
   str "completeness_lemma :=" ++ pr_ocst f_info.completeness_lemma ++ fnl () ++

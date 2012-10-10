@@ -70,7 +70,7 @@ let isVarf f x =
     in global environment. *)
 let ident_global_exist id =
   try
-    let ans = CRef (Libnames.Ident (Loc.ghost,id)) in
+    let ans = CRef (Libnames.Ident (Loc.ghost,id), None) in
     let _ = ignore (Constrintern.intern_constr (Global.env()) ans) in
     true
   with e when Errors.noncritical e -> false
@@ -134,16 +134,12 @@ let prNamedRLDecl s lc =
 let showind (id:Id.t) =
   let cstrid = Constrintern.global_reference id in
   let ind1,cstrlist = Inductiveops.find_inductive (Global.env()) Evd.empty cstrid in
-  let mib1,ib1 = Inductive.lookup_mind_specif (Global.env()) ind1 in
+  let mib1,ib1 = Inductive.lookup_mind_specif (Global.env()) (fst ind1) in
   List.iter (fun (nm, optcstr, tp) ->
     print_string (string_of_name nm^":");
     prconstr tp; print_string "\n")
     ib1.mind_arity_ctxt;
-  (match ib1.mind_arity with
-    | Monomorphic x ->
-        Printf.printf "arity :"; prconstr x.mind_user_arity
-    | Polymorphic x ->
-        Printf.printf "arity : universe?");
+    Printf.printf "arity :"; prconstr ib1.mind_arity.mind_user_arity;
   Array.iteri
     (fun i x -> Printf.printf"type constr %d :" i ; prconstr x)
     ib1.mind_user_lc
@@ -888,7 +884,7 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
   let indexpr = glob_constr_list_to_inductive_expr prms1 prms2 mib1 mib2 shift_prm rawlist in
   (* Declare inductive *)
   let indl,_,_ = Command.extract_mutual_inductive_declaration_components [(indexpr,[])] in
-  let mie,impls = Command.interp_mutual_inductive indl [] true (* means: not coinductive *) in
+  let mie,impls = Command.interp_mutual_inductive indl [] false (*FIXMEnon-poly *) true (* means: not coinductive *) in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (Command.declare_mutual_inductive_with_eliminations Declare.UserVerbose mie impls)
 
@@ -961,7 +957,7 @@ let funify_branches relinfo nfuns branch =
       | _ -> assert false in
   let is_dom c =
     match kind_of_term c with
-      | Ind((u,_)) | Construct((u,_),_) -> MutInd.equal u mut_induct
+      | Ind(((u,_),_)) | Construct(((u,_),_),_) -> MutInd.equal u mut_induct
       | _ -> false in
   let _dom_i c =
     assert (is_dom c);

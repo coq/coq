@@ -28,6 +28,8 @@ Reserved Notation "x == y" (at level 70, no associativity).
 End RingSyntax.
 Import RingSyntax.
 
+(* Set Universe Polymorphism. *)
+
 Section Power.
  Variable R:Type.
  Variable rI : R.
@@ -252,6 +254,7 @@ Section ALMOST_RING.
 
  Section SEMI_RING.
  Variable SReqe : sring_eq_ext radd rmul req.
+
    Add Morphism radd : radd_ext1.  exact (SRadd_ext SReqe). Qed.
    Add Morphism rmul : rmul_ext1.  exact (SRmul_ext SReqe). Qed.
  Variable SRth : semi_ring_theory 0 1 radd rmul req.
@@ -503,7 +506,6 @@ Qed.
 
 End ALMOST_RING.
 
-
 Section AddRing.
 
 (* Variable R : Type.
@@ -527,7 +529,6 @@ Inductive ring_kind : Type :=
     phi
     (_ : ring_morph rO rI radd rmul rsub ropp req
                     cO cI cadd cmul csub copp ceqb phi).
-
 
 End AddRing.
 

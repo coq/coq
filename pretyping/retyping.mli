@@ -26,8 +26,7 @@ type retype_error
 exception RetypeError of retype_error
 
 val get_type_of :
-  ?polyprop:bool -> ?refresh:bool -> ?lax:bool ->
-  env -> evar_map -> constr -> types
+  ?polyprop:bool -> ?lax:bool -> env -> evar_map -> constr -> types
 
 val get_sort_of :
   ?polyprop:bool -> env -> evar_map -> types -> sorts

@@ -295,6 +295,9 @@ let interp_ident = interp_ident_gen false
 let interp_fresh_ident = interp_ident_gen true
 let pf_interp_ident id gl = interp_ident_gen false id (pf_env gl)
 
+let interp_global ist gl gr = 
+  Evd.fresh_global (pf_env gl) (project gl) gr
+
 (* Interprets an optional identifier which must be fresh *)
 let interp_fresh_name ist env = function
   | Anonymous -> Anonymous
@@ -842,7 +845,7 @@ let interp_induction_arg ist gl arg =
 	if Tactics.is_quantified_hypothesis id gl then
           ElimOnIdent (loc,id)
 	else
-          let c = (GVar (loc,id),Some (CRef (Ident (loc,id)))) in
+          let c = (GVar (loc,id),Some (CRef (Ident (loc,id),None))) in
           let (sigma,c) = interp_constr ist env sigma c in
           ElimOnConstr (sigma,(c,NoBindings))
 
@@ -2104,8 +2107,7 @@ let () =
   Geninterp.register_interp0 wit_intro_pattern interp;
   let interp ist gl pat = (project gl, interp_clause ist (pf_env gl) pat) in
   Geninterp.register_interp0 wit_clause_dft_concl interp;
-
-  let interp ist gl s = (project gl, interp_sort s) in
+  let interp ist gl s = interp_sort (project gl) s in
   Geninterp.register_interp0 wit_sort interp
 
 let () =
@@ -2143,7 +2145,8 @@ let _ =
     if has_type arg (glbwit wit_tactic) then
       let tac = out_gen (glbwit wit_tactic) arg in
       let tac = interp_tactic ist tac in
-      let prf = Proof.start sigma [env, ty] in
+      let ctx = Evd.get_universe_context_set sigma in
+      let prf = Proof.start sigma [env, (ty, ctx)] in
       let (prf, _) =
         try Proof.run_tactic env tac prf
         with Proof_errors.TacticFailure e as src ->

@@ -13,7 +13,7 @@ and proves its properties *)
 
 Require Export NSub.
 
-Ltac f_equiv' := repeat (f_equiv; try intros ? ? ?; auto).
+Ltac f_equiv' := repeat (repeat f_equiv; try intros ? ? ?; auto).
 
 Module NStrongRecProp (Import N : NAxiomsRecSig').
 Include NSubProp N.
@@ -82,7 +82,6 @@ Proof.
 intros. unfold strong_rec0.
 f_equiv.
 rewrite recursion_succ; f_equiv'.
-reflexivity.
 Qed.
 
 Lemma strong_rec_0 : forall a,

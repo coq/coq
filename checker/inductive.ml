@@ -161,11 +161,11 @@ let rec make_subst env = function
       (* (actualize_decl_level), then to the conclusion of the arity (via *)
       (* the substitution) *)
       let ctx,subst = make_subst env (sign, exp, []) in
-      if polymorphism_on_non_applied_parameters then
-	let s = fresh_local_univ () in
-	let t = actualize_decl_level env (Type s) t in
-	(na,None,t)::ctx, cons_subst u s subst
-      else
+      (* if polymorphism_on_non_applied_parameters then *)
+      (* 	let s = fresh_local_univ () in *)
+      (* 	let t = actualize_decl_level env (Type s) t in *)
+      (* 	(na,None,t)::ctx, cons_subst u s subst *)
+      (* else *)
 	d::ctx, subst
   | sign, [], _ ->
       (* Uniform parameters are exhausted *)
@@ -173,23 +173,21 @@ let rec make_subst env = function
   | [], _, _ ->
       assert false
 
-let instantiate_universes env ctx ar argsorts =
-  let args = Array.to_list argsorts in
-  let ctx,subst = make_subst env (ctx,ar.poly_param_levels,args) in
-  let level = subst_large_constraints subst ar.poly_level in
-  ctx,
-  if is_type0m_univ level then Prop Null
-  else if is_type0_univ level then Prop Pos
-  else Type level
+(* let instantiate_universes env ctx ar argsorts = *)
+(*   let args = Array.to_list argsorts in *)
+(*   let ctx,subst = make_subst env (ctx,ar.poly_param_levels,args) in *)
+(*   let level = subst_large_constraints subst ar.poly_level in *)
+(*   ctx, *)
+(*   if is_type0m_univ level then Prop Null *)
+(*   else if is_type0_univ level then Prop Pos *)
+(*   else Type level *)
 
 let type_of_inductive_knowing_parameters env mip paramtyps =
-  match mip.mind_arity with
-  | Monomorphic s ->
-      s.mind_user_arity
-  | Polymorphic ar ->
-      let ctx = List.rev mip.mind_arity_ctxt in
-      let ctx,s = instantiate_universes env ctx ar paramtyps in
-      mkArity (List.rev ctx,s)
+  mip.mind_arity
+  (* | Polymorphic ar -> *)
+  (*     let ctx = List.rev mip.mind_arity_ctxt in *)
+  (*     let ctx,s = instantiate_universes env ctx ar paramtyps in *)
+  (*     mkArity (List.rev ctx,s) *)
 
 (* Type of a (non applied) inductive type *)
 
@@ -236,9 +234,7 @@ let error_elim_expln kp ki =
 (* Get type of inductive, with parameters instantiated *)
 
 let inductive_sort_family mip =
-  match mip.mind_arity with
-   | Monomorphic s -> family_of_sort s.mind_sort
-   | Polymorphic _ -> InType
+  family_of_sort (snd (destArity mip.mind_arity))
 
 let mind_arity mip =
   mip.mind_arity_ctxt, inductive_sort_family mip

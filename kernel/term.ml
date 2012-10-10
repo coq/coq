@@ -32,7 +32,6 @@ type types = Constr.t
 (** Same as [constr], for documentation purposes. *)
 
 type existential_key = Constr.existential_key
-
 type existential = Constr.existential
 
 type metavariable = Constr.metavariable
@@ -54,6 +53,10 @@ type case_info = Constr.case_info =
 type cast_kind = Constr.cast_kind =
   VMcast | NATIVEcast | DEFAULTcast | REVERTcast
 
+(********************************************************************)
+(*       Constructions as implemented                               *)
+(********************************************************************)
+
 type rec_declaration = Constr.rec_declaration
 type fixpoint = Constr.fixpoint
 type cofixpoint = Constr.cofixpoint
@@ -62,6 +65,12 @@ type ('constr, 'types) prec_declaration =
   ('constr, 'types) Constr.prec_declaration
 type ('constr, 'types) pfixpoint = ('constr, 'types) Constr.pfixpoint
 type ('constr, 'types) pcofixpoint = ('constr, 'types) Constr.pcofixpoint
+type 'a puniverses = 'a Univ.puniverses
+
+(** Simply type aliases *)
+type pconstant = constant puniverses
+type pinductive = inductive puniverses
+type pconstructor = constructor puniverses
 
 type ('constr, 'types) kind_of_term = ('constr, 'types) Constr.kind_of_term =
   | Rel       of int
@@ -74,12 +83,13 @@ type ('constr, 'types) kind_of_term = ('constr, 'types) Constr.kind_of_term =
   | Lambda    of Name.t * 'types * 'constr
   | LetIn     of Name.t * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
-  | Const     of constant
-  | Ind       of inductive
-  | Construct of constructor
+  | Const     of pconstant
+  | Ind       of pinductive
+  | Construct of pconstructor
   | Case      of case_info * 'constr * 'constr * 'constr array
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
+  | Proj      of constant * 'constr
 
 type values = Constr.values
 
@@ -93,6 +103,8 @@ let type1_sort  = Sorts.type1
 let sorts_ord = Sorts.compare
 let is_prop_sort = Sorts.is_prop
 let family_of_sort = Sorts.family
+let univ_of_sort = Sorts.univ_of_sort
+let sort_of_univ = Sorts.sort_of_univ
 
 (** {6 Term constructors. } *)
 
@@ -110,8 +122,13 @@ let mkLambda = Constr.mkLambda
 let mkLetIn = Constr.mkLetIn
 let mkApp = Constr.mkApp
 let mkConst = Constr.mkConst
+let mkProj = Constr.mkProj
 let mkInd = Constr.mkInd
 let mkConstruct = Constr.mkConstruct
+let mkConstU = Constr.mkConstU
+let mkIndU = Constr.mkIndU
+let mkConstructU = Constr.mkConstructU
+let mkConstructUi = Constr.mkConstructUi
 let mkCase = Constr.mkCase
 let mkFix = Constr.mkFix
 let mkCoFix = Constr.mkCoFix
@@ -121,9 +138,16 @@ let mkCoFix = Constr.mkCoFix
 (**********************************************************************)
 
 let eq_constr = Constr.equal
+let eq_constr_univs = Constr.eq_constr_univs
+let leq_constr_univs = Constr.leq_constr_univs
+let eq_constr_universes = Constr.eq_constr_universes
+let leq_constr_universes = Constr.leq_constr_universes
+let eq_constr_nounivs = Constr.eq_constr_nounivs
+
 let kind_of_term = Constr.kind
 let constr_ord = Constr.compare
 let fold_constr = Constr.fold
+let map_puniverses = Constr.map_puniverses
 let map_constr = Constr.map
 let map_constr_with_binders = Constr.map_with_binders
 let iter_constr = Constr.iter
@@ -195,9 +219,7 @@ let rec is_Type c = match kind_of_term c with
   | Cast (c,_,_) -> is_Type c
   | _ -> false
 
-let is_small = function
-  | Prop _ -> true
-  | _ -> false
+let is_small = Sorts.is_small
 
 let iskind c = isprop c || is_Type c
 
@@ -649,6 +671,7 @@ let kind_of_type t = match kind_of_term t with
   | Prod (na,t,c) -> ProdType (na, t, c)
   | LetIn (na,b,t,c) -> LetInType (na, b, t, c)
   | App (c,l) -> AtomicType (c, l)
-  | (Rel _ | Meta _ | Var _ | Evar _ | Const _ | Case _ | Fix _ | CoFix _ | Ind _)
+  | (Rel _ | Meta _ | Var _ | Evar _ | Const _ 
+  | Proj _ | Case _ | Fix _ | CoFix _ | Ind _)
     -> AtomicType (t,[||])
   | (Lambda _ | Construct _) -> failwith "Not a type"

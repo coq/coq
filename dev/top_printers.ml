@@ -22,6 +22,7 @@ open Evd
 open Goptions
 open Genarg
 open Clenv
+open Universes
 
 let _ = Constrextern.print_evar_arguments := true
 let _ = Constrextern.print_universes := true
@@ -44,9 +45,11 @@ let ppmp mp = pp(str (string_of_mp mp))
 let ppcon con = pp(debug_pr_con con)
 let ppkn kn = pp(pr_kn kn)
 let ppmind kn = pp(debug_pr_mind kn)
+let ppind (kn,i) = pp(debug_pr_mind kn ++ str"," ++int i)
 let ppsp sp = pp(pr_path sp)
 let ppqualid qid = pp(pr_qualid qid)
 let ppclindex cl = pp(Classops.pr_cl_index cl)
+let ppscheme k = pp (Ind_tables.pr_scheme_kind k)
 
 let pprecarg = function
   | Declarations.Norec -> str "Norec"
@@ -60,6 +63,7 @@ let ppwf_paths x = pp (Rtree.pp_tree pprecarg x)
 let rawdebug = ref false
 let ppevar evk = pp (str (Evd.string_of_existential evk))
 let ppconstr x = pp (Termops.print_constr x)
+let ppconstr_expr x = pp (Ppconstr.pr_constr_expr x)
 let ppconstrdb x = pp(Flags.with_option rawdebug Termops.print_constr x)
 let ppterm = ppconstr
 let ppsconstr x = ppconstr (Mod_subst.force_constr x)
@@ -67,7 +71,6 @@ let ppconstr_univ x = Constrextern.with_universes ppconstr x
 let ppglob_constr = (fun x -> pp(pr_lglob_constr x))
 let pppattern = (fun x -> pp(pr_constr_pattern x))
 let pptype = (fun x -> try pp(pr_ltype x) with e -> pp (str (Printexc.to_string e)))
-
 let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
 
 let ppbigint n = pp (str (Bigint.to_string n));;
@@ -145,6 +148,10 @@ let ppexistentialfilter filter = match Evd.Filter.repr filter with
 let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoalgoal gl = pp(Goal.pr_goal gl)
 let ppgoal g = pp(Printer.pr_goal g)
+let ppgoalsigma g = pp(Printer.pr_goal g ++ pr_evar_map None (Refiner.project g))
+
+let ppopenconstr (x : Evd.open_constr) =
+  let (evd,c) = x in pp (pr_evar_map (Some 2) evd ++ pr_constr c)
 (* spiwack: deactivated until a replacement is found
 let pppftreestate p = pp(print_pftreestate p)
 *)
@@ -163,10 +170,20 @@ let pppftreestate p = pp(print_pftreestate p)
 (* let pproof p = pp(print_proof Evd.empty empty_named_context p) *)
 
 let ppuni u = pp(pr_uni u)
+let ppuni_level u = pp (Level.pr u)
+let ppuniverses u = pp (str"[" ++ Universe.pr u ++ str"]")
 
-let ppuniverses u = pp (str"[" ++ pr_universes u ++ str"]")
-
+let ppuniverse_set l = pp (LSet.pr l)
+let ppuniverse_instance l = pp (Instance.pr l)
+let ppuniverse_context l = pp (pr_universe_context l)
+let ppuniverse_context_set l = pp (pr_universe_context_set l)
+let ppuniverse_subst l = pp (Univ.pr_universe_subst l)
+let ppuniverse_opt_subst l = pp (Universes.pr_universe_opt_subst l)
+let ppuniverse_level_subst l = pp (Univ.pr_universe_level_subst l)
+let ppevar_universe_context l = pp (Evd.pr_evar_universe_context l)
+let ppconstraints_map c = pp (Universes.pr_constraints_map c)
 let ppconstraints c = pp (pr_constraints c)
+let ppuniverseconstraints c = pp (UniverseConstraints.pr c)
 
 let ppenv e = pp
   (str "[" ++ pr_named_context_of e ++ str "]" ++ spc() ++
@@ -202,12 +219,13 @@ let constr_display csr =
       ^(term_display t)^","^(term_display c)^")"
   | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
   | Evar (e,l) -> "Evar("^(string_of_existential e)^","^(array_display l)^")"
-  | Const c -> "Const("^(string_of_con c)^")"
-  | Ind (sp,i) ->
-      "MutInd("^(string_of_mind sp)^","^(string_of_int i)^")"
-  | Construct ((sp,i),j) ->
+  | Const (c,u) -> "Const("^(string_of_con c)^","^(universes_display u)^")"
+  | Ind ((sp,i),u) ->
+      "MutInd("^(string_of_mind sp)^","^(string_of_int i)^","^(universes_display u)^")"
+  | Construct (((sp,i),j),u) ->
       "MutConstruct(("^(string_of_mind sp)^","^(string_of_int i)^"),"
-      ^(string_of_int j)^")"
+      ^","^(universes_display u)^(string_of_int j)^")"
+  | Proj (p, c) -> "Proj("^(string_of_con p)^","^term_display c ^")"
   | Case (ci,p,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
       ^(array_display bl)^")"
@@ -231,12 +249,21 @@ let constr_display csr =
        (fun x i -> (term_display x)^(if not(i="") then (";"^i) else ""))
        v "")^"|]"
 
+  and univ_display u =
+    incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ pr_uni u ++ fnl ())
+
+  and level_display u =
+    incr cnt; pp (str "with " ++ int !cnt ++ str" " ++ Level.pr u ++ fnl ())
+
   and sort_display = function
     | Prop(Pos) -> "Prop(Pos)"
     | Prop(Null) -> "Prop(Null)"
-    | Type u ->
-	incr cnt; pp (str "with " ++ int !cnt ++ pr_uni u ++ fnl ());
+    | Type u -> univ_display u;
 	"Type("^(string_of_int !cnt)^")"
+
+  and universes_display l = 
+    Array.fold_right (fun x i -> level_display x; (string_of_int !cnt)^(if not(i="")
+        then (" "^i) else "")) (Instance.to_array l) ""
 
   and name_display = function
     | Name id -> "Name("^(Id.to_string id)^")"
@@ -282,19 +309,28 @@ let print_pure_constr csr =
   | Evar (e,l) -> print_string "Evar#"; print_int (Evar.repr e); print_string "{";
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string"}"
-  | Const c -> print_string "Cons(";
+  | Const (c,u) -> print_string "Cons(";
       sp_con_display c;
+      print_string ","; universes_display u;
       print_string ")"
-  | Ind (sp,i) ->
+  | Proj (p,c') -> print_string "Proj(";
+      sp_con_display p;
+      print_string ",";
+      box_display c';
+      print_string ")"
+  | Ind ((sp,i),u) ->
       print_string "Ind(";
       sp_display sp;
       print_string ","; print_int i;
+      print_string ","; universes_display u;
       print_string ")"
-  | Construct ((sp,i),j) ->
+  | Construct (((sp,i),j),u) ->
       print_string "Constr(";
       sp_display sp;
       print_string ",";
-      print_int i; print_string ","; print_int j; print_string ")"
+      print_int i; print_string ","; print_int j; 
+      print_string ","; universes_display u;
+      print_string ")"
   | Case (ci,p,c,bl) ->
       open_vbox 0;
       print_string "<"; box_display p; print_string ">";
@@ -335,6 +371,9 @@ let print_pure_constr csr =
       in print_string"{"; print_fix (); print_string"}"
 
   and box_display c = open_hovbox 1; term_display c; close_box()
+
+  and universes_display u =
+    Array.iter (fun u -> print_space (); pp (Level.pr u)) (Instance.to_array u)
 
   and sort_display = function
     | Prop(Pos) -> print_string "Set"
@@ -404,7 +443,7 @@ let in_current_context f c =
   let (evmap,sign) =
     try Pfedit.get_current_goal_context ()
     with e when Logic.catchable_exception e -> (Evd.empty, Global.env()) in
-  f (Constrintern.interp_constr evmap sign c)
+  f (fst (Constrintern.interp_constr evmap sign c))(*FIXME*)
 
 (* We expand the result of preprocessing to be independent of camlp4
 

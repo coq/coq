@@ -17,7 +17,7 @@ open Environ
 
 exception Elimconst
 
-(** Machinery to custom the behavior of the reduction *)
+(** Machinery to customize the behavior of the reduction *)
 module ReductionBehaviour : sig
   type flag = [ `ReductionDontExposeCase | `ReductionNeverUnfold ]
 
@@ -37,6 +37,7 @@ module Stack : sig
   type 'a member =
   | App of 'a app_node
   | Case of case_info * 'a * 'a array * ('a * 'a list) option
+  | Proj of int * int * projection
   | Fix of fixpoint * 'a t * ('a * 'a list) option
   | Shift of int
   | Update of 'a
@@ -81,6 +82,8 @@ type state = constr * constr Stack.t
 type contextual_reduction_function = env -> evar_map -> constr -> constr
 type reduction_function = contextual_reduction_function
 type local_reduction_function = evar_map -> constr -> constr
+
+type e_reduction_function = env -> evar_map -> constr -> evar_map * constr
 
 type contextual_stack_reduction_function =
     env -> evar_map -> constr -> constr * constr list
@@ -203,6 +206,7 @@ val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_prod_assum :
   env ->  evar_map -> constr -> rel_context * constr
+val is_sort : env -> evar_map -> types -> bool
 
 type 'a miota_args = {
   mP      : constr;     (** the result type *)
@@ -223,7 +227,7 @@ val contract_fix : ?env:Environ.env -> fixpoint ->
 val fix_recarg : fixpoint -> constr Stack.t -> (int * constr) option
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)
-val is_transparent : Environ.env -> 'a tableKey -> bool
+val is_transparent : Environ.env -> constant tableKey -> bool
 
 (** {6 Conversion Functions (uses closures, lazy strategy) } *)
 
@@ -232,7 +236,7 @@ type conversion_test = constraints -> constraints
 val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb
 
-val sort_cmp : conv_pb -> sorts -> sorts -> conversion_test
+val sort_cmp : conv_pb -> sorts -> sorts -> universes -> unit
 
 val is_conv : env ->  evar_map -> constr -> constr -> bool
 val is_conv_leq : env ->  evar_map -> constr -> constr -> bool
@@ -241,6 +245,17 @@ val is_fconv : conv_pb -> env ->  evar_map -> constr -> constr -> bool
 val is_trans_conv : transparent_state -> env -> evar_map -> constr -> constr -> bool
 val is_trans_conv_leq : transparent_state -> env ->  evar_map -> constr -> constr -> bool
 val is_trans_fconv : conv_pb -> transparent_state -> env ->  evar_map -> constr -> constr -> bool
+
+(** [check_conv} Checks universe constraints only.
+    pb defaults to CUMUL and ts to a full transparent state.
+ *)
+val check_conv : ?pb:conv_pb -> ?ts:transparent_state -> env ->  evar_map -> constr -> constr -> bool
+
+(** [infer_fconv] Adds necessary universe constraints to the evar map.
+    pb defaults to CUMUL and ts to a full transparent state.
+ *)
+val infer_conv : ?pb:conv_pb -> ?ts:transparent_state -> env ->  evar_map -> constr -> constr -> 
+  evar_map * bool
 
 (** {6 Special-Purpose Reduction Functions } *)
 

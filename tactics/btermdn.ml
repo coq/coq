@@ -48,8 +48,8 @@ let decomp =
 let constr_val_discr t =
   let c, l = decomp t in
     match kind_of_term c with
-    | Ind ind_sp -> Label(GRLabel (IndRef ind_sp),l)
-    | Construct cstr_sp -> Label(GRLabel (ConstructRef cstr_sp),l)
+    | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
+    | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
     | Var id -> Label(GRLabel (VarRef id),l)
     | Const _ -> Everything
     | _ -> Nothing
@@ -67,9 +67,9 @@ let constr_pat_discr t =
 let constr_val_discr_st (idpred,cpred) t =
   let c, l = decomp t in
     match kind_of_term c with
-    | Const c -> if Cpred.mem c cpred then Everything else Label(GRLabel (ConstRef c),l)
-    | Ind ind_sp -> Label(GRLabel (IndRef ind_sp),l)
-    | Construct cstr_sp -> Label(GRLabel (ConstructRef cstr_sp),l)
+    | Const (c,u) -> if Cpred.mem c cpred then Everything else Label(GRLabel (ConstRef c),l)
+    | Ind (ind_sp,u) -> Label(GRLabel (IndRef ind_sp),l)
+    | Construct (cstr_sp,u) -> Label(GRLabel (ConstructRef cstr_sp),l)
     | Var id when not (Id.Pred.mem id idpred) -> Label(GRLabel (VarRef id),l)
     | Prod (n, d, c) -> Label(ProdLabel, [d; c])
     | Lambda (n, d, c) -> Label(LambdaLabel, [d; c] @ l)
@@ -140,6 +140,77 @@ struct
  type t = Dn.t
 
   let create = Dn.create
+
+(* FIXME: MS: remove *)
+(*   let decomp = 
+    let rec decrec acc c = match kind_of_term c with
+      | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
+      | Proj (p,c) -> decrec (c :: acc) (mkConst p)
+      | Cast (c1,_,_) -> decrec acc c1
+      | _ -> (c,acc)
+    in 
+      decrec []
+
+  let constr_val_discr t =
+    let c, l = decomp t in
+      match kind_of_term c with
+      | Ind (ind_sp,_) -> Dn.Label(Term_dn.GRLabel (IndRef ind_sp),l)
+      | Construct (cstr_sp,_) -> Dn.Label(Term_dn.GRLabel (ConstructRef cstr_sp),l)
+      | Var id -> Dn.Label(Term_dn.GRLabel (VarRef id),l)
+      | Const _ -> Dn.Everything
+      | Proj (p, c) -> Dn.Everything
+      | _ -> Dn.Nothing
+	
+  let constr_val_discr_st (idpred,cpred) t =
+    let c, l = decomp t in
+      match kind_of_term c with
+      | Const (c,_) -> if Cpred.mem c cpred then Dn.Everything else Dn.Label(Term_dn.GRLabel (ConstRef c),l)
+      | Ind (ind_sp,_) -> Dn.Label(Term_dn.GRLabel (IndRef ind_sp),l)
+      | Construct (cstr_sp,_) -> Dn.Label(Term_dn.GRLabel (ConstructRef cstr_sp),l)
+      | Proj (p,c) ->
+        if Cpred.mem p cpred then Dn.Everything else Dn.Label(Term_dn.GRLabel (ConstRef p), c::l)
+      | Var id when not (Id.Pred.mem id idpred) -> Dn.Label(Term_dn.GRLabel (VarRef id),l)
+      | Prod (n, d, c) -> Dn.Label(Term_dn.ProdLabel, [d; c])
+      | Lambda (n, d, c) -> Dn.Label(Term_dn.LambdaLabel, [d; c] @ l)
+      | Sort _ -> Dn.Label(Term_dn.SortLabel, [])
+      | Evar _ -> Dn.Everything
+      | _ -> Dn.Nothing
+
+  let bounded_constr_pat_discr_st st (t,depth) =
+    if Int.equal depth 0 then 
+      None 
+    else
+      match Term_dn.constr_pat_discr_st st t with
+	| None -> None
+	| Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
+	    
+  let bounded_constr_val_discr_st st (t,depth) =
+    if Int.equal depth 0 then 
+      Dn.Nothing 
+    else
+      match constr_val_discr_st st t with
+	| Dn.Label (c,l) -> Dn.Label(c,List.map (fun c -> (c,depth-1)) l)
+	| Dn.Nothing -> Dn.Nothing
+	| Dn.Everything -> Dn.Everything
+
+  let bounded_constr_pat_discr (t,depth) =
+    if Int.equal depth 0 then 
+      None 
+    else
+      match Term_dn.constr_pat_discr t with
+	| None -> None
+	| Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
+	    
+  let bounded_constr_val_discr (t,depth) =
+    if Int.equal depth 0 then 
+      Dn.Nothing 
+    else
+      match constr_val_discr t with
+	| Dn.Label (c,l) -> Dn.Label(c,List.map (fun c -> (c,depth-1)) l)
+	| Dn.Nothing -> Dn.Nothing
+	| Dn.Everything -> Dn.Everything
+	    
+*)	    
 
   let add = function
     | None ->

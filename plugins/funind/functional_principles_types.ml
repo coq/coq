@@ -106,14 +106,14 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let pre_princ = substl (List.map mkVar ptes_vars) pre_princ in
   let is_dom c =
     match kind_of_term c with
-      | Ind((u,_)) -> MutInd.equal u rel_as_kn
-      | Construct((u,_),_) -> MutInd.equal u rel_as_kn
+      | Ind((u,_),_) -> MutInd.equal u rel_as_kn
+      | Construct(((u,_),_),_) -> MutInd.equal u rel_as_kn
       | _ -> false
   in
   let get_fun_num c =
     match kind_of_term c with
-      | Ind(_,num) -> num
-      | Construct((_,num),_) -> num
+      | Ind((_,num),_) -> num
+      | Construct(((_,num),_),_) -> num
       | _ -> assert false
   in
   let dummy_var = mkVar (Id.of_string "________") in
@@ -251,8 +251,10 @@ let change_property_sort toSort princ princName =
   let princ_info = compute_elim_sig princ in
   let change_sort_in_predicate (x,v,t) =
     (x,None,
-     let args,_ = decompose_prod t in
-     compose_prod args (mkSort toSort)
+     let args,ty = decompose_prod t in
+     let s = destSort ty in
+       Global.add_constraints (Univ.enforce_leq (univ_of_sort toSort) (univ_of_sort s) Univ.Constraint.empty);
+       compose_prod args (mkSort toSort)
     )
   in
   let princName_as_constr = Constrintern.global_reference princName in
@@ -292,8 +294,8 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
   begin
     Lemmas.start_proof
       new_princ_name
-      (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
-      new_principle_type
+      (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem))
+      (new_principle_type, (*FIXME*) Univ.ContextSet.empty)
       hook
     ;
     (*       let _tim1 = System.get_time ()  in *)
@@ -315,7 +317,7 @@ let generate_functional_principle
   try
 
   let f = funs.(i) in
-  let type_sort = Termops.new_sort_in_family InType in
+  let type_sort = Universes.new_sort_in_family InType in
   let new_sorts =
     match sorts with
       | None -> Array.make (Array.length funs) (type_sort)
@@ -334,18 +336,23 @@ let generate_functional_principle
     then
       (*     let id_of_f = Label.to_id (con_label f) in *)
       let register_with_sort fam_sort =
-	let s = Termops.new_sort_in_family fam_sort in
+	let s = Universes.new_sort_in_family fam_sort in
 	let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
 	let value = change_property_sort s new_principle_type new_princ_name in
 	(*       Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
-	let ce = {
-          const_entry_body = Future.from_val (value,Declareops.no_seff);
-          const_entry_secctx = None;
-          const_entry_type = None;
-          const_entry_opaque = false;
-          const_entry_inline_code = false;
-          const_entry_feedback = None;
-	} in
+	let ce =
+          { const_entry_body =
+              Future.from_val (value,Declareops.no_seff);
+            const_entry_secctx = None;
+	    const_entry_type = None;	
+	    const_entry_polymorphic = false;
+	    const_entry_universes = Univ.UContext.empty (*FIXME*);
+	    const_entry_proj = None;
+	    const_entry_opaque = false;
+            const_entry_feedback = None;
+	    const_entry_inline_code = false
+	  }
+	in
 	ignore(
 	  Declare.declare_constant
 	    name
@@ -488,19 +495,20 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
     List.map
       (fun (idx) ->
 	 let ind = first_fun_kn,idx in
-	 ind,true,prop_sort
+	   (ind,Univ.Instance.empty)(*FIXME*),true,prop_sort
       )
       funs_indexes
   in
+  let sigma, schemes = 
+    Indrec.build_mutual_induction_scheme env sigma ind_list
+  in
   let l_schemes =
-    List.map
-      (Typing.type_of env sigma)
-      (Indrec.build_mutual_induction_scheme env sigma ind_list)
+    List.map (Typing.type_of env sigma) schemes
   in
   let i = ref (-1) in
   let sorts =
     List.rev_map (fun (_,x) ->
-		Termops.new_sort_in_family (Pretyping.interp_elimination_sort x)
+		Universes.new_sort_in_family (Pretyping.interp_elimination_sort x)
 	     )
       fas
   in
@@ -649,10 +657,10 @@ let build_case_scheme fa =
 (*     Constrintern.global_reference  id *)
 (*   in  *)
   let funs =  (fun (_,f,_) ->
-		 try Globnames.constr_of_global (Nametab.global f)
+		 try Universes.constr_of_global (Nametab.global f)
 		 with Not_found ->
 		   Errors.error ("Cannot find "^ Libnames.string_of_reference f)) fa in
-  let first_fun = destConst  funs in
+  let first_fun,u = destConst  funs in
 
   let funs_mp,funs_dp,_ = Names.repr_con first_fun in
   let first_fun_kn = try fst (find_Function_infos  first_fun).graph_ind with Not_found -> raise No_graph_found in
@@ -664,16 +672,18 @@ let build_case_scheme fa =
   let prop_sort = InProp in
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
-    List.assoc_f Constant.equal (destConst funs) this_block_funs_indexes
+    List.assoc_f Constant.equal (fst (destConst funs)) this_block_funs_indexes
   in
   let ind_fun =
 	 let ind = first_fun_kn,funs_indexes in
-	 ind,prop_sort
+	   (ind,Univ.Instance.empty)(*FIXME*),prop_sort
   in
-  let scheme_type =  (Typing.type_of env sigma ) ((fun (ind,sf) -> Indrec.build_case_analysis_scheme_default env sigma ind sf)  ind_fun) in
+  let sigma, scheme = 
+    (fun (ind,sf) -> Indrec.build_case_analysis_scheme_default env sigma ind sf)  ind_fun in
+  let scheme_type =  (Typing.type_of env sigma ) scheme in
   let sorts =
     (fun (_,_,x) ->
-       Termops.new_sort_in_family (Pretyping.interp_elimination_sort x)
+       Universes.new_sort_in_family (Pretyping.interp_elimination_sort x)
     )
       fa
   in
@@ -690,6 +700,6 @@ let build_case_scheme fa =
       (Some princ_name)
       this_block_funs
       0
-      (prove_princ_for_struct false 0 [|destConst funs|])
+      (prove_princ_for_struct false 0 [|fst (destConst funs)|])
   in
   ()

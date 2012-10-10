@@ -47,7 +47,7 @@ let match_with_non_recursive_type t =
     | App _ ->
         let (hdapp,args) = decompose_app t in
         (match kind_of_term hdapp with
-           | Ind ind ->
+           | Ind (ind,u) ->
                if not (Global.lookup_mind (fst ind)).mind_finite then
 		 Some (hdapp,args)
 	       else
@@ -90,9 +90,9 @@ let match_with_one_constructor style onlybinary allow_rec t =
   let (hdapp,args) = decompose_app t in
   let res = match kind_of_term hdapp with
   | Ind ind ->
-      let (mib,mip) = Global.lookup_inductive ind in
+      let (mib,mip) = Global.lookup_inductive (fst ind) in
       if Int.equal (Array.length mip.mind_consnames) 1
-	&& (allow_rec || not (mis_is_recursive (ind,mib,mip)))
+	&& (allow_rec || not (mis_is_recursive (fst ind,mib,mip)))
         && (Int.equal mip.mind_nrealargs 0)
       then
 	if is_strict_conjunction style (* strict conjunction *) then
@@ -137,8 +137,8 @@ let match_with_tuple t =
   let t = match_with_one_constructor None false true t in
   Option.map (fun (hd,l) ->
     let ind = destInd hd in
-    let (mib,mip) = Global.lookup_inductive ind in
-    let isrec = mis_is_recursive (ind,mib,mip) in
+    let (mib,mip) = Global.lookup_pinductive ind in
+    let isrec = mis_is_recursive (fst ind,mib,mip) in
     (hd,l,isrec)) t
 
 let is_tuple t =
@@ -158,7 +158,7 @@ let test_strict_disjunction n lc =
 let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
   let (hdapp,args) = decompose_app t in
   let res = match kind_of_term hdapp with
-  | Ind ind  ->
+  | Ind (ind,u)  ->
       let car = mis_constr_nargs ind in
       let (mib,mip) = Global.lookup_inductive ind in
       if Array.for_all (fun ar -> Int.equal ar 1) car
@@ -193,7 +193,7 @@ let match_with_empty_type t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
     | Ind ind ->
-        let (mib,mip) = Global.lookup_inductive ind in
+        let (mib,mip) = Global.lookup_pinductive ind in
         let nconstr = Array.length mip.mind_consnames in
 	if Int.equal nconstr 0 then Some hdapp else None
     | _ ->  None
@@ -207,7 +207,7 @@ let match_with_unit_or_eq_type t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
     | Ind ind  ->
-        let (mib,mip) = Global.lookup_inductive ind in
+        let (mib,mip) = Global.lookup_pinductive ind in
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
         let zero_args c = Int.equal (nb_prod c) mib.mind_nparams in
@@ -249,7 +249,7 @@ let match_with_equation t =
   if not (isApp t) then raise NoEquationFound;
   let (hdapp,args) = destApp t in
   match kind_of_term hdapp with
-  | Ind ind ->
+  | Ind (ind,u) ->
       if eq_gr (IndRef ind) glob_eq then
 	Some (build_coq_eq_data()),hdapp,
 	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
@@ -282,7 +282,7 @@ let is_inductive_equality ind =
 let match_with_equality_type t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
-  | Ind ind when is_inductive_equality ind -> Some (hdapp,args)
+  | Ind (ind,_) when is_inductive_equality ind -> Some (hdapp,args)
   | _ -> None
 
 let is_equality_type t = op2bool (match_with_equality_type t)
@@ -322,7 +322,7 @@ let match_with_nodep_ind t =
   let (hdapp,args) = decompose_app t in
     match (kind_of_term hdapp) with
       | Ind ind  ->
-          let (mib,mip) = Global.lookup_inductive ind in
+          let (mib,mip) = Global.lookup_pinductive ind in
 	    if Array.length (mib.mind_packets)>1 then None else
 	      let nodep_constr = has_nodep_prod_after mib.mind_nparams in
 		if Array.for_all nodep_constr mip.mind_nf_lc then
@@ -340,7 +340,7 @@ let match_with_sigma_type t=
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
     | Ind ind  ->
-        let (mib,mip) = Global.lookup_inductive ind in
+        let (mib,mip) = Global.lookup_pinductive ind in
           if Int.equal (Array.length (mib.mind_packets)) 1 &&
 	    (Int.equal mip.mind_nrealargs 0) &&
 	    (Int.equal (Array.length mip.mind_consnames)1) &&
@@ -378,7 +378,7 @@ let match_eq eqn eq_pat =
   match Id.Map.bindings (matches pat eqn) with
     | [(m1,t);(m2,x);(m3,y)] ->
 	assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
-	PolymorphicLeibnizEq (t,x,y)
+        PolymorphicLeibnizEq (t,x,y)
     | [(m1,t);(m2,x);(m3,t');(m4,x')] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3 && Id.equal m4 meta4);
 	HeterogenousEq (t,x,t',x')
@@ -387,13 +387,21 @@ let match_eq eqn eq_pat =
 let no_check () = true
 let check_jmeq_loaded () = Library.library_is_loaded Coqlib.jmeq_module
 
+let build_coq_jmeq_data_in env =
+  build_coq_jmeq_data (), Univ.ContextSet.empty
+
+let build_coq_identity_data_in env =
+  build_coq_identity_data (), Univ.ContextSet.empty
+
 let equalities =
   [coq_eq_pattern, no_check, build_coq_eq_data;
    coq_jmeq_pattern, check_jmeq_loaded, build_coq_jmeq_data;
    coq_identity_pattern, no_check, build_coq_identity_data]
 
 let find_eq_data eqn = (* fails with PatternMatchingFailure *)
-  first_match (match_eq eqn) equalities
+  let d,k = first_match (match_eq eqn) equalities in
+  let hd,u = destInd (fst (destApp eqn)) in
+    d,u,k
 
 let extract_eq_args gl = function
   | MonomorphicLeibnizEq (e1,e2) ->
@@ -404,11 +412,11 @@ let extract_eq_args gl = function
       else raise PatternMatchingFailure
 
 let find_eq_data_decompose gl eqn =
-  let (lbeq,eq_args) = find_eq_data eqn in
-  (lbeq,extract_eq_args gl eq_args)
+  let (lbeq,u,eq_args) = find_eq_data eqn in
+  (lbeq,u,extract_eq_args gl eq_args)
 
 let find_this_eq_data_decompose gl eqn =
-  let (lbeq,eq_args) =
+  let (lbeq,u,eq_args) =
     try (*first_match (match_eq eqn) inversible_equalities*)
       find_eq_data eqn
     with PatternMatchingFailure ->
@@ -417,7 +425,7 @@ let find_this_eq_data_decompose gl eqn =
     try extract_eq_args gl eq_args
     with PatternMatchingFailure ->
       error "Don't know what to do with JMeq on arguments not of same type." in
-  (lbeq,eq_args)
+  (lbeq,u,eq_args)
 
 let match_eq_nf gls eqn eq_pat =
   match Id.Map.bindings (pf_matches gls (Lazy.force eq_pat) eqn) with
@@ -439,18 +447,16 @@ let coq_ex_pattern_gen ex = lazy PATTERN [ %ex ?X1 ?X2 ?X3 ?X4 ]
 let coq_existT_pattern = coq_ex_pattern_gen coq_existT_ref
 let coq_exist_pattern = coq_ex_pattern_gen coq_exist_ref
 
-let match_sigma ex ex_pat =
-  match Id.Map.bindings (matches (Lazy.force ex_pat) ex) with
-    | [(m1,a);(m2,p);(m3,car);(m4,cdr)] ->
-        assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3 && Id.equal m4 meta4);
-	(a,p,car,cdr)
-    | _ ->
-	anomaly ~label:"match_sigma" (Pp.str "a successful sigma pattern should match 4 terms")
-
+let match_sigma ex =
+  match kind_of_term ex with
+  | App (f, [| a; p; car; cdr |]) when is_global (Lazy.force coq_exist_ref) f -> 
+      build_sigma (), (snd (destConstruct f), a, p, car, cdr)
+  | App (f, [| a; p; car; cdr |]) when is_global (Lazy.force coq_existT_ref) f -> 
+    build_sigma_type (), (snd (destConstruct f), a, p, car, cdr)
+  | _ -> raise PatternMatchingFailure
+    
 let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
-  first_match (match_sigma ex)
-    [coq_existT_pattern, no_check, build_sigma_type;
-     coq_exist_pattern, no_check, build_sigma]
+  match_sigma ex
 
 (* Pattern "(sig ?1 ?2)" *)
 let coq_sig_pattern = lazy PATTERN [ %coq_sig_ref ?X1 ?X2 ]
@@ -495,7 +501,7 @@ let match_eqdec t =
         false,op_or,matches (Lazy.force coq_eqdec_rev_pattern) t in
   match Id.Map.bindings subst with
   | [(_,typ);(_,c1);(_,c2)] ->
-      eqonleft, Globnames.constr_of_global (Lazy.force op), c1, c2, typ
+      eqonleft, Universes.constr_of_global (Lazy.force op), c1, c2, typ
   | _ -> anomaly (Pp.str "Unexpected pattern")
 
 (* Patterns "~ ?" and "? -> False" *)

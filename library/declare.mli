@@ -23,7 +23,7 @@ open Decl_kinds
 
 type section_variable_entry =
   | SectionLocalDef of definition_entry
-  | SectionLocalAssum of types * bool (** Implicit status *)
+  | SectionLocalAssum of types Univ.in_universe_context_set * polymorphic * bool (** Implicit status *)
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
@@ -47,12 +47,18 @@ type internal_flag =
   | KernelSilent
   | UserVerbose
 
+(* Defaut definition entries, transparent with no secctx or proj information *)
+val definition_entry : ?opaque:bool -> ?types:types -> 
+  ?poly:polymorphic -> ?univs:Univ.universe_context ->
+  constr -> definition_entry
+
 val declare_constant :
  ?internal:internal_flag -> ?local:bool -> Id.t -> constant_declaration -> constant
 
 val declare_definition : 
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
-  ?local:bool -> Id.t -> ?types:constr -> Entries.const_entry_body -> constant
+  ?local:bool -> ?poly:polymorphic -> Id.t -> ?types:constr -> 
+  constr Univ.in_universe_context_set -> constant
 
 (** Since transparent constant's side effects are globally declared, we
  *  need that *)

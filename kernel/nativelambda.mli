@@ -12,7 +12,6 @@ open Nativevalues
 open Nativeinstr
 
 (** This file defines the lambda code generation phase of the native compiler *)
-
 type evars =
     { evars_val : existential -> constr option;
       evars_typ : existential -> types;
@@ -25,6 +24,8 @@ val decompose_Llam_Llet : lambda -> (Names.name * lambda option) array * lambda
 
 val is_lazy : prefix -> constr -> bool
 val mk_lazy : lambda -> lambda
+
+val get_mind_prefix : env -> mutual_inductive -> string
 
 val get_allias : env -> constant -> constant
 

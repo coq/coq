@@ -153,7 +153,7 @@ Section Fix_rects.
 
   Hypothesis equiv_lowers:
     forall x0 (g h: forall x: {y: A | R y x0}, P (proj1_sig x)),
-    (forall x p p', g (exist (fun y: A => R y x0) x p) = h (exist _ x p')) ->
+    (forall x p p', g (exist (fun y: A => R y x0) x p) = h (exist (*FIXME shouldn't be needed *) (fun y => R y x0) x p')) ->
       f g = f h.
 
   (* From equiv_lowers, it follows that
@@ -231,10 +231,10 @@ Module WfExtensionality.
   Program Lemma fix_sub_eq_ext :
     forall (A : Type) (R : A -> A -> Prop) (Rwf : well_founded R)
       (P : A -> Type)
-      (F_sub : forall x : A, (forall y:{y : A | R y x}, P y) -> P x),
+      (F_sub : forall x : A, (forall y:{y : A | R y x}, P (` y)) -> P x),
       forall x : A,
         Fix_sub A R Rwf P F_sub x =
-          F_sub x (fun y:{y : A | R y x} => Fix_sub A R Rwf P F_sub y).
+          F_sub x (fun y:{y : A | R y x} => Fix_sub A R Rwf P F_sub (` y)).
   Proof.
     intros ; apply Fix_eq ; auto.
     intros.

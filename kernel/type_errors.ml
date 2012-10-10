@@ -42,12 +42,12 @@ type type_error =
   | NotAType of unsafe_judgment
   | BadAssumption of unsafe_judgment
   | ReferenceVariables of identifier * constr
-  | ElimArity of inductive * sorts_family list * constr * unsafe_judgment
+  | ElimArity of pinductive * sorts_family list * constr * unsafe_judgment
       * (sorts_family * sorts_family * arity_error) option
   | CaseNotInductive of unsafe_judgment
-  | WrongCaseInfo of inductive * case_info
+  | WrongCaseInfo of pinductive * case_info
   | NumberBranches of unsafe_judgment * int
-  | IllFormedBranch of constr * constructor * constr * constr
+  | IllFormedBranch of constr * pconstructor * constr * constr
   | Generalization of (Name.t * types) * unsafe_judgment
   | ActualType of unsafe_judgment * types
   | CantApplyBadType of
@@ -56,11 +56,12 @@ type type_error =
   | IllFormedRecBody of guard_error * Name.t array * int * env * unsafe_judgment array
   | IllTypedRecBody of
       int * Name.t array * unsafe_judgment array * types array
+  | UnsatisfiedConstraints of Univ.constraints
 
 exception TypeError of env * type_error
 
-let nfj {uj_val=c;uj_type=ct} =
-  {uj_val=c;uj_type=nf_betaiota ct}
+let nfj env {uj_val=c;uj_type=ct} =
+  {uj_val=c;uj_type=nf_betaiota env ct}
 
 let error_unbound_rel env n =
   raise (TypeError (env, UnboundRel n))
@@ -84,11 +85,11 @@ let error_case_not_inductive env j =
   raise (TypeError (env, CaseNotInductive j))
 
 let error_number_branches env cj expn =
-  raise (TypeError (env, NumberBranches (nfj cj,expn)))
+  raise (TypeError (env, NumberBranches (nfj env cj,expn)))
 
 let error_ill_formed_branch env c i actty expty =
   raise (TypeError (env,
-    IllFormedBranch (c,i,nf_betaiota actty, nf_betaiota expty)))
+    IllFormedBranch (c,i,nf_betaiota env actty, nf_betaiota env expty)))
 
 let error_generalization env nvar c =
   raise (TypeError (env, Generalization (nvar,c)))
@@ -114,3 +115,5 @@ let error_elim_explain kp ki =
   | InType, InSet -> StrongEliminationOnNonSmallType (* if Set impredicative *)
   | _ -> WrongArity
 
+let error_unsatisfied_constraints env c =
+  raise (TypeError (env, UnsatisfiedConstraints c))

@@ -151,9 +151,7 @@ Section Efficient_Rec.
     forall P:Z -> Prop,
       (forall x:Z, (forall y:Z, 0 <= y < x -> P y) -> 0 <= x -> P x) ->
       forall x:Z, 0 <= x -> P x.
-  Proof.
-    exact Zlt_0_rec.
-  Qed.
+  Proof. intros; now apply Zlt_0_rec. Qed.
 
   (** Obsolete version of [Z.lt] induction principle on non-negative numbers *)
 
@@ -170,7 +168,7 @@ Section Efficient_Rec.
       (forall x:Z, (forall y:Z, 0 <= y < x -> P y) -> P x) ->
       forall x:Z, 0 <= x -> P x.
   Proof.
-    exact Z_lt_rec.
+    intros; now apply Z_lt_rec.
   Qed.
 
   (** An even more general induction principle using [Z.lt]. *)
@@ -196,7 +194,7 @@ Section Efficient_Rec.
       (forall x:Z, (forall y:Z, z <= y < x -> P y) -> z <= x -> P x) ->
       forall x:Z, z <= x -> P x.
   Proof.
-    exact Zlt_lower_bound_rec.
+    intros; now apply Zlt_lower_bound_rec with z.
   Qed.
 
 End Efficient_Rec.

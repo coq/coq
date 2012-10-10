@@ -85,9 +85,9 @@ Notation "x < y" := (rlt x y).
 
 
 Add Relation R req
-  reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _ )
-  symmetry proved by sor.(SORsetoid).(@Equivalence_Symmetric _ _ )
-  transitivity proved by sor.(SORsetoid).(@Equivalence_Transitive _ _ )
+  reflexivity proved by sor.(SORsetoid).(@Equivalence_Reflexive _ _)
+  symmetry proved by sor.(SORsetoid).(@Equivalence_Symmetric _ _)
+  transitivity proved by sor.(SORsetoid).(@Equivalence_Transitive _ _)
 as sor_setoid.
 
 

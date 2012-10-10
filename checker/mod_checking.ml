@@ -14,31 +14,30 @@ open Environ
 
 (** {6 Checking constants } *)
 
-let refresh_arity ar =
-  let ctxt, hd = decompose_prod_assum ar in
-  match hd with
-      Sort (Type u) when not (Univ.is_univ_variable u) ->
-        let u' = Univ.fresh_local_univ() in
-        mkArity (ctxt,Type u'),
-        Univ.enforce_leq u u' Univ.empty_constraint
-    | _ -> ar, Univ.empty_constraint
+(* let refresh_arity ar = *)
+(*   let ctxt, hd = decompose_prod_assum ar in *)
+(*   match hd with *)
+(*       Sort (Type u) when not (Univ.is_univ_variable u) -> *)
+(*         let u' = Univ.fresh_local_univ() in *)
+(*         mkArity (ctxt,Type u'), *)
+(*         Univ.enforce_leq u u' Univ.empty_constraint *)
+(*     | _ -> ar, Univ.empty_constraint *)
 
 let check_constant_declaration env kn cb =
   Flags.if_verbose ppnl (str "  checking cst: " ++ prcon kn);
 (*  let env = add_constraints cb.const_constraints env in*)
   (match cb.const_type with
-      NonPolymorphicType ty ->
-        let ty, cu = refresh_arity ty in
-        let envty = add_constraints cu env in
-        let _ = infer_type envty ty in
-        (match body_of_constant cb with
+      ty ->
+        let env' = add_constraints cb.const_constraints env in
+	let _ = infer_type env' ty in
+          (match body_of_constant cb with
           | Some bd ->
-              let j = infer env bd in
-              conv_leq envty j ty
+              let j = infer env' bd in
+              conv_leq env' j ty
           | None -> ())
-    | PolymorphicArity(ctxt,par) ->
-        let _ = check_ctxt env ctxt in
-        check_polymorphic_arity env ctxt par);
+    (* | PolymorphicArity(ctxt,par) -> *)
+    (*     let _ = check_ctxt env ctxt in *)
+    (*     check_polymorphic_arity env ctxt par *));
   add_constant kn cb env
 
 

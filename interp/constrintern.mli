@@ -91,13 +91,13 @@ val intern_context : bool -> env -> internalization_env -> local_binder list -> 
 (** Main interpretation functions expecting evars to be all resolved *)
 
 val interp_constr : evar_map -> env -> ?impls:internalization_env ->
-  constr_expr -> constr
+  constr_expr -> constr Univ.in_universe_context_set
 
 val interp_casted_constr : evar_map -> env -> ?impls:internalization_env ->
-  constr_expr -> types -> constr
+  constr_expr -> types -> constr Univ.in_universe_context_set
 
 val interp_type : evar_map -> env -> ?impls:internalization_env ->
-  constr_expr -> types
+  constr_expr -> types Univ.in_universe_context_set
 
 (** Main interpretation function expecting evars to be all resolved *)
 
@@ -142,7 +142,7 @@ val interp_reference : ltac_sign -> reference -> glob_constr
 
 (** Interpret binders *)
 
-val interp_binder  : evar_map -> env -> Name.t -> constr_expr -> types
+val interp_binder  : evar_map -> env -> Name.t -> constr_expr -> types Univ.in_universe_context_set
 
 val interp_binder_evars : evar_map ref -> env -> Name.t -> constr_expr -> types
 
@@ -152,6 +152,16 @@ val interp_context_evars :
   ?global_level:bool -> ?impl_env:internalization_env ->
   evar_map ref -> env -> local_binder list ->
   internalization_env * ((env * rel_context) * Impargs.manual_implicits)
+
+(* val interp_context_gen : (env -> glob_constr -> unsafe_type_judgment Evd.in_evar_universe_context) -> *)
+(*   (env -> Evarutil.type_constraint -> glob_constr -> unsafe_judgment Evd.in_evar_universe_context) -> *)
+(*   ?global_level:bool -> ?impl_env:internalization_env -> *)
+(*   evar_map -> env -> local_binder list -> internalization_env * ((env * Evd.evar_universe_context * rel_context * sorts list) * Impargs.manual_implicits) *)
+  
+(* val interp_context : ?global_level:bool -> ?impl_env:internalization_env -> *)
+(*   evar_map -> env -> local_binder list ->  *)
+(*   internalization_env *  *)
+(*   ((env * Evd.evar_universe_context * rel_context * sorts list) * Impargs.manual_implicits) *)
 
 (** Locating references of constructions, possibly via a syntactic definition 
    (these functions do not modify the glob file) *)

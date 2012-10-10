@@ -21,7 +21,7 @@ let find_reference locstr dir s =
     anomaly ~label:locstr (Pp.str "cannot find" ++ spc () ++ Libnames.pr_path sp)
 
 let coq_reference locstr dir s = find_reference locstr ("Coq"::dir) s
-let coq_constant locstr dir s = Globnames.constr_of_global (coq_reference locstr dir s)
+let coq_constant locstr dir s = Universes.constr_of_global (coq_reference locstr dir s)
 
 let init_constant dir s () = coq_constant "Program" dir s
 let init_reference dir s () = coq_reference "Program" dir s

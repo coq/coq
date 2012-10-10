@@ -20,6 +20,16 @@ let prop = Prop Null
 let set = Prop Pos
 let type1 = Type type1_univ
 
+let univ_of_sort = function
+  | Type u -> u
+  | Prop Pos -> Universe.type0
+  | Prop Null -> Universe.type0m
+
+let sort_of_univ u =
+  if is_type0m_univ u then Prop Null
+  else if is_type0_univ u then Prop Pos
+  else Type u
+
 let compare s1 s2 =
   if s1 == s2 then 0 else
   match s1, s2 with
@@ -36,8 +46,16 @@ let compare s1 s2 =
 let equal s1 s2 = Int.equal (compare s1 s2) 0
 
 let is_prop = function
-| Prop Null -> true
-| _ -> false
+  | Prop Null -> true
+  | _ -> false
+
+let is_set = function
+  | Prop Pos -> true
+  | _ -> false
+
+let is_small = function
+  | Prop _ -> true
+  | Type u -> is_small_univ u
 
 let family = function
   | Prop Null -> InProp
@@ -56,7 +74,7 @@ let hash = function
   in
   combinesmall 1 h
 | Type u ->
-  let h = Universe.hash u in
+  let h = Hashtbl.hash u in (** FIXME *)
   combinesmall 2 h
 
 module List = struct
@@ -70,14 +88,18 @@ module Hsorts =
       type _t = t
       type t = _t
       type u = universe -> universe
+
       let hashcons huniv = function
-        | Type u -> Type (huniv u)
+        | Type u as c -> 
+	  let u' = huniv u in 
+	    if u' == u then c else Type u'
         | s -> s
       let equal s1 s2 = match (s1,s2) with
         | (Prop c1, Prop c2) -> c1 == c2
         | (Type u1, Type u2) -> u1 == u2
         |_ -> false
-      let hash = hash
+
+      let hash = Hashtbl.hash (** FIXME *)
     end)
 
 let hcons = Hashcons.simple_hcons Hsorts.generate hcons_univ

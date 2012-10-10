@@ -63,7 +63,7 @@ let warn_bound_again name =
 let constrain n (ids, m as x) (names, terms as subst) =
   try
     let (ids', m') = Id.Map.find n terms in
-    if List.equal Id.equal ids ids' && eq_constr m m' then subst
+    if List.equal Id.equal ids ids' && eq_constr_nounivs m m' then subst
     else raise PatternMatchingFailure
   with Not_found ->
     let () = if Id.Map.mem n names then warn_bound_meta n in
@@ -139,9 +139,18 @@ let merge_binding allow_bound_rels stk n cT subst =
   constrain n c subst
 
 let matches_core convert allow_partial_app allow_bound_rels pat c =
-  let conv = match convert with
-    | None -> eq_constr
-    | Some (env,sigma) -> is_conv env sigma in
+  let convref ref c = 
+    match ref, kind_of_term c with
+    | VarRef id, Var id' -> Names.id_eq id id'
+    | ConstRef c, Const (c',_) -> Names.eq_constant c c'
+    | IndRef i, Ind (i', _) -> Names.eq_ind i i'
+    | ConstructRef c, Construct (c',u) -> Names.eq_constructor c c'
+    | _, _ -> (match convert with 
+               | None -> false
+	       | Some (env,sigma) -> 
+	         let sigma,c' = Evd.fresh_global env sigma ref in
+		   is_conv env sigma c' c)
+  in
   let rec sorec stk subst p t =
     let cT = strip_outer_cast t in
     match p,kind_of_term cT with
@@ -165,7 +174,7 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 
       | PVar v1, Var v2 when Id.equal v1 v2 -> subst
 
-      | PRef ref, _ when conv (constr_of_global ref) cT -> subst
+      | PRef ref, _ when convref ref cT -> subst
 
       | PRel n1, Rel n2 when Int.equal n1 n2 -> subst
 
@@ -193,8 +202,17 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
           else raise PatternMatchingFailure
 
       | PApp (c1,arg1), App (c2,arg2) ->
-        (try Array.fold_left2 (sorec stk) (sorec stk subst c1 c2) arg1 arg2
-         with Invalid_argument _ -> raise PatternMatchingFailure)
+	(match c1, kind_of_term c2 with
+	| PRef (ConstRef r), Proj _ ->
+      	  (let subst = (sorec stk subst (PProj (r,arg1.(0))) c2) in
+	     try Array.fold_left2 (sorec stk) subst (Array.tl arg1) arg2
+	     with Invalid_argument _ -> raise PatternMatchingFailure)
+	| _ ->
+          (try Array.fold_left2 (sorec stk) (sorec stk subst c1 c2) arg1 arg2
+           with Invalid_argument _ -> raise PatternMatchingFailure))
+	  
+      | PProj (p1,c1), Proj (p2,c2) when eq_constant p1 p2 ->
+          sorec stk subst c1 c2
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
 	  sorec ((na1,na2,c2)::stk)
@@ -367,6 +385,10 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
     let next () =
       try_aux ((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next in
     authorized_occ partial_app closed pat c mk_ctx next
+  | Proj (p,c') ->
+    let next_mk_ctx le = mk_ctx (mkProj (p,List.hd le)) in
+    let next () = try_aux [c'] next_mk_ctx next in
+      authorized_occ partial_app closed pat c mk_ctx next
   | Construct _| Ind _|Evar _|Const _ | Rel _|Meta _|Var _|Sort _ ->
       authorized_occ partial_app closed pat c mk_ctx next
 

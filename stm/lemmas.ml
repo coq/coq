@@ -73,7 +73,7 @@ let find_mutually_recursive_statements thms =
       | Some (Some (_,id),CStructRec) ->
           let i,b,typ = lookup_rel_id id hyps in
           (match kind_of_term t with
-          | Ind (kn,_ as ind) when
+          | Ind ((kn,_ as ind), u) when
               let mind = Global.lookup_mind kn in
               mind.mind_finite && Option.is_empty b ->
               [ind,x,i],[]
@@ -90,7 +90,7 @@ let find_mutually_recursive_statements thms =
       let ind_hyps =
         List.flatten (List.map_i (fun i (_,b,t) ->
           match kind_of_term t with
-          | Ind (kn,_ as ind) when
+          | Ind ((kn,_ as ind),u) when
                 let mind = Global.lookup_mind kn in
                 mind.mind_finite && Option.is_empty b ->
               [ind,x,i]
@@ -100,7 +100,7 @@ let find_mutually_recursive_statements thms =
         let cclenv = push_rel_context hyps (Global.env()) in
         let whnf_ccl,_ = whd_betadeltaiota_stack cclenv Evd.empty ccl in
         match kind_of_term whnf_ccl with
-        | Ind (kn,_ as ind) when
+        | Ind ((kn,_ as ind),u) when
               let mind = Global.lookup_mind kn in
               Int.equal mind.mind_ntypes n && not mind.mind_finite ->
             [ind,x,0]
@@ -167,9 +167,11 @@ let look_for_possibly_mutual_statements = function
 
 (* Saving a goal *)
 
-let save id const do_guard (locality,kind) hook =
+let save id const cstrs do_guard (locality,poly,kind) hook =
   let const = adjust_guardness_conditions const do_guard in
   let k = Kindops.logical_kind_of_goal_kind kind in
+  (* Add global constraints necessary to check the type of the proof *)
+  let () = Global.add_constraints cstrs in
   let l,r = match locality with
     | Discharge when Lib.sections_are_opened () ->
 	let c = SectionLocalDef const in
@@ -198,14 +200,14 @@ let compute_proof_name locality = function
   | None ->
       next_global_ident_away default_thm_id (Pfedit.get_all_proof_names ()) 
 
-let save_remaining_recthms (locality,kind) body opaq i (id,(t_i,(_,imps))) =
+let save_remaining_recthms (locality,p,kind) body opaq i (id,((t_i,ctx_i),(_,imps))) =
   match body with
   | None ->
       (match locality with
       | Discharge ->
           let impl = false in (* copy values from Vernacentries *)
           let k = IsAssumption Conjectural in
-          let c = SectionLocalAssum (t_i,impl) in
+          let c = SectionLocalAssum ((t_i,ctx_i),p,impl) in
 	  let _ = declare_variable id (Lib.cwd(),c,k) in
           (Discharge, VarRef id,imps)
       | Local | Global ->
@@ -215,7 +217,8 @@ let save_remaining_recthms (locality,kind) body opaq i (id,(t_i,(_,imps))) =
           | Global -> false
           | Discharge -> assert false
           in
-          let decl = (ParameterEntry (None,t_i,None), k) in
+          let ctx = Univ.ContextSet.to_context ctx_i in
+          let decl = (ParameterEntry (None,p,(t_i,ctx),None), k) in
           let kn = declare_constant id ~local decl in
           (locality,ConstRef kn,imps))
   | Some body ->
@@ -230,27 +233,26 @@ let save_remaining_recthms (locality,kind) body opaq i (id,(t_i,(_,imps))) =
                 Future.from_val (body_i,Declareops.no_seff);
               const_entry_secctx = None;
               const_entry_type = Some t_i;
+	      const_entry_proj = None;
               const_entry_opaque = opaq;
-              const_entry_inline_code = false;
               const_entry_feedback = None;
+              const_entry_inline_code = false;
+	      const_entry_polymorphic = p;
+	      const_entry_universes = Univ.ContextSet.to_context ctx_i
           } in
 	  let c = SectionLocalDef const in
 	  let _ = declare_variable id (Lib.cwd(), c, k) in
           (Discharge,VarRef id,imps)
       | Local | Global ->
+        let ctx = Univ.ContextSet.to_context ctx_i in
         let local = match locality with
         | Local -> true
         | Global -> false
         | Discharge -> assert false
         in
-        let const = { const_entry_body =
-              Future.from_val (body_i,Declareops.no_seff);
-            const_entry_secctx = None;
-            const_entry_type = Some t_i;
-            const_entry_opaque = opaq;
-            const_entry_inline_code = false;
-            const_entry_feedback = None;
-        } in
+        let const =
+	  Declare.definition_entry ~types:t_i ~poly:p ~univs:ctx ~opaque:opaq body_i
+	in
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
         (locality,ConstRef kn,imps)
 
@@ -258,8 +260,8 @@ let save_hook = ref ignore
 let set_save_hook f = save_hook := f
 
 let save_named proof =
-  let id,const,do_guard,persistence,hook = proof in
-  save id const do_guard persistence hook
+  let id,const,cstrs,do_guard,persistence,hook = proof in
+  save id const cstrs do_guard persistence hook
 
 let check_anonymity id save_ident =
   if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
@@ -267,25 +269,29 @@ let check_anonymity id save_ident =
 
 
 let save_anonymous proof save_ident =
-  let id,const,do_guard,persistence,hook = proof in
+  let id,const,cstrs,do_guard,persistence,hook = proof in
   check_anonymity id save_ident;
-  save save_ident const do_guard persistence hook
+  save save_ident const cstrs do_guard persistence hook
 
 let save_anonymous_with_strength proof kind save_ident =
-  let id,const,do_guard,_,hook = proof in
+  let id,const,cstrs,do_guard,_,hook = proof in
   check_anonymity id save_ident;
   (* we consider that non opaque behaves as local for discharge *)
-  save save_ident const do_guard (Global, Proof kind) hook
+  save save_ident const cstrs do_guard (Global, const.const_entry_polymorphic, Proof kind) hook
 
 (* Admitted *)
 
 let admit hook () =
   let (id,k,typ) = Pfedit.current_proof_statement () in
-  let e = Pfedit.get_used_variables(), typ, None in
-  let kn = declare_constant id (ParameterEntry e,IsAssumption Conjectural) in
-  let () = match fst k with
-  | Global -> ()
-  | Local | Discharge ->
+  let ctx =
+    let evd = fst (Pfedit.get_current_goal_context ()) in
+      Evd.universe_context evd
+  in
+  let e = Pfedit.get_used_variables(), pi2 k, (typ, ctx), None in
+  let kn = declare_constant id (ParameterEntry e, IsAssumption Conjectural) in
+  let () = match k with
+  | Global, _, _ -> ()
+  | Local, _, _ | Discharge, _, _ ->
     msg_warning (str "Let definition" ++ spc () ++ pr_id id ++ spc () ++
       str "declared as an axiom.")
   in
@@ -302,7 +308,8 @@ let get_proof proof do_guard hook opacity =
   let (id,(const,persistence)) =
     Pfedit.cook_this_proof proof
   in
-  id,{const with const_entry_opaque = opacity},do_guard,persistence,hook
+  (** FIXME *)
+  id,{const with const_entry_opaque = opacity},Univ.Constraint.empty,do_guard,persistence,hook
 
 let standard_proof_terminator compute_guard hook =
   let open Proof_global in function
@@ -325,13 +332,14 @@ let start_proof id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
     | Some sign -> sign
     | None -> initialize_named_context_for_proof ()
   in
-  !start_hook c;
+  !start_hook (fst c);
   Pfedit.start_proof id kind sign c ?init_tac terminator
 
 
+(* FIXME: forgetting about the universes here *)
 let rec_tac_initializer finite guard thms snl =
   if finite then
-    match List.map (fun (id,(t,_)) -> (id,t)) thms with
+    match List.map (fun (id,(t,_)) -> (id,fst t)) thms with
     | (id,_)::l -> Tactics.mutual_cofix id l 0
     | _ -> assert false
   else
@@ -339,7 +347,7 @@ let rec_tac_initializer finite guard thms snl =
     let nl = match snl with 
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
-    in match List.map2 (fun (id,(t,_)) n -> (id,n,t)) thms nl with
+    in match List.map2 (fun (id,(t,_)) n -> (id,n,fst t)) thms nl with
        | (id,n,_)::l -> Tactics.mutual_fix id n l 0
        | _ -> assert false
 
@@ -382,19 +390,24 @@ let start_proof_with_initialization kind recguard thms snl hook =
       start_proof id kind t ?init_tac hook ~compute_guard:guard
 
 let start_proof_com kind thms hook =
-  let evdref = ref Evd.empty in
   let env0 = Global.env () in
+  let evdref = ref (Evd.from_env env0) in
   let thms = List.map (fun (sopt,(bl,t,guard)) ->
     let impls, ((env, ctx), imps) = interp_context_evars evdref env0 bl in
     let t', imps' = interp_type_evars_impls ~impls evdref env t in
     check_evars_are_solved env Evd.empty !evdref;
     let ids = List.map pi1 ctx in
-      (compute_proof_name (fst kind) sopt,
+      (compute_proof_name (pi1 kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
        (ids, imps @ lift_implicits (List.length ids) imps'),
        guard)))
     thms in
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
+  let evd, nf = Evarutil.nf_evars_and_universes !evdref in
+  let ctxset = Evd.get_universe_context_set evd in
+  let thms = List.map (fun (n, (t, info)) -> (n, ((nf t, ctxset), info)))
+    thms
+  in
   start_proof_with_initialization kind recguard thms snl hook
 
 
@@ -419,13 +432,3 @@ let get_current_context () =
   try Pfedit.get_current_goal_context ()
   with e when Logic.catchable_exception e ->
     (Evd.empty, Global.env())
-
-
-
-
-
-
-
-
-
-

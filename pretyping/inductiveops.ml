@@ -19,32 +19,38 @@ open Declarations
 open Declareops
 open Environ
 open Reductionops
+open Inductive
 
 (* The following three functions are similar to the ones defined in
    Inductive, but they expect an env *)
 
-let type_of_inductive env ind =
+let type_of_inductive env (ind,u) =
  let specif = Inductive.lookup_mind_specif env ind in
-  Inductive.type_of_inductive env specif
+  Inductive.type_of_inductive env (specif,u)
 
 (* Return type as quoted by the user *)
-let type_of_constructor env cstr =
+let type_of_constructor env (cstr,u) =
  let specif =
   Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
- Inductive.type_of_constructor cstr specif
+ Inductive.type_of_constructor (cstr,u) specif
+
+let type_of_constructor_in_ctx env cstr =
+ let specif =
+  Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
+ Inductive.type_of_constructor_in_ctx cstr specif
 
 (* Return constructor types in user form *)
-let type_of_constructors env ind =
+let type_of_constructors env (ind,u as indu) =
  let specif = Inductive.lookup_mind_specif env ind in
-  Inductive.type_of_constructors ind specif
+  Inductive.type_of_constructors indu specif
 
 (* Return constructor types in normal form *)
-let arities_of_constructors env ind =
+let arities_of_constructors env (ind,u as indu) =
  let specif = Inductive.lookup_mind_specif env ind in
-  Inductive.arities_of_constructors ind specif
+  Inductive.arities_of_constructors indu specif
 
 (* [inductive_family] = [inductive_instance] applied to global parameters *)
-type inductive_family = inductive * constr list
+type inductive_family = pinductive * constr list
 
 let make_ind_family (mis, params) = (mis,params)
 let dest_ind_family (mis,params) = (mis,params)
@@ -71,7 +77,7 @@ let lift_inductive_type n = liftn_inductive_type n 1
 let substnl_ind_type l n = map_inductive_type (substnl l n)
 
 let mkAppliedInd (IndType ((ind,params), realargs)) =
-  applist (mkInd ind,params@realargs)
+  applist (mkIndU ind,params@realargs)
 
 (* Does not consider imbricated or mutually recursive types *)
 let mis_is_recursive_subset listind rarg =
@@ -88,13 +94,14 @@ let mis_is_recursive (ind,mib,mip) =
   mis_is_recursive_subset (List.interval 0 (mib.mind_ntypes - 1))
     mip.mind_recargs
 
-let mis_nf_constructor_type (ind,mib,mip) j =
+let mis_nf_constructor_type ((ind,u),mib,mip) j =
   let specif = mip.mind_nf_lc
   and ntypes = mib.mind_ntypes
   and nconstr = Array.length mip.mind_consnames in
-  let make_Ik k = mkInd ((fst ind),ntypes-k-1) in
+  let make_Ik k = mkIndU (((fst ind),ntypes-k-1),u) in
   if j > nconstr then error "Not enough constructors in the type.";
-  substl (List.init ntypes make_Ik) specif.(j-1)
+  let univsubst = make_inductive_subst mib u in
+    substl (List.init ntypes make_Ik) (subst_univs_constr univsubst specif.(j-1))
 
 (* Arity of constructors excluding parameters and local defs *)
 
@@ -139,9 +146,10 @@ let constructor_nrealhyps (ind,j) =
   let (mib,mip) = Global.lookup_inductive ind in
   mip.mind_consnrealdecls.(j-1)
 
-let get_full_arity_sign env ind =
+let get_full_arity_sign env (ind,u) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  mip.mind_arity_ctxt
+  let subst = Inductive.make_inductive_subst mib u in
+    Vars.subst_univs_context subst mip.mind_arity_ctxt
 
 let nconstructors ind =
   let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
@@ -163,6 +171,10 @@ let inductive_has_local_defs ind =
 
 let inductive_nparams ind =
   (fst (Global.lookup_inductive ind)).mind_nparams
+
+let inductive_params_ctxt (ind,u) =
+  let (mib,mip) = Global.lookup_inductive ind in
+    Inductive.inductive_params_ctxt (mib,u)
 
 let inductive_nargs ind =
   let (mib,mip) = Global.lookup_inductive ind in
@@ -189,7 +201,7 @@ let make_case_info env ind style =
 (*s Useful functions *)
 
 type constructor_summary = {
-  cs_cstr : constructor;
+  cs_cstr : pconstructor;
   cs_params : constr list;
   cs_nargs : int;
   cs_args : rel_context;
@@ -219,21 +231,21 @@ let instantiate_params t args sign =
     | _ -> anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch")
   in inst [] t (List.rev sign,args)
 
-let get_constructor (ind,mib,mip,params) j =
+let get_constructor ((ind,u as indu),mib,mip,params) j =
   assert (j <= Array.length mip.mind_consnames);
-  let typi = mis_nf_constructor_type (ind,mib,mip) j in
+  let typi = mis_nf_constructor_type (indu,mib,mip) j in
   let typi = instantiate_params typi params mib.mind_params_ctxt in
   let (args,ccl) = decompose_prod_assum typi in
   let (_,allargs) = decompose_app ccl in
   let vargs = List.skipn (List.length params) allargs in
-  { cs_cstr = ith_constructor_of_inductive ind j;
+  { cs_cstr = (ith_constructor_of_inductive ind j,u);
     cs_params = params;
     cs_nargs = rel_context_length args;
     cs_args = args;
     cs_concl_realargs = Array.of_list vargs }
 
 let get_constructors env (ind,params) =
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  let (mib,mip) = Inductive.lookup_mind_specif env (fst ind) in
   Array.init (Array.length mip.mind_consnames)
     (fun j -> get_constructor (ind,mib,mip,params) (j+1))
 
@@ -255,8 +267,9 @@ let instantiate_context sign args =
   | _ -> anomaly (Pp.str "Signature/instance mismatch in inductive family")
   in aux [] (List.rev sign,args)
 
-let get_arity env (ind,params) =
+let get_arity env ((ind,u),params) =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
+  let univsubst = make_inductive_subst mib u in
   let parsign =
     (* Dynamically detect if called with an instance of recursively
        uniform parameter only or also of non recursively uniform
@@ -267,15 +280,17 @@ let get_arity env (ind,params) =
       snd (List.chop nnonrecparams mib.mind_params_ctxt)
     else
       parsign in
+  let parsign = Vars.subst_univs_context univsubst parsign in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
   let arsign,_ = List.chop arproperlength mip.mind_arity_ctxt in
   let subst = instantiate_context parsign params in
+  let arsign = Vars.subst_univs_context univsubst arsign in
   (substl_rel_context subst arsign, Inductive.inductive_sort_family mip)
 
 (* Functions to build standard types related to inductive *)
 let build_dependent_constructor cs =
   applist
-    (mkConstruct cs.cs_cstr,
+    (mkConstructU cs.cs_cstr,
      (List.map (lift cs.cs_nargs) cs.cs_params)
       @(extended_rel_list 0 cs.cs_args))
 
@@ -283,7 +298,7 @@ let build_dependent_inductive env ((ind, params) as indf) =
   let arsign,_ = get_arity env indf in
   let nrealargs = List.length arsign in
   applist
-    (mkInd ind,
+    (mkIndU ind,
      (List.map (lift nrealargs) params)@(extended_rel_list 0 arsign))
 
 (* builds the arity of an elimination predicate in sort [s] *)
@@ -328,18 +343,18 @@ let find_mrectype env sigma c =
 let find_rectype env sigma c =
   let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
   match kind_of_term t with
-    | Ind ind ->
+    | Ind (ind,u as indu) ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
         if mib.mind_nparams > List.length l then raise Not_found;
         let (par,rargs) = List.chop mib.mind_nparams l in
-        IndType((ind, par),rargs)
+        IndType((indu, par),rargs)
     | _ -> raise Not_found
 
 let find_inductive env sigma c =
   let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
   match kind_of_term t with
     | Ind ind
-        when (fst (Inductive.lookup_mind_specif env ind)).mind_finite ->
+        when (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite ->
         (ind, l)
     | _ -> raise Not_found
 
@@ -347,7 +362,7 @@ let find_coinductive env sigma c =
   let (t, l) = decompose_app (whd_betadeltaiota env sigma c) in
   match kind_of_term t with
     | Ind ind
-        when not (fst (Inductive.lookup_mind_specif env ind)).mind_finite ->
+        when not (fst (Inductive.lookup_mind_specif env (fst ind))).mind_finite ->
         (ind, l)
     | _ -> raise Not_found
 
@@ -414,7 +429,7 @@ let set_pattern_names env ind brv =
 
 let type_case_branches_with_names env indspec p c =
   let (ind,args) = indspec in
-  let (mib,mip as specif) = Inductive.lookup_mind_specif env ind in
+  let (mib,mip as specif) = Inductive.lookup_mind_specif env (fst ind) in
   let nparams = mib.mind_nparams in
   let (params,realargs) = List.chop nparams args in
   let lbrty = Inductive.build_branches_type ind specif params p in
@@ -422,7 +437,7 @@ let type_case_branches_with_names env indspec p c =
   let conclty = Reduction.beta_appvect p (Array.of_list (realargs@[c])) in
   (* Adjust names *)
   if is_elim_predicate_explicitly_dependent env p (ind,params) then
-    (set_pattern_names env ind lbrty, conclty)
+    (set_pattern_names env (fst ind) lbrty, conclty)
   else (lbrty, conclty)
 
 (* Type of Case predicates *)
@@ -436,40 +451,9 @@ let arity_of_case_predicate env (ind,params) dep k =
 (* Inferring the sort of parameters of a polymorphic inductive type
    knowing the sort of the conclusion *)
 
-(* Compute the inductive argument types: replace the sorts
-   that appear in the type of the inductive by the sort of the
-   conclusion, and the other ones by fresh universes. *)
-let rec instantiate_universes env scl is = function
-  | (_,Some _,_ as d)::sign, exp ->
-      d :: instantiate_universes env scl is (sign, exp)
-  | d::sign, None::exp ->
-      d :: instantiate_universes env scl is (sign, exp)
-  | (na,None,ty)::sign, Some u::exp ->
-      let ctx,_ = Reduction.dest_arity env ty in
-      let s =
-	(* Does the sort of parameter [u] appear in (or equal)
-           the sort of inductive [is] ? *)
-        if univ_depends u is then
-          scl (* constrained sort: replace by scl *)
-        else
-          (* unconstriained sort: replace by fresh universe *)
-          new_Type_sort() in
-      (na,None,mkArity(ctx,s)):: instantiate_universes env scl is (sign, exp)
-  | sign, [] -> sign (* Uniform parameters are exhausted *)
-  | [], _ -> assert false
-
-(* Does not deal with universes, but only with Set/Type distinction *)
-let type_of_inductive_knowing_conclusion env mip conclty =
-  match mip.mind_arity with
-  | Monomorphic s ->
-      s.mind_user_arity
-  | Polymorphic ar ->
-      let _,scl = Reduction.dest_arity env conclty in
-      let ctx = List.rev mip.mind_arity_ctxt in
-      let ctx =
-        instantiate_universes
-          env scl ar.poly_level (ctx,ar.poly_param_levels) in
-      mkArity (List.rev ctx,scl)
+let type_of_inductive_knowing_conclusion env ((mib,mip),u) conclty =
+  let subst = Inductive.make_inductive_subst mib u in
+    subst_univs_constr subst mip.mind_arity.mind_user_arity
 
 (***********************************************)
 (* Guard condition *)
@@ -490,7 +474,3 @@ let control_only_guard env c =
     iter_constr_with_full_binders push_rel iter env c
   in
   iter env c
-
-let subst_inductive subst (kn,i as ind) =
-  let kn' = Mod_subst.subst_ind subst kn in
-  if kn == kn' then ind else (kn',i)

@@ -56,7 +56,7 @@ val delete_all_proofs : unit -> unit
 type lemma_possible_guards = Proof_global.lemma_possible_guards
 
 val start_proof :
-  Id.t -> goal_kind -> named_context_val -> constr ->
+  Id.t -> goal_kind -> named_context_val -> constr Univ.in_universe_context_set ->
   ?init_tac:unit Proofview.tactic ->
   Proof_global.proof_terminator -> unit
 
@@ -149,8 +149,10 @@ val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
 
 val build_constant_by_tactic :
   Id.t -> named_context_val -> ?goal_kind:goal_kind ->
-    types -> unit Proofview.tactic -> Entries.definition_entry * bool
-val build_by_tactic : env -> types -> unit Proofview.tactic -> constr * bool
+    types Univ.in_universe_context_set -> unit Proofview.tactic -> Entries.definition_entry * bool * Universes.universe_opt_subst
+val build_by_tactic : env -> ?poly:polymorphic -> 
+  types Univ.in_universe_context_set -> unit Proofview.tactic -> 
+  constr * bool * Universes.universe_opt_subst
 
 (** Declare the default tactic to fill implicit arguments *)
 
@@ -161,10 +163,3 @@ val clear_implicit_tactic : unit -> unit
 
 (* Raise Exit if cannot solve *)
 val solve_by_implicit_tactic : env -> Evd.evar_map -> Evd.evar -> constr
-
-
-
-
-
-
-

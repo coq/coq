@@ -50,7 +50,7 @@ let evars_to_goals p evm =
 
 open Auto
 
-let e_give_exact flags c gl =
+let e_give_exact flags (c,cl) gl =
   let t1 = (pf_type_of gl c) in
     tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl
 
@@ -91,15 +91,17 @@ let progress_evars t =
     in t <*> check
   end
 
-let unify_e_resolve flags (c,clenv) gls =
-  let clenv' = connect_clenv gls clenv in
+let unify_e_resolve poly flags (c,clenv) gls =
+  let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
+  let clenv' = connect_clenv gls clenv' in
   let clenv' = clenv_unique_resolver ~flags clenv' gls in
     Clenvtac.clenv_refine true ~with_classes:false clenv' gls
 
-let unify_resolve flags (c,clenv) gls =
-  let clenv' = connect_clenv gls clenv in
+let unify_resolve poly flags (c,clenv) gls =
+  let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
+  let clenv' = connect_clenv gls clenv' in
   let clenv' = clenv_unique_resolver ~flags clenv' gls in
-    Clenvtac.clenv_refine false ~with_classes:false clenv' gls
+    Clenvtac.clenv_refine false(*uhoh, was true*) ~with_classes:false clenv' gls
 
 let clenv_of_prods nprods (c, clenv) gls =
   if Int.equal nprods 0 then Some clenv
@@ -107,6 +109,7 @@ let clenv_of_prods nprods (c, clenv) gls =
     let ty = pf_type_of gls c in
     let diff = nb_prod ty - nprods in
       if Pervasives.(>=) diff 0 then
+        (* Was Some clenv... *)
 	Some (mk_clenv_from_n gls (Some diff) (c,ty))
       else None
 
@@ -152,14 +155,14 @@ and e_my_find_search db_list local_db hdc complete concl =
       (local_db::db_list)
   in
   let tac_of_hint =
-    fun (flags, {pri = b; pat = p; code = t; name = name}) ->
+    fun (flags, {pri = b; pat = p; poly = poly; code = t; name = name}) ->
       let tac =
 	match t with
-	  | Res_pf (term,cl) -> with_prods nprods (term,cl) (unify_resolve flags)
-	  | ERes_pf (term,cl) -> with_prods nprods (term,cl) (unify_e_resolve flags)
-	  | Give_exact (c) -> e_give_exact flags c
+	  | Res_pf (term,cl) -> with_prods nprods (term,cl) (unify_resolve poly flags)
+	  | ERes_pf (term,cl) -> with_prods nprods (term,cl) (unify_e_resolve poly flags)
+	  | Give_exact c -> e_give_exact flags c
 	  | Res_pf_THEN_trivial_fail (term,cl) ->
-              tclTHEN (with_prods nprods (term,cl) (unify_e_resolve flags))
+              tclTHEN (with_prods nprods (term,cl) (unify_e_resolve poly flags))
 	        (if complete then tclIDTAC else e_trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c])
 	  | Extern tacast ->
@@ -178,13 +181,13 @@ and e_my_find_search db_list local_db hdc complete concl =
 and e_trivial_resolve db_list local_db gl =
   try
     e_my_find_search db_list local_db
-    (fst (head_constr_bound gl)) true gl
+    (head_constr_bound gl) true gl
   with Bound | Not_found -> []
 
 let e_possible_resolve db_list local_db gl =
   try
     e_my_find_search db_list local_db
-      (fst (head_constr_bound gl)) false gl
+      (head_constr_bound gl) false gl
   with Bound | Not_found -> []
 
 let catchable = function
@@ -223,8 +226,8 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
   let rec iscl env ty =
     let ctx, ar = decompose_prod_assum ty in
       match kind_of_term (fst (decompose_app ar)) with
-      | Const c -> is_class (ConstRef c)
-      | Ind i -> is_class (IndRef i)
+      | Const (c,_) -> is_class (ConstRef c)
+      | Ind (i,_) -> is_class (IndRef i)
       | _ ->
 	  let env' = Environ.push_rel_context ctx env in
 	  let ty' = whd_betadeltaiota env' ar in
@@ -241,13 +244,16 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
 	  let hints = build_subclasses ~check:false env sigma (VarRef id) None in
 	    (List.map_append
 	       (fun (path,pri, c) -> make_resolves env sigma ~name:(PathHints path)
-		  (true,false,Flags.is_verbose()) pri c)
+		  (true,false,Flags.is_verbose()) pri false
+		 (IsConstr (c,Univ.ContextSet.empty)))
 	       hints)
 	else []
       in
         (hints @ List.map_filter
-	 (fun f -> try Some (f (c, cty)) with Failure _ | UserError _ -> None)
-	 [make_exact_entry ~name sigma pri; make_apply_entry ~name env sigma flags pri])
+	 (fun f -> try Some (f (c, cty, Univ.ContextSet.empty)) 
+	   with Failure _ | UserError _ -> None)
+	 [make_exact_entry ~name env sigma pri false; 
+	  make_apply_entry ~name env sigma flags pri false])
     else []
 
 let pf_filtered_hyps gls =
@@ -266,21 +272,19 @@ let make_hints g st only_classes sign =
     (PathEmpty, []) sign
   in Hint_db.add_list hintlist (Hint_db.empty st true)
 
-let autogoal_hints_cache
-    : (bool * Environ.named_context_val * hint_db) option ref
-    = Summary.ref None ~name:"autogoal-hints-cache"
-let freeze () = !autogoal_hints_cache
-let unfreeze v = autogoal_hints_cache := v
-
 let make_autogoal_hints =
-  fun only_classes ?(st=full_transparent_state) g ->
-    let sign = pf_filtered_hyps g in
-      match freeze () with
-      | Some (onlyc, sign', hints)
-	  when (onlyc : bool) == only_classes &&
-	    Environ.eq_named_context_val sign sign' -> hints
-      | _ -> let hints = make_hints g st only_classes (Environ.named_context_of_val sign) in
-	  unfreeze (Some (only_classes, sign, hints)); hints
+  let cache = ref (true, Environ.empty_named_context_val, 
+		   Hint_db.empty full_transparent_state true) 
+  in
+    fun only_classes ?(st=full_transparent_state) g ->
+      let sign = pf_filtered_hyps g in
+      let (onlyc, sign', cached_hints) = !cache in
+	if onlyc == only_classes && 
+	  (sign == sign' || Environ.eq_named_context_val sign sign') then
+	  cached_hints
+	else
+	  let hints = make_hints g st only_classes (Environ.named_context_of_val sign) in
+	    cache := (only_classes, sign, hints); hints
 
 let lift_tactic tac (f : goal list sigma -> autoinfo -> autogoal list sigma) : 'a tac =
   { skft = fun sk fk {it = gl,hints; sigma=s;} ->
@@ -467,7 +471,8 @@ let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm hints t
       let res = run_list_tac tac p goals (make_autogoals ~only_classes ~st hints goals evm') in
 	match get_result res with
 	| None -> raise Not_found
-	| Some (evm', fk) -> Some (evars_reset_evd ~with_conv_pbs:true evm' evm, fk)
+	| Some (evm', fk) -> 
+	  Some (evars_reset_evd ~with_conv_pbs:true ~with_univs:false evm' evm, fk)
 
 let eauto_tac hints =
   then_tac normevars_tac (or_tac (hints_tac hints) intro_tac)
@@ -743,4 +748,4 @@ let autoapply c i gl =
   let flags = flags_of_state (Auto.Hint_db.transparent_state (Auto.searchtable_map i)) in
   let cty = pf_type_of gl c in
   let ce = mk_clenv_from gl (c,cty) in
-  unify_e_resolve flags (c,ce) gl
+  unify_e_resolve false flags (c,ce) gl

@@ -45,7 +45,7 @@ module SearchBlacklist =
 
 let iter_constructors indsp fn env nconstr =
   for i = 1 to nconstr do
-    let typ = Inductiveops.type_of_constructor env (indsp, i) in
+    let typ, _ = Inductiveops.type_of_constructor_in_ctx env (indsp, i) in
     fn (ConstructRef (indsp, i)) env typ
   done
 
@@ -60,14 +60,15 @@ let iter_declarations (fn : global_reference -> env -> constr -> unit) =
     with Not_found -> (* we are in a section *) () end
   | "CONSTANT" ->
     let cst = Global.constant_of_delta_kn kn in
-    let typ = Typeops.type_of_constant env cst in
+    let typ, _ = Environ.constant_type_in_ctx env cst in
     fn (ConstRef cst) env typ
   | "INDUCTIVE" ->
     let mind = Global.mind_of_delta_kn kn in
     let mib = Global.lookup_mind mind in
     let iter_packet i mip =
       let ind = (mind, i) in
-      let typ = Inductiveops.type_of_inductive env ind in
+      let i = (ind, Univ.UContext.instance mib.mind_universes) in
+      let typ = Inductiveops.type_of_inductive env i in
       let () = fn (IndRef ind) env typ in
       let len = Array.length mip.mind_user_lc in
       iter_constructors ind fn env len

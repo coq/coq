@@ -59,8 +59,17 @@ val unfoldn :
 (** Fold *)
 val fold_commands : constr list ->  reduction_function
 
+val make_eq_univs_test : evar_map -> constr -> evar_map Termops.testing_function
+
+(** [subst_closed_term_occ occl c d] replaces occurrences of closed [c] at
+   positions [occl] by [Rel 1] in [d] (see also Note OCC), unifying universes
+   which results in a set of constraints. *)
+val subst_closed_term_univs_occ : evar_map -> occurrences -> constr -> constr -> 
+  constr * evar_map
+
 (** Pattern *)
-val pattern_occs : (occurrences * constr) list ->  reduction_function
+val pattern_occs : (occurrences * constr) list -> env -> evar_map -> constr -> 
+  constr
 
 (** Rem: Lazy strategies are defined in Reduction *)
 
@@ -74,12 +83,12 @@ val cbv_norm_flags : Closure.RedFlags.reds ->  reduction_function
 (** [reduce_to_atomic_ind env sigma t] puts [t] in the form [t'=(I args)]
    with [I] an inductive definition;
    returns [I] and [t'] or fails with a user error *)
-val reduce_to_atomic_ind : env ->  evar_map -> types -> inductive * types
+val reduce_to_atomic_ind : env ->  evar_map -> types -> pinductive * types
 
 (** [reduce_to_quantified_ind env sigma t] puts [t] in the form
    [t'=(x1:A1)..(xn:An)(I args)] with [I] an inductive definition;
    returns [I] and [t'] or fails with a user error *)
-val reduce_to_quantified_ind : env ->  evar_map -> types -> inductive * types
+val reduce_to_quantified_ind : env ->  evar_map -> types -> pinductive * types
 
 (** [reduce_to_quantified_ref env sigma ref t] try to put [t] in the form
    [t'=(x1:A1)..(xn:An)(ref args)] and fails with user error if not possible *)
@@ -90,7 +99,10 @@ val reduce_to_atomic_ref :
   env ->  evar_map -> global_reference -> types -> types
 
 val find_hnf_rectype : 
-  env ->  evar_map -> types -> inductive * constr list
+  env ->  evar_map -> types -> pinductive * constr list
 
 val contextually : bool -> occurrences * constr_pattern ->
   (patvar_map -> reduction_function) -> reduction_function
+
+val e_contextually : bool -> occurrences * constr_pattern ->
+  (patvar_map -> e_reduction_function) -> e_reduction_function

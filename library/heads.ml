@@ -58,7 +58,7 @@ let variable_head id  = Evalrefmap.find (EvalVarRef id) !head_map
 let constant_head cst = Evalrefmap.find (EvalConstRef cst) !head_map
 
 let kind_of_head env t =
-  let rec aux k l t b = match kind_of_term (Reduction.whd_betaiotazeta t) with
+  let rec aux k l t b = match kind_of_term (Reduction.whd_betaiotazeta env t) with
   | Rel n when n > k -> NotImmediatelyComputableHead
   | Rel n -> FlexibleHead (k,k+1-n,List.length l,b)
   | Var id ->
@@ -68,7 +68,7 @@ let kind_of_head env t =
         match pi2 (lookup_named id env) with
         | Some c -> aux k l c b
         | None -> NotImmediatelyComputableHead)
-  | Const cst ->
+  | Const (cst,_) ->
       (try on_subterm k l b (constant_head cst)
        with Not_found -> assert false)
   | Construct _ | CoFix _ ->
@@ -85,6 +85,10 @@ let kind_of_head env t =
   | LetIn _ -> assert false
   | Meta _ | Evar _ -> NotImmediatelyComputableHead
   | App (c,al) -> aux k (Array.to_list al @ l) c b
+  | Proj (p,c) ->
+      (try on_subterm k (c :: l) b (constant_head p)
+       with Not_found -> assert false)
+
   | Case (_,_,c,_) -> aux k [] c true
   | Fix ((i,j),_) ->
       let n = i.(j) in
@@ -113,11 +117,18 @@ let kind_of_head env t =
   | x -> x
   in aux 0 [] t false
 
+(* FIXME: maybe change interface here *)
 let compute_head = function
 | EvalConstRef cst ->
-    (match constant_opt_value (Global.env()) cst with
+   let env = Global.env() in
+   let cb = Environ.lookup_constant cst env in
+   let body = 
+     if cb.Declarations.const_proj = None 
+     then Declareops.body_of_constant cb else None 
+   in
+     (match body with
      | None -> RigidHead (RigidParameter cst)
-     | Some c -> kind_of_head (Global.env()) c)
+     | Some c -> kind_of_head env c)
 | EvalVarRef id ->
     (match pi2 (Global.lookup_named id) with
      | Some c when not (Decls.variable_opacity id) ->
@@ -140,8 +151,8 @@ let cache_head o =
 
 let subst_head_approximation subst = function
   | RigidHead (RigidParameter cst) as k ->
-      let cst,c = subst_con subst cst in
-      if isConst c && eq_constant (destConst c) cst then
+      let cst,c = subst_con_kn subst cst in
+      if isConst c && eq_constant (fst (destConst c)) cst then
         (* A change of the prefix of the constant *)
         k
       else

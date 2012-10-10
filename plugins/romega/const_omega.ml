@@ -30,11 +30,11 @@ let string_of_global r =
 let destructurate t =
   let c, args = Term.decompose_app t in
   match Term.kind_of_term c, args with
-    | Term.Const sp, args ->
+    | Term.Const (sp,_), args ->
 	Kapp (string_of_global (Globnames.ConstRef sp), args)
-    | Term.Construct csp , args ->
+    | Term.Construct (csp,_) , args ->
 	Kapp (string_of_global (Globnames.ConstructRef csp), args)
-    | Term.Ind isp, args ->
+    | Term.Ind (isp,_), args ->
 	Kapp (string_of_global (Globnames.IndRef isp), args)
     | Term.Var id,[] -> Kvar(Names.Id.to_string id)
     | Term.Prod (Names.Anonymous,typ,body), [] -> Kimp(typ,body)
@@ -48,9 +48,9 @@ let dest_const_apply t =
   let f,args = Term.decompose_app t in
   let ref =
   match Term.kind_of_term f with
-    | Term.Const sp      -> Globnames.ConstRef sp
-    | Term.Construct csp -> Globnames.ConstructRef csp
-    | Term.Ind isp       -> Globnames.IndRef isp
+    | Term.Const (sp,_)      -> Globnames.ConstRef sp
+    | Term.Construct (csp,_) -> Globnames.ConstructRef csp
+    | Term.Ind (isp,_)       -> Globnames.IndRef isp
     | _ -> raise Destruct
   in  Nametab.basename_of_global ref, args
 
@@ -210,19 +210,26 @@ let rec mk_nat = function
 
 (* Lists *)
 
-let coq_cons =  lazy (constant "cons")
-let coq_nil =  lazy (constant "nil")
+let mkListConst c u = 
+  Term.mkConstructU (Globnames.destConstructRef 
+		     (Coqlib.gen_reference "" ["Init";"Datatypes"] c),
+		     Univ.Instance.of_array [|u|])
 
-let mk_list typ l =
+let coq_cons univ typ = Term.mkApp (mkListConst "cons" univ, [|typ|])
+let coq_nil univ typ =  Term.mkApp (mkListConst "nil" univ, [|typ|])
+
+let mk_list univ typ l =
   let rec loop = function
-    | [] ->
-	Term.mkApp (Lazy.force coq_nil, [|typ|])
+    | [] -> coq_nil univ typ
     | (step :: l) ->
-	Term.mkApp (Lazy.force coq_cons, [|typ; step; loop l |]) in
+	Term.mkApp (coq_cons univ typ, [| step; loop l |]) in
   loop l
 
-let mk_plist l = mk_list Term.mkProp l
+let mk_plist = 
+  let type1lev = Universes.new_univ_level (Global.current_dirpath ()) in
+    fun l -> mk_list type1lev Term.mkProp l
 
+let mk_list = mk_list Univ.Level.set
 let mk_shuffle_list l = mk_list (Lazy.force coq_t_fusion) l
 
 

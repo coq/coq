@@ -8,10 +8,36 @@ repeat match goal with
   apply <- andb_true_iff; split
 end.
 
+Arguments decide P /H.
+
 Hint Extern 5 => progress bool.
 
 Ltac define t x H :=
 set (x := t) in *; assert (H : t = x) by reflexivity; clearbody x.
+
+Lemma Decidable_sound : forall P (H : Decidable P),
+                          decide P = true -> P.
+Proof.
+intros P H Hp; apply -> Decidable_spec; assumption.
+Qed.
+
+Lemma Decidable_complete : forall P (H : Decidable P),
+  P -> decide P = true.
+Proof.
+intros P H Hp; apply <- Decidable_spec; assumption.
+Qed.
+
+Lemma Decidable_sound_alt : forall P (H : Decidable P),
+   ~ P -> decide P = false.
+Proof.
+intros P [wit spec] Hd; destruct wit; simpl; tauto. 
+Qed.
+
+Lemma Decidable_complete_alt : forall P (H : Decidable P),
+  decide P = false -> ~ P.
+Proof.
+  intros P [wit spec] Hd Hc; simpl in *; intuition congruence.
+Qed.
 
 Ltac try_rewrite :=
 repeat match goal with
@@ -142,6 +168,7 @@ end.
 Program Instance Decidable_eq_poly : forall (p q : poly), Decidable (eq p q) := {
   Decidable_witness := beq_poly p q
 }.
+
 Next Obligation.
 split.
 revert q; induction p; intros [] ?; simpl in *; bool; try_decide;
@@ -185,8 +212,8 @@ Program Instance Decidable_valid : forall n p, Decidable (valid n p) := {
 }.
 Next Obligation.
 split.
-  revert n; induction p; simpl in *; intuition; bool; try_decide; auto.
-  intros H; induction H; simpl in *; bool; try_decide; auto.
+  revert n; induction p; unfold valid_dec in *; intuition; bool; try_decide; auto.
+  intros H; induction H; unfold valid_dec in *; bool; try_decide; auto.
 Qed.
 
 (** Basic algebra *)

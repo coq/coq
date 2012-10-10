@@ -32,9 +32,9 @@ Section Bounds.
   Variable U : Type.
   Variable D : PO U.
 
-  Let C := Carrier_of U D.
+  Let C := @Carrier_of U D.
 
-  Let R := Rel_of U D.
+  Let R := @Rel_of U D.
 
   Inductive Upper_Bound (B:Ensemble U) (x:U) : Prop :=
     Upper_Bound_definition :
@@ -103,6 +103,6 @@ Section Specific_orders.
 
   Record Chain : Type := Definition_of_chain
     {PO_of_chain : PO U;
-    Chain_cond : Totally_ordered U PO_of_chain (Carrier_of U PO_of_chain)}.
+    Chain_cond : Totally_ordered U PO_of_chain (@Carrier_of _ PO_of_chain)}.
 
 End Specific_orders.

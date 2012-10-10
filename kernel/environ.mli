@@ -10,6 +10,7 @@ open Names
 open Term
 open Context
 open Declarations
+open Univ
 
 (** Unsafe environments. We define here a datatype for environments.
    Since typing is not yet defined, it is not possible to check the
@@ -47,6 +48,7 @@ val named_context_val : env -> named_context_val
 
 
 val engagement    : env -> engagement option
+val is_impredicative_set : env -> bool
 
 (** is the local context empty *)
 val empty_context : env -> bool
@@ -125,17 +127,36 @@ val add_constant_key : constant -> constant_body -> Pre_env.link_info ref ->
 val lookup_constant    : constant -> env -> constant_body
 val evaluable_constant : constant -> env -> bool
 
+val lookup_projection    : Names.projection -> env -> projection_body
+val is_projection : constant -> env -> bool
+
 (** {6 ... } *)
 (** [constant_value env c] raises [NotEvaluableConst Opaque] if
    [c] is opaque and [NotEvaluableConst NoBody] if it has no
-   body and [Not_found] if it does not exist in [env] *)
+   body and [NotEvaluableConst IsProj] if [c] is a projection 
+   and [Not_found] if it does not exist in [env] *)
 
-type const_evaluation_result = NoBody | Opaque
+type const_evaluation_result = NoBody | Opaque | IsProj
 exception NotEvaluableConst of const_evaluation_result
 
-val constant_value     : env -> constant -> constr
-val constant_type      : env -> constant -> constant_type
-val constant_opt_value : env -> constant -> constr option
+val constant_value : env -> constant puniverses -> constr constrained
+val constant_type : env -> constant puniverses -> types constrained
+val constant_type_in_ctx : env -> constant -> types Univ.in_universe_context
+
+val constant_opt_value : env -> constant puniverses -> (constr * Univ.constraints) option
+val constant_value_and_type : env -> constant puniverses -> 
+  types option * constr * Univ.constraints
+(** The universe context associated to the constant, empty if not 
+    polymorphic *)
+val constant_context : env -> constant -> Univ.universe_context
+
+(* These functions should be called under the invariant that [env] 
+   already contains the constraints corresponding to the constant 
+   application. *)
+val constant_value_in : env -> constant puniverses -> constr
+val constant_type_in : env -> constant puniverses -> types
+val constant_opt_value_in : env -> constant puniverses -> constr option
+
 
 (** {5 Inductive types } *)
 val add_mind_key : mutual_inductive -> Pre_env.mind_key -> env -> env
@@ -157,7 +178,16 @@ val lookup_modtype : module_path -> env -> module_type_body
 
 (** {5 Universe constraints } *)
 
+(** Add universe constraints to the environment.
+    @raises UniverseInconsistency
+*)
 val add_constraints : Univ.constraints -> env -> env
+
+(** Check constraints are satifiable in the environment. *)
+val check_constraints : Univ.constraints -> env -> bool
+val push_context : Univ.universe_context -> env -> env
+val push_context_set : Univ.universe_context_set -> env -> env
+val push_constraints_to_env : 'a Univ.constrained -> env -> env
 
 val set_engagement : engagement -> env -> env
 

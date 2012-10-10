@@ -29,7 +29,7 @@ Set Implicit Arguments.
     [le x y -> le y z -> le x z].
 *)
 
-Inductive ord := OEQ | OLT | OLE.
+Inductive ord : Set := OEQ | OLT | OLE.
 Definition trans_ord o o' :=
  match o, o' with
  | OEQ, _ => o'
@@ -70,7 +70,7 @@ Lemma le_refl : forall x, x<=x.
 Proof. intros; rewrite P.le_lteq; right; reflexivity. Qed.
 
 Lemma lt_irrefl : forall x, ~ x<x.
-Proof. intros; apply StrictOrder_Irreflexive. Qed.
+Proof. intros. apply StrictOrder_Irreflexive. Qed.
 
 (** Symmetry rules *)
 
@@ -100,8 +100,9 @@ Local Notation "#" := interp_ord.
 
 Lemma trans : forall o o' x y z, #o x y -> #o' y z -> #(o+o') x z.
 Proof.
-destruct o, o'; simpl; intros x y z; rewrite ?P.le_lteq; intuition;
- subst_eqns; eauto using (StrictOrder_Transitive x y z) with *.
+destruct o, o'; simpl; intros x y z;
+rewrite ?P.le_lteq; intuition auto;
+subst_eqns; eauto using (StrictOrder_Transitive x y z) with *.
 Qed.
 
 Definition eq_trans x y z : x==y -> y==z -> x==z := @trans OEQ OEQ x y z.

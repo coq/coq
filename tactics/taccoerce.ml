@@ -157,7 +157,7 @@ let coerce_to_evaluable_ref env v =
     else fail ()
   else
     let ev = match Value.to_constr v with
-    | Some c when isConst c -> EvalConstRef (destConst c)
+    | Some c when isConst c -> EvalConstRef (Univ.out_punivs (destConst c))
     | Some c when isVar c -> EvalVarRef (destVar c)
     | _ -> fail ()
     in
@@ -213,7 +213,7 @@ let coerce_to_reference env v =
 
 let coerce_to_inductive v =
   match Value.to_constr v with
-  | Some c when isInd c -> destInd c
+  | Some c when isInd c -> Univ.out_punivs (destInd c)
   | _ -> raise (CannotCoerceTo "an inductive type")
 
 (* Quantified named or numbered hypothesis or hypothesis in context *)

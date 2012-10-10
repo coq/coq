@@ -258,7 +258,21 @@ devdocclean:
 .PHONY: tags printenv
 
 tags:
-	echo $(MLIFILES) $(MLSTATICFILES) $(ML4FILES) | sort -r | xargs \
+	echo $(filter-out checker/%, $(MLIFILES)) $(filter-out checker/%, $(MLSTATICFILES)) $(ML4FILES) | sort -r | xargs \
+	etags --language=none\
+	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/type[ \t]+\([^ \t]+\)/\1/" \
+              "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
+	echo $(ML4FILES) | sort -r | xargs \
+	etags --append --language=none\
+	      "--regex=/[ \t]*\([^: \t]+\)[ \t]*:/\1/"
+
+checker-tags:
+	echo $(filter-out kernel/%, $(MLIFILES)) $(filter-out kernel/%, $(MLSTATICFILES)) $(ML4FILES) | sort -r | xargs \
 	etags --language=none\
 	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \

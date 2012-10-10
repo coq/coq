@@ -15,6 +15,7 @@ Notation "A -> B" := (forall (_ : A), B) : type_scope.
 (** * Propositional connectives *)
 
 (** [True] is the always true proposition *)
+
 Inductive True : Prop :=
   I : True.
 
@@ -232,7 +233,6 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
    P x] is in fact equivalent to [ex (fun x => P x)] which may be not
    convertible to [ex P] if [P] is not itself an abstraction *)
 
-
 Inductive ex (A:Type) (P:A -> Prop) : Prop :=
   ex_intro : forall x:A, P x -> ex (A:=A) P.
 
@@ -301,7 +301,8 @@ Arguments eq_ind [A] x P _ y _.
 Arguments eq_rec [A] x P _ y _.
 Arguments eq_rect [A] x P _ y _.
 
-Hint Resolve I conj or_introl or_intror eq_refl: core.
+Hint Resolve I conj or_introl or_intror : core. 
+Hint Resolve eq_refl: core. 
 Hint Resolve ex_intro ex_intro2: core.
 
 Section Logic_lemmas.
@@ -341,7 +342,7 @@ Section Logic_lemmas.
 
   Definition eq_ind_r :
     forall (A:Type) (x:A) (P:A -> Prop), P x -> forall y:A, y = x -> P y.
-    intros A x P H y H0; elim eq_sym with (1 := H0); assumption.
+    intros A x P H y H0. elim eq_sym with (1 := H0); assumption.
   Defined.
 
   Definition eq_rec_r :

@@ -10,7 +10,7 @@ open Misctypes
    Some basic functions to rebuild glob_constr
    In each of them the location is Loc.ghost
 *)
-let mkGRef ref = GRef(Loc.ghost,ref)
+let mkGRef ref = GRef(Loc.ghost,ref,None)
 let mkGVar id = GVar(Loc.ghost,id)
 let mkGApp(rt,rtl) = GApp(Loc.ghost,rt,rtl)
 let mkGLambda(n,t,b) = GLambda(Loc.ghost,n,Explicit,t,b)
@@ -180,6 +180,7 @@ let change_vars =
       | GRec _ -> error "Local (co)fixes are not supported"
       | GSort _ -> rt
       | GHole _ -> rt
+      | GProj _ -> error "Native projections are not supported" (** FIXME *)
       | GCast(loc,b,c) ->
 	  GCast(loc,change_vars mapping b,
 		Miscops.map_cast_type (change_vars mapping) c)
@@ -357,6 +358,7 @@ let rec alpha_rt excluded rt =
 	    alpha_rt excluded rhs
 	   )
     | GRec _ -> error "Not handled GRec"
+    | GProj _ -> error "Native projections are not supported" (** FIXME *)
     | GSort _ -> rt
     | GHole _ -> rt
     | GCast (loc,b,c) ->
@@ -407,6 +409,7 @@ let is_free_in id =
     | GIf(_,cond,_,br1,br2) ->
 	is_free_in cond || is_free_in br1 || is_free_in br2
     | GRec _ -> raise (UserError("",str "Not handled GRec"))
+    | GProj _ -> error "Native projections are not supported" (** FIXME *)
     | GSort _ -> false
     | GHole _ -> false
     | GCast (_,b,(CastConv t|CastVM t|CastNative t)) -> is_free_in b || is_free_in t
@@ -503,6 +506,7 @@ let replace_var_by_term x_id term =
 	      replace_var_by_pattern rhs
 	     )
       | GRec _ -> raise (UserError("",str "Not handled GRec"))
+      | GProj _ -> error "Native projections are not supported" (** FIXME *)
       | GSort _ -> rt
       | GHole _ -> rt
       | GCast(loc,b,c) ->
@@ -598,6 +602,7 @@ let ids_of_glob_constr c =
       | GCases (loc,sty,rtntypopt,tml,brchl) ->
 	  List.flatten (List.map (fun (_,idl,patl,c) -> idl @ ids_of_glob_constr [] c) brchl)
       | GRec _ -> failwith "Fix inside a constructor branch"
+      | GProj _ -> error "Native projections are not supported" (** FIXME *)
       | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> []
   in
   (* build the set *)
@@ -656,6 +661,7 @@ let zeta_normalize =
 	      zeta_normalize_term rhs
 	     )
       | GRec _ -> raise (UserError("",str "Not handled GRec"))
+      | GProj _ -> error "Native projections are not supported" (** FIXME *)
       | GSort _ -> rt
       | GHole _ -> rt
       | GCast(loc,b,c) ->
@@ -698,6 +704,7 @@ let expand_as =
 	  GIf(loc,expand_as map e,(na,Option.map (expand_as map) po),
 	      expand_as map br1, expand_as map br2)
       | GRec _ ->  error "Not handled GRec"
+      | GProj _ -> error "Native projections are not supported" (** FIXME *)
       | GCast(loc,b,c) ->
 	  GCast(loc,expand_as map b,
 		Miscops.map_cast_type (expand_as map) c)

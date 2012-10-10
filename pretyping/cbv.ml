@@ -45,7 +45,7 @@ type cbv_value =
   | LAM of int * (Name.t * constr) list * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
-  | CONSTR of constructor * cbv_value array
+  | CONSTR of constructor puniverses * cbv_value array
 
 (* type of terms with a hole. This hole can appear only under App or Case.
  *   TOP means the term is considered without context
@@ -67,6 +67,7 @@ and cbv_stack =
   | TOP
   | APP of cbv_value array * cbv_stack
   | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
+  | PROJ of projection * Declarations.projection_body * cbv_stack
 
 (* les vars pourraient etre des constr,
    cela permet de retarder les lift: utile ?? *)
@@ -107,7 +108,7 @@ let contract_cofixp env (i,(_,_,bds as bodies)) =
 let make_constr_ref n = function
   | RelKey p -> mkRel (n+p)
   | VarKey id -> mkVar id
-  | ConstKey cst -> mkConst cst
+  | ConstKey cst -> mkConstU cst
 
 (* Adds an application list. Collapse APPs! *)
 let stack_app appl stack =
@@ -121,6 +122,7 @@ let rec stack_concat stk1 stk2 =
       TOP -> stk2
     | APP(v,stk1') -> APP(v,stack_concat stk1' stk2)
     | CASE(c,b,i,s,stk1') -> CASE(c,b,i,s,stack_concat stk1' stk2)
+    | PROJ (p,pinfo,stk1') -> PROJ (p,pinfo,stack_concat stk1' stk2)
 
 (* merge stacks when there is no shifts in between *)
 let mkSTACK = function
@@ -136,7 +138,7 @@ open RedFlags
 let red_set_ref flags = function
   | RelKey _ -> red_set flags fDELTA
   | VarKey id -> red_set flags (fVAR id)
-  | ConstKey sp -> red_set flags (fCONST sp)
+  | ConstKey (sp,_) -> red_set flags (fCONST sp)
 
 (* Transfer application lists from a value to the stack
  * useful because fixpoints may be totally applied in several times.
@@ -193,6 +195,10 @@ let rec norm_head info env t stack =
       norm_head info env head (stack_app nargs stack)
   | Case (ci,p,c,v) -> norm_head info env c (CASE(p,v,ci,env,stack))
   | Cast (ct,_,_) -> norm_head info env ct stack
+  
+  | Proj (p, c) -> 
+    let pinfo = Option.get ((Environ.lookup_constant p (info_env info)).Declarations.const_proj) in
+    norm_head info env c (PROJ (p, pinfo, stack))
 
   (* constants, axioms
    * the first pattern is CRUCIAL, n=0 happens very often:
@@ -221,7 +227,7 @@ let rec norm_head info env t stack =
 	(CBN(t,env), stack) (* Considérer une coupure commutative ? *)
 
   | Evar ev ->
-      (match evar_value info ev with
+      (match evar_value info.i_cache ev with
           Some c -> norm_head info env c stack
         | None -> (VAL(0, t), stack))
 
@@ -279,14 +285,14 @@ and cbv_stack_term info stack env t =
         cbv_stack_term info stk envf redfix
 
     (* constructor in a Case -> IOTA *)
-    | (CONSTR((sp,n),[||]), APP(args,CASE(_,br,ci,env,stk)))
+    | (CONSTR(((sp,n),u),[||]), APP(args,CASE(_,br,ci,env,stk)))
             when red_set (info_flags info) fIOTA ->
 	let cargs =
           Array.sub args ci.ci_npar (Array.length args - ci.ci_npar) in
         cbv_stack_term info (stack_app cargs stk) env br.(n-1)
 
     (* constructor of arity 0 in a Case -> IOTA *)
-    | (CONSTR((_,n),[||]), CASE(_,br,_,env,stk))
+    | (CONSTR(((_,n),u),[||]), CASE(_,br,_,env,stk))
             when red_set (info_flags info) fIOTA ->
                     cbv_stack_term info stk env br.(n-1)
 
@@ -312,6 +318,8 @@ let rec apply_stack info t = function
         (mkCase (ci, cbv_norm_term info env ty, t,
 		    Array.map (cbv_norm_term info env) br))
         st
+  | PROJ (p, pinfo, st) ->
+       apply_stack info (mkProj (p, t)) st
 
 (* performs the reduction on a constr, and returns a constr *)
 and cbv_norm_term info env t =
@@ -348,7 +356,7 @@ and cbv_norm_value info = function (* reduction under binders *)
 				(subs_liftn (Array.length lty) env)) bds)),
          Array.map (cbv_norm_value info) args)
   | CONSTR (c,args) ->
-      mkApp(mkConstruct c, Array.map (cbv_norm_value info) args)
+      mkApp(mkConstructU c, Array.map (cbv_norm_value info) args)
 
 (* with profiling *)
 let cbv_norm infos constr =

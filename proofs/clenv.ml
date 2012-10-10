@@ -42,12 +42,27 @@ type clausenv = {
 let cl_env ce = ce.env
 let cl_sigma ce =  ce.evd
 
+let map_clenv sub clenv =
+  { templval = map_fl sub clenv.templval;
+    templtyp = map_fl sub clenv.templtyp;
+    evd = cmap sub clenv.evd;
+    env = clenv.env }
+
 let clenv_nf_meta clenv c = nf_meta clenv.evd c
 let clenv_term clenv c = meta_instance clenv.evd c
 let clenv_meta_type clenv mv = Typing.meta_type clenv.evd mv
 let clenv_value clenv = meta_instance clenv.evd clenv.templval
 let clenv_type clenv = meta_instance clenv.evd clenv.templtyp
 
+let refresh_undefined_univs clenv =
+  match kind_of_term clenv.templval.rebus with
+  | Var _ -> clenv, Univ.empty_level_subst
+  | App (f, args) when isVar f -> clenv, Univ.empty_level_subst
+  | _ ->  
+    let evd', subst = Evd.refresh_undefined_universes clenv.evd in
+    let map_freelisted f = { f with rebus = subst_univs_level_constr subst f.rebus } in
+      { clenv with evd = evd'; templval = map_freelisted clenv.templval;
+	templtyp = map_freelisted clenv.templtyp }, subst
 
 let clenv_hnf_constr ce t = hnf_constr (cl_env ce) (cl_sigma ce) t
 
@@ -239,14 +254,14 @@ let clenv_dependent ce = clenv_dependent_gen false ce
 
 (******************************************************************)
 
-let clenv_unify ?(flags=default_unify_flags) cv_pb t1 t2 clenv =
+let clenv_unify ?(flags=default_unify_flags ()) cv_pb t1 t2 clenv =
   { clenv with
       evd = w_unify ~flags clenv.env clenv.evd cv_pb t1 t2 }
 
-let clenv_unify_meta_types ?(flags=default_unify_flags) clenv =
+let clenv_unify_meta_types ?(flags=default_unify_flags ()) clenv =
   { clenv with evd = w_unify_meta_types ~flags:flags clenv.env clenv.evd }
 
-let clenv_unique_resolver ?(flags=default_unify_flags) clenv gl =
+let clenv_unique_resolver ?(flags=default_unify_flags ()) clenv gl =
   let concl = Goal.V82.concl clenv.evd (sig_it gl) in
   if isMeta (fst (decompose_appvect (whd_nored clenv.evd clenv.templtyp.rebus))) then
     clenv_unify CUMUL ~flags (clenv_type clenv) concl
@@ -305,6 +320,9 @@ let connect_clenv gls clenv =
     evd = evd ;
     env = Goal.V82.env evd (sig_it gls) }
 
+(* let connect_clenv_key = Profile.declare_profile "connect_clenv";; *)
+(* let connect_clenv = Profile.profile2 connect_clenv_key connect_clenv *)
+
 (* [clenv_fchain mv clenv clenv']
  *
  * Resolves the value of "mv" (which must be undefined) in clenv to be
@@ -329,11 +347,11 @@ let connect_clenv gls clenv =
    In particular, it assumes that [env'] and [sigma'] extend [env] and [sigma].
 *)
 
-let fchain_flags =
-  { default_unify_flags with
+let fchain_flags () =
+  { (default_unify_flags ()) with
     allow_K_in_toplevel_higher_order_unification = true }
 
-let clenv_fchain ?(flags=fchain_flags) mv clenv nextclenv =
+let clenv_fchain ?(flags=fchain_flags ()) mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
   let clenv' =
     { templval = clenv.templval;

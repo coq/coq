@@ -460,13 +460,13 @@ Proof.
   induction n; simpl; auto with qarith.
   rewrite IHn; auto with qarith.
 Qed.
-
+Transparent Qred.
 Lemma Qcpower_0 : forall n, n<>O -> 0^n = 0.
 Proof.
   destruct n; simpl.
   destruct 1; auto.
   intros.
-  now apply Qc_is_canon.
+  now apply Qc_is_canon. 
 Qed.
 
 Lemma Qcpower_pos : forall p n, 0 <= p -> 0 <= p^n.

@@ -54,8 +54,8 @@ val type_of_inductive_knowing_parameters :
 
 val max_inductive_sort : sorts array -> Univ.universe
 
-val instantiate_universes : env -> rel_context ->
-    polymorphic_arity -> constr array -> rel_context * sorts
+(* val instantiate_universes : env -> rel_context -> *)
+(*     inductive_arity -> constr array -> rel_context * sorts *)
 
 (***************************************************************)
 (* Debug *)

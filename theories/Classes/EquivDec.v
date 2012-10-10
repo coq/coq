@@ -56,6 +56,7 @@ Local Open Scope program_scope.
 Program Definition nequiv_dec `{EqDec A} (x y : A) : { x =/= y } + { x === y } := 
           swap_sumbool (x == y).
 
+
 (** Overloaded notation for inequality. *)
 
 Infix "<>" := nequiv_dec (no associativity, at level 70) : equiv_scope.

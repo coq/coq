@@ -62,12 +62,13 @@ val pf_whd_betadeltaiota       : goal sigma -> constr -> constr
 val pf_hnf_constr              : goal sigma -> constr -> constr
 val pf_nf                      : goal sigma -> constr -> constr
 val pf_nf_betaiota             : goal sigma -> constr -> constr
-val pf_reduce_to_quantified_ind : goal sigma -> types -> inductive * types
-val pf_reduce_to_atomic_ind     : goal sigma -> types -> inductive * types
+val pf_reduce_to_quantified_ind : goal sigma -> types -> pinductive * types
+val pf_reduce_to_atomic_ind     : goal sigma -> types -> pinductive * types
 val pf_compute                 : goal sigma -> constr -> constr
 val pf_unfoldn    : (occurrences * evaluable_global_reference) list
   -> goal sigma -> constr -> constr
 
+val pf_const_value : goal sigma -> pconstant -> constr
 val pf_conv_x      : goal sigma -> constr -> constr -> bool
 val pf_conv_x_leq  : goal sigma -> constr -> constr -> bool
 
@@ -125,7 +126,7 @@ module New : sig
   val pf_last_hyp           : [ `NF ] Proofview.Goal.t -> named_declaration
 
   val pf_nf_concl : [ `LZ ] Proofview.Goal.t -> types
-  val pf_reduce_to_quantified_ind : 'a Proofview.Goal.t -> types -> inductive * types
+  val pf_reduce_to_quantified_ind : 'a Proofview.Goal.t -> types -> pinductive * types
 
   val pf_hnf_constr : 'a Proofview.Goal.t -> constr -> types
   val pf_hnf_type_of : 'a Proofview.Goal.t -> constr -> types

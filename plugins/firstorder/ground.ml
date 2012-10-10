@@ -18,7 +18,7 @@ let update_flags ()=
   let predref=ref Names.Cpred.empty in
   let f coe=
     try
-      let kn=destConst (Classops.get_coercion_value coe) in
+      let kn= fst (destConst (Classops.get_coercion_value coe)) in
 	predref:=Names.Cpred.add kn !predref
     with DestKO -> ()
   in

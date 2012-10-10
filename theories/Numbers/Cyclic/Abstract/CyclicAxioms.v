@@ -93,7 +93,7 @@ Module ZnZ.
     lor         : t -> t -> t;
     land        : t -> t -> t;
     lxor        : t -> t -> t }.
-
+ 
  Section Specs.
  Context {t : Type}{ops : Ops t}.
 

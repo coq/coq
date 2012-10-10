@@ -433,6 +433,9 @@ let subst_constant_def sub = function
   | Def c -> Def (subst_constr_subst sub c)
   | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
 
+(** Local variables and graph *)
+type universe_context = Univ.LSet.t * Univ.constraints 
+
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
   | Def c -> Some (force_constr c)
@@ -488,9 +491,8 @@ let eq_wf_paths = Rtree.equal eq_recarg
    with      In (params) : Un := cn1 : Tn1 | ... | cnpn : Tnpn
 *)
 
-let subst_arity sub = function
-| NonPolymorphicType s -> NonPolymorphicType (subst_mps sub s)
-| PolymorphicArity (ctx,s) -> PolymorphicArity (subst_rel_context sub ctx,s)
+let subst_arity sub s = subst_mps sub s
+
 
 (* TODO: should be changed to non-coping after Term.subst_mps *)
 (* NB: we leave bytecode and native code fields untouched *)
@@ -498,14 +500,6 @@ let subst_const_body sub cb =
  { cb with
     const_body = subst_constant_def sub cb.const_body;
     const_type = subst_arity sub cb.const_type }
-
-let subst_arity sub = function
-| Monomorphic s ->
-    Monomorphic {
-      mind_user_arity = subst_mps sub s.mind_user_arity;
-      mind_sort = s.mind_sort;
-    }
-| Polymorphic s as x -> x
 
 let subst_mind_packet sub mbp =
   { mind_consnames = mbp.mind_consnames;

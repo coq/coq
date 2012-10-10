@@ -124,7 +124,7 @@ let env_of_rel n env =
 let push_named_context_val d (ctxt,vals) =
   let id,_,_ = d in
   let rval = ref VKnone in
-    Context.add_named_decl d ctxt, (id,rval)::vals
+    add_named_decl d ctxt, (id,rval)::vals
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);

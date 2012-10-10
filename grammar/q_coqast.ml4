@@ -140,10 +140,10 @@ let mlexpr_of_binder_kind = function
 	$mlexpr_of_binding_kind b'$ $mlexpr_of_bool b''$ >>
 
 let rec mlexpr_of_constr = function
-  | Constrexpr.CRef (Libnames.Ident (loc,id)) when is_meta (Id.to_string id) ->
+  | Constrexpr.CRef (Libnames.Ident (loc,id),_) when is_meta (Id.to_string id) ->
       let loc = of_coqloc loc in
       anti loc (Id.to_string id)
-  | Constrexpr.CRef r -> <:expr< Constrexpr.CRef $mlexpr_of_reference r$ >>
+  | Constrexpr.CRef (r,n) -> <:expr< Constrexpr.CRef $mlexpr_of_reference r$ None >>
   | Constrexpr.CFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Constrexpr.CCoFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Constrexpr.CProdN (loc,l,a) ->
@@ -154,8 +154,9 @@ let rec mlexpr_of_constr = function
     let loc = of_coqloc loc in
     <:expr< Constrexpr.CLambdaN $dloc$ $mlexpr_of_list (mlexpr_of_triple (mlexpr_of_list (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_name)) mlexpr_of_binder_kind mlexpr_of_constr) l$ $mlexpr_of_constr a$ >>
   | Constrexpr.CLetIn (loc,_,_,_) -> failwith "mlexpr_of_constr: TODO"
-  | Constrexpr.CAppExpl (loc,a,l) ->
+  | Constrexpr.CAppExpl (loc,(p,r,us),l) ->
     let loc = of_coqloc loc in
+    let a = (p,r) in
     <:expr< Constrexpr.CAppExpl $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_reference a$ $mlexpr_of_list mlexpr_of_constr l$ >>
   | Constrexpr.CApp (loc,a,l) ->
     let loc = of_coqloc loc in

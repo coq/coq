@@ -657,6 +657,48 @@ let profile7 e f a b c d g h i =
     last_alloc := get_alloc ();
     raise reraise
 
+let profile8 e f a b c d g h i j =
+  let dw = spent_alloc () in
+  match !stack with [] -> assert false | p::_ ->
+  (* We add spent alloc since last measure to current caller own/total alloc *)
+  ajoute_ownalloc p dw;
+  ajoute_totalloc p dw;
+  e.owncount <- e.owncount + 1;
+  if not (p==e) then stack := e::!stack;
+  let totalloc0 = e.totalloc in
+  let intcount0 = e.intcount in
+  let t = get_time () in
+  try
+    last_alloc := get_alloc ();
+    let r = f a b c d g h i j in
+    let dw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    ajoute_ownalloc e dw;
+    ajoute_totalloc e dw;
+    p.owntime <- p.owntime - dt;
+    ajoute_totalloc p (e.totalloc -. totalloc0);
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    r
+  with reraise ->
+    let dw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    ajoute_ownalloc e dw;
+    ajoute_totalloc e dw;
+    p.owntime <- p.owntime - dt;
+    ajoute_totalloc p (e.totalloc -. totalloc0);
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    raise reraise
+
 let print_logical_stats a =
   let (c, s, d) = CObj.obj_stats a in
   Printf.printf "Expanded size: %10d (str: %8d) Depth: %6d\n" (s+c) c d

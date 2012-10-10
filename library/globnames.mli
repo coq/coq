@@ -31,19 +31,21 @@ val destConstRef : global_reference -> constant
 val destIndRef : global_reference -> inductive
 val destConstructRef : global_reference -> constructor
 
+val is_global : global_reference -> constr -> bool
 
 val subst_constructor : substitution -> constructor -> constructor * constr
 val subst_global : substitution -> global_reference -> global_reference * constr
+val subst_global_reference : substitution -> global_reference -> global_reference
 
-(** Turn a global reference into a construction *)
-val constr_of_global : global_reference -> constr
+(** This constr is not safe to be typechecked, universe polymorphism is not 
+    handled here: just use for printing *)
+val printable_constr_of_global : global_reference -> constr
 
 (** Turn a construction denoting a global reference into a global reference;
    raise [Not_found] if not a global reference *)
 val global_of_constr : constr -> global_reference
 
 (** Obsolete synonyms for constr_of_global and global_of_constr *)
-val constr_of_reference : global_reference -> constr
 val reference_of_constr : constr -> global_reference
 
 module RefOrdered : sig
@@ -86,8 +88,6 @@ end
 type global_reference_or_constr = 
   | IsGlobal of global_reference
   | IsConstr of constr
-
-val constr_of_global_or_constr : global_reference_or_constr -> constr
 
 (** {6 Temporary function to brutally form kernel names from section paths } *)
 

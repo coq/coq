@@ -88,7 +88,7 @@ val dEq : evars_flag -> constr with_bindings induction_arg option -> unit Proofv
 val dEqThen : evars_flag -> (constr -> int -> unit Proofview.tactic) -> constr with_bindings induction_arg option -> unit Proofview.tactic
 
 val make_iterated_tuple :
-  env -> evar_map -> constr -> (constr * types) -> constr * constr * constr
+  env -> evar_map -> constr -> (constr * types) -> evar_map * (constr * constr * constr)
 
 (* The family cutRewriteIn expect an equality statement *)
 val cutRewriteInHyp : bool -> types -> Id.t -> unit Proofview.tactic

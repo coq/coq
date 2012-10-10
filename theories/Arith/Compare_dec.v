@@ -201,7 +201,7 @@ Qed.
 Lemma nat_compare_spec :
   forall x y, CompareSpec (x=y) (x<y) (y<x) (nat_compare x y).
 Proof.
- intros.
+ intros. 
  destruct (nat_compare x y) eqn:?; constructor.
  apply nat_compare_eq; auto.
  apply <- nat_compare_lt; auto.

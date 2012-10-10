@@ -97,16 +97,16 @@ let is_unit_or_eq flags ist =
 let is_record t =
   let (hdapp,args) = decompose_app t in
     match (kind_of_term hdapp) with
-      | Ind ind  ->
+      | Ind (ind,u) ->
           let (mib,mip) = Global.lookup_inductive ind in
-	    mib.Declarations.mind_record
+	    mib.Declarations.mind_record <> None
       | _ -> false
 
 let bugged_is_binary t =
   isApp t &&
   let (hdapp,args) = decompose_app t in
     match (kind_of_term hdapp) with
-    | Ind ind  ->
+    | Ind (ind,u)  ->
         let (mib,mip) = Global.lookup_inductive ind in
          Int.equal mib.Declarations.mind_nparams 2
     | _ -> false
@@ -319,7 +319,7 @@ let tauto_gen flags =
   Proofview.tclBIND
     (Proofview.tclUNIT ())
     begin fun () -> try
-      let nnpp = constr_of_global (Nametab.global_of_path coq_nnpp_path) in
+      let nnpp = Universes.constr_of_global (Nametab.global_of_path coq_nnpp_path) in
     (* try intuitionistic version first to avoid an axiom if possible *)
       Tacticals.New.tclORELSE (tauto_intuitionistic flags) (tauto_classical flags nnpp)
     with Not_found ->

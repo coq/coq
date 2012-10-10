@@ -21,6 +21,8 @@ Require Vectors.Fin.
 Import EqNotations.
 Local Open Scope nat_scope.
 
+Set Universe Polymorphism.
+
 (**
 A vector is a list of size n whose elements belong to a set A. *)
 
@@ -43,10 +45,10 @@ Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
  |@cons _ a 0 v =>
    match v with
      |nil _ => bas a
-     |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
+     |_ => fun devil => False_ind (@IDProp) devil (* subterm !!! *)
    end
  |@cons _ a (S nn') v => rect a v (rectS_fix v)
- |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
+ |_ => fun devil => False_ind (@IDProp) devil (* subterm !!! *)
  end.
 
 (** An induction scheme for 2 vectors of same length *)
@@ -60,13 +62,13 @@ match v1 as v1' in t _ n1
   |[] => fun v2 =>
      match v2 with
        |[] => bas
-       |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
+       |_ => fun devil => False_ind (@IDProp) devil (* subterm !!! *)
      end
   |h1 :: t1 => fun v2 =>
     match v2 with
       |h2 :: t2 => fun t1' =>
         rect (rect2_fix t1' t2) h1 h2
-      |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
+      |_ => fun devil => False_ind (@IDProp) devil (* subterm !!! *)
     end t1
 end.
 
@@ -74,7 +76,7 @@ end.
 Definition case0 {A} (P:t A 0 -> Type) (H:P (nil A)) v:P v :=
 match v with
   |[] => H
-  |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
+  |_ => fun devil => False_ind (@IDProp) devil (* subterm !!! *)
 end.
 
 (** A vector of length [S _] is [cons] *)
@@ -82,7 +84,7 @@ Definition caseS {A} (P : forall {n}, t A (S n) -> Type)
   (H : forall h {n} t, @P n (h :: t)) {n} (v: t A (S n)) : P v :=
 match v with
   |h :: t => H h t
-  |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
+  |_ => fun devil => False_ind (@IDProp) devil (* subterm !!! *)
 end.
 End SCHEMES.
 
@@ -245,11 +247,11 @@ fix fold_left2_fix (a : A) {n} (v : t B n) : t C n -> A :=
 match v in t _ n0 return t C n0 -> A with
   |[] => fun w => match w with
     |[] => a
-    |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
+    |_ => fun devil => False_ind (@IDProp) devil (* subterm !!! *)
   end
   |@cons _ vh vn vt => fun w => match w with
     |wh :: wt => fun vt' => fold_left2_fix (f a vh wh) vt' wt
-    |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
+    |_ => fun devil => False_ind (@IDProp) devil (* subterm !!! *)
   end vt
 end.
 

@@ -17,7 +17,8 @@ type recipe = { from : constant_body; info : Opaqueproof.cooking_info }
 type inline = bool
 
 type result =
-  constant_def * constant_type * Univ.constraints * inline
+  constant_def * constant_type * projection_body option * 
+    bool * constant_universes * inline
     * Context.section_context option
 
 val cook_constant : env -> recipe -> result

@@ -12,9 +12,9 @@ bool ->
            Constrintern.internalization_env ->
            Constrexpr.constr_expr ->
            Constrexpr.constr_expr ->
-           int -> Constrexpr.constr_expr -> (Names.constant ->
+           int -> Constrexpr.constr_expr -> (Term.pconstant ->
             Term.constr option ref ->
-            Names.constant ->
-            Names.constant -> int -> Term.types -> int -> Term.constr -> 'a) -> Constrexpr.constr_expr list -> unit
+            Term.pconstant ->
+            Term.pconstant -> int -> Term.types -> int -> Term.constr -> 'a) -> Constrexpr.constr_expr list -> unit
 
 

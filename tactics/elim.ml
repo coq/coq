@@ -104,12 +104,12 @@ let head_in indl t gl =
       if !up_to_delta
       then find_mrectype env sigma t
       else extract_mrectype t
-    in List.exists (fun i -> eq_ind i ity) indl
+    in List.exists (fun i -> eq_ind (fst i) (fst ity)) indl
   with Not_found -> false
 
 let decompose_these c l =
   Proofview.Goal.raw_enter begin fun gl ->
-  let indl = (*List.map inductive_of*) l in
+  let indl = List.map (fun x -> x, Univ.Instance.empty) l in
   general_decompose (fun (_,t) -> head_in indl t gl) c
   end
 

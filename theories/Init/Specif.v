@@ -21,19 +21,19 @@ Require Import Logic.
     Similarly [(sig2 A P Q)], or [{x:A | P x & Q x}], denotes the subset
     of elements of the type [A] which satisfy both [P] and [Q]. *)
 
-Inductive sig (A:Type) (P:A -> Prop) : Type :=
+Polymorphic Inductive sig (A:Type) (P:A -> Prop) : Type :=
     exist : forall x:A, P x -> sig P.
 
-Inductive sig2 (A:Type) (P Q:A -> Prop) : Type :=
+Polymorphic Inductive sig2 (A:Type) (P Q:A -> Prop) : Type :=
     exist2 : forall x:A, P x -> Q x -> sig2 P Q.
 
 (** [(sigT A P)], or more suggestively [{x:A & (P x)}] is a Sigma-type.
     Similarly for [(sigT2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
 
-Inductive sigT (A:Type) (P:A -> Type) : Type :=
+Polymorphic Inductive sigT (A:Type) (P:A -> Type) : Type :=
     existT : forall x:A, P x -> sigT P.
 
-Inductive sigT2 (A:Type) (P Q:A -> Type) : Type :=
+Polymorphic Inductive sigT2 (A:Type) (P Q:A -> Type) : Type :=
     existT2 : forall x:A, P x -> Q x -> sigT2 P Q.
 
 (* Notations *)
@@ -65,7 +65,7 @@ Add Printing Let sigT2.
     [(proj1_sig y)] is the witness [a] and [(proj2_sig y)] is the
     proof of [(P a)] *)
 
-
+Set Universe Polymorphism.
 Section Subset_projections.
 
   Variable A : Type.
@@ -123,6 +123,8 @@ End Subset_projections2.
     [(projT1 x)] is the first projection and [(projT2 x)] is the
     second projection, the type of which depends on the [projT1]. *)
 
+
+
 Section Projections.
 
   Variable A : Type.
@@ -131,6 +133,7 @@ Section Projections.
   Definition projT1 (x:sigT P) : A := match x with
                                       | existT _ a _ => a
                                       end.
+
   Definition projT2 (x:sigT P) : P (projT1 x) :=
     match x return P (projT1 x) with
     | existT _ _ h => h
@@ -212,6 +215,8 @@ Add Printing If sumor.
 Arguments inleft {A B} _ , [A] B _.
 Arguments inright {A B} _ , A [B] _.
 
+Unset Universe Polymorphism.
+
 (** Various forms of the axiom of choice for specifications *)
 
 Section Choice_lemmas.
@@ -257,10 +262,10 @@ Section Dependent_choice_lemmas.
     (forall x:X, {y | R x y}) ->
     forall x0, {f : nat -> X | f O = x0 /\ forall n, R (f n) (f (S n))}.
   Proof.
-    intros H x0.
+    intros H x0. 
     set (f:=fix f n := match n with O => x0 | S n' => proj1_sig (H (f n')) end).
     exists f.
-    split. reflexivity.
+    split. reflexivity. 
     induction n; simpl; apply proj2_sig.
   Defined.
 
@@ -273,11 +278,13 @@ End Dependent_choice_lemmas.
      [Inductive Exc [A:Type] : Type := value : A->(Exc A) | error : (Exc A)].
 
      It is implemented using the option type. *)
+Section Exc.
+  Variable A : Type.
 
-Definition Exc := option.
-Definition value := Some.
-Definition error := @None.
-
+  Definition Exc := option A.
+  Definition value := @Some A.
+  Definition error := @None A.
+End Exc.
 Arguments error [A].
 
 Definition except := False_rec. (* for compatibility with previous versions *)

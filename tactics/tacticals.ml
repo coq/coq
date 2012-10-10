@@ -145,7 +145,7 @@ let ifOnHyp pred tac1 tac2 id gl =
   the elimination. *)
 
 type branch_args = {
-  ity        : inductive;   (* the type we were eliminating on *)
+  ity        : pinductive;   (* the type we were eliminating on *)
   largs      : constr list; (* its arguments *)
   branchnum  : int;         (* the branch number *)
   pred       : constr;      (* the predicate we used *)
@@ -185,7 +185,7 @@ let compute_induction_names n = function
   | Some (loc,_) ->
       user_err_loc (loc,"",str "Disjunctive/conjunctive introduction pattern expected.")
 
-let compute_construtor_signatures isrec (_,k as ity) =
+let compute_construtor_signatures isrec ((_,k as ity),u) =
   let rec analrec c recargs =
     match kind_of_term c, recargs with
     | Prod (_,_,c), recarg::rest ->
@@ -214,10 +214,19 @@ let elimination_sort_of_clause = function
   | None -> elimination_sort_of_goal
   | Some id -> elimination_sort_of_hyp id
 
+
+let pf_with_evars glsev k gls = 
+  let evd, a = glsev gls in
+    tclTHEN (Refiner.tclEVARS evd) (k a) gls
+
+let pf_constr_of_global gr k =
+  pf_with_evars (fun gls -> pf_apply Evd.fresh_global gls gr) k
+
 (* computing the case/elim combinators *)
 
 let gl_make_elim ind gl =
-  Indrec.lookup_eliminator ind (elimination_sort_of_goal gl)
+  let gr = Indrec.lookup_eliminator (fst ind) (elimination_sort_of_goal gl) in
+    pf_apply Evd.fresh_global gl gr
 
 let gl_make_case_dep ind gl =
   pf_apply Indrec.build_case_analysis_scheme gl ind true
@@ -535,7 +544,8 @@ module New = struct
       isrec allnames tac predicate ind (c, t) =
     Proofview.Goal.enter begin fun gl ->
     let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c, t)) gl in
-    let elim = Tacmach.New.of_old (mk_elim ind) gl in
+    (** FIXME: evar leak. *)
+    let sigma, elim = Tacmach.New.of_old (mk_elim ind) gl in
     (* applying elimination_scheme just a little modified *)
     let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_type_of gl elim)) gl in
     let indmv =
@@ -550,7 +560,7 @@ module New = struct
       | _ ->
 	  let name_elim =
 	    match kind_of_term elim with
-	    | Const kn -> string_of_con kn
+	    | Const (kn, _) -> string_of_con kn
 	    | Var id -> string_of_id id
 	    | _ -> "\b"
 	  in
@@ -559,7 +569,7 @@ module New = struct
     let elimclause' = clenv_fchain indmv elimclause indclause in
     let branchsigns = compute_construtor_signatures isrec ind in
     let brnames = compute_induction_names (Array.length branchsigns) allnames in
-    let flags = Unification.elim_flags in
+    let flags = Unification.elim_flags () in
     let elimclause' =
       match predicate with
       | None   -> elimclause'
@@ -591,9 +601,9 @@ module New = struct
     Proofview.Goal.enter begin fun gl ->
     let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
     let isrec,mkelim =
-      if (Global.lookup_mind (fst ind)).mind_record
-      then false,gl_make_case_dep
-      else true,gl_make_elim
+      match (Global.lookup_mind (fst (fst ind))).mind_record with
+      | None -> true,gl_make_elim
+      | Some _ -> false,gl_make_case_dep
     in
     general_elim_then_using mkelim isrec None tac None ind (c, t)
     end
@@ -629,5 +639,13 @@ module New = struct
   let elimination_sort_of_clause id gl = match id with
   | None -> elimination_sort_of_goal gl
   | Some id -> elimination_sort_of_hyp id gl
+
+  let pf_constr_of_global ref tac =
+    Proofview.Goal.enter begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let sigma = Proofview.Goal.sigma gl in
+      let (sigma, c) = Evd.fresh_global env sigma ref in
+      Proofview.V82.tclEVARS sigma <*> (tac c)
+    end
 
 end

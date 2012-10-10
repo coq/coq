@@ -258,12 +258,12 @@ let notations_key_table = ref (KeyMap.empty : notation_rule list KeyMap.t)
 let prim_token_key_table = ref KeyMap.empty
 
 let glob_prim_constr_key = function
-  | GApp (_,GRef (_,ref),_) | GRef (_,ref) -> RefKey (canonical_gr ref)
+  | GApp (_,GRef (_,ref,_),_) | GRef (_,ref,_) -> RefKey (canonical_gr ref)
   | _ -> Oth
 
 let glob_constr_keys = function
-  | GApp (_,GRef (_,ref),_) -> [RefKey (canonical_gr ref); Oth]
-  | GRef (_,ref) -> [RefKey (canonical_gr ref)]
+  | GApp (_,GRef (_,ref,_),_) -> [RefKey (canonical_gr ref); Oth]
+  | GRef (_,ref,_) -> [RefKey (canonical_gr ref)]
   | _ -> [Oth]
 
 let cases_pattern_key = function
@@ -455,8 +455,8 @@ let interp_prim_token =
 let rec rcp_of_glob looked_for = function
   | GVar (loc,id) -> RCPatAtom (loc,Some id)
   | GHole (loc,_,_) -> RCPatAtom (loc,None)
-  | GRef (loc,g) -> looked_for g; RCPatCstr (loc, g,[],[])
-  | GApp (loc,GRef (_,g),l) ->
+  | GRef (loc,g,_) -> looked_for g; RCPatCstr (loc, g,[],[])
+  | GApp (loc,GRef (_,g,_),l) ->
     looked_for g; RCPatCstr (loc, g, List.map (rcp_of_glob looked_for) l,[])
   | _ -> raise Not_found
 
@@ -502,7 +502,7 @@ let uninterp_prim_token_ind_pattern ind args =
     if not b then raise Notation_ops.No_match;
     let args' = List.map
       (fun x -> snd (glob_constr_of_closed_cases_pattern x)) args in
-    let ref = GRef (Loc.ghost,ref) in
+    let ref = GRef (Loc.ghost,ref,None) in
     match numpr (GApp (Loc.ghost,ref,args')) with
       | None -> raise Notation_ops.No_match
       | Some n -> (sc,n)
@@ -655,13 +655,13 @@ let rebuild_arguments_scope (req,r,l,_) =
   match req with
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->
-        let scs,cls = compute_arguments_scope_full (Global.type_of_global r) in
+        let scs,cls = compute_arguments_scope_full (fst(Universes.type_of_global r)(*FIXME?*)) in
 	(req,r,scs,cls)
     | ArgsScopeManual ->
 	(* Add to the manually given scopes the one found automatically
            for the extra parameters of the section. Discard the classes
            of the manually given scopes to avoid further re-computations. *)
-	let l',cls = compute_arguments_scope_full (Global.type_of_global r) in
+	let l',cls = compute_arguments_scope_full (Global.type_of_global_unsafe r) in
         let nparams = List.length l' - List.length l in
 	let l1 = List.firstn nparams l' in
         let cls1 = List.firstn nparams cls in
@@ -705,7 +705,7 @@ let find_arguments_scope r =
   with Not_found -> []
 
 let declare_ref_arguments_scope ref =
-  let t = Global.type_of_global ref in
+  let t = Global.type_of_global_unsafe ref in
   declare_arguments_scope_gen ArgsScopeAuto ref (compute_arguments_scope_full t)
 
 
