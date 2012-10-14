@@ -204,11 +204,11 @@ let file_of_name name =
     if full then
       if is_in_path !coq_mlpath_copy base then base else fail base
     else
-      let name = base ^ ".cmo" in
+      let name = base ^ ".cma" in
       if is_in_path !coq_mlpath_copy name then name else
-        let name = base ^ ".cma" in
+        let name = base ^ ".cmo" in
         if is_in_path !coq_mlpath_copy name then name else
-          fail (base ^ ".cm[oa]")
+          fail (base ^ ".cm[ao]")
 
 (** Is the ML code of the standard library placed into loadable plugins
     or statically compiled into coqtop ? For the moment this choice is
