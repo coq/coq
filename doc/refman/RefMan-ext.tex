@@ -1518,6 +1518,23 @@ Check (p (s:=a) (t:=b) r1 (u:=c) r2).
 Fail Arguments p [s t] _ [w] _.
 \end{coq_example}
 
+\subsection{Deprecated Implicit Arguments command
+\comindex{Implicit Arguments}}
+
+Before version 8.4 the command to specify the implicit arguments of a constant
+was {\tt Implicit Arguments} followed by a bracketed list of identifiers.
+Starting with Coq 8.4 the {\tt Argument} command must be used (see
+\ref{ImplicitArguments}).
+
+\begin{coq_example}
+Require Import List.
+Implicit Arguments map [A B].
+Implicit Arguments length [[A]].
+\end{coq_example}
+
+The first example declares the arguments of {\tt map} named {\tt A} and
+{\tt B} implicit. The second one declares the argument named {\tt A} implicit
+and maximally inserted.
 
 \subsection{Displaying what the implicit arguments are
 \comindex{Print Implicit}
