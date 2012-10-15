@@ -215,12 +215,12 @@ EXTEND
          declare_tactic loc s l ] ]
   ;
   tacrule:
-    [ [ "["; l = LIST1 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]"
-        ->
-	  if match List.hd l with GramNonTerminal _ -> true | _ -> false then
+    [ [ "["; l = LIST1 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]" ->
+	(match l with
+	  | GramNonTerminal _ :: _ ->
 	    (* En attendant la syntaxe de tacticielles *)
-	    failwith "Tactic syntax must start with an identifier";
-	  (l,e)
+	    failwith "Tactic syntax must start with an identifier"
+	  | _ -> (l,e))
     ] ]
   ;
   tacargs:
