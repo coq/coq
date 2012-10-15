@@ -107,16 +107,14 @@ COREMLINCLUDES=$(addprefix -I , $(CORESRCDIRS)) -I $(MYCAMLP4LIB)
 OCAMLC := $(TYPEREX) $(OCAMLC) $(CAMLFLAGS)
 OCAMLOPT := $(TYPEREX) $(OCAMLOPT) $(CAMLFLAGS)
 
-BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG) $(USERFLAGS)
-OPTFLAGS=$(MLINCLUDES) $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
-COREBYTEFLAGS=$(COREMLINCLUDES) $(CAMLDEBUG) $(USERFLAGS)
-COREOPTFLAGS=$(COREMLINCLUDES) $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
+BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
+OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 DEPFLAGS= -slash $(LOCALINCLUDES)
 
 define bestocaml
 $(if $(OPT),\
-$(OCAMLOPT) $(OPTFLAGS) -o $@ $(1) $(addsuffix .cmxa,$(2)) $^ && $(STRIP) $@,\
-$(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
+$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -o $@ $(1) $(addsuffix .cmxa,$(2)) $^ && $(STRIP) $@,\
+$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
 endef
 
 CAMLP4DEPS=$(shell LC_ALL=C sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*@\1@p' $(1) \#))
@@ -224,7 +222,7 @@ minibyte: $(COQTOPBYTE) pluginsbyte
 ifeq ($(BEST),opt)
 $(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -boot -opt $(COREOPTFLAGS) -o $@
+	$(HIDE)$(COQMKTOP) -boot -opt $(COREMLINCLUDES) $(OPTFLAGS) -o $@
 	$(STRIP) $@
 else
 $(COQTOPEXE): $(COQTOPBYTE)
@@ -233,17 +231,15 @@ endif
 
 $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -boot -top $(COREBYTEFLAGS) -o $@
+	$(HIDE)$(COQMKTOP) -boot -top $(COREMLINCLUDES) $(BYTEFLAGS) -o $@
 
 LOCALCHKLIBS:=$(addprefix -I , $(CHKSRCDIRS) )
 CHKLIBS:=$(LOCALCHKLIBS) -I $(MYCAMLP4LIB)
-CHKBYTEFLAGS:=$(CHKLIBS) $(CAMLDEBUG) $(USERFLAGS)
-CHKOPTFLAGS:=$(CHKLIBS) $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 
 ifeq ($(BEST),opt)
 $(CHICKEN): checker/check.cmxa checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -o $@ $(SYSCMXA) $^
+	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -o $@ $(SYSCMXA) $^
 	$(STRIP) $@
 else
 $(CHICKEN): $(CHICKENBYTE)
@@ -252,7 +248,7 @@ endif
 
 $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(SYSCMA) $^
+	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(SYSCMA) $^
 
 # coqmktop
 $(COQMKTOP): $(patsubst %.cma,%$(BESTLIB),$(COQMKTOPCMO:.cmo=$(BESTOBJ)))
@@ -274,21 +270,21 @@ $(COQC):  $(patsubst %.cma,%$(BESTLIB),$(COQCCMO:.cmo=$(BESTOBJ)))
 
 %.cma: | %.mllib.d
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $^
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -a -o $@ $^
 
 %.cmxa: | %.mllib.d
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $^
+	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -a -o $@ $^
 
 # For the checker, different flags may be used
 
 checker/check.cma: | checker/check.mllib.d
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) -a -o $@ $^
+	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -a -o $@ $^
 
 checker/check.cmxa: | checker/check.mllib.d
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -a -o $@ $^
+	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -a -o $@ $^
 
 ###########################################################################
 # Csdp to micromega special targets
@@ -322,7 +318,7 @@ coqide-files: $(IDEFILES)
 ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT) | $(COQTOPEXE)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa threads.cmxa \
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(MLINCLUDES) $(OPTFLAGS) -o $@ unix.cmxa threads.cmxa \
 		lablgtk.cmxa lablgtksourceview2.cmxa $(IDEOPTFLAGS) gtkThread.cmx \
 		str.cmxa $(LINKIDEOPT)
 	$(STRIP) $@
@@ -333,7 +329,7 @@ endif
 
 $(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma\
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(MLINCLUDES) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma\
 	        lablgtksourceview2.cma gtkThread.cmo str.cma $(COQRUNBYTEFLAGS) $(LINKIDE)
 
 # install targets
@@ -729,18 +725,18 @@ $(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
 
 dev/printers.cma: | dev/printers.mllib.d
 	$(SHOW)'Testing $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(SYSCMA) $(P4CMA) $^ -o test-printer
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(SYSCMA) $(P4CMA) $^ -o test-printer
 	@rm -f test-printer
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $^ -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $^ -linkall -a -o $@
 
 grammar/grammar.cma: | grammar/grammar.mllib.d
 	$(SHOW)'Testing $@'
 	@touch test.ml4
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp '$(CAMLP4O) -I $(CAMLLIB) $^ -impl' -impl test.ml4 -o test-grammar
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -pp '$(CAMLP4O) -I $(CAMLLIB) $^ -impl' -impl test.ml4 -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $^ -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $^ -linkall -a -o $@
 
 ide/coqide_main.ml: ide/coqide_main.ml4
 	$(SHOW)'CAMLP4O   $<'
@@ -757,11 +753,11 @@ TERM:=kernel/term
 
 $(TERM).cmo: $(TERM).ml | $(TERM).ml.d
 	$(SHOW)'OCAMLC -rectypes $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -rectypes -c $<
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -rectypes -c $<
 
 $(TERM).cmx: $(TERM).ml | $(TERM).ml.d
 	$(SHOW)'OCAMLOPT -rectypes $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -intf-suffix .cmi -rectypes -c $<
+	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -intf-suffix .cmi -rectypes -c $<
 
 # pretty printing of the revision number when compiling a checked out
 # source tree
@@ -817,12 +813,12 @@ endif
 ## Three flavor of flags: checker/* ide/* and normal files
 
 COND_BYTEFLAGS= \
- $(if $(filter checker/%,$<), $(CHKBYTEFLAGS), \
-   $(if $(filter ide/%,$<),$(COQIDEFLAGS),) $(BYTEFLAGS))
+ $(if $(filter checker/%,$<), $(CHKLIBS), \
+   $(if $(filter ide/%,$<),$(COQIDEFLAGS),) $(MLINCLUDES)) $(BYTEFLAGS)
 
 COND_OPTFLAGS= \
- $(if $(filter checker/%,$<), $(CHKOPTFLAGS), \
-   $(if $(filter ide/%,$<),$(COQIDEFLAGS),) $(OPTFLAGS))
+ $(if $(filter checker/%,$<), $(CHKLIBS), \
+   $(if $(filter ide/%,$<),$(COQIDEFLAGS),) $(MLINCLUDES)) $(OPTFLAGS)
 
 %.o: %.c
 	$(SHOW)'OCAMLC    $<'
