@@ -76,8 +76,11 @@ PLUGINS:=\
 
 SRCDIRS:=\
   $(CORESRCDIRS)  \
-  tools 	tools/coqdoc 	scripts		ide/utils	ide \
+  tools 	tools/coqdoc 	scripts	\
   $(addprefix plugins/, $(PLUGINS))
+
+IDESRCDIRS:=\
+  config	lib	ide/utils	ide
 
 # Order is relevent here because kernel and checker contain files
 # with the same name
@@ -224,8 +227,7 @@ IDEMOD:=$(shell cat ide/ide.mllib)
 
 # coqmktop, coqc
 
-COQENVCMO:=lib/clib.cma\
-  lib/loc.cmo lib/errors.cmo
+COQENVCMO:=lib/clib.cma lib/loc.cmo lib/errors.cmo
 
 COQMKTOPCMO:=$(COQENVCMO) scripts/tolink.cmo scripts/coqmktop.cmo
 
