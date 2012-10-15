@@ -70,7 +70,7 @@ let mkBranches c1 c2 =
 let solveNoteqBranch side =
   tclTHEN (choose_noteq side)
     (tclTHEN introf
-      (onLastHypId (fun id -> Extratactics.h_discrHyp id)))
+      (onLastHypId (fun id -> Extratactics.discrHyp id)))
 
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
@@ -106,7 +106,7 @@ let diseqCase eqonleft =
   (tclTHEN  red_in_concl
   (tclTHEN  (intro_using absurd)
   (tclTHEN  (h_simplest_apply (mkVar diseq))
-  (tclTHEN  (Extratactics.h_injHyp absurd)
+  (tclTHEN  (Extratactics.injHyp absurd)
             (full_trivial [])))))))
 
 let solveArg eqonleft op a1 a2 tac g =

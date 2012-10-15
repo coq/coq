@@ -77,24 +77,6 @@ let rec make_args = function
       <:expr< [ Genarg.in_gen $make_wit loc t$ $lid:p$ :: $make_args l$ ] >>
   | _::l -> make_args l
 
-let rec make_eval_tactic e = function
-  | [] -> e
-  | GramNonTerminal(loc,tag,_,Some p)::l when is_tactic_genarg tag ->
-      let loc = of_coqloc loc in
-      let p = Names.string_of_id p in
-      let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
-      let e = make_eval_tactic e l in
-      <:expr< let $lid:p$ = $lid:p$ in $e$ >>
-  | _::l -> make_eval_tactic e l
-
-let rec make_fun e = function
-  | [] -> e
-  | GramNonTerminal(loc,_,_,Some p)::l ->
-      let loc = of_coqloc loc in
-      let p = Names.string_of_id p in
-      <:expr< fun $lid:p$ -> $make_fun e l$ >>
-  | _::l -> make_fun e l
-
 let mlexpr_terminals_of_grammar_tactic_prod_item_expr = function
   | GramTerminal s -> <:expr< Some $mlexpr_of_string s$ >>
   | GramNonTerminal (loc,nt,_,sopt) ->
@@ -171,18 +153,10 @@ let declare_tactic loc s cl =
   let se = mlexpr_of_string s in
   let pp = make_printing_rule se cl in
   let gl = mlexpr_of_clause cl in
-  let hide_tac (p,e) =
-    (* reste a definir les fonctions cachees avec des noms frais *)
-    let stac = "h_"^s in
-    let e = make_fun (make_eval_tactic e p) p in
-    <:str_item< value $lid:stac$ = $e$ >>
-  in
-  let hidden = if List.length cl = 1 then List.map hide_tac cl else [] in
   let atomic_tactics =
     mlexpr_of_list (mlexpr_of_pair mlexpr_of_string (fun x -> x))
       (possibly_atomic loc cl) in
   declare_str_items loc
-   (hidden @
     [ <:str_item< do {
       try
         let _=Tacinterp.add_tactic $se$ $make_fun_clauses loc s cl$ in
@@ -201,7 +175,7 @@ let declare_tactic loc s cl =
 	     (Errors.print e));
       Egramml.extend_tactic_grammar $se$ $gl$;
       List.iter Pptactic.declare_extra_tactic_pprule $pp$; } >>
-    ])
+    ]
 
 open Pcaml
 open PcamlSig

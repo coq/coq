@@ -93,9 +93,11 @@ TACTIC EXTEND esimplify_eq
     [ dEq true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
+let discr_main c = elimOnConstrWithHoles discr_tac false c
+
 TACTIC EXTEND discriminate_main
 | [ "discriminate" constr_with_bindings(c) ] ->
-    [ elimOnConstrWithHoles discr_tac false c ]
+    [ discr_main c ]
 END
 TACTIC EXTEND discriminate
 | [ "discriminate" ] -> [ discr_tac false None ]
@@ -112,12 +114,15 @@ TACTIC EXTEND ediscriminate
     [ discr_tac true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
-let h_discrHyp id gl =
-  h_discriminate_main {it = Term.mkVar id,NoBindings; sigma = Refiner.project gl} gl
+let discrHyp id gl =
+  discr_main {it = Term.mkVar id,NoBindings; sigma = Refiner.project gl} gl
+
+let injection_main c =
+ elimOnConstrWithHoles (injClause []) false c
 
 TACTIC EXTEND injection_main
 | [ "injection" constr_with_bindings(c) ] ->
-    [ elimOnConstrWithHoles (injClause []) false c ]
+    [ injection_main c ]
 END
 TACTIC EXTEND injection
 | [ "injection" ] -> [ injClause [] false None ]
@@ -153,8 +158,8 @@ TACTIC EXTEND einjection_as
     [ injClause ipat true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
-let h_injHyp id gl =
-  h_injection_main { it = Term.mkVar id,NoBindings; sigma = Refiner.project gl } gl
+let injHyp id gl =
+  injection_main { it = Term.mkVar id,NoBindings; sigma = Refiner.project gl } gl
 
 TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
@@ -313,7 +318,7 @@ TACTIC EXTEND refine
   [ "refine" casted_open_constr(c) ] -> [ refine c ]
 END
 
-let refine_tac = h_refine
+let refine_tac = refine
 
 (**********************************************************************)
 (* Inversion lemmas (Leminv)                                          *)
