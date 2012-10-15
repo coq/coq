@@ -26,11 +26,6 @@ let make_generic_action
         Gram.action (fun v -> make ((p,in_generic t v) :: env) tl) in
   make [] (List.rev pil)
 
-let make_rule_gen mkproditem mkact pt =
-  let (symbs,ntl) = List.split (List.map mkproditem pt) in
-  let act = make_generic_action mkact ntl in
-  (symbs, act)
-
 (** Grammar extensions declared at ML level *)
 
 type grammar_prod_item =
@@ -43,7 +38,10 @@ let make_prod_item = function
   | GramNonTerminal (_,t,e,po) ->
       (symbol_of_prod_entry_key e, Option.map (fun p -> (p,t)) po)
 
-let make_rule mkact = make_rule_gen make_prod_item mkact
+let make_rule mkact pt =
+  let (symbs,ntl) = List.split (List.map make_prod_item pt) in
+  let act = make_generic_action mkact ntl in
+  (symbs, act)
 
 (** Tactic grammar extensions *)
 
