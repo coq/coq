@@ -38,8 +38,9 @@ type index_entry =
 let current_library = ref ""
   (** refers to the file being parsed *)
 
-(** [deftable] stores only definitions and is used to interpolate idents
-    inside comments, which are not globalized otherwise. *)
+(** [deftable] stores only definitions and is used to build the index
+    and to interpolate idents inside comments, which are not
+    globalized otherwise. *)
 
 let deftable = Hashtbl.create 97
 
@@ -59,18 +60,18 @@ let add_def loc1 loc2 ty sp id =
   for loc = loc1 to loc2 do
     Hashtbl.add reftable (!current_library, loc) (Def (full_ident sp id, ty))
   done;
-  Hashtbl.add deftable id (Def (full_ident sp id, ty))
+  Hashtbl.add deftable id (!current_library, full_ident sp id, ty)
 
 let add_ref m loc m' sp id ty =
   if Hashtbl.mem reftable (m, loc) then ()
   else Hashtbl.add reftable (m, loc) (Ref (m', full_ident sp id, ty));
   let idx = if id = "<>" then m' else id in
     if Hashtbl.mem deftable idx then ()
-    else Hashtbl.add deftable idx (Ref (m', full_ident sp id, ty))
+    else Hashtbl.add deftable idx (m', full_ident sp id, ty)
 
 let find m l = Hashtbl.find reftable (m, l)
 
-let find_string m s = Hashtbl.find deftable s
+let find_string m s = let (m,s,t) = Hashtbl.find deftable s in Ref (m,s,t)
 
 (*s Manipulating path prefixes *)
 
@@ -254,9 +255,8 @@ let all_entries () =
     let l = try Hashtbl.find bt t with Not_found -> [] in
       Hashtbl.replace bt t ((s,m) :: l)
   in
-  let classify m e = match e with
-    | Def (s,t) -> add_g s m t; add_bt t s m
-    | Ref _ | Mod _ -> ()
+  let classify _ (m,s,t) =
+    if s <> "" && Hashtbl.mem local_modules m then (add_g s m t; add_bt t s m)
   in
     Hashtbl.iter classify deftable;
     Hashtbl.iter (fun id m -> add_g id m Library; add_bt Library id m) modules;
