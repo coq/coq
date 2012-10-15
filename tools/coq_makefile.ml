@@ -395,7 +395,7 @@ let variables is_install opt (args,defs) =
     print "COQFLAGS?=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
     print "COQCHKFLAGS?=-silent -o\n";
     print "COQDOCFLAGS?=-interpolate -utf8\n";
-    print "COQC?=$(COQBIN)coqc\n";
+    print "COQC?=$(TIMER) $(COQBIN)coqc\n";
     print "GALLINA?=$(COQBIN)gallina\n";
     print "COQDOC?=$(COQBIN)coqdoc\n";
     print "COQCHK?=$(COQBIN)coqchk\n\n";
@@ -451,12 +451,16 @@ let parameters () =
   print ".DEFAULT_GOAL := all\n\n# \n";
   print "# This Makefile may take arguments passed as environment variables:\n";
   print "# COQBIN to specify the directory where Coq binaries resides;\n";
+  print "# TIMECMD set a command to log .v compilation time;\n";
+  print "# TIMED if non empty, use the default time command as TIMECMD;\n";
   print "# ZDEBUG/COQDEBUG to specify debug flags for ocamlc&ocamlopt/coqc;\n";
   print "# DSTROOT to specify a prefix to install path.\n\n";
   print "# Here is a hack to make $(eval $(shell works:\n";
   print "define donewline\n\n\nendef\n";
   print "includecmdwithout@ = $(eval $(subst @,$(donewline),$(shell { $(1) | tr -d '\\r' | tr '\\n' '@'; })))\n";
-  print "$(call includecmdwithout@,$(COQBIN)coqtop -config)\n\n"
+  print "$(call includecmdwithout@,$(COQBIN)coqtop -config)\n\n";
+  print "TIMED=\nTIMECMD=\nSTDTIME?=/usr/bin/time -f \"$* (user: %U mem: %M ko)\"\n";
+  print "TIMER=$(if $(TIMED), $(STDTIME), $(TIMECMD))\n\n"
 
 let include_dirs (inc_i,inc_r) =
   let parse_includes l = List.map (fun (x,_) -> "-I " ^ x) l in
