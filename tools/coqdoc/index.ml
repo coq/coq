@@ -35,7 +35,6 @@ type entry_type =
 type index_entry =
   | Def of string * entry_type
   | Ref of coq_module * string * entry_type
-  | Mod of coq_module * string
 
 let current_type : entry_type ref = ref Library
 let current_library = ref ""
@@ -70,10 +69,6 @@ let add_ref m loc m' sp id ty =
   let idx = if id = "<>" then m' else id in
     if Hashtbl.mem deftable idx then ()
     else Hashtbl.add deftable idx (Ref (m', full_ident sp id, ty))
-
-let add_mod m loc m' id =
-  Hashtbl.add reftable (m, loc) (Mod (m', id));
-  Hashtbl.add deftable m (Mod (m', id))
 
 let find m l = Hashtbl.find reftable (m, l)
 
@@ -291,7 +286,7 @@ let all_entries () =
   in
   let classify m e = match e with
     | Def (s,t) -> add_g s m t; add_bt t s m
-    | Ref _ | Mod _ -> ()
+    | Ref _ -> ()
   in
     Hashtbl.iter classify deftable;
     Hashtbl.iter (fun id m -> add_g id m Library; add_bt Library id m) modules;
