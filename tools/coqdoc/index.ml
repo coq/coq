@@ -33,7 +33,6 @@ type entry_type =
 type index_entry =
   | Def of string * entry_type
   | Ref of coq_module * string * entry_type
-  | Mod of coq_module * string
 
 let current_library = ref ""
   (** refers to the file being parsed *)

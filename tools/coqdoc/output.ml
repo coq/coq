@@ -327,9 +327,6 @@ module Latex = struct
       let space = 0.5 *. (float n) in
       printf "\\coqdocindent{%2.2fem}\n" space
 
-  let module_ref m s =
-    printf "\\coqdocmodule{%s}{%s}" m (escaped s)
-
   let ident_ref m fid typ s =
     let id = if fid <> "" then (m ^ "." ^ fid) else m in
     match find_module m with
@@ -358,12 +355,8 @@ module Latex = struct
   let reference s = function
     | Def (fullid,typ) ->
 	defref (get_module false) fullid typ s
-    | Mod (m,s') when s = s' ->
-	module_ref m s
     | Ref (m,fullid,typ) ->
 	ident_ref m fullid typ s
-    | Mod _ ->
-	printf "\\coqdocvar{%s}" (escaped s)
 
   (*s The sublexer buffers symbol characters and attached
        uninterpreted ident and try to apply special translation such as,
@@ -620,15 +613,6 @@ module Html = struct
        | Some n -> n
        | None -> addr)
 
-  let module_ref m s =
-    match find_module m with
-      | Local ->
-	  printf "<a class=\"modref\" href=\"%s.html\">%s</a>" m s
-      | External m when !externals ->
-	  printf "<a class=\"modref\" href=\"%s.html\">%s</a>" m s
-      | External _ | Unknown ->
-	  output_string s
-
   let ident_ref m fid typ s =
     match find_module m with
     | Local ->
@@ -645,12 +629,8 @@ module Html = struct
     | Def (fullid,ty) ->
 	printf "<a name=\"%s\">" fullid;
 	printf "<span class=\"id\" type=\"%s\">%s</span></a>" (type_name ty) s
-    | Mod (m,s') when s = s' ->
-	module_ref m s
     | Ref (m,fullid,ty) ->
 	ident_ref m fullid (type_name ty) s
-    | Mod _ ->
-	printf "<span class=\"id\" type=\"mod\">%s</span>" s
 
   let output_sublexer_string doescape issymbchar tag s =
     let s = if doescape then escaped s else s in
