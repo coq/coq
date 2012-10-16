@@ -525,9 +525,6 @@ Qed.
 (*******************************)
 (*i Due to L.Thery i*)
 
-Ltac case_eq name :=
-  generalize (eq_refl name); pattern name at -1; case name.
-
 Definition powerRZ (x:R) (n:Z) :=
   match n with
     | Z0 => 1
