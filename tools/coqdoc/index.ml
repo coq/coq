@@ -40,10 +40,12 @@ let current_type : entry_type ref = ref Library
 let current_library = ref ""
   (** refers to the file being parsed *)
 
-(** [deftable] stores only definitions and is used to interpolate idents
-    inside comments, which are not globalized otherwise. *)
-
+(** [deftable] stores only definitions and is used to build the index *)
 let deftable = Hashtbl.create 97
+
+(** [byidtable] is used to interpolate idents inside comments, which are not
+    globalized otherwise. *)
+let byidtable = Hashtbl.create 97
 
 (** [reftable] stores references and definitions *)
 let reftable = Hashtbl.create 97
@@ -58,21 +60,25 @@ let full_ident sp id =
   else ""
 
 let add_def loc1 loc2 ty sp id =
+  let fullid = full_ident sp id in
+  let def = Def (fullid, ty) in
   for loc = loc1 to loc2 do
-    Hashtbl.add reftable (!current_library, loc) (Def (full_ident sp id, ty))
+    Hashtbl.add reftable (!current_library, loc) def
   done;
-  Hashtbl.add deftable id (Def (full_ident sp id, ty))
+  Hashtbl.add deftable !current_library (fullid, ty);
+  Hashtbl.add byidtable id (!current_library, fullid, ty)
 
 let add_ref m loc m' sp id ty =
+  let fullid = full_ident sp id in
   if Hashtbl.mem reftable (m, loc) then ()
-  else Hashtbl.add reftable (m, loc) (Ref (m', full_ident sp id, ty));
+  else Hashtbl.add reftable (m, loc) (Ref (m', fullid, ty));
   let idx = if id = "<>" then m' else id in
-    if Hashtbl.mem deftable idx then ()
-    else Hashtbl.add deftable idx (Ref (m', full_ident sp id, ty))
+    if Hashtbl.mem byidtable idx then ()
+    else Hashtbl.add byidtable idx (m', fullid, ty)
 
 let find m l = Hashtbl.find reftable (m, l)
 
-let find_string m s = Hashtbl.find deftable s
+let find_string m s = let (m,s,t) = Hashtbl.find byidtable s in Ref (m,s,t)
 
 (*s Manipulating path prefixes *)
 
@@ -284,10 +290,7 @@ let all_entries () =
     let l = try Hashtbl.find bt t with Not_found -> [] in
       Hashtbl.replace bt t ((s,m) :: l)
   in
-  let classify m e = match e with
-    | Def (s,t) -> add_g s m t; add_bt t s m
-    | Ref _ -> ()
-  in
+  let classify m (s,t) = (add_g s m t; add_bt t s m) in
     Hashtbl.iter classify deftable;
     Hashtbl.iter (fun id m -> add_g id m Library; add_bt Library id m) modules;
     { idx_name = "global";
