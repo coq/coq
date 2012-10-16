@@ -22,7 +22,7 @@ let declare_tactic_option ?(default=Tacexpr.TacId []) name =
     if not local then set_default_tactic local tac
   in
   let subst (s, (local, tac)) =
-    (local, Tacinterp.subst_tactic s tac)
+    (local, Tacsubst.subst_tactic s tac)
   in
   let input : bool * Tacexpr.glob_tactic_expr -> obj =
     declare_object

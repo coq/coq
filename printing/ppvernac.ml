@@ -64,7 +64,7 @@ let sep_end = function
 (* Warning: [pr_raw_tactic] globalises and fails if globalisation fails *)
 
 let pr_raw_tactic_env l env t =
-  pr_glob_tactic env (Tacinterp.glob_tactic_env l env t)
+  pr_glob_tactic env (Tacintern.glob_tactic_env l env t)
 
 let pr_gen env t =
   pr_raw_generic

@@ -12,6 +12,7 @@ open Pp
 open Evd
 
 open Tacmach
+open Tacintern
 open Tacinterp
 open Decl_expr
 open Decl_mode

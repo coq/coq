@@ -16,6 +16,8 @@ Contradiction
 Refine
 Inv
 Leminv
+Tacsubst
+Tacintern
 Tacinterp
 Evar_tactics
 Autorewrite

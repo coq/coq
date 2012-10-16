@@ -1379,8 +1379,9 @@ let pr_glob_constr_with_bindings_sign _ _ _ (ge : glob_constr_with_bindings_sign
 let pr_glob_constr_with_bindings _ _ _ (ge : glob_constr_with_bindings) = Printer.pr_glob_constr (fst (fst ge))
 let pr_constr_expr_with_bindings prc _ _ (ge : constr_expr_with_bindings) = prc (fst ge)
 let interp_glob_constr_with_bindings ist gl c = Tacmach.project gl , (ist, c)
-let glob_glob_constr_with_bindings ist l = Tacinterp.intern_constr_with_bindings ist l
-let subst_glob_constr_with_bindings s c = subst_glob_with_bindings s c
+let glob_glob_constr_with_bindings ist l = Tacintern.intern_constr_with_bindings ist l
+let subst_glob_constr_with_bindings s c =
+  Tacsubst.subst_glob_with_bindings s c
 
 
 ARGUMENT EXTEND glob_constr_with_bindings 
@@ -1465,7 +1466,7 @@ type glob_strategy = (glob_constr_and_expr, Tacexpr.raw_red_expr) strategy_ast
 let interp_strategy ist gl s = 
   let sigma = project gl in
     sigma, strategy_of_ast s
-let glob_strategy ist s = map_strategy (Tacinterp.intern_constr ist) (fun c -> c) s
+let glob_strategy ist s = map_strategy (Tacintern.intern_constr ist) (fun c -> c) s
 let subst_strategy s str = str
 
 let pr_strategy _ _ _ (s : strategy) = Pp.str "<strategy>"

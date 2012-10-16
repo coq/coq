@@ -99,9 +99,9 @@ let pr_globc _prc _prlc _prtac (_,glob) = Printer.pr_glob_constr glob
 
 let interp_glob ist gl (t,_) = Tacmach.project gl , (ist,t)
 
-let glob_glob = Tacinterp.intern_constr
+let glob_glob = Tacintern.intern_constr
 
-let subst_glob = Tacinterp.subst_glob_constr_and_expr
+let subst_glob = Tacsubst.subst_glob_constr_and_expr
 
 ARGUMENT EXTEND glob
     PRINTED BY pr_globc
@@ -138,11 +138,11 @@ let pr_hloc = pr_loc_place () () ()
 
 let intern_place ist = function
     ConclLocation () -> ConclLocation ()
-  | HypLocation (id,hl) -> HypLocation (intern_hyp ist id,hl)
+  | HypLocation (id,hl) -> HypLocation (Tacintern.intern_hyp ist id,hl)
 
 let interp_place ist gl = function
     ConclLocation () -> ConclLocation ()
-  | HypLocation (id,hl) -> HypLocation (interp_hyp ist gl id,hl)
+  | HypLocation (id,hl) -> HypLocation (Tacinterp.interp_hyp ist gl id,hl)
 
 let interp_place ist gl p =
   Tacmach.project gl , interp_place ist gl p

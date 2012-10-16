@@ -57,7 +57,7 @@ VERNAC COMMAND EXTEND Firstorder_Set_Solver
 | [ "Set" "Firstorder" "Solver" tactic(t) ] -> [
     set_default_solver 
       (Locality.use_section_locality ())
-      (Tacinterp.glob_tactic t) ]
+      (Tacintern.glob_tactic t) ]
 END
 
 VERNAC COMMAND EXTEND Firstorder_Print_Solver

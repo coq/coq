@@ -108,7 +108,7 @@ VERNAC COMMAND EXTEND Set_Solver
 | [ "Obligation" "Tactic" ":=" tactic(t) ] -> [
     set_default_tactic
       (Locality.use_section_locality ())
-      (Tacinterp.glob_tactic t) ]
+      (Tacintern.glob_tactic t) ]
 END
 
 open Pp

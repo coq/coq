@@ -128,7 +128,7 @@ let rec possibly_empty_subentries loc = function
             <:expr< match Genarg.default_empty_value $rawwit$ with
                     [ None -> failwith ""
                     | Some v ->
-                        Tacinterp.intern_genarg Tacinterp.fully_empty_glob_sign
+                        Tacintern.intern_genarg Tacintern.fully_empty_glob_sign
                           (Genarg.in_gen $rawwit$ v) ] >>
         | GramTerminal _ | GramNonTerminal(_,_,_,_) ->
             (* This does not parse epsilon (this Exit is static time) *)
@@ -159,11 +159,11 @@ let declare_tactic loc s cl =
   declare_str_items loc
     [ <:str_item< do {
       try
-        let _=Tacinterp.add_tactic $se$ $make_fun_clauses loc s cl$ in
+        let _=Tacintern.add_tactic $se$ $make_fun_clauses loc s cl$ in
         List.iter
           (fun (s,l) -> match l with
            [ Some l ->
-              Tacinterp.add_primitive_tactic s
+              Tacintern.add_primitive_tactic s
               (Tacexpr.TacAtom($default_loc$,
                  Tacexpr.TacExtend($default_loc$,$se$,l)))
            | None -> () ])

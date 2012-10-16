@@ -73,7 +73,7 @@ let cache_tactic_notation (_, tobj) =
 
 let subst_tactic_parule subst tg =
   let dir, tac = tg.tacgram_tactic in
-  { tg with tacgram_tactic = (dir, Tacinterp.subst_tactic subst tac); }
+  { tg with tacgram_tactic = (dir, Tacsubst.subst_tactic subst tac); }
 
 let subst_tactic_notation (subst, tobj) =
   { tobj with
@@ -112,7 +112,7 @@ let add_tactic_notation (local,n,prods,e) =
     pptac_prods = (n, List.map make_terminal_status prods);
   } in
   let ids = List.fold_left cons_production_parameter [] prods in
-  let tac = Tacinterp.glob_tactic_env ids (Global.env()) e in
+  let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
   let parule = {
     tacgram_key = key;
     tacgram_level = n;

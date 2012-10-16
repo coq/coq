@@ -102,19 +102,20 @@ let proof_instr = Gram.entry_create "proofmode:instr"
 (* [Genarg.create_arg] creates a new embedding into Genarg. *)
 let (wit_proof_instr,globwit_proof_instr,rawwit_proof_instr) =
   Genarg.create_arg None "proof_instr"
-let _ = Tacinterp.add_interp_genarg "proof_instr"
-  begin
+let _ = Tacintern.add_intern_genarg "proof_instr"
   begin fun e x -> (* declares the globalisation function *)
     Genarg.in_gen globwit_proof_instr 
       (Decl_interp.intern_proof_instr e (Genarg.out_gen rawwit_proof_instr x))
-  end,
+  end
+let _ = Tacinterp.add_interp_genarg "proof_instr"
   begin fun ist gl x -> (* declares the interpretation function *)
     Tacmach.project gl ,
     Genarg.in_gen wit_proof_instr 
       (interp_proof_instr ist gl (Genarg.out_gen globwit_proof_instr x))
-  end,
-  begin fun _ x -> x end (* declares the substitution function, irrelevant in our case *)
-   end
+  end
+(* declares the substitution function, irrelevant in our case : *)
+let _ = Tacsubst.add_genarg_subst "proof_instr" (fun _ x -> x)
+
 
 let _ = Pptactic.declare_extra_genarg_pprule
   (rawwit_proof_instr, pr_raw_proof_instr)

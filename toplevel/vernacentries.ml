@@ -876,7 +876,7 @@ let vernac_restore_state file =
 (* Commands *)
 
 let vernac_declare_tactic_definition (local,x,def) =
-  Tacinterp.add_tacdef local x def
+  Tacintern.add_tacdef local x def
 
 let vernac_create_hintdb local id b =
   Auto.create_hint_db local id full_transparent_state b
@@ -1317,7 +1317,7 @@ let vernac_check_may_eval redexp glopt rc =
     | None ->
 	msg_notice (print_judgment env j)
     | Some r ->
-        Tacinterp.dump_glob_red_expr r;
+        Tacintern.dump_glob_red_expr r;
         let (sigma',r_interp) = interp_redexp env sigma' r in
 	let redfun = fst (reduction_of_red_expr r_interp) in
 	msg_notice (print_eval redfun env sigma' rc j)
@@ -1352,7 +1352,7 @@ let vernac_print = function
   | PrintClasses -> msg_notice (Prettyp.print_classes())
   | PrintTypeClasses -> msg_notice (Prettyp.print_typeclasses())
   | PrintInstances c -> msg_notice (Prettyp.print_instances (smart_global c))
-  | PrintLtac qid -> msg_notice (Tacinterp.print_ltac (snd (qualid_of_reference qid)))
+  | PrintLtac qid -> msg_notice (Tacintern.print_ltac (snd (qualid_of_reference qid)))
   | PrintCoercions -> msg_notice (Prettyp.print_coercions())
   | PrintCoercionPaths (cls,clt) ->
       msg_notice (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))

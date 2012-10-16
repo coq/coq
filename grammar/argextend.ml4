@@ -190,7 +190,7 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
     | None ->
 	<:expr< fun e x ->
           out_gen $make_globwit loc rawtyp$
-            (Tacinterp.intern_genarg e
+            (Tacintern.intern_genarg e
                (Genarg.in_gen $make_rawwit loc rawtyp$ x)) >>
     | Some f -> <:expr< $lid:f$>> in
   let interp = match f with
@@ -206,7 +206,7 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
     | None ->
 	<:expr< fun s x ->
           out_gen $make_globwit loc globtyp$
-	    (Tacinterp.subst_genarg s
+	    (Tacsubst.subst_genarg s
                (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
     | Some f -> <:expr< $lid:f$>> in
   let se = mlexpr_of_string s in
@@ -222,14 +222,16 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
      <:str_item<
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
      <:str_item< do {
+      Tacintern.add_intern_genarg $se$
+        (fun e x ->
+          (Genarg.in_gen $globwit$ ($glob$ e (out_gen $rawwit$ x))));
       Tacinterp.add_interp_genarg $se$
-        ((fun e x ->
-          (Genarg.in_gen $globwit$ ($glob$ e (out_gen $rawwit$ x)))),
         (fun ist gl x ->
 	  let (sigma,a_interp) = $interp$ ist gl (out_gen $globwit$ x) in
-          (sigma , Genarg.in_gen $wit$ a_interp)),
+          (sigma , Genarg.in_gen $wit$ a_interp));
+      Tacsubst.add_genarg_subst $se$
         (fun subst x ->
-          (Genarg.in_gen $globwit$ ($substitute$ subst (out_gen $globwit$ x)))));
+          (Genarg.in_gen $globwit$ ($substitute$ subst (out_gen $globwit$ x))));
       Compat.maybe_uncurry (Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.entry 'a))
 	(None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule

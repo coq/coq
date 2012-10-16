@@ -186,7 +186,7 @@ let exec_tactic env n f args =
     TacId[] in
   let getter =
     Tacexp(TacFun(List.map(fun id -> Some id) lid,
-                  glob_tactic(tacticIn get_res))) in
+                  Tacintern.glob_tactic(tacticIn get_res))) in
   let _ =
     Tacinterp.eval_tactic(ltac_call f (args@[getter])) (dummy_goal env) in
   !res
@@ -395,10 +395,10 @@ let subst_th (subst,th) =
   let th' = subst_mps subst th.ring_th in
   let thm1' = subst_mps subst th.ring_lemma1 in
   let thm2' = subst_mps subst th.ring_lemma2 in
-  let tac'= subst_tactic subst th.ring_cst_tac in
-  let pow_tac'= subst_tactic subst th.ring_pow_tac in
-  let pretac'= subst_tactic subst th.ring_pre_tac in
-  let posttac'= subst_tactic subst th.ring_post_tac in
+  let tac'= Tacsubst.subst_tactic subst th.ring_cst_tac in
+  let pow_tac'= Tacsubst.subst_tactic subst th.ring_pow_tac in
+  let pretac'= Tacsubst.subst_tactic subst th.ring_pre_tac in
+  let posttac'= Tacsubst.subst_tactic subst th.ring_post_tac in
   if c' == th.ring_carrier &&
      eq' == th.ring_req &&
      eq_constr set' th.ring_setoid &&
@@ -605,7 +605,7 @@ type cst_tac_spec =
 
 let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
   match cst_tac with
-      Some (CstTac t) -> Tacinterp.glob_tactic t
+      Some (CstTac t) -> Tacintern.glob_tactic t
     | Some (Closed lc) ->
         closed_term_ast (List.map Smartlocate.global_with_alias lc)
     | None ->
@@ -649,7 +649,7 @@ let interp_power env pow =
   | Some (tac, spec) ->
       let tac =
         match tac with
-        | CstTac t -> Tacinterp.glob_tactic t
+        | CstTac t -> Tacintern.glob_tactic t
         | Closed lc ->
             closed_term_ast (List.map Smartlocate.global_with_alias lc) in
       let spec = make_hyp env (ic spec) in
@@ -695,11 +695,11 @@ let add_theory name rth eqth morphth cst_tac (pre,post) power sign div =
     interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
     match pre with
-        Some t -> Tacinterp.glob_tactic t
+        Some t -> Tacintern.glob_tactic t
       | _ -> TacId [] in
   let posttac =
     match post with
-        Some t -> Tacinterp.glob_tactic t
+        Some t -> Tacintern.glob_tactic t
       | _ -> TacId [] in
   let _ =
     Lib.add_leaf name
@@ -974,10 +974,10 @@ let subst_th (subst,th) =
   let thm3' = subst_mps subst th.field_simpl_ok in
   let thm4' = subst_mps subst th.field_simpl_eq_in_ok in
   let thm5' = subst_mps subst th.field_cond in
-  let tac'= subst_tactic subst th.field_cst_tac in
-  let pow_tac' = subst_tactic subst th.field_pow_tac in
-  let pretac'= subst_tactic subst th.field_pre_tac in
-  let posttac'= subst_tactic subst th.field_post_tac in
+  let tac'= Tacsubst.subst_tactic subst th.field_cst_tac in
+  let pow_tac' = Tacsubst.subst_tactic subst th.field_pow_tac in
+  let pretac'= Tacsubst.subst_tactic subst th.field_pre_tac in
+  let posttac'= Tacsubst.subst_tactic subst th.field_post_tac in
   if c' == th.field_carrier &&
      eq' == th.field_req &&
      thm1' == th.field_ok &&
@@ -1058,11 +1058,11 @@ let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign odi
     interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
     match pre with
-        Some t -> Tacinterp.glob_tactic t
+        Some t -> Tacintern.glob_tactic t
       | _ -> TacId [] in
   let posttac =
     match post with
-        Some t -> Tacinterp.glob_tactic t
+        Some t -> Tacintern.glob_tactic t
       | _ -> TacId [] in
   let _ =
     Lib.add_leaf name

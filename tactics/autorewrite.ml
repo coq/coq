@@ -31,7 +31,7 @@ let subst_hint subst hint =
   let cst' = subst_mps subst hint.rew_lemma in
   let typ' = subst_mps subst hint.rew_type in
   let pat' = subst_mps subst hint.rew_pat in
-  let t' = Tacinterp.subst_tactic subst hint.rew_tac in
+  let t' = Tacsubst.subst_tactic subst hint.rew_tac in
     if hint.rew_lemma == cst' && hint.rew_type == typ' && hint.rew_tac == t' then hint else
       { hint with
 	rew_lemma = cst'; rew_type = typ';
@@ -295,7 +295,7 @@ let add_rew_rules base lrul =
 	let pat = if b then info.hyp_left else info.hyp_right in
 	let rul = { rew_lemma = c; rew_type = info.hyp_ty;
 		    rew_pat = pat; rew_l2r = b;
-		    rew_tac = Tacinterp.glob_tactic t}
+		    rew_tac = Tacintern.glob_tactic t}
 	in incr counter;
 	  HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
   in Lib.add_anonymous_leaf (inHintRewrite (base,lrul))
