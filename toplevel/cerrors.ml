@@ -63,15 +63,25 @@ let wrap_vernac_error strm =
   EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None)
 
 let rec process_vernac_interp_error = function
-  | Univ.UniverseInconsistency (o,u,v) ->
-      let msg =
-	if !Constrextern.print_universes then
-	  spc() ++ str "(cannot enforce" ++ spc() ++ Univ.pr_uni u ++ spc() ++
-          str (match o with Univ.Lt -> "<" | Univ.Le -> "<=" | Univ.Eq -> "=")
-	  ++ spc() ++ Univ.pr_uni v ++ str")"
-	else
-	  mt() in
-      wrap_vernac_error (str "Universe inconsistency" ++ msg ++ str ".")
+  | Univ.UniverseInconsistency (o,u,v,p) ->
+    let pr_rel r =
+      match r with
+	  Univ.Eq -> str"=" | Univ.Lt -> str"<" | Univ.Le -> str"<=" in
+    let reason = match p with
+	[] -> mt()
+      | _::_ ->
+	str " because" ++ spc() ++ Univ.pr_uni v ++
+	  prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ Univ.pr_uni v)
+	  p ++
+	  (if snd (CList.last p)=u then mt() else
+	      (spc() ++ str "= " ++ Univ.pr_uni u)) in
+    let msg =
+      if !Constrextern.print_universes then
+	spc() ++ str "(cannot enforce" ++ spc() ++ Univ.pr_uni u ++ spc() ++
+          pr_rel o ++ spc() ++ Univ.pr_uni v ++ reason ++ str")"
+      else
+	mt() in
+    wrap_vernac_error (str "Universe inconsistency" ++ msg ++ str ".")
   | TypeError(ctx,te) ->
       wrap_vernac_error (Himsg.explain_type_error ctx Evd.empty te)
   | PretypeError(ctx,sigma,te) ->

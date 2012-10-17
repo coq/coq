@@ -252,12 +252,12 @@ let rec explain_exn = function
       hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ str (guill s) ++ report ())
   | Sys.Break ->
       hov 0 (fnl () ++ str "User interrupt.")
-  | Univ.UniverseInconsistency (o,u,v) ->
+  | Univ.UniverseInconsistency (o,u,v,_) ->
       let msg =
 	if !Flags.debug (*!Constrextern.print_universes*) then
-	  spc() ++ str "(cannot enforce" ++ spc() ++ (*Univ.pr_uni u ++*) spc() ++
+	  spc() ++ str "(cannot enforce" ++ spc() ++ Univ.pr_uni u ++ spc() ++
           str (match o with Univ.Lt -> "<" | Univ.Le -> "<=" | Univ.Eq -> "=")
-	  ++ spc() ++ (*Univ.pr_uni v ++*) str")"
+	  ++ spc() ++ Univ.pr_uni v ++ str")"
 	else
 	  mt() in
       hov 0 (str "Error: Universe inconsistency" ++ msg ++ str ".")

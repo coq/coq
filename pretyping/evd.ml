@@ -522,15 +522,15 @@ let set_leq_sort ({evars = (sigma, (us, sm))} as d) s1 s2 =
       match s1, s2 with
       | Prop c, Prop c' -> 
 	  if c = Null && c' = Pos then d
-	  else (raise (Univ.UniverseInconsistency (Univ.Le, u1, u2)))
+	  else (raise (Univ.UniverseInconsistency (Univ.Le, u1, u2,[])))
      | Type u, Prop c -> 
 	  if c = Pos then 
 	    add_constraints d (Univ.enforce_leq u Univ.type0_univ Univ.empty_constraint)
-	  else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2))
+	  else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2,[]))
       | _, Type u ->
 	  if is_univ_var_or_set u then
 	    add_constraints d (Univ.enforce_leq u1 u2 Univ.empty_constraint)
-	  else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2))
+	  else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2,[]))
 
 let is_univ_level_var us u =
   match Univ.universe_level u with
@@ -553,7 +553,7 @@ let set_eq_sort ({evars = (sigma, (us, sm))} as d) s1 s2 =
       | Type u, Prop c when is_univ_var_or_set u && Univ.check_eq sm u1 u2 -> d
       | Type u, Type v when is_univ_var_or_set u && is_univ_var_or_set v ->
 	  add_constraints d (Univ.enforce_eq u1 u2 Univ.empty_constraint)
-      | _, _ -> raise (Univ.UniverseInconsistency (Univ.Eq, u1, u2))
+      | _, _ -> raise (Univ.UniverseInconsistency (Univ.Eq, u1, u2, []))
 	    
 (**********************************************************)
 (* Accessing metas *)

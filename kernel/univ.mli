@@ -71,7 +71,22 @@ val enforce_eq : constraint_function
 
 type constraint_type = Lt | Le | Eq
 
-exception UniverseInconsistency of constraint_type * universe * universe
+(** Type explanation is used to decorate error messages to provide
+  useful explanation why a given constraint is rejected. It is composed
+  of a path of universes and relation kinds [(r1,u1);..;(rn,un)] means
+   .. <(r1) u1 <(r2) ... <(rn) un (where <(ri) is the relation symbol
+  denoted by ri, currently only < and <=). The lowest end of the chain
+  is supposed known (see UniverseInconsistency exn). The upper end may
+  differ from the second univ of UniverseInconsistency because all
+  universes in the path are canonical. Note that each step does not
+  necessarily correspond to an actual constraint, but reflect how the
+  system stores the graph and may result from combination of several
+  constraints...
+*)
+type explanation = (constraint_type * universe) list
+
+exception UniverseInconsistency of
+    constraint_type * universe * universe * explanation
 
 val merge_constraints : constraints -> universes -> universes
 val normalize_universes : universes -> universes

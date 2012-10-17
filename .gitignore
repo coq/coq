@@ -50,6 +50,7 @@ dev/ocamldebug-coq
 plugins/micromega/csdpcert
 kernel/byterun/dllcoqrun.so
 coqdoc.sty
+csdp.cache
 test-suite/lia.cache
 test-suite/trace
 test-suite/misc/universes/all_stdlib.v
