@@ -131,10 +131,6 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
         Use the ocamlc.opt compiler instead of ocamlc (and ocamlopt.opt 
         compiler instead of ocamlopt). Makes compilation faster (recommended).
 
--nowarnings
-	Disable the Objective Caml compiler warnings. This option has no
-	effect on the result of the compilation.
-
 5- Still in the root directory, do
 
 	make world
