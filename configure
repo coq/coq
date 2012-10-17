@@ -626,33 +626,55 @@ if [ "$coqide_spec" = "yes" -a "$COQIDE" = "no" ]; then
 else
     case $lablgtkdir_spec in
 	no)
-            if lablgtkdir=$(ocamlfind query lablgtk2.sourceview2 2> /dev/null); then
-                lablgtkdir_spec=yes
-	    elif [ -f "${CAMLLIB}/lablgtk2/gSourceView2.mli" ]; then
+            if lablgtkdirtmp=$(ocamlfind query lablgtk2.sourceview2 2> /dev/null); then
+                if [ ! -f "$lablgtkdirtmp/gSourceView2.cmi" ]; then
+	            echo "Incomplete Lablgtk2 found by ocamlfind (gSourceView.cmi not found)."
+                elif [ ! -f "$lablgtkdirtmp/glib.mli" ]; then
+	            echo "Incomplete Lablgtk2 found by ocamlfind (glib.mli not found)."
+                else
+                    lablgtkdirfoundmsg="LabelGtk2 found by ocamlfind"
+                    lablgtkdir=$lablgtkdirtmp
+                    LABLGTKLIB=$lablgtkdir # Pour le message utilisateur
+                fi
+            fi
+            if [ "$lablgtkdir" = "" -a -f "${CAMLLIB}/lablgtk2/gSourceView2.cmi" -a -f "${CAMLLIB}/lablgtk2/glib.mli" ]; then
+	        lablgtkdirfoundmsg="LablGtk2 found in ocaml lib directory"
 		lablgtkdir=${CAMLLIB}/lablgtk2
+                LABLGTKLIB=+lablgtk2 # Pour le message utilisateur
 	    fi;;
 	yes)
-	    if [ ! -f "$lablgtkdir/gSourceView2.mli" ]; then
-		echo "Incorrect LablGtk2 library (gSourceView2.mli not found)."
+	    if [ ! -d "$lablgtkdir" ]; then
+                echo "$lablgtkdir is not a valid directory."
+		echo "Configuration script failed!"
+		exit 1
+	    elif [ ! -f "$lablgtkdir/gSourceView2.cmi" ]; then
+		echo "Incomplete LablGtk2 library (gSourceView2.cmi not found)."
 		echo "Make sure that the GtkSourceView bindings are available."
 		echo "Configuration script failed!"
 		exit 1
-	    fi;;
+            elif [ ! -f "$lablgtkdir/glib.mli" ]; then
+		echo "Incomplete LablGtk2 library (glib.mli not found)."
+		echo "Configuration script failed!"
+		exit 1
+            else
+                lablgtkdirfoundmsg="LablGtk2 directory found"
+                LABLGTKLIB=$lablgtkdir # Pour le message utilisateur
+            fi;;
     esac
     if [ "$lablgtkdir" = "" ]; then
 	echo "LablGtk2 not found: CoqIde will not be available."
 	COQIDE=no
     elif [ -z "`grep -w convert_with_fallback "$lablgtkdir/glib.mli"`" ]; then
-	echo "LablGtk2 found but too old: CoqIde will not be available."
+	echo "$lablgtkdirfoundmsg but too old: CoqIde will not be available."
 	COQIDE=no;
     elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
-	echo "LablGtk2 found, bytecode CoqIde will be used as requested."
+	echo "$lablgtkdirfoundmsg, bytecode CoqIde will be used as requested."
 	COQIDE=byte
     elif [ ! -f "${CAMLLIB}/threads/threads.cmxa" -a -f "${lablgtkdir}/gtkThread.cmx" ]; then 
-	echo "LablGtk2 found, not native (or no native threads): bytecode CoqIde will be available."
+	echo "$lablgtkdirfoundmsg, not native (or no native threads): bytecode CoqIde will be available."
 	COQIDE=byte
     else
-        echo "LablGtk2 found, native threads: native CoqIde will be available."
+        echo "$lablgtkdirfoundmsg, native threads: native CoqIde will be available."
 	COQIDE=opt
         if [ "$nomacintegration_spec" = "no" ] && lablgtkosxdir=$(ocamlfind query lablgtkosx 2> /dev/null);
         then
@@ -669,13 +691,9 @@ fi
 
 case $COQIDE in
     byte|opt)
-        case $lablgtkdir_spec in
-            no)  LABLGTKLIB=+lablgtk2                   # Pour le message
-                 LABLGTKINCLUDES="-I $LABLGTKLIB";;     # Pour le makefile
-            yes) LABLGTKLIB=$lablgtkdir               # Pour le message
-                 LABLGTKINCLUDES="-I $LABLGTKLIB";; # Pour le makefile
-        esac;;
-    no) LABLGTKINCLUDES="";;
+        LABLGTKINCLUDES="-I $LABLGTKLIB";;
+    no)
+        LABLGTKINCLUDES="";;
 esac
 
 [ x$lablgtkosxdir = x ] || LABLGTKINCLUDES="$LABLGTKINCLUDES -I $lablgtkosxdir"
