@@ -609,7 +609,6 @@ install-tools::
 # from .mli without .ml, and the ones obtained from .ml without .mli
 
 INSTALLCMI = $(sort \
-	$(CONFIG:.cmo=.cmi) \
 	$(filter-out checker/% ide/% tools/%, $(MLIFILES:.mli=.cmi)) \
 	$(foreach lib,$(CORECMA) $(PLUGINSCMA), $(addsuffix .cmi,$($(lib:.cma=_MLLIB_DEPENDENCIES)))))
 
@@ -620,7 +619,7 @@ install-devfiles:
 	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMO) $(GRAMMARCMA)
 	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)
 ifeq ($(BEST),opt)
-	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CONFIG:.cmo=.o) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
+	$(INSTALLSH)  $(FULLCOQLIB) $(LINKCMX) $(CORECMA:.cma=.a) $(STATICPLUGINS:.cma=.a)
 endif
 
 install-library:
