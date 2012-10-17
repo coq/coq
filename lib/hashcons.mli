@@ -36,7 +36,8 @@ module type HashconsedType =
         [equal x (hashcons f x) = true]. *)
     val equal : t -> t -> bool
     (** A comparison function. It is allowed to use physical equality
-        on the sub-terms hashconsed by the [hashcons] function. *)
+        on the sub-terms hashconsed by the [hashcons] function, but it should be
+        insensible to shallow copy of the compared object. *)
     val hash : t -> int
     (** A hash function passed to the underlying hashtable structure. [hash]
         should be compatible with [equal], i.e. if [equal x y = true] then

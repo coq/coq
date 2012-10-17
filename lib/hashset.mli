@@ -6,12 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** The following module is a specialized version of [Hashtbl] that is
-    a better space saver. In each cell of the internal bucketlist of a
-    hashtable, there are two representations of the same value. In this
-    implementation, there is only one.
+(** Adapted from Damien Doligez, projet Para, INRIA Rocquencourt,
+    OCaml stdlib. *)
 
-    Besides, the responsibility of computing the hash function is now
+(** The following functor is a specialized version of [Weak.Make].
+    Here, the responsibility of computing the hash function is now
     given to the caller, which makes possible the interleaving of the
     hash key computation and the hash-consing. *)
 
@@ -27,6 +26,8 @@ module type S = sig
   (** Type of hashsets. *)
   val create : int -> t
   (** [create n] creates a fresh hashset with initial size [n]. *)
+  val clear : t -> unit
+  (** Clear the contents of a hashset. *)
   val repr : int -> elt -> t -> elt
   (** [repr key constr set] uses [key] to look for [constr]
       in the hashet [set]. If [constr] is in [set], returns the

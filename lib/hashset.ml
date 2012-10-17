@@ -6,15 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* The following module is a specialized version of [Hashtbl] that is
-   a better space saver. Actually, [Hashcons] instanciates [Hashtbl.t]
-   with [constr] used both as a key and as an image.  Thus, in each
-   cell of the internal bucketlist, there are two representations of
-   the same value. In this implementation, there is only one.
+(** Adapted from Damien Doligez, projet Para, INRIA Rocquencourt,
+    OCaml stdlib. *)
 
-   Besides, the responsibility of computing the hash function is now
-   given to the caller, which makes possible the interleaving of the
-   hash key computation and the hash-consing. *)
+(** The following functor is a specialized version of [Weak.Make].
+    Here, the responsibility of computing the hash function is now
+    given to the caller, which makes possible the interleaving of the
+    hash key computation and the hash-consing. *)
 
 module type EqType = sig
   type t
@@ -25,76 +23,167 @@ module type S = sig
   type elt
   type t
   val create : int -> t
+  val clear : t -> unit
   val repr : int -> elt -> t -> elt
 end
 
 module Make (E : EqType) =
   struct
 
-    type elt = E.t
+  type elt = E.t
 
-    type bucketlist = Empty | Cons of elt * int * bucketlist
+  let emptybucket = Weak.create 0
 
-    type t = {
-      mutable size : int;
-      mutable data : bucketlist array; }
+  type t = {
+    mutable table : elt Weak.t array;
+    mutable hashes : int array array;
+    mutable limit : int;               (* bucket size limit *)
+    mutable oversize : int;            (* number of oversize buckets *)
+    mutable rover : int;               (* for internal bookkeeping *)
+  }
 
-    let create s =
-      let s = min (max 1 s) Sys.max_array_length in
-      { size = 0; data = Array.make s Empty }
+  let get_index t h = (h land max_int) mod (Array.length t.table)
 
-    let resize table =
-      let odata = table.data in
-      let osize = Array.length odata in
-      let nsize = min (2 * osize + 1) Sys.max_array_length in
-      if nsize <> osize then begin
-        let ndata = Array.create nsize Empty in
-        let rec insert_bucket = function
-        | Empty -> ()
-        | Cons (key, hash, rest) ->
-            let nidx = hash mod nsize in
-            let obucket = ndata.(nidx) in
-            ndata.(nidx) <- Cons (key, hash, obucket);
-            insert_bucket rest
-        in
-        for i = 0 to osize - 1 do insert_bucket odata.(i) done;
-        table.data <- ndata
-      end
+  let limit = 7
+  let over_limit = 2
 
-  let add hash key table =
-    let odata = table.data in
-    let osize = Array.length odata in
-    let i = hash mod osize in
-    odata.(i) <- Cons (key, hash, odata.(i));
-    table.size <- table.size + 1;
-    if table.size > osize lsl 1 then resize table
+  let create sz =
+    let sz = if sz < 7 then 7 else sz in
+    let sz = if sz > Sys.max_array_length then Sys.max_array_length else sz in
+    {
+      table = Array.create sz emptybucket;
+      hashes = Array.create sz [| |];
+      limit = limit;
+      oversize = 0;
+      rover = 0;
+    }
 
-  let find_rec hash key table bucket =
-    let rec aux = function
-      | Empty ->
-	add hash key table; key
-      | Cons (k, h, rest) ->
-	if hash == h && E.equal key k then k else aux rest
+  let clear t =
+    for i = 0 to Array.length t.table - 1 do
+      t.table.(i) <- emptybucket;
+      t.hashes.(i) <- [| |];
+    done;
+    t.limit <- limit;
+    t.oversize <- 0
+
+  let iter_weak f t =
+    let rec iter_bucket i j b =
+      if i >= Weak.length b then () else
+      match Weak.check b i with
+      | true -> f b t.hashes.(j) i; iter_bucket (i+1) j b
+      | false -> iter_bucket (i+1) j b
     in
-    aux bucket
+    Array.iteri (iter_bucket 0) t.table
 
-  let repr hash key table =
-    let odata = table.data in
-    let osize = Array.length odata in
-    let i = hash mod osize in
-    match odata.(i) with
-      |	Empty -> add hash key table; key
-      | Cons (k1, h1, rest1) ->
-	if hash == h1 && E.equal key k1 then k1 else
-	  match rest1 with
-            | Empty -> add hash key table; key
-	    | Cons (k2, h2, rest2) ->
-              if hash == h2 && E.equal key k2 then k2 else
-		match rest2 with
-		  | Empty -> add hash key table; key
-		  | Cons (k3, h3, rest3) ->
-		    if hash == h2 && E.equal key k3 then k3
-		    else find_rec hash key table rest3
+  let rec count_bucket i b accu =
+    if i >= Weak.length b then accu else
+    count_bucket (i+1) b (accu + (if Weak.check b i then 1 else 0))
+
+  let next_sz n = min (3 * n / 2 + 3) Sys.max_array_length
+  let prev_sz n = ((n - 3) * 2 + 2) / 3
+
+  let test_shrink_bucket t =
+    let bucket = t.table.(t.rover) in
+    let hbucket = t.hashes.(t.rover) in
+    let len = Weak.length bucket in
+    let prev_len = prev_sz len in
+    let live = count_bucket 0 bucket 0 in
+    if live <= prev_len then begin
+      let rec loop i j =
+        if j >= prev_len then begin
+          if Weak.check bucket i then loop (i + 1) j
+          else if Weak.check bucket j then begin
+            Weak.blit bucket j bucket i 1;
+            hbucket.(i) <- hbucket.(j);
+            loop (i + 1) (j - 1);
+          end else loop i (j - 1);
+        end;
+      in
+      loop 0 (Weak.length bucket - 1);
+      if prev_len = 0 then begin
+        t.table.(t.rover) <- emptybucket;
+        t.hashes.(t.rover) <- [| |];
+      end else begin
+        Obj.truncate (Obj.repr bucket) (prev_len + 1);
+        Obj.truncate (Obj.repr hbucket) prev_len;
+      end;
+      if len > t.limit && prev_len <= t.limit then t.oversize <- t.oversize - 1;
+    end;
+    t.rover <- (t.rover + 1) mod (Array.length t.table)
+
+  let rec resize t =
+    let oldlen = Array.length t.table in
+    let newlen = next_sz oldlen in
+    if newlen > oldlen then begin
+      let newt = create newlen in
+      let add_weak ob oh oi =
+        let setter nb ni _ = Weak.blit ob oi nb ni 1 in
+        let h = oh.(oi) in
+        add_aux newt setter None h (get_index newt h);
+      in
+      iter_weak add_weak t;
+      t.table <- newt.table;
+      t.hashes <- newt.hashes;
+      t.limit <- newt.limit;
+      t.oversize <- newt.oversize;
+      t.rover <- t.rover mod Array.length newt.table;
+    end else begin
+      t.limit <- max_int;             (* maximum size already reached *)
+      t.oversize <- 0;
+    end
+
+  and add_aux t setter d h index =
+    let bucket = t.table.(index) in
+    let hashes = t.hashes.(index) in
+    let sz = Weak.length bucket in
+    let rec loop i =
+      if i >= sz then begin
+        let newsz = min (3 * sz / 2 + 3) (Sys.max_array_length - 1) in
+        if newsz <= sz then failwith "Weak.Make: hash bucket cannot grow more";
+        let newbucket = Weak.create newsz in
+        let newhashes = Array.make newsz 0 in
+        Weak.blit bucket 0 newbucket 0 sz;
+        Array.blit hashes 0 newhashes 0 sz;
+        setter newbucket sz d;
+        newhashes.(sz) <- h;
+        t.table.(index) <- newbucket;
+        t.hashes.(index) <- newhashes;
+        if sz <= t.limit && newsz > t.limit then begin
+          t.oversize <- t.oversize + 1;
+          for i = 0 to over_limit do test_shrink_bucket t done;
+        end;
+        if t.oversize > Array.length t.table / over_limit then resize t
+      end else if Weak.check bucket i then begin
+        loop (i + 1)
+      end else begin
+        setter bucket i d;
+        hashes.(i) <- h
+      end
+    in
+    loop 0
+
+  let find_or h t d ifnotfound =
+    let index = get_index t h in
+    let bucket = t.table.(index) in
+    let hashes = t.hashes.(index) in
+    let sz = Weak.length bucket in
+    let rec loop i =
+      if i >= sz then ifnotfound index
+      else if h = hashes.(i) then begin
+        match Weak.get_copy bucket i with
+        | Some v when E.equal v d ->
+          begin match Weak.get bucket i with
+          | Some v -> v
+          | None -> loop (i + 1)
+          end
+        | _ -> loop (i + 1)
+      end else loop (i + 1)
+    in
+    loop 0
+
+  let repr h d t =
+    let ifnotfound index = add_aux t Weak.set (Some d) h index; d in
+    find_or h t d ifnotfound
 
 end
 
