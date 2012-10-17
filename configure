@@ -594,16 +594,13 @@ esac
 # OS dependent libraries
 
 OSDEPLIBS="-cclib -lunix"
-case $ARCH,$CYGWIN in
+case $ARCH in
   sun4*) OS=`uname -r`
 	case $OS in
 	   5*) OS="Sun Solaris $OS"
 	       OSDEPLIBS="$OSDEPLIBS -cclib -lnsl -cclib -lsocket";;
 	   *) OS="Sun OS $OS"
         esac;;
-  win32,yes) OS="Win32 (Cygwin)"
-	 cflags="-mno-cygwin $cflags";;
-  win32,*) OS="Win32 (MinGW)";;
 esac
 
 # lablgtk2 and CoqIDE
