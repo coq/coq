@@ -32,7 +32,7 @@ let get_version_date () =
 
 let print_header () =
   let (ver,rev) = (get_version_date ()) in
-    pp (str "Welcome to Coq "++ str ver ++ str " (" ++ str rev ++ str ")\n");
+    pp (str "Welcome to Coq "++ str ver ++ str " (" ++ str rev ++ str ")" ++ fnl ());
     flush stdout
 
 let output_context = ref false
