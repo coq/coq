@@ -633,7 +633,9 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/states
 	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
+ifneq ($(COQRUNBYTEFLAGS),"-custom")
 	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
+endif
 	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG) $(LINKCMO) $(GRAMMARCMA)
 	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)
 ifeq ($(BEST),opt)
