@@ -49,9 +49,12 @@ let undo_todepth n =
 
 let start_proof id str hyps c ?init_tac ?compute_guard hook = 
   let goals = [ (Global.env_of_context hyps , c) ] in
-  let init_tac = Option.map Proofview.V82.tactic init_tac in
   Proof_global.start_proof id str goals ?compute_guard hook;
-  try Option.iter Proof_global.run_tactic init_tac
+  let tac = match init_tac with
+   | Some tac -> Proofview.V82.tactic tac
+   | None -> Proofview.tclUNIT ()
+  in
+  try Proof_global.run_tactic tac
   with e -> Proof_global.discard_current (); raise e
 
 let restart_proof () = undo_todepth 1
