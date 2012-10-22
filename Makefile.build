@@ -330,7 +330,7 @@ endif
 $(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma\
-	        lablgtksourceview2.cma gtkThread.cmo str.cma $(COQRUNBYTEFLAGS) $(LINKIDE)
+	        lablgtksourceview2.cma gtkThread.cmo str.cma $(LINKIDE)
 
 # install targets
 
