@@ -151,8 +151,9 @@ let match_with_disjunction ?(strict=false) t =
   | Ind ind  ->
       let car = mis_constr_nargs ind in
       let (mib,mip) = Global.lookup_inductive ind in
-      if array_for_all (fun ar -> ar = 1) car &&
-	not (mis_is_recursive (ind,mib,mip))
+      if array_for_all (fun ar -> ar = 1) car
+        && not (mis_is_recursive (ind,mib,mip))
+        && (mip.mind_nrealargs = 0)
       then
 	if strict then
 	  if test_strict_disjunction mib.mind_nparams mip.mind_nf_lc then
