@@ -63,16 +63,18 @@ let no_start   = ref false
 
 let is_ocaml4 = Coq_config.caml_version.[0] <> '3'
 
+(* Since the .cma are given with their relative paths (e.g. "lib/clib.cma"),
+   we only need to include directories mentionned in the temp main ml file
+   below (for accessing the corresponding .cmi). *)
+
 let src_dirs =
-  [ []; ["kernel";"byterun"]; [ "config" ]; [ "toplevel" ] ]
+  [ []; ["lib"]; ["toplevel"]; ["kernel";"byterun"]  ]
 
 let includes () =
-  (if !Flags.boot then [] (* the include flags are given on the cmdline *)
-   else
-      let coqlib = Envars.coqlib Errors.error in
-      let mkdir d = "\"" ^ List.fold_left Filename.concat coqlib d ^ "\"" in
-      let camlp4incl = ["-I"; "\"" ^ Envars.camlp4lib () ^ "\""] in
-      List.fold_right (fun d l -> "-I" :: mkdir d :: l)	src_dirs camlp4incl)
+  let coqlib = if !Flags.boot then "." else Envars.coqlib Errors.error in
+  let mkdir d = "\"" ^ List.fold_left Filename.concat coqlib d ^ "\"" in
+  (List.fold_right (fun d l -> "-I" :: mkdir d :: l) src_dirs [])
+  @ ["-I"; "\"" ^ Envars.camlp4lib () ^ "\""]
   @ (if is_ocaml4 then ["-I"; "+compiler-libs"] else [])
 
 (* Transform bytecode object file names in native object file names *)
