@@ -1055,6 +1055,11 @@ Section~\ref{Occurrences clauses}.
 
   This behaves as {\tt set ( {\ident} := {\term} ) in *} and using a
   logical (Leibniz's) equality instead of a local definition.
+ 
+\item {\tt remember {\term} as {\ident} eqn:{\ident}}
+
+  This behaves as {\tt remember {\term} as {\ident}}, except
+  that the name of the generated equality is also given.
 
 \item {\tt remember {\term} as {\ident} in {\occgoalset}}
 
@@ -1436,6 +1441,10 @@ syntax {\tt destruct ({\num})} (not very interesting anyway).
 \end{itemize}
 
 \begin{Variants}
+\item{\tt destruct \term$_1$, \ldots, \term$_n$}
+
+  This is a shortcut for {\tt destruct \term$_1$; \ldots; destruct \term$_n$}.
+
 \item{\tt destruct {\term} as {\disjconjintropattern}}
 
   This behaves as {\tt destruct {\term}} but uses the names in
@@ -1454,20 +1463,13 @@ syntax {\tt destruct ({\num})} (not very interesting anyway).
 %  It is recommended to use this variant of {\tt destruct} for
 %  robust proof scripts.
 
-\item{\tt destruct {\term} as {\disjconjintropattern} \_eqn}
+\item{\tt destruct {\term} eqn:{\namingintropattern}}
 
   This behaves as {\tt destruct {\term}} but adds an equation between
   {\term} and the value that {\term} takes in each of the possible
-  cases.  The name of the equation is chosen by Coq. If
-  {\disjconjintropattern} is simply {\tt []}, it is automatically considered
-  as a disjunctive pattern of the appropriate size.
-
-\item{\tt destruct {\term} as {\disjconjintropattern} \_eqn:~{\namingintropattern}}
-
-  This behaves as {\tt destruct {\term} as
-    {\disjconjintropattern} \_eqn} but use {\namingintropattern} to
-  name the equation (see Section~\ref{intros-pattern}). Note that spaces
-  can generally be removed around {\tt \_eqn}.
+  cases.  The name of the equation is specified by {\namingintropattern}
+  (see Section~\ref{intros-pattern}), in particular {\tt ?} can be
+  used to let Coq generate a fresh name.
 
 \item{\tt destruct {\term} with \bindinglist}
 
@@ -1496,16 +1498,15 @@ syntax {\tt destruct ({\num})} (not very interesting anyway).
   occurrence clause whose syntax and behavior is described in
   Section~\ref{Occurrences clauses}.
 
-%  When an occurrence clause is given, an equation between {\term} and
-%  the value it gets in each case of the analysis is added to the
-%  context of the subgoals corresponding to the cases (even
-%  if no clause {\tt as {\namingintropattern}} is given).
-
-\item{\tt destruct {\term$_1$} with {\bindinglist$_1$} as {\disjconjintropattern} \_eqn:~{\namingintropattern}  using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}\\
-     {\tt edestruct {\term$_1$} with {\bindinglist$_1$} as {\disjconjintropattern} \_eqn:~{\namingintropattern} using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}
+\item{\tt destruct {\term$_1$} with {\bindinglist$_1$}
+        as {\disjconjintropattern} eqn:{\namingintropattern}
+        using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}\\
+     {\tt edestruct {\term$_1$} with {\bindinglist$_1$}
+        as {\disjconjintropattern} eqn:{\namingintropattern}
+        using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}
 
   These are the general forms of {\tt destruct} and {\tt edestruct}.
-  They combine the effects of the {\tt with}, {\tt as}, {\tt using},
+  They combine the effects of the {\tt with}, {\tt as}, {\tt eqn:}, {\tt using},
   and {\tt in} clauses.
 
 \item{\tt case \term}\label{case}\tacindex{case}
@@ -1624,17 +1625,17 @@ induction n.
   {\tt ($p_{1}$,\ldots,$p_{n}$)} can be used instead of
   {\tt [} $p_{1}$ \ldots $p_{n}$ {\tt ]}.
 
-%\item{\tt induction {\term} as {\namingintropattern}}
+\item{\tt induction {\term} eqn:{\namingintropattern}}
 
-%  This behaves as {\tt induction {\term}} but adds an equation between
-%  {\term} and the value that {\term} takes in each of the induction
-%  case.  The name of the equation is built according to
-%  {\namingintropattern} which can be an identifier, a ``?'', etc, as
-%  indicated in Section~\ref{intros-pattern}.
+  This behaves as {\tt induction {\term}} but adds an equation between
+  {\term} and the value that {\term} takes in each of the induction
+  case.  The name of the equation is built according to
+  {\namingintropattern} which can be an identifier, a ``?'', etc, as
+  indicated in Section~\ref{intros-pattern}.
 
-%\item{\tt induction {\term} as {\namingintropattern} {\disjconjintropattern}}
+\item{\tt induction {\term} as {\disjconjintropattern} eqn:{\namingintropattern}}
 
-%  This combines the two previous forms.
+  This combines the two previous forms.
 
 \item{\tt induction {\term} with \bindinglist}
 
@@ -1661,7 +1662,7 @@ induction n.
   This behaves as {\tt induction {\term$_1$} using {\term$_2$}} but
   also providing instances for the premises of the type of {\term$_2$}.
 
-\item \texttt{induction {\term}$_1$ $\ldots$ {\term}$_n$ using {\qualid}}
+\item \texttt{induction {\term}$_1$, $\ldots$, {\term}$_n$ using {\qualid}}
 
   This syntax is used for the case {\qualid} denotes an induction principle
   with complex predicates as the induction principles generated by
@@ -1674,17 +1675,16 @@ induction n.
   occurrence clause whose syntax and behavior is described in
   Section~\ref{Occurrences clauses}.
 
-%  When an occurrence clause is given, an equation between {\term} and
-%  the value it gets in each case of the induction is added to the
-%  context of the subgoals corresponding to the induction cases (even
-%  if no clause {\tt as {\namingintropattern}} is given).
-
-\item {\tt induction {\term$_1$} with {\bindinglist$_1$} as {\namingintropattern} {\disjconjintropattern} using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}\\
-     {\tt einduction {\term$_1$} with {\bindinglist$_1$} as {\namingintropattern} {\disjconjintropattern} using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}
+\item {\tt induction {\term$_1$} with {\bindinglist$_1$}
+       as {\disjconjintropattern} eqn:{\namingintropattern}
+       using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}\\
+     {\tt einduction {\term$_1$} with {\bindinglist$_1$}
+       as {\disjconjintropattern} eqn:{\namingintropattern}
+       using {\term$_2$} with {\bindinglist$_2$} in {\occgoalset}}
 
   These are the most general forms of {\tt induction} and {\tt
   einduction}.  It combines the effects of the {\tt with}, {\tt as},
-  {\tt using}, and {\tt in} clauses.
+  {\tt eqn:}, {\tt using}, and {\tt in} clauses.
 
 \item {\tt elim \term}\label{elim}
 
