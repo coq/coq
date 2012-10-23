@@ -54,7 +54,7 @@ let echo       = ref false
 let is_ocaml4 = String.sub Coq_config.caml_version 0 2 = "4."
 
 let src_dirs () =
-  [ []; ["kernel";"byterun"]; [ "config" ]; [ "toplevel" ] ] @
+  [ []; ["kernel";"byterun"]; [ "config" ]; [ "lib" ]; [ "toplevel" ] ] @
   if !coqide then [[ "ide" ]] else []
 
 let includes () =
