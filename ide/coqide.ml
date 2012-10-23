@@ -820,7 +820,7 @@ object(self)
     begin
       let menu_callback = if !current.contextual_menus_on_goal then
           (fun s () -> ignore (self#insert_this_phrase_on_success
-                                 true true false ("progress "^s) s))
+				 true true false ("progress "^s) s))
         else
           (fun _ _ -> ()) in
       try
@@ -1007,6 +1007,7 @@ object(self)
       if stop#starts_line then
         input_buffer#insert ~iter:stop insertphrase
       else input_buffer#insert ~iter:stop ("\n"^insertphrase);
+      tag_on_insert (input_buffer :> GText.buffer);
       let start = self#get_start_of_input in
       input_buffer#move_mark ~where:stop (`NAME "start_of_input");
       input_buffer#apply_tag (safety_tag safe) ~start ~stop;
@@ -1231,7 +1232,7 @@ object(self)
       (List.exists
          (fun p ->
            self#insert_this_phrase_on_success true false false
-             ("progress "^p^".\n") (p^".\n")) l)
+             ("progress "^p^".") (p^".")) l)
 
   method active_keypress_handler k =
     let state = GdkEvent.Key.state k in
@@ -2354,7 +2355,7 @@ let main files =
   let tactic_shortcut s sc = GAction.add_action s ~label:("_"^s)
     ~accel:(!current.modifier_for_tactics^sc)
     ~callback:(do_if_active (fun a -> a#insert_command
-			       ("progress "^s^".\n") (s^".\n"))) in
+			       ("progress "^s^".") (s^"."))) in
   let query_callback command _ =
     let word = get_current_word () in
     if not (word = "") then
