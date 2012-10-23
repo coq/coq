@@ -866,6 +866,7 @@ object(self)
       if stop#starts_line then
         input_buffer#insert ~iter:stop insertphrase
       else input_buffer#insert ~iter:stop ("\n"^insertphrase);
+      tag_on_insert (input_buffer :> GText.buffer);
       let start = self#get_start_of_input in
       input_buffer#move_mark ~where:stop (`NAME "start_of_input");
       let tag =
@@ -923,7 +924,7 @@ object(self)
       (List.exists
          (fun p ->
            self#insert_this_phrase_on_success handle
-             ("progress "^p^".\n") (p^".\n")) l)
+             ("progress "^p^".") (p^".")) l)
 
   method private include_file_dir_in_path handle =
     match filename with

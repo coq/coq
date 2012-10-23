@@ -124,25 +124,25 @@ let hyp_next_tac sigma env (id,_,ast) =
   let id_s = Names.string_of_id id in
   let type_s = string_of_ppcmds (pr_ltype_env env ast) in
   [
-    ("clear "^id_s),("clear "^id_s^".\n");
-    ("apply "^id_s),("apply "^id_s^".\n");
-    ("exact "^id_s),("exact "^id_s^".\n");
-    ("generalize "^id_s),("generalize "^id_s^".\n");
-    ("absurd <"^id_s^">"),("absurd "^type_s^".\n")
+    ("clear "^id_s),("clear "^id_s^".");
+    ("apply "^id_s),("apply "^id_s^".");
+    ("exact "^id_s),("exact "^id_s^".");
+    ("generalize "^id_s),("generalize "^id_s^".");
+    ("absurd <"^id_s^">"),("absurd "^type_s^".")
   ] @ [
-    ("discriminate "^id_s),("discriminate "^id_s^".\n");
-    ("injection "^id_s),("injection "^id_s^".\n")
+    ("discriminate "^id_s),("discriminate "^id_s^".");
+    ("injection "^id_s),("injection "^id_s^".")
   ] @ [
-    ("rewrite "^id_s),("rewrite "^id_s^".\n");
-    ("rewrite <- "^id_s),("rewrite <- "^id_s^".\n")
+    ("rewrite "^id_s),("rewrite "^id_s^".");
+    ("rewrite <- "^id_s),("rewrite <- "^id_s^".")
   ] @ [
-    ("elim "^id_s), ("elim "^id_s^".\n");
-    ("inversion "^id_s), ("inversion "^id_s^".\n");
-    ("inversion clear "^id_s), ("inversion_clear "^id_s^".\n")
+    ("elim "^id_s), ("elim "^id_s^".");
+    ("inversion "^id_s), ("inversion "^id_s^".");
+    ("inversion clear "^id_s), ("inversion_clear "^id_s^".")
   ]
 
 let concl_next_tac sigma concl =
-  let expand s = (s,s^".\n") in
+  let expand s = (s,s^".") in
   List.map expand ([
     "intro";
     "intros";
