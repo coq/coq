@@ -56,7 +56,7 @@ let () =
   ignore (GtkMain.Main.init ())
 
 IFDEF QUARTZ THEN
-  let osx = GOSXApplication.osxapplication ()
+  let osx = GosxApplication.osxapplication ()
 
   let _ =
     osx#connect#ns_application_open_file ~callback:(fun x -> Coqide.do_load x; true) in
@@ -92,11 +92,11 @@ let () =
 
 IFDEF QUARTZ THEN
   let () =
-    GtkOSXApplication.OSXApplication.set_menu_bar osx#as_osxapplication (GtkMenu.MenuShell.cast (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar")#as_widget) in
+    GtkosxApplication.Application.set_menu_bar osx#as_osxapplication (GtkMenu.MenuShell.cast (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar")#as_widget) in
   let () =
-    GtkOSXApplication.OSXApplication.insert_app_menu_item osx#as_osxapplication (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Edit/Prefs")#as_widget 1 in
+    GtkosxApplication.Application.insert_app_menu_item osx#as_osxapplication (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Edit/Prefs")#as_widget 1 in
   let () =
-    GtkOSXApplication.OSXApplication.set_help_menu osx#as_osxapplication (Some (GtkMenu.MenuItem.cast (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Help")#as_widget)) in
+    GtkosxApplication.Application.set_help_menu osx#as_osxapplication (Some (GtkMenu.MenuItem.cast (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Help")#as_widget)) in
   osx#ready ()
 END
 
