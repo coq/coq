@@ -318,19 +318,16 @@ Section Logic_lemmas.
     Proof.
       destruct 1; trivial.
     Defined.
-    Opaque eq_sym.
 
     Theorem eq_trans : x = y -> y = z -> x = z.
     Proof.
       destruct 2; trivial.
     Defined.
-    Opaque eq_trans.
 
     Theorem f_equal : x = y -> f x = f y.
     Proof.
       destruct 1; trivial.
     Defined.
-    Opaque f_equal.
 
     Theorem not_eq_sym : x <> y -> y <> x.
     Proof.
