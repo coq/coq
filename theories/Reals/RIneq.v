@@ -409,7 +409,9 @@ Proof.
   rewrite Rplus_assoc; rewrite H; ring.
 Qed.
 
-Hint Resolve (f_equal (A:=R)): real.
+Definition f_equal_R := (f_equal (A:=R)).
+
+Hint Resolve f_equal_R : real.
 
 Lemma Rplus_eq_compat_l : forall r r1 r2, r1 = r2 -> r + r1 = r + r2.
 Proof.

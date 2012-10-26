@@ -96,8 +96,8 @@ type hint_db_name = string
 type hint_db = Hint_db.t
 
 type hints_entry =
-  | HintsResolveEntry of (int option * bool * hints_path_atom * constr) list
-  | HintsImmediateEntry of (hints_path_atom * constr) list
+  | HintsResolveEntry of (int option * bool * hints_path_atom * global_reference) list
+  | HintsImmediateEntry of (hints_path_atom * global_reference) list
   | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool

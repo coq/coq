@@ -34,7 +34,7 @@ let set_typeclass_transparency c local b =
 let _ =
   Typeclasses.register_add_instance_hint
     (fun inst local pri ->
-     let path = try Auto.PathHints [global_of_constr inst] with _ -> Auto.PathAny in
+     let path = try Auto.PathHints [inst] with _ -> Auto.PathAny in
       Flags.silently (fun () ->
 	Auto.add_hints local [typeclasses_db]
 	  (Auto.HintsResolveEntry

@@ -341,7 +341,7 @@ Module Import MX := OrderedTypeFacts X.
 Scheme tree_ind := Induction for tree Sort Prop.
 Scheme bst_ind := Induction for bst Sort Prop.
 
-Local Hint Resolve MX.eq_refl MX.eq_trans MX.lt_trans @ok.
+Local Hint Resolve MX.eq_refl MX.eq_trans MX.lt_trans ok.
 Local Hint Immediate MX.eq_sym.
 Local Hint Unfold In lt_tree gt_tree.
 Local Hint Constructors InT bst.

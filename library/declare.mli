@@ -57,6 +57,10 @@ type internal_flag =
 val declare_constant :
  ?internal:internal_flag -> identifier -> constant_declaration -> constant
 
+val declare_definition : 
+  ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
+  identifier -> ?types:constr -> constr -> constant
+
 (** [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
    the whole block (boolean must be true iff it is a record) *)

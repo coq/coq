@@ -39,6 +39,11 @@ let classes_transparent_state_ref = ref (fun () -> assert false)
 let register_classes_transparent_state = (:=) classes_transparent_state_ref
 let classes_transparent_state () = !classes_transparent_state_ref ()
 
+
+let declare_definition_ref = ref (fun ?internal ?opaque ?kind id ?types constr -> assert false)
+let register_declare_definition =
+  (:=) declare_definition_ref
+
 let solve_instanciation_problem = ref (fun _ _ _ -> assert false)
 
 let resolve_one_typeclass env evm t =
@@ -238,6 +243,12 @@ let check_instance env sigma c =
   with _ -> false
 
 let build_subclasses ~check env sigma glob pri =
+  let id = Nametab.basename_of_global glob in
+  let next_id = 
+    let i = ref (-1) in 
+      (fun () -> incr i;
+        Nameops.add_suffix id ("_subinstance_" ^ string_of_int !i))
+  in
   let rec aux pri c =
     let ty = Evarutil.nf_evar sigma (Retyping.get_type_of env sigma c) in
       match class_of_constr ty with
@@ -261,10 +272,13 @@ let build_subclasses ~check env sigma glob pri =
 		   | Some p, None -> Some (p + 1)
 		   | _, _ -> None
 		 in
-		   Some (ConstRef proj, pri, body)) tc.cl_projs 
+		 let c = !declare_definition_ref ~internal:true
+		   ~kind:Decl_kinds.Instance (next_id ()) body 
+		 in
+		   Some (ConstRef proj, pri, ConstRef c)) tc.cl_projs 
 	in
 	let declare_proj hints (cref, pri, body) =
-	  let rest = aux pri body in
+	  let rest = aux pri (constr_of_global body) in
 	    hints @ (pri, body) :: rest
 	in List.fold_left declare_proj [] projs 
   in aux pri (constr_of_global glob)
@@ -313,7 +327,7 @@ let discharge_instance (_, (action, inst)) =
 let is_local i = i.is_global = -1
 
 let add_instance check inst =
-  add_instance_hint (constr_of_global inst.is_impl) (is_local inst) inst.is_pri;
+  add_instance_hint inst.is_impl (is_local inst) inst.is_pri;
   List.iter (fun (pri, c) -> add_instance_hint c (is_local inst) pri) 
     (build_subclasses ~check:(check && not (isVarRef inst.is_impl))
        (Global.env ()) Evd.empty inst.is_impl inst.is_pri)

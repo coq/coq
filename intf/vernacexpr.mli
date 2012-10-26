@@ -103,8 +103,8 @@ type comment =
   | CommentInt of int
 
 type hints_expr =
-  | HintsResolve of (int option * bool * constr_expr) list
-  | HintsImmediate of constr_expr list
+  | HintsResolve of (int option * bool * reference) list
+  | HintsImmediate of reference list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
   | HintsConstructors of reference list

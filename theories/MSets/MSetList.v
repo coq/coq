@@ -228,16 +228,14 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Notation Inf := (lelistA X.lt).
   Notation In := (InA X.eq).
 
-  (* TODO: modify proofs in order to avoid these hints *)
-  Hint Resolve (@Equivalence_Reflexive _ _ X.eq_equiv).
-  Hint Immediate (@Equivalence_Symmetric _ _ X.eq_equiv).
-  Hint Resolve (@Equivalence_Transitive _ _ X.eq_equiv).
+  Existing Instance X.eq_equiv.
+  Hint Extern 20 => solve [order].
 
   Definition IsOk s := Sort s.
 
   Class Ok (s:t) : Prop := ok : Sort s.
 
-  Hint Resolve @ok.
+  Hint Resolve ok.
   Hint Unfold Ok.
 
   Instance Sort_Ok s `(Hs : Sort s) : Ok s := { ok := Hs }.
@@ -343,7 +341,6 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   induction s; simpl; intros.
   intuition. inv; auto.
   elim_compare x a; inv; rewrite !InA_cons, ?IHs; intuition.
-  left; order.
   Qed.
 
   Lemma remove_inf :
@@ -402,8 +399,8 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Global Instance union_ok s s' : forall `(Ok s, Ok s'), Ok (union s s').
   Proof.
   repeat rewrite <- isok_iff; revert s s'.
-  induction2; constructors; try apply @ok; auto.
-  apply Inf_eq with x'; auto; apply union_inf; auto; apply Inf_eq with x; auto.
+  induction2; constructors; try apply @ok; auto. 
+  apply Inf_eq with x'; auto; apply union_inf; auto; apply Inf_eq with x; auto; order.
   change (Inf x' (union (x :: l) l')); auto.
   Qed.
 
@@ -412,7 +409,6 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
    In x (union s s') <-> In x s \/ In x s'.
   Proof.
   induction2; try rewrite ?InA_cons, ?Hrec, ?Hrec'; intuition; inv; auto.
-  left; order.
   Qed.
 
   Lemma inter_inf :
@@ -440,7 +436,6 @@ Module MakeRaw (X: OrderedType) <: RawSets X.
   Proof.
   induction2; try rewrite ?InA_cons, ?Hrec, ?Hrec'; intuition; inv; auto;
    try sort_inf_in; try order.
-  left; order.
   Qed.
 
   Lemma diff_inf :

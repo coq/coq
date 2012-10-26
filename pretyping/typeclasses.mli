@@ -103,9 +103,13 @@ val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> u
 val register_classes_transparent_state : (unit -> transparent_state) -> unit
 val classes_transparent_state : unit -> transparent_state
 
-val register_add_instance_hint : (constr -> bool (* local? *) -> int option -> unit) -> unit
+val register_declare_definition : (?internal:bool -> ?opaque:bool -> ?kind:definition_object_kind -> identifier -> ?types:constr -> constr -> constant) -> unit
+
+
+val register_add_instance_hint : 
+  (global_reference -> bool (* local? *) -> int option -> unit) -> unit
 val register_remove_instance_hint : (global_reference -> unit) -> unit
-val add_instance_hint : constr -> bool -> int option -> unit
+val add_instance_hint : global_reference -> bool -> int option -> unit
 val remove_instance_hint : global_reference -> unit
 
 val solve_instanciations_problem : (env -> evar_map -> evar_filter -> bool -> bool -> evar_map) ref
@@ -119,4 +123,4 @@ val declare_instance : int option -> bool -> global_reference -> unit
     subinstances and add only the missing ones. *)
 
 val build_subclasses : check:bool -> env -> evar_map -> global_reference -> int option (* priority *) ->
-  (int option * constr) list
+  (int option * global_reference) list

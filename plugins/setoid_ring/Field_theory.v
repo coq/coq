@@ -84,15 +84,29 @@ Qed.
 Let eq_trans := Setoid.Seq_trans _ _ Rsth.
 Let eq_sym := Setoid.Seq_sym _ _ Rsth.
 Let eq_refl := Setoid.Seq_refl _ _ Rsth.
+Let mor1h := CRmorph.(morph1).
 
-Hint Resolve eq_refl rdiv_def rinv_l rI_neq_rO CRmorph.(morph1) .
-Hint Resolve (Rmul_ext Reqe) (Rmul_ext Reqe) (Radd_ext Reqe)
-             (ARsub_ext Rsth Reqe ARth) (Ropp_ext Reqe) SRinv_ext.
-Hint Resolve (ARadd_0_l  ARth) (ARadd_comm  ARth) (ARadd_assoc ARth)
-             (ARmul_1_l  ARth) (ARmul_0_l  ARth)
-             (ARmul_comm  ARth) (ARmul_assoc ARth) (ARdistr_l  ARth)
-             (ARopp_mul_l ARth) (ARopp_add  ARth)
-             (ARsub_def  ARth) .
+Hint Resolve eq_refl rdiv_def rinv_l rI_neq_rO .
+
+Let lem1 := Rmul_ext Reqe.
+Let lem2 := Rmul_ext Reqe.
+Let lem3 := (Radd_ext Reqe).
+Let lem4 := ARsub_ext Rsth Reqe ARth.
+Let lem5 := Ropp_ext Reqe.
+Let lem6 := ARadd_0_l  ARth.
+Let lem7 := ARadd_comm  ARth.
+Let lem8 := (ARadd_assoc ARth).
+Let lem9 := ARmul_1_l  ARth.
+Let lem10 := (ARmul_0_l  ARth).
+Let lem11 := ARmul_comm  ARth.
+Let lem12 := ARmul_assoc ARth.
+Let lem13 := (ARdistr_l  ARth).
+Let lem14 := ARopp_mul_l ARth.
+Let lem15 := (ARopp_add  ARth).
+Let lem16 := ARsub_def  ARth.
+
+Hint Resolve lem1 lem2 lem3 lem4 lem5 lem6 lem7 lem8 lem9 lem10
+     lem11 lem12 lem13 lem14 lem15 lem16 SRinv_ext.
 
  (* Power coefficients *)
  Variable Cpow : Type.

@@ -250,7 +250,7 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
 	  let hints = build_subclasses ~check:false env sigma (VarRef id) None in
 	    (List.map_append
 	       (fun (pri, c) -> make_resolves env sigma 
-		  (true,false,Flags.is_verbose()) pri c) 
+		  (true,false,Flags.is_verbose()) pri (constr_of_global c))
 	       hints)
 	else []
       in
