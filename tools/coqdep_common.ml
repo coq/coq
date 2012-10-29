@@ -288,7 +288,7 @@ let canonize f =
     | (f,_) :: _ -> escape f
     | _ -> escape f
 
-let traite_fichier_Coq verbose f =
+let rec traite_fichier_Coq verbose f =
   try
     let chan = open_in f in
     let buf = Lexing.from_channel chan in
@@ -347,7 +347,9 @@ let traite_fichier_Coq verbose f =
 	        addQueue deja_vu_v [str];
                 try
                   let file_str = Hashtbl.find vKnown [str] in
-                  printf " %s.v" (canonize file_str)
+                  let canon = canonize file_str in
+                  printf " %s.v" canon;
+                  traite_fichier_Coq true (canon ^ ".v")
                 with Not_found -> ()
        	      end
           | AddLoadPath _ | AddRecLoadPath _ -> (* TODO *) ()
