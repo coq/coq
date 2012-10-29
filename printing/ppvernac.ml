@@ -430,6 +430,58 @@ let pr_record_decl b c fs =
     hv 0 (prlist_with_sep pr_semicolon pr_record_field fs ++ str"}")
 in
 
+let pr_printable = function
+| PrintFullContext -> str "Print All"
+| PrintSectionContext s ->
+    str "Print Section" ++ spc() ++ Libnames.pr_reference s
+| PrintGrammar ent ->
+    str "Print Grammar" ++ spc() ++ str ent
+| PrintLoadPath dir -> str "Print LoadPath" ++ pr_opt pr_dirpath dir
+| PrintModules -> str "Print Modules"
+| PrintMLLoadPath -> str "Print ML Path"
+| PrintMLModules -> str "Print ML Modules"
+| PrintGraph -> str "Print Graph"
+| PrintClasses -> str "Print Classes"
+| PrintTypeClasses -> str "Print TypeClasses"
+| PrintInstances qid -> str "Print Instances" ++ spc () ++ pr_smart_global qid
+| PrintLtac qid -> str "Print Ltac" ++ spc() ++ pr_ltac_ref qid
+| PrintCoercions -> str "Print Coercions"
+| PrintCoercionPaths (s,t) -> str "Print Coercion Paths" ++ spc() ++ pr_class_rawexpr s ++ spc() ++ pr_class_rawexpr t
+| PrintCanonicalConversions -> str "Print Canonical Structures"
+| PrintTables -> str "Print Tables"
+| PrintHintGoal -> str "Print Hint"
+| PrintHint qid -> str "Print Hint" ++ spc() ++ pr_smart_global qid
+| PrintHintDb -> str "Print Hint *"
+| PrintHintDbName s -> str "Print HintDb" ++ spc() ++ str s
+| PrintRewriteHintDbName s -> str "Print Rewrite HintDb" ++ spc() ++ str s
+| PrintUniverses (b, fopt) ->
+  let cmd =
+    if b then "Print Sorted Universes"
+    else "Print Universes"
+  in
+  str cmd ++ pr_opt str fopt
+| PrintName qid -> str "Print" ++ spc()  ++ pr_smart_global qid
+| PrintModuleType qid -> str "Print Module Type" ++ spc() ++ pr_reference qid
+| PrintModule qid -> str "Print Module" ++ spc() ++ pr_reference qid
+| PrintInspect n -> str "Inspect" ++ spc() ++ int n
+| PrintScopes -> str "Print Scopes"
+| PrintScope s -> str "Print Scope" ++ spc() ++ str s
+| PrintVisibility s -> str "Print Visibility" ++ pr_opt str s
+| PrintAbout qid -> str "About" ++ spc()  ++ pr_smart_global qid
+| PrintImplicit qid -> str "Print Implicit" ++ spc()  ++ pr_smart_global qid
+(* spiwack: command printing all the axioms and section variables used in a
+  term *)
+| PrintAssumptions (b, t, qid) ->
+  let cmd = match b, t with
+  | true, true -> "Print All Dependencies"
+  | true, false -> "Print Opaque Dependencies"
+  | false, true -> "Print Transparent Dependencies"
+  | false, false -> "Print Assumptions"
+  in
+  str cmd ++ spc() ++ pr_smart_global qid
+| PrintNamespace dp -> str "Print Namespace" ++ pr_dirpath dp
+in
+
 let rec pr_vernac = function
 
   (* Proof management *)
@@ -860,47 +912,7 @@ let rec pr_vernac = function
   | VernacDeclareReduction (b,s,r) ->
      pr_locality b ++ str "Declare Reduction " ++ str s ++ str " := " ++
      pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) r
-  | VernacPrint p ->
-      let pr_printable = function
-	| PrintFullContext -> str"Print All"
-	| PrintSectionContext s ->
-            str"Print Section" ++ spc() ++ Libnames.pr_reference s
-	| PrintGrammar ent ->
-            str"Print Grammar" ++ spc() ++ str ent
-	| PrintLoadPath dir -> str"Print LoadPath" ++ pr_opt pr_dirpath dir
-	| PrintModules -> str"Print Modules"
-	| PrintMLLoadPath -> str"Print ML Path"
-	| PrintMLModules -> str"Print ML Modules"
-	| PrintGraph -> str"Print Graph"
-	| PrintClasses -> str"Print Classes"
-	| PrintTypeClasses -> str"Print TypeClasses"
-	| PrintInstances qid -> str"Print Instances" ++ spc () ++ pr_smart_global qid
-	| PrintLtac qid -> str"Print Ltac" ++ spc() ++ pr_ltac_ref qid
-	| PrintCoercions -> str"Print Coercions"
-	| PrintCoercionPaths (s,t) -> str"Print Coercion Paths" ++ spc() ++ pr_class_rawexpr s ++ spc() ++ pr_class_rawexpr t
-	| PrintCanonicalConversions -> str"Print Canonical Structures"
-	| PrintTables -> str"Print Tables"
-	| PrintHintGoal -> str"Print Hint"
-	| PrintHint qid -> str"Print Hint" ++ spc() ++ pr_smart_global qid
-	| PrintHintDb -> str"Print Hint *"
-	| PrintHintDbName s -> str"Print HintDb" ++ spc() ++ str s
-	| PrintRewriteHintDbName s -> str"Print Rewrite HintDb" ++ spc() ++ str s
-	| PrintUniverses (b, fopt) -> Printf.ksprintf str "Print %sUniverses" (if b then "Sorted " else "") ++ pr_opt str fopt
-	| PrintName qid -> str"Print" ++ spc()  ++ pr_smart_global qid
-	| PrintModuleType qid -> str"Print Module Type" ++ spc() ++ pr_reference qid
-	| PrintModule qid -> str"Print Module" ++ spc() ++ pr_reference qid
-	| PrintInspect n -> str"Inspect" ++ spc() ++ int n
-	| PrintScopes -> str"Print Scopes"
-	| PrintScope s -> str"Print Scope" ++ spc() ++ str s
-	| PrintVisibility s -> str"Print Visibility" ++ pr_opt str s
-	| PrintAbout qid -> str"About" ++ spc()  ++ pr_smart_global qid
-	| PrintImplicit qid -> str"Print Implicit" ++ spc()  ++ pr_smart_global qid
-(* spiwack: command printing all the axioms and section variables used in a
-         term *)
-	| PrintAssumptions (b,qid) -> (if b then str"Print Assumptions" else str"Print Opaque Dependencies")
-	    ++ spc() ++ pr_smart_global qid
-	| PrintNamespace dp -> str"Print Namespace" ++ pr_dirpath dp
-      in pr_printable p
+  | VernacPrint p -> pr_printable p
   | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_constr_pattern_expr
   | VernacLocate loc ->
       let pr_locate =function

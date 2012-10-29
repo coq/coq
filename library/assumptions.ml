@@ -27,6 +27,7 @@ type context_object =
   | Variable of identifier (* A section variable or a Let definition *)
   | Axiom of constant      (* An axiom or a constant. *)
   | Opaque of constant     (* An opaque constant. *)
+  | Transparent of constant
 
 (* Defines a set of [assumption] *)
 module OrderedContextObject =
@@ -37,10 +38,14 @@ struct
       | Variable i1 , Variable i2 -> id_ord i1 i2
       | Axiom k1 , Axiom k2 -> cst_ord k1 k2
       | Opaque k1 , Opaque k2 -> cst_ord k1 k2
-      | Variable _ , Axiom _ -> -1
+      | Transparent k1 , Transparent k2 -> cst_ord k1 k2
       | Axiom _ , Variable _ -> 1
-      | Opaque _ , _ -> -1
-      | _, Opaque _ -> 1
+      | Opaque _ , Variable _
+      | Opaque _ , Axiom _ -> 1
+      | Transparent _ , Variable _
+      | Transparent _ , Axiom _
+      | Transparent _ , Opaque _ -> 1
+      | _ , _ -> -1
 end
 
 module ContextObjectSet = Set.Make (OrderedContextObject)
@@ -151,7 +156,7 @@ let lookup_constant cst =
     else lookup_constant_in_impl cst (Some cb)
   with Not_found -> lookup_constant_in_impl cst None
 
-let assumptions ?(add_opaque=false) st (* t *) =
+let assumptions ?(add_opaque=false) ?(add_transparent=false) st (* t *) =
   modcache := MPmap.empty;
   let (idts,knst) = st in
   (* Infix definition for chaining function that accumulate
@@ -223,11 +228,15 @@ let assumptions ?(add_opaque=false) st (* t *) =
 	(s,ContextObjectMap.add cst ctype acc)
     in
     let (s,acc) =
-      if add_opaque && Declarations.constant_has_body cb
-	&& (Declarations.is_opaque cb || not (Cpred.mem kn knst))
-      then
-	do_type (Opaque kn)
-      else (s,acc)
+      if Declarations.constant_has_body cb then
+        if Declarations.is_opaque cb || not (Cpred.mem kn knst) then
+          (** it is opaque *)
+          if add_opaque then do_type (Opaque kn)
+          else (s, acc)
+        else
+          if add_transparent then do_type (Transparent kn)
+          else (s, acc)
+      else (s, acc)
     in
       match Declarations.body_of_constant cb with
       | None -> do_type (Axiom kn)

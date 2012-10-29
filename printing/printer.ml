@@ -586,19 +586,24 @@ let pr_assumptionset env s =
       try str " : " ++ pr_ltype typ with _ -> mt ()
     in
     let fold t typ accu =
-      let (v, a, o) = accu in
+      let (v, a, o, tr) = accu in
       match t with
       | Variable id ->
         let var = str (string_of_id id) ++ str " : " ++ pr_ltype typ in
-        (var :: v, a, o)
+        (var :: v, a, o, tr)
       | Axiom kn ->
         let ax = safe_pr_constant env kn ++ safe_pr_ltype typ in
-        (v, ax :: a, o)
+        (v, ax :: a, o, tr)
       | Opaque kn ->
         let opq = safe_pr_constant env kn ++ safe_pr_ltype typ in
-        (v, a, opq :: o)
+        (v, a, opq :: o, tr)
+      | Transparent kn ->
+        let tran = safe_pr_constant env kn ++ safe_pr_ltype typ in
+        (v, a, o, tran :: tr)
     in
-    let (vars, axioms, opaque) = ContextObjectMap.fold fold s ([], [], []) in
+    let (vars, axioms, opaque, trans) = 
+      ContextObjectMap.fold fold s ([], [], [], [])
+    in
     let opt_list title = function
     | [] -> None
     | l ->
@@ -608,6 +613,7 @@ let pr_assumptionset env s =
       Some section
     in
     let assums = [
+      opt_list (str "Transparent constants:") trans;
       opt_list (str "Section Variables:") vars;
       opt_list (str "Axioms:") axioms;
       opt_list (str "Opaque constants:") opaque;

@@ -862,8 +862,11 @@ GEXTEND Gram
       | IDENT "Implicit"; qid = smart_global -> PrintImplicit qid
       | IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses (false, fopt)
       | IDENT "Sorted"; IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses (true, fopt)
-      | IDENT "Assumptions"; qid = smart_global -> PrintAssumptions (false, qid)
-      | IDENT "Opaque"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (true, qid) ] ]
+      | IDENT "Assumptions"; qid = smart_global -> PrintAssumptions (false, false, qid)
+      | IDENT "Opaque"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (true, false, qid)
+      | IDENT "Transparent"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (false, true, qid)
+      | IDENT "All"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (true, true, qid) ] ]
+
   ;
   class_rawexpr:
     [ [ IDENT "Funclass" -> FunClass
