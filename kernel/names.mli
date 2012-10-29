@@ -40,6 +40,8 @@ module ModIdmap : Map.S with type key = module_ident
 
 type dir_path
 
+val dir_path_ord : dir_path -> dir_path -> int
+
 (** Inner modules idents on top of list (to improve sharing).
    For instance: A.B.C is ["C";"B";"A"] *)
 val make_dirpath : module_ident list -> dir_path
@@ -67,6 +69,8 @@ module Labmap : Map.S with type key = label
 (** {6 Unique names for bound modules } *)
 
 type mod_bound_id
+
+val mod_bound_id_ord : mod_bound_id -> mod_bound_id -> int
 
 (** The first argument is a file name - to prevent conflict between
    different files *)

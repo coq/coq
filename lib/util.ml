@@ -137,9 +137,14 @@ let subst_command_placeholder s t =
   done;
   Buffer.contents buff
 
-module Stringset = Set.Make(struct type t = string let compare (x:t) (y:t) = compare x y end)
+module StringOrd =
+struct
+  type t = string
+  external compare : string -> string -> int = "caml_string_compare"
+end
 
-module Stringmap = Map.Make(struct type t = string let compare (x:t) (y:t) = compare x y end)
+module Stringset = Set.Make(StringOrd)
+module Stringmap = Map.Make(StringOrd)
 
 (* Lists *)
 
@@ -202,9 +207,14 @@ let delayed_force f = f ()
 
 type ('a,'b) union = Inl of 'a | Inr of 'b
 
-module Intset = Set.Make(struct type t = int let compare (x:t) (y:t) = compare x y end)
+module IntOrd =
+struct
+  type t  = int
+  external compare : int -> int -> int = "caml_int_compare"
+end
 
-module Intmap = Map.Make(struct type t = int let compare (x:t) (y:t) = compare x y end)
+module Intset = Set.Make(IntOrd)
+module Intmap = Map.Make(IntOrd)
 
 (*s interruption *)
 

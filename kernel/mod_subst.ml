@@ -50,7 +50,7 @@ let empty_delta_resolver = Deltamap.empty
 module MBImap = Map.Make
   (struct
     type t = mod_bound_id
-    let compare = Pervasives.compare
+    let compare = mod_bound_id_ord
    end)
 
 module Umap = struct

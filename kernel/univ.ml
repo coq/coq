@@ -53,11 +53,12 @@ module UniverseLevel = struct
     | Level (i1, dp1), Level (i2, dp2) ->
       if i1 < i2 then -1
       else if i1 > i2 then 1
-      else compare dp1 dp2)
+      else Names.dir_path_ord dp1 dp2)
 
   let equal u v = match u,v with
     | Set, Set -> true
-    | Level (i1, dp1), Level (i2, dp2) -> i1 = i2 && dp1 = dp2
+    | Level (i1, dp1), Level (i2, dp2) ->
+      i1 = i2 && (Names.dir_path_ord dp1 dp2 = 0)
     | _ -> false
 
   let to_string = function
@@ -271,6 +272,15 @@ let between g arcu arcv =
 
 type constraint_type = Lt | Le | Eq
 type explanation = (constraint_type * universe) list
+
+let constraint_type_ord c1 c2 = match c1, c2 with
+| Lt, Lt -> 0
+| Lt, _ -> -1
+| Le, Lt -> 1
+| Le, Le -> 0
+| Le, Eq -> -1
+| Eq, Eq -> 0
+| Eq, _ -> 1
 
 (* Assuming the current universe has been reached by [p] and [l]
    correspond to the universes in (direct) relation [rel] with it,
@@ -527,7 +537,7 @@ module Constraint = Set.Make(
   struct
     type t = univ_constraint
     let compare (u,c,v) (u',c',v') =
-      let i = Pervasives.compare c c' in
+      let i = constraint_type_ord c c' in
       if i <> 0 then i
       else
 	let i' = UniverseLevel.compare u u' in

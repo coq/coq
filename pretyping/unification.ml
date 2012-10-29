@@ -103,13 +103,9 @@ let extract_instance_status = function
   | CUMUL -> add_type_status (IsSubType, IsSuperType)
   | CONV -> add_type_status (Conv, Conv)
 
-let rec assoc_pair x = function
-    [] -> raise Not_found
-  | (a,b,_)::l -> if compare a x = 0 then b else assoc_pair x l
-
 let rec subst_meta_instances bl c =
   match kind_of_term c with
-    | Meta i -> (try assoc_pair i bl with Not_found -> c)
+    | Meta i -> (try List.assoc_snd_in_triple i bl with Not_found -> c)
     | _ -> map_constr (subst_meta_instances bl) c
 
 let pose_all_metas_as_evars env evd t =

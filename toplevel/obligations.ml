@@ -428,7 +428,7 @@ let subst_deps_obl obls obl =
   let t' = subst_deps true obls obl.obl_deps obl.obl_type in
     { obl with obl_type = t' }
 
-module ProgMap = Map.Make(struct type t = identifier let compare = compare end)
+module ProgMap = Map.Make(struct type t = identifier let compare = id_ord end)
 
 let map_replace k v m = ProgMap.add k v (ProgMap.remove k m)
 

@@ -79,6 +79,8 @@ module Make (E : EqType) =
     if i >= Weak.length b then accu else
     count_bucket (i+1) b (accu + (if Weak.check b i then 1 else 0))
 
+  let min x y = if x - y < 0 then x else y
+
   let next_sz n = min (3 * n / 2 + 3) Sys.max_array_length
   let prev_sz n = ((n - 3) * 2 + 2) / 3
 

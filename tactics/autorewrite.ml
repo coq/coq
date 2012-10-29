@@ -41,9 +41,7 @@ module HintIdent =
 struct
   type t = int * rew_rule
 
-  let compare (i,t) (i',t') =
-    Pervasives.compare i i'
-(*     Pervasives.compare t.rew_lemma t'.rew_lemma *)
+  let compare (i, t) (j, t') = i - j
 
   let subst s (i,t) = (i,subst_hint s t)
 

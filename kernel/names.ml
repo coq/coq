@@ -42,10 +42,9 @@ let id_of_string s =
 
 let string_of_id id = String.copy id
 
-let id_ord (x:string) (y:string) =
-  if x == y
-  then 0
-  else Pervasives.compare x y
+let id_ord (x : string) (y : string) =
+  (* String.compare already checks for pointer equality *)
+  String.compare x y
 
 module IdOrdered =
   struct
@@ -81,6 +80,17 @@ type dir_path = module_ident list
 
 module ModIdmap = Idmap
 
+let rec dir_path_ord (p1 : dir_path) (p2 : dir_path) =
+  if p1 == p2 then 0
+  else begin match p1, p2 with
+  | [], [] -> 0
+  | [], _ -> -1
+  | _, [] -> 1
+  | id1 :: p1, id2 :: p2 ->
+    let c = id_ord id1 id2 in
+    if c <> 0 then c else dir_path_ord p1 p2
+  end
+
 let make_dirpath x = x
 let repr_dirpath x = x
 
@@ -102,15 +112,28 @@ let make_uid dir s = incr u_number;(!u_number,s,dir)
 let string_of_uid (i,s,p) =
   string_of_dirpath p ^"."^s
 
-module Umap = Map.Make(struct
-			 type t = uniq_ident
-			 let compare x y =
-                           if x == y
-                           then 0
-                           else Pervasives.compare x y
-		       end)
+let uniq_ident_ord (x : uniq_ident) (y : uniq_ident) =
+  if x == y then 0
+  else match (x, y) with
+  | (nl, idl, dpl), (nr, idr, dpr) ->
+    let ans = nl - nr in
+    if ans <> 0 then ans
+    else
+      let ans = id_ord idl idr in
+      if ans <> 0 then ans
+      else
+        dir_path_ord dpl dpr
+
+module UOrdered =
+struct
+  type t = uniq_ident
+  let compare = uniq_ident_ord
+end
+
+module Umap = Map.Make(UOrdered)
 
 type mod_bound_id = uniq_ident
+let mod_bound_id_ord = uniq_ident_ord
 let make_mbid = make_uid
 let repr_mbid (n, id, dp) = (n, id, dp)
 let debug_string_of_mbid = debug_string_of_uid
@@ -150,14 +173,19 @@ let rec string_of_mp = function
 (** we compare labels first if both are MPdots *)
 let rec mp_ord mp1 mp2 =
   if mp1 == mp2 then 0
-  else match (mp1,mp2) with
-    MPdot(mp1,l1), MPdot(mp2,l2) ->
-      let c = Pervasives.compare l1 l2 in
-	if c<>0 then
-	  c
-	else
-	  mp_ord mp1 mp2
-  |  _,_ -> Pervasives.compare mp1 mp2
+  else match (mp1, mp2) with
+  | MPfile p1, MPfile p2 ->
+    dir_path_ord p1 p2
+  | MPbound id1, MPbound id2 ->
+    uniq_ident_ord id1 id2
+  | MPdot (mp1, l1), MPdot (mp2, l2) ->
+      let c = String.compare l1 l2 in
+        if c <> 0 then c
+        else mp_ord mp1 mp2
+  | MPfile _, _ -> -1
+  | MPbound _, MPfile _ -> 1
+  | MPbound _, MPdot _ -> -1
+  | MPdot _, _ -> 1
 
 module MPord = struct
   type t = module_path
@@ -192,21 +220,17 @@ let string_of_kn (mp,dir,l) =
 
 let pr_kn kn = str (string_of_kn kn)
 
-let kn_ord kn1 kn2 =
-  if kn1 == kn2 then
-    0
+let kn_ord (kn1 : kernel_name) (kn2 : kernel_name) =
+  if kn1 == kn2 then 0
   else
-    let mp1,dir1,l1 = kn1 in
-    let mp2,dir2,l2 = kn2 in
-    let c = Pervasives.compare l1 l2 in
-      if c <> 0 then
-	c
+    let mp1, dir1, l1 = kn1 in
+    let mp2, dir2, l2 = kn2 in
+    let c = String.compare l1 l2 in
+      if c <> 0 then c
       else
-	let c = Pervasives.compare dir1 dir2 in
-	  if c<>0 then
-	    c
-	  else
-	    MPord.compare mp1 mp2
+        let c = dir_path_ord dir1 dir2 in
+        if c <> 0 then c
+        else MPord.compare mp1 mp2
 
 module KNord = struct
   type t = kernel_name
@@ -392,7 +416,7 @@ module Huniqid = Hashcons.Make(
     let hashcons (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
     let equal ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
       (x == y) ||
-      (n1 = n2 && s1 == s2 && dir1 == dir2)
+      (n1 - n2 = 0 && s1 == s2 && dir1 == dir2)
     let hash = Hashtbl.hash
   end)
 
@@ -454,7 +478,7 @@ module Hconstruct = Hashcons.Make(
     type t = constructor
     type u = inductive -> inductive
     let hashcons hind (ind, j) = (hind ind, j)
-    let equal (ind1,j1) (ind2,j2) = ind1 == ind2 && j1 = j2
+    let equal (ind1,j1) (ind2,j2) = ind1 == ind2 && (j1 - j2 = 0)
     let hash = Hashtbl.hash
   end)
 
@@ -493,11 +517,17 @@ type inv_rel_key = int (* index in the [rel_context] part of environment
 type id_key = inv_rel_key tableKey
 
 let eq_id_key ik1 ik2 =
-  (ik1 == ik2) ||
-  (match ik1,ik2 with
-    ConstKey (_,kn1),
-      ConstKey (_,kn2) -> kn1=kn2
-    | a,b -> a=b)
+  if ik1 == ik2 then true
+  else match ik1,ik2 with
+  | ConstKey (u1, kn1), ConstKey (u2, kn2) ->
+    let ans = (kn_ord u1 u2 = 0) in
+    if ans then kn_ord kn1 kn2 = 0
+    else ans
+  | VarKey id1, VarKey id2 ->
+    id_ord id1 id2 = 0
+  | RelKey k1, RelKey k2 ->
+    k1 - k2 = 0
+  | _ -> false
 
 let eq_con_chk (kn1,_) (kn2,_) = kn1=kn2
 let eq_mind_chk (kn1,_) (kn2,_) = kn1=kn2

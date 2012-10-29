@@ -568,7 +568,7 @@ let undefined_metas evd =
     | (n,Cltyp (_,typ))  -> Some n
   in
   let m = List.map_filter filter (meta_list evd) in
-  List.sort Pervasives.compare m
+  List.sort (-) m
 
 let metas_of evd =
   List.map (function

@@ -101,7 +101,13 @@ let print_hyps_limit () = !print_hyps_limit
 (* A list of the areas of the system where "unsafe" operation
  * has been requested *)
 
-module Stringset = Set.Make(struct type t = string let compare = compare end)
+module StringOrd =
+struct
+  type t = string
+  let compare (x : t) (y : t) = String.compare x y
+end
+
+module Stringset = Set.Make(StringOrd)
 
 let unsafe_set = ref Stringset.empty
 let add_unsafe s = unsafe_set := Stringset.add s !unsafe_set

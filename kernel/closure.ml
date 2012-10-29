@@ -199,6 +199,15 @@ let unfold_red kn =
 
 type table_key = id_key
 
+module IdKeyHash =
+struct
+  type t = id_key
+  let equal = Names.eq_id_key
+  let hash = Hashtbl.hash
+end
+
+module KeyTable = Hashtbl.Make(IdKeyHash)
+
 let eq_table_key = Names.eq_id_key
 
 type 'a infos = {
@@ -208,13 +217,13 @@ type 'a infos = {
   i_sigma : existential -> constr option;
   i_rels : int * (int * constr) list;
   i_vars : (identifier * constr) list;
-  i_tab : (table_key, 'a) Hashtbl.t }
+  i_tab : 'a KeyTable.t }
 
 let info_flags info = info.i_flags
 
 let ref_value_cache info ref =
   try
-    Some (Hashtbl.find info.i_tab ref)
+    Some (KeyTable.find info.i_tab ref)
   with Not_found ->
   try
     let body =
@@ -225,7 +234,7 @@ let ref_value_cache info ref =
 	| ConstKey cst -> constant_value info.i_env cst
     in
     let v = info.i_repr info body in
-    Hashtbl.add info.i_tab ref v;
+    KeyTable.add info.i_tab ref v;
     Some v
   with
     | Not_found (* List.assoc *)
@@ -262,7 +271,7 @@ let create mk_cl flgs env evars =
     i_sigma = evars;
     i_rels = defined_rels flgs env;
     i_vars = defined_vars flgs env;
-    i_tab = Hashtbl.create 17 }
+    i_tab = KeyTable.create 17 }
 
 
 (**********************************************************************)

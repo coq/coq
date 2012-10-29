@@ -114,6 +114,8 @@ module MethodsDnet : Term_dnet.S
   = Term_dnet.Make
   (struct
      type t = global_reference * Evd.evar * Evd.evar_map
+     (** ppedrot: FIXME: this is surely wrong, generic equality has nothing to 
+         do w.r.t. evar maps. *)
      let compare = Pervasives.compare
      let subst = subst_id
      let constr_of (_,ev,evm) = Evd.evar_concl (Evd.find evm ev)
