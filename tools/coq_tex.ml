@@ -13,15 +13,6 @@
  * Perl isn't as portable as it pretends to be, and is quite difficult
  * to read and maintain... Let us rewrite the stuff in Caml! *)
 
-let _ =
-  match Sys.os_type with
-    | "Unix" -> ()
-    | _ -> begin
-      	print_string "This program only runs under Unix !\n";
-      	flush stdout;
-      	exit 1
-      end
-
 let linelen = ref 72
 let output = ref ""
 let output_specified = ref false
@@ -31,6 +22,7 @@ let verbose = ref false
 let slanted = ref false
 let hrule = ref false
 let small = ref false
+let boot = ref false
 
 let coq_prompt = Str.regexp "Coq < "
 let any_prompt = Str.regexp "^[A-Z0-9a-z_\\$']* < "
@@ -86,21 +78,23 @@ let bang    = Str.regexp "!"
 let expos   = Str.regexp "^"
 
 let tex_escaped s =
-  let rec trans = parser
-    | [< s1 = (parser
-		 | [< ''_'|'$'|'{'|'}'|'&'|'%'|'#' as c >] ->
-		     "\\" ^ (String.make 1 c)
-		 | [< ''\\' >] -> "{\\char'134}"
-		 | [< ''^'  >] -> "{\\char'136}"
-		 | [< ''~'  >] -> "{\\char'176}"
-		 | [< '' '  >] -> "~"
-		 | [< ''<'  >] -> "{<}"
-		 | [< ''>'  >] -> "{>}"
-		 | [< 'c >]    -> String.make 1 c);
-	 s2 = trans >] -> s1 ^ s2
-    | [< >] -> ""
+  let dollar = "\\$" and  backslash = "\\\\" and expon = "\\^" in
+  let delims = Str.regexp ("[_{}&%#" ^ dollar ^ backslash ^ expon ^"~ <>]") in
+  let adapt_delim = function
+    | "_" | "{" | "}" | "&" | "%" | "#" | "$" as c -> "\\"^c
+    | "\\" -> "{\\char'134}"
+    | "^" -> "{\\char'136}"
+    | "~" -> "{\\char'176}"
+    | " " -> "~"
+    | "<" -> "{<}"
+    | ">" -> "{>}"
+    | _ -> assert false
   in
-  trans (Stream.of_string s)
+  let adapt = function
+    | Str.Text s -> s
+    | Str.Delim s -> adapt_delim s
+  in
+  String.concat "" (List.map adapt (Str.full_split delims s))
 
 let encapsule sl c_out s =
   if sl then
@@ -196,11 +190,11 @@ let insert texfile coq_output result =
     else begin
       if !verbose then Printf.printf "Coq < %s\n" s;
       if has_match dot_end_line s then
-       	let bl = next_block (succ k) in
+	let bl = next_block (succ k) in
 	if !verbose then List.iter print_endline bl;
 	eval 0
       else
-       	eval (succ k)
+	eval (succ k)
     end
   in
   try
@@ -266,18 +260,29 @@ let parse_cl () =
 	"-hrule", Arg.Set hrule,
 	"           Coq parts are written between 2 horizontal lines";
 	"-small", Arg.Set small,
-	"           Coq parts are written in small font"
+	"           Coq parts are written in small font";
+	"-boot", Arg.Set boot,
+	"           Launch coqtop with the -boot option"
       ]
       (fun s -> files := s :: !files)
       "coq-tex [options] file ..."
 
+let find_coqtop () =
+  let prog = Sys.executable_name in
+  try
+    let size = String.length prog in
+    let i = Str.search_backward (Str.regexp_string "coq-tex") prog (size-7) in
+    (String.sub prog 0 i)^"coqtop"^(String.sub prog (i+7) (size-i-7))
+  with Not_found -> begin
+    Printf.printf "Warning: preprocessing with default image \"coqtop\"\n";
+    "coqtop"
+  end
+
 let main () =
   parse_cl ();
-  if !image = "" then begin
-    Printf.printf "Warning: preprocessing with default image \"coqtop\"\n";
-    image := "coqtop"
-  end;
-  if Sys.command (!image ^ " -batch > /dev/null 2>&1") <> 0 then begin
+  if !image = "" then image := Filename.quote (find_coqtop ());
+  if !boot then image := !image ^ " -boot";
+  if Sys.command (!image ^ " -batch -silent") <> 0 then begin
     Printf.printf "Error: ";
     let _ = Sys.command (!image ^ " -batch") in
     exit 1

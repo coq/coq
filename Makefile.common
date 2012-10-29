@@ -113,7 +113,7 @@ HEVEAOPTS:=-fix -exec xxdate.exe
 HEVEALIB:=/usr/local/lib/hevea:/usr/lib/hevea
 HTMLSTYLE:=simple
 export TEXINPUTS:=$(HEVEALIB):
-COQTEXOPTS:=-n 72 -image "$(COQTOPEXE) -boot" -sl -small
+COQTEXOPTS:=-boot -n 72 -sl -small
 
 DOCCOMMON:=doc/common/version.tex doc/common/title.tex doc/common/macros.tex 
 
