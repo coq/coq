@@ -319,8 +319,8 @@ coqide-files: $(IDEFILES)
 
 $(COQIDEOPT): $(LINKIDEOPT) | $(COQTOPOPT)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) $(IDEOPTFLAGS) -o $@ unix.cmxa threads.cmxa lablgtk.cmxa\
-		 gtkThread.cmx str.cmxa $(LINKIDEOPT)
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa threads.cmxa \
+		lablgtk.cmxa $(IDEOPTFLAGS) gtkThread.cmx str.cmxa $(LINKIDEOPT)
 	$(STRIP) $@
 
 $(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
