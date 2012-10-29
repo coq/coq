@@ -193,6 +193,16 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
+## In Win32, cygwin provides an emulation of ln -s, but this emulation
+## won't work outside of cygwin shell (i.e. typically in a Sys.command).
+## So we just forget about it, and do a simple copy.
+
+ifeq ($(ARCH),win32)
+LN:=cp -f
+else
+LN:=ln -sf
+endif
+
 .PHONY: coqbinaries coq coqlib coqlight states
 
 coqbinaries:: ${COQBINARIES} ${CSDPCERT} ${FAKEIDE}
@@ -215,7 +225,7 @@ $(COQTOPBYTE): $(BESTCOQMKTOP) $(LINKCMO) $(LIBCOQRUN)
 	$(HIDE)$(BESTCOQMKTOP) -boot -top $(BAREBYTEFLAGS) -o $@
 
 $(COQTOPEXE): $(ORDER_ONLY_SEP) $(BESTCOQTOP)
-	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
+	cd bin && $(LN) coqtop.$(BEST)$(EXE) coqtop$(EXE)
 
 LOCALCHKLIBS:=$(addprefix -I , $(CHKSRCDIRS) )
 CHKLIBS:=$(LOCALCHKLIBS) -I $(MYCAMLP4LIB)
@@ -232,7 +242,7 @@ $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(SYSCMA) $^
 
 $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
-	cd bin && ln -sf coqchk.$(BEST)$(EXE) coqchk$(EXE)
+	cd bin && $(LN) coqchk.$(BEST)$(EXE) coqchk$(EXE)
 
 # coqmktop 
 
@@ -246,7 +256,7 @@ $(COQMKTOPOPT): $(COQMKTOPCMO:.cmo=.cmx)
 	$(STRIP) $@
 
 $(COQMKTOP): $(ORDER_ONLY_SEP) $(BESTCOQMKTOP)
-	cd bin; ln -sf coqmktop.$(BEST)$(EXE) coqmktop$(EXE)
+	cd bin && $(LN) coqmktop.$(BEST)$(EXE) coqmktop$(EXE)
 
 scripts/tolink.ml: Makefile.build Makefile.common
 	$(SHOW)"ECHO... >" $@
@@ -266,7 +276,7 @@ $(COQCOPT): $(COQCCMO:.cmo=.cmx) | $(COQTOPOPT)
 	$(STRIP) $@
 
 $(COQC): $(ORDER_ONLY_SEP) $(BESTCOQC) 
-	cd bin; ln -sf coqc.$(BEST)$(EXE) coqc$(EXE)
+	cd bin && $(LN) coqc.$(BEST)$(EXE) coqc$(EXE)
 
 # target for libraries
 
@@ -329,7 +339,7 @@ $(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
 		str.cma $(COQRUNBYTEFLAGS) $(LINKIDE)
 
 $(COQIDE):
-	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
+	cd bin && $(LN) coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
 
 # install targets
 
@@ -345,14 +355,14 @@ install-ide-byte:
 	$(INSTALLBIN) $(COQIDEBYTE) $(FULLBINDIR)
 	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA) \
 	  $(foreach lib,$(IDECMA:.cma=_MLLIB_DEPENDENCIES),$(addsuffix .cmi,$($(lib))))
-	cd $(FULLBINDIR); ln -sf coqide.byte$(EXE) coqide$(EXE)
+	cd $(FULLBINDIR) && $(LN) coqide.byte$(EXE) coqide$(EXE)
 
 install-ide-opt:
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQIDEOPT) $(FULLBINDIR)
 	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA) $(IDECMA:.cma=.cmxa) $(IDECMA:.cma=.a) \
 	  $(foreach lib,$(IDECMA:.cma=_MLLIB_DEPENDENCIES),$(addsuffix .cmi,$($(lib))))
-	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
+	cd $(FULLBINDIR) && $(LN) coqide.opt$(EXE) coqide$(EXE)
 
 install-ide-files:
 	$(MKDIR) $(FULLDATADIR)
@@ -603,12 +613,12 @@ install-binaries:: install-$(BEST)  install-tools
 install-byte::
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(CHICKEN) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqtop.byte$(EXE) coqtop$(EXE); ln -sf coqchk.byte$(EXE) coqchk$(EXE)
+	cd $(FULLBINDIR); $(LN) coqtop.byte$(EXE) coqtop$(EXE); $(LN) coqchk.byte$(EXE) coqchk$(EXE)
 
 install-opt::
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(CHICKEN) $(CHICKENOPT) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqtop.opt$(EXE) coqtop$(EXE); ln -sf coqchk.opt$(EXE) coqchk$(EXE)
+	cd $(FULLBINDIR); $(LN) coqtop.opt$(EXE) coqtop$(EXE); $(LN) coqchk.opt$(EXE) coqchk$(EXE)
 
 install-tools::
 	$(MKDIR) $(FULLBINDIR)
