@@ -161,7 +161,6 @@ tactics/rewrite.ml
 tactics/eqdecide.ml
 tactics/extratactics.ml
 tactics/extraargs.ml
-tools/coq_tex.ml
 toplevel/mltop.ml
 toplevel/whelp.ml
 ide/coqide_main.ml

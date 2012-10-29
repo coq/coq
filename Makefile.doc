@@ -53,10 +53,10 @@ rectutorial: doc/RecTutorial/RecTutorial.html \
 
 ifdef QUICK
 %.v.tex: %.tex
-	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
+	$(COQTEX) $(COQTEXOPTS) $<
 else
 %.v.tex: %.tex $(COQTEX) $(COQTOPEXE) $(PLUGINSVO) $(THEORIESVO)
-	(cd `dirname $<`; $(COQSRC)/$(COQTEX) $(COQTEXOPTS) `basename $<`)
+	$(COQTEX) $(COQTEXOPTS) $<
 endif
 
 %.ps: %.dvi
