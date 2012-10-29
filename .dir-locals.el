@@ -1,8 +1,31 @@
-((nil . ((eval . (setq default-directory (locate-dominating-file
-                                          buffer-file-name
-                                          ".dir-locals.el")
-                       tags-file-name (concat default-directory
-                                          "TAGS")
-                       camldebug-command-name (concat
-                                          default-directory "dev/ocamldebug-coq")
-)))))
+;; EMACS CONFIGURATION FOR COQ DEVELOPPERS This configuration will be
+;; executed for each opened file under coq root directory.
+((nil
+  . ((eval
+      . (progn
+	  ;; coq root directory (ending with slash)
+	  (let ((coq-root-directory (locate-dominating-file buffer-file-name
+							    ".dir-locals.el"))
+		(coq-project-find-file
+		 (and (boundp 'coq-project-find-file) coq-project-find-file)))
+	    ;; coq tags file and coq debugger executable
+	    (setq tags-file-name (concat coq-root-directory "TAGS")
+		  camldebug-command-name (concat coq-root-directory
+						 "dev/ocamldebug-coq"))
+
+	    ;; Setting the compilation directory to coq root. This is
+	    ;; mutually exclusive with the setting of default-directory
+	    ;; below.
+	    (unless coq-project-find-file
+	      (setq compile-command (concat "make -C " coq-root-directory)))
+
+	    ;; Set default directory to coq root ONLY IF variable
+	    ;; coq-project-find-file is non nil. This should remain a
+	    ;; user preference and not be set by default. This setting
+	    ;; is redundant with compile-command above as M-x compile
+	    ;; always CD's to default directory. To enable it add this
+	    ;; to your emacs config: (setq coq-project-find-file t)
+	    (when coq-project-find-file
+	      (setq default-directory coq-root-directory))))
+      ))
+  ))
