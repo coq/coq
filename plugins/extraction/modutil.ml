@@ -24,9 +24,9 @@ let rec msid_of_mt = function
 (*s Apply some functions upon all [ml_decl] and [ml_spec] found in a
    [ml_structure]. *)
 
-let se_iter do_decl do_spec =
+let se_iter do_decl do_spec do_mp =
   let rec mt_iter = function
-    | MTident _ -> ()
+    | MTident mp -> do_mp mp
     | MTfunsig (_,mt,mt') -> mt_iter mt; mt_iter mt'
     | MTwith (mt,ML_With_type(idl,l,t))->
 	let mp_mt = msid_of_mt mt in
@@ -36,7 +36,12 @@ let se_iter do_decl do_spec =
 	in
 	let r = ConstRef (make_con mp_w empty_dirpath (label_of_id l')) in
 	mt_iter mt; do_decl (Dtype(r,l,t))
-    | MTwith (mt,_)->mt_iter mt
+    | MTwith (mt,ML_With_module(idl,mp))->
+        let mp_mt = msid_of_mt mt in
+        let mp_w =
+	  List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl
+	in
+	mt_iter mt; do_mp mp_w; do_mp mp
     | MTsig (_, sign) -> List.iter spec_iter sign
   and spec_iter = function
     | (_,Spec s) -> do_spec s
@@ -49,15 +54,16 @@ let se_iter do_decl do_spec =
 	me_iter m.ml_mod_expr; mt_iter m.ml_mod_type
     | (_,SEmodtype m) -> mt_iter m
   and me_iter = function
-    | MEident _ -> ()
+    | MEident mp -> do_mp mp
     | MEfunctor (_,mt,me) -> me_iter me; mt_iter mt
     | MEapply (me,me') -> me_iter me; me_iter me'
     | MEstruct (msid, sel) -> List.iter se_iter sel
   in
   se_iter
 
-let struct_iter do_decl do_spec s =
-  List.iter (function (_,sel) -> List.iter (se_iter do_decl do_spec) sel) s
+let struct_iter do_decl do_spec do_mp s =
+  List.iter
+    (function (_,sel) -> List.iter (se_iter do_decl do_spec do_mp) sel) s
 
 (*s Apply some fonctions upon all references in [ml_type], [ml_ast],
   [ml_decl], [ml_spec] and [ml_structure]. *)
@@ -139,7 +145,7 @@ let decl_ast_search f = function
   | _ -> ()
 
 let struct_ast_search f s =
-  try struct_iter (decl_ast_search f) (fun _ -> ()) s; false
+  try struct_iter (decl_ast_search f) (fun _ -> ()) (fun _ -> ()) s; false
   with Found -> true
 
 let rec type_search f = function
@@ -163,7 +169,9 @@ let spec_type_search f = function
   | Sval (_,u) -> type_search f u
 
 let struct_type_search f s =
-  try struct_iter (decl_type_search f) (spec_type_search f) s; false
+  try
+    struct_iter (decl_type_search f) (spec_type_search f) (fun _ -> ()) s;
+    false
   with Found -> true
 
 
@@ -245,34 +253,32 @@ let dfix_to_mlfix rv av i =
   let c = Array.map (subst 0) av
   in MLfix(i, ids, c)
 
+(* [optim_se] applies the [normalize] function everywhere and does the
+   inlining of code. The inlined functions are kept for the moment in
+   order to preserve the global interface, later [depcheck_se] will get
+   rid of them if possible *)
+
 let rec optim_se top to_appear s = function
   | [] -> []
   | (l,SEdecl (Dterm (r,a,t))) :: lse ->
       let a = normalize (ast_glob_subst !s a) in
       let i = inline r a in
       if i then s := Refmap'.add r a !s;
-      if top && i && not (library ()) && not (List.mem r to_appear)
-      then optim_se top to_appear s lse
-      else
-	let d = match optimize_fix a with
-	  | MLfix (0, _, [|c|]) ->
-	      Dfix ([|r|], [|ast_subst (MLglob r) c|], [|t|])
-	  | a -> Dterm (r, a, t)
-	in (l,SEdecl d) :: (optim_se top to_appear s lse)
+      let d = match optimize_fix a with
+	| MLfix (0, _, [|c|]) ->
+	  Dfix ([|r|], [|ast_subst (MLglob r) c|], [|t|])
+	| a -> Dterm (r, a, t)
+      in
+      (l,SEdecl d) :: (optim_se top to_appear s lse)
   | (l,SEdecl (Dfix (rv,av,tv))) :: lse ->
       let av = Array.map (fun a -> normalize (ast_glob_subst !s a)) av in
-      let all = ref true in
       (* This fake body ensures that no fixpoint will be auto-inlined. *)
       let fake_body = MLfix (0,[||],[||]) in
       for i = 0 to Array.length rv - 1 do
 	if inline rv.(i) fake_body
 	then s := Refmap'.add rv.(i) (dfix_to_mlfix rv av i) !s
-	else all := false
       done;
-      if !all && top && not (library ())
-	&& (Array.for_all (fun r -> not (List.mem r to_appear)) rv)
-      then optim_se top to_appear s lse
-      else (l,SEdecl (Dfix (rv, av, tv))) :: (optim_se top to_appear s lse)
+      (l,SEdecl (Dfix (rv, av, tv))) :: (optim_se top to_appear s lse)
   | (l,SEmodule m) :: lse ->
       let m = { m with ml_mod_expr = optim_me to_appear s m.ml_mod_expr}
       in (l,SEmodule m) :: (optim_se top to_appear s lse)
@@ -287,7 +293,7 @@ and optim_me to_appear s = function
 
 (* After these optimisations, some dependencies may not be needed anymore.
    For non-library extraction, we recompute a minimal set of dependencies
-   for first-level objects *)
+   for first-level definitions (no module pruning yet). *)
 
 let base_r = function
   | ConstRef c as r -> r
@@ -358,7 +364,7 @@ let rec depcheck_se = function
     end
   | t :: se ->
     let se' = depcheck_se se in
-    se_iter compute_deps_decl compute_deps_spec t;
+    se_iter compute_deps_decl compute_deps_spec add_needed_mp t;
     t :: se'
 
 let rec depcheck_struct = function
@@ -366,7 +372,7 @@ let rec depcheck_struct = function
   | (mp,lse)::struc ->
       let struc' = depcheck_struct struc in
       let lse' = depcheck_se lse in
-      (mp,lse')::struc'
+      if lse' = [] then struc' else (mp,lse')::struc'
 
 let check_implicits = function
   | MLexn s ->
@@ -385,9 +391,9 @@ let optimize_struct to_appear struc =
     List.map (fun (mp,lse) -> (mp, optim_se true (fst to_appear) subst lse))
       struc
   in
-  let opt_struc = List.filter (fun (_,lse) -> lse<>[]) opt_struc in
   ignore (struct_ast_search check_implicits opt_struc);
-  if library () then opt_struc
+  if library () then
+    List.filter (fun (_,lse) -> lse<>[]) opt_struc
   else begin
     reset_needed ();
     List.iter add_needed (fst to_appear);
