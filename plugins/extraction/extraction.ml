@@ -128,7 +128,7 @@ let rec nb_default_params env c =
 
 (* Enriching a signature with implicit information *)
 
-let sign_with_implicits r s =
+let sign_with_implicits r s nb_params =
   let implicits = implicits_of_global r in
   let rec add_impl i = function
     | [] -> []
@@ -137,7 +137,7 @@ let sign_with_implicits r s =
 	  if sign = Keep && List.mem i implicits then Kill Kother else sign
 	in sign' :: add_impl (succ i) s
   in
-  add_impl 1 s
+  add_impl (1+nb_params) s
 
 (* Enriching a exception message *)
 
@@ -665,7 +665,7 @@ and extract_cst_app env mle mlt kn args =
   let head = put_magic_if magic1 (MLglob (ConstRef kn)) in
   (* Now, the extraction of the arguments. *)
   let s_full = type2signature env (snd schema) in
-  let s_full = sign_with_implicits (ConstRef kn) s_full in
+  let s_full = sign_with_implicits (ConstRef kn) s_full 0 in
   let s = sign_no_final_keeps s_full in
   let ls = List.length s in
   let la = List.length args in
@@ -724,7 +724,7 @@ and extract_cons_app env mle mlt (((kn,i) as ip,j) as cp) args =
   let type_cons = instantiation (nb_tvars, type_cons) in
   (* Then, the usual variables [s], [ls], [la], ... *)
   let s = List.map (type2sign env) types in
-  let s = sign_with_implicits (ConstructRef cp) s in
+  let s = sign_with_implicits (ConstructRef cp) s params_nb in
   let ls = List.length s in
   let la = List.length args in
   assert (la <= ls + params_nb);
@@ -803,7 +803,7 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	let l = List.map f oi.ip_types.(i) in
 	(* the corresponding signature *)
 	let s = List.map (type2sign env) oi.ip_types.(i) in
-	let s = sign_with_implicits r s in
+	let s = sign_with_implicits r s mi.ind_nparams in
 	(* Extraction of the branch (in functional form). *)
 	let e = extract_maybe_term env mle (type_recomp (l,mlt)) br.(i) in
 	(* We suppress dummy arguments according to signature. *)
@@ -874,7 +874,7 @@ let extract_std_constant env kn body typ =
   let l,t' = type_decomp (expand env (var2var' t)) in
   let s = List.map (type2sign env) l in
   (* Check for user-declared implicit information *)
-  let s = sign_with_implicits (ConstRef kn) s in
+  let s = sign_with_implicits (ConstRef kn) s 0 in
   (* Decomposing the top level lambdas of [body].
      If there isn't enough, it's ok, as long as remaining args
      aren't to be pruned (and initial lambdas aren't to be all
@@ -931,7 +931,7 @@ let extract_axiom env kn typ =
   let l,_ = type_decomp (expand env (var2var' t)) in
   let s = List.map (type2sign env) l in
   (* Check for user-declared implicit information *)
-  let s = sign_with_implicits (ConstRef kn) s in
+  let s = sign_with_implicits (ConstRef kn) s 0 in
   type_expunge_from_sign env s t
 
 let extract_fixpoint env vkn (fi,ti,ci) =
