@@ -28,10 +28,14 @@ let keywords =
 
 let pp_comment s = str";; "++h 0 s++fnl ()
 
+let pp_header_comment = function
+  | None -> mt ()
+  | Some com -> pp_comment com ++ fnl () ++ fnl ()
+
 let preamble _ comment _ usf =
-  pp_comment comment ++ fnl () ++
+  pp_header_comment comment ++
   str ";; This extracted scheme code relies on some additional macros\n" ++
-  str ";; available at http://www.pps.jussieu.fr/~letouzey/scheme\n" ++
+  str ";; available at http://www.pps.univ-paris-diderot.fr/~letouzey/scheme\n" ++
   str "(load \"macros_extr.scm\")\n\n" ++
   (if usf.mldummy then str "(define __ (lambda (_) __))\n\n" else mt ())
 
@@ -224,7 +228,7 @@ let scheme_descr = {
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;
-  sig_preamble = (fun _ s _ _ -> pp_comment s ++ fnl () ++ fnl ());
+  sig_preamble = (fun _ _ _ _ -> mt ());
   pp_sig = (fun _ -> mt ());
   pp_decl = pp_decl;
 }

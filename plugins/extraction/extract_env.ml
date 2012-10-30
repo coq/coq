@@ -453,6 +453,13 @@ let formatter dry file =
       (* note: max_indent should be < margin above, otherwise it's ignored *)
   ft
 
+let get_comment () =
+  let s = file_comment () in
+  if s = "" then None
+  else
+    let split_comment = Str.split (Str.regexp "[ \t\n]+") s in
+    Some (prlist_with_sep spc str split_comment)
+
 let print_structure_to_file (fn,si,mo) dry struc =
   Buffer.clear buf;
   let d = descr () in
@@ -473,14 +480,11 @@ let print_structure_to_file (fn,si,mo) dry struc =
   (* Print the implementation *)
   let cout = if dry then None else Option.map open_out fn in
   let ft = formatter dry cout in
-  let file_comment =
-    let split_comment = Str.split (Str.regexp "[ \t\n]+") (file_comment ()) in
-    prlist_with_sep spc str split_comment
-  in
+  let comment = get_comment () in
   begin try
     (* The real printing of the implementation *)
     set_phase Impl;
-    pp_with ft (d.preamble mo file_comment opened unsafe_needs);
+    pp_with ft (d.preamble mo comment opened unsafe_needs);
     pp_with ft (d.pp_struct struc);
     Option.iter close_out cout;
   with e ->
@@ -494,7 +498,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
        let ft = formatter false (Some cout) in
        begin try
 	 set_phase Intf;
-	 pp_with ft (d.sig_preamble mo file_comment opened unsafe_needs);
+	 pp_with ft (d.sig_preamble mo comment opened unsafe_needs);
 	 pp_with ft (d.pp_sig (signature_of_structure struc));
 	 close_out cout;
        with e ->

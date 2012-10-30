@@ -44,7 +44,9 @@ let preamble mod_name comment used_modules usf =
      str "{- For Hugs, use the option -F\"cpp -P -traditional\" -}")
   ++ fnl () ++ fnl ()
   ++
-  pp_bracket_comment comment ++ fnl () ++ fnl ()
+  (match comment with
+    | None -> mt ()
+    | Some com -> pp_bracket_comment com ++ fnl () ++ fnl ())
   ++
   str "module " ++ pr_upper_id mod_name ++ str " where" ++ fnl2 () ++
   str "import qualified Prelude" ++ fnl () ++
@@ -358,7 +360,7 @@ let haskell_descr = {
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;
-  sig_preamble = (fun _ s _ _ -> (pp_bracket_comment s)++fnl());
+  sig_preamble = (fun _ _ _ _ -> mt ());
   pp_sig = (fun _ -> mt ());
   pp_decl = pp_decl;
 }

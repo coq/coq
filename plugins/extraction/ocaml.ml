@@ -63,8 +63,12 @@ let pp_open mp = str ("open "^ string_of_modfile mp ^"\n")
 
 let pp_comment s = str "(* " ++ hov 0 s ++ str " *)"
 
+let pp_header_comment = function
+  | None -> mt ()
+  | Some com -> pp_comment com ++ fnl () ++ fnl ()
+
 let preamble _ comment used_modules usf =
-  pp_comment comment ++ fnl () ++ fnl () ++
+  pp_header_comment comment ++
   prlist pp_open used_modules ++
   (if used_modules = [] then mt () else fnl ()) ++
   (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n" else mt()) ++
@@ -74,7 +78,7 @@ let preamble _ comment used_modules usf =
   (if usf.tdummy || usf.tunknown || usf.mldummy then fnl () else mt ())
 
 let sig_preamble _ comment used_modules usf =
-  pp_comment comment ++ fnl () ++ fnl () ++
+  pp_header_comment comment ++ fnl () ++ fnl () ++
   prlist pp_open used_modules ++
   (if used_modules = [] then mt () else fnl ()) ++
   (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n\n" else mt())
