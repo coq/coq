@@ -41,13 +41,8 @@ object
   val mutable read_only : bool
   val mutable filename : string option
   val mutable stats : Unix.stats option
-  val mutable detached_views : GWindow.window list
   method without_auto_complete : 'a 'b. ('a -> 'b) -> 'a -> 'b
   method set_auto_complete : bool -> unit
-
-  method kill_detached_views : unit -> unit
-  method add_detached_view : GWindow.window -> unit
-  method remove_detached_view : GWindow.window -> unit
 
   method filename : string option
   method stats :  Unix.stats option
@@ -104,7 +99,10 @@ type viewable_script =
     }
 
 let kill_session s =
-  s.analyzed_view#kill_detached_views ();
+  (* To close the detached views of this script, we call manually
+     [destroy] on it, triggering some callbacks in [detach_view].
+     In a more modern lablgtk, rather use the page-removed signal ? *)
+  s.script#destroy ();
   Coq.kill_coqtop !(s.toplvl)
 
 let build_session s =
@@ -591,7 +589,6 @@ object(self)
   val mutable stats = None
   val mutable last_modification_time = 0.
   val mutable last_auto_save_time = 0.
-  val mutable detached_views = []
   val mutable find_forward_instead_of_backward = false
 
   val mutable auto_complete_on = !current.auto_complete
@@ -606,14 +603,6 @@ object(self)
     let y = f x in
     self#set_auto_complete old;
     y
-  method add_detached_view (w:GWindow.window) =
-    detached_views <- w::detached_views
-  method remove_detached_view (w:GWindow.window) =
-    detached_views <- List.filter (fun e -> w#misc#get_oid<>e#misc#get_oid) detached_views
-
-  method kill_detached_views () =
-    List.iter (fun w -> w#destroy ()) detached_views;
-    detached_views <- []
 
   method filename = filename
   method stats = stats
@@ -2382,6 +2371,24 @@ let main files =
 	|Some ac -> GAction.add_action name ~label ~callback ~accel:(!current.modifier_for_templates^ac)
 	|None -> GAction.add_action name ~label ~callback ?accel:None
   in
+  let detach_view _ =
+    (* Open a separate window containing the current buffer *)
+    let trm = session_notebook#current_term in
+    let w = GWindow.window ~show:true
+      ~width:(!current.window_width*2/3)
+      ~height:(!current.window_height*2/3)
+      ~position:`CENTER
+      ~title:(if trm.filename = "" then "*scratch*" else trm.filename)
+      ()
+    in
+    let sb = GBin.scrolled_window ~packing:w#add ()
+    in
+    let nv = GText.view ~buffer:trm.script#buffer ~packing:sb#add ()
+    in
+    nv#misc#modify_font !current.text_font;
+    (* If the buffer in the main window is closed, destroy this detached view *)
+    ignore (trm.script#connect#destroy ~callback:w#destroy)
+  in
     GAction.add_actions file_actions [
       GAction.add_action "File" ~label:"_File";
       GAction.add_action "New" ~callback:new_f ~stock:`NEW;
@@ -2569,33 +2576,7 @@ let main files =
     ];
     GAction.add_actions windows_actions [
       GAction.add_action "Windows" ~label:"_Windows";
-      GAction.add_action "Detach View" ~label:"Detach _View"
-	~callback:(fun _ -> do_if_not_computing "detach view"
-		     (function {script=v;analyzed_view=av} ->
-			let w = GWindow.window ~show:true
-			  ~width:(!current.window_width*2/3)
-			  ~height:(!current.window_height*2/3)
-			  ~position:`CENTER
-			  ~title:(match av#filename with
-				    | None -> "*Unnamed*"
-				    | Some f -> f)
-			  ()
-			in
-			let sb = GBin.scrolled_window
-			  ~packing:w#add ()
-			in
-			let nv = GText.view
-			  ~buffer:v#buffer
-			  ~packing:sb#add
-			  ()
-			in
-			  nv#misc#modify_font
-			    !current.text_font;
-			  ignore (w#connect#destroy
-				    ~callback:
-				    (fun () -> av#remove_detached_view w));
-			  av#add_detached_view w)
-		     [session_notebook#current_term]);
+      GAction.add_action "Detach View" ~label:"Detach _View" ~callback:detach_view
     ];
     GAction.add_actions help_actions [
       GAction.add_action "Help" ~label:"_Help";
