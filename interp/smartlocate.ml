@@ -25,6 +25,7 @@ let global_of_extended_global = function
   | SynDef kn ->
   match search_syntactic_definition kn with
   | [],NRef ref -> ref
+  | [],NApp (NRef ref,[]) -> ref
   | _ -> raise Not_found
 
 let locate_global_with_alias (loc,qid) =

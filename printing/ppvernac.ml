@@ -179,17 +179,21 @@ let pr_opt_hintbases l = match l with
   | [] -> mt()
   | _ as z -> str":" ++ spc() ++ prlist_with_sep sep str z
 
+let pr_reference_or_constr pr_c = function
+  | HintsReference r -> pr_reference r
+  | HintsConstr c -> pr_c c
+
 let pr_hints local db h pr_c pr_pat =
   let opth = pr_opt_hintbases db  in
   let pph =
     match h with
     | HintsResolve l ->
         str "Resolve " ++ prlist_with_sep sep
-	  (fun (pri, _, c) -> pr_reference c ++
+	  (fun (pri, _, c) -> pr_reference_or_constr pr_c c ++
 	    match pri with Some x -> spc () ++ str"(" ++ int x ++ str")" | None -> mt ())
 	  l
     | HintsImmediate l ->
-        str"Immediate" ++ spc() ++ prlist_with_sep sep pr_reference l
+        str"Immediate" ++ spc() ++ prlist_with_sep sep (pr_reference_or_constr pr_c) l
     | HintsUnfold l ->
         str "Unfold " ++ prlist_with_sep sep pr_reference l
     | HintsTransparency (l, b) ->

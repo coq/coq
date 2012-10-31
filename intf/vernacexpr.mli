@@ -102,9 +102,13 @@ type comment =
   | CommentString of string
   | CommentInt of int
 
+type reference_or_constr = 
+  | HintsReference of reference
+  | HintsConstr of constr_expr
+
 type hints_expr =
-  | HintsResolve of (int option * bool * reference) list
-  | HintsImmediate of reference list
+  | HintsResolve of (int option * bool * reference_or_constr) list
+  | HintsImmediate of reference_or_constr list
   | HintsUnfold of reference list
   | HintsTransparency of reference list * bool
   | HintsConstructors of reference list

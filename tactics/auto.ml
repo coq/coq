@@ -815,18 +815,36 @@ let prepare_hint env (sigma,c) =
       mkNamedLambda id t (iter (replace_term evar (mkVar id) c)) in
   iter c
 
-let interp_hints h =
+let interp_hints =
+  let hint_counter = ref 1 in
+  fun h ->
+  let f c =
+    let evd,c = Constrintern.interp_open_constr Evd.empty (Global.env()) c in
+    let c = prepare_hint (Global.env()) (evd,c) in
+    Evarutil.check_evars (Global.env()) Evd.empty evd c;
+    c in
   let fr r =
     let gr = global_with_alias r in
     let r' = evaluable_of_global_reference (Global.env()) gr in
     Dumpglob.add_glob (loc_of_reference r) gr;
     r' in
-  let fres (o, b, c) =
-    let gr = global_with_alias c in
-      (o, b, PathHints [gr], gr) in
   let fi c =
-    let gr = global_with_alias c in
-      PathHints [gr], gr
+    match c with
+    | HintsReference c ->
+      let gr = global_with_alias c in
+	(PathHints [gr], gr)
+    | HintsConstr c ->
+      let term = f c in
+      let id = id_of_string ("auto_hint_" ^ string_of_int !hint_counter) in
+	incr hint_counter;
+      let kn = Declare.declare_definition ~internal:Declare.KernelSilent
+	~opaque:false id term in
+      let gr = ConstRef kn in
+	(PathHints [gr], gr)
+  in
+  let fres (o, b, c) =
+    let path, gr = fi c in
+      (o, b, path, gr)
   in
   let fp = Constrintern.intern_constr_pattern Evd.empty (Global.env()) in
   match h with

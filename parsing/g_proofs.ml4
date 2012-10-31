@@ -91,7 +91,7 @@ GEXTEND Gram
 	  VernacHints (enforce_module_locality local,dbnames, h)
       (* Declare "Resolve" explicitly so as to be able to later extend with
          "Resolve ->" and "Resolve <-" *)
-      | IDENT "Hint"; IDENT "Resolve"; lc = LIST1 reference; n = OPT natural;
+      | IDENT "Hint"; IDENT "Resolve"; lc = LIST1 reference_or_constr; n = OPT natural;
 	  dbnames = opt_hintbases ->
 	  VernacHints (use_module_locality (),dbnames,
 	    HintsResolve (List.map (fun x -> (n, true, x)) lc))
@@ -100,10 +100,14 @@ GEXTEND Gram
   obsolete_locality:
     [ [ IDENT "Local" -> true | -> false ] ]
   ;
+  reference_or_constr:
+   [ [ r = global -> HintsReference r
+     | "("; c = operconstr LEVEL "200"; ")" -> HintsConstr c ] ]
+  ;
   hint:
-    [ [ IDENT "Resolve"; lc = LIST1 global; n = OPT natural ->
+    [ [ IDENT "Resolve"; lc = LIST1 reference_or_constr; n = OPT natural ->
           HintsResolve (List.map (fun x -> (n, true, x)) lc)
-      | IDENT "Immediate"; lc = LIST1 global -> HintsImmediate lc
+      | IDENT "Immediate"; lc = LIST1 reference_or_constr -> HintsImmediate lc
       | IDENT "Transparent"; lc = LIST1 global -> HintsTransparency (lc, true)
       | IDENT "Opaque"; lc = LIST1 global -> HintsTransparency (lc, false)
       | IDENT "Unfold"; lqid = LIST1 global -> HintsUnfold lqid
