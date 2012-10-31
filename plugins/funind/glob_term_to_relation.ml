@@ -488,7 +488,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		let rt_as_constr = Pretyping.understand Evd.empty env rt in
 		let rt_typ = Typing.type_of env Evd.empty rt_as_constr in
 		let res_raw_type = Detyping.detype false [] (Termops.names_of_rel_context env) rt_typ in
-		let res = fresh_id args_res.to_avoid "res" in
+		let res = fresh_id args_res.to_avoid "_res" in
 		let new_avoid = res::args_res.to_avoid in
 		let res_rt = mkGVar res in
 		let new_result =
@@ -835,7 +835,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 
 let is_res id =
   try
-    String.sub (string_of_id id) 0 3 = "res"
+    String.sub (string_of_id id) 0 4 = "_res"
   with Invalid_argument _ -> false
 
 

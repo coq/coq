@@ -126,7 +126,7 @@ let generate_type g_to_f f graph i =
   (*i We need to name the vars [res] and [fv] i*)
   let filter = function (Name id,_,_) -> Some id | (Anonymous,_,_) -> None in
   let named_ctxt = List.map_filter filter fun_ctxt in
-  let res_id = Namegen.next_ident_away_in_goal (id_of_string "res") named_ctxt in
+  let res_id = Namegen.next_ident_away_in_goal (id_of_string "_res") named_ctxt in
   let fv_id = Namegen.next_ident_away_in_goal (id_of_string "fv") (res_id :: named_ctxt) in
   (*i we can then type the argument to be applied to the function [f] i*)
   let args_as_rels = Array.of_list (args_from_decl 1 [] fun_ctxt) in
