@@ -118,14 +118,14 @@ module EvarInfoMap = struct
   let undefined_evars (def,undef) = (ExistentialMap.empty,undef)
   let defined_evars (def,undef) = (def,ExistentialMap.empty)
 
-  let find (def,undef) k =
-    try ExistentialMap.find k def
-    with Not_found -> ExistentialMap.find k undef
+  let find (def, undef) k =
+    try ExistentialMap.find k undef
+    with Not_found -> ExistentialMap.find k def
   let find_undefined (def,undef) k = ExistentialMap.find k undef
   let remove (def,undef) k =
     (ExistentialMap.remove k def,ExistentialMap.remove k undef)
-  let mem (def,undef) k =
-    ExistentialMap.mem k def || ExistentialMap.mem k undef
+  let mem (def, undef) k =
+    ExistentialMap.mem k undef || ExistentialMap.mem k def
   let fold (def,undef) f a =
     ExistentialMap.fold f def (ExistentialMap.fold f undef a)
   let fold_undefined (def,undef) f a =
@@ -133,15 +133,13 @@ module EvarInfoMap = struct
   let exists_undefined (def,undef) f =
     ExistentialMap.fold (fun k v b -> b || f k v) undef false
 
-  let add (def,undef) evk newinfo =
-    if newinfo.evar_body = Evar_empty then
-      (def,ExistentialMap.add evk newinfo undef)
-    else
-      (ExistentialMap.add evk newinfo def,undef)
+  let add (def,undef) evk newinfo = match newinfo.evar_body with
+  | Evar_empty -> (def, ExistentialMap.add evk newinfo undef)
+  | _ -> (ExistentialMap.add evk newinfo def, undef)
 
-  let add_undefined (def,undef) evk newinfo =
-    assert (newinfo.evar_body = Evar_empty);
-    (def,ExistentialMap.add evk newinfo undef)
+  let add_undefined (def,undef) evk newinfo = match newinfo.evar_body with
+  | Evar_empty -> (def, ExistentialMap.add evk newinfo undef)
+  | _ -> assert false
 
   let map f (def,undef) = (ExistentialMap.map f def, ExistentialMap.map f undef)
 
