@@ -135,6 +135,25 @@ let set_vm_opt () =
   Vm.set_transp_values (not !boxed_val);
   Vconv.set_use_vm !use_vm
 
+(** GC tweaking *)
+
+(** Coq is a heavy user of persistent data structures and symbolic ASTs, so the
+    minor heap is heavily sollicited. Unfortunately, the default size is far too
+    small, so we enlarge it a lot (128 times larger).
+
+    To better handle huge memory consumers, we also augment the default major
+    heap increment and the GC pressure coefficient.
+*)
+
+let init_gc () =
+  let control = Gc.get () in
+  let tweaked_control = { control with
+    Gc.minor_heap_size = 33554432; (** 4M *)
+    Gc.major_heap_increment = 268435456; (** 32M *)
+    Gc.space_overhead = 120;
+  } in
+  Gc.set tweaked_control
+
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
     between coqtop and coqc. *)
@@ -323,6 +342,7 @@ let parse_args arglist =
     | e -> fatal_error (Errors.print e)
 
 let init arglist =
+  init_gc ();
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
   Lib.init();
   (* Default Proofb Mode starts with an alternative default. *)
