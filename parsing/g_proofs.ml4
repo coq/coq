@@ -102,7 +102,7 @@ GEXTEND Gram
   ;
   reference_or_constr:
    [ [ r = global -> HintsReference r
-     | "("; c = operconstr LEVEL "200"; ")" -> HintsConstr c ] ]
+     | c = constr -> HintsConstr c ] ]
   ;
   hint:
     [ [ IDENT "Resolve"; lc = LIST1 reference_or_constr; n = OPT natural ->
