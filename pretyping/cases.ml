@@ -988,7 +988,7 @@ let adjust_predicate_from_tomatch tomatch (current,typ as ct) pb =
 
 let rec ungeneralize n ng body =
   match kind_of_term body with
-  | Lambda (_,_,c) when ng = 0 ->
+  | Lambda (_,_,c) when Int.equal ng 0 ->
       subst1 (mkRel n) c
   | Lambda (na,t,c) ->
       (* We traverse an inner generalization *)
@@ -1046,8 +1046,8 @@ let rec irrefutable env = function
   | PatCstr (_,cstr,args,_) ->
       let ind = inductive_of_constructor cstr in
       let (_,mip) = Inductive.lookup_mind_specif env ind in
-      let one_constr = Array.length mip.mind_user_lc = 1 in
-      one_constr & List.for_all (irrefutable env) args
+      let one_constr = Int.equal (Array.length mip.mind_user_lc) 1 in
+      one_constr && List.for_all (irrefutable env) args
 
 let first_clause_irrefutable env = function
   | eqn::mat -> List.for_all (irrefutable env) eqn.patterns
@@ -1419,7 +1419,7 @@ let push_binder d (k,env,subst) =
 
 let rec list_assoc_in_triple x = function
     [] -> raise Not_found
-  | (a,b,_)::l -> if compare a x = 0 then b else list_assoc_in_triple x l
+  | (a, b, _)::l -> if Int.equal a x then b else list_assoc_in_triple x l
 
 (* Let vijk and ti be a set of dependent terms and T a type, all
  * defined in some environment env. The vijk and ti are supposed to be
@@ -1682,7 +1682,7 @@ let prepare_predicate_from_arsign_tycon loc tomatchs arsign c =
       let signlen = List.length sign in
 	match kind_of_term tm with
 	  | Rel n when dependent tm c
-		&& signlen = 1 (* The term to match is not of a dependent type itself *) ->
+		&& Int.equal signlen 1 (* The term to match is not of a dependent type itself *) ->
 	      ((n, len) :: subst, len - signlen)
 	  | Rel n when signlen > 1 (* The term is of a dependent type,
 				      maybe some variable in its type appears in the tycon. *) ->
@@ -2162,7 +2162,7 @@ let build_dependent_signature env evars avoid tomatchs arsign =
       ([], 0, [], nar, []) tomatchs arsign
   in
   let arsign'' = List.rev arsign' in
-    assert(slift = 0); (* we must have folded over all elements of the arity signature *)
+    assert(Int.equal slift 0); (* we must have folded over all elements of the arity signature *)
     arsign'', allnames, nar, eqs, neqs, refls
 
 let context_of_arsign l =

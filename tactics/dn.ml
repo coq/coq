@@ -16,7 +16,7 @@ struct
 	  None,None -> 0
 	| Some (l,n),Some (l',n') -> 
 	    let m = Y.compare l l' in
-	    if m = 0 then
+	    if Int.equal m 0 then
 	      n-n' 
 	    else m
 	| Some(l,n),None -> 1
@@ -26,7 +26,7 @@ struct
     type t = X.t * Z.t
     let compare (x1,x2) (y1,y2) = 
       let m = (X.compare x1 y1) in
-      if m = 0 then (Z.compare x2 y2) else 
+      if Int.equal m 0 then (Z.compare x2 y2) else 
 	m
   end
 
@@ -65,7 +65,7 @@ prefix ordering, [dna] is the function returning the main node of a pattern *)
     try [T.map tm lbl, true] with Not_found -> []
       
   let rec skip_arg n tm =
-    if n = 0 then [tm,true]
+    if Int.equal n 0 then [tm,true]
     else
       List.flatten 
 	(List.map 

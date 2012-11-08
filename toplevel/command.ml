@@ -36,7 +36,7 @@ open Indschemes
 open Misctypes
 
 let rec under_binders env f n c =
-  if n = 0 then f env Evd.empty c else
+  if Int.equal n 0 then f env Evd.empty c else
     match kind_of_term c with
       | Lambda (x,t,c) ->
 	  mkLambda (x,t,under_binders (push_rel (x,None,t) env) f (n-1) c)

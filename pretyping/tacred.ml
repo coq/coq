@@ -959,7 +959,7 @@ let unfold env sigma name =
 let unfoldoccs env sigma (occs,name) c =
   let unfo nowhere_except_in locs =
     let (nbocc,uc) = substlin env name 1 (nowhere_except_in,locs) c in
-    if nbocc = 1 then
+    if Int.equal nbocc 1 then
       error ((string_of_evaluable_ref env name)^" does not occur.");
     let rest = List.filter (fun o -> o >= nbocc) locs in
     if rest <> [] then error_invalid_occurrence rest;

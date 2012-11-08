@@ -52,7 +52,7 @@ module Make = functor (X:Map.OrderedType) -> struct
           Node(Empty, x, data, Empty, 1)
       | Node(l, v, d, r, h) ->
           let c = X.compare x v in
-          if c = 0 then
+          if Int.equal c 0 then
             Node(l, x, data, r, h)
           else if c < 0 then
             bal (add x data l) v d r
@@ -64,7 +64,7 @@ module Make = functor (X:Map.OrderedType) -> struct
           raise Not_found
       | Node(l, v, d, r, _) ->
           let c = X.compare x v in
-          if c = 0 then d
+          if Int.equal c 0 then d
           else find x (if c < 0 then l else r)
 
     let rec mem x = function
@@ -72,7 +72,7 @@ module Make = functor (X:Map.OrderedType) -> struct
           false
       | Node(l, v, d, r, _) ->
           let c = X.compare x v in
-          c = 0 || mem x (if c < 0 then l else r)
+          Int.equal c 0 || mem x (if c < 0 then l else r)
 
     let rec min_binding = function
         Empty -> raise Not_found
@@ -97,7 +97,7 @@ module Make = functor (X:Map.OrderedType) -> struct
           Empty
       | Node(l, v, d, r, h) ->
           let c = X.compare x v in
-          if c = 0 then
+          if Int.equal c 0 then
             merge l r
           else if c < 0 then
             bal (remove x l) v d r

@@ -395,7 +395,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
                let tyN = get_type_of curenv sigma cN in
                check_compatibility curenv substn tyM tyN);
 	    (* Here we check that [cN] does not contain any local variables *)
-	    if nb = 0 then
+	    if Int.equal nb 0 then
               sigma,(k,cN,snd (extract_instance_status pb))::metasubst,evarsubst
             else if noccur_between 1 nb cN then
               (sigma,
@@ -409,7 +409,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
                let tyN = Typing.meta_type sigma k in
                check_compatibility curenv substn tyM tyN);
 	    (* Here we check that [cM] does not contain any local variables *)
-	    if nb = 0 then
+	    if Int.equal nb 0 then
               (sigma,(k,cM,fst (extract_instance_status pb))::metasubst,evarsubst)
 	    else if noccur_between 1 nb cM
 	    then
@@ -771,7 +771,7 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
 
 let applyHead env evd n c  =
   let rec apprec n c cty evd =
-    if n = 0 then
+    if Int.equal n 0 then
       (evd, c)
     else
       match kind_of_term (whd_betadeltaiota env evd cty) with

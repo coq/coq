@@ -221,7 +221,7 @@ let lookup_rel_id id sign =
     | []                     -> raise Not_found
     | (Anonymous, _, _) :: l -> lookrec (n + 1) l
     | (Name id', b, t) :: l  ->
-      if Names.id_ord id' id = 0 then (n, b, t) else lookrec (n + 1) l
+      if Int.equal (Names.id_ord id' id) 0 then (n, b, t) else lookrec (n + 1) l
   in
   lookrec 1 sign
 
@@ -258,7 +258,7 @@ let rec strip_head_cast c = match kind_of_term c with
       let rec collapse_rec f cl2 = match kind_of_term f with
 	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
 	| Cast (c,_,_) -> collapse_rec c cl2
-	| _ -> if Array.length cl2 = 0 then f else mkApp (f,cl2)
+	| _ -> if Int.equal (Array.length cl2) 0 then f else mkApp (f,cl2)
       in
       collapse_rec f cl
   | Cast (c,_,_) -> strip_head_cast c
@@ -342,7 +342,7 @@ let fold_rec_types g (lna,typarray,_) e =
 
 let map_left2 f a g b =
   let l = Array.length a in
-  if l = 0 then [||], [||] else begin
+  if Int.equal l 0 then [||], [||] else begin
     let r = Array.create l (f a.(0)) in
     let s = Array.create l (g b.(0)) in
     for i = 1 to l - 1 do
@@ -911,7 +911,7 @@ let eq_constr = constr_cmp Reduction.CONV
 let split_app c = match kind_of_term c with
     App(c,l) ->
       let len = Array.length l in
-      if len=0 then ([],c) else
+      if Int.equal len 0 then ([],c) else
 	let last = Array.get l (len-1) in
 	let prev = Array.sub l 0 (len-1) in
 	c::(Array.to_list prev), last
@@ -981,7 +981,7 @@ let rec eta_reduce_head c =
                  (match kind_of_term cl.(lastn) with
                     | Rel 1 ->
 			let c' =
-                          if lastn = 1 then f
+                          if Int.equal lastn 1 then f
 			  else mkApp (f, Array.sub cl 0 lastn)
 			in
 			if noccurn 1 c'

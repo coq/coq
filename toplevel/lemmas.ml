@@ -292,7 +292,7 @@ let start_proof_with_initialization kind recguard thms snl hook =
             else
               tacl)),guard
   | None ->
-      assert (List.length thms = 1);
+      let () = match thms with [_] -> () | _ -> assert false in
       (if Flags.is_auto_intros () then Some (intro_tac (List.hd thms)) else None), [] in
   match thms with
   | [] -> anomaly "No proof to start"

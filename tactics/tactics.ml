@@ -1211,7 +1211,7 @@ let keep hyps gl =
 (************************)
 
 let check_number_of_constructors expctdnumopt i nconstr =
-  if i=0 then error "The constructors are numbered starting from 1.";
+  if Int.equal i 0 then error "The constructors are numbered starting from 1.";
   begin match expctdnumopt with
     | Some n when n <> nconstr ->
 	error ("Not an inductive goal with "^
@@ -1243,7 +1243,7 @@ let any_constructor with_evars tacopt gl =
   let mind = fst (pf_reduce_to_quantified_ind gl (pf_concl gl)) in
   let nconstr =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
-  if nconstr = 0 then error "The type has no constructors.";
+  if Int.equal nconstr 0 then error "The type has no constructors.";
   tclFIRST
     (List.map
       (fun i -> tclTHEN (constructor_tac with_evars None i NoBindings) t)
@@ -1286,9 +1286,9 @@ let error_unexpected_extra_pattern loc nb pat =
   | IntroIdentifier _ -> "name", (plural nb " introduction pattern"), "no"
   | _ -> "introduction pattern", "", "none" in
   user_err_loc (loc,"",str "Unexpected " ++ str s1 ++ str " (" ++
-    (if nb = 0 then (str s3 ++ str s2) else
+    (if Int.equal nb 0 then (str s3 ++ str s2) else
       (str "at most " ++ int nb ++ str s2)) ++ spc () ++
-       str (if nb = 1 then "was" else "were") ++
+       str (if Int.equal nb 1 then "was" else "were") ++
       strbrk " expected in the branch).")
 
 let intro_or_and_pattern loc b ll l' tac id gl =
@@ -1297,9 +1297,9 @@ let intro_or_and_pattern loc b ll l' tac id gl =
     let nv = mis_constr_nargs ind in
     let bracketed = b or not (l'=[]) in
     let rec adjust_names_length nb n = function
-      | [] when n = 0 or not bracketed -> []
+      | [] when Int.equal n 0 or not bracketed -> []
       | [] -> (dloc,IntroAnonymous) :: adjust_names_length nb (n-1) []
-      | (loc',pat) :: _ as l when n = 0 ->
+      | (loc',pat) :: _ as l when Int.equal n 0 ->
 	  if bracketed then error_unexpected_extra_pattern loc' nb pat;
 	  l
       | ip :: l -> ip :: adjust_names_length nb (n-1) l in
@@ -2239,7 +2239,7 @@ let empty_scheme =
   }
 
 let make_base n id =
-  if n=0 or n=1 then id
+  if Int.equal n 0 || Int.equal n 1 then id
   else
     (* This extends the name to accept new digits if it already ends with *)
     (* digits *)
@@ -2260,7 +2260,7 @@ let make_up_names n ind_opt cname =
     else add_prefix ind_prefix cname in
   let hyprecname = make_base n base_ind in
   let avoid =
-    if n=1 (* Only one recursive argument *) or n=0 then []
+    if Int.equal n 1 (* Only one recursive argument *) or Int.equal n 0 then []
     else
       (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
       (* in order to get names such as f1, f2, ... *)
@@ -2618,13 +2618,15 @@ let decompose_paramspred_branch_args elimt =
      type (See for example Empty_set_ind, as False would actually be ok). Then
      we must find the predicate of the conclusion to separate params_pred from
      args. We suppose there is only one predicate here. *)
-  if List.length acc2 <> 0 then acc1, acc2 , acc3, ccl
-  else
+  match acc2 with
+  | [] ->
     let hyps,ccl = decompose_prod_assum elimt in
     let hd_ccl_pred,_ = decompose_app ccl in
-    match kind_of_term hd_ccl_pred with
+    begin match kind_of_term hd_ccl_pred with
       | Rel i  -> let acc3,acc1 = cut_list (i-1) hyps in acc1 , [] , acc3 , ccl
       | _ -> error_ind_scheme ""
+    end
+  | _ -> acc1, acc2 , acc3, ccl
 
 
 let exchange_hd_app subst_hd t =
@@ -2694,7 +2696,7 @@ let compute_elim_sig ?elimc elimt =
       raise Exit
     end;
     (* 2- If no args_indargs (=!res.nargs at this point) then no indarg *)
-    if !res.nargs=0 then raise Exit;
+    if Int.equal !res.nargs 0 then raise Exit;
     (* 3- Look at last arg: is it the indarg? *)
     ignore (
       match List.hd args_indargs with
@@ -3166,7 +3168,7 @@ let new_induct_gen_l isrec with_evars elim (eqname,names) lc gl =
    args *)
 let induct_destruct isrec with_evars (lc,elim,names,cls) gl =
   assert (List.length lc > 0); (* ensured by syntax, but if called inside caml? *)
-  if List.length lc = 1 && not (is_functional_induction elim gl) then
+  if Int.equal (List.length lc) 1 && not (is_functional_induction elim gl) then
     (* standard induction *)
     onOpenInductionArg
       (fun c -> new_induct_gen isrec with_evars elim names c cls)
@@ -3182,7 +3184,8 @@ let induct_destruct isrec with_evars (lc,elim,names,cls) gl =
       error "'in' clause not supported here.";
     let lc = List.map
       (map_induction_arg (pf_apply finish_evar_resolution gl)) lc in
-    if List.length lc = 1 then
+    begin match lc with
+    | [_] ->
       (* Hook to recover standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
       onInductionArg
@@ -3190,7 +3193,7 @@ let induct_destruct isrec with_evars (lc,elim,names,cls) gl =
 	  if lbind <> NoBindings then
 	    error "'with' clause not supported here.";
 	  new_induct_gen_l isrec with_evars elim names [c]) (List.hd lc) gl
-    else
+    | _ ->
       let newlc =
 	List.map (fun x ->
 	  match x with (* FIXME: should we deal with ElimOnIdent? *)
@@ -3198,6 +3201,7 @@ let induct_destruct isrec with_evars (lc,elim,names,cls) gl =
 	  | _ -> error "Don't know where to find some argument.")
 	  lc in
       new_induct_gen_l isrec with_evars elim names newlc gl
+    end
   end
 
 let induction_destruct isrec with_evars = function

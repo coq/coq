@@ -199,7 +199,7 @@ and spaces ntn n =
 
 let expand_notation_string ntn n =
   let pos = List.nth (wildcards ntn 0) n in
-  let hd = if pos = 0 then "" else String.sub ntn 0 pos in
+  let hd = if Int.equal pos 0 then "" else String.sub ntn 0 pos in
   let tl =
     if pos = String.length ntn then ""
     else String.sub ntn (pos+1) (String.length ntn - pos -1) in
@@ -737,7 +737,7 @@ let find_remaining_scopes pl1 pl2 ref =
   let impls_st = implicits_of_global ref in
   let len_pl1 = List.length pl1 in
   let len_pl2 = List.length pl2 in
-  let impl_list = if len_pl1 = 0
+  let impl_list = if Int.equal len_pl1 0
     then select_impargs_size len_pl2 impls_st
     else List.skipn_at_least len_pl1 (select_stronger_impargs impls_st) in
   let allscs = find_arguments_scope ref in
@@ -797,7 +797,7 @@ let check_constructor_length env loc cstr len_pl pl0 =
         (nargs - (Inductiveops.inductive_nparams (fst cstr))))
 
 let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 =
-  let impl_list = if len_pl1 = 0
+  let impl_list = if Int.equal len_pl1 0
     then select_impargs_size (List.length pl2) impls_st
     else List.skipn_at_least len_pl1 (select_stronger_impargs impls_st) in
   let remaining_args = List.fold_left (fun i x -> if is_status_implicit x then i else succ i) in

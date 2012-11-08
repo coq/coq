@@ -423,7 +423,7 @@ let register =
     let nth_digit_plus_one i n = (* calculates the nth (starting with 0)
                                     digit of i and adds 1 to it
                                     (nth_digit_plus_one 1 3 = 2) *)
-      if (land) i ((lsl) 1 n) = 0 then
+      if Int.equal (i land (1 lsl n)) 0 then
         1
       else
         2

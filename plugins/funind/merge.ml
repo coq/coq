@@ -227,7 +227,7 @@ let linkmonad f lnkvar =
 let linklift lnkvar i = linkmonad (fun x -> x+i) lnkvar
 
 (* This map is used to deal with debruijn linked indices. *)
-module Link = Map.Make (struct type t = int let compare = Pervasives.compare end)
+module Link = Map.Make (Int)
 
 let pr_links l =
   Printf.printf "links:\n";

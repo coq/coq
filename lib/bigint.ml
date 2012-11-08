@@ -43,8 +43,8 @@ let size =
 
 let format_size =
   (* How to parametrize a printf format *)
-  if size = 4 then Printf.sprintf "%04d"
-  else if size = 9 then Printf.sprintf "%09d"
+  if Int.equal size 4 then Printf.sprintf "%04d"
+  else if Int.equal size 9 then Printf.sprintf "%09d"
   else fun n ->
     let rec aux j l n =
       if j=size then l else aux (j+1) (string_of_int (n mod 10) :: l) (n/10)
@@ -73,7 +73,7 @@ let neg_one = [|-1|]
 
 let canonical n =
   let ok x = (0 <= x && x < base) in
-  let rec ok_tail k = (k = 0) || (ok n.(k) && ok_tail (k-1)) in
+  let rec ok_tail k = (Int.equal k 0) || (ok n.(k) && ok_tail (k-1)) in
   let ok_init x = (-base <= x && x < base && x <> -1 && x <> 0)
   in
   (n = [||]) || (n = [|-1|]) ||
@@ -83,7 +83,7 @@ let canonical n =
 
 let normalize_pos n =
   let k = ref 0 in
-  while !k < Array.length n & n.(!k) = 0 do incr k done;
+  while !k < Array.length n && Int.equal n.(!k) 0 do incr k done;
   Array.sub n !k (Array.length n - !k)
 
 (* [normalize_neg] : avoid (-1) as first bloc.
@@ -94,16 +94,16 @@ let normalize_neg n =
   let k = ref 1 in
   while !k < Array.length n & n.(!k) = base - 1 do incr k done;
   let n' = Array.sub n !k (Array.length n - !k) in
-  if Array.length n' = 0 then [|-1|] else (n'.(0) <- n'.(0) - base; n')
+  if Int.equal (Array.length n') 0 then [|-1|] else (n'.(0) <- n'.(0) - base; n')
 
 (* [normalize] : avoid 0 and (-1) as first bloc.
    input: an array with first bloc in [-base;base[ and others in [0;base[
    output: a canonical array *)
 
 let normalize n =
-  if Array.length n = 0 then n
-  else if n.(0) = -1 then normalize_neg n
-  else if n.(0) = 0 then normalize_pos n
+  if Int.equal (Array.length n) 0 then n
+  else if Int.equal n.(0) (-1) then normalize_neg n
+  else if Int.equal n.(0) 0 then normalize_pos n
   else n
 
 (* Opposite (expects and returns canonical arrays) *)
@@ -112,8 +112,8 @@ let neg m =
   if m = zero then zero else
   let n = Array.copy m in
   let i = ref (Array.length m - 1) in
-  while !i > 0 & n.(!i) = 0 do decr i done;
-  if !i = 0 then begin
+  while !i > 0 && Int.equal n.(!i) 0 do decr i done;
+  if Int.equal !i 0 then begin
     n.(0) <- - n.(0);
     (* n.(0) cannot be 0 since m is canonical *)
     if n.(0) = -1 then normalize_neg n
@@ -261,7 +261,7 @@ let euclid m d =
     let q = Array.create (ql+1) 0 in
     let i = ref 0 in
     while not (less_than_shift_pos !i m d) do
-      if m.(!i)=0 then incr i else
+      if Int.equal m.(!i) 0 then incr i else
       if can_divide !i m d 0 then begin
         let v =
           if Array.length d > 1 && d.(0) <> m.(!i) then
@@ -297,14 +297,14 @@ let of_string s =
   let e = if h<>"" then 1 else 0 in
   let l = (len - !d) / size in
   let a = Array.create (l + e) 0 in
-  if e=1 then a.(0) <- int_of_string h;
-  for i=1 to l do
+  if Int.equal e 1 then a.(0) <- int_of_string h;
+  for i = 1 to l do
     a.(i+e-1) <- int_of_string (String.sub s ((i-1)*size + !d + r) size)
   done;
   if isneg then neg a else a
 
 let to_string_pos sgn n =
-   if Array.length n = 0 then "0" else
+   if Int.equal (Array.length n) 0 then "0" else
      sgn ^
      String.concat ""
       (string_of_int n.(0) :: List.map format_size (List.tl (Array.to_list n)))
@@ -342,7 +342,7 @@ let mkarray n =
   t
 
 let ints_of_int n =
-  if n = 0 then [| |]
+  if Int.equal n 0 then [| |]
   else if small n then [| n |]
   else mkarray n
 
@@ -352,7 +352,7 @@ let of_int n =
 let of_ints n =
   let n = normalize n in (* TODO: using normalize here seems redundant now *)
   if n = zero then Obj.repr 0 else
-  if Array.length n = 1 then Obj.repr n.(0) else
+  if Int.equal (Array.length n) 1 then Obj.repr n.(0) else
   Obj.repr n
 
 let coerce_to_int = (Obj.magic : Obj.t -> int)
@@ -366,7 +366,7 @@ let int_of_ints =
   let maxi = mkarray max_int and mini = mkarray min_int in
   fun t ->
     let l = Array.length t in
-    if (l > 3) || (l = 3 && (less_than maxi t || less_than t mini))
+    if (l > 3) || (Int.equal l 3 && (less_than maxi t || less_than t mini))
     then failwith "Bigint.to_int: too large";
     let sum = ref 0 in
     let pow = ref 1 in

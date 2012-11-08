@@ -169,7 +169,7 @@ type whd =
 
 let rec whd_accu a stk =
   let stk =
-    if Obj.size a = 2 then stk
+    if Int.equal (Obj.size a) 2 then stk
     else Zapp (Obj.obj a) :: stk in
   let at = Obj.field a 1 in
   match Obj.tag at with
@@ -211,7 +211,7 @@ let whd_val : values -> whd =
       let tag = Obj.tag o in
       if tag = accu_tag then
 	(
-	if Obj.size o = 1 then Obj.obj o (* sort *)
+	if Int.equal (Obj.size o) 1 then Obj.obj o (* sort *)
 	else
 	  if is_accumulate (fun_code o) then whd_accu o []
 	  else (Vprod(Obj.obj o)))
@@ -255,7 +255,7 @@ let arg args i =
 
 let apply_arguments vf vargs =
   let n = nargs vargs in
-  if n = 0 then vf
+  if Int.equal n 0 then vf
   else
    begin
      push_ra stop;
@@ -265,7 +265,7 @@ let apply_arguments vf vargs =
 
 let apply_vstack vf vstk =
   let n = Array.length vstk in
-  if n = 0 then vf
+  if Int.equal n 0 then vf
   else
     begin
       push_ra stop;
@@ -502,7 +502,7 @@ let type_of_switch sw =
   interprete sw.sw_type_code crazy_val sw.sw_env 0
 
 let branch_arg k (tag,arity) =
-  if arity = 0 then  ((Obj.magic tag):values)
+  if Int.equal arity 0 then  ((Obj.magic tag):values)
   else
     let b = Obj.new_block tag arity in
     for i = 0 to arity - 1 do

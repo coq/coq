@@ -146,7 +146,7 @@ let sync nb_opened_proofs =
     the end. *)
 
 let back count =
-  if count = 0 then 0
+  if Int.equal count 0 then 0
   else
     let nb_opened_proofs = List.length (Pfedit.get_all_proof_names ()) in
     npop count;

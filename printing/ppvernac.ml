@@ -495,7 +495,7 @@ let rec pr_vernac = function
   | VernacUnfocused -> str"Unfocused"
   | VernacGoal c -> str"Goal" ++ pr_lconstrarg c
   | VernacAbort id -> str"Abort" ++ pr_opt pr_lident id
-  | VernacUndo i -> if i=1 then str"Undo" else str"Undo" ++ pr_intarg i
+  | VernacUndo i -> if Int.equal i 1 then str"Undo" else str"Undo" ++ pr_intarg i
   | VernacUndoTo i -> str"Undo" ++ spc() ++ str"To" ++ pr_intarg i
   | VernacBacktrack (i,j,k) ->
       str "Backtrack" ++  spc() ++ prlist_with_sep sep int [i;j;k]
@@ -523,7 +523,7 @@ let rec pr_vernac = function
   (* Resetting *)
   | VernacResetName id -> str"Reset" ++ spc() ++ pr_lident id
   | VernacResetInitial -> str"Reset Initial"
-  | VernacBack i -> if i=1 then str"Back" else str"Back" ++ pr_intarg i
+  | VernacBack i -> if Int.equal i 1 then str"Back" else str"Back" ++ pr_intarg i
   | VernacBackTo i -> str"BackTo" ++ pr_intarg i
 
   (* State management *)
@@ -634,9 +634,9 @@ let rec pr_vernac = function
       let pr_constructor_list b l = match l with
         | Constructors [] -> mt()
         | Constructors l ->
+            let fst_sep = match l with [_] -> "   " | _ -> " | " in
             pr_com_at (begin_of_inductive l) ++
-            fnl() ++
-            str (if List.length l = 1 then "   " else " | ") ++
+            fnl() ++ str fst_sep ++
             prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l
        | RecordDecl (c,fs) ->
 	    spc() ++

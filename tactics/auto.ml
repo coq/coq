@@ -77,7 +77,7 @@ type hint_entry = global_reference option * types gen_auto_tactic
 
 let pri_order_int (id1, {pri=pri1}) (id2, {pri=pri2}) =
   let d = pri1 - pri2 in
-    if d == 0 then id2 - id1
+    if Int.equal d 0 then id2 - id1
     else d
 
 let pri_order t1 t2 = pri_order_int t1 t2 <= 0

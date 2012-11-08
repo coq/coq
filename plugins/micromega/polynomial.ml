@@ -585,7 +585,7 @@ struct
   module MonT = 
   struct
     module MonoMap = Map.Make(Monomial)
-    module IntMap  = Map.Make(struct type t = int let compare = Pervasives.compare end)
+    module IntMap  = Map.Make(Int)
 	  
     (** A hash table might be preferable but requires a hash function. *)
     let (index_of_monomial : int MonoMap.t ref) = ref (MonoMap.empty)

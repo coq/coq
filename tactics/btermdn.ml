@@ -81,7 +81,7 @@ struct
       | _ -> Dn.Nothing
 
   let bounded_constr_pat_discr_st st (t,depth) =
-    if depth = 0 then 
+    if Int.equal depth 0 then 
       None 
     else
       match Term_dn.constr_pat_discr_st st t with
@@ -89,7 +89,7 @@ struct
 	| Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 	    
   let bounded_constr_val_discr_st st (t,depth) =
-    if depth = 0 then 
+    if Int.equal depth 0 then 
       Dn.Nothing 
     else
       match constr_val_discr_st st t with
@@ -98,7 +98,7 @@ struct
 	| Dn.Everything -> Dn.Everything
 
   let bounded_constr_pat_discr (t,depth) =
-    if depth = 0 then 
+    if Int.equal depth 0 then 
       None 
     else
       match Term_dn.constr_pat_discr t with
@@ -106,7 +106,7 @@ struct
 	| Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
 	    
   let bounded_constr_val_discr (t,depth) =
-    if depth = 0 then 
+    if Int.equal depth 0 then 
       Dn.Nothing 
     else
       match constr_val_discr t with

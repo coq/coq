@@ -191,10 +191,10 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       | Cast(t,_,_) -> names_prod_letin t
       | _ -> []
     in
-    assert (Array.length mib1.mind_packets = 1);
-    assert (Array.length mib2.mind_packets = 1);
-    assert (Array.length mib1.mind_packets.(0).mind_user_lc = 1);
-    assert (Array.length mib2.mind_packets.(0).mind_user_lc = 1);
+    assert (Int.equal (Array.length mib1.mind_packets) 1);
+    assert (Int.equal (Array.length mib2.mind_packets) 1);
+    assert (Int.equal (Array.length mib1.mind_packets.(0).mind_user_lc) 1);
+    assert (Int.equal (Array.length mib2.mind_packets.(0).mind_user_lc) 1);
     check (fun mib ->
       let nparamdecls = List.length mib.mind_params_ctxt in
       let names = names_prod_letin (mib.mind_packets.(0).mind_user_lc.(0)) in

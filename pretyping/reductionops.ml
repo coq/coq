@@ -69,7 +69,8 @@ let nfirsts_app_of_stack n s =
   let (args, _) = strip_app s in List.firstn n args
 let list_of_app_stack s =
   let (out,s') = strip_app s in
-  Option.init (s' = []) out
+  let init = match s' with [] -> true | _ -> false in
+  Option.init init out
 let array_of_app_stack s =
   Option.map Array.of_list (list_of_app_stack s)
 let rec zip = function
@@ -93,7 +94,7 @@ let rec stack_assign s p c = match s with
           | _ -> assert false)
   | _ -> s
 let rec stack_tail p s =
-  if p = 0 then s else
+  if Int.equal p 0 then s else
     match s with
       | Zapp args :: s ->
 	  let q = List.length args in
@@ -188,11 +189,11 @@ module RedFlags = (struct
   let fiota = 16
   let fzeta = 32
   let mkflags = List.fold_left (lor) 0
-  let red_beta f = f land fbeta <> 0
-  let red_delta f = f land fdelta <> 0
-  let red_eta f = f land feta <> 0
-  let red_iota f = f land fiota <> 0
-  let red_zeta f = f land fzeta <> 0
+  let red_beta f = not (Int.equal (f land fbeta) 0)
+  let red_delta f = not (Int.equal (f land fdelta) 0)
+  let red_eta f = not (Int.equal (f land feta) 0)
+  let red_iota f = not (Int.equal (f land fiota) 0)
+  let red_zeta f = not (Int.equal (f land fzeta) 0)
 end : RedFlagsSig)
 
 open RedFlags
@@ -319,7 +320,7 @@ let rec whd_state_gen flags ts env sigma =
                           match kind_of_term x' with
                             | Rel 1 when l' = empty_stack ->
 				let lc = Array.sub cl 0 (napp-1) in
-				let u = if napp=1 then f else appvect (f,lc) in
+				let u = if Int.equal napp 1 then f else appvect (f,lc) in
 				if noccurn 1 u then (pop u,empty_stack) else s
                             | _ -> s
 			else s
@@ -375,7 +376,7 @@ let local_whd_state_gen flags sigma =
                           match kind_of_term x' with
                             | Rel 1 when l' = empty_stack ->
 				let lc = Array.sub cl 0 (napp-1) in
-				let u = if napp=1 then f else appvect (f,lc) in
+				let u = if Int.equal napp 1 then f else appvect (f,lc) in
 				if noccurn 1 u then (pop u,empty_stack) else s
                             | _ -> s
 			else s
@@ -690,7 +691,9 @@ let plain_instance s c =
     | _ ->
 	map_constr_with_binders succ irec n u
   in
-  if s = [] then c else irec 0 c
+  match s with
+  | [] -> c
+  | _ -> irec 0 c
 
 (* [instance] is used for [res_pf]; the call to [local_strong whd_betaiota]
    has (unfortunately) different subtle side effects:
@@ -804,7 +807,7 @@ let splay_arity env sigma c =
 let sort_of_arity env sigma c = snd (splay_arity env sigma c)
 
 let splay_prod_n env sigma n =
-  let rec decrec env m ln c = if m = 0 then (ln,c) else
+  let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | Prod (n,a,c0) ->
 	  decrec (push_rel (n,None,a) env)
@@ -814,7 +817,7 @@ let splay_prod_n env sigma n =
   decrec env n empty_rel_context
 
 let splay_lam_n env sigma n =
-  let rec decrec env m ln c = if m = 0 then (ln,c) else
+  let rec decrec env m ln c = if Int.equal m 0 then (ln,c) else
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | Lambda (n,a,c0) ->
 	  decrec (push_rel (n,None,a) env)
@@ -941,7 +944,9 @@ let meta_instance sigma b =
     List.map
       (fun mv -> (mv,meta_value sigma mv)) (Metaset.elements b.freemetas)
   in
-  if c_sigma = [] then b.rebus else instance sigma c_sigma b.rebus
+  match c_sigma with
+  | [] -> b.rebus
+  | _ -> instance sigma c_sigma b.rebus
 
 let nf_meta sigma c = meta_instance sigma (mk_freelisted c)
 
@@ -981,7 +986,9 @@ let meta_reducible_instance evd b =
 	 with Not_found -> u)
     | _ -> map_constr irec u
   in
-  if fm = [] then (* nf_betaiota? *) b.rebus else irec b.rebus
+  match fm with
+  | [] -> (* nf_betaiota? *) b.rebus
+  | _ -> irec b.rebus
 
 
 let head_unfold_under_prod ts env _ c =

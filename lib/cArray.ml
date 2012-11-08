@@ -280,8 +280,9 @@ let smartmap f ar =
           Array.init ar_size copy
 
 let map2 f v1 v2 =
-  if Array.length v1 <> Array.length v2 then invalid_arg "Array.map2";
-  if Array.length v1 == 0 then
+  if not (Int.equal (Array.length v1) (Array.length v2)) then
+    invalid_arg "Array.map2";
+  if Int.equal (Array.length v1) 0 then
     [| |]
   else begin
     let res = Array.create (Array.length v1) (f v1.(0) v2.(0)) in
@@ -292,8 +293,9 @@ let map2 f v1 v2 =
   end
 
 let map2_i f v1 v2 =
-  if Array.length v1 <> Array.length v2 then invalid_arg "Array.map2";
-  if Array.length v1 == 0 then
+  if not (Int.equal (Array.length v1) (Array.length v2)) then
+    invalid_arg "Array.map2";
+  if Int.equal (Array.length v1) 0 then
     [| |]
   else begin
     let res = Array.create (Array.length v1) (f 0 v1.(0) v2.(0)) in
@@ -306,7 +308,7 @@ let map2_i f v1 v2 =
 let map3 f v1 v2 v3 =
   if Array.length v1 <> Array.length v2 ||
      Array.length v1 <> Array.length v3 then invalid_arg "Array.map3";
-  if Array.length v1 == 0 then
+  if Int.equal (Array.length v1) 0 then
     [| |]
   else begin
     let res = Array.create (Array.length v1) (f v1.(0) v2.(0) v3.(0)) in
@@ -318,7 +320,7 @@ let map3 f v1 v2 v3 =
 
 let map_left f a = (* Ocaml does not guarantee Array.map is LR *)
   let l = Array.length a in (* (even if so), then we rewrite it *)
-  if l = 0 then [||] else begin
+  if Int.equal l 0 then [||] else begin
     let r = Array.create l (f a.(0)) in
     for i = 1 to l - 1 do
       r.(i) <- f a.(i)
@@ -328,7 +330,7 @@ let map_left f a = (* Ocaml does not guarantee Array.map is LR *)
 
 let iter2 f v1 v2 =
   let n = Array.length v1 in
-  if Array.length v2 <> n then invalid_arg "Array.iter2"
+  if not (Int.equal (Array.length v2) n) then invalid_arg "Array.iter2"
   else for i = 0 to n - 1 do f v1.(i) v2.(i) done
 
 let pure_functional = false

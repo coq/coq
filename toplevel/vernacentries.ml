@@ -259,7 +259,7 @@ let print_namespace ns =
         begin match match_dirpath ns dir with
         | Some [] as y -> y
         | Some (a::ns') ->
-            if Names.id_ord a id = 0 then Some ns'
+            if Int.equal (Names.id_ord a id) 0 then Some ns'
             else None
         | None -> None
         end
@@ -272,7 +272,7 @@ let print_namespace ns =
         begin match match_modulepath ns mp with
         | Some [] as y -> y
         | Some (a::ns') ->
-            if Names.id_ord a id = 0 then Some ns'
+            if Int.equal (Names.id_ord a id) 0 then Some ns'
             else None
         | None -> None
         end
@@ -1551,7 +1551,7 @@ let vernac_undoto n =
 let vernac_focus gln =
   let p = Proof_global.give_me_the_proof () in
   let n = match gln with None -> 1 | Some n -> n in
-  if n = 0 then
+  if Int.equal n 0 then
     Errors.error "Invalid goal number: 0. Goal numbering starts with 1."
   else
     Proof.focus focus_command_cond () n p; print_subgoals ()

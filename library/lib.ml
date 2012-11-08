@@ -452,7 +452,7 @@ let section_segment_of_mutual_inductive kn =
 
 let rec list_mem_assoc x = function
   | [] -> raise Not_found
-  | (a,_)::l -> compare a x = 0 or list_mem_assoc x l
+  | (a, _) :: l -> Int.equal (Names.id_ord a x) 0 || list_mem_assoc x l
 
 let section_instance = function
   | VarRef id ->

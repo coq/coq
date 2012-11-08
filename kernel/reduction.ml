@@ -129,7 +129,7 @@ let beta_appvect c v =
 
 let betazeta_appvect n c v =
   let rec stacklam n env t stack =
-    if n = 0 then applist (substl env t, stack) else
+    if Int.equal n 0 then applist (substl env t, stack) else
     match kind_of_term t, stack with
         Lambda(_,_,c), arg::stacktl -> stacklam (n-1) (arg::env) c stacktl
       | LetIn(_,b,_,c), _ -> stacklam (n-1) (b::env) c stack
@@ -205,7 +205,7 @@ let rec no_arg_available = function
   | [] -> true
   | Zupdate _ :: stk -> no_arg_available stk
   | Zshift _ :: stk -> no_arg_available stk
-  | Zapp v :: stk -> Array.length v = 0 && no_arg_available stk
+  | Zapp v :: stk -> Int.equal (Array.length v) 0 && no_arg_available stk
   | Zcase _ :: _ -> true
   | Zfix _ :: _ -> true
 

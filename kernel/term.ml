@@ -154,7 +154,7 @@ let mkLetIn (x,c1,t,c2) = LetIn (x,c1,t,c2)
 (* We ensure applicative terms have at least one argument and the
    function is not itself an applicative term *)
 let mkApp (f, a) =
-  if Array.length a = 0 then f else
+  if Int.equal (Array.length a) 0 then f else
     match f with
       | App (g, cl) -> App (g, Array.append cl a)
       | _ -> App (f, a)
@@ -623,10 +623,13 @@ let constr_ord_int f t1 t2 =
 	((-) =? (Array.compare f)) e1 e2 l1 l2
     | Const c1, Const c2 -> kn_ord (canonical_con c1) (canonical_con c2)
     | Ind (spx, ix), Ind (spy, iy) ->
-	let c = ix - iy in if c = 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c
+        let c = Int.compare ix iy in
+        if Int.equal c 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c
     | Construct ((spx, ix), jx), Construct ((spy, iy), jy) ->
-	let c = jx - jy in if c = 0 then
-	  (let c = ix - iy in if c = 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c)
+        let c = Int.compare jx jy in
+        if Int.equal c 0 then
+	  (let c = Int.compare ix iy in
+          if Int.equal c 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c)
 	else c
     | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
 	((f =? f) ==? (Array.compare f)) p1 p2 c1 c2 bl1 bl2
@@ -665,7 +668,7 @@ let for_all_named_declaration f (_, v, ty) = Option.cata f true v && f ty
 let for_all_rel_declaration f (_, v, ty) = Option.cata f true v && f ty
 
 let eq_named_declaration (i1, c1, t1) (i2, c2, t2) =
-  id_ord i1 i2 = 0 && Option.Misc.compare eq_constr c1 c2 && eq_constr t1 t2
+  Int.equal (id_ord i1 i2) 0 && Option.Misc.compare eq_constr c1 c2 && eq_constr t1 t2
 
 let eq_rel_declaration (n1, c1, t1) (n2, c2, t2) =
   n1 = n2 && Option.Misc.compare eq_constr c1 c2 && eq_constr t1 t2
@@ -805,7 +808,7 @@ let make_substituend c = { sinfo=Unknown; sit=c }
 
 let substn_many lamv n c =
   let lv = Array.length lamv in
-  if lv = 0 then c
+  if Int.equal lv 0 then c
   else
     let rec substrec depth c = match kind_of_term c with
       | Rel k     ->
@@ -947,7 +950,7 @@ let appvectc f l = mkApp (f,l)
 (* to_lambda n (x1:T1)...(xn:Tn)T =
  * [x1:T1]...[xn:Tn]T *)
 let rec to_lambda n prod =
-  if n = 0 then
+  if Int.equal n 0 then
     prod
   else
     match kind_of_term prod with
@@ -956,7 +959,7 @@ let rec to_lambda n prod =
       | _   -> errorlabstrm "to_lambda" (mt ())
 
 let rec to_prod n lam =
-  if n=0 then
+  if Int.equal n 0 then
     lam
   else
     match kind_of_term lam with

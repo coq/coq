@@ -17,9 +17,9 @@ type 'a t = {
 
 let rec split i accu l = match l with
 | [] ->
-  if i = 0 then (accu, []) else invalid_arg "split"
+  if Int.equal i 0 then (accu, []) else invalid_arg "split"
 | t :: q ->
-  if i = 0 then (accu, l)
+  if Int.equal i 0 then (accu, l)
   else split (pred i) (t :: accu) q
 
 let balance q =
@@ -88,7 +88,7 @@ let rev q = {
 
 let length q = q.lenf + q.lenr
 
-let is_empty q = length q = 0
+let is_empty q = Int.equal (length q) 0
 
 let filter f q =
   let fold (accu, len) x = if f x then (x :: accu, succ len) else (accu, len) in

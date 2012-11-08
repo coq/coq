@@ -274,7 +274,7 @@ let drop_implicits_in_patt cst nb_expl args =
 	|None -> aux t
 	|x -> x
      in
-     if nb_expl = 0 then aux impl_data
+     if Int.equal nb_expl 0 then aux impl_data
      else
        let imps = List.skipn_at_least nb_expl (select_stronger_impargs impl_st) in
        impls_fit [] (imps,args)
@@ -712,7 +712,7 @@ let rec extern inctx scopes vars r =
 		 let projs = struc.Recordops.s_PROJ in
 		 let locals = struc.Recordops.s_PROJKIND in
 		 let rec cut args n =
-		   if n = 0 then args
+		   if Int.equal n 0 then args
 		   else
 		     match args with
 		     | [] -> raise No_match
@@ -907,7 +907,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
                   subscopes,impls
                 | _ ->
                   [], [] in
-	      (if n = 0 then f else GApp (Loc.ghost,f,args1)),
+	      (if Int.equal n 0 then f else GApp (Loc.ghost,f,args1)),
 	      args2, subscopes, impls
 	  | GApp (_,(GRef (_,ref) as f),args), None ->
 	      let subscopes = find_arguments_scope ref in

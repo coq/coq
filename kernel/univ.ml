@@ -58,7 +58,7 @@ module UniverseLevel = struct
   let equal u v = match u,v with
     | Set, Set -> true
     | Level (i1, dp1), Level (i2, dp2) ->
-      i1 = i2 && (Names.dir_path_ord dp1 dp2 = 0)
+      Int.equal i1 i2 && Int.equal (Names.dir_path_ord dp1 dp2) 0
     | _ -> false
 
   let to_string = function
@@ -725,7 +725,7 @@ let sort_universes orig =
     let accu, continue = UniverseLMap.fold (fun u x (accu, continue) ->
       let continue = continue || x < 0 in
       let accu =
-        if x = 0 && u != type0 then UniverseLMap.add u i accu
+        if Int.equal x 0 && u != type0 then UniverseLMap.add u i accu
         else accu
       in accu, continue) distances (accu, false)
     in

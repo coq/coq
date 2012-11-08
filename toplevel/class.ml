@@ -242,7 +242,7 @@ let add_new_coercion_core coef stre source target isid =
   if coercion_exists coef then raise (CoercionError AlreadyExists);
   let tg,lp = prods_of t in
   let llp = List.length lp in
-  if llp = 0 then raise (CoercionError NotAFunction);
+  if Int.equal llp 0 then raise (CoercionError NotAFunction);
   let (cls,lvs,ind) =
     try
       get_source lp source

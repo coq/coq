@@ -56,8 +56,8 @@ let emacs_prompt_endstring() = Printer.emacs_str "</prompt>"
    beginning of line. *)
 let prompt_char ic ibuf count =
   let bol = match ibuf.bols with
-    | ll::_ -> ibuf.len == ll
-    | [] -> ibuf.len == 0
+    | ll::_ -> Int.equal ibuf.len ll
+    | [] -> Int.equal ibuf.len 0
   in
   if bol && not !print_emacs then msgerr (str (ibuf.prompt()));
   try

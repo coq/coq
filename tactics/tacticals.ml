@@ -179,7 +179,7 @@ let fix_empty_or_and_pattern nv l =
 
 let check_or_and_pattern_size loc names n =
   if List.length names <> n then
-    if n = 1 then
+    if Int.equal n 1 then
       user_err_loc (loc,"",str "Expects a conjunctive pattern.")
     else
       user_err_loc (loc,"",str "Expects a disjunctive pattern with " ++ int n

@@ -312,7 +312,7 @@ let explain_ill_typed_rec_body env sigma i names vdefj vargs =
   let pvd,pvdt = pr_ljudge_env env (vdefj.(i)) in
   let pv = pr_lconstr_env env vargs.(i) in
   str "The " ++
-  (if Array.length vdefj = 1 then mt () else pr_nth (i+1) ++ spc ()) ++
+  (if Int.equal (Array.length vdefj) 1 then mt () else pr_nth (i+1) ++ spc ()) ++
   str "recursive definition" ++ spc () ++ pvd ++ spc () ++
   str "has type" ++ spc () ++ pvdt ++ spc () ++
   str "while it should be" ++ spc () ++ pv ++ str "."
@@ -809,7 +809,7 @@ let error_ill_formed_inductive env c v =
 
 let error_ill_formed_constructor env id c v nparams nargs =
   let pv = pr_lconstr_env env v in
-  let atomic = (nb_prod c = 0) in
+  let atomic = Int.equal (nb_prod c) 0 in
   str "The type of constructor" ++ brk(1,1) ++ pr_id id ++ brk(1,1) ++
   str "is not valid;" ++ brk(1,1) ++
   strbrk (if atomic then "it must be " else "its conclusion must be ") ++
@@ -917,8 +917,8 @@ let explain_bad_constructor env cstr ind =
   str "is expected."
 
 let decline_string n s =
-  if n = 0 then "no "^s^"s"
-  else if n = 1 then "1 "^s
+  if Int.equal n 0 then "no "^s^"s"
+  else if Int.equal n 1 then "1 "^s
   else (string_of_int n^" "^s^"s")
 
 let explain_wrong_numarg_constructor env cstr n =
@@ -1020,7 +1020,7 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
 		     pr_id id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
 		  (List.rev vars @ unboundvars) ++ str ")"
 	      else mt())) ++
-      (if n=2 then str " (repeated twice)"
+      (if Int.equal n 2 then str " (repeated twice)"
        else if n>2 then str " (repeated "++int n++str" times)"
        else mt()) in
     if calls <> [] then

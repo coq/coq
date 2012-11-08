@@ -89,7 +89,7 @@ type vector = Vect.t
     {coeffs = v ; bound = (l,r) } models the constraints l <= v <= r
 **)
 
-module ISet = Set.Make(struct type t = int let compare = Pervasives.compare end)
+module ISet = Set.Make(Int)
 
 
 module PSet = ISet
@@ -437,7 +437,7 @@ let elim_var_using_eq vr vect cst  prf sys =
 (** [size sys] computes the number of entries in the system of constraints *)
 let size sys = System.fold (fun v iref s -> s + (!iref).neg + (!iref).pos) sys 0
 
-module IMap = Map.Make(struct type t = int let compare : int -> int -> int = Pervasives.compare end)
+module IMap = Map.Make(Int)
 
 let pp_map o map = IMap.fold (fun k elt () -> Printf.fprintf o "%i -> %s\n" k (string_of_num elt)) map ()
 

@@ -754,7 +754,7 @@ let rec match_cases_pattern metas sigma a1 a2 =
       when r1 = r2 ->
       let l1 = add_patterns_for_params (fst r1) args1 in
       let le2 = List.length l2 in
-      if le2 = 0 (* Special case of a notation for a @Cstr *) || le2 > List.length l1
+      if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length l1
       then
 	raise No_match
       else
@@ -777,7 +777,7 @@ let match_ind_pattern metas sigma ind pats a2 =
   | NApp (NRef (IndRef r2),l2)
       when ind = r2 ->
       let le2 = List.length l2 in
-      if le2 = 0 (* Special case of a notation for a @Cstr *) || le2 > List.length pats
+      if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length pats
       then
 	raise No_match
       else

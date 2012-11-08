@@ -65,7 +65,7 @@ let strip s =
 let string_map f s =
   let l = String.length s in
   let r = String.create l in
-  for i= 0 to (l - 1) do r.[i] <- f (s.[i]) done;
+  for i = 0 to (l - 1) do r.[i] <- f (s.[i]) done;
   r
 
 let drop_simple_quotes s =
@@ -118,7 +118,7 @@ let split_string_at c s =
     with
       | Not_found -> [String.sub s n (len-n)]
   in
-  if len = 0 then [] else split 0
+  if Int.equal len 0 then [] else split 0
 
 let parse_loadpath s =
   let l = split_string_at '/' s in
@@ -207,14 +207,8 @@ let delayed_force f = f ()
 
 type ('a,'b) union = Inl of 'a | Inr of 'b
 
-module IntOrd =
-struct
-  type t  = int
-  external compare : int -> int -> int = "caml_int_compare"
-end
-
-module Intset = Set.Make(IntOrd)
-module Intmap = Map.Make(IntOrd)
+module Intset = Set.Make(Int)
+module Intmap = Map.Make(Int)
 
 (*s interruption *)
 

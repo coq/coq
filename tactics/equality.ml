@@ -296,14 +296,14 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars frze
     {elimindex = None; elimbody = (elim,NoBindings)} gl
 
 let adjust_rewriting_direction args lft2rgt =
-  if List.length args = 1 then begin
+  match args with
+  | [_] ->
     (* equality to a constant, like in eq_true *)
     (* more natural to see -> as the rewriting to the constant *)
     if not lft2rgt then
       error "Rewriting non-symmetric equality not allowed from right-to-left.";
     None
-  end
-  else
+  | _ ->
     (* other equality *)
     Some lft2rgt
 
@@ -931,7 +931,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
   let { intro = exist_term } = find_sigma_data sort_of_ty in
   let evdref = ref (Evd.create_goal_evar_defs sigma) in
   let rec sigrec_clausal_form siglen p_i =
-    if siglen = 0 then
+    if Int.equal siglen 0 then
       (* is the default value typable with the expected type *)
       let dflt_typ = type_of env sigma dflt in
       if Evarconv.e_cumul env evdref dflt_typ p_i then

@@ -621,9 +621,10 @@ let pr_fix_tac (id,n,c) =
           ln nal)
       [] bll in
   let idarg,bll = set_nth_name names n bll in
-  let annot =
-    if List.length names = 1 then mt()
-    else spc() ++ str"{struct " ++ pr_id idarg ++ str"}" in
+  let annot = match names with
+  | [_] -> mt ()
+  | _ -> spc() ++ str"{struct " ++ pr_id idarg ++ str"}"
+  in
   hov 1 (str"(" ++ pr_id id ++
         prlist pr_binder_fix bll ++ annot ++ str" :" ++
         pr_lconstrarg ty ++ str")") in
@@ -973,7 +974,7 @@ in (pr_tac, pr_match_rule)
 
 let strip_prod_binders_glob_constr n (ty,_) =
   let rec strip_ty acc n ty =
-    if n=0 then (List.rev acc, (ty,None)) else
+    if Int.equal n 0 then (List.rev acc, (ty,None)) else
       match ty with
           Glob_term.GProd(loc,na,Explicit,a,b) ->
             strip_ty (([Loc.ghost,na],(a,None))::acc) (n-1) b

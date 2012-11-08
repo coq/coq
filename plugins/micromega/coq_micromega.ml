@@ -243,7 +243,7 @@ let rec add_term  t0 = function
   * MODULE: Ordered set of integers.
   *)
 
-module ISet = Set.Make(struct type t = int let compare : int -> int -> int = Pervasives.compare end)
+module ISet = Set.Make(Int)
 
 (**
   * Given a set of integers s={i0,...,iN} and a list m, return the list of

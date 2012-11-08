@@ -51,7 +51,7 @@ let expand_path_macros ~warn s =
 	  let v = safe_getenv warn (String.sub s (i+1) (n-i-1)) in
 	  let s = (String.sub s 0 i)^v^(String.sub s n (l-n)) in
 	  expand_macros s (i + String.length v)
-	| '~' when i = 0 ->
+	| '~' when Int.equal i 0 ->
 	  let n = expand_atom s (i+1) in
 	  let v =
 	    if n=i+1 then home ~warn

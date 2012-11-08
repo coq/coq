@@ -170,7 +170,9 @@ let restore_timeout = function
 
 let open_utf8_file_in fname =
   let is_bom s =
-    Char.code s.[0] = 0xEF && Char.code s.[1] = 0xBB && Char.code s.[2] = 0xBF
+    Int.equal (Char.code s.[0]) 0xEF &&
+    Int.equal (Char.code s.[1]) 0xBB &&
+    Int.equal (Char.code s.[2]) 0xBF
   in
   let in_chan = open_in fname in
   let s = "   " in

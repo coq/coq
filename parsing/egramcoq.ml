@@ -229,9 +229,9 @@ let extend_constr_notation ng =
 (** Grammar declaration for Tactic Notation (Coq level)               *)
 
 let get_tactic_entry n =
-  if n = 0 then
+  if Int.equal n 0 then
     weaken_entry Tactic.simple_tactic, None
-  else if n = 5 then
+  else if Int.equal n 5 then
     weaken_entry Tactic.binder_tactic, None
   else if 1<=n && n<5 then
     weaken_entry Tactic.tactic_expr, Some (Extend.Level (string_of_int n))
@@ -264,7 +264,7 @@ let head_is_ident tg = match tg.tacgram_prods with
 let add_tactic_entry tg =
   let entry, pos = get_tactic_entry tg.tacgram_level in
   let rules =
-    if tg.tacgram_level = 0 then begin
+    if Int.equal tg.tacgram_level 0 then begin
       if not (head_is_ident tg) then
         error "Notation for simple tactic must start with an identifier.";
       let mkact loc l =
@@ -293,7 +293,7 @@ let recover_notation_grammar ntn prec =
     Some (vars, ng)
   | _ -> None in
   let l = List.map_filter filter !grammar_state in
-  assert (List.length l = 1);
+  let () = match l with [_] -> () | _ -> assert false in
   List.hd l
 
 (* Summary functions: the state of the lexer is included in that of the parser.

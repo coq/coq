@@ -304,8 +304,8 @@ let tclDO n t =
   let rec dorec k =
     if k < 0 then errorlabstrm "Refiner.tclDO"
       (str"Wrong argument : Do needs a positive integer.");
-    if k = 0 then tclIDTAC
-    else if k = 1 then t else (tclTHEN t (dorec (k-1)))
+    if Int.equal k 0 then tclIDTAC
+    else if Int.equal k 1 then t else (tclTHEN t (dorec (k-1)))
   in
   dorec n
 
@@ -339,7 +339,7 @@ let tclAT_LEAST_ONCE t = (tclTHEN t (tclREPEAT t))
 
 (* Repeat on the first subgoal (no failure if no more subgoal) *)
 let rec tclREPEAT_MAIN t g =
-  (tclORELSE (tclTHEN_i t (fun i -> if i = 1 then (tclREPEAT_MAIN t) else
+  (tclORELSE (tclTHEN_i t (fun i -> if Int.equal i 1 then (tclREPEAT_MAIN t) else
     tclIDTAC)) tclIDTAC) g
 
 (*s Tactics handling a list of goals. *)

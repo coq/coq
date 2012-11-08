@@ -349,7 +349,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
     recursive parameters *)
 
 let compute_rec_par (env,n,_,_) hyps nmr largs =
-if nmr = 0 then 0 else
+if Int.equal nmr 0 then 0 else
 (* start from 0, hyps will be in reverse order *)
   let (lpar,_) = List.chop nmr largs in
   let rec find k index =
@@ -371,7 +371,7 @@ let lambda_implicit_lift n a =
 (* This removes global parameters of the inductive types in lc (for
    nested inductive types only ) *)
 let abstract_mind_lc env ntyps npars lc =
-  if npars = 0 then
+  if Int.equal npars 0 then
     lc
   else
     let make_abs =
@@ -411,7 +411,7 @@ let rec ienv_decompose_prod (env,_,_,_ as ienv) n c =
 	  ienv_decompose_prod ienv' (n-1) b
       | _ -> assert false
 
-let array_min nmr a = if nmr = 0 then 0 else
+let array_min nmr a = if Int.equal nmr 0 then 0 else
   Array.fold_left (fun k (nmri,_) -> min k nmri) nmr a
 
 (* The recursive function that checks positivity and builds the list
@@ -620,7 +620,7 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
     let nconst, nblock = ref 0, ref 0 in
     let transf num =
       let arity = List.length (dest_subterms recarg).(num) in
-	if arity = 0 then
+	if Int.equal arity 0 then
 	  let p  = (!nconst, 0) in
 	    incr nconst; p
 	else

@@ -35,7 +35,7 @@ let cache_token (_,s) = Lexer.add_keyword s
 
 let inToken : string -> obj =
   declare_object {(default_object "TOKEN") with
-       open_function = (fun i o -> if i=1 then cache_token o);
+       open_function = (fun i o -> if Int.equal i 1 then cache_token o);
        cache_function = cache_token;
        subst_function = Libobject.ident_subst_function;
        classify_function = (fun o -> Substitute o)}
@@ -84,7 +84,7 @@ let classify_tactic_notation tacobj =
 
 let inTacticGrammar : tactic_grammar_obj -> obj =
   declare_object {(default_object "TacticGrammar") with
-       open_function = (fun i o -> if i=1 then cache_tactic_notation o);
+       open_function = (fun i o -> if Int.equal i 1 then cache_tactic_notation o);
        cache_function = cache_tactic_notation;
        subst_function = subst_tactic_notation;
        classify_function = classify_tactic_notation}
@@ -180,7 +180,7 @@ let parse_format ((loc, str) : lstring) =
     | cur::l -> (a::cur)::l
     | [] -> [[a]] in
   let push_white n l =
-    if n = 0 then l else push_token (UnpTerminal (String.make n ' ')) l in
+    if Int.equal n 0 then l else push_token (UnpTerminal (String.make n ' ')) l in
   let close_box i b = function
     | a::(_::_ as l) -> push_token (UnpBox (b,a)) l
     | _ -> error "Non terminated box in format." in
@@ -195,7 +195,7 @@ let parse_format ((loc, str) : lstring) =
     if i < String.length str & str.[i] <> ' ' then
       if str.[i] = '\'' & quoted &
         (i+1 >= String.length str or str.[i+1] = ' ')
-      then if n=0 then error "Empty quoted token." else n
+      then if Int.equal n 0 then error "Empty quoted token." else n
       else nonspaces quoted (n+1) (i+1)
     else
       if quoted then error "Spaces are not allowed in (quoted) symbols."
@@ -240,7 +240,7 @@ let parse_format ((loc, str) : lstring) =
 	  push_token (UnpTerminal (String.sub str (i-1) (n+2)))
 	    (parse_token (close_quotation (i+n))))
     else
-      if n = 0 then []
+      if Int.equal n 0 then []
       else error "Ending spaces non part of a format annotation."
   and parse_box box i =
     let n = spaces 0 i in
@@ -760,7 +760,7 @@ let classify_syntax_definition (local, _ as o) =
 
 let inSyntaxExtension : syntax_extension_obj -> obj =
   declare_object {(default_object "SYNTAX-EXTENSION") with
-       open_function = (fun i o -> if i = 1 then cache_syntax_extension o);
+       open_function = (fun i o -> if Int.equal i 1 then cache_syntax_extension o);
        cache_function = cache_syntax_extension;
        subst_function = subst_syntax_extension;
        classify_function = classify_syntax_definition}
@@ -1008,7 +1008,7 @@ let open_notation i (_, nobj) =
   let scope = nobj.notobj_scope in
   let (ntn, df) = nobj.notobj_notation in
   let pat = nobj.notobj_interp in
-  if i = 1 & not (Notation.exists_notation_in_scope scope ntn pat) then begin
+  if Int.equal i 1 && not (Notation.exists_notation_in_scope scope ntn pat) then begin
     (* Declare the interpretation *)
     Notation.declare_notation_interpretation ntn scope pat df;
     (* Declare the uninterpretation *)
@@ -1229,7 +1229,7 @@ let load_scope_command _ (_,(scope,dlm)) =
   Notation.declare_scope scope
 
 let open_scope_command i (_,(scope,o)) =
-  if i=1 then
+  if Int.equal i 1 then
     match o with
     | ScopeDelim dlm -> Notation.declare_delimiters scope dlm
     | ScopeClasses cl -> List.iter (Notation.declare_scope_class scope) cl

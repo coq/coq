@@ -93,7 +93,7 @@ struct
           (Empty, None, Empty)
       | Node(l, v, r, _) ->
           let c = X.compare x v in
-          if c = 0 then (l, Some v, r)
+          if Int.equal c 0 then (l, Some v, r)
           else if c < 0 then
             let (ll, vl, rl) = split x l in (ll, vl, join rl v r)
           else
@@ -109,13 +109,13 @@ struct
         Empty -> false
       | Node(l, v, r, _) ->
           let c = X.compare x v in
-          c = 0 || mem x (if c < 0 then l else r)
+          Int.equal c 0 || mem x (if c < 0 then l else r)
 
     let rec add x = function
         Empty -> Node(Empty, x, Empty, 1)
       | Node(l, v, r, _) as t ->
           let c = X.compare x v in
-          if c = 0 then t else
+          if Int.equal c 0 then t else
           if c < 0 then bal (add x l) v r else bal l v (add x r)
 
     let singleton x = Node(Empty, x, Empty, 1)
@@ -124,7 +124,7 @@ struct
         Empty -> Empty
       | Node(l, v, r, _) ->
           let c = X.compare x v in
-          if c = 0 then merge l r else
+          if Int.equal c 0 then merge l r else
           if c < 0 then bal (remove x l) v r else bal l v (remove x r)
 
     let rec union s1 s2 =
@@ -133,12 +133,12 @@ struct
       | (t1, Empty) -> t1
       | (Node(l1, v1, r1, h1), Node(l2, v2, r2, h2)) ->
           if h1 >= h2 then
-            if h2 = 1 then add v2 s1 else begin
+            if Int.equal h2 1 then add v2 s1 else begin
               let (l2, _, r2) = split v1 s2 in
               join (union l1 l2) v1 (union r1 r2)
             end
           else
-            if h1 = 1 then add v1 s2 else begin
+            if Int.equal h1 1 then add v1 s2 else begin
               let (l1, _, r1) = split v2 s1 in
               join (union l1 l2) v2 (union r1 r2)
             end
@@ -184,7 +184,7 @@ struct
       compare_aux [s1] [s2]
 
     let equal s1 s2 =
-      compare s1 s2 = 0
+      Int.equal (compare s1 s2) 0
 
     let rec subset s1 s2 =
       match (s1, s2) with
@@ -194,7 +194,7 @@ struct
           false
       | Node (l1, v1, r1, _), (Node (l2, v2, r2, _) as t2) ->
           let c = X.compare v1 v2 in
-          if c = 0 then
+          if Int.equal c 0 then
             subset l1 l2 && subset r1 r2
           else if c < 0 then
             subset (Node (l1, v1, Empty, 0)) l2 && subset r1 t2

@@ -321,7 +321,7 @@ let split_product na' = function
   | _ -> anomaly "ill-formed fixpoint body"
 
 let rec split_fix n typ def =
-  if n = 0 then ([],typ,def)
+  if Int.equal n 0 then ([],typ,def)
   else
     let (na,_,def) = split_lambda def in
     let (na,t,typ) = split_product na typ in

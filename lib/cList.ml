@@ -377,7 +377,7 @@ let interval n m =
 
 let addn n v =
   let rec aux n l =
-    if n = 0 then l
+    if Int.equal n 0 then l
     else aux (pred n) (v :: l)
   in
   if n < 0 then invalid_arg "List.addn"
@@ -525,7 +525,7 @@ let rec remove_assoc_in_triple x = function
 
 let rec assoc_snd_in_triple x = function
     [] -> raise Not_found
-  | (a,b,_)::l -> if Pervasives.compare a x = 0 then b else assoc_snd_in_triple x l
+  | (a,b,_)::l -> if Int.equal (Pervasives.compare a x) 0 then b else assoc_snd_in_triple x l
 
 let add_set x l = if List.mem x l then l else x :: l
 
@@ -587,7 +587,7 @@ let rec merge_uniq cmp l1 l2 =
   | l1, [] -> l1
   | h1 :: t1, h2 :: t2 ->
       let c = cmp h1 h2 in
-      if c = 0
+      if Int.equal c 0
       then h1 :: merge_uniq cmp t1 t2
       else if c <= 0
       then h1 :: merge_uniq cmp t1 l2

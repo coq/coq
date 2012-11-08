@@ -354,7 +354,7 @@ and stack = stack_member list
 
 let empty_stack = []
 let append_stack v s =
-  if Array.length v = 0 then s else
+  if Int.equal (Array.length v) 0 then s else
   match s with
   | Zapp l :: s -> Zapp (Array.append v l) :: s
   | _ -> Zapp v :: s
@@ -398,7 +398,7 @@ let rec stack_assign s p c = match s with
          Zapp nargs :: s)
   | _ -> s
 let rec stack_tail p s =
-  if p = 0 then s else
+  if Int.equal p 0 then s else
     match s with
       | Zapp args :: s ->
 	  let q = Array.length args in
@@ -719,7 +719,7 @@ let get_nth_arg head n stk =
           let bef = Array.sub args 0 n in
           let aft = Array.sub args (n+1) (q-n-1) in
           let stk' =
-            List.rev (if n = 0 then rstk else (Zapp bef :: rstk)) in
+            List.rev (if Int.equal n 0 then rstk else (Zapp bef :: rstk)) in
           (Some (stk', args.(n)), append_stack aft s')
     | Zupdate(m)::s ->
         strip_rec rstk (update m (h.norm,h.term)) n s
@@ -764,7 +764,7 @@ let rec reloc_rargs_rec depth stk =
     | _ -> stk
 
 let reloc_rargs depth stk =
-  if depth = 0 then stk else reloc_rargs_rec depth stk
+  if Int.equal depth 0 then stk else reloc_rargs_rec depth stk
 
 let rec drop_parameters depth n argstk =
   match argstk with

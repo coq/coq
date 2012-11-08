@@ -165,7 +165,7 @@ let emit_instr = function
       then out(opENVACC1 + n - 1)
       else (out opENVACC; out_int n)
   | Koffsetclosure ofs ->
-      if ofs = -2 || ofs = 0 || ofs = 2
+      if Int.equal ofs (-2) || Int.equal ofs 0 || Int.equal ofs 2
       then out (opOFFSETCLOSURE0 + ofs / 2)
       else (out opOFFSETCLOSURE; out_int ofs)
   | Kpush ->
@@ -214,7 +214,7 @@ let emit_instr = function
   | Kconst c ->
       out opGETGLOBAL; slot_for_const c
   | Kmakeblock(n, t) ->
-      if n = 0 then raise (Invalid_argument "emit_instr : block size = 0")
+      if Int.equal n 0 then raise (Invalid_argument "emit_instr : block size = 0")
       else if n < 4 then (out(opMAKEBLOCK1 + n - 1); out_int t)
       else (out opMAKEBLOCK; out_int n; out_int t)
   | Kmakeprod ->
@@ -279,7 +279,7 @@ let rec emit = function
       else (out opPUSHENVACC; out_int n);
       emit c
   | Kpush :: Koffsetclosure ofs :: c ->
-      if ofs = -2 || ofs = 0 || ofs = 2
+      if Int.equal ofs (-2) || Int.equal ofs 0 || Int.equal ofs 2
       then out(opPUSHOFFSETCLOSURE0 + ofs / 2)
       else (out opPUSHOFFSETCLOSURE; out_int ofs);
       emit c

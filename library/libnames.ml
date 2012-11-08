@@ -92,7 +92,7 @@ let sp_ord sp1 sp2 =
   let (p1,id1) = repr_path sp1
   and (p2,id2) = repr_path sp2 in
   let p_bit = compare p1 p2 in
-  if p_bit = 0 then id_ord id1 id2 else p_bit
+  if Int.equal p_bit 0 then id_ord id1 id2 else p_bit
 
 module SpOrdered =
   struct
