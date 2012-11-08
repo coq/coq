@@ -1,5 +1,6 @@
 Coq_config
 
+Int
 Pp_control
 Loc
 Compat
@@ -107,6 +108,7 @@ Pretyping
 Declaremods
 
 Tok
+Int
 Lexer
 Ppextend
 Pputils
