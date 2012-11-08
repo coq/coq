@@ -317,9 +317,9 @@ let make_mind_equiv mp1 mp2 dir l = ((mp1,dir,l),(mp2,dir,l))
 let canonical_mind mind = snd mind
 let user_mind mind = fst mind
 let repr_mind mind = fst mind
-let mind_label mind= label (fst mind)
+let mind_label mind = label (fst mind)
 
-let eq_mind (_,kn1) (_,kn2) = kn1=kn2
+let eq_mind (_, kn1) (_, kn2) = kn_ord kn1 kn2 = 0
 
 let string_of_mind mind = string_of_kn (fst mind)
 let pr_mind mind = str (string_of_mind mind)
@@ -327,12 +327,14 @@ let debug_string_of_mind mind =
   "(" ^ string_of_kn (fst mind) ^ "," ^ string_of_kn (snd mind) ^ ")"
 let debug_pr_mind con = str (debug_string_of_mind con)
 
-let ith_mutual_inductive (kn,_) i = (kn,i)
-let ith_constructor_of_inductive ind i = (ind,i)
-let inductive_of_constructor (ind,i) = ind
-let index_of_constructor (ind,i) = i
-let eq_ind (kn1,i1) (kn2,i2) = i1=i2&&eq_mind kn1 kn2
-let eq_constructor (kn1,i1) (kn2,i2) = i1=i2&&eq_ind kn1 kn2
+let ith_mutual_inductive (kn, _) i = (kn, i)
+let ith_constructor_of_inductive ind i = (ind, i)
+let inductive_of_constructor (ind, i) = ind
+let index_of_constructor (ind, i) = i
+let eq_ind (kn1, i1) (kn2, i2) =
+  i1 - i2 = 0 && eq_mind kn1 kn2
+let eq_constructor (kn1, i1) (kn2, i2) =
+  i1 - i2 = 0 && eq_ind kn1 kn2
 
 module Mindmap = Map.Make(Canonical_ord)
 module Mindset = Set.Make(Canonical_ord)

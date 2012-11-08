@@ -47,7 +47,7 @@ type bound_ident_map = (identifier * identifier) list
 
 exception PatternMatchingFailure
 
-let constrain (n,(ids,m as x)) (names,terms as subst) =
+let constrain n (ids, m as x) (names, terms as subst) =
   try
     let (ids',m') = List.assoc n terms in
     if ids = ids' && eq_constr m m' then subst
@@ -79,30 +79,32 @@ let build_lambda toabstract stk (m : constr) =
   let rec buildrec m p_0 p_1 = match p_0,p_1 with
     | (_, []) -> m
     | (n, (_,na,t)::tl) ->
-	if List.mem n toabstract then
+	if Intset.mem n toabstract then
           buildrec (mkLambda (na,t,m)) (n+1) tl
         else
 	  buildrec (lift (-1) m) (n+1) tl
   in
   buildrec m 1 stk
 
-let rec list_insert f a = function
-  | [] -> [a]
-  | b::l when f a b -> a::b::l
-  | b::l when a = b -> raise PatternMatchingFailure
-  | b::l -> b :: list_insert f a l
+let rec list_insert a = function
+| [] -> [a]
+| b :: l ->
+  let ord = id_ord a b in
+  if ord < 0 then a :: b :: l
+  else if ord > 0 then b :: list_insert a l
+  else raise PatternMatchingFailure
 
 let extract_bound_vars =
   let rec aux k = function
   | ([],_) -> []
-  | (n::l,(na1,na2,_)::stk) when k = n ->
-      begin match na1,na2 with
-      | Name id1,Name _ -> list_insert (<) id1 (aux (k+1) (l,stk))
-      | Name _,Anonymous -> anomaly "Unnamed bound variable"
-      | Anonymous,_ -> raise PatternMatchingFailure
+  | (n :: l, (na1, na2, _) :: stk) when k - n = 0 ->
+      begin match na1, na2 with
+      | Name id1, Name _ -> list_insert id1 (aux (k + 1) (l, stk))
+      | Name _, Anonymous -> anomaly "Unnamed bound variable"
+      | Anonymous, _ -> raise PatternMatchingFailure
       end
-  | (l,_::stk) -> aux (k+1) (l,stk)
-  | (_,[]) -> assert false
+  | (l, _ :: stk) -> aux (k + 1) (l, stk)
+  | (_, []) -> assert false
   in aux 1
 
 let dummy_constr = mkProp
@@ -131,11 +133,11 @@ let merge_binding allow_bound_rels stk n cT subst =
 	let canonically_ordered_vars = extract_bound_vars (frels,stk) in
 	let renaming = make_renaming canonically_ordered_vars stk in
 	(canonically_ordered_vars, substl renaming cT)
-      else if frels = [] then
-	([],lift (-depth) cT)
-      else
-	raise PatternMatchingFailure in
-  constrain (n,c) subst
+      else match frels with
+      | [] -> ([], lift (- depth) cT)
+      | _ -> raise PatternMatchingFailure
+  in
+  constrain n c subst
 
 let matches_core convert allow_partial_app allow_bound_rels pat c =
   let conv = match convert with
@@ -145,29 +147,28 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
     let cT = strip_outer_cast t in
     match p,kind_of_term cT with
       | PSoApp (n,args),m ->
-	  let relargs =
-	    List.map
-	      (function
-		 | PRel n -> n
-		 | _ -> error "Only bound indices allowed in second order pattern matching.")
-	      args in
-	  let frels = Intset.elements (free_rels cT) in
-	  if List.subset frels relargs then
-	    constrain (n,([],build_lambda relargs stk cT)) subst
-	  else
-	    raise PatternMatchingFailure
+        let fold accu = function
+        | PRel n -> Intset.add n accu
+        | _ -> error "Only bound indices allowed in second order pattern matching."
+        in
+        let relargs = List.fold_left fold Intset.empty args in
+        let frels = free_rels cT in
+        if Intset.subset frels relargs then
+          constrain n ([], build_lambda relargs stk cT) subst
+        else
+          raise PatternMatchingFailure
 
       | PMeta (Some n), m -> merge_binding allow_bound_rels stk n cT subst
 
       | PMeta None, m -> subst
 
-      | PRef (VarRef v1), Var v2 when v1 = v2 -> subst
+      | PRef (VarRef v1), Var v2 when id_ord v1 v2 = 0 -> subst
 
-      | PVar v1, Var v2 when v1 = v2 -> subst
+      | PVar v1, Var v2 when id_ord v1 v2 = 0 -> subst
 
       | PRef ref, _ when conv (constr_of_global ref) cT -> subst
 
-      | PRel n1, Rel n2 when n1 = n2 -> subst
+      | PRel n1, Rel n2 when n1 - n2 = 0 -> subst
 
       | PSort GProp, Sort (Prop Null) -> subst
 
@@ -182,7 +183,7 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 
       | PApp (PMeta (Some n),args1), App (c2,args2) when allow_partial_app ->
           let p = Array.length args2 - Array.length args1 in
-          if p>=0 then
+          if p >= 0 then
             let args21, args22 = Array.chop p args2 in
 	    let c = mkApp(c2,args21) in
             let subst = merge_binding allow_bound_rels stk n c subst in
@@ -222,9 +223,17 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 
       | PCase (ci1,p1,a1,br1), Case (ci2,p2,a2,br2) ->
 	  let n2 = Array.length br2 in
-	  if (ci1.cip_ind <> None && ci1.cip_ind <> Some ci2.ci_ind) ||
-	     (not ci1.cip_extensible && List.length br1 <> n2)
-	  then raise PatternMatchingFailure;
+          let () = match ci1.cip_ind with
+          | None -> ()
+          | Some ind1 ->
+            (** ppedrot: Something spooky going here. The comparison used to be
+                the generic one, so I may have broken something. *)
+            if not (eq_ind ind1 ci2.ci_ind) then raise PatternMatchingFailure
+          in
+          let () =
+            if not ci1.cip_extensible && List.length br1 <> n2
+            then raise PatternMatchingFailure
+          in
 	  let chk_branch subst (j,n,c) =
 	    (* (ind,j+1) is normally known to be a correct constructor
 	       and br2 a correct match over the same inductive *)
@@ -240,7 +249,7 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 
   in
   let names,terms = sorec [] ([],[]) pat c in
-  (names,Sort.list (fun (a,_) (b,_) -> a<b) terms)
+  (names, List.sort (fun (a, _) (b, _) -> id_ord a b) terms)
 
 let matches_core_closed convert allow_partial_app pat c =
   let names,subst = matches_core convert allow_partial_app false pat c in
