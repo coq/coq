@@ -57,6 +57,7 @@ type error_msg =
         | AttributeValueExpected
         | EndOfTagExpected of string
         | EOFExpected
+	| Empty
 
 type error = error_msg * error_pos
 
@@ -90,10 +91,11 @@ type source =
 (** This function returns a new parser with default options. *)
 val make : source -> t
 
-(** When a Xml document is parsed, the parser will check that the end of the
+(** When a Xml document is parsed, the parser may check that the end of the
  document is reached, so for example parsing ["<A/><B/>"] will fail instead
- of returning only the A element. You can turn off this check by setting
- [check_eof] to [false] {i (by default, check_eof is true)}. *)
+ of returning only the A element. You can turn on this check by setting
+ [check_eof] to [true] {i (by default, check_eof is false, unlike
+ in the original Xmllight)}. *)
 val check_eof : t -> bool -> unit
 
 (** Once the parser is configurated, you can run the parser on a any kind

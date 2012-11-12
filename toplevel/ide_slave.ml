@@ -367,7 +367,6 @@ let loop () =
       let xml_answer =
         try
           let p = Xml_parser.make (Xml_parser.SChannel stdin) in
-          let () = Xml_parser.check_eof p false in
           let xml_query = Xml_parser.parse p in
           let q = Serialize.to_call xml_query in
           let () = pr_debug ("<-- " ^ Serialize.pr_call q) in
@@ -375,6 +374,9 @@ let loop () =
           let () = pr_debug ("--> " ^ Serialize.pr_full_value q r) in
           Serialize.of_answer q r
         with
+	| Xml_parser.Error (Xml_parser.Empty, _) ->
+	  pr_debug ("End of input, exiting");
+	  exit 0
         | Xml_parser.Error (err, loc) ->
           let msg = "Syntax error in query: " ^ Xml_parser.error_msg err in
           fail msg

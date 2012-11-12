@@ -87,7 +87,7 @@ let main =
   let coqtop =
     let (cin, cout) = Unix.open_process (coqtop_name^" -ideslave") in
     let p = Xml_parser.make (Xml_parser.SChannel cin) in
-    let () = Xml_parser.check_eof p false in {
+    {
       in_chan = cin;
       out_chan = cout;
       xml_parser = p;
