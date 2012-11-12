@@ -146,13 +146,18 @@ let set_vm_opt () =
 *)
 
 let init_gc () =
+  let param =
+    try ignore (Sys.getenv "OCAMLRUNPARAM"); true
+    with Not_found -> false
+  in
   let control = Gc.get () in
   let tweaked_control = { control with
     Gc.minor_heap_size = 33554432; (** 4M *)
     Gc.major_heap_increment = 268435456; (** 32M *)
-    Gc.space_overhead = 120;
+(*     Gc.space_overhead = 120; *)
   } in
-  Gc.set tweaked_control
+  if param then ()
+  else Gc.set tweaked_control
 
 (*s Parsing of the command line.
     We no longer use [Arg.parse], in order to use share [Usage.print_usage]
