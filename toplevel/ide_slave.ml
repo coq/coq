@@ -442,6 +442,9 @@ let loop () =
           let () = pr_debug ("--> " ^ Ide_intf.pr_full_value q r) in
           Ide_intf.of_answer q r
         with
+	| Xml_parser.Error (Xml_parser.Empty, _) ->
+	  pr_debug ("End of input, exiting");
+	  exit 0
         | Xml_parser.Error (err, loc) ->
           let msg = "Syntax error in query: " ^ Xml_parser.error_msg err in
           fail msg

@@ -59,6 +59,7 @@ type error_msg =
         | AttributeValueExpected
         | EndOfTagExpected of string
         | EOFExpected
+	| Empty
 
 type error = error_msg * error_pos
 

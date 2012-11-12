@@ -42,6 +42,7 @@ type error_msg =
         | AttributeValueExpected
         | EndOfTagExpected of string
         | EOFExpected
+	| Empty
 
 type error = error_msg * error_pos
 
@@ -117,13 +118,13 @@ let rec read_node s =
 	| Xml_lexer.PCData s -> PCData s
 	| Xml_lexer.Tag (tag, attr, true) -> Element (tag, attr, [])
 	| Xml_lexer.Tag (tag, attr, false) ->
-          let elements = read_elems ~tag s in
+          let elements = read_elems tag s in
           Element (tag, attr, canonicalize elements)
 	| t ->
 		push t s;
 		raise NoMoreData
 and
-	read_elems ?tag s =
+	read_elems tag s =
 		let elems = ref [] in
 		(try
                   while true do
@@ -137,12 +138,8 @@ and
 		with
 			NoMoreData -> ());
 		match pop s with
-		| Xml_lexer.Endtag s when Some s = tag -> List.rev !elems
-		| Xml_lexer.Eof when tag = None -> List.rev !elems
-		| t ->
-			match tag with
-			| None -> raise (Internal_error EOFExpected)
-			| Some s -> raise (Internal_error (EndOfTagExpected s))
+		| Xml_lexer.Endtag s when s = tag -> List.rev !elems
+		| t -> raise (Internal_error (EndOfTagExpected tag))
 
 let rec read_xml s =
   let node = read_node s in
@@ -162,24 +159,25 @@ let convert = function
 	| Xml_lexer.EAttributeValueExpected -> AttributeValueExpected
 	| Xml_lexer.EUnterminatedEntity -> 	UnterminatedEntity
 
+let error_of_exn stk = function
+  | NoMoreData when Stack.pop stk = Xml_lexer.Eof -> Empty
+  | NoMoreData -> NodeExpected
+  | Internal_error e -> e
+  | Xml_lexer.Error e -> convert e
+  | e -> raise e
+
 let do_parse xparser source =
+        let stk = Stack.create() in
 	try
 		Xml_lexer.init source;
-		let s = { source = source; xparser = xparser; stack = Stack.create(); } in
+		let s = { source = source; xparser = xparser; stack = stk } in
 		let x = read_xml s in
 		if xparser.check_eof && pop s <> Xml_lexer.Eof then raise (Internal_error EOFExpected);
 		Xml_lexer.close source;
 		x
-	with
-		| NoMoreData ->
-			Xml_lexer.close source;
-			raise (!xml_error NodeExpected source)
-		| Internal_error e ->
-			Xml_lexer.close source;
-			raise (!xml_error e source)
-		| Xml_lexer.Error e ->
-			Xml_lexer.close source;
-			raise (!xml_error (convert e) source)
+	with e ->
+	  Xml_lexer.close source;
+	  raise (!xml_error (error_of_exn stk e) source)
 
 let parse p = function
 	| SChannel ch -> do_parse p (Lexing.from_channel ch)
@@ -208,6 +206,7 @@ let error_msg = function
         | AttributeValueExpected -> "Attribute value expected"
         | EndOfTagExpected tag -> sprintf "End of tag expected : '%s'" tag
         | EOFExpected -> "End of file expected"
+	| Empty -> "Empty"
 
 let error (msg,pos) =
         if pos.emin = pos.emax then
