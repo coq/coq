@@ -232,11 +232,29 @@ let coqtop_zombies () = !toplvl_ctr
 
     Note: we use Unix.stderr in Unix.create_process to get debug
     messages from the coqtop's Ide_slave loop.
+
+    NB: it's important to close coqide's descriptors (ide2top_w and top2ide_r)
+    in coqtop. We do this indirectly via [Unix.set_close_on_exec].
+    This way, coqide has the only remaining copies of these descriptors,
+    and closing them later will have visible effects in coqtop. Cf man 7 pipe :
+
+    - If  all file descriptors referring to the write end of a pipe have been
+      closed, then an attempt to read(2) from the pipe will see end-of-file
+      (read(2) will return 0).
+    - If all file descriptors referring to the read end of a pipe have been
+      closed, then a write(2) will cause a SIGPIPE signal to be generated for
+      the calling process. If the calling process is ignoring this signal,
+      then write(2) fails with the error EPIPE.
+
+    Symmetrically, coqtop's descriptors (ide2top_r and top2ide_w) should be
+    closed in coqide.
 *)
 
 let open_process_pid prog args =
   let (ide2top_r,ide2top_w) = Unix.pipe () in
   let (top2ide_r,top2ide_w) = Unix.pipe () in
+  Unix.set_close_on_exec ide2top_w;
+  Unix.set_close_on_exec top2ide_r;
   let pid = Unix.create_process prog args ide2top_r top2ide_w Unix.stderr in
   assert (pid <> 0);
   Unix.close ide2top_r;
