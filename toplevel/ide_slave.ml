@@ -270,24 +270,19 @@ let about () = {
   Interface.compile_date = Coq_config.compile_date;
 }
 
-(** Grouping all call handlers together + error handling *)
+(** When receiving the Quit call, we don't directly do an [exit 0],
+    but rather set this reference, in order to send a final answer
+    before exiting. *)
 
-exception Quit
+let quit = ref false
+
+(** Grouping all call handlers together + error handling *)
 
 let eval_call c =
   let rec handle_exn e =
     catch_break := false;
     let pr_exn e = (read_stdout ())^("\n"^(string_of_ppcmds (Errors.print e))) in
     match e with
-      | Quit ->
-        (* Here we do send an acknowledgement message to prove everything went 
-          OK. *)
-        let dummy = Interface.Good () in
-        let xml_answer = Serialize.of_answer Serialize.quit dummy in
-        let () = Xml_utils.print_xml !orig_stdout xml_answer in
-        let () = flush !orig_stdout in
-        let () = pr_debug "Exiting gracefully." in
-        exit 0
       | Errors.Drop -> None, "Drop is not allowed by coqide!"
       | Errors.Quit -> None, "Quit is not allowed by coqide!"
       | Vernac.DuringCommandInterp (_,inner) -> handle_exn inner
@@ -320,7 +315,7 @@ let eval_call c =
     Serialize.get_options = interruptible get_options;
     Serialize.set_options = interruptible set_options;
     Serialize.mkcases = interruptible Vernacentries.make_cases;
-    Serialize.quit = (fun () -> raise Quit);
+    Serialize.quit = (fun () -> quit := true);
     Serialize.about = interruptible about;
     Serialize.handle_exn = handle_exn; }
   in
@@ -345,14 +340,8 @@ let slave_logger level message =
 (** The main loop *)
 
 (** Exceptions during eval_call should be converted into [Interface.Fail]
-    messages by [handle_exn] above. Otherwise, we die badly, after having
-    tried to send a last message to the ide: trying to recover from errors
-    with the current protocol would most probably bring desynchronisation
-    between coqtop and ide. With marshalling, reading an answer to
-    a different request could hang the ide... *)
-
-let fail err =
-  Serialize.of_value (fun _ -> assert false) (Interface.Fail (None, err))
+    messages by [handle_exn] above. Otherwise, we die badly, without
+    trying to answer malformed requests. *)
 
 let loop () =
   init_signal_handler ();
@@ -362,36 +351,29 @@ let loop () =
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;
   Flags.make_term_color false;
-  try
-    while true do
-      let xml_answer =
-        try
-          let p = Xml_parser.make (Xml_parser.SChannel stdin) in
-          let xml_query = Xml_parser.parse p in
-          let q = Serialize.to_call xml_query in
-          let () = pr_debug ("<-- " ^ Serialize.pr_call q) in
-          let r = eval_call q in
-          let () = pr_debug ("--> " ^ Serialize.pr_full_value q r) in
-          Serialize.of_answer q r
-        with
-	| Xml_parser.Error (Xml_parser.Empty, _) ->
-	  pr_debug ("End of input, exiting");
-	  exit 0
-        | Xml_parser.Error (err, loc) ->
-          let msg = "Syntax error in query: " ^ Xml_parser.error_msg err in
-          fail msg
-        | Serialize.Marshal_error ->
-          fail "Incorrect query."
-      in
-      Xml_utils.print_xml !orig_stdout xml_answer;
+  while not !quit do
+    try
+      let p = Xml_parser.make (Xml_parser.SChannel stdin) in
+      let xml_query = Xml_parser.parse p in
+      let q = Serialize.to_call xml_query in
+      let () = pr_debug ("<-- " ^ Serialize.pr_call q) in
+      let r = eval_call q in
+      let () = pr_debug ("--> " ^ Serialize.pr_full_value q r) in
+      Xml_utils.print_xml !orig_stdout (Serialize.of_answer q r);
       flush !orig_stdout
-    done
-  with e ->
-    let msg = Printexc.to_string e in
-    let r = "Fatal exception in coqtop:\n" ^ msg in
-    pr_debug ("==> " ^ r);
-    (try
-      Xml_utils.print_xml !orig_stdout (fail r);
-      flush !orig_stdout
-    with _ -> ());
-    exit 1
+    with
+      | Xml_parser.Error (Xml_parser.Empty, _) ->
+	pr_debug "End of input, exiting gracefully.";
+	exit 0
+      | Xml_parser.Error (err, loc) ->
+        pr_debug ("Syntax error in query: " ^ Xml_parser.error_msg err);
+	exit 1
+      | Serialize.Marshal_error ->
+        pr_debug "Incorrect query.";
+	exit 1
+      | e ->
+	pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string e);
+	exit 1
+  done;
+  pr_debug "Exiting gracefully.";
+  exit 0
