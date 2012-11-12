@@ -74,8 +74,8 @@ usage () {
     printf "\tSpecifies to not try to build coqide mac integration\n"
     echo "-browser <command>"
     printf "\tUse <command> to open URL %%s\n"
-    echo "-with-doc (yes|no)"
-    printf "\tSpecifies whether or not to compile the documentation\n"
+    echo "-nodoc"
+    printf "\tSpecifies to not compile the documentation\n"
     echo "-with-geoproof (yes|no)"
     printf "\tSpecifies whether or not to use Geoproof binding\n"
     echo "-byte-only"
@@ -228,6 +228,8 @@ while : ; do
     -coqwebsite|--coqwebsite) wwwcoq_spec=yes
                       WWWCOQ=$2
                       shift;;
+    -nodoc|--nodoc) with_doc_spec=yes
+                    with_doc=no;;
     -with-doc|--with-doc) with_doc_spec=yes
 		      case "$2" in
 			  yes|all) with_doc=all;;
