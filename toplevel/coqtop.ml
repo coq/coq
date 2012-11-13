@@ -153,8 +153,8 @@ let init_gc () =
   let control = Gc.get () in
   let tweaked_control = { control with
     Gc.minor_heap_size = 33554432; (** 4M *)
-    Gc.major_heap_increment = 268435456; (** 32M *)
-(*     Gc.space_overhead = 120; *)
+(*     Gc.major_heap_increment = 268435456; (** 32M *) *)
+    Gc.space_overhead = 120;
   } in
   if param then ()
   else Gc.set tweaked_control
