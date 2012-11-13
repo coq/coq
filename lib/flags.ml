@@ -104,7 +104,7 @@ let print_hyps_limit () = !print_hyps_limit
 module StringOrd =
 struct
   type t = string
-  let compare (x : t) (y : t) = String.compare x y
+  let compare = String.compare
 end
 
 module Stringset = Set.Make(StringOrd)

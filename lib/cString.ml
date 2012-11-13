@@ -45,7 +45,7 @@ end
 module type ExtS =
 sig
   include S
-  external equal : string -> string -> bool = "caml_string_equal"
+  external equal : string -> string -> bool = "caml_string_equal" "noalloc"
   val explode : string -> string list
   val implode : string list -> string
   val strip : string -> string
@@ -60,8 +60,7 @@ end
 
 include String
 
-external equal : string -> string -> bool = "caml_string_equal"
-
+external equal : string -> string -> bool = "caml_string_equal" "noalloc"
 
 let explode s =
   let rec explode_rec n =
