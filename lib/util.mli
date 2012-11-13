@@ -36,16 +36,7 @@ val is_blank : char -> bool
 
 (** {6 Strings. } *)
 
-val explode : string -> string list
-val implode : string list -> string
-val strip : string -> string
-val string_map : (char -> char) -> string -> string
-val drop_simple_quotes : string -> string
-val string_index_from : string -> int -> string -> int
-val string_string_contains : where:string -> what:string -> bool
-val plural : int -> string -> string
-val ordinal : int -> string
-val split_string_at : char -> string -> string list
+module String : CString.ExtS
 
 (** Substitute %s in the first chain by the second chain *)
 val subst_command_placeholder : string -> string -> string

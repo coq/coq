@@ -734,7 +734,7 @@ let rec pr_vernac = function
 
  | VernacDeclareInstances (glob, ids) ->
      hov 1 (pr_non_locality (not glob) ++
-               str"Existing" ++ spc () ++ str(plural (List.length ids) "Instance") ++
+               str"Existing" ++ spc () ++ str(String.plural (List.length ids) "Instance") ++
                spc () ++ prlist_with_sep spc pr_reference ids)
 
  | VernacDeclareClass id ->

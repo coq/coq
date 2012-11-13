@@ -282,7 +282,7 @@ let drop_implicits_in_patt cst nb_expl args =
 let has_curly_brackets ntn =
   String.length ntn >= 6 & (String.sub ntn 0 6 = "{ _ } " or
     String.sub ntn (String.length ntn - 6) 6 = " { _ }" or
-    string_string_contains ~where:ntn ~what:" { _ } ")
+    String.string_contains ~where:ntn ~what:" { _ } ")
 
 let rec wildcards ntn n =
   if n = String.length ntn then []

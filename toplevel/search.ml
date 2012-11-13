@@ -212,7 +212,7 @@ let filter_by_module_from_list = function
 let filter_blacklist gr _ _ =
   let name = full_name_of_reference gr in
   let l = SearchBlacklist.elements () in
-  List.for_all (fun str -> not (string_string_contains ~where:name ~what:str)) l
+  List.for_all (fun str -> not (String.string_contains ~where:name ~what:str)) l
 
 let (&&&&&) f g x y z = f x y z && g x y z
 
@@ -237,7 +237,7 @@ type glob_search_about_item =
 
 let search_about_item (itemref,typ) = function
   | GlobSearchSubPattern pat -> is_matching_appsubterm ~closed:false pat typ
-  | GlobSearchString s -> string_string_contains ~where:(name_of_reference itemref) ~what:s
+  | GlobSearchString s -> String.string_contains ~where:(name_of_reference itemref) ~what:s
 
 let raw_search_about filter_modules display_function l =
   let filter ref' env typ =

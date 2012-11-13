@@ -10,6 +10,7 @@ Unicode
 Errors
 CObj
 CList
+CString
 CArray
 Util
 Option

@@ -1215,7 +1215,7 @@ let check_number_of_constructors expctdnumopt i nconstr =
   begin match expctdnumopt with
     | Some n when n <> nconstr ->
 	error ("Not an inductive goal with "^
-	       string_of_int n^plural n " constructor"^".")
+	       string_of_int n ^ String.plural n " constructor"^".")
     | _ -> ()
   end;
   if i > nconstr then error "Not enough constructors."
@@ -1283,7 +1283,7 @@ let register_subst_one f =
 
 let error_unexpected_extra_pattern loc nb pat =
   let s1,s2,s3 = match pat with
-  | IntroIdentifier _ -> "name", (plural nb " introduction pattern"), "no"
+  | IntroIdentifier _ -> "name", (String.plural nb " introduction pattern"), "no"
   | _ -> "introduction pattern", "", "none" in
   user_err_loc (loc,"",str "Unexpected " ++ str s1 ++ str " (" ++
     (if Int.equal nb 0 then (str s3 ++ str s2) else
@@ -1883,7 +1883,7 @@ let expand_hyp id = tclTHEN (tclTRY (unfold_body id)) (clear [id])
 let check_unused_names names =
   if names <> [] & Flags.is_verbose () then
     msg_warning
-      (str"Unused introduction " ++ str (plural (List.length names) "pattern")
+      (str"Unused introduction " ++ str (String.plural (List.length names) "pattern")
        ++ str": " ++ prlist_with_sep spc pr_intro_pattern names)
 
 let rec consume_pattern avoid id isdep gl = function

@@ -8,6 +8,7 @@ Loc
 Compat
 Errors
 CList
+CString
 CArray
 Util
 Bigint

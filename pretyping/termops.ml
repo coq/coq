@@ -705,7 +705,7 @@ let replace_term = replace_term_gen eq_constr
 let error_invalid_occurrence l =
   let l = List.uniquize (List.sort Pervasives.compare l) in
   errorlabstrm ""
-    (str ("Invalid occurrence " ^ plural (List.length l) "number" ^": ") ++
+    (str ("Invalid occurrence " ^ String.plural (List.length l) "number" ^": ") ++
      prlist_with_sep spc int l ++ str ".")
 
 let pr_position (cl,pos) =

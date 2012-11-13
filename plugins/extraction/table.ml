@@ -413,7 +413,7 @@ let msg_non_implicit r n id =
     | Anonymous -> ""
     | Name id -> "(" ^ string_of_id id ^ ") "
   in
-  "The " ^ (ordinal n) ^ " argument " ^ name ^ "of " ^ (string_of_global r)
+  "The " ^ (String.ordinal n) ^ " argument " ^ name ^ "of " ^ (string_of_global r)
 
 let error_non_implicit msg =
   err (str (msg ^ " still occurs after extraction.") ++

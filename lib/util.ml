@@ -36,92 +36,10 @@ let is_blank = function
 
 (* Strings *)
 
-let explode s =
-  let rec explode_rec n =
-    if n >= String.length s then
-      []
-    else
-      String.make 1 (String.get s n) :: explode_rec (succ n)
-  in
-  explode_rec 0
-
-let implode sl = String.concat "" sl
-
-let strip s =
-  let n = String.length s in
-  let rec lstrip_rec i =
-    if i < n && is_blank s.[i] then
-      lstrip_rec (i+1)
-    else i
-  in
-  let rec rstrip_rec i =
-    if i >= 0 && is_blank s.[i] then
-      rstrip_rec (i-1)
-    else i
-  in
-  let a = lstrip_rec 0 and b = rstrip_rec (n-1) in
-  String.sub s a (b-a+1)
-
-let string_map f s =
-  let l = String.length s in
-  let r = String.create l in
-  for i = 0 to (l - 1) do r.[i] <- f (s.[i]) done;
-  r
-
-let drop_simple_quotes s =
-  let n = String.length s in
-  if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
-
-(* substring searching... *)
-
-(* gdzie = where, co = what *)
-(* gdzie=gdzie(string) gl=gdzie(length) gi=gdzie(index) *)
-let rec is_sub gdzie gl gi co cl ci =
-  (ci>=cl) ||
-  ((String.unsafe_get gdzie gi = String.unsafe_get co ci) &&
-   (is_sub gdzie gl (gi+1) co cl (ci+1)))
-
-let rec raw_str_index i gdzie l c co cl =
-  (* First adapt to ocaml 3.11 new semantics of index_from *)
-  if (i+cl > l) then raise Not_found;
-  (* Then proceed as in ocaml < 3.11 *)
-  let i' = String.index_from gdzie i c in
-    if (i'+cl <= l) && (is_sub gdzie l i' co cl 0) then i' else
-      raw_str_index (i'+1) gdzie l c co cl
-
-let string_index_from gdzie i co =
-  if co="" then i else
-    raw_str_index i gdzie (String.length gdzie)
-      (String.unsafe_get co 0) co (String.length co)
-
-let string_string_contains ~where ~what =
-  try
-    let _ = string_index_from where 0 what in true
-  with
-      Not_found -> false
-
-let plural n s = if n<>1 then s^"s" else s
-
-let ordinal n =
-  let s = match n mod 10 with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> "th" in
-  string_of_int n ^ s
-
-(* string parsing *)
-
-let split_string_at c s =
-  let len = String.length s in
-  let rec split n =
-    try
-      let pos = String.index_from s n c in
-      let dir = String.sub s n (pos-n) in
-      dir :: split (succ pos)
-    with
-      | Not_found -> [String.sub s n (len-n)]
-  in
-  if Int.equal len 0 then [] else split 0
+module String : CString.ExtS = CString
 
 let parse_loadpath s =
-  let l = split_string_at '/' s in
+  let l = String.split '/' s in
   if List.mem "" l then
     invalid_arg "parse_loadpath: find an empty dir in loadpath";
   l
@@ -137,14 +55,8 @@ let subst_command_placeholder s t =
   done;
   Buffer.contents buff
 
-module StringOrd =
-struct
-  type t = string
-  external compare : string -> string -> int = "caml_string_compare"
-end
-
-module Stringset = Set.Make(StringOrd)
-module Stringmap = Map.Make(StringOrd)
+module Stringset = Set.Make(String)
+module Stringmap = Map.Make(String)
 
 (* Lists *)
 

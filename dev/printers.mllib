@@ -12,6 +12,7 @@ Unicode
 Errors
 CObj
 CList
+CString
 CArray
 Util
 Bigint

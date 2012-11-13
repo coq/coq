@@ -641,7 +641,7 @@ let decompose_notation_key s =
     let tok =
       match String.sub s n (pos-n) with
       | "_" -> NonTerminal (id_of_string "_")
-      | s -> Terminal (drop_simple_quotes s) in
+      | s -> Terminal (String.drop_simple_quotes s) in
     decomp_ntn (tok::dirs) (pos+1)
   in
     decomp_ntn [] 0

@@ -169,7 +169,7 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   let nargs = Array.length randl in
 (*  let pe = pr_ne_context_of (str "in environment") env in*)
   let pr,prt = pr_ljudge_env env rator in
-  let term_string1 = str (plural nargs "term") in
+  let term_string1 = str (String.plural nargs "term") in
   let term_string2 =
     if nargs>1 then str "The " ++ pr_nth n ++ str " term" else str "This term" in
   let appl = prvect_with_sep fnl
@@ -204,7 +204,7 @@ let explain_cant_apply_not_functional env sigma rator randl =
   (* pe ++ *) fnl () ++
   str "The expression" ++ brk(1,1) ++ pr ++ spc () ++
   str "of type" ++ brk(1,1) ++ prt ++ spc () ++
-  str "cannot be applied to the " ++ str (plural nargs "term") ++ fnl () ++
+  str "cannot be applied to the " ++ str (String.plural nargs "term") ++ fnl () ++
   str " " ++ v 0 appl
 
 let explain_unexpected_type env sigma actual_type expected_type =
@@ -448,7 +448,7 @@ let explain_cannot_unify_binding_type env m n =
 
 let explain_cannot_find_well_typed_abstraction env p l =
   str "Abstracting over the " ++
-  str (plural (List.length l) "term") ++ spc () ++
+  str (String.plural (List.length l) "term") ++ spc () ++
   hov 0 (pr_enum (pr_lconstr_env env) l) ++ spc () ++
   str "leads to a term" ++ spc () ++ pr_lconstr_env env p ++ spc () ++
   str "which is ill-typed."
@@ -757,7 +757,7 @@ let explain_refiner_bad_type arg ty conclty =
 
 let explain_refiner_unresolved_bindings l =
   str "Unable to find an instance for the " ++
-  str (plural (List.length l) "variable") ++ spc () ++
+  str (String.plural (List.length l) "variable") ++ spc () ++
   prlist_with_sep pr_comma pr_name l ++ str"."
 
 let explain_refiner_cannot_apply t harg =
@@ -817,12 +817,12 @@ let error_ill_formed_constructor env id c v nparams nargs =
   (* warning: because of implicit arguments it is difficult to say which
      parameters must be explicitly given *)
   (if nparams<>0 then
-    strbrk " applied to its " ++ str (plural nparams "parameter")
+    strbrk " applied to its " ++ str (String.plural nparams "parameter")
   else
     mt()) ++
   (if nargs<>0 then
      str (if nparams<>0 then " and" else " applied") ++
-     strbrk " to some " ++ str (plural nargs "argument")
+     strbrk " to some " ++ str (String.plural nargs "argument")
    else
      mt()) ++ str "."
 
@@ -955,7 +955,7 @@ let explain_unused_clause env pats =
 
 let explain_non_exhaustive env pats =
   str "Non exhaustive pattern-matching: no clause found for " ++
-  str (plural (List.length pats) "pattern") ++
+  str (String.plural (List.length pats) "pattern") ++
   spc () ++ hov 0 (pr_sequence pr_cases_pattern pats)
 
 let explain_cannot_infer_predicate env typs =

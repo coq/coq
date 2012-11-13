@@ -137,7 +137,7 @@ let explain_non_linear_pattern id =
   str "The variable " ++ pr_id id ++ str " is bound several times in pattern"
 
 let explain_bad_patterns_number n1 n2 =
-  str "Expecting " ++ int n1 ++ str (plural n1 " pattern") ++
+  str "Expecting " ++ int n1 ++ str (String.plural n1 " pattern") ++
   str " but found " ++ int n2
 
 let explain_internalization_error e =

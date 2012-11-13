@@ -359,7 +359,7 @@ let rec raw_analyze_notation_tokens = function
   | String x :: sl when Lexer.is_ident x ->
       NonTerminal (Names.id_of_string x) :: raw_analyze_notation_tokens sl
   | String s :: sl ->
-      Terminal (drop_simple_quotes s) :: raw_analyze_notation_tokens sl
+      Terminal (String.drop_simple_quotes s) :: raw_analyze_notation_tokens sl
   | WhiteSpace n :: sl ->
       Break n :: raw_analyze_notation_tokens sl
 
@@ -571,7 +571,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       when s' = String.make (String.length s') ' ' ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
   | Terminal s :: symbs, (UnpTerminal s') :: fmt
-      when s = drop_simple_quotes s' ->
+      when s = String.drop_simple_quotes s' ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
   | NonTerminal s :: symbs, UnpTerminal s' :: fmt when s = id_of_string s' ->
       let i = List.index s vars in

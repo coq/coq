@@ -5,6 +5,7 @@ Coq_config
 Deque
 CObj
 CList
+CString
 CArray
 Util
 Serialize
