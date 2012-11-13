@@ -190,7 +190,7 @@ let type_of_inductive_knowing_parameters ?(polyprop=true) env mip paramtyps =
       (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
          the situation where a non-Prop singleton inductive becomes Prop
          when applied to Prop params *)
-      if not polyprop && not (is_type0m_univ ar.poly_level) && s = prop_sort
+      if not polyprop && not (is_type0m_univ ar.poly_level) && is_prop_sort s
       then raise (SingletonInductiveBecomesProp mip.mind_typename);
       mkArity (List.rev ctx,s)
 

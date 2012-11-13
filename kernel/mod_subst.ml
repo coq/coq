@@ -31,6 +31,8 @@ type delta_hint =
 module Deltamap = struct
   type t = module_path MPmap.t * delta_hint KNmap.t
   let empty = MPmap.empty, KNmap.empty
+  let is_empty (mm, km) =
+    MPmap.is_empty mm && KNmap.is_empty km
   let add_kn kn hint (mm,km) = (mm,KNmap.add kn hint km)
   let add_mp mp mp' (mm,km) = (MPmap.add mp mp' mm, km)
   let find_mp mp map = MPmap.find mp (fst map)
@@ -391,10 +393,10 @@ let subst_mps sub c =
 
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
-    | _ when mp = mpfrom -> mpto
+    | _ when mp_eq mp mpfrom -> mpto
     | MPdot (mp1,l) ->
 	let mp1' = replace_mp_in_mp mpfrom mpto mp1 in
-	  if mp1==mp1' then mp
+	  if mp1 == mp1' then mp
 	  else MPdot (mp1',l)
     | _ -> mp
 
@@ -406,7 +408,7 @@ let replace_mp_in_kn mpfrom mpto kn =
 
 let rec mp_in_mp mp mp1 =
   match mp1 with
-    | _ when mp1 = mp -> true
+    | _ when mp_eq mp1 mp -> true
     | MPdot (mp2,l) -> mp_in_mp mp mp2
     | _ -> false
 
@@ -483,7 +485,7 @@ let update_delta_resolver resolver1 resolver2 =
 let add_delta_resolver resolver1 resolver2 =
   if resolver1 == resolver2 then
     resolver2
-  else if resolver2 = empty_delta_resolver then
+  else if Deltamap.is_empty resolver2 then
     resolver1
   else
     Deltamap.join (update_delta_resolver resolver1 resolver2) resolver2
@@ -522,13 +524,13 @@ let join subst1 subst2 =
   Umap.join subst2 subst
 
 let rec occur_in_path mbi = function
-  | MPbound bid' -> mbi = bid'
+  | MPbound bid' -> mod_bound_id_eq mbi bid'
   | MPdot (mp1,_) -> occur_in_path mbi mp1
   | _ -> false
 
 let occur_mbid mbi sub =
   let check_one mbi' (mp,_) =
-    if mbi = mbi' || occur_in_path mbi mp then raise Exit
+    if mod_bound_id_eq mbi mbi' || occur_in_path mbi mp then raise Exit
   in
   try
     Umap.iter_mbi check_one sub;

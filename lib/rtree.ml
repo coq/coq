@@ -36,7 +36,7 @@ let rec lift_rtree_rec depth n = function
   | Rec(j,defs) ->
       Rec(j, Array.map (lift_rtree_rec (depth+1) n) defs)
 
-let lift n t = if n=0 then t else lift_rtree_rec 0 n t
+let lift n t = if Int.equal n 0 then t else lift_rtree_rec 0 n t
 
 (* The usual subst operation *)
 let rec subst_rtree_rec depth sub = function
@@ -153,12 +153,21 @@ let compare_rtree f = fold2
     if b < 0 then false
     else if b > 0 then true
     else match expand t1, expand t2 with
-        Node(_,v1), Node(_,v2) when Array.length v1 = Array.length v2 ->
+        Node(_,v1), Node(_,v2) when Int.equal (Array.length v1) (Array.length v2) ->
           Array.for_all2 cmp v1 v2
       | _ -> false)
 
+let rec raw_eq cmp t1 t2 = match t1, t2 with
+| Param (i1, j1), Param (i2, j2) ->
+  Int.equal i1 i2 && Int.equal j1 j2
+| Node (x1, a1), Node (x2, a2) ->
+  cmp x1 x2 && Array.equal (raw_eq cmp) a1 a2
+| Rec (i1, a1), Rec (i2, a2) ->
+  Int.equal i1 i2 && Array.equal (raw_eq cmp) a1 a2
+| _ -> false
+
 let eq_rtree cmp t1 t2 =
-  t1 == t2 || t1=t2 ||
+  t1 == t2 || raw_eq cmp t1 t2 ||
   compare_rtree
     (fun t1 t2 ->
       if cmp (fst(dest_node t1)) (fst(dest_node t2)) then 0
@@ -175,8 +184,8 @@ let rec pp_tree prl t =
         hov 2 (str"("++prl lab++str","++brk(1,0)++
                prvect_with_sep pr_comma (pp_tree prl) v++str")")
     | Rec(i,v) ->
-        if Array.length v = 0 then str"Rec{}"
-        else if Array.length v = 1 then
+        if Int.equal (Array.length v) 0 then str"Rec{}"
+        else if Int.equal (Array.length v) 1 then
           hov 2 (str"Rec{"++pp_tree prl v.(0)++str"}")
         else
           hov 2 (str"Rec{"++int i++str","++brk(1,0)++

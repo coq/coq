@@ -42,9 +42,9 @@ let id_of_string s =
 
 let string_of_id id = String.copy id
 
-let id_ord (x : string) (y : string) =
-  (* String.compare already checks for pointer equality *)
-  String.compare x y
+let id_ord = String.compare
+
+let id_eq = String.equal
 
 module IdOrdered =
   struct
@@ -68,6 +68,11 @@ module Idpred = Predicate.Make(IdOrdered)
 
 type name = Name of identifier | Anonymous
 type variable = identifier
+
+let name_eq n1 n2 = match n1, n2 with
+| Anonymous, Anonymous -> true
+| Name id1, Name id2 -> String.equal id1 id2
+| _ -> false
 
 (** {6 Directory paths = section names paths } *)
 
@@ -134,6 +139,7 @@ module Umap = Map.Make(UOrdered)
 
 type mod_bound_id = uniq_ident
 let mod_bound_id_ord = uniq_ident_ord
+let mod_bound_id_eq mbl mbr = Int.equal (uniq_ident_ord mbl mbr) 0
 let make_mbid = make_uid
 let repr_mbid (n, id, dp) = (n, id, dp)
 let debug_string_of_mbid = debug_string_of_uid
@@ -187,6 +193,8 @@ let rec mp_ord mp1 mp2 =
   | MPbound _, MPdot _ -> -1
   | MPdot _, _ -> 1
 
+let mp_eq mp1 mp2 = Int.equal (mp_ord mp1 mp2) 0
+
 module MPord = struct
   type t = module_path
   let compare = mp_ord
@@ -214,7 +222,9 @@ let label kn =
   let _,_,l = repr_kn kn in l
 
 let string_of_kn (mp,dir,l) =
-  let str_dir = if dir = [] then "." else "#" ^ string_of_dirpath dir ^ "#"
+  let str_dir = match dir with
+  | [] -> "."
+  | _ -> "#" ^ string_of_dirpath dir ^ "#"
   in
   string_of_mp mp ^ str_dir ^ string_of_label l
 
@@ -380,9 +390,10 @@ type evaluable_global_reference =
   | EvalVarRef of identifier
   | EvalConstRef of constant
 
-let eq_egr e1 e2 = match e1,e2 with
+let eq_egr e1 e2 = match e1, e2 with
     EvalConstRef con1, EvalConstRef con2 -> eq_constant con1 con2
-  | _,_ -> e1 = e2
+  | EvalVarRef id1, EvalVarRef id2 -> Int.equal (id_ord id1 id2) 0
+  | _, _ -> false
 
 (** {6 Hash-consing of name objects } *)
 

@@ -205,7 +205,7 @@ EXTEND
         let t, g = interp_entry_name false None e sep in
         GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
       | s = STRING ->
-	if s = "" then Errors.user_err_loc (!@loc,"",Pp.str "Empty terminal.");
+	if String.equal s "" then Errors.user_err_loc (!@loc,"",Pp.str "Empty terminal.");
         GramTerminal s
     ] ]
   ;

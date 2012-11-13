@@ -51,15 +51,15 @@ let el_stack el stk =
 let compare_stack_shape stk1 stk2 =
   let rec compare_rec bal stk1 stk2 =
   match (stk1,stk2) with
-      ([],[]) -> bal=0
+      ([],[]) -> Int.equal bal 0
     | ((Zupdate _|Zshift _)::s1, _) -> compare_rec bal s1 stk2
     | (_, (Zupdate _|Zshift _)::s2) -> compare_rec bal stk1 s2
     | (Zapp l1::s1, _) -> compare_rec (bal+Array.length l1) s1 stk2
     | (_, Zapp l2::s2) -> compare_rec (bal-Array.length l2) stk1 s2
     | (Zcase(c1,_,_)::s1, Zcase(c2,_,_)::s2) ->
-        bal=0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
+        Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
     | (Zfix(_,a1)::s1, Zfix(_,a2)::s2) ->
-        bal=0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
+        Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
     | (_,_) -> false in
   compare_rec 0 stk1 stk2
 
@@ -181,14 +181,18 @@ type conv_pb =
   | CONV
   | CUMUL
 
+let is_cumul = function CUMUL -> true | CONV -> false
+
 let sort_cmp pb s0 s1 cuniv =
   match (s0,s1) with
-    | (Prop c1, Prop c2) when pb = CUMUL ->
-        if c1 = Null or c2 = Pos then cuniv   (* Prop <= Set *)
-        else raise NotConvertible
+    | (Prop c1, Prop c2) when is_cumul pb ->
+      begin match c1, c2 with
+      | Null, _ | _, Pos -> cuniv (* Prop <= Set *)
+      | _ -> raise NotConvertible
+      end
     | (Prop c1, Prop c2) ->
-        if c1 = c2 then cuniv else raise NotConvertible
-    | (Prop c1, Type u) when pb = CUMUL -> assert (is_univ_variable u); cuniv
+        if c1 == c2 then cuniv else raise NotConvertible
+    | (Prop c1, Type u) when is_cumul pb -> assert (is_univ_variable u); cuniv
     | (Type u1, Type u2) ->
 	assert (is_univ_variable u2);
 	(match pb with
@@ -266,12 +270,12 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 		 anomaly "conversion was given ill-typed terms (Sort)";
 	       sort_cmp cv_pb s1 s2 cuniv
 	   | (Meta n, Meta m) ->
-               if n=m
+               if Int.equal n m
 	       then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
                else raise NotConvertible
 	   | _ -> raise NotConvertible)
     | (FEvar ((ev1,args1),env1), FEvar ((ev2,args2),env2)) ->
-        if ev1=ev2 then
+        if Int.equal ev1 ev2 then
           let u1 = convert_stacks l2r infos lft1 lft2 v1 v2 cuniv in
           convert_vect l2r infos el1 el2
             (Array.map (mk_clos env1) args1)
@@ -280,7 +284,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
     (* 2 index known to be bound to no constant *)
     | (FRel n, FRel m) ->
-        if reloc_rel n el1 = reloc_rel m el2
+        if Int.equal (reloc_rel n el1) (reloc_rel m el2)
         then convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
@@ -362,13 +366,13 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else raise NotConvertible
 
     | (FConstruct (ind1,j1), FConstruct (ind2,j2)) ->
-	if j1 = j2 && eq_ind ind1 ind2
+	if Int.equal j1 j2 && eq_ind ind1 ind2
 	then
           convert_stacks l2r infos lft1 lft2 v1 v2 cuniv
         else raise NotConvertible
 
-    | (FFix ((op1,(_,tys1,cl1)),e1), FFix((op2,(_,tys2,cl2)),e2)) ->
-	if op1 = op2
+    | (FFix (((op1, i1),(_,tys1,cl1)),e1), FFix(((op2, i2),(_,tys2,cl2)),e2)) ->
+	if Int.equal i1 i2 && Array.equal Int.equal op1 op2
 	then
 	  let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
@@ -383,7 +387,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         else raise NotConvertible
 
     | (FCoFix ((op1,(_,tys1,cl1)),e1), FCoFix((op2,(_,tys2,cl2)),e2)) ->
-        if op1 = op2
+        if Int.equal op1 op2
         then
 	  let n = Array.length cl1 in
           let fty1 = Array.map (mk_clos e1) tys1 in
@@ -414,7 +418,7 @@ and convert_stacks l2r infos lft1 lft2 stk1 stk2 cuniv =
 and convert_vect l2r infos lft1 lft2 v1 v2 cuniv =
   let lv1 = Array.length v1 in
   let lv2 = Array.length v2 in
-  if lv1 = lv2
+  if Int.equal lv1 lv2
   then
     let rec fold n univ =
       if n >= lv1 then univ

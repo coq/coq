@@ -327,7 +327,7 @@ and fterm =
 
 let fterm_of v = v.term
 let set_norm v = v.norm <- Norm
-let is_val v = v.norm = Norm
+let is_val v = match v.norm with Norm -> true | _ -> false
 
 let mk_atom c = {norm=Norm;term=FAtom c}
 
@@ -426,9 +426,9 @@ let rec lft_fconstr n ft =
     | FLOCKED -> assert false
     | _ -> {norm=ft.norm; term=FLIFT(n,ft)}
 let lift_fconstr k f =
-  if k=0 then f else lft_fconstr k f
+  if Int.equal k 0 then f else lft_fconstr k f
 let lift_fconstr_vect k v =
-  if k=0 then v else Array.map (fun f -> lft_fconstr k f) v
+  if Int.equal k 0 then v else Array.map (fun f -> lft_fconstr k f) v
 
 let clos_rel e i =
   match expand_rel i e with
@@ -452,7 +452,7 @@ let compact_stack head stk =
 
 (* Put an update mark in the stack, only if needed *)
 let zupdate m s =
-  if !share & m.norm = Red
+  if !share && begin match m.norm with Red -> true | _ -> false end
   then
     let s' = compact_stack m s in
     let _ = m.term <- FLOCKED in
@@ -760,7 +760,7 @@ let rec reloc_rargs_rec depth stk =
   match stk with
       Zapp args :: s ->
         Zapp (lift_fconstr_vect depth args) :: reloc_rargs_rec depth s
-    | Zshift(k)::s -> if k=depth then s else reloc_rargs_rec (depth-k) s
+    | Zshift(k)::s -> if Int.equal k depth then s else reloc_rargs_rec (depth-k) s
     | _ -> stk
 
 let reloc_rargs depth stk =
@@ -771,13 +771,13 @@ let rec drop_parameters depth n argstk =
       Zapp args::s ->
         let q = Array.length args in
         if n > q then drop_parameters depth (n-q) s
-        else if n = q then reloc_rargs depth s
+        else if Int.equal n q then reloc_rargs depth s
         else
           let aft = Array.sub args n (q-n) in
           reloc_rargs depth (append_stack aft s)
     | Zshift(k)::s -> drop_parameters (depth-k) n s
     | [] -> (* we know that n < stack_args_size(argstk) (if well-typed term) *)
-	if n=0 then []
+	if Int.equal n 0 then []
 	else anomaly
 	  "ill-typed term: found a match on a partially applied constructor"
     | _ -> assert false

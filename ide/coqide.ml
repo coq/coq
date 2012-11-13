@@ -1703,7 +1703,7 @@ let main files =
   let windows_actions = GAction.action_group ~name:"Windows" () in
   let help_actions = GAction.action_group ~name:"Help" () in
   let add_gen_actions menu_name act_grp l =
-    let no_under = Util.string_map (fun x -> if x = '_' then '-' else x) in
+    let no_under = Util.String.map (fun x -> if x = '_' then '-' else x) in
     let add_simple_template menu_name act_grp text =
       let text' =
 	let l = String.length text - 1 in

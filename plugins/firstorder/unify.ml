@@ -87,7 +87,7 @@ let value i t=
   let add x y=
     if x<0 then y else if y<0 then x else x+y in
   let rec vaux term=
-    if isMeta term && destMeta term = i then 0 else
+    if isMeta term && Int.equal (destMeta term) i then 0 else
       let f v t=add v (vaux t) in
       let vr=fold_constr f (-1) term in
 	if vr<0 then -1 else vr+1 in

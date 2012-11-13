@@ -63,6 +63,10 @@ let prop_sort = Prop Null
 let set_sort = Prop Pos
 let type1_sort = Type type1_univ
 
+let is_prop_sort = function
+| Prop Null -> true
+| _ -> false
+
 type sorts_family = InProp | InSet | InType
 
 let family_of_sort = function
@@ -138,7 +142,7 @@ let mkSort   = function
 (* (that means t2 is declared as the type of t1) *)
 let mkCast (t1,k2,t2) =
   match t1 with
-  | Cast (c,k1, _) when k1 = VMcast & k1 = k2 -> Cast (c,k1,t2)
+  | Cast (c,k1, _) when k1 == VMcast && k1 == k2 -> Cast (c,k1,t2)
   | _ -> Cast (t1,k2,t2)
 
 (* Constructs the product (x:t1)t2 *)
@@ -265,7 +269,7 @@ let destMeta c = match kind_of_term c with
   | _ -> invalid_arg "destMeta"
 
 let isMeta c = match kind_of_term c with Meta _ -> true | _ -> false
-let isMetaOf mv c = match kind_of_term c with Meta mv' -> mv = mv' | _ -> false
+let isMetaOf mv c = match kind_of_term c with Meta mv' -> Int.equal mv mv' | _ -> false
 
 (* Destructs a variable *)
 let destVar c = match kind_of_term c with
@@ -324,11 +328,11 @@ let isCast c = match kind_of_term c with Cast _ -> true | _ -> false
 
 (* Tests if a de Bruijn index *)
 let isRel c = match kind_of_term c with Rel _ -> true | _ -> false
-let isRelN n c = match kind_of_term c with Rel n' -> n = n' | _ -> false
+let isRelN n c = match kind_of_term c with Rel n' -> Int.equal n n' | _ -> false
 
 (* Tests if a variable *)
 let isVar c = match kind_of_term c with Var _ -> true | _ -> false
-let isVarId id c = match kind_of_term c with Var id' -> id = id' | _ -> false
+let isVarId id c = match kind_of_term c with Var id' -> Int.equal (id_ord id id') 0 | _ -> false
 
 (* Tests if an inductive *)
 let isInd c = match kind_of_term c with Ind _ -> true | _ -> false
@@ -559,30 +563,31 @@ let map_constr_with_binders g f l c = match kind_of_term c with
 
 let compare_constr f t1 t2 =
   match kind_of_term t1, kind_of_term t2 with
-  | Rel n1, Rel n2 -> n1 = n2
-  | Meta m1, Meta m2 -> m1 = m2
-  | Var id1, Var id2 -> id1 = id2
-  | Sort s1, Sort s2 -> s1 = s2
+  | Rel n1, Rel n2 -> Int.equal n1 n2
+  | Meta m1, Meta m2 -> Int.equal m1 m2
+  | Var id1, Var id2 -> Int.equal (id_ord id1 id2) 0
+  | Sort s1, Sort s2 -> Int.equal (Pervasives.compare s1 s2) 0 (** FIXME **)
   | Cast (c1,_,_), _ -> f c1 t2
   | _, Cast (c2,_,_) -> f t1 c2
-  | Prod (_,t1,c1), Prod (_,t2,c2) -> f t1 t2 & f c1 c2
-  | Lambda (_,t1,c1), Lambda (_,t2,c2) -> f t1 t2 & f c1 c2
-  | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> f b1 b2 & f t1 t2 & f c1 c2
+  | Prod (_,t1,c1), Prod (_,t2,c2) -> f t1 t2 && f c1 c2
+  | Lambda (_,t1,c1), Lambda (_,t2,c2) -> f t1 t2 && f c1 c2
+  | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> f b1 b2 && f t1 t2 && f c1 c2
   | App (c1,l1), _ when isCast c1 -> f (mkApp (pi1 (destCast c1),l1)) t2
   | _, App (c2,l2) when isCast c2 -> f t1 (mkApp (pi1 (destCast c2),l2))
   | App (c1,l1), App (c2,l2) ->
-    Array.length l1 = Array.length l2 &&
-      f c1 c2 && Array.for_all2 f l1 l2
-  | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & Array.for_all2 f l1 l2
+    Int.equal (Array.length l1) (Array.length l2) &&
+      f c1 c2 && Array.equal f l1 l2
+  | Evar (e1,l1), Evar (e2,l2) -> Int.equal e1 e2 && Array.equal f l1 l2
   | Const c1, Const c2 -> eq_constant c1 c2
   | Ind c1, Ind c2 -> eq_ind c1 c2
   | Construct c1, Construct c2 -> eq_constructor c1 c2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
-      f p1 p2 & f c1 c2 & Array.for_all2 f bl1 bl2
-  | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
-      ln1 = ln2 & Array.for_all2 f tl1 tl2 & Array.for_all2 f bl1 bl2
+      f p1 p2 & f c1 c2 && Array.equal f bl1 bl2
+  | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
+      Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
+      && Array.equal f tl1 tl2 && Array.equal f bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-      ln1 = ln2 & Array.for_all2 f tl1 tl2 & Array.for_all2 f bl1 bl2
+      Int.equal ln1 ln2 && Array.equal f tl1 tl2 && Array.equal f bl1 bl2
   | _ -> false
 
 (*******************************)
@@ -592,21 +597,20 @@ let compare_constr f t1 t2 =
 (* alpha conversion : ignore print names and casts *)
 
 let rec eq_constr m n =
-  (m==n) or
-  compare_constr eq_constr m n
+  (m == n) || compare_constr eq_constr m n
 
 let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
 let constr_ord_int f t1 t2 =
   let (=?) f g i1 i2 j1 j2=
-    let c=f i1 i2 in
-    if c=0 then g j1 j2 else c in
+    let c = f i1 i2 in
+    if Int.equal c 0 then g j1 j2 else c in
   let (==?) fg h i1 i2 j1 j2 k1 k2=
     let c=fg i1 i2 j1 j2 in
-    if c=0 then h k1 k2 else c in
+    if Int.equal c 0 then h k1 k2 else c in
   match kind_of_term t1, kind_of_term t2 with
-    | Rel n1, Rel n2 -> n1 - n2
-    | Meta m1, Meta m2 -> m1 - m2
+    | Rel n1, Rel n2 -> Int.compare n1 n2
+    | Meta m1, Meta m2 -> Int.compare m1 m2
     | Var id1, Var id2 -> id_ord id1 id2
     | Sort s1, Sort s2 -> Pervasives.compare s1 s2
     | Cast (c1,_,_), _ -> f c1 t2
@@ -671,7 +675,7 @@ let eq_named_declaration (i1, c1, t1) (i2, c2, t2) =
   Int.equal (id_ord i1 i2) 0 && Option.Misc.compare eq_constr c1 c2 && eq_constr t1 t2
 
 let eq_rel_declaration (n1, c1, t1) (n2, c2, t2) =
-  n1 = n2 && Option.Misc.compare eq_constr c1 c2 && eq_constr t1 t2
+  name_eq n1 n2 && Option.Misc.compare eq_constr c1 c2 && eq_constr t1 t2
 
 (***************************************************************************)
 (*     Type of local contexts (telescopes)                                 *)
@@ -729,7 +733,7 @@ let closed0 = closedn 0
 
 let noccurn n term =
   let rec occur_rec n c = match kind_of_term c with
-    | Rel m -> if m = n then raise LocalOccur
+    | Rel m -> if Int.equal m n then raise LocalOccur
     | _ -> iter_constr_with_binders succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false
@@ -839,7 +843,7 @@ let subst1_named_decl = subst1_decl
 let rec thin_val = function
   | [] -> []
   | (((id,{ sit = v }) as s)::tl) when isVar v ->
-      if id = destVar v then thin_val tl else s::(thin_val tl)
+      if Int.equal (id_ord id (destVar v)) 0 then thin_val tl else s::(thin_val tl)
   | h::tl -> h::(thin_val tl)
 
 (* (replace_vars sigma M) applies substitution sigma to term M *)
@@ -853,7 +857,9 @@ let replace_vars var_alist =
          with Not_found -> c)
     | _ -> map_constr_with_binders succ substrec n c
   in
-  if var_alist = [] then (function x -> x) else substrec 0
+  match var_alist with
+  | [] -> (function x -> x)
+  | _ -> substrec 0
 
 (*
 let repvarkey = Profile.declare_profile "replace_vars";;
@@ -1017,7 +1023,7 @@ let decompose_lam =
 let decompose_prod_n n =
   if n < 0 then error "decompose_prod_n: integer parameter must be positive";
   let rec prodec_rec l n c =
-    if n=0 then l,c
+    if Int.equal n 0 then l,c
     else match kind_of_term c with
       | Prod (x,t,c) -> prodec_rec ((x,t)::l) (n-1) c
       | Cast (c,_,_)   -> prodec_rec l n c
@@ -1030,7 +1036,7 @@ let decompose_prod_n n =
 let decompose_lam_n n =
   if n < 0 then error "decompose_lam_n: integer parameter must be positive";
   let rec lamdec_rec l n c =
-    if n=0 then l,c
+    if Int.equal n 0 then l,c
     else match kind_of_term c with
       | Lambda (x,t,c) -> lamdec_rec ((x,t)::l) (n-1) c
       | Cast (c,_,_)     -> lamdec_rec l n c
@@ -1068,7 +1074,7 @@ let decompose_prod_n_assum n =
   if n < 0 then
     error "decompose_prod_n_assum: integer parameter must be positive";
   let rec prodec_rec l n c =
-    if n=0 then l,c
+    if Int.equal n 0 then l,c
     else match kind_of_term c with
     | Prod (x,t,c)    -> prodec_rec (add_rel_decl (x,None,t) l) (n-1) c
     | LetIn (x,b,t,c) -> prodec_rec (add_rel_decl (x,Some b,t) l) (n-1) c
@@ -1085,7 +1091,7 @@ let decompose_lam_n_assum n =
   if n < 0 then
     error "decompose_lam_n_assum: integer parameter must be positive";
   let rec lamdec_rec l n c =
-    if n=0 then l,c
+    if Int.equal n 0 then l,c
     else match kind_of_term c with
     | Lambda (x,t,c)  -> lamdec_rec (add_rel_decl (x,None,t) l) (n-1) c
     | LetIn (x,b,t,c) -> lamdec_rec (add_rel_decl (x,Some b,t) l) n c
@@ -1199,9 +1205,9 @@ let rec isArity c =
 
 let array_eqeq t1 t2 =
   t1 == t2 ||
-  (Array.length t1 = Array.length t2 &&
+  (Int.equal (Array.length t1) (Array.length t2) &&
    let rec aux i =
-     (i = Array.length t1) || (t1.(i) == t2.(i) && aux (i + 1))
+     (Int.equal i (Array.length t1)) || (t1.(i) == t2.(i) && aux (i + 1))
    in aux 0)
 
 let equals_constr t1 t2 =
@@ -1216,20 +1222,21 @@ let equals_constr t1 t2 =
     | LetIn (n1,b1,t1,c1), LetIn (n2,b2,t2,c2) ->
       n1 == n2 & b1 == b2 & t1 == t2 & c1 == c2
     | App (c1,l1), App (c2,l2) -> c1 == c2 & array_eqeq l1 l2
-    | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & array_eqeq l1 l2
+    | Evar (e1,l1), Evar (e2,l2) -> Int.equal e1 e2 & array_eqeq l1 l2
     | Const c1, Const c2 -> c1 == c2
-    | Ind (sp1,i1), Ind (sp2,i2) -> sp1 == sp2 & i1 = i2
+    | Ind (sp1,i1), Ind (sp2,i2) -> sp1 == sp2 && Int.equal i1 i2
     | Construct ((sp1,i1),j1), Construct ((sp2,i2),j2) ->
-      sp1 == sp2 & i1 = i2 & j1 = j2
+      sp1 == sp2 && Int.equal i1 i2 && Int.equal j1 j2
     | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
       ci1 == ci2 & p1 == p2 & c1 == c2 & array_eqeq bl1 bl2
-    | Fix (ln1,(lna1,tl1,bl1)), Fix (ln2,(lna2,tl2,bl2)) ->
-      ln1 = ln2
-      & array_eqeq lna1 lna2
-      & array_eqeq tl1 tl2
-      & array_eqeq bl1 bl2
+    | Fix ((ln1, i1),(lna1,tl1,bl1)), Fix ((ln2, i2),(lna2,tl2,bl2)) ->
+      Int.equal i1 i2
+      && Array.equal Int.equal ln1 ln2
+      && array_eqeq lna1 lna2
+      && array_eqeq tl1 tl2
+      && array_eqeq bl1 bl2
     | CoFix(ln1,(lna1,tl1,bl1)), CoFix(ln2,(lna2,tl2,bl2)) ->
-      ln1 = ln2
+      Int.equal ln1 ln2
       & array_eqeq lna1 lna2
       & array_eqeq tl1 tl2
       & array_eqeq bl1 bl2
@@ -1379,7 +1386,7 @@ module Hsorts =
         | Type u -> Type (huniv u)
       let equal s1 s2 =
         match (s1,s2) with
-            (Prop c1, Prop c2) -> c1=c2
+            (Prop c1, Prop c2) -> c1 == c2
           | (Type u1, Type u2) -> u1 == u2
           |_ -> false
       let hash = Hashtbl.hash
@@ -1391,11 +1398,14 @@ module Hcaseinfo =
       type t = case_info
       type u = inductive -> inductive
       let hashcons hind ci = { ci with ci_ind = hind ci.ci_ind }
+      let pp_info_equal info1 info2 =
+        Int.equal info1.ind_nargs info2.ind_nargs &&
+        info1.style == info2.style
       let equal ci ci' =
 	ci.ci_ind == ci'.ci_ind &&
-	ci.ci_npar = ci'.ci_npar &&
-	ci.ci_cstr_ndecls = ci'.ci_cstr_ndecls && (* we use (=) on purpose *)
-	ci.ci_pp_info = ci'.ci_pp_info  (* we use (=) on purpose *)
+	Int.equal ci.ci_npar ci'.ci_npar &&
+	Array.equal Int.equal ci.ci_cstr_ndecls ci'.ci_cstr_ndecls && (* we use [Array.equal] on purpose *)
+	pp_info_equal ci.ci_pp_info ci'.ci_pp_info  (* we use (=) on purpose *)
       let hash = Hashtbl.hash
     end)
 

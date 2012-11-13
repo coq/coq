@@ -1,6 +1,6 @@
 let ui_m = GAction.ui_manager ();;
 
-let no_under = Util.string_map (fun x -> if x = '_' then '-' else x)
+let no_under = Util.String.map (fun x -> if x = '_' then '-' else x)
 
 let list_items menu li =
   let res_buf = Buffer.create 500 in

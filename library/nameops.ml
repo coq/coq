@@ -28,16 +28,16 @@ let cut_ident skip_quote s =
   let slen = String.length s in
   (* [n'] is the position of the first non nullary digit *)
   let rec numpart n n' =
-    if n = 0 then
+    if Int.equal n 0 then
       (* ident made of _ and digits only [and ' if skip_quote]: don't cut it *)
       slen
     else
       let c = Char.code (String.get s (n-1)) in
-      if c = code_of_0 && n <> slen then
+      if Int.equal c code_of_0 && n <> slen then
 	numpart (n-1) n'
       else if code_of_0 <= c && c <= code_of_9 then
 	numpart (n-1) (n-1)
-      else if skip_quote & (c = Char.code '\'' || c = Char.code '_') then
+      else if skip_quote && (Int.equal c (Char.code '\'') || Int.equal c (Char.code '_')) then
 	numpart (n-1) (n-1)
       else
 	n'
@@ -48,7 +48,7 @@ let repr_ident s =
   let numstart = cut_ident false s in
   let s = string_of_id s in
   let slen = String.length s in
-  if numstart = slen then
+  if Int.equal numstart slen then
     (s, None)
   else
     (String.sub s 0 numstart,
@@ -75,7 +75,7 @@ let lift_subscript id =
   let rec add carrypos =
     let c = id.[carrypos] in
     if is_digit c then
-      if c = '9' then begin
+      if Int.equal (Char.code c) (Char.code '9') then begin
 	assert (carrypos>0);
 	add (carrypos-1)
       end

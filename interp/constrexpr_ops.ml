@@ -73,9 +73,10 @@ let local_binder_loc = function
   | LocalRawDef ((loc,_),t) -> Loc.merge loc (constr_loc t)
   | LocalRawAssum ([],_,_) -> assert false
 
-let local_binders_loc bll =
-  if bll = [] then Loc.ghost else
-  Loc.merge (local_binder_loc (List.hd bll)) (local_binder_loc (List.last bll))
+let local_binders_loc bll = match bll with
+  | [] -> Loc.ghost
+  | h :: l ->
+    Loc.merge (local_binder_loc h) (local_binder_loc (List.last bll))
 
 (** Pseudo-constructors *)
 

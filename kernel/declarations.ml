@@ -127,7 +127,7 @@ let subst_const_def sub = function
   | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
 
 let subst_const_body sub cb = {
-  const_hyps = (assert (cb.const_hyps=[]); []);
+  const_hyps = (match cb.const_hyps with [] -> [] | _ -> assert false);
   const_body = subst_const_def sub cb.const_body;
   const_type = subst_const_type sub cb.const_type;
   const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
@@ -341,7 +341,7 @@ let subst_mind sub mib =
   { mind_record = mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
-    mind_hyps = (assert (mib.mind_hyps=[]); []) ;
+    mind_hyps = (match mib.mind_hyps with [] -> [] | _ -> assert false);
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =

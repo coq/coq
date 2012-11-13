@@ -179,16 +179,17 @@ let push_local sz r =
 
 
 (*i Compilation of variables *)
-let find_at el l =
+let find_at f l =
   let rec aux n = function
     | [] -> raise Not_found
-    | hd :: tl -> if hd = el then n else aux (n+1) tl
+    | hd :: tl -> if f hd then n else aux (n + 1) tl
   in aux 1 l
 
 let pos_named id r =
   let env = !(r.in_env) in
   let cid = FVnamed id in
-  try Kenvacc(r.offset + env.size - (find_at cid env.fv_rev))
+  let f = function FVnamed id' -> id_eq id id' | _ -> false in
+  try Kenvacc(r.offset + env.size - (find_at f env.fv_rev))
   with Not_found ->
     let pos = env.size in
     r.in_env := { size = pos+1; fv_rev =  cid:: env.fv_rev};
@@ -206,7 +207,8 @@ let pos_rel i r sz =
       let i = i - r.nb_rec in
       let db = FVrel(i) in
       let env = !(r.in_env) in
-      try Kenvacc(r.offset + env.size - (find_at db env.fv_rev))
+      let f = function FVrel j -> Int.equal i j | _ -> false in
+      try Kenvacc(r.offset + env.size - (find_at f env.fv_rev))
       with Not_found ->
 	let pos = env.size in
 	r.in_env := { size = pos+1; fv_rev =  db:: env.fv_rev};
@@ -357,7 +359,7 @@ let rec str_const c =
 	    let oip = oib.mind_packets.(j) in
 	    let num,arity = oip.mind_reloc_tbl.(i-1) in
 	    let nparams = oib.mind_nparams in
-	    if nparams + arity = Array.length args then
+	    if Int.equal (nparams + arity) (Array.length args) then
               (* spiwack: *)
               (* 1/ tries to compile the constructor in an optimal way,
                     it is supposed to work only if the arguments are
@@ -609,7 +611,7 @@ let rec compile_constr reloc c sz cont =
       let lbl_sw = Label.create () in
       let sz_b,branch,is_tailcall =
 	match branch1 with
-	| Kreturn k -> assert (k = sz); sz, branch1, true
+	| Kreturn k -> assert (Int.equal k sz); sz, branch1, true
 	| _ -> sz+3, Kjump, false
       in
       let annot = {ci = ci; rtbl = tbl; tailcall = is_tailcall} in
@@ -632,7 +634,7 @@ let rec compile_constr reloc c sz cont =
 	  let nargs = List.length args in
 	  let lbl_b,code_b =
 	    label_code(
-	    if nargs = arity then
+	    if Int.equal nargs arity then
 	      Kpushfields arity ::
 	      compile_constr (push_param arity sz_b reloc)
 		body (sz_b+arity) (add_pop arity (branch :: !c))
@@ -844,7 +846,7 @@ let op_compilation n op =
   fun kn fc reloc args sz cont ->
   if not fc then raise Not_found else
   let nargs = Array.length args in
-  if nargs=n then (*if it is a fully applied addition*)
+  if Int.equal nargs n then (*if it is a fully applied addition*)
     let (escape, labeled_cont) = make_branch cont in
     let else_lbl = Label.create () in
       comp_args compile_constr reloc args sz
@@ -854,7 +856,7 @@ let op_compilation n op =
            (* works as comp_app with nargs = n and non-tailcall cont*)
            Kgetglobal (get_allias !global_env kn)::
            Kapply n::labeled_cont)))
-  else if nargs=0 then
+  else if Int.equal nargs 0 then
     code_construct kn cont
   else
     comp_app (fun _ _ _ cont -> code_construct kn cont)

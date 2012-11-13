@@ -29,7 +29,7 @@ let pi3 (_,_,a) = a
 let is_letter c = (c >= 'a' && c <= 'z') or (c >= 'A' && c <= 'Z')
 let is_digit c = (c >= '0' && c <= '9')
 let is_ident_tail c =
-  is_letter c or is_digit c or c = '\'' or c = '_'
+  is_letter c or is_digit c || c = '\'' or c = '_'
 let is_blank = function
   | ' ' | '\r' | '\t' | '\n' -> true
   | _ -> false

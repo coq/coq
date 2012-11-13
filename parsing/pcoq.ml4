@@ -164,9 +164,9 @@ let grammar_delete e reinit (pos,rls) =
     (List.rev rls);
   if reinit <> None then
     let lev = match pos with Some (Level n) -> n | _ -> assert false in
-    let pos =
-      if lev = "200" then First
-      else After (string_of_int (int_of_string lev + 1)) in
+    let pos = match lev with
+    | "200" -> First
+    | _ -> After (string_of_int (int_of_string lev + 1)) in
     maybe_uncurry (G.extend e) (Some pos, [Some lev,reinit,[]])
 
 (** The apparent parser of Coq; encapsulate G to keep track
@@ -502,7 +502,7 @@ let find_position_gen forpat ensure assoc lev =
       let init = ref None in
       let rec add_level q = function
         | (p,_,_ as pa)::l when p > n -> pa :: add_level (Some p) l
-        | (p,a,reinit)::l when p = n ->
+        | (p,a,reinit)::l when Int.equal p n ->
             if reinit then
 	      let a' = create_assoc assoc in (init := Some a'; (p,a',false)::l)
 	    else if admissible_assoc (a,assoc) then
@@ -517,14 +517,19 @@ let find_position_gen forpat ensure assoc lev =
 	  else (add_level None ccurrent, pcurrent) in
         level_stack := updated:: !level_stack;
 	let assoc = create_assoc assoc in
-        if !init = None then
+        begin match !init with
+        | None ->
 	  (* Create the entry *)
-	  (if !after = None then Some Extend.First
-	   else Some (Extend.After (constr_level (Option.get !after)))),
-	   Some assoc, Some (constr_level n), None
-        else
+          let ext = match !after with
+          | None -> Some Extend.First
+          | _ ->
+            Some (Extend.After (constr_level (Option.get !after)))
+          in
+	  ext, Some assoc, Some (constr_level n), None
+        | _ ->
 	  (* The reinit flag has been updated *)
 	   Some (Extend.Level (constr_level n)), None, None, !init
+        end
       with
 	  (* Nothing has changed *)
           Exit ->
@@ -537,7 +542,7 @@ let remove_levels n =
 
 let rec list_mem_assoc_triple x = function
   | [] -> false
-  | (a,b,c) :: l -> a = x or list_mem_assoc_triple x l
+  | (a,b,c) :: l -> Int.equal a x || list_mem_assoc_triple x l
 
 let register_empty_levels forpat levels =
   let filter n =
@@ -565,6 +570,12 @@ let camlp4_assoc = function
   | Some Extend.NonA | Some Extend.RightA -> Extend.RightA
   | None | Some Extend.LeftA -> Extend.LeftA
 
+let assoc_eq al ar = match al, ar with
+| Extend.NonA, Extend.NonA
+| Extend.RightA, Extend.RightA
+| Extend.LeftA, Extend.LeftA -> true
+| _, _ -> false
+
 (* [adjust_level assoc from prod] where [assoc] and [from] are the name
    and associativity of the level where to add the rule; the meaning of
    the result is
@@ -587,18 +598,21 @@ let adjust_level assoc from = function
   (* If NonA on the left-hand side, adopt the current assoc ?? *)
   | (NumLevel n,BorderProd (Left,Some Extend.NonA)) -> None
   (* If the expected assoc is the current one, set to SELF *)
-  | (NumLevel n,BorderProd (Left,Some a)) when a = camlp4_assoc assoc ->
+  | (NumLevel n,BorderProd (Left,Some a)) when assoc_eq a (camlp4_assoc assoc) ->
       None
   (* Otherwise, force the level, n or n-1, according to expected assoc *)
   | (NumLevel n,BorderProd (Left,Some a)) ->
-      if a = Extend.LeftA then Some (Some (n,true)) else Some None
+    begin match a with
+    | Extend.LeftA -> Some (Some (n, true))
+    | _ -> Some None
+    end
   (* None means NEXT *)
   | (NextLevel,_) -> Some None
 (* Compute production name elsewhere *)
   | (NumLevel n,InternalProd) ->
       match from with
-	| ETConstr (p,()) when p = n+1 -> Some None
-	| ETConstr (p,()) -> Some (Some (n,n=p))
+	| ETConstr (p,()) when Int.equal p (n + 1) -> Some None
+	| ETConstr (p,()) -> Some (Some (n, Int.equal n p))
 	| _ -> Some (Some (n,false))
 
 let compute_entry allow_create adjust forpat = function
@@ -610,7 +624,8 @@ let compute_entry allow_create adjust forpat = function
   | ETBinder true -> anomaly "Should occur only as part of BinderList"
   | ETBinder false -> weaken_entry Constr.binder, None, false
   | ETBinderList (true,tkl) ->
-      assert (tkl=[]); weaken_entry Constr.open_binders, None, false
+    let () = match tkl with [] -> () | _ -> assert false in
+    weaken_entry Constr.open_binders, None, false
   | ETBinderList (false,_) -> anomaly "List of entries cannot be registered."
   | ETBigint -> weaken_entry Prim.bigint, None, false
   | ETReference -> weaken_entry Constr.global, None, false
@@ -643,10 +658,11 @@ let is_self from e =
   match from, e with
       ETConstr(n,()), ETConstr(NumLevel n',
         BorderProd(Right, _ (* Some(NonA|LeftA) *))) -> false
-    | ETConstr(n,()), ETConstr(NumLevel n',BorderProd(Left,_)) -> n=n'
+    | ETConstr(n,()), ETConstr(NumLevel n',BorderProd(Left,_)) -> Int.equal n n'
     | (ETName,ETName | ETReference, ETReference | ETBigint,ETBigint
       | ETPattern, ETPattern) -> true
-    | ETOther(s1,s2), ETOther(s1',s2') -> s1=s1' & s2=s2'
+    | ETOther(s1,s2), ETOther(s1',s2') ->
+      Int.equal (String.compare s1 s1') 0 && Int.equal (String.compare s2 s2') 0
     | _ -> false
 
 let is_binder_level from e =
@@ -726,33 +742,49 @@ let level_of_snterml = function
 (**********************************************************************)
 (* Interpret entry names of the form "ne_constr_list" as entry keys   *)
 
+let coincide s pat off =
+  let len = String.length pat in
+  let break = ref true in
+  let i = ref 0 in
+  while !break && !i < len do
+    let c = Char.code s.[off + !i] in
+    let d = Char.code pat.[!i] in
+    break := Int.equal c d;
+    incr i
+  done;
+  !break
+
 let rec interp_entry_name static up_level s sep =
   let l = String.length s in
-  if l > 8 & String.sub s 0 3 = "ne_" & String.sub s (l-5) 5 = "_list" then
+  if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
     let t, g = interp_entry_name static up_level (String.sub s 3 (l-8)) "" in
     List1ArgType t, Alist1 g
-  else if l > 12 & String.sub s 0 3 = "ne_" &
-                   String.sub s (l-9) 9 = "_list_sep" then
+  else if l > 12 && coincide s "ne_" 0 &&
+                   coincide s "_list_sep" (l-9) then
     let t, g = interp_entry_name static up_level (String.sub s 3 (l-12)) "" in
     List1ArgType t, Alist1sep (g,sep)
-  else if l > 5 & String.sub s (l-5) 5 = "_list" then
+  else if l > 5 && coincide s "_list" (l-5) then
     let t, g = interp_entry_name static up_level (String.sub s 0 (l-5)) "" in
     List0ArgType t, Alist0 g
-  else if l > 9 & String.sub s (l-9) 9 = "_list_sep" then
+  else if l > 9 && coincide s "_list_sep" (l-9) then
     let t, g = interp_entry_name static up_level (String.sub s 0 (l-9)) "" in
     List0ArgType t, Alist0sep (g,sep)
-  else if l > 4 & String.sub s (l-4) 4 = "_opt" then
+  else if l > 4 && coincide s "_opt" (l-4) then
     let t, g = interp_entry_name static up_level (String.sub s 0 (l-4)) "" in
     OptArgType t, Aopt g
-  else if l > 5 & String.sub s (l-5) 5 = "_mods" then
+  else if l > 5 && coincide s "_mods" (l-5) then
     let t, g = interp_entry_name static up_level (String.sub s 0 (l-1)) "" in
     List0ArgType t, Amodifiers g
   else
-    let s = if s = "hyp" then "var" else s in
+    let s = match s with "hyp" -> "var" | _ -> s in
+    let check_lvl n = match up_level with
+    | None -> false
+    | Some m -> Int.equal m n && not (Int.equal m 5)
+    in
     let t, se =
       match Extrawit.tactic_genarg_level s with
-	| Some n when Some n = up_level & up_level <> Some 5 -> None, Aself
-	| Some n when Some (n+1) = up_level & up_level <> Some 5 -> None, Anext
+	| Some n when check_lvl n -> None, Aself
+	| Some n when check_lvl (n + 1) -> None, Anext
 	| Some n -> None, Atactic n
 	| None ->
       try Some (get_entry uprim s), Aentry ("prim",s) with Not_found ->

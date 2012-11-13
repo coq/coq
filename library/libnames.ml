@@ -50,21 +50,25 @@ let add_dirpath_suffix p id = make_dirpath (id :: repr_dirpath p)
 let parse_dir s =
   let len = String.length s in
   let rec decoupe_dirs dirs n =
-    if n = len && n > 0 then error (s ^ " is an invalid path.");
+    if Int.equal n len && n > 0 then error (s ^ " is an invalid path.");
     if n >= len then dirs else
     let pos =
       try
 	String.index_from s n '.'
       with Not_found -> len
     in
-    if pos = n then error (s ^ " is an invalid path.");
+    if Int.equal pos n then error (s ^ " is an invalid path.");
     let dir = String.sub s n (pos-n) in
     decoupe_dirs ((id_of_string dir)::dirs) (pos+1)
   in
     decoupe_dirs [] 0
 
 let dirpath_of_string s =
-  make_dirpath (if s = "" then [] else parse_dir s)
+  let path = match s with
+  | "" -> []
+  | _ -> parse_dir s
+  in
+  make_dirpath path
 
 let string_of_dirpath = Names.string_of_dirpath
 
@@ -85,8 +89,9 @@ let repr_path { dirpath = pa; basename = id } = (pa,id)
 (* parsing and printing of section paths *)
 let string_of_path sp =
   let (sl,id) = repr_path sp in
-  if repr_dirpath sl = [] then string_of_id id
-  else (string_of_dirpath sl) ^ "." ^ (string_of_id id)
+  match repr_dirpath sl with
+  | [] -> string_of_id id
+  | _ -> (string_of_dirpath sl) ^ "." ^ (string_of_id id)
 
 let sp_ord sp1 sp2 =
   let (p1,id1) = repr_path sp1

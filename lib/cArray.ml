@@ -102,7 +102,9 @@ let compare item_cmp v1 v2 =
     cmp (Array.length v1 - 1)
 
 let equal cmp t1 t2 =
-  Array.length t1 = Array.length t2 &&
+  if t1 == t2 then true else
+  if not (Array.length t1 = Array.length t2) then false
+  else
   let rec aux i =
     (i = Array.length t1) || (cmp t1.(i) t2.(i) && aux (i + 1))
   in aux 0

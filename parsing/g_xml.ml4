@@ -85,7 +85,11 @@ let uri_of_data s =
   let n = String.index s ':' in
   let p = String.index s '.' in
   let s = String.sub s (n+2) (p-n-2) in
-  for i=0 to String.length s - 1 do if s.[i]='/' then s.[i]<-'.' done;
+  for i = 0 to String.length s - 1 do
+    match s.[i] with
+    | '/' -> s.[i] <- '.'
+    | _ -> ()
+  done;
   qualid_of_string s
 
 let constant_of_cdata (loc,a) = Nametab.locate_constant (uri_of_data a)
@@ -201,7 +205,7 @@ let rec interp_xml_constr = function
       user_err_loc (loc,"", str "Unexpected tag " ++ str s ++ str ".")
 
 and interp_xml_tag s = function
-  | XmlTag (loc,tag,al,xl) when tag=s -> (loc,al,xl)
+  | XmlTag (loc,tag,al,xl) when String.equal tag s -> (loc,al,xl)
   | XmlTag (loc,tag,_,_) -> user_err_loc (loc, "",
     str "Expect tag " ++ str s ++ str " but find " ++ str s ++ str ".")
 

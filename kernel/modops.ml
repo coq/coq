@@ -138,10 +138,10 @@ let module_body_of_type mp mtb =
     mod_retroknowledge = []}
 
 let check_modpath_equiv env mp1 mp2 = 
-  if mp1=mp2 then () else
+  if mp_eq mp1 mp2 then () else
     let mb1=lookup_module  mp1 env in
     let mb2=lookup_module mp2 env in
-      if (mp_of_delta mb1.mod_delta mp1)=(mp_of_delta mb2.mod_delta mp2)
+      if mp_eq (mp_of_delta mb1.mod_delta mp1) (mp_of_delta mb2.mod_delta mp2)
       then ()
       else error_not_equal_modpaths mp1 mp2
 	
@@ -184,7 +184,7 @@ and subst_structure sub do_delta sign =
 
 and subst_module sub do_delta mb =
   let mp = subst_mp sub mb.mod_mp in
-  let sub = if is_functor mb.mod_type && not(mp=mb.mod_mp) then
+  let sub = if is_functor mb.mod_type && not (mp_eq mp mb.mod_mp) then
     add_mp mb.mod_mp mp
       empty_delta_resolver sub else sub in 
   let id_delta = (fun x y-> x) in
@@ -557,7 +557,7 @@ and clean_expr l = function
  | SEBfunctor (mbid,sigt,str) as s->
      let str_clean = clean_expr l str in
      let sig_clean = clean_expr l sigt.typ_expr in 
-       if  str_clean == str && sig_clean = sigt.typ_expr then
+       if  str_clean == str && Int.equal (Pervasives.compare sig_clean sigt.typ_expr) 0 then (** FIXME **)
 	 s else SEBfunctor (mbid,{sigt with typ_expr=sig_clean},str_clean)
   | SEBstruct str as s->
       let str_clean = Util.List.smartmap (clean_struct l) str in 

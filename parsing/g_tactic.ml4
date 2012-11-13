@@ -79,7 +79,7 @@ let check_for_coloneq =
       let rec skip_to_rpar p n =
 	match get_tok (List.last (Stream.npeek n strm)) with
         | KEYWORD "(" -> skip_to_rpar (p+1) (n+1)
-        | KEYWORD ")" -> if p=0 then n+1 else skip_to_rpar (p-1) (n+1)
+        | KEYWORD ")" -> if Int.equal p 0 then n+1 else skip_to_rpar (p-1) (n+1)
 	| KEYWORD "." -> err ()
 	| _ -> skip_to_rpar p (n+1) in
       let rec skip_names n =
@@ -127,11 +127,13 @@ let mk_cofix_tac (loc,id,bl,ann,ty) =
   (id,CProdN(loc,bl,ty))
 
 (* Functions overloaded by quotifier *)
-let induction_arg_of_constr (c,lbind as clbind) =
-  if lbind = NoBindings then
-    try ElimOnIdent (Constrexpr_ops.constr_loc c,snd(Constrexpr_ops.coerce_to_id c))
-    with _ -> ElimOnConstr clbind
-  else ElimOnConstr clbind
+let induction_arg_of_constr (c,lbind as clbind) = match lbind with
+  | NoBindings ->
+    begin
+      try ElimOnIdent (Constrexpr_ops.constr_loc c,snd(Constrexpr_ops.coerce_to_id c))
+      with _ -> ElimOnConstr clbind
+    end
+  | _ -> ElimOnConstr clbind
 
 let mkTacCase with_evar = function
   | [ElimOnConstr cl,(None,None)],None,None ->
@@ -158,10 +160,10 @@ let rec mkCLambdaN_simple_loc loc bll c =
   | ([],_,_) :: bll -> mkCLambdaN_simple_loc loc bll c
   | [] -> c
 
-let mkCLambdaN_simple bl c =
-  if bl=[] then c
-  else
-    let loc = Loc.merge (fst (List.hd (pi1 (List.hd bl)))) (Constrexpr_ops.constr_loc c) in
+let mkCLambdaN_simple bl c = match bl with
+  | [] -> c
+  | h :: _ ->
+    let loc = Loc.merge (fst (List.hd (pi1 h))) (Constrexpr_ops.constr_loc c) in
     mkCLambdaN_simple_loc loc bl c
 
 let loc_of_ne_list l = Loc.merge (fst (List.hd l)) (fst (List.last l))
@@ -173,30 +175,41 @@ let map_int_or_var f = function
 let all_concl_occs_clause = { onhyps=Some[]; concl_occs=AllOccurrences }
 
 let has_no_specified_occs cl =
-  (cl.onhyps = None || 
-    List.for_all (fun ((occs,_),_) -> occs = AllOccurrences)
-    (Option.get cl.onhyps))
-  && (cl.concl_occs = AllOccurrences
-      || cl.concl_occs = NoOccurrences)
+  let forall ((occs, _), _) = match occs with
+  | AllOccurrences -> true
+  | _ -> false
+  in
+  let hyps = match cl.onhyps with
+  | None -> true
+  | Some hyps -> List.for_all forall hyps in
+  let concl = match cl.concl_occs with
+  | AllOccurrences | NoOccurrences -> true
+  | _ -> false
+  in
+  hyps && concl
 
 let merge_occurrences loc cl = function
   | None ->
       if has_no_specified_occs cl then (None, cl)
       else
 	user_err_loc (loc,"",str "Found an \"at\" clause without \"with\" clause.")
-  | Some (occs,p) ->
-      (Some p,
-      if occs = AllOccurrences then cl
-      else if cl = all_concl_occs_clause then { onhyps=Some[]; concl_occs=occs }
-      else match cl.onhyps with
-      | Some [(occs',id),l] when
-	  occs' = AllOccurrences && cl.concl_occs = NoOccurrences ->
-	  { cl with onhyps=Some[(occs,id),l] }
+  | Some (occs, p) ->
+    let ans = match occs with
+    | AllOccurrences -> cl
+    | _ ->
+      begin match cl with
+      | { onhyps = Some []; concl_occs = AllOccurrences } ->
+        { onhyps = Some []; concl_occs = occs }
+      | { onhyps = Some [(AllOccurrences, id), l]; concl_occs = NoOccurrences } ->
+        { cl with onhyps = Some [(occs, id), l] }
       | _ ->
-	  if has_no_specified_occs cl then
-	    user_err_loc (loc,"",str "Unable to interpret the \"at\" clause; move it in the \"in\" clause.")
-	  else
-	    user_err_loc (loc,"",str "Cannot use clause \"at\" twice."))
+        if has_no_specified_occs cl then
+          user_err_loc (loc,"",str "Unable to interpret the \"at\" clause; move it in the \"in\" clause.")
+        else
+          user_err_loc (loc,"",str "Cannot use clause \"at\" twice.")
+      end
+    in
+    (Some p, ans)
 
 (* Auxiliary grammar rules *)
 
@@ -612,7 +625,9 @@ GEXTEND Gram
 
       (* Context management *)
       | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacClear (true, l)
-      | IDENT "clear"; l = LIST0 id_or_meta -> TacClear (l=[], l)
+      | IDENT "clear"; l = LIST0 id_or_meta ->
+        let is_empty = match l with [] -> true | _ -> false in
+        TacClear (is_empty, l)
       | IDENT "clearbody"; l = LIST1 id_or_meta -> TacClearBody l
       | IDENT "move"; hfrom = id_or_meta; hto = move_location ->
 	  TacMove (true,hfrom,hto)

@@ -557,7 +557,7 @@ type constraint_function =
 
 let constraint_add_leq v u c =
   (* We just discard trivial constraints like Set<=u or u<=u *)
-  if v = UniverseLevel.Set || UniverseLevel.equal v u then c
+  if UniverseLevel.equal v UniverseLevel.Set || UniverseLevel.equal v u then c
   else Constraint.add (v,Le,u) c
 
 let enforce_leq u v c =
@@ -634,12 +634,16 @@ let normalize_universes g =
 let check_sorted g sorted =
   let get u = try UniverseLMap.find u sorted with
     | Not_found -> assert false
-  in UniverseLMap.iter (fun u arc -> let lu = get u in match arc with
-    | Equiv v -> assert (lu = get v)
-    | Canonical {univ=u'; lt=lt; le=le} ->
+  in
+  let iter u arc =
+    let lu = get u in match arc with
+    | Equiv v -> assert (Int.equal lu (get v))
+    | Canonical {univ = u'; lt = lt; le = le} ->
       assert (u == u');
       List.iter (fun v -> assert (lu <= get v)) le;
-      List.iter (fun v -> assert (lu < get v)) lt) g
+      List.iter (fun v -> assert (lu < get v)) lt
+  in
+  UniverseLMap.iter iter g
 
 (**
   Bellman-Ford algorithm with a few customizations:
@@ -648,7 +652,10 @@ let check_sorted g sorted =
       vertices, and [bottom] is used as the source vertex
 *)
 let bellman_ford bottom g =
-  assert (lookup_level bottom g = None);
+  let () = match lookup_level bottom g with
+  | None -> ()
+  | Some _ -> assert false
+  in
   let ( << ) a b = match a, b with
     | _, None -> true
     | None, _ -> false
@@ -790,11 +797,11 @@ let make_max = function
   | (le,lt) -> Max (le,lt)
 
 let remove_large_constraint u = function
-  | Atom u' as x -> if u = u' then Max ([],[]) else x
+  | Atom u' as x -> if UniverseLevel.equal u u' then Max ([],[]) else x
   | Max (le,lt) -> make_max (List.remove u le,lt)
 
 let is_direct_constraint u = function
-  | Atom u' -> u = u'
+  | Atom u' -> UniverseLevel.equal u u'
   | Max (le,lt) -> List.mem u le
 
 (*
@@ -854,7 +861,7 @@ let no_upper_constraints u cst =
 
 let univ_depends u v =
   match u, v with
-    | Atom u, Atom v -> u = v
+    | Atom u, Atom v -> UniverseLevel.equal u v
     | Atom u, Max (gel,gtl) -> List.mem u gel || List.mem u gtl
     | _ -> anomaly "univ_depends given a non-atomic 1st arg"
 
@@ -948,7 +955,7 @@ module Hconstraint =
       type u = universe_level -> universe_level
       let hashcons hul (l1,k,l2) = (hul l1, k, hul l2)
       let equal (l1,k,l2) (l1',k',l2') =
-	l1 == l1' && k = k' && l2 == l2'
+	l1 == l1' && k == k' && l2 == l2'
       let hash = Hashtbl.hash
     end)
 

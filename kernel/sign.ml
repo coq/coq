@@ -29,7 +29,7 @@ let empty_named_context = []
 let add_named_decl d sign = d::sign
 
 let rec lookup_named id = function
-  | (id',_,_ as decl) :: _ when id=id' -> decl
+  | (id',_,_ as decl) :: _ when id_eq id id' -> decl
   | _ :: sign -> lookup_named id sign
   | [] -> raise Not_found
 

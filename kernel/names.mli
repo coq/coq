@@ -18,6 +18,7 @@ val string_of_id : identifier -> string
 val id_of_string : string -> identifier
 
 val id_ord : identifier -> identifier -> int
+val id_eq : identifier -> identifier -> bool
 
 (** Identifiers sets and maps *)
 module Idset  : Set.S with type elt = identifier
@@ -32,6 +33,8 @@ end
 
 type name = Name of identifier | Anonymous
 type variable = identifier
+
+val name_eq : name -> name -> bool
 
 (** {6 Directory paths = section names paths } *)
 
@@ -71,6 +74,7 @@ module Labmap : Map.S with type key = label
 type mod_bound_id
 
 val mod_bound_id_ord : mod_bound_id -> mod_bound_id -> int
+val mod_bound_id_eq : mod_bound_id -> mod_bound_id -> bool
 
 (** The first argument is a file name - to prevent conflict between
    different files *)
@@ -87,6 +91,9 @@ type module_path =
   | MPfile of dir_path
   | MPbound of mod_bound_id
   | MPdot of module_path * label
+
+val mp_ord : module_path -> module_path -> int
+val mp_eq : module_path -> module_path -> bool
 
 val check_bound_mp : module_path -> bool
 

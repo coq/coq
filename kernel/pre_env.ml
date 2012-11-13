@@ -116,7 +116,7 @@ let push_named d env =
       env_named_vals =  (id,rval):: env.env_named_vals }
 
 let lookup_named_val id env =
-  snd(List.find (fun (id',_) -> id = id') env.env_named_vals)
+  snd(List.find (fun (id',_) -> id_eq id id') env.env_named_vals)
 
 (* Warning all the names should be different *)
 let env_of_named id env = env

@@ -24,7 +24,7 @@ let exclude_search_in_dirname f = skipped_dirnames := f :: !skipped_dirnames
 
 let ok_dirname f =
   f <> "" && f.[0] <> '.' && not (List.mem f !skipped_dirnames) &&
-  (Unicode.ident_refutation f = None)
+  (match Unicode.ident_refutation f with None -> true | _ -> false)
 
 let all_subdirs ~unix_path:root =
   let l = ref [] in
@@ -37,11 +37,13 @@ let all_subdirs ~unix_path:root =
 	if ok_dirname f then
 	  let file = Filename.concat dir f in
 	  try
-	    if (stat file).st_kind = S_DIR then begin
-	      let newrel = rel@[f] in
+            begin match (stat file).st_kind with
+	    | S_DIR ->
+	      let newrel = rel @ [f] in
 	      add file newrel;
 	      traverse file newrel
-	    end
+            | _ -> ()
+            end
 	  with Unix_error (e,s1,s2) -> ()
       done
     with End_of_file ->

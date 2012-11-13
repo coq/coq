@@ -137,16 +137,16 @@ let check_utf8_trailing_byte cs c =
 (* but don't certify full utf8 compliance (e.g. no emptyness check) *)
 let lookup_utf8_tail c cs =
   let c1 = Char.code c in
-  if c1 land 0x40 = 0 or c1 land 0x38 = 0x38 then error_utf8 cs
+  if Int.equal (c1 land 0x40) 0 or Int.equal (c1 land 0x38) 0x38 then error_utf8 cs
   else
     let n, unicode =
-      if c1 land 0x20 = 0 then
+      if Int.equal (c1 land 0x20) 0 then
       match Stream.npeek 2 cs with
       | [_;c2] ->
 	  check_utf8_trailing_byte cs c2;
 	  2, (c1 land 0x1F) lsl 6 + (Char.code c2 land 0x3F)
       | _ -> error_utf8 cs
-      else if c1 land 0x10 = 0 then
+      else if Int.equal (c1 land 0x10) 0 then
       match Stream.npeek 3 cs with
       | [_;c2;c3] ->
 	  check_utf8_trailing_byte cs c2; check_utf8_trailing_byte cs c3;
@@ -281,8 +281,11 @@ let rec string in_comments bp len = parser
   | [< ''*'; s >] ->
       (parser
         | [< '')'; s >] ->
-            if in_comments = Some 0 then
-	      msg_warning (strbrk "Not interpreting \"*)\" as the end of current non-terminated comment because it occurs in a non-terminated string of the comment.");
+            let () = match in_comments with
+            | Some 0 ->
+                msg_warning (strbrk "Not interpreting \"*)\" as the end of current non-terminated comment because it occurs in a non-terminated string of the comment.")
+            | _ -> ()
+            in
             let in_comments = Option.map pred in_comments in
  	    string in_comments bp (store (store len '*') ')') s
         | [< >] ->
@@ -296,7 +299,9 @@ let set_xml_output_comment f = xml_output_comment := f
 
 (* Utilities for comments in beautify *)
 let comment_begin = ref None
-let comm_loc bp = if !comment_begin=None then comment_begin := Some bp
+let comm_loc bp = match !comment_begin with
+| None -> comment_begin := Some bp
+| _ -> ()
 
 let current = Buffer.create 8192
 let between_com = ref true
@@ -319,7 +324,7 @@ let push_char c =
   if
     !between_com || List.mem c ['\n';'\r'] ||
     (List.mem c [' ';'\t']&&
-     (Buffer.length current = 0 ||
+     (Int.equal (Buffer.length current) 0 ||
       not (let s = Buffer.contents current in
 	   List.mem s.[String.length s - 1] [' ';'\t';'\n';'\r'])))
   then
@@ -354,8 +359,11 @@ let rec comm_string bp = parser
   | [< ''"' >] -> push_string "\""
   | [< ''\\'; _ =
            (parser [< ' ('"' | '\\' as c) >] ->
-             if c='"' then real_push_char c;
-             real_push_char c
+              let () = match c with
+              | '"' -> real_push_char c
+              | _ -> ()
+              in
+              real_push_char c
                  | [< >] -> real_push_char '\\'); s >]
      -> comm_string bp s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
@@ -399,11 +407,11 @@ and update_longest_valid_token last nj tt cs =
 and progress_utf8 last nj n c tt cs =
   try
     let tt = CharMap.find c tt.branch in
-    if n=1 then
+    if Int.equal n 1 then
       update_longest_valid_token last (nj+n) tt cs
     else
       match Util.List.skipn (nj+1) (Stream.npeek (nj+n) cs) with
-      | l when List.length l = n-1 ->
+      | l when Int.equal (List.length l) (n - 1) ->
 	 List.iter (check_utf8_trailing_byte cs) l;
 	 let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in
 	 update_longest_valid_token last (nj+n) tt cs
@@ -477,10 +485,12 @@ let rec next_token = parser bp
       comment_stop bp;
       (* We enforce that "." should either be part of a larger keyword,
          for instance ".(", or followed by a blank or eof. *)
-      if t = KEYWORD "." then begin
+      let () = match t with
+      | KEYWORD "." ->
 	if not (blank_or_eof s) then err (bp,ep+1) Undefined_token;
 	if Flags.do_beautify() then between_com := true;
-      end;
+      | _ -> ()
+      in
       (t, (bp,ep))
   | [< ''?'; s >] ep ->
       let t = parse_after_qmark bp s in comment_stop bp; (t, (ep, bp))
@@ -631,14 +641,14 @@ let is_ident_not_keyword s =
 
 let is_number s =
   let rec aux i =
-    String.length s = i or
+    Int.equal (String.length s) i ||
     match s.[i] with '0'..'9' -> aux (i+1) | _ -> false
   in aux 0
 
 let strip s =
   let len =
     let rec loop i len =
-      if i = String.length s then len
+      if Int.equal i (String.length s) then len
       else if s.[i] == ' ' then loop (i + 1) len
       else loop (i + 1) (len + 1)
     in
@@ -656,7 +666,7 @@ let strip s =
 
 let terminal s =
   let s = strip s in
-  if s = "" then failwith "empty token";
+  let () = match s with "" -> failwith "empty token" | _ -> () in
   if is_ident_not_keyword s then IDENT s
   else if is_number s then INT s
   else KEYWORD s
