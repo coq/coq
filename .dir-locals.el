@@ -4,8 +4,10 @@
   . ((eval
       . (progn
 	  ;; coq root directory (ending with slash)
-	  (let ((coq-root-directory (locate-dominating-file buffer-file-name
-							    ".dir-locals.el"))
+	  (let ((coq-root-directory (when buffer-file-name
+				      (locate-dominating-file
+				       buffer-file-name
+				       ".dir-locals.el")))
 		(coq-project-find-file
 		 (and (boundp 'coq-project-find-file) coq-project-find-file)))
 	    ;; coq tags file and coq debugger executable
