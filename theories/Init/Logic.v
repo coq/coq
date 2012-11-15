@@ -355,11 +355,33 @@ End Logic_lemmas.
 Module EqNotations.
   Notation "'rew' H 'in' H'" := (eq_rect _ _ H' _ H)
     (at level 10, H' at level 10).
+  Notation "'rew' [ P ] H 'in' H'" := (eq_rect _ P H' _ H)
+    (at level 10, H' at level 10).
   Notation "'rew' <- H 'in' H'" := (eq_rect_r _ H' H)
+    (at level 10, H' at level 10).
+  Notation "'rew' <- [ P ] H 'in' H'" := (eq_rect_r P H' H)
     (at level 10, H' at level 10).
   Notation "'rew' -> H 'in' H'" := (eq_rect _ _ H' _ H)
     (at level 10, H' at level 10, only parsing).
+  Notation "'rew' -> [ P ] H 'in' H'" := (eq_rect _ P H' _ H)
+    (at level 10, H' at level 10).
 End EqNotations.
+
+Import EqNotations.
+
+Lemma rew_opp_r : forall A (P:A->Type) (x y:A) (H:x=y) (a:P y), rew H in rew <- H in a = a.
+Proof.
+intros.
+destruct H.
+reflexivity.
+Defined.
+
+Lemma rew_opp_l : forall A (P:A->Type) (x y:A) (H:x=y) (a:P x), rew <- H in rew H in a = a.
+Proof.
+intros.
+destruct H.
+reflexivity.
+Defined.
 
 Theorem f_equal2 :
   forall (A1 A2 B:Type) (f:A1 -> A2 -> B) (x1 y1:A1)
