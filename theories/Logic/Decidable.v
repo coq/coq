@@ -175,7 +175,16 @@ Proof.
 unfold decidable. tauto.
 Qed.
 
+(* Functional relations on decidable co-domains are decidable *)
 
+Theorem dec_functional_relation :
+  forall (X Y : Type) (A:X->Y->Prop), (forall y y' : Y, decidable (y=y')) ->
+  (forall x, exists! y, A x y) -> forall x y, decidable (A x y).
+Proof.
+intros X Y A Hdec H x y.
+destruct (H x) as (y',(Hex,Huniq)).
+destruct (Hdec y y') as [->|Hnot]; firstorder.
+Qed.
 
 (** With the following hint database, we can leverage [auto] to check
     decidability of propositions. *)
