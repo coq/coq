@@ -20,5 +20,10 @@ min_r: forall n m : nat, m <= n -> min n m = m
 min_l: forall n m : nat, n <= m -> min n m = n
 max_r: forall n m : nat, n <= m -> max n m = m
 max_l: forall n m : nat, m <= n -> max n m = n
+f_equal_pred: forall x y : nat, x = y -> pred x = pred y
+f_equal2_plus:
+  forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 + x2 = y1 + y2
+f_equal2_mult:
+  forall x1 y1 x2 y2 : nat, x1 = y1 -> x2 = y2 -> x1 * x2 = y1 * y2
 eq_add_S: forall n m : nat, S n = S m -> n = m
 eq_S: forall x y : nat, x = y -> S x = S y
