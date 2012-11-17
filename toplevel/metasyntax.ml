@@ -313,10 +313,10 @@ let rec find_pattern nt xl = function
       find_pattern nt (x::xl) (l,l')
   | [], NonTerminal x' :: l' ->
       (out_nt nt,x',List.rev xl),l'
-  | _, Terminal s :: _ | Terminal s :: _, _ ->
-      error ("The token \""^s^"\" occurs on one side of \"..\" but not on the other side.")
   | _, Break s :: _ | Break s :: _, _ ->
       error ("A break occurs on one side of \"..\" but not on the other side.")
+  | _, Terminal s :: _ | Terminal s :: _, _ ->
+      error ("The token \""^s^"\" occurs on one side of \"..\" but not on the other side.")
   | _, [] ->
       error ("The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\".")
   | ((SProdList _ | NonTerminal _) :: _), _ | _, (SProdList _ :: _) ->

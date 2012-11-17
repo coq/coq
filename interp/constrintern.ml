@@ -296,6 +296,12 @@ let set_type_scope env = {env with tmp_scope = Some Notation.type_scope}
 
 let reset_tmp_scope env = {env with tmp_scope = None}
 
+let set_scope env = function
+  | CastConv (GSort _) -> set_type_scope env
+  | CastConv (GRef (_,ref) | GApp (_,GRef (_,ref),_)) ->
+      {env with tmp_scope = compute_scope_of_global ref}
+  | _ -> env
+
 let rec it_mkGProd loc2 env body =
   match env with
       (loc1, (na, bk, _, t)) :: tl -> it_mkGProd loc2 tl (GProd (Loc.merge loc1 loc2, na, bk, t, body))
@@ -1441,7 +1447,9 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | CSort (loc, s) ->
 	GSort(loc,s)
     | CCast (loc, c1, c2) ->
-	GCast (loc,intern env c1, Miscops.map_cast_type (intern_type env) c2)
+        let c2 = Miscops.map_cast_type (intern_type env) c2 in
+        let env' = set_scope env c2 in
+	GCast (loc,intern env' c1, c2)
 
   and intern_type env = intern (set_type_scope env)
 
@@ -1599,19 +1607,23 @@ let extract_ids env =
     (Termops.ids_of_rel_context (Environ.rel_context env))
     Idset.empty
 
-let intern_gen isarity sigma env
+let scope_of_type_kind = function
+  | IsType -> Some Notation.type_scope
+  | OfType (Some typ) -> compute_type_scope typ
+  | OfType None -> None
+
+let intern_gen kind sigma env
                ?(impls=empty_internalization_env) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
-  let tmp_scope =
-    if isarity then Some Notation.type_scope else None in
-    internalize sigma env {ids = extract_ids env; unb = false;
-			   tmp_scope = tmp_scope; scopes = [];
-			  impls = impls}
-      allow_patvar (ltacvars, []) c
+  let tmp_scope = scope_of_type_kind kind in
+  internalize sigma env {ids = extract_ids env; unb = false;
+		         tmp_scope = tmp_scope; scopes = [];
+			 impls = impls}
+    allow_patvar (ltacvars, []) c
 
-let intern_constr sigma env c = intern_gen false sigma env c
+let intern_constr sigma env c = intern_gen (OfType None) sigma env c
 
-let intern_type sigma env c = intern_gen true sigma env c
+let intern_type sigma env c = intern_gen IsType sigma env c
 
 let intern_pattern globalenv patt =
   try
@@ -1629,7 +1641,7 @@ let intern_pattern globalenv patt =
 let interp_gen kind sigma env
                ?(impls=empty_internalization_env) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
-  let c = intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars sigma env c in
+  let c = intern_gen kind ~impls ~allow_patvar ~ltacvars sigma env c in
     understand_gen kind sigma env c
 
 let interp_constr sigma env c =
@@ -1645,7 +1657,7 @@ let interp_open_constr sigma env c =
   understand_tcc sigma env (intern_constr sigma env c)
 
 let interp_open_constr_patvar sigma env c =
-  let raw = intern_gen false sigma env c ~allow_patvar:true in
+  let raw = intern_gen (OfType None) sigma env c ~allow_patvar:true in
   let sigma = ref sigma in
   let evars = ref (Gmap.empty : (identifier,glob_constr) Gmap.t) in
   let rec patvar_to_evar r = match r with
@@ -1673,7 +1685,7 @@ let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
     | Some evdref -> evdref
   in
   let istype = kind = IsType in
-  let c = intern_gen istype ~impls !evdref env c in
+  let c = intern_gen kind ~impls !evdref env c in
   let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:istype c in
     understand_tcc_evars ~fail_evar evdref env kind c, imps
 
@@ -1688,7 +1700,7 @@ let interp_constr_evars_impls ?evdref ?(fail_evar=true) env ?(impls=empty_intern
   interp_constr_evars_gen_impls ?evdref ~fail_evar env (OfType None) ~impls c
 
 let interp_constr_evars_gen evdref env ?(impls=empty_internalization_env) kind c =
-  let c = intern_gen (kind=IsType) ~impls !evdref env c in
+  let c = intern_gen kind ~impls !evdref env c in
     understand_tcc_evars evdref env kind c
 
 let interp_casted_constr_evars evdref env ?(impls=empty_internalization_env) c typ =
@@ -1700,7 +1712,8 @@ let interp_type_evars evdref env ?(impls=empty_internalization_env) c =
 type ltac_sign = identifier list * unbound_ltac_var_map
 
 let intern_constr_pattern sigma env ?(as_type=false) ?(ltacvars=([],[])) c =
-  let c = intern_gen as_type ~allow_patvar:true ~ltacvars sigma env c in
+  let c = intern_gen (if as_type then IsType else OfType None)
+            ~allow_patvar:true ~ltacvars sigma env c in
   pattern_of_glob_constr c
 
 let interp_notation_constr ?(impls=empty_internalization_env) vars recvars a =
@@ -1722,12 +1735,12 @@ let interp_notation_constr ?(impls=empty_internalization_env) vars recvars a =
 (* Interpret binders and contexts  *)
 
 let interp_binder sigma env na t =
-  let t = intern_gen true sigma env t in
+  let t = intern_gen IsType sigma env t in
   let t' = locate_if_isevar (loc_of_glob_constr t) na t in
   understand_type sigma env t'
 
 let interp_binder_evars evdref env na t =
-  let t = intern_gen true !evdref env t in
+  let t = intern_gen IsType !evdref env t in
   let t' = locate_if_isevar (loc_of_glob_constr t) na t in
   understand_tcc_evars evdref env IsType t'
 

@@ -13,3 +13,11 @@ Record B := { f :> Z -> Z }.
 Variable a:B.
 Arguments Scope a [Z_scope].
 Check a 0.
+
+(* Check that casts activate scopes if ever possible *)
+
+Inductive U := A.
+Bind Scope u with U.
+Notation "'ε'" := A : u.
+Definition c := ε : U.
+Check ε : U

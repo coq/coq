@@ -465,7 +465,7 @@ let interp_gen kind ist allow_patvar expand_evar fail_evar use_classes env sigma
        intros/lettac/inversion hypothesis names *)
   | Some c ->
       let ltacdata = (List.map fst ltacvars,unbndltacvars) in
-      intern_gen (kind = IsType) ~allow_patvar ~ltacvars:ltacdata sigma env c
+      intern_gen kind ~allow_patvar ~ltacvars:ltacdata sigma env c
   in
   let trace = push_trace (dloc,LtacConstrInterp (c,vars)) ist.trace in
   let evdc =

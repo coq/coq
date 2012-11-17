@@ -160,6 +160,8 @@ val declare_scope_class : scope_name -> scope_class -> unit
 val declare_ref_arguments_scope : global_reference -> unit
 
 val compute_arguments_scope : Term.types -> scope_name option list
+val compute_type_scope : Term.types -> scope_name option
+val compute_scope_of_global : global_reference -> scope_name option
 
 (** Building notation key *)
 

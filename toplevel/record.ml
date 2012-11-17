@@ -26,7 +26,7 @@ open Constrexpr_ops
 (********** definition d'un record (structure) **************)
 
 let interp_evars evdref env impls k typ =
-  let typ' = intern_gen true ~impls !evdref env typ in
+  let typ' = intern_gen Pretyping.IsType ~impls !evdref env typ in
   let imps = Implicit_quantifiers.implicits_of_glob_constr typ' in
     imps, Pretyping.understand_tcc_evars evdref env k typ'
 

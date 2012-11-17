@@ -513,6 +513,12 @@ let compute_arguments_scope_full t =
 
 let compute_arguments_scope t = fst (compute_arguments_scope_full t)
 
+let compute_type_scope t =
+  find_scope_class_opt (try Some (compute_scope_class t) with Not_found -> None)
+
+let compute_scope_of_global ref =
+  find_scope_class_opt (Some (ScopeRef ref))
+
 (** When merging scope list, we give priority to the first one (computed
     by substitution), using the second one (user given or earlier automatic)
     as fallback *)

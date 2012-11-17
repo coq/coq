@@ -78,7 +78,7 @@ val intern_constr : evar_map -> env -> constr_expr -> glob_constr
 
 val intern_type : evar_map -> env -> constr_expr -> glob_constr
 
-val intern_gen : bool -> evar_map -> env ->
+val intern_gen : typing_constraint -> evar_map -> env ->
   ?impls:internalization_env -> ?allow_patvar:bool -> ?ltacvars:ltac_sign ->
   constr_expr -> glob_constr
 
