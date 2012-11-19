@@ -460,35 +460,23 @@ let is_message = function
 | Element ("message", _, _) -> true
 | _ -> false
 
-let of_answer (q : 'a call) (r : 'a value) =
-  let convert = match q with
-  | Interp _ -> Obj.magic (of_string : string -> xml)
-  | Rewind _ -> Obj.magic (of_int : int -> xml)
-  | Goal -> Obj.magic (of_option of_goals : goals option -> xml)
-  | Evars -> Obj.magic (of_option (of_list of_evar) : evar list option -> xml)
-  | Hints -> Obj.magic (of_hints : (hint list * hint) option -> xml)
-  | Status -> Obj.magic (of_status : status -> xml)
-  | Search _ -> Obj.magic (of_list (of_coq_object of_string) : string coq_object list -> xml)
-  | GetOptions -> Obj.magic (of_list (of_pair (of_list of_string) of_option_state) : (option_name * option_state) list -> xml)
-  | SetOptions _ -> Obj.magic (fun _ -> Element ("unit", [], []))
-  | InLoadPath _ -> Obj.magic (of_bool : bool -> xml)
-  | MkCases _ -> Obj.magic (of_list (of_list of_string) : string list list -> xml)
-  | Quit -> Obj.magic (fun _ -> Element ("unit", [], []))
-  | About -> Obj.magic (of_coq_info : coq_info -> xml)
-  in
-  of_value convert r
+(** Conversions between ['a value] and xml answers
 
-(** Dynamic check that an answer is well-formed w.r.t. some call *)
+  When decoding an xml answer, we dynamically check that it is compatible
+  with the original call. For that we now rely on the fact that all
+  sub-fonctions [to_xxx : xml -> xxx] check that the current xml element
+  is "xxx", and raise [Marshal_error] if anything goes wrong.
+*)
 
 type value_type =
-  | Unit | String | Int | Bool | Goals | Evar | State
-  | Option_state | Option_value | Coq_info
+  | Unit | String | Int | Bool | Goals | Evar | State | Option_state | Coq_info
   | Option of value_type
   | List of value_type
   | Coq_object of value_type
   | Pair of value_type * value_type
 
 let hint = List (Pair (String, String))
+let option_name = List String
 
 let expected_answer_type = function
   | Interp _ -> String
@@ -498,26 +486,38 @@ let expected_answer_type = function
   | Hints -> Option (Pair (List hint, hint))
   | Status -> State
   | Search _ -> List (Coq_object String)
-  | GetOptions -> List (Pair (Option_state, Option_value))
+  | GetOptions -> List (Pair (option_name, Option_state))
   | SetOptions _ -> Unit
   | InLoadPath _ -> Bool
   | MkCases _ -> List (List String)
   | Quit -> Unit
   | About -> Coq_info
 
-(** We rely now on the fact that all sub-fonctions [to_xxx : xml -> xxx]
-    check that the current xml element starts with "xxx" and raise
-    [Marshal_error] if anything goes wrong.
- *)
+let of_answer (q : 'a call) (r : 'a value) : xml =
+  let rec convert ty : 'a -> xml = match ty with
+    | Unit -> Obj.magic of_unit
+    | Bool -> Obj.magic of_bool
+    | String -> Obj.magic of_string
+    | Int -> Obj.magic of_int
+    | State -> Obj.magic of_status
+    | Option_state -> Obj.magic of_option_state
+    | Coq_info -> Obj.magic of_coq_info
+    | Goals -> Obj.magic of_goals
+    | Evar -> Obj.magic of_evar
+    | List t -> Obj.magic (of_list (convert t))
+    | Option t -> Obj.magic (of_option (convert t))
+    | Coq_object t -> Obj.magic (of_coq_object (convert t))
+    | Pair (t1,t2) -> Obj.magic (of_pair (convert t1) (convert t2))
+  in
+  of_value (convert (expected_answer_type q)) r
 
-let to_answer xml (c:'a call) : 'a value =
+let to_answer xml (c : 'a call) : 'a value =
   let rec convert ty : xml -> 'a = match ty with
     | Unit -> Obj.magic to_unit
+    | Bool -> Obj.magic to_bool
     | String -> Obj.magic to_string
     | Int -> Obj.magic to_int
     | State -> Obj.magic to_status
-    | Bool -> Obj.magic to_bool
-    | Option_value -> Obj.magic to_option_value
     | Option_state -> Obj.magic to_option_state
     | Coq_info -> Obj.magic to_coq_info
     | Goals -> Obj.magic to_goals
