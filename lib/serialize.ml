@@ -452,10 +452,6 @@ let to_message xml = match xml with
   { message_level = to_message_level lvl; message_content = to_string content }
 | _ -> raise Marshal_error
 
-let of_hints =
-  let of_hint = of_list (of_pair of_string of_string) in
-  of_option (of_pair (of_list of_hint) of_hint)
-
 let is_message = function
 | Element ("message", _, _) -> true
 | _ -> false
