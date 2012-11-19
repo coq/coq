@@ -105,9 +105,6 @@ val protocol_version : string
 
 exception Marshal_error
 
-val of_value : ('a -> xml) -> 'a value -> xml
-val to_value : (xml -> 'a) -> xml -> 'a value
-
 val of_call : 'a call -> xml
 val to_call : xml -> unknown call
 
