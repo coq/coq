@@ -117,11 +117,9 @@ let massoc x l =
 let constructor t c args = Element (t, ["val", c], args)
 
 let do_match constr t mf = match constr with
-| Element (s, attrs, args) ->
-  if s = t then
+| Element (s, attrs, args) when CString.equal s t ->
     let c = massoc "val" attrs in
     mf c args
-  else raise Marshal_error
 | _ -> raise Marshal_error
 
 let singleton = function
@@ -136,6 +134,12 @@ let raw_string = function
 let bool_arg tag b = if b then [tag, ""] else []
 
 (** Base types *)
+
+let of_unit () = Element ("unit", [], [])
+
+let to_unit = function
+  | Element ("unit", [], []) -> ()
+  | _ -> raise Marshal_error
 
 let of_bool b =
   if b then constructor "bool" "true" []
@@ -173,7 +177,8 @@ let to_string = function
 let of_int i = Element ("int", [], [PCData (string_of_int i)])
 
 let to_int = function
-| Element ("int", [], [PCData s]) -> int_of_string s
+| Element ("int", [], [PCData s]) ->
+  (try int_of_string s with Failure _ -> raise Marshal_error)
 | _ -> raise Marshal_error
 
 let of_pair f g (x, y) = Element ("pair", [], [f x; g y])
@@ -473,29 +478,56 @@ let of_answer (q : 'a call) (r : 'a value) =
   in
   of_value convert r
 
-let to_answer xml _ =
-  let rec convert elt = match elt with
-  | Element (tpe, attrs, l) ->
-    begin match tpe with
-    | "unit" -> Obj.magic ()
-    | "string" -> Obj.magic (to_string elt : string)
-    | "int" -> Obj.magic (to_int elt : int)
-    | "status" -> Obj.magic (to_status elt : status)
-    | "bool" -> Obj.magic (to_bool elt : bool)
-    | "list" -> Obj.magic (to_list convert elt : 'a list)
-    | "option" -> Obj.magic (to_option convert elt : 'a option)
-    | "pair" -> Obj.magic (to_pair convert convert elt : ('a * 'b))
-    | "goals" -> Obj.magic (to_goals elt : goals)
-    | "evar" -> Obj.magic (to_evar elt : evar)
-    | "option_value" -> Obj.magic (to_option_value elt : option_value)
-    | "option_state" -> Obj.magic (to_option_state elt : option_state)
-    | "coq_info" -> Obj.magic (to_coq_info elt : coq_info)
-    | "coq_object" -> Obj.magic (to_coq_object convert elt : 'a coq_object)
-    | _ -> raise Marshal_error
-    end
-  | _ -> raise Marshal_error
+(** Dynamic check that an answer is well-formed w.r.t. some call *)
+
+type value_type =
+  | Unit | String | Int | Bool | Goals | Evar | State
+  | Option_state | Option_value | Coq_info
+  | Option of value_type
+  | List of value_type
+  | Coq_object of value_type
+  | Pair of value_type * value_type
+
+let hint = List (Pair (String, String))
+
+let expected_answer_type = function
+  | Interp _ -> String
+  | Rewind _ -> Int
+  | Goal -> Option Goals
+  | Evars -> Option (List Evar)
+  | Hints -> Option (Pair (List hint, hint))
+  | Status -> State
+  | Search _ -> List (Coq_object String)
+  | GetOptions -> List (Pair (Option_state, Option_value))
+  | SetOptions _ -> Unit
+  | InLoadPath _ -> Bool
+  | MkCases _ -> List (List String)
+  | Quit -> Unit
+  | About -> Coq_info
+
+(** We rely now on the fact that all sub-fonctions [to_xxx : xml -> xxx]
+    check that the current xml element starts with "xxx" and raise
+    [Marshal_error] if anything goes wrong.
+ *)
+
+let to_answer xml (c:'a call) : 'a value =
+  let rec convert ty : xml -> 'a = match ty with
+    | Unit -> Obj.magic to_unit
+    | String -> Obj.magic to_string
+    | Int -> Obj.magic to_int
+    | State -> Obj.magic to_status
+    | Bool -> Obj.magic to_bool
+    | Option_value -> Obj.magic to_option_value
+    | Option_state -> Obj.magic to_option_state
+    | Coq_info -> Obj.magic to_coq_info
+    | Goals -> Obj.magic to_goals
+    | Evar -> Obj.magic to_evar
+    | List t -> Obj.magic (to_list (convert t))
+    | Option t -> Obj.magic (to_option (convert t))
+    | Coq_object t -> Obj.magic (to_coq_object (convert t))
+    | Pair (t1,t2) -> Obj.magic (to_pair (convert t1) (convert t2))
   in
-  to_value convert xml
+  to_value (convert (expected_answer_type c)) xml
 
 (** * Debug printing *)
 
