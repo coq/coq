@@ -97,7 +97,7 @@ sig
   (** Return the list of unique elements which appear at least twice. Elements
       are kept in the order of their first appearance. *)
 
-  val filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
+  val filter2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> 'a list * 'b list
   val map_filter : ('a -> 'b option) -> 'a list -> 'b list
   val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
 

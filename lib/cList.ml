@@ -71,7 +71,7 @@ sig
   val assign : 'a list -> int -> 'a -> 'a list
   val distinct : 'a list -> bool
   val duplicates : 'a list -> 'a list
-  val filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
+  val filter2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> 'a list * 'b list
   val map_filter : ('a -> 'b option) -> 'a list -> 'b list
   val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
   val filter_with : bool list -> 'a list -> 'a list
@@ -187,130 +187,130 @@ type 'a cell = {
 
 external cast : 'a cell -> 'a list = "%identity"
 
+let rec map_loop f p = function
+| [] -> ()
+| x :: l ->
+  let c = { head = f x; tail = [] } in
+  p.tail <- cast c;
+  map_loop f c l
+
 let map f = function
 | [] -> []
 | x :: l ->
-  let rec loop p = function
-  | [] -> ()
-  | x :: l ->
-    let c = { head = f x; tail = [] } in
-    p.tail <- cast c;
-    loop c l
-  in
   let c = { head = f x; tail = [] } in
-  loop c l;
+  map_loop f c l;
   cast c
+
+let rec map2_loop f p l1 l2 = match l1, l2 with
+| [], [] -> ()
+| x :: l1, y :: l2 ->
+  let c = { head = f x y; tail = [] } in
+  p.tail <- cast c;
+  map2_loop f c l1 l2
+| _ -> invalid_arg "List.map2"
 
 let map2 f l1 l2 = match l1, l2 with
 | [], [] -> []
 | x :: l1, y :: l2 ->
-  let rec loop p l1 l2 = match l1, l2 with
-  | [], [] -> ()
-  | x :: l1, y :: l2 ->
-    let c = { head = f x y; tail = [] } in
-    p.tail <- cast c;
-    loop c l1 l2
-  | _ -> invalid_arg "List.map2"
-  in
   let c = { head = f x y; tail = [] } in
-  loop c l1 l2;
+  map2_loop f c l1 l2;
   cast c
 | _ -> invalid_arg "List.map2"
+
+let rec append_loop p tl = function
+| [] -> p.tail <- tl
+| x :: l ->
+  let c = { head = x; tail = [] } in
+  p.tail <- cast c;
+  append_loop c tl l
 
 let append l1 l2 = match l1 with
 | [] -> l2
 | x :: l ->
-  let rec loop p = function
-  | [] -> p.tail <- l2
-  | x :: l ->
-    let c = { head = x; tail = [] } in
-    p.tail <- cast c;
-    loop c l
-  in
   let c = { head = x; tail = [] } in
-  loop c l;
+  append_loop c l2 l;
   cast c
 
+let rec copy p = function
+| [] -> p
+| x :: l ->
+  let c = { head = x; tail = [] } in
+  p.tail <- cast c;
+  copy c l
+
+let rec concat_loop p = function
+| [] -> ()
+| x :: l -> concat_loop (copy p x) l
+
 let concat l =
-  let rec copy p = function
-  | [] -> p
-  | x :: l ->
-    let c = { head = x; tail = [] } in
-    p.tail <- cast c;
-    copy c l
-  in
-  let rec loop p = function
-  | [] -> ()
-  | x :: l -> loop (copy p x) l
-  in
   let dummy = { head = Obj.magic 0; tail = [] } in
-  loop dummy l;
+  concat_loop dummy l;
   dummy.tail
 
 let flatten = concat
 
+let rec split_loop p q = function
+| [] -> ()
+| (x, y) :: l ->
+  let cl = { head = x; tail = [] } in
+  let cr = { head = y; tail = [] } in
+  p.tail <- cast cl;
+  q.tail <- cast cr;
+  split_loop cl cr l
+
 let split = function
 | [] -> [], []
 | (x, y) :: l ->
-  let rec loop p q = function
-  | [] -> ()
-  | (x, y) :: l ->
-    let cl = { head = x; tail = [] } in
-    let cr = { head = y; tail = [] } in
-    p.tail <- cast cl;
-    q.tail <- cast cr;
-    loop cl cr l
-  in
   let cl = { head = x; tail = [] } in
   let cr = { head = y; tail = [] } in
-  loop cl cr l;
+  split_loop cl cr l;
   (cast cl, cast cr)
+
+let rec combine_loop p l1 l2 = match l1, l2 with
+| [], [] -> ()
+| x :: l1, y :: l2 ->
+  let c = { head = (x, y); tail = [] } in
+  p.tail <- cast c;
+  combine_loop c l1 l2
+| _ -> invalid_arg "List.combine"
 
 let combine l1 l2 = match l1, l2 with
 | [], [] -> []
 | x :: l1, y :: l2 ->
-  let rec loop p l1 l2 = match l1, l2 with
-  | [], [] -> ()
-  | x :: l1, y :: l2 ->
-    let c = { head = (x, y); tail = [] } in
-    p.tail <- cast c;
-    loop c l1 l2
-  | _ -> invalid_arg "List.combine"
-  in
   let c = { head = (x, y); tail = [] } in
-  loop c l1 l2;
+  combine_loop c l1 l2;
   cast c
 | _ -> invalid_arg "List.combine"
 
+let rec filter_loop f p = function
+| [] -> ()
+| x :: l ->
+  if f x then
+    let c = { head = x; tail = [] } in
+    let () = p.tail <- cast c in
+    filter_loop f c l
+  else
+    filter_loop f p l
+
 let filter f l =
-  let rec loop p = function
-  | [] -> ()
-  | x :: l ->
-    if f x then
-      let c = { head = x; tail = [] } in
-      let () = p.tail <- cast c in
-      loop c l
-    else
-      loop p l
-  in
   let c = { head = Obj.magic 0; tail = [] } in
-  loop c l;
+  filter_loop f c l;
   c.tail
 
 (** FIXME: Already present in OCaml 4.00 *)
 
+let rec map_i_loop f i p = function
+| [] -> ()
+| x :: l ->
+  let c = { head = f i x; tail = [] } in
+  p.tail <- cast c;
+  map_i_loop f (succ i) c l
+
 let map_i f i = function
 | [] -> []
 | x :: l ->
-  let rec loop i p = function
-  | [] -> ()
-  | x :: l ->
-    let c = { head = f i x; tail = [] } in
-    p.tail <- cast c;
-    loop (succ i) c l
-  in
   let c = { head = f i x; tail = [] } in
-  loop (succ i) c l;
+  map_i_loop f (succ i) c l;
   cast c
 
 (** Extensions of OCaml Stdlib *)
@@ -335,7 +335,7 @@ let rec equal cmp l1 l2 =
     | _ -> false
 
 let intersect l1 l2 =
-  List.filter (fun x -> List.mem x l2) l1
+  filter (fun x -> List.mem x l2) l1
 
 let union l1 l2 =
   let rec urec = function
@@ -357,16 +357,16 @@ let subtract l1 l2 =
 let subtractq l1 l2 =
   if l2 = [] then l1 else List.filter (fun x -> not (List.memq x l2)) l1
 
+let rec tabulate_loop f len p i =
+  if len <= i then ()
+  else
+    let c = { head = f i; tail = [] } in
+    let () = p.tail <- cast c in
+    tabulate_loop f len c (succ i)
+
 let tabulate f len =
-  let rec loop p i =
-    if len <= i then ()
-    else
-      let c = { head = f i; tail = [] } in
-      let () = p.tail <- cast c in
-      loop c (succ i)
-  in
   let dummy = { head = Obj.magic 0; tail = [] } in
-  loop dummy 0;
+  tabulate_loop f len dummy 0;
   dummy.tail
 
 let interval n m =
@@ -434,7 +434,7 @@ let rec smartfilter f l = match l with
           if tl' == tl then l
           else h :: tl'
         else tl'
-          
+
 let index_f f x =
   let rec index_x n = function
     | y::l -> if f x y then n else index_x (succ n) l
@@ -599,12 +599,24 @@ let rec duplicates = function
       let l' = duplicates l in
       if List.mem x l then add_set x l' else l'
 
-let rec filter2 f = function
-  | [], [] as p -> p
-  | d::dp, l::lp ->
-     let (dp',lp' as p) = filter2 f (dp,lp) in
-      if f d l then d::dp', l::lp' else p
-  | _ -> invalid_arg "List.filter2"
+let rec filter2_loop f p q l1 l2 = match l1, l2 with
+| [], [] -> ()
+| x :: l1, y :: l2 ->
+  if f x y then
+    let c1 = { head = x; tail = [] } in
+    let c2 = { head = y; tail = [] } in
+    let () = p.tail <- cast c1 in
+    let () = q.tail <- cast c2 in
+    filter2_loop f c1 c2 l1 l2
+  else
+    filter2_loop f p q l1 l2
+| _ -> invalid_arg "List.filter2"
+
+let filter2 f l1 l2 =
+  let c1 = { head = Obj.magic 0; tail = [] } in
+  let c2 = { head = Obj.magic 0; tail = [] } in
+  filter2_loop f c1 c2 l1 l2;
+  (c1.tail, c2.tail)
 
 let rec map_filter f = function
   | [] -> []
@@ -621,7 +633,7 @@ let map_filter_i f =
   in aux 0
 
 let filter_along f filter l =
-  snd (filter2 (fun b c -> f b) (filter,l))
+  snd (filter2 (fun b c -> f b) filter l)
 
 let filter_with filter l =
   filter_along (fun x -> x) filter l

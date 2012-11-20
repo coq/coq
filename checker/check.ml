@@ -149,20 +149,23 @@ let canonical_path_name p =
 
 let find_logical_path phys_dir =
   let phys_dir = canonical_path_name phys_dir in
-  match List.filter2 (fun p d -> p = phys_dir) !load_paths with
+  let physical, logical = !load_paths in
+  match List.filter2 (fun p d -> p = phys_dir) physical logical with
   | _,[dir] -> dir
   | _,[] -> default_root_prefix
   | _,l -> anomaly ("Two logical paths are associated to "^phys_dir)
 
 let remove_load_path dir =
-  load_paths := List.filter2 (fun p d -> p <> dir) !load_paths
+  let physical, logical = !load_paths in
+  load_paths := List.filter2 (fun p d -> p <> dir) physical logical
 
 let add_load_path (phys_path,coq_path) =
   if !Flags.debug then
     ppnl (str "path: " ++ pr_dirpath coq_path ++ str " ->" ++ spc() ++
            str phys_path);
   let phys_path = canonical_path_name phys_path in
-    match List.filter2 (fun p d -> p = phys_path) !load_paths with
+  let physical, logical = !load_paths in
+    match List.filter2 (fun p d -> p = phys_path) physical logical with
       | _,[dir] ->
 	  if coq_path <> dir
             (* If this is not the default -I . to coqtop *)
@@ -185,7 +188,8 @@ let add_load_path (phys_path,coq_path) =
       | _ -> anomaly ("Two logical paths are associated to "^phys_path)
 
 let load_paths_of_dir_path dir =
-  fst (List.filter2 (fun p d -> d = dir) !load_paths)
+  let physical, logical = !load_paths in
+  fst (List.filter2 (fun p d -> d = dir) physical logical)
 
 (************************************************************************)
 (*s Locate absolute or partially qualified library names in the path *)
