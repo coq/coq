@@ -104,7 +104,7 @@ val of_call : 'a call -> xml
 val to_call : xml -> 'a call
 
 val of_answer : 'a call -> 'a value -> xml
-val to_answer : xml -> 'a value
+val to_answer : xml -> 'a call -> 'a value
 
 (** * Debug printing *)
 

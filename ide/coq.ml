@@ -268,7 +268,7 @@ let eval_call coqtop (c:'a Ide_intf.call) =
   Xml_utils.print_xml coqtop.cin (Ide_intf.of_call c);
   flush coqtop.cin;
   let xml = Xml_parser.parse p (Xml_parser.SChannel coqtop.cout) in
-  (Ide_intf.to_answer xml : 'a Interface.value)
+  (Ide_intf.to_answer xml c : 'a Interface.value)
 
 let interp coqtop ?(raw=false) ?(verbose=true) s =
   eval_call coqtop (Ide_intf.interp (raw,verbose,s))

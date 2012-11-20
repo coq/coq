@@ -21,7 +21,7 @@ let eval_call (call:'a Ide_intf.call) =
   Xml_utils.print_xml (snd !coqtop) xml_query;
   flush (snd !coqtop);
   let xml_answer = Xml_parser.parse p (Xml_parser.SChannel (fst !coqtop)) in
-  let res = Ide_intf.to_answer xml_answer in
+  let res = Ide_intf.to_answer xml_answer call in
   prerr_endline (Ide_intf.pr_full_value call res);
   match res with Interface.Fail _ -> exit 1 | _ -> ()
 
