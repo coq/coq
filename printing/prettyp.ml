@@ -418,10 +418,12 @@ let print_constant with_values sep sp =
     | None ->
 	str"*** [ " ++
 	print_basename sp ++ str " : " ++ cut () ++ pr_ltype typ ++
-	str" ]"
+	str" ]" ++
+	Printer.pr_univ_cstr cb.const_constraints
     | _ ->
 	print_basename sp ++ str sep ++ cut () ++
-	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ))
+	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ)++
+        Printer.pr_univ_cstr cb.const_constraints)
 
 let gallina_print_constant_with_infos sp =
   print_constant true " = " sp ++

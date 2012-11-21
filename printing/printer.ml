@@ -113,6 +113,13 @@ let pr_sort s = pr_glob_sort (extern_sort s)
 
 let _ = Termops.set_print_constr pr_lconstr_env
 
+let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
+let pr_univ_cstr (c:Univ.constraints) =
+  if !Detyping.print_universes && not (Univ.is_empty_constraint c) then
+    fnl()++pr_in_comment (fun c -> v 0 (Univ.pr_constraints c)) c
+  else
+    mt()
+
 (**********************************************************************)
 (* Global references *)
 
@@ -674,7 +681,8 @@ let print_mutual_inductive env mind mib =
   hov 0 (
     str (if mib.mind_finite then "Inductive " else "CoInductive ") ++
     prlist_with_sep (fun () -> fnl () ++ str"  with ")
-      (print_one_inductive env mib) inds)
+      (print_one_inductive env mib) inds ++
+      pr_univ_cstr mib.mind_constraints)
 
 let get_fields =
   let rec prodec_rec l subst c =
@@ -709,7 +717,8 @@ let print_record env mind mib =
       prlist_with_sep (fun () -> str ";" ++ brk(2,0))
         (fun (id,b,c) ->
 	  pr_id id ++ str (if b then " : " else " := ") ++
-	  pr_lconstr_env envpar c) fields) ++ str" }")
+	  pr_lconstr_env envpar c) fields) ++ str" }" ++
+      pr_univ_cstr mib.mind_constraints)
 
 let pr_mutual_inductive_body env mind mib =
   if mib.mind_record & not !Flags.raw_print then

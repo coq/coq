@@ -70,6 +70,10 @@ val pr_cases_pattern       : cases_pattern -> std_ppcmds
 
 val pr_sort                : sorts -> std_ppcmds
 
+(** Universe constraints *)
+
+val pr_univ_cstr           : Univ.constraints -> std_ppcmds
+
 (** Printing global references using names as short as possible *)
 
 val pr_global_env          : Idset.t -> global_reference -> std_ppcmds
