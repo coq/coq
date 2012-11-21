@@ -20,4 +20,4 @@ Inductive U := A.
 Bind Scope u with U.
 Notation "'ε'" := A : u.
 Definition c := ε : U.
-Check ε : U
+Check ε : U.
