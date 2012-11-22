@@ -23,7 +23,8 @@ let skipped_dirnames = ref ["CVS"; "_darcs"]
 let exclude_search_in_dirname f = skipped_dirnames := f :: !skipped_dirnames
 
 let ok_dirname f =
-  f <> "" && f.[0] <> '.' && not (List.mem f !skipped_dirnames) &&
+  not (String.equal f "") && f.[0] != '.' &&
+  not (List.mem f !skipped_dirnames) &&
   (match Unicode.ident_refutation f with None -> true | _ -> false)
 
 let all_subdirs ~unix_path:root =
@@ -60,19 +61,22 @@ let where_in_path ?(warn=true) path filename =
 	  then (lpe,f) :: search rem
 	  else search rem
     | [] -> [] in
-  let check_and_warn l =
-    match l with
-      | [] -> raise Not_found
-      | (lpe, f) :: l' ->
-	  if warn & l' <> [] then
-	    msg_warning
-	      (str filename ++ str " has been found in" ++ spc () ++
-	       hov 0 (str "[ " ++
-	         hv 0 (prlist_with_sep (fun () -> str " " ++ pr_semicolon())
-		   (fun (lpe,_) -> str lpe) l)
-	         ++ str " ];") ++ fnl () ++
-	       str "loading " ++ str f);
-	  (lpe, f) in
+  let check_and_warn l = match l with
+  | [] -> raise Not_found
+  | (lpe, f) :: l' ->
+    let () = match l' with
+    | _ :: _ when warn ->
+      msg_warning
+        (str filename ++ str " has been found in" ++ spc () ++
+          hov 0 (str "[ " ++
+            hv 0 (prlist_with_sep (fun () -> str " " ++ pr_semicolon())
+              (fun (lpe,_) -> str lpe) l)
+            ++ str " ];") ++ fnl () ++
+          str "loading " ++ str f)
+    | _ -> ()
+    in
+    (lpe, f)
+  in
   check_and_warn (search path)
 
 let find_file_in_path ?(warn=true) paths filename =
@@ -123,7 +127,7 @@ let raw_extern_intern magic suffix =
     filename,channel
   and intern_state filename =
     let channel = open_in_bin filename in
-    if input_binary_int channel <> magic then
+    if not (Int.equal (input_binary_int channel) magic) then
       raise (Bad_magic_number filename);
     channel
   in

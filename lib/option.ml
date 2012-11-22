@@ -19,6 +19,10 @@ let has_some = function
   | None -> false
   | _ -> true
 
+let is_empty = function
+| None -> true
+| Some _ -> false
+
 exception IsNone
 
 (** [get x] returns [y] where [x] is [Some y]. It raises IsNone

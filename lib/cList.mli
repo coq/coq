@@ -63,6 +63,9 @@ sig
   val equal : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
   (** Lifts equality to list type. *)
 
+  val is_empty : 'a list -> bool
+  (** Checks whether a list is empty *)
+
   val add_set : 'a -> 'a list -> 'a list
   (** [add_set x l] adds [x] in [l] if it is not already there, or returns [l]
       otherwise. *)

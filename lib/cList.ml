@@ -56,6 +56,7 @@ sig
   include S
   val compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
   val equal : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
+  val is_empty : 'a list -> bool
   val add_set : 'a -> 'a list -> 'a list
   val eq_set : 'a list -> 'a list -> bool
   val intersect : 'a list -> 'a list -> 'a list
@@ -333,6 +334,10 @@ let rec equal cmp l1 l2 =
     | x1 :: l1, x2 :: l2 ->
       cmp x1 x2 && equal cmp l1 l2
     | _ -> false
+
+let is_empty = function
+| [] -> true
+| _ -> false
 
 let intersect l1 l2 =
   filter (fun x -> List.mem x l2) l1

@@ -17,6 +17,9 @@
     otherwise.  *)
 val has_some : 'a option -> bool
 
+(** Negation of [has_some] *)
+val is_empty : 'a option -> bool
+
 exception IsNone
 
 (** [get x] returns [y] where [x] is [Some y]. It raises IsNone
