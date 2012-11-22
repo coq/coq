@@ -492,7 +492,7 @@ let add_delta_resolver resolver1 resolver2 =
 
 let substition_prefixed_by k mp subst =
   let mp_prefixmp kmp (mp_to,reso) sub =
-    if mp_in_mp mp kmp && mp <> kmp then
+    if mp_in_mp mp kmp && not (mp_eq mp kmp) then
       let new_key = replace_mp_in_mp mp k kmp in
       Umap.add_mp new_key (mp_to,reso) sub
     else sub

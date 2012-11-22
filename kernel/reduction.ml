@@ -333,14 +333,20 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
 
     (* Eta-expansion on the fly *)
     | (FLambda _, _) ->
-        if v1 <> [] then
-	  anomaly "conversion was given unreduced term (FLambda)";
+        let () = match v1 with
+        | [] -> ()
+        | _ ->
+          anomaly "conversion was given unreduced term (FLambda)"
+        in
         let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
 	eqappr CONV l2r infos
 	  (el_lift lft1, (bd1, [])) (el_lift lft2, (hd2, eta_expand_stack v2)) cuniv
     | (_, FLambda _) ->
-        if v2 <> [] then
-	  anomaly "conversion was given unreduced term (FLambda)";
+        let () = match v2 with
+        | [] -> ()
+        | _ ->
+	  anomaly "conversion was given unreduced term (FLambda)"
+	in
         let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
 	eqappr CONV l2r infos
 	  (el_lift lft1, (hd1, eta_expand_stack v1)) (el_lift lft2, (bd2, [])) cuniv

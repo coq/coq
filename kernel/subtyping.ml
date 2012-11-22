@@ -135,14 +135,14 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   in
 
   let check_packet cst p1 p2 =
-    let check f why = if f p1 <> f p2 then error why in
-      check (fun p -> p.mind_consnames) NotSameConstructorNamesField;
-      check (fun p -> p.mind_typename) NotSameInductiveNameInBlockField;
+    let check f test why = if not (test (f p1) (f p2)) then error why in
+      check (fun p -> p.mind_consnames) (Array.equal id_eq) NotSameConstructorNamesField;
+      check (fun p -> p.mind_typename) id_eq NotSameInductiveNameInBlockField;
       (* nf_lc later *)
       (* nf_arity later *)
       (* user_lc ignored *)
       (* user_arity ignored *)
-      check (fun p -> p.mind_nrealargs) (NotConvertibleInductiveField p2.mind_typename); (* How can it fail since the type of inductive are checked below? [HH] *)
+      check (fun p -> p.mind_nrealargs) Int.equal (NotConvertibleInductiveField p2.mind_typename); (* How can it fail since the type of inductive are checked below? [HH] *)
       (* kelim ignored *)
       (* listrec ignored *)
       (* finite done *)
@@ -161,10 +161,10 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       (arities_of_specif kn1 (mib1,p1))
       (arities_of_specif kn1 (mib2,p2))
   in
-  let check f why = if f mib1 <> f mib2 then error (why (f mib2)) in
-  check (fun mib -> mib.mind_finite) (fun x -> FiniteInductiveFieldExpected x);
-  check (fun mib -> mib.mind_ntypes) (fun x -> InductiveNumbersFieldExpected x);
-  assert (mib1.mind_hyps=[] && mib2.mind_hyps=[]);
+  let check f test why = if not (test (f mib1) (f mib2)) then error (why (f mib2)) in
+  check (fun mib -> mib.mind_finite) (==) (fun x -> FiniteInductiveFieldExpected x);
+  check (fun mib -> mib.mind_ntypes) Int.equal (fun x -> InductiveNumbersFieldExpected x);
+  assert (List.is_empty mib1.mind_hyps && List.is_empty mib2.mind_hyps);
   assert (Array.length mib1.mind_packets >= 1
 	    && Array.length mib2.mind_packets >= 1);
 
@@ -173,17 +173,17 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   (* at the time of checking the inductive arities in check_packet. *)
   (* Notice that we don't expect the local definitions to match: only *)
   (* the inductive types and constructors types have to be convertible *)
-  check (fun mib -> mib.mind_nparams) (fun x -> InductiveParamsNumberField x);
+  check (fun mib -> mib.mind_nparams) Int.equal (fun x -> InductiveParamsNumberField x);
 
   begin
   match mind_of_delta reso2 kn2  with
-      | kn2' when kn2=kn2' -> ()
+      | kn2' when eq_mind kn2 kn2' -> ()
       | kn2' -> 
 	  if not (eq_mind (mind_of_delta reso1 kn1) (subst_ind subst2 kn2')) then 
 	    error NotEqualInductiveAliases
   end;
   (* we check that records and their field names are preserved. *)
-  check (fun mib -> mib.mind_record) (fun x -> RecordFieldExpected x);
+  check (fun mib -> mib.mind_record) (==) (fun x -> RecordFieldExpected x);
   if mib1.mind_record then begin
     let rec names_prod_letin t = match kind_of_term t with
       | Prod(n,_,t) -> n::(names_prod_letin t)
@@ -198,7 +198,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     check (fun mib ->
       let nparamdecls = List.length mib.mind_params_ctxt in
       let names = names_prod_letin (mib.mind_packets.(0).mind_user_lc.(0)) in
-      snd (List.chop nparamdecls names))
+      snd (List.chop nparamdecls names)) (List.equal name_eq)
       (fun x -> RecordProjectionsExpected x);
   end;
   (* we first check simple things *)
@@ -265,7 +265,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 
   match info1 with
     | Constant cb1 ->
-      assert (cb1.const_hyps=[] && cb2.const_hyps=[]) ;
+      let () = assert (List.is_empty cb1.const_hyps && List.is_empty cb2.const_hyps) in
       let cb1 = subst_const_body subst1 cb1 in
       let cb2 = subst_const_body subst2 cb2 in
       (* Start by checking types*)
@@ -295,7 +295,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
        "instantiated by an inductive type. Hint: you can rename the " ^
        "inductive type and give a definition to map the old name to the new " ^
        "name."));
-      assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
+      let () = assert (List.is_empty mind1.mind_hyps && List.is_empty cb2.const_hyps) in
       if constant_has_body cb2 then error DefinitionFieldExpected;
       let arity1 = type_of_inductive env (mind1,mind1.mind_packets.(i)) in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
@@ -306,7 +306,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
        "instantiated by a constructor. Hint: you can rename the " ^
        "constructor and give a definition to map the old name to the new " ^
        "name."));
-      assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
+      let () = assert (List.is_empty mind1.mind_hyps && List.is_empty cb2.const_hyps) in
       if constant_has_body cb2 then error DefinitionFieldExpected;
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in

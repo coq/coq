@@ -126,9 +126,12 @@ let extract_level env p =
   let _,c = dest_prod_assum env p in
   match kind_of_term c with Sort (Type u) -> Some u | _ -> None
 
-let extract_context_levels env =
-  List.fold_left
-    (fun l (_,b,p) -> if b=None then extract_level env p::l else l) []
+let extract_context_levels env l =
+  let fold l (_, b, p) = match b with
+  | None -> extract_level env p :: l
+  | _ -> l
+  in
+  List.fold_left fold [] l
 
 let make_polymorphic_if_constant_for_ind env {uj_val = c; uj_type = t} =
   let params, ccl = dest_prod_assum env t in
@@ -227,12 +230,14 @@ let sort_of_product env domsort rangsort =
     | (Prop _,  Prop Pos) -> rangsort
     (* Product rule (Type,Set,?) *)
     | (Type u1, Prop Pos) ->
-        if engagement env = Some ImpredicativeSet then
+        begin match engagement env with
+        | Some ImpredicativeSet ->
           (* Rule is (Type,Set,Set) in the Set-impredicative calculus *)
           rangsort
-        else
+        | _ ->
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
           Type (sup u1 type0_univ)
+        end
     (* Product rule (Prop,Type_i,Type_i) *)
     | (Prop Pos,  Type u2)  -> Type (sup type0_univ u2)
     (* Product rule (Prop,Type_i,Type_i) *)
@@ -348,7 +353,7 @@ let judge_of_case env ci pj cj lfj =
 
 let type_fixpoint env lna lar vdefj =
   let lt = Array.length vdefj in
-  assert (Array.length lar = lt);
+  assert (Int.equal (Array.length lar) lt);
   try
     conv_leq_vecti env (Array.map j_type vdefj) (Array.map (fun ty -> lift lt ty) lar)
   with NotConvertibleVect i ->

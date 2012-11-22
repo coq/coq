@@ -75,7 +75,7 @@ let instantiate_params full t args sign =
       sign
       ~init:(args,[],t)
   in
-  if rem_args <> [] then fail();
+  let () = if not (List.is_empty rem_args) then fail () in
   substl subs ty
 
 let full_inductive_instantiate mib params sign =
@@ -282,7 +282,10 @@ let build_dependent_inductive ind (_,mip) params =
 exception LocalArity of (sorts_family * sorts_family * arity_error) option
 
 let check_allowed_sort ksort specif =
-  if not (List.exists ((=) ksort) (elim_sorts specif)) then
+  let eq_ksort s = match ksort, s with
+  | InProp, InProp | InSet, InSet | InType, InType -> true
+  | _ -> false in
+  if not (List.exists eq_ksort (elim_sorts specif)) then
     let s = inductive_sort_family (snd specif) in
     raise (LocalArity (Some(ksort,s,error_elim_explain ksort s)))
 
@@ -358,9 +361,9 @@ let type_case_branches env (ind,largs) pj c =
 let check_case_info env indsp ci =
   let (mib,mip) = lookup_mind_specif env indsp in
   if
-    not (eq_ind indsp ci.ci_ind) or
-    (mib.mind_nparams <> ci.ci_npar) or
-    (mip.mind_consnrealdecls <> ci.ci_cstr_ndecls)
+    not (eq_ind indsp ci.ci_ind) ||
+    not (Int.equal mib.mind_nparams ci.ci_npar) ||
+    not (Array.equal Int.equal mip.mind_consnrealdecls ci.ci_cstr_ndecls)
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))
 
 (************************************************************************)
@@ -412,7 +415,7 @@ type subterm_spec =
   | Not_subterm
 
 let spec_of_tree t = lazy
-  (if Rtree.eq_rtree (=) (Lazy.force t) mk_norec
+  (if Rtree.eq_rtree eq_recarg (Lazy.force t) mk_norec
    then Not_subterm
    else Subterm(Strict,Lazy.force t))
 
@@ -424,7 +427,7 @@ let subterm_spec_glb =
       | Not_subterm, _ -> Not_subterm
       | _, Not_subterm -> Not_subterm
       | Subterm (a1,t1), Subterm (a2,t2) ->
-          if Rtree.eq_rtree (=) t1 t2 then Subterm (size_glb a1 a2, t1)
+          if Rtree.eq_rtree eq_recarg t1 t2 then Subterm (size_glb a1 a2, t1)
           (* branches do not return objects with same spec *)
           else Not_subterm in
   Array.fold_left glb2 Dead_code
@@ -515,7 +518,7 @@ let branches_specif renv c_spec ci =
 	   (match Lazy.force c_spec with
 		Subterm (_,t) when match_inductive ci.ci_ind (dest_recarg t) ->
 		  let vra = Array.of_list (dest_subterms t).(i) in
-		  assert (nca = Array.length vra);
+		  assert (Int.equal nca (Array.length vra));
 		  Array.map
 		    (fun t -> Lazy.force (spec_of_tree (lazy t)))
 		    vra
@@ -586,7 +589,7 @@ let rec subterm_specif renv stack t =
 		     subterm_specif renv'' [] strippedBody)
 
       | Lambda (x,a,b) ->
-          assert (l=[]);
+          let () = assert (List.is_empty l) in
 	  let spec,stack' = extract_stack renv a stack in
 	    subterm_specif (push_var renv (x,a,spec)) stack' b
 
@@ -711,7 +714,7 @@ let check_one_fix renv recpos def =
 	    let stack' = push_stack_closures renv l stack in
               Array.iteri
                 (fun j body ->
-                   if i=j && (List.length stack' > decrArg) then
+                   if Int.equal i j && (List.length stack' > decrArg) then
 		     let recArg = List.nth stack' decrArg in
 	             let arg_sp = stack_element_specif recArg in
 	             check_nested_fix_body renv' (decrArg+1) arg_sp body
@@ -727,13 +730,13 @@ let check_one_fix renv recpos def =
 	    else List.iter (check_rec_call renv []) l
 
         | Lambda (x,a,b) ->
-	    assert (l = []);
+            let () = assert (List.is_empty l) in
 	    check_rec_call renv [] a ;
 	    let spec, stack' = extract_stack renv a stack in
 	    check_rec_call (push_var renv (x,a,spec)) stack' b
 
         | Prod (x,a,b) ->
-	    assert (l = [] && stack = []);
+            let () = assert (List.is_empty l && List.is_empty stack) in
             check_rec_call renv [] a;
             check_rec_call (push_var_renv renv (x,a)) [] b
 
@@ -757,7 +760,8 @@ let check_one_fix renv recpos def =
 		    check_rec_call renv stack (applist(c,l))
             end
 
-	| Sort _ -> assert (l = [])
+	| Sort _ ->
+          assert (List.is_empty l)
 
         (* l is not checked because it is considered as the meta's context *)
         | (Evar _ | Meta _) -> ()
@@ -784,11 +788,11 @@ let judgment_of_fixpoint (_, types, bodies) =
 let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   let nbfix = Array.length bodies in
   if Int.equal nbfix 0
-    or Array.length nvect <> nbfix
-    or Array.length types <> nbfix
-    or Array.length names <> nbfix
-    or bodynum < 0
-    or bodynum >= nbfix
+    || not (Int.equal (Array.length nvect) nbfix)
+    || not (Int.equal (Array.length types) nbfix)
+    || not (Int.equal (Array.length names) nbfix)
+    || bodynum < 0
+    || bodynum >= nbfix
   then anomaly "Ill-formed fix term";
   let fixenv = push_rec_types recdef env in
   let vdefj = judgment_of_fixpoint recdef in
@@ -803,7 +807,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
         | Lambda (x,a,b) ->
 	    if noccur_with_meta n nbfix a then
 	      let env' = push_rel (x, None, a) env in
-              if n = k+1 then
+              if Int.equal n (k + 1) then
                 (* get the inductive type of the fixpoint *)
                 let (mind, _) =
                   try find_inductive env a
@@ -873,7 +877,7 @@ let check_one_cofix env nbfix def deftype =
             let realargs = List.skipn mib.mind_nparams args in
             let rec process_args_of_constr = function
               | (t::lr), (rar::lrar) ->
-                  if rar = mk_norec then
+                  if Rtree.eq_rtree eq_recarg rar mk_norec then
                     if noccur_with_meta n nbfix t
                     then process_args_of_constr (lr, lrar)
                     else raise (CoFixGuardError
@@ -887,7 +891,7 @@ let check_one_cofix env nbfix def deftype =
             in process_args_of_constr (realargs, lra)
 
 	| Lambda (x,a,b) ->
-	     assert (args = []);
+	    let () = assert (List.is_empty args) in
             if noccur_with_meta n nbfix a then
               let env' = push_rel (x, None, a) env in
               check_rec_call env' alreadygrd (n+1)  vlra b

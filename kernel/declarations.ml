@@ -180,6 +180,12 @@ type recarg =
   | Mrec of inductive
   | Imbr of inductive
 
+let eq_recarg r1 r2 = match r1, r2 with
+| Norec, Norec -> true
+| Mrec i1, Mrec i2 -> eq_ind i1 i2
+| Imbr i1, Imbr i2 -> eq_ind i1 i2
+| _ -> false
+
 let subst_recarg sub r = match r with
   | Norec -> r
   | Mrec (kn,i) -> let kn' = subst_ind sub kn in
@@ -204,7 +210,7 @@ let dest_recarg p = fst (Rtree.dest_node p)
  *)
 let dest_subterms p =
   let (ra,cstrs) = Rtree.dest_node p in
-  assert (ra<>Norec);
+  assert (match ra with Norec -> false | _ -> true);
   Array.map (fun t -> Array.to_list (snd (Rtree.dest_node t))) cstrs
 
 let recarg_length p j =

@@ -105,9 +105,12 @@ let pr_uni = function
   | Max ([],[u]) ->
       str "(" ++ pr_uni_level u ++ str ")+1"
   | Max (gel,gtl) ->
+      let opt_sep = match gel, gtl with
+      | [], _ | _, [] -> mt ()
+      | _ -> pr_comma ()
+      in
       str "max(" ++ hov 0
-       (prlist_with_sep pr_comma pr_uni_level gel ++
-	  (if gel <> [] & gtl <> [] then pr_comma () else mt ()) ++
+       (prlist_with_sep pr_comma pr_uni_level gel ++ opt_sep ++
 	prlist_with_sep pr_comma
 	  (fun x -> str "(" ++ pr_uni_level x ++ str ")+1") gtl) ++
       str ")"
@@ -177,7 +180,8 @@ let is_type0_univ = function
   | u -> false
 
 let is_univ_variable = function
-  | Atom a when a<>UniverseLevel.Set -> true
+  | Atom UniverseLevel.Set -> false
+  | Atom _ -> true
   | _ -> false
 
 (* When typing [Prop] and [Set], there is no constraint on the level,
@@ -538,10 +542,10 @@ module Constraint = Set.Make(
     type t = univ_constraint
     let compare (u,c,v) (u',c',v') =
       let i = constraint_type_ord c c' in
-      if i <> 0 then i
+      if not (Int.equal i 0) then i
       else
 	let i' = UniverseLevel.compare u u' in
-	if i' <> 0 then i'
+	if not (Int.equal i' 0) then i'
 	else UniverseLevel.compare v v'
   end)
 
@@ -830,7 +834,7 @@ let solve_constraints_system levels level_bounds =
   let nind = Array.length v in
   for i=0 to nind-1 do
     for j=0 to nind-1 do
-      if i<>j & is_direct_sort_constraint levels.(j) v.(i) then
+      if not (Int.equal i j) && is_direct_sort_constraint levels.(j) v.(i) then
 	v.(i) <- sup v.(i) level_bounds.(j)
     done;
     for j=0 to nind-1 do
@@ -854,7 +858,10 @@ let subst_large_constraints =
 
 let no_upper_constraints u cst =
   match u with
-  | Atom u -> Constraint.for_all (fun (u1,_,_) -> u1 <> u) cst
+  | Atom u ->
+    let test (u1, _, _) =
+      not (Int.equal (UniverseLevel.compare u1 u) 0) in
+    Constraint.for_all test cst
   | Max _ -> anomaly "no_upper_constraints"
 
 (* Is u mentionned in v (or equals to v) ? *)
@@ -871,10 +878,14 @@ let pr_arc = function
   | _, Canonical {univ=u; lt=[]; le=[]} ->
       mt ()
   | _, Canonical {univ=u; lt=lt; le=le} ->
+      let opt_sep = match lt, le with
+      | [], _ | _, [] -> mt ()
+      | _ -> spc ()
+      in
       pr_uni_level u ++ str " " ++
       v 0
         (pr_sequence (fun v -> str "< " ++ pr_uni_level v) lt ++
-	 (if lt <> [] & le <> [] then spc () else mt()) ++
+	 opt_sep ++
          pr_sequence (fun v -> str "<= " ++ pr_uni_level v) le) ++
       fnl ()
   | u, Equiv v ->

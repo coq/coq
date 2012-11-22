@@ -96,10 +96,13 @@ let rec dir_path_ord (p1 : dir_path) (p2 : dir_path) =
     if Int.equal c 0 then dir_path_ord p1 p2 else c
   end
 
+let dir_path_eq p1 p2 = Int.equal (dir_path_ord p1 p2) 0
+
 let make_dirpath x = x
 let repr_dirpath x = x
 
 let empty_dirpath = []
+let is_empty_dirpath d = match d with [] -> true | _ -> false
 
 (** Printing of directory paths as ["coq_root.module.submodule"] *)
 
@@ -155,6 +158,7 @@ let string_of_label = string_of_id
 let pr_label l = str (string_of_label l)
 let id_of_label l = l
 let label_of_id id = id
+let eq_label = String.equal
 
 module Labset = Idset
 module Labmap = Idmap
@@ -281,7 +285,7 @@ let debug_string_of_con con =
 let debug_pr_con con = str (debug_string_of_con con)
 
 let con_with_label ((mp1,dp1,l1),(mp2,dp2,l2) as con) lbl =
-  if Int.equal (String.compare lbl l1) 0 && Int.equal (String.compare lbl l2) 0
+  if String.equal lbl l1 && String.equal lbl l2
     then con
     else ((mp1, dp1, lbl), (mp2, dp2, lbl))
 

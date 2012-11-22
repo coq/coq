@@ -271,7 +271,7 @@ let add_constant dir l decl senv =
     | ConstantEntry ce -> translate_constant senv.env kn ce
     | GlobalRecipe r ->
       let cb = translate_recipe senv.env kn r in
-      if dir = empty_dirpath then hcons_const_body cb else cb
+      if is_empty_dirpath dir then hcons_const_body cb else cb
   in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
   let senv'' = match cb.const_body with
@@ -284,16 +284,19 @@ let add_constant dir l decl senv =
 (* Insertion of inductive types. *)
 
 let add_mind dir l mie senv =
-  if mie.mind_entry_inds = [] then
-    anomaly "empty inductive types declaration";
+  let () = match mie.mind_entry_inds with
+  | [] ->
+    anomaly "empty inductive types declaration"
             (* this test is repeated by translate_mind *)
+  | _ -> ()
+  in
   let id = (List.nth mie.mind_entry_inds 0).mind_entry_typename in
-  if l <> label_of_id id then
+  if not (eq_label l (label_of_id id)) then
     anomaly ("the label of inductive packet and its first inductive"^
 	     " type do not match");
   let kn = make_mind senv.modinfo.modpath dir l in
   let mib = translate_mind senv.env kn mie in
-  let mib = if mib.mind_hyps <> [] then mib else hcons_mind mib in
+  let mib = match mib.mind_hyps with [] -> hcons_mind mib | _ -> mib in
   let senv' = add_field (l,SFBmind mib) (I kn) senv in
   kn, senv'
 
@@ -358,7 +361,7 @@ let end_module l restype senv =
       | NONE | LIBRARY _ | SIG _ -> error_no_module_to_end ()
       | STRUCT params -> params, (List.length params > 0)
   in
-  if l <> modinfo.label then error_incompatible_labels l modinfo.label;
+  if not (eq_label l modinfo.label) then error_incompatible_labels l modinfo.label;
   if not (empty_context senv.env) then error_non_empty_local_context None;
   let functorize_struct tb =
     List.fold_left
@@ -494,8 +497,11 @@ let end_module l restype senv =
 (* Adding parameters to modules or module types *)
 
 let add_module_parameter mbid mte inl senv =
-  if  senv.revstruct <> [] or senv.loads <> [] then
-    anomaly "Cannot add a module parameter to a non empty module";
+  let () = match senv.revstruct, senv.loads with
+  | [], _ :: _ | _ :: _, [] ->
+    anomaly "Cannot add a module parameter to a non empty module"
+  | _ -> ()
+  in
   let mtb = translate_module_type senv.env (MPbound mbid) inl mte in
   let senv = 
     full_add_module (module_body_of_type (MPbound mbid) mtb) senv
@@ -559,7 +565,7 @@ let end_modtype l senv =
       | LIBRARY _ | NONE | STRUCT _ -> error_no_modtype_to_end ()
       | SIG params -> params
   in
-  if l <> modinfo.label then error_incompatible_labels l modinfo.label;
+  if not (eq_label l modinfo.label) then error_incompatible_labels l modinfo.label;
   if not (empty_context senv.env) then error_non_empty_local_context None;
   let auto_tb =
      SEBstruct (List.rev senv.revstruct)
@@ -629,10 +635,9 @@ type compiled_library =
 (* We check that only initial state Require's were performed before
    [start_library] was called *)
 
-let is_empty senv =
-  senv.revstruct = [] &&
-  senv.modinfo.modpath = initial_path &&
-  senv.modinfo.variant = NONE
+let is_empty senv = match senv.revstruct, senv.modinfo.variant with
+  | [], NONE -> mp_eq senv.modinfo.modpath initial_path
+  | _ -> false
 
 let start_library dir senv =
   if not (is_empty senv) then
@@ -677,7 +682,7 @@ let export senv dir =
   begin
     match modinfo.variant with
       | LIBRARY dp ->
-	  if dir <> dp then
+	  if not (dir_path_eq dir dp) then
 	    anomaly "We are not exporting the right library!"
       | _ ->
 	  anomaly "We are not exporting the library"
@@ -703,7 +708,7 @@ let check_imports senv needed =
   let check (id,stamp) =
     try
       let actual_stamp = List.assoc id imports in
-      if stamp <> actual_stamp then
+      if not (String.equal stamp actual_stamp) then
 	error
 	  ("Inconsistent assumptions over module "^(string_of_dirpath id)^".")
     with Not_found ->

@@ -89,6 +89,8 @@ type recarg =
   | Mrec of inductive
   | Imbr of inductive
 
+val eq_recarg : recarg -> recarg -> bool
+
 val subst_recarg : substitution -> recarg -> recarg
 
 type wf_paths = recarg Rtree.t

@@ -90,7 +90,7 @@ let mind_check_names mie =
 
 (* Typing the arities and constructor types *)
 
-let is_logic_type t = (t.utj_type = prop_sort)
+let is_logic_type t = is_prop_sort t.utj_type
 
 (* [infos] is a sequence of pair [islogic,issmall] for each type in
    the product of a constructor or arity *)
@@ -179,7 +179,10 @@ let infer_constructor_packet env_ar_par params lc =
 (* Type-check an inductive definition. Does not check positivity
    conditions. *)
 let typecheck_inductive env mie =
-  if mie.mind_entry_inds = [] then anomaly "empty inductive types declaration";
+  let () = match mie.mind_entry_inds with
+  | [] -> anomaly "empty inductive types declaration"
+  | _ -> ()
+  in
   (* Check unicity of names *)
   mind_check_names mie;
   (* Params are typed-checked here *)
@@ -233,22 +236,25 @@ let typecheck_inductive env mie =
 
   let inds = Array.of_list inds in
   let arities = Array.of_list arity_list in
-  let param_ccls = List.fold_left (fun l (_,b,p) ->
-    if b = None then
-      (* Parameter contributes to polymorphism only if explicit Type *)
-      let c = strip_prod_assum p in
-      (* Add Type levels to the ordered list of parameters contributing to *)
-      (* polymorphism unless there is aliasing (i.e. non distinct levels) *)
-      match kind_of_term c with
-      | Sort (Type u) ->
-          if List.mem (Some u) l then
-            None :: List.map (function Some v when u = v -> None | x -> x) l
-          else
-            Some u :: l
-      | _ ->
-          None :: l
-    else
-      l) [] params in
+  let fold l (_, b, p) = match b with
+  | None ->
+    (* Parameter contributes to polymorphism only if explicit Type *)
+    let c = strip_prod_assum p in
+    (* Add Type levels to the ordered list of parameters contributing to *)
+    (* polymorphism unless there is aliasing (i.e. non distinct levels) *)
+    begin match kind_of_term c with
+    | Sort (Type u) ->
+      if List.mem (Some u) l then
+        (** FIXME *)
+        None :: List.map (function Some v when Pervasives.(=) u v -> None | x -> x) l
+      else
+        Some u :: l
+    | _ ->
+      None :: l
+    end
+  | _ -> l
+  in
+  let param_ccls = List.fold_left fold [] params in
 
   (* Compute/check the sorts of the inductive types *)
   let ind_min_levels = inductive_levels arities inds in
@@ -256,7 +262,7 @@ let typecheck_inductive env mie =
     Array.fold_map2' (fun ((id,full_arity,ar_level),cn,info,lc,_) lev cst ->
       let sign, s = dest_arity env full_arity in
       let status,cst = match s with
-      | Type u when ar_level <> None (* Explicitly polymorphic *)
+      | Type u when ar_level != None (* Explicitly polymorphic *)
             && no_upper_constraints u cst ->
 	  (* The polymorphic level is a function of the level of the *)
 	  (* conclusions of the parameters *)
@@ -265,7 +271,11 @@ let typecheck_inductive env mie =
 	  Inr (param_ccls, lev), enforce_leq lev u cst
       | Type u (* Not an explicit occurrence of Type *) ->
 	  Inl (info,full_arity,s), enforce_leq lev u cst
-      | Prop Pos when engagement env <> Some ImpredicativeSet ->
+      | Prop Pos when
+        begin match engagement env with
+        | Some ImpredicativeSet -> false
+        | _ -> true
+        end ->
 	  (* Predicative set: check that the content is indeed predicative *)
 	  if not (is_type0m_univ lev) & not (is_type0_univ lev) then
 	    raise (InductiveError LargeNonPropInductiveNotInType);
@@ -337,7 +347,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
     | (_,Some _,_)::hyps -> check k (index+1) hyps
     | _::hyps ->
         match kind_of_term (whd_betadeltaiota env lpar.(k)) with
-	  | Rel w when w = index -> check (k-1) (index+1) hyps
+	  | Rel w when Int.equal w index -> check (k-1) (index+1) hyps
 	  | _ -> raise (IllFormedInd (LocalNonPar (k+1,l)))
   in check (nparams-1) (n-nhyps) hyps;
   if not (Array.for_all (noccur_between n ntypes) largs') then
@@ -359,7 +369,7 @@ if Int.equal nmr 0 then 0 else
 	| (lp,(_,Some _,_)::hyps) -> find k (index-1) (lp,hyps)
 	| (p::lp,_::hyps) ->
        ( match kind_of_term (whd_betadeltaiota env p) with
-	  | Rel w when w = index -> find (k+1) (index-1) (lp,hyps)
+	  | Rel w when Int.equal w index -> find (k+1) (index-1) (lp,hyps)
           | _ -> k)
   in find 0 (n-1) (lpar,List.rev hyps)
 
@@ -403,7 +413,7 @@ let ienv_push_inductive (env, n, ntypes, ra_env) (mi,lpar) =
   (env', newidx, ntypes, ra_env')
 
 let rec ienv_decompose_prod (env,_,_,_ as ienv) n c =
-  if n=0 then (ienv,c) else
+  if Int.equal n 0 then (ienv,c) else
     let c' = whd_betadeltaiota env c in
     match kind_of_term c' with
 	Prod(na,a,b) ->
@@ -424,7 +434,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
     let x,largs = decompose_app (whd_betadeltaiota env c) in
       match kind_of_term x with
 	| Prod (na,b,d) ->
-	    assert (largs = []);
+	    let () = assert (List.is_empty largs) in
             (match weaker_noccur_between env n ntypes b with
 		None -> failwith_non_pos_list n ntypes [b]
               | Some b ->
@@ -466,7 +476,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
 	failwith_non_pos_list n ntypes auxlargs;
       (* We do not deal with imbricated mutual inductive types *)
       let auxntyp = mib.mind_ntypes in
-	if auxntyp <> 1 then raise (IllFormedInd (LocalNonPos n));
+	if not (Int.equal auxntyp 1) then raise (IllFormedInd (LocalNonPos n));
 	(* The nested inductive type with parameters removed *)
 	let auxlcvect = abstract_mind_lc env auxntyp auxnpar mip.mind_nf_lc in
 	  (* Extends the environment with a variable corresponding to
@@ -500,21 +510,23 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
 	match kind_of_term x with
 
           | Prod (na,b,d) ->
-	      assert (largs = []);
+	      let () = assert (List.is_empty largs) in
               let nmr',recarg = check_pos ienv nmr b in
               let ienv' = ienv_push_var ienv (na,b,mk_norec) in
-		check_constr_rec ienv' nmr' (recarg::lrec) d
-
-	  | hd ->
-	      if check_head then
-		if hd = Rel (n+ntypes-i-1) then
-		  check_correct_par ienv hyps (ntypes-i) largs
-		else
-		  raise (IllFormedInd LocalNotConstructor)
-	      else
-		if not (List.for_all (noccur_between n ntypes) largs)
-		then failwith_non_pos_list n ntypes largs;
-	      (nmr,List.rev lrec)
+                check_constr_rec ienv' nmr' (recarg::lrec) d
+          | hd ->
+            let () =
+              if check_head then
+                begin match hd with
+                | Rel j when Int.equal j (n + ntypes - i - 1) ->
+                  check_correct_par ienv hyps (ntypes - i) largs
+                | _ -> raise (IllFormedInd LocalNotConstructor)
+                end
+              else
+                if not (List.for_all (noccur_between n ntypes) largs)
+                then failwith_non_pos_list n ntypes largs
+            in
+            (nmr, List.rev lrec)
     in check_constr_rec ienv nmr [] c
   in
   let irecargs_nmr =

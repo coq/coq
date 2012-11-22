@@ -41,7 +41,7 @@ let is_modular = function
 
 let rec list_split_assoc ((k,m) as km) rev_before = function
   | [] -> raise Not_found
-  | (k',b)::after when k=k' && is_modular b = m -> rev_before,b,after
+  | (k',b)::after when eq_label k k' && (is_modular b) == (m : bool) -> rev_before,b,after
   | h::tail -> list_split_assoc km (h::rev_before) tail
 
 let discr_resolver env mtb =
@@ -65,11 +65,12 @@ let rec check_with env sign with_decl alg_sign mp equiv =
 	let sign,equiv,cst = check_with_mod env sign (idl,mp1) mp equiv in
 	sign,With_module_body(idl,mp1),equiv,cst
   in
-    if alg_sign = None then
-      sign,None,equiv,cst
-    else
-      sign,Some (SEBwith(Option.get(alg_sign),wd)),equiv,cst
-	    
+  match alg_sign with
+  | None ->
+    sign, None, equiv, cst
+  | Some s ->
+    sign,Some (SEBwith(s, wd)),equiv,cst
+
 and check_with_def env sign (idl,c) mp equiv =
   let sig_b = match sign with 
     | SEBstruct(sig_b) -> sig_b
@@ -81,10 +82,11 @@ and check_with_def env sign (idl,c) mp equiv =
   in
   let l = label_of_id id in
     try
-      let rev_before,spec,after = list_split_assoc (l,(idl<>[])) [] sig_b in
+      let not_empty = match idl with [] -> false | _ :: _ -> true in
+      let rev_before,spec,after = list_split_assoc (l, not_empty) [] sig_b in
       let before = List.rev rev_before in
       let env' = Modops.add_signature mp before equiv env in
-      if idl = [] then
+      match idl with [] ->
 	      (* Toplevel definition *)
 	      let cb = match spec with
 		| SFBconst cb -> cb
@@ -119,7 +121,7 @@ and check_with_def env sign (idl,c) mp equiv =
 		  const_constraints = cst }
 	      in
 	      SEBstruct(before@(l,SFBconst(cb'))::after),cb',cst
-      else
+      | _ ->
 	      (* Definition inside a sub-module *)
 	      let old = match spec with
 		| SFBmodule msb -> msb
@@ -156,7 +158,7 @@ and check_with_mod env sign (idl,mp1) mp equiv =
       let rev_before,spec,after = list_split_assoc (l,true) [] sig_b in
       let before = List.rev rev_before in
       let env' = Modops.add_signature mp before equiv env in
-      if idl = [] then
+      match idl with [] ->
 	      (* Toplevel module definition *)
 	      let old = match spec with
 		  SFBmodule msb -> msb
@@ -191,7 +193,7 @@ and check_with_mod env sign (idl,mp1) mp equiv =
 	      let id_subst = map_mp (MPdot(mp,l)) (MPdot(mp,l)) new_mb.mod_delta in
 		SEBstruct(before@(l,new_spec)::subst_signature id_subst after),
 	      add_delta_resolver equiv new_mb.mod_delta,cst
-      else
+      | _ ->
 	      (* Module definition of a sub-module *)
 	      let old = match spec with
 		  SFBmodule msb -> msb

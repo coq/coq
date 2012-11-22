@@ -692,7 +692,7 @@ let fapp_stack (m,stk) = zip m stk
 
 (* optimised for the case where there are no shifts... *)
 let strip_update_shift_app head stk =
-  assert (head.norm <> Red);
+  assert (match head.norm with Red -> false | _ -> true);
   let rec strip_rec rstk h depth = function
     | Zshift(k) as e :: s ->
         strip_rec (e::rstk) (lift_fconstr k h) (depth+k) s
@@ -706,7 +706,7 @@ let strip_update_shift_app head stk =
 
 
 let get_nth_arg head n stk =
-  assert (head.norm <> Red);
+  assert (match head.norm with Red -> false | _ -> true);
   let rec strip_rec rstk h n = function
     | Zshift(k) as e :: s ->
         strip_rec (e::rstk) (lift_fconstr k h) n s
