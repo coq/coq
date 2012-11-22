@@ -30,7 +30,7 @@ let is_imported_modpath mp =
     match mp with
       | MPfile dp ->
 	  let rec find_prefix = function
-	    |MPfile dp1 -> not (dp1=dp)
+	    |MPfile dp1 -> not (dir_path_eq dp1 dp)
 	    |MPdot(mp,_) -> find_prefix mp
 	    |MPbound(_) -> false
 	  in find_prefix current_mp
@@ -234,14 +234,21 @@ let make_all_name_different env =
    subscript *)
 
 let occur_rel p env id =
-  try lookup_name_of_rel p env = Name id
+  try
+    let name = lookup_name_of_rel p env in
+    begin match name with
+    | Name id' -> id_eq id' id
+    | Anonymous -> false
+    end
   with Not_found -> false (* Unbound indice : may happen in debug *)
 
 let visibly_occur_id id (nenv,c) =
   let rec occur n c = match kind_of_term c with
     | Const _ | Ind _ | Construct _ | Var _
-	  when shortest_qualid_of_global Idset.empty (global_of_constr c)
-	    = qualid_of_ident id -> raise Occur
+      when
+        let short = shortest_qualid_of_global Idset.empty (global_of_constr c) in
+        qualid_eq short (qualid_of_ident id) ->
+      raise Occur
     | Rel p when p>n & occur_rel (p-n) nenv id -> raise Occur
     | _ -> iter_constr_with_binders succ occur n c
   in
@@ -294,17 +301,19 @@ let next_name_for_display flags =
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
 let compute_displayed_name_in flags avoid na c =
-  if na = Anonymous & noccurn 1 c then
+  match na with
+  | Anonymous when noccurn 1 c ->
     (Anonymous,avoid)
-  else
+  | _ ->
     let fresh_id = next_name_for_display flags na avoid in
     let idopt = if noccurn 1 c then Anonymous else Name fresh_id in
     (idopt, fresh_id::avoid)
 
 let compute_and_force_displayed_name_in flags avoid na c =
-  if na = Anonymous & noccurn 1 c then
+  match na with
+  | Anonymous when noccurn 1 c ->
     (Anonymous,avoid)
-  else
+  | _ ->
     let fresh_id = next_name_for_display flags na avoid in
     (Name fresh_id, fresh_id::avoid)
 

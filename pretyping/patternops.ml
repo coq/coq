@@ -134,7 +134,10 @@ let map_pattern_with_binders g f l = function
   | PFix _ | PCoFix _ as x) -> x
 
 let error_instantiate_pattern id l =
-  let is = if List.length l = 1 then "is" else "are" in
+  let is = match l with
+  | [_] -> "is" 
+  | _ -> "are"
+  in
   errorlabstrm "" (str "Cannot substitute the term bound to " ++ pr_id id
     ++ strbrk " in pattern because the term refers to " ++ pr_enum pr_id l
     ++ strbrk " which " ++ str is ++ strbrk " not bound in the pattern.")
@@ -326,8 +329,11 @@ and pats_of_glob_branches loc metas vars ind brs =
     | [] -> false, []
     | [(_,_,[PatVar(_,Anonymous)],GHole _)] -> true, [] (* ends with _ => _ *)
     | (_,_,[PatCstr(_,(indsp,j),lv,_)],br) :: brs ->
-      if ind <> None && ind <> Some indsp then
-        err loc (Pp.str "All constructors must be in the same inductive type.");
+      let () = match ind with
+      | Some sp when eq_ind sp indsp -> ()
+      | _ ->
+        err loc (Pp.str "All constructors must be in the same inductive type.")
+      in
       if Intset.mem (j-1) indexes then
 	err loc
           (str "No unique branch for " ++ int j ++ str"-th constructor.");

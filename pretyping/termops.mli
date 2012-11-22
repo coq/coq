@@ -103,7 +103,6 @@ exception Occur
 val occur_meta : types -> bool
 val occur_existential : types -> bool
 val occur_meta_or_existential : types -> bool
-val occur_const : constant -> types -> bool
 val occur_evar : existential_key -> types -> bool
 val occur_var : env -> identifier -> types -> bool
 val occur_var_in_decl :
@@ -199,7 +198,6 @@ val constr_cmp : Reduction.conv_pb -> constr -> constr -> bool
 val eq_constr : constr -> constr -> bool
 
 val eta_reduce_head : constr -> constr
-val eta_eq_constr : constr -> constr -> bool
 
 exception CannotFilter
 

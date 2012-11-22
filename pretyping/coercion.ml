@@ -79,7 +79,7 @@ let disc_subset x =
        Ind i ->
 	 let len = Array.length l in
 	 let sigty = delayed_force sig_typ in
-	   if len = 2 && i = Term.destInd sigty
+	   if Int.equal len 2 && eq_ind i (Term.destInd sigty)
 	   then
 	     let (a, b) = pair_of_array l in
 	       Some (a, b)
@@ -169,9 +169,9 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
       match (kind_of_term x, kind_of_term y) with
       | Sort s, Sort s' ->
 	  (match s, s' with
-	   Prop x, Prop y when x = y -> None
+	   Prop x, Prop y when x == y -> None
 	   | Prop _, Type _ -> None
-	   | Type x, Type y when x = y -> None (* false *)
+	   | Type x, Type y when Pervasives.(=) x y -> None (* false *) (** FIXME **)
 	   | _ -> subco ())
       | Prod (name, a, b), Prod (name', a', b') ->
 	  let name' = Name (Namegen.next_ident_away (id_of_string "x") (Termops.ids_of_context env)) in
@@ -198,10 +198,10 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 	     let sigT = delayed_force sigT_typ in
 	     let prod = delayed_force prod_typ in
 	       (* Sigma types *)
-	       if len = Array.length l' && len = 2 && i = i'
-		 && (i = Term.destInd sigT || i = Term.destInd prod)
+	       if Int.equal len (Array.length l') && Int.equal len 2 && eq_ind i i'
+		 && (eq_ind i (Term.destInd sigT) || eq_ind i (Term.destInd prod))
 	       then
-		 if i = Term.destInd sigT
+		 if eq_ind i (Term.destInd sigT)
 		 then
 		   begin
 		     let (a, pb), (a', pb') =
@@ -261,8 +261,8 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 				  mkApp (delayed_force prod_intro, [| a'; b'; x ; y |]))
 		   end
 	       else
-		 if i = i' && len = Array.length l' then
-		   let evm =  !isevars in
+		 if eq_ind i i' && Int.equal len (Array.length l') then
+		   let evm = !isevars in
 		     (try subco ()
 		      with NoSubtacCoercion ->
 			let typ = Typing.type_of env evm c in
@@ -272,8 +272,8 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 		       (* 			     else subco () *)
 		 else
 		   subco ()
-	   | x, y when x = y ->
-	       if Array.length l = Array.length l' then
+	   | x, y when Pervasives.(=) x y -> (** FIXME *)
+	       if Int.equal (Array.length l) (Array.length l') then
 		 let evm =  !isevars in
 		 let lam_type = Typing.type_of env evm c in
 		 let lam_type' = Typing.type_of env evm c' in

@@ -161,7 +161,7 @@ let new_Type_sort () = Type (new_univ ())
 let refresh_universes_gen strict t =
   let modified = ref false in
   let rec refresh t = match kind_of_term t with
-    | Sort (Type u) when strict or u <> Univ.type0m_univ ->
+    | Sort (Type u) when strict || Pervasives.(<>) u Univ.type0m_univ -> (** FIXME *)
 	modified := true; new_Type ()
     | Prod (na,u,v) -> mkProd (na,u,refresh v)
     | _ -> t in
@@ -285,7 +285,7 @@ let decompose_app_vect c =
 
 let adjust_app_list_size f1 l1 f2 l2 =
   let len1 = List.length l1 and len2 = List.length l2 in
-  if len1 = len2 then (f1,l1,f2,l2)
+  if Int.equal len1 len2 then (f1,l1,f2,l2)
   else if len1 < len2 then
    let extras,restl2 = List.chop (len2-len1) l2 in
     (f1, l1, applist (f2,extras), restl2)
@@ -295,7 +295,7 @@ let adjust_app_list_size f1 l1 f2 l2 =
 
 let adjust_app_array_size f1 l1 f2 l2 =
   let len1 = Array.length l1 and len2 = Array.length l2 in
-  if len1 = len2 then (f1,l1,f2,l2)
+  if Int.equal len1 len2 then (f1,l1,f2,l2)
   else if len1 < len2 then
     let extras,restl2 = Array.chop (len2-len1) l2 in
     (f1, l1, appvect (f2,extras), restl2)
@@ -514,16 +514,9 @@ let occur_meta_or_existential c =
     | _ -> iter_constr occrec c
   in try occrec c; false with Occur -> true
 
-let occur_const s c =
-  let rec occur_rec c = match kind_of_term c with
-    | Const sp when sp=s -> raise Occur
-    | _ -> iter_constr occur_rec c
-  in
-  try occur_rec c; false with Occur -> true
-
 let occur_evar n c =
   let rec occur_rec c = match kind_of_term c with
-    | Evar (sp,_) when sp=n -> raise Occur
+    | Evar (sp,_) when Int.equal sp n -> raise Occur
     | _ -> iter_constr occur_rec c
   in
   try occur_rec c; false with Occur -> true
@@ -770,18 +763,20 @@ let subst_closed_term_occ_gen_modulo occs test cl occ t =
 
 let check_used_occurrences nbocc (nowhere_except_in,locs) =
   let rest = List.filter (fun o -> o >= nbocc) locs in
-  if rest <> [] then error_invalid_occurrence rest
+  match rest with
+  | [] -> ()
+  | _ -> error_invalid_occurrence rest
 
 let proceed_with_occurrences f occs x =
-  if occs = NoOccurrences then x
-  else begin
+  match occs with
+  | NoOccurrences -> x
+  | _ ->
     (* TODO FINISH ADAPTING WITH HUGO *)
     let plocs = Locusops.convert_occs occs in
     assert (List.for_all (fun x -> x >= 0) (snd plocs));
     let (nbocc,x) = f 1 x in
     check_used_occurrences nbocc plocs;
     x
-  end
 
 let make_eq_test c = {
   match_fun = (fun c' -> if eq_constr c c' then () else raise NotUnifiable);
@@ -851,7 +846,7 @@ let lookup_name_of_rel p names =
 let lookup_rel_of_name id names =
   let rec lookrec n = function
     | Anonymous :: l  -> lookrec (n+1) l
-    | (Name id') :: l -> if id' = id then n else lookrec (n+1) l
+    | (Name id') :: l -> if id_eq id' id then n else lookrec (n+1) l
     | []            -> raise Not_found
   in
   lookrec 1 names
@@ -889,8 +884,8 @@ let has_polymorphic_type c =
 
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with
-    | (Prop c1, Prop c2) -> c1 = Null or c2 = Pos  (* Prop <= Set *)
-    | (Prop c1, Type u)  -> pb = Reduction.CUMUL
+    | (Prop c1, Prop c2) -> c1 == Null || c2 == Pos  (* Prop <= Set *)
+    | (Prop c1, Type u)  -> pb == Reduction.CUMUL
     | (Type u1, Type u2) -> true
     | _ -> false
 
@@ -917,8 +912,6 @@ let split_app c = match kind_of_term c with
 	c::(Array.to_list prev), last
   | _ -> assert false
 
-let hdtl l = List.hd l, List.tl l
-
 type subst = (rel_context*constr) Intmap.t
 
 exception CannotFilter
@@ -935,9 +928,14 @@ let filtering env cv_pb c1 c2 =
   let rec aux env cv_pb c1 c2 =
     match kind_of_term c1, kind_of_term c2 with
       | App _, App _ ->
-	  let ((p1,l1),(p2,l2)) = (split_app c1),(split_app c2) in
-	  aux env cv_pb l1 l2; if p1=[] & p2=[] then () else
-	      aux env cv_pb (applist (hdtl p1)) (applist (hdtl p2))
+        let ((p1,l1),(p2,l2)) = (split_app c1),(split_app c2) in
+        let () = aux env cv_pb l1 l2 in
+        begin match p1, p2 with
+        | [], [] -> ()
+        | (h1 :: p1), (h2 :: p2) ->
+          aux env cv_pb (applistc h1 p1) (applistc h2 p2)
+        | _ -> assert false
+        end
       | Prod (n,t1,c1), Prod (_,t2,c2) ->
 	  aux env cv_pb t1 t2;
 	  aux ((n,None,t1)::env) cv_pb c1 c2
@@ -990,15 +988,6 @@ let rec eta_reduce_head c =
                     | _   -> c)
            | _ -> c)
     | _ -> c
-
-
-(* alpha-eta conversion : ignore print names and casts *)
-let eta_eq_constr =
-  let rec aux t1 t2 =
-    let t1 = eta_reduce_head (strip_head_cast t1)
-    and t2 = eta_reduce_head (strip_head_cast t2) in
-    t1=t2 or compare_constr aux t1 t2
-  in aux
 
 
 (* iterator on rel context *)
@@ -1060,13 +1049,13 @@ let adjust_subst_to_rel_context sign l =
 let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
 
 let rec mem_named_context id = function
-  | (id',_,_) :: _ when id=id' -> true
+  | (id',_,_) :: _ when id_eq id id' -> true
   | _ :: sign -> mem_named_context id sign
   | [] -> false
 
 let clear_named_body id env =
   let aux _ = function
-  | (id',Some c,t) when id = id' -> push_named (id,None,t)
+  | (id',Some c,t) when id_eq id id' -> push_named (id,None,t)
   | d -> push_named d in
   fold_named_context aux env ~init:(reset_context env)
 

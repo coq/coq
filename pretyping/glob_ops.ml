@@ -108,13 +108,20 @@ let fold_glob_constr f acc =
 
 let iter_glob_constr f = fold_glob_constr (fun () -> f) ()
 
+let same_id na id = match na with
+| Anonymous -> false
+| Name id' -> id_eq id id'
+
 let occur_glob_constr id =
   let rec occur = function
-    | GVar (loc,id') -> id = id'
+    | GVar (loc,id') -> id_eq id id'
     | GApp (loc,f,args) -> (occur f) or (List.exists occur args)
-    | GLambda (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
-    | GProd (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
-    | GLetIn (loc,na,b,c) -> (occur b) or ((na <> Name id) & (occur c))
+    | GLambda (loc,na,bk,ty,c) ->
+      (occur ty) || (not (same_id na id) && (occur c))
+    | GProd (loc,na,bk,ty,c) ->
+      (occur ty) || (not (same_id na id) && (occur c))
+    | GLetIn (loc,na,b,c) ->
+      (occur b) || (not (same_id na id) && (occur c))
     | GCases (loc,sty,rtntypopt,tml,pl) ->
 	(occur_option rtntypopt)
         or (List.exists (fun (tm,_) -> occur tm) tml)
@@ -127,13 +134,13 @@ let occur_glob_constr id =
     | GRec (loc,fk,idl,bl,tyl,bv) ->
         not (Array.for_all4 (fun fid bl ty bd ->
           let rec occur_fix = function
-              [] -> not (occur ty) && (fid=id or not(occur bd))
+              [] -> not (occur ty) && (id_eq fid id || not(occur bd))
             | (na,k,bbd,bty)::bl ->
                 not (occur bty) &&
                 (match bbd with
                     Some bd -> not (occur bd)
                   | _ -> true) &&
-                (na=Name id or not(occur_fix bl)) in
+                (match na with Name id' -> id_eq id id' | _ -> not (occur_fix bl)) in
           occur_fix bl)
           idl bl tyl bv)
     | GCast (loc,c,k) -> (occur c) or (match k with CastConv t | CastVM t -> occur t | CastCoerce -> false)
@@ -143,7 +150,7 @@ let occur_glob_constr id =
 
   and occur_option = function None -> false | Some p -> occur p
 
-  and occur_return_type (na,tyopt) id = na <> Name id & occur_option tyopt
+  and occur_return_type (na,tyopt) id = not (same_id na id) && occur_option tyopt
 
   in occur
 
@@ -233,10 +240,13 @@ let loc_of_glob_constr = function
 (* Conversion from glob_constr to cases pattern, if possible            *)
 
 let rec cases_pattern_of_glob_constr na = function
-  | GVar (loc,id) when na<>Anonymous ->
+  | GVar (loc,id) ->
+    begin match na with
+    | Name _ ->
       (* Unable to manage the presence of both an alias and a variable *)
       raise Not_found
-  | GVar (loc,id) -> PatVar (loc,Name id)
+    | Anonymous -> PatVar (loc,Name id)
+    end
   | GHole (loc,_) -> PatVar (loc,na)
   | GRef (loc,ConstructRef cstr) ->
       PatCstr (loc,cstr,[],na)

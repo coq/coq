@@ -265,7 +265,7 @@ let pr_cs_pattern = function
   | Sort_cs s -> Termops.pr_sort_family s
 
 let open_canonical_structure i (_,o) =
-  if i=1 then
+  if Int.equal i 1 then
     let lo = compute_canonical_projections o in
     List.iter (fun ((proj,cs_pat),s) ->
       let l = try Refmap.find proj !object_table with Not_found -> [] in

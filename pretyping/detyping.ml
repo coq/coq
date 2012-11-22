@@ -42,9 +42,9 @@ let encode_inductive r =
 (* Tables for Cases printing under a "if" form, a "let" form,  *)
 
 let has_two_constructors lc =
-  Array.length lc = 2 (* & lc.(0) = 0 & lc.(1) = 0 *)
+  Int.equal (Array.length lc) 2 (* & lc.(0) = 0 & lc.(1) = 0 *)
 
-let isomorphic_to_tuple lc = (Array.length lc = 1)
+let isomorphic_to_tuple lc = Int.equal (Array.length lc) 1
 
 let encode_bool r =
   let (x,lc) = encode_inductive r in
@@ -167,7 +167,7 @@ let computable p k =
        engendrera un prédicat non dépendant) *)
 
   let sign,ccl = decompose_lam_assum p in
-  (rel_context_length sign = k+1)
+  Int.equal (rel_context_length sign) (k + 1)
   &&
   noccur_between 1 (k+1) ccl
 
@@ -175,11 +175,11 @@ let lookup_name_as_displayed env t s =
   let rec lookup avoid n c = match kind_of_term c with
     | Prod (name,_,c') ->
 	(match compute_displayed_name_in RenamingForGoal avoid name c' with
-           | (Name id,avoid') -> if id=s then Some n else lookup avoid' (n+1) c'
+           | (Name id,avoid') -> if id_eq id s then Some n else lookup avoid' (n+1) c'
 	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | LetIn (name,_,_,c') ->
 	(match compute_displayed_name_in RenamingForGoal avoid name c' with
-           | (Name id,avoid') -> if id=s then Some n else lookup avoid' (n+1) c'
+           | (Name id,avoid') -> if id_eq id s then Some n else lookup avoid' (n+1) c'
 	   | (Anonymous,avoid') -> lookup avoid' (n+1) (pop c'))
     | Cast (c,_,_) -> lookup avoid n c
     | _ -> None
@@ -191,9 +191,9 @@ let lookup_index_as_renamed env t n =
 	  (match compute_displayed_name_in RenamingForGoal [] name c' with
                (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
-		 if n=0 then
+		 if Int.equal n 0 then
 		   Some (d-1)
-		 else if n=1 then
+		 else if Int.equal n 1 then
 		   Some d
 		 else
 		   lookup (n-1) (d+1) c')
@@ -201,15 +201,15 @@ let lookup_index_as_renamed env t n =
 	  (match compute_displayed_name_in RenamingForGoal [] name c' with
              | (Name _,_) -> lookup n (d+1) c'
              | (Anonymous,_) ->
-		 if n=0 then
+		 if Int.equal n 0 then
 		   Some (d-1)
-		 else if n=1 then
+		 else if Int.equal n 1 then
 		   Some d
 		 else
 		   lookup (n-1) (d+1) c'
 	  )
     | Cast (c,_,_) -> lookup n d c
-    | _ -> if n=0 then Some (d-1) else None
+    | _ -> if Int.equal n 0 then Some (d-1) else None
   in lookup n 1 t
 
 (**********************************************************************)
@@ -224,7 +224,7 @@ let update_name na ((_,e),c) =
 
 let rec decomp_branch n nal b (avoid,env as e) c =
   let flag = if b then RenamingForGoal else RenamingForCasesPattern in
-  if n=0 then (List.rev nal,(e,c))
+  if Int.equal n 0 then (List.rev nal,(e,c))
   else
     let na,c,f =
       match kind_of_term (strip_outer_cast c) with
@@ -247,7 +247,7 @@ and align_tree nal isgoal (e,c as rhs) = match nal with
   | [] -> [[],rhs]
   | na::nal ->
     match kind_of_term c with
-    | Case (ci,p,c,cl) when c = mkRel (List.index na (snd e))
+    | Case (ci,p,c,cl) when eq_constr c (mkRel (List.index na (snd e)))
 	& (* don't contract if p dependent *)
 	computable p (ci.ci_pp_info.ind_nargs) ->
 	let clauses = build_tree na isgoal e ci cl in
@@ -278,7 +278,7 @@ let is_nondep_branch c n =
     false
 
 let extract_nondep_branches test c b n =
-  let rec strip n r = if n=0 then r else
+  let rec strip n r = if Int.equal n 0 then r else
     match r with
       | GLambda (_,_,_,_,t) -> strip (n-1) t
       | GLetIn (_,_,_,t) -> strip (n-1) t
@@ -287,7 +287,7 @@ let extract_nondep_branches test c b n =
 
 let it_destRLambda_or_LetIn_names n c =
   let rec aux n nal c =
-    if n=0 then (List.rev nal,c) else match c with
+    if Int.equal n 0 then (List.rev nal,c) else match c with
       | GLambda (_,na,_,_,c) -> aux (n-1) (na::nal) c
       | GLetIn (_,na,_,c) -> aux (n-1) (na::nal) c
       | _ ->
@@ -311,7 +311,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   let synth_type = synthetize_type () in
   let tomatch = detype c in
   let alias, aliastyp, pred=
-    if (not !Flags.raw_print) & synth_type & computable & Array.length bl<>0
+    if (not !Flags.raw_print) && synth_type && computable && not (Int.equal (Array.length bl) 0)
     then
       Anonymous, None, None
     else
@@ -323,7 +323,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
               | GLambda (_,x,_,t,c) -> x, c
 	      | _ -> Anonymous, typ in
 	    let aliastyp =
-	      if List.for_all ((=) Anonymous) nl then None
+	      if List.for_all (name_eq Anonymous) nl then None
 	      else Some (dl,indsp,nl) in
             n, aliastyp, Some typ
   in
@@ -332,7 +332,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
     try
       if !Flags.raw_print then
         RegularStyle
-      else if st = LetPatternStyle then
+      else if st == LetPatternStyle then
 	st
       else if PrintingLet.active indsp then
 	LetStyle
@@ -342,16 +342,16 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 	st
     with Not_found -> st
   in
-  match tag with
-  | LetStyle when aliastyp = None ->
+  match tag, aliastyp with
+  | LetStyle, None ->
       let bl' = Array.map detype bl in
       let (nal,d) = it_destRLambda_or_LetIn_names consnargsl.(0) bl'.(0) in
       GLetTuple (dl,nal,(alias,pred),tomatch,d)
-  | IfStyle when aliastyp = None ->
+  | IfStyle, None ->
       let bl' = Array.map detype bl in
       let nondepbrs =
 	Array.map3 (extract_nondep_branches testdep) bl bl' consnargsl in
-      if Array.for_all ((<>) None) nondepbrs then
+      if Array.for_all ((!=) None) nondepbrs then
 	GIf (dl,tomatch,(alias,pred),
              Option.get nondepbrs.(0),Option.get nondepbrs.(1))
       else
@@ -399,7 +399,7 @@ let rec detype (isgoal:bool) avoid env t =
     | Cast (c1,k,c2) ->
         let d1 = detype isgoal avoid env c1 in
 	let d2 = detype isgoal avoid env c2 in
-	GCast(dl,d1,if k = VMcast then CastVM d2 else CastConv d2)
+	GCast(dl,d1,if k == VMcast then CastVM d2 else CastConv d2)
     | Prod (na,ty,c) -> detype_binder isgoal BProd avoid env na ty c
     | Lambda (na,ty,c) -> detype_binder isgoal BLambda avoid env na ty c
     | LetIn (na,b,_,c) -> detype_binder isgoal BLetIn avoid env na b c
@@ -512,7 +512,7 @@ and detype_eqn isgoal avoid env constr construct_nargs branch =
       PatVar (dl,Name id),id::avoid,(add_name (Name id) env),id::ids
   in
   let rec buildrec ids patlist avoid env n b =
-    if n=0 then
+    if Int.equal n 0 then
       (dl, ids,
        [PatCstr(dl, constr, List.rev patlist,Anonymous)],
        detype isgoal avoid env b)
@@ -542,9 +542,9 @@ and detype_eqn isgoal avoid env constr construct_nargs branch =
 
 and detype_binder isgoal bk avoid env na ty c =
   let flag = if isgoal then RenamingForGoal else RenamingElsewhereFor (env,c) in
-  let na',avoid' =
-    if bk = BLetIn then compute_displayed_let_name_in flag avoid na c
-    else compute_displayed_name_in flag avoid na c in
+  let na',avoid' = match bk with
+  | BLetIn -> compute_displayed_let_name_in flag avoid na c
+  | _ -> compute_displayed_name_in flag avoid na c in
   let r =  detype isgoal avoid' (add_name na' env) c in
   match bk with
   | BProd -> GProd (dl, na',Explicit,detype false avoid env ty, r)
@@ -560,7 +560,7 @@ let detype_rel_context where avoid env sign =
 	match where with
 	| None -> na,avoid
 	| Some c ->
-	    if b<>None then
+	    if b != None then
 	      compute_displayed_let_name_in
                 (RenamingElsewhereFor (env,c)) avoid na c
 	    else

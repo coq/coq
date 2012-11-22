@@ -50,7 +50,7 @@ exception PatternMatchingFailure
 let constrain n (ids, m as x) (names, terms as subst) =
   try
     let (ids',m') = List.assoc n terms in
-    if ids = ids' && eq_constr m m' then subst
+    if List.equal id_eq ids ids' && eq_constr m m' then subst
     else raise PatternMatchingFailure
   with
       Not_found ->
@@ -97,7 +97,7 @@ let rec list_insert a = function
 let extract_bound_vars =
   let rec aux k = function
   | ([],_) -> []
-  | (n :: l, (na1, na2, _) :: stk) when k - n = 0 ->
+  | (n :: l, (na1, na2, _) :: stk) when Int.equal k n ->
       begin match na1, na2 with
       | Name id1, Name _ -> list_insert id1 (aux (k + 1) (l, stk))
       | Name _, Anonymous -> anomaly "Unnamed bound variable"
@@ -122,7 +122,7 @@ let rec make_renaming ids = function
 let merge_binding allow_bound_rels stk n cT subst =
   let depth = List.length stk in
   let c =
-    if depth = 0 then
+    if Int.equal depth 0 then
       (* Optimization *)
       ([],cT)
     else
@@ -162,13 +162,13 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 
       | PMeta None, m -> subst
 
-      | PRef (VarRef v1), Var v2 when id_ord v1 v2 = 0 -> subst
+      | PRef (VarRef v1), Var v2 when id_eq v1 v2 -> subst
 
-      | PVar v1, Var v2 when id_ord v1 v2 = 0 -> subst
+      | PVar v1, Var v2 when id_eq v1 v2 -> subst
 
       | PRef ref, _ when conv (constr_of_global ref) cT -> subst
 
-      | PRel n1, Rel n2 when n1 - n2 = 0 -> subst
+      | PRel n1, Rel n2 when Int.equal n1 n2 -> subst
 
       | PSort GProp, Sort (Prop Null) -> subst
 
@@ -231,7 +231,7 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
             if not (eq_ind ind1 ci2.ci_ind) then raise PatternMatchingFailure
           in
           let () =
-            if not ci1.cip_extensible && List.length br1 <> n2
+            if not ci1.cip_extensible && not (Int.equal (List.length br1) n2)
             then raise PatternMatchingFailure
           in
 	  let chk_branch subst (j,n,c) =

@@ -42,6 +42,9 @@ val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
 
 type instance_constraint = IsSuperType | IsSubType | Conv
 
+val eq_instance_constraint :
+  instance_constraint -> instance_constraint -> bool
+
 (** Status of the unification of the type of an instance against the type of
      the meta it instantiates:
    - CoerceToType means that the unification of types has not been done

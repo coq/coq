@@ -146,13 +146,15 @@ let nconstructors ind =
 
 let mis_constructor_has_local_defs (indsp,j) =
   let (mib,mip) = Global.lookup_inductive indsp in
-  mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt)
-  <> recarg_length mip.mind_recargs j + mib.mind_nparams
+  let l1 = mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt) in
+  let l2 = recarg_length mip.mind_recargs j + mib.mind_nparams in
+  not (Int.equal l1 l2)
 
 let inductive_has_local_defs ind =
   let (mib,mip) = Global.lookup_inductive ind in
-  rel_context_length (mib.mind_params_ctxt) + mip.mind_nrealargs_ctxt
-  <> mib.mind_nparams + mip.mind_nrealargs
+  let l1 = rel_context_length (mib.mind_params_ctxt) + mip.mind_nrealargs_ctxt in
+  let l2 = mib.mind_nparams + mip.mind_nrealargs in
+  not (Int.equal l1 l2)
 
 (* Length of arity (w/o local defs) *)
 
@@ -257,7 +259,7 @@ let get_arity env (ind,params) =
        parameters *)
     let parsign = mib.mind_params_ctxt in
     let nnonrecparams = mib.mind_nparams - mib.mind_nparams_rec in
-    if List.length params = rel_context_nhyps parsign - nnonrecparams then
+    if Int.equal (List.length params) (rel_context_nhyps parsign - nnonrecparams) then
       snd (List.chop nnonrecparams mib.mind_params_ctxt)
     else
       parsign in
@@ -378,7 +380,10 @@ let is_predicate_explicitly_dep env pred arsign =
           check whether the predicate is actually dependent or not
           would indeed be more natural! *)
 
-	  na <> Anonymous
+          begin match na with
+          | Anonymous -> false
+          | Name _ -> true
+          end
 
       | _ -> anomaly "Non eta-expanded dep-expanded \"match\" predicate"
   in

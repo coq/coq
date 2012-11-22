@@ -40,7 +40,7 @@ let occur_meta_evd sigma mv c =
     (* Note: evars are not instantiated by terms with metas *)
     let c = whd_evar sigma (whd_meta sigma c) in
     match kind_of_term c with
-    | Meta mv' when mv = mv' -> raise Occur
+    | Meta mv' when Int.equal mv mv' -> raise Occur
     | _ -> iter_constr occrec c
   in try occrec c; false with Occur -> true
 
@@ -116,7 +116,7 @@ let pose_all_metas_as_evars env evd t =
        | Some ({rebus=c},_) -> c
        | None ->
         let {rebus=ty;freemetas=mvs} = Evd.meta_ftype evd mv in
-        let ty = if mvs = Evd.Metaset.empty then ty else aux ty in
+        let ty = if Evd.Metaset.is_empty mvs then ty else aux ty in
         let ev = Evarutil.e_new_evar evdref env ~src:(Loc.ghost,Evar_kinds.GoalEvar) ty in
         evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) !evdref;
         ev)
@@ -380,7 +380,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
     and cN = Evarutil.whd_head_evar sigma curn in
       match (kind_of_term cM,kind_of_term cN) with
 	| Meta k1, Meta k2 ->
-            if k1 = k2 then substn else
+            if Int.equal k1 k2 then substn else
 	    let stM,stN = extract_instance_status pb in
             if wt && flags.check_applied_meta_types then
               (let tyM = Typing.meta_type sigma k1 in
@@ -431,7 +431,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	| Sort s1, Sort s2 ->
 	    (try 
 	       let sigma' = 
-		 if cv_pb = CUMUL 
+		 if cv_pb == CUMUL 
 		 then Evd.set_leq_sort sigma s1 s2 
 		 else Evd.set_eq_sort sigma s1 s2 
 	       in (sigma', metasubst, evarsubst)
@@ -605,8 +605,11 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
-      if flags.modulo_conv_on_closed_terms = None ||
-         subterm_restriction b flags then
+      if
+        begin match flags.modulo_conv_on_closed_terms with
+        | None -> true
+        | Some _ -> subterm_restriction b flags
+        end then
 	error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else
 	try f1 () with e when precatchable_exception e ->
@@ -626,7 +629,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
     let (evd,ks,_) =
       List.fold_left
 	(fun (evd,ks,m) b ->
-	  if m=n then (evd,t2::ks, m-1) else
+	  if Int.equal m n then (evd,t2::ks, m-1) else
             let mv = new_meta () in
 	    let evd' = meta_declare mv (substl ks b) evd in
 	      (evd', mkMeta mv :: ks, m - 1))
@@ -704,14 +707,14 @@ let merge_instances env sigma flags st1 st2 c1 c2 =
   | ((IsSubType | Conv as oppst1),
      (IsSubType | Conv)) ->
     let res = unify_0 env sigma CUMUL flags c2 c1 in
-      if oppst1=st2 then (* arbitrary choice *) (left, st1, res)
-      else if st2=IsSubType then (left, st1, res)
+      if eq_instance_constraint oppst1 st2 then (* arbitrary choice *) (left, st1, res)
+      else if eq_instance_constraint st2 IsSubType then (left, st1, res)
       else (right, st2, res)
   | ((IsSuperType | Conv as oppst1),
      (IsSuperType | Conv)) ->
     let res = unify_0 env sigma CUMUL flags c1 c2 in
-      if oppst1=st2 then (* arbitrary choice *) (left, st1, res)
-      else if st2=IsSuperType then (left, st1, res)
+      if eq_instance_constraint oppst1 st2 then (* arbitrary choice *) (left, st1, res)
+      else if eq_instance_constraint st2 IsSuperType then (left, st1, res)
       else (right, st2, res)
   | (IsSuperType,IsSubType) ->
     (try (left, IsSubType, unify_0 env sigma CUMUL flags c2 c1)
@@ -832,9 +835,10 @@ let unify_type env sigma flags mv status c =
 let order_metas metas =
   let rec order latemetas = function
   | [] -> List.rev latemetas
-  | (_,_,(status,to_type) as meta)::metas ->
-      if to_type = CoerceToType then order (meta::latemetas) metas
-      else meta :: order latemetas metas
+  | (_,_,(_,CoerceToType) as meta)::metas ->
+    order (meta::latemetas) metas
+  | (_,_,(_,_) as meta)::metas ->
+    meta :: order latemetas metas
   in order [] metas
 
 (* Solve an equation ?n[x1=u1..xn=un] = t where ?n is an evar *)
@@ -886,13 +890,15 @@ let w_merge env with_types flags (evd,metas,evars) =
     match metas with
     | (mv,c,(status,to_type))::metas ->
         let ((evd,c),(metas'',evars'')),eqns =
-	  if with_types & to_type <> TypeProcessed then
-	    if to_type = CoerceToType then
+	  if with_types && to_type != TypeProcessed then
+	    begin match to_type with
+	    | CoerceToType ->
               (* Some coercion may have to be inserted *)
 	      (w_coerce env evd mv c,([],[])),eqns
-	    else
+	    | _ ->
               (* No coercion needed: delay the unification of types *)
 	      ((evd,c),([],[])),(mv,status,c)::eqns
+	    end
 	  else
 	    ((evd,c),([],[])),eqns 
 	in
@@ -1010,7 +1016,7 @@ let w_typed_unify_list env evd flags f1 l1 f2 l2 =
 let iter_fail f a =
   let n = Array.length a in
   let rec ffail i =
-    if i = n then error "iter_fail"
+    if Int.equal i n then error "iter_fail"
     else
       try f a.(i)
       with ex when precatchable_exception ex -> ffail (i+1)
@@ -1096,7 +1102,7 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags) (op,cl) =
   let bind_iter f a =
     let n = Array.length a in
     let rec ffail i =
-      if i = n then fun a -> a
+      if Int.equal i n then fun a -> a
       else bind (f a.(i)) (ffail (i+1))
     in ffail 0
   in
@@ -1135,10 +1141,10 @@ let w_unify_to_subterm_all env evd ?(flags=default_unify_flags) (op,cl) =
             | _ -> fail "Match_subterm"))
   in
   let res = matchrec cl [] in
-  if res = [] then
+  match res with
+  | [] ->
     raise (PretypeError (env,evd,NoOccurrenceFound (op, None)))
-  else
-    res
+  | _ -> res
 
 let w_unify_to_subterm_list env evd flags hdmeta oplist t =
   List.fold_right
@@ -1223,10 +1229,12 @@ let w_unify2 env evd flags dep cv_pb ty1 ty2 =
 let w_unify env evd cv_pb ?(flags=default_unify_flags) ty1 ty2 =
   let hd1,l1 = whd_nored_stack evd ty1 in
   let hd2,l2 = whd_nored_stack evd ty2 in
-    match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
+  let is_empty1 = match l1 with [] -> true | _ -> false in
+  let is_empty2 = match l2 with [] -> true | _ -> false in
+    match kind_of_term hd1, not is_empty1, kind_of_term hd2, not is_empty2 with
       (* Pattern case *)
       | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
-	  when List.length l1 = List.length l2 ->
+	  when Int.equal (List.length l1) (List.length l2) ->
 	  (try
 	      w_typed_unify_list env evd flags hd1 l1 hd2 l2
 	    with ex when precatchable_exception ex ->

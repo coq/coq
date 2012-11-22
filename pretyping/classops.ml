@@ -49,9 +49,9 @@ type coe_info_typ = {
 let coe_info_typ_equal c1 c2 =
   eq_constr c1.coe_value c2.coe_value &&
     eq_constr c1.coe_type c2.coe_type &&
-    c1.coe_strength = c2.coe_strength &&
-    c1.coe_is_identity = c2.coe_is_identity &&
-    c1.coe_param = c2.coe_param
+    c1.coe_strength == c2.coe_strength &&
+    c1.coe_is_identity == c2.coe_is_identity &&
+    Int.equal c1.coe_param c2.coe_param
 
 type cl_index = int
 
@@ -69,7 +69,7 @@ module Bijint = struct
   let revmap y b = let n = Gmap.find y b.inv in (n, snd (b.v.(n)))
   let add x y b =
     let v =
-      if b.s = Array.length b.v then
+      if Int.equal b.s (Array.length b.v) then
 	(let v = Array.make (b.s + 8) (x,y) in Array.blit b.v 0 v 0 b.s; v)
       else b.v in
     v.(b.s) <- (x,y); { v = v; s = b.s+1; inv = Gmap.add x b.s b.inv }
@@ -183,7 +183,7 @@ let class_of env sigma t =
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, args)
   in
-  if List.length args = n1 then t, i else raise Not_found
+  if Int.equal (List.length args) n1 then t, i else raise Not_found
 
 let inductive_class_of ind = fst (class_info (CL_IND ind))
 
@@ -218,14 +218,14 @@ let apply_on_class_of env sigma t cont =
   try
     let (cl,args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
-    if List.length args <> n1 then raise Not_found;
+    if not (Int.equal (List.length args) n1) then raise Not_found;
     t, cont i
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
     let t = Tacred.hnf_constr env sigma t in
     let (cl, args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
-    if List.length args <> n1 then raise Not_found;
+    if not (Int.equal (List.length args) n1) then raise Not_found;
     t, cont i
 
 let lookup_path_between env sigma (s,t) =
@@ -287,7 +287,7 @@ let add_coercion_in_graph (ic,source,target) =
     (ref [] : ((cl_index * cl_index) * inheritance_path) list ref) in
   let try_add_new_path (i,j as ij) p =
     try
-      if i=j then begin
+      if Int.equal i j then begin
 	if different_class_params i j then begin
 	  let _ = lookup_path_between_class ij in
           ambig_paths := (ij,p)::!ambig_paths
@@ -308,20 +308,21 @@ let add_coercion_in_graph (ic,source,target) =
   if try_add_new_path (source,target) [ic] then begin
     Gmap.iter
       (fun (s,t) p ->
-         if s<>t then begin
-	   if t = source then begin
+         if not (Int.equal s t) then begin
+	   if Int.equal t source then begin
              try_add_new_path1 (s,target) (p@[ic]);
              Gmap.iter
 	       (fun (u,v) q ->
-                  if u<>v & u = target &&  not (List.equal coe_info_typ_equal p q) then
+                  if not (Int.equal u v) && Int.equal u target &&  not (List.equal coe_info_typ_equal p q) then
 		    try_add_new_path1 (s,v) (p@[ic]@q))
                old_inheritance_graph
            end;
-           if s = target then try_add_new_path1 (source,t) (ic::p)
+           if Int.equal s target then try_add_new_path1 (source,t) (ic::p)
 	 end)
       old_inheritance_graph
   end;
-  if (!ambig_paths <> []) && is_verbose () then
+  let is_ambig = match !ambig_paths with [] -> false | _ -> true in
+  if is_ambig && is_verbose () then
     msg_warning (message_ambig !ambig_paths)
 
 type coercion = coe_typ * locality * bool * cl_typ * cl_typ * int
@@ -376,7 +377,7 @@ let load_coercion _ o =
     cache_coercion o
 
 let open_coercion i o =
-  if i = 1 && not
+  if Int.equal i 1 && not
     (!automatically_import_coercions || Flags.version_less_or_equal Flags.V8_2)
   then
     cache_coercion o
@@ -394,7 +395,9 @@ let discharge_cl = function
   | cl -> cl
 
 let discharge_coercion (_,(coe,stre,isid,cls,clt,ps)) =
-  if stre = Local then None else
+  match stre with
+  | Local -> None
+  | Global ->
     let n = try Array.length (Lib.section_instance coe) with Not_found -> 0 in
     Some (Lib.discharge_global coe,
           stre,
@@ -404,7 +407,9 @@ let discharge_coercion (_,(coe,stre,isid,cls,clt,ps)) =
           n + ps)
 
 let classify_coercion (coe,stre,isid,cls,clt,ps as obj) =
-  if stre = Local then Dispose else Substitute obj
+  match stre with
+  | Local -> Dispose
+  | Global -> Substitute obj
 
 let inCoercion : coercion -> obj =
   declare_object {(default_object "COERCION") with

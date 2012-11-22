@@ -317,8 +317,8 @@ let rec whd_state_gen flags ts env sigma =
 			let napp = Array.length cl in
 			if napp > 0 then
 			  let x', l' = whrec' (Array.last cl, empty_stack) in
-                          match kind_of_term x' with
-                            | Rel 1 when l' = empty_stack ->
+                          match kind_of_term x', l' with
+                            | Rel 1, [] ->
 				let lc = Array.sub cl 0 (napp-1) in
 				let u = if Int.equal napp 1 then f else appvect (f,lc) in
 				if noccurn 1 u then (pop u,empty_stack) else s
@@ -373,8 +373,8 @@ let local_whd_state_gen flags sigma =
 			let napp = Array.length cl in
 			if napp > 0 then
 			  let x', l' = whrec (Array.last cl, empty_stack) in
-                          match kind_of_term x' with
-                            | Rel 1 when l' = empty_stack ->
+                          match kind_of_term x', l' with
+                            | Rel 1, [] ->
 				let lc = Array.sub cl 0 (napp-1) in
 				let u = if Int.equal napp 1 then f else appvect (f,lc) in
 				if noccurn 1 u then (pop u,empty_stack) else s
@@ -623,14 +623,15 @@ let fakey = Profile.declare_profile "fhnf_apply";;
 let fhnf_apply info k h a = Profile.profile4 fakey fhnf_apply info k h a;;
 *)
 
-let is_transparent k =
-  Conv_oracle.get_strategy k <> Conv_oracle.Opaque
+let is_transparent k = match Conv_oracle.get_strategy k with
+| Conv_oracle.Opaque -> false
+| _ -> true
 
 (* Conversion utility functions *)
 
 type conversion_test = constraints -> constraints
 
-let pb_is_equal pb = pb = CONV
+let pb_is_equal pb = pb == CONV
 
 let pb_equal = function
   | CUMUL -> CONV
@@ -965,8 +966,9 @@ let meta_reducible_instance evd b =
 	let m = try destMeta c with _ -> destMeta (pi1 (destCast c)) in
 	(match
 	  try
-	    let g,s = List.assoc m metas in
-	    if isConstruct g or s <> CoerceToType then Some g else None
+	    let g, s = List.assoc m metas in
+            let is_coerce = match s with CoerceToType -> true | _ -> false in
+	    if isConstruct g || not is_coerce then Some g else None
 	  with Not_found -> None
 	  with
 	    | Some g -> irec (mkCase (ci,p,g,bl))
@@ -975,14 +977,17 @@ let meta_reducible_instance evd b =
 	let m = try destMeta f with _ -> destMeta (pi1 (destCast f)) in
 	(match
 	  try
-	    let g,s = List.assoc m metas in
-	    if isLambda g or s <> CoerceToType then Some g else None
+	    let g, s = List.assoc m metas in
+            let is_coerce = match s with CoerceToType -> true | _ -> false in
+	    if isLambda g || not is_coerce then Some g else None
 	  with Not_found -> None
 	 with
 	   | Some g -> irec (mkApp (g,l))
 	   | None -> mkApp (f,Array.map irec l))
     | Meta m ->
-	(try let g,s = List.assoc m metas in if s<>CoerceToType then irec g else u
+	(try let g, s = List.assoc m metas in
+          let is_coerce = match s with CoerceToType -> true | _ -> false in
+          if not is_coerce then irec g else u
 	 with Not_found -> u)
     | _ -> map_constr irec u
   in

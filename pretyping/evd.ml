@@ -61,11 +61,17 @@ let evar_env evi =
   List.fold_right push_named (evar_filtered_context evi)
     (reset_context (Global.env()))
 
+let eq_evar_body b1 b2 = match b1, b2 with
+| Evar_empty, Evar_empty -> true
+| Evar_defined t1, Evar_defined t2 -> eq_constr t1 t2
+| _ -> false
+
 let eq_evar_info ei1 ei2 =
   ei1 == ei2 ||
     eq_constr ei1.evar_concl ei2.evar_concl &&
     eq_named_context_val (ei1.evar_hyps) (ei2.evar_hyps) &&
-    ei1.evar_body = ei2.evar_body
+    eq_evar_body ei1.evar_body ei2.evar_body
+    (** ppedrot: [eq_constr] may be a bit too permissive here *)
 
 (* spiwack: Revised hierarchy :
    - ExistentialMap ( Maps of existential_keys )
@@ -92,7 +98,9 @@ let make_evar_instance sign args =
 
 let instantiate_evar sign c args =
   let inst = make_evar_instance sign args in
-  if inst = [] then c else replace_vars inst c
+  match inst with
+  | [] -> c
+  | _ -> replace_vars inst c
 
 module EvarInfoMap = struct
   type t = evar_info ExistentialMap.t * evar_info ExistentialMap.t
@@ -216,9 +224,10 @@ module EvarMap = struct
   let existential_value (sigma,_) = EvarInfoMap.existential_value sigma
   let existential_type (sigma,_) = EvarInfoMap.existential_type sigma
   let existential_opt_value (sigma,_) = EvarInfoMap.existential_opt_value sigma
-  let progress_evar_map (sigma1,sm1 as x) (sigma2,sm2 as y) = not (x == y) &&
+  let progress_evar_map (sigma1,sm1 as x) (sigma2,sm2 as y) =
+    not (x == y) &&
     (EvarInfoMap.exists_undefined sigma1
-      (fun k v -> assert (v.evar_body = Evar_empty);
+      (fun k v -> assert (v.evar_body == Evar_empty);
         EvarInfoMap.is_defined sigma2 k))
 
   let merge e e' = fold e' (fun n v sigma -> add sigma n v) e
@@ -259,6 +268,8 @@ let map_fl f cfl = { cfl with rebus=f cfl.rebus }
 *)
 
 type instance_constraint = IsSuperType | IsSubType | Conv
+
+let eq_instance_constraint c1 c2 = c1 == c2
 
 (* Status of the unification of the type of an instance against the type of
      the meta it instantiates:
@@ -361,7 +372,7 @@ let add_constraints d e = {d with evars= EvarMap.add_constraints d.evars e}
 (* evar_map are considered empty disregarding histories *)
 let is_empty d =
   EvarMap.is_empty d.evars &&
-  d.conv_pbs = [] &&
+  begin match d.conv_pbs with [] -> true | _ -> false end &&
   Metamap.is_empty d.metas
 
 let subst_named_context_val s = map_named_val (subst_mps s)
@@ -376,7 +387,7 @@ let subst_evar_info s evi =
 
 let subst_evar_defs_light sub evd =
   assert (Univ.is_initial_universes (snd (snd evd.evars)));
-  assert (evd.conv_pbs = []);
+  assert (match evd.conv_pbs with [] -> true | _ -> false);
   { evd with
       metas = Metamap.map (map_clb (subst_mps sub)) evd.metas;
       evars = EvarInfoMap.map (subst_evar_info sub)  (fst evd.evars), (snd evd.evars)
@@ -417,13 +428,12 @@ let define evk body evd =
         | _ -> ExistentialSet.add evk evd.last_mods }
 
 let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) ?filter ?candidates evd =
-  let filter =
-    if filter = None then
-      List.map (fun _ -> true) (named_context_of_val hyps)
-    else
-      (let filter = Option.get filter in
-      assert (List.length filter = List.length (named_context_of_val hyps));
-      filter)
+  let filter = match filter with
+  | None ->
+    List.map (fun _ -> true) (named_context_of_val hyps)
+  | Some filter ->
+    assert (Int.equal (List.length filter) (List.length (named_context_of_val hyps)));
+    filter
   in
   { evd with
     evars = EvarMap.add_undefined evd.evars evk
@@ -504,31 +514,34 @@ let univ_of_sort = function
   | Prop Null -> Univ.type0m_univ
 
 let is_eq_sort s1 s2 =
-  if s1 = s2 then None
-  else 
-    let u1 = univ_of_sort s1 and u2 = univ_of_sort s2 in
-      if u1 = u2 then None
+  if Pervasives.(=) s1 s2 then None (* FIXME *)
+  else
+    let u1 = univ_of_sort s1
+    and u2 = univ_of_sort s2 in
+      if Pervasives.(=) u1 u2 then None (* FIXME *)
       else Some (u1, u2)
 
-let is_univ_var_or_set u =   
-  Univ.is_univ_variable u || u = Univ.type0_univ
+let is_univ_var_or_set u =
+  Univ.is_univ_variable u || Pervasives.(=) u Univ.type0_univ (** FIXME *)
 
 let set_leq_sort ({evars = (sigma, (us, sm))} as d) s1 s2 =
   match is_eq_sort s1 s2 with
   | None -> d
   | Some (u1, u2) ->
-      match s1, s2 with
-      | Prop c, Prop c' -> 
-	  if c = Null && c' = Pos then d
-	  else (raise (Univ.UniverseInconsistency (Univ.Le, u1, u2,[])))
-     | Type u, Prop c -> 
-	  if c = Pos then 
-	    add_constraints d (Univ.enforce_leq u Univ.type0_univ Univ.empty_constraint)
-	  else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2,[]))
-      | _, Type u ->
-	  if is_univ_var_or_set u then
-	    add_constraints d (Univ.enforce_leq u1 u2 Univ.empty_constraint)
-	  else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2,[]))
+    match s1, s2 with
+    | Prop Null, Prop Pos -> d
+    | Prop _, Prop _ ->
+      raise (Univ.UniverseInconsistency (Univ.Le, u1, u2,[]))
+    | Type u, Prop Pos ->
+      let cstr = Univ.enforce_leq u Univ.type0_univ Univ.empty_constraint in
+      add_constraints d cstr
+    | Type _, Prop _ ->
+      raise (Univ.UniverseInconsistency (Univ.Le, u1, u2,[]))
+    | _, Type u ->
+      if is_univ_var_or_set u then
+        let cstr = Univ.enforce_leq u1 u2 Univ.empty_constraint in
+        add_constraints d cstr
+      else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2,[]))
 
 let is_univ_level_var us u =
   match Univ.universe_level u with
@@ -637,7 +650,7 @@ let meta_with_name evd id =
     Metamap.fold
       (fun n clb (l1,l2 as l) ->
         let (na',def) = clb_name clb in
-        if na = na' then if def then (n::l1,l2) else (n::l1,n::l2)
+        if name_eq na na' then if def then (n::l1,l2) else (n::l1,n::l2)
         else l)
       evd.metas ([],[]) in
   match mvnodef, mvl with
@@ -790,7 +803,7 @@ let evar_dependency_closure n sigma =
   let graph = compute_evar_dependency_graph sigma in
   let order a b = fst a < fst b in
   let rec aux n l =
-    if n=0 then l
+    if Int.equal n 0 then l
     else
       let l' =
         List.map_append (fun (evk,_) ->
@@ -815,7 +828,7 @@ let pr_evar_map_t depth sigma =
       | Some n ->
           (* Print all evars *)
           str"UNDEFINED EVARS"++
-          (if n=0 then mt() else str" (+level "++int n++str" closure):")++
+          (if Int.equal n 0 then mt() else str" (+level "++int n++str" closure):")++
           brk(0,1)++
           pr_evar_list (evar_dependency_closure n sigma)++fnl()
   and svs =
@@ -850,15 +863,19 @@ let pr_constraints pbs =
 	    spc() ++ print_constr t2) pbs)
 
 let pr_evar_map_constraints evd =
-  if evd.conv_pbs = [] then mt()
-  else pr_constraints evd.conv_pbs++fnl()
+  match evd.conv_pbs with
+  | [] -> mt ()
+  | _ -> pr_constraints evd.conv_pbs ++ fnl ()
 
 let pr_evar_map allevars evd =
   let pp_evm =
     if EvarMap.is_empty evd.evars then mt() else
       pr_evar_map_t allevars evd++fnl() in
-  let cstrs = if evd.conv_pbs = [] then mt() else
-    str"CONSTRAINTS:"++brk(0,1)++pr_constraints evd.conv_pbs++fnl() in
+  let cstrs = match evd.conv_pbs with
+  | [] -> mt ()
+  | _ ->
+    str "CONSTRAINTS:" ++ brk(0,1) ++ pr_constraints evd.conv_pbs ++ fnl ()
+  in
   let pp_met =
     if Metamap.is_empty evd.metas then mt() else
       str"METAS:"++brk(0,1)++pr_meta_map evd.metas in

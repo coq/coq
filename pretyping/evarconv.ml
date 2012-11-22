@@ -170,7 +170,7 @@ let ise_array2 evd f v1 v2 =
       if b then allrec i' (n-1) else (evd,false)
   in
   let lv1 = Array.length v1 in
-  if lv1 = Array.length v2 then allrec evd (pred lv1)
+  if Int.equal lv1 (Array.length v2) then allrec evd (pred lv1)
   else (evd,false)
 
 let ise_stack2 no_app env evd f sk1 sk2 =
@@ -185,8 +185,8 @@ let ise_stack2 no_app env evd f sk1 sk2 =
 	let (i'',b'') = ise_array2 i' (fun ii -> f env ii CONV) c1 c2 in
 	if b'' then ise_stack2 true i'' q1 q2 else fal ()
       else fal ()
-    | Zfix ((li1,(_,tys1,bds1 as recdef1)),a1)::q1, Zfix ((li2,(_,tys2,bds2)),a2)::q2 ->
-      if li1=li2 then
+    | Zfix (((li1, i1),(_,tys1,bds1 as recdef1)),a1)::q1, Zfix (((li2, i2),(_,tys2,bds2)),a2)::q2 ->
+      if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
         let (i',b') = ise_and i [
 	  (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
 	  (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
@@ -271,6 +271,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
     in
     ise_try evd [f1; f2; f3] in
 
+  let app_empty = match sk1, sk2 with [], [] -> true | _ -> false in
   (* Evar must be undefined since we have flushed evars *)
   match (flex_kind_of_term term1 sk1, flex_kind_of_term term2 sk2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
@@ -284,7 +285,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	          (position_problem true pbty,ev1,zip(term2,r))
 	  |_, (_, _) -> (i, false)
 	and f2 i =
-          if sp1 = sp2 then
+          if Int.equal sp1 sp2 then
 	    match ise_stack2 false env i (evar_conv_x ts) sk1 sk2 with
 	    |None, (i', true) -> solve_refl (evar_conv_x ts) env i' sp1 al1 al2, true
 	    |_ -> i, false
@@ -336,7 +337,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
             | (CoFix _|Meta _|Rel _)-> true
             | Evar _ -> List.exists (function (Zfix _ | Zcase _) -> true | _ -> false) args
 	    (* false (* immediate solution without Canon Struct *)*)
-            | Lambda _ -> assert(args = []); true
+            | Lambda _ -> assert (match args with [] -> true | _ -> false); true
             | LetIn (_,b,_,c) ->
                 is_unnamed (whd_betaiota_deltazeta_for_iota_state ts env i (subst1 b c, args))
             | Case _| Fix _| App _| Cast _ -> assert false in
@@ -372,7 +373,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
     | Rigid, Rigid when isLambda term1 & isLambda term2 ->
         let (na,c1,c'1) = destLambda term1 in
         let (_,c2,c'2) = destLambda term2 in
-        assert (sk1=[] & sk2=[]);
+        assert app_empty;
         ise_and evd
           [(fun i -> evar_conv_x ts env i CONV c1 c2);
            (fun i ->
@@ -419,7 +420,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 
     (* Eta-expansion *)
     | Rigid, _ when isLambda term1 ->
-	assert (sk1 = []);
+	assert (match sk1 with [] -> true | _ -> false);
 	let (na,c1,c'1) = destLambda term1 in
         let c = nf_evar evd c1 in
 	let env' = push_rel (na,None,c) env in
@@ -428,7 +429,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	evar_eqappr_x ts env' evd CONV appr1 appr2
 
     | _, Rigid when isLambda term2 ->
-	assert (sk2 = []);
+	assert (match sk2 with [] -> true | _ -> false);
 	let (na,c2,c'2) = destLambda term2 in
         let c = nf_evar evd c2 in
 	let env' = push_rel (na,None,c) env in
@@ -439,17 +440,17 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
     | Rigid, Rigid -> begin
         match kind_of_term term1, kind_of_term term2 with
 
-	| Sort s1, Sort s2 when sk1=[] & sk2=[] ->
+	| Sort s1, Sort s2 when app_empty ->
 	    (try 
 	       let evd' = 
-		 if pbty = CONV 
+		 if pbty == CONV 
 		 then Evd.set_eq_sort evd s1 s2 
 		 else Evd.set_leq_sort evd s1 s2 
 	       in (evd', true)
 	     with Univ.UniverseInconsistency _ -> (evd, false)
 	     | _ -> (evd, false))
 
-	| Prod (n,c1,c'1), Prod (_,c2,c'2) when sk1=[] & sk2=[] ->
+	| Prod (n,c1,c'1), Prod (_,c2,c'2) when app_empty ->
             ise_and evd
               [(fun i -> evar_conv_x ts env i CONV c1 c2);
                (fun i ->
@@ -467,7 +468,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
             else (evd, false)
 
 	| CoFix (i1,(_,tys1,bds1 as recdef1)), CoFix (i2,(_,tys2,bds2)) ->
-            if i1=i2  then
+            if Int.equal i1 i2  then
               ise_and evd
                 [(fun i -> ise_array2 i
                     (fun i -> evar_conv_x ts env i CONV) tys1 tys2);
@@ -489,8 +490,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 
     | PseudoRigid, PseudoRigid ->
       begin match kind_of_term term1, kind_of_term term2 with
-      | Fix (li1,(_,tys1,bds1 as recdef1)), Fix (li2,(_,tys2,bds2)) -> (* Partially applied fixs *)
-	if li1=li2 then
+      | Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
+	if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
           ise_and evd [
 	    (fun i -> ise_array2 i (fun i' -> evar_conv_x ts env i' CONV) tys1 tys2);
 	    (fun i -> ise_array2 i (fun i' -> evar_conv_x ts (push_rec_types recdef1 env) i' CONV) bds1 bds2);
@@ -512,7 +513,7 @@ and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) 
   let (evd',ks,_) =
     List.fold_left
       (fun (i,ks,m) b ->
-	 if m=n then (i,t2::ks, m-1) else
+	 if Int.equal m n then (i,t2::ks, m-1) else
 	 let dloc = (Loc.ghost,Evar_kinds.InternalHole) in
          let (i',ev) = new_evar i env ~src:dloc (substl ks b) in
 	 (i', ev :: ks, m - 1))
@@ -553,8 +554,9 @@ let choose_less_dependent_instance evk evd term args =
   let evi = Evd.find_undefined evd evk in
   let subst = make_pure_subst evi args in
   let subst' = List.filter (fun (id,c) -> eq_constr c term) subst in
-  if subst' = [] then evd, false else
-  Evd.define evk (mkVar (fst (List.hd subst'))) evd, true
+  match subst' with
+  | [] -> evd, false
+  | (id, _) :: _ -> Evd.define evk (mkVar id) evd, true
 
 let apply_on_subterm f c t =
   let rec applyrec (k,c as kc) t =
@@ -614,10 +616,12 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
 
   let rec make_subst = function
   | (id,_,t)::ctxt', c::l, occs::occsl when isVarId id c ->
-      if occs<>None then
+      begin match occs with
+      | Some _ ->
         error "Cannot force abstraction on identity instance."
-      else
+      | None ->
         make_subst (ctxt',l,occsl)
+      end
   | (id,_,t)::ctxt', c::l, occs::occsl ->
       let evs = ref [] in
       let ty = Retyping.get_type_of env_rhs evd c in
@@ -698,18 +702,19 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let t2 = apprec_nohdbeta ts env evd (whd_head_evar evd t2) in
   let (term1,l1 as appr1) = decompose_app t1 in
   let (term2,l2 as appr2) = decompose_app t2 in
+  let app_empty = match l1, l2 with [], [] -> true | _ -> false in
   match kind_of_term term1, kind_of_term term2 with
-  | Evar (evk1,args1), (Rel _|Var _) when l1 = [] & l2 = []
-      & Array.for_all (fun a -> eq_constr a term2 or isEvar a) args1 ->
+  | Evar (evk1,args1), (Rel _|Var _) when app_empty
+      && Array.for_all (fun a -> eq_constr a term2 || isEvar a) args1 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
       choose_less_dependent_instance evk1 evd term2 args1
-  | (Rel _|Var _), Evar (evk2,args2) when l1 = [] & l2 = []
-      & Array.for_all (fun a -> eq_constr a term1 or isEvar a) args2 ->
+  | (Rel _|Var _), Evar (evk2,args2) when app_empty
+      && Array.for_all (fun a -> eq_constr a term1 || isEvar a) args2 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
       choose_less_dependent_instance evk2 evd term1 args2
-  | Evar (evk1,args1), Evar (evk2,args2) when evk1 = evk2 ->
+  | Evar (evk1,args1), Evar (evk2,args2) when Int.equal evk1 evk2 ->
       let f env evd pbty x y = (evd,is_trans_fconv pbty ts env evd x y) in
       solve_refl ~can_drop:true f env evd evk1 args1 args2, true
   | Evar ev1, Evar ev2 ->
@@ -796,9 +801,11 @@ let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =
       let evd', b = apply_conversion_problem_heuristic ts env evd pbty t1 t2 in
 	if b then 
 	  let (evd', rest) = extract_all_conv_pbs evd' in
-	    if rest = [] then aux evd' pbs true stuck
-	    else (* Unification got actually stuck, postpone *)
+          begin match rest with
+          | [] -> aux evd' pbs true stuck
+	  | _ -> (* Unification got actually stuck, postpone *)
 	      aux evd pbs progress (pb :: stuck)
+          end
 	else Pretype_errors.error_cannot_unify env evd (t1, t2)
     | _ -> 
 	if progress then aux evd stuck false []

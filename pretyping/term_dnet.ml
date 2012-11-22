@@ -117,7 +117,7 @@ struct
 
   let fold2 (f:'a -> 'b -> 'c -> 'a) (acc:'a) (c1:'b t) (c2:'c t) : 'a =
     let head w = map (fun _ -> ()) w in
-    if compare (head c1) (head c2) <> 0
+    if not (Int.equal (compare (head c1) (head c2)) 0)
     then invalid_arg "fold2:compare" else
       match c1,c2 with
 	| (DRel, DRel | DNil, DNil | DSort, DSort | DRef _, DRef _) -> acc
@@ -136,7 +136,7 @@ struct
 
   let map2 (f:'a -> 'b -> 'c) (c1:'a t) (c2:'b t) : 'c t =
     let head w = map (fun _ -> ()) w in
-    if compare (head c1) (head c2) <> 0
+    if not (Int.equal (compare (head c1) (head c2)) 0)
     then invalid_arg "map2_t:compare" else
       match c1,c2 with
 	| (DRel, DRel | DSort, DSort | DNil, DNil | DRef _, DRef _) as cc ->
@@ -283,7 +283,7 @@ struct
 
   let rec e_subst_evar i (t:unit->constr) c =
     match kind_of_term c with
-    | Evar (j,_) when i=j -> t()
+    | Evar (j,_) when Int.equal i j -> t()
     | _ -> map_constr (e_subst_evar i t) c
 
   let subst_evar i c = e_subst_evar i (fun _ -> c)
@@ -312,7 +312,7 @@ struct
       ) (TDnet.find_match dpat dn) []
 
   let fold_pattern_neutral f =
-    fold_pattern (fun acc (mset,m,dn) -> if m=neutral_meta then acc else f m dn acc)
+    fold_pattern (fun acc (mset,m,dn) -> if Int.equal m neutral_meta then acc else f m dn acc)
 
   let fold_pattern_nonlin f =
     let defined = ref Gmap.empty in

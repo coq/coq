@@ -64,7 +64,7 @@ let e_judge_of_apply env evdref funj argjv =
   apply_rec 1 funj.uj_type (Array.to_list argjv)
 
 let e_check_branch_types env evdref ind cj (lfj,explft) =
-  if Array.length lfj <> Array.length explft then
+  if not (Int.equal (Array.length lfj) (Array.length explft)) then
     error_number_branches env cj (Array.length explft);
   for i = 0 to Array.length explft - 1 do
     if not (Evarconv.e_cumul env evdref lfj.(i).uj_type explft.(i)) then
@@ -124,7 +124,7 @@ let check_allowed_sort env sigma ind c p =
   let ksort = family_of_sort (sort_of_arity env sigma pj.uj_type) in
   let specif = Global.lookup_inductive ind in
   let sorts = elim_sorts specif in
-  if not (List.exists ((=) ksort) sorts) then
+  if not (List.exists ((==) ksort) sorts) then
     let s = inductive_sort_family (snd specif) in
     error_elim_arity env ind sorts c pj
       (Some(ksort,s,error_elim_explain ksort s))

@@ -85,7 +85,7 @@ let rec shift_value n = function
   | CONSTR (c,args) ->
       CONSTR (c, Array.map (shift_value n) args)
 let shift_value n v =
-  if n = 0 then v else shift_value n v
+  if Int.equal n 0 then v else shift_value n v
 
 (* Contracts a fixpoint: given a fixpoint and a bindings,
  * returns the corresponding fixpoint body, and the bindings in which
@@ -110,7 +110,7 @@ let make_constr_ref n = function
 
 (* Adds an application list. Collapse APPs! *)
 let stack_app appl stack =
-  if Array.length appl = 0 then stack else
+  if Int.equal (Array.length appl) 0 then stack else
     match stack with
     | APP(args,stk) -> APP(Array.append appl args,stk)
     | _             -> APP(appl, stack)

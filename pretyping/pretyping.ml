@@ -64,11 +64,12 @@ exception Found of int array
 let search_guard loc env possible_indexes fixdefs =
   (* Standard situation with only one possibility for each fix. *)
   (* We treat it separately in order to get proper error msg. *)
-  if List.for_all (fun l->1=List.length l) possible_indexes then
+  let is_singleton = function [_] -> true | _ -> false in
+  if List.for_all is_singleton possible_indexes then
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
     let fix = ((indexes, 0),fixdefs) in
     (try check_fix env fix with
-       | e -> if loc = Loc.ghost then raise e else Loc.raise loc e);
+       | e -> Loc.raise loc e);
     indexes
   else
     (* we now search recursively amoungst all combinations *)
@@ -81,7 +82,6 @@ let search_guard loc env possible_indexes fixdefs =
 	    with TypeError _ -> ())
 	 (List.combinations possible_indexes);
        let errmsg = "Cannot guess decreasing argument of fix." in
-       if loc = Loc.ghost then error errmsg else
 	 user_err_loc (loc,"search_guard", Pp.str errmsg)
      with Found indexes -> indexes)
 
@@ -165,7 +165,7 @@ let evd_comb2 f evdref x y =
 
 let evar_type_fixpoint loc env evdref lna lar vdefj =
   let lt = Array.length vdefj in
-    if Array.length lar = lt then
+    if Int.equal (Array.length lar) lt then
       for i = 0 to lt-1 do
         if not (e_cumul env evdref (vdefj.(i)).uj_type
 		  (lift lt lar.(i))) then
@@ -384,14 +384,14 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	  | Some ty ->
 	      let (ind, i) = destConstruct fj.uj_val in
 	      let npars = inductive_nparams ind in
-	  	if npars = 0 then []
+	  	if Int.equal npars 0 then []
 	  	else
 	  	  try
 	  	    (* Does not treat partially applied constructors. *)
 		    let ty = evd_comb1 (Coercion.inh_coerce_to_prod loc env) evdref ty in
 	  	    let IndType (indf, args) = find_rectype env !evdref ty in
 	  	    let (ind',pars) = dest_ind_family indf in
-	  	      if ind = ind' then pars
+	  	      if eq_ind ind ind' then pars
 	  	      else (* Let the usual code throw an error *) []
 	  	  with Not_found -> []
  	else []
@@ -462,14 +462,14 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 
   | GProd(loc,name,bk,c1,c2)        ->
       let j = pretype_type empty_valcon env evdref lvar c1 in
-      let j' =
-	if name = Anonymous then
-	  let j = pretype_type empty_valcon env evdref lvar c2 in
-	    { j with utj_val = lift 1 j.utj_val }
-	else
-	  let var = (name,j.utj_val) in
-	  let env' = push_rel_assum var env in
-	    pretype_type empty_valcon env' evdref lvar c2
+      let j' = match name with
+      | Anonymous ->
+        let j = pretype_type empty_valcon env evdref lvar c2 in
+          { j with utj_val = lift 1 j.utj_val }
+      | Name _ ->
+        let var = (name,j.utj_val) in
+        let env' = push_rel_assum var env in
+          pretype_type empty_valcon env' evdref lvar c2
       in
       let resj =
 	try judge_of_product env name j j'
@@ -500,11 +500,11 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	    error_case_not_inductive_loc cloc env !evdref cj
       in
       let cstrs = get_constructors env indf in
-	if Array.length cstrs <> 1 then
+	if not (Int.equal (Array.length cstrs) 1) then
           user_err_loc (loc,"",str "Destructing let is only for inductive types" ++
 			str " with one constructor.");
 	let cs = cstrs.(0) in
-	  if List.length nal <> cs.cs_nargs then
+	  if not (Int.equal (List.length nal) cs.cs_nargs) then
             user_err_loc (loc,"", str "Destructing let on this type expects " ++ 
 			    int cs.cs_nargs ++ str " variables.");
 	  let fsign = List.map2 (fun na (_,c,t) -> (na,c,t))
@@ -568,7 +568,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	  let cloc = loc_of_glob_constr c in
 	    error_case_not_inductive_loc cloc env !evdref cj in
       let cstrs = get_constructors env indf in
-	if Array.length cstrs <> 2 then
+	if not (Int.equal (Array.length cstrs) 2) then
           user_err_loc (loc,"",
 			str "If is only for inductive types with two constructors.");
 
