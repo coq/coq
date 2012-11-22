@@ -27,9 +27,10 @@ let isConstructRef = function ConstructRef _ -> true | _ -> false
 let eq_gr gr1 gr2 =
   match gr1,gr2 with
     | ConstRef con1, ConstRef con2 -> eq_constant con1 con2
-    | IndRef kn1,IndRef kn2 -> eq_ind kn1 kn2
-    | ConstructRef kn1,ConstructRef kn2 -> eq_constructor kn1 kn2
-    | _,_ -> gr1=gr2
+    | IndRef kn1, IndRef kn2 -> eq_ind kn1 kn2
+    | ConstructRef kn1, ConstructRef kn2 -> eq_constructor kn1 kn2
+    | VarRef v1, VarRef v2 -> id_eq v1 v2
+    | _ -> false
 
 let destVarRef = function VarRef ind -> ind | _ -> failwith "destVarRef"
 let destConstRef = function ConstRef ind -> ind | _ -> failwith "destConstRef"
@@ -77,15 +78,16 @@ let reference_of_constr = global_of_constr
 
 let global_ord_gen fc fmi x y =
   let ind_ord (indx,ix) (indy,iy) =
-    let c = Pervasives.compare ix iy in
-    if c = 0 then kn_ord (fmi indx) (fmi indy) else c
+    let c = Int.compare ix iy in
+    if Int.equal c 0 then kn_ord (fmi indx) (fmi indy) else c
   in
   match x, y with
     | ConstRef cx, ConstRef cy -> kn_ord (fc cx) (fc cy)
     | IndRef indx, IndRef indy -> ind_ord indx indy
     | ConstructRef (indx,jx), ConstructRef (indy,jy) ->
-      let c = Pervasives.compare jx jy in
-      if c = 0 then ind_ord indx indy else c
+      let c = Int.compare jx jy in
+      if Int.equal c 0 then ind_ord indx indy else c
+    | VarRef v1, VarRef v2 -> id_ord v1 v2
     | _, _ -> Pervasives.compare x y
 
 let global_ord_can = global_ord_gen canonical_con canonical_mind

@@ -82,6 +82,10 @@ type full_path = {
   dirpath : dir_path ;
   basename : identifier }
 
+let eq_full_path p1 p2 =
+  id_eq p1.basename p2.basename &&
+  Int.equal (dir_path_ord p1.dirpath p2.dirpath) 0
+
 let make_path pa id = { dirpath = pa; basename = id }
 
 let repr_path { dirpath = pa; basename = id } = (pa,id)
@@ -130,6 +134,8 @@ type qualid = full_path
 let make_qualid = make_path
 let repr_qualid = repr_path
 
+let qualid_eq = eq_full_path
+
 let string_of_qualid = string_of_path
 let pr_qualid = pr_path
 
@@ -157,6 +163,19 @@ type global_dir_reference =
   | DirClosedSection of dir_path
       (* this won't last long I hope! *)
 
+let eq_op (d1, (mp1, p1)) (d2, (mp2, p2)) =
+  Int.equal (dir_path_ord d1 d2) 0 &&
+  Int.equal (dir_path_ord p1 p2) 0 &&
+  mp_eq mp1 mp2
+
+let eq_global_dir_reference r1 r2 = match r1, r2 with
+| DirOpenModule op1, DirOpenModule op2 -> eq_op op1 op2
+| DirOpenModtype op1, DirOpenModtype op2 -> eq_op op1 op2
+| DirOpenSection op1, DirOpenSection op2 -> eq_op op1 op2
+| DirModule op1, DirModule op2 -> eq_op op1 op2
+| DirClosedSection dp1, DirClosedSection dp2 -> Int.equal (dir_path_ord dp1 dp2) 0
+| _ -> false
+
 type reference =
   | Qualid of qualid Loc.located
   | Ident of identifier Loc.located
@@ -176,6 +195,11 @@ let pr_reference = function
 let loc_of_reference = function
   | Qualid (loc,qid) -> loc
   | Ident (loc,id) -> loc
+
+let eq_reference r1 r2 = match r1, r2 with
+| Qualid (_, q1), Qualid (_, q2) -> qualid_eq q1 q2
+| Ident (_, id1), Ident (_, id2) -> id_eq id1 id2
+| _ -> false
 
 (* Deprecated synonyms *)
 

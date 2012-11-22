@@ -60,12 +60,12 @@ let modcache = ref (MPmap.empty : structure_body MPmap.t)
 
 let rec search_mod_label lab = function
   | [] -> raise Not_found
-  | (l,SFBmodule mb) :: _ when l = lab -> mb
+  | (l, SFBmodule mb) :: _ when eq_label l lab -> mb
   | _ :: fields -> search_mod_label lab fields
 
 let rec search_cst_label lab = function
   | [] -> raise Not_found
-  | (l,SFBconst cb) :: _ when l = lab -> cb
+  | (l, SFBconst cb) :: _ when eq_label l lab -> cb
   | _ :: fields -> search_cst_label lab fields
 
 let rec lookup_module_in_impl mp =
@@ -91,7 +91,7 @@ and fields_of_mp mp =
   let mb = lookup_module_in_impl mp in
   let fields,inner_mp,subs = fields_of_mb empty_subst mb [] in
   let subs =
-    if inner_mp = mp then subs
+    if mp_eq inner_mp mp then subs
     else add_mp inner_mp mp mb.mod_delta subs
   in
   Modops.subst_signature subs fields
@@ -114,7 +114,7 @@ and fields_of_mb subs mb args =
 
 and fields_of_seb subs mp0 seb args = match seb with
   | SEBstruct l ->
-    assert (args = []);
+    let () = assert (List.is_empty args) in
     l, mp0, subs
   | SEBident mp ->
     let mb = lookup_module_in_impl (subst_mp subs mp) in

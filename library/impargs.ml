@@ -82,7 +82,8 @@ let with_implicits flags f x =
 
 let set_maximality imps b =
   (* Force maximal insertion on ending implicits (compatibility) *)
-  b || List.for_all ((<>) None) imps
+  let is_set x = match x with None -> false | _ -> true in
+  b || List.for_all is_set imps
 
 (*s Computation of implicit arguments *)
 
@@ -113,6 +114,11 @@ type argument_position =
   | Conclusion
   | Hyp of int
 
+let argument_position_eq p1 p2 = match p1, p2 with
+| Conclusion, Conclusion -> true
+| Hyp h1, Hyp h2 -> Int.equal h1 h2
+| _ -> false
+
 type implicit_explanation =
   | DepRigid of argument_position
   | DepFlex of argument_position
@@ -132,10 +138,10 @@ let update pos rig (na,st) =
       | Some (DepRigid n as x) ->
           if argument_less (pos,n) then DepRigid pos else x
       | Some (DepFlexAndRigid (fpos,rpos) as x) ->
-          if argument_less (pos,fpos) or pos=fpos then DepRigid pos else
+          if argument_less (pos,fpos) || argument_position_eq pos fpos then DepRigid pos else
           if argument_less (pos,rpos) then DepFlexAndRigid (fpos,pos) else x
       | Some (DepFlex fpos) ->
-          if argument_less (pos,fpos) or pos=fpos then DepRigid pos
+          if argument_less (pos,fpos) || argument_position_eq pos fpos then DepRigid pos
           else DepFlexAndRigid (fpos,pos)
       | Some Manual -> assert false
   else
@@ -160,7 +166,8 @@ let is_flexible_reference env bound depth f =
         let cb = Environ.lookup_constant kn env in
 	(match cb.const_body with Def _ -> true | _ -> false)
     | Var id ->
-        let (_,value,_) = Environ.lookup_named id env in value <> None
+        let (_, value, _) = Environ.lookup_named id env in
+        begin match value with None -> false | _ -> true end
     | Ind _ | Construct _ -> false
     |  _ -> true
 
@@ -311,7 +318,7 @@ let set_implicit id imp insmax =
   (id,(match imp with None -> Manual | Some imp -> imp),insmax)
 
 let rec assoc_by_pos k = function
-    (ExplByPos (k', x), b) :: tl when k = k' -> (x,b), tl
+    (ExplByPos (k', x), b) :: tl when Int.equal k k' -> (x,b), tl
   | hd :: tl -> let (x, tl) = assoc_by_pos k tl in x, hd :: tl
   | [] -> raise Not_found
 
@@ -352,7 +359,11 @@ let set_manual_implicits env flags enriching autoimps l =
 	  let (id, (b, fi, fo)), l' = assoc_by_pos k l in
 	    l', (Some Manual), (Some (b,fi))
 	with Not_found ->
-	  l,imp, if enriching && imp <> None then Some (flags.maximal,true) else None
+          let m = match enriching, imp with
+          | true, Some _ -> Some (flags.maximal, true)
+          | _ -> None
+          in
+          l, imp, m
       in
       let imps' = merge (k+1) l' imps in
       let m = Option.map (fun (b,f) -> set_maximality imps' b, f) m in
@@ -360,7 +371,7 @@ let set_manual_implicits env flags enriching autoimps l =
   | (Anonymous,imp)::imps ->
       let l', forced = try_forced k l in
 	forced :: merge (k+1) l' imps
-  | [] when l = [] -> []
+  | [] when begin match l with [] -> true | _ -> false end -> []
   | [] ->
       check_correct_manual_implicits autoimps l;
       []
@@ -483,10 +494,15 @@ let subst_implicits (subst,(req,l)) =
   (ImplLocal,List.smartmap (subst_implicits_decl subst) l)
 
 let impls_of_context ctx =
-  List.rev_map
-    (fun (id,impl,_,_) ->
-      if impl = Implicit then Some (id, Manual, (true,true)) else None)
-    (List.filter (fun (_,_,b,_) -> b = None) ctx)
+  let map (id, impl, _, _) = match impl with
+  | Implicit -> Some (id, Manual, (true, true))
+  | _ -> None
+  in
+  let is_set (_, _, b, _) = match b with
+  | None -> true
+  | Some _ -> false
+  in
+  List.rev_map map (List.filter is_set ctx)
 
 let section_segment_of_reference = function
   | ConstRef con -> section_segment_of_constant con
@@ -566,8 +582,9 @@ let rebuild_implicits (req,l) =
 	  else
 	    [ref,oldimpls]
 
-let classify_implicits (req,_ as obj) =
-  if req = ImplLocal then Dispose else Substitute obj
+let classify_implicits (req,_ as obj) = match req with
+| ImplLocal -> Dispose
+| _ -> Substitute obj
 
 type implicits_obj =
     implicit_discharge_request *
@@ -659,8 +676,9 @@ let declare_manual_implicits local ref ?enriching l =
     add_anonymous_leaf (inImplicits (req,[ref,l']))
 
 let maybe_declare_manual_implicits local ref ?enriching l =
-  if l = [] then ()
-  else declare_manual_implicits local ref ?enriching [l]
+  match l with
+  | [] -> ()
+  | _ -> declare_manual_implicits local ref ?enriching [l]
 
 let extract_impargs_data impls =
   let rec aux p = function
@@ -678,7 +696,7 @@ let lift_implicits n =
 let make_implicits_list l = [DefaultImpArgs, l]
 
 let rec drop_first_implicits p l =
-  if p = 0 then l else match l with
+  if Int.equal p 0 then l else match l with
   | _,[] as x -> x
   | DefaultImpArgs,imp::impls ->
       drop_first_implicits (p-1) (DefaultImpArgs,impls)

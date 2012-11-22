@@ -189,16 +189,23 @@ let split_lib_gen test =
       | None -> error "no such entry"
       | Some r -> r
 
-let split_lib sp = split_lib_gen (fun x -> fst x = sp)
+let eq_object_name (fp1, kn1) (fp2, kn2) =
+  eq_full_path fp1 fp2 && Int.equal (Names.kn_ord kn1 kn2) 0
+
+let split_lib sp =
+  let is_sp (nsp, _) = eq_object_name sp nsp in
+  split_lib_gen is_sp
 
 let split_lib_at_opening sp =
-  let is_sp = function
-    | x,(OpenedSection _|OpenedModule _|CompilingLibrary _) -> x = sp
+  let is_sp (nsp, obj) = match obj with
+    | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
+      eq_object_name nsp sp
     | _ -> false
   in
-  let a,s,b = split_lib_gen is_sp in
-  assert (List.tl s = []);
-  (a,List.hd s,b)
+  let a, s, b = split_lib_gen is_sp in
+  match s with
+  | [obj] -> (a, obj, b)
+  | _ -> assert false
 
 (* Adding operations. *)
 
@@ -216,7 +223,8 @@ let add_anonymous_entry node =
   name
 
 let add_leaf id obj =
-  if fst (current_prefix ()) = Names.initial_path then
+  let (path, _) = current_prefix () in
+  if Names.mp_eq path Names.initial_path then
     error ("No session module started (use -top dir)");
   let oname = make_oname id in
   cache_object (oname,obj);
@@ -292,7 +300,7 @@ let end_mod is_type =
   let oname,fs =
     try match find_entry_p is_opening_node with
       | oname,OpenedModule (ty,_,_,fs) ->
-	if ty = is_type then oname,fs
+	if Pervasives.(=) ty is_type then oname, fs
 	else error_still_opened (module_kind ty) oname
       | oname,OpenedSection _ -> error_still_opened "section" oname
       | _ -> assert false
@@ -318,9 +326,9 @@ let contents_after = function
 
 (* TODO: use check_for_module ? *)
 let start_compilation s mp =
-  if !comp_name <> None then
+  if !comp_name != None then
     error "compilation unit is already started";
-  if snd (snd (!path_prefix)) <> Names.empty_dirpath then
+  if not (Names.dir_path_eq (snd (snd (!path_prefix))) Names.empty_dirpath) then
     error "some sections are already opened";
   let prefix = s, (mp, Names.empty_dirpath) in
   let _ = add_anonymous_entry (CompilingLibrary prefix) in
@@ -348,7 +356,7 @@ let end_compilation dir =
     match !comp_name with
       | None -> anomaly "There should be a module name..."
       | Some m ->
-	  if m <> dir then anomaly
+	  if not (Names.dir_path_eq m dir) then anomaly
 	    ("The current open module has name "^ (Names.string_of_dirpath m) ^
 	       " and not " ^ (Names.string_of_dirpath m));
   in
@@ -379,7 +387,7 @@ let find_opening_node id =
   try
     let oname,entry = find_entry_p is_opening_node in
     let id' = basename (fst oname) in
-    if id <> id' then
+    if not (Names.id_eq id id') then
       error ("Last block to end has name "^(Names.string_of_id id')^".");
     entry
   with Not_found -> error "There is nothing to end."
@@ -412,7 +420,8 @@ let add_section_variable id impl =
 
 let extract_hyps (secs,ohyps) =
   let rec aux = function
-    | ((id,impl)::idl,(id',b,t)::hyps) when id=id' -> (id',impl,b,t) :: aux (idl,hyps)
+    | ((id,impl)::idl,(id',b,t)::hyps) when Names.id_eq id id' ->
+      (id',impl,b,t) :: aux (idl,hyps)
     | (id::idl,hyps) -> aux (idl,hyps)
     | [], _ -> []
   in aux (secs,ohyps)
@@ -574,14 +583,15 @@ let mark_end_of_command, current_command_label, reset_command_label =
   let n = ref (first_command_label-1) in
   (fun () ->
     match !lib_stk with
-        (_,Leaf o)::_ when object_tag o = "DOT" -> ()
+        (_,Leaf o)::_ when String.equal (object_tag o) "DOT" -> ()
       | _ -> incr n;add_anonymous_leaf (inLabel !n)),
   (fun () -> !n),
   (fun x -> n:=x;add_anonymous_leaf (inLabel x))
 
 let is_label_n n x =
   match x with
-    | (sp,Leaf o) when object_tag o = "DOT" && n = outLabel o -> true
+    | (sp, Leaf o) when String.equal (object_tag o) "DOT" &&
+      Int.equal n (outLabel o) -> true
     | _ -> false
 
 (** Reset the label registered by [mark_end_of_command()] with number n,
@@ -599,8 +609,11 @@ let reset_label n =
 let label_before_name (loc,id) =
   let found = ref false in
   let search = function
-    | (_,Leaf o) when !found && object_tag o = "DOT" -> true
-    | (sp,_) -> (if id = snd (repr_path (fst sp)) then found := true); false
+    | (_, Leaf o) when !found && String.equal (object_tag o) "DOT" -> true
+    | ((fp, _),_) ->
+      let (_, name) = repr_path fp in
+      let () = if Names.id_eq id name then found := true in
+      false
   in
   match find_entry_p search with
     | (_,Leaf o) -> outLabel o
@@ -690,11 +703,13 @@ let pop_con con =
 
 let con_defined_in_sec kn =
   let _,dir,_ = Names.repr_con kn in
-  dir <> Names.empty_dirpath && fst (split_dirpath dir) = snd (current_prefix ())
+  not (Names.dir_path_eq dir Names.empty_dirpath) &&
+  Names.dir_path_eq (fst (split_dirpath dir)) (snd (current_prefix ()))
 
 let defined_in_sec kn =
   let _,dir,_ = Names.repr_mind kn in
-  dir <> Names.empty_dirpath && fst (split_dirpath dir) = snd (current_prefix ())
+  not (Names.dir_path_eq dir Names.empty_dirpath) &&
+  Names.dir_path_eq (fst (split_dirpath dir)) (snd (current_prefix ()))
 
 let discharge_global = function
   | ConstRef kn when con_defined_in_sec kn ->

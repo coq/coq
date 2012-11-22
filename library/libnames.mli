@@ -40,6 +40,8 @@ module Dirmap : Map.S with type key = dir_path
 (** {6 Full paths are {e absolute} paths of declarations } *)
 type full_path
 
+val eq_full_path : full_path -> full_path -> bool
+
 (** Constructors of [full_path] *)
 val make_path : dir_path -> identifier -> full_path
 
@@ -68,6 +70,8 @@ type qualid
 val make_qualid : dir_path -> identifier -> qualid
 val repr_qualid : qualid -> dir_path * identifier
 
+val qualid_eq : qualid -> qualid -> bool
+
 val pr_qualid : qualid -> std_ppcmds
 val string_of_qualid : qualid -> string
 val qualid_of_string : string -> qualid
@@ -87,6 +91,8 @@ type object_name = full_path * kernel_name
 
 type object_prefix = dir_path * (module_path * dir_path)
 
+val eq_op : object_prefix -> object_prefix -> bool
+
 val make_oname : object_prefix -> identifier -> object_name
 
 (** to this type are mapped [dir_path]'s in the nametab *)
@@ -98,6 +104,9 @@ type global_dir_reference =
   | DirClosedSection of dir_path
       (** this won't last long I hope! *)
 
+val eq_global_dir_reference : 
+  global_dir_reference -> global_dir_reference -> bool
+
 (** {6 ... } *)
 (** A [reference] is the user-level notion of name. It denotes either a
     global name (referred either by a qualified name or by a single
@@ -107,6 +116,7 @@ type reference =
   | Qualid of qualid located
   | Ident of identifier located
 
+val eq_reference : reference -> reference -> bool
 val qualid_of_reference : reference -> qualid located
 val string_of_reference : reference -> string
 val pr_reference : reference -> std_ppcmds

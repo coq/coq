@@ -87,8 +87,13 @@ let kind_of_head env t =
       if b then NotImmediatelyComputableHead else ConstructorHead
   | Sort _ | Ind _ | Prod _ -> RigidHead RigidType
   | Cast (c,_,_) -> aux k l c b
-  | Lambda (_,_,c) when l = [] -> assert (not b); aux (k+1) [] c b
-  | Lambda (_,_,c) -> aux (k+1) (List.tl l) (subst1 (List.hd l) c) b
+  | Lambda (_,_,c) ->
+    begin match l with
+    | [] ->
+      let () = assert (not b) in
+      aux (k + 1) [] c b
+    | h :: l -> aux (k + 1) l (subst1 h c) b
+    end
   | LetIn _ -> assert false
   | Meta _ | Evar _ -> NotImmediatelyComputableHead
   | App (c,al) -> aux k (Array.to_list al @ l) c b

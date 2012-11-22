@@ -33,7 +33,7 @@ let cut_ident skip_quote s =
       slen
     else
       let c = Char.code (String.get s (n-1)) in
-      if Int.equal c code_of_0 && n <> slen then
+      if Int.equal c code_of_0 && not (Int.equal n slen) then
 	numpart (n-1) n'
       else if code_of_0 <= c && c <= code_of_9 then
 	numpart (n-1) (n-1)

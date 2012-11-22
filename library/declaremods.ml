@@ -155,7 +155,7 @@ let _ = Summary.declare_summary "MODULE-INFO"
 
 let mp_of_kn kn =
   let mp,sec,l = repr_kn kn in
-    if sec=empty_dirpath then
+    if dir_path_eq sec empty_dirpath then
       MPdot (mp,l)
     else
       anomaly ("Non-empty section in module name!" ^ string_of_kn kn)
@@ -230,7 +230,9 @@ let build_subtypes interp_modtype mp args mtys =
 let compute_visibility exists what i dir dirinfo =
   if exists then
     if
-      try Nametab.locate_dir (qualid_of_dirpath dir) = dirinfo
+      try
+        let globref = Nametab.locate_dir (qualid_of_dirpath dir) in
+        eq_global_dir_reference globref dirinfo
       with Not_found -> false
     then
       Nametab.Exactly i
@@ -316,7 +318,7 @@ let load_keep i ((sp,kn),seg) =
     begin
       try
 	let prefix',objects = MPmap.find mp !modtab_objects in
-	  if prefix' <> prefix then
+	  if not (eq_op prefix' prefix) then
 	    anomaly "Two different modules with the same path!";
 	  modtab_objects := MPmap.add mp (prefix,objects@seg) !modtab_objects;
       with
@@ -366,7 +368,7 @@ let cache_modtype ((sp,kn),(entry,modtypeobjs,sub_mty_l)) =
       | None ->
 	  anomaly "You must not recache interactive module types!"
       | Some (mte,inl) ->
-	  if mp <> Global.add_modtype (basename sp) mte inl then
+	  if not (mp_eq mp (Global.add_modtype (basename sp) mte inl)) then
 	    anomaly "Kernel and Library names do not match"
   in
 
@@ -384,7 +386,7 @@ let cache_modtype ((sp,kn),(entry,modtypeobjs,sub_mty_l)) =
 
 
 let load_modtype i ((sp,kn),(entry,modtypeobjs,_)) =
-  assert (entry = None);
+  assert (Option.is_empty entry);
 
   if Nametab.exists_modtype sp then
     errorlabstrm "cache_modtype"
@@ -396,10 +398,12 @@ let load_modtype i ((sp,kn),(entry,modtypeobjs,_)) =
 
 
 let open_modtype i ((sp,kn),(entry,_,_)) =
-  assert (entry = None);
+  assert (Option.is_empty entry);
 
   if
-    try Nametab.locate_modtype (qualid_of_path sp) <> (mp_of_kn kn)
+    try
+      let mp = Nametab.locate_modtype (qualid_of_path sp) in
+      not (mp_eq mp (mp_of_kn kn))
     with Not_found -> true
   then
     errorlabstrm ("open_modtype")
@@ -408,7 +412,7 @@ let open_modtype i ((sp,kn),(entry,_,_)) =
   Nametab.push_modtype (Nametab.Exactly i) sp (mp_of_kn kn)
 
 let subst_modtype (subst,(entry,(mbids,mp,objs),_)) =
-  assert (entry = None);
+  assert (Option.is_empty entry);
   (entry,(mbids,subst_mp subst mp,subst_objects subst objs),[])
 
 let classify_modtype (_,substobjs,_) =
@@ -428,17 +432,18 @@ let in_modtype : modtype_obj -> obj =
       classify_function = classify_modtype }
 
 let rec replace_module_object idl (mbids,mp,lib_stack) (mbids2,mp2,objs) mp1 =
-  if mbids<>[] then anomaly "Unexpected functor objects";
+  let () = match mbids with
+  | [] -> () | _ -> anomaly "Unexpected functor objects" in
   let rec replace_idl = function
     | _,[] -> []
-    | id::idl,(id',obj)::tail when id = id' ->
-      if object_tag obj <> "MODULE" then anomaly "MODULE expected!";
-      let substobjs =
-	if idl = [] then
-	  let mp' = MPdot(mp, label_of_id id) in
-	  mbids, mp', subst_objects (map_mp mp1 mp' empty_delta_resolver) objs
-	else
-	  replace_module_object idl (out_module obj) (mbids2,mp2,objs) mp
+    | id::idl,(id',obj)::tail when id_eq id id' ->
+      if not (String.equal (object_tag obj) "MODULE") then anomaly "MODULE expected!";
+      let substobjs = match idl with
+      | [] ->
+        let mp' = MPdot(mp, label_of_id id) in
+        mbids, mp', subst_objects (map_mp mp1 mp' empty_delta_resolver) objs
+      | _ ->
+        replace_module_object idl (out_module obj) (mbids2,mp2,objs) mp
       in
       (id, in_module substobjs)::tail
     | idl,lobj::tail -> lobj::replace_idl (idl,tail)
@@ -611,16 +616,17 @@ let end_module () =
   in
   let node = in_module substobjs in
   let objects =
-    if keep = [] || mbids <> [] then
+    match keep, mbids with
+    | [], _ | _, _ :: _ ->
       special@[node]   (* no keep objects or we are defining a functor *)
-    else
+    | _ ->
       special@[node;in_modkeep keep]   (* otherwise *)
   in
   let newoname = Lib.add_leaves id objects in
 
-    if (fst newoname) <> (fst oldoname) then
+    if not (eq_full_path (fst newoname) (fst oldoname)) then
       anomaly "Names generated on start_ and end_module do not match";
-    if mp_of_kn (snd newoname) <> mp then
+    if not (mp_eq (mp_of_kn (snd newoname)) mp) then
       anomaly "Kernel and Library names do not match";
 
     Lib.add_frozen_state () (* to prevent recaching *);
@@ -652,7 +658,7 @@ let register_library dir cenv objs digest =
     (* if it's in the environment, the cached objects should be correct *)
     Dirmap.find dir !library_cache
   with Not_found ->
-    if mp <> Global.import cenv digest then
+    if not (mp_eq mp (Global.import cenv digest)) then
       anomaly "Unexpected disk module name";
     let mp,substitute,keep = objs in
     let substobjs = [], mp, substitute in
@@ -703,7 +709,7 @@ let subst_import (subst,(export,mp as obj)) =
 let in_import =
   declare_object {(default_object "IMPORT MODULE") with
 		    cache_function = cache_import;
-		    open_function = (fun i o -> if i=1 then cache_import o);
+		    open_function = (fun i o -> if Int.equal i 1 then cache_import o);
 		    subst_function = subst_import;
 		    classify_function = classify_import }
 
@@ -735,10 +741,10 @@ let end_modtype () =
   check_subtypes_mt mp sub_mty_l;
   let oname = Lib.add_leaves id (special@[in_modtype (None, modtypeobjs,[])])
   in
-  if fst oname <> fst oldoname then
+  if not (eq_full_path (fst oname) (fst oldoname)) then
     anomaly
       "Section paths generated on start_ and end_modtype do not match";
-  if (mp_of_kn (snd oname)) <> mp then
+  if not (mp_eq (mp_of_kn (snd oname)) mp) then
     anomaly
       "Kernel and Library names do not match";
 
@@ -833,10 +839,13 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
   (* and declare the module as a whole *)
   Summary.unfreeze_summaries fs;
   let mp = mp_of_kn (Lib.make_kn id) in
-  let inl = if inl_expr = None then None else inl_res in (*PLTODO *)
+  let inl = match inl_expr with
+  | None -> None
+  | _ -> inl_res
+  in (* PLTODO *)
   let mp_env,resolver = Global.add_module id entry inl in
 
-  if mp_env <> mp then anomaly "Kernel and Library names do not match";
+  if not (mp_eq mp_env mp) then anomaly "Kernel and Library names do not match";
 
   
   check_subtypes mp subs;
@@ -965,7 +974,7 @@ let declare_one_include_inner annot (me,is_mod) =
     else
       get_modtype_substobjs env mp1 inl me in
   let (mbids,mp,objs) =
-    if mbids <> [] then
+    if not (List.is_empty mbids) then
       get_includeself_substobjs env (mbids,mp,objs) me is_mod inl
     else
       (mbids,mp,objs) in

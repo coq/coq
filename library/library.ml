@@ -28,7 +28,9 @@ let get_load_paths () = List.map pi1 !load_paths
 
 let find_logical_path phys_dir =
   let phys_dir = CUnix.canonical_path_name phys_dir in
-  match List.filter (fun (p,d,_) -> p = phys_dir) !load_paths with
+  let filter (p, _, _) = String.equal p phys_dir in
+  let paths = List.filter filter !load_paths in
+  match paths with
   | [_,dir,_] -> dir
   | [] -> Nameops.default_root_prefix
   | l -> anomaly ("Two logical paths are associated to "^phys_dir)
@@ -40,21 +42,22 @@ let is_in_load_paths phys_dir =
     List.exists check_p lp
 
 let remove_load_path dir =
-  load_paths := List.filter (fun (p,d,_) -> p <> dir) !load_paths
+  load_paths := List.filter (fun (p,_,_) -> not (String.equal p dir)) !load_paths
 
 let add_load_path isroot (phys_path,coq_path) =
   let phys_path = CUnix.canonical_path_name phys_path in
-    match List.filter (fun (p,d,_) -> p = phys_path) !load_paths with
+  let filter (p, _, _) = String.equal p phys_path in
+    match List.filter filter !load_paths with
       | [_,dir,_] ->
-	  if coq_path <> dir
+	  if not (dir_path_eq coq_path dir)
             (* If this is not the default -I . to coqtop *)
             && not
-            (phys_path = CUnix.canonical_path_name Filename.current_dir_name
-		&& coq_path = Nameops.default_root_prefix)
+            (String.equal phys_path (CUnix.canonical_path_name Filename.current_dir_name)
+		&& dir_path_eq coq_path (Nameops.default_root_prefix))
 	  then
 	    begin
               (* Assume the user is concerned by library naming *)
-	      if dir <> Nameops.default_root_prefix then
+	      if not (dir_path_eq dir Nameops.default_root_prefix) then
 		Flags.if_warn msg_warning
 		  (str phys_path ++ strbrk " was previously bound to " ++
 		   pr_dirpath dir ++ strbrk "; it is remapped to " ++
@@ -87,7 +90,7 @@ let root_paths_matching_dir_path dir =
 
 let intersections d1 d2 =
   let rec aux d1 =
-    if d1 = empty_dirpath then [d2] else
+    if dir_path_eq d1 empty_dirpath then [d2] else
       let rest = aux (snd (chop_dirpath 1 d1)) in
       if is_dirpath_prefix_of d1 d2 then drop_dirpath_prefix d1 d2 :: rest
       else rest in
@@ -134,9 +137,7 @@ type library_t = {
 module LibraryOrdered =
   struct
     type t = dir_path
-    let compare d1 d2 =
-      Pervasives.compare
-        (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2))
+    let compare = dir_path_ord
   end
 
 module LibraryMap = Map.Make(LibraryOrdered)
@@ -209,7 +210,7 @@ let library_is_loaded dir =
   with Not_found -> false
 
 let library_is_opened dir =
-  List.exists (fun m -> m.library_name = dir) !libraries_imports_list
+  List.exists (fun m -> dir_path_eq m.library_name dir) !libraries_imports_list
 
 let loaded_libraries () =
   List.map (fun m -> m.library_name) !libraries_loaded_list
@@ -223,7 +224,7 @@ let opened_libraries () =
 let register_loaded_library m =
   let rec aux = function
     | [] -> [m]
-    | m'::_ as l when m'.library_name = m.library_name -> l
+    | m'::_ as l when dir_path_eq m'.library_name m.library_name -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
   libraries_table := LibraryMap.add m.library_name m !libraries_table
@@ -237,7 +238,7 @@ let register_loaded_library m =
 let rec remember_last_of_each l m =
   match l with
   | [] -> [m]
-  | m'::l' when m'.library_name = m.library_name -> remember_last_of_each l' m
+  | m'::l' when dir_path_eq m'.library_name m.library_name -> remember_last_of_each l' m
   | m'::l' -> m' :: remember_last_of_each l' m
 
 let register_open_library export m =
@@ -251,7 +252,7 @@ let register_open_library export m =
 (* [open_library export explicit m] opens library [m] if not already
    opened _or_ if explicitly asked to be (re)opened *)
 
-let eq_lib_name m1 m2 = m1.library_name = m2.library_name
+let eq_lib_name m1 m2 = dir_path_eq m1.library_name m2.library_name
 
 let open_library export explicit_libs m =
   if
@@ -287,7 +288,7 @@ let open_libraries export modl =
 (* import and export  -  synchronous operations*)
 
 let open_import i (_,(dir,export)) =
-  if i=1 then
+  if Int.equal i 1 then
     (* even if the library is already imported, we re-import it *)
     (* if not (library_is_opened dir) then *)
       open_libraries export [try_find_library dir]
@@ -327,7 +328,7 @@ let locate_absolute_library dir =
   (* Search in loadpath *)
   let pref, base = split_dirpath dir in
   let loadpath = root_paths_matching_dir_path pref in
-  if loadpath = [] then raise LibUnmappedDir;
+  let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
   try
     let name = (string_of_id base)^".vo" in
     let _, file = System.where_in_path ~warn:false loadpath name in
@@ -344,7 +345,7 @@ let locate_qualified_library warn qid =
     (* Search library in loadpath *)
     let dir, base = repr_qualid qid in
     let loadpath = loadpaths_matching_dir_path dir in
-    if loadpath = [] then raise LibUnmappedDir;
+    let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
     let name = string_of_id base ^ ".vo" in
     let lpath, file = System.where_in_path ~warn (List.map fst loadpath) name in
     let dir = add_dirpath_suffix (List.assoc lpath loadpath) base in
@@ -398,7 +399,7 @@ let fetch_opaque_table (f,pos,digest) =
   try
     let ch = System.with_magic_number_check raw_intern_library f in
     seek_in ch pos;
-    if System.marshal_in ch <> digest then failwith "File changed!";
+    if not (String.equal (System.marshal_in ch) digest) then failwith "File changed!";
     let table = (System.marshal_in ch : LightenLibrary.table) in
     close_in ch;
     table
@@ -427,7 +428,7 @@ let rec intern_library needed (dir, f) =
   with Not_found ->
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
   let m = intern_from_file f in
-  if dir <> m.library_name then
+  if not (dir_path_eq dir m.library_name) then
     errorlabstrm "load_physical_library"
       (str ("The file " ^ f ^ " contains library") ++ spc () ++
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
@@ -439,7 +440,7 @@ and intern_library_deps needed dir m =
 
 and intern_mandatory_library caller needed (dir,d) =
   let m,needed = intern_library needed (try_locate_absolute_library dir) in
-  if d <> m.library_digest then
+  if not (String.equal d m.library_digest) then
     errorlabstrm "" (strbrk ("Compiled library "^(string_of_dirpath caller)^
 	   ".vo makes inconsistent assumptions over library "
 	   ^(string_of_dirpath dir)));
@@ -449,7 +450,7 @@ let rec_intern_library needed mref =
   let _,needed = intern_library needed mref in needed
 
 let check_library_short_name f dir = function
-  | Some id when id <> snd (split_dirpath dir) ->
+  | Some id when not (id_eq id (snd (split_dirpath dir))) ->
       errorlabstrm "check_library_short_name"
       (str ("The file " ^ f ^ " contains library") ++ spc () ++
       pr_dirpath dir ++ spc () ++ str "and not library" ++ spc () ++
@@ -596,7 +597,8 @@ let import_module export (loc,qid) =
 
 let check_coq_overwriting p id =
   let l = repr_dirpath p in
-  if not !Flags.boot && l <> [] && string_of_id (List.last l) = "Coq" then
+  let is_empty = match l with [] -> true | _ -> false in
+  if not !Flags.boot && not is_empty && String.equal (string_of_id (List.last l)) "Coq" then
     errorlabstrm ""
       (strbrk ("Cannot build module "^string_of_dirpath p^"."^string_of_id id^
       ": it starts with prefix \"Coq\" which is reserved for the Coq library."))
