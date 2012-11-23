@@ -20,6 +20,8 @@ open Pattern
 
 (** {5 Functions on patterns} *)
 
+val constr_pattern_eq : constr_pattern -> constr_pattern -> bool
+
 val occur_meta_pattern : constr_pattern -> bool
 
 val subst_pattern : substitution -> constr_pattern -> constr_pattern

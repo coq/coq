@@ -24,6 +24,7 @@ val notation_constr_of_glob_constr :
 val ldots_var : identifier
 
 (** Equality of [glob_constr] (warning: only partially implemented) *)
+(** FIXME: nothing to do here *)
 val eq_glob_constr : glob_constr -> glob_constr -> bool
 
 (** Re-interpret a notation as a [glob_constr], taking care of binders     *)

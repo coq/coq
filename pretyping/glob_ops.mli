@@ -17,6 +17,9 @@ open Misctypes
 open Locus
 open Glob_term
 
+(** Equalities *)
+val glob_sort_eq : glob_sort -> glob_sort -> bool
+
 (** Operations on [glob_constr] *)
 
 val cases_pattern_loc : cases_pattern -> Loc.t

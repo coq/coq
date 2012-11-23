@@ -33,6 +33,13 @@ let map_glob_decl_left_to_right f (na,k,obd,ty) =
   let comp2 = f ty in
   (na,k,comp1,comp2)
 
+let glob_sort_eq g1 g2 = match g1, g2 with
+| GProp, GProp -> true
+| GSet, GSet -> true
+| GType None, GType None -> true
+| GType (Some s1), GType (Some s2) -> String.equal s1 s2
+| _ -> false
+
 let map_glob_constr_left_to_right f = function
   | GApp (loc,g,args) ->
       let comp1 = f g in
