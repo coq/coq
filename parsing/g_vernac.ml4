@@ -359,13 +359,13 @@ GEXTEND Gram
   ;
   simple_assum_coe:
     [ [ idl = LIST1 identref; oc = of_type_with_opt_coercion; c = lconstr ->
-        (oc <> None,(idl,c)) ] ]
+        (not (Option.is_empty oc),(idl,c)) ] ]
   ;
 
   constructor_type:
     [[ l = binders;
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
-	            fun l id -> (coe <> None,(id,mkCProdN (!@loc) l c))
+	            fun l id -> (not (Option.is_empty coe),(id,mkCProdN (!@loc) l c))
             |  ->
 		 fun l id -> (false,(id,mkCProdN (!@loc) l (CHole (!@loc, None)))) ]
 	 -> t l
@@ -612,7 +612,7 @@ GEXTEND Gram
            | [] -> narg, impl in
          let nargs, impl = List.split (List.map (aux 0 (-1, [])) impl) in
          let nargs, rest = List.hd nargs, List.tl nargs in
-         if List.exists ((<>) nargs) rest then
+         if List.exists (fun arg -> not (Int.equal arg nargs)) rest then
            error "All arguments lists must have the same length";
          let err_incompat x y =
            error ("Options \""^x^"\" and \""^y^"\" are incompatible") in
@@ -677,7 +677,7 @@ GEXTEND Gram
   ;
   argument_spec: [
        [ b = OPT "!"; id = name ; s = OPT scope ->
-       snd id, b <> None, Option.map (fun x -> !@loc, x) s
+       snd id, not (Option.is_empty b), Option.map (fun x -> !@loc, x) s
     ]
   ];
   strategy_level:

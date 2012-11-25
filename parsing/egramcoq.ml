@@ -177,7 +177,10 @@ let pure_sublevels level symbs =
   let filter s =
     try
       let i = level_of_snterml s in
-      if level = Some i then None else Some i
+      begin match level with
+      | Some j when Int.equal i j -> None
+      | _ -> Some i
+      end
     with Failure _ -> None
   in
   List.map_filter filter symbs
@@ -289,7 +292,7 @@ let extend_grammar gram =
 
 let recover_notation_grammar ntn prec =
   let filter = function
-  | _, Notation (prec', vars, ng) when prec = prec' & ntn = ng.notgram_notation ->
+  | _, Notation (prec', vars, ng) when Notation.level_eq prec prec' && String.equal ntn ng.notgram_notation ->
     Some (vars, ng)
   | _ -> None in
   let l = List.map_filter filter !grammar_state in

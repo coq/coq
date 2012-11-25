@@ -30,7 +30,7 @@ type attribute = string * (Loc.t * string)
 type xml = XmlTag of Loc.t * string * attribute list * xml list
 
 let check_tags loc otag ctag =
-  if otag <> ctag then
+  if not (String.equal otag ctag) then
     user_err_loc (loc,"",str "closing xml tag " ++ str ctag ++
       str "does not match open xml tag " ++ str otag ++ str ".")
 

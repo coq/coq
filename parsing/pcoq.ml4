@@ -116,7 +116,7 @@ module Gramtypes : Gramtypes =
 struct
   let inGramObj rawwit = in_typed_entry (unquote rawwit)
   let outGramObj (a:'a raw_abstract_argument_type) o =
-    if type_of_typed_entry o <> unquote a
+    if not (argument_type_eq (type_of_typed_entry o) (unquote a))
       then anomaly "outGramObj: wrong type";
     (* downcast from grammar_object *)
     Obj.magic (object_of_typed_entry o)
@@ -162,7 +162,7 @@ let grammar_delete e reinit (pos,rls) =
     (fun (n,ass,lev) ->
       List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
     (List.rev rls);
-  if reinit <> None then
+  if reinit != None then
     let lev = match pos with Some (Level n) -> n | _ -> assert false in
     let pos = match lev with
     | "200" -> First
@@ -279,7 +279,7 @@ let new_entry etyp (u, utab) s =
 let create_entry (u, utab) s etyp =
   try
     let e = Hashtbl.find utab s in
-    if type_of_typed_entry e <> etyp then
+    if not (argument_type_eq (type_of_typed_entry e) etyp) then
       failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type");
     e
   with Not_found ->

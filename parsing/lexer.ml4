@@ -131,7 +131,7 @@ let utf8_char_size cs = function
 let njunk n = Util.repeat n Stream.junk
 
 let check_utf8_trailing_byte cs c =
-  if Char.code c land 0xC0 <> 0x80 then error_utf8 cs
+  if not (Int.equal (Char.code c land 0xC0) 0x80) then error_utf8 cs
 
 (* Recognize utf8 blocks (of length less than 4 bytes) *)
 (* but don't certify full utf8 compliance (e.g. no emptyness check) *)
