@@ -135,15 +135,20 @@ let whd_head_evar_stack sigma c =
 
 let whd_head_evar sigma c = applist (whd_head_evar_stack sigma c)
 
-let noccur_evar evd evk c =
-  let rec occur_rec c = match kind_of_term c with
-  | Evar (evk',_ as ev') ->
+let noccur_evar env evd evk c =
+  let rec occur_rec k c = match kind_of_term c with
+  | Evar (evk',args' as ev') ->
       (match safe_evar_value evd ev' with
-       | Some c -> occur_rec c
-       | None -> if evk = evk' then raise Occur)
-  | _ -> iter_constr occur_rec c
+       | Some c -> occur_rec k c
+       | None ->
+           if evk = evk' then raise Occur else Array.iter (occur_rec k) args')
+  | Rel i when i > k ->
+      (match pi2 (Environ.lookup_rel (i-k) env) with
+       | None -> ()
+       | Some b -> occur_rec k (lift i b))
+  | _ -> iter_constr_with_binders succ occur_rec k c
   in
-  try occur_rec c; true with Occur -> false
+  try occur_rec 0 c; true with Occur -> false
 
 let normalize_evar evd ev =
   match kind_of_term (whd_evar evd (mkEvar ev)) with
@@ -741,7 +746,8 @@ let is_unification_pattern_meta env nb m l t =
     None
 
 let is_unification_pattern_evar env evd (evk,args) l t =
-  if List.for_all (fun x -> isRel x || isVar x) l & noccur_evar evd evk t then
+  if List.for_all (fun x -> isRel x || isVar x) l & noccur_evar env evd evk t
+  then
     let args = remove_instance_local_defs evd evk (Array.to_list args) in
     let n = List.length args in
     match find_unification_pattern_args env (args @ l) t with
@@ -1112,10 +1118,11 @@ let invert_arg_from_subst evd aliases k0 subst_in_env_extended_with_k_binders c_
     | Not_found -> CannotInvert
     | NotUnique -> Invertible NoUniqueProjection
 
-let invert_arg evd aliases k evk subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders =
+let invert_arg fullenv evd aliases k evk subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders =
   let res = invert_arg_from_subst evd aliases k subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders in
   match res with
-  | Invertible (UniqueProjection (c,_)) when not (noccur_evar evd evk c) ->
+  | Invertible (UniqueProjection (c,_)) when not (noccur_evar fullenv evd evk c)
+      ->
       CannotInvert
   | _ ->
       res
@@ -1153,10 +1160,11 @@ let extract_candidates sols =
 
 let filter_of_projection = function Invertible _ -> true | _ -> false
 
-let invert_invertible_arg evd aliases k (evk,argsv) args' =
+let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
   let evi = Evd.find_undefined evd evk in
   let subst,_ = make_projectable_subst aliases evd evi argsv in
-  let projs = array_map_to_list (invert_arg evd aliases k evk subst) args' in
+  let projs =
+    array_map_to_list (invert_arg fullenv evd aliases k evk subst) args' in
   Array.of_list (extract_unique_projections projs)
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
@@ -1364,12 +1372,14 @@ let has_constrainable_free_vars evd aliases k ev (fv_rels,fv_ids as fvs) t =
 
 let ensure_evar_independent g env evd (evk1,argsv1 as ev1) (evk2,argsv2 as ev2)=
   let filter1 =
-    restrict_upon_filter evd evk1 (noccur_evar evd evk2) (Array.to_list argsv1)
+    restrict_upon_filter evd evk1 (noccur_evar env evd evk2)
+      (Array.to_list argsv1)
   in
   let candidates1 = restrict_candidates g env evd filter1 ev1 ev2 in
   let evd,(evk1,_ as ev1) = do_restrict_hyps evd ev1 filter1 candidates1 in
   let filter2 =
-    restrict_upon_filter evd evk2 (noccur_evar evd evk1) (Array.to_list argsv2)
+    restrict_upon_filter evd evk2 (noccur_evar env evd evk1)
+      (Array.to_list argsv2)
   in
   let candidates2 = restrict_candidates g env evd filter2 ev2 ev1 in
   let evd,ev2 = do_restrict_hyps evd ev2 filter2 candidates2 in
@@ -1389,7 +1399,7 @@ let project_evar_on_evar g env evd aliases k2 (evk1,argsv1 as ev1) (evk2,argsv2 
     try
       let candidates1 = restrict_candidates g env evd filter1 ev1 ev2 in
       let evd,(evk1',args1) = do_restrict_hyps evd ev1 filter1 candidates1 in
-      evd,mkEvar (evk1',invert_invertible_arg evd aliases k2 ev2 args1)
+      evd,mkEvar (evk1',invert_invertible_arg env evd aliases k2 ev2 args1)
     with
     | EvarSolvedWhileRestricting (evd,ev1) ->
         raise (EvarSolvedOnTheFly (evd,ev1))
@@ -1585,7 +1595,7 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
         let aliases = lift_aliases k aliases in
         (try
           let ev = (evk,Array.map (lift k) argsv) in
-          let evd,body = project_evar_on_evar conv_algo env !evdref aliases k ev'  ev in
+          let evd,body = project_evar_on_evar conv_algo env' !evdref aliases k ev'  ev in
 	  evdref := evd;
           body
         with
