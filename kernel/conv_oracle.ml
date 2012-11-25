@@ -19,6 +19,9 @@ open Names
 type level = Expand | Level of int | Opaque
 let default = Level 0
 let transparent = default
+let is_transparent = function
+| Level 0 -> true
+| _ -> false
 
 type oracle = level Idmap.t * level Cmap.t
 

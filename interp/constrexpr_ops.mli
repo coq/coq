@@ -24,6 +24,10 @@ val raw_cases_pattern_expr_loc : raw_cases_pattern_expr -> Loc.t
 
 val local_binders_loc : local_binder list -> Loc.t
 
+val binding_kind_eq : Decl_kinds.binding_kind -> Decl_kinds.binding_kind -> bool
+
+val binder_kind_eq : binder_kind -> binder_kind -> bool
+
 val default_binder_kind : binder_kind
 
 val mkIdentC : identifier -> constr_expr

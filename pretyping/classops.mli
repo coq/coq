@@ -22,6 +22,9 @@ type cl_typ =
   | CL_CONST of constant
   | CL_IND of inductive
 
+(** Equality over [cl_typ] *)
+val cl_typ_eq : cl_typ -> cl_typ -> bool
+
 val subst_cl_typ : substitution -> cl_typ -> cl_typ
 
 (** This is the type of infos for declared classes *)

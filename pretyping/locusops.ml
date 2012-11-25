@@ -40,6 +40,9 @@ let nowhere = { onhyps=Some[]; concl_occs=NoOccurrences }
 let onHyp h =
   { onhyps=Some[(AllOccurrences,h),InHyp]; concl_occs=NoOccurrences }
 
+let is_nowhere = function
+| { onhyps=Some[]; concl_occs=NoOccurrences } -> true
+| _ -> false
 
 (** Clause conversion functions, parametrized by a hyp enumeration function *)
 

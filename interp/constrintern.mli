@@ -188,3 +188,8 @@ val parsing_explicit : bool ref
 
 (** Globalization leak for Grammar *)
 val for_grammar : ('a -> 'b) -> 'a -> 'b
+
+(** Nothing to do here *)
+
+val explicitation_eq : explicitation -> explicitation -> bool
+

@@ -53,6 +53,14 @@ let coe_info_typ_equal c1 c2 =
     c1.coe_is_identity == c2.coe_is_identity &&
     Int.equal c1.coe_param c2.coe_param
 
+let cl_typ_eq t1 t2 = match t1, t2 with
+| CL_SORT, CL_SORT -> true
+| CL_FUN, CL_FUN -> true
+| CL_SECVAR v1, CL_SECVAR v2 -> id_eq v1 v2
+| CL_CONST c1, CL_CONST c2 -> eq_constant c1 c2
+| CL_IND i1, CL_IND i2 -> eq_ind i1 i2
+| _ -> false
+
 type cl_index = int
 
 type coe_index = coe_info_typ

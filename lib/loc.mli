@@ -32,6 +32,9 @@ val make_loc : int * int -> t
 val ghost : t
 (** Dummy location *)
 
+val is_ghost : t -> bool
+(** Test whether the location is meaningful *)
+
 val merge : t -> t -> t
 
 val raise : t -> exn -> 'a

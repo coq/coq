@@ -17,6 +17,18 @@ open Decl_kinds
 (***********************)
 (* For binders parsing *)
 
+let binding_kind_eq bk1 bk2 = match bk1, bk2 with
+| Explicit, Explicit -> true
+| Implicit, Implicit -> true
+| _ -> false
+
+let binder_kind_eq b1 b2 = match b1, b2 with
+| Default bk1, Default bk2 -> binding_kind_eq bk1 bk2
+| Generalized (bk1, ck1, b1), Generalized (bk2, ck2, b2) ->
+  binding_kind_eq bk1 bk2 && binding_kind_eq ck1 ck2 &&
+  (if b1 then b2 else not b2)
+| _ -> false
+
 let default_binder_kind = Default Explicit
 
 let names_of_local_assums bl =

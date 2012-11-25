@@ -28,6 +28,10 @@ val onConcl : 'a clause_expr
 val nowhere : 'a clause_expr
 val onHyp : 'a -> 'a clause_expr
 
+(** Tests *)
+
+val is_nowhere : 'a clause_expr -> bool
+
 (** Clause conversion functions, parametrized by a hyp enumeration function *)
 
 val simple_clause_of : (unit -> identifier list) -> clause -> simple_clause

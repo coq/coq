@@ -273,6 +273,8 @@ type argument_type =
   | PairArgType of argument_type * argument_type
   | ExtraArgType of string
 
+val argument_type_eq : argument_type -> argument_type -> bool
+
 val genarg_tag : 'a generic_argument -> argument_type
 
 val unquote : ('a,'co) abstract_argument_type -> argument_type

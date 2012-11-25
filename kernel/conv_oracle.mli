@@ -22,6 +22,9 @@ val oracle_order : bool -> 'a tableKey -> 'a tableKey -> bool
 type level = Expand | Level of int | Opaque
 val transparent : level
 
+(** Check whether a level is transparent *)
+val is_transparent : level -> bool
+
 val get_strategy : 'a tableKey -> level
 
 (** Sets the level of a constant.

@@ -75,6 +75,17 @@ let init_scope_map () =
 (**********************************************************************)
 (* Operations on scopes *)
 
+let parenRelation_eq t1 t2 = match t1, t2 with
+| L, L | E, E | Any, Any -> true
+| Prec l1, Prec l2 -> Int.equal l1 l2
+| _ -> false
+
+let level_eq (l1, t1) (l2, t2) =
+  let tolerability_eq (i1, r1) (i2, r2) =
+    Int.equal i1 i2 && parenRelation_eq r1 r2
+  in
+  Int.equal l1 l2 && List.equal tolerability_eq t1 t2
+
 let declare_scope scope =
   try let _ = Gmap.find scope !scope_map in ()
   with Not_found ->
@@ -623,6 +634,14 @@ type symbol =
   | NonTerminal of identifier
   | SProdList of identifier * symbol list
   | Break of int
+
+let rec symbol_eq s1 s2 = match s1, s2 with
+| Terminal s1, Terminal s2 -> String.equal s1 s2
+| NonTerminal id1, NonTerminal id2 -> id_eq id1 id2
+| SProdList (id1, l1), SProdList (id2, l2) ->
+  id_eq id1 id2 && List.equal symbol_eq l1 l2
+| Break i1, Break i2 -> Int.equal i1 i2
+| _ -> false
 
 let rec string_of_symbol = function
   | NonTerminal _ -> ["_"]

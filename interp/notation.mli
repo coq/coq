@@ -35,6 +35,8 @@ val declare_scope : scope_name -> unit
 
 val current_scopes : unit -> scopes
 
+val level_eq : level -> level -> bool
+
 (** Check where a scope is opened or not in a scope list, or in
  * the current opened scopes *)
 val scope_is_open_in_scopes : scope_name -> scopes -> bool
@@ -170,6 +172,8 @@ type symbol =
   | NonTerminal of identifier
   | SProdList of identifier * symbol list
   | Break of int
+
+val symbol_eq : symbol -> symbol -> bool
 
 val make_notation_key : symbol list -> notation
 val decompose_notation_key : notation -> symbol list
