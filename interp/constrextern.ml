@@ -159,38 +159,47 @@ let extern_reference loc vars r =
 (************************************************************************)
 (* Equality up to location (useful for translator v8) *)
 
+let prim_token_eq t1 t2 = match t1, t2 with
+| Numeral i1, Numeral i2 -> Bigint.equal i1 i2
+| String s1, String s2 -> String.equal s1 s2
+| _ -> false
+
+(** ppedrot: FIXME, EVERYTHING IS WRONG HERE! *)
+
 let rec check_same_pattern p1 p2 =
   match p1, p2 with
-    | CPatAlias(_,a1,i1), CPatAlias(_,a2,i2) when i1=i2 ->
+    | CPatAlias(_,a1,i1), CPatAlias(_,a2,i2) when id_eq i1 i2 ->
         check_same_pattern a1 a2
-    | CPatCstr(_,c1,a1,b1), CPatCstr(_,c2,a2,b2) when c1=c2 ->
+    | CPatCstr(_,c1,a1,b1), CPatCstr(_,c2,a2,b2) when eq_reference c1 c2 ->
         let () = List.iter2 check_same_pattern a1 a2 in
         List.iter2 check_same_pattern b1 b2
-    | CPatAtom(_,r1), CPatAtom(_,r2) when r1=r2 -> ()
-    | CPatPrim(_,i1), CPatPrim(_,i2) when i1=i2 -> ()
-    | CPatDelimiters(_,s1,e1), CPatDelimiters(_,s2,e2) when s1=s2 ->
+    | CPatAtom(_,r1), CPatAtom(_,r2) when Option.Misc.compare eq_reference r1 r2 -> ()
+    | CPatPrim(_,i1), CPatPrim(_,i2) when prim_token_eq i1 i2 -> ()
+    | CPatDelimiters(_,s1,e1), CPatDelimiters(_,s2,e2) when String.equal s1 s2 ->
         check_same_pattern e1 e2
     | _ -> failwith "not same pattern"
 
 let check_same_ref r1 r2 =
-  match r1,r2 with
-  | Qualid(_,q1), Qualid(_,q2) when q1=q2 -> ()
-  | Ident(_,i1), Ident(_,i2) when i1=i2 -> ()
-  | _ -> failwith "not same ref"
+  if not (eq_reference r1 r2) then failwith "not same ref"
+
+let eq_located f (_, x) (_, y) = f x y
+
+let same_id (id1, c1) (id2, c2) =
+  Option.Misc.compare (eq_located id_eq) id1 id2 && Pervasives.(=) c1 c2
 
 let rec check_same_type ty1 ty2 =
   match ty1, ty2 with
   | CRef r1, CRef r2 -> check_same_ref r1 r2
-  | CFix(_,(_,id1),fl1), CFix(_,(_,id2),fl2) when id1=id2 ->
-      List.iter2 (fun (id1,i1,bl1,a1,b1) (id2,i2,bl2,a2,b2) ->
-        if id1<>id2 || i1<>i2 then failwith "not same fix";
+  | CFix(_,id1,fl1), CFix(_,id2,fl2) when eq_located id_eq id1 id2 ->
+      List.iter2 (fun ((_, id1),i1,bl1,a1,b1) ((_, id2),i2,bl2,a2,b2) ->
+        if not (id_eq id1 id2) || not (same_id i1 i2) then failwith "not same fix";
         check_same_fix_binder bl1 bl2;
         check_same_type a1 a2;
         check_same_type b1 b2)
         fl1 fl2
-  | CCoFix(_,(_,id1),fl1), CCoFix(_,(_,id2),fl2) when id1=id2 ->
+  | CCoFix(_,id1,fl1), CCoFix(_,id2,fl2) when eq_located id_eq id1 id2 ->
       List.iter2 (fun (id1,bl1,a1,b1) (id2,bl2,a2,b2) ->
-        if id1<>id2 then failwith "not same fix";
+        if not (eq_located id_eq id1 id2) then failwith "not same fix";
         check_same_fix_binder bl1 bl2;
         check_same_type a1 a2;
         check_same_type b1 b2)
@@ -201,16 +210,16 @@ let rec check_same_type ty1 ty2 =
   | CLambdaN(_,bl1,a1), CLambdaN(_,bl2,a2) ->
       List.iter2 check_same_binder bl1 bl2;
       check_same_type a1 a2
-  | CLetIn(_,(_,na1),a1,b1), CLetIn(_,(_,na2),a2,b2) when na1=na2 ->
+  | CLetIn(_,(_,na1),a1,b1), CLetIn(_,(_,na2),a2,b2) when name_eq na1 na2 ->
       check_same_type a1 a2;
       check_same_type b1 b2
-  | CAppExpl(_,(proj1,r1),al1), CAppExpl(_,(proj2,r2),al2) when proj1=proj2 ->
+  | CAppExpl(_,(proj1,r1),al1), CAppExpl(_,(proj2,r2),al2) when Option.Misc.compare Int.equal proj1 proj2 ->
       check_same_ref r1 r2;
       List.iter2 check_same_type al1 al2
   | CApp(_,(_,e1),al1), CApp(_,(_,e2),al2) ->
       check_same_type e1 e2;
       List.iter2 (fun (a1,e1) (a2,e2) ->
-                    if e1<>e2 then failwith "not same expl";
+                    if Option.Misc.compare (eq_located Constrintern.explicitation_eq) e1 e2 then failwith "not same expl";
                     check_same_type a1 a2) al1 al2
   | CCases(_,_,_,a1,brl1), CCases(_,_,_,a2,brl2) ->
       List.iter2 (fun (tm1,_) (tm2,_) -> check_same_type tm1 tm2) a1 a2;
@@ -218,26 +227,26 @@ let rec check_same_type ty1 ty2 =
         List.iter2 (Loc.located_iter2 (List.iter2 check_same_pattern)) pl1 pl2;
         check_same_type r1 r2) brl1 brl2
   | CHole _, CHole _ -> ()
-  | CPatVar(_,i1), CPatVar(_,i2) when i1=i2 -> ()
-  | CSort(_,s1), CSort(_,s2) when s1=s2 -> ()
+  | CPatVar(_,(b1, i1)), CPatVar(_,(b2, i2)) when (b1 : bool) == b2 && id_eq i1 i2 -> ()
+  | CSort(_,s1), CSort(_,s2) when glob_sort_eq s1 s2 -> ()
   | CCast(_,a1,(CastConv b1|CastVM b1)), CCast(_,a2,(CastConv b2|CastVM b2)) ->
       check_same_type a1 a2;
       check_same_type b1 b2
   | CCast(_,a1,CastCoerce), CCast(_,a2, CastCoerce) ->
       check_same_type a1 a2
-  | CNotation(_,n1,(e1,el1,bl1)), CNotation(_,n2,(e2,el2,bl2)) when n1=n2 ->
+  | CNotation(_,n1,(e1,el1,bl1)), CNotation(_,n2,(e2,el2,bl2)) when String.equal n1 n2 ->
       List.iter2 check_same_type e1 e2;
       List.iter2 (List.iter2 check_same_type) el1 el2;
       List.iter2 check_same_fix_binder bl1 bl2
-  | CPrim(_,i1), CPrim(_,i2) when i1=i2 -> ()
-  | CDelimiters(_,s1,e1), CDelimiters(_,s2,e2) when s1=s2 ->
+  | CPrim(_,i1), CPrim(_,i2) when prim_token_eq i1 i2 -> ()
+  | CDelimiters(_,s1,e1), CDelimiters(_,s2,e2) when String.equal s1 s2 ->
       check_same_type e1 e2
-  | _ when ty1=ty2 -> ()
+  | _ when Pervasives.(=) ty1 ty2 -> () (** FIXME *)
   | _ -> failwith "not same type"
 
 and check_same_binder (nal1,_,e1) (nal2,_,e2) =
   List.iter2 (fun (_,na1) (_,na2) ->
-    if na1<>na2 then failwith "not same name") nal1 nal2;
+    if name_eq na1 na2 then failwith "not same name") nal1 nal2;
   check_same_type e1 e2
 
 and check_same_fix_binder bl1 bl2 =
@@ -280,16 +289,16 @@ let drop_implicits_in_patt cst nb_expl args =
        impls_fit [] (imps,args)
 
 let has_curly_brackets ntn =
-  String.length ntn >= 6 & (String.sub ntn 0 6 = "{ _ } " or
-    String.sub ntn (String.length ntn - 6) 6 = " { _ }" or
+  String.length ntn >= 6 && (String.equal (String.sub ntn 0 6) "{ _ } " ||
+    String.equal (String.sub ntn (String.length ntn - 6) 6) " { _ }" ||
     String.string_contains ~where:ntn ~what:" { _ } ")
 
 let rec wildcards ntn n =
-  if n = String.length ntn then []
-  else let l = spaces ntn (n+1) in if ntn.[n] = '_' then n::l else l
+  if Int.equal n (String.length ntn) then []
+  else let l = spaces ntn (n+1) in if ntn.[n] == '_' then n::l else l
 and spaces ntn n =
-  if n = String.length ntn then []
-  else if ntn.[n] = ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
+  if Int.equal n (String.length ntn) then []
+  else if ntn.[n] == ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
 
 let expand_curly_brackets loc mknot ntn l =
   let ntn' = ref ntn in
@@ -299,7 +308,7 @@ let expand_curly_brackets loc mknot ntn l =
     | a::l ->
         let a' =
           let p = List.nth (wildcards !ntn' 0) i - 2 in
-          if p>=0 & p+5 <= String.length !ntn' & String.sub !ntn' p 5 = "{ _ }"
+          if p>=0 & p+5 <= String.length !ntn' && String.equal (String.sub !ntn' p 5) "{ _ }"
           then begin
             ntn' :=
               String.sub !ntn' 0 p ^ "_" ^
@@ -333,14 +342,16 @@ let make_notation_gen loc ntn mknot mkprim destprim l =
 	    mknot (loc,ntn,l)
 
 let make_notation loc ntn (terms,termlists,binders as subst) =
-  if termlists <> [] or binders <> [] then CNotation (loc,ntn,subst) else
-  make_notation_gen loc ntn
-    (fun (loc,ntn,l) -> CNotation (loc,ntn,(l,[],[])))
-    (fun (loc,p) -> CPrim (loc,p))
-    destPrim terms
+  if not (List.is_empty termlists) || not (List.is_empty binders) then
+    CNotation (loc,ntn,subst)
+  else
+    make_notation_gen loc ntn
+      (fun (loc,ntn,l) -> CNotation (loc,ntn,(l,[],[])))
+      (fun (loc,p) -> CPrim (loc,p))
+      destPrim terms
 
 let make_pat_notation loc ntn (terms,termlists as subst) args =
-  if termlists <> [] then CPatNotation (loc,ntn,subst,args) else
+  if not (List.is_empty termlists) then CPatNotation (loc,ntn,subst,args) else
   make_notation_gen loc ntn
     (fun (loc,ntn,l) -> CPatNotation (loc,ntn,(l,[]),args))
     (fun (loc,p) -> CPatPrim (loc,p))
@@ -348,7 +359,7 @@ let make_pat_notation loc ntn (terms,termlists as subst) args =
 
 let mkPat loc qid l =
   (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
-  if l = [] then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,[],l)
+  if List.is_empty l then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,[],l)
 
 let pattern_printable_in_both_syntax (ind,_ as c) =
   let impl_st = extract_impargs_data (implicits_of_global (ConstructRef c)) in
@@ -440,7 +451,7 @@ and apply_notation_to_pattern loc gr ((subst,substlist),(nb_to_drop,more_args))
 		List.map (extern_cases_pattern_in_scope subscope vars) c)
 		substlist in
 	    let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
-	    let l2' = if !Topconstr.oldfashion_patterns || ll <> [] then l2
+	    let l2' = if !Topconstr.oldfashion_patterns || not (List.is_empty ll) then l2
 	      else
 		match drop_implicits_in_patt gr nb_to_drop l2 with
 		  |Some true_args -> true_args
@@ -462,7 +473,7 @@ and apply_notation_to_pattern loc gr ((subst,substlist),(nb_to_drop,more_args))
 	    |Some true_args -> true_args
 	    |None -> raise No_match
       in
-      assert (substlist = []);
+      assert (List.is_empty substlist);
       mkPat loc qid (List.rev_append l1 l2')
 and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
@@ -539,7 +550,7 @@ let is_significant_implicit a =
   not (is_hole a)
 
 let is_needed_for_correct_partial_application tail imp =
-  tail = [] & not (maximal_insertion_of imp)
+  List.is_empty tail && not (maximal_insertion_of imp)
 
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
@@ -566,33 +577,33 @@ let explicitize loc inctx impl (cf,f) args =
     | [], _ -> [] in
   match is_projection (List.length args) cf with
     | Some i as ip ->
-	if impl <> [] & is_status_implicit (List.nth impl (i-1)) then
+	if not (List.is_empty impl) && is_status_implicit (List.nth impl (i-1)) then
 	  let f' = match f with CRef f -> f | _ -> assert false in
 	  CAppExpl (loc,(ip,f'),args)
 	else
 	  let (args1,args2) = List.chop i args in
-	  let (impl1,impl2) = if impl=[] then [],[] else List.chop i impl in
+	  let (impl1,impl2) = if List.is_empty impl then [],[] else List.chop i impl in
 	  let args1 = exprec 1 (args1,impl1) in
 	  let args2 = exprec (i+1) (args2,impl2) in
 	  CApp (loc,(Some (List.length args1),f),args1@args2)
     | None ->
 	let args = exprec 1 (args,impl) in
-	if args = [] then f else CApp (loc, (None, f), args)
+	if List.is_empty args then f else CApp (loc, (None, f), args)
 
 let extern_global loc impl f =
   if not !Constrintern.parsing_explicit &&
-     impl <> [] && List.for_all is_status_implicit impl
+     not (List.is_empty impl) && List.for_all is_status_implicit impl
   then
     CAppExpl (loc, (None, f), [])
   else
     CRef f
 
 let extern_app loc inctx impl (cf,f) args =
-  if args = [] then
+  if List.is_empty args then
     (* If coming from a notation "Notation a := @b" *)
     CAppExpl (loc, (None, f), [])
   else if not !Constrintern.parsing_explicit &&
-    ((!Flags.raw_print or
+    ((!Flags.raw_print ||
       (!print_implicits & not !print_implicits_explicit_args)) &
      List.exists is_status_implicit impl)
   then
@@ -629,7 +640,7 @@ let rec remove_coercions inctx = function
 		 been confused with ordinary application or would have need
                  a surrounding context and the coercion to funclass would
                  have been made explicit to match *)
-	      if l = [] then a' else GApp (loc,a',l)
+	      if List.is_empty l then a' else GApp (loc,a',l)
 	  | _ -> c
       with Not_found -> c)
   | c -> c
@@ -767,11 +778,16 @@ let rec extern inctx scopes vars r =
     let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
     let tml = List.map (fun (tm,(na,x)) ->
       let na' = match na,tm with
-          Anonymous, GVar (_,id) when
-	      rtntypopt<>None & occur_glob_constr id (Option.get rtntypopt)
-	      -> Some (Loc.ghost,Anonymous)
+        | Anonymous, GVar (_, id) ->
+            begin match rtntypopt with
+            | None -> None
+            | Some ntn ->
+              if occur_glob_constr id ntn then
+                Some (Loc.ghost, Anonymous)
+              else None
+            end
         | Anonymous, _ -> None
-        | Name id, GVar (_,id') when id=id' -> None
+        | Name id, GVar (_,id') when id_eq id id' -> None
         | Name _, _ -> Some (Loc.ghost,na) in
       (sub_extern false scopes vars tm,
        (na',Option.map (fun (loc,ind,nal) ->
@@ -843,7 +859,7 @@ and factorize_prod scopes vars na bk aty c =
   let c = extern_typ scopes vars c in
   match na, c with
   | Name id, CProdN (loc,[nal,Default bk',ty],c)
-      when bk = bk' && is_same_type aty ty
+      when binding_kind_eq bk bk' && is_same_type aty ty
       & not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
       nal,c
   | _ ->
@@ -853,7 +869,7 @@ and factorize_lambda inctx scopes vars na bk aty c =
   let c = sub_extern inctx scopes vars c in
   match c with
   | CLambdaN (loc,[nal,Default bk',ty],c)
-      when bk = bk' && is_same_type aty ty
+      when binding_kind_eq bk bk' && is_same_type aty ty
       & not (occur_name na ty) (* avoid na in ty escapes scope *) ->
       nal,c
   | _ ->
@@ -951,8 +967,8 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 		  extern true (scopt,scl@scopes) vars c, None)
 		  terms in
               let a = CRef (Qualid (loc, shortest_qualid_of_syndef vars kn)) in
-	      if l = [] then a else CApp (loc,(None,a),l) in
- 	if args = [] then e
+	      if List.is_empty l then a else CApp (loc,(None,a),l) in
+ 	if List.is_empty args then e
 	else
 	  let args = extern_args (extern true) scopes vars args argsscopes in
 	  explicitize loc false argsimpls (None,e) args

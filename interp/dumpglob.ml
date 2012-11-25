@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 
 (* Dump of globalization (to be used by coqdoc) *)
 
@@ -138,7 +139,7 @@ let add_glob_gen loc sp lib_dp ty =
       dump_ref loc filepath modpath ident ty
 
 let add_glob loc ref =
-  if dump () && loc <> Loc.ghost then
+  if dump () && not (Loc.is_ghost loc) then
     let sp = Nametab.path_of_global ref in
     let lib_dp = Lib.library_part ref in
     let ty = type_of_global_ref ref in
@@ -149,7 +150,7 @@ let mp_of_kn kn =
     Names.MPdot (mp,l)
 
 let add_glob_kn loc kn =
-  if dump () && loc <> Loc.ghost then
+  if dump () && not (Loc.is_ghost loc) then
     let sp = Nametab.path_of_syndef kn in
     let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
       add_glob_gen loc sp lib_dp "syndef"
@@ -174,7 +175,7 @@ let dump_constraint ((loc, n), _, _) sec ty =
 let dump_modref loc mp ty =
   if dump () then
     let (dp, l) = Lib.split_modpath mp in
-    let l = if l = [] then l else Util.List.drop_last l in
+    let l = if List.is_empty l then l else List.drop_last l in
     let fp = Names.string_of_dirpath dp in
     let mp = Names.string_of_dirpath (Names.make_dirpath l) in
     let bl,el = interval loc in
@@ -207,19 +208,19 @@ let cook_notation df sc =
   let l = String.length df - 1 in
   let i = ref 0 in
   while !i <= l do
-    assert (df.[!i] <> ' ');
-    if df.[!i] = '_' && (!i = l || df.[!i+1] = ' ') then
+    assert (df.[!i] != ' ');
+    if df.[!i] == '_' && (Int.equal !i l || df.[!i+1] == ' ') then
       (* Next token is a non-terminal *)
       (ntn.[!j] <- 'x'; incr j; incr i)
     else begin
       (* Next token is a terminal *)
       ntn.[!j] <- '\''; incr j;
-      while !i <= l && df.[!i] <> ' ' do
+      while !i <= l && df.[!i] != ' ' do
 	if df.[!i] < ' ' then
 	  let c = char_of_int (int_of_char 'A' + int_of_char df.[!i] - 1) in
 	  (String.blit ("'^" ^ String.make 1 c) 0 ntn !j 3; j := !j+3; incr i)
 	else begin
-	  if df.[!i] = '\'' then (ntn.[!j] <- '\''; incr j);
+	  if df.[!i] == '\'' then (ntn.[!j] <- '\''; incr j);
 	  ntn.[!j] <- df.[!i]; incr j; incr i
 	end
       done;

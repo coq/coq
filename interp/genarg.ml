@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Glob_term
 open Constrexpr
 open Misctypes
@@ -173,7 +174,7 @@ let wit_opt t = OptArgType t
 let wit_pair t1 t2 = PairArgType (t1,t2)
 
 let in_gen t o = (t,Obj.repr o)
-let out_gen t (t',o) = if t = t' then Obj.magic o else failwith "out_gen"
+let out_gen t (t',o) = if argument_type_eq t t' then Obj.magic o else failwith "out_gen"
 let genarg_tag (s,_) = s
 
 let fold_list0 f = function

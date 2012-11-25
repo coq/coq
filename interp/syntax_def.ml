@@ -42,17 +42,19 @@ let load_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
 let is_alias_of_already_visible_name sp = function
   | _,NRef ref ->
       let (dir,id) = repr_qualid (shortest_qualid_of_global Idset.empty ref) in
-      dir = empty_dirpath && id = basename sp
+      dir_path_eq dir empty_dirpath && id_eq id (basename sp)
   | _ ->
       false
 
 let open_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
   if not (is_alias_of_already_visible_name sp pat) then begin
     Nametab.push_syndef (Nametab.Exactly i) sp kn;
-    if onlyparse = None then
+    match onlyparse with
+    | None ->
       (* Redeclare it to be used as (short) name in case an other (distfix)
 	 notation was declared inbetween *)
       Notation.declare_uninterpretation (Notation.SynDefRule kn) pat
+    | _ -> ()
   end
 
 let cache_syntax_constant d =

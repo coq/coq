@@ -67,7 +67,7 @@ let check_required_library d =
   let dir = make_dirpath (List.rev d') in
   let mp = (fst(Lib.current_prefix())) in
   let current_dir = match mp with
-    | MPfile dp -> (dir=dp)
+    | MPfile dp -> dir_path_eq dir dp
     | _ -> false
   in
   if not (Library.library_is_loaded dir) then

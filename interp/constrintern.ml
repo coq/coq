@@ -191,17 +191,17 @@ let compute_internalization_env env ty =
 (* Contracting "{ _ }" in notations *)
 
 let rec wildcards ntn n =
-  if n = String.length ntn then []
-  else let l = spaces ntn (n+1) in if ntn.[n] = '_' then n::l else l
+  if Int.equal n (String.length ntn) then []
+  else let l = spaces ntn (n+1) in if ntn.[n] == '_' then n::l else l
 and spaces ntn n =
-  if n = String.length ntn then []
-  else if ntn.[n] = ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
+  if Int.equal n (String.length ntn) then []
+  else if ntn.[n] == ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
 
 let expand_notation_string ntn n =
   let pos = List.nth (wildcards ntn 0) n in
   let hd = if Int.equal pos 0 then "" else String.sub ntn 0 pos in
   let tl =
-    if pos = String.length ntn then ""
+    if Int.equal pos (String.length ntn) then ""
     else String.sub ntn (pos+1) (String.length ntn - pos -1) in
   hd ^ "{ _ }" ^ tl
 
@@ -243,10 +243,10 @@ type intern_env = {
 (**********************************************************************)
 (* Remembering the parsing scope of variables in notations            *)
 
-let make_current_scope = function
-  | (Some tmp_scope,(sc::_ as scopes)) when sc = tmp_scope -> scopes
-  | (Some tmp_scope,scopes) -> tmp_scope::scopes
-  | None,scopes -> scopes
+let make_current_scope tmp scopes = match tmp, scopes with
+| Some tmp_scope, (sc :: _) when String.equal sc tmp_scope -> scopes
+| Some tmp_scope, scopes -> tmp_scope :: scopes
+| None, scopes -> scopes
 
 let pr_scope_stack = function
   | [] -> str "the empty scope stack"
@@ -268,17 +268,16 @@ let error_expect_binder_notation_type loc id =
 let set_var_scope loc id istermvar env ntnvars =
   try
     let idscopes,typ = List.assoc id ntnvars in
-    if istermvar then
+    let () = if istermvar then
       (* scopes have no effect on the interpretation of identifiers *)
-      if !idscopes = None then
-        idscopes := Some (env.tmp_scope,env.scopes)
-      else
-        if make_current_scope (Option.get !idscopes)
-          <> make_current_scope (env.tmp_scope,env.scopes)
-        then
-	  error_inconsistent_scope loc id
-	    (make_current_scope (Option.get !idscopes))
-	    (make_current_scope (env.tmp_scope,env.scopes));
+      begin match !idscopes with
+      | None -> idscopes := Some (env.tmp_scope, env.scopes)
+      | Some (tmp, scope) ->
+        let s1 = make_current_scope tmp scope in
+        let s2 = make_current_scope env.tmp_scope env.scopes in
+        if not (List.equal String.equal s1 s2) then error_inconsistent_scope loc id s1 s2
+      end
+    in
     match typ with
     | NtnInternTypeBinder ->
 	if istermvar then error_expect_binder_notation_type loc id
@@ -444,12 +443,15 @@ let intern_generalization intern env lvar loc bk ak c =
   let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:env.ids c in
   let env', c' =
     let abs =
-      let pi =
-	match ak with
+      let pi = match ak with
 	| Some AbsPi -> true
-	| None when env.tmp_scope = Some Notation.type_scope
-	    || List.mem Notation.type_scope env.scopes -> true
-	| _ -> false
+        | Some _ -> false
+	| None ->
+          let is_type_scope = match env.tmp_scope with
+          | None -> false
+          | Some sc -> String.equal sc Notation.type_scope
+          in
+          is_type_scope || List.mem Notation.type_scope env.scopes
       in
 	if pi then
 	  (fun (id, loc') acc ->
@@ -467,7 +469,7 @@ let intern_generalization intern env lvar loc bk ak c =
 (* Syntax extensions                                                  *)
 
 let option_mem_assoc id = function
-  | Some (id',c) -> id = id'
+  | Some (id',c) -> id_eq id id'
   | None -> false
 
 let find_fresh_name renaming (terms,termlists,binders) id =
@@ -491,7 +493,7 @@ let traverse_binder (terms,_,_ as subst)
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
     let id' = find_fresh_name renaming subst id in
-    let renaming' = if id=id' then renaming else (id,id')::renaming in
+    let renaming' = if id_eq id id' then renaming else (id,id')::renaming in
     (renaming',env), Name id'
 
 let make_letins = List.fold_right (fun (loc,(na,b,t)) c -> GLetIn (loc,na,b,c))
@@ -508,7 +510,7 @@ let rec subordinate_letins letins = function
       letins,[]
 
 let rec subst_iterator y t = function
-  | GVar (_,id) as x -> if id = y then t else x
+  | GVar (_,id) as x -> if id_eq id y then t else x
   | x -> map_glob_constr (subst_iterator y t) x
 
 let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
@@ -622,7 +624,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
   then
     (set_var_scope loc id true genv ntnvars; GVar (loc,id), [], [], [])
   (* Is [id] the special variable for recursive notations *)
-  else if ntnvars <> [] && id = ldots_var
+  else if ntnvars != [] && id_eq id ldots_var
   then
     GVar (loc,id), [], [], []
   else
@@ -650,7 +652,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
 let find_appl_head_data = function
   | GRef (_,ref) as x -> x,implicits_of_global ref,find_arguments_scope ref,[]
   | GApp (_,GRef (_,ref),l) as x
-      when l <> [] & Flags.version_strictly_greater Flags.V8_2 ->
+      when l != [] && Flags.version_strictly_greater Flags.V8_2 ->
       let n = List.length l in
       x,List.map (drop_first_implicits n) (implicits_of_global ref),
       List.skipn_at_least n (find_arguments_scope ref),[]
@@ -660,11 +662,13 @@ let error_not_enough_arguments loc =
   user_err_loc (loc,"",str "Abbreviation is not applied enough.")
 
 let check_no_explicitation l =
-  let l = List.filter (fun (a,b) -> b <> None) l in
-  if l <> [] then
-    let loc = fst (Option.get (snd (List.hd l))) in
-    user_err_loc
-     (loc,"",str"Unexpected explicitation of the argument of an abbreviation.")
+  let is_unset (a, b) = match b with None -> false | Some _ -> true in
+  let l = List.filter is_unset l in
+  match l with
+  | [] -> ()
+  | (_, None) :: _ -> assert false
+  | (_, Some (loc, _)) :: _ ->
+    user_err_loc (loc,"",str"Unexpected explicitation of the argument of an abbreviation.")
 
 let dump_extended_global loc = function
   | TrueGlobal ref -> Dumpglob.add_glob loc ref
@@ -735,7 +739,7 @@ let rec simple_adjust_scopes n scopes =
   (* Note: they can be less scopes than arguments but also more scopes *)
   (* than arguments because extra scopes are used in the presence of *)
   (* coercions to funclass *)
-  if n=0 then [] else match scopes with
+  if Int.equal n 0 then [] else match scopes with
   | [] -> None :: simple_adjust_scopes (n-1) []
   | sc::scopes -> sc :: simple_adjust_scopes (n-1) scopes
 
@@ -785,7 +789,7 @@ let check_linearity lhs ids =
 (* Match the number of pattern against the number of matched args *)
 let check_number_of_pattern loc n l =
   let p = List.length l in
-  if n<>p then raise (InternalizationError (loc,BadPatternsNumber (n,p)))
+  if not (Int.equal n p) then raise (InternalizationError (loc,BadPatternsNumber (n,p)))
 
 let check_or_pat_variables loc ids idsl =
   if List.exists (fun ids' -> not (List.eq_set ids ids')) idsl then
@@ -797,8 +801,8 @@ let check_or_pat_variables loc ids idsl =
 let check_constructor_length env loc cstr len_pl pl0 =
   let nargs = Inductiveops.mis_constructor_nargs cstr in
   let n = len_pl + List.length pl0 in
-  if n = nargs then false else
-    (n = (fst (Inductiveops.inductive_nargs (fst cstr))) + Inductiveops.constructor_nrealhyps cstr) ||
+  if Int.equal n nargs then false else
+    (Int.equal n ((fst (Inductiveops.inductive_nargs (fst cstr))) + Inductiveops.constructor_nrealhyps cstr)) ||
       (error_wrong_numarg_constructor_loc loc env cstr
         (nargs - (Inductiveops.inductive_nparams (fst cstr))))
 
@@ -809,8 +813,8 @@ let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 
   let remaining_args = List.fold_left (fun i x -> if is_status_implicit x then i else succ i) in
   let rec aux i = function
     |[],l -> let args_len = List.length l + List.length impl_list + len_pl1 in
-	     ((if args_len = nargs then false
-	      else args_len = nargs_with_letin || (fst (fail (nargs - List.length impl_list + i))))
+	     ((if Int.equal args_len nargs then false
+	      else Int.equal args_len nargs_with_letin || (fst (fail (nargs - List.length impl_list + i))))
 	       ,l)
     |imp::q as il,[] -> if is_status_implicit imp && maximal_insertion_of imp
       then let (b,out) = aux i (q,[]) in (b,RCPatAtom(Loc.ghost,None)::out)
@@ -853,7 +857,7 @@ let find_constructor loc add_params ref =
     |IndRef _ -> user_err_loc (loc,"find_constructor",str "There is an inductive name deep in a \"in\" clause.")
     |_ -> anomaly "unexpected global_reference in pattern") ref in
   cstr, (function (ind,_ as c) -> match add_params with
-    |Some nb_args -> let nb = if nb_args = Inductiveops.constructor_nrealhyps c
+    |Some nb_args -> let nb = if Int.equal nb_args (Inductiveops.constructor_nrealhyps c)
       then fst (Inductiveops.inductive_nargs ind)
       else Inductiveops.inductive_nparams ind in
 		     Util.List.make nb ([],[([],PatVar(Loc.ghost,Anonymous))])
@@ -889,15 +893,16 @@ let sort_fields mode loc l completer =
 		    | [] -> anomaly "Number of projections mismatch"
 		    | (_, regular)::tm ->
 		       let boolean = not regular in
-		       if ConstRef name = global_reference_of_reference refer
-		       then
+                       begin match global_reference_of_reference refer with
+		       | ConstRef name' when eq_constant name name' ->
 			 if boolean && mode then
 			   user_err_loc (loc, "", str"No local fields allowed in a record construction.")
 			 else build_patt b tm (i + 1) (i, snd acc) (* we found it *)
-		       else
+                       | _ ->
 			  build_patt b tm (if boolean&&mode then i else i + 1)
 			    (if boolean && mode then acc
-			     else fst acc, (i, ConstRef name) :: snd acc))
+			     else fst acc, (i, ConstRef name) :: snd acc)
+                       end)
 	      | None :: b-> (* we don't want anonymous fields *)
 		 if mode then
 		   user_err_loc (loc, "", str "This record contains anonymous fields.")
@@ -929,7 +934,7 @@ let sort_fields mode loc l completer =
 			 (loc, "",
 			  str "This record contains fields of different records.")
 		   | (i, a) :: b->
-		       if glob_refer = a
+		       if eq_gr glob_refer a
 		       then (i,List.rev_append acc l)
 		       else add_patt b ((i,a)::acc)
 	         in
@@ -957,7 +962,12 @@ let sort_fields mode loc l completer =
   (* [merge_aliases] returns the sets of all aliases encountered at this
      point and a substitution mapping extra aliases to the first one *)
 let merge_aliases (ids,asubst as _aliases) id =
-  ids@[id], if ids=[] then asubst else (id, List.hd ids)::asubst
+  let ans = ids @ [id] in
+  let subst = match ids with
+  | [] -> asubst
+  | id' :: _ -> (id, id') :: asubst
+  in
+  (ans, subst)
 
 let alias_of = function
   | ([],_) -> Anonymous
@@ -977,7 +987,7 @@ let message_redundant_alias (id1,id2) =
 
 let rec subst_pat_iterator y t p = match p with
   | RCPatAtom (_,id) ->
-    begin match id with Some x when x = y -> t |_ -> p end
+    begin match id with Some x when id_eq x y -> t | _ -> p end
   | RCPatCstr (loc,id,l1,l2) ->
      RCPatCstr (loc,id,List.map (subst_pat_iterator y t) l1,
 	       List.map (subst_pat_iterator y t) l2)
@@ -994,12 +1004,12 @@ let drop_notations_pattern looked_for =
 	  (match a with
 	    | NRef g ->
 	      looked_for g;
-	      let () = assert (vars = []) in
+	      let () = assert (List.is_empty vars) in
 	      let (_,argscs) = find_remaining_scopes [] pats g in
 	      Some (g, [], List.map2 (in_pat_sc env) argscs pats)
 	    | NApp (NRef g,[]) -> (* special case : Syndef for @Cstr *)
 	      looked_for g;
-	      let () = assert (vars = []) in
+              let () = assert (List.is_empty vars) in
 	      let (argscs,_) = find_remaining_scopes pats [] g in
 	      Some (g, List.map2 (in_pat_sc env) argscs pats, [])
 	    | NApp (NRef g,args) ->
@@ -1074,7 +1084,7 @@ let drop_notations_pattern looked_for =
   and in_pat_sc env x = in_pat {env with tmp_scope = x}
   and in_not loc env (subst,substlist as fullsubst) args = function
     | NVar id ->
-      assert (args = []);
+      let () = assert (List.is_empty args) in
       begin
 	(* subst remembers the delimiters stack in the interpretation *)
 	(* of the notations *)
@@ -1083,7 +1093,7 @@ let drop_notations_pattern looked_for =
 	  in_pat {env with scopes=subscopes@env.scopes;
 	    tmp_scope = scopt} a
 	with Not_found ->
-	  if id = ldots_var then RCPatAtom (loc,Some id) else
+	  if id_eq id ldots_var then RCPatAtom (loc,Some id) else
 	    anomaly ("Unbound pattern notation variable: "^(string_of_id id))
       end
     | NRef g ->
@@ -1097,7 +1107,7 @@ let drop_notations_pattern looked_for =
 		 List.map2 (fun x -> in_not loc {env with tmp_scope = x} fullsubst []) argscs1 pl,
 		 List.map2 (in_pat_sc env) argscs2 args)
     | NList (x,_,iter,terminator,lassoc) ->
-      let () = assert (args = []) in
+      let () = assert (List.is_empty args) in
       (try
          (* All elements of the list are in scopes (scopt,subscopes) *)
 	 let (l,(scopt,subscopes)) = List.assoc x substlist in
@@ -1108,7 +1118,9 @@ let drop_notations_pattern looked_for =
            (if lassoc then List.rev l else l) termin
        with Not_found ->
          anomaly "Inconsistent substitution of recursive notation")
-    | NHole _ -> let () = assert (args = []) in RCPatAtom (loc,None)
+    | NHole _ ->
+      let () = assert (List.is_empty args) in
+      RCPatAtom (loc, None)
     | t -> error_invalid_pattern_notation loc
   in in_pat
 
@@ -1125,7 +1137,8 @@ let rec intern_pat genv (ids,asubst as aliases) pat =
       intern_pat genv aliases' p
     | RCPatCstr (loc, head, expl_pl, pl) ->
       if !oldfashion_patterns then
-	let c,idslpl1 = find_constructor loc (if expl_pl = [] then Some (List.length pl) else None) head in
+        let len = if List.is_empty expl_pl then Some (List.length pl) else None in
+	let c,idslpl1 = find_constructor loc len head in
 	let with_letin =
 	  check_constructor_length genv loc c (List.length idslpl1 + List.length expl_pl) pl in
 	intern_cstr_with_all_args loc c with_letin idslpl1 (expl_pl@pl)
@@ -1140,7 +1153,7 @@ let rec intern_pat genv (ids,asubst as aliases) pat =
     | RCPatAtom (loc, None) ->
       (ids,[asubst, PatVar (loc,alias_of aliases)])
     | RCPatOr (loc, pl) ->
-      assert (pl <> []);
+      assert (not (List.is_empty pl));
       let pl' = List.map (intern_pat genv aliases) pl in
       let (idsl,pl') = List.split pl' in
       let ids = List.hd idsl in
@@ -1183,10 +1196,14 @@ let explicitation_eq ex1 ex2 = match ex1, ex2 with
 | _ -> false
 
 let merge_impargs l args =
+  let test x = function
+  | (_, Some (_, y)) -> explicitation_eq x y
+  | _ -> false
+  in
   List.fold_right (fun a l ->
     match a with
       | (_,Some (_,(ExplByName id as x))) when
-	  List.exists (function (_,Some (_,y)) -> x=y | _ -> false) args -> l
+	  List.exists (test x) args -> l
       | _ -> a::l)
     l args
 
@@ -1195,7 +1212,7 @@ let check_projection isproj nargs r =
   | GRef (loc, ref), Some _ ->
       (try
 	let n = Recordops.find_projection_nparams ref + 1 in
-	if nargs <> n then
+	if not (Int.equal nargs n) then
 	  user_err_loc (loc,"",str "Projection has not the right number of explicit parameters.");
       with Not_found ->
 	user_err_loc
@@ -1212,7 +1229,7 @@ let set_hole_implicit i b = function
   | _ -> anomaly "Only refs have implicits"
 
 let exists_implicit_name id =
-  List.exists (fun imp -> is_status_implicit imp & id = name_of_implicit imp)
+  List.exists (fun imp -> is_status_implicit imp && id_eq id (name_of_implicit imp))
 
 let extract_explicit_arg imps args =
   let rec aux = function
@@ -1361,7 +1378,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | CApp (loc, (isproj,f), args) ->
         let isproj,f,args = match f with
           (* Compact notations like "t.(f args') args" *)
-          | CApp (_,(Some _,f), args') when isproj=None -> isproj,f,args'@args
+          | CApp (_,(Some _,f), args') when not (Option.has_some isproj) -> isproj,f,args'@args
           (* Don't compact "(f args') args" to resolve implicits separately *)
           | _ -> isproj,f,args in
 	let (c,impargs,args_scopes,l),args =
@@ -1472,7 +1489,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 
   (* Expands a disjunction of multiple pattern *)
   and intern_disjunctive_multiple_pattern env loc n mpl =
-    assert (mpl <> []);
+    assert (not (List.is_empty mpl));
     let mpl' = List.map (intern_multiple_pattern env n) mpl in
     let (idsl,mpl') = List.split mpl' in
     let ids = List.hd idsl in
@@ -1554,10 +1571,10 @@ let internalize sigma globalenv env allow_patvar lvar c =
     let l = select_impargs_size (List.length args) l in
     let eargs, rargs = extract_explicit_arg l args in
     if !parsing_explicit then
-      if eargs <> [] then
-        error "Arguments given by name or position not supported in explicit mode."
-      else
-        intern_args env subscopes rargs
+      begin match eargs with
+      | [] -> intern_args env subscopes rargs
+      | _ -> error "Arguments given by name or position not supported in explicit mode."
+      end
     else
     let rec aux n impl subscopes eargs rargs =
       let (enva,subscopes') = apply_scope_env env subscopes in
@@ -1569,7 +1586,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	    let eargs' = List.remove_assoc id eargs in
 	    intern enva a :: aux (n+1) impl' subscopes' eargs' rargs
 	  with Not_found ->
-	  if rargs=[] & eargs=[] & not (maximal_insertion_of imp) then
+	  if List.is_empty rargs && List.is_empty eargs && not (maximal_insertion_of imp) then
             (* Less regular arguments than expected: complete *)
             (* with implicit arguments if maximal insertion is set *)
 	    []
@@ -1580,14 +1597,14 @@ let internalize sigma globalenv env allow_patvar lvar c =
       | (imp::impl', a::rargs') ->
 	  intern enva a :: aux (n+1) impl' subscopes' eargs rargs'
       | (imp::impl', []) ->
-	  if eargs <> [] then
+	  if not (List.is_empty eargs) then
 	    (let (id,(loc,_)) = List.hd eargs in
 	       user_err_loc (loc,"",str "Not enough non implicit \
 	    arguments to accept the argument bound to " ++
 		 pr_id id ++ str"."));
 	  []
       | ([], rargs) ->
-	  assert (eargs = []);
+	  assert (List.is_empty eargs);
 	  intern_args env subscopes rargs
     in aux 1 l subscopes eargs rargs
 
@@ -1691,7 +1708,7 @@ let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
     | None -> ref Evd.empty
     | Some evdref -> evdref
   in
-  let istype = kind = IsType in
+  let istype = kind == IsType in
   let c = intern_gen kind ~impls !evdref env c in
   let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:istype c in
     understand_tcc_evars ~fail_evar evdref env kind c, imps
@@ -1777,7 +1794,7 @@ let interp_rawcontext_gen understand_type understand_judgment env bl =
 	      let t = understand_type env t' in
 	      let d = (na,None,t) in
 	      let impls =
-		if k = Implicit then
+		if k == Implicit then
 		  let na = match na with Name n -> Some n | Anonymous -> None in
 		    (ExplByPos (n, na), (true, true, true)) :: impls
 		else impls

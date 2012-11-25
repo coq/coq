@@ -32,7 +32,7 @@ let _ =
       Summary.init_function = (fun () -> generalizable_table := Idpred.empty) }
 
 let declare_generalizable_ident table (loc,id) =
-  if id <> root_of_id id then
+  if not (id_eq id (root_of_id id)) then
     user_err_loc(loc,"declare_generalizable_ident",
     (pr_id id ++ str
       " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
@@ -210,7 +210,11 @@ let combine_params avoid fn applied needed =
     List.partition
       (function
 	  (t, Some (loc, ExplByName id)) ->
-	    if not (List.exists (fun (_, (id', _, _)) -> Name id = id') needed) then
+            let is_id (_, (na, _, _)) = match na with
+            | Name id' -> id_eq id id'
+            | Anonymous -> false
+            in
+	    if not (List.exists is_id needed) then
 	      user_err_loc (loc,"",str "Wrong argument name: " ++ Nameops.pr_id id);
 	    true
 	| _ -> false) applied
@@ -219,7 +223,11 @@ let combine_params avoid fn applied needed =
     (fun x -> match x with (t, Some (loc, ExplByName id)) -> id, t | _ -> assert false)
     named
   in
-  let needed = List.filter (fun (_, (_, b, _)) -> b = None) needed in
+  let is_unset (_, (_, b, _)) = match b with
+  | None -> true
+  | Some _ -> false
+  in
+  let needed = List.filter is_unset needed in
   let rec aux ids avoid app need =
     match app, need with
 	[], [] -> List.rev ids, avoid
@@ -280,9 +288,13 @@ let implicit_application env ?(allow_partial=true) f ty =
 	  let (ci, rd) = c.cl_context in
 	  if not allow_partial then
 	    begin
-	      let applen = List.fold_left (fun acc (x, y) -> if y = None then succ acc else acc) 0 par in
-	      let needlen = List.fold_left (fun acc x -> if x = None then succ acc else acc) 0 ci in
-		if needlen <> applen then
+              let opt_succ x n = match x with
+              | None -> succ n
+              | Some _ -> n
+              in
+	      let applen = List.fold_left (fun acc (x, y) -> opt_succ y acc) 0 par in
+	      let needlen = List.fold_left (fun acc x -> opt_succ x acc) 0 ci in
+		if not (Int.equal needlen applen) then
 		  Typeclasses_errors.mismatched_ctx_inst (Global.env ()) Parameters (List.map fst par) rd
 	    end;
 	  let pars = List.rev (List.combine ci rd) in
@@ -291,15 +303,16 @@ let implicit_application env ?(allow_partial=true) f ty =
 	in c, avoid
 
 let implicits_of_glob_constr ?(with_products=true) l =
-  let add_impl i na bk l =
- 	if bk = Implicit then
-	  let name =
-	    match na with
-	    | Name id -> Some id
-	    | Anonymous -> None
-	  in
-	    (ExplByPos (i, name), (true, true, true)) :: l
-	else l in
+  let add_impl i na bk l = match bk with
+  | Implicit ->
+    let name =
+      match na with
+      | Name id -> Some id
+      | Anonymous -> None
+    in
+    (ExplByPos (i, name), (true, true, true)) :: l
+  | _ -> l
+  in
   let rec aux i c =
     let abs na bk b =
       add_impl i na bk (aux (succ i) b)
@@ -307,11 +320,13 @@ let implicits_of_glob_constr ?(with_products=true) l =
       match c with
       | GProd (loc, na, bk, t, b) ->
 	  if with_products then abs na bk b
-	  else 
-	    (if bk = Implicit then
+	  else
+            let () = match bk with
+            | Implicit ->
 	       msg_warning (strbrk "Ignoring implicit status of product binder " ++ 
-			      pr_name na ++ strbrk " and following binders");
-	     [])
+			      pr_name na ++ strbrk " and following binders")
+            | _ -> ()
+            in []
       | GLambda (loc, na, bk, t, b) -> abs na bk b
       | GLetIn (loc, na, t, b) -> aux i b
       | GRec (_, fix_kind, nas, args, tys, bds) ->

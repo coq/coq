@@ -53,7 +53,7 @@ let _ =
       Summary.init_function = init_reserved }
 
 let declare_reserved_type_binding (loc,id) t =
-  if id <> root_of_id id then
+  if not (id_eq id (root_of_id id)) then
     user_err_loc(loc,"declare_reserved_type",
     (pr_id id ++ str
       " is not reservable: it must have no trailing digits, quote, or _"));
@@ -94,9 +94,10 @@ open Glob_term
 let anonymize_if_reserved na t = match na with
   | Name id as na ->
       (try
-	if not !Flags.raw_print &
-	   (try Notation_ops.notation_constr_of_glob_constr [] [] t
-		  = find_reserved_type id
+	if not !Flags.raw_print &&
+	   (try
+            let ntn = Notation_ops.notation_constr_of_glob_constr [] [] t in
+            Pervasives.(=) ntn (find_reserved_type id) (** FIXME *)
             with UserError _ -> false)
 	then GHole (Loc.ghost,Evar_kinds.BinderType na)
 	else t

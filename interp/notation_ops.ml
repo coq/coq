@@ -122,35 +122,42 @@ let add_name r = function Anonymous -> () | Name id -> add_id r id
 let split_at_recursive_part c =
   let sub = ref None in
   let rec aux = function
-  | GApp (loc0,GVar(loc,v),c::l) when v = ldots_var ->
-      if !sub <> None then
-	(* Not narrowed enough to find only one recursive part *)
-	raise Not_found
-      else
-	(sub := Some c;
-	 if l = [] then GVar (loc,ldots_var)
-	 else GApp (loc0,GVar (loc,ldots_var),l))
+  | GApp (loc0,GVar(loc,v),c::l) when id_eq v ldots_var ->
+      begin match !sub with
+      | None ->
+        let () = sub := Some c in
+        begin match l with
+        | [] -> GVar (loc, ldots_var)
+        | _ :: _ -> GApp (loc0, GVar (loc, ldots_var), l)
+        end
+      | Some _ ->
+        (* Not narrowed enough to find only one recursive part *)
+        raise Not_found
+      end
   | c -> map_glob_constr aux c in
   let outer_iterator = aux c in
   match !sub with
   | None -> (* No recursive pattern found *) raise Not_found
   | Some c ->
   match outer_iterator with
-  | GVar (_,v) when v = ldots_var -> (* Not enough context *) raise Not_found
+  | GVar (_,v) when id_eq v ldots_var -> (* Not enough context *) raise Not_found
   | _ -> outer_iterator, c
 
 let on_true_do b f c = if b then (f c; b) else b
 
 let compare_glob_constr f add t1 t2 = match t1,t2 with
   | GRef (_,r1), GRef (_,r2) -> eq_gr r1 r2
-  | GVar (_,v1), GVar (_,v2) -> on_true_do (v1 = v2) add (Name v1)
-  | GApp (_,f1,l1), GApp (_,f2,l2) -> f f1 f2 & List.for_all2eq f l1 l2
-  | GLambda (_,na1,bk1,ty1,c1), GLambda (_,na2,bk2,ty2,c2) when na1 = na2 && bk1 = bk2 -> on_true_do (f ty1 ty2 & f c1 c2) add na1
-  | GProd (_,na1,bk1,ty1,c1), GProd (_,na2,bk2,ty2,c2) when na1 = na2 && bk1 = bk2 ->
+  | GVar (_,v1), GVar (_,v2) -> on_true_do (id_eq v1 v2) add (Name v1)
+  | GApp (_,f1,l1), GApp (_,f2,l2) -> f f1 f2 && List.for_all2eq f l1 l2
+  | GLambda (_,na1,bk1,ty1,c1), GLambda (_,na2,bk2,ty2,c2)
+    when name_eq na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
+    on_true_do (f ty1 ty2 & f c1 c2) add na1
+  | GProd (_,na1,bk1,ty1,c1), GProd (_,na2,bk2,ty2,c2)
+    when name_eq na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
       on_true_do (f ty1 ty2 & f c1 c2) add na1
   | GHole _, GHole _ -> true
-  | GSort (_,s1), GSort (_,s2) -> s1 = s2
-  | GLetIn (_,na1,b1,c1), GLetIn (_,na2,b2,c2) when na1 = na2 ->
+  | GSort (_,s1), GSort (_,s2) -> glob_sort_eq s1 s2
+  | GLetIn (_,na1,b1,c1), GLetIn (_,na2,b2,c2) when name_eq na1 na2 ->
       on_true_do (f b1 b2 & f c1 c2) add na1
   | (GCases _ | GRec _
     | GPatVar _ | GEvar _ | GLetTuple _ | GIf _ | GCast _),_
@@ -174,26 +181,38 @@ let compare_recursive_parts found f (iterator,subc) =
   let diff = ref None in
   let terminator = ref None in
   let rec aux c1 c2 = match c1,c2 with
-  | GVar(_,v), term when v = ldots_var ->
+  | GVar(_,v), term when id_eq v ldots_var ->
       (* We found the pattern *)
-      assert (!terminator = None); terminator := Some term;
+      assert (match !terminator with None -> true | Some _ -> false);
+      terminator := Some term;
       true
-  | GApp (_,GVar(_,v),l1), GApp (_,term,l2) when v = ldots_var ->
+  | GApp (_,GVar(_,v),l1), GApp (_,term,l2) when id_eq v ldots_var ->
       (* We found the pattern, but there are extra arguments *)
       (* (this allows e.g. alternative (recursive) notation of application) *)
-      assert (!terminator = None); terminator := Some term;
+      assert (match !terminator with None -> true | Some _ -> false);
+      terminator := Some term;
       List.for_all2eq aux l1 l2
-  | GVar (_,x), GVar (_,y) when x<>y ->
+  | GVar (_,x), GVar (_,y) when not (id_eq x y) ->
       (* We found the position where it differs *)
-      let lassoc = (!terminator <> None) in
+      let lassoc = match !terminator with None -> false | Some _ -> true in
       let x,y = if lassoc then y,x else x,y in
-      !diff = None && (diff := Some (x,y,Some lassoc); true)
+      begin match !diff with
+      | None ->
+        let () = diff := Some (x, y, Some lassoc) in
+        true
+      | Some _ -> false
+      end
   | GLambda (_,Name x,_,t_x,c), GLambda (_,Name y,_,t_y,term)
   | GProd (_,Name x,_,t_x,c), GProd (_,Name y,_,t_y,term) ->
       (* We found a binding position where it differs *)
       check_is_hole x t_x;
       check_is_hole y t_y;
-      !diff = None && (diff := Some (x,y,None); aux c term)
+      begin match !diff with
+      | None ->
+        let () = diff := Some (x, y, None) in
+        aux c term
+      | Some _ -> false
+      end
   | _ ->
       compare_glob_constr aux (add_name found) c1 c2 in
   if aux iterator subc then
@@ -230,7 +249,7 @@ let notation_constr_and_vars_of_glob_constr a =
     with Not_found ->
     found := keepfound;
     match c with
-    | GApp (_,GVar (loc,f),[c]) when f = ldots_var ->
+    | GApp (_,GVar (loc,f),[c]) when id_eq f ldots_var ->
 	(* Fall on the second part of the recursive pattern w/o having
 	   found the first part *)
 	user_err_loc (loc,"",
@@ -262,7 +281,7 @@ let notation_constr_and_vars_of_glob_constr a =
   | GRec (_,fk,idl,dll,tl,bl) ->
       Array.iter (add_id found) idl;
       let dll = Array.map (List.map (fun (na,bk,oc,b) ->
-	 if bk <> Explicit then
+	 if bk != Explicit then
 	   error "Binders marked as implicit not allowed in notations.";
 	 add_name found na; (na,Option.map aux oc,aux b))) dll in
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
@@ -281,7 +300,7 @@ let notation_constr_and_vars_of_glob_constr a =
 
 let rec list_rev_mem_assoc x = function
   | [] -> false
-  | (_,x')::l -> x = x' || list_rev_mem_assoc x l
+  | (_,x')::l -> id_eq x x' || list_rev_mem_assoc x l
 
 let check_variables vars recvars (found,foundrec,foundrecbinding) =
   let useless_vars = List.map snd recvars in
@@ -474,17 +493,15 @@ let abstract_return_type_context_notation_constr =
 exception No_match
 
 let rec alpha_var id1 id2 = function
-  | (i1,i2)::_ when i1=id1 -> i2 = id2
-  | (i1,i2)::_ when i2=id2 -> i1 = id1
+  | (i1,i2)::_ when id_eq i1 id1 -> id_eq i2 id2
+  | (i1,i2)::_ when id_eq i2 id2 -> id_eq i1 id1
   | _::idl -> alpha_var id1 id2 idl
-  | [] -> id1 = id2
-
-let alpha_eq_val (x,y) = x = y
+  | [] -> id_eq id1 id2
 
 let bind_env alp (sigma,sigmalist,sigmabinders as fullsigma) var v =
   try
     let vvar = List.assoc var sigma in
-    if alpha_eq_val (v,vvar) then fullsigma
+    if Pervasives.(=) v vvar then fullsigma (** FIXME *)
     else raise No_match
   with Not_found ->
     (* Check that no capture of binding variables occur *)
@@ -497,10 +514,15 @@ let bind_binder (sigma,sigmalist,sigmabinders) x bl =
 
 let match_fix_kind fk1 fk2 =
   match (fk1,fk2) with
-  | GCoFix n1, GCoFix n2 -> n1 = n2
+  | GCoFix n1, GCoFix n2 -> Int.equal n1 n2
   | GFix (nl1,n1), GFix (nl2,n2) ->
-      n1 = n2 &&
-      Array.for_all2 (fun (n1,_) (n2,_) -> n2 = None || n1 = n2) nl1 nl2
+      let test (n1, _) (n2, _) = match n1, n2 with
+      | _, None -> true
+      | Some id1, Some id2 -> Int.equal id1 id2
+      | _ -> false
+      in
+      Int.equal n1 n2 &&
+      Array.for_all2 test nl1 nl2
   | _ -> false
 
 let match_opt f sigma t1 t2 = match (t1,t2) with
@@ -522,7 +544,7 @@ let rec match_cases_pattern_binders metas acc pat1 pat2 =
   match (pat1,pat2) with
   | PatVar (_,na1), PatVar (_,na2) -> match_names metas acc na1 na2
   | PatCstr (_,c1,patl1,na1), PatCstr (_,c2,patl2,na2)
-      when c1 = c2 & List.length patl1 = List.length patl2 ->
+      when eq_constructor c1 c2 && Int.equal (List.length patl1) (List.length patl2) ->
       List.fold_left2 (match_cases_pattern_binders metas)
 	(match_names metas acc na1 na2) patl1 patl2
   | _ -> raise No_match
@@ -550,7 +572,7 @@ let match_abinderlist_with_app match_fun metas sigma rest x iter termin =
       let b = match List.assoc x (pi3 sigma) with [b] -> b | _ ->assert false in
       let sigma = remove_sigma x (remove_sigma ldots_var sigma) in
       aux sigma (b::acc) rest
-    with No_match when acc <> [] ->
+    with No_match when not (List.is_empty acc) ->
       acc, match_fun metas sigma rest termin in
   let bl,sigma = aux sigma [] rest in
   bind_binder sigma x bl
@@ -563,7 +585,7 @@ let match_alist match_fun metas sigma rest x iter termin lassoc =
       let t = List.assoc x (pi1 sigma) in
       let sigma = remove_sigma x (remove_sigma ldots_var sigma) in
       aux sigma (t::acc) rest
-    with No_match when acc <> [] ->
+    with No_match when not (List.is_empty acc) ->
       acc, match_fun metas sigma rest termin in
   let l,sigma = aux sigma [] rest in
   (pi1 sigma, (x,if lassoc then l else List.rev l)::pi2 sigma, pi3 sigma)
@@ -596,7 +618,7 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
       (* TODO: address the possibility that termin is a Lambda itself *)
       match_in u alp metas (bind_binder sigma x decls) b termin
   | GProd (_,na1,bk,t1,b1), NBinderList (x,_,NProd (Name id2,_,b2),termin)
-      when na1 <> Anonymous ->
+      when na1 != Anonymous ->
       let (decls,b) = match_iterated_binders false [(na1,bk,None,t1)] b1 in
       (* TODO: address the possibility that termin is a Prod itself *)
       match_in u alp metas (bind_binder sigma x decls) b termin
@@ -608,13 +630,13 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   | GLambda (_,na,bk,t,b1), NLambda (Name id,_,b2) when List.mem id blmetas ->
       match_in u alp metas (bind_binder sigma id [(na,bk,None,t)]) b1 b2
   | GProd (_,na,bk,t,b1), NProd (Name id,_,b2)
-      when List.mem id blmetas & na <> Anonymous ->
+      when List.mem id blmetas && na != Anonymous ->
       match_in u alp metas (bind_binder sigma id [(na,bk,None,t)]) b1 b2
 
   (* Matching compositionally *)
   | GVar (_,id1), NVar id2 when alpha_var id1 id2 alp -> sigma
   | GRef (_,r1), NRef r2 when (eq_gr r1 r2) -> sigma
-  | GPatVar (_,(_,n1)), NPatVar n2 when n1=n2 -> sigma
+  | GPatVar (_,(_,n1)), NPatVar n2 when id_eq n1 n2 -> sigma
   | GApp (loc,f1,l1), NApp (f2,l2) ->
       let n1 = List.length l1 and n2 = List.length l2 in
       let f1,l1,f2,l2 =
@@ -633,9 +655,9 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   | GLetIn (_,na1,t1,b1), NLetIn (na2,t2,b2) ->
      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
   | GCases (_,sty1,rtno1,tml1,eqnl1), NCases (sty2,rtno2,tml2,eqnl2)
-      when sty1 = sty2
-	 & List.length tml1 = List.length tml2
-	 & List.length eqnl1 = List.length eqnl2 ->
+      when sty1 == sty2
+	 && Int.equal (List.length tml1) (List.length tml2)
+	 && Int.equal (List.length eqnl1) (List.length eqnl2) ->
       let rtno1' = abstract_return_type_context_glob_constr tml1 rtno1 in
       let rtno2' = abstract_return_type_context_notation_constr tml2 rtno2 in
       let sigma =
@@ -647,7 +669,7 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
         match_in u alp metas s tm1 tm2) sigma tml1 tml2 in
       List.fold_left2 (match_equations u alp metas) sigma eqnl1 eqnl2
   | GLetTuple (_,nal1,(na1,to1),b1,c1), NLetTuple (nal2,(na2,to2),b2,c2)
-      when List.length nal1 = List.length nal2 ->
+      when Int.equal (List.length nal1) (List.length nal2) ->
       let sigma = match_opt (match_binders u alp metas na1 na2) sigma to1 to2 in
       let sigma = match_in u alp metas sigma b1 b2 in
       let (alp,sigma) =
@@ -657,8 +679,8 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
       let sigma = match_opt (match_binders u alp metas na1 na2) sigma to1 to2 in
       List.fold_left2 (match_in u alp metas) sigma [a1;b1;c1] [a2;b2;c2]
   | GRec (_,fk1,idl1,dll1,tl1,bl1), NRec (fk2,idl2,dll2,tl2,bl2)
-      when match_fix_kind fk1 fk2 & Array.length idl1 =  Array.length idl2 &
-	Array.for_all2 (fun l1 l2 -> List.length l1 = List.length l2) dll1 dll2
+      when match_fix_kind fk1 fk2 && Int.equal (Array.length idl1) (Array.length idl2) &&
+	Array.for_all2 (fun l1 l2 -> Int.equal (List.length l1) (List.length l2)) dll1 dll2
 	->
       let alp,sigma = Array.fold_left2
 	(List.fold_left2 (fun (alp,sigma) (na1,_,oc1,b1) (na2,oc2,b2) ->
@@ -676,7 +698,7 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   | GCast(_,c1, CastCoerce), NCast(c2, CastCoerce) ->
       match_in u alp metas sigma c1 c2
   | GSort (_,GType _), NSort (GType None) when not u -> sigma
-  | GSort (_,s1), NSort s2 when s1 = s2 -> sigma
+  | GSort (_,s1), NSort s2 when glob_sort_eq s1 s2 -> sigma
   | GPatVar _, NHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, NHole _ -> sigma
 
@@ -710,7 +732,8 @@ and match_equations u alp metas sigma (_,_,patl1,rhs1) (patl2,rhs2) =
   match_in u alp metas sigma rhs1 rhs2
 
 let match_notation_constr u c (metas,pat) =
-  let vars = List.partition (fun (_,(_,x)) -> x <> NtnTypeBinderList) metas in
+  let test (_, (_, x)) = match x with NtnTypeBinderList -> false | _ -> true in
+  let vars = List.partition test metas in
   let vars = (List.map fst (fst vars), List.map fst (snd vars)) in
   let terms,termlists,binders = match_ false u [] vars ([],[],[]) c pat in
   (* Reorder canonically the substitution *)
@@ -739,7 +762,7 @@ let add_patterns_for_params ind l =
 let bind_env_cases_pattern (sigma,sigmalist,x as fullsigma) var v =
   try
     let vvar = List.assoc var sigma in
-    if v=vvar then fullsigma else raise No_match
+    if Pervasives.(=) v vvar then fullsigma else raise No_match (** FIXME *)
   with Not_found ->
     (* TODO: handle the case of multiple occs in different scopes *)
     (var,v)::sigma,sigmalist,x
@@ -748,10 +771,10 @@ let rec match_cases_pattern metas sigma a1 a2 =
  match (a1,a2) with
   | r1, NVar id2 when List.mem id2 metas -> (bind_env_cases_pattern sigma id2 r1),(0,[])
   | PatVar (_,Anonymous), NHole _ -> sigma,(0,[])
-  | PatCstr (loc,(ind,_ as r1),largs,_), NRef (ConstructRef r2) when r1 = r2 ->
+  | PatCstr (loc,(ind,_ as r1),largs,_), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
       sigma,(0,largs)
   | PatCstr (loc,(ind,_ as r1),args1,_), NApp (NRef (ConstructRef r2),l2)
-      when r1 = r2 ->
+      when eq_constructor r1 r2 ->
       let l1 = add_patterns_for_params (fst r1) args1 in
       let le2 = List.length l2 in
       if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length l1
@@ -772,10 +795,10 @@ and match_cases_pattern_no_more_args metas sigma a1 a2 =
 
 let match_ind_pattern metas sigma ind pats a2 =
   match a2 with
-  | NRef (IndRef r2) when ind = r2 ->
+  | NRef (IndRef r2) when eq_ind ind r2 ->
       sigma,(0,pats)
   | NApp (NRef (IndRef r2),l2)
-      when ind = r2 ->
+      when eq_ind ind r2 ->
       let le2 = List.length l2 in
       if Int.equal le2 0 (* Special case of a notation for a @Cstr *) || le2 > List.length pats
       then

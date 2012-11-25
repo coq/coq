@@ -153,16 +153,27 @@ let split_at_annot bl na =
   let names = List.map snd (names_of_local_assums bl) in
   match na with
   | None ->
-      if names = [] then error "A fixpoint needs at least one parameter."
-      else [], bl
+      begin match names with
+      | [] -> error "A fixpoint needs at least one parameter."
+      | _ -> ([], bl)
+      end
   | Some (loc, id) ->
       let rec aux acc = function
 	| LocalRawAssum (bls, k, t) as x :: rest ->
-	    let l, r = List.split_when (fun (loc, na) -> na = Name id) bls in
-	      if r = [] then aux (x :: acc) rest
-	      else
-		(List.rev (if l = [] then acc else LocalRawAssum (l, k, t) :: acc),
-		 LocalRawAssum (r, k, t) :: rest)
+            let test (_, na) = match na with
+            | Name id' -> id_eq id id'
+            | Anonymous -> false
+            in
+	    let l, r = List.split_when test bls in
+            begin match r with
+            | [] -> aux (x :: acc) rest
+            | _ ->
+              let ans = match l with
+              | [] -> acc
+              | _ -> LocalRawAssum (l, k, t) :: acc
+              in
+              (List.rev ans, LocalRawAssum (r, k, t) :: rest)
+            end
 	| LocalRawDef _ as x :: rest -> aux (x :: acc) rest
 	| [] ->
             user_err_loc(loc,"",
@@ -251,8 +262,8 @@ let locs_of_notation loc locs ntn =
   let (bl, el) = Loc.unloc loc in
   let locs =  List.map Loc.unloc locs in
   let rec aux pos = function
-    | [] -> if pos = el then [] else [(pos,el-1)]
-    | (ba,ea)::l ->if pos = ba then aux ea l else (pos,ba-1)::aux ea l
+    | [] -> if Int.equal pos el then [] else [(pos,el-1)]
+    | (ba,ea)::l ->if Int.equal pos ba then aux ea l else (pos,ba-1)::aux ea l
   in aux bl (Sort.list (fun l1 l2 -> fst l1 < fst l2) locs)
 
 let ntn_loc loc (args,argslist,binderslist) =
