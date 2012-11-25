@@ -109,7 +109,7 @@ let onNLastHypsId n tac = onHyps (nLastHypsId n) tac
 let onNLastHyps n tac   = onHyps (nLastHyps n) tac
 
 let afterHyp id gl =
-  fst (List.split_when (fun (hyp,_,_) -> hyp = id) (pf_hyps gl))
+  fst (List.split_when (fun (hyp,_,_) -> id_eq hyp id) (pf_hyps gl))
 
 (***************************************)
 (*           Clause Tacticals          *)
@@ -175,10 +175,12 @@ let fix_empty_or_and_pattern nv l =
      names and "[ ]" for no clause at all *)
   (* 2- More generally, we admit "[ ]" for any disjunctive pattern of
      arbitrary length *)
-  if l = [[]] then List.make nv [] else l
+  match l with
+  | [[]] -> List.make nv []
+  | _ -> l
 
 let check_or_and_pattern_size loc names n =
-  if List.length names <> n then
+  if not (Int.equal (List.length names) n) then
     if Int.equal n 1 then
       user_err_loc (loc,"",str "Expects a conjunctive pattern.")
     else
@@ -201,7 +203,7 @@ let compute_construtor_signatures isrec (_,k as ity) =
     | Prod (_,_,c), recarg::rest ->
 	let b = match dest_recarg recarg with
 	  | Norec | Imbr _  -> false
-	  | Mrec (_,j)  -> isrec & j=k
+	  | Mrec (_,j)  -> isrec && Int.equal j k
 	in b :: (analrec c rest)
     | LetIn (_,_,_,c), rest -> false :: (analrec c rest)
     | _, [] -> []

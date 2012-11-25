@@ -117,7 +117,7 @@ type search_entry = stored_data list * stored_data list * Bounded_net.t
 let empty_se = ([],[],Bounded_net.create ())
 
 let eq_pri_auto_tactic (_, x) (_, y) =
-  if x.pri = y.pri && x.pat = y.pat then
+  if Int.equal x.pri y.pri && Option.Misc.compare constr_pattern_eq x.pat y.pat then
     match x.code,y.code with
       | Res_pf(cstr,_),Res_pf(cstr1,_) -> 
 	   eq_constr cstr cstr1
@@ -173,13 +173,29 @@ let translate_hint (go,p) =
   in
   (go,{ p with code = code })
 
+let hints_path_atom_eq h1 h2 = match h1, h2 with
+| PathHints l1, PathHints l2 -> List.equal eq_gr l1 l2
+| PathAny, PathAny -> true
+| _ -> false
+
+let rec hints_path_eq h1 h2 = match h1, h2 with
+| PathAtom h1, PathAtom h2 -> hints_path_atom_eq h1 h2
+| PathStar h1, PathStar h2 -> hints_path_eq h1 h2
+| PathSeq (l1, r1), PathSeq (l2, r2) ->
+  hints_path_eq l1 l2 && hints_path_eq r1 r2
+| PathOr (l1, r1), PathOr (l2, r2) ->
+  hints_path_eq l1 l2 && hints_path_eq r1 r2
+| PathEmpty, PathEmpty -> true
+| PathEpsilon, PathEpsilon -> true
+| _ -> false
+
 let path_matches hp hints =
   let rec aux hp hints k =
     match hp, hints with
     | PathAtom _, [] -> false
     | PathAtom PathAny, (_ :: hints') -> k hints'
     | PathAtom p, (h :: hints') -> 
-      if p = h then k hints' else false
+      if hints_path_atom_eq p h then k hints' else false
     | PathStar hp', hints -> 
       k hints || aux hp' hints (fun hints' -> aux hp hints' k)
     | PathSeq (hp, hp'), hints -> 
@@ -209,7 +225,7 @@ let rec is_empty = function
 let rec path_derivate hp hint =
   let rec derivate_atoms hints hints' =
     match hints, hints' with
-    | gr :: grs, gr' :: grs' when gr = gr' -> derivate_atoms grs grs'
+    | gr :: grs, gr' :: grs' when eq_gr gr gr' -> derivate_atoms grs grs'
     | [], [] -> PathEpsilon
     | [], hints -> PathEmpty
     | grs, [] -> PathAtom (PathHints grs)
@@ -242,11 +258,11 @@ let rec normalize_path h =
   | PathOr (PathEmpty, p) | PathOr (p, PathEmpty) -> normalize_path p
   | PathOr (p, q) -> 
     let p', q' = normalize_path p, normalize_path q in
-      if p = p' && q = q' then h
+      if hints_path_eq p p' && hints_path_eq q q' then h
       else normalize_path (PathOr (p', q'))
   | PathSeq (p, q) -> 
     let p', q' = normalize_path p, normalize_path q in
-      if p = p' && q = q' then h
+      if hints_path_eq p p' && hints_path_eq q q' then h
       else normalize_path (PathSeq (p', q'))
   | _ -> h
 
@@ -347,7 +363,7 @@ module Hint_db = struct
     let pat = if not db.use_dn && is_exact v.code then None else v.pat in
       match k with
       | None ->
-	  if not (List.exists (fun (_, (_, v')) -> v = v') db.hintdb_nopat) then
+	  if not (List.exists (fun (_, (_, v')) -> Pervasives.(=) v v') db.hintdb_nopat) then (** FIXME *)
 	    { db with hintdb_nopat = (gr,idv) :: db.hintdb_nopat }
 	  else db
       | Some gr ->
@@ -496,7 +512,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri ?(name=PathAny) (c,cty) 
 	  try head_pattern_bound pat
           with BoundPattern -> failwith "make_apply_entry" in
         let nmiss = List.length (clenv_missing ce) in
-	if nmiss = 0 then
+	if Int.equal nmiss 0 then
 	  (Some hd,
           { pri = (match pri with None -> nb_hyp cty | Some p -> p);
             pat = Some pat;
@@ -526,7 +542,7 @@ let make_resolves env sigma flags pri ?name c =
   let ents = List.map_filter try_apply
       [make_exact_entry sigma pri ?name; make_apply_entry env sigma flags pri ?name]
   in
-  if ents = [] then
+  if List.is_empty ents then
     errorlabstrm "Hint"
       (pr_lconstr c ++ spc() ++
         (if pi1 flags then str"cannot be used as a hint."
@@ -689,7 +705,9 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
 	if path' == path then obj else (local, name, AddCut path')
 
 let classify_autohint ((local,name,hintlist) as obj) =
-  if local or hintlist = (AddHints []) then Dispose else Substitute obj
+  match hintlist with
+  | AddHints [] -> Dispose
+  | _ -> if local then Dispose else Substitute obj
 
 let inAutoHint : hint_obj -> obj =
   declare_object {(default_object "AUTOHINT") with
@@ -702,7 +720,7 @@ let create_hint_db l n st b =
   Lib.add_anonymous_leaf (inAutoHint (l,n,CreateDB (b, st)))
 
 let remove_hints local dbnames grs =
-  let dbnames = if dbnames = [] then ["core"] else dbnames in
+  let dbnames = if List.is_empty dbnames then ["core"] else dbnames in
     List.iter
       (fun dbname ->
 	 Lib.add_anonymous_leaf (inAutoHint(local, dbname, RemoveHints grs)))
@@ -799,7 +817,7 @@ let prepare_hint env (sigma,c) =
       (* We skip the test whether args is the identity or not *)
       let t = Evarutil.nf_evar sigma (existential_type sigma ev) in
       let t = List.fold_right (fun (e,id) c -> replace_term e id c) !subst t in
-      if free_rels t <> Intset.empty then
+      if not (Intset.is_empty (free_rels t)) then
 	error "Hints with holes dependent on a bound variable not supported.";
       if occur_existential t then
 	(* Not clever enough to construct dependency graph of evars *)
@@ -870,7 +888,7 @@ let interp_hints =
 let add_hints local dbnames0 h =
   if List.mem "nocore" dbnames0 then
     error "The hint database \"nocore\" is meant to stay empty.";
-  let dbnames = if dbnames0 = [] then ["core"] else dbnames0 in
+  let dbnames = if List.is_empty dbnames0 then ["core"] else dbnames0 in
   let env = Global.env() and sigma = Evd.empty in
   match h with
   | HintsResolveEntry lhints -> add_resolves env sigma lhints local dbnames
@@ -905,7 +923,7 @@ let pr_hint_list hintlist =
 
 let pr_hints_db (name,db,hintlist) =
   (str "In the database " ++ str name ++ str ":" ++
-     if hintlist = [] then (str " nothing" ++ fnl ())
+     if List.is_empty hintlist then (str " nothing" ++ fnl ())
      else (fnl () ++ pr_hint_list hintlist))
 
 (* Print all hints associated to head c in any database *)
@@ -916,7 +934,7 @@ let pr_hint_list_for_head c =
     (name, db, hints)
   in
   let valid_dbs = List.map validate dbs in
-  if valid_dbs = [] then
+  if List.is_empty valid_dbs then
     (str "No hint declared for :" ++ pr_global c)
   else
     hov 0
@@ -942,7 +960,7 @@ let pr_hint_term cl =
       let fn db = List.map (fun x -> 0, x) (fn db) in
       List.map (fun (name, db) -> (name, db, fn db)) dbs
     in
-      if valid_dbs = [] then
+      if List.is_empty valid_dbs then
 	(str "No hint applicable for current goal")
       else
 	(str "Applicable Hints :" ++ fnl () ++
@@ -1007,7 +1025,7 @@ let pr_searchtable () =
 (*          tactics with a trace mechanism for automatic search           *)
 (**************************************************************************)
 
-let priority l = List.filter (fun (_, hint) -> hint.pri = 0) l
+let priority l = List.filter (fun (_, hint) -> Int.equal hint.pri 0) l
 
 (* tell auto not to reuse already instantiated metas in unification (for
    compatibility, since otherwise, apply succeeds oftener) *)
@@ -1134,8 +1152,8 @@ let no_dbg () = (Off,0,ref [])
 
 let mk_trivial_dbg debug =
   let d =
-    if debug = Debug || !global_debug_trivial then Debug
-    else if debug = Info || !global_info_trivial then Info
+    if debug == Debug || !global_debug_trivial then Debug
+    else if debug == Info || !global_info_trivial then Info
     else Off
   in (d,0,ref [])
 
@@ -1144,8 +1162,8 @@ let mk_trivial_dbg debug =
 
 let mk_auto_dbg debug =
   let d =
-    if debug = Debug || !global_debug_auto then Debug
-    else if debug = Info || !global_info_auto then Info
+    if debug == Debug || !global_debug_auto then Debug
+    else if debug == Info || !global_info_auto then Info
     else Off
   in (d,1,ref [])
 
@@ -1194,7 +1212,7 @@ let rec cleanup_info_trace depth acc = function
 
 and erase_subtree depth = function
   | [] -> []
-  | (d,_) :: l -> if d = depth then l else erase_subtree depth l
+  | (d,_) :: l -> if Int.equal d depth then l else erase_subtree depth l
 
 let pr_info_atom (d,pp) =
   str (String.make d ' ') ++ pp () ++ str "."
@@ -1220,10 +1238,10 @@ let tclTRY_dbg d tac =
   tclORELSE0
     (fun gl ->
       let out = tac gl in
-      if level <> Off then msg_debug (pr_dbg_header d ++ fnl () ++ pr_info_trace d);
+      if level != Off then msg_debug (pr_dbg_header d ++ fnl () ++ pr_info_trace d);
       out)
     (fun gl ->
-      if level = Info then msg_debug (pr_info_nop d);
+      if level == Info then msg_debug (pr_info_nop d);
       tclIDTAC gl)
 
 (**************************************************************************)
@@ -1314,7 +1332,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t})) =
         (unify_resolve_gen flags (c,cl))
 	(* With "(debug) trivial", we shouldn't end here, and
 	   with "debug auto" we don't display the details of inner trivial *)
-        (trivial_fail_db (no_dbg ()) (flags <> None) db_list local_db)
+        (trivial_fail_db (no_dbg ()) (not (Option.is_empty flags)) db_list local_db)
     | Unfold_nth c ->
       (fun gl ->
        if exists_evaluable_reference (pf_env gl) c then
@@ -1401,7 +1419,7 @@ let intro_register dbg kont db =
 
 let search d n mod_delta db_list local_db =
   let rec search d n local_db =
-    if n=0 then (fun gl -> error "BOUND 2") else
+    if Int.equal n 0 then (fun gl -> error "BOUND 2") else
       tclORELSE0 (dbg_assumption d)
 	(tclORELSE0 (intro_register d (search d n) local_db)
 	   (fun gl ->

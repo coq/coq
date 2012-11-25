@@ -165,7 +165,7 @@ let build_signature evars env m (cstrs : (types * types option) option list)
 	    let pred = mkLambda (na, ty, b) in
 	    let liftarg = mkLambda (na, ty, arg) in
 	    let arg' = mkApp (Lazy.force forall_relation, [| ty ; pred ; liftarg |]) in
-	      if obj = None then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
+	      if Option.is_empty obj then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
 	      else error "build_signature: no constraint can apply on a dependent argument"
       | _, obj :: _ -> anomaly "build_signature: not enough products"
       | _, [] ->
@@ -332,7 +332,7 @@ let convertible env evd x y =
   Reductionops.is_conv env evd x y
 
 let refresh_hypinfo env sigma hypinfo =
-  if hypinfo.abs = None then
+  if Option.is_empty hypinfo.abs then
     let {l2r=l2r; c=c;cl=cl;flags=flags} = hypinfo in
       match c with
 	| Some c ->
@@ -461,7 +461,7 @@ let arrow_morphism ta tb a b =
       mkApp (Lazy.force arrow, [| a; b |]), unfold_impl
 
 let rec decomp_pointwise n c =
-  if n = 0 then c
+  if Int.equal n 0 then c
   else
     match kind_of_term c with
     | App (f, [| a; b; relb |]) when eq_constr f (Lazy.force pointwise_relation) ->
@@ -495,7 +495,7 @@ let lift_cstr env sigma evars (args : constr list) c ty cstr =
     | Some (ty, Some rel) -> rel
   in
   let rec aux env prod n = 
-    if n = 0 then start env prod
+    if Int.equal n 0 then start env prod
     else
       match kind_of_term (Reduction.whd_betadeltaiota env prod) with
       | Prod (na, ty, b) ->
@@ -572,7 +572,7 @@ let resolve_subrelation env avoid car rel prf rel' res =
 
 let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' cstr evars =
   let evars, morph_instance, proj, sigargs, m', args, args' =
-    let first = match (Array.findi (fun _ b -> b <> None) args') with
+    let first = match (Array.findi (fun _ b -> not (Option.is_empty b)) args') with
     | Some i -> i
     | None -> raise (Invalid_argument "resolve_morphism") in
     let morphargs, morphobjs = Array.chop first args in
@@ -609,7 +609,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' cstr evars 
 	      | Some r ->
 		  [ snd (get_rew_prf r); r.rew_to; x ] @ acc, subst, evars, sigargs, r.rew_to :: typeargs')
 	  | None ->
-	      if y <> None then error "Cannot rewrite the argument of a dependent function";
+	      if not (Option.is_empty y) then error "Cannot rewrite the argument of a dependent function";
 	      x :: acc, x :: subst, evars, sigargs, x :: typeargs')
       ([], [], evars, sigargs, []) args args'
   in
@@ -635,7 +635,7 @@ let apply_rule hypinfo loccs : strategy =
       if not (eq_env !hypinfo.cl.env env) then
 	hypinfo := refresh_hypinfo env (goalevars evars) !hypinfo;
       let unif = unify_eqn env (goalevars evars) hypinfo t in
-	if unif <> None then incr occ;
+	if not (Option.is_empty unif) then incr occ;
 	match unif with
 	| Some (evd', (prf, (car, rel, c1, c2))) when is_occ !occ ->
 	    begin
@@ -691,8 +691,8 @@ let fold_match ?(force=false) env sigma c =
 	it_mkProd_or_LetIn (subst1 mkProp body) (List.tl ctx)
     in
     let sk = 
-      if sortp = InProp then
-	if sortc = InProp then
+      if sortp == InProp then
+	if sortc == InProp then
 	  if dep then case_dep_scheme_kind_from_prop
 	  else case_scheme_kind_from_prop
 	else (
@@ -719,7 +719,7 @@ let fold_match ?(force=false) env sigma c =
       
 let unfold_match env sigma sk app =
   match kind_of_term app with
-  | App (f', args) when f' = mkConst sk ->
+  | App (f', args) when eq_constr f' (mkConst sk) ->
       let v = Environ.constant_value (Global.env ()) sk in
 	Reductionops.whd_beta sigma (mkApp (v, args))
   | _ -> app
@@ -739,11 +739,11 @@ let subterm all flags (s : strategy) : strategy =
 	    let args', evars', progress =
 	      Array.fold_left
 		(fun (acc, evars, progress) arg ->
-		  if progress <> None && not all then (None :: acc, evars, progress)
+		  if not (Option.is_empty progress) && not all then (None :: acc, evars, progress)
 		  else
 		    let res = s env avoid arg (Typing.type_of env (goalevars evars) arg) None evars in
 		      match res with
-		      | Some None -> (None :: acc, evars, if progress = None then Some false else progress)
+		      | Some None -> (None :: acc, evars, if Option.is_empty progress then Some false else progress)
 		      | Some (Some r) -> (Some r :: acc, r.rew_evars, Some true)
 		      | None -> (None :: acc, evars, progress))
 		([], evars, success) args
@@ -873,11 +873,11 @@ let subterm all flags (s : strategy) : strategy =
 		let res = make_leibniz_proof (mkCase (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs)) ty r in
 		  Some (Some (coerce env avoid cstr res))
 	    | x ->
-	      if Array.for_all ((=) 0) ci.ci_cstr_ndecls then
+	      if Array.for_all (Int.equal 0) ci.ci_cstr_ndecls then
 		let cstr = Some (mkApp (Lazy.force coq_eq, [| ty |])) in
 		let found, brs' = Array.fold_left 
 		  (fun (found, acc) br ->
-		   if found <> None then (found, fun x -> lift 1 br :: acc x)
+		   if not (Option.is_empty found) then (found, fun x -> lift 1 br :: acc x)
 		   else
 		     match s env avoid br ty cstr evars with
 		     | Some (Some r) -> (Some r, fun x -> mkRel 1 :: acc x)
@@ -1232,7 +1232,7 @@ let assert_replacing id newt tac =
        let nc' = 
 	 Environ.fold_named_context
 	   (fun _ (n, b, t as decl) nc' ->
-	      if n = id then (n, b, newt) :: nc'
+	      if id_eq n id then (n, b, newt) :: nc'
 	      else decl :: nc')
 	   env ~init:[]
        in
@@ -1246,8 +1246,8 @@ let assert_replacing id newt tac =
 		      let inst = 
 			fold_named_context
 			  (fun _ (n, b, t) inst ->
-			     if n = id then ev' :: inst
-			     else if b = None then mkVar n :: inst else inst)
+			     if id_eq n id then ev' :: inst
+			     else if Option.is_empty b then mkVar n :: inst else inst)
 			  env ~init:[]
 		      in
 		      let (e, args) = destEvar ev in
@@ -1524,7 +1524,7 @@ TACTIC EXTEND rewrite_strat
 END
 
 let clsubstitute o c =
-  let is_tac id = match fst (fst (snd c)) with GVar (_, id') when id' = id -> true | _ -> false in
+  let is_tac id = match fst (fst (snd c)) with GVar (_, id') when id_eq id' id -> true | _ -> false in
     Tacticals.onAllHypsAndConcl
       (fun cl ->
 	match cl with

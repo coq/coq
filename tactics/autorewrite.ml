@@ -137,7 +137,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas : tactic =
        g::_ ->
         (match Environ.named_context_of_val (Goal.V82.hyps gl'.Evd.sigma g) with
             (lastid,_,_)::_ ->
-              if last_hyp_id <> lastid then
+              if not (id_eq last_hyp_id lastid) then
                begin
                 let gl'' =
                   if !to_be_cleared then
@@ -167,8 +167,8 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
   let try_do_hyps treat_id l =
     autorewrite_multi_in ~conds (List.map treat_id l) tac_main lbas
   in
-  if cl.concl_occs <> AllOccurrences &
-     cl.concl_occs <> NoOccurrences
+  if cl.concl_occs != AllOccurrences &&
+     cl.concl_occs != NoOccurrences
   then
     error "The \"at\" syntax isn't available yet for the autorewrite tactic."
   else
@@ -178,7 +178,7 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
 	| _ ->      tclTHENFIRST t1 t2
     in
     compose_tac
-	(if cl.concl_occs <> NoOccurrences then autorewrite ~conds tac_main lbas else tclIDTAC)
+	(if cl.concl_occs != NoOccurrences then autorewrite ~conds tac_main lbas else tclIDTAC)
 	(match cl.onhyps with
 	   | Some l -> try_do_hyps (fun ((_,id),_) -> id) l
 	   | None ->
@@ -191,7 +191,7 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
 let auto_multi_rewrite ?(conds=Naive) = gen_auto_multi_rewrite conds Refiner.tclIDTAC
 
 let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl gl =
-  let onconcl = cl.Locus.concl_occs <> NoOccurrences in
+  let onconcl = match cl.Locus.concl_occs with NoOccurrences -> false | _ -> true in
   match onconcl,cl.Locus.onhyps with
     | false,Some [_] | true,Some [] | false,Some [] ->
 	(* autorewrite with .... in clause using tac n'est sur que

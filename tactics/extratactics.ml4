@@ -448,7 +448,7 @@ let subst_transitivity_lemma (subst,(b,ref)) = (b,subst_mps subst ref)
 let inTransitivity : bool * constr -> obj =
   declare_object {(default_object "TRANSITIVITY-STEPS") with
     cache_function = cache_transitivity_lemma;
-    open_function = (fun i o -> if i=1 then cache_transitivity_lemma o);
+    open_function = (fun i o -> if Int.equal i 1 then cache_transitivity_lemma o);
     subst_function = subst_transitivity_lemma;
     classify_function = (fun o -> Substitute o) }
 
@@ -555,10 +555,10 @@ let subst_var_with_hole occ tid t =
   let locref = ref 0 in
   let rec substrec = function
     | GVar (_,id) as x -> 
-        if id = tid 
+        if id_eq id tid 
         then
 	  (decr occref;
-	   if !occref = 0 then x
+	   if Int.equal !occref 0 then x
            else
 	     (incr locref;
 	      GHole (Loc.make_loc (!locref,0),
@@ -575,7 +575,7 @@ let subst_hole_with_term occ tc t =
   let rec substrec = function
     | GHole (_,Evar_kinds.QuestionMark(Evar_kinds.Define true)) ->
         decr occref;
-        if !occref = 0 then tc
+        if Int.equal !occref 0 then tc
         else
 	  (incr locref;
 	   GHole (Loc.make_loc (!locref,0),
@@ -654,7 +654,7 @@ END
 exception Found of tactic
 
 let rewrite_except h g =
-  tclMAP (fun id -> if id = h then tclIDTAC else 
+  tclMAP (fun id -> if id_eq id h then tclIDTAC else 
       tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
     (Tacmach.pf_ids_of_hyps g) g
 

@@ -74,29 +74,37 @@ let has_nodep_prod = has_nodep_prod_after 0
 
 (* style: None = record; Some false = conjunction; Some true = strict conj *)
 
+let is_strict_conjunction = function
+| Some true -> true
+| _ -> false
+
+let is_lax_conjunction = function
+| Some false -> true
+| _ -> false
+
 let match_with_one_constructor style onlybinary allow_rec t =
   let (hdapp,args) = decompose_app t in
   let res = match kind_of_term hdapp with
   | Ind ind ->
       let (mib,mip) = Global.lookup_inductive ind in
-      if (Array.length mip.mind_consnames = 1)
+      if Int.equal (Array.length mip.mind_consnames) 1
 	&& (allow_rec or not (mis_is_recursive (ind,mib,mip)))
-        && (mip.mind_nrealargs = 0)
+        && (Int.equal mip.mind_nrealargs 0)
       then
-	if style = Some true (* strict conjunction *) then
+	if is_strict_conjunction style (* strict conjunction *) then
 	  let ctx =
 	    (prod_assum (snd
 	      (decompose_prod_n_assum mib.mind_nparams mip.mind_nf_lc.(0)))) in
 	  if
 	    List.for_all
-	      (fun (_,b,c) -> b=None && isRel c && destRel c = mib.mind_nparams) ctx
+	      (fun (_,b,c) -> Option.is_empty b && isRel c && Int.equal (destRel c) mib.mind_nparams) ctx
 	  then
 	    Some (hdapp,args)
 	  else None
 	else
 	  let ctyp = prod_applist mip.mind_nf_lc.(0) args in
 	  let cargs = List.map pi3 ((prod_assum ctyp)) in
-	  if style <> Some false || has_nodep_prod ctyp then
+	  if not (is_lax_conjunction style) || has_nodep_prod ctyp then
 	    (* Record or non strict conjunction *)
 	    Some (hdapp,List.rev cargs)
 	  else
@@ -105,7 +113,8 @@ let match_with_one_constructor style onlybinary allow_rec t =
 	None
   | _ -> None in
   match res with
-  | Some (hdapp,args) when not onlybinary || List.length args = 2 -> res
+  | Some (hdapp, args) when not onlybinary -> res
+  | Some (hdapp, [_; _]) -> res
   | _ -> None
 
 let match_with_conjunction ?(strict=false) ?(onlybinary=false) t =
@@ -139,7 +148,7 @@ let is_tuple t =
 let test_strict_disjunction n lc =
   Array.for_all_i (fun i c ->
     match (prod_assum (snd (decompose_prod_n_assum n c))) with
-    | [_,None,c] -> isRel c && destRel c = (n - i)
+    | [_,None,c] -> isRel c && Int.equal (destRel c) (n - i)
     | _ -> false) 0 lc
 
 let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
@@ -148,9 +157,9 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
   | Ind ind  ->
       let car = mis_constr_nargs ind in
       let (mib,mip) = Global.lookup_inductive ind in
-      if Array.for_all (fun ar -> ar = 1) car
+      if Array.for_all (fun ar -> Int.equal ar 1) car
 	&& not (mis_is_recursive (ind,mib,mip))
-        && (mip.mind_nrealargs = 0)
+        && (Int.equal mip.mind_nrealargs 0)
       then
 	if strict then
 	  if test_strict_disjunction mib.mind_nparams mip.mind_nf_lc then
@@ -166,7 +175,8 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
 	None
   | _ -> None in
   match res with
-  | Some (hdapp,args) when not onlybinary || List.length args = 2 -> res
+  | Some (hdapp,args) when not onlybinary -> res
+  | Some (hdapp,[_; _]) -> res
   | _ -> None
 
 let is_disjunction ?(strict=false) ?(onlybinary=false) t =
@@ -181,7 +191,7 @@ let match_with_empty_type t =
     | Ind ind ->
         let (mib,mip) = Global.lookup_inductive ind in
         let nconstr = Array.length mip.mind_consnames in
-	if nconstr = 0 then Some hdapp else None
+	if Int.equal nconstr 0 then Some hdapp else None
     | _ ->  None
 
 let is_empty_type t = op2bool (match_with_empty_type t)
@@ -196,8 +206,8 @@ let match_with_unit_or_eq_type t =
         let (mib,mip) = Global.lookup_inductive ind in
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
-        let zero_args c = nb_prod c = mib.mind_nparams in
-	if nconstr = 1 && zero_args constr_types.(0) then
+        let zero_args c = Int.equal (nb_prod c) mib.mind_nparams in
+	if Int.equal nconstr 1 && zero_args constr_types.(0) then
 	  Some hdapp
 	else
 	  None
@@ -211,7 +221,7 @@ let is_unit_or_eq_type t = op2bool (match_with_unit_or_eq_type t)
 
 let is_unit_type t =
   match match_with_conjunction t with
-  | Some (_,t) when List.length t = 0 -> true
+  | Some (_,[]) -> true
   | _ -> false
 
 (* Checks if a given term is an application of an
@@ -236,20 +246,20 @@ let match_with_equation t =
   let (hdapp,args) = destApp t in
   match kind_of_term hdapp with
   | Ind ind ->
-      if IndRef ind = glob_eq then
+      if eq_gr (IndRef ind) glob_eq then
 	Some (build_coq_eq_data()),hdapp,
 	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-      else if IndRef ind = glob_identity then
+      else if eq_gr (IndRef ind) glob_identity then
 	Some (build_coq_identity_data()),hdapp,
 	PolymorphicLeibnizEq(args.(0),args.(1),args.(2))
-      else if IndRef ind = glob_jmeq then
+      else if eq_gr (IndRef ind) glob_jmeq then
 	Some (build_coq_jmeq_data()),hdapp,
 	HeterogenousEq(args.(0),args.(1),args.(2),args.(3))
       else
         let (mib,mip) = Global.lookup_inductive ind in
         let constr_types = mip.mind_nf_lc in
         let nconstr = Array.length mip.mind_consnames in
-	if nconstr = 1 then
+	if Int.equal nconstr 1 then
           if is_matching coq_refl_leibniz1_pattern constr_types.(0) then
 	    None, hdapp, MonomorphicLeibnizEq(args.(0),args.(1))
 	  else if is_matching coq_refl_leibniz2_pattern constr_types.(0) then
@@ -263,7 +273,7 @@ let match_with_equation t =
 let is_inductive_equality ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let nconstr = Array.length mip.mind_consnames in
-  nconstr = 1 && constructor_nrealargs (Global.env()) (ind,1) = 0
+  Int.equal nconstr 1 && Int.equal (constructor_nrealargs (Global.env()) (ind,1)) 0
 
 let match_with_equality_type t =
   let (hdapp,args) = decompose_app t in
@@ -277,7 +287,8 @@ let coq_arrow_pattern = PATTERN [ ?X1 -> ?X2 ]
 
 let match_arrow_pattern t =
   match matches coq_arrow_pattern t with
-    | [(m1,arg);(m2,mind)] -> assert (m1=meta1 & m2=meta2); (arg, mind)
+    | [(m1,arg);(m2,mind)] ->
+      assert (id_eq m1 meta1 && id_eq m2 meta2); (arg, mind)
     | _ -> anomaly "Incorrect pattern matching"
 
 let match_with_nottype t =
@@ -311,7 +322,7 @@ let match_with_nodep_ind t =
 	      let nodep_constr = has_nodep_prod_after mib.mind_nparams in
 		if Array.for_all nodep_constr mip.mind_nf_lc then
 		  let params=
-		    if mip.mind_nrealargs=0 then args else
+		    if Int.equal mip.mind_nrealargs 0 then args else
 		      fst (List.chop mib.mind_nparams args) in
 		    Some (hdapp,params,mip.mind_nrealargs)
 		else
@@ -325,9 +336,9 @@ let match_with_sigma_type t=
   match (kind_of_term hdapp) with
     | Ind ind  ->
         let (mib,mip) = Global.lookup_inductive ind in
-          if (Array.length (mib.mind_packets)=1) &&
-	    (mip.mind_nrealargs=0) &&
-	    (Array.length mip.mind_consnames=1) &&
+          if Int.equal (Array.length (mib.mind_packets)) 1 &&
+	    (Int.equal mip.mind_nrealargs 0) &&
+	    (Int.equal (Array.length mip.mind_consnames)1) &&
 	    has_nodep_prod_after (mib.mind_nparams+1) mip.mind_nf_lc.(0) then
 	      (*allowing only 1 existential*)
 	      Some (hdapp,args)
@@ -357,10 +368,10 @@ let match_eq eqn eq_pat =
   let pat = try Lazy.force eq_pat with _ -> raise PatternMatchingFailure in
   match matches pat eqn with
     | [(m1,t);(m2,x);(m3,y)] ->
-	assert (m1 = meta1 & m2 = meta2 & m3 = meta3);
+	assert (id_eq m1 meta1 && id_eq m2 meta2 && id_eq m3 meta3);
 	PolymorphicLeibnizEq (t,x,y)
     | [(m1,t);(m2,x);(m3,t');(m4,x')] ->
-	assert (m1 = meta1 & m2 = meta2 & m3 = meta3 & m4 = meta4);
+        assert (id_eq m1 meta1 && id_eq m2 meta2 && id_eq m3 meta3 && id_eq m4 meta4);
 	HeterogenousEq (t,x,t',x')
     | _ -> anomaly "match_eq: an eq pattern should match 3 or 4 terms"
 
@@ -401,7 +412,7 @@ open Tacmach
 let match_eq_nf gls eqn eq_pat =
   match pf_matches gls (Lazy.force eq_pat) eqn with
     | [(m1,t);(m2,x);(m3,y)] ->
-	assert (m1 = meta1 & m2 = meta2 & m3 = meta3);
+        assert (id_eq m1 meta1 && id_eq m2 meta2 && id_eq m3 meta3);
 	(t,pf_whd_betadeltaiota gls x,pf_whd_betadeltaiota gls y)
     | _ -> anomaly "match_eq: an eq pattern should match 3 terms"
 
@@ -421,7 +432,7 @@ let coq_exist_pattern = coq_ex_pattern_gen coq_exist_ref
 let match_sigma ex ex_pat =
   match matches (Lazy.force ex_pat) ex with
     | [(m1,a);(m2,p);(m3,car);(m4,cdr)] ->
-	assert (m1=meta1 & m2=meta2 & m3=meta3 & m4=meta4);
+        assert (id_eq m1 meta1 && id_eq m2 meta2 && id_eq m3 meta3 && id_eq m4 meta4);
 	(a,p,car,cdr)
     | _ ->
 	anomaly "match_sigma: a successful sigma pattern should match 4 terms"

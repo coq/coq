@@ -566,7 +566,7 @@ let rec intern_atomic lf ist x =
   | TacAssert (otac,ipat,c) ->
       TacAssert (Option.map (intern_pure_tactic ist) otac,
                  Option.map (intern_intro_pattern lf ist) ipat,
-                 intern_constr_gen false (otac<>None) ist c)
+                 intern_constr_gen false (not (Option.is_empty otac)) ist c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (fun (c,na) ->
 	               intern_constr_with_occurrences ist c,
@@ -628,10 +628,16 @@ let rec intern_atomic lf ist x =
       dump_glob_red_expr r;
       TacReduce (intern_red_expr ist r, clause_app (intern_hyp_location ist) cl)
   | TacChange (None,c,cl) ->
+      let is_onhyps = match cl.onhyps with
+      | None | Some [] -> true
+      | _ -> false
+      in
+      let is_onconcl = match cl.concl_occs with
+      | AllOccurrences | NoOccurrences -> true
+      | _ -> false
+      in
       TacChange (None,
-        (if (cl.onhyps = None or cl.onhyps = Some []) &
-	    (cl.concl_occs = AllOccurrences or
-	     cl.concl_occs = NoOccurrences)
+        (if is_onhyps && is_onconcl
          then intern_type ist c else intern_constr ist c),
 	clause_app (intern_hyp_location ist) cl)
   | TacChange (Some p,c,cl) ->

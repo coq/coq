@@ -90,7 +90,7 @@ open Unification
 (* A tactic similar to Auto, but using EApply, Assumption and e_give_exact *)
 (***************************************************************************)
 
-let priority l = List.map snd (List.filter (fun (pr,_) -> pr = 0) l)
+let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
 
 let unify_e_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
@@ -177,7 +177,7 @@ module SearchProblem = struct
 
   type state = search_state
 
-  let success s = (sig_it s.tacres) = []
+  let success s = List.is_empty (sig_it s.tacres)
 
   let pr_ev evs ev = Printer.pr_constr_env (Evd.evar_env ev) (Evarutil.nf_evar evs ev.Evd.evar_concl)
 
@@ -205,13 +205,13 @@ module SearchProblem = struct
   let compare s s' =
     let d = s'.depth - s.depth in
     let nbgoals s = List.length (sig_it s.tacres) in
-    if d <> 0 then d else nbgoals s - nbgoals s'
+    if not (Int.equal d 0) then d else nbgoals s - nbgoals s'
 
   let branching s =
-    if s.depth = 0 then
+    if Int.equal s.depth 0 then
       []
     else
-      let ps = if s.prev = Unknown then Unknown else State s in
+      let ps = if s.prev == Unknown then Unknown else State s in
       let lg = s.tacres in
       let nbgl = List.length (sig_it lg) in
       assert (nbgl > 0);
@@ -292,8 +292,8 @@ let _ =
       Goptions.optwrite = (:=) global_info_eauto }
 
 let mk_eauto_dbg d =
-  if d = Debug || !global_debug_eauto then Debug
-  else if d = Info || !global_info_eauto then Info
+  if d == Debug || !global_debug_eauto then Debug
+  else if d == Info || !global_info_eauto then Info
   else Off
 
 let pr_info_nop = function
@@ -306,7 +306,7 @@ let pr_dbg_header = function
   | Info -> msg_debug (str "(* info eauto : *)")
 
 let pr_info dbg s =
-  if dbg <> Info then ()
+  if dbg != Info then ()
   else
     let rec loop s =
       match s.prev with
@@ -327,7 +327,7 @@ let make_initial_state dbg n gl dblist localdb =
     last_tactic = lazy (mt());
     dblist = dblist;
     localdb = [localdb];
-    prev = if dbg=Info then Init else Unknown;
+    prev = if dbg == Info then Init else Unknown;
   }
 
 let e_search_auto debug (in_depth,p) lems db_list gl =

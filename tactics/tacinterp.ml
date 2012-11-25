@@ -69,14 +69,14 @@ type value =
 let dloc = Loc.ghost
 
 let catch_error call_trace tac g =
-  if call_trace = [] then tac g else try tac g with
+  if List.is_empty call_trace then tac g else try tac g with
   | LtacLocated _ as e -> raise e
   | Loc.Exc_located (_,LtacLocated _) as e -> raise e
   | e ->
     let (nrep,loc',c),tail = List.sep_last call_trace in
     let loc,e' = match e with Loc.Exc_located(loc,e) -> loc,e | _ ->dloc,e in
-    if tail = [] then
-      let loc = if loc = dloc then loc' else loc in
+    if List.is_empty tail then
+      let loc = if Loc.is_ghost loc then loc' else loc in
       raise (Loc.Exc_located(loc,e'))
     else
       raise (Loc.Exc_located(loc',LtacLocated((nrep,c,tail,loc),e')))
@@ -150,12 +150,12 @@ let lookup_interp_genarg id =
     f
 
 let push_trace (loc,ck) = function
-  | (n,loc',ck')::trl when ck=ck' -> (n+1,loc,ck)::trl
+  | (n,loc',ck')::trl when Pervasives.(=) ck ck' -> (n+1,loc,ck)::trl (** FIXME *)
   | trl -> (1,loc,ck)::trl
 
 let propagate_trace ist loc id = function
   | VFun (_,lfun,it,b) ->
-      let t = if it=[] then b else TacFun (it,b) in
+      let t = if List.is_empty it then b else TacFun (it,b) in
       VFun (push_trace(loc,LtacVarCall (id,t)) ist.trace,lfun,it,b)
   | x -> x
 
@@ -312,7 +312,7 @@ let constr_of_value env = function
 
 let closed_constr_of_value env v =
   let ids,c = constr_of_value env v in
-  if ids <> [] then raise Not_found;
+  if not (List.is_empty ids) then raise Not_found;
   c
 
 let coerce_to_hyp env = function
@@ -444,7 +444,7 @@ let interp_fresh_id ist env l =
   let ids = List.map_filter (function ArgVar (_, id) -> Some id | _ -> None) l in
   let avoid = (extract_ids ids ist.lfun) @ ist.avoid_ids in
   let id =
-    if l = [] then default_fresh_id
+    if List.is_empty l then default_fresh_id
     else
       let s =
 	String.concat "" (List.map (function
@@ -491,7 +491,7 @@ let interp_type = interp_constr_gen IsType
 
 (* Interprets an open constr *)
 let interp_open_constr ccl ist =
-  interp_gen (OfType ccl) ist false true false (ccl<>None)
+  interp_gen (OfType ccl) ist false true false (not (Option.is_empty ccl))
 
 let interp_pure_open_constr ist =
   interp_gen (OfType None) ist false false false false
@@ -564,7 +564,7 @@ let interp_closed_typed_pattern_with_occurrences ist env sigma occl =
 let interp_constr_with_occurrences_and_name_as_list =
   interp_constr_in_compound_list
     (fun c -> ((AllOccurrences,c),Anonymous))
-    (function ((occs,c),Anonymous) when occs = AllOccurrences -> c
+    (function ((occs,c),Anonymous) when occs == AllOccurrences -> c
       | _ -> raise Not_found)
     (fun ist env sigma (occ_c,na) ->
       let (sigma,c_interp) = interp_constr_with_occurrences ist env sigma occ_c in
@@ -758,7 +758,7 @@ let loc_of_bindings = function
 let interp_open_constr_with_bindings_loc ist env sigma ((c,_),bl as cb) =
   let loc1 = loc_of_glob_constr c in
   let loc2 = loc_of_bindings bl in
-  let loc = if loc2 = Loc.ghost then loc1 else Loc.merge loc1 loc2 in
+  let loc = if Loc.is_ghost loc2 then loc1 else Loc.merge loc1 loc2 in
   let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
   sigma, (loc,cb)
 
@@ -866,7 +866,7 @@ let equal_instances gl (ctx',c') (ctx,c) =
   (* How to compare instances? Do we want the terms to be convertible?
      unifiable? Do we want the universe levels to be relevant? 
      (historically, conv_x is used) *)
-  ctx = ctx' & pf_conv_x gl c' c
+  List.equal id_eq ctx ctx' && pf_conv_x gl c' c
 
 (* Verifies if the matched list is coherent with respect to lcm *)
 (* While non-linear matching is modulo eq_constr in matches, merge of *)
@@ -874,7 +874,7 @@ let equal_instances gl (ctx',c') (ctx,c) =
 let verify_metas_coherence gl (ln1,lcm) (ln,lm) =
   let rec aux = function
   | (id,c as x)::tl ->
-      if List.for_all (fun (id',c') -> id'<>id or equal_instances gl c' c) lcm
+      if List.for_all (fun (id',c') -> not (id_eq id' id) || equal_instances gl c' c) lcm
       then
 	x :: aux tl
       else
@@ -931,7 +931,7 @@ let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
               with
                 | PatternMatchingFailure -> apply_one_mhyp_context_rec tl in
             match_next_pattern (fun () ->
-	      let hyp = if b<>None then refresh_universes_strict hyp else hyp in
+	      let hyp = if Option.is_empty b then hyp else refresh_universes_strict hyp in
 	      match_pat lmatch hyp pat) ()
 	| Some patv ->
 	    match b with
@@ -1053,7 +1053,7 @@ and interp_ltac_reference loc' mustbetac ist gl = function
       sigma , if mustbetac then coerce_to_tactic loc id v else v
   | ArgArg (loc,r) ->
       let ids = extract_ids [] ist.lfun in
-      let loc_info = ((if loc' = dloc then loc else loc'),LtacNameCall r) in
+      let loc_info = ((if Loc.is_ghost loc' then loc else loc'),LtacNameCall r) in
       let ist =
         { lfun=[]; debug=ist.debug; avoid_ids=ids;
           trace = push_trace loc_info ist.trace } in
@@ -1109,13 +1109,13 @@ and interp_tacarg ist gl arg =
       v
     | TacDynamic(_,t) ->
         let tg = (Dyn.tag t) in
-	if tg = "tactic" then
+	if String.equal tg "tactic" then
           let (sigma,v) = val_interp ist gl (tactic_out t ist) in
 	  evdref := sigma;
 	  v
-	else if tg = "value" then
+	else if String.equal tg "value" then
           value_out t
-	else if tg = "constr" then
+	else if String.equal tg "constr" then
         VConstr ([],constr_out t)
 	else
           anomaly_loc (dloc, "Tacinterp.val_interp",
@@ -1134,7 +1134,7 @@ and interp_app loc ist gl fv largs =
       |VFun(trace,olfun,([] as var),
          (TacFun _|TacLetIn _|TacMatchGoal _|TacMatch _| TacArg _ as body))) ->
 	let (newlfun,lvar,lval)=head_with_value (var,largs) in
-	if lvar=[] then
+	if List.is_empty lvar then
 	  let (sigma,v) =
 	    try
 	      catch_error trace
@@ -1146,7 +1146,7 @@ and interp_app loc ist gl fv largs =
           debugging_step ist
 	    (fun () ->
 	       str"evaluation returns"++fnl()++pr_value (Some (pf_env gl)) v);
-          if lval=[] then sigma,v else interp_app loc ist gl v lval
+          if List.is_empty lval then sigma,v else interp_app loc ist gl v lval
 	else
           project gl , VFun(trace,newlfun@olfun,lvar,body)
     | _ ->
@@ -1225,7 +1225,10 @@ and interp_match_goal ist goal lz lr lmr =
     match_next_pattern (fun () -> match_subterm_gen app c csr) () in
   let rec apply_match_goal ist env goal nrs lex lpt =
     begin
-      if lex<>[] then db_pattern_rule ist.debug nrs (List.hd lex);
+      let () = match lex with
+      | r :: _ -> db_pattern_rule ist.debug nrs r
+      | _ -> ()
+      in
       match lpt with
 	| (All t)::tl ->
 	    begin
@@ -1256,7 +1259,7 @@ and interp_match_goal ist goal lz lr lmr =
 	| _ ->
 	    errorlabstrm "Tacinterp.apply_match_goal"
               (v 0 (str "No matching clauses for match goal" ++
-		      (if ist.debug=DebugOff then
+		      (if ist.debug == DebugOff then
 			 fnl() ++ str "(use \"Set Ltac Debug\" for more info)"
 		       else mt()) ++ str"."))
     end in
@@ -1478,7 +1481,7 @@ and interp_ltac_constr ist gl e =
       Pptactic.pr_glob_tactic (pf_env gl) e ++ fnl() ++
       str " has value " ++ fnl() ++
       pr_constr_under_binders_env (pf_env gl) cresult);
-    if fst cresult <> [] then raise Not_found;
+    if not (List.is_empty (fst cresult)) then raise Not_found;
     sigma , snd cresult
   with Not_found ->
     errorlabstrm ""
@@ -1603,7 +1606,7 @@ and interp_atomic ist gl tac =
 	(tclEVARS sigma)
 	(h_cut c_interp)
   | TacAssert (t,ipat,c) ->
-      let (sigma,c) = (if t=None then interp_constr else interp_type) ist env sigma c in
+      let (sigma,c) = (if Option.is_empty t then interp_constr else interp_type) ist env sigma c in
       tclTHEN
 	(tclEVARS sigma)
         (Tactics.forward (Option.map (interp_tactic ist) t)
@@ -1618,7 +1621,7 @@ and interp_atomic ist gl tac =
 	(h_generalize_dep c_interp)
   | TacLetTac (na,c,clp,b,eqpat) ->
       let clp = interp_clause ist gl clp in
-      if clp = Locusops.nowhere then
+      if Locusops.is_nowhere clp then
         (* We try to fully-typecheck the term *)
 	let (sigma,c_interp) = pf_interp_constr ist gl c in
 	tclTHEN
@@ -1716,10 +1719,16 @@ and interp_atomic ist gl tac =
 	(tclEVARS sigma)
 	(h_reduce r_interp (interp_clause ist gl cl))
   | TacChange (None,c,cl) ->
+      let is_onhyps = match cl.onhyps with
+      | None | Some [] -> true
+      | _ -> false
+      in
+      let is_onconcl = match cl.concl_occs with
+      | AllOccurrences | NoOccurrences -> true
+      | _ -> false
+      in
       let (sigma,c_interp) =
-	if (cl.onhyps = None or cl.onhyps = Some []) &
-	    (cl.concl_occs = AllOccurrences or
-	     cl.concl_occs = NoOccurrences)
+	if is_onhyps && is_onconcl
 	 then pf_interp_type ist gl c
 	 else pf_interp_constr ist gl c
       in
@@ -1828,7 +1837,7 @@ and interp_atomic ist gl tac =
         let (sigma,c_interp) = interp_constr_may_eval ist gl (out_gen globwit_constr_may_eval x) in
 	evdref := sigma;
 	VConstr ([],c_interp)
-    | ExtraArgType s when tactic_genarg_level s <> None ->
+    | ExtraArgType s when not (Option.is_empty (tactic_genarg_level s)) ->
           (* Special treatment of tactic arguments *)
 	let (sigma,v) = val_interp ist gl
           (out_gen (globwit_tactic (Option.get (tactic_genarg_level s))) x)

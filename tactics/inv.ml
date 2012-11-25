@@ -39,9 +39,9 @@ let check_no_metas clenv ccl =
     let metas = List.filter (fun m -> not (Evd.meta_defined clenv.evd m))
       (collect_meta_variables ccl) in
     let metas = List.map (Evd.meta_name clenv.evd) metas in
+    let opts = match metas with [_] -> " " | _ -> "s " in
     errorlabstrm "inversion"
-      (str ("Cannot find an instantiation for variable"^
-	       (if List.length metas = 1 then " " else "s ")) ++
+      (str ("Cannot find an instantiation for variable"^opts) ++
 	 prlist_with_sep pr_comma pr_name metas
 	 (* ajouter "in " ++ pr_lconstr ccl mais il faut le bon contexte *))
 
@@ -281,10 +281,10 @@ let generalizeRewriteIntros tac depids id gls =
 let rec tclMAP_i n tacfun = function
   | [] -> tclDO n (tacfun None)
   | a::l ->
-      if n=0 then error "Too many names."
+      if Int.equal n 0 then error "Too many names."
       else tclTHEN (tacfun (Some a)) (tclMAP_i (n-1) tacfun l)
 
-let remember_first_eq id x = if !x = MoveLast then x := MoveAfter id
+let remember_first_eq id x = if !x == MoveLast then x := MoveAfter id
 
 (* invariant: ProjectAndApply is responsible for erasing the clause
    which it is given as input
@@ -308,7 +308,7 @@ let projectAndApply thin id eqname names depids gls =
   in
   let deq_trailer id neqns =
     tclTHENSEQ
-      [(if names <> [] then clear [id] else tclIDTAC);
+      [(if not (List.is_empty names) then clear [id] else tclIDTAC);
        (tclMAP_i neqns (fun idopt ->
 	 tclTRY (tclTHEN
 	   (intro_move idopt MoveLast)
@@ -316,7 +316,7 @@ let projectAndApply thin id eqname names depids gls =
 	   (* decomposition, arbitrarily try to rewrite RL !? *)
 	   (tclTRY (onLastHypId (substHypIfVariable (subst_hyp false))))))
 	 names);
-       (if names = [] then clear [id] else tclIDTAC)]
+       (if List.is_empty names then clear [id] else tclIDTAC)]
   in
   substHypIfVariable
     (* If no immediate variable in the equation, try to decompose it *)
@@ -377,11 +377,13 @@ let rec get_names allow_conj (loc,pat) = match pat with
   | IntroRewrite _->
       error "Rewriting pattern not allowed for inversion equations."
   | IntroOrAndPattern [l] ->
-      if allow_conj then
-	if l = [] then (None,[]) else
-	  let l = List.map (fun id -> Option.get (fst (get_names false id))) l in
-	  (Some (List.hd l), l)
-      else
+      let get_name id = Option.get (fst (get_names false id)) in
+      if allow_conj then begin match l with
+      | [] -> (None, [])
+      | id :: l ->
+        let n = get_name id in
+        (Some n, n :: List.map get_name l)
+      end else
 	error"Nested conjunctive patterns not allowed for inversion equations."
   | IntroOrAndPattern l ->
       error "Disjunctive patterns not allowed for inversion equations."
@@ -432,9 +434,10 @@ let rewrite_equations_tac (gene, othin) id neqns names ba =
   let tac =
     if gene then rewrite_equations_gene othin neqns ba
     else rewrite_equations othin neqns names ba in
-  if othin = Some true (* if Inversion_clear, clear the hypothesis *) then
+  match othin with
+  | Some true (* if Inversion_clear, clear the hypothesis *) ->
     tclTHEN tac (tclTRY (clear [id]))
-  else
+  | _ ->
     tac
 
 
@@ -453,7 +456,7 @@ let raw_inversion inv_kind id status names gl =
   let (elim_predicate,neqns) =
     make_inv_predicate env sigma indf realargs id status (pf_concl gl) in
   let (cut_concl,case_tac) =
-    if status <> NoDep & (dependent c (pf_concl gl)) then
+    if status != NoDep && (dependent c (pf_concl gl)) then
       Reduction.beta_appvect elim_predicate (Array.of_list (realargs@[c])),
       case_then_using
     else

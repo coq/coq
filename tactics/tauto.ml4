@@ -106,7 +106,7 @@ let bugged_is_binary t =
     match (kind_of_term hdapp) with
     | Ind ind  ->
         let (mib,mip) = Global.lookup_inductive ind in
-         mib.Declarations.mind_nparams = 2
+         Int.equal mib.Declarations.mind_nparams 2
     | _ -> false
 
 let iter_tac tacl =

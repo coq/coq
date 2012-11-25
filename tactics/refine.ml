@@ -170,10 +170,10 @@ let rec compute_metamap env sigma c = match kind_of_term c with
 	(* terme de preuve incomplet *)
 	| TH (c1,mm1,sgp1), TH (c2,mm2,sgp2) ->
 	    let m1,mm1,sgp1 =
-              if sgp1=[] then (c1,mm1,[])
+              if List.is_empty sgp1 then (c1,mm1,[])
               else replace_by_meta env sigma th1 in
 	    let m2,mm2,sgp2 =
-              if sgp2=[] then (c2,mm2,[])
+              if List.is_empty sgp2 then (c2,mm2,[])
               else replace_by_meta env' sigma th2 in
 	    TH (mkNamedLetIn v m1 t1 m2, mm1@mm2, sgp1@sgp2)
       end
@@ -262,7 +262,7 @@ let rec compute_metamap env sigma c = match kind_of_term c with
 let ensure_products n =
   let p = ref 0 in
   let rec aux n gl =
-    if n = 0 then tclFAIL 0 (mt()) gl
+    if Int.equal n 0 then tclFAIL 0 (mt()) gl
     else
       tclTHEN
         (tclORELSE intro (fun gl -> incr p; introf gl))

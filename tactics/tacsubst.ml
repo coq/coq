@@ -42,7 +42,7 @@ let subst_quantified_hypothesis _ x = x
 let subst_declared_or_quantified_hypothesis _ x = x
 
 let subst_glob_constr_and_expr subst (c,e) =
-  assert (e=None); (* e<>None only for toplevel tactics *)
+  assert (Option.is_empty e); (* e<>None only for toplevel tactics *)
   (Detyping.subst_glob_constr subst c,None)
 
 let subst_glob_constr = subst_glob_constr_and_expr (* shortening *)

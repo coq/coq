@@ -50,7 +50,7 @@ let evars_to_goals p evm =
 	(gls', Evd.add evm' ev evi'))
       evm ([], Evd.defined_evars evm)
   in
-  if goals = [] then None else Some (List.rev goals, evm')
+  if List.is_empty goals then None else Some (List.rev goals, evm')
 
 (** Typeclasses instance search tactic / eauto *)
 
@@ -80,7 +80,7 @@ let auto_unif_flags = {
 
 let rec eq_constr_mod_evars x y =
   match kind_of_term x, kind_of_term y with
-  | Evar (e1, l1), Evar (e2, l2) when e1 <> e2 -> true
+  | Evar (e1, l1), Evar (e2, l2) when not (Int.equal e1 e2) -> true
   | _, _ -> compare_constr eq_constr_mod_evars x y
 
 let progress_evars t gl =
@@ -107,7 +107,7 @@ let unify_resolve flags (c,clenv) gls =
     Clenvtac.clenv_refine false ~with_classes:false clenv' gls
 
 let clenv_of_prods nprods (c, clenv) gls =
-  if nprods = 0 then Some clenv
+  if Int.equal nprods 0 then Some clenv
   else 
     let ty = pf_type_of gls c in
     let diff = nb_prod ty - nprods in
@@ -328,7 +328,7 @@ let compare (pri, _, _, res) (pri', _, _, res') =
     List.length (sig_it s) + nb_empty_evars (sig_sig s)
   in
   let pri = pri - pri' in
-    if pri <> 0 then pri
+    if not (Int.equal pri 0) then pri
     else nbgoals res - nbgoals res'
 
 let or_tac (x : 'a tac) (y : 'a tac) : 'a tac =
@@ -397,10 +397,12 @@ let hints_tac hints =
 
 let isProp env sigma concl = 
   let ty = Retyping.get_type_of env sigma concl in
-    kind_of_term ty = Sort (Prop Null)
+  match kind_of_term ty with
+  | Sort (Prop Null) -> true
+  | _ -> false
 
 let needs_backtrack only_classes env evd oev concl =
-  if oev = None || isProp env evd concl then
+  if Option.is_empty oev || isProp env evd concl then
     not (Intset.is_empty (Evarutil.evars_of_term concl))
   else true
 
@@ -413,7 +415,7 @@ let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk
 	     second.skft
 	       (fun {it=gls';sigma=s'} fk' ->
 		  let needs_backtrack = 
-		    if gls' = [] then
+		    if List.is_empty gls' then
  		      needs_backtrack info.only_classes
 		        (Goal.V82.env s gl) s' info.is_evar (Goal.V82.concl s gl)
 		    else true
@@ -456,7 +458,7 @@ let rec fix (t : 'a tac) : 'a tac =
   then_tac t { skft = fun sk fk -> (fix t).skft sk fk }
 
 let rec fix_limit limit (t : 'a tac) : 'a tac =
-  if limit = 0 then fail_tac 
+  if Int.equal limit 0 then fail_tac 
   else then_tac t { skft = fun sk fk -> (fix_limit (pred limit) t).skft sk fk }
     
 let make_autogoal ?(only_classes=true) ?(st=full_transparent_state) cut ev g =
@@ -603,7 +605,7 @@ let error_unresolvable env comp do_split evd =
   let _, ev = Evd.fold_undefined
     (fun ev evi (b,acc) ->
       (* focus on one instance if only one was searched for *)
-      if class_of_constr evi.evar_concl <> None then
+      if not (Option.is_empty (class_of_constr evi.evar_concl)) then
 	if not b (* || do_split *) then
 	  true, Some ev
 	else b, None
@@ -619,7 +621,7 @@ let error_unresolvable env comp do_split evd =
     and return undefined evar_info *)
 
 let select_and_update_evars p oevd in_comp evd ev evi =
-  assert (evi.evar_body = Evar_empty);
+  assert (evi.evar_body == Evar_empty);
   try
     let oevi = Evd.find_undefined oevd ev in
     if Typeclasses.is_resolvable oevi then
