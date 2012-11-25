@@ -14,6 +14,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
+open Util
 open Pp
 open Names
 
@@ -102,7 +103,7 @@ let _ = Errors.register_handler begin function
 end
 let extract id l =
   let rec aux = function
-    | ((id',_) as np)::l when id_ord id id' = 0 -> (np,l)
+    | ((id',_) as np)::l when id_eq id id' -> (np,l)
     | np::l -> let (np', l) = aux l in (np' , np::l)
     | [] -> raise NoSuchProof
   in
@@ -154,7 +155,7 @@ let msg_proofs () =
     | l ->  (str"." ++ fnl () ++ str"Proofs currently edited:" ++ spc () ++
                (pr_sequence Nameops.pr_id l) ++ str".")
 
-let there_is_a_proof () = !current_proof <> []
+let there_is_a_proof () = not (List.is_empty !current_proof)
 let there_are_pending_proofs () = there_is_a_proof ()
 let check_no_pending_proof () =
   if not (there_are_pending_proofs ()) then
@@ -222,7 +223,7 @@ end
 let start_proof  id str goals ?(compute_guard=[]) hook =
   begin
     List.iter begin fun (id_ex,_) ->
-      if Names.id_ord id id_ex = 0 then raise AlreadyExists
+      if Names.id_eq id id_ex then raise AlreadyExists
     end !current_proof
   end;
   let p = Proof.start goals in
@@ -307,6 +308,12 @@ module Bullet = struct
 
   type t = Vernacexpr.bullet
 
+  let bullet_eq b1 b2 = match b1, b2 with
+  | Vernacexpr.Dash, Vernacexpr.Dash -> true
+  | Vernacexpr.Star, Vernacexpr.Star -> true
+  | Vernacexpr.Plus, Vernacexpr.Plus -> true
+  | _ -> false
+
   type behavior = {
     name : string;
     put : Proof.proof -> t -> unit
@@ -338,7 +345,7 @@ module Bullet = struct
 
     let has_bullet bul pr =
       let rec has_bullet = function
-	| b'::_ when bul=b' -> true
+	| b'::_ when bullet_eq bul b' -> true
 	| _::l -> has_bullet l
 	| [] -> false
       in
@@ -358,7 +365,7 @@ module Bullet = struct
     let put p bul =
       if has_bullet bul p then
 	Proof.transaction p begin fun () ->
-	  while bul <> pop p do () done;
+	  while not (bullet_eq bul (pop p)) do () done;
 	  push bul p
 	end
       else

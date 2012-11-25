@@ -147,10 +147,10 @@ let find_q x (m,q) =
   let rec find accs acc = function
       [] -> raise Not_found
     | [(x',l)] ->
-        if x=x' then ((v,Idset.union accs l),(m',List.rev acc))
+        if id_eq x x' then ((v,Idset.union accs l),(m',List.rev acc))
         else raise Not_found
     | (x',l as i)::((x'',l'')::q as itl) ->
-        if x=x' then
+        if id_eq x x' then
           ((v,Idset.union accs l),
            (m',List.rev acc@(x'',Idset.add x (Idset.union l l''))::q))
         else find (Idset.union l accs) (i::acc) itl in
@@ -163,7 +163,7 @@ let occur_vars_in_decl env hyps d =
 
 let reorder_context env sign ord =
   let ords = List.fold_right Idset.add ord Idset.empty in
-  if List.length ord <> Idset.cardinal ords then
+  if not (Int.equal (List.length ord) (Idset.cardinal ords)) then
     error "Order list has duplicates";
   let rec step ord expected ctxt_head moved_hyps ctxt_tail =
     match ord with
@@ -211,10 +211,17 @@ let check_decl_position env sign (x,_,_ as d) =
  * on the right side [right] if [toleft=false].
  * If [with_dep] then dependent hypotheses are moved accordingly. *)
 
+let move_location_eq m1 m2 = match m1, m2 with
+| MoveAfter id1, MoveAfter id2 -> id_eq id1 id2
+| MoveBefore id1, MoveBefore id2 -> id_eq id1 id2
+| MoveLast, MoveLast -> true
+| MoveFirst, MoveFirst -> true
+| _ -> false
+
 let rec get_hyp_after h = function
   | [] -> error_no_such_hypothesis h
   | (hyp,_,_) :: right ->
-      if hyp = h then
+      if id_eq hyp h then
 	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveFirst
       else
        get_hyp_after h right
@@ -223,11 +230,14 @@ let split_sign hfrom hto l =
   let rec splitrec left toleft = function
     | [] -> error_no_such_hypothesis hfrom
     | (hyp,c,typ) as d :: right ->
-      	if hyp = hfrom then
-	  (left,right,d, toleft or hto = MoveLast)
+      	if id_eq hyp hfrom then
+	  (left,right,d, toleft || move_location_eq hto MoveLast)
       	else
-	  splitrec (d::left)
-	    (toleft or hto = MoveAfter hyp or hto = MoveBefore hyp)
+          let is_toleft = match hto with
+          | MoveAfter h' | MoveBefore h' -> id_eq hyp h'
+          | _ -> false
+          in
+	  splitrec (d::left) (toleft || is_toleft)
 	    right
   in
     splitrec [] false l
@@ -249,12 +259,12 @@ let move_hyp with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
 	if match hto with MoveFirst | MoveLast -> false | _ -> true then
 	  error_no_such_hypothesis (hyp_of_move_location hto);
 	List.rev first @ List.rev middle
-    | (hyp,_,_) :: _ as right when hto = MoveBefore hyp ->
+    | (hyp,_,_) :: _ as right when move_location_eq hto (MoveBefore hyp) ->
 	List.rev first @ List.rev middle @ right
     | (hyp,_,_) as d :: right ->
 	let (first',middle') =
       	  if List.exists (test_dep d) middle then
-	    if with_dep & hto <> MoveAfter hyp then
+	    if with_dep && not (move_location_eq hto (MoveAfter hyp)) then
 	      (first, d::middle)
             else
 	      errorlabstrm "move_hyp" (str "Cannot move " ++ pr_id idfrom ++
@@ -264,7 +274,7 @@ let move_hyp with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
           else
 	    (d::first, middle)
 	in
-      	if hto = MoveAfter hyp then
+      	if move_location_eq hto (MoveAfter hyp) then
 	  List.rev first' @ List.rev middle' @ right
       	else
 	  moverec first' middle' right
@@ -340,7 +350,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	(** we keep the casts (in particular VMcast) except
 	    when they are annotating metas *)
 	if isMeta t then begin
-	  assert (k <> VMcast);
+	  assert (k != VMcast);
 	  res
 	end else
 	  let (gls,cty,sigma,trm) = res in
@@ -526,7 +536,7 @@ let prim_refiner r sigma goal =
      	let rec check_ind env k cl =
           match kind_of_term (strip_outer_cast cl) with
             | Prod (na,c1,b) ->
-            	if k = 1 then
+            	if Int.equal k 1 then
 		  try
 		    fst (find_inductive env sigma c1)
 		  with Not_found ->
@@ -541,7 +551,7 @@ let prim_refiner r sigma goal =
      	let rec mk_sign sign = function
 	  | (f,n,ar)::oth ->
 	      let (sp',_)  = check_ind env n ar in
-	      if not (sp=sp') then
+	      if not (eq_mind sp sp') then
 		error ("Fixpoints should be on the same " ^
 		       "mutual inductive declaration.");
 	      if !check && mem_named_context f (named_context_of_val sign) then
@@ -622,7 +632,7 @@ let prim_refiner r sigma goal =
 	check_typability env sigma cl';
 	if (not !check) || is_conv_leq env sigma cl' cl then
           let (sg,ev,sigma) = mk_goal sign cl' in
-	  let ev = if k<>DEFAULTcast then mkCast(ev,k,cl) else ev in
+	  let ev = if k != DEFAULTcast then mkCast(ev,k,cl) else ev in
 	  let sigma = Goal.V82.partial_solution sigma goal ev in
           ([sg], sigma)
 	else
@@ -669,7 +679,7 @@ let prim_refiner r sigma goal =
         ([gl], sigma)
 
     | Rename (id1,id2) ->
-        if !check & id1 <> id2 &&
+        if !check && not (id_eq id1 id2) &&
 	  List.mem id2 (ids_of_named_context (named_context_of_val sign)) then
           error ((string_of_id id2)^" is already used.");
         let sign' = rename_hyp id1 id2 sign in

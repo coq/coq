@@ -71,8 +71,8 @@ let map_strategy f l =
           match f q with
               Some q' -> q' :: ql
             | None -> ql) ql [] in
-      if ql'=[] then str else (lev,ql')::str) l [] in
-  if l'=[] then None else Some (false,l')
+      if List.is_empty ql' then str else (lev,ql')::str) l [] in
+  if List.is_empty l' then None else Some (false,l')
 
 let classify_strategy (local,_ as obj) =
   if local then Dispose else Substitute obj

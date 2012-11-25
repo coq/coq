@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Pp
 open Term
 
@@ -180,8 +181,8 @@ module Refinable = struct
   let rec fusion l1 l2 = match l1 , l2 with
     | [] , _ -> l2
     | _ , [] -> l1
-    | a::l1 , b::_ when a>b -> a::(fusion l1 l2)
-    | a::l1 , b::l2 when a=b -> a::(fusion l1 l2)
+    | a::l1 , b::_ when a > b -> a::(fusion l1 l2)
+    | a::l1 , b::l2 when Int.equal a b -> a::(fusion l1 l2)
     | _ , b::l2 -> b::(fusion l1 l2)
 
   let update_handle handle init_defs post_defs =
@@ -353,7 +354,7 @@ let plus s1 s2 env rdefs goal info =
   with UndefinedHere -> s2 env rdefs goal info
 
 (* Equality of two goals *)
-let equal { content = e1 } { content = e2 } = e1 = e2
+let equal { content = e1 } { content = e2 } = Int.equal e1 e2
 
 let here goal value _ _ goal' _ =
   if equal goal goal' then
@@ -426,7 +427,7 @@ let rename_hyp_sign id1 id2 sign =
     (fun d _ -> map_named_declaration (replace_vars [id1,mkVar id2]) d)
 let rename_hyp id1 id2 env rdefs gl info =
   let hyps = hyps env rdefs gl info in
-  if id1 <> id2 &&
+  if not (Names.id_eq id1 id2) &&
     List.mem id2 (Termops.ids_of_named_context (Environ.named_context_of_val hyps)) then
        Errors.error ((Names.string_of_id id2)^" is already used.");
   let new_hyps = rename_hyp_sign id1 id2 hyps in

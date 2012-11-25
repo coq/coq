@@ -29,6 +29,8 @@
      Therefore the undo stack stores action to be ran to undo.
 *)
 
+open Util
+
 type _focus_kind = int
 type 'a focus_kind = _focus_kind
 type focus_info = Obj.t
@@ -48,7 +50,7 @@ let new_focus_kind () =
   r
 
 (* Auxiliary function to define conditions. *)
-let check kind1 kind2 = kind1=kind2
+let check kind1 kind2 = Int.equal kind1 kind2
 
 (* To be authorized to unfocus one must meet the condition prescribed by
     the action which focused.*)
@@ -85,7 +87,7 @@ module Cond = struct
     | _ , Cannot e -> Cannot e
     | Strict, Strict -> Strict
     | _ , _ -> Loose
-  let kind e k0 k p = bool e (k0=k) k p 
+  let kind e k0 k p = bool e (Int.equal k0 k) k p 
   let pdone e k p = bool e (Proofview.finished p) k p
 end
 

@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Names
 open Pp
 open Tacexpr
@@ -69,11 +70,11 @@ let skip = ref 0
 let breakpoint = ref None
 
 let rec drop_spaces inst i =
-  if String.length inst > i && inst.[i] = ' ' then drop_spaces inst (i+1)
+  if String.length inst > i && inst.[i] == ' ' then drop_spaces inst (i+1)
   else i
 
 let possibly_unquote s =
-  if String.length s >= 2 & s.[0] = '"' & s.[String.length s - 1] = '"' then
+  if String.length s >= 2 & s.[0] == '"' & s.[String.length s - 1] == '"' then
     String.sub s 1 (String.length s - 2)
   else
     s
@@ -84,7 +85,7 @@ let db_initialize () =
 
 (* Gives the number of steps or next breakpoint of a run command *)
 let run_com inst =
-  if (String.get inst 0)='r' then
+  if (String.get inst 0) == 'r' then
     let i = drop_spaces inst 1 in
     if String.length inst > i then
       let s = String.sub inst i (String.length inst - i) in
@@ -135,10 +136,10 @@ let rec prompt level =
 let debug_prompt lev g tac f =
   (* What to print and to do next *)
   let newlevel =
-    if !skip = 0 then
-      if !breakpoint = None then (goal_com g tac; prompt lev)
+    if Int.equal !skip 0 then
+      if Option.is_empty !breakpoint then (goal_com g tac; prompt lev)
       else (run false; DebugOn (lev+1))
-    else (decr skip; run false; if !skip=0 then skipped:=0; DebugOn (lev+1)) in
+    else (decr skip; run false; if Int.equal !skip 0 then skipped:=0; DebugOn (lev+1)) in
   (* What to execute *)
   try f newlevel
   with e ->
@@ -147,14 +148,19 @@ let debug_prompt lev g tac f =
       msg_tac_debug (str "Level " ++ int lev ++ str ": " ++ !explain_logic_error e);
     raise e
 
+let is_debug db = match db, !breakpoint with
+| DebugOff, _ -> false
+| _, Some _ -> false
+| _ -> Int.equal !skip 0
+
 (* Prints a constr *)
 let db_constr debug env c =
-  if debug <> DebugOff & !skip = 0 & !breakpoint = None then
+  if is_debug debug then
     msg_tac_debug (str "Evaluated term: " ++ print_constr_env env c)
 
 (* Prints the pattern rule *)
 let db_pattern_rule debug num r =
-  if debug <> DebugOff & !skip = 0 & !breakpoint = None then
+  if is_debug debug then
   begin
     msg_tac_debug (str "Pattern rule " ++ int num ++ str ":" ++ fnl () ++
       str "|" ++ spc () ++ !prmatchrl r)
@@ -167,38 +173,38 @@ let hyp_bound = function
 
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env (id,_,c) ido =
-  if debug <> DebugOff & !skip = 0 & !breakpoint = None then
+  if is_debug debug then
     msg_tac_debug (str "Hypothesis " ++
            str ((Names.string_of_id id)^(hyp_bound ido)^
                 " has been matched: ") ++ print_constr_env env c)
 
 (* Prints the matched conclusion *)
 let db_matched_concl debug env c =
-  if debug <> DebugOff & !skip = 0 & !breakpoint = None then
+  if is_debug debug then
     msg_tac_debug (str "Conclusion has been matched: " ++ print_constr_env env c)
 
 (* Prints a success message when the goal has been matched *)
 let db_mc_pattern_success debug =
-  if debug <> DebugOff & !skip = 0 & !breakpoint = None then
+  if is_debug debug then
     msg_tac_debug (str "The goal has been successfully matched!" ++ fnl() ++
            str "Let us execute the right-hand side part..." ++ fnl())
 
 (* Prints a failure message for an hypothesis pattern *)
 let db_hyp_pattern_failure debug env (na,hyp) =
-  if debug <> DebugOff & !skip = 0 & !breakpoint = None then
+  if is_debug debug then
     msg_tac_debug (str ("The pattern hypothesis"^(hyp_bound na)^
                 " cannot match: ") ++
            !prmatchpatt env hyp)
 
 (* Prints a matching failure message for a rule *)
 let db_matching_failure debug =
-  if debug <> DebugOff & !skip = 0 & !breakpoint = None then
+  if is_debug debug then
     msg_tac_debug (str "This rule has failed due to matching errors!" ++ fnl() ++
            str "Let us try the next one...")
 
 (* Prints an evaluation failure message for a rule *)
 let db_eval_failure debug s =
-  if debug <> DebugOff & !skip = 0 & !breakpoint = None then
+  if is_debug debug then
     let s = str "message \"" ++ s ++ str "\"" in
     msg_tac_debug
       (str "This rule has failed due to \"Fail\" tactic (" ++
@@ -206,7 +212,7 @@ let db_eval_failure debug s =
 
 (* Prints a logic failure message for a rule *)
 let db_logic_failure debug err =
-  if debug <> DebugOff & !skip = 0 & !breakpoint = None then
+  if is_debug debug then
   begin
     msg_tac_debug (!explain_logic_error err);
     msg_tac_debug (str "This rule has failed due to a logic error!" ++ fnl() ++
@@ -214,12 +220,12 @@ let db_logic_failure debug err =
   end
 
 let is_breakpoint brkname s = match brkname, s with
-  | Some s, MsgString s'::_ -> s = s'
+  | Some s, MsgString s'::_ -> String.equal s s'
   | _ -> false
 
 let db_breakpoint debug s =
   match debug with
-  | DebugOn lev when s <> [] & is_breakpoint !breakpoint s ->
+  | DebugOn lev when not (List.is_empty s) && is_breakpoint !breakpoint s ->
       breakpoint:=None
   | _ ->
       ()

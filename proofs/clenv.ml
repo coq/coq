@@ -150,7 +150,7 @@ let mk_clenv_type_of gls t = mk_clenv_from gls (t,pf_type_of gls t)
 
 let mentions clenv mv0 =
   let rec menrec mv1 =
-    mv0 = mv1 ||
+    Int.equal mv0 mv1 ||
     let mlist =
       try match meta_opt_fvalue clenv.evd mv1 with
       | Some (b,_) -> b.freemetas
@@ -445,7 +445,7 @@ let clenv_assign_binding clenv k c =
   { clenv' with evd = meta_assign k (c,(Conv,status)) clenv'.evd }
 
 let clenv_match_args bl clenv =
-  if bl = [] then
+  if List.is_empty bl then
     clenv
   else
     let mvs = clenv_independent clenv in
@@ -473,17 +473,17 @@ let error_not_right_number_missing_arguments n =
       int n ++ str ").")
 
 let clenv_constrain_dep_args hyps_only bl clenv =
-  if bl = [] then
+  if List.is_empty bl then
     clenv
   else
     let occlist = clenv_dependent_gen hyps_only clenv in
-    if List.length occlist = List.length bl then
+    if Int.equal (List.length occlist) (List.length bl) then
       List.fold_left2 clenv_assign_binding clenv occlist bl
     else
       if hyps_only then
 	(* Tolerance for compatibility <= 8.3 *)
 	let occlist' = clenv_dependent_gen hyps_only ~iter:false clenv in
-	if List.length occlist' = List.length bl then
+	if Int.equal (List.length occlist') (List.length bl) then
 	  List.fold_left2 clenv_assign_binding clenv occlist' bl
 	else
 	  error_not_right_number_missing_arguments (List.length occlist)

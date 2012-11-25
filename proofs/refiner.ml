@@ -355,7 +355,7 @@ let tclIDTAC_list gls = gls
 
 let first_goal gls =
   let gl = gls.it and sig_0 = gls.sigma in
-  if gl = [] then error "first_goal";
+  if List.is_empty gl then error "first_goal";
   { it = List.hd gl; sigma = sig_0 }
 
 (* goal_goal_list : goal sigma -> goal list sigma *)
@@ -398,14 +398,15 @@ let check_evars env sigma extsigma gl =
   let origsigma = gl.sigma in
   let rest =
     Evd.fold_undefined (fun evk evi acc ->
-      if Evd.is_undefined extsigma evk & not (Evd.mem origsigma evk) then
+      if Evd.is_undefined extsigma evk && not (Evd.mem origsigma evk) then
 	evi::acc
       else
 	acc)
       sigma []
   in
-  if rest <> [] then
-    let evi = List.hd rest in
+  match rest with
+  | [] -> ()
+  | evi :: _ ->
     let (loc,k) = evi.evar_source in
     let evi = Evarutil.nf_evar_info sigma evi in
     Pretype_errors.error_unsolvable_implicit loc env sigma evi k None

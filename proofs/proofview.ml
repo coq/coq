@@ -20,6 +20,8 @@
    There is also need of a list of the evars which initialised the proofview
    to be able to return information about the proofview. *)
 
+open Util
+
 (* Type of proofviews. *)
 type proofview = {
      initial : (Term.constr * Term.types) list;
@@ -81,7 +83,7 @@ exception IndexOutOfRange
    Raises [IndexOutOfRange] if [i > length l]*)
 let list_goto = 
   let rec aux acc index = function
-    | l when index = 0-> (acc,l)
+    | l when Int.equal index 0-> (acc,l)
     | [] -> raise IndexOutOfRange
     | a::q -> aux (a::acc) (index-1) q
   in
@@ -313,7 +315,7 @@ let tclDISPATCHS tacs =
 let extend_to_list =
   let rec copy n x l =
     if n < 0 then raise SizeMismatch
-    else if n = 0 then l
+    else if Int.equal n 0 then l
     else copy (n-1) x (x::l)
   in
   fun startxs rx endxs l ->

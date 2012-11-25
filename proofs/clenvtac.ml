@@ -52,7 +52,7 @@ let clenv_value_cast_meta clenv =
 
 let clenv_pose_dependent_evars with_evars clenv =
   let dep_mvs = clenv_dependent clenv in
-  if dep_mvs <> [] & not with_evars then
+  if not (List.is_empty dep_mvs) && not with_evars then
     raise
       (RefinerError (UnresolvedBindings (List.map (meta_name clenv.evd) dep_mvs)));
   clenv_pose_metas_as_evars clenv dep_mvs

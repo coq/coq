@@ -45,7 +45,7 @@ let current_proof_depth () =
 let undo_todepth n =
   try
     undo ((current_proof_depth ()) - n )
-  with Proof_global.NoCurrentProof  when n=0 -> ()
+  with Proof_global.NoCurrentProof  when Int.equal n 0 -> ()
 
 let start_proof id str hyps c ?init_tac ?compute_guard hook = 
   let goals = [ (Global.env_of_context hyps , c) ] in
