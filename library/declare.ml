@@ -128,7 +128,7 @@ let cache_constant ((sp,kn),(cdt,dhyps,kind)) =
   let _,dir,_ = repr_kn kn in
   check_exists sp;
   let kn' = Global.add_constant dir id cdt in
-  assert (kn' = constant_of_kn kn);
+  assert (eq_constant kn' (constant_of_kn kn));
   Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
   add_section_constant kn' (Global.lookup_constant kn').const_hyps;
   Dischargedhypsmap.set_discharged_hyps sp dhyps;
@@ -235,7 +235,7 @@ let cache_inductive ((sp,kn),(dhyps,mie)) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
   let kn' = Global.add_mind dir id mie in
-  assert (kn'= mind_of_kn kn);
+  assert (eq_mind kn' (mind_of_kn kn));
   add_section_kn kn' (Global.lookup_mind kn').mind_hyps;
   Dischargedhypsmap.set_discharged_hyps sp dhyps;
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names;

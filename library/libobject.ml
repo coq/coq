@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Errors
 open Libnames
 open Mod_subst
@@ -82,20 +83,20 @@ let declare_object_full odecl =
   let na = odecl.object_name in
   let (infun,outfun) = Dyn.create na in
   let cacher (oname,lobj) =
-    if Dyn.tag lobj = na then odecl.cache_function (oname,outfun lobj)
+    if String.equal (Dyn.tag lobj) na then odecl.cache_function (oname,outfun lobj)
     else anomaly "somehow we got the wrong dynamic object in the cachefun"
   and loader i (oname,lobj) =
-    if Dyn.tag lobj = na then odecl.load_function i (oname,outfun lobj)
+    if String.equal (Dyn.tag lobj) na then odecl.load_function i (oname,outfun lobj)
     else anomaly "somehow we got the wrong dynamic object in the loadfun"
   and opener i (oname,lobj) =
-    if Dyn.tag lobj = na then odecl.open_function i (oname,outfun lobj)
+    if String.equal (Dyn.tag lobj) na then odecl.open_function i (oname,outfun lobj)
     else anomaly "somehow we got the wrong dynamic object in the openfun"
   and substituter (sub,lobj) = 
-    if Dyn.tag lobj = na then 
+    if String.equal (Dyn.tag lobj) na then 
       infun (odecl.subst_function (sub,outfun lobj))
     else anomaly "somehow we got the wrong dynamic object in the substfun"
   and classifier lobj =
-    if Dyn.tag lobj = na then
+    if String.equal (Dyn.tag lobj) na then
       match odecl.classify_function (outfun lobj) with
 	| Dispose -> Dispose
 	| Substitute obj -> Substitute (infun obj)
@@ -104,12 +105,12 @@ let declare_object_full odecl =
     else
       anomaly "somehow we got the wrong dynamic object in the classifyfun"
   and discharge (oname,lobj) =
-    if Dyn.tag lobj = na then
+    if String.equal (Dyn.tag lobj) na then
       Option.map infun (odecl.discharge_function (oname,outfun lobj))
     else
       anomaly "somehow we got the wrong dynamic object in the dischargefun"
   and rebuild lobj =
-    if Dyn.tag lobj = na then infun (odecl.rebuild_function (outfun lobj))
+    if String.equal (Dyn.tag lobj) na then infun (odecl.rebuild_function (outfun lobj))
     else anomaly "somehow we got the wrong dynamic object in the rebuildfun"
   in
   Hashtbl.add cache_tab na { dyn_cache_function = cacher;

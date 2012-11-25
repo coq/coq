@@ -9,6 +9,7 @@
 (** This module registers tables for some non-logical informations
      associated declarations *)
 
+open Util
 open Names
 open Sign
 open Decl_kinds
@@ -64,7 +65,7 @@ let initialize_named_context_for_proof () =
 let last_section_hyps dir =
   fold_named_context
     (fun (id,_,_) sec_ids ->
-      try if dir=variable_path id then id::sec_ids else sec_ids
+      try if dir_path_eq dir (variable_path id) then id::sec_ids else sec_ids
       with Not_found -> sec_ids)
     (Environ.named_context (Global.env()))
     ~init:[]
