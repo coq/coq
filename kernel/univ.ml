@@ -61,6 +61,8 @@ module UniverseLevel = struct
       Int.equal i1 i2 && Int.equal (Names.dir_path_ord dp1 dp2) 0
     | _ -> false
 
+  let make m n = Level (n, m)
+
   let to_string = function
     | Set -> "Set"
     | Level (n,d) -> Names.string_of_dirpath d^"."^string_of_int n
@@ -85,13 +87,33 @@ let compare_levels = UniverseLevel.compare
    maximum of two algebraic universes
 *)
 
-type universe =
+module Universe =
+struct
+  type t =
   | Atom of UniverseLevel.t
   | Max of UniverseLevel.t list * UniverseLevel.t list
 
-let make_universe_level (m,n) = UniverseLevel.Level (n,m)
-let make_universe l = Atom l
-let make_univ c = Atom (make_universe_level c)
+  let compare u1 u2 =
+    if u1 == u2 then 0 else
+    match u1, u2 with
+    | Atom l1, Atom l2 -> UniverseLevel.compare l1 l2
+    | Max (lt1, le1), Max (lt2, le2) ->
+      let c = List.compare UniverseLevel.compare lt1 lt2 in
+      if Int.equal c 0 then
+        List.compare UniverseLevel.compare le1 le2
+      else c
+    | Atom _, Max _ -> -1
+    | Max _, Atom _ -> 1
+
+  let equal u1 u2 = Int.equal (compare u1 u2) 0
+
+  let make l = Atom l
+
+end
+
+open Universe
+
+type universe = Universe.t
 
 let universe_level = function
   | Atom l -> Some l

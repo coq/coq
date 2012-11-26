@@ -499,7 +499,7 @@ let collect_evars c =
 let new_univ_variable ({ evars = (sigma,(us,sm)) } as d) =
   let u = Termops.new_univ_level () in
   let us' = Univ.UniverseLSet.add u us in
-    ({d with evars = (sigma, (us', sm))}, Univ.make_universe u)
+    ({d with evars = (sigma, (us', sm))}, Univ.Universe.make u)
   
 let new_sort_variable d =
   let (d', u) = new_univ_variable d in

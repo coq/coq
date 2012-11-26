@@ -8,8 +8,46 @@
 
 (** Universes. *)
 
-type universe_level
-type universe
+module UniverseLevel :
+sig
+  type t
+  (** Type of universe levels. A universe level is essentially a unique name
+      that will be associated to constraints later on. *)
+
+  val compare : t -> t -> int
+  (** Comparison function *)
+
+  val equal : t -> t -> bool
+  (** Equality function *)
+
+  val make : Names.dir_path -> int -> t
+  (** Create a new universe level from a unique identifier and an associated
+      module path. *)
+
+end
+
+type universe_level = UniverseLevel.t
+(** Alias name. *)
+
+module Universe :
+sig
+  type t
+  (** Type of universes. A universe is defined as a set of constraints w.r.t.
+      other universes. *)
+
+  val compare : t -> t -> int
+  (** Comparison function *)
+
+  val equal : t -> t -> bool
+  (** Equality function *)
+
+  val make : UniverseLevel.t -> t
+  (** Create a constraint-free universe out of a given level. *)
+
+end
+
+type universe = Universe.t
+(** Alias name. *)
 
 module UniverseLSet : Set.S with type elt = universe_level
 
@@ -20,16 +58,11 @@ val type0m_univ : universe  (** image of Prop in the universes hierarchy *)
 val type0_univ : universe  (** image of Set in the universes hierarchy *)
 val type1_univ : universe  (** the universe of the type of Prop/Set *)
 
-val make_universe_level : Names.dir_path * int -> universe_level
-val make_universe : universe_level -> universe
-val make_univ : Names.dir_path * int -> universe
-
 val is_type0_univ : universe -> bool
 val is_type0m_univ : universe -> bool
 val is_univ_variable : universe -> bool
 
 val universe_level : universe -> universe_level option
-val compare_levels : universe_level -> universe_level -> int
 
 (** The type of a universe *)
 val super : universe -> universe
