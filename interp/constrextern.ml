@@ -218,9 +218,12 @@ let rec check_same_type ty1 ty2 =
       List.iter2 check_same_type al1 al2
   | CApp(_,(_,e1),al1), CApp(_,(_,e2),al2) ->
       check_same_type e1 e2;
-      List.iter2 (fun (a1,e1) (a2,e2) ->
-                    if Option.Misc.compare (eq_located Constrintern.explicitation_eq) e1 e2 then failwith "not same expl";
-                    check_same_type a1 a2) al1 al2
+      let check_args (a1,e1) (a2,e2) =
+        let eq_expl = eq_located Constrintern.explicitation_eq in
+        if not (Option.Misc.compare eq_expl e1 e2) then failwith "not same expl";
+        check_same_type a1 a2
+      in
+      List.iter2 check_args al1 al2
   | CCases(_,_,_,a1,brl1), CCases(_,_,_,a2,brl2) ->
       List.iter2 (fun (tm1,_) (tm2,_) -> check_same_type tm1 tm2) a1 a2;
       List.iter2 (fun (_,pl1,r1) (_,pl2,r2) ->
@@ -246,7 +249,7 @@ let rec check_same_type ty1 ty2 =
 
 and check_same_binder (nal1,_,e1) (nal2,_,e2) =
   List.iter2 (fun (_,na1) (_,na2) ->
-    if name_eq na1 na2 then failwith "not same name") nal1 nal2;
+    if not (name_eq na1 na2) then failwith "not same name") nal1 nal2;
   check_same_type e1 e2
 
 and check_same_fix_binder bl1 bl2 =
