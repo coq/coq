@@ -21,6 +21,7 @@ val set_sort  : sorts
 val prop_sort : sorts
 val type1_sort  : sorts
 
+val sorts_ord : sorts -> sorts -> int
 val is_prop_sort : sorts -> bool
 
 (** {6 The sorts family of CCI. } *)

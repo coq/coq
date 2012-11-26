@@ -245,8 +245,7 @@ let typecheck_inductive env mie =
     begin match kind_of_term c with
     | Sort (Type u) ->
       if List.mem (Some u) l then
-        (** FIXME *)
-        None :: List.map (function Some v when Pervasives.(=) u v -> None | x -> x) l
+        None :: List.map (function Some v when Universe.equal u v -> None | x -> x) l
       else
         Some u :: l
     | _ ->

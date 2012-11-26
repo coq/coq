@@ -171,7 +171,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 	  (match s, s' with
 	   Prop x, Prop y when x == y -> None
 	   | Prop _, Type _ -> None
-	   | Type x, Type y when Pervasives.(=) x y -> None (* false *) (** FIXME **)
+	   | Type x, Type y when Univ.Universe.equal x y -> None (* false *)
 	   | _ -> subco ())
       | Prod (name, a, b), Prod (name', a', b') ->
 	  let name' = Name (Namegen.next_ident_away (id_of_string "x") (Termops.ids_of_context env)) in

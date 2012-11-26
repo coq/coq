@@ -514,15 +514,15 @@ let univ_of_sort = function
   | Prop Null -> Univ.type0m_univ
 
 let is_eq_sort s1 s2 =
-  if Pervasives.(=) s1 s2 then None (* FIXME *)
+  if Int.equal (sorts_ord s1 s2) 0 then None (* FIXME *)
   else
     let u1 = univ_of_sort s1
     and u2 = univ_of_sort s2 in
-      if Pervasives.(=) u1 u2 then None (* FIXME *)
+      if Univ.Universe.equal u1 u2 then None
       else Some (u1, u2)
 
 let is_univ_var_or_set u =
-  Univ.is_univ_variable u || Pervasives.(=) u Univ.type0_univ (** FIXME *)
+  Univ.is_univ_variable u || Univ.is_type0_univ u
 
 let set_leq_sort ({evars = (sigma, (us, sm))} as d) s1 s2 =
   match is_eq_sort s1 s2 with

@@ -63,6 +63,19 @@ let prop_sort = Prop Null
 let set_sort = Prop Pos
 let type1_sort = Type type1_univ
 
+let sorts_ord s1 s2 =
+  if s1 == s2 then 0 else
+  match s1, s2 with
+  | Prop c1, Prop c2 ->
+    begin match c1, c2 with
+    | Pos, Pos | Null, Null -> 0
+    | Pos, Null -> -1
+    | Null, Pos -> 1
+    end
+  | Type u1, Type u2 -> Universe.compare u1 u2
+  | Prop _, Type _ -> -1
+  | Type _, Prop _ -> 1
+
 let is_prop_sort = function
 | Prop Null -> true
 | _ -> false
@@ -566,7 +579,7 @@ let compare_constr f t1 t2 =
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
   | Var id1, Var id2 -> Int.equal (id_ord id1 id2) 0
-  | Sort s1, Sort s2 -> Int.equal (Pervasives.compare s1 s2) 0 (** FIXME **)
+  | Sort s1, Sort s2 -> Int.equal (sorts_ord s1 s2) 0
   | Cast (c1,_,_), _ -> f c1 t2
   | _, Cast (c2,_,_) -> f t1 c2
   | Prod (_,t1,c1), Prod (_,t2,c2) -> f t1 t2 && f c1 c2
@@ -612,7 +625,7 @@ let constr_ord_int f t1 t2 =
     | Rel n1, Rel n2 -> Int.compare n1 n2
     | Meta m1, Meta m2 -> Int.compare m1 m2
     | Var id1, Var id2 -> id_ord id1 id2
-    | Sort s1, Sort s2 -> Pervasives.compare s1 s2
+    | Sort s1, Sort s2 -> sorts_ord s1 s2
     | Cast (c1,_,_), _ -> f c1 t2
     | _, Cast (c2,_,_) -> f t1 c2
     | Prod (_,t1,c1), Prod (_,t2,c2)

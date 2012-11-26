@@ -161,7 +161,7 @@ let new_Type_sort () = Type (new_univ ())
 let refresh_universes_gen strict t =
   let modified = ref false in
   let rec refresh t = match kind_of_term t with
-    | Sort (Type u) when strict || Pervasives.(<>) u Univ.type0m_univ -> (** FIXME *)
+    | Sort (Type u) when strict || not (Univ.is_type0m_univ u) ->
 	modified := true; new_Type ()
     | Prod (na,u,v) -> mkProd (na,u,refresh v)
     | _ -> t in
