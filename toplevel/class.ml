@@ -76,7 +76,7 @@ let check_arity = function
 
 (* check that the computed target is the provided one *)
 let check_target clt = function
-  | Some cl when cl <> clt -> raise (CoercionError (WrongTarget(clt,cl)))
+  | Some cl when not (cl_typ_eq cl clt) -> raise (CoercionError (WrongTarget(clt,cl)))
   | _ -> ()
 
 (* condition d'heritage uniforme *)
@@ -86,7 +86,7 @@ let uniform_cond nargs lt =
     | (0,[]) -> true
     | (n,t::l) ->
       let t = strip_outer_cast t in
-      isRel t && destRel t = n && aux ((n-1),l)
+      isRel t && Int.equal (destRel t) n && aux ((n-1),l)
     | _ -> false
   in
   aux (nargs,lt)
@@ -127,7 +127,7 @@ let get_source lp source =
 	  | t1::lt ->
 	      try
 		let cl1,lv1 = find_class_type Evd.empty t1 in
-		if cl = cl1 then cl1,lv1,(List.length lt+1)
+		if cl_typ_eq cl cl1 then cl1,lv1,(List.length lt+1)
 		else raise Not_found
               with Not_found -> aux lt
 	in aux (List.rev lp)

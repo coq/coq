@@ -185,16 +185,16 @@ let parse_format ((loc, str) : lstring) =
     | a::(_::_ as l) -> push_token (UnpBox (b,a)) l
     | _ -> error "Non terminated box in format." in
   let close_quotation i =
-    if i < String.length str & str.[i] = '\'' & (i+1 = l or str.[i+1] = ' ')
+    if i < String.length str && str.[i] == '\'' && (Int.equal (i+1) l || str.[i+1] == ' ')
     then i+1
     else error "Incorrectly terminated quoted expression." in
   let rec spaces n i =
-    if i < String.length str & str.[i] = ' ' then spaces (n+1) (i+1)
+    if i < String.length str && str.[i] == ' ' then spaces (n+1) (i+1)
     else n in
   let rec nonspaces quoted n i =
-    if i < String.length str & str.[i] <> ' ' then
-      if str.[i] = '\'' & quoted &
-        (i+1 >= String.length str or str.[i+1] = ' ')
+    if i < String.length str && str.[i] != ' ' then
+      if str.[i] == '\'' && quoted &&
+        (i+1 >= String.length str || str.[i+1] == ' ')
       then if Int.equal n 0 then error "Empty quoted token." else n
       else nonspaces quoted (n+1) (i+1)
     else
@@ -206,7 +206,7 @@ let parse_format ((loc, str) : lstring) =
   and parse_quoted n i =
     if i < String.length str then match str.[i] with
       (* Parse " // " *)
-      | '/' when i <= String.length str & str.[i+1] = '/' ->
+      | '/' when i <= String.length str && str.[i+1] == '/' ->
           (* We forget the useless n spaces... *)
 	  push_token (UnpCut PpFnl)
             (parse_token (close_quotation (i+2)))
@@ -221,7 +221,7 @@ let parse_format ((loc, str) : lstring) =
       | '[' ->
 	  if i <= String.length str then match str.[i+1] with
 	    (* Parse " [h .. ",  *)
-	    | 'h' when i+1 <= String.length str & str.[i+2] = 'v' ->
+	    | 'h' when i+1 <= String.length str && str.[i+2] == 'v' ->
 		  (parse_box (fun n -> PpHVB n) (i+3))
 		(* Parse " [v .. ",  *)
 	    | 'v' ->
@@ -250,7 +250,7 @@ let parse_format ((loc, str) : lstring) =
     let i = i+n in
     if i < l then match str.[i] with
       (* Parse a ' *)
-      |	'\'' when i+1 >= String.length str or str.[i+1] = ' ' ->
+      |	'\'' when i+1 >= String.length str || str.[i+1] == ' ' ->
 	  push_white (n-1) (push_token (UnpTerminal "'") (parse_token (i+1)))
       (* Parse the beginning of a quoted expression *)
       |	'\'' ->
@@ -261,7 +261,7 @@ let parse_format ((loc, str) : lstring) =
     else push_white n [[]]
   in
   try
-    if str <> "" then match parse_token 0 with
+    if not (String.equal str "") then match parse_token 0 with
       | [l] -> l
       | _ -> error "Box closed without being opened in format."
     else
@@ -276,16 +276,16 @@ type symbol_token = WhiteSpace of int | String of string
 
 let split_notation_string str =
   let push_token beg i l =
-    if beg = i then l else
+    if Int.equal beg i then l else
       let s = String.sub str beg (i - beg) in
       String s :: l
   in
   let push_whitespace beg i l =
-    if beg = i then l else WhiteSpace (i-beg) :: l
+    if Int.equal beg i then l else WhiteSpace (i-beg) :: l
   in
   let rec loop beg i =
     if i < String.length str then
-      if str.[i] = ' ' then
+      if str.[i] == ' ' then
 	push_token beg i (loop_on_whitespace (i+1) (i+1))
       else
 	loop beg (i+1)
@@ -293,7 +293,7 @@ let split_notation_string str =
       push_token beg i []
   and loop_on_whitespace beg i =
     if i < String.length str then
-      if str.[i] <> ' ' then
+      if str.[i] != ' ' then
 	push_whitespace beg i (loop i (i+1))
       else
 	loop_on_whitespace beg (i+1)
@@ -307,9 +307,9 @@ let split_notation_string str =
 let out_nt = function NonTerminal x -> x | _ -> assert false
 
 let rec find_pattern nt xl = function
-  | Break n as x :: l, Break n' :: l' when n=n' ->
+  | Break n as x :: l, Break n' :: l' when Int.equal n n' ->
       find_pattern nt (x::xl) (l,l')
-  | Terminal s as x :: l, Terminal s' :: l' when s = s' ->
+  | Terminal s as x :: l, Terminal s' :: l' when String.equal s s' ->
       find_pattern nt (x::xl) (l,l')
   | [], NonTerminal x' :: l' ->
       (out_nt nt,x',List.rev xl),l'
@@ -324,7 +324,7 @@ let rec find_pattern nt xl = function
 
 let rec interp_list_parser hd = function
   | [] -> [], List.rev hd
-  | NonTerminal id :: tl when id = ldots_var ->
+  | NonTerminal id :: tl when id_eq id ldots_var ->
       let hd = List.rev hd in
       let ((x,y,sl),tl') = find_pattern (List.hd hd) [] (List.tl hd,tl) in
       let xyl,tl'' = interp_list_parser [] tl' in
@@ -332,7 +332,7 @@ let rec interp_list_parser hd = function
       (* remove the second copy of it afterwards *)
       (x,y)::xyl, SProdList (x,sl) :: tl''
   | (Terminal _ | Break _) as s :: tl ->
-      if hd = [] then
+      if List.is_empty hd then
         let yl,tl' = interp_list_parser [] tl in
         yl, s :: tl'
       else
@@ -349,7 +349,7 @@ let rec interp_list_parser hd = function
 let quote_notation_token x =
   let n = String.length x in
   let norm = Lexer.is_ident x in
-  if (n > 0 & norm) or (n > 2 & x.[0] = '\'') then "'"^x^"'"
+  if (n > 0 && norm) || (n > 2 && x.[0] == '\'') then "'"^x^"'"
   else x
 
 let rec raw_analyze_notation_tokens = function
@@ -374,7 +374,7 @@ let rec get_notation_vars = function
   | [] -> []
   | NonTerminal id :: sl ->
       let vars = get_notation_vars sl in
-      if id = ldots_var then vars else
+      if id_eq id ldots_var then vars else
 	if List.mem id vars then
 	  error ("Variable "^string_of_id id^" occurs more than once.")
 	else
@@ -406,7 +406,7 @@ let prec_assoc = function
 let precedence_of_entry_type from = function
   | ETConstr (NumLevel n,BorderProd (_,None)) -> n, Prec n
   | ETConstr (NumLevel n,BorderProd (b,Some a)) ->
-      n, let (lp,rp) = prec_assoc a in if b=Left then lp else rp
+      n, let (lp,rp) = prec_assoc a in if b == Left then lp else rp
   | ETConstr (NumLevel n,InternalProd) -> n, Prec n
   | ETConstr (NextLevel,_) -> from, L
   | _ -> 0, E (* ?? *)
@@ -420,25 +420,25 @@ let precedence_of_entry_type from = function
 (* "< x , y > { z , t }" : "< x , / y > / { z , / t }" *)
 
 let is_left_bracket s =
-  let l = String.length s in l <> 0 &
-  (s.[0] = '{' or s.[0] = '[' or s.[0] = '(')
+  let l = String.length s in not (Int.equal l 0) &&
+  (s.[0] == '{' || s.[0] == '[' || s.[0] == '(')
 
 let is_right_bracket s =
-  let l = String.length s in l <> 0 &
-  (s.[l-1] = '}' or s.[l-1] = ']' or s.[l-1] = ')')
+  let l = String.length s in not (Int.equal l 0) &&
+  (s.[l-1] == '}' || s.[l-1] == ']' || s.[l-1] == ')')
 
 let is_comma s =
-  let l = String.length s in l <> 0 &
-  (s.[0] = ',' or s.[0] = ';')
+  let l = String.length s in not (Int.equal l 0) &&
+  (s.[0] == ',' || s.[0] == ';')
 
 let is_operator s =
-  let l = String.length s in l <> 0 &
-  (s.[0] = '+' or s.[0] = '*' or s.[0] = '=' or
-   s.[0] = '-' or s.[0] = '/' or s.[0] = '<' or s.[0] = '>' or
-   s.[0] = '@' or s.[0] = '\\' or s.[0] = '&' or s.[0] = '~' or s.[0] = '$')
+  let l = String.length s in not (Int.equal l 0) &&
+  (s.[0] == '+' || s.[0] == '*' || s.[0] == '=' ||
+   s.[0] == '-' || s.[0] == '/' || s.[0] == '<' || s.[0] == '>' ||
+   s.[0] == '@' || s.[0] == '\\' || s.[0] == '&' || s.[0] == '~' || s.[0] == '$')
 
 let is_prod_ident = function
-  | Terminal s when is_letter s.[0] or s.[0] = '_' -> true
+  | Terminal s when is_letter s.[0] || s.[0] == '_' -> true
   | _ -> false
 
 let is_non_terminal = function
@@ -448,7 +448,7 @@ let is_non_terminal = function
 let add_break n l = UnpCut (PpBrk(n,0)) :: l
 
 let check_open_binder isopen sl m =
-  if isopen & sl <> [] then
+  if isopen && not (List.is_empty sl) then
     errorlabstrm "" (str "as " ++ pr_id m ++
       str " is a non-closed binder, no such \"" ++
       prlist_with_sep spc (function Terminal s -> str s | _ -> assert false) sl
@@ -465,33 +465,34 @@ let make_hunks etyps symbols from =
 	let i = List.index m vars in
 	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
 	let u = UnpMetaVar (i,prec) in
-	if prods <> [] && is_non_terminal (List.hd prods) then
+        begin match prods with
+        | s :: _ when is_non_terminal s ->
 	  u :: add_break 1 (make CanBreak prods)
-	else
+        | _ ->
 	  u :: make CanBreak prods
-
+        end
     | Terminal s :: prods when List.exists is_non_terminal prods ->
         if is_comma s then
 	  UnpTerminal s :: add_break 1 (make NoBreak prods)
 	else if is_right_bracket s then
 	  UnpTerminal s :: add_break 0 (make NoBreak prods)
 	else if is_left_bracket s then
-          if ws = CanBreak then
+          if ws == CanBreak then
 	    add_break 1 (UnpTerminal s :: make CanBreak prods)
 	  else
 	    UnpTerminal s :: make CanBreak prods
 	else if is_operator s then
-	  if ws = CanBreak then
+	  if ws == CanBreak then
 	    UnpTerminal (" "^s) :: add_break 1 (make NoBreak prods)
 	  else
 	    UnpTerminal s :: add_break 1 (make NoBreak prods)
 	else if is_ident_tail s.[String.length s - 1] then
 	  let sep = if is_prod_ident (List.hd prods) then "" else " " in
-	  if ws = CanBreak then
+	  if ws == CanBreak then
 	    add_break 1 (UnpTerminal (s^sep) :: make CanBreak prods)
 	  else
 	    UnpTerminal (s^sep) :: make CanBreak prods
-	else if ws = CanBreak then
+	else if ws == CanBreak then
 	  add_break 1 (UnpTerminal (s^" ") :: make CanBreak prods)
 	else
 	  UnpTerminal s :: make CanBreak prods
@@ -499,7 +500,7 @@ let make_hunks etyps symbols from =
     | Terminal s :: prods ->
 	if is_right_bracket s then
 	  UnpTerminal s :: make NoBreak prods
-        else if ws = CanBreak then
+        else if ws == CanBreak then
 	  add_break 1 (UnpTerminal s :: make NoBreak prods)
         else
           UnpTerminal s :: make NoBreak prods
@@ -513,7 +514,7 @@ let make_hunks etyps symbols from =
 	let _,prec = precedence_of_entry_type from typ in
         let sl' =
           (* If no separator: add a break *)
-	  if sl = [] then add_break 1 []
+	  if List.is_empty sl then add_break 1 []
           (* We add NonTerminal for simulation but remove it afterwards *)
 	  else snd (List.sep_last (make NoBreak (sl@[NonTerminal m]))) in
 	let hunk = match typ with
@@ -533,7 +534,7 @@ let make_hunks etyps symbols from =
 let error_format () = error "The format does not match the notation."
 
 let rec split_format_at_ldots hd = function
-  | UnpTerminal s :: fmt when s = string_of_id ldots_var -> List.rev hd, fmt
+  | UnpTerminal s :: fmt when String.equal s (string_of_id ldots_var) -> List.rev hd, fmt
   | u :: fmt ->
       check_no_ldots_in_box u;
       split_format_at_ldots (u::hd) fmt
@@ -559,7 +560,7 @@ let read_recursive_format sl fmt =
     let sl = skip_var_in_recursive_format fmt in
     try split_format_at_ldots [] sl with Exit -> error_format () in
   let rec get_tail = function
-    | a :: sepfmt, b :: fmt when a = b -> get_tail (sepfmt, fmt)
+    | a :: sepfmt, b :: fmt when Pervasives.(=) a b -> get_tail (sepfmt, fmt) (* FIXME *)
     | [], tail -> skip_var_in_recursive_format tail
     | _ -> error "The format is not the same on the right and left hand side of the special token \"..\"." in
   let slfmt, fmt = get_head fmt in
@@ -568,12 +569,12 @@ let read_recursive_format sl fmt =
 let hunks_of_format (from,(vars,typs)) symfmt =
   let rec aux = function
   | symbs, (UnpTerminal s' as u) :: fmt
-      when s' = String.make (String.length s') ' ' ->
+      when String.equal s' (String.make (String.length s') ' ') ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
   | Terminal s :: symbs, (UnpTerminal s') :: fmt
-      when s = String.drop_simple_quotes s' ->
+      when String.equal s (String.drop_simple_quotes s') ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
-  | NonTerminal s :: symbs, UnpTerminal s' :: fmt when s = id_of_string s' ->
+  | NonTerminal s :: symbs, UnpTerminal s' :: fmt when id_eq s (id_of_string s') ->
       let i = List.index s vars in
       let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
       let symbs, l = aux (symbs,fmt) in symbs, UnpMetaVar (i,prec) :: l
@@ -589,7 +590,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       let _,prec = precedence_of_entry_type from typ in
       let slfmt,fmt = read_recursive_format sl fmt in
       let sl, slfmt = aux (sl,slfmt) in
-      if sl <> [] then error_format ();
+      if not (List.is_empty sl) then error_format ();
       let symbs, l = aux (symbs,fmt) in
       let hunk = match typ with
 	| ETConstr _ -> UnpListMetaVar (i,prec,slfmt)
@@ -637,7 +638,7 @@ let distribute a ll = List.map (fun l -> a @ l) ll
   (* Expand LIST1(t,sep) into the combination of t and t;sep;LIST1(t,sep)
      as many times as expected in [n] argument *)
 let rec expand_list_rule typ tkl x n i hds ll =
-  if i = n then
+  if Int.equal i n then
     let hds =
       GramConstrListMark (n,true) :: hds
       @	[GramConstrNonTerminal (ETConstrList (typ,tkl), Some x)] in
@@ -678,7 +679,7 @@ let make_production etyps symbols =
 let rec find_symbols c_current c_next c_last = function
   | [] -> []
   | NonTerminal id :: sl ->
-      let prec = if sl <> [] then c_current else c_last in
+      let prec = if not (List.is_empty sl) then c_current else c_last in
       (id, prec) :: (find_symbols c_next c_next c_last sl)
   | Terminal s :: sl -> find_symbols c_next c_next c_last sl
   | Break n :: sl -> find_symbols c_current c_next c_last sl
@@ -700,10 +701,10 @@ let recompute_assoc typs =
 (* Registration of syntax extensions (parsing/printing, no interpretation)*)
 
 let pr_arg_level from = function
-  | (n,L) when n=from -> str "at next level"
+  | (n,L) when Int.equal n from -> str "at next level"
   | (n,E) -> str "at level " ++ int n
   | (n,L) -> str "at level below " ++ int n
-  | (n,Prec m) when m=n -> str "at level " ++ int n
+  | (n,Prec m) when Int.equal m n -> str "at level " ++ int n
   | (n,_) -> str "Unknown level"
 
 let pr_level ntn (from,args) =
@@ -732,7 +733,7 @@ let cache_one_syntax_extension se =
   let prec = se.synext_level in
   try
     let oldprec = Notation.level_of_notation ntn in
-    if prec <> oldprec then error_incompatible_level ntn oldprec prec
+    if not (Notation.level_eq prec oldprec) then error_incompatible_level ntn oldprec prec
   with Not_found ->
     (* Reserve the notation level *)
     Notation.declare_notation_level ntn prec;
@@ -789,22 +790,22 @@ let interp_modifiers modl =
 	let typ = ETConstr (n,()) in
 	interp assoc level ((id,typ)::etyps) format (SetItemLevel (idl,n)::l)
     | SetLevel n :: l ->
-	if level <> None then error "A level is given more than once.";
+	if not (Option.is_empty level) then error "A level is given more than once.";
 	interp assoc (Some n) etyps format l
     | SetAssoc a :: l ->
-	if assoc <> None then error"An associativity is given more than once.";
+	if not (Option.is_empty assoc) then error"An associativity is given more than once.";
 	interp (Some a) level etyps format l
     | SetOnlyParsing _ :: l ->
 	onlyparsing := true;
 	interp assoc level etyps format l
     | SetFormat s :: l ->
-	if format <> None then error "A format is given more than once.";
+	if not (Option.is_empty format) then error "A format is given more than once.";
 	interp assoc level etyps (Some s) l
   in interp None None [] None modl
 
 let check_infix_modifiers modifiers =
   let (assoc,level,t,b,fmt) = interp_modifiers modifiers in
-  if t <> [] then
+  if not (List.is_empty t) then
     error "Explicit entry level or type unexpected in infix notation."
 
 let no_syntax_modifiers = function
@@ -837,7 +838,7 @@ let join_auxiliary_recursive_types recvars etyps =
     | None, None -> typs
     | Some _, None -> typs
     | None, Some ytyp -> (x,ytyp)::typs
-    | Some xtyp, Some ytyp when xtyp = ytyp -> typs
+    | Some xtyp, Some ytyp when Pervasives.(=) xtyp ytyp -> typs (* FIXME *)
     | Some xtyp, Some ytyp ->
 	errorlabstrm ""
 	  (strbrk "In " ++ pr_id x ++ str " .. " ++ pr_id y ++
@@ -867,8 +868,12 @@ let make_interpretation_type isrec = function
   | NtnInternTypeBinder -> error "Type not allowed in recursive notation."
 
 let make_interpretation_vars recvars allvars =
+  let eq_subscope (sc1, l1) (sc2, l2) =
+    Option.Misc.compare String.equal sc1 sc2 &&
+    List.equal String.equal l1 l2
+  in
   List.iter (fun (x,y) ->
-    if fst (List.assoc x allvars) <> fst (List.assoc y allvars) then
+    if not (eq_subscope (fst (List.assoc x allvars)) (fst (List.assoc y allvars))) then
       error_not_same_scope x y) recvars;
   let useless_recvars = List.map snd recvars in
   let mainvars =
@@ -893,31 +898,32 @@ let find_precedence lev etyps symbols =
 	| ETConstr _ ->
 	    error "The level of the leftmost non-terminal cannot be changed."
 	| ETName | ETBigint | ETReference ->
-	    if lev = None then
+            begin match lev with
+            | None ->
 	      ([msg_info,strbrk "Setting notation at level 0."],0)
-	    else
-	    if lev <> Some 0 then
+            | Some 0 ->
+              ([],0)
+            | _ ->
 	      error "A notation starting with an atomic expression must be at level 0."
-	    else
-	      ([],0)
+            end
 	| ETPattern | ETBinder _ | ETOther _ -> (* Give a default ? *)
-	    if lev = None then
+	    if Option.is_empty lev then
 	      error "Need an explicit level."
 	    else [],Option.get lev
         | ETConstrList _ | ETBinderList _ ->
 	    assert false (* internally used in grammar only *)
       with Not_found ->
-	if lev = None then
+	if Option.is_empty lev then
 	  error "A left-recursive notation must have an explicit level."
 	else [],Option.get lev)
   | Terminal _ ::l when
       (match List.last symbols with Terminal _ -> true |_ -> false)
       ->
-      if lev = None then
+      if Option.is_empty lev then
 	([msg_info,strbrk "Setting notation at level 0."], 0)
       else [],Option.get lev
   | _ ->
-      if lev = None then error "Cannot determine the level.";
+      if Option.is_empty lev then error "Cannot determine the level.";
       [],Option.get lev
 
 let check_curly_brackets_notation_exists () =
@@ -940,9 +946,9 @@ let remove_curly_brackets l =
             let br',next' = skip_break [] l' in
             (match next' with
               | Terminal "}" as t2 :: l'' as l1 ->
-                  if l <> l0 or l' <> l1 then
+                  if not (List.equal Notation.symbol_eq l l0) || not (List.equal Notation.symbol_eq l' l1) then
                     msg_warning (strbrk "Skipping spaces inside curly brackets");
-                  if deb & l'' = [] then [t1;x;t2] else begin
+                  if deb && List.is_empty l'' then [t1;x;t2] else begin
                     check_curly_brackets_notation_exists ();
                     x :: aux false l''
                   end
@@ -958,7 +964,7 @@ let compute_syntax_data df modifiers =
   let (recvars,mainvars,symbols) = analyze_notation_tokens toks in
   let ntn_for_interp = make_notation_key symbols in
   let symbols' = remove_curly_brackets symbols in
-  let need_squash = (symbols <> symbols') in
+  let need_squash = not (List.equal Notation.symbol_eq symbols symbols') in
   let ntn_for_grammar = make_notation_key symbols' in
   check_rule_productivity symbols';
   let msgs,n = find_precedence n etyps symbols' in
@@ -1050,11 +1056,11 @@ let with_syntax_protection f x =
 (* Recovering existing syntax                                         *)
 
 let contract_notation ntn =
-  if ntn = "{ _ }" then ntn else
+  if String.equal ntn "{ _ }" then ntn else
   let rec aux ntn i =
     if i <= String.length ntn - 5 then
       let ntn' =
-        if String.sub ntn i 5 = "{ _ }" then
+        if String.equal (String.sub ntn i 5) "{ _ }" then
           String.sub ntn 0 i ^ "_" ^
           String.sub ntn (i+5) (String.length ntn -i-5)
         else ntn in
@@ -1084,7 +1090,7 @@ let recover_squash_syntax sy =
 let recover_notation_syntax rawntn =
   let ntn = contract_notation rawntn in
   let sy = recover_syntax ntn in
-  let need_squash = ntn <> rawntn in
+  let need_squash = not (String.equal ntn rawntn) in
   let rules = if need_squash then recover_squash_syntax sy else [sy] in
   sy.synext_intern, rules
 
@@ -1242,7 +1248,7 @@ let subst_scope_command (subst,(scope,o as x)) = match o with
   | ScopeClasses cl ->
       let cl' = List.map_filter (subst_scope_class subst) cl in
       let cl' =
-        if List.length cl = List.length cl' && List.for_all2 (==) cl cl' then cl
+        if Int.equal (List.length cl) (List.length cl') && List.for_all2 (==) cl cl' then cl
         else cl' in
       scope, ScopeClasses cl'
   | _ -> x

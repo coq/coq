@@ -332,8 +332,8 @@ let explain_occur_check env sigma ev rhs =
   pt ++ spc () ++ str "that would depend on itself."
 
 let pr_ne_context_of header footer env =
-  if Environ.rel_context env = empty_rel_context &
-    Environ.named_context env = empty_named_context
+  if List.is_empty (Environ.rel_context env) &&
+    List.is_empty (Environ.named_context env)
   then footer
   else pr_ne_context_of header env
 
@@ -404,7 +404,7 @@ let explain_var_not_found env id =
 
 let explain_wrong_case_info env ind ci =
   let pi = pr_inductive (Global.env()) ind in
-  if ci.ci_ind = ind then
+  if eq_ind ci.ci_ind ind then
     str "Pattern-matching expression on an object of inductive type" ++
     spc () ++ pi ++ spc () ++ str "has invalid information."
   else
@@ -700,7 +700,7 @@ let is_goal_evar evi = match evi.evar_source with (_, Evar_kinds.GoalEvar) -> tr
 
 let pr_constraints printenv env evm =
   let l = Evd.to_list evm in
-  assert(l <> []);
+  assert(not (List.is_empty l));
   let (ev, evi) = List.hd l in
     if List.for_all (fun (ev', evi') ->
       eq_named_context_val evi.evar_hyps evi'.evar_hyps) l
@@ -816,12 +816,12 @@ let error_ill_formed_constructor env id c v nparams nargs =
   pv ++
   (* warning: because of implicit arguments it is difficult to say which
      parameters must be explicitly given *)
-  (if nparams<>0 then
+  (if not (Int.equal nparams 0) then
     strbrk " applied to its " ++ str (String.plural nparams "parameter")
   else
     mt()) ++
-  (if nargs<>0 then
-     str (if nparams<>0 then " and" else " applied") ++
+  (if not (Int.equal nargs 0) then
+     str (if not (Int.equal nparams 0) then " and" else " applied") ++
      strbrk " to some " ++ str (String.plural nargs "argument")
    else
      mt()) ++ str "."
@@ -868,7 +868,7 @@ let error_not_allowed_case_analysis isrec kind i =
   pr_inductive (Global.env()) i ++ str "."
 
 let error_not_mutual_in_scheme ind ind' =
-  if ind = ind' then
+  if eq_ind ind ind' then
     str "The inductive type " ++ pr_inductive (Global.env()) ind ++
     str " occurs twice."
   else
@@ -1013,7 +1013,7 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
 	     function (id,None) -> None | (id,Some id') -> Some(id,([],mkVar id')) in
 	   let unboundvars = List.map_filter filter unboundvars in
 	   quote (pr_glob_constr_env (Global.env()) c) ++
-	     (if unboundvars <> [] or vars <> [] then
+	     (if not (List.is_empty unboundvars) || not (List.is_empty vars) then
 		strbrk " (with " ++
 		  prlist_with_sep pr_comma
 		  (fun (id,c) ->
@@ -1023,7 +1023,7 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
       (if Int.equal n 2 then str " (repeated twice)"
        else if n>2 then str " (repeated "++int n++str" times)"
        else mt()) in
-    if calls <> [] then
+    if not (List.is_empty calls) then
       let kind_of_last_call = match List.last calls with
     | (_,Proof_type.LtacConstrInterp _) -> ", last term evaluation failed."
     | _ -> ", last call failed." in

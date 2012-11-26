@@ -189,7 +189,7 @@ let build_beq_scheme kn =
 			  in
                             let args = Array.append
                                 (Array.map (fun x->lift lifti x) a) eqa
-                            in if args = [||] then eq
+                            in if Array.equal eq_constr args [||] then eq
                                else mkApp (eq,Array.append
                                       (Array.map (fun x->lift lifti x) a) eqa)
                          with Not_found -> raise(EqNotFound (ind',ind))
@@ -233,7 +233,7 @@ let build_beq_scheme kn =
 	  let ar2 = Array.create n ff in
           let constrsj = constrs (3+nparrec+nb_cstr_args) in
 	    for j=0 to n-1 do
-	      if (i=j) then
+	      if Int.equal i j then
 		ar2.(j) <- let cc = (match nb_cstr_args with
                     | 0 -> tt
                     | _ -> let eqs = Array.make nb_cstr_args tt in
@@ -319,7 +319,7 @@ let do_replace_lb lb_scheme_key aavoid narg gls p q =
     let s = destVar v in
     let n = Array.length avoid in
     let rec find i =
-      if avoid.(n-i) = s then avoid.(n-i-x)
+      if id_eq avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
             else error ("Var "^(string_of_id s)^" seems unknown.")
       )
@@ -329,7 +329,7 @@ let do_replace_lb lb_scheme_key aavoid narg gls p q =
       (
         let mp,dir,lbl = repr_con (destConst v) in
           mkConst (make_con mp dir (mk_label (
-          if offset=1 then ("eq_"^(string_of_label lbl))
+          if Int.equal offset 1 then ("eq_"^(string_of_label lbl))
                        else ((string_of_label lbl)^"_lb")
         )))
       )
@@ -353,7 +353,7 @@ let do_replace_lb lb_scheme_key aavoid narg gls p q =
                           (Array.map (fun x -> x) v)
                           (Array.map (fun x -> do_arg x 1) v))
                           (Array.map (fun x -> do_arg x 2) v)
-        in let app =  if lb_args = [||]
+        in let app =  if Array.equal eq_constr lb_args [||]
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
             in [Equality.replace p q ; apply app ; Auto.default_auto]
 
@@ -366,7 +366,7 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
     let s = destVar v in
     let n = Array.length avoid in
     let rec find i =
-      if avoid.(n-i) = s then avoid.(n-i-x)
+      if id_eq avoid.(n-i) s then avoid.(n-i-x)
       else (if i<n then find (i+1)
             else error ("Var "^(string_of_id s)^" seems unknown.")
       )
@@ -376,7 +376,7 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
       (
         let mp,dir,lbl = repr_con (destConst v) in
           mkConst (make_con mp dir (mk_label (
-          if offset=1 then ("eq_"^(string_of_label lbl))
+          if Int.equal offset 1 then ("eq_"^(string_of_label lbl))
                        else ((string_of_label lbl)^"_bl")
         )))
       )
@@ -385,12 +385,12 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
   let rec aux l1 l2 =
     match (l1,l2) with
     | (t1::q1,t2::q2) -> let tt1 = pf_type_of gls t1 in
-        if t1=t2 then aux q1 q2
+        if eq_constr t1 t2 then aux q1 q2
         else (
           let u,v = try  destruct_ind tt1
           (* trick so that the good sequence is returned*)
                 with _ -> ind,[||]
-          in if u = ind
+          in if eq_ind u ind
              then (Equality.replace t1 t2)::(Auto.default_auto)::(aux q1 q2)
              else (
                let bl_t1 =
@@ -412,7 +412,7 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
                           (Array.map (fun x -> do_arg x 1) v))
                           (Array.map (fun x -> do_arg x 2) v )
                 in
-                let app =  if bl_args = [||]
+                let app =  if Array.equal eq_constr bl_args [||]
                            then bl_t1 else mkApp (bl_t1,bl_args)
                 in
                   (Equality.replace_by t1 t2
@@ -434,7 +434,7 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
     _ -> (try fst (destConstruct ind2)  with _ ->
                 error "The expected type is an inductive one.")
   in
-    if (sp1 <> sp2) || (i1 <> i2)
+    if not (eq_mind sp1 sp2) || not (Int.equal i1 i2)
       then (error "Eq should be on the same type")
       else (aux (Array.to_list ca1) (Array.to_list ca2))
 
@@ -461,7 +461,7 @@ let eqI ind l =
   and  e = try mkConst (find_scheme beq_scheme_kind ind) with
     Not_found -> error
         ("The boolean equality on "^(string_of_mind (fst ind))^" is needed.");
-  in (if eA = [||] then e else mkApp(e,eA))
+  in (if Array.equal eq_constr eA [||] then e else mkApp(e,eA))
 
 (**********************************************************************)
 (* Boolean->Leibniz *)
@@ -558,7 +558,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                       | App (c,ca) -> (
                         match (kind_of_term c) with
                         | Ind indeq ->
-                            if IndRef indeq = Coqlib.glob_eq
+                            if eq_gr (IndRef indeq) Coqlib.glob_eq
                             then (
                               tclTHENSEQ ((do_replace_bl bl_scheme_key ind gls
 				                      (!avoid)
@@ -577,7 +577,7 @@ let bl_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
 let make_bl_scheme mind =
   let mib = Global.lookup_mind mind in
-  if Array.length mib.mind_packets <> 1 then
+  if not (Int.equal (Array.length mib.mind_packets) 1) then
     errorlabstrm ""
       (str "Automatic building of boolean->Leibniz lemmas not supported");
   let ind = (mind,0) in
@@ -689,7 +689,7 @@ let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 
 let make_lb_scheme mind =
   let mib = Global.lookup_mind mind in
-  if Array.length mib.mind_packets <> 1 then
+  if not (Int.equal (Array.length mib.mind_packets) 1) then
     errorlabstrm ""
       (str "Automatic building of Leibniz->boolean lemmas not supported");
   let ind = (mind,0) in
@@ -844,7 +844,7 @@ let compute_dec_tact ind lnamesparrec nparrec gsig =
 
 let make_eq_decidability mind =
   let mib = Global.lookup_mind mind in
-  if Array.length mib.mind_packets <> 1 then
+  if not (Int.equal (Array.length mib.mind_packets) 1) then
     anomaly "Decidability lemma for mutual inductive types not supported";
   let ind = (mind,0) in
   let nparams = mib.mind_nparams in

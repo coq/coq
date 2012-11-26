@@ -193,7 +193,7 @@ let declare_beq_scheme = declare_beq_scheme_with []
 let declare_one_case_analysis_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
-  let dep = if kind = InProp then case_scheme_kind_from_prop else case_dep_scheme_kind_from_type in
+  let dep = if kind == InProp then case_scheme_kind_from_prop else case_dep_scheme_kind_from_type in
   let kelim = elim_sorts (mib,mip) in
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
@@ -216,7 +216,7 @@ let kinds_from_type =
 let declare_one_induction_scheme ind =
   let (mib,mip) = Global.lookup_inductive ind in
   let kind = inductive_sort_family mip in
-  let from_prop = kind = InProp in
+  let from_prop = kind == InProp in
   let kelim = elim_sorts (mib,mip) in
   let elims =
     List.map_filter (fun (sort,kind) ->
@@ -361,7 +361,7 @@ let do_mutual_induction_scheme lnamedepindsort =
 let get_common_underlying_mutual_inductive = function
   | [] -> assert false
   | (id,(mind,i as ind))::l as all ->
-      match List.filter (fun (_,(mind',_)) -> mind <> mind') l with
+      match List.filter (fun (_,(mind',_)) -> not (eq_mind mind mind')) l with
       | (_,ind')::_ ->
 	  raise (RecursionSchemeError (NotMutualInScheme (ind,ind')))
       | [] ->
@@ -375,11 +375,11 @@ let do_scheme l =
   let ischeme,escheme = split_scheme l in
 (* we want 1 kind of scheme at a time so we check if the user
 tried to declare different schemes at once *)
-    if (ischeme <> []) && (escheme <> [])
+    if not (List.is_empty ischeme) && not (List.is_empty escheme)
     then
       error "Do not declare equality and induction scheme at the same time."
     else (
-      if ischeme <> [] then do_mutual_induction_scheme ischeme
+      if not (List.is_empty ischeme) then do_mutual_induction_scheme ischeme
       else
 	let mind,l = get_common_underlying_mutual_inductive escheme in
 	declare_beq_scheme_with l mind;
@@ -392,7 +392,7 @@ tried to declare different schemes at once *)
 
 let list_split_rev_at index l =
   let rec aux i acc = function
-      hd :: tl when i = index -> acc, tl
+      hd :: tl when Int.equal i index -> acc, tl
     | hd :: tl -> aux (succ i) (hd :: acc) tl
     | [] -> failwith "List.split_when: Invalid argument"
   in aux 0 [] l

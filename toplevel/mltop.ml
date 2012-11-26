@@ -49,7 +49,7 @@ open System
 let coq_mlpath_copy = ref ["."]
 let keep_copy_mlpath path =
   let cpath = canonical_path_name path in
-  let filter path' = (cpath <> canonical_path_name path') in
+  let filter path' = not (String.equal cpath (canonical_path_name path')) in
   coq_mlpath_copy := path :: List.filter filter !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)

@@ -55,7 +55,7 @@ let set_batch_mode () = batch_mode := true
 let toplevel_default_name = make_dirpath [id_of_string "Top"]
 let toplevel_name = ref (Some toplevel_default_name)
 let set_toplevel_name dir =
-  if dir = empty_dirpath then error "Need a non empty toplevel module name";
+  if dir_path_eq dir empty_dirpath then error "Need a non empty toplevel module name";
   toplevel_name := Some dir
 let unset_toplevel_name () = toplevel_name := None
 
@@ -63,11 +63,11 @@ let remove_top_ml () = Mltop.remove ()
 
 let inputstate = ref ""
 let set_inputstate s = inputstate:=s
-let inputstate () = if !inputstate <> "" then intern_state !inputstate
+let inputstate () = if not (String.equal !inputstate "") then intern_state !inputstate
 
 let outputstate = ref ""
 let set_outputstate s = outputstate:=s
-let outputstate () = if !outputstate <> "" then extern_state !outputstate
+let outputstate () = if not (String.equal !outputstate "") then extern_state !outputstate
 
 let set_default_include d = push_include (d,Nameops.default_root_prefix)
 let set_include d p =
@@ -184,8 +184,8 @@ let parse_args arglist =
   let rec parse = function
     | [] -> []
     | "-with-geoproof" :: s :: rem ->
-	if s = "yes" then Coq_config.with_geoproof := true
-	else if s = "no" then Coq_config.with_geoproof := false
+	if String.equal s "yes" then Coq_config.with_geoproof := true
+	else if String.equal s "no" then Coq_config.with_geoproof := false
 	else usage ();
 	parse rem
     | "-impredicative-set" :: rem ->
@@ -370,7 +370,7 @@ let init arglist =
       (* Be careful to set these variables after the inputstate *)
       Syntax_def.set_verbose_compat_notations !verb_compat_ntn;
       Syntax_def.set_compat_notations (not !no_compat_ntn);
-      if (not !batch_mode|| !compile_list=[]) && Global.env_is_empty() then
+      if (not !batch_mode|| List.is_empty !compile_list) && Global.env_is_empty() then
         Option.iter Declaremods.start_library !toplevel_name;
       init_library_roots ();
       load_vernac_obj ();

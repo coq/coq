@@ -194,7 +194,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
       in
       let subst =
 	match props with
-	| None -> if k.cl_props = [] then Some (Inl subst) else None
+	| None -> if List.is_empty k.cl_props then Some (Inl subst) else None
 	| Some (Inr term) ->
 	    let c = interp_casted_constr_evars evars env' term cty in
 	      Some (Inr (c, subst))
@@ -207,17 +207,21 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	    let props, rest =
 	      List.fold_left
 		(fun (props, rest) (id,b,_) ->
-		   if b = None then
+		   if Option.is_empty b then
 		     try
-		       let (loc_mid, c) = 
-			 List.find (fun (id', _) -> Name (snd (get_id id')) = id) rest 
+                      let is_id (id', _) = match id, get_id id' with
+                      | Name id, (_, id') -> id_eq id id'
+                      | Anonymous, _ -> false
+                      in
+		       let (loc_mid, c) =
+			 List.find is_id rest 
 		       in
 		       let rest' = 
-			 List.filter (fun (id', _) -> Name (snd (get_id id')) <> id) rest 
+			 List.filter (fun v -> not (is_id v)) rest 
 		       in
 		       let (loc, mid) = get_id loc_mid in
 			 List.iter (fun (n, _, x) -> 
-				      if n = Name mid then
+				      if name_eq n (Name mid) then
 					Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) x)
 			   k.cl_projs;
 			 c :: props, rest'
@@ -226,9 +230,10 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 		   else props, rest)
 		([], props) k.cl_props
 	    in
-	      if rest <> [] then
-		unbound_method env' k.cl_impl (get_id (fst (List.hd rest)))
-	      else
+              match rest with
+              | (n, _) :: _ ->
+		unbound_method env' k.cl_impl (get_id n)
+              | _ ->
 		Some (Inl (type_ctx_instance evars (push_rel_context ctx' env') 
 			     k.cl_props props subst))
       in	  
@@ -238,7 +243,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	    None, termtype
 	| Some (Inl subst) ->
 	  let subst = List.fold_left2
-	    (fun subst' s (_, b, _) -> if b = None then s :: subst' else subst')
+	    (fun subst' s (_, b, _) -> if Option.is_empty b then s :: subst' else subst')
 	    [] subst (k.cl_props @ snd k.cl_context)
 	  in
 	  let app, ty_constr = instance_constructor k subst in
@@ -265,7 +270,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
       let term = Option.map (Evarutil.nf_evar !evars) term in
       let evm = Evarutil.nf_evar_map_undefined !evars in
       let evm = undefined_evars evm in
-	if Evd.is_empty evm && term <> None then
+	if Evd.is_empty evm && not (Option.is_empty term) then
 	  declare_instance_constant k pri global imps ?hook id (Option.get term) termtype
 	else begin
 	  let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
@@ -291,7 +296,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	       (fun () ->
 		Lemmas.start_proof id kind termtype
 		(fun _ -> instance_hook k pri global imps ?hook);
-		if term <> None then 
+		if not (Option.is_empty term) then 
 		  Pfedit.by (!refine_ref (evm, Option.get term))
 		else if Flags.is_auto_intros () then
 		  Pfedit.by (Refiner.tclDO len Tactics.intro);
@@ -333,7 +338,7 @@ let context l =
     else (
       let impl = List.exists 
 	(fun (x,_) ->
-	   match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
+	   match x with ExplByPos (_, Some id') -> id_eq id id' | _ -> false) impls
       in
 	Command.declare_assumption false (Local (* global *), Definitional) t
 	  [] impl (* implicit *) None (* inline *) (Loc.ghost, id) && status)

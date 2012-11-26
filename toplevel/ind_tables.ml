@@ -89,7 +89,7 @@ let scheme_object_table =
 let declare_scheme_object s aux f =
   (try check_ident ("ind"^s) with _ ->
     error ("Illegal induction scheme suffix: "^s));
-  let key = if aux = "" then s else aux in
+  let key = if String.equal aux "" then s else aux in
   try
     let _ = Hashtbl.find scheme_object_table key in
 (*    let aux_msg = if aux="" then "" else " (with key "^aux^")" in*)

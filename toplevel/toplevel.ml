@@ -116,7 +116,7 @@ let blanch_utf8_string s bp ep =
     fixed-size char and therefore contract all utf-8 code into one
     space; in any case, preserve tabulation so
     that its effective interpretation in terms of spacing is preserved *)
-    if s.[i] = '\t' then s'.[!j] <- '\t';
+    if s.[i] == '\t' then s'.[!j] <- '\t';
     if n < 0x80 || 0xC0 <= n then incr j
   done;
   String.sub s' 0 !j
@@ -152,11 +152,11 @@ let print_highlight_location ib loc =
 
 let print_location_in_file s inlibrary fname loc =
   let errstrm = str"Error while reading " ++ str s in
-  if loc = Loc.ghost then
+  if Loc.is_ghost loc then
     hov 1 (errstrm ++ spc() ++ str" (unknown location):") ++ fnl ()
   else
     let errstrm =
-      if s = fname then mt() else errstrm ++ str":" ++ fnl() in
+      if String.equal s fname then mt() else errstrm ++ str":" ++ fnl() in
     if inlibrary then
       hov 0 (errstrm ++ str"Module " ++ str ("\""^fname^"\"") ++ spc() ++
              str"characters " ++ Cerrors.print_loc loc) ++ fnl ()
@@ -183,15 +183,15 @@ let print_location_in_file s inlibrary fname loc =
          hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ())
 
 let valid_loc dloc loc =
-  loc <> Loc.ghost
-  & match dloc with
+  not (Loc.is_ghost loc)
+  && match dloc with
     | Some dloc ->
-	let (bd,ed) = Loc.unloc dloc in let (b,e) = Loc.unloc loc in bd<=b & e<=ed
+	let (bd,ed) = Loc.unloc dloc in let (b,e) = Loc.unloc loc in bd<=b && e<=ed
     | _ -> true
 
 let valid_buffer_loc ib dloc loc =
   valid_loc dloc loc &
-  let (b,e) = Loc.unloc loc in b-ib.start >= 0 & e-ib.start < ib.len & b<=e
+  let (b,e) = Loc.unloc loc in b-ib.start >= 0 & e-ib.start < ib.len && b<=e
 
 (*s The Coq prompt is the name of the focused proof, if any, and "Coq"
     otherwise. We trap all exceptions to prevent the error message printing
@@ -228,7 +228,7 @@ let make_emacs_prompt() =
   let pending = Pfedit.get_all_proof_names() in
   let pendingprompt =
     List.fold_left
-      (fun acc x -> acc ^ (if acc <> "" then "|" else "") ^ Names.string_of_id x)
+      (fun acc x -> acc ^ (if String.equal acc "" then "" else "|") ^ Names.string_of_id x)
       "" pending in
   let proof_info = if dpth >= 0 then string_of_int dpth else "0" in
   if !Flags.print_emacs then statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < "
@@ -274,7 +274,7 @@ let print_toplevel_error exc =
   let (dloc,exc) =
     match exc with
       | DuringCommandInterp (loc,ie) ->
-          if loc = Loc.ghost then (None,ie) else (Some loc, ie)
+          if Loc.is_ghost loc then (None,ie) else (Some loc, ie)
       | _ -> (None, exc)
   in
   let (locstrm,exc) =

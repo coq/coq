@@ -104,9 +104,9 @@ let raise_with_file file exc =
   in
   let (inner,inex) =
     match re with
-      | Error_in_file (_, (b,f,loc), e) when loc <> Loc.ghost ->
+      | Error_in_file (_, (b,f,loc), e) when not (Loc.is_ghost loc) ->
           ((b, f, loc), e)
-      | Loc.Exc_located (loc, e) when loc <> Loc.ghost ->
+      | Loc.Exc_located (loc, e) when not (Loc.is_ghost loc) ->
           ((false,file, loc), e)
       | Loc.Exc_located (_, e) | e -> ((false,file,cmdloc), e)
   in
@@ -430,7 +430,8 @@ let compile verbosely f =
   Dumpglob.dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
   if !Flags.xml_export then !xml_start_library ();
   let _ = load_vernac verbosely long_f_dot_v in
-  if Pfedit.get_all_proof_names () <> [] then
+  let pfs = Pfedit.get_all_proof_names () in
+  if not (List.is_empty pfs) then
     (pperrnl (str "Error: There are pending proofs"); flush_all (); exit 1);
   if !Flags.xml_export then !xml_end_library ();
   Dumpglob.end_dump_glob ();

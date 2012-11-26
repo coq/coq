@@ -71,7 +71,7 @@ let find_mutually_recursive_statements thms =
           (match kind_of_term t with
           | Ind (kn,_ as ind) when
               let mind = Global.lookup_mind kn in
-              mind.mind_finite & b = None ->
+              mind.mind_finite && Option.is_empty b ->
               [ind,x,i],[]
           | _ ->
               error "Decreasing argument is not an inductive assumption.")
@@ -88,7 +88,7 @@ let find_mutually_recursive_statements thms =
           match kind_of_term t with
           | Ind (kn,_ as ind) when
                 let mind = Global.lookup_mind kn in
-                mind.mind_finite & b = None ->
+                mind.mind_finite && Option.is_empty b ->
               [ind,x,i]
           | _ ->
               []) 0 (List.rev whnf_hyp_hds)) in
@@ -98,13 +98,13 @@ let find_mutually_recursive_statements thms =
         match kind_of_term whnf_ccl with
         | Ind (kn,_ as ind) when
               let mind = Global.lookup_mind kn in
-              mind.mind_ntypes = n & not mind.mind_finite ->
+              Int.equal mind.mind_ntypes n && not mind.mind_finite ->
             [ind,x,0]
         | _ ->
             [] in
       ind_hyps,ind_ccl) thms in
     let inds_hyps,ind_ccls = List.split inds in
-    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> kn = kn' in
+    let of_same_mutind ((kn,_),_,_) = function ((kn',_),_,_) -> eq_mind kn kn' in
     (* Check if all conclusions are coinductive in the same type *)
     (* (degenerated cartesian product since there is at most one coind ccl) *)
     let same_indccl =
@@ -112,7 +112,7 @@ let find_mutually_recursive_statements thms =
 	if List.for_all (of_same_mutind hyp) oks
 	then Some (hyp::oks) else None) [] ind_ccls in
     let ordered_same_indccl =
-      List.filter (List.for_all_i (fun i ((kn,j),_,_) -> i=j) 0) same_indccl in
+      List.filter (List.for_all_i (fun i ((kn,j),_,_) -> Int.equal i j) 0) same_indccl in
     (* Check if some hypotheses are inductive in the same type *)
     let common_same_indhyp =
       List.cartesians_filter (fun hyp oks ->
@@ -121,16 +121,19 @@ let find_mutually_recursive_statements thms =
     let ordered_inds,finite,guard =
       match ordered_same_indccl, common_same_indhyp with
       | indccl::rest, _ ->
-	  assert (rest=[]);
+	  assert (List.is_empty rest);
           (* One occ. of common coind ccls and no common inductive hyps *)
-	  if common_same_indhyp <> [] then
+	  if not (List.is_empty common_same_indhyp) then
 	    if_verbose msg_info (str "Assuming mutual coinductive statements.");
 	  flush_all ();
           indccl, true, []
       | [], _::_ ->
-	  if same_indccl <> [] &&
-	     List.distinct (List.map pi1 (List.hd same_indccl)) then
-	    if_verbose msg_info (strbrk "Coinductive statements do not follow the order of definition, assuming the proof to be by induction."); flush_all ();
+          let () = match same_indccl with
+          | ind :: _ ->
+            if List.distinct (List.map pi1 ind) then
+              if_verbose msg_info (strbrk "Coinductive statements do not follow the order of definition, assuming the proof to be by induction."); flush_all ()
+          | _ -> ()
+          in
           let possible_guards = List.map (List.map pi3) inds_hyps in
 	  (* assume the largest indices as possible *)
 	  List.last common_same_indhyp, false, possible_guards
@@ -180,7 +183,7 @@ let compute_proof_name locality = function
   | Some (loc,id) ->
       (* We check existence here: it's a bit late at Qed time *)
       if Nametab.exists_cci (Lib.make_path id) || is_section_variable id ||
-	 locality=Global && Nametab.exists_cci (Lib.make_path_except_section id)
+	 locality == Global && Nametab.exists_cci (Lib.make_path_except_section id)
       then
         user_err_loc (loc,"",pr_id id ++ str " already exists.");
       id
@@ -233,7 +236,7 @@ let save_named opacity =
   save id const do_guard persistence hook
 
 let check_anonymity id save_ident =
-  if atompart_of_id id <> string_of_id (default_thm_id) then
+  if not (String.equal (atompart_of_id id) (string_of_id (default_thm_id))) then
     error "This command can only be used for unnamed theorem."
 
 let save_anonymous opacity save_ident =
@@ -299,7 +302,7 @@ let start_proof_with_initialization kind recguard thms snl hook =
   | (id,(t,(_,imps)))::other_thms ->
       let hook strength ref =
         let other_thms_data =
-          if other_thms = [] then [] else
+          if List.is_empty other_thms then [] else
             (* there are several theorems defined mutually *)
             let body,opaq = retrieve_first_recthm ref in
             List.map_i (save_remaining_recthms kind body opaq) 1 other_thms in

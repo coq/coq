@@ -7,6 +7,7 @@
 (************************************************************************)
 
 (*i*)
+open Util
 open Pp
 open Printer
 open Names
@@ -33,7 +34,7 @@ type instance_decl_function = global_reference -> rel_context -> constr list -> 
 
 let rec subst_evar evar def n c =
   match kind_of_term c with
-    | Evar (e,_) when e=evar -> lift n def
+    | Evar (e,_) when Int.equal e evar -> lift n def
     | _ -> map_constr_with_binders (fun n->n+1) (subst_evar evar def) n c
 
 let subst_evar_in_evm evar def evm =
@@ -57,7 +58,7 @@ let rec safe_define evm ev c =
   let define_subst evm sigma =
     Util.Intmap.fold
       ( fun ev (e,c) evm ->
-	  match kind_of_term c with Evar (i,_) when i=ev -> evm | _ ->
+	  match kind_of_term c with Evar (i,_) when Int.equal i ev -> evm | _ ->
 	    safe_define evm ev (lift (-List.length e) c)
       ) sigma evm in
   match evi.evar_body with

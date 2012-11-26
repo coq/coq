@@ -77,7 +77,7 @@ let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
     else if ng < ngprev then
       (* A subgoal have been solved. Let's compute the new current level
 	 by discarding all levels with 0 remaining goals. *)
-      let _ = assert (ng = ngprev - 1) in
+      let _ = assert (Int.equal ng (ngprev - 1)) in
       let rec loop = function
 	| (0, ng2::ngl2) -> loop (ng2,ngl2)
 	| p -> p
@@ -306,7 +306,9 @@ let print_namespace ns =
     in
     print_kn k ++ str":" ++ spc() ++ Printer.pr_type t
   in
-  let matches mp = match_modulepath ns mp = Some [] in
+  let matches mp = match match_modulepath ns mp with
+  | Some [] -> true
+  | _ -> false in
   let constants = (Environ.pre_env (Global.env ())).Pre_env.env_globals.Pre_env.env_constants in
   let constants_in_namespace =
     Cmap_env.fold (fun c (body,_) acc ->
@@ -398,7 +400,7 @@ let print_located_module r =
     let dir = Nametab.full_name_module qid in
     msg_notice (str "Module " ++ pr_dirpath dir)
   with Not_found ->
-    if fst (repr_qualid qid) = empty_dirpath then
+    if dir_path_eq (fst (repr_qualid qid)) empty_dirpath then
       msg_error (str "No module is referred to by basename" ++ spc () ++ pr_qualid qid)
     else
       msg_error (str "No module is referred to by name" ++ spc () ++ pr_qualid qid)
@@ -448,7 +450,7 @@ let start_proof_and_print k l hook =
   print_subgoals ()
 
 let vernac_definition (local,k) (loc,id as lid) def hook =
-  if local = Local then Dumpglob.dump_definition lid true "var"
+  if local == Local then Dumpglob.dump_definition lid true "var"
   else Dumpglob.dump_definition lid false "def";
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
@@ -504,7 +506,7 @@ let vernac_exact_proof c =
   Backtrack.mark_unreachable [prf]
 
 let vernac_assumption kind l nl=
-  let global = fst kind = Global in
+  let global = (fst kind) == Global in
   let status =
     List.fold_left (fun status (is_coe,(idl,c)) ->
       if Dumpglob.dump () then
@@ -560,7 +562,7 @@ let vernac_inductive finite infer indl =
       | _ -> Errors.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
-    do_mutual_inductive indl (finite<>CoFinite)
+    do_mutual_inductive indl (finite != CoFinite)
 
 let vernac_fixpoint l =
   if Dumpglob.dump () then
@@ -605,7 +607,7 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast =
     error "Modules and Module Types are not allowed inside sections.";
   let binders_ast = List.map
    (fun (export,idl,ty) ->
-     if export <> None then
+     if not (Option.is_empty export) then
       error ("Arguments of a functor declaration cannot be exported. " ^
        "Remove the \"Export\" and \"Import\" keywords from every functor " ^
        "argument.")
@@ -646,7 +648,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
     | _::_ ->
        let binders_ast = List.map
         (fun (export,idl,ty) ->
-          if export <> None then
+          if not (Option.is_empty export) then
            error ("Arguments of a functor definition can be imported only if" ^
                   " the definition is interactive. Remove the \"Export\" and " ^
                   "\"Import\" keywords from every functor argument.")
@@ -695,7 +697,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
     | _ :: _ ->
 	let binders_ast = List.map
           (fun (export,idl,ty) ->
-            if export <> None then
+            if not (Option.is_empty export) then
               error ("Arguments of a functor definition can be imported only if" ^
 			" the definition is interactive. Remove the \"Export\" " ^
 			"and \"Import\" keywords from every functor argument.")
@@ -812,7 +814,9 @@ let vernac_solve_existential = instantiate_nth_evar_com
 let vernac_set_end_tac tac =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
-  if tac <> (Tacexpr.TacId []) then set_end_tac (Tacinterp.interp tac) else ()
+  match tac with
+  | Tacexpr.TacId [] -> ()
+  | _ -> set_end_tac (Tacinterp.interp tac)
     (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
 
 let vernac_set_used_variables l =
@@ -820,7 +824,7 @@ let vernac_set_used_variables l =
   if not (List.distinct l) then error "Used variables list contains duplicates";
   let vars = Environ.named_context (Global.env ()) in
   List.iter (fun id -> 
-    if not (List.exists (fun (id',_,_) -> id = id') vars) then
+    if not (List.exists (fun (id',_,_) -> id_eq id id') vars) then
       error ("Unknown variable: " ^ string_of_id id))
     l;
   set_used_variables l
@@ -903,9 +907,9 @@ let vernac_declare_arguments local r l nargs flags =
   let names = List.map (List.map (fun (id, _,_,_,_) -> id)) l in
   let names, rest = List.hd names, List.tl names in
   let scopes = List.map (List.map (fun (_,_, s, _,_) -> s)) l in
-  if List.exists ((<>) names) rest then
+  if List.exists (fun na -> not (List.equal name_eq na names)) rest then
     error "All arguments lists must declare the same names.";
-  if not (Util.List.distinct (List.filter ((<>) Anonymous) names)) then
+  if not (List.distinct (List.filter ((!=) Anonymous) names)) then
     error "Arguments names must be distinct.";
   let sr = smart_global r in
   let inf_names =
@@ -921,39 +925,48 @@ let vernac_declare_arguments local r l nargs flags =
        (String.concat ", " (List.map string_of_name l)) ^ ".")
     | _::li, _::ld, _::ls -> check li ld ls 
     | _ -> assert false in
-  if l <> [[]] then
-    List.iter2 (fun l -> check inf_names l) (names :: rest) scopes;
+  let () = match l with
+  | [[]] -> ()
+  | _ ->
+    List.iter2 (fun l -> check inf_names l) (names :: rest) scopes
+  in
   (* we take extra scopes apart, and we check they are consistent *)
   let l, scopes = 
     let scopes, rest = List.hd scopes, List.tl scopes in
-    if List.exists (List.exists ((<>) None)) rest then
+    if List.exists (List.exists ((!=) None)) rest then
       error "Notation scopes can be given only once";
     if not extra_scope_flag then l, scopes else
     let l, _ = List.split (List.map (List.chop (List.length inf_names)) l) in
     l, scopes in
   (* we interpret _ as the inferred names *)
-  let l = if l = [[]] then l else
+  let l = match l with
+  | [[]] -> l
+  | _ ->
     let name_anons = function
       | (Anonymous, a,b,c,d), Name id -> Name id, a,b,c,d
       | x, _ -> x in
     List.map (fun ns -> List.map name_anons (List.combine ns inf_names)) l in
   let names_decl = List.map (List.map (fun (id, _,_,_,_) -> id)) l in
   let some_renaming_specified =
-    try Arguments_renaming.arguments_names sr <> names_decl
+    try
+      let names = Arguments_renaming.arguments_names sr in
+      not (List.equal (List.equal name_eq) names names_decl)
     with Not_found -> false in
   let some_renaming_specified, implicits =
-    if l = [[]] then false, [[]] else
-    Util.List.fold_map (fun sr il ->
-      let sr', impl = Util.List.fold_map (fun b -> function
+    match l with
+    | [[]] -> false, [[]]
+    | _ ->
+    List.fold_map (fun sr il ->
+      let sr', impl = List.fold_map (fun b -> function
         | (Anonymous, _,_, true, max), Name id -> assert false
         | (Name x, _,_, true, _), Anonymous ->
             error ("Argument "^string_of_id x^" cannot be declared implicit.")
         | (Name iid, _,_, true, max), Name id ->
-           b || iid <> id, Some (ExplByName id, max, false)
-        | (Name iid, _,_, _, _), Name id -> b || iid <> id, None
+           b || not (id_eq iid id), Some (ExplByName id, max, false)
+        | (Name iid, _,_, _, _), Name id -> b || not (id_eq iid id), None
         | _ -> b, None)
         sr (List.combine il inf_names) in
-      sr || sr', Util.List.map_filter (fun x -> x) impl)
+      sr || sr', List.map_filter (fun x -> x) impl)
       some_renaming_specified l in
   if some_renaming_specified then
     if not (List.mem `Rename flags) then
@@ -961,13 +974,14 @@ let vernac_declare_arguments local r l nargs flags =
     else Arguments_renaming.rename_arguments local sr names_decl;
   (* All other infos are in the first item of l *)
   let l = List.hd l in
-  let some_implicits_specified = implicits <> [[]] in
+  let some_implicits_specified = match implicits with
+  | [[]] -> false | _ -> true in
   let scopes = List.map (function
     | None -> None
     | Some (o, k) -> 
         try Some(ignore(Notation.find_scope k); k)
         with _ -> Some (Notation.find_delimiters_scope o k)) scopes in
-  let some_scopes_specified = List.exists ((<>) None) scopes in
+  let some_scopes_specified = List.exists ((!=) None) scopes in
   let rargs =
     Util.List.map_filter (function (n, true) -> Some n | _ -> None)
       (Util.List.map_i (fun i (_, b, _,_,_) -> i, b) 0 l) in
@@ -983,7 +997,7 @@ let vernac_declare_arguments local r l nargs flags =
     | #Tacred.simpl_flag as x :: tl -> x :: narrow tl
     | [] -> [] | _ :: tl -> narrow tl in
   let flags = narrow flags in
-  if rargs <> [] || nargs >= 0 || flags <> [] then
+  if not (List.is_empty rargs) || nargs >= 0 || not (List.is_empty flags) then
     match sr with
     | ConstRef _ as c ->
        Tacred.set_simpl_behaviour local c (rargs, nargs, flags)
@@ -1238,7 +1252,7 @@ let _ =
       optdepr  = false;
       optname  = "Ltac debug";
       optkey   = ["Ltac";"Debug"];
-      optread  = (fun () -> get_debug () <> Tactic_debug.DebugOff);
+      optread  = (fun () -> get_debug () != Tactic_debug.DebugOff);
       optwrite = vernac_debug }
 
 let _ =
@@ -1451,7 +1465,7 @@ let vernac_locate = function
 let vernac_backto lbl =
   try
     let lbl' = Backtrack.backto lbl in
-    if lbl <> lbl' then
+    if not (Int.equal lbl lbl') then
       Pp.msg_warning
 	(str "Actually back to state "++ Pp.int lbl' ++ str ".");
     try_print_subgoals ()
@@ -1460,7 +1474,7 @@ let vernac_backto lbl =
 let vernac_back n =
   try
     let extra = Backtrack.back n in
-    if extra <> 0 then
+    if not (Int.equal extra 0) then
       Pp.msg_warning
 	(str "Actually back by " ++ Pp.int (extra+n) ++ str " steps.");
     try_print_subgoals ()

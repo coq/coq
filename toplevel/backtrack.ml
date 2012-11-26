@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Names
 open Vernacexpr
 
@@ -157,10 +158,10 @@ let back count =
     Return the final state number. *)
 
 let backto snum =
-  if snum = Lib.current_command_label () then snum
+  if Int.equal snum (Lib.current_command_label ()) then snum
   else
     let nb_opened_proofs = List.length (Pfedit.get_all_proof_names ()) in
-    search (fun i -> i.label = snum);
+    search (fun i -> Int.equal i.label snum);
     fst (sync nb_opened_proofs)
 
 (** Old [Backtrack] code with corresponding update of the history stack.
@@ -172,7 +173,7 @@ let backto snum =
 
 let backtrack snum pnum naborts =
   raw_backtrack snum pnum naborts;
-  search (fun i -> i.label = snum)
+  search (fun i -> Int.equal i.label snum)
 
 (** [reset_initial] resets the system and clears the command history
     stack, only pushing back the initial entry. It should be equivalent
@@ -180,7 +181,7 @@ let backtrack snum pnum naborts =
 
 let reset_initial () =
   let init_label = Lib.first_command_label in
-  if Lib.current_command_label () = init_label then ()
+  if Int.equal (Lib.current_command_label ()) init_label then ()
   else begin
     Pfedit.delete_all_proofs ();
     Lib.reset_label init_label;
@@ -227,7 +228,7 @@ let get_script prf =
   let script = ref [] in
   let select i = match i.prfname with
     | None -> raise Not_found
-    | Some p when p=prf && i.reachable -> script := i :: !script
+    | Some p when id_eq p prf && i.reachable -> script := i :: !script
     | _ -> ()
   in
   (try Stack.iter select history with Not_found -> ());

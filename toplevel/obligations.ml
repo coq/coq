@@ -234,14 +234,14 @@ let eterm_obligations env name evm fs ?status t ty =
 	 let status = match k with Evar_kinds.QuestionMark o -> Some o | _ -> status in
 	 let status, chop = match status with
 	   | Some (Evar_kinds.Define true as stat) ->
-	       if chop <> fs then Evar_kinds.Define false, None
+	       if not (Int.equal chop fs) then Evar_kinds.Define false, None
 	       else stat, Some chop
 	   | Some s -> s, None
 	   | None -> Evar_kinds.Define true, None
 	 in
 	 let tac = match evar_tactic.get ev.evar_extra with
 	   | Some t ->
-	       if Dyn.tag t = "tactic" then
+	       if String.equal (Dyn.tag t) "tactic" then
 		 Some (Tacinterp.interp 
 			  (Tacinterp.globTacticIn (Tacinterp.tactic_out t)))
 	       else None
@@ -369,7 +369,7 @@ let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
 
 let get_obligation_body expand obl =
   let c = Option.get obl.obl_body in
-    if expand && obl.obl_status = Evar_kinds.Expand then
+    if expand && obl.obl_status == Evar_kinds.Expand then
       match kind_of_term c with
       | Const c -> constant_value (Global.env ()) c
       | _ -> c
@@ -471,7 +471,7 @@ let close sec =
       errorlabstrm "Program" 
 	(str "Unsolved obligations when closing " ++ str sec ++ str":" ++ spc () ++
 	   prlist_with_sep spc (fun x -> Nameops.pr_id x) keys ++
-	   (str (if List.length keys = 1 then " has " else "have ") ++
+	   (str (if Int.equal (List.length keys) 1 then " has " else "have ") ++
 	      str "unsolved obligations"))
 
 let input : program_info ProgMap.t -> obj =
@@ -518,9 +518,10 @@ open Pp
 
 let rec lam_index n t acc =
   match kind_of_term t with
-    | Lambda (na, _, b) ->
-	if na = Name n then acc
-	else lam_index n b (succ acc)
+    | Lambda (Name n', _, _) when id_eq n n' ->
+      acc
+    | Lambda (_, _, b) ->
+	lam_index n b (succ acc)
     | _ -> raise Not_found
 
 let compute_possible_guardness_evidences (n,_) fixbody fixtype =
@@ -553,7 +554,7 @@ let declare_mutual_definition l =
   let fixdecls = (Array.of_list (List.map (fun x -> Name x.prg_name) l), arrrec, recvec) in
   let (local,kind) = first.prg_kind in
   let fixnames = first.prg_deps in
-  let kind = if fixkind <> IsCoFixpoint then Fixpoint else CoFixpoint in
+  let kind = if fixkind != IsCoFixpoint then Fixpoint else CoFixpoint in
   let indexes, fixdecls =
     match fixkind with
       | IsFixpoint wfl ->
@@ -568,7 +569,7 @@ let declare_mutual_definition l =
   let kns = List.map4 (!declare_fix_ref kind) fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter Metasyntax.add_notation_interpretation first.prg_notations;
-    Declare.recursive_message (fixkind<>IsCoFixpoint) indexes fixnames;
+    Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in
       first.prg_hook local gr;
@@ -600,7 +601,7 @@ let init_prog_info n b t deps fixkind notations obls impls kind reduce hook =
   let obls', b = 
     match b with
     | None ->
-	assert(obls = [||]);
+	assert(Int.equal (Array.length obls) 0);
 	let n = Nameops.add_suffix n "_obligation" in
 	  [| { obl_name = n; obl_body = None;
 	       obl_location = Loc.ghost, Evar_kinds.InternalHole; obl_type = t;
@@ -682,7 +683,7 @@ let update_obls prg obls rem =
 		Defined (ConstRef kn)
 	    else Dependent)
 
-let is_defined obls x = obls.(x).obl_body <> None
+let is_defined obls x = not (Option.is_empty obls.(x).obl_body)
 
 let deps_remaining obls deps =
   Intset.fold
@@ -695,7 +696,7 @@ let dependencies obls n =
   let res = ref Intset.empty in
     Array.iteri
       (fun i obl ->
-	if i <> n && Intset.mem n obl.obl_deps then
+	if not (Int.equal i n) && Intset.mem n obl.obl_deps then
 	  res := Intset.add i !res)
       obls;
     !res
@@ -740,7 +741,7 @@ let rec solve_obligation prg num tac =
   let user_num = succ num in
   let obls, rem = prg.prg_obligations in
   let obl = obls.(num) in
-    if obl.obl_body <> None then
+    if not (Option.is_empty obl.obl_body) then
       pperror (str "Obligation" ++ spc () ++ int user_num ++ str "already" ++ spc() ++ str "solved.")
     else
       match deps_remaining obls obl.obl_deps with
@@ -773,7 +774,7 @@ let rec solve_obligation prg num tac =
 		  match res with
 		  | Remain n when n > 0 ->
 		      let deps = dependencies obls num in
-			if deps <> Intset.empty then
+			if not (Intset.is_empty deps) then
 			  ignore(auto_solve_obligations (Some prg.prg_name) None ~oblset:deps)
 		  | _ -> ());
 	    trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
@@ -801,7 +802,7 @@ and solve_obligation_by_tac prg obls i tac =
     | Some _ -> false
     | None ->
 	try
-	  if deps_remaining obls obl.obl_deps = [] then
+	  if List.is_empty (deps_remaining obls obl.obl_deps) then
 	    let obl = subst_deps_obl obls obl in
 	    let tac =
 	      match tac with
@@ -970,7 +971,7 @@ let next_obligation n tac =
   | Some _ -> get_prog_err n
   in
   let obls, rem = prg.prg_obligations in
-  let is_open _ x = x.obl_body = None && deps_remaining obls x.obl_deps = [] in
+  let is_open _ x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
   let i = match Array.findi is_open obls with
   | Some i -> i
   | None -> anomaly "Could not find a solvable obligation."

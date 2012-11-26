@@ -61,18 +61,24 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
     | "VARIABLE" ->
 	(try
 	   let (id,_,typ) = Global.lookup_named (basename sp) in
-           if refopt = None
-	     || head_const typ = constr_of_global (Option.get refopt)
-	   then
+           begin match refopt with
+           | None ->
+             fn (VarRef id) env typ
+           | Some r when eq_constr (head_const typ) (constr_of_global r) ->
 	     fn (VarRef id) env typ
+           | _ -> ()
+           end
 	 with Not_found -> (* we are in a section *) ())
     | "CONSTANT" ->
 	let cst = Global.constant_of_delta_kn kn in
 	let typ = Typeops.type_of_constant env cst in
-        if refopt = None
-	  || head_const typ = constr_of_global (Option.get refopt)
-	then
-	  fn (ConstRef cst) env typ
+        begin match refopt with
+        | None ->
+          fn (ConstRef cst) env typ
+        | Some r when eq_constr (head_const typ) (constr_of_global r) ->
+          fn (ConstRef cst) env typ
+        | _ -> ()
+        end
     | "INDUCTIVE" ->
 	let mind = Global.mind_of_delta_kn kn in
         let mib = Global.lookup_mind mind in
@@ -242,7 +248,7 @@ let search_about_item (itemref,typ) = function
 let raw_search_about filter_modules display_function l =
   let filter ref' env typ =
     filter_modules ref' env typ &&
-    List.for_all (fun (b,i) -> b = search_about_item (ref',typ) i) l &&
+    List.for_all (fun (b,i) -> (b : bool) == search_about_item (ref',typ) i) l &&
       filter_blacklist ref' () ()
   in
   gen_filtered_search filter display_function

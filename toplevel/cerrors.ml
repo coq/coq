@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Pp
 open Errors
 open Indtypes
@@ -14,7 +15,7 @@ open Pretype_errors
 open Indrec
 
 let print_loc loc =
-  if loc = Loc.ghost then
+  if Loc.is_ghost loc then
     (str"<unknown>")
   else
     let loc = Loc.unloc loc in
@@ -41,12 +42,12 @@ let explain_exn_default = function
   | Sys.Break -> hov 0 (fnl () ++ str "User interrupt.")
   (* Meta-exceptions *)
   | Loc.Exc_located (loc,exc) ->
-      hov 0 ((if loc = Loc.ghost then (mt ())
+      hov 0 ((if Loc.is_ghost loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ Errors.print_no_anomaly exc)
   | Compat.Exc_located (loc, exc) ->
       let loc = Compat.to_coqloc loc in
-      hov 0 ((if loc = Loc.ghost then (mt ())
+      hov 0 ((if Loc.is_ghost loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ Errors.print_no_anomaly exc)
   | EvaluatedError (msg,None) -> msg
@@ -62,6 +63,9 @@ let _ = Errors.register_handler explain_exn_default
 let wrap_vernac_error strm =
   EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None)
 
+let is_mt t =
+  Pervasives.(=) (Lazy.force t) (mt ()) (* FIXME *)
+
 let rec process_vernac_interp_error = function
   | Univ.UniverseInconsistency (o,u,v,p) ->
     let pr_rel r =
@@ -73,7 +77,7 @@ let rec process_vernac_interp_error = function
 	str " because" ++ spc() ++ Univ.pr_uni v ++
 	  prlist (fun (r,v) -> spc() ++ pr_rel r ++ str" " ++ Univ.pr_uni v)
 	  p ++
-	  (if snd (CList.last p)=u then mt() else
+	  (if Pervasives.(=) (snd (List.last p)) u then mt() else (* FIXME *)
 	      (spc() ++ str "= " ++ Univ.pr_uni u)) in
     let msg =
       if !Constrextern.print_universes then
@@ -114,11 +118,11 @@ let rec process_vernac_interp_error = function
   | Refiner.FailError (i,s) ->
       wrap_vernac_error
 	(str "Tactic failure" ++
-           (if Lazy.force s <> mt() then str ":" ++ Lazy.force s else mt ()) ++
-           if i=0 then str "." else str " (level " ++ int i ++ str").")
+           (if not (is_mt s) then str ":" ++ Lazy.force s else mt ()) ++ (* FIXME *)
+           if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
   | AlreadyDeclared msg ->
       wrap_vernac_error (msg ++ str ".")
-  | Proof_type.LtacLocated (_,(Refiner.FailError (i,s) as exc)) when Lazy.force s <> mt () ->
+  | Proof_type.LtacLocated (_,(Refiner.FailError (i,s) as exc)) when not (is_mt s) ->
       process_vernac_interp_error exc
   | Proof_type.LtacLocated (s,exc) ->
       EvaluatedError (hov 0 (Himsg.explain_ltac_call_trace s ++ fnl()),
