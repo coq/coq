@@ -269,6 +269,7 @@ let is_same_type c d =
 (* mapping patterns to cases_pattern_expr                                *)
 
 let add_patt_for_params ind l =
+  if !in_debugger then l else
     Util.List.addn (fst (Inductiveops.inductive_nargs ind)) (CPatAtom (Loc.ghost,None)) l
 
 let drop_implicits_in_patt cst nb_expl args =
@@ -405,7 +406,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	  let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
 	  let p =
 	    try
-              if !in_debugger || !Flags.raw_print then raise Exit;
+              if !Flags.raw_print then raise Exit;
 	      let projs = Recordops.lookup_projections (fst cstrsp) in
 	      let rec ip projs args acc =
 		match projs with
@@ -795,7 +796,9 @@ let rec extern inctx scopes vars r =
       (sub_extern false scopes vars tm,
        (na',Option.map (fun (loc,ind,nal) ->
 	 let args = List.map (fun x -> PatVar (Loc.ghost, x)) nal in
-	 let fullargs = Notation_ops.add_patterns_for_params ind args in
+	 let fullargs =
+	   if !in_debugger then args else
+	     Notation_ops.add_patterns_for_params ind args in
 	 extern_ind_pattern_in_scope scopes vars ind fullargs
 	) x))) tml in
     let eqns = List.map (extern_eqn inctx scopes vars) eqns in
