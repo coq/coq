@@ -165,9 +165,10 @@ let sup u v =
 type canonical_arc =
     { univ: UniverseLevel.t;
       lt: UniverseLevel.t list;
-      le: UniverseLevel.t list }
+      le: UniverseLevel.t list;
+      rank: int }
 
-let terminal u = {univ=u; lt=[]; le=[]}
+let terminal u = {univ=u; lt=[]; le=[]; rank=0}
 
 (* A UniverseLevel.t is either an alias for another one, or a canonical one,
    for which we know the universes that are above *)
@@ -474,24 +475,44 @@ let setleq_if (g,arcu) v =
 (* we assume  compare(u,v) = LE *)
 (* merge u v  forces u ~ v with repr u as canonical repr *)
 let merge g arcu arcv =
-  match between g arcu arcv with
-    | arcu::v -> (* arcu is chosen as canonical and all others (v) are *)
-                 (* redirected to it *)
-	let redirect (g,w,w') arcv =
- 	  let g' = enter_equiv_arc arcv.univ arcu.univ g in
- 	  (g',List.unionq arcv.lt w,arcv.le@w')
-	in
-	let (g',w,w') = List.fold_left redirect (g,[],[]) v in
-	let g_arcu = (g',arcu) in
-	let g_arcu = List.fold_left setlt_if g_arcu w in
-	let g_arcu = List.fold_left setleq_if g_arcu w' in
-	fst g_arcu
-    | [] -> anomaly "Univ.between"
+  let bet = between g arcu arcv in
+  (* we find the arc with the biggest rank, and we redirect all others to it *)
+  let max, posmax, only = CList.fold_left_i (fun pos (max, posmax, only) arc -> 
+    if arc.rank > max then (arc.rank, pos, true) else 
+      if arc.rank = max then (arc.rank, pos, false) else
+	(max, posmax, only))
+    0 (-1, -1, true) bet
+  in
+  if posmax = -1 then anomaly "Univ.between";
+  let arcu = List.nth bet posmax in
+  let v = CList.filteri (fun i _ -> posmax <> i) bet in
+  let arcu, g =
+    if only then arcu, g
+    else
+      let arcu = {arcu with rank = succ arcu.rank} in
+      arcu, enter_arc arcu g
+  in
+  let redirect (g,w,w') arcv =
+    let g' = enter_equiv_arc arcv.univ arcu.univ g in
+    (g',List.unionq arcv.lt w,arcv.le@w')
+  in
+  let (g',w,w') = List.fold_left redirect (g,[],[]) v in
+  let g_arcu = (g',arcu) in
+  let g_arcu = List.fold_left setlt_if g_arcu w in
+  let g_arcu = List.fold_left setleq_if g_arcu w' in
+  fst g_arcu
 
 (* merge_disc : UniverseLevel.t -> UniverseLevel.t -> unit *)
 (* we assume  compare(u,v) = compare(v,u) = NLE *)
 (* merge_disc u v  forces u ~ v with repr u as canonical repr *)
-let merge_disc g arcu arcv =
+let merge_disc g arc1 arc2 =
+  let arcu, arcv = if arc1.rank < arc2.rank then arc2, arc1 else arc1, arc2 in
+  let arcu, g = 
+    if arc1.rank <> arc2.rank then arcu, g
+    else
+      let arcu = {arcu with rank = succ arcu.rank} in 
+      arcu, enter_arc arcu g
+  in
   let g' = enter_equiv_arc arcv.univ arcu.univ g in
   let g_arcu = (g',arcu) in
   let g_arcu = List.fold_left setlt_if g_arcu arcv.lt in
@@ -638,7 +659,7 @@ let normalize_universes g =
   in
   let canonicalize u = function
     | Equiv _ -> Equiv (repr u)
-    | Canonical {univ=v; lt=lt; le=le} ->
+    | Canonical {univ=v; lt=lt; le=le; rank=rank} ->
       assert (u == v);
       (* avoid duplicates and self-loops *)
       let lt = lrepr lt and le = lrepr le in
@@ -650,6 +671,7 @@ let normalize_universes g =
         univ = v;
         lt = UniverseLSet.elements lt;
         le = UniverseLSet.elements le;
+	rank = rank
       }
   in
   UniverseLMap.mapi canonicalize g
@@ -714,7 +736,8 @@ let bellman_ford bottom g =
     let node = Canonical {
       univ = bottom;
       lt = [];
-      le = UniverseLSet.elements vertices
+      le = UniverseLSet.elements vertices;
+      rank = 0
     } in UniverseLMap.add bottom node g
   in
   let rec iter count accu =
@@ -774,12 +797,12 @@ let sort_universes orig =
           | false, true -> push res v
           | false, false -> res
         end
-      | Canonical {univ=v; lt=lt; le=le} ->
+      | Canonical {univ=v; lt=lt; le=le; rank=r} ->
         assert (u == v);
         if filter u then
           let lt = List.filter filter lt in
           let le = List.filter filter le in
-          UniverseLMap.add u (Canonical {univ=u; lt=lt; le=le}) res
+          UniverseLMap.add u (Canonical {univ=u; lt=lt; le=le; rank=r}) res
         else
           let res = List.fold_left (fun g u -> if filter u then push g u else g) res lt in
           let res = List.fold_left (fun g u -> if filter u then push g u else g) res le in
@@ -799,7 +822,8 @@ let sort_universes orig =
         let g = UniverseLMap.add u (Canonical {
           univ = u;
           le = [];
-          lt = [types.(i+1)]
+          lt = [types.(i+1)];
+	  rank = 1
         }) g in aux (i+1) g
       else g
     in aux 0 g
