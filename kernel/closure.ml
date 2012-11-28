@@ -33,6 +33,7 @@ let share = ref true
 (* Profiling *)
 let beta = ref 0
 let delta = ref 0
+let eta = ref 0
 let zeta = ref 0
 let evar = ref 0
 let iota = ref 0
@@ -44,8 +45,9 @@ let reset () =
 
 let stop() =
   msg_debug (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
-	 str" zeta=" ++ int !zeta ++ str" evar=" ++ int !evar ++
-         str" iota=" ++ int !iota ++ str" prune=" ++ int !prune ++ str"]")
+	 str " eta=" ++ int !eta ++ str" zeta=" ++ int !zeta ++ str" evar=" ++
+	 int !evar ++ str" iota=" ++ int !iota ++ str" prune=" ++ int !prune ++
+	 str"]")
 
 let incr_cnt red cnt =
   if red then begin
@@ -74,6 +76,7 @@ module type RedFlagsSig = sig
   type red_kind
   val fBETA : red_kind
   val fDELTA : red_kind
+  val fETA : red_kind
   val fIOTA : red_kind
   val fZETA : red_kind
   val fCONST : constant -> red_kind
@@ -95,14 +98,16 @@ module RedFlags = (struct
   type reds = {
     r_beta : bool;
     r_delta : bool;
+    r_eta : bool;
     r_const : transparent_state;
     r_zeta : bool;
     r_iota : bool }
 
-  type red_kind = BETA | DELTA | IOTA | ZETA
+  type red_kind = BETA | DELTA | ETA | IOTA | ZETA
 	      | CONST of constant | VAR of identifier
   let fBETA = BETA
   let fDELTA = DELTA
+  let fETA = ETA
   let fIOTA = IOTA
   let fZETA = ZETA
   let fCONST kn  = CONST kn
@@ -110,12 +115,14 @@ module RedFlags = (struct
   let no_red = {
     r_beta = false;
     r_delta = false;
+    r_eta = false;
     r_const = all_opaque;
     r_zeta = false;
     r_iota = false }
 
   let red_add red = function
     | BETA -> { red with r_beta = true }
+    | ETA -> { red with r_eta = true }
     | DELTA -> { red with r_delta = true; r_const = all_transparent }
     | CONST kn ->
 	let (l1,l2) = red.r_const in
@@ -128,6 +135,7 @@ module RedFlags = (struct
 
   let red_sub red = function
     | BETA -> { red with r_beta = false }
+    | ETA -> { red with r_eta = false }
     | DELTA -> { red with r_delta = false }
     | CONST kn ->
  	let (l1,l2) = red.r_const in
@@ -145,6 +153,7 @@ module RedFlags = (struct
 
   let red_set red = function
     | BETA -> incr_cnt red.r_beta beta
+    | ETA -> incr_cnt red.r_eta eta
     | CONST kn ->
 	let (_,l) = red.r_const in
 	let c = Cpred.mem kn l in

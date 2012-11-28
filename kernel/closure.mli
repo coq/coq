@@ -37,9 +37,12 @@ module type RedFlagsSig = sig
   type reds
   type red_kind
 
-  (** The different kinds of reduction *)
+  (** {7 The different kinds of reduction } *)
+
   val fBETA : red_kind
   val fDELTA : red_kind
+  val fETA : red_kind
+  (** This flag is never used by the kernel reduction but pretyping does *)
   val fIOTA : red_kind
   val fZETA : red_kind
   val fCONST : constant -> red_kind
