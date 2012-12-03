@@ -6,6 +6,38 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+let _ = Coqide.ignore_break ()
+let _ = GtkMain.Main.init ()
+
+(* We handle Gtk warning messages ourselves :
+   - on win32, we don't want them to end on a non-existing console
+   - we display critical messages via pop-ups *)
+
+let catch_gtk_messages () =
+  let all_levels =
+    [`FLAG_RECURSION;`FLAG_FATAL;`ERROR;`CRITICAL;`WARNING;
+     `MESSAGE;`INFO;`DEBUG]
+  in
+  let handler ~level msg =
+    let header = "Coqide internal error: " in
+    let level_is tag = (level land Glib.Message.log_level tag) <> 0 in
+    if level_is `ERROR then
+      let () = GToolbox.message_box ~title:"Error" (header ^ msg) in
+      Coqide.crash_save 1
+    else if level_is `CRITICAL then
+      GToolbox.message_box ~title:"Error" (header ^ msg)
+    else if level_is `DEBUG || Sys.os_type = "Win32" then
+      Ideutils.prerr_endline msg (* no-op unless in debug mode *)
+    else
+      Printf.eprintf "%s\n" msg
+  in
+  let catch domain =
+    ignore (Glib.Message.set_log_handler ~domain ~levels:all_levels handler)
+  in
+  List.iter catch ["GLib";"Gtk";"Gdk";"Pango"]
+
+let () = catch_gtk_messages ()
+
 (* On win32, we add the directory of coqide to the PATH at launch-time
    (this used to be done in a .bat script). *)
 
@@ -20,12 +52,18 @@ let set_win32_path () =
 *)
 
 let reroute_stdout_stderr () =
+  (* We anticipate a bit the argument parsing and look for -debug *)
+  let debug = List.mem "-debug" (Array.to_list Sys.argv) in
+  Ideutils.debug := debug;
   let out_descr =
-    if !Ideutils.debug then
-      Unix.descr_of_out_channel (snd (Filename.open_temp_file "coqide_" ".log"))
+    if debug then
+      let (name,chan) = Filename.open_temp_file "coqide_" ".log" in
+      Coqide.logfile := Some name;
+      Unix.descr_of_out_channel chan
     else
       snd (Unix.pipe ())
   in
+  Unix.set_close_on_exec out_descr;
   Unix.dup2 out_descr Unix.stdout;
   Unix.dup2 out_descr Unix.stderr
 
@@ -50,10 +88,6 @@ let () =
   set_win32_path ();
   reroute_stdout_stderr ()
 END
-
-let () =
-  Coqide.ignore_break ();
-  ignore (GtkMain.Main.init ())
 
 IFDEF QUARTZ THEN
   let osx = GosxApplication.osxapplication ()
@@ -80,13 +114,6 @@ let () =
   end;
 (*    GtkData.AccelGroup.set_default_mod_mask
       (Some [`CONTROL;`SHIFT;`MOD1;`MOD3;`MOD4]);*)
-    ignore (
-	     Glib.Message.set_log_handler ~domain:"Gtk" ~levels:[`ERROR;`FLAG_FATAL;
-								 `WARNING;`CRITICAL]
-	       (fun ~level msg ->
-		  if level land Glib.Message.log_level `WARNING <> 0
-		  then Printf.eprintf "Warning: %s\n" msg
-		  else failwith ("Coqide internal error: " ^ msg)));
   let argl = Array.to_list Sys.argv in
   let argl = Coqide.read_coqide_args argl in
   let files = Coq.filter_coq_opts (List.tl argl) in

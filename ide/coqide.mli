@@ -12,6 +12,9 @@
     no /bin/sh when using create_process instead of open_process. *)
 val sup_args : string list ref
 
+(** In debug mode under win32, messages are written to a log file *)
+val logfile : string option ref
+
 (** Filter the argv from coqide specific options, and set
     Minilib.coqtop_path accordingly *)
 val read_coqide_args : string list -> string list

@@ -1785,6 +1785,8 @@ let forbid_quit_to_save () =
 	end
 	else false)
 
+let logfile = ref None
+
 let main files =
 
   (* Main window *)
@@ -2828,12 +2830,17 @@ let main files =
      \n-------------------\
      \n"
   in
+  let display_log_file (b:GText.buffer) =
+    if !debug then
+      let file = match !logfile with None -> "stderr" | Some f -> f in
+      b#insert ("Debug mode is on, log file is "^file)
+  in
   let initial_about (b:GText.buffer) =
     let initial_string =
       "Welcome to CoqIDE, an Integrated Development Environment for Coq\n"
     in
     let coq_version = Coq.short_version () in
-    b#insert ~iter:b#start_iter "\n\n";
+    display_log_file b;
     if Glib.Utf8.validate ("You are running " ^ coq_version) then
       b#insert ~iter:b#start_iter ("You are running " ^ coq_version);
     if Glib.Utf8.validate initial_string then
@@ -2863,8 +2870,8 @@ let main files =
     then b#insert about_full_string;
     let coq_version = Coq.version () in
     if Glib.Utf8.validate coq_version
-    then b#insert coq_version
-
+    then b#insert coq_version;
+    display_log_file b;
   in
   (* Remove default pango menu for textviews *)
   w#show ();
