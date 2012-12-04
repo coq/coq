@@ -208,7 +208,7 @@ let mkCase (ci, p, c, ac) = Case (ci, p, c, ac)
     ...
     with     fn [ctxn] : tn := bn.
 
-   where the lenght of the jth context is ij.
+   where the length of the jth context is ij.
 *)
 
 let mkFix fix = Fix fix
