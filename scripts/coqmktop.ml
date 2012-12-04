@@ -244,8 +244,7 @@ let declare_loading_string () =
 
 (* create a temporary main file to link *)
 let create_tmp_main_file modules =
-  let main_name = Filename.temp_file "coqmain" ".ml" in
-  let oc = open_out main_name in
+  let main_name,oc = Filename.open_temp_file "coqmain" ".ml" in
   try
     (* Add the pre-linked modules *)
     output_string oc "List.iter Mltop.add_known_module [\"";
@@ -292,10 +291,10 @@ let main () =
       []
   in
   (* the list of the loaded modules *)
-  let main_file = Filename.quote (create_tmp_main_file modules) in
+  let main_file = create_tmp_main_file modules in
   try
-    let args =
-      options @ (includes ()) @ copts @ tolink @ dynlink @ [ main_file ] in
+    let args = options @ includes () @ copts @ tolink @ dynlink in
+    let args = args @ [ Filename.quote main_file ] in
       (* add topstart.cmo explicitly because we shunted ocamlmktop wrapper *)
     let args = if !top then args @ [ "topstart.cmo" ] else args in
       (* Now, with the .cma, we MUST use the -linkall option *)
