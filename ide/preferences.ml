@@ -699,7 +699,7 @@ let configure ?(apply=(fun () -> ())) () =
       ~allow:the_valid_mod
       ~f:(fun l -> current.modifier_for_display <- mod_list_to_str l)
       ~help:help_string
-      "Modifiers for Display Menu"
+      "Modifiers for View Menu"
       (str_to_mod_list current.modifier_for_display)
   in
   let modifiers_valid =
