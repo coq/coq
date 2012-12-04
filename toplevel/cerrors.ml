@@ -45,11 +45,6 @@ let explain_exn_default = function
       hov 0 ((if Loc.is_ghost loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ Errors.print_no_anomaly exc)
-  | Compat.Exc_located (loc, exc) ->
-      let loc = Compat.to_coqloc loc in
-      hov 0 ((if Loc.is_ghost loc then (mt ())
-               else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
-               ++ Errors.print_no_anomaly exc)
   | EvaluatedError (msg,None) -> msg
   | EvaluatedError (msg,Some reraise) -> msg ++ Errors.print_no_anomaly reraise
   (* Otherwise, not handled here *)
@@ -129,9 +124,6 @@ let rec process_vernac_interp_error = function
         Some (process_vernac_interp_error exc))
   | Loc.Exc_located (loc,exc) ->
       Loc.Exc_located (loc,process_vernac_interp_error exc)
-  | Compat.Exc_located (loc, exc) ->
-      let loc = Compat.to_coqloc loc in
-      Loc.Exc_located (loc, process_vernac_interp_error exc)
   | exc ->
       exc
 

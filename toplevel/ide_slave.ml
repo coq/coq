@@ -290,10 +290,6 @@ let eval_call c =
       | Loc.Exc_located (loc, inner) ->
         let loc = if Loc.is_ghost loc then None else Some (Loc.unloc loc) in
         loc, pr_exn inner
-      | Compat.Exc_located (loc, inner) ->
-        let loc = Compat.to_coqloc loc in
-        let loc = if Loc.is_ghost loc then None else Some (Loc.unloc loc) in
-        loc, pr_exn inner
       | e -> None, pr_exn e
   in
   let interruptible f x =
