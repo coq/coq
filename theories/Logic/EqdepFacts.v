@@ -325,6 +325,29 @@ Section Equivalences.
 
 End Equivalences.
 
+(** UIP_refl is downward closed (a short proof of the key lemma of Voevodsky's
+    proof of inclusion of h-level n into h-level n+1; see hlevelntosn
+    in https://github.com/vladimirias/Foundations.git). *)
+
+Theorem UIP_shift : forall U, UIP_refl_ U -> forall x:U, UIP_refl_ (x = x).
+Proof.
+  intros X UIP_refl x y.
+  rewrite (UIP_refl x y).
+  intros z.
+  assert (UIP:forall y' y'' : x = x, y' = y'').
+  { intros. apply eq_trans with (eq_refl x). apply UIP_refl. 
+    symmetry. apply UIP_refl. }
+  transitivity (eq_trans (eq_trans (UIP (eq_refl x) (eq_refl x)) z)
+                         (eq_sym (UIP (eq_refl x) (eq_refl x)))).
+  - destruct z. unfold e. destruct (UIP _ _). reflexivity.
+  - change
+      (match eq_refl x as y' in _ = x' return y' = y' -> Type with
+       | eq_refl => fun z => z = (eq_refl (eq_refl x))
+       end (eq_trans (eq_trans (UIP (eq_refl x) (eq_refl x)) z)
+                     (eq_sym (UIP (eq_refl x) (eq_refl x))))).
+    destruct z. unfold e. destruct (UIP _ _). reflexivity.
+Qed.
+
 Section Corollaries.
 
   Variable U:Type.

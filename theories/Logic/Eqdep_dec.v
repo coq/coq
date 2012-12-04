@@ -326,6 +326,14 @@ Qed.
   (** Examples of short direct proofs of unicity of reflexivity proofs
       on specific domains *)
 
+Lemma UIP_refl_unit (x : tt = tt) : x = eq_refl tt.
+Proof.
+  change (match tt as b return tt = b -> Type with
+          | tt => fun x => x = eq_refl tt
+          end x).
+  destruct x; reflexivity.
+Defined.
+
 Lemma UIP_refl_bool (b:bool) (x : b = b) : x = eq_refl.
 Proof.
   destruct b.
