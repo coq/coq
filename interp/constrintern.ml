@@ -1471,9 +1471,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | CSort (loc, s) ->
 	GSort(loc,s)
     | CCast (loc, c1, c2) ->
-        let c2 = Miscops.map_cast_type (intern_type env) c2 in
-        let env' = set_scope env c2 in
-	GCast (loc,intern env' c1, c2)
+        GCast (loc,intern env c1, Miscops.map_cast_type (intern_type env) c2)
 
   and intern_type env = intern (set_type_scope env)
 
