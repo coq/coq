@@ -191,7 +191,9 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
       Gramext.position option * single_extend_statment list
   let action = Gramext.action
   let entry_create = Entry.create
-  let entry_parse = Entry.parse
+  let entry_parse e p =
+    try Entry.parse e p
+    with Exc_located (loc,e) -> raise (Loc.Exc_located (to_coqloc loc,e))
 IFDEF CAMLP5_6_02_1 THEN
   let entry_print ft x = Entry.print ft x
 ELSE
@@ -225,7 +227,9 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
   let parsable s = s
   let action = Action.mk
   let entry_create = Entry.mk
-  let entry_parse e s = parse e (*FIXME*)CompatLoc.ghost s
+  let entry_parse e s =
+    try parse e (*FIXME*)CompatLoc.ghost s
+    with Exc_located (loc,e) -> raise (Loc.Exc_located (to_coqloc loc,e))
   let entry_print ft x = Entry.print ft x
   let srules' = srules (entry_create "dummy")
 end
