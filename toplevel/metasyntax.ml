@@ -419,13 +419,19 @@ let precedence_of_entry_type from = function
 (* "{ x } + { y }" : "{ x } / + { y }" *)
 (* "< x , y > { z , t }" : "< x , / y > / { z , / t }" *)
 
-let is_left_bracket s =
+let starts_with_left_bracket s =
   let l = String.length s in not (Int.equal l 0) &&
   (s.[0] == '{' || s.[0] == '[' || s.[0] == '(')
 
-let is_right_bracket s =
+let ends_with_right_bracket s =
   let l = String.length s in not (Int.equal l 0) &&
   (s.[l-1] == '}' || s.[l-1] == ']' || s.[l-1] == ')')
+
+let is_left_bracket s =
+  starts_with_left_bracket s && not (ends_with_right_bracket s)
+
+let is_right_bracket s =
+  not (starts_with_left_bracket s) && ends_with_right_bracket s
 
 let is_comma s =
   let l = String.length s in not (Int.equal l 0) &&
@@ -445,7 +451,18 @@ let is_non_terminal = function
   | NonTerminal _ | SProdList _ -> true
   | _ -> false
 
+let is_next_non_terminal prods =
+  prods <> [] && is_non_terminal (List.hd prods)
+
+let is_next_terminal = function Terminal _ :: _ -> true | _ -> false
+
+let is_next_break = function Break _ :: _ -> true | _ -> false
+
 let add_break n l = UnpCut (PpBrk(n,0)) :: l
+
+let add_break_if_none n = function
+  | ((UnpCut (PpBrk _) :: _) | []) as l -> l
+  | l -> UnpCut (PpBrk(n,0)) :: l
 
 let check_open_binder isopen sl m =
   if isopen && not (List.is_empty sl) then
@@ -456,57 +473,41 @@ let check_open_binder isopen sl m =
 
 (* Heuristics for building default printing rules *)
 
-type previous_prod_status = NoBreak | CanBreak
-
 let make_hunks etyps symbols from =
   let vars,typs = List.split etyps in
-  let rec make ws = function
+  let rec make = function
     | NonTerminal m :: prods ->
 	let i = List.index m vars in
 	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
 	let u = UnpMetaVar (i,prec) in
-        begin match prods with
-        | s :: _ when is_non_terminal s ->
-	  u :: add_break 1 (make CanBreak prods)
-        | _ ->
-	  u :: make CanBreak prods
-        end
-    | Terminal s :: prods when List.exists is_non_terminal prods ->
-        if is_comma s then
-	  UnpTerminal s :: add_break 1 (make NoBreak prods)
-	else if is_right_bracket s then
-	  UnpTerminal s :: add_break 0 (make NoBreak prods)
-	else if is_left_bracket s then
-          if ws == CanBreak then
-	    add_break 1 (UnpTerminal s :: make CanBreak prods)
-	  else
-	    UnpTerminal s :: make CanBreak prods
-	else if is_operator s then
-	  if ws == CanBreak then
-	    UnpTerminal (" "^s) :: add_break 1 (make NoBreak prods)
-	  else
-	    UnpTerminal s :: add_break 1 (make NoBreak prods)
-	else if is_ident_tail s.[String.length s - 1] then
-	  let sep = if is_prod_ident (List.hd prods) then "" else " " in
-	  if ws == CanBreak then
-	    add_break 1 (UnpTerminal (s^sep) :: make CanBreak prods)
-	  else
-	    UnpTerminal (s^sep) :: make CanBreak prods
-	else if ws == CanBreak then
-	  add_break 1 (UnpTerminal (s^" ") :: make CanBreak prods)
+	if is_next_non_terminal prods then
+	  u :: add_break_if_none 1 (make prods)
 	else
-	  UnpTerminal s :: make CanBreak prods
+	  u :: make_with_space prods
+    | Terminal s :: prods when List.exists is_non_terminal prods ->
+        if (is_comma s || is_operator s) then
+          (* Always a breakable space after comma or separator *)
+	  UnpTerminal s :: add_break_if_none 1 (make prods)
+	else if is_right_bracket s && is_next_terminal prods then
+          (* Always no space after right bracked, but possibly a break *)
+	  UnpTerminal s :: add_break_if_none 0 (make prods)
+        else if is_left_bracket s  && is_next_non_terminal prods then
+	  UnpTerminal s :: make prods
+	else if not (is_next_break prods) then
+          (* Add rigid space, no break, unless user asked for something *)
+          UnpTerminal (s^" ") :: make prods
+        else
+          (* Rely on user spaces *)
+          UnpTerminal s :: make prods
 
     | Terminal s :: prods ->
-	if is_right_bracket s then
-	  UnpTerminal s :: make NoBreak prods
-        else if ws == CanBreak then
-	  add_break 1 (UnpTerminal s :: make NoBreak prods)
-        else
-          UnpTerminal s :: make NoBreak prods
+        (* Separate but do not cut a trailing sequence of terminal *)
+        (match prods with
+        | Terminal _ :: _ -> UnpTerminal (s^" ") :: make prods
+        | _ -> UnpTerminal s :: make prods)
 
     | Break n :: prods ->
-	add_break n (make NoBreak prods)
+	add_break n (make prods)
 
     | SProdList (m,sl) :: prods ->
 	let i = List.index m vars in
@@ -516,18 +517,40 @@ let make_hunks etyps symbols from =
           (* If no separator: add a break *)
 	  if List.is_empty sl then add_break 1 []
           (* We add NonTerminal for simulation but remove it afterwards *)
-	  else snd (List.sep_last (make NoBreak (sl@[NonTerminal m]))) in
+	  else snd (List.sep_last (make (sl@[NonTerminal m]))) in
 	let hunk = match typ with
 	  | ETConstr _ -> UnpListMetaVar (i,prec,sl')
 	  | ETBinder isopen ->
 	      check_open_binder isopen sl m;
 	      UnpBinderListMetaVar (i,isopen,sl')
 	  | _ -> assert false in
-	hunk :: make CanBreak prods
+	hunk :: make_with_space prods
 
     | [] -> []
 
-  in make NoBreak symbols
+  and make_with_space prods =
+    match prods with
+    | Terminal s' :: prods'->
+        if is_operator s' then
+          (* A rigid space before operator and a breakable after *)
+          UnpTerminal (" "^s') :: add_break_if_none 1 (make prods')
+        else if is_comma s' then
+          (* No space whatsoever before comma *)
+          make prods
+        else if is_right_bracket s' then
+          make prods
+        else
+          (* A breakable space between any other two terminals *)
+          add_break_if_none 1 (make prods)
+    | (NonTerminal _ | SProdList _) :: _ ->
+        (* A breakable space before a non-terminal *)
+        add_break_if_none 1 (make prods)
+    | Break _ :: _ ->
+        (* Rely on user wish *)
+        make prods
+    | [] -> []
+
+  in make symbols
 
 (* Build default printing rules from explicit format *)
 

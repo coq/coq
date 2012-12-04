@@ -40,6 +40,8 @@ Notations
 - A notation can be given a (compat "8.x") annotation, making
   it behave like a (only parsing), but flags may active warning
   or error when this notation is used.
+- More systematic insertion of spaces as a default for printing
+  notations ("format" still available to override the default).
 
 Internal Infrastructure
 

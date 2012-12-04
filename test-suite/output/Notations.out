@@ -8,17 +8,17 @@ fun e : nat * nat => proj1 e
 Identifier 'decomp' now a keyword
 decomp (true, true) as t, u in (t, u)
      : bool * bool
-!(0 = 0)
+! (0 = 0)
      : Prop
 forall n : nat, n = 0
      : Prop
-!(0 = 0)
+! (0 = 0)
      : Prop
-forall n : nat, #(n = n)
+forall n : nat, # (n = n)
      : Prop
-forall n n0 : nat, ##(n = n0)
+forall n n0 : nat, ## (n = n0)
      : Prop
-forall n n0 : nat, ###(n = n0)
+forall n n0 : nat, ### (n = n0)
      : Prop
 3 + 3
      : Z
@@ -42,7 +42,7 @@ Identifier 'ifn' now a keyword
 Identifier 'is' now a keyword
 fun x : nat => ifn x is succ n then n else 0
      : nat -> nat
-1-
+1 -
      : bool
 -4
      : Z
