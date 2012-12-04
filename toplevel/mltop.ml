@@ -92,6 +92,21 @@ let ocaml_toploop () =
     | WithTop t -> Printexc.catch t.ml_loop ()
     | _ -> ()
 
+(* Try to interpret load_obj's (internal) errors *)
+let report_on_load_obj_error exc =
+  let x = Obj.repr exc in
+  (* Try an horrible (fragile) hack to report on Symtable dynlink errors *)
+  (* (we follow ocaml's Printexc.to_string decoding of exceptions) *)
+  if Obj.is_block x && Obj.magic(Obj.field (Obj.field x 0) 0) = "Symtable.Error"
+  then
+    let err_block = Obj.field x 1 in
+    if Obj.tag err_block = 0 then
+      (* Symtable.Undefined_global of string *)
+      str "reference to undefined global " ++
+      str (Obj.magic (Obj.field err_block 0))
+    else str (Printexc.to_string exc)
+  else str (Printexc.to_string exc)
+
 (* Dynamic loading of .cmo/.cma *)
 let dir_ml_load s =
   match !load with
@@ -99,8 +114,10 @@ let dir_ml_load s =
       (try t.load_obj s
        with
        | (UserError _ | Failure _ | Anomaly _ | Not_found as u) -> raise u
-       | _ -> errorlabstrm "Mltop.load_object" (str"Cannot link ml-object " ++
-                str s ++ str" to Coq code."))
+       | exc ->
+           let msg = report_on_load_obj_error exc in
+           errorlabstrm "Mltop.load_object" (str"Cannot link ml-object " ++
+                str s ++ str" to Coq code (" ++ msg ++ str ")."))
     | WithoutTop ->
         let warn = Flags.is_verbose() in
         let _,gname = find_file_in_path ~warn !coq_mlpath_copy s in
