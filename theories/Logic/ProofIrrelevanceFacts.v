@@ -40,7 +40,7 @@ Module ProofIrrelevanceTheory (M:ProofIrrelevance).
   (** We derive the irrelevance of the membership property for subsets *)
 
   Lemma subset_eq_compat :
-    forall (U:Set) (P:U->Prop) (x y:U) (p:P x) (q:P y),
+    forall (U:Type) (P:U->Prop) (x y:U) (p:P x) (q:P y),
       x = y -> exist P x p = exist P y q.
   Proof.
     intros.
