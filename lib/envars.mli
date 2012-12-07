@@ -6,8 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** This file gathers environment variables needed by Coq to run (such
-   as coqlib) *)
+(** This file provides a high-level interface to the environment variables 
+    needed by Coq to run (such as coqlib). The values of these variables
+    may come from different sources (shell environment variables, 
+    command line options, options set at the time Coq was build). *)
 
 (** [expand_path_macros warn s] substitutes environment variables 
     in a string by their values. This function also takes care of
@@ -19,7 +21,7 @@ val expand_path_macros : warn:(string -> unit) -> string -> string
     on the OS. This information is usually stored in the $HOME 
     environment variable on POSIX shells. If no such variable 
     exists, then other common names are tried (HOMEDRIVE, HOMEPATH,
-    USERPROFILE). If all of them failed, [warn] is called. *)
+    USERPROFILE). If all of them fail, [warn] is called. *)
 val home : warn:(string -> unit) -> string
 
 (** [coqlib] is the path to the Coq library. *)
@@ -45,20 +47,23 @@ val coqpath : string list
 (** [camlbin ()] is the path to the ocaml binaries. *)
 val camlbin : unit -> string
 
-(** [camlp4bin ()] is an absolute reference to camlp4 binary. *)
-val camlp4bin : unit -> string
-
 (** [camllib ()] is the path to the ocaml standard library. *)
 val camllib : unit -> string
-
-(** [camlp4lib ()] is the path to the camlp4 library. *)
-val camlp4lib : unit -> string
 
 (** [ocamlc ()] is the ocaml bytecode compiler that compiled this Coq. *)
 val ocamlc   : unit -> string
 
 (** [ocamlc ()] is the ocaml native compiler that compiled this Coq. *)
 val ocamlopt : unit -> string
+
+(** [camlp4bin ()] is the path to the camlp4 binary. *)
+val camlp4bin : unit -> string
+
+(** [camlp4lib ()] is the path to the camlp4 library. *)
+val camlp4lib : unit -> string
+
+(** [camlp4 ()] is the camlp4 utility. *)
+val camlp4 : unit -> string
 
 (** Coq tries to honor the XDG Base Directory Specification to access
     the user's configuration files.
