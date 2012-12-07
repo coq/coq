@@ -27,8 +27,6 @@ val find_tag_start : GText.tag -> GText.iter -> GText.iter
 val find_tag_stop : GText.tag -> GText.iter -> GText.iter
 val get_insert : < get_iter_at_mark : [> `INSERT] -> 'a; .. > -> 'a
 
-val my_stat : string -> Unix.stats option
-
 val print_id : 'a -> unit
 
 val select_file_for_open : title:string -> unit -> string option
@@ -68,3 +66,15 @@ val textview_width : #GText.view -> int
 
 val default_logger : Interface.message_level -> string -> unit
 (** Default logger. It logs messages that the casual user should not see. *)
+
+(** {6 File operations} *)
+
+(** A customized [stat] function. Exceptions are catched. *)
+
+type stats = MTime of float | NoSuchFile | OtherError
+val stat : string -> stats
+
+(** Read the content of file [f] and add it to buffer [b].
+    I/O Exceptions are propagated. *)
+
+val read_file : string -> Buffer.t -> unit

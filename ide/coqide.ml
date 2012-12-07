@@ -27,8 +27,8 @@ class type _analyzed_view =
 object
 
   method filename : string option
-  method stats :  Unix.stats option
   method update_stats : unit
+  method changed_on_disk : bool
   method revert : unit
   method auto_save : unit
   method save : string -> bool
@@ -249,18 +249,6 @@ let get_current_word () =
       Minilib.log t;
       t
 
-let input_channel b ic =
-  let buf = String.create 1024 and len = ref 0 in
-  while len := input ic buf 0 1024; !len > 0 do
-    Buffer.add_substring b buf 0 !len
-  done
-
-let with_file handler name ~f =
-  try
-    let ic = open_in_gen [Open_rdonly;Open_creat] 0o644 name in
-    try f ic; close_in ic with e -> close_in ic; raise e
-  with Sys_error s -> handler s
-
 (** Cut a part of the buffer in sentences and tag them.
     May raise [Coq_lex.Unterminated] when the zone ends with
     an unterminated sentence. *)
@@ -400,18 +388,27 @@ object(self)
   val mycoqtop = _ct
 
   val mutable filename = _fn
-  val mutable stats = None
+  val mutable last_stats = NoSuchFile
   val mutable last_modification_time = 0.
   val mutable last_auto_save_time = 0.
 
   val hidden_proofs = Hashtbl.create 32
 
   method filename = filename
-  method stats = stats
-  method update_stats =
-    match filename with
-      | Some f -> stats <- my_stat f
-      | _ -> ()
+
+  method update_stats = match filename with
+    |Some f -> last_stats <- Ideutils.stat f
+    |_ -> ()
+
+  method changed_on_disk = match filename with
+    |None -> false
+    |Some f -> match Ideutils.stat f, last_stats with
+        |MTime cur_mt, MTime last_mt -> cur_mt > last_mt
+        |MTime _, (NoSuchFile|OtherError) -> true
+        |NoSuchFile, MTime _ ->
+          flash_info ("Warning, file not on disk anymore : "^f);
+          false
+        |_ -> false
 
   method revert =
     let do_revert f =
@@ -419,7 +416,7 @@ object(self)
       try
         Coq.reset_coqtop mycoqtop self#requested_reset_initial;
         let b = Buffer.create 1024 in
-        with_file flash_info f ~f:(input_channel b);
+        Ideutils.read_file f b;
         let s = try_convert (Buffer.contents b) in
         input_buffer#set_text s;
         self#update_stats;
@@ -458,8 +455,8 @@ object(self)
   method save f =
     if try_export f (input_buffer#get_text ()) then begin
       filename <- Some f;
+      self#update_stats;
       input_buffer#set_modified false;
-      stats <- my_stat f;
       (match self#auto_save_name with
         | None -> ()
         | Some fn -> try Sys.remove fn with _ -> ());
@@ -1106,7 +1103,7 @@ let current_view () = session_notebook#current_term.analyzed_view
 
 module FileAux = struct
 
-let load_file handler f =
+let load_file ?(maycreate=false) f =
   let f = CUnix.correct_path f (Sys.getcwd ()) in
   try
     Minilib.log "Loading file starts";
@@ -1121,33 +1118,27 @@ let load_file handler f =
     if not (search_f 0 session_notebook#pages) then begin
       Minilib.log "Loading: get raw content";
       let b = Buffer.create 1024 in
-      with_file handler f ~f:(input_channel b);
+      if Sys.file_exists f then Ideutils.read_file f b
+      else if not maycreate then flash_info ("Load failed: no such file");
       Minilib.log "Loading: convert content";
       let s = do_convert (Buffer.contents b) in
       Minilib.log "Loading: create view";
       let session = create_session (Some f) in
-      Minilib.log "Loading: adding view";
       let index = session_notebook#append_term session in
-      let av = session.analyzed_view in
+      session_notebook#goto_page index;
       Minilib.log "Loading: stats";
-      av#update_stats;
+      session.analyzed_view#update_stats;
       let input_buffer = session.script#buffer in
       Minilib.log "Loading: fill buffer";
       input_buffer#set_text s;
+      input_buffer#set_modified false;
       input_buffer#place_cursor ~where:input_buffer#start_iter;
       force_retag input_buffer;
-      Minilib.log ("Loading: switch to view "^ string_of_int index);
-      session_notebook#goto_page index;
-      Minilib.log "Loading: highlight";
-      input_buffer#set_modified false;
-      Minilib.log "Loading: clear undo";
       session.script#clear_undo ();
-      Minilib.log "Loading: success";
       !refresh_editor_hook ();
+      Minilib.log "Loading: success";
     end
-  with e -> handler ("Load failed: "^(Printexc.to_string e))
-
-let do_load file = load_file flash_info file
+  with e -> flash_info ("Load failed: "^(Printexc.to_string e))
 
 let confirm_save ok =
   if ok then flash_info "Saved" else warning "Save Failed"
@@ -1172,16 +1163,6 @@ let check_save ~saveas current =
       confirm_save ok;
       ok
   with _ -> warning "Save Failed"; false
-
-let revert {analyzed_view = av} =
-  try match av#filename,av#stats with
-    | Some f,Some stats ->
-      let new_stats = Unix.stat f in
-      if new_stats.Unix.st_mtime > stats.Unix.st_mtime
-      then av#revert
-    | Some _, None -> av#revert
-    | _ -> ()
-  with _ -> av#revert
 
 exception DontQuit
 
@@ -1249,7 +1230,7 @@ let newfile _ =
 let load _ =
   match select_file_for_open ~title:"Load file" () with
     | None -> ()
-    | Some f -> FileAux.do_load f
+    | Some f -> FileAux.load_file f
 
 let save _ =
   ignore (FileAux.check_save ~saveas:false session_notebook#current_term)
@@ -1268,7 +1249,11 @@ let saveall _ =
       | Some f -> ignore (av#save f))
     session_notebook#pages
 
-let revert_all _ = List.iter FileAux.revert session_notebook#pages
+let revert_all _ =
+  List.iter
+    (function {analyzed_view = av} ->
+      if av#changed_on_disk then av#revert)
+    session_notebook#pages
 
 let quit _ =
   try FileAux.check_quit saveall; exit 0 with FileAux.DontQuit -> ()
@@ -1378,7 +1363,7 @@ let forbid_quit_to_save () =
   try FileAux.check_quit File.saveall; false
   with FileAux.DontQuit -> true
 
-let do_load = FileAux.do_load
+let do_load f = FileAux.load_file f
 
 (** Callbacks for external commands *)
 
@@ -1422,7 +1407,7 @@ let make _ =
 let next_error _ =
   try
     let file,line,start,stop,error_msg = search_next_error () in
-    FileAux.do_load file;
+    FileAux.load_file file;
     let v = session_notebook#current_term in
     let av = v.analyzed_view in
     let input_buffer = v.script#buffer in
@@ -2106,6 +2091,7 @@ let build_ui () =
   let resize_window () =
     w#resize ~width:current.window_width ~height:current.window_height
   in
+  refresh_toolbar ();
   refresh_toolbar_hook := refresh_toolbar;
   refresh_style_hook := refresh_style;
   refresh_editor_hook := refresh_editor_prefs;
@@ -2119,29 +2105,27 @@ let build_ui () =
   (* Showtime ! *)
   w#show ()
 
+let make_file_buffer f =
+  let f =
+    if Sys.file_exists f || Filename.check_suffix f ".v" then f
+    else f^".v"
+  in
+  FileAux.load_file ~maycreate:true f
+
+let make_scratch_buffer () =
+  let session = create_session None in
+  let _ = session_notebook#append_term session in
+  !refresh_editor_hook ()
+
 let main files =
   build_ui ();
   reset_revert_timer ();
   reset_autosave_timer ();
-  let do_file f =
-    if Sys.file_exists f then FileAux.do_load f
-    else
-      let f = if Filename.check_suffix f ".v" then f else f^".v" in
-      FileAux.load_file (fun s -> warning s; exit 1) f
-  in
-  begin match files with
-    |[] ->
-      let session = create_session None in
-      let index = session_notebook#append_term session in
-      !refresh_editor_hook ();
-      session_notebook#goto_page index;
-    |_ ->
-      List.iter do_file files;
-      session_notebook#goto_page 0;
-  end;
+  (match files with
+    | [] -> make_scratch_buffer ()
+    | _ -> List.iter make_file_buffer files);
+  session_notebook#goto_page 0;
   MiscMenu.initial_about ();
-  !refresh_toolbar_hook ();
-  !refresh_editor_hook ();
   session_notebook#current_term.script#misc#grab_focus ();
   Minilib.log "End of Coqide.main"
 

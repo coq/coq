@@ -105,9 +105,6 @@ let try_export file_name s =
     true
   with e -> Minilib.log (Printexc.to_string e);false
 
-let my_stat f = try Some (Unix.stat f) with _ -> None
-
-
 type timer = { run : ms:int -> callback:(unit->bool) -> unit;
                kill : unit -> unit }
 
@@ -340,3 +337,28 @@ let default_logger level message =
   in
   Minilib.log ~level message
 
+
+(** {6 File operations} *)
+
+(** A customized [stat] function. Exceptions are catched. *)
+
+type stats = MTime of float | NoSuchFile | OtherError
+
+let stat f =
+  try MTime (Unix.stat f).Unix.st_mtime
+  with
+    | Unix.Unix_error (Unix.ENOENT,_,_) -> NoSuchFile
+    | _ -> OtherError
+
+(** Read the content of file [f] and add it to buffer [b].
+    I/O Exceptions are propagated. *)
+
+let read_file name buf =
+  let ic = open_in name in
+  let s = String.create 1024 and len = ref 0 in
+  try
+    while len := input ic s 0 1024; !len > 0 do
+      Buffer.add_substring buf s 0 !len
+    done;
+    close_in ic
+  with e -> close_in ic; raise e
