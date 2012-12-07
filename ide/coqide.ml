@@ -20,6 +20,9 @@ type ide_info = {
   flags : flag list;
 }
 
+let revert_timer = Ideutils.mktimer ()
+let autosave_timer = Ideutils.mktimer ()
+
 class type _analyzed_view =
 object
 
@@ -450,7 +453,7 @@ object(self)
             | _ ->
               Minilib.log "Auto revert set to false";
               current.global_auto_revert <- false;
-              disconnect_revert_timer ()
+              revert_timer.kill ()
 
   method save f =
     if try_export f (input_buffer#get_text ()) then begin
@@ -1353,6 +1356,22 @@ let highlight _ =
 
 end
 
+(** Timers *)
+
+let reset_revert_timer () =
+  revert_timer.kill ();
+  if current.global_auto_revert then
+    revert_timer.run
+      ~ms:current.global_auto_revert_delay
+      ~callback:(fun () -> File.revert_all (); true)
+
+let reset_autosave_timer () =
+  let autosave p = try p.analyzed_view#auto_save with _ -> () in
+  let autosave_all () = List.iter autosave session_notebook#pages; true in
+  autosave_timer.kill ();
+  if current.auto_save then
+    autosave_timer.run ~ms:current.auto_save_delay ~callback:autosave_all
+
 (** For MacOSX : *)
 
 let forbid_quit_to_save () =
@@ -1784,25 +1803,6 @@ let build_ui () =
     with _ -> ()
   in
 
-  (* begin Preferences *)
-  let reset_revert_timer () =
-    disconnect_revert_timer ();
-    if current.global_auto_revert then
-      revert_timer := Some
-	(GMain.Timeout.add ~ms:current.global_auto_revert_delay
-	   ~callback:(fun () -> File.revert_all (); true))
-  in reset_revert_timer (); (* to enable statup preferences timer *)
-
-  let reset_auto_save_timer () =
-    let autosave p = try p.analyzed_view#auto_save with _ -> () in
-    let autosave_all () = List.iter autosave session_notebook#pages; true in
-    disconnect_auto_save_timer ();
-    if current.auto_save then
-      auto_save_timer := Some
-	(GMain.Timeout.add ~ms:current.auto_save_delay ~callback:autosave_all)
-  in reset_auto_save_timer (); (* to enable statup preferences timer *)
-  (* end Preferences *)
-
   let file_menu = GAction.action_group ~name:"File" () in
   let edit_menu = GAction.action_group ~name:"Edit" () in
   let view_menu = GAction.action_group ~name:"View" () in
@@ -2121,6 +2121,8 @@ let build_ui () =
 
 let main files =
   build_ui ();
+  reset_revert_timer ();
+  reset_autosave_timer ();
   let do_file f =
     if Sys.file_exists f then FileAux.do_load f
     else

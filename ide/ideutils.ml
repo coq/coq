@@ -107,15 +107,19 @@ let try_export file_name s =
 
 let my_stat f = try Some (Unix.stat f) with _ -> None
 
-let revert_timer = ref None
-let disconnect_revert_timer () = match !revert_timer with
-  | None -> ()
-  | Some id -> GMain.Timeout.remove id; revert_timer := None
 
-let auto_save_timer = ref None
-let disconnect_auto_save_timer () = match !auto_save_timer with
-  | None -> ()
-  | Some id -> GMain.Timeout.remove id; auto_save_timer := None
+type timer = { run : ms:int -> callback:(unit->bool) -> unit;
+               kill : unit -> unit }
+
+let mktimer () =
+  let timer = ref None in
+  { run =
+      (fun ~ms ~callback ->
+          timer := Some (GMain.Timeout.add ~ms ~callback));
+    kill =
+      (fun () -> match !timer with
+        | None -> ()
+        | Some id -> GMain.Timeout.remove id; timer := None) }
 
 let last_dir = ref ""
 

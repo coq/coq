@@ -16,8 +16,11 @@ val doc_url : unit -> string
 val browse : (string -> unit) -> string -> unit
 val browse_keyword : (string -> unit) -> string -> unit
 val byte_offset_to_char_offset : string -> int -> int
-val disconnect_revert_timer : unit -> unit
-val disconnect_auto_save_timer : unit -> unit
+
+type timer = { run : ms:int -> callback:(unit->bool) -> unit;
+               kill : unit -> unit }
+val mktimer : unit -> timer
+
 val do_convert : string -> string
 val find_tag_limits : GText.tag -> GText.iter -> GText.iter * GText.iter
 val find_tag_start : GText.tag -> GText.iter -> GText.iter
@@ -28,8 +31,6 @@ val my_stat : string -> Unix.stats option
 
 val print_id : 'a -> unit
 
-val revert_timer : GMain.Timeout.id option ref
-val auto_save_timer : GMain.Timeout.id option ref
 val select_file_for_open : title:string -> unit -> string option
 val select_file_for_save :
   title:string -> ?filename:string -> unit -> string option
