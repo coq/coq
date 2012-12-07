@@ -406,7 +406,7 @@ let variables is_install opt (args,defs) =
   -I $(COQLIB)library -I $(COQLIB)parsing -I $(COQLIB)pretyping \\
   -I $(COQLIB)interp -I $(COQLIB)printing -I $(COQLIB)intf \\
   -I $(COQLIB)proofs -I $(COQLIB)tactics -I $(COQLIB)tools \\
-  -I $(COQLIB)toplevel -I $(COQLIB)grammar";
+  -I $(COQLIB)toplevel -I $(COQLIB)grammar -I $(COQLIB)config";
     List.iter (fun c -> print " \\
   -I $(COQLIB)"; print c) Coq_config.plugins_dirs; print "\n";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
