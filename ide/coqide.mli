@@ -26,9 +26,9 @@ val forbid_quit_to_save : unit -> bool
 (** Function to load of a file. *)
 val do_load : string -> unit
 
-(** Set coqide to ignore Ctrl-C, while launching [crash_save] and
-    exiting for others received signals *)
-val ignore_break : unit -> unit
+(** Set coqide to perform a clean quit at Ctrl-C, while launching
+    [crash_save] and exiting for others received signals *)
+val set_signal_handlers : unit -> unit
 
 (** Emergency saving of opened files as "foo.v.crashcoqide",
     and exit (if the integer isn't 127). *)

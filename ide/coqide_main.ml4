@@ -52,7 +52,7 @@ let () =
 END
 
 let () =
-  Coqide.ignore_break ();
+  Coqide.set_signal_handlers ();
   ignore (GtkMain.Main.init ())
 
 IFDEF QUARTZ THEN
@@ -100,13 +100,8 @@ IFDEF QUARTZ THEN
   osx#ready ()
 END
 
-    while true do
-      try
-	GtkThread.main ()
-      with
-	| Sys.Break -> Minilib.log "Interrupted."
-	| e ->
-	    Minilib.log
-	      ("CoqIde unexpected error:" ^ (Printexc.to_string e));
-	    Coqide.crash_save 127
-    done
+let () =
+  try GtkThread.main ()
+  with e ->
+    Minilib.log ("CoqIde unexpected error:" ^ Printexc.to_string e);
+    Coqide.crash_save 127

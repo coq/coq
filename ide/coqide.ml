@@ -144,46 +144,6 @@ let update_notebook_pos () =
   in
   session_notebook#set_tab_pos pos
 
-(** * Coqide's handling of signals *)
-
-(** We ignore Ctrl-C, and for most of the other catchable signals
-    we launch an emergency save of opened files and then exit *)
-
-let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup;
-			Sys.sigill; Sys.sigpipe; Sys.sigquit;
-			(* Sys.sigsegv; Sys.sigterm;*) Sys.sigusr2]
-
-let crash_save i =
-  (*  ignore (Unix.sigprocmask Unix.SIG_BLOCK signals_to_crash);*)
-  Minilib.log "Trying to save all buffers in .crashcoqide files";
-  let count = ref 0 in
-  List.iter
-    (function {script=view; analyzed_view = av } ->
-      (let filename = match av#filename with
-	| None ->
-	  incr count;
-	  "Unnamed_coqscript_"^(string_of_int !count)^".crashcoqide"
-	| Some f -> f^".crashcoqide"
-       in
-       try
-	 if try_export filename (view#buffer#get_text ()) then
-	   Minilib.log ("Saved "^filename)
-	 else Minilib.log ("Could not save "^filename)
-       with _ -> Minilib.log ("Could not save "^filename))
-    )
-    session_notebook#pages;
-  Minilib.log "Done. Please report.";
-  if i <> 127 then exit i
-
-let ignore_break () =
-  List.iter
-    (fun i ->
-      try Sys.set_signal i (Sys.Signal_handle crash_save)
-      with _ -> Minilib.log "Signal ignored (normal if Win32)")
-    signals_to_crash;
-  Sys.set_signal Sys.sigint Sys.Signal_ignore
-
-
 exception Unsuccessful
 
 let force_reset_initial () =
@@ -1217,6 +1177,27 @@ let check_quit saveall =
       | `NO | `DELETE_EVENT -> ()
   end
 
+let crash_save exitcode =
+  Minilib.log "Starting emergency save of buffers in .crashcoqide files";
+  let idx =
+    let r = ref 0 in
+    fun () -> incr r; string_of_int !r
+  in
+  let save_page p =
+    let filename = match p.analyzed_view#filename with
+      | None -> "Unnamed_coqscript_" ^ idx () ^ ".crashcoqide"
+      | Some f -> f^".crashcoqide"
+    in
+    try
+      if try_export filename (p.script#buffer#get_text ()) then
+	Minilib.log ("Saved "^filename)
+      else Minilib.log ("Could not save "^filename)
+    with _ -> Minilib.log ("Could not save "^filename)
+  in
+  List.iter save_page session_notebook#pages;
+  Minilib.log "End emergency save";
+  exit exitcode
+
 end
 
 (** Callbacks for the File menu *)
@@ -1359,12 +1340,13 @@ let reset_autosave_timer () =
   if prefs.auto_save then
     autosave_timer.run ~ms:prefs.auto_save_delay ~callback:autosave_all
 
-(** For MacOSX : *)
+(** Export of functions used in [coqide_main] : *)
 
 let forbid_quit_to_save () =
   try FileAux.check_quit File.saveall; false
   with FileAux.DontQuit -> true
 
+let crash_save = FileAux.crash_save
 let do_load f = FileAux.load_file f
 
 (** Callbacks for external commands *)
@@ -2180,3 +2162,21 @@ let read_coqide_args argv =
   Ideutils.custom_coqtop := coqtop;
   custom_project_files := project_files;
   argv
+
+(** * Coqide's handling of signals *)
+
+(** The Ctrl-C (sigint) is handled as a interactive quit.
+    For most of the other catchable signals we launch
+    an emergency save of opened files and then exit. *)
+
+let signals_to_crash =
+  [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup;
+   Sys.sigill; Sys.sigpipe; Sys.sigquit; Sys.sigusr1; Sys.sigusr2]
+
+let set_signal_handlers () =
+  try
+    Sys.set_signal Sys.sigint (Sys.Signal_handle File.quit);
+    List.iter
+      (fun i -> Sys.set_signal i (Sys.Signal_handle FileAux.crash_save))
+      signals_to_crash
+  with _ -> Minilib.log "Signal ignored (normal if Win32)"
