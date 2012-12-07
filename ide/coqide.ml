@@ -23,6 +23,8 @@ type ide_info = {
 let revert_timer = Ideutils.mktimer ()
 let autosave_timer = Ideutils.mktimer ()
 
+let prefs = Preferences.current
+
 class type _analyzed_view =
 object
 
@@ -134,7 +136,7 @@ let session_notebook =
 let cb = GData.clipboard Gdk.Atom.primary
 
 let update_notebook_pos () =
-  let pos = match current.vertical_tabs, current.opposite_tabs with
+  let pos = match prefs.vertical_tabs, prefs.opposite_tabs with
     | false, false -> `TOP
     | false, true  -> `BOTTOM
     | true , false -> `LEFT
@@ -449,7 +451,7 @@ object(self)
                 flash_info "Could not overwrite file"
             | _ ->
               Minilib.log "Auto revert set to false";
-              current.global_auto_revert <- false;
+              prefs.global_auto_revert <- false;
               revert_timer.kill ()
 
   method save f =
@@ -469,9 +471,9 @@ object(self)
       | None -> None
       | Some f ->
         let dir = Filename.dirname f in
-        let base = (fst current.auto_save_name) ^
+        let base = (fst prefs.auto_save_name) ^
           (Filename.basename f) ^
-          (snd current.auto_save_name)
+          (snd prefs.auto_save_name)
         in Some (Filename.concat dir base)
 
   method private need_auto_save =
@@ -711,7 +713,7 @@ object(self)
 
   method private process_until_iter handle iter =
     let until len start stop =
-      if current.stop_before then stop#compare iter > 0
+      if prefs.stop_before then stop#compare iter > 0
       else start#compare iter >= 0
     in
     let finish () = () in
@@ -1014,8 +1016,8 @@ let create_session file =
     GSourceView2.source_buffer
       ~tag_table:Tags.Script.table
       ~highlight_matching_brackets:true
-      ?language:(lang_manager#language current.source_language)
-      ?style_scheme:(style_manager#style_scheme current.source_style)
+      ?language:(lang_manager#language prefs.source_language)
+      ?style_scheme:(style_manager#style_scheme prefs.source_style)
       ()
   in
   let proof = Wg_ProofView.proof_view () in
@@ -1026,11 +1028,11 @@ let create_session file =
   in
   let get_args f =
     Project_file.args_from_project f
-      !custom_project_files current.project_file_name
+      !custom_project_files prefs.project_file_name
   in
   let coqtop_args = match file with
     |None -> !sup_args
-    |Some the_file -> match current.read_project with
+    |Some the_file -> match prefs.read_project with
 	|Ignore_args -> !sup_args
 	|Append_args -> get_args the_file @ !sup_args
 	|Subst_args -> get_args the_file
@@ -1292,7 +1294,7 @@ let export kind _ =
           | _ -> assert false
       in
       let cmd =
-        local_cd f ^ current.cmd_coqdoc ^ " --" ^ kind ^
+        local_cd f ^ prefs.cmd_coqdoc ^ " --" ^ kind ^
 	  " -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
       in
       let st,_ = run_command av cmd in
@@ -1304,8 +1306,8 @@ let print _ =
     |None -> flash_info "Cannot print: this buffer has no name"
     |Some f_name ->
       let cmd =
-        local_cd f_name ^ current.cmd_coqdoc ^ " -ps " ^
-        Filename.quote (Filename.basename f_name) ^ " | " ^ current.cmd_print
+        local_cd f_name ^ prefs.cmd_coqdoc ^ " -ps " ^
+        Filename.quote (Filename.basename f_name) ^ " | " ^ prefs.cmd_print
       in
       let w = GWindow.window ~title:"Print" ~modal:true
         ~position:`CENTER ~wm_class:"CoqIDE" ~wm_name: "CoqIDE" ()
@@ -1345,17 +1347,17 @@ end
 
 let reset_revert_timer () =
   revert_timer.kill ();
-  if current.global_auto_revert then
+  if prefs.global_auto_revert then
     revert_timer.run
-      ~ms:current.global_auto_revert_delay
+      ~ms:prefs.global_auto_revert_delay
       ~callback:(fun () -> File.revert_all (); true)
 
 let reset_autosave_timer () =
   let autosave p = try p.analyzed_view#auto_save with _ -> () in
   let autosave_all () = List.iter autosave session_notebook#pages; true in
   autosave_timer.kill ();
-  if current.auto_save then
-    autosave_timer.run ~ms:current.auto_save_delay ~callback:autosave_all
+  if prefs.auto_save then
+    autosave_timer.run ~ms:prefs.auto_save_delay ~callback:autosave_all
 
 (** For MacOSX : *)
 
@@ -1376,7 +1378,7 @@ let compile _ =
   match av#filename with
     |None -> flash_info "Active buffer has no name"
     |Some f ->
-      let cmd = current.cmd_coqc ^ " -I "
+      let cmd = prefs.cmd_coqc ^ " -I "
 	^ (Filename.quote (Filename.dirname f))
 	^ " " ^ (Filename.quote f) in
       let st,res = run_command av cmd in
@@ -1394,7 +1396,7 @@ let make _ =
   match av#filename with
     |None -> flash_info "Cannot make: this buffer has no name"
     |Some f ->
-      let cmd = local_cd f ^ current.cmd_make in
+      let cmd = local_cd f ^ prefs.cmd_make in
       (*
 	save_f ();
       *)
@@ -1402,7 +1404,7 @@ let make _ =
       let st,res = run_command av cmd in
       last_make := res;
       last_make_index := 0;
-      flash_info (current.cmd_make ^ pr_exit_status st)
+      flash_info (prefs.cmd_make ^ pr_exit_status st)
 
 let next_error _ =
   try
@@ -1428,9 +1430,9 @@ let coq_makefile _ =
   match av#filename with
     |None -> flash_info "Cannot make makefile: this buffer has no name"
     |Some f ->
-      let cmd = local_cd f ^ current.cmd_coqmakefile in
+      let cmd = local_cd f ^ prefs.cmd_coqmakefile in
       let st,res = run_command av cmd in
-      flash_info (current.cmd_coqmakefile ^ pr_exit_status st)
+      flash_info (prefs.cmd_coqmakefile ^ pr_exit_status st)
 
 let editor _ =
   let av = current_view () in
@@ -1439,7 +1441,7 @@ let editor _ =
     |Some f ->
       File.save ();
       let f = Filename.quote f in
-      let cmd = Util.subst_command_placeholder current.cmd_editor f in
+      let cmd = Util.subst_command_placeholder prefs.cmd_editor f in
       let _ = run_command av cmd in
       av#revert
 
@@ -1582,15 +1584,15 @@ let detach_view _ =
     |Some f -> f
   in
   let w = GWindow.window ~show:true ~title:file ~position:`CENTER
-    ~width:(current.window_width*2/3)
-    ~height:(current.window_height*2/3)
+    ~width:(prefs.window_width*2/3)
+    ~height:(prefs.window_height*2/3)
     ()
   in
   let sb = GBin.scrolled_window ~packing:w#add ()
   in
   let nv = GText.view ~buffer:trm.script#buffer ~packing:sb#add ()
   in
-  nv#misc#modify_font current.text_font;
+  nv#misc#modify_font prefs.text_font;
   (* If the buffer in the main window is closed, destroy this detached view *)
   ignore (trm.script#connect#destroy ~callback:w#destroy)
 
@@ -1651,31 +1653,31 @@ end
 (** Refresh functions *)
 
 let refresh_editor_prefs () =
-  let wrap_mode = if current.dynamic_word_wrap then `WORD else `NONE in
+  let wrap_mode = if prefs.dynamic_word_wrap then `WORD else `NONE in
   let show_spaces =
-    if current.show_spaces then 0b1001011 (* SPACE, TAB, NBSP, TRAILING *)
+    if prefs.show_spaces then 0b1001011 (* SPACE, TAB, NBSP, TRAILING *)
     else 0
   in
-  let fd = current.text_font in
-  let clr = Tags.color_of_string current.background_color
+  let fd = prefs.text_font in
+  let clr = Tags.color_of_string prefs.background_color
   in
   let iter_page p =
     (* Editor settings *)
     p.script#set_wrap_mode wrap_mode;
-    p.script#set_show_line_numbers current.show_line_number;
-    p.script#set_auto_indent current.auto_indent;
-    p.script#set_highlight_current_line current.highlight_current_line;
+    p.script#set_show_line_numbers prefs.show_line_number;
+    p.script#set_auto_indent prefs.auto_indent;
+    p.script#set_highlight_current_line prefs.highlight_current_line;
 
     (* Hack to handle missing binding in lablgtk *)
     let conv = { Gobject.name = "draw-spaces"; Gobject.conv = Gobject.Data.int }
     in
     Gobject.set conv p.script#as_widget show_spaces;
 
-    p.script#set_show_right_margin current.show_right_margin;
+    p.script#set_show_right_margin prefs.show_right_margin;
     p.script#set_insert_spaces_instead_of_tabs
-      current.spaces_instead_of_tabs;
-    p.script#set_tab_width current.tab_length;
-    p.script#set_auto_complete current.auto_complete;
+      prefs.spaces_instead_of_tabs;
+    p.script#set_tab_width prefs.tab_length;
+    p.script#set_auto_complete prefs.auto_complete;
 
     (* Fonts *)
     p.script#misc#modify_font fd;
@@ -1705,7 +1707,7 @@ let toggle_item = GAction.add_toggle_action
 let toggle_items menu_name l =
   let f (opts,name,label,key,dflt) =
     toggle_item name ~active:dflt ~label
-      ~accel:(current.modifier_for_display^key)
+      ~accel:(prefs.modifier_for_display^key)
       ~callback:(printopts_callback opts)
       menu_name
   in
@@ -1747,7 +1749,7 @@ let alpha_items menu_name item_name l =
     Caveat: the offset is now from the start of the text. *)
 
 let template_item (text, offset, len, key) =
-  let modifier = current.modifier_for_templates in
+  let modifier = prefs.modifier_for_templates in
   let idx = String.index text ' ' in
   let name = String.sub text 0 idx in
   let label = "_"^name^" __" in
@@ -1770,7 +1772,7 @@ let build_ui () =
   let w = GWindow.window
     ~wm_class:"CoqIde" ~wm_name:"CoqIde"
     ~allow_grow:true ~allow_shrink:true
-    ~width:current.window_width ~height:current.window_height
+    ~width:prefs.window_width ~height:prefs.window_height
     ~title:"CoqIde" ()
   in
   let () =
@@ -1881,9 +1883,9 @@ let build_ui () =
       ~stock:`GO_FORWARD
       ~callback:(fun _ -> session_notebook#next_page ());
     toggle_item "Show Toolbar" ~label:"Show _Toolbar"
-      ~active:(current.show_toolbar)
+      ~active:(prefs.show_toolbar)
       ~callback:(fun _ ->
-        current.show_toolbar <- not current.show_toolbar;
+        prefs.show_toolbar <- not prefs.show_toolbar;
         !refresh_toolbar_hook ());
     toggle_item "Show Query Pane" ~label:"Show _Query Pane"
       ~accel:"<Alt>Escape"
@@ -1899,47 +1901,47 @@ let build_ui () =
     item "Navigation" ~label:"_Navigation";
     item "Forward" ~label:"_Forward" ~stock:`GO_DOWN ~callback:Nav.forward_one
       ~tooltip:"Forward one command"
-      ~accel:(current.modifier_for_navigation^"Down");
+      ~accel:(prefs.modifier_for_navigation^"Down");
     item "Backward" ~label:"_Backward" ~stock:`GO_UP ~callback:Nav.backward_one
       ~tooltip:"Backward one command"
-      ~accel:(current.modifier_for_navigation^"Up");
+      ~accel:(prefs.modifier_for_navigation^"Up");
     item "Go to" ~label:"_Go to" ~stock:`JUMP_TO ~callback:Nav.goto
       ~tooltip:"Go to cursor"
-      ~accel:(current.modifier_for_navigation^"Right");
+      ~accel:(prefs.modifier_for_navigation^"Right");
     item "Start" ~label:"_Start" ~stock:`GOTO_TOP ~callback:Nav.restart
       ~tooltip:"Restart coq"
-      ~accel:(current.modifier_for_navigation^"Home");
+      ~accel:(prefs.modifier_for_navigation^"Home");
     item "End" ~label:"_End" ~stock:`GOTO_BOTTOM  ~callback:Nav.goto_end
       ~tooltip:"Go to end"
-      ~accel:(current.modifier_for_navigation^"End");
+      ~accel:(prefs.modifier_for_navigation^"End");
     item "Interrupt" ~label:"_Interrupt" ~stock:`STOP ~callback:Nav.interrupt
       ~tooltip:"Interrupt computations"
-      ~accel:(current.modifier_for_navigation^"Break");
+      ~accel:(prefs.modifier_for_navigation^"Break");
 (* wait for this available in GtkSourceView !
       item "Hide" ~label:"_Hide" ~stock:`MISSING_IMAGE
 	~callback:(fun _ -> let sess = session_notebook#current_term in
 		     toggle_proof_visibility sess.script#buffer
 		       sess.analyzed_view#get_insert) ~tooltip:"Hide proof"
-	~accel:(current.modifier_for_navigation^"h");*)
+	~accel:(prefs.modifier_for_navigation^"h");*)
     item "Previous" ~label:"_Previous" ~stock:`GO_BACK
       ~callback:Nav.previous_occ
       ~tooltip:"Previous occurence"
-      ~accel:(current.modifier_for_navigation^"less");
+      ~accel:(prefs.modifier_for_navigation^"less");
     item "Next" ~label:"_Next" ~stock:`GO_FORWARD ~callback:Nav.next_occ
       ~tooltip:"Next occurence"
-      ~accel:(current.modifier_for_navigation^"greater");
+      ~accel:(prefs.modifier_for_navigation^"greater");
   ];
 
   let tacitem s sc =
     item s ~label:("_"^s)
-      ~accel:(current.modifier_for_tactics^sc)
+      ~accel:(prefs.modifier_for_tactics^sc)
       ~callback:(tactic_wizard_callback [s])
   in
   menu tactics_menu [
     item "Try Tactics" ~label:"_Try Tactics";
     item "Wizard" ~label:"<Proof Wizard>" ~stock:`DIALOG_INFO
-      ~tooltip:"Proof Wizard" ~accel:(current.modifier_for_tactics^"dollar")
-      ~callback:(tactic_wizard_callback current.automatic_tactics);
+      ~tooltip:"Proof Wizard" ~accel:(prefs.modifier_for_tactics^"dollar")
+      ~callback:(tactic_wizard_callback prefs.automatic_tactics);
     tacitem "auto" "a";
     tacitem "auto with *" "asterisk";
     tacitem "eauto" "e";
@@ -1961,7 +1963,7 @@ let build_ui () =
     template_item ("Fixpoint ident (_ : _) {struct _} : _ :=\n.\n", 9,5, "F");
     template_item ("Scheme new_scheme := Induction for _ Sort _\n" ^
                    "with _ := Induction for _ Sort _.\n", 7,10, "S");
-    item "match" ~label:"match ..." ~accel:(current.modifier_for_templates^"C")
+    item "match" ~label:"match ..." ~accel:(prefs.modifier_for_templates^"C")
       ~callback:match_callback
   ];
   alpha_items templates_menu "Template" Coq_commands.commands;
@@ -2010,7 +2012,7 @@ let build_ui () =
     item "Browse Coq Library" ~label:"Browse Coq _Library"
       ~callback:(fun _ ->
 	let av = session_notebook#current_term.analyzed_view in
-	browse av#insert_message current.library_url);
+	browse av#insert_message prefs.library_url);
     item "Help for keyword" ~label:"Help for _keyword" ~stock:`HELP
       ~callback:(fun _ ->
         let av = session_notebook#current_term.analyzed_view in
@@ -2049,7 +2051,7 @@ let build_ui () =
 
   (* Reset on tab switch *)
   let _ = session_notebook#connect#switch_page
-    (fun _ -> if current.reset_on_tab_switch then force_reset_initial ())
+    (fun _ -> if prefs.reset_on_tab_switch then force_reset_initial ())
   in
 
   (* Vertical Separator between Scripts and Goals *)
@@ -2079,17 +2081,17 @@ let build_ui () =
 
   (* Initializing hooks *)
   let refresh_toolbar () =
-    if current.show_toolbar
+    if prefs.show_toolbar
     then toolbar#misc#show ()
     else toolbar#misc#hide ()
   in
   let refresh_style () =
-    let style =  style_manager#style_scheme current.source_style in
+    let style =  style_manager#style_scheme prefs.source_style in
     let iter_page p = p.script#source_buffer#set_style_scheme style in
     List.iter iter_page session_notebook#pages
   in
   let resize_window () =
-    w#resize ~width:current.window_width ~height:current.window_height
+    w#resize ~width:prefs.window_width ~height:prefs.window_height
   in
   refresh_toolbar ();
   refresh_toolbar_hook := refresh_toolbar;
@@ -2099,8 +2101,8 @@ let build_ui () =
   refresh_tabs_hook := update_notebook_pos;
 
   (* Color configuration *)
-  Tags.set_processing_color (Tags.color_of_string current.processing_color);
-  Tags.set_processed_color (Tags.color_of_string current.processed_color);
+  Tags.set_processing_color (Tags.color_of_string prefs.processing_color);
+  Tags.set_processed_color (Tags.color_of_string prefs.processed_color);
 
   (* Showtime ! *)
   w#show ()
