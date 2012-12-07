@@ -214,6 +214,7 @@ let get_current_word () =
       t
 
 (** Cut a part of the buffer in sentences and tag them.
+    Invariant: either this slice ends the buffer, or it ends with ".".
     May raise [Coq_lex.Unterminated] when the zone ends with
     an unterminated sentence. *)
 
@@ -255,14 +256,18 @@ let is_char s c = s#char = Char.code c
 
 (** Search backward the first character of a sentence, starting at [iter]
     and going at most up to [soi] (meant to be the end of the locked zone).
-    Raise [Not_found] when no proper sentence start has been found,
-    in particular when the final "." of the locked zone is followed
-    by a non-blank character outside the locked zone. This non-blank
-    character will be signaled as erroneous in [tag_on_insert] below. *)
+    Raise [StartError] when no proper sentence start has been found.
+    A character following a ending "." is considered as a sentence start
+    only if this character is a blank. In particular, when a final "."
+    at the end of the locked zone isn't followed by a blank, then this
+    non-blank character will be signaled as erroneous in [tag_on_insert] below.
+*)
+
+exception StartError
 
 let grab_sentence_start (iter:GText.iter) soi =
   let cond iter =
-    if iter#compare soi < 0 then raise Not_found;
+    if iter#compare soi < 0 then raise StartError;
     let prev = iter#backward_char in
     is_sentence_end prev &&
       (not (is_char prev '.') ||
@@ -285,30 +290,34 @@ let rec grab_ending_dot (start:GText.iter) =
 (** Retag a zone that has been edited *)
 
 let tag_on_insert buffer =
+  (* the start of the non-locked zone *)
+  let soi = buffer#get_iter_at_mark (`NAME "start_of_input") in
+  (* the inserted zone is between [prev_insert] and [insert] *)
+  let insert = buffer#get_iter_at_mark `INSERT in
+  let prev = buffer#get_iter_at_mark (`NAME "prev_insert") in
+  (* [prev] is normally always before [insert] even when deleting.
+     Let's check this nonetheless *)
+  let prev, insert =
+    if insert#compare prev < 0 then insert, prev else prev, insert
+  in
   try
-    (* the start of the non-locked zone *)
-    let soi = buffer#get_iter_at_mark (`NAME "start_of_input") in
-    (* the inserted zone is between [prev_insert] and [insert] *)
-    let insert = buffer#get_iter_at_mark `INSERT in
-    let prev_insert = buffer#get_iter_at_mark (`NAME "prev_insert") in
-    (* [prev_insert] is normally always before [insert] even when deleting.
-      Let's check this nonetheless *)
-    let prev_insert =
-      if insert#compare prev_insert < 0 then insert else prev_insert
-    in
-    let start = grab_sentence_start prev_insert soi in
+    let start = grab_sentence_start prev soi in
     (** The status of "{" "}" as sentence delimiters is too fragile.
         We retag up to the next "." instead. *)
     let stop = grab_ending_dot insert in
     try split_slice_lax buffer start stop
     with Coq_lex.Unterminated ->
-      try split_slice_lax buffer start buffer#end_iter
-      with Coq_lex.Unterminated -> ()
-  with Not_found ->
-    (* This is raised by [grab_sentence_start] *)
-    let err_pos = buffer#get_iter_at_mark (`NAME "start_of_input") in
-    buffer#apply_tag Tags.Script.error
-      ~start:err_pos ~stop:err_pos#forward_char
+      (* This shouldn't happen frequently. Either:
+         - we are at eof, with indeed an unfinished sentence.
+         - we have just inserted an opening of comment or string.
+         - the inserted text ends with a "." that interacts with the "."
+           found by [grab_ending_dot] to form a non-ending "..".
+         In any case, we retag up to eof, since this isn't that costly. *)
+      if not stop#is_end then
+        try split_slice_lax buffer start buffer#end_iter
+        with Coq_lex.Unterminated -> ()
+  with StartError ->
+    buffer#apply_tag Tags.Script.error ~start:soi ~stop:soi#forward_char
 
 let force_retag buffer =
   try split_slice_lax buffer buffer#start_iter buffer#end_iter
