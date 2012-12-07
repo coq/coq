@@ -1439,7 +1439,7 @@ let do_or_activate f =
   do_if_not_computing p "do_or_activate"
     (fun handle ->
       let av = p.analyzed_view in
-      ignore (f handle av);
+      f handle av;
       pop_info ();
       let msg = match Coq.status handle with
         | Interface.Fail (l, str) ->
@@ -1463,7 +1463,7 @@ let do_if_active f =
     (fun handle -> ignore (f handle p.analyzed_view))
 
 module Nav = struct
-  let forward_one _ = do_or_activate (fun h a -> a#process_next_phrase h)
+  let forward_one _ = do_or_activate (fun h a -> a#process_next_phrase h true)
   let backward_one _ = do_or_activate (fun h a -> a#backtrack_last_phrase h)
   let goto _ = do_or_activate (fun h a -> a#go_to_insert h)
   let restart _ = force_reset_initial ()
