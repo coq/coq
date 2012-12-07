@@ -913,48 +913,46 @@ object(self)
   untagged and then retagged. *)
 
   initializer
-    ignore (input_buffer#connect#insert_text
-              ~callback:(fun it s ->
-                (* If a #insert happens in the locked zone, we discard it.
-                   Other solution: always use #insert_interactive and similar *)
-                if (it#compare self#get_start_of_input)<0
-                then GtkSignal.stop_emit ();
-                if String.length s > 1 then begin
-                  Minilib.log "insert_text: Placing cursor";
-                  input_buffer#place_cursor ~where:it
-                end;
-                if String.contains s '\n' then begin
-                  Minilib.log "insert_text: Recentering";
-                  self#recenter_insert
-                end));
-    ignore (input_buffer#connect#begin_user_action
-              ~callback:(fun () ->
-                let where = self#get_insert in
-                input_buffer#move_mark (`NAME "prev_insert") ~where;
-                let start = self#get_start_of_input in
-                let stop = input_buffer#end_iter in
-                input_buffer#remove_tag Tags.Script.error ~start ~stop)
-    );
-    ignore (input_buffer#connect#end_user_action
-              ~callback:(fun () ->
-                last_modification_time <- Unix.time ();
-                tag_on_insert (input_buffer :> GText.buffer)
-              )
-    );
-    ignore (input_buffer#add_selection_clipboard cb);
-    ignore (input_buffer#connect#after#mark_set
-              ~callback:(fun it (m:Gtk.text_mark) ->
-                !set_location
-                  (Printf.sprintf
-                     "Line: %5d Char: %3d" (self#get_insert#line + 1)
-                     (self#get_insert#line_offset + 1));
-                match GtkText.Mark.get_name m  with
-                  | Some "insert" -> ()
-                  | Some s ->
-                    Minilib.log (s^" moved")
-                  | None -> () )
-    );
-    Coq.grab mycoqtop self#include_file_dir_in_path;
+  let _ = input_buffer#connect#insert_text
+    ~callback:(fun it s ->
+      (* If a #insert happens in the locked zone, we discard it.
+         Other solution: always use #insert_interactive and similar *)
+      if (it#compare self#get_start_of_input)<0 then
+        GtkSignal.stop_emit ();
+      if String.length s > 1 then
+        let () = Minilib.log "insert_text: Placing cursor" in
+        input_buffer#place_cursor ~where:it;
+        if String.contains s '\n' then
+          let () = Minilib.log "insert_text: Recentering" in
+          self#recenter_insert)
+  in
+  let _ = input_buffer#connect#begin_user_action
+    ~callback:(fun () ->
+      let where = self#get_insert in
+      input_buffer#move_mark (`NAME "prev_insert") ~where;
+      let start = self#get_start_of_input in
+      let stop = input_buffer#end_iter in
+      input_buffer#remove_tag Tags.Script.error ~start ~stop)
+  in
+  let _ = input_buffer#connect#end_user_action
+    ~callback:(fun () ->
+      last_modification_time <- Unix.time ();
+      tag_on_insert (input_buffer :> GText.buffer))
+  in
+  let _ = input_buffer#add_selection_clipboard cb
+  in
+  let _ = input_buffer#connect#after#mark_set
+    ~callback:(fun it m ->
+      !set_location
+        (Printf.sprintf "Line: %5d Char: %3d"
+           (self#get_insert#line + 1)
+           (self#get_insert#line_offset + 1));
+      match GtkText.Mark.get_name m  with
+        | Some "insert" -> ()
+        | Some s -> Minilib.log (s^" moved")
+        | None -> ())
+  in
+  Coq.grab mycoqtop self#include_file_dir_in_path;
 end
 
 let last_make = ref "";;
