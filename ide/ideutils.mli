@@ -30,13 +30,9 @@ val print_id : 'a -> unit
 
 val revert_timer : GMain.Timeout.id option ref
 val auto_save_timer : GMain.Timeout.id option ref
-val select_file_for_open :
-  title:string ->
-  ?dir:string ref -> ?filename:string -> unit -> string option
+val select_file_for_open : title:string -> unit -> string option
 val select_file_for_save :
-  title:string ->
-  ?dir:string ref -> ?filename:string -> unit -> string option
-val set_highlight_timer : (unit -> 'a) -> unit
+  title:string -> ?filename:string -> unit -> string option
 val try_convert : string -> string
 val try_export : string -> string -> bool
 val stock_to_widget :  ?size:Gtk.Tags.icon_size -> GtkStock.id -> GObj.widget
@@ -58,8 +54,6 @@ val pop_info : unit -> unit
 val flash_info : ?delay:int -> string -> unit
 
 val set_location : (string -> unit) ref
-
-val pbar : GRange.progress_bar
 
 (* In win32, when a command-line is to be executed via cmd.exe
    (i.e. Sys.command, Unix.open_process, ...), it cannot contain several

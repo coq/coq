@@ -27,8 +27,6 @@ let flash_info =
 
 let set_location = ref  (function s -> failwith "not ready")
 
-let pbar = GRange.progress_bar ~pulse_step:0.2 ()
-
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
 
 let byte_offset_to_char_offset s byte_offset =
@@ -52,29 +50,24 @@ let byte_offset_to_char_offset s byte_offset =
 let print_id id =
   Minilib.log ("GOT sig id :"^(string_of_int (Obj.magic id)))
 
-
 let do_convert s =
-  Utf8_convert.f
-    (if Glib.Utf8.validate s then begin
-      Minilib.log "Input is UTF-8";s
-    end else
-	let from_loc () =
-	  let _,char_set = Glib.Convert.get_charset () in
-	  flash_info
-	    ("Converting from locale ("^char_set^")");
-	  Glib.Convert.convert_with_fallback ~to_codeset:"UTF-8" ~from_codeset:char_set s
-	in
-	let from_manual enc =
-	  flash_info
-	    ("Converting from "^ enc);
-	  Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:enc
-	in
-	match current.encoding with
-	  |Preferences.Eutf8 | Preferences.Elocale -> from_loc ()
-	  |Emanual enc ->
-	    try
-	      from_manual enc
-	    with _ -> from_loc ())
+  let from_loc () =
+    let _,char_set = Glib.Convert.get_charset () in
+    flash_info ("Converting from locale ("^char_set^")");
+    Glib.Convert.convert_with_fallback
+      ~to_codeset:"UTF-8" ~from_codeset:char_set s
+  in
+  let from_manual enc =
+    flash_info ("Converting from "^ enc);
+    Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:enc
+  in
+  let s =
+    if Glib.Utf8.validate s then (Minilib.log "Input is UTF-8"; s)
+    else match current.encoding with
+      |Preferences.Eutf8 | Preferences.Elocale -> from_loc ()
+      |Emanual enc -> try from_manual enc with _ -> from_loc ()
+  in
+  Utf8_convert.f s
 
 let try_convert s =
   try
@@ -85,28 +78,31 @@ Please choose a correct encoding in the preference panel.*)";;
 
 
 let try_export file_name s =
-  try let s =
+  let s =
     try match current.encoding with
-      |Eutf8 -> begin
-	(Minilib.log "UTF-8 is enforced" ;s)
-      end
-      |Elocale -> begin
+      |Eutf8 -> Minilib.log "UTF-8 is enforced" ; s
+      |Elocale ->
 	let is_unicode,char_set = Glib.Convert.get_charset () in
 	if is_unicode then
-	  (Minilib.log "Locale is UTF-8" ;s)
+	  (Minilib.log "Locale is UTF-8" ; s)
 	else
 	  (Minilib.log ("Locale is "^char_set);
-	   Glib.Convert.convert_with_fallback ~from_codeset:"UTF-8" ~to_codeset:char_set s)
-      end
+	   Glib.Convert.convert_with_fallback
+             ~from_codeset:"UTF-8" ~to_codeset:char_set s)
       |Emanual enc ->
 	(Minilib.log ("Manual charset is "^ enc);
-       Glib.Convert.convert_with_fallback ~from_codeset:"UTF-8" ~to_codeset:enc s)
-    with e -> (Minilib.log ("Error ("^(Printexc.to_string e)^") in transcoding: falling back to UTF-8") ;s)
+         Glib.Convert.convert_with_fallback
+           ~from_codeset:"UTF-8" ~to_codeset:enc s)
+    with e ->
+      let str = Printexc.to_string e in
+      Minilib.log ("Error ("^str^") in transcoding: falling back to UTF-8");
+      s
   in
-  let oc = open_out file_name in
-  output_string oc s;
-  close_out oc;
-  true
+  try
+    let oc = open_out file_name in
+    output_string oc s;
+    close_out oc;
+    true
   with e -> Minilib.log (Printexc.to_string e);false
 
 let my_stat f = try Some (Unix.stat f) with _ -> None
@@ -121,19 +117,6 @@ let disconnect_auto_save_timer () = match !auto_save_timer with
   | None -> ()
   | Some id -> GMain.Timeout.remove id; auto_save_timer := None
 
-let highlight_timer = ref None
-let set_highlight_timer f =
-  match !highlight_timer with
-    | None ->
-	revert_timer :=
-      Some (GMain.Timeout.add ~ms:2000
-	      ~callback:(fun () -> f (); highlight_timer := None; true))
-    | Some id ->
-	GMain.Timeout.remove id;
-	revert_timer :=
-	Some (GMain.Timeout.add ~ms:2000
-		~callback:(fun () -> f (); highlight_timer := None; true))
-
 let last_dir = ref ""
 
 let filter_all_files () = GFile.filter
@@ -144,55 +127,62 @@ let filter_coq_files () =  GFile.filter
   ~name:"Coq source code"
   ~patterns:[ "*.v"] ()
 
-let select_file_for_open ~title ?(dir = last_dir) ?(filename="") () =
+let select_file_for_open ~title () =
   let file = ref None in
-  let file_chooser = GWindow.file_chooser_dialog ~action:`OPEN ~modal:true ~title () in
-    file_chooser#add_button_stock `CANCEL `CANCEL ;
-    file_chooser#add_select_button_stock `OPEN `OPEN ;
-    file_chooser#add_filter (filter_coq_files ());
-    file_chooser#add_filter (filter_all_files ());
-    file_chooser#set_default_response `OPEN;
-    ignore (file_chooser#set_current_folder !dir);
-    begin match file_chooser#run () with
-      | `OPEN ->
-	  begin
-	    file := file_chooser#filename;
-	    match !file with
-		None -> ()
-	      | Some s -> dir := Filename.dirname s;
-	  end
-      | `DELETE_EVENT | `CANCEL -> ()
-    end ;
-    file_chooser#destroy ();
-    !file
+  let file_chooser =
+    GWindow.file_chooser_dialog ~action:`OPEN ~modal:true ~title ()
+  in
+  file_chooser#add_button_stock `CANCEL `CANCEL ;
+  file_chooser#add_select_button_stock `OPEN `OPEN ;
+  file_chooser#add_filter (filter_coq_files ());
+  file_chooser#add_filter (filter_all_files ());
+  file_chooser#set_default_response `OPEN;
+  ignore (file_chooser#set_current_folder !last_dir);
+  begin match file_chooser#run () with
+    | `OPEN ->
+      begin
+	file := file_chooser#filename;
+	match !file with
+	  | None -> ()
+	  | Some s -> last_dir := Filename.dirname s;
+      end
+    | `DELETE_EVENT | `CANCEL -> ()
+  end ;
+  file_chooser#destroy ();
+  !file
 
-
-let select_file_for_save ~title ?(dir = last_dir) ?(filename="") () =
+let select_file_for_save ~title ?filename () =
   let file = ref None in
-  let file_chooser = GWindow.file_chooser_dialog ~action:`SAVE ~modal:true ~title () in
-    file_chooser#add_button_stock `CANCEL `CANCEL ;
-    file_chooser#add_select_button_stock `SAVE `SAVE ;
-    file_chooser#add_filter (filter_coq_files ());
-    file_chooser#add_filter (filter_all_files ());
-  (* this line will be used when a lablgtk >= 2.10.0 is the default on most distributions
-       file_chooser#set_do_overwrite_confirmation true;
-     *)
-    file_chooser#set_default_response `SAVE;
-    ignore (file_chooser#set_current_folder !dir);
-    ignore (file_chooser#set_current_name filename);
-
-    begin match file_chooser#run () with
-      | `SAVE ->
-	  begin
-	    file := file_chooser#filename;
-	    match !file with
-		None -> ()
-	      | Some s -> dir := Filename.dirname s;
-	  end
-      | `DELETE_EVENT | `CANCEL -> ()
-    end ;
-    file_chooser#destroy ();
-    !file
+  let file_chooser =
+    GWindow.file_chooser_dialog ~action:`SAVE ~modal:true ~title ()
+  in
+  file_chooser#add_button_stock `CANCEL `CANCEL ;
+  file_chooser#add_select_button_stock `SAVE `SAVE ;
+  file_chooser#add_filter (filter_coq_files ());
+  file_chooser#add_filter (filter_all_files ());
+  (* this line will be used when a lablgtk >= 2.10.0 is the default
+     on most distributions:
+     file_chooser#set_do_overwrite_confirmation true;
+  *)
+  file_chooser#set_default_response `SAVE;
+  let dir,filename = match filename with
+    |None -> !last_dir, ""
+    |Some f -> Filename.dirname f, Filename.basename f
+  in
+  ignore (file_chooser#set_current_folder dir);
+  ignore (file_chooser#set_current_name filename);
+  begin match file_chooser#run () with
+    | `SAVE ->
+      begin
+        file := file_chooser#filename;
+        match !file with
+            None -> ()
+          | Some s -> last_dir := Filename.dirname s;
+      end
+    | `DELETE_EVENT | `CANCEL -> ()
+  end ;
+  file_chooser#destroy ();
+  !file
 
 let find_tag_start (tag :GText.tag) (it:GText.iter) =
   let it = it#copy in
@@ -257,7 +247,8 @@ let coqtop_path () =
 	  let prog = String.copy Sys.executable_name in
 	  try
 	    let pos = String.length prog - 6 in
-	    let i = Str.search_backward (Str.regexp_string "coqide") prog pos in
+	    let i = Str.search_backward (Str.regexp_string "coqide") prog pos
+            in
 	    String.blit "coqtop" 0 prog i 6;
 	    prog
 	  with Not_found -> "coqtop"
@@ -285,7 +276,9 @@ let browse f url =
 *)
 let doc_url () =
   if current.doc_url = use_default_doc_url || current.doc_url = "" then
-    let addr = List.fold_left Filename.concat (Coq_config.docdir) ["html";"refman";"index.html"] in
+    let addr = List.fold_left Filename.concat (Coq_config.docdir)
+      ["html";"refman";"index.html"]
+    in
     if Sys.file_exists addr then "file://"^addr else Coq_config.wwwrefman
   else current.doc_url
 
