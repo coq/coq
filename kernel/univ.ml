@@ -475,22 +475,24 @@ let setleq_if (g,arcu) v =
 (* we assume  compare(u,v) = LE *)
 (* merge u v  forces u ~ v with repr u as canonical repr *)
 let merge g arcu arcv =
-  let bet = between g arcu arcv in
   (* we find the arc with the biggest rank, and we redirect all others to it *)
-  let max, posmax, only = CList.fold_left_i (fun pos (max, posmax, only) arc -> 
-    if arc.rank > max then (arc.rank, pos, true) else 
-      if arc.rank = max then (arc.rank, pos, false) else
-	(max, posmax, only))
-    0 (-1, -1, true) bet
-  in
-  if posmax = -1 then anomaly "Univ.between";
-  let arcu = List.nth bet posmax in
-  let v = CList.filteri (fun i _ -> posmax <> i) bet in
-  let arcu, g =
-    if only then arcu, g
-    else
-      let arcu = {arcu with rank = succ arcu.rank} in
-      arcu, enter_arc arcu g
+  let arcu, g, v =
+    let best_ranked (max_rank, old_max_rank, best_arc, rest) arc =
+      if arc.rank >= max_rank
+      then (arc.rank, max_rank, arc, best_arc::rest)
+      else (max_rank, old_max_rank, best_arc, arc::rest)
+    in
+    match between g arcu arcv with
+      | [] -> anomaly "Univ.between"
+      | arc::rest ->
+        let (max_rank, old_max_rank, best_arc, rest) =
+          List.fold_left best_ranked (arc.rank, min_int, arc, []) rest in
+        if max_rank > old_max_rank then best_arc, g, rest
+        else begin
+          (* one redirected node also has max_rank *)
+          let arcu = {best_arc with rank = max_rank + 1} in
+          arcu, enter_arc arcu g, rest
+        end 
   in
   let redirect (g,w,w') arcv =
     let g' = enter_equiv_arc arcv.univ arcu.univ g in
