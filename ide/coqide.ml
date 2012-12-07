@@ -218,27 +218,20 @@ let get_current_word () =
     May raise [Coq_lex.Unterminated] when the zone ends with
     an unterminated sentence. *)
 
-let split_slice_lax (buffer: GText.buffer) from upto =
-  buffer#remove_tag ~start:from ~stop:upto Tags.Script.comment_sentence;
-  buffer#remove_tag ~start:from ~stop:upto Tags.Script.sentence;
-  let slice = buffer#get_text ~start:from ~stop:upto () in
-  let rec split_substring str =
-    let off_conv = byte_offset_to_char_offset str in
-    let slice_len = String.length str in
-    let is_comment,end_off = Coq_lex.delimit_sentence str in
-    let start = from#forward_chars (off_conv end_off) in
-    let stop = start#forward_char in
-    let tag =
-      if is_comment then Tags.Script.comment_sentence else Tags.Script.sentence
-    in
-    buffer#apply_tag ~start ~stop tag;
-    let next = end_off + 1 in
-    if next < slice_len then begin
-      ignore (from#nocopy#forward_chars (off_conv next));
-      split_substring (String.sub str next (slice_len - next))
-    end
+let split_slice_lax (buffer: GText.buffer) start stop =
+  buffer#remove_tag ~start ~stop Tags.Script.comment_sentence;
+  buffer#remove_tag ~start ~stop Tags.Script.sentence;
+  let slice = buffer#get_text ~start ~stop () in
+  let mkiter =
+    (* caveat : partial application with effects *)
+    let convert = byte_offset_to_char_offset slice in
+    fun off -> start#forward_chars (convert off)
   in
-  split_substring slice
+  let apply_tag off tag =
+    let start = mkiter off in
+    buffer#apply_tag ~start ~stop:start#forward_char tag
+  in
+  Coq_lex.delimit_sentences apply_tag slice
 
 (** Searching forward and backward a position fulfilling some condition *)
 
