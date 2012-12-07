@@ -399,6 +399,7 @@ let variables is_install opt (args,defs) =
     print "GALLINA?=$(COQBIN)gallina\n";
     print "COQDOC?=$(COQBIN)coqdoc\n";
     print "COQCHK?=$(COQBIN)coqchk\n\n";
+    print "COQMKTOP?=$(COQBIN)coqmktop\n\n";
     end;
     (* Caml executables and relative variables *)
     if !some_ml4file || !some_mlfile || !some_mlifile then begin
