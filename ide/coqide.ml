@@ -10,6 +10,37 @@ open Preferences
 open Gtk_parsing
 open Ideutils
 
+(** Note concerning GtkTextBuffer
+
+    Be careful with gtk calls on text buffers, since many are non-atomic :
+    they emit a gtk signal and the handlers for this signal are run
+    immediately, before returning to the current function.
+    Here's a partial list of these signals and the methods that
+    trigger them (cf. documentation of GtkTextBuffer, signal section)
+
+      begin_user_action : #begin_user_action, #insert_interactive,
+        #insert_range_interactive, #delete_interactive, #delete_selection
+      end_user_action : #end_user_action, #insert_interactive,
+        #insert_range_interactive, #delete_interactive, #delete_selection
+
+      insert_text : #insert (and variants)
+      delete_range : #delete (and variants)
+
+      apply_tag : #apply_tag, (and some #insert)
+      remove_tag : #remove_tag
+
+      mark_deleted : #delete_mark
+      mark_set : #create_mark, #move_mark
+
+      changed : ... (whenever a buffer has changed)
+      modified_changed : #set_modified (and whenever the modified bit flips)
+
+   Caveat : when the buffer is modified, all iterators on it become
+   invalid and shouldn't be used (nasty errors otherwise). There are
+   some special cases : boundaries given to #insert and #delete are
+   revalidated by the default signal handler.
+*)
+
 type direction = Up | Down
 
 type flag = [ `COMMENT | `UNSAFE ]
@@ -884,26 +915,18 @@ object(self)
   initializer
     ignore (input_buffer#connect#insert_text
               ~callback:(fun it s ->
+                (* If a #insert happens in the locked zone, we discard it.
+                   Other solution: always use #insert_interactive and similar *)
                 if (it#compare self#get_start_of_input)<0
                 then GtkSignal.stop_emit ();
-                if String.length s > 1 then
-                  (Minilib.log "insert_text: Placing cursor";input_buffer#place_cursor ~where:it)));
-    ignore (input_buffer#connect#after#apply_tag
-              ~callback:(fun tag ~start ~stop ->
-                if (start#compare self#get_start_of_input)>=0
-                then
-                  begin
-                    input_buffer#remove_tag
-                      Tags.Script.processed
-                      ~start
-                      ~stop;
-                    input_buffer#remove_tag
-                      Tags.Script.unjustified
-                      ~start
-                      ~stop
-                  end
-              )
-    );
+                if String.length s > 1 then begin
+                  Minilib.log "insert_text: Placing cursor";
+                  input_buffer#place_cursor ~where:it
+                end;
+                if String.contains s '\n' then begin
+                  Minilib.log "insert_text: Recentering";
+                  self#recenter_insert
+                end));
     ignore (input_buffer#connect#begin_user_action
               ~callback:(fun () ->
                 let where = self#get_insert in
@@ -931,13 +954,6 @@ object(self)
                     Minilib.log (s^" moved")
                   | None -> () )
     );
-    ignore (input_buffer#connect#insert_text
-              ~callback:(fun it s ->
-                Minilib.log "Should recenter ?";
-                if String.contains s '\n' then begin
-                  Minilib.log "Should recenter: yes";
-                  self#recenter_insert
-                end));
     Coq.grab mycoqtop self#include_file_dir_in_path;
 end
 
