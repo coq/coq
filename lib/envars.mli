@@ -9,23 +9,64 @@
 (** This file gathers environment variables needed by Coq to run (such
    as coqlib) *)
 
+(** [expand_path_macros warn s] substitutes environment variables 
+    in a string by their values. This function also takes care of
+    substituting path of the form '~X' by an absolute path. 
+    Use [warn] as a message displayer. *)
 val expand_path_macros : warn:(string -> unit) -> string -> string
+
+(** [home warn] returns the root of the user directory, depending
+    on the OS. This information is usually stored in the $HOME 
+    environment variable on POSIX shells. If no such variable 
+    exists, then other common names are tried (HOMEDRIVE, HOMEPATH,
+    USERPROFILE). If all of them failed, [warn] is called. *)
 val home : warn:(string -> unit) -> string
 
+(** [coqlib] is the path to the Coq library. *)
 val coqlib : fail:(string -> string) -> string
+
+(** [docdir] is the path to the Coq documentation. *)
 val docdir : unit -> string
+
+(** [coqbin] is the name of the current executable. *)
 val coqbin : string
+
+(** [coqroot] is the path to [coqbin]. 
+    The following value only makes sense when executables are running from
+    source tree (e.g. during build or in local mode). 
+*)
 val coqroot : string
-(* coqpath is stored in reverse order, since that is the order it
- * gets added to the searc path *)
-val xdg_config_home : (string -> unit) -> string
-val xdg_data_home : (string -> unit) -> string
-val xdg_config_dirs : (string -> unit) -> string list
-val xdg_data_dirs : (string -> unit) -> string list
-val xdg_dirs : warn:(string -> unit) -> string list
+
+(** [coqpath] is the standard path to coq. 
+    Notice that coqpath is stored in reverse order, since that is 
+    the order it gets added to the search path. *)
 val coqpath : string list
 
+(** [camlbin ()] is the path to the ocaml binaries. *)
 val camlbin : unit -> string
+
+(** [camlp4bin ()] is an absolute reference to camlp4 binary. *)
 val camlp4bin : unit -> string
+
+(** [camllib ()] is the path to the ocaml standard library. *)
 val camllib : unit -> string
+
+(** [camlp4lib ()] is the path to the camlp4 library. *)
 val camlp4lib : unit -> string
+
+(** [ocamlc ()] is the ocaml bytecode compiler that compiled this Coq. *)
+val ocamlc   : unit -> string
+
+(** [ocamlc ()] is the ocaml native compiler that compiled this Coq. *)
+val ocamlopt : unit -> string
+
+(** Coq tries to honor the XDG Base Directory Specification to access
+    the user's configuration files.
+
+    see [http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html]
+*)
+val xdg_config_home : (string -> unit) -> string
+val xdg_data_home   : (string -> unit) -> string
+val xdg_config_dirs : (string -> unit) -> string list
+val xdg_data_dirs   : (string -> unit) -> string list
+val xdg_dirs : warn : (string -> unit) -> string list

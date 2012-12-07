@@ -163,13 +163,18 @@ let camlbin () =
     if !Flags.boot then Coq_config.camlbin else
       try guess_camlbin () with _ -> Coq_config.camlbin
 
+let in_caml_bin s = Filename.concat (camlbin ()) s
+
+let ocamlc () = in_caml_bin Coq_config.ocamlc
+
+let ocamlopt () = in_caml_bin Coq_config.ocamlopt
+
 let camllib () =
-  if !Flags.boot
-  then Coq_config.camllib
+  if !Flags.boot then 
+    Coq_config.camllib
   else
-    let camlbin = camlbin () in
-    let com = (Filename.concat camlbin "ocamlc") ^ " -where" in
-    let _,res = CUnix.run_command (fun x -> x) (fun _ -> ()) com in
+    let com = ocamlc () ^ " -where" in
+    let _, res = CUnix.run_command (fun x -> x) (fun _ -> ()) com in
     Util.String.strip res
 
 let camlp4bin () =
@@ -189,3 +194,4 @@ let camlp4lib () =
     match ex with
       |Unix.WEXITED 0 -> Util.String.strip res
       |_ -> "/dev/null"
+
