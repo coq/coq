@@ -25,6 +25,8 @@ let autosave_timer = Ideutils.mktimer ()
 
 let prefs = Preferences.current
 
+let logfile = ref None
+
 class type _analyzed_view =
 object
 
@@ -1578,6 +1580,12 @@ let detach_view _ =
   (* If the buffer in the main window is closed, destroy this detached view *)
   ignore (trm.script#connect#destroy ~callback:w#destroy)
 
+let log_file_message () =
+  if !Minilib.debug then
+    let file = match !logfile with None -> "stderr" | Some f -> f in
+    "\nDebug mode is on, log file is "^file
+  else ""
+
 let initial_about () =
   let initial_string =
     "Welcome to CoqIDE, an Integrated Development Environment for Coq"
@@ -1588,7 +1596,7 @@ let initial_about () =
       "\nYou are running " ^ coq_version
     else ""
   in
-  let msg = initial_string ^ version_info in
+  let msg = initial_string ^ version_info ^ log_file_message () in
   session_notebook#current_term.message_view#push Interface.Notice msg
 
 let coq_icon () =
