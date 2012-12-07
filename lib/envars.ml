@@ -151,6 +151,10 @@ let camlbin () =
     if !Flags.boot then Coq_config.camlbin else
       try guess_camlbin () with _ -> Coq_config.camlbin
 
+let ocamlc () = camlbin () / Coq_config.ocamlc
+
+let ocamlopt () = camlbin () / Coq_config.ocamlopt
+
 let camllib () =
   if !Flags.boot then 
     Coq_config.camllib
@@ -158,10 +162,6 @@ let camllib () =
     let com = ocamlc () ^ " -where" in
     let _, res = CUnix.run_command (fun x -> x) (fun _ -> ()) com in
     Util.String.strip res
-
-let ocamlc () = camlbin () / Coq_config.ocamlc
-
-let ocamlopt () = camlbin () / Coq_config.ocamlopt
 
 (** {2 Camlp4 paths} *)
 
