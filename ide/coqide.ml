@@ -68,8 +68,6 @@ object
   method auto_save : unit
   method save : string -> bool
   method save_as : string -> bool
-  method get_insert : GText.iter
-  method get_start_of_input : GText.iter
   method go_to_insert : Coq.handle -> unit
   method find_next_occurrence : direction -> unit
   method tactic_wizard : Coq.handle -> string list -> unit
@@ -166,6 +164,9 @@ let session_notebook =
   Wg_Notebook.create build_session kill_session
     ~border_width:2 ~show_border:false ~scrollable:true ()
 
+let current_view () = session_notebook#current_term.analyzed_view
+let current_buffer () = session_notebook#current_term.script#buffer
+
 let cb = GData.clipboard Gdk.Atom.primary
 
 let update_notebook_pos () =
@@ -229,20 +230,17 @@ let print_items = [
    "l",false)
 ]
 
-let get_current_word () =
-  match session_notebook#current_term,cb#text with
-    | {script=script; analyzed_view=av;},None ->
-      Minilib.log "None selected";
-      let it = av#get_insert in
-      let start = find_word_start it in
-      let stop = find_word_end start in
-      script#buffer#move_mark `SEL_BOUND ~where:start;
-      script#buffer#move_mark `INSERT ~where:stop;
-      script#buffer#get_text ~slice:true ~start ~stop ()
-    | _,Some t ->
-      Minilib.log "Some selected";
-      Minilib.log t;
-      t
+let get_current_word () = match cb#text with
+  |Some t -> Minilib.log ("get_current_word : selection = " ^ t); t
+  |None ->
+    Minilib.log "get_current_word : none selected";
+    let b = current_buffer () in
+    let it = b#get_iter_at_mark `INSERT in
+    let start = find_word_start it in
+    let stop = find_word_end start in
+    b#move_mark `SEL_BOUND ~where:start;
+    b#move_mark `INSERT ~where:stop;
+    b#get_text ~slice:true ~start ~stop ()
 
 (** Cut a part of the buffer in sentences and tag them.
     Invariant: either this slice ends the buffer, or it ends with ".".
@@ -515,10 +513,11 @@ object(self)
   method private push_message level content =
     message_view#push level content
 
-  method get_start_of_input =
+  method private get_start_of_input =
     input_buffer#get_iter_at_mark (`NAME "start_of_input")
 
-  method get_insert = get_insert input_buffer
+  method private get_insert =
+    input_buffer#get_iter_at_mark `INSERT
 
   method recenter_insert =
     (* BUG : to investigate further:
@@ -1069,8 +1068,6 @@ let pr_exit_status = function
 let run_command av cmd =
   CUnix.run_command Ideutils.try_convert av#insert_message cmd
 
-let current_view () = session_notebook#current_term.analyzed_view
-
 (** Auxiliary functions for the File operations *)
 
 module FileAux = struct
@@ -1492,6 +1489,14 @@ let printopts_callback opts v =
 
 (** Templates menu *)
 
+let print_branch c l =
+  Format.fprintf c " | @[<hov 1>%a@]=> _@\n"
+    (print_list (fun c s -> Format.fprintf c "%s@ " s)) l
+
+let print_branches c cases =
+  Format.fprintf c "@[match var with@\n%aend@]@."
+    (print_list print_branch) cases
+
 let match_callback _ =
   let w = get_current_word () in
   let coqtop = session_notebook#current_term.toplvl in
@@ -1499,26 +1504,22 @@ let match_callback _ =
     Coq.try_grab coqtop begin fun handle -> match Coq.mkcases handle w with
       | Interface.Fail _ -> raise Not_found
       | Interface.Good cases | Interface.Unsafe cases ->
-        let print_branch c l =
-	  Format.fprintf c " | @[<hov 1>%a@]=> _@\n"
-	    (print_list (fun c s -> Format.fprintf c "%s@ " s)) l
+        let text =
+          let buf = Buffer.create 1024 in
+          let () = print_branches (Format.formatter_of_buffer buf) cases in
+          Buffer.contents buf
         in
-        let b = Buffer.create 1024 in
-        let fmt = Format.formatter_of_buffer b in
-        Format.fprintf fmt "@[match var with@\n%aend@]@."
-          (print_list print_branch) cases;
-        let s = Buffer.contents b in
-        Minilib.log s;
-        let {script = view } = session_notebook#current_term in
-        ignore (view#buffer#delete_selection ());
-        let m = view#buffer#create_mark
-          (view#buffer#get_iter `INSERT)
-        in
-        if view#buffer#insert_interactive s then
-          let i = view#buffer#get_iter (`MARK m) in
+        Minilib.log ("match template :\n" ^ text);
+        let b = current_buffer () in
+        let _ =  b#delete_selection () in
+        let m = b#create_mark (b#get_iter `INSERT) in
+        if b#insert_interactive text then begin
+          let i = b#get_iter (`MARK m) in
           let _ = i#nocopy#forward_chars 9 in
-          view#buffer#place_cursor ~where:i;
-          view#buffer#move_mark ~where:(i#backward_chars 3) `SEL_BOUND
+          let _ = b#place_cursor ~where:i in
+          b#move_mark ~where:(i#backward_chars 3) `SEL_BOUND
+        end;
+        b#delete_mark (`MARK m)
     end ignore
   with Not_found -> flash_info "Not an inductive type"
 
@@ -1726,8 +1727,7 @@ let alpha_items menu_name item_name l =
     in
     item (item_name^" "^(no_under text)) ~label:text
       ~callback:(fun _ ->
-        let v = session_notebook#current_term.script in
-	ignore (v#buffer#insert_interactive text'))
+	ignore ((current_buffer ())#insert_interactive text'))
       menu_name
   in
   let mk_items = function
@@ -1753,13 +1753,13 @@ let template_item (text, offset, len, key) =
   let label = "_"^name^" __" in
   let negoffset = String.length text - offset - len in
   let callback _ =
-    let view = session_notebook#current_term.script in
-    if view#buffer#insert_interactive text then begin
-      let iter = view#buffer#get_iter_at_mark `INSERT in
+    let b = current_buffer () in
+    if b#insert_interactive text then begin
+      let iter = b#get_iter_at_mark `INSERT in
       ignore (iter#nocopy#backward_chars negoffset);
-      view#buffer#move_mark `INSERT ~where:iter;
+      b#move_mark `INSERT ~where:iter;
       ignore (iter#nocopy#backward_chars len);
-      view#buffer#move_mark `SEL_BOUND ~where:iter;
+      b#move_mark `SEL_BOUND ~where:iter;
     end
   in
   item name ~label ~callback ~accel:(modifier^key)
@@ -2139,8 +2139,7 @@ let rec check_for_geoproof_input () =
     let s = cb_Dr#text in
     (match s with
 	Some s ->
-	  if s <> "Ack" then
-	    session_notebook#current_term.script#buffer#insert (s^"\n");
+	  if s <> "Ack" then (current_buffer ())#insert (s^"\n");
 	  cb_Dr#set_text "Ack"
       | None -> ()
     );

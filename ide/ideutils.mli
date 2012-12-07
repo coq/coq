@@ -25,7 +25,6 @@ val do_convert : string -> string
 val find_tag_limits : GText.tag -> GText.iter -> GText.iter * GText.iter
 val find_tag_start : GText.tag -> GText.iter -> GText.iter
 val find_tag_stop : GText.tag -> GText.iter -> GText.iter
-val get_insert : < get_iter_at_mark : [> `INSERT] -> 'a; .. > -> 'a
 
 val print_id : 'a -> unit
 

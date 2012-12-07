@@ -27,8 +27,6 @@ let flash_info =
 
 let set_location = ref  (function s -> failwith "not ready")
 
-let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
-
 (** A utf8 char is either a single byte (ascii char, 0xxxxxxx)
     or multi-byte (with a leading byte 11xxxxxx and extra bytes 10xxxxxx) *)
 
