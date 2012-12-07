@@ -903,24 +903,16 @@ object(self)
               )
     );
     ignore (input_buffer#connect#begin_user_action
-	      ~callback:(fun () ->
-		           let here = input_buffer#get_iter_at_mark `INSERT in
-			   input_buffer#move_mark (`NAME "prev_insert") here
-	      )
+              ~callback:(fun () ->
+                let where = self#get_insert in
+                input_buffer#move_mark (`NAME "prev_insert") ~where;
+                let start = self#get_start_of_input in
+                let stop = input_buffer#end_iter in
+                input_buffer#remove_tag Tags.Script.error ~start ~stop)
     );
     ignore (input_buffer#connect#end_user_action
               ~callback:(fun () ->
                 last_modification_time <- Unix.time ();
-                let r = input_view#visible_rect in
-                let stop =
-                  input_view#get_iter_at_location
-                    ~x:(Gdk.Rectangle.x r + Gdk.Rectangle.width r)
-                    ~y:(Gdk.Rectangle.y r + Gdk.Rectangle.height r)
-                in
-                input_buffer#remove_tag
-                  Tags.Script.error
-                  ~start:self#get_start_of_input
-                  ~stop;
                 tag_on_insert (input_buffer :> GText.buffer)
               )
     );
