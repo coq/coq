@@ -29,23 +29,17 @@ let set_location = ref  (function s -> failwith "not ready")
 
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
 
+(** A utf8 char is either a single byte (ascii char, 0xxxxxxx)
+    or multi-byte (with a leading byte 11xxxxxx and extra bytes 10xxxxxx) *)
+
+let is_extra_byte c = ((Char.code c) lsr 6 = 2)
+
 let byte_offset_to_char_offset s byte_offset =
-  if (byte_offset < String.length s) then begin
-    let count_delta = ref 0 in
-    for i = 0 to byte_offset do
-      let code = Char.code s.[i] in
-      if code >= 0x80 && code < 0xc0 then incr count_delta
-    done;
-    byte_offset - !count_delta
-  end
-  else begin
-    let count_delta = ref 0 in
-    for i = 0 to String.length s - 1 do
-      let code = Char.code s.[i] in
-      if code >= 0x80 && code < 0xc0 then incr count_delta
-    done;
-    byte_offset - !count_delta
-  end
+  let extra_bytes = ref 0 in
+  for i = 0 to min byte_offset (String.length s - 1) do
+    if is_extra_byte s.[i] then incr extra_bytes
+  done;
+  byte_offset - !extra_bytes
 
 let print_id id =
   Minilib.log ("GOT sig id :"^(string_of_int (Obj.magic id)))
