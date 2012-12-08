@@ -128,6 +128,14 @@ module ExtRefOrdered = struct
       | _, _ -> Pervasives.compare x y
 end
 
+type global_reference_or_constr = 
+  | IsGlobal of global_reference
+  | IsConstr of constr
+
+let constr_of_global_or_constr = function
+  | IsConstr c -> c
+  | IsGlobal gr -> constr_of_global gr
+
 (** {6 Temporary function to brutally form kernel names from section paths } *)
 
 let encode_mind dir id = make_mind (MPfile dir) empty_dirpath (label_of_id id)

@@ -20,7 +20,7 @@ open Libobject
 (*i*)
 
 
-let add_instance_hint_ref = ref (fun id local pri -> assert false)
+let add_instance_hint_ref = ref (fun id path local pri -> assert false)
 let register_add_instance_hint =
   (:=) add_instance_hint_ref
 let add_instance_hint id = !add_instance_hint_ref id
@@ -38,11 +38,6 @@ let set_typeclass_transparency gr local c = !set_typeclass_transparency_ref gr l
 let classes_transparent_state_ref = ref (fun () -> assert false)
 let register_classes_transparent_state = (:=) classes_transparent_state_ref
 let classes_transparent_state () = !classes_transparent_state_ref ()
-
-
-let declare_definition_ref = ref (fun ?internal ?opaque ?kind id ?types constr -> assert false)
-let register_declare_definition =
-  (:=) declare_definition_ref
 
 let solve_instanciation_problem = ref (fun _ _ _ -> assert false)
 
@@ -247,18 +242,20 @@ let check_instance env sigma c =
   with _ -> false
 
 let build_subclasses ~check env sigma glob pri =
-  let id = Nametab.basename_of_global glob in
-  let next_id = 
+  let _id = Nametab.basename_of_global glob in
+  let _next_id = 
     let i = ref (-1) in 
       (fun () -> incr i;
-        Nameops.add_suffix id ("_subinstance_" ^ string_of_int !i))
+        Nameops.add_suffix _id ("_subinstance_" ^ string_of_int !i))
   in
-  let rec aux pri c =
+  let rec aux pri c path =
     let ty = Evarutil.nf_evar sigma (Retyping.get_type_of env sigma c) in
       match class_of_constr ty with
       | None -> []
       | Some (rels, (tc, args)) ->
-	let instapp = Reductionops.whd_beta sigma (appvectc c (Termops.extended_rel_vect 0 rels)) in
+	let instapp = 
+	  Reductionops.whd_beta sigma (appvectc c (Termops.extended_rel_vect 0 rels)) 
+	in
 	let projargs = Array.of_list (args @ [instapp]) in
 	let projs = List.map_filter 
 	  (fun (n, b, proj) ->
@@ -276,16 +273,14 @@ let build_subclasses ~check env sigma glob pri =
 		   | Some p, None -> Some (p + 1)
 		   | _, _ -> None
 		 in
-		 let c = !declare_definition_ref ~internal:true
-		   ~kind:Decl_kinds.Instance (next_id ()) body 
-		 in
-		   Some (ConstRef proj, pri, ConstRef c)) tc.cl_projs 
+		   Some (ConstRef proj, pri, body)) tc.cl_projs 
 	in
 	let declare_proj hints (cref, pri, body) =
-	  let rest = aux pri (constr_of_global body) in
-	    hints @ (pri, body) :: rest
+	  let path' = cref :: path in
+	  let rest = aux pri body path' in
+	    hints @ (path', pri, body) :: rest
 	in List.fold_left declare_proj [] projs 
-  in aux pri (constr_of_global glob)
+  in aux pri (constr_of_global glob) [glob]
 
 (*
  * instances persistent object
@@ -331,8 +326,9 @@ let discharge_instance (_, (action, inst)) =
 let is_local i = Int.equal i.is_global (-1)
 
 let add_instance check inst =
-  add_instance_hint inst.is_impl (is_local inst) inst.is_pri;
-  List.iter (fun (pri, c) -> add_instance_hint c (is_local inst) pri) 
+  add_instance_hint (IsGlobal inst.is_impl) [inst.is_impl] (is_local inst) inst.is_pri;
+  List.iter (fun (path, pri, c) -> add_instance_hint (IsConstr c) path
+    (is_local inst) pri) 
     (build_subclasses ~check:(check && not (isVarRef inst.is_impl))
        (Global.env ()) Evd.empty inst.is_impl inst.is_pri)
 

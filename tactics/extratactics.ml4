@@ -289,11 +289,7 @@ let project_hint pri l2r r =
   let c = Reductionops.whd_beta Evd.empty (mkApp (c,Termops.extended_rel_vect 0 sign)) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in
-  let id =
-    Nameops.add_suffix (Nametab.basename_of_global gr) ("_proj_" ^ (if l2r then "l2r" else "r2l"))
-  in
-  let c = Declare.declare_definition ~internal:Declare.KernelSilent id c in
-    (pri,true,Auto.PathAny, Globnames.ConstRef c)
+    (pri,true,Auto.PathAny, Globnames.IsConstr c)
 
 let add_hints_iff l2r lc n bl =
   Auto.add_hints true bl

@@ -761,7 +761,7 @@ intros x; case x; simpl ww_is_even.
   auto.
  split.
  unfold zn2z_to_Z; rewrite <- Hw1.
- unfold ww_to_Z, zn2z_to_Z in H1; rewrite H1.
+ unfold ww_to_Z, zn2z_to_Z in H1. rewrite H1.
  rewrite <- Hw0.
  match goal with |- (?X ^2 + ?Y) * wwB + (?Z * wB + ?T) = ?U =>
   transitivity ((X * wB) ^ 2 + (Y * wB + Z) * wB + T)

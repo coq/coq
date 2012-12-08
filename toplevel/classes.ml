@@ -24,6 +24,7 @@ open Constrexpr
 
 open Decl_kinds
 open Entries
+open Misctypes
 
 let typeclasses_db = "typeclass_instances"
 
@@ -33,12 +34,11 @@ let set_typeclass_transparency c local b =
     
 let _ =
   Typeclasses.register_add_instance_hint
-    (fun inst local pri ->
-     let path = try Auto.PathHints [inst] with _ -> Auto.PathAny in
+    (fun inst path local pri ->
       Flags.silently (fun () ->
 	Auto.add_hints local [typeclasses_db]
 	  (Auto.HintsResolveEntry
-	     [pri, false, path, inst])) ());
+	     [pri, false, Auto.PathHints path, inst])) ());
   Typeclasses.register_set_typeclass_transparency set_typeclass_transparency;
   Typeclasses.register_classes_transparent_state 
     (fun () -> Auto.Hint_db.transparent_state (Auto.searchtable_map typeclasses_db))
