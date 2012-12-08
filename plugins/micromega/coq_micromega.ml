@@ -1759,7 +1759,7 @@ let really_call_csdpcert : provername -> micromega_polys -> Sos_types.positivste
   Lazy.force require_csdp;
 
   let cmdname =
-    List.fold_left Filename.concat (Envars.coqlib Errors.error)
+    List.fold_left Filename.concat (Envars.coqlib ~fail:Errors.error)
       ["plugins"; "micromega"; "csdpcert" ^ Coq_config.exec_extension] in
 
     match ((command cmdname [|cmdname|] (provername,poly)) : csdp_certificate) with

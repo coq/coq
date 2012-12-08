@@ -32,13 +32,16 @@ let load_rcfile() =
         if CUnix.file_readable_p !rcfile then
           Vernac.load_vernac false !rcfile
         else raise (Sys_error ("Cannot read rcfile: "^ !rcfile))
-      else try let inferedrc = List.find CUnix.file_readable_p [
-	Envars.xdg_config_home (fun x -> msg_warning (str x))/rcdefaultname^"."^Coq_config.version;
-	Envars.xdg_config_home (fun x -> msg_warning (str x))/rcdefaultname;
-	Envars.home (fun x -> msg_warning (str x))/"."^rcdefaultname^"."^Coq_config.version;
-	Envars.home (fun x -> msg_warning (str x))/"."^rcdefaultname;
-      ] in
-        Vernac.load_vernac false inferedrc
+      else
+	try
+	  let warn x = msg_warning (str x) in
+	  let inferedrc = List.find CUnix.file_readable_p [
+	    Envars.xdg_config_home warn / rcdefaultname^"."^Coq_config.version;
+	    Envars.xdg_config_home warn / rcdefaultname;
+	    Envars.home ~warn / "."^rcdefaultname^"."^Coq_config.version;
+	    Envars.home ~warn / "."^rcdefaultname
+	  ] in
+          Vernac.load_vernac false inferedrc
 	with Not_found -> ()
 	(*
 	Flags.if_verbose
@@ -91,9 +94,9 @@ let theories_dirs_map = [
 
 (* Initializes the LoadPath *)
 let init_load_path () =
-  let coqlib = Envars.coqlib Errors.error in
+  let coqlib = Envars.coqlib ~fail:Errors.error in
   let user_contrib = coqlib/"user-contrib" in
-  let xdg_dirs = Envars.xdg_dirs (fun x -> msg_warning (str x)) in
+  let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> msg_warning (str x)) in
   let coqpath = Envars.coqpath in
   let dirs = ["plugins"] in
     (* NOTE: These directories are searched from last to first *)
@@ -129,7 +132,7 @@ let init_ocaml_path () =
   let add_subdir dl =
     Mltop.add_ml_dir (List.fold_left (/) Envars.coqroot dl)
   in
-    Mltop.add_ml_dir (Envars.coqlib Errors.error);
+    Mltop.add_ml_dir (Envars.coqlib ~fail:Errors.error);
     List.iter add_subdir
       [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ];
 	[ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];

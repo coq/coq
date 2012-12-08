@@ -192,9 +192,9 @@ let camlp4lib () =
 
 (** {1 XDG utilities} *)
 
-let xdg_data_home warning =
+let xdg_data_home warn =
   coqify
-    (getenv_else "XDG_DATA_HOME" (fun () -> (home warning) / ".local/share"))
+    (getenv_else "XDG_DATA_HOME" (fun () -> (home ~warn) / ".local/share"))
 
 let xdg_config_home warn =
   coqify
