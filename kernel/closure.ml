@@ -194,8 +194,8 @@ let unfold_red kn =
  *  * i_repr is the function to get the representation from the current
  *         state of the cache and the body of the constant. The result
  *         is stored in the table.
- *  * i_rels = (4,[(1,c);(3,d)]) means there are 4 free rel variables
- *    and only those with index 1 and 3 have bodies which are c and d resp.
+ *  * i_rels is the array of free rel variables together with their optional
+ *    body
  *  * i_vars is the list of _defined_ named variables.
  *
  * ref_value_cache searchs in the tab, otherwise uses i_repr to
@@ -224,7 +224,7 @@ type 'a infos = {
   i_repr : 'a infos -> constr -> 'a;
   i_env : env;
   i_sigma : existential -> constr option;
-  i_rels : int * (int * constr) list;
+  i_rels : constr option array;
   i_vars : (identifier * constr) list;
   i_tab : 'a KeyTable.t }
 
@@ -238,7 +238,13 @@ let ref_value_cache info ref =
     let body =
       match ref with
 	| RelKey n ->
-	    let (s,l) = info.i_rels in lift n (List.assoc (s-n) l)
+            let len = Array.length info.i_rels in
+            let i = n - 1 in
+            let () = if i < 0 || len <= i then raise Not_found in
+            begin match Array.unsafe_get info.i_rels i with
+            | None -> raise Not_found
+            | Some t -> lift n t
+            end
 	| VarKey id -> List.assoc id info.i_vars
 	| ConstKey cst -> constant_value info.i_env cst
     in
@@ -265,12 +271,15 @@ let defined_vars flags env =
 
 let defined_rels flags env =
 (*  if red_local_const (snd flags) then*)
-  Sign.fold_rel_context
-      (fun (id,b,t) (i,subs) ->
-	 match b with
-	   | None -> (i+1, subs)
-	   | Some body -> (i+1, (i,body) :: subs))
-      (rel_context env) ~init:(0,[])
+  let ctx = rel_context env in
+  let len = List.length ctx in
+  let ans = Array.make len None in
+  let iter i (_, b, _) = match b with
+  | None -> ()
+  | Some _ -> Array.unsafe_set ans i b
+  in
+  let () = List.iteri iter ctx in
+  ans
 (*  else (0,[])*)
 
 let create mk_cl flgs env evars =
