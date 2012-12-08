@@ -1015,7 +1015,7 @@ class configuration_box (tt : GData.tooltips) conf_struct =
 
   let set_icon iter = function
   | None -> ()
-  | Some icon -> tree#set iter icon_col icon
+  | Some icon -> tree#set ~row:iter ~column:icon_col icon
   in
 
   (* Populate the tree *)
@@ -1036,9 +1036,9 @@ class configuration_box (tt : GData.tooltips) conf_struct =
           method apply () = List.iter (fun param -> param#apply) params
         end
       in
-      let () = tree#set new_iter label_col label in
+      let () = tree#set ~row:new_iter ~column:label_col label in
       let () = set_icon new_iter icon in
-      let () = tree#set new_iter box_col widget in
+      let () = tree#set ~row:new_iter ~column:box_col widget in
       ()
     | Section_list (label, icon, struct_list) ->
       let widget =
@@ -1049,9 +1049,9 @@ class configuration_box (tt : GData.tooltips) conf_struct =
           method box = box#coerce
         end
       in
-      let () = tree#set new_iter label_col label in
+      let () = tree#set ~row:new_iter ~column:label_col label in
       let () = set_icon new_iter icon in
-      let () = tree#set new_iter box_col widget in
+      let () = tree#set ~row:new_iter ~column:box_col widget in
       List.iter (make_tree (Some new_iter)) struct_list
   in
 

@@ -522,10 +522,8 @@ object(self)
       if dir=Down then stop#forward_search else start#backward_search
     in
     match search text with
-      | None -> ()
-      | Some(start, _) ->
-        (b#place_cursor start;
-         self#recenter_insert)
+      |None -> ()
+      |Some(where, _) -> b#place_cursor ~where; self#recenter_insert
 
   method show_goals h k =
     Coq.PrintOpt.set_printing_width proof_view#width;
@@ -1573,7 +1571,7 @@ let coq_icon () =
 
 let about _ =
   let dialog = GWindow.about_dialog () in
-  let _ = dialog#connect#response (fun _ -> dialog#destroy ()) in
+  let _ = dialog#connect#response ~callback:(fun _ -> dialog#destroy ()) in
   let _ =
     try dialog#set_logo (GdkPixbuf.from_file (coq_icon ()))
     with _ -> ()
@@ -1720,6 +1718,11 @@ let template_item (text, offset, len, key) =
   in
   item name ~label ~callback ~accel:(modifier^key)
 
+let emit_to_focus window sgn =
+  let focussed_widget = GtkWindow.Window.get_focus window#as_window in
+  let obj = Gobject.unsafe_cast focussed_widget in
+  try GtkSignal.emit_unit obj ~sgn with _ -> ()
+
 (** Creation of the main coqide window *)
 
 let build_ui () =
@@ -1736,13 +1739,6 @@ let build_ui () =
   let _ = w#event#connect#delete ~callback:(fun _ -> File.quit (); true)
   in
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
-
-  let emit_to_focus sgn =
-    let focussed_widget = GtkWindow.Window.get_focus w#as_window in
-    let obj = Gobject.unsafe_cast focussed_widget in
-    try GtkSignal.emit_unit obj sgn
-    with _ -> ()
-  in
 
   let file_menu = GAction.action_group ~name:"File" () in
   let edit_menu = GAction.action_group ~name:"Edit" () in
@@ -1791,11 +1787,11 @@ let build_ui () =
     item "Redo" ~stock:`REDO
       ~callback:(fun _ -> session_notebook#current_term.script#redo ());
     item "Cut" ~stock:`CUT
-      ~callback:(fun _ -> emit_to_focus GtkText.View.S.cut_clipboard);
+      ~callback:(fun _ -> emit_to_focus w GtkText.View.S.cut_clipboard);
     item "Copy" ~stock:`COPY
-      ~callback:(fun _ -> emit_to_focus GtkText.View.S.copy_clipboard);
+      ~callback:(fun _ -> emit_to_focus w GtkText.View.S.copy_clipboard);
     item "Paste" ~stock:`PASTE
-      ~callback:(fun _ -> emit_to_focus GtkText.View.S.paste_clipboard);
+      ~callback:(fun _ -> emit_to_focus w GtkText.View.S.paste_clipboard);
     item "Find" ~stock:`FIND
       ~callback:(fun _ -> session_notebook#current_term.finder#show `FIND);
     item "Find Next" ~label:"Find _Next" ~stock:`GO_DOWN ~accel:"F3"

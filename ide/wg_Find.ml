@@ -213,13 +213,13 @@ class finder (view : GText.view) =
 
     initializer
       let _ = self#hide () in
-      let _ = next_button#connect#clicked self#find_forward in
-      let _ = previous_button#connect#clicked self#find_backward in
-      let _ = r_next_button#connect#clicked self#find_forward in
-      let _ = r_previous_button#connect#clicked self#find_backward in
-      let _ = r_replace_button#connect#clicked self#replace in
-      let _ = r_replace_all_button#connect#clicked self#replace_all in
-      ()
+      let _ = next_button#connect#clicked ~callback:self#find_forward in
+      let _ = previous_button#connect#clicked ~callback:self#find_backward in
+      let _ = r_next_button#connect#clicked ~callback:self#find_forward in
+      let _ = r_previous_button#connect#clicked ~callback:self#find_backward in
+      let _ = r_replace_button#connect#clicked ~callback:self#replace in
+      let _ = r_replace_all_button#connect#clicked ~callback:self#replace_all
+      in ()
 
   end
 
@@ -276,7 +276,7 @@ class info (coqtop : Coq.coqtop) (view : GText.view) (msg_view : Wg_MessageView.
 
     initializer
       let _ = self#hide () in
-      let _ = next_button#connect#clicked self#search in
+      let _ = next_button#connect#clicked ~callback:self#search in
       ()
 
   end
