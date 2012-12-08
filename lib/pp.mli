@@ -61,8 +61,6 @@ val qs : string -> std_ppcmds
 val quote : std_ppcmds -> std_ppcmds
 val strbrk : string -> std_ppcmds
 
-val xmlescape : std_ppcmds -> std_ppcmds
-
 (** {6 Boxing commands} *)
 
 val h : int -> std_ppcmds -> std_ppcmds
