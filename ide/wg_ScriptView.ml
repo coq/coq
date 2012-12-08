@@ -42,7 +42,7 @@ end
 
 module Proposals = Set.Make(StringOrd)
 
-let get_completion (buffer : GText.buffer) coqtop w =
+let get_completion (buffer : GText.buffer) coqtop w handle_res =
   let rec get_aux accu (iter : GText.iter) =
     match iter#forward_search w with
     | None -> accu
@@ -56,23 +56,23 @@ let get_completion (buffer : GText.buffer) coqtop w =
       else get_aux accu stop
   in
   let get_semantic accu =
-    let ans = ref accu in
     let flags = [Interface.Name_Pattern ("^" ^ w), true] in
-    let query handle = match Coq.search handle flags with
-    | Interface.Good l ->
-      let fold accu elt =
-        let rec last accu = function
-        | [] -> accu
-        | [basename] -> Proposals.add basename accu
-        | _ :: l -> last accu l
-        in
-        last accu elt.Interface.coq_object_qualid
-      in
-      ans := (List.fold_left fold accu l)
-    | _ -> ()
+    let query h k =
+      Coq.search flags h
+	(function
+	  | Interface.Good l ->
+	    let fold accu elt =
+              let rec last accu = function
+		| [] -> accu
+		| [basename] -> Proposals.add basename accu
+		| _ :: l -> last accu l
+              in
+              last accu elt.Interface.coq_object_qualid
+	    in
+	    handle_res (List.fold_left fold accu l) k
+	  | _ -> handle_res accu k)
     in
     Coq.try_grab coqtop query ignore;
-    !ans
   in
   get_semantic (get_aux Proposals.empty buffer#start_iter)
 
@@ -87,8 +87,6 @@ object (self)
   val mutable last_completion = (-1, "", Proposals.empty)
   (* this variable prevents CoqIDE from autocompleting when we have deleted something *)
   val mutable is_auto_completing = false
-
-  val undo_lock = Mutex.create ()
 
   method auto_complete = auto_complete
 
@@ -142,51 +140,35 @@ object (self)
     self#buffer#insert_interactive ~iter s
 
   method undo () =
-    if Mutex.try_lock undo_lock then begin
-      Minilib.log "UNDO";
-      let effective = self#process_action history in
-      if effective then self#backward ();
-      Mutex.unlock undo_lock;
-      effective
-    end else
-      (Minilib.log "UNDO DISCARDED"; true)
+    Minilib.log "UNDO";
+    let effective = self#process_action history in
+    if effective then self#backward ()
 
   method redo () =
-    if Mutex.try_lock undo_lock then begin
-      Minilib.log "REDO";
-      let effective = self#process_action redo in
-      if effective then self#forward ();
-      Mutex.unlock undo_lock;
-      effective
-    end else
-      (Minilib.log "REDO DISCARDED"; true)
+    Minilib.log "REDO";
+    let effective = self#process_action redo in
+    if effective then self#forward ()
 
   method private handle_insert iter s =
     (* we're inserting, so we may autocomplete *)
     is_auto_completing <- true;
     (* Save the insert action *)
-    if Mutex.try_lock undo_lock then begin
-      let action = Insert (s, iter#offset, Glib.Utf8.length s) in
-      history <- action :: history;
-      redo <- [];
-      self#dump_debug ();
-      Mutex.unlock undo_lock
-    end
+    let action = Insert (s, iter#offset, Glib.Utf8.length s) in
+    history <- action :: history;
+    redo <- [];
+    self#dump_debug ()
 
   method private handle_delete ~start ~stop =
     (* disable autocomplete *)
     is_auto_completing <- false;
     (* Save the delete action *)
-    if Mutex.try_lock undo_lock then begin
-      let start_offset = start#offset in
-      let stop_offset = stop#offset in
-      let s = self#buffer#get_text ~start ~stop () in
-      let action = Delete (s, start_offset, stop_offset - start_offset) in
-      history <- action :: history;
-      redo <- [];
-      self#dump_debug ();
-      Mutex.unlock undo_lock
-    end
+    let start_offset = start#offset in
+    let stop_offset = stop#offset in
+    let s = self#buffer#get_text ~start ~stop () in
+    let action = Delete (s, start_offset, stop_offset - start_offset) in
+    history <- action :: history;
+    redo <- [];
+    self#dump_debug ();
 
   method private do_auto_complete () =
     let iter = self#buffer#get_iter `INSERT in
@@ -197,33 +179,35 @@ object (self)
       if String.length w >= auto_complete_length then begin
         Minilib.log ("Completion of prefix: '" ^ w ^ "'");
         let (off, prefix, proposals) = last_completion in
-        let new_proposals = 
-        (* check whether we have the last request in cache *)
-          if (start#offset = off) && (0 <= is_substring prefix w) then
-            Proposals.filter (fun p -> 0 < is_substring w p) proposals
-          else
-            let ans = get_completion self#buffer ct w in
-            let () = last_completion <- (start#offset, w, ans) in
-            ans
-        in
-        let prop =
-          try Some (Proposals.choose new_proposals)
-          with Not_found -> None
-        in
-        match prop with
-        | None -> ()
-        | Some proposal ->
-          let suffix =
-            let len1 = String.length proposal in
-            let len2 = String.length w in
-            String.sub proposal len2 (len1 - len2)
+	let handle_proposals isnew new_proposals k =
+	  if isnew then last_completion <- (start#offset, w, new_proposals);
+          let prop =
+            try Some (Proposals.choose new_proposals)
+            with Not_found -> None
           in
-          let offset = iter#offset in
-          ignore (self#buffer#delete_selection ());
-          ignore (self#buffer#insert_interactive suffix);
-          let ins = self#buffer#get_iter (`OFFSET offset) in
-          let sel = self#buffer#get_iter `INSERT in
-          self#buffer#select_range sel ins
+          match prop with
+            | None -> k ()
+            | Some proposal ->
+              let suffix =
+		let len1 = String.length proposal in
+		let len2 = String.length w in
+		String.sub proposal len2 (len1 - len2)
+              in
+              let offset = iter#offset in
+              ignore (self#buffer#delete_selection ());
+              ignore (self#buffer#insert_interactive suffix);
+              let ins = self#buffer#get_iter (`OFFSET offset) in
+              let sel = self#buffer#get_iter `INSERT in
+              self#buffer#select_range sel ins;
+	      k ()
+	in
+        (* check whether we have the last request in cache *)
+        if (start#offset = off) && (0 <= is_substring prefix w) then
+          handle_proposals false
+	    (Proposals.filter (fun p -> 0 < is_substring w p) proposals)
+	    (fun () -> ())
+        else
+	  get_completion self#buffer ct w (handle_proposals true)
       end
     end
 
@@ -340,8 +324,10 @@ object (self)
     (* Install auto-completion *)
     ignore (self#buffer#connect#after#end_user_action ~callback:self#may_auto_complete);
     (* HACK: Redirect the undo/redo signals of the underlying GtkSourceView *)
-    ignore (self#connect#undo (fun _ -> ignore (self#undo ()); GtkSignal.stop_emit()));
-    ignore (self#connect#redo (fun _ -> ignore (self#redo ()); GtkSignal.stop_emit()));
+    ignore (self#connect#undo
+	      ~callback:(fun _ -> ignore (self#undo ()); GtkSignal.stop_emit()));
+    ignore (self#connect#redo
+	      ~callback:(fun _ -> ignore (self#redo ()); GtkSignal.stop_emit()));
     (* HACK: Redirect the move_line signal of the underlying GtkSourceView *)
     let move_line_marshal = GtkSignal.marshal2
       Gobject.Data.boolean Gobject.Data.int "move_line_marshal"
@@ -360,9 +346,11 @@ object (self)
       (* do we forward the signal? *)
       let proceed =
         if not b && i = 1 then
-          iter#editable true && iter#forward_line#editable true
+          iter#editable ~default:true &&
+	  iter#forward_line#editable ~default:true
         else if not b && i = -1 then
-          iter#editable true && iter#backward_line#editable true
+          iter#editable ~default:true &&
+	  iter#backward_line#editable ~default:true
         else false
       in
       if not proceed then GtkSignal.stop_emit ()
@@ -376,11 +364,13 @@ let script_view ct ?(source_buffer:GSourceView2.source_buffer option)  ?draw_spa
   GtkSourceView2.SourceView.make_params [] ~cont:(
     GtkText.View.make_params ~cont:(
       GContainer.pack_container ~create:
-	(fun pl -> let w = match source_buffer with
-	  | None -> GtkSourceView2.SourceView.new_ ()
-	  | Some buf -> GtkSourceView2.SourceView.new_with_buffer
-            (Gobject.try_cast buf#as_buffer "GtkSourceBuffer") in
-          let w = Gobject.unsafe_cast w in
-		   Gobject.set_params (Gobject.try_cast w "GtkSourceView") pl;
-		   Gaux.may (GtkSourceView2.SourceView.set_draw_spaces w) draw_spaces;
-		   ((new script_view w ct) : script_view))))
+	(fun pl ->
+	  let w = match source_buffer with
+	    | None -> GtkSourceView2.SourceView.new_ ()
+	    | Some buf -> GtkSourceView2.SourceView.new_with_buffer
+              (Gobject.try_cast buf#as_buffer "GtkSourceBuffer")
+	  in
+	  let w = Gobject.unsafe_cast w in
+	  Gobject.set_params (Gobject.try_cast w "GtkSourceView") pl;
+	  Gaux.may ~f:(GtkSourceView2.SourceView.set_draw_spaces w) draw_spaces;
+	  ((new script_view w ct) : script_view))))

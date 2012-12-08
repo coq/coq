@@ -15,9 +15,12 @@ exception Forbidden
 
 let status = GMisc.statusbar ()
 
-let push_info,pop_info =
+let push_info,pop_info,clear_info =
   let status_context = status#new_context ~name:"Messages" in
-    (fun s -> ignore (status_context#push s)),status_context#pop
+  let size = ref 0 in
+  (fun s -> incr size; ignore (status_context#push s)),
+  (fun () -> decr size; status_context#pop ()),
+  (fun () -> for i = 1 to !size do status_context#pop () done; size := 0)
 
 let flash_info =
   let flash_context = status#new_context ~name:"Flash" in
@@ -219,35 +222,6 @@ let find_tag_stop (tag :GText.tag) (it:GText.iter) =
 let find_tag_limits (tag :GText.tag) (it:GText.iter) =
  (find_tag_start tag it , find_tag_stop tag it)
 
-(* explanations: Win32 threads won't work if events are produced
-   in a thread different from the thread of the Gtk loop. In this
-   case we must use GtkThread.async to push a callback in the
-   main thread. Beware that the synchronus version may produce
-   deadlocks. *)
-let async =
-  if Sys.os_type = "Win32" then GtkThread.async else (fun x -> x)
-let sync =
-  if Sys.os_type = "Win32" then GtkThread.sync else (fun x -> x)
-
-let mutex text f =
-  let m = Mutex.create() in
-  fun x ->
-    if Mutex.try_lock m
-    then
-      (try
-        Minilib.log ("Got lock on "^text);
-        f x;
-        Mutex.unlock m;
-        Minilib.log ("Released lock on "^text)
-      with e ->
-        Mutex.unlock m;
-        Minilib.log ("Released lock on "^text^" (on error)");
-        raise e)
-    else
-      Minilib.log
-        ("Discarded call for "^text^": computations ongoing")
-
-
 let stock_to_widget ?(size=`DIALOG) s =
   let img = GMisc.image ()
   in img#set_stock s;
@@ -284,65 +258,14 @@ let rec print_list print fmt = function
 
 let requote cmd = if Sys.os_type = "Win32" then "\""^cmd^"\"" else cmd
 
-let browse f url =
-  let com = Util.subst_command_placeholder current.cmd_browse url in
-  let _ = Unix.open_process_out com in ()
-(* This beautiful message will wait for twt ...
-  if s = 127 then
-    f ("Could not execute\n\""^com^
-       "\"\ncheck your preferences for setting a valid browser command\n")
-*)
-let doc_url () =
-  if current.doc_url = use_default_doc_url || current.doc_url = "" then
-    let addr = List.fold_left Filename.concat (Coq_config.docdir)
-      ["html";"refman";"index.html"]
-    in
-    if Sys.file_exists addr then "file://"^addr else Coq_config.wwwrefman
-  else current.doc_url
-
-let url_for_keyword =
-  let ht = Hashtbl.create 97 in
-    lazy (
-      begin try
-	let cin =
-	  try let index_urls = Filename.concat (List.find
-            (fun x -> Sys.file_exists (Filename.concat x "index_urls.txt"))
-	    (Minilib.coqide_config_dirs ())) "index_urls.txt" in
-	    open_in index_urls
-	  with Not_found ->
-	    let doc_url = doc_url () in
-	    let n = String.length doc_url in
-	      if n > 8 && String.sub doc_url 0 7 = "file://" then
-		open_in (String.sub doc_url 7 (n-7) ^ "index_urls.txt")
-	      else
-		raise Exit
-	in
-	  try while true do
-	    let s = input_line cin in
-	      try
-		let i = String.index s ',' in
-		let k = String.sub s 0 i in
-		let u = String.sub s (i + 1) (String.length s - i - 1) in
-		  Hashtbl.add ht k u
-	      with _ ->
-		Minilib.log "Warning: Cannot parse documentation index file."
-	  done with End_of_file ->
-	    close_in cin
-      with _ ->
-	Minilib.log "Warning: Cannot find documentation index file."
-      end;
-      Hashtbl.find ht : string -> string)
-
-let browse_keyword f text =
-  try let u = Lazy.force url_for_keyword text in browse f (doc_url() ^ u)
-  with Not_found -> f ("No documentation found for \""^text^"\".\n")
-
 let textview_width (view : #GText.view) =
   let rect = view#visible_rect in
   let pixel_width = Gdk.Rectangle.width rect in
   let metrics = view#misc#pango_context#get_metrics ()  in
   let char_width = GPango.to_pixels metrics#approx_char_width in
   pixel_width / char_width
+
+type logger = Interface.message_level -> string -> unit
 
 let default_logger level message =
   let level = match level with
@@ -367,15 +290,119 @@ let stat f =
     | Unix.Unix_error (Unix.ENOENT,_,_) -> NoSuchFile
     | _ -> OtherError
 
+(** I/O utilities
+
+    Note: In a mono-thread coqide, we use the same buffer for
+    different read operations *)
+
+let maxread = 1024
+
+let read_string = String.create maxread
+let read_buffer = Buffer.create maxread
+
 (** Read the content of file [f] and add it to buffer [b].
     I/O Exceptions are propagated. *)
 
 let read_file name buf =
   let ic = open_in name in
-  let s = String.create 1024 and len = ref 0 in
+  let len = ref 0 in
   try
-    while len := input ic s 0 1024; !len > 0 do
-      Buffer.add_substring buf s 0 !len
+    while len := input ic read_string 0 maxread; !len > 0 do
+      Buffer.add_substring buf read_string 0 !len
     done;
     close_in ic
   with e -> close_in ic; raise e
+
+(** Read a gtk asynchronous channel *)
+
+let io_read_all chan =
+  Buffer.clear read_buffer;
+  let rec loop () =
+    let len = Glib.Io.read ~buf:read_string ~pos:0 ~len:maxread chan in
+    Buffer.add_substring read_buffer read_string 0 len;
+    if len < maxread then Buffer.contents read_buffer
+    else loop ()
+  in loop ()
+
+(** Run an external command asynchronously *)
+
+let run_command display finally cmd =
+  let cin = Unix.open_process_in cmd in
+  let io_chan = Glib.Io.channel_of_descr (Unix.descr_of_in_channel cin) in
+  let all_conds = [`ERR; `HUP; `IN; `NVAL; `PRI] in (* all except `OUT *)
+  let rec has_errors = function
+    | [] -> false
+    | (`IN | `PRI) :: conds -> has_errors conds
+    | e :: _ -> true
+  in
+  let handle_end () = finally (Unix.close_process_in cin); false
+  in
+  let handle_input conds =
+    if has_errors conds then handle_end ()
+    else
+      let s = io_read_all io_chan in
+      if s = "" then handle_end ()
+      else (display (try_convert s); true)
+  in
+  ignore (Glib.Io.add_watch ~cond:all_conds ~callback:handle_input io_chan)
+
+(** Web browsing *)
+
+let browse prerr url =
+  let com = Util.subst_command_placeholder current.cmd_browse url in
+  let finally = function
+    | Unix.WEXITED 127 ->
+      prerr
+        ("Could not execute:\n"^com^"\n"^
+         "check your preferences for setting a valid browser command\n")
+    | _ -> ()
+  in
+  run_command (fun _ -> ()) finally com
+
+let doc_url () =
+  if current.doc_url = use_default_doc_url || current.doc_url = ""
+  then
+    let addr = List.fold_left Filename.concat (Coq_config.docdir)
+      ["html";"refman";"index.html"]
+    in
+    if Sys.file_exists addr then "file://"^addr else Coq_config.wwwrefman
+  else current.doc_url
+
+let url_for_keyword =
+  let ht = Hashtbl.create 97 in
+    lazy (
+      begin try
+        let cin =
+          try let index_urls = Filename.concat (List.find
+            (fun x -> Sys.file_exists (Filename.concat x "index_urls.txt"))
+            (Minilib.coqide_config_dirs ())) "index_urls.txt" in
+            open_in index_urls
+          with Not_found ->
+            let doc_url = doc_url () in
+            let n = String.length doc_url in
+              if n > 8 && String.sub doc_url 0 7 = "file://" then
+                open_in (String.sub doc_url 7 (n-7) ^ "index_urls.txt")
+              else
+                raise Exit
+        in
+          try while true do
+            let s = input_line cin in
+              try
+                let i = String.index s ',' in
+                let k = String.sub s 0 i in
+                let u = String.sub s (i + 1) (String.length s - i - 1) in
+                  Hashtbl.add ht k u
+              with _ ->
+                Minilib.log "Warning: Cannot parse documentation index file."
+          done with End_of_file ->
+            close_in cin
+      with _ ->
+        Minilib.log "Warning: Cannot find documentation index file."
+      end;
+      Hashtbl.find ht : string -> string)
+
+let browse_keyword prerr text =
+  try
+    let u = Lazy.force url_for_keyword text in
+    browse prerr (doc_url() ^ u)
+  with Not_found -> prerr ("No documentation found for \""^text^"\".\n")

@@ -111,18 +111,16 @@ object(self)
 	if String.get com (String.length com - 1) = '.'
 	then com ^ " " else com ^ " " ^ entry#text ^" . "
       in
-      let insert level message =
-        result#buffer#insert message;
-        result#buffer#insert "\n"
+      let log level message = result#buffer#insert (message^"\n")
       in
-      let process handle =
-        let answer = match Coq.interp handle insert ~raw:true phrase with
-        | Interface.Fail (l,str) ->
-            "Error while interpreting "^phrase^":\n"^str
-        | Interface.Good results | Interface.Unsafe results ->
-            "Result for command " ^ phrase ^ ":\n" ^ results
-        in
-        result#buffer#insert answer
+      let process h k =
+	Coq.interp ~logger:log ~raw:true phrase h (function
+          |Interface.Fail (l,str) ->
+            result#buffer#insert ("Error while interpreting "^phrase^":\n"^str);
+	    k ()
+          |Interface.Good res | Interface.Unsafe res ->
+            result#buffer#insert ("Result for command " ^ phrase ^ ":\n" ^ res);
+	    k ())
       in
       result#buffer#set_text "";
       Coq.try_grab coqtop process ignore
@@ -130,17 +128,13 @@ object(self)
     ignore (combo#entry#connect#activate ~callback:(on_activate callback));
     ignore (ok_b#connect#clicked ~callback:(on_activate callback));
 
-    begin match command,term with
-      | None,None -> ()
-      | Some c, None ->
-	  combo#entry#set_text c;
-
-      | Some c, Some t ->
-	  combo#entry#set_text c;
-	  entry#set_text t
-
-      | None , Some t ->
-	  entry#set_text t
+    begin match command with
+      | None -> ()
+      | Some c -> combo#entry#set_text c
+    end;
+    begin match term with
+      | None -> ()
+      | Some t -> entry#set_text t
     end;
     on_activate callback ();
     entry#misc#grab_focus ();

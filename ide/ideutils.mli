@@ -6,12 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-val async : ('a -> unit) -> 'a -> unit
-val sync  : ('a -> 'b) -> 'a -> 'b
-
-(* avoid running two instances of a function concurrently *)
-val mutex : string -> ('a -> unit) -> 'a -> unit
-
 val doc_url : unit -> string
 val browse : (string -> unit) -> string -> unit
 val browse_keyword : (string -> unit) -> string -> unit
@@ -49,6 +43,7 @@ val coqtop_path : unit -> string
 val status : GMisc.statusbar
 val push_info : string -> unit
 val pop_info : unit -> unit
+val clear_info : unit -> unit
 val flash_info : ?delay:int -> string -> unit
 
 val set_location : (string -> unit) ref
@@ -63,10 +58,12 @@ val requote : string -> string
 val textview_width : #GText.view -> int
 (** Returns an approximate value of the character width of a textview *)
 
+type logger = Interface.message_level -> string -> unit
+
 val default_logger : Interface.message_level -> string -> unit
 (** Default logger. It logs messages that the casual user should not see. *)
 
-(** {6 File operations} *)
+(** {6 I/O operations} *)
 
 (** A customized [stat] function. Exceptions are catched. *)
 
@@ -77,3 +74,14 @@ val stat : string -> stats
     I/O Exceptions are propagated. *)
 
 val read_file : string -> Buffer.t -> unit
+
+(** Read the available content on some gtk asynchronous input channel *)
+
+val io_read_all : Glib.Io.channel -> string
+
+(** [run_command display finally cmd] allow to run a command
+    asynchronously, calling [display] on any output of this command
+    and [finally] when the command has returned. *)
+
+val run_command :
+  (string -> unit) -> (Unix.process_status -> unit) -> string -> unit

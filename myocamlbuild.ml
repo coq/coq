@@ -308,9 +308,9 @@ let extra_rules () = begin
   flag ["ocaml"; "ide"; "compile"] lablgtkincl;
   flag ["ocaml"; "ide"; "link"] lablgtkincl;
   flag ["ocaml"; "ide"; "link"; "byte"]
-    (S [A"lablgtk.cma"; A"lablgtksourceview2.cma"; A"gtkThread.cmo"]);
+    (S [A"lablgtk.cma"; A"lablgtksourceview2.cma"]);
   flag ["ocaml"; "ide"; "link"; "native"]
-    (S [A"lablgtk.cmxa"; A"lablgtksourceview2.cmxa"; A"gtkThread.cmx"]);
+    (S [A"lablgtk.cmxa"; A"lablgtksourceview2.cmxa"]);
 
 (** C code for the VM *)
 

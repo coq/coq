@@ -302,7 +302,7 @@ plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO:.cmo=$(BESTOBJ))
 # target to build CoqIde
 coqide:: coqide-files coqide-binaries theories/Init/Prelude.vo
 
-COQIDEFLAGS=-thread $(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES)
+COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES)
 
 .SUFFIXES:.vo
 
@@ -317,8 +317,8 @@ coqide-files: $(IDEFILES)
 ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT) | $(COQTOPEXE)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa threads.cmxa \
-		lablgtk.cmxa lablgtksourceview2.cmxa $(IDEOPTFLAGS) gtkThread.cmx \
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa \
+		lablgtk.cmxa lablgtksourceview2.cmxa $(IDEOPTFLAGS) \
 		str.cmxa $(LINKIDEOPT)
 	$(STRIP) $@
 else
@@ -328,8 +328,8 @@ endif
 
 $(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma\
-	        lablgtksourceview2.cma gtkThread.cmo str.cma $(LINKIDE)
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma lablgtk.cma \
+	        lablgtksourceview2.cma str.cma $(LINKIDE)
 
 # install targets
 

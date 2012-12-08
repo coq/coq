@@ -8,7 +8,7 @@
 <tools/coq_tex.{native,byte}> : use_str
 <tools/coq_makefile.{native,byte}> : use_str, use_unix
 <tools/coqdoc/main.{native,byte}> : use_str
-<ide/coqide_main.{native,byte}> : use_str, use_unix, thread, ide
+<ide/coqide_main.{native,byte}> : use_str, use_unix, ide
 <checker/main.{native,byte}> : use_str, use_unix
 <plugins/micromega/csdpcert.{native,byte}> : use_nums, use_unix
 <tools/mkwinapp.{native,byte}> : use_unix
@@ -16,7 +16,7 @@
 
 ## tags for ide
 
-<ide/**/*.{ml,mli}>: thread, ide
+<ide/**/*.{ml,mli}>: ide
 
 ## tags for grammar.cm*
 

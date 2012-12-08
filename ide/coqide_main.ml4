@@ -84,22 +84,13 @@ let reroute_stdout_stderr () =
 
 (* We also provide specific kill and interrupt functions. *)
 
-(* Since [win32_interrupt] involves some hack about the process console,
-   only one should run at the same time, we simply skip execution of
-   [win32_interrupt] if another instance is already running *)
-
-let ctrl_c_mtx = Mutex.create ()
-
-let ctrl_c_protect f i =
-  if not (Mutex.try_lock ctrl_c_mtx) then ()
-  else try f i; Mutex.unlock ctrl_c_mtx with _ -> Mutex.unlock ctrl_c_mtx
-
 IFDEF WIN32 THEN
 external win32_kill : int -> unit = "win32_kill"
 external win32_interrupt : int -> unit = "win32_interrupt"
 let () =
   Coq.killer := win32_kill;
-  Coq.interrupter := ctrl_c_protect win32_interrupt;
+  Coq.soft_killer := win32_kill;
+  Coq.interrupter := win32_interrupt;
   set_win32_path ();
   reroute_stdout_stderr ()
 END
@@ -115,6 +106,9 @@ let () =
   in
   let _ = osx#connect#ns_application_block_termination
     ~callback:Coqide.forbid_quit_to_save
+  in
+  let _ = osx#connect#ns_application_will_terminate
+    ~callback:Coqide.close_and_quit
   in ()
 
 let os_specific_init () =
@@ -147,10 +141,11 @@ let () =
   Coq.check_connection args;
   Coqide.sup_args := args;
   Coqide.main files;
-  if !Coq_config.with_geoproof then
-    ignore (Thread.create Coqide.check_for_geoproof_input ());
+  if !Coq_config.with_geoproof then Coqide.check_for_geoproof_input ();
   os_specific_init ();
-  try GtkThread.main ()
+  try
+    GMain.main ();
+    failwith "Gtk loop ended"
   with e ->
     Minilib.log ("CoqIde unexpected error:" ^ Printexc.to_string e);
     Coqide.crash_save 127
