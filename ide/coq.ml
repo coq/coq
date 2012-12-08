@@ -326,9 +326,20 @@ let open_process_pid prog args =
 exception TubeError
 exception AnswerWithoutRequest
 
+(* Check that a string is only composed by blank characters
+   from a position onwards *)
+let is_blank s pos =
+  try
+    for i = pos to String.length s - 1 do
+      if not (List.mem s.[i] [' ';'\n';'\t';'\r']) then raise Not_found
+    done;
+    true
+  with Not_found -> false
+
 let install_input_watch handle respawner =
   let io_chan = Glib.Io.channel_of_descr handle.cout in
   let all_conds = [`ERR; `HUP; `IN; `NVAL; `PRI] in (* all except `OUT *)
+  let last_fragment = ref "" in
   let rec check_errors = function
     | [] -> ()
     | (`IN | `PRI) :: conds -> check_errors conds
@@ -349,19 +360,32 @@ let install_input_watch handle respawner =
     check_errors conds;
     let s = io_read_all io_chan in
     if s = "" then raise TubeError;
-    match handle.waiting_for with
+    let s = !last_fragment ^ s in
+    let ccb,logger = match handle.waiting_for with
       |None -> raise AnswerWithoutRequest
-      |Some (ccb,logger) ->
-	let p = Xml_parser.make (Xml_parser.SString s) in
-	let rec loop () =
-	  let xml = Xml_parser.parse p in
-	  if Serialize.is_message xml then
-	    (handle_intermediate_message logger xml; loop ())
-	  else
-	    ignore (handle_final_answer ccb xml)
-	in
-	try loop ()
-	with Xml_parser.Error (Xml_parser.Empty, _) -> () (* end of s *)
+      |Some (c,l) -> c,l
+    in
+    let lex = Lexing.from_string s in
+    let finished () = (Lexing.lexeme_end lex = String.length s) in
+    let p = Xml_parser.make (Xml_parser.SLexbuf lex) in
+    let xml_end = ref 0 in
+    let rec loop () =
+      let xml = Xml_parser.parse p in
+      xml_end := Lexing.lexeme_end lex;
+      if Serialize.is_message xml then
+	(handle_intermediate_message logger xml; loop ())
+      else begin
+        (* We should have finished decoding s *)
+        if not (is_blank s !xml_end) then raise AnswerWithoutRequest;
+        last_fragment := "";
+	ignore (handle_final_answer ccb xml)
+      end
+    in
+    try loop ()
+    with Xml_parser.Error _ when finished () ->
+      (* Parsing error at the end of s : we have only received a part of
+         an xml answer. We store the current fragment for later *)
+      last_fragment := String.sub s !xml_end (String.length s - !xml_end)
   in
   let print_exception = function
     | Xml_parser.Error e -> Xml_parser.error e
