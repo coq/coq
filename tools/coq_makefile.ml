@@ -249,7 +249,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     install_include_by_root where_what_oth;
     List.iter
       (fun x ->
-	printf "\t(cd %s; $(MAKE) DSTROOT=$(DSTROOT) INSTALLDEFAULTROOT=$(INSTALLDEFAULTROOT)/%s install)\n" x x)
+	printf "\t+cd %s && $(MAKE) DSTROOT=$(DSTROOT) INSTALLDEFAULTROOT=$(INSTALLDEFAULTROOT)/%s install\n" x x)
       sds;
     print "\n";
     let install_one_kind kind dir =
@@ -284,7 +284,7 @@ let make_makefile sds =
     print "\tmv -f $@ $@.bak\n";
     print "\t$(COQBIN)coq_makefile -f $< -o $@\n\n";
     List.iter
-      (fun x -> print "\t(cd "; print x; print " ; $(MAKE) Makefile)\n")
+      (fun x -> print "\t+cd "; print x; print " && $(MAKE) Makefile\n")
       sds;
     print "\n";
   end
@@ -306,13 +306,13 @@ let clean sds sps =
 	 (print "\t- rm -rf "; print file; print "\n"))
     sps;
   List.iter
-    (fun x -> print "\t(cd "; print x; print " ; $(MAKE) clean)\n")
+    (fun x -> print "\t+cd "; print x; print " && $(MAKE) clean\n")
     sds;
   print "\n";
   print "archclean:\n";
   print "\trm -f *.cmx *.o\n";
   List.iter
-    (fun x -> print "\t(cd "; print x; print " ; $(MAKE) archclean)\n")
+    (fun x -> print "\t+cd "; print x; print " && $(MAKE) archclean\n")
     sds;
   print "\n";
   print "printenv:\n\t@$(COQBIN)coqtop -config\n";
@@ -492,7 +492,7 @@ let custom sps =
 
 let subdirs sds =
   let pr_subdir s =
-    print s; print ":\n\tcd "; print s; print " ; $(MAKE) all\n\n"
+    print s; print ":\n\t+cd \""; print s; print "\" && $(MAKE) all\n\n"
   in
     if sds <> [] then section "Subdirectories.";
     List.iter pr_subdir sds
