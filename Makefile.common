@@ -212,8 +212,7 @@ endif
 LINKCMO:=$(CORECMA) $(STATICPLUGINS)
 LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
 
-IDEDEPS:=lib/clib.cma lib/xml_lexer.cmo lib/xml_parser.cmo \
-  lib/xml_utils.cmo
+IDEDEPS:=lib/clib.cma lib/xml_lexer.cmo lib/xml_parser.cmo
 IDECMA:=ide/ide.cma
 
 LINKIDE:=$(IDEDEPS) $(IDECMA) ide/coqide_main.ml

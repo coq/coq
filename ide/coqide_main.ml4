@@ -105,7 +105,7 @@ let () =
     ~callback:(fun x -> Coqide.do_load x; true)
   in
   let _ = osx#connect#ns_application_block_termination
-    ~callback:Coqide.forbid_quit_to_save
+    ~callback:Coqide.forbid_quit
   in
   let _ = osx#connect#ns_application_will_terminate
     ~callback:Coqide.close_and_quit
