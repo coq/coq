@@ -6,6 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+val warn_image : GMisc.image
+val warning : string -> unit
+
+val cb : GData.clipboard
+
 val doc_url : unit -> string
 val browse : (string -> unit) -> string -> unit
 val browse_keyword : (string -> unit) -> string -> unit

@@ -6,16 +6,18 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-class type message_view =
-  object
-    inherit GObj.widget
-    method clear : unit
-    method add : string -> unit
-    method set : string -> unit
-    method push : Interface.message_level -> string -> unit
-      (** same as [add], but with an explicit level instead of [Notice] *)
-    method buffer : GText.buffer
-      (** for more advanced text edition *)
-  end
+val revert_timer : Ideutils.timer
+val autosave_timer : Ideutils.timer
 
-val message_view : unit -> message_view
+class type ops =
+object
+  method filename : string option
+  method update_stats : unit
+  method changed_on_disk : bool
+  method revert : unit
+  method auto_save : unit
+  method save : string -> bool
+  method saveas : string -> bool
+end
+
+class fileops : GText.buffer -> string option -> (unit -> unit) -> ops

@@ -11,6 +11,17 @@ open Preferences
 
 exception Forbidden
 
+let warn_image =
+  let img = GMisc.image () in
+  img#set_stock `DIALOG_WARNING;
+  img#set_icon_size `DIALOG;
+  img
+
+let warning msg =
+  GToolbox.message_box ~title:"Warning" ~icon:warn_image#coerce msg
+
+let cb = GData.clipboard Gdk.Atom.primary
+
 (* status bar and locations *)
 
 let status = GMisc.statusbar ()

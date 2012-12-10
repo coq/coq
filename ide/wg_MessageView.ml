@@ -9,9 +9,13 @@
 class type message_view =
   object
     inherit GObj.widget
-    method clear : unit -> unit
+    method clear : unit
+    method add : string -> unit
+    method set : string -> unit
     method push : Interface.message_level -> string -> unit
+      (** same as [add], but with an explicit level instead of [Notice] *)
     method buffer : GText.buffer
+      (** for more advanced text edition *)
   end
 
 let message_view () : message_view =
@@ -22,10 +26,10 @@ let message_view () : message_view =
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
   let _ = buffer#add_selection_clipboard default_clipboard in
   let () = view#set_left_margin 2 in
-  object
+  object (self)
     inherit GObj.widget view#as_widget
 
-    method clear () =
+    method clear =
       buffer#set_text ""
 
     method push level msg =
@@ -35,6 +39,10 @@ let message_view () : message_view =
       in
       buffer#insert ~tags msg;
       buffer#insert ~tags "\n"
+
+    method add msg = self#push Interface.Notice msg
+
+    method set msg = self#clear; self#add msg
 
     method buffer = buffer
 

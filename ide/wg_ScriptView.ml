@@ -111,6 +111,10 @@ object (self)
       Minilib.log "==========Redo Stack End=========="
     end
 
+  method recenter_insert =
+    self#scroll_to_mark
+      ~use_align:false ~yalign:0.75 ~within_margin:0.25 `INSERT
+
   method clear_undo () =
     history <- [];
     redo <- []

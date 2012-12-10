@@ -6,16 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-class type message_view =
-  object
-    inherit GObj.widget
-    method clear : unit
-    method add : string -> unit
-    method set : string -> unit
-    method push : Interface.message_level -> string -> unit
-      (** same as [add], but with an explicit level instead of [Notice] *)
-    method buffer : GText.buffer
-      (** for more advanced text edition *)
-  end
+(** Retag the ends of sentences around an inserted zone *)
 
-val message_view : unit -> message_view
+val tag_on_insert : GText.buffer -> unit
+
+(** Retag the ends of sentences in the whole buffer *)
+
+val tag_all : GText.buffer -> unit
+
+(** Search a sentence around some position *)
+
+val find : GText.buffer -> GText.iter -> (GText.iter * GText.iter) option
