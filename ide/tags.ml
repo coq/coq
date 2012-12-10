@@ -26,6 +26,9 @@ struct
   let unjustified = make_tag table ~name:"unjustified" [`BACKGROUND "gold";`EDITABLE false]
   let found = make_tag table ~name:"found" [`BACKGROUND "blue"; `FOREGROUND "white"]
   let sentence = make_tag table ~name:"sentence" []
+  let all =
+    [comment_sentence; error; to_process; processed; unjustified;
+     found; sentence]
 end
 module Proof =
 struct

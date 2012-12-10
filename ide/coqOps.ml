@@ -329,13 +329,8 @@ object(self)
       buffer#delete_mark phrase.stop
     done;
     (* reset the buffer *)
-    let start = buffer#start_iter in
-    let stop = buffer#end_iter in
-    buffer#move_mark ~where:start (`NAME "start_of_input");
-    buffer#remove_tag Tags.Script.processed ~start ~stop;
-    buffer#remove_tag Tags.Script.unjustified ~start ~stop;
-    buffer#remove_tag Tags.Script.to_process ~start ~stop;
-    Sentence.tag_on_insert buffer;
+    buffer#move_mark ~where:buffer#start_iter (`NAME "start_of_input");
+    Sentence.tag_all buffer;
     (* clear the views *)
     messages#clear;
     proof#clear ();

@@ -10,7 +10,7 @@
 
 val tag_on_insert : GText.buffer -> unit
 
-(** Retag the ends of sentences in the whole buffer *)
+(** Retag the ends of sentences in the non-locked part of the buffer *)
 
 val tag_all : GText.buffer -> unit
 

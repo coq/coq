@@ -14,8 +14,7 @@
     an unterminated sentence. *)
 
 let split_slice_lax (buffer:GText.buffer) start stop =
-  buffer#remove_tag ~start ~stop Tags.Script.comment_sentence;
-  buffer#remove_tag ~start ~stop Tags.Script.sentence;
+  List.iter (buffer#remove_tag ~start ~stop) Tags.Script.all;
   let slice = buffer#get_text ~start ~stop () in
   let mkiter =
     (* caveat : partial application with effects *)
@@ -109,7 +108,8 @@ let tag_on_insert buffer =
     buffer#apply_tag ~start:soi ~stop:soi#forward_char Tags.Script.error
 
 let tag_all buffer =
-  try split_slice_lax buffer buffer#start_iter buffer#end_iter
+  let soi = buffer#get_iter_at_mark (`NAME "start_of_input") in
+  try split_slice_lax buffer soi buffer#end_iter
   with Coq_lex.Unterminated -> ()
 
 (** Search a sentence around some position *)
