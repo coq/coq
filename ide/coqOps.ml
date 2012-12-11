@@ -157,7 +157,8 @@ object(self)
     messages#clear;
     script#set_editable false;
     self#fill_command_queue until queue;
-    (* Now unlock and process asynchronously *)
+    (* Now unlock and process asynchronously. Since [until]
+       may contain iterators, it shouldn't be used anymore *)
     script#set_editable true;
     let push_info lvl msg = if verbose then messages#push lvl msg
     in
@@ -173,9 +174,11 @@ object(self)
           (self#commit_queue_transaction queue sentence []; loop ())
         else
           (* If the line is not a comment, we interpret it. *)
-          let start = buffer#get_iter_at_mark sentence.start in
-          let stop = buffer#get_iter_at_mark sentence.stop in
-          let phrase = start#get_slice ~stop in
+          let phrase =
+            let start = buffer#get_iter_at_mark sentence.start in
+            let stop = buffer#get_iter_at_mark sentence.stop in
+            start#get_slice ~stop
+          in
           let commit_and_continue msg flags =
             push_info Interface.Notice msg;
             self#commit_queue_transaction queue sentence flags;
@@ -207,35 +210,50 @@ object(self)
 
   (** Clear the command stack until [until] returns [true].
       Returns the number of commands sent to Coqtop to backtrack. *)
-  method private clear_command_stack until =
-    let rec loop len real_len =
-      if Stack.is_empty cmd_stack then real_len
+  method private prepare_clear_zone until zone =
+    let merge_zone phrase zone =
+      match zone with
+        | None -> Some (phrase.start, phrase.stop)
+        | Some (start,stop) ->
+          (* phrase should be just before the current clear zone *)
+          buffer#delete_mark phrase.stop;
+          buffer#delete_mark start;
+          Some (phrase.start, stop)
+    in
+    let rec loop len real_len zone =
+      if Stack.is_empty cmd_stack then real_len, zone
       else
         let phrase = Stack.top cmd_stack in
         let is_comment = List.mem `COMMENT phrase.flags in
-        let start = buffer#get_iter_at_mark phrase.start in
-        let stop = buffer#get_iter_at_mark phrase.stop in
-        if not (until len real_len start stop) then begin
-          (* [until] has not been reached, so we clear this command *)
-          ignore (Stack.pop cmd_stack);
-          buffer#remove_tag Tags.Script.processed ~start ~stop;
-          buffer#remove_tag Tags.Script.unjustified ~start ~stop;
-          buffer#move_mark ~where:start (`NAME "start_of_input");
-          buffer#delete_mark phrase.start;
-          buffer#delete_mark phrase.stop;
-          loop (succ len) (if is_comment then real_len else succ real_len)
-        end else
-          real_len
+        if until len real_len phrase.start phrase.stop then
+          real_len, zone
+        else
+          (* [until] has not been reached, so we'll clear this command *)
+          let _ = Stack.pop cmd_stack in
+          let zone = merge_zone phrase zone in
+          loop (succ len) (if is_comment then real_len else succ real_len) zone
     in
-    loop 0 0
+    loop 0 0 zone
+
+  method private commit_clear_zone = function
+    | None -> ()
+    | Some (start_mark, stop_mark) ->
+      let start = buffer#get_iter_at_mark start_mark in
+      let stop = buffer#get_iter_at_mark stop_mark in
+      buffer#remove_tag Tags.Script.processed ~start ~stop;
+      buffer#remove_tag Tags.Script.unjustified ~start ~stop;
+      buffer#move_mark ~where:start (`NAME "start_of_input");
+      buffer#delete_mark start_mark;
+      buffer#delete_mark stop_mark
 
   (** Actually performs the undoing *)
-  method private undo_command_stack n h k =
+  method private undo_command_stack n clear_zone h k =
     Coq.rewind n h (function
       |Interface.Good n | Interface.Unsafe n ->
         let until _ len _ _ = n <= len in
         (* Coqtop requested [n] more ACTUAL backtrack *)
-        ignore (self#clear_command_stack until);
+        let _, zone = self#prepare_clear_zone until clear_zone in
+        self#commit_clear_zone zone;
         k ()
       |Interface.Fail (l, str) ->
         messages#set
@@ -248,14 +266,16 @@ object(self)
   method private backtrack_until until h k =
     push_info "Coq is undoing";
     messages#clear;
-    (* Lock everything *)
-    script#set_editable false;
-    let to_undo = self#clear_command_stack until in
-    self#undo_command_stack to_undo h
-      (fun () -> script#set_editable true; pop_info (); k ())
+    (* Instead of locking the whole buffer, we now simply remove
+       read-only tags *after* the actual backtrack *)
+    let to_undo,zone = self#prepare_clear_zone until None in
+    self#undo_command_stack to_undo zone h
+      (fun () -> pop_info (); k ())
 
   method private backtrack_to_iter iter h k =
-    let until _ _ _ stop = iter#compare stop >= 0 in
+    let until _ _ _ stop =
+      iter#compare (buffer#get_iter_at_mark stop) >= 0
+    in
     self#backtrack_until until h
       (* We may have backtracked too much: let's replay *)
       (fun () -> self#process_until_iter iter h k)
