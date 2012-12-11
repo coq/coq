@@ -176,37 +176,38 @@ object (self)
 
   method private do_auto_complete () =
     let iter = self#buffer#get_iter `INSERT in
-    Minilib.log ("Completion at offset: " ^ string_of_int iter#offset);
-    let start = find_word_start iter in
+    let cur_offset = iter#offset in
+    Minilib.log ("Completion at offset: " ^ string_of_int cur_offset);
     if ends_word iter#backward_char then begin
+      let start = find_word_start iter in
       let w = self#buffer#get_text ~start ~stop:iter () in
       if String.length w >= auto_complete_length then begin
         Minilib.log ("Completion of prefix: '" ^ w ^ "'");
         let (off, prefix, proposals) = last_completion in
+        let start_offset = start#offset in
 	let handle_proposals isnew new_proposals k =
-	  if isnew then last_completion <- (start#offset, w, new_proposals);
-          let prop =
-            try Some (Proposals.choose new_proposals)
-            with Not_found -> None
-          in
-          match prop with
-            | None -> k ()
-            | Some proposal ->
-              let suffix =
-		let len1 = String.length proposal in
-		let len2 = String.length w in
-		String.sub proposal len2 (len1 - len2)
-              in
-              let offset = iter#offset in
-              ignore (self#buffer#delete_selection ());
-              ignore (self#buffer#insert_interactive suffix);
-              let ins = self#buffer#get_iter (`OFFSET offset) in
-              let sel = self#buffer#get_iter `INSERT in
-              self#buffer#select_range sel ins;
-	      k ()
+          if isnew then last_completion <- (start_offset, w, new_proposals);
+          (* [iter] might be invalid now, get a new one to please gtk *)
+          let iter = self#buffer#get_iter `INSERT in
+          (* We cancel completion when the buffer has changed recently *)
+          if iter#offset = cur_offset && not (Proposals.is_empty new_proposals)
+          then begin
+            let proposal = Proposals.choose new_proposals in
+            let suffix =
+	      let len1 = String.length proposal in
+	      let len2 = String.length w in
+	      String.sub proposal len2 (len1 - len2)
+            in
+            ignore (self#buffer#delete_selection ());
+            ignore (self#buffer#insert_interactive suffix);
+            let ins = self#buffer#get_iter (`OFFSET cur_offset) in
+            let sel = self#buffer#get_iter `INSERT in
+            self#buffer#select_range sel ins
+          end;
+	  k ()
 	in
         (* check whether we have the last request in cache *)
-        if (start#offset = off) && (0 <= is_substring prefix w) then
+        if (start_offset = off) && (0 <= is_substring prefix w) then
           handle_proposals false
 	    (Proposals.filter (fun p -> 0 < is_substring w p) proposals)
 	    (fun () -> ())
