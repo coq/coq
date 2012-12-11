@@ -8,26 +8,34 @@
 
 {
   exception Unterminated
+
+  let utf8_adjust = ref 0
+
+  let utf8_lexeme_start lexbuf =
+    Lexing.lexeme_start lexbuf - !utf8_adjust
 }
 
-let space =
-  [' ' '\n' '\r' '\t' '\012'] (* '\012' is form-feed *)
+let space = [' ' '\n' '\r' '\t' '\012'] (* '\012' is form-feed *)
 
 let undotted_sep = [ '{' '}' '-' '+' '*' ]
 
 let dot_sep = '.' (space | eof)
 
+let utf8_extra_byte = [ '\x80' - '\xBF' ]
+
 rule coq_string = parse
   | "\"\"" { coq_string lexbuf }
   | "\"" { () }
   | eof { () }
+  | utf8_extra_byte { incr utf8_adjust; coq_string lexbuf }
   | _ { coq_string lexbuf }
 
 and comment = parse
   | "(*" { let _  = comment lexbuf in comment lexbuf }
   | "\"" { let () = coq_string lexbuf in comment lexbuf }
-  | "*)" { Some (Lexing.lexeme_start lexbuf + 1) }
+  | "*)" { Some (utf8_lexeme_start lexbuf + 1) }
   | eof { None }
+  | utf8_extra_byte { incr utf8_adjust; comment lexbuf }
   | _ { comment lexbuf }
 
 (** NB : [mkiter] should be called on increasing offsets *)
@@ -57,24 +65,25 @@ and sentence initial stamp = parse
     }
   | dot_sep {
       (* The usual "." terminator *)
-      stamp (Lexing.lexeme_start lexbuf) Tags.Script.sentence;
+      stamp (utf8_lexeme_start lexbuf) Tags.Script.sentence;
       sentence true stamp lexbuf
     }
   | undotted_sep {
       (* Separators like { or } and bullets * - + are only active
 	 at the start of a sentence *)
-      if initial then stamp (Lexing.lexeme_start lexbuf) Tags.Script.sentence;
+      if initial then stamp (utf8_lexeme_start lexbuf) Tags.Script.sentence;
       sentence initial stamp lexbuf
     }
   | space+ {
        (* Parsing spaces is the only situation preserving initiality *)
        sentence initial stamp lexbuf
     }
+  | utf8_extra_byte { incr utf8_adjust; sentence false stamp lexbuf }
+  | eof { if initial then () else raise Unterminated }
   | _ {
       (* Any other characters *)
       sentence false stamp lexbuf
     }
-  | eof { if initial then () else raise Unterminated }
 
 {
 
@@ -85,6 +94,7 @@ and sentence initial stamp = parse
   *)
 
   let delimit_sentences stamp slice =
+    utf8_adjust := 0;
     sentence true stamp (Lexing.from_string slice)
 
 }

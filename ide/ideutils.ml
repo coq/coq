@@ -44,7 +44,6 @@ let set_location = ref  (function s -> failwith "not ready")
 (** A utf8 char is either a single byte (ascii char, 0xxxxxxx)
     or multi-byte (with a leading byte 11xxxxxx and extra bytes 10xxxxxx) *)
 
-let is_char_start c = ((Char.code c) lsr 6 <> 2)
 let is_extra_byte c = ((Char.code c) lsr 6 = 2)
 
 (** For a string buffer that may contain utf8 chars,
@@ -59,24 +58,6 @@ let byte_offset_to_char_offset s byte_offset =
     if is_extra_byte s.[i] then incr extra_bytes
   done;
   byte_offset - !extra_bytes
-
-(** For multiple offset conversions in a long buffer,
-    we proceed incrementally by storing last known positions.
-    Offsets should be asked in increasing order
-   and correspond to char-starting byte. *)
-
-let incremental_byte_offset_to_char_offset s =
-  let bytes = ref 0
-  and chars = ref 0
-  and len = String.length s
-  in
-  fun byte_offset ->
-    assert (!bytes <= byte_offset);
-    for i = !bytes + 1 to byte_offset do
-      if i >= len || is_char_start s.[i] then incr chars
-    done;
-    bytes := byte_offset;
-    !chars
 
 let print_id id =
   Minilib.log ("GOT sig id :"^(string_of_int (Obj.magic id)))

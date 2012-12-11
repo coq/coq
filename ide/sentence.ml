@@ -16,14 +16,10 @@
 let split_slice_lax (buffer:GText.buffer) start stop =
   List.iter (buffer#remove_tag ~start ~stop) Tags.Script.all;
   let slice = buffer#get_text ~start ~stop () in
-  let mkiter =
-    (* caveat : partial application with effects *)
-    let convert = Ideutils.byte_offset_to_char_offset slice in
-    fun off -> start#forward_chars (convert off)
-  in
   let apply_tag off tag =
-    let start = mkiter off in
-    buffer#apply_tag ~start ~stop:start#forward_char tag
+    (* off is now a utf8-compliant char offset, cf Coq_lex.utf8_adjust *)
+    let iter = start#forward_chars off in
+    buffer#apply_tag ~start:iter ~stop:iter#forward_char tag
   in
   Coq_lex.delimit_sentences apply_tag slice
 
