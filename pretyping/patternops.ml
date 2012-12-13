@@ -23,8 +23,8 @@ open Evd
 
 let case_info_pattern_eq i1 i2 =
   i1.cip_style == i2.cip_style &&
-  Option.Misc.compare eq_ind i1.cip_ind i2.cip_ind &&
-  Option.Misc.compare Int.equal i1.cip_ind_args i2.cip_ind_args &&
+  Option.equal eq_ind i1.cip_ind i2.cip_ind &&
+  Option.equal Int.equal i1.cip_ind_args i2.cip_ind_args &&
   i1.cip_extensible == i2.cip_extensible
 
 let rec constr_pattern_eq p1 p2 = match p1, p2 with
@@ -45,7 +45,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PLetIn (v1, t1, b1), PLetIn (v2, t2, b2) ->
   name_eq v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
 | PSort s1, PSort s2 -> glob_sort_eq s1 s2
-| PMeta m1, PMeta m2 -> Option.Misc.compare id_eq m1 m2
+| PMeta m1, PMeta m2 -> Option.equal id_eq m1 m2
 | PIf (t1, l1, r1), PIf (t2, l2, r2) ->
   constr_pattern_eq t1 t2 && constr_pattern_eq l1 l2 && constr_pattern_eq r1 r2
 | PCase (info1, p1, r1, l1), PCase (info2, p2, r2, l2) ->

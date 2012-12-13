@@ -117,7 +117,7 @@ type search_entry = stored_data list * stored_data list * Bounded_net.t
 let empty_se = ([],[],Bounded_net.create ())
 
 let eq_pri_auto_tactic (_, x) (_, y) =
-  if Int.equal x.pri y.pri && Option.Misc.compare constr_pattern_eq x.pat y.pat then
+  if Int.equal x.pri y.pri && Option.equal constr_pattern_eq x.pat y.pat then
     match x.code,y.code with
       | Res_pf(cstr,_),Res_pf(cstr1,_) -> 
 	   eq_constr cstr cstr1

@@ -13,6 +13,8 @@
    they actually are similar considering ['a option] as a type
    of lists with at most one element. *)
 
+exception IsNone
+
 (** [has_some x] is [true] if [x] is of the form [Some y] and [false]
     otherwise.  *)
 val has_some : 'a option -> bool
@@ -20,7 +22,11 @@ val has_some : 'a option -> bool
 (** Negation of [has_some] *)
 val is_empty : 'a option -> bool
 
-exception IsNone
+(** [equal f x y] lifts the equality predicate [f] to
+    option types. That is, if both [x] and [y] are [None] then
+    it returns [true], if they are both [Some _] then
+    [f] is called. Otherwise it returns [false]. *)
+val equal : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
 
 (** [get x] returns [y] where [x] is [Some y]. It raises IsNone
     if [x] equals [None]. *)
@@ -106,15 +112,3 @@ module List : sig
 
   val find : ('a -> 'b option) -> 'a list -> 'b option
 end
-
-
-(** {6 Miscelaneous Primitives} *)
-
-module Misc : sig
-  (** [Misc.compare f x y] lifts the equality predicate [f] to
-      option types. That is, if both [x] and [y] are [None] then
-      it returns [true], if they are bothe [Some _] then
-      [f] is called. Otherwise it returns [false]. *)
-   val compare : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
-end
-

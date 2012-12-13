@@ -385,7 +385,7 @@ let convert_hyp check (id,b,bt as d) env rdefs gl info =
     (fun _ (_,c,ct) _ ->
        if check && not (Reductionops.is_conv env sigma bt ct) then
 	 Errors.error ("Incorrect change of the type of "^(Names.string_of_id id));
-       if check && not (Option.Misc.compare (Reductionops.is_conv env sigma) b c) then
+       if check && not (Option.equal (Reductionops.is_conv env sigma) b c) then
 	 Errors.error ("Incorrect change of the body of "^(Names.string_of_id id));
        d)
   in

@@ -820,7 +820,7 @@ let locate_notation prglob ntn scope =
 	    pr_notation_info prglob df r ++ tbrk (1,2) ++
 	    (if String.equal sc default_scope then mt () else (str ": " ++ str sc)) ++
 	    tbrk (1,2) ++
-	    (if Option.Misc.compare String.equal (Some sc) scope then str "(default interpretation)" else mt ())
+	    (if Option.equal String.equal (Some sc) scope then str "(default interpretation)" else mt ())
 	    ++ fnl ()))
 	l) ntns)
 

@@ -892,7 +892,7 @@ let make_interpretation_type isrec = function
 
 let make_interpretation_vars recvars allvars =
   let eq_subscope (sc1, l1) (sc2, l2) =
-    Option.Misc.compare String.equal sc1 sc2 &&
+    Option.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
   in
   List.iter (fun (x,y) ->

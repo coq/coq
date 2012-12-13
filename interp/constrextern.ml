@@ -173,7 +173,7 @@ let rec check_same_pattern p1 p2 =
     | CPatCstr(_,c1,a1,b1), CPatCstr(_,c2,a2,b2) when eq_reference c1 c2 ->
         let () = List.iter2 check_same_pattern a1 a2 in
         List.iter2 check_same_pattern b1 b2
-    | CPatAtom(_,r1), CPatAtom(_,r2) when Option.Misc.compare eq_reference r1 r2 -> ()
+    | CPatAtom(_,r1), CPatAtom(_,r2) when Option.equal eq_reference r1 r2 -> ()
     | CPatPrim(_,i1), CPatPrim(_,i2) when prim_token_eq i1 i2 -> ()
     | CPatDelimiters(_,s1,e1), CPatDelimiters(_,s2,e2) when String.equal s1 s2 ->
         check_same_pattern e1 e2
@@ -185,7 +185,7 @@ let check_same_ref r1 r2 =
 let eq_located f (_, x) (_, y) = f x y
 
 let same_id (id1, c1) (id2, c2) =
-  Option.Misc.compare (eq_located id_eq) id1 id2 && Pervasives.(=) c1 c2
+  Option.equal (eq_located id_eq) id1 id2 && Pervasives.(=) c1 c2
 
 let rec check_same_type ty1 ty2 =
   match ty1, ty2 with
@@ -213,14 +213,14 @@ let rec check_same_type ty1 ty2 =
   | CLetIn(_,(_,na1),a1,b1), CLetIn(_,(_,na2),a2,b2) when name_eq na1 na2 ->
       check_same_type a1 a2;
       check_same_type b1 b2
-  | CAppExpl(_,(proj1,r1),al1), CAppExpl(_,(proj2,r2),al2) when Option.Misc.compare Int.equal proj1 proj2 ->
+  | CAppExpl(_,(proj1,r1),al1), CAppExpl(_,(proj2,r2),al2) when Option.equal Int.equal proj1 proj2 ->
       check_same_ref r1 r2;
       List.iter2 check_same_type al1 al2
   | CApp(_,(_,e1),al1), CApp(_,(_,e2),al2) ->
       check_same_type e1 e2;
       let check_args (a1,e1) (a2,e2) =
         let eq_expl = eq_located Constrintern.explicitation_eq in
-        if not (Option.Misc.compare eq_expl e1 e2) then failwith "not same expl";
+        if not (Option.equal eq_expl e1 e2) then failwith "not same expl";
         check_same_type a1 a2
       in
       List.iter2 check_args al1 al2

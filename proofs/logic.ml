@@ -472,7 +472,7 @@ let convert_hyp sign sigma (id,b,bt as d) =
         let env = Global.env_of_context sign in
         if !check && not (is_conv env sigma bt ct) then
 	  error ("Incorrect change of the type of "^(string_of_id id)^".");
-        if !check && not (Option.Misc.compare (is_conv env sigma) b c) then
+        if !check && not (Option.equal (is_conv env sigma) b c) then
 	  error ("Incorrect change of the body of "^(string_of_id id)^".");
        if !check then reorder := check_decl_position env sign d;
        d) in

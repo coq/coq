@@ -23,6 +23,12 @@ let is_empty = function
 | None -> true
 | Some _ -> false
 
+(** Lifting equality onto option types. *)
+let equal f x y = match x, y with
+| None, None -> true
+| Some x, Some y -> f x y
+| _, _ -> false
+
 exception IsNone
 
 (** [get x] returns [y] where [x] is [Some y]. It raises IsNone
@@ -164,21 +170,4 @@ module List =
 	 |None -> find f t
 	 |x -> x
 
-end
-
-
-
-(** {6 Miscelaneous Primitives} *)
-
-module Misc =
- struct
-  (** [Misc.compare f x y] lifts the equality predicate [f] to
-      option types. That is, if both [x] and [y] are [None] then
-      it returns [true], if they are bothe [Some _] then
-      [f] is called. Otherwise it returns [false]. *)
-   let compare f x y =
-     match x,y with
-     | None, None -> true
-     | Some z, Some w -> f z w
-     | _,_ -> false
 end

@@ -1190,7 +1190,7 @@ let intern_ind_pattern genv env pat =
 
 let explicitation_eq ex1 ex2 = match ex1, ex2 with
 | ExplByPos (i1, id1), ExplByPos (i2, id2) ->
-  Int.equal i1 i2 && Option.Misc.compare id_eq id1 id2
+  Int.equal i1 i2 && Option.equal id_eq id1 id2
 | ExplByName id1, ExplByName id2 ->
   id_eq id1 id2
 | _ -> false
