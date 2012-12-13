@@ -293,8 +293,8 @@ let drop_implicits_in_patt cst nb_expl args =
        impls_fit [] (imps,args)
 
 let has_curly_brackets ntn =
-  String.length ntn >= 6 && (String.equal (String.sub ntn 0 6) "{ _ } " ||
-    String.equal (String.sub ntn (String.length ntn - 6) 6) " { _ }" ||
+  String.length ntn >= 6 && (String.is_sub "{ _ } " ntn 0 ||
+    String.is_sub " { _ }" ntn (String.length ntn - 6) ||
     String.string_contains ~where:ntn ~what:" { _ } ")
 
 let rec wildcards ntn n =
@@ -312,7 +312,7 @@ let expand_curly_brackets loc mknot ntn l =
     | a::l ->
         let a' =
           let p = List.nth (wildcards !ntn' 0) i - 2 in
-          if p>=0 & p+5 <= String.length !ntn' && String.equal (String.sub !ntn' p 5) "{ _ }"
+          if p>=0 && p+5 <= String.length !ntn' && String.is_sub "{ _ }" !ntn' p
           then begin
             ntn' :=
               String.sub !ntn' 0 p ^ "_" ^

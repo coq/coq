@@ -2276,7 +2276,7 @@ let make_up_names n ind_opt cname =
   id_of_string base, hyprecname, avoid
 
 let error_ind_scheme s =
-  let s = if not (String.equal s "") then s^" " else s in
+  let s = if not (String.is_empty s) then s^" " else s in
   error ("Cannot recognize "^s^"an induction scheme.")
 
 let coq_eq = Lazy.lazy_from_fun Coqlib.build_coq_eq

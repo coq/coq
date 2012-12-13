@@ -63,11 +63,11 @@ let remove_top_ml () = Mltop.remove ()
 
 let inputstate = ref ""
 let set_inputstate s = inputstate:=s
-let inputstate () = if not (String.equal !inputstate "") then intern_state !inputstate
+let inputstate () = if not (String.is_empty !inputstate) then intern_state !inputstate
 
 let outputstate = ref ""
 let set_outputstate s = outputstate:=s
-let outputstate () = if not (String.equal !outputstate "") then extern_state !outputstate
+let outputstate () = if not (String.is_empty !outputstate) then extern_state !outputstate
 
 let set_default_include d = push_include (d,Nameops.default_root_prefix)
 let set_include d p =

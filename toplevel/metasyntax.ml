@@ -261,7 +261,7 @@ let parse_format ((loc, str) : lstring) =
     else push_white n [[]]
   in
   try
-    if not (String.equal str "") then match parse_token 0 with
+    if not (String.is_empty str) then match parse_token 0 with
       | [l] -> l
       | _ -> error "Box closed without being opened in format."
     else
@@ -1083,7 +1083,7 @@ let contract_notation ntn =
   let rec aux ntn i =
     if i <= String.length ntn - 5 then
       let ntn' =
-        if String.equal (String.sub ntn i 5) "{ _ }" then
+        if String.is_sub "{ _ }" ntn i then
           String.sub ntn 0 i ^ "_" ^
           String.sub ntn (i+5) (String.length ntn -i-5)
         else ntn in

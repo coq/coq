@@ -84,7 +84,7 @@ EXTEND
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]"; "->"; "["; e = Pcaml.expr; "]"
         ->
-      if String.equal s "" then Errors.user_err_loc (!@loc,"",Pp.str"Command name is empty.");
+      if String.is_empty s then Errors.user_err_loc (!@loc,"",Pp.str"Command name is empty.");
       (Some s,l,<:expr< fun () -> $e$ >>)
       | "[" ; "-" ; l = LIST1 args ; "]" ; "->" ; "[" ; e = Pcaml.expr ; "]" ->
 	  (None,l,<:expr< fun () -> $e$ >>)
