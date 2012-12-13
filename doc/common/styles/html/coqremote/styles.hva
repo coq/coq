@@ -18,6 +18,7 @@
 
 \htmlhead{\begin{rawhtml}
 <div id="container">
+
 <div id="headertop">
 <div id="nav">
   <ul class="links-menu">
@@ -32,13 +33,12 @@
 </div>
 
 <div id="header">
-
 <div id="logoWrapper">
 
-<div id="logo"><a href="http://coq.inria.fr/" title="Home"><img src="http://coq.inria.fr/files/barron_logo.png" alt="Home" /></a>
-</div>
-<div id="siteName"><a href="http://coq.inria.fr/" title="Home">The Coq Proof Assistant</a>
-</div>
+  <div id="logo"><a href="http://coq.inria.fr/" title="Home"><img src="http://coq.inria.fr/files/barron_logo.png" alt="Home" /></a>
+  </div>
+  <div id="siteName"><a href="http://coq.inria.fr/" title="Home">The Coq Proof Assistant</a>
+  </div>
 
 </div>
 </div>
@@ -49,34 +49,25 @@
 
 \htmlfoot{\begin{rawhtml}
 <div id="sidebarWrapper">
-<div id="sidebar">
-
-<div class="block">
-<h2 class="title">Navigation</h2>
-<div class="content">
-
-<ul class="menu">
-
-<li class="leaf"><a href="index.html">Cover</a></li>
-<li class="leaf"><a href="toc.html">Table of contents</a></li>
-<li class="leaf">Index
-  <ul class="menu">
-  <li><a href="general-index.html">General</a></li>
-  <li><a href="command-index.html">Commands</a></li>
-  <li><a href="tactic-index.html">Tactics</a></li>
-  <li><a href="error-index.html">Errors</a></li>
-  </ul>
-</li>
-
-</ul>
-
-</div>
-</div>
-
-</div>
-</div>
-
-
+  <div id="sidebar">
+    <div class="block">
+      <h2 class="title">Navigation</h2>
+      <div class="content">
+        <ul class="menu">
+          <li class="leaf"><a href="index.html">Cover</a></li>
+          <li class="leaf"><a href="toc.html">Table of contents</a></li>
+          <li class="leaf">Index
+            <ul class="menu">
+              <li><a href="general-index.html">General</a></li>
+              <li><a href="command-index.html">Commands</a></li>
+              <li><a href="tactic-index.html">Tactics</a></li>
+              <li><a href="error-index.html">Errors</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </div>
 
 </div>
