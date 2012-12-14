@@ -65,16 +65,15 @@ type constr_expr =
   | CRef of reference
   | CFix of Loc.t * identifier located * fix_expr list
   | CCoFix of Loc.t * identifier located * cofix_expr list
-  | CProdN of Loc.t * (name located list * binder_kind * constr_expr) list * constr_expr
-  | CLambdaN of Loc.t * (name located list * binder_kind * constr_expr) list * constr_expr
+  | CProdN of Loc.t * binder_expr list * constr_expr
+  | CLambdaN of Loc.t * binder_expr list * constr_expr
   | CLetIn of Loc.t * name located * constr_expr * constr_expr
   | CAppExpl of Loc.t * (proj_flag * reference) * constr_expr list
   | CApp of Loc.t * (proj_flag * constr_expr) *
       (constr_expr * explicitation located option) list
   | CRecord of Loc.t * constr_expr option * (reference * constr_expr) list
   | CCases of Loc.t * case_style * constr_expr option *
-      (constr_expr * (name located option * cases_pattern_expr option)) list *
-      (Loc.t * cases_pattern_expr list located list * constr_expr) list
+      case_expr list * branch_expr list
   | CLetTuple of Loc.t * name located list * (name located option * constr_expr option) *
       constr_expr * constr_expr
   | CIf of Loc.t * constr_expr * (name located option * constr_expr option)
@@ -88,6 +87,15 @@ type constr_expr =
   | CGeneralization of Loc.t * binding_kind * abstraction_kind option * constr_expr
   | CPrim of Loc.t * prim_token
   | CDelimiters of Loc.t * string * constr_expr
+
+and case_expr =
+  constr_expr * (name located option * cases_pattern_expr option)
+
+and branch_expr =
+  Loc.t * cases_pattern_expr list located list * constr_expr
+
+and binder_expr =
+  name located list * binder_kind * constr_expr
 
 and fix_expr =
     identifier located * (identifier located option * recursion_order_expr) *

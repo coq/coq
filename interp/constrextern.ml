@@ -155,116 +155,6 @@ let extern_reference loc vars r =
   else
     Qualid (loc,shortest_qualid_of_global vars r)
 
-
-(************************************************************************)
-(* Equality up to location (useful for translator v8) *)
-
-let prim_token_eq t1 t2 = match t1, t2 with
-| Numeral i1, Numeral i2 -> Bigint.equal i1 i2
-| String s1, String s2 -> String.equal s1 s2
-| _ -> false
-
-(** ppedrot: FIXME, EVERYTHING IS WRONG HERE! *)
-
-let rec check_same_pattern p1 p2 =
-  match p1, p2 with
-    | CPatAlias(_,a1,i1), CPatAlias(_,a2,i2) when id_eq i1 i2 ->
-        check_same_pattern a1 a2
-    | CPatCstr(_,c1,a1,b1), CPatCstr(_,c2,a2,b2) when eq_reference c1 c2 ->
-        let () = List.iter2 check_same_pattern a1 a2 in
-        List.iter2 check_same_pattern b1 b2
-    | CPatAtom(_,r1), CPatAtom(_,r2) when Option.equal eq_reference r1 r2 -> ()
-    | CPatPrim(_,i1), CPatPrim(_,i2) when prim_token_eq i1 i2 -> ()
-    | CPatDelimiters(_,s1,e1), CPatDelimiters(_,s2,e2) when String.equal s1 s2 ->
-        check_same_pattern e1 e2
-    | _ -> failwith "not same pattern"
-
-let check_same_ref r1 r2 =
-  if not (eq_reference r1 r2) then failwith "not same ref"
-
-let eq_located f (_, x) (_, y) = f x y
-
-let same_id (id1, c1) (id2, c2) =
-  Option.equal (eq_located id_eq) id1 id2 && Pervasives.(=) c1 c2
-
-let rec check_same_type ty1 ty2 =
-  match ty1, ty2 with
-  | CRef r1, CRef r2 -> check_same_ref r1 r2
-  | CFix(_,id1,fl1), CFix(_,id2,fl2) when eq_located id_eq id1 id2 ->
-      List.iter2 (fun ((_, id1),i1,bl1,a1,b1) ((_, id2),i2,bl2,a2,b2) ->
-        if not (id_eq id1 id2) || not (same_id i1 i2) then failwith "not same fix";
-        check_same_fix_binder bl1 bl2;
-        check_same_type a1 a2;
-        check_same_type b1 b2)
-        fl1 fl2
-  | CCoFix(_,id1,fl1), CCoFix(_,id2,fl2) when eq_located id_eq id1 id2 ->
-      List.iter2 (fun (id1,bl1,a1,b1) (id2,bl2,a2,b2) ->
-        if not (eq_located id_eq id1 id2) then failwith "not same fix";
-        check_same_fix_binder bl1 bl2;
-        check_same_type a1 a2;
-        check_same_type b1 b2)
-        fl1 fl2
-  | CProdN(_,bl1,a1), CProdN(_,bl2,a2) ->
-      List.iter2 check_same_binder bl1 bl2;
-      check_same_type a1 a2
-  | CLambdaN(_,bl1,a1), CLambdaN(_,bl2,a2) ->
-      List.iter2 check_same_binder bl1 bl2;
-      check_same_type a1 a2
-  | CLetIn(_,(_,na1),a1,b1), CLetIn(_,(_,na2),a2,b2) when name_eq na1 na2 ->
-      check_same_type a1 a2;
-      check_same_type b1 b2
-  | CAppExpl(_,(proj1,r1),al1), CAppExpl(_,(proj2,r2),al2) when Option.equal Int.equal proj1 proj2 ->
-      check_same_ref r1 r2;
-      List.iter2 check_same_type al1 al2
-  | CApp(_,(_,e1),al1), CApp(_,(_,e2),al2) ->
-      check_same_type e1 e2;
-      let check_args (a1,e1) (a2,e2) =
-        let eq_expl = eq_located Constrintern.explicitation_eq in
-        if not (Option.equal eq_expl e1 e2) then failwith "not same expl";
-        check_same_type a1 a2
-      in
-      List.iter2 check_args al1 al2
-  | CCases(_,_,_,a1,brl1), CCases(_,_,_,a2,brl2) ->
-      List.iter2 (fun (tm1,_) (tm2,_) -> check_same_type tm1 tm2) a1 a2;
-      List.iter2 (fun (_,pl1,r1) (_,pl2,r2) ->
-        List.iter2 (Loc.located_iter2 (List.iter2 check_same_pattern)) pl1 pl2;
-        check_same_type r1 r2) brl1 brl2
-  | CHole _, CHole _ -> ()
-  | CPatVar(_,(b1, i1)), CPatVar(_,(b2, i2)) when (b1 : bool) == b2 && id_eq i1 i2 -> ()
-  | CSort(_,s1), CSort(_,s2) when glob_sort_eq s1 s2 -> ()
-  | CCast(_,a1,(CastConv b1|CastVM b1)), CCast(_,a2,(CastConv b2|CastVM b2)) ->
-      check_same_type a1 a2;
-      check_same_type b1 b2
-  | CCast(_,a1,CastCoerce), CCast(_,a2, CastCoerce) ->
-      check_same_type a1 a2
-  | CNotation(_,n1,(e1,el1,bl1)), CNotation(_,n2,(e2,el2,bl2)) when String.equal n1 n2 ->
-      List.iter2 check_same_type e1 e2;
-      List.iter2 (List.iter2 check_same_type) el1 el2;
-      List.iter2 check_same_fix_binder bl1 bl2
-  | CPrim(_,i1), CPrim(_,i2) when prim_token_eq i1 i2 -> ()
-  | CDelimiters(_,s1,e1), CDelimiters(_,s2,e2) when String.equal s1 s2 ->
-      check_same_type e1 e2
-  | _ when Pervasives.(=) ty1 ty2 -> () (** FIXME *)
-  | _ -> failwith "not same type"
-
-and check_same_binder (nal1,_,e1) (nal2,_,e2) =
-  List.iter2 (fun (_,na1) (_,na2) ->
-    if not (name_eq na1 na2) then failwith "not same name") nal1 nal2;
-  check_same_type e1 e2
-
-and check_same_fix_binder bl1 bl2 =
-  List.iter2 (fun b1 b2 ->
-    match b1,b2 with
-        LocalRawAssum(nal1,k,ty1), LocalRawAssum(nal2,k',ty2) ->
-          check_same_binder (nal1,k,ty1) (nal2,k',ty2)
-      | LocalRawDef(na1,def1), LocalRawDef(na2,def2) ->
-          check_same_binder ([na1],default_binder_kind,def1) ([na2],default_binder_kind,def2)
-      | _ -> failwith "not same binder") bl1 bl2
-
-let is_same_type c d =
-  try let () = check_same_type c d in true
-  with Failure _ | Invalid_argument _ -> false
-
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
 
@@ -865,7 +755,7 @@ and factorize_prod scopes vars na bk aty c =
   let c = extern_typ scopes vars c in
   match na, c with
   | Name id, CProdN (loc,[nal,Default bk',ty],c)
-      when binding_kind_eq bk bk' && is_same_type aty ty
+      when binding_kind_eq bk bk' && constr_expr_eq aty ty
       & not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
       nal,c
   | _ ->
@@ -875,7 +765,7 @@ and factorize_lambda inctx scopes vars na bk aty c =
   let c = sub_extern inctx scopes vars c in
   match c with
   | CLambdaN (loc,[nal,Default bk',ty],c)
-      when binding_kind_eq bk bk' && is_same_type aty ty
+      when binding_kind_eq bk bk' && constr_expr_eq aty ty
       & not (occur_name na ty) (* avoid na in ty escapes scope *) ->
       nal,c
   | _ ->
@@ -893,7 +783,7 @@ and extern_local_binder scopes vars = function
       let ty = extern_typ scopes vars (anonymize_if_reserved na ty) in
       (match extern_local_binder scopes (name_fold Idset.add na vars) l with
           (assums,ids,LocalRawAssum(nal,k,ty')::l)
-            when is_same_type ty ty' &
+            when constr_expr_eq ty ty' &
               match na with Name id -> not (occur_var_constr_expr id ty')
                 | _ -> true ->
               (na::assums,na::ids,

@@ -34,7 +34,10 @@ Argextend
 Tacextend
 Vernacextend
 
+Nameops
 Redops
+Miscops
+Glob_ops
 Constrexpr_ops
 Locusops
 G_prim

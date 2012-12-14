@@ -328,18 +328,8 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
     impls
 
 (* Very syntactical equality *)
-let eq_local_binder d1 d2 = match d1,d2 with
-  | LocalRawAssum (nal1,k1,c1), LocalRawAssum (nal2,k2,c2) ->
-      Int.equal (List.length nal1) (List.length nal2) && binder_kind_eq k1 k2 &&
-      List.for_all2 (fun (_,na1) (_,na2) -> name_eq na1 na2) nal1 nal2 &&
-      Constrextern.is_same_type c1 c2
-  | LocalRawDef ((_,id1),c1), LocalRawDef ((_,id2),c2) ->
-      name_eq id1 id2 && Constrextern.is_same_type c1 c2
-  | _ ->
-      false
-
 let eq_local_binders bl1 bl2 =
-  Int.equal (List.length bl1) (List.length bl2) && List.for_all2 eq_local_binder bl1 bl2
+  List.equal local_binder_eq bl1 bl2
 
 let extract_coercions indl =
   let mkqid (_,((_,id),_)) = qualid_of_ident id in
