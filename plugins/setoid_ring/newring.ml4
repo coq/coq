@@ -244,13 +244,13 @@ let my_constant c =
   lazy (Coqlib.gen_constant_in_modules "Ring" plugin_modules c)
 
 let new_ring_path =
-  make_dirpath (List.map Id.of_string ["Ring_tac";plugin_dir;"Coq"])
+  Dir_path.make (List.map Id.of_string ["Ring_tac";plugin_dir;"Coq"])
 let ltac s =
-  lazy(make_kn (MPfile new_ring_path) (make_dirpath []) (mk_label s))
+  lazy(make_kn (MPfile new_ring_path) (Dir_path.make []) (mk_label s))
 let znew_ring_path =
-  make_dirpath (List.map Id.of_string ["InitialRing";plugin_dir;"Coq"])
+  Dir_path.make (List.map Id.of_string ["InitialRing";plugin_dir;"Coq"])
 let zltac s =
-  lazy(make_kn (MPfile znew_ring_path) (make_dirpath []) (mk_label s))
+  lazy(make_kn (MPfile znew_ring_path) (Dir_path.make []) (mk_label s))
 
 let mk_cst l s = lazy (Coqlib.gen_constant "newring" l s);;
 let pol_cst s = mk_cst [plugin_dir;"Ring_polynom"] s ;;
@@ -826,10 +826,10 @@ END
 (***********************************************************************)
 
 let new_field_path =
-  make_dirpath (List.map Id.of_string ["Field_tac";plugin_dir;"Coq"])
+  Dir_path.make (List.map Id.of_string ["Field_tac";plugin_dir;"Coq"])
 
 let field_ltac s =
-  lazy(make_kn (MPfile new_field_path) (make_dirpath []) (mk_label s))
+  lazy(make_kn (MPfile new_field_path) (Dir_path.make []) (mk_label s))
 
 
 let _ = add_map "field"

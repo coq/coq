@@ -13,38 +13,38 @@ open Names
 
 (**********************************************)
 
-let pr_dirpath sl = (str (string_of_dirpath sl))
+let pr_dirpath sl = (str (Dir_path.to_string sl))
 
 (*s Operations on dirpaths *)
 
 (* Pop the last n module idents *)
 let pop_dirpath_n n dir =
-  make_dirpath (List.skipn n (repr_dirpath dir))
+  Dir_path.make (List.skipn n (Dir_path.repr dir))
 
-let pop_dirpath p = match repr_dirpath p with
+let pop_dirpath p = match Dir_path.repr p with
   | [] -> anomaly "dirpath_prefix: empty dirpath"
-  | _::l -> make_dirpath l
+  | _::l -> Dir_path.make l
 
 let is_dirpath_prefix_of d1 d2 =
-  List.prefix_of (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2))
+  List.prefix_of (List.rev (Dir_path.repr d1)) (List.rev (Dir_path.repr d2))
 
 let chop_dirpath n d =
-  let d1,d2 = List.chop n (List.rev (repr_dirpath d)) in
-    make_dirpath (List.rev d1), make_dirpath (List.rev d2)
+  let d1,d2 = List.chop n (List.rev (Dir_path.repr d)) in
+    Dir_path.make (List.rev d1), Dir_path.make (List.rev d2)
 
 let drop_dirpath_prefix d1 d2 =
-  let d = Util.List.drop_prefix (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2)) in
-    make_dirpath (List.rev d)
+  let d = Util.List.drop_prefix (List.rev (Dir_path.repr d1)) (List.rev (Dir_path.repr d2)) in
+    Dir_path.make (List.rev d)
 
-let append_dirpath d1 d2 = make_dirpath (repr_dirpath d2 @ repr_dirpath d1)
+let append_dirpath d1 d2 = Dir_path.make (Dir_path.repr d2 @ Dir_path.repr d1)
 
 (* To know how qualified a name should be to be understood in the current env*)
-let add_dirpath_prefix id d = make_dirpath (repr_dirpath d @ [id])
+let add_dirpath_prefix id d = Dir_path.make (Dir_path.repr d @ [id])
 
 let split_dirpath d =
-  let l = repr_dirpath d in (make_dirpath (List.tl l), List.hd l)
+  let l = Dir_path.repr d in (Dir_path.make (List.tl l), List.hd l)
 
-let add_dirpath_suffix p id = make_dirpath (id :: repr_dirpath p)
+let add_dirpath_suffix p id = Dir_path.make (id :: Dir_path.repr p)
 
 (* parsing *)
 let parse_dir s =
@@ -68,23 +68,22 @@ let dirpath_of_string s =
   | "" -> []
   | _ -> parse_dir s
   in
-  make_dirpath path
+  Dir_path.make path
 
-let string_of_dirpath = Names.string_of_dirpath
+let string_of_dirpath = Names.Dir_path.to_string
 
-
-module Dirset = Set.Make(struct type t = dir_path let compare = dir_path_ord end)
-module Dirmap = Map.Make(struct type t = dir_path let compare = dir_path_ord end)
+module Dirset = Set.Make(struct type t = Dir_path.t let compare = Dir_path.compare end)
+module Dirmap = Map.Make(struct type t = Dir_path.t let compare = Dir_path.compare end)
 
 (*s Section paths are absolute names *)
 
 type full_path = {
-  dirpath : dir_path ;
+  dirpath : Dir_path.t ;
   basename : Id.t }
 
 let eq_full_path p1 p2 =
   Id.equal p1.basename p2.basename &&
-  Int.equal (dir_path_ord p1.dirpath p2.dirpath) 0
+  Int.equal (Dir_path.compare p1.dirpath p2.dirpath) 0
 
 let make_path pa id = { dirpath = pa; basename = id }
 
@@ -93,9 +92,9 @@ let repr_path { dirpath = pa; basename = id } = (pa,id)
 (* parsing and printing of section paths *)
 let string_of_path sp =
   let (sl,id) = repr_path sp in
-  match repr_dirpath sl with
+  match Dir_path.repr sl with
   | [] -> Id.to_string id
-  | _ -> (string_of_dirpath sl) ^ "." ^ (Id.to_string id)
+  | _ -> (Dir_path.to_string sl) ^ "." ^ (Id.to_string id)
 
 let sp_ord sp1 sp2 =
   let (p1,id1) = repr_path sp1
@@ -125,8 +124,8 @@ let pr_path sp = str (string_of_path sp)
 
 let restrict_path n sp =
   let dir, s = repr_path sp in
-  let dir' = List.firstn n (repr_dirpath dir) in
-  make_path (make_dirpath dir') s
+  let dir' = List.firstn n (Dir_path.repr dir) in
+  make_path (Dir_path.make dir') s
 
 (*s qualified names *)
 type qualid = full_path
@@ -142,30 +141,30 @@ let pr_qualid = pr_path
 let qualid_of_string = path_of_string
 
 let qualid_of_path sp = sp
-let qualid_of_ident id = make_qualid empty_dirpath id
+let qualid_of_ident id = make_qualid Dir_path.empty id
 let qualid_of_dirpath dir =
   let (l,a) = split_dirpath dir in
   make_qualid l a
 
 type object_name = full_path * kernel_name
 
-type object_prefix = dir_path * (module_path * dir_path)
+type object_prefix = Dir_path.t * (module_path * Dir_path.t)
 
 let make_oname (dirpath,(mp,dir)) id =
   make_path dirpath id, make_kn mp dir (label_of_id id)
 
-(* to this type are mapped dir_path's in the nametab *)
+(* to this type are mapped Dir_path.t's in the nametab *)
 type global_dir_reference =
   | DirOpenModule of object_prefix
   | DirOpenModtype of object_prefix
   | DirOpenSection of object_prefix
   | DirModule of object_prefix
-  | DirClosedSection of dir_path
+  | DirClosedSection of Dir_path.t
       (* this won't last long I hope! *)
 
 let eq_op (d1, (mp1, p1)) (d2, (mp2, p2)) =
-  Int.equal (dir_path_ord d1 d2) 0 &&
-  Int.equal (dir_path_ord p1 p2) 0 &&
+  Int.equal (Dir_path.compare d1 d2) 0 &&
+  Int.equal (Dir_path.compare p1 p2) 0 &&
   mp_eq mp1 mp2
 
 let eq_global_dir_reference r1 r2 = match r1, r2 with
@@ -173,7 +172,7 @@ let eq_global_dir_reference r1 r2 = match r1, r2 with
 | DirOpenModtype op1, DirOpenModtype op2 -> eq_op op1 op2
 | DirOpenSection op1, DirOpenSection op2 -> eq_op op1 op2
 | DirModule op1, DirModule op2 -> eq_op op1 op2
-| DirClosedSection dp1, DirClosedSection dp2 -> Int.equal (dir_path_ord dp1 dp2) 0
+| DirClosedSection dp1, DirClosedSection dp2 -> Int.equal (Dir_path.compare dp1 dp2) 0
 | _ -> false
 
 type reference =

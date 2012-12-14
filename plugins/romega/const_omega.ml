@@ -19,7 +19,7 @@ let meaningful_submodule = [ "Z"; "N"; "Pos" ]
 
 let string_of_global r =
   let dp = Nametab.dirpath_of_global r in
-  let prefix = match Names.repr_dirpath dp with
+  let prefix = match Names.Dir_path.repr dp with
     | [] -> ""
     | m::_ ->
       let s = Names.Id.to_string m in

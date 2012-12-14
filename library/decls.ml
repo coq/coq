@@ -18,7 +18,7 @@ open Libnames
 (** Datas associated to section variables and local definitions *)
 
 type variable_data =
-    dir_path * bool (* opacity *) * Univ.constraints * logical_kind
+    Dir_path.t * bool (* opacity *) * Univ.constraints * logical_kind
 
 let vartab = ref (Id.Map.empty : variable_data Id.Map.t)
 
@@ -65,7 +65,7 @@ let initialize_named_context_for_proof () =
 let last_section_hyps dir =
   fold_named_context
     (fun (id,_,_) sec_ids ->
-      try if dir_path_eq dir (variable_path id) then id::sec_ids else sec_ids
+      try if Dir_path.equal dir (variable_path id) then id::sec_ids else sec_ids
       with Not_found -> sec_ids)
     (Environ.named_context (Global.env()))
     ~init:[]

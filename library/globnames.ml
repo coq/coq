@@ -138,28 +138,28 @@ let constr_of_global_or_constr = function
 
 (** {6 Temporary function to brutally form kernel names from section paths } *)
 
-let encode_mind dir id = make_mind (MPfile dir) empty_dirpath (label_of_id id)
+let encode_mind dir id = make_mind (MPfile dir) Dir_path.empty (label_of_id id)
 
-let encode_con dir id = make_con (MPfile dir) empty_dirpath (label_of_id id)
+let encode_con dir id = make_con (MPfile dir) Dir_path.empty (label_of_id id)
 
 let decode_mind kn =
   let rec dir_of_mp = function
-    | MPfile dir -> repr_dirpath dir
+    | MPfile dir -> Dir_path.repr dir
     | MPbound mbid ->
 	let _,_,dp = repr_mbid mbid in
 	let id = id_of_mbid mbid in
-	  id::(repr_dirpath dp)
+	  id::(Dir_path.repr dp)
     | MPdot(mp,l) -> (id_of_label l)::(dir_of_mp mp)
   in
   let mp,sec_dir,l = repr_mind kn in
-    if (repr_dirpath sec_dir) = [] then
-     (make_dirpath (dir_of_mp mp)),id_of_label l
+    if (Dir_path.repr sec_dir) = [] then
+     (Dir_path.make (dir_of_mp mp)),id_of_label l
     else
       anomaly "Section part should be empty!"
 
 let decode_con kn =
   let mp,sec_dir,l = repr_con kn in
-    match mp,(repr_dirpath sec_dir) with
+    match mp,(Dir_path.repr sec_dir) with
 	MPfile dir,[] -> (dir,id_of_label l)
       | _ , [] -> anomaly "MPfile expected!"
       | _ -> anomaly "Section part should be empty!"

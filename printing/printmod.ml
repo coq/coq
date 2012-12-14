@@ -37,7 +37,7 @@ let _ =
 
 let get_new_id locals id =
   let rec get_id l id =
-    let dir = make_dirpath [id] in
+    let dir = Dir_path.make [id] in
       if not (Nametab.exists_module dir) then
 	id
       else
@@ -71,9 +71,9 @@ let print_kn locals kn =
 
 let nametab_register_dir mp =
   let id = Id.of_string "FAKETOP" in
-  let fp = Libnames.make_path empty_dirpath id in
-  let dir = make_dirpath [id] in
-  Nametab.push_dir (Nametab.Until 1) dir (DirModule (dir,(mp,empty_dirpath)));
+  let fp = Libnames.make_path Dir_path.empty id in
+  let dir = Dir_path.make [id] in
+  Nametab.push_dir (Nametab.Until 1) dir (DirModule (dir,(mp,Dir_path.empty)));
   fp
 
 (** Nota: the [global_reference] we register in the nametab below
@@ -90,9 +90,9 @@ let nametab_register_body mp fp (l,body) =
     | SFBmodule _ -> () (* TODO *)
     | SFBmodtype _ -> () (* TODO *)
     | SFBconst _ ->
-      push (id_of_label l) (ConstRef (make_con mp empty_dirpath l))
+      push (id_of_label l) (ConstRef (make_con mp Dir_path.empty l))
     | SFBmind mib ->
-      let mind = make_mind mp empty_dirpath l in
+      let mind = make_mind mp Dir_path.empty l in
       Array.iteri
 	(fun i mip ->
 	  push mip.mind_typename (IndRef (mind,i));
@@ -126,7 +126,7 @@ let print_body is_impl env mp (l,body) =
     | SFBmind mib ->
       try
 	let env = Option.get env in
-	Printer.pr_mutual_inductive_body env (make_mind mp empty_dirpath l) mib
+	Printer.pr_mutual_inductive_body env (make_mind mp Dir_path.empty l) mib
       with _ ->
 	(if mib.mind_finite then str "Inductive " else str "CoInductive")
 	++ name)
@@ -208,7 +208,7 @@ let rec print_modexpr env mp locals mexpr = match mexpr with
 
 let rec printable_body dir =
   let dir = pop_dirpath dir in
-    dir = empty_dirpath ||
+    dir = Dir_path.empty ||
     try
       match Nametab.locate_dir (qualid_of_dirpath dir) with
 	  DirOpenModtype _ -> false

@@ -34,7 +34,7 @@ let se_iter do_decl do_spec do_mp =
 	let mp_w =
 	  List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl'
 	in
-	let r = ConstRef (make_con mp_w empty_dirpath (label_of_id l')) in
+	let r = ConstRef (make_con mp_w Dir_path.empty (label_of_id l')) in
 	mt_iter mt; do_decl (Dtype(r,l,t))
     | MTwith (mt,ML_With_module(idl,mp))->
         let mp_mt = msid_of_mt mt in

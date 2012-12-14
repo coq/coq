@@ -72,15 +72,15 @@ val contents_after : Libnames.object_name option -> library_segment
 (** {6 Functions relative to current path } *)
 
 (** User-side names *)
-val cwd : unit -> Names.dir_path
-val cwd_except_section : unit -> Names.dir_path
-val current_dirpath : bool -> Names.dir_path (* false = except sections *)
+val cwd : unit -> Names.Dir_path.t
+val cwd_except_section : unit -> Names.Dir_path.t
+val current_dirpath : bool -> Names.Dir_path.t (* false = except sections *)
 val make_path : Names.Id.t -> Libnames.full_path
 val make_path_except_section : Names.Id.t -> Libnames.full_path
 val path_of_include : unit -> Libnames.full_path
 
 (** Kernel-side names *)
-val current_prefix : unit -> Names.module_path * Names.dir_path
+val current_prefix : unit -> Names.module_path * Names.Dir_path.t
 val make_kn : Names.Id.t -> Names.kernel_name
 val make_con : Names.Id.t -> Names.constant
 
@@ -124,19 +124,19 @@ val end_modtype :
 
 (** {6 Compilation units } *)
 
-val start_compilation : Names.dir_path -> Names.module_path -> unit
-val end_compilation : Names.dir_path -> Libnames.object_prefix * library_segment
+val start_compilation : Names.Dir_path.t -> Names.module_path -> unit
+val end_compilation : Names.Dir_path.t -> Libnames.object_prefix * library_segment
 
-(** The function [library_dp] returns the [dir_path] of the current
+(** The function [library_dp] returns the [Dir_path.t] of the current
    compiling library (or [default_library]) *)
-val library_dp : unit -> Names.dir_path
+val library_dp : unit -> Names.Dir_path.t
 
 (** Extract the library part of a name even if in a section *)
-val dp_of_mp : Names.module_path -> Names.dir_path
-val split_mp : Names.module_path -> Names.dir_path * Names.dir_path
-val split_modpath : Names.module_path -> Names.dir_path * Names.Id.t list
-val library_part :  Globnames.global_reference -> Names.dir_path
-val remove_section_part : Globnames.global_reference -> Names.dir_path
+val dp_of_mp : Names.module_path -> Names.Dir_path.t
+val split_mp : Names.module_path -> Names.Dir_path.t * Names.Dir_path.t
+val split_modpath : Names.module_path -> Names.Dir_path.t * Names.Id.t list
+val library_part :  Globnames.global_reference -> Names.Dir_path.t
+val remove_section_part : Globnames.global_reference -> Names.Dir_path.t
 
 (** {6 Sections } *)
 

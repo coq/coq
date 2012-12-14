@@ -104,7 +104,7 @@ val module_objects : module_path -> library_segment
 
 (** {6 Libraries i.e. modules on disk } *)
 
-type library_name = dir_path
+type library_name = Dir_path.t
 
 type library_objects
 

@@ -163,11 +163,11 @@ let convert_string d =
 let add_rec_path ~unix_path ~coq_root =
   if exists_dir unix_path then
     let dirs = all_subdirs ~unix_path in
-    let prefix = Names.repr_dirpath coq_root in
+    let prefix = Names.Dir_path.repr coq_root in
     let convert_dirs (lp, cp) =
       try
         let path = List.map convert_string (List.rev cp) @ prefix in
-        Some (lp, Names.make_dirpath path)
+        Some (lp, Names.Dir_path.make path)
       with Exit -> None
     in
     let dirs = List.map_filter convert_dirs dirs in

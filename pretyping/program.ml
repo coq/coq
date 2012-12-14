@@ -11,7 +11,7 @@ open Util
 open Names
 open Term
 
-let make_dir l = make_dirpath (List.map Id.of_string (List.rev l))
+let make_dir l = Dir_path.make (List.map Id.of_string (List.rev l))
 
 let find_reference locstr dir s =
   let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in

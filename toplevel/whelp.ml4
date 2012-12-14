@@ -83,7 +83,7 @@ let error_whelp_unknown_reference ref =
 let uri_of_repr_kn ref (mp,dir,l) =
   match mp with
     | MPfile sl ->
-        uri_of_dirpath (id_of_label l :: repr_dirpath dir @ repr_dirpath sl)
+        uri_of_dirpath (id_of_label l :: Dir_path.repr dir @ Dir_path.repr sl)
     | _ ->
         error_whelp_unknown_reference ref
 

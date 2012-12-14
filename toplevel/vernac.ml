@@ -427,7 +427,7 @@ let load_vernac verb file =
 let compile verbosely f =
   let ldir,long_f_dot_v = Flags.verbosely Library.start_library f in
   Dumpglob.start_dump_glob long_f_dot_v;
-  Dumpglob.dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
+  Dumpglob.dump_string ("F" ^ Names.Dir_path.to_string ldir ^ "\n");
   if !Flags.xml_export then !xml_start_library ();
   let _ = load_vernac verbosely long_f_dot_v in
   let pfs = Pfedit.get_all_proof_names () in

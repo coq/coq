@@ -39,7 +39,7 @@ type namedmodule =
    constructors *)
 
 let add_mib_nameobjects mp l mib map =
-  let ind = make_mind mp empty_dirpath l in
+  let ind = make_mind mp Dir_path.empty l in
   let add_mip_nameobjects j oib map =
     let ip = (ind,j) in
     let map =
@@ -88,8 +88,8 @@ let check_conv_error error why cst f env a1 a2 =
 (* for now we do not allow reorderings *)
 
 let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2= 
-  let kn1 = make_mind mp1 empty_dirpath l in
-  let kn2 = make_mind mp2 empty_dirpath l in
+  let kn1 = make_mind mp1 Dir_path.empty l in
+  let kn2 = make_mind mp2 Dir_path.empty l in
   let error why = error_signature_mismatch l spec2 why in
   let check_conv why cst f = check_conv_error error why cst f in
   let mib1 =

@@ -201,7 +201,7 @@ let show_match id =
 (* "Print" commands *)
 
 let print_path_entry (s,l) =
-  (str (string_of_dirpath l) ++ str " " ++ tbrk (0,0) ++ str s)
+  (str (Dir_path.to_string l) ++ str " " ++ tbrk (0,0) ++ str s)
 
 let print_loadpath dir =
   let l = Library.get_full_load_paths () in
@@ -250,7 +250,7 @@ let print_modtype r =
       msg_error (str"Unknown Module Type or Module " ++ pr_qualid qid)
 
 let print_namespace ns =
-  let ns = List.rev (Names.repr_dirpath ns) in
+  let ns = List.rev (Names.Dir_path.repr ns) in
   (* [match_dirpath], [match_modulpath] are helpers for [matches]
      which checks whether a constant is in the namespace [ns]. *)
   let rec match_dirpath ns = function
@@ -266,7 +266,7 @@ let print_namespace ns =
   in
   let rec match_modulepath ns = function
     | MPbound _ -> None (* Not a proper namespace. *)
-    | MPfile dir -> match_dirpath ns (Names.repr_dirpath dir)
+    | MPfile dir -> match_dirpath ns (Names.Dir_path.repr dir)
     | MPdot (mp,lbl) ->
         let id = Names.id_of_label lbl in
         begin match match_modulepath ns mp with
@@ -286,7 +286,7 @@ let print_namespace ns =
   let qualified_minus n mp =
     let rec list_of_modulepath = function
       | MPbound _ -> assert false (* MPbound never matches *)
-      | MPfile dir -> Names.repr_dirpath dir
+      | MPfile dir -> Names.Dir_path.repr dir
       | MPdot (mp,lbl) -> (Names.id_of_label lbl)::(list_of_modulepath mp)
     in
     snd (Util.List.chop n (List.rev (list_of_modulepath mp)))
@@ -400,7 +400,7 @@ let print_located_module r =
     let dir = Nametab.full_name_module qid in
     msg_notice (str "Module " ++ pr_dirpath dir)
   with Not_found ->
-    if dir_path_eq (fst (repr_qualid qid)) empty_dirpath then
+    if Dir_path.equal (fst (repr_qualid qid)) Dir_path.empty then
       msg_error (str "No module is referred to by basename" ++ spc () ++ pr_qualid qid)
     else
       msg_error (str "No module is referred to by name" ++ spc () ++ pr_qualid qid)
@@ -729,7 +729,7 @@ let vernac_begin_section (_, id as lid) =
 
 let vernac_end_section (loc,_) =
   Dumpglob.dump_reference loc
-    (string_of_dirpath (Lib.current_dirpath true)) "<>" "sec";
+    (Dir_path.to_string (Lib.current_dirpath true)) "<>" "sec";
   Lib.close_section ()
 
 (* Dispatcher of the "End" command *)
@@ -1492,7 +1492,7 @@ let vernac_reset_name id =
     if not globalized then begin
        try begin match Lib.find_opening_node (snd id) with
           | Lib.OpenedSection _ -> Dumpglob.dump_reference (fst id)
-              (string_of_dirpath (Lib.current_dirpath true)) "<>" "sec";
+              (Dir_path.to_string (Lib.current_dirpath true)) "<>" "sec";
           (* Might be nice to implement module cases, too.... *)
           | _ -> ()
        end with UserError _ -> ()

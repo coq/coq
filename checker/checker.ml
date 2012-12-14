@@ -36,7 +36,7 @@ let parse_dir s =
 let dirpath_of_string s =
   match parse_dir s with
       [] -> Check.default_root_prefix
-    | dir -> make_dirpath (List.map Id.of_string dir)
+    | dir -> Dir_path.make (List.map Id.of_string dir)
 let path_of_string s =
   match parse_dir s with
       [] -> invalid_arg "path_of_string"
@@ -77,11 +77,11 @@ let convert_string d =
 let add_rec_path ~unix_path ~coq_root =
   if exists_dir unix_path then
     let dirs = all_subdirs ~unix_path in
-    let prefix = repr_dirpath coq_root in
+    let prefix = Dir_path.repr coq_root in
     let convert_dirs (lp, cp) =
       try
         let path = List.map convert_string (List.rev cp) @ prefix in
-        Some (lp, Names.make_dirpath path)
+        Some (lp, Names.Dir_path.make path)
       with Exit -> None
     in
     let dirs = List.map_filter convert_dirs dirs in
@@ -113,9 +113,9 @@ let init_load_path () =
   let plugins = coqlib/"plugins" in
   (* NOTE: These directories are searched from last to first *)
   (* first standard library *)
-  add_rec_path ~unix_path:(coqlib/"theories") ~coq_root:(Names.make_dirpath[coq_root]);
+  add_rec_path ~unix_path:(coqlib/"theories") ~coq_root:(Names.Dir_path.make[coq_root]);
   (* then plugins *)
-  add_rec_path ~unix_path:plugins ~coq_root:(Names.make_dirpath [coq_root]);
+  add_rec_path ~unix_path:plugins ~coq_root:(Names.Dir_path.make [coq_root]);
   (* then user-contrib *)
   if Sys.file_exists user_contrib then
     add_rec_path ~unix_path:user_contrib ~coq_root:Check.default_root_prefix;

@@ -331,7 +331,7 @@ let print_located_qualid ref =
   match List.map expand (N.locate_extended_all qid) with
     | [] ->
 	let (dir,id) = repr_qualid qid in
-	if dir = empty_dirpath then
+	if dir = Dir_path.empty then
 	  str "No object of basename " ++ pr_id id
 	else
 	  str "No object of suffix " ++ pr_qualid qid
@@ -634,7 +634,7 @@ let print_any_name = function
   | Undefined qid ->
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in
-    if (repr_dirpath dir) <> [] then raise Not_found;
+    if (Dir_path.repr dir) <> [] then raise Not_found;
     let (_,c,typ) = Global.lookup_named str in
     (print_named_decl (str,c,typ))
   with Not_found ->

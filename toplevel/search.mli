@@ -23,11 +23,11 @@ type glob_search_about_item =
 type filter_function = global_reference -> env -> constr -> bool
 type display_function = global_reference -> env -> constr -> unit
 
-val search_by_head : constr -> dir_path list * bool -> std_ppcmds
-val search_rewrite : constr -> dir_path list * bool -> std_ppcmds
-val search_pattern : constr -> dir_path list * bool -> std_ppcmds
+val search_by_head : constr -> Dir_path.t list * bool -> std_ppcmds
+val search_rewrite : constr -> Dir_path.t list * bool -> std_ppcmds
+val search_pattern : constr -> Dir_path.t list * bool -> std_ppcmds
 val search_about  :
-  (bool * glob_search_about_item) list -> dir_path list * bool -> std_ppcmds
+  (bool * glob_search_about_item) list -> Dir_path.t list * bool -> std_ppcmds
 
 val interface_search : (Interface.search_constraint * bool) list ->
   string Interface.coq_object list
@@ -35,7 +35,7 @@ val interface_search : (Interface.search_constraint * bool) list ->
 (** The filtering function that is by standard search facilities.
    It can be passed as argument to the raw search functions. *)
 
-val filter_by_module_from_list : dir_path list * bool -> filter_function
+val filter_by_module_from_list : Dir_path.t list * bool -> filter_function
 
 val filter_blacklist : filter_function
 

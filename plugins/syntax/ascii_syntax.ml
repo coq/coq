@@ -16,7 +16,7 @@ open Coqlib
 
 exception Non_closed_ascii
 
-let make_dir l = make_dirpath (List.map Id.of_string (List.rev l))
+let make_dir l = Dir_path.make (List.map Id.of_string (List.rev l))
 let make_kn dir id = Globnames.encode_mind (make_dir dir) (Id.of_string id)
 let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
 

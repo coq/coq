@@ -141,7 +141,7 @@ let print_env env =
   in
     (sign_env ++ db_env)
 
-(*let current_module = ref empty_dirpath
+(*let current_module = ref Dir_path.empty
 
 let set_module m = current_module := m*)
 

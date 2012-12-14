@@ -80,10 +80,10 @@ val constr_of_global_or_constr : global_reference_or_constr -> constr
 
 (** {6 Temporary function to brutally form kernel names from section paths } *)
 
-val encode_mind : dir_path -> Id.t -> mutual_inductive
-val decode_mind : mutual_inductive -> dir_path * Id.t
-val encode_con : dir_path -> Id.t -> constant
-val decode_con : constant -> dir_path * Id.t
+val encode_mind : Dir_path.t -> Id.t -> mutual_inductive
+val decode_mind : mutual_inductive -> Dir_path.t * Id.t
+val encode_con : Dir_path.t -> Id.t -> constant
+val decode_con : constant -> Dir_path.t * Id.t
 
 (** {6 Popping one level of section in global names } *)
 

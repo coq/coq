@@ -259,7 +259,7 @@ let add_retroknowledge mp =
 
 let rec add_signature mp sign resolver env = 
   let add_one env (l,elem) =
-    let kn = make_kn mp empty_dirpath l in
+    let kn = make_kn mp Dir_path.empty l in
     match elem with
       | SFBconst cb ->
 	Environ.add_constant (constant_of_delta_kn resolver kn) cb env
@@ -284,7 +284,7 @@ let strengthen_const mp_from l cb resolver =
   match cb.const_body with
     | Def _ -> cb
     | _ ->
-      let kn = make_kn mp_from empty_dirpath l in
+      let kn = make_kn mp_from Dir_path.empty l in
       let con = constant_of_delta_kn resolver kn in
       { cb with
 	const_body = Def (Declarations.from_val (mkConst con));
@@ -429,8 +429,8 @@ and strengthen_and_subst_struct
 	    (* If we are performing an inclusion we need to add
 	       the fact that the constant mp_to.l is \Delta-equivalent
 	       to resolver(mp_from.l) *)
-	  let kn_from = make_kn mp_from empty_dirpath l in
-	  let kn_to = make_kn mp_to empty_dirpath l in
+	  let kn_from = make_kn mp_from Dir_path.empty l in
+	  let kn_to = make_kn mp_to Dir_path.empty l in
 	  let old_name = kn_of_delta resolver kn_from in
 	  (add_kn_delta_resolver kn_to old_name resolve_out),
 	  item'::rest'
@@ -446,8 +446,8 @@ and strengthen_and_subst_struct
 	  strengthen_and_subst_struct rest subst
 	    mp_alias mp_from mp_to alias incl resolver in
 	if incl then
-	  let kn_from = make_kn mp_from empty_dirpath l in
-	  let kn_to = make_kn mp_to empty_dirpath l in
+	  let kn_from = make_kn mp_from Dir_path.empty l in
+	  let kn_to = make_kn mp_to Dir_path.empty l in
 	  let old_name = kn_of_delta resolver kn_from in
 	  (add_kn_delta_resolver kn_to old_name resolve_out),
 	  item'::rest'

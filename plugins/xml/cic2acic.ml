@@ -36,7 +36,7 @@ let get_module_path_of_full_path path =
 let remove_module_dirpath_from_dirpath ~basedir dir =
  let module Ln = Libnames in
   if Ln.is_dirpath_prefix_of basedir dir then
-   let ids = Names.repr_dirpath dir in
+   let ids = Names.Dir_path.repr dir in
    let rec remove_firsts n l =
     match n,l with
        (0,l) -> l
@@ -46,11 +46,11 @@ let remove_module_dirpath_from_dirpath ~basedir dir =
     let ids' =
      List.rev
       (remove_firsts
-        (List.length (Names.repr_dirpath basedir))
+        (List.length (Names.Dir_path.repr basedir))
         (List.rev ids))
     in
      ids'
-  else Names.repr_dirpath dir
+  else Names.Dir_path.repr dir
 ;;
 
 
@@ -61,7 +61,7 @@ let get_uri_of_var v pvars =
    function
       [] -> Errors.error ("Variable "^v^" not found")
     | he::tl as modules ->
-       let dirpath = N.make_dirpath modules in
+       let dirpath = N.Dir_path.make modules in
         if List.mem (N.Id.of_string v) (D.last_section_hyps dirpath) then
          modules
         else
@@ -71,7 +71,7 @@ let get_uri_of_var v pvars =
     if List.mem v pvars then
       []
     else
-      search_in_open_sections (N.repr_dirpath (Lib.cwd ()))
+      search_in_open_sections (N.Dir_path.repr (Lib.cwd ()))
    in
     "cic:" ^
      List.fold_left
@@ -106,21 +106,21 @@ let ext_of_tag =
 exception FunctorsXMLExportationNotImplementedYet;;
 
 let subtract l1 l2 =
- let l1' = List.rev (Names.repr_dirpath l1) in
- let l2' = List.rev (Names.repr_dirpath l2) in
+ let l1' = List.rev (Names.Dir_path.repr l1) in
+ let l2' = List.rev (Names.Dir_path.repr l2) in
   let rec aux =
    function
       he::tl when tl = l2' -> [he]
     | he::tl -> he::(aux tl)
     | [] -> assert (l2' = []) ; []
   in
-   Names.make_dirpath (List.rev (aux l1'))
+   Names.Dir_path.make (List.rev (aux l1'))
 ;;
 
 let token_list_of_path dir id tag =
  let module N = Names in
   let token_list_of_dirpath dirpath =
-   List.rev_map N.Id.to_string (N.repr_dirpath dirpath) in
+   List.rev_map N.Id.to_string (N.Dir_path.repr dirpath) in
   token_list_of_dirpath dir @ [N.Id.to_string id ^ "." ^ (ext_of_tag tag)]
 
 let token_list_of_kernel_name tag =

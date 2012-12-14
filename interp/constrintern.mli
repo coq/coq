@@ -171,7 +171,7 @@ val interp_context_evars : ?global_level:bool -> ?impl_env:internalization_env -
 val is_global : Id.t -> bool
 val construct_reference : named_context -> Id.t -> constr
 val global_reference : Id.t -> constr
-val global_reference_in_absolute_module : dir_path -> Id.t -> constr
+val global_reference_in_absolute_module : Dir_path.t -> Id.t -> constr
 
 (** Interprets a term as the left-hand side of a notation; the boolean
     list is a set and this set is [true] for a variable occurring in

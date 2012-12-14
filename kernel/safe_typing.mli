@@ -43,12 +43,12 @@ type global_declaration =
   | GlobalRecipe of Cooking.recipe
 
 val add_constant :
-  dir_path -> label -> global_declaration -> safe_environment ->
+  Dir_path.t -> label -> global_declaration -> safe_environment ->
       constant * safe_environment
 
 (** Adding an inductive type *)
 val add_mind :
-  dir_path -> label -> mutual_inductive_entry -> safe_environment ->
+  Dir_path.t -> label -> mutual_inductive_entry -> safe_environment ->
     mutual_inductive * safe_environment
 
 (** Adding a module *)
@@ -101,10 +101,10 @@ val delta_of_senv : safe_environment -> delta_resolver*delta_resolver
 (** exporting and importing modules *)
 type compiled_library
 
-val start_library : dir_path -> safe_environment
+val start_library : Dir_path.t -> safe_environment
       -> module_path * safe_environment
 
-val export : safe_environment -> dir_path
+val export : safe_environment -> Dir_path.t
       -> module_path * compiled_library
 
 val import : compiled_library -> Digest.t -> safe_environment

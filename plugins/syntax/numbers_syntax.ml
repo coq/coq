@@ -14,10 +14,10 @@ open Glob_term
 
 (*** Constants for locating int31 / bigN / bigZ / bigQ constructors ***)
 
-let make_dir l = Names.make_dirpath (List.map Names.Id.of_string (List.rev l))
+let make_dir l = Names.Dir_path.make (List.map Names.Id.of_string (List.rev l))
 let make_path dir id = Libnames.make_path (make_dir dir) (Names.Id.of_string id)
 
-let make_mind mp id = Names.make_mind mp Names.empty_dirpath (Names.mk_label id)
+let make_mind mp id = Names.make_mind mp Names.Dir_path.empty (Names.mk_label id)
 let make_mind_mpfile dir id = make_mind (Names.MPfile (make_dir dir)) id
 let make_mind_mpdot dir modname id =
   let mp = Names.MPdot (Names.MPfile (make_dir dir), Names.mk_label modname)

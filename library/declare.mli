@@ -32,7 +32,7 @@ type section_variable_entry =
   | SectionLocalDef of constr * types option * bool (** opacity *)
   | SectionLocalAssum of types * bool (** Implicit status *)
 
-type variable_declaration = dir_path * section_variable_entry * logical_kind
+type variable_declaration = Dir_path.t * section_variable_entry * logical_kind
 
 val declare_variable : variable -> variable_declaration -> object_name
 

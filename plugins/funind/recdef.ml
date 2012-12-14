@@ -50,7 +50,7 @@ let coq_base_constant s =
     (Coqlib.init_modules @ [["Coq";"Arith";"Le"];["Coq";"Arith";"Lt"]]) s;;
 
 let find_reference sl s =
-    (locate (make_qualid(Names.make_dirpath
+    (locate (make_qualid(Names.Dir_path.make
 			   (List.map Id.of_string (List.rev sl)))
 	       (Id.of_string s)));;
 
@@ -85,7 +85,7 @@ let type_of_const t =
 
 let constant sl s =
   constr_of_global
-    (locate (make_qualid(Names.make_dirpath
+    (locate (make_qualid(Names.Dir_path.make
 			   (List.map Id.of_string (List.rev sl)))
 	       (Id.of_string s)));;
 let const_of_ref = function

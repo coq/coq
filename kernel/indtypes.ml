@@ -373,7 +373,7 @@ if Int.equal nmr 0 then 0 else
   in find 0 (n-1) (lpar,List.rev hyps)
 
 let lambda_implicit_lift n a =
-  let level = UniverseLevel.make (make_dirpath [Id.of_string "implicit"]) 0 in
+  let level = UniverseLevel.make (Dir_path.make [Id.of_string "implicit"]) 0 in
   let implicit_sort = mkType (Universe.make level) in
   let lambda_implicit a = mkLambda (Anonymous, implicit_sort, a) in
   iterate lambda_implicit n (lift n a)

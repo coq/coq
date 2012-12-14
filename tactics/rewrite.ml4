@@ -38,7 +38,7 @@ open Decl_kinds
 (** Typeclass-based generalized rewriting. *)
 
 let classes_dirpath =
-  make_dirpath (List.map Id.of_string ["Classes";"Coq"])
+  Dir_path.make (List.map Id.of_string ["Classes";"Coq"])
 
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
@@ -52,7 +52,7 @@ let proper_proxy_class =
 
 let proper_proj = lazy (mkConst (Option.get (pi3 (List.hd (Lazy.force proper_class).cl_projs))))
 
-let make_dir l = make_dirpath (List.map Id.of_string (List.rev l))
+let make_dir l = Dir_path.make (List.map Id.of_string (List.rev l))
 
 let try_find_global_reference dir s =
   let sp = Libnames.make_path (make_dir ("Coq"::dir)) (Id.of_string s) in

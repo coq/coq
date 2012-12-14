@@ -40,14 +40,14 @@ val pr_lab : label -> Pp.std_ppcmds
 
 (** some preset paths *)
 
-val default_library : dir_path
+val default_library : Dir_path.t
 
 (** This is the root of the standard library of Coq *)
 val coq_root : module_ident
 
 (** This is the default root prefix for developments which doesn't
    mention a root *)
-val default_root_prefix : dir_path
+val default_root_prefix : Dir_path.t
 
 (** Metavariables *)
 val pr_meta : Term.metavariable -> Pp.std_ppcmds

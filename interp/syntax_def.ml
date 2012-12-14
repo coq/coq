@@ -42,7 +42,7 @@ let load_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
 let is_alias_of_already_visible_name sp = function
   | _,NRef ref ->
       let (dir,id) = repr_qualid (shortest_qualid_of_global Id.Set.empty ref) in
-      dir_path_eq dir empty_dirpath && Id.equal id (basename sp)
+      Dir_path.equal dir Dir_path.empty && Id.equal id (basename sp)
   | _ ->
       false
 

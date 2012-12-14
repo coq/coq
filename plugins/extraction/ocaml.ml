@@ -650,7 +650,7 @@ and pp_module_type params = function
       let mp_w =
 	List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl'
       in
-      let r = ConstRef (make_con mp_w empty_dirpath (label_of_id l)) in
+      let r = ConstRef (make_con mp_w Dir_path.empty (label_of_id l)) in
       push_visible mp_mt [];
       let pp_w = str " with type " ++ ids ++ pp_global Type r in
       pop_visible();

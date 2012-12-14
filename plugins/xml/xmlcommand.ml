@@ -46,7 +46,7 @@ let filter_params pvars hyps =
   let cwd = Lib.cwd () in
   let cwdsp = Libnames.make_path cwd (Names.Id.of_string "dummy") in
   let modulepath = Cic2acic.get_module_path_of_full_path cwdsp in
-   aux (Names.repr_dirpath modulepath) (List.rev pvars)
+   aux (Names.Dir_path.repr modulepath) (List.rev pvars)
 ;;
 
 (* The computation is very inefficient, but we can't do anything *)
@@ -62,7 +62,7 @@ let search_variables () =
        [] -> []
      | he::tl as modules ->
         let one_section_variables =
-         let dirpath = N.make_dirpath (modules @ N.repr_dirpath modulepath) in
+         let dirpath = N.Dir_path.make (modules @ N.Dir_path.repr modulepath) in
           let t = List.map N.Id.to_string (Decls.last_section_hyps dirpath) in
            [he,t]
         in
@@ -113,7 +113,7 @@ let theory_filename xml_library_root =
   match xml_library_root with
     None -> None  (* stdout *)
   | Some xml_library_root' ->
-     let toks = List.map N.Id.to_string (N.repr_dirpath (Lib.library_dp ())) in
+     let toks = List.map N.Id.to_string (N.Dir_path.repr (Lib.library_dp ())) in
      (* theory from A/B/C/F.v goes into A/B/C/F.theory *)
      let alltoks = List.rev toks in
        Some (join_dirs xml_library_root' alltoks ^ ".theory")
@@ -531,7 +531,7 @@ let _ = Lexer.set_xml_output_comment (theory_output_string ~do_not_quote:true) ;
 
 let uri_of_dirpath dir =
   "/" ^ String.concat "/"
-    (List.map Names.Id.to_string (List.rev (Names.repr_dirpath dir)))
+    (List.map Names.Id.to_string (List.rev (Names.Dir_path.repr dir)))
 ;;
 
 let _ =
@@ -550,5 +550,5 @@ let _ =
   Library.set_xml_require
     (fun d -> theory_output_string
       (Printf.sprintf "<b>Require</b> <a helm:helm_link=\"href\" href=\"theory:%s.theory\">%s</a>.<br/>"
-       (uri_of_dirpath d) (Names.string_of_dirpath d)))
+       (uri_of_dirpath d) (Names.Dir_path.to_string d)))
 ;;

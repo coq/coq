@@ -225,11 +225,11 @@ let inloadpath dir =
   Library.is_in_load_paths (CUnix.physical_path_of_string dir)
 
 let status () =
-  (** We remove the initial part of the current [dir_path]
+  (** We remove the initial part of the current [Dir_path.t]
       (usually Top in an interactive session, cf "coqtop -top"),
       and display the other parts (opened sections and modules) *)
   let path =
-    let l = Names.repr_dirpath (Lib.cwd ()) in
+    let l = Names.Dir_path.repr (Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
   in
   let proof =

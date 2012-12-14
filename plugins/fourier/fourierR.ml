@@ -81,8 +81,8 @@ type ineq = Rlt | Rle | Rgt | Rge
 let string_of_R_constant kn =
   match Names.repr_con kn with
     | MPfile dir, sec_dir, id when
-	sec_dir = empty_dirpath &&
-	string_of_dirpath dir = "Coq.Reals.Rdefinitions"
+	sec_dir = Dir_path.empty &&
+	Dir_path.to_string dir = "Coq.Reals.Rdefinitions"
 	-> string_of_label id
     | _ -> "constant_not_of_R"
 
