@@ -8,14 +8,14 @@ Segmenttree
 Unicodetable
 Unicode
 Errors
+Hashset
+Hashcons
 CObj
 CList
 CString
 CArray
 Util
 Option
-Hashset
-Hashcons
 CUnix
 System
 Envars

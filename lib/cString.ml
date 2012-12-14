@@ -60,6 +60,7 @@ sig
   val is_sub : string -> string -> int -> bool
   module Set : Set.S with type elt = t
   module Map : Map.S with type key = t
+  val hcons : string -> string
 end
 
 include String
@@ -178,3 +179,5 @@ end
 
 module Set = Set.Make(Self)
 module Map = Map.Make(Self)
+
+let hcons = Hashcons.simple_hcons Hashcons.Hstring.generate ()

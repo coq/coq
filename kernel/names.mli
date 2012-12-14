@@ -220,7 +220,6 @@ val eq_egr : evaluable_global_reference ->  evaluable_global_reference
 
 (** {6 Hash-consing } *)
 
-val hcons_string : string -> string
 val hcons_ident : identifier -> identifier
 val hcons_name : name -> name
 val hcons_dirpath : dir_path -> dir_path

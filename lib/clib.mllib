@@ -3,6 +3,8 @@ Pp_control
 Pp
 Coq_config
 Deque
+Hashset
+Hashcons
 CObj
 CList
 CString

@@ -7,13 +7,13 @@ Pp
 Loc
 Compat
 Errors
+Hashset
+Hashcons
 CList
 CString
 CArray
 Util
 Bigint
-Hashset
-Hashcons
 Predicate
 Option
 Segmenttree

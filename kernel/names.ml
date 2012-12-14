@@ -22,8 +22,6 @@ open Pp
 open Errors
 open Util
 
-let hcons_string = Hashcons.simple_hcons Hashcons.Hstring.generate ()
-
 (** {6 Identifiers } *)
 
 type identifier = string
@@ -38,7 +36,7 @@ let check_ident x =
 let id_of_string s =
   let () = check_ident_soft s in
   let s = String.copy s in
-  hcons_string s
+  String.hcons s
 
 let string_of_id id = String.copy id
 
@@ -504,13 +502,13 @@ module Hconstruct = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-let hcons_ident = hcons_string
+let hcons_ident = String.hcons
 let hcons_name = Hashcons.simple_hcons Hname.generate hcons_ident
 let hcons_dirpath = Hashcons.simple_hcons Hdir.generate hcons_ident
 let hcons_uid = Hashcons.simple_hcons Huniqid.generate (hcons_ident,hcons_dirpath)
 let hcons_mp =
-  Hashcons.simple_hcons Hmod.generate (hcons_dirpath,hcons_uid,hcons_string)
-let hcons_kn = Hashcons.simple_hcons Hkn.generate (hcons_mp,hcons_dirpath,hcons_string)
+  Hashcons.simple_hcons Hmod.generate (hcons_dirpath,hcons_uid,String.hcons)
+let hcons_kn = Hashcons.simple_hcons Hkn.generate (hcons_mp,hcons_dirpath,String.hcons)
 let hcons_con = Hashcons.simple_hcons Hcn.generate hcons_kn
 let hcons_mind = Hashcons.simple_hcons Hcn.generate hcons_kn
 let hcons_ind = Hashcons.simple_hcons Hind.generate hcons_mind
