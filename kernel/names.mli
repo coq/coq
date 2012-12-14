@@ -291,7 +291,7 @@ val eq_id_key : id_key -> id_key -> bool
 val eq_con_chk : constant -> constant -> bool
 val eq_ind_chk : inductive -> inductive -> bool
 
-(** {6 Deprecated functions. For backward compatibility. *)
+(** {6 Deprecated functions. For backward compatibility.} *)
 
 (** {5 Identifiers} *)
 
