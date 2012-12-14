@@ -22,7 +22,7 @@ let ignore = space | ('#' [^ '\n']*)
 
 rule prefs m = parse
   |ignore* (ident as id) ignore* '=' { let conf = str_list [] lexbuf in
-				 prefs (Util.Stringmap.add id conf m) lexbuf }
+				 prefs (Util.String.Map.add id conf m) lexbuf }
   | _     { let c = lexeme_start lexbuf in
 	      eprintf "coqiderc: invalid character (%d)\n@." c;
 	      prefs m lexbuf }
@@ -47,7 +47,7 @@ and string = parse
   let load_file f =
     let c = open_in f in
     let lb = from_channel c in
-    let m = prefs Util.Stringmap.empty lb in
+    let m = prefs Util.String.Map.empty lb in
     close_in c;
     m
 
@@ -58,7 +58,7 @@ and string = parse
       | [] -> ()
       | s :: sl -> fprintf fmt "%S@ %a" s print_list sl
     in
-    Util.Stringmap.iter
+    Util.String.Map.iter
       (fun k s -> fprintf fmt "@[<hov 2>%s = %a@]@\n" k print_list s) m;
     fprintf fmt "@.";
     close_out c
