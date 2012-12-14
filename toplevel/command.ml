@@ -210,9 +210,9 @@ let push_types env idl tl =
     env idl tl
 
 type structured_one_inductive_expr = {
-  ind_name : identifier;
+  ind_name : Id.t;
   ind_arity : constr_expr;
-  ind_lc : (identifier * constr_expr) list
+  ind_lc : (Id.t * constr_expr) list
 }
 
 type structured_inductive_expr =
@@ -430,7 +430,7 @@ let rec partial_order = function
 	    let res = List.remove_assoc y res in
 	    let res = List.map (function
 	      | (z, Inl t) ->
-		  if id_eq t y then (z, Inl x) else (z, Inl t)
+		  if Id.equal t y then (z, Inl x) else (z, Inl t)
 	      | (z, Inr zge) ->
 		  if List.mem y zge then
 		    (z, Inr (List.add_set x (List.remove y zge)))
@@ -446,11 +446,11 @@ let rec partial_order = function
 let non_full_mutual_message x xge y yge isfix rest =
   let reason =
     if List.mem x yge then
-      string_of_id y^" depends on "^string_of_id x^" but not conversely"
+      Id.to_string y^" depends on "^Id.to_string x^" but not conversely"
     else if List.mem y xge then
-      string_of_id x^" depends on "^string_of_id y^" but not conversely"
+      Id.to_string x^" depends on "^Id.to_string y^" but not conversely"
     else
-      string_of_id y^" and "^string_of_id x^" are not mutually dependent" in
+      Id.to_string y^" and "^Id.to_string x^" are not mutually dependent" in
   let e = if List.is_empty rest then reason else "e.g.: "^reason in
   let k = if isfix then "fixpoint" else "cofixpoint" in
   let w =
@@ -464,7 +464,7 @@ let check_mutuality env isfix fixl =
   let names = List.map fst fixl in
   let preorder =
     List.map (fun (id,def) ->
-      (id, List.filter (fun id' -> not (id_eq id id') && occur_var env id' def) names))
+      (id, List.filter (fun id' -> not (Id.equal id id') && occur_var env id' def) names))
       fixl in
   let po = partial_order preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
@@ -473,8 +473,8 @@ let check_mutuality env isfix fixl =
     | _ -> ()
 
 type structured_fixpoint_expr = {
-  fix_name : identifier;
-  fix_annot : identifier Loc.located option;
+  fix_name : Id.t;
+  fix_annot : Id.t Loc.located option;
   fix_binders : local_binder list;
   fix_body : constr_expr option;
   fix_type : constr_expr
@@ -532,7 +532,7 @@ let compute_possible_guardness_evidences (ids,_,na) =
       List.interval 0 (List.length ids - 1)
 
 type recursive_preentry =
-  identifier list * constr option list * types list
+  Id.t list * constr option list * types list
 
 (* Wellfounded definition *)
 
@@ -597,7 +597,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   let top_arity = interp_type_evars isevars top_env arityc in
   let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
   let argtyp, letbinders, make = telescope binders_rel in
-  let argname = id_of_string "recarg" in
+  let argname = Id.of_string "recarg" in
   let arg = (Name argname, None, argtyp) in
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
@@ -631,7 +631,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
     in wf_rel, wf_rel_fun, measure
   in
   let wf_proof = mkApp (delayed_force well_founded, [| argtyp ; wf_rel |]) in
-  let argid' = id_of_string (string_of_id argname ^ "'") in
+  let argid' = Id.of_string (Id.to_string argname ^ "'") in
   let wfarg len = (Name argid', None,
   		   mkSubset (Name argid') argtyp
 		    (wf_rel_fun (mkRel 1) (mkRel (len + 1))))
@@ -654,7 +654,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
     let arg = mkApp ((delayed_force build_sigma).intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
     let app = mkApp (mkRel (2 * len + 2 (* recproof + orig binders + current binders *)), [| arg |]) in
     let rcurry = mkApp (rel, [| measure; lift len measure |]) in
-    let lam = (Name (id_of_string "recproof"), None, rcurry) in
+    let lam = (Name (Id.of_string "recproof"), None, rcurry) in
     let body = it_mkLambda_or_LetIn app (lam :: binders_rel) in
     let ty = it_mkProd_or_LetIn (lift 1 top_arity) (lam :: binders_rel) in
       (Name recname, Some body, ty)
@@ -667,8 +667,8 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
       Constrintern.compute_internalization_data env
 	Constrintern.Recursive full_arity impls 
     in
-    let newimpls = Idmap.singleton recname
-      (r, l, impls @ [(Some (id_of_string "recproof", Impargs.Manual, (true, false)))],
+    let newimpls = Id.Map.singleton recname
+      (r, l, impls @ [(Some (Id.of_string "recproof", Impargs.Manual, (true, false)))],
        scopes @ [None]) in
       interp_casted_constr_evars isevars ~impls:newimpls
 	(push_rel_context ctx env) body (lift 1 top_arity)
@@ -759,7 +759,7 @@ let interp_recursive isfix fixl notations =
     Metasyntax.with_syntax_protection (fun () ->
       List.iter (Metasyntax.set_notation_for_interpretation impls) notations;
       List.map4
-	(fun fixctximpenv -> interp_fix_body evdref env_rec (Idmap.fold Idmap.add fixctximpenv impls))
+	(fun fixctximpenv -> interp_fix_body evdref env_rec (Id.Map.fold Id.Map.add fixctximpenv impls))
 	fixctximpenvs fixctxs fixl fixccls)
       () in
 

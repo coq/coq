@@ -10,7 +10,7 @@ open Names
 
 let pp s = pp (hov 0 s)
 
-let prid id = Format.print_string (string_of_id id)
+let prid id = Format.print_string (Id.to_string id)
 let prsp sp = Format.print_string (string_of_path sp)
 
 

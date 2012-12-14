@@ -85,9 +85,9 @@ let constr_pat_discr_st (idpred,cpred) t =
   match decomp_pat t with
   | PRef ((IndRef _) as ref), args
   | PRef ((ConstructRef _ ) as ref), args -> Some (GRLabel ref,args)
-  | PRef ((VarRef v) as ref), args when not (Idpred.mem v idpred) ->
+  | PRef ((VarRef v) as ref), args when not (Id.Pred.mem v idpred) ->
       Some(GRLabel ref,args)
-  | PVar v, args when not (Idpred.mem v idpred) ->
+  | PVar v, args when not (Id.Pred.mem v idpred) ->
       Some(GRLabel (VarRef v),args)
   | PRef ((ConstRef c) as ref), args when not (Cpred.mem c cpred) ->
       Some (GRLabel ref, args)
@@ -113,7 +113,7 @@ let constr_val_discr_st (idpred,cpred) t =
     | Const c -> if Cpred.mem c cpred then Everything else Label(GRLabel (ConstRef c),l)
     | Ind ind_sp -> Label(GRLabel (IndRef ind_sp),l)
     | Construct cstr_sp -> Label(GRLabel (ConstructRef cstr_sp),l)
-    | Var id when not (Idpred.mem id idpred) -> Label(GRLabel (VarRef id),l)
+    | Var id when not (Id.Pred.mem id idpred) -> Label(GRLabel (VarRef id),l)
     | Prod (n, d, c) -> Label(ProdLabel, [d; c])
     | Lambda (n, d, c) -> Label(LambdaLabel, [d; c] @ l)
     | Sort _ -> Label (SortLabel, [])

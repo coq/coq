@@ -92,12 +92,12 @@ let pr_glob_constr_env env c =
   pr_constr_expr (extern_glob_constr (Termops.vars_of_env env) c)
 
 let pr_lglob_constr c =
-  pr_lconstr_expr (extern_glob_constr Idset.empty c)
+  pr_lconstr_expr (extern_glob_constr Id.Set.empty c)
 let pr_glob_constr c =
-  pr_constr_expr (extern_glob_constr Idset.empty c)
+  pr_constr_expr (extern_glob_constr Id.Set.empty c)
 
 let pr_cases_pattern t =
-  pr_cases_pattern_expr (extern_cases_pattern Idset.empty t)
+  pr_cases_pattern_expr (extern_cases_pattern Id.Set.empty t)
 
 let pr_lconstr_pattern_env env c =
   pr_lconstr_pattern_expr (extern_constr_pattern (Termops.names_of_rel_context env) c)
@@ -124,7 +124,7 @@ let pr_univ_cstr (c:Univ.constraints) =
 (* Global references *)
 
 let pr_global_env = pr_global_env
-let pr_global = pr_global_env Idset.empty
+let pr_global = pr_global_env Id.Set.empty
 
 let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)
 let pr_existential env ev = pr_lconstr_env env (mkEvar ev)
@@ -135,7 +135,7 @@ let pr_evaluable_reference ref =
   pr_global (Tacred.global_of_evaluable_reference ref)
 
 (*let pr_glob_constr t =
-  pr_lconstr (Constrextern.extern_glob_constr Idset.empty t)*)
+  pr_lconstr (Constrextern.extern_glob_constr Id.Set.empty t)*)
 
 (*open Pattern
 
@@ -257,7 +257,7 @@ let pr_predicate pr_elt (b, elts) =
       if elts = [] then str"none" else pr_elts
 
 let pr_cpred p = pr_predicate (pr_constant (Global.env())) (Cpred.elements p)
-let pr_idpred p = pr_predicate Nameops.pr_id (Idpred.elements p)
+let pr_idpred p = pr_predicate Nameops.pr_id (Id.Pred.elements p)
 
 let pr_transparent_state (ids, csts) =
   hv 0 (str"VARIABLES: " ++ pr_idpred ids ++ fnl () ++
@@ -596,7 +596,7 @@ let pr_assumptionset env s =
       let (v, a, o, tr) = accu in
       match t with
       | Variable id ->
-        let var = str (string_of_id id) ++ str " : " ++ pr_ltype typ in
+        let var = str (Id.to_string id) ++ str " : " ++ pr_ltype typ in
         (var :: v, a, o, tr)
       | Axiom kn ->
         let ax = safe_pr_constant env kn ++ safe_pr_ltype typ in
@@ -688,10 +688,10 @@ let get_fields =
   let rec prodec_rec l subst c =
     match kind_of_term c with
     | Prod (na,t,c) ->
-	let id = match na with Name id -> id | Anonymous -> id_of_string "_" in
+	let id = match na with Name id -> id | Anonymous -> Id.of_string "_" in
 	prodec_rec ((id,true,substl subst t)::l) (mkVar id::subst) c
     | LetIn (na,b,_,c) ->
-	let id = match na with Name id -> id | Anonymous -> id_of_string "_" in
+	let id = match na with Name id -> id | Anonymous -> Id.of_string "_" in
 	prodec_rec ((id,false,substl subst b)::l) (mkVar id::subst) c
     | _               -> List.rev l
   in

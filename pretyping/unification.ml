@@ -337,7 +337,7 @@ let key_of b flags f =
         Cpred.mem cst (snd flags.modulo_delta) ->
       Some (ConstKey cst)
   | Var id when is_transparent (VarKey id) &&
-        Idpred.mem id (fst flags.modulo_delta) ->
+        Id.Pred.mem id (fst flags.modulo_delta) ->
       Some (VarKey id)
   | _ -> None
 
@@ -657,9 +657,9 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       | _ -> constr_cmp cv_pb m n) then true
       else if (match flags.modulo_conv_on_closed_terms, flags.modulo_delta with
             | Some (cv_id, cv_k), (dl_id, dl_k) ->
-                Idpred.subset dl_id cv_id && Cpred.subset dl_k cv_k
+                Id.Pred.subset dl_id cv_id && Cpred.subset dl_k cv_k
             | None,(dl_id, dl_k) ->
-                Idpred.is_empty dl_id && Cpred.is_empty dl_k)
+                Id.Pred.is_empty dl_id && Cpred.is_empty dl_k)
       then error_cannot_unify env sigma (m, n) else false)
     then subst
     else unirec_rec (env,0) cv_pb conv_at_top false subst m n

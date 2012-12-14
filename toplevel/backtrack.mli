@@ -66,7 +66,7 @@ val reset_initial : unit -> unit
 
 (** Reset to the last known state just before defining [id] *)
 
-val reset_name : Names.identifier Loc.located -> unit
+val reset_name : Names.Id.t Loc.located -> unit
 
 (** When a proof is ended (via either Qed/Admitted/Restart/Abort),
     old proof steps should be marked differently to avoid jumping back
@@ -77,11 +77,11 @@ val reset_name : Names.identifier Loc.located -> unit
     We also mark as unreachable the proof steps cancelled via a Undo.
 *)
 
-val mark_unreachable : ?after:int -> Names.identifier list -> unit
+val mark_unreachable : ?after:int -> Names.Id.t list -> unit
 
 (** Parse the history stack for printing the script of a proof *)
 
-val get_script : Names.identifier -> (Vernacexpr.vernac_expr * int) list
+val get_script : Names.Id.t -> (Vernacexpr.vernac_expr * int) list
 
 
 (** For debug purpose, a dump of the history *)
@@ -89,7 +89,7 @@ val get_script : Names.identifier -> (Vernacexpr.vernac_expr * int) list
 type info = {
   label : int;
   nproofs : int;
-  prfname : Names.identifier option;
+  prfname : Names.Id.t option;
   prfdepth : int;
   ngoals : int;
   cmd : Vernacexpr.vernac_expr;

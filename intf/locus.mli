@@ -49,7 +49,7 @@ type 'id clause_expr =
   { onhyps : 'id hyp_location_expr list option;
     concl_occs : occurrences_expr }
 
-type clause = identifier clause_expr
+type clause = Id.t clause_expr
 
 
 (** {6 Concrete view of occurrence clauses} *)
@@ -59,7 +59,7 @@ type clause = identifier clause_expr
    or in both) or to some occurrences of the conclusion *)
 
 type clause_atom =
-  | OnHyp of identifier * occurrences_expr * hyp_location_flag
+  | OnHyp of Id.t * occurrences_expr * hyp_location_flag
   | OnConcl of occurrences_expr
 
 (** A [concrete_clause] is an effective collection of occurrences
@@ -72,7 +72,7 @@ type concrete_clause = clause_atom list
 
 (** A [hyp_location] is an hypothesis together with a location *)
 
-type hyp_location = identifier * hyp_location_flag
+type hyp_location = Id.t * hyp_location_flag
 
 (** A [goal_location] is either an hypothesis (together with a location)
     or the conclusion (represented by None) *)
@@ -85,4 +85,4 @@ type goal_location = hyp_location option
 (** A [simple_clause] is a set of hypotheses, possibly extended with
    the conclusion (conclusion is represented by None) *)
 
-type simple_clause = identifier option list
+type simple_clause = Id.t option list

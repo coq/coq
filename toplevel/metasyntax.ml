@@ -324,7 +324,7 @@ let rec find_pattern nt xl = function
 
 let rec interp_list_parser hd = function
   | [] -> [], List.rev hd
-  | NonTerminal id :: tl when id_eq id ldots_var ->
+  | NonTerminal id :: tl when Id.equal id ldots_var ->
       let hd = List.rev hd in
       let ((x,y,sl),tl') = find_pattern (List.hd hd) [] (List.tl hd,tl) in
       let xyl,tl'' = interp_list_parser [] tl' in
@@ -357,7 +357,7 @@ let rec raw_analyze_notation_tokens = function
   | String ".." :: sl -> NonTerminal ldots_var :: raw_analyze_notation_tokens sl
   | String "_" :: _ -> error "_ must be quoted."
   | String x :: sl when Lexer.is_ident x ->
-      NonTerminal (Names.id_of_string x) :: raw_analyze_notation_tokens sl
+      NonTerminal (Names.Id.of_string x) :: raw_analyze_notation_tokens sl
   | String s :: sl ->
       Terminal (String.drop_simple_quotes s) :: raw_analyze_notation_tokens sl
   | WhiteSpace n :: sl ->
@@ -374,9 +374,9 @@ let rec get_notation_vars = function
   | [] -> []
   | NonTerminal id :: sl ->
       let vars = get_notation_vars sl in
-      if id_eq id ldots_var then vars else
+      if Id.equal id ldots_var then vars else
 	if List.mem id vars then
-	  error ("Variable "^string_of_id id^" occurs more than once.")
+	  error ("Variable "^Id.to_string id^" occurs more than once.")
 	else
           id::vars
   | (Terminal _ | Break _) :: sl -> get_notation_vars sl
@@ -389,7 +389,7 @@ let analyze_notation_tokens l =
   recvars, List.subtract vars (List.map snd recvars), l
 
 let error_not_same_scope x y =
-  error ("Variables "^string_of_id x^" and "^string_of_id y^
+  error ("Variables "^Id.to_string x^" and "^Id.to_string y^
     " must be in the same scope.")
 
 (**********************************************************************)
@@ -557,7 +557,7 @@ let make_hunks etyps symbols from =
 let error_format () = error "The format does not match the notation."
 
 let rec split_format_at_ldots hd = function
-  | UnpTerminal s :: fmt when String.equal s (string_of_id ldots_var) -> List.rev hd, fmt
+  | UnpTerminal s :: fmt when String.equal s (Id.to_string ldots_var) -> List.rev hd, fmt
   | u :: fmt ->
       check_no_ldots_in_box u;
       split_format_at_ldots (u::hd) fmt
@@ -597,7 +597,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
   | Terminal s :: symbs, (UnpTerminal s') :: fmt
       when String.equal s (String.drop_simple_quotes s') ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
-  | NonTerminal s :: symbs, UnpTerminal s' :: fmt when id_eq s (id_of_string s') ->
+  | NonTerminal s :: symbs, UnpTerminal s' :: fmt when Id.equal s (Id.of_string s') ->
       let i = List.index s vars in
       let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
       let symbs, l = aux (symbs,fmt) in symbs, UnpMetaVar (i,prec) :: l
@@ -800,14 +800,14 @@ let interp_modifiers modl =
     | [] ->
 	(assoc,level,etyps,!onlyparsing,format)
     | SetEntryType (s,typ) :: l ->
-	let id = id_of_string s in
+	let id = Id.of_string s in
 	if List.mem_assoc id etyps then
 	  error (s^" is already assigned to an entry or constr level.");
 	interp assoc level ((id,typ)::etyps) format l
     | SetItemLevel ([],n) :: l ->
 	interp assoc level etyps format l
     | SetItemLevel (s::idl,n) :: l ->
-	let id = id_of_string s in
+	let id = Id.of_string s in
 	if List.mem_assoc id etyps then
 	  error (s^" is already assigned to an entry or constr level.");
 	let typ = ETConstr (n,()) in
@@ -1239,7 +1239,7 @@ let add_notation local c ((loc,df),modifiers) sc =
 
 (* Infix notations *)
 
-let inject_var x = CRef (Ident (Loc.ghost, id_of_string x))
+let inject_var x = CRef (Ident (Loc.ghost, Id.of_string x))
 
 let add_infix local ((loc,inf),modifiers) pr sc =
   check_infix_modifiers modifiers;

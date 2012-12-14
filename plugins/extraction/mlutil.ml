@@ -22,8 +22,8 @@ exception Impossible
 
 (*S Names operations. *)
 
-let anonymous_name = id_of_string "x"
-let dummy_name = id_of_string "_"
+let anonymous_name = Id.of_string "x"
+let dummy_name = Id.of_string "_"
 
 let anonymous = Id anonymous_name
 
@@ -857,7 +857,7 @@ let is_imm_apply = function MLapp (MLrel 1, _) -> true | _ -> false
 
 let is_program_branch = function
   | Id id ->
-    let s = string_of_id id in
+    let s = Id.to_string id in
     let br = "program_branch_" in
     let n = String.length br in
     (try

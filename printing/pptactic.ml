@@ -24,7 +24,7 @@ open Genredexpr
 open Ppconstr
 open Printer
 
-let pr_global x = Nametab.pr_global_env Idset.empty x
+let pr_global x = Nametab.pr_global_env Id.Set.empty x
 
 type grammar_terminals = string option list
 
@@ -606,7 +606,7 @@ let pr_fix_tac (id,n,c) =
           match List.chop (n-1) nal with
               _, (_,Name id) :: _ -> id, (nal,ty)::bll
             | bef, (loc,Anonymous) :: aft ->
-                let id = next_ident_away (id_of_string"y") avoid in
+                let id = next_ident_away (Id.of_string"y") avoid in
                 id, ((bef@(loc,Name id)::aft, ty)::bll)
             | _ -> assert false
         else

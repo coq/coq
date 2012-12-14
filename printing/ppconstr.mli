@@ -30,9 +30,9 @@ val prec_less : int -> int * Ppextend.parenRelation -> bool
 val pr_tight_coma : unit -> std_ppcmds
 
 val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
-val pr_metaid : identifier -> std_ppcmds
+val pr_metaid : Id.t -> std_ppcmds
 
-val pr_lident : identifier located -> std_ppcmds
+val pr_lident : Id.t located -> std_ppcmds
 val pr_lname : name located -> std_ppcmds
 
 val pr_with_comments : Loc.t -> std_ppcmds -> std_ppcmds
@@ -42,7 +42,7 @@ val pr_sep_com :
   (constr_expr -> std_ppcmds) ->
   constr_expr -> std_ppcmds
 
-val pr_id : identifier -> std_ppcmds
+val pr_id : Id.t -> std_ppcmds
 val pr_name : name -> std_ppcmds
 val pr_qualid : qualid -> std_ppcmds
 val pr_patvar : patvar -> std_ppcmds
@@ -59,7 +59,7 @@ val pr_may_eval :
 val pr_glob_sort : glob_sort -> std_ppcmds
 val pr_guard_annot : (constr_expr -> std_ppcmds) ->
   local_binder list ->
-  ('a * Names.identifier) option * recursion_order_expr ->
+  ('a * Names.Id.t) option * recursion_order_expr ->
   std_ppcmds
 
 val pr_binders : local_binder list -> std_ppcmds

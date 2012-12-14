@@ -22,7 +22,7 @@ type key =
   | RefKey of global_reference
   | Oth
 
-let reserve_table = ref Idmap.empty
+let reserve_table = ref Id.Map.empty
 let reserve_revtable = ref Gmapl.empty
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
@@ -34,17 +34,17 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
 
 let cache_reserved_type (_,(id,t)) =
   let key = fst (notation_constr_key t) in
-  reserve_table := Idmap.add id t !reserve_table;
+  reserve_table := Id.Map.add id t !reserve_table;
   reserve_revtable := Gmapl.add key (t,id) !reserve_revtable
 
-let in_reserved : identifier * notation_constr -> obj =
+let in_reserved : Id.t * notation_constr -> obj =
   declare_object {(default_object "RESERVED-TYPE") with
     cache_function = cache_reserved_type }
 
 let freeze_reserved () = (!reserve_table,!reserve_revtable)
 let unfreeze_reserved (r,rr) = reserve_table := r; reserve_revtable := rr
 let init_reserved () =
-  reserve_table := Idmap.empty; reserve_revtable := Gmapl.empty
+  reserve_table := Id.Map.empty; reserve_revtable := Gmapl.empty
 
 let _ =
   Summary.declare_summary "reserved-type"
@@ -53,12 +53,12 @@ let _ =
       Summary.init_function = init_reserved }
 
 let declare_reserved_type_binding (loc,id) t =
-  if not (id_eq id (root_of_id id)) then
+  if not (Id.equal id (root_of_id id)) then
     user_err_loc(loc,"declare_reserved_type",
     (pr_id id ++ str
       " is not reservable: it must have no trailing digits, quote, or _"));
   begin try
-    let _ = Idmap.find id !reserve_table in
+    let _ = Id.Map.find id !reserve_table in
     user_err_loc(loc,"declare_reserved_type",
     (pr_id id++str" is already bound to a type"))
   with Not_found -> () end;
@@ -67,7 +67,7 @@ let declare_reserved_type_binding (loc,id) t =
 let declare_reserved_type idl t =
   List.iter (fun id -> declare_reserved_type_binding id t) (List.rev idl)
 
-let find_reserved_type id = Idmap.find (root_of_id id) !reserve_table
+let find_reserved_type id = Id.Map.find (root_of_id id) !reserve_table
 
 let constr_key c =
   try RefKey (canonical_gr (global_of_constr (fst (Term.decompose_app c))))

@@ -31,7 +31,7 @@ and library_entry = object_name * node
 
 and library_segment = library_entry list
 
-type lib_objects =  (Names.identifier * obj) list
+type lib_objects =  (Names.Id.t * obj) list
 
 let module_kind is_type =
   if is_type then "module type" else "module"
@@ -214,7 +214,7 @@ let add_entry sp node =
 
 let anonymous_id =
   let n = ref 0 in
-  fun () -> incr n; Names.id_of_string ("_" ^ (string_of_int !n))
+  fun () -> incr n; Names.Id.of_string ("_" ^ (string_of_int !n))
 
 let add_anonymous_entry node =
   let id = anonymous_id () in
@@ -387,8 +387,8 @@ let find_opening_node id =
   try
     let oname,entry = find_entry_p is_opening_node in
     let id' = basename (fst oname) in
-    if not (Names.id_eq id id') then
-      error ("Last block to end has name "^(Names.string_of_id id')^".");
+    if not (Names.Id.equal id id') then
+      error ("Last block to end has name "^(Names.Id.to_string id')^".");
     entry
   with Not_found -> error "There is nothing to end."
 
@@ -401,12 +401,12 @@ let find_opening_node id =
    - the list of substitution to do at section closing
 *)
 
-type variable_info = Names.identifier * Decl_kinds.binding_kind * Term.constr option * Term.types
+type variable_info = Names.Id.t * Decl_kinds.binding_kind * Term.constr option * Term.types
 type variable_context = variable_info list
 type abstr_list = variable_context Names.Cmap.t * variable_context Names.Mindmap.t
 
 let sectab =
-  ref ([] : ((Names.identifier * Decl_kinds.binding_kind) list *
+  ref ([] : ((Names.Id.t * Decl_kinds.binding_kind) list *
 		Cooking.work_list * abstr_list) list)
 
 let add_section () =
@@ -420,7 +420,7 @@ let add_section_variable id impl =
 
 let extract_hyps (secs,ohyps) =
   let rec aux = function
-    | ((id,impl)::idl,(id',b,t)::hyps) when Names.id_eq id id' ->
+    | ((id,impl)::idl,(id',b,t)::hyps) when Names.Id.equal id id' ->
       (id',impl,b,t) :: aux (idl,hyps)
     | (id::idl,hyps) -> aux (idl,hyps)
     | [], _ -> []
@@ -461,7 +461,7 @@ let section_segment_of_mutual_inductive kn =
 
 let rec list_mem_assoc x = function
   | [] -> raise Not_found
-  | (a, _) :: l -> Int.equal (Names.id_ord a x) 0 || list_mem_assoc x l
+  | (a, _) :: l -> Int.equal (Names.Id.compare a x) 0 || list_mem_assoc x l
 
 let section_instance = function
   | VarRef id ->
@@ -612,7 +612,7 @@ let label_before_name (loc,id) =
     | (_, Leaf o) when !found && String.equal (object_tag o) "DOT" -> true
     | ((fp, _),_) ->
       let (_, name) = repr_path fp in
-      let () = if Names.id_eq id name then found := true in
+      let () = if Names.Id.equal id name then found := true in
       false
   in
   match find_entry_p search with
@@ -657,7 +657,7 @@ let rec split_mp mp =
     | Names.MPfile dp -> dp,  Names.empty_dirpath
     | Names.MPdot (prfx, lbl) ->
 	let mprec, dprec = split_mp prfx in
-	  mprec, Names.make_dirpath (Names.id_of_string (Names.string_of_label lbl) :: (Names.repr_dirpath dprec))
+	  mprec, Names.make_dirpath (Names.Id.of_string (Names.string_of_label lbl) :: (Names.repr_dirpath dprec))
     | Names.MPbound mbid -> let (_, id, dp) = Names.repr_mbid mbid in  library_dp(), Names.make_dirpath [id]
 
 let split_modpath mp =

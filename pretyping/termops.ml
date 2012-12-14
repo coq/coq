@@ -221,7 +221,7 @@ let lookup_rel_id id sign =
     | []                     -> raise Not_found
     | (Anonymous, _, _) :: l -> lookrec (n + 1) l
     | (Name id', b, t) :: l  ->
-      if Int.equal (Names.id_ord id' id) 0 then (n, b, t) else lookrec (n + 1) l
+      if Int.equal (Names.Id.compare id' id) 0 then (n, b, t) else lookrec (n + 1) l
   in
   lookrec 1 sign
 
@@ -564,9 +564,9 @@ let collect_metas c =
    all section variables; for the latter, use global_vars_set *)
 let collect_vars c =
   let rec aux vars c = match kind_of_term c with
-  | Var id -> Idset.add id vars
+  | Var id -> Id.Set.add id vars
   | _ -> fold_constr aux vars c in
-  aux Idset.empty c
+  aux Id.Set.empty c
 
 (* Tests whether [m] is a subterm of [t]:
    [m] is appropriately lifted through abstractions of [t] *)
@@ -726,7 +726,7 @@ type 'a testing_function = {
   match_fun : constr -> 'a;
   merge_fun : 'a -> 'a -> 'a;
   mutable testing_state : 'a;
-  mutable last_found : ((identifier * hyp_location_flag) option * int * constr) option
+  mutable last_found : ((Id.t * hyp_location_flag) option * int * constr) option
 }
 
 let subst_closed_term_occ_gen_modulo occs test cl occ t =
@@ -825,14 +825,14 @@ let subst_closed_term_occ_decl_modulo (plocs,hyploc) test d =
 
 let vars_of_env env =
   let s =
-    Sign.fold_named_context (fun (id,_,_) s -> Idset.add id s)
-      (named_context env) ~init:Idset.empty in
+    Sign.fold_named_context (fun (id,_,_) s -> Id.Set.add id s)
+      (named_context env) ~init:Id.Set.empty in
   Sign.fold_rel_context
-    (fun (na,_,_) s -> match na with Name id -> Idset.add id s | _ -> s)
+    (fun (na,_,_) s -> match na with Name id -> Id.Set.add id s | _ -> s)
     (rel_context env) ~init:s
 
 let add_vname vars = function
-    Name id -> Idset.add id vars
+    Name id -> Id.Set.add id vars
   | _ -> vars
 
 (*************************)
@@ -846,7 +846,7 @@ let lookup_name_of_rel p names =
 let lookup_rel_of_name id names =
   let rec lookrec n = function
     | Anonymous :: l  -> lookrec (n+1) l
-    | (Name id') :: l -> if id_eq id' id then n else lookrec (n+1) l
+    | (Name id') :: l -> if Id.equal id' id then n else lookrec (n+1) l
     | []            -> raise Not_found
   in
   lookrec 1 names
@@ -1049,31 +1049,31 @@ let adjust_subst_to_rel_context sign l =
 let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
 
 let rec mem_named_context id = function
-  | (id',_,_) :: _ when id_eq id id' -> true
+  | (id',_,_) :: _ when Id.equal id id' -> true
   | _ :: sign -> mem_named_context id sign
   | [] -> false
 
 let clear_named_body id env =
   let aux _ = function
-  | (id',Some c,t) when id_eq id id' -> push_named (id,None,t)
+  | (id',Some c,t) when Id.equal id id' -> push_named (id,None,t)
   | d -> push_named d in
   fold_named_context aux env ~init:(reset_context env)
 
-let global_vars env ids = Idset.elements (global_vars_set env ids)
+let global_vars env ids = Id.Set.elements (global_vars_set env ids)
 
 let global_vars_set_of_decl env = function
   | (_,None,t) -> global_vars_set env t
   | (_,Some c,t) ->
-      Idset.union (global_vars_set env t)
+      Id.Set.union (global_vars_set env t)
         (global_vars_set env c)
 
 let dependency_closure env sign hyps =
-  if Idset.is_empty hyps then [] else
+  if Id.Set.is_empty hyps then [] else
     let (_,lh) =
       Sign.fold_named_context_reverse
         (fun (hs,hl) (x,_,_ as d) ->
-          if Idset.mem x hs then
-            (Idset.union (global_vars_set_of_decl env d) (Idset.remove x hs),
+          if Id.Set.mem x hs then
+            (Id.Set.union (global_vars_set_of_decl env d) (Id.Set.remove x hs),
             x::hl)
           else (hs,hl))
         ~init:(hyps,[])
@@ -1111,8 +1111,8 @@ let impossible_default_case = ref None
 let set_impossible_default_clause c = impossible_default_case := Some c
 
 let coq_unit_judge =
-  let na1 = Name (id_of_string "A") in
-  let na2 = Name (id_of_string "H") in
+  let na1 = Name (Id.of_string "A") in
+  let na2 = Name (Id.of_string "H") in
   fun () ->
     match !impossible_default_case with
     | Some (id,type_of_id) ->

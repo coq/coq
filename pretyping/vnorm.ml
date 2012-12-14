@@ -22,7 +22,7 @@ let crazy_type =  mkSet
 
 let decompose_prod env t =
   let (name,dom,codom as res) = destProd (whd_betadeltaiota env t) in
-  if name = Anonymous then (Name (id_of_string "x"),dom,codom)
+  if name = Anonymous then (Name (Id.of_string "x"),dom,codom)
   else res
 
 exception Find_at of int
@@ -141,7 +141,7 @@ and nf_whd env whd typ =
   | Vsort s -> mkSort s
   | Vprod p ->
       let dom = nf_vtype env (dom p) in
-      let name = Name (id_of_string "x") in
+      let name = Name (Id.of_string "x") in
       let vc = body_of_vfun (nb_rel env) (codom p) in
       let codom = nf_vtype (push_rel (name,None,dom) env) vc  in
       mkProd(name,dom,codom)
@@ -213,7 +213,7 @@ and nf_predicate env ind mip params v pT =
   | Vfun f, _ ->
       let k = nb_rel env in
       let vb = body_of_vfun k f in
-      let name = Name (id_of_string "c") in
+      let name = Name (Id.of_string "c") in
       let n = mip.mind_nrealargs in
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
       let params = if n=0 then params else Array.map (lift n) params in
@@ -262,7 +262,7 @@ and nf_fix env f =
   let vb, vt = reduce_fix k f in
   let ndef = Array.length vt in
   let ft = Array.map (fun v -> nf_val env v crazy_type) vt in
-  let name = Array.init ndef (fun _ -> (Name (id_of_string "Ffix"))) in
+  let name = Array.init ndef (fun _ -> (Name (Id.of_string "Ffix"))) in
   let env = push_rec_types (name,ft,ft) env in
   let fb = Util.Array.map2 (fun v t -> nf_fun env v t) vb ft in
   mkFix ((rec_args,init),(name,ft,fb))
@@ -280,7 +280,7 @@ and nf_cofix env cf =
   let vb,vt = reduce_cofix k cf in
   let ndef = Array.length vt in
   let cft = Array.map (fun v -> nf_val env v crazy_type) vt in
-  let name = Array.init ndef (fun _ -> (Name (id_of_string "Fcofix"))) in
+  let name = Array.init ndef (fun _ -> (Name (Id.of_string "Fcofix"))) in
   let env = push_rec_types (name,cft,cft) env in
   let cfb = Util.Array.map2 (fun v t -> nf_val env v t) vb cft in
   mkCoFix (init,(name,cft,cfb))

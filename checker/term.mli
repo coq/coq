@@ -26,7 +26,7 @@ type 'a pcofixpoint = int * 'a prec_declaration
 type cast_kind = VMcast | DEFAULTcast
 type constr =
     Rel of int
-  | Var of identifier
+  | Var of Id.t
   | Meta of metavariable
   | Evar of constr pexistential
   | Sort of sorts
@@ -71,7 +71,7 @@ val substnl : constr list -> int -> constr -> constr
 val substl : constr list -> constr -> constr
 val subst1 : constr -> constr -> constr
 
-type named_declaration = identifier * constr option * constr
+type named_declaration = Id.t * constr option * constr
 type rel_declaration = name * constr option * constr
 type named_context = named_declaration list
 val empty_named_context : named_context

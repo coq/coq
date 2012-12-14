@@ -127,7 +127,7 @@ let replace_in_array keep_length env sigma a =
   v',mm,sgp
 
 let fresh env n =
-  let id = match n with Name x -> x | _ -> id_of_string "_H" in
+  let id = match n with Name x -> x | _ -> Id.of_string "_H" in
   next_ident_away_in_goal id (ids_of_named_context (named_context env))
 
 let rec compute_metamap env sigma c = match kind_of_term c with

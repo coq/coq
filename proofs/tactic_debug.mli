@@ -46,7 +46,7 @@ val db_pattern_rule :
 
 (** Prints a matched hypothesis *)
 val db_matched_hyp :
-  debug_info -> env -> identifier * constr option * constr -> name -> unit
+  debug_info -> env -> Id.t * constr option * constr -> name -> unit
 
 (** Prints the matched conclusion *)
 val db_matched_concl : debug_info -> env -> constr -> unit
@@ -78,4 +78,4 @@ val db_logic_failure : debug_info -> exn -> unit
 
 (** Prints a logic failure message for a rule *)
 val db_breakpoint : debug_info ->
-  identifier Loc.located message_token list -> unit
+  Id.t Loc.located message_token list -> unit

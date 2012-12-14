@@ -98,7 +98,7 @@ type cinfo=
 type term=
     Symb of constr
   | Product of sorts_family * sorts_family
-  | Eps of identifier
+  | Eps of Id.t
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
 
@@ -106,7 +106,7 @@ let rec term_equal t1 t2 =
   match t1, t2 with
     | Symb c1, Symb c2 -> eq_constr c1 c2
     | Product (s1, t1), Product (s2, t2) -> s1 = s2 && t1 = t2
-    | Eps i1, Eps i2 -> id_ord i1 i2 = 0
+    | Eps i1, Eps i2 -> Id.compare i1 i2 = 0
     | Appli (t1, u1), Appli (t2, u2) -> term_equal t1 t2 && term_equal u1 u2
     | Constructor {ci_constr=c1; ci_arity=i1; ci_nhyps=j1},
       Constructor {ci_constr=c2; ci_arity=i2; ci_nhyps=j2} ->
@@ -149,7 +149,7 @@ type patt_kind =
   | Creates_variables
 
 type quant_eq =
-    {qe_hyp_id: identifier;
+    {qe_hyp_id: Id.t;
      qe_pol: bool;
      qe_nvars:int;
      qe_lhs: ccpattern;
@@ -203,7 +203,7 @@ module Termhash = Hashtbl.Make
    end)
 
 module Identhash = Hashtbl.Make
-  (struct type t = identifier
+  (struct type t = Id.t
 	  let equal = Pervasives.(=)
 	  let hash = Hashtbl.hash
    end)
@@ -356,8 +356,8 @@ let new_representative typ =
 
 (* rebuild a constr from an applicative term *)
 
-let _A_ = Name (id_of_string "A")
-let _B_ = Name (id_of_string "A")
+let _A_ = Name (Id.of_string "A")
+let _B_ = Name (Id.of_string "A")
 let _body_ =  mkProd(Anonymous,mkRel 2,mkRel 2)
 
 let cc_product s1 s2 =
@@ -722,7 +722,7 @@ let one_step state =
 	    true
 	with Not_found -> false
 
-let __eps__ = id_of_string "_eps_"
+let __eps__ = Id.of_string "_eps_"
 
 let new_state_var typ state =
   let id = pf_get_new_id __eps__ state.gls in

@@ -23,15 +23,15 @@ open Glob_term
 
 let binnums = ["Coq";"Numbers";"BinNums"]
 
-let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
-let make_path dir id = Libnames.make_path (make_dir dir) (id_of_string id)
+let make_dir l = make_dirpath (List.map Id.of_string (List.rev l))
+let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
 
 let positive_path = make_path binnums "positive"
 
 (* TODO: temporary hack *)
 let make_kn dir id = Globnames.encode_mind dir id
 
-let positive_kn = make_kn (make_dir binnums) (id_of_string "positive")
+let positive_kn = make_kn (make_dir binnums) (Id.of_string "positive")
 let glob_positive = IndRef (positive_kn,0)
 let path_of_xI = ((positive_kn,0),1)
 let path_of_xO = ((positive_kn,0),2)
@@ -93,7 +93,7 @@ let _ = Notation.declare_numeral_interpreter "positive_scope"
 (* Parsing N via scopes                                               *)
 (**********************************************************************)
 
-let n_kn = make_kn (make_dir binnums) (id_of_string "N")
+let n_kn = make_kn (make_dir binnums) (Id.of_string "N")
 let glob_n = IndRef (n_kn,0)
 let path_of_N0 = ((n_kn,0),1)
 let path_of_Npos = ((n_kn,0),2)
@@ -144,7 +144,7 @@ let _ = Notation.declare_numeral_interpreter "N_scope"
 (**********************************************************************)
 
 let z_path = make_path binnums "Z"
-let z_kn = make_kn (make_dir binnums) (id_of_string "Z")
+let z_kn = make_kn (make_dir binnums) (Id.of_string "Z")
 let glob_z = IndRef (z_kn,0)
 let path_of_ZERO = ((z_kn,0),1)
 let path_of_POS = ((z_kn,0),2)

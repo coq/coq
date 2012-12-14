@@ -33,17 +33,17 @@ val pp_tuple_light : (bool -> 'a -> std_ppcmds) -> 'a list -> std_ppcmds
 val pp_tuple : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val pp_boxed_tuple : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 
-val pr_binding : identifier list -> std_ppcmds
+val pr_binding : Id.t list -> std_ppcmds
 
-val rename_id : identifier -> Idset.t -> identifier
+val rename_id : Id.t -> Id.Set.t -> Id.t
 
-type env = identifier list * Idset.t
+type env = Id.t list * Id.Set.t
 val empty_env : unit -> env
 
-val rename_vars: Idset.t -> identifier list -> env
-val rename_tvars: Idset.t -> identifier list -> identifier list
-val push_vars : identifier list -> env -> identifier list * env
-val get_db_name : int -> env -> identifier
+val rename_vars: Id.Set.t -> Id.t list -> env
+val rename_tvars: Id.Set.t -> Id.t list -> Id.t list
+val push_vars : Id.t list -> env -> Id.t list * env
+val get_db_name : int -> env -> Id.t
 
 type phase = Pre | Impl | Intf
 
@@ -69,7 +69,7 @@ type reset_kind = AllButExternal | Everything
 
 val reset_renaming_tables : reset_kind -> unit
 
-val set_keywords : Idset.t -> unit
+val set_keywords : Id.Set.t -> unit
 
 (** For instance: [mk_ind "Coq.Init.Datatypes" "nat"] *)
 

@@ -56,7 +56,7 @@ let coe_info_typ_equal c1 c2 =
 let cl_typ_eq t1 t2 = match t1, t2 with
 | CL_SORT, CL_SORT -> true
 | CL_FUN, CL_FUN -> true
-| CL_SECVAR v1, CL_SECVAR v2 -> id_eq v1 v2
+| CL_SECVAR v1, CL_SECVAR v2 -> Id.equal v1 v2
 | CL_CONST c1, CL_CONST c2 -> eq_constant c1 c2
 | CL_IND i1, CL_IND i2 -> eq_ind i1 i2
 | _ -> false
@@ -201,11 +201,11 @@ let string_of_class = function
   | CL_FUN -> "Funclass"
   | CL_SORT -> "Sortclass"
   | CL_CONST sp ->
-      string_of_qualid (shortest_qualid_of_global Idset.empty (ConstRef sp))
+      string_of_qualid (shortest_qualid_of_global Id.Set.empty (ConstRef sp))
   | CL_IND sp ->
-      string_of_qualid (shortest_qualid_of_global Idset.empty (IndRef sp))
+      string_of_qualid (shortest_qualid_of_global Id.Set.empty (IndRef sp))
   | CL_SECVAR sp ->
-      string_of_qualid (shortest_qualid_of_global Idset.empty (VarRef sp))
+      string_of_qualid (shortest_qualid_of_global Id.Set.empty (VarRef sp))
 
 let pr_class x = str (string_of_class x)
 
@@ -444,7 +444,7 @@ let coercion_of_reference r =
   let ref = Nametab.global r in
   if not (coercion_exists ref) then
     errorlabstrm "try_add_coercion"
-      (Nametab.pr_global_env Idset.empty ref ++ str" is not a coercion.");
+      (Nametab.pr_global_env Id.Set.empty ref ++ str" is not a coercion.");
   ref
 
 module CoercionPrinting =
@@ -452,7 +452,7 @@ module CoercionPrinting =
     type t = coe_typ
     let encode = coercion_of_reference
     let subst = subst_coe_typ
-    let printer x = pr_global_env Idset.empty x
+    let printer x = pr_global_env Id.Set.empty x
     let key = ["Printing";"Coercion"]
     let title = "Explicitly printed coercions: "
     let member_message x b =

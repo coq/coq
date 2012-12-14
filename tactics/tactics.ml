@@ -94,7 +94,7 @@ let string_of_inductive c =
   try match kind_of_term c with
   | Ind ind_sp ->
       let (mib,mip) = Global.lookup_inductive ind_sp in
-      string_of_id mip.mind_typename
+      Id.to_string mip.mind_typename
   | _ -> raise Bound
   with Bound -> error "Bound head variable."
 
@@ -373,8 +373,8 @@ let id_of_name_with_default id = function
   | Anonymous -> id
   | Name id   -> id
 
-let hid = id_of_string "H"
-let xid = id_of_string "X"
+let hid = Id.of_string "H"
+let xid = Id.of_string "X"
 
 let default_id_of_sort = function Prop _ -> hid | Type _ -> xid
 
@@ -389,9 +389,9 @@ let default_id env sigma = function
    possibly a move to do after the introduction *)
 
 type intro_name_flag =
-  | IntroAvoid of identifier list
-  | IntroBasedOn of identifier * identifier list
-  | IntroMustBe of identifier
+  | IntroAvoid of Id.t list
+  | IntroBasedOn of Id.t * Id.t list
+  | IntroMustBe of Id.t
 
 let find_name loc decl gl = function
   | IntroAvoid idl ->
@@ -401,7 +401,7 @@ let find_name loc decl gl = function
   | IntroMustBe id ->
       (* When name is given, we allow to hide a global name *)
       let id' = next_ident_away id (pf_ids_of_hyps gl) in
-      if not (id_eq id' id) then user_err_loc (loc,"",pr_id id ++ str" is already used.");
+      if not (Id.equal id' id) then user_err_loc (loc,"",pr_id id ++ str" is already used.");
       id'
 
 (* Returns the names that would be created by intros, without doing
@@ -468,9 +468,9 @@ let intro_forthcoming_then_gen loc name_flag move_flag dep_flag tac =
   aux []
 
 let rec get_next_hyp_position id = function
-  | [] -> error ("No such hypothesis: " ^ string_of_id id)
+  | [] -> error ("No such hypothesis: " ^ Id.to_string id)
   | (hyp,_,_) :: right ->
-      if id_eq hyp id then
+      if Id.equal hyp id then
 	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveLast
       else
 	get_next_hyp_position id right
@@ -919,7 +919,7 @@ let descend_in_conjunctions tac exit c gl =
     | Some (_,_,isrec) ->
 	let n = (mis_constr_nargs ind).(0) in
 	let sort = elimination_sort_of_goal gl in
-	let id = fresh_id [] (id_of_string "H") gl in
+	let id = fresh_id [] (Id.of_string "H") gl in
 	let IndType (indf,_) = pf_apply find_rectype gl ccl in
 	let params = snd (dest_ind_family indf) in
 	let cstr = (get_constructors (pf_env gl) indf).(0) in
@@ -1137,7 +1137,7 @@ let clear_wildcards ids =
     with ClearDependencyError (id,err) ->
       (* Intercept standard [thin] error message *)
       Loc.raise loc
-        (error_clear_dependency (pf_env gl) (id_of_string "_") err))
+        (error_clear_dependency (pf_env gl) (Id.of_string "_") err))
     ids
 
 (*   Takes a list of booleans, and introduces all the variables
@@ -1347,17 +1347,17 @@ let rec explicit_intro_names = function
 | [] ->
     []
 
-let wild_id = id_of_string "_tmp"
+let wild_id = Id.of_string "_tmp"
 
 let rec list_mem_assoc_right id = function
   | [] -> false
-  | (x,id')::l -> id_eq id id' || list_mem_assoc_right id l
+  | (x,id')::l -> Id.equal id id' || list_mem_assoc_right id l
 
 let check_thin_clash_then id thin avoid tac =
   if list_mem_assoc_right id thin then
     let newid = next_ident_away (add_suffix id "'") avoid in
     let thin =
-      List.map (on_snd (fun id' -> if id_eq id id' then newid else id')) thin in
+      List.map (on_snd (fun id' -> if Id.equal id id' then newid else id')) thin in
     tclTHEN (rename_hyp [id,newid]) (tac thin)
   else
     tac thin
@@ -1441,7 +1441,7 @@ let ipat_of_name = function
 let allow_replace c gl = function (* A rather arbitrary condition... *)
   | Some (_, IntroIdentifier id) ->
       let c = fst (decompose_app ((strip_lam_assum c))) in
-      isVar c && id_eq (destVar c) id
+      isVar c && Id.equal (destVar c) id
   | _ ->
       false
 
@@ -1631,7 +1631,7 @@ let out_arg = function
 let occurrences_of_hyp id cls =
   let rec hyp_occ = function
       [] -> None
-    | ((occs,id'),hl)::_ when id_eq id id' ->
+    | ((occs,id'),hl)::_ when Id.equal id id' ->
         Some (occurrences_map (List.map out_arg) occs, hl)
     | _::l -> hyp_occ l in
   match cls.onhyps with
@@ -1684,7 +1684,7 @@ let letin_tac with_eq name c occs gl =
   let id =
     if name = Anonymous then fresh_id [] x gl else
       if not (mem_named_context x (pf_hyps gl)) then x else
-	error ("The variable "^(string_of_id x)^" is already declared") in
+	error ("The variable "^(Id.to_string x)^" is already declared") in
   let (depdecls,marks,ccl)= letin_abstract id c occs gl in
   let t = pf_type_of gl c in
   let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
@@ -1767,7 +1767,7 @@ let letin_tac_gen with_eq name (sigmac,c) test ty occs gl =
     let x = id_of_name_using_hdchar (Global.env()) t name in
     if name == Anonymous then fresh_id [] x gl else
       if not (mem_named_context x (pf_hyps gl)) then x else
-	error ("The variable "^(string_of_id x)^" is already declared.") in
+	error ("The variable "^(Id.to_string x)^" is already declared.") in
   let (depdecls,lastlhyp,ccl,c) = letin_abstract id c test occs gl in
   let t = match ty with Some t -> t | None -> pf_apply typ_of gl c in
   let newcl,eq_tac = match with_eq with
@@ -1925,7 +1925,7 @@ let safe_dest_intros_patterns avoid thin dest pat tac gl =
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
 type recarg_position =
-  | AfterFixedPosition of identifier option (* None = top of context *)
+  | AfterFixedPosition of Id.t option (* None = top of context *)
 
 let update_dest (recargdests,tophyp as dests) = function
   | [] -> dests
@@ -2035,15 +2035,15 @@ let find_atomic_param_of_ind nparams indtyp =
   let argl = snd (decompose_app indtyp) in
   let argv = Array.of_list argl in
   let params = List.firstn nparams argl in
-  let indvars = ref Idset.empty in
+  let indvars = ref Id.Set.empty in
   for i = nparams to (Array.length argv)-1 do
     match kind_of_term argv.(i) with
       | Var id
           when not (List.exists (occur_var (Global.env()) id) params) ->
-	  indvars := Idset.add id !indvars
+	  indvars := Id.Set.add id !indvars
       | _ -> ()
   done;
-  Idset.elements !indvars;
+  Id.Set.elements !indvars;
 
 
 (* [cook_sign] builds the lists [indhyps] of hyps that must be
@@ -2109,7 +2109,7 @@ let find_atomic_param_of_ind nparams indtyp =
 
 *)
 
-exception Shunt of identifier move_location
+exception Shunt of Id.t move_location
 
 let cook_sign hyp0_opt indvars env =
   let hyp0,inhyps =
@@ -2126,7 +2126,7 @@ let cook_sign hyp0_opt indvars env =
   let lstatus = ref [] in
   let before = ref true in
   let seek_deps env (hyp,_,_ as decl) rhyp =
-    if id_eq hyp hyp0 then begin
+    if Id.equal hyp hyp0 then begin
       before:=false;
       (* If there was no main induction hypotheses, then hyp is one of
          indvars too, so add it to indhyps. *)
@@ -2154,7 +2154,7 @@ let cook_sign hyp0_opt indvars env =
   let _ = fold_named_context seek_deps env ~init:MoveFirst in
   (* 2nd phase from R to L: get left hyp of [hyp0] and [lhyps] *)
   let compute_lstatus lhyp (hyp,_,_) =
-    if id_eq hyp hyp0 then raise (Shunt lhyp);
+    if Id.equal hyp hyp0 then raise (Shunt lhyp);
     if List.mem hyp !ldeps then begin
       lstatus := (hyp,lhyp)::!lstatus;
       lhyp
@@ -2246,19 +2246,19 @@ let make_base n id =
   else
     (* This extends the name to accept new digits if it already ends with *)
     (* digits *)
-    id_of_string (atompart_of_id (make_ident (string_of_id id) (Some 0)))
+    Id.of_string (atompart_of_id (make_ident (Id.to_string id) (Some 0)))
 
 (* Builds two different names from an optional inductive type and a
    number, also deals with a list of names to avoid. If the inductive
    type is None, then hyprecname is IHi where i is a number. *)
 let make_up_names n ind_opt cname =
   let is_hyp = String.equal (atompart_of_id cname) "H" in
-  let base = string_of_id (make_base n cname) in
+  let base = Id.to_string (make_base n cname) in
   let ind_prefix = "IH" in
   let base_ind =
     if is_hyp then
       match ind_opt with
-	| None -> id_of_string ind_prefix
+	| None -> Id.of_string ind_prefix
 	| Some ind_id -> add_prefix ind_prefix (Nametab.basename_of_global ind_id)
     else add_prefix ind_prefix cname in
   let hyprecname = make_base n base_ind in
@@ -2268,12 +2268,12 @@ let make_up_names n ind_opt cname =
       (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
       (* in order to get names such as f1, f2, ... *)
       let avoid =
-        (make_ident (string_of_id hyprecname) None) ::
-        (make_ident (string_of_id hyprecname) (Some 0)) :: [] in
+        (make_ident (Id.to_string hyprecname) None) ::
+        (make_ident (Id.to_string hyprecname) (Some 0)) :: [] in
       if not (String.equal (atompart_of_id cname) "H") then
         (make_ident base (Some 0)) :: (make_ident base None) :: avoid
       else avoid in
-  id_of_string base, hyprecname, avoid
+  Id.of_string base, hyprecname, avoid
 
 let error_ind_scheme s =
   let s = if not (String.is_empty s) then s^" " else s in
@@ -2312,7 +2312,7 @@ let lift_list l = List.map (lift 1) l
 let ids_of_constr ?(all=false) vars c =
   let rec aux vars c =
     match kind_of_term c with
-    | Var id -> Idset.add id vars
+    | Var id -> Id.Set.add id vars
     | App (f, args) -> 
 	(match kind_of_term f with
 	| Construct (ind,_)
@@ -2371,17 +2371,17 @@ let make_abstract_generalize gl id concl dep ctx body c eqs args refls =
     mkApp (appeqs, abshypt)
 
 let hyps_of_vars env sign nogen hyps =
-  if Idset.is_empty hyps then [] 
+  if Id.Set.is_empty hyps then [] 
   else
     let (_,lh) =
       Sign.fold_named_context_reverse
         (fun (hs,hl) (x,_,_ as d) ->
-	  if Idset.mem x nogen then (hs,hl)
-	  else if Idset.mem x hs then (hs,x::hl)
+	  if Id.Set.mem x nogen then (hs,hl)
+	  else if Id.Set.mem x hs then (hs,x::hl)
 	  else
 	    let xvars = global_vars_set_of_decl env d in
-	      if not (Idset.equal (Idset.diff xvars hs) Idset.empty) then
-		(Idset.add x hs, x :: hl)
+	      if not (Id.Set.equal (Id.Set.diff xvars hs) Id.Set.empty) then
+		(Id.Set.add x hs, x :: hl)
 	      else (hs, hl))
         ~init:(hyps,[])
         sign 
@@ -2393,11 +2393,11 @@ let linear vars args =
   let seen = ref vars in
     try 
       Array.iter (fun i -> 
-	let rels = ids_of_constr ~all:true Idset.empty i in
+	let rels = ids_of_constr ~all:true Id.Set.empty i in
 	let seen' = 
-	  Idset.fold (fun id acc ->
-	    if Idset.mem id acc then raise Seen
-	    else Idset.add id acc)
+	  Id.Set.fold (fun id acc ->
+	    if Id.Set.mem id acc then raise Seen
+	    else Id.Set.add id acc)
 	    rels !seen
 	in seen := seen')
 	args;
@@ -2415,7 +2415,7 @@ let abstract_args gl generalize_vars dep id defined f args =
   let dep = dep || dependent (mkVar id) concl in
   let avoid = ref [] in
   let get_id name =
-    let id = fresh_id !avoid (match name with Name n -> n | Anonymous -> id_of_string "gen_x") gl in
+    let id = fresh_id !avoid (match name with Name n -> n | Anonymous -> Id.of_string "gen_x") gl in
       avoid := id :: !avoid; id
   in
     (* Build application generalized w.r.t. the argument plus the necessary eqs.
@@ -2436,9 +2436,9 @@ let abstract_args gl generalize_vars dep id defined f args =
     let liftargty = lift lenctx argty in
     let leq = constr_cmp Reduction.CUMUL liftargty ty in
       match kind_of_term arg with
-      | Var id when not (is_defined_variable env id) && leq && not (Idset.mem id nongenvars) ->
+      | Var id when not (is_defined_variable env id) && leq && not (Id.Set.mem id nongenvars) ->
       	  (subst1 arg arity, ctx, ctxenv, mkApp (c, [|arg|]), args, eqs, refls,
-      	  Idset.add id nongenvars, Idset.remove id vars, env)
+      	  Id.Set.add id nongenvars, Id.Set.remove id vars, env)
       | _ ->
 	  let name = get_id name in
 	  let decl = (Name name, None, ty) in
@@ -2456,11 +2456,11 @@ let abstract_args gl generalize_vars dep id defined f args =
 	  let refls = refl :: refls in
 	  let argvars = ids_of_constr vars arg in
 	    (arity, ctx, push_rel decl ctxenv, c', args, eqs, refls, 
-	    nongenvars, Idset.union argvars vars, env)
+	    nongenvars, Id.Set.union argvars vars, env)
   in 
   let f', args' = decompose_indapp f args in
   let dogen, f', args' =
-    let parvars = ids_of_constr ~all:true Idset.empty f' in
+    let parvars = ids_of_constr ~all:true Id.Set.empty f' in
       if not (linear parvars args') then true, f, args
       else
 	match Array.findi (fun i x -> not (isVar x) || is_defined_variable env (destVar x)) args' with
@@ -2471,12 +2471,12 @@ let abstract_args gl generalize_vars dep id defined f args =
   in
     if dogen then
       let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env = 
-	Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],Idset.empty,Idset.empty,env) args'
+	Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],Id.Set.empty,Id.Set.empty,env) args'
       in
       let args, refls = List.rev args, List.rev refls in
       let vars = 
 	if generalize_vars then
-	  let nogen = Idset.add id nogen in
+	  let nogen = Id.Set.add id nogen in
 	    hyps_of_vars (pf_env gl) (pf_hyps gl) nogen vars
 	else []
       in
@@ -2674,7 +2674,7 @@ let compute_elim_sig ?elimc elimt =
   let params_preds,branches,args_indargs,conclusion =
     decompose_paramspred_branch_args elimt in
 
-  let ccl = exchange_hd_app (mkVar (id_of_string "__QI_DUMMY__")) conclusion in
+  let ccl = exchange_hd_app (mkVar (Id.of_string "__QI_DUMMY__")) conclusion in
   let concl_with_args = it_mkProd_or_LetIn ccl args_indargs in
   let nparams = Int.Set.cardinal (free_rels concl_with_args) in
   let preds,params = cut_list (List.length params_preds - nparams) params_preds in
@@ -2833,11 +2833,11 @@ let find_elim isrec elim hyp0 gl =
     | Some e -> given_elim hyp0 e gl
 
 type scheme_signature =
-    (identifier list * (elim_arg_kind * bool * identifier) list) array
+    (Id.t list * (elim_arg_kind * bool * Id.t) list) array
 
 type eliminator_source =
   | ElimUsing of (eliminator * types) * scheme_signature
-  | ElimOver of bool * identifier
+  | ElimOver of bool * Id.t
 
 let find_induction_type isrec elim hyp0 gl =
   let scheme,elim =
@@ -3299,7 +3299,7 @@ let andE id gl =
     (tclTHEN (simplest_elim (mkVar id)) (tclDO 2 intro)) gl
   else
     errorlabstrm "andE"
-      (str("Tactic andE expects "^(string_of_id id)^" is a conjunction."))
+      (str("Tactic andE expects "^(Id.to_string id)^" is a conjunction."))
 
 let dAnd cls =
   onClause
@@ -3314,7 +3314,7 @@ let orE id gl =
     (tclTHEN (simplest_elim (mkVar id)) intro) gl
   else
     errorlabstrm "orE"
-      (str("Tactic orE expects "^(string_of_id id)^" is a disjunction."))
+      (str("Tactic orE expects "^(Id.to_string id)^" is a disjunction."))
 
 let dorE b cls =
   onClause
@@ -3332,7 +3332,7 @@ let impE id gl =
       (apply_term (mkVar id) [mkMeta (new_meta())]) gl
   else
     errorlabstrm "impE"
-      (str("Tactic impE expects "^(string_of_id id)^
+      (str("Tactic impE expects "^(Id.to_string id)^
 	      " is a an implication."))
 
 let dImp cls =

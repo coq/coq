@@ -39,7 +39,7 @@ END
 
 TACTIC EXTEND omega'
 | [ "omega" "with" ne_ident_list(l) ] ->
-    [ omega_tactic (List.map Names.string_of_id l) ]
+    [ omega_tactic (List.map Names.Id.to_string l) ]
 | [ "omega" "with" "*" ] -> [ omega_tactic ["nat";"positive";"N";"Z"] ]
 END
 

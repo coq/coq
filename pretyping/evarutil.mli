@@ -51,7 +51,7 @@ val new_type_evar :
 val new_evar_instance :
  named_context_val -> evar_map -> types -> ?src:Loc.t * Evar_kinds.t -> ?filter:bool list -> ?candidates:constr list -> constr list -> evar_map * constr
 
-val make_pure_subst : evar_info -> constr array -> (identifier * constr) list
+val make_pure_subst : evar_info -> constr array -> (Id.t * constr) list
 
 (** {6 Instantiate evars} *)
 
@@ -201,17 +201,17 @@ val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
 raise OccurHypInSimpleClause if the removal breaks dependencies *)
 
 type clear_dependency_error =
-| OccurHypInSimpleClause of identifier option
+| OccurHypInSimpleClause of Id.t option
 | EvarTypingBreak of existential
 
-exception ClearDependencyError of identifier * clear_dependency_error
+exception ClearDependencyError of Id.t * clear_dependency_error
 
 (* spiwack: marks an evar that has been "defined" by clear.
     used by [Goal] and (indirectly) [Proofview] to handle the clear tactic gracefully*)
 val cleared : bool Store.Field.t
 
 val clear_hyps_in_evi : evar_map ref -> named_context_val -> types ->
-  identifier list -> named_context_val * types
+  Id.t list -> named_context_val * types
 
 val push_rel_context_to_named_context : Environ.env -> types ->
   named_context_val * types * constr list * constr list

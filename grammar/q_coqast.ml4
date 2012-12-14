@@ -25,12 +25,12 @@ let loc = CompatLoc.ghost
 let dloc = <:expr< Loc.ghost >>
 
 let mlexpr_of_ident id =
-  <:expr< Names.id_of_string $str:Names.string_of_id id$ >>
+  <:expr< Names.Id.of_string $str:Names.Id.to_string id$ >>
 
 let mlexpr_of_name = function
   | Names.Anonymous -> <:expr< Names.Anonymous >>
   | Names.Name id ->
-      <:expr< Names.Name (Names.id_of_string $str:Names.string_of_id id$) >>
+      <:expr< Names.Name (Names.Id.of_string $str:Names.Id.to_string id$) >>
 
 let mlexpr_of_dirpath dir =
   let l = Names.repr_dirpath dir in
@@ -139,9 +139,9 @@ let mlexpr_of_binder_kind = function
 	$mlexpr_of_binding_kind b'$ $mlexpr_of_bool b''$ >>
 
 let rec mlexpr_of_constr = function
-  | Constrexpr.CRef (Libnames.Ident (loc,id)) when is_meta (string_of_id id) ->
+  | Constrexpr.CRef (Libnames.Ident (loc,id)) when is_meta (Id.to_string id) ->
       let loc = of_coqloc loc in
-      anti loc (string_of_id id)
+      anti loc (Id.to_string id)
   | Constrexpr.CRef r -> <:expr< Constrexpr.CRef $mlexpr_of_reference r$ >>
   | Constrexpr.CFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Constrexpr.CCoFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"

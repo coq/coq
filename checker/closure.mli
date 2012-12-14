@@ -25,7 +25,7 @@ val with_stats: 'a Lazy.t -> 'a
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of
   a LetIn expression is Letin reduction *)
 
-type transparent_state = Idpred.t * Cpred.t
+type transparent_state = Id.Pred.t * Cpred.t
 
 val all_opaque      : transparent_state
 val all_transparent : transparent_state
@@ -44,7 +44,7 @@ module type RedFlagsSig = sig
   val fIOTA : red_kind
   val fZETA : red_kind
   val fCONST : constant -> red_kind
-  val fVAR : identifier -> red_kind
+  val fVAR : Id.t -> red_kind
 
   (* No reduction at all *)
   val no_red : reds
@@ -69,7 +69,7 @@ val betadeltaiotanolet : reds
 (***********************************************************************)
 type table_key =
   | ConstKey of constant
-  | VarKey of identifier
+  | VarKey of Id.t
   | RelKey of int
 
 type 'a infos

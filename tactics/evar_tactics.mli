@@ -12,6 +12,6 @@ open Tacexpr
 open Locus
 
 val instantiate : int -> Tacinterp.interp_sign * Glob_term.glob_constr ->
-  (identifier * hyp_location_flag, unit) location -> tactic
+  (Id.t * hyp_location_flag, unit) location -> tactic
 
 val let_evar : name -> Term.types -> tactic

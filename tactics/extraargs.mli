@@ -33,21 +33,21 @@ val glob : constr_expr Pcoq.Gram.entry
 
 type 'id gen_place= ('id * Locus.hyp_location_flag,unit) location
 
-type loc_place = identifier Loc.located gen_place
-type place = identifier gen_place
+type loc_place = Id.t Loc.located gen_place
+type place = Id.t gen_place
 
 val rawwit_hloc : loc_place raw_abstract_argument_type
 val wit_hloc : place typed_abstract_argument_type
 val hloc : loc_place Pcoq.Gram.entry
 val pr_hloc : loc_place -> Pp.std_ppcmds
 
-val in_arg_hyp:  (Names.identifier Loc.located list option * bool)  Pcoq.Gram.entry
-val globwit_in_arg_hyp : (Names.identifier Loc.located list option * bool) glob_abstract_argument_type
-val rawwit_in_arg_hyp : (Names.identifier Loc.located list option * bool) raw_abstract_argument_type
-val wit_in_arg_hyp : (Names.identifier list option * bool) typed_abstract_argument_type
-val raw_in_arg_hyp_to_clause : (Names.identifier Loc.located list option * bool) -> Locus.clause
-val glob_in_arg_hyp_to_clause :  (Names.identifier list option * bool)  -> Locus.clause
-val pr_in_arg_hyp : (Names.identifier list option * bool) -> Pp.std_ppcmds
+val in_arg_hyp:  (Names.Id.t Loc.located list option * bool)  Pcoq.Gram.entry
+val globwit_in_arg_hyp : (Names.Id.t Loc.located list option * bool) glob_abstract_argument_type
+val rawwit_in_arg_hyp : (Names.Id.t Loc.located list option * bool) raw_abstract_argument_type
+val wit_in_arg_hyp : (Names.Id.t list option * bool) typed_abstract_argument_type
+val raw_in_arg_hyp_to_clause : (Names.Id.t Loc.located list option * bool) -> Locus.clause
+val glob_in_arg_hyp_to_clause :  (Names.Id.t list option * bool)  -> Locus.clause
+val pr_in_arg_hyp : (Names.Id.t list option * bool) -> Pp.std_ppcmds
 
 val by_arg_tac : Tacexpr.raw_tactic_expr option Pcoq.Gram.entry
 val rawwit_by_arg_tac :  raw_tactic_expr option raw_abstract_argument_type

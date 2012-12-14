@@ -25,7 +25,7 @@ let update_flags ()=
     red_flags:=
     Closure.RedFlags.red_add_transparent
       Closure.betaiotazeta
-      (Names.Idpred.full,Names.Cpred.complement !predref)
+      (Names.Id.Pred.full,Names.Cpred.complement !predref)
 
 let ground_tac solver startseq gl=
   update_flags ();

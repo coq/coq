@@ -44,8 +44,8 @@ open Pattern
 open Misctypes
 
 type typing_constraint = OfType of types option | IsType
-type var_map = (identifier * constr_under_binders) list
-type unbound_ltac_var_map = (identifier * identifier option) list
+type var_map = (Id.t * constr_under_binders) list
+type unbound_ltac_var_map = (Id.t * Id.t option) list
 type ltac_var_map = var_map * unbound_ltac_var_map
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr
@@ -609,7 +609,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 		(fun (n, b, t) ->
 		   match n with
                    Name _ -> (n, b, t)
-                   | Anonymous -> (Name (id_of_string "H"), b, t))
+                   | Anonymous -> (Name (Id.of_string "H"), b, t))
 		cs.cs_args
 	  in
 	  let env_c = push_rel_context csgn env in

@@ -91,7 +91,7 @@ let mk_evd metalist gls =
     meta_declare meta typ evd in
     List.fold_right add_one metalist evd0
 
-let is_tmp id = (string_of_id id).[0] = '_'
+let is_tmp id = (Id.to_string id).[0] = '_'
 
 let tmp_ids gls =
   let ctx = pf_hyps gls in
@@ -210,27 +210,27 @@ let filter_hyps f gls =
       tclTRY (clear [id])  in
     tclMAP filter_aux (pf_hyps gls) gls
 
-let local_hyp_prefix = id_of_string "___"
+let local_hyp_prefix = Id.of_string "___"
 
 let add_justification_hyps keep items gls =
   let add_aux c gls=
     match kind_of_term c with
 	Var id ->
-	  keep:=Idset.add id !keep;
+	  keep:=Id.Set.add id !keep;
 	  tclIDTAC gls
       | _ ->
 	  let id=pf_get_new_id local_hyp_prefix gls in
-	    keep:=Idset.add id !keep;
+	    keep:=Id.Set.add id !keep;
 	    tclTHEN (letin_tac None (Names.Name id) c None Locusops.nowhere)
               (thin_body [id]) gls in
     tclMAP add_aux items gls
 
 let prepare_goal items gls =
-  let tokeep = ref Idset.empty in
+  let tokeep = ref Id.Set.empty in
   let auxres = add_justification_hyps tokeep items gls in
    tclTHENLIST
      [ (fun _ -> auxres);
-       filter_hyps (let keep = !tokeep in fun id -> Idset.mem id keep)] gls
+       filter_hyps (let keep = !tokeep in fun id -> Id.Set.mem id keep)] gls
 
 let my_automation_tac = ref
   (fun gls -> anomaly "No automation registered")
@@ -474,7 +474,7 @@ let instr_cut mkstat _thus _then cut gls0 =
   let stat = cut.cut_stat in
   let (c_id,_) = match stat.st_label with
       Anonymous ->
-	pf_get_new_id (id_of_string "_fact") gls0,false
+	pf_get_new_id (Id.of_string "_fact") gls0,false
     | Name id -> id,true in
   let c_stat = mkstat info gls0 stat.st_it in
   let thus_tac gls=
@@ -520,7 +520,7 @@ let instr_rew _thus rew_side cut gls0 =
     justification (tclTHEN items_tac method_tac) gls in
   let (c_id,_) = match cut.cut_stat.st_label with
       Anonymous ->
-	pf_get_new_id (id_of_string "_eq") gls0,false
+	pf_get_new_id (Id.of_string "_eq") gls0,false
     | Name id -> id,true in
   let thus_tac new_eq gls=
     if _thus then
@@ -549,7 +549,7 @@ let instr_rew _thus rew_side cut gls0 =
 let instr_claim _thus st gls0 =
   let info = get_its_info gls0 in
   let (id,_) = match st.st_label with
-      Anonymous -> pf_get_new_id (id_of_string "_claim") gls0,false
+      Anonymous -> pf_get_new_id (Id.of_string "_claim") gls0,false
     | Name id -> id,true in
   let thus_tac gls=
     if _thus then
@@ -566,7 +566,7 @@ let instr_claim _thus st gls0 =
 let push_intro_tac coerce nam gls =
       let (hid,_) =
 	match nam with
-	    Anonymous -> pf_get_new_id (id_of_string "_hyp") gls,false
+	    Anonymous -> pf_get_new_id (Id.of_string "_hyp") gls,false
 	  | Name id -> id,true in
 	tclTHENLIST
 	  [intro_mustbe_force hid;
@@ -640,7 +640,7 @@ let rec build_applist prod = function
 
 let instr_suffices _then cut gls0 =
   let info = get_its_info gls0 in
-  let c_id = pf_get_new_id (id_of_string "_cofact") gls0 in
+  let c_id = pf_get_new_id (Id.of_string "_cofact") gls0 in
   let ctx,hd = cut.cut_stat in
   let c_stat = build_product ctx (mk_stat_or_thesis info gls0 hd) in
   let metas = metas_from 1 ctx in
@@ -677,7 +677,7 @@ let rec intron_then n ids ltac gls =
   if n<=0 then
     ltac ids gls
   else
-    let id = pf_get_new_id (id_of_string "_tmp") gls in
+    let id = pf_get_new_id (Id.of_string "_tmp") gls in
       tclTHEN
 	(intro_mustbe_force id)
 	(intron_then (pred n) (id::ids) ltac) gls
@@ -692,7 +692,7 @@ let rec consider_match may_intro introduced available expected gls =
     | [],hyps ->
 	if may_intro then
 	  begin
- 	    let id = pf_get_new_id (id_of_string "_tmp") gls in
+ 	    let id = pf_get_new_id (Id.of_string "_tmp") gls in
 	      tclIFTHENELSE
 		(intro_mustbe_force id)
 		(consider_match true [] [id] hyps)
@@ -732,7 +732,7 @@ let consider_tac c hyps gls =
       Var id ->
 	consider_match false [] [id] hyps gls
     | _ ->
-	let id = pf_get_new_id (id_of_string "_tmp") gls in
+	let id = pf_get_new_id (Id.of_string "_tmp") gls in
 	tclTHEN
 	  (forward None (Some (Loc.ghost, IntroIdentifier id)) c)
  	  (consider_match false [] [id] hyps) gls
@@ -823,7 +823,7 @@ let map_tree id_fun mapi = function
 
 
 let start_tree env ind rp =
-  init_tree Idset.empty ind rp (fun _ _ -> None)
+  init_tree Id.Set.empty ind rp (fun _ _ -> None)
 
 let build_per_info etype casee gls =
   let concl=pf_concl gls in
@@ -872,7 +872,7 @@ let per_tac etype casee gls=
 		  Per(etype,per_info,ek,[])::info.pm_stack} gls
       | Virtual cut ->
 	  assert (cut.cut_stat.st_label=Anonymous);
-	  let id = pf_get_new_id (id_of_string "anonymous_matched") gls in
+	  let id = pf_get_new_id (Id.of_string "anonymous_matched") gls in
 	  let c = mkVar id in
 	  let modified_cut =
 	    {cut with cut_stat={cut.cut_stat with st_label=Name id}} in
@@ -901,7 +901,7 @@ let register_nodep_subcase id= function
 let suppose_tac hyps gls0 =
   let info = get_its_info gls0 in
   let thesis = pf_concl gls0 in
-  let id = pf_get_new_id (id_of_string "subcase_") gls0 in
+  let id = pf_get_new_id (Id.of_string "subcase_") gls0 in
   let clause = build_product hyps thesis in
   let ninfo1 = {pm_stack=Suppose_case::info.pm_stack} in
   let old_clauses,stack = register_nodep_subcase id info.pm_stack in
@@ -931,17 +931,17 @@ let rec tree_of_pats ((id,_) as cpl) pats =
 	  | (patt,rp) :: rest_args ->
 	      match patt with
 		  PatVar (_,v) ->
-		    Skip_patt (Idset.singleton id,
+		    Skip_patt (Id.Set.singleton id,
 			       tree_of_pats cpl (rest_args::stack))
 		| PatCstr (_,(ind,cnum),args,nam) ->
 		    let nexti i ati =
 		      if i = pred cnum then
 			let nargs =
 			  List.map_i (fun j a -> (a,ati.(j))) 0 args in
-			  Some (Idset.singleton id,
+			  Some (Id.Set.singleton id,
 				tree_of_pats cpl (nargs::rest_args::stack))
 		      else None
-		      in init_tree Idset.empty ind rp nexti
+		      in init_tree Id.Set.empty ind rp nexti
 
 let rec add_branch ((id,_) as cpl) pats tree=
   match pats with
@@ -967,10 +967,10 @@ let rec add_branch ((id,_) as cpl) pats tree=
 		    begin
 		      match tree with
 			  Skip_patt (ids,t) ->
-			    Skip_patt (Idset.add id ids,
+			    Skip_patt (Id.Set.add id ids,
 				       add_branch cpl (rest_args::stack) t)
 			| Split_patt (_,_,_) ->
-			    map_tree (Idset.add id)
+			    map_tree (Id.Set.add id)
 			      (fun i bri ->
 				 append_branch cpl 1 (rest_args::stack) bri)
 			      tree
@@ -983,7 +983,7 @@ let rec add_branch ((id,_) as cpl) pats tree=
 			    if i = pred cnum then
 			      let nargs =
 				List.map_i (fun j a -> (a,ati.(j))) 0 args in
-				Some (Idset.add id ids,
+				Some (Id.Set.add id ids,
 				      add_branch cpl (nargs::rest_args::stack)
 					(skip_args t ids (Array.length ati)))
 			    else
@@ -1005,19 +1005,19 @@ let rec add_branch ((id,_) as cpl) pats tree=
 		      | _ -> anomaly "No pop/stop expected here"
 and append_branch ((id,_) as cpl) depth pats = function
     Some (ids,tree) ->
-      Some (Idset.add id ids,append_tree cpl depth pats tree)
+      Some (Id.Set.add id ids,append_tree cpl depth pats tree)
   | None ->
-      Some (Idset.singleton id,tree_of_pats cpl pats)
+      Some (Id.Set.singleton id,tree_of_pats cpl pats)
 and append_tree ((id,_) as cpl) depth pats tree =
   if depth<=0 then add_branch cpl pats tree
   else match tree with
       Close_patt t ->
 	Close_patt (append_tree cpl (pred depth) pats t)
     | Skip_patt (ids,t) ->
-	Skip_patt (Idset.add id ids,append_tree cpl depth pats t)
+	Skip_patt (Id.Set.add id ids,append_tree cpl depth pats t)
     | End_patt _ -> anomaly "Premature end of branch"
     | Split_patt (_,_,_) ->
-	map_tree (Idset.add id)
+	map_tree (Id.Set.add id)
 	  (fun i bri -> append_branch cpl (succ depth) pats bri) tree
 
 (* suppose it is *)
@@ -1101,7 +1101,7 @@ let rec register_dep_subcase id env per_info pat = function
 
 let case_tac params pat_info hyps gls0 =
   let info = get_its_info gls0 in
-  let id = pf_get_new_id (id_of_string "subcase_") gls0 in
+  let id = pf_get_new_id (Id.of_string "subcase_") gls0 in
   let et,per_info,ek,old_clauses,rest =
     match info.pm_stack with
 	Per (et,pi,ek,old_clauses)::rest -> (et,pi,ek,old_clauses,rest)
@@ -1139,7 +1139,7 @@ let push_arg arg stacks =
 
 
 let push_one_head c ids (id,stack) =
-  let head = if Idset.mem id ids then Some c else None in
+  let head = if Id.Set.mem id ids then Some c else None in
     id,(head,[]) :: stack
 
 let push_head c ids stacks =
@@ -1251,7 +1251,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 		 | Some (sub_ids,tree) ->
 		     let br_args =
 		       List.filter
-			 (fun (id,_) -> Idset.mem id sub_ids) args in
+			 (fun (id,_) -> Id.Set.mem id sub_ids) args in
 		     let construct =
 		       applist (mkConstruct(ind,succ i),params) in
 		     let p_args =
@@ -1333,9 +1333,9 @@ let end_tac et2 gls =
 		  begin
 		    fun gls0 ->
 		      let fix_id =
-			pf_get_new_id (id_of_string "_fix") gls0 in
+			pf_get_new_id (Id.of_string "_fix") gls0 in
 		      let c_id =
-			pf_get_new_id (id_of_string "_main_arg") gls0 in
+			pf_get_new_id (Id.of_string "_main_arg") gls0 in
 			tclTHENLIST
 			  [fix (Some fix_id) (succ nargs);
 			   tclDO nargs introf;

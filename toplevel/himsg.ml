@@ -349,7 +349,7 @@ let explain_evar_kind env evi = function
       let id = Option.get ido in
       str "the implicit parameter " ++
       pr_id id ++ spc () ++ str "of" ++
-      spc () ++ Nametab.pr_global_env Idset.empty c
+      spc () ++ Nametab.pr_global_env Id.Set.empty c
   | Evar_kinds.InternalHole ->
       str "an internal placeholder" ++
 	Option.cata (fun evi ->
@@ -543,7 +543,7 @@ let explain_not_match_error = function
   | ModuleTypeFieldExpected ->
     strbrk "a module type is expected"
   | NotConvertibleInductiveField id | NotConvertibleConstructorField id ->
-    str "types given to " ++ str (string_of_id id) ++ str " differ"
+    str "types given to " ++ str (Id.to_string id) ++ str " differ"
   | NotConvertibleBodyField ->
     str "the body of definitions differs"
   | NotConvertibleTypeField ->
@@ -565,7 +565,7 @@ let explain_not_match_error = function
   | RecordProjectionsExpected nal ->
     (if List.length nal >= 2 then str "expected projection names are "
      else str "expected projection name is ") ++
-    pr_enum (function Name id -> str (string_of_id id) | _ -> str "_") nal
+    pr_enum (function Name id -> str (Id.to_string id) | _ -> str "_") nal
   | NotEqualInductiveAliases ->
     str "Aliases to inductive types do not match"
   | NoTypeConstraintExpected ->

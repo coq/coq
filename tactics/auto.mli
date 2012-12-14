@@ -88,7 +88,7 @@ module Hint_db :
     val add_cut : hints_path -> t -> t
     val cut : t -> hints_path
 
-    val unfolds : t -> Idset.t * Cset.t
+    val unfolds : t -> Id.Set.t * Cset.t
   end
 
 type hint_db_name = string

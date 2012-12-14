@@ -105,17 +105,17 @@ let make_refl_eq constructor type_of_t t  =
 
 type pte_info =
     {
-      proving_tac : (identifier list ->  Tacmach.tactic);
+      proving_tac : (Id.t list ->  Tacmach.tactic);
       is_valid : constr -> bool
     }
 
-type ptes_info = pte_info Idmap.t
+type ptes_info = pte_info Id.Map.t
 
 type 'a dynamic_info =
     {
       nb_rec_hyps : int;
-      rec_hyps : identifier list ;
-      eq_hyps : identifier list;
+      rec_hyps : Id.t list ;
+      eq_hyps : Id.t list;
       info : 'a
     }
 
@@ -361,7 +361,7 @@ let is_property (ptes_info:ptes_info) t_x full_type_of_hyp =
     if isVar pte && Array.for_all closed0 args
     then
       try
-	let info = Idmap.find (destVar pte) ptes_info in
+	let info = Id.Map.find (destVar pte) ptes_info in
 	info.is_valid full_type_of_hyp
       with Not_found -> false
     else false
@@ -406,7 +406,7 @@ let rewrite_until_var arg_num eq_ids : tactic =
   do_rewrite eq_ids
 
 
-let rec_pte_id = id_of_string "Hrec"
+let rec_pte_id = Id.of_string "Hrec"
 let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
   let coq_False = Coqlib.build_coq_False () in
   let coq_True = Coqlib.build_coq_True () in
@@ -430,7 +430,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	if is_property ptes_infos t_x actual_real_type_of_hyp then
 	  begin
 	    let pte,pte_args =  (destApp t_x) in
-	    let (* fix_info *) prove_rec_hyp = (Idmap.find (destVar pte) ptes_infos).proving_tac in
+	    let (* fix_info *) prove_rec_hyp = (Id.Map.find (destVar pte) ptes_infos).proving_tac in
 	    let popped_t' = Termops.pop t' in
 	    let real_type_of_hyp = it_mkProd_or_LetIn popped_t' context in
 	    let prove_new_type_of_hyp =
@@ -579,7 +579,7 @@ let clean_goal_with_heq ptes_infos continue_tac (dyn_infos:body_info) =
       ]
       g
 
-let heq_id = id_of_string "Heq"
+let heq_id = Id.of_string "Heq"
 
 let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
   fun g ->
@@ -632,7 +632,7 @@ let my_orelse tac1 tac2 g =
 (*     observe (str "using snd tac since : " ++ Errors.print e); *)
     tac2 g
 
-let instanciate_hyps_with_args (do_prove:identifier list -> tactic) hyps args_id =
+let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
   let args = Array.of_list (List.map mkVar  args_id) in
   let instanciate_one_hyp hid =
     my_orelse
@@ -672,10 +672,10 @@ let instanciate_hyps_with_args (do_prove:identifier list -> tactic) hyps args_id
 	tclMAP instanciate_one_hyp hyps;
 	(fun g ->
 	   let all_g_hyps_id =
-	     List.fold_right Idset.add (pf_ids_of_hyps g) Idset.empty
+	     List.fold_right Id.Set.add (pf_ids_of_hyps g) Id.Set.empty
 	   in
 	   let remaining_hyps =
-	     List.filter (fun id -> Idset.mem id all_g_hyps_id) hyps
+	     List.filter (fun id -> Id.Set.mem id all_g_hyps_id) hyps
 	   in
 	   do_prove remaining_hyps g
 	  )
@@ -885,7 +885,7 @@ let build_proof
 type static_fix_info =
     {
       idx : int;
-      name : identifier;
+      name : Id.t;
       types : types;
       offset : int;
       nb_realargs : int;
@@ -1042,7 +1042,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
       (fun na ->
 	 let new_id =
 	   match na with
-	       Name id -> fresh_id !avoid (string_of_id id)
+	       Name id -> fresh_id !avoid (Id.to_string id)
 	     | Anonymous -> fresh_id !avoid "H"
 	 in
 	 avoid := new_id :: !avoid;
@@ -1183,14 +1183,14 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		   in
 (* 		   observe (str "binding " ++ Ppconstr.pr_id (Nameops.out_name pte) ++  *)
 (* 			      str " to " ++ Ppconstr.pr_id info.name); *)
-		   (Idmap.add (Nameops.out_name pte) info acc_map,info::acc_info)
+		   (Id.Map.add (Nameops.out_name pte) info acc_map,info::acc_info)
 		   )
 		0
-		(Idmap.empty,[])
+		(Id.Map.empty,[])
 		(List.rev princ_info.predicates)
 	    in
 	    pte_to_fix,List.rev rev_info
-	| _ -> Idmap.empty,[]
+	| _ -> Id.Map.empty,[]
     in
     let mk_fixes : tactic =
       let pre_info,infos = list_chop fun_num infos in
@@ -1224,7 +1224,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	let pte,pte_args = (decompose_app pte_app) in
 	try
 	  let pte = try destVar pte with _ -> anomaly "Property is not a variable"  in
-	  let fix_info = Idmap.find  pte ptes_to_fix in
+	  let fix_info = Id.Map.find  pte ptes_to_fix in
 	  let nb_args = fix_info.nb_realargs in
 	  tclTHENSEQ
 	    [
@@ -1262,7 +1262,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		       build_proof
 			 interactive_proof
 			 (Array.to_list fnames)
-			 (Idmap.map prove_rec_hyp ptes_to_fix)
+			 (Id.Map.map prove_rec_hyp ptes_to_fix)
 		     in
 		     let prove_tac branches  =
 		       let dyn_infos =
@@ -1272,7 +1272,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 			 }
 		       in
 		       observe_tac "cleaning" (clean_goal_with_heq
-			 (Idmap.map prove_rec_hyp ptes_to_fix)
+			 (Id.Map.map prove_rec_hyp ptes_to_fix)
 			 do_prove
 			 dyn_infos)
 		     in
@@ -1316,7 +1316,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		      build_proof
 			interactive_proof
 			(Array.to_list fnames)
-			 (Idmap.map prove_rec_hyp ptes_to_fix)
+			 (Id.Map.map prove_rec_hyp ptes_to_fix)
 		    in
 		    let prove_tac branches  =
 		      let dyn_infos =
@@ -1326,7 +1326,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 			 }
 		      in
 		       clean_goal_with_heq
-			 (Idmap.map prove_rec_hyp ptes_to_fix)
+			 (Id.Map.map prove_rec_hyp ptes_to_fix)
 			 do_prove
 			 dyn_infos
 		    in
@@ -1413,7 +1413,7 @@ let rec rewrite_eqs_in_eqs eqs =
 	    (tclMAP
 	       (fun id gl ->
 		  observe_tac
-		    (Format.sprintf "rewrite %s in %s " (string_of_id eq) (string_of_id id))
+		    (Format.sprintf "rewrite %s in %s " (Id.to_string eq) (Id.to_string id))
 		    (tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences
 			       true (* dep proofs also: *) true id (mkVar eq) false))
 		    gl
@@ -1427,7 +1427,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
     (tclTHENSEQ
        [
 	 backtrack_eqs_until_hrec hrec eqs;
-	 (* observe_tac ("new_prove_with_tcc ( applying "^(string_of_id hrec)^" )" ) *)
+	 (* observe_tac ("new_prove_with_tcc ( applying "^(Id.to_string hrec)^" )" ) *)
 	 (tclTHENS  (* We must have exactly ONE subgoal !*)
 	    (apply (mkVar hrec))
 	    [ tclTHENSEQ
@@ -1463,13 +1463,13 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 
 
 let is_valid_hypothesis predicates_name =
-  let predicates_name = List.fold_right Idset.add predicates_name Idset.empty in
+  let predicates_name = List.fold_right Id.Set.add predicates_name Id.Set.empty in
   let is_pte typ =
     if isApp typ
     then
       let pte,_ = destApp typ in
       if isVar pte
-      then Idset.mem (destVar pte) predicates_name
+      then Id.Set.mem (destVar pte) predicates_name
       else false
     else false
   in
@@ -1491,7 +1491,7 @@ let prove_principle_for_gen
     fun na ->
       let new_id =
 	  match na with
-	    | Name id -> fresh_id !avoid (string_of_id id)
+	    | Name id -> fresh_id !avoid (Id.to_string id)
 	    | Anonymous -> fresh_id !avoid "H"
       in
       avoid := new_id :: !avoid;
@@ -1534,9 +1534,9 @@ let prove_principle_for_gen
   let subst_constrs = List.map (fun (na,_,_) -> mkVar (Nameops.out_name na)) (pre_rec_arg@princ_info.params) in
   let relation = substl subst_constrs relation in
   let input_type = substl subst_constrs rec_arg_type in
-  let wf_thm_id = Nameops.out_name (fresh_id (Name (id_of_string "wf_R"))) in
+  let wf_thm_id = Nameops.out_name (fresh_id (Name (Id.of_string "wf_R"))) in
   let acc_rec_arg_id =
-    Nameops.out_name (fresh_id (Name (id_of_string ("Acc_"^(string_of_id rec_arg_id)))))
+    Nameops.out_name (fresh_id (Name (Id.of_string ("Acc_"^(Id.to_string rec_arg_id)))))
   in
   let revert l =
     tclTHEN (h_generalize (List.map mkVar l)) (clear l)
@@ -1580,7 +1580,7 @@ let prove_principle_for_gen
     let hyps = pf_ids_of_hyps gls in
       let hid =
 	next_ident_away_in_goal
-	  (id_of_string "prov")
+	  (Id.of_string "prov")
 	  hyps
       in
       tclTHENSEQ
@@ -1669,14 +1669,14 @@ let prove_principle_for_gen
 	     is_valid = is_valid_hypothesis predicates_names
 	   }
 	 in
-	 let ptes_info : pte_info Idmap.t =
+	 let ptes_info : pte_info Id.Map.t =
 	   List.fold_left
 	     (fun map pte_id ->
-		Idmap.add pte_id
+		Id.Map.add pte_id
 		  pte_info
 		  map
 	     )
-	     Idmap.empty
+	     Id.Map.empty
 	     predicates_names
 	 in
 	 let make_proof rec_hyps =

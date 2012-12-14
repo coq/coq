@@ -463,7 +463,7 @@ let mkAppL a =
 let rec fourier gl=
     Coqlib.check_required_library ["Coq";"fourier";"Fourier"];
     let goal = strip_outer_cast (pf_concl gl) in
-    let fhyp=id_of_string "new_hyp_for_fourier" in
+    let fhyp=Id.of_string "new_hyp_for_fourier" in
     (* si le but est une inéquation, on introduit son contraire,
        et le but à prouver devient False *)
     try (let tac =

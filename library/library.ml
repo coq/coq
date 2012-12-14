@@ -71,7 +71,7 @@ let add_load_path isroot (phys_path,coq_path) =
 
 let extend_path_with_dirpath p dir =
   List.fold_left Filename.concat p
-    (List.map string_of_id (List.rev (repr_dirpath dir)))
+    (List.map Id.to_string (List.rev (repr_dirpath dir)))
 
 let root_paths_matching_dir_path dir =
   let rec aux = function
@@ -330,7 +330,7 @@ let locate_absolute_library dir =
   let loadpath = root_paths_matching_dir_path pref in
   let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
   try
-    let name = (string_of_id base)^".vo" in
+    let name = (Id.to_string base)^".vo" in
     let _, file = System.where_in_path ~warn:false loadpath name in
     (dir, file)
   with Not_found ->
@@ -346,7 +346,7 @@ let locate_qualified_library warn qid =
     let dir, base = repr_qualid qid in
     let loadpath = loadpaths_matching_dir_path dir in
     let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
-    let name = string_of_id base ^ ".vo" in
+    let name = Id.to_string base ^ ".vo" in
     let lpath, file = System.where_in_path ~warn (List.map fst loadpath) name in
     let dir = add_dirpath_suffix (List.assoc lpath loadpath) base in
     (* Look if loaded *)
@@ -450,7 +450,7 @@ let rec_intern_library needed mref =
   let _,needed = intern_library needed mref in needed
 
 let check_library_short_name f dir = function
-  | Some id when not (id_eq id (snd (split_dirpath dir))) ->
+  | Some id when not (Id.equal id (snd (split_dirpath dir))) ->
       errorlabstrm "check_library_short_name"
       (str ("The file " ^ f ^ " contains library") ++ spc () ++
       pr_dirpath dir ++ spc () ++ str "and not library" ++ spc () ++
@@ -598,9 +598,9 @@ let import_module export (loc,qid) =
 let check_coq_overwriting p id =
   let l = repr_dirpath p in
   let is_empty = match l with [] -> true | _ -> false in
-  if not !Flags.boot && not is_empty && String.equal (string_of_id (List.last l)) "Coq" then
+  if not !Flags.boot && not is_empty && String.equal (Id.to_string (List.last l)) "Coq" then
     errorlabstrm ""
-      (strbrk ("Cannot build module "^string_of_dirpath p^"."^string_of_id id^
+      (strbrk ("Cannot build module "^string_of_dirpath p^"."^Id.to_string id^
       ": it starts with prefix \"Coq\" which is reserved for the Coq library."))
 
 let start_library f =
@@ -608,7 +608,7 @@ let start_library f =
   let _,longf =
     System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
   let ldir0 = find_logical_path (Filename.dirname longf) in
-  let id = id_of_string (Filename.basename f) in
+  let id = Id.of_string (Filename.basename f) in
   check_coq_overwriting ldir0 id;
   let ldir = add_dirpath_suffix ldir0 id in
   Declaremods.start_library ldir;

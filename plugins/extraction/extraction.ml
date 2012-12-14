@@ -192,7 +192,7 @@ let parse_ind_args si args relmax =
   in parse 1 1 si
 
 let oib_equal o1 o2 =
-  id_ord o1.mind_typename o2.mind_typename = 0 &&
+  Id.compare o1.mind_typename o2.mind_typename = 0 &&
   List.equal eq_rel_declaration o1.mind_arity_ctxt o2.mind_arity_ctxt &&
   begin match o1.mind_arity, o2.mind_arity with
   | Monomorphic {mind_user_arity=c1; mind_sort=s1},

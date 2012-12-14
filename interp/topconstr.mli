@@ -25,26 +25,26 @@ val oldfashion_patterns : bool ref
 (** Utilities on constr_expr                                           *)
 
 val replace_vars_constr_expr :
-  (identifier * identifier) list -> constr_expr -> constr_expr
+  (Id.t * Id.t) list -> constr_expr -> constr_expr
 
-val free_vars_of_constr_expr : constr_expr -> Idset.t
-val occur_var_constr_expr : identifier -> constr_expr -> bool
+val free_vars_of_constr_expr : constr_expr -> Id.Set.t
+val occur_var_constr_expr : Id.t -> constr_expr -> bool
 
 (** Specific function for interning "in indtype" syntax of "match" *)
-val ids_of_cases_indtype : cases_pattern_expr -> identifier list
+val ids_of_cases_indtype : cases_pattern_expr -> Id.t list
 
-val split_at_annot : local_binder list -> identifier located option -> local_binder list * local_binder list
+val split_at_annot : local_binder list -> Id.t located option -> local_binder list * local_binder list
 
 (** Used in typeclasses *)
 
-val fold_constr_expr_with_binders : (identifier -> 'a -> 'a) ->
+val fold_constr_expr_with_binders : (Id.t -> 'a -> 'a) ->
    ('a -> 'b -> constr_expr -> 'b) -> 'a -> 'b -> constr_expr -> 'b
 
 (** Used in correctness and interface; absence of var capture not guaranteed 
    in pattern-matching clauses and in binders of the form [x,y:T(x)] *)
 
 val map_constr_expr_with_binders :
-  (identifier -> 'a -> 'a) -> ('a -> constr_expr -> constr_expr) ->
+  (Id.t -> 'a -> 'a) -> ('a -> constr_expr -> constr_expr) ->
       'a -> constr_expr -> constr_expr
 
 val ntn_loc :

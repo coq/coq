@@ -4,11 +4,11 @@
 val tclUSER_if_not_mes : 
   Proof_type.tactic ->
   bool -> 
-  Names.identifier list option -> 
+  Names.Id.t list option -> 
   Proof_type.tactic
 val recursive_definition :  
 bool ->
-           Names.identifier ->
+           Names.Id.t ->
            Constrintern.internalization_env ->
            Constrexpr.constr_expr ->
            Constrexpr.constr_expr ->

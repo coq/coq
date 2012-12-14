@@ -21,11 +21,11 @@ open Decl_kinds
 open Tacexpr
 
 (** Forward declaration. *)
-val declare_fix_ref : (definition_object_kind -> identifier ->
+val declare_fix_ref : (definition_object_kind -> Id.t ->
   constr -> types -> Impargs.manual_implicits -> global_reference) ref
 
 val declare_definition_ref :
-  (identifier -> locality * definition_object_kind ->
+  (Id.t -> locality * definition_object_kind ->
      Entries.definition_entry -> Impargs.manual_implicits
        -> global_reference declaration_hook -> global_reference) ref
 
@@ -38,21 +38,21 @@ val sort_dependencies : (int * evar_info * Int.Set.t) list -> (int * evar_info *
 
 (* env, id, evars, number of function prototypes to try to clear from
    evars contexts, object and type *)
-val eterm_obligations : env -> identifier -> evar_map -> int ->
+val eterm_obligations : env -> Id.t -> evar_map -> int ->
   ?status:Evar_kinds.obligation_definition_status -> constr -> types ->
-  (identifier * types * Evar_kinds.t Loc.located * Evar_kinds.obligation_definition_status * Int.Set.t *
+  (Id.t * types * Evar_kinds.t Loc.located * Evar_kinds.obligation_definition_status * Int.Set.t *
       tactic option) array
     (* Existential key, obl. name, type as product, 
        location of the original evar, associated tactic,
        status and dependencies as indexes into the array *)
-  * ((existential_key * identifier) list * ((identifier -> constr) -> constr -> constr)) *
+  * ((existential_key * Id.t) list * ((Id.t -> constr) -> constr -> constr)) *
     constr * types
     (* Translations from existential identifiers to obligation identifiers 
        and for terms with existentials to closed terms, given a 
        translation from obligation identifiers to constrs, new term, new type *)
 
 type obligation_info =
-  (identifier * Term.types * Evar_kinds.t Loc.located *
+  (Id.t * Term.types * Evar_kinds.t Loc.located *
       Evar_kinds.obligation_definition_status * Int.Set.t * tactic option) array
     (* ident, type, location, (opaque or transparent, expand or define),
        dependencies, tactic to solve it *)
@@ -69,7 +69,7 @@ val print_default_tactic : unit -> Pp.std_ppcmds
 val set_proofs_transparency : bool -> unit (* true = All transparent, false = Opaque if possible *)
 val get_proofs_transparency : unit -> bool
 
-val add_definition : Names.identifier -> ?term:Term.constr -> Term.types -> 
+val add_definition : Names.Id.t -> ?term:Term.constr -> Term.types -> 
   ?implicits:(Constrexpr.explicitation * (bool * bool * bool)) list ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:Proof_type.tactic ->
@@ -80,11 +80,11 @@ type notations =
     (Vernacexpr.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
 
 type fixpoint_kind =
-  | IsFixpoint of (identifier Loc.located option * Constrexpr.recursion_order_expr) list
+  | IsFixpoint of (Id.t Loc.located option * Constrexpr.recursion_order_expr) list
   | IsCoFixpoint
 
 val add_mutual_definitions :
-  (Names.identifier * Term.constr * Term.types *
+  (Names.Id.t * Term.constr * Term.types *
       (Constrexpr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
   ?tactic:Proof_type.tactic ->
   ?kind:Decl_kinds.definition_kind ->
@@ -93,28 +93,28 @@ val add_mutual_definitions :
   notations ->
   fixpoint_kind -> unit
 
-val obligation : int * Names.identifier option * Constrexpr.constr_expr option ->
+val obligation : int * Names.Id.t option * Constrexpr.constr_expr option ->
   Tacexpr.raw_tactic_expr option -> unit
 
-val next_obligation : Names.identifier option -> Tacexpr.raw_tactic_expr option -> unit
+val next_obligation : Names.Id.t option -> Tacexpr.raw_tactic_expr option -> unit
 
-val solve_obligations : Names.identifier option -> Proof_type.tactic option -> progress
+val solve_obligations : Names.Id.t option -> Proof_type.tactic option -> progress
 (* Number of remaining obligations to be solved for this program *)
 
 val solve_all_obligations : Proof_type.tactic option -> unit
 
-val try_solve_obligation : int -> Names.identifier option -> Proof_type.tactic option -> unit
+val try_solve_obligation : int -> Names.Id.t option -> Proof_type.tactic option -> unit
 
-val try_solve_obligations : Names.identifier option -> Proof_type.tactic option -> unit
+val try_solve_obligations : Names.Id.t option -> Proof_type.tactic option -> unit
 
-val show_obligations : ?msg:bool -> Names.identifier option -> unit
+val show_obligations : ?msg:bool -> Names.Id.t option -> unit
 
-val show_term : Names.identifier option -> std_ppcmds
+val show_term : Names.Id.t option -> std_ppcmds
 
-val admit_obligations : Names.identifier option -> unit
+val admit_obligations : Names.Id.t option -> unit
 
-exception NoObligations of Names.identifier option
+exception NoObligations of Names.Id.t option
 
-val explain_no_obligations : Names.identifier option -> Pp.std_ppcmds
+val explain_no_obligations : Names.Id.t option -> Pp.std_ppcmds
 
 val set_program_mode : bool -> unit

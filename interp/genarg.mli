@@ -130,21 +130,21 @@ val rawwit_intro_pattern : (intro_pattern_expr located,rlevel) abstract_argument
 val globwit_intro_pattern : (intro_pattern_expr located,glevel) abstract_argument_type
 val wit_intro_pattern : (intro_pattern_expr located,tlevel) abstract_argument_type
 
-val rawwit_ident : (identifier,rlevel) abstract_argument_type
-val globwit_ident : (identifier,glevel) abstract_argument_type
-val wit_ident : (identifier,tlevel) abstract_argument_type
+val rawwit_ident : (Id.t,rlevel) abstract_argument_type
+val globwit_ident : (Id.t,glevel) abstract_argument_type
+val wit_ident : (Id.t,tlevel) abstract_argument_type
 
-val rawwit_pattern_ident : (identifier,rlevel) abstract_argument_type
-val globwit_pattern_ident : (identifier,glevel) abstract_argument_type
-val wit_pattern_ident : (identifier,tlevel) abstract_argument_type
+val rawwit_pattern_ident : (Id.t,rlevel) abstract_argument_type
+val globwit_pattern_ident : (Id.t,glevel) abstract_argument_type
+val wit_pattern_ident : (Id.t,tlevel) abstract_argument_type
 
-val rawwit_ident_gen : bool -> (identifier,rlevel) abstract_argument_type
-val globwit_ident_gen : bool -> (identifier,glevel) abstract_argument_type
-val wit_ident_gen : bool -> (identifier,tlevel) abstract_argument_type
+val rawwit_ident_gen : bool -> (Id.t,rlevel) abstract_argument_type
+val globwit_ident_gen : bool -> (Id.t,glevel) abstract_argument_type
+val wit_ident_gen : bool -> (Id.t,tlevel) abstract_argument_type
 
-val rawwit_var : (identifier located,rlevel) abstract_argument_type
-val globwit_var : (identifier located,glevel) abstract_argument_type
-val wit_var : (identifier,tlevel) abstract_argument_type
+val rawwit_var : (Id.t located,rlevel) abstract_argument_type
+val globwit_var : (Id.t located,glevel) abstract_argument_type
+val wit_var : (Id.t,tlevel) abstract_argument_type
 
 val rawwit_ref : (reference,rlevel) abstract_argument_type
 val globwit_ref : (global_reference located or_var,glevel) abstract_argument_type

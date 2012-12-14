@@ -219,7 +219,7 @@ let interp_hyps_gen inject blend sigma env hyps head =
 
 let interp_hyps sigma env hyps = fst (interp_hyps_gen fst (fun x _ -> x) sigma env hyps glob_prop)
 
-let dummy_prefix= id_of_string "__"
+let dummy_prefix= Id.of_string "__"
 
 let rec deanonymize ids =
   function

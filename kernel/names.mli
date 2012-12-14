@@ -8,37 +8,60 @@
 
 (** {6 Identifiers } *)
 
-type identifier
+module Id :
+sig
+  type t
+  (** Type of identifiers *)
 
-val check_ident : string -> unit
-val check_ident_soft : string -> unit
+  val equal : t -> t -> bool
+  (** Equality over identifiers *)
 
-(** Parsing and printing of identifiers *)
-val string_of_id : identifier -> string
-val id_of_string : string -> identifier
+  val compare : t -> t -> int
+  (** Comparison over identifiers *)
 
-val id_ord : identifier -> identifier -> int
-val id_eq : identifier -> identifier -> bool
+  val check : string -> unit
+  (** Check that a string may be converted to an identifier. Raise an exception
+      related to the problem when this is not the case. *)
 
-(** Identifiers sets and maps *)
-module Idset  : Set.S with type elt = identifier
-module Idpred : Predicate.S with type elt = identifier
-module Idmap  : sig
-  include Map.S with type key = identifier
-  val exists : (identifier -> 'a -> bool) -> 'a t -> bool
-  val singleton : key -> 'a -> 'a t
+  val check_soft : string -> unit
+  (** As [check], but may raise a warning instead of failing when the string is
+      not an identifier, but is a well-formed string. *)
+
+  val of_string : string -> t
+  (** Converts a string into an identifier. *)
+
+  val to_string : t -> string
+  (** Converts a identifier into an string. *)
+
+  module Set : Set.S with type elt = t
+  (** Finite sets of identifiers. *)
+
+  module Map : sig
+    include Map.S with type key = t
+    (** FIXME: this is included in OCaml 3.12 *)
+    val exists : (key -> 'a -> bool) -> 'a t -> bool
+    val singleton : key -> 'a -> 'a t
+  end
+  (** Finite maps of identifiers. *)
+
+  module Pred : Predicate.S with type elt = t
+  (** Predicates over identifiers. *)
+
+  val hcons : t -> t
+  (** Hashconsing of identifiers. *)
+
 end
 
 (** {6 Various types based on identifiers } *)
 
-type name = Name of identifier | Anonymous
-type variable = identifier
+type name = Name of Id.t | Anonymous
+type variable = Id.t
 
 val name_eq : name -> name -> bool
 
 (** {6 Directory paths = section names paths } *)
 
-type module_ident = identifier
+type module_ident = Id.t
 module ModIdmap : Map.S with type key = module_ident
 
 type dir_path
@@ -67,8 +90,8 @@ val mk_label : string -> label
 val string_of_label : label -> string
 val pr_label : label -> Pp.std_ppcmds
 
-val label_of_id : identifier -> label
-val id_of_label : label -> identifier
+val label_of_id : Id.t -> label
+val id_of_label : label -> Id.t
 
 val eq_label : label -> label -> bool
 
@@ -85,9 +108,9 @@ val mod_bound_id_eq : mod_bound_id -> mod_bound_id -> bool
 (** The first argument is a file name - to prevent conflict between
    different files *)
 
-val make_mbid : dir_path -> identifier -> mod_bound_id
-val repr_mbid : mod_bound_id -> int * identifier * dir_path
-val id_of_mbid : mod_bound_id -> identifier
+val make_mbid : dir_path -> Id.t -> mod_bound_id
+val repr_mbid : mod_bound_id -> int * Id.t * dir_path
+val id_of_mbid : mod_bound_id -> Id.t
 val debug_string_of_mbid : mod_bound_id -> string
 val string_of_mbid : mod_bound_id -> string
 
@@ -212,7 +235,7 @@ val eq_constructor : constructor -> constructor -> bool
 
 (** Better to have it here that in Closure, since required in grammar.cma *)
 type evaluable_global_reference =
-  | EvalVarRef of identifier
+  | EvalVarRef of Id.t
   | EvalConstRef of constant
 
 val eq_egr : evaluable_global_reference ->  evaluable_global_reference
@@ -220,7 +243,6 @@ val eq_egr : evaluable_global_reference ->  evaluable_global_reference
 
 (** {6 Hash-consing } *)
 
-val hcons_ident : identifier -> identifier
 val hcons_name : name -> name
 val hcons_dirpath : dir_path -> dir_path
 val hcons_con : constant -> constant
@@ -232,10 +254,10 @@ val hcons_construct : constructor -> constructor
 
 type 'a tableKey =
   | ConstKey of constant
-  | VarKey of identifier
+  | VarKey of Id.t
   | RelKey of 'a
 
-type transparent_state = Idpred.t * Cpred.t
+type transparent_state = Id.Pred.t * Cpred.t
 
 val empty_transparent_state : transparent_state
 val full_transparent_state : transparent_state
@@ -256,3 +278,40 @@ val eq_id_key : id_key -> id_key -> bool
 val eq_con_chk : constant -> constant -> bool
 val eq_ind_chk : inductive -> inductive -> bool
 
+(** {6 Deprecated functions. For backward compatibility. *)
+
+(** {5 Identifiers} *)
+
+type identifier = Id.t
+(** @deprecated Alias for [Id.t] *)
+
+val check_ident : string -> unit
+(** @deprecated Same as [Id.check]. *)
+
+val check_ident_soft : string -> unit
+(** @deprecated Same as [Id.check_soft]. *)
+
+val string_of_id : identifier -> string
+(** @deprecated Same as [Id.to_string]. *)
+
+val id_of_string : string -> identifier
+(** @deprecated Same as [Id.of_string]. *)
+
+val id_ord : identifier -> identifier -> int
+(** @deprecated Same as [Id.compare]. *)
+
+val id_eq : identifier -> identifier -> bool
+(** @deprecated Same as [Id.equal]. *)
+
+module Idset  : Set.S with type elt = identifier and type t = Id.Set.t
+(** @deprecated Same as [Id.Set]. *)
+
+module Idpred : Predicate.S with type elt = identifier and type t = Id.Pred.t
+(** @deprecated Same as [Id.Pred]. *)
+
+module Idmap  : sig
+  include Map.S with type key = identifier
+  val exists : (identifier -> 'a -> bool) -> 'a t -> bool
+  val singleton : key -> 'a -> 'a t
+end
+(** @deprecated Same as [Id.Map]. *)

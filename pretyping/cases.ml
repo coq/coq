@@ -73,7 +73,7 @@ let rec list_try_compile f = function
 	    list_try_compile f t
 
 let force_name =
-  let nx = Name (id_of_string "x") in function Anonymous -> nx | na -> na
+  let nx = Name (Id.of_string "x") in function Anonymous -> nx | na -> na
 
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)
@@ -107,8 +107,8 @@ let rec relocate_index n1 n2 k t = match kind_of_term t with
 
 type 'a rhs =
     { rhs_env    : env;
-      rhs_vars   : identifier list;
-      avoid_ids  : identifier list;
+      rhs_vars   : Id.t list;
+      avoid_ids  : Id.t list;
       it         : 'a option}
 
 type 'a equation =
@@ -1807,7 +1807,7 @@ let prepare_predicate loc typing_fun sigma env tomatchs arsign tycon pred =
       let predcclj = typing_fun (mk_tycon (mkSort newt)) envar evdref rtntyp in
       let sigma = !evdref in
       (* let sigma = Option.cata (fun tycon -> *)
-      (*     let na = Name (id_of_string "x") in *)
+      (*     let na = Name (Id.of_string "x") in *)
       (*     let tms = List.map (fun tm -> Pushed(tm,[],na)) tomatchs in *)
       (*     let predinst = extract_predicate predcclj.uj_val tms in *)
       (*     Coercion.inh_conv_coerce_to loc env !evdref predinst tycon) *)
@@ -1830,11 +1830,11 @@ let ($) f x = f x
 let string_of_name name =
   match name with
     | Anonymous -> "anonymous"
-    | Name n -> string_of_id n
+    | Name n -> Id.to_string n
 
 let make_prime_id name =
   let str = string_of_name name in
-    id_of_string str, id_of_string (str ^ "'")
+    Id.of_string str, Id.of_string (str ^ "'")
 
 let prime avoid name =
   let previd, id = make_prime_id name in
@@ -1846,7 +1846,7 @@ let make_prime avoid prevname =
     previd, id
 
 let eq_id avoid id =
-  let hid = id_of_string ("Heq_" ^ string_of_id id) in
+  let hid = Id.of_string ("Heq_" ^ Id.to_string id) in
   let hid' = next_ident_away hid avoid in
     hid'
 
@@ -1865,7 +1865,7 @@ let constr_of_pat env isevars arsign pat avoid =
 	let name, avoid = match name with
 	    Name n -> name, avoid
 	  | Anonymous ->
-	      let previd, id = prime avoid (Name (id_of_string "wildcard")) in
+	      let previd, id = prime avoid (Name (Id.of_string "wildcard")) in
 		Name id, id :: avoid
 	in
 	  (PatVar (l, name), [name, None, ty] @ realargs, mkRel 1, ty, 
@@ -1931,7 +1931,7 @@ let constr_of_pat env isevars arsign pat avoid =
 
 (* shadows functional version *)
 let eq_id avoid id =
-  let hid = id_of_string ("Heq_" ^ string_of_id id) in
+  let hid = Id.of_string ("Heq_" ^ Id.to_string id) in
   let hid' = next_ident_away hid !avoid in
     avoid := hid' :: !avoid;
     hid'
@@ -1960,7 +1960,7 @@ let vars_of_ctx ctx =
 	    match na with
 		Anonymous -> raise (Invalid_argument "vars_of_ctx")
 	      | Name n -> n, GVar (Loc.ghost, n) :: vars)
-      ctx (id_of_string "vars_of_ctx_error", [])
+      ctx (Id.of_string "vars_of_ctx_error", [])
   in List.rev y
 
 let rec is_included x y =
@@ -2075,7 +2075,7 @@ let constrs_of_pats typing_fun env isevars eqns tomatchs sign neqs arity =
 	 let j = typing_fun (mk_tycon tycon) rhs_env eqn.rhs.it in
 	 let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
 	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
-	 let branch_name = id_of_string ("program_branch_" ^ (string_of_int !i)) in
+	 let branch_name = Id.of_string ("program_branch_" ^ (string_of_int !i)) in
 	 let branch_decl = (Name branch_name, Some (lift !i bbody), (lift !i btype)) in
 	 let branch =
 	   let bref = GVar (Loc.ghost, branch_name) in
@@ -2123,7 +2123,7 @@ let abstract_tomatch env tomatchs tycon =
 	   | _ ->
 	       let tycon = Option.map
 		 (fun t -> subst_term (lift 1 c) (lift 1 t)) tycon in
-	       let name = next_ident_away (id_of_string "filtered_var") names in
+	       let name = next_ident_away (Id.of_string "filtered_var") names in
 		 (mkRel 1, lift_tomatch_type (succ lenctx) t) :: lift_ctx 1 prev,
 	       (Name name, Some (lift lenctx c), lift lenctx $ type_of_tomatch t) :: ctx,
 	       name :: names, tycon)

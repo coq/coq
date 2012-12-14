@@ -69,13 +69,13 @@ let rec url_list_with_sep sep f = function
   | [a] -> f a
   | a::l -> f a; url_string sep; url_list_with_sep sep f l
 
-let url_id id = url_string (string_of_id id)
+let url_id id = url_string (Id.to_string id)
 
 let uri_of_dirpath dir =
   url_string "cic:/"; url_list_with_sep "/" url_id (List.rev dir)
 
 let error_whelp_unknown_reference ref =
-  let qid = Nametab.shortest_qualid_of_global Idset.empty ref in
+  let qid = Nametab.shortest_qualid_of_global Id.Set.empty ref in
   errorlabstrm ""
     (strbrk "Definitions of the current session, like " ++ pr_qualid qid ++
      strbrk ", are not supported in Whelp.")
@@ -102,7 +102,7 @@ let uri_of_ind_pointer l =
 
 let uri_of_global ref =
   match ref with
-  | VarRef id -> error ("Unknown Whelp reference: "^(string_of_id id)^".")
+  | VarRef id -> error ("Unknown Whelp reference: "^(Id.to_string id)^".")
   | ConstRef cst ->
       uri_of_repr_kn ref (repr_con cst); url_string ".con"
   | IndRef (kn,i) ->
@@ -110,7 +110,7 @@ let uri_of_global ref =
   | ConstructRef ((kn,i),j) ->
       uri_of_repr_kn ref (repr_mind kn); uri_of_ind_pointer [1;i+1;j]
 
-let whelm_special = id_of_string "WHELM_ANON_VAR"
+let whelm_special = Id.of_string "WHELM_ANON_VAR"
 
 let url_of_name = function
   | Name id -> url_id id

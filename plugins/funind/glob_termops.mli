@@ -1,12 +1,8 @@
 open Glob_term
 open Misctypes
 
-(* Ocaml 3.06 Map.S does not handle is_empty *)
-val idmap_is_empty : 'a Names.Idmap.t -> bool
-
-
 (* [get_pattern_id pat] returns a list of all the variable appearing in [pat] *)
-val get_pattern_id : cases_pattern -> Names.identifier list
+val get_pattern_id : cases_pattern -> Names.Id.t list
 
 (* [pattern_to_term pat] returns a glob_constr corresponding to [pat].
    [pat] must not contain occurences of anonymous pattern
@@ -18,7 +14,7 @@ val pattern_to_term : cases_pattern -> glob_constr
    In each of them the location is Util.Loc.ghost
 *)
 val mkGRef : Globnames.global_reference -> glob_constr
-val mkGVar : Names.identifier -> glob_constr
+val mkGVar : Names.Id.t -> glob_constr
 val mkGApp  : glob_constr*(glob_constr list) -> glob_constr
 val mkGLambda : Names.name * glob_constr * glob_constr -> glob_constr
 val mkGProd : Names.name * glob_constr * glob_constr -> glob_constr
@@ -61,7 +57,7 @@ val  glob_make_or_list : glob_constr list -> glob_constr
 
 
 (* Replace the var mapped in the glob_constr/context *)
-val change_vars : Names.identifier Names.Idmap.t -> glob_constr -> glob_constr
+val change_vars : Names.Id.t Names.Id.Map.t -> glob_constr -> glob_constr
 
 
 
@@ -73,27 +69,27 @@ val change_vars : Names.identifier Names.Idmap.t -> glob_constr -> glob_constr
    [avoid] with the variables appearing in the result.
 *)
   val alpha_pat :
-    Names.Idmap.key list ->
+    Names.Id.Map.key list ->
     Glob_term.cases_pattern ->
-    Glob_term.cases_pattern * Names.Idmap.key list *
-      Names.identifier Names.Idmap.t
+    Glob_term.cases_pattern * Names.Id.Map.key list *
+      Names.Id.t Names.Id.Map.t
 
 (* [alpha_rt avoid rt] alpha convert [rt] s.t. the result repects barendregt
    conventions and  does not share bound variables with avoid
 *)
-val alpha_rt : Names.identifier list -> glob_constr -> glob_constr
+val alpha_rt : Names.Id.t list -> glob_constr -> glob_constr
 
 (* same as alpha_rt but for case branches *)
-val alpha_br : Names.identifier list ->
-    Loc.t * Names.identifier list * Glob_term.cases_pattern list *
+val alpha_br : Names.Id.t list ->
+    Loc.t * Names.Id.t list * Glob_term.cases_pattern list *
     Glob_term.glob_constr ->
-    Loc.t * Names.identifier list * Glob_term.cases_pattern list *
+    Loc.t * Names.Id.t list * Glob_term.cases_pattern list *
     Glob_term.glob_constr
 
 
 (* Reduction function *)
 val replace_var_by_term  :
-  Names.identifier ->
+  Names.Id.t ->
   Glob_term.glob_constr -> Glob_term.glob_constr -> Glob_term.glob_constr
 
 
@@ -101,7 +97,7 @@ val replace_var_by_term  :
 (*
    [is_free_in id rt] checks if [id] is a free variable in [rt]
 *)
-val is_free_in : Names.identifier -> glob_constr -> bool
+val is_free_in : Names.Id.t -> glob_constr -> bool
 
 
 val are_unifiable : cases_pattern -> cases_pattern -> bool
@@ -110,13 +106,13 @@ val eq_cases_pattern : cases_pattern -> cases_pattern -> bool
 
 
 (*
-   ids_of_pat : cases_pattern -> Idset.t
+   ids_of_pat : cases_pattern -> Id.Set.t
    returns the set of variables appearing in a pattern
 *)
-val   ids_of_pat : cases_pattern -> Names.Idset.t
+val   ids_of_pat : cases_pattern -> Names.Id.Set.t
 
 (* TODO: finish this function (Fix not treated) *)
-val ids_of_glob_constr: glob_constr -> Names.Idset.t
+val ids_of_glob_constr: glob_constr -> Names.Id.Set.t
 
 (*
    removing let_in construction in a glob_constr

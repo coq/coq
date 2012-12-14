@@ -40,8 +40,8 @@ val push_rec_types : name array * constr array * 'a -> env -> env
 (* Named variables *)
 val named_context : env -> named_context
 val push_named : named_declaration -> env -> env
-val lookup_named : identifier -> env -> named_declaration
-val named_type : identifier -> env -> constr
+val lookup_named : Id.t -> env -> named_declaration
+val named_type : Id.t -> env -> constr
 
 (* Universes *)
 val universes : env -> Univ.universes

@@ -52,7 +52,7 @@ let engage () =
 
 let set_batch_mode () = batch_mode := true
 
-let toplevel_default_name = make_dirpath [id_of_string "Top"]
+let toplevel_default_name = make_dirpath [Id.of_string "Top"]
 let toplevel_name = ref (Some toplevel_default_name)
 let set_toplevel_name dir =
   if dir_path_eq dir empty_dirpath then error "Need a non empty toplevel module name";

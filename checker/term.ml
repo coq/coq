@@ -88,7 +88,7 @@ let val_cast = val_enum "cast_kind" 2
 
 type constr =
   | Rel       of int
-  | Var       of identifier
+  | Var       of Id.t
   | Meta      of metavariable
   | Evar      of constr pexistential
   | Sort      of sorts
@@ -318,7 +318,7 @@ let val_rdecl =
 let val_nctxt = val_list val_ndecl
 let val_rctxt = val_list val_rdecl
 
-type named_declaration = identifier * constr option * constr
+type named_declaration = Id.t * constr option * constr
 type rel_declaration = name * constr option * constr
 
 type named_context = named_declaration list

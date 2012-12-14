@@ -21,7 +21,7 @@ open Pcoq.Prim
 open Pcoq.Constr
 
 (* TODO: avoid this redefinition without an extra dep to Notation_ops *)
-let ldots_var = id_of_string ".."
+let ldots_var = Id.of_string ".."
 
 let constr_kw =
   [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for";
@@ -88,7 +88,7 @@ let lpar_id_coloneq =
                   (match get_tok (stream_nth 2 strm) with
                     | KEYWORD ":=" ->
                         stream_njunk 3 strm;
-                        Names.id_of_string s
+                        Names.Id.of_string s
 	            | _ -> err ())
               | _ -> err ())
         | _ -> err ())
@@ -102,7 +102,7 @@ let impl_ident_head =
 	      | IDENT ("wf"|"struct"|"measure") -> err ()
 	      | IDENT s ->
 		  stream_njunk 2 strm;
-		  Names.id_of_string s
+		  Names.Id.of_string s
 	      | _ -> err ())
 	| _ -> err ())
 
@@ -114,7 +114,7 @@ let name_colon =
             (match get_tok (stream_nth 1 strm) with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
-                  Name (Names.id_of_string s)
+                  Name (Names.Id.of_string s)
               | _ -> err ())
 	| KEYWORD "_" ->
           (match get_tok (stream_nth 1 strm) with
@@ -135,7 +135,7 @@ GEXTEND Gram
     [ [ id = Prim.ident -> id
 
       (* This is used in quotations and Syntax *)
-      | id = METAIDENT -> id_of_string id ] ]
+      | id = METAIDENT -> Id.of_string id ] ]
   ;
   Prim.name:
     [ [ "_" -> (!@loc, Anonymous) ] ]

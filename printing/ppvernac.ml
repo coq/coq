@@ -28,11 +28,11 @@ let pr_spc_lconstr = pr_sep_com spc pr_lconstr_expr
 let pr_lident (loc,id) =
   if loc <> Loc.ghost then
     let (b,_) = Loc.unloc loc in
-    pr_located pr_id (Loc.make_loc (b,b+String.length(string_of_id id)),id)
+    pr_located pr_id (Loc.make_loc (b,b+String.length(Id.to_string id)),id)
   else pr_id id
 
 let string_of_fqid fqid =
- String.concat "." (List.map string_of_id fqid)
+ String.concat "." (List.map Id.to_string fqid)
 
 let pr_fqid fqid = str (string_of_fqid fqid)
 
@@ -104,8 +104,8 @@ let pr_set_entry_type = function
   | ETBinderList _ | ETConstrList _ -> failwith "Internal entry type"
 
 let strip_meta id =
-  let s = string_of_id id in
-  if s.[0]='$' then id_of_string (String.sub s 1 (String.length s - 1))
+  let s = Id.to_string id in
+  if s.[0]='$' then Id.of_string (String.sub s 1 (String.length s - 1))
   else id
 
 let pr_production_item = function

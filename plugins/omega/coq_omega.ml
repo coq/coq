@@ -85,7 +85,7 @@ let generalize_time = timing "Generalize"
 
 let new_identifier =
   let cpt = ref 0 in
-  (fun () -> let s = "Omega" ^ string_of_int !cpt in incr cpt; id_of_string s)
+  (fun () -> let s = "Omega" ^ string_of_int !cpt in incr cpt; Id.of_string s)
 
 let new_identifier_state =
   let cpt = ref 0 in
@@ -93,7 +93,7 @@ let new_identifier_state =
 
 let new_identifier_var =
   let cpt = ref 0 in
-  (fun () -> let s = "Zvar" ^ string_of_int !cpt in incr cpt; id_of_string s)
+  (fun () -> let s = "Zvar" ^ string_of_int !cpt in incr cpt; Id.of_string s)
 
 let new_id =
   let cpt = ref 0 in fun () -> incr cpt; !cpt
@@ -109,7 +109,7 @@ let display_var i = Printf.sprintf "X%d" i
 let intern_id,unintern_id =
   let cpt = ref 0 in
   let table = Hashtbl.create 7 and co_table = Hashtbl.create 7 in
-  (fun (name : identifier) ->
+  (fun (name : Id.t) ->
      try Hashtbl.find table name with Not_found ->
        let idx = !cpt in
        Hashtbl.add table name idx;
@@ -136,13 +136,13 @@ let rev_assoc k =
   loop
 
 let tag_hypothesis,tag_of_hyp, hyp_of_tag =
-  let l = ref ([]:(identifier * int) list) in
+  let l = ref ([]:(Id.t * int) list) in
   (fun h id -> l := (h,id):: !l),
   (fun h -> try List.assoc h !l with Not_found -> failwith "tag_hypothesis"),
   (fun h -> try rev_assoc h !l with Not_found -> failwith "tag_hypothesis")
 
 let hide_constr,find_constr,clear_tables,dump_tables =
-  let l = ref ([]:(constr * (identifier * identifier * bool)) list) in
+  let l = ref ([]:(constr * (Id.t * Id.t * bool)) list) in
   (fun h id eg b -> l := (h,(id,eg,b)):: !l),
   (fun h -> try List.assoc_f eq_constr h !l with Not_found -> failwith "find_contr"),
   (fun () -> l := []),
@@ -329,7 +329,7 @@ let sp_Zge = lazy (evaluable_ref_of_constr "Z.ge" coq_Zge)
 let sp_Zlt = lazy (evaluable_ref_of_constr "Z.lt" coq_Zlt)
 let sp_not = lazy (evaluable_ref_of_constr "not" (lazy (build_coq_not ())))
 
-let mk_var v = mkVar (id_of_string v)
+let mk_var v = mkVar (Id.of_string v)
 let mk_plus t1 t2 = mkApp (Lazy.force coq_Zplus, [| t1; t2 |])
 let mk_times t1 t2 = mkApp (Lazy.force coq_Zmult, [| t1; t2 |])
 let mk_minus t1 t2 = mkApp (Lazy.force coq_Zminus, [| t1;t2 |])
@@ -370,7 +370,7 @@ type omega_proposition =
   | Kn
 
 type result =
-  | Kvar of identifier
+  | Kvar of Id.t
   | Kapp of omega_constant * constr list
   | Kimp of constr * constr
   | Kufo
@@ -527,7 +527,7 @@ let occurence path (t : constr) =
 let abstract_path typ path t =
   let term_occur = ref (mkRel 0) in
   let abstract = context (fun i t -> term_occur:= t; mkRel i) path t in
-  mkLambda (Name (id_of_string "x"), typ, abstract), !term_occur
+  mkLambda (Name (Id.of_string "x"), typ, abstract), !term_occur
 
 let focused_simpl path gl =
   let newc = context (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
@@ -539,7 +539,7 @@ type oformula =
   | Oplus of oformula * oformula
   | Oinv of  oformula
   | Otimes of oformula * oformula
-  | Oatom of identifier
+  | Oatom of Id.t
   | Oz of bigint
   | Oufo of constr
 
@@ -551,7 +551,7 @@ let rec oprint = function
   | Otimes (t1,t2) ->
       print_string "("; oprint t1; print_string "*";
       oprint t2; print_string ")"
-  | Oatom s -> print_string (string_of_id s)
+  | Oatom s -> print_string (Id.to_string s)
   | Oz i -> print_string (string_of_bigint i)
   | Oufo f -> print_string "?"
 
@@ -597,10 +597,10 @@ let clever_rewrite_base_poly typ p result theorem gl =
   let t =
     applist
       (mkLambda
-	 (Name (id_of_string "P"),
+	 (Name (Id.of_string "P"),
 	  mkArrow typ mkProp,
           mkLambda
-	    (Name (id_of_string "H"),
+	    (Name (Id.of_string "H"),
 	     applist (mkRel 1,[result]),
 	     mkApp (Lazy.force coq_eq_ind_r,
 		       [| typ; result; mkRel 2; mkRel 1; occ; theorem |]))),
@@ -1007,9 +1007,9 @@ let rec clear_zero p = function
   | t -> [],t
 
 let replay_history tactic_normalisation =
-  let aux  = id_of_string "auxiliary" in
-  let aux1 = id_of_string "auxiliary_1" in
-  let aux2 = id_of_string "auxiliary_2" in
+  let aux  = Id.of_string "auxiliary" in
+  let aux1 = Id.of_string "auxiliary_1" in
+  let aux2 = Id.of_string "auxiliary_2" in
   let izero = mk_integer zero in
   let rec loop t =
     match t with

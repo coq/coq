@@ -60,7 +60,7 @@ let _ =
 (*** Proof Global Environment ***)
 
 (* local shorthand *)
-type nproof = identifier*Proof.proof
+type nproof = Id.t*Proof.proof
 
 (* Extra info on proofs. *)
 type lemma_possible_guards = int list list
@@ -75,7 +75,7 @@ type proof_info = {
 (* The head of [!current_proof] is the actual current proof, the other ones are
    to be resumed when the current proof is closed or aborted. *)
 let current_proof = ref ([]:nproof list)
-let proof_info = ref (Idmap.empty : proof_info Idmap.t)
+let proof_info = ref (Id.Map.empty : proof_info Id.Map.t)
 
 (* Current proof_mode, for bookkeeping *)
 let current_proof_mode = ref !default_proof_mode
@@ -84,7 +84,7 @@ let current_proof_mode = ref !default_proof_mode
 let update_proof_mode () =
   match !current_proof with
   | (id,_)::_ ->
-      let { mode = m } = Idmap.find id !proof_info in
+      let { mode = m } = Id.Map.find id !proof_info in
       !current_proof_mode.reset ();
       current_proof_mode := m;
       !current_proof_mode.set ()
@@ -103,7 +103,7 @@ let _ = Errors.register_handler begin function
 end
 let extract id l =
   let rec aux = function
-    | ((id',_) as np)::l when id_eq id id' -> (np,l)
+    | ((id',_) as np)::l when Id.equal id id' -> (np,l)
     | np::l -> let (np', l) = aux l in (np' , np::l)
     | [] -> raise NoSuchProof
   in
@@ -128,9 +128,9 @@ let find_top l =
 
 (* combinators for the proof_info map *)
 let add id info m =
-  m := Idmap.add id info !m
+  m := Id.Map.add id info !m
 let remove id m =
-  m := Idmap.remove id !m
+  m := Id.Map.remove id !m
 
 (*** Proof Global manipulation ***)
 
@@ -183,7 +183,7 @@ let discard_current () =
 
 let discard_all () =
   current_proof := [];
-  proof_info := Idmap.empty
+  proof_info := Id.Map.empty
 
 (* [set_proof_mode] sets the proof mode to be used after it's called. It is
     typically called by the Proof Mode command. *)
@@ -191,9 +191,9 @@ let discard_all () =
     No undo handling.
     Applies to proof [id], and proof mode [m]. *)
 let set_proof_mode m id =
-  let info = Idmap.find id !proof_info in
+  let info = Id.Map.find id !proof_info in
   let info = { info with mode = m } in
-  proof_info := Idmap.add id info !proof_info;
+  proof_info := Id.Map.add id info !proof_info;
   update_proof_mode ()
 (* Complete function.
     Handles undo.
@@ -223,7 +223,7 @@ end
 let start_proof  id str goals ?(compute_guard=[]) hook =
   begin
     List.iter begin fun (id_ex,_) ->
-      if Names.id_eq id id_ex then raise AlreadyExists
+      if Names.Id.equal id id_ex then raise AlreadyExists
     end !current_proof
   end;
   let p = Proof.start goals in
@@ -247,7 +247,7 @@ let set_endline_tactic tac =
 let set_used_variables l =
   let p = give_me_the_proof () in
   let env = Global.env () in
-  let ids = List.fold_right Idset.add l Idset.empty in
+  let ids = List.fold_right Id.Set.add l Id.Set.empty in
   let ctx = Environ.keep_hyps env ids in
   Proof.set_used_variables ctx p
 
@@ -274,7 +274,7 @@ let close_proof () =
       proofs_and_types
     in
     let { compute_guard=cg ; strength=str ; hook=hook } =
-      Idmap.find id !proof_info
+      Id.Map.find id !proof_info
     in
     (id, (entries,cg,str,hook))
   with
@@ -405,7 +405,7 @@ module V82 = struct
     let p = give_me_the_proof () in
     let id = get_current_proof_name () in
     let { strength=str ; hook=hook } =
-      Idmap.find id !proof_info
+      Id.Map.find id !proof_info
     in
     (id,(Proof.V82.get_initial_conclusions p, str, hook))
 end

@@ -37,17 +37,17 @@ val declare_rewriting_schemes : inductive -> unit
 (** Mutual Minimality/Induction scheme *)
 
 val do_mutual_induction_scheme :
-  (identifier located * bool * inductive * glob_sort) list -> unit
+  (Id.t located * bool * inductive * glob_sort) list -> unit
 
 (** Main calls to interpret the Scheme command *)
 
-val do_scheme : (identifier located option * scheme) list -> unit
+val do_scheme : (Id.t located option * scheme) list -> unit
 
 (** Combine a list of schemes into a conjunction of them *)
 
 val build_combined_scheme : env -> constant list -> constr * types
 
-val do_combined_scheme : identifier located -> identifier located list -> unit
+val do_combined_scheme : Id.t located -> Id.t located list -> unit
 
 (** Hook called at each inductive type definition *)
 

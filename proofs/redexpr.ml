@@ -44,7 +44,7 @@ let set_strategy_one ref l  =
 	  | OpaqueDef _ ->
             errorlabstrm "set_transparent_const"
               (str "Cannot make" ++ spc () ++
-		 Nametab.pr_global_env Idset.empty (ConstRef sp) ++
+		 Nametab.pr_global_env Id.Set.empty (ConstRef sp) ++
 		 spc () ++ str "transparent because it was declared opaque.");
 	  | _ -> Csymtable.set_transparent_const sp)
     | _ -> ()

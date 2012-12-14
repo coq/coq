@@ -21,12 +21,12 @@ type section_path = {
   dirpath : string list ;
   basename : string }
 let dir_of_path p =
-  make_dirpath (List.map id_of_string p.dirpath)
+  make_dirpath (List.map Id.of_string p.dirpath)
 let path_of_dirpath dir =
   match repr_dirpath dir with
       [] -> failwith "path_of_dirpath"
     | l::dir ->
-        {dirpath=List.map string_of_id dir;basename=string_of_id l}
+        {dirpath=List.map Id.to_string dir;basename=Id.to_string l}
 let pr_dirlist dp =
   prlist_with_sep (fun _ -> str".") str (List.rev dp)
 let pr_path sp =
@@ -203,7 +203,7 @@ let locate_absolute_library dir =
   let loadpath = load_paths_of_dir_path pref in
   if loadpath = [] then raise LibUnmappedDir;
   try
-    let name = string_of_id base^".vo" in
+    let name = Id.to_string base^".vo" in
     let _, file = System.where_in_path ~warn:false loadpath name in
     (dir, file)
   with Not_found ->
@@ -226,7 +226,7 @@ let locate_qualified_library qid =
     let name =  qid.basename^".vo" in
     let path, file = System.where_in_path loadpath name in
     let dir =
-      extend_dirpath (find_logical_path path) (id_of_string qid.basename) in
+      extend_dirpath (find_logical_path path) (Id.of_string qid.basename) in
     (* Look if loaded *)
     try
       (dir, library_full_filename dir)

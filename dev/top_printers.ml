@@ -61,12 +61,12 @@ let ppbigint n = pp (str (Bigint.to_string n));;
 
 let prset pr l = str "[" ++ hov 0 (prlist_with_sep spc pr l) ++ str "]"
 let ppintset l = pp (prset int (Int.Set.elements l))
-let ppidset l = pp (prset pr_id (Idset.elements l))
+let ppidset l = pp (prset pr_id (Id.Set.elements l))
 
 let prset' pr l = str "[" ++ hov 0 (prlist_with_sep pr_comma pr l) ++ str "]"
 let ppidmap pr l =
   let pr (id,b) = pr_id id ++ str "=>" ++ pr id b in
-  pp (prset' pr (Idmap.fold (fun a b l -> (a,b)::l) l []))
+  pp (prset' pr (Id.Map.fold (fun a b l -> (a,b)::l) l []))
 
 let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
   hov 0
@@ -161,7 +161,7 @@ let constr_display csr =
   let rec term_display c = match kind_of_term c with
   | Rel n -> "Rel("^(string_of_int n)^")"
   | Meta n -> "Meta("^(string_of_int n)^")"
-  | Var id -> "Var("^(string_of_id id)^")"
+  | Var id -> "Var("^(Id.to_string id)^")"
   | Sort s -> "Sort("^(sort_display s)^")"
   | Cast (c,k, t) ->
       "Cast("^(term_display c)^","^(cast_kind_display k)^","^(term_display t)^")"
@@ -211,7 +211,7 @@ let constr_display csr =
 	"Type("^(string_of_int !cnt)^")"
 
   and name_display = function
-    | Name id -> "Name("^(string_of_id id)^")"
+    | Name id -> "Name("^(Id.to_string id)^")"
     | Anonymous -> "Anonymous"
 
   in
@@ -223,14 +223,14 @@ let print_pure_constr csr =
   let rec term_display c = match kind_of_term c with
   | Rel n -> print_string "#"; print_int n
   | Meta n -> print_string "Meta("; print_int n; print_string ")"
-  | Var id -> print_string (string_of_id id)
+  | Var id -> print_string (Id.to_string id)
   | Sort s -> sort_display s
   | Cast (c,_, t) -> open_hovbox 1;
       print_string "("; (term_display c); print_cut();
       print_string "::"; (term_display t); print_string ")"; close_box()
   | Prod (Name(id),t,c) ->
       open_hovbox 1;
-      print_string"("; print_string (string_of_id id);
+      print_string"("; print_string (Id.to_string id);
       print_string ":"; box_display t;
       print_string ")"; print_cut();
       box_display c; close_box()
@@ -315,13 +315,13 @@ let print_pure_constr csr =
 	print_string "Type("; pp (pr_uni u); print_string ")"; close_box()
 
   and name_display = function
-    | Name id -> print_string (string_of_id id)
+    | Name id -> print_string (Id.to_string id)
     | Anonymous -> print_string "_"
 (* Remove the top names for library and Scratch to avoid long names *)
   and sp_display sp =
 (*    let dir,l = decode_kn sp in
     let ls =
-      match List.rev (List.map string_of_id (repr_dirpath dir)) with
+      match List.rev (List.map Id.to_string (repr_dirpath dir)) with
           ("Top"::l)-> l
 	| ("Coq"::_::l) -> l
 	| l             -> l
@@ -330,7 +330,7 @@ let print_pure_constr csr =
   and sp_con_display sp =
 (*    let dir,l = decode_kn sp in
     let ls =
-      match List.rev (List.map string_of_id (repr_dirpath dir)) with
+      match List.rev (List.map Id.to_string (repr_dirpath dir)) with
           ("Top"::l)-> l
 	| ("Coq"::_::l) -> l
 	| l             -> l
@@ -421,7 +421,7 @@ let _ =
     [[GramTerminal "PrintConstr";
       GramNonTerminal
         (Loc.ghost,ConstrArgType,Aentry ("constr","constr"),
-	 Some (Names.id_of_string "c"))]]
+	 Some (Names.Id.of_string "c"))]]
 
 let _ =
   try
@@ -438,7 +438,7 @@ let _ =
     [[GramTerminal "PrintPureConstr";
       GramNonTerminal
         (Loc.ghost,ConstrArgType,Aentry ("constr","constr"),
-	 Some (Names.id_of_string "c"))]]
+	 Some (Names.Id.of_string "c"))]]
 
 (* Setting printer of unbound global reference *)
 open Names
@@ -451,7 +451,7 @@ let encode_path loc prefix mpdir suffix id =
 	(repr_dirpath (dirpath_of_string (string_of_mp mp))@
 	repr_dirpath dir) in
   Qualid (loc, make_qualid
-    (make_dirpath (List.rev (id_of_string prefix::dir@suffix))) id)
+    (make_dirpath (List.rev (Id.of_string prefix::dir@suffix))) id)
 
 let raw_string_of_ref loc = function
   | ConstRef cst ->
@@ -460,12 +460,12 @@ let raw_string_of_ref loc = function
   | IndRef (kn,i) ->
       let (mp,dir,id) = repr_mind kn in
       encode_path loc "IND" (Some (mp,dir)) [id_of_label id]
-	(id_of_string ("_"^string_of_int i))
+	(Id.of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
       let (mp,dir,id) = repr_mind kn in
       encode_path loc "CSTR" (Some (mp,dir))
-	[id_of_label id;id_of_string ("_"^string_of_int i)]
-	(id_of_string ("_"^string_of_int j))
+	[id_of_label id;Id.of_string ("_"^string_of_int i)]
+	(Id.of_string ("_"^string_of_int j))
   | VarRef id ->
       encode_path loc "SECVAR" None [] id
 
@@ -475,11 +475,11 @@ let short_string_of_ref loc = function
   | IndRef (kn,0) -> Ident (loc,id_of_label (pi3 (repr_mind kn)))
   | IndRef (kn,i) ->
       encode_path loc "IND" None [id_of_label (pi3 (repr_mind kn))]
-        (id_of_string ("_"^string_of_int i))
+        (Id.of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
       encode_path loc "CSTR" None
-        [id_of_label (pi3 (repr_mind kn));id_of_string ("_"^string_of_int i)]
-        (id_of_string ("_"^string_of_int j))
+        [id_of_label (pi3 (repr_mind kn));Id.of_string ("_"^string_of_int i)]
+        (Id.of_string ("_"^string_of_int j))
 
 (* Anticipate that printers can be used from ocamldebug and that 
    pretty-printer should not make calls to the global env since ocamldebug

@@ -85,19 +85,19 @@ let functional_induction with_clean c princl pat =
     let princ_vars =
       List.fold_right
 	(fun a acc ->
-	  try Idset.add (destVar a) acc
+	  try Id.Set.add (destVar a) acc
 	  with _ -> acc
 	)
 	args
-	Idset.empty
+	Id.Set.empty
     in
-    let old_idl = List.fold_right Idset.add (Tacmach.pf_ids_of_hyps g) Idset.empty in
-    let old_idl = Idset.diff old_idl princ_vars in
+    let old_idl = List.fold_right Id.Set.add (Tacmach.pf_ids_of_hyps g) Id.Set.empty in
+    let old_idl = Id.Set.diff old_idl princ_vars in
     let subst_and_reduce g =
       if with_clean
       then
 	let idl =
-	  List.filter (fun id -> not (Idset.mem id old_idl))
+	  List.filter (fun id -> not (Id.Set.mem id old_idl))
 	    (Tacmach.pf_ids_of_hyps g)
 	in
 	let flag =
@@ -152,7 +152,7 @@ let build_newrecursive
         let arityc = Constrexpr_ops.prod_constr_expr arityc bl in
         let arity = Constrintern.interp_type sigma env0 arityc in
 	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity [] in
-        (Environ.push_named (recname,None,arity) env, Idmap.add recname impl impls))
+        (Environ.push_named (recname,None,arity) env, Id.Map.add recname impl impls))
       (env0,Constrintern.empty_internalization_env) lnameargsardef in
   let recdef =
     (* Declare local notations *)
@@ -185,8 +185,8 @@ let build_newrecursive l =
 
 (* Checks whether or not the mutual bloc is recursive *)
 let is_rec names =
-  let names = List.fold_right Idset.add names Idset.empty in
-  let check_id id names =  Idset.mem id names in
+  let names = List.fold_right Id.Set.add names Id.Set.empty in
+  let check_id id names =  Id.Set.mem id names in
   let rec lookup names = function
     | GVar(_,id) -> check_id id names
     | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ -> false
@@ -195,11 +195,11 @@ let is_rec names =
     | GIf(_,b,_,lhs,rhs) ->
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
     | GLetIn(_,na,t,b) | GLambda(_,na,_,t,b) | GProd(_,na,_,t,b)  ->
-	lookup names t || lookup (Nameops.name_fold Idset.remove na names) b
+	lookup names t || lookup (Nameops.name_fold Id.Set.remove na names) b
     | GLetTuple(_,nal,_,t,b) -> lookup names t ||
 	lookup
 	  (List.fold_left
-	     (fun acc na -> Nameops.name_fold Idset.remove na acc)
+	     (fun acc na -> Nameops.name_fold Id.Set.remove na acc)
 	     names
 	     nal
 	  )
@@ -209,7 +209,7 @@ let is_rec names =
 	List.exists (fun (e,_) -> lookup names e) el ||
 	  List.exists (lookup_br names) brl
   and lookup_br names (_,idl,_,rt) =
-    let new_names = List.fold_right Idset.remove idl names in
+    let new_names = List.fold_right Id.Set.remove idl names in
     lookup new_names rt
   in
   lookup names
@@ -460,9 +460,9 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
     match wf_rel_expr_opt with 
       | None ->
 	  let ltof =
-	    let make_dir l = make_dirpath (List.map id_of_string (List.rev l)) in
+	    let make_dir l = make_dirpath (List.map Id.of_string (List.rev l)) in
 	    Libnames.Qualid (Loc.ghost,Libnames.qualid_of_path
-			       (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (id_of_string "ltof")))
+			       (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (Id.of_string "ltof")))
 	  in
 	  let fun_from_mes =
 	    let applied_mes =
@@ -475,8 +475,8 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	  wf_rel_from_mes,true
       | Some wf_rel_expr -> 
 	  let wf_rel_with_mes = 
-	    let a = Names.id_of_string "___a" in 
-	    let b = Names.id_of_string "___b" in 
+	    let a = Names.Id.of_string "___a" in 
+	    let b = Names.Id.of_string "___b" in 
 	    Constrexpr_ops.mkLambdaC(
 	      [Loc.ghost,Name a;Loc.ghost,Name b],
 	      Constrexpr.Default Explicit,

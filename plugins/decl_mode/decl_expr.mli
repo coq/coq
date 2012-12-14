@@ -16,7 +16,7 @@ type 'it statement =
 
 type thesis_kind =
     Plain
-  | For of identifier
+  | For of Id.t
 
 type 'this or_thesis =
     This of 'this
@@ -60,8 +60,8 @@ type ('hyp,'constr,'pat,'tac) bare_proof_instr =
   | Pconsider of 'constr*('hyp,'constr) hyp list
   | Pclaim of 'constr statement
   | Pfocus of 'constr statement
-  | Pdefine of identifier * 'hyp list * 'constr
-  | Pcast of identifier or_thesis * 'constr
+  | Pdefine of Id.t * 'hyp list * 'constr
+  | Pcast of Id.t or_thesis * 'constr
   | Psuppose of ('hyp,'constr) hyp list
   | Pcase of 'hyp list*'pat*(('hyp,'constr or_thesis) hyp list)
   | Ptake of 'constr list
@@ -77,13 +77,13 @@ type ('hyp,'constr,'pat,'tac) gen_proof_instr=
 
 
 type raw_proof_instr =
-    ((identifier*(Constrexpr.constr_expr option)) Loc.located,
+    ((Id.t*(Constrexpr.constr_expr option)) Loc.located,
      Constrexpr.constr_expr,
      Constrexpr.cases_pattern_expr,
      raw_tactic_expr) gen_proof_instr
 
 type glob_proof_instr =
-    ((identifier*(Genarg.glob_constr_and_expr option)) Loc.located,
+    ((Id.t*(Genarg.glob_constr_and_expr option)) Loc.located,
      Genarg.glob_constr_and_expr,
      Constrexpr.cases_pattern_expr,
      Tacexpr.glob_tactic_expr) gen_proof_instr

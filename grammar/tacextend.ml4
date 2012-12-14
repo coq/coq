@@ -22,7 +22,7 @@ open Compat
 let rec make_patt = function
   | [] -> <:patt< [] >>
   | GramNonTerminal(loc',_,_,Some p)::l ->
-      let p = Names.string_of_id p in
+      let p = Names.Id.to_string p in
       <:patt< [ $lid:p$ :: $make_patt l$ ] >>
   | _::l -> make_patt l
 
@@ -30,7 +30,7 @@ let rec make_when loc = function
   | [] -> <:expr< True >>
   | GramNonTerminal(loc',t,_,Some p)::l ->
       let loc' = of_coqloc loc' in
-      let p = Names.string_of_id p in
+      let p = Names.Id.to_string p in
       let l = make_when loc l in
       let loc = CompatLoc.merge loc' loc in
       let t = mlexpr_of_argtype loc' t in
@@ -41,7 +41,7 @@ let rec make_let e = function
   | [] -> e
   | GramNonTerminal(loc,t,_,Some p)::l ->
       let loc = of_coqloc loc in
-      let p = Names.string_of_id p in
+      let p = Names.Id.to_string p in
       let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
       let e = make_let e l in
       let v = <:expr< Genarg.out_gen $make_wit loc t$ $lid:p$ >> in
@@ -73,7 +73,7 @@ let rec make_args = function
   | [] -> <:expr< [] >>
   | GramNonTerminal(loc,t,_,Some p)::l ->
       let loc = of_coqloc loc in
-      let p = Names.string_of_id p in
+      let p = Names.Id.to_string p in
       <:expr< [ Genarg.in_gen $make_wit loc t$ $lid:p$ :: $make_args l$ ] >>
   | _::l -> make_args l
 
@@ -200,10 +200,10 @@ EXTEND
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let t, g = interp_entry_name false None e "" in
-        GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let t, g = interp_entry_name false None e sep in
-        GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | s = STRING ->
 	if String.is_empty s then Errors.user_err_loc (!@loc,"",Pp.str "Empty terminal.");
         GramTerminal s

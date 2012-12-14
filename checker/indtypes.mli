@@ -27,10 +27,10 @@ type inductive_error =
   | NotEnoughArgs of env * constr * constr
   | NotConstructor of env * constr * constr
   | NonPar of env * constr * int * constr * constr
-  | SameNamesTypes of identifier
-  | SameNamesConstructors of identifier
-  | SameNamesOverlap of identifier list
-  | NotAnArity of identifier
+  | SameNamesTypes of Id.t
+  | SameNamesConstructors of Id.t
+  | SameNamesOverlap of Id.t list
+  | NotAnArity of Id.t
   | BadEntry
 
 exception InductiveError of inductive_error

@@ -644,7 +644,7 @@ let plain_instance s c =
 	    (try let g = List.assoc p s in
 	    match kind_of_term g with
             | App _ ->
-                let h = id_of_string "H" in
+                let h = Id.of_string "H" in
                 mkLetIn (Name h,g,t,mkApp(mkRel 1,Array.map (lift 1) l'))
             | _ -> mkApp (g,l')
 	    with Not_found -> mkApp (f,l'))

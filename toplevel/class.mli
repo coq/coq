@@ -39,7 +39,7 @@ val try_add_new_coercion_with_source : global_reference -> locality ->
 (** [try_add_new_identity_coercion id s src tg] enriches the
    environment with a new definition of name [id] declared as an
    identity coercion from [src] to [tg] *)
-val try_add_new_identity_coercion : identifier -> locality ->
+val try_add_new_identity_coercion : Id.t -> locality ->
   source:cl_typ -> target:cl_typ -> unit
 
 val add_coercion_hook : unit Tacexpr.declaration_hook

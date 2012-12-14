@@ -776,7 +776,7 @@ let bellman_ford bottom g =
     graph already contains [Type.n] nodes (calling a module Type is
     probably a bad idea anyway). *)
 let sort_universes orig =
-  let mp = Names.make_dirpath [Names.id_of_string "Type"] in
+  let mp = Names.make_dirpath [Names.Id.of_string "Type"] in
   let rec make_level accu g i =
     let type0 = UniverseLevel.Level (i, mp) in
     let distances = bellman_ford type0 g in

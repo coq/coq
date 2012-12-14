@@ -39,22 +39,22 @@ val apply_sig_tac :
 val pf_concl              : goal sigma -> types
 val pf_env                : goal sigma -> env
 val pf_hyps               : goal sigma -> named_context
-(*i val pf_untyped_hyps       : goal sigma -> (identifier * constr) list i*)
-val pf_hyps_types         : goal sigma -> (identifier * types) list
-val pf_nth_hyp_id         : goal sigma -> int -> identifier
+(*i val pf_untyped_hyps       : goal sigma -> (Id.t * constr) list i*)
+val pf_hyps_types         : goal sigma -> (Id.t * types) list
+val pf_nth_hyp_id         : goal sigma -> int -> Id.t
 val pf_last_hyp           : goal sigma -> named_declaration
-val pf_ids_of_hyps        : goal sigma -> identifier list
-val pf_global             : goal sigma -> identifier -> constr
+val pf_ids_of_hyps        : goal sigma -> Id.t list
+val pf_global             : goal sigma -> Id.t -> constr
 val pf_parse_const        : goal sigma -> string -> constr
 val pf_type_of            : goal sigma -> constr -> types
 val pf_check_type         : goal sigma -> constr -> types -> unit
 val pf_hnf_type_of        : goal sigma -> constr -> types
 
-val pf_get_hyp            : goal sigma -> identifier -> named_declaration
-val pf_get_hyp_typ        : goal sigma -> identifier -> types
+val pf_get_hyp            : goal sigma -> Id.t -> named_declaration
+val pf_get_hyp_typ        : goal sigma -> Id.t -> types
 
-val pf_get_new_id  : identifier      -> goal sigma -> identifier
-val pf_get_new_ids : identifier list -> goal sigma -> identifier list
+val pf_get_new_id  : Id.t      -> goal sigma -> Id.t
+val pf_get_new_ids : Id.t list -> goal sigma -> Id.t list
 
 val pf_reduction_of_red_expr : goal sigma -> red_expr -> constr -> constr
 
@@ -87,34 +87,34 @@ val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 (** {6 The most primitive tactics. } *)
 
 val refiner                   : rule -> tactic
-val introduction_no_check     : identifier -> tactic
-val internal_cut_no_check     : bool -> identifier -> types -> tactic
-val internal_cut_rev_no_check : bool -> identifier -> types -> tactic
+val introduction_no_check     : Id.t -> tactic
+val internal_cut_no_check     : bool -> Id.t -> types -> tactic
+val internal_cut_rev_no_check : bool -> Id.t -> types -> tactic
 val refine_no_check           : constr -> tactic
 val convert_concl_no_check    : types -> cast_kind -> tactic
 val convert_hyp_no_check      : named_declaration -> tactic
-val thin_no_check             : identifier list -> tactic
-val thin_body_no_check        : identifier list -> tactic
+val thin_no_check             : Id.t list -> tactic
+val thin_body_no_check        : Id.t list -> tactic
 val move_hyp_no_check         :
-  bool -> identifier -> identifier move_location -> tactic
-val rename_hyp_no_check       : (identifier*identifier) list -> tactic
-val order_hyps : identifier list -> tactic
+  bool -> Id.t -> Id.t move_location -> tactic
+val rename_hyp_no_check       : (Id.t*Id.t) list -> tactic
+val order_hyps : Id.t list -> tactic
 val mutual_fix      :
-  identifier -> int -> (identifier * int * constr) list -> int -> tactic
-val mutual_cofix    : identifier -> (identifier * constr) list -> int -> tactic
+  Id.t -> int -> (Id.t * int * constr) list -> int -> tactic
+val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> tactic
 
 (** {6 The most primitive tactics with consistency and type checking } *)
 
-val introduction     : identifier -> tactic
-val internal_cut     : bool -> identifier -> types -> tactic
-val internal_cut_rev : bool -> identifier -> types -> tactic
+val introduction     : Id.t -> tactic
+val internal_cut     : bool -> Id.t -> types -> tactic
+val internal_cut_rev : bool -> Id.t -> types -> tactic
 val refine           : constr -> tactic
 val convert_concl    : types -> cast_kind -> tactic
 val convert_hyp      : named_declaration -> tactic
-val thin             : identifier list -> tactic
-val thin_body        : identifier list -> tactic
-val move_hyp         : bool -> identifier -> identifier move_location -> tactic
-val rename_hyp       : (identifier*identifier) list -> tactic
+val thin             : Id.t list -> tactic
+val thin_body        : Id.t list -> tactic
+val move_hyp         : bool -> Id.t -> Id.t move_location -> tactic
+val rename_hyp       : (Id.t*Id.t) list -> tactic
 
 (** {6 Tactics handling a list of goals. } *)
 

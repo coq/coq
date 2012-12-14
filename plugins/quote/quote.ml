@@ -189,10 +189,10 @@ let decomp_term c = kind_of_term (strip_outer_cast c)
   type [typ] *)
 
 let coerce_meta_out id =
-  let s = string_of_id id in
+  let s = Id.to_string id in
   int_of_string (String.sub s 1 (String.length s - 1))
 let coerce_meta_in n =
-  id_of_string ("M" ^ string_of_int n)
+  Id.of_string ("M" ^ string_of_int n)
 
 let compute_lhs typ i nargsi =
   match kind_of_term typ with

@@ -23,7 +23,7 @@ val pop_dirpath : dir_path -> dir_path
 val pop_dirpath_n : int -> dir_path -> dir_path
 
 (** Give the immediate prefix and basename of a [dir_path] *)
-val split_dirpath : dir_path -> dir_path * identifier
+val split_dirpath : dir_path -> dir_path * Id.t
 
 val add_dirpath_suffix : dir_path -> module_ident -> dir_path
 val add_dirpath_prefix : module_ident -> dir_path -> dir_path
@@ -43,12 +43,12 @@ type full_path
 val eq_full_path : full_path -> full_path -> bool
 
 (** Constructors of [full_path] *)
-val make_path : dir_path -> identifier -> full_path
+val make_path : dir_path -> Id.t -> full_path
 
 (** Destructors of [full_path] *)
-val repr_path : full_path -> dir_path * identifier
+val repr_path : full_path -> dir_path * Id.t
 val dirpath : full_path -> dir_path
-val basename : full_path -> identifier
+val basename : full_path -> Id.t
 
 (** Parsing and printing of section path as ["coq_root.module.id"] *)
 val path_of_string : string -> full_path
@@ -67,8 +67,8 @@ val restrict_path : int -> full_path -> full_path
 
 type qualid
 
-val make_qualid : dir_path -> identifier -> qualid
-val repr_qualid : qualid -> dir_path * identifier
+val make_qualid : dir_path -> Id.t -> qualid
+val repr_qualid : qualid -> dir_path * Id.t
 
 val qualid_eq : qualid -> qualid -> bool
 
@@ -76,12 +76,12 @@ val pr_qualid : qualid -> std_ppcmds
 val string_of_qualid : qualid -> string
 val qualid_of_string : string -> qualid
 
-(** Turns an absolute name, a dirpath, or an identifier into a
+(** Turns an absolute name, a dirpath, or an Id.t into a
    qualified name denoting the same name *)
 
 val qualid_of_path : full_path -> qualid
 val qualid_of_dirpath : dir_path -> qualid
-val qualid_of_ident : identifier -> qualid
+val qualid_of_ident : Id.t -> qualid
 
 (** Both names are passed to objects: a "semantic" [kernel_name], which
    can be substituted and a "syntactic" [full_path] which can be printed
@@ -93,7 +93,7 @@ type object_prefix = dir_path * (module_path * dir_path)
 
 val eq_op : object_prefix -> object_prefix -> bool
 
-val make_oname : object_prefix -> identifier -> object_name
+val make_oname : object_prefix -> Id.t -> object_name
 
 (** to this type are mapped [dir_path]'s in the nametab *)
 type global_dir_reference =
@@ -114,7 +114,7 @@ val eq_global_dir_reference :
 
 type reference =
   | Qualid of qualid located
-  | Ident of identifier located
+  | Ident of Id.t located
 
 val eq_reference : reference -> reference -> bool
 val qualid_of_reference : reference -> qualid located
@@ -124,5 +124,5 @@ val loc_of_reference : reference -> Loc.t
 
 (** Deprecated synonyms *)
 
-val make_short_qualid : identifier -> qualid (** = qualid_of_ident *)
+val make_short_qualid : Id.t -> qualid (** = qualid_of_ident *)
 val qualid_of_sp : full_path -> qualid (** = qualid_of_path *)

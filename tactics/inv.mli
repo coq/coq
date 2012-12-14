@@ -21,11 +21,11 @@ val inv_gen :
   bool -> inversion_kind -> inversion_status ->
     intro_pattern_expr located option -> quantified_hypothesis -> tactic
 val invIn_gen :
-  inversion_kind -> intro_pattern_expr located option -> identifier list ->
+  inversion_kind -> intro_pattern_expr located option -> Id.t list ->
     quantified_hypothesis -> tactic
 
 val inv_clause :
-  inversion_kind -> intro_pattern_expr located option -> identifier list ->
+  inversion_kind -> intro_pattern_expr located option -> Id.t list ->
     quantified_hypothesis -> tactic
 
 val inv : inversion_kind -> intro_pattern_expr located option ->
@@ -34,9 +34,9 @@ val inv : inversion_kind -> intro_pattern_expr located option ->
 val dinv : inversion_kind -> constr option ->
   intro_pattern_expr located option -> quantified_hypothesis -> tactic
 
-val half_inv_tac : identifier -> tactic
-val inv_tac : identifier -> tactic
-val inv_clear_tac : identifier -> tactic
-val half_dinv_tac : identifier -> tactic
-val dinv_tac : identifier -> tactic
-val dinv_clear_tac : identifier -> tactic
+val half_inv_tac : Id.t -> tactic
+val inv_tac : Id.t -> tactic
+val inv_clear_tac : Id.t -> tactic
+val half_dinv_tac : Id.t -> tactic
+val dinv_tac : Id.t -> tactic
+val dinv_clear_tac : Id.t -> tactic

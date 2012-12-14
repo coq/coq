@@ -395,7 +395,7 @@ let check_named_ctxt env ctxt =
     let _ =
       try
         let _ = lookup_named id env in
-        failwith ("variable "^string_of_id id^" defined twice")
+        failwith ("variable "^Id.to_string id^" defined twice")
       with Not_found -> () in
     match d with
         (_,None,ty) ->

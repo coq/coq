@@ -51,7 +51,7 @@ open Globnames
    {- [shortest_qualid_of : object_reference -> user_name]
 
      The [user_name] can be for example the shortest non ambiguous [qualid] or
-     the [full_user_name] or [identifier]. Such a function can also have a
+     the [full_user_name] or [Id.t]. Such a function can also have a
      local context argument.}}
 
 *)
@@ -149,18 +149,18 @@ val path_of_tactic : ltac_constant -> full_path
    associated to global reference *)
 
 val dirpath_of_global : global_reference -> dir_path
-val basename_of_global : global_reference -> identifier
+val basename_of_global : global_reference -> Id.t
 
 (** Printing of global references using names as short as possible *)
-val pr_global_env : Idset.t -> global_reference -> std_ppcmds
+val pr_global_env : Id.Set.t -> global_reference -> std_ppcmds
 
 
 (** The [shortest_qualid] functions given an object with [user_name]
    Coq.A.B.x, try to find the shortest among x, B.x, A.B.x and
    Coq.A.B.x that denotes the same object. *)
 
-val shortest_qualid_of_global : Idset.t -> global_reference -> qualid
-val shortest_qualid_of_syndef : Idset.t -> syndef_name -> qualid
+val shortest_qualid_of_global : Id.Set.t -> global_reference -> qualid
+val shortest_qualid_of_syndef : Id.Set.t -> syndef_name -> qualid
 val shortest_qualid_of_modtype : module_path -> qualid
 val shortest_qualid_of_module : module_path -> qualid
 val shortest_qualid_of_tactic : ltac_constant -> qualid

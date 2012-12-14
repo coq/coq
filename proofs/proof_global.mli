@@ -32,10 +32,10 @@ val there_is_a_proof : unit -> bool
 val there_are_pending_proofs : unit -> bool
 val check_no_pending_proof : unit -> unit
 
-val get_current_proof_name : unit -> Names.identifier
-val get_all_proof_names : unit -> Names.identifier list
+val get_current_proof_name : unit -> Names.Id.t
+val get_all_proof_names : unit -> Names.Id.t list
 
-val discard : Names.identifier Loc.located -> unit
+val discard : Names.Id.t Loc.located -> unit
 val discard_current : unit -> unit
 val discard_all : unit -> unit
 
@@ -53,7 +53,7 @@ val give_me_the_proof : unit -> Proof.proof
     proof end (e.g. to declare the built constructions as a coercion
     or a setoid morphism). *)
 type lemma_possible_guards = int list list
-val start_proof : Names.identifier -> 
+val start_proof : Names.Id.t -> 
                           Decl_kinds.goal_kind ->
                           (Environ.env * Term.types) list  ->
                           ?compute_guard:lemma_possible_guards -> 
@@ -61,7 +61,7 @@ val start_proof : Names.identifier ->
                           unit
 
 val close_proof : unit -> 
-                           Names.identifier * 
+                           Names.Id.t * 
                           (Entries.definition_entry list * 
 			    lemma_possible_guards * 
 			    Decl_kinds.goal_kind * 
@@ -77,7 +77,7 @@ val run_tactic : unit Proofview.tactic -> unit
 val set_endline_tactic : unit Proofview.tactic -> unit
 
 (** Sets the section variables assumed by the proof *)
-val set_used_variables : Names.identifier list -> unit
+val set_used_variables : Names.Id.t list -> unit
 val get_used_variables : unit -> Sign.section_context option
 
 (** Appends the endline tactic of the current proof to a tactic. *)
@@ -127,5 +127,5 @@ module Bullet : sig
 end
 
 module V82 : sig
-  val get_current_initial_conclusions : unit -> Names.identifier *(Term.types list * Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
+  val get_current_initial_conclusions : unit -> Names.Id.t *(Term.types list * Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
 end

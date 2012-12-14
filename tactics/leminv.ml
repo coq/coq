@@ -140,7 +140,7 @@ let rec add_prods_sign env sigma t =
 let compute_first_inversion_scheme env sigma ind sort dep_option =
   let indf,realargs = dest_ind_type ind in
   let allvars = ids_of_context env in
-  let p = next_ident_away (id_of_string "P") allvars in
+  let p = next_ident_away (Id.of_string "P") allvars in
   let pty,goal =
     if dep_option  then
       let pty = make_arity env true indf sort in
@@ -210,7 +210,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let rec fill_holes c =
     match kind_of_term c with
     | Evar (e,args) ->
-	let h = next_ident_away (id_of_string "H") !avoid in
+	let h = next_ident_away (Id.of_string "H") !avoid in
 	let ty,inst = Evarutil.generalize_evar_over_rels sigma (e,args) in
 	avoid := h::!avoid;
 	ownSign := add_named_decl (h,None,ty) !ownSign;

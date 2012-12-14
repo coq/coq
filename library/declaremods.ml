@@ -436,7 +436,7 @@ let rec replace_module_object idl (mbids,mp,lib_stack) (mbids2,mp2,objs) mp1 =
   | [] -> () | _ -> anomaly "Unexpected functor objects" in
   let rec replace_idl = function
     | _,[] -> []
-    | id::idl,(id',obj)::tail when id_eq id id' ->
+    | id::idl,(id',obj)::tail when Id.equal id id' ->
       if not (String.equal (object_tag obj) "MODULE") then anomaly "MODULE expected!";
       let substobjs = match idl with
       | [] ->

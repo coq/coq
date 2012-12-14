@@ -19,7 +19,7 @@ let () = at_exit flush_all
 let fatal_error info =
   pperrnl info; flush_all (); exit 1
 
-let coq_root = id_of_string "Coq"
+let coq_root = Id.of_string "Coq"
 let parse_dir s =
   let len = String.length s in
   let rec decoupe_dirs dirs n =
@@ -36,7 +36,7 @@ let parse_dir s =
 let dirpath_of_string s =
   match parse_dir s with
       [] -> Check.default_root_prefix
-    | dir -> make_dirpath (List.map id_of_string dir)
+    | dir -> make_dirpath (List.map Id.of_string dir)
 let path_of_string s =
   match parse_dir s with
       [] -> invalid_arg "path_of_string"
@@ -69,7 +69,7 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
     msg_warning (str ("Cannot open " ^ dir))
 
 let convert_string d =
-  try id_of_string d
+  try Id.of_string d
   with _ ->
     if_verbose msg_warning (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
     raise Exit

@@ -68,7 +68,7 @@ type implicit_explanation =
 type maximal_insertion = bool (** true = maximal contextual insertion *)
 type force_inference = bool (** true = always infer, never turn into evar/subgoal *)
 
-type implicit_status = (identifier * implicit_explanation * 
+type implicit_status = (Id.t * implicit_explanation * 
 			  (maximal_insertion * force_inference)) option
     (** [None] = Not implicit *)
 
@@ -78,7 +78,7 @@ type implicits_list = implicit_side_condition * implicit_status list
 
 val is_status_implicit : implicit_status -> bool
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
-val name_of_implicit : implicit_status -> identifier
+val name_of_implicit : implicit_status -> Id.t
 val maximal_insertion_of : implicit_status -> bool
 val force_inference_of : implicit_status -> bool
 

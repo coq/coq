@@ -27,7 +27,7 @@ open Egramml
 
 type grammar_constr_prod_item =
   | GramConstrTerminal of Tok.t
-  | GramConstrNonTerminal of constr_prod_entry_key * identifier option
+  | GramConstrNonTerminal of constr_prod_entry_key * Id.t option
   | GramConstrListMark of int * bool
     (* tells action rule to make a list of the n previous parsed items;
        concat with last parsed list if true *)

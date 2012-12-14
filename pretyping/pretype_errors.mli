@@ -28,13 +28,13 @@ type pretype_error =
   | CannotUnifyLocal of constr * constr * constr
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
-  | NoOccurrenceFound of constr * identifier option
+  | NoOccurrenceFound of constr * Id.t option
   | CannotFindWellTypedAbstraction of constr * constr list
   | WrongAbstractionType of name * constr * types * types
   | AbstractionOverMeta of name * name
   | NonLinearUnification of name * constr
   (** Pretyping *)
-  | VarNotFound of identifier
+  | VarNotFound of Id.t
   | UnexpectedType of constr * constr
   | NotProduct of constr
   | TypingError of Type_errors.type_error
@@ -131,4 +131,4 @@ val error_not_product_loc :
 
 (** {6 Error in conversion from AST to glob_constr } *)
 
-val error_var_not_found_loc : Loc.t -> identifier -> 'b
+val error_var_not_found_loc : Loc.t -> Id.t -> 'b

@@ -32,7 +32,7 @@ open Vernacexpr
 type info = {
   label : int;
   nproofs : int;
-  prfname : identifier option;
+  prfname : Id.t option;
   prfdepth : int;
   ngoals : int;
   cmd : vernac_expr;
@@ -228,7 +228,7 @@ let get_script prf =
   let script = ref [] in
   let select i = match i.prfname with
     | None -> raise Not_found
-    | Some p when id_eq p prf && i.reachable -> script := i :: !script
+    | Some p when Id.equal p prf && i.reachable -> script := i :: !script
     | _ -> ()
   in
   (try Stack.iter select history with Not_found -> ());

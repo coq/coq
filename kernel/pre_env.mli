@@ -31,12 +31,12 @@ type stratification = {
 }
 
 type val_kind =
-    | VKvalue of values * Idset.t
+    | VKvalue of values * Id.Set.t
     | VKnone
 
 type lazy_val = val_kind ref
 
-type named_vals = (identifier * lazy_val) list
+type named_vals = (Id.t * lazy_val) list
 
 type env = {
     env_globals       : globals;
@@ -66,8 +66,8 @@ val env_of_rel     : int -> env -> env
 val push_named_context_val  :
     named_declaration -> named_context_val -> named_context_val
 val push_named       : named_declaration -> env -> env
-val lookup_named_val : identifier -> env -> lazy_val
-val env_of_named     : identifier -> env -> env
+val lookup_named_val : Id.t -> env -> lazy_val
+val env_of_named     : Id.t -> env -> env
 
 (** Global constants *)
 

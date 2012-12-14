@@ -50,7 +50,7 @@ let rec subst_glob_vars l = function
       GLambda (loc,Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
   | r -> map_glob_constr (subst_glob_vars l) r (* assume: id is not binding *)
 
-let ldots_var = id_of_string ".."
+let ldots_var = Id.of_string ".."
 
 let glob_constr_of_notation_constr_with_binders loc g f e = function
   | NVar id -> GVar (loc,id)
@@ -122,7 +122,7 @@ let add_name r = function Anonymous -> () | Name id -> add_id r id
 let split_at_recursive_part c =
   let sub = ref None in
   let rec aux = function
-  | GApp (loc0,GVar(loc,v),c::l) when id_eq v ldots_var ->
+  | GApp (loc0,GVar(loc,v),c::l) when Id.equal v ldots_var ->
       begin match !sub with
       | None ->
         let () = sub := Some c in
@@ -140,14 +140,14 @@ let split_at_recursive_part c =
   | None -> (* No recursive pattern found *) raise Not_found
   | Some c ->
   match outer_iterator with
-  | GVar (_,v) when id_eq v ldots_var -> (* Not enough context *) raise Not_found
+  | GVar (_,v) when Id.equal v ldots_var -> (* Not enough context *) raise Not_found
   | _ -> outer_iterator, c
 
 let on_true_do b f c = if b then (f c; b) else b
 
 let compare_glob_constr f add t1 t2 = match t1,t2 with
   | GRef (_,r1), GRef (_,r2) -> eq_gr r1 r2
-  | GVar (_,v1), GVar (_,v2) -> on_true_do (id_eq v1 v2) add (Name v1)
+  | GVar (_,v1), GVar (_,v2) -> on_true_do (Id.equal v1 v2) add (Name v1)
   | GApp (_,f1,l1), GApp (_,f2,l2) -> f f1 f2 && List.for_all2eq f l1 l2
   | GLambda (_,na1,bk1,ty1,c1), GLambda (_,na2,bk2,ty2,c2)
     when name_eq na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
@@ -181,18 +181,18 @@ let compare_recursive_parts found f (iterator,subc) =
   let diff = ref None in
   let terminator = ref None in
   let rec aux c1 c2 = match c1,c2 with
-  | GVar(_,v), term when id_eq v ldots_var ->
+  | GVar(_,v), term when Id.equal v ldots_var ->
       (* We found the pattern *)
       assert (match !terminator with None -> true | Some _ -> false);
       terminator := Some term;
       true
-  | GApp (_,GVar(_,v),l1), GApp (_,term,l2) when id_eq v ldots_var ->
+  | GApp (_,GVar(_,v),l1), GApp (_,term,l2) when Id.equal v ldots_var ->
       (* We found the pattern, but there are extra arguments *)
       (* (this allows e.g. alternative (recursive) notation of application) *)
       assert (match !terminator with None -> true | Some _ -> false);
       terminator := Some term;
       List.for_all2eq aux l1 l2
-  | GVar (_,x), GVar (_,y) when not (id_eq x y) ->
+  | GVar (_,x), GVar (_,y) when not (Id.equal x y) ->
       (* We found the position where it differs *)
       let lassoc = match !terminator with None -> false | Some _ -> true in
       let x,y = if lassoc then y,x else x,y in
@@ -249,7 +249,7 @@ let notation_constr_and_vars_of_glob_constr a =
     with Not_found ->
     found := keepfound;
     match c with
-    | GApp (_,GVar (loc,f),[c]) when id_eq f ldots_var ->
+    | GApp (_,GVar (loc,f),[c]) when Id.equal f ldots_var ->
 	(* Fall on the second part of the recursive pattern w/o having
 	   found the first part *)
 	user_err_loc (loc,"",
@@ -300,7 +300,7 @@ let notation_constr_and_vars_of_glob_constr a =
 
 let rec list_rev_mem_assoc x = function
   | [] -> false
-  | (_,x')::l -> id_eq x x' || list_rev_mem_assoc x l
+  | (_,x')::l -> Id.equal x x' || list_rev_mem_assoc x l
 
 let check_variables vars recvars (found,foundrec,foundrecbinding) =
   let useless_vars = List.map snd recvars in
@@ -316,9 +316,9 @@ let check_variables vars recvars (found,foundrec,foundrecbinding) =
       if List.mem_assoc x foundrec or List.mem_assoc x foundrecbinding
 	or list_rev_mem_assoc x foundrec or list_rev_mem_assoc x foundrecbinding
       then
-	error ((string_of_id x)^" should not be bound in a recursive pattern of the right-hand side.")
+	error ((Id.to_string x)^" should not be bound in a recursive pattern of the right-hand side.")
       else
-	error ((string_of_id x)^" is unbound in the right-hand side.") in
+	error ((Id.to_string x)^" is unbound in the right-hand side.") in
   let check_pair s x y where =
     if not (List.mem (x,y) where) then
       errorlabstrm "" (strbrk "in the right-hand side, " ++ pr_id x ++
@@ -493,10 +493,10 @@ let abstract_return_type_context_notation_constr =
 exception No_match
 
 let rec alpha_var id1 id2 = function
-  | (i1,i2)::_ when id_eq i1 id1 -> id_eq i2 id2
-  | (i1,i2)::_ when id_eq i2 id2 -> id_eq i1 id1
+  | (i1,i2)::_ when Id.equal i1 id1 -> Id.equal i2 id2
+  | (i1,i2)::_ when Id.equal i2 id2 -> Id.equal i1 id1
   | _::idl -> alpha_var id1 id2 idl
-  | [] -> id_eq id1 id2
+  | [] -> Id.equal id1 id2
 
 let bind_env alp (sigma,sigmalist,sigmabinders as fullsigma) var v =
   try
@@ -636,7 +636,7 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   (* Matching compositionally *)
   | GVar (_,id1), NVar id2 when alpha_var id1 id2 alp -> sigma
   | GRef (_,r1), NRef r2 when (eq_gr r1 r2) -> sigma
-  | GPatVar (_,(_,n1)), NPatVar n2 when id_eq n1 n2 -> sigma
+  | GPatVar (_,(_,n1)), NPatVar n2 when Id.equal n1 n2 -> sigma
   | GApp (loc,f1,l1), NApp (f2,l2) ->
       let n1 = List.length l1 and n2 = List.length l2 in
       let f1,l1,f2,l2 =

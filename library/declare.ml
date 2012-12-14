@@ -80,7 +80,7 @@ let discharge_variable (_,o) = match o with
   | Inl _ -> Some o
 
 type variable_obj =
-    (Univ.constraints, identifier * variable_declaration) union
+    (Univ.constraints, Id.t * variable_declaration) union
 
 let inVariable : variable_obj -> obj =
   declare_object { (default_object "VARIABLE") with

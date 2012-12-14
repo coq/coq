@@ -177,7 +177,7 @@ let save id const do_guard (locality,kind) hook =
   definition_message id;
   hook l r
 
-let default_thm_id = id_of_string "Unnamed_thm"
+let default_thm_id = Id.of_string "Unnamed_thm"
 
 let compute_proof_name locality = function
   | Some (loc,id) ->
@@ -236,7 +236,7 @@ let save_named opacity =
   save id const do_guard persistence hook
 
 let check_anonymity id save_ident =
-  if not (String.equal (atompart_of_id id) (string_of_id (default_thm_id))) then
+  if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
     error "This command can only be used for unnamed theorem."
 
 let save_anonymous opacity save_ident =

@@ -169,13 +169,13 @@ let db_pattern_rule debug num r =
 (* Prints the hypothesis pattern identifier if it exists *)
 let hyp_bound = function
   | Anonymous -> " (unbound)"
-  | Name id -> " (bound to "^(Names.string_of_id id)^")"
+  | Name id -> " (bound to "^(Names.Id.to_string id)^")"
 
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env (id,_,c) ido =
   if is_debug debug then
     msg_tac_debug (str "Hypothesis " ++
-           str ((Names.string_of_id id)^(hyp_bound ido)^
+           str ((Names.Id.to_string id)^(hyp_bound ido)^
                 " has been matched: ") ++ print_constr_env env c)
 
 (* Prints the matched conclusion *)

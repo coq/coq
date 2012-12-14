@@ -21,10 +21,10 @@ open Smartlocate
 
 type message = string
 
-let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
+let make_dir l = make_dirpath (List.map Id.of_string (List.rev l))
 
 let find_reference locstr dir s =
-  let sp = Libnames.make_path (make_dir dir) (id_of_string s) in
+  let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
   try global_of_extended_global (Nametab.extended_global_of_path sp)
   with Not_found -> anomaly (locstr^": cannot find "^(string_of_path sp))
 
@@ -63,7 +63,7 @@ let gen_constant_in_modules locstr dirs s =
 (* For tactics/commands requiring vernacular libraries *)
 
 let check_required_library d =
-  let d' = List.map id_of_string d in
+  let d' = List.map Id.of_string d in
   let dir = make_dirpath (List.rev d') in
   let mp = (fst(Lib.current_prefix())) in
   let current_dir = match mp with
@@ -130,14 +130,14 @@ let make_con dir id = Globnames.encode_con dir id
 
 (** Identity *)
 
-let id = make_con datatypes_module (id_of_string "id")
-let type_of_id = make_con datatypes_module (id_of_string "ID")
+let id = make_con datatypes_module (Id.of_string "id")
+let type_of_id = make_con datatypes_module (Id.of_string "ID")
 
 let _ = Termops.set_impossible_default_clause (mkConst id,mkConst type_of_id)
 
 (** Natural numbers *)
-let nat_kn = make_kn datatypes_module (id_of_string "nat")
-let nat_path = Libnames.make_path datatypes_module (id_of_string "nat")
+let nat_kn = make_kn datatypes_module (Id.of_string "nat")
+let nat_path = Libnames.make_path datatypes_module (Id.of_string "nat")
 
 let glob_nat = IndRef (nat_kn,0)
 
@@ -147,7 +147,7 @@ let glob_O = ConstructRef path_of_O
 let glob_S = ConstructRef path_of_S
 
 (** Booleans *)
-let bool_kn = make_kn datatypes_module (id_of_string "bool")
+let bool_kn = make_kn datatypes_module (Id.of_string "bool")
 
 let glob_bool = IndRef (bool_kn,0)
 
@@ -157,13 +157,13 @@ let glob_true  = ConstructRef path_of_true
 let glob_false  = ConstructRef path_of_false
 
 (** Equality *)
-let eq_kn = make_kn logic_module (id_of_string "eq")
+let eq_kn = make_kn logic_module (Id.of_string "eq")
 let glob_eq = IndRef (eq_kn,0)
 
-let identity_kn = make_kn datatypes_module (id_of_string "identity")
+let identity_kn = make_kn datatypes_module (Id.of_string "identity")
 let glob_identity = IndRef (identity_kn,0)
 
-let jmeq_kn = make_kn jmeq_module (id_of_string "JMeq")
+let jmeq_kn = make_kn jmeq_module (Id.of_string "JMeq")
 let glob_jmeq = IndRef (jmeq_kn,0)
 
 type coq_sigma_data = {
@@ -278,8 +278,8 @@ let build_coq_jmeq_data () =
   congr = Lazy.force coq_jmeq_congr }
 
 let join_jmeq_types eq =
-  mkLambda(Name (id_of_string "A"),Termops.new_Type(),
-  mkLambda(Name (id_of_string "x"),mkRel 1,
+  mkLambda(Name (Id.of_string "A"),Termops.new_Type(),
+  mkLambda(Name (Id.of_string "x"),mkRel 1,
   mkApp (eq,[|mkRel 2;mkRel 1;mkRel 2|])))
 
 let build_coq_inversion_jmeq_data () =

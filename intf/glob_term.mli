@@ -29,7 +29,7 @@ type cases_pattern =
 
 type glob_constr =
   | GRef of (Loc.t * global_reference)
-  | GVar of (Loc.t * identifier)
+  | GVar of (Loc.t * Id.t)
   | GEvar of Loc.t * existential_key * glob_constr list option
   | GPatVar of Loc.t * (bool * patvar) (** Used for patterns only *)
   | GApp of Loc.t * glob_constr * glob_constr list
@@ -43,7 +43,7 @@ type glob_constr =
   | GLetTuple of Loc.t * name list * (name * glob_constr option) *
       glob_constr * glob_constr
   | GIf of Loc.t * glob_constr * (name * glob_constr option) * glob_constr * glob_constr
-  | GRec of Loc.t * fix_kind * identifier array * glob_decl list array *
+  | GRec of Loc.t * fix_kind * Id.t array * glob_decl list array *
       glob_constr array * glob_constr array
   | GSort of Loc.t * glob_sort
   | GHole of (Loc.t * Evar_kinds.t)
@@ -68,7 +68,7 @@ and tomatch_tuple = (glob_constr * predicate_pattern)
 
 and tomatch_tuples = tomatch_tuple list
 
-and cases_clause = (Loc.t * identifier list * cases_pattern list * glob_constr)
+and cases_clause = (Loc.t * Id.t list * cases_pattern list * glob_constr)
 (** [(p,il,cl,t)] = "|'cl' => 't'". Precondition: the free variables
     of [t] are members of [il]. *)
 and cases_clauses = cases_clause list

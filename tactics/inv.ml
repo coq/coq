@@ -448,7 +448,7 @@ let raw_inversion inv_kind id status names gl =
     try pf_reduce_to_atomic_ind gl (pf_type_of gl c)
     with UserError _ ->
       errorlabstrm "raw_inversion"
-	(str ("The type of "^(string_of_id id)^" is not inductive.")) in
+	(str ("The type of "^(Id.to_string id)^" is not inductive.")) in
   let indclause = mk_clenv_from gl (c,t) in
   let ccl = clenv_type indclause in
   check_no_metas indclause ccl;

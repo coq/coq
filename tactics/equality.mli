@@ -52,21 +52,21 @@ val rewriteRL : ?tac:(tactic * conditions) -> constr  -> tactic
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
 val register_general_rewrite_clause :
-  (identifier option -> orientation ->
+  (Id.t option -> orientation ->
     occurrences -> constr with_bindings -> new_goals:constr list -> tactic) -> unit
 val register_is_applied_rewrite_relation : (env -> evar_map -> rel_context -> constr -> constr option) -> unit
 
-val general_rewrite_ebindings_clause : identifier option ->
+val general_rewrite_ebindings_clause : Id.t option ->
   orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
   ?tac:(tactic * conditions) -> constr with_bindings -> evars_flag -> tactic
 
 val general_rewrite_bindings_in :
   orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
   ?tac:(tactic * conditions) ->
-  identifier -> constr with_bindings -> evars_flag -> tactic
+  Id.t -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite_in          :
   orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag -> 
-  ?tac:(tactic * conditions) -> identifier -> constr -> evars_flag -> tactic
+  ?tac:(tactic * conditions) -> Id.t -> constr -> evars_flag -> tactic
 
 val general_multi_rewrite :
   orientation -> evars_flag -> ?tac:(tactic * conditions) -> constr with_bindings -> clause -> tactic
@@ -80,14 +80,14 @@ val general_multi_multi_rewrite :
 
 val replace_in_clause_maybe_by : constr -> constr -> clause -> tactic option -> tactic
 val replace    : constr -> constr -> tactic
-val replace_in : identifier -> constr -> constr -> tactic
+val replace_in : Id.t -> constr -> constr -> tactic
 val replace_by : constr -> constr -> tactic -> tactic
-val replace_in_by : identifier -> constr -> constr -> tactic -> tactic
+val replace_in_by : Id.t -> constr -> constr -> tactic -> tactic
 
 val discr        : evars_flag -> constr with_bindings -> tactic
 val discrConcl   : tactic
 val discrClause  : evars_flag -> clause -> tactic
-val discrHyp     : identifier -> tactic
+val discrHyp     : Id.t -> tactic
 val discrEverywhere : evars_flag -> tactic
 val discr_tac    : evars_flag ->
   constr with_bindings induction_arg option -> tactic
@@ -95,7 +95,7 @@ val inj          : intro_pattern_expr Loc.located list -> evars_flag ->
   constr with_bindings -> tactic
 val injClause    : intro_pattern_expr Loc.located list -> evars_flag ->
   constr with_bindings induction_arg option -> tactic
-val injHyp       : identifier -> tactic
+val injHyp       : Id.t -> tactic
 val injConcl     : tactic
 
 val dEq : evars_flag -> constr with_bindings induction_arg option -> tactic
@@ -105,29 +105,29 @@ val make_iterated_tuple :
   env -> evar_map -> constr -> (constr * types) -> constr * constr * constr
 
 (* The family cutRewriteIn expect an equality statement *)
-val cutRewriteInHyp : bool -> types -> identifier -> tactic
+val cutRewriteInHyp : bool -> types -> Id.t -> tactic
 val cutRewriteInConcl : bool -> constr -> tactic
 
 (* The family rewriteIn expect the proof of an equality *)
-val rewriteInHyp : bool -> constr -> identifier -> tactic
+val rewriteInHyp : bool -> constr -> Id.t -> tactic
 val rewriteInConcl : bool -> constr -> tactic
 
 (* Expect the proof of an equality; fails with raw internal errors *)
-val substClause : bool -> constr -> identifier option -> tactic
+val substClause : bool -> constr -> Id.t option -> tactic
 
 val discriminable : env -> evar_map -> constr -> constr -> bool
 val injectable : env -> evar_map -> constr -> constr -> bool
 
 (* Subst *)
 
-val unfold_body : identifier -> tactic
+val unfold_body : Id.t -> tactic
 
 type subst_tactic_flags = {
   only_leibniz : bool;
   rewrite_dependent_proof : bool
 }
-val subst_gen : bool -> identifier list -> tactic
-val subst : identifier list -> tactic
+val subst_gen : bool -> Id.t list -> tactic
+val subst : Id.t list -> tactic
 val subst_all : ?flags:subst_tactic_flags -> tactic
 
 (* Replace term *)

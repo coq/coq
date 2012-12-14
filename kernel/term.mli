@@ -79,7 +79,7 @@ type types = constr
 val mkRel : int -> constr
 
 (** Constructs a Variable *)
-val mkVar : identifier -> constr
+val mkVar : Id.t -> constr
 
 (** Constructs an patvar named "?n" *)
 val mkMeta : metavariable -> constr
@@ -104,7 +104,7 @@ val mkCast : constr * cast_kind * constr -> constr
 
 (** Constructs the product [(x:t1)t2] *)
 val mkProd : name * types * types -> types
-val mkNamedProd : identifier -> types -> types -> types
+val mkNamedProd : Id.t -> types -> types -> types
 
 (** non-dependent product [t1 -> t2], an alias for
    [forall (_:t1), t2]. Beware [t_2] is NOT lifted.
@@ -114,11 +114,11 @@ val mkArrow : types -> types -> constr
 
 (** Constructs the abstraction \[x:t{_ 1}\]t{_ 2} *)
 val mkLambda : name * types * constr -> constr
-val mkNamedLambda : identifier -> types -> constr -> constr
+val mkNamedLambda : Id.t -> types -> constr -> constr
 
 (** Constructs the product [let x = t1 : t2 in t3] *)
 val mkLetIn : name * constr * types * constr -> constr
-val mkNamedLetIn : identifier -> constr -> types -> constr -> constr
+val mkNamedLetIn : Id.t -> constr -> types -> constr -> constr
 
 (** [mkApp (f,[| t_1; ...; t_n |]] constructs the application
    {% $(f~t_1~\dots~t_n)$ %}. *)
@@ -197,7 +197,7 @@ type ('constr, 'types) pcofixpoint =
 
 type ('constr, 'types) kind_of_term =
   | Rel       of int
-  | Var       of identifier
+  | Var       of Id.t
   | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of sorts
@@ -234,7 +234,7 @@ val kind_of_type : types -> (constr, types) kind_of_type
 val isRel  : constr -> bool
 val isRelN : int -> constr -> bool
 val isVar  : constr -> bool
-val isVarId : identifier -> constr -> bool
+val isVarId : Id.t -> constr -> bool
 val isInd  : constr -> bool
 val isEvar : constr -> bool
 val isMeta : constr -> bool
@@ -271,7 +271,7 @@ val destRel : constr -> int
 val destMeta : constr -> metavariable
 
 (** Destructs a variable *)
-val destVar : constr -> identifier
+val destVar : constr -> Id.t
 
 (** Destructs a sort. [is_Prop] recognizes the sort {% \textsf{%}Prop{% }%}, whether
    [isprop] recognizes both {% \textsf{%}Prop{% }%} and {% \textsf{%}Set{% }%}. *)
@@ -337,7 +337,7 @@ val destCoFix : constr -> cofixpoint
     (in the latter case, [na] is of type [name] but just for printing
     purpose) *)
 
-type named_declaration = identifier * constr option * types
+type named_declaration = Id.t * constr option * types
 type rel_declaration = name * constr option * types
 
 val map_named_declaration :
@@ -570,16 +570,16 @@ val subst1_decl : constr -> rel_declaration -> rel_declaration
 val subst1_named_decl : constr -> named_declaration -> named_declaration
 val substl_named_decl : constr list -> named_declaration -> named_declaration
 
-val replace_vars : (identifier * constr) list -> constr -> constr
-val subst_var : identifier -> constr -> constr
+val replace_vars : (Id.t * constr) list -> constr -> constr
+val subst_var : Id.t -> constr -> constr
 
 (** [subst_vars [id1;...;idn] t] substitute [VAR idj] by [Rel j] in [t]
    if two names are identical, the one of least indice is kept *)
-val subst_vars : identifier list -> constr -> constr
+val subst_vars : Id.t list -> constr -> constr
 
 (** [substn_vars n [id1;...;idn] t] substitute [VAR idj] by [Rel j+n-1] in [t]
    if two names are identical, the one of least indice is kept *)
-val substn_vars : int -> identifier list -> constr -> constr
+val substn_vars : int -> Id.t list -> constr -> constr
 
 
 (** {6 Functionals working on the immediate subterm of a construction } *)

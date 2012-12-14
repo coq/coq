@@ -53,7 +53,7 @@ val pattern_of_glob_constr : glob_constr ->
       patvar list * constr_pattern
 
 val instantiate_pattern :
-  Evd.evar_map -> (identifier * (identifier list * constr)) list ->
+  Evd.evar_map -> (Id.t * (Id.t list * constr)) list ->
   constr_pattern -> constr_pattern
 
 val lift_pattern : int -> constr_pattern -> constr_pattern

@@ -22,20 +22,20 @@ open Misctypes
 (** Values for interpretation *)
 type value =
   | VRTactic of (goal list sigma)
-  | VFun of ltac_trace * (identifier*value) list *
-      identifier option list * glob_tactic_expr
+  | VFun of ltac_trace * (Id.t*value) list *
+      Id.t option list * glob_tactic_expr
   | VVoid
   | VInteger of int
   | VIntroPattern of intro_pattern_expr
   | VConstr of Pattern.constr_under_binders
   | VConstr_context of constr
   | VList of value list
-  | VRec of (identifier*value) list ref * glob_tactic_expr
+  | VRec of (Id.t*value) list ref * glob_tactic_expr
 
 (** Signature for interpretation: val\_interp and interpretation functions *)
 and interp_sign =
-  { lfun : (identifier * value) list;
-    avoid_ids : identifier list;
+  { lfun : (Id.t * value) list;
+    avoid_ids : Id.t list;
     debug : debug_info;
     trace : ltac_trace }
 
@@ -79,7 +79,7 @@ val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map 
 
 (** Interprets tactic expressions *)
 
-val interp_hyp :  interp_sign -> goal sigma -> identifier Loc.located -> identifier
+val interp_hyp :  interp_sign -> goal sigma -> Id.t Loc.located -> Id.t
 
 val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map ->
  glob_constr_and_expr bindings -> Evd.evar_map * constr bindings
@@ -93,7 +93,7 @@ val eval_tactic : glob_tactic_expr -> tactic
 
 (** Globalization + interpretation *)
 
-val interp_tac_gen : (identifier * value) list -> identifier list ->
+val interp_tac_gen : (Id.t * value) list -> Id.t list ->
                  debug_info -> raw_tactic_expr -> tactic
 
 val interp : raw_tactic_expr -> tactic
@@ -112,8 +112,8 @@ val declare_xml_printer :
 
 exception CannotCoerceTo of string
 
-val interp_ltac_var : (value -> 'a) -> interp_sign -> Environ.env option -> identifier Loc.located -> 'a
+val interp_ltac_var : (value -> 'a) -> interp_sign -> Environ.env option -> Id.t Loc.located -> 'a
 
-val interp_int : interp_sign -> identifier Loc.located -> int
+val interp_int : interp_sign -> Id.t Loc.located -> int
 
-val error_ltac_variable : Loc.t -> identifier -> Environ.env option -> value -> string -> 'a
+val error_ltac_variable : Loc.t -> Id.t -> Environ.env option -> value -> string -> 'a

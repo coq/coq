@@ -14,9 +14,9 @@ open Libnames
 
 (** Syntactic definitions. *)
 
-type syndef_interpretation = (identifier * subscopes) list * notation_constr
+type syndef_interpretation = (Id.t * subscopes) list * notation_constr
 
-val declare_syntactic_definition : bool -> identifier ->
+val declare_syntactic_definition : bool -> Id.t ->
   Flags.compat_version option -> syndef_interpretation -> unit
 
 val search_syntactic_definition : kernel_name -> syndef_interpretation

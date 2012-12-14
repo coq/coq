@@ -20,7 +20,7 @@ open Errors
 open Util
 
 let assoc_var s ist =
-  match List.assoc (Names.id_of_string s) ist.lfun with
+  match List.assoc (Names.Id.of_string s) ist.lfun with
     | VConstr ([],c) -> c
     | _ -> failwith "tauto: anomaly"
 
@@ -297,8 +297,8 @@ let tauto_intuitionistic flags g =
       errorlabstrm "tauto" (str "tauto failed.")
 
 let coq_nnpp_path =
-  let dir = List.map id_of_string ["Classical_Prop";"Logic";"Coq"] in
-  Libnames.make_path (make_dirpath dir) (id_of_string "NNPP")
+  let dir = List.map Id.of_string ["Classical_Prop";"Logic";"Coq"] in
+  Libnames.make_path (make_dirpath dir) (Id.of_string "NNPP")
 
 let tauto_classical flags nnpp g =
   try tclTHEN (apply nnpp) (tauto_intuitionistic flags) g

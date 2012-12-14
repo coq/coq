@@ -155,7 +155,7 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
     msg_warning (str ("Cannot open " ^ dir))
 
 let convert_string d =
-  try Names.id_of_string d
+  try Names.Id.of_string d
   with _ ->
     if_warn msg_warning (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
     raise Exit

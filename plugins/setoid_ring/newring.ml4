@@ -119,19 +119,19 @@ END;;*)
 
 (*
 let closed_term_ast l =
-  TacFun([Some(id_of_string"t")],
+  TacFun([Some(Id.of_string"t")],
   TacAtom(Loc.ghost,TacExtend(Loc.ghost,"closed_term",
-  [Genarg.in_gen Genarg.wit_constr (mkVar(id_of_string"t"));
+  [Genarg.in_gen Genarg.wit_constr (mkVar(Id.of_string"t"));
    Genarg.in_gen (Genarg.wit_list1 Genarg.wit_ref) l])))
 *)
 let closed_term_ast l =
   let l = List.map (fun gr -> ArgArg(Loc.ghost,gr)) l in
-  TacFun([Some(id_of_string"t")],
+  TacFun([Some(Id.of_string"t")],
   TacAtom(Loc.ghost,TacExtend(Loc.ghost,"closed_term",
-  [Genarg.in_gen Genarg.globwit_constr (GVar(Loc.ghost,id_of_string"t"),None);
+  [Genarg.in_gen Genarg.globwit_constr (GVar(Loc.ghost,Id.of_string"t"),None);
    Genarg.in_gen (Genarg.wit_list1 Genarg.globwit_ref) l])))
 (*
-let _ = add_tacdef false ((Loc.ghost,id_of_string"ring_closed_term"
+let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
 *)
 
 (****************************************************************************)
@@ -143,7 +143,7 @@ let ic c =
 let ty c = Typing.type_of (Global.env()) Evd.empty c
 
 let decl_constant na c =
-  mkConst(declare_constant (id_of_string na) (DefinitionEntry
+  mkConst(declare_constant (Id.of_string na) (DefinitionEntry
     { const_entry_body = c;
       const_entry_secctx = None;
       const_entry_type = None;
@@ -156,17 +156,17 @@ let ltac_call tac (args:glob_tactic_arg list) =
 
 (* Calling a locally bound tactic *)
 let ltac_lcall tac args =
-  TacArg(Loc.ghost,TacCall(Loc.ghost, ArgVar(Loc.ghost, id_of_string tac),args))
+  TacArg(Loc.ghost,TacCall(Loc.ghost, ArgVar(Loc.ghost, Id.of_string tac),args))
 
 let ltac_letin (x, e1) e2 =
-  TacLetIn(false,[(Loc.ghost,id_of_string x),e1],e2)
+  TacLetIn(false,[(Loc.ghost,Id.of_string x),e1],e2)
 
 let ltac_apply (f:glob_tactic_expr) (args:glob_tactic_arg list) =
   Tacinterp.eval_tactic
     (ltac_letin ("F", Tacexp f) (ltac_lcall "F" args))
 
 let ltac_record flds =
-  TacFun([Some(id_of_string"proj")], ltac_lcall "proj" flds)
+  TacFun([Some(Id.of_string"proj")], ltac_lcall "proj" flds)
 
 
 let carg c = TacDynamic(Loc.ghost,Pretyping.constr_in c)
@@ -178,7 +178,7 @@ let dummy_goal env =
    Evd.sigma = sigma}
 
 let exec_tactic env n f args =
-  let lid = List.tabulate(fun i -> id_of_string("x"^string_of_int i)) n in
+  let lid = List.tabulate(fun i -> Id.of_string("x"^string_of_int i)) n in
   let res = ref [||] in
   let get_res ist =
     let l = List.map (fun id ->  List.assoc id ist.lfun) lid in
@@ -244,11 +244,11 @@ let my_constant c =
   lazy (Coqlib.gen_constant_in_modules "Ring" plugin_modules c)
 
 let new_ring_path =
-  make_dirpath (List.map id_of_string ["Ring_tac";plugin_dir;"Coq"])
+  make_dirpath (List.map Id.of_string ["Ring_tac";plugin_dir;"Coq"])
 let ltac s =
   lazy(make_kn (MPfile new_ring_path) (make_dirpath []) (mk_label s))
 let znew_ring_path =
-  make_dirpath (List.map id_of_string ["InitialRing";plugin_dir;"Coq"])
+  make_dirpath (List.map Id.of_string ["InitialRing";plugin_dir;"Coq"])
 let zltac s =
   lazy(make_kn (MPfile znew_ring_path) (make_dirpath []) (mk_label s))
 
@@ -689,8 +689,8 @@ let add_theory name rth eqth morphth cst_tac (pre,post) power sign div =
   let lemma1 = constr_of params.(3) in
   let lemma2 = constr_of params.(4) in
 
-  let lemma1 = decl_constant (string_of_id name^"_ring_lemma1") lemma1 in
-  let lemma2 = decl_constant (string_of_id name^"_ring_lemma2") lemma2 in
+  let lemma1 = decl_constant (Id.to_string name^"_ring_lemma1") lemma1 in
+  let lemma2 = decl_constant (Id.to_string name^"_ring_lemma2") lemma2 in
   let cst_tac =
     interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
@@ -826,7 +826,7 @@ END
 (***********************************************************************)
 
 let new_field_path =
-  make_dirpath (List.map id_of_string ["Field_tac";plugin_dir;"Coq"])
+  make_dirpath (List.map Id.of_string ["Field_tac";plugin_dir;"Coq"])
 
 let field_ltac s =
   lazy(make_kn (MPfile new_field_path) (make_dirpath []) (mk_label s))
@@ -1049,11 +1049,11 @@ let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign odi
     match inj with
       | Some thm -> mkApp(constr_of params.(8),[|thm|])
       | None -> constr_of params.(7) in
-  let lemma1 = decl_constant (string_of_id name^"_field_lemma1") lemma1 in
-  let lemma2 = decl_constant (string_of_id name^"_field_lemma2") lemma2 in
-  let lemma3 = decl_constant (string_of_id name^"_field_lemma3") lemma3 in
-  let lemma4 = decl_constant (string_of_id name^"_field_lemma4") lemma4 in
-  let cond_lemma = decl_constant (string_of_id name^"_lemma5") cond_lemma in
+  let lemma1 = decl_constant (Id.to_string name^"_field_lemma1") lemma1 in
+  let lemma2 = decl_constant (Id.to_string name^"_field_lemma2") lemma2 in
+  let lemma3 = decl_constant (Id.to_string name^"_field_lemma3") lemma3 in
+  let lemma4 = decl_constant (Id.to_string name^"_field_lemma4") lemma4 in
+  let cond_lemma = decl_constant (Id.to_string name^"_lemma5") cond_lemma in
   let cst_tac =
     interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =

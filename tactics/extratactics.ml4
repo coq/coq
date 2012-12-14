@@ -551,7 +551,7 @@ let subst_var_with_hole occ tid t =
   let locref = ref 0 in
   let rec substrec = function
     | GVar (_,id) as x -> 
-        if id_eq id tid 
+        if Id.equal id tid 
         then
 	  (decr occref;
 	   if Int.equal !occref 0 then x
@@ -650,7 +650,7 @@ END
 exception Found of tactic
 
 let rewrite_except h g =
-  tclMAP (fun id -> if id_eq id h then tclIDTAC else 
+  tclMAP (fun id -> if Id.equal id h then tclIDTAC else 
       tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
     (Tacmach.pf_ids_of_hyps g) g
 
@@ -684,7 +684,7 @@ let case_eq_intros_rewrite x g =
       mkCaseEq x;
       (fun g -> 
 	let n' = nb_prod (Tacmach.pf_concl g) in
-	let h = fresh_id (Tacmach.pf_ids_of_hyps g) (id_of_string "heq") g in
+	let h = fresh_id (Tacmach.pf_ids_of_hyps g) (Id.of_string "heq") g in
 	tclTHENLIST [ (tclDO (n'-n-1) intro);
 		      Tacmach.introduction h;
 		      rewrite_except h] g

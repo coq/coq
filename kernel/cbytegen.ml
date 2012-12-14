@@ -188,7 +188,7 @@ let find_at f l =
 let pos_named id r =
   let env = !(r.in_env) in
   let cid = FVnamed id in
-  let f = function FVnamed id' -> id_eq id id' | _ -> false in
+  let f = function FVnamed id' -> Id.equal id id' | _ -> false in
   try Kenvacc(r.offset + env.size - (find_at f env.fv_rev))
   with Not_found ->
     let pos = env.size in
@@ -710,7 +710,7 @@ let compile env c =
   Format.print_string "fv = ";
   List.iter (fun v ->
     match v with
-    | FVnamed id -> Format.print_string ((string_of_id id)^"; ")
+    | FVnamed id -> Format.print_string ((Id.to_string id)^"; ")
     | FVrel i -> Format.print_string ((string_of_int i)^"; ")) fv;  Format
     .print_string "\n";
   Format.print_flush();  *)

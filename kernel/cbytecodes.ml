@@ -121,7 +121,7 @@ type instruction =
 
 and bytecodes = instruction list
 
-type fv_elem = FVnamed of identifier | FVrel of int
+type fv_elem = FVnamed of Id.t | FVrel of int
 
 type fv = fv_elem array
 

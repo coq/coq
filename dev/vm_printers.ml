@@ -34,7 +34,7 @@ let print_idkey idk =
       print_string "Cons(";
       print_string (string_of_con sp);
       print_string ")"
-  | VarKey id -> print_string (string_of_id id)
+  | VarKey id -> print_string (Id.to_string id)
   | RelKey i -> print_string "~";print_int i
 
 let rec ppzipper z =

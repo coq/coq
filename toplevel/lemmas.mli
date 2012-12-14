@@ -18,7 +18,7 @@ open Pfedit
 (** A hook start_proof calls on the type of the definition being started *)
 val set_start_hook : (types -> unit) -> unit
 
-val start_proof : identifier -> goal_kind -> types ->
+val start_proof : Id.t -> goal_kind -> types ->
   ?init_tac:tactic -> ?compute_guard:lemma_possible_guards -> 
    unit declaration_hook -> unit
 
@@ -28,7 +28,7 @@ val start_proof_com : goal_kind ->
 
 val start_proof_with_initialization : 
   goal_kind -> (bool * lemma_possible_guards * tactic list option) option ->
-  (identifier * (types * (name list * Impargs.manual_explicitation list))) list
+  (Id.t * (types * (name list * Impargs.manual_explicitation list))) list
   -> int list option -> unit declaration_hook -> unit
 
 (** A hook the next three functions pass to cook_proof *)
@@ -44,13 +44,13 @@ val save_named : bool -> unit
 (** [save_anonymous b name] behaves as [save_named] but declares the theorem
 under the name [name] and respects the strength of the declaration *)
 
-val save_anonymous : bool -> identifier -> unit
+val save_anonymous : bool -> Id.t -> unit
 
 (** [save_anonymous_with_strength s b name] behaves as [save_anonymous] but
    declares the theorem under the name [name] and gives it the
    strength [strength] *)
 
-val save_anonymous_with_strength : theorem_kind -> bool -> identifier -> unit
+val save_anonymous_with_strength : theorem_kind -> bool -> Id.t -> unit
 
 (** [admit ()] aborts the current goal and save it as an assmumption *)
 

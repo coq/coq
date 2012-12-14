@@ -15,7 +15,7 @@ open Declarations
 module Refset' : Set.S with type elt = global_reference
 module Refmap' : Map.S with type key = global_reference
 
-val safe_basename_of_global : global_reference -> identifier
+val safe_basename_of_global : global_reference -> Id.t
 
 (*s Warning and Error messages. *)
 
@@ -30,7 +30,7 @@ val error_inductive : global_reference -> 'a
 val error_nb_cons : unit -> 'a
 val error_module_clash : module_path -> module_path -> 'a
 val error_no_module_expr : module_path -> 'a
-val error_singleton_become_prop : identifier -> 'a
+val error_singleton_become_prop : Id.t -> 'a
 val error_unknown_module : qualid -> 'a
 val error_scheme : unit -> 'a
 val error_not_visible : global_reference -> 'a
@@ -193,12 +193,12 @@ val extract_inductive :
   reference -> string -> string list -> string option -> unit
 
 
-type int_or_id = ArgInt of int | ArgId of identifier
+type int_or_id = ArgInt of int | ArgId of Id.t
 val extraction_implicit : reference -> int_or_id list -> unit
 
 (*s Table of blacklisted filenames *)
 
-val extraction_blacklist : identifier list -> unit
+val extraction_blacklist : Id.t list -> unit
 val reset_extraction_blacklist : unit -> unit
 val print_extraction_blacklist : unit -> Pp.std_ppcmds
 

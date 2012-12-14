@@ -41,8 +41,8 @@ let load_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
 
 let is_alias_of_already_visible_name sp = function
   | _,NRef ref ->
-      let (dir,id) = repr_qualid (shortest_qualid_of_global Idset.empty ref) in
-      dir_path_eq dir empty_dirpath && id_eq id (basename sp)
+      let (dir,id) = repr_qualid (shortest_qualid_of_global Id.Set.empty ref) in
+      dir_path_eq dir empty_dirpath && Id.equal id (basename sp)
   | _ ->
       false
 
@@ -76,7 +76,7 @@ let in_syntax_constant
     subst_function = subst_syntax_constant;
     classify_function = classify_syntax_constant }
 
-type syndef_interpretation = (identifier * subscopes) list * notation_constr
+type syndef_interpretation = (Id.t * subscopes) list * notation_constr
 
 (* Coercions to the general format of notation that also supports
    variables bound to list of expressions *)
@@ -86,8 +86,8 @@ let out_pat (ids,ac) = (List.map (fun (id,(sc,typ)) -> (id,sc)) ids,ac)
 let declare_syntactic_definition local id onlyparse pat =
   let _ = add_leaf id (in_syntax_constant (local,in_pat pat,onlyparse)) in ()
 
-let pr_global r = pr_global_env Idset.empty r
-let pr_syndef kn = pr_qualid (shortest_qualid_of_syndef Idset.empty kn)
+let pr_global r = pr_global_env Id.Set.empty r
+let pr_syndef kn = pr_qualid (shortest_qualid_of_syndef Id.Set.empty kn)
 
 let allow_compat_notations = ref true
 let verbose_compat_notations = ref false
@@ -101,7 +101,7 @@ let verbose_compat kn def = function
       if !verbose_compat_notations then msg_warning else errorlabstrm ""
     in
     let pp_def = match def with
-      | [], NRef r -> str " is " ++ pr_global_env Idset.empty r
+      | [], NRef r -> str " is " ++ pr_global_env Id.Set.empty r
       | _ -> str " is a compatibility notation"
     in
     let since = str (" since Coq > " ^ Flags.pr_version v ^ ".") in

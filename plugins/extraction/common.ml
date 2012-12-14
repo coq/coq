@@ -18,7 +18,7 @@ open Miniml
 open Mlutil
 
 let string_of_id id =
-  let s = Names.string_of_id id in
+  let s = Names.Id.to_string id in
   for i = 0 to String.length s - 2 do
     if s.[i] = '_' && s.[i+1] = '_' then warning_id s
   done;
@@ -109,12 +109,12 @@ let pseudo_qualify = qualify "__"
 let is_upper s = match s.[0] with 'A' .. 'Z' -> true | _ -> false
 let is_lower s = match s.[0] with 'a' .. 'z' | '_' -> true | _ -> false
 
-let lowercase_id id = id_of_string (String.uncapitalize (string_of_id id))
+let lowercase_id id = Id.of_string (String.uncapitalize (string_of_id id))
 let uppercase_id id =
   let s = string_of_id id in
   assert (s<>"");
-  if s.[0] = '_' then id_of_string ("Coq_"^s)
-  else id_of_string (String.capitalize s)
+  if s.[0] = '_' then Id.of_string ("Coq_"^s)
+  else Id.of_string (String.capitalize s)
 
 type kind = Term | Type | Cons | Mod
 
@@ -128,12 +128,12 @@ let kindcase_id k id =
 
 (*s de Bruijn environments for programs *)
 
-type env = identifier list * Idset.t
+type env = Id.t list * Id.Set.t
 
 (*s Generic renaming issues for local variable names. *)
 
 let rec rename_id id avoid =
-  if Idset.mem id avoid then rename_id (lift_subscript id) avoid else id
+  if Id.Set.mem id avoid then rename_id (lift_subscript id) avoid else id
 
 let rec rename_vars avoid = function
   | [] ->
@@ -145,14 +145,14 @@ let rec rename_vars avoid = function
   | id :: idl ->
       let (idl, avoid) = rename_vars avoid idl in
       let id = rename_id (lowercase_id id) avoid in
-      (id :: idl, Idset.add id avoid)
+      (id :: idl, Id.Set.add id avoid)
 
 let rename_tvars avoid l =
   let rec rename avoid = function
     | [] -> [],avoid
     | id :: idl ->
 	let id = rename_id (lowercase_id id) avoid in
-	let idl, avoid = rename (Idset.add id avoid) idl in
+	let idl, avoid = rename (Id.Set.add id avoid) idl in
 	(id :: idl, avoid) in
   fst (rename avoid l)
 
@@ -162,7 +162,7 @@ let push_vars ids (db,avoid) =
 
 let get_db_name n (db,_) =
   let id = List.nth db (pred n) in
-  if id = dummy_name then id_of_string "__" else id
+  if id = dummy_name then Id.of_string "__" else id
 
 
 (*S Renamings of global objects. *)
@@ -179,13 +179,13 @@ let set_phase, get_phase =
   let ph = ref Impl in ((:=) ph), (fun () -> !ph)
 
 let set_keywords, get_keywords =
-  let k = ref Idset.empty in
+  let k = ref Id.Set.empty in
   ((:=) k), (fun () -> !k)
 
 let add_global_ids, get_global_ids =
-  let ids = ref Idset.empty in
+  let ids = ref Id.Set.empty in
   register_cleanup (fun () -> ids := get_keywords ());
-  let add s = ids := Idset.add s !ids
+  let add s = ids := Id.Set.add s !ids
   and get () = !ids
   in (add,get)
 
@@ -309,7 +309,7 @@ let modular_rename k id =
     if upperkind k then "Coq_",is_upper else "coq_",is_lower
   in
   if not (is_ok s) ||
-    (Idset.mem id (get_keywords ())) ||
+    (Id.Set.mem id (get_keywords ())) ||
     (String.length s >= 4 && String.sub s 0 4 = prefix)
   then prefix ^ s
   else s
@@ -320,7 +320,7 @@ let modular_rename k id =
 let modfstlev_rename =
   let add_prefixes,get_prefixes,_ = mktable true in
   fun l ->
-    let coqid = id_of_string "Coq" in
+    let coqid = Id.of_string "Coq" in
     let id = id_of_label l in
     try
       let coqset = get_prefixes id in
@@ -372,12 +372,12 @@ let ref_renaming_fun (k,r) =
     let idg = safe_basename_of_global r in
     if l = [""] (* this happens only at toplevel of the monolithic case *)
     then
-      let globs = Idset.elements (get_global_ids ()) in
+      let globs = Id.Set.elements (get_global_ids ()) in
       let id = next_ident_away (kindcase_id k idg) globs in
       string_of_id id
     else modular_rename k idg
   in
-  add_global_ids (id_of_string s);
+  add_global_ids (Id.of_string s);
   s::l
 
 (* Cached version of the last function *)

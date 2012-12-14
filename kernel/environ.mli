@@ -88,7 +88,7 @@ val push_named_context_val  :
 
 
 (** Looks up in the context of local vars referred by names ([named_context]) 
-   raises [Not_found] if the identifier is not found *)
+   raises [Not_found] if the Id.t is not found *)
 
 val lookup_named     : variable -> env -> named_declaration
 val lookup_named_val : variable -> named_context_val -> named_declaration
@@ -162,12 +162,12 @@ val set_engagement : engagement -> env -> env
    directly as [Var id] in [c] or indirectly as a section variable
    dependent in a global reference occurring in [c] *)
 
-val global_vars_set : env -> constr -> Idset.t
+val global_vars_set : env -> constr -> Id.Set.t
 
 (** the constr must be a global reference *)
-val vars_of_global : env -> constr -> identifier list
+val vars_of_global : env -> constr -> Id.t list
 
-val keep_hyps : env -> Idset.t -> section_context
+val keep_hyps : env -> Id.Set.t -> section_context
 
 (** {5 Unsafe judgments. }
     We introduce here the pre-type of judgments, which is
@@ -212,7 +212,7 @@ val insert_after_hyp : named_context_val -> variable ->
   named_declaration ->
     (named_context -> unit) -> named_context_val
 
-val remove_hyps : identifier list -> (named_declaration -> named_declaration) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val
+val remove_hyps : Id.t list -> (named_declaration -> named_declaration) -> (Pre_env.lazy_val -> Pre_env.lazy_val) -> named_context_val -> named_context_val
 
 
 

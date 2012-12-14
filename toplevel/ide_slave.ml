@@ -121,7 +121,7 @@ let interp (raw,verbosely,s) =
 (** Goal display *)
 
 let hyp_next_tac sigma env (id,_,ast) =
-  let id_s = Names.string_of_id id in
+  let id_s = Names.Id.to_string id in
   let type_s = string_of_ppcmds (pr_ltype_env env ast) in
   [
     ("clear "^id_s),("clear "^id_s^".");
@@ -230,15 +230,15 @@ let status () =
       and display the other parts (opened sections and modules) *)
   let path =
     let l = Names.repr_dirpath (Lib.cwd ()) in
-    List.rev_map Names.string_of_id l
+    List.rev_map Names.Id.to_string l
   in
   let proof =
-    try Some (Names.string_of_id (Proof_global.get_current_proof_name ()))
+    try Some (Names.Id.to_string (Proof_global.get_current_proof_name ()))
     with _ -> None
   in
   let allproofs =
     let l = Proof_global.get_all_proof_names () in
-    List.map Names.string_of_id l
+    List.map Names.Id.to_string l
   in
   {
     Interface.status_path = path;

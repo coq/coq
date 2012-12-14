@@ -449,7 +449,7 @@ let autounfolds db occs =
     in
     let (ids, csts) = Hint_db.unfolds db in
       Cset.fold (fun cst -> cons (AllOccurrences, EvalConstRef cst)) csts
-	(Idset.fold (fun id -> cons (AllOccurrences, EvalVarRef id)) ids [])) db)
+	(Id.Set.fold (fun id -> cons (AllOccurrences, EvalVarRef id)) ids [])) db)
   in unfold_option unfolds
 
 let autounfold db cls gl =
@@ -471,7 +471,7 @@ END
 let unfold_head env (ids, csts) c = 
   let rec aux c = 
     match kind_of_term c with
-    | Var id when Idset.mem id ids ->
+    | Var id when Id.Set.mem id ids ->
 	(match Environ.named_body id env with
 	| Some b -> true, b
 	| None -> false, c)
@@ -507,7 +507,7 @@ let autounfold_one db cl gl =
 	with Not_found -> errorlabstrm "autounfold" (str "Unknown database " ++ str dbname)
       in
       let (ids, csts) = Hint_db.unfolds db in
-	(Idset.union ids i, Cset.union csts c)) (Idset.empty, Cset.empty) db
+	(Id.Set.union ids i, Cset.union csts c)) (Id.Set.empty, Cset.empty) db
   in
   let did, c' = unfold_head (pf_env gl) st (match cl with Some (id, _) -> pf_get_hyp_typ gl id | None -> pf_concl gl) in
     if did then
@@ -517,7 +517,7 @@ let autounfold_one db cl gl =
     else tclFAIL 0 (str "Nothing to unfold") gl
 
 (* 	  Cset.fold (fun cst -> cons (all_occurrences, EvalConstRef cst)) csts *)
-(* 	    (Idset.fold (fun id -> cons (all_occurrences, EvalVarRef id)) ids [])) db) *)
+(* 	    (Id.Set.fold (fun id -> cons (all_occurrences, EvalVarRef id)) ids [])) db) *)
 (*       in unfold_option unfolds cl *)
 
 (*       let db = try searchtable_map dbname  *)
@@ -525,7 +525,7 @@ let autounfold_one db cl gl =
 (*       in *)
 (*       let (ids, csts) = Hint_db.unfolds db in *)
 (* 	Cset.fold (fun cst -> tclORELSE (unfold_option [(occ, EvalVarRef id)] cst)) csts *)
-(* 	  (Idset.fold (fun id -> tclORELSE (unfold_option [(occ, EvalVarRef id)] cl) ids acc))) *)
+(* 	  (Id.Set.fold (fun id -> tclORELSE (unfold_option [(occ, EvalVarRef id)] cl) ids acc))) *)
 (*       (tclFAIL 0 (mt())) db *)
       
 TACTIC EXTEND autounfold_one

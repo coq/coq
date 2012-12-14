@@ -12,7 +12,7 @@ open Names
 
 (** Cases pattern variables *)
 
-type patvar = identifier
+type patvar = Id.t
 
 (** Introduction patterns *)
 
@@ -20,8 +20,8 @@ type intro_pattern_expr =
   | IntroOrAndPattern of or_and_intro_pattern_expr
   | IntroWildcard
   | IntroRewrite of bool
-  | IntroIdentifier of identifier
-  | IntroFresh of identifier
+  | IntroIdentifier of Id.t
+  | IntroFresh of Id.t
   | IntroForthcoming of bool
   | IntroAnonymous
 and or_and_intro_pattern_expr = (Loc.t * intro_pattern_expr) list list
@@ -61,7 +61,7 @@ type 'a cast_type =
 
 (** Bindings *)
 
-type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
+type quantified_hypothesis = AnonHyp of int | NamedHyp of Id.t
 
 type 'a explicit_bindings = (Loc.t * quantified_hypothesis * 'a) list
 
@@ -77,9 +77,9 @@ type 'a with_bindings = 'a * 'a bindings
 
 type 'a or_var =
   | ArgArg of 'a
-  | ArgVar of Names.identifier Loc.located
+  | ArgVar of Names.Id.t Loc.located
 
-type 'a and_short_name = 'a * identifier Loc.located option
+type 'a and_short_name = 'a * Id.t Loc.located option
 
 type 'a or_by_notation =
   | AN of 'a

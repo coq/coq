@@ -85,8 +85,8 @@ let mkDecideEqGoal eqonleft op rectype c1 c2 g =
 
 let mkGenDecideEqGoal rectype g =
   let hypnames = pf_ids_of_hyps g in
-  let xname    = next_ident_away (id_of_string "x") hypnames
-  and yname    = next_ident_away (id_of_string "y") hypnames in
+  let xname    = next_ident_away (Id.of_string "x") hypnames
+  and yname    = next_ident_away (Id.of_string "y") hypnames in
   (mkNamedProd xname rectype
      (mkNamedProd yname rectype
         (mkDecideEqGoal true (build_coq_sumbool ())
@@ -99,8 +99,8 @@ let eqCase tac =
   tac)))
 
 let diseqCase eqonleft =
-  let diseq  = id_of_string "diseq" in
-  let absurd = id_of_string "absurd" in
+  let diseq  = Id.of_string "diseq" in
+  let absurd = Id.of_string "absurd" in
   (tclTHEN (intro_using diseq)
   (tclTHEN (choose_noteq eqonleft)
   (tclTHEN  red_in_concl

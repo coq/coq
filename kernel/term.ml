@@ -105,7 +105,7 @@ type ('constr, 'types) pcofixpoint =
    de Bruijn indices. *)
 type ('constr, 'types) kind_of_term =
   | Rel       of int
-  | Var       of identifier
+  | Var       of Id.t
   | Meta      of metavariable
   | Evar      of 'constr pexistential
   | Sort      of sorts
@@ -345,7 +345,7 @@ let isRelN n c = match kind_of_term c with Rel n' -> Int.equal n n' | _ -> false
 
 (* Tests if a variable *)
 let isVar c = match kind_of_term c with Var _ -> true | _ -> false
-let isVarId id c = match kind_of_term c with Var id' -> Int.equal (id_ord id id') 0 | _ -> false
+let isVarId id c = match kind_of_term c with Var id' -> Int.equal (Id.compare id id') 0 | _ -> false
 
 (* Tests if an inductive *)
 let isInd c = match kind_of_term c with Ind _ -> true | _ -> false
@@ -578,7 +578,7 @@ let compare_constr f t1 t2 =
   match kind_of_term t1, kind_of_term t2 with
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
-  | Var id1, Var id2 -> Int.equal (id_ord id1 id2) 0
+  | Var id1, Var id2 -> Int.equal (Id.compare id1 id2) 0
   | Sort s1, Sort s2 -> Int.equal (sorts_ord s1 s2) 0
   | Cast (c1,_,_), _ -> f c1 t2
   | _, Cast (c2,_,_) -> f t1 c2
@@ -624,7 +624,7 @@ let constr_ord_int f t1 t2 =
   match kind_of_term t1, kind_of_term t2 with
     | Rel n1, Rel n2 -> Int.compare n1 n2
     | Meta m1, Meta m2 -> Int.compare m1 m2
-    | Var id1, Var id2 -> id_ord id1 id2
+    | Var id1, Var id2 -> Id.compare id1 id2
     | Sort s1, Sort s2 -> sorts_ord s1 s2
     | Cast (c1,_,_), _ -> f c1 t2
     | _, Cast (c2,_,_) -> f t1 c2
@@ -669,7 +669,7 @@ type types = constr
 
 type strategy = types option
 
-type named_declaration = identifier * constr option * types
+type named_declaration = Id.t * constr option * types
 type rel_declaration = name * constr option * types
 
 let map_named_declaration f (id, (v : strategy), ty) = (id, Option.map f v, f ty)
@@ -685,7 +685,7 @@ let for_all_named_declaration f (_, v, ty) = Option.cata f true v && f ty
 let for_all_rel_declaration f (_, v, ty) = Option.cata f true v && f ty
 
 let eq_named_declaration (i1, c1, t1) (i2, c2, t2) =
-  id_eq i1 i2 && Option.equal eq_constr c1 c2 && eq_constr t1 t2
+  Id.equal i1 i2 && Option.equal eq_constr c1 c2 && eq_constr t1 t2
 
 let eq_rel_declaration (n1, c1, t1) (n2, c2, t2) =
   name_eq n1 n2 && Option.equal eq_constr c1 c2 && eq_constr t1 t2
@@ -856,7 +856,7 @@ let subst1_named_decl = subst1_decl
 let rec thin_val = function
   | [] -> []
   | (((id,{ sit = v }) as s)::tl) when isVar v ->
-      if Int.equal (id_ord id (destVar v)) 0 then thin_val tl else s::(thin_val tl)
+      if Int.equal (Id.compare id (destVar v)) 0 then thin_val tl else s::(thin_val tl)
   | h::tl -> h::(thin_val tl)
 
 (* (replace_vars sigma M) applies substitution sigma to term M *)
@@ -1433,7 +1433,7 @@ let hcons_constr =
      hcons_ind,
      hcons_con,
      hcons_name,
-     hcons_ident)
+     Id.hcons)
 
 let hcons_types = hcons_constr
 

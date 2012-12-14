@@ -6,9 +6,6 @@ open Names
 open Decl_kinds
 open Misctypes
 
-(* Ocaml 3.06 Map.S does not handle is_empty *)
-let idmap_is_empty m = m = Idmap.empty
-
 (*
    Some basic functions to rebuild glob_constr
    In each of them the location is Loc.ghost
@@ -119,7 +116,7 @@ let rec glob_make_or_list = function
 let remove_name_from_mapping mapping na =
   match na with
     | Anonymous -> mapping
-    | Name id -> Idmap.remove id mapping
+    | Name id -> Id.Map.remove id mapping
 
 let change_vars =
   let rec change_vars mapping rt =
@@ -128,7 +125,7 @@ let change_vars =
       | GVar(loc,id) ->
 	  let new_id =
 	    try
-	      Idmap.find id mapping
+	      Id.Map.find id mapping
 	    with Not_found -> id
 	  in
 	  GVar(loc,new_id)
@@ -187,8 +184,8 @@ let change_vars =
 	  GCast(loc,change_vars mapping b,
 		Miscops.map_cast_type (change_vars mapping) c)
   and change_vars_br mapping ((loc,idl,patl,res) as br) =
-    let new_mapping = List.fold_right Idmap.remove idl mapping in
-    if idmap_is_empty new_mapping
+    let new_mapping = List.fold_right Id.Map.remove idl mapping in
+    if Id.Map.is_empty new_mapping
     then br
     else (loc,idl,patl,change_vars new_mapping res)
   in
@@ -200,27 +197,27 @@ let rec alpha_pat excluded pat =
   match pat with
     | PatVar(loc,Anonymous) ->
 	let new_id = Indfun_common.fresh_id excluded "_x" in
-	PatVar(loc,Name new_id),(new_id::excluded),Idmap.empty
+	PatVar(loc,Name new_id),(new_id::excluded),Id.Map.empty
     | PatVar(loc,Name id) ->
 	if List.mem id excluded
 	then
 	  let new_id = Namegen.next_ident_away id excluded in
 	  PatVar(loc,Name new_id),(new_id::excluded),
-	(Idmap.add id new_id Idmap.empty)
-	else pat,excluded,Idmap.empty
+	(Id.Map.add id new_id Id.Map.empty)
+	else pat,excluded,Id.Map.empty
     | PatCstr(loc,constr,patl,na) ->
 	let new_na,new_excluded,map =
 	  match na with
 	    | Name id when List.mem id excluded ->
 		let new_id = Namegen.next_ident_away id excluded in
-		Name new_id,new_id::excluded, Idmap.add id new_id Idmap.empty
-	    | _ -> na,excluded,Idmap.empty
+		Name new_id,new_id::excluded, Id.Map.add id new_id Id.Map.empty
+	    | _ -> na,excluded,Id.Map.empty
 	in
 	let new_patl,new_excluded,new_map =
 	  List.fold_left
 	    (fun (patl,excluded,map) pat ->
 	       let new_pat,new_excluded,new_map = alpha_pat excluded pat in
-	       (new_pat::patl,new_excluded,Idmap.fold Idmap.add new_map map)
+	       (new_pat::patl,new_excluded,Id.Map.fold Id.Map.add new_map map)
 	    )
 	    ([],new_excluded,map)
 	    patl
@@ -232,9 +229,9 @@ let alpha_patl excluded patl  =
     List.fold_left
       (fun (patl,excluded,map) pat ->
 	 let new_pat,new_excluded,new_map = alpha_pat excluded pat in
-	 new_pat::patl,new_excluded,(Idmap.fold Idmap.add new_map map)
+	 new_pat::patl,new_excluded,(Id.Map.fold Id.Map.add new_map map)
       )
-      ([],excluded,Idmap.empty)
+      ([],excluded,Id.Map.empty)
       patl
   in
   (List.rev patl,new_excluded,map)
@@ -266,7 +263,7 @@ let rec alpha_rt excluded rt =
     match rt with
       | GRef _ | GVar _ | GEvar _ | GPatVar _ -> rt
       | GLambda(loc,Anonymous,k,t,b) ->
-	  let new_id = Namegen.next_ident_away (id_of_string "_x") excluded in
+	  let new_id = Namegen.next_ident_away (Id.of_string "_x") excluded in
 	  let new_excluded = new_id :: excluded in
 	  let new_t = alpha_rt new_excluded t in
 	  let new_b = alpha_rt new_excluded b in
@@ -285,7 +282,7 @@ let rec alpha_rt excluded rt =
 	  if new_id = id
 	  then t,b
 	  else
-	    let replace = change_vars (Idmap.add id new_id Idmap.empty) in
+	    let replace = change_vars (Id.Map.add id new_id Id.Map.empty) in
 	    (t,replace b)
 	in
 	let new_excluded = new_id::excluded in
@@ -299,7 +296,7 @@ let rec alpha_rt excluded rt =
 	  if new_id = id
 	  then t,b
 	  else
-	    let replace = change_vars (Idmap.add id new_id Idmap.empty) in
+	    let replace = change_vars (Id.Map.add id new_id Id.Map.empty) in
 	    (t,replace b)
 	in
 	let new_t = alpha_rt new_excluded t in
@@ -311,7 +308,7 @@ let rec alpha_rt excluded rt =
 	  if new_id = id
 	  then t,b
 	  else
-	    let replace = change_vars (Idmap.add id new_id Idmap.empty) in
+	    let replace = change_vars (Id.Map.add id new_id Id.Map.empty) in
 	    (t,replace b)
 	in
 	let new_excluded = new_id::excluded in
@@ -332,14 +329,14 @@ let rec alpha_rt excluded rt =
 		     then
 		       na::nal,id::excluded,mapping
 		     else
-		       (Name new_id)::nal,id::excluded,(Idmap.add id new_id mapping)
+		       (Name new_id)::nal,id::excluded,(Id.Map.add id new_id mapping)
 	    )
-	    ([],excluded,Idmap.empty)
+	    ([],excluded,Id.Map.empty)
 	    nal
 	in
 	let new_nal = List.rev rev_new_nal in
 	let new_rto,new_t,new_b =
-	  if idmap_is_empty mapping
+	  if Id.Map.is_empty mapping
 	  then rto,t,b
 	  else let replace = change_vars mapping in
 	  (Option.map replace rto, t,replace b)
@@ -387,14 +384,14 @@ and alpha_br excluded (loc,ids,patl,res) =
 let is_free_in id =
   let rec is_free_in = function
     | GRef _ ->  false
-    | GVar(_,id') -> id_ord id' id == 0
+    | GVar(_,id') -> Id.compare id' id == 0
     | GEvar _ -> false
     | GPatVar _ -> false
     | GApp(_,rt,rtl) -> List.exists is_free_in (rt::rtl)
     | GLambda(_,n,_,t,b) | GProd(_,n,_,t,b) | GLetIn(_,n,t,b) ->
 	let check_in_b =
 	  match n with
-	    | Name id' -> id_ord id' id <> 0
+	    | Name id' -> Id.compare id' id <> 0
 	    | _ -> true
 	in
 	is_free_in t || (check_in_b && is_free_in b)
@@ -451,7 +448,7 @@ let replace_var_by_term x_id term =
   let rec replace_var_by_pattern rt =
     match rt with
       | GRef _ -> rt
-      | GVar(_,id) when id_ord id x_id == 0 -> term
+      | GVar(_,id) when Id.compare id x_id == 0 -> term
       | GVar _ -> rt
       | GEvar _ -> rt
       | GPatVar _ -> rt
@@ -460,7 +457,7 @@ let replace_var_by_term x_id term =
 	       replace_var_by_pattern rt',
 	       List.map replace_var_by_pattern rtl
 	      )
-      | GLambda(_,Name id,_,_,_) when id_ord id x_id == 0 -> rt
+      | GLambda(_,Name id,_,_,_) when Id.compare id x_id == 0 -> rt
       | GLambda(loc,name,k,t,b) ->
 	  GLambda(loc,
 		  name,
@@ -468,7 +465,7 @@ let replace_var_by_term x_id term =
 		  replace_var_by_pattern t,
 		  replace_var_by_pattern b
 		 )
-      | GProd(_,Name id,_,_,_) when id_ord id x_id == 0 -> rt
+      | GProd(_,Name id,_,_,_) when Id.compare id x_id == 0 -> rt
       | GProd(loc,name,k,t,b) ->
 	  GProd(loc,
 		  name,
@@ -476,7 +473,7 @@ let replace_var_by_term x_id term =
 		  replace_var_by_pattern t,
 		  replace_var_by_pattern b
 		 )
-      | GLetIn(_,Name id,_,_) when id_ord id x_id == 0 -> rt
+      | GLetIn(_,Name id,_,_) when Id.compare id x_id == 0 -> rt
       | GLetIn(loc,name,def,b) ->
 	  GLetIn(loc,
 		 name,
@@ -512,7 +509,7 @@ let replace_var_by_term x_id term =
 	  GCast(loc,replace_var_by_pattern b,
 		Miscops.map_cast_type replace_var_by_pattern c)
   and replace_var_by_pattern_br ((loc,idl,patl,res) as br) =
-    if List.exists (fun id -> id_ord id x_id == 0) idl
+    if List.exists (fun id -> Id.compare id x_id == 0) idl
     then br
     else (loc,idl,patl,replace_var_by_pattern res)
   in
@@ -573,13 +570,13 @@ let eq_cases_pattern pat1 pat2 =
 let ids_of_pat =
   let rec ids_of_pat ids = function
     | PatVar(_,Anonymous) -> ids
-    | PatVar(_,Name id) -> Idset.add id ids
+    | PatVar(_,Name id) -> Id.Set.add id ids
     | PatCstr(_,_,patl,_) -> List.fold_left ids_of_pat ids patl
   in
-  ids_of_pat Idset.empty
+  ids_of_pat Id.Set.empty
 
 let id_of_name = function
-  | Names.Anonymous -> id_of_string "x"
+  | Names.Anonymous -> Id.of_string "x"
   | Names.Name x -> x
 
 (* TODO: finish Rec caes *)
@@ -604,7 +601,7 @@ let ids_of_glob_constr c =
       | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> []
   in
   (* build the set *)
-  List.fold_left (fun acc x -> Idset.add x acc) Idset.empty (ids_of_glob_constr [] c)
+  List.fold_left (fun acc x -> Id.Set.add x acc) Id.Set.empty (ids_of_glob_constr [] c)
 
 
 
@@ -678,7 +675,7 @@ let expand_as =
     match pat with
       | PatVar _ -> map
       | PatCstr(_,_,patl,Name id) ->
-	  Idmap.add id (pattern_to_term pat) (List.fold_left add_as map patl)
+	  Id.Map.add id (pattern_to_term pat) (List.fold_left add_as map patl)
       | PatCstr(_,_,patl,_) -> List.fold_left add_as map patl
   in
   let rec expand_as map rt =
@@ -687,7 +684,7 @@ let expand_as =
       | GVar(_,id) ->
 	  begin
 	    try
-	      Idmap.find id map
+	      Id.Map.find id map
 	    with Not_found -> rt
 	  end
       | GApp(loc,f,args) -> GApp(loc,expand_as map f,List.map (expand_as map) args)
@@ -710,4 +707,4 @@ let expand_as =
   and expand_as_br map (loc,idl,cpl,rt) =
     (loc,idl,cpl, expand_as (List.fold_left add_as map cpl) rt)
   in
-  expand_as Idmap.empty
+  expand_as Id.Map.empty

@@ -34,7 +34,7 @@ type 'constr context_entry =
                                (* is not present in the DTD, but is needed   *)
                                (* to use Coq functions during exportation.   *)
 
-type 'constr hypothesis = identifier * 'constr context_entry
+type 'constr hypothesis = Id.t * 'constr context_entry
 type context = constr hypothesis list
 
 type conjecture = existential_key * context * constr
@@ -57,13 +57,13 @@ type obj =
     inductiveType list *                           (* inductive types ,      *)
     params * int                                   (*  parameters,n ind. pars*)
 and inductiveType =
- identifier * bool * constr *                 (* typename, inductive, arity *)
+ Id.t * bool * constr *                 (* typename, inductive, arity *)
   constructor list                            (*  constructors              *)
 and constructor =
- identifier * constr                          (* id, type *)
+ Id.t * constr                          (* id, type *)
 
 type aconstr =
-  | ARel       of id * int * id * identifier
+  | ARel       of id * int * id * Id.t
   | AVar       of id * uri
   | AEvar      of id * existential_key * aconstr list
   | ASort      of id * sorts
@@ -79,9 +79,9 @@ type aconstr =
   | AFix       of id * int * ainductivefun list
   | ACoFix     of id * int * acoinductivefun list
 and ainductivefun =
- id * identifier * int * aconstr * aconstr
+ id * Id.t * int * aconstr * aconstr
 and acoinductivefun =
- id * identifier * aconstr * aconstr
+ id * Id.t * aconstr * aconstr
 and explicit_named_substitution = id option * (uri * aconstr) list
 
 type acontext = (id * aconstr hypothesis) list
@@ -102,7 +102,7 @@ type aobj =
     anninductiveType list *                        (* inductive types ,      *)
     params * int                                   (*  parameters,n ind. pars*)
 and anninductiveType =
- id * identifier * bool * aconstr *           (* typename, inductive, arity *)
+ id * Id.t * bool * aconstr *           (* typename, inductive, arity *)
   annconstructor list                         (*  constructors              *)
 and annconstructor =
- identifier * aconstr                         (* id, type *)
+ Id.t * aconstr                         (* id, type *)

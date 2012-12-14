@@ -288,7 +288,7 @@ let coq_arrow_pattern = PATTERN [ ?X1 -> ?X2 ]
 let match_arrow_pattern t =
   match matches coq_arrow_pattern t with
     | [(m1,arg);(m2,mind)] ->
-      assert (id_eq m1 meta1 && id_eq m2 meta2); (arg, mind)
+      assert (Id.equal m1 meta1 && Id.equal m2 meta2); (arg, mind)
     | _ -> anomaly "Incorrect pattern matching"
 
 let match_with_nottype t =
@@ -368,10 +368,10 @@ let match_eq eqn eq_pat =
   let pat = try Lazy.force eq_pat with _ -> raise PatternMatchingFailure in
   match matches pat eqn with
     | [(m1,t);(m2,x);(m3,y)] ->
-	assert (id_eq m1 meta1 && id_eq m2 meta2 && id_eq m3 meta3);
+	assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
 	PolymorphicLeibnizEq (t,x,y)
     | [(m1,t);(m2,x);(m3,t');(m4,x')] ->
-        assert (id_eq m1 meta1 && id_eq m2 meta2 && id_eq m3 meta3 && id_eq m4 meta4);
+        assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3 && Id.equal m4 meta4);
 	HeterogenousEq (t,x,t',x')
     | _ -> anomaly "match_eq: an eq pattern should match 3 or 4 terms"
 
@@ -412,7 +412,7 @@ open Tacmach
 let match_eq_nf gls eqn eq_pat =
   match pf_matches gls (Lazy.force eq_pat) eqn with
     | [(m1,t);(m2,x);(m3,y)] ->
-        assert (id_eq m1 meta1 && id_eq m2 meta2 && id_eq m3 meta3);
+        assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
 	(t,pf_whd_betadeltaiota gls x,pf_whd_betadeltaiota gls y)
     | _ -> anomaly "match_eq: an eq pattern should match 3 terms"
 
@@ -432,7 +432,7 @@ let coq_exist_pattern = coq_ex_pattern_gen coq_exist_ref
 let match_sigma ex ex_pat =
   match matches (Lazy.force ex_pat) ex with
     | [(m1,a);(m2,p);(m3,car);(m4,cdr)] ->
-        assert (id_eq m1 meta1 && id_eq m2 meta2 && id_eq m3 meta3 && id_eq m4 meta4);
+        assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3 && Id.equal m4 meta4);
 	(a,p,car,cdr)
     | _ ->
 	anomaly "match_sigma: a successful sigma pattern should match 4 terms"

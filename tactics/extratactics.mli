@@ -8,8 +8,8 @@
 
 open Proof_type
 
-val discrHyp : Names.identifier -> tactic
-val injHyp : Names.identifier -> tactic
+val discrHyp : Names.Id.t -> tactic
+val injHyp : Names.Id.t -> tactic
 
 val refine_tac : Evd.open_constr -> tactic
 

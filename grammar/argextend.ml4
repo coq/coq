@@ -121,7 +121,7 @@ let possibly_empty_subentries loc (prods,act) =
   let bind_name p v e = match p with
     | None -> e
     | Some id ->
-        let s = Names.string_of_id id in <:expr< let $lid:s$ = $v$ in $e$ >> in
+        let s = Names.Id.to_string id in <:expr< let $lid:s$ = $v$ in $e$ >> in
   let rec aux = function
     | [] -> <:expr< let loc = $default_loc$ in let _ = loc = loc in $act$ >>
     | GramNonTerminal(_,OptArgType _,_,p) :: tl ->
@@ -130,7 +130,7 @@ let possibly_empty_subentries loc (prods,act) =
         bind_name p <:expr< [] >> (aux tl)
     | GramNonTerminal(_,(ExtraArgType _ as t),_,p) :: tl ->
         (* We check at runtime if extraarg s parses "epsilon" *)
-        let s = match p with None -> "_" | Some id -> Names.string_of_id id in
+        let s = match p with None -> "_" | Some id -> Names.Id.to_string id in
         <:expr< let $lid:s$ = match Genarg.default_empty_value $make_rawwit loc t$ with
           [ None -> raise Exit
           | Some v -> v ] in $aux tl$ >>
@@ -163,7 +163,7 @@ let make_act loc act pil =
   let rec make = function
     | [] -> <:expr< Pcoq.Gram.action (fun loc -> ($act$ : 'a)) >>
     | GramNonTerminal (_,t,_,Some p) :: tl ->
-	let p = Names.string_of_id p in
+	let p = Names.Id.to_string p in
 	<:expr<
           Pcoq.Gram.action
             (fun $lid:p$ ->
@@ -316,10 +316,10 @@ EXTEND
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let t, g = interp_entry_name false None e "" in
-	GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
+	GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let t, g = interp_entry_name false None e sep in
-	GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
+	GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
 	    Lexer.add_keyword s;

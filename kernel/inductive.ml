@@ -178,7 +178,7 @@ let instantiate_universes env ctx ar argsorts =
   (* This is a Type with constraints *)
  else Type level
 
-exception SingletonInductiveBecomesProp of identifier
+exception SingletonInductiveBecomesProp of Id.t
 
 let type_of_inductive_knowing_parameters ?(polyprop=true) env mip paramtyps =
   match mip.mind_arity with

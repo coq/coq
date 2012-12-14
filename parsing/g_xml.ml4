@@ -79,7 +79,7 @@ let get_xml_attr s al =
 
 (* Interpreting specific attributes *)
 
-let ident_of_cdata (loc,a) = id_of_string a
+let ident_of_cdata (loc,a) = Id.of_string a
 
 let uri_of_data s =
   let n = String.index s ':' in

@@ -63,6 +63,6 @@ val weaken_sort_scheme : sorts -> int -> constr -> types -> constr * types
 
 val lookup_eliminator : inductive -> sorts_family -> constr
 val elimination_suffix : sorts_family -> string
-val make_elimination_ident : identifier -> sorts_family -> identifier
+val make_elimination_ident : Id.t -> sorts_family -> Id.t
 
 val case_suffix : string

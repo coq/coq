@@ -198,7 +198,7 @@ let valid_buffer_loc ib dloc loc =
     from cycling. *)
 let make_prompt () =
   try
-    (Names.string_of_id (Pfedit.get_current_proof_name ())) ^ " < "
+    (Names.Id.to_string (Pfedit.get_current_proof_name ())) ^ " < "
   with _ ->
     "Coq < "
 
@@ -207,7 +207,7 @@ let make_prompt () =
   let l' = ref l in
   let res =
     while List.length !l' > 1 do
-      pl := !pl ^ "|" Names.string_of_id x;
+      pl := !pl ^ "|" Names.Id.to_string x;
       l':=List.tl !l'
     done in
   let last = try List.hd !l' with _ ->   in
@@ -228,7 +228,7 @@ let make_emacs_prompt() =
   let pending = Pfedit.get_all_proof_names() in
   let pendingprompt =
     List.fold_left
-      (fun acc x -> acc ^ (if String.is_empty acc then "" else "|") ^ Names.string_of_id x)
+      (fun acc x -> acc ^ (if String.is_empty acc then "" else "|") ^ Names.Id.to_string x)
       "" pending in
   let proof_info = if dpth >= 0 then string_of_int dpth else "0" in
   if !Flags.print_emacs then statnum ^ " |" ^ pendingprompt ^ "| " ^ proof_info ^ " < "

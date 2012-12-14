@@ -77,10 +77,10 @@ val term_expunge : signature -> ml_ident list * ml_ast -> ml_ast
 (*s Special identifiers. [dummy_name] is to be used for dead code
     and will be printed as [_] in concrete (Caml) code. *)
 
-val anonymous_name : identifier
-val dummy_name : identifier
-val id_of_name : name -> identifier
-val id_of_mlid : ml_ident -> identifier
+val anonymous_name : Id.t
+val dummy_name : Id.t
+val id_of_name : name -> Id.t
+val id_of_mlid : ml_ident -> Id.t
 val tmp_id : ml_ident -> ml_ident
 
 (*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns

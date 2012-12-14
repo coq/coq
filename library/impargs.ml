@@ -264,7 +264,7 @@ type force_inference = bool (* true = always infer, never turn into evar/subgoal
 
 type implicit_status =
     (* None = Not implicit *)
-    (identifier * implicit_explanation * (maximal_insertion * force_inference)) option
+    (Id.t * implicit_explanation * (maximal_insertion * force_inference)) option
 
 type implicit_side_condition = DefaultImpArgs | LessArgsThan of int
 
@@ -326,7 +326,7 @@ let check_correct_manual_implicits autoimps l =
   List.iter (function
     | ExplByName id,(b,fi,forced) ->
 	if not forced then
-	  error ("Wrong or non-dependent implicit argument name: "^(string_of_id id)^".")
+	  error ("Wrong or non-dependent implicit argument name: "^(Id.to_string id)^".")
     | ExplByPos (i,_id),_t ->
 	if i<1 or i>List.length autoimps then
 	  error ("Bad implicit argument number: "^(string_of_int i)^".")
@@ -340,7 +340,7 @@ let set_manual_implicits env flags enriching autoimps l =
     try
       let (id, (b, fi, fo)), l' = assoc_by_pos k l in
 	if fo then
-	  let id = match id with Some id -> id | None -> id_of_string ("arg_" ^ string_of_int k) in
+	  let id = match id with Some id -> id | None -> Id.of_string ("arg_" ^ string_of_int k) in
 	    l', Some (id,Manual,(b,fi))
 	else l, None
     with Not_found -> l, None

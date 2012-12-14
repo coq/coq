@@ -38,7 +38,7 @@ let interp_fields_evars evars env impls_env nots l =
       let impls =
 	match i with
 	| Anonymous -> impls
-	| Name id -> Idmap.add id (compute_internalization_data env Constrintern.Method t' impl) impls
+	| Name id -> Id.Map.add id (compute_internalization_data env Constrintern.Method t' impl) impls
       in
       let d = (i,b',t') in
       List.iter (Metasyntax.set_notation_for_interpretation impls) no;
@@ -90,14 +90,14 @@ let degenerate_decl (na,b,t) =
     | Some b -> (id, Entries.LocalDef b)
 
 type record_error =
-  | MissingProj of identifier * identifier list
-  | BadTypedProj of identifier * env * Type_errors.type_error
+  | MissingProj of Id.t * Id.t list
+  | BadTypedProj of Id.t * env * Type_errors.type_error
 
 let warning_or_error coe indsp err =
   let st = match err with
     | MissingProj (fi,projs) ->
 	let s,have = if List.length projs > 1 then "s","were" else "","was" in
-        (str(string_of_id fi) ++
+        (str(Id.to_string fi) ++
 	   strbrk" cannot be defined because the projection" ++ str s ++ spc () ++
            prlist_with_sep pr_comma pr_id projs ++ spc () ++ str have ++
 	   strbrk " not defined.")

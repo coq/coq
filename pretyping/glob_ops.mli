@@ -38,8 +38,8 @@ val map_glob_constr_left_to_right :
 
 val fold_glob_constr : ('a -> glob_constr -> 'a) -> 'a -> glob_constr -> 'a
 val iter_glob_constr : (glob_constr -> unit) -> glob_constr -> unit
-val occur_glob_constr : identifier -> glob_constr -> bool
-val free_glob_vars : glob_constr -> identifier list
+val occur_glob_constr : Id.t -> glob_constr -> bool
+val free_glob_vars : glob_constr -> Id.t list
 val loc_of_glob_constr : glob_constr -> Loc.t
 
 (** Conversion from glob_constr to cases pattern, if possible

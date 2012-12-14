@@ -24,11 +24,11 @@ let get_daimon_flag () = !daimon_flag
 open Store.Field
 
 type split_tree=
-    Skip_patt of Idset.t * split_tree
-  | Split_patt of Idset.t * inductive *
-		(bool array * (Idset.t * split_tree) option) array
+    Skip_patt of Id.Set.t * split_tree
+  | Split_patt of Id.Set.t * inductive *
+		(bool array * (Id.Set.t * split_tree) option) array
   | Close_patt of split_tree
-  | End_patt of (identifier * (int * int))
+  | End_patt of (Id.t * (int * int))
 
 type elim_kind =
     EK_dep of split_tree
@@ -48,7 +48,7 @@ type per_info =
      per_wf:recpath}
 
 type stack_info =
-    Per of Decl_expr.elim_type * per_info * elim_kind * identifier list
+    Per of Decl_expr.elim_type * per_info * elim_kind * Id.t list
   | Suppose_case
   | Claim
   | Focus_claim

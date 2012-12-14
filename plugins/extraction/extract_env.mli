@@ -15,7 +15,7 @@ open Globnames
 val simple_extraction : reference -> unit
 val full_extraction : string option -> reference list -> unit
 val separate_extraction : reference list -> unit
-val extraction_library : bool -> identifier -> unit
+val extraction_library : bool -> Id.t -> unit
 
 (* For debug / external output via coqtop.byte + Drop : *)
 

@@ -27,18 +27,18 @@ type goal = Goal.goal
 type tactic = goal sigma -> goal list sigma 
 
 type prim_rule =
-  | Intro of identifier
-  | Cut of bool * bool * identifier * types
-  | FixRule of identifier * int * (identifier * int * constr) list * int
-  | Cofix of identifier * (identifier * constr) list * int
+  | Intro of Id.t
+  | Cut of bool * bool * Id.t * types
+  | FixRule of Id.t * int * (Id.t * int * constr) list * int
+  | Cofix of Id.t * (Id.t * constr) list * int
   | Refine of constr
   | Convert_concl of types * cast_kind
   | Convert_hyp of named_declaration
-  | Thin of identifier list
-  | ThinBody of identifier list
-  | Move of bool * identifier * identifier move_location
-  | Order of identifier list
-  | Rename of identifier * identifier
+  | Thin of Id.t list
+  | ThinBody of Id.t list
+  | Move of bool * Id.t * Id.t move_location
+  | Order of Id.t list
+  | Rename of Id.t * Id.t
   | Change_evars
 
 (** Nowadays, the only rules we'll consider are the primitive rules *)
@@ -51,9 +51,9 @@ type ltac_call_kind =
   | LtacNotationCall of string
   | LtacNameCall of ltac_constant
   | LtacAtomCall of glob_atomic_tactic_expr
-  | LtacVarCall of identifier * glob_tactic_expr
+  | LtacVarCall of Id.t * glob_tactic_expr
   | LtacConstrInterp of glob_constr *
-      (extended_patvar_map * (identifier * identifier option) list)
+      (extended_patvar_map * (Id.t * Id.t option) list)
 
 type ltac_trace = (int * Loc.t * ltac_call_kind) list
 

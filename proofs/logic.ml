@@ -34,7 +34,7 @@ type refiner_error =
 
   (* Errors raised by the tactics *)
   | IntroNeedsProduct
-  | DoesNotOccurIn of constr * identifier
+  | DoesNotOccurIn of constr * Id.t
 
 exception RefinerError of refiner_error
 
@@ -58,7 +58,7 @@ let rec catchable_exception = function
   | _ -> false
 
 let error_no_such_hypothesis id =
-  error ("No such hypothesis: " ^ string_of_id id ^ ".")
+  error ("No such hypothesis: " ^ Id.to_string id ^ ".")
 
 (* Tells if the refiner should check that the submitted rules do not
    produce invalid subgoals *)
@@ -103,16 +103,16 @@ let recheck_typability (what,id) env sigma t =
   with _ ->
     let s = match what with
       | None -> "the conclusion"
-      | Some id -> "hypothesis "^(string_of_id id) in
+      | Some id -> "hypothesis "^(Id.to_string id) in
     error
-      ("The correctness of "^s^" relies on the body of "^(string_of_id id))
+      ("The correctness of "^s^" relies on the body of "^(Id.to_string id))
 
 let remove_hyp_body env sigma id =
   let sign =
     apply_to_hyp_and_dependent_on (named_context_val env) id
       (fun (_,c,t) _ ->
 	match c with
-	| None -> error ((string_of_id id)^" is not a local definition.")
+	| None -> error ((Id.to_string id)^" is not a local definition.")
 	| Some c ->(id,None,t))
       (fun (id',c,t as d) sign ->
 	(if !check then
@@ -134,36 +134,36 @@ let remove_hyp_body env sigma id =
 (* pas echangees. Choix: les hyps mentionnees ne peuvent qu'etre *)
 (* reculees par rapport aux autres (faire le contraire!) *)
 
-let mt_q = (Idmap.empty,[])
+let mt_q = (Id.Map.empty,[])
 let push_val y = function
     (_,[] as q) -> q
-  | (m, (x,l)::q) -> (m, (x,Idset.add y l)::q)
+  | (m, (x,l)::q) -> (m, (x,Id.Set.add y l)::q)
 let push_item x v (m,l) =
-  (Idmap.add x v m, (x,Idset.empty)::l)
-let mem_q x (m,_) = Idmap.mem x m
+  (Id.Map.add x v m, (x,Id.Set.empty)::l)
+let mem_q x (m,_) = Id.Map.mem x m
 let find_q x (m,q) =
-  let v = Idmap.find x m in
-  let m' = Idmap.remove x m in
+  let v = Id.Map.find x m in
+  let m' = Id.Map.remove x m in
   let rec find accs acc = function
       [] -> raise Not_found
     | [(x',l)] ->
-        if id_eq x x' then ((v,Idset.union accs l),(m',List.rev acc))
+        if Id.equal x x' then ((v,Id.Set.union accs l),(m',List.rev acc))
         else raise Not_found
     | (x',l as i)::((x'',l'')::q as itl) ->
-        if id_eq x x' then
-          ((v,Idset.union accs l),
-           (m',List.rev acc@(x'',Idset.add x (Idset.union l l''))::q))
-        else find (Idset.union l accs) (i::acc) itl in
-  find Idset.empty [] q
+        if Id.equal x x' then
+          ((v,Id.Set.union accs l),
+           (m',List.rev acc@(x'',Id.Set.add x (Id.Set.union l l''))::q))
+        else find (Id.Set.union l accs) (i::acc) itl in
+  find Id.Set.empty [] q
 
 let occur_vars_in_decl env hyps d =
-  if Idset.is_empty hyps then false else
+  if Id.Set.is_empty hyps then false else
     let ohyps = global_vars_set_of_decl env d in
-    Idset.exists (fun h -> Idset.mem h ohyps) hyps
+    Id.Set.exists (fun h -> Id.Set.mem h ohyps) hyps
 
 let reorder_context env sign ord =
-  let ords = List.fold_right Idset.add ord Idset.empty in
-  if not (Int.equal (List.length ord) (Idset.cardinal ords)) then
+  let ords = List.fold_right Id.Set.add ord Id.Set.empty in
+  if not (Int.equal (List.length ord) (Id.Set.cardinal ords)) then
     error "Order list has duplicates";
   let rec step ord expected ctxt_head moved_hyps ctxt_tail =
     match ord with
@@ -175,15 +175,15 @@ let reorder_context env sign ord =
               (str "Cannot move declaration " ++ pr_id top ++ spc() ++
               str "before " ++
               pr_sequence pr_id
-                (Idset.elements (Idset.inter h
+                (Id.Set.elements (Id.Set.inter h
                   (global_vars_set_of_decl env d))));
           step ord' expected ctxt_head mh (d::ctxt_tail)
       | _ ->
           (match ctxt_head with
             | [] -> error_no_such_hypothesis (List.hd ord)
             | (x,_,_ as d) :: ctxt ->
-                if Idset.mem x expected then
-                  step ord (Idset.remove x expected)
+                if Id.Set.mem x expected then
+                  step ord (Id.Set.remove x expected)
                     ctxt (push_item x d moved_hyps) ctxt_tail
                 else
                   step ord expected
@@ -200,7 +200,7 @@ let check_decl_position env sign (x,_,_ as d) =
   let needed = global_vars_set_of_decl env d in
   let deps = dependency_closure env (named_context_of_val sign) needed in
   if List.mem x deps then
-    error ("Cannot create self-referring hypothesis "^string_of_id x);
+    error ("Cannot create self-referring hypothesis "^Id.to_string x);
   x::deps
 
 (* Auxiliary functions for primitive MOVE tactic
@@ -212,8 +212,8 @@ let check_decl_position env sign (x,_,_ as d) =
  * If [with_dep] then dependent hypotheses are moved accordingly. *)
 
 let move_location_eq m1 m2 = match m1, m2 with
-| MoveAfter id1, MoveAfter id2 -> id_eq id1 id2
-| MoveBefore id1, MoveBefore id2 -> id_eq id1 id2
+| MoveAfter id1, MoveAfter id2 -> Id.equal id1 id2
+| MoveBefore id1, MoveBefore id2 -> Id.equal id1 id2
 | MoveLast, MoveLast -> true
 | MoveFirst, MoveFirst -> true
 | _ -> false
@@ -221,7 +221,7 @@ let move_location_eq m1 m2 = match m1, m2 with
 let rec get_hyp_after h = function
   | [] -> error_no_such_hypothesis h
   | (hyp,_,_) :: right ->
-      if id_eq hyp h then
+      if Id.equal hyp h then
 	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveFirst
       else
        get_hyp_after h right
@@ -230,11 +230,11 @@ let split_sign hfrom hto l =
   let rec splitrec left toleft = function
     | [] -> error_no_such_hypothesis hfrom
     | (hyp,c,typ) as d :: right ->
-      	if id_eq hyp hfrom then
+      	if Id.equal hyp hfrom then
 	  (left,right,d, toleft || move_location_eq hto MoveLast)
       	else
           let is_toleft = match hto with
-          | MoveAfter h' | MoveBefore h' -> id_eq hyp h'
+          | MoveAfter h' | MoveBefore h' -> Id.equal hyp h'
           | _ -> false
           in
 	  splitrec (d::left) (toleft || is_toleft)
@@ -471,9 +471,9 @@ let convert_hyp sign sigma (id,b,bt as d) =
       (fun _ (_,c,ct) _ ->
         let env = Global.env_of_context sign in
         if !check && not (is_conv env sigma bt ct) then
-	  error ("Incorrect change of the type of "^(string_of_id id)^".");
+	  error ("Incorrect change of the type of "^(Id.to_string id)^".");
         if !check && not (Option.equal (is_conv env sigma) b c) then
-	  error ("Incorrect change of the body of "^(string_of_id id)^".");
+	  error ("Incorrect change of the body of "^(Id.to_string id)^".");
        if !check then reorder := check_decl_position env sign d;
        d) in
   reorder_val_context env sign' !reorder
@@ -495,7 +495,7 @@ let prim_refiner r sigma goal =
     (* Logical rules *)
     | Intro id ->
     	if !check && mem_named_context id (named_context_of_val sign) then
-	  error ("Variable " ^ string_of_id id ^ " is already declared.");
+	  error ("Variable " ^ Id.to_string id ^ " is already declared.");
         (match kind_of_term (strip_outer_cast cl) with
 	   | Prod (_,c1,b) ->
 	       let (sg,ev,sigma) = mk_goal (push_named_context_val (id,None,c1) sign)
@@ -524,7 +524,7 @@ let prim_refiner r sigma goal =
 	      cl,sigma
 	  else
             (if !check && mem_named_context id (named_context_of_val sign) then
-	      error ("Variable " ^ string_of_id id ^ " is already declared.");
+	      error ("Variable " ^ Id.to_string id ^ " is already declared.");
 	     push_named_context_val (id,None,t) sign,cl,sigma) in
         let (sg2,ev2,sigma) = 
 	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
@@ -556,7 +556,7 @@ let prim_refiner r sigma goal =
 		       "mutual inductive declaration.");
 	      if !check && mem_named_context f (named_context_of_val sign) then
 		error
-		  ("Name "^string_of_id f^" already used in the environment");
+		  ("Name "^Id.to_string f^" already used in the environment");
 	      mk_sign (push_named_context_val (f,None,ar) sign) oth
 	  | [] ->
 	      Goal.list_map (fun sigma (_,_,c) ->
@@ -679,9 +679,9 @@ let prim_refiner r sigma goal =
         ([gl], sigma)
 
     | Rename (id1,id2) ->
-        if !check && not (id_eq id1 id2) &&
+        if !check && not (Id.equal id1 id2) &&
 	  List.mem id2 (ids_of_named_context (named_context_of_val sign)) then
-          error ((string_of_id id2)^" is already used.");
+          error ((Id.to_string id2)^" is already used.");
         let sign' = rename_hyp id1 id2 sign in
         let cl' = replace_vars [id1,mkVar id2] cl in
 	let (gl,ev,sigma) = mk_goal sign' cl' in

@@ -238,7 +238,7 @@ let build_projection intype outtype (cstr:constructor) special default gls=
   let pred=mkLambda(Anonymous,intype,outtype) in
   let case_info=make_case_info (pf_env gls) ind RegularStyle in
   let body= mkCase(case_info, pred, casee, branches) in
-  let id=pf_get_new_id (id_of_string "t") gls in
+  let id=pf_get_new_id (Id.of_string "t") gls in
     mkLambda(Name id,intype,body)
 
 (* generate an adhoc tactic following the proof tree  *)
@@ -275,7 +275,7 @@ let rec proof_tac p gls =
 	let typf = Termops.refresh_universes (pf_type_of gls tf1) in
 	let typx = Termops.refresh_universes (pf_type_of gls tx1) in
 	let typfx = Termops.refresh_universes (pf_type_of gls (mkApp (tf1,[|tx1|]))) in
-	let id = pf_get_new_id (id_of_string "f") gls in
+	let id = pf_get_new_id (Id.of_string "f") gls in
 	let appx1 = mkLambda(Name id,typf,mkApp(mkRel 1,[|tx1|])) in
 	let lemma1 =
 	  mkApp(Lazy.force _f_equal,
@@ -316,7 +316,7 @@ let refute_tac c t1 t2 p gls =
   let neweq=
     mkApp(Lazy.force _eq,
 	  [|intype;tt1;tt2|]) in
-  let hid=pf_get_new_id (id_of_string "Heq") gls in
+  let hid=pf_get_new_id (Id.of_string "Heq") gls in
   let false_t=mkApp (c,[|mkVar hid|]) in
     tclTHENS (assert_tac (Name hid) neweq)
       [proof_tac p; simplest_elim false_t] gls
@@ -325,8 +325,8 @@ let convert_to_goal_tac c t1 t2 p gls =
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
   let sort = Termops.refresh_universes (pf_type_of gls tt2) in
   let neweq=mkApp(Lazy.force _eq,[|sort;tt1;tt2|]) in
-  let e=pf_get_new_id (id_of_string "e") gls in
-  let x=pf_get_new_id (id_of_string "X") gls in
+  let e=pf_get_new_id (Id.of_string "e") gls in
+  let x=pf_get_new_id (Id.of_string "X") gls in
   let identity=mkLambda (Name x,sort,mkRel 1) in
   let endt=mkApp (Lazy.force _eq_rect,
 		  [|sort;tt1;identity;c;tt2;mkVar e|]) in
@@ -335,7 +335,7 @@ let convert_to_goal_tac c t1 t2 p gls =
 
 let convert_to_hyp_tac c1 t1 c2 t2 p gls =
   let tt2=constr_of_term t2 in
-  let h=pf_get_new_id (id_of_string "H") gls in
+  let h=pf_get_new_id (Id.of_string "H") gls in
   let false_t=mkApp (c2,[|mkVar h|]) in
     tclTHENS (assert_tac (Name h) tt2)
       [convert_to_goal_tac c1 t1 t2 p;
@@ -346,13 +346,13 @@ let discriminate_tac cstr p gls =
   let intype = Termops.refresh_universes (pf_type_of gls t1) in
   let concl=pf_concl gls in
   let outsort = mkType (Termops.new_univ ()) in
-  let xid=pf_get_new_id (id_of_string "X") gls in
-  let tid=pf_get_new_id (id_of_string "t") gls in
+  let xid=pf_get_new_id (Id.of_string "X") gls in
+  let tid=pf_get_new_id (Id.of_string "t") gls in
   let identity=mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in
   let trivial=pf_type_of gls identity in
   let outtype = mkType (Termops.new_univ ()) in
   let pred=mkLambda(Name xid,outtype,mkRel 1) in
-  let hid=pf_get_new_id (id_of_string "Heq") gls in
+  let hid=pf_get_new_id (Id.of_string "Heq") gls in
   let proj=build_projection intype outtype cstr trivial concl gls in
   let injt=mkApp (Lazy.force _f_equal,
 		  [|intype;outtype;proj;t1;t2;mkVar hid|]) in

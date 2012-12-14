@@ -243,8 +243,8 @@ let compute_canonical_projections (con,ind) =
 		     ((ConstRef proji_sp, patt, n, args) :: l)
 		 with Not_found ->
                    if Flags.is_verbose () then
-                     (let con_pp = Nametab.pr_global_env Idset.empty (ConstRef con)
-                      and proji_sp_pp = Nametab.pr_global_env Idset.empty (ConstRef proji_sp) in
+                     (let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con)
+                      and proji_sp_pp = Nametab.pr_global_env Id.Set.empty (ConstRef proji_sp) in
 		      msg_warning (strbrk "No global reference exists for projection value"
                                    ++ Termops.print_constr t ++ strbrk " in instance "  
                                    ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it."));
@@ -259,7 +259,7 @@ let compute_canonical_projections (con,ind) =
     comp
 
 let pr_cs_pattern = function
-    Const_cs c -> Nametab.pr_global_env Idset.empty c
+    Const_cs c -> Nametab.pr_global_env Id.Set.empty c
   | Prod_cs -> str "_ -> _"
   | Default_cs -> str "_"
   | Sort_cs s -> Termops.pr_sort_family s
@@ -277,7 +277,7 @@ let open_canonical_structure i (_,o) =
             if Flags.is_verbose () then
               let old_can_s = (Termops.print_constr cs.o_DEF)
               and new_can_s = (Termops.print_constr s.o_DEF) in
-              let prj = (Nametab.pr_global_env Idset.empty proj)
+              let prj = (Nametab.pr_global_env Id.Set.empty proj)
               and hd_val = (pr_cs_pattern cs_pat) in
               msg_warning (strbrk "Ignoring canonical projection to " ++ hd_val
                              ++ strbrk " by " ++ prj ++ strbrk " in "

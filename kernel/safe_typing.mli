@@ -31,10 +31,10 @@ val is_empty : safe_environment -> bool
 
 (** Adding and removing local declarations (Local or Variables) *)
 val push_named_assum :
-  identifier * types -> safe_environment ->
+  Id.t * types -> safe_environment ->
     Univ.constraints * safe_environment
 val push_named_def :
-  identifier * constr * types option -> safe_environment ->
+  Id.t * constr * types option -> safe_environment ->
     Univ.constraints * safe_environment
 
 (** Adding global axioms or definitions *)

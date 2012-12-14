@@ -53,7 +53,7 @@ let pf_get_hyp gls id =
   try
     Sign.lookup_named id (pf_hyps gls)
   with Not_found ->
-    error ("No such hypothesis: " ^ (string_of_id id))
+    error ("No such hypothesis: " ^ (Id.to_string id))
 
 let pf_get_hyp_typ gls id =
   let (_,_,ty)= (pf_get_hyp gls id) in
@@ -72,7 +72,7 @@ let pf_get_new_ids ids gls =
 
 let pf_global gls id = Constrintern.construct_reference (pf_hyps gls) id
 
-let pf_parse_const gls = compose (pf_global gls) id_of_string
+let pf_parse_const gls = compose (pf_global gls) Id.of_string
 
 let pf_reduction_of_red_expr gls re c =
   (fst (reduction_of_red_expr re)) (pf_env gls) (project gls) c

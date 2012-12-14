@@ -56,7 +56,7 @@ let load_rcfile() =
 
 (* Puts dir in the path of ML and in the LoadPath *)
 let coq_add_path unix_path s =
-  Mltop.add_path ~unix_path ~coq_root:(Names.make_dirpath [Nameops.coq_root;Names.id_of_string s])
+  Mltop.add_path ~unix_path ~coq_root:(Names.make_dirpath [Nameops.coq_root;Names.Id.of_string s])
 let coq_add_rec_path unix_path = Mltop.add_rec_path ~unix_path ~coq_root:(Names.make_dirpath [Nameops.coq_root])
 
 (* By the option -include -I or -R of the command line *)
@@ -104,7 +104,7 @@ let init_load_path () =
     if Coq_config.local then coq_add_path (coqlib/"dev") "dev";
     (* then standard library *)
     List.iter
-      (fun (s,alias) -> Mltop.add_rec_path ~unix_path:(coqlib/s) ~coq_root:(Names.make_dirpath [Names.id_of_string alias; Nameops.coq_root]))
+      (fun (s,alias) -> Mltop.add_rec_path ~unix_path:(coqlib/s) ~coq_root:(Names.make_dirpath [Names.Id.of_string alias; Nameops.coq_root]))
       theories_dirs_map;
     (* then plugins *)
     List.iter (fun s -> coq_add_rec_path (coqlib/s)) dirs;

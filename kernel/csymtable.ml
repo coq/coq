@@ -117,7 +117,7 @@ and slot_for_fv env fv =
 	    let (_, b, _) = Sign.lookup_named id env.env_named_context in
 	    let v,d =
 	      match b with
-		| None -> (val_of_named id, Idset.empty)
+		| None -> (val_of_named id, Id.Set.empty)
 		| Some c -> (val_of_constr env c, Environ.global_vars_set (Environ.env_of_pre_env env) c)
 	    in
 	      nv := VKvalue (v,d); v
@@ -131,7 +131,7 @@ and slot_for_fv env fv =
 	    let (_, b, _) = lookup_rel i env.env_rel_context in
 	    let (v, d) =
 	      match b with
-		| None -> (val_of_rel (nb_rel env - i), Idset.empty)
+		| None -> (val_of_rel (nb_rel env - i), Id.Set.empty)
 		| Some c -> let renv =  env_of_rel i env in
 			      (val_of_constr renv c, Environ.global_vars_set (Environ.env_of_pre_env renv) c)
 	    in

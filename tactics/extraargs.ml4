@@ -121,8 +121,8 @@ END
 
 type 'id gen_place= ('id * hyp_location_flag,unit) location
 
-type loc_place = identifier Loc.located gen_place
-type place = identifier gen_place
+type loc_place = Id.t Loc.located gen_place
+type place = Id.t gen_place
 
 let pr_gen_place pr_id = function
     ConclLocation () -> Pp.mt ()

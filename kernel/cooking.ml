@@ -23,7 +23,7 @@ open Environ
 
 (*s Cooking the constants. *)
 
-type work_list = identifier array Cmap.t * identifier array Mindmap.t
+type work_list = Id.t array Cmap.t * Id.t array Mindmap.t
 
 let pop_dirpath p = match repr_dirpath p with
   | [] -> anomaly "dirpath_prefix: empty dirpath"
@@ -139,7 +139,7 @@ let cook_constant env r =
   in
   let const_hyps =
     Sign.fold_named_context (fun (h,_,_) hyps ->
-      List.filter (fun (id,_,_) -> not (id_eq id h)) hyps)
+      List.filter (fun (id,_,_) -> not (Id.equal id h)) hyps)
       hyps ~init:cb.const_hyps in
   let typ = match cb.const_type with
     | NonPolymorphicType t ->

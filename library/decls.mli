@@ -40,4 +40,4 @@ val initialize_named_context_for_proof : unit -> Environ.named_context_val
 
 (** Miscellaneous functions *)
 
-val last_section_hyps : dir_path -> identifier list
+val last_section_hyps : dir_path -> Id.t list

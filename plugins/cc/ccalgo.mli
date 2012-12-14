@@ -18,7 +18,7 @@ type cinfo =
 type term =
     Symb of constr
   | Product of sorts_family * sorts_family
-  | Eps of identifier
+  | Eps of Id.t
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
 
@@ -87,7 +87,7 @@ val add_equality : state -> constr -> term -> term -> unit
 
 val add_disequality : state -> from -> term -> term -> unit
 
-val add_quant : state -> identifier -> bool ->
+val add_quant : state -> Id.t -> bool ->
   int * patt_kind * ccpattern * patt_kind * ccpattern -> unit
 
 val tail_pac : pa_constructor -> pa_constructor
@@ -106,7 +106,7 @@ val join_path : forest -> int -> int ->
   ((int * int) * equality) list * ((int * int) * equality) list
 
 type quant_eq=
-    {qe_hyp_id: identifier;
+    {qe_hyp_id: Id.t;
      qe_pol: bool;
      qe_nvars:int;
      qe_lhs: ccpattern;
@@ -161,7 +161,7 @@ type term =
 
 type rule =
     Congruence
-  | Axiom of Names.identifier
+  | Axiom of Names.Id.t
   | Injection of int*int*int*int
 
 type equality =
@@ -207,19 +207,19 @@ val process_rec : UF.t -> equality list -> int list
 val cc : UF.t -> unit
 
 val make_uf :
-  (Names.identifier * (term * term)) list -> UF.t
+  (Names.Id.t * (term * term)) list -> UF.t
 
 val add_one_diseq : UF.t -> (term * term) -> int * int
 
 val add_disaxioms :
-  UF.t -> (Names.identifier * (term * term)) list ->
-  (Names.identifier * (int * int)) list
+  UF.t -> (Names.Id.t * (term * term)) list ->
+  (Names.Id.t * (int * int)) list
 
 val check_equal : UF.t -> int * int -> bool
 
 val find_contradiction : UF.t ->
-  (Names.identifier * (int * int)) list ->
-  (Names.identifier * (int * int))
+  (Names.Id.t * (int * int)) list ->
+  (Names.Id.t * (int * int))
 *)
 
 

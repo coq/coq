@@ -43,14 +43,14 @@ open Misctypes
 
  *)
 
-type bound_ident_map = (identifier * identifier) list
+type bound_ident_map = (Id.t * Id.t) list
 
 exception PatternMatchingFailure
 
 let constrain n (ids, m as x) (names, terms as subst) =
   try
     let (ids',m') = List.assoc n terms in
-    if List.equal id_eq ids ids' && eq_constr m m' then subst
+    if List.equal Id.equal ids ids' && eq_constr m m' then subst
     else raise PatternMatchingFailure
   with
       Not_found ->
@@ -89,7 +89,7 @@ let build_lambda toabstract stk (m : constr) =
 let rec list_insert a = function
 | [] -> [a]
 | b :: l ->
-  let ord = id_ord a b in
+  let ord = Id.compare a b in
   if ord < 0 then a :: b :: l
   else if ord > 0 then b :: list_insert a l
   else raise PatternMatchingFailure
@@ -162,9 +162,9 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 
       | PMeta None, m -> subst
 
-      | PRef (VarRef v1), Var v2 when id_eq v1 v2 -> subst
+      | PRef (VarRef v1), Var v2 when Id.equal v1 v2 -> subst
 
-      | PVar v1, Var v2 when id_eq v1 v2 -> subst
+      | PVar v1, Var v2 when Id.equal v1 v2 -> subst
 
       | PRef ref, _ when conv (constr_of_global ref) cT -> subst
 
@@ -249,7 +249,7 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 
   in
   let names,terms = sorec [] ([],[]) pat c in
-  (names, List.sort (fun (a, _) (b, _) -> id_ord a b) terms)
+  (names, List.sort (fun (a, _) (b, _) -> Id.compare a b) terms)
 
 let matches_core_closed convert allow_partial_app pat c =
   let names,subst = matches_core convert allow_partial_app false pat c in

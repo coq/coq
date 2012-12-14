@@ -21,16 +21,16 @@ open Common
 
 (*s Haskell renaming issues. *)
 
-let pr_lower_id id = str (String.uncapitalize (string_of_id id))
-let pr_upper_id id = str (String.capitalize (string_of_id id))
+let pr_lower_id id = str (String.uncapitalize (Id.to_string id))
+let pr_upper_id id = str (String.capitalize (Id.to_string id))
 
 let keywords =
-  List.fold_right (fun s -> Idset.add (id_of_string s))
+  List.fold_right (fun s -> Id.Set.add (Id.of_string s))
   [ "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
     "if"; "import"; "in"; "infix"; "infixl"; "infixr"; "instance";
     "let"; "module"; "newtype"; "of"; "then"; "type"; "where"; "_"; "__";
     "as"; "qualified"; "hiding" ; "unit" ; "unsafeCoerce" ]
-  Idset.empty
+  Id.Set.empty
 
 let pp_comment s = str "-- " ++ s ++ fnl ()
 let pp_bracket_comment s = str"{- " ++ hov 0 s ++ str" -}"

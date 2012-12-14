@@ -44,7 +44,7 @@ val local_binders_loc : local_binder list -> Loc.t
 
 (** {6 Constructors}*)
 
-val mkIdentC : identifier -> constr_expr
+val mkIdentC : Id.t -> constr_expr
 val mkRefC : reference -> constr_expr
 val mkAppC : constr_expr * constr_expr list -> constr_expr
 val mkCastC : constr_expr * constr_expr cast_type -> constr_expr
@@ -63,10 +63,10 @@ val mkCProdN : Loc.t -> local_binder list -> constr_expr -> constr_expr
 
 (** {6 Destructors}*)
 
-val coerce_reference_to_id : reference -> identifier
+val coerce_reference_to_id : reference -> Id.t
 (** FIXME: nothing to do here *)
 
-val coerce_to_id : constr_expr -> identifier located
+val coerce_to_id : constr_expr -> Id.t located
 (** Destruct terms of the form [CRef (Ident _)]. *)
 
 val coerce_to_name : constr_expr -> name located

@@ -9,31 +9,31 @@
 open Names
 
 (** Identifiers and names *)
-val pr_id : identifier -> Pp.std_ppcmds
+val pr_id : Id.t -> Pp.std_ppcmds
 val pr_name : name -> Pp.std_ppcmds
 
-val make_ident : string -> int option -> identifier
-val repr_ident : identifier -> string * int option
+val make_ident : string -> int option -> Id.t
+val repr_ident : Id.t -> string * int option
 
-val atompart_of_id : identifier -> string  (** remove trailing digits *)
-val root_of_id : identifier -> identifier (** remove trailing digits, ' and _ *)
+val atompart_of_id : Id.t -> string  (** remove trailing digits *)
+val root_of_id : Id.t -> Id.t (** remove trailing digits, ' and _ *)
 
-val add_suffix : identifier -> string -> identifier
-val add_prefix : string -> identifier -> identifier
+val add_suffix : Id.t -> string -> Id.t
+val add_prefix : string -> Id.t -> Id.t
 
-val has_subscript    : identifier -> bool
-val lift_subscript   : identifier -> identifier
-val forget_subscript : identifier -> identifier
+val has_subscript    : Id.t -> bool
+val lift_subscript   : Id.t -> Id.t
+val forget_subscript : Id.t -> Id.t
 
-val out_name : name -> identifier
+val out_name : name -> Id.t
 (** [out_name] associates [id] to [Name id]. Raises [Failure "Nameops.out_name"]
     otherwise. *)
 
-val name_fold : (identifier -> 'a -> 'a) -> name -> 'a -> 'a
-val name_iter : (identifier -> unit) -> name -> unit
-val name_cons : name -> identifier list -> identifier list
-val name_app : (identifier -> identifier) -> name -> name
-val name_fold_map : ('a -> identifier -> 'a * identifier) -> 'a -> name -> 'a * name
+val name_fold : (Id.t -> 'a -> 'a) -> name -> 'a -> 'a
+val name_iter : (Id.t -> unit) -> name -> unit
+val name_cons : name -> Id.t list -> Id.t list
+val name_app : (Id.t -> Id.t) -> name -> name
+val name_fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> name -> 'a * name
 
 
 val pr_lab : label -> Pp.std_ppcmds

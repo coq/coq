@@ -241,7 +241,7 @@ type one_inductive_body = {
 (* Primitive datas *)
 
  (* Name of the type: [Ii] *)
-    mind_typename : identifier;
+    mind_typename : Id.t;
 
  (* Arity context of [Ii] with parameters: [forall params, Ui] *)
     mind_arity_ctxt : rel_context;
@@ -250,7 +250,7 @@ type one_inductive_body = {
     mind_arity : inductive_arity;
 
  (* Names of the constructors: [cij] *)
-    mind_consnames : identifier array;
+    mind_consnames : Id.t array;
 
  (* Types of the constructors with parameters: [forall params, Tij],
     where the Ik are replaced by de Bruijn index in the context
@@ -363,10 +363,10 @@ let hcons_indarity = function
 
 let hcons_mind_packet oib =
  { oib with
-   mind_typename = hcons_ident oib.mind_typename;
+   mind_typename = Id.hcons oib.mind_typename;
    mind_arity_ctxt = hcons_rel_context oib.mind_arity_ctxt;
    mind_arity = hcons_indarity oib.mind_arity;
-   mind_consnames = Array.smartmap hcons_ident oib.mind_consnames;
+   mind_consnames = Array.smartmap Id.hcons oib.mind_consnames;
    mind_user_lc = Array.smartmap hcons_types oib.mind_user_lc;
    mind_nf_lc = Array.smartmap hcons_types oib.mind_nf_lc }
 
@@ -395,8 +395,8 @@ and struct_expr_body =
   | SEBwith of struct_expr_body * with_declaration_body
 
 and with_declaration_body =
-    With_module_body of identifier list * module_path
-  | With_definition_body of  identifier list * constant_body
+    With_module_body of Id.t list * module_path
+  | With_definition_body of  Id.t list * constant_body
 
 and module_body =
     { mod_mp : module_path;

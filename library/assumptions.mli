@@ -13,7 +13,7 @@ open Environ
 (** A few declarations for the "Print Assumption" command
     @author spiwack *)
 type context_object =
-  | Variable of identifier  (** A section variable or a Let definition *)
+  | Variable of Id.t  (** A section variable or a Let definition *)
   | Axiom of constant       (** An axiom or a constant. *)
   | Opaque of constant      (** An opaque constant. *)
   | Transparent of constant (** A transparent constant *)

@@ -643,15 +643,15 @@ let declare_ref_arguments_scope ref =
 
 type symbol =
   | Terminal of string
-  | NonTerminal of identifier
-  | SProdList of identifier * symbol list
+  | NonTerminal of Id.t
+  | SProdList of Id.t * symbol list
   | Break of int
 
 let rec symbol_eq s1 s2 = match s1, s2 with
 | Terminal s1, Terminal s2 -> String.equal s1 s2
-| NonTerminal id1, NonTerminal id2 -> id_eq id1 id2
+| NonTerminal id1, NonTerminal id2 -> Id.equal id1 id2
 | SProdList (id1, l1), SProdList (id2, l2) ->
-  id_eq id1 id2 && List.equal symbol_eq l1 l2
+  Id.equal id1 id2 && List.equal symbol_eq l1 l2
 | Break i1, Break i2 -> Int.equal i1 i2
 | _ -> false
 
@@ -677,7 +677,7 @@ let decompose_notation_key s =
     in
     let tok =
       match String.sub s n (pos-n) with
-      | "_" -> NonTerminal (id_of_string "_")
+      | "_" -> NonTerminal (Id.of_string "_")
       | s -> Terminal (String.drop_simple_quotes s) in
     decomp_ntn (tok::dirs) (pos+1)
   in
@@ -695,7 +695,7 @@ let classes_of_scope sc =
 
 let pr_scope_class = function
   | ScopeSort -> str "Sort"
-  | ScopeRef t -> pr_global_env Idset.empty t
+  | ScopeRef t -> pr_global_env Id.Set.empty t
 
 let pr_scope_classes sc =
   let l = classes_of_scope sc in

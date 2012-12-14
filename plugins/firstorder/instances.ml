@@ -98,7 +98,7 @@ let rec collect_quantified seq=
 
 let dummy_constr=mkMeta (-1)
 
-let dummy_bvid=id_of_string "x"
+let dummy_bvid=Id.of_string "x"
 
 let mk_open_instance id gl m t=
   let env=pf_env gl in

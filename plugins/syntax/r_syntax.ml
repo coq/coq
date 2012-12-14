@@ -19,14 +19,14 @@ exception Non_closed_number
 open Glob_term
 open Bigint
 
-let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
+let make_dir l = make_dirpath (List.map Id.of_string (List.rev l))
 let rdefinitions = make_dir ["Coq";"Reals";"Rdefinitions"]
-let make_path dir id = Libnames.make_path dir (id_of_string id)
+let make_path dir id = Libnames.make_path dir (Id.of_string id)
 
 let r_path = make_path rdefinitions "R"
 
 (* TODO: temporary hack *)
-let make_path dir id = Globnames.encode_con dir (id_of_string id)
+let make_path dir id = Globnames.encode_con dir (Id.of_string id)
 
 let r_kn = make_path rdefinitions "R"
 let glob_R = ConstRef r_kn

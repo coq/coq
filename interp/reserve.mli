@@ -12,6 +12,6 @@ open Names
 open Glob_term
 open Notation_term
 
-val declare_reserved_type : identifier located list -> notation_constr -> unit
-val find_reserved_type : identifier -> notation_constr
+val declare_reserved_type : Id.t located list -> notation_constr -> unit
+val find_reserved_type : Id.t -> notation_constr
 val anonymize_if_reserved : name -> glob_constr -> glob_constr

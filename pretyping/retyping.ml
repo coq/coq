@@ -40,7 +40,7 @@ let sort_of_atomic_type env sigma ft args =
 let type_of_var env id =
   try let (_,_,ty) = lookup_named id env in ty
   with Not_found ->
-    anomaly ("type_of: variable "^(string_of_id id)^" unbound")
+    anomaly ("type_of: variable "^(Id.to_string id)^" unbound")
 
 let is_impredicative_set env = match Environ.engagement env with
 | Some ImpredicativeSet -> true

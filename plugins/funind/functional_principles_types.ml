@@ -41,7 +41,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let env = Global.env () in
   let env_with_params = Environ.push_rel_context princ_type_info.params env in
   let tbl = Hashtbl.create 792 in
-  let rec change_predicates_names (avoid:identifier list) (predicates:rel_context)  : rel_context =
+  let rec change_predicates_names (avoid:Id.t list) (predicates:rel_context)  : rel_context =
     match predicates with
     | [] -> []
     |(Name x,v,t)::predicates ->
@@ -83,10 +83,10 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
   let ptes_vars = List.map (fun (id,_,_) -> id) new_predicates in
   let is_pte =
-    let set = List.fold_right Idset.add ptes_vars Idset.empty in
+    let set = List.fold_right Id.Set.add ptes_vars Id.Set.empty in
     fun t ->
       match kind_of_term t with
-	| Var id -> Idset.mem id set
+	| Var id -> Id.Set.mem id set
 	| _ -> false
   in
   let pre_princ =
@@ -114,7 +114,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       | Construct((_,num),_) -> num
       | _ -> assert false
   in
-  let dummy_var = mkVar (id_of_string "________") in
+  let dummy_var = mkVar (Id.of_string "________") in
   let mk_replacement c i args =
     let res = mkApp(rel_to_fun.(i), Array.map Termops.pop (array_get_start args)) in
 (*     observe (str "replacing " ++ pr_lconstr c ++ str " by "  ++ pr_lconstr res); *)
@@ -284,7 +284,7 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
   (*    Pp.msgnl (str "computing principle type := " ++ System.fmt_time_difference time1 time2); *)
      observe (str "new_principle_type : " ++ pr_lconstr new_principle_type);
   let new_princ_name =
-    next_ident_away_in_goal (id_of_string "___________princ_________") []
+    next_ident_away_in_goal (Id.of_string "___________princ_________") []
   in
   begin
     Lemmas.start_proof
@@ -366,7 +366,7 @@ let generate_functional_principle
       begin
 	try
 	  let id = Pfedit.get_current_proof_name () in
-	  let s = string_of_id id in
+	  let s = Id.to_string id in
 	  let n = String.length "___________princ_________" in
 	  if String.length s >= n
 	  then if String.sub s 0 n = "___________princ_________"
@@ -519,7 +519,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
       begin
 	try
 	  let id = Pfedit.get_current_proof_name () in
-	  let s = string_of_id id in
+	  let s = Id.to_string id in
 	  let n = String.length "___________princ_________" in
 	  if String.length s >= n
 	  then if String.sub s 0 n = "___________princ_________"

@@ -66,7 +66,7 @@ type 'cst formula =
   | C of 'cst formula * 'cst formula
   | D of 'cst formula * 'cst formula
   | N of 'cst formula
-  | I of 'cst formula * Names.identifier option * 'cst formula
+  | I of 'cst formula * Names.Id.t option * 'cst formula
 
 (**
   * Formula pretty-printer.
@@ -83,7 +83,7 @@ let rec pp_formula o f =
     | I(f1,n,f2) -> Printf.fprintf o "I(%a%s,%a)"
 	pp_formula f1
 	  (match n with
-	    | Some id -> Names.string_of_id id
+	    | Some id -> Names.Id.to_string id
 	    | None -> "") pp_formula f2
     | N(f) -> Printf.fprintf o "N(%a)" pp_formula f
 
@@ -1158,7 +1158,7 @@ struct
     | (e::l) ->
        let (name,expr,typ) = e in
         xset (Term.mkNamedLetIn
-               (Names.id_of_string name)
+               (Names.Id.of_string name)
                expr typ acc) l in
     xset concl l
 
@@ -1185,7 +1185,7 @@ let same_proof sg cl1 cl2 =
 
 let tags_of_clause tgs wit clause =
  let rec xtags tgs = function
-  | Mc.PsatzIn n -> Names.Idset.union tgs
+  | Mc.PsatzIn n -> Names.Id.Set.union tgs
      (snd (List.nth clause (CoqToCaml.nat n) ))
   | Mc.PsatzMulC(e,w) -> xtags tgs w
   | Mc.PsatzMulE (w1,w2) | Mc.PsatzAdd(w1,w2) -> xtags (xtags tgs w1) w2
@@ -1194,7 +1194,7 @@ let tags_of_clause tgs wit clause =
 
 (*let tags_of_cnf wits cnf =
  List.fold_left2 (fun acc w cl -> tags_of_clause acc w cl)
-  Names.Idset.empty wits cnf *)
+  Names.Id.Set.empty wits cnf *)
 
 let find_witness prover polys1 = try_any prover polys1
 

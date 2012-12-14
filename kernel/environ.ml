@@ -238,12 +238,12 @@ let global_vars_set env constr =
     let acc =
       match kind_of_term c with
       | Var _ | Const _ | Ind _ | Construct _ ->
-	  List.fold_right Idset.add (vars_of_global env c) acc
+	  List.fold_right Id.Set.add (vars_of_global env c) acc
       | _ ->
 	  acc in
     fold_constr filtrec acc c
   in
-    filtrec Idset.empty constr
+    filtrec Id.Set.empty constr
 
 
 (* [keep_hyps env ids] keeps the part of the section context of [env] which
@@ -254,20 +254,20 @@ let keep_hyps env needed =
   let really_needed =
     Sign.fold_named_context_reverse
       (fun need (id,copt,t) ->
-        if Idset.mem id need then
+        if Id.Set.mem id need then
           let globc =
 	    match copt with
-	      | None -> Idset.empty
+	      | None -> Id.Set.empty
 	      | Some c -> global_vars_set env c in
-	  Idset.union
+	  Id.Set.union
             (global_vars_set env t)
-	    (Idset.union globc need)
+	    (Id.Set.union globc need)
         else need)
       ~init:needed
       (named_context env) in
   Sign.fold_named_context
     (fun (id,_,_ as d) nsign ->
-      if Idset.mem id really_needed then add_named_decl d nsign
+      if Id.Set.mem id really_needed then add_named_decl d nsign
       else nsign)
     (named_context env)
     ~init:empty_named_context
@@ -322,7 +322,7 @@ let apply_to_hyp (ctxt,vals) id f =
   let rec aux rtail ctxt vals =
     match ctxt, vals with
     | (idc,c,ct as d)::ctxt, v::vals ->
-	if id_eq idc id then
+	if Id.equal idc id then
 	  (f ctxt d rtail)::ctxt, v::vals
 	else
 	  let ctxt',vals' = aux (d::rtail) ctxt vals in
@@ -335,7 +335,7 @@ let apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
   let rec aux ctxt vals =
     match ctxt,vals with
     | (idc,c,ct as d)::ctxt, v::vals ->
-	if id_eq idc id then
+	if Id.equal idc id then
 	  let sign = ctxt,vals in
 	  push_named_context_val (f d sign) sign
 	else
@@ -349,7 +349,7 @@ let insert_after_hyp (ctxt,vals) id d check =
   let rec aux ctxt vals =
     match  ctxt, vals with
     | (idc,c,ct)::ctxt', v::vals' ->
-	if id_eq idc id then begin
+	if Id.equal idc id then begin
 	  check ctxt;
 	  push_named_context_val d (ctxt,vals)
 	end else

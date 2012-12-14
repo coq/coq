@@ -44,5 +44,5 @@ type ('a,'b,'c) red_expr_gen =
 type ('a,'b,'c) may_eval =
   | ConstrTerm of 'a
   | ConstrEval of ('a,'b,'c) red_expr_gen * 'a
-  | ConstrContext of (Loc.t * Names.identifier) * 'a
+  | ConstrContext of (Loc.t * Names.Id.t) * 'a
   | ConstrTypeOf of 'a

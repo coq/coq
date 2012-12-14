@@ -56,7 +56,7 @@ let is_modfile = function
   | _ -> false
 
 let raw_string_of_modfile = function
-  | MPfile f -> String.capitalize (string_of_id (List.hd (repr_dirpath f)))
+  | MPfile f -> String.capitalize (Id.to_string (List.hd (repr_dirpath f)))
   | _ -> assert false
 
 let current_toplevel () = fst (Lib.current_prefix ())
@@ -256,8 +256,8 @@ let safe_basename_of_global r =
     | VarRef _ -> assert false
 
 let string_of_global r =
- try string_of_qualid (Nametab.shortest_qualid_of_global Idset.empty r)
- with _ -> string_of_id (safe_basename_of_global r)
+ try string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty r)
+ with _ -> Id.to_string (safe_basename_of_global r)
 
 let safe_pr_global r = str (string_of_global r)
 
@@ -273,7 +273,7 @@ let safe_pr_long_global r =
 
 let pr_long_mp mp =
   let lid = repr_dirpath (Nametab.dirpath_of_module mp) in
-  str (String.concat "." (List.map string_of_id (List.rev lid)))
+  str (String.concat "." (List.map Id.to_string (List.rev lid)))
 
 let pr_long_global ref = pr_path (Nametab.path_of_global ref)
 
@@ -411,7 +411,7 @@ let error_MPfile_as_mod mp b =
 let msg_non_implicit r n id =
   let name = match id with
     | Anonymous -> ""
-    | Name id -> "(" ^ string_of_id id ^ ") "
+    | Name id -> "(" ^ Id.to_string id ^ ") "
   in
   "The " ^ (String.ordinal n) ^ " argument " ^ name ^ "of " ^ (string_of_global r)
 
@@ -652,7 +652,7 @@ let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
 (*s Extraction Implicit *)
 
-type int_or_id = ArgInt of int | ArgId of identifier
+type int_or_id = ArgInt of int | ArgId of Id.t
 
 let implicits_table = ref Refmap'.empty
 
@@ -704,21 +704,21 @@ let extraction_implicit r l =
 
 (*s Extraction Blacklist of filenames not to use while extracting *)
 
-let blacklist_table = ref Idset.empty
+let blacklist_table = ref Id.Set.empty
 
 let modfile_ids = ref []
 let modfile_mps = ref MPmap.empty
 
 let reset_modfile () =
-  modfile_ids := Idset.elements !blacklist_table;
+  modfile_ids := Id.Set.elements !blacklist_table;
   modfile_mps := MPmap.empty
 
 let string_of_modfile mp =
   try MPmap.find mp !modfile_mps
   with Not_found ->
-    let id = id_of_string (raw_string_of_modfile mp) in
+    let id = Id.of_string (raw_string_of_modfile mp) in
     let id' = next_ident_away id !modfile_ids in
-    let s' = string_of_id id' in
+    let s' = Id.to_string id' in
     modfile_ids := id' :: !modfile_ids;
     modfile_mps := MPmap.add mp s' !modfile_mps;
     s'
@@ -727,7 +727,7 @@ let string_of_modfile mp =
 
 let file_of_modfile mp =
   let s0 = match mp with
-    | MPfile f -> string_of_id (List.hd (repr_dirpath f))
+    | MPfile f -> Id.to_string (List.hd (repr_dirpath f))
     | _ -> assert false
   in
   let s = String.copy (string_of_modfile mp) in
@@ -736,7 +736,7 @@ let file_of_modfile mp =
 
 let add_blacklist_entries l =
   blacklist_table :=
-    List.fold_right (fun s -> Idset.add (id_of_string (String.capitalize s)))
+    List.fold_right (fun s -> Id.Set.add (Id.of_string (String.capitalize s)))
       l !blacklist_table
 
 (* Registration of operations for rollback. *)
@@ -752,26 +752,26 @@ let blacklist_extraction : string list -> obj =
 let _ = declare_summary "Extraction Blacklist"
 	  { freeze_function = (fun () -> !blacklist_table);
 	    unfreeze_function = ((:=) blacklist_table);
-	    init_function = (fun () -> blacklist_table := Idset.empty) }
+	    init_function = (fun () -> blacklist_table := Id.Set.empty) }
 
 (* Grammar entries. *)
 
 let extraction_blacklist l =
-  let l = List.rev_map string_of_id l in
+  let l = List.rev_map Id.to_string l in
   Lib.add_anonymous_leaf (blacklist_extraction l)
 
 (* Printing part *)
 
 let print_extraction_blacklist () =
-  prlist_with_sep fnl pr_id (Idset.elements !blacklist_table)
+  prlist_with_sep fnl pr_id (Id.Set.elements !blacklist_table)
 
 (* Reset part *)
 
 let reset_blacklist : unit -> obj =
   declare_object
     {(default_object "Reset Extraction Blacklist") with
-       cache_function = (fun (_,_)-> blacklist_table := Idset.empty);
-       load_function = (fun _ (_,_)-> blacklist_table := Idset.empty)}
+       cache_function = (fun (_,_)-> blacklist_table := Id.Set.empty);
+       load_function = (fun _ (_,_)-> blacklist_table := Id.Set.empty)}
 
 let reset_extraction_blacklist () = Lib.add_anonymous_leaf (reset_blacklist ())
 

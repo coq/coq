@@ -53,9 +53,9 @@ let prim_token_eq t1 t2 = match t1, t2 with
 
 let explicitation_eq ex1 ex2 = match ex1, ex2 with
 | ExplByPos (i1, id1), ExplByPos (i2, id2) ->
-  Int.equal i1 i2 && Option.equal id_eq id1 id2
+  Int.equal i1 i2 && Option.equal Id.equal id1 id2
 | ExplByName id1, ExplByName id2 ->
-  id_eq id1 id2
+  Id.equal id1 id2
 | _ -> false
 
 let eq_located f (_, x) (_, y) = f x y
@@ -64,7 +64,7 @@ let rec cases_pattern_expr_eq p1 p2 =
   if p1 == p2 then true
   else match p1, p2 with
   | CPatAlias(_,a1,i1), CPatAlias(_,a2,i2) ->
-      id_eq i1 i2 && cases_pattern_expr_eq a1 a2
+      Id.equal i1 i2 && cases_pattern_expr_eq a1 a2
   | CPatCstr(_,c1,a1,b1), CPatCstr(_,c2,a2,b2) ->
       eq_reference c1 c2 &&
       List.equal cases_pattern_expr_eq a1 a2 &&
@@ -97,10 +97,10 @@ let rec constr_expr_eq e1 e2 =
   else match e1, e2 with
   | CRef r1, CRef r2 -> eq_reference r1 r2
   | CFix(_,id1,fl1), CFix(_,id2,fl2) ->
-      eq_located id_eq id1 id2 &&
+      eq_located Id.equal id1 id2 &&
       List.equal fix_expr_eq fl1 fl2
   | CCoFix(_,id1,fl1), CCoFix(_,id2,fl2) ->
-      eq_located id_eq id1 id2 &&
+      eq_located Id.equal id1 id2 &&
       List.equal cofix_expr_eq fl1 fl2
   | CProdN(_,bl1,a1), CProdN(_,bl2,a2) ->
       List.equal binder_expr_eq bl1 bl2 &&
@@ -145,7 +145,7 @@ let rec constr_expr_eq e1 e2 =
     constr_expr_eq f1 f2
   | CHole _, CHole _ -> true
   | CPatVar(_,(b1, i1)), CPatVar(_,(b2, i2)) ->
-    (b1 : bool) == b2 && id_eq i1 i2
+    (b1 : bool) == b2 && Id.equal i1 i2
   | CEvar (_, ev1, c1), CEvar (_, ev2, c2) ->
     Int.equal ev1 ev2 &&
     Option.equal (List.equal constr_expr_eq) c1 c2
@@ -188,15 +188,15 @@ and binder_expr_eq ((n1, _, e1) : binder_expr) (n2, _, e2) =
   List.equal (eq_located name_eq) n1 n2 && constr_expr_eq e1 e2
 
 and fix_expr_eq (id1,(j1, r1),bl1,a1,b1) (id2,(j2, r2),bl2,a2,b2) =
-  (eq_located id_eq id1 id2) &&
-  Option.equal (eq_located id_eq) j1 j2 &&
+  (eq_located Id.equal id1 id2) &&
+  Option.equal (eq_located Id.equal) j1 j2 &&
   recursion_order_expr_eq r1 r2 &&
   List.equal local_binder_eq bl1 bl2 &&
   constr_expr_eq a1 a2 &&
   constr_expr_eq b1 b2
 
 and cofix_expr_eq (id1,bl1,a1,b1) (id2,bl2,a2,b2) =
-  (eq_located id_eq id1 id2) &&
+  (eq_located Id.equal id1 id2) &&
   List.equal local_binder_eq bl1 bl2 &&
   constr_expr_eq a1 a2 &&
   constr_expr_eq b1 b2

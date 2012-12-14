@@ -48,11 +48,11 @@ let with_stats c =
   end else
     Lazy.force c
 
-type transparent_state = Idpred.t * Cpred.t
-let all_opaque = (Idpred.empty, Cpred.empty)
-let all_transparent = (Idpred.full, Cpred.full)
+type transparent_state = Id.Pred.t * Cpred.t
+let all_opaque = (Id.Pred.empty, Cpred.empty)
+let all_transparent = (Id.Pred.full, Cpred.full)
 
-let is_transparent_variable (ids, _) id = Idpred.mem id ids
+let is_transparent_variable (ids, _) id = Id.Pred.mem id ids
 let is_transparent_constant (_, csts) cst = Cpred.mem cst csts
 
 module type RedFlagsSig = sig
@@ -63,7 +63,7 @@ module type RedFlagsSig = sig
   val fIOTA : red_kind
   val fZETA : red_kind
   val fCONST : constant -> red_kind
-  val fVAR : identifier -> red_kind
+  val fVAR : Id.t -> red_kind
   val no_red : reds
   val red_add : reds -> red_kind -> reds
   val mkflags : red_kind list -> reds
@@ -85,7 +85,7 @@ module RedFlags = (struct
     r_iota : bool }
 
   type red_kind = BETA | DELTA | IOTA | ZETA
-	      | CONST of constant | VAR of identifier
+	      | CONST of constant | VAR of Id.t
   let fBETA = BETA
   let fDELTA = DELTA
   let fIOTA = IOTA
@@ -110,7 +110,7 @@ module RedFlags = (struct
     | ZETA -> { red with r_zeta = true }
     | VAR id ->
 	let (l1,l2) = red.r_const in
-	{ red with r_const = Idpred.add id l1, l2 }
+	{ red with r_const = Id.Pred.add id l1, l2 }
 
   let mkflags = List.fold_left red_add no_red
 
@@ -122,7 +122,7 @@ module RedFlags = (struct
 	incr_cnt c delta
     | VAR id -> (* En attendant d'avoir des kn pour les Var *)
 	let (l,_) = red.r_const in
-	let c = Idpred.mem id l in
+	let c = Id.Pred.mem id l in
 	incr_cnt c delta
     | ZETA -> incr_cnt red.r_zeta zeta
     | IOTA -> incr_cnt red.r_iota iota
@@ -162,7 +162,7 @@ let betaiotazeta = mkflags [fBETA;fIOTA;fZETA]
 
 type table_key =
   | ConstKey of constant
-  | VarKey of identifier
+  | VarKey of Id.t
   | RelKey of int
 
 type 'a infos = {
@@ -170,7 +170,7 @@ type 'a infos = {
   i_repr : 'a infos -> constr -> 'a;
   i_env : env;
   i_rels : int * (int * constr) list;
-  i_vars : (identifier * constr) list;
+  i_vars : (Id.t * constr) list;
   i_tab : (table_key, 'a) Hashtbl.t }
 
 let ref_value_cache info ref =
@@ -544,7 +544,7 @@ let rec to_constr constr_fun lfts v =
         let fr = mk_clos2 env t in
         let unfv = update v (fr.norm,fr.term) in
         to_constr constr_fun lfts unfv
-    | FLOCKED -> assert false (*mkVar(id_of_string"_LOCK_")*)
+    | FLOCKED -> assert false (*mkVar(Id.of_string"_LOCK_")*)
 
 (* This function defines the correspondance between constr and
    fconstr. When we find a closure whose substitution is the identity,

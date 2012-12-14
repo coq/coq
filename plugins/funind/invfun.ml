@@ -126,8 +126,8 @@ let generate_type g_to_f f graph i =
   (*i We need to name the vars [res] and [fv] i*)
   let filter = function (Name id,_,_) -> Some id | (Anonymous,_,_) -> None in
   let named_ctxt = List.map_filter filter fun_ctxt in
-  let res_id = Namegen.next_ident_away_in_goal (id_of_string "_res") named_ctxt in
-  let fv_id = Namegen.next_ident_away_in_goal (id_of_string "fv") (res_id :: named_ctxt) in
+  let res_id = Namegen.next_ident_away_in_goal (Id.of_string "_res") named_ctxt in
+  let fv_id = Namegen.next_ident_away_in_goal (Id.of_string "fv") (res_id :: named_ctxt) in
   (*i we can then type the argument to be applied to the function [f] i*)
   let args_as_rels = Array.of_list (args_from_decl 1 [] fun_ctxt) in
   (*i
@@ -242,13 +242,13 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
     let princ_infos = Tactics.compute_elim_sig princ_type in
     (* The number of args of the function is then easilly computable *)
     let nb_fun_args = nb_prod (pf_concl g)  - 2  in
-    let args_names = generate_fresh_id (id_of_string "x") [] nb_fun_args in
+    let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
     let ids = args_names@(pf_ids_of_hyps g) in
     (* Since we cannot ensure that the funcitonnal principle is defined in the
        environement and due to the bug #1174, we will need to pose the principle
        using a name
     *)
-    let principle_id = Namegen.next_ident_away_in_goal (id_of_string "princ") ids in
+    let principle_id = Namegen.next_ident_away_in_goal (Id.of_string "princ") ids in
     let ids = principle_id :: ids in
     (* We get the branches of the principle *)
     let branches = List.rev princ_infos.branches in
@@ -258,7 +258,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	(fun (_,_,br_type) ->
 	   List.map
 	     (fun id -> Loc.ghost, IntroIdentifier id)
-	     (generate_fresh_id (id_of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
+	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
 	)
 	branches
     in
@@ -276,16 +276,16 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.fold_right
 	(fun (_,pat) acc ->
 	     match pat with
-	       | Genarg.IntroIdentifier id -> Idset.add id acc
+	       | Genarg.IntroIdentifier id -> Id.Set.add id acc
 	| _ -> anomaly "Not an identifier"
 	)
 	(List.nth intro_pats (pred i))
-	Idset.empty
+	Id.Set.empty
       in
 	let pre_args g =
 	List.fold_right
 	  (fun (id,b,t) pre_args ->
-	    if Idset.mem id this_branche_ids
+	    if Id.Set.mem id this_branche_ids
 	    then
 	      match b with
 		| None -> id::pre_args
@@ -299,7 +299,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       let pre_tac g =
 	List.fold_right
 	  (fun (id,b,t) pre_tac ->
-	     if Idset.mem id this_branche_ids
+	     if Id.Set.mem id this_branche_ids
 	     then
 	       match b with
 		 | None -> pre_tac
@@ -383,7 +383,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       let app_constructor g = applist((mkConstruct(constructor)),constructor_args g) in
       (* an apply the tactic *)
       let res,hres =
-	match generate_fresh_id (id_of_string "z") (ids(* @this_branche_ids *)) 2 with
+	match generate_fresh_id (Id.of_string "z") (ids(* @this_branche_ids *)) 2 with
 	  | [res;hres] -> res,hres
 	  | _ -> assert false
       in
@@ -466,7 +466,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	  princ_type
 	  (h_exact f_principle));
 	observe_tac "intro args_names" (tclMAP h_intro args_names);
-	(* observe_tac "titi" (pose_proof (Name (id_of_string "__")) (Reductionops.nf_beta Evd.empty  ((mkApp (mkVar principle_id,Array.of_list bindings))))); *)
+	(* observe_tac "titi" (pose_proof (Name (Id.of_string "__")) (Reductionops.nf_beta Evd.empty  ((mkApp (mkVar principle_id,Array.of_list bindings))))); *)
 	observe_tac "idtac" tclIDTAC;
 	tclTHEN_i
 	  (observe_tac "functional_induction" (
@@ -506,13 +506,13 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
     let princ_infos = Tactics.compute_elim_sig princ_type in
     (* The number of args of the function is then easilly computable *)
     let nb_fun_args = nb_prod (pf_concl g)  - 2  in
-    let args_names = generate_fresh_id (id_of_string "x") [] nb_fun_args in
+    let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
     let ids = args_names@(pf_ids_of_hyps g) in
     (* Since we cannot ensure that the funcitonnal principle is defined in the
        environement and due to the bug #1174, we will need to pose the principle
        using a name
     *)
-    let principle_id = Namegen.next_ident_away_in_goal (id_of_string "princ") ids in
+    let principle_id = Namegen.next_ident_away_in_goal (Id.of_string "princ") ids in
     let ids = principle_id :: ids in
     (* We get the branches of the principle *)
     let branches = List.rev princ_infos.branches in
@@ -522,7 +522,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	(fun (_,_,br_type) ->
 	   List.map
 	     (fun id -> Loc.ghost, Genarg.IntroIdentifier id)
-	     (generate_fresh_id (id_of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
+	     (generate_fresh_id (Id.of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
 	)
 	branches
     in
@@ -540,17 +540,17 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.fold_right
 	  (fun (_,pat) acc ->
 	     match pat with
-	       | Genarg.IntroIdentifier id -> Idset.add id acc
+	       | Genarg.IntroIdentifier id -> Id.Set.add id acc
 	       | _ -> anomaly "Not an identifier"
 	  )
 	  (List.nth intro_pats (pred i))
-	  Idset.empty
+	  Id.Set.empty
       in
       (* and get the real args of the branch by unfolding the defined constant *)
       let pre_args,pre_tac =
 	List.fold_right
 	  (fun (id,b,t) (pre_args,pre_tac) ->
-	     if Idset.mem id this_branche_ids
+	     if Id.Set.mem id this_branche_ids
 	     then
 	       match b with
 		 | None -> (id::pre_args,pre_tac)
@@ -624,7 +624,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       let app_constructor = applist((mkConstruct(constructor)),constructor_args) in
       (* an apply the tactic *)
       let res,hres =
-	match generate_fresh_id (id_of_string "z") (ids(* @this_branche_ids *)) 2 with
+	match generate_fresh_id (Id.of_string "z") (ids(* @this_branche_ids *)) 2 with
 	  | [res;hres] -> res,hres
 	  | _ -> assert false
       in
@@ -735,7 +735,7 @@ and intros_with_rewrite_aux : tactic =
 		  | App(eq,args) when (eq_constr eq eq_ind)  ->
  		      if Reductionops.is_conv (pf_env g) (project g) args.(1) args.(2)
 		      then
-			let id = pf_get_new_id (id_of_string "y") g  in
+			let id = pf_get_new_id (Id.of_string "y") g  in
 			tclTHENSEQ [ h_intro id; thin [id]; intros_with_rewrite ] g
 		      else if isVar args.(1) && (Environ.evaluable_named (destVar args.(1)) (pf_env g)) 
 		      then tclTHENSEQ[
@@ -753,7 +753,7 @@ and intros_with_rewrite_aux : tactic =
 		      ] g
 		      else if isVar args.(1)
 		      then
-			let id = pf_get_new_id (id_of_string "y") g  in
+			let id = pf_get_new_id (Id.of_string "y") g  in
 			tclTHENSEQ [ h_intro id;
 				     generalize_dependent_of (destVar args.(1)) id;
 				     tclTRY (Equality.rewriteLR (mkVar id));
@@ -762,7 +762,7 @@ and intros_with_rewrite_aux : tactic =
 			  g
 		      else if isVar args.(2) 
 		      then 
-			let id = pf_get_new_id (id_of_string "y") g  in
+			let id = pf_get_new_id (Id.of_string "y") g  in
 			tclTHENSEQ [ h_intro id;
 				     generalize_dependent_of (destVar args.(2)) id;
 				     tclTRY (Equality.rewriteRL (mkVar id));
@@ -771,7 +771,7 @@ and intros_with_rewrite_aux : tactic =
 			  g
 		      else
 			begin
-			  let id = pf_get_new_id (id_of_string "y") g  in
+			  let id = pf_get_new_id (Id.of_string "y") g  in
 			  tclTHENSEQ[
 			    h_intro id;
 			    tclTRY (Equality.rewriteLR (mkVar id));
@@ -797,7 +797,7 @@ and intros_with_rewrite_aux : tactic =
 			intros_with_rewrite
 		      ] g
 		  | _ ->
-		      let id = pf_get_new_id (id_of_string "y") g  in
+		      let id = pf_get_new_id (Id.of_string "y") g  in
 		      tclTHENSEQ [ h_intro id;intros_with_rewrite] g
 	      end
 	  | LetIn _ ->
@@ -904,11 +904,11 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
        and compute a fresh name for each of them
     *)
     let nb_fun_args = nb_prod (pf_concl g)  - 2  in
-    let args_names = generate_fresh_id (id_of_string "x") [] nb_fun_args in
+    let args_names = generate_fresh_id (Id.of_string "x") [] nb_fun_args in
     let ids = args_names@(pf_ids_of_hyps g) in
     (* and fresh names for res H and the principle (cf bug bug #1174) *)
     let res,hres,graph_principle_id =
-      match generate_fresh_id (id_of_string "z") ids 3 with
+      match generate_fresh_id (Id.of_string "z") ids 3 with
 	| [res;hres;graph_principle_id] -> res,hres,graph_principle_id
 	| _ -> assert false
     in
@@ -920,7 +920,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	(fun (_,_,br_type) ->
 	   List.map
 	     (fun id -> id)
-	     (generate_fresh_id (id_of_string "y") ids (nb_prod br_type))
+	     (generate_fresh_id (Id.of_string "y") ids (nb_prod br_type))
 	)
 	branches
     in
@@ -1059,7 +1059,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	   (fst lemmas_types_infos.(i))
 	   (fun _ _ -> ());
 	 Pfedit.by
-	   (observe_tac ("prove correctness ("^(string_of_id f_id)^")")
+	   (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
 	      (proving_tac i));
 	 do_save ();
 	 let finfo = find_Function_infos f_as_constant in
@@ -1110,7 +1110,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	   (fst lemmas_types_infos.(i))
 	   (fun _ _ -> ());
 	 Pfedit.by
-	   (observe_tac ("prove completeness ("^(string_of_id f_id)^")")
+	   (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
 	      (proving_tac i));
 	 do_save ();
 	 let finfo = find_Function_infos f_as_constant in
@@ -1187,7 +1187,7 @@ let revert_graph kn post_tac hid g =
 
 let functional_inversion kn hid fconst f_correct : tactic =
   fun g ->
-    let old_ids = List.fold_right Idset.add  (pf_ids_of_hyps g) Idset.empty in
+    let old_ids = List.fold_right Id.Set.add  (pf_ids_of_hyps g) Id.Set.empty in
     let type_of_h = pf_type_of g (mkVar hid) in
     match kind_of_term type_of_h with
       | App(eq,args) when eq_constr eq (Coqlib.build_coq_eq ())  ->
@@ -1206,7 +1206,7 @@ let functional_inversion kn hid fconst f_correct : tactic =
 	    h_intro hid;
 	    Inv.inv FullInversion None (NamedHyp hid);
 	    (fun g ->
-	       let new_ids = List.filter (fun id -> not (Idset.mem id old_ids)) (pf_ids_of_hyps g) in
+	       let new_ids = List.filter (fun id -> not (Id.Set.mem id old_ids)) (pf_ids_of_hyps g) in
 	       tclMAP (revert_graph kn pre_tac)  (hid::new_ids)  g
 	    );
 	  ] g

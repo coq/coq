@@ -117,11 +117,11 @@ let iter_glob_constr f = fold_glob_constr (fun () -> f) ()
 
 let same_id na id = match na with
 | Anonymous -> false
-| Name id' -> id_eq id id'
+| Name id' -> Id.equal id id'
 
 let occur_glob_constr id =
   let rec occur = function
-    | GVar (loc,id') -> id_eq id id'
+    | GVar (loc,id') -> Id.equal id id'
     | GApp (loc,f,args) -> (occur f) or (List.exists occur args)
     | GLambda (loc,na,bk,ty,c) ->
       (occur ty) || (not (same_id na id) && (occur c))
@@ -141,13 +141,13 @@ let occur_glob_constr id =
     | GRec (loc,fk,idl,bl,tyl,bv) ->
         not (Array.for_all4 (fun fid bl ty bd ->
           let rec occur_fix = function
-              [] -> not (occur ty) && (id_eq fid id || not(occur bd))
+              [] -> not (occur ty) && (Id.equal fid id || not(occur bd))
             | (na,k,bbd,bty)::bl ->
                 not (occur bty) &&
                 (match bbd with
                     Some bd -> not (occur bd)
                   | _ -> true) &&
-                (match na with Name id' -> id_eq id id' | _ -> not (occur_fix bl)) in
+                (match na with Name id' -> Id.equal id id' | _ -> not (occur_fix bl)) in
           occur_fix bl)
           idl bl tyl bv)
     | GCast (loc,c,k) -> (occur c) or (match k with CastConv t | CastVM t -> occur t | CastCoerce -> false)
@@ -165,11 +165,11 @@ let occur_glob_constr id =
 let add_name_to_ids set na =
   match na with
     | Anonymous -> set
-    | Name id -> Idset.add id set
+    | Name id -> Id.Set.add id set
 
 let free_glob_vars  =
   let rec vars bounded vs = function
-    | GVar (loc,id') -> if Idset.mem id' bounded then vs else Idset.add id' vs
+    | GVar (loc,id') -> if Id.Set.mem id' bounded then vs else Id.Set.add id' vs
     | GApp (loc,f,args) -> List.fold_left (vars bounded) vs (f::args)
     | GLambda (loc,na,_,ty,c) | GProd (loc,na,_,ty,c) | GLetIn (loc,na,ty,c) ->
 	let vs' = vars bounded vs ty in
@@ -190,7 +190,7 @@ let free_glob_vars  =
 	let vs3 = vars bounded vs2 b1 in
 	vars bounded vs3 b2
     | GRec (loc,fk,idl,bl,tyl,bv) ->
-	let bounded' = Array.fold_right Idset.add idl bounded in
+	let bounded' = Array.fold_right Id.Set.add idl bounded in
 	let vars_fix i vs fid =
 	  let vs1,bounded1 =
 	    List.fold_left
@@ -212,7 +212,7 @@ let free_glob_vars  =
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs
 
   and vars_pattern bounded vs (loc,idl,p,c) =
-    let bounded' = List.fold_right Idset.add idl bounded  in
+    let bounded' = List.fold_right Id.Set.add idl bounded  in
     vars bounded' vs c
 
   and vars_option bounded vs = function None -> vs | Some p -> vars bounded vs p
@@ -222,8 +222,8 @@ let free_glob_vars  =
     vars_option bounded' vs tyopt
   in
   fun rt ->
-    let vs = vars Idset.empty Idset.empty rt in
-    Idset.elements vs
+    let vs = vars Id.Set.empty Id.Set.empty rt in
+    Id.Set.elements vs
 
 
 let loc_of_glob_constr = function

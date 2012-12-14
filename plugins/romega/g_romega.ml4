@@ -37,6 +37,6 @@ END
 
 TACTIC EXTEND romega'
 | [ "romega" "with" ne_ident_list(l) ] ->
-    [ romega_tactic (List.map Names.string_of_id l) ]
+    [ romega_tactic (List.map Names.Id.to_string l) ]
 | [ "romega" "with" "*" ] -> [ romega_tactic ["nat";"positive";"N";"Z"] ]
 END

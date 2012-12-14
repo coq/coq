@@ -26,7 +26,7 @@ open Esubst
 
 let unfold_reference ((ids, csts), infos) k =
   match k with
-    | VarKey id when not (Idpred.mem id ids) -> None
+    | VarKey id when not (Id.Pred.mem id ids) -> None
     | ConstKey cst when not (Cpred.mem cst csts) -> None
     | _ -> unfold_reference infos k
 
@@ -446,7 +446,7 @@ let trans_conv_cmp ?(l2r=false) conv reds = trans_fconv reds conv l2r (fun _->No
 let trans_conv ?(l2r=false) ?(evars=fun _->None) reds = trans_fconv reds CONV l2r evars
 let trans_conv_leq ?(l2r=false) ?(evars=fun _->None) reds = trans_fconv reds CUMUL l2r evars
 
-let fconv = trans_fconv (Idpred.full, Cpred.full)
+let fconv = trans_fconv (Id.Pred.full, Cpred.full)
 
 let conv_cmp ?(l2r=false) cv_pb = fconv cv_pb l2r (fun _->None)
 let conv ?(l2r=false) ?(evars=fun _->None) = fconv CONV l2r evars

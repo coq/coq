@@ -41,7 +41,7 @@ open Decl_kinds
    of [env] *)
 
 type var_internalization_type =
-  | Inductive of identifier list (* list of params *)
+  | Inductive of Id.t list (* list of params *)
   | Recursive
   | Method
   | Variable
@@ -50,14 +50,14 @@ type var_internalization_data =
     var_internalization_type *
       (** type of the "free" variable, for coqdoc, e.g. while typing the
 	  constructor of JMeq, "JMeq" behaves as a variable of type Inductive *)
-    identifier list *
+    Id.t list *
       (** impargs to automatically add to the variable, e.g. for "JMeq A a B b"
           in implicit mode, this is [A;B] and this adds (A:=A) and (B:=B) *)
     Impargs.implicit_status list * (** signature of impargs of the variable *)
     Notation_term.scope_name option list (** subscopes of the args of the variable *)
 
 (** A map of free variables to their implicit arguments and scopes *)
-type internalization_env = var_internalization_data Idmap.t
+type internalization_env = var_internalization_data Id.Map.t
 
 val empty_internalization_env : internalization_env
 
@@ -65,10 +65,10 @@ val compute_internalization_data : env -> var_internalization_type ->
   types -> Impargs.manual_explicitation list -> var_internalization_data
 
 val compute_internalization_env : env -> var_internalization_type ->
-  identifier list -> types list -> Impargs.manual_explicitation list list ->
+  Id.t list -> types list -> Impargs.manual_explicitation list list ->
   internalization_env
 
-type ltac_sign = identifier list * unbound_ltac_var_map
+type ltac_sign = Id.t list * unbound_ltac_var_map
 
 type glob_binder = (name * binding_kind * glob_constr option * glob_constr)
 
@@ -83,8 +83,8 @@ val intern_gen : typing_constraint -> evar_map -> env ->
   constr_expr -> glob_constr
 
 val intern_pattern : env -> cases_pattern_expr ->
-  Names.identifier list *
-    ((Names.identifier * Names.identifier) list * cases_pattern) list
+  Names.Id.t list *
+    ((Names.Id.t * Names.Id.t) list * cases_pattern) list
 
 val intern_context : bool -> evar_map -> env -> internalization_env -> local_binder list -> internalization_env * glob_binder list
 
@@ -168,19 +168,19 @@ val interp_context_evars : ?global_level:bool -> ?impl_env:internalization_env -
 (** Locating references of constructions, possibly via a syntactic definition 
    (these functions do not modify the glob file) *)
 
-val is_global : identifier -> bool
-val construct_reference : named_context -> identifier -> constr
-val global_reference : identifier -> constr
-val global_reference_in_absolute_module : dir_path -> identifier -> constr
+val is_global : Id.t -> bool
+val construct_reference : named_context -> Id.t -> constr
+val global_reference : Id.t -> constr
+val global_reference_in_absolute_module : dir_path -> Id.t -> constr
 
 (** Interprets a term as the left-hand side of a notation; the boolean
     list is a set and this set is [true] for a variable occurring in
     term position, [false] for a variable occurring in binding
     position; [true;false] if in both kinds of position *)
 val interp_notation_constr : ?impls:internalization_env ->
-  (identifier * notation_var_internalization_type) list ->
-  (identifier * identifier) list -> constr_expr ->
-  (identifier * (subscopes * notation_var_internalization_type)) list *
+  (Id.t * notation_var_internalization_type) list ->
+  (Id.t * Id.t) list -> constr_expr ->
+  (Id.t * (subscopes * notation_var_internalization_type)) list *
   notation_constr
 
 (** Globalization options *)

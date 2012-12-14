@@ -24,48 +24,75 @@ open Util
 
 (** {6 Identifiers } *)
 
-type identifier = string
+module Id =
+struct
+  type t = string
 
-let check_ident_soft x =
-  Option.iter (fun (fatal,x) ->
-      if fatal then error x else Pp.msg_warning (str x))
-    (Unicode.ident_refutation x)
-let check_ident x =
-  Option.iter (fun (_,x) -> Errors.error x) (Unicode.ident_refutation x)
+  let equal = String.equal
 
-let id_of_string s =
-  let () = check_ident_soft s in
-  let s = String.copy s in
-  String.hcons s
+  let compare = String.compare
 
-let string_of_id id = String.copy id
+  let check_soft x =
+    let iter (fatal, x) =
+      if fatal then error x else Pp.msg_warning (str x)
+    in
+    Option.iter iter (Unicode.ident_refutation x)
 
-let id_ord = String.compare
+  let check x =
+    let iter (_, x) = Errors.error x in
+    Option.iter iter (Unicode.ident_refutation x)
 
-let id_eq = String.equal
+  let of_string s =
+    let () = check_soft s in
+    let s = String.copy s in
+    String.hcons s
 
-module IdOrdered =
+  let to_string id = String.copy id
+
+  module Self =
   struct
-    type t = identifier
-    let compare = id_ord
+    type t = string
+    let compare = compare
   end
 
-module Idset = Set.Make(IdOrdered)
-module Idmap =
-struct
-  include Map.Make(IdOrdered)
-  exception Finded
-  let exists f m =
-    try iter (fun a b -> if f a b then raise Finded) m ; false
-    with |Finded -> true
-  let singleton k v = add k v empty
+  module Set = Set.Make(Self)
+  module Map =
+  struct
+    include Map.Make(Self)
+    exception Finded
+    let exists f m =
+      try iter (fun a b -> if f a b then raise Finded) m ; false
+      with Finded -> true
+    let singleton k v = add k v empty
+  end
+
+  module Pred = Predicate.Make(Self)
+
+  let hcons = String.hcons
+
 end
-module Idpred = Predicate.Make(IdOrdered)
+
+(** Backward compatibility for [Id.t] *)
+
+type identifier = Id.t
+
+let id_eq = Id.equal
+let id_ord = Id.compare
+let check_ident_soft = Id.check_soft
+let check_ident = Id.check
+let string_of_id = Id.to_string
+let id_of_string = Id.of_string
+
+module Idset = Id.Set
+module Idmap = Id.Map
+module Idpred = Id.Pred
+
+(** / End of backward compatibility *)
 
 (** {6 Various types based on identifiers } *)
 
-type name = Name of identifier | Anonymous
-type variable = identifier
+type name = Name of Id.t | Anonymous
+type variable = Id.t
 
 let name_eq n1 n2 = match n1, n2 with
 | Anonymous, Anonymous -> true
@@ -78,7 +105,7 @@ let name_eq n1 n2 = match n1, n2 with
     The actual representation is reversed to optimise sharing:
     Coq.A.B is ["B";"A";"Coq"] *)
 
-type module_ident = identifier
+type module_ident = Id.t
 type dir_path = module_ident list
 
 module ModIdmap = Idmap
@@ -90,7 +117,7 @@ let rec dir_path_ord (p1 : dir_path) (p2 : dir_path) =
   | [], _ -> -1
   | _, [] -> 1
   | id1 :: p1, id2 :: p2 ->
-    let c = id_ord id1 id2 in
+    let c = Id.compare id1 id2 in
     if Int.equal c 0 then dir_path_ord p1 p2 else c
   end
 
@@ -111,7 +138,7 @@ let string_of_dirpath = function
 (** {6 Unique names for bound modules } *)
 
 let u_number = ref 0
-type uniq_ident = int * identifier * dir_path
+type uniq_ident = int * Id.t * dir_path
 let make_uid dir s = incr u_number;(!u_number,s,dir)
  let debug_string_of_uid (i,s,p) =
  "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
@@ -125,7 +152,7 @@ let uniq_ident_ord (x : uniq_ident) (y : uniq_ident) =
     let ans = Int.compare nl nr in
     if not (Int.equal ans 0) then ans
     else
-      let ans = id_ord idl idr in
+      let ans = Id.compare idl idr in
       if not (Int.equal ans 0) then ans
       else
         dir_path_ord dpl dpr
@@ -149,7 +176,7 @@ let id_of_mbid (_,s,_) = s
 
 (** {6 Names of structure elements } *)
 
-type label = identifier
+type label = Id.t
 
 let mk_label = id_of_string
 let string_of_label = string_of_id
@@ -389,12 +416,12 @@ module Constrmap_env = Map.Make(ConstructorOrdered_env)
 
 (* Better to have it here that in closure, since used in grammar.cma *)
 type evaluable_global_reference =
-  | EvalVarRef of identifier
+  | EvalVarRef of Id.t
   | EvalConstRef of constant
 
 let eq_egr e1 e2 = match e1, e2 with
     EvalConstRef con1, EvalConstRef con2 -> eq_constant con1 con2
-  | EvalVarRef id1, EvalVarRef id2 -> Int.equal (id_ord id1 id2) 0
+  | EvalVarRef id1, EvalVarRef id2 -> Int.equal (Id.compare id1 id2) 0
   | _, _ -> false
 
 (** {6 Hash-consing of name objects } *)
@@ -402,7 +429,7 @@ let eq_egr e1 e2 = match e1, e2 with
 module Hname = Hashcons.Make(
   struct
     type t = name
-    type u = identifier -> identifier
+    type u = Id.t -> Id.t
     let hashcons hident = function
       | Name id -> Name (hident id)
       | n -> n
@@ -418,7 +445,7 @@ module Hname = Hashcons.Make(
 module Hdir = Hashcons.Make(
   struct
     type t = dir_path
-    type u = identifier -> identifier
+    type u = Id.t -> Id.t
     let hashcons hident d = List.smartmap hident d
     let rec equal d1 d2 =
       (d1==d2) ||
@@ -432,7 +459,7 @@ module Hdir = Hashcons.Make(
 module Huniqid = Hashcons.Make(
   struct
     type t = uniq_ident
-    type u = (identifier -> identifier) * (dir_path -> dir_path)
+    type u = (Id.t -> Id.t) * (dir_path -> dir_path)
     let hashcons (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
     let equal ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
       (x == y) ||
@@ -502,10 +529,9 @@ module Hconstruct = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-let hcons_ident = String.hcons
-let hcons_name = Hashcons.simple_hcons Hname.generate hcons_ident
-let hcons_dirpath = Hashcons.simple_hcons Hdir.generate hcons_ident
-let hcons_uid = Hashcons.simple_hcons Huniqid.generate (hcons_ident,hcons_dirpath)
+let hcons_name = Hashcons.simple_hcons Hname.generate Id.hcons
+let hcons_dirpath = Hashcons.simple_hcons Hdir.generate Id.hcons
+let hcons_uid = Hashcons.simple_hcons Huniqid.generate (Id.hcons,hcons_dirpath)
 let hcons_mp =
   Hashcons.simple_hcons Hmod.generate (hcons_dirpath,hcons_uid,String.hcons)
 let hcons_kn = Hashcons.simple_hcons Hkn.generate (hcons_mp,hcons_dirpath,String.hcons)
@@ -526,7 +552,7 @@ let cst_full_transparent_state = (Idpred.empty, Cpred.full)
 
 type 'a tableKey =
   | ConstKey of constant
-  | VarKey of identifier
+  | VarKey of Id.t
   | RelKey of 'a
 
 
@@ -544,7 +570,7 @@ let eq_id_key ik1 ik2 =
     if ans then Int.equal (kn_ord kn1 kn2) 0
     else ans
   | VarKey id1, VarKey id2 ->
-    Int.equal (id_ord id1 id2) 0
+    Int.equal (Id.compare id1 id2) 0
   | RelKey k1, RelKey k2 -> Int.equal k1 k2
   | _ -> false
 

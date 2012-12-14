@@ -41,10 +41,10 @@ val declare_scheme : 'a scheme_kind -> (inductive * constant) array -> unit
 
 val define_individual_scheme : individual scheme_kind -> 
   Declare.internal_flag (** internal *) ->
-  identifier option -> inductive -> constant
+  Id.t option -> inductive -> constant
 
 val define_mutual_scheme : mutual scheme_kind -> Declare.internal_flag (** internal *) ->
-  (int * identifier) list -> mutual_inductive -> constant array
+  (int * Id.t) list -> mutual_inductive -> constant array
 
 (** Main function to retrieve a scheme in the cache or to generate it *)
 val find_scheme : 'a scheme_kind -> inductive -> constant

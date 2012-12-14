@@ -37,12 +37,12 @@ let is_constructor_head t =
 type inductive_error =
   | NonPos of env * constr * constr
   | NotEnoughArgs of env * constr * constr
-  | NotConstructor of env * identifier * constr * constr * int * int
+  | NotConstructor of env * Id.t * constr * constr * int * int
   | NonPar of env * constr * int * constr * constr
-  | SameNamesTypes of identifier
-  | SameNamesConstructors of identifier
-  | SameNamesOverlap of identifier list
-  | NotAnArity of identifier
+  | SameNamesTypes of Id.t
+  | SameNamesConstructors of Id.t
+  | SameNamesOverlap of Id.t list
+  | NotAnArity of Id.t
   | BadEntry
   | LargeNonPropInductiveNotInType
 
@@ -57,10 +57,10 @@ let check_constructors_names =
   let rec check idset = function
     | [] -> idset
     | c::cl ->
-	if Idset.mem c idset then
+	if Id.Set.mem c idset then
 	  raise (InductiveError (SameNamesConstructors c))
 	else
-	  check (Idset.add c idset) cl
+	  check (Id.Set.add c idset) cl
   in
   check
 
@@ -74,13 +74,13 @@ let mind_check_names mie =
     | ind::inds ->
 	let id = ind.mind_entry_typename in
 	let cl = ind.mind_entry_consnames in
-	if Idset.mem id indset then
+	if Id.Set.mem id indset then
 	  raise (InductiveError (SameNamesTypes id))
 	else
 	  let cstset' = check_constructors_names cstset cl in
-	  check (Idset.add id indset) cstset' inds
+	  check (Id.Set.add id indset) cstset' inds
   in
-  check Idset.empty Idset.empty mie.mind_entry_inds
+  check Id.Set.empty Id.Set.empty mie.mind_entry_inds
 (* The above verification is not necessary from the kernel point of
   vue since inductive and constructors are not referred to by their
   name, but only by the name of the inductive packet and an index. *)
@@ -373,7 +373,7 @@ if Int.equal nmr 0 then 0 else
   in find 0 (n-1) (lpar,List.rev hyps)
 
 let lambda_implicit_lift n a =
-  let level = UniverseLevel.make (make_dirpath [id_of_string "implicit"]) 0 in
+  let level = UniverseLevel.make (make_dirpath [Id.of_string "implicit"]) 0 in
   let implicit_sort = mkType (Universe.make level) in
   let lambda_implicit a = mkLambda (Anonymous, implicit_sort, a) in
   iterate lambda_implicit n (lift n a)
@@ -597,8 +597,8 @@ let fold_inductive_blocks f =
 
 let used_section_variables env inds =
   let ids = fold_inductive_blocks
-    (fun l c -> Idset.union (Environ.global_vars_set env c) l)
-      Idset.empty inds in
+    (fun l c -> Id.Set.union (Environ.global_vars_set env c) l)
+      Id.Set.empty inds in
   keep_hyps env ids
 
 let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =

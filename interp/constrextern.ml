@@ -271,7 +271,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
   match pat with
     | PatCstr(loc,cstrsp,args,na)
 	when !in_debugger||Inductiveops.mis_constructor_has_local_defs cstrsp ->
-      let c = extern_reference loc Idset.empty (ConstructRef cstrsp) in
+      let c = extern_reference loc Id.Set.empty (ConstructRef cstrsp) in
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
       CPatCstr (loc, c, add_patt_for_params (fst cstrsp) args, [])
     | _ ->
@@ -308,12 +308,12 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 		      | CPatAtom(_, None) :: tail -> ip q tail acc
 		    (* we don't want to have 'x = _' in our patterns *)
 		      | head :: tail -> ip q tail
-		        ((extern_reference loc Idset.empty (ConstRef c), head) :: acc)
+		        ((extern_reference loc Id.Set.empty (ConstRef c), head) :: acc)
 	      in
 	      CPatRecord(loc, List.rev (ip projs args []))
 	    with
 		Not_found | No_match | Exit ->
-                  let c = extern_reference loc Idset.empty (ConstructRef cstrsp) in
+                  let c = extern_reference loc Id.Set.empty (ConstructRef cstrsp) in
 		  if !Topconstr.oldfashion_patterns then
 		    if pattern_printable_in_both_syntax cstrsp
 		    then CPatCstr (loc, c, [], args)
@@ -638,7 +638,7 @@ let rec extern inctx scopes vars r =
 				 | [] -> raise No_match
 				     (* we give up since the constructor is not complete *)
 				 | head :: tail -> ip q locs' tail
-				     ((extern_reference loc Idset.empty (ConstRef c), head) :: acc)
+				     ((extern_reference loc Id.Set.empty (ConstRef c), head) :: acc)
 		   in
 		 CRecord (loc, None, List.rev (ip projs locals args []))
 	       with
@@ -667,7 +667,7 @@ let rec extern inctx scopes vars r =
 
   | GCases (loc,sty,rtntypopt,tml,eqns) ->
     let vars' =
-      List.fold_right (name_fold Idset.add)
+      List.fold_right (name_fold Id.Set.add)
 	(cases_predicate_names tml) vars in
     let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
     let tml = List.map (fun (tm,(na,x)) ->
@@ -681,7 +681,7 @@ let rec extern inctx scopes vars r =
               else None
             end
         | Anonymous, _ -> None
-        | Name id, GVar (_,id') when id_eq id id' -> None
+        | Name id, GVar (_,id') when Id.equal id id' -> None
         | Name _, _ -> Some (Loc.ghost,na) in
       (sub_extern false scopes vars tm,
        (na',Option.map (fun (loc,ind,nal) ->
@@ -708,15 +708,15 @@ let rec extern inctx scopes vars r =
         sub_extern inctx scopes vars b1, sub_extern inctx scopes vars b2)
 
   | GRec (loc,fk,idv,blv,tyv,bv) ->
-      let vars' = Array.fold_right Idset.add idv vars in
+      let vars' = Array.fold_right Id.Set.add idv vars in
       (match fk with
 	 | GFix (nv,n) ->
 	     let listdecl =
 	       Array.mapi (fun i fi ->
                  let (bl,ty,def) = blv.(i), tyv.(i), bv.(i) in
                  let (assums,ids,bl) = extern_local_binder scopes vars bl in
-                 let vars0 = List.fold_right (name_fold Idset.add) ids vars in
-                 let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
+                 let vars0 = List.fold_right (name_fold Id.Set.add) ids vars in
+                 let vars1 = List.fold_right (name_fold Id.Set.add) ids vars' in
 		 let n =
 		   match fst nv.(i) with
 		     | None -> None
@@ -731,8 +731,8 @@ let rec extern inctx scopes vars r =
 	     let listdecl =
                Array.mapi (fun i fi ->
                  let (_,ids,bl) = extern_local_binder scopes vars blv.(i) in
-                 let vars0 = List.fold_right (name_fold Idset.add) ids vars in
-                 let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
+                 let vars0 = List.fold_right (name_fold Id.Set.add) ids vars in
+                 let vars1 = List.fold_right (name_fold Id.Set.add) ids vars' in
 		 ((Loc.ghost, fi),bl,extern_typ scopes vars0 tyv.(i),
                   sub_extern false scopes vars1 bv.(i))) idv
 	     in
@@ -775,13 +775,13 @@ and extern_local_binder scopes vars = function
     [] -> ([],[],[])
   | (na,bk,Some bd,ty)::l ->
       let (assums,ids,l) =
-        extern_local_binder scopes (name_fold Idset.add na vars) l in
+        extern_local_binder scopes (name_fold Id.Set.add na vars) l in
       (assums,na::ids,
        LocalRawDef((Loc.ghost,na), extern false scopes vars bd) :: l)
 
   | (na,bk,None,ty)::l ->
       let ty = extern_typ scopes vars (anonymize_if_reserved na ty) in
-      (match extern_local_binder scopes (name_fold Idset.add na vars) l with
+      (match extern_local_binder scopes (name_fold Id.Set.add na vars) l with
           (assums,ids,LocalRawAssum(nal,k,ty')::l)
             when constr_expr_eq ty ty' &
               match na with Name id -> not (occur_var_constr_expr id ty')
@@ -933,7 +933,7 @@ let rec glob_of_pat env = function
 	| Name id   -> id
 	| Anonymous ->
 	    anomaly "glob_constr_of_pattern: index to an anonymous variable"
-      with Not_found -> id_of_string ("_UNBOUND_REL_"^(string_of_int n)) in
+      with Not_found -> Id.of_string ("_UNBOUND_REL_"^(string_of_int n)) in
       GVar (loc,id)
   | PMeta None -> GHole (loc,Evar_kinds.InternalHole)
   | PMeta (Some n) -> GPatVar (loc,(false,n))
@@ -976,7 +976,7 @@ let rec glob_of_pat env = function
   | PSort s -> GSort (loc,s)
 
 let extern_constr_pattern env pat =
-  extern true (None,[]) Idset.empty (glob_of_pat env pat)
+  extern true (None,[]) Id.Set.empty (glob_of_pat env pat)
 
 let extern_rel_context where env sign =
   let a = detype_rel_context where [] (names_of_rel_context env) sign in

@@ -79,8 +79,8 @@ let rec cases_pattern_fold_names f a = function
 let ids_of_pattern_list =
   List.fold_left
     (Loc.located_fold_left
-      (List.fold_left (cases_pattern_fold_names Idset.add)))
-    Idset.empty
+      (List.fold_left (cases_pattern_fold_names Id.Set.add)))
+    Id.Set.empty
 
 let rec fold_constr_expr_binders g f n acc b = function
   | (nal,bk,t)::l ->
@@ -123,7 +123,7 @@ let fold_constr_expr_with_binders g f n acc = function
       let acc = List.fold_left (f n) acc (List.map fst al) in
       List.fold_right (fun (loc,patl,rhs) acc ->
 	let ids = ids_of_pattern_list patl in
-	f (Idset.fold g ids n) acc rhs) bl acc
+	f (Id.Set.fold g ids n) acc rhs) bl acc
   | CLetTuple (loc,nal,(ona,po),b,c) ->
       let n' = List.fold_right (Loc.down_located (name_fold g)) nal n in
       f (Option.fold_right (Loc.down_located (name_fold g)) ona n') (f n acc b) c
@@ -141,11 +141,11 @@ let fold_constr_expr_with_binders g f n acc = function
 
 let free_vars_of_constr_expr c =
   let rec aux bdvars l = function
-  | CRef (Ident (_,id)) -> if List.mem id bdvars then l else Idset.add id l
+  | CRef (Ident (_,id)) -> if List.mem id bdvars then l else Id.Set.add id l
   | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
-  in aux [] Idset.empty c
+  in aux [] Id.Set.empty c
 
-let occur_var_constr_expr id c = Idset.mem id (free_vars_of_constr_expr c)
+let occur_var_constr_expr id c = Id.Set.mem id (free_vars_of_constr_expr c)
 
 (* Interpret the index of a recursion order annotation *)
 
@@ -161,7 +161,7 @@ let split_at_annot bl na =
       let rec aux acc = function
 	| LocalRawAssum (bls, k, t) as x :: rest ->
             let test (_, na) = match na with
-            | Name id' -> id_eq id id'
+            | Name id' -> Id.equal id id'
             | Anonymous -> false
             in
 	    let l, r = List.split_when test bls in

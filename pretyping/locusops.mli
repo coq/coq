@@ -34,5 +34,5 @@ val is_nowhere : 'a clause_expr -> bool
 
 (** Clause conversion functions, parametrized by a hyp enumeration function *)
 
-val simple_clause_of : (unit -> identifier list) -> clause -> simple_clause
-val concrete_clause_of : (unit -> identifier list) -> clause -> concrete_clause
+val simple_clause_of : (unit -> Id.t list) -> clause -> simple_clause
+val concrete_clause_of : (unit -> Id.t list) -> clause -> concrete_clause

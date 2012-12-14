@@ -21,7 +21,7 @@ let rec make_let e = function
   | [] -> e
   | GramNonTerminal(loc,t,_,Some p)::l ->
       let loc = of_coqloc loc in
-      let p = Names.string_of_id p in
+      let p = Names.Id.to_string p in
       let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
       let e = make_let e l in
       <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
@@ -93,10 +93,10 @@ EXTEND
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let t, g = interp_entry_name false None e "" in
-        GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let t, g = interp_entry_name false None e sep in
-        GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.Id.of_string s))
       | s = STRING ->
         GramTerminal s
     ] ]

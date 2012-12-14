@@ -25,8 +25,8 @@ open Misctypes
 
 (** Basic tactics *)
 
-val h_intro_move      : identifier option -> identifier move_location -> tactic
-val h_intro           : identifier -> tactic
+val h_intro_move      : Id.t option -> Id.t move_location -> tactic
+val h_intro           : Id.t -> tactic
 val h_intros_until    : quantified_hypothesis -> tactic
 
 val h_assumption      : tactic
@@ -38,7 +38,7 @@ val h_apply           : advanced_flag -> evars_flag ->
   constr with_bindings located list -> tactic
 val h_apply_in        : advanced_flag -> evars_flag ->
   constr with_bindings located list ->
-  identifier * intro_pattern_expr located option -> tactic
+  Id.t * intro_pattern_expr located option -> tactic
 
 val h_elim            : evars_flag -> constr with_bindings ->
                         constr with_bindings option -> tactic
@@ -46,11 +46,11 @@ val h_elim_type       : constr -> tactic
 val h_case            : evars_flag -> constr with_bindings -> tactic
 val h_case_type       : constr -> tactic
 
-val h_mutual_fix      : identifier -> int ->
-                        (identifier * int * constr) list -> tactic
-val h_fix             : identifier option -> int -> tactic
-val h_mutual_cofix    : identifier -> (identifier * constr) list -> tactic
-val h_cofix           : identifier option -> tactic
+val h_mutual_fix      : Id.t -> int ->
+                        (Id.t * int * constr) list -> tactic
+val h_fix             : Id.t option -> int -> tactic
+val h_mutual_cofix    : Id.t -> (Id.t * constr) list -> tactic
+val h_cofix           : Id.t option -> tactic
 
 val h_cut             : constr -> tactic
 val h_generalize      : constr list -> tactic
@@ -90,11 +90,11 @@ val h_lapply          : constr -> tactic
 
 
 (** Context management *)
-val h_clear           : bool -> identifier list -> tactic
-val h_clear_body      : identifier list -> tactic
-val h_move            : bool -> identifier -> identifier move_location -> tactic
-val h_rename          : (identifier*identifier) list -> tactic
-val h_revert          : identifier list -> tactic
+val h_clear           : bool -> Id.t list -> tactic
+val h_clear_body      : Id.t list -> tactic
+val h_move            : bool -> Id.t -> Id.t move_location -> tactic
+val h_rename          : (Id.t*Id.t) list -> tactic
+val h_revert          : Id.t list -> tactic
 
 (** Constructors *)
 val h_constructor     : evars_flag -> int -> constr bindings -> tactic

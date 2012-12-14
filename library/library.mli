@@ -26,7 +26,7 @@ open Libobject
 val require_library : qualid located list -> bool option -> unit
 val require_library_from_dirpath : (dir_path * string) list -> bool option -> unit
 val require_library_from_file :
-  identifier option -> CUnix.physical_path -> bool option -> unit
+  Id.t option -> CUnix.physical_path -> bool option -> unit
 
 (** {6 ... } *)
 (** Open a module (or a library); if the boolean is true then it's also

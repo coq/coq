@@ -29,7 +29,7 @@ let eq_gr gr1 gr2 =
     | ConstRef con1, ConstRef con2 -> eq_constant con1 con2
     | IndRef kn1, IndRef kn2 -> eq_ind kn1 kn2
     | ConstructRef kn1, ConstructRef kn2 -> eq_constructor kn1 kn2
-    | VarRef v1, VarRef v2 -> id_eq v1 v2
+    | VarRef v1, VarRef v2 -> Id.equal v1 v2
     | _ -> false
 
 let destVarRef = function VarRef ind -> ind | _ -> failwith "destVarRef"
@@ -87,7 +87,7 @@ let global_ord_gen fc fmi x y =
     | ConstructRef (indx,jx), ConstructRef (indy,jy) ->
       let c = Int.compare jx jy in
       if Int.equal c 0 then ind_ord indx indy else c
-    | VarRef v1, VarRef v2 -> id_ord v1 v2
+    | VarRef v1, VarRef v2 -> Id.compare v1 v2
     | _, _ -> Pervasives.compare x y
 
 let global_ord_can = global_ord_gen canonical_con canonical_mind

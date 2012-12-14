@@ -19,8 +19,8 @@ type contexts = Parameters | Properties
 
 type typeclass_error =
     | NotAClass of constr
-    | UnboundMethod of global_reference * identifier Loc.located (* Class name, method *)
-    | NoInstance of identifier Loc.located * constr list
+    | UnboundMethod of global_reference * Id.t Loc.located (* Class name, method *)
+    | NoInstance of Id.t Loc.located * constr list
     | UnsatisfiableConstraints of evar_map * (existential_key * Evar_kinds.t) option
     | MismatchedContextInstance of contexts * constr_expr list * rel_context (* found, expected *)
 

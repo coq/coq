@@ -22,7 +22,7 @@ val add_rew_rules : string -> raw_rew_rule list -> unit
    Default is Naive: first match in the clause, don't look at the side-conditions to
    tell if the rewrite succeeded. *)
 val autorewrite : ?conds:conditions -> tactic -> string list -> tactic
-val autorewrite_in : ?conds:conditions -> Names.identifier -> tactic -> string list -> tactic
+val autorewrite_in : ?conds:conditions -> Names.Id.t -> tactic -> string list -> tactic
 
 (** Rewriting rules *)
 type rew_rule = { rew_lemma: constr;

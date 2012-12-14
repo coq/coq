@@ -34,7 +34,7 @@ type debug = Debug | Info | Off (* for trivial / auto / eauto ... *)
 
 type 'a induction_arg =
   | ElimOnConstr of 'a
-  | ElimOnIdent of identifier located
+  | ElimOnIdent of Id.t located
   | ElimOnAnonHyp of int
 
 type inversion_kind =
@@ -75,7 +75,7 @@ type multi =
 (* Type of patterns *)
 type 'a match_pattern =
   | Term of 'a
-  | Subterm of bool * identifier option * 'a
+  | Subterm of bool * Id.t option * 'a
 
 (* Type of hypotheses for a Match Context rule *)
 type 'a match_context_hyps =
@@ -93,7 +93,7 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   (* Basic tactics *)
   | TacIntroPattern of intro_pattern_expr located list
   | TacIntrosUntil of quantified_hypothesis
-  | TacIntroMove of identifier option * 'nam move_location
+  | TacIntroMove of Id.t option * 'nam move_location
   | TacAssumption
   | TacExact of 'trm
   | TacExactNoCheck of 'trm
@@ -104,10 +104,10 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacElimType of 'trm
   | TacCase of evars_flag * 'trm with_bindings
   | TacCaseType of 'trm
-  | TacFix of identifier option * int
-  | TacMutualFix of identifier * int * (identifier * int * 'trm) list
-  | TacCofix of identifier option
-  | TacMutualCofix of identifier * (identifier * 'trm) list
+  | TacFix of Id.t option * int
+  | TacMutualFix of Id.t * int * (Id.t * int * 'trm) list
+  | TacCofix of Id.t option
+  | TacMutualCofix of Id.t * (Id.t * 'trm) list
   | TacCut of 'trm
   | TacAssert of
       ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option *
@@ -167,7 +167,7 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
 
   (* For syntax extensions *)
   | TacAlias of Loc.t * string *
-      (identifier * 'lev generic_argument) list * (dir_path * glob_tactic_expr)
+      (Id.t * 'lev generic_argument) list * (dir_path * glob_tactic_expr)
 
 (** Possible arguments of a tactic definition *)
 
@@ -213,12 +213,12 @@ and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr =
   | TacProgress of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacShowHyps of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacAbstract of
-      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr * identifier option
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr * Id.t option
   | TacId of 'n message_token list
   | TacFail of int or_var * 'n message_token list
   | TacInfo of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacLetIn of rec_flag *
-      (identifier located * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_arg) list *
+      (Id.t located * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_arg) list *
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacMatch of lazy_flag *
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
@@ -229,7 +229,7 @@ and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr =
   | TacArg of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_arg located
 
 and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_fun_ast =
-    identifier option list * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+    Id.t option list * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
 
 (** Globalized tactics *)
 
@@ -238,7 +238,7 @@ and g_pat = glob_constr_and_expr * constr_pattern
 and g_cst = evaluable_global_reference and_short_name or_var
 and g_ind = inductive or_var
 and g_ref = ltac_constant located or_var
-and g_nam  = identifier located
+and g_nam  = Id.t located
 
 and glob_tactic_expr =
     (g_trm, g_pat, g_cst, g_ind, g_ref, g_nam, glevel) gen_tactic_expr
@@ -256,7 +256,7 @@ type r_pat = constr_pattern_expr
 type r_cst = reference or_by_notation
 type r_ind = reference or_by_notation
 type r_ref = reference
-type r_nam  = identifier located or_metaid
+type r_nam  = Id.t located or_metaid
 type r_lev = rlevel
 
 type raw_atomic_tactic_expr =

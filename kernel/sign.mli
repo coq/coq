@@ -16,9 +16,9 @@ type section_context = named_context
 
 val empty_named_context : named_context
 val add_named_decl : named_declaration -> named_context -> named_context
-val vars_of_named_context : named_context -> identifier list
+val vars_of_named_context : named_context -> Id.t list
 
-val lookup_named : identifier -> named_context -> named_declaration
+val lookup_named : Id.t -> named_context -> named_declaration
 
 (** number of declarations *)
 val named_context_length : named_context -> int

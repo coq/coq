@@ -29,8 +29,8 @@ type signature_mismatch_error =
   | DefinitionFieldExpected
   | ModuleFieldExpected
   | ModuleTypeFieldExpected
-  | NotConvertibleInductiveField of identifier
-  | NotConvertibleConstructorField of identifier
+  | NotConvertibleInductiveField of Id.t
+  | NotConvertibleConstructorField of Id.t
   | NotConvertibleBodyField
   | NotConvertibleTypeField
   | NotSameConstructorNamesField

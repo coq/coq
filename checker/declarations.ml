@@ -607,7 +607,7 @@ type one_inductive_body = {
 (* Primitive datas *)
 
  (* Name of the type: [Ii] *)
-    mind_typename : identifier;
+    mind_typename : Id.t;
 
  (* Arity context of [Ii] with parameters: [forall params, Ui] *)
     mind_arity_ctxt : rel_context;
@@ -616,7 +616,7 @@ type one_inductive_body = {
     mind_arity : inductive_arity;
 
  (* Names of the constructors: [cij] *)
-    mind_consnames : identifier array;
+    mind_consnames : Id.t array;
 
  (* Types of the constructors with parameters: [forall params, Tij],
     where the Ik are replaced by de Bruijn index in the context
@@ -764,8 +764,8 @@ and struct_expr_body =
   | SEBwith of struct_expr_body * with_declaration_body
 
 and with_declaration_body =
-    With_module_body of identifier list * module_path
-  | With_definition_body of  identifier list * constant_body
+    With_module_body of Id.t list * module_path
+  | With_definition_body of  Id.t list * constant_body
 
 and module_body =
     { mod_mp : module_path;

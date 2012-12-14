@@ -25,7 +25,7 @@ val special_meta : metavariable
 (** [bound_ident_map] represents the result of matching binding
    identifiers of the pattern with the binding identifiers of the term
    matched *)
-type bound_ident_map = (identifier * identifier) list
+type bound_ident_map = (Id.t * Id.t) list
 
 (** [matches pat c] matches [c] against [pat] and returns the resulting
    assignment of metavariables; it raises [PatternMatchingFailure] if

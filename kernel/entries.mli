@@ -37,15 +37,15 @@ then, in i{^ th} block, [mind_entry_params] is [xn:Xn;...;x1:X1];
 *)
 
 type one_inductive_entry = {
-  mind_entry_typename : identifier;
+  mind_entry_typename : Id.t;
   mind_entry_arity : constr;
-  mind_entry_consnames : identifier list;
+  mind_entry_consnames : Id.t list;
   mind_entry_lc : constr list }
 
 type mutual_inductive_entry = {
   mind_entry_record : bool;
   mind_entry_finite : bool;
-  mind_entry_params : (identifier * local_entry) list;
+  mind_entry_params : (Id.t * local_entry) list;
   mind_entry_inds : one_inductive_entry list }
 
 (** {6 Constants (Definition/Axiom) } *)
@@ -73,8 +73,8 @@ type module_struct_entry =
   | MSEapply of module_struct_entry * module_struct_entry
 
 and with_declaration =
-    With_Module of identifier list * module_path
-  | With_Definition of identifier list * constr
+    With_Module of Id.t list * module_path
+  | With_Definition of Id.t list * constr
 
 and module_entry =
     { mod_entry_type : module_struct_entry option;

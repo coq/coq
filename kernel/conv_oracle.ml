@@ -23,14 +23,14 @@ let is_transparent = function
 | Level 0 -> true
 | _ -> false
 
-type oracle = level Idmap.t * level Cmap.t
+type oracle = level Id.Map.t * level Cmap.t
 
-let var_opacity = ref Idmap.empty
+let var_opacity = ref Id.Map.empty
 let cst_opacity = ref Cmap.empty
 
 let get_strategy = function
   | VarKey id ->
-      (try Idmap.find id !var_opacity
+      (try Id.Map.find id !var_opacity
       with Not_found -> default)
   | ConstKey c ->
       (try Cmap.find c !cst_opacity
@@ -41,8 +41,8 @@ let set_strategy k l =
   match k with
   | VarKey id ->
       var_opacity :=
-      if l=default then Idmap.remove id !var_opacity
-      else Idmap.add id l !var_opacity
+      if l=default then Id.Map.remove id !var_opacity
+      else Id.Map.add id l !var_opacity
   | ConstKey c ->
       cst_opacity :=
       if l=default then Cmap.remove c !cst_opacity
@@ -50,9 +50,9 @@ let set_strategy k l =
   | RelKey _ -> Errors.error "set_strategy: RelKey"
 
 let get_transp_state () =
-  (Idmap.fold
-    (fun id l ts -> if  l=Opaque then Idpred.remove id ts else ts)
-    !var_opacity Idpred.full,
+  (Id.Map.fold
+    (fun id l ts -> if  l=Opaque then Id.Pred.remove id ts else ts)
+    !var_opacity Id.Pred.full,
    Cmap.fold
     (fun c l ts -> if  l=Opaque then Cpred.remove c ts else ts)
     !cst_opacity Cpred.full)
@@ -67,6 +67,6 @@ let oracle_order l2r k1 k2 =
     | _ -> l2r (* use recommended default *)
 
 (* summary operations *)
-let init() = (cst_opacity := Cmap.empty; var_opacity := Idmap.empty)
+let init() = (cst_opacity := Cmap.empty; var_opacity := Id.Map.empty)
 let freeze () = (!var_opacity, !cst_opacity)
 let unfreeze (vo,co) = (cst_opacity := co; var_opacity := vo)

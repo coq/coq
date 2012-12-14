@@ -29,23 +29,23 @@ val subst_glob_constr : substitution -> glob_constr -> glob_constr
    [isgoal] tells if naming must avoid global-level synonyms as intro does 
    [ctx] gives the names of the free variables *)
 
-val detype : bool -> identifier list -> names_context -> constr -> glob_constr
+val detype : bool -> Id.t list -> names_context -> constr -> glob_constr
 
 val detype_case :
   bool -> ('a -> glob_constr) ->
   (constructor array -> int array -> 'a array ->
-    (Loc.t * identifier list * cases_pattern list * glob_constr) list) ->
+    (Loc.t * Id.t list * cases_pattern list * glob_constr) list) ->
   ('a -> int -> bool) ->
-  identifier list -> inductive * case_style * int array * int ->
+  Id.t list -> inductive * case_style * int array * int ->
     'a option -> 'a -> 'a array -> glob_constr
 
 val detype_sort : sorts -> glob_sort
 
-val detype_rel_context : constr option -> identifier list -> names_context ->
+val detype_rel_context : constr option -> Id.t list -> names_context ->
   rel_context -> glob_decl list
 
 (** look for the index of a named var or a nondep var as it is renamed *)
-val lookup_name_as_displayed  : env -> constr -> identifier -> int option
+val lookup_name_as_displayed  : env -> constr -> Id.t -> int option
 val lookup_index_as_renamed : env -> constr -> int -> int option
 
 val set_detype_anonymous : (Loc.t -> int -> glob_constr) -> unit

@@ -24,8 +24,8 @@ open Nametab
     Conversion from [raw_tactic_expr] to [glob_tactic_expr] *)
 
 type glob_sign = {
-  ltacvars : identifier list * identifier list;
-  ltacrecvars : (identifier * ltac_constant) list;
+  ltacvars : Id.t list * Id.t list;
+  ltacrecvars : (Id.t * ltac_constant) list;
   gsigma : Evd.evar_map;
   genv : Environ.env }
 
@@ -40,7 +40,7 @@ val make_empty_glob_sign : unit -> glob_sign
 val glob_tactic : raw_tactic_expr -> glob_tactic_expr
 
 val glob_tactic_env :
-  identifier list -> Environ.env -> raw_tactic_expr -> glob_tactic_expr
+  Id.t list -> Environ.env -> raw_tactic_expr -> glob_tactic_expr
 
 (** Low-level variants *)
 
@@ -55,7 +55,7 @@ val intern_constr_with_bindings :
   glob_sign -> constr_expr * constr_expr bindings ->
   glob_constr_and_expr * glob_constr_and_expr bindings
 
-val intern_hyp : glob_sign -> identifier Loc.located -> identifier Loc.located
+val intern_hyp : glob_sign -> Id.t Loc.located -> Id.t Loc.located
 
 (** Adds a globalization function for extra generic arguments *)
 

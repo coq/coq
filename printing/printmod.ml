@@ -70,7 +70,7 @@ let print_kn locals kn =
 	    Not_found -> print_modpath locals kn
 
 let nametab_register_dir mp =
-  let id = id_of_string "FAKETOP" in
+  let id = Id.of_string "FAKETOP" in
   let fp = Libnames.make_path empty_dirpath id in
   let dir = make_dirpath [id] in
   Nametab.push_dir (Nametab.Until 1) dir (DirModule (dir,(mp,empty_dirpath)));
@@ -175,11 +175,11 @@ let rec print_modtype env mp locals mty =
 		 prlist_with_sep spc (print_modpath locals) mapp ++ str")")
   | SEBwith(seb,With_definition_body(idl,cb))->
       let env' = None in (* TODO: build a proper environment if env <> None *)
-      let s = (String.concat "." (List.map string_of_id idl)) in
+      let s = (String.concat "." (List.map Id.to_string idl)) in
       hov 2 (print_modtype env' mp locals seb ++ spc() ++ str "with" ++ spc() ++
 	       str "Definition"++ spc() ++ str s ++ spc() ++  str ":="++ spc())
   | SEBwith(seb,With_module_body(idl,mp))->
-      let s =(String.concat "." (List.map string_of_id idl)) in
+      let s =(String.concat "." (List.map Id.to_string idl)) in
       hov 2 (print_modtype env mp locals seb ++ spc() ++ str "with" ++ spc() ++
 	       str "Module"++ spc() ++ str s ++ spc() ++ str ":="++ spc())
 

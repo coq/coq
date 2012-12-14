@@ -24,7 +24,7 @@ open Mod_subst
 let cst_ord k1 k2 = kn_ord (canonical_con k1) (canonical_con k2)
 
 type context_object =
-  | Variable of identifier (* A section variable or a Let definition *)
+  | Variable of Id.t (* A section variable or a Let definition *)
   | Axiom of constant      (* An axiom or a constant. *)
   | Opaque of constant     (* An opaque constant. *)
   | Transparent of constant
@@ -35,7 +35,7 @@ struct
   type t = context_object
   let compare x y =
       match x , y with
-      | Variable i1 , Variable i2 -> id_ord i1 i2
+      | Variable i1 , Variable i2 -> Id.compare i1 i2
       | Axiom k1 , Axiom k2 -> cst_ord k1 k2
       | Opaque k1 , Opaque k2 -> cst_ord k1 k2
       | Transparent k1 , Transparent k2 -> cst_ord k1 k2

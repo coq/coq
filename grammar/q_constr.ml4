@@ -33,7 +33,7 @@ EXTEND
       | "Type" -> Misctypes.GType None ] ]
   ;
   ident:
-    [ [ s = string -> <:expr< Names.id_of_string $str:s$ >> ] ]
+    [ [ s = string -> <:expr< Names.Id.of_string $str:s$ >> ] ]
   ;
   name:
     [ [ "_" -> <:expr< Anonymous >> | id = ident -> <:expr< Name $id$ >> ] ]

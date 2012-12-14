@@ -279,16 +279,16 @@ let recheck_typability (what,id) env sigma t =
   with _ ->
     let s = match what with
       | None -> "the conclusion"
-      | Some id -> "hypothesis "^(Names.string_of_id id) in
+      | Some id -> "hypothesis "^(Names.Id.to_string id) in
     Errors.error
-      ("The correctness of "^s^" relies on the body of "^(Names.string_of_id id))
+      ("The correctness of "^s^" relies on the body of "^(Names.Id.to_string id))
 
 let remove_hyp_body env sigma id =
   let sign =
     wrap_apply_to_hyp_and_dependent_on (Environ.named_context_val env) id
       (fun (_,c,t) _ ->
 	match c with
-	| None -> Errors.error ((Names.string_of_id id)^" is not a local definition")
+	| None -> Errors.error ((Names.Id.to_string id)^" is not a local definition")
 	| Some c ->(id,None,t))
       (fun (id',c,t as d) sign ->
 	(
@@ -384,9 +384,9 @@ let convert_hyp check (id,b,bt as d) env rdefs gl info =
   let replace_function =
     (fun _ (_,c,ct) _ ->
        if check && not (Reductionops.is_conv env sigma bt ct) then
-	 Errors.error ("Incorrect change of the type of "^(Names.string_of_id id));
+	 Errors.error ("Incorrect change of the type of "^(Names.Id.to_string id));
        if check && not (Option.equal (Reductionops.is_conv env sigma) b c) then
-	 Errors.error ("Incorrect change of the body of "^(Names.string_of_id id));
+	 Errors.error ("Incorrect change of the body of "^(Names.Id.to_string id));
        d)
   in
   (* Modified named context. *)
@@ -427,9 +427,9 @@ let rename_hyp_sign id1 id2 sign =
     (fun d _ -> map_named_declaration (replace_vars [id1,mkVar id2]) d)
 let rename_hyp id1 id2 env rdefs gl info =
   let hyps = hyps env rdefs gl info in
-  if not (Names.id_eq id1 id2) &&
+  if not (Names.Id.equal id1 id2) &&
     List.mem id2 (Termops.ids_of_named_context (Environ.named_context_of_val hyps)) then
-       Errors.error ((Names.string_of_id id2)^" is already used.");
+       Errors.error ((Names.Id.to_string id2)^" is already used.");
   let new_hyps = rename_hyp_sign id1 id2 hyps in
   let new_env = Environ.reset_with_named_context new_hyps env in
   let new_concl = Term.replace_vars [id1,mkVar id2] (concl env rdefs gl info) in

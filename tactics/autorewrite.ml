@@ -129,7 +129,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas : tactic =
      match Tacmach.pf_hyps gl with
         (last_hyp_id,_,_)::_ -> last_hyp_id
       | _ -> (* even the hypothesis id is missing *)
-             error ("No such hypothesis: " ^ (string_of_id !id) ^".")
+             error ("No such hypothesis: " ^ (Id.to_string !id) ^".")
     in
     let gl' = general_rewrite_in dir AllOccurrences true ~tac:(tac, conds) false !id cstr false gl in
     let gls = gl'.Evd.it in
@@ -137,7 +137,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas : tactic =
        g::_ ->
         (match Environ.named_context_of_val (Goal.V82.hyps gl'.Evd.sigma g) with
             (lastid,_,_)::_ ->
-              if not (id_eq last_hyp_id lastid) then
+              if not (Id.equal last_hyp_id lastid) then
                begin
                 let gl'' =
                   if !to_be_cleared then

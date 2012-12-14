@@ -62,7 +62,7 @@ let get_uri_of_var v pvars =
       [] -> Errors.error ("Variable "^v^" not found")
     | he::tl as modules ->
        let dirpath = N.make_dirpath modules in
-        if List.mem (N.id_of_string v) (D.last_section_hyps dirpath) then
+        if List.mem (N.Id.of_string v) (D.last_section_hyps dirpath) then
          modules
         else
          search_in_open_sections tl
@@ -75,7 +75,7 @@ let get_uri_of_var v pvars =
    in
     "cic:" ^
      List.fold_left
-      (fun i x -> "/" ^ N.string_of_id x ^ i) "" path
+      (fun i x -> "/" ^ N.Id.to_string x ^ i) "" path
 ;;
 
 type tag =
@@ -120,8 +120,8 @@ let subtract l1 l2 =
 let token_list_of_path dir id tag =
  let module N = Names in
   let token_list_of_dirpath dirpath =
-   List.rev_map N.string_of_id (N.repr_dirpath dirpath) in
-  token_list_of_dirpath dir @ [N.string_of_id id ^ "." ^ (ext_of_tag tag)]
+   List.rev_map N.Id.to_string (N.repr_dirpath dirpath) in
+  token_list_of_dirpath dir @ [N.Id.to_string id ^ "." ^ (ext_of_tag tag)]
 
 let token_list_of_kernel_name tag =
  let module N = Names in
@@ -202,7 +202,7 @@ let typeur sigma metamap =
           let (_,_,ty) = Environ.lookup_named id env in
           ty
         with Not_found ->
-          Errors.anomaly ("type_of: variable "^(Names.string_of_id id)^" unbound"))
+          Errors.anomaly ("type_of: variable "^(Names.Id.to_string id)^" unbound"))
     | T.Const c ->
         let cb = Environ.lookup_constant c env in
         Typeops.type_of_constant_type env (cb.Declarations.const_type)
@@ -455,8 +455,8 @@ print_endline "PASSATO" ; flush stdout ;
                 let he1' = remove_module_dirpath_from_dirpath ~basedir he1_sp in
                 let he1'' =
                  String.concat "/"
-                  (List.map Names.string_of_id (List.rev he1')) ^ "/"
-                 ^ (Names.string_of_id he1_id) ^ ".var"
+                  (List.map Names.Id.to_string (List.rev he1')) ^ "/"
+                 ^ (Names.Id.to_string he1_id) ^ ".var"
                 in
                  (he1'',he2)::subst, extra_args, uninst
            in
@@ -501,13 +501,13 @@ print_endline "PASSATO" ; flush stdout ;
                A.ARel (fresh_id'', n, List.nth idrefs (n-1), id)
            | T.Var id ->
 	      let pvars = Termops.ids_of_named_context (E.named_context env) in
-	      let pvars = List.map N.string_of_id pvars in
-              let path = get_uri_of_var (N.string_of_id id) pvars in
+	      let pvars = List.map N.Id.to_string pvars in
+              let path = get_uri_of_var (N.Id.to_string id) pvars in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
                if is_a_Prop innersort  && expected_available then
                 add_inner_type fresh_id'' ;
                A.AVar
-                (fresh_id'', path ^ "/" ^ (N.string_of_id id) ^ ".var")
+                (fresh_id'', path ^ "/" ^ (N.Id.to_string id) ^ ".var")
            | T.Evar (n,l) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
               if is_a_Prop innersort  && expected_available then
@@ -610,7 +610,7 @@ print_endline "PASSATO" ; flush stdout ;
            | T.LetIn (n,s,t,d) ->
               let id =
                match n with
-                   N.Anonymous -> N.id_of_string "_X"
+                   N.Anonymous -> N.Id.of_string "_X"
                  | N.Name id -> id
               in
               let n' =
@@ -886,7 +886,7 @@ let acic_object_of_cic_object sigma obj =
                          in
                          let dummy_never_used =
                           let s = "dummy_never_used" in
-                           A.ARel (s,99,s,Names.id_of_string s)
+                           A.ARel (s,99,s,Names.Id.of_string s)
                          in
                           final_env,final_idrefs,
                            (hid,(n,A.Def (at,dummy_never_used)))::atl

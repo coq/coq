@@ -33,7 +33,7 @@ let pr_int_or_id _ _ _ = function
 ARGUMENT EXTEND int_or_id
   TYPED AS int_or_id
   PRINTED BY pr_int_or_id
-| [ preident(id) ] -> [ ArgId (id_of_string id) ]
+| [ preident(id) ] -> [ ArgId (Id.of_string id) ]
 | [ integer(i) ] -> [ ArgInt i ]
 END
 

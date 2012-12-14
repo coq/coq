@@ -40,10 +40,10 @@ val declare_instance_constant :
   bool -> (** globality *)
   Impargs.manual_explicitation list -> (** implicits *)
   ?hook:(Globnames.global_reference -> unit) ->
-  identifier -> (** name *)
+  Id.t -> (** name *)
   Term.constr -> (** body *)
   Term.types -> (** type *)
-  Names.identifier
+  Names.Id.t
 
 val new_instance :
   ?abstract:bool -> (** Not abstract by default. *)
@@ -55,7 +55,7 @@ val new_instance :
   ?tac:Proof_type.tactic  ->
   ?hook:(Globnames.global_reference -> unit) ->
   int option ->
-  identifier
+  Id.t
 
 (** Setting opacity *)
 
@@ -63,7 +63,7 @@ val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> u
 
 (** For generation on names based on classes only *)
 
-val id_of_class : typeclass -> identifier
+val id_of_class : typeclass -> Id.t
 
 (** Context command *)
 

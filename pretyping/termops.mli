@@ -41,7 +41,7 @@ val push_rel_assum : name * types -> env -> env
 val push_rels_assum : (name * types) list -> env -> env
 val push_named_rec_types : name array * types array * 'a -> env -> env
 
-val lookup_rel_id : identifier -> rel_context -> int * constr option * types
+val lookup_rel_id : Id.t -> rel_context -> int * constr option * types
 (** Associates the contents of an identifier in a [rel_context]. Raise
     [Not_found] if there is no such identifier. *)
 
@@ -104,16 +104,16 @@ val occur_meta : types -> bool
 val occur_existential : types -> bool
 val occur_meta_or_existential : types -> bool
 val occur_evar : existential_key -> types -> bool
-val occur_var : env -> identifier -> types -> bool
+val occur_var : env -> Id.t -> types -> bool
 val occur_var_in_decl :
   env ->
-  identifier -> 'a * types option * types -> bool
+  Id.t -> 'a * types option * types -> bool
 val free_rels : constr -> Int.Set.t
 val dependent : constr -> constr -> bool
 val dependent_no_evar : constr -> constr -> bool
 val count_occurrences : constr -> constr -> int
 val collect_metas : constr -> int list
-val collect_vars : constr -> Idset.t (** for visible vars only *)
+val collect_vars : constr -> Id.Set.t (** for visible vars only *)
 val occur_term : constr -> constr -> bool (** Synonymous
  of dependent 
    Substitution of metavariables *)
@@ -162,7 +162,7 @@ type 'a testing_function = {
   match_fun : constr -> 'a;
   merge_fun : 'a -> 'a -> 'a;
   mutable testing_state : 'a;
-  mutable last_found : ((identifier * hyp_location_flag) option * int * constr) option
+  mutable last_found : ((Id.t * hyp_location_flag) option * int * constr) option
 }
 
 val make_eq_test : constr -> unit testing_function
@@ -170,7 +170,7 @@ val make_eq_test : constr -> unit testing_function
 exception NotUnifiable
 
 val subst_closed_term_occ_modulo :
-  occurrences -> 'a testing_function -> (identifier * hyp_location_flag) option
+  occurrences -> 'a testing_function -> (Id.t * hyp_location_flag) option
   -> constr -> types
 
 (** [subst_closed_term_occ occl c d] replaces occurrences of closed [c] at
@@ -228,19 +228,19 @@ val adjust_app_array_size : constr -> constr array -> constr -> constr array ->
 type names_context = name list
 val add_name : name -> names_context -> names_context
 val lookup_name_of_rel : int -> names_context -> name
-val lookup_rel_of_name : identifier -> names_context -> int
+val lookup_rel_of_name : Id.t -> names_context -> int
 val empty_names_context : names_context
-val ids_of_rel_context : rel_context -> identifier list
-val ids_of_named_context : named_context -> identifier list
-val ids_of_context : env -> identifier list
+val ids_of_rel_context : rel_context -> Id.t list
+val ids_of_named_context : named_context -> Id.t list
+val ids_of_context : env -> Id.t list
 val names_of_rel_context : env -> names_context
 
 val context_chop : int -> rel_context -> rel_context * rel_context
 val env_rel_context_chop : int -> env -> env * rel_context
 
 (** Set of local names *)
-val vars_of_env: env -> Idset.t
-val add_vname : Idset.t -> name -> Idset.t
+val vars_of_env: env -> Id.Set.t
+val add_vname : Id.Set.t -> name -> Id.Set.t
 
 (** other signature iterators *)
 val process_rel_context : (rel_declaration -> env -> env) -> env -> env
@@ -256,19 +256,19 @@ val map_rel_context_with_binders :
 val fold_named_context_both_sides :
   ('a -> named_declaration -> named_declaration list -> 'a) ->
     named_context -> init:'a -> 'a
-val mem_named_context : identifier -> named_context -> bool
+val mem_named_context : Id.t -> named_context -> bool
 
-val clear_named_body : identifier -> env -> env
+val clear_named_body : Id.t -> env -> env
 
-val global_vars : env -> constr -> identifier list
-val global_vars_set_of_decl : env -> named_declaration -> Idset.t
+val global_vars : env -> constr -> Id.t list
+val global_vars_set_of_decl : env -> named_declaration -> Id.Set.t
 
 (** Gives an ordered list of hypotheses, closed by dependencies,
    containing a given set *)
-val dependency_closure : env -> named_context -> Idset.t -> identifier list
+val dependency_closure : env -> named_context -> Id.Set.t -> Id.t list
 
 (** Test if an identifier is the basename of a global reference *)
-val is_section_variable : identifier -> bool
+val is_section_variable : Id.t -> bool
 
 val isGlobalRef : constr -> bool
 

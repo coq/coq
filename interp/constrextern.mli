@@ -25,9 +25,9 @@ open Misctypes
 (** Translation of pattern, cases pattern, glob_constr and term into syntax
    trees for printing *)
 
-val extern_cases_pattern : Idset.t -> cases_pattern -> cases_pattern_expr
-val extern_glob_constr : Idset.t -> glob_constr -> constr_expr
-val extern_glob_type : Idset.t -> glob_constr -> constr_expr
+val extern_cases_pattern : Id.Set.t -> cases_pattern -> cases_pattern_expr
+val extern_glob_constr : Id.Set.t -> glob_constr -> constr_expr
+val extern_glob_type : Id.Set.t -> glob_constr -> constr_expr
 val extern_constr_pattern : names_context -> constr_pattern -> constr_expr
 
 (** If [b=true] in [extern_constr b env c] then the variables in the first
@@ -35,7 +35,7 @@ val extern_constr_pattern : names_context -> constr_pattern -> constr_expr
 
 val extern_constr : bool -> env -> constr -> constr_expr
 val extern_constr_in_scope : bool -> scope_name -> env -> constr -> constr_expr
-val extern_reference : Loc.t -> Idset.t -> global_reference -> reference
+val extern_reference : Loc.t -> Id.Set.t -> global_reference -> reference
 val extern_type : bool -> env -> types -> constr_expr
 val extern_sort : sorts -> glob_sort
 val extern_rel_context : constr option -> env ->

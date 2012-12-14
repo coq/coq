@@ -81,7 +81,7 @@ and general_decompose_aux recognizer id =
    pas si aucune élimination n'est possible *)
 
 (* Meilleures stratégies mais perte de compatibilité *)
-let tmphyp_name = id_of_string "_TmpHyp"
+let tmphyp_name = Id.of_string "_TmpHyp"
 let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c gl =

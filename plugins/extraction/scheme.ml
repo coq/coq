@@ -20,11 +20,11 @@ open Common
 (*s Scheme renaming issues. *)
 
 let keywords =
-  List.fold_right (fun s -> Idset.add (id_of_string s))
+  List.fold_right (fun s -> Id.Set.add (Id.of_string s))
     [ "define"; "let"; "lambda"; "lambdas"; "match";
       "apply"; "car"; "cdr";
       "error"; "delay"; "force"; "_"; "__"]
-    Idset.empty
+    Id.Set.empty
 
 let pp_comment s = str";; "++h 0 s++fnl ()
 
@@ -40,7 +40,7 @@ let preamble _ comment _ usf =
   (if usf.mldummy then str "(define __ (lambda (_) __))\n\n" else mt ())
 
 let pr_id id =
-  let s = string_of_id id in
+  let s = Id.to_string id in
   for i = 0 to String.length s - 1 do
     if s.[i] = '\'' then s.[i] <- '~'
   done;

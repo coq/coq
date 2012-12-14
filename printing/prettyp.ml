@@ -36,7 +36,7 @@ type object_pr = {
   print_syntactic_def       : kernel_name -> std_ppcmds;
   print_module              : bool -> Names.module_path -> std_ppcmds;
   print_modtype             : module_path -> std_ppcmds;
-  print_named_decl          : identifier * constr option * types -> std_ppcmds;
+  print_named_decl          : Id.t * constr option * types -> std_ppcmds;
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
   print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
   print_typed_value_in_env  : Environ.env -> Term.constr * Term.types -> Pp.std_ppcmds;
@@ -325,9 +325,9 @@ let print_located_qualid ref =
   let module N = Nametab in
   let expand = function
     | TrueGlobal ref ->
-	Term ref, N.shortest_qualid_of_global Idset.empty ref
+	Term ref, N.shortest_qualid_of_global Id.Set.empty ref
     | SynDef kn ->
-	Syntactic kn, N.shortest_qualid_of_syndef Idset.empty kn in
+	Syntactic kn, N.shortest_qualid_of_syndef Id.Set.empty kn in
   match List.map expand (N.locate_extended_all qid) with
     | [] ->
 	let (dir,id) = repr_qualid qid in
@@ -370,7 +370,7 @@ let print_named_assum name typ =
   str "*** [" ++ str name ++ str " : " ++ pr_ltype typ ++ str "]"
 
 let gallina_print_named_decl (id,c,typ) =
-  let s = string_of_id id in
+  let s = Id.to_string id in
   match c with
     | Some body -> print_named_def s body typ
     | None -> print_named_assum s typ
@@ -430,7 +430,7 @@ let gallina_print_constant_with_infos sp =
   with_line_skip (print_name_infos (ConstRef sp))
 
 let gallina_print_syntactic_def kn =
-  let qid = Nametab.shortest_qualid_of_syndef Idset.empty kn
+  let qid = Nametab.shortest_qualid_of_syndef Id.Set.empty kn
   and (vars,a) = Syntax_def.search_syntactic_definition kn in
   let c = Notation_ops.glob_constr_of_notation_constr Loc.ghost a in
   hov 2

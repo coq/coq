@@ -23,28 +23,28 @@ open Nameops
 open Misctypes
 (*i*)
 
-let generalizable_table = ref Idpred.empty
+let generalizable_table = ref Id.Pred.empty
 
 let _ =
   Summary.declare_summary "generalizable-ident"
     { Summary.freeze_function = (fun () -> !generalizable_table);
       Summary.unfreeze_function = (fun r -> generalizable_table := r);
-      Summary.init_function = (fun () -> generalizable_table := Idpred.empty) }
+      Summary.init_function = (fun () -> generalizable_table := Id.Pred.empty) }
 
 let declare_generalizable_ident table (loc,id) =
-  if not (id_eq id (root_of_id id)) then
+  if not (Id.equal id (root_of_id id)) then
     user_err_loc(loc,"declare_generalizable_ident",
     (pr_id id ++ str
       " is not declarable as generalizable identifier: it must have no trailing digits, quote, or _"));
-  if Idpred.mem id table then
+  if Id.Pred.mem id table then
     user_err_loc(loc,"declare_generalizable_ident",
 		(pr_id id++str" is already declared as a generalizable identifier"))
-  else Idpred.add id table
+  else Id.Pred.add id table
 
 let add_generalizable gen table =
   match gen with
-  | None -> Idpred.empty
-  | Some [] -> Idpred.full
+  | None -> Id.Pred.empty
+  | Some [] -> Id.Pred.full
   | Some l -> List.fold_left (fun table lid -> declare_generalizable_ident table lid)
       table l
 
@@ -54,7 +54,7 @@ let cache_generalizable_type (_,(local,cmd)) =
 let load_generalizable_type _ (_,(local,cmd)) =
   generalizable_table := add_generalizable cmd !generalizable_table
 
-let in_generalizable : bool * identifier Loc.located list option -> obj =
+let in_generalizable : bool * Id.t Loc.located list option -> obj =
   declare_object {(default_object "GENERALIZED-IDENT") with
     load_function = load_generalizable_type;
     cache_function = cache_generalizable_type;
@@ -64,10 +64,10 @@ let in_generalizable : bool * identifier Loc.located list option -> obj =
 let declare_generalizable local gen =
  Lib.add_anonymous_leaf (in_generalizable (local, gen))
 
-let find_generalizable_ident id = Idpred.mem (root_of_id id) !generalizable_table
+let find_generalizable_ident id = Id.Pred.mem (root_of_id id) !generalizable_table
 
 let ids_of_list l =
-  List.fold_right Idset.add l Idset.empty
+  List.fold_right Id.Set.add l Id.Set.empty
 
 let locate_reference qid =
   match Nametab.locate_extended qid with
@@ -82,7 +82,7 @@ let is_global id =
 
 let is_freevar ids env x =
   try
-    if Idset.mem x ids then false
+    if Id.Set.mem x ids then false
     else
       try ignore(Environ.lookup_named x env) ; false
       with _ -> not (is_global x)
@@ -94,7 +94,7 @@ let ungeneralizable loc id =
   user_err_loc (loc, "Generalization", 
 	       str "Unbound and ungeneralizable variable " ++ pr_id id)
 
-let free_vars_of_constr_expr c ?(bound=Idset.empty) l =
+let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
   let found loc id bdvars l =
     if List.mem id l then l
     else if is_freevar bdvars (Global.env ()) id
@@ -105,25 +105,25 @@ let free_vars_of_constr_expr c ?(bound=Idset.empty) l =
   in
   let rec aux bdvars l c = match c with
     | CRef (Ident (loc,id)) -> found loc id bdvars l
-    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id)) :: _, [], [])) when not (Idset.mem id bdvars) ->
-	Topconstr.fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux (Idset.add id bdvars) l c
-    | c -> Topconstr.fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
+    | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id)) :: _, [], [])) when not (Id.Set.mem id bdvars) ->
+	Topconstr.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux (Id.Set.add id bdvars) l c
+    | c -> Topconstr.fold_constr_expr_with_binders (fun a l -> Id.Set.add a l) aux bdvars l c
   in aux bound l c
 
 let ids_of_names l =
   List.fold_left (fun acc x -> match snd x with Name na -> na :: acc | Anonymous -> acc) [] l
 
-let free_vars_of_binders ?(bound=Idset.empty) l (binders : local_binder list) =
+let free_vars_of_binders ?(bound=Id.Set.empty) l (binders : local_binder list) =
   let rec aux bdvars l c = match c with
       ((LocalRawAssum (n, _, c)) :: tl) ->
 	let bound = ids_of_names n in
 	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
-	  aux (Idset.union (ids_of_list bound) bdvars) l' tl
+	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
 
     | ((LocalRawDef (n, c)) :: tl) ->
 	let bound = match snd n with Anonymous -> [] | Name n -> [n] in
 	let l' = free_vars_of_constr_expr c ~bound:bdvars l in
-	  aux (Idset.union (ids_of_list bound) bdvars) l' tl
+	  aux (Id.Set.union (ids_of_list bound) bdvars) l' tl
 
     | [] -> bdvars, l
   in aux bound l binders
@@ -131,9 +131,9 @@ let free_vars_of_binders ?(bound=Idset.empty) l (binders : local_binder list) =
 let add_name_to_ids set na =
   match na with
   | Anonymous -> set
-  | Name id -> Idset.add id set
+  | Name id -> Id.Set.add id set
 
-let generalizable_vars_of_glob_constr ?(bound=Idset.empty) ?(allowed=Idset.empty) =
+let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.empty) =
   let rec vars bound vs = function
     | GVar (loc,id) ->
 	if is_freevar bound (Global.env ()) id then
@@ -160,7 +160,7 @@ let generalizable_vars_of_glob_constr ?(bound=Idset.empty) ?(allowed=Idset.empty
 	let vs3 = vars bound vs2 b1 in
 	vars bound vs3 b2
     | GRec (loc,fk,idl,bl,tyl,bv) ->
-	let bound' = Array.fold_right Idset.add idl bound in
+	let bound' = Array.fold_right Id.Set.add idl bound in
 	let vars_fix i vs fid =
 	  let vs1,bound1 =
 	    List.fold_left
@@ -182,7 +182,7 @@ let generalizable_vars_of_glob_constr ?(bound=Idset.empty) ?(allowed=Idset.empty
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs
 
   and vars_pattern bound vs (loc,idl,p,c) =
-    let bound' = List.fold_right Idset.add idl bound  in
+    let bound' = List.fold_right Id.Set.add idl bound  in
     vars bound' vs c
 
   and vars_option bound vs = function None -> vs | Some p -> vars bound vs p
@@ -193,7 +193,7 @@ let generalizable_vars_of_glob_constr ?(bound=Idset.empty) ?(allowed=Idset.empty
   in fun rt -> 
     let vars = List.rev (vars bound [] rt) in
       List.iter (fun (id, loc) ->
-	if not (Idset.mem id allowed || find_generalizable_ident id) then 
+	if not (Id.Set.mem id allowed || find_generalizable_ident id) then 
 	  ungeneralizable loc id) vars;
       vars
 
@@ -202,7 +202,7 @@ let rec make_fresh ids env x =
 
 let next_name_away_from na avoid =
   match na with
-  | Anonymous -> make_fresh avoid (Global.env ()) (id_of_string "anon")
+  | Anonymous -> make_fresh avoid (Global.env ()) (Id.of_string "anon")
   | Name id -> make_fresh avoid (Global.env ()) id
 
 let combine_params avoid fn applied needed =
@@ -211,7 +211,7 @@ let combine_params avoid fn applied needed =
       (function
 	  (t, Some (loc, ExplByName id)) ->
             let is_id (_, (na, _, _)) = match na with
-            | Name id' -> id_eq id id'
+            | Name id' -> Id.equal id id'
             | Anonymous -> false
             in
 	    if not (List.exists is_id needed) then
@@ -255,7 +255,7 @@ let combine_params avoid fn applied needed =
 let combine_params_freevar =
   fun avoid (_, (na, _, _)) ->
     let id' = next_name_away_from na avoid in
-      (CRef (Ident (Loc.ghost, id')), Idset.add id' avoid)
+      (CRef (Ident (Loc.ghost, id')), Id.Set.add id' avoid)
 
 let destClassApp cl =
   match cl with
@@ -282,7 +282,7 @@ let implicit_application env ?(allow_partial=true) f ty =
     match is_class with
     | None -> ty, env
     | Some ((loc, id, par), gr) ->
-	let avoid = Idset.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
+	let avoid = Id.Set.union env (ids_of_list (free_vars_of_constr_expr ty ~bound:env [])) in
 	let c, avoid =
 	  let c = class_info gr in
 	  let (ci, rd) = c.cl_context in

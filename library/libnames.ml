@@ -59,7 +59,7 @@ let parse_dir s =
     in
     if Int.equal pos n then error (s ^ " is an invalid path.");
     let dir = String.sub s n (pos-n) in
-    decoupe_dirs ((id_of_string dir)::dirs) (pos+1)
+    decoupe_dirs ((Id.of_string dir)::dirs) (pos+1)
   in
     decoupe_dirs [] 0
 
@@ -80,10 +80,10 @@ module Dirmap = Map.Make(struct type t = dir_path let compare = dir_path_ord end
 
 type full_path = {
   dirpath : dir_path ;
-  basename : identifier }
+  basename : Id.t }
 
 let eq_full_path p1 p2 =
-  id_eq p1.basename p2.basename &&
+  Id.equal p1.basename p2.basename &&
   Int.equal (dir_path_ord p1.dirpath p2.dirpath) 0
 
 let make_path pa id = { dirpath = pa; basename = id }
@@ -94,14 +94,14 @@ let repr_path { dirpath = pa; basename = id } = (pa,id)
 let string_of_path sp =
   let (sl,id) = repr_path sp in
   match repr_dirpath sl with
-  | [] -> string_of_id id
-  | _ -> (string_of_dirpath sl) ^ "." ^ (string_of_id id)
+  | [] -> Id.to_string id
+  | _ -> (string_of_dirpath sl) ^ "." ^ (Id.to_string id)
 
 let sp_ord sp1 sp2 =
   let (p1,id1) = repr_path sp1
   and (p2,id2) = repr_path sp2 in
   let p_bit = compare p1 p2 in
-  if Int.equal p_bit 0 then id_ord id1 id2 else p_bit
+  if Int.equal p_bit 0 then Id.compare id1 id2 else p_bit
 
 module SpOrdered =
   struct
@@ -178,7 +178,7 @@ let eq_global_dir_reference r1 r2 = match r1, r2 with
 
 type reference =
   | Qualid of qualid Loc.located
-  | Ident of identifier Loc.located
+  | Ident of Id.t Loc.located
 
 let qualid_of_reference = function
   | Qualid (loc,qid) -> loc, qid
@@ -186,11 +186,11 @@ let qualid_of_reference = function
 
 let string_of_reference = function
   | Qualid (loc,qid) -> string_of_qualid qid
-  | Ident (loc,id) -> string_of_id id
+  | Ident (loc,id) -> Id.to_string id
 
 let pr_reference = function
   | Qualid (_,qid) -> pr_qualid qid
-  | Ident (_,id) -> str (string_of_id id)
+  | Ident (_,id) -> str (Id.to_string id)
 
 let loc_of_reference = function
   | Qualid (loc,qid) -> loc
@@ -198,7 +198,7 @@ let loc_of_reference = function
 
 let eq_reference r1 r2 = match r1, r2 with
 | Qualid (_, q1), Qualid (_, q2) -> qualid_eq q1 q2
-| Ident (_, id1), Ident (_, id2) -> id_eq id1 id2
+| Ident (_, id1), Ident (_, id2) -> Id.equal id1 id2
 | _ -> false
 
 (* Deprecated synonyms *)

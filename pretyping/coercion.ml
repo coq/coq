@@ -70,7 +70,7 @@ let app_opt env evars f t =
   whd_betaiota !evars (app_opt f t)
 
 let pair_of_array a = (a.(0), a.(1))
-let make_name s = Name (id_of_string s)
+let make_name s = Name (Id.of_string s)
 
 let disc_subset x =
   match kind_of_term x with
@@ -174,7 +174,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 	   | Type x, Type y when Univ.Universe.equal x y -> None (* false *)
 	   | _ -> subco ())
       | Prod (name, a, b), Prod (name', a', b') ->
-	  let name' = Name (Namegen.next_ident_away (id_of_string "x") (Termops.ids_of_context env)) in
+	  let name' = Name (Namegen.next_ident_away (Id.of_string "x") (Termops.ids_of_context env)) in
 	  let env' = push_rel (name', None, a') env in
 	  let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
 	    (* env, x : a' |- c1 : lift 1 a' > lift 1 a *)
@@ -435,7 +435,7 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
           (* Note: we retype the term because sort-polymorphism may have *)
           (* weaken its type *)
 	  let name = match name with
-	    | Anonymous -> Name (id_of_string "x")
+	    | Anonymous -> Name (Id.of_string "x")
 	    | _ -> name in
 	  let env1 = push_rel (name,None,u1) env in
 	  let (evd', v1) =

@@ -62,7 +62,7 @@ let safe_push_named (id,_,_ as d) env =
   let _ =
     try
       let _ = lookup_named id env in
-      error ("Identifier "^string_of_id id^" already defined.")
+      error ("Identifier "^Id.to_string id^" already defined.")
     with Not_found -> () in
   push_named d env
 
@@ -110,28 +110,28 @@ let global_vars_set_constant_type env = function
   | PolymorphicArity (ctx,_) ->
       Sign.fold_rel_context
         (fold_rel_declaration
-	  (fun t c -> Idset.union (global_vars_set env t) c))
-      ctx ~init:Idset.empty
+	  (fun t c -> Id.Set.union (global_vars_set env t) c))
+      ctx ~init:Id.Set.empty
 
 let build_constant_declaration env kn (def,typ,cst,ctx) =
   let hyps = 
     let inferred =
       let ids_typ = global_vars_set_constant_type env typ in
       let ids_def = match def with
-      | Undef _ -> Idset.empty
+      | Undef _ -> Id.Set.empty
       | Def cs -> global_vars_set env (Declarations.force cs)
       | OpaqueDef lc -> 
           global_vars_set env (Declarations.force_opaque lc) in
-      keep_hyps env (Idset.union ids_typ ids_def) in
+      keep_hyps env (Id.Set.union ids_typ ids_def) in
     let declared = match ctx with
       | None -> inferred 
       | Some declared -> declared in
-    let mk_set l = List.fold_right Idset.add (List.map pi1 l) Idset.empty in
+    let mk_set l = List.fold_right Id.Set.add (List.map pi1 l) Id.Set.empty in
     let inferred_set, declared_set = mk_set inferred, mk_set declared in
-    if not (Idset.subset inferred_set declared_set) then
+    if not (Id.Set.subset inferred_set declared_set) then
       error ("The following section variable are used but not declared:\n"^
-        (String.concat ", " (List.map string_of_id
-          (Idset.elements (Idset.diff inferred_set declared_set)))));
+        (String.concat ", " (List.map Id.to_string
+          (Id.Set.elements (Id.Set.diff inferred_set declared_set)))));
     declared in
   let tps = Cemitcodes.from_val (compile_constant_body env def) in
   { const_hyps = hyps;

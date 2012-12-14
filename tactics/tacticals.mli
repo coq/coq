@@ -69,28 +69,28 @@ val tclFIRST_PROGRESS_ON : ('a -> tactic) -> 'a list -> tactic
 
 (** {6 Tacticals applying to hypotheses } *)
 
-val onNthHypId       : int -> (identifier -> tactic) -> tactic
+val onNthHypId       : int -> (Id.t -> tactic) -> tactic
 val onNthHyp         : int -> (constr -> tactic) -> tactic
 val onNthDecl        : int -> (named_declaration -> tactic) -> tactic
-val onLastHypId      : (identifier -> tactic) -> tactic
+val onLastHypId      : (Id.t -> tactic) -> tactic
 val onLastHyp        : (constr -> tactic) -> tactic
 val onLastDecl       : (named_declaration -> tactic) -> tactic
-val onNLastHypsId    : int -> (identifier list -> tactic) -> tactic
+val onNLastHypsId    : int -> (Id.t list -> tactic) -> tactic
 val onNLastHyps      : int -> (constr list -> tactic) -> tactic
 val onNLastDecls     : int -> (named_context -> tactic) -> tactic
 
-val lastHypId   : goal sigma -> identifier
+val lastHypId   : goal sigma -> Id.t
 val lastHyp     : goal sigma -> constr
 val lastDecl    : goal sigma -> named_declaration
-val nLastHypsId : int -> goal sigma -> identifier list
+val nLastHypsId : int -> goal sigma -> Id.t list
 val nLastHyps   : int -> goal sigma -> constr list
 val nLastDecls  : int -> goal sigma -> named_context
 
-val afterHyp    : identifier -> goal sigma -> named_context
+val afterHyp    : Id.t -> goal sigma -> named_context
 
-val ifOnHyp     : (identifier * types -> bool) ->
-                  (identifier -> tactic) -> (identifier -> tactic) ->
-		   identifier -> tactic
+val ifOnHyp     : (Id.t * types -> bool) ->
+                  (Id.t -> tactic) -> (Id.t -> tactic) ->
+		   Id.t -> tactic
 
 val onHyps      : (goal sigma -> named_context) ->
                   (named_context -> tactic) -> tactic
@@ -101,14 +101,14 @@ val onHyps      : (goal sigma -> named_context) ->
    goal; in particular, it can abstractly refer to the set of
    hypotheses independently of the effective contents of the current goal *)
 
-val tryAllHyps          : (identifier -> tactic) -> tactic
-val tryAllHypsAndConcl  : (identifier option -> tactic) -> tactic
+val tryAllHyps          : (Id.t -> tactic) -> tactic
+val tryAllHypsAndConcl  : (Id.t option -> tactic) -> tactic
 
-val onAllHyps           : (identifier -> tactic) -> tactic
-val onAllHypsAndConcl   : (identifier option -> tactic) -> tactic
+val onAllHyps           : (Id.t -> tactic) -> tactic
+val onAllHypsAndConcl   : (Id.t option -> tactic) -> tactic
 
-val onClause   : (identifier option -> tactic) -> clause -> tactic
-val onClauseLR : (identifier option -> tactic) -> clause -> tactic
+val onClause   : (Id.t option -> tactic) -> clause -> tactic
+val onClauseLR : (Id.t option -> tactic) -> clause -> tactic
 
 (** {6 Elimination tacticals. } *)
 
@@ -141,8 +141,8 @@ val compute_induction_names :
     intro_pattern_expr located list array
 
 val elimination_sort_of_goal : goal sigma -> sorts_family
-val elimination_sort_of_hyp  : identifier -> goal sigma -> sorts_family
-val elimination_sort_of_clause : identifier option -> goal sigma -> sorts_family
+val elimination_sort_of_hyp  : Id.t -> goal sigma -> sorts_family
+val elimination_sort_of_clause : Id.t option -> goal sigma -> sorts_family
 
 val general_elim_then_using :
   (inductive -> goal sigma -> constr) -> rec_flag ->

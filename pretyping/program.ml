@@ -11,10 +11,10 @@ open Util
 open Names
 open Term
 
-let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
+let make_dir l = make_dirpath (List.map Id.of_string (List.rev l))
 
 let find_reference locstr dir s =
-  let sp = Libnames.make_path (make_dir dir) (id_of_string s) in
+  let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
   try Nametab.global_of_path sp
   with Not_found -> anomaly (locstr^": cannot find "^(Libnames.string_of_path sp))
 

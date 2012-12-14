@@ -48,7 +48,7 @@ module type UserName = sig
   type t
   val equal : t -> t -> bool
   val to_string : t -> string
-  val repr : t -> identifier * module_ident list
+  val repr : t -> Id.t * module_ident list
 end
 
 module type EqualityType =
@@ -77,7 +77,7 @@ module type NAMETREE = sig
   val find : user_name -> t -> elt
   val exists : user_name -> t -> bool
   val user_name : qualid -> t -> user_name
-  val shortest_qualid : Idset.t -> user_name -> t -> qualid
+  val shortest_qualid : Id.Set.t -> user_name -> t -> qualid
   val find_prefixes : qualid -> t -> elt list
 end
 
@@ -101,9 +101,9 @@ struct
   let mktree p m = { path=p; map=m }
   let empty_tree = mktree Nothing ModIdmap.empty
 
-  type t = nametree Idmap.t
+  type t = nametree Id.Map.t
 
-  let empty = Idmap.empty
+  let empty = Id.Map.empty
 
   (* [push_until] is used to register [Until vis] visibility and
      [push_exactly] to [Exactly vis] and [push_tree] chooses the right one*)
@@ -178,14 +178,14 @@ let rec push_exactly uname o level tree = function
 let push visibility uname o tab =
   let id,dir = U.repr uname in
   let ptab =
-    try Idmap.find id tab
+    try Id.Map.find id tab
     with Not_found -> empty_tree
   in
   let ptab' = match visibility with
     | Until i -> push_until uname o (i-1) ptab dir
     | Exactly i -> push_exactly uname o (i-1) ptab dir
   in
-    Idmap.add id ptab' tab
+    Id.Map.add id ptab' tab
 
 
 let rec search tree = function
@@ -194,7 +194,7 @@ let rec search tree = function
 
 let find_node qid tab =
   let (dir,id) = repr_qualid qid in
-    search (Idmap.find id tab) (repr_dirpath dir)
+    search (Id.Map.find id tab) (repr_dirpath dir)
 
 let locate qid tab =
   let o = match find_node qid tab with
@@ -212,7 +212,7 @@ let user_name qid tab =
 
 let find uname tab =
   let id,l = U.repr uname in
-    match search (Idmap.find id tab) l with
+    match search (Id.Map.find id tab) l with
 	Absolute (_,o) -> o
       | _ -> raise Not_found
 
@@ -225,7 +225,7 @@ let exists uname tab =
 
 let shortest_qualid ctx uname tab =
   let id,dir = U.repr uname in
-  let hidden = Idset.mem id ctx in
+  let hidden = Id.Set.mem id ctx in
   let rec find_uname pos dir tree =
     let is_empty = match pos with [] -> true | _ -> false in
     match tree.path with
@@ -236,7 +236,7 @@ let shortest_qualid ctx uname tab =
 	    [] -> raise Not_found
 	  | id::dir -> find_uname (id::pos) dir (ModIdmap.find id tree.map)
   in
-  let ptab = Idmap.find id tab in
+  let ptab = Id.Map.find id tab in
   let found_dir = find_uname [] dir ptab in
     make_qualid (make_dirpath found_dir) id
 
@@ -256,7 +256,7 @@ let rec search_prefixes tree = function
 let find_prefixes qid tab =
   try
     let (dir,id) = repr_qualid qid in
-    search_prefixes (Idmap.find id tab) (repr_dirpath dir)
+    search_prefixes (Id.Map.find id tab) (repr_dirpath dir)
   with Not_found -> []
 
 end
@@ -520,15 +520,15 @@ let shortest_qualid_of_syndef ctx kn =
 
 let shortest_qualid_of_module mp =
   let dir = MPmap.find mp !the_modrevtab in
-    DirTab.shortest_qualid Idset.empty dir !the_dirtab
+    DirTab.shortest_qualid Id.Set.empty dir !the_dirtab
 
 let shortest_qualid_of_modtype kn =
   let sp = MPmap.find kn !the_modtyperevtab in
-    MPTab.shortest_qualid Idset.empty sp !the_modtypetab
+    MPTab.shortest_qualid Id.Set.empty sp !the_modtypetab
 
 let shortest_qualid_of_tactic kn =
   let sp = KNmap.find kn !the_tacticrevtab in
-    KnTab.shortest_qualid Idset.empty sp !the_tactictab
+    KnTab.shortest_qualid Id.Set.empty sp !the_tactictab
 
 let pr_global_env env ref =
   (* Il est important de laisser le let-in, car les streams s'évaluent

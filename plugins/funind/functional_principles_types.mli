@@ -10,7 +10,7 @@ val generate_functional_principle :
   (* *)
   sorts array option ->
   (* Name of the new principle *)
-  (identifier) option ->
+  (Id.t) option ->
   (* the compute functions to use   *)
   constant array ->
   (* We prove the nth- principle *)
@@ -29,6 +29,6 @@ exception No_graph_found
 
 val make_scheme : (constant*glob_sort) list -> Entries.definition_entry list
 
-val build_scheme : (identifier*Libnames.reference*glob_sort) list ->  unit
-val build_case_scheme : (identifier*Libnames.reference*glob_sort)  ->  unit
+val build_scheme : (Id.t*Libnames.reference*glob_sort) list ->  unit
+val build_case_scheme : (Id.t*Libnames.reference*glob_sort)  ->  unit
 

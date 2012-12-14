@@ -40,7 +40,7 @@ type occ_path = occ_step list
 
 (* chemin identifiant une proposition sous forme du nom de l'hypothèse et
    d'une liste de pas à partir de la racine de l'hypothèse *)
-type occurence = {o_hyp : Names.identifier; o_path : occ_path}
+type occurence = {o_hyp : Names.Id.t; o_path : occ_path}
 
 (* \subsection{refiable formulas} *)
 type oformula =
@@ -137,7 +137,7 @@ type context_content =
 
 (* \section{Specific utility functions to handle base types} *)
 (* Nom arbitraire de l'hypothèse codant la négation du but final *)
-let id_concl = Names.id_of_string "__goal__"
+let id_concl = Names.Id.of_string "__goal__"
 
 (* Initialisation de l'environnement de réification de la tactique *)
 let new_environment () = {
@@ -746,7 +746,7 @@ let reify_gl env gl =
       (i,t) :: lhyps ->
 	let t' = oproposition_of_constr env (false,[],i,[]) gl t in
 	if !debug then begin
-	  Printf.printf "  %s: " (Names.string_of_id i);
+	  Printf.printf "  %s: " (Names.Id.to_string i);
 	  pprint stdout t';
 	  Printf.printf "\n"
 	end;
@@ -840,7 +840,7 @@ let display_systems syst_list =
 	 (List.map (function O_left -> "L" | O_right -> "R" | O_mono -> "M")
 	    oformula_eq.e_origin.o_path));
     Printf.printf "\n  Origin: %s (negated : %s)\n\n"
-      (Names.string_of_id oformula_eq.e_origin.o_hyp)
+      (Names.Id.to_string oformula_eq.e_origin.o_hyp)
       (if oformula_eq.e_negated then "yes" else "no") in
 
   let display_system syst =

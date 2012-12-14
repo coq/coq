@@ -135,7 +135,7 @@ let add_glob_gen loc sp lib_dp ty =
     let mod_dp_trunc = Libnames.drop_dirpath_prefix lib_dp mod_dp in
     let filepath = Names.string_of_dirpath lib_dp in
     let modpath = Names.string_of_dirpath mod_dp_trunc in
-    let ident = Names.string_of_id id in
+    let ident = Names.Id.to_string id in
       dump_ref loc filepath modpath ident ty
 
 let add_glob loc ref =
@@ -160,7 +160,7 @@ let dump_binding loc id = ()
 let dump_definition (loc, id) sec s =
   let bl,el = interval loc in
   dump_string (Printf.sprintf "%s %d:%d %s %s\n" s bl el
-			(Names.string_of_dirpath (Lib.current_dirpath sec)) (Names.string_of_id id))
+			(Names.string_of_dirpath (Lib.current_dirpath sec)) (Names.Id.to_string id))
 
 let dump_reference loc modpath ident ty =
   let bl,el = interval loc in

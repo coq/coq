@@ -128,7 +128,7 @@ let filter_by_module (module_list:dir_path list) (accept:bool)
     in
     xor accept (filter_aux module_list)
 
-let ref_eq = Globnames.encode_mind Coqlib.logic_module (id_of_string "eq"), 0
+let ref_eq = Globnames.encode_mind Coqlib.logic_module (Id.of_string "eq"), 0
 let c_eq = mkInd ref_eq
 let gref_eq = IndRef ref_eq
 
@@ -155,7 +155,7 @@ let filtered_search filter_function display_function ref =
 let rec id_from_pattern = function
   | PRef gr -> gr
 (* should be appear as a PRef (VarRef sp) !!
-  | PVar id -> Nametab.locate (make_qualid [] (string_of_id id))
+  | PVar id -> Nametab.locate (make_qualid [] (Id.to_string id))
  *)
   | PApp (p,_) -> id_from_pattern p
   | _ -> error "The pattern is not simple enough."
@@ -177,11 +177,11 @@ let raw_search_rewrite extra_filter display_function pattern =
 let raw_search_by_head extra_filter display_function pattern =
   Errors.todo "raw_search_by_head"
 
-let name_of_reference ref = string_of_id (basename_of_global ref)
+let name_of_reference ref = Id.to_string (basename_of_global ref)
 
 let full_name_of_reference ref =
   let (dir,id) = repr_path (path_of_global ref) in
-  string_of_dirpath dir ^ "." ^ string_of_id id
+  string_of_dirpath dir ^ "." ^ Id.to_string id
 
 (*
  * functions to use the new Libtypes facility
@@ -293,7 +293,7 @@ let interface_search flags =
     extract_flags [] [] [] [] false flags
   in
   let filter_function ref env constr =
-    let id = Names.string_of_id (Nametab.basename_of_global ref) in
+    let id = Names.Id.to_string (Nametab.basename_of_global ref) in
     let path = Libnames.dirpath (Nametab.path_of_global ref) in
     let toggle x b = if x then b else not b in
     let match_name (regexp, flag) =
@@ -319,20 +319,20 @@ let interface_search flags =
   let ans = ref [] in
   let print_function ref env constr =
     let fullpath = repr_dirpath (Nametab.dirpath_of_global ref) in
-    let qualid = Nametab.shortest_qualid_of_global Idset.empty ref in
+    let qualid = Nametab.shortest_qualid_of_global Id.Set.empty ref in
     let (shortpath, basename) = Libnames.repr_qualid qualid in
     let shortpath = repr_dirpath shortpath in
     (* [shortpath] is a suffix of [fullpath] and we're looking for the missing
        prefix *)
     let rec prefix full short accu = match full, short with
     | _, [] ->
-      let full = List.rev_map string_of_id full in
+      let full = List.rev_map Id.to_string full in
       (full, accu)
     | _ :: full, m :: short ->
-      prefix full short (string_of_id m :: accu)
+      prefix full short (Id.to_string m :: accu)
     | _ -> assert false
     in
-    let (prefix, qualid) = prefix fullpath shortpath [string_of_id basename] in
+    let (prefix, qualid) = prefix fullpath shortpath [Id.to_string basename] in
     let answer = {
       Interface.coq_object_prefix = prefix;
       Interface.coq_object_qualid = qualid;

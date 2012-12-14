@@ -29,7 +29,7 @@ let case_info_pattern_eq i1 i2 =
 
 let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PRef r1, PRef r2 -> eq_gr r1 r2
-| PVar v1, PVar v2 -> id_eq v1 v2
+| PVar v1, PVar v2 -> Id.equal v1 v2
 | PEvar (ev1, ctx1), PEvar (ev2, ctx2) ->
   Int.equal ev1 ev2 && Array.equal constr_pattern_eq ctx1 ctx2
 | PRel i1, PRel i2 ->
@@ -37,7 +37,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PApp (t1, arg1), PApp (t2, arg2) ->
   constr_pattern_eq t1 t2 && Array.equal constr_pattern_eq arg1 arg2
 | PSoApp (id1, arg1), PSoApp (id2, arg2) ->
-  id_eq id1 id2 && List.equal constr_pattern_eq arg1 arg2
+  Id.equal id1 id2 && List.equal constr_pattern_eq arg1 arg2
 | PLambda (v1, t1, b1), PLambda (v2, t2, b2) ->
   name_eq v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
 | PProd (v1, t1, b1), PProd (v2, t2, b2) ->
@@ -45,7 +45,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PLetIn (v1, t1, b1), PLetIn (v2, t2, b2) ->
   name_eq v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
 | PSort s1, PSort s2 -> glob_sort_eq s1 s2
-| PMeta m1, PMeta m2 -> Option.equal id_eq m1 m2
+| PMeta m1, PMeta m2 -> Option.equal Id.equal m1 m2
 | PIf (t1, l1, r1), PIf (t2, l2, r2) ->
   constr_pattern_eq t1 t2 && constr_pattern_eq l1 l2 && constr_pattern_eq r1 r2
 | PCase (info1, p1, r1, l1), PCase (info2, p2, r2, l2) ->
@@ -122,7 +122,7 @@ let pattern_of_constr sigma t =
   let rec pattern_of_constr t =
   match kind_of_term t with
     | Rel n  -> PRel n
-    | Meta n -> PMeta (Some (id_of_string ("META" ^ string_of_int n)))
+    | Meta n -> PMeta (Some (Id.of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
     | Sort (Prop Null) -> PSort GProp
     | Sort (Prop Pos) -> PSort GSet

@@ -368,7 +368,7 @@ let find_fapp (test:constr -> bool) g : fapp_info list =
     an occurence of function [id] in the conclusion of goal [g]. If
     [id]=[None] then calls to any function are selected. In any case
     [heuristic] is used to select the most pertinent occurrence. *)
-let finduction (oid:identifier option) (heuristic: fapp_info list -> fapp_info list)
+let finduction (oid:Id.t option) (heuristic: fapp_info list -> fapp_info list)
     (nexttac:Proof_type.tactic) g =
   let test = match oid with
     | Some id ->
@@ -468,10 +468,10 @@ VERNAC COMMAND EXTEND MergeFunind
        let ar2 = List.length (fst (decompose_prod f2type)) in
        let _ =
 	 if ar1 <> List.length cl1 then
-	   Errors.error ("not the right number of arguments for " ^ string_of_id id1) in
+	   Errors.error ("not the right number of arguments for " ^ Id.to_string id1) in
        let _ =
 	 if ar2 <> List.length cl2 then
-	   Errors.error ("not the right number of arguments for " ^ string_of_id id2) in
+	   Errors.error ("not the right number of arguments for " ^ Id.to_string id2) in
        Merge.merge id1 id2 (Array.of_list cl1) (Array.of_list cl2)  id
      ]
 END

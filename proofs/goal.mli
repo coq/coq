@@ -102,10 +102,10 @@ val refine : refinable -> subgoals sensitive
 (*** Cleaning  goals ***)
 
 (* Implements the [clear] tactic *)
-val clear : Names.identifier list -> subgoals sensitive
+val clear : Names.Id.t list -> subgoals sensitive
 
 (* Implements the [clearbody] tactic *)
-val clear_body : Names.identifier list -> subgoals sensitive
+val clear_body : Names.Id.t list -> subgoals sensitive
 
 
 (*** Conversion in goals ***)
@@ -121,7 +121,7 @@ val convert_concl : bool -> Term.constr -> subgoals sensitive
 (*** Bureaucracy in hypotheses ***)
 
 (* Renames a hypothesis. *)
-val rename_hyp : Names.identifier -> Names.identifier -> subgoals sensitive
+val rename_hyp : Names.Id.t -> Names.Id.t -> subgoals sensitive
 
 (*** Sensitive primitives ***)
 

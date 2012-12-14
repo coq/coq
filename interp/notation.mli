@@ -169,8 +169,8 @@ val compute_scope_of_global : global_reference -> scope_name option
 
 type symbol =
   | Terminal of string
-  | NonTerminal of identifier
-  | SProdList of identifier * symbol list
+  | NonTerminal of Id.t
+  | SProdList of Id.t * symbol list
   | Break of int
 
 val symbol_eq : symbol -> symbol -> bool

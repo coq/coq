@@ -109,7 +109,7 @@ let onNLastHypsId n tac = onHyps (nLastHypsId n) tac
 let onNLastHyps n tac   = onHyps (nLastHyps n) tac
 
 let afterHyp id gl =
-  fst (List.split_when (fun (hyp,_,_) -> id_eq hyp id) (pf_hyps gl))
+  fst (List.split_when (fun (hyp,_,_) -> Id.equal hyp id) (pf_hyps gl))
 
 (***************************************)
 (*           Clause Tacticals          *)
@@ -249,7 +249,7 @@ let general_elim_then_using mk_elim
 	  let name_elim =
 	    match kind_of_term elim with
 	      | Const kn -> string_of_con kn
-	      | Var id -> string_of_id id
+	      | Var id -> Id.to_string id
 	      | _ -> "\b"
 	  in
 	  error ("The elimination combinator " ^ name_elim ^ " is unknown.")

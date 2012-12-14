@@ -38,7 +38,7 @@ val check_no_pending_proofs : unit -> unit
 (** [delete_proof name] deletes proof of name [name] or fails if no proof
     has this name *)
 
-val delete_proof : identifier located -> unit
+val delete_proof : Id.t located -> unit
 
 (** [delete_current_proof ()] deletes current focused proof or fails if
     no proof is focused *)
@@ -75,7 +75,7 @@ val current_proof_depth: unit -> int
 type lemma_possible_guards = Proof_global.lemma_possible_guards
 
 val start_proof :
-  identifier -> goal_kind -> named_context_val -> constr ->
+  Id.t -> goal_kind -> named_context_val -> constr ->
   ?init_tac:tactic -> ?compute_guard:lemma_possible_guards -> 
   unit declaration_hook -> unit
 
@@ -91,7 +91,7 @@ val restart_proof : unit -> unit
     it also tells if the guardness condition has to be inferred. *)
 
 val cook_proof : (Proof.proof -> unit) ->
-  identifier *
+  Id.t *
     (Entries.definition_entry * lemma_possible_guards * goal_kind *
      unit declaration_hook)
 
@@ -117,19 +117,19 @@ val get_current_goal_context : unit -> Evd.evar_map * env
 (** [current_proof_statement] *)
 
 val current_proof_statement :
-  unit -> identifier * goal_kind * types * unit declaration_hook
+  unit -> Id.t * goal_kind * types * unit declaration_hook
 
 (** {6 ... } *)
 (** [get_current_proof_name ()] return the name of the current focused
     proof or failed if no proof is focused *)
 
-val get_current_proof_name : unit -> identifier
+val get_current_proof_name : unit -> Id.t
 
 (** [get_all_proof_names ()] returns the list of all pending proof names.
     The first name is the current proof, the other names may come in
     any order. *)
 
-val get_all_proof_names : unit -> identifier list
+val get_all_proof_names : unit -> Id.t list
 
 (** {6 ... } *)
 (** [set_end_tac tac] applies tactic [tac] to all subgoal generate
@@ -140,7 +140,7 @@ val set_end_tac : tactic -> unit
 (** {6 ... } *)
 (** [set_used_variables l] declares that section variables [l] will be
     used in the proof *)
-val set_used_variables : identifier list -> unit
+val set_used_variables : Id.t list -> unit
 val get_used_variables : unit -> Sign.section_context option
 
 (** {6 ... } *)
@@ -165,7 +165,7 @@ val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
 
 (** [build_by_tactic typ tac] returns a term of type [typ] by calling [tac] *)
 
-val build_constant_by_tactic : identifier -> named_context_val -> types -> tactic ->
+val build_constant_by_tactic : Id.t -> named_context_val -> types -> tactic ->
   Entries.definition_entry
 val build_by_tactic : env -> types -> tactic -> constr
 

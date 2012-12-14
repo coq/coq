@@ -36,7 +36,7 @@ type recursion_scheme_error =
 exception RecursionSchemeError of recursion_scheme_error
 
 let make_prod_dep dep env = if dep then mkProd_name env else mkProd
-let mkLambda_string s t c = mkLambda (Name (id_of_string s), t, c)
+let mkLambda_string s t c = mkLambda (Name (Id.of_string s), t, c)
 
 (*******************************************)
 (* Building curryfied elimination          *)
@@ -380,7 +380,7 @@ let mis_make_indrec env sigma listdepkind mib =
 	    let fixn = Array.of_list (List.rev ln) in
             let fixtyi = Array.of_list (List.rev ltyp) in
             let fixdef = Array.of_list (List.rev ldef) in
-            let names = Array.create nrec (Name(id_of_string "F")) in
+            let names = Array.create nrec (Name(Id.of_string "F")) in
 	      mkFix ((fixn,p),(names,fixtyi,fixdef))
       in
 	mrec 0 [] [] []
@@ -570,6 +570,6 @@ let lookup_eliminator ind_sp s =
     errorlabstrm "default_elim"
       (strbrk "Cannot find the elimination combinator " ++
        pr_id id ++ strbrk ", the elimination of the inductive definition " ++
-       pr_global_env Idset.empty (IndRef ind_sp) ++
+       pr_global_env Id.Set.empty (IndRef ind_sp) ++
        strbrk " on sort " ++ Termops.pr_sort_family s ++
        strbrk " is probably not allowed.")

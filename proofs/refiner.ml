@@ -204,7 +204,7 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
     List.fold_left
     (fun acc lh -> acc ^ (if !frst then (frst:=false;"") else " | ")
       ^ (List.fold_left
-	   (fun acc (nm,_,_) -> (Names.string_of_id nm) ^ " " ^ acc)
+	   (fun acc (nm,_,_) -> (Names.Id.to_string nm) ^ " " ^ acc)
 	   "" lh))
     "" newhyps in
   pp (str (emacs_str "<infoH>")

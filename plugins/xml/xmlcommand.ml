@@ -35,7 +35,7 @@ let filter_params pvars hyps =
       let ids' = id::ids in
       let ids'' =
        "cic:/" ^
-        String.concat "/" (List.rev (List.map Names.string_of_id ids')) in
+        String.concat "/" (List.rev (List.map Names.Id.to_string ids')) in
       let he' =
        ids'', List.rev (List.filter (function x -> List.mem x hyps) he) in
       let tl' = aux ids' tl in
@@ -44,7 +44,7 @@ let filter_params pvars hyps =
         | _,_  -> he'::tl'
  in
   let cwd = Lib.cwd () in
-  let cwdsp = Libnames.make_path cwd (Names.id_of_string "dummy") in
+  let cwdsp = Libnames.make_path cwd (Names.Id.of_string "dummy") in
   let modulepath = Cic2acic.get_module_path_of_full_path cwdsp in
    aux (Names.repr_dirpath modulepath) (List.rev pvars)
 ;;
@@ -55,7 +55,7 @@ let filter_params pvars hyps =
 let search_variables () =
  let module N = Names in
   let cwd = Lib.cwd () in
-  let cwdsp = Libnames.make_path cwd (Names.id_of_string "dummy") in
+  let cwdsp = Libnames.make_path cwd (Names.Id.of_string "dummy") in
   let modulepath = Cic2acic.get_module_path_of_full_path cwdsp in
    let rec aux =
     function
@@ -63,7 +63,7 @@ let search_variables () =
      | he::tl as modules ->
         let one_section_variables =
          let dirpath = N.make_dirpath (modules @ N.repr_dirpath modulepath) in
-          let t = List.map N.string_of_id (Decls.last_section_hyps dirpath) in
+          let t = List.map N.Id.to_string (Decls.last_section_hyps dirpath) in
            [he,t]
         in
          one_section_variables @ aux tl
@@ -113,7 +113,7 @@ let theory_filename xml_library_root =
   match xml_library_root with
     None -> None  (* stdout *)
   | Some xml_library_root' ->
-     let toks = List.map N.string_of_id (N.repr_dirpath (Lib.library_dp ())) in
+     let toks = List.map N.Id.to_string (N.repr_dirpath (Lib.library_dp ())) in
      (* theory from A/B/C/F.v goes into A/B/C/F.theory *)
      let alltoks = List.rev toks in
        Some (join_dirs xml_library_root' alltoks ^ ".theory")
@@ -153,7 +153,7 @@ let print_object uri obj sigma filename =
 
 let string_list_of_named_context_list =
  List.map
-  (function (n,_,_) -> Names.string_of_id n)
+  (function (n,_,_) -> Names.Id.to_string n)
 ;;
 
 (* Function to collect the variables that occur in a term. *)
@@ -212,11 +212,11 @@ let mk_variable_obj id body typ =
    | Some bo -> find_hyps bo, Some (Unshare.unshare bo)
  in
   let hyps' = find_hyps typ @ hyps in
-  let hyps'' = List.map Names.string_of_id hyps' in
+  let hyps'' = List.map Names.Id.to_string hyps' in
   let variables = search_variables () in
   let params = filter_params variables hyps'' in
    Acic.Variable
-    (Names.string_of_id id, unsharedbody, Unshare.unshare typ, params)
+    (Names.Id.to_string id, unsharedbody, Unshare.unshare typ, params)
 ;;
 
 
@@ -226,10 +226,10 @@ let mk_constant_obj id bo ty variables hyps =
  let params = filter_params variables hyps in
   match bo with
      None ->
-      Acic.Constant (Names.string_of_id id,None,ty,params)
+      Acic.Constant (Names.Id.to_string id,None,ty,params)
    | Some c ->
       Acic.Constant
-       (Names.string_of_id id, Some (Unshare.unshare (Declarations.force c)),
+       (Names.Id.to_string id, Some (Unshare.unshare (Declarations.force c)),
          ty,params)
 ;;
 
@@ -531,7 +531,7 @@ let _ = Lexer.set_xml_output_comment (theory_output_string ~do_not_quote:true) ;
 
 let uri_of_dirpath dir =
   "/" ^ String.concat "/"
-    (List.map Names.string_of_id (List.rev (Names.repr_dirpath dir)))
+    (List.map Names.Id.to_string (List.rev (Names.repr_dirpath dir)))
 ;;
 
 let _ =
