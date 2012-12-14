@@ -119,9 +119,6 @@ let delayed_force f = f ()
 
 type ('a,'b) union = Inl of 'a | Inr of 'b
 
-module Intset = Set.Make(Int)
-module Intmap = Map.Make(Int)
-
 (*s interruption *)
 
 let interrupt = ref false

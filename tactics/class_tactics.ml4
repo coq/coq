@@ -403,7 +403,7 @@ let isProp env sigma concl =
 
 let needs_backtrack only_classes env evd oev concl =
   if Option.is_empty oev || isProp env evd concl then
-    not (Intset.is_empty (Evarutil.evars_of_term concl))
+    not (Int.Set.is_empty (Evarutil.evars_of_term concl))
   else true
 
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
@@ -530,19 +530,19 @@ let resolve_all_evars_once debug limit p evd =
     Beware of the imperative effects on the partition structure,
     it should not be shared, but only used locally. *)
 
-module Intpart = Unionfind.Make(Intset)(Intmap)
+module Intpart = Unionfind.Make(Int.Set)(Int.Map)
 
 let deps_of_constraints cstrs evm p =
   List.iter (fun (_, _, x, y) ->
     let evx = Evarutil.undefined_evars_of_term evm x in
     let evy = Evarutil.undefined_evars_of_term evm y in
-    Intpart.union_set (Intset.union evx evy) p)
+    Intpart.union_set (Int.Set.union evx evy) p)
     cstrs
 
 let evar_dependencies evm p =
   Evd.fold_undefined
     (fun ev evi _ ->
-      let evars = Intset.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
+      let evars = Int.Set.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
       in Intpart.union_set evars p)
     evm ()
 
@@ -577,7 +577,7 @@ let split_evars evm =
 let evars_in_comp comp evm =
   try
     evars_reset_evd 
-      (Intset.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evm ev))
+      (Int.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evm ev))
 	 comp Evd.empty) evm
   with Not_found -> assert false
 
@@ -595,7 +595,7 @@ let is_inference_forced p evd ev =
   with Not_found -> assert false
 
 let is_mandatory p comp evd =
-  Intset.exists (is_inference_forced p evd) comp
+  Int.Set.exists (is_inference_forced p evd) comp
 
 (** In case of unsatisfiable constraints, build a nice error message *)
 
@@ -661,8 +661,8 @@ let revert_resolvability oevd evd =
 exception Unresolved
 
 let resolve_all_evars debug m env p oevd do_split fail =
-  let split = if do_split then split_evars oevd else [Intset.empty] in
-  let in_comp comp ev = if do_split then Intset.mem ev comp else true
+  let split = if do_split then split_evars oevd else [Int.Set.empty] in
+  let in_comp comp ev = if do_split then Int.Set.mem ev comp else true
   in
   let rec docomp evd = function
     | [] -> revert_resolvability oevd evd

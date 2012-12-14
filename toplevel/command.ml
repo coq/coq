@@ -857,8 +857,8 @@ let out_def = function
   | None -> error "Program Fixpoint needs defined bodies."
 
 let collect_evars_of_term evd c ty =
-  let evars = Intset.union (evars_of_term c) (evars_of_term ty) in
-    Intset.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
+  let evars = Int.Set.union (evars_of_term c) (evars_of_term ty) in
+    Int.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
       evars Evd.empty
       
 let do_program_recursive fixkind fixl ntns =

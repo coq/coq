@@ -79,7 +79,7 @@ let build_lambda toabstract stk (m : constr) =
   let rec buildrec m p_0 p_1 = match p_0,p_1 with
     | (_, []) -> m
     | (n, (_,na,t)::tl) ->
-	if Intset.mem n toabstract then
+	if Int.Set.mem n toabstract then
           buildrec (mkLambda (na,t,m)) (n+1) tl
         else
 	  buildrec (lift (-1) m) (n+1) tl
@@ -126,7 +126,7 @@ let merge_binding allow_bound_rels stk n cT subst =
       (* Optimization *)
       ([],cT)
     else
-      let frels = Intset.elements (free_rels cT) in
+      let frels = Int.Set.elements (free_rels cT) in
       let frels = List.filter (fun i -> i <= depth) frels in
       if allow_bound_rels then
 	let frels = Sort.list (<) frels in
@@ -148,12 +148,12 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
     match p,kind_of_term cT with
       | PSoApp (n,args),m ->
         let fold accu = function
-        | PRel n -> Intset.add n accu
+        | PRel n -> Int.Set.add n accu
         | _ -> error "Only bound indices allowed in second order pattern matching."
         in
-        let relargs = List.fold_left fold Intset.empty args in
+        let relargs = List.fold_left fold Int.Set.empty args in
         let frels = free_rels cT in
-        if Intset.subset frels relargs then
+        if Int.Set.subset frels relargs then
           constrain n ([], build_lambda relargs stk cT) subst
         else
           raise PatternMatchingFailure

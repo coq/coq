@@ -878,7 +878,7 @@ let minimal_free_rels env sigma (c,cty) =
   let cty_rels = free_rels cty in
   let cty' = simpl env sigma cty in
   let rels' = free_rels cty' in
-  if Intset.subset cty_rels rels' then
+  if Int.Set.subset cty_rels rels' then
     (cty,cty_rels)
   else
     (cty',rels')
@@ -888,10 +888,10 @@ let minimal_free_rels env sigma (c,cty) =
 let minimal_free_rels_rec env sigma =
   let rec minimalrec_free_rels_rec prev_rels (c,cty) =
     let (cty,direct_rels) = minimal_free_rels env sigma (c,cty) in
-    let combined_rels = Intset.union prev_rels direct_rels in
+    let combined_rels = Int.Set.union prev_rels direct_rels in
     let folder rels i = snd (minimalrec_free_rels_rec rels (c, type_of env sigma (mkRel i)))
-    in (cty, List.fold_left folder combined_rels (Intset.elements (Intset.diff direct_rels prev_rels)))
-  in minimalrec_free_rels_rec Intset.empty
+    in (cty, List.fold_left folder combined_rels (Int.Set.elements (Int.Set.diff direct_rels prev_rels)))
+  in minimalrec_free_rels_rec Int.Set.empty
 
 (* [sig_clausal_form siglen ty]
 
@@ -1024,7 +1024,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 let make_iterated_tuple env sigma dflt (z,zty) =
   let (zty,rels) = minimal_free_rels_rec env sigma (z,zty) in
   let sort_of_zty = get_sort_of env sigma zty in
-  let sorted_rels = Sort.list (<) (Intset.elements rels) in
+  let sorted_rels = Sort.list (<) (Int.Set.elements rels) in
   let (tuple,tuplety) =
     List.fold_left (make_tuple env sigma) (z,zty) sorted_rels
   in

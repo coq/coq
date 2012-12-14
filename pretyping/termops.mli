@@ -108,7 +108,7 @@ val occur_var : env -> identifier -> types -> bool
 val occur_var_in_decl :
   env ->
   identifier -> 'a * types option * types -> bool
-val free_rels : constr -> Intset.t
+val free_rels : constr -> Int.Set.t
 val dependent : constr -> constr -> bool
 val dependent_no_evar : constr -> constr -> bool
 val count_occurrences : constr -> constr -> int
@@ -207,7 +207,7 @@ exception CannotFilter
    (context,term), or raises [CannotFilter].
    Warning: Outer-kernel sort subtyping are taken into account: c1 has
    to be smaller than c2 wrt. sorts. *)
-type subst = (rel_context*constr) Intmap.t
+type subst = (rel_context*constr) Int.Map.t
 val filtering : rel_context -> Reduction.conv_pb -> constr -> constr -> subst
 
 val decompose_prod_letin : constr -> int * rel_context * constr

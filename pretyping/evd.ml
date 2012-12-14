@@ -80,8 +80,8 @@ let eq_evar_info ei1 ei2 =
    - evar_map (exported)
 *)
 
-module ExistentialMap = Intmap
-module ExistentialSet = Intset
+module ExistentialMap = Int.Map
+module ExistentialSet = Int.Set
 
 (* This exception is raised by *.existential_value *)
 exception NotInstantiatedEvar
@@ -244,16 +244,16 @@ end
 
 type 'a freelisted = {
   rebus : 'a;
-  freemetas : Intset.t }
+  freemetas : Int.Set.t }
 
 (* Collects all metavars appearing in a constr *)
 let metavars_of c =
   let rec collrec acc c =
     match kind_of_term c with
-      | Meta mv -> Intset.add mv acc
+      | Meta mv -> Int.Set.add mv acc
       | _         -> fold_constr collrec acc c
   in
-  collrec Intset.empty c
+  collrec Int.Set.empty c
 
 let mk_freelisted c =
   { rebus = c; freemetas = metavars_of c }
@@ -308,11 +308,11 @@ let clb_name = function
 
 (***********************)
 
-module Metaset = Intset
+module Metaset = Int.Set
 
 let meta_exists p s = Metaset.fold (fun x b -> b || (p x)) s false
 
-module Metamap = Intmap
+module Metamap = Int.Map
 
 let metamap_to_list m =
   Metamap.fold (fun n v l -> (n,v)::l) m []

@@ -390,17 +390,17 @@ and pats_of_glob_branches loc metas vars ind brs =
       | _ ->
         err loc (Pp.str "All constructors must be in the same inductive type.")
       in
-      if Intset.mem (j-1) indexes then
+      if Int.Set.mem (j-1) indexes then
 	err loc
           (str "No unique branch for " ++ int j ++ str"-th constructor.");
       let lna = List.map get_arg lv in
       let vars' = List.rev lna @ vars in
       let pat = rev_it_mkPLambda lna (pat_of_raw metas vars' br) in
-      let ext,pats = get_pat (Intset.add (j-1) indexes) brs in
+      let ext,pats = get_pat (Int.Set.add (j-1) indexes) brs in
       ext, ((j-1, List.length lv, pat) :: pats)
     | (loc,_,_,_) :: _ -> err loc (Pp.str "Non supported pattern.")
   in
-  get_pat Intset.empty brs
+  get_pat Int.Set.empty brs
 
 let pattern_of_glob_constr c =
   let metas = ref [] in

@@ -118,10 +118,10 @@ val solve_pattern_eqn : env -> constr list -> constr -> constr
     contained in the object, including defined evars *)
 
 
-val evars_of_term : constr -> Intset.t
+val evars_of_term : constr -> Int.Set.t
 
-val evars_of_named_context : named_context -> Intset.t
-val evars_of_evar_info : evar_info -> Intset.t
+val evars_of_named_context : named_context -> Int.Set.t
+val evars_of_evar_info : evar_info -> Int.Set.t
 
 (** [gather_dependent_evars evm seeds] classifies the evars in [evm]
     as dependent_evars and goals (these may overlap). A goal is an
@@ -132,16 +132,16 @@ val evars_of_evar_info : evar_info -> Intset.t
     associating to each dependent evar [None] if it has no (partial)
     definition or [Some s] if [s] is the list of evars appearing in
     its (partial) definition. *)
-val gather_dependent_evars : evar_map -> evar list -> (Intset.t option) Intmap.t
+val gather_dependent_evars : evar_map -> evar list -> (Int.Set.t option) Int.Map.t
 
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
     This is roughly a combination of the previous functions and
     [nf_evar]. *)
 
-val undefined_evars_of_term : evar_map -> constr -> Intset.t
-val undefined_evars_of_named_context : evar_map -> named_context -> Intset.t
-val undefined_evars_of_evar_info : evar_map -> evar_info -> Intset.t
+val undefined_evars_of_term : evar_map -> constr -> Int.Set.t
+val undefined_evars_of_named_context : evar_map -> named_context -> Int.Set.t
+val undefined_evars_of_evar_info : evar_map -> evar_info -> Int.Set.t
 
 (** {6 Value/Type constraints} *)
 

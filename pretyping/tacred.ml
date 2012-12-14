@@ -198,7 +198,7 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
     raise Elimconst;
   List.iteri (fun i t_i ->
     if not (List.mem_assoc (i+1) li) then
-      let fvs = List.map ((+) (i+1)) (Intset.elements (free_rels t_i)) in
+      let fvs = List.map ((+) (i+1)) (Int.Set.elements (free_rels t_i)) in
       match List.intersect fvs reversible_rels with
       | [] -> ()
       | _ -> raise Elimconst)
@@ -372,7 +372,7 @@ let vfun = id_of_string"_eliminator_function_"
 let substl_with_function subst constr =
   let cnt = ref 0 in
   let evd = ref Evd.empty in
-  let minargs = ref Intmap.empty in
+  let minargs = ref Int.Map.empty in
   let v = Array.of_list subst in
   let rec subst_total k c =
     match kind_of_term c with
@@ -386,7 +386,7 @@ let substl_with_function subst constr =
                       (val_of_named_context
                         [(vfx,None,dummy);(vfun,None,dummy)])
                       dummy);
-                  minargs := Intmap.add !cnt min !minargs;
+                  minargs := Int.Map.add !cnt min !minargs;
                   lift k (mkEvar(!cnt,[|fx;ref|]))
               | (fx,None) -> lift k fx
           else mkRel (i - Array.length v)
@@ -406,8 +406,8 @@ let solve_arity_problem env sigma fxminargs c =
     let c' = whd_betaiotazeta sigma c in
     let (h,rcargs) = decompose_app c' in
     match kind_of_term h with
-        Evar(i,_) when Intmap.mem i fxminargs && not (Evd.is_defined !evm i) ->
-          let minargs = Intmap.find i fxminargs in
+        Evar(i,_) when Int.Map.mem i fxminargs && not (Evd.is_defined !evm i) ->
+          let minargs = Int.Map.find i fxminargs in
           if List.length rcargs < minargs then
             if strict then set_fix i
             else raise Partial;
@@ -434,7 +434,7 @@ let substl_checking_arity env subst c =
      the other ones are replaced by the function symbol *)
   let rec nf_fix c =
     match kind_of_term c with
-        Evar(i,[|fx;f|] as ev) when Intmap.mem i minargs ->
+        Evar(i,[|fx;f|] as ev) when Int.Map.mem i minargs ->
           (match Evd.existential_opt_value sigma' ev with
               Some c' -> c'
             | None -> f)

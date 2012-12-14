@@ -13,3 +13,12 @@ external equal : int -> int -> bool = "%eq"
 external compare : int -> int -> int = "caml_int_compare"
 
 let hash i = i land max_int
+
+module Self =
+struct
+  type t = int
+  let compare = compare
+end
+
+module Set = Set.Make(Self)
+module Map = Map.Make(Self)

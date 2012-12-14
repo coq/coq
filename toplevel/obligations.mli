@@ -33,14 +33,14 @@ val check_evars : env -> evar_map -> unit
 
 val mkMetas : int -> constr list
 
-val evar_dependencies : evar_map -> int -> Intset.t
-val sort_dependencies : (int * evar_info * Intset.t) list -> (int * evar_info * Intset.t) list
+val evar_dependencies : evar_map -> int -> Int.Set.t
+val sort_dependencies : (int * evar_info * Int.Set.t) list -> (int * evar_info * Int.Set.t) list
 
 (* env, id, evars, number of function prototypes to try to clear from
    evars contexts, object and type *)
 val eterm_obligations : env -> identifier -> evar_map -> int ->
   ?status:Evar_kinds.obligation_definition_status -> constr -> types ->
-  (identifier * types * Evar_kinds.t Loc.located * Evar_kinds.obligation_definition_status * Intset.t *
+  (identifier * types * Evar_kinds.t Loc.located * Evar_kinds.obligation_definition_status * Int.Set.t *
       tactic option) array
     (* Existential key, obl. name, type as product, 
        location of the original evar, associated tactic,
@@ -53,7 +53,7 @@ val eterm_obligations : env -> identifier -> evar_map -> int ->
 
 type obligation_info =
   (identifier * Term.types * Evar_kinds.t Loc.located *
-      Evar_kinds.obligation_definition_status * Intset.t * tactic option) array
+      Evar_kinds.obligation_definition_status * Int.Set.t * tactic option) array
     (* ident, type, location, (opaque or transparent, expand or define),
        dependencies, tactic to solve it *)
 

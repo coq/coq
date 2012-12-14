@@ -114,7 +114,7 @@ let focus_sublist i j l =
   let (left,sub_right) = list_goto (i-1) l in
   let (sub, right) = 
     try 
-      Util.List.chop (j-i+1) sub_right 
+      List.chop (j-i+1) sub_right 
     with Failure "list_chop" -> 
       Errors.errorlabstrm "nth_unproven" (Pp.str"No such unproven subgoal")
   in
@@ -482,7 +482,7 @@ module V82 = struct
 
   let top_evars { initial=initial } =
     let evars_of_initial (c,_) =
-      Util.Intset.elements (Evarutil.evars_of_term c)
+      Int.Set.elements (Evarutil.evars_of_term c)
     in
     List.flatten (List.map evars_of_initial initial)
 

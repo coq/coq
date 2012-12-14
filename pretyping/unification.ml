@@ -419,13 +419,13 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	| Evar (evk,_ as ev), _
             when not (ExistentialSet.mem evk flags.frozen_evars) ->
 	    let cmvars = free_rels cM and cnvars = free_rels cN in
-	      if Intset.subset cnvars cmvars then
+	      if Int.Set.subset cnvars cmvars then
 		sigma,metasubst,((curenv,ev,cN)::evarsubst)
 	      else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Evar (evk,_ as ev)
             when not (ExistentialSet.mem evk flags.frozen_evars) ->
 	    let cmvars = free_rels cM and cnvars = free_rels cN in
-	      if Intset.subset cmvars cnvars then
+	      if Int.Set.subset cmvars cnvars then
 		sigma,metasubst,((curenv,ev,cM)::evarsubst)
 	      else error_cannot_unify_local curenv sigma (m,n,cN)
 	| Sort s1, Sort s2 ->

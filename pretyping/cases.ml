@@ -1518,7 +1518,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
 	  (rel_context extenv) in
       let rel_filter =
 	List.map (fun a -> not (isRel a) || dependent a u
-                           || Intset.mem (destRel a) depvl) inst in
+                           || Int.Set.mem (destRel a) depvl) inst in
       let named_filter =
 	List.map (fun (id,_,_) -> dependent (mkVar id) u)
 	  (named_context extenv) in

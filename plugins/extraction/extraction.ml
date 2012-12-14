@@ -169,7 +169,7 @@ let db_from_sign s =
 
 let rec db_from_ind dbmap i =
   if i = 0 then []
-  else (try Intmap.find i dbmap with Not_found -> 0)::(db_from_ind dbmap (i-1))
+  else (try Int.Map.find i dbmap with Not_found -> 0)::(db_from_ind dbmap (i-1))
 
 (*s [parse_ind_args] builds a map: [i->j] iff the i-th Coq argument
   of a constructor corresponds to the j-th type var of the ML inductive. *)
@@ -183,11 +183,11 @@ let rec db_from_ind dbmap i =
 
 let parse_ind_args si args relmax =
   let rec parse i j = function
-    | [] -> Intmap.empty
+    | [] -> Int.Map.empty
     | Kill _ :: s -> parse (i+1) j s
     | Keep :: s ->
       (match kind_of_term args.(i-1) with
-	 | Rel k -> Intmap.add (relmax+1-k) j (parse (i+1) (j+1) s)
+	 | Rel k -> Int.Map.add (relmax+1-k) j (parse (i+1) (j+1) s)
 	 | _ -> parse (i+1) (j+1) s)
   in parse 1 1 si
 
@@ -493,7 +493,7 @@ and extract_type_cons env db dbmap c i =
   match kind_of_term (whd_betadeltaiota env none c) with
     | Prod (n,t,d) ->
 	let env' = push_rel_assum (n,t) env in
-	let db' = (try Intmap.find i dbmap with Not_found -> 0) :: db in
+	let db' = (try Int.Map.find i dbmap with Not_found -> 0) :: db in
 	let l = extract_type_cons env' db' dbmap d (i+1) in
 	(extract_type env db 0 t []) :: l
     | _ -> []

@@ -544,10 +544,10 @@ let occur_var_in_decl env hyp (_,c,typ) =
 
 let free_rels m =
   let rec frec depth acc c = match kind_of_term c with
-    | Rel n       -> if n >= depth then Intset.add (n-depth+1) acc else acc
+    | Rel n       -> if n >= depth then Int.Set.add (n-depth+1) acc else acc
     | _ -> fold_constr_with_binders succ frec depth acc c
   in
-  frec 1 Intset.empty m
+  frec 1 Int.Set.empty m
 
 (* collects all metavar occurences, in left-to-right order, preserving
  * repetitions and all. *)
@@ -912,18 +912,18 @@ let split_app c = match kind_of_term c with
 	c::(Array.to_list prev), last
   | _ -> assert false
 
-type subst = (rel_context*constr) Intmap.t
+type subst = (rel_context*constr) Int.Map.t
 
 exception CannotFilter
 
 let filtering env cv_pb c1 c2 =
-  let evm = ref Intmap.empty in
+  let evm = ref Int.Map.empty in
   let define cv_pb e1 ev c1 =
-    try let (e2,c2) = Intmap.find ev !evm in
+    try let (e2,c2) = Int.Map.find ev !evm in
     let shift = List.length e1 - List.length e2 in
     if constr_cmp cv_pb c1 (lift shift c2) then () else raise CannotFilter
     with Not_found ->
-      evm := Intmap.add ev (e1,c1) !evm
+      evm := Int.Map.add ev (e1,c1) !evm
   in
   let rec aux env cv_pb c1 c2 =
     match kind_of_term c1, kind_of_term c2 with

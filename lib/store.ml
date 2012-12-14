@@ -21,7 +21,7 @@ let next =
   incr count;
   n
 
-type t = Obj.t Util.Intmap.t
+type t = Obj.t Int.Map.t
 
 module Field = struct
   type 'a field = {
@@ -34,18 +34,18 @@ end
 
 open Field
 
-let empty = Util.Intmap.empty
+let empty = Int.Map.empty
 
 let field () =
   let fid = next () in
   let set a s =
-    Util.Intmap.add fid (Obj.repr a) s
+    Int.Map.add fid (Obj.repr a) s
   in
   let get s =
-    try Some (Obj.obj (Util.Intmap.find fid s))
+    try Some (Obj.obj (Int.Map.find fid s))
     with _ -> None
   in
   let remove s =
-    Util.Intmap.remove fid s
+    Int.Map.remove fid s
   in
   { set = set ; get = get ; remove = remove }

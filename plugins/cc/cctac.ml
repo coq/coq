@@ -103,7 +103,7 @@ let rec pattern_of_constr env sigma c =
 	let pargs,lrels = List.split
 	  (Array.map_to_list (pattern_of_constr env sigma) args) in
 	  PApp (pf,List.rev pargs),
-	List.fold_left Intset.union Intset.empty lrels
+	List.fold_left Int.Set.union Int.Set.empty lrels
     | Prod (_,a,_b) when not (Termops.dependent (mkRel 1) _b) ->
 	let b = Termops.pop _b in
 	let pa,sa = pattern_of_constr env sigma a in
@@ -111,11 +111,11 @@ let rec pattern_of_constr env sigma c =
 	let sort_b = sf_of env sigma b in
 	let sort_a = sf_of env sigma a in
 	  PApp(Product (sort_a,sort_b),
-	       [pa;pb]),(Intset.union sa sb)
-    | Rel i -> PVar i,Intset.singleton i
+	       [pa;pb]),(Int.Set.union sa sb)
+    | Rel i -> PVar i,Int.Set.singleton i
     | _ ->
 	let pf = decompose_term env sigma c in
-	  PApp (pf,[]),Intset.empty
+	  PApp (pf,[]),Int.Set.empty
 
 let non_trivial = function
     PVar _ -> false
@@ -129,11 +129,11 @@ let patterns_of_constr env sigma nrels term=
 	  let patt1,rels1 = pattern_of_constr env sigma args.(1)
 	  and patt2,rels2 = pattern_of_constr env sigma args.(2) in
 	  let valid1 =
-	    if Intset.cardinal rels1 <> nrels then Creates_variables
+	    if Int.Set.cardinal rels1 <> nrels then Creates_variables
 	    else if non_trivial patt1 then Normal
 	    else Trivial args.(0)
 	  and valid2 =
-	    if Intset.cardinal rels2 <> nrels then Creates_variables
+	    if Int.Set.cardinal rels2 <> nrels then Creates_variables
 	    else if non_trivial patt2 then Normal
 	    else Trivial args.(0) in
 	    if valid1 <> Creates_variables

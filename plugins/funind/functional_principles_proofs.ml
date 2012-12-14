@@ -267,12 +267,12 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	let t2 = destRel t2  in
 	begin
 	  try
-	    let t1' = Intmap.find t2 sub in
+	    let t1' = Int.Map.find t2 sub in
 	    if not (eq_constr t1 t1') then nochange "twice bound variable";
 	    sub
 	  with Not_found ->
 	    assert (closed0 t1);
-	    Intmap.add t2 t1 sub
+	    Int.Map.add t2 t1 sub
 	end
       else if isAppConstruct t1 && isAppConstruct t2
       then
@@ -286,14 +286,14 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
       else
 	if (eq_constr t1 t2) then sub else nochange ~t':(make_refl_eq constructor (Reduction.whd_betadeltaiota env t1) t2)  "cannot solve (diff)"
     in
-    let sub = compute_substitution Intmap.empty (snd t1) (snd t2) in
+    let sub = compute_substitution Int.Map.empty (snd t1) (snd t2) in
     let sub = compute_substitution sub (fst t1) (fst t2) in
     let end_of_type_with_pop = Termops.pop end_of_type in (*the equation will be removed *)
     let new_end_of_type =
       (* Ugly hack to prevent Map.fold order change between ocaml-3.08.3 and ocaml-3.08.4
 	 Can be safely replaced by the next comment for Ocaml >= 3.08.4
       *)
-      let sub' = Intmap.fold (fun i t acc -> (i,t)::acc) sub [] in
+      let sub' = Int.Map.fold (fun i t acc -> (i,t)::acc) sub [] in
       let sub'' = List.sort (fun (x,_) (y,_) -> Pervasives.compare x y) sub' in
       List.fold_left (fun end_of_type (i,t)  -> lift 1 (substnl  [t] (i-1) end_of_type))
 	end_of_type_with_pop
@@ -309,7 +309,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
       List.fold_left_i
 	(fun i (end_of_type,ctxt_size,witness_fun) ((x',b',t') as decl) ->
 	   try
-	     let witness = Intmap.find i sub in
+	     let witness = Int.Map.find i sub in
 	     if b' <> None then anomaly "can not redefine a rel!";
 	     (Termops.pop end_of_type,ctxt_size,mkLetIn(x',witness,t',witness_fun))
 	   with Not_found  ->

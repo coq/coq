@@ -336,13 +336,13 @@ let emacs_print_dependent_evars sigma seeds =
   let evars () =
     let evars = Evarutil.gather_dependent_evars sigma seeds in
     let evars =
-      Intmap.fold begin fun e i s ->
+      Int.Map.fold begin fun e i s ->
 	let e' = str (string_of_existential e) in
 	match i with
 	| None -> s ++ str" " ++ e' ++ str " open,"
 	| Some i ->
 	  s ++ str " " ++ e' ++ str " using " ++
-	    Intset.fold begin fun d s ->
+	    Int.Set.fold begin fun d s ->
 	      str (string_of_existential d) ++ str " " ++ s
 	    end i (str ",")
       end evars (str "")

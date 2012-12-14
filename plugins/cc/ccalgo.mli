@@ -123,7 +123,7 @@ type matching_problem
 
 module PafMap: Map.S with type key = pa_fun
 
-val make_fun_table : state -> Intset.t PafMap.t
+val make_fun_table : state -> Int.Set.t PafMap.t
 
 val do_match :  state ->
     (quant_eq * int array) list ref -> matching_problem Stack.t -> unit

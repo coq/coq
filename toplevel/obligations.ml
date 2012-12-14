@@ -53,7 +53,7 @@ type oblinfo =
     ev_src: Evar_kinds.t Loc.located;
     ev_typ: types;
     ev_tac: tactic option;
-    ev_deps: Intset.t }
+    ev_deps: Int.Set.t }
 
 (* spiwack: Store field for internalizing ev_tac in evar_infos' evar_extra. *)
 open Store.Field
@@ -63,7 +63,7 @@ let evar_tactic = Store.field ()
   where n binders were passed through. *)
 
 let subst_evar_constr evs n idf t = 
-  let seen = ref Intset.empty in
+  let seen = ref Int.Set.empty in
   let transparent = ref Idset.empty in
   let evar_info id = List.assoc id evs in
   let rec substrec (depth, fixrels) c = match kind_of_term c with
@@ -74,7 +74,7 @@ let subst_evar_constr evs n idf t =
 	  with Not_found ->
 	    anomaly ("eterm: existential variable " ^ string_of_int k ^ " not found")
 	in
-        seen := Intset.add id !seen;
+        seen := Int.Set.add id !seen;
 	  (* Evar arguments are created in inverse order,
 	     and we must not apply to defined ones (i.e. LetIn's)
 	  *)
@@ -125,14 +125,14 @@ let etype_of_evar evs hyps concl =
 	let t', s, trans = subst_evar_constr evs n mkVar t in
 	let t'' = subst_vars acc 0 t' in
 	let rest, s', trans' = aux (id :: acc) (succ n) tl in
-	let s' = Intset.union s s' in
+	let s' = Int.Set.union s s' in
 	let trans' = Idset.union trans trans' in
 	  (match copt with
 	      Some c -> 
 		let c', s'', trans'' = subst_evar_constr evs n mkVar c in
 		let c' = subst_vars acc 0 c' in
 		  mkNamedProd_or_LetIn (id, Some c', t'') rest,
-		Intset.union s'' s',
+		Int.Set.union s'' s',
 		Idset.union trans'' trans'
 	    | None ->
 		mkNamedProd_or_LetIn (id, None, t'') rest, s', trans')
@@ -156,49 +156,49 @@ let rec chop_product n t =
       | _ -> None
 
 let evars_of_evar_info evi =
-  Intset.union (Evarutil.evars_of_term evi.evar_concl)
-    (Intset.union
+  Int.Set.union (Evarutil.evars_of_term evi.evar_concl)
+    (Int.Set.union
 	(match evi.evar_body with
-	| Evar_empty -> Intset.empty
+	| Evar_empty -> Int.Set.empty
 	| Evar_defined b -> Evarutil.evars_of_term b)
 	(Evarutil.evars_of_named_context (evar_filtered_context evi)))
 
 let evar_dependencies evm oev =
   let one_step deps =
-    Intset.fold (fun ev s ->
+    Int.Set.fold (fun ev s ->
       let evi = Evd.find evm ev in
       let deps' = evars_of_evar_info evi in
-	if Intset.mem oev deps' then
+	if Int.Set.mem oev deps' then
 	  raise (Invalid_argument ("Ill-formed evar map: cycle detected for evar " ^ string_of_int oev))
-	else Intset.union deps' s)
+	else Int.Set.union deps' s)
       deps deps
   in
   let rec aux deps =
     let deps' = one_step deps in
-      if Intset.equal deps deps' then deps
+      if Int.Set.equal deps deps' then deps
       else aux deps'
-  in aux (Intset.singleton oev)
+  in aux (Int.Set.singleton oev)
       
 let move_after (id, ev, deps as obl) l = 
   let rec aux restdeps = function
     | (id', _, _) as obl' :: tl -> 
-	let restdeps' = Intset.remove id' restdeps in
-	  if Intset.is_empty restdeps' then
+	let restdeps' = Int.Set.remove id' restdeps in
+	  if Int.Set.is_empty restdeps' then
 	    obl' :: obl :: tl
 	  else obl' :: aux restdeps' tl
     | [] -> [obl]
-  in aux (Intset.remove id deps) l
+  in aux (Int.Set.remove id deps) l
     
 let sort_dependencies evl =
   let rec aux l found list =
     match l with
     | (id, ev, deps) as obl :: tl ->
-	let found' = Intset.union found (Intset.singleton id) in
-	  if Intset.subset deps found' then
+	let found' = Int.Set.union found (Int.Set.singleton id) in
+	  if Int.Set.subset deps found' then
 	    aux tl found' (obl :: list)
 	  else aux (move_after obl tl) found list
     | [] -> List.rev list
-  in aux evl Intset.empty []
+  in aux evl Int.Set.empty []
 
 open Environ
 
@@ -292,7 +292,7 @@ let explain_no_obligations = function
 
 type obligation_info =
     (Names.identifier * Term.types * Evar_kinds.t Loc.located *
-     Evar_kinds.obligation_definition_status * Intset.t * tactic option) array
+     Evar_kinds.obligation_definition_status * Int.Set.t * tactic option) array
 
 type obligation =
   { obl_name : identifier;
@@ -300,7 +300,7 @@ type obligation =
     obl_location : Evar_kinds.t Loc.located;
     obl_body : constr option;
     obl_status : Evar_kinds.obligation_definition_status;
-    obl_deps : Intset.t;
+    obl_deps : Int.Set.t;
     obl_tac : tactic option;
   }
 
@@ -376,7 +376,7 @@ let get_obligation_body expand obl =
     else c
 
 let obl_substitution expand obls deps =
-  Intset.fold
+  Int.Set.fold
     (fun x acc ->
        let xobl = obls.(x) in
        let oblb =
@@ -494,8 +494,8 @@ let progmap_replace prg' =
   Lib.add_anonymous_leaf (input (map_replace prg'.prg_name prg' !from_prg))
 
 let rec intset_to = function
-    -1 -> Intset.empty
-  | n -> Intset.add n (intset_to (pred n))
+    -1 -> Int.Set.empty
+  | n -> Int.Set.add n (intset_to (pred n))
 
 let subst_body expand prg =
   let obls, _ = prg.prg_obligations in
@@ -605,7 +605,7 @@ let init_prog_info n b t deps fixkind notations obls impls kind reduce hook =
 	let n = Nameops.add_suffix n "_obligation" in
 	  [| { obl_name = n; obl_body = None;
 	       obl_location = Loc.ghost, Evar_kinds.InternalHole; obl_type = t;
-	       obl_status = Evar_kinds.Expand; obl_deps = Intset.empty;
+	       obl_status = Evar_kinds.Expand; obl_deps = Int.Set.empty;
 	       obl_tac = None } |],
 	mkVar n
     | Some b ->
@@ -686,18 +686,18 @@ let update_obls prg obls rem =
 let is_defined obls x = not (Option.is_empty obls.(x).obl_body)
 
 let deps_remaining obls deps =
-  Intset.fold
+  Int.Set.fold
     (fun x acc ->
       if is_defined obls x then acc
       else x :: acc)
     deps []
 
 let dependencies obls n =
-  let res = ref Intset.empty in
+  let res = ref Int.Set.empty in
     Array.iteri
       (fun i obl ->
-	if not (Int.equal i n) && Intset.mem n obl.obl_deps then
-	  res := Intset.add i !res)
+	if not (Int.equal i n) && Int.Set.mem n obl.obl_deps then
+	  res := Int.Set.add i !res)
       obls;
     !res
 
@@ -774,7 +774,7 @@ let rec solve_obligation prg num tac =
 		  match res with
 		  | Remain n when n > 0 ->
 		      let deps = dependencies obls num in
-			if not (Intset.is_empty deps) then
+			if not (Int.Set.is_empty deps) then
 			  ignore(auto_solve_obligations (Some prg.prg_name) None ~oblset:deps)
 		  | _ -> ());
 	    trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
@@ -830,7 +830,7 @@ and solve_prg_obligations prg ?oblset tac =
   let obls' = Array.copy obls in
   let p = match oblset with
     | None -> (fun _ -> true)
-    | Some s -> (fun i -> Intset.mem i s)
+    | Some s -> (fun i -> Int.Set.mem i s)
   in
   let _ =
     Array.iteri (fun i x ->

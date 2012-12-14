@@ -171,12 +171,12 @@ module Mlenv = struct
 
   let generalization mle t =
     let c = ref 0 in
-    let map = ref (Intmap.empty : int Intmap.t) in
-    let add_new i = incr c; map := Intmap.add i !c !map; !c in
+    let map = ref (Int.Map.empty : int Int.Map.t) in
+    let add_new i = incr c; map := Int.Map.add i !c !map; !c in
     let rec meta2var t = match t with
       | Tmeta {contents=Some u} -> meta2var u
       | Tmeta ({id=i} as m) ->
-	  (try Tvar (Intmap.find i !map)
+	  (try Tvar (Int.Map.find i !map)
 	   with Not_found ->
 	     if Metaset.mem m mle.free then t
 	     else Tvar (add_new i))
@@ -731,14 +731,14 @@ let census_add, census_max, census_clean =
   let h = Hashtbl.create 13 in
   let clear () = Hashtbl.clear h in
   let add e i =
-    let s = try Hashtbl.find h e with Not_found -> Intset.empty in
-    Hashtbl.replace h e (Intset.add i s)
+    let s = try Hashtbl.find h e with Not_found -> Int.Set.empty in
+    Hashtbl.replace h e (Int.Set.add i s)
   in
   let max e0 =
-    let len = ref 0 and lst = ref Intset.empty and elm = ref e0 in
+    let len = ref 0 and lst = ref Int.Set.empty and elm = ref e0 in
     Hashtbl.iter
       (fun e s ->
-	 let n = Intset.cardinal s in
+	 let n = Int.Set.cardinal s in
 	 if n > !len then begin len := n; lst := s; elm := e end)
       h;
     (!elm,!lst)
@@ -766,7 +766,7 @@ let factor_branches o typ br =
     done;
     let br_factor, br_set = census_max MLdummy in
     census_clean ();
-    let n = Intset.cardinal br_set in
+    let n = Int.Set.cardinal br_set in
     if n = 0 then None
     else if Array.length br >= 2 && n < 2 then None
     else Some (br_factor, br_set)
@@ -945,7 +945,7 @@ and simpl_case o typ br e =
       if lang() = Scheme || is_custom_match br
       then MLcase (typ, e, br)
       else match factor_branches o typ br with
-	| Some (f,ints) when Intset.cardinal ints = Array.length br ->
+	| Some (f,ints) when Int.Set.cardinal ints = Array.length br ->
 	  (* If all branches have been factorized, we remove the match *)
 	  simpl o (MLletin (Tmp anonymous_name, e, f))
 	| Some (f,ints) ->
@@ -954,7 +954,7 @@ and simpl_case o typ br e =
 	    else ([], Pwild, ast_pop f)
 	  in
 	  let brl = Array.to_list br in
-	  let brl_opt = List.filteri (fun i _ -> not (Intset.mem i ints)) brl in
+	  let brl_opt = List.filteri (fun i _ -> not (Int.Set.mem i ints)) brl in
 	  let brl_opt = brl_opt @ [last_br] in
 	  MLcase (typ, e, Array.of_list brl_opt)
 	| None -> MLcase (typ, e, br)

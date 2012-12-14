@@ -456,15 +456,15 @@ let compute_rel_aliases var_aliases rels =
          | Var id' ->
              let aliases_of_n =
                try Idmap.find id' var_aliases with Not_found -> [] in
-             Intmap.add n (aliases_of_n@[t]) aliases
+             Int.Map.add n (aliases_of_n@[t]) aliases
          | Rel p ->
              let aliases_of_n =
-               try Intmap.find (p+n) aliases with Not_found -> [] in
-             Intmap.add n (aliases_of_n@[mkRel (p+n)]) aliases
+               try Int.Map.find (p+n) aliases with Not_found -> [] in
+             Int.Map.add n (aliases_of_n@[mkRel (p+n)]) aliases
          | _ ->
-             Intmap.add n [lift n t] aliases)
+             Int.Map.add n [lift n t] aliases)
      | None -> aliases))
-         rels (List.length rels,Intmap.empty))
+         rels (List.length rels,Int.Map.empty))
 
 let make_alias_map env =
   (* We compute the chain of aliases for each var and rel *)
@@ -475,11 +475,11 @@ let make_alias_map env =
 let lift_aliases n (var_aliases,rel_aliases as aliases) =
   if Int.equal n 0 then aliases else
   (var_aliases,
-   Intmap.fold (fun p l -> Intmap.add (p+n) (List.map (lift n) l))
-     rel_aliases Intmap.empty)
+   Int.Map.fold (fun p l -> Int.Map.add (p+n) (List.map (lift n) l))
+     rel_aliases Int.Map.empty)
 
 let get_alias_chain_of aliases x = match kind_of_term x with
-  | Rel n -> (try Intmap.find n (snd aliases) with Not_found -> [])
+  | Rel n -> (try Int.Map.find n (snd aliases) with Not_found -> [])
   | Var id -> (try Idmap.find id (fst aliases) with Not_found -> [])
   | _ -> []
 
@@ -496,12 +496,12 @@ let normalize_alias aliases x =
   | None -> x
 
 let normalize_alias_var var_aliases id =
-  destVar (normalize_alias (var_aliases,Intmap.empty) (mkVar id))
+  destVar (normalize_alias (var_aliases,Int.Map.empty) (mkVar id))
 
 let extend_alias (_,b,_) (var_aliases,rel_aliases) =
   let rel_aliases =
-    Intmap.fold (fun n l -> Intmap.add (n+1) (List.map (lift 1) l))
-      rel_aliases Intmap.empty in
+    Int.Map.fold (fun n l -> Int.Map.add (n+1) (List.map (lift 1) l))
+      rel_aliases Int.Map.empty in
   let rel_aliases =
     match b with
     | Some t ->
@@ -509,13 +509,13 @@ let extend_alias (_,b,_) (var_aliases,rel_aliases) =
         | Var id' ->
             let aliases_of_binder =
               try Idmap.find id' var_aliases with Not_found -> [] in
-	    Intmap.add 1 (aliases_of_binder@[t]) rel_aliases
+	    Int.Map.add 1 (aliases_of_binder@[t]) rel_aliases
         | Rel p ->
             let aliases_of_binder =
-              try Intmap.find (p+1) rel_aliases with Not_found -> [] in
-	    Intmap.add 1 (aliases_of_binder@[mkRel (p+1)]) rel_aliases
+              try Int.Map.find (p+1) rel_aliases with Not_found -> [] in
+	    Int.Map.add 1 (aliases_of_binder@[mkRel (p+1)]) rel_aliases
         | _ ->
-            Intmap.add 1 [lift 1 t] rel_aliases)
+            Int.Map.add 1 [lift 1 t] rel_aliases)
     | None -> rel_aliases in
   (var_aliases, rel_aliases)
 
@@ -545,14 +545,14 @@ let rec expand_vars_in_term_using aliases t = match kind_of_term t with
 let expand_vars_in_term env = expand_vars_in_term_using (make_alias_map env)
 
 let free_vars_and_rels_up_alias_expansion aliases c =
-  let acc1 = ref Intset.empty and acc2 = ref Idset.empty in
-  let cache_rel = ref Intset.empty and cache_var = ref Idset.empty in
+  let acc1 = ref Int.Set.empty and acc2 = ref Idset.empty in
+  let cache_rel = ref Int.Set.empty and cache_var = ref Idset.empty in
   let is_in_cache depth = function
-    | Rel n -> Intset.mem (n-depth) !cache_rel
+    | Rel n -> Int.Set.mem (n-depth) !cache_rel
     | Var s -> Idset.mem s !cache_var
     | _ -> false in
   let put_in_cache depth = function
-    | Rel n -> cache_rel := Intset.add (n-depth) !cache_rel
+    | Rel n -> cache_rel := Int.Set.add (n-depth) !cache_rel
     | Var s -> cache_var := Idset.add s !cache_var
     | _ -> () in
   let rec frec (aliases,depth) c =
@@ -563,7 +563,7 @@ let free_vars_and_rels_up_alias_expansion aliases c =
       let c = expansion_of_var aliases c in
         match kind_of_term c with
         | Var id -> acc2 := Idset.add id !acc2
-        | Rel n -> if n >= depth+1 then acc1 := Intset.add (n-depth) !acc1
+        | Rel n -> if n >= depth+1 then acc1 := Int.Set.add (n-depth) !acc1
         | _ -> frec (aliases,depth) c end
     | Const _ | Ind _ | Construct _ ->
         acc2 := List.fold_right Idset.add (vars_of_global (Global.env()) c) !acc2
@@ -729,7 +729,7 @@ let get_actual_deps aliases l t =
     List.filter (fun c ->
       match kind_of_term c with
       | Var id -> Idset.mem id fv_ids
-      | Rel n -> Intset.mem n fv_rels
+      | Rel n -> Int.Set.mem n fv_rels
       | _ -> assert false) l
 
 let remove_instance_local_defs evd evk args =
@@ -1373,7 +1373,7 @@ let rec is_constrainable_in k (ev,(fv_rels,fv_ids) as g) t =
   | Prod (_,t1,t2) -> is_constrainable_in k g t1 && is_constrainable_in k g t2
   | Evar (ev',_) -> not (Int.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
   | Var id -> Idset.mem id fv_ids
-  | Rel n -> n <= k || Intset.mem n fv_rels
+  | Rel n -> n <= k || Int.Set.mem n fv_rels
   | Sort _ -> true
   | _ -> (* We don't try to be more clever *) true
 
@@ -1381,7 +1381,7 @@ let has_constrainable_free_vars evd aliases k ev (fv_rels,fv_ids as fvs) t =
   let t = expansion_of_var aliases t in
   match kind_of_term t with
   | Var id -> Idset.mem id fv_ids
-  | Rel n -> n <= k || Intset.mem n fv_rels
+  | Rel n -> n <= k || Int.Set.mem n fv_rels
   | _ -> is_constrainable_in k (ev,fvs) t
 
 let ensure_evar_independent g env evd (evk1,argsv1 as ev1) (evk2,argsv2 as ev2)=
@@ -1800,14 +1800,14 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
 let evars_of_term c =
   let rec evrec acc c =
     match kind_of_term c with
-    | Evar (n, l) -> Intset.add n (Array.fold_left evrec acc l)
+    | Evar (n, l) -> Int.Set.add n (Array.fold_left evrec acc l)
     | _ -> fold_constr evrec acc c
   in
-  evrec Intset.empty c
+  evrec Int.Set.empty c
 
 (* spiwack: a few functions to gather evars on which goals depend. *)
 let queue_set q is_dependent set =
-  Intset.iter (fun a -> Queue.push (is_dependent,a) q) set
+  Int.Set.iter (fun a -> Queue.push (is_dependent,a) q) set
 let queue_term q is_dependent c =
   queue_set q is_dependent (evars_of_term c)
 
@@ -1824,7 +1824,7 @@ let process_dependent_evar q acc evm is_dependent e =
   end (Environ.named_context_of_val evi.evar_hyps);
   match evi.evar_body with
   | Evar_empty ->
-      if is_dependent then Intmap.add e None acc else acc
+      if is_dependent then Int.Map.add e None acc else acc
   | Evar_defined b ->
       let subevars = evars_of_term b in
       (* evars appearing in the definition of an evar [e] are marked
@@ -1832,14 +1832,14 @@ let process_dependent_evar q acc evm is_dependent e =
          non-dependent goal, then, unless they are reach from another
          path, these evars are just other non-dependent goals. *)
       queue_set q is_dependent subevars;
-      if is_dependent then Intmap.add e (Some subevars) acc else acc
+      if is_dependent then Int.Map.add e (Some subevars) acc else acc
 
 let gather_dependent_evars q evm =
-  let acc = ref Intmap.empty in
+  let acc = ref Int.Map.empty in
   while not (Queue.is_empty q) do
     let (is_dependent,e) = Queue.pop q in
     (* checks if [e] has already been added to [!acc] *)
-    begin if not (Intmap.mem e !acc) then
+    begin if not (Int.Map.mem e !acc) then
         acc := process_dependent_evar q !acc evm is_dependent e  
     end
   done;
@@ -1855,15 +1855,15 @@ let gather_dependent_evars evm l =
 let evars_of_named_context nc =
   List.fold_right (fun (_, b, t) s ->
     Option.fold_left (fun s t ->
-      Intset.union s (evars_of_term t))
-      (Intset.union s (evars_of_term t)) b)
-    nc Intset.empty
+      Int.Set.union s (evars_of_term t))
+      (Int.Set.union s (evars_of_term t)) b)
+    nc Int.Set.empty
 
 let evars_of_evar_info evi =
-  Intset.union (evars_of_term evi.evar_concl)
-    (Intset.union
+  Int.Set.union (evars_of_term evi.evar_concl)
+    (Int.Set.union
 	(match evi.evar_body with
-	| Evar_empty -> Intset.empty
+	| Evar_empty -> Int.Set.empty
 	| Evar_defined b -> evars_of_term b)
 	(evars_of_named_context (named_context_of_val evi.evar_hyps)))
 
@@ -1878,25 +1878,25 @@ let undefined_evars_of_term evd t =
       | Evar (n, l) ->
 	let acc = Array.fold_left evrec acc l in
 	(try match (Evd.find evd n).evar_body with
-	  | Evar_empty -> Intset.add n acc
+	  | Evar_empty -> Int.Set.add n acc
 	  | Evar_defined c -> evrec acc c
 	 with Not_found -> anomaly "undefined_evars_of_term: evar not found")
       | _ -> fold_constr evrec acc c
   in
-  evrec Intset.empty t
+  evrec Int.Set.empty t
 
 let undefined_evars_of_named_context evd nc =
   List.fold_right (fun (_, b, t) s ->
     Option.fold_left (fun s t ->
-      Intset.union s (undefined_evars_of_term evd t))
-      (Intset.union s (undefined_evars_of_term evd t)) b)
-    nc Intset.empty
+      Int.Set.union s (undefined_evars_of_term evd t))
+      (Int.Set.union s (undefined_evars_of_term evd t)) b)
+    nc Int.Set.empty
 
 let undefined_evars_of_evar_info evd evi =
-  Intset.union (undefined_evars_of_term evd evi.evar_concl)
-    (Intset.union
+  Int.Set.union (undefined_evars_of_term evd evi.evar_concl)
+    (Int.Set.union
        (match evi.evar_body with
-	 | Evar_empty -> Intset.empty
+	 | Evar_empty -> Int.Set.empty
 	 | Evar_defined b -> undefined_evars_of_term evd b)
        (undefined_evars_of_named_context evd
 	  (named_context_of_val evi.evar_hyps)))

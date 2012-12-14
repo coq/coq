@@ -297,8 +297,8 @@ let rec hdMatchSub inu (test: constr -> bool) : fapp_info list =
   else
     let f,args = decompose_app inu in
     let freeset = Termops.free_rels inu in
-    let max_rel = try Util.Intset.max_elt freeset with Not_found -> -1 in
-    {fname = f; largs = args; free = Util.Intset.is_empty freeset;
+    let max_rel = try Int.Set.max_elt freeset with Not_found -> -1 in
+    {fname = f; largs = args; free = Int.Set.is_empty freeset;
     max_rel = max_rel; onlyvars = List.for_all isVar args }
     ::subres
 

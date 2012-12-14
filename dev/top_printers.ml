@@ -60,7 +60,7 @@ let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
 let ppbigint n = pp (str (Bigint.to_string n));;
 
 let prset pr l = str "[" ++ hov 0 (prlist_with_sep spc pr l) ++ str "]"
-let ppintset l = pp (prset int (Intset.elements l))
+let ppintset l = pp (prset int (Int.Set.elements l))
 let ppidset l = pp (prset pr_id (Idset.elements l))
 
 let prset' pr l = str "[" ++ hov 0 (prlist_with_sep pr_comma pr l) ++ str "]"

@@ -65,7 +65,7 @@ module ST=struct
     with
 	Not_found -> ()
 
-  let delete_set st s = Intset.iter (delete st) s
+  let delete_set st s = Int.Set.iter (delete st) s
 
 end
 
@@ -172,11 +172,11 @@ type inductive_status =
 
 type representative=
     {mutable weight:int;
-     mutable lfathers:Intset.t;
-     mutable fathers:Intset.t;
+     mutable lfathers:Int.Set.t;
+     mutable fathers:Int.Set.t;
      mutable inductive_status: inductive_status;
      class_type : Term.types;
-     mutable functions: Intset.t PafMap.t;
+     mutable functions: Int.Set.t PafMap.t;
      mutable constructors: int PacMap.t} (*pac -> term = app(constr,t) *)
 
 type cl = Rep of representative| Eqto of int*equality
@@ -219,16 +219,16 @@ type forest=
 type state =
     {uf: forest;
      sigtable:ST.t;
-     mutable terms: Intset.t;
+     mutable terms: Int.Set.t;
      combine: equality Queue.t;
      marks: (int * pa_mark) Queue.t;
      mutable diseq: disequality list;
      mutable quant: quant_eq list;
-     mutable pa_classes: Intset.t;
+     mutable pa_classes: Int.Set.t;
      q_history: (int array) Identhash.t;
      mutable rew_depth:int;
      mutable changed:bool;
-     by_type: Intset.t Typehash.t;
+     by_type: Int.Set.t Typehash.t;
      mutable gls:Proof_type.goal Tacmach.sigma}
 
 let dummy_node =
@@ -245,13 +245,13 @@ let empty depth gls:state =
       epsilons=[];
       axioms=Constrhash.create init_size;
       syms=Termhash.create init_size};
-  terms=Intset.empty;
+  terms=Int.Set.empty;
   combine=Queue.create ();
   marks=Queue.create ();
   sigtable=ST.empty ();
   diseq=[];
   quant=[];
-  pa_classes=Intset.empty;
+  pa_classes=Int.Set.empty;
   q_history=Identhash.create init_size;
   rew_depth=depth;
   by_type=Constrhash.create init_size;
@@ -292,13 +292,13 @@ let epsilons uf = uf.epsilons
 let add_lfather uf i t=
   let r=get_representative uf i in
     r.weight<-r.weight+1;
-    r.lfathers<-Intset.add t r.lfathers;
-    r.fathers <-Intset.add t r.fathers
+    r.lfathers<-Int.Set.add t r.lfathers;
+    r.fathers <-Int.Set.add t r.fathers
 
 let add_rfather uf i t=
   let r=get_representative uf i in
     r.weight<-r.weight+1;
-    r.fathers <-Intset.add t r.fathers
+    r.fathers <-Int.Set.add t r.fathers
 
 exception Discriminable of int * pa_constructor * int * pa_constructor
 
@@ -317,8 +317,8 @@ let add_pac rep pac t =
 
 let add_paf rep paf t =
   let already =
-    try PafMap.find paf rep.functions with Not_found -> Intset.empty in
-    rep.functions<- PafMap.add paf (Intset.add t already) rep.functions
+    try PafMap.find paf rep.functions with Not_found -> Int.Set.empty in
+    rep.functions<- PafMap.add paf (Int.Set.add t already) rep.functions
 
 let term uf i=uf.map.(i).term
 
@@ -347,8 +347,8 @@ let next uf=
 
 let new_representative typ =
   {weight=0;
-   lfathers=Intset.empty;
-   fathers=Intset.empty;
+   lfathers=Int.Set.empty;
+   fathers=Int.Set.empty;
    inductive_status=Unknown;
    class_type=typ;
    functions=PafMap.empty;
@@ -445,7 +445,7 @@ let rec add_term state t=
 		  let i1=add_term state t1 and i2=add_term state t2 in
 		    add_lfather uf (find uf i1) b;
 		    add_rfather uf (find uf i2) b;
-		    state.terms<-Intset.add b state.terms;
+		    state.terms<-Int.Set.add b state.terms;
 		    {clas= Rep (new_representative typ);
 		     cpath= -1;
 		     vertex= Node(i1,i2);
@@ -468,9 +468,9 @@ let rec add_term state t=
 	    uf.map.(b)<-new_node;
 	    Termhash.add uf.syms t b;
 	    Typehash.replace state.by_type typ
-	      (Intset.add b
+	      (Int.Set.add b
 		 (try Typehash.find state.by_type typ with
-		      Not_found -> Intset.empty));
+		      Not_found -> Int.Set.empty));
 	    b
 
 let add_equality state c s t=
@@ -567,34 +567,34 @@ let union state i1 i2 eq=
   and r2= get_representative state.uf i2 in
     link state.uf i1 i2 eq;
     Constrhash.replace state.by_type r1.class_type
-      (Intset.remove i1
+      (Int.Set.remove i1
 	 (try Constrhash.find state.by_type r1.class_type with
-	      Not_found -> Intset.empty));
-    let f= Intset.union r1.fathers r2.fathers in
-      r2.weight<-Intset.cardinal f;
+	      Not_found -> Int.Set.empty));
+    let f= Int.Set.union r1.fathers r2.fathers in
+      r2.weight<-Int.Set.cardinal f;
       r2.fathers<-f;
-      r2.lfathers<-Intset.union r1.lfathers r2.lfathers;
+      r2.lfathers<-Int.Set.union r1.lfathers r2.lfathers;
       ST.delete_set state.sigtable r1.fathers;
-      state.terms<-Intset.union state.terms r1.fathers;
+      state.terms<-Int.Set.union state.terms r1.fathers;
       PacMap.iter
 	(fun pac b -> Queue.add (b,Cmark pac) state.marks)
 	r1.constructors;
       PafMap.iter
-	(fun paf -> Intset.iter
+	(fun paf -> Int.Set.iter
 	   (fun b -> Queue.add (b,Fmark paf) state.marks))
 	r1.functions;
       match r1.inductive_status,r2.inductive_status with
 	  Unknown,_ -> ()
 	| Partial pac,Unknown ->
 	    r2.inductive_status<-Partial pac;
-	    state.pa_classes<-Intset.remove i1 state.pa_classes;
-	    state.pa_classes<-Intset.add i2 state.pa_classes
+	    state.pa_classes<-Int.Set.remove i1 state.pa_classes;
+	    state.pa_classes<-Int.Set.add i2 state.pa_classes
 	| Partial _ ,(Partial _ |Partial_applied) ->
-	    state.pa_classes<-Intset.remove i1 state.pa_classes
+	    state.pa_classes<-Int.Set.remove i1 state.pa_classes
 	| Partial_applied,Unknown ->
 	    r2.inductive_status<-Partial_applied
 	| Partial_applied,Partial _ ->
-	    state.pa_classes<-Intset.remove i2 state.pa_classes;
+	    state.pa_classes<-Int.Set.remove i2 state.pa_classes;
 	    r2.inductive_status<-Partial_applied
 	| Total cpl,Unknown -> r2.inductive_status<-Total cpl;
 	| Total (i,pac),Total _ -> Queue.add (i,Cmark pac) state.marks
@@ -623,7 +623,7 @@ let update t state = (* update 1 and 2 *)
       match rep.inductive_status with
 	  Partial _ ->
 	    rep.inductive_status <- Partial_applied;
-	    state.pa_classes <- Intset.remove i state.pa_classes
+	    state.pa_classes <- Int.Set.remove i state.pa_classes
 	| _ -> ()
     end;
     PacMap.iter
@@ -640,7 +640,7 @@ let update t state = (* update 1 and 2 *)
 
 let process_function_mark t rep paf state  =
   add_paf rep paf t;
-  state.terms<-Intset.union rep.lfathers state.terms
+  state.terms<-Int.Set.union rep.lfathers state.terms
 
 let process_constructor_mark t i rep pac state =
     match rep.inductive_status with
@@ -662,16 +662,16 @@ let process_constructor_mark t i rep pac state =
 	    in f cinfo.ci_nhyps opac.args pac.args
       | Partial_applied | Partial _ ->
 	  add_pac rep pac t;
-	  state.terms<-Intset.union rep.lfathers state.terms
+	  state.terms<-Int.Set.union rep.lfathers state.terms
       | Unknown ->
 	  if pac.arity = 0 then
 	    rep.inductive_status <- Total (t,pac)
 	  else
 	    begin
 	      add_pac rep pac t;
-	      state.terms<-Intset.union rep.lfathers state.terms;
+	      state.terms<-Int.Set.union rep.lfathers state.terms;
 	      rep.inductive_status <- Partial pac;
-	      state.pa_classes<- Intset.add i state.pa_classes
+	      state.pa_classes<- Int.Set.add i state.pa_classes
 	    end
 
 let process_mark t m state =
@@ -716,8 +716,8 @@ let one_step state =
 	  true
       with Queue.Empty ->
 	try
-	  let t = Intset.choose state.terms in
-	    state.terms<-Intset.remove t state.terms;
+	  let t = Int.Set.choose state.terms in
+	    state.terms<-Int.Set.remove t state.terms;
 	    update t state;
 	    true
 	with Not_found -> false
@@ -753,7 +753,7 @@ let complete_one_class state i=
     | _ -> anomaly "wrong incomplete class"
 
 let complete state =
-  Intset.iter (complete_one_class state) state.pa_classes
+  Int.Set.iter (complete_one_class state) state.pa_classes
 
 type matching_problem =
 {mp_subst : int array;
@@ -771,8 +771,8 @@ let make_fun_table state =
 	       (fun paf _ ->
 		  let elem =
 		    try PafMap.find paf !funtab
-		    with Not_found -> Intset.empty in
-		    funtab:= PafMap.add paf (Intset.add i elem) !funtab)
+		    with Not_found -> Int.Set.empty in
+		    funtab:= PafMap.add paf (Int.Set.add i elem) !funtab)
 	       rep.functions
 	 | _ -> ()) state.uf.map;
     !funtab
@@ -817,7 +817,7 @@ let do_match state res pb_stack =
 			     mp_stack=
 			      (PApp(f,rem_args),s) ::
 				(last_arg,t) :: remains} pb_stack in
-		      Intset.iter aux good_terms
+		      Int.Set.iter aux good_terms
 		  with Not_found -> ()
 
 let paf_of_patt syms = function
@@ -834,21 +834,21 @@ let init_pb_stack state =
     begin
       let good_classes =
 	match inst.qe_lhs_valid with
-	  Creates_variables -> Intset.empty
+	  Creates_variables -> Int.Set.empty
 	| Normal ->
 	    begin
 	      try
 		let paf= paf_of_patt syms inst.qe_lhs in
 		  PafMap.find paf funtab
-	      with Not_found -> Intset.empty
+	      with Not_found -> Int.Set.empty
 	    end
 	| Trivial typ ->
 	    begin
 	      try
 		Typehash.find state.by_type typ
-	      with Not_found -> Intset.empty
+	      with Not_found -> Int.Set.empty
 	    end in
-	Intset.iter (fun i ->
+	Int.Set.iter (fun i ->
 		       Stack.push
 			 {mp_subst = Array.make inst.qe_nvars (-1);
 			  mp_inst=inst;
@@ -857,21 +857,21 @@ let init_pb_stack state =
     begin
       let good_classes =
 	match inst.qe_rhs_valid with
-	  Creates_variables -> Intset.empty
+	  Creates_variables -> Int.Set.empty
 	| Normal ->
 	    begin
 	      try
 		let paf= paf_of_patt syms inst.qe_rhs in
 		  PafMap.find paf funtab
-	      with Not_found -> Intset.empty
+	      with Not_found -> Int.Set.empty
 	    end
 	| Trivial typ ->
 	    begin
 	      try
 		Typehash.find state.by_type typ
-	      with Not_found -> Intset.empty
+	      with Not_found -> Int.Set.empty
 	    end in
-	Intset.iter (fun i ->
+	Int.Set.iter (fun i ->
 		       Stack.push
 			 {mp_subst = Array.make inst.qe_nvars (-1);
 			  mp_inst=inst;
@@ -903,7 +903,7 @@ let rec execute first_run state =
     done;
     match check_disequalities state with
 	None ->
-	  if not(Intset.is_empty state.pa_classes) then
+	  if not(Int.Set.is_empty state.pa_classes) then
 	    begin
 	      debug (str "First run was incomplete, completing ... ");
 	      complete state;

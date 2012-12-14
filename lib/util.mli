@@ -84,10 +84,6 @@ val delayed_force : 'a delayed -> 'a
 
 type ('a, 'b) union = Inl of 'a | Inr of 'b
 
-module Intset : Set.S with type elt = int
-
-module Intmap : Map.S with type key = int
-
 (** {6 ... } *)
 (** Coq interruption: set the following boolean reference to interrupt Coq
     (it eventually raises [Break], simulating a Ctrl-C) *)

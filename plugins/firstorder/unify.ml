@@ -46,12 +46,12 @@ let unif t1 t2=
 		else bind i nt2
 	  | Meta i,_ ->
 	      let t=subst_meta !sigma nt2 in
-		if Intset.is_empty (free_rels t) &&
+		if Int.Set.is_empty (free_rels t) &&
 		  not (occur_term (mkMeta i) t) then
 		    bind i t else raise (UFAIL(nt1,nt2))
 	  | _,Meta i ->
 	      let t=subst_meta !sigma nt1 in
-		if Intset.is_empty (free_rels t) &&
+		if Int.Set.is_empty (free_rels t) &&
 		  not (occur_term (mkMeta i) t) then
 		    bind i t else raise (UFAIL(nt1,nt2))
 	  | Cast(_,_,_),_->Queue.add (strip_outer_cast nt1,nt2) bige
