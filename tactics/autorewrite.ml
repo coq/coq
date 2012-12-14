@@ -58,10 +58,10 @@ module HintDN = Term_dnet.Make(HintIdent)(HintOpt)
 
 (* Summary and Object declaration *)
 let rewtab =
-  ref (Stringmap.empty : HintDN.t Stringmap.t)
+  ref (String.Map.empty : HintDN.t String.Map.t)
 
 let _ =
-  let init () = rewtab := Stringmap.empty in
+  let init () = rewtab := String.Map.empty in
   let freeze () = !rewtab in
   let unfreeze fs = rewtab := fs in
   Summary.declare_summary "autorewrite"
@@ -70,7 +70,7 @@ let _ =
       Summary.init_function     = init }
 
 let find_base bas =
- try Stringmap.find bas !rewtab
+ try String.Map.find bas !rewtab
  with
   Not_found ->
    errorlabstrm "AutoRewrite"
@@ -207,7 +207,7 @@ let cache_hintrewrite (_,(rbase,lrl)) =
   let base = try find_base rbase with _ -> HintDN.empty in
   let max = try fst (Util.List.last (HintDN.find_all base)) with _ -> 0 in
   let lrl = HintDN.map (fun (i,h) -> (i + max, h)) lrl in
-    rewtab:=Stringmap.add rbase (HintDN.union lrl base) !rewtab
+    rewtab:=String.Map.add rbase (HintDN.union lrl base) !rewtab
 
 
 let subst_hintrewrite (subst,(rbase,list as node)) =

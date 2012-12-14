@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
+
 (** {1 Helper functions} *)
 
 let getenv_else s dft = try Sys.getenv s with Not_found -> dft ()
@@ -31,7 +33,7 @@ let home ~warn =
 
 let path_to_list p =
   let sep = if Sys.os_type = "Win32" then ';' else ':' in
-    Util.String.split sep p
+    String.split sep p
 
 let user_path () = 
   let path = try Sys.getenv "PATH" with _ -> raise Not_found in
@@ -161,7 +163,7 @@ let camllib () =
   else
     let com = ocamlc () ^ " -where" in
     let _, res = CUnix.run_command (fun x -> x) (fun _ -> ()) com in
-    Util.String.strip res
+    String.strip res
 
 (** {2 Camlp4 paths} *)
 
@@ -187,7 +189,7 @@ let camlp4lib () =
     let com = camlp4 () ^ " -where" in
     let ex, res = CUnix.run_command (fun x -> x) (fun _ -> ()) com in
     match ex with
-      | Unix.WEXITED 0 -> Util.String.strip res
+      | Unix.WEXITED 0 -> String.strip res
       | _ -> "/dev/null"
 
 (** {1 XDG utilities} *)

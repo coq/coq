@@ -71,13 +71,13 @@ type intern_genarg_type =
     glob_sign -> raw_generic_argument -> glob_generic_argument
 
 let genarginterns =
-  ref (Stringmap.empty : intern_genarg_type Stringmap.t)
+  ref (String.Map.empty : intern_genarg_type String.Map.t)
 
 let add_intern_genarg id f =
-  genarginterns := Stringmap.add id f !genarginterns
+  genarginterns := String.Map.add id f !genarginterns
 
 let lookup_intern_genarg id =
-  try Stringmap.find id !genarginterns
+  try String.Map.find id !genarginterns
   with Not_found ->
     let msg = "No globalization function found for entry "^id in
     Pp.msg_warning (Pp.strbrk msg);

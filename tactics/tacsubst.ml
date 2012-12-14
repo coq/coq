@@ -26,11 +26,11 @@ open Pretyping
 type subst_genarg_type =
     substitution -> glob_generic_argument -> glob_generic_argument
 let genargsubs =
-  ref (Stringmap.empty : subst_genarg_type Stringmap.t)
+  ref (String.Map.empty : subst_genarg_type String.Map.t)
 let add_genarg_subst id f =
-  genargsubs := Stringmap.add id f !genargsubs
+  genargsubs := String.Map.add id f !genargsubs
 let lookup_genarg_subst id =
-  try Stringmap.find id !genargsubs
+  try String.Map.find id !genargsubs
   with Not_found ->
     Pp.msg_warning (Pp.strbrk ("No substitution found for entry "^id));
     let dflt = fun _ x -> x in

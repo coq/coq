@@ -137,11 +137,11 @@ type interp_genarg_type =
     Evd.evar_map * typed_generic_argument
 
 let extragenargtab =
-  ref (Stringmap.empty : interp_genarg_type Stringmap.t)
+  ref (String.Map.empty : interp_genarg_type String.Map.t)
 let add_interp_genarg id f =
-  extragenargtab := Stringmap.add id f !extragenargtab
+  extragenargtab := String.Map.add id f !extragenargtab
 let lookup_interp_genarg id =
-  try Stringmap.find id !extragenargtab
+  try String.Map.find id !extragenargtab
   with Not_found ->
     let msg = "No interpretation function found for entry " ^ id in
     msg_warning (strbrk msg);

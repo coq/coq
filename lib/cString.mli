@@ -87,6 +87,13 @@ sig
 
   val is_sub : string -> string -> int -> bool
   (** [is_sub p s off] tests whether [s] contains [p] at offset [off]. *)
+
+  module Set : Set.S with type elt = t
+  (** Finite sets on [string] *)
+
+  module Map : Map.S with type key = t
+  (** Finite maps on [string] *)
+
 end
 
 include ExtS

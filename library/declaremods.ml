@@ -27,19 +27,19 @@ type 'a module_signature =
 
 type scope_subst = (string * string) list
 
-let scope_subst = ref (Stringmap.empty : string Stringmap.t)
+let scope_subst = ref (String.Map.empty : string String.Map.t)
 
 let add_scope_subst sc sc' =
-  scope_subst := Stringmap.add sc sc' !scope_subst
+  scope_subst := String.Map.add sc sc' !scope_subst
 
 let register_scope_subst scl =
   List.iter (fun (sc1,sc2) -> add_scope_subst sc1 sc2) scl
 
 let subst_scope sc =
- try Stringmap.find sc !scope_subst with Not_found -> sc
+ try String.Map.find sc !scope_subst with Not_found -> sc
 
 let reset_scope_subst () =
-  scope_subst := Stringmap.empty
+  scope_subst := String.Map.empty
 
 (** Which inline annotations should we honor, either None or the ones
     whose level is less or equal to the given integer *)

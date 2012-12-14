@@ -55,9 +55,6 @@ let subst_command_placeholder s t =
   done;
   Buffer.contents buff
 
-module Stringset = Set.Make(String)
-module Stringmap = Map.Make(String)
-
 (* Lists *)
 
 module List : CList.ExtS = CList

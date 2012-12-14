@@ -237,31 +237,31 @@ let file_of_name name =
  * (linked or loaded with load_object). It is used not to load a
  * module twice. It is NOT the list of ML modules Coq knows. *)
 
-let known_loaded_modules = ref Stringset.empty
+let known_loaded_modules = ref String.Set.empty
 
 let add_known_module mname =
   let mname = String.capitalize mname in
-  known_loaded_modules := Stringset.add mname !known_loaded_modules
+  known_loaded_modules := String.Set.add mname !known_loaded_modules
 
 let module_is_known mname =
-  Stringset.mem (String.capitalize mname) !known_loaded_modules
+  String.Set.mem (String.capitalize mname) !known_loaded_modules
 
 (** A plugin is just an ML module with an initialization function. *)
 
-let known_loaded_plugins = ref Stringmap.empty
+let known_loaded_plugins = ref String.Map.empty
 
 let add_known_plugin init name =
   let name = String.capitalize name in
   add_known_module name;
-  known_loaded_plugins := Stringmap.add name init !known_loaded_plugins
+  known_loaded_plugins := String.Map.add name init !known_loaded_plugins
 
 let init_known_plugins () =
-  Stringmap.iter (fun _ f -> f()) !known_loaded_plugins
+  String.Map.iter (fun _ f -> f()) !known_loaded_plugins
 
 (** ml object = ml module or plugin *)
 
 let init_ml_object mname =
-  try Stringmap.find mname !known_loaded_plugins ()
+  try String.Map.find mname !known_loaded_plugins ()
   with Not_found -> ()
 
 let load_ml_object mname fname=
@@ -271,7 +271,7 @@ let load_ml_object mname fname=
 
 (* Summary of declared ML Modules *)
 
-(* List and not Stringset because order is important: most recent first. *)
+(* List and not String.Set because order is important: most recent first. *)
 
 let loaded_modules = ref []
 let get_loaded_modules () = List.rev !loaded_modules

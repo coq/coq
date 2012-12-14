@@ -60,7 +60,7 @@ type 'a extra_genarg_printer =
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
     'a -> std_ppcmds
 
-let genarg_pprule = ref Stringmap.empty
+let genarg_pprule = ref String.Map.empty
 
 let declare_extra_genarg_pprule (rawwit, f) (globwit, g) (wit, h) =
   let s = match unquote wit with
@@ -71,7 +71,7 @@ let declare_extra_genarg_pprule (rawwit, f) (globwit, g) (wit, h) =
   let f prc prlc prtac x = f prc prlc prtac (out_gen rawwit x) in
   let g prc prlc prtac x = g prc prlc prtac (out_gen globwit x) in
   let h prc prlc prtac x = h prc prlc prtac (out_gen wit x) in
-  genarg_pprule := Stringmap.add s (f,g,h) !genarg_pprule
+  genarg_pprule := String.Map.add s (f,g,h) !genarg_pprule
 
 let pr_arg pr x = spc () ++ pr x
 
@@ -178,7 +178,7 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
             [a;b])
 	  x)
   | ExtraArgType s ->
-      try pi1 (Stringmap.find s !genarg_pprule) prc prlc prtac x
+      try pi1 (String.Map.find s !genarg_pprule) prc prlc prtac x
       with Not_found -> str "[no printer for " ++ str s ++ str "]"
 
 
@@ -223,7 +223,7 @@ let rec pr_glob_generic prc prlc prtac prpat x =
 	  (fun a b -> pr_sequence (pr_glob_generic prc prlc prtac prpat) [a;b])
 	  x)
   | ExtraArgType s ->
-      try pi2 (Stringmap.find s !genarg_pprule) prc prlc prtac x
+      try pi2 (String.Map.find s !genarg_pprule) prc prlc prtac x
       with Not_found -> str "[no printer for " ++ str s ++ str "]"
 
 let rec pr_generic prc prlc prtac prpat x =
@@ -263,7 +263,7 @@ let rec pr_generic prc prlc prtac prpat x =
           [a;b])
 	  x)
   | ExtraArgType s ->
-      try pi3 (Stringmap.find s !genarg_pprule) prc prlc prtac x
+      try pi3 (String.Map.find s !genarg_pprule) prc prlc prtac x
       with Not_found -> str "[no printer for " ++ str s ++ str "]"
 
 let rec tacarg_using_rule_token pr_gen = function

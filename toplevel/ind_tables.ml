@@ -35,8 +35,8 @@ type 'a scheme_kind = string
 let scheme_map = ref Indmap.empty
 
 let cache_one_scheme kind (ind,const) =
-  let map = try Indmap.find ind !scheme_map with Not_found -> Stringmap.empty in
-  scheme_map := Indmap.add ind (Stringmap.add kind const map) !scheme_map
+  let map = try Indmap.find ind !scheme_map with Not_found -> String.Map.empty in
+  scheme_map := Indmap.add ind (String.Map.add kind const map) !scheme_map
 
 let cache_scheme (_,(kind,l)) =
   Array.iter (cache_one_scheme kind) l
@@ -168,7 +168,7 @@ let define_mutual_scheme kind internal names mind =
       define_mutual_scheme_base kind s f internal names mind
 
 let find_scheme kind (mind,i as ind) =
-  try Stringmap.find kind (Indmap.find ind !scheme_map)
+  try String.Map.find kind (Indmap.find ind !scheme_map)
   with Not_found ->
   match Hashtbl.find scheme_object_table kind with
   | s,IndividualSchemeFunction f ->
@@ -177,6 +177,6 @@ let find_scheme kind (mind,i as ind) =
       (define_mutual_scheme_base kind s f KernelSilent [] mind).(i)
 
 let check_scheme kind ind =
-  try let _ = Stringmap.find kind (Indmap.find ind !scheme_map) in true
+  try let _ = String.Map.find kind (Indmap.find ind !scheme_map) in true
   with Not_found -> false
 

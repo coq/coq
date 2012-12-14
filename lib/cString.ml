@@ -58,6 +58,8 @@ sig
   val ordinal : int -> string
   val split : char -> string -> string list
   val is_sub : string -> string -> int -> bool
+  module Set : Set.S with type elt = t
+  module Map : Map.S with type key = t
 end
 
 include String
@@ -167,3 +169,12 @@ let split c s =
       | Not_found -> [String.sub s n (len-n)]
   in
   if Int.equal len 0 then [] else split 0
+
+module Self =
+struct
+  type t = string
+  let compare = compare
+end
+
+module Set = Set.Make(Self)
+module Map = Map.Make(Self)

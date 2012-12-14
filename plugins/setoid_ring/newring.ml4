@@ -73,10 +73,10 @@ and mk_clos_app_but f_map subs f args n =
 let interp_map l t =
   try Some(List.assoc_f eq_constr t l) with Not_found -> None
 
-let protect_maps = ref Stringmap.empty
-let add_map s m = protect_maps := Stringmap.add s m !protect_maps
+let protect_maps = ref String.Map.empty
+let add_map s m = protect_maps := String.Map.add s m !protect_maps
 let lookup_map map =
-  try Stringmap.find map !protect_maps
+  try String.Map.find map !protect_maps
   with Not_found ->
     errorlabstrm"lookup_map"(str"map "++qs map++str"not found")
 

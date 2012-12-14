@@ -36,12 +36,12 @@ let internal_declare_summary sumname sdecl =
 let declare_summary sumname decl =
   internal_declare_summary (sumname^"-SUMMARY") decl
 
-type frozen = Dyn.t Stringmap.t
+type frozen = Dyn.t String.Map.t
 
 let freeze_summaries () =
-  let m = ref Stringmap.empty in
+  let m = ref String.Map.empty in
   Hashtbl.iter
-    (fun id decl -> m := Stringmap.add id (decl.freeze_function()) !m)
+    (fun id decl -> m := String.Map.add id (decl.freeze_function()) !m)
     summaries;
   !m
 
@@ -49,7 +49,7 @@ let freeze_summaries () =
 let unfreeze_summaries fs =
   Hashtbl.iter
     (fun id decl ->
-       try decl.unfreeze_function (Stringmap.find id fs)
+       try decl.unfreeze_function (String.Map.find id fs)
        with Not_found -> decl.init_function())
     summaries
 
