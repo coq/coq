@@ -1411,7 +1411,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | None ->
 	[], None in
     let na = match tm', na with
-      | GVar (loc,id), None when Idset.mem id env.ids -> loc,Name id
+      | GVar (loc,id), None when not (List.mem_assoc id (snd lvar)) ->
+          loc,Name id
       | GRef (loc, VarRef id), None -> loc,Name id
       | _, None -> dummy_loc,Anonymous
       | _, Some (loc,na) -> loc,na in
