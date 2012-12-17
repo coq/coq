@@ -1654,7 +1654,7 @@ let prepare_predicate loc typing_fun evdref env tomatchs sign tycon pred =
 	(* First strategy: we build an "inversion" predicate *)
 	let sigma1,pred = build_inversion_problem loc env !evdref tomatchs t in
 	(* Second strategy: we abstract the tycon wrt to the dependencies *)
-        let pred2 = lift (List.length names) t in
+        let pred2 = lift (List.length (List.flatten names)) t in
 	[sigma1, DepUnknown, pred; !evdref, KnownNotDep, pred2]
     | None,  _ ->
 	(* No type constaints: we use two strategies *)
