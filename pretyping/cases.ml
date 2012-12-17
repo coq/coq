@@ -1763,7 +1763,7 @@ let prepare_predicate loc typing_fun sigma env tomatchs arsign tycon pred =
         (* First strategy: we build an "inversion" predicate *)
 	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
 	(* Second strategy: we directly use the evar as a non dependent pred *)
-        let pred2 = lift (List.length arsign) t in
+        let pred2 = lift (List.length (List.flatten arsign)) t in
 	[sigma1, pred1; sigma, pred2]
     (* Some type annotation *)
     | Some rtntyp, _ ->
