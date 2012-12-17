@@ -396,6 +396,8 @@ let rec detype (isgoal:bool) avoid env t =
 	 with _ ->
 	  GVar (dl, id))
     | Sort s -> GSort (dl,detype_sort s)
+    | Cast (c1,REVERTcast,c2) when not !Flags.raw_print ->
+        detype isgoal avoid env c1
     | Cast (c1,k,c2) ->
         let d1 = detype isgoal avoid env c1 in
 	let d2 = detype isgoal avoid env c2 in
