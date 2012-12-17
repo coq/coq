@@ -51,8 +51,14 @@ let init_stdout,read_stdout =
              let r = Buffer.contents out_buff in
              Buffer.clear out_buff; r)
 
+let pr_with_pid s = Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
+
 let pr_debug s =
-  if !Flags.debug then Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
+  if !Flags.debug then pr_with_pid s
+let pr_debug_call q =
+  if !Flags.debug then pr_with_pid ("<-- " ^ Serialize.pr_call q)
+let pr_debug_answer q r =
+  if !Flags.debug then pr_with_pid ("--> " ^ Serialize.pr_full_value q r)
 
 (** Categories of commands *)
 
@@ -352,9 +358,9 @@ let loop () =
       let p = Xml_parser.make (Xml_parser.SChannel stdin) in
       let xml_query = Xml_parser.parse p in
       let q = Serialize.to_call xml_query in
-      let () = pr_debug ("<-- " ^ Serialize.pr_call q) in
+      let () = pr_debug_call q in
       let r = eval_call q in
-      let () = pr_debug ("--> " ^ Serialize.pr_full_value q r) in
+      let () = pr_debug_answer q r in
       Xml_utils.print_xml !orig_stdout (Serialize.of_answer q r);
       flush !orig_stdout
     with
