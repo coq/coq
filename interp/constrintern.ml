@@ -1504,7 +1504,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
     let tm' = intern env tm in
     (* the "as" part *)
     let extra_id,na = match tm', na with
-      | GVar (loc,id), None when Id.Set.mem id env.ids -> Some id,(loc,Name id)
+      | GVar (loc,id), None when not (List.mem_assoc id (snd lvar)) -> Some id,(loc,Name id)
       | GRef (loc, VarRef id), None -> Some id,(loc,Name id)
       | _, None -> None,(Loc.ghost,Anonymous)
       | _, Some (loc,na) -> None,(loc,na) in
