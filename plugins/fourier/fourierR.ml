@@ -83,7 +83,7 @@ let string_of_R_constant kn =
     | MPfile dir, sec_dir, id when
 	sec_dir = Dir_path.empty &&
 	Dir_path.to_string dir = "Coq.Reals.Rdefinitions"
-	-> string_of_label id
+	-> Label.to_string id
     | _ -> "constant_not_of_R"
 
 let rec string_of_R_constr c =

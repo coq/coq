@@ -73,7 +73,7 @@ let def_of_const t =
 	     | _ -> assert false)
        with _ ->
 	 anomaly ("Cannot find definition of constant "^
-		    (Id.to_string (id_of_label (con_label sp))))
+		    (Id.to_string (Label.to_id (con_label sp))))
       )
      |_ -> assert false
 

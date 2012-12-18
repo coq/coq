@@ -44,24 +44,24 @@ type signature_mismatch_error =
   | NoTypeConstraintExpected
 
 type module_typing_error =
-  | SignatureMismatch of label * structure_field_body * signature_mismatch_error
-  | LabelAlreadyDeclared of label
+  | SignatureMismatch of Label.t * structure_field_body * signature_mismatch_error
+  | LabelAlreadyDeclared of Label.t
   | ApplicationToNotPath of module_struct_entry
   | NotAFunctor of struct_expr_body
   | IncompatibleModuleTypes of module_type_body * module_type_body
   | NotEqualModulePaths of module_path * module_path
-  | NoSuchLabel of label
-  | IncompatibleLabels of label * label
+  | NoSuchLabel of Label.t
+  | IncompatibleLabels of Label.t * Label.t
   | SignatureExpected of struct_expr_body
   | NoModuleToEnd
   | NoModuleTypeToEnd
   | NotAModule of string
   | NotAModuleType of string
-  | NotAConstant of label
-  | IncorrectWithConstraint of label
-  | GenerativeModuleExpected of label
-  | NonEmptyLocalContect of label option
-  | LabelMissing of label * string
+  | NotAConstant of Label.t
+  | IncorrectWithConstraint of Label.t
+  | GenerativeModuleExpected of Label.t
+  | NonEmptyLocalContect of Label.t option
+  | LabelMissing of Label.t * string
 
 exception ModuleTypingError of module_typing_error
 

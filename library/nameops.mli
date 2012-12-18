@@ -36,7 +36,7 @@ val name_app : (Id.t -> Id.t) -> name -> name
 val name_fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> name -> 'a * name
 
 
-val pr_lab : label -> Pp.std_ppcmds
+val pr_lab : Label.t -> Pp.std_ppcmds
 
 (** some preset paths *)
 

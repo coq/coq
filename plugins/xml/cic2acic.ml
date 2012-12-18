@@ -128,12 +128,12 @@ let token_list_of_kernel_name tag =
  let module GN = Globnames in
  let id,dir = match tag with
    | Variable kn ->
-       N.id_of_label (N.label kn), Lib.cwd ()
+       N.Label.to_id (N.label kn), Lib.cwd ()
    | Constant con ->
-       N.id_of_label (N.con_label con),
+       N.Label.to_id (N.con_label con),
        Lib.remove_section_part (GN.ConstRef con)
    | Inductive kn ->
-       N.id_of_label (N.mind_label kn),
+       N.Label.to_id (N.mind_label kn),
        Lib.remove_section_part (GN.IndRef (kn,0))
  in
  token_list_of_path dir id (etag_of_tag tag)

@@ -90,7 +90,7 @@ let nametab_register_body mp fp (l,body) =
     | SFBmodule _ -> () (* TODO *)
     | SFBmodtype _ -> () (* TODO *)
     | SFBconst _ ->
-      push (id_of_label l) (ConstRef (make_con mp Dir_path.empty l))
+      push (Label.to_id l) (ConstRef (make_con mp Dir_path.empty l))
     | SFBmind mib ->
       let mind = make_mind mp Dir_path.empty l in
       Array.iteri
@@ -101,7 +101,7 @@ let nametab_register_body mp fp (l,body) =
 	mib.mind_packets
 
 let print_body is_impl env mp (l,body) =
-  let name = str (string_of_label l) in
+  let name = str (Label.to_string l) in
   hov 2 (match body with
     | SFBmodule _ -> str "Module " ++ name
     | SFBmodtype _ -> str "Module Type " ++ name

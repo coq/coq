@@ -33,6 +33,9 @@ sig
   val to_string : t -> string
   (** Converts a identifier into an string. *)
 
+  val print : t -> Pp.std_ppcmds
+  (** Pretty-printer. *)
+
   module Set : Set.S with type elt = t
   (** Finite sets of identifiers. *)
 
@@ -101,19 +104,33 @@ module ModIdmap : Map.S with type key = module_ident
 
 (** {6 Names of structure elements } *)
 
-type label
+module Label :
+sig
+  type t
+  (** Type of labels *)
 
-val mk_label : string -> label
-val string_of_label : label -> string
-val pr_label : label -> Pp.std_ppcmds
+  val equal : t -> t -> bool
+  (** Equality over labels *)
 
-val label_of_id : Id.t -> label
-val id_of_label : label -> Id.t
+  val make : string -> t
+  (** Create a label out of a string. *)
 
-val eq_label : label -> label -> bool
+  val to_string : t -> string
+  (** Conversion to string. *)
 
-module Labset : Set.S with type elt = label
-module Labmap : Map.S with type key = label
+  val of_id : Id.t -> t
+  (** Conversion from an identifier. *)
+
+  val to_id : t -> Id.t
+  (** Conversion to an identifier. *)
+
+  val print : t -> Pp.std_ppcmds
+  (** Pretty-printer. *)
+
+  module Set : Set.S with type elt = t
+  module Map : Map.S with type key = t
+
+end
 
 (** {6 Unique names for bound modules } *)
 
@@ -136,7 +153,7 @@ val string_of_mbid : mod_bound_id -> string
 type module_path =
   | MPfile of Dir_path.t
   | MPbound of mod_bound_id
-  | MPdot of module_path * label
+  | MPdot of module_path * Label.t
 
 val mp_ord : module_path -> module_path -> int
 val mp_eq : module_path -> module_path -> bool
@@ -156,11 +173,11 @@ val initial_path : module_path (** [= MPfile initial_dir] *)
 type kernel_name
 
 (** Constructor and destructor *)
-val make_kn : module_path -> Dir_path.t -> label -> kernel_name
-val repr_kn : kernel_name -> module_path * Dir_path.t * label
+val make_kn : module_path -> Dir_path.t -> Label.t -> kernel_name
+val repr_kn : kernel_name -> module_path * Dir_path.t * Label.t
 
 val modpath : kernel_name -> module_path
-val label : kernel_name -> label
+val label : kernel_name -> Label.t
 
 val string_of_kn : kernel_name -> string
 val pr_kn : kernel_name -> Pp.std_ppcmds
@@ -200,17 +217,17 @@ module Constrmap_env : Map.S with type key = constructor
 
 val constant_of_kn : kernel_name -> constant
 val constant_of_kn_equiv : kernel_name -> kernel_name -> constant
-val make_con : module_path -> Dir_path.t -> label -> constant
+val make_con : module_path -> Dir_path.t -> Label.t -> constant
 val make_con_equiv : module_path -> module_path -> Dir_path.t 
-  -> label -> constant
+  -> Label.t -> constant
 val user_con : constant -> kernel_name
 val canonical_con : constant -> kernel_name
-val repr_con : constant -> module_path * Dir_path.t * label
+val repr_con : constant -> module_path * Dir_path.t * Label.t
 val eq_constant : constant -> constant -> bool
-val con_with_label : constant -> label -> constant
+val con_with_label : constant -> Label.t -> constant
 
 val string_of_con : constant -> string
-val con_label : constant -> label
+val con_label : constant -> Label.t
 val con_modpath : constant -> module_path
 val pr_con : constant -> Pp.std_ppcmds
 val debug_pr_con : constant -> Pp.std_ppcmds
@@ -220,16 +237,16 @@ val debug_string_of_con : constant -> string
 
 val mind_of_kn : kernel_name -> mutual_inductive
 val mind_of_kn_equiv : kernel_name -> kernel_name -> mutual_inductive
-val make_mind : module_path -> Dir_path.t -> label -> mutual_inductive
+val make_mind : module_path -> Dir_path.t -> Label.t -> mutual_inductive
 val make_mind_equiv : module_path -> module_path -> Dir_path.t 
-  -> label -> mutual_inductive
+  -> Label.t -> mutual_inductive
 val user_mind : mutual_inductive -> kernel_name
 val canonical_mind : mutual_inductive -> kernel_name
-val repr_mind : mutual_inductive -> module_path * Dir_path.t * label
+val repr_mind : mutual_inductive -> module_path * Dir_path.t * Label.t
 val eq_mind : mutual_inductive -> mutual_inductive -> bool
 
 val string_of_mind : mutual_inductive -> string
-val mind_label : mutual_inductive -> label
+val mind_label : mutual_inductive -> Label.t
 val mind_modpath : mutual_inductive -> module_path
 val pr_mind : mutual_inductive -> Pp.std_ppcmds
 val debug_pr_mind : mutual_inductive -> Pp.std_ppcmds
@@ -357,3 +374,26 @@ val string_of_dirpath : dir_path -> string
 
 val initial_dir : Dir_path.t
 (** @deprecated Same as [Dir_path.initial]. *)
+
+(** {5 Labels} *)
+
+type label = Label.t
+(** Alias type *)
+
+val mk_label : string -> label
+(** @deprecated Same as [Label.make]. *)
+
+val string_of_label : label -> string
+(** @deprecated Same as [Label.to_string]. *)
+
+val pr_label : label -> Pp.std_ppcmds
+(** @deprecated Same as [Label.print]. *)
+
+val label_of_id : Id.t -> label
+(** @deprecated Same as [Label.of_id]. *)
+
+val id_of_label : label -> Id.t
+(** @deprecated Same as [Label.to_id]. *)
+
+val eq_label : label -> label -> bool
+(** @deprecated Same as [Label.equal]. *)

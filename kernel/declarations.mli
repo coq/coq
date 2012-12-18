@@ -198,7 +198,7 @@ type structure_field_body =
     a [structure_body], once for a module ([SFBmodule] or [SFBmodtype])
     and once for an object ([SFBconst] or [SFBmind]) *)
 
-and structure_body = (label * structure_field_body) list
+and structure_body = (Label.t * structure_field_body) list
 
 and struct_expr_body =
   | SEBident of module_path

@@ -456,29 +456,29 @@ let encode_path loc prefix mpdir suffix id =
 let raw_string_of_ref loc = function
   | ConstRef cst ->
       let (mp,dir,id) = repr_con cst in
-      encode_path loc "CST" (Some (mp,dir)) [] (id_of_label id)
+      encode_path loc "CST" (Some (mp,dir)) [] (Label.to_id id)
   | IndRef (kn,i) ->
       let (mp,dir,id) = repr_mind kn in
-      encode_path loc "IND" (Some (mp,dir)) [id_of_label id]
+      encode_path loc "IND" (Some (mp,dir)) [Label.to_id id]
 	(Id.of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
       let (mp,dir,id) = repr_mind kn in
       encode_path loc "CSTR" (Some (mp,dir))
-	[id_of_label id;Id.of_string ("_"^string_of_int i)]
+	[Label.to_id id;Id.of_string ("_"^string_of_int i)]
 	(Id.of_string ("_"^string_of_int j))
   | VarRef id ->
       encode_path loc "SECVAR" None [] id
 
 let short_string_of_ref loc = function
   | VarRef id -> Ident (loc,id)
-  | ConstRef cst -> Ident (loc,id_of_label (pi3 (repr_con cst)))
-  | IndRef (kn,0) -> Ident (loc,id_of_label (pi3 (repr_mind kn)))
+  | ConstRef cst -> Ident (loc,Label.to_id (pi3 (repr_con cst)))
+  | IndRef (kn,0) -> Ident (loc,Label.to_id (pi3 (repr_mind kn)))
   | IndRef (kn,i) ->
-      encode_path loc "IND" None [id_of_label (pi3 (repr_mind kn))]
+      encode_path loc "IND" None [Label.to_id (pi3 (repr_mind kn))]
         (Id.of_string ("_"^string_of_int i))
   | ConstructRef ((kn,i),j) ->
       encode_path loc "CSTR" None
-        [id_of_label (pi3 (repr_mind kn));Id.of_string ("_"^string_of_int i)]
+        [Label.to_id (pi3 (repr_mind kn));Id.of_string ("_"^string_of_int i)]
         (Id.of_string ("_"^string_of_int j))
 
 (* Anticipate that printers can be used from ocamldebug and that 

@@ -227,7 +227,7 @@ let invert_name labs l na0 env sigma ref = function
 	  | EvalRel _ | EvalEvar _ -> None
 	  | EvalVar id' -> Some (EvalVar id)
 	  | EvalConst kn ->
-	      Some (EvalConst (con_with_label kn (label_of_id id))) in
+	      Some (EvalConst (con_with_label kn (Label.of_id id))) in
 	match refi with
 	  | None -> None
 	  | Some ref ->
@@ -502,7 +502,7 @@ let reduce_mind_case_use_function func env sigma mia =
 		       mutual inductive, try to reuse the global name if
 		       the block was indeed initially built as a global
 		       definition *)
-		    let kn = con_with_label (destConst func) (label_of_id id)
+		    let kn = con_with_label (destConst func) (Label.of_id id)
 		    in
 		    try match constant_opt_value env kn with
 		      | None -> None

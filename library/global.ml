@@ -46,7 +46,7 @@ let push_named_def d =
 
 
 let add_thing add dir id thing =
-  let kn, newenv = add dir (label_of_id id) thing !global_env in
+  let kn, newenv = add dir (Label.of_id id) thing !global_env in
     global_env := newenv;
     kn
 
@@ -56,7 +56,7 @@ let add_modtype x y inl = add_thing (fun _ x y -> add_modtype x y inl) () x y
 
 
 let add_module id me inl =
-  let l = label_of_id id in
+  let l = Label.of_id id in
   let mp,resolve,new_env = add_module l me inl !global_env in
     global_env := new_env;
     mp,resolve
@@ -72,13 +72,13 @@ let add_include me is_module inl =
     resolve
 
 let start_module id =
-  let l = label_of_id id in
+  let l = Label.of_id id in
   let mp,newenv = start_module l !global_env in
     global_env := newenv;
     mp
 
 let end_module fs id mtyo =
-  let l = label_of_id id in
+  let l = Label.of_id id in
   let mp,resolve,newenv = end_module l mtyo !global_env in
     Summary.unfreeze_summaries fs;
     global_env := newenv;
@@ -92,13 +92,13 @@ let add_module_parameter mbid mte inl =
 
 
 let start_modtype id =
-  let l = label_of_id id in
+  let l = Label.of_id id in
   let mp,newenv = start_modtype l !global_env in
     global_env := newenv;
     mp
 
 let end_modtype fs id =
-  let l = label_of_id id in
+  let l = Label.of_id id in
   let kn,newenv = end_modtype l !global_env in
     Summary.unfreeze_summaries fs;
     global_env := newenv;

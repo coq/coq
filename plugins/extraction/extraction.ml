@@ -450,7 +450,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  | Anonymous::l, typ::typs ->
 	      None :: (select_fields l typs)
 	  | Name id::l, typ::typs ->
-	      let knp = make_con mp d (label_of_id id) in
+	      let knp = make_con mp d (Label.of_id id) in
 	      (* Is it safe to use [id] for projections [foo.id] ? *)
 	      if List.for_all ((=) Keep) (type2signature env typ)
 	      then projs := Cset.add knp !projs;

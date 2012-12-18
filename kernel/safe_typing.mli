@@ -43,22 +43,22 @@ type global_declaration =
   | GlobalRecipe of Cooking.recipe
 
 val add_constant :
-  Dir_path.t -> label -> global_declaration -> safe_environment ->
+  Dir_path.t -> Label.t -> global_declaration -> safe_environment ->
       constant * safe_environment
 
 (** Adding an inductive type *)
 val add_mind :
-  Dir_path.t -> label -> mutual_inductive_entry -> safe_environment ->
+  Dir_path.t -> Label.t -> mutual_inductive_entry -> safe_environment ->
     mutual_inductive * safe_environment
 
 (** Adding a module *)
 val add_module :
-  label -> module_entry -> inline -> safe_environment
+  Label.t -> module_entry -> inline -> safe_environment
     -> module_path * delta_resolver * safe_environment
 
 (** Adding a module type *)
 val add_modtype :
-  label -> module_struct_entry -> inline -> safe_environment
+  Label.t -> module_struct_entry -> inline -> safe_environment
     -> module_path * safe_environment
 
 (** Adding universe constraints *)
@@ -72,20 +72,20 @@ val set_engagement : engagement -> safe_environment -> safe_environment
 (** {6 Interactive module functions } *)
 
 val start_module :
-  label -> safe_environment -> module_path * safe_environment
+  Label.t -> safe_environment -> module_path * safe_environment
 
 val end_module :
-  label -> (module_struct_entry * inline) option
+  Label.t -> (module_struct_entry * inline) option
       -> safe_environment -> module_path * delta_resolver * safe_environment 
 
 val add_module_parameter :
   mod_bound_id -> module_struct_entry -> inline -> safe_environment -> delta_resolver * safe_environment
 
 val start_modtype :
-  label -> safe_environment -> module_path * safe_environment
+  Label.t -> safe_environment -> module_path * safe_environment
 
 val end_modtype :
-  label -> safe_environment -> module_path * safe_environment
+  Label.t -> safe_environment -> module_path * safe_environment
 
 val add_include :
   module_struct_entry -> bool -> inline -> safe_environment ->
@@ -138,7 +138,7 @@ val typing : safe_environment -> constr -> judgment
 
 (** {7 Query } *)
 
-val exists_objlabel : label -> safe_environment -> bool
+val exists_objlabel : Label.t -> safe_environment -> bool
 
 (*spiwack: safe retroknowledge functionalities *)
 

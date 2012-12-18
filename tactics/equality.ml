@@ -253,14 +253,14 @@ let find_elim hdcncl lft2rgt dep cls args gl =
         | Some false, Some _ ->
 	  let c1 = destConst pr1 in 
 	  let mp,dp,l = repr_con (constant_of_kn (canonical_con c1)) in 
-	  let l' = label_of_id (add_suffix (id_of_label l) "_r")  in 
+	  let l' = Label.of_id (add_suffix (Label.to_id l) "_r")  in 
 	  let c1' = Global.constant_of_delta_kn (make_kn mp dp l') in
 	  begin 
 	    try 
 	      let _ = Global.lookup_constant c1' in
 	      mkConst c1'
 	    with Not_found -> 
-	      let rwr_thm = string_of_label l' in 
+	      let rwr_thm = Label.to_string l' in 
 	      error ("Cannot find rewrite principle "^rwr_thm^".")
 	  end
 	| _ -> pr1

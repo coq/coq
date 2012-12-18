@@ -538,7 +538,7 @@ TACTIC EXTEND autounfold_one
 TACTIC EXTEND autounfoldify
 | [ "autounfoldify" constr(x) ] -> [
     let db = match kind_of_term x with
-      | Const c -> string_of_label (con_label c)
+      | Const c -> Label.to_string (con_label c)
       | _ -> assert false
     in autounfold ["core";db] onConcl ]
 END

@@ -648,9 +648,9 @@ and pp_module_type params = function
       let mp_mt = msid_of_mt mt in
       let l,idl' = List.sep_last idl in
       let mp_w =
-	List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl'
+	List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
       in
-      let r = ConstRef (make_con mp_w Dir_path.empty (label_of_id l)) in
+      let r = ConstRef (make_con mp_w Dir_path.empty (Label.of_id l)) in
       push_visible mp_mt [];
       let pp_w = str " with type " ++ ids ++ pp_global Type r in
       pop_visible();
@@ -658,7 +658,7 @@ and pp_module_type params = function
   | MTwith(mt,ML_With_module(idl,mp)) ->
       let mp_mt = msid_of_mt mt in
       let mp_w =
-	List.fold_left (fun mp id -> MPdot(mp,label_of_id id)) mp_mt idl
+	List.fold_left (fun mp id -> MPdot(mp,Label.of_id id)) mp_mt idl
       in
       push_visible mp_mt [];
       let pp_w = str " with module " ++ pp_modname mp_w in

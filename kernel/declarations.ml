@@ -385,7 +385,7 @@ type structure_field_body =
   | SFBmodule of module_body
   | SFBmodtype of module_type_body
 
-and structure_body = (label * structure_field_body) list
+and structure_body = (Label.t * structure_field_body) list
 
 and struct_expr_body =
   | SEBident of module_path

@@ -328,9 +328,9 @@ let do_replace_lb lb_scheme_key aavoid narg gls p q =
               Parameter*)
       (
         let mp,dir,lbl = repr_con (destConst v) in
-          mkConst (make_con mp dir (mk_label (
-          if Int.equal offset 1 then ("eq_"^(string_of_label lbl))
-                       else ((string_of_label lbl)^"_lb")
+          mkConst (make_con mp dir (Label.make (
+          if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
+                       else ((Label.to_string lbl)^"_lb")
         )))
       )
   in
@@ -375,9 +375,9 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
               Parameter*)
       (
         let mp,dir,lbl = repr_con (destConst v) in
-          mkConst (make_con mp dir (mk_label (
-          if Int.equal offset 1 then ("eq_"^(string_of_label lbl))
-                       else ((string_of_label lbl)^"_bl")
+          mkConst (make_con mp dir (Label.make (
+          if Int.equal offset 1 then ("eq_"^(Label.to_string lbl))
+                       else ((Label.to_string lbl)^"_bl")
         )))
       )
   in

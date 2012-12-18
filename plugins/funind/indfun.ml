@@ -58,7 +58,7 @@ let functional_induction with_clean c princl pat =
 			  (or f_rec, f_rect) i*)
 			let princ_name =
 			  Indrec.make_elimination_ident
-			    (id_of_label (con_label c'))
+			    (Label.to_id (con_label c'))
 			    (Tacticals.elimination_sort_of_goal g)
 			in
 			try
@@ -810,14 +810,14 @@ let make_graph (f_ref:global_reference) =
 		 in
 		 l
 	     | _ ->
-		 let id = id_of_label (con_label c) in
+		 let id = Label.to_id (con_label c) in
 		 [((Loc.ghost,id),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
 	 in
 	 do_generate_principle error_error false false expr_list;
 	 (* We register the infos *)
 	 let mp,dp,_ = repr_con c in
 	 List.iter
-	   (fun (((_,id),_,_,_,_),_) -> add_Function false (make_con mp dp (label_of_id id)))
+	   (fun (((_,id),_,_,_,_),_) -> add_Function false (make_con mp dp (Label.of_id id)))
 	   expr_list);
   Dumpglob.continue ()
 

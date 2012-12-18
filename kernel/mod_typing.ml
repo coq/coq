@@ -41,7 +41,7 @@ let is_modular = function
 
 let rec list_split_assoc ((k,m) as km) rev_before = function
   | [] -> raise Not_found
-  | (k',b)::after when eq_label k k' && (is_modular b) == (m : bool) -> rev_before,b,after
+  | (k',b)::after when Label.equal k k' && (is_modular b) == (m : bool) -> rev_before,b,after
   | h::tail -> list_split_assoc km (h::rev_before) tail
 
 let discr_resolver env mtb =
@@ -80,7 +80,7 @@ and check_with_def env sign (idl,c) mp equiv =
     | [] -> assert false
     | id::idl -> id,idl
   in
-  let l = label_of_id id in
+  let l = Label.of_id id in
     try
       let not_empty = match idl with [] -> false | _ :: _ -> true in
       let rev_before,spec,after = list_split_assoc (l, not_empty) [] sig_b in
@@ -125,7 +125,7 @@ and check_with_def env sign (idl,c) mp equiv =
 	      (* Definition inside a sub-module *)
 	      let old = match spec with
 		| SFBmodule msb -> msb
-		| _ -> error_not_a_module (string_of_label l)
+		| _ -> error_not_a_module (Label.to_string l)
 	      in
 		begin
 		  match old.mod_expr with
@@ -153,7 +153,7 @@ and check_with_mod env sign (idl,mp1) mp equiv =
     | [] -> assert false
     | id::idl -> id,idl
   in
-  let l = label_of_id id in
+  let l = Label.of_id id in
     try
       let rev_before,spec,after = list_split_assoc (l,true) [] sig_b in
       let before = List.rev rev_before in
@@ -162,7 +162,7 @@ and check_with_mod env sign (idl,mp1) mp equiv =
 	      (* Toplevel module definition *)
 	      let old = match spec with
 		  SFBmodule msb -> msb
-		| _ -> error_not_a_module (string_of_label l)
+		| _ -> error_not_a_module (Label.to_string l)
 	      in
 	      let mb_mp1 = (lookup_module mp1 env) in
 	      let mtb_mp1 = 
@@ -175,7 +175,7 @@ and check_with_mod env sign (idl,mp1) mp equiv =
 			  (check_subtypes env' mtb_mp1 
 			     (module_type_of_module None old))
 			  old.mod_constraints
-			with Failure _ -> error_incorrect_with_constraint (label_of_id id)
+			with Failure _ -> error_incorrect_with_constraint (Label.of_id id)
 		      end
 		  | Some (SEBident(mp')) ->
 		      check_modpath_equiv env' mp1 mp';
@@ -197,7 +197,7 @@ and check_with_mod env sign (idl,mp1) mp equiv =
 	      (* Module definition of a sub-module *)
 	      let old = match spec with
 		  SFBmodule msb -> msb
-		| _ -> error_not_a_module (string_of_label l)
+		| _ -> error_not_a_module (Label.to_string l)
 	      in
 	      begin
 		match old.mod_expr with
@@ -215,7 +215,7 @@ and check_with_mod env sign (idl,mp1) mp equiv =
 			SEBstruct(before@(l,new_spec)::subst_signature id_subst after),
 		      new_equiv,cst
 		  | Some (SEBident(mp')) ->
-		      let mpnew = rebuild_mp mp' (List.map label_of_id idl) in
+		      let mpnew = rebuild_mp mp' (List.map Label.of_id idl) in
 			check_modpath_equiv env' mpnew mp;
 			  SEBstruct(before@(l,spec)::after)
 			    ,equiv,empty_constraint

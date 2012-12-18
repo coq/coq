@@ -322,14 +322,14 @@ let generate_functional_principle
     match new_princ_name with
       | Some (id) -> id,id
       | None ->
-	  let id_of_f = id_of_label (con_label f) in
+	  let id_of_f = Label.to_id (con_label f) in
 	  id_of_f,Indrec.make_elimination_ident id_of_f (family_of_sort type_sort)
   in
   let names = ref [new_princ_name] in
   let hook new_principle_type _ _  =
     if sorts = None
     then
-      (*     let id_of_f = id_of_label (con_label f) in *)
+      (*     let id_of_f = Label.to_id (con_label f) in *)
       let register_with_sort fam_sort =
 	let s = Termops.new_sort_in_family fam_sort in
 	let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
@@ -390,7 +390,7 @@ let get_funs_constant mp dp =
 	    (fun i na ->
 	       match na with
 		 | Name id ->
-		     let const = make_con mp dp (label_of_id id) in
+		     let const = make_con mp dp (Label.of_id id) in
 		     const,i
 		 | Anonymous ->
 		     anomaly "Anonymous fix"

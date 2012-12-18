@@ -32,14 +32,14 @@ let se_iter do_decl do_spec do_mp =
 	let mp_mt = msid_of_mt mt in
 	let l',idl' = List.sep_last idl in
 	let mp_w =
-	  List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl'
+	  List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl'
 	in
-	let r = ConstRef (make_con mp_w Dir_path.empty (label_of_id l')) in
+	let r = ConstRef (make_con mp_w Dir_path.empty (Label.of_id l')) in
 	mt_iter mt; do_decl (Dtype(r,l,t))
     | MTwith (mt,ML_With_module(idl,mp))->
         let mp_mt = msid_of_mt mt in
         let mp_w =
-	  List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl
+	  List.fold_left (fun mp l -> MPdot(mp,Label.of_id l)) mp_mt idl
 	in
 	mt_iter mt; do_mp mp_w; do_mp mp
     | MTsig (_, sign) -> List.iter spec_iter sign
@@ -249,7 +249,7 @@ let dfix_to_mlfix rv av i =
 	(try MLrel (n + (Refmap'.find refe s)) with Not_found -> t)
     | _ -> ast_map_lift subst n t
   in
-  let ids = Array.map (fun r -> id_of_label (label_of_r r)) rv in
+  let ids = Array.map (fun r -> Label.to_id (label_of_r r)) rv in
   let c = Array.map (subst 0) av
   in MLfix(i, ids, c)
 

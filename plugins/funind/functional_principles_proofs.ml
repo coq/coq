@@ -966,7 +966,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
     (Typeops.type_of_constant_type (Global.env()) f_def.const_type) in
   let eqn = mkApp(Lazy.force eq,[|type_of_f;eq_lhs;eq_rhs|]) in
   let lemma_type = it_mkProd_or_LetIn eqn type_ctxt in
-  let f_id = id_of_label (con_label (destConst f)) in
+  let f_id = Label.to_id (con_label (destConst f)) in
   let prove_replacement =
     tclTHENSEQ
       [
@@ -1000,7 +1000,7 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
       let finfos = find_Function_infos (destConst f) in
       mkConst (Option.get finfos.equation_lemma)
     with (Not_found | Option.IsNone as e) ->
-      let f_id = id_of_label (con_label (destConst f)) in
+      let f_id = Label.to_id (con_label (destConst f)) in
       (*i The next call to mk_equation_id is valid since we will construct the lemma
 	Ensures by: obvious
 	i*)

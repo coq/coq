@@ -175,7 +175,7 @@ let add_recursors env kn =
     make_con_equiv
       (modpath (user_mind kn))
       (modpath (canonical_mind kn))
-      Dir_path.empty (label_of_id id)
+      Dir_path.empty (Label.of_id id)
   in
   let mib = Environ.lookup_mind kn env in
   Array.iter
@@ -245,8 +245,8 @@ let safe_basename_of_global r =
       anomaly "Inductive object unknown to extraction and not globally visible"
   in
   match r with
-    | ConstRef kn -> id_of_label (con_label kn)
-    | IndRef (kn,0) -> id_of_label (mind_label kn)
+    | ConstRef kn -> Label.to_id (con_label kn)
+    | IndRef (kn,0) -> Label.to_id (mind_label kn)
     | IndRef (kn,i) ->
       (try (snd (lookup_ind kn)).ind_packets.(i).ip_typename
        with Not_found -> last_chance r)
@@ -268,7 +268,7 @@ let safe_pr_long_global r =
   with _ -> match r with
     | ConstRef kn ->
 	let mp,_,l = repr_con kn in
-	str ((string_of_mp mp)^"."^(string_of_label l))
+	str ((string_of_mp mp)^"."^(Label.to_string l))
     | _ -> assert false
 
 let pr_long_mp mp =

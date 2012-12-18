@@ -21,7 +21,7 @@ let cprop =
    (N.MPfile
      (Libnames.dirpath_of_string "CoRN.algebra.CLogic"))
    (N.Dir_path.make [])
-   (N.mk_label "CProp")
+   (N.Label.make "CProp")
 ;;
 
 let whd_betadeltaiotacprop env _evar_map ty =

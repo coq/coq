@@ -572,11 +572,11 @@ let explain_not_match_error = function
     strbrk "a definition whose type is constrained can only be subtype of a definition whose type is itself constrained"
 
 let explain_signature_mismatch l spec why =
-  str "Signature components for label " ++ str (string_of_label l) ++
+  str "Signature components for label " ++ str (Label.to_string l) ++
   str " do not match:" ++ spc () ++ explain_not_match_error why ++ str "."
 
 let explain_label_already_declared l =
-  str ("The label "^string_of_label l^" is already declared.")
+  str ("The label "^Label.to_string l^" is already declared.")
 
 let explain_application_to_not_path _ =
   str "Application of modules is restricted to paths."
@@ -591,11 +591,11 @@ let explain_not_equal_module_paths mp1 mp2 =
   str "Non equal modules."
 
 let explain_no_such_label l =
-  str "No such label " ++ str (string_of_label l) ++ str "."
+  str "No such label " ++ str (Label.to_string l) ++ str "."
 
 let explain_incompatible_labels l l' =
   str "Opening and closing labels are not the same: " ++
-  str (string_of_label l) ++ str " <> " ++ str (string_of_label l') ++ str "!"
+  str (Label.to_string l) ++ str " <> " ++ str (Label.to_string l') ++ str "!"
 
 let explain_signature_expected mtb =
   str "Signature expected."
@@ -613,24 +613,24 @@ let explain_not_a_module_type s =
   quote (str s) ++ str " is not a module type."
 
 let explain_not_a_constant l =
-  quote (pr_label l) ++ str " is not a constant."
+  quote (Label.print l) ++ str " is not a constant."
 
 let explain_incorrect_label_constraint l =
   str "Incorrect constraint for label " ++
-  quote (pr_label l) ++ str "."
+  quote (Label.print l) ++ str "."
 
 let explain_generative_module_expected l =
-  str "The module " ++ str (string_of_label l) ++
+  str "The module " ++ str (Label.to_string l) ++
   strbrk " is not generative. Only components of generative modules can be changed using the \"with\" construct."
 
 let explain_non_empty_local_context = function
   | None -> str "The local context is not empty."
   | Some l ->
       str "The local context of the component " ++
-      str (string_of_label l) ++ str " is not empty."
+      str (Label.to_string l) ++ str " is not empty."
 
 let explain_label_missing l s =
-  str "The field " ++ str (string_of_label l) ++ str " is missing in "
+  str "The field " ++ str (Label.to_string l) ++ str " is missing in "
   ++ str s ++ str "."
 
 let explain_module_error = function

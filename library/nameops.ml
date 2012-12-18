@@ -136,7 +136,7 @@ let name_fold_map f e = function
   | Name id -> let (e,id) = f e id in (e,Name id)
   | Anonymous -> e,Anonymous
 
-let pr_lab l = str (string_of_label l)
+let pr_lab l = str (Label.to_string l)
 
 let default_library = Names.Dir_path.initial (* = ["Top"] *)
 

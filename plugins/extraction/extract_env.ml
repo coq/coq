@@ -208,7 +208,7 @@ let env_for_mtb_with_def env mp seb idl =
     | SEBstruct(sig_b) -> sig_b
     | _ -> assert false
   in
-  let l = label_of_id (List.hd idl) in
+  let l = Label.of_id (List.hd idl) in
   let spot = function (l',SFBconst _) -> l = l' | _ -> false in
   let before = fst (List.split_when spot sig_b) in
   Modops.add_signature mp before empty_delta_resolver env

@@ -49,6 +49,8 @@ struct
 
   let to_string id = String.copy id
 
+  let print id = str id
+
   module Self =
   struct
     type t = string
@@ -217,24 +219,33 @@ let id_of_mbid (_,s,_) = s
 
 (** {6 Names of structure elements } *)
 
+module Label =
+struct
+  include Id
+  let make = Id.of_string
+  let of_id id = id
+  let to_id id = id
+end
+
+(** Compatibility layer for [Label] *)
+
 type label = Id.t
 
-let mk_label = id_of_string
-let string_of_label = string_of_id
-let pr_label l = str (string_of_label l)
-let id_of_label l = l
-let label_of_id id = id
-let eq_label = String.equal
+let mk_label = Label.make
+let string_of_label = Label.to_string
+let pr_label = Label.print
+let id_of_label = Label.to_id
+let label_of_id = Label.of_id
+let eq_label = Label.equal
 
-module Labset = Idset
-module Labmap = Idmap
+(** / End of compatibility layer for [Label] *)
 
 (** {6 The module part of the kernel name } *)
 
 type module_path =
   | MPfile of Dir_path.t
   | MPbound of mod_bound_id
-  | MPdot of module_path * label
+  | MPdot of module_path * Label.t
 
 let rec check_bound_mp = function
   | MPbound _ -> true
@@ -244,7 +255,7 @@ let rec check_bound_mp = function
 let rec string_of_mp = function
   | MPfile sl -> string_of_dirpath sl
   | MPbound uid -> string_of_uid uid
-  | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
+  | MPdot (mp,l) -> string_of_mp mp ^ "." ^ Label.to_string l
 
 (** we compare labels first if both are MPdots *)
 let rec mp_ord mp1 mp2 =
@@ -277,7 +288,7 @@ let initial_path = MPfile Dir_path.initial
 
 (** {6 Kernel names } *)
 
-type kernel_name = module_path * Dir_path.t * label
+type kernel_name = module_path * Dir_path.t * Label.t
 
 let make_kn mp dir l = (mp,dir,l)
 let repr_kn kn = kn
@@ -293,7 +304,7 @@ let string_of_kn (mp,dir,l) =
   | [] -> "."
   | _ -> "#" ^ string_of_dirpath dir ^ "#"
   in
-  string_of_mp mp ^ str_dir ^ string_of_label l
+  string_of_mp mp ^ str_dir ^ Label.to_string l
 
 let pr_kn kn = str (string_of_kn kn)
 

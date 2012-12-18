@@ -164,8 +164,8 @@ let get_strength stre ref cls clt =
 let ident_key_of_class = function
   | CL_FUN -> "Funclass"
   | CL_SORT -> "Sortclass"
-  | CL_CONST sp -> string_of_label (con_label sp)
-  | CL_IND (sp,_) -> string_of_label (mind_label sp)
+  | CL_CONST sp -> Label.to_string (con_label sp)
+  | CL_IND (sp,_) -> Label.to_string (mind_label sp)
   | CL_SECVAR id -> Id.to_string id
 
 (* coercion identité *)

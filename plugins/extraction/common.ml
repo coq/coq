@@ -255,7 +255,7 @@ let params_ren_add, params_ren_mem =
 
 type visible_layer = { mp : module_path;
 		       params : module_path list;
-		       content : ((kind*string),label) Hashtbl.t }
+		       content : ((kind*string),Label.t) Hashtbl.t }
 
 let pop_visible, push_visible, get_visible =
   let vis = ref [] in
@@ -321,7 +321,7 @@ let modfstlev_rename =
   let add_prefixes,get_prefixes,_ = mktable true in
   fun l ->
     let coqid = Id.of_string "Coq" in
-    let id = id_of_label l in
+    let id = Label.to_id l in
     try
       let coqset = get_prefixes id in
       let nextcoq = next_ident_away coqid coqset in
@@ -341,7 +341,7 @@ let rec mp_renaming_fun mp = match mp with
   | MPdot (mp,l) ->
       let lmp = mp_renaming mp in
       if lmp = [""] then (modfstlev_rename l)::lmp
-      else (modular_rename Mod (id_of_label l))::lmp
+      else (modular_rename Mod (Label.to_id l))::lmp
   | MPbound mbid ->
       let s = modular_rename Mod (id_of_mbid mbid) in
       if not (params_ren_mem mp) then [s]
@@ -584,7 +584,7 @@ let pp_module mp =
     the constants are directly turned into chars *)
 
 let mk_ind path s =
-  make_mind (MPfile (dirpath_of_string path)) Dir_path.empty (mk_label s)
+  make_mind (MPfile (dirpath_of_string path)) Dir_path.empty (Label.make s)
 
 let ind_ascii = mk_ind "Coq.Strings.Ascii" "ascii"
 

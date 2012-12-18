@@ -46,9 +46,9 @@ val info_file : string -> unit
 (*s utilities about [module_path] and [kernel_names] and [global_reference] *)
 
 val occur_kn_in_ref : mutual_inductive -> global_reference -> bool
-val repr_of_r : global_reference -> module_path * Dir_path.t * label
+val repr_of_r : global_reference -> module_path * Dir_path.t * Label.t
 val modpath_of_r : global_reference -> module_path
-val label_of_r : global_reference -> label
+val label_of_r : global_reference -> Label.t
 val current_toplevel : unit -> module_path
 val base_mp : module_path -> module_path
 val is_modfile : module_path -> bool
@@ -61,8 +61,8 @@ val mp_length : module_path -> int
 val prefixes_mp : module_path -> MPset.t
 val common_prefix_from_list :
   module_path -> module_path list -> module_path option
-val get_nth_label_mp : int -> module_path -> label
-val labels_of_ref : global_reference -> module_path * label list
+val get_nth_label_mp : int -> module_path -> Label.t
+val labels_of_ref : global_reference -> module_path * Label.t list
 
 (*s Some table-related operations *)
 

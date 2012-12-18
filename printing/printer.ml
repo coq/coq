@@ -587,7 +587,7 @@ let pr_assumptionset env s =
       try pr_constant env kn
       with Not_found ->
 	let mp,_,lab = repr_con kn in
-	str (string_of_mp mp ^ "." ^ string_of_label lab)
+	str (string_of_mp mp ^ "." ^ Label.to_string lab)
     in
     let safe_pr_ltype typ =
       try str " : " ++ pr_ltype typ with _ -> mt ()

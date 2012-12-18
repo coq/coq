@@ -85,7 +85,7 @@ let refine_ref = ref (fun _ -> assert(false))
 
 let id_of_class cl =
   match cl.cl_impl with
-    | ConstRef kn -> let _,_,l = repr_con kn in id_of_label l
+    | ConstRef kn -> let _,_,l = repr_con kn in Label.to_id l
     | IndRef (kn,i) ->
 	let mip = (Environ.lookup_mind kn (Global.env ())).Declarations.mind_packets in
 	  mip.(0).Declarations.mind_typename

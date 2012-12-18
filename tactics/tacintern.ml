@@ -127,7 +127,7 @@ let _ =
 let lookup_atomic id = Id.Map.find id !atomic_mactab
 let is_atomic_kn kn =
   let (_,_,l) = repr_kn kn in
-  Id.Map.mem (id_of_label l) !atomic_mactab
+  Id.Map.mem (Label.to_id l) !atomic_mactab
 
 (* Tactics table (TacExtend). *)
 
@@ -875,7 +875,7 @@ let load_md i ((sp,kn),(local,defs)) =
     match id with
       | NewTac id ->
 	  let sp = Libnames.make_path dp id in
-	  let kn = Names.make_kn mp dir (label_of_id id) in
+	  let kn = Names.make_kn mp dir (Label.of_id id) in
 	    Nametab.push_tactic (Until i) sp kn;
 	    add (kn,t)
       | UpdateTac kn -> replace (kn,t)) defs
@@ -887,7 +887,7 @@ let open_md i ((sp,kn),(local,defs)) =
     match id with
 	NewTac id ->
 	  let sp = Libnames.make_path dp id in
-	  let kn = Names.make_kn mp dir (label_of_id id) in
+	  let kn = Names.make_kn mp dir (Label.of_id id) in
 	    Nametab.push_tactic (Exactly i) sp kn
       | UpdateTac kn -> ()) defs
 

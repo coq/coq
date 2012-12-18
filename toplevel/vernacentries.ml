@@ -268,7 +268,7 @@ let print_namespace ns =
     | MPbound _ -> None (* Not a proper namespace. *)
     | MPfile dir -> match_dirpath ns (Names.Dir_path.repr dir)
     | MPdot (mp,lbl) ->
-        let id = Names.id_of_label lbl in
+        let id = Names.Label.to_id lbl in
         begin match match_modulepath ns mp with
         | Some [] as y -> y
         | Some (a::ns') ->
@@ -287,7 +287,7 @@ let print_namespace ns =
     let rec list_of_modulepath = function
       | MPbound _ -> assert false (* MPbound never matches *)
       | MPfile dir -> Names.Dir_path.repr dir
-      | MPdot (mp,lbl) -> (Names.id_of_label lbl)::(list_of_modulepath mp)
+      | MPdot (mp,lbl) -> (Names.Label.to_id lbl)::(list_of_modulepath mp)
     in
     snd (Util.List.chop n (List.rev (list_of_modulepath mp)))
   in
@@ -295,7 +295,7 @@ let print_namespace ns =
   let print_kn kn =
     (* spiwack: I'm ignoring the dirpath, is that bad? *)
     let (mp,_,lbl) = Names.repr_kn kn in
-    let qn = (qualified_minus (List.length ns) mp)@[Names.id_of_label lbl] in
+    let qn = (qualified_minus (List.length ns) mp)@[Names.Label.to_id lbl] in
     print_list pr_id qn
   in
   let print_constant k body =

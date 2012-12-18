@@ -152,7 +152,7 @@ and check_with_def env mtb (idl,c) mp =
     | [] -> assert false
     | id::idl -> id,idl
   in
-  let l = label_of_id id in
+  let l = Label.of_id id in
     try
       let rev_before,spec,after = list_split_assoc (l,(idl<>[])) [] sig_b in
       let before = List.rev rev_before in
@@ -189,7 +189,7 @@ and check_with_mod env mtb (idl,mp1) mp =
     | [] -> assert false
     | id::idl -> id,idl
   in
-  let l = label_of_id id in
+  let l = Label.of_id id in
     try
       let rev_before,spec,after = list_split_assoc (l,false) [] sig_b in
       let before = List.rev rev_before in

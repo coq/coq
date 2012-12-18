@@ -61,7 +61,7 @@ let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
     | ((sp,kn),Leaf o) :: stk ->
-	let id = Names.id_of_label (Names.label kn) in
+	let id = Names.Label.to_id (Names.label kn) in
 	  (match classify_object o with
 	     | Dispose -> clean acc stk
 	     | Keep o' ->
@@ -136,11 +136,11 @@ let current_prefix () = snd !path_prefix
 
 let make_kn id =
   let mp,dir = current_prefix () in
-    Names.make_kn mp dir (Names.label_of_id id)
+    Names.make_kn mp dir (Names.Label.of_id id)
 
 let make_con id =
   let mp,dir = current_prefix () in
-    Names.make_con mp dir (Names.label_of_id id)
+    Names.make_con mp dir (Names.Label.of_id id)
 
 
 let make_oname id = make_path id, make_kn id
@@ -657,7 +657,7 @@ let rec split_mp mp =
     | Names.MPfile dp -> dp,  Names.Dir_path.empty
     | Names.MPdot (prfx, lbl) ->
 	let mprec, dprec = split_mp prfx in
-	  mprec, Names.Dir_path.make (Names.Id.of_string (Names.string_of_label lbl) :: (Names.Dir_path.repr dprec))
+	  mprec, Names.Dir_path.make (Names.Id.of_string (Names.Label.to_string lbl) :: (Names.Dir_path.repr dprec))
     | Names.MPbound mbid -> let (_, id, dp) = Names.repr_mbid mbid in  library_dp(), Names.Dir_path.make [id]
 
 let split_modpath mp =
@@ -666,7 +666,7 @@ let split_modpath mp =
     | Names.MPbound mbid ->
 	library_dp (), [Names.id_of_mbid mbid]
     | Names.MPdot (mp,l) -> let (mp', lab) = aux mp in
-			      (mp', Names.id_of_label l :: lab)
+			      (mp', Names.Label.to_id l :: lab)
   in
   let (mp, l) = aux mp in
     mp, l

@@ -384,12 +384,12 @@ let print internal glob_ref kind xml_library_root =
        (* this kn is fake since it is not provided by Coq *)
        let kn =
         let (mod_path,dir_path) = Lib.current_prefix () in
-        N.make_kn mod_path dir_path (N.label_of_id id)
+        N.make_kn mod_path dir_path (N.Label.of_id id)
        in
        let (_,body,typ) = G.lookup_named id in
         Cic2acic.Variable kn,mk_variable_obj id body typ
     | Gn.ConstRef kn ->
-       let id = N.id_of_label (N.con_label kn) in
+       let id = N.Label.to_id (N.con_label kn) in
        let cb = G.lookup_constant kn in
        let val0 = D.body_of_constant cb in
        let typ = cb.D.const_type in
@@ -467,7 +467,7 @@ let _ =
          (* I saved in the Pfedit.set_xml_cook_proof callback.          *)
         let fn = filename_of_path xml_library_root (Cic2acic.Constant kn) in
          show_pftreestate internal fn pftreestate
-	  (Names.id_of_label (Names.con_label kn)) ;
+	  (Names.Label.to_id (Names.con_label kn)) ;
          proof_to_export := None)
 ;;
 

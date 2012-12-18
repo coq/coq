@@ -440,7 +440,7 @@ let rec replace_module_object idl (mbids,mp,lib_stack) (mbids2,mp2,objs) mp1 =
       if not (String.equal (object_tag obj) "MODULE") then anomaly "MODULE expected!";
       let substobjs = match idl with
       | [] ->
-        let mp' = MPdot(mp, label_of_id id) in
+        let mp' = MPdot(mp, Label.of_id id) in
         mbids, mp', subst_objects (map_mp mp1 mp' empty_delta_resolver) objs
       | _ ->
         replace_module_object idl (out_module obj) (mbids2,mp2,objs) mp

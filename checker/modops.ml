@@ -16,32 +16,32 @@ open Declarations
 (*i*)
 
 let error_not_a_constant l =
-  error ("\""^(string_of_label l)^"\" is not a constant")
+  error ("\""^(Label.to_string l)^"\" is not a constant")
 
 let error_not_a_functor _ = error "Application of not a functor"
 
 let error_incompatible_modtypes _ _ = error "Incompatible module types"
 
 let error_not_match l _ =
-  error ("Signature components for label "^string_of_label l^" do not match")
+  error ("Signature components for label "^Label.to_string l^" do not match")
 
-let error_no_such_label l = error ("No such label "^string_of_label l)
+let error_no_such_label l = error ("No such label "^Label.to_string l)
 
 let error_no_such_label_sub l l1 =
   let l1 = string_of_mp l1 in
   error ("The field "^
-         string_of_label l^" is missing in "^l1^".")
+         Label.to_string l^" is missing in "^l1^".")
 
 let error_not_a_module_loc loc s =
-  user_err_loc (loc,"",str ("\""^string_of_label s^"\" is not a module"))
+  user_err_loc (loc,"",str ("\""^Label.to_string s^"\" is not a module"))
 
 let error_not_a_module s = error_not_a_module_loc Loc.ghost s
 
 let error_with_incorrect l =
-  error ("Incorrect constraint for label \""^(string_of_label l)^"\"")
+  error ("Incorrect constraint for label \""^(Label.to_string l)^"\"")
 
 let error_a_generative_module_expected l =
-  error ("The module " ^ string_of_label l ^ " is not generative. Only " ^
+  error ("The module " ^ Label.to_string l ^ " is not generative. Only " ^
          "component of generative modules can be changed using the \"with\" " ^
          "construct.")
 

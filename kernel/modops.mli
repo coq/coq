@@ -71,28 +71,28 @@ type signature_mismatch_error =
   | NoTypeConstraintExpected
 
 type module_typing_error =
-  | SignatureMismatch of label * structure_field_body * signature_mismatch_error
-  | LabelAlreadyDeclared of label
+  | SignatureMismatch of Label.t * structure_field_body * signature_mismatch_error
+  | LabelAlreadyDeclared of Label.t
   | ApplicationToNotPath of module_struct_entry
   | NotAFunctor of struct_expr_body
   | IncompatibleModuleTypes of module_type_body * module_type_body
   | NotEqualModulePaths of module_path * module_path
-  | NoSuchLabel of label
-  | IncompatibleLabels of label * label
+  | NoSuchLabel of Label.t
+  | IncompatibleLabels of Label.t * Label.t
   | SignatureExpected of struct_expr_body
   | NoModuleToEnd
   | NoModuleTypeToEnd
   | NotAModule of string
   | NotAModuleType of string
-  | NotAConstant of label
-  | IncorrectWithConstraint of label
-  | GenerativeModuleExpected of label
-  | NonEmptyLocalContect of label option
-  | LabelMissing of label * string
+  | NotAConstant of Label.t
+  | IncorrectWithConstraint of Label.t
+  | GenerativeModuleExpected of Label.t
+  | NonEmptyLocalContect of Label.t option
+  | LabelMissing of Label.t * string
 
 exception ModuleTypingError of module_typing_error
 
-val error_existing_label : label -> 'a
+val error_existing_label : Label.t -> 'a
 
 val error_application_to_not_path : module_struct_entry -> 'a
 
@@ -100,11 +100,11 @@ val error_incompatible_modtypes :
   module_type_body -> module_type_body -> 'a
 
 val error_signature_mismatch :
-  label -> structure_field_body -> signature_mismatch_error -> 'a
+  Label.t -> structure_field_body -> signature_mismatch_error -> 'a
 
-val error_incompatible_labels : label -> label -> 'a
+val error_incompatible_labels : Label.t -> Label.t -> 'a
 
-val error_no_such_label : label -> 'a
+val error_no_such_label : Label.t -> 'a
 
 val error_signature_expected : struct_expr_body -> 'a
 
@@ -114,12 +114,12 @@ val error_no_modtype_to_end : unit -> 'a
 
 val error_not_a_module : string -> 'a
 
-val error_not_a_constant : label -> 'a
+val error_not_a_constant : Label.t -> 'a
 
-val error_incorrect_with_constraint : label -> 'a
+val error_incorrect_with_constraint : Label.t -> 'a
 
-val error_generative_module_expected : label -> 'a
+val error_generative_module_expected : Label.t -> 'a
 
-val error_non_empty_local_context : label option -> 'a
+val error_non_empty_local_context : Label.t option -> 'a
 
-val error_no_such_label_sub : label->string->'a
+val error_no_such_label_sub : Label.t->string->'a

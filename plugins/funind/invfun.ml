@@ -179,7 +179,7 @@ let find_induction_principle f =
 (*     let fname =  *)
 (*       match kind_of_term f with  *)
 (* 	| Const c' ->  *)
-(* 	    id_of_label (con_label c')  *)
+(* 	    Label.to_id (con_label c')  *)
 (* 	| _ -> error "Must be used with a function"  *)
 (*     in *)
 
@@ -1049,7 +1049,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
     in
     Array.iteri
       (fun i f_as_constant ->
-	 let f_id = id_of_label (con_label f_as_constant) in
+	 let f_id = Label.to_id (con_label f_as_constant) in
 	 (*i The next call to mk_correct_id is valid since we are constructing the lemma
 	     Ensures by: obvious
 	 i*)
@@ -1100,7 +1100,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
     in
     Array.iteri
       (fun i f_as_constant ->
-	 let f_id = id_of_label (con_label f_as_constant) in
+	 let f_id = Label.to_id (con_label f_as_constant) in
 	 (*i The next call to mk_complete_id is valid since we are constructing the lemma
 	     Ensures by: obvious
 	   i*)

@@ -157,7 +157,7 @@ and ml_with_declaration =
   | ML_With_type of Id.t list * Id.t list * ml_type
   | ML_With_module of Id.t list * module_path
 
-and ml_module_sig = (label * ml_specif) list
+and ml_module_sig = (Label.t * ml_specif) list
 
 type ml_structure_elem =
   | SEdecl of ml_decl
@@ -170,7 +170,7 @@ and ml_module_expr =
   | MEstruct of module_path * ml_module_structure
   | MEapply of ml_module_expr * ml_module_expr
 
-and ml_module_structure = (label * ml_structure_elem) list
+and ml_module_structure = (Label.t * ml_structure_elem) list
 
 and ml_module =
     { ml_mod_expr : ml_module_expr;

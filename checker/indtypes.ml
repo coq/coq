@@ -21,19 +21,19 @@ open Environ
 let rec debug_string_of_mp = function
   | MPfile sl -> Dir_path.to_string sl
   | MPbound uid -> "bound("^string_of_mbid uid^")"
-  | MPdot (mp,l) -> debug_string_of_mp mp ^ "." ^ string_of_label l
+  | MPdot (mp,l) -> debug_string_of_mp mp ^ "." ^ Label.to_string l
 
 let rec string_of_mp = function
   | MPfile sl -> Dir_path.to_string sl
   | MPbound uid -> string_of_mbid uid
-  | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
+  | MPdot (mp,l) -> string_of_mp mp ^ "." ^ Label.to_string l
 
 let string_of_mp mp =
   if !Flags.debug then debug_string_of_mp mp else string_of_mp mp
 
 let prkn kn =
   let (mp,_,l) = repr_kn kn in
-  str(string_of_mp mp ^ "." ^ string_of_label l)
+  str(string_of_mp mp ^ "." ^ Label.to_string l)
 let prcon c =
   let ck = canonical_con c in
   let uk = user_con c in

@@ -60,12 +60,12 @@ let modcache = ref (MPmap.empty : structure_body MPmap.t)
 
 let rec search_mod_label lab = function
   | [] -> raise Not_found
-  | (l, SFBmodule mb) :: _ when eq_label l lab -> mb
+  | (l, SFBmodule mb) :: _ when Label.equal l lab -> mb
   | _ :: fields -> search_mod_label lab fields
 
 let rec search_cst_label lab = function
   | [] -> raise Not_found
-  | (l, SFBconst cb) :: _ when eq_label l lab -> cb
+  | (l, SFBconst cb) :: _ when Label.equal l lab -> cb
   | _ :: fields -> search_cst_label lab fields
 
 let rec lookup_module_in_impl mp =

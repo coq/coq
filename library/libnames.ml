@@ -151,7 +151,7 @@ type object_name = full_path * kernel_name
 type object_prefix = Dir_path.t * (module_path * Dir_path.t)
 
 let make_oname (dirpath,(mp,dir)) id =
-  make_path dirpath id, make_kn mp dir (label_of_id id)
+  make_path dirpath id, make_kn mp dir (Label.of_id id)
 
 (* to this type are mapped Dir_path.t's in the nametab *)
 type global_dir_reference =
