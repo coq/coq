@@ -376,11 +376,12 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
   | (keyrule,pat,n as _rule)::rules ->
     try
       match t,n with
-      | PatCstr (loc,(ind,_),l,na), n when n = Some 0 or n = None or 
-	 n = Some(fst(Global.lookup_inductive ind)).Declarations.mind_nparams ->
+      | PatCstr (loc,(ind,_),l,na), n when (n = Some 0 or n = None or
+	 n = Some(fst(Global.lookup_inductive ind)).Declarations.mind_nparams)
+          && (match keyrule with SynDefRule _ -> true | _ -> false) ->
         (* Abbreviation for the constructor name only *)
 	(match keyrule with
-        | NotationRule (sc,ntn) -> raise No_match
+        | NotationRule _ -> assert false
         | SynDefRule kn ->
 	    let qid = Qualid (loc, shortest_qualid_of_syndef vars kn) in
 	    let l = List.map (extern_cases_pattern_in_scope allscopes vars) l in

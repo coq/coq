@@ -308,13 +308,14 @@ let build_constructors_of_type ind' argl =
 		    (Global.env ())
 		    construct
 		in
-		let argl =
-		  if argl = []
-		  then
+		let argl = match argl with
+                | None ->
  		    Array.to_list
-		      (Array.init (cst_narg - npar) (fun _ -> mkGHole ())
+		      (Array.init cst_narg (fun _ -> mkGHole ())
 		      )
-		  else argl
+                | Some l ->
+	            Array.to_list
+		      (Array.init npar (fun _ -> mkGHole ()))@l
 		in
 		let pat_as_term =
 		  mkGApp(mkGRef (ConstructRef(ind',i+1)),argl)
@@ -653,7 +654,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 			       Printer.pr_glob_constr b ++ str " in " ++
 			       Printer.pr_glob_constr rt ++ str ". try again with a cast")
 	in
-	let case_pats = build_constructors_of_type ind [] in
+	let case_pats = build_constructors_of_type ind None in
 	assert (Array.length case_pats = 2);
 	let brl =
 	  list_map_i
@@ -669,12 +670,12 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
     | GLetTuple(_,nal,_,b,e) ->
 	begin
 	  let nal_as_glob_constr =
-	    List.map
+	    Some (List.map
 	      (function
 		   Name id -> mkGVar id
 		 | Anonymous -> mkGHole ()
 	      )
-	      nal
+	      nal)
 	  in
 	  let b_as_constr = Pretyping.Default.understand Evd.empty env b in
 	  let b_typ = Typing.type_of env Evd.empty b_as_constr in
