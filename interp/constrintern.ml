@@ -66,7 +66,7 @@ type var_internalization_data =
 type internalization_env =
     (var_internalization_data) Id.Map.t
 
-type glob_binder = (name * binding_kind * glob_constr option * glob_constr)
+type glob_binder = (Name.t * binding_kind * glob_constr option * glob_constr)
 
 let interning_grammar = ref false
 

@@ -79,7 +79,7 @@ let make_constr_action
         Gram.action (fun (v:reference) ->
 	  make (CRef v :: constrs, constrlists, binders) tl)
     | ETName ->
-        Gram.action (fun (na:Loc.t * name) ->
+        Gram.action (fun (na:Loc.t * Name.t) ->
 	  make (constr_expr_of_name na :: constrs, constrlists, binders) tl)
     | ETBigint ->
         Gram.action (fun (v:Bigint.bigint) ->
@@ -130,7 +130,7 @@ let make_cases_pattern_action
         Gram.action (fun (v:reference) ->
 	  make (CPatAtom (Loc.ghost,Some v) :: env, envlist, hasbinders) tl)
     | ETName ->
-        Gram.action (fun (na:Loc.t * name) ->
+        Gram.action (fun (na:Loc.t * Name.t) ->
 	  make (cases_pattern_expr_of_name na :: env, envlist, hasbinders) tl)
     | ETBigint ->
         Gram.action (fun (v:Bigint.bigint) ->

@@ -74,15 +74,45 @@ struct
 
 end
 
+
+module Name =
+struct
+  type t = Name of Id.t | Anonymous
+
+  let equal n1 n2 = match n1, n2 with
+  | Anonymous, Anonymous -> true
+  | Name id1, Name id2 -> String.equal id1 id2
+  | _ -> false
+
+  module Self_Hashcons =
+    struct
+      type _t = t
+      type t = _t
+      type u = Id.t -> Id.t
+      let hashcons hident = function
+        | Name id -> Name (hident id)
+        | n -> n
+      let equal n1 n2 =
+        n1 == n2 ||
+        match (n1,n2) with
+          | (Name id1, Name id2) -> id1 == id2
+          | (Anonymous,Anonymous) -> true
+          | _ -> false
+      let hash = Hashtbl.hash
+    end
+
+  module Hname = Hashcons.Make(Self_Hashcons)
+
+  let hcons = Hashcons.simple_hcons Hname.generate Id.hcons
+
+end
+
+type name = Name.t = Name of Id.t | Anonymous
+(** Alias, to import constructors. *)
+
 (** {6 Various types based on identifiers } *)
 
-type name = Name of Id.t | Anonymous
 type variable = Id.t
-
-let name_eq n1 n2 = match n1, n2 with
-| Anonymous, Anonymous -> true
-| Name id1, Name id2 -> String.equal id1 id2
-| _ -> false
 
 type module_ident = Id.t
 
@@ -448,22 +478,6 @@ let eq_egr e1 e2 = match e1, e2 with
 
 (** {6 Hash-consing of name objects } *)
 
-module Hname = Hashcons.Make(
-  struct
-    type t = name
-    type u = Id.t -> Id.t
-    let hashcons hident = function
-      | Name id -> Name (hident id)
-      | n -> n
-    let equal n1 n2 =
-      n1 == n2 ||
-      match (n1,n2) with
-	| (Name id1, Name id2) -> id1 == id2
-        | (Anonymous,Anonymous) -> true
-        | _ -> false
-    let hash = Hashtbl.hash
-  end)
-
 module Hmod = Hashcons.Make(
   struct
     type t = module_path
@@ -526,7 +540,6 @@ module Hconstruct = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-let hcons_name = Hashcons.simple_hcons Hname.generate Id.hcons
 let hcons_mp =
   Hashcons.simple_hcons Hmod.generate (Dir_path.hcons,MBId.hcons,String.hcons)
 let hcons_kn = Hashcons.simple_hcons Hkn.generate (hcons_mp,Dir_path.hcons,String.hcons)
@@ -631,3 +644,9 @@ let label_of_id = Label.of_id
 let eq_label = Label.equal
 
 (** / End of compatibility layer for [Label] *)
+
+(** Compatibility layer for [Name] *)
+
+let name_eq = Name.equal
+
+(** / End of compatibility layer for [Name] *)

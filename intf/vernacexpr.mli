@@ -19,7 +19,7 @@ open Libnames
 (** Vernac expressions, produced by the parser *)
 
 type lident = Id.t located
-type lname = name located
+type lname = Name.t located
 type lstring = string located
 type lreference = reference
 
@@ -317,7 +317,7 @@ type vernac_expr =
   | VernacDeclareImplicits of locality_flag * reference or_by_notation *
       (explicitation * bool * bool) list list
   | VernacArguments of locality_flag * reference or_by_notation *
-      ((name * bool * (Loc.t * string) option * bool * bool) list) list *
+      ((Name.t * bool * (Loc.t * string) option * bool * bool) list) list *
       int * [ `SimplDontExposeCase | `SimplNeverUnfold | `Rename | `ExtraScopes
             | `ClearImplicits | `ClearScopes | `DefaultImplicits ] list
   | VernacArgumentsScope of locality_flag * reference or_by_notation *

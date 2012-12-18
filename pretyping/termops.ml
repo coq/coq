@@ -838,7 +838,7 @@ let add_vname vars = function
 (*************************)
 (*   Names environments  *)
 (*************************)
-type names_context = name list
+type names_context = Name.t list
 let add_name n nl = n::nl
 let lookup_name_of_rel p names =
   try List.nth names (p-1)

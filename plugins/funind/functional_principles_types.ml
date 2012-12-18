@@ -169,7 +169,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     begin
       try
 	let new_t,binders_to_remove_from_t = compute_new_princ_type remove env t in
-	let new_x : name = get_name (Termops.ids_of_context env) x in
+	let new_x : Name.t = get_name (Termops.ids_of_context env) x in
 	let new_env = Environ.push_rel (x,None,t) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
 	 if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b
@@ -198,7 +198,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
       try
 	let new_t,binders_to_remove_from_t = compute_new_princ_type remove env t in
 	let new_v,binders_to_remove_from_v = compute_new_princ_type remove env v in
-	let new_x : name = get_name (Termops.ids_of_context env) x in
+	let new_x : Name.t = get_name (Termops.ids_of_context env) x in
 	let new_env = Environ.push_rel (x,Some v,t) env in
 	let new_b,binders_to_remove_from_b = compute_new_princ_type remove new_env b in
 	if List.exists (eq_constr (mkRel 1)) binders_to_remove_from_b

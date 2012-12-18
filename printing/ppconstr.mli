@@ -33,7 +33,7 @@ val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
 val pr_metaid : Id.t -> std_ppcmds
 
 val pr_lident : Id.t located -> std_ppcmds
-val pr_lname : name located -> std_ppcmds
+val pr_lname : Name.t located -> std_ppcmds
 
 val pr_with_comments : Loc.t -> std_ppcmds -> std_ppcmds
 val pr_com_at : int -> std_ppcmds
@@ -43,7 +43,7 @@ val pr_sep_com :
   constr_expr -> std_ppcmds
 
 val pr_id : Id.t -> std_ppcmds
-val pr_name : name -> std_ppcmds
+val pr_name : Name.t -> std_ppcmds
 val pr_qualid : qualid -> std_ppcmds
 val pr_patvar : patvar -> std_ppcmds
 

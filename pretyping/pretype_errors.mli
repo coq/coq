@@ -30,9 +30,9 @@ type pretype_error =
   | CannotGeneralize of constr
   | NoOccurrenceFound of constr * Id.t option
   | CannotFindWellTypedAbstraction of constr * constr list
-  | WrongAbstractionType of name * constr * types * types
-  | AbstractionOverMeta of name * name
-  | NonLinearUnification of name * constr
+  | WrongAbstractionType of Name.t * constr * types * types
+  | AbstractionOverMeta of Name.t * Name.t
+  | NonLinearUnification of Name.t * constr
   (** Pretyping *)
   | VarNotFound of Id.t
   | UnexpectedType of constr * constr
@@ -82,7 +82,7 @@ val error_number_branches_loc :
 
 val error_ill_typed_rec_body_loc :
   Loc.t -> env -> Evd.evar_map ->
-      int -> name array -> unsafe_judgment array -> types array -> 'b
+      int -> Name.t array -> unsafe_judgment array -> types array -> 'b
 
 val error_not_a_type_loc :
   Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> 'b
@@ -108,7 +108,7 @@ val error_cannot_find_well_typed_abstraction : env -> Evd.evar_map ->
       constr -> constr list -> 'b
 
 val error_wrong_abstraction_type :  env -> Evd.evar_map ->
-      name -> constr -> types -> types -> 'b
+      Name.t -> constr -> types -> types -> 'b
 
 val error_abstraction_over_meta : env -> Evd.evar_map ->
   metavariable -> metavariable -> 'b

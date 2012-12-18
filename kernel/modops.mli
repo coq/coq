@@ -66,7 +66,7 @@ type signature_mismatch_error =
   | InductiveNumbersFieldExpected of int
   | InductiveParamsNumberField of int
   | RecordFieldExpected of bool
-  | RecordProjectionsExpected of name list
+  | RecordProjectionsExpected of Name.t list
   | NotEqualInductiveAliases
   | NoTypeConstraintExpected
 

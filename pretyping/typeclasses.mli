@@ -37,7 +37,7 @@ type typeclass = {
       Some may be undefinable due to sorting restrictions or simply undefined if 
       no name is provided. The [int option option] indicates subclasses whose hint has
       the given priority. *)
-  cl_projs : (name * (direction * int option) option * constant option) list;
+  cl_projs : (Name.t * (direction * int option) option * constant option) list;
 }
 
 type instance

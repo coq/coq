@@ -46,7 +46,7 @@ val db_pattern_rule :
 
 (** Prints a matched hypothesis *)
 val db_matched_hyp :
-  debug_info -> env -> Id.t * constr option * constr -> name -> unit
+  debug_info -> env -> Id.t * constr option * constr -> Name.t -> unit
 
 (** Prints the matched conclusion *)
 val db_matched_concl : debug_info -> env -> constr -> unit
@@ -56,7 +56,7 @@ val db_mc_pattern_success : debug_info -> unit
 
 (** Prints a failure message for an hypothesis pattern *)
 val db_hyp_pattern_failure :
-  debug_info -> env -> name * constr_pattern match_pattern -> unit
+  debug_info -> env -> Name.t * constr_pattern match_pattern -> unit
 
 (** Prints a matching failure message for a rule *)
 val db_matching_failure : debug_info -> unit

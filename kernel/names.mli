@@ -55,13 +55,24 @@ sig
 
 end
 
-(** {6 Various types based on identifiers } *)
+module Name :
+sig
+  type t = Name of Id.t | Anonymous
+  (** A name is either undefined, either an identifier. *)
 
-type name = Name of Id.t | Anonymous
+  val equal : t -> t -> bool
+  (** Equality over names. *)
+
+  val hcons : t -> t
+  (** Hashconsing over names. *)
+
+end
+
+(** {6 Type aliases} *)
+
+type name = Name.t = Name of Id.t | Anonymous
 type variable = Id.t
 type module_ident = Id.t
-
-val name_eq : name -> name -> bool
 
 (** {6 Directory paths = section names paths } *)
 
@@ -99,8 +110,6 @@ sig
   (** Hashconsing of directory paths. *)
 
 end
-
-module ModIdmap : Map.S with type key = module_ident
 
 (** {6 Names of structure elements } *)
 
@@ -163,6 +172,8 @@ sig
   (** Same as [to_string], but outputs information related to debug. *)
 
 end
+
+module ModIdmap : Map.S with type key = module_ident
 
 (** {6 The module part of the kernel name } *)
 
@@ -290,7 +301,6 @@ val eq_egr : evaluable_global_reference ->  evaluable_global_reference
 
 (** {6 Hash-consing } *)
 
-val hcons_name : name -> name
 val hcons_con : constant -> constant
 val hcons_mind : mutual_inductive -> mutual_inductive
 val hcons_ind : inductive -> inductive
@@ -439,3 +449,8 @@ val string_of_mbid : mod_bound_id -> string
 
 val debug_string_of_mbid : mod_bound_id -> string
 (** @deprecated Same as [MBId.debug_to_string]. *)
+
+(** {5 Names} *)
+
+val name_eq : name -> name -> bool
+(** @deprecated Same as [Name.equal]. *)

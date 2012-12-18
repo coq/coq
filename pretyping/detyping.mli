@@ -54,7 +54,7 @@ val synthetize_type : unit -> bool
 
 (** Utilities to transform kernel cases to simple pattern-matching problem *)
 
-val it_destRLambda_or_LetIn_names : int -> glob_constr -> name list * glob_constr
+val it_destRLambda_or_LetIn_names : int -> glob_constr -> Name.t list * glob_constr
 val simple_cases_matrix_of_branches :
   inductive -> (int * int * glob_constr) list -> cases_clauses
 val return_type_of_predicate :

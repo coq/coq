@@ -291,7 +291,7 @@ let next_name_away_for_default_printing env_t na avoid =
 type renaming_flags =
   | RenamingForCasesPattern
   | RenamingForGoal
-  | RenamingElsewhereFor of (name list * constr)
+  | RenamingElsewhereFor of (Name.t list * constr)
 
 let next_name_for_display flags =
   match flags with

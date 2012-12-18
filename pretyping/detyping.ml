@@ -323,7 +323,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
               | GLambda (_,x,_,t,c) -> x, c
 	      | _ -> Anonymous, typ in
 	    let aliastyp =
-	      if List.for_all (name_eq Anonymous) nl then None
+	      if List.for_all (Name.equal Anonymous) nl then None
 	      else Some (dl,indsp,nl) in
             n, aliastyp, Some typ
   in

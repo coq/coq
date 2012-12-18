@@ -363,16 +363,16 @@ val cut_in_parallel             : constr list -> tactic
 
 val assert_as : bool -> intro_pattern_expr located option -> constr -> tactic
 val forward   : tactic option -> intro_pattern_expr located option -> constr -> tactic
-val letin_tac : (bool * intro_pattern_expr located) option -> name ->
+val letin_tac : (bool * intro_pattern_expr located) option -> Name.t ->
   constr -> types option -> clause -> tactic
-val letin_pat_tac : (bool * intro_pattern_expr located) option -> name ->
+val letin_pat_tac : (bool * intro_pattern_expr located) option -> Name.t ->
   evar_map * constr -> types option -> clause -> tactic
-val assert_tac : name -> types -> tactic
-val assert_by  : name -> types -> tactic -> tactic
-val pose_proof : name -> constr -> tactic
+val assert_tac : Name.t -> types -> tactic
+val assert_by  : Name.t -> types -> tactic -> tactic
+val pose_proof : Name.t -> constr -> tactic
 
 val generalize      : constr list -> tactic
-val generalize_gen  : ((occurrences * constr) * name) list -> tactic
+val generalize_gen  : ((occurrences * constr) * Name.t) list -> tactic
 val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -> tactic
 
 val unify           : ?state:Names.transparent_state -> constr -> constr -> tactic

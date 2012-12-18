@@ -111,9 +111,9 @@ type fterm =
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCases of case_info * fconstr * fconstr * fconstr array
-  | FLambda of int * (name * constr) list * constr * fconstr subs
-  | FProd of name * fconstr * fconstr
-  | FLetIn of name * fconstr * fconstr * constr * fconstr subs
+  | FLambda of int * (Name.t * constr) list * constr * fconstr subs
+  | FProd of Name.t * fconstr * fconstr
+  | FLetIn of Name.t * fconstr * fconstr * constr * fconstr subs
   | FEvar of existential * fconstr subs
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
@@ -157,7 +157,7 @@ val mk_atom : constr -> fconstr
 val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 val destFLambda :
-  (fconstr subs -> constr -> fconstr) -> fconstr -> name * fconstr * fconstr
+  (fconstr subs -> constr -> fconstr) -> fconstr -> Name.t * fconstr * fconstr
 
 (** Global and local constant cache *)
 type clos_infos

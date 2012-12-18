@@ -15,7 +15,7 @@ open Util
 open Libobject
 (*i*)
 
-let empty_name_table = (Refmap.empty : name list list Refmap.t)
+let empty_name_table = (Refmap.empty : Name.t list list Refmap.t)
 let name_table = ref empty_name_table
 
 let _ =
@@ -26,7 +26,7 @@ let _ =
 
 type req =
   | ReqLocal
-  | ReqGlobal of global_reference * name list list
+  | ReqGlobal of global_reference * Name.t list list
 
 let load_rename_args _ (_, (_, (r, names))) =
   name_table := Refmap.add r names !name_table

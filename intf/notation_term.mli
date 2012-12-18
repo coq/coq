@@ -27,19 +27,19 @@ type notation_constr =
   | NHole of Evar_kinds.t
   | NList of Id.t * Id.t * notation_constr * notation_constr * bool
   (** Part only in [glob_constr] *)
-  | NLambda of name * notation_constr * notation_constr
-  | NProd of name * notation_constr * notation_constr
+  | NLambda of Name.t * notation_constr * notation_constr
+  | NProd of Name.t * notation_constr * notation_constr
   | NBinderList of Id.t * Id.t * notation_constr * notation_constr
-  | NLetIn of name * notation_constr * notation_constr
+  | NLetIn of Name.t * notation_constr * notation_constr
   | NCases of case_style * notation_constr option *
-      (notation_constr * (name * (inductive * name list) option)) list *
+      (notation_constr * (Name.t * (inductive * Name.t list) option)) list *
       (cases_pattern list * notation_constr) list
-  | NLetTuple of name list * (name * notation_constr option) *
+  | NLetTuple of Name.t list * (Name.t * notation_constr option) *
       notation_constr * notation_constr
-  | NIf of notation_constr * (name * notation_constr option) *
+  | NIf of notation_constr * (Name.t * notation_constr option) *
       notation_constr * notation_constr
   | NRec of fix_kind * Id.t array *
-      (name * notation_constr option * notation_constr) list array *
+      (Name.t * notation_constr option * notation_constr) list array *
       notation_constr array * notation_constr array
   | NSort of glob_sort
   | NPatVar of patvar

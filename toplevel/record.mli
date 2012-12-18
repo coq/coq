@@ -21,7 +21,7 @@ open Globnames
 val declare_projections :
   inductive -> ?kind:Decl_kinds.definition_object_kind -> ?name:Id.t ->
   coercion_flag list -> manual_explicitation list list -> rel_context ->
-  (name * bool) list * constant option list
+  (Name.t * bool) list * constant option list
 
 val declare_structure : Decl_kinds.recursivity_kind ->
   bool (**infer?*) -> Id.t -> Id.t ->

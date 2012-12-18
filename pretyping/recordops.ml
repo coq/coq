@@ -36,7 +36,7 @@ open Reductionops
 type struc_typ = {
   s_CONST : constructor;
   s_EXPECTEDPARAM : int;
-  s_PROJKIND : (name * bool) list;
+  s_PROJKIND : (Name.t * bool) list;
   s_PROJ : constant option list }
 
 let structure_table = ref (Indmap.empty : struc_typ Indmap.t)
@@ -46,7 +46,7 @@ let projection_table = ref Cmap.empty
    is the inductive always (fst constructor) ? It seems so... *)
 
 type struc_tuple =
-    inductive * constructor * (name * bool) list * constant option list
+    inductive * constructor * (Name.t * bool) list * constant option list
 
 let load_structure i (_,(ind,id,kl,projs)) =
   let n = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in

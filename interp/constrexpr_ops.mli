@@ -48,9 +48,9 @@ val mkIdentC : Id.t -> constr_expr
 val mkRefC : reference -> constr_expr
 val mkAppC : constr_expr * constr_expr list -> constr_expr
 val mkCastC : constr_expr * constr_expr cast_type -> constr_expr
-val mkLambdaC : name located list * binder_kind * constr_expr * constr_expr -> constr_expr
-val mkLetInC : name located * constr_expr * constr_expr -> constr_expr
-val mkProdC : name located list * binder_kind * constr_expr * constr_expr -> constr_expr
+val mkLambdaC : Name.t located list * binder_kind * constr_expr * constr_expr -> constr_expr
+val mkLetInC : Name.t located * constr_expr * constr_expr -> constr_expr
+val mkProdC : Name.t located list * binder_kind * constr_expr * constr_expr -> constr_expr
 
 val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
@@ -69,17 +69,17 @@ val coerce_reference_to_id : reference -> Id.t
 val coerce_to_id : constr_expr -> Id.t located
 (** Destruct terms of the form [CRef (Ident _)]. *)
 
-val coerce_to_name : constr_expr -> name located
+val coerce_to_name : constr_expr -> Name.t located
 (** Destruct terms of the form [CRef (Ident _)] or [CHole _]. *)
 
 (** {6 Binder manipulation} *)
 
 val default_binder_kind : binder_kind
 
-val names_of_local_binders : local_binder list -> name located list
+val names_of_local_binders : local_binder list -> Name.t located list
 (** Retrieve a list of binding names from a list of binders. *)
 
-val names_of_local_assums : local_binder list -> name located list
+val names_of_local_assums : local_binder list -> Name.t located list
 (** Same as [names_of_local_binders], but does not take the [let] bindings into
     account. *)
 

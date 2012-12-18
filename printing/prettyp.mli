@@ -19,7 +19,7 @@ open Misctypes
 
 (** A Pretty-Printer for the Calculus of Inductive Constructions. *)
 
-val assumptions_for_print : name list -> Termops.names_context
+val assumptions_for_print : Name.t list -> Termops.names_context
 
 val print_closed_sections : bool ref
 val print_context : bool -> int option -> Lib.library_segment -> std_ppcmds

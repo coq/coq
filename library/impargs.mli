@@ -95,7 +95,7 @@ type manual_implicits = manual_explicitation list
 val compute_implicits_with_manual : env -> types -> bool ->
   manual_implicits -> implicit_status list
 
-val compute_implicits_names : env -> types -> name list
+val compute_implicits_names : env -> types -> Name.t list
 
 (** {6 Computation of implicits (done using the global environment). } *)
 

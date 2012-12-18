@@ -907,7 +907,7 @@ let vernac_declare_arguments local r l nargs flags =
   let names = List.map (List.map (fun (id, _,_,_,_) -> id)) l in
   let names, rest = List.hd names, List.tl names in
   let scopes = List.map (List.map (fun (_,_, s, _,_) -> s)) l in
-  if List.exists (fun na -> not (List.equal name_eq na names)) rest then
+  if List.exists (fun na -> not (List.equal Name.equal na names)) rest then
     error "All arguments lists must declare the same names.";
   if not (List.distinct (List.filter ((!=) Anonymous) names)) then
     error "Arguments names must be distinct.";
@@ -950,7 +950,7 @@ let vernac_declare_arguments local r l nargs flags =
   let some_renaming_specified =
     try
       let names = Arguments_renaming.arguments_names sr in
-      not (List.equal (List.equal name_eq) names names_decl)
+      not (List.equal (List.equal Name.equal) names names_decl)
     with Not_found -> false in
   let some_renaming_specified, implicits =
     match l with

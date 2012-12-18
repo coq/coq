@@ -16,12 +16,12 @@ val msgnl : std_ppcmds -> unit
 val invalid_argument : string -> 'a
 
 val fresh_id : Id.t list -> string -> Id.t
-val fresh_name : Id.t list -> string -> name
-val get_name : Id.t list -> ?default:string -> name -> name
+val fresh_name : Id.t list -> string -> Name.t
+val get_name : Id.t list -> ?default:string -> Name.t -> Name.t
 
 val array_get_start : 'a array -> 'a array
 
-val id_of_name : name -> Id.t
+val id_of_name : Name.t -> Id.t
 
 val locate_ind : Libnames.reference -> inductive
 val locate_constant : Libnames.reference -> constant
@@ -36,10 +36,10 @@ val list_add_set_eq :
   ('a -> 'a -> bool) -> 'a -> 'a list -> 'a list
 
 val chop_rlambda_n : int -> Glob_term.glob_constr ->
-  (name*Glob_term.glob_constr*bool) list * Glob_term.glob_constr
+  (Name.t*Glob_term.glob_constr*bool) list * Glob_term.glob_constr
 
 val chop_rprod_n : int -> Glob_term.glob_constr ->
-  (name*Glob_term.glob_constr) list * Glob_term.glob_constr
+  (Name.t*Glob_term.glob_constr) list * Glob_term.glob_constr
 
 val def_of_const : Term.constr -> Term.constr
 val eq : Term.constr Lazy.t

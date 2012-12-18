@@ -27,7 +27,7 @@ type cbv_value =
   | VAL of int * constr
   | STACK of int * cbv_value * cbv_stack
   | CBN of constr * cbv_value subs
-  | LAM of int * (name * constr) list * constr * cbv_value subs
+  | LAM of int * (Name.t * constr) list * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value array
   | COFIXP of cofixpoint * cbv_value subs * cbv_value array
   | CONSTR of constructor * cbv_value array

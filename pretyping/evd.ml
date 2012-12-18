@@ -294,8 +294,8 @@ type instance_status = instance_constraint * instance_typing_status
 (* Clausal environments *)
 
 type clbinding =
-  | Cltyp of name * constr freelisted
-  | Clval of name * (constr freelisted * instance_status) * constr freelisted
+  | Cltyp of Name.t * constr freelisted
+  | Clval of Name.t * (constr freelisted * instance_status) * constr freelisted
 
 let map_clb f = function
   | Cltyp (na,cfl) -> Cltyp (na,map_fl f cfl)
@@ -650,7 +650,7 @@ let meta_with_name evd id =
     Metamap.fold
       (fun n clb (l1,l2 as l) ->
         let (na',def) = clb_name clb in
-        if name_eq na na' then if def then (n::l1,l2) else (n::l1,n::l2)
+        if Name.equal na na' then if def then (n::l1,l2) else (n::l1,n::l2)
         else l)
       evd.metas ([],[]) in
   match mvnodef, mvl with

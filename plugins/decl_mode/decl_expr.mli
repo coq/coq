@@ -11,7 +11,7 @@ open Pp
 open Tacexpr
 
 type 'it statement =
-    {st_label:name;
+    {st_label:Name.t;
      st_it:'it}
 
 type thesis_kind =

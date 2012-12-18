@@ -150,14 +150,14 @@ let compare_glob_constr f add t1 t2 = match t1,t2 with
   | GVar (_,v1), GVar (_,v2) -> on_true_do (Id.equal v1 v2) add (Name v1)
   | GApp (_,f1,l1), GApp (_,f2,l2) -> f f1 f2 && List.for_all2eq f l1 l2
   | GLambda (_,na1,bk1,ty1,c1), GLambda (_,na2,bk2,ty2,c2)
-    when name_eq na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
+    when Name.equal na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
     on_true_do (f ty1 ty2 & f c1 c2) add na1
   | GProd (_,na1,bk1,ty1,c1), GProd (_,na2,bk2,ty2,c2)
-    when name_eq na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
+    when Name.equal na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
       on_true_do (f ty1 ty2 & f c1 c2) add na1
   | GHole _, GHole _ -> true
   | GSort (_,s1), GSort (_,s2) -> glob_sort_eq s1 s2
-  | GLetIn (_,na1,b1,c1), GLetIn (_,na2,b2,c2) when name_eq na1 na2 ->
+  | GLetIn (_,na1,b1,c1), GLetIn (_,na2,b2,c2) when Name.equal na1 na2 ->
       on_true_do (f b1 b2 & f c1 c2) add na1
   | (GCases _ | GRec _
     | GPatVar _ | GEvar _ | GLetTuple _ | GIf _ | GCast _),_

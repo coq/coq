@@ -95,7 +95,7 @@ val interp_prim_token_cases_pattern_expr : Loc.t -> (global_reference -> unit) -
 val uninterp_prim_token :
   glob_constr -> scope_name * prim_token
 val uninterp_prim_token_cases_pattern :
-  cases_pattern -> name * scope_name * prim_token
+  cases_pattern -> Name.t * scope_name * prim_token
 val uninterp_prim_token_ind_pattern :
  inductive -> cases_pattern list -> scope_name * prim_token
 

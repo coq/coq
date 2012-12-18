@@ -22,9 +22,9 @@ let observe strm =
 
 
 type binder_type =
-  | Lambda of name
-  | Prod of name
-  | LetIn of name
+  | Lambda of Name.t
+  | Prod of Name.t
+  | LetIn of Name.t
 
 type glob_context = (binder_type*glob_constr) list
 
@@ -138,7 +138,7 @@ let apply_args ctxt body args =
   let need_convert avoid  bt =
     List.exists (need_convert_id avoid) (ids_of_binder bt)
   in
-  let next_name_away (na:name) (mapping: Id.t Id.Map.t) (avoid: Id.t list) =
+  let next_name_away (na:Name.t) (mapping: Id.t Id.Map.t) (avoid: Id.t list) =
     match na with
        | Name id when List.mem id avoid ->
 	   let new_id = Namegen.next_ident_away id avoid in
@@ -1186,7 +1186,7 @@ and compute_cst_params_from_app acc (params,rtl) =
 	compute_cst_params_from_app (param::acc) (params',rtl')
     | _  -> List.rev acc
 
-let compute_params_name relnames (args : (Names.name * Glob_term.glob_constr * bool) list array) csts =
+let compute_params_name relnames (args : (Name.t * Glob_term.glob_constr * bool) list array) csts =
   let rels_params =
     Array.mapi
       (fun i args ->
@@ -1222,13 +1222,13 @@ let rec rebuild_return_type rt =
 	Constrexpr.CProdN(loc,n,rebuild_return_type t')
     | Constrexpr.CLetIn(loc,na,t,t') ->
 	Constrexpr.CLetIn(loc,na,t,rebuild_return_type t')
-    | _ -> Constrexpr.CProdN(Loc.ghost,[[Loc.ghost,Names.Anonymous],
+    | _ -> Constrexpr.CProdN(Loc.ghost,[[Loc.ghost,Anonymous],
 				       Constrexpr.Default Decl_kinds.Explicit,rt],
 			    Constrexpr.CSort(Loc.ghost,GType None))
 
 
 let do_build_inductive
-    funnames (funsargs: (Names.name * glob_constr * bool) list list)
+    funnames (funsargs: (Name.t * glob_constr * bool) list list)
     returned_types
     (rtl:glob_constr list) =
   let _time1 = System.get_time () in
@@ -1257,7 +1257,7 @@ let do_build_inductive
   let resa = Array.map (build_entry_lc env  funnames_as_set []) rta in
   let env_with_graphs =
     let rel_arity i funargs =  (* Reduilding arities (with parameters) *)
-      let rel_first_args :(Names.name * Glob_term.glob_constr * bool ) list  =
+      let rel_first_args :(Name.t * Glob_term.glob_constr * bool ) list  =
 	funargs
       in
       List.fold_right
@@ -1323,7 +1323,7 @@ let do_build_inductive
     rel_constructors
   in
   let rel_arity i funargs =  (* Reduilding arities (with parameters) *)
-    let rel_first_args :(Names.name * Glob_term.glob_constr * bool ) list  =
+    let rel_first_args :(Name.t * Glob_term.glob_constr * bool ) list  =
       (snd (List.chop nrel_params funargs))
     in
     List.fold_right

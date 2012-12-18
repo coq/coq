@@ -79,8 +79,8 @@ type 'a match_pattern =
 
 (* Type of hypotheses for a Match Context rule *)
 type 'a match_context_hyps =
-  | Hyp of name located * 'a match_pattern
-  | Def of name located * 'a match_pattern * 'a match_pattern
+  | Hyp of Name.t located * 'a match_pattern
+  | Def of Name.t located * 'a match_pattern * 'a match_pattern
 
 (* Type of a Match rule for Match Context and Match *)
 type ('a,'t) match_rule =
@@ -112,9 +112,9 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacAssert of
       ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option *
       intro_pattern_expr located option * 'trm
-  | TacGeneralize of ('trm with_occurrences * name) list
+  | TacGeneralize of ('trm with_occurrences * Name.t) list
   | TacGeneralizeDep of 'trm
-  | TacLetTac of name * 'trm * 'nam clause_expr * letin_flag *
+  | TacLetTac of Name.t * 'trm * 'nam clause_expr * letin_flag *
       intro_pattern_expr located option
 
   (* Derived basic tactics *)

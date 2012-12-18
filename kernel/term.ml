@@ -95,7 +95,7 @@ let family_of_sort = function
    the same order (i.e. last argument first) *)
 type 'constr pexistential = existential_key * 'constr array
 type ('constr, 'types) prec_declaration =
-    name array * 'types array * 'constr array
+    Name.t array * 'types array * 'constr array
 type ('constr, 'types) pfixpoint =
     (int array * int) * ('constr, 'types) prec_declaration
 type ('constr, 'types) pcofixpoint =
@@ -110,9 +110,9 @@ type ('constr, 'types) kind_of_term =
   | Evar      of 'constr pexistential
   | Sort      of sorts
   | Cast      of 'constr * cast_kind * 'types
-  | Prod      of name * 'types * 'types
-  | Lambda    of name * 'types * 'constr
-  | LetIn     of name * 'constr * 'types * 'constr
+  | Prod      of Name.t * 'types * 'types
+  | Lambda    of Name.t * 'types * 'constr
+  | LetIn     of Name.t * 'constr * 'types * 'constr
   | App       of 'constr * 'constr array
   | Const     of constant
   | Ind       of inductive
@@ -126,7 +126,7 @@ type ('constr, 'types) kind_of_term =
 type constr = (constr,constr) kind_of_term
 
 type existential = existential_key * constr array
-type rec_declaration = name array * constr array * constr array
+type rec_declaration = Name.t array * constr array * constr array
 type fixpoint = (int array * int) * rec_declaration
 type cofixpoint = int * rec_declaration
 
@@ -250,8 +250,8 @@ let kind_of_term c = c
 type ('constr, 'types) kind_of_type =
   | SortType   of sorts
   | CastType   of 'types * 'types
-  | ProdType   of name * 'types * 'types
-  | LetInType  of name * 'constr * 'types * 'types
+  | ProdType   of Name.t * 'types * 'types
+  | LetInType  of Name.t * 'constr * 'types * 'types
   | AtomicType of 'constr * 'constr array
 
 let kind_of_type = function
@@ -670,7 +670,7 @@ type types = constr
 type strategy = types option
 
 type named_declaration = Id.t * constr option * types
-type rel_declaration = name * constr option * types
+type rel_declaration = Name.t * constr option * types
 
 let map_named_declaration f (id, (v : strategy), ty) = (id, Option.map f v, f ty)
 let map_rel_declaration = map_named_declaration
@@ -688,7 +688,7 @@ let eq_named_declaration (i1, c1, t1) (i2, c2, t2) =
   Id.equal i1 i2 && Option.equal eq_constr c1 c2 && eq_constr t1 t2
 
 let eq_rel_declaration (n1, c1, t1) (n2, c2, t2) =
-  name_eq n1 n2 && Option.equal eq_constr c1 c2 && eq_constr t1 t2
+  Name.equal n1 n2 && Option.equal eq_constr c1 c2 && eq_constr t1 t2
 
 (***************************************************************************)
 (*     Type of local contexts (telescopes)                                 *)
@@ -1432,7 +1432,7 @@ let hcons_constr =
      hcons_construct,
      hcons_ind,
      hcons_con,
-     hcons_name,
+     Name.hcons,
      Id.hcons)
 
 let hcons_types = hcons_constr

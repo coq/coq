@@ -28,9 +28,9 @@ type pretype_error =
   | CannotGeneralize of constr
   | NoOccurrenceFound of constr * Id.t option
   | CannotFindWellTypedAbstraction of constr * constr list
-  | WrongAbstractionType of name * constr * types * types
-  | AbstractionOverMeta of name * name
-  | NonLinearUnification of name * constr
+  | WrongAbstractionType of Name.t * constr * types * types
+  | AbstractionOverMeta of Name.t * Name.t
+  | NonLinearUnification of Name.t * constr
   (* Pretyping *)
   | VarNotFound of Id.t
   | UnexpectedType of constr * constr

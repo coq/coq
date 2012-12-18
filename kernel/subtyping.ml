@@ -198,7 +198,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     check (fun mib ->
       let nparamdecls = List.length mib.mind_params_ctxt in
       let names = names_prod_letin (mib.mind_packets.(0).mind_user_lc.(0)) in
-      snd (List.chop nparamdecls names)) (List.equal name_eq)
+      snd (List.chop nparamdecls names)) (List.equal Name.equal)
       (fun x -> RecordProjectionsExpected x);
   end;
   (* we first check simple things *)

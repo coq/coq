@@ -19,7 +19,7 @@ type obligation_definition_status = Define of bool | Expand
 type t =
   | ImplicitArg of global_reference * (int * Id.t option)
      * bool (** Force inference *)
-  | BinderType of name
+  | BinderType of Name.t
   | QuestionMark of obligation_definition_status
   | CasesType
   | InternalHole

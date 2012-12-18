@@ -160,7 +160,7 @@ module Prim :
     open Libnames
     val preident : string Gram.entry
     val ident : Id.t Gram.entry
-    val name : name located Gram.entry
+    val name : Name.t located Gram.entry
     val identref : Id.t located Gram.entry
     val pattern_ident : Id.t Gram.entry
     val pattern_identref : Id.t located Gram.entry
@@ -198,7 +198,7 @@ module Constr :
     val binders : local_binder list Gram.entry (* list of binder *)
     val open_binders : local_binder list Gram.entry
     val binders_fixannot : (local_binder list * (Id.t located option * recursion_order_expr)) Gram.entry
-    val typeclass_constraint : (name located * bool * constr_expr) Gram.entry
+    val typeclass_constraint : (Name.t located * bool * constr_expr) Gram.entry
     val record_declaration : constr_expr Gram.entry
     val appl_arg : (constr_expr * explicitation located option) Gram.entry
   end

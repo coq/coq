@@ -39,11 +39,11 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PSoApp (id1, arg1), PSoApp (id2, arg2) ->
   Id.equal id1 id2 && List.equal constr_pattern_eq arg1 arg2
 | PLambda (v1, t1, b1), PLambda (v2, t2, b2) ->
-  name_eq v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
+  Name.equal v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
 | PProd (v1, t1, b1), PProd (v2, t2, b2) ->
-  name_eq v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
+  Name.equal v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
 | PLetIn (v1, t1, b1), PLetIn (v2, t2, b2) ->
-  name_eq v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
+  Name.equal v1 v2 && constr_pattern_eq t1 t2 && constr_pattern_eq b1 b2
 | PSort s1, PSort s2 -> glob_sort_eq s1 s2
 | PMeta m1, PMeta m2 -> Option.equal Id.equal m1 m2
 | PIf (t1, l1, r1), PIf (t2, l2, r2) ->
@@ -73,7 +73,7 @@ and cofixpoint_eq (i1, r1) (i2, r2) =
   rec_declaration_eq r1 r2
 
 and rec_declaration_eq (n1, c1, r1) (n2, c2, r2) =
-  Array.equal name_eq n1 n2 &&
+  Array.equal Name.equal n1 n2 &&
   Array.equal eq_constr c1 c2 &&
   Array.equal eq_constr r1 r2
 

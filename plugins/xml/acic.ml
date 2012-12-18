@@ -68,9 +68,9 @@ type aconstr =
   | AEvar      of id * existential_key * aconstr list
   | ASort      of id * sorts
   | ACast      of id * aconstr * aconstr
-  | AProds     of (id * name * aconstr) list * aconstr
-  | ALambdas   of (id * name * aconstr) list * aconstr
-  | ALetIns    of (id * name * aconstr) list * aconstr
+  | AProds     of (id * Name.t * aconstr) list * aconstr
+  | ALambdas   of (id * Name.t * aconstr) list * aconstr
+  | ALetIns    of (id * Name.t * aconstr) list * aconstr
   | AApp       of id * aconstr list
   | AConst     of id * explicit_named_substitution * uri
   | AInd       of id * explicit_named_substitution * uri * int

@@ -22,11 +22,11 @@ open Library
 type struc_typ = {
   s_CONST : constructor;
   s_EXPECTEDPARAM : int;
-  s_PROJKIND : (name * bool) list;
+  s_PROJKIND : (Name.t * bool) list;
   s_PROJ : constant option list }
 
 type struc_tuple =
-    inductive * constructor * (name * bool) list * constant option list
+    inductive * constructor * (Name.t * bool) list * constant option list
 
 val declare_structure : struc_tuple -> unit
 

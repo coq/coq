@@ -335,9 +335,9 @@ and fterm =
   | FFix of fixpoint * fconstr subs
   | FCoFix of cofixpoint * fconstr subs
   | FCases of case_info * fconstr * fconstr * fconstr array
-  | FLambda of int * (name * constr) list * constr * fconstr subs
-  | FProd of name * fconstr * fconstr
-  | FLetIn of name * fconstr * fconstr * constr * fconstr subs
+  | FLambda of int * (Name.t * constr) list * constr * fconstr subs
+  | FProd of Name.t * fconstr * fconstr
+  | FLetIn of Name.t * fconstr * fconstr * constr * fconstr subs
   | FEvar of existential * fconstr subs
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs

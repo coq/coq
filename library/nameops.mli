@@ -10,7 +10,7 @@ open Names
 
 (** Identifiers and names *)
 val pr_id : Id.t -> Pp.std_ppcmds
-val pr_name : name -> Pp.std_ppcmds
+val pr_name : Name.t -> Pp.std_ppcmds
 
 val make_ident : string -> int option -> Id.t
 val repr_ident : Id.t -> string * int option
@@ -25,15 +25,15 @@ val has_subscript    : Id.t -> bool
 val lift_subscript   : Id.t -> Id.t
 val forget_subscript : Id.t -> Id.t
 
-val out_name : name -> Id.t
+val out_name : Name.t -> Id.t
 (** [out_name] associates [id] to [Name id]. Raises [Failure "Nameops.out_name"]
     otherwise. *)
 
-val name_fold : (Id.t -> 'a -> 'a) -> name -> 'a -> 'a
-val name_iter : (Id.t -> unit) -> name -> unit
-val name_cons : name -> Id.t list -> Id.t list
-val name_app : (Id.t -> Id.t) -> name -> name
-val name_fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> name -> 'a * name
+val name_fold : (Id.t -> 'a -> 'a) -> Name.t -> 'a -> 'a
+val name_iter : (Id.t -> unit) -> Name.t -> unit
+val name_cons : Name.t -> Id.t list -> Id.t list
+val name_app : (Id.t -> Id.t) -> Name.t -> Name.t
+val name_fold_map : ('a -> Id.t -> 'a * Id.t) -> 'a -> Name.t -> 'a * Name.t
 
 
 val pr_lab : Label.t -> Pp.std_ppcmds

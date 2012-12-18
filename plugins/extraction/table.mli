@@ -38,7 +38,7 @@ val error_MPfile_as_mod : module_path -> bool -> 'a
 val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit
 val check_loaded_modfile : module_path -> unit
-val msg_non_implicit : global_reference -> int -> name -> string
+val msg_non_implicit : global_reference -> int -> Name.t -> string
 val error_non_implicit : string -> 'a
 
 val info_file : string -> unit

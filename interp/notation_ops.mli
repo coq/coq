@@ -30,7 +30,7 @@ val eq_glob_constr : glob_constr -> glob_constr -> bool
 (** Re-interpret a notation as a [glob_constr], taking care of binders     *)
 
 val glob_constr_of_notation_constr_with_binders : Loc.t ->
-  ('a -> name -> 'a * name) ->
+  ('a -> Name.t -> 'a * Name.t) ->
   ('a -> notation_constr -> glob_constr) ->
   'a -> notation_constr -> glob_constr
 

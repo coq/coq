@@ -221,7 +221,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 		       in
 		       let (loc, mid) = get_id loc_mid in
 			 List.iter (fun (n, _, x) -> 
-				      if name_eq n (Name mid) then
+				      if Name.equal n (Name mid) then
 					Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) x)
 			   k.cl_projs;
 			 c :: props, rest'

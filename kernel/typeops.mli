@@ -56,17 +56,17 @@ val judge_of_apply :
 
 (** {6 Type of an abstraction. } *)
 val judge_of_abstraction :
-  env -> name -> unsafe_type_judgment -> unsafe_judgment
+  env -> Name.t -> unsafe_type_judgment -> unsafe_judgment
     -> unsafe_judgment
 
 (** {6 Type of a product. } *)
 val judge_of_product :
-  env -> name -> unsafe_type_judgment -> unsafe_type_judgment
+  env -> Name.t -> unsafe_type_judgment -> unsafe_type_judgment
     -> unsafe_judgment
 
 (** s Type of a let in. *)
 val judge_of_letin :
-  env -> name -> unsafe_judgment -> unsafe_type_judgment -> unsafe_judgment
+  env -> Name.t -> unsafe_judgment -> unsafe_type_judgment -> unsafe_judgment
     -> unsafe_judgment
 
 (** {6 Type of a cast. } *)
@@ -89,7 +89,7 @@ val judge_of_case : env -> case_info
     -> unsafe_judgment * constraints
 
 (** Typecheck general fixpoint (not checking guard conditions) *)
-val type_fixpoint : env -> name array -> types array
+val type_fixpoint : env -> Name.t array -> types array
     -> unsafe_judgment array -> constraints
 
 (** Kernel safe typing but applicable to partial proofs *)

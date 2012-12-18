@@ -28,7 +28,7 @@ val start_proof_com : goal_kind ->
 
 val start_proof_with_initialization : 
   goal_kind -> (bool * lemma_possible_guards * tactic list option) option ->
-  (Id.t * (types * (name list * Impargs.manual_explicitation list))) list
+  (Id.t * (types * (Name.t list * Impargs.manual_explicitation list))) list
   -> int list option -> unit declaration_hook -> unit
 
 (** A hook the next three functions pass to cook_proof *)

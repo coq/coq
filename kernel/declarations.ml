@@ -136,7 +136,7 @@ let subst_const_body sub cb = {
 (* Hash-consing of [constant_body] *)
 
 let hcons_rel_decl ((n,oc,t) as d) =
-  let n' = hcons_name n
+  let n' = Name.hcons n
   and oc' = Option.smartmap hcons_constr oc
   and t' = hcons_types t
   in if n' == n && oc' == oc && t' == t then d else (n',oc',t')

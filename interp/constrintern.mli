@@ -70,7 +70,7 @@ val compute_internalization_env : env -> var_internalization_type ->
 
 type ltac_sign = Id.t list * unbound_ltac_var_map
 
-type glob_binder = (name * binding_kind * glob_constr option * glob_constr)
+type glob_binder = (Name.t * binding_kind * glob_constr option * glob_constr)
 
 (** {6 Internalization performs interpretation of global names and notations } *)
 
@@ -148,9 +148,9 @@ val interp_reference : ltac_sign -> reference -> glob_constr
 
 (** Interpret binders *)
 
-val interp_binder  : evar_map -> env -> name -> constr_expr -> types
+val interp_binder  : evar_map -> env -> Name.t -> constr_expr -> types
 
-val interp_binder_evars : evar_map ref -> env -> name -> constr_expr -> types
+val interp_binder_evars : evar_map ref -> env -> Name.t -> constr_expr -> types
 
 (** Interpret contexts: returns extended env and context *)
 

@@ -26,7 +26,7 @@ type refiner_error =
 
   (* Errors raised by the refiner *)
   | BadType of constr * constr * constr
-  | UnresolvedBindings of name list
+  | UnresolvedBindings of Name.t list
   | CannotApply of constr * constr
   | NotWellTyped of constr
   | NonLinearProof of constr

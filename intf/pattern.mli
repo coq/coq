@@ -65,9 +65,9 @@ type constr_pattern =
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of patvar * constr_pattern list
-  | PLambda of name * constr_pattern * constr_pattern
-  | PProd of name * constr_pattern * constr_pattern
-  | PLetIn of name * constr_pattern * constr_pattern
+  | PLambda of Name.t * constr_pattern * constr_pattern
+  | PProd of Name.t * constr_pattern * constr_pattern
+  | PLetIn of Name.t * constr_pattern * constr_pattern
   | PSort of glob_sort
   | PMeta of patvar option
   | PIf of constr_pattern * constr_pattern * constr_pattern

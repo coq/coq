@@ -37,9 +37,9 @@ val print_rel_context : env -> std_ppcmds
 val print_env : env -> std_ppcmds
 
 (** about contexts *)
-val push_rel_assum : name * types -> env -> env
-val push_rels_assum : (name * types) list -> env -> env
-val push_named_rec_types : name array * types array * 'a -> env -> env
+val push_rel_assum : Name.t * types -> env -> env
+val push_rels_assum : (Name.t * types) list -> env -> env
+val push_named_rec_types : Name.t array * types array * 'a -> env -> env
 
 val lookup_rel_id : Id.t -> rel_context -> int * constr option * types
 (** Associates the contents of an identifier in a [rel_context]. Raise
@@ -54,8 +54,8 @@ val extended_rel_vect : int -> rel_context -> constr array
 (** iterators/destructors on terms *)
 val mkProd_or_LetIn : rel_declaration -> types -> types
 val mkProd_wo_LetIn : rel_declaration -> types -> types
-val it_mkProd : types -> (name * types) list -> types
-val it_mkLambda : constr -> (name * types) list -> constr
+val it_mkProd : types -> (Name.t * types) list -> types
+val it_mkLambda : constr -> (Name.t * types) list -> constr
 val it_mkProd_or_LetIn : types -> rel_context -> types
 val it_mkProd_wo_LetIn : types -> rel_context -> types
 val it_mkLambda_or_LetIn : constr -> rel_context -> constr
@@ -69,7 +69,7 @@ val it_named_context_quantifier :
 (** {6 Generic iterators on constr} *)
 
 val map_constr_with_named_binders :
-  (name -> 'a -> 'a) ->
+  (Name.t -> 'a -> 'a) ->
   ('a -> constr -> constr) -> 'a -> constr -> constr
 val map_constr_with_binders_left_to_right :
   (rel_declaration -> 'a -> 'a) ->
@@ -225,9 +225,9 @@ val adjust_app_array_size : constr -> constr array -> constr -> constr array ->
   (constr * constr array * constr * constr array)
 
 (** name contexts *)
-type names_context = name list
-val add_name : name -> names_context -> names_context
-val lookup_name_of_rel : int -> names_context -> name
+type names_context = Name.t list
+val add_name : Name.t -> names_context -> names_context
+val lookup_name_of_rel : int -> names_context -> Name.t
 val lookup_rel_of_name : Id.t -> names_context -> int
 val empty_names_context : names_context
 val ids_of_rel_context : rel_context -> Id.t list
@@ -240,11 +240,11 @@ val env_rel_context_chop : int -> env -> env * rel_context
 
 (** Set of local names *)
 val vars_of_env: env -> Id.Set.t
-val add_vname : Id.Set.t -> name -> Id.Set.t
+val add_vname : Id.Set.t -> Name.t -> Id.Set.t
 
 (** other signature iterators *)
 val process_rel_context : (rel_declaration -> env -> env) -> env -> env
-val assums_of_rel_context : rel_context -> (name * constr) list
+val assums_of_rel_context : rel_context -> (Name.t * constr) list
 val lift_rel_context : int -> rel_context -> rel_context
 val substl_rel_context : constr list -> rel_context -> rel_context
 val smash_rel_context : rel_context -> rel_context (** expand lets in context *)

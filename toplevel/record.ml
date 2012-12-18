@@ -120,7 +120,7 @@ let warning_or_error coe indsp err =
   Flags.if_verbose msg_warning (hov 0 st)
 
 type field_status =
-  | NoProjection of name
+  | NoProjection of Name.t
   | Projection of constr
 
 exception NotDefinable of record_error

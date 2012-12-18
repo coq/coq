@@ -353,8 +353,8 @@ type ('a,'b) journey_info_tac =
 (* journey_info : specifies the actions to do on the different term constructors during the travelling of the term
 *)
 type journey_info = 
-    { letiN : ((name*constr*types*constr),constr) journey_info_tac;
-      lambdA : ((name*types*constr),constr) journey_info_tac;
+    { letiN : ((Name.t*constr*types*constr),constr) journey_info_tac;
+      lambdA : ((Name.t*types*constr),constr) journey_info_tac;
       casE : ((constr infos -> tactic) -> constr infos -> tactic) -> 
 	((case_info * constr * constr * constr array),constr) journey_info_tac;
       otherS : (unit,constr) journey_info_tac;

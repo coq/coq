@@ -74,7 +74,7 @@ type 'a rhs =
 type 'a equation =
     { patterns     : cases_pattern list;
       rhs          : 'a rhs;
-      alias_stack  : name list;
+      alias_stack  : Name.t list;
       eqn_loc      : Loc.t;
       used         : bool ref }
 
@@ -82,12 +82,12 @@ type 'a matrix = 'a equation list
 
 (* 1st argument of IsInd is the original ind before extracting the summary *)
 type tomatch_type =
-  | IsInd of types * inductive_type * name list
+  | IsInd of types * inductive_type * Name.t list
   | NotInd of constr option * types
 
 type tomatch_status =
-  | Pushed of ((constr * tomatch_type) * int list * name)
-  | Alias of (name * constr * (constr * types))
+  | Pushed of ((constr * tomatch_type) * int list * Name.t)
+  | Alias of (Name.t * constr * (constr * types))
   | NonDepAlias
   | Abstract of int * rel_declaration
 

@@ -14,4 +14,4 @@ open Locus
 val instantiate : int -> Tacinterp.interp_sign * Glob_term.glob_constr ->
   (Id.t * hyp_location_flag, unit) location -> tactic
 
-val let_evar : name -> Term.types -> tactic
+val let_evar : Name.t -> Term.types -> tactic

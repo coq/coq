@@ -109,7 +109,7 @@ let rec constr_expr_eq e1 e2 =
       List.equal binder_expr_eq bl1 bl2 &&
       constr_expr_eq a1 a2
   | CLetIn(_,(_,na1),a1,b1), CLetIn(_,(_,na2),a2,b2) ->
-      name_eq na1 na2 &&
+      Name.equal na1 na2 &&
       constr_expr_eq a1 a2 &&
       constr_expr_eq b1 b2
   | CAppExpl(_,(proj1,r1),al1), CAppExpl(_,(proj2,r2),al2) ->
@@ -132,14 +132,14 @@ let rec constr_expr_eq e1 e2 =
       List.equal case_expr_eq a1 a2 &&
       List.equal branch_expr_eq brl1 brl2
   | CLetTuple (_, n1, (m1, e1), t1, b1), CLetTuple (_, n2, (m2, e2), t2, b2) ->
-    List.equal (eq_located name_eq) n1 n2 &&
-    Option.equal (eq_located name_eq) m1 m2 &&
+    List.equal (eq_located Name.equal) n1 n2 &&
+    Option.equal (eq_located Name.equal) m1 m2 &&
     Option.equal constr_expr_eq e1 e2 &&
     constr_expr_eq t1 t2 &&
     constr_expr_eq b1 b2
   | CIf (_, e1, (n1, r1), t1, f1), CIf (_, e2, (n2, r2), t2, f2) ->
     constr_expr_eq e1 e2 &&
-    Option.equal (eq_located name_eq) n1 n2 &&
+    Option.equal (eq_located Name.equal) n1 n2 &&
     Option.equal constr_expr_eq r1 r2 &&
     constr_expr_eq t1 t2 &&
     constr_expr_eq f1 f2
@@ -176,7 +176,7 @@ and args_eq (a1,e1) (a2,e2) =
 
 and case_expr_eq (e1, (n1, p1)) (e2, (n2, p2)) =
   constr_expr_eq e1 e2 &&
-  Option.equal (eq_located name_eq) n1 n2 &&
+  Option.equal (eq_located Name.equal) n1 n2 &&
   Option.equal cases_pattern_expr_eq p1 p2
 
 and branch_expr_eq (_, p1, e1) (_, p2, e2) =
@@ -185,7 +185,7 @@ and branch_expr_eq (_, p1, e1) (_, p2, e2) =
 
 and binder_expr_eq ((n1, _, e1) : binder_expr) (n2, _, e2) =
   (** Don't care about the [binder_kind] *)
-  List.equal (eq_located name_eq) n1 n2 && constr_expr_eq e1 e2
+  List.equal (eq_located Name.equal) n1 n2 && constr_expr_eq e1 e2
 
 and fix_expr_eq (id1,(j1, r1),bl1,a1,b1) (id2,(j2, r2),bl2,a2,b2) =
   (eq_located Id.equal id1 id2) &&
@@ -210,10 +210,10 @@ and recursion_order_expr_eq r1 r2 = match r1, r2 with
 
 and local_binder_eq l1 l2 = match l1, l2 with
 | LocalRawDef (n1, e1), LocalRawDef (n2, e2) ->
-  eq_located name_eq n1 n2 && constr_expr_eq e1 e2
+  eq_located Name.equal n1 n2 && constr_expr_eq e1 e2
 | LocalRawAssum (n1, _, e1), LocalRawAssum (n2, _, e2) ->
   (** Don't care about the [binder_kind] *)
-  List.equal (eq_located name_eq) n1 n2 && constr_expr_eq e1 e2
+  List.equal (eq_located Name.equal) n1 n2 && constr_expr_eq e1 e2
 | _ -> false
 
 and constr_notation_substitution_eq (e1, el1, bl1) (e2, el2, bl2) =

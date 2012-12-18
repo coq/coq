@@ -543,8 +543,8 @@ let rec merge_app_unsafe c1 c2 shift filter_shift_stable =
    calls of branch 1 with all rec calls of branch 2. *)
 (* TODO: reecrire cette heuristique (jusqu'a merge_types) *)
 let rec merge_rec_hyps shift accrec
-    (ltyp:(Names.name * glob_constr option * glob_constr option) list)
-    filter_shift_stable : (Names.name * glob_constr option * glob_constr option) list =
+    (ltyp:(Name.t * glob_constr option * glob_constr option) list)
+    filter_shift_stable : (Name.t * glob_constr option * glob_constr option) list =
   let mergeonehyp t reldecl =
     match reldecl with
       | (nme,x,Some (GApp(_,i,args) as ind))
@@ -560,7 +560,7 @@ let rec merge_rec_hyps shift accrec
     | e::lt -> e :: merge_rec_hyps shift accrec lt filter_shift_stable
 
 
-let build_suppl_reccall (accrec:(name * glob_constr) list) concl2 shift =
+let build_suppl_reccall (accrec:(Name.t * glob_constr) list) concl2 shift =
   List.map (fun (nm,tp) -> (nm,merge_app_unsafe tp concl2 shift)) accrec
 
 
@@ -584,9 +584,9 @@ let prnt_prod_or_letin nm letbdy typ =
 
 
 let rec merge_types shift accrec1
-    (ltyp1:(name * glob_constr option * glob_constr option) list)
-    (concl1:glob_constr) (ltyp2:(name * glob_constr option * glob_constr option) list) concl2
-    : (name * glob_constr option * glob_constr option) list * glob_constr =
+    (ltyp1:(Name.t * glob_constr option * glob_constr option) list)
+    (concl1:glob_constr) (ltyp2:(Name.t * glob_constr option * glob_constr option) list) concl2
+    : (Name.t * glob_constr option * glob_constr option) list * glob_constr =
   let _ = prstr "MERGE_TYPES\n" in
   let _ = prstr "ltyp 1 : " in
   let _ = List.iter (fun (nm,lbdy,tp) -> prnt_prod_or_letin nm lbdy tp) ltyp1 in
