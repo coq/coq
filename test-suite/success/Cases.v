@@ -1865,3 +1865,9 @@ Type (fun n => match n with
                | Z0 => true
                | _ => false
                end).
+
+(* Check that types with unknown sort, as A below, are not fatal to
+   the pattern-matching compilation *)
+
+Definition transport {A} (P : A->Type) {x y : A} (p : x=y) (u : P x) : P y :=
+  match p with eq_refl => u end.
