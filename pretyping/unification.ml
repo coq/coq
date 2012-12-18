@@ -236,7 +236,7 @@ type unify_flags = {
 }
 
 (* Default flag for unifying a type against a type (e.g. apply) *)
-(* We set all conversion flags *)
+(* We set all conversion flags (no flag should be modified anymore) *)
 let default_unify_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly_in_conv_on_closed_terms = true;
@@ -258,20 +258,12 @@ let default_unify_flags = {
 (* type against a type (e.g. apply) *)
 (* We set only the flags available at the time the new "apply" extends *)
 (* out of "simple apply" *)
-let default_no_delta_unify_flags = {
-  modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly_in_conv_on_closed_terms = true;
+let default_no_delta_unify_flags = { default_unify_flags with
   modulo_delta = empty_transparent_state;
-  modulo_delta_types = full_transparent_state;
   check_applied_meta_types = false;
-  resolve_evars = false;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true;
-  frozen_evars = ExistentialSet.empty;
-  restrict_conv_on_strict_subterms = false;
   modulo_betaiota = false;
-  modulo_eta = true;
-  allow_K_in_toplevel_higher_order_unification = false
 }
 
 (* Default flags for looking for subterms in elimination tactics *)
@@ -279,36 +271,16 @@ let default_no_delta_unify_flags = {
 (* allow_K) because only closed terms are involved in *)
 (* induction/destruct/case/elim and w_unify_to_subterm_list does not *)
 (* call w_unify for induction/destruct/case/elim  (13/6/2011) *)
-let elim_flags = {
-  modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly_in_conv_on_closed_terms = true;
-  modulo_delta = full_transparent_state;
-  modulo_delta_types = full_transparent_state;
-  check_applied_meta_types = true;
-  resolve_evars = false;
-  use_pattern_unification = true;
-  use_meta_bound_pattern_unification = true;
-  frozen_evars = ExistentialSet.empty;
+let elim_flags = { default_unify_flags with
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = false;
-  modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = true
 }
 
-let elim_no_delta_flags = {
-  modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly_in_conv_on_closed_terms = true;
+let elim_no_delta_flags = { elim_flags with
   modulo_delta = empty_transparent_state;
-  modulo_delta_types = full_transparent_state;
   check_applied_meta_types = false;
-  resolve_evars = false;
   use_pattern_unification = false;
-  use_meta_bound_pattern_unification = true;
-  frozen_evars = ExistentialSet.empty;
-  restrict_conv_on_strict_subterms = false; (* ? *)
-  modulo_betaiota = false;
-  modulo_eta = true;
-  allow_K_in_toplevel_higher_order_unification = true
 }
 
 let use_evars_pattern_unification flags =
