@@ -40,16 +40,26 @@ Definition trans_ord o o' :=
 Local Infix "+" := trans_ord.
 
 
-(** ** The requirements of the tactic : [TotalOrder].
+(** ** The tactic requirements : a total order
 
-   [TotalOrder] contains an equivalence [eq],
-   a strict order [lt] total and compatible with [eq], and
-   a larger order [le] synonym for [lt\/eq].
+   We need :
+   - an equivalence [eq],
+   - a strict order [lt] total and compatible with [eq],
+   - a larger order [le] synonym for [lt\/eq].
+
+   This used to be provided here via a [TotalOrder], but
+   for technical reasons related to extraction, we now ask
+   for two sperate parts: relations in a [EqLtLe] + properties in
+   [IsTotalOrder]. Note that [TotalOrder = EqLtLe <+ IsTotalOrder]
 *)
+
+Module Type IsTotalOrder (O:EqLtLe) :=
+ IsEq O <+ IsStrOrder O <+ LeIsLtEq O <+ LtIsTotal O.
 
 (** ** Properties that will be used by the [order] tactic *)
 
-Module OrderFacts(Import O:TotalOrder').
+Module OrderFacts (Import O:EqLtLe)(P:IsTotalOrder O).
+Include EqLtLeNotation O.
 
 (** Reflexivity rules *)
 
@@ -57,7 +67,7 @@ Lemma eq_refl : forall x, x==x.
 Proof. reflexivity. Qed.
 
 Lemma le_refl : forall x, x<=x.
-Proof. intros; rewrite le_lteq; right; reflexivity. Qed.
+Proof. intros; rewrite P.le_lteq; right; reflexivity. Qed.
 
 Lemma lt_irrefl : forall x, ~ x<x.
 Proof. intros; apply StrictOrder_Irreflexive. Qed.
@@ -69,7 +79,7 @@ Proof. auto with *. Qed.
 
 Lemma le_antisym : forall x y, x<=y -> y<=x -> x==y.
 Proof.
- intros x y; rewrite 2 le_lteq. intuition.
+ intros x y; rewrite 2 P.le_lteq. intuition.
  elim (StrictOrder_Irreflexive x); transitivity y; auto.
 Qed.
 
@@ -90,7 +100,7 @@ Local Notation "#" := interp_ord.
 
 Lemma trans : forall o o' x y z, #o x y -> #o' y z -> #(o+o') x z.
 Proof.
-destruct o, o'; simpl; intros x y z; rewrite ?le_lteq; intuition;
+destruct o, o'; simpl; intros x y z; rewrite ?P.le_lteq; intuition;
  subst_eqns; eauto using (StrictOrder_Transitive x y z) with *.
 Qed.
 
@@ -114,19 +124,19 @@ Proof. eauto using eq_trans, eq_sym. Qed.
 
 Lemma not_neq_eq : forall x y, ~~x==y -> x==y.
 Proof.
-intros x y H. destruct (lt_total x y) as [H'|[H'|H']]; auto;
+intros x y H. destruct (P.lt_total x y) as [H'|[H'|H']]; auto;
  destruct H; intro H; rewrite H in H'; eapply lt_irrefl; eauto.
 Qed.
 
 Lemma not_ge_lt : forall x y, ~y<=x -> x<y.
 Proof.
-intros x y H. destruct (lt_total x y); auto.
-destruct H. rewrite le_lteq. intuition.
+intros x y H. destruct (P.lt_total x y); auto.
+destruct H. rewrite P.le_lteq. intuition.
 Qed.
 
 Lemma not_gt_le : forall x y, ~y<x -> x<=y.
 Proof.
-intros x y H. rewrite le_lteq. generalize (lt_total x y); intuition.
+intros x y H. rewrite P.le_lteq. generalize (P.lt_total x y); intuition.
 Qed.
 
 Lemma le_neq_lt : forall x y, x<=y -> ~x==y -> x<y.
@@ -138,9 +148,9 @@ End OrderFacts.
 
 (** ** [MakeOrderTac] : The functor providing the order tactic. *)
 
-Module MakeOrderTac (Import O:TotalOrder').
-
-Include OrderFacts O.
+Module MakeOrderTac (Import O:EqLtLe)(P:IsTotalOrder O).
+Include OrderFacts O P.
+Include EqLtLeNotation O.
 
 (** order_eq : replace x by y in all (in)equations hyps thanks
    to equality EQ (where eq has been hidden in order to avoid
@@ -257,37 +267,10 @@ End MakeOrderTac.
 
 Module OTF_to_OrderTac (OTF:OrderedTypeFull).
  Module TO := OTF_to_TotalOrder OTF.
- Include !MakeOrderTac TO.
+ Include !MakeOrderTac OTF TO.
 End OTF_to_OrderTac.
 
 Module OT_to_OrderTac (OT:OrderedType).
  Module OTF := OT_to_Full OT.
  Include !OTF_to_OrderTac OTF.
 End OT_to_OrderTac.
-
-Module TotalOrderRev (O:TotalOrder) <: TotalOrder.
-
-Definition t := O.t.
-Definition eq := O.eq.
-Definition lt := flip O.lt.
-Definition le := flip O.le.
-Include EqLtLeNotation.
-
-(* No Instance syntax to avoid saturating the Equivalence tables *)
-Definition eq_equiv := O.eq_equiv.
-
-Instance lt_strorder: StrictOrder lt.
-Proof. unfold lt; auto with *. Qed.
-Instance lt_compat : Proper (eq==>eq==>iff) lt.
-Proof. unfold lt; auto with *. Qed.
-
-Lemma le_lteq : forall x y, x<=y <-> x<y \/ x==y.
-Proof. intros; unfold le, lt, flip. rewrite O.le_lteq; intuition. Qed.
-
-Lemma lt_total : forall x y, x<y \/ x==y \/ y<x.
-Proof.
- intros x y; unfold lt, eq, flip.
- generalize (O.lt_total x y); intuition.
-Qed.
-
-End TotalOrderRev.

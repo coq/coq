@@ -1486,6 +1486,8 @@ Qed.
 
 Include UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
+Ltac order := Private_Tac.order.
+
 (** Minimum, maximum and constant one *)
 
 Lemma max_1_l n : max 1 n = n.

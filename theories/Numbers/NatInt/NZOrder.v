@@ -147,18 +147,14 @@ Definition lt_total := lt_trichotomy.
 Definition le_lteq := lt_eq_cases.
 
 Module Private_OrderTac.
-Module Elts <: TotalOrder.
- Definition t := t.
- Definition eq := eq.
- Definition lt := lt.
- Definition le := le.
+Module IsTotal.
  Definition eq_equiv := eq_equiv.
  Definition lt_strorder := lt_strorder.
  Definition lt_compat := lt_compat.
  Definition lt_total := lt_total.
  Definition le_lteq := le_lteq.
-End Elts.
-Module Tac := !MakeOrderTac Elts.
+End IsTotal.
+Module Tac := !MakeOrderTac NZ IsTotal.
 End Private_OrderTac.
 Ltac order := Private_OrderTac.Tac.order.
 

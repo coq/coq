@@ -42,6 +42,7 @@ Module BigQ <: QType <: OrderedTypeFull <: TotalOrder.
  Bind Scope bigQ_scope with t t_.
  Include !QProperties <+ HasEqBool2Dec
   <+ !MinMaxLogicalProperties <+ !MinMaxDecProperties.
+ Ltac order := Private_Tac.order.
 End BigQ.
 
 (** Notations about [BigQ] *)
@@ -144,8 +145,7 @@ End TestField.
 
 (** [BigQ] can also benefit from an "order" tactic *)
 
-Module BigQ_Order := !OrdersTac.MakeOrderTac BigQ.
-Ltac bigQ_order := BigQ_Order.order.
+Ltac bigQ_order := BigQ.order.
 
 Section TestOrder.
 Let test : forall x y : bigQ, x<=y -> y<=x -> x==y.
