@@ -25,9 +25,6 @@ Module Type Int.
   Parameter t : Set.
   Bind Scope Int_scope with t.
 
-  (** For compatibility *)
-  Definition int := t.
-
   Parameter i2z : t -> Z.
 
   Parameter _0 : t.
@@ -362,7 +359,6 @@ End MoreInt.
 Module Z_as_Int <: Int.
   Local Open Scope Z_scope.
   Definition t := Z.
-  Definition int := t.
   Definition _0 := 0.
   Definition _1 := 1.
   Definition _2 := 2.
@@ -375,7 +371,7 @@ Module Z_as_Int <: Int.
   Definition gt_le_dec := Z_gt_le_dec.
   Definition ge_lt_dec := Z_ge_lt_dec.
   Definition eq_dec := Z.eq_dec.
-  Definition i2z : int -> Z := fun n => n.
+  Definition i2z : t -> Z := fun n => n.
   Lemma i2z_eq : forall n p, i2z n=i2z p -> n = p. Proof. auto. Qed.
   Lemma i2z_0 : i2z _0 = 0.  Proof. auto. Qed.
   Lemma i2z_1 : i2z _1 = 1.  Proof. auto. Qed.

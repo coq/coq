@@ -14,14 +14,14 @@ Delimit Scope Int_scope with I.
 
 Module Type Int.
 
-  Parameter int : Set.
+  Parameter t : Set.
 
-  Parameter zero : int.
-  Parameter one : int.
-  Parameter plus : int -> int -> int.
-  Parameter opp : int -> int.
-  Parameter minus : int -> int -> int.
-  Parameter mult : int -> int -> int.
+  Parameter zero : t.
+  Parameter one : t.
+  Parameter plus : t -> t -> t.
+  Parameter opp : t -> t.
+  Parameter minus : t -> t -> t.
+  Parameter mult : t -> t -> t.
 
   Notation "0" := zero : Int_scope.
   Notation "1" := one : Int_scope.
@@ -33,14 +33,14 @@ Module Type Int.
   Open Scope Int_scope.
 
   (* First, int is a ring: *)
-  Axiom ring : @ring_theory int 0 1 plus mult minus opp (@eq int).
+  Axiom ring : @ring_theory t 0 1 plus mult minus opp (@eq t).
 
   (* int should also be ordered: *)
 
-  Parameter le : int -> int -> Prop.
-  Parameter lt : int -> int -> Prop.
-  Parameter ge : int -> int -> Prop.
-  Parameter gt : int -> int -> Prop.
+  Parameter le : t -> t -> Prop.
+  Parameter lt : t -> t -> Prop.
+  Parameter ge : t -> t -> Prop.
+  Parameter gt : t -> t -> Prop.
   Notation "x <= y" := (le x y): Int_scope.
   Notation "x < y" := (lt x y) : Int_scope.
   Notation "x >= y" := (ge x y) : Int_scope.
@@ -61,7 +61,7 @@ Module Type Int.
    forall i j k, 0 < k -> i < j -> k*i<k*j.
 
   (* We should have a way to decide the equality and the order*)
-  Parameter compare : int -> int -> comparison.
+  Parameter compare : t -> t -> comparison.
   Infix "?=" := compare (at level 70, no associativity) : Int_scope.
   Axiom compare_Eq : forall i j, compare i j = Eq <-> i=j.
   Axiom compare_Lt : forall i j, compare i j = Lt <-> i<j.
@@ -83,7 +83,7 @@ Module Z_as_Int <: Int.
 
   Open Scope Z_scope.
 
-  Definition int := Z.
+  Definition t := Z.
   Definition zero := 0.
   Definition one := 1.
   Definition plus := Z.add.
@@ -91,7 +91,7 @@ Module Z_as_Int <: Int.
   Definition minus := Z.sub.
   Definition mult := Z.mul.
 
-  Lemma ring : @ring_theory int zero one plus mult minus opp (@eq int).
+  Lemma ring : @ring_theory t zero one plus mult minus opp (@eq t).
   Proof.
   constructor.
   exact Z.add_0_l.
@@ -138,6 +138,7 @@ End Z_as_Int.
 
 Module IntProperties (I:Int).
  Import I.
+ Local Notation int := I.t.
 
  (* Primo, some consequences of being a ring theory... *)
 
@@ -827,6 +828,7 @@ Module IntOmega (I:Int).
 Import I.
 Module IP:=IntProperties(I).
 Import IP.
+Local Notation int := I.t.
 
 (* \subsubsection{Definition of reified integer expressions}
    Terms are either:
@@ -1037,20 +1039,16 @@ Close Scope romega_scope.
 
 Theorem eq_term_true : forall t1 t2 : term, eq_term t1 t2 = true -> t1 = t2.
 Proof.
- simple induction t1; intros until t2; case t2; simpl in *;
- try (intros; discriminate; fail);
- [ intros; elim beq_true with (1 := H); trivial
- | intros t21 t22 H3; elim andb_prop with (1 := H3); intros H4 H5;
-    elim H with (1 := H4); elim H0 with (1 := H5);
-    trivial
- | intros t21 t22 H3; elim andb_prop with (1 := H3); intros H4 H5;
-    elim H with (1 := H4); elim H0 with (1 := H5);
-    trivial
- | intros t21 t22 H3; elim andb_prop with (1 := H3); intros H4 H5;
-    elim H with (1 := H4); elim H0 with (1 := H5);
-    trivial
- | intros t21 H3; elim H with (1 := H3); trivial
- | intros; elim beq_nat_true with (1 := H); trivial ].
+ induction t1; destruct t2; simpl in *; try discriminate;
+ (rewrite andb_true_iff; intros (H1,H2)) || intros H; f_equal;
+ auto using beq_true, beq_nat_true.
+Qed.
+
+Theorem eq_term_refl : forall t0 : term, eq_term t0 t0 = true.
+Proof.
+ induction t0; simpl in *; try (apply andb_true_iff; split); trivial.
+ - now apply beq_iff.
+ - now apply beq_nat_true_iff.
 Qed.
 
 Ltac trivial_case := unfold not; intros; discriminate.
@@ -1058,31 +1056,7 @@ Ltac trivial_case := unfold not; intros; discriminate.
 Theorem eq_term_false :
  forall t1 t2 : term, eq_term t1 t2 = false -> t1 <> t2.
 Proof.
- simple induction t1;
- [ intros z t2; case t2; try trivial_case; simpl; unfold not;
-    intros; elim beq_false with (1 := H); simplify_eq H0;
-    auto
- | intros t11 H1 t12 H2 t2; case t2; try trivial_case; simpl;
-    intros t21 t22 H3; unfold not; intro H4;
-    elim andb_false_elim with (1 := H3); intros H5;
-    [ elim H1 with (1 := H5); simplify_eq H4; auto
-    | elim H2 with (1 := H5); simplify_eq H4; auto ]
- | intros t11 H1 t12 H2 t2; case t2; try trivial_case; simpl;
-    intros t21 t22 H3; unfold not; intro H4;
-    elim andb_false_elim with (1 := H3); intros H5;
-    [ elim H1 with (1 := H5); simplify_eq H4; auto
-    | elim H2 with (1 := H5); simplify_eq H4; auto ]
- | intros t11 H1 t12 H2 t2; case t2; try trivial_case; simpl;
-    intros t21 t22 H3; unfold not; intro H4;
-    elim andb_false_elim with (1 := H3); intros H5;
-    [ elim H1 with (1 := H5); simplify_eq H4; auto
-    | elim H2 with (1 := H5); simplify_eq H4; auto ]
- | intros t11 H1 t2; case t2; try trivial_case; simpl; intros t21 H3;
-    unfold not; intro H4; elim H1 with (1 := H3);
-    simplify_eq H4; auto
- | intros n t2; case t2; try trivial_case; simpl; unfold not;
-    intros; elim beq_nat_false with (1 := H); simplify_eq H0;
-    auto ].
+ intros t1 t2 H E. subst t2. now rewrite eq_term_refl in H.
 Qed.
 
 (* \subsubsection{Tactiques pour éliminer ces tests}
@@ -1919,9 +1893,9 @@ Fixpoint fusion (trace : list t_fusion) (t : term) {struct trace} : term :=
       end
   end.
 
-Theorem fusion_stable : forall t : list t_fusion, term_stable (fusion t).
+Theorem fusion_stable : forall trace : list t_fusion, term_stable (fusion trace).
 Proof.
- simple induction t; simpl;
+ simple induction trace; simpl;
  [ exact reduce_stable
  | intros stp l H; case stp;
     [ apply compose_term_stable;
@@ -2093,11 +2067,8 @@ Definition constant_not_nul (i : nat) (h : hyps) :=
 Theorem constant_not_nul_valid :
  forall i : nat, valid_hyps (constant_not_nul i).
 Proof.
- unfold valid_hyps, constant_not_nul; intros;
- generalize (nth_valid ep e i lp); Simplify; simpl.
-
- elim_beq i1 i0; auto; simpl; intros H1 H2;
- elim H1; symmetry ; auto.
+ unfold valid_hyps, constant_not_nul; intros i ep e lp H.
+ generalize (nth_valid ep e i lp H); Simplify.
 Qed.
 
 (* \paragraph{[O_CONSTANT_NEG]} *)
@@ -2131,12 +2102,12 @@ Definition not_exact_divide (k1 k2 : int) (body : term)
   end.
 
 Theorem not_exact_divide_valid :
- forall (k1 k2 : int) (body : term) (t i : nat),
- valid_hyps (not_exact_divide k1 k2 body t i).
+ forall (k1 k2 : int) (body : term) (t0 i : nat),
+ valid_hyps (not_exact_divide k1 k2 body t0 i).
 Proof.
  unfold valid_hyps, not_exact_divide; intros;
  generalize (nth_valid ep e i lp); Simplify.
- rewrite (scalar_norm_add_stable t e), <-H1.
+ rewrite (scalar_norm_add_stable t0 e), <-H1.
  do 2 rewrite <- scalar_norm_add_stable; simpl in *; intros.
  absurd (interp_term e body * k1 + k2 = 0);
  [ now apply OMEGA4 | symmetry; auto ].
@@ -2509,9 +2480,9 @@ Fixpoint execute_omega (t : t_omega) (l : hyps) {struct t} : lhyps :=
       execute_omega cont (apply_oper_2 i1 i2 (state m s) l)
   end.
 
-Theorem omega_valid : forall t : t_omega, valid_list_hyps (execute_omega t).
+Theorem omega_valid : forall tr : t_omega, valid_list_hyps (execute_omega tr).
 Proof.
- simple induction t; simpl;
+ simple induction tr; simpl;
  [ unfold valid_list_hyps; simpl; intros; left;
     apply (constant_not_nul_valid n ep e lp H)
  | unfold valid_list_hyps; simpl; intros; left;
@@ -2522,7 +2493,7 @@ Proof.
      (apply_oper_1_valid m (divide_and_approx k1 k2 body n)
         (divide_and_approx_valid k1 k2 body n) ep e lp H)
  | unfold valid_list_hyps; simpl; intros; left;
-    apply (not_exact_divide_valid i i0 t0 n n0 ep e lp H)
+    apply (not_exact_divide_valid _ _ _ _ _ ep e lp H)
  | unfold valid_list_hyps, valid_hyps;
     intros k body n t' Ht' m ep e lp H; apply Ht';
     apply
@@ -2618,10 +2589,10 @@ Qed.
 (* \subsubsection{Exécution de la trace} *)
 
 Theorem execute_goal :
- forall (t : t_omega) (ep : list Prop) (env : list int) (l : hyps),
- interp_list_goal ep env (execute_omega t l) -> interp_goal ep env l.
+ forall (tr : t_omega) (ep : list Prop) (env : list int) (l : hyps),
+ interp_list_goal ep env (execute_omega tr l) -> interp_goal ep env l.
 Proof.
- intros; apply (goal_valid (execute_omega t) (omega_valid t) ep env l H).
+ intros; apply (goal_valid (execute_omega tr) (omega_valid tr) ep env l H).
 Qed.
 
 
@@ -2936,13 +2907,13 @@ Proof.
     | intro; apply ne_left_2; assumption ]
  | case p; simpl; intros; auto; generalize H; elim (t_rewrite_stable s);
     simpl; intro H1;
-    [ rewrite (plus_0_r_reverse (interp_term e t0)); rewrite H1;
+    [ rewrite (plus_0_r_reverse (interp_term e t1)); rewrite H1;
        rewrite plus_permute; rewrite plus_opp_r;
        rewrite plus_0_r; trivial
-    | apply (fun a b => plus_le_reg_r a b (- interp_term e t));
+    | apply (fun a b => plus_le_reg_r a b (- interp_term e t0));
        rewrite plus_opp_r; assumption
     | rewrite ge_le_iff;
-       apply (fun a b => plus_le_reg_r a b (- interp_term e t0));
+       apply (fun a b => plus_le_reg_r a b (- interp_term e t1));
        rewrite plus_opp_r; assumption
     | rewrite gt_lt_iff; apply lt_left_inv; assumption
     | apply lt_left_inv; assumption
