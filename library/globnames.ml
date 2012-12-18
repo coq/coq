@@ -146,8 +146,8 @@ let decode_mind kn =
   let rec dir_of_mp = function
     | MPfile dir -> Dir_path.repr dir
     | MPbound mbid ->
-	let _,_,dp = repr_mbid mbid in
-	let id = id_of_mbid mbid in
+	let _,_,dp = MBId.repr mbid in
+	let id = MBId.to_id mbid in
 	  id::(Dir_path.repr dp)
     | MPdot(mp,l) -> (Label.to_id l)::(dir_of_mp mp)
   in

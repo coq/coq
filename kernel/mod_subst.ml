@@ -51,8 +51,8 @@ let empty_delta_resolver = Deltamap.empty
 
 module MBImap = Map.Make
   (struct
-    type t = mod_bound_id
-    let compare = mod_bound_id_ord
+    type t = MBId.t
+    let compare = MBId.compare
    end)
 
 module Umap = struct
@@ -94,7 +94,7 @@ let debug_string_of_delta resolve =
 let list_contents sub =
   let one_pair (mp,reso) = (string_of_mp mp,debug_string_of_delta reso) in
   let mp_one_pair mp0 p l = (string_of_mp mp0, one_pair p)::l in
-  let mbi_one_pair mbi p l = (debug_string_of_mbid mbi, one_pair p)::l in
+  let mbi_one_pair mbi p l = (MBId.debug_to_string mbi, one_pair p)::l in
   Umap.fold mp_one_pair mbi_one_pair sub []
 
 let debug_string_of_subst sub =
@@ -524,13 +524,13 @@ let join subst1 subst2 =
   Umap.join subst2 subst
 
 let rec occur_in_path mbi = function
-  | MPbound bid' -> mod_bound_id_eq mbi bid'
+  | MPbound bid' -> MBId.equal mbi bid'
   | MPdot (mp1,_) -> occur_in_path mbi mp1
   | _ -> false
 
 let occur_mbid mbi sub =
   let check_one mbi' (mp,_) =
-    if mod_bound_id_eq mbi mbi' || occur_in_path mbi mp then raise Exit
+    if MBId.equal mbi mbi' || occur_in_path mbi mp then raise Exit
   in
   try
     Umap.iter_mbi check_one sub;

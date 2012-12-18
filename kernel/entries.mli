@@ -68,7 +68,7 @@ type constant_entry =
 
 type module_struct_entry =
     MSEident of module_path
-  | MSEfunctor of mod_bound_id * module_struct_entry * module_struct_entry
+  | MSEfunctor of MBId.t * module_struct_entry * module_struct_entry
   | MSEwith of module_struct_entry * with_declaration
   | MSEapply of module_struct_entry * module_struct_entry
 

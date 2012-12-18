@@ -74,23 +74,6 @@ struct
 
 end
 
-(** Backward compatibility for [Id.t] *)
-
-type identifier = Id.t
-
-let id_eq = Id.equal
-let id_ord = Id.compare
-let check_ident_soft = Id.check_soft
-let check_ident = Id.check
-let string_of_id = Id.to_string
-let id_of_string = Id.of_string
-
-module Idset = Id.Set
-module Idmap = Id.Map
-module Idpred = Id.Pred
-
-(** / End of backward compatibility *)
-
 (** {6 Various types based on identifiers } *)
 
 type name = Name of Id.t | Anonymous
@@ -103,7 +86,7 @@ let name_eq n1 n2 = match n1, n2 with
 
 type module_ident = Id.t
 
-module ModIdmap = Idmap
+module ModIdmap = Id.Map
 
 (** {6 Directory paths = section names paths } *)
 
@@ -164,58 +147,61 @@ struct
 
 end
 
-(** Compatibility layer for [Dir_path] *)
-
-type dir_path = Dir_path.t
-let dir_path_ord = Dir_path.compare
-let dir_path_eq = Dir_path.equal
-let make_dirpath = Dir_path.make
-let repr_dirpath = Dir_path.repr
-let empty_dirpath = Dir_path.empty
-let is_empty_dirpath = Dir_path.is_empty
-let string_of_dirpath = Dir_path.to_string
-let initial_dir = Dir_path.initial
-
-(** / End of compatibility layer for [Dir_path] *)
-
 (** {6 Unique names for bound modules } *)
 
-let u_number = ref 0
-type uniq_ident = int * Id.t * Dir_path.t
-let make_uid dir s = incr u_number;(!u_number,s,dir)
- let debug_string_of_uid (i,s,p) =
- "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
-let string_of_uid (i,s,p) =
-  string_of_dirpath p ^"."^s
+module MBId =
+struct
+  type t = int * Id.t * Dir_path.t
 
-let uniq_ident_ord (x : uniq_ident) (y : uniq_ident) =
-  if x == y then 0
-  else match (x, y) with
-  | (nl, idl, dpl), (nr, idr, dpr) ->
-    let ans = Int.compare nl nr in
-    if not (Int.equal ans 0) then ans
-    else
-      let ans = Id.compare idl idr in
+  let gen =
+    let seed = ref 0 in fun () ->
+      let ans = !seed in
+      let () = incr seed in
+      ans
+
+  let make dir s = (gen(), s, dir)
+
+  let repr mbid = mbid
+
+  let to_string (i, s, p) =
+    Dir_path.to_string p ^ "." ^ s
+
+  let debug_to_string (i, s, p) =
+    "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
+
+  let compare (x : t) (y : t) =
+    if x == y then 0
+    else match (x, y) with
+    | (nl, idl, dpl), (nr, idr, dpr) ->
+      let ans = Int.compare nl nr in
       if not (Int.equal ans 0) then ans
       else
-        Dir_path.compare dpl dpr
+        let ans = Id.compare idl idr in
+        if not (Int.equal ans 0) then ans
+        else
+          Dir_path.compare dpl dpr
 
-module UOrdered =
-struct
-  type t = uniq_ident
-  let compare = uniq_ident_ord
+  let equal x y = Int.equal (compare x y) 0
+
+  let to_id (_, s, _) = s
+
+  module Self_Hashcons =
+    struct
+      type _t = t
+      type t = _t
+      type u = (Id.t -> Id.t) * (Dir_path.t -> Dir_path.t)
+      let hashcons (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
+      let equal ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
+        (x == y) ||
+        (Int.equal n1 n2 && s1 == s2 && dir1 == dir2)
+      let hash = Hashtbl.hash
+    end
+
+  module HashMBId = Hashcons.Make(Self_Hashcons)
+
+  let hcons = Hashcons.simple_hcons HashMBId.generate (Id.hcons, Dir_path.hcons)
+
 end
-
-module Umap = Map.Make(UOrdered)
-
-type mod_bound_id = uniq_ident
-let mod_bound_id_ord = uniq_ident_ord
-let mod_bound_id_eq mbl mbr = Int.equal (uniq_ident_ord mbl mbr) 0
-let make_mbid = make_uid
-let repr_mbid (n, id, dp) = (n, id, dp)
-let debug_string_of_mbid = debug_string_of_uid
-let string_of_mbid = string_of_uid
-let id_of_mbid (_,s,_) = s
 
 (** {6 Names of structure elements } *)
 
@@ -227,24 +213,11 @@ struct
   let to_id id = id
 end
 
-(** Compatibility layer for [Label] *)
-
-type label = Id.t
-
-let mk_label = Label.make
-let string_of_label = Label.to_string
-let pr_label = Label.print
-let id_of_label = Label.to_id
-let label_of_id = Label.of_id
-let eq_label = Label.equal
-
-(** / End of compatibility layer for [Label] *)
-
 (** {6 The module part of the kernel name } *)
 
 type module_path =
   | MPfile of Dir_path.t
-  | MPbound of mod_bound_id
+  | MPbound of MBId.t
   | MPdot of module_path * Label.t
 
 let rec check_bound_mp = function
@@ -253,8 +226,8 @@ let rec check_bound_mp = function
   | _ -> false
 
 let rec string_of_mp = function
-  | MPfile sl -> string_of_dirpath sl
-  | MPbound uid -> string_of_uid uid
+  | MPfile sl -> Dir_path.to_string sl
+  | MPbound uid -> MBId.to_string uid
   | MPdot (mp,l) -> string_of_mp mp ^ "." ^ Label.to_string l
 
 (** we compare labels first if both are MPdots *)
@@ -264,7 +237,7 @@ let rec mp_ord mp1 mp2 =
   | MPfile p1, MPfile p2 ->
     Dir_path.compare p1 p2
   | MPbound id1, MPbound id2 ->
-    uniq_ident_ord id1 id2
+    MBId.compare id1 id2
   | MPdot (mp1, l1), MPdot (mp2, l2) ->
       let c = String.compare l1 l2 in
         if not (Int.equal c 0) then c
@@ -302,7 +275,7 @@ let label kn =
 let string_of_kn (mp,dir,l) =
   let str_dir = match dir with
   | [] -> "."
-  | _ -> "#" ^ string_of_dirpath dir ^ "#"
+  | _ -> "#" ^ Dir_path.to_string dir ^ "#"
   in
   string_of_mp mp ^ str_dir ^ Label.to_string l
 
@@ -491,21 +464,10 @@ module Hname = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-module Huniqid = Hashcons.Make(
-  struct
-    type t = uniq_ident
-    type u = (Id.t -> Id.t) * (Dir_path.t -> Dir_path.t)
-    let hashcons (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
-    let equal ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
-      (x == y) ||
-      (Int.equal n1 n2 && s1 == s2 && dir1 == dir2)
-    let hash = Hashtbl.hash
-  end)
-
 module Hmod = Hashcons.Make(
   struct
     type t = module_path
-    type u = (Dir_path.t -> Dir_path.t) * (uniq_ident -> uniq_ident) *
+    type u = (Dir_path.t -> Dir_path.t) * (MBId.t -> MBId.t) *
 	(string -> string)
     let rec hashcons (hdir,huniqid,hstr as hfuns) = function
       | MPfile dir -> MPfile (hdir dir)
@@ -565,9 +527,8 @@ module Hconstruct = Hashcons.Make(
   end)
 
 let hcons_name = Hashcons.simple_hcons Hname.generate Id.hcons
-let hcons_uid = Hashcons.simple_hcons Huniqid.generate (Id.hcons,Dir_path.hcons)
 let hcons_mp =
-  Hashcons.simple_hcons Hmod.generate (Dir_path.hcons,hcons_uid,String.hcons)
+  Hashcons.simple_hcons Hmod.generate (Dir_path.hcons,MBId.hcons,String.hcons)
 let hcons_kn = Hashcons.simple_hcons Hkn.generate (hcons_mp,Dir_path.hcons,String.hcons)
 let hcons_con = Hashcons.simple_hcons Hcn.generate hcons_kn
 let hcons_mind = Hashcons.simple_hcons Hcn.generate hcons_kn
@@ -577,12 +538,12 @@ let hcons_construct = Hashcons.simple_hcons Hconstruct.generate hcons_ind
 
 (*******)
 
-type transparent_state = Idpred.t * Cpred.t
+type transparent_state = Id.Pred.t * Cpred.t
 
-let empty_transparent_state = (Idpred.empty, Cpred.empty)
-let full_transparent_state = (Idpred.full, Cpred.full)
-let var_full_transparent_state = (Idpred.full, Cpred.empty)
-let cst_full_transparent_state = (Idpred.empty, Cpred.full)
+let empty_transparent_state = (Id.Pred.empty, Cpred.empty)
+let full_transparent_state = (Id.Pred.full, Cpred.full)
+let var_full_transparent_state = (Id.Pred.full, Cpred.empty)
+let cst_full_transparent_state = (Id.Pred.empty, Cpred.full)
 
 type 'a tableKey =
   | ConstKey of constant
@@ -611,3 +572,62 @@ let eq_id_key ik1 ik2 =
 let eq_con_chk (kn1,_) (kn2,_) = Int.equal (kn_ord kn1 kn2) 0
 let eq_mind_chk (kn1,_) (kn2,_) = Int.equal (kn_ord kn1 kn2) 0
 let eq_ind_chk (kn1,i1) (kn2,i2) = Int.equal i1 i2 && eq_mind_chk kn1 kn2
+
+(** Compatibility layers *)
+
+(** Backward compatibility for [Id.t] *)
+
+type identifier = Id.t
+
+let id_eq = Id.equal
+let id_ord = Id.compare
+let check_ident_soft = Id.check_soft
+let check_ident = Id.check
+let string_of_id = Id.to_string
+let id_of_string = Id.of_string
+
+module Idset = Id.Set
+module Idmap = Id.Map
+module Idpred = Id.Pred
+
+(** / End of backward compatibility *)
+
+(** Compatibility layer for [Dir_path] *)
+
+type dir_path = Dir_path.t
+let dir_path_ord = Dir_path.compare
+let dir_path_eq = Dir_path.equal
+let make_dirpath = Dir_path.make
+let repr_dirpath = Dir_path.repr
+let empty_dirpath = Dir_path.empty
+let is_empty_dirpath = Dir_path.is_empty
+let string_of_dirpath = Dir_path.to_string
+let initial_dir = Dir_path.initial
+
+(** / End of compatibility layer for [Dir_path] *)
+
+(** Compatibility layer for [MBId] *)
+
+type mod_bound_id = MBId.t
+let mod_bound_id_ord = MBId.compare
+let mod_bound_id_eq = MBId.equal
+let make_mbid = MBId.make
+let repr_mbid = MBId.repr
+let debug_string_of_mbid = MBId.debug_to_string
+let string_of_mbid = MBId.to_string
+let id_of_mbid = MBId.to_id
+
+(** / End of compatibility layer for [MBId] *)
+
+(** Compatibility layer for [Label] *)
+
+type label = Id.t
+
+let mk_label = Label.make
+let string_of_label = Label.to_string
+let pr_label = Label.print
+let id_of_label = Label.to_id
+let label_of_id = Label.of_id
+let eq_label = Label.equal
+
+(** / End of compatibility layer for [Label] *)

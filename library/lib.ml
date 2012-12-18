@@ -658,13 +658,13 @@ let rec split_mp mp =
     | Names.MPdot (prfx, lbl) ->
 	let mprec, dprec = split_mp prfx in
 	  mprec, Names.Dir_path.make (Names.Id.of_string (Names.Label.to_string lbl) :: (Names.Dir_path.repr dprec))
-    | Names.MPbound mbid -> let (_, id, dp) = Names.repr_mbid mbid in  library_dp(), Names.Dir_path.make [id]
+    | Names.MPbound mbid -> let (_, id, dp) = Names.MBId.repr mbid in  library_dp(), Names.Dir_path.make [id]
 
 let split_modpath mp =
   let rec aux = function
     | Names.MPfile dp -> dp, []
     | Names.MPbound mbid ->
-	library_dp (), [Names.id_of_mbid mbid]
+	library_dp (), [Names.MBId.to_id mbid]
     | Names.MPdot (mp,l) -> let (mp', lab) = aux mp in
 			      (mp', Names.Label.to_id l :: lab)
   in

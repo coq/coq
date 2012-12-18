@@ -62,13 +62,13 @@ val is_empty_subst : substitution -> bool
 (** add_* add [arg2/arg1]\{arg3\} to the substitution with no
    sequential composition  *)
 val add_mbid :
-  mod_bound_id -> module_path -> delta_resolver  -> substitution -> substitution
+  MBId.t -> module_path -> delta_resolver  -> substitution -> substitution
 val add_mp :
   module_path -> module_path -> delta_resolver -> substitution -> substitution
 
 (** map_* create a new substitution [arg2/arg1]\{arg3\} *)
 val map_mbid :
-  mod_bound_id -> module_path -> delta_resolver -> substitution
+  MBId.t -> module_path -> delta_resolver -> substitution
 val map_mp :
   module_path -> module_path -> delta_resolver -> substitution
 
@@ -136,7 +136,7 @@ val subst_mps : substitution -> constr -> constr
 (** [occur_*id id sub] returns true iff [id] occurs in [sub]
    on either side *)
 
-val occur_mbid : mod_bound_id -> substitution -> bool
+val occur_mbid : MBId.t -> substitution -> bool
 
 (** [repr_substituted r] dumps the representation of a substituted:
     - [None, a] when r is a value

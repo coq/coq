@@ -79,7 +79,7 @@ val end_module :
       -> safe_environment -> module_path * delta_resolver * safe_environment 
 
 val add_module_parameter :
-  mod_bound_id -> module_struct_entry -> inline -> safe_environment -> delta_resolver * safe_environment
+  MBId.t -> module_struct_entry -> inline -> safe_environment -> delta_resolver * safe_environment
 
 val start_modtype :
   Label.t -> safe_environment -> module_path * safe_environment

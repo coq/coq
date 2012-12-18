@@ -185,7 +185,7 @@ and structure_body = (label * structure_field_body) list
 
 and struct_expr_body =
   | SEBident of module_path
-  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body
+  | SEBfunctor of MBId.t * module_type_body * struct_expr_body
   | SEBapply of struct_expr_body * struct_expr_body * Univ.constraints
   | SEBstruct of structure_body
   | SEBwith of struct_expr_body * with_declaration_body
@@ -215,9 +215,9 @@ and module_type_body =
 type 'a subst_fun = substitution -> 'a -> 'a
 
 val empty_subst : substitution
-val add_mbid : mod_bound_id -> module_path -> substitution -> substitution
+val add_mbid : MBId.t -> module_path -> substitution -> substitution
 val add_mp   : module_path -> module_path -> substitution -> substitution
-val map_mbid : mod_bound_id -> module_path -> substitution
+val map_mbid : MBId.t -> module_path -> substitution
 val map_mp   : module_path -> module_path -> substitution
 val mp_in_delta : module_path -> delta_resolver -> bool
 val mind_of_delta : delta_resolver -> mutual_inductive -> mutual_inductive

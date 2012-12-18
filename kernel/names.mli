@@ -132,27 +132,43 @@ sig
 
 end
 
-(** {6 Unique names for bound modules } *)
+(** {6 Unique names for bound modules} *)
 
-type mod_bound_id
+module MBId :
+sig
+  type t
+  (** Unique names for bound modules. Each call to [make] constructs a fresh
+      unique identifier. *)
 
-val mod_bound_id_ord : mod_bound_id -> mod_bound_id -> int
-val mod_bound_id_eq : mod_bound_id -> mod_bound_id -> bool
+  val equal : t -> t -> bool
+  (** Equality over unique bound names. *)
 
-(** The first argument is a file name - to prevent conflict between
-   different files *)
+  val compare : t -> t -> int
+  (** Comparison over unique bound names. *)
 
-val make_mbid : Dir_path.t -> Id.t -> mod_bound_id
-val repr_mbid : mod_bound_id -> int * Id.t * Dir_path.t
-val id_of_mbid : mod_bound_id -> Id.t
-val debug_string_of_mbid : mod_bound_id -> string
-val string_of_mbid : mod_bound_id -> string
+  val make : Dir_path.t -> Id.t -> t
+  (** The first argument is a file name, to prevent conflict between different
+      files. *)
+
+  val repr : t -> int * Id.t * Dir_path.t
+  (** Reverse of [make]. *)
+
+  val to_id : t -> Id.t
+  (** Return the identifier contained in the argument. *)
+
+  val to_string : t -> string
+  (** Conversion to a string. *)
+
+  val debug_to_string : t -> string
+  (** Same as [to_string], but outputs information related to debug. *)
+
+end
 
 (** {6 The module part of the kernel name } *)
 
 type module_path =
   | MPfile of Dir_path.t
-  | MPbound of mod_bound_id
+  | MPbound of MBId.t
   | MPdot of module_path * Label.t
 
 val mp_ord : module_path -> module_path -> int
@@ -397,3 +413,29 @@ val id_of_label : label -> Id.t
 
 val eq_label : label -> label -> bool
 (** @deprecated Same as [Label.equal]. *)
+
+(** {5 Unique bound module names} *)
+
+type mod_bound_id = MBId.t
+(** Alias type. *)
+
+val mod_bound_id_ord : mod_bound_id -> mod_bound_id -> int
+(** @deprecated Same as [MBId.compare]. *)
+
+val mod_bound_id_eq : mod_bound_id -> mod_bound_id -> bool
+(** @deprecated Same as [MBId.equal]. *)
+
+val make_mbid : Dir_path.t -> Id.t -> mod_bound_id
+(** @deprecated Same as [MBId.make]. *)
+
+val repr_mbid : mod_bound_id -> int * Id.t * Dir_path.t
+(** @deprecated Same as [MBId.repr]. *)
+
+val id_of_mbid : mod_bound_id -> Id.t
+(** @deprecated Same as [MBId.to_id]. *)
+
+val string_of_mbid : mod_bound_id -> string
+(** @deprecated Same as [MBId.to_string]. *)
+
+val debug_string_of_mbid : mod_bound_id -> string
+(** @deprecated Same as [MBId.debug_to_string]. *)

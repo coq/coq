@@ -343,9 +343,9 @@ let rec mp_renaming_fun mp = match mp with
       if lmp = [""] then (modfstlev_rename l)::lmp
       else (modular_rename Mod (Label.to_id l))::lmp
   | MPbound mbid ->
-      let s = modular_rename Mod (id_of_mbid mbid) in
+      let s = modular_rename Mod (MBId.to_id mbid) in
       if not (params_ren_mem mp) then [s]
-      else let i,_,_ = repr_mbid mbid in [s^"__"^string_of_int i]
+      else let i,_,_ = MBId.repr mbid in [s^"__"^string_of_int i]
   | MPfile _ ->
       assert (modular ()); (* see [at_toplevel] above *)
       assert (get_phase () = Pre);

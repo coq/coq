@@ -86,7 +86,7 @@ type 'a annotated = ('a * funct_app_annot)
 
 *)
 type substitutive_objects =
-     mod_bound_id list * module_path * lib_objects
+     MBId.t list * module_path * lib_objects
 
 
 (* For each module, we store the following things:
@@ -124,7 +124,7 @@ let modtab_objects =
    is a functor) and declared output type *)
 let openmod_info =
   ref ((MPfile(Dir_path.initial),[],None,[])
-	 : module_path *  mod_bound_id list *
+	 : module_path *  MBId.t list *
            (module_struct_entry * int option) option *
 	   module_type_body list)
 
@@ -346,7 +346,7 @@ let modtypetab =
 (* currently started interactive module type. We remember its arguments
    if it is a functor type *)
 let openmodtype_info =
-  ref ([],[] : mod_bound_id list * module_type_body list)
+  ref ([],[] : MBId.t list * module_type_body list)
 
 let _ = Summary.declare_summary "MODTYPE-INFO"
 	  { Summary.freeze_function = (fun () ->
@@ -529,7 +529,7 @@ let rec seb2mse = function
   | _ -> failwith "seb2mse: received a non-atomic seb"
 
 let process_module_seb_binding mbid seb =
-  process_module_bindings [id_of_mbid mbid]
+  process_module_bindings [MBId.to_id mbid]
     [mbid,
      (seb2mse seb,
       { ann_inline = DefaultInline; ann_scope_subst = [] })]
@@ -537,7 +537,7 @@ let process_module_seb_binding mbid seb =
 let intern_args interp_modtype (idl,(arg,ann)) =
   let inl = inline_annot ann in
   let lib_dir = Lib.library_dp() in
-  let mbids = List.map (fun (_,id) -> make_mbid lib_dir id) idl in
+  let mbids = List.map (fun (_,id) -> MBId.make lib_dir id) idl in
   let mty = interp_modtype (Global.env()) arg in
   let dirs = List.map (fun (_,id) -> Dir_path.make [id]) idl in
   let (mbi,mp_from,objs) = get_modtype_substobjs (Global.env())

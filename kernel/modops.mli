@@ -22,7 +22,7 @@ val module_type_of_module : module_path option -> module_body ->
   module_type_body
 
 val destr_functor :
-  env -> struct_expr_body -> mod_bound_id * module_type_body * struct_expr_body
+  env -> struct_expr_body -> MBId.t * module_type_body * struct_expr_body
 
 val subst_struct_expr :  substitution -> struct_expr_body -> struct_expr_body
 
@@ -39,7 +39,7 @@ val check_modpath_equiv : env -> module_path -> module_path -> unit
 val strengthen : module_type_body -> module_path -> module_type_body
 
 val inline_delta_resolver :
-  env -> inline -> module_path -> mod_bound_id -> module_type_body ->
+  env -> inline -> module_path -> MBId.t -> module_type_body ->
   delta_resolver -> delta_resolver
 
 val strengthen_and_subst_mb : module_body -> module_path -> bool -> module_body

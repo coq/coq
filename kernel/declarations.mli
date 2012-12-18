@@ -202,7 +202,7 @@ and structure_body = (Label.t * structure_field_body) list
 
 and struct_expr_body =
   | SEBident of module_path
-  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body
+  | SEBfunctor of MBId.t * module_type_body * struct_expr_body
   | SEBapply of struct_expr_body * struct_expr_body * constraints
   | SEBstruct of structure_body
   | SEBwith of struct_expr_body * with_declaration_body

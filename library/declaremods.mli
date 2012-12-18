@@ -152,8 +152,8 @@ val debug_print_modtab : unit -> Pp.std_ppcmds
 
 (** For translator *)
 val process_module_bindings : module_ident list ->
-  (mod_bound_id * (module_struct_entry annotated)) list -> unit
+  (MBId.t * (module_struct_entry annotated)) list -> unit
 
 (** For Printer *)
 val process_module_seb_binding :
-  mod_bound_id -> Declarations.struct_expr_body -> unit
+  MBId.t -> Declarations.struct_expr_body -> unit

@@ -23,7 +23,7 @@ val module_type_of_module : module_path option -> module_body ->
   module_type_body
 
 val destr_functor :
-  env -> struct_expr_body -> mod_bound_id * module_type_body * struct_expr_body
+  env -> struct_expr_body -> MBId.t * module_type_body * struct_expr_body
 
 val add_signature : module_path -> structure_body -> delta_resolver -> env -> env
 

@@ -74,8 +74,8 @@ open Mod_subst
 
 type modvariant =
   | NONE
-  | SIG of (* funsig params *) (mod_bound_id * module_type_body) list
-  | STRUCT of (* functor params *) (mod_bound_id * module_type_body) list
+  | SIG of (* funsig params *) (MBId.t * module_type_body) list
+  | STRUCT of (* functor params *) (MBId.t * module_type_body) list
   | LIBRARY of Dir_path.t
 
 type module_info =

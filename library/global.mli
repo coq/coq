@@ -71,7 +71,7 @@ val end_module : Summary.frozen ->Id.t ->
   (module_struct_entry * inline) option -> module_path * delta_resolver
 
 val add_module_parameter :
- mod_bound_id -> module_struct_entry -> inline -> delta_resolver
+ MBId.t -> module_struct_entry -> inline -> delta_resolver
 
 val start_modtype : Id.t -> module_path
 val end_modtype : Summary.frozen -> Id.t -> module_path

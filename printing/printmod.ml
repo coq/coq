@@ -155,11 +155,11 @@ let rec print_modtype env mp locals mty =
       let env' = Option.map
 	  (Modops.add_module (Modops.module_body_of_type mp1 mtb1)) env in
       let seb1 = Option.default mtb1.typ_expr mtb1.typ_expr_alg in
-      let locals' = (mbid, get_new_id locals (id_of_mbid mbid))::locals
+      let locals' = (mbid, get_new_id locals (MBId.to_id mbid))::locals
       in
       (try Declaremods.process_module_seb_binding mbid seb1 with _ -> ());
       hov 2 (str "Funsig" ++ spc () ++ str "(" ++
-	       pr_id (id_of_mbid mbid) ++ str ":" ++
+	       pr_id (MBId.to_id mbid) ++ str ":" ++
 	       print_modtype env mp1 locals seb1 ++
 	       str ")" ++ spc() ++ print_modtype env' mp locals' mtb2)
   | SEBstruct (sign) ->
@@ -190,9 +190,9 @@ let rec print_modexpr env mp locals mexpr = match mexpr with
       let env' = Option.map
 	(Modops.add_module (Modops.module_body_of_type mp' mty)) env in
       let typ = Option.default mty.typ_expr mty.typ_expr_alg in
-      let locals' = (mbid, get_new_id locals (id_of_mbid mbid))::locals in
+      let locals' = (mbid, get_new_id locals (MBId.to_id mbid))::locals in
       (try Declaremods.process_module_seb_binding mbid typ with _ -> ());
-      hov 2 (str "Functor" ++ spc() ++ str"(" ++ pr_id(id_of_mbid mbid) ++
+      hov 2 (str "Functor" ++ spc() ++ str"(" ++ pr_id(MBId.to_id mbid) ++
 	     str ":" ++ print_modtype env mp' locals typ ++
       str ")" ++ spc () ++ print_modexpr env' mp locals' mexpr)
   | SEBstruct struc ->

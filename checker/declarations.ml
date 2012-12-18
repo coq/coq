@@ -58,7 +58,7 @@ let empty_delta_resolver = Deltamap.empty
 
 module MBImap = Map.Make
   (struct
-    type t = mod_bound_id
+    type t = MBId.t
     let compare = Pervasives.compare
    end)
 
@@ -758,7 +758,7 @@ and structure_body = (label * structure_field_body) list
 
 and struct_expr_body =
   | SEBident of module_path
-  | SEBfunctor of mod_bound_id * module_type_body * struct_expr_body
+  | SEBfunctor of MBId.t * module_type_body * struct_expr_body
   | SEBapply of struct_expr_body * struct_expr_body * Univ.constraints
   | SEBstruct of structure_body
   | SEBwith of struct_expr_body * with_declaration_body
