@@ -34,12 +34,12 @@ Extract Inductive N => int [ "0" "" ]
 (** Efficient (but uncertified) versions for usual functions *)
 
 Extract Constant Pos.add => "(+)".
-Extract Constant Pos.succ => "succ".
-Extract Constant Pos.pred => "fun n -> max 1 (n-1)".
-Extract Constant Pos.sub => "fun n m -> max 1 (n-m)".
+Extract Constant Pos.succ => "Pervasives.succ".
+Extract Constant Pos.pred => "fun n -> Pervasives.max 1 (n-1)".
+Extract Constant Pos.sub => "fun n m -> Pervasives.max 1 (n-m)".
 Extract Constant Pos.mul => "( * )".
-Extract Constant Pos.min => "min".
-Extract Constant Pos.max => "max".
+Extract Constant Pos.min => "Pervasives.min".
+Extract Constant Pos.max => "Pervasives.max".
 Extract Constant Pos.compare =>
  "fun x y -> if x=y then Eq else if x<y then Lt else Gt".
 Extract Constant Pos.compare_cont =>
@@ -47,12 +47,12 @@ Extract Constant Pos.compare_cont =>
 
 
 Extract Constant N.add => "(+)".
-Extract Constant N.succ => "succ".
-Extract Constant N.pred => "fun n -> max 0 (n-1)".
-Extract Constant N.sub => "fun n m -> max 0 (n-m)".
+Extract Constant N.succ => "Pervasives.succ".
+Extract Constant N.pred => "fun n -> Pervasives.max 0 (n-1)".
+Extract Constant N.sub => "fun n m -> Pervasives.max 0 (n-m)".
 Extract Constant N.mul => "( * )".
-Extract Constant N.min => "min".
-Extract Constant N.max => "max".
+Extract Constant N.min => "Pervasives.min".
+Extract Constant N.max => "Pervasives.max".
 Extract Constant N.div => "fun a b -> if b=0 then 0 else a/b".
 Extract Constant N.modulo => "fun a b -> if b=0 then a else a mod b".
 Extract Constant N.compare =>
@@ -60,19 +60,19 @@ Extract Constant N.compare =>
 
 
 Extract Constant Z.add => "(+)".
-Extract Constant Z.succ => "succ".
-Extract Constant Z.pred => "pred".
+Extract Constant Z.succ => "Pervasives.succ".
+Extract Constant Z.pred => "Pervasives.pred".
 Extract Constant Z.sub => "(-)".
 Extract Constant Z.mul => "( * )".
 Extract Constant Z.opp => "(~-)".
-Extract Constant Z.abs => "abs".
-Extract Constant Z.min => "min".
-Extract Constant Z.max => "max".
+Extract Constant Z.abs => "Pervasives.abs".
+Extract Constant Z.min => "Pervasives.min".
+Extract Constant Z.max => "Pervasives.max".
 Extract Constant Z.compare =>
  "fun x y -> if x=y then Eq else if x<y then Lt else Gt".
 
 Extract Constant Z.of_N => "fun p -> p".
-Extract Constant Z.abs_N => "abs".
+Extract Constant Z.abs_N => "Pervasives.abs".
 
 (** Z.div and Z.modulo are quite complex to define in terms of (/) and (mod).
     For the moment we don't even try *)
