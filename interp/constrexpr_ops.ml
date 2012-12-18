@@ -345,5 +345,5 @@ let rec raw_cases_pattern_expr_of_glob_constr looked_for = function
     RCPatCstr (loc, g,[],[])
   | GApp (loc,GRef (_,g),l) ->
     looked_for g;
-    RCPatCstr (loc, g,[],List.map (raw_cases_pattern_expr_of_glob_constr looked_for) l)
+    RCPatCstr (loc, g,List.map (raw_cases_pattern_expr_of_glob_constr looked_for) l,[])
   | _ -> raise Not_found

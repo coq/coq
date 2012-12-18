@@ -132,3 +132,12 @@ Identifier 'foo' now a keyword
      : nat
 fun _ : nat => 9
      : nat -> nat
+Identifier 'ONE' now a keyword
+fun (x : nat) (p : x = x) => match p with
+                             | ONE => ONE
+                             end = p
+     : forall x : nat, x = x -> Prop
+fun (x : nat) (p : x = x) => match p with
+                             | 1 => 1
+                             end = p
+     : forall x : nat, x = x -> Prop

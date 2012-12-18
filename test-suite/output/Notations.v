@@ -266,3 +266,17 @@ Notation "'foo' n" := (S n) (at level 50): nat_scope.
 
 Check (foo 9).
 Check (fun _ : nat => 9).
+
+(* Checking parsing and printing of numerical and non-numerical notations for eq_refl *)
+
+(* This notation was not correctly printed until Pierre B.'s
+   improvements to the interpretation of patterns *)
+
+Notation "'ONE'" := eq_refl.
+Check fun (x:nat) (p : x=x) => match p with ONE => ONE end = p.
+
+(* This one used to failed at parsing until now *)
+
+Notation "1" := eq_refl.
+Check fun (x:nat) (p : x=x) => match p with 1 => 1 end = p.
+
