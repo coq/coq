@@ -194,10 +194,17 @@ type unify_flags = {
     (* (and activated for apply, rewrite but not auto since Feb 2008 for 8.2) *)
 
   modulo_delta : Names.transparent_state;
-    (* This controls which constant are unfoldable; this is on for apply *)
+    (* This controls which constants are unfoldable; this is on for apply *)
     (* (but not simple apply) since Feb 2008 for 8.2 *)
 
   modulo_delta_types : Names.transparent_state;
+
+  modulo_delta_in_merge : Names.transparent_state option;
+    (* This controls whether unfoldability is different when trying to unify *)
+    (* several instances of the same metavariable *)
+    (* Typical situation is when we give a pattern to be matched *)
+    (* syntactically against a subterm but we want the metas of the *)
+    (* pattern to be modulo convertibility *)
 
   check_applied_meta_types : bool;
     (* This controls whether meta's applied to arguments have their *)
@@ -242,6 +249,7 @@ let default_unify_flags = {
   use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = full_transparent_state;
   modulo_delta_types = full_transparent_state;
+  modulo_delta_in_merge = None;
   check_applied_meta_types = true;
   resolve_evars = false;
   use_pattern_unification = true;
@@ -253,6 +261,12 @@ let default_unify_flags = {
   allow_K_in_toplevel_higher_order_unification = false
       (* in fact useless when not used in w_unify_to_subterm_list *)
 }
+
+let set_merge_flags flags =
+  match flags.modulo_delta_in_merge with
+  | None -> flags
+  | Some ts ->
+    { flags with modulo_delta = ts; modulo_conv_on_closed_terms = Some ts }
 
 (* Default flag for the "simple apply" version of unification of a *)
 (* type against a type (e.g. apply) *)
@@ -833,7 +847,7 @@ let w_merge env with_types flags (evd,metas,evars) =
 	if Evd.is_defined evd evk then
 	  let v = Evd.existential_value evd ev in
 	  let (evd,metas',evars'') =
-	    unify_0 curenv evd CONV flags rhs v in
+	    unify_0 curenv evd CONV (set_merge_flags flags) rhs v in
 	  w_merge_rec evd (metas'@metas) (evars''@evars') eqns
     	else begin
 	  (* This can make rhs' ill-typed if metas are *)
@@ -913,7 +927,7 @@ let w_merge env with_types flags (evd,metas,evars) =
     let sp_env = Global.env_of_context ev.evar_hyps in
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (evd'',mc,ec) =
-      unify_0 sp_env evd' CUMUL flags
+      unify_0 sp_env evd' CUMUL (set_merge_flags flags)
         (get_type_of sp_env evd' c) ev.evar_concl in
     let evd''' = w_merge_rec evd'' mc ec [] in
     if evd' == evd'''
