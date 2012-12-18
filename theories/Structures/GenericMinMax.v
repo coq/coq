@@ -40,34 +40,34 @@ Module GenericMinMax (Import O:OrderedTypeFull') <: HasMinMax O.
  Definition max := gmax O.compare.
  Definition min := gmin O.compare.
 
- Lemma ge_not_lt : forall x y, y<=x -> x<y -> False.
+ Lemma ge_not_lt x y : y<=x -> x<y -> False.
  Proof.
- intros x y H H'.
+ intros H H'.
  apply (StrictOrder_Irreflexive x).
  rewrite le_lteq in *; destruct H as [H|H].
  transitivity y; auto.
  rewrite H in H'; auto.
  Qed.
 
- Lemma max_l : forall x y, y<=x -> max x y == x.
+ Lemma max_l x y : y<=x -> max x y == x.
  Proof.
  intros. unfold max, gmax. case compare_spec; auto with relations.
  intros; elim (ge_not_lt x y); auto.
  Qed.
 
- Lemma max_r : forall x y, x<=y -> max x y == y.
+ Lemma max_r x y : x<=y -> max x y == y.
  Proof.
  intros. unfold max, gmax. case compare_spec; auto with relations.
  intros; elim (ge_not_lt y x); auto.
  Qed.
 
- Lemma min_l : forall x y, x<=y -> min x y == x.
+ Lemma min_l x y : x<=y -> min x y == x.
  Proof.
  intros. unfold min, gmin. case compare_spec; auto with relations.
  intros; elim (ge_not_lt y x); auto.
  Qed.
 
- Lemma min_r : forall x y, y<=x -> min x y == y.
+ Lemma min_r x y : y<=x -> min x y == y.
  Proof.
  intros. unfold min, gmin. case compare_spec; auto with relations.
  intros; elim (ge_not_lt x y); auto.
@@ -76,31 +76,30 @@ Module GenericMinMax (Import O:OrderedTypeFull') <: HasMinMax O.
 End GenericMinMax.
 
 
-(** ** Consequences of the minimalist interface: facts about [max]. *)
+(** ** Consequences of the minimalist interface: facts about [max] and [min]. *)
 
-Module MaxLogicalProperties (Import O:TotalOrder')(Import M:HasMax O).
- Module Import Private_Tac := !MakeOrderTac O.
+Module MinMaxLogicalProperties (Import O:TotalOrder')(Import M:HasMinMax O).
+ Module Import Private_Tac := !MakeOrderTac O O.
 
 (** An alternative caracterisation of [max], equivalent to
     [max_l /\ max_r] *)
 
-Lemma max_spec : forall n m,
-  (n < m /\ max n m == m)  \/ (m <= n /\ max n m == n).
+Lemma max_spec n m :
+  (n < m /\ max n m == m) \/ (m <= n /\ max n m == n).
 Proof.
- intros n m.
  destruct (lt_total n m); [left|right].
- split; auto. apply max_r. rewrite le_lteq; auto.
- assert (m <= n) by (rewrite le_lteq; intuition).
- split; auto. apply max_l; auto.
+ - split; auto. apply max_r. rewrite le_lteq; auto.
+ - assert (m <= n) by (rewrite le_lteq; intuition).
+   split; auto. now apply max_l.
 Qed.
 
 (** A more symmetric version of [max_spec], based only on [le].
     Beware that left and right alternatives overlap. *)
 
-Lemma max_spec_le : forall n m,
+Lemma max_spec_le n m :
  (n <= m /\ max n m == m) \/ (m <= n /\ max n m == n).
 Proof.
- intros. destruct (max_spec n m); [left|right]; intuition; order.
+ destruct (max_spec n m); [left|right]; intuition; order.
 Qed.
 
 Instance : Proper (eq==>eq==>iff) le.
@@ -108,25 +107,24 @@ Proof. repeat red. intuition order. Qed.
 
 Instance max_compat : Proper (eq==>eq==>eq) max.
 Proof.
-intros x x' Hx y y' Hy.
-assert (H1 := max_spec x y). assert (H2 := max_spec x' y').
-set (m := max x y) in *; set (m' := max x' y') in *; clearbody m m'.
-rewrite <- Hx, <- Hy in *.
-destruct (lt_total x y); intuition order.
+ intros x x' Hx y y' Hy.
+ assert (H1 := max_spec x y). assert (H2 := max_spec x' y').
+ set (m := max x y) in *; set (m' := max x' y') in *; clearbody m m'.
+ rewrite <- Hx, <- Hy in *.
+ destruct (lt_total x y); intuition order.
 Qed.
-
 
 (** A function satisfying the same specification is equal to [max]. *)
 
-Lemma max_unicity : forall n m p,
- ((n < m /\ p == m)  \/ (m <= n /\ p == n)) ->  p == max n m.
+Lemma max_unicity n m p :
+ ((n < m /\ p == m) \/ (m <= n /\ p == n)) -> p == max n m.
 Proof.
- intros. assert (Hm := max_spec n m).
+ assert (Hm := max_spec n m).
  destruct (lt_total n m); intuition; order.
 Qed.
 
-Lemma max_unicity_ext : forall f,
- (forall n m, (n < m /\ f n m == m)  \/ (m <= n /\ f n m == n)) ->
+Lemma max_unicity_ext f :
+ (forall n m, (n < m /\ f n m == m) \/ (m <= n /\ f n m == n)) ->
  (forall n m, f n m == max n m).
 Proof.
  intros. apply max_unicity; auto.
@@ -134,12 +132,12 @@ Qed.
 
 (** [max] commutes with monotone functions. *)
 
-Lemma max_mono: forall f,
+Lemma max_mono f :
  (Proper (eq ==> eq) f) ->
  (Proper (le ==> le) f) ->
  forall x y, max (f x) (f y) == f (max x y).
 Proof.
- intros f Eqf Lef x y.
+ intros Eqf Lef x y.
  destruct (max_spec x y) as [(H,E)|(H,E)]; rewrite E;
   destruct (max_spec (f x) (f y)) as [(H',E')|(H',E')]; auto.
  assert (f x <= f y) by (apply Lef; order). order.
@@ -148,239 +146,232 @@ Qed.
 
 (** *** Semi-lattice algebraic properties of [max] *)
 
-Lemma max_id : forall n, max n n == n.
+Lemma max_id n : max n n == n.
 Proof.
- intros. destruct (max_spec n n); intuition.
+ apply max_l; order.
 Qed.
 
 Notation max_idempotent := max_id (only parsing).
 
-Lemma max_assoc : forall m n p, max m (max n p) == max (max m n) p.
+Lemma max_assoc m n p : max m (max n p) == max (max m n) p.
 Proof.
- intros.
- destruct (max_spec n p) as [(H,Eq)|(H,Eq)]; rewrite Eq.
- destruct (max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'.
- destruct (max_spec m p); intuition; order. order.
- destruct (max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'. order.
- destruct (max_spec m p); intuition; order.
+ destruct (max_spec n p) as [(H,E)|(H,E)]; rewrite E;
+ destruct (max_spec m n) as [(H',E')|(H',E')]; rewrite E', ?E; try easy.
+ - apply max_r; order.
+ - symmetry. apply max_l; order.
 Qed.
 
-Lemma max_comm : forall n m, max n m == max m n.
+Lemma max_comm n m : max n m == max m n.
 Proof.
- intros.
- destruct (max_spec n m) as [(H,Eq)|(H,Eq)]; rewrite Eq.
- destruct (max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'; order.
- destruct (max_spec m n) as [(H',Eq')|(H',Eq')]; rewrite Eq'; order.
+ destruct (max_spec m n) as [(H,E)|(H,E)]; rewrite E;
+  (apply max_r || apply max_l); order.
 Qed.
+
+Ltac solve_max :=
+ match goal with |- context [max ?n ?m] =>
+  destruct (max_spec n m); intuition; order
+ end.
 
 (** *** Least-upper bound properties of [max] *)
 
-Lemma le_max_l : forall n m, n <= max n m.
+Lemma le_max_l n m : n <= max n m.
+Proof. solve_max. Qed.
+
+Lemma le_max_r n m : m <= max n m.
+Proof. solve_max. Qed.
+
+Lemma max_l_iff n m : max n m == n <-> m <= n.
+Proof. solve_max. Qed.
+
+Lemma max_r_iff n m : max n m == m <-> n <= m.
+Proof. solve_max. Qed.
+
+Lemma max_le n m p : p <= max n m -> p <= n \/ p <= m.
 Proof.
- intros; destruct (max_spec n m); intuition; order.
+ destruct (max_spec n m); [right|left]; intuition; order.
 Qed.
 
-Lemma le_max_r : forall n m, m <= max n m.
-Proof.
- intros; destruct (max_spec n m); intuition; order.
-Qed.
+Lemma max_le_iff n m p : p <= max n m <-> p <= n \/ p <= m.
+Proof. split. apply max_le. solve_max. Qed.
 
-Lemma max_l_iff : forall n m, max n m == n <-> m <= n.
+Lemma max_lt_iff n m p : p < max n m <-> p < n \/ p < m.
 Proof.
- split. intro H; rewrite <- H. apply le_max_r. apply max_l.
-Qed.
-
-Lemma max_r_iff : forall n m, max n m == m <-> n <= m.
-Proof.
- split. intro H; rewrite <- H. apply le_max_l. apply max_r.
-Qed.
-
-Lemma max_le : forall n m p, p <= max n m -> p <= n \/ p <= m.
-Proof.
- intros n m p H; destruct (max_spec n m);
-  [right|left]; intuition; order.
-Qed.
-
-Lemma max_le_iff : forall n m p, p <= max n m <-> p <= n \/ p <= m.
-Proof.
- intros. split. apply max_le.
- destruct (max_spec n m); intuition; order.
-Qed.
-
-Lemma max_lt_iff : forall n m p, p < max n m <-> p < n \/ p < m.
-Proof.
- intros. destruct (max_spec n m); intuition;
+ destruct (max_spec n m); intuition;
   order || (right; order) || (left; order).
 Qed.
 
-Lemma max_lub_l : forall n m p, max n m <= p -> n <= p.
-Proof.
- intros; destruct (max_spec n m); intuition; order.
-Qed.
+Lemma max_lub_l n m p : max n m <= p -> n <= p.
+Proof. solve_max. Qed.
 
-Lemma max_lub_r : forall n m p, max n m <= p -> m <= p.
-Proof.
- intros; destruct (max_spec n m); intuition; order.
-Qed.
+Lemma max_lub_r n m p : max n m <= p -> m <= p.
+Proof. solve_max. Qed.
 
-Lemma max_lub : forall n m p, n <= p -> m <= p -> max n m <= p.
-Proof.
- intros; destruct (max_spec n m); intuition; order.
-Qed.
+Lemma max_lub n m p : n <= p -> m <= p -> max n m <= p.
+Proof. solve_max. Qed.
 
-Lemma max_lub_iff : forall n m p, max n m <= p <-> n <= p /\ m <= p.
-Proof.
- intros; destruct (max_spec n m); intuition; order.
-Qed.
+Lemma max_lub_iff n m p : max n m <= p <-> n <= p /\ m <= p.
+Proof. solve_max. Qed.
 
-Lemma max_lub_lt : forall n m p, n < p -> m < p -> max n m < p.
-Proof.
- intros; destruct (max_spec n m); intuition; order.
-Qed.
+Lemma max_lub_lt n m p : n < p -> m < p -> max n m < p.
+Proof. solve_max. Qed.
 
-Lemma max_lub_lt_iff : forall n m p, max n m < p <-> n < p /\ m < p.
-Proof.
- intros; destruct (max_spec n m); intuition; order.
-Qed.
+Lemma max_lub_lt_iff n m p : max n m < p <-> n < p /\ m < p.
+Proof. solve_max. Qed.
 
-Lemma max_le_compat_l : forall n m p, n <= m -> max p n <= max p m.
-Proof.
- intros.
- destruct (max_spec p n) as [(LT,E)|(LE,E)]; rewrite E.
- assert (LE' := le_max_r p m). order.
- apply le_max_l.
-Qed.
+Lemma max_le_compat_l n m p : n <= m -> max p n <= max p m.
+Proof. intros. apply max_lub_iff. solve_max. Qed.
 
-Lemma max_le_compat_r : forall n m p, n <= m -> max n p <= max m p.
-Proof.
- intros. rewrite (max_comm n p), (max_comm m p).
- auto using max_le_compat_l.
-Qed.
+Lemma max_le_compat_r n m p : n <= m -> max n p <= max m p.
+Proof. intros. apply max_lub_iff. solve_max. Qed.
 
-Lemma max_le_compat : forall n m p q, n <= m -> p <= q ->
- max n p <= max m q.
+Lemma max_le_compat n m p q : n <= m -> p <= q -> max n p <= max m q.
 Proof.
- intros  n m p q Hnm Hpq.
+ intros Hnm Hpq.
  assert (LE := max_le_compat_l _ _ m Hpq).
  assert (LE' := max_le_compat_r _ _ p Hnm).
  order.
 Qed.
 
-End MaxLogicalProperties.
+(** Properties of [min] *)
 
+Lemma min_spec n m :
+ (n < m /\ min n m == n) \/ (m <= n /\ min n m == m).
+Proof.
+ destruct (lt_total n m); [left|right].
+ - split; auto. apply min_l. rewrite le_lteq; auto.
+ - assert (m <= n) by (rewrite le_lteq; intuition).
+   split; auto. now apply min_r.
+Qed.
 
-(** ** Properties concernant [min], then both [min] and [max].
-
-   To avoid too much code duplication, we exploit that [min] can be
-   seen as a [max] of the reversed order.
-*)
-
-Module MinMaxLogicalProperties (Import O:TotalOrder')(Import M:HasMinMax O).
- Include MaxLogicalProperties O M.
- Import Private_Tac.
-
- Module Import Private_Rev.
- Module ORev := TotalOrderRev O.
- Module MRev <: HasMax ORev.
-  Definition max x y := M.min y x.
-  Definition max_l x y := M.min_r y x.
-  Definition max_r x y := M.min_l y x.
- End MRev.
- Module MPRev := MaxLogicalProperties ORev MRev.
- End Private_Rev.
+Lemma min_spec_le n m :
+ (n <= m /\ min n m == n) \/ (m <= n /\ min n m == m).
+Proof.
+ destruct (min_spec n m); [left|right]; intuition; order.
+Qed.
 
 Instance min_compat : Proper (eq==>eq==>eq) min.
-Proof. intros x x' Hx y y' Hy. apply MPRev.max_compat; assumption. Qed.
+Proof.
+intros x x' Hx y y' Hy.
+assert (H1 := min_spec x y). assert (H2 := min_spec x' y').
+set (m := min x y) in *; set (m' := min x' y') in *; clearbody m m'.
+rewrite <- Hx, <- Hy in *.
+destruct (lt_total x y); intuition order.
+Qed.
 
-Lemma min_spec : forall n m,
- (n < m /\ min n m == n) \/ (m <= n /\ min n m == m).
-Proof. intros. exact (MPRev.max_spec m n). Qed.
+Lemma min_unicity n m p :
+ ((n < m /\ p == n) \/ (m <= n /\ p == m)) ->  p == min n m.
+Proof.
+ assert (Hm := min_spec n m).
+ destruct (lt_total n m); intuition; order.
+Qed.
 
-Lemma min_spec_le : forall n m,
- (n <= m /\ min n m == n) \/ (m <= n /\ min n m == m).
-Proof. intros. exact (MPRev.max_spec_le m n). Qed.
+Lemma min_unicity_ext f :
+ (forall n m, (n < m /\ f n m == n)  \/ (m <= n /\ f n m == m)) ->
+ (forall n m, f n m == min n m).
+Proof.
+ intros. apply min_unicity; auto.
+Qed.
 
-Lemma min_mono: forall f,
+Lemma min_mono f :
  (Proper (eq ==> eq) f) ->
  (Proper (le ==> le) f) ->
  forall x y, min (f x) (f y) == f (min x y).
 Proof.
- intros. apply MPRev.max_mono; auto. compute in *; eauto.
+ intros Eqf Lef x y.
+ destruct (min_spec x y) as [(H,E)|(H,E)]; rewrite E;
+  destruct (min_spec (f x) (f y)) as [(H',E')|(H',E')]; auto.
+ assert (f x <= f y) by (apply Lef; order). order.
+ assert (f y <= f x) by (apply Lef; order). order.
 Qed.
 
-Lemma min_unicity : forall n m p,
- ((n < m /\ p == n)  \/ (m <= n /\ p == m)) ->  p == min n m.
-Proof. intros n m p. apply MPRev.max_unicity. Qed.
-
-Lemma min_unicity_ext : forall f,
- (forall n m, (n < m /\ f n m == n)  \/ (m <= n /\ f n m == m)) ->
- (forall n m, f n m == min n m).
-Proof. intros f H n m. apply MPRev.max_unicity, H; auto. Qed.
-
-Lemma min_id : forall n, min n n == n.
-Proof. intros. exact (MPRev.max_id n). Qed.
+Lemma min_id n : min n n == n.
+Proof.
+ apply min_l; order.
+Qed.
 
 Notation min_idempotent := min_id (only parsing).
 
-Lemma min_assoc : forall m n p, min m (min n p) == min (min m n) p.
-Proof. intros. symmetry; apply MPRev.max_assoc. Qed.
+Lemma min_assoc m n p : min m (min n p) == min (min m n) p.
+Proof.
+ destruct (min_spec n p) as [(H,E)|(H,E)]; rewrite E;
+ destruct (min_spec m n) as [(H',E')|(H',E')]; rewrite E', ?E; try easy.
+ - symmetry. apply min_l; order.
+ - apply min_r; order.
+Qed.
 
-Lemma min_comm : forall n m, min n m == min m n.
-Proof. intros. exact (MPRev.max_comm m n). Qed.
+Lemma min_comm n m : min n m == min m n.
+Proof.
+ destruct (min_spec m n) as [(H,E)|(H,E)]; rewrite E;
+  (apply min_r || apply min_l); order.
+Qed.
 
-Lemma le_min_r : forall n m, min n m <= m.
-Proof. intros. exact (MPRev.le_max_l m n). Qed.
+Ltac solve_min :=
+ match goal with |- context [min ?n ?m] =>
+  destruct (min_spec n m); intuition; order
+ end.
 
-Lemma le_min_l : forall n m, min n m <= n.
-Proof. intros. exact (MPRev.le_max_r m n). Qed.
+Lemma le_min_r n m : min n m <= m.
+Proof. solve_min. Qed.
 
-Lemma min_l_iff : forall n m, min n m == n <-> n <= m.
-Proof. intros n m. exact (MPRev.max_r_iff m n). Qed.
+Lemma le_min_l n m : min n m <= n.
+Proof. solve_min. Qed.
 
-Lemma min_r_iff : forall n m, min n m == m <-> m <= n.
-Proof. intros n m. exact (MPRev.max_l_iff m n). Qed.
+Lemma min_l_iff n m : min n m == n <-> n <= m.
+Proof. solve_min. Qed.
 
-Lemma min_le : forall n m p, min n m <= p -> n <= p \/ m <= p.
-Proof. intros n m p H. destruct (MPRev.max_le _ _ _ H); auto. Qed.
+Lemma min_r_iff n m : min n m == m <-> m <= n.
+Proof. solve_min. Qed.
 
-Lemma min_le_iff : forall n m p, min n m <= p <-> n <= p \/ m <= p.
-Proof. intros n m p. rewrite (MPRev.max_le_iff m n p); intuition. Qed.
+Lemma min_le n m p : min n m <= p -> n <= p \/ m <= p.
+Proof.
+ destruct (min_spec n m); [left|right]; intuition; order.
+Qed.
 
-Lemma min_lt_iff : forall n m p, min n m < p <-> n < p \/ m < p.
-Proof. intros n m p. rewrite (MPRev.max_lt_iff m n p); intuition. Qed.
+Lemma min_le_iff n m p : min n m <= p <-> n <= p \/ m <= p.
+Proof. split. apply min_le. solve_min. Qed.
 
-Lemma min_glb_l : forall n m p, p <= min n m -> p <= n.
-Proof. intros n m. exact (MPRev.max_lub_r m n). Qed.
+Lemma min_lt_iff n m p : min n m < p <-> n < p \/ m < p.
+Proof.
+ destruct (min_spec n m); intuition;
+  order || (right; order) || (left; order).
+Qed.
 
-Lemma min_glb_r : forall n m p, p <= min n m -> p <= m.
-Proof. intros n m. exact (MPRev.max_lub_l m n). Qed.
+Lemma min_glb_l n m p : p <= min n m -> p <= n.
+Proof. solve_min. Qed.
 
-Lemma min_glb : forall n m p, p <= n -> p <= m -> p <= min n m.
-Proof. intros. apply MPRev.max_lub; auto. Qed.
+Lemma min_glb_r n m p : p <= min n m -> p <= m.
+Proof. solve_min. Qed.
 
-Lemma min_glb_iff : forall n m p, p <= min n m <-> p <= n /\ p <= m.
-Proof. intros. rewrite (MPRev.max_lub_iff m n p); intuition. Qed.
+Lemma min_glb n m p : p <= n -> p <= m -> p <= min n m.
+Proof. solve_min. Qed.
 
-Lemma min_glb_lt : forall n m p, p < n -> p < m -> p < min n m.
-Proof. intros. apply MPRev.max_lub_lt; auto. Qed.
+Lemma min_glb_iff n m p : p <= min n m <-> p <= n /\ p <= m.
+Proof. solve_min. Qed.
 
-Lemma min_glb_lt_iff : forall n m p, p < min n m <-> p < n /\ p < m.
-Proof. intros. rewrite (MPRev.max_lub_lt_iff m n p); intuition. Qed.
+Lemma min_glb_lt n m p : p < n -> p < m -> p < min n m.
+Proof. solve_min. Qed.
 
-Lemma min_le_compat_l : forall n m p, n <= m -> min p n <= min p m.
-Proof. intros n m. exact (MPRev.max_le_compat_r m n). Qed.
+Lemma min_glb_lt_iff n m p : p < min n m <-> p < n /\ p < m.
+Proof. solve_min. Qed.
 
-Lemma min_le_compat_r : forall n m p, n <= m -> min n p <= min m p.
-Proof. intros n m. exact (MPRev.max_le_compat_l m n). Qed.
+Lemma min_le_compat_l n m p : n <= m -> min p n <= min p m.
+Proof. intros. apply min_glb_iff. solve_min. Qed.
 
-Lemma min_le_compat : forall n m p q, n <= m -> p <= q ->
+Lemma min_le_compat_r n m p : n <= m -> min n p <= min m p.
+Proof. intros. apply min_glb_iff. solve_min. Qed.
+
+Lemma min_le_compat n m p q : n <= m -> p <= q ->
  min n p <= min m q.
-Proof. intros. apply MPRev.max_le_compat; auto. Qed.
-
+Proof.
+ intros Hnm Hpq.
+ assert (LE := min_le_compat_l _ _ m Hpq).
+ assert (LE' := min_le_compat_r _ _ p Hnm).
+ order.
+Qed.
 
 (** *** Combined properties of min and max *)
 
-Lemma min_max_absorption : forall n m, max n (min n m) == n.
+Lemma min_max_absorption n m : max n (min n m) == n.
 Proof.
  intros.
  destruct (min_spec n m) as [(C,E)|(C,E)]; rewrite E.
@@ -388,7 +379,7 @@ Proof.
  destruct (max_spec n m); intuition; order.
 Qed.
 
-Lemma max_min_absorption : forall n m, min n (max n m) == n.
+Lemma max_min_absorption n m : min n (max n m) == n.
 Proof.
  intros.
  destruct (max_spec n m) as [(C,E)|(C,E)]; rewrite E.
@@ -398,35 +389,35 @@ Qed.
 
 (** Distributivity *)
 
-Lemma max_min_distr : forall n m p,
+Lemma max_min_distr n m p :
  max n (min m p) == min (max n m) (max n p).
 Proof.
- intros. symmetry. apply min_mono.
+ symmetry. apply min_mono.
  eauto with *.
  repeat red; intros. apply max_le_compat_l; auto.
 Qed.
 
-Lemma min_max_distr : forall n m p,
+Lemma min_max_distr n m p :
  min n (max m p) == max (min n m) (min n p).
 Proof.
- intros. symmetry. apply max_mono.
+ symmetry. apply max_mono.
  eauto with *.
  repeat red; intros. apply min_le_compat_l; auto.
 Qed.
 
 (** Modularity *)
 
-Lemma max_min_modular : forall n m p,
+Lemma max_min_modular n m p :
  max n (min m (max n p)) == min (max n m) (max n p).
 Proof.
- intros. rewrite <- max_min_distr.
+ rewrite <- max_min_distr.
  destruct (max_spec n p) as [(C,E)|(C,E)]; rewrite E; auto with *.
  destruct (min_spec m n) as [(C',E')|(C',E')]; rewrite E'.
  rewrite 2 max_l; try order. rewrite min_le_iff; auto.
  rewrite 2 max_l; try order. rewrite min_le_iff; auto.
 Qed.
 
-Lemma min_max_modular : forall n m p,
+Lemma min_max_modular n m p :
  min n (max m (min n p)) == max (min n m) (min n p).
 Proof.
  intros. rewrite <- min_max_distr.
@@ -438,7 +429,7 @@ Qed.
 
 (** Disassociativity *)
 
-Lemma max_min_disassoc : forall n m p,
+Lemma max_min_disassoc n m p :
  min n (max m p) <= max (min n m) p.
 Proof.
  intros. rewrite min_max_distr.
@@ -447,24 +438,24 @@ Qed.
 
 (** Anti-monotonicity swaps the role of [min] and [max] *)
 
-Lemma max_min_antimono : forall f,
+Lemma max_min_antimono f :
  Proper (eq==>eq) f ->
  Proper (le==>inverse le) f ->
  forall x y, max (f x) (f y) == f (min x y).
 Proof.
- intros f Eqf Lef x y.
+ intros Eqf Lef x y.
  destruct (min_spec x y) as [(H,E)|(H,E)]; rewrite E;
   destruct (max_spec (f x) (f y)) as [(H',E')|(H',E')]; auto.
  assert (f y <= f x) by (apply Lef; order). order.
  assert (f x <= f y) by (apply Lef; order). order.
 Qed.
 
-Lemma min_max_antimono : forall f,
+Lemma min_max_antimono f :
  Proper (eq==>eq) f ->
  Proper (le==>inverse le) f ->
  forall x y, min (f x) (f y) == f (max x y).
 Proof.
- intros f Eqf Lef x y.
+ intros Eqf Lef x y.
  destruct (max_spec x y) as [(H,E)|(H,E)]; rewrite E;
   destruct (min_spec (f x) (f y)) as [(H',E')|(H',E')]; auto.
  assert (f y <= f x) by (apply Lef; order). order.
@@ -480,11 +471,11 @@ Module MinMaxDecProperties (Import O:OrderedTypeFull')(Import M:HasMinMax O).
 
 (** Induction principles for [max]. *)
 
-Lemma max_case_strong : forall n m (P:t -> Type),
+Lemma max_case_strong n m (P:t -> Type) :
   (forall x y, x==y -> P x -> P y) ->
   (m<=n -> P n) -> (n<=m -> P m) -> P (max n m).
 Proof.
-intros n m P Compat Hl Hr.
+intros Compat Hl Hr.
 destruct (CompSpec2Type (compare_spec n m)) as [EQ|LT|GT].
 assert (n<=m) by (rewrite le_lteq; auto).
 apply (Compat m), Hr; auto. symmetry; apply max_r; auto.
@@ -494,26 +485,26 @@ assert (m<=n) by (rewrite le_lteq; auto).
 apply (Compat n), Hl; auto. symmetry; apply max_l; auto.
 Defined.
 
-Lemma max_case : forall n m (P:t -> Type),
+Lemma max_case n m (P:t -> Type) :
   (forall x y, x == y -> P x -> P y) ->
   P n -> P m -> P (max n m).
 Proof. intros. apply max_case_strong; auto. Defined.
 
 (** [max] returns one of its arguments. *)
 
-Lemma max_dec : forall n m, {max n m == n} + {max n m == m}.
+Lemma max_dec n m : {max n m == n} + {max n m == m}.
 Proof.
- intros n m. apply max_case; auto with relations.
+ apply max_case; auto with relations.
  intros x y H [E|E]; [left|right]; rewrite <-H; auto.
 Defined.
 
 (** Idem for [min] *)
 
-Lemma min_case_strong : forall n m (P:O.t -> Type),
+Lemma min_case_strong n m (P:O.t -> Type) :
  (forall x y, x == y -> P x -> P y) ->
  (n<=m -> P n) -> (m<=n -> P m) -> P (min n m).
 Proof.
-intros n m P Compat Hl Hr.
+intros Compat Hl Hr.
 destruct (CompSpec2Type (compare_spec n m)) as [EQ|LT|GT].
 assert (n<=m) by (rewrite le_lteq; auto).
 apply (Compat n), Hl; auto. symmetry; apply min_l; auto.
@@ -523,12 +514,12 @@ assert (m<=n) by (rewrite le_lteq; auto).
 apply (Compat m), Hr; auto. symmetry; apply min_r; auto.
 Defined.
 
-Lemma min_case : forall n m (P:O.t -> Type),
+Lemma min_case n m (P:O.t -> Type) :
   (forall x y, x == y -> P x -> P y) ->
   P n -> P m -> P (min n m).
 Proof. intros. apply min_case_strong; auto. Defined.
 
-Lemma min_dec : forall n m, {min n m == n} + {min n m == m}.
+Lemma min_dec n m : {min n m == n} + {min n m == m}.
 Proof.
  intros. apply min_case; auto with relations.
  intros x y H [E|E]; [left|right]; rewrite <- E; auto with relations.
@@ -558,19 +549,19 @@ Module UsualMinMaxLogicalProperties
 
  Include MinMaxLogicalProperties O M.
 
- Lemma max_monotone : forall f, Proper (le ==> le) f ->
+ Lemma max_monotone f : Proper (le ==> le) f ->
   forall x y, max (f x) (f y) = f (max x y).
  Proof. intros; apply max_mono; auto. congruence. Qed.
 
- Lemma min_monotone : forall f, Proper (le ==> le) f ->
+ Lemma min_monotone f : Proper (le ==> le) f ->
   forall x y, min (f x) (f y) = f (min x y).
  Proof. intros; apply min_mono; auto. congruence. Qed.
 
- Lemma min_max_antimonotone : forall f, Proper (le ==> inverse le) f ->
+ Lemma min_max_antimonotone f : Proper (le ==> inverse le) f ->
   forall x y, min (f x) (f y) = f (max x y).
  Proof. intros; apply min_max_antimono; auto. congruence. Qed.
 
- Lemma max_min_antimonotone : forall f, Proper (le ==> inverse le) f ->
+ Lemma max_min_antimonotone f : Proper (le ==> inverse le) f ->
   forall x y, max (f x) (f y) = f (min x y).
  Proof. intros; apply max_min_antimono; auto. congruence. Qed.
 
