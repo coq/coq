@@ -42,6 +42,11 @@ let e_type_judgment env evdref j =
         evdref := evd; { utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_type env j
 
+let e_assumption_of_judgment env evdref j =
+  try (e_type_judgment env evdref j).utj_val
+  with TypeError _ ->
+    error_assumption env j
+
 let e_judge_of_apply env evdref funj argjv =
   let rec apply_rec n typ = function
   | [] ->
@@ -150,7 +155,7 @@ let rec execute env evdref cstr =
     | Evar ev ->
 	let ty = Evd.existential_type !evdref ev in
 	let jty = execute env evdref (whd_evar !evdref ty) in
-	let jty = assumption_of_judgment env jty in
+	let jty = e_assumption_of_judgment env evdref jty in
 	{ uj_val = cstr; uj_type = jty }
 
     | Rel n ->
@@ -243,7 +248,7 @@ let rec execute env evdref cstr =
 
 and execute_recdef env evdref (names,lar,vdef) =
   let larj = execute_array env evdref lar in
-  let lara = Array.map (assumption_of_judgment env) larj in
+  let lara = Array.map (e_assumption_of_judgment env evdref) larj in
   let env1 = push_rec_types (names,lara,vdef) env in
   let vdefj = execute_array env1 evdref vdef in
   let vdefv = Array.map j_val vdefj in
