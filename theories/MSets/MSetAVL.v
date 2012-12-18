@@ -44,6 +44,7 @@ Local Unset Case Analysis Schemes.
 
 Module Ops (Import I:Int)(X:OrderedType) <: MSetInterface.Ops X.
 Local Open Scope Int_scope.
+Local Notation int := I.t.
 
 (** ** Generic trees instantiated with integer height *)
 
