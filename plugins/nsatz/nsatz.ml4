@@ -427,7 +427,7 @@ let remove_list_tail l i =
 let remove_zeros zero lci =
   let n = List.length (List.hd lci) in
   let m=List.length lci in
-  let u = Array.create m false in
+  let u = Array.make m false in
   let rec utiles k =
     if k>=m
     then ()

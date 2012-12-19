@@ -241,7 +241,7 @@ let empty depth gls:state =
   {uf=
      {max_size=init_size;
       size=0;
-      map=Array.create init_size dummy_node;
+      map=Array.make init_size dummy_node;
       epsilons=[];
       axioms=Constrhash.create init_size;
       syms=Termhash.create init_size};
@@ -335,7 +335,7 @@ let next uf=
   let nsize= succ size in
     if nsize=uf.max_size then
       let newmax=uf.max_size * 3 / 2 + 1 in
-      let newmap=Array.create newmax dummy_node in
+      let newmap=Array.make newmax dummy_node in
 	begin
 	  uf.max_size<-newmax;
 	  Array.blit uf.map 0 newmap 0 size;

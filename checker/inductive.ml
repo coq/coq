@@ -525,8 +525,8 @@ let branches_specif renv c_spec ci =
 		  Array.map
 		    (fun t -> Lazy.force (spec_of_tree (lazy t)))
 		    vra
-	      | Dead_code -> Array.create nca Dead_code
-	      | _ -> Array.create nca Not_subterm) in
+	      | Dead_code -> Array.make nca Dead_code
+	      | _ -> Array.make nca Not_subterm) in
 	 List.tabulate (fun j -> lazy (Lazy.force lvra).(j)) nca)
       car 
 

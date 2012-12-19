@@ -227,10 +227,10 @@ let build_beq_scheme kn =
       extended_rel_list (n+nb_ind-1) mib.mind_params_ctxt)) in
     let constrsi = constrs (3+nparrec) in
     let n = Array.length constrsi in
-    let ar = Array.create n ff in
+    let ar = Array.make n ff in
 	for i=0 to n-1 do
 	  let nb_cstr_args = List.length constrsi.(i).cs_args in
-	  let ar2 = Array.create n ff in
+	  let ar2 = Array.make n ff in
           let constrsj = constrs (3+nparrec+nb_cstr_args) in
 	    for j=0 to n-1 do
 	      if Int.equal i j then

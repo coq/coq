@@ -358,7 +358,7 @@ let rec depcheck_se = function
       (* Hack to avoid extracting unused part of a Dfix *)
       match d with
 	| Dfix (rv,trms,tys) when (List.for_all is_custom refs') ->
-	  let trms' =  Array.create (Array.length rv) (MLexn "UNUSED") in
+	  let trms' =  Array.make (Array.length rv) (MLexn "UNUSED") in
 	  ((l,SEdecl (Dfix (rv,trms',tys))) :: se')
 	| _ -> (compute_deps_decl d; t::se')
     end

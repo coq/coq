@@ -270,7 +270,7 @@ let mis_make_indrec env sigma listdepkind mib =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let nrec = List.length listdepkind in
   let depPvec =
-    Array.create mib.mind_ntypes (None : (bool * constr) option) in
+    Array.make mib.mind_ntypes (None : (bool * constr) option) in
   let _ =
     let rec
 	assign k = function
@@ -380,7 +380,7 @@ let mis_make_indrec env sigma listdepkind mib =
 	    let fixn = Array.of_list (List.rev ln) in
             let fixtyi = Array.of_list (List.rev ltyp) in
             let fixdef = Array.of_list (List.rev ldef) in
-            let names = Array.create nrec (Name(Id.of_string "F")) in
+            let names = Array.make nrec (Name(Id.of_string "F")) in
 	      mkFix ((fixn,p),(names,fixtyi,fixdef))
       in
 	mrec 0 [] [] []

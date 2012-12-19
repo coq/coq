@@ -537,8 +537,8 @@ let rec compile_constr reloc c sz cont =
   | Fix ((rec_args,init),(_,type_bodies,rec_bodies)) ->
       let ndef = Array.length type_bodies in
       let rfv = ref empty_fv in
-      let lbl_types = Array.create ndef Label.no in
-      let lbl_bodies = Array.create ndef Label.no in
+      let lbl_types = Array.make ndef Label.no in
+      let lbl_bodies = Array.make ndef Label.no in
       (* Compilation des types *)
       let env_type = comp_env_fix_type rfv in
       for i = 0 to ndef - 1 do
@@ -566,8 +566,8 @@ let rec compile_constr reloc c sz cont =
 
   | CoFix(init,(_,type_bodies,rec_bodies)) ->
       let ndef = Array.length type_bodies in
-      let lbl_types = Array.create ndef Label.no in
-      let lbl_bodies = Array.create ndef Label.no in
+      let lbl_types = Array.make ndef Label.no in
+      let lbl_bodies = Array.make ndef Label.no in
       (* Compiling types *)
       let rfv = ref empty_fv in
       let env_type = comp_env_cofix_type ndef rfv in
@@ -600,8 +600,8 @@ let rec compile_constr reloc c sz cont =
       let mib = lookup_mind (fst ind) !global_env in
       let oib = mib.mind_packets.(snd ind) in
       let tbl = oib.mind_reloc_tbl in
-      let lbl_consts = Array.create oib.mind_nb_constant Label.no in
-      let lbl_blocks = Array.create (oib.mind_nb_args+1) Label.no in
+      let lbl_consts = Array.make oib.mind_nb_constant Label.no in
+      let lbl_blocks = Array.make (oib.mind_nb_args+1) Label.no in
       let branch1,cont = make_branch cont in
       (* Compiling return type *)
       let lbl_typ,fcode =

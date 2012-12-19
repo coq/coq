@@ -1092,7 +1092,7 @@ let first_clause_irrefutable env = function
 let group_equations pb ind current cstrs mat =
   let mat =
     if first_clause_irrefutable pb.env mat then [List.hd mat] else mat in
-  let brs = Array.create (Array.length cstrs) [] in
+  let brs = Array.make (Array.length cstrs) [] in
   let only_default = ref true in
   let _ =
     List.fold_right (* To be sure it's from bottom to top *)

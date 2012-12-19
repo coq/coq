@@ -133,7 +133,7 @@ let x n = Prec (n,[|cf0;cf1|])
 let monome v n =
   match n with
       0->Pint coef1;
-    |_->let tmp = Array.create (n+1) (Pint coef0) in
+    |_->let tmp = Array.make (n+1) (Pint coef0) in
         tmp.(n)<-(Pint coef1);
         Prec (v, tmp)
 
@@ -191,7 +191,7 @@ let norm p = match p with
        if !n<0 then Pint coef0
        else if !n=0 then a.(0)
        else if !n=d then p
-       else (let b=Array.create (!n+1) (Pint coef0) in
+       else (let b=Array.make (!n+1) (Pint coef0) in
                for i=0 to !n do b.(i)<-a.(i);done;
                Prec(x,b))
 
@@ -243,7 +243,7 @@ let rec plusP p q =
                               Prec (x,p2))
           else
             (let n=max (deg x p) (deg x q) in
-             let r=Array.create (n+1) (Pint coef0) in
+             let r=Array.make (n+1) (Pint coef0) in
                for i=0 to n do
                  r.(i)<- plusP (coef x i p) (coef x i q);
                done;
@@ -277,13 +277,13 @@ let rec vars=function
 (* multiply p by v^n, v >= max_var p *)
 let multx n v p =
   match p with
-      Prec (x,p1) when x=v -> let p2= Array.create ((Array.length p1)+n) (Pint coef0) in
+      Prec (x,p1) when x=v -> let p2= Array.make ((Array.length p1)+n) (Pint coef0) in
         for i=0 to (Array.length p1)-1 do
           p2.(i+n)<-p1.(i);
         done;
         Prec (x,p2)
     |_ -> if equal p (Pint coef0) then (Pint coef0)
-       else (let p2=Array.create (n+1) (Pint coef0) in
+       else (let p2=Array.make (n+1) (Pint coef0) in
                p2.(n)<-p;
                Prec (v,p2))
 
@@ -320,7 +320,7 @@ let deriv v p =
        let d = Array.length p1 -1 in
          if d=1 then p1.(1)
          else
-           (let p2 = Array.create d (Pint coef0) in
+           (let p2 = Array.make d (Pint coef0) in
               for i=0 to d-1 do
 		p2.(i)<- multP (Pint (coef_of_int (i+1))) p1.(i+1);
               done;
