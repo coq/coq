@@ -22,26 +22,22 @@ open Evd
 
 type flex_kind_of_term =
   | Rigid
-  | PseudoRigid (* approximated as rigid but not necessarily so *)
   | MaybeFlexible (* approx'ed as reducible but not necessarily so *)
   | Flexible of existential
 
-let flex_kind_of_term c =
-  let rec aux not_empty = function
-  | Zshift _ :: q -> aux not_empty q
-  | Zapp _ :: q -> aux true q
-  | (Zcase _ | Zfix _) :: _ -> PseudoRigid
-  | [] -> (match kind_of_term c with
+let flex_kind_of_term c sk =
+  match kind_of_term c with
     | Rel _ | Const _ | Var _ -> MaybeFlexible
-    | Lambda _ when not_empty -> MaybeFlexible
+    | Lambda _ when not (Option.is_empty (decomp_stack sk)) -> MaybeFlexible
     | LetIn _  -> MaybeFlexible
     | Evar ev -> Flexible ev
     | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ -> Rigid
-    | Meta _ -> PseudoRigid
-    | Fix _ -> PseudoRigid (* happens when the fixpoint is partially applied *)
-    | Cast _ | App _ | Case _ -> assert false)
-  | _ -> assert false
-  in aux false
+    | Meta _ -> Rigid
+    | Fix _ -> Rigid (* happens when the fixpoint is partially applied *)
+    | Cast _ | App _ | Case _ -> assert false
+
+let not_purely_applicative_stack args =
+  List.exists (function (Zfix _ | Zcase _) -> true | _ -> false) args
 
 let eval_flexible_term ts env c =
   match kind_of_term c with
@@ -55,8 +51,8 @@ let eval_flexible_term ts env c =
   | Var id ->
       (try
 	 if is_transparent_variable ts id then
-	   let (_,v,_) = lookup_named id env in v 
-	 else None 
+	   let (_,v,_) = lookup_named id env in v
+	 else None
        with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c)
   | Lambda _ -> Some c
@@ -270,11 +266,18 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
       ) (evd, false) (list_of_app_stack skF) in
   let flex_maybeflex on_left ev (termF,skF as apprF) (termM, skM as apprM) =
     let switch f a b = if on_left then f a b else f b a in
-    let f1 i = miller_pfenning on_left (i,false) ev apprF apprM i
+    let not_only_app = not_purely_applicative_stack skM in
+    let f1 i = miller_pfenning on_left
+      (if not_only_app then (* Postpone the use of an heuristic *)
+	switch (fun x y -> add_conv_pb (pbty,env,zip x,zip y) i, true) apprF apprM
+       else (i,false))
+      ev apprF apprM i
     and f2 i =
-      match switch (ise_stack2 false env i (evar_conv_x ts)) skF skM with
-      |Some ([],r), (i', true) when on_left -> switch (evar_conv_x ts env i' pbty) termF (zip(termM,r))
-      |Some (r,[]), (i', true) when not on_left -> switch (evar_conv_x ts env i' pbty) termF (zip(termM,r))
+      match switch (ise_stack2 not_only_app env i (evar_conv_x ts)) skF skM with
+      |Some (l,r), (i', true) when on_left && (not_only_app || l = []) ->
+	switch (evar_conv_x ts env i' pbty) (zip(termF,l)) (zip(termM,r))
+      |Some (r,l), (i', true) when not on_left && (not_only_app || l = []) ->
+	switch (evar_conv_x ts env i' pbty) (zip(termF,l)) (zip(termM,r))
       |None, (i', true) -> switch (evar_conv_x ts env i' pbty) termF termM
       |_ -> (i, false)
     and f3 i =
@@ -348,9 +351,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
              usable as a canonical projection or canonical value *)
           let rec is_unnamed (hd, args) = match kind_of_term hd with
             | (Var _|Construct _|Ind _|Const _|Prod _|Sort _) ->
-	      List.exists (function (Zfix _ | Zcase _) -> true | _ -> false) args
+	      not_purely_applicative_stack args
             | (CoFix _|Meta _|Rel _)-> true
-            | Evar _ -> List.exists (function (Zfix _ | Zcase _) -> true | _ -> false) args
+            | Evar _ -> not_purely_applicative_stack args
 	    (* false (* immediate solution without Canon Struct *)*)
             | Lambda _ -> assert (match args with [] -> true | _ -> false); true
             | LetIn (_,b,_,c) ->
@@ -359,10 +362,12 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
           let rhs_is_stuck_and_unnamed () =
             match eval_flexible_term ts env term2 with
             | None -> false
-            | Some v2 -> is_unnamed (whd_betaiota_deltazeta_for_iota_state ts env i (v2, sk2)) in
+            | Some v2 ->
+	      let applicative_stack = append_stack_app_list (fst (strip_app sk2)) empty_stack in
+	      is_unnamed (whd_betaiota_deltazeta_for_iota_state ts env i (v2, applicative_stack)) in
           let rhs_is_already_stuck =
             rhs_is_already_stuck || rhs_is_stuck_and_unnamed () in
-	  if isLambda term1 || rhs_is_already_stuck then
+	  if (isLambda term1 || rhs_is_already_stuck) && (not (not_purely_applicative_stack sk1)) then
 	    match eval_flexible_term ts env term1 with
 	    | Some v1 ->
 		evar_eqappr_x ~rhs_is_already_stuck
@@ -395,19 +400,19 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	     let c = nf_evar i c1 in
 	     evar_conv_x ts (push_rel (na,None,c) env) i CONV c'1 c'2)]
 
-    | Flexible ev1, (Rigid | PseudoRigid) ->
+    | Flexible ev1, Rigid ->
       miller_pfenning true
 	((* Postpone the use of an heuristic *)
 	  add_conv_pb (pbty,env,zip appr1,zip appr2) evd, true)
 	ev1 appr1 appr2 evd
 
-    | (Rigid | PseudoRigid), Flexible ev2 ->
+    | Rigid, Flexible ev2 ->
       miller_pfenning false
 	((* Postpone the use of an heuristic *)
 	  add_conv_pb (pbty,env,zip appr1,zip appr2) evd, true)
 	ev2 appr2 appr1 evd
 
-    | MaybeFlexible, (Rigid | PseudoRigid) ->
+    | MaybeFlexible, Rigid ->
 	let f3 i =
 	  (try conv_record ts env i (check_conv_record appr1 appr2)
            with Not_found -> (i,false))
@@ -420,7 +425,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	in
 	ise_try evd [f3; f4]
 
-    | (Rigid | PseudoRigid), MaybeFlexible ->
+    | Rigid, MaybeFlexible ->
 	let f3 i =
 	  (try conv_record ts env i (check_conv_record appr2 appr1)
            with Not_found -> (i,false))
@@ -482,6 +487,14 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
               exact_ise_stack2 env evd (evar_conv_x ts) sk1 sk2
             else (evd, false)
 
+	| Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
+	  if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
+            ise_and evd [
+	      (fun i -> ise_array2 i (fun i' -> evar_conv_x ts env i' CONV) tys1 tys2);
+	      (fun i -> ise_array2 i (fun i' -> evar_conv_x ts (push_rec_types recdef1 env) i' CONV) bds1 bds2);
+	      (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
+	  else (evd, false)
+
 	| CoFix (i1,(_,tys1,bds1 as recdef1)), CoFix (i2,(_,tys2,bds2)) ->
             if Int.equal i1 i2  then
               ise_and evd
@@ -494,35 +507,21 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
                      (evar_conv_x ts) sk1 sk2)]
             else (evd,false)
 
-	| (Ind _ | Construct _ | Sort _ | Prod _ | CoFix _), _ -> (evd,false)
-	| _, (Ind _ | Construct _ | Sort _ | Prod _ | CoFix _) -> (evd,false)
+	| (Meta _, _) | (_, Meta _) ->
+	  begin match ise_stack2 true env evd (evar_conv_x ts) sk1 sk2 with
+	  |_, (_, false) -> (evd, false)
+	  |None, (i', true) -> evar_conv_x ts env i' CONV term1 term2
+	  |Some (sk1',sk2'), (i', true) -> evar_conv_x ts env i' CONV (zip (term1,sk1')) (zip (term2,sk2'))
+	  end
 
-	| (App _ | Meta _ | Cast _ | Case _ | Fix _), _ -> assert false
+	| (Ind _ | Construct _ | Sort _ | Prod _ | CoFix _ | Fix _), _ -> (evd,false)
+	| _, (Ind _ | Construct _ | Sort _ | Prod _ | CoFix _ | Fix _) -> (evd,false)
+
+	| (App _ | Cast _ | Case _), _ -> assert false
 	| (LetIn _ | Rel _ | Var _ | Const _ | Evar _), _ -> assert false
 	| (Lambda _), _ -> assert false
 
       end
-
-    | PseudoRigid, PseudoRigid ->
-      begin match kind_of_term term1, kind_of_term term2 with
-      | Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
-	if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
-          ise_and evd [
-	    (fun i -> ise_array2 i (fun i' -> evar_conv_x ts env i' CONV) tys1 tys2);
-	    (fun i -> ise_array2 i (fun i' -> evar_conv_x ts (push_rec_types recdef1 env) i' CONV) bds1 bds2);
-	    (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
-	else (evd, false)
-      |_, _ ->
-	begin match ise_stack2 true env evd (evar_conv_x ts) sk1 sk2 with
-	|_, (_, false) -> (evd, false)
-	|None, (i', true) -> evar_conv_x ts env i' CONV term1 term2
-	|Some (sk1',sk2'), (i', true) -> evar_conv_x ts env i' CONV (zip (term1,sk1')) (zip (term2,sk2'))
-	end
-      end
-
-    | PseudoRigid, Rigid ->  (evd,false)
-
-    | Rigid, PseudoRigid ->  (evd,false)
 
 and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
   let (evd',ks,_) =
