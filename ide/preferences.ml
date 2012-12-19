@@ -341,7 +341,6 @@ let load_pref () =
       (fun v -> np.modifier_for_display <- v);
     set_hd "modifiers_valid"
       (fun v ->
-	let () = GtkData.AccelGroup.set_default_mod_mask (Some (str_to_mod_list v)) in
 	np.modifiers_valid <- v);
     set_command_with_pair_compat "cmd_browse" (fun v -> np.cmd_browse <- v);
     set_command_with_pair_compat "cmd_editor" (fun v -> np.cmd_editor <- v);
@@ -705,7 +704,6 @@ let configure ?(apply=(fun () -> ())) () =
   let modifiers_valid =
     modifiers
       ~f:(fun l ->
- 	let () = GtkData.AccelGroup.set_default_mod_mask (Some l) in
 	current.modifiers_valid <- mod_list_to_str l)
       "Allowed modifiers"
       the_valid_mod
