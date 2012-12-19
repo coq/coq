@@ -18,7 +18,8 @@ let safe_getenv warning n =
     ("$"^n)
   )
 
-let ( / ) = Filename.concat
+let ( / ) a b =
+  if Filename.is_relative b then Filename.concat a b else b
 
 let coqify d = d / "coq"
 
