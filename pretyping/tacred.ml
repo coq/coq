@@ -450,7 +450,7 @@ let reduce_fix whdfun sigma fix stack =
         let (recarg'hd,_ as recarg') = whdfun sigma recarg in
         let stack' = List.assign stack recargnum (applist recarg') in
 	(match kind_of_term recarg'hd with
-           | Construct _ -> Reduced (contract_fix fix, stack')
+           | Construct _ -> Reduced (contract_fix fix None, stack')
 	   | _ -> NotReducible)
 
 let contract_fix_use_function env sigma f

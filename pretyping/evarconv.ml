@@ -184,13 +184,13 @@ let ise_stack2 no_app env evd f sk1 sk2 =
       else None, (evd, false) in
     match sk1, sk2 with
     | [], [] -> None, (i,true)
-    | Zcase (_,t1,c1)::q1, Zcase (_,t2,c2)::q2 ->
+    | Zcase (_,t1,c1,_)::q1, Zcase (_,t2,c2,_)::q2 ->
       let (i',b') = f env i CONV t1 t2 in
       if b' then
 	let (i'',b'') = ise_array2 i' (fun ii -> f env ii CONV) c1 c2 in
 	if b'' then ise_stack2 true i'' q1 q2 else fal ()
       else fal ()
-    | Zfix (((li1, i1),(_,tys1,bds1 as recdef1)),a1)::q1, Zfix (((li2, i2),(_,tys2,bds2)),a2)::q2 ->
+    | Zfix (((li1, i1),(_,tys1,bds1 as recdef1)),a1,_)::q1, Zfix (((li2, i2),(_,tys2,bds2)),a2,_)::q2 ->
       if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
         let (i',b') = ise_and i [
 	  (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
