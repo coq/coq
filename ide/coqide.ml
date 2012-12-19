@@ -88,27 +88,7 @@ let make_coqtop_args = function
       |Append_args -> get_args the_file @ !sup_args
       |Subst_args -> get_args the_file
 
-module Opt = Coq.PrintOpt
-
-let print_items = [
-  ([Opt.implicit],"Display implicit arguments","Display _implicit arguments",
-   "i",false);
-  ([Opt.coercions],"Display coercions","Display _coercions","c",false);
-  ([Opt.raw_matching],"Display raw matching expressions",
-   "Display raw _matching expressions","m",true);
-  ([Opt.notations],"Display notations","Display _notations","n",true);
-  ([Opt.all_basic],"Display all basic low-level contents",
-   "Display _all basic low-level contents","a",false);
-  ([Opt.existential],"Display existential variable instances",
-   "Display _existential variable instances","e",false);
-  ([Opt.universes],"Display universe levels","Display _universe levels",
-   "u",false);
-  ([Opt.all_basic;Opt.existential;Opt.universes],
-   "Display all low-level contents", "Display all _low-level contents",
-   "l",false)
-]
-
-let create_session f = Session.create f (make_coqtop_args f) print_items
+let create_session f = Session.create f (make_coqtop_args f)
 
 (** Auxiliary functions for the File operations *)
 
@@ -550,10 +530,8 @@ let tactic_wizard_callback l _ =
 
 let printopts_callback opts v =
   let b = v#get_active in
-  let opts = List.map (fun o -> (o,b)) opts in
-  send_to_coq (fun sn h k ->
-    Coq.PrintOpt.set opts h
-      (fun () -> sn.coqops#show_goals h k))
+  let () = List.iter (fun o -> Coq.PrintOpt.set o b) opts in
+  send_to_coq (fun sn -> sn.coqops#show_goals)
 
 (** Templates menu *)
 
@@ -791,11 +769,27 @@ let item = GAction.add_action
 
 let toggle_item = GAction.add_toggle_action
 
+(** Search the first '_' in a label string and return the following
+    character as shortcut, plus the string without the '_' *)
+
+let get_shortcut s =
+  try
+    let n = String.length s in
+    let i = String.index s '_' in
+    let k = String.make 1 s.[i+1] in
+    let s' = (String.sub s 0 i) ^ (String.sub s (i+1) (n-i-1)) in
+    Some k, s'
+  with _ -> None,s
+
+module Opt = Coq.PrintOpt
+
 let toggle_items menu_name l =
-  let f (opts,name,label,key,dflt) =
-    toggle_item name ~active:dflt ~label
-      ~accel:(prefs.modifier_for_display^key)
-      ~callback:(printopts_callback opts)
+  let f d =
+    let label = d.Opt.label in
+    let k, name = get_shortcut label in
+    let accel = Option.map ((^) prefs.modifier_for_display) k in
+    toggle_item name ~label ?accel ~active:d.Opt.init
+      ~callback:(printopts_callback d.Opt.opts)
       menu_name
   in
   List.iter f l
@@ -977,7 +971,7 @@ let build_ui () =
         then ccw#frame#misc#hide ()
         else ccw#frame#misc#show ())
   ];
-  toggle_items view_menu print_items;
+  toggle_items view_menu Coq.PrintOpt.bool_items;
 
   menu navigation_menu [
     item "Navigation" ~label:"_Navigation";

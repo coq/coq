@@ -28,7 +28,7 @@ object
   method raw_coq_query : string -> Coq.task
   method show_goals : Coq.task
   method backtrack_last_phrase : Coq.task
-  method include_file_dir_in_path : Coq.task
+  method initialize : Coq.task
 end
 
 class coqops
@@ -357,9 +357,9 @@ object(self)
     clear_info ();
     push_info "Restarted";
     (* apply the initial commands to coq *)
-    self#include_file_dir_in_path h k;
+    self#initialize h k;
 
-  method include_file_dir_in_path h k =
+  method private include_file_dir_in_path h k =
     match get_filename () with
       |None -> k ()
       |Some f ->
@@ -378,70 +378,8 @@ object(self)
                 k ()
               |Interface.Good _ | Interface.Unsafe _ -> k ()))
 
-(** NB: Events during text edition:
+  method initialize h k =
+    self#include_file_dir_in_path h
+      (fun () -> Coq.PrintOpt.enforce h k)
 
-    - [begin_user_action]
-    - [insert_text] (or [delete_range] when deleting)
-    - [changed]
-    - [end_user_action]
-
-   When pasting a text containing tags (e.g. the sentence terminators),
-   there is actually many [insert_text] and [changed]. For instance,
-   for "a. b.":
-
-    - [begin_user_action]
-    - [insert_text] (for "a")
-    - [changed]
-    - [insert_text] (for ".")
-    - [changed]
-    - [apply_tag] (for the tag of ".")
-    - [insert_text] (for " b")
-    - [changed]
-    - [insert_text] (for ".")
-    - [changed]
-    - [apply_tag] (for the tag of ".")
-    - [end_user_action]
-
-  Since these copy-pasted tags may interact badly with the retag mechanism,
-  we now don't monitor the "changed" event, but rather the "begin_user_action"
-  and "end_user_action". We begin by setting a mark at the initial cursor
-  point. At the end, the zone between the mark and the cursor is to be
-  untagged and then retagged. *)
-
-  initializer
-  let _ = buffer#connect#insert_text
-    ~callback:(fun it s ->
-      (* If a #insert happens in the locked zone, we discard it.
-         Other solution: always use #insert_interactive and similar *)
-      if (it#compare self#get_start_of_input)<0 then
-        GtkSignal.stop_emit ();
-      if String.length s > 1 then
-        let () = Minilib.log "insert_text: Placing cursor" in
-        buffer#place_cursor ~where:it;
-        if String.contains s '\n' then
-          let () = Minilib.log "insert_text: Recentering" in
-          script#recenter_insert)
-  in
-  let _ = buffer#connect#begin_user_action
-    ~callback:(fun () ->
-      let where = self#get_insert in
-      buffer#move_mark (`NAME "prev_insert") ~where;
-      let start = self#get_start_of_input in
-      let stop = buffer#end_iter in
-      buffer#remove_tag Tags.Script.error ~start ~stop)
-  in
-  let _ = buffer#connect#end_user_action
-    ~callback:(fun () -> Sentence.tag_on_insert buffer)
-  in
-  let _ = buffer#connect#after#mark_set
-    ~callback:(fun it m ->
-      !set_location
-        (Printf.sprintf "Line: %5d Char: %3d"
-           (self#get_insert#line + 1)
-           (self#get_insert#line_offset + 1));
-      match GtkText.Mark.get_name m  with
-        | Some "insert" -> ()
-        | Some s -> Minilib.log (s^" moved")
-        | None -> ())
-  in ()
 end

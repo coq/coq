@@ -518,10 +518,8 @@ module PrintOpt =
 struct
   type t = string list
 
-  let width_ref = ref None
-  let set_printing_width w = width_ref := Some w
+  (* Boolean options *)
 
-  let width = ["Printing"; "Width"]
   let implicit = ["Printing"; "Implicit"]
   let coercions = ["Printing"; "Coercions"]
   let raw_matching = ["Printing"; "Matching"]
@@ -530,29 +528,56 @@ struct
   let existential = ["Printing"; "Existential"; "Instances"]
   let universes = ["Printing"; "Universes"]
 
-  let state_hack = Hashtbl.create 11
-  let _ = List.iter (fun opt -> Hashtbl.add state_hack opt false)
-            [ implicit; coercions; raw_matching; notations;
-	      all_basic; existential; universes ]
+  type bool_descr = { opts : t list; init : bool; label : string }
 
-  let set opts h k =
-    List.iter (fun (name, v) -> Hashtbl.replace state_hack name v) opts;
-    let opts = List.map (fun (n, v) -> (n, Interface.BoolValue v)) opts in
-    let opts = (width, Interface.IntValue !width_ref):: opts in
+  let bool_items = [
+    { opts = [implicit]; init = false; label = "Display _implicit arguments" };
+    { opts = [coercions]; init = false; label = "Display _coercions" };
+    { opts = [raw_matching]; init = true;
+      label = "Display raw _matching expressions" };
+    { opts = [notations]; init = true; label = "Display _notations" };
+    { opts = [all_basic]; init = false;
+      label = "Display _all basic low-level contents" };
+    { opts = [existential]; init = false;
+      label = "Display _existential variable instances" };
+    { opts = [universes]; init = false; label = "Display _universe levels" };
+    { opts = [all_basic;existential;universes]; init = false;
+      label = "Display all _low-level contents" }
+  ]
+
+  (** The current status of the boolean options *)
+
+  let current_state = Hashtbl.create 11
+
+  let set opt v = Hashtbl.replace current_state opt v
+
+  let reset () =
+    let init_descr d = List.iter (fun o -> set o d.init) d.opts in
+    List.iter init_descr bool_items
+
+  let _ = reset ()
+
+  (** Integer option *)
+
+  let width = ["Printing"; "Width"]
+  let width_state = ref None
+  let set_printing_width w = width_state := Some w
+
+  (** Transmitting options to coqtop *)
+
+  let enforce h k =
+    let mkopt o v acc = (o, Interface.BoolValue v) :: acc in
+    let opts = Hashtbl.fold mkopt current_state [] in
+    let opts = (width, Interface.IntValue !width_state) :: opts in
     eval_call (Serialize.set_options opts) h
       (function
 	| Interface.Good () -> k ()
 	| _ -> failwith "Cannot set options. Resetting coqtop")
 
-  let enforce_hack h k =
-    let elements = Hashtbl.fold (fun opt v acc -> (opt, v) :: acc) state_hack []
-    in
-    set elements h k
-
 end
 
 let goals h k =
-  PrintOpt.enforce_hack h (fun () -> eval_call Serialize.goals h k)
+  PrintOpt.enforce h (fun () -> eval_call Serialize.goals h k)
 
 let evars h k =
-  PrintOpt.enforce_hack h (fun () -> eval_call Serialize.evars h k)
+  PrintOpt.enforce h (fun () -> eval_call Serialize.evars h k)

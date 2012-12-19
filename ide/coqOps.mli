@@ -17,7 +17,7 @@ object
   method raw_coq_query : string -> Coq.task
   method show_goals : Coq.task
   method backtrack_last_phrase : Coq.task
-  method include_file_dir_in_path : Coq.task
+  method initialize : Coq.task
 end
 
 class coqops :

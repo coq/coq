@@ -128,15 +128,17 @@ val search : Interface.search_flags -> string Interface.coq_object list atask
 
 module PrintOpt :
 sig
-  type t
-  val implicit : t
-  val coercions : t
-  val raw_matching : t
-  val notations : t
-  val all_basic : t
-  val existential : t
-  val universes : t
+  type t (** Representation of an option *)
 
+  type bool_descr = { opts : t list; init : bool; label : string }
+
+  val bool_items : bool_descr list
+
+  val set : t -> bool -> unit
   val set_printing_width : int -> unit
-  val set : (t * bool) list -> task
+
+  (** [enforce] transmits to coq the current option values.
+      It is also called by [goals] and [evars] above. *)
+
+  val enforce : task
 end

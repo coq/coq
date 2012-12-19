@@ -26,17 +26,7 @@ type session = {
   tab_label : GMisc.label;
 }
 
-type print_items =
-    (Coq.PrintOpt.t list * string * string * string * bool) list
-
-let create file coqtop_args print_items =
-  let basename = match file with
-    |None -> "*scratch*"
-    |Some f -> Glib.Convert.filename_to_utf8 (Filename.basename f)
-  in
-  let coqtop = Coq.spawn_coqtop coqtop_args in
-  let reset () = Coq.reset_coqtop coqtop
-  in
+let create_buffer () =
   let buffer = GSourceView2.source_buffer
     ~tag_table:Tags.Script.table
     ~highlight_matching_brackets:true
@@ -47,38 +37,122 @@ let create file coqtop_args print_items =
   let _ = buffer#create_mark ~name:"start_of_input" buffer#start_iter in
   let _ = buffer#create_mark ~name:"prev_insert" buffer#start_iter in
   let _ = buffer#place_cursor ~where:buffer#start_iter in
-  let _ = buffer#add_selection_clipboard Ideutils.cb
-  in
-  let script = Wg_ScriptView.script_view coqtop ~source_buffer:buffer
+  let _ = buffer#add_selection_clipboard Ideutils.cb in
+  buffer
+
+let create_script coqtop source_buffer =
+  let script = Wg_ScriptView.script_view coqtop ~source_buffer
     ~show_line_numbers:true ~wrap_mode:`NONE ()
   in
   let _ = script#misc#set_name "ScriptWindow"
   in
+  script
+
+(** NB: Events during text edition:
+
+    - [begin_user_action]
+    - [insert_text] (or [delete_range] when deleting)
+    - [changed]
+    - [end_user_action]
+
+   When pasting a text containing tags (e.g. the sentence terminators),
+   there is actually many [insert_text] and [changed]. For instance,
+   for "a. b.":
+
+    - [begin_user_action]
+    - [insert_text] (for "a")
+    - [changed]
+    - [insert_text] (for ".")
+    - [changed]
+    - [apply_tag] (for the tag of ".")
+    - [insert_text] (for " b")
+    - [changed]
+    - [insert_text] (for ".")
+    - [changed]
+    - [apply_tag] (for the tag of ".")
+    - [end_user_action]
+
+  Since these copy-pasted tags may interact badly with the retag mechanism,
+  we now don't monitor the "changed" event, but rather the "begin_user_action"
+  and "end_user_action". We begin by setting a mark at the initial cursor
+  point. At the end, the zone between the mark and the cursor is to be
+  untagged and then retagged. *)
+
+let set_buffer_handlers buffer script =
+  let start_of_input () = buffer#get_iter_at_mark (`NAME "start_of_input") in
+  let get_insert () = buffer#get_iter_at_mark `INSERT
+  in
+  let _ = buffer#connect#insert_text
+    ~callback:(fun it s ->
+      (* If a #insert happens in the locked zone, we discard it.
+         Other solution: always use #insert_interactive and similar *)
+      if (it#compare (start_of_input ()))<0 then
+        GtkSignal.stop_emit ();
+      if String.length s > 1 then
+        let () = Minilib.log "insert_text: Placing cursor" in
+        buffer#place_cursor ~where:it;
+        if String.contains s '\n' then
+          let () = Minilib.log "insert_text: Recentering" in
+          script#recenter_insert)
+  in
+  let _ = buffer#connect#begin_user_action
+    ~callback:(fun () ->
+      (* We remove any error red zone, and place the [prev_insert] mark *)
+      let where = get_insert () in
+      buffer#move_mark (`NAME "prev_insert") ~where;
+      let start = start_of_input () in
+      let stop = buffer#end_iter in
+      buffer#remove_tag Tags.Script.error ~start ~stop)
+  in
+  let _ = buffer#connect#end_user_action
+    ~callback:(fun () -> Sentence.tag_on_insert buffer)
+  in
+  let _ = buffer#connect#after#mark_set
+    ~callback:(fun it m ->
+      let ins = get_insert () in
+      !Ideutils.set_location
+        (Printf.sprintf "Line: %5d Char: %3d"
+           (ins#line + 1)
+           (ins#line_offset + 1));
+      match GtkText.Mark.get_name m with
+        | Some "insert" -> ()
+        | Some s -> Minilib.log (s^" moved")
+        | None -> ())
+  in ()
+
+let create_proof () =
   let proof = Wg_ProofView.proof_view () in
   let _ = proof#misc#set_can_focus true in
-  let _ =
-    GtkBase.Widget.add_events proof#as_widget [`ENTER_NOTIFY;`POINTER_MOTION]
+  let _ = GtkBase.Widget.add_events proof#as_widget
+    [`ENTER_NOTIFY;`POINTER_MOTION]
   in
+  proof
+
+let create_messages () =
   let messages = Wg_MessageView.message_view () in
-  let _ = messages#misc#set_can_focus true
+  let _ = messages#misc#set_can_focus true in
+  messages
+
+let create file coqtop_args =
+  let basename = match file with
+    |None -> "*scratch*"
+    |Some f -> Glib.Convert.filename_to_utf8 (Filename.basename f)
   in
+  let coqtop = Coq.spawn_coqtop coqtop_args in
+  let reset () = Coq.reset_coqtop coqtop in
+  let buffer = create_buffer () in
+  let script = create_script coqtop buffer in
+  let _ = set_buffer_handlers (buffer :> GText.buffer) script in
+  let proof = create_proof () in
+  let messages = create_messages () in
   let command = new Wg_Command.command_window coqtop in
   let finder = new Wg_Find.finder (script :> GText.view) in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
+  let _ = fops#update_stats in
   let cops = new CoqOps.coqops script proof messages (fun () -> fops#filename)
   in
   let _ = Coq.set_reset_handler coqtop cops#handle_reset_initial in
-  let _ = fops#update_stats in
-  let _ = Coq.init_coqtop coqtop
-    (fun h k ->
-      cops#include_file_dir_in_path h
-        (fun () ->
-          let fold accu (opts, _, _, _, dflt) =
-            List.fold_left (fun accu opt -> (opt, dflt) :: accu) accu opts
-          in
-          let options = List.fold_left fold [] print_items in
-          Coq.PrintOpt.set options h k))
-  in
+  let _ = Coq.init_coqtop coqtop cops#initialize in
   {
     buffer = (buffer :> GText.buffer);
     script=script;

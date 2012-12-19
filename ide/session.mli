@@ -22,11 +22,8 @@ type session = {
   tab_label : GMisc.label;
 }
 
-type print_items =
-    (Coq.PrintOpt.t list * string * string * string * bool) list
-
 (** [create filename coqtop_args] *)
-val create : string option -> string list -> print_items -> session
+val create : string option -> string list -> session
 
 val kill : session -> unit
 
