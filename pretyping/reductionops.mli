@@ -187,7 +187,8 @@ val is_arity : env ->  evar_map -> constr -> bool
 
 val whd_programs :  reduction_function
 
-val contract_fix : fixpoint -> (constr * constr list) option -> constr
+val contract_fix : ?env:Environ.env -> fixpoint ->
+  (constr * constr list) option -> constr
 val fix_recarg : fixpoint -> constr stack -> (int * constr) option
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)

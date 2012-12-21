@@ -217,17 +217,42 @@ let reducible_mind_case c = match kind_of_term c with
   | Construct _ | CoFix _ -> true
   | _  -> false
 
-let contract_cofix (bodynum,(types,names,bodies as typedbodies)) cst =
+(** @return c if there is a constant c whose body is bd
+    @return bd else.
+
+    It has only a meaning because internal representation of "Fixpoint f x
+    := t" is Definition f := fix f x => t
+
+    Even more fragile that we could hope because do Module M. Fixpoint
+    f x := t. End M. Definition f := u. and say goodbye to any hope
+    of refolding M.f this way ...
+*)
+let magicaly_constant_of_fixbody env bd = function
+  | Name.Anonymous -> bd
+  | Name.Name id ->
+    try
+      let cst = Nametab.locate_constant
+	(Libnames.make_qualid Dir_path.empty id) in
+      match constant_opt_value env cst with
+      | None -> bd
+      | Some t -> if eq_constr t bd then mkConst cst else bd
+    with
+    | Not_found -> bd
+
+let contract_cofix ?env (bodynum,(names,types,bodies as typedbodies)) cst =
   let nbodies = Array.length bodies in
-    let make_Fi j =
-      let ind = nbodies-j-1 in
-      if bodynum = ind && not (Option.is_empty cst) then
-	let (c,params) = Option.get cst in
-	applist(c, List.rev params)
-      else
-	mkCoFix (ind,typedbodies) in
-    let closure = List.tabulate make_Fi nbodies in
-    substl closure bodies.(bodynum)
+  let make_Fi j =
+    let ind = nbodies-j-1 in
+    if bodynum = ind && not (Option.is_empty cst) then
+      let (c,params) = Option.get cst in
+      applist(c, List.rev params)
+    else
+      let bd = mkCoFix (ind,typedbodies) in
+      match env with
+      | None -> bd
+      | Some e -> magicaly_constant_of_fixbody e bd names.(ind) in
+  let closure = List.tabulate make_Fi nbodies in
+  substl closure bodies.(bodynum)
 
 let reduce_mind_case mia =
   match kind_of_term mia.mconstr with
@@ -243,7 +268,7 @@ let reduce_mind_case mia =
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
    Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
 
-let contract_fix ((recindices,bodynum),(types,names,bodies as typedbodies)) cst =
+let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies)) cst =
     let nbodies = Array.length recindices in
     let make_Fi j =
       let ind = nbodies-j-1 in
@@ -251,7 +276,10 @@ let contract_fix ((recindices,bodynum),(types,names,bodies as typedbodies)) cst 
 	let (c,params) = Option.get cst in
 	applist(c, List.rev params)
       else
-	mkFix ((recindices,ind),typedbodies) in
+	let bd = mkFix ((recindices,ind),typedbodies) in
+	match env with
+	| None -> bd
+	| Some e -> magicaly_constant_of_fixbody e bd names.(ind) in
     let closure = List.tabulate make_Fi nbodies in
     substl closure bodies.(bodynum)
 
@@ -354,7 +382,7 @@ let rec whd_state_gen ?(refold=false) flags env sigma =
 	  whrec noth (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
 	|args, (Zfix (f,s',cst)::s'') ->
 	  let x' = applist(x,args) in
-	  whrec noth (contract_fix f cst,
+	  whrec noth ((if refold then contract_fix ~env f else contract_fix f) cst,
 		      append_stack_app_list s' (append_stack_app_list [x'] s''))
 	|_ -> fold ()
       else fold ()
@@ -363,7 +391,9 @@ let rec whd_state_gen ?(refold=false) flags env sigma =
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
 	match strip_app stack with
 	|args, (Zcase(ci, _, lf,_)::s') ->
-	  whrec noth (contract_cofix cofix (best_cst ()), stack)
+	  whrec noth ((if refold
+	    then contract_cofix ~env cofix
+	    else contract_cofix cofix) (best_cst ()), stack)
 	|_ -> fold ()
       else fold ()
 
