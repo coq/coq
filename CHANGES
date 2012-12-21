@@ -1,3 +1,35 @@
+Changes from V8.4 to V8.4pl1
+============================
+
+Bug fixes
+
+- Solved bugs :
+  #2851 #2863 #2865 #2893 #2895 #2892 #2905 #2906 #2907 #2917 #2921
+  #2930 #2941 #2878
+- Partially fixed bug : #2904
+- Various fixes concerning coq_makefile
+
+Optimizations
+
+- "Union by rank" optimization for universes contributed by J.H. Jourdan
+  and G. Sherrer (see union-find-and-coq-universes on gagallium blog).
+
+Libraries
+
+- Internal organisation of some modular libraries have slightly changed
+  due to bug #2904 (GenericMinMax, OrdersTac)
+- No more constant "int" in ZArith/Int.v to avoid name clash with OCaml
+  (cf bug #2878).
+
+Coqide
+
+- Improved shutdown of coqtop processes spawned by coqide
+  (in particular added a missing close_on_exec primitive before forking).
+- On windows, launching coqide with the -debug option now produces
+  a log file in the user's temporary directory. The location of this
+  log file is displayed in the "About" message.
+
+
 Changes from V8.4beta2 to V8.4
 ==============================
 
