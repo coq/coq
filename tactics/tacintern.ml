@@ -455,6 +455,7 @@ let intern_red_expr ist = function
   | Unfold l -> Unfold (List.map (intern_unfold ist) l)
   | Fold l -> Fold (List.map (intern_constr ist) l)
   | Cbv f -> Cbv (intern_flag ist f)
+  | Cbn f -> Cbn (intern_flag ist f)
   | Lazy f -> Lazy (intern_flag ist f)
   | Pattern l -> Pattern (List.map (intern_constr_with_occurrences ist) l)
   | Simpl o -> Simpl (Option.map (intern_typed_pattern_with_occurrences ist) o)

@@ -117,6 +117,7 @@ let subst_redexp subst = function
   | Unfold l -> Unfold (List.map (subst_unfold subst) l)
   | Fold l -> Fold (List.map (subst_glob_constr subst) l)
   | Cbv f -> Cbv (subst_flag subst f)
+  | Cbn f -> Cbn (subst_flag subst f)
   | Lazy f -> Lazy (subst_flag subst f)
   | Pattern l -> Pattern (List.map (subst_constr_with_occurrences subst) l)
   | Simpl o -> Simpl (Option.map (subst_pattern_with_occurrences subst) o)

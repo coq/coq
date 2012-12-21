@@ -182,6 +182,8 @@ let mlexpr_of_red_expr = function
   | Genredexpr.Simpl o -> <:expr< Genredexpr.Simpl $mlexpr_of_option mlexpr_of_occ_constr o$ >>
   | Genredexpr.Cbv f ->
       <:expr< Genredexpr.Cbv $mlexpr_of_red_flags f$ >>
+  | Genredexpr.Cbn f ->
+      <:expr< Genredexpr.Cbn $mlexpr_of_red_flags f$ >>
   | Genredexpr.Lazy f ->
       <:expr< Genredexpr.Lazy $mlexpr_of_red_flags f$ >>
   | Genredexpr.Unfold l ->

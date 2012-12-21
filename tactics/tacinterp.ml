@@ -577,6 +577,7 @@ let interp_red_expr ist sigma env = function
     let (sigma,l_interp) = interp_constr_list ist env sigma l in
     sigma , Fold l_interp
   | Cbv f -> sigma , Cbv (interp_flag ist env f)
+  | Cbn f -> sigma , Cbn (interp_flag ist env f)
   | Lazy f -> sigma , Lazy (interp_flag ist env f)
   | Pattern l ->
     let (sigma,l_interp) =

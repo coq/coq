@@ -262,7 +262,7 @@ let bind_red_expr_occurrences occs nbcl redexp =
           error_illegal_clause ()
         else
           CbvVm (Some (occs,c))
-    | Red _ | Hnf | Cbv _ | Lazy _
+    | Red _ | Hnf | Cbv _ | Lazy _ | Cbn _
     | ExtraRedExpr _ | Fold _ | Simpl None | CbvVm None ->
 	error_occurrences_not_unsupported ()
     | Unfold [] | Pattern [] ->
