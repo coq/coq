@@ -258,6 +258,4 @@ Qed.
 
 Unset Implicit Arguments.
 
-Notation iter_nat := @nat_iter (only parsing).
-Notation iter_nat_plus := @nat_iter_plus (only parsing).
-Notation iter_nat_invariant := @nat_iter_invariant (only parsing).
+Notation iter_nat n A f x := (nat_rect (fun _ => A) x (fun _ => f) n) (only parsing).

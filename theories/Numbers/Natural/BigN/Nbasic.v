@@ -371,7 +371,7 @@ Section CompareRec.
  intros n (H0, H); split; auto.
  apply Z.lt_le_trans with (1:= H).
  unfold double_wB, DoubleBase.double_wB; simpl.
- rewrite Pshiftl_nat_S, base_xO.
+ rewrite base_xO.
  set (u := base (Pos.shiftl_nat wm_base n)).
  assert (0 < u).
   unfold u, base; auto with zarith.

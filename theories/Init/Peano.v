@@ -266,35 +266,16 @@ induction n; destruct m; simpl; auto. inversion 1.
 intros. apply f_equal. apply IHn. apply le_S_n. trivial.
 Qed.
 
-(** [n]th iteration of the function [f] *)
-
-Fixpoint nat_iter (n:nat) {A} (f:A->A) (x:A) : A :=
-  match n with
-    | O => x
-    | S n' => f (nat_iter n' f x)
-  end.
-
-Lemma nat_iter_succ_r n {A} (f:A->A) (x:A) :
-  nat_iter (S n) f x = nat_iter n f (f x).
+Lemma nat_rect_succ_r {A} (f: A -> A) (x:A) n :
+  nat_rect (fun _ => A) x (fun _ => f) (S n) = nat_rect (fun _ => A) (f x) (fun _ => f) n.
 Proof.
   induction n; intros; simpl; rewrite <- ?IHn; trivial.
 Qed.
 
-Theorem nat_iter_plus :
+Theorem nat_rect_plus :
   forall (n m:nat) {A} (f:A -> A) (x:A),
-    nat_iter (n + m) f x = nat_iter n f (nat_iter m f x).
+    nat_rect (fun _ => A) x (fun _ => f) (n + m) =
+      nat_rect (fun _ => A) (nat_rect (fun _ => A) x (fun _ => f) m) (fun _ => f) n.
 Proof.
   induction n; intros; simpl; rewrite ?IHn; trivial.
-Qed.
-
-(** Preservation of invariants : if [f : A->A] preserves the invariant [Inv],
-    then the iterates of [f] also preserve it. *)
-
-Theorem nat_iter_invariant :
-  forall (n:nat) {A} (f:A -> A) (P : A -> Prop),
-    (forall x, P x -> P (f x)) ->
-    forall x, P x -> P (nat_iter n f x).
-Proof.
-  induction n; simpl; trivial.
-  intros A f P Hf x Hx. apply Hf, IHn; trivial.
 Qed.

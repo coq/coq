@@ -287,7 +287,7 @@ Section DoubleBase.
   Lemma double_wB_wwB : forall n, double_wB n * double_wB n = double_wB (S n).
   Proof.
    intros n;unfold double_wB;simpl.
-   unfold base. rewrite Pshiftl_nat_S, (Pos2Z.inj_xO (_ << _)).
+   unfold base. rewrite (Pos2Z.inj_xO (_ << _)).
    replace  (2 * Zpos (w_digits << n)) with
      (Zpos (w_digits << n) + Zpos (w_digits << n)) by ring.
    symmetry; apply Zpower_exp;intro;discriminate.

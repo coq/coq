@@ -25,7 +25,7 @@ Local Open Scope Z_scope.
 (** [Zpower_nat z n] is the n-th power of [z] when [n] is an unary
     integer (type [nat]) and [z] a signed integer (type [Z]) *)
 
-Definition Zpower_nat (z:Z) (n:nat) := nat_iter n (Z.mul z) 1.
+Definition Zpower_nat (z:Z) (n:nat) := nat_rect _ 1 (fun _ => Z.mul z) n.
 
 Lemma Zpower_nat_0_r z : Zpower_nat z 0 = 1.
 Proof. reflexivity. Qed.
@@ -42,7 +42,7 @@ Lemma Zpower_nat_is_exp :
 Proof.
  induction n.
  - intros. now rewrite Zpower_nat_0_r, Z.mul_1_l.
- - intros. simpl. now rewrite 2 Zpower_nat_succ_r, IHn, Z.mul_assoc.
+ - intros. simpl. now rewrite IHn, Z.mul_assoc.
 Qed.
 
 (** Conversions between powers of unary and binary integers *)
@@ -94,7 +94,7 @@ Section Powers_of_2.
       calculus is possible. [shift n m] computes [2^n * m], i.e.
       [m] shifted by [n] positions *)
 
-  Definition shift_nat (n:nat) (z:positive) := nat_iter n xO z.
+  Definition shift_nat (n:nat) (z:positive) := nat_rect _ z (fun _ => xO) n.
   Definition shift_pos (n z:positive) := Pos.iter n xO z.
   Definition shift (n:Z) (z:positive) :=
     match n with
@@ -154,7 +154,7 @@ Section Powers_of_2.
   Lemma shift_nat_plus n m x :
     shift_nat (n + m) x = shift_nat n (shift_nat m x).
   Proof.
-   apply iter_nat_plus.
+   induction n; simpl; now f_equal.
   Qed.
 
   Theorem shift_nat_correct n x :
@@ -255,7 +255,7 @@ Section power_div_with_rest.
   Proof.
    rewrite Pos2Nat.inj_iter, two_power_pos_nat.
    induction (Pos.to_nat p); simpl; trivial.
-   destruct (nat_iter n Zdiv_rest_aux (x,0,1)) as ((q,r),d).
+   destruct (nat_rect _ _ _ n) as ((q,r),d).
    unfold Zdiv_rest_aux. rewrite two_power_nat_S; now f_equal.
   Qed.
 

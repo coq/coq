@@ -14,14 +14,12 @@ Require Import NZBase NZOrder NZAddOrder Plus Minus.
     translation from Peano numbers [nat] into NZ.
 *)
 
-(** First, some complements about [nat_iter] *)
+Local Notation "f ^ n" := (fun x => nat_rect _ x (fun _ => f) n).
 
-Local Notation "f ^ n" := (nat_iter n f).
-
-Instance nat_iter_wd n {A} (R:relation A) :
- Proper ((R==>R)==>R==>R) (nat_iter n).
+Instance nat_rect_wd n {A} (R:relation A) :
+ Proper (R==>(R==>R)==>R) (fun x f => nat_rect (fun _ => _) x (fun _ => f) n).
 Proof.
-intros f f' Hf. induction n; simpl; red; auto.
+intros x y eq_xy f g eq_fg; induction n; [assumption | now apply eq_fg].
 Qed.
 
 Module NZDomainProp (Import NZ:NZDomainSig').
@@ -33,17 +31,24 @@ Include NZBaseProp NZ.
 
 Lemma itersucc_or_itersucc n m : exists k, n == (S^k) m \/ m == (S^k) n.
 Proof.
-nzinduct n m.
+revert n.
+apply central_induction with (z:=m).
+ { intros x y eq_xy; apply ex_iff_morphism.
+  intros n; apply or_iff_morphism.
+ + split; intros; etransitivity; try eassumption; now symmetry.
+ + split; intros; (etransitivity; [eassumption|]); [|symmetry];
+    (eapply nat_rect_wd; [eassumption|apply succ_wd]).
+ }
 exists 0%nat. now left.
 intros n. split; intros [k [L|R]].
 exists (Datatypes.S k). left. now apply succ_wd.
 destruct k as [|k].
 simpl in R. exists 1%nat. left. now apply succ_wd.
-rewrite nat_iter_succ_r in R. exists k. now right.
+rewrite nat_rect_succ_r in R. exists k. now right.
 destruct k as [|k]; simpl in L.
 exists 1%nat. now right.
 apply succ_inj in L. exists k. now left.
-exists (Datatypes.S k). right. now rewrite nat_iter_succ_r.
+exists (Datatypes.S k). right. now rewrite nat_rect_succ_r.
 Qed.
 
 (** Generalized version of [pred_succ] when iterating *)
@@ -53,7 +58,7 @@ Proof.
 induction k.
 simpl; auto with *.
 simpl; intros. apply pred_wd in H. rewrite pred_succ in H. apply IHk in H; auto.
-rewrite <- nat_iter_succ_r in H; auto.
+rewrite <- nat_rect_succ_r in H; auto.
 Qed.
 
 (** From a given point, all others are iterated successors
@@ -319,7 +324,7 @@ Lemma ofnat_add : forall n m, [n+m] == [n]+[m].
 Proof.
  intros. rewrite ofnat_add_l.
  induction n; simpl. reflexivity.
- rewrite ofnat_succ. now f_equiv.
+ now f_equiv.
 Qed.
 
 Lemma ofnat_mul : forall n m, [n*m] == [n]*[m].
@@ -327,15 +332,15 @@ Proof.
  induction n; simpl; intros.
  symmetry. apply mul_0_l.
  rewrite plus_comm.
- rewrite ofnat_succ, ofnat_add, mul_succ_l.
+ rewrite ofnat_add, mul_succ_l.
  now f_equiv.
 Qed.
 
 Lemma ofnat_sub_r : forall n m, n-[m] == (P^m) n.
 Proof.
  induction m; simpl; intros.
- rewrite ofnat_zero. apply sub_0_r.
- rewrite ofnat_succ, sub_succ_r. now f_equiv.
+ apply sub_0_r.
+ rewrite sub_succ_r. now f_equiv.
 Qed.
 
 Lemma ofnat_sub : forall n m, m<=n -> [n-m] == [n]-[m].
@@ -346,9 +351,10 @@ Proof.
  intros.
  destruct n.
  inversion H.
- rewrite nat_iter_succ_r.
+ rewrite nat_rect_succ_r.
  simpl.
- rewrite ofnat_succ, pred_succ; auto with arith.
+ etransitivity. apply IHm. auto with arith.
+    eapply nat_rect_wd; [symmetry;apply pred_succ|apply pred_wd].
 Qed.
 
 End NZOfNatOps.

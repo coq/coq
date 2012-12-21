@@ -113,7 +113,7 @@ Proof.
 Qed.
 
 Lemma inj_iter a {A} (f:A->A) (x:A) :
-  N.iter a f x = nat_iter (N.to_nat a) f x.
+  N.iter a f x = nat_rect (fun _ => A) x (fun _ => f) (N.to_nat a).
 Proof.
  destruct a as [|a]. trivial. apply Pos2Nat.inj_iter.
 Qed.
@@ -194,7 +194,7 @@ Lemma inj_max n n' :
 Proof. nat2N. Qed.
 
 Lemma inj_iter n {A} (f:A->A) (x:A) :
-  nat_iter n f x = N.iter (N.of_nat n) f x.
+  nat_rect (fun _ => A) x (fun _ => f) n = N.iter (N.of_nat n) f x.
 Proof. now rewrite N2Nat.inj_iter, !id. Qed.
 
 End Nat2N.

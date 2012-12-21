@@ -86,7 +86,7 @@ Lemma Nshiftl_nat_equiv :
  forall a n, N.shiftl_nat a (N.to_nat n) = N.shiftl a n.
 Proof.
  intros [|a] [|n]; simpl; unfold N.shiftl_nat; trivial.
- apply nat_iter_invariant; intros; now subst.
+ induction (Pos.to_nat n) as [|? H]; simpl; now try rewrite H.
  rewrite <- Pos2Nat.inj_iter. symmetry. now apply Pos.iter_swap_gen.
 Qed.
 
@@ -103,7 +103,7 @@ Lemma Nshiftr_nat_spec : forall a n m,
 Proof.
  induction n; intros m.
  now rewrite <- plus_n_O.
- simpl. rewrite <- plus_n_Sm, <- plus_Sn_m, <- IHn, Nshiftr_nat_S.
+ simpl. rewrite <- plus_n_Sm, <- plus_Sn_m, <- IHn.
  destruct (N.shiftr_nat a n) as [|[p|p|]]; simpl; trivial.
 Qed.
 
@@ -113,7 +113,7 @@ Proof.
  induction n; intros m H.
  now rewrite <- minus_n_O.
  destruct m. inversion H. apply le_S_n in H.
- simpl. rewrite <- IHn, Nshiftl_nat_S; trivial.
+ simpl. rewrite <- IHn; trivial.
  destruct (N.shiftl_nat a n) as [|[p|p|]]; simpl; trivial.
 Qed.
 
@@ -148,7 +148,7 @@ Lemma Pshiftl_nat_plus : forall n m p,
   Pos.shiftl_nat p (m + n) = Pos.shiftl_nat (Pos.shiftl_nat p n) m.
 Proof.
  induction m; simpl; intros. reflexivity.
- rewrite 2 Pshiftl_nat_S. now f_equal.
+ now f_equal.
 Qed.
 
 (** Semantics of bitwise operations with respect to [N.testbit_nat] *)

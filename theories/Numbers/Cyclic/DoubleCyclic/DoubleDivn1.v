@@ -160,7 +160,7 @@ Section GENDIVN1.
   Lemma p_lt_double_digits : forall n, [|p|] <= Zpos (w_digits << n).
   Proof.
    induction n;simpl. trivial.
-   case (spec_to_Z p); rewrite Pshiftl_nat_S, Pos2Z.inj_xO;auto with zarith.
+   case (spec_to_Z p); rewrite Pos2Z.inj_xO;auto with zarith.
   Qed.
 
   Lemma spec_double_divn1_p : forall n r h l,
@@ -305,7 +305,6 @@ Section GENDIVN1.
  Lemma spec_double_digits:forall n, Zpos w_digits <= Zpos (w_digits << n).
  Proof.
   induction n;simpl;auto with zarith.
-  rewrite Pshiftl_nat_S.
   change (Zpos (xO (w_digits << n))) with
     (2*Zpos (w_digits << n)).
   assert (0 < Zpos w_digits) by reflexivity.

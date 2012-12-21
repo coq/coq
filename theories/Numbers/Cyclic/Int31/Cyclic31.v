@@ -86,14 +86,14 @@ Section Basics.
  Lemma nshiftr_S_tail :
   forall n x, nshiftr (S n) x = nshiftr n (shiftr x).
  Proof.
- induction n; simpl; auto.
- intros; rewrite nshiftr_S, IHn, nshiftr_S; auto.
+ intros n; elim n; simpl; auto.
+ intros; now f_equal.
  Qed.
 
  Lemma nshiftr_n_0 : forall n, nshiftr n 0 = 0.
  Proof.
  induction n; simpl; auto.
- rewrite nshiftr_S, IHn; auto.
+ rewrite IHn; auto.
  Qed.
 
  Lemma nshiftr_size : forall x, nshiftr size x = 0.
@@ -108,7 +108,7 @@ Section Basics.
  replace k with ((k-size)+size)%nat by omega.
  induction (k-size)%nat; auto.
   rewrite nshiftr_size; auto.
-  simpl; rewrite nshiftr_S, IHn; auto.
+  simpl; rewrite IHn; auto.
  Qed.
 
  (** * Iterated shift to the left *)
@@ -124,14 +124,13 @@ Section Basics.
  Lemma nshiftl_S_tail :
   forall n x, nshiftl (S n) x = nshiftl n (shiftl x).
  Proof.
- induction n; simpl; auto.
- intros; rewrite nshiftl_S, IHn, nshiftl_S; auto.
+ intros n; elim n; simpl; intros; now f_equal.
  Qed.
 
  Lemma nshiftl_n_0 : forall n, nshiftl n 0 = 0.
  Proof.
  induction n; simpl; auto.
- rewrite nshiftl_S, IHn; auto.
+ rewrite IHn; auto.
  Qed.
 
  Lemma nshiftl_size : forall x, nshiftl size x = 0.
@@ -146,7 +145,7 @@ Section Basics.
  replace k with ((k-size)+size)%nat by omega.
  induction (k-size)%nat; auto.
   rewrite nshiftl_size; auto.
-  simpl; rewrite nshiftl_S, IHn; auto.
+  simpl; rewrite IHn; auto.
  Qed.
 
  Lemma firstr_firstl :
@@ -176,7 +175,7 @@ Section Basics.
  replace p with ((p-n)+n)%nat by omega.
  induction (p-n)%nat.
  simpl; auto.
- simpl; rewrite nshiftr_S; rewrite IHn0; auto.
+ simpl; rewrite IHn0; auto.
  Qed.
 
  Lemma nshiftr_0_firstl : forall n x, n < size ->
@@ -240,7 +239,7 @@ Section Basics.
   recr_aux p A case0 caserec (nshiftr (size - n) x).
  Proof.
  induction n.
- simpl; intros.
+ simpl minus; intros.
  rewrite nshiftr_size; destruct p; simpl; auto.
  intros.
  destruct p.
@@ -439,7 +438,7 @@ Section Basics.
   (phibis_aux n (nshiftr (size-n) x) < 2 ^ (Z.of_nat n))%Z.
  Proof.
  induction n.
- simpl; unfold phibis_aux; simpl; auto with zarith.
+ simpl minus; unfold phibis_aux; simpl; auto with zarith.
  intros.
  unfold phibis_aux, recrbis_aux; fold recrbis_aux;
   fold (phibis_aux n (shiftr (nshiftr (size - S n) x))).
@@ -529,7 +528,7 @@ Section Basics.
  remember (k'-k)%nat as n.
  clear Heqn H k'.
  induction n; simpl; auto.
- rewrite 2 nshiftl_S; f_equal; auto.
+ f_equal; auto.
  Qed.
 
  Lemma EqShiftL_firstr : forall k x y, k < size ->
@@ -823,7 +822,7 @@ Section Basics.
    nshiftr (size-n) x.
  Proof.
  induction n.
- intros; simpl.
+ intros; simpl minus.
  rewrite nshiftr_size; auto.
  intros.
  unfold phibis_aux, recrbis_aux; fold recrbis_aux;
@@ -879,12 +878,12 @@ Section Basics.
  Proof.
  induction n.
  simpl; intros; auto.
- simpl; intros.
- destruct p; simpl.
+ simpl p2ibis; intros.
+ destruct p; simpl snd.
 
  specialize IHn with p.
- destruct (p2ibis n p); simpl in *.
- rewrite nshiftr_S_tail.
+ destruct (p2ibis n p). simpl snd in *.
+rewrite nshiftr_S_tail.
  destruct (le_lt_dec size n).
  rewrite nshiftr_above_size; auto.
  assert (H:=nshiftr_0_firstl _ _ l IHn).
@@ -892,7 +891,7 @@ Section Basics.
  destruct i; simpl in *; rewrite H; auto.
 
  specialize IHn with p.
- destruct (p2ibis n p); simpl in *.
+ destruct (p2ibis n p); simpl snd in *.
  rewrite nshiftr_S_tail.
  destruct (le_lt_dec size n).
  rewrite nshiftr_above_size; auto.
@@ -1525,14 +1524,14 @@ Section Int31_Specs.
   unfold phibis_aux; simpl; rewrite H; fold (phibis_aux n (shiftr i));
   generalize (phibis_aux_pos n (shiftr i)); intros;
   set (z := phibis_aux n (shiftr i)) in *; clearbody z;
-  rewrite <- iter_nat_plus.
+  rewrite <- nat_rect_plus.
 
  f_equal.
  rewrite Z.double_spec, <- Z.add_diag.
  symmetry; apply Zabs2Nat.inj_add; auto with zarith.
 
- change (iter_nat (S (Z.abs_nat z + Z.abs_nat z)) A f a =
-         iter_nat (Z.abs_nat (Z.succ_double z)) A f a); f_equal.
+ change (iter_nat (S (Z.abs_nat z) + (Z.abs_nat z))%nat A f a =
+    iter_nat (Z.abs_nat (Z.succ_double z)) A f a); f_equal.
  rewrite Z.succ_double_spec, <- Z.add_diag.
  rewrite Zabs2Nat.inj_add; auto with zarith.
  rewrite Zabs2Nat.inj_add; auto with zarith.
@@ -1557,7 +1556,7 @@ Section Int31_Specs.
  intros.
  simpl addmuldiv31_alt.
  replace (S n) with (n+1)%nat by (rewrite plus_comm; auto).
- rewrite iter_nat_plus; simpl; auto.
+ rewrite nat_rect_plus; simpl; auto.
  Qed.
 
  Lemma spec_add_mul_div : forall x y p, [|p|] <= Zpos 31 ->
