@@ -19,17 +19,21 @@ open Reduction
 
 exception Elimconst
 
+(** This module implements a call by name reduction used by (at
+    least) evarconv unification and cbn tactic.
 
-(**********************************************************************)
-(* The type of (machine) stacks (= lambda-bar-calculus' contexts)     *)
+    It has an ability to "refold" constants by storing constants and
+    their parameters in its stack.
+*)
 
+
+(** The type of (machine) stacks (= lambda-bar-calculus' contexts) *)
 type 'a stack_member =
   | Zapp of 'a list
   | Zcase of case_info * 'a * 'a array * ('a * 'a list) option
   | Zfix of fixpoint * 'a list * ('a * 'a list) option
   | Zshift of int
   | Zupdate of 'a
-
 and 'a stack = 'a stack_member list
 
 let empty_stack = []
@@ -46,7 +50,6 @@ let rec stack_args_size = function
   | Zupdate(_)::s -> stack_args_size s
   | _ -> 0
 
-(* When used as an argument stack (only Zapp can appear) *)
 let rec decomp_stack = function
   | Zapp[v]::s -> Some (v, s)
   | Zapp(v::l)::s -> Some (v, (Zapp l :: s))
@@ -73,21 +76,6 @@ let list_of_app_stack s =
   Option.init init out
 let array_of_app_stack s =
   Option.map Array.of_list (list_of_app_stack s)
-let rec zip ?(refold=false) = function
-  | f, [] -> f
-  | f, (Zapp [] :: s) -> zip ~refold (f, s)
-  | f, (Zapp args :: s) ->
-      zip ~refold (applist (f, args), s)
-  | f, (Zcase (ci,rt,br,Some(cst, params))::s) when refold ->
-    zip ~refold (cst, append_stack_app_list (List.rev params) s)
-  | f, (Zcase (ci,rt,br,_)::s) -> zip ~refold (mkCase (ci,rt,f,br), s)
-  | f, (Zfix (fix,st,Some(cst, params))::s) when refold -> zip ~refold
-    (cst, append_stack_app_list (List.rev params)
-      (append_stack_app_list st (append_stack_app_list [f] s)))
-  | f, (Zfix (fix,st,_)::s) -> zip ~refold
-    (mkFix fix, append_stack_app_list st (append_stack_app_list [f] s))
-  | f, (Zshift n::s) -> zip ~refold (lift n f, s)
-  | _ -> assert false
 let rec stack_assign s p c = match s with
   | Zapp args :: s ->
       let q = List.length args in
@@ -113,8 +101,23 @@ let rec stack_nth s p = match s with
       else List.nth args p
   | _ -> raise Not_found
 
-(**************************************************************)
-(* The type of (machine) states (= lambda-bar-calculus' cuts) *)
+let rec zip ?(refold=false) = function
+  | f, [] -> f
+  | f, (Zapp [] :: s) -> zip ~refold (f, s)
+  | f, (Zapp args :: s) ->
+      zip ~refold (applist (f, args), s)
+  | f, (Zcase (ci,rt,br,Some(cst, params))::s) when refold ->
+    zip ~refold (cst, append_stack_app_list (List.rev params) s)
+  | f, (Zcase (ci,rt,br,_)::s) -> zip ~refold (mkCase (ci,rt,f,br), s)
+  | f, (Zfix (fix,st,Some(cst, params))::s) when refold -> zip ~refold
+    (cst, append_stack_app_list (List.rev params)
+      (append_stack_app_list st (append_stack_app_list [f] s)))
+  | f, (Zfix (fix,st,_)::s) -> zip ~refold
+    (mkFix fix, append_stack_app_list st (append_stack_app_list [f] s))
+  | f, (Zshift n::s) -> zip ~refold (lift n f, s)
+  | _ -> assert false
+
+(** The type of (machine) states (= lambda-bar-calculus' cuts) *)
 type state = constr * constr stack
 
 type  contextual_reduction_function = env ->  evar_map -> constr -> constr
@@ -260,21 +263,23 @@ let fix_recarg ((recindices,bodynum),_) stack =
   with Not_found ->
     None
 
-(* Generic reduction function *)
+(** Generic reduction function with environment
 
-(* Y avait un commentaire pour whd_betadeltaiota :
+    Here is where unfolded constant are stored in order to be
+    eventualy refolded.
 
-   NB : Cette fonction alloue peu c'est l'appel
-     ``let (c,cargs) = whfun (recarg, empty_stack)''
-                              -------------------
-   qui coute cher *)
-
+    It uses the flag refold when it reaches a value and because it
+    substitutes fix and cofix by the constant they come from in
+    contract_*.
+*)
 let rec whd_state_gen ?(refold=false) flags env sigma =
   let noth = [] in
   let rec whrec cst_l (x, stack as s) =
-    let best_cst () = List.fold_left
-      (fun def (c,params,nb_skip) -> if nb_skip = 0 then Some(c,params) else def)
-      None cst_l in
+    let best_cst () =
+      if refold then List.fold_left
+	(fun def (c,params,nb_skip) -> if nb_skip = 0 then Some(c,params) else def)
+	None cst_l
+      else None in
     let best_state def (cst,params,nb_skip) =
       let apps,s' = strip_app stack in
       try
@@ -285,152 +290,154 @@ let rec whd_state_gen ?(refold=false) flags env sigma =
       if refold then List.fold_left best_state s cst_l else s
     in
     match kind_of_term x with
-      | Rel n when Closure.RedFlags.red_set flags Closure.RedFlags.fDELTA ->
-	  (match lookup_rel n env with
-	     | (_,Some body,_) -> whrec noth (lift n body, stack)
-	     | _ -> fold ())
-      | Var id when Closure.RedFlags.red_set flags (Closure.RedFlags.fVAR id) ->
-	  (match lookup_named id env with
-	     | (_,Some body,_) -> whrec ((mkVar id,[],0)::cst_l) (body, stack)
-	     | _ -> fold ())
-      | Evar ev ->
-	  (match safe_evar_value sigma ev with
-	     | Some body -> whrec noth (body, stack)
-	     | None -> fold ())
-      | Meta ev ->
-	  (match safe_meta_value sigma ev with
-	     | Some body -> whrec noth (body, stack)
-	     | None -> fold ())
-      | Const const when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST const) ->
-	  (match constant_opt_value env const with
-	     | Some  body -> whrec ((mkConst const,[],0)::cst_l) (body, stack)
-	     | None -> fold ())
-      | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
-	apply_subst whrec [b] cst_l c stack
-      | Cast (c,_,_) -> whrec cst_l (c, stack)
-      | App (f,cl)  ->
-	whrec
-	  (List.map (fun (a,b,nb_skip) -> (a,b,nb_skip+Array.length cl)) cst_l)
-	  (f, append_stack_app cl stack)
-      | Lambda (na,t,c) ->
-          (match decomp_stack stack with
-             | Some _ when Closure.RedFlags.red_set flags Closure.RedFlags.fBETA ->
-	       apply_subst whrec [] cst_l x stack
-             | None when Closure.RedFlags.red_set flags Closure.RedFlags.fETA ->
-		 let env' = push_rel (na,None,t) env in
-		 let whrec' = whd_state_gen ~refold flags env' sigma in
-                 (match kind_of_term (zip ~refold (whrec' (c, empty_stack))) with
-                    | App (f,cl) ->
-			let napp = Array.length cl in
-			if napp > 0 then
-			  let x', l' = whrec' (Array.last cl, empty_stack) in
-                          match kind_of_term x', l' with
-                            | Rel 1, [] ->
-				let lc = Array.sub cl 0 (napp-1) in
-				let u = if Int.equal napp 1 then f else appvect (f,lc) in
-				if noccurn 1 u then (pop u,empty_stack) else fold ()
-                            | _ -> fold ()
-			else fold ()
-		    | _ -> fold ())
-	     | _ -> fold ())
+    | Rel n when Closure.RedFlags.red_set flags Closure.RedFlags.fDELTA ->
+      (match lookup_rel n env with
+      | (_,Some body,_) -> whrec noth (lift n body, stack)
+      | _ -> fold ())
+    | Var id when Closure.RedFlags.red_set flags (Closure.RedFlags.fVAR id) ->
+      (match lookup_named id env with
+      | (_,Some body,_) -> whrec ((mkVar id,[],0)::cst_l) (body, stack)
+      | _ -> fold ())
+    | Evar ev ->
+      (match safe_evar_value sigma ev with
+      | Some body -> whrec noth (body, stack)
+      | None -> fold ())
+    | Meta ev ->
+      (match safe_meta_value sigma ev with
+      | Some body -> whrec noth (body, stack)
+      | None -> fold ())
+    | Const const when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST const) ->
+      (match constant_opt_value env const with
+      | Some  body -> whrec ((mkConst const,[],0)::cst_l) (body, stack)
+      | None -> fold ())
+    | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
+      apply_subst whrec [b] cst_l c stack
+    | Cast (c,_,_) -> whrec cst_l (c, stack)
+    | App (f,cl)  ->
+      whrec
+	(List.map (fun (a,b,nb_skip) -> (a,b,nb_skip+Array.length cl)) cst_l)
+	(f, append_stack_app cl stack)
+    | Lambda (na,t,c) ->
+      (match decomp_stack stack with
+      | Some _ when Closure.RedFlags.red_set flags Closure.RedFlags.fBETA ->
+	apply_subst whrec [] cst_l x stack
+      | None when Closure.RedFlags.red_set flags Closure.RedFlags.fETA ->
+	let env' = push_rel (na,None,t) env in
+	let whrec' = whd_state_gen ~refold flags env' sigma in
+        (match kind_of_term (zip ~refold (whrec' (c, empty_stack))) with
+        | App (f,cl) ->
+	  let napp = Array.length cl in
+	  if napp > 0 then
+	    let x', l' = whrec' (Array.last cl, empty_stack) in
+            match kind_of_term x', l' with
+            | Rel 1, [] ->
+	      let lc = Array.sub cl 0 (napp-1) in
+	      let u = if Int.equal napp 1 then f else appvect (f,lc) in
+	      if noccurn 1 u then (pop u,empty_stack) else fold ()
+            | _ -> fold ()
+	  else fold ()
+	| _ -> fold ())
+      | _ -> fold ())
 
-      | Case (ci,p,d,lf) ->
-	whrec noth (d, Zcase (ci,p,lf,best_cst ()) :: stack)
+    | Case (ci,p,d,lf) ->
+      whrec noth (d, Zcase (ci,p,lf,best_cst ()) :: stack)
 
-      | Fix ((ri,n),_ as f) ->
-	(match strip_n_app ri.(n) stack with
-	  |None -> fold ()
-	  |Some (bef,arg,s') -> whrec noth (arg, Zfix(f,bef,best_cst ())::s'))
+    | Fix ((ri,n),_ as f) ->
+      (match strip_n_app ri.(n) stack with
+      |None -> fold ()
+      |Some (bef,arg,s') -> whrec noth (arg, Zfix(f,bef,best_cst ())::s'))
 
-      | Construct (ind,c) ->
-	if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
-	  match strip_app stack with
-	  |args, (Zcase(ci, _, lf,_)::s') ->
-	    whrec noth (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
-	  |args, (Zfix (f,s',cst)::s'') ->
-	    let x' = applist(x,args) in
-	    whrec noth (contract_fix f cst, append_stack_app_list s' (append_stack_app_list [x'] s''))
-	  |_ -> fold ()
-	else fold ()
+    | Construct (ind,c) ->
+      if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
+	match strip_app stack with
+	|args, (Zcase(ci, _, lf,_)::s') ->
+	  whrec noth (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
+	|args, (Zfix (f,s',cst)::s'') ->
+	  let x' = applist(x,args) in
+	  whrec noth (contract_fix f cst,
+		      append_stack_app_list s' (append_stack_app_list [x'] s''))
+	|_ -> fold ()
+      else fold ()
 
-      | CoFix cofix ->
-	if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
-	  match strip_app stack with
-	  |args, (Zcase(ci, _, lf,_)::s') ->
-	    whrec noth (contract_cofix cofix (best_cst ()), stack)
-	  |_ -> fold ()
-	else fold ()
+    | CoFix cofix ->
+      if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
+	match strip_app stack with
+	|args, (Zcase(ci, _, lf,_)::s') ->
+	  whrec noth (contract_cofix cofix (best_cst ()), stack)
+	|_ -> fold ()
+      else fold ()
 
-      | Rel _ | Var _ | Const _ | LetIn _ -> fold ()
-      | Sort _ | Ind _ | Prod _ -> fold ()
+    | Rel _ | Var _ | Const _ | LetIn _ -> fold ()
+    | Sort _ | Ind _ | Prod _ -> fold ()
   in
   whrec noth
 
+(** reduction machine without global env and refold machinery *)
 let local_whd_state_gen flags sigma =
   let rec whrec (x, stack as s) =
     match kind_of_term x with
-      | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
-	stacklam whrec [b] c stack
-      | Cast (c,_,_) -> whrec (c, stack)
-      | App (f,cl)  -> whrec (f, append_stack_app cl stack)
-      | Lambda (_,_,c) ->
-          (match decomp_stack stack with
-             | Some (a,m) when Closure.RedFlags.red_set flags Closure.RedFlags.fBETA ->
-	       stacklam whrec [a] c m
-             | None when Closure.RedFlags.red_set flags Closure.RedFlags.fETA ->
-                 (match kind_of_term (zip (whrec (c, empty_stack))) with
-                    | App (f,cl) ->
-			let napp = Array.length cl in
-			if napp > 0 then
-			  let x', l' = whrec (Array.last cl, empty_stack) in
-                          match kind_of_term x', l' with
-                            | Rel 1, [] ->
-				let lc = Array.sub cl 0 (napp-1) in
-				let u = if Int.equal napp 1 then f else appvect (f,lc) in
-				if noccurn 1 u then (pop u,empty_stack) else s
-                            | _ -> s
-			else s
-		    | _ -> s)
-	     | _ -> s)
+    | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
+      stacklam whrec [b] c stack
+    | Cast (c,_,_) -> whrec (c, stack)
+    | App (f,cl)  -> whrec (f, append_stack_app cl stack)
+    | Lambda (_,_,c) ->
+      (match decomp_stack stack with
+      | Some (a,m) when Closure.RedFlags.red_set flags Closure.RedFlags.fBETA ->
+	stacklam whrec [a] c m
+      | None when Closure.RedFlags.red_set flags Closure.RedFlags.fETA ->
+        (match kind_of_term (zip (whrec (c, empty_stack))) with
+        | App (f,cl) ->
+	  let napp = Array.length cl in
+	  if napp > 0 then
+	    let x', l' = whrec (Array.last cl, empty_stack) in
+            match kind_of_term x', l' with
+            | Rel 1, [] ->
+	      let lc = Array.sub cl 0 (napp-1) in
+	      let u = if Int.equal napp 1 then f else appvect (f,lc) in
+	      if noccurn 1 u then (pop u,empty_stack) else s
+            | _ -> s
+	  else s
+	| _ -> s)
+      | _ -> s)
 
-      | Case (ci,p,d,lf) ->
-	whrec (d, Zcase (ci,p,lf,None) :: stack)
+    | Case (ci,p,d,lf) ->
+      whrec (d, Zcase (ci,p,lf,None) :: stack)
 
-      | Fix ((ri,n),_ as f) ->
-	(match strip_n_app ri.(n) stack with
-	  |None -> s
-	  |Some (bef,arg,s') -> whrec (arg, Zfix(f,bef,None)::s'))
+    | Fix ((ri,n),_ as f) ->
+      (match strip_n_app ri.(n) stack with
+      |None -> s
+      |Some (bef,arg,s') -> whrec (arg, Zfix(f,bef,None)::s'))
 
-      | Evar ev ->
-          (match safe_evar_value sigma ev with
-              Some c -> whrec (c,stack)
-            | None -> s)
+    | Evar ev ->
+      (match safe_evar_value sigma ev with
+        Some c -> whrec (c,stack)
+      | None -> s)
 
-      | Meta ev ->
-          (match safe_meta_value sigma ev with
-              Some c -> whrec (c,stack)
-            | None -> s)
+    | Meta ev ->
+      (match safe_meta_value sigma ev with
+        Some c -> whrec (c,stack)
+      | None -> s)
 
-      | Construct (ind,c) ->
-	if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
-	  match strip_app stack with
-	  |args, (Zcase(ci, _, lf,_)::s') ->
-	    whrec (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
-	  |args, (Zfix (f,s',cst)::s'') ->
-	    let x' = applist(x,args) in
-	    whrec (contract_fix f cst,append_stack_app_list s' (append_stack_app_list [x'] s''))
-	  |_ -> s
-	else s
+    | Construct (ind,c) ->
+      if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
+	match strip_app stack with
+	|args, (Zcase(ci, _, lf,_)::s') ->
+	  whrec (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
+	|args, (Zfix (f,s',cst)::s'') ->
+	  let x' = applist(x,args) in
+	  whrec (contract_fix f cst,append_stack_app_list s' (append_stack_app_list [x'] s''))
+	|_ -> s
+      else s
 
-      | CoFix cofix ->
-	if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
-	  match strip_app stack with
-	  |args, (Zcase(ci, _, lf,_)::s') ->
-	    whrec (contract_cofix cofix None, stack)
-	  |_ -> s
-	else s
+    | CoFix cofix ->
+      if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
+	match strip_app stack with
+	|args, (Zcase(ci, _, lf,_)::s') ->
+	  whrec (contract_cofix cofix None, stack)
+	|_ -> s
+      else s
 
-      | x -> s
+    | x -> s
   in
   whrec
 
@@ -548,7 +555,7 @@ let clos_norm_flags flgs env sigma t =
     norm_val
       (create_clos_infos ~evars:(safe_evar_value sigma) flgs env)
       (inject t)
-  with Anomaly _ -> error "Tried to normalized ill-typed term" 
+  with Anomaly _ -> error "Tried to normalized ill-typed term"
 
 let nf_beta = clos_norm_flags Closure.beta empty_env
 let nf_betaiota = clos_norm_flags Closure.betaiota empty_env
