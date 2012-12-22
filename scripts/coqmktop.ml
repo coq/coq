@@ -46,7 +46,7 @@ let camlp4topobjs =
       "Camlp4Parsers/Camlp4OCamlRevisedParser.cmo";
       "Camlp4Parsers/Camlp4OCamlParser.cmo";
       "Camlp4Parsers/Camlp4GrammarParser.cmo";
-      "q_util.cmo"; "q_coqast.cmo" ]
+      "grammar/q_util.cmo"; "grammar/q_coqast.cmo" ]
 let topobjs = camlp4topobjs
 
 let gramobjs = []
