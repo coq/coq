@@ -1315,15 +1315,15 @@ let hcons_term (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Const c ->
 	(Const (sh_con c), combinesmall 9 (Hashtbl.hash c))
       | Ind ((kn,i) as ind) ->
-	(Ind (sh_ind ind), combinesmall 9 (combine (Hashtbl.hash kn) i))
+	(Ind (sh_ind ind), combinesmall 10 (combine (Hashtbl.hash kn) i))
       | Construct (((kn,i),j) as c)->
-	(Construct (sh_construct c), combinesmall 10 (combine3 (Hashtbl.hash kn) i j))
+	(Construct (sh_construct c), combinesmall 11 (combine3 (Hashtbl.hash kn) i j))
       | Case (ci,p,c,bl) ->
 	let p, hp = sh_rec p
 	and c, hc = sh_rec c in
 	let hbl = hash_term_array bl in
 	let hbl = combine (combine hc hp) hbl in
-	(Case (sh_ci ci, p, c, bl), combinesmall 11 hbl)
+	(Case (sh_ci ci, p, c, bl), combinesmall 12 hbl)
       | Fix (ln,(lna,tl,bl)) ->
 	let hbl = hash_term_array  bl in
 	let htl = hash_term_array  tl in
@@ -1374,11 +1374,11 @@ let rec hash_constr t =
     | Const c ->
       combinesmall 9 (Hashtbl.hash c)	(* TODO: proper hash function for constants *)
     | Ind (kn,i) ->
-      combinesmall 9 (combine (Hashtbl.hash kn) i)
+      combinesmall 10 (combine (Hashtbl.hash kn) i)
     | Construct ((kn,i),j) ->
-      combinesmall 10 (combine3 (Hashtbl.hash kn) i j)
+      combinesmall 11 (combine3 (Hashtbl.hash kn) i j)
     | Case (_ , p, c, bl) ->
-      combinesmall 11 (combine3 (hash_constr c) (hash_constr p) (hash_term_array bl))
+      combinesmall 12 (combine3 (hash_constr c) (hash_constr p) (hash_term_array bl))
     | Fix (ln ,(_, tl, bl)) ->
       combinesmall 13 (combine (hash_term_array bl) (hash_term_array tl))
     | CoFix(ln, (_, tl, bl)) ->
