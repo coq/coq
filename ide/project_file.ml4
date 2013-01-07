@@ -6,7 +6,8 @@ type target =
   | MLPACK of string (* MLLIB file : foo.mlpack -> (MLLIB "foo.mlpack") *)
   | V of string  (* V file : foo.v -> (V "foo") *)
   | Arg of string
-  | Special of string * string * string (* file, dependencies, command *)
+  | Special of string * string * bool * string
+    (* file, dependencies, is_phony, command *)
   | Subdir of string
   | Def of string * string (* X=foo -> Def ("X","foo") *)
   | Include of string
@@ -70,7 +71,11 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
     in
     process_cmd_line orig_dir (project_file,makefile,install,opt) l r
   | "-custom" :: com :: dependencies :: file :: r ->
-    process_cmd_line orig_dir opts (Special (file,dependencies,com) :: l) r
+    process_cmd_line orig_dir opts (Special (file,dependencies,false,com) :: l) r
+  | "-extra" :: file :: dependencies :: com :: r ->
+    process_cmd_line orig_dir opts (Special (file,dependencies,false,com) :: l) r
+  | "-extra-phony" :: target :: dependencies :: com :: r ->
+    process_cmd_line orig_dir opts (Special (target,dependencies,true,com) :: l) r
   | "-I" :: d :: r ->
     process_cmd_line orig_dir opts ((Include (CUnix.correct_path d orig_dir)) :: l) r
   | "-R" :: p :: lp :: r ->
@@ -140,8 +145,8 @@ let split_arguments =
   | MLPACK n :: r ->
       let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
       ((v,(mli,ml4,ml,mllib,CUnix.remove_path_dot n::mlpack),o,s),i,d)
-  | Special (n,dep,c) :: r ->
-      let (v,m,o,s),i,d = aux r in ((v,m,(n,dep,c)::o,s),i,d)
+  | Special (n,dep,is_phony,c) :: r ->
+      let (v,m,o,s),i,d = aux r in ((v,m,(n,dep,is_phony,c)::o,s),i,d)
   | Subdir n :: r ->
       let (v,m,o,s),i,d = aux r in ((v,m,o,n::s),i,d)
   | Include p :: r ->

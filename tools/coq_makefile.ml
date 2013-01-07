@@ -78,7 +78,7 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ... [file.mllib]
 [--help]: equivalent to [-h]\n";
   exit 1
 
-let is_genrule r =
+let is_genrule r = (* generic rule (like bar%foo: ...) *)
     let genrule = Str.regexp("%") in
       Str.string_match genrule r 0
 
@@ -301,8 +301,8 @@ let clean sds sps =
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) all-mli.tex\n";
   print "\t- rm -rf html mlihtml uninstall_me.sh\n";
   List.iter
-    (fun (file,_,_) ->
-       if not (is_genrule file) then
+    (fun (file,_,is_phony,_) ->
+       if not (is_phony || is_genrule file) then
 	 (print "\t- rm -rf "; print file; print "\n"))
     sps;
   List.iter
@@ -483,9 +483,10 @@ let include_dirs (inc_i,inc_r) =
     end
 
 let custom sps =
-  let pr_path (file,dependencies,com) =
+  let pr_path (file,dependencies,is_phony,com) =
     print file; print ": "; print dependencies; print "\n";
-    if com <> "" then (print "\t"; print com); print "\n\n"
+    if com <> "" then (print "\t"; print com; print "\n");
+    print "\n"
   in
     if sps <> [] then section "Custom targets.";
     List.iter pr_path sps
@@ -640,14 +641,18 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
     end
 
 let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
-  let special_targets = List.filter (fun (n,_,_) -> not (is_genrule n)) sps in
-  let other_targets = List.map (function x,_,_ -> x) special_targets @ sds in
+  let other_targets = CList.map_filter
+    (fun (n,_,is_phony,_) -> if is_phony || not (is_genrule n) then Some n else None)
+    sps @ sds in
   main_targets vfiles mlfiles other_targets inc;
     print ".PHONY: ";
     print_list " "
       ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install" ::
 	  "uninstall_me.sh" :: "uninstall" :: "userinstall" :: "depend" ::
 	  "html" :: "validate" :: sds);
+    print_list " " (CList.map_filter
+		      (fun (n,_,is_phony,_) -> if is_phony then Some n else None)
+		      sps);
     print "\n\n";
     custom sps;
     subdirs sds;
@@ -736,7 +741,7 @@ let do_makefile args =
     else if (Filename.check_suffix f ".mllib") then some_mllibfile := true
     else if (Filename.check_suffix f ".mlpack") then some_mlpackfile := true
   in
-  List.iter (fun (_,dependencies,_) ->
+  List.iter (fun (_,dependencies,_,_) ->
     List.iter check_dep (Str.split (Str.regexp "[ \t]+") dependencies)) sps;
 
   let inc = ensure_root_dir targets inc in
