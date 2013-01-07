@@ -363,7 +363,7 @@ and apply_notation_to_pattern loc gr ((subst,substlist),(nb_to_drop,more_args))
       let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
       let l2' = if !Topconstr.oldfashion_patterns then l2
 	else
-	  match drop_implicits_in_patt gr (List.length l1) l2 with
+	  match drop_implicits_in_patt gr (nb_to_drop + List.length l1) l2 with
 	    |Some true_args -> true_args
 	    |None -> raise No_match
       in

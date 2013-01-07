@@ -772,7 +772,7 @@ let rec match_cases_pattern metas sigma a1 a2 =
   | r1, NVar id2 when List.mem id2 metas -> (bind_env_cases_pattern sigma id2 r1),(0,[])
   | PatVar (_,Anonymous), NHole _ -> sigma,(0,[])
   | PatCstr (loc,(ind,_ as r1),largs,_), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
-      sigma,(0,largs)
+      sigma,(0,add_patterns_for_params (fst r1) largs)
   | PatCstr (loc,(ind,_ as r1),args1,_), NApp (NRef (ConstructRef r2),l2)
       when eq_constructor r1 r2 ->
       let l1 = add_patterns_for_params (fst r1) args1 in
