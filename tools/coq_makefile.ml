@@ -172,9 +172,9 @@ let install_include_by_root files_var files (inc_i,inc_r) =
 		       let pdir' = physical_dir_of_logical_dir ldir in
 			 if has_inc_r_files then
 			   begin
-			     printf "\tcd %s; for i in $(%s%d); do \\\n" pdir files_var i;
-			     printf "\t install -d `dirname $(DSTROOT)$(COQLIBINSTALL)/%s/$$i`; \\\n" pdir';
-			     printf "\t install -m 0644 $$i $(DSTROOT)$(COQLIBINSTALL)/%s/$$i; \\\n" pdir';
+			     printf "\tcd \"%s\"; for i in $(%s%d); do \\\n" pdir files_var i;
+			     printf "\t install -d \"`dirname \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/$$i`\"; \\\n" pdir';
+			     printf "\t install -m 0644 $$i \"$(DSTROOT)\"$(COQLIBINSTALL)/%s/$$i; \\\n" pdir';
 			     printf "\tdone\n";
 			   end;
 			 if has_inc_i_files then install_inc_i pdir'
@@ -182,9 +182,9 @@ let install_include_by_root files_var files (inc_i,inc_r) =
 
 let install_doc some_vfiles some_mlifiles (_,inc_r) =
   let install_one_kind kind dir =
-    printf "\tinstall -d $(DSTROOT)$(COQDOCINSTALL)/%s/%s\n" dir kind;
+    printf "\tinstall -d \"$(DSTROOT)\"$(COQDOCINSTALL)/%s/%s\n" dir kind;
     printf "\tfor i in %s/*; do \\\n" kind;
-    printf "\t install -m 0644 $$i $(DSTROOT)$(COQDOCINSTALL)/%s/$$i;\\\n" dir;
+    printf "\t install -m 0644 $$i \"$(DSTROOT)\"$(COQDOCINSTALL)/%s/$$i;\\\n" dir;
     print "\tdone\n" in
     print "install-doc:\n";
     let () = match inc_r with
@@ -233,16 +233,17 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
       install_include_by_root "CMAFILES" mllibfiles inc;
     List.iter
       (fun x ->
-	 printf "\t(cd %s; $(MAKE) DSTROOT=$(DSTROOT) INSTALLDEFAULTROOT=$(INSTALLDEFAULTROOT)/%s install)\n" x x)
+	printf "\t+cd %s && $(MAKE) DSTROOT=\"$(DSTROOT)\" INSTALLDEFAULTROOT=\"$(INSTALLDEFAULTROOT)/%s\" install\n" x x)
       sds;
     print "\n";
     install_doc (not_empty vfiles) (not_empty mlifiles) inc
+
 
 let make_makefile sds =
   if !make_name <> "" then begin
     printf "%s: %s\n" !makefile_name !make_name;
     print "\tmv -f $@ $@.bak\n";
-    print "\t$(COQBIN)coq_makefile -f $< -o $@\n\n";
+    print "\t\"$(COQBIN)coq_makefile\" -f $< -o $@\n\n";
     List.iter
       (fun x -> print "\t(cd "; print x; print " ; $(MAKE) Makefile)\n")
       sds;
@@ -275,9 +276,9 @@ let clean sds sps =
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) archclean)\n")
     sds;
   print "\n";
-  print "printenv:\n\t@$(COQBIN)coqtop -config\n";
-  print "\t@echo CAMLC =\t$(CAMLC)\n\t@echo CAMLOPTC =\t$(CAMLOPTC)\n\t@echo PP =\t$(PP)\n\t@echo COQFLAGS =\t$(COQFLAGS)\n";
-  print "\t@echo COQLIBINSTALL =\t$(COQLIBINSTALL)\n\t@echo COQDOCINSTALL =\t$(COQDOCINSTALL)\n\n"
+  print "printenv:\n\t@\"$(COQBIN)coqtop\" -config\n";
+  print "\t@echo 'CAMLC =\t$(CAMLC)'\n\t@echo 'CAMLOPTC =\t$(CAMLOPTC)'\n\t@echo 'PP =\t$(PP)'\n\t@echo 'COQFLAGS =\t$(COQFLAGS)'\n";
+  print "\t@echo 'COQLIBINSTALL =\t$(COQLIBINSTALL)'\n\t@echo 'COQDOCINSTALL =\t$(COQDOCINSTALL)'\n\n"
 
 let header_includes () = ()
 
@@ -318,7 +319,7 @@ in
     print "%.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex $< -o $@\n\n";
     print "%.html: %.v %.glob\n\t$(COQDOC) $(COQDOCFLAGS) -html $< -o $@\n\n";
     print "%.g.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex -g $< -o $@\n\n";
-    print "%.g.html: %.v %.glob\n\t$(COQDOC)$(COQDOCFLAGS)  -html -g $< -o $@\n\n";
+    print "%.g.html: %.v %.glob\n\t$(COQDOC) $(COQDOCFLAGS)  -html -g $< -o $@\n\n";
     print "%.v.d: %.v\n";
     print "\t$(COQDEP) -slash $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
     print "%.v.beautified:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) -beautify $*\n\n"
@@ -350,25 +351,24 @@ let variables is_install opt (args,defs) =
     end;
     (* Coq executables and relative variables *)
     if !some_vfile || !some_mlpackfile || !some_mllibfile then
-      print "COQDEP?=$(COQBIN)coqdep -c\n";
+      print "COQDEP?=\"$(COQBIN)coqdep\" -c\n";
     if !some_vfile then begin
     print "COQFLAGS?=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
     print "COQCHKFLAGS?=-silent -o\n";
     print "COQDOCFLAGS?=-interpolate -utf8\n";
-    print "COQC?=$(COQBIN)coqc\n";
-    print "GALLINA?=$(COQBIN)gallina\n";
-    print "COQDOC?=$(COQBIN)coqdoc\n";
-    print "COQCHK?=$(COQBIN)coqchk\n\n";
+    print "COQC?=\"$(COQBIN)coqc\"\n";
+    print "GALLINA?=\"$(COQBIN)gallina\"\n";
+    print "COQDOC?=\"$(COQBIN)coqdoc\"\n";
+    print "COQCHK?=\"$(COQBIN)coqchk\"\n\n";
     end;
     (* Caml executables and relative variables *)
     if !some_ml4file || !some_mlfile || !some_mlifile then begin
-    print "COQSRCLIBS?=-I $(COQLIB)kernel -I $(COQLIB)lib \\
-  -I $(COQLIB)library -I $(COQLIB)parsing \\
-  -I $(COQLIB)pretyping -I $(COQLIB)interp \\
-  -I $(COQLIB)proofs -I $(COQLIB)tactics \\
-  -I $(COQLIB)toplevel";
+    print "COQSRCLIBS?=-I \"$(COQLIB)kernel\" -I \"$(COQLIB)lib\" \\
+  -I \"$(COQLIB)library\" -I \"$(COQLIB)parsing\" -I \"$(COQLIB)pretyping\" \\
+  -I \"$(COQLIB)interp\" -I \"$(COQLIB)proofs\" -I \"$(COQLIB)tactics\" \\
+  -I \"$(COQLIB)tools\" -I \"$(COQLIB)toplevel\"";
     List.iter (fun c -> print " \\
-  -I $(COQLIB)plugins/"; print c) Coq_config.plugins_dirs; print "\n";
+  -I \"$(COQLIB)plugins/\""; print c) Coq_config.plugins_dirs; print "\n";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
     print "CAMLC?=$(OCAMLC) -c -rectypes\n";
     print "CAMLOPTC?=$(OCAMLOPT) -c -rectypes\n";
@@ -377,28 +377,28 @@ let variables is_install opt (args,defs) =
     print "GRAMMARS?=grammar.cma\n";
     print "CAMLP4EXTEND?=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
     print "CAMLP4OPTIONS?=-loc loc\n";
-    print "PP?=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I $(CAMLLIB) -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n\n";
+    print "PP?=-pp '\"$(CAMLP4BIN)$(CAMLP4)o\" -I \"$(CAMLLIB)\" -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'\n\n";
     end;
     match is_install with
       | Project_file.NoInstall -> ()
       | Project_file.UnspecInstall ->
         section "Install Paths.";
 	print "ifdef USERINSTALL\n";
-        print "XDG_DATA_HOME?=$(HOME)/.local/share\n";
+        print "XDG_DATA_HOME?=\"$(HOME)/.local/share\"\n";
         print "COQLIBINSTALL=$(XDG_DATA_HOME)/coq\n";
         print "COQDOCINSTALL=$(XDG_DATA_HOME)/doc/coq\n";
 	print "else\n";
-        print "COQLIBINSTALL=${COQLIB}user-contrib\n";
-        print "COQDOCINSTALL=${DOCDIR}user-contrib\n";
+        print "COQLIBINSTALL=\"${COQLIB}user-contrib\"\n";
+        print "COQDOCINSTALL=\"${DOCDIR}user-contrib\"\n";
 	print "endif\n\n"
       | Project_file.TraditionalInstall ->
           section "Install Paths.";
-          print "COQLIBINSTALL=${COQLIB}user-contrib\n";
-          print "COQDOCINSTALL=${DOCDIR}user-contrib\n";
+          print "COQLIBINSTALL=\"${COQLIB}user-contrib\"\n";
+          print "COQDOCINSTALL=\"${DOCDIR}user-contrib\"\n";
           print "\n"
       | Project_file.UserInstall ->
           section "Install Paths.";
-          print "XDG_DATA_HOME?=$(HOME)/.local/share\n";
+          print "XDG_DATA_HOME?=\"$(HOME)/.local/share\"\n";
           print "COQLIBINSTALL=$(XDG_DATA_HOME)/coq\n";
           print "COQDOCINSTALL=$(XDG_DATA_HOME)/doc/coq\n";
           print "\n"
