@@ -23,6 +23,11 @@ let _ =
   if Coq_config.arch = "win32" then
     Unix.putenv "PATH" (coqbin ^ ";" ^ System.getenv_else "PATH" "")
 
+let exe =
+  let exeext =
+    if Coq_config.arch = "win32" then ".exe" else ""
+  in fun s -> s ^ exeext
+
 let reldir instdir testfile oth =
   let rpath = if Coq_config.local then [] else instdir in
   let out = List.fold_left Filename.concat coqroot rpath in
@@ -89,12 +94,12 @@ let rec which l f =
 let guess_camlbin () =
   let path = try Sys.getenv "PATH" with _ -> raise Not_found in
   let lpath = path_to_list path in
-    which lpath "ocamlc"
+    which lpath (exe "ocamlc")
 
 let guess_camlp4bin () =
   let path = try Sys.getenv "PATH" with _ -> raise Not_found in
   let lpath = path_to_list path in
-    which lpath Coq_config.camlp4
+    which lpath (exe Coq_config.camlp4)
 
 let camlbin () =
   if !Flags.camlbin_spec then !Flags.camlbin else
@@ -114,7 +119,7 @@ let camlp4bin () =
   if !Flags.camlp4bin_spec then !Flags.camlp4bin else
     if !Flags.boot then Coq_config.camlp4bin else
       try guess_camlp4bin () with _ -> let cb = camlbin () in
-				       if Sys.file_exists (Filename.concat cb Coq_config.camlp4) then cb
+				       if Sys.file_exists (Filename.concat cb (exe Coq_config.camlp4)) then cb
 				       else Coq_config.camlp4bin
 
 let camlp4lib () =
