@@ -902,7 +902,7 @@ object(self)
       if stop#compare start > 0 && is_sentence_end stop#backward_char
       then Some (start,stop)
       else None
-    with Not_found -> None
+    with StartError -> None
 
   method complete_at_offset (offset:int) =
     prerr_endline ("Completion at offset : " ^ string_of_int offset);
