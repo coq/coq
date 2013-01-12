@@ -23,10 +23,7 @@ let _ =
   if Coq_config.arch = "win32" then
     Unix.putenv "PATH" (coqbin ^ ";" ^ System.getenv_else "PATH" "")
 
-let exe =
-  let exeext =
-    if Coq_config.arch = "win32" then ".exe" else ""
-  in fun s -> s ^ exeext
+let exe s = s ^ Coq_config.exec_extension
 
 let reldir instdir testfile oth =
   let rpath = if Coq_config.local then [] else instdir in
