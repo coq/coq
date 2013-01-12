@@ -89,7 +89,7 @@ module Make (E : Hashtype) =
 		match rest2 with
 		  | Empty -> add hash key; key
 		  | Cons (k3, h3, rest3) ->
-		    if hash == h2 && E.equals key k3 then k3
+		    if hash == h3 && E.equals key k3 then k3
 		    else find_rec hash key rest3
 
 end
