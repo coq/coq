@@ -50,15 +50,17 @@ let rec which l f =
 	then p
 	else which tl f
 
+let exe s = s ^ Coq_config.exec_extension
+
 let guess_camlbin () =
   let path = try Sys.getenv "PATH" with _ -> raise Not_found in
   let lpath = path_to_list path in
-    which lpath "ocamlc"
+    which lpath (exe "ocamlc")
 
 let guess_camlp4bin () =
   let path = try Sys.getenv "PATH" with _ -> raise Not_found in
   let lpath = path_to_list path in
-    which lpath Coq_config.camlp4
+    which lpath (exe Coq_config.camlp4)
 
 let camlbin () =
   if !Flags.camlbin_spec then !Flags.camlbin else
