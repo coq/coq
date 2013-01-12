@@ -147,7 +147,9 @@ let coqpath =
 
 (** {2 Caml paths} *)
 
-let guess_camlbin () = which (user_path ()) "ocamlc"
+let exe s = s ^ Coq_config.exec_extension
+
+let guess_camlbin () = which (user_path ()) (exe "ocamlc")
 
 let camlbin () =
   if !Flags.camlbin_spec then !Flags.camlbin else
@@ -168,7 +170,7 @@ let camllib () =
 
 (** {2 Camlp4 paths} *)
 
-let guess_camlp4bin () = which (user_path ()) Coq_config.camlp4
+let guess_camlp4bin () = which (user_path ()) (exe Coq_config.camlp4)
 
 let camlp4bin () =
   if !Flags.camlp4bin_spec then !Flags.camlp4bin else
@@ -176,7 +178,7 @@ let camlp4bin () =
       try 
 	guess_camlp4bin () 
       with _ -> 
-	if Sys.file_exists (camlbin () / Coq_config.camlp4) then 
+	if Sys.file_exists (camlbin () / exe Coq_config.camlp4) then
 	  camlbin ()
 	else 
 	  Coq_config.camlp4bin
