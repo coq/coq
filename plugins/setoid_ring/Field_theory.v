@@ -407,7 +407,7 @@ Qed.
 Fixpoint PExpr_eq (e1 e2 : PExpr C) {struct e1} : bool :=
  match e1, e2 with
    PEc c1, PEc c2 => ceqb c1 c2
-  | PEX p1, PEX p2 => Pos.eqb p1 p2
+  | PEX _ p1, PEX _ p2 => Pos.eqb p1 p2
   | PEadd e3 e5, PEadd e4 e6 => if PExpr_eq e3 e4 then PExpr_eq e5 e6 else false
   | PEsub e3 e5, PEsub e4 e6 => if PExpr_eq e3 e4 then PExpr_eq e5 e6 else false
   | PEmul e3 e5, PEmul e4 e6 => if PExpr_eq e3 e4 then PExpr_eq e5 e6 else false

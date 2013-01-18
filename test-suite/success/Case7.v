@@ -12,6 +12,6 @@ Parameter
 Type
   (fun (A : Set) (l : List A) =>
    match l return (Empty A l \/ ~ Empty A l) with
-   | Nil => or_introl (~ Empty A (Nil A)) (intro_Empty A)
-   | Cons a y as b => or_intror (Empty A b) (inv_Empty A a y)
+   | Nil _ => or_introl (~ Empty A (Nil A)) (intro_Empty A)
+   | Cons _ a y as b => or_intror (Empty A b) (inv_Empty A a y)
    end).

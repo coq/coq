@@ -902,7 +902,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
     Fixpoint xfoldi (m : t A) (v : B) (i : positive) :=
       match m with
-        | Leaf => v
+        | Leaf _ => v
         | Node l (Some x) r =>
           xfoldi r (f i x (xfoldi l v (append i 2))) (append i 3)
         | Node l None r =>
@@ -940,8 +940,8 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
 
   Fixpoint equal (A:Type)(cmp : A -> A -> bool)(m1 m2 : t A) : bool :=
     match m1, m2 with
-      | Leaf, _ => is_empty m2
-      | _, Leaf => is_empty m1
+      | Leaf _, _ => is_empty m2
+      | _, Leaf _ => is_empty m1
       | Node l1 o1 r1, Node l2 o2 r2 =>
            (match o1, o2 with
              | None, None => true

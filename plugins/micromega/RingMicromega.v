@@ -947,7 +947,7 @@ Variable phi_C_of_S :   forall c,  phiS c =  phi (C_of_S c).
 Fixpoint map_PExpr (e : PExpr S) : PExpr C :=
   match e with
     | PEc c => PEc (C_of_S c)
-    | PEX p => PEX _ p
+    | PEX _ p => PEX _ p
     | PEadd e1 e2 => PEadd (map_PExpr e1) (map_PExpr e2)
     | PEsub e1 e2 => PEsub (map_PExpr e1) (map_PExpr e2)
     | PEmul e1 e2 => PEmul (map_PExpr e1) (map_PExpr e2)

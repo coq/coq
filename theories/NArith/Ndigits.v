@@ -512,9 +512,9 @@ Definition N2Bv (n:N) : Bvector (N.size_nat n) :=
 
 Fixpoint Bv2N (n:nat)(bv:Bvector n) : N :=
   match bv with
-    | Vector.nil => N0
-    | Vector.cons false n bv => N.double (Bv2N n bv)
-    | Vector.cons true n bv => N.succ_double (Bv2N n bv)
+    | Vector.nil _ => N0
+    | Vector.cons _ false n bv => N.double (Bv2N n bv)
+    | Vector.cons _ true n bv => N.succ_double (Bv2N n bv)
   end.
 
 Lemma Bv2N_N2Bv : forall n, Bv2N _ (N2Bv n) = n.

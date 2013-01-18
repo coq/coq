@@ -145,8 +145,8 @@ Module ListDict (E: ELEM).
   Definition add (e : elt) (s : T) := cons elt e s.
   Fixpoint find (e : elt) (s : T) {struct s} : bool :=
     match s with
-    | nil => false
-    | cons e' s' => ifte (E.eq_dec e e') true (find e s')
+    | nil _ => false
+    | cons _ e' s' => ifte (E.eq_dec e e') true (find e s')
     end.
 
   Definition find_empty_false (e : elt) := refl_equal false.

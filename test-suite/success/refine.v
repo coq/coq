@@ -84,7 +84,7 @@ Definition div :
 refine
   (fun m div_rec n =>
      match div_rec m n with
-     | exist _ _ => _
+     | exist _ _ _ => _
      end).
 Abort.
 

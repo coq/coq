@@ -19,7 +19,7 @@ open Constrexpr_ops
 (*i*)
 
 
-let oldfashion_patterns = ref (true)
+let oldfashion_patterns = ref (false)
 let _ = Goptions.declare_bool_option {
   Goptions.optsync = true; Goptions.optdepr = false;
   Goptions.optname =

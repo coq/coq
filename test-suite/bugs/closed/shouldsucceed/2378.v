@@ -66,9 +66,9 @@ Implicit Arguments lpSat.
 
 Fixpoint LPTransfo Pred1 Pred2 p2lp (f: LP Pred1): LP Pred2 :=
   match f with
-    LPPred p => p2lp p
-  | LPAnd f1 f2 => LPAnd _ (LPTransfo Pred1 Pred2 p2lp f1) (LPTransfo Pred1 Pred2 p2lp f2)
-  | LPNot f1 => LPNot _ (LPTransfo Pred1 Pred2 p2lp f1)
+    LPPred _ p => p2lp p
+  | LPAnd _ f1 f2 => LPAnd _ (LPTransfo Pred1 Pred2 p2lp f1) (LPTransfo Pred1 Pred2 p2lp f2)
+  | LPNot _ f1 => LPNot _ (LPTransfo Pred1 Pred2 p2lp f1)
   end.
 Implicit Arguments LPTransfo.
 

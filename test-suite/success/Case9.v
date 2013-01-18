@@ -36,10 +36,10 @@ Parameter
 Fixpoint eqlongdec (x y : List nat) {struct x} :
  eqlong x y \/ ~ eqlong x y :=
   match x, y return (eqlong x y \/ ~ eqlong x y) with
-  | Nil, Nil => or_introl (~ eqlong (Nil nat) (Nil nat)) eql_nil
-  | Nil, Cons a x as L => or_intror (eqlong (Nil nat) L) (inv_r a x)
-  | Cons a x as L, Nil => or_intror (eqlong L (Nil nat)) (inv_l a x)
-  | Cons a x as L1, Cons b y as L2 =>
+  | Nil _, Nil _ => or_introl (~ eqlong (Nil nat) (Nil nat)) eql_nil
+  | Nil _, Cons _ a x as L => or_intror (eqlong (Nil nat) L) (inv_r a x)
+  | Cons _ a x as L, Nil _ => or_intror (eqlong L (Nil nat)) (inv_l a x)
+  | Cons _ a x as L1, Cons _ b y as L2 =>
       match eqlongdec x y return (eqlong L1 L2 \/ ~ eqlong L1 L2) with
       | or_introl h => or_introl (~ eqlong L1 L2) (eql_cons a b x y h)
       | or_intror h => or_intror (eqlong L1 L2) (nff a b x y h)
@@ -49,10 +49,10 @@ Fixpoint eqlongdec (x y : List nat) {struct x} :
 
 Type
   match Nil nat as x, Nil nat as y return (eqlong x y \/ ~ eqlong x y) with
-  | Nil, Nil => or_introl (~ eqlong (Nil nat) (Nil nat)) eql_nil
-  | Nil, Cons a x as L => or_intror (eqlong (Nil nat) L) (inv_r a x)
-  | Cons a x as L, Nil => or_intror (eqlong L (Nil nat)) (inv_l a x)
-  | Cons a x as L1, Cons b y as L2 =>
+  | Nil _, Nil _ => or_introl (~ eqlong (Nil nat) (Nil nat)) eql_nil
+  | Nil _, Cons _ a x as L => or_intror (eqlong (Nil nat) L) (inv_r a x)
+  | Cons _ a x as L, Nil _ => or_intror (eqlong L (Nil nat)) (inv_l a x)
+  | Cons _ a x as L1, Cons _ b y as L2 =>
       match eqlongdec x y return (eqlong L1 L2 \/ ~ eqlong L1 L2) with
       | or_introl h => or_introl (~ eqlong L1 L2) (eql_cons a b x y h)
       | or_intror h => or_intror (eqlong L1 L2) (nff a b x y h)

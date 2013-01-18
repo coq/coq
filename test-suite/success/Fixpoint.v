@@ -42,8 +42,8 @@ Variables (B C : Set) (g : B -> C -> C) (c : C).
 
 Fixpoint foldrn n bs :=
   match bs with
-  | Vnil => c
-  | Vcons b _ tl => g b (foldrn _ tl)
+  | Vnil _ => c
+  | Vcons _ b _ tl => g b (foldrn _ tl)
   end.
 
 End folding.

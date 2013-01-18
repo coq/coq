@@ -51,7 +51,7 @@ Check
   (let p :=
      fun (m : nat) f (n : nat) =>
      match f m n with
-     | exist a b => exist _ a b
+     | exist _ a b => exist _ a b
      end in
    p
    :forall x : nat,
@@ -178,9 +178,9 @@ refine
        | left _ => _
        | right _ =>
            match le_step s _ _ with
-           | exist s' h' =>
+           | exist _ s' h' =>
                match hr s' _ _ with
-               | exist s'' _ => exist _ s'' _
+               | exist _ s'' _ => exist _ s'' _
                end
            end
        end)).
@@ -204,7 +204,7 @@ Abort.
 Fixpoint filter (A:nat->Set) (l:list (sigT A)) : list (sigT A) :=
   match l with
   | nil => nil
-  | (existT k v)::l' => (existT _ k v):: (filter A l')
+  | (existT _ k v)::l' => (existT _ k v):: (filter A l')
   end.
 
 (* Bug #2000: used to raise Out of memory in 8.2 while it should fail by

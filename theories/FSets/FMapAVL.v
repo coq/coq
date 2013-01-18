@@ -342,7 +342,7 @@ Notation "t #r" := (t_right t) (at level 9, format "t '#r'").
 
 Fixpoint map (elt elt' : Type)(f : elt -> elt')(m : t elt) : t elt' :=
   match m with
-   | Leaf   => Leaf _
+   | Leaf _   => Leaf _
    | Node l x d r h => Node (map f l) x (f d) (map f r) h
   end.
 
@@ -350,7 +350,7 @@ Fixpoint map (elt elt' : Type)(f : elt -> elt')(m : t elt) : t elt' :=
 
 Fixpoint mapi (elt elt' : Type)(f : key -> elt -> elt')(m : t elt) : t elt' :=
   match m with
-   | Leaf   => Leaf _
+   | Leaf _ => Leaf _
    | Node l x d r h => Node (mapi f l) x (f x d) (mapi f r) h
   end.
 
@@ -359,7 +359,7 @@ Fixpoint mapi (elt elt' : Type)(f : key -> elt -> elt')(m : t elt) : t elt' :=
 Fixpoint map_option (elt elt' : Type)(f : key -> elt -> option elt')(m : t elt)
   : t elt' :=
   match m with
-   | Leaf => Leaf _
+   | Leaf _ => Leaf _
    | Node l x d r h =>
       match f x d with
        | Some d' => join (map_option f l) x d' (map_option f r)
@@ -389,8 +389,8 @@ Variable mapr : t elt' -> t elt''.
 
 Fixpoint map2_opt m1 m2 :=
  match m1, m2 with
-  | Leaf, _ => mapr m2
-  | _, Leaf => mapl m1
+  | Leaf _, _ => mapr m2
+  | _, Leaf _ => mapl m1
   | Node l1 x1 d1 r1 h1, _ =>
      let (l2',o2,r2') := split x1 m2 in
      match f x1 d1 o2 with
@@ -1424,7 +1424,7 @@ Qed.
     i.e. the list of elements actually compared *)
 
 Fixpoint flatten_e (e : enumeration elt) : list (key*elt) := match e with
-  | End => nil
+  | End _ => nil
   | More x e t r => (x,e) :: elements t ++ flatten_e r
  end.
 
@@ -2016,7 +2016,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
 
   Definition compare_more x1 d1 (cont:R.enumeration D.t -> comparison) e2 :=
    match e2 with
-    | R.End => Gt
+    | R.End _ => Gt
     | R.More x2 d2 r2 e2 =>
        match X.compare x1 x2 with
         | EQ _ => match D.compare d1 d2 with
@@ -2033,7 +2033,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
 
   Fixpoint compare_cont s1 (cont:R.enumeration D.t -> comparison) e2 :=
    match s1 with
-    | R.Leaf => cont e2
+    | R.Leaf _ => cont e2
     | R.Node l1 x1 d1 r1 _ =>
        compare_cont l1 (compare_more x1 d1 (compare_cont r1 cont)) e2
    end.
@@ -2041,7 +2041,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   (** Initial continuation *)
 
   Definition compare_end (e2:R.enumeration D.t) :=
-   match e2 with R.End => Eq | _ => Lt end.
+   match e2 with R.End _ => Eq | _ => Lt end.
 
   (** The complete comparison *)
 

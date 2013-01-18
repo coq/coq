@@ -309,43 +309,43 @@ Type
 Type
   (fun l : List nat =>
    match l return (List nat) with
-   | Nil => Nil nat
-   | Cons a l => l
+   | Nil _ => Nil nat
+   | Cons _ a l => l
    end).
 
 Type (fun l : List nat => match l with
-                          | Nil => Nil nat
-                          | Cons a l => l
+                          | Nil _ => Nil nat
+                          | Cons _ a l => l
                           end).
 
 Type match Nil nat return nat with
-     | Nil => 0
-     | Cons a l => S a
+     | Nil _ => 0
+     | Cons _ a l => S a
      end.
 Type match Nil nat with
-     | Nil => 0
-     | Cons a l => S a
+     | Nil _ => 0
+     | Cons _ a l => S a
      end.
 
 Type match Nil nat return (List nat) with
-     | Cons a l => l
+     | Cons _ a l => l
      | x => x
      end.
 
 Type match Nil nat with
-     | Cons a l => l
+     | Cons _ a l => l
      | x => x
      end.
 
 Type
   match Nil nat return (List nat) with
-  | Nil => Nil nat
-  | Cons a l => l
+  | Nil _ => Nil nat
+  | Cons _ a l => l
   end.
 
 Type match Nil nat with
-     | Nil => Nil nat
-     | Cons a l => l
+     | Nil _ => Nil nat
+     | Cons _ a l => l
      end.
 
 
@@ -353,8 +353,8 @@ Type
   match 0 return nat with
   | O => 0
   | S x => match Nil nat return nat with
-           | Nil => x
-           | Cons a l => x + a
+           | Nil _ => x
+           | Cons _ a l => x + a
            end
   end.
 
@@ -362,8 +362,8 @@ Type
   match 0 with
   | O => 0
   | S x => match Nil nat with
-           | Nil => x
-           | Cons a l => x + a
+           | Nil _ => x
+           | Cons _ a l => x + a
            end
   end.
 
@@ -372,8 +372,8 @@ Type
    match y with
    | O => 0
    | S x => match Nil nat with
-            | Nil => x
-            | Cons a l => x + a
+            | Nil _ => x
+            | Cons _ a l => x + a
             end
    end).
 
@@ -381,8 +381,8 @@ Type
 Type
   match 0, Nil nat return nat with
   | O, x => 0
-  | S x, Nil => x
-  | S x, Cons a l => x + a
+  | S x, Nil _ => x
+  | S x, Cons _ a l => x + a
   end.
 
 
@@ -597,71 +597,60 @@ Type
 Type
   (fun (A : Set) (n : nat) (l : Listn A n) =>
    match l return nat with
-   | Niln => 0
-   | Consn n a Niln => 0
-   | Consn n a (Consn m b l) => n + m
+   | Niln _ => 0
+   | Consn _ n a (Niln _) => 0
+   | Consn _ n a (Consn _ m b l) => n + m
    end).
 
 Type
   (fun (A : Set) (n : nat) (l : Listn A n) =>
    match l with
-   | Niln => 0
-   | Consn n a Niln => 0
-   | Consn n a (Consn m b l) => n + m
+   | Niln _ => 0
+   | Consn _ n a (Niln _) => 0
+   | Consn _ n a (Consn _ m b l) => n + m
    end).
-
-(* This example was deactivated in Cristina's code
 
 Type
   (fun (A:Set) (n:nat) (l:Listn A n) =>
     match l return Listn A O with
-      | Niln  as b => b
-      | Consn  n a (Niln  as b) => (Niln A)
-      | Consn  n a (Consn m b l) => (Niln A)
+      | Niln _ as b => b
+      | Consn _  n a (Niln _ as b) => (Niln A)
+      | Consn _ n a (Consn _ m b l) => (Niln A)
     end).
-*)
 
-(* This one is (still) failing: too weak unification
-
+(*
 Type
   (fun (A:Set) (n:nat) (l:Listn A n) =>
     match l with
-      | Niln  as b => b
-      | Consn  n a (Niln  as b) => (Niln A)
-      | Consn  n a (Consn m b l) => (Niln A)
+      | Niln _ as b => b
+      | Consn _ n a (Niln _ as b) => (Niln A)
+      | Consn _ n a (Consn _ m b l) => (Niln A)
     end).
 *)
-
-(* This one is failing: alias L not chosen of the right type
 
 Type
   (fun (A:Set) (n:nat) (l:Listn A n) =>
     match l return Listn A (S 0) with
-      | Niln  as b => Consn A O O b
-      | Consn n a Niln as L => L
-      | Consn n a _ => Consn A O O (Niln A)
+      | Niln _ as b => Consn A O O b
+      | Consn _ n a (Niln _) as L => L
+      | Consn _ n a _ => Consn A O O (Niln A)
     end).
-*)
-
-(******** This example (still) failed
 
 Type
   (fun (A:Set) (n:nat) (l:Listn A n) =>
     match l return Listn A (S 0) with
-      | Niln  as b => Consn A O O b
-      | Consn n a Niln as L => L
-      | Consn n a _ => Consn A O O (Niln A)
+      | Niln _ as b => Consn A O O b
+      | Consn _ n a (Niln _) as L => L
+      | Consn _ n a _ => Consn A O O (Niln A)
     end).
-
-**********)
 
 (* To test treatment of as-patterns in depth *)
 Type
   (fun (A : Set) (l : List A) =>
    match l with
-   | Nil as b => Nil A
-   | Cons a Nil as L => L
-   | Cons a (Cons b m) as L => L
+   | Nil _ as b => Nil A
+   | Cons _ a (Nil _) as L => L
+   | Cons _ a (Cons _ b m) as L => L
    end).
 
 
@@ -704,40 +693,40 @@ Type
 Type
   (fun (A : Set) (n : nat) (l : Listn A n) =>
    match l with
-   | Niln as b => l
+   | Niln _ as b => l
    | _ => l
    end).
 
 Type
   (fun (A : Set) (n : nat) (l : Listn A n) =>
    match l return (Listn A n) with
-   | Niln => l
-   | Consn n a Niln => l
-   | Consn n a (Consn m b c) => l
+   | Niln _ => l
+   | Consn _ n a (Niln _) => l
+   | Consn _ n a (Consn _ m b c) => l
    end).
 
 Type
   (fun (A : Set) (n : nat) (l : Listn A n) =>
    match l with
-   | Niln => l
-   | Consn n a Niln => l
-   | Consn n a (Consn m b c) => l
+   | Niln _ => l
+   | Consn _ n a (Niln _) => l
+   | Consn _ n a (Consn _ m b c) => l
    end).
 
 Type
   (fun (A : Set) (n : nat) (l : Listn A n) =>
    match l return (Listn A n) with
-   | Niln as b => l
-   | Consn n a (Niln as b) => l
-   | Consn n a (Consn m b _) => l
+   | Niln _ as b => l
+   | Consn _ n a (Niln _ as b) => l
+   | Consn _ n a (Consn _ m b _) => l
    end).
 
 Type
   (fun (A : Set) (n : nat) (l : Listn A n) =>
    match l with
-   | Niln as b => l
-   | Consn n a (Niln as b) => l
-   | Consn n a (Consn m b _) => l
+   | Niln _ as b => l
+   | Consn _ n a (Niln _ as b) => l
+   | Consn _ n a (Consn _ m b _) => l
    end).
 
 
@@ -770,40 +759,40 @@ Type match LeO 0 with
 Type
   (fun (n : nat) (l : Listn nat n) =>
    match l return nat with
-   | Niln => 0
-   | Consn n a l => 0
+   | Niln _ => 0
+   | Consn _ n a l => 0
    end).
 
 
 Type
   (fun (n : nat) (l : Listn nat n) =>
    match l with
-   | Niln => 0
-   | Consn n a l => 0
+   | Niln _ => 0
+   | Consn _ n a l => 0
    end).
 
 
 Type match Niln nat with
-     | Niln => 0
-     | Consn n a l => 0
+     | Niln _ => 0
+     | Consn _ n a l => 0
      end.
 
 Type match LE_n 0 return nat with
-     | LE_n => 0
-     | LE_S m h => 0
+     | LE_n _ => 0
+     | LE_S _ m h => 0
      end.
 
 
 Type match LE_n 0 with
-     | LE_n => 0
-     | LE_S m h => 0
+     | LE_n _ => 0
+     | LE_S _ m h => 0
      end.
 
 
 
 Type match LE_n 0 with
-     | LE_n => 0
-     | LE_S m h => 0
+     | LE_n _ => 0
+     | LE_S _ m h => 0
      end.
 
 
@@ -825,16 +814,17 @@ Type
 
 Type
   match Niln nat return nat with
-  | Niln => 0
-  | Consn n a Niln => n
-  | Consn n a (Consn m b l) => n + m
+  | Niln _ => 0
+  | Consn _ n a (Niln _
+) => n
+  | Consn _ n a (Consn _ m b l) => n + m
   end.
 
 Type
   match Niln nat with
-  | Niln => 0
-  | Consn n a Niln => n
-  | Consn n a (Consn m b l) => n + m
+  | Niln _ => 0
+  | Consn _ n a (Niln _) => n
+  | Consn _ n a (Consn _ m b l) => n + m
   end.
 
 
@@ -1027,17 +1017,17 @@ Type
 
 Type
   match LE_n 0 return nat with
-  | LE_n => 0
-  | LE_S m LE_n => 0 + m
-  | LE_S m (LE_S y h) => 0 + m
+  | LE_n _ => 0
+  | LE_S _ m (LE_n _) => 0 + m
+  | LE_S _ m (LE_S _ y h) => 0 + m
   end.
 
 
 Type
   match LE_n 0 with
-  | LE_n => 0
-  | LE_S m LE_n => 0 + m
-  | LE_S m (LE_S y h) => 0 + m
+  | LE_n _ => 0
+  | LE_S _ m (LE_n _) => 0 + m
+  | LE_S _ m (LE_S _ y h) => 0 + m
   end.
 
 
@@ -1077,25 +1067,25 @@ Type
 Type
   (fun (A : Set) (n : nat) (l : Listn A n) =>
    match l return (nat -> nat) with
-   | Niln => fun _ : nat => 0
-   | Consn n a Niln => fun _ : nat => n
-   | Consn n a (Consn m b l) => fun _ : nat => n + m
+   | Niln _ => fun _ : nat => 0
+   | Consn _ n a (Niln _) => fun _ : nat => n
+   | Consn _ n a (Consn _ m b l) => fun _ : nat => n + m
    end).
 
 Type
   (fun (A : Set) (n : nat) (l : Listn A n) =>
    match l with
-   | Niln => fun _ : nat => 0
-   | Consn n a Niln => fun _ : nat => n
-   | Consn n a (Consn m b l) => fun _ : nat => n + m
+   | Niln _ => fun _ : nat => 0
+   | Consn _ n a (Niln _) => fun _ : nat => n
+   | Consn _ n a (Consn _ m b l) => fun _ : nat => n + m
    end).
 
 (* Also tests for multiple _ patterns *)
 Type
   (fun (A : Set) (n : nat) (l : Listn A n) =>
    match l in (Listn _ n) return (Listn A n) with
-   | Niln as b => b
-   | Consn _ _ _ as b => b
+   | Niln _ as b => b
+   | Consn _ _ _ _ as b => b
    end).
 
 (** This one was said to raised once an "Horrible error message!" *)
@@ -1103,8 +1093,8 @@ Type
 Type
   (fun (A:Set) (n:nat) (l:Listn A n) =>
    match l with
-   | Niln as b => b
-   | Consn _ _ _  as b =>  b
+   | Niln _ as b => b
+   | Consn _ _ _ _  as b =>  b
    end).
 
 Type
@@ -1123,26 +1113,26 @@ Type
 Type
   (fun (n m : nat) (h : LE n m) =>
    match h return (nat -> nat) with
-   | LE_n => fun _ : nat => n
-   | LE_S m LE_n => fun _ : nat => n + m
-   | LE_S m (LE_S y h) => fun _ : nat => m + y
+   | LE_n _ => fun _ : nat => n
+   | LE_S _ m (LE_n _) => fun _ : nat => n + m
+   | LE_S _ m (LE_S _ y h) => fun _ : nat => m + y
    end).
 Type
   (fun (n m : nat) (h : LE n m) =>
    match h with
-   | LE_n => fun _ : nat => n
-   | LE_S m LE_n => fun _ : nat => n + m
-   | LE_S m (LE_S y h) => fun _ : nat => m + y
+   | LE_n _ => fun _ : nat => n
+   | LE_S _ m (LE_n _) => fun _ : nat => n + m
+   | LE_S _ m (LE_S _ y h) => fun _ : nat => m + y
    end).
 
 
 Type
   (fun (n m : nat) (h : LE n m) =>
    match h return nat with
-   | LE_n => n
-   | LE_S m LE_n => n + m
-   | LE_S m (LE_S y LE_n) => n + m + y
-   | LE_S m (LE_S y (LE_S y' h)) => n + m + (y + y')
+   | LE_n _ => n
+   | LE_S _ m (LE_n _) => n + m
+   | LE_S _ m (LE_S _ y (LE_n _)) => n + m + y
+   | LE_S _ m (LE_S _ y (LE_S _ y' h)) => n + m + (y + y')
    end).
 
 
@@ -1150,28 +1140,28 @@ Type
 Type
   (fun (n m : nat) (h : LE n m) =>
    match h with
-   | LE_n => n
-   | LE_S m LE_n => n + m
-   | LE_S m (LE_S y LE_n) => n + m + y
-   | LE_S m (LE_S y (LE_S y' h)) => n + m + (y + y')
+   | LE_n _ => n
+   | LE_S _ m (LE_n _) => n + m
+   | LE_S _ m (LE_S _ y (LE_n _)) => n + m + y
+   | LE_S _ m (LE_S _ y (LE_S _ y' h)) => n + m + (y + y')
    end).
 
 
 Type
   (fun (n m : nat) (h : LE n m) =>
    match h return nat with
-   | LE_n => n
-   | LE_S m LE_n => n + m
-   | LE_S m (LE_S y h) => n + m + y
+   | LE_n _ => n
+   | LE_S _ m (LE_n _) => n + m
+   | LE_S _ m (LE_S _ y h) => n + m + y
    end).
 
 
 Type
   (fun (n m : nat) (h : LE n m) =>
    match h with
-   | LE_n => n
-   | LE_S m LE_n => n + m
-   | LE_S m (LE_S y h) => n + m + y
+   | LE_n _ => n
+   | LE_S _ m (LE_n _) => n + m
+   | LE_S _ m (LE_S _ y h) => n + m + y
    end).
 
 Type
@@ -1231,14 +1221,14 @@ Parameter B : Set.
 Type
   (fun (P : nat -> B -> Prop) (x : SStream B P) =>
    match x return B with
-   | scons _ a _ _ => a
+   | scons _ _ a _ _ => a
    end).
 
 
 Type
   (fun (P : nat -> B -> Prop) (x : SStream B P) =>
    match x with
-   | scons _ a _ _ => a
+   | scons _ _ a _ _ => a
    end).
 
 Type match (0, 0) return (nat * nat) with
@@ -1267,14 +1257,14 @@ Parameter concat : forall A : Set, List A -> List A -> List A.
 
 Type
   match Nil nat, Nil nat return (List nat) with
-  | Nil as b, x => concat nat b x
-  | Cons _ _ as d, Nil as c => concat nat d c
+  | Nil _ as b, x => concat nat b x
+  | Cons _ _ _ as d, Nil _ as c => concat nat d c
   | _, _ => Nil nat
   end.
 Type
   match Nil nat, Nil nat with
-  | Nil as b, x => concat nat b x
-  | Cons _ _ as d, Nil as c => concat nat d c
+  | Nil _ as b, x => concat nat b x
+  | Cons _ _ _ as d, Nil _ as c => concat nat d c
   | _, _ => Nil nat
   end.
 
@@ -1415,7 +1405,7 @@ Parameter p : eq_prf.
 
 Type
   match p with
-  | ex_intro c eqc =>
+  | ex_intro _ c eqc =>
       match eq_nat_dec c n with
       | right _ => refl_equal n
       | left y => (* c=n*)  refl_equal n
@@ -1438,7 +1428,7 @@ Type
   (fun N : nat =>
    match N_cla N with
    | inright H => match exist_U2 N H with
-                  | exist a b => a
+                  | exist _ a b => a
                   end
    | _ => 0
    end).
@@ -1636,8 +1626,8 @@ Parameter
 
 Type
   match Nil nat as l return (Empty nat l \/ ~ Empty nat l) with
-  | Nil => or_introl (~ Empty nat (Nil nat)) (intro_Empty nat)
-  | Cons a y => or_intror (Empty nat (Cons nat a y)) (inv_Empty nat a y)
+  | Nil _ => or_introl (~ Empty nat (Nil nat)) (intro_Empty nat)
+  | Cons _ a y => or_intror (Empty nat (Cons nat a y)) (inv_Empty nat a y)
   end.
 
 
@@ -1687,20 +1677,20 @@ Parameter
 
 Type
   match Nil nat as x, Nil nat as y return (eqlong x y \/ ~ eqlong x y) with
-  | Nil, Nil => V1
-  | Nil, Cons a x => V2 a x
-  | Cons a x, Nil => V3 a x
-  | Cons a x, Cons b y => V4 a x b y
+  | Nil _, Nil _ => V1
+  | Nil _, Cons _ a x => V2 a x
+  | Cons _ a x, Nil _ => V3 a x
+  | Cons _ a x, Cons _ b y => V4 a x b y
   end.
 
 
 Type
   (fun x y : List nat =>
    match x, y return (eqlong x y \/ ~ eqlong x y) with
-   | Nil, Nil => V1
-   | Nil, Cons a x => V2 a x
-   | Cons a x, Nil => V3 a x
-   | Cons a x, Cons b y => V4 a x b y
+   | Nil _, Nil _ => V1
+   | Nil _, Cons _ a x => V2 a x
+   | Cons _ a x, Nil _ => V3 a x
+   | Cons _ a x, Cons _ b y => V4 a x b y
    end).
 
 

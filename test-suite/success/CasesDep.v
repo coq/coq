@@ -4,8 +4,8 @@ Check
   (fun (P : nat -> Prop) Q (A : P 0 -> Q) (B : forall n : nat, P (S n) -> Q)
      x =>
    match x return Q with
-   | exist O H => A H
-   | exist (S n) H => B n H
+   | exist _ O H => A H
+   | exist _ (S n) H => B n H
    end).
 
 (* Check dependencies in anonymous arguments (from FTA/listn.v) *)
@@ -21,30 +21,30 @@ Variable c : C.
 
 Fixpoint foldrn (n : nat) (bs : listn B n) {struct bs} : C :=
   match bs with
-  | niln => c
-  | consn b _ tl => g b (foldrn _ tl)
+  | niln _ => c
+  | consn _ b _ tl => g b (foldrn _ tl)
   end.
 End Folding.
 
 (** Testing post-processing of nested dependencies *)
 
 Check fun x:{x|x=0}*nat+nat => match x with
-      | inl ((exist 0 eq_refl),0) => None
+      | inl ((exist _ 0 eq_refl),0) => None
       | _ => Some 0
       end.
 
 Check fun x:{_:{x|x=0}|True}+nat => match x with
-      | inl (exist (exist 0 eq_refl) I) => None
+      | inl (exist _ (exist _ 0 eq_refl) I) => None
       | _ => Some 0
       end.
 
 Check fun x:{_:{x|x=0}|True}+nat => match x with
-      | inl (exist (exist 0 eq_refl) I) => None
+      | inl (exist _ (exist _ 0 eq_refl) I) => None
       | _ => Some 0
       end.
 
 Check fun x:{_:{x|x=0}|True}+nat => match x return option nat with
-      | inl (exist (exist 0 eq_refl) I) => None
+      | inl (exist _ (exist _ 0 eq_refl) I) => None
       | _ => Some 0
       end.
 
@@ -52,11 +52,11 @@ Check fun x:{_:{x|x=0}|True}+nat => match x return option nat with
   (* due to a bug in dependencies postprocessing (revealed by CoLoR) *)
 
 Check fun x:{x:nat*nat|fst x = 0 & True} => match x return option nat with
-      | exist2 (x,y) eq_refl I => None
+      | exist2 _ _ (x,y) eq_refl I => None
       end.
 
 Check fun x:{_:{x:nat*nat|fst x = 0 & True}|True}+nat => match x return option nat with
-      | inl (exist (exist2 (x,y) eq_refl I) I) => None
+      | inl (exist _ (exist2 _ _ (x,y) eq_refl I) I) => None
       | _ => Some 0
       end.
 
@@ -521,8 +521,8 @@ end.
 
 Fixpoint app {A} {n m} (v : listn A n) (w : listn A m) : listn A (n + m) :=
   match v with
-    | niln => w
-    | consn a n' v' => consn _ a _ (app v' w)
+    | niln _ => w
+    | consn _ a n' v' => consn _ a _ (app v' w)
   end.
 
 (* Testing regression of bug 2106 *)
@@ -547,7 +547,7 @@ n'.
 
 Definition test (s:step E E) :=
   match s with
-    | Step nil _ (cons E nil) _ Plus l l' => true
+    | @Step nil _ (cons E nil) _ Plus l l' => true
     | _ => false
   end.
 

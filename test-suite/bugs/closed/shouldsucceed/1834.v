@@ -53,7 +53,7 @@ Definition S1_1 y0 y1 (e0:eq_0 y0) (e1:S0_0 y0 e0 = y1) :=
    y1 e1.
 
 Definition eq_ok1 y0 y1 y2 (E: eq_1 y0 y1) :=
-  match E with exist e0 e1 => S1_1 y0 y1 e0 e1 = y2 end.
+  match E with exist _ e0 e1 => S1_1 y0 y1 e0 e1 = y2 end.
 
 Definition eq_2 y0 y1 y2 :=
   {E1:eq_1 y0 y1 | eq_ok1 y0 y1 y2 E1}.
@@ -81,7 +81,7 @@ Definition S2_2 y0 y1 y2 (e0:eq_0 y0) (e1:S0_0 y0 e0 = y1)
    y2 e2.
 
 Definition eq_ok2 y0 y1 y2 y3 (E: eq_2 y0 y1 y2) : Prop :=
-  match E with exist (exist e0 e1) e2 =>
+  match E with exist _ (exist _ e0 e1) e2 =>
      S2_2 y0 y1 y2 e0 e1 e2 = y3 end.
 
 Definition eq_3 y0 y1 y2 y3 :=
@@ -118,7 +118,7 @@ Definition S3_3 y0 y1 y2 y3 (e0:eq_0 y0) (e1:S0_0 y0 e0 = y1)
    y3 e3.
 
 Definition eq_ok3 y0 y1 y2 y3 y4 (E: eq_3 y0 y1 y2 y3) : Prop :=
-  match E with exist (exist (exist e0 e1) e2) e3 =>
+  match E with exist _ (exist _ (exist _ e0 e1) e2) e3 =>
      S3_3 y0 y1 y2 y3 e0 e1 e2 e3 = y4 end.
 
 Definition eq_4 y0 y1 y2 y3 y4 :=
@@ -165,7 +165,7 @@ Definition S4_4 y0 y1 y2 y3 y4 (e0:eq_0 y0) (e1:S0_0 y0 e0 = y1)
    y4 e4.
 
 Definition eq_ok4 y0 y1 y2 y3 y4 y5 (E: eq_4 y0 y1 y2 y3 y4) : Prop :=
-  match E with exist (exist (exist (exist e0 e1) e2) e3) e4 =>
+  match E with exist _ (exist _ (exist _ (exist _ e0 e1) e2) e3) e4 =>
      S4_4 y0 y1 y2 y3 y4 e0 e1 e2 e3 e4 = y5 end.
 
 Definition eq_5 y0 y1 y2 y3 y4 y5 :=

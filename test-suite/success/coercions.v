@@ -96,13 +96,13 @@ Inductive list (A : Type) : Type :=
   nil : list A | cons : A -> list A -> list A.
 Inductive vect (A : Type) : nat -> Type :=
   vnil : vect A 0 | vcons : forall n, A -> vect A n -> vect A (1+n).
-Fixpoint size A (l : list A) : nat := match l with nil => 0 | cons _ tl => 1+size _ tl end.
+Fixpoint size A (l : list A) : nat := match l with nil _ => 0 | cons _ _ tl => 1+size _ tl end.
 
 Section test_non_unif_but_complete.
 Fixpoint l2v A (l : list A) : vect A (size A l) :=
   match l as l return vect A (size A l) with
-  | nil => vnil A
-  | cons x xs => vcons A (size A xs) x (l2v A xs)
+  | nil _ => vnil A
+  | cons _ x xs => vcons A (size A xs) x (l2v A xs)
   end.
 
 Local Coercion l2v : list >-> vect.
@@ -121,8 +121,8 @@ Instance pair A B C D (c1 : coercion A B) (c2 : coercion C D) : coercion (A * C)
 
 Fixpoint l2v2 {A B} {c : coercion A B} (l : list A) : (vect B (size A l)) := 
   match l as l return vect B (size A l) with
-  | nil => vnil B
-  | cons x xs => vcons _ _ (c x) (l2v2 xs) end.
+  | nil _ => vnil B
+  | cons _ x xs => vcons _ _ (c x) (l2v2 xs) end.
 
 Local Coercion l2v2 : list >-> vect.
 

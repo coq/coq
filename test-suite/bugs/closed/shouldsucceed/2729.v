@@ -53,12 +53,12 @@ Program Fixpoint insertBase {pu : PatchUniverse}
                             (qs : SequenceBase pu mid to)
                           : SequenceBase pu from to
     := match qs with
-       | Nil _ => Cons p Nil
-       | Cons mid' mid2' to' q qs' =>
+       | Nil => Cons p Nil
+       | Cons q qs' =>
            match SignedName_compare (pu_nameOf p) (pu_nameOf q) with
            | Lt => Cons p qs
            | _  => match commutable_dec p (castPatchFrom _ q) with
-                   | inleft (existT _ (existT q' (existT p' _))) => Cons q'
+                   | inleft (existT _ _ (existT _ q' (existT _ p' _))) => Cons q'
 (insertBase p' qs')
                    | inright _ => Cons p qs
                    end

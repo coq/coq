@@ -660,7 +660,7 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
 
   Fixpoint cardinal_e (e:Raw.enumeration D.t) :=
     match e with
-     | Raw.End => 0%nat
+     | Raw.End _ => 0%nat
      | Raw.More _ _ r e => S (Raw.cardinal r + cardinal_e e)
     end.
 
@@ -677,9 +677,9 @@ Module IntMake_ord (I:Int)(X: OrderedType)(D : OrderedType) <:
   Function compare_aux (ee:Raw.enumeration D.t * Raw.enumeration D.t)
    { measure cardinal_e_2 ee } : comparison :=
   match ee with
-  | (Raw.End, Raw.End) => Eq
-  | (Raw.End, Raw.More _ _ _ _) => Lt
-  | (Raw.More _ _ _ _, Raw.End) => Gt
+  | (Raw.End _, Raw.End _) => Eq
+  | (Raw.End _, Raw.More _ _ _ _) => Lt
+  | (Raw.More _ _ _ _, Raw.End _) => Gt
   | (Raw.More x1 d1 r1 e1, Raw.More x2 d2 r2 e2) =>
       match X.compare x1 x2 with
       | EQ _ => match D.compare d1 d2 with

@@ -23,14 +23,14 @@ Inductive t : nat -> Set :=
 
 Section SCHEMES.
 Definition case0 P (p: t 0): P p :=
-  match p with | F1 _ | FS _ _ => fun devil => False_rect (@ID) devil (* subterm !!! *) end.
+  match p with | F1 | FS  _ => fun devil => False_rect (@ID) devil (* subterm !!! *) end.
 
 Definition caseS (P: forall {n}, t (S n) -> Type)
   (P1: forall n, @P n F1) (PS : forall {n} (p: t n), P (FS p))
   {n} (p: t (S n)): P p :=
   match p with
-  |F1 k => P1 k
-  |FS k pp => PS pp
+  |@F1 k => P1 k
+  |FS pp => PS pp
   end.
 
 Definition rectS (P: forall {n}, t (S n) -> Type)
@@ -38,9 +38,9 @@ Definition rectS (P: forall {n}, t (S n) -> Type)
   forall {n} (p: t (S n)), P p :=
 fix rectS_fix {n} (p: t (S n)): P p:=
   match p with
-  |F1 k => P1 k
-  |FS 0 pp => case0 (fun f => P (FS f)) pp
-  |FS (S k) pp => PS pp (rectS_fix pp)
+  |@F1 k => P1 k
+  |@FS 0 pp => case0 (fun f => P (FS f)) pp
+  |@FS (S k) pp => PS pp (rectS_fix pp)
   end.
 
 Definition rect2 (P: forall {n} (a b: t n), Type)
@@ -51,14 +51,14 @@ Definition rect2 (P: forall {n} (a b: t n), Type)
     forall {n} (a b: t n), P a b :=
 fix rect2_fix {n} (a: t n): forall (b: t n), P a b :=
 match a with
-  |F1 m => fun (b: t (S m)) => match b as b' in t (S n')
+  |@F1 m => fun (b: t (S m)) => match b as b' in t (S n')
                    return P F1 b' with
-                     |F1 m' => H0 m'
-                     |FS m' b' => H1 b'
+                     |@F1 m' => H0 m'
+                     |FS b' => H1 b'
                    end
-  |FS m a' => fun (b: t (S m)) => match b with
-                         |F1 m' => fun aa: t m' => H2 aa
-                         |FS m' b' => fun aa: t m' => HS aa b' (rect2_fix aa b')
+  |@FS m a' => fun (b: t (S m)) => match b with
+                         |@F1 m' => fun aa: t m' => H2 aa
+                         |FS b' => fun aa => HS aa b' (rect2_fix aa b')
                        end a'
 end.
 End SCHEMES.
@@ -66,15 +66,15 @@ End SCHEMES.
 Definition FS_inj {n} (x y: t n) (eq: FS x = FS y): x = y :=
 match eq in _ = a return
   match a as a' in t m return match m with |0 => Prop |S n' => t n' -> Prop end
-  with @F1 _ =>  fun _ => True |@FS _ y => fun x' => x' = y end x with
+  with F1 =>  fun _ => True |FS y => fun x' => x' = y end x with
   eq_refl => eq_refl
 end.
 
 (** [to_nat f] = p iff [f] is the p{^ th} element of [fin m]. *)
 Fixpoint to_nat {m} (n : t m) : {i | i < m} :=
   match n with
-    |F1 j => exist _ 0 (Lt.lt_0_Sn j)
-    |FS _ p => match to_nat p with |exist i P => exist _ (S i) (Lt.lt_n_S _ _ P) end
+    |@F1 j => exist _ 0 (Lt.lt_0_Sn j)
+    |FS p => match to_nat p with |exist _ i P => exist _ (S i) (Lt.lt_n_S _ _ P) end
   end.
 
 (** [of_nat p n] answers the p{^ th} element of [fin n] if p < n or a proof of
@@ -86,7 +86,7 @@ Fixpoint of_nat (p n : nat) : (t n) + { exists m, p = n + m } :=
       |0 => inleft _ (F1)
       |S p' => match of_nat p' n' with
         |inleft f => inleft _ (FS f)
-        |inright arg => inright _ (match arg with |ex_intro m e =>
+        |inright arg => inright _ (match arg with |ex_intro _ m e =>
           ex_intro (fun x => S p' = S n' + x) m (f_equal S e) end)
       end
     end
@@ -118,15 +118,15 @@ Fixpoint weak {m}{n} p (f : t m -> t n) :
 match p as p' return t (p' + m) -> t (p' + n) with
   |0 => f
   |S p' => fun x => match x with
-     |F1 n' => fun eq : n' = p' + m => F1
-     |FS n' y => fun eq : n' = p' + m => FS (weak p' f (eq_rect _ t y _ eq))
+     |@F1 n' => fun eq : n' = p' + m => F1
+     |@FS n' y => fun eq : n' = p' + m => FS (weak p' f (eq_rect _ t y _ eq))
   end (eq_refl _)
 end.
 
 (** The p{^ th} element of [fin m] viewed as the p{^ th} element of
 [fin (m + n)] *)
 Fixpoint L {m} n (p : t m) : t (m + n) :=
-  match p with |F1 _ => F1 |FS _ p' => FS (L n p') end.
+  match p with |F1 => F1 |FS p' => FS (L n p') end.
 
 Lemma L_sanity {m} n (p : t m) : proj1_sig (to_nat (L n p)) = proj1_sig (to_nat p).
 Proof.
@@ -144,8 +144,8 @@ induction n.
   exact p.
   exact ((fix LS k (p: t k) :=
     match p with
-      |F1 k' => @F1 (S k')
-      |FS _ p' => FS (LS _ p')
+      |@F1 k' => @F1 (S k')
+      |FS p' => FS (LS _ p')
     end) _ IHn).
 Defined.
 
@@ -163,8 +163,8 @@ Qed.
 
 Fixpoint depair {m n} (o : t m) (p : t n) : t (m * n) :=
 match o with
-  |F1 m' => L (m' * n) p
-  |FS m' o' => R n (depair o' p)
+  |@F1 m' => L (m' * n) p
+  |FS o' => R n (depair o' p)
 end.
 
 Lemma depair_sanity {m n} (o : t m) (p : t n) :
@@ -181,9 +181,9 @@ Qed.
 Fixpoint eqb {m n} (p : t m) (q : t n) :=
 match p, q with
 | @F1 m', @F1 n' => EqNat.beq_nat m' n'
-| @FS _ _, @F1 _ => false
-| @F1 _, @FS _ _ => false
-| @FS _ p', @FS _ q' => eqb p' q'
+| FS _, F1 => false
+| F1, FS _ => false
+| FS p', FS q' => eqb p' q'
 end.
 
 Lemma eqb_nat_eq : forall m n (p : t m) (q : t n), eqb p q = true -> m = n.
@@ -219,11 +219,11 @@ Definition cast: forall {m} (v: t m) {n}, m = n -> t n.
 Proof.
 refine (fix cast {m} (v: t m) {struct v} :=
  match v in t m' return forall n, m' = n -> t n with
- |@F1 _ => fun n => match n with
+ |F1 => fun n => match n with
    | 0 => fun H => False_rect _ _
    | S n' => fun H => F1
  end
- |@FS _ f => fun n => match n with
+ |FS f => fun n => match n with
    | 0 => fun H => False_rect _ _
    | S n' => fun H => FS (cast f n' (f_equal pred H))
  end

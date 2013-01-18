@@ -284,7 +284,7 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
 
   Lemma choose_equal : forall s s', Equal s s' ->
      match choose s, choose s' with
-       | inleft (exist x _), inleft (exist x' _) => E.eq x x'
+       | inleft (exist _ x _), inleft (exist _ x' _) => E.eq x x'
        | inright _, inright _  => True
        | _, _                        => False
      end.
@@ -423,7 +423,7 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
 
   Definition choose (s : t) : option elt :=
     match choose s with
-    | inleft (exist x _) => Some x
+    | inleft (exist _ x _) => Some x
     | inright _ => None
     end.
 
@@ -472,7 +472,7 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
 
   Definition min_elt (s : t) : option elt :=
     match min_elt s with
-    | inleft (exist x _) => Some x
+    | inleft (exist _ x _) => Some x
     | inright _ => None
     end.
 
@@ -500,7 +500,7 @@ Module NodepOfDep (M: Sdep) <: S with Module E := M.E.
 
   Definition max_elt (s : t) : option elt :=
     match max_elt s with
-    | inleft (exist x _) => Some x
+    | inleft (exist _ x _) => Some x
     | inright _ => None
     end.
 

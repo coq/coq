@@ -241,7 +241,7 @@ Fixpoint interpret3 t fv {struct t}: R :=
   | (PEpow t1 t2) =>
        let v1  := interpret3 t1 fv in pow v1 (N.to_nat t2)
   | (PEc t1) => (IZR1 t1)
-  | (PEX n) => List.nth (pred (Pos.to_nat n)) fv 0
+  | (PEX _ n) => List.nth (pred (Pos.to_nat n)) fv 0
   end.
 
 

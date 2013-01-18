@@ -68,6 +68,6 @@ Inductive list''' (A:Set) (B:=(A*A)%type) (a:A) : B -> Set :=
 Fixpoint length''' (A:Set) (B:=(A*A)%type) (a:A) (m:B) (l:list''' A a m)
   {struct l} : nat :=
   match l with
-  | nil''' => 0
-  | cons''' _ m l0 => S (length''' A a m l0)
+  | nil''' _ _ => 0
+  | @cons''' _ _ _ _ m l0 => S (length''' A a m l0)
   end.

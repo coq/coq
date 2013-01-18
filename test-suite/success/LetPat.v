@@ -9,22 +9,22 @@ Print l3.
 
 Record someT (A : Type) := mkT { a : nat; b: A }.
 
-Definition l4 A (t : someT A) : nat := let 'mkT x y := t in x.
+Definition l4 A (t : someT A) : nat := let 'mkT _ x y := t in x.
 Print l4.
 Print sigT.
 
 Definition l5 A (B : A -> Type) (t : sigT B) : B (projT1 t) :=
-  let 'existT x y := t return B (projT1 t) in y.
+  let 'existT _ x y := t return B (projT1 t) in y.
 
 Definition l6 A (B : A -> Type) (t : sigT B) : B (projT1 t) :=
-  let 'existT x y as t' := t return B (projT1 t') in y.
+  let 'existT _ x y as t' := t return B (projT1 t') in y.
 
 Definition l7 A (B : A -> Type) (t : sigT B) : B (projT1 t) :=
-  let 'existT x y as t' in sigT _ := t return B (projT1 t') in y.
+  let 'existT _ x y as t' in sigT _ := t return B (projT1 t') in y.
 
 Definition l8 A (B : A -> Type) (t : sigT B) : B (projT1 t) :=
   match t with
-    existT x y => y
+    existT _ x y => y
   end.
 
 (** An example from algebra, using let' and inference of return clauses

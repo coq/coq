@@ -38,7 +38,7 @@ Check
      (f : forall z : C, P z (I C D x y z)) (y0 : C)
      (a : A C D x y y0) =>
    match a as a0 in (A _ _ _ _ y1) return (P y1 a0) with
-   | I x0 => f x0
+   | I _ _ _ _ x0 => f x0
    end).
 
 Record B (C D : Set) (E:=C) (F:=D) (x y : E -> F) : Set :=  {p : C; q : E}.
@@ -51,7 +51,7 @@ Check
      (f : forall p0 q0 : C, P (Build_B C D x y p0 q0))
      (b : B C D x y) =>
    match b as b0 return (P b0) with
-   | Build_B x0 x1 => f x0 x1
+   | Build_B _ _ _ _ x0 x1 => f x0 x1
    end).
 
 (* Check inductive types with local definitions (constructors) *)

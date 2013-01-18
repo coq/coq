@@ -419,7 +419,7 @@ Qed.
  Fixpoint PEeval (l:list R) (pe:PExpr C) {struct pe} : R :=
    match pe with
    | PEc c => [c]
-   | PEX j => nth 0 j l
+   | PEX _ j => nth 0 j l
    | PEadd pe1 pe2 => (PEeval l pe1) + (PEeval l pe2)
    | PEsub pe1 pe2 => (PEeval l pe1) - (PEeval l pe2)
    | PEmul pe1 pe2 => (PEeval l pe1) * (PEeval l pe2)
@@ -501,7 +501,7 @@ Definition pow_N_gen (R:Type)(x1:R)(m:R->R->R)(x:R) (p:N) :=
   Fixpoint norm_aux (pe:PExpr C) : Pol :=
    match pe with
    | PEc c => Pc c
-   | PEX j => mk_X j
+   | PEX _ j => mk_X j
    | PEadd pe1 (PEopp pe2) =>
      Psub (norm_aux pe1) (norm_aux pe2)
    | PEadd pe1 pe2 => Padd (norm_aux  pe1) (norm_aux pe2)

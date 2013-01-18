@@ -62,7 +62,7 @@ Qed.
 Fixpoint Zeval_expr (env : PolEnv Z) (e: PExpr Z) : Z :=
   match e with
     | PEc c => c
-    | PEX x => env x
+    | PEX _ x => env x
     | PEadd e1 e2 => Zeval_expr env e1 + Zeval_expr env e2
     | PEmul e1 e2 => Zeval_expr env e1 * Zeval_expr env e2
     | PEpow e1 n  => Z.pow (Zeval_expr env e1) (Z.of_N n)

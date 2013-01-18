@@ -40,12 +40,12 @@ Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
  (rect: forall a {n} (v: t A (S n)), P v -> P (a :: v)) :=
  fix rectS_fix {n} (v: t A (S n)) : P v :=
  match v with
- |cons a 0 v =>
+ |@cons _ a 0 v =>
    match v with
-     |nil => bas a
+     |nil _ => bas a
      |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
    end
- |cons a (S nn') v => rect a v (rectS_fix v)
+ |@cons _ a (S nn') v => rect a v (rectS_fix v)
  |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
  end.
 
@@ -109,8 +109,8 @@ ocaml function. *)
 Definition nth {A} := 
 fix nth_fix {m} (v' : t A m) (p : Fin.t m) {struct v'} : A :=
 match p in Fin.t m' return t A m' -> A with
- |Fin.F1 q => fun v => caseS (fun n v' => A) (fun h n t => h) v
- |Fin.FS q p' => fun v => (caseS (fun n v' => Fin.t n -> A)
+ |Fin.F1 => fun v => caseS (fun n v' => A) (fun h n t => h) v
+ |Fin.FS p' => fun v => (caseS (fun n v' => Fin.t n -> A)
    (fun h n t p0 => nth_fix t p0) v) p'
 end v'.
 
@@ -121,8 +121,8 @@ Definition nth_order {A} {n} (v: t A n) {p} (H: p < n) :=
 (** Put [a] at the p{^ th} place of [v] *)
 Fixpoint replace {A n} (v : t A n) (p: Fin.t n) (a : A) {struct p}: t A n :=
   match p with
-  |Fin.F1 k => fun v': t A (S k) => caseS (fun n _ => t A (S n)) (fun h _ t => a :: t) v'
-  |Fin.FS k p' => fun v' =>
+  |@Fin.F1 k => fun v': t A (S k) => caseS (fun n _ => t A (S n)) (fun h _ t => a :: t) v'
+  |Fin.FS p' => fun v' =>
     (caseS (fun n _ => Fin.t n -> t A (S n)) (fun h _ t p2 => h :: (replace t p2 a)) v') p'
   end v.
 
@@ -251,7 +251,7 @@ match v in t _ n0 return t C n0 -> A with
     |[] => a
     |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
   end
-  |cons vh vn vt => fun w => match w with
+  |@cons _ vh vn vt => fun w => match w with
     |wh :: wt => fun vt' => fold_left2_fix (f a vh wh) vt' wt
     |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
   end vt

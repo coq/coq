@@ -22,8 +22,8 @@ Inductive hole (A:Set) : Set := Hole | Hole2.
 
 Definition wrong_id (A B : Set) (x:hole A) : hole B :=
  match x with
-  | Hole => @Hole _
-  | Hole2 => @Hole2 _
+  | Hole _ => @Hole _
+  | Hole2 _ => @Hole2 _
  end.
 
 Extraction wrong_id. (** should _not_ be optimized as an identity *)
@@ -114,9 +114,9 @@ Definition decode_cond_mode (mode : Type) (f : word -> decoder_result mode)
     | Some oc =>
       match f w with
         | DecInst i => DecInst (g i oc)
-        | DecError m => @DecError inst m
-        | DecUndefined => @DecUndefined inst
-        | DecUnpredictable => @DecUnpredictable inst
+        | DecError _ m => @DecError inst m
+        | DecUndefined _ => @DecUndefined inst
+        | DecUnpredictable _ => @DecUnpredictable inst
       end
     | None => @DecUndefined inst
   end.

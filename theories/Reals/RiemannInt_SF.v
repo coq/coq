@@ -144,7 +144,7 @@ Definition subdivision (a b:R) (f:StepFun a b) : Rlist := projT1 (pre f).
 
 Definition subdivision_val (a b:R) (f:StepFun a b) : Rlist :=
   match projT2 (pre f) with
-    | existT a b => a
+    | existT _ a b => a
   end.
 
 Fixpoint Int_SF (l k:Rlist) : R :=

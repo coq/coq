@@ -40,11 +40,13 @@ Parameter
 
 Hint Resolve equiv_refl equiv_sym equiv_trans: monad.
 
-Add Relation K equiv
- reflexivity proved by (@equiv_refl)
- symmetry proved by (@equiv_sym)
- transitivity proved by (@equiv_trans)
- as equiv_rel.
+Instance equiv_rel A: Equivalence (@equiv A).
+Proof.
+ constructor.
+ intros xa; apply equiv_refl.
+ intros xa xb; apply equiv_sym.
+ intros xa xb xc; apply equiv_trans.
+Defined.
 
 Definition fequiv (A B: Type)  (f g: A -> K B) := forall (x:A), (equiv (f x) (g
 x)).
@@ -67,17 +69,17 @@ Proof.
   unfold fequiv; intros; eapply equiv_trans; auto with monad.
 Qed.
 
-Add Relation (fun (A B:Type) => A -> K B) fequiv
- reflexivity proved by (@fequiv_refl)
- symmetry proved by (@fequiv_sym)
- transitivity proved by (@fequiv_trans)
- as fequiv_rel.
-
-Add Morphism bind
- with signature equiv ==> fequiv ==> equiv
- as bind_mor.
+Instance fequiv_re A B: Equivalence (@fequiv A B).
 Proof.
- unfold fequiv; intros; apply bind_compat; auto.
+ constructor.
+ intros f; apply fequiv_refl.
+ intros f g; apply fequiv_sym.
+ intros f g h; apply fequiv_trans.
+Defined.
+
+Instance bind_mor A B: Morphisms.Proper (@equiv _ ==> @fequiv _ _ ==> @equiv _) (@bind A B).
+Proof.
+ unfold fequiv; intros x y xy_equiv f g fg_equiv; apply bind_compat; auto.
 Qed.
 
 Lemma test:

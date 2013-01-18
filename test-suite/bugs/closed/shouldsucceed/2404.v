@@ -37,8 +37,8 @@ Definition Rweak : forall a b : bWorld, Type := RstarInv bwweak.
 
 Fixpoint exportRweak {a b} (aRWb : Rweak a b) (y : bName b) : option (bName a) :=
   match aRWb,y with
-  | starReflS a, y' => Some y'
-  | starTransS i j k jWk jRWi, y' =>
+  | starReflS _ a, y' => Some y'
+  | starTransS jWk jRWi, y' =>
     match (bexportw jWk y) with
     | Some x => exportRweak jRWi x
     | None   => None

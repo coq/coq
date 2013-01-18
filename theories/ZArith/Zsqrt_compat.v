@@ -53,7 +53,7 @@ Definition sqrtrempos : forall p:positive, sqrt_data (Zpos p).
 	| xI xH => c_sqrt 3 1 2 _ _
 	| xO (xO p') =>
           match sqrtrempos p' with
-            | c_sqrt s' r' Heq Hint =>
+            | c_sqrt _ s' r' Heq Hint =>
               match Z_le_gt_dec (4 * s' + 1) (4 * r') with
 		| left Hle =>
                   c_sqrt (Zpos (xO (xO p'))) (2 * s' + 1)
@@ -63,7 +63,7 @@ Definition sqrtrempos : forall p:positive, sqrt_data (Zpos p).
           end
 	| xO (xI p') =>
           match sqrtrempos p' with
-            | c_sqrt s' r' Heq Hint =>
+            | c_sqrt _ s' r' Heq Hint =>
               match Z_le_gt_dec (4 * s' + 1) (4 * r' + 2) with
 		| left Hle =>
                   c_sqrt (Zpos (xO (xI p'))) (2 * s' + 1)
@@ -74,7 +74,7 @@ Definition sqrtrempos : forall p:positive, sqrt_data (Zpos p).
           end
 	| xI (xO p') =>
           match sqrtrempos p' with
-            | c_sqrt s' r' Heq Hint =>
+            | c_sqrt _ s' r' Heq Hint =>
               match Z_le_gt_dec (4 * s' + 1) (4 * r' + 1) with
 		| left Hle =>
                   c_sqrt (Zpos (xI (xO p'))) (2 * s' + 1)
@@ -85,7 +85,7 @@ Definition sqrtrempos : forall p:positive, sqrt_data (Zpos p).
           end
 	| xI (xI p') =>
           match sqrtrempos p' with
-            | c_sqrt s' r' Heq Hint =>
+            | c_sqrt _ s' r' Heq Hint =>
               match Z_le_gt_dec (4 * s' + 1) (4 * r' + 3) with
 		| left Hle =>
                   c_sqrt (Zpos (xI (xI p'))) (2 * s' + 1)
@@ -114,7 +114,7 @@ Definition Zsqrt :
 	| Zpos p =>
           fun h =>
             match sqrtrempos p with
-              | c_sqrt s r Heq Hint =>
+              | c_sqrt _ s r Heq Hint =>
 		existT
                 (fun s:Z =>
                   {r : Z |
@@ -150,7 +150,7 @@ Definition Zsqrt_plain (x:Z) : Z :=
   match x with
     | Zpos p =>
       match Zsqrt (Zpos p) (Pos2Z.is_nonneg p) with
-	| existT s _ => s
+	| existT _ s _ => s
       end
     | Zneg p => 0
     | Z0 => 0

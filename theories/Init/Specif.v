@@ -72,12 +72,12 @@ Section Subset_projections.
   Variable P : A -> Prop.
 
   Definition proj1_sig (e:sig P) := match e with
-                                    | exist a b => a
+                                    | exist _ a b => a
                                     end.
 
   Definition proj2_sig (e:sig P) :=
     match e return P (proj1_sig e) with
-    | exist a b => b
+    | exist _ a b => b
     end.
 
 End Subset_projections.
@@ -96,11 +96,11 @@ Section Projections.
   Variable P : A -> Type.
 
   Definition projT1 (x:sigT P) : A := match x with
-                                      | existT a _ => a
+                                      | existT _ a _ => a
                                       end.
   Definition projT2 (x:sigT P) : P (projT1 x) :=
     match x return P (projT1 x) with
-    | existT _ h => h
+    | existT _ _ h => h
     end.
 
 End Projections.

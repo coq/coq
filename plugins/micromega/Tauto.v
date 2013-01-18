@@ -31,10 +31,10 @@ Set Implicit Arguments.
 
   Fixpoint eval_f (A:Type)  (ev:A -> Prop ) (f:BFormula A) {struct f}: Prop :=
     match f with
-      | TT => True
-      | FF => False
+      | TT _ => True
+      | FF _ => False
       | A a =>  ev a
-      | X p => p
+      | X _ p => p
       | Cj e1 e2 => (eval_f  ev e1) /\ (eval_f ev e2)
       | D e1 e2  => (eval_f  ev e1) \/ (eval_f  ev e2)
       | N e     => ~ (eval_f  ev e)
@@ -54,9 +54,9 @@ Set Implicit Arguments.
 
   Fixpoint map_bformula (T U : Type) (fct : T -> U) (f : BFormula T) : BFormula U :=
     match f with
-      | TT => TT _
-      | FF => FF _
-      | X p => X _ p
+      | TT _ => TT _
+      | FF _ => FF _
+      | X _ p => X _ p
       | A a => A (fct a)
       | Cj f1 f2 => Cj (map_bformula fct f1) (map_bformula fct f2)
       | D f1 f2 => D (map_bformula fct f1) (map_bformula fct f2)
@@ -172,9 +172,9 @@ Set Implicit Arguments.
 
     Fixpoint xcnf (pol : bool) (f : BFormula Term)  {struct f}: cnf :=
       match f with
-        | TT => if pol then tt else ff
-        | FF => if pol then ff else tt
-        | X p => if pol then ff else ff (* This is not complete - cannot negate any proposition *)
+        | TT _ => if pol then tt else ff
+        | FF _ => if pol then ff else tt
+        | X _ p => if pol then ff else ff (* This is not complete - cannot negate any proposition *)
         | A x => if pol then normalise x else negate x
         | N e  => xcnf (negb pol) e
         | Cj e1 e2 =>

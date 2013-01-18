@@ -38,15 +38,15 @@ Lemma le_unique: forall m n (h1 h2: m <= n), h1 = h2.
 Proof.
 fix 3.
 refine (fun m _ h1 => match h1 as h' in _ <= k return forall hh: m <= k, h' = hh
-  with le_n => _ |le_S i H => _ end).
+  with le_n _ => _ |le_S _ i H => _ end).
 refine (fun hh => match hh as h' in _ <= k return forall eq: m = k, 
   le_n m = match eq in _ = p return m <= p -> m <= m with |eq_refl => fun bli => bli end h' with
-    |le_n => fun eq => _ |le_S j H' => fun eq => _ end eq_refl).
+    |le_n _ => fun eq => _ |le_S _ j H' => fun eq => _ end eq_refl).
 rewrite (UIP_nat _ _ eq eq_refl). reflexivity.
 subst m. destruct (Lt.lt_irrefl j H').
 refine (fun hh => match hh as h' in _ <= k return match k as k' return m <= k' -> Prop
   with |0 => fun _ => True |S i' => fun h'' => forall H':m <= i', le_S m i' H' = h'' end h'
-    with |le_n => _ |le_S j H2 => fun H' => _ end H).
+    with |le_n _ => _ |le_S _ j H2 => fun H' => _ end H).
 destruct m. exact I. intros; destruct (Lt.lt_irrefl m H').
 f_equal. apply le_unique.
 Qed.

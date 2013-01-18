@@ -497,7 +497,7 @@ Module Type Sdep.
         in the dependent version of [choose], so we leave it separate. *)
   Parameter choose_equal : forall s s', Equal s s' ->
      match choose s, choose s' with
-       | inleft (exist x _), inleft (exist x' _) => E.eq x x'
+       | inleft (exist _ x _), inleft (exist _ x' _) => E.eq x x'
        | inright _, inright _  => True
        | _, _  => False
      end.

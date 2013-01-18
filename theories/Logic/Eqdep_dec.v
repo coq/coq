@@ -101,7 +101,7 @@ Section EqdepDec.
 
   Let proj (P:A -> Prop) (exP:ex P) (def:P x) : P x :=
     match exP with
-      | ex_intro x' prf =>
+      | ex_intro _ x' prf =>
         match eq_dec x' x with
           | or_introl eqprf => eq_ind x' P prf x eqprf
           | _ => def

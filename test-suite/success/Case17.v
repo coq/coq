@@ -19,10 +19,10 @@ Axiom HHH : forall A : Prop, A.
 
 Check
   (match rec l0 (HHH _) with
-   | inleft (existS (false :: l1) _) => inright _ (HHH _)
-   | inleft (existS (true :: l1) (exist t1 (conj Hp Hl))) =>
+   | inleft (existS _ (false :: l1) _) => inright _ (HHH _)
+   | inleft (existS _ (true :: l1) (exist _ t1 (conj Hp Hl))) =>
        inright _ (HHH _)
-   | inleft (existS _ _) => inright _ (HHH _)
+   | inleft (existS _ _ _) => inright _ (HHH _)
    | inright Hnp => inright _ (HHH _)
    end
    :{l'' : list bool &
@@ -39,10 +39,10 @@ Check
             {t : nat | parse_rel l' l'' t /\ length l'' <= length l'}} +
             {(forall (l'' : list bool) (t : nat), ~ parse_rel l' l'' t)}) =>
    match rec l0 (HHH _) with
-   | inleft (existS (false :: l1) _) => inright _ (HHH _)
-   | inleft (existS (true :: l1) (exist t1 (conj Hp Hl))) =>
+   | inleft (existS _ (false :: l1) _) => inright _ (HHH _)
+   | inleft (existS _ (true :: l1) (exist _ t1 (conj Hp Hl))) =>
        inright _ (HHH _)
-   | inleft (existS _ _) => inright _ (HHH _)
+   | inleft (existS _ _ _) => inright _ (HHH _)
    | inright Hnp => inright _ (HHH _)
    end
    :{l'' : list bool &

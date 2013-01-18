@@ -301,8 +301,8 @@ Section Le_case_analysis.
            (HS : forall m, n <= m -> Q (S m)).
  Check (
     match H in (_ <= q) return (Q q)  with
-    | le_n => H0
-    | le_S m Hm => HS m Hm
+    | le_n _ => H0
+    | le_S _ m Hm => HS m Hm
     end
   ).
 
@@ -320,8 +320,8 @@ Qed.
 Definition Vtail_total
    (A : Set) (n : nat) (v : Vector.t A n) : Vector.t A (pred n):=
 match v in (Vector.t _ n0) return (Vector.t A (pred n0)) with
-| Vector.nil => Vector.nil A
-| Vector.cons _ n0 v0 => v0
+| Vector.nil _ => Vector.nil A
+| Vector.cons _ _ n0 v0 => v0
 end.
 
 Definition Vtail' (A:Set)(n:nat)(v:Vector.t A n) : Vector.t A (pred n).
@@ -1060,8 +1060,8 @@ Fixpoint vector_nth (A:Set)(n:nat)(p:nat)(v:Vector.t A p){struct v}
                   : option A :=
   match n,v  with
     _   , Vector.nil => None
-  | 0   , Vector.cons b  _ _ => Some b
-  | S n', Vector.cons _  p' v' => vector_nth A n'  p' v'
+  | 0   , Vector.cons b _ => Some b
+  | S n', Vector.cons _ v' => vector_nth A n' _ v'
   end.
 
 Implicit Arguments vector_nth [A p].
