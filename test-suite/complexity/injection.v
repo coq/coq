@@ -72,14 +72,14 @@ Definition own_join (a b c: own) : Prop :=
  match a , b , c with
   | NO , _ , _ =>  b=c
   | _ , NO , _ =>  a=c
-  | VAL' sa _ , VAL' sb _, VAL' sc _ => Share.j.(join) sa sb sc
-  | LK sa pa ha fa, LK sb pb hb fb, LK sc pc hc fc =>
+  | @VAL' sa _, @VAL' sb _, @VAL' sc _ => Share.j.(join) sa sb sc
+  | @LK sa pa ha fa, @LK sb pb hb fb, @LK sc pc hc fc =>
       Share.j.(join) sa sb sc /\
       Share.j.(join) ha hb hc /\
       fa=fc /\
       fb=fc
-  | CT sa pa , CT sb pb, CT sc pc => Share.j.(join) sa sb sc
-  | FUN sa pa fa, FUN sb pb fb, FUN sc pc fc =>
+  | @CT sa pa , @CT sb pb, @CT sc pc => Share.j.(join) sa sb sc
+  | @FUN sa pa fa, @FUN sb pb fb, @FUN sc pc fc =>
         Share.j.(join) sa sb sc /\ fa=fc /\ fb=fc
   | _ , _ , _ => False
  end.
