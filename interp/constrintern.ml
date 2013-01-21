@@ -995,54 +995,59 @@ let rec subst_pat_iterator y t p = match p with
   | RCPatOr (l,pl) -> RCPatOr (l,List.map (subst_pat_iterator y t) pl)
 
 let drop_notations_pattern looked_for =
-  let rec drop_syndef env re pats =
+  (* At toplevel, Constructors and Inductives are accepted, in trecursive calls
+     only constructor are allowed *)
+  let ensure_kind top =
+    if top then looked_for else
+      function  ConstructRef _ -> () |_ -> raise Not_found in
+  let rec drop_syndef top env re pats =
     let (loc,qid) = qualid_of_reference re in
     try
       match locate_extended qid with
-	|SynDef sp ->
-	  let (vars,a) = Syntax_def.search_syntactic_definition sp in
-	  (match a with
-	    | NRef g ->
-	      looked_for g;
-	      let () = assert (List.is_empty vars) in
-	      let (_,argscs) = find_remaining_scopes [] pats g in
-	      Some (g, [], List.map2 (in_pat_sc env) argscs pats)
-	    | NApp (NRef g,[]) -> (* special case : Syndef for @Cstr *)
-	      looked_for g;
+      |SynDef sp ->
+	let (vars,a) = Syntax_def.search_syntactic_definition sp in
+	(match a with
+	| NRef g ->
+	  ensure_kind top g;
+	  let () = assert (List.is_empty vars) in
+	  let (_,argscs) = find_remaining_scopes [] pats g in
+	  Some (g, [], List.map2 (in_pat_sc env) argscs pats)
+	| NApp (NRef g,[]) -> (* special case : Syndef for @Cstr *)
+	      ensure_kind top g;
               let () = assert (List.is_empty vars) in
 	      let (argscs,_) = find_remaining_scopes pats [] g in
 	      Some (g, List.map2 (in_pat_sc env) argscs pats, [])
 	    | NApp (NRef g,args) ->
-	      looked_for g;
+	      ensure_kind top g;
 	      let nvars = List.length vars in
 	      if List.length pats < nvars then error_not_enough_arguments loc;
 	      let pats1,pats2 = List.chop nvars pats in
 	      let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) vars pats1 in
-	      let idspl1 = List.map (in_not loc env (subst,[]) []) args in
+	      let idspl1 = List.map (in_not false loc env (subst,[]) []) args in
 	      let (_,argscs) = find_remaining_scopes pats1 pats2 g in
 	      Some (g, idspl1, List.map2 (in_pat_sc env) argscs pats2)
 	    | _ -> raise Not_found)
 	|TrueGlobal g ->
-	  looked_for g;
+	  ensure_kind top g;
 	  Dumpglob.add_glob loc g;
 	  let (_,argscs) = find_remaining_scopes [] pats g in
-	  Some (g,[],List.map2 (fun x -> in_pat {env with tmp_scope = x}) argscs pats)
+	  Some (g,[],List.map2 (fun x -> in_pat false {env with tmp_scope = x}) argscs pats)
     with Not_found -> None
-  and in_pat env = function
-    | CPatAlias (loc, p, id) -> RCPatAlias (loc, in_pat env p, id)
+  and in_pat top env = function
+    | CPatAlias (loc, p, id) -> RCPatAlias (loc, in_pat top env p, id)
     | CPatRecord (loc, l) ->
       let sorted_fields =
 	sort_fields false loc l (fun _ l -> (CPatAtom (loc, None))::l) in
       begin match sorted_fields with
 	| None -> RCPatAtom (loc, None)
 	| Some (_, head, pl) ->
-	  match drop_syndef env head pl with
+	  match drop_syndef top env head pl with
 	    |Some (a,b,c) -> RCPatCstr(loc, a, b, c)
 	    |None -> raise (InternalizationError (loc,NotAConstructor head))
       end
     | CPatCstr (loc, head, [], pl) ->
       begin
-	match drop_syndef env head pl with
+	match drop_syndef top env head pl with
 	  | Some (a,b,c) -> RCPatCstr(loc, a, b, c)
 	  | None -> raise (InternalizationError (loc,NotAConstructor head))
       end
@@ -1055,10 +1060,10 @@ let drop_notations_pattern looked_for =
       RCPatCstr (loc, g, List.map2 (in_pat_sc env) argscs1 expl_pl, List.map2 (in_pat_sc env) argscs2 pl)
     | CPatNotation (loc,"- _",([CPatPrim(_,Numeral p)],[]),[])
 	when Bigint.is_strictly_pos p ->
-      fst (Notation.interp_prim_token_cases_pattern_expr loc looked_for (Numeral (Bigint.neg p))
+      fst (Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false) (Numeral (Bigint.neg p))
 	     (env.tmp_scope,env.scopes))
     | CPatNotation (_,"( _ )",([a],[]),[]) ->
-      in_pat env a
+      in_pat top env a
     | CPatNotation (loc, ntn, fullargs,extrargs) ->
       let ntn,(args,argsl as fullargs) = contract_pat_notation ntn fullargs in
       let ((ids',c),df) = Notation.interp_notation loc ntn (env.tmp_scope,env.scopes) in
@@ -1066,23 +1071,23 @@ let drop_notations_pattern looked_for =
       Dumpglob.dump_notation_location (patntn_loc loc fullargs ntn) ntn df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids' args in
       let substlist = List.map2 (fun (id,scl) a -> (id,(a,scl))) idsl' argsl in
-      in_not loc env (subst,substlist) extrargs c
+      in_not top loc env (subst,substlist) extrargs c
     | CPatDelimiters (loc, key, e) ->
-      in_pat {env with scopes=find_delimiters_scope loc key::env.scopes;
+      in_pat top {env with scopes=find_delimiters_scope loc key::env.scopes;
 	tmp_scope = None} e
-    | CPatPrim (loc,p) -> fst (Notation.interp_prim_token_cases_pattern_expr loc looked_for p
+    | CPatPrim (loc,p) -> fst (Notation.interp_prim_token_cases_pattern_expr loc (ensure_kind false) p
 				 (env.tmp_scope,env.scopes))
     | CPatAtom (loc, Some id) ->
       begin
-	match drop_syndef env id [] with
+	match drop_syndef top env id [] with
 	  |Some (a,b,c) -> RCPatCstr (loc, a, b, c)
 	  |None -> RCPatAtom (loc, Some (find_pattern_variable id))
       end
     | CPatAtom (loc,None) -> RCPatAtom (loc,None)
     | CPatOr (loc, pl) ->
-      RCPatOr (loc,List.map (in_pat env) pl)
-  and in_pat_sc env x = in_pat {env with tmp_scope = x}
-  and in_not loc env (subst,substlist as fullsubst) args = function
+      RCPatOr (loc,List.map (in_pat top env) pl)
+  and in_pat_sc env x = in_pat false {env with tmp_scope = x}
+  and in_not top loc env (subst,substlist as fullsubst) args = function
     | NVar id ->
       let () = assert (List.is_empty args) in
       begin
@@ -1090,30 +1095,30 @@ let drop_notations_pattern looked_for =
 	(* of the notations *)
 	try
 	  let (a,(scopt,subscopes)) = List.assoc id subst in
-	  in_pat {env with scopes=subscopes@env.scopes;
+	  in_pat top {env with scopes=subscopes@env.scopes;
 	    tmp_scope = scopt} a
 	with Not_found ->
 	  if Id.equal id ldots_var then RCPatAtom (loc,Some id) else
 	    anomaly ("Unbound pattern notation variable: "^(Id.to_string id))
       end
     | NRef g ->
-      looked_for g;
+      ensure_kind top g;
       let (_,argscs) = find_remaining_scopes [] args g in
       RCPatCstr (loc, g, [], List.map2 (in_pat_sc env) argscs args)
     | NApp (NRef g,pl) ->
-      looked_for g;
+      ensure_kind top g;
       let (argscs1,argscs2) = find_remaining_scopes pl args g in
       RCPatCstr (loc, g,
-		 List.map2 (fun x -> in_not loc {env with tmp_scope = x} fullsubst []) argscs1 pl,
+		 List.map2 (fun x -> in_not false loc {env with tmp_scope = x} fullsubst []) argscs1 pl,
 		 List.map2 (in_pat_sc env) argscs2 args)
     | NList (x,_,iter,terminator,lassoc) ->
       let () = assert (List.is_empty args) in
       (try
          (* All elements of the list are in scopes (scopt,subscopes) *)
 	 let (l,(scopt,subscopes)) = List.assoc x substlist in
-         let termin = in_not loc env fullsubst [] terminator in
+         let termin = in_not top loc env fullsubst [] terminator in
 	 List.fold_right (fun a t ->
-           let u = in_not loc env ((x,(a,(scopt,subscopes)))::subst,substlist) [] iter in
+           let u = in_not false loc env ((x,(a,(scopt,subscopes)))::subst,substlist) [] iter in
            subst_pat_iterator ldots_var t u)
            (if lassoc then List.rev l else l) termin
        with Not_found ->
@@ -1122,7 +1127,7 @@ let drop_notations_pattern looked_for =
       let () = assert (List.is_empty args) in
       RCPatAtom (loc, None)
     | t -> error_invalid_pattern_notation loc
-  in in_pat
+  in in_pat true
 
 let rec intern_pat genv (ids,asubst as aliases) pat =
   let intern_cstr_with_all_args loc c with_letin idslpl1 pl2 =
