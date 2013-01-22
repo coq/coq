@@ -44,14 +44,19 @@ Sign
 Cbytecodes
 Copcodes
 Cemitcodes
+Nativevalues
 Declarations
 Retroknowledge
 Pre_env
+Nativelambda
+Nativecode
+Nativelib
 Cbytegen
 Environ
 Conv_oracle
 Closure
 Reduction
+Nativeconv
 Type_errors
 Modops
 Inductive
@@ -61,6 +66,7 @@ Cooking
 Term_typing
 Subtyping
 Mod_typing
+Nativelibrary
 Safe_typing
 
 Summary

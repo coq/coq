@@ -37,7 +37,7 @@ type metavariable = int
 (* This defines the strategy to use for verifiying a Cast *)
 (* Warning: REVERTcast is not exported to vo-files; as of r14492, it has to *)
 (* come after the vo-exported cast_kind so as to be compatible with coqchk *)
-type cast_kind = VMcast | DEFAULTcast | REVERTcast
+type cast_kind = VMcast | NATIVEcast | DEFAULTcast | REVERTcast
 
 (* This defines Cases annotations *)
 type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
@@ -155,7 +155,7 @@ let mkSort   = function
 (* (that means t2 is declared as the type of t1) *)
 let mkCast (t1,k2,t2) =
   match t1 with
-  | Cast (c,k1, _) when k1 == VMcast && k1 == k2 -> Cast (c,k1,t2)
+  | Cast (c,k1, _) when (k1 == VMcast || k1 == NATIVEcast) && k1 == k2 -> Cast (c,k1,t2)
   | _ -> Cast (t1,k2,t2)
 
 (* Constructs the product (x:t1)t2 *)

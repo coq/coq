@@ -160,3 +160,9 @@ let default_inline_level = 100
 let inline_level = ref default_inline_level
 let set_inline_level = (:=) inline_level
 let get_inline_level () = !inline_level
+
+(* Disabling native code compilation for conversion and normalization *)
+let no_native_compiler = ref false
+
+(* Print the mod uid associated to a vo file by the native compiler *)
+let print_mod_uid = ref false

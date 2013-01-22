@@ -258,7 +258,7 @@ let pr_binder_among_many pr_c = function
       pr_binder true pr_c (nal,k,t)
   | LocalRawDef (na,c) ->
       let c,topt = match c with
-        | CCast(_,c, (CastConv t|CastVM t)) -> c, t
+        | CCast(_,c, (CastConv t|CastVM t|CastNative t)) -> c, t
         | _ -> c, CHole (Loc.ghost, None) in
       surround (pr_lname na ++ pr_opt_type pr_c topt ++
          str":=" ++ cut() ++ pr_c c)
@@ -540,6 +540,7 @@ let pr pr sep inherited a =
 	    match b with
 	      | CastConv b -> str ":" ++ pr mt (-lcast,E) b
 	      | CastVM b -> str "<:" ++ pr mt (-lcast,E) b
+	      | CastNative b -> str "<<:" ++ pr mt (-lcast,E) b
 	      | CastCoerce -> str ":>"), lcast
   | CNotation (_,"( _ )",([t],[],[])) ->
       pr (fun()->str"(") (max_int,L) t ++ str")", latom
@@ -637,6 +638,7 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) = function
   | Red true -> error "Shouldn't be accessible from user."
   | ExtraRedExpr s -> str s
   | CbvVm o -> str "vm_compute" ++ pr_opt (pr_with_occurrences pr_pattern) o
+  | CbvNative o -> str "native_compute" ++ pr_opt (pr_with_occurrences pr_pattern) o
 
 let pr_may_eval test prc prlc pr2 pr3 = function
   | ConstrEval (r,c) ->

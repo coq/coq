@@ -222,7 +222,7 @@ cleanconfig:
 distclean: clean cleanconfig
 
 voclean:
-	find theories plugins test-suite -name '*.vo' -o -name '*.glob' | xargs rm -f
+	find theories plugins test-suite -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" -o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" | xargs rm -f
 
 devdocclean:
 	find . -name '*.dep.ps' -o -name '*.dot' | xargs rm -f

@@ -83,12 +83,20 @@ type constant_def =
   | Def of constr_substituted
   | OpaqueDef of lazy_constr
 
+type native_name =
+  | Linked of string
+  | LinkedLazy of string
+  | LinkedInteractive of string
+  | NotLinked
+
 type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
     const_body : constant_def;
     const_type : constant_type;
     const_body_code : Cemitcodes.to_patch_substituted;
-    const_constraints : constraints }
+    const_constraints : constraints;
+    const_native_name : native_name ref;
+    const_inline_code : bool }
 
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
@@ -131,7 +139,9 @@ let subst_const_body sub cb = {
   const_body = subst_const_def sub cb.const_body;
   const_type = subst_const_type sub cb.const_type;
   const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
-  const_constraints = cb.const_constraints}
+  const_constraints = cb.const_constraints;
+  const_native_name = ref NotLinked;
+  const_inline_code = cb.const_inline_code }
 
 (* Hash-consing of [constant_body] *)
 
@@ -317,6 +327,10 @@ type mutual_inductive_body = {
   (* Universes constraints enforced by the inductive declaration *)
     mind_constraints : constraints;
 
+  (* Data for native compilation *)
+  (* Status of the code (linked or not, and where) *)
+    mind_native_name : native_name ref;
+
   }
 
 let subst_indarity sub = function
@@ -353,7 +367,8 @@ let subst_mind sub mib =
     mind_params_ctxt =
       map_rel_context (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
-    mind_constraints = mib.mind_constraints  }
+    mind_constraints = mib.mind_constraints;
+    mind_native_name = ref NotLinked }
 
 let hcons_indarity = function
   | Monomorphic a ->

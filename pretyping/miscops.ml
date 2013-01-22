@@ -16,12 +16,14 @@ let map_cast_type f = function
   | CastConv a -> CastConv (f a)
   | CastVM a -> CastVM (f a)
   | CastCoerce -> CastCoerce
+  | CastNative a -> CastNative (f a)
 
 let smartmap_cast_type f c =
   match c with
     | CastConv a -> let a' = f a in if a' == a then c else CastConv a'
     | CastVM a -> let a' = f a in if a' == a then c else CastVM a'
     | CastCoerce -> CastCoerce
+    | CastNative a -> let a' = f a in if a' == a then c else CastNative a'
 
 (** Printing of [intro_pattern] *)
 

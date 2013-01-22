@@ -122,6 +122,7 @@ let subst_redexp subst = function
   | Pattern l -> Pattern (List.map (subst_constr_with_occurrences subst) l)
   | Simpl o -> Simpl (Option.map (subst_pattern_with_occurrences subst) o)
   | CbvVm o -> CbvVm (Option.map (subst_pattern_with_occurrences subst) o)
+  | CbvNative o -> CbvNative (Option.map (subst_pattern_with_occurrences subst) o)
   | (Red _ | Hnf | ExtraRedExpr _ as r) -> r
 
 let subst_raw_may_eval subst = function

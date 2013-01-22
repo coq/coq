@@ -631,6 +631,9 @@ let set_engagement c senv =
 
 type compiled_library =
     Dir_path.t * module_body * library_info list * engagement option
+      * Nativecode.symbol array
+
+type native_library = Nativecode.global list
 
 (* We check that only initial state Require's were performed before
    [start_library] was called *)
@@ -698,9 +701,16 @@ let export senv dir =
       mod_type_alg = None;
       mod_constraints = senv.univ;
       mod_delta = senv.modinfo.resolver;
-      mod_retroknowledge = senv.local_retroknowledge}
+      mod_retroknowledge = senv.local_retroknowledge
+    }
   in
-   mp, (dir,mb,senv.imports,engagement senv.env)
+  let ast, values =
+    if !Flags.no_native_compiler then [], [||]
+    else let ast, values, upds = Nativelibrary.dump_library mp dir senv.env str in
+    Nativecode.update_locations upds;
+    ast, values
+  in
+   mp, (dir,mb,senv.imports,engagement senv.env,values), ast
 
 
 let check_imports senv needed =
@@ -731,7 +741,7 @@ loaded by side-effect once and for all (like it is done in OCaml).
 Would this be correct with respect to undo's and stuff ?
 *)
 
-let import (dp,mb,depends,engmt) digest senv =
+let import (dp,mb,depends,engmt,values) digest senv =
   check_imports senv depends;
   check_engagement senv.env engmt;
   let mp = MPfile dp in
@@ -745,7 +755,7 @@ let import (dp,mb,depends,engmt) digest senv =
 	 resolver = 
 	    add_delta_resolver mb.mod_delta senv.modinfo.resolver};
 	  imports = (dp,digest)::senv.imports;
-	  loads = (mp,mb)::senv.loads }
+	  loads = (mp,mb)::senv.loads }, values
 
 
  (* Store the body of modules' opaque constants inside a table.  
@@ -829,7 +839,7 @@ end = struct
       | SEBwith (seb,wdcl) ->
 	SEBwith (traverse_modexpr seb,wdcl)
     in
-    fun (dp,mb,depends,s) -> (dp,traverse_module mb,depends,s) 
+    fun (dp,mb,depends,s,val_tbl) -> (dp,traverse_module mb,depends,s,val_tbl)
 
   (* To disburden a library from opaque definitions, we simply 
      traverse it and add an indirection between the module body 

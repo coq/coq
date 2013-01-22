@@ -222,8 +222,15 @@ let opened_libraries () =
      be performed first, thus the libraries_loaded_list ... *)
 
 let register_loaded_library m =
+  let link m =
+    let dirname = Filename.dirname (library_full_filename m.library_name) in
+    let prefix = Nativecode.mod_uid_of_dirpath m.library_name ^ "." in
+    let f = prefix ^ "cmo" in
+    let f = Dynlink.adapt_filename f in
+    Nativelib.call_linker ~fatal:false prefix (Filename.concat dirname f) None
+  in
   let rec aux = function
-    | [] -> [m]
+    | [] -> link m; [m]
     | m'::_ as l when Dir_path.equal m'.library_name m.library_name -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
@@ -461,6 +468,8 @@ let rec_intern_by_filename_only id f =
   let m = try intern_from_file f with Sys_error s -> error s in
   (* Only the base name is expected to match *)
   check_library_short_name f m.library_name id;
+  if !Flags.print_mod_uid then
+    print_endline (Nativecode.mod_uid_of_dirpath m.library_name);
   (* We check no other file containing same library is loaded *)
   if library_is_loaded m.library_name then
     begin
@@ -632,7 +641,7 @@ let error_recursively_dependent_library dir =
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
 let save_library_to dir f =
-  let cenv, seg = Declaremods.end_library dir in
+  let cenv, seg, ast = Declaremods.end_library dir in
   let cenv, table = LightenLibrary.save cenv in
   let md = {
     md_name = dir;
@@ -654,8 +663,17 @@ let save_library_to dir f =
     let di = Digest.file f' in
     System.marshal_out ch di;
     System.marshal_out ch table;
-    close_out ch
-  with e -> msg_warning (str ("Removed file "^f')); close_out ch; Sys.remove f'; raise e
+    close_out ch;
+    if not !Flags.no_native_compiler then begin
+    let lp = List.map CUnix.string_of_physical_path (get_load_paths ()) in
+    let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
+    match Nativelibrary.compile_library dir ast lp fn with
+      | 0 -> ()
+      | _ -> anomaly "Library compilation failure"
+    end
+  with e ->
+    msg_warning (str ("Removed file "^f')); close_out ch; Sys.remove f';
+    raise e
 
 (************************************************************************)
 (*s Display the memory use of a library. *)
@@ -667,3 +685,8 @@ let mem s =
   h 0 (str (sprintf "%dk (cenv = %dk / seg = %dk)"
 		 (CObj.size_kb m) (CObj.size_kb m.library_compiled)
 		 (CObj.size_kb m.library_objects)))
+
+let get_load_paths_str () =
+  List.map CUnix.string_of_physical_path (get_load_paths ())
+
+let _ = Nativelib.get_load_paths := get_load_paths_str

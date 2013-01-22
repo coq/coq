@@ -160,7 +160,7 @@ let rec uri_of_constr c =
   | GLetIn (_,na,b,c) ->
       url_string "let "; url_of_name na; url_string "\\def ";
       uri_of_constr b; url_string " in "; uri_of_constr c
-  | GCast (_,c, (CastConv t|CastVM t)) ->
+  | GCast (_,c, (CastConv t|CastVM t|CastNative t)) ->
       uri_of_constr c; url_string ":"; uri_of_constr t
   | GRec _ | GIf _ | GLetTuple _ | GCases _ ->
       error "Whelp does not support pattern-matching and (co-)fixpoint."

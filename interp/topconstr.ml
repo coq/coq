@@ -105,7 +105,7 @@ let fold_constr_expr_with_binders g f n acc = function
   | CApp (loc,(_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
   | CProdN (_,l,b) | CLambdaN (_,l,b) -> fold_constr_expr_binders g f n acc b l
   | CLetIn (_,na,a,b) -> fold_constr_expr_binders g f n acc b [[na],default_binder_kind,a]
-  | CCast (loc,a,(CastConv b|CastVM b)) -> f n (f n acc a) b
+  | CCast (loc,a,(CastConv b|CastVM b|CastNative b)) -> f n (f n acc a) b
   | CCast (loc,a,CastCoerce) -> f n acc a
   | CNotation (_,_,(l,ll,bll)) ->
       (* The following is an approximation: we don't know exactly if

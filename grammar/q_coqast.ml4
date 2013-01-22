@@ -196,6 +196,7 @@ let mlexpr_of_red_expr = function
       let f = mlexpr_of_list mlexpr_of_occ_constr in
       <:expr< Genredexpr.Pattern $f l$ >>
   | Genredexpr.CbvVm o -> <:expr< Genredexpr.CbvVm $mlexpr_of_option mlexpr_of_occ_constr o$ >>
+  | Genredexpr.CbvNative o -> <:expr< Genredexpr.CbvNative $mlexpr_of_option mlexpr_of_occ_constr o$ >>
   | Genredexpr.ExtraRedExpr s ->
       <:expr< Genredexpr.ExtraRedExpr $mlexpr_of_string s$ >>
 

@@ -186,6 +186,7 @@ let declare_definition ?(internal=UserVerbose) ?(opaque=false) ?(kind=Decl_kinds
     { Entries.const_entry_body = body;
       const_entry_type = types;
       const_entry_opaque = opaque;
+      const_entry_inline_code = false;
       const_entry_secctx = None }
   in
     declare_constant ~internal id

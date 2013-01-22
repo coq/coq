@@ -62,12 +62,20 @@ type constant_def =
   | Def of constr_substituted
   | OpaqueDef of lazy_constr
 
+type native_name =
+  | Linked of string
+  | LinkedLazy of string
+  | LinkedInteractive of string
+  | NotLinked
+
 type constant_body = {
     const_hyps : section_context; (** New: younger hyp at top *)
     const_body : constant_def;
     const_type : constant_type;
     const_body_code : to_patch_substituted;
-    const_constraints : constraints }
+    const_constraints : constraints;
+    const_native_name : native_name ref;
+    const_inline_code : bool }
 
 val subst_const_def : substitution -> constant_def -> constant_def
 val subst_const_body : substitution -> constant_body -> constant_body
@@ -180,6 +188,11 @@ type mutual_inductive_body = {
     mind_params_ctxt : rel_context;  (** The context of parameters (includes let-in declaration) *)
 
     mind_constraints : constraints;  (** Universes constraints enforced by the inductive declaration *)
+
+(** {8 Data for native compilation } *)
+
+    mind_native_name : native_name ref; (** status of the code (linked or not, and where) *)
+
 
   }
 

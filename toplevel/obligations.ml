@@ -508,7 +508,8 @@ let declare_definition prg =
     { const_entry_body = body;
       const_entry_secctx = None;
       const_entry_type = Some typ;
-      const_entry_opaque = false }
+      const_entry_opaque = false;
+      const_entry_inline_code = false}
   in
     progmap_remove prg;
     !declare_definition_ref prg.prg_name prg.prg_kind ce prg.prg_implicits
@@ -586,7 +587,8 @@ let declare_obligation prg obl body =
 	{ const_entry_body = body;
           const_entry_secctx = None;
 	  const_entry_type = Some ty;
-	  const_entry_opaque = opaque }
+	  const_entry_opaque = opaque;
+	  const_entry_inline_code = false} 
       in
       let constant = Declare.declare_constant obl.obl_name
 	(DefinitionEntry ce,IsProof Property)

@@ -99,11 +99,11 @@ let infer_declaration env dcl =
 	then OpaqueDef (Declarations.opaque_from_val j.uj_val)
 	else Def (Declarations.from_val j.uj_val)
       in
-      def, typ, cst, c.const_entry_secctx
+      def, typ, cst, c.const_entry_inline_code, c.const_entry_secctx
   | ParameterEntry (ctx,t,nl) ->
       let (j,cst) = infer env t in
       let t = hcons_constr (Typeops.assumption_of_judgment env j) in
-      Undef nl, NonPolymorphicType t, cst, ctx
+      Undef nl, NonPolymorphicType t, cst, false, ctx
 
 let global_vars_set_constant_type env = function
   | NonPolymorphicType t -> global_vars_set env t
@@ -113,7 +113,7 @@ let global_vars_set_constant_type env = function
 	  (fun t c -> Id.Set.union (global_vars_set env t) c))
       ctx ~init:Id.Set.empty
 
-let build_constant_declaration env kn (def,typ,cst,ctx) =
+let build_constant_declaration env kn (def,typ,cst,inline_code,ctx) =
   let hyps = 
     let inferred =
       let ids_typ = global_vars_set_constant_type env typ in
@@ -138,7 +138,9 @@ let build_constant_declaration env kn (def,typ,cst,ctx) =
     const_body = def;
     const_type = typ;
     const_body_code = tps;
-    const_constraints = cst }
+    const_constraints = cst;
+    const_native_name = ref NotLinked;
+    const_inline_code = inline_code }
 
 (*s Global and local constant declaration. *)
 
@@ -147,8 +149,8 @@ let translate_constant env kn ce =
 
 let translate_recipe env kn r =
   build_constant_declaration env kn 
-    (let def,typ,cst,hyps = Cooking.cook_constant env r in
-     def,typ,cst,Some hyps)
+    (let def,typ,cst,inline,hyps = Cooking.cook_constant env r in
+     def,typ,cst,inline,Some hyps)
 
 (* Insertion of inductive types. *)
 

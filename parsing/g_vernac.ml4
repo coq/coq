@@ -342,7 +342,7 @@ GEXTEND Gram
 	   (oc,DefExpr (id,mkCLambdaN (!@loc) l b,Some (mkCProdN (!@loc) l t)))
       | l = binders; ":="; b = lconstr -> fun id ->
          match b with
-	 | CCast(_,b, (CastConv t|CastVM t)) ->
+	 | CCast(_,b, (CastConv t|CastVM t|CastNative t)) ->
 	     (None,DefExpr(id,mkCLambdaN (!@loc) l b,Some (mkCProdN (!@loc) l t)))
          | _ ->
 	     (None,DefExpr(id,mkCLambdaN (!@loc) l b,None)) ] ]

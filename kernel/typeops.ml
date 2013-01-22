@@ -280,7 +280,11 @@ let judge_of_cast env cj k tj =
           conv_leq false env cj.uj_type expected_type
       | REVERTcast ->
           cj.uj_val,
-          conv_leq true env cj.uj_type expected_type in
+          conv_leq true env cj.uj_type expected_type
+      | NATIVEcast ->
+          mkCast (cj.uj_val, k, expected_type),
+          native_conv CUMUL env cj.uj_type expected_type
+    in
     { uj_val = c;
       uj_type = expected_type },
     cst

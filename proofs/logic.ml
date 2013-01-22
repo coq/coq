@@ -347,10 +347,10 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	check_typability env sigma ty;
 	check_conv_leq_goal env sigma trm ty conclty;
 	let res = mk_refgoals sigma goal goalacc ty t in
-	(** we keep the casts (in particular VMcast) except
+	(** we keep the casts (in particular VMcast and NATIVEcast) except
 	    when they are annotating metas *)
 	if isMeta t then begin
-	  assert (k != VMcast);
+	  assert (k != VMcast && k != NATIVEcast);
 	  res
 	end else
 	  let (gls,cty,sigma,trm) = res in

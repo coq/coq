@@ -141,9 +141,9 @@ let start_library dir =
 let export s = export !global_env s
 
 let import cenv digest =
-  let mp,newenv = import cenv digest !global_env in
+  let mp,newenv,values = import cenv digest !global_env in
     global_env := newenv;
-    mp
+    mp, values
 
 
 

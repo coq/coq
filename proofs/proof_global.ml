@@ -270,7 +270,8 @@ let close_proof () =
       (fun (c,t) -> { Entries.const_entry_body = c;
                       const_entry_secctx = section_vars;
                       const_entry_type = Some t;
-		      const_entry_opaque = true })
+              const_entry_opaque = true;
+              const_entry_inline_code = false })
       proofs_and_types
     in
     let { compute_guard=cg ; strength=str ; hook=hook } =

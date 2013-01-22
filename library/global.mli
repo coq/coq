@@ -91,8 +91,9 @@ val exists_objlabel  : Label.t -> bool
 
 (** Compiled modules *)
 val start_library : Dir_path.t -> module_path
-val export : Dir_path.t -> module_path * compiled_library
-val import : compiled_library -> Digest.t -> module_path
+val export : Dir_path.t -> module_path * compiled_library * native_library
+val import : compiled_library -> Digest.t ->
+  module_path * Nativecode.symbol array
 
 (** {6 ... } *)
 (** Function to get an environment from the constants part of the global

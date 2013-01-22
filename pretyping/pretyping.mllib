@@ -5,6 +5,7 @@ Reductionops
 Vnorm
 Namegen
 Inductiveops
+Nativenorm
 Retyping
 Cbv
 Pretype_errors

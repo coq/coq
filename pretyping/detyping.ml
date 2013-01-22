@@ -401,7 +401,12 @@ let rec detype (isgoal:bool) avoid env t =
     | Cast (c1,k,c2) ->
         let d1 = detype isgoal avoid env c1 in
 	let d2 = detype isgoal avoid env c2 in
-	GCast(dl,d1,if k == VMcast then CastVM d2 else CastConv d2)
+    let cast = match k with
+    | VMcast -> CastVM d2
+    | NATIVEcast -> CastNative d2
+    | _ -> CastConv d2
+    in
+	GCast(dl,d1,cast)
     | Prod (na,ty,c) -> detype_binder isgoal BProd avoid env na ty c
     | Lambda (na,ty,c) -> detype_binder isgoal BLambda avoid env na ty c
     | LetIn (na,b,_,c) -> detype_binder isgoal BLetIn avoid env na b c

@@ -323,9 +323,18 @@ ALLSTDLIB := test-suite/misc/universes/all_stdlib
 # remove .vo, replace theories and plugins by Coq, and replace slashes by dots
 vo_to_mod = $(subst /,.,$(patsubst theories/%,Coq.%,$(patsubst plugins/%,Coq.%,$(1:.vo=))))
 
+# Converting a stdlib filename into native compiler filenames
+# Used for install targets
+vo_to_cm = $(foreach vo,$(1),$(dir $(vo))$(subst /,_,$(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.vo=.cm*)))))
+
+vo_to_obj = $(foreach vo,$(1),$(dir $(vo))$(subst /,_,$(patsubst theories/%,NCoq_%,$(patsubst plugins/%,NCoq_%,$(vo:.vo=.o)))))
+
 ALLMODS:=$(call vo_to_mod,$(ALLVO))
 
-LIBFILES:=$(THEORIESVO) $(PLUGINSVO)
+LIBFILES:=$(THEORIESVO) $(PLUGINSVO) $(call vo_to_cm,$(THEORIESVO)) \
+	    $(call vo_to_cm,$(PLUGINSVO)) $(call vo_to_obj,$(THEORIESVO)) \
+	    $(call vo_to_obj,$(PLUGINSVO)) 
+
 LIBFILESLIGHT:=$(THEORIESLIGHTVO)
 
 ###########################################################################

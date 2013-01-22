@@ -104,7 +104,11 @@ let fold_glob_constr f acc =
 	  (List.fold_left (fun acc (na,k,bbd,bty) ->
 	    fold (Option.fold_left fold acc bbd) bty)) acc bl in
 	Array.fold_left fold (Array.fold_left fold acc tyl) bv
-    | GCast (_,c,k) -> fold (match k with CastConv t | CastVM t -> fold acc t | CastCoerce -> acc) c
+    | GCast (_,c,k) ->
+        let r = match k with
+        | CastConv t | CastVM t | CastNative t -> fold acc t | CastCoerce -> acc
+        in
+        fold r c
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> acc
 
   and fold_pattern acc (_,idl,p,c) = fold acc c
@@ -150,7 +154,8 @@ let occur_glob_constr id =
                 (match na with Name id' -> Id.equal id id' | _ -> not (occur_fix bl)) in
           occur_fix bl)
           idl bl tyl bv)
-    | GCast (loc,c,k) -> (occur c) or (match k with CastConv t | CastVM t -> occur t | CastCoerce -> false)
+    | GCast (loc,c,k) -> (occur c) or (match k with CastConv t
+      | CastVM t | CastNative t -> occur t | CastCoerce -> false)
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> false
 
   and occur_pattern (loc,idl,p,c) = not (List.mem id idl) & (occur c)
@@ -208,7 +213,7 @@ let free_glob_vars  =
 	in
 	Array.fold_left_i vars_fix vs idl
     | GCast (loc,c,k) -> let v = vars bounded vs c in
-	(match k with CastConv t | CastVM t -> vars bounded v t | _ -> v)
+	(match k with CastConv t | CastVM t | CastNative t -> vars bounded v t | _ -> v)
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs
 
   and vars_pattern bounded vs (loc,idl,p,c) =

@@ -460,6 +460,7 @@ let intern_red_expr ist = function
   | Pattern l -> Pattern (List.map (intern_constr_with_occurrences ist) l)
   | Simpl o -> Simpl (Option.map (intern_typed_pattern_with_occurrences ist) o)
   | CbvVm o -> CbvVm (Option.map (intern_typed_pattern_with_occurrences ist) o)
+  | CbvNative o -> CbvNative (Option.map (intern_typed_pattern_with_occurrences ist) o)
   | (Red _ | Hnf | ExtraRedExpr _ as r ) -> r
 
 let intern_in_hyp_as ist lf (id,ipat) =

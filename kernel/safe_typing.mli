@@ -101,14 +101,16 @@ val delta_of_senv : safe_environment -> delta_resolver*delta_resolver
 (** exporting and importing modules *)
 type compiled_library
 
+type native_library = Nativecode.global list
+
 val start_library : Dir_path.t -> safe_environment
       -> module_path * safe_environment
 
 val export : safe_environment -> Dir_path.t
-      -> module_path * compiled_library
+      -> module_path * compiled_library * native_library
 
 val import : compiled_library -> Digest.t -> safe_environment
-      -> module_path * safe_environment
+      -> module_path * safe_environment * Nativecode.symbol array
 
 (** Remove the body of opaque constants *)
 

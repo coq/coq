@@ -1,0 +1,102 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2013     *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+open Term
+open Names
+
+(** This modules defines the representation of values internally used by
+the native compiler. Be careful when removing apparently dead code from this
+interface, as it may be used by programs generated at runtime. *)
+
+type t = t -> t
+
+type accumulator
+
+type tag = int
+type arity = int
+
+type reloc_table = (tag * arity) array
+
+type annot_sw = {
+    asw_ind : inductive;
+    asw_ci : case_info;
+    asw_reloc : reloc_table;
+    asw_finite : bool;
+    asw_prefix : string
+  }
+
+type sort_annot = string * int
+      
+type rec_pos = int array
+
+type atom =
+  | Arel of int
+  | Aconstant of constant
+  | Aind of inductive
+  | Asort of sorts
+  | Avar of identifier
+  | Acase of annot_sw * accumulator * t * (t -> t) 
+  | Afix of t array * t array * rec_pos * int 
+  | Acofix of t array * t array * int * t
+  | Acofixe of t array * t array * int * t
+  | Aprod of name * t * (t -> t)
+
+(* Constructors *)
+
+val mk_accu : atom -> t
+val mk_rel_accu : int -> t
+val mk_rels_accu : int -> int -> t array
+val mk_constant_accu : constant -> t
+val mk_ind_accu : inductive -> t
+val mk_sort_accu : sorts -> t
+val mk_var_accu : identifier -> t
+val mk_sw_accu : annot_sw -> accumulator -> t -> (t -> t)
+val mk_prod_accu : name -> t -> t -> t
+val mk_fix_accu : rec_pos  -> int -> t array -> t array -> t
+val mk_cofix_accu : int -> t array -> t array -> t 
+val upd_cofix : t -> t -> unit
+val force_cofix : t -> t 
+val mk_const : tag -> t
+val mk_block : tag -> t array -> t
+
+
+val mk_int : int -> t
+
+val napply : t -> t array -> t
+(* Functions over accumulators *)
+
+val dummy_value : unit -> t
+val atom_of_accu : accumulator -> atom
+val args_of_accu : accumulator -> t list
+val accu_nargs : accumulator -> int
+
+val cast_accu : t -> accumulator
+(* Functions over block: i.e constructors *)
+    
+type block
+      
+val block_size : block -> int
+val block_field : block -> int -> t
+val block_tag : block -> int
+
+
+
+(* kind_of_value *)
+
+type kind_of_value =
+  | Vaccu of accumulator
+  | Vfun of (t -> t)
+  | Vconst of int
+  | Vblock of block
+
+val kind_of_value : t -> kind_of_value
+
+(* *)
+val is_accu : t -> bool
+
+val str_encode : 'a -> string
+val str_decode : string -> 'a

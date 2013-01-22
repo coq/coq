@@ -652,21 +652,26 @@ type library_objects =
 
 let register_library dir cenv objs digest =
   let mp = MPfile dir in
-  let substobjs, keep =
+  let substobjs, keep, values =
   try 
     ignore(Global.lookup_module mp);
     (* if it's in the environment, the cached objects should be correct *)
     Dirmap.find dir !library_cache
   with Not_found ->
-    if not (mp_eq mp (Global.import cenv digest)) then
+    let mp', values = Global.import cenv digest in
+    if not (mp_eq mp mp') then
       anomaly "Unexpected disk module name";
     let mp,substitute,keep = objs in
     let substobjs = [], mp, substitute in
-    let modobjs = substobjs, keep in
+    let modobjs = substobjs, keep, values in
     library_cache := Dirmap.add dir modobjs !library_cache;
       modobjs
   in
     do_module false "register_library" load_objects 1 dir mp substobjs keep
+
+let get_library_symbols_tbl dir =
+  let _,_,values = Dirmap.find dir !library_cache in
+  values
 
 let start_library dir =
   let mp = Global.start_library dir in
@@ -680,9 +685,9 @@ let set_end_library_hook f = end_library_hook := f
 let end_library dir =
   !end_library_hook();
   let prefix, lib_stack = Lib.end_compilation dir in
-  let mp,cenv = Global.export dir in
+  let mp,cenv,ast = Global.export dir in
   let substitute, keep, _ = Lib.classify_segment lib_stack in
-    cenv,(mp,substitute,keep)
+    cenv,(mp,substitute,keep),ast
 
 
 (* implementation of Export M and Import M *)

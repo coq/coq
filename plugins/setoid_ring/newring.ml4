@@ -147,7 +147,8 @@ let decl_constant na c =
     { const_entry_body = c;
       const_entry_secctx = None;
       const_entry_type = None;
-      const_entry_opaque = true },
+      const_entry_opaque = true;
+      const_entry_inline_code = false},
     IsProof Lemma))
 
 (* Calling a global tactic *)

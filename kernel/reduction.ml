@@ -464,6 +464,16 @@ let conv_leq_vecti ?(l2r=false) ?(evars=fun _->None) env v1 v2 =
     v2
 
 (* option for conversion *)
+let nat_conv = ref (fun cv_pb -> fconv cv_pb false (fun _->None))
+let set_nat_conv f = nat_conv := f
+
+let native_conv cv_pb env t1 t2 =
+  if eq_constr t1 t2 then empty_constraint
+  else begin
+    let t1 = (it_mkLambda_or_LetIn t1 (rel_context env)) in
+    let t2 = (it_mkLambda_or_LetIn t2 (rel_context env)) in
+    !nat_conv cv_pb env t1 t2 
+  end
 
 let vm_conv = ref (fun cv_pb -> fconv cv_pb false (fun _->None))
 let set_vm_conv f = vm_conv := f

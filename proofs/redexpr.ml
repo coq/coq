@@ -28,6 +28,9 @@ let cbv_vm env _ c =
   let ctyp = (fst (Typeops.infer env c)).Environ.uj_type in
   Vnorm.cbv_vm env c ctyp
 
+let cbv_native env _ c =
+  let ctyp = (fst (Typeops.infer env c)).Environ.uj_type in
+  Nativenorm.native_norm env c ctyp
 
 let set_strategy_one ref l  =
   let k =
@@ -206,7 +209,16 @@ let rec reduction_of_red_expr = function
     let redfun = contextually b lp vmfun in
     (redfun, VMcast)
   | CbvVm None -> (cbv_vm, VMcast)
-
+  | CbvNative (Some lp) ->
+    let b = is_reference (snd lp) in
+    let lp = out_with_occurrences lp in
+    let nativefun _ env map c =
+      let tpe = Retyping.get_type_of env map c in
+      Nativenorm.native_norm env c tpe
+    in
+    let redfun = contextually b lp nativefun in
+    (redfun, NATIVEcast)
+  | CbvNative None -> (cbv_native, NATIVEcast)
 
 let subst_flags subs flags =
   { flags with rConst = List.map subs flags.rConst }

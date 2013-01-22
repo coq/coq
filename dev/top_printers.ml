@@ -156,6 +156,7 @@ let cast_kind_display k =
   | VMcast -> "VMcast"
   | DEFAULTcast -> "DEFAULTcast"
   | REVERTcast -> "REVERTcast"
+  | NATIVEcast -> "NATIVEcast"
 
 let constr_display csr =
   let rec term_display c = match kind_of_term c with

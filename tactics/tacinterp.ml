@@ -591,6 +591,8 @@ let interp_red_expr ist sigma env = function
     sigma , Simpl (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
   | CbvVm o ->
     sigma , CbvVm (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
+  | CbvNative o ->
+    sigma , CbvNative (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
   | (Red _ |  Hnf | ExtraRedExpr _ as r) -> sigma , r
 
 let pf_interp_red_expr ist gl = interp_red_expr ist (project gl) (pf_env gl)

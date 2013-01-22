@@ -637,8 +637,8 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	| CastCoerce ->
 	  let cj = pretype empty_tycon env evdref lvar c in
 	    evd_comb1 (Coercion.inh_coerce_to_base loc env) evdref cj
-	| CastConv t | CastVM t ->
-	  let k = (match k with CastVM _ -> VMcast | _ -> DEFAULTcast) in
+	| CastConv t | CastVM t | CastNative t ->
+	  let k = (match k with CastVM _ -> VMcast | CastNative _ -> NATIVEcast | _ -> DEFAULTcast) in
 	  let tj = pretype_type empty_valcon env evdref lvar t in
 	  let tval = nf_evar !evdref tj.utj_val in
 	  let cj = match k with
@@ -654,6 +654,19 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 		  end
 		else user_err_loc (loc,"",str "Cannot check cast with vm: " ++
 				   str "unresolved arguments remain.")
+	    | NATIVEcast ->
+ 	      let cj = pretype empty_tycon env evdref lvar c in
+	      let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tj.utj_val in
+		if not (occur_existential cty || occur_existential tval) then
+		  begin 
+		    try 
+		      ignore (Nativeconv.native_conv Reduction.CUMUL env cty tval); cj
+		    with Reduction.NotConvertible -> 
+		    error_actual_type_loc loc env !evdref cj tval 
+		  end
+		else user_err_loc (loc,"",str "Cannot check cast with native compiler: " ++
+				   str "unresolved arguments remain.")
+
 	    | _ -> 
  	      pretype (mk_tycon tval) env evdref lvar c
 	  in

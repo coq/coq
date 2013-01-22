@@ -23,7 +23,7 @@ type recipe = {
 
 val cook_constant :
   env -> recipe ->
-    constant_def * constant_type * constraints * Sign.section_context
+    constant_def * constant_type * constraints * bool * Sign.section_context
 
 
 (** {6 Utility functions used in module [Discharge]. } *)
