@@ -675,12 +675,12 @@ install-latex:
 source-doc: mli-doc $(OCAMLDOCDIR)/coq.pdf
 
 $(OCAMLDOCDIR)/coq.tex:: $(DOCMLIS:.mli=.cmi)
-	$(OCAMLDOC) -latex -I $(MYCAMLP4LIB) $(MLINCLUDES)\
+	$(OCAMLDOC) -latex -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
 	$(DOCMLIS) -t "Coq mlis documentation" \
 	-intro $(OCAMLDOCDIR)/docintro -o $@
 
 mli-doc:: $(DOCMLIS:.mli=.cmi)
-	$(OCAMLDOC) -html -I $(MYCAMLP4LIB) $(MLINCLUDES)\
+	$(OCAMLDOC) -html -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
 	$(DOCMLIS) -d $(OCAMLDOCDIR)/html -colorize-code \
 	-t "Coq mlis documentation" -intro $(OCAMLDOCDIR)/docintro \
 	-css-style style.css
@@ -693,9 +693,9 @@ ml-dot:: $(MLEXTRAFILES)
 	$(DOT) -Tpng $< -o $@
 
 %_types.dot: %.mli
-	$(OCAMLDOC) $(MLINCLUDES) $(ODOCDOTOPTS) -dot-types -o $@ $<
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -dot-types -o $@ $< 
 
-OCAMLDOC_MLLIBD = $(OCAMLDOC) $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ \
+OCAMLDOC_MLLIBD = $(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ \
   $(foreach lib,$(|:.mllib.d=_MLLIB_DEPENDENCIES),$(addsuffix .ml,$($(lib))))
 
 %.dot: | %.mllib.d
@@ -714,7 +714,7 @@ tactics/tactics.dot: | tactics/tactics.mllib.d tactics/hightactics.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
 %.dot: %.mli
-	$(OCAMLDOC) $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $<
+	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ $< 
 
 $(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
 	(cd $(OCAMLDOCDIR) ; pdflatex $*.tex && pdflatex $*.tex)
@@ -745,19 +745,6 @@ ide/coqide_main.ml: ide/coqide_main.ml4
 ide/coqide_main_opt.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
 	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) -D$(IDEOPTINT) -impl $< -o $@
-
-# Specific rule for term.ml which uses -rectypes
-# Since term.mli doesn't need -rectypes, this doesn't impact the other ml files
-
-TERM:=kernel/term
-
-$(TERM).cmo: $(TERM).ml | $(TERM).ml.d
-	$(SHOW)'OCAMLC -rectypes $<'
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -rectypes -c $<
-
-$(TERM).cmx: $(TERM).ml | $(TERM).ml.d
-	$(SHOW)'OCAMLOPT -rectypes $<'
-	$(HIDE)$(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -intf-suffix .cmi -rectypes -c $<
 
 # pretty printing of the revision number when compiling a checked out
 # source tree

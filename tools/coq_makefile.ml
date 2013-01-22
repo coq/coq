@@ -409,12 +409,12 @@ let variables is_install opt (args,defs) =
   -I \"$(COQLIB)proofs\" -I \"$(COQLIB)tactics\" -I \"$(COQLIB)tools\" \\
   -I \"$(COQLIB)toplevel\" -I \"$(COQLIB)grammar\"";
     List.iter (fun c -> print " \\
-  -I \"$(COQLIB)\""; print c) Coq_config.plugins_dirs; print "\n";
-    print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I \"$(CAMLP4LIB)\"\n\n";
-    print "CAMLC?=$(OCAMLC) -c\n";
-    print "CAMLOPTC?=$(OCAMLOPT) -c\n";
-    print "CAMLLINK?=$(OCAMLC)\n";
-    print "CAMLOPTLINK?=$(OCAMLOPT)\n";
+  -I $(COQLIB)/"; print c) Coq_config.plugins_dirs; print "\n";
+    print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
+    print "CAMLC?=$(OCAMLC) -c -rectypes\n";
+    print "CAMLOPTC?=$(OCAMLOPT) -c -rectypes\n";
+    print "CAMLLINK?=$(OCAMLC) -rectypes\n";
+    print "CAMLOPTLINK?=$(OCAMLOPT) -rectypes\n";
     print "GRAMMARS?=grammar.cma\n";
     print "ifeq ($(CAMLP4),camlp5)
 CAMLP4EXTEND=pa_extend.cmo q_MLast.cmo pa_macro.cmo
@@ -610,9 +610,9 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
     begin
       print "mlihtml: $(MLIFILES:.mli=.cmi)\n";
       print "\t mkdir $@ || rm -rf $@/*\n";
-      print "\t$(OCAMLDOC) -html -d $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
+      print "\t$(OCAMLDOC) -html -rectypes -d $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
       print "all-mli.tex: $(MLIFILES:.mli=.cmi)\n";
-      print "\t$(OCAMLDOC) -latex -o $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
+      print "\t$(OCAMLDOC) -latex -rectypes -o $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
     end;
   if !some_vfile then
     begin

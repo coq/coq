@@ -302,9 +302,8 @@ let extra_rules () = begin
 (** All caml files are compiled with +camlp4/5
     and ide files need +lablgtk2 *)
 
-  flag ["compile"; "ocaml"; "rectypes" ] (A "-rectypes");
-  flag ["compile"; "ocaml"] camlp4incl;
-  flag ["link"; "ocaml"] camlp4incl;
+  flag ["compile"; "ocaml"] (S [A"-rectypes"; camlp4incl]);
+  flag ["link"; "ocaml"] (S [A"-rectypes"; camlp4incl]);
   flag ["ocaml"; "ide"; "compile"] lablgtkincl;
   flag ["ocaml"; "ide"; "link"] lablgtkincl;
   flag ["ocaml"; "ide"; "link"; "byte"]

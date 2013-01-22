@@ -1142,7 +1142,7 @@ CAMLLINK="$bytecamlc"
 CAMLOPTLINK="$nativecamlc"
 
 # Caml flags
-CAMLFLAGS=$coq_annotate_flag
+CAMLFLAGS=-rectypes $coq_annotate_flag
 TYPEREX=$coq_typerex_wrapper
 
 # Compilation debug flags
