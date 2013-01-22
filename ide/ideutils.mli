@@ -80,7 +80,8 @@ val stat : string -> stats
 
 val read_file : string -> Buffer.t -> unit
 
-(** Read the available content on some gtk asynchronous input channel *)
+(** Read what is available on a gtk input channel.
+    This channel should have been set as non-blocking. *)
 
 val io_read_all : Glib.Io.channel -> string
 

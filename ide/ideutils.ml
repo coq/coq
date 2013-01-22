@@ -287,7 +287,7 @@ let stat f =
     Note: In a mono-thread coqide, we use the same buffer for
     different read operations *)
 
-let maxread = 1024
+let maxread = 8192
 
 let read_string = String.create maxread
 let read_buffer = Buffer.create maxread
@@ -305,22 +305,27 @@ let read_file name buf =
     close_in ic
   with e -> close_in ic; raise e
 
-(** Read a gtk asynchronous channel *)
+(** Read what is available on a gtk channel. This channel should have been
+    set as non-blocking. When there's nothing more to read, the inner loop
+    will be exited via a GError exception concerning a EAGAIN unix error.
+    Anyway, any other exception also stops the read. *)
 
 let io_read_all chan =
   Buffer.clear read_buffer;
-  let rec loop () =
-    let len = Glib.Io.read ~buf:read_string ~pos:0 ~len:maxread chan in
-    Buffer.add_substring read_buffer read_string 0 len;
-    if len < maxread then Buffer.contents read_buffer
-    else loop ()
-  in loop ()
+  let read_once () =
+    let len = Glib.Io.read_chars ~buf:read_string ~pos:0 ~len:maxread chan in
+    Buffer.add_substring read_buffer read_string 0 len
+  in
+  begin try while true do read_once () done with _ -> () end;
+  Buffer.contents read_buffer
 
 (** Run an external command asynchronously *)
 
 let run_command display finally cmd =
   let cin = Unix.open_process_in cmd in
-  let io_chan = Glib.Io.channel_of_descr (Unix.descr_of_in_channel cin) in
+  let fd = Unix.descr_of_in_channel cin in
+  let () = Unix.set_nonblock fd in
+  let io_chan = Glib.Io.channel_of_descr fd in
   let all_conds = [`ERR; `HUP; `IN; `NVAL; `PRI] in (* all except `OUT *)
   let rec has_errors = function
     | [] -> false

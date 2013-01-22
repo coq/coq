@@ -321,6 +321,7 @@ let open_process_pid prog args =
   assert (pid <> 0);
   Unix.close ide2top_r;
   Unix.close top2ide_w;
+  Unix.set_nonblock top2ide_r;
   (pid,top2ide_r,Unix.out_channel_of_descr ide2top_w)
 
 exception TubeError
