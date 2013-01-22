@@ -36,6 +36,7 @@
 *.v.ps
 *.v.html
 *.stamp
+*.native
 revision
 TAGS
 .DS_Store
