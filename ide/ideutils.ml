@@ -287,7 +287,7 @@ let stat f =
     Note: In a mono-thread coqide, we use the same buffer for
     different read operations *)
 
-let maxread = 8192
+let maxread = 4096
 
 let read_string = String.create maxread
 let read_buffer = Buffer.create maxread
