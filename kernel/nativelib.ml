@@ -65,7 +65,7 @@ let call_compiler ml_filename load_path =
   let link_filename = f ^ ".cmo" in
   let link_filename = Dynlink.adapt_filename link_filename in
   let comp_cmd =
-    Format.sprintf "%s -%s -o %s -rectypes -w -A -I %s %s"
+    Format.sprintf "%s -%s -o %s -rectypes -w a -I %s %s"
       compiler_name (if Dynlink.is_native then "shared" else "c")
       (Filename.quote link_filename) include_dirs (Filename.quote ml_filename)
   in
