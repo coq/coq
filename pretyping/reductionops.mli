@@ -69,6 +69,19 @@ type contextual_state_reduction_function =
 type state_reduction_function = contextual_state_reduction_function
 type local_state_reduction_function = evar_map -> state -> state
 
+(** {6 Machinery about a stack of unfolded constant }
+
+    cst applied to params must convertible to term of the state applied to args
+*)
+module Cst_stack : sig
+  type t
+  val empty : t
+  val add_param : constr -> t -> t
+  val add_args : constr array -> t -> t
+  val add_cst : constr -> t -> t
+  val best_cst : t -> (constr * constr list) option
+end
+
 (** {6 Reduction Function Operators } *)
 
 val strong : reduction_function -> reduction_function
@@ -80,12 +93,8 @@ val stack_reduction_of_reduction :
 i*)
 val stacklam : (state -> 'a) -> constr list -> constr -> constr stack -> 'a
 
-val whd_state_gen : ?refold:bool ->
-  Closure.RedFlags.reds ->
-  Environ.env ->
-  Evd.evar_map ->
-  Term.constr * Term.constr stack_member list ->
-  Term.constr * Term.constr stack_member list
+val whd_state_gen : ?csts:Cst_stack.t -> bool -> Closure.RedFlags.reds ->
+  Environ.env -> Evd.evar_map -> state -> state * Cst_stack.t
 
 (** {6 Generic Optimized Reduction Function using Closures } *)
 

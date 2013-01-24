@@ -188,7 +188,7 @@ let rec reduction_of_red_expr = function
   | Cbv f -> (cbv_norm_flags (make_flag f),DEFAULTcast)
   | Cbn f ->
     (strong (fun env evd x -> zip ~refold:true
-      (whd_state_gen ~refold:true (make_flag f) env evd (x, []))),DEFAULTcast)
+      (fst (whd_state_gen true (make_flag f) env evd (x, [])))),DEFAULTcast)
   | Lazy f -> (clos_norm_flags (make_flag f),DEFAULTcast)
   | Unfold ubinds -> (unfoldn (List.map out_with_occurrences ubinds),DEFAULTcast)
   | Fold cl -> (fold_commands cl,DEFAULTcast)

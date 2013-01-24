@@ -186,15 +186,42 @@ let betadeltaiota = Closure.RedFlags.red_add betadelta Closure.RedFlags.fIOTA
 let betadeltaiota_nolet = Closure.betadeltaiotanolet
 let betadeltaiotaeta = Closure.RedFlags.red_add betadeltaiota Closure.RedFlags.fETA
 
+(** Machinery about stack of unfolded constants *)
+module Cst_stack = struct
+  type t = (Term.constr * Term.constr list * int)  list
+
+  let empty = []
+
+  let drop_useless = function
+    | _ :: ((_,_,0)::_ as q) -> q
+    | l -> l
+
+  let add_param h cst_l =
+    let append2cst (c,params,nb_skip) =
+      if nb_skip <= 0
+      then (c, h::params, nb_skip)
+      else (c, params, pred nb_skip) in
+    drop_useless (List.map append2cst cst_l)
+
+  let add_args cl =
+    List.map (fun (a,b,nb_skip) -> (a,b,nb_skip+Array.length cl))
+
+  let add_cst cst = function
+    | (_,_,0) :: q as l -> l
+    | l -> (cst,[],0)::l
+
+  let best_cst = function
+    | (cst,params,0)::_ -> Some(cst,params)
+    | _ -> None
+end
+
 (* Beta Reduction tools *)
 
 let apply_subst recfun env cst_l t stack =
   let rec aux env cst_l t stack =
     match (decomp_stack stack,kind_of_term t) with
     | Some (h,stacktl), Lambda (_,_,c) ->
-      let append2cst (c,params,nb_skip) =
-	if nb_skip <= 0 then (c, h::params, nb_skip) else (c, params, pred nb_skip) in
-      aux (h::env) (List.map append2cst cst_l) c stacktl
+      aux (h::env) (Cst_stack.add_param h cst_l) c stacktl
     | _ -> recfun cst_l (substl env t, stack)
   in aux env cst_l t stack
 
@@ -300,14 +327,9 @@ let fix_recarg ((recindices,bodynum),_) stack =
     substitutes fix and cofix by the constant they come from in
     contract_*.
 *)
-let rec whd_state_gen ?(refold=false) flags env sigma =
+let rec whd_state_gen ?csts refold flags env sigma =
   let noth = [] in
   let rec whrec cst_l (x, stack as s) =
-    let best_cst () =
-      if refold then List.fold_left
-	(fun def (c,params,nb_skip) -> if nb_skip = 0 then Some(c,params) else def)
-	None cst_l
-      else None in
     let best_state def (cst,params,nb_skip) =
       let apps,s' = strip_app stack in
       try
@@ -315,7 +337,7 @@ let rec whd_state_gen ?(refold=false) flags env sigma =
 	(cst, append_stack_app_list (List.rev params) (append_stack_app_list aft s'))
       with Failure _ -> def in
     let fold () =
-      if refold then List.fold_left best_state s cst_l else s
+      if refold then (List.fold_left best_state s cst_l,noth) else (s,cst_l)
     in
     match kind_of_term x with
     | Rel n when Closure.RedFlags.red_set flags Closure.RedFlags.fDELTA ->
@@ -324,26 +346,26 @@ let rec whd_state_gen ?(refold=false) flags env sigma =
       | _ -> fold ())
     | Var id when Closure.RedFlags.red_set flags (Closure.RedFlags.fVAR id) ->
       (match lookup_named id env with
-      | (_,Some body,_) -> whrec ((mkVar id,[],0)::cst_l) (body, stack)
+      | (_,Some body,_) -> whrec (Cst_stack.add_cst (mkVar id) cst_l) (body, stack)
       | _ -> fold ())
     | Evar ev ->
       (match safe_evar_value sigma ev with
-      | Some body -> whrec noth (body, stack)
+      | Some body -> whrec cst_l (body, stack)
       | None -> fold ())
     | Meta ev ->
       (match safe_meta_value sigma ev with
-      | Some body -> whrec noth (body, stack)
+      | Some body -> whrec cst_l (body, stack)
       | None -> fold ())
     | Const const when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST const) ->
       (match constant_opt_value env const with
-      | Some  body -> whrec ((mkConst const,[],0)::cst_l) (body, stack)
+      | Some  body -> whrec (Cst_stack.add_cst (mkConst const) cst_l) (body, stack)
       | None -> fold ())
     | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
       apply_subst whrec [b] cst_l c stack
     | Cast (c,_,_) -> whrec cst_l (c, stack)
     | App (f,cl)  ->
       whrec
-	(List.map (fun (a,b,nb_skip) -> (a,b,nb_skip+Array.length cl)) cst_l)
+	(Cst_stack.add_args cl cst_l)
 	(f, append_stack_app cl stack)
     | Lambda (na,t,c) ->
       (match decomp_stack stack with
@@ -351,29 +373,29 @@ let rec whd_state_gen ?(refold=false) flags env sigma =
 	apply_subst whrec [] cst_l x stack
       | None when Closure.RedFlags.red_set flags Closure.RedFlags.fETA ->
 	let env' = push_rel (na,None,t) env in
-	let whrec' = whd_state_gen ~refold flags env' sigma in
-        (match kind_of_term (zip ~refold (whrec' (c, empty_stack))) with
+	let whrec' = whd_state_gen refold flags env' sigma in
+        (match kind_of_term (zip ~refold (fst (whrec' (c, empty_stack)))) with
         | App (f,cl) ->
 	  let napp = Array.length cl in
 	  if napp > 0 then
-	    let x', l' = whrec' (Array.last cl, empty_stack) in
+	    let (x', l'),_ = whrec' (Array.last cl, empty_stack) in
             match kind_of_term x', l' with
             | Rel 1, [] ->
 	      let lc = Array.sub cl 0 (napp-1) in
 	      let u = if Int.equal napp 1 then f else appvect (f,lc) in
-	      if noccurn 1 u then (pop u,empty_stack) else fold ()
+	      if noccurn 1 u then (pop u,empty_stack),noth else fold ()
             | _ -> fold ()
 	  else fold ()
 	| _ -> fold ())
       | _ -> fold ())
 
     | Case (ci,p,d,lf) ->
-      whrec noth (d, Zcase (ci,p,lf,best_cst ()) :: stack)
+      whrec noth (d, Zcase (ci,p,lf,Cst_stack.best_cst cst_l) :: stack)
 
     | Fix ((ri,n),_ as f) ->
       (match strip_n_app ri.(n) stack with
       |None -> fold ()
-      |Some (bef,arg,s') -> whrec noth (arg, Zfix(f,bef,best_cst ())::s'))
+      |Some (bef,arg,s') -> whrec noth (arg, Zfix(f,bef,Cst_stack.best_cst cst_l)::s'))
 
     | Construct (ind,c) ->
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
@@ -393,14 +415,14 @@ let rec whd_state_gen ?(refold=false) flags env sigma =
 	|args, (Zcase(ci, _, lf,_)::s') ->
 	  whrec noth ((if refold
 	    then contract_cofix ~env cofix
-	    else contract_cofix cofix) (best_cst ()), stack)
+	    else contract_cofix cofix) (Cst_stack.best_cst cst_l), stack)
 	|_ -> fold ()
       else fold ()
 
     | Rel _ | Var _ | Const _ | LetIn _ -> fold ()
     | Sort _ | Ind _ | Prod _ -> fold ()
   in
-  whrec noth
+  whrec (Option.default noth csts)
 
 (** reduction machine without global env and refold machinery *)
 let local_whd_state_gen flags sigma =
@@ -471,6 +493,7 @@ let local_whd_state_gen flags sigma =
   in
   whrec
 
+let raw_whd_state_gen flags env sigma s = fst (whd_state_gen false flags env sigma s)
 
 let stack_red_of_state_red f sigma x =
   appterm_of_stack (f sigma (x, empty_stack))
@@ -500,18 +523,18 @@ let whd_betalet = red_of_state_red whd_betalet_state
 
 (* 2. Delta Reduction Functions *)
 
-let whd_delta_state e = whd_state_gen delta e
+let whd_delta_state e = raw_whd_state_gen delta e
 let whd_delta_stack env = stack_red_of_state_red (whd_delta_state env)
 let whd_delta env = red_of_state_red  (whd_delta_state env)
 
-let whd_betadelta_state e = whd_state_gen betadelta e
+let whd_betadelta_state e = raw_whd_state_gen betadelta e
 let whd_betadelta_stack env =
   stack_red_of_state_red (whd_betadelta_state env)
 let whd_betadelta env =
   red_of_state_red (whd_betadelta_state env)
 
 
-let whd_betadeltaeta_state e = whd_state_gen betadeltaeta e
+let whd_betadeltaeta_state e = raw_whd_state_gen betadeltaeta e
 let whd_betadeltaeta_stack env =
   stack_red_of_state_red (whd_betadeltaeta_state env)
 let whd_betadeltaeta env =
@@ -527,26 +550,26 @@ let whd_betaiotazeta_state = local_whd_state_gen betaiotazeta
 let whd_betaiotazeta_stack = stack_red_of_state_red whd_betaiotazeta_state
 let whd_betaiotazeta = red_of_state_red whd_betaiotazeta_state
 
-let whd_betadeltaiota_state env = whd_state_gen betadeltaiota env
+let whd_betadeltaiota_state env = raw_whd_state_gen betadeltaiota env
 let whd_betadeltaiota_stack env =
   stack_red_of_state_red (whd_betadeltaiota_state env)
 let whd_betadeltaiota env =
   red_of_state_red (whd_betadeltaiota_state env)
 
 let whd_betadeltaiota_state_using ts env =
-  whd_state_gen (Closure.RedFlags.red_add_transparent betadeltaiota ts) env
+  raw_whd_state_gen (Closure.RedFlags.red_add_transparent betadeltaiota ts) env
 let whd_betadeltaiota_stack_using ts env =
   stack_red_of_state_red (whd_betadeltaiota_state_using ts env)
 let whd_betadeltaiota_using ts env =
   red_of_state_red (whd_betadeltaiota_state_using ts env)
 
-let whd_betadeltaiotaeta_state env = whd_state_gen betadeltaiotaeta env
+let whd_betadeltaiotaeta_state env = raw_whd_state_gen betadeltaiotaeta env
 let whd_betadeltaiotaeta_stack env =
   stack_red_of_state_red (whd_betadeltaiotaeta_state env)
 let whd_betadeltaiotaeta env =
   red_of_state_red (whd_betadeltaiotaeta_state env)
 
-let whd_betadeltaiota_nolet_state env = whd_state_gen betadeltaiota_nolet env
+let whd_betadeltaiota_nolet_state env = raw_whd_state_gen betadeltaiota_nolet env
 let whd_betadeltaiota_nolet_stack env =
   stack_red_of_state_red (whd_betadeltaiota_nolet_state env)
 let whd_betadeltaiota_nolet env =
