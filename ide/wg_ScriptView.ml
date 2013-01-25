@@ -25,8 +25,10 @@ type delete_action = {
 type action =
   | Insert of insert_action
   | Delete of delete_action
+  | Action of action list
+  | EndGrp (** pending begin_user_action *)
 
-let neg act = match act with
+let rec negate_action act = match act with
   | Insert act ->
     let act = {
       del_len = act.ins_len;
@@ -41,6 +43,9 @@ let neg act = match act with
       ins_val = act.del_val;
     } in
     Insert act
+  | Action acts ->
+    Action (List.rev_map negate_action acts)
+  | EndGrp -> assert false
 
 type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
 
@@ -100,92 +105,144 @@ let get_completion (buffer : GText.buffer) coqtop w handle_res =
   in
   get_semantic (get_aux Proposals.empty buffer#start_iter)
 
-class script_view (tv : source_view) (ct : Coq.coqtop) =
-object (self)
-  inherit GSourceView2.source_view (Gobject.unsafe_cast tv) as super
-
+class undo_manager (buffer : GText.buffer) =
+object(self)
+  val mutable lock_undo = true
   val mutable history = []
   val mutable redo = []
-  val mutable auto_complete = false
-  val mutable auto_complete_length = 3
-  val mutable last_completion = (-1, "", Proposals.empty)
-  (* this variable prevents CoqIDE from autocompleting when we have deleted something *)
-  val mutable is_auto_completing = false
-  (* this mutex ensure that CoqIDE will not try to autocomplete twice *)
-  val mutable lock_auto_completing = true
 
-  method auto_complete = auto_complete
-
-  method set_auto_complete flag =
-    auto_complete <- flag
+  method with_lock_undo : 'a. ('a -> unit) -> 'a -> unit =
+    fun f x ->
+    if lock_undo then
+      let () = lock_undo <- false in
+      try (f x; lock_undo <- true)
+      with e -> (lock_undo <- true; raise e)
+    else ()
 
   method private dump_debug () =
-    let iter = function
+    let rec iter = function
     | Insert act ->
-      Printf.eprintf "Insert of '%s' at %d (length %d)\n"
+      Printf.eprintf "Insert of '%s' at %d (length %d)\n%!"
         act.ins_val act.ins_off act.ins_len
     | Delete act ->
-      Printf.eprintf "Delete '%s' from %d (length %d)\n"
+      Printf.eprintf "Delete '%s' from %d (length %d)\n%!"
         act.del_val act.del_off act.del_len
+    | Action l ->
+      Printf.eprintf "Action\n%!";
+      List.iter iter l;
+      Printf.eprintf "//Action\n%!";
+    | EndGrp ->
+      Printf.eprintf "End Group\n%!"
     in
     if false (* !debug *) then begin
-      Minilib.log "==========Undo Stack top=============";
+      Printf.eprintf "==========Undo Stack top=============\n%!";
       List.iter iter history;
       Printf.eprintf "Stack size %d\n" (List.length history);
-      Minilib.log "==========Undo Stack Bottom==========";
-      Minilib.log "==========Redo Stack start=============";
+      Printf.eprintf "==========Undo Stack Bottom==========\n%!";
+      Printf.eprintf "==========Redo Stack start=============\n%!";
       List.iter iter redo;
       Printf.eprintf "Stack size %d\n" (List.length redo);
-      Minilib.log "==========Redo Stack End=========="
+      Printf.eprintf "==========Redo Stack End==========\n%!"
     end
-
-  method recenter_insert =
-    self#scroll_to_mark
-      ~use_align:false ~yalign:0.75 ~within_margin:0.25 `INSERT
 
   method clear_undo () =
     history <- [];
     redo <- []
 
-  method private forward () =
-    match redo with
-    | [] -> ()
-    | action :: h ->
-      redo <- h;
-      history <- neg action :: history
-
-  method private backward () =
-    match history with
-    | [] -> ()
-    | action :: h ->
-      history <- h;
-      redo <- neg action :: redo
-
-  method private process_action = function
-  | [] -> false
-  | Insert ins :: history ->
-    let start = self#buffer#get_iter (`OFFSET ins.ins_off) in
+  (** Warning: processing actually undo the action *)
+  method private process_insert_action ins =
+    let start = buffer#get_iter (`OFFSET ins.ins_off) in
     let stop = start#forward_chars ins.ins_len in
-    self#buffer#delete_interactive ~start ~stop ()
-  | Delete del :: history ->
-    let iter = self#buffer#get_iter (`OFFSET del.del_off) in
-    self#buffer#insert_interactive ~iter del.del_val
+    buffer#delete_interactive ~start ~stop ()
+
+  method private process_delete_action del =
+    let iter = buffer#get_iter (`OFFSET del.del_off) in
+    buffer#insert_interactive ~iter del.del_val
+
+  (** We don't care about atomicity. Return:
+    1. `OK when there was no error, `FAIL otherwise
+    2. `NOOP if no write occured, `WRITE otherwise
+  *)
+  method private process_action = function
+  | Insert ins ->
+    if self#process_insert_action ins then (`OK, `WRITE) else (`FAIL, `NOOP)
+  | Delete del ->
+    if self#process_delete_action del then (`OK, `WRITE) else (`FAIL, `NOOP)
+  | Action lst ->
+    let fold accu action = match accu with
+    | (`FAIL, _) -> accu (** we stop now! *)
+    | (`OK, status) ->
+      let (res, nstatus) = self#process_action action in
+      let merge op1 op2 = match op1, op2 with
+      | `NOOP, `NOOP -> `NOOP (** only a noop when both are *)
+      | _ -> `WRITE
+      in
+      (res, merge status nstatus)
+    in
+    List.fold_left fold (`OK, `NOOP) lst
+  | EndGrp -> assert false
+
+  method perform_undo () = match history with
+  | [] -> ()
+  | action :: rem ->
+    let ans = self#process_action action in
+    begin match ans with
+    | (`OK, _) ->
+      history <- rem;
+      redo <- (negate_action action) :: redo
+    | (`FAIL, `NOOP) -> () (** we do nothing *)
+    | (`FAIL, `WRITE) -> self#clear_undo () (** we don't know how we failed, so start off *)
+    end
+
+  method perform_redo () = match redo with
+  | [] -> ()
+  | action :: rem ->
+    let ans = self#process_action action in
+    begin match ans with
+    | (`OK, _) ->
+      redo <- rem;
+      history <- (negate_action action) :: history;
+    | (`FAIL, `NOOP) -> () (** we do nothing *)
+    | (`FAIL, `WRITE) -> self#clear_undo () (** we don't know how we failed *)
+    end
 
   method undo () =
     Minilib.log "UNDO";
-    let effective = self#process_action history in
-    if effective then self#backward ()
+    self#with_lock_undo self#perform_undo ();
 
   method redo () =
     Minilib.log "REDO";
-    let effective = self#process_action redo in
-    if effective then self#forward ()
+    self#with_lock_undo self#perform_redo ();
 
-  method private handle_insert iter s =
-    (* we're inserting, so we may autocomplete *)
-    is_auto_completing <- true
+  method process_begin_user_action () =
+    (* Push a new level of event on history stack *)
+    history <- EndGrp :: history
 
-  method private handle_after_insert iter s =
+  method begin_user_action () =
+    self#with_lock_undo self#process_begin_user_action ()
+
+  method process_end_user_action () =
+    (** Search for the pending action *)
+    let rec split accu = function
+    | [] -> raise Not_found (** no pending begin action! *)
+    | EndGrp :: rem ->
+      let grp = List.rev accu in
+      begin match grp with
+      | [] -> rem
+      | _ -> Action grp :: rem
+      end
+    | action :: rem ->
+      split (action :: accu) rem
+    in
+    try history <- split [] history
+    with Not_found ->
+      Minilib.log "Error: Badly parenthezised user action";
+      self#clear_undo ()
+
+  method end_user_action () =
+    self#with_lock_undo self#process_end_user_action ()
+
+  method private process_handle_insert iter s =
     (* Save the insert action *)
     let ins = {
       ins_val = s;
@@ -195,23 +252,65 @@ object (self)
     let action = Insert ins in
     history <- action :: history;
     redo <- [];
-    self#dump_debug ()
 
-  method private handle_delete ~start ~stop =
-    (* disable autocomplete *)
-    is_auto_completing <- false
+  method private handle_insert iter s =
+    self#with_lock_undo (self#process_handle_insert iter) s
 
-  method private handle_after_delete ~start ~stop =
+  method private process_handle_delete start stop =
     (* Save the delete action *)
     let del = {
-      del_val = self#buffer#get_text ~start ~stop ();
+      del_val = buffer#get_text ~start ~stop ();
       del_off = start#offset;
       del_len = stop#offset - start#offset;
     } in
     let action = Delete del in
     history <- action :: history;
     redo <- [];
-    self#dump_debug ();
+
+  method private handle_delete ~start ~stop =
+    self#with_lock_undo (self#process_handle_delete start) stop
+
+  initializer
+    let _ = buffer#connect#after#begin_user_action ~callback:self#begin_user_action in
+    let _ = buffer#connect#after#end_user_action ~callback:self#end_user_action in
+    let _ = buffer#connect#insert_text ~callback:self#handle_insert in
+    let _ = buffer#connect#delete_range ~callback:self#handle_delete in
+    ()
+
+end
+
+class script_view (tv : source_view) (ct : Coq.coqtop) =
+
+let _obj_ = new GSourceView2.source_view (Gobject.unsafe_cast tv) in
+
+object (self)
+  inherit GSourceView2.source_view (Gobject.unsafe_cast tv) as super
+
+  val mutable auto_complete = false
+  val mutable auto_complete_length = 3
+  val mutable last_completion = (-1, "", Proposals.empty)
+  (* this variable prevents CoqIDE from autocompleting when we have deleted something *)
+  val mutable is_auto_completing = false
+  (* this mutex ensure that CoqIDE will not try to autocomplete twice *)
+  val mutable lock_auto_completing = true
+  val undo_manager = new undo_manager _obj_#buffer
+
+  method auto_complete = auto_complete
+
+  method set_auto_complete flag =
+    auto_complete <- flag
+
+  method recenter_insert =
+    self#scroll_to_mark
+      ~use_align:false ~yalign:0.75 ~within_margin:0.25 `INSERT
+
+  method private handle_insert iter s =
+    (* we're inserting, so we may autocomplete *)
+    is_auto_completing <- true
+
+  method private handle_delete ~start ~stop =
+    (* disable autocomplete *)
+    is_auto_completing <- false
 
   method private do_auto_complete () =
     let iter = self#buffer#get_iter `INSERT in
@@ -368,10 +467,12 @@ object (self)
       self#buffer#delete_mark (`MARK stop_mark)
     | _ -> ()
 
+  method undo = undo_manager#undo
+  method redo = undo_manager#redo
+  method clear_undo = undo_manager#clear_undo
+
   initializer
     (* Install undo managing *)
-    ignore (self#buffer#connect#after#insert_text ~callback:self#handle_after_insert);
-    ignore (self#buffer#connect#after#delete_range ~callback:self#handle_after_delete);
     (* Install auto-completion *)
     ignore (self#buffer#connect#insert_text ~callback:self#handle_insert);
     ignore (self#buffer#connect#delete_range ~callback:self#handle_delete);
