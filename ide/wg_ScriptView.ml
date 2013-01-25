@@ -14,12 +14,14 @@ type insert_action = {
   ins_val : string;
   ins_off : int;
   ins_len : int;
+  ins_mrg : bool;
 }
 
 type delete_action = {
-  del_val : string;
-  del_off : int;
-  del_len : int;
+  del_val : string; (** Contents *)
+  del_off : int; (** Absolute offset of the modification *)
+  del_len : int; (** Length *)
+  del_mrg : bool; (** Is the modification mergeable? *)
 }
 
 type action =
@@ -28,12 +30,45 @@ type action =
   | Action of action list
   | EndGrp (** pending begin_user_action *)
 
+let merge_insert ins = function
+| Insert ins' :: rem ->
+  if ins.ins_mrg && ins'.ins_mrg &&
+    (ins'.ins_off + ins'.ins_len = ins.ins_off) then
+    let nins = {
+      ins_val = ins'.ins_val ^ ins.ins_val;
+      ins_off = ins'.ins_off;
+      ins_len = ins'.ins_len + ins.ins_len;
+      ins_mrg = true;
+    } in
+    Insert nins :: rem
+  else
+    Insert ins :: Insert ins' :: rem
+| l ->
+  Insert ins :: l
+
+let merge_delete del = function
+| Delete del' :: rem ->
+  if del.del_mrg && del'.del_mrg &&
+    (del.del_off + del.del_len = del'.del_off) then
+    let ndel = {
+      del_val = del.del_val ^ del'.del_val;
+      del_off = del.del_off;
+      del_len = del.del_len + del'.del_len;
+      del_mrg = true;
+    } in
+    Delete ndel :: rem
+  else
+  Delete del :: Delete del' :: rem
+| l ->
+  Delete del :: l
+
 let rec negate_action act = match act with
   | Insert act ->
     let act = {
       del_len = act.ins_len;
       del_off = act.ins_off;
       del_val = act.ins_val;
+      del_mrg = act.ins_mrg;
     } in
     Delete act
   | Delete act ->
@@ -41,6 +76,7 @@ let rec negate_action act = match act with
       ins_len = act.del_len;
       ins_off = act.del_off;
       ins_val = act.del_val;
+      ins_mrg = act.del_mrg;
     } in
     Insert act
   | Action acts ->
@@ -122,11 +158,11 @@ object(self)
   method private dump_debug () =
     let rec iter = function
     | Insert act ->
-      Printf.eprintf "Insert of '%s' at %d (length %d)\n%!"
-        act.ins_val act.ins_off act.ins_len
+      Printf.eprintf "Insert of '%s' at %d (length %d, mergeable %b)\n%!"
+        act.ins_val act.ins_off act.ins_len act.ins_mrg
     | Delete act ->
-      Printf.eprintf "Delete '%s' from %d (length %d)\n%!"
-        act.del_val act.del_off act.del_len
+      Printf.eprintf "Delete '%s' from %d (length %d, mergeable %b)\n%!"
+        act.del_val act.del_off act.del_len act.del_mrg
     | Action l ->
       Printf.eprintf "Action\n%!";
       List.iter iter l;
@@ -135,14 +171,16 @@ object(self)
       Printf.eprintf "End Group\n%!"
     in
     if false (* !debug *) then begin
+      Printf.eprintf "+++++++++++++++++++++++++++++++++++++\n%!";
       Printf.eprintf "==========Undo Stack top=============\n%!";
       List.iter iter history;
       Printf.eprintf "Stack size %d\n" (List.length history);
       Printf.eprintf "==========Undo Stack Bottom==========\n%!";
-      Printf.eprintf "==========Redo Stack start=============\n%!";
+      Printf.eprintf "==========Redo Stack start===========\n%!";
       List.iter iter redo;
       Printf.eprintf "Stack size %d\n" (List.length redo);
-      Printf.eprintf "==========Redo Stack End==========\n%!"
+      Printf.eprintf "==========Redo Stack End=============\n%!";
+      Printf.eprintf "+++++++++++++++++++++++++++++++++++++\n%!";
     end
 
   method clear_undo () =
@@ -227,14 +265,18 @@ object(self)
     | [] -> raise Not_found (** no pending begin action! *)
     | EndGrp :: rem ->
       let grp = List.rev accu in
-      begin match grp with
+      let rec flatten = function
       | [] -> rem
+      | [Insert ins] -> merge_insert ins rem
+      | [Delete del] -> merge_delete del rem
+      | [Action l] -> flatten l
       | _ -> Action grp :: rem
-      end
+      in
+      flatten grp
     | action :: rem ->
       split (action :: accu) rem
     in
-    try history <- split [] history
+    try (history <- split [] history; self#dump_debug ())
     with Not_found ->
       Minilib.log "Error: Badly parenthezised user action";
       self#clear_undo ()
@@ -244,24 +286,33 @@ object(self)
 
   method private process_handle_insert iter s =
     (* Save the insert action *)
+    let len = Glib.Utf8.length s in
+    let mergeable =
+      (** heuristic: split at newline and atomic pastes *)
+      len = 1 && (s <> "\n")
+    in
     let ins = {
       ins_val = s;
       ins_off = iter#offset;
-      ins_len = Glib.Utf8.length s;
+      ins_len = len;
+      ins_mrg = mergeable;
     } in
-    let action = Insert ins in
-    history <- action :: history;
-    redo <- [];
+    let () = history <- Insert ins :: history in
+    ()
 
   method private handle_insert iter s =
     self#with_lock_undo (self#process_handle_insert iter) s
 
   method private process_handle_delete start stop =
     (* Save the delete action *)
+    let text = buffer#get_text ~start ~stop () in
+    let len = Glib.Utf8.length text in
+    let mergeable = len = 1  && (text <> "\n") in
     let del = {
-      del_val = buffer#get_text ~start ~stop ();
+      del_val = text;
       del_off = start#offset;
       del_len = stop#offset - start#offset;
+      del_mrg = mergeable;
     } in
     let action = Delete del in
     history <- action :: history;
