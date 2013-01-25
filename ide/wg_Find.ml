@@ -218,8 +218,16 @@ class finder (view : GText.view) =
       let _ = r_next_button#connect#clicked ~callback:self#find_forward in
       let _ = r_previous_button#connect#clicked ~callback:self#find_backward in
       let _ = r_replace_button#connect#clicked ~callback:self#replace in
-      let _ = r_replace_all_button#connect#clicked ~callback:self#replace_all
-      in ()
+      let _ = r_replace_all_button#connect#clicked ~callback:self#replace_all in
+      let find_cb ev =
+        let ev_key = GdkEvent.Key.keyval ev in
+        let (key, _) = GtkData.AccelGroup.parse "Return" in
+        let () = Printf.printf "%i %i\n%!" ev_key key in
+        if ev_key = key then (self#find_forward (); true)
+        else false
+      in
+      let _ = find_entry#event#connect#key_press find_cb in
+      ()
 
   end
 
