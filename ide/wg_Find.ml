@@ -222,7 +222,6 @@ class finder (view : GText.view) =
       let find_cb ev =
         let ev_key = GdkEvent.Key.keyval ev in
         let (key, _) = GtkData.AccelGroup.parse "Return" in
-        let () = Printf.printf "%i %i\n%!" ev_key key in
         if ev_key = key then (self#find_forward (); true)
         else false
       in
