@@ -931,8 +931,6 @@ let build_ui () =
       ~callback:(fun _ -> notebook#current_term.finder#find_backward ());
     item "Replace" ~stock:`FIND_AND_REPLACE
       ~callback:(fun _ -> notebook#current_term.finder#show `REPLACE);
-    item "Close Find" ~accel:"Escape"
-      ~callback:(fun _ -> notebook#current_term.finder#hide ());
     item "Complete Word" ~label:"Complete Word" ~accel:"<Ctrl>slash"
       ~callback:(fun _ ->
         ignore ( ()

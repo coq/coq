@@ -20,7 +20,6 @@ let list_items menu li =
 
 let init () =
   let theui = Printf.sprintf "<ui>
-<accelerator action='Close Find' />
 <menubar name='CoqIde MenuBar'>
   <menu action='File'>
     <menuitem action='New' />

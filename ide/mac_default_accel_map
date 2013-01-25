@@ -244,7 +244,6 @@
 ; (gtk_accel_path "<Actions>/Templates/Template Notation" "")
 ; (gtk_accel_path "<Actions>/Edit/Cut" "<Primary>x")
 ; (gtk_accel_path "<Actions>/Templates/Template Theorem" "")
-; (gtk_accel_path "<Actions>/Edit/Close Find" "Escape")
 ; (gtk_accel_path "<Actions>/Tactics/Tactic constructor" "")
 ; (gtk_accel_path "<Actions>/Tactics/Tactic elim -- with" "")
 ; (gtk_accel_path "<Actions>/Templates/Template Identity Coercion" "")
