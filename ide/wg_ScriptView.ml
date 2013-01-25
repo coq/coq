@@ -10,13 +10,37 @@ open Ideutils
 open GText
 open Gtk_parsing
 
+type insert_action = {
+  ins_val : string;
+  ins_off : int;
+  ins_len : int;
+}
+
+type delete_action = {
+  del_val : string;
+  del_off : int;
+  del_len : int;
+}
+
 type action =
-  | Insert of string * int * int (* content*pos*length *)
-  | Delete of string * int * int (* content*pos*length *)
+  | Insert of insert_action
+  | Delete of delete_action
 
 let neg act = match act with
-  | Insert (s,i,l) -> Delete (s,i,l)
-  | Delete (s,i,l) -> Insert (s,i,l)
+  | Insert act ->
+    let act = {
+      del_len = act.ins_len;
+      del_off = act.ins_off;
+      del_val = act.ins_val;
+    } in
+    Delete act
+  | Delete act ->
+    let act = {
+      ins_len = act.del_len;
+      ins_off = act.del_off;
+      ins_val = act.del_val;
+    } in
+    Insert act
 
 type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
 
@@ -87,6 +111,8 @@ object (self)
   val mutable last_completion = (-1, "", Proposals.empty)
   (* this variable prevents CoqIDE from autocompleting when we have deleted something *)
   val mutable is_auto_completing = false
+  (* this mutex ensure that CoqIDE will not try to autocomplete twice *)
+  val mutable lock_auto_completing = true
 
   method auto_complete = auto_complete
 
@@ -95,10 +121,12 @@ object (self)
 
   method private dump_debug () =
     let iter = function
-    | Insert (s, p, l) ->
-      Printf.eprintf "Insert of '%s' at %d (length %d)\n" s p l
-    | Delete (s, p, l) ->
-      Printf.eprintf "Delete '%s' from %d (length %d)\n" s p l
+    | Insert act ->
+      Printf.eprintf "Insert of '%s' at %d (length %d)\n"
+        act.ins_val act.ins_off act.ins_len
+    | Delete act ->
+      Printf.eprintf "Delete '%s' from %d (length %d)\n"
+        act.del_val act.del_off act.del_len
     in
     if false (* !debug *) then begin
       Minilib.log "==========Undo Stack top=============";
@@ -135,13 +163,13 @@ object (self)
 
   method private process_action = function
   | [] -> false
-  | Insert (s, p, l) :: history ->
-    let start = self#buffer#get_iter_at_char p in
-    let stop = start#forward_chars l in
+  | Insert ins :: history ->
+    let start = self#buffer#get_iter (`OFFSET ins.ins_off) in
+    let stop = start#forward_chars ins.ins_len in
     self#buffer#delete_interactive ~start ~stop ()
-  | Delete (s, p, l) :: history ->
-    let iter = self#buffer#get_iter_at_char p in
-    self#buffer#insert_interactive ~iter s
+  | Delete del :: history ->
+    let iter = self#buffer#get_iter (`OFFSET del.del_off) in
+    self#buffer#insert_interactive ~iter del.del_val
 
   method undo () =
     Minilib.log "UNDO";
@@ -155,21 +183,32 @@ object (self)
 
   method private handle_insert iter s =
     (* we're inserting, so we may autocomplete *)
-    is_auto_completing <- true;
+    is_auto_completing <- true
+
+  method private handle_after_insert iter s =
     (* Save the insert action *)
-    let action = Insert (s, iter#offset, Glib.Utf8.length s) in
+    let ins = {
+      ins_val = s;
+      ins_off = iter#offset;
+      ins_len = Glib.Utf8.length s;
+    } in
+    let action = Insert ins in
     history <- action :: history;
     redo <- [];
     self#dump_debug ()
 
   method private handle_delete ~start ~stop =
     (* disable autocomplete *)
-    is_auto_completing <- false;
+    is_auto_completing <- false
+
+  method private handle_after_delete ~start ~stop =
     (* Save the delete action *)
-    let start_offset = start#offset in
-    let stop_offset = stop#offset in
-    let s = self#buffer#get_text ~start ~stop () in
-    let action = Delete (s, start_offset, stop_offset - start_offset) in
+    let del = {
+      del_val = self#buffer#get_text ~start ~stop ();
+      del_off = start#offset;
+      del_len = stop#offset - start#offset;
+    } in
+    let action = Delete del in
     history <- action :: history;
     redo <- [];
     self#dump_debug ();
@@ -198,11 +237,14 @@ object (self)
 	      let len2 = String.length w in
 	      String.sub proposal len2 (len1 - len2)
             in
+            self#buffer#begin_user_action ();
             ignore (self#buffer#delete_selection ());
-            ignore (self#buffer#insert_interactive suffix);
+            let iter = self#buffer#get_iter (`OFFSET cur_offset) in
+            ignore (self#buffer#insert_interactive ~iter suffix);
             let ins = self#buffer#get_iter (`OFFSET cur_offset) in
             let sel = self#buffer#get_iter `INSERT in
-            self#buffer#select_range sel ins
+            self#buffer#select_range sel ins;
+            self#buffer#end_user_action ();
           end;
 	  k ()
 	in
@@ -217,7 +259,11 @@ object (self)
     end
 
   method private may_auto_complete () =
-    if auto_complete && is_auto_completing then self#do_auto_complete ()
+    if auto_complete && is_auto_completing && lock_auto_completing then begin
+      lock_auto_completing <- false;
+      self#do_auto_complete ();
+      lock_auto_completing <- true;
+    end
 
   (* HACK: missing gtksourceview features *)
   method right_margin_position =
@@ -324,9 +370,11 @@ object (self)
 
   initializer
     (* Install undo managing *)
+    ignore (self#buffer#connect#after#insert_text ~callback:self#handle_after_insert);
+    ignore (self#buffer#connect#after#delete_range ~callback:self#handle_after_delete);
+    (* Install auto-completion *)
     ignore (self#buffer#connect#insert_text ~callback:self#handle_insert);
     ignore (self#buffer#connect#delete_range ~callback:self#handle_delete);
-    (* Install auto-completion *)
     ignore (self#buffer#connect#after#end_user_action ~callback:self#may_auto_complete);
     (* HACK: Redirect the undo/redo signals of the underlying GtkSourceView *)
     ignore (self#connect#undo
