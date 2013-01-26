@@ -49,7 +49,7 @@ type handle
 *)
 
 type void
-type task = handle -> (unit->void) -> void
+type 'a task = handle -> ('a -> void) -> void
 
 (** Check if coqtop is computing, i.e. already has a current task *)
 val is_computing : coqtop -> bool
@@ -61,11 +61,11 @@ val spawn_coqtop : string list -> coqtop
 
 (** Register a handler called when a coqtop dies (badly or on purpose) *)
 type reset_kind = Planned | Unexpected
-val set_reset_handler : coqtop -> (reset_kind -> task) -> unit
+val set_reset_handler : coqtop -> (reset_kind -> unit task) -> unit
 
 (** Finish initializing a freshly spawned coqtop, by running a first task on it.
     The task should run its inner continuation at the end. *)
-val init_coqtop : coqtop -> task -> unit
+val init_coqtop : coqtop -> unit task -> unit
 
 (** Interrupt the current computation of coqtop. *)
 val break_coqtop : coqtop -> unit
@@ -100,7 +100,7 @@ val final_countdown : unit -> unit
       before its completion.
     - The task callback should run its inner continuation at the end. *)
 
-val try_grab : coqtop -> task -> (unit -> unit) -> unit
+val try_grab : coqtop -> unit task -> (unit -> unit) -> unit
 
 (** * Atomic calls to coqtop
 
@@ -111,18 +111,18 @@ val try_grab : coqtop -> task -> (unit -> unit) -> unit
   when this answer is available.
   Except for interp, we use the default logger for any call. *)
 
-type 'a atask = handle -> ('a Interface.value -> void) -> void
+type 'a query = 'a Interface.value task
 
 val interp : ?logger:Ideutils.logger -> ?raw:bool -> ?verbose:bool ->
-  string -> string atask
-val rewind : int -> int atask
-val status : Interface.status atask
-val goals : Interface.goals option atask
-val evars : Interface.evar list option atask
-val hints : (Interface.hint list * Interface.hint) option atask
-val inloadpath : string -> bool atask
-val mkcases : string -> string list list atask
-val search : Interface.search_flags -> string Interface.coq_object list atask
+  string -> string query
+val rewind : int -> int query
+val status : Interface.status query
+val goals : Interface.goals option query
+val evars : Interface.evar list option query
+val hints : (Interface.hint list * Interface.hint) option query
+val inloadpath : string -> bool query
+val mkcases : string -> string list list query
+val search : Interface.search_flags -> string Interface.coq_object list query
 
 (** A specialized version of [raw_interp] dedicated to set/unset options. *)
 
@@ -140,5 +140,5 @@ sig
   (** [enforce] transmits to coq the current option values.
       It is also called by [goals] and [evars] above. *)
 
-  val enforce : task
+  val enforce : unit task
 end

@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Coq
 open Ideutils
 
 type flag = [ `COMMENT | `UNSAFE ]
@@ -20,15 +21,15 @@ let prefs = Preferences.current
 
 class type ops =
 object
-  method go_to_insert : Coq.task
-  method tactic_wizard : string list -> Coq.task
-  method process_next_phrase : Coq.task
-  method process_until_end_or_error : Coq.task
-  method handle_reset_initial : Coq.reset_kind -> Coq.task
-  method raw_coq_query : string -> Coq.task
-  method show_goals : Coq.task
-  method backtrack_last_phrase : Coq.task
-  method initialize : Coq.task
+  method go_to_insert : unit task
+  method tactic_wizard : string list -> unit task
+  method process_next_phrase : unit task
+  method process_until_end_or_error : unit task
+  method handle_reset_initial : Coq.reset_kind -> unit task
+  method raw_coq_query : string -> unit task
+  method show_goals : unit task
+  method backtrack_last_phrase : unit task
+  method initialize : unit task
 end
 
 class coqops

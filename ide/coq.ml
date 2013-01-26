@@ -266,7 +266,7 @@ type handle = {
 
 type status = New | Ready | Busy | Closed
 
-type task = handle -> (unit -> void) -> void
+type 'a task = handle -> ('a -> void) -> void
 
 type reset_kind = Planned | Unexpected
 
@@ -274,7 +274,7 @@ type coqtop = {
   (* non quoted command-line arguments of coqtop *)
   sup_args : string list;
   (* called whenever coqtop dies *)
-  mutable reset_handler : reset_kind -> task;
+  mutable reset_handler : reset_kind -> unit task;
   (* actual coqtop process and its status *)
   mutable handle : handle;
   mutable status : status;
@@ -494,7 +494,7 @@ let init_coqtop coqtop task =
 
 (** Cf [Ide_intf] for more details *)
 
-type 'a atask = handle -> ('a Interface.value -> void) -> void
+type 'a query = 'a Interface.value task
 
 let eval_call ?(logger=default_logger) call handle k =
   (** Send messages to coqtop and prepare the decoding of the answer *)
