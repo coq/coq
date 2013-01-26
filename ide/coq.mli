@@ -49,7 +49,19 @@ type handle
 *)
 
 type void
-type 'a task = handle -> ('a -> void) -> void
+type 'a task
+
+val return : 'a -> 'a task
+(** Monadic return of values as tasks. *)
+
+val bind : 'a task -> ('a -> 'b task) -> 'b task
+(** Monadic binding of tasks *)
+
+val lift : (unit -> 'a) -> 'a task
+(** Return the impertative computation waiting to be processed. *)
+
+val seq : unit task -> 'a task -> 'a task
+(** Sequential composition *)
 
 (** Check if coqtop is computing, i.e. already has a current task *)
 val is_computing : coqtop -> bool

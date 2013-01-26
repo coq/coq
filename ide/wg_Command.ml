@@ -113,14 +113,14 @@ object(self)
       in
       let log level message = result#buffer#insert (message^"\n")
       in
-      let process h k =
-	Coq.interp ~logger:log ~raw:true phrase h (function
-          |Interface.Fail (l,str) ->
+      let process =
+	Coq.bind (Coq.interp ~logger:log ~raw:true phrase) (function
+          | Interface.Fail (l,str) ->
             result#buffer#insert ("Error while interpreting "^phrase^":\n"^str);
-	    k ()
-          |Interface.Good res | Interface.Unsafe res ->
+	    Coq.return ()
+          | Interface.Good res | Interface.Unsafe res ->
             result#buffer#insert ("Result for command " ^ phrase ^ ":\n" ^ res);
-	    k ())
+	    Coq.return ())
       in
       result#buffer#set_text "";
       Coq.try_grab coqtop process ignore

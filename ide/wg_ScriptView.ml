@@ -107,9 +107,10 @@ end
 
 module Proposals = Set.Make(StringOrd)
 
-let get_completion (buffer : GText.buffer) coqtop w handle_res =
+(** Retrieve completion proposals in the buffer *)
+let get_syntactic_completion (buffer : GText.buffer) pattern accu =
   let rec get_aux accu (iter : GText.iter) =
-    match iter#forward_search w with
+    match iter#forward_search pattern with
     | None -> accu
     | Some (start, stop) ->
       if starts_word start then
@@ -117,29 +118,29 @@ let get_completion (buffer : GText.buffer) coqtop w handle_res =
         if ne#compare stop = 0 then get_aux accu stop
         else
           let proposal = buffer#get_text ~start ~stop:ne () in
-          get_aux (Proposals.add proposal accu) stop
+          let accu = Proposals.add proposal accu in
+          get_aux accu stop
       else get_aux accu stop
   in
-  let get_semantic accu =
-    let flags = [Interface.Name_Pattern ("^" ^ w), true] in
-    let query h k =
-      Coq.search flags h
-	(function
-	  | Interface.Good l ->
-	    let fold accu elt =
-              let rec last accu = function
-		| [] -> accu
-		| [basename] -> Proposals.add basename accu
-		| _ :: l -> last accu l
-              in
-              last accu elt.Interface.coq_object_qualid
-	    in
-	    handle_res (List.fold_left fold accu l) k
-	  | _ -> handle_res accu k)
-    in
-    Coq.try_grab coqtop query ignore;
+  get_aux accu buffer#start_iter
+
+(** Retrieve completion proposals in Coq libraries *)
+let get_semantic_completion pattern accu =
+  let flags = [Interface.Name_Pattern ("^" ^ pattern), true] in
+  (** Only get the last part of the qualified name *)
+  let rec last accu = function
+  | [] -> accu
+  | [basename] -> Proposals.add basename accu
+  | _ :: l -> last accu l
   in
-  get_semantic (get_aux Proposals.empty buffer#start_iter)
+  let next = function
+  | Interface.Good l ->
+    let fold accu elt = last accu elt.Interface.coq_object_qualid in
+    let ans = List.fold_left fold accu l in
+    Coq.return ans
+  | _ -> Coq.return accu
+  in
+  Coq.bind (Coq.search flags) next
 
 class undo_manager (buffer : GText.buffer) =
 object(self)
@@ -374,7 +375,7 @@ object (self)
         Minilib.log ("Completion of prefix: '" ^ w ^ "'");
         let (off, prefix, proposals) = last_completion in
         let start_offset = start#offset in
-	let handle_proposals isnew new_proposals k =
+	let handle_proposals isnew new_proposals =
           if isnew then last_completion <- (start_offset, w, new_proposals);
           (* [iter] might be invalid now, get a new one to please gtk *)
           let iter = self#buffer#get_iter `INSERT in
@@ -395,17 +396,23 @@ object (self)
             let sel = self#buffer#get_iter `INSERT in
             self#buffer#select_range sel ins;
             self#buffer#end_user_action ();
-          end;
-	  k ()
+          end
 	in
         (* check whether we have the last request in cache *)
         if (start_offset = off) && (0 <= is_substring prefix w) then
-          handle_proposals false
-	    (Proposals.filter (fun p -> 0 < is_substring w p) proposals)
-	    (fun () -> ())
+          let filter prop = 0 < is_substring w prop in
+          let props = Proposals.filter filter proposals in
+          handle_proposals false props
         else
-	  get_completion self#buffer ct w (handle_proposals true)
-      end
+          (** If not in the cache, we recompute it: first syntactic *)
+          let synt = get_syntactic_completion self#buffer w Proposals.empty in
+          (** Then semantic *)
+          let next accu = Coq.lift (fun () -> handle_proposals true accu) in
+          let query = Coq.bind (get_semantic_completion w synt) next in
+          (** If coqtop is computing, do the syntactic completion altogether *)
+          let occupied () = handle_proposals true synt in
+          Coq.try_grab ct query occupied
+        end
     end
 
   method private may_auto_complete () =

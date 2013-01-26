@@ -19,6 +19,9 @@ type ide_info = {
 
 let prefs = Preferences.current
 
+let log msg : unit task =
+  Coq.lift (fun () -> Minilib.log msg)
+
 class type ops =
 object
   method go_to_insert : unit task
@@ -51,34 +54,40 @@ object(self)
   method private get_insert =
     buffer#get_iter_at_mark `INSERT
 
-  method show_goals h k =
+  method show_goals =
     Coq.PrintOpt.set_printing_width proof#width;
-    Coq.goals h (function
-      |Interface.Fail (l, str) ->
-        (messages#set ("Error in coqtop:\n"^str); k())
-      |Interface.Good goals | Interface.Unsafe goals ->
-        Coq.evars h (function
-          |Interface.Fail (l, str)->
-            (messages#set ("Error in coqtop:\n"^str); k())
-          |Interface.Good evs | Interface.Unsafe evs ->
-            proof#set_goals goals;
-            proof#set_evars evs;
-            proof#refresh ();
-            k()))
+    Coq.bind Coq.goals (function
+    | Interface.Fail (l, str) ->
+      messages#set ("Error in coqtop:\n"^str);
+      Coq.return ()
+    | Interface.Good goals | Interface.Unsafe goals ->
+      Coq.bind Coq.evars (function
+        | Interface.Fail (l, str)->
+          messages#set ("Error in coqtop:\n"^str);
+          Coq.return ()
+        | Interface.Good evs | Interface.Unsafe evs ->
+          proof#set_goals goals;
+          proof#set_evars evs;
+          proof#refresh ();
+          Coq.return ()
+        )
+      )
 
   (* This method is intended to perform stateless commands *)
-  method raw_coq_query phrase h k =
-    let () = Minilib.log "raw_coq_query starting now" in
+  method raw_coq_query phrase =
+    let action = log "raw_coq_query starting now" in
     let display_error s =
       if not (Glib.Utf8.validate s) then
         flash_info "This error is so nasty that I can't even display it."
       else messages#add s;
     in
-    Coq.interp ~logger:messages#push ~raw:true ~verbose:false phrase h
-      (function
-        | Interface.Fail (_, err) -> display_error err; k ()
-        | Interface.Good msg | Interface.Unsafe msg ->
-          messages#add msg; k ())
+    let query = Coq.interp ~logger:messages#push ~raw:true ~verbose:false phrase in
+    let next = function
+    | Interface.Fail (_, err) -> display_error err; Coq.return ()
+    | Interface.Good msg | Interface.Unsafe msg ->
+      messages#add msg; Coq.return ()
+    in
+    Coq.bind (Coq.seq action query) next
 
   (** [fill_command_queue until q] fills a command queue until the [until]
       condition returns true; it is fed with the number of phrases read and the
@@ -131,7 +140,8 @@ object(self)
     ignore (Queue.pop queue);
     Stack.push sentence cmd_stack
 
-  method private process_error queue phrase loc msg h k =
+  method private process_error queue phrase loc msg =
+    Coq.bind (Coq.return ()) (function () ->
     let position_error = function
       | None -> ()
       | Some (start, stop) ->
@@ -148,27 +158,30 @@ object(self)
     position_error loc;
     messages#clear;
     messages#push Interface.Error msg;
-    self#show_goals h k
+    self#show_goals)
 
   (** Compute the phrases until [until] returns [true]. *)
-  method private process_until until verbose h k =
-    let queue = Queue.create () in
-    (* Lock everything and fill the waiting queue *)
-    push_info "Coq is computing";
-    messages#clear;
-    script#set_editable false;
-    self#fill_command_queue until queue;
-    (* Now unlock and process asynchronously. Since [until]
-       may contain iterators, it shouldn't be used anymore *)
-    script#set_editable true;
-    let push_info lvl msg = if verbose then messages#push lvl msg
+  method private process_until until verbose =
+    let push_msg lvl msg = if verbose then messages#push lvl msg in
+    let action = Coq.lift (fun () ->
+      let queue = Queue.create () in
+      (* Lock everything and fill the waiting queue *)
+      push_info "Coq is computing";
+      messages#clear;
+      script#set_editable false;
+      self#fill_command_queue until queue;
+      (* Now unlock and process asynchronously. Since [until]
+        may contain iterators, it shouldn't be used anymore *)
+      script#set_editable true;
+      Minilib.log "Begin command processing";
+      queue)
     in
-    Minilib.log "Begin command processing";
+    Coq.bind action (fun queue ->
     let rec loop () =
       if Queue.is_empty queue then
         let () = pop_info () in
         let () = script#recenter_insert in
-        self#show_goals h k
+        self#show_goals
       else
         let sentence = Queue.peek queue in
         if List.mem `COMMENT sentence.flags then
@@ -181,33 +194,37 @@ object(self)
             start#get_slice ~stop
           in
           let commit_and_continue msg flags =
-            push_info Interface.Notice msg;
+            push_msg Interface.Notice msg;
             self#commit_queue_transaction queue sentence flags;
             loop ()
           in
-          Coq.interp ~logger:push_info ~verbose phrase h
-            (function
-              |Interface.Good msg -> commit_and_continue msg []
-              |Interface.Unsafe msg -> commit_and_continue msg [`UNSAFE]
-              |Interface.Fail (loc, msg) ->
-                self#process_error queue phrase loc msg h k)
+          let query = Coq.interp ~logger:push_msg ~verbose phrase in
+          let next = function
+          | Interface.Good msg -> commit_and_continue msg []
+          | Interface.Unsafe msg -> commit_and_continue msg [`UNSAFE]
+          | Interface.Fail (loc, msg) ->
+            self#process_error queue phrase loc msg
+          in
+          Coq.bind query next
     in
-    loop ()
+    loop ())
 
-  method process_next_phrase h k =
+  method process_next_phrase =
     let until len start stop = 1 <= len in
-    self#process_until until true h
-      (fun () -> buffer#place_cursor ~where:self#get_start_of_input; k())
+    let next () =
+      buffer#place_cursor ~where:self#get_start_of_input; Coq.return ()
+    in
+    Coq.bind (self#process_until until true) next
 
-  method private process_until_iter iter h k =
+  method private process_until_iter iter =
     let until len start stop =
       if prefs.Preferences.stop_before then stop#compare iter > 0
       else start#compare iter >= 0
     in
-    self#process_until until false h k
+    self#process_until until false
 
-  method process_until_end_or_error h k =
-    self#process_until_iter buffer#end_iter h k
+  method process_until_end_or_error =
+    self#process_until_iter buffer#end_iter
 
   (** Clear the command stack until [until] returns [true].
       Returns the number of commands sent to Coqtop to backtrack. *)
@@ -248,53 +265,60 @@ object(self)
       buffer#delete_mark stop_mark
 
   (** Actually performs the undoing *)
-  method private undo_command_stack n clear_zone h k =
-    Coq.rewind n h (function
-      |Interface.Good n | Interface.Unsafe n ->
-        let until _ len _ _ = n <= len in
-        (* Coqtop requested [n] more ACTUAL backtrack *)
-        let _, zone = self#prepare_clear_zone until clear_zone in
-        self#commit_clear_zone zone;
-        k ()
-      |Interface.Fail (l, str) ->
-        messages#set
-          ("Error while backtracking: " ^ str ^
-           "\nCoqIDE and coqtop may be out of sync," ^
-           "you may want to use Restart.");
-        k ())
+  method private undo_command_stack n clear_zone =
+    let next = function
+    | Interface.Good n | Interface.Unsafe n ->
+      let until _ len _ _ = n <= len in
+      (* Coqtop requested [n] more ACTUAL backtrack *)
+      let _, zone = self#prepare_clear_zone until clear_zone in
+      self#commit_clear_zone zone;
+      Coq.return ()
+    | Interface.Fail (l, str) ->
+      messages#set
+        ("Error while backtracking: " ^ str ^
+          "\nCoqIDE and coqtop may be out of sync," ^
+          "you may want to use Restart.");
+      Coq.return ()
+    in
+    Coq.bind (Coq.rewind n) next
 
   (** Wrapper around the raw undo command *)
-  method private backtrack_until until h k =
-    push_info "Coq is undoing";
-    messages#clear;
+  method private backtrack_until until =
+    let action () = 
+      push_info "Coq is undoing";
+      messages#clear
+    in
+    Coq.bind (Coq.lift action) (fun () ->
     (* Instead of locking the whole buffer, we now simply remove
        read-only tags *after* the actual backtrack *)
-    let to_undo,zone = self#prepare_clear_zone until None in
-    self#undo_command_stack to_undo zone h
-      (fun () -> pop_info (); k ())
+      let to_undo, zone = self#prepare_clear_zone until None in
+      let next () = pop_info (); Coq.return () in
+      Coq.bind (self#undo_command_stack to_undo zone) next
+    )
 
-  method private backtrack_to_iter iter h k =
+  method private backtrack_to_iter iter =
     let until _ _ _ stop =
       iter#compare (buffer#get_iter_at_mark stop) >= 0
     in
-    self#backtrack_until until h
+    Coq.seq (self#backtrack_until until)
       (* We may have backtracked too much: let's replay *)
-      (fun () -> self#process_until_iter iter h k)
+      (self#process_until_iter iter)
 
-  method backtrack_last_phrase h k =
+  method backtrack_last_phrase =
     let until len _ _ _ = 1 <= len in
-    self#backtrack_until until h
+    Coq.bind (self#backtrack_until until)
       (fun () ->
         buffer#place_cursor ~where:self#get_start_of_input;
-        self#show_goals h k)
+        self#show_goals)
 
-  method go_to_insert h k =
+  method go_to_insert =
+    Coq.bind (Coq.return ()) (fun () ->
     let point = self#get_insert in
     if point#compare self#get_start_of_input >= 0
-    then self#process_until_iter point h k
-    else self#backtrack_to_iter point h k
+    then self#process_until_iter point
+    else self#backtrack_to_iter point)
 
-  method tactic_wizard l h k =
+  method tactic_wizard l =
     let insert_phrase phrase tag =
       let stop = self#get_start_of_input in
       let phrase' = if stop#starts_line then phrase else "\n"^phrase in
@@ -312,7 +336,7 @@ object(self)
       } in
       Stack.push ide_payload cmd_stack;
       messages#clear;
-      self#show_goals h k;
+      self#show_goals
     in
     let display_error (loc, s) =
       if not (Glib.Utf8.validate s) then
@@ -320,67 +344,82 @@ object(self)
       else messages#add s
     in
     let try_phrase phrase stop more =
-      Minilib.log "Sending to coq now";
-      Coq.interp ~verbose:false phrase h
-        (function
-          |Interface.Fail (l, str) ->
-            display_error (l, str);
-            messages#add ("Unsuccessfully tried: "^phrase);
-            more ()
-          |Interface.Good msg ->
-            messages#add msg;
-            stop Tags.Script.processed
-          |Interface.Unsafe msg ->
-            messages#add msg;
-            stop Tags.Script.unjustified)
+      let action = log "Sending to coq now" in
+      let query = Coq.interp ~verbose:false phrase in
+      let next = function
+      | Interface.Fail (l, str) ->
+        display_error (l, str);
+        messages#add ("Unsuccessfully tried: "^phrase);
+        more
+      | Interface.Good msg ->
+        messages#add msg;
+        stop Tags.Script.processed
+      | Interface.Unsafe msg ->
+        messages#add msg;
+        stop Tags.Script.unjustified
+      in
+      Coq.bind (Coq.seq action query) next
     in
-    let rec loop l () = match l with
-      | [] -> k ()
+    let rec loop l = match l with
+      | [] -> Coq.return ()
       | p :: l' ->
         try_phrase ("progress "^p^".") (insert_phrase (p^".")) (loop l')
     in
-    loop l ()
+    loop l
 
-  method handle_reset_initial why h k =
-    if why = Coq.Unexpected then warning "Coqtop died badly. Resetting.";
-    (* clear the stack *)
-    while not (Stack.is_empty cmd_stack) do
-      let phrase = Stack.pop cmd_stack in
-      buffer#delete_mark phrase.start;
-      buffer#delete_mark phrase.stop
-    done;
-    (* reset the buffer *)
-    buffer#move_mark ~where:buffer#start_iter (`NAME "start_of_input");
-    Sentence.tag_all buffer;
-    (* clear the views *)
-    messages#clear;
-    proof#clear ();
-    clear_info ();
-    push_info "Restarted";
-    (* apply the initial commands to coq *)
-    self#initialize h k;
+  method handle_reset_initial why =
+    let action () =
+      if why = Coq.Unexpected then warning "Coqtop died badly. Resetting.";
+      (* clear the stack *)
+      while not (Stack.is_empty cmd_stack) do
+        let phrase = Stack.pop cmd_stack in
+        buffer#delete_mark phrase.start;
+        buffer#delete_mark phrase.stop
+      done;
+      (* reset the buffer *)
+      buffer#move_mark ~where:buffer#start_iter (`NAME "start_of_input");
+      Sentence.tag_all buffer;
+      (* clear the views *)
+      messages#clear;
+      proof#clear ();
+      clear_info ();
+      push_info "Restarted";
+      (* apply the initial commands to coq *)
+    in
+    Coq.seq (Coq.lift action) self#initialize
 
-  method private include_file_dir_in_path h k =
-    match get_filename () with
-      |None -> k ()
-      |Some f ->
-        let dir = Filename.dirname f in
-        Coq.inloadpath dir h (function
-          |Interface.Fail (_,s) ->
-            messages#set
-              ("Could not determine lodpath, this might lead to problems:\n"^s);
-            k ()
-          |Interface.Good true |Interface.Unsafe true -> k ()
-          |Interface.Good false |Interface.Unsafe false ->
-            let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
-            Coq.interp cmd h (function
-              |Interface.Fail (l,str) ->
-                messages#set ("Couln't add loadpath:\n"^str);
-                k ()
-              |Interface.Good _ | Interface.Unsafe _ -> k ()))
+  method private include_file_dir_in_path =
+    let query f =
+      let dir = Filename.dirname f in
+      let loadpath = Coq.inloadpath dir in
+      let next = function
+      | Interface.Fail (_, s) ->
+        messages#set
+          ("Could not determine lodpath, this might lead to problems:\n"^s);
+        Coq.return ()
+      | Interface.Good true | Interface.Unsafe true -> Coq.return ()
+      | Interface.Good false | Interface.Unsafe false ->
+        let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
+        let cmd = Coq.interp cmd in
+        let next = function
+        | Interface.Fail (l, str) ->
+          messages#set ("Couln't add loadpath:\n"^str);
+          Coq.return ()
+        | Interface.Good _ | Interface.Unsafe _ ->
+          Coq.return ()
+        in
+        Coq.bind cmd next
+      in
+      Coq.bind loadpath next
+    in
+    let next () = match get_filename () with
+    | None -> Coq.return ()
+    | Some f -> query f
+    in
+    Coq.bind (Coq.return ()) next
 
-  method initialize h k =
-    self#include_file_dir_in_path h
-      (fun () -> Coq.PrintOpt.enforce h k)
+  method initialize =
+    let next () = Coq.PrintOpt.enforce in
+    Coq.bind self#include_file_dir_in_path next
 
 end

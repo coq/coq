@@ -280,6 +280,18 @@ type coqtop = {
   mutable status : status;
 }
 
+let return (x : 'a) : 'a task =
+  (); fun _ k -> k x
+
+let bind (m : 'a task) (f : 'a -> 'b task) : 'b task =
+  (); fun h k -> m h (fun x -> f x h k)
+
+let seq (m : unit task) (n : 'a task) : 'a task =
+  (); fun h k -> m h (fun () -> n h k)
+
+let lift (f : unit -> 'a) : 'a task =
+  (); fun _ k -> k (f ())
+
 (** * Starting / signaling / ending a real coqtop sub-process *)
 
 (** We simulate a Unix.open_process that also returns the pid of
