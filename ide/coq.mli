@@ -8,48 +8,33 @@
 
 (** Coq : Interaction with the Coq toplevel *)
 
-(** * Version and date *)
-
-val short_version : unit -> string
-val version : unit -> string
-
-(** * Launch a test coqtop processes, ask for a correct coqtop if it fails.
-    @return the list of arguments that coqtop did not understand
-    (the files probably ..). This command may terminate coqide in
-    case of trouble.  *)
-val filter_coq_opts : string list -> string list
-
-(** Launch a coqtop with the user args in order to be sure that it works,
-    checking in particular that Prelude.vo is found. This command
-    may terminate coqide in case of trouble *)
-val check_connection : string list -> unit
-
-(** * The structure describing a coqtop sub-process *)
-
-(** Liveness management of coqtop is automatic. Whenever a Coqtop dies abruptly,
-    this module is responsible for relaunching the whole process. The hook
-    passed as an argument in coqtop construction will be called after such an
-    abrupt failure. In particular, it is NOT called when explicitely requesting
-    coqtop to close or to reset. *)
+(** {5 General structures} *)
 
 type coqtop
-type handle
+(** The structure describing a coqtop sub-process .
 
-(** * Coqtop tasks
+    Liveness management of coqtop is automatic. Whenever a coqtop dies abruptly,
+    this module is responsible for relaunching the whole process. The reset
+    handler set through [set_reset_handler] will be called after such an
+    abrupt failure. It is also called when explicitely requesting coqtop to
+    reset. *)
 
-  A task is a group of sequential calls to be perform on a coqtop.
-  If a task is already sent to coqtop, it is considered busy
-  ([is_computing] will answer [true]), and other task submission
-  will be rejected.
-
-  A task is represented as a continuation, with a coqtop [handle]
-  as first argument, and a final inner continuation as 2nd argument.
-  This inner continuation should be runned at the end of the task.
-  Any exception occuring within the task will trigger a coqtop reset.
-*)
-
-type void
 type 'a task
+(** Coqtop tasks.
+
+    A task is a group of sequential calls to be performed on a coqtop process,
+    that ultimately return some content.
+
+    If a task is already sent to coqtop, it is considered busy
+    ([is_computing] will answer [true]), and any other task submission
+    will be rejected by [try_grab].
+
+    Any exception occuring within the task will trigger a coqtop reset.
+
+    Beware, because of the GTK scheduler, you never know when a task will
+    actually be executed. If you need to sequentialize imperative actions, you
+    should do so using the monadic primitives.
+*)
 
 val return : 'a -> 'a task
 (** Monadic return of values as tasks. *)
@@ -63,31 +48,34 @@ val lift : (unit -> 'a) -> 'a task
 val seq : unit task -> 'a task -> 'a task
 (** Sequential composition *)
 
-(** Check if coqtop is computing, i.e. already has a current task *)
-val is_computing : coqtop -> bool
+(** {5 Coqtop process management} *)
 
-(** * Starting / signaling / ending a real coqtop sub-process *)
-
-(** Create a coqtop process with some command-line arguments. *)
-val spawn_coqtop : string list -> coqtop
-
-(** Register a handler called when a coqtop dies (badly or on purpose) *)
 type reset_kind = Planned | Unexpected
-val set_reset_handler : coqtop -> (reset_kind -> unit task) -> unit
+(** A reset may occur accidentally or voluntarily, so we discriminate between
+    these. *)
 
+val is_computing : coqtop -> bool
+(** Check if coqtop is computing, i.e. already has a current task *)
+
+val spawn_coqtop : string list -> coqtop
+(** Create a coqtop process with some command-line arguments. *)
+
+val set_reset_handler : coqtop -> (reset_kind -> unit task) -> unit
+(** Register a handler called when a coqtop dies (badly or on purpose) *)
+
+val init_coqtop : coqtop -> unit task -> unit
 (** Finish initializing a freshly spawned coqtop, by running a first task on it.
     The task should run its inner continuation at the end. *)
-val init_coqtop : coqtop -> unit task -> unit
 
-(** Interrupt the current computation of coqtop. *)
 val break_coqtop : coqtop -> unit
+(** Interrupt the current computation of coqtop. *)
 
-(** Close coqtop. Subsequent requests will be discarded. Hook ignored. *)
 val close_coqtop : coqtop -> unit
+(** Close coqtop. Subsequent requests will be discarded. Hook ignored. *)
 
+val reset_coqtop : coqtop -> unit
 (** Reset coqtop. Pending requests will be discarded. The reset handler
     of coqtop will be called with [Planned] as first argument *)
-val reset_coqtop : coqtop -> unit
 
 (** In win32, we'll use a different kill function than Unix.kill *)
 
@@ -95,13 +83,13 @@ val killer : (int -> unit) ref
 val soft_killer : (int -> unit) ref
 val interrupter : (int -> unit) ref
 
-(** [set_final_countdown] triggers an exit of coqide after
+val final_countdown : unit -> unit
+(** [final_countdown] triggers an exit of coqide after
     some last cycles for closing remaining coqtop zombies *)
 
-val final_countdown : unit -> unit
+(** {5 Task processing} *)
 
-(** * Coqtop commmunication *)
-
+val try_grab : coqtop -> unit task -> (unit -> unit) -> unit
 (** Try to schedule a task on a coqtop. If coqtop is available, the task
     callback is run (asynchronously), otherwise the [(unit->unit)] callback
     is triggered.
@@ -112,10 +100,9 @@ val final_countdown : unit -> unit
       before its completion.
     - The task callback should run its inner continuation at the end. *)
 
-val try_grab : coqtop -> unit task -> (unit -> unit) -> unit
+(** {5 Atomic calls to coqtop} *)
 
-(** * Atomic calls to coqtop
-
+(**
   These atomic calls can be combined to form arbitrary multi-call tasks.
   They correspond to the protocol calls (cf [Serialize] for more details).
   Note that each call is asynchronous: it will return immediately,
@@ -124,6 +111,7 @@ val try_grab : coqtop -> unit task -> (unit -> unit) -> unit
   Except for interp, we use the default logger for any call. *)
 
 type 'a query = 'a Interface.value task
+(** A type abbreviation for coqtop specific answers *)
 
 val interp : ?logger:Ideutils.logger -> ?raw:bool -> ?verbose:bool ->
   string -> string query
@@ -154,3 +142,24 @@ sig
 
   val enforce : unit task
 end
+
+(** {5 Miscellaneous} *)
+
+val short_version : unit -> string
+(** Return a short phrase identifying coqtop version and date of compilation, as
+    given by the [configure] script. *)
+
+val version : unit -> string
+(** More verbose description, including details about libraries and
+    architecture. *)
+
+val filter_coq_opts : string list -> string list
+(** * Launch a test coqtop processes, ask for a correct coqtop if it fails.
+    @return the list of arguments that coqtop did not understand
+    (the files probably ..). This command may terminate coqide in
+    case of trouble.  *)
+
+val check_connection : string list -> unit
+(** Launch a coqtop with the user args in order to be sure that it works,
+    checking in particular that Prelude.vo is found. This command
+    may terminate coqide in case of trouble *)
