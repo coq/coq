@@ -317,8 +317,9 @@ let pr_ltac_or_var pr = function
   | ArgArg x -> pr x
   | ArgVar (loc,id) -> pr_with_comments loc (pr_id id)
 
-let pr_ltac_constant sp =
-  pr_qualid (Nametab.shortest_qualid_of_tactic sp)
+let pr_ltac_constant kn =
+  if !Constrextern.in_debugger then pr_kn kn
+  else pr_qualid (Nametab.shortest_qualid_of_tactic kn)
 
 let pr_evaluable_reference_env env = function
   | EvalVarRef id -> pr_id id
