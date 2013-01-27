@@ -83,13 +83,14 @@ let string_of_hint = function
   | Equiv kn -> string_of_kn kn
 
 let debug_string_of_delta resolve =
-  let kn_to_string kn hint s =
-    s^", "^(string_of_kn kn)^"=>"^(string_of_hint hint)
+  let kn_to_string kn hint l =
+    (string_of_kn kn ^ "=>" ^ string_of_hint hint) :: l
   in
-  let mp_to_string mp mp' s =
-    s^", "^(string_of_mp mp)^"=>"^(string_of_mp mp')
+  let mp_to_string mp mp' l =
+    (string_of_mp mp ^ "=>" ^ string_of_mp mp') :: l
   in
-  Deltamap.fold mp_to_string kn_to_string resolve ""
+  let l = Deltamap.fold mp_to_string kn_to_string resolve [] in
+  String.concat ", " (List.rev l)
 
 let list_contents sub =
   let one_pair (mp,reso) = (string_of_mp mp,debug_string_of_delta reso) in

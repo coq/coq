@@ -475,7 +475,7 @@ let end_module l restype senv =
    in
    let str = match sign with
      | SEBstruct(str_l) -> str_l
-     | _ -> error ("You cannot Include a high-order structure.")
+     | _ -> error ("You cannot Include a higher-order structure.")
    in
    let senv = update_resolver (add_delta_resolver resolver) senv
    in
