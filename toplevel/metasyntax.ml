@@ -272,6 +272,9 @@ let split_notation_string str =
 
 let out_nt = function NonTerminal x -> x | _ -> assert false
 
+let msg_expected_form_of_recursive_notation =
+  "The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\"."
+
 let rec find_pattern nt xl = function
   | Break n as x :: l, Break n' :: l' when n=n' ->
       find_pattern nt (x::xl) (l,l')
@@ -284,13 +287,14 @@ let rec find_pattern nt xl = function
   | [], Break s :: _ | Break s :: _, _ ->
       error ("A break occurs on one side of \"..\" but not on the other side.")
   | _, [] ->
-      error ("The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\".")
+      error msg_expected_form_of_recursive_notation
   | ((SProdList _ | NonTerminal _) :: _), _ | _, (SProdList _ :: _) ->
       anomaly "Only Terminal or Break expected on left, non-SProdList on right"
 
 let rec interp_list_parser hd = function
   | [] -> [], List.rev hd
   | NonTerminal id :: tl when id = ldots_var ->
+      if hd = [] then error msg_expected_form_of_recursive_notation;
       let hd = List.rev hd in
       let ((x,y,sl),tl') = find_pattern (List.hd hd) [] (List.tl hd,tl) in
       let xyl,tl'' = interp_list_parser [] tl' in
