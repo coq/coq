@@ -827,6 +827,14 @@ let order_metas metas =
     meta :: order latemetas metas
   in order [] metas
 
+(* Give priority to the less-dependent evars so that instances found
+   by matching are preferred over instances found by unification of
+   types of other instances; this gives instances more faithful to
+   what the user sees *)
+
+let order_evars evars =
+  Sort.list (fun (env1,(evk1,_),rhs1) (env2,(evk2,_),rhs2) -> evk1 < evk2) evars
+
 (* Solve an equation ?n[x1=u1..xn=un] = t where ?n is an evar *)
 
 let solve_simple_evar_eqn ts env evd ev rhs =
@@ -935,7 +943,7 @@ let w_merge env with_types flags (evd,metas,evars) =
     else Evd.define sp (Evarutil.nf_evar evd''' c) evd''' in
 
   (* merge constraints *)
-  w_merge_rec evd (order_metas metas) evars []
+  w_merge_rec evd (order_metas metas) (order_evars evars) []
 
 let w_unify_meta_types env ?(flags=default_unify_flags) evd =
   let metas,evd = retract_coercible_metas evd in
