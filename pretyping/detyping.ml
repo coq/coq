@@ -85,7 +85,7 @@ module PrintingCasesIf =
   PrintingInductiveMake (struct
     let encode = encode_bool
     let field = "If"
-    let title = "Types leading to pretty-printing of Cases using a `if' form: "
+    let title = "Types leading to pretty-printing of Cases using a `if' form:"
     let member_message s b =
       str "Cases on elements of " ++ s ++
       str

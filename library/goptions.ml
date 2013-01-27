@@ -105,10 +105,10 @@ module MakeTable =
     let print_table table_name printer table =
       pp (str table_name ++
 	   (hov 0
-	      (if MySet.is_empty table then str "None" ++ fnl ()
+	      (if MySet.is_empty table then str " None" ++ fnl ()
                else MySet.fold
-		 (fun a b -> printer a ++ spc () ++ b)
-		 table (mt ()) ++ fnl ())))
+		 (fun a b -> spc () ++ printer a ++ b)
+		 table (mt ()) ++ str "." ++ fnl ())))
 
     class table_of_A () =
     object
