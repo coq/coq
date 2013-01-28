@@ -55,7 +55,10 @@ let start_proof id str hyps c ?init_tac ?compute_guard hook =
    | None -> Proofview.tclUNIT ()
   in
   try Proof_global.run_tactic tac
-  with e -> Proof_global.discard_current (); raise e
+  with e ->
+    let e = Errors.push e in
+    Proof_global.discard_current ();
+    raise e
 
 let restart_proof () = undo_todepth 1
 

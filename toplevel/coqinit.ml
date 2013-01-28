@@ -13,6 +13,7 @@ let (/) = Filename.concat
 
 let set_debug () =
   let () = Printexc.record_backtrace true in
+  let () = Errors.record_backtrace () in
   Flags.debug := true
 
 (* Loading of the ressource file.
@@ -51,8 +52,9 @@ let load_rcfile() =
 			 " found. Skipping rcfile loading."))
 	*)
     with e ->
-      (msg_info (str"Load of rcfile failed.");
-       raise e)
+      let e = Errors.push e in
+      let () = msg_info (str"Load of rcfile failed.") in
+      raise e
   else
     Flags.if_verbose msg_info (str"Skipping rcfile loading.")
 

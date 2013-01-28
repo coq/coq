@@ -160,7 +160,12 @@ and eval_to_patch env (buff,pl,fv) =
 and val_of_constr env c =
   let (_,fun_code,_ as ccfv) =
     try compile env c
-    with e -> print_string "can not compile \n";Format.print_flush();raise e in
+    with e ->
+      let e = Errors.push e in
+      let () = print_string "can not compile \n" in
+      let () = Format.print_flush () in
+      raise e
+  in
   eval_to_patch env (to_memory ccfv)
 
 let set_transparent_const kn = () (* !?! *)

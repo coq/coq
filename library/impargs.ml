@@ -75,10 +75,10 @@ let with_implicits flags f x =
     let rslt = f x in
     implicit_args := oflags;
     rslt
-  with e -> begin
-    implicit_args := oflags;
+  with e ->
+    let e = Errors.push e in
+    let () = implicit_args := oflags in
     raise e
-  end
 
 let set_maximality imps b =
   (* Force maximal insertion on ending implicits (compatibility) *)

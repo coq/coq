@@ -70,9 +70,11 @@ let dloc = Loc.ghost
 
 let catch_error call_trace tac g =
   if List.is_empty call_trace then tac g else try tac g with
-  | LtacLocated _ as e -> raise e
-  | Loc.Exc_located (_,LtacLocated _) as e -> raise e
+  | LtacLocated _ as e -> let e = Errors.push e in raise e
+  | Loc.Exc_located (_,LtacLocated _) as e ->
+    let e = Errors.push e in raise e
   | e ->
+    let e = Errors.push e in
     let (nrep,loc',c),tail = List.sep_last call_trace in
     let loc,e' = match e with Loc.Exc_located(loc,e) -> loc,e | _ ->dloc,e in
     if List.is_empty tail then
@@ -618,6 +620,7 @@ let interp_may_eval f ist gl = function
      try
 	f ist gl c
      with e ->
+       let e = Errors.push e in
        debugging_exception_step ist false e (fun () ->
          str"interpretation of term " ++ pr_glob_constr_env (pf_env gl) (fst c));
        raise e
@@ -628,6 +631,7 @@ let interp_constr_may_eval ist gl c =
     try
       interp_may_eval pf_interp_constr ist gl c
     with e ->
+      let e = Errors.push e in
       debugging_exception_step ist false e (fun () -> str"evaluation of term");
       raise e
   in
@@ -1143,6 +1147,7 @@ and interp_app loc ist gl fv largs =
 	      catch_error trace
 		(val_interp {ist with lfun=newlfun@olfun; trace=trace} gl) body
 	    with e ->
+              let e = Errors.push e in
               debugging_exception_step ist false e (fun () -> str "evaluation");
 	      raise e in
 	  let gl = { gl with sigma=sigma } in
@@ -1434,6 +1439,7 @@ and interp_match ist g lz constr lmr =
             let lmatch =
               try extended_matches c csr
               with e ->
+                let e = Errors.push e in
                 debugging_exception_step ist false e (fun () ->
                   str "matching with pattern" ++ fnl () ++
                   pr_constr_pattern_env (pf_env g) c);
@@ -1442,6 +1448,7 @@ and interp_match ist g lz constr lmr =
               let lfun = extend_values_with_bindings lmatch ist.lfun in
               eval_with_fail { ist with lfun=lfun } lz g mt
             with e ->
+              let e = Errors.push e in
               debugging_exception_step ist false e (fun () ->
                 str "rule body for pattern" ++
                 pr_constr_pattern_env (pf_env g) c);
@@ -1458,12 +1465,14 @@ and interp_match ist g lz constr lmr =
         "No matching clauses for match.") in
   let (sigma,csr) =
       try interp_ltac_constr ist g constr with e ->
+       let e = Errors.push e in
         debugging_exception_step ist true e
           (fun () -> str "evaluation of the matched expression");
         raise e in
   let ilr = read_match_rule (fst (extract_ltac_constr_values ist (pf_env g))) ist (pf_env g) sigma lmr in
   let res =
      try apply_match ist sigma csr ilr with e ->
+       let e = Errors.push e in
        debugging_exception_step ist true e (fun () -> str "match expression");
        raise e in
   debugging_step ist (fun () ->

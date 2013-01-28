@@ -267,6 +267,7 @@ let parse_format ((loc, str) : lstring) =
     else
       error "Empty format."
   with e ->
+    let e = Errors.push e in
     Loc.raise loc e
 
 (***********************)
@@ -1072,7 +1073,10 @@ let inNotation : notation_obj -> obj =
 let with_lib_stk_protection f x =
   let fs = Lib.freeze () in
   try let a = f x in Lib.unfreeze fs; a
-  with e -> Lib.unfreeze fs; raise e
+  with e ->
+    let e = Errors.push e in
+    let () = Lib.unfreeze fs in
+    raise e
 
 let with_syntax_protection f x =
   with_lib_stk_protection

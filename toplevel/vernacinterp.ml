@@ -55,6 +55,7 @@ let call (opn,converted_args) =
   with
     | Drop -> raise Drop
     | e ->
+        let e = Errors.push e in
         if !Flags.debug then
 	  msg_debug (str"Vernac Interpreter " ++ str !loc);
         raise e

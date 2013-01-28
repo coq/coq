@@ -1791,11 +1791,12 @@ let interp c =
     interp c; Locality.check_locality ();
     Flags.program_mode := mode;
     true
-  with
+  with e ->
+    let e = Errors.push e in
+    match e with
     | UnsafeSuccess ->
         Flags.program_mode := mode;
         false
     | e ->
-    Flags.program_mode := mode;
-    raise e
-
+      Flags.program_mode := mode;
+      raise e

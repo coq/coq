@@ -1984,6 +1984,7 @@ let setoid_proof gl ty fn fallback =
     with e ->
       try fallback gl
       with Hipattern.NoEquationFound ->
+          let e = Errors.push e in
 	  match e with
 	  | Not_found ->
 	      let rel, args = decompose_app_rel env (project gl) (pf_concl gl) in

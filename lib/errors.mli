@@ -11,6 +11,14 @@ open Pp
 (** This modules implements basic manipulations of errors for use
     throughout Coq's code. *)
 
+(** {6 Error handling} *)
+
+val push : exn -> exn
+(** Alias for [Backtrace.push_exn]. *)
+
+val reraise : exn -> 'a
+(** Alias for [Backtrace.reraise]. *)
+
 (** {6 Generic errors.}
 
  [Anomaly] is used for system errors and [UserError] for the
@@ -85,3 +93,6 @@ val print_no_report : exn -> Pp.std_ppcmds
 (** Same as [print], except that anomalies are not printed but re-raised
     (used for the Fail command) *)
 val print_no_anomaly : exn -> Pp.std_ppcmds
+
+(** Enable registering of backtrace information. *)
+val record_backtrace : unit -> unit

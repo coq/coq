@@ -8,26 +8,35 @@
 
 open Pp
 
+(** Aliases *)
+
+let push = Backtrace.push_exn
+
+let reraise = Backtrace.reraise
+
 (* Errors *)
 
-type backtrace = string option
-
-exception Anomaly of string option * std_ppcmds * backtrace (* System errors *)
-
-let get_backtrace () =
-  if !Flags.debug then Some (Printexc.get_backtrace ())
-  else None
+exception Anomaly of string option * std_ppcmds * Backtrace.t (* System errors *)
 
 let make_anomaly ?label pp =
-  let bt = get_backtrace () in
+  let bt =
+    if !Flags.debug then Backtrace.empty
+    else Backtrace.none
+  in
   Anomaly (label, pp, bt)
 
 let anomaly_gen label pp =
-  let bt = get_backtrace () in
+  let bt =
+    if !Flags.debug then Backtrace.empty
+    else Backtrace.none
+  in
   raise (Anomaly (label, pp, bt))
 
 let anomaly ?loc ?label pp =
-  let bt = get_backtrace () in
+  let bt =
+    if !Flags.debug then Backtrace.empty
+    else Backtrace.none
+  in
   match loc with
   | None -> raise (Anomaly (label, pp, bt))
   | Some loc ->
@@ -96,7 +105,10 @@ let raw_anomaly e = match e with
 
 let print_anomaly askreport e =
   let bt_info = match e with
-  | Anomaly (_, _, Some bt) -> (fnl () ++ hov 0 (str bt))
+  | Anomaly (_, _, Some bt) ->
+    let pr_frame f = str (Backtrace.print_frame f) in
+    let bt = prlist_with_sep fnl pr_frame bt in
+    fnl () ++ hov 0 bt
   | _ -> mt ()
   in
   let info =
@@ -127,3 +139,21 @@ let _ = register_handler begin function
   | _ -> raise Unhandled
 end
 
+let rec anomaly_handler = function
+| Anomaly (lbl, pp, bt) ->
+  let bt = Backtrace.push bt in
+  Some (Anomaly (lbl, pp, bt))
+| Loc.Exc_located (loc, e) ->
+  begin match anomaly_handler e with
+  | None -> None
+  | Some e -> Some (Loc.Exc_located (loc, e))
+  end
+| Error_in_file (s, data, e) ->
+  begin match anomaly_handler e with
+  | None -> None
+  | Some e -> Some (Error_in_file (s, data, e))
+  end
+| e -> None
+
+let record_backtrace () =
+  Backtrace.register_backtrace_handler anomaly_handler

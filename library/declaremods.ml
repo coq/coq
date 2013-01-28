@@ -1006,7 +1006,9 @@ let protect_summaries f =
   try f fs
   with e ->
     (* Something wrong: undo the whole process *)
-    Summary.unfreeze_summaries fs; raise e
+    let e = Errors.push e in
+    let () = Summary.unfreeze_summaries fs in
+    raise e
 
 let declare_include interp_struct me_asts =
   protect_summaries

@@ -166,7 +166,9 @@ let error_of_exn xparser = function
   | NoMoreData -> NodeExpected
   | Internal_error e -> e
   | Xml_lexer.Error e -> convert e
-  | e -> raise e
+  | e ->
+    (*let e = Errors.push e in: We do not record backtrace here. *)
+    raise e
 
 let do_parse xparser =
 	try

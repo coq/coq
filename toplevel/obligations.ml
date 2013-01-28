@@ -736,6 +736,7 @@ let solve_by_tac evi t =
 	const.Entries.const_entry_body;
       const.Entries.const_entry_body
   with e ->
+    let e = Errors.push e in
     Pfedit.delete_current_proof();
     raise e
 
@@ -818,13 +819,15 @@ and solve_obligation_by_tac prg obls i tac =
 	      obls.(i) <- declare_obligation prg obl t;
 	      true
 	  else false
-	with
-	| Loc.Exc_located(_, Proof_type.LtacLocated (_, Refiner.FailError (_, s)))
-	| Loc.Exc_located(_, Refiner.FailError (_, s))
-	| Refiner.FailError (_, s) ->
-	    user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)
-	| e when Errors.is_anomaly e -> raise e
-	| e -> false
+	with e ->
+          let e = Errors.push e in
+          match e with
+          | Loc.Exc_located(_, Proof_type.LtacLocated (_, Refiner.FailError (_, s)))
+          | Loc.Exc_located(_, Refiner.FailError (_, s))
+          | Refiner.FailError (_, s) ->
+              user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)
+          | e when is_anomaly e -> raise e
+          | e -> false
 
 and solve_prg_obligations prg ?oblset tac =
   let obls, rem = prg.prg_obligations in

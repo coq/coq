@@ -334,6 +334,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
 	    rewrite_side_tac (!general_rewrite_clause cls
 				 lft2rgt occs (c,l) ~new_goals:[]) tac gl
 	  with e -> (* Try to see if there's an equality hidden *)
+            let e = Errors.push e in
 	    let env' = push_rel_context rels env in
 	    let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
 	      match match_with_equality_type t' with

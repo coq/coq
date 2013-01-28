@@ -142,7 +142,9 @@ let extern_intern ?(warn=true) magic suffix =
         marshal_out channel val_0;
         close_out channel
       with e ->
-	begin try_remove filename; raise e end
+	let e = Errors.push e in
+        let () = try_remove filename in
+        raise e
     with Sys_error s -> error ("System error: " ^ s)
   and intern_state paths name =
     try

@@ -714,6 +714,7 @@ let intern_applied_reference intern env namedctx lvar args = function
 	let r,args2 = intern_non_secvar_qualid loc qid intern env lvar args in
 	find_appl_head_data r, args2
       with e ->
+        let e = Errors.push e in
 	(* Extra allowance for non globalizing functions *)
 	if !interning_grammar || env.unb then
 	  (GVar (loc,id), [], [], []),args

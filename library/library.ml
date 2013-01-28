@@ -371,12 +371,15 @@ let explain_locate_library_error qid = function
   | LibNotFound ->
       errorlabstrm "load_absolute_library_from"
       (str"Cannot find library " ++ pr_qualid qid ++ str" in loadpath")
-  | e -> raise e
+  | e ->
+    let e = Errors.push e in
+    raise e
 
 let try_locate_absolute_library dir =
   try
     locate_absolute_library dir
   with e ->
+    let e = Errors.push e in
     explain_locate_library_error (qualid_of_dirpath dir) e
 
 let try_locate_qualified_library (loc,qid) =
@@ -384,6 +387,7 @@ let try_locate_qualified_library (loc,qid) =
     let (_,dir,f) = locate_qualified_library (Flags.is_verbose()) qid in
     dir,f
   with e ->
+    let e = Errors.push e in
     explain_locate_library_error qid e
 
 
@@ -672,7 +676,10 @@ let save_library_to dir f =
       | _ -> anomaly (Pp.str "Library compilation failure")
     end
   with e ->
-    msg_warning (str ("Removed file "^f')); close_out ch; Sys.remove f';
+    let e = Errors.push e in
+    let () = msg_warning (str ("Removed file "^f')) in
+    let () = close_out ch in
+    let () = Sys.remove f' in
     raise e
 
 (************************************************************************)

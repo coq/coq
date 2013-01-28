@@ -284,6 +284,7 @@ let rec vernac_com interpfun checknav (loc,com) =
 	    restore_translator_coqdoc st;
             status
 	  with e ->
+            let e = Errors.push e in
 	    restore_translator_coqdoc st;
 	    raise e
 	end
@@ -298,7 +299,9 @@ let rec vernac_com interpfun checknav (loc,com) =
 	  (* If the command actually works, ignore its effects on the state *)
 	  States.with_state_protection
 	    (fun v -> ignore (interp v); raise HasNotFailed) v
-	with e -> match real_error e with
+	with e ->
+          let e = Errors.push e in
+          match real_error e with
 	  | HasNotFailed ->
 	      errorlabstrm "Fail" (str "The command has not failed !")
 	  | e ->
@@ -331,7 +334,10 @@ let rec vernac_com interpfun checknav (loc,com) =
             in
 	    restore_timeout psh;
             status
-	  with e -> restore_timeout psh; raise e
+	  with e ->
+            let e = Errors.push e in
+            restore_timeout psh;
+            raise e
   in
     try
       checknav loc com;
@@ -341,6 +347,7 @@ let rec vernac_com interpfun checknav (loc,com) =
       let com = if !time then VernacTime com else com in
       interp com
     with e ->
+      let e = Errors.push e in
       Format.set_formatter_out_channel stdout;
       raise (DuringCommandInterp (loc, e))
 
@@ -375,6 +382,7 @@ and read_vernac_file verbosely s =
     done;
     assert false
   with e ->   (* whatever the exception *)
+    let e = Errors.push e in
     Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
     match real_error e with
@@ -420,6 +428,7 @@ let load_vernac verb file =
     let _ = read_vernac_file verb file in
     if !Flags.beautify_file then close_out !chan_beautify;
   with e ->
+    let e = Errors.push e in
     if !Flags.beautify_file then close_out !chan_beautify;
     raise_with_file file e
 
