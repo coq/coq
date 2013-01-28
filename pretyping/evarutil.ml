@@ -1492,7 +1492,10 @@ let solve_candidates conv_algo env evd (evk,argsv as ev) rhs =
           (filter_compatible_candidates conv_algo env evd evi args rhs) l in
       match l' with
       | [] -> error_cannot_unify env evd (mkEvar ev, rhs)
-      | [c,evd] -> Evd.define evk c evd
+      | [c,evd] ->
+          (* solve_candidates might have been called recursively in the mean *)
+          (* time and the evar been solved by the filtering process *)
+          if Evd.is_undefined evd evk then Evd.define evk c evd else evd
       | l when List.length l < List.length l' ->
           let candidates = List.map fst l in
           restrict_evar evd evk None (Some candidates)
