@@ -92,7 +92,7 @@ let kind_of_head env t =
     | [] ->
       let () = assert (not b) in
       aux (k + 1) [] c b
-    | h :: l -> aux (k + 1) l (subst1 h c) b
+    | h :: l -> aux k l (subst1 h c) b
     end
   | LetIn _ -> assert false
   | Meta _ | Evar _ -> NotImmediatelyComputableHead
