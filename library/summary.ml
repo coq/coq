@@ -29,7 +29,7 @@ let internal_declare_summary sumname sdecl =
     init_function = dyn_init }
   in
   if Hashtbl.mem summaries sumname then
-    anomalylabstrm "Summary.declare_summary"
+    anomaly ~label:"Summary.declare_summary"
       (str "Cannot declare a summary twice: " ++ str sumname);
   Hashtbl.add summaries sumname ddecl
 

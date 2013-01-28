@@ -26,7 +26,7 @@ let make_dir l = Dir_path.make (List.map Id.of_string (List.rev l))
 let find_reference locstr dir s =
   let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
   try global_of_extended_global (Nametab.extended_global_of_path sp)
-  with Not_found -> anomaly (locstr^": cannot find "^(string_of_path sp))
+  with Not_found -> anomaly ~label:locstr (str "cannot find " ++ Libnames.pr_path sp)
 
 let coq_reference locstr dir s = find_reference locstr ("Coq"::dir) s
 let coq_constant locstr dir s = constr_of_global (coq_reference locstr dir s)
@@ -50,12 +50,12 @@ let gen_constant_in_modules locstr dirs s =
   match these with
     | [x] -> constr_of_global x
     | [] ->
-	anomalylabstrm "" (str (locstr^": cannot find "^s^
+	anomaly ~label:locstr (str ("cannot find "^s^
 	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
 	prlist_with_sep pr_comma pr_dirpath dirs)
     | l ->
-	anomalylabstrm ""
-	(str (locstr^": found more than once object of name "^s^
+	anomaly ~label:locstr
+	(str ("found more than once object of name "^s^
 	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
 	prlist_with_sep pr_comma pr_dirpath dirs)
 
@@ -183,7 +183,7 @@ let build_bool_type () =
     andb_prop =  init_constant ["Datatypes"] "andb_prop";
     andb_true_intro =  init_constant ["Datatypes"] "andb_true_intro" }
 
-let build_sigma_set () = anomaly "Use build_sigma_type"
+let build_sigma_set () = anomaly (Pp.str "Use build_sigma_type")
 
 let build_sigma_type () =
   { proj1 = init_constant ["Specif"] "projT1";
@@ -369,7 +369,7 @@ let coq_eq_ref      = lazy (init_reference ["Logic"] "eq")
 let coq_identity_ref = lazy (init_reference ["Datatypes"] "identity")
 let coq_jmeq_ref     = lazy (gen_reference "Coqlib" ["Logic";"JMeq"] "JMeq")
 let coq_eq_true_ref = lazy (gen_reference "Coqlib" ["Init";"Datatypes"] "eq_true")
-let coq_existS_ref  = lazy (anomaly "use coq_existT_ref")
+let coq_existS_ref  = lazy (anomaly (Pp.str "use coq_existT_ref"))
 let coq_existT_ref  = lazy (init_reference ["Specif"] "existT")
 let coq_exist_ref  = lazy (init_reference ["Specif"] "exist")
 let coq_not_ref     = lazy (init_reference ["Logic"] "not")

@@ -14,6 +14,7 @@
 (* Initial author: Arnaud Spiwack
    Module-traversing code: Pierre Letouzey *)
 
+open Pp
 open Errors
 open Util
 open Names
@@ -147,7 +148,7 @@ let lookup_constant_in_impl cst fallback =
        - The label has not been found in the structure. This is an error *)
     match fallback with
       | Some cb -> cb
-      | None -> anomaly ("Print Assumption: unknown constant "^string_of_con cst)
+      | None -> anomaly (str "Print Assumption: unknown constant " ++ pr_con cst)
 
 let lookup_constant cst =
   try

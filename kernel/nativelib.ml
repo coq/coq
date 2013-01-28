@@ -19,7 +19,7 @@ open Envars
 used by the native compiler. *)
 
 let get_load_paths =
-  ref (fun _ -> anomaly "get_load_paths not initialized" : unit -> string list)
+  ref (fun _ -> anomaly (Pp.str "get_load_paths not initialized") : unit -> string list)
 
 let open_header = ["Nativevalues";
                    "Nativecode";
@@ -85,7 +85,7 @@ let call_linker ~fatal prefix f upds =
     register_native_file prefix
    with | Dynlink.Error e ->
           let msg = "Dynlink error, " ^ Dynlink.error_message e in
-          if fatal then anomaly msg else Pp.msg_warning (Pp.str msg)
+          if fatal then anomaly (Pp.str msg) else Pp.msg_warning (Pp.str msg)
         | _ -> let msg = "Dynlink error" in
-          if fatal then anomaly msg else Pp.msg_warning (Pp.str msg));
+          if fatal then anomaly (Pp.str msg) else Pp.msg_warning (Pp.str msg));
   match upds with Some upds -> update_locations upds | _ -> ()

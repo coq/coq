@@ -289,7 +289,7 @@ let kind_of_variable id =
     | IsAssumption Conjectural -> "VARIABLE","Conjecture"
     | IsDefinition Definition -> "VARIABLE","LocalDefinition"
     | IsProof _ -> "VARIABLE","LocalFact"
-    | _ -> Errors.anomaly "Unsupported variable kind"
+    | _ -> Errors.anomaly (Pp.str "Unsupported variable kind")
 ;;
 
 let kind_of_constant kn =
@@ -423,7 +423,7 @@ let print_ref qid fn =
 (* pretty prints via Xml.pp the proof in progress on dest     *)
 let show_pftreestate internal fn (kind,pftst) id =
  if true then
-   Errors.anomaly "Xmlcommand.show_pftreestate is not supported in this version."
+   Errors.anomaly (Pp.str "Xmlcommand.show_pftreestate is not supported in this version.")
 
 let show fn =
  let pftst = Pfedit.get_pftreestate () in
@@ -519,7 +519,7 @@ let _ =
 	  let options = " --html -s --body-only --no-index --latin1 --raw-comments" in
           let command cmd =
            if Sys.command cmd <> 0 then
-            Errors.anomaly ("Error executing \"" ^ cmd ^ "\"")
+            Errors.anomaly (Pp.str ("Error executing \"" ^ cmd ^ "\""))
           in
            command (coqdoc^options^" -o "^fn^".xml "^fn^".v");
            command ("rm "^fn^".v "^fn^".glob");

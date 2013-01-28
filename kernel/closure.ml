@@ -797,7 +797,7 @@ let rec drop_parameters depth n argstk =
     | [] -> (* we know that n < stack_args_size(argstk) (if well-typed term) *)
 	if Int.equal n 0 then []
 	else anomaly
-	  "ill-typed term: found a match on a partially applied constructor"
+	  (Pp.str "ill-typed term: found a match on a partially applied constructor")
     | _ -> assert false
 	(* strip_update_shift_app only produces Zapp and Zshift items *)
 

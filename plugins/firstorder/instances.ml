@@ -75,7 +75,7 @@ let match_one_quantified_hyp setref seq lf=
       Left(Lforall(i,dom,triv))|Right(Rexists(i,dom,triv))->
 	if do_sequent setref triv lf.id seq i dom lf.atoms then
 	  setref:=IS.add ((Phantom dom),lf.id) !setref
-    | _ ->anomaly "can't happen"
+    | _ -> anomaly (Pp.str "can't happen")
 
 let give_instances lf seq=
   let setref=ref IS.empty in
@@ -125,7 +125,7 @@ let mk_open_instance id gl m t=
 	  GLambda(loc,name,k,_,t0)->
 	    let t1=raux (n-1) t0 in
 	      GLambda(loc,name,k,GHole (Loc.ghost,Evar_kinds.BinderType name),t1)
-	| _-> anomaly "can't happen" in
+	| _-> anomaly (Pp.str "can't happen") in
   let ntt=try
     Pretyping.understand evmap env (raux m rawt)
   with _ ->

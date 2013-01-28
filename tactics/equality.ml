@@ -946,7 +946,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
     else
       let (a,p_i_minus_1) = match whd_beta_stack !evdref p_i with
 	| (_sigS,[a;p]) -> (a,p)
- 	| _ -> anomaly "sig_clausal_form: should be a sigma type" in
+ 	| _ -> anomaly ~label:"sig_clausal_form" (Pp.str "should be a sigma type") in
       let ev = Evarutil.e_new_evar evdref env a in
       let rty = beta_applist(p_i_minus_1,[ev]) in
       let tuple_tail = sigrec_clausal_form (siglen-1) rty in
@@ -960,7 +960,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
               applist(exist_term,[w_type;p_i_minus_1;w;tuple_tail])
             else
               error "Cannot solve a unification problem."
-	| None -> anomaly "Not enough components to build the dependent tuple"
+	| None -> anomaly (Pp.str "Not enough components to build the dependent tuple")
   in
   let scf = sigrec_clausal_form siglen ty in
   Evarutil.nf_evar !evdref scf

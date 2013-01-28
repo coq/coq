@@ -275,16 +275,16 @@ let is_status_implicit = function
   | _ -> true
 
 let name_of_implicit = function
-  | None -> anomaly "Not an implicit argument"
+  | None -> anomaly (Pp.str "Not an implicit argument")
   | Some (id,_,_) -> id
 
 let maximal_insertion_of = function
   | Some (_,_,(b,_)) -> b
-  | None -> anomaly "Not an implicit argument"
+  | None -> anomaly (Pp.str "Not an implicit argument")
 
 let force_inference_of = function
   | Some (_, _, (_, b)) -> b
-  | None -> anomaly "Not an implicit argument"
+  | None -> anomaly (Pp.str "Not an implicit argument")
 
 (* [in_ctx] means we know the expected type, [n] is the index of the argument *)
 let is_inferable_implicit in_ctx n = function
@@ -308,7 +308,7 @@ let positions_of_implicits (_,impls) =
 
 let rec prepare_implicits f = function
   | [] -> []
-  | (Anonymous, Some _)::_ -> anomaly "Unnamed implicit"
+  | (Anonymous, Some _)::_ -> anomaly (Pp.str "Unnamed implicit")
   | (Name id, Some imp)::imps ->
       let imps' = prepare_implicits f imps in
       Some (id,imp,(set_maximality imps' f.maximal,true)) :: imps'
@@ -476,7 +476,7 @@ let implicits_of_global ref =
       List.map2 (fun (t, il) rl -> t, List.map2 rename il rl) l rename_l
     with Not_found -> l
     | Invalid_argument _ ->
-        anomaly "renamings list and implicits list have different lenghts"
+        anomaly (Pp.str "renamings list and implicits list have different lenghts")
   with Not_found -> [DefaultImpArgs,[]]
 
 let cache_implicits_decl (ref,imps) =

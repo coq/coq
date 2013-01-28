@@ -641,7 +641,7 @@ let rec add_args id new_args b =
 	    CAppExpl(Loc.ghost,(None,r),new_args)
 	| _ -> b
       end
-  | CFix  _  | CCoFix _ -> anomaly "add_args : todo"
+  | CFix  _  | CCoFix _ -> anomaly ~label:"add_args " (Pp.str "todo")
   | CProdN(loc,nal,b1) ->
       CProdN(loc,
 	     List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args b2)) nal,
@@ -692,10 +692,10 @@ let rec add_args id new_args b =
       CRecord (loc,
 	       (match w with Some w -> Some (add_args id new_args w) | _ -> None),
 	       List.map (fun (e,o) -> e, add_args id new_args o) pars)
-  | CNotation _ -> anomaly "add_args : CNotation"
-  | CGeneralization _ -> anomaly "add_args : CGeneralization"
+  | CNotation _ -> anomaly ~label:"add_args " (Pp.str "CNotation")
+  | CGeneralization _ -> anomaly ~label:"add_args " (Pp.str "CGeneralization")
   | CPrim _ -> b
-  | CDelimiters _ -> anomaly "add_args : CDelimiters"
+  | CDelimiters _ -> anomaly ~label:"add_args " (Pp.str "CDelimiters")
 exception Stop of  Constrexpr.constr_expr
 
 
@@ -736,7 +736,7 @@ let rec chop_n_arrow n t =
 	      chop_n_arrow new_n t'
 	    with Stop t -> t
 	  end
-      | _ -> anomaly "Not enough products"
+      | _ -> anomaly (Pp.str "Not enough products")
 
 
 let rec get_args b t : Constrexpr.local_binder list *

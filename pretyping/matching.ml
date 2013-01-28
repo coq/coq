@@ -100,7 +100,7 @@ let extract_bound_vars =
   | (n :: l, (na1, na2, _) :: stk) when Int.equal k n ->
       begin match na1, na2 with
       | Name id1, Name _ -> list_insert id1 (aux (k + 1) (l, stk))
-      | Name _, Anonymous -> anomaly "Unnamed bound variable"
+      | Name _, Anonymous -> anomaly (Pp.str "Unnamed bound variable")
       | Anonymous, _ -> raise PatternMatchingFailure
       end
   | (l, _ :: stk) -> aux (k + 1) (l, stk)

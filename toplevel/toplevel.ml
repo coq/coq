@@ -86,7 +86,7 @@ let reset_input_buffer ic ibuf =
 
 let get_bols_of_loc ibuf (bp,ep) =
   let add_line (b,e) lines =
-    if b < 0 or e < b then anomaly "Bad location";
+    if b < 0 or e < b then anomaly (Pp.str "Bad location");
     match lines with
       | ([],None) -> ([], Some (b,e))
       | (fl,oe) -> ((b,e)::fl, oe)

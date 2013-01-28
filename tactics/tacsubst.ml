@@ -284,8 +284,8 @@ and subst_tacarg subst = function
 	| "tactic" | "value" -> x
         | "constr" ->
           TacDynamic(the_loc, constr_in (subst_mps subst (constr_out t)))
-	| s -> Errors.anomaly_loc (dloc, "Tacinterp.val_interp",
-                 str "Unknown dynamic: <" ++ str s ++ str ">"))
+	| s -> Errors.anomaly ~loc:dloc ~label:"Tacinterp.val_interp"
+                 (str "Unknown dynamic: <" ++ str s ++ str ">"))
 
 (* Reads the rules of a Match Context or a Match *)
 and subst_match_rule subst = function

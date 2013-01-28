@@ -116,7 +116,7 @@ let show_script () =
   msg_notice (v 0 (Pp.prlist_with_sep Pp.fnl (fun x -> x) indented_cmds))
 
 let show_thesis () =
-     msg_error (anomaly "TODO" )
+     msg_error (anomaly (Pp.str "TODO") )
 
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)

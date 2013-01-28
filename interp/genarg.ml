@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Pp
 open Util
 open Glob_term
 open Constrexpr
@@ -238,7 +239,7 @@ type ('a,'b) abstract_argument_type = argument_type
 
 let create_arg v s =
   if List.mem_assoc s !dyntab then
-    Errors.anomaly ("Genarg.create: already declared generic argument " ^ s);
+    Errors.anomaly ~label:"Genarg.create" (str ("already declared generic argument " ^ s));
   let t = ExtraArgType s in
   dyntab := (s,Option.map (in_gen t) v) :: !dyntab;
   (t,t,t)

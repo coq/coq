@@ -143,8 +143,8 @@ let super = function
   | Atom u ->
       Max ([],[u])
   | Max _ ->
-      anomaly ("Cannot take the successor of a non variable universe:\n"^
-               "(maybe a bugged tactic)")
+      anomaly (str "Cannot take the successor of a non variable universe" ++ spc () ++
+               str "(maybe a bugged tactic)")
 
 (* Returns the formal universe that is greater than the universes u and v.
    Used to type the products. *)
@@ -224,8 +224,8 @@ let repr g u =
   let rec repr_rec u =
     let a =
       try UniverseLMap.find u g
-      with Not_found -> anomalylabstrm "Univ.repr"
-	  (str"Universe " ++ pr_uni_level u ++ str" undefined")
+      with Not_found -> anomaly ~label:"Univ.repr"
+	  (str "Universe" ++ spc () ++ pr_uni_level u ++ spc () ++ str "undefined")
     in
     match a with
       | Equiv v -> repr_rec v
@@ -432,7 +432,7 @@ let check_eq g u v =
         (* TODO: remove elements of lt in le! *)
         compare_list (check_equal g) ule vle &&
         compare_list (check_equal g) ult vlt
-    | _ -> anomaly "check_eq" (* not complete! (Atom(u) = Max([u],[]) *)
+    | _ -> anomaly (str "check_eq") (* not complete! (Atom(u) = Max([u],[]) *)
 
 let check_leq g u v =
   match u,v with
@@ -440,7 +440,7 @@ let check_leq g u v =
     | Max(le,lt), Atom vl ->
         List.for_all (fun ul -> check_smaller g false ul vl) le &&
         List.for_all (fun ul -> check_smaller g true ul vl) lt
-    | _ -> anomaly "check_leq"
+    | _ -> anomaly (str "check_leq")
 
 (** Enforcing new constraints : [setlt], [setleq], [merge], [merge_disc] *)
 
@@ -483,7 +483,7 @@ let merge g arcu arcv =
       else (max_rank, old_max_rank, best_arc, arc::rest)
     in
     match between g arcu arcv with
-      | [] -> anomaly "Univ.between"
+      | [] -> anomaly (str "Univ.between")
       | arc::rest ->
         let (max_rank, old_max_rank, best_arc, rest) =
           List.fold_left best_ranked (arc.rank, min_int, arc, []) rest in
@@ -540,7 +540,7 @@ let enforce_univ_leq u v g =
     | LT p -> error_inconsistency Le u v (List.rev p)
     | LE _ -> merge g arcv arcu
     | NLE -> fst (setleq g arcu arcv)
-    | EQ -> anomaly "Univ.compare"
+    | EQ -> anomaly (Pp.str "Univ.compare")
 
 (* enforc_univ_eq : UniverseLevel.t -> UniverseLevel.t -> unit *)
 (* enforc_univ_eq u v will force u=v if possible, will fail otherwise *)
@@ -556,7 +556,7 @@ let enforce_univ_eq u v g =
            | LT p -> error_inconsistency Eq u v (List.rev p)
            | LE _ -> merge g arcv arcu
            | NLE -> merge_disc g arcu arcv
-           | EQ -> anomaly "Univ.compare")
+           | EQ -> anomaly (Pp.str "Univ.compare"))
 
 (* enforce_univ_lt u v will force u<v if possible, will fail otherwise *)
 let enforce_univ_lt u v g =
@@ -569,7 +569,7 @@ let enforce_univ_lt u v g =
     | NLE ->
       (match compare_neq false g arcv arcu with
 	  NLE -> fst (setlt g arcu arcv)
-	| EQ -> anomaly "Univ.compare"
+	| EQ -> anomaly (Pp.str "Univ.compare")
 	| (LE p|LT p) -> error_inconsistency Lt u v (List.rev p))
 
 (* Constraints and sets of consrtaints. *)
@@ -615,14 +615,14 @@ let enforce_leq u v c =
   | Max (gel,gtl), Atom v ->
       let d = List.fold_right (fun u -> constraint_add_leq u v) gel c in
       List.fold_right (fun u -> Constraint.add (u,Lt,v)) gtl d
-  | _ -> anomaly "A universe bound can only be a variable"
+  | _ -> anomaly (Pp.str "A universe bound can only be a variable")
 
 let enforce_eq u v c =
   match (u,v) with
     | Atom u, Atom v ->
       (* We discard trivial constraints like u=u *)
       if UniverseLevel.equal u v then c else Constraint.add (u,Eq,v) c
-    | _ -> anomaly "A universe comparison can only happen between variables"
+    | _ -> anomaly (Pp.str "A universe comparison can only happen between variables")
 
 let merge_constraints c g =
   Constraint.fold enforce_constraint c g
@@ -876,7 +876,7 @@ let is_direct_sort_constraint s v = match s with
 
 let solve_constraints_system levels level_bounds =
   let levels =
-    Array.map (Option.map (function Atom u -> u | _ -> anomaly "expects Atom"))
+    Array.map (Option.map (function Atom u -> u | _ -> anomaly (Pp.str "expects Atom")))
       levels in
   let v = Array.copy level_bounds in
   let nind = Array.length v in
@@ -899,7 +899,7 @@ let subst_large_constraint u u' v =
       if is_direct_constraint u v then sup u' (remove_large_constraint u v)
       else v
   | _ ->
-      anomaly "expect a universe level"
+      anomaly (Pp.str "expect a universe level")
 
 let subst_large_constraints =
   List.fold_right (fun (u,u') -> subst_large_constraint u u')
@@ -910,7 +910,7 @@ let no_upper_constraints u cst =
     let test (u1, _, _) =
       not (Int.equal (UniverseLevel.compare u1 u) 0) in
     Constraint.for_all test cst
-  | Max _ -> anomaly "no_upper_constraints"
+  | Max _ -> anomaly (Pp.str "no_upper_constraints")
 
 (* Is u mentionned in v (or equals to v) ? *)
 
@@ -918,7 +918,7 @@ let univ_depends u v =
   match u, v with
     | Atom u, Atom v -> UniverseLevel.equal u v
     | Atom u, Max (gel,gtl) -> List.mem u gel || List.mem u gtl
-    | _ -> anomaly "univ_depends given a non-atomic 1st arg"
+    | _ -> anomaly (Pp.str "univ_depends given a non-atomic 1st arg")
 
 (* Pretty-printing *)
 

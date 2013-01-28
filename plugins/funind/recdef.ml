@@ -73,8 +73,8 @@ let def_of_const t =
              | Some c -> Declarations.force c
 	     | _ -> assert false)
        with _ ->
-	 anomaly ("Cannot find definition of constant "^
-		    (Id.to_string (Label.to_id (con_label sp))))
+	 anomaly (str "Cannot find definition of constant " ++
+		    (Id.print (Label.to_id (con_label sp))))
       )
      |_ -> assert false
 
@@ -91,7 +91,7 @@ let constant sl s =
 	       (Id.of_string s)));;
 let const_of_ref = function
     ConstRef kn -> kn
-  | _ -> anomaly "ConstRef expected"
+  | _ -> anomaly (Pp.str "ConstRef expected")
 
 
 let nf_zeta env =
@@ -426,7 +426,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) =
 	travel jinfo new_continuation_tac 
 	  {expr_info with info = b; is_final=false}
       end
-    | Rel _ -> anomaly "Free var in goal conclusion !"
+    | Rel _ -> anomaly (Pp.str "Free var in goal conclusion !")
     | Prod _ -> 
       begin
 	try
@@ -1115,7 +1115,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
       let f_id =
 	match f_name with
 	  | Name f_id -> next_ident_away_in_goal f_id ids
-	  | Anonymous -> anomaly "Anonymous function"
+	  | Anonymous -> anomaly (Pp.str "Anonymous function")
       in
       let n_names_types,_ = decompose_lam_n nb_args body1 in
       let n_ids,ids =
@@ -1125,7 +1125,7 @@ let whole_start (concl_tac:tactic) nb_args is_mes func input_type relation rec_a
 	       | Name id ->
 		   let n_id = next_ident_away_in_goal id ids in
 		   n_id::n_ids,n_id::ids
-	       | _ -> anomaly "anonymous argument"
+	       | _ -> anomaly (Pp.str "anonymous argument")
 	  )
 	  ([],(f_id::ids))
 	  n_names_types
@@ -1249,7 +1249,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     | Some s -> s
     | None   ->
 	try (add_suffix current_proof_name "_subproof")
-	with _ -> anomaly "open_new_goal with an unamed theorem"
+	with _ -> anomaly (Pp.str "open_new_goal with an unamed theorem")
   in
   let sign = initialize_named_context_for_proof () in
   let na = next_global_ident_away name [] in
@@ -1261,7 +1261,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
       let na_global = Nametab.global na_ref in
       match na_global with
 	  ConstRef c -> is_opaque_constant c
-	| _ -> anomaly "equation_lemma: not a constant"
+	| _ -> anomaly ~label:"equation_lemma" (Pp.str "not a constant")
     in
     let lemma = mkConst (Lib.make_con na) in
     ref_ := Some lemma ;
@@ -1405,7 +1405,7 @@ let (com_eqn : int -> Id.t ->
     let opacity =
       match terminate_ref with
 	| ConstRef c -> is_opaque_constant c
-	| _ -> anomaly "terminate_lemma: not a constant"
+	| _ -> anomaly ~label:"terminate_lemma" (Pp.str "not a constant")
     in
     let (evmap, env) = Lemmas.get_current_context() in
     let f_constr = constr_of_global f_ref in
@@ -1499,7 +1499,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
 	begin
 	  if do_observe ()
 	  then msg_debug (str "Cannot create equation Lemma " ++ Errors.print e)
-	  else anomaly "Cannot create equation Lemma"
+	  else anomaly (Pp.str "Cannot create equation Lemma")
 	  ;
 	  true
 	end
@@ -1533,7 +1533,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   with e ->
     begin
       (try ignore (Backtrack.backto previous_label) with _ -> ());
-      (*       anomaly "Cannot create termination Lemma" *)
+      (*       anomaly (Pp.str "Cannot create termination Lemma") *)
       raise e
     end
 

@@ -180,7 +180,7 @@ let infer_constructor_packet env_ar_par params lc =
    conditions. *)
 let typecheck_inductive env mie =
   let () = match mie.mind_entry_inds with
-  | [] -> anomaly "empty inductive types declaration"
+  | [] -> anomaly (Pp.str "empty inductive types declaration")
   | _ -> ()
   in
   (* Check unicity of names *)
@@ -327,11 +327,11 @@ let failwith_non_pos n ntypes c =
 
 let failwith_non_pos_vect n ntypes v =
   Array.iter (failwith_non_pos n ntypes) v;
-  anomaly "failwith_non_pos_vect: some k in [n;n+ntypes-1] should occur"
+  anomaly ~label:"failwith_non_pos_vect" (Pp.str "some k in [n;n+ntypes-1] should occur")
 
 let failwith_non_pos_list n ntypes l =
   List.iter (failwith_non_pos n ntypes) l;
-  anomaly "failwith_non_pos_list: some k in [n;n+ntypes-1] should occur"
+  anomaly ~label:"failwith_non_pos_list" (Pp.str "some k in [n;n+ntypes-1] should occur")
 
 (* Check the inductive type is called with the expected parameters *)
 let check_correct_par (env,n,ntypes,_) hyps l largs =

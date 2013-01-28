@@ -460,13 +460,13 @@ fun env field value ->
     match value with
       | Const kn ->  retroknowledge add_int31_op env value 2
 	                               op kn
-      | _ -> anomaly "Environ.register: should be a constant"
+      | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant")
   in
   let add_int31_unop_from_const op =
     match value with
       | Const kn ->  retroknowledge add_int31_op env value 1
 	                               op kn
-      | _ -> anomaly "Environ.register: should be a constant"
+      | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant")
   in
   (* subfunction which completes the function constr_of_int31 above
      by performing the actual retroknowledge operations *)
@@ -481,9 +481,9 @@ fun env field value ->
 		  | Ind i31t ->
 		      Retroknowledge.add_vm_decompile_constant_info rk
 		               value (constr_of_int31 i31t i31bit_type)
-		  | _ -> anomaly "Environ.register: should be an inductive type")
-	    | _ -> anomaly "Environ.register: Int31Bits should be an inductive type")
-      | _ -> anomaly "Environ.register: add_int31_decompilation_from_type called with an abnormal field"
+		  | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type"))
+	    | _ -> anomaly ~label:"Environ.register" (Pp.str "Int31Bits should be an inductive type"))
+      | _ -> anomaly ~label:"Environ.register" (Pp.str "add_int31_decompilation_from_type called with an abnormal field")
   in
   {env with retroknowledge =
   let retroknowledge_with_reactive_info =
@@ -491,7 +491,7 @@ fun env field value ->
     | KInt31 (_, Int31Type) ->
         let i31c = match value with
                      | Ind i31t -> (Construct (i31t, 1))
-		     | _ -> anomaly "Environ.register: should be an inductive type"
+		     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type")
 	in
 	add_int31_decompilation_from_type
 	  (add_vm_before_match_info
@@ -511,14 +511,14 @@ fun env field value ->
 				 | Const kn ->
 				     retroknowledge add_int31_op env value 3
 	                               Cbytecodes.Kdiv21int31 kn
-				 | _ -> anomaly "Environ.register: should be a constant")
+				 | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant"))
     | KInt31 (_, Int31Div) -> add_int31_binop_from_const Cbytecodes.Kdivint31
     | KInt31 (_, Int31AddMulDiv) -> (* this is a ternary operation *)
                                 (match value with
 				 | Const kn ->
 				     retroknowledge add_int31_op env value 3
 	                               Cbytecodes.Kaddmuldivint31 kn
-				 | _ -> anomaly "Environ.register: should be a constant")
+				 | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant"))
     | KInt31 (_, Int31Compare) -> add_int31_binop_from_const Cbytecodes.Kcompareint31
     | KInt31 (_, Int31Head0) -> add_int31_unop_from_const Cbytecodes.Khead0int31
     | KInt31 (_, Int31Tail0) -> add_int31_unop_from_const Cbytecodes.Ktail0int31

@@ -117,7 +117,7 @@ struct
   let inGramObj rawwit = in_typed_entry (unquote rawwit)
   let outGramObj (a:'a raw_abstract_argument_type) o =
     if not (argument_type_eq (type_of_typed_entry o) (unquote a))
-      then anomaly "outGramObj: wrong type";
+      then anomaly ~label:"outGramObj" (str "wrong type");
     (* downcast from grammar_object *)
     Obj.magic (object_of_typed_entry o)
 end
@@ -209,7 +209,7 @@ let grammar_extend e reinit ext =
 let rec remove_grammars n =
   if n>0 then
     (match !camlp4_state with
-       | [] -> anomaly "Pcoq.remove_grammars: too many rules to remove"
+       | [] -> anomaly ~label:"Pcoq.remove_grammars" (Pp.str "too many rules to remove")
        | ByGrammar(g,reinit,ext)::t ->
            grammar_delete g (Option.map of_coq_assoc reinit) ext;
            camlp4_state := t;
@@ -266,7 +266,7 @@ let get_univ s =
   try
     Hashtbl.find univ_tab s
   with Not_found ->
-    anomaly ("Unknown grammar universe: "^s)
+    anomaly (Pp.str ("Unknown grammar universe: "^s))
 
 let get_entry (u, utab) s = Hashtbl.find utab s
 
@@ -621,16 +621,16 @@ let compute_entry allow_create adjust forpat = function
        else weaken_entry Constr.operconstr),
       adjust (n,q), false
   | ETName -> weaken_entry Prim.name, None, false
-  | ETBinder true -> anomaly "Should occur only as part of BinderList"
+  | ETBinder true -> anomaly (Pp.str "Should occur only as part of BinderList")
   | ETBinder false -> weaken_entry Constr.binder, None, false
   | ETBinderList (true,tkl) ->
     let () = match tkl with [] -> () | _ -> assert false in
     weaken_entry Constr.open_binders, None, false
-  | ETBinderList (false,_) -> anomaly "List of entries cannot be registered."
+  | ETBinderList (false,_) -> anomaly (Pp.str "List of entries cannot be registered.")
   | ETBigint -> weaken_entry Prim.bigint, None, false
   | ETReference -> weaken_entry Constr.global, None, false
   | ETPattern -> weaken_entry Constr.pattern, None, false
-  | ETConstrList _ -> anomaly "List of entries cannot be registered."
+  | ETConstrList _ -> anomaly (Pp.str "List of entries cannot be registered.")
   | ETOther (u,n) ->
       let u = get_univ u in
       let e =

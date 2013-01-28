@@ -112,32 +112,32 @@ type symbol =
 let get_value tbl i =
   match tbl.(i) with
     | SymbValue v -> v
-    | _ -> anomaly "get_value failed"
+    | _ -> anomaly (Pp.str "get_value failed")
 
 let get_sort tbl i =
   match tbl.(i) with
     | SymbSort s -> s
-    | _ -> anomaly "get_sort failed"
+    | _ -> anomaly (Pp.str "get_sort failed")
 
 let get_name tbl i =
   match tbl.(i) with
     | SymbName id -> id
-    | _ -> anomaly "get_name failed"
+    | _ -> anomaly (Pp.str "get_name failed")
 
 let get_const tbl i =
   match tbl.(i) with
     | SymbConst kn -> kn
-    | _ -> anomaly "get_const failed"
+    | _ -> anomaly (Pp.str "get_const failed")
 
 let get_match tbl i =
   match tbl.(i) with
     | SymbMatch case_info -> case_info
-    | _ -> anomaly "get_match failed"
+    | _ -> anomaly (Pp.str "get_match failed")
 
 let get_ind tbl i =
   match tbl.(i) with
     | SymbInd ind -> ind
-    | _ -> anomaly "get_ind failed"
+    | _ -> anomaly (Pp.str "get_ind failed")
 
 let symbols_list = ref ([] : symbol list)
 

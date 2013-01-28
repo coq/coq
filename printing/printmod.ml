@@ -203,7 +203,7 @@ let rec print_modexpr env mp locals mexpr = match mexpr with
   | SEBapply _ ->
       let lapp = flatten_app mexpr [] in
       hov 3 (str"(" ++ prlist_with_sep spc (print_modpath locals) lapp ++ str")")
-  | SEBwith (_,_)-> anomaly "Not available yet"
+  | SEBwith (_,_)-> anomaly (Pp.str "Not available yet")
 
 
 let rec printable_body dir =

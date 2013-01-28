@@ -813,7 +813,7 @@ let instance sigma s c =
 let hnf_prod_app env sigma t n =
   match kind_of_term (whd_betadeltaiota env sigma t) with
     | Prod (_,_,b) -> subst1 n b
-    | _ -> anomaly "hnf_prod_app: Need a product"
+    | _ -> anomaly ~label:"hnf_prod_app" (Pp.str "Need a product")
 
 let hnf_prod_appvect env sigma t nl =
   Array.fold_left (hnf_prod_app env sigma) t nl
@@ -824,7 +824,7 @@ let hnf_prod_applist env sigma t nl =
 let hnf_lam_app env sigma t n =
   match kind_of_term (whd_betadeltaiota env sigma t) with
     | Lambda (_,_,b) -> subst1 n b
-    | _ -> anomaly "hnf_lam_app: Need an abstraction"
+    | _ -> anomaly ~label:"hnf_lam_app" (Pp.str "Need an abstraction")
 
 let hnf_lam_appvect env sigma t nl =
   Array.fold_left (hnf_lam_app env sigma) t nl

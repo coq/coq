@@ -234,7 +234,7 @@ let try_interp_ltac_var coerce ist env (loc,id) =
 
 let interp_ltac_var coerce ist env locid =
   try try_interp_ltac_var coerce ist env locid
-  with Not_found -> anomaly ("Detected '" ^ (Id.to_string (snd locid)) ^ "' as ltac var at interning time")
+  with Not_found -> anomaly (str "Detected '" ++ Id.print (snd locid) ++ str "' as ltac var at interning time")
 
 (* Interprets an identifier which must be fresh *)
 let coerce_to_ident fresh env = function
@@ -1121,8 +1121,8 @@ and interp_tacarg ist gl arg =
 	else if String.equal tg "constr" then
         VConstr ([],constr_out t)
 	else
-          anomaly_loc (dloc, "Tacinterp.val_interp",
-		       (str "Unknown dynamic: <" ++ str (Dyn.tag t) ++ str ">"))
+          anomaly ~loc:dloc ~label:"Tacinterp.val_interp"
+		       (str "Unknown dynamic: <" ++ str (Dyn.tag t) ++ str ">")
   in
   !evdref , v
 
@@ -1964,7 +1964,7 @@ let globTacticIn t = TacArg (dloc,TacDynamic (dloc,tactic_in t))
 let tacticIn t =
   globTacticIn (fun ist ->
     try glob_tactic (t ist)
-    with e -> anomalylabstrm "tacticIn"
+    with e -> anomaly ~label:"tacticIn"
       (str "Incorrect tactic expression. Received exception is:" ++
        Errors.print e))
 

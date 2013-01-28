@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Pp
 open Errors
 open Util
 open Names
@@ -64,7 +65,7 @@ let error_needs_inversion env x t =
 
 let rec list_try_compile f = function
   | [a] -> f a
-  | [] -> anomaly "try_find_f"
+  | [] -> anomaly (str "try_find_f")
   | h::t ->
       try f h
       with UserError _ | TypeError _ | PretypeError _ | PatternMatchingError _
@@ -149,9 +150,9 @@ let feed_history arg = function
   | Continuation (n, l, h) when n>=1 ->
       Continuation (n-1, arg :: l, h)
   | Continuation (n, _, _) ->
-      anomaly ("Bad number of expected remaining patterns: "^(string_of_int n))
+      anomaly (str "Bad number of expected remaining patterns: " ++ int n)
   | Result _ ->
-      anomaly "Exhausted pattern history"
+      anomaly (Pp.str "Exhausted pattern history")
 
 (* This is for non exhaustive error message *)
 
@@ -177,7 +178,7 @@ let pop_history_pattern = function
   | Continuation (0, l, MakeConstructor (pci, rh)) ->
       feed_history (PatCstr (Loc.ghost,pci,List.rev l,Anonymous)) rh
   | _ ->
-      anomaly "Constructor not yet filled with its arguments"
+      anomaly (Pp.str "Constructor not yet filled with its arguments")
 
 let pop_history h =
   feed_history (PatVar (Loc.ghost, Anonymous)) h
@@ -403,7 +404,7 @@ let lift_tomatch_type n = liftn_tomatch_type n 1
 let current_pattern eqn =
   match eqn.patterns with
     | pat::_ -> pat
-    | [] -> anomaly "Empty list of patterns"
+    | [] -> anomaly (Pp.str "Empty list of patterns")
 
 let alias_of_pat = function
   | PatVar (_,name) -> name
@@ -415,7 +416,7 @@ let remove_current_pattern eqn =
 	{ eqn with
 	    patterns = pats;
 	    alias_stack = alias_of_pat pat :: eqn.alias_stack }
-    | [] -> anomaly "Empty list of patterns"
+    | [] -> anomaly (Pp.str "Empty list of patterns")
 
 let push_current_pattern (cur,ty) eqn =
   match eqn.patterns with
@@ -424,7 +425,7 @@ let push_current_pattern (cur,ty) eqn =
 	{ eqn with
             rhs = { eqn.rhs with rhs_env = rhs_env };
 	    patterns = pats }
-    | [] -> anomaly "Empty list of patterns"
+    | [] -> anomaly (Pp.str "Empty list of patterns")
 
 let prepend_pattern tms eqn = {eqn with patterns = tms@eqn.patterns }
 
@@ -606,7 +607,7 @@ let replace_tomatch n c =
   | Pushed ((b,tm),l,na) :: rest ->
       let b = replace_term n c depth b in
       let tm = map_tomatch_type (replace_term n c depth) tm in
-      List.iter (fun i -> if Int.equal i (n + depth) then anomaly "replace_tomatch") l;
+      List.iter (fun i -> if Int.equal i (n + depth) then anomaly (Pp.str "replace_tomatch")) l;
       Pushed ((b,tm),l,na) :: replrec depth rest
   | Alias (na,b,d) :: rest ->
       (* [b] is out of replacement scope *)
@@ -835,7 +836,7 @@ let specialize_predicate_var (cur,typ,dep) tms ccl =
 (*****************************************************************************)
 let generalize_predicate (names,na) ny d tms ccl =
   let () = match na with
-  | Anonymous -> anomaly "Undetected dependency"
+  | Anonymous -> anomaly (Pp.str "Undetected dependency")
   | _ -> () in
   let p = List.length names + 1 in
   let ccl = lift_predicate 1 ccl tms in
@@ -1697,7 +1698,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 		  if not (eq_ind ind ind') then
 		    user_err_loc (loc,"",str "Wrong inductive type.");
 		  if not (Int.equal nrealargs_ctxt (List.length realnal)) then
-		      anomaly "Ill-formed 'in' clause in cases";
+		      anomaly (Pp.str "Ill-formed 'in' clause in cases");
 		  List.rev realnal
 	      | None -> List.make nrealargs_ctxt Anonymous in
 	  (na,None,build_dependent_inductive env0 indf')

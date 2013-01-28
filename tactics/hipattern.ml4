@@ -289,7 +289,7 @@ let match_arrow_pattern t =
   match matches coq_arrow_pattern t with
     | [(m1,arg);(m2,mind)] ->
       assert (Id.equal m1 meta1 && Id.equal m2 meta2); (arg, mind)
-    | _ -> anomaly "Incorrect pattern matching"
+    | _ -> anomaly (Pp.str "Incorrect pattern matching")
 
 let match_with_nottype t =
   try
@@ -373,7 +373,7 @@ let match_eq eqn eq_pat =
     | [(m1,t);(m2,x);(m3,t');(m4,x')] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3 && Id.equal m4 meta4);
 	HeterogenousEq (t,x,t',x')
-    | _ -> anomaly "match_eq: an eq pattern should match 3 or 4 terms"
+    | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 or 4 terms")
 
 let equalities =
   [coq_eq_pattern, build_coq_eq_data;
@@ -414,7 +414,7 @@ let match_eq_nf gls eqn eq_pat =
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
 	(t,pf_whd_betadeltaiota gls x,pf_whd_betadeltaiota gls y)
-    | _ -> anomaly "match_eq: an eq pattern should match 3 terms"
+    | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 terms")
 
 let dest_nf_eq gls eqn =
   try
@@ -435,7 +435,7 @@ let match_sigma ex ex_pat =
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3 && Id.equal m4 meta4);
 	(a,p,car,cdr)
     | _ ->
-	anomaly "match_sigma: a successful sigma pattern should match 4 terms"
+	anomaly ~label:"match_sigma" (Pp.str "a successful sigma pattern should match 4 terms")
 
 let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
   first_match (match_sigma ex)
@@ -448,7 +448,7 @@ let coq_sig_pattern = lazy PATTERN [ %coq_sig_ref ?X1 ?X2 ]
 let match_sigma t =
   match matches (Lazy.force coq_sig_pattern) t with
     | [(_,a); (_,p)] -> (a,p)
-    | _ -> anomaly "Unexpected pattern"
+    | _ -> anomaly (Pp.str "Unexpected pattern")
 
 let is_matching_sigma t = is_matching (Lazy.force coq_sig_pattern) t
 
@@ -486,7 +486,7 @@ let match_eqdec t =
   match subst with
   | [(_,typ);(_,c1);(_,c2)] ->
       eqonleft, Globnames.constr_of_global (Lazy.force op), c1, c2, typ
-  | _ -> anomaly "Unexpected pattern"
+  | _ -> anomaly (Pp.str "Unexpected pattern")
 
 (* Patterns "~ ?" and "? -> False" *)
 let coq_not_pattern = lazy PATTERN [ ~ _ ]

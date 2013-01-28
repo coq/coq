@@ -36,7 +36,7 @@ type 'a object_declaration = {
   discharge_function : object_name * 'a -> 'a option;
   rebuild_function : 'a -> 'a }
 
-let yell s = anomaly s
+let yell s = anomaly (Pp.str s)
 
 let default_object s = {
   object_name = s;
@@ -84,17 +84,17 @@ let declare_object_full odecl =
   let (infun,outfun) = Dyn.create na in
   let cacher (oname,lobj) =
     if String.equal (Dyn.tag lobj) na then odecl.cache_function (oname,outfun lobj)
-    else anomaly "somehow we got the wrong dynamic object in the cachefun"
+    else anomaly (Pp.str "somehow we got the wrong dynamic object in the cachefun")
   and loader i (oname,lobj) =
     if String.equal (Dyn.tag lobj) na then odecl.load_function i (oname,outfun lobj)
-    else anomaly "somehow we got the wrong dynamic object in the loadfun"
+    else anomaly (Pp.str "somehow we got the wrong dynamic object in the loadfun")
   and opener i (oname,lobj) =
     if String.equal (Dyn.tag lobj) na then odecl.open_function i (oname,outfun lobj)
-    else anomaly "somehow we got the wrong dynamic object in the openfun"
+    else anomaly (Pp.str "somehow we got the wrong dynamic object in the openfun")
   and substituter (sub,lobj) = 
     if String.equal (Dyn.tag lobj) na then 
       infun (odecl.subst_function (sub,outfun lobj))
-    else anomaly "somehow we got the wrong dynamic object in the substfun"
+    else anomaly (Pp.str "somehow we got the wrong dynamic object in the substfun")
   and classifier lobj =
     if String.equal (Dyn.tag lobj) na then
       match odecl.classify_function (outfun lobj) with
@@ -103,15 +103,15 @@ let declare_object_full odecl =
 	| Keep obj -> Keep (infun obj)
 	| Anticipate (obj) -> Anticipate (infun obj)
     else
-      anomaly "somehow we got the wrong dynamic object in the classifyfun"
+      anomaly (Pp.str "somehow we got the wrong dynamic object in the classifyfun")
   and discharge (oname,lobj) =
     if String.equal (Dyn.tag lobj) na then
       Option.map infun (odecl.discharge_function (oname,outfun lobj))
     else
-      anomaly "somehow we got the wrong dynamic object in the dischargefun"
+      anomaly (Pp.str "somehow we got the wrong dynamic object in the dischargefun")
   and rebuild lobj =
     if String.equal (Dyn.tag lobj) na then infun (odecl.rebuild_function (outfun lobj))
-    else anomaly "somehow we got the wrong dynamic object in the rebuildfun"
+    else anomaly (Pp.str "somehow we got the wrong dynamic object in the rebuildfun")
   in
   Hashtbl.add cache_tab na { dyn_cache_function = cacher;
 			     dyn_load_function = loader;

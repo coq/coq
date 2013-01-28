@@ -310,7 +310,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	(fun i (end_of_type,ctxt_size,witness_fun) ((x',b',t') as decl) ->
 	   try
 	     let witness = Int.Map.find i sub in
-	     if b' <> None then anomaly "can not redefine a rel!";
+	     if b' <> None then anomaly (Pp.str "can not redefine a rel!");
 	     (Termops.pop end_of_type,ctxt_size,mkLetIn(x',witness,t',witness_fun))
 	   with Not_found  ->
 	     (mkProd_or_LetIn decl end_of_type, ctxt_size + 1, mkLambda_or_LetIn decl witness_fun)
@@ -396,7 +396,7 @@ let rewrite_until_var arg_num eq_ids : tactic =
     then tclIDTAC g
     else
       match eq_ids with
-	| [] -> anomaly "Cannot find a way to prove recursive property";
+	| [] -> anomaly (Pp.str "Cannot find a way to prove recursive property");
 	| eq_id::eq_ids ->
 	    tclTHEN
 	      (tclTRY (Equality.rewriteRL (mkVar eq_id)))
@@ -604,7 +604,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 		   observe (str "cannot compute new term value : " ++ pr_gls g' ++ fnl () ++ str "last hyp is" ++
 			      pr_lconstr_env (pf_env g') new_term_value_eq
 			   );
-		   anomaly "cannot compute new term value"
+		   anomaly (Pp.str "cannot compute new term value")
 	   in
 	 let fun_body =
 	   mkLambda(Anonymous,
@@ -830,7 +830,7 @@ let build_proof
 		 h_reduce_with_zeta Locusops.onConcl;
 		 build_proof do_finalize new_infos
 		] g
-	  | Rel _ -> anomaly "Free var in goal conclusion !"
+	  | Rel _ -> anomaly (Pp.str "Free var in goal conclusion !")
   and build_proof do_finalize dyn_infos g =
 (*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
     observe_tac_stream (str "build_proof with " ++ Printer.pr_lconstr dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
@@ -1014,7 +1014,7 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
 		{finfos with
 		   equation_lemma = Some (match Nametab.locate (qualid_of_ident equation_lemma_id) with
 					      ConstRef c -> c
-					    | _ -> Errors.anomaly "Not a constant"
+					    | _ -> Errors.anomaly (Pp.str "Not a constant")
 					 )
 		}
 	  | _ -> ()
@@ -1208,7 +1208,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	    else
 	      h_mutual_fix this_fix_info.name (this_fix_info.idx + 1)
 		other_fix_infos
-	| _ -> anomaly "Not a valid information"
+	| _ -> anomaly (Pp.str "Not a valid information")
     in
     let first_tac : tactic = (* every operations until fix creations *)
       tclTHENSEQ
@@ -1223,7 +1223,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	let ctxt,pte_app =  (decompose_prod_assum (pf_concl gl)) in
 	let pte,pte_args = (decompose_app pte_app) in
 	try
-	  let pte = try destVar pte with _ -> anomaly "Property is not a variable"  in
+	  let pte = try destVar pte with _ -> anomaly (Pp.str "Property is not a variable")  in
 	  let fix_info = Id.Map.find  pte ptes_to_fix in
 	  let nb_args = fix_info.nb_realargs in
 	  tclTHENSEQ
@@ -1364,7 +1364,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 
 let prove_with_tcc tcc_lemma_constr eqs : tactic =
   match !tcc_lemma_constr with
-    | None -> anomaly "No tcc proof !!"
+    | None -> anomaly (Pp.str "No tcc proof !!")
     | Some lemma ->
 	fun gls ->
 (* 	  let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in *)
@@ -1562,7 +1562,7 @@ let prove_principle_for_gen
   let args_ids = List.map (fun (na,_,_) -> Nameops.out_name na) princ_info.args in
   let lemma =
     match !tcc_lemma_ref with
-     | None -> anomaly ( "No tcc proof !!")
+     | None -> anomaly (str "No tcc proof !!")
      | Some lemma -> lemma
   in
 (*   let rec list_diff del_list check_list = *)

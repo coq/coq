@@ -337,7 +337,7 @@ let rec find_without_delimiters find (ntn_scope,ntn) = function
 
 let declare_notation_level ntn level =
   if Gmap.mem ntn !notation_level_map then
-    anomaly ("Notation "^ntn^" is already assigned a level");
+    anomaly (str "Notation " ++ str ntn ++ str " is already assigned a level");
   notation_level_map := Gmap.add ntn level !notation_level_map
 
 let level_of_notation ntn =
@@ -887,7 +887,7 @@ let declare_notation_printing_rule ntn unpl =
 
 let find_notation_printing_rule ntn =
   try Gmap.find ntn !printing_rules
-  with Not_found -> anomaly ("No printing rule found for "^ntn)
+  with Not_found -> anomaly (str "No printing rule found for " ++ str ntn)
 
 (**********************************************************************)
 (* Synchronisation with reset *)

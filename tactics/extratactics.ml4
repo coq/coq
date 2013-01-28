@@ -583,7 +583,7 @@ let subst_hole_with_term occ tc t =
 open Tacmach
 
 let out_arg = function
-  | ArgVar _ -> anomaly "Unevaluated or_var variable"
+  | ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable")
   | ArgArg x -> x
 
 let hResolve id c occ t gl = 

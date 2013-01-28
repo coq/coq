@@ -72,7 +72,7 @@ let subst_evar_constr evs n idf t =
 	      ev_hyps = hyps ; ev_chop = chop } =
 	  try evar_info k
 	  with Not_found ->
-	    anomaly ("eterm: existential variable " ^ string_of_int k ^ " not found")
+	    anomaly ~label:"eterm" (Pp.str "existential variable " ++ int k ++ str " not found")
 	in
         seen := Int.Set.add id !seen;
 	  (* Evar arguments are created in inverse order,
@@ -976,7 +976,7 @@ let next_obligation n tac =
   let is_open _ x = Option.is_empty x.obl_body && List.is_empty (deps_remaining obls x.obl_deps) in
   let i = match Array.findi is_open obls with
   | Some i -> i
-  | None -> anomaly "Could not find a solvable obligation."
+  | None -> anomaly (Pp.str "Could not find a solvable obligation.")
   in
   solve_obligation prg i tac
 

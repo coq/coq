@@ -32,7 +32,7 @@ let wrap n b continue seq gls=
   let rec aux i nc ctx=
     if i<=0 then seq else
       match nc with
-	  []->anomaly "Not the expected number of hyps"
+	  []->anomaly (Pp.str "Not the expected number of hyps")
 	| ((id,_,typ) as nd)::q->
 	    if occur_var env id (pf_concl gls) ||
 	      List.exists (occur_var_in_decl env id) ctx then

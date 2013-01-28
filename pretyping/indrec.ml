@@ -245,7 +245,7 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 	   process_constr (push_rel d env) (i+1) (lift 1 f)
 	     (cprest,rest))
     | [],[] -> f
-    | _,[] | [],_ -> anomaly "process_constr"
+    | _,[] | [],_ -> anomaly (Pp.str "process_constr")
 
   in
   process_constr env 0 f (List.rev cstr.cs_args, recargs)
@@ -473,7 +473,7 @@ let modify_sort_scheme sort =
 	  else
 	    mkLambda (n, t, drec (npar-1) c)
       | LetIn (n,b,t,c) -> mkLetIn (n,b,t,drec npar c)
-      | _ -> anomaly "modify_sort_scheme: wrong elimination type"
+      | _ -> anomaly ~label:"modify_sort_scheme" (Pp.str "wrong elimination type")
   in
   drec
 
@@ -492,7 +492,7 @@ let weaken_sort_scheme sort npars term =
 	    mkProd (n, t, c'), mkLambda (n, t, term')
       | LetIn (n,b,t,c) -> let c',term' = drec np c in
            mkLetIn (n,b,t,c'), mkLetIn (n,b,t,term')
-      | _ -> anomaly "weaken_sort_scheme: wrong elimination type"
+      | _ -> anomaly ~label:"weaken_sort_scheme" (Pp.str "wrong elimination type")
   in
   drec npars
 
@@ -532,7 +532,7 @@ let build_mutual_induction_scheme env sigma = function
       in
       let _ = check_arities listdepkind in
       mis_make_indrec env sigma listdepkind mib
-  | _ -> anomaly "build_induction_scheme expects a non empty list of inductive types"
+  | _ -> anomaly (Pp.str "build_induction_scheme expects a non empty list of inductive types")
 
 let build_induction_scheme env sigma ind dep kind =
   let (mib,mip) = lookup_mind_specif env ind in

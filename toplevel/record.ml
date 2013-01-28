@@ -84,7 +84,7 @@ let typecheck_params_and_fields id t ps nots fs =
 let degenerate_decl (na,b,t) =
   let id = match na with
     | Name id -> id
-    | Anonymous -> anomaly "Unnamed record variable" in
+    | Anonymous -> anomaly (Pp.str "Unnamed record variable") in
   match b with
     | None -> (id, Entries.LocalAssum t)
     | Some b -> (id, Entries.LocalDef b)

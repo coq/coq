@@ -33,7 +33,7 @@ let find_logical_path phys_dir =
   match paths with
   | [_,dir,_] -> dir
   | [] -> Nameops.default_root_prefix
-  | l -> anomaly ("Two logical paths are associated to "^phys_dir)
+  | l -> anomaly (str "Two logical paths are associated to" ++ spc () ++ str phys_dir)
 
 let is_in_load_paths phys_dir =
   let dir = CUnix.canonical_path_name phys_dir in
@@ -67,7 +67,7 @@ let add_load_path isroot (phys_path,coq_path) =
 	    end
       | [] ->
 	  load_paths := (phys_path,coq_path,isroot) :: !load_paths;
-      | _ -> anomaly ("Two logical paths are associated to "^phys_path)
+      | _ -> anomaly (str "Two logical paths are associated to" ++ spc () ++ str phys_path)
 
 let extend_path_with_dirpath p dir =
   List.fold_left Filename.concat p
@@ -669,7 +669,7 @@ let save_library_to dir f =
     let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
     match Nativelibrary.compile_library dir ast lp fn with
       | 0 -> ()
-      | _ -> anomaly "Library compilation failure"
+      | _ -> anomaly (Pp.str "Library compilation failure")
     end
   with e ->
     msg_warning (str ("Removed file "^f')); close_out ch; Sys.remove f';

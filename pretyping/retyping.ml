@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Pp
 open Errors
 open Util
 open Term
@@ -22,7 +23,7 @@ let rec subst_type env sigma typ = function
   | h::rest ->
       match kind_of_term (whd_betadeltaiota env sigma typ) with
         | Prod (na,c1,c2) -> subst_type env sigma (subst1 h c2) rest
-        | _ -> anomaly "Non-functional construction"
+        | _ -> anomaly (str "Non-functional construction")
 
 (* Si ft est le type d'un terme f, lequel est appliqué à args, *)
 (* [sort_of_atomic_ty] calcule ft[args] qui doit être une sorte *)
@@ -40,7 +41,7 @@ let sort_of_atomic_type env sigma ft args =
 let type_of_var env id =
   try let (_,_,ty) = lookup_named id env in ty
   with Not_found ->
-    anomaly ("type_of: variable "^(Id.to_string id)^" unbound")
+    anomaly ~label:"type_of" (str "variable " ++ Id.print id ++ str " unbound")
 
 let is_impredicative_set env = match Environ.engagement env with
 | Some ImpredicativeSet -> true
@@ -51,7 +52,7 @@ let retype ?(polyprop=true) sigma =
     match kind_of_term cstr with
     | Meta n ->
       (try strip_outer_cast (Evd.meta_ftype sigma n).Evd.rebus
-       with Not_found -> anomaly ("type_of: unknown meta " ^ string_of_int n))
+       with Not_found -> anomaly ~label:"type_of" (str "unknown meta " ++ int n))
     | Rel n ->
         let (_,_,ty) = lookup_rel n env in
         lift n ty
@@ -63,7 +64,7 @@ let retype ?(polyprop=true) sigma =
     | Case (_,p,c,lf) ->
         let Inductiveops.IndType(_,realargs) =
           try Inductiveops.find_rectype env sigma (type_of env c)
-          with Not_found -> anomaly "type_of: Bad recursive type" in
+          with Not_found -> anomaly ~label:"type_of" (str "Bad recursive type") in
         let t = whd_beta sigma (applist (p, realargs)) in
         (match kind_of_term (whd_betadeltaiota env sigma (type_of env t)) with
           | Prod _ -> whd_beta sigma (applist (t, [c]))
@@ -104,7 +105,7 @@ let retype ?(polyprop=true) sigma =
         sort_of_atomic_type env sigma t args
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | Lambda _ | Fix _ | Construct _ ->
-        anomaly "sort_of: Not a type (1)"
+        anomaly ~label:"sort_of" (str "Not a type (1)")
     | _ -> decomp_sort env sigma (type_of env t)
 
   and sort_family_of env t =
@@ -122,7 +123,7 @@ let retype ?(polyprop=true) sigma =
     | App(f,args) ->
 	family_of_sort (sort_of_atomic_type env sigma (type_of env f) args)
     | Lambda _ | Fix _ | Construct _ ->
-        anomaly "sort_of: Not a type (1)"
+        anomaly ~label:"sort_of" (str "Not a type (1)")
     | _ -> family_of_sort (decomp_sort env sigma (type_of env t))
 
   and type_of_global_reference_knowing_parameters env c args =
@@ -132,11 +133,11 @@ let retype ?(polyprop=true) sigma =
       let (_,mip) = lookup_mind_specif env ind in
 	(try Inductive.type_of_inductive_knowing_parameters
 	       ~polyprop env mip argtyps
-	 with Reduction.NotArity -> anomaly "type_of: Not an arity")
+	 with Reduction.NotArity -> anomaly ~label:"type_of" (str "Not an arity"))
     | Const cst ->
       let t = constant_type env cst in
 	(try Typeops.type_of_constant_knowing_parameters env t argtyps
-	 with Reduction.NotArity -> anomaly "type_of: Not an arity")
+	 with Reduction.NotArity -> anomaly ~label:"type_of" (str "Not an arity"))
     | Var id -> type_of_var env id
     | Construct cstr -> type_of_constructor env cstr
     | _ -> assert false

@@ -206,13 +206,13 @@ let instantiate_params t args sign =
     | ((_,None,_)::ctxt,a::args) ->
 	(match kind_of_term t with
 	   | Prod(_,_,t) -> inst (a::s) t (ctxt,args)
-	   | _ -> anomaly"instantiate_params: type, ctxt and args mismatch")
+	   | _ -> anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch"))
     | ((_,(Some b),_)::ctxt,args) ->
 	(match kind_of_term t with
 	   | LetIn(_,_,_,t) -> inst ((substl s b)::s) t (ctxt,args)
-	   | _ -> anomaly"instantiate_params: type, ctxt and args mismatch")
+	   | _ -> anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch"))
     | _, [] -> substl s t
-    | _ -> anomaly"instantiate_params: type, ctxt and args mismatch"
+    | _ -> anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch")
   in inst [] t (List.rev sign,args)
 
 let get_constructor (ind,mib,mip,params) j =
@@ -248,7 +248,7 @@ let instantiate_context sign args =
   | (_,None,_)::sign, a::args -> aux (a::subst) (sign,args)
   | (_,Some b,_)::sign, args -> aux (substl subst b::subst) (sign,args)
   | [], [] -> subst
-  | _ -> anomaly "Signature/instance mismatch in inductive family"
+  | _ -> anomaly (Pp.str "Signature/instance mismatch in inductive family")
   in aux [] (List.rev sign,args)
 
 let get_arity env (ind,params) =
@@ -385,7 +385,7 @@ let is_predicate_explicitly_dep env pred arsign =
           | Name _ -> true
           end
 
-      | _ -> anomaly "Non eta-expanded dep-expanded \"match\" predicate"
+      | _ -> anomaly (Pp.str "Non eta-expanded dep-expanded \"match\" predicate")
   in
   srec env pred arsign
 

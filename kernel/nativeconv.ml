@@ -148,6 +148,6 @@ let native_conv pb env t1 t2 =
         (* TODO change 0 when we can have deBruijn *)
         conv_val pb 0 !rt1 !rt2 empty_constraint
       end
-  | _ -> anomaly "Compilation failure" 
+  | _ -> anomaly (Pp.str "Compilation failure") 
 
 let _ = set_nat_conv native_conv

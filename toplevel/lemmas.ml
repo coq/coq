@@ -154,7 +154,7 @@ let look_for_possibly_mutual_statements = function
     let recguard,ordered_inds = find_mutually_recursive_statements thms in
     let thms = List.map pi2 ordered_inds in
     Some recguard,thms, Some (List.map (fun (_,_,i) -> succ i) ordered_inds)
-  | [] -> anomaly "Empty list of theorems."
+  | [] -> anomaly (Pp.str "Empty list of theorems.")
 
 (* Saving a goal *)
 
@@ -209,7 +209,7 @@ let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
       let body_i = match kind_of_term body with
         | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
         | CoFix (0,decls) -> mkCoFix (i,decls)
-        | _ -> anomaly "Not a proof by induction" in
+        | _ -> anomaly (Pp.str "Not a proof by induction") in
       match local with
       | Local ->
 	  let c = SectionLocalDef (body_i, Some t_i, opaq) in
@@ -300,7 +300,7 @@ let start_proof_with_initialization kind recguard thms snl hook =
       let () = match thms with [_] -> () | _ -> assert false in
       (if Flags.is_auto_intros () then Some (intro_tac (List.hd thms)) else None), [] in
   match thms with
-  | [] -> anomaly "No proof to start"
+  | [] -> anomaly (Pp.str "No proof to start")
   | (id,(t,(_,imps)))::other_thms ->
       let hook strength ref =
         let other_thms_data =

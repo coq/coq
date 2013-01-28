@@ -92,7 +92,7 @@ let make_evar_instance sign args =
     | (id,_,_) :: sign, c::args when isVarId id c -> instrec (sign,args)
     | (id,_,_) :: sign, c::args -> (id,c) :: instrec (sign,args)
     | [],[] -> []
-    | [],_ | _,[] -> anomaly "Signature and its instance do not match"
+    | [],_ | _,[] -> anomaly (Pp.str "Signature and its instance do not match")
   in
     instrec (sign,args)
 
@@ -157,7 +157,7 @@ module EvarInfoMap = struct
       with Not_found -> 
 	try ExistentialMap.find evk def
 	with Not_found -> 
-	  anomaly "Evd.define: cannot define undeclared evar" in
+	  anomaly ~label:"Evd.define" (Pp.str "cannot define undeclared evar") in
     let newinfo =
       { oldinfo with
 	  evar_body = Evar_defined body } in
@@ -165,7 +165,7 @@ module EvarInfoMap = struct
 	| Evar_empty ->
 	    (ExistentialMap.add evk newinfo def,ExistentialMap.remove evk undef)
 	| _ ->
-	    anomaly "Evd.define: cannot define an evar twice"
+	    anomaly ~label:"Evd.define" (Pp.str "cannot define an evar twice")
 
   let is_evar = mem
 
@@ -181,7 +181,7 @@ module EvarInfoMap = struct
     let info =
       try find sigma n
       with Not_found ->
-	anomaly ("Evar "^(string_of_existential n)^" was not declared") in
+	anomaly (str "Evar " ++ str (string_of_existential n) ++ str " was not declared") in
     let hyps = evar_filtered_context info in
       instantiate_evar hyps info.evar_concl (Array.to_list args)
 
@@ -611,7 +611,7 @@ let try_meta_fvalue evd mv =
 
 let meta_fvalue evd mv =
   try try_meta_fvalue evd mv
-  with Not_found -> anomaly "meta_fvalue: meta has no value"
+  with Not_found -> anomaly ~label:"meta_fvalue" (Pp.str "meta has no value")
 
 let meta_value evd mv =
   (fst (try_meta_fvalue evd mv)).rebus
@@ -631,14 +631,14 @@ let meta_assign mv (v,pb) evd =
   | Cltyp(na,ty) ->
       { evd with
         metas = Metamap.add mv (Clval(na,(mk_freelisted v,pb),ty)) evd.metas }
-  | _ -> anomaly "meta_assign: already defined"
+  | _ -> anomaly ~label:"meta_assign" (Pp.str "already defined")
 
 let meta_reassign mv (v,pb) evd =
   match Metamap.find mv evd.metas with
   | Clval(na,_,ty) ->
       { evd with
         metas = Metamap.add mv (Clval(na,(mk_freelisted v,pb),ty)) evd.metas }
-  | _ -> anomaly "meta_reassign: not yet defined"
+  | _ -> anomaly ~label:"meta_reassign" (Pp.str "not yet defined")
 
 (* If the meta is defined then forget its name *)
 let meta_name evd mv =

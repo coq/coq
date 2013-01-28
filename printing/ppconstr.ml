@@ -123,7 +123,7 @@ let pr_expl_args pr (a,expl) =
   match expl with
   | None -> pr (lapp,L) a
   | Some (_,ExplByPos (n,_id)) ->
-      anomaly("Explicitation by position not implemented")
+      anomaly (Pp.str "Explicitation by position not implemented")
   | Some (_,ExplByName id) ->
       str "(" ++ pr_id id ++ str ":=" ++ pr ltop a ++ str ")"
 
@@ -242,7 +242,7 @@ let pr_binder many pr (nal,k,t) =
 	  hov 1 (str "`" ++ (surround_impl b'
 			       (pr_lident (loc,id) ++ str " : " ++
 				  (if t' then str "!" else mt()) ++ pr t)))
-	|_ -> anomaly "List of generalized binders have alwais one element."
+	|_ -> anomaly (Pp.str "List of generalized binders have alwais one element.")
       end
     | Default b ->
       match t with
@@ -305,7 +305,7 @@ let split_lambda = function
   | CLambdaN (loc,[[na],bk,t],c) -> (na,t,c)
   | CLambdaN (loc,([na],bk,t)::bl,c) -> (na,t,CLambdaN(loc,bl,c))
   | CLambdaN (loc,(na::nal,bk,t)::bl,c) -> (na,t,CLambdaN(loc,(nal,bk,t)::bl,c))
-  | _ -> anomaly "ill-formed fixpoint body"
+  | _ -> anomaly (Pp.str "ill-formed fixpoint body")
 
 let rename na na' t c =
   match (na,na') with
@@ -318,7 +318,7 @@ let split_product na' = function
   | CProdN (loc,([na],bk,t)::bl,c) -> rename na na' t (CProdN(loc,bl,c))
   | CProdN (loc,(na::nal,bk,t)::bl,c) ->
       rename na na' t (CProdN(loc,(nal,bk,t)::bl,c))
-  | _ -> anomaly "ill-formed fixpoint body"
+  | _ -> anomaly (Pp.str "ill-formed fixpoint body")
 
 let rec split_fix n typ def =
   if Int.equal n 0 then ([],typ,def)
@@ -363,7 +363,7 @@ let pr_cofixdecl pr prd dangling_with_for ((_,id),bl,t,c) =
   pr_recursive_decl pr prd dangling_with_for id bl (mt()) t c
 
 let pr_recursive pr_decl id = function
-  | [] -> anomaly "(co)fixpoint with no definition"
+  | [] -> anomaly (Pp.str "(co)fixpoint with no definition")
   | [d1] -> pr_decl false d1
   | dl ->
       prlist_with_sep (fun () -> fnl() ++ str "with ")

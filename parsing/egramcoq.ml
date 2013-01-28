@@ -145,7 +145,7 @@ let make_cases_pattern_action
 	Gram.action (fun (v:local_binder list list) ->
 	  make (env, envlist, true) tl)
     | (ETPattern | ETOther _) ->
-        anomaly "Unexpected entry of type cases pattern or other")
+        anomaly (Pp.str "Unexpected entry of type cases pattern or other"))
   | GramConstrListMark (n,b) :: tl ->
       (* Rebuild expansions of ConstrList *)
       let heads,env = List.chop n env in

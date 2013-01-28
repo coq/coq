@@ -42,7 +42,7 @@ let apply_coercion_args env argl funj =
 	| Prod (_,c1,c2) ->
 	    (* Typage garanti par l'appel à app_coercion*)
 	    apply_rec (h::acc) (subst1 h c2) restl
-	| _ -> anomaly "apply_coercion_args"
+	| _ -> anomaly (Pp.str "apply_coercion_args")
   in
     apply_rec [] funj.uj_type argl
 
@@ -334,7 +334,7 @@ let apply_coercion env sigma p hj typ_cl =
 		   jres),
 	      jres.uj_type)
            (hj,typ_cl) p)
-  with _ -> anomaly "apply_coercion"
+  with _ -> anomaly (Pp.str "apply_coercion")
 
 let inh_app_fun env evd j =
   let t = whd_betadeltaiota env evd j.uj_type in

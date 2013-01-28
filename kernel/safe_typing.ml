@@ -286,14 +286,14 @@ let add_constant dir l decl senv =
 let add_mind dir l mie senv =
   let () = match mie.mind_entry_inds with
   | [] ->
-    anomaly "empty inductive types declaration"
+    anomaly (Pp.str "empty inductive types declaration")
             (* this test is repeated by translate_mind *)
   | _ -> ()
   in
   let id = (List.nth mie.mind_entry_inds 0).mind_entry_typename in
   if not (Label.equal l (Label.of_id id)) then
-    anomaly ("the label of inductive packet and its first inductive"^
-	     " type do not match");
+    anomaly (Pp.str "the label of inductive packet and its first inductive \
+	     type do not match");
   let kn = make_mind senv.modinfo.modpath dir l in
   let mib = translate_mind senv.env kn mie in
   let mib = match mib.mind_hyps with [] -> hcons_mind mib | _ -> mib in
@@ -499,7 +499,7 @@ let end_module l restype senv =
 let add_module_parameter mbid mte inl senv =
   let () = match senv.revstruct, senv.loads with
   | [], _ :: _ | _ :: _, [] ->
-    anomaly "Cannot add a module parameter to a non empty module"
+    anomaly (Pp.str "Cannot add a module parameter to a non empty module")
   | _ -> ()
   in
   let mtb = translate_module_type senv.env (MPbound mbid) inl mte in
@@ -510,7 +510,7 @@ let add_module_parameter mbid mte inl senv =
     | STRUCT params -> STRUCT ((mbid,mtb) :: params)
     | SIG params -> SIG ((mbid,mtb) :: params)
     | _ ->
-	anomaly "Module parameters can only be added to modules or signatures"  
+	anomaly (Pp.str "Module parameters can only be added to modules or signatures")  
   in
     
   let resolver_of_param = match mtb.typ_expr with
@@ -644,10 +644,10 @@ let is_empty senv = match senv.revstruct, senv.modinfo.variant with
 
 let start_library dir senv =
   if not (is_empty senv) then
-    anomaly "Safe_typing.start_library: environment should be empty";
+    anomaly ~label:"Safe_typing.start_library" (Pp.str "environment should be empty");
   let dir_path,l =
     match (Dir_path.repr dir) with
-	[] -> anomaly "Empty dirpath in Safe_typing.start_library"
+	[] -> anomaly (Pp.str "Empty dirpath in Safe_typing.start_library")
       | hd::tl ->
 	  Dir_path.make tl, Label.of_id hd
   in
@@ -686,9 +686,9 @@ let export senv dir =
     match modinfo.variant with
       | LIBRARY dp ->
 	  if not (Dir_path.equal dir dp) then
-	    anomaly "We are not exporting the right library!"
+	    anomaly (Pp.str "We are not exporting the right library!")
       | _ ->
-	  anomaly "We are not exporting the library"
+	  anomaly (Pp.str "We are not exporting the library")
   end;
   (*if senv.modinfo.params <> [] || senv.modinfo.restype <> None then
     (* error_export_simple *) (); *)

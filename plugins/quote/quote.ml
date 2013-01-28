@@ -410,7 +410,7 @@ let quote_terms ivs lc gl =
                | None ->
                    begin match ivs.constant_lhs with
                      | Some c_lhs -> Termops.subst_meta [1, c] c_lhs
-                     | None -> anomaly "invalid inversion scheme for quote"
+                     | None -> anomaly (Pp.str "invalid inversion scheme for quote")
                    end
                | Some var_lhs ->
                    begin match ivs.constant_lhs with

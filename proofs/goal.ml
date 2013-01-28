@@ -63,7 +63,7 @@ let rec advance sigma g =
     let v =
       match evi.Evd.evar_body with
       | Evd.Evar_defined c -> c
-      | _ -> Errors.anomaly "Some goal is marked as 'cleared' but is uninstantiated"
+      | _ -> Errors.anomaly (Pp.str "Some goal is marked as 'cleared' but is uninstantiated")
     in
     let (e,_) = Term.destEvar v in
     let g' = { g with content = e } in

@@ -323,7 +323,7 @@ let rec find_pattern nt xl = function
   | _, [] ->
       error msg_expected_form_of_recursive_notation
   | ((SProdList _ | NonTerminal _) :: _), _ | _, (SProdList _ :: _) ->
-      anomaly "Only Terminal or Break expected on left, non-SProdList on right"
+      anomaly (Pp.str "Only Terminal or Break expected on left, non-SProdList on right")
 
 let rec interp_list_parser hd = function
   | [] -> [], List.rev hd
@@ -344,7 +344,7 @@ let rec interp_list_parser hd = function
   | NonTerminal _ as x :: tl ->
       let xyl,tl' = interp_list_parser [x] tl in
       xyl, List.rev_append hd tl'
-  | SProdList _ :: _ -> anomaly "Unexpected SProdList in interp_list_parser"
+  | SProdList _ :: _ -> anomaly (Pp.str "Unexpected SProdList in interp_list_parser")
 
 
 (* Find non-terminal tokens of notation *)
@@ -692,7 +692,7 @@ let make_production etyps symbols =
             let tkl = List.flatten
               (List.map (function Terminal s -> [Lexer.terminal s]
                 | Break _ -> []
-                | _ -> anomaly "Found a non terminal token in recursive notation separator") sl) in
+                | _ -> anomaly (Pp.str "Found a non terminal token in recursive notation separator")) sl) in
 	    match List.assoc x etyps with
             | ETConstr typ -> expand_list_rule typ tkl x 1 0 [] ll
             | ETBinder o ->

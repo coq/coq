@@ -853,7 +853,7 @@ let make_projectable_subst aliases sigma evi args =
 		   cstrs)
 	    | _ ->
 		(rest,Id.Map.add id [a,normalize_alias_opt aliases a,id] all,cstrs))
-	| _ -> anomaly "Instance does not match its signature")
+	| _ -> anomaly (Pp.str "Instance does not match its signature"))
       sign (Array.rev_to_list args,Id.Map.empty,Constrmap.empty) in
   (full_subst,cstr_subst)
 
@@ -862,7 +862,7 @@ let make_pure_subst evi args =
     (fun (id,b,c) (args,l) ->
       match args with
 	| a::rest -> (rest, (id,a)::l)
-	| _ -> anomaly "Instance does not match its signature")
+	| _ -> anomaly (Pp.str "Instance does not match its signature"))
     (evar_filtered_context evi) (Array.rev_to_list args,[]))
 
 (*------------------------------------*
@@ -1036,7 +1036,7 @@ let rec find_projectable_vars with_evars aliases sigma y subst =
 	    | _ -> subst'
 	  end
 	| [] -> subst'
-	| _ -> anomaly "More than one non var in aliases class of evar instance"
+	| _ -> anomaly (Pp.str "More than one non var in aliases class of evar instance")
       else
 	subst' in
   Id.Map.fold is_projectable subst []
@@ -1883,7 +1883,7 @@ let undefined_evars_of_term evd t =
 	(try match (Evd.find evd n).evar_body with
 	  | Evar_empty -> Int.Set.add n acc
 	  | Evar_defined c -> evrec acc c
-	 with Not_found -> anomaly "undefined_evars_of_term: evar not found")
+	 with Not_found -> anomaly ~label:"undefined_evars_of_term" (Pp.str "evar not found"))
       | _ -> fold_constr evrec acc c
   in
   evrec Int.Set.empty t

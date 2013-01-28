@@ -151,7 +151,7 @@ let pr_section_locality local =
 
 let pr_explanation (e,b,f) =
   let a = match e with
-  | ExplByPos (n,_) -> anomaly "No more supported"
+  | ExplByPos (n,_) -> anomaly (Pp.str "No more supported")
   | ExplByName id -> pr_id id in
   let a = if f then str"!" ++ a else a in
     if b then str "[" ++ a ++ str "]" else a
@@ -336,7 +336,7 @@ let pr_assumption_token many = function
       str (if many then "Parameters" else "Parameter")
   | (Global,Conjectural) -> str"Conjecture"
   | (Local,Conjectural) ->
-      anomaly "Don't know how to beautify a local conjecture"
+      anomaly (Pp.str "Don't know how to beautify a local conjecture")
 
 let pr_params pr_c (xl,(c,t)) =
   hov 2 (prlist_with_sep sep pr_lident xl ++ spc() ++
@@ -963,7 +963,7 @@ and pr_extend s cl =
       match rl with
       | Egramml.GramTerminal s :: rl -> str s, rl, cl
       | Egramml.GramNonTerminal _ :: rl -> pr_arg (List.hd cl), rl, List.tl cl
-      | [] -> anomaly "Empty entry" in
+      | [] -> anomaly (Pp.str "Empty entry") in
     let (pp,_) =
       List.fold_left
         (fun (strm,args) pi ->

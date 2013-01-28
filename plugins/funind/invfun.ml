@@ -112,7 +112,7 @@ let generate_type g_to_f f graph i =
   let ctxt,_ = decompose_prod_assum graph_arity in
   let fun_ctxt,res_type =
     match ctxt with
-      | [] | [_] -> anomaly "Not a valid context"
+      | [] | [_] -> anomaly (Pp.str "Not a valid context")
       | (_,_,res_type)::fun_ctxt -> fun_ctxt,res_type
   in
   let rec args_from_decl i accu = function
@@ -277,7 +277,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	(fun (_,pat) acc ->
 	     match pat with
 	       | Genarg.IntroIdentifier id -> Id.Set.add id acc
-	| _ -> anomaly "Not an identifier"
+	| _ -> anomaly (Pp.str "Not an identifier")
 	)
 	(List.nth intro_pats (pred i))
 	Id.Set.empty
@@ -316,7 +316,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       	  (fun (_,pat) acc ->
       	     match pat with
 	       | IntroIdentifier id -> id::acc
-      	       | _ -> anomaly "Not an identifier"
+      	       | _ -> anomaly (Pp.str "Not an identifier")
       	  )
       	  (List.nth intro_pats (pred i))
       	  []
@@ -423,7 +423,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       Array.map
 	(fun (_,(ctxt,concl)) ->
 	   match ctxt with
-	     | [] | [_] | [_;_] -> anomaly "bad context"
+	     | [] | [_] | [_;_] -> anomaly (Pp.str "bad context")
 	     | hres::res::(x,_,t)::ctxt ->
 		 Termops.it_mkLambda_or_LetIn
 		   (Termops.it_mkProd_or_LetIn concl [hres;res])
@@ -488,7 +488,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       Array.map
 	(fun (_,(ctxt,concl)) ->
 	   match ctxt with
-	     | [] | [_] | [_;_] -> anomaly "bad context"
+	     | [] | [_] | [_;_] -> anomaly (Pp.str "bad context")
 	     | hres::res::(x,_,t)::ctxt ->
 		 Termops.it_mkLambda_or_LetIn
 		   (Termops.it_mkProd_or_LetIn concl [hres;res])
@@ -541,7 +541,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	  (fun (_,pat) acc ->
 	     match pat with
 	       | Genarg.IntroIdentifier id -> Id.Set.add id acc
-	       | _ -> anomaly "Not an identifier"
+	       | _ -> anomaly (Pp.str "Not an identifier")
 	  )
 	  (List.nth intro_pats (pred i))
 	  Id.Set.empty
@@ -935,7 +935,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
       then
 	let eq_lemma =
 	  try Option.get (infos).equation_lemma
-	  with Option.IsNone -> anomaly "Cannot find equation lemma"
+	  with Option.IsNone -> anomaly (Pp.str "Cannot find equation lemma")
 	in
 	tclTHENSEQ[
 	  tclMAP h_intro ids;
@@ -1146,7 +1146,7 @@ let revert_graph kn post_tac hid g =
 	    let info =
 	      try find_Function_of_graph ind'
 	      with Not_found -> (* The graphs are mutually recursive but we cannot find one of them !*)
-		anomaly "Cannot retrieve infos about a mutual block"
+		anomaly (Pp.str "Cannot retrieve infos about a mutual block")
 	    in
 	    (* if we can find a completeness lemma for this function
 	       then we can come back to the functional form. If not, we do nothing

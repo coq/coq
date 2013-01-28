@@ -5,6 +5,7 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
+open Pp
 open Errors
 open Term
 open Environ
@@ -124,7 +125,7 @@ let type_of_sort s =
 let type_of_var env id = 
   try let (_,_,ty) = lookup_named id env in ty
   with Not_found ->
-    anomaly ("type_of_var: variable "^(string_of_id id)^" unbound")
+    anomaly ~label:"type_of_var" (str "variable " ++ Id.print id ++ str " unbound")
 
 let sort_of_product env domsort rangsort =
   match (domsort, rangsort) with
@@ -344,4 +345,4 @@ let native_norm env c ty =
         let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
         if !Flags.debug then Pp.msg_debug (Pp.str time_info);
         nf_val env !Nativelib.rt1 ty
-    | _ -> anomaly "Compilation failure" 
+    | _ -> anomaly (Pp.str "Compilation failure") 

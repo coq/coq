@@ -22,7 +22,7 @@ let pop_dirpath_n n dir =
   Dir_path.make (List.skipn n (Dir_path.repr dir))
 
 let pop_dirpath p = match Dir_path.repr p with
-  | [] -> anomaly "dirpath_prefix: empty dirpath"
+  | [] -> anomaly (str "dirpath_prefix: empty dirpath")
   | _::l -> Dir_path.make l
 
 let is_dirpath_prefix_of d1 d2 =

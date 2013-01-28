@@ -26,8 +26,12 @@ let anomaly_gen label pp =
   let bt = get_backtrace () in
   raise (Anomaly (label, pp, bt))
 
-let anomaly string =
-  anomaly_gen None (str string)
+let anomaly ?loc ?label pp =
+  let bt = get_backtrace () in
+  match loc with
+  | None -> raise (Anomaly (label, pp, bt))
+  | Some loc ->
+    Loc.raise loc (Anomaly (label, pp, bt))
 
 let anomalylabstrm string pps =
   anomaly_gen (Some string) pps
@@ -44,11 +48,6 @@ exception AlreadyDeclared of std_ppcmds (* for already declared Schemes *)
 let alreadydeclared pps = raise (AlreadyDeclared(pps))
 
 let todo s = prerr_string ("TODO: "^s^"\n")
-
-(* raising located exceptions *)
-let anomaly_loc (loc,s,strm) =
-  let bt = get_backtrace () in
-  Loc.raise loc (Anomaly (Some s, strm, bt))
 
 let user_err_loc (loc,s,strm) = Loc.raise loc (UserError (s,strm))
 let invalid_arg_loc (loc,s) = Loc.raise loc (Invalid_argument s)

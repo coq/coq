@@ -773,8 +773,8 @@ and intern_tacarg strict onlytac ist = function
       (match Dyn.tag t with
 	| "tactic" | "value" -> x
         | "constr" -> if onlytac then error_tactic_expected loc else x
-	| s -> anomaly_loc (loc, "",
-                 str "Unknown dynamic: <" ++ str s ++ str ">"))
+	| s -> anomaly ~loc
+                 (str "Unknown dynamic: <" ++ str s ++ str ">"))
 
 (* Reads the rules of a Match Context or a Match *)
 and intern_match_rule onlytac ist = function

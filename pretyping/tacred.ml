@@ -99,7 +99,7 @@ let destEvalRef c = match kind_of_term c with
   | Var id  -> EvalVar id
   | Rel n -> EvalRel n
   | Evar ev -> EvalEvar ev
-  | _ -> anomaly "Not an unfoldable reference"
+  | _ -> anomaly (Pp.str "Not an unfoldable reference")
 
 let reference_opt_value sigma env = function
   | EvalConst cst -> constant_opt_value env cst
@@ -288,7 +288,7 @@ let compute_consteval_mutual_fix sigma env ref =
 	  (* Forget all \'s and args and do as if we had started with c' *)
 	  let ref = destEvalRef c' in
 	  (match reference_opt_value sigma env ref with
-	    | None -> anomaly "Should have been trapped by compute_direct"
+	    | None -> anomaly (Pp.str "Should have been trapped by compute_direct")
 	    | Some c -> srec env (minarg-nargs) [] ref c)
       | _ -> (* Should not occur *) NotAnElimination
   in

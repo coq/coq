@@ -167,7 +167,7 @@ let build_signature evars env m (cstrs : (types * types option) option list)
 	    let arg' = mkApp (Lazy.force forall_relation, [| ty ; pred ; liftarg |]) in
 	      if Option.is_empty obj then evars, mkProd(na, ty, b), arg', (ty, None) :: cstrs
 	      else error "build_signature: no constraint can apply on a dependent argument"
-      | _, obj :: _ -> anomaly "build_signature: not enough products"
+      | _, obj :: _ -> anomaly ~label:"build_signature" (Pp.str "not enough products")
       | _, [] ->
 	  (match finalcstr with
 	  | None | Some (_, None) ->
@@ -1440,7 +1440,7 @@ let rec strategy_of_ast = function
       | "try" -> Strategies.try_
       | "any" -> Strategies.any
       | "repeat" -> Strategies.repeat
-      | _ -> anomalylabstrm "strategy_of_ast" (str"Unkwnon strategy: " ++ str f)
+      | _ -> anomaly ~label:"strategy_of_ast" (str"Unkwnon strategy: " ++ str f)
     in f' s'
   | StratBinary (f, s, t) ->
     let s' = strategy_of_ast s in
@@ -1448,7 +1448,7 @@ let rec strategy_of_ast = function
     let f' = match f with
       | "compose" -> Strategies.seq
       | "choice" -> Strategies.choice
-      | _ -> anomalylabstrm "strategy_of_ast" (str"Unkwnon strategy: " ++ str f)
+      | _ -> anomaly ~label:"strategy_of_ast" (str"Unkwnon strategy: " ++ str f)
     in f' s' t'
   | StratConstr (c, b) -> apply_glob_constr (fst c) b AllOccurrences
   | StratHints (old, id) -> if old then Strategies.old_hints id else Strategies.hints id

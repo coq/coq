@@ -75,7 +75,7 @@ and print_vars pconstr gtyp env sep _be _have vars =
       begin
 	let nenv =
 	  match st.st_label with
-	      Anonymous -> anomaly "anonymous variable"
+	      Anonymous -> anomaly (Pp.str "anonymous variable")
 	    | Name id -> Environ.push_named (id,None,st.st_it) env in
 	let pr_sep = if sep then pr_comma () else mt () in
 		spc() ++ pr_sep ++
@@ -173,14 +173,14 @@ let rec pr_bare_proof_instr _then _thus env = function
       str "per" ++ spc () ++ pr_elim_type et ++ spc () ++
       pr_casee env c
   | Pend (B_elim et) -> str "end" ++ spc () ++ pr_elim_type et
-  | _ -> anomaly "unprintable instruction"
+  | _ -> anomaly (Pp.str "unprintable instruction")
 
 let pr_emph = function
     0 -> str "    "
   | 1 -> str "*   "
   | 2 -> str "**  "
   | 3 -> str "*** "
-  | _ -> anomaly "unknown emphasis"
+  | _ -> anomaly (Pp.str "unknown emphasis")
 
 let pr_proof_instr env instr =
   pr_emph instr.emph ++ spc () ++

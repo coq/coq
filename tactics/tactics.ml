@@ -692,7 +692,7 @@ let cut_in_parallel l =
 
 let error_uninstantiated_metas t clenv =
   let na = meta_name clenv.evd (List.hd (Metaset.elements (metavars_of t))) in
-  let id = match na with Name id -> id | _ -> anomaly "unnamed dependent meta"
+  let id = match na with Name id -> id | _ -> anomaly (Pp.str "unnamed dependent meta")
   in errorlabstrm "" (str "Cannot find an instance for " ++ pr_id id ++ str".")
 
 (* For a clenv expressing some lemma [C[?1:T1,...,?n:Tn] : P] and some
@@ -724,13 +724,13 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) id c
 let last_arg c = match kind_of_term c with
   | App (f,cl) ->
       Array.last cl
-  | _ -> anomaly "last_arg"
+  | _ -> anomaly (Pp.str "last_arg")
 
 let nth_arg i c =
   if Int.equal i (-1) then last_arg c else
   match kind_of_term c with
   | App (f,cl) -> cl.(i)
-  | _ -> anomaly "nth_arg"
+  | _ -> anomaly (Pp.str "nth_arg")
 
 let index_of_ind_arg t =
   let rec aux i j t = match kind_of_term t with
@@ -1630,7 +1630,7 @@ let quantify lconstr =
 *)
 
 let out_arg = function
-  | ArgVar _ -> anomaly "Unevaluated or_var variable"
+  | ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable")
   | ArgArg x -> x
 
 let occurrences_of_hyp id cls =
@@ -2998,7 +2998,7 @@ let induction_from_context_l with_evars elim_info lid names gl =
      context. *)
   let hyp0,indvars,lid_params =
     match lid with
-      | []  -> anomaly "induction_from_context_l"
+      | []  -> anomaly (Pp.str "induction_from_context_l")
       | e::l ->
 	  let nargs_without_first = nargs_indarg_farg - 1 in
 	  let ivs,lp = cut_list nargs_without_first l in
@@ -3272,7 +3272,7 @@ let elim_scheme_type elim t gl =
 	  clenv_unify ~flags:elim_flags Reduction.CUMUL t
             (clenv_meta_type clause mv) clause in
 	res_pf clause' ~flags:elim_flags gl
-    | _ -> anomaly "elim_scheme_type"
+    | _ -> anomaly (Pp.str "elim_scheme_type")
 
 let elim_type t gl =
   let (ind,t) = pf_reduce_to_atomic_ind gl t in

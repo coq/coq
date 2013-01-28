@@ -19,9 +19,9 @@ open Pp
 val make_anomaly : ?label:string -> std_ppcmds -> exn
 (** Create an anomaly. *)
 
-val anomaly : string -> 'a
-val anomalylabstrm : string -> std_ppcmds -> 'a
-val anomaly_loc : Loc.t * string * std_ppcmds -> 'a
+val anomaly : ?loc:Loc.t -> ?label:string -> std_ppcmds -> 'a
+(** Raise an anomaly, with an optional location and an optional
+    label identifying the anomaly. *)
 
 val is_anomaly : exn -> bool
 (** Check whether a given exception is an anomaly. *)

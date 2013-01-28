@@ -155,14 +155,14 @@ let decode_mind kn =
     if (Dir_path.repr sec_dir) = [] then
      (Dir_path.make (dir_of_mp mp)),Label.to_id l
     else
-      anomaly "Section part should be empty!"
+      anomaly (Pp.str "Section part should be empty!")
 
 let decode_con kn =
   let mp,sec_dir,l = repr_con kn in
     match mp,(Dir_path.repr sec_dir) with
 	MPfile dir,[] -> (dir,Label.to_id l)
-      | _ , [] -> anomaly "MPfile expected!"
-      | _ -> anomaly "Section part should be empty!"
+      | _ , [] -> anomaly (Pp.str "MPfile expected!")
+      | _ -> anomaly (Pp.str "Section part should be empty!")
 
 (* popping one level of section in global names *)
 
@@ -178,4 +178,4 @@ let pop_global_reference = function
   | ConstRef con -> ConstRef (pop_con con)
   | IndRef (kn,i) -> IndRef (pop_kn kn,i)
   | ConstructRef ((kn,i),j) -> ConstructRef ((pop_kn kn,i),j)
-  | VarRef id -> anomaly "VarRef not poppable"
+  | VarRef id -> anomaly (Pp.str "VarRef not poppable")

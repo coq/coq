@@ -98,7 +98,7 @@ let global_of_cdata (loc,a) = Nametab.locate (uri_of_data a)
 
 let inductive_of_cdata a = match global_of_cdata a with
     | IndRef (kn,_) -> kn
-    | _ -> anomaly "XML parser: not an inductive"
+    | _ -> anomaly ~label:"XML parser" (str "not an inductive")
 
 let ltacref_of_cdata (loc,a) = (loc,locate_tactic (uri_of_data a))
 

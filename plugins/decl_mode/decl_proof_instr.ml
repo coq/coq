@@ -177,7 +177,7 @@ let close_block bt pts =
 		ET_Case_analysis -> error "\"end cases\" expected."
 	      | ET_Induction ->  error "\"end induction\" expected."
 	  end
-      | _,_ -> anomaly "Lonely suppose on stack."
+      | _,_ -> anomaly (Pp.str "Lonely suppose on stack.")
 
 
 (* utility for suppose / suppose it is *)
@@ -187,7 +187,7 @@ let close_previous_case pts =
     Proof.is_done pts
   then
     match get_top_stack pts with
-	Per (et,_,_,_) :: _ -> anomaly "Weird case occured ..."
+	Per (et,_,_,_) :: _ -> anomaly (Pp.str "Weird case occured ...")
       | Suppose_case :: Per (et,_,_,_) :: _ ->
 	  goto_current_focus (pts)
       | _ -> error "Not inside a proof per cases or induction."
@@ -233,7 +233,7 @@ let prepare_goal items gls =
        filter_hyps (let keep = !tokeep in fun id -> Id.Set.mem id keep)] gls
 
 let my_automation_tac = ref
-  (fun gls -> anomaly "No automation registered")
+  (fun gls -> anomaly (Pp.str "No automation registered"))
 
 let register_automation_tac tac = my_automation_tac:= tac
 
@@ -380,7 +380,7 @@ let concl_refiner metas body gls =
   let env = pf_env gls in
   let sort = family_of_sort (Typing.sort_of env evd concl) in
   let rec aux env avoid subst = function
-      [] -> anomaly "concl_refiner: cannot happen"
+      [] -> anomaly ~label:"concl_refiner" (Pp.str "cannot happen")
     | (n,typ)::rest ->
 	let _A = subst_meta subst typ in
 	let x = id_of_name_using_hdchar env _A Anonymous in
@@ -896,7 +896,7 @@ let register_nodep_subcase id= function
 	  | EK_nodep -> clauses,Per(et,pi,EK_nodep,id::clauses)::s
 	  | EK_dep _ -> error "Do not mix \"suppose\" with \"suppose it is\"."
       end
-  | _ -> anomaly "wrong stack state"
+  | _ -> anomaly (Pp.str "wrong stack state")
 
 let suppose_tac hyps gls0 =
   let info = get_its_info gls0 in
@@ -950,7 +950,7 @@ let rec add_branch ((id,_) as cpl) pats tree=
 	  match tree with
 	      End_patt cpl0 -> End_patt cpl0
 		(* this ensures precedence for overlapping patterns *)
-	    | _ -> anomaly "tree is expected to end here"
+	    | _ -> anomaly (Pp.str "tree is expected to end here")
 	end
     | args::stack ->
 	match args with
@@ -959,7 +959,7 @@ let rec add_branch ((id,_) as cpl) pats tree=
 		match tree with
 		   Close_patt t ->
 		     Close_patt (add_branch cpl stack t)
-		  | _ -> anomaly "we should pop here"
+		  | _ -> anomaly (Pp.str "we should pop here")
 	      end
 	  | (patt,rp) :: rest_args ->
 	      match patt with
@@ -974,7 +974,7 @@ let rec add_branch ((id,_) as cpl) pats tree=
 			      (fun i bri ->
 				 append_branch cpl 1 (rest_args::stack) bri)
 			      tree
-			| _ -> anomaly "No pop/stop expected here"
+			| _ -> anomaly (Pp.str "No pop/stop expected here")
 		    end
 		| PatCstr (_,(ind,cnum),args,nam) ->
 		      match tree with
@@ -1002,7 +1002,7 @@ let rec add_branch ((id,_) as cpl) pats tree=
 				  (nargs::rest_args::stack) bri
 			    else bri in
 			    map_tree_rp rp (fun ids -> ids) mapi tree
-		      | _ -> anomaly "No pop/stop expected here"
+		      | _ -> anomaly (Pp.str "No pop/stop expected here")
 and append_branch ((id,_) as cpl) depth pats = function
     Some (ids,tree) ->
       Some (Id.Set.add id ids,append_tree cpl depth pats tree)
@@ -1015,7 +1015,7 @@ and append_tree ((id,_) as cpl) depth pats tree =
 	Close_patt (append_tree cpl (pred depth) pats t)
     | Skip_patt (ids,t) ->
 	Skip_patt (Id.Set.add id ids,append_tree cpl depth pats t)
-    | End_patt _ -> anomaly "Premature end of branch"
+    | End_patt _ -> anomaly (Pp.str "Premature end of branch")
     | Split_patt (_,_,_) ->
 	map_tree (Id.Set.add id)
 	  (fun i bri -> append_branch cpl (succ depth) pats bri) tree
@@ -1105,7 +1105,7 @@ let case_tac params pat_info hyps gls0 =
   let et,per_info,ek,old_clauses,rest =
     match info.pm_stack with
 	Per (et,pi,ek,old_clauses)::rest -> (et,pi,ek,old_clauses,rest)
-      | _ -> anomaly "wrong place for cases" in
+      | _ -> anomaly (Pp.str "wrong place for cases") in
   let clause = build_dep_clause params pat_info per_info hyps gls0 in
   let ninfo1 = {pm_stack=Suppose_case::info.pm_stack} in
   let nek = 
@@ -1130,7 +1130,7 @@ let initial_instance_stack ids : (_, _) instance_stack =
   List.map (fun id -> id,[None,[]]) ids
 
 let push_one_arg arg = function
-    [] -> anomaly "impossible"
+    [] -> anomaly (Pp.str "impossible")
   | (head,args) :: ctx ->
       ((head,(arg::args)) :: ctx)
 
@@ -1148,7 +1148,7 @@ let push_head c ids stacks =
 let pop_one (id,stack) =
   let nstack=
     match stack with
-	[] -> anomaly "impossible"
+	[] -> anomaly (Pp.str "impossible")
       | [c] as l -> l
       | (Some head,args)::(head0,args0)::ctx ->
 	  let arg = applist (head,(List.rev args)) in
@@ -1195,7 +1195,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 		       (applist (mkVar id,
 				 List.append param_metas 
 				   (List.rev_append br_args hyp_metas)))) gls
-	    | _ -> anomaly "wrong stack size"
+	    | _ -> anomaly (Pp.str "wrong stack size")
 	end
     | Split_patt (ids,ind,br), casee::next_objs ->
 	let (mind,oind) as spec = Global.lookup_inductive ind in
@@ -1262,11 +1262,11 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	    (refine case_term)
 	    (Array.mapi branch_tac br) gls
     | Split_patt (_, _, _) , [] ->
-	anomaly "execute_cases : Nothing to split"
+	anomaly ~label:"execute_cases " (Pp.str "Nothing to split")
     | Skip_patt _ , [] ->
-	anomaly "execute_cases : Nothing to skip"
+	anomaly ~label:"execute_cases " (Pp.str "Nothing to skip")
     | End_patt (_,_) , _ :: _  ->
-	anomaly "execute_cases : End of branch with garbage left"
+	anomaly ~label:"execute_cases " (Pp.str "End of branch with garbage left")
 
 let understand_my_constr c gls =
   let env = pf_env gls in
@@ -1289,14 +1289,14 @@ let end_tac et2 gls =
   let et1,pi,ek,clauses =
     match info.pm_stack with
 	Suppose_case::_ ->
-	  anomaly "This case should already be trapped"
+	  anomaly (Pp.str "This case should already be trapped")
       | Claim::_ ->
 	  error "\"end claim\" expected."
       | Focus_claim::_ ->
 	  error "\"end focus\" expected."
       | Per(et',pi,ek,clauses)::_ -> (et',pi,ek,clauses)
       | [] ->
-	  anomaly "This case should already be trapped" in
+	  anomaly (Pp.str "This case should already be trapped") in
   let et =
     if et1 <> et2 then
       match et1 with
@@ -1394,7 +1394,7 @@ let rec do_proof_instr_gen _thus _then instr =
     | Psuppose hyps      -> suppose_tac hyps
     | Pcase (params,pat_info,hyps) -> case_tac params pat_info hyps
     | Pend (B_elim et) -> end_tac et
-    | Pend _ -> anomaly "Not applicable"
+    | Pend _ -> anomaly (Pp.str "Not applicable")
     | Pescape -> escape_tac
 
 let eval_instr {instr=instr} =
@@ -1443,7 +1443,7 @@ let rec postprocess pts instr =
  	    with
 		Type_errors.TypeError(env,
 				      Type_errors.IllFormedRecBody(_,_,_,_,_)) ->
-		  anomaly "\"end induction\" generated an ill-formed fixpoint"
+		  anomaly (Pp.str "\"end induction\" generated an ill-formed fixpoint")
 	end
     | Pend _ ->
 	goto_current_focus_or_top (pts)

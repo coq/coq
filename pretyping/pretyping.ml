@@ -686,7 +686,7 @@ and pretype_type valcon env evdref lvar = function
                | Sort s -> s
                | Evar ev when is_Type (existential_type sigma ev) ->
 		   evd_comb1 (define_evar_as_sort) evdref ev
-               | _ -> anomaly "Found a type constraint which is not a type"
+               | _ -> anomaly (Pp.str "Found a type constraint which is not a type")
            in
 	     { utj_val = v;
 	       utj_type = s }

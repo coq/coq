@@ -633,7 +633,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       (list_of_app_stack ts) (list_of_app_stack ts1) with
       |Some substn ->
 	unirec_rec curenvnb pb b false substn c1 (applist (c,(List.rev ks)))
-      |None -> anomaly "As expected, solve_canonical_projection breaks the term too much"
+      |None -> anomaly (Pp.str "As expected, solve_canonical_projection breaks the term too much")
   in
   let evd = sigma in
     if (if occur_meta_or_undefined_evar evd m || occur_meta_or_undefined_evar evd n

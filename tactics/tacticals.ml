@@ -207,7 +207,7 @@ let compute_construtor_signatures isrec (_,k as ity) =
 	in b :: (analrec c rest)
     | LetIn (_,_,_,c), rest -> false :: (analrec c rest)
     | _, [] -> []
-    | _ -> anomaly "compute_construtor_signatures"
+    | _ -> anomaly (Pp.str "compute_construtor_signatures")
   in
   let (mib,mip) = Global.lookup_inductive ity in
   let n = mib.mind_nparams in
@@ -239,7 +239,7 @@ let general_elim_then_using mk_elim
   let indmv =
     match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
       | Meta mv -> mv
-      | _         -> anomaly "elimination"
+      | _         -> anomaly (Pp.str "elimination")
   in
   let pmv =
     let p, _ = decompose_app elimclause.templtyp.Evd.rebus in
@@ -335,11 +335,11 @@ let make_elim_branch_assumptions ba gl =
 		   id::constargs,
 		   recargs,
 		   indargs) tl idtl
-      | (_, _) -> anomaly "make_elim_branch_assumptions"
+      | (_, _) -> anomaly (Pp.str "make_elim_branch_assumptions")
   in
   makerec ([],[],[],[],[]) ba.branchsign
     (try List.firstn ba.nassums (pf_hyps gl)
-     with Failure _ -> anomaly "make_elim_branch_assumptions")
+     with Failure _ -> anomaly (Pp.str "make_elim_branch_assumptions"))
 
 let elim_on_ba tac ba gl = tac (make_elim_branch_assumptions ba gl) gl
 
@@ -359,11 +359,11 @@ let make_case_branch_assumptions ba gl =
 		   id::cargs,
 		   recargs,
 		   id::constargs) tl idtl
-      | (_, _) -> anomaly "make_case_branch_assumptions"
+      | (_, _) -> anomaly (Pp.str "make_case_branch_assumptions")
   in
   makerec ([],[],[],[]) ba.branchsign
     (try List.firstn ba.nassums (pf_hyps gl)
-     with Failure _ -> anomaly "make_case_branch_assumptions")
+     with Failure _ -> anomaly (Pp.str "make_case_branch_assumptions"))
 
 let case_on_ba tac ba gl = tac (make_case_branch_assumptions ba gl) gl
 

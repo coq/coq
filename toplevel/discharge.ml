@@ -21,7 +21,7 @@ open Cooking
 let detype_param = function
   | (Name id,None,p) -> id, Entries.LocalAssum p
   | (Name id,Some p,_) -> id, Entries.LocalDef p
-  | (Anonymous,_,_) -> anomaly"Unnamed inductive local variable"
+  | (Anonymous,_,_) -> anomaly (Pp.str "Unnamed inductive local variable")
 
 (* Replace
 

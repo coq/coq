@@ -64,7 +64,7 @@ let cook_proof hook =
   hook prf;
   match Proof_global.close_proof () with
   | (i,([e],cg,str,h)) -> (i,(e,cg,str,h))
-  | _ -> Errors.anomaly "Pfedit.cook_proof: more than one proof term."
+  | _ -> Errors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
 
 let xml_cook_proof = ref (fun _ -> ())
 let set_xml_cook_proof f = xml_cook_proof := f
@@ -113,7 +113,7 @@ let get_current_goal_context () =
 let current_proof_statement () =
   match Proof_global.V82.get_current_initial_conclusions () with
     | (id,([concl],strength,hook)) -> id,strength,concl,hook
-    | _ -> Errors.anomaly "Pfedit.current_proof_statement: more than one statement"
+    | _ -> Errors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement")
 
 let solve_nth ?(with_end_tac=false) gi tac = 
   try 

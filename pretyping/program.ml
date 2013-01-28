@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Pp
 open Errors
 open Util
 open Names
@@ -16,7 +17,8 @@ let make_dir l = Dir_path.make (List.map Id.of_string (List.rev l))
 let find_reference locstr dir s =
   let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
   try Nametab.global_of_path sp
-  with Not_found -> anomaly (locstr^": cannot find "^(Libnames.string_of_path sp))
+  with Not_found ->
+    anomaly ~label:locstr (Pp.str "cannot find" ++ spc () ++ Libnames.pr_path sp)
 
 let coq_reference locstr dir s = find_reference locstr ("Coq"::dir) s
 let coq_constant locstr dir s = Globnames.constr_of_global (coq_reference locstr dir s)

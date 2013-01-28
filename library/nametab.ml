@@ -172,7 +172,7 @@ let rec push_exactly uname o level tree = function
 	  let ptab' = push_exactly uname o (level-1) mc path in
 	  mktree tree.path (ModIdmap.add modid ptab' tree.map)
   | [] ->
-      anomaly "Prefix longer than path! Impossible!"
+      anomaly (Pp.str "Prefix longer than path! Impossible!")
 
 
 let push visibility uname o tab =
@@ -312,7 +312,7 @@ struct
   let equal d1 d2 = Int.equal (Dir_path.compare d1 d2) 0
   let to_string = Dir_path.to_string
   let repr dir = match Dir_path.repr dir with
-    | [] -> anomaly "Empty dirpath"
+    | [] -> anomaly (Pp.str "Empty dirpath")
     | id :: l -> (id, l)
 end
 

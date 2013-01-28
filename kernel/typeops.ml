@@ -466,10 +466,10 @@ let rec execute env cstr cu =
 
     (* Partial proofs: unsupported by the kernel *)
     | Meta _ ->
-	anomaly "the kernel does not support metavariables"
+	anomaly (Pp.str "the kernel does not support metavariables")
 
     | Evar _ ->
-	anomaly "the kernel does not support existential variables"
+	anomaly (Pp.str "the kernel does not support existential variables")
 
 and execute_type env constr cu =
   let (j,cu1) = execute env constr cu in

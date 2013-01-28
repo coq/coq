@@ -657,7 +657,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       let filter = List.map2 (&&) filter filter' in
       (id,t,c,ty,evs,filter,occs) :: make_subst (ctxt',l,occsl)
   | [], [], [] -> []
-  | _ -> anomaly "Signature, instance and occurrences list do not match" in
+  | _ -> anomaly (Pp.str "Signature, instance and occurrences list do not match") in
 
   let rec set_holes evdref rhs = function
   | (id,_,c,cty,evsref,filter,occs)::subst ->

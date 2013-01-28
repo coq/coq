@@ -165,9 +165,9 @@ let rec uri_of_constr c =
   | GRec _ | GIf _ | GLetTuple _ | GCases _ ->
       error "Whelp does not support pattern-matching and (co-)fixpoint."
   | GVar _ | GRef _ | GHole _ | GEvar _ | GSort _ | GCast (_,_, CastCoerce) ->
-      anomaly "Written w/o parenthesis"
+      anomaly (Pp.str "Written w/o parenthesis")
   | GPatVar _ ->
-      anomaly "Found constructors not supported in constr") ()
+      anomaly (Pp.str "Found constructors not supported in constr")) ()
 
 let make_string f x = Buffer.reset b; f x; Buffer.contents b
 

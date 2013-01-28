@@ -229,7 +229,7 @@ and check_with_mod env sign (idl,mp1) mp equiv =
 and translate_module env mp inl me =
   match me.mod_entry_expr, me.mod_entry_type with
     | None, None ->
-	anomaly "Mod_typing.translate_module: empty type and expr in module entry"
+	anomaly ~label:"Mod_typing.translate_module" (Pp.str "empty type and expr in module entry")
     | None, Some mte ->
 	let mtb = translate_module_type env mp inl mte in
 	  { mod_mp = mp;

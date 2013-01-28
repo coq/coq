@@ -441,7 +441,7 @@ let destArity =
     | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t)::l) c
     | Cast (c,_,_)    -> prodec_rec l c
     | Sort s          -> l,s
-    | _               -> anomaly "destArity: not an arity"
+    | _               -> anomaly ~label:"destArity" (Pp.str "not an arity")
   in
   prodec_rec []
 

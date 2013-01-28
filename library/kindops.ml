@@ -34,8 +34,8 @@ let string_of_definition_kind def =
   | Global, CanonicalStructure -> "Canonical Structure"
   | Global, Example -> "Example"
   | Local, (CanonicalStructure|Example) ->
-      Errors.anomaly "Unsupported local definition kind"
+      Errors.anomaly (Pp.str "Unsupported local definition kind")
   | Local, Instance -> "Instance"
   | Global, Instance -> "Global Instance"
   | _, (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method)
-      -> Errors.anomaly "Internal definition kind"
+      -> Errors.anomaly (Pp.str "Internal definition kind")

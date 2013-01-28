@@ -280,7 +280,7 @@ let inInductive : inductive_obj -> obj =
 let declare_mind isrecord mie =
   let id = match mie.mind_entry_inds with
     | ind::_ -> ind.mind_entry_typename
-    | [] -> anomaly "cannot declare an empty list of inductives" in
+    | [] -> anomaly (Pp.str "cannot declare an empty list of inductives") in
   let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
   let mind = Global.mind_of_delta_kn kn in
   declare_mib_implicits mind;
@@ -294,7 +294,7 @@ let pr_rank i = pr_nth (i+1)
 
 let fixpoint_message indexes l =
   Flags.if_verbose msg_info (match l with
-  | [] -> anomaly "no recursive definition"
+  | [] -> anomaly (Pp.str "no recursive definition")
   | [id] -> pr_id id ++ str " is recursively defined" ++
       (match indexes with
 	 | Some [|i|] -> str " (decreasing on "++pr_rank i++str " argument)"
@@ -309,7 +309,7 @@ let fixpoint_message indexes l =
 
 let cofixpoint_message l =
   Flags.if_verbose msg_info (match l with
-  | [] -> anomaly "No corecursive definition."
+  | [] -> anomaly (Pp.str "No corecursive definition.")
   | [id] -> pr_id id ++ str " is corecursively defined"
   | l -> hov 0 (prlist_with_sep pr_comma pr_id l ++
                     spc () ++ str "are corecursively defined"))

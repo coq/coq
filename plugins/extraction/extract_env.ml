@@ -348,7 +348,7 @@ and extract_seb env mp all = function
   | SEBstruct (msb) ->
       let env' = Modops.add_signature mp msb empty_delta_resolver env in
       MEstruct (mp,extract_sfb env' mp all msb)
-  | SEBwith (_,_) -> anomaly "Not available yet"
+  | SEBwith (_,_) -> anomaly (Pp.str "Not available yet")
 
 and extract_module env mp all mb =
   (* A module has an empty [mod_expr] when :

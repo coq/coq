@@ -845,7 +845,7 @@ let compute_dec_tact ind lnamesparrec nparrec gsig =
 let make_eq_decidability mind =
   let mib = Global.lookup_mind mind in
   if not (Int.equal (Array.length mib.mind_packets) 1) then
-    anomaly "Decidability lemma for mutual inductive types not supported";
+    anomaly (Pp.str "Decidability lemma for mutual inductive types not supported");
   let ind = (mind,0) in
   let nparams = mib.mind_nparams in
   let nparrec = mib.mind_nparams_rec in

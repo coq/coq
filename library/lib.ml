@@ -350,15 +350,15 @@ let end_compilation dir =
     try match find_entry_p is_opening_lib with
       |	(oname, CompilingLibrary prefix) -> oname
       | _ -> assert false
-    with Not_found -> anomaly "No module declared"
+    with Not_found -> anomaly (Pp.str "No module declared")
   in
   let _ =
     match !comp_name with
-      | None -> anomaly "There should be a module name..."
+      | None -> anomaly (Pp.str "There should be a module name...")
       | Some m ->
 	  if not (Names.Dir_path.equal m dir) then anomaly
-	    ("The current open module has name "^ (Names.Dir_path.to_string m) ^
-	       " and not " ^ (Names.Dir_path.to_string m));
+	    (str "The current open module has name" ++ spc () ++ pr_dirpath m ++
+             spc () ++ str "and not" ++ spc () ++ pr_dirpath m);
   in
   let (after,mark,before) = split_lib_at_opening oname in
   comp_name := None;
@@ -521,7 +521,7 @@ let discharge_item ((sp,_ as oname),e) =
   | FrozenState _ -> None
   | ClosedSection _ | ClosedModule _ -> None
   | OpenedSection _ | OpenedModule _ | CompilingLibrary _ ->
-      anomaly "discharge_item"
+      anomaly (Pp.str "discharge_item")
 
 let close_section () =
   let oname,fs =
@@ -681,7 +681,7 @@ let remove_section_part ref =
   let dir,_ = repr_path sp in
   match ref with
   | VarRef id ->
-      anomaly "remove_section_part not supported on local variables"
+      anomaly (Pp.str "remove_section_part not supported on local variables")
   | _ ->
       if is_dirpath_prefix_of dir (cwd ()) then
         (* Not yet (fully) discharged *)

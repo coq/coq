@@ -108,14 +108,14 @@ let rec head_pattern_bound t =
 	-> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
     | PLambda _ -> raise BoundPattern
-    | PCoFix _ -> anomaly "head_pattern_bound: not a type"
+    | PCoFix _ -> anomaly ~label:"head_pattern_bound" (Pp.str "not a type")
 
 let head_of_constr_reference c = match kind_of_term c with
   | Const sp -> ConstRef sp
   | Construct sp -> ConstructRef sp
   | Ind sp -> IndRef sp
   | Var id -> VarRef id
-  | _ -> anomaly "Not a rigid reference"
+  | _ -> anomaly (Pp.str "Not a rigid reference")
 
 let pattern_of_constr sigma t =
   let ctx = ref [] in

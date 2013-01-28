@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Pp
 open Errors
 open Util
 open Term
@@ -21,7 +22,7 @@ open Arguments_renaming
 let meta_type evd mv =
   let ty =
     try Evd.meta_ftype evd mv
-    with Not_found -> anomaly ("unknown meta ?"^Nameops.string_of_meta mv) in
+    with Not_found -> anomaly (str "unknown meta ?" ++ str (Nameops.string_of_meta mv)) in
   meta_instance evd ty
 
 let constant_type_knowing_parameters env cst jl =

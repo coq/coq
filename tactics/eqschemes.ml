@@ -563,7 +563,7 @@ let fix_r2l_forward_rew_scheme c =
 	      (Reductionops.whd_beta Evd.empty
 		(applist (c,
 	          extended_rel_list 3 indargs @ [mkRel 1;mkRel 3;mkRel 2]))))))
-  | _ -> anomaly "Ill-formed non-dependent left-to-right rewriting scheme"
+  | _ -> anomaly (Pp.str "Ill-formed non-dependent left-to-right rewriting scheme")
 
 (**********************************************************************)
 (* Build the right-to-left rewriting lemma for conclusion associated  *)

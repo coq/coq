@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Pp
 open Genarg
 
 (* This file defines extra argument types *)
@@ -28,7 +29,7 @@ let wit_tactic = function
   | 3 -> wit_tactic3
   | 4 -> wit_tactic4
   | 5 -> wit_tactic5
-  | n -> Errors.anomaly ("Unavailable tactic level: "^string_of_int n)
+  | n -> Errors.anomaly (str "Unavailable tactic level:" ++ spc () ++ int n)
 
 let globwit_tactic = function
   | 0 -> globwit_tactic0
@@ -37,7 +38,7 @@ let globwit_tactic = function
   | 3 -> globwit_tactic3
   | 4 -> globwit_tactic4
   | 5 -> globwit_tactic5
-  | n -> Errors.anomaly ("Unavailable tactic level: "^string_of_int n)
+  | n -> Errors.anomaly (str "Unavailable tactic level:" ++ spc () ++ int n)
 
 let rawwit_tactic = function
   | 0 -> rawwit_tactic0
@@ -46,7 +47,7 @@ let rawwit_tactic = function
   | 3 -> rawwit_tactic3
   | 4 -> rawwit_tactic4
   | 5 -> rawwit_tactic5
-  | n -> Errors.anomaly ("Unavailable tactic level: "^string_of_int n)
+  | n -> Errors.anomaly (str "Unavailable tactic level:" ++ spc () ++ int n)
 
 let tactic_genarg_level s =
   if Int.equal (String.length s) 7 && String.sub s 0 6 = "tactic" then

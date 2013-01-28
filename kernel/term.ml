@@ -407,7 +407,7 @@ let isConstruct c = match kind_of_term c with Construct _ -> true | _ -> false
 (* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
 let destCase c = match kind_of_term c with
   | Case (ci,p,c,v) -> (ci,p,c,v)
-  | _ -> anomaly "destCase"
+  | _ -> invalid_arg "destCase"
 
 let isCase c =  match kind_of_term c with Case _ -> true | _ -> false
 
@@ -1160,7 +1160,7 @@ let destArity =
     | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t)::l) c
     | Cast (c,_,_)      -> prodec_rec l c
     | Sort s          -> l,s
-    | _               -> anomaly "destArity: not an arity"
+    | _               -> anomaly ~label:"destArity" (Pp.str "not an arity")
   in
   prodec_rec []
 

@@ -244,7 +244,7 @@ let add_retroknowledge mp =
 	  (match e with 
 	    | Const kn -> kind_of_term (mkConst kn)
 	    | Ind ind -> kind_of_term (mkInd ind)
-	    | _ -> anomaly "Modops.add_retroknowledge: had to import an unsupported kind of term")
+	    | _ -> anomaly ~label:"Modops.add_retroknowledge" (Pp.str "had to import an unsupported kind of term"))
   in
   fun lclrk env ->
   (* The order of the declaration matters, for instance (and it's at the
@@ -278,7 +278,7 @@ and add_module mb env =
 	  add_retroknowledge mp mb.mod_retroknowledge 
 	    (add_signature mp sign mb.mod_delta env)
       | SEBfunctor _ -> env
-      | _ -> anomaly "Modops:the evaluation of the structure failed "
+      | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
 
 let strengthen_const mp_from l cb resolver =
   match cb.const_body with
@@ -308,7 +308,7 @@ let rec strengthen_mod mp_from mp_to mb =
 	       (add_delta_resolver mb.mod_delta resolve_out);
 	       mod_retroknowledge = mb.mod_retroknowledge}
      | SEBfunctor _ -> mb
-     | _ -> anomaly "Modops:the evaluation of the structure failed "
+     | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
 
 and strengthen_sig mp_from sign mp_to resolver =
   match sign with
@@ -345,7 +345,7 @@ let strengthen mtb mp =
 	       typ_delta = add_delta_resolver mtb.typ_delta
 		(add_mp_delta_resolver mtb.typ_mp mp resolve_out)}
       | SEBfunctor _ -> mtb
-      | _ -> anomaly "Modops:the evaluation of the structure failed "
+      | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
 
 let module_type_of_module mp mb =
   match mp with
@@ -408,7 +408,7 @@ let rec strengthen_and_subst_mod
 	   subst_module subst 
 	     (fun resolver subst-> subst_dom_codom_delta_resolver subst resolver) mb  
 	
-       | _ -> anomaly "Modops:the evaluation of the structure failed "
+       | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
 	   
 and strengthen_and_subst_struct 
     str subst mp_alias mp_from mp_to alias incl resolver =
@@ -518,7 +518,7 @@ let strengthen_and_subst_mb mb mp include_b =
 	  let subst = map_mp mb.mod_mp mp empty_delta_resolver in
 	  subst_module subst 
 	    (fun resolver subst -> subst_dom_codom_delta_resolver subst resolver) mb 
-      | _ -> anomaly "Modops:the evaluation of the structure failed "
+      | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
 
 
 let subst_modtype_and_resolver mtb mp =
@@ -572,7 +572,7 @@ let rec collect_mbid l = function
   | SEBstruct str as s->
       let str_clean = Util.List.smartmap (clean_struct l) str in 
 	if  str_clean == str then s else SEBstruct(str_clean)
-  |  _ -> anomaly "Modops:the evaluation of the structure failed "
+  |  _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
        
        
 let clean_bounded_mod_expr = function

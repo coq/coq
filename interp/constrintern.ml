@@ -316,7 +316,7 @@ let rec it_mkGLambda loc2 env body =
 let build_impls = function
   |Implicit -> (function
 		  |Name id ->  Some (id, Impargs.Manual, (true,true))
-		  |Anonymous -> anomaly "Anonymous implicit argument")
+		  |Anonymous -> anomaly (Pp.str "Anonymous implicit argument"))
   |Explicit -> fun _ -> None
 
 let impls_type_list ?(args = []) =
@@ -543,7 +543,7 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
             (aux ((x,(a,(scopt,subscopes)))::terms,binderopt) subinfos iter))
             (if lassoc then List.rev l else l) termin
       with Not_found ->
-          anomaly "Inconsistent substitution of recursive notation")
+          anomaly (Pp.str "Inconsistent substitution of recursive notation"))
     | NHole (Evar_kinds.BinderType (Name id as na)) ->
       let na =
         try snd (coerce_to_name (fst (List.assoc id terms)))
@@ -562,7 +562,7 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
 	  termin bl in
 	make_letins letins res
       with Not_found ->
-          anomaly "Inconsistent substitution of recursive notation")
+          anomaly (Pp.str "Inconsistent substitution of recursive notation"))
     | NProd (Name id, NHole _, c') when option_mem_assoc id binderopt ->
         let (loc,(na,bk,t)),letins = snd (Option.get binderopt) in
 	GProd (loc,na,bk,t,make_letins letins (aux subst' infos c'))
@@ -855,7 +855,7 @@ let chop_params_pattern loc ind args with_letin =
 let find_constructor loc add_params ref =
   let cstr = (function ConstructRef cstr -> cstr
     |IndRef _ -> user_err_loc (loc,"find_constructor",str "There is an inductive name deep in a \"in\" clause.")
-    |_ -> anomaly "unexpected global_reference in pattern") ref in
+    |_ -> anomaly (Pp.str "unexpected global_reference in pattern")) ref in
   cstr, (function (ind,_ as c) -> match add_params with
     |Some nb_args -> let nb = if Int.equal nb_args (Inductiveops.constructor_nrealhyps c)
       then fst (Inductiveops.inductive_nargs ind)
@@ -890,7 +890,7 @@ let sort_fields mode loc l completer =
 	      | [] -> (i, acc)
 	      | (Some name) :: b->
 		 (match m with
-		    | [] -> anomaly "Number of projections mismatch"
+		    | [] -> anomaly (Pp.str "Number of projections mismatch")
 		    | (_, regular)::tm ->
 		       let boolean = not regular in
                        begin match global_reference_of_reference refer with
@@ -914,7 +914,7 @@ let sort_fields mode loc l completer =
 	    (record.Recordops.s_EXPECTEDPARAM,
 	     Qualid (loc, shortest_qualid_of_global Id.Set.empty (ConstructRef ind)),
 	     build_patt record.Recordops.s_PROJ record.Recordops.s_PROJKIND 1 (0,[]))
-	  with Not_found -> anomaly "Environment corruption for records."
+	  with Not_found -> anomaly (Pp.str "Environment corruption for records.")
 	  in
 	(* now we want to have all fields of the pattern indexed by their place in
 	   the constructor *)
@@ -1099,7 +1099,7 @@ let drop_notations_pattern looked_for =
 	    tmp_scope = scopt} a
 	with Not_found ->
 	  if Id.equal id ldots_var then RCPatAtom (loc,Some id) else
-	    anomaly ("Unbound pattern notation variable: "^(Id.to_string id))
+	    anomaly (str "Unbound pattern notation variable: " ++ Id.print id)
       end
     | NRef g ->
       ensure_kind top g;
@@ -1122,7 +1122,7 @@ let drop_notations_pattern looked_for =
            subst_pat_iterator ldots_var t u)
            (if lassoc then List.rev l else l) termin
        with Not_found ->
-         anomaly "Inconsistent substitution of recursive notation")
+         anomaly (Pp.str "Inconsistent substitution of recursive notation"))
     | NHole _ ->
       let () = assert (List.is_empty args) in
       RCPatAtom (loc, None)
@@ -1224,7 +1224,7 @@ let get_implicit_name n imps =
 let set_hole_implicit i b = function
   | GRef (loc,r) | GApp (_,GRef (loc,r),_) -> (loc,Evar_kinds.ImplicitArg (r,i,b))
   | GVar (loc,id) -> (loc,Evar_kinds.ImplicitArg (VarRef id,i,b))
-  | _ -> anomaly "Only refs have implicits"
+  | _ -> anomaly (Pp.str "Only refs have implicits")
 
 let exists_implicit_name id =
   List.exists (fun imp -> is_status_implicit imp && Id.equal id (name_of_implicit imp))

@@ -167,7 +167,7 @@ let error_incompatible_inst clenv mv  =
           (str "An incompatible instantiation has already been found for " ++
            pr_id id)
     | _ ->
-        anomaly "clenv_assign: non dependent metavar already assigned"
+        anomaly ~label:"clenv_assign" (Pp.str "non dependent metavar already assigned")
 
 (* TODO: replace by clenv_unify (mkMeta mv) rhs ? *)
 let clenv_assign mv rhs clenv =
@@ -421,7 +421,7 @@ let error_already_defined b =
           (str "Binder name \"" ++ pr_id id ++
            str"\" already defined with incompatible value.")
     | AnonHyp n ->
-        anomalylabstrm ""
+        anomaly
           (str "Position " ++ int n ++ str" already defined.")
 
 let clenv_unify_binding_type clenv c t u =

@@ -211,7 +211,7 @@ let push_named_rec_types (lna,typarray,_) env =
       (fun i na t ->
 	 match na with
 	   | Name id -> (id, None, lift i t)
-	   | Anonymous -> anomaly "Fix declarations must be named")
+	   | Anonymous -> anomaly (Pp.str "Fix declarations must be named"))
       lna typarray in
   Array.fold_left
     (fun e assum -> push_named assum e) env ctxt
@@ -275,7 +275,7 @@ let rec drop_extra_implicit_args c = match kind_of_term c with
 (* Get the last arg of an application *)
 let last_arg c = match kind_of_term c with
   | App (f,cl) -> Array.last cl
-  | _ -> anomaly "last_arg"
+  | _ -> anomaly (Pp.str "last_arg")
 
 (* Get the last arg of an application *)
 let decompose_app_vect c =
@@ -974,7 +974,7 @@ let rec eta_reduce_head c =
 	(match kind_of_term (eta_reduce_head c') with
            | App (f,cl) ->
                let lastn = (Array.length cl) - 1 in
-               if lastn < 1 then anomaly "application without arguments"
+               if lastn < 1 then anomaly (Pp.str "application without arguments")
                else
                  (match kind_of_term cl.(lastn) with
                     | Rel 1 ->
@@ -1043,7 +1043,7 @@ let adjust_subst_to_rel_context sign l =
     | (_,Some c,_)::sign', args' ->
 	aux (substl (List.rev subst) c :: subst) sign' args'
     | [], [] -> List.rev subst
-    | _ -> anomaly "Instance and signature do not match"
+    | _ -> anomaly (Pp.str "Instance and signature do not match")
   in aux [] (List.rev sign) l
 
 let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
@@ -1093,7 +1093,7 @@ let context_chop k ctx =
     | (0, l2) -> (List.rev acc, l2)
     | (n, ((_,Some _,_ as h)::t)) -> chop_aux (h::acc) (n, t)
     | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
-    | (_, []) -> anomaly "context_chop"
+    | (_, []) -> anomaly (Pp.str "context_chop")
   in chop_aux [] (k,ctx)
 
 (* Do not skip let-in's *)
