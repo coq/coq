@@ -1,5 +1,6 @@
 Coq_config
 
+Backtrace
 Int
 Pp_control
 Flags
