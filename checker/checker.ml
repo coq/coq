@@ -238,8 +238,6 @@ let rec explain_exn = function
       hov 0 (str "Out of memory")
   | Stack_overflow ->
       hov 0 (str "Stack overflow")
-  | Anomaly (s,pps) ->
-      hov 1 (anomaly_string () ++ where s ++ pps ++ report ())
   | Match_failure(filename,pos1,pos2) ->
       hov 1 (anomaly_string () ++ str "Match failure in file " ++
 	     str (guill filename) ++ str " at line " ++ int pos1 ++
@@ -283,6 +281,8 @@ let rec explain_exn = function
 		   str ", characters " ++ int e ++ str "-" ++
 		   int (e+6) ++ str ")")) ++
 	       report ())
+  | e when is_anomaly e ->
+      print_anomaly e
   | reraise ->
       hov 0 (anomaly_string () ++ str "Uncaught exception " ++
 	       str (Printexc.to_string reraise)++report())

@@ -16,10 +16,15 @@ open Pp
  [Anomaly] is used for system errors and [UserError] for the
    user's ones. *)
 
-exception Anomaly of string * std_ppcmds
+val make_anomaly : ?label:string -> std_ppcmds -> exn
+(** Create an anomaly. *)
+
 val anomaly : string -> 'a
 val anomalylabstrm : string -> std_ppcmds -> 'a
 val anomaly_loc : Loc.t * string * std_ppcmds -> 'a
+
+val is_anomaly : exn -> bool
+(** Check whether a given exception is an anomaly. *)
 
 exception UserError of string * std_ppcmds
 val error : string -> 'a
@@ -69,6 +74,9 @@ val register_handler : (exn -> Pp.std_ppcmds) -> unit
 
 (** The standard exception printer *)
 val print : exn -> Pp.std_ppcmds
+
+(** Exception printer dedicated to anomalies. *)
+val print_anomaly : exn -> Pp.std_ppcmds
 
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)

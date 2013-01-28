@@ -10,9 +10,31 @@ open Pp
 
 (* Errors *)
 
-exception Anomaly of string * std_ppcmds  (* System errors *)
-let anomaly string = raise (Anomaly(string, str string))
-let anomalylabstrm string pps = raise (Anomaly(string,pps))
+type backtrace = string option
+
+exception Anomaly of string option * std_ppcmds * backtrace (* System errors *)
+
+let get_backtrace () =
+  if !Flags.debug then Some (Printexc.get_backtrace ())
+  else None
+
+let make_anomaly ?label pp =
+  let bt = get_backtrace () in
+  Anomaly (label, pp, bt)
+
+let anomaly_gen label pp =
+  let bt = get_backtrace () in
+  raise (Anomaly (label, pp, bt))
+
+let anomaly string =
+  anomaly_gen None (str string)
+
+let anomalylabstrm string pps =
+  anomaly_gen (Some string) pps
+
+let is_anomaly = function
+| Anomaly _ -> true
+| _ -> false
 
 exception UserError of string * std_ppcmds (* User errors *)
 let error string = raise (UserError("_", str string))
@@ -24,7 +46,10 @@ let alreadydeclared pps = raise (AlreadyDeclared(pps))
 let todo s = prerr_string ("TODO: "^s^"\n")
 
 (* raising located exceptions *)
-let anomaly_loc (loc,s,strm) = Loc.raise loc (Anomaly (s,strm))
+let anomaly_loc (loc,s,strm) =
+  let bt = get_backtrace () in
+  Loc.raise loc (Anomaly (Some s, strm, bt))
+
 let user_err_loc (loc,s,strm) = Loc.raise loc (UserError (s,strm))
 let invalid_arg_loc (loc,s) = Loc.raise loc (Invalid_argument s)
 
@@ -60,19 +85,28 @@ let rec print_gen bottom stk e =
     In usual situation, the [handle_stack] is treated as it if was always
     non-empty with [print_anomaly] as its bottom handler. *)
 
-let where s =
+let where = function
+| None -> mt ()
+| Some s ->
   if !Flags.debug then str ("in "^s^":") ++ spc () else mt ()
 
 let raw_anomaly e = match e with
-  | Anomaly (s,pps) -> where s ++ pps ++ str "."
+  | Anomaly (s, pps, bt) -> where s ++ pps ++ str "."
   | Assert_failure _ | Match_failure _ -> str (Printexc.to_string e ^ ".")
   | _ -> str ("Uncaught exception " ^ Printexc.to_string e ^ ".")
 
 let print_anomaly askreport e =
-  if askreport then
-    hov 0 (str "Anomaly: " ++ raw_anomaly e ++ spc () ++ str "Please report.")
-  else
-    hov 0 (raw_anomaly e)
+  let bt_info = match e with
+  | Anomaly (_, _, Some bt) -> (fnl () ++ hov 0 (str bt))
+  | _ -> mt ()
+  in
+  let info =
+    if askreport then
+      hov 0 (str "Anomaly: " ++ raw_anomaly e ++ spc () ++ str "Please report.")
+    else
+      hov 0 (raw_anomaly e)
+  in
+  info ++ bt_info
 
 (** The standard exception printer *)
 let print e = print_gen (print_anomaly true) !handle_stack e
@@ -81,6 +115,8 @@ let print e = print_gen (print_anomaly true) !handle_stack e
     isn't printed (used in Ltac debugging). *)
 let print_no_report e = print_gen (print_anomaly false) !handle_stack e
 
+let print_anomaly e = print_anomaly true e
+
 (** Same as [print], except that anomalies are not printed but re-raised
     (used for the Fail command) *)
 let print_no_anomaly e = print_gen (fun e -> raise e) !handle_stack e
@@ -88,7 +124,7 @@ let print_no_anomaly e = print_gen (fun e -> raise e) !handle_stack e
 (** Predefined handlers **)
 
 let _ = register_handler begin function
-  | UserError(s,pps) -> hov 0 (str "Error: " ++ where s ++ pps)
+  | UserError(s,pps) -> hov 0 (str "Error: " ++ where (Some s) ++ pps)
   | _ -> raise Unhandled
 end
 

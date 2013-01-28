@@ -11,7 +11,9 @@ open Pp
 
 let (/) = Filename.concat
 
-let set_debug () = Flags.debug := true
+let set_debug () =
+  let () = Printexc.record_backtrace true in
+  Flags.debug := true
 
 (* Loading of the ressource file.
    rcfile is either $XDG_CONFIG_HOME/.coqrc.VERSION, or $XDG_CONFIG_HOME/.coqrc if the first one

@@ -823,7 +823,7 @@ and solve_obligation_by_tac prg obls i tac =
 	| Loc.Exc_located(_, Refiner.FailError (_, s))
 	| Refiner.FailError (_, s) ->
 	    user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)
-	| Errors.Anomaly _ as e -> raise e
+	| e when Errors.is_anomaly e -> raise e
 	| e -> false
 
 and solve_prg_obligations prg ?oblset tac =

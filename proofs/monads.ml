@@ -166,7 +166,9 @@ end = struct
     (* spiwack: I cannot be sure right now, but [anomaly] shouldn't be
        reachable. If it is reachable there may be some redesign to be
        done around success continuations. *)
-    let anomaly = Errors.Anomaly ("Monads.Logic(T).split", Pp.str"[fk] should ignore this error") in
+    let anomaly = Errors.make_anomaly ~label:"Monads.Logic(T).split"
+      (Pp.str "[fk] should ignore this error")
+    in
     let fk e = T.return (Util.Inr e) in
     let sk a fk = T.return (Util.Inl (a,bind (lift (fk anomaly)) reflect)) in
     lift (x.go sk fk)

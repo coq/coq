@@ -1744,9 +1744,10 @@ and interp_atomic ist gl tac =
 	 is dropped as the evar_map taken as input (from
 	 extend_gl_hyps) is incorrect.  This means that evar
 	 instantiated by pf_interp_constr may be lost, there. *)
+      let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
       let (_,c_interp) =
 	try pf_interp_constr ist (extend_gl_hyps gl sign) c
-	with Not_found | Anomaly _ (* Hack *) ->
+	with e when to_catch e (* Hack *) ->
 	   errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
       in
       tclTHEN
