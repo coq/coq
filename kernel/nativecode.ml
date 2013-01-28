@@ -1447,38 +1447,37 @@ let mk_conv_code env prefix t1 t2 =
     let init = (gl, (mind_updates, const_updates)) in
     compile_deps env prefix ~interactive:true init t2
   in
-  let gl = List.rev gl in
   let code1 = lambda_of_constr env t1 in
   let code2 = lambda_of_constr env t2 in
   let (gl,code1) = compile_with_fv env gl None code1 in
   let (gl,code2) = compile_with_fv env gl None code2 in
+  let t1 = mk_internal_let "t1" code1 in
+  let t2 = mk_internal_let "t2" code2 in
   let g1 = MLglobal (Ginternal "t1") in
   let g2 = MLglobal (Ginternal "t2") in
+  let setref1 = Glet(Ginternal "_", MLsetref("rt1",g1)) in
+  let setref2 = Glet(Ginternal "_", MLsetref("rt2",g2)) in
+  let gl = List.rev (setref2 :: setref1 :: t2 :: t1 :: gl) in
   let header = Glet(Ginternal "symbols_tbl",
     MLapp (MLglobal (Ginternal "get_symbols_tbl"),
       [|MLglobal (Ginternal "()")|])) in
-  header::(gl@
-  [mk_internal_let "t1" code1;
-  mk_internal_let "t2" code2;
-  Glet(Ginternal "_", MLsetref("rt1",g1));
-  Glet(Ginternal "_", MLsetref("rt2",g2))]),
-  (mind_updates, const_updates)
+  header::gl, (mind_updates, const_updates)
 
 let mk_norm_code env prefix t =
   let gl, (mind_updates, const_updates) =
     let init = ([], empty_updates) in
     compile_deps env prefix ~interactive:true init t
   in
-  let gl = List.rev gl in
   let code = lambda_of_constr env t in
   let (gl,code) = compile_with_fv env gl None code in
+  let t1 = mk_internal_let "t1" code in
   let g1 = MLglobal (Ginternal "t1") in
+  let setref = Glet(Ginternal "_", MLsetref("rt1",g1)) in
+  let gl = List.rev (setref :: t1 :: gl) in
   let header = Glet(Ginternal "symbols_tbl",
     MLapp (MLglobal (Ginternal "get_symbols_tbl"),
       [|MLglobal (Ginternal "()")|])) in
-  header::(gl@
-  [mk_internal_let "t1" code;
-  Glet(Ginternal "_", MLsetref("rt1",g1))]), (mind_updates, const_updates)
+  header::gl, (mind_updates, const_updates)
 
 let mk_library_header dir =
   let libname = Format.sprintf "(str_decode \"%s\")" (str_encode dir) in
