@@ -1630,6 +1630,7 @@ and interp_atomic ist gl tac =
 	(h_generalize_dep c_interp)
   | TacLetTac (na,c,clp,b,eqpat) ->
       let clp = interp_clause ist gl clp in
+      let eqpat = Option.map (interp_intro_pattern ist gl) eqpat in
       if Locusops.is_nowhere clp then
         (* We try to fully-typecheck the term *)
 	let (sigma,c_interp) = pf_interp_constr ist gl c in
