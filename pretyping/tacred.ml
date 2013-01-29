@@ -125,12 +125,12 @@ type constant_evaluation =
 
 (* We use a cache registered as a global table *)
 
-let eval_table = ref Cmap.empty
+let eval_table = ref Cmap_env.empty
 
-type frozen = (int * constant_evaluation) Cmap.t
+type frozen = (int * constant_evaluation) Cmap_env.t
 
 let init () =
-  eval_table := Cmap.empty
+  eval_table := Cmap_env.empty
 
 let freeze () =
   !eval_table
@@ -291,10 +291,10 @@ let compute_consteval sigma env ref =
 let reference_eval sigma env = function
   | EvalConst cst as ref ->
       (try
-	 Cmap.find cst !eval_table
+	 Cmap_env.find cst !eval_table
        with Not_found -> begin
 	 let v = compute_consteval sigma env ref in
-	 eval_table := Cmap.add cst v !eval_table;
+	 eval_table := Cmap_env.add cst v !eval_table;
 	 v
        end)
   | ref -> compute_consteval sigma env ref
