@@ -554,10 +554,16 @@ module V82 = struct
        with a good implementation of them.
     *)
 
-  (* Used for congruence closure *)
-  let new_goal_with sigma gl new_hyps =
+  (* Used for congruence closure and change *)
+  let new_goal_with sigma gl extra_hyps =
     let evi = content sigma gl in
-    let new_evi = { evi with Evd.evar_hyps = new_hyps } in
+    let hyps = evi.Evd.evar_hyps in
+    let new_hyps =
+      List.fold_right Environ.push_named_context_val extra_hyps hyps in
+    let extra_filter = List.map (fun _ -> true) extra_hyps in
+    let new_filter = extra_filter @ evi.Evd.evar_filter in
+    let new_evi =
+      { evi with Evd.evar_hyps = new_hyps; Evd.evar_filter = new_filter } in
     let new_evi = Typeclasses.mark_unresolvable new_evi in
     let evk = Evarutil.new_untyped_evar () in
     let new_sigma = Evd.add Evd.empty evk new_evi in
