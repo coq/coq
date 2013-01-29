@@ -266,7 +266,7 @@ let pr_transparent_state (ids, csts) =
 (* display complete goal *)
 let default_pr_goal gs =
   let (g,sigma) = Goal.V82.nf_evar (project gs) (sig_it gs) in
-  let env = Goal.V82.unfiltered_env sigma g in
+  let env = Goal.V82.env sigma g in
   let preamb,thesis,penv,pc =
     mt (), mt (),
     pr_context_of env,

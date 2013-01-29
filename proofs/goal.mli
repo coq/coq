@@ -182,9 +182,6 @@ module V82 : sig
   (* Old style env primitive *)
   val env : Evd.evar_map -> goal -> Environ.env
 
-  (* For printing *)
-  val unfiltered_env : Evd.evar_map -> goal -> Environ.env
-
   (* Old style hyps primitive *)
   val hyps : Evd.evar_map -> goal -> Environ.named_context_val
 

@@ -22,7 +22,7 @@ open Pcoq.Tactic
 
 let pr_goal gs =
   let (g,sigma) = Goal.V82.nf_evar (Tacmach.project gs) (Evd.sig_it gs) in
-  let env = Goal.V82.unfiltered_env sigma g in
+  let env = Goal.V82.env sigma g in
   let preamb,thesis,penv,pc =
     (str "     *** Declarative Mode ***" ++ fnl ()++fnl ()),
     (str "thesis := "  ++ fnl ()),
