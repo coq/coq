@@ -36,7 +36,7 @@ let define_and_solve_constraints evk c evd =
 let w_refine (evk,evi) (ltac_var,rawc) sigma =
   if Evd.is_defined sigma evk then
     error "Instantiate called on already-defined evar";
-  let env = Evd.evar_env evi in
+  let env = Evd.evar_filtered_env evi in
   let sigma',typed_c =
     try Pretyping.understand_ltac ~resolve_classes:true true 
       sigma env ltac_var (Pretyping.OfType (Some evi.evar_concl)) rawc
@@ -53,7 +53,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
 (* Main component of vernac command Existential *)
 let instantiate_pf_com evk com sigma =
   let evi = Evd.find sigma evk in
-  let env = Evd.evar_env evi in
+  let env = Evd.evar_filtered_env evi in
   let rawc = Constrintern.intern_constr sigma env com in
   let sigma' = w_refine (evk,evi) (([],[]),rawc) sigma in
   sigma'

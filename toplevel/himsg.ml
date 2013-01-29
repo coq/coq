@@ -353,7 +353,7 @@ let explain_evar_kind env evi = function
   | Evar_kinds.InternalHole ->
       str "an internal placeholder" ++
 	Option.cata (fun evi ->
-	  let env = Evd.evar_env evi in
+	  let env = Evd.evar_filtered_env evi in
 	    str " of type "  ++ pr_lconstr_env env evi.evar_concl ++
 	      pr_ne_context_of (str " in environment:"++ fnl ()) (mt ()) env)
 	(mt ()) evi
@@ -386,7 +386,7 @@ let explain_unsolvability = function
 let explain_typeclass_resolution env evi k =
   match Typeclasses.class_of_constr evi.evar_concl with
   | Some c ->
-    let env = Evd.evar_env evi in
+    let env = Evd.evar_filtered_env evi in
       fnl () ++ str "Could not find an instance for " ++
       pr_lconstr_env env evi.evar_concl ++
       pr_ne_context_of (str " in environment:"++ fnl ()) (str ".") env

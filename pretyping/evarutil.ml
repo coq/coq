@@ -1452,7 +1452,7 @@ type conv_fun =
 
 let check_evar_instance evd evk1 body conv_algo =
   let evi = Evd.find evd evk1 in
-  let evenv = evar_unfiltered_env evi in
+  let evenv = evar_env evi in
   (* FIXME: The body might be ill-typed when this is called from w_merge *)
   let ty =
     try Retyping.get_type_of evenv evd body
@@ -1571,7 +1571,7 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
             raise (NotEnoughInformationToProgress sols);
 	  (* No unique projection but still restrict to where it is possible *)
           (* materializing is necessary, but is restricting useful? *)
-          let ty = find_solution_type (evar_env evi) sols in
+          let ty = find_solution_type (evar_filtered_env evi) sols in
           let sign = evar_filtered_context evi in
           let ty' = instantiate_evar sign ty (Array.to_list argsv) in
 	  let (evd,evar,(evk',argsv' as ev')) =
@@ -1711,7 +1711,7 @@ and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
  * Another problem is that type variables are evars of type Type
    let _ =
       try
-        let env = evar_env evi in
+        let env = evar_filtered_env evi in
         let ty = evi.evar_concl in
         Typing.check env evd' body ty
       with e ->
@@ -1963,7 +1963,7 @@ let idx = Id.of_string "x"
 
 let define_pure_evar_as_product evd evk =
   let evi = Evd.find_undefined evd evk in
-  let evenv = evar_unfiltered_env evi in
+  let evenv = evar_env evi in
   let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
   let evd1,dom = new_type_evar evd evenv ~filter:(evar_filter evi) in
   let evd2,rng =
@@ -1997,7 +1997,7 @@ let define_evar_as_product evd (evk,args) =
 
 let define_pure_evar_as_lambda env evd evk =
   let evi = Evd.find_undefined evd evk in
-  let evenv = evar_unfiltered_env evi in
+  let evenv = evar_env evi in
   let typ = whd_betadeltaiota env evd (evar_concl evi) in
   let evd1,(na,dom,rng) = match kind_of_term typ with
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))

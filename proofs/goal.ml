@@ -464,17 +464,17 @@ module V82 = struct
   (* Old style env primitive *)
   let env evars gl =
     let evi = content evars gl in
-    Evd.evar_env evi
+    Evd.evar_filtered_env evi
 
   (* For printing *)
   let unfiltered_env evars gl =
     let evi = content evars gl in
-    Evd.evar_unfiltered_env evi
+    Evd.evar_env evi
 
   (* Old style hyps primitive *)
   let hyps evars gl =
     let evi = content evars gl in
-    evi.Evd.evar_hyps
+    Evd.evar_hyps evi
 
   (* Access to ".evar_concl" *)
   let concl evars gl =

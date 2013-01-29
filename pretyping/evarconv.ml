@@ -636,7 +636,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   try
   let args = Array.to_list args in
   let evi = Evd.find_undefined evd evk in
-  let env_evar = evar_env evi in
+  let env_evar = evar_filtered_env evi in
   let sign = named_context_val env_evar in
   let ctxt = evar_filtered_context evi in
   let filter = evar_filter evi in
