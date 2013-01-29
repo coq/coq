@@ -474,7 +474,7 @@ module V82 = struct
   (* Old style hyps primitive *)
   let hyps evars gl =
     let evi = content evars gl in
-    evi.Evd.evar_hyps
+    Evd.evar_filtered_hyps evi
 
   (* Access to ".evar_concl" *)
   let concl evars gl =

@@ -67,9 +67,12 @@ let evar_hyps evi = evi.evar_hyps
 let evar_context evi = named_context_of_val evi.evar_hyps
 let evar_body evi = evi.evar_body
 let evar_filter evi = evi.evar_filter
-let evar_unfiltered_env evi = Global.env_of_context evi.evar_hyps
 let evar_filtered_context evi =
   snd (list_filter2 (fun b c -> b) (evar_filter evi,evar_context evi))
+let evar_filtered_hyps evi =
+  List.fold_right push_named_context_val (evar_filtered_context evi)
+    empty_named_context_val
+let evar_unfiltered_env evi = Global.env_of_context evi.evar_hyps
 let evar_env evi =
   List.fold_right push_named (evar_filtered_context evi)
     (reset_context (Global.env()))

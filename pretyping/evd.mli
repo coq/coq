@@ -127,6 +127,7 @@ val evar_concl : evar_info -> constr
 val evar_context : evar_info -> named_context
 val evar_filtered_context : evar_info -> named_context
 val evar_hyps : evar_info -> named_context_val
+val evar_filtered_hyps : evar_info -> named_context_val
 val evar_body : evar_info -> evar_body
 val evar_filter : evar_info -> bool list
 val evar_unfiltered_env :  evar_info -> env
