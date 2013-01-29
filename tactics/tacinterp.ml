@@ -1762,10 +1762,7 @@ let mk_int_or_var_value ist c = VInteger (interp_int_or_var ist c)
 let pack_sigma (sigma,c) = {it=c;sigma=sigma}
 
 let extend_gl_hyps { it=gl ; sigma=sigma } sign =
-  let hyps = Goal.V82.hyps sigma gl in
-  let new_hyps = List.fold_right Environ.push_named_context_val sign hyps in
-  (* spiwack: (2010/01/13) if a bug was reintroduced in [change] in is probably here *)
-  Goal.V82.new_goal_with sigma gl new_hyps
+  Goal.V82.new_goal_with sigma gl sign
 
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist gl (tac:glob_tactic_expr) =
