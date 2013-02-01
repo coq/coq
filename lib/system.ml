@@ -113,9 +113,11 @@ let try_remove filename =
     (str"Could not remove file " ++ str filename ++ str" which is corrupted!")
 
 let marshal_out ch v = Marshal.to_channel ch v []
-let marshal_in ch =
+let marshal_in filename ch =
   try Marshal.from_channel ch
-  with End_of_file -> error "corrupted file: reached end of file"
+  with
+    | End_of_file | Failure _ (* e.g. "truncated object" *) ->
+      error (filename ^ " is corrupted, try to rebuild it.")
 
 exception Bad_magic_number of string
 
@@ -150,7 +152,7 @@ let extern_intern ?(warn=true) magic suffix =
     try
       let _,filename = find_file_in_path ~warn paths (CUnix.make_suffix name suffix) in
       let channel = raw_intern filename in
-      let v = marshal_in channel in
+      let v = marshal_in filename channel in
       close_in channel;
       v
     with Sys_error s ->
