@@ -47,7 +47,7 @@ val find_file_in_path :
   when the check fails, with the full file name. *)
 
 val marshal_out : out_channel -> 'a -> unit
-val marshal_in : in_channel -> 'a
+val marshal_in : string -> in_channel -> 'a
 
 exception Bad_magic_number of string
 
