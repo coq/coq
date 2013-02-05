@@ -30,12 +30,12 @@ let rec subst_type env sigma typ = function
 (* et sinon on substitue *)
 
 let sort_of_atomic_type env sigma ft args =
-  let rec concl_of_arity env ar =
-    match kind_of_term (whd_betadeltaiota env sigma ar) with
-    | Prod (na, t, b) -> concl_of_arity (push_rel (na,None,t) env) b
-    | Sort s -> s
-    | _ -> decomp_sort env sigma (subst_type env sigma ft (Array.to_list args))
-  in concl_of_arity env ft
+  let rec concl_of_arity env ar args =
+    match kind_of_term (whd_betadeltaiota env sigma ar), args with
+    | Prod (na, t, b), h::l -> concl_of_arity (push_rel (na,Some h,t) env) b l
+    | Sort s, [] -> s
+    | _ -> anomaly "Not a sort"
+  in concl_of_arity env ft (Array.to_list args)
 
 let type_of_var env id =
   try let (_,_,ty) = lookup_named id env in ty
