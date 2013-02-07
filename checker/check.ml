@@ -290,9 +290,9 @@ let intern_from_file (dir, f) =
   let (md,table,digest) =
     try
       let ch = with_magic_number_check raw_intern_library f in
-      let (md:library_disk) = System.marshal_in ch in
-      let digest = System.marshal_in ch in
-      let table = (System.marshal_in ch : Safe_typing.LightenLibrary.table) in
+      let (md:library_disk) = System.marshal_in f ch in
+      let digest = System.marshal_in f ch in
+      let table = (System.marshal_in f ch : Safe_typing.LightenLibrary.table) in
       close_in ch;
       if dir <> md.md_name then
         errorlabstrm "load_physical_library"
