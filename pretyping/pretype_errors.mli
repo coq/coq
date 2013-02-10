@@ -43,20 +43,6 @@ exception PretypeError of env * Evd.evar_map * pretype_error
 
 val precatchable_exception : exn -> bool
 
-(** Presenting terms without solved evars *)
-val nf_evar : Evd.evar_map -> constr -> constr
-val j_nf_evar : Evd.evar_map -> unsafe_judgment -> unsafe_judgment
-val jl_nf_evar : Evd.evar_map -> unsafe_judgment list -> unsafe_judgment list
-val jv_nf_evar : Evd.evar_map -> unsafe_judgment array -> unsafe_judgment array
-val tj_nf_evar : Evd.evar_map -> unsafe_type_judgment -> unsafe_type_judgment
-
-val env_nf_evar : Evd.evar_map -> env -> env
-val env_nf_betaiotaevar : Evd.evar_map -> env -> env
-
-val j_nf_betaiotaevar : Evd.evar_map -> unsafe_judgment -> unsafe_judgment
-val jv_nf_betaiotaevar :
-  Evd.evar_map -> unsafe_judgment array -> unsafe_judgment array
-
 (** Raising errors *)
 val error_actual_type_loc :
   Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr -> 'b

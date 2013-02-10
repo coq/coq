@@ -184,6 +184,14 @@ val nf_evar_info : evar_map -> evar_info -> evar_info
 val nf_evar_map : evar_map -> evar_map
 val nf_evar_map_undefined : evar_map -> evar_map
 
+val env_nf_evar : evar_map -> env -> env
+val env_nf_betaiotaevar : evar_map -> env -> env
+
+val j_nf_betaiotaevar : evar_map -> unsafe_judgment -> unsafe_judgment
+val jv_nf_betaiotaevar :
+  evar_map -> unsafe_judgment array -> unsafe_judgment array
+(** Presenting terms without solved evars *)
+
 (** Replacing all evars, possibly raising [Uninstantiated_evar] *)
 exception Uninstantiated_evar of existential_key
 val flush_and_check_evars :  evar_map -> constr -> constr

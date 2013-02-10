@@ -36,11 +36,28 @@ let rec flush_and_check_evars sigma c =
        | Some c -> flush_and_check_evars sigma c)
   | _ -> map_constr (flush_and_check_evars sigma) c
 
-let nf_evar = Pretype_errors.nf_evar
-let j_nf_evar = Pretype_errors.j_nf_evar
-let jl_nf_evar = Pretype_errors.jl_nf_evar
-let jv_nf_evar = Pretype_errors.jv_nf_evar
-let tj_nf_evar = Pretype_errors.tj_nf_evar
+let nf_evar = Reductionops.nf_evar
+let j_nf_evar sigma j =
+  { uj_val = nf_evar sigma j.uj_val;
+    uj_type = nf_evar sigma j.uj_type }
+let j_nf_betaiotaevar sigma j =
+  { uj_val = nf_evar sigma j.uj_val;
+    uj_type = Reductionops.nf_betaiota sigma j.uj_type }
+let jl_nf_evar sigma jl = List.map (j_nf_evar sigma) jl
+let jv_nf_betaiotaevar sigma jl =
+  Array.map (j_nf_betaiotaevar sigma) jl
+let jv_nf_evar sigma = Array.map (j_nf_evar sigma)
+let tj_nf_evar sigma {utj_val=v;utj_type=t} =
+  {utj_val=nf_evar sigma v;utj_type=t}
+
+let env_nf_evar sigma env =
+  process_rel_context
+    (fun d e -> push_rel (map_rel_declaration (nf_evar sigma) d) e) env
+
+let env_nf_betaiotaevar sigma env =
+  process_rel_context
+    (fun d e ->
+      push_rel (map_rel_declaration (Reductionops.nf_betaiota sigma) d) e) env
 
 let nf_named_context_evar sigma ctx =
   Sign.map_named_context (Reductionops.nf_evar sigma) ctx

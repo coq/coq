@@ -45,29 +45,6 @@ let precatchable_exception = function
     Nametab.GlobalizationError _ | PretypeError _)) -> true
   | _ -> false
 
-let nf_evar = Reductionops.nf_evar
-let j_nf_evar sigma j =
-  { uj_val = nf_evar sigma j.uj_val;
-    uj_type = nf_evar sigma j.uj_type }
-let j_nf_betaiotaevar sigma j =
-  { uj_val = nf_evar sigma j.uj_val;
-    uj_type = Reductionops.nf_betaiota sigma j.uj_type }
-let jl_nf_evar sigma jl = List.map (j_nf_evar sigma) jl
-let jv_nf_betaiotaevar sigma jl =
-  Array.map (j_nf_betaiotaevar sigma) jl
-let jv_nf_evar sigma = Array.map (j_nf_evar sigma)
-let tj_nf_evar sigma {utj_val=v;utj_type=t} =
-  {utj_val=nf_evar sigma v;utj_type=t}
-
-let env_nf_evar sigma env =
-  process_rel_context
-    (fun d e -> push_rel (map_rel_declaration (nf_evar sigma) d) e) env
-
-let env_nf_betaiotaevar sigma env =
-  process_rel_context
-    (fun d e ->
-      push_rel (map_rel_declaration (Reductionops.nf_betaiota sigma) d) e) env
-
 (* This simplifies the typing context of Cases clauses *)
 (* hope it does not disturb other typing contexts *)
 let contract env lc =

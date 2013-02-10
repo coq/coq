@@ -205,12 +205,12 @@ let rec execute env evdref cstr =
 		(* Sort-polymorphism of inductive types *)
 		make_judge f
 		  (inductive_type_knowing_parameters env ind
-		    (jv_nf_evar !evdref jl))
+		    (Evarutil.jv_nf_evar !evdref jl))
 	    | Const cst ->
 		(* Sort-polymorphism of inductive types *)
 		make_judge f
 		  (constant_type_knowing_parameters env cst
-		    (jv_nf_evar !evdref jl))
+		    (Evarutil.jv_nf_evar !evdref jl))
 	    | _ ->
 		execute env evdref f
 	in
