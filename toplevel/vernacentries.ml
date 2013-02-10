@@ -449,14 +449,22 @@ let start_proof_and_print k l hook =
   start_proof_com k l hook;
   print_subgoals ()
 
-let vernac_definition (local,k) (loc,id as lid) def hook =
+let no_hook _ _ = ()
+
+let vernac_definition_hook = function
+| Coercion -> Class.add_coercion_hook
+| CanonicalStructure -> fun _ -> Recordops.declare_canonical_structure
+| SubClass -> Class.add_subclass_hook
+| _ -> no_hook
+
+let vernac_definition (local,k) (loc,id as lid) def =
+  let hook = vernac_definition_hook k in
   if local == Local then Dumpglob.dump_definition lid true "var"
   else Dumpglob.dump_definition lid false "def";
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
- 	let hook _ _ = () in
  	  start_proof_and_print (local,DefinitionBody Definition)
-	    [Some lid, (bl,t,None)] hook
+	    [Some lid, (bl,t,None)] no_hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
           | None -> None
@@ -465,7 +473,7 @@ let vernac_definition (local,k) (loc,id as lid) def hook =
  		Some (snd (interp_redexp env evc r)) in
 	do_definition id (local,k) bl red_option c typ_opt hook)
 
-let vernac_start_proof kind l lettop hook =
+let vernac_start_proof kind l lettop =
   if Dumpglob.dump () then
     List.iter (fun (id, _) ->
       match id with
@@ -475,7 +483,7 @@ let vernac_start_proof kind l lettop hook =
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode.");
-  start_proof_and_print (Global, Proof kind) l hook
+  start_proof_and_print (Global, Proof kind) l no_hook
 
 let qed_display_script = ref true
 
@@ -1668,8 +1676,8 @@ let interp c = match c with
   | VernacNotation (local,c,infpl,sc) -> vernac_notation local c infpl sc
 
   (* Gallina *)
-  | VernacDefinition (k,lid,d,f) -> vernac_definition k lid d f
-  | VernacStartTheoremProof (k,l,top,f) -> vernac_start_proof k l top f
+  | VernacDefinition (k,lid,d) -> vernac_definition k lid d
+  | VernacStartTheoremProof (k,l,top) -> vernac_start_proof k l top
   | VernacEndProof e -> vernac_end_proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption stre l nl
@@ -1755,7 +1763,7 @@ let interp c = match c with
   | VernacNop -> ()
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof Theorem [None,([],t,None)] false (fun _ _->())
+  | VernacGoal t -> vernac_start_proof Theorem [None,([],t,None)] false
   | VernacAbort id -> vernac_abort id
   | VernacAbortAll -> vernac_abort_all ()
   | VernacRestart -> vernac_restart ()

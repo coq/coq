@@ -68,7 +68,6 @@ let default_command_entry =
   Gram.Entry.of_parser "command_entry"
     (fun strm -> Gram.parse_tokens_after_filter (get_command_entry ()) strm)
 
-let no_hook _ _ = ()
 GEXTEND Gram
   GLOBAL: vernac gallina_ext tactic_mode noedit_mode subprf subgoal_command;
   vernac: FIRST
@@ -154,14 +153,14 @@ GEXTEND Gram
         l = LIST0
           [ "with"; id = identref; bl = binders; ":"; c = lconstr ->
             (Some id,(bl,c,None)) ] ->
-          VernacStartTheoremProof (thm,(Some id,(bl,c,None))::l, false, no_hook)
+          VernacStartTheoremProof (thm,(Some id,(bl,c,None))::l, false)
       | stre = assumption_token; nl = inline; bl = assum_list ->
 	  VernacAssumption (stre, nl, bl)
       | stre = assumptions_token; nl = inline; bl = assum_list ->
 	  test_plurial_form bl;
 	  VernacAssumption (stre, nl, bl)
-      | (f,d) = def_token; id = identref; b = def_body ->
-          VernacDefinition (d, id, b, f)
+      | d = def_token; id = identref; b = def_body ->
+          VernacDefinition (d, id, b)
       (* Gallina inductive declarations *)
       | f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
@@ -197,13 +196,13 @@ GEXTEND Gram
   ;
   def_token:
     [ [ "Definition" ->
-	no_hook, (Global, Definition)
+	(Global, Definition)
       | IDENT "Let" ->
-	no_hook, (Local, Definition)
+	(Local, Definition)
       | IDENT "Example" ->
-	no_hook, (Global, Example)
+	(Global, Example)
       | IDENT "SubClass"  ->
-          Class.add_subclass_hook, (use_locality_exp (), SubClass) ] ]
+        (use_locality_exp (), SubClass) ] ]
   ;
   assumption_token:
     [ [ "Hypothesis" -> (Local, Logical)
@@ -534,16 +533,15 @@ GEXTEND Gram
           d = def_body ->
           let s = coerce_reference_to_id qid in
 	  VernacDefinition
-	    ((Global,CanonicalStructure),(Loc.ghost,s),d,
-	     (fun _ -> Recordops.declare_canonical_structure))
+	    ((Global,CanonicalStructure),(Loc.ghost,s),d)
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-	  VernacDefinition ((use_locality_exp (),Coercion),(Loc.ghost,s),d,Class.add_coercion_hook)
+	  VernacDefinition ((use_locality_exp (),Coercion),(Loc.ghost,s),d)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
            let s = coerce_reference_to_id qid in
-	  VernacDefinition ((enforce_locality_exp true,Coercion),(Loc.ghost,s),d,Class.add_coercion_hook)
+	  VernacDefinition ((enforce_locality_exp true,Coercion),(Loc.ghost,s),d)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr ->
 	   VernacIdentityCoercion (enforce_locality_exp true, f, s, t)

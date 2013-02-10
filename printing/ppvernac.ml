@@ -585,7 +585,7 @@ let rec pr_vernac = function
       pr_syntax_modifiers l
 
   (* Gallina *)
-  | VernacDefinition (d,id,b,f) -> (* A verifier... *)
+  | VernacDefinition (d,id,b) -> (* A verifier... *)
       let pr_def_token dk = str (Kindops.string_of_definition_kind dk) in
       let pr_reduce = function
         | None -> mt()
@@ -608,7 +608,7 @@ let rec pr_vernac = function
         | None -> mt()
         | Some cc -> str" :=" ++ spc() ++ cc))
 
-  | VernacStartTheoremProof (ki,l,_,_) ->
+  | VernacStartTheoremProof (ki,l,_) ->
       hov 1 (pr_statement (pr_thm_token ki) (List.hd l) ++
              prlist (pr_statement (spc () ++ str "with")) (List.tl l))
 

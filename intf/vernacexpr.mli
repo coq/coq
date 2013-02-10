@@ -232,11 +232,10 @@ type vernac_expr =
       scope_name option
 
   (* Gallina *)
-  | VernacDefinition of definition_kind * lident * definition_expr *
-      unit declaration_hook
+  | VernacDefinition of definition_kind * lident * definition_expr
   | VernacStartTheoremProof of theorem_kind *
       (lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)) list *
-        bool * unit declaration_hook
+        bool
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
   | VernacAssumption of assumption_kind * inline * simple_binder with_coercion list
