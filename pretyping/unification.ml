@@ -17,6 +17,7 @@ open Evd
 open Reduction
 open Reductionops
 open Evarutil
+open Evarsolve
 open Pretype_errors
 open Retyping
 open Coercion

@@ -32,6 +32,10 @@ val new_evar :
   evar_map -> env -> ?src:Loc.t * Evar_kinds.t -> ?filter:bool list ->
   ?candidates:constr list -> types -> evar_map * constr
 
+val new_pure_evar :
+  evar_map -> named_context_val -> ?src:Loc.t * Evar_kinds.t -> ?filter:bool list ->
+  ?candidates:constr list -> types -> evar_map * evar
+
 (** the same with side-effects *)
 val e_new_evar :
   evar_map ref -> env -> ?src:Loc.t * Evar_kinds.t -> ?filter:bool list ->
@@ -53,18 +57,6 @@ val new_evar_instance :
 
 val make_pure_subst : evar_info -> constr array -> (Id.t * constr) list
 
-(** {6 Instantiate evars} *)
-
-type conv_fun =
-  env ->  evar_map -> conv_pb -> constr -> constr -> evar_map * bool
-
-(** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
-   possibly solving related unification problems, possibly leaving open
-   some problems that cannot be solved in a unique way (except if choose is
-   true); fails if the instance is not valid for the given [ev] *)
-val evar_define : conv_fun -> ?choose:bool -> env -> evar_map -> 
-  existential -> constr -> evar_map
-
 (** {6 Evars/Metas switching...} *)
 
 (** [evars_to_metas] generates new metavariables for each non dependent
@@ -85,16 +77,6 @@ val whd_head_evar :  evar_map -> constr -> constr
 
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
-val solve_refl : ?can_drop:bool -> conv_fun -> env ->  evar_map ->
-  existential_key -> constr array -> constr array -> evar_map
-val solve_evar_evar : ?force:bool ->
-  (env -> evar_map -> existential -> constr -> evar_map) -> conv_fun ->
-  env ->  evar_map -> existential -> existential -> evar_map
-
-val solve_simple_eqn : conv_fun -> ?choose:bool -> env ->  evar_map ->
-  bool option * existential * constr -> evar_map * bool
-val reconsider_conv_pbs : conv_fun -> evar_map -> evar_map * bool
-
 (** [check_evars env initial_sigma extended_sigma c] fails if some
    new unresolved evar remains in [c] *)
 val check_evars : env -> evar_map -> evar_map -> constr -> unit
@@ -103,16 +85,8 @@ val define_evar_as_product : evar_map -> existential -> evar_map * types
 val define_evar_as_lambda : env -> evar_map -> existential -> evar_map * types
 val define_evar_as_sort : evar_map -> existential -> evar_map * sorts
 
-val is_unification_pattern_evar : env -> evar_map -> existential -> constr list ->
-  constr -> constr list option
-
-val is_unification_pattern : env * int -> evar_map -> constr -> constr list ->
-  constr -> constr list option
-
 val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
   evar_map * existential
-
-val solve_pattern_eqn : env -> constr list -> constr -> constr
 
 (** The following functions return the set of evars immediately
     contained in the object, including defined evars *)
@@ -196,10 +170,6 @@ val jv_nf_betaiotaevar :
 exception Uninstantiated_evar of existential_key
 val flush_and_check_evars :  evar_map -> constr -> constr
 
-(** Replace the vars and rels that are aliases to other vars and rels by 
-   their representative that is most ancient in the context *)
-val expand_vars_in_term : env -> constr -> constr
-
 (** {6 debug pretty-printer:} *)
 
 val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
@@ -226,6 +196,4 @@ val push_rel_context_to_named_context : Environ.env -> types ->
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 
-val check_evar_instance : evar_map -> existential_key -> constr -> conv_fun ->
-  evar_map
 

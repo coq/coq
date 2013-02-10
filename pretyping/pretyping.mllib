@@ -10,6 +10,7 @@ Retyping
 Cbv
 Pretype_errors
 Evarutil
+Evarsolve
 Term_dnet
 Recordops
 Evarconv
