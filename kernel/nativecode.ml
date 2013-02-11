@@ -615,13 +615,27 @@ let merge_branches t =
       let lf,env_n = push_rels (empty_env ()) ids in
       let t_params = Array.make ndef [||] in
       let t_norm_f = Array.make ndef (Gnorm (l,-1)) in
+      let mk_let envi (id,def) t = MLlet (id,def,t) in
+      let mk_lam_or_let (params,lets,env) (id,def) =
+        let ln,env' = push_rel env id in
+        match def with
+        | None -> (ln::params,lets,env')
+        | Some lam -> (params, (ln,ml_of_lam env l lam)::lets,env')
+      in
       let ml_of_fix i body =
-	let idsi,bodyi = decompose_Llam body in
-	let paramsi, envi = push_rels env_n idsi in
-	t_norm_f.(i) <- fresh_gnorm l;
-	let bodyi = ml_of_lam envi l bodyi in
-	t_params.(i) <- paramsi;
-	mkMLlam paramsi bodyi in
+        let varsi, bodyi = decompose_Llam_Llet body in
+        let paramsi,letsi,envi = 
+          Array.fold_left mk_lam_or_let ([],[],env_n) varsi
+        in
+        let paramsi,letsi =
+          Array.of_list (List.rev paramsi), Array.of_list (List.rev letsi)
+        in
+        t_norm_f.(i) <- fresh_gnorm l;
+        let bodyi = ml_of_lam envi l bodyi in
+        t_params.(i) <- paramsi;
+        let bodyi = Array.fold_right (mk_let envi) letsi bodyi in
+        mkMLlam paramsi bodyi
+      in
       let tnorm = Array.mapi ml_of_fix tb in
       let fvn,fvr = !(env_n.env_named), !(env_n.env_urel) in
       let fv_params = fv_params env_n in
@@ -667,12 +681,12 @@ let merge_branches t =
       let t_params = Array.make ndef [||] in
       let t_norm_f = Array.make ndef (Gnorm (l,-1)) in
       let ml_of_fix i body =
-	let idsi,bodyi = decompose_Llam body in
-	let paramsi, envi = push_rels env_n idsi in
-	t_norm_f.(i) <- fresh_gnorm l;
-	let bodyi = ml_of_lam envi l bodyi in
-	t_params.(i) <- paramsi;
-	mkMLlam paramsi bodyi in
+        let idsi,bodyi = decompose_Llam body in
+        let paramsi, envi = push_rels env_n idsi in
+        t_norm_f.(i) <- fresh_gnorm l;
+        let bodyi = ml_of_lam envi l bodyi in
+        t_params.(i) <- paramsi;
+        mkMLlam paramsi bodyi in
       let tnorm = Array.mapi ml_of_fix tb in
       let fvn,fvr = !(env_n.env_named), !(env_n.env_urel) in
       let fv_params = fv_params env_n in

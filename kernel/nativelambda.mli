@@ -46,6 +46,7 @@ and lam_branches = (constructor * name array * lambda) array
 and fix_decl =  name array * lambda array * lambda array
 
 val decompose_Llam : lambda -> Names.name array * lambda
+val decompose_Llam_Llet : lambda -> (Names.name * lambda option) array * lambda
 
 val is_lazy : constr -> bool
 val mk_lazy : lambda -> lambda
