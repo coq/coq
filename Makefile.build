@@ -370,7 +370,8 @@ install-ide-info:
 
 .PHONY: validate check test-suite $(ALLSTDLIB).v
 
-VALIDOPTS=-silent -o -m
+
+VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m
 
 validate:: $(CHICKEN) $(ALLVO)
 	$(SHOW)'COQCHK <theories & plugins>'

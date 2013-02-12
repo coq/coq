@@ -5,6 +5,8 @@ open Term
 type values
 type reloc_table
 type to_patch_substituted
+(* Native code *)
+type native_name
 (*Retroknowledge *)
 type action
 type retroknowledge
@@ -57,7 +59,9 @@ type constant_body = {
     const_body : constant_def;
     const_type : constant_type;
     const_body_code : to_patch_substituted;
-    const_constraints : Univ.constraints }
+    const_constraints : Univ.constraints;
+    const_native_name : native_name ref;
+    const_inline_code : bool }
 
 val body_of_constant : constant_body -> constr_substituted option
 val constant_has_body : constant_body -> bool
@@ -166,6 +170,9 @@ type mutual_inductive_body = {
 
   (* Universes constraints enforced by the inductive declaration *)
     mind_constraints : Univ.constraints;
+
+  (* Data for native compilation *)
+    mind_native_name : native_name ref;
 
   }
 

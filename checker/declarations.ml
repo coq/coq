@@ -7,6 +7,8 @@ open Validate
 type values
 type reloc_table
 type to_patch_substituted
+(* Native code *)
+type native_name
 (*Retroknowledge *)
 type action
 type retroknowledge
@@ -518,7 +520,9 @@ type constant_body = {
     const_body : constant_def;
     const_type : constant_type;
     const_body_code : to_patch_substituted;
-    const_constraints : Univ.constraints }
+    const_constraints : Univ.constraints;
+    const_native_name : native_name ref;
+    const_inline_code : bool }
 
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
@@ -538,7 +542,9 @@ let val_cb = val_tuple ~name:"constant_body"
     val_cst_def;
     val_cst_type;
     no_val;
-    val_cstrs|]
+    val_cstrs;
+    no_val;
+    val_bool|]
 
 let subst_rel_declaration sub (id,copt,t as x) =
   let copt' = Option.smartmap (subst_mps sub) copt in
@@ -689,10 +695,13 @@ type mutual_inductive_body = {
   (* Universes constraints enforced by the inductive declaration *)
     mind_constraints : Univ.constraints;
 
+  (* Data for native compilation *)
+    mind_native_name : native_name ref;
+
   }
 let val_ind_pack = val_tuple ~name:"mutual_inductive_body"
   [|val_array val_one_ind;val_bool;val_bool;val_int;val_nctxt;
-    val_int; val_int; val_rctxt;val_cstrs|]
+    val_int; val_int; val_rctxt;val_cstrs;no_val|]
 
 
 let subst_arity sub = function
@@ -700,12 +709,12 @@ let subst_arity sub = function
 | PolymorphicArity (ctx,s) -> PolymorphicArity (subst_rel_context sub ctx,s)
 
 (* TODO: should be changed to non-coping after Term.subst_mps *)
-let subst_const_body sub cb = {
+(* NB: we leave bytecode and native code fields untouched *)
+let subst_const_body sub cb =
+ { cb with
     const_hyps = (assert (cb.const_hyps=[]); []);
     const_body = subst_constant_def sub cb.const_body;
-    const_type = subst_arity sub cb.const_type;
-    const_body_code = (*Cemitcodes.subst_to_patch_subst sub*) cb.const_body_code;
-    const_constraints = cb.const_constraints}
+    const_type = subst_arity sub cb.const_type }
 
 let subst_arity sub = function
 | Monomorphic s ->
@@ -742,7 +751,8 @@ let subst_mind sub mib =
     mind_params_ctxt =
       map_rel_context (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
-    mind_constraints = mib.mind_constraints  }
+    mind_constraints = mib.mind_constraints;
+    mind_native_name = mib.mind_native_name}
 
 (* Modules *)
 

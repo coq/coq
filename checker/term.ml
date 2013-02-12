@@ -80,8 +80,8 @@ let val_fix f =
     [|val_tuple~name:"fix2"[|val_array val_int;val_int|];val_prec f|]
 let val_cofix f = val_tuple ~name:"pcofixpoint"[|val_int;val_prec f|]
 
-type cast_kind = VMcast | DEFAULTcast
-let val_cast = val_enum "cast_kind" 2
+type cast_kind = VMcast | NATIVEcast | DEFAULTcast
+let val_cast = val_enum "cast_kind" 3
 
 (*s*******************************************************************)
 (* The type of constructions *)

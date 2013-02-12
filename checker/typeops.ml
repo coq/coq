@@ -167,7 +167,7 @@ let sort_of_product env domsort rangsort =
 let judge_of_cast env (c,cj) k tj =
   let conversion =
     match k with
-    | VMcast -> vm_conv CUMUL
+    | VMcast | NATIVEcast -> vm_conv CUMUL
     | DEFAULTcast -> conv_leq in
   try
     conversion env cj tj

@@ -23,7 +23,7 @@ type 'a pexistential = existential_key * 'a array
 type 'a prec_declaration = name array * 'a array * 'a array
 type 'a pfixpoint = (int array * int) * 'a prec_declaration
 type 'a pcofixpoint = int * 'a prec_declaration
-type cast_kind = VMcast | DEFAULTcast
+type cast_kind = VMcast | NATIVEcast | DEFAULTcast
 type constr =
     Rel of int
   | Var of Id.t
