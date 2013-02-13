@@ -646,4 +646,4 @@ End NZOrderProp.
 
 Module NZOrderedType (NZ : NZDecOrdSig')
  <: DecidableTypeFull <: OrderedTypeFull
- := NZ <+ NZBaseProp <+ NZOrderProp <+ Compare2EqBool <+ HasEqBool2Dec.
+ := NZ <+ NZBaseProp <+ NZOrderProp NZ <+ Compare2EqBool <+ HasEqBool2Dec.

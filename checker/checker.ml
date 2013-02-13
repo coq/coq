@@ -371,7 +371,8 @@ let run () =
     compile_files ();
     flush_all()
   with e ->
-    (Pp.ppnl(explain_exn e);
+    (flush_all();
+    Pp.ppnl(explain_exn e);
     flush_all();
     exit 1)
 
