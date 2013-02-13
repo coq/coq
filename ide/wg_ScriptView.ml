@@ -341,6 +341,7 @@ object (self)
   val mutable auto_complete = false
   val mutable auto_complete_length = 3
   val mutable last_completion = (-1, "", Proposals.empty)
+  val mutable insert_offset = -1
   (* this variable prevents CoqIDE from autocompleting when we have deleted something *)
   val mutable is_auto_completing = false
   (* this mutex ensure that CoqIDE will not try to autocomplete twice *)
@@ -364,62 +365,77 @@ object (self)
     (* disable autocomplete *)
     is_auto_completing <- false
 
-  method private do_auto_complete () =
+  method private handle_proposals word =
+    let (start_offset, _, props) = last_completion in
+    let filter prop = 0 < is_substring word prop in
+    let props = Proposals.filter filter props in
+    (* [iter] might be invalid now, get a new one to please gtk *)
     let iter = self#buffer#get_iter `INSERT in
-    let cur_offset = iter#offset in
-    Minilib.log ("Completion at offset: " ^ string_of_int cur_offset);
-    if ends_word iter#backward_char then begin
-      let start = find_word_start iter in
-      let w = self#buffer#get_text ~start ~stop:iter () in
-      if String.length w >= auto_complete_length then begin
-        Minilib.log ("Completion of prefix: '" ^ w ^ "'");
-        let (off, prefix, proposals) = last_completion in
-        let start_offset = start#offset in
-	let handle_proposals isnew new_proposals =
-          if isnew then last_completion <- (start_offset, w, new_proposals);
-          (* [iter] might be invalid now, get a new one to please gtk *)
-          let iter = self#buffer#get_iter `INSERT in
-          (* We cancel completion when the buffer has changed recently *)
-          if iter#offset = cur_offset && not (Proposals.is_empty new_proposals)
-          then begin
-            let proposal = Proposals.choose new_proposals in
-            let suffix =
-	      let len1 = String.length proposal in
-	      let len2 = String.length w in
-	      String.sub proposal len2 (len1 - len2)
-            in
-            self#buffer#begin_user_action ();
-            ignore (self#buffer#delete_selection ());
-            let iter = self#buffer#get_iter (`OFFSET cur_offset) in
-            ignore (self#buffer#insert_interactive ~iter suffix);
-            let ins = self#buffer#get_iter (`OFFSET cur_offset) in
-            let sel = self#buffer#get_iter `INSERT in
-            self#buffer#select_range sel ins;
-            self#buffer#end_user_action ();
-          end
-	in
-        (* check whether we have the last request in cache *)
-        if (start_offset = off) && (0 <= is_substring prefix w) then
-          let filter prop = 0 < is_substring w prop in
-          let props = Proposals.filter filter proposals in
-          handle_proposals false props
-        else
-          (** If not in the cache, we recompute it: first syntactic *)
-          let synt = get_syntactic_completion self#buffer w Proposals.empty in
-          (** Then semantic *)
-          let next accu = Coq.lift (fun () -> handle_proposals true accu) in
-          let query = Coq.bind (get_semantic_completion w synt) next in
-          (** If coqtop is computing, do the syntactic completion altogether *)
-          let occupied () = handle_proposals true synt in
-          Coq.try_grab ct query occupied
-        end
+    (* We cancel completion when the buffer has changed recently *)
+    if iter#offset = insert_offset && not (Proposals.is_empty props) then begin
+      let proposal = Proposals.choose props in
+      let suffix =
+        let len1 = String.length proposal in
+        let len2 = insert_offset - start_offset in
+        String.sub proposal len2 (len1 - len2)
+      in
+      self#buffer#begin_user_action ();
+      ignore (self#buffer#delete_selection ());
+      let iter = self#buffer#get_iter (`OFFSET insert_offset) in
+      ignore (self#buffer#insert_interactive ~iter suffix);
+      let ins = self#buffer#get_iter (`OFFSET insert_offset) in
+      let sel = self#buffer#get_iter `INSERT in
+      self#buffer#select_range sel ins;
+      self#buffer#end_user_action ();
     end
+
+  method private do_auto_complete k =
+    let iter = self#buffer#get_iter `INSERT in
+    let () = insert_offset <- iter#offset in
+    let log = Printf.sprintf "Completion at offset: %i" insert_offset in
+    let () = Minilib.log log in
+    let prefix =
+      if ends_word iter#backward_char then
+        let start = find_word_start iter in
+        let w = self#buffer#get_text ~start ~stop:iter () in
+        if String.length w >= auto_complete_length then Some (w, start)
+        else None
+      else None
+    in
+    match prefix with
+    | Some (w, start) ->
+      let () = Minilib.log ("Completion of prefix: '" ^ w ^ "'") in
+      let (off, prefix, props) = last_completion in
+      let start_offset = start#offset in
+      (* check whether we have the last request in cache *)
+      if (start_offset = off) && (0 <= is_substring prefix w) then
+        let () = self#handle_proposals w in
+        k ()
+      else
+        let update prop = last_completion <- (start_offset, w, prop) in
+        (** If not in the cache, we recompute it: first syntactic *)
+        let synt = get_syntactic_completion self#buffer w Proposals.empty in
+        (** Then semantic *)
+        let next prop =
+          let () = update prop in
+          let () = self#handle_proposals w in
+          Coq.lift k
+        in
+        let query = Coq.bind (get_semantic_completion w synt) next in
+        (** If coqtop is computing, do the syntactic completion altogether *)
+        let occupied () =
+          let () = update synt in
+          let () = self#handle_proposals w in
+          k ()
+        in
+        Coq.try_grab ct query occupied
+    | None -> k ()
 
   method private may_auto_complete () =
     if auto_complete && is_auto_completing && lock_auto_completing then begin
-      lock_auto_completing <- false;
-      self#do_auto_complete ();
-      lock_auto_completing <- true;
+      let () = lock_auto_completing <- false in
+      let unlock () = lock_auto_completing <- true in
+      self#do_auto_complete unlock
     end
 
   (* HACK: missing gtksourceview features *)
