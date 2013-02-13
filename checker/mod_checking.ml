@@ -133,6 +133,11 @@ let lookup_modtype mp env =
   with Not_found ->
     failwith ("Unknown module type: "^string_of_mp mp)
 
+let lookup_module mp env =
+  try Environ.lookup_module mp env
+  with Not_found ->
+    failwith ("Unknown module: "^string_of_mp mp)
+
 let rec check_with env mtb with_decl mp=
   match with_decl with
     | With_definition_body (idl,c) ->
@@ -199,7 +204,7 @@ and check_with_mod env mtb (idl,mp1) mp =
 		  SFBmodule msb -> msb
 		| _ -> error_not_a_module l
 	      in
-	      let (_:module_body) = (lookup_module mp1 env) in ()
+	      let (_:module_body) = (Environ.lookup_module mp1 env) in ()
       else
 	    let old = match spec with
 		SFBmodule msb -> msb

@@ -644,6 +644,8 @@ End NZOrderProp.
 (** If we have moreover a [compare] function, we can build
     an [OrderedType] structure. *)
 
+(* Temporary workaround for bug #2949: remove this problematic + unused functor
 Module NZOrderedType (NZ : NZDecOrdSig')
  <: DecidableTypeFull <: OrderedTypeFull
  := NZ <+ NZBaseProp <+ NZOrderProp <+ Compare2EqBool <+ HasEqBool2Dec.
+*)

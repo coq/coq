@@ -17,7 +17,7 @@ open Check
 let () = at_exit flush_all
 
 let fatal_error info =
-  pperrnl info; flush_all (); exit 1
+  flush_all (); pperrnl info; flush_all (); exit 1
 
 let coq_root = Id.of_string "Coq"
 let parse_dir s =
