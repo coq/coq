@@ -373,15 +373,15 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
     (* First pass: we store inductive signatures together with *)
     (* their type var list. *)
     let packets =
-      Array.map
-	(fun mip ->
-	   let b = snd (mind_arity mip) <> InProp in
+      Array.mapi
+	(fun i mip ->
+	   let info = sort_of env (mkInd (kn,i)) <> InProp in
 	   let ar = Inductive.type_of_inductive env (mib,mip) in
-	   let s,v = if b then type_sign_vl env ar else [],[] in
+	   let s,v = if info then type_sign_vl env ar else [],[] in
 	   let t = Array.make (Array.length mip.mind_nf_lc) [] in
 	   { ip_typename = mip.mind_typename;
 	     ip_consnames = mip.mind_consnames;
-	     ip_logical = (not b);
+	     ip_logical = not info;
 	     ip_sign = s;
 	     ip_vars = v;
 	     ip_types = t })
