@@ -15,7 +15,9 @@ open Reductionops
 open Evd
 open Locus
 
-(** returns exception Reduction.NotConvertible if not unifiable *)
+exception UnableToUnify of evar_map * Pretype_errors.unification_error
+
+(** returns exception NotUnifiable with best known evar_map if not unifiable *)
 val the_conv_x     : ?ts:transparent_state -> env -> constr -> constr -> evar_map -> evar_map
 val the_conv_x_leq : ?ts:transparent_state -> env -> constr -> constr -> evar_map -> evar_map
 
@@ -27,11 +29,11 @@ val e_cumul : ?ts:transparent_state -> env -> evar_map ref -> constr -> constr -
 (**/**)
 (* For debugging *)
 val evar_conv_x : transparent_state ->
-  env -> evar_map -> conv_pb -> constr -> constr -> evar_map * bool
+  env -> evar_map -> conv_pb -> constr -> constr -> Evarsolve.unification_result
 val evar_eqappr_x : transparent_state ->
   env -> evar_map ->
     conv_pb -> constr * constr stack -> constr * constr stack ->
-      evar_map * bool
+      Evarsolve.unification_result
 (**/**)
 
 val consider_remaining_unif_problems : ?ts:transparent_state -> env -> evar_map -> evar_map

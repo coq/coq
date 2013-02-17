@@ -14,15 +14,27 @@ open Namegen
 open Environ
 open Type_errors
 
+type unification_error =
+  | OccurCheck of existential_key * constr
+  | NotClean of existential * constr
+  | NotSameArgSize
+  | NotSameHead
+  | NoCanonicalStructure
+  | ConversionFailed of env * constr * constr
+  | MetaOccurInBody of existential_key
+  | InstanceNotSameType of existential_key
+  | UnifUnivInconsistency
+
 type pretype_error =
   (* Old Case *)
   | CantFindCaseType of constr
-  (* Unification *)
-  | OccurCheck of existential_key * constr
-  | NotClean of existential_key * constr * Evar_kinds.t
+  (* Type inference unification *)
+  | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
+  (* Tactic unification *)
+  | UnifOccurCheck of existential_key * constr
   | UnsolvableImplicit of Evd.evar_info * Evar_kinds.t *
       Evd.unsolvability_explanation option
-  | CannotUnify of constr * constr
+  | CannotUnify of constr * constr * unification_error option
   | CannotUnifyLocal of constr * constr * constr
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
@@ -69,6 +81,25 @@ let contract2 env a b = match contract env [a;b] with
 let contract3 env a b c = match contract env [a;b;c] with
   | env, [a;b;c] -> env,a,b,c | _ -> assert false
 
+let contract4 env a b c d = match contract env [a;b;c;d] with
+  | env, [a;b;c;d] -> (env,a,b,c),d | _ -> assert false
+
+let contract4_vect env a b c d v =
+  match contract env ([a;b;c;d] @ Array.to_list v) with
+  | env, a::b::c::d::l -> (env,a,b,c),d,Array.of_list l
+  | _ -> assert false
+
+let contract3' env a b c = function
+  | OccurCheck (evk,d) -> let x,d = contract4 env a b c d in x,OccurCheck(evk,d)
+  | NotClean ((evk,args),d) ->
+      let x,d,args = contract4_vect env a b c d args in x,NotClean((evk,args),d)
+  | ConversionFailed (env',t1,t2) ->
+      let (env',t1,t2) = contract2 env' t1 t2 in
+      contract3 env a b c, ConversionFailed (env',t1,t2)
+  | NotSameArgSize | NotSameHead | NoCanonicalStructure
+  | MetaOccurInBody _ | InstanceNotSameType _ 
+  | UnifUnivInconsistency as x -> contract3 env a b c, x
+
 let raise_pretype_error (loc,env,sigma,te) =
   Loc.raise loc (PretypeError(env,sigma,te))
 
@@ -76,10 +107,11 @@ let raise_located_type_error (loc,env,sigma,te) =
   Loc.raise loc (PretypeError(env,sigma,TypingError te))
 
 
-let error_actual_type_loc loc env sigma {uj_val=c;uj_type=actty} expty =
-  let env, c, actty, expty = contract3 env c actty expty in
+let error_actual_type_loc loc env sigma {uj_val=c;uj_type=actty} expty reason =
+  let (env, c, actty, expty), reason = contract3' env c actty expty reason in
   let j = {uj_val=c;uj_type=actty} in
-  raise_located_type_error (loc, env, sigma, ActualType (j, expty))
+  raise_pretype_error
+    (loc, env, sigma, ActualTypeNotCoercible (j, expty, reason))
 
 let error_cant_apply_not_functional_loc loc env sigma rator randl =
   raise_located_type_error
@@ -111,23 +143,20 @@ let error_not_a_type_loc loc env sigma j =
     a precise location. *)
 
 let error_occur_check env sigma ev c =
-  raise (PretypeError (env, sigma, OccurCheck (ev,c)))
-
-let error_not_clean env sigma ev c (loc,k) =
-  Loc.raise loc (PretypeError (env, sigma, NotClean (ev,c,k)))
+  raise (PretypeError (env, sigma, UnifOccurCheck (ev,c)))
 
 let error_unsolvable_implicit loc env sigma evi e explain =
   Loc.raise loc
     (PretypeError (env, sigma, UnsolvableImplicit (evi, e, explain)))
 
-let error_cannot_unify env sigma (m,n) =
-  raise (PretypeError (env, sigma,CannotUnify (m,n)))
+let error_cannot_unify env sigma ?reason (m,n) =
+  raise (PretypeError (env, sigma,CannotUnify (m,n,reason)))
 
 let error_cannot_unify_local env sigma (m,n,sn) =
   raise (PretypeError (env, sigma,CannotUnifyLocal (m,n,sn)))
 
 let error_cannot_coerce env sigma (m,n) =
-  raise (PretypeError (env, sigma,CannotUnify (m,n)))
+  raise (PretypeError (env, sigma,CannotUnify (m,n,None)))
 
 let error_cannot_find_well_typed_abstraction env sigma p l =
   raise (PretypeError (env, sigma,CannotFindWellTypedAbstraction (p,l)))

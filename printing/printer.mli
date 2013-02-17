@@ -80,6 +80,7 @@ val pr_global_env          : Id.Set.t -> global_reference -> std_ppcmds
 val pr_global              : global_reference -> std_ppcmds
 
 val pr_constant            : env -> constant -> std_ppcmds
+val pr_existential_key     : existential_key -> std_ppcmds
 val pr_existential         : env -> existential -> std_ppcmds
 val pr_constructor         : env -> constructor -> std_ppcmds
 val pr_inductive           : env -> inductive -> std_ppcmds

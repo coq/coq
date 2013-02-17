@@ -650,7 +650,8 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 		    try 
 		      ignore (Reduction.vm_conv Reduction.CUMUL env cty tval); cj
 		    with Reduction.NotConvertible -> 
-		    error_actual_type_loc loc env !evdref cj tval 
+		      error_actual_type_loc loc env !evdref cj tval 
+                        (ConversionFailed (env,cty,tval))
 		  end
 		else user_err_loc (loc,"",str "Cannot check cast with vm: " ++
 				   str "unresolved arguments remain.")
@@ -662,7 +663,8 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 		    try 
 		      ignore (Nativeconv.native_conv Reduction.CUMUL env cty tval); cj
 		    with Reduction.NotConvertible -> 
-		    error_actual_type_loc loc env !evdref cj tval 
+		      error_actual_type_loc loc env !evdref cj tval 
+                        (ConversionFailed (env,cty,tval))
 		  end
 		else user_err_loc (loc,"",str "Cannot check cast with native compiler: " ++
 				   str "unresolved arguments remain.")

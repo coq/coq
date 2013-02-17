@@ -16,15 +16,27 @@ open Inductiveops
 
 (** {6 The type of errors raised by the pretyper } *)
 
+type unification_error =
+  | OccurCheck of existential_key * constr
+  | NotClean of existential * constr
+  | NotSameArgSize
+  | NotSameHead
+  | NoCanonicalStructure
+  | ConversionFailed of env * constr * constr
+  | MetaOccurInBody of existential_key
+  | InstanceNotSameType of existential_key
+  | UnifUnivInconsistency
+
 type pretype_error =
   (** Old Case *)
   | CantFindCaseType of constr
-  (** Unification *)
-  | OccurCheck of existential_key * constr
-  | NotClean of existential_key * constr * Evar_kinds.t
+  (** Type inference unification *)
+  | ActualTypeNotCoercible of unsafe_judgment * types * unification_error
+  (** Tactic Unification *)
+  | UnifOccurCheck of existential_key * constr
   | UnsolvableImplicit of Evd.evar_info * Evar_kinds.t *
       Evd.unsolvability_explanation option
-  | CannotUnify of constr * constr
+  | CannotUnify of constr * constr * unification_error option
   | CannotUnifyLocal of constr * constr * constr
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
@@ -45,7 +57,8 @@ val precatchable_exception : exn -> bool
 
 (** Raising errors *)
 val error_actual_type_loc :
-  Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr -> 'b
+  Loc.t -> env -> Evd.evar_map -> unsafe_judgment -> constr ->
+      unification_error -> 'b
 
 val error_cant_apply_not_functional_loc :
   Loc.t -> env -> Evd.evar_map ->
@@ -79,14 +92,12 @@ val error_cannot_coerce : env -> Evd.evar_map -> constr * constr -> 'b
 
 val error_occur_check : env -> Evd.evar_map -> existential_key -> constr -> 'b
 
-val error_not_clean :
-  env -> Evd.evar_map -> existential_key -> constr -> Loc.t * Evar_kinds.t -> 'b
-
 val error_unsolvable_implicit :
   Loc.t -> env -> Evd.evar_map -> Evd.evar_info -> Evar_kinds.t ->
       Evd.unsolvability_explanation option -> 'b
 
-val error_cannot_unify : env -> Evd.evar_map -> constr * constr -> 'b
+val error_cannot_unify : env -> Evd.evar_map -> ?reason:unification_error ->
+  constr * constr -> 'b
 
 val error_cannot_unify_local : env -> Evd.evar_map -> constr * constr * constr -> 'b
 

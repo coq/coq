@@ -30,6 +30,7 @@ open Termops
 
 (* Typing operations dealing with coercions *)
 exception NoCoercion
+exception NoCoercionNoUnifier of evar_map * unification_error
 
 (* Here, funj is a coercion therefore already typed in global context *)
 let apply_coercion_args env argl funj =
@@ -122,7 +123,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
       try
 	isevars := the_conv_x_leq env x y !isevars;
 	None
-      with Reduction.NotConvertible -> coerce' env x y
+      with UnableToUnify _ -> coerce' env x y
   and coerce' env x y : (Term.constr -> Term.constr) option =
     let subco () = subset_coerce env isevars x y in
     let dest_prod c =
@@ -139,12 +140,12 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
 		aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
-	    with Reduction.NotConvertible ->
+	    with UnableToUnify _ ->
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
 	      let _ =
 		try isevars := the_conv_x_leq env eqT eqT' !isevars
-		with Reduction.NotConvertible -> raise NoSubtacCoercion
+		with UnableToUnify _ -> raise NoSubtacCoercion
 	      in
 		(* Disallow equalities on arities *)
 		if Reduction.is_arity env eqT then raise NoSubtacCoercion;
@@ -416,11 +417,11 @@ let inh_coerce_to_fail env evd rigidonly v t c1 =
       with Not_found -> raise NoCoercion
     in
       try (the_conv_x_leq env t' c1 evd, v')
-      with Reduction.NotConvertible -> raise NoCoercion
+      with UnableToUnify _ -> raise NoCoercion
 
 let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
   try (the_conv_x_leq env t c1 evd, v)
-  with Reduction.NotConvertible ->
+  with UnableToUnify (best_failed_evd,e) ->
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
       match
@@ -448,14 +449,14 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
 	    | Some v2 -> Retyping.get_type_of env1 evd' v2 in
 	  let (evd'',v2') = inh_conv_coerce_to_fail loc env1 evd' rigidonly v2 t2 u2 in
 	    (evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')
-      | _ -> raise NoCoercion
+      | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
 let inh_conv_coerce_to_gen rigidonly loc env evd cj t =
   let (evd', val') =
     try
       inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
-    with NoCoercion ->
+    with NoCoercionNoUnifier _ ->
       try
 	if Flags.is_program_mode () then
 	  coerce_itf loc env evd (Some cj.uj_val) cj.uj_type t
@@ -464,8 +465,8 @@ let inh_conv_coerce_to_gen rigidonly loc env evd cj t =
 	let evd = saturate_evd env evd in
       	  try
       	    inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
-      	  with NoCoercion ->
-	    error_actual_type_loc loc env evd cj t
+	  with NoCoercionNoUnifier (best_failed_evd,e) ->
+	    error_actual_type_loc loc env best_failed_evd cj t e
   in
   let val' = match val' with Some v -> v | None -> assert(false) in
     (evd',{ uj_val = val'; uj_type = t })
