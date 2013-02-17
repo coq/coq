@@ -217,14 +217,13 @@ let catch_failerror e =
   if catchable_exception e then check_for_interrupt ()
   else match e with
   | FailError (0,_) | Loc.Exc_located(_, FailError (0,_))
-  | Loc.Exc_located(_, LtacLocated (_,FailError (0,_)))  ->
+  | LtacLocated (_,_,FailError (0,_))  ->
       check_for_interrupt ()
   | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
   | Loc.Exc_located(s,FailError (lvl,s')) ->
       raise (Loc.Exc_located(s,FailError (lvl - 1, s')))
-  | Loc.Exc_located(s,LtacLocated (s'',FailError (lvl,s')))  ->
-      raise
-       (Loc.Exc_located(s,LtacLocated (s'',FailError (lvl - 1,s'))))
+  | LtacLocated (s'',loc,FailError (lvl,s'))  ->
+      raise (LtacLocated (s'',loc,FailError (lvl - 1,s')))
   | e -> raise e
 
 (* ORELSE0 t1 t2 tries to apply t1 and if it fails, applies t2 *)

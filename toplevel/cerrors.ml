@@ -117,11 +117,15 @@ let rec process_vernac_interp_error = function
            if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
   | AlreadyDeclared msg ->
       wrap_vernac_error (msg ++ str ".")
-  | Proof_type.LtacLocated (_,(Refiner.FailError (i,s) as exc)) when not (is_mt s) ->
+  | Proof_type.LtacLocated (_,_,(Refiner.FailError (i,s) as exc)) when not (is_mt s) ->
+      (* Ltac error is intended, trace is irrelevant *)
       process_vernac_interp_error exc
-  | Proof_type.LtacLocated (s,exc) ->
-      EvaluatedError (hov 0 (Himsg.explain_ltac_call_trace s ++ fnl()),
-        Some (process_vernac_interp_error exc))
+  | Proof_type.LtacLocated (s,loc,exc) ->
+      (match
+          Himsg.extract_ltac_trace s loc (process_vernac_interp_error exc)
+       with
+       | None,loc,e -> Loc.Exc_located (loc,e)
+       | Some msg, loc, e -> Loc.Exc_located (loc,EvaluatedError (msg,Some e)))
   | Loc.Exc_located (loc,exc) ->
       Loc.Exc_located (loc,process_vernac_interp_error exc)
   | exc ->

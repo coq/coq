@@ -82,4 +82,4 @@ type ltac_call_kind =
 
 type ltac_trace = (int * Loc.t * ltac_call_kind) list
 
-exception LtacLocated of (int * ltac_call_kind * ltac_trace * Loc.t) * exn
+exception LtacLocated of ltac_trace * Loc.t * exn

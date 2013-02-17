@@ -795,7 +795,7 @@ let explain_refiner_error = function
 
 (* Inductive errors *)
 
-let error_non_strictly_positive env c v  =
+let error_non_strictly_positive env c v =
   let pc = pr_lconstr_env env c in
   let pv = pr_lconstr_env env v in
   str "Non strictly positive occurrence of " ++ pv ++ str " in" ++
@@ -994,6 +994,14 @@ let explain_reduction_tactic_error = function
       spc () ++ str "is not well typed." ++ fnl () ++
       explain_type_error env' Evd.empty e
 
+let is_defined_ltac trace =
+  let rec aux = function
+  | (_,_,Proof_type.LtacNameCall _) :: tail -> true
+  | (_,_,Proof_type.LtacAtomCall _) :: tail -> false
+  | _ :: tail -> aux tail
+  | [] -> false in
+  aux (List.rev trace)
+
 let explain_ltac_call_trace (nrep,last,trace,loc) =
   let calls =
     (nrep,last) :: List.rev (List.map(fun(n,_,ck)->(n,ck))trace)
@@ -1031,3 +1039,23 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
            pr_enum pr_call calls ++ strbrk kind_of_last_call)
   else
     mt ()
+
+let extract_ltac_trace trace eloc e =
+  let (nrep,loc,c),tail = List.sep_last trace in
+  if is_defined_ltac trace then
+    (* We entered a user-defined tactic,
+       we display the trace with location of the call *)
+    let msg = hov 0 (explain_ltac_call_trace (nrep,c,tail,eloc) ++ fnl()) in
+    Some msg, loc, e
+  else
+    (* We entered a primitive tactic, we don't display trace but
+       report on the finest location *)
+    let best_loc =
+      if not (Loc.is_ghost eloc) then eloc else
+        (* trace is with innermost call coming first *)
+        let rec aux = function
+        | (_,loc,_)::tail when not (Loc.is_ghost loc) -> loc
+        | _::tail -> aux tail
+        | [] -> Loc.ghost in
+        aux trace in
+    None, best_loc, e

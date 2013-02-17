@@ -1,10 +1,10 @@
 Goal
 Evar_refiner
 Monads
+Proof_type
 Proofview
 Proof
 Proof_global
-Proof_type
 Redexpr
 Logic
 Refiner

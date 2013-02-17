@@ -69,19 +69,15 @@ type value =
 let dloc = Loc.ghost
 
 let catch_error call_trace tac g =
-  if List.is_empty call_trace then tac g else try tac g with
-  | LtacLocated _ as e -> let e = Errors.push e in raise e
-  | Loc.Exc_located (_,LtacLocated _) as e ->
-    let e = Errors.push e in raise e
-  | e ->
-    let e = Errors.push e in
-    let (nrep,loc',c),tail = List.sep_last call_trace in
-    let loc,e' = match e with Loc.Exc_located(loc,e) -> loc,e | _ ->dloc,e in
-    if List.is_empty tail then
-      let loc = if Loc.is_ghost loc then loc' else loc in
-      raise (Loc.Exc_located(loc,e'))
-    else
-      raise (Loc.Exc_located(loc',LtacLocated((nrep,c,tail,loc),e')))
+  try tac g with e ->
+  let e = Errors.push e in
+  let inner_trace,loc,e = match e with
+  | LtacLocated (inner_trace,loc,e) -> inner_trace,loc,e
+  | Loc.Exc_located (loc,e) -> [],loc,e
+  | e -> [],Loc.ghost,e in
+  if List.is_empty call_trace & List.is_empty inner_trace then raise e
+  else
+    raise (LtacLocated(inner_trace@call_trace,loc,e))
 
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
@@ -159,6 +155,10 @@ let propagate_trace ist loc id = function
   | VFun (_,lfun,it,b) ->
       let t = if List.is_empty it then b else TacFun (it,b) in
       VFun (push_trace(loc,LtacVarCall (id,t)) ist.trace,lfun,it,b)
+  | x -> x
+
+let append_trace trace = function
+  | VFun (trace',lfun,it,b) -> VFun (trace'@trace,lfun,it,b)
   | x -> x
 
 (* Dynamically check that an argument is a tactic *)
@@ -469,7 +469,8 @@ let interp_gen kind ist allow_patvar expand_evar fail_evar use_classes env sigma
       let ltacdata = (List.map fst ltacvars,unbndltacvars) in
       intern_gen kind ~allow_patvar ~ltacvars:ltacdata sigma env c
   in
-  let trace = push_trace (dloc,LtacConstrInterp (c,vars)) ist.trace in
+  let trace =
+    push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist.trace in
   let evdc =
     catch_error trace 
       (understand_ltac ~resolve_classes:use_classes expand_evar sigma env vars kind) c 
@@ -1139,14 +1140,18 @@ and interp_app loc ist gl fv largs =
          (TacFun _|TacLetIn _|TacMatchGoal _|TacMatch _| TacArg _ as body))) ->
 	let (newlfun,lvar,lval)=head_with_value (var,largs) in
 	if List.is_empty lvar then
+          (* Check evaluation and report problems with current trace *)
 	  let (sigma,v) =
 	    try
-	      catch_error trace
-		(val_interp {ist with lfun=newlfun@olfun; trace=trace} gl) body
+              catch_error trace
+		(val_interp {ist with lfun=newlfun@olfun; trace=[]} gl) body
 	    with e ->
               let e = Errors.push e in
               debugging_exception_step ist false e (fun () -> str "evaluation");
 	      raise e in
+          (* No errors happened, we propagate the trace *)
+          let v = append_trace trace v in
+
 	  let gl = { gl with sigma=sigma } in
           debugging_step ist
 	    (fun () ->
@@ -1163,7 +1168,7 @@ and tactic_of_value ist vle g =
   match vle with
   | VRTactic res -> res
   | VFun (trace,lfun,[],t) ->
-      let tac = eval_tactic {ist with lfun=lfun; trace=trace} t in
+      let tac = eval_tactic {ist with lfun=lfun; trace=[]} t in
       catch_error trace tac g
   | (VFun _|VRec _) -> error "A fully applied tactic is expected."
   | VConstr _ -> errorlabstrm "" (str"Value is a term. Expected a tactic.")
@@ -1185,13 +1190,13 @@ and eval_with_fail ist is_lazy goal tac =
     | a -> a)
   with
     | FailError (0,s) | Loc.Exc_located(_, FailError (0,s))
-    | Loc.Exc_located(_,LtacLocated (_,FailError (0,s))) ->
+    | LtacLocated (_,_,FailError (0,s)) ->
 	raise (Eval_fail (Lazy.force s))
     | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
     | Loc.Exc_located(s,FailError (lvl,s')) ->
 	raise (Loc.Exc_located(s,FailError (lvl - 1, s')))
-    | Loc.Exc_located(s,LtacLocated (s'',FailError (lvl,s'))) ->
-	raise (Loc.Exc_located(s,LtacLocated (s'',FailError (lvl - 1, s'))))
+    | LtacLocated (s'',loc,FailError (lvl,s')) ->
+	raise (LtacLocated (s'',loc,FailError (lvl - 1, s')))
 
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist gl llc u =
