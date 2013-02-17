@@ -201,6 +201,7 @@ val extract_changed_conv_pbs : evar_map ->
       (ExistentialSet.t -> evar_constraint -> bool) ->
       evar_map * evar_constraint list
 val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
+val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t
 
 val evar_list : evar_map -> constr -> existential list
 val collect_evars : constr -> ExistentialSet.t

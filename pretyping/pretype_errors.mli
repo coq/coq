@@ -96,6 +96,9 @@ val error_unsolvable_implicit :
   Loc.t -> env -> Evd.evar_map -> Evd.evar_info -> Evar_kinds.t ->
       Evd.unsolvability_explanation option -> 'b
 
+val error_cannot_unify_loc : Loc.t -> env -> Evd.evar_map ->
+  ?reason:unification_error -> constr * constr -> 'b
+
 val error_cannot_unify : env -> Evd.evar_map -> ?reason:unification_error ->
   constr * constr -> 'b
 

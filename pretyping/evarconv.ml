@@ -861,15 +861,17 @@ let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =
 	      aux evd pbs progress (pb :: stuck)
             end
         | UnifFailure (evd,reason) ->
-	    Pretype_errors.error_cannot_unify env evd ~reason (t1, t2))
+	    Pretype_errors.error_cannot_unify_loc (loc_of_conv_pb evd pb)
+              env evd ~reason (t1, t2))
     | _ -> 
 	if progress then aux evd stuck false []
 	else 
 	  match stuck with
 	  | [] -> (* We're finished *) evd
-	  | (pbty,env,t1,t2) :: _ ->
+	  | (pbty,env,t1,t2 as pb) :: _ ->
 	      (* There remains stuck problems *)
-	      Pretype_errors.error_cannot_unify env evd (t1, t2)
+	      Pretype_errors.error_cannot_unify_loc (loc_of_conv_pb evd pb)
+                env evd (t1, t2)
   in
   let (evd,pbs) = extract_all_conv_pbs evd in
   let heuristic_solved_evd = aux evd pbs false [] in

@@ -477,6 +477,14 @@ let extract_changed_conv_pbs evd p =
 let extract_all_conv_pbs evd =
   extract_conv_pbs evd (fun _ -> true)
 
+let loc_of_conv_pb evd (pbty,env,t1,t2) =
+  match kind_of_term (fst (decompose_app t1)) with
+  | Evar (evk1,_) -> fst (evar_source evk1 evd)
+  | _ ->
+  match kind_of_term (fst (decompose_app t2)) with
+  | Evar (evk2,_) -> fst (evar_source evk2 evd)
+  | _ -> Loc.ghost
+
 (* spiwack: should it be replaced by Evd.merge? *)
 let evar_merge evd evars =
   { evd with evars = EvarMap.merge evd.evars evars.evars }

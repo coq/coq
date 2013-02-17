@@ -149,6 +149,10 @@ let error_unsolvable_implicit loc env sigma evi e explain =
   Loc.raise loc
     (PretypeError (env, sigma, UnsolvableImplicit (evi, e, explain)))
 
+let error_cannot_unify_loc loc env sigma ?reason (m,n) =
+  let env, m, n = contract2 env m n in
+  Loc.raise loc (PretypeError (env, sigma,CannotUnify (m,n,reason)))
+
 let error_cannot_unify env sigma ?reason (m,n) =
   raise (PretypeError (env, sigma,CannotUnify (m,n,reason)))
 
