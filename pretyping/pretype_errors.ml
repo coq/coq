@@ -154,6 +154,7 @@ let error_cannot_unify_loc loc env sigma ?reason (m,n) =
   Loc.raise loc (PretypeError (env, sigma,CannotUnify (m,n,reason)))
 
 let error_cannot_unify env sigma ?reason (m,n) =
+  let env, m, n = contract2 env m n in
   raise (PretypeError (env, sigma,CannotUnify (m,n,reason)))
 
 let error_cannot_unify_local env sigma (m,n,sn) =

@@ -189,6 +189,7 @@ let explain_unification_error env sigma p1 p2 = function
         spc () ++ str "(Universe inconsistency)"
 
 let explain_actual_type env sigma j t reason =
+  let env = make_all_name_different env in
   let j = Evarutil.j_nf_betaiotaevar sigma j in
   let t = Reductionops.nf_betaiota sigma t in
   let pe = pr_ne_context_of (str "In environment") env in
@@ -456,19 +457,21 @@ let explain_wrong_case_info env ind ci =
     spc () ++ pc ++ str "."
 
 let explain_cannot_unify env sigma m n e =
+  let env = make_all_name_different env in
   let m = Evarutil.nf_evar sigma m in
   let n = Evarutil.nf_evar sigma n in
   let pm = pr_lconstr_env env m in
   let pn = pr_lconstr_env env n in
   let ppreason = explain_unification_error env sigma m n e in
-  str "Impossible to unify" ++ brk(1,1) ++ pm ++ spc () ++
+  let pe = pr_ne_context_of (str "In environment") (mt ()) env in
+  pe ++ str "Unable to unify" ++ brk(1,1) ++ pm ++ spc () ++
   str "with" ++ brk(1,1) ++ pn ++ ppreason ++ str "."
 
 let explain_cannot_unify_local env sigma m n subn =
   let pm = pr_lconstr_env env m in
   let pn = pr_lconstr_env env n in
   let psubn = pr_lconstr_env env subn in
-    str "Impossible to unify" ++ brk(1,1) ++ pm ++ spc () ++
+    str "Unable to unify" ++ brk(1,1) ++ pm ++ spc () ++
       str "with" ++ brk(1,1) ++ pn ++ spc () ++ str "as" ++ brk(1,1) ++
       psubn ++ str " contains local variables."
 
