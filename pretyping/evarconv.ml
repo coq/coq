@@ -651,6 +651,8 @@ let set_solve_evars f = solve_evars := f
  * proposition from Dan Grayson]
  *)
 
+exception TypingFailed of evar_map
+
 let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   try
   let args = Array.to_list args in
@@ -702,10 +704,11 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
 
   (* We instantiate the evars of which the value is forced by typing *)
   let evd,rhs =
-    try !solve_evars env_evar evd rhs
+    let evdref = ref evd in
+    try let c = !solve_evars env_evar evdref rhs in !evdref,c
     with e when Pretype_errors.precatchable_exception e ->
       (* Could not revert all subterms *)
-      raise Exit in
+      raise (TypingFailed !evdref) in
 
   let rec abstract_free_holes evd = function
   | (id,idty,c,_,evsref,_,_)::l ->
@@ -736,7 +739,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       Evd.define evk rhs evd in
 
   abstract_free_holes evd subst, true
-  with Exit -> evd, false
+  with TypingFailed evd -> Evd.define evk rhs evd, false
 
 let second_order_matching_with_args ts env evd ev l t =
 (*

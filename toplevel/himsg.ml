@@ -219,7 +219,7 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
 		  let pc,pct = pr_ljudge_env env c in
 		  hov 2 (pc ++ spc () ++ str ": " ++ pct)) randl
   in
-  str "Illegal application (Type Error): " ++ (* pe ++ *) fnl () ++
+  str "Illegal application: " ++ (* pe ++ *) fnl () ++
   str "The term" ++ brk(1,1) ++ pr ++ spc () ++
   str "of type" ++ brk(1,1) ++ prt ++ spc () ++
   str "cannot be applied to the " ++ term_string1 ++ fnl () ++
@@ -489,12 +489,13 @@ let explain_cannot_unify_binding_type env m n =
   str "This binding has type" ++ brk(1,1) ++ pm ++ spc () ++
   str "which should be unifiable with" ++ brk(1,1) ++ pn ++ str "."
 
-let explain_cannot_find_well_typed_abstraction env p l =
+let explain_cannot_find_well_typed_abstraction env p l e =
   str "Abstracting over the " ++
   str (String.plural (List.length l) "term") ++ spc () ++
   hov 0 (pr_enum (pr_lconstr_env env) l) ++ spc () ++
   str "leads to a term" ++ spc () ++ pr_lconstr_env env p ++ spc () ++
-  str "which is ill-typed."
+  str "which is ill-typed." ++
+  (match e with None -> mt () | Some e -> fnl () ++ str "Reason is: " ++ e)
 
 let explain_wrong_abstraction_type env na abs expected result =
   let ppname = match na with Anonymous -> mt() | Name id -> pr_id id ++ spc() in
@@ -565,8 +566,9 @@ let explain_pretype_error env sigma err =
   | CannotGeneralize ty -> explain_refiner_cannot_generalize env ty
   | NoOccurrenceFound (c, id) -> explain_no_occurrence_found env c id
   | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type env m n
-  | CannotFindWellTypedAbstraction (p,l) ->
+  | CannotFindWellTypedAbstraction (p,l,e) ->
       explain_cannot_find_well_typed_abstraction env p l
+        (Option.map (fun (env',e) -> explain_type_error env' sigma e) e)
   | WrongAbstractionType (n,a,t,u) -> explain_wrong_abstraction_type env n a t u
   | AbstractionOverMeta (m,n) -> explain_abstraction_over_meta env m n
   | NonLinearUnification (m,c) -> explain_non_linear_unification env m c

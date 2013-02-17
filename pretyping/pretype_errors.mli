@@ -13,6 +13,7 @@ open Sign
 open Environ
 open Glob_term
 open Inductiveops
+open Type_errors
 
 (** {6 The type of errors raised by the pretyper } *)
 
@@ -41,7 +42,7 @@ type pretype_error =
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
   | NoOccurrenceFound of constr * Id.t option
-  | CannotFindWellTypedAbstraction of constr * constr list
+  | CannotFindWellTypedAbstraction of constr * constr list * (env * type_error) option
   | WrongAbstractionType of Name.t * constr * types * types
   | AbstractionOverMeta of Name.t * Name.t
   | NonLinearUnification of Name.t * constr
@@ -49,7 +50,7 @@ type pretype_error =
   | VarNotFound of Id.t
   | UnexpectedType of constr * constr
   | NotProduct of constr
-  | TypingError of Type_errors.type_error
+  | TypingError of type_error
 
 exception PretypeError of env * Evd.evar_map * pretype_error
 
@@ -105,7 +106,7 @@ val error_cannot_unify : env -> Evd.evar_map -> ?reason:unification_error ->
 val error_cannot_unify_local : env -> Evd.evar_map -> constr * constr * constr -> 'b
 
 val error_cannot_find_well_typed_abstraction : env -> Evd.evar_map ->
-      constr -> constr list -> 'b
+      constr -> constr list -> (env * type_error) option -> 'b
 
 val error_wrong_abstraction_type :  env -> Evd.evar_map ->
       Name.t -> constr -> types -> types -> 'b

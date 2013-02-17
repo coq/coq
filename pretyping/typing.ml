@@ -287,10 +287,9 @@ let e_type_of env evd c =
   (* side-effect on evdref *)
   !evdref, Termops.refresh_universes j.uj_type
 
-let solve_evars env evd c =
-  let evdref = ref evd in
+let solve_evars env evdref c =
   let c = (execute env evdref c).uj_val in
   (* side-effect on evdref *)
-  !evdref, nf_evar !evdref c
+  nf_evar !evdref c
 
 let _ = Evarconv.set_solve_evars solve_evars

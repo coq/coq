@@ -69,8 +69,11 @@ let abstract_list_all env evd typ c l =
   let p = abstract_scheme env c l_with_all_occs ctxt in
   let typp =
     try Typing.type_of env evd p
-    with UserError _ | Type_errors.TypeError _ ->
-      error_cannot_find_well_typed_abstraction env evd p l in
+    with
+    | UserError _ ->
+        error_cannot_find_well_typed_abstraction env evd p l None
+    | Type_errors.TypeError (env',x) ->
+        error_cannot_find_well_typed_abstraction env evd p l (Some (env',x)) in
   (p,typp)
 
 let set_occurrences_of_last_arg args =
@@ -83,8 +86,8 @@ let abstract_list_all_with_dependencies env evd typ c l =
   let evd,b =
     Evarconv.second_order_matching empty_transparent_state
       env evd ev' argoccs c in
-  if b then nf_evar evd (existential_value evd (destEvar ev))
-  else error "Cannot find a well-typed abstraction."
+  let p = nf_evar evd (existential_value evd (destEvar ev)) in
+  if b then p else error_cannot_find_well_typed_abstraction env evd p l None
 
 (**)
 

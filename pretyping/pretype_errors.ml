@@ -39,7 +39,7 @@ type pretype_error =
   | CannotUnifyBindingType of constr * constr
   | CannotGeneralize of constr
   | NoOccurrenceFound of constr * Id.t option
-  | CannotFindWellTypedAbstraction of constr * constr list
+  | CannotFindWellTypedAbstraction of constr * constr list * (env * type_error) option
   | WrongAbstractionType of Name.t * constr * types * types
   | AbstractionOverMeta of Name.t * Name.t
   | NonLinearUnification of Name.t * constr
@@ -162,8 +162,8 @@ let error_cannot_unify_local env sigma (m,n,sn) =
 let error_cannot_coerce env sigma (m,n) =
   raise (PretypeError (env, sigma,CannotUnify (m,n,None)))
 
-let error_cannot_find_well_typed_abstraction env sigma p l =
-  raise (PretypeError (env, sigma,CannotFindWellTypedAbstraction (p,l)))
+let error_cannot_find_well_typed_abstraction env sigma p l e =
+  raise (PretypeError (env, sigma,CannotFindWellTypedAbstraction (p,l,e)))
 
 let error_wrong_abstraction_type env sigma na a p l =
   raise (PretypeError (env, sigma,WrongAbstractionType (na,a,p,l)))
