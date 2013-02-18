@@ -12,10 +12,19 @@ type +'a t
 (** Information containing a given type. *)
 
 val make : unit -> 'a t
-(** Create a new information. *)
+(** Create a new piece of information. *)
 
 val add : exn -> 'a t -> 'a -> exn
-(** Add an information to an exception. *)
+(** Add information to an exception. *)
 
 val get : exn -> 'a t -> 'a option
-(** Get an information worn by an exception. Returns [None] if undefined. *)
+(** Get information worn by an exception. Returns [None] if undefined. *)
+
+(* val remove : exn -> 'a t -> exn *)
+(** TODO: Remove a given piece of information. *)
+
+val clear : exn -> exn
+(** Remove any information. *)
+
+val copy : exn -> exn -> exn
+(** [copy src dst] adds the additional info from [src] to [dst]. *)
