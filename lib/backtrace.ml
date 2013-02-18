@@ -26,11 +26,9 @@ type frame = { frame_location : location option; frame_raised : bool; }
 external get_exception_backtrace: unit -> raw_frame array option
   = "caml_get_exception_backtrace"
 
-type t = frame list option
+type t = frame list
 
-let empty = Some []
-
-let none = None
+let empty = []
 
 let of_raw = function
 | Unknown_location r ->
@@ -44,18 +42,15 @@ let of_raw = function
   } in
   { frame_location = Some loc; frame_raised = r; }
 
-let push bt = match bt with
-| None -> None
-| Some stack ->
-  match get_exception_backtrace () with
-  | None -> bt
-  | Some frames ->
-    let len = Array.length frames in
-    let rec append accu i =
-      if i = len then accu
-      else append (of_raw frames.(i) :: accu) (succ i)
-    in
-    Some (append stack 0)
+let push stack = match get_exception_backtrace () with
+| None -> []
+| Some frames ->
+  let len = Array.length frames in
+  let rec append accu i =
+    if i = len then accu
+    else append (of_raw frames.(i) :: accu) (succ i)
+  in
+  append stack 0
 
 (** Utilities *)
 
@@ -69,21 +64,33 @@ let print_frame frame =
 
 (** Exception manipulation *)
 
-let handlers = ref []
+let backtrace : t Exninfo.t = Exninfo.make ()
 
-let register_backtrace_handler h =
-  handlers := h :: !handlers
+let is_recording = ref false
 
-let rec push_exn_aux e = function
-| [] -> e
-| f :: l ->
-  match f e with
-  | None -> push_exn_aux e l
-  | Some e -> e
+let record_backtrace b =
+  let () = Printexc.record_backtrace b in
+  is_recording := b
 
-let push_exn e =
-  push_exn_aux e !handlers
+let get_backtrace e =
+  Exninfo.get e backtrace
 
-let reraise e =
-  let e = push_exn e in
-  raise e
+let add_backtrace e =
+  if !is_recording then
+    let current = get_exception_backtrace () in
+    begin match current with
+    | None -> e
+    | Some frames ->
+      let len = Array.length frames in
+      let rec append accu i =
+        if i = len then accu
+        else append (of_raw frames.(i) :: accu) (succ i)
+      in
+      let old = match get_backtrace e with
+      | None -> []
+      | Some bt -> bt
+      in
+      let bt = append old 0 in
+      Exninfo.add e backtrace bt
+    end
+  else e

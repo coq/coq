@@ -32,15 +32,12 @@ type frame = { frame_location : location option; frame_raised : bool; }
 (** A frame contains two informations: its optional physical location, and
     whether it raised the exception or let it pass through. *)
 
-type t = frame list option
+type t = frame list
 (** Type of backtraces. They're just stack of frames. [None] indicates that we
     don't care about recording the backtraces. *)
 
 val empty : t
 (** Empty frame stack. *)
-
-val none : t
-(** Frame stack that will not register anything. *)
 
 val push : t -> t
 (** Add the current backtrace information to a given backtrace. *)
@@ -52,26 +49,22 @@ val print_frame : frame -> string
 
 (** {5 Exception handling} *)
 
-val register_backtrace_handler : (exn -> exn option) -> unit
-(** Add a handler to enrich backtrace information that may be carried by
-    exceptions. If the handler returns [None], this means that it is not its
-    duty to handle this one. Otherwise, the new exception will be used by the
-    functions thereafter instead of the original one.
+val record_backtrace : bool -> unit
+(** Whether to activate the backtrace recording mechanism. Note that it will
+    only work whenever the program was compiled with the [debug] flag. *)
 
-    Handlers are called in the reverse order of their registration. If no
-    handler match, the original exception is returned.
-*)
+val get_backtrace : exn -> t option
+(** Retrieve the optional backtrace coming with the exception. *)
 
-val push_exn : exn -> exn
-(** Add the current backtrace information to the given exception, using the
-    registered handlers.
+val add_backtrace : exn -> exn
+(** Add the current backtrace information to the given exception.
 
     The intended use case is of the form: {[
 
     try foo
       with
       | Bar -> bar
-      | err -> let err = push_exn err in baz
+      | err -> let err = add_backtrace err in baz
 
     ]}
 
@@ -81,7 +74,7 @@ val push_exn : exn -> exn
 
     try foo
       with err ->
-        let err = push_exn err in
+        let err = add_backtrace err in
         match err with
         | Bar -> bar
         | err -> baz
@@ -89,20 +82,5 @@ val push_exn : exn -> exn
     ]}
 
     I admit that's a bit heavy, but there is not much to do...
-
-*)
-
-val reraise : exn -> 'a
-(** Convenience function which covers a generic pattern in Coq code.
-    [reraise e] is equivalent to [raise (push_exn e)].
-
-    The intended use case is of the form: {[
-
-    try foo
-      with
-      | Bar -> bar
-      | err -> reraise err
-
-    ]}
 
 *)

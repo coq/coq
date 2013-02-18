@@ -12,8 +12,7 @@ open Pp
 let (/) = Filename.concat
 
 let set_debug () =
-  let () = Printexc.record_backtrace true in
-  let () = Errors.record_backtrace () in
+  let () = Backtrace.record_backtrace true in
   Flags.debug := true
 
 (* Loading of the ressource file.

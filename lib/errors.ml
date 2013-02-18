@@ -10,37 +10,23 @@ open Pp
 
 (** Aliases *)
 
-let push = Backtrace.push_exn
-
-let reraise = Backtrace.reraise
+let push = Backtrace.add_backtrace
 
 (* Errors *)
 
-exception Anomaly of string option * std_ppcmds * Backtrace.t (* System errors *)
+exception Anomaly of string option * std_ppcmds (* System errors *)
 
 let make_anomaly ?label pp =
-  let bt =
-    if !Flags.debug then Backtrace.empty
-    else Backtrace.none
-  in
-  Anomaly (label, pp, bt)
+  Anomaly (label, pp)
 
 let anomaly_gen label pp =
-  let bt =
-    if !Flags.debug then Backtrace.empty
-    else Backtrace.none
-  in
-  raise (Anomaly (label, pp, bt))
+  raise (Anomaly (label, pp))
 
 let anomaly ?loc ?label pp =
-  let bt =
-    if !Flags.debug then Backtrace.empty
-    else Backtrace.none
-  in
   match loc with
-  | None -> raise (Anomaly (label, pp, bt))
+  | None -> raise (Anomaly (label, pp))
   | Some loc ->
-    Loc.raise loc (Anomaly (label, pp, bt))
+    Loc.raise loc (Anomaly (label, pp))
 
 let anomalylabstrm string pps =
   anomaly_gen (Some string) pps
@@ -99,17 +85,17 @@ let where = function
   if !Flags.debug then str ("in "^s^":") ++ spc () else mt ()
 
 let raw_anomaly e = match e with
-  | Anomaly (s, pps, bt) -> where s ++ pps ++ str "."
+  | Anomaly (s, pps) -> where s ++ pps ++ str "."
   | Assert_failure _ | Match_failure _ -> str (Printexc.to_string e ^ ".")
   | _ -> str ("Uncaught exception " ^ Printexc.to_string e ^ ".")
 
 let print_anomaly askreport e =
-  let bt_info = match e with
-  | Anomaly (_, _, Some bt) ->
+  let bt_info = match Backtrace.get_backtrace e with
+  | None -> mt ()
+  | Some bt ->
     let pr_frame f = str (Backtrace.print_frame f) in
     let bt = prlist_with_sep fnl pr_frame bt in
     fnl () ++ hov 0 bt
-  | _ -> mt ()
   in
   let info =
     if askreport then
@@ -138,22 +124,3 @@ let _ = register_handler begin function
   | UserError(s,pps) -> hov 0 (str "Error: " ++ where (Some s) ++ pps)
   | _ -> raise Unhandled
 end
-
-let rec anomaly_handler = function
-| Anomaly (lbl, pp, bt) ->
-  let bt = Backtrace.push bt in
-  Some (Anomaly (lbl, pp, bt))
-| Loc.Exc_located (loc, e) ->
-  begin match anomaly_handler e with
-  | None -> None
-  | Some e -> Some (Loc.Exc_located (loc, e))
-  end
-| Error_in_file (s, data, e) ->
-  begin match anomaly_handler e with
-  | None -> None
-  | Some e -> Some (Error_in_file (s, data, e))
-  end
-| e -> None
-
-let record_backtrace () =
-  Backtrace.register_backtrace_handler anomaly_handler

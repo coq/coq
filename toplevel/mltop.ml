@@ -121,7 +121,7 @@ let dir_ml_load s =
         let e = Errors.push e in
         match e with
         | (UserError _ | Failure _ | Not_found as u) -> raise u
-        | u when is_anomaly u -> reraise u
+        | u when is_anomaly u -> raise u
         | exc ->
             let msg = report_on_load_obj_error exc in
             errorlabstrm "Mltop.load_object" (str"Cannot link ml-object " ++
