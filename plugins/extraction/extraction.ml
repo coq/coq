@@ -375,8 +375,8 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
     let packets =
       Array.mapi
 	(fun i mip ->
-	   let info = sort_of env (mkInd (kn,i)) <> InProp in
 	   let ar = Inductive.type_of_inductive env (mib,mip) in
+	   let info = (fst (flag_of_type env ar) = Info) in
 	   let s,v = if info then type_sign_vl env ar else [],[] in
 	   let t = Array.make (Array.length mip.mind_nf_lc) [] in
 	   { ip_typename = mip.mind_typename;
