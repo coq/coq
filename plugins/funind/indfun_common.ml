@@ -132,9 +132,8 @@ let coq_constant s =
     Coqlib.init_modules s;;
 
 let find_reference sl s =
-    (Nametab.locate (make_qualid(Names.Dir_path.make
-			   (List.map Id.of_string (List.rev sl)))
-	       (Id.of_string s)));;
+  let dp = Names.Dir_path.make (List.rev_map Id.of_string sl) in
+  Nametab.locate (make_qualid dp (Id.of_string s))
 
 let eq = lazy(coq_constant "eq")
 let refl_equal = lazy(coq_constant "eq_refl")

@@ -55,7 +55,7 @@ let set_batch_mode () = batch_mode := true
 let toplevel_default_name = Dir_path.make [Id.of_string "Top"]
 let toplevel_name = ref (Some toplevel_default_name)
 let set_toplevel_name dir =
-  if Dir_path.equal dir Dir_path.empty then error "Need a non empty toplevel module name";
+  if Dir_path.is_empty dir then error "Need a non empty toplevel module name";
   toplevel_name := Some dir
 let unset_toplevel_name () = toplevel_name := None
 

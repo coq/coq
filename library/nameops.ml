@@ -142,7 +142,7 @@ let default_library = Names.Dir_path.initial (* = ["Top"] *)
 
 (*s Roots of the space of absolute names *)
 let coq_root = Id.of_string "Coq"
-let default_root_prefix = Dir_path.make []
+let default_root_prefix = Dir_path.empty
 
 (* Metavariables *)
 let pr_meta = Pp.int

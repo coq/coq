@@ -50,10 +50,8 @@ let coq_base_constant s =
     (Coqlib.init_modules @ [["Coq";"Arith";"Le"];["Coq";"Arith";"Lt"]]) s;;
 
 let find_reference sl s =
-    (locate (make_qualid(Names.Dir_path.make
-			   (List.map Id.of_string (List.rev sl)))
-	       (Id.of_string s)));;
-
+  let dp = Names.Dir_path.make (List.rev_map Id.of_string sl) in
+  locate (make_qualid dp (Id.of_string s))
 
 let (declare_fun : Id.t -> logical_kind -> constr -> global_reference) =
   fun f_id kind value ->
@@ -84,11 +82,8 @@ let type_of_const t =
     |_ -> assert false
 
 
-let constant sl s =
-  constr_of_global
-    (locate (make_qualid(Names.Dir_path.make
-			   (List.map Id.of_string (List.rev sl)))
-	       (Id.of_string s)));;
+let constant sl s = constr_of_global (find_reference sl s)
+
 let const_of_ref = function
     ConstRef kn -> kn
   | _ -> anomaly (Pp.str "ConstRef expected")

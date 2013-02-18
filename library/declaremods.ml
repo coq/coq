@@ -155,7 +155,7 @@ let _ = Summary.declare_summary "MODULE-INFO"
 
 let mp_of_kn kn =
   let mp,sec,l = repr_kn kn in
-    if Dir_path.equal sec Dir_path.empty then
+    if Dir_path.is_empty sec then
       MPdot (mp,l)
     else
       anomaly (str "Non-empty section in module name!" ++ spc () ++ pr_kn kn)

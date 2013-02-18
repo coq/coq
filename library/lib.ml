@@ -693,38 +693,30 @@ let remove_section_part ref =
 (************************)
 (* Discharging names *)
 
-let pop_kn kn =
-  let (mp,dir,l) = Names.repr_mind kn in
-  Names.make_mind mp (pop_dirpath dir) l
-
-let pop_con con =
-  let (mp,dir,l) = Names.repr_con con in
-  Names.make_con mp (pop_dirpath dir) l
-
 let con_defined_in_sec kn =
   let _,dir,_ = Names.repr_con kn in
-  not (Names.Dir_path.equal dir Names.Dir_path.empty) &&
+  not (Names.Dir_path.is_empty dir) &&
   Names.Dir_path.equal (fst (split_dirpath dir)) (snd (current_prefix ()))
 
 let defined_in_sec kn =
   let _,dir,_ = Names.repr_mind kn in
-  not (Names.Dir_path.equal dir Names.Dir_path.empty) &&
+  not (Names.Dir_path.is_empty dir) &&
   Names.Dir_path.equal (fst (split_dirpath dir)) (snd (current_prefix ()))
 
 let discharge_global = function
   | ConstRef kn when con_defined_in_sec kn ->
-      ConstRef (pop_con kn)
+      ConstRef (Globnames.pop_con kn)
   | IndRef (kn,i) when defined_in_sec kn ->
-      IndRef (pop_kn kn,i)
+      IndRef (Globnames.pop_kn kn,i)
   | ConstructRef ((kn,i),j) when defined_in_sec kn ->
-      ConstructRef ((pop_kn kn,i),j)
+      ConstructRef ((Globnames.pop_kn kn,i),j)
   | r -> r
 
 let discharge_kn kn =
-  if defined_in_sec kn then pop_kn kn else kn
+  if defined_in_sec kn then Globnames.pop_kn kn else kn
 
 let discharge_con cst =
-  if con_defined_in_sec cst then pop_con cst else cst
+  if con_defined_in_sec cst then Globnames.pop_con cst else cst
 
 let discharge_inductive (kn,i) =
   (discharge_kn kn,i)

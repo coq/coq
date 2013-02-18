@@ -309,7 +309,7 @@ let the_modtypetab = ref (MPTab.empty : mptab)
 module DirPath =
 struct
   type t = Dir_path.t
-  let equal d1 d2 = Int.equal (Dir_path.compare d1 d2) 0
+  let equal = Dir_path.equal
   let to_string = Dir_path.to_string
   let repr dir = match Dir_path.repr dir with
     | [] -> anomaly (Pp.str "Empty dirpath")

@@ -400,7 +400,7 @@ let print_located_module r =
     let dir = Nametab.full_name_module qid in
     msg_notice (str "Module " ++ pr_dirpath dir)
   with Not_found ->
-    if Dir_path.equal (fst (repr_qualid qid)) Dir_path.empty then
+    if Dir_path.is_empty (fst (repr_qualid qid)) then
       msg_error (str "No module is referred to by basename" ++ spc () ++ pr_qualid qid)
     else
       msg_error (str "No module is referred to by name" ++ spc () ++ pr_qualid qid)

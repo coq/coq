@@ -90,7 +90,7 @@ let root_paths_matching_dir_path dir =
 
 let intersections d1 d2 =
   let rec aux d1 =
-    if Dir_path.equal d1 Dir_path.empty then [d2] else
+    if Dir_path.is_empty d1 then [d2] else
       let rest = aux (snd (chop_dirpath 1 d1)) in
       if is_dirpath_prefix_of d1 d2 then drop_dirpath_prefix d1 d2 :: rest
       else rest in
@@ -134,12 +134,7 @@ type library_t = {
   library_imports : compilation_unit_name list;
   library_digest : Digest.t }
 
-module LibraryOrdered =
-  struct
-    type t = Dir_path.t
-    let compare = Dir_path.compare
-  end
-
+module LibraryOrdered = Dir_path
 module LibraryMap = Map.Make(LibraryOrdered)
 module LibraryFilenameMap = Map.Make(LibraryOrdered)
 

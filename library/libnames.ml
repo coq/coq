@@ -83,7 +83,7 @@ type full_path = {
 
 let eq_full_path p1 p2 =
   Id.equal p1.basename p2.basename &&
-  Int.equal (Dir_path.compare p1.dirpath p2.dirpath) 0
+  Dir_path.equal p1.dirpath p2.dirpath
 
 let make_path pa id = { dirpath = pa; basename = id }
 
@@ -163,8 +163,8 @@ type global_dir_reference =
       (* this won't last long I hope! *)
 
 let eq_op (d1, (mp1, p1)) (d2, (mp2, p2)) =
-  Int.equal (Dir_path.compare d1 d2) 0 &&
-  Int.equal (Dir_path.compare p1 p2) 0 &&
+  Dir_path.equal d1 d2 &&
+  Dir_path.equal p1 p2 &&
   mp_eq mp1 mp2
 
 let eq_global_dir_reference r1 r2 = match r1, r2 with
@@ -172,7 +172,7 @@ let eq_global_dir_reference r1 r2 = match r1, r2 with
 | DirOpenModtype op1, DirOpenModtype op2 -> eq_op op1 op2
 | DirOpenSection op1, DirOpenSection op2 -> eq_op op1 op2
 | DirModule op1, DirModule op2 -> eq_op op1 op2
-| DirClosedSection dp1, DirClosedSection dp2 -> Int.equal (Dir_path.compare dp1 dp2) 0
+| DirClosedSection dp1, DirClosedSection dp2 -> Dir_path.equal dp1 dp2
 | _ -> false
 
 type reference =

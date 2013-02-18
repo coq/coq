@@ -208,7 +208,7 @@ let rec print_modexpr env mp locals mexpr = match mexpr with
 
 let rec printable_body dir =
   let dir = pop_dirpath dir in
-    dir = Dir_path.empty ||
+    Dir_path.is_empty dir ||
     try
       match Nametab.locate_dir (qualid_of_dirpath dir) with
 	  DirOpenModtype _ -> false

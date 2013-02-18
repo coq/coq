@@ -837,7 +837,8 @@ let sort_universes orig =
 (* Temporary inductive type levels *)
 
 let fresh_level =
-  let n = ref 0 in fun () -> incr n; UniverseLevel.Level (!n, Names.Dir_path.make [])
+  let n = ref 0 in
+  fun () -> incr n; UniverseLevel.Level (!n, Names.Dir_path.empty)
 
 let fresh_local_univ () = Atom (fresh_level ())
 

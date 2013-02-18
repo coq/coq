@@ -12,7 +12,7 @@ open Util
 open Names
 
 let pr_dirpath dp = str (Dir_path.to_string dp)
-let default_root_prefix = Dir_path.make []
+let default_root_prefix = Dir_path.empty
 let split_dirpath d =
   let l = Dir_path.repr d in (Dir_path.make (List.tl l), List.hd l)
 let extend_dirpath p id = Dir_path.make (id :: Dir_path.repr p)

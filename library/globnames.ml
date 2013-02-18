@@ -142,6 +142,10 @@ let encode_mind dir id = make_mind (MPfile dir) Dir_path.empty (Label.of_id id)
 
 let encode_con dir id = make_con (MPfile dir) Dir_path.empty (Label.of_id id)
 
+let check_empty_section dp =
+  if not (Dir_path.is_empty dp) then
+    anomaly (Pp.str "Section part should be empty!")
+
 let decode_mind kn =
   let rec dir_of_mp = function
     | MPfile dir -> Dir_path.repr dir
@@ -152,17 +156,15 @@ let decode_mind kn =
     | MPdot(mp,l) -> (Label.to_id l)::(dir_of_mp mp)
   in
   let mp,sec_dir,l = repr_mind kn in
-    if (Dir_path.repr sec_dir) = [] then
-     (Dir_path.make (dir_of_mp mp)),Label.to_id l
-    else
-      anomaly (Pp.str "Section part should be empty!")
+  check_empty_section sec_dir;
+  (Dir_path.make (dir_of_mp mp)),Label.to_id l
 
 let decode_con kn =
   let mp,sec_dir,l = repr_con kn in
-    match mp,(Dir_path.repr sec_dir) with
-	MPfile dir,[] -> (dir,Label.to_id l)
-      | _ , [] -> anomaly (Pp.str "MPfile expected!")
-      | _ -> anomaly (Pp.str "Section part should be empty!")
+  check_empty_section sec_dir;
+  match mp with
+    | MPfile dir -> (dir,Label.to_id l)
+    | _ -> anomaly (Pp.str "MPfile expected!")
 
 (* popping one level of section in global names *)
 
