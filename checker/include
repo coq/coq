@@ -127,7 +127,7 @@ let mod_access m fld =
 ;;
 
 let parse_dp s =
-  make_dirpath(List.map id_of_string (List.rev (Str.split(Str.regexp"\\.") s)))
+  make_dirpath(List.rev_map id_of_string (Str.split(Str.regexp"\\.") s))
 ;;
 let parse_sp s =
   let l = List.rev (Str.split(Str.regexp"\\.") s) in

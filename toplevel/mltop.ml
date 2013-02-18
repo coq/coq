@@ -174,7 +174,7 @@ let add_rec_path ~unix_path ~coq_root =
     let prefix = Names.Dir_path.repr coq_root in
     let convert_dirs (lp, cp) =
       try
-        let path = List.map convert_string (List.rev cp) @ prefix in
+        let path = List.rev_map convert_string cp @ prefix in
         Some (lp, Names.Dir_path.make path)
       with Exit -> None
     in

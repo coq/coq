@@ -321,7 +321,7 @@ let unfreeze (grams, lex) =
   remove_levels n;
   grammar_state := common;
   Lexer.unfreeze lex;
-  List.iter extend_grammar (List.rev (List.map snd redo))
+  List.iter extend_grammar (List.rev_map snd redo)
 
 let init_grammar () =
   remove_grammars (number_of_entries !grammar_state);

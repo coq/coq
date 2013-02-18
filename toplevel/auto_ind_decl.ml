@@ -42,7 +42,7 @@ and aux = function
 
 let deconstruct_type t =
   let l,r = decompose_prod t in
-    (List.map (fun (_,b) -> b) (List.rev l))@[r]
+  (List.rev_map snd l)@[r]
 
 exception EqNotFound of inductive * inductive
 exception EqUnknown of string

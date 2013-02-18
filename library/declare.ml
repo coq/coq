@@ -138,7 +138,7 @@ let cache_constant ((sp,kn),(cdt,dhyps,kind)) =
 let discharged_hyps kn sechyps =
   let (_,dir,_) = repr_kn kn in
   let args = Array.to_list (instance_from_variable_context sechyps) in
-  List.rev (List.map (Libnames.make_path dir) args)
+  List.rev_map (Libnames.make_path dir) args
 
 let discharge_constant ((sp,kn),(cdt,dhyps,kind)) =
   let con = constant_of_kn kn in

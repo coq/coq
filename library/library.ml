@@ -71,7 +71,7 @@ let add_load_path isroot (phys_path,coq_path) =
 
 let extend_path_with_dirpath p dir =
   List.fold_left Filename.concat p
-    (List.map Id.to_string (List.rev (Dir_path.repr dir)))
+    (List.rev_map Id.to_string (Dir_path.repr dir))
 
 let root_paths_matching_dir_path dir =
   let rec aux = function

@@ -663,9 +663,9 @@ let build_link_map_aux (allargs1:Id.t array) (allargs2:Id.t array)
 
 let build_link_map allargs1 allargs2 lnk =
   let allargs1 =
-    Array.of_list (List.rev (List.map (fun (x,_,_) -> id_of_name x) allargs1)) in
+    Array.of_list (List.rev_map (fun (x,_,_) -> id_of_name x) allargs1) in
   let allargs2 =
-    Array.of_list (List.rev (List.map (fun (x,_,_) -> id_of_name x) allargs2)) in
+    Array.of_list (List.rev_map (fun (x,_,_) -> id_of_name x) allargs2) in
   build_link_map_aux allargs1 allargs2 lnk
 
 

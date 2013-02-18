@@ -322,7 +322,7 @@ let print_pure_constr csr =
   and sp_display sp =
 (*    let dir,l = decode_kn sp in
     let ls =
-      match List.rev (List.map Id.to_string (Dir_path.repr dir)) with
+      match List.rev_map Id.to_string (Dir_path.repr dir) with
           ("Top"::l)-> l
 	| ("Coq"::_::l) -> l
 	| l             -> l
@@ -331,7 +331,7 @@ let print_pure_constr csr =
   and sp_con_display sp =
 (*    let dir,l = decode_kn sp in
     let ls =
-      match List.rev (List.map Id.to_string (Dir_path.repr dir)) with
+      match List.rev_map Id.to_string (Dir_path.repr dir) with
           ("Top"::l)-> l
 	| ("Coq"::_::l) -> l
 	| l             -> l

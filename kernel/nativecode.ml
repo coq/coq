@@ -936,7 +936,7 @@ let string_of_label l = Unicode.ascii_of_ident (string_of_label l)
 
 let string_of_dirpath = function
   | [] -> "_"
-  | sl -> String.concat "_" (List.map string_of_id (List.rev sl))
+  | sl -> String.concat "_" (List.rev_map string_of_id sl)
 
 (* The first letter of the file name has to be a capital to be accepted by *)
 (* OCaml as a module identifier.                                           *)

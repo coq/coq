@@ -2135,7 +2135,7 @@ let abstract_tomatch env tomatchs tycon =
 let build_dependent_signature env evars avoid tomatchs arsign =
   let avoid = ref avoid in
   let arsign = List.rev arsign in
-  let allnames = List.rev (List.map (List.map pi1) arsign) in
+  let allnames = List.rev_map (List.map pi1) arsign in
   let nar = List.fold_left (fun n names -> List.length names + n) 0 allnames in
   let eqs, neqs, refls, slift, arsign' =
     List.fold_left2

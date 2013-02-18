@@ -35,7 +35,7 @@ let filter_params pvars hyps =
       let ids' = id::ids in
       let ids'' =
        "cic:/" ^
-        String.concat "/" (List.rev (List.map Names.Id.to_string ids')) in
+        String.concat "/" (List.rev_map Names.Id.to_string ids') in
       let he' =
        ids'', List.rev (List.filter (function x -> List.mem x hyps) he) in
       let tl' = aux ids' tl in
@@ -531,7 +531,7 @@ let _ = Lexer.set_xml_output_comment (theory_output_string ~do_not_quote:true) ;
 
 let uri_of_dirpath dir =
   "/" ^ String.concat "/"
-    (List.map Names.Id.to_string (List.rev (Names.Dir_path.repr dir)))
+    (List.rev_map Names.Id.to_string (Names.Dir_path.repr dir))
 ;;
 
 let _ =

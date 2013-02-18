@@ -141,7 +141,7 @@ let warning_clash file dir =
       let f = Filename.basename f1 in
       let d1 = Filename.dirname f1 in
       let d2 = Filename.dirname f2 in
-      let dl = List.map Filename.dirname (List.rev fl) in
+      let dl = List.rev_map Filename.dirname fl in
       eprintf
         "*** Warning: in file %s, \n    required library %s matches several files in path\n    (found %s.v in "
         file (String.concat "." dir) f;

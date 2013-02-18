@@ -183,7 +183,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
       | _ -> assert false
     else
       if dep then
-	let realargs = List.map (fun k -> mkRel (i-k)) (List.rev li) in
+	let realargs = List.rev_map (fun k -> mkRel (i-k)) li in
         let params = List.map (lift i) vargs in
         let co = applist (mkConstruct cs.cs_cstr,params@realargs) in
 	Reduction.beta_appvect c [|co|]

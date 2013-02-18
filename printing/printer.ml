@@ -297,7 +297,7 @@ let pr_concl n sigma g =
 let pr_evgl_sign gl =
   let ps = pr_named_context_of (evar_env gl) in
   let _, l = List.filter2 (fun b c -> not b) (evar_filter gl) (evar_context gl) in
-  let ids = List.rev (List.map pi1 l) in
+  let ids = List.rev_map pi1 l in
   let warn =
     if ids = [] then mt () else
       (str "(" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")

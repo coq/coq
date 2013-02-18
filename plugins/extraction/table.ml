@@ -273,7 +273,7 @@ let safe_pr_long_global r =
 
 let pr_long_mp mp =
   let lid = Dir_path.repr (Nametab.dirpath_of_module mp) in
-  str (String.concat "." (List.map Id.to_string (List.rev lid)))
+  str (String.concat "." (List.rev_map Id.to_string lid))
 
 let pr_long_global ref = pr_path (Nametab.path_of_global ref)
 

@@ -457,7 +457,7 @@ print_endline "PASSATO" ; flush stdout ;
                 let he1' = remove_module_dirpath_from_dirpath ~basedir he1_sp in
                 let he1'' =
                  String.concat "/"
-                  (List.map Names.Id.to_string (List.rev he1')) ^ "/"
+                  (List.rev_map Names.Id.to_string he1') ^ "/"
                  ^ (Names.Id.to_string he1_id) ^ ".var"
                 in
                  (he1'',he2)::subst, extra_args, uninst

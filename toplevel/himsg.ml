@@ -1052,7 +1052,7 @@ let is_defined_ltac trace =
 
 let explain_ltac_call_trace (nrep,last,trace,loc) =
   let calls =
-    (nrep,last) :: List.rev (List.map(fun(n,_,ck)->(n,ck))trace)
+    (nrep,last) :: List.rev_map (fun(n,_,ck)->(n,ck)) trace
   in
   let pr_call (n,ck) =
     (match ck with
