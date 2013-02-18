@@ -39,14 +39,13 @@ let unsatisfiable_constraints env evd ev =
   | None ->
       raise (TypeClassError (env, UnsatisfiableConstraints (evd, None)))
   | Some ev ->
-      let loc, kind = Evd.evar_source ev evd in
-	raise (Loc.Exc_located (loc, TypeClassError
-	  (env, UnsatisfiableConstraints (evd, Some (ev, kind)))))
+    let loc, kind = Evd.evar_source ev evd in
+    let err = TypeClassError (env, UnsatisfiableConstraints (evd, Some (ev, kind))) in
+    Loc.raise loc err
 
 let mismatched_ctx_inst env c n m = typeclass_error env (MismatchedContextInstance (c, n, m))
 
 let rec unsatisfiable_exception exn =
   match exn with
   | TypeClassError (_, UnsatisfiableConstraints _) -> true
-  | Loc.Exc_located(_, e) -> unsatisfiable_exception e
   | _ -> false

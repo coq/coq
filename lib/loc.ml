@@ -19,8 +19,6 @@ type t = {
   ep : int; (** end position *)
 }
 
-exception Exc_located of t * exn
-
 let create fname line_nb bol_pos (bp, ep) = {
   fname = fname; line_nb = line_nb; bol_pos = bol_pos;
   line_nb_last = line_nb; bol_pos_last = bol_pos; bp = bp; ep = ep; }
@@ -58,12 +56,22 @@ let unloc loc = (loc.bp, loc.ep)
 
 let represent loc = (loc.fname, loc.line_nb, loc.bol_pos, loc.bp, loc.ep)
 
-let raise loc e = raise (Exc_located (loc, e))
-
 let dummy_loc = ghost
 let join_loc = merge
+
+(** Located type *)
 
 type 'a located = t * 'a
 let located_fold_left f x (_,a) = f x a
 let located_iter2 f (_,a) (_,b) = f a b
 let down_located f (_,a) = f a
+
+(** Exceptions *)
+
+let location : t Exninfo.t = Exninfo.make ()
+
+let add_loc e loc = Exninfo.add e location loc
+
+let get_loc e = Exninfo.get e location
+
+let raise loc e = raise (Exninfo.add e location loc)

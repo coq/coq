@@ -106,14 +106,15 @@ let raise_with_file file exc =
     match re with
       | Error_in_file (_, (b,f,loc), e) when not (Loc.is_ghost loc) ->
           ((b, f, loc), e)
-      | Loc.Exc_located (loc, e) when not (Loc.is_ghost loc) ->
+      | e ->
+        match Loc.get_loc e with
+        | Some loc when not (Loc.is_ghost loc) ->
           ((false,file, loc), e)
-      | Loc.Exc_located (_, e) | e -> ((false,file,cmdloc), e)
+        | _ -> ((false,file,cmdloc), e)
   in
   raise (Error_in_file (file, inner, disable_drop inex))
 
 let real_error = function
-  | Loc.Exc_located (_, e) -> e
   | Error_in_file (_, _, e) -> e
   | e -> e
 

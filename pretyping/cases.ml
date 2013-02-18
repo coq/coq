@@ -69,9 +69,7 @@ let rec list_try_compile f = function
   | [] -> anomaly (str "try_find_f")
   | h::t ->
       try f h
-      with UserError _ | TypeError _ | PretypeError _ | PatternMatchingError _
-	| Loc.Exc_located
-	    (_, (UserError _ | TypeError _ | PretypeError _ | PatternMatchingError _)) ->
+      with UserError _ | TypeError _ | PretypeError _ | PatternMatchingError _ ->
 	    list_try_compile f t
 
 let force_name =

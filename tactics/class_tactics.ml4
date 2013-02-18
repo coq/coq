@@ -195,7 +195,6 @@ let e_possible_resolve db_list local_db gl =
 
 let rec catchable = function
   | Refiner.FailError _ -> true
-  | Loc.Exc_located (_, e) -> catchable e
   | Proof_type.LtacLocated (_, _, e) -> catchable e
   | e -> Logic.catchable_exception e
 

@@ -171,8 +171,9 @@ let lookup_utf8 cs =
     | Some ('\x80'..'\xFF' as c) -> Utf8Token (lookup_utf8_tail c cs)
     | None -> EmptyStream
 
-let unlocated f x =
-  try f x with Loc.Exc_located (_, exc) -> raise exc
+let unlocated f x = f x
+  (** FIXME: should we still unloc the exception? *)
+(*   try f x with Loc.Exc_located (_, exc) -> raise exc *)
 
 let check_keyword str =
   let rec loop_symb = parser

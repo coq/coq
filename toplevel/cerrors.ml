@@ -41,10 +41,10 @@ let explain_exn_default = function
   | Timeout -> hov 0 (str "Timeout!")
   | Sys.Break -> hov 0 (fnl () ++ str "User interrupt.")
   (* Meta-exceptions *)
-  | Loc.Exc_located (loc,exc) ->
+(*  | Loc.Exc_located (loc,exc) ->
       hov 0 ((if Loc.is_ghost loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
-               ++ Errors.print_no_anomaly exc)
+               ++ Errors.print_no_anomaly exc)*)
   | EvaluatedError (msg,None) -> msg
   | EvaluatedError (msg,Some reraise) -> msg ++ Errors.print_no_anomaly reraise
   (* Otherwise, not handled here *)
@@ -55,13 +55,14 @@ let _ = Errors.register_handler explain_exn_default
 
 (** Pre-explain a vernac interpretation error *)
 
-let wrap_vernac_error strm =
-  EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None)
+let wrap_vernac_error exn strm =
+  let e = EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None) in
+  Exninfo.copy exn e
 
 let is_mt t =
   Pervasives.(=) (Lazy.force t) (mt ()) (* FIXME *)
 
-let rec process_vernac_interp_error = function
+let rec process_vernac_interp_error exn = match exn with
   | Univ.UniverseInconsistency (o,u,v,p) ->
     let pr_rel r =
       match r with
@@ -80,43 +81,43 @@ let rec process_vernac_interp_error = function
           pr_rel o ++ spc() ++ Univ.pr_uni v ++ reason ++ str")"
       else
 	mt() in
-    wrap_vernac_error (str "Universe inconsistency" ++ msg ++ str ".")
+    wrap_vernac_error exn (str "Universe inconsistency" ++ msg ++ str ".")
   | TypeError(ctx,te) ->
-      wrap_vernac_error (Himsg.explain_type_error ctx Evd.empty te)
+      wrap_vernac_error exn (Himsg.explain_type_error ctx Evd.empty te)
   | PretypeError(ctx,sigma,te) ->
-      wrap_vernac_error (Himsg.explain_pretype_error ctx sigma te)
+      wrap_vernac_error exn (Himsg.explain_pretype_error ctx sigma te)
   | Typeclasses_errors.TypeClassError(env, te) ->
-      wrap_vernac_error (Himsg.explain_typeclass_error env te)
+      wrap_vernac_error exn (Himsg.explain_typeclass_error env te)
   | InductiveError e ->
-      wrap_vernac_error (Himsg.explain_inductive_error e)
+      wrap_vernac_error exn (Himsg.explain_inductive_error e)
   | Modops.ModuleTypingError e ->
-      wrap_vernac_error (Himsg.explain_module_error e)
+      wrap_vernac_error exn (Himsg.explain_module_error e)
   | Modintern.ModuleInternalizationError e ->
-      wrap_vernac_error (Himsg.explain_module_internalization_error e)
+      wrap_vernac_error exn (Himsg.explain_module_internalization_error e)
   | RecursionSchemeError e ->
-      wrap_vernac_error (Himsg.explain_recursion_scheme_error e)
+      wrap_vernac_error exn (Himsg.explain_recursion_scheme_error e)
   | Cases.PatternMatchingError (env,e) ->
-      wrap_vernac_error (Himsg.explain_pattern_matching_error env e)
+      wrap_vernac_error exn (Himsg.explain_pattern_matching_error env e)
   | Tacred.ReductionTacticError e ->
-      wrap_vernac_error (Himsg.explain_reduction_tactic_error e)
+      wrap_vernac_error exn (Himsg.explain_reduction_tactic_error e)
   | Logic.RefinerError e ->
-      wrap_vernac_error (Himsg.explain_refiner_error e)
+      wrap_vernac_error exn (Himsg.explain_refiner_error e)
   | Nametab.GlobalizationError q ->
-      wrap_vernac_error
+      wrap_vernac_error exn
         (str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
 	 spc () ++ str "was not found" ++
 	 spc () ++ str "in the current" ++ spc () ++ str "environment.")
   | Nametab.GlobalizationConstantError q ->
-      wrap_vernac_error
+      wrap_vernac_error exn
         (str "No constant of this name:" ++ spc () ++
          Libnames.pr_qualid q ++ str ".")
   | Refiner.FailError (i,s) ->
-      wrap_vernac_error
+      wrap_vernac_error exn
 	(str "Tactic failure" ++
            (if not (is_mt s) then str ":" ++ Lazy.force s else mt ()) ++ (* FIXME *)
            if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
   | AlreadyDeclared msg ->
-      wrap_vernac_error (msg ++ str ".")
+      wrap_vernac_error exn (msg ++ str ".")
   | Proof_type.LtacLocated (_,_,(Refiner.FailError (i,s) as exc)) when not (is_mt s) ->
       (* Ltac error is intended, trace is irrelevant *)
       process_vernac_interp_error exc
@@ -124,10 +125,9 @@ let rec process_vernac_interp_error = function
       (match
           Himsg.extract_ltac_trace s loc (process_vernac_interp_error exc)
        with
-       | None,loc,e -> Loc.Exc_located (loc,e)
-       | Some msg, loc, e -> Loc.Exc_located (loc,EvaluatedError (msg,Some e)))
-  | Loc.Exc_located (loc,exc) ->
-      Loc.Exc_located (loc,process_vernac_interp_error exc)
+       | None,loc,e -> Loc.add_loc e loc
+       | Some msg, loc, e ->
+        Loc.add_loc (EvaluatedError (msg,Some e)) loc)
   | exc ->
       exc
 

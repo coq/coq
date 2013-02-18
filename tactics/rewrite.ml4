@@ -1209,7 +1209,6 @@ let cl_rewrite_clause_tac ?abs strat meta clause gl =
       let res = cl_rewrite_clause_aux ?abs strat (pf_env gl) [] sigma concl is_hyp in
 	treat res
     with
-    | Loc.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
     | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
 	Refiner.tclFAIL 0
 	  (str"Unable to satisfy the rewriting constraints."
@@ -1300,7 +1299,6 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	       cl_rewrite_clause_aux ?abs strat env [] sigma ty is_hyp 
 	     in return (res, is_hyp)
 	   with
-	   | Loc.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
 	   | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
 	     raise (RewriteFailure (str"Unable to satisfy the rewriting constraints."
 			++ fnl () ++ Himsg.explain_typeclass_error env e)))

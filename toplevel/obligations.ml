@@ -823,7 +823,6 @@ and solve_obligation_by_tac prg obls i tac =
           let e = Errors.push e in
           match e with
 	  | Proof_type.LtacLocated (_, _, Refiner.FailError (_, s))
-	  | Loc.Exc_located(_, Refiner.FailError (_, s))
 	  | Refiner.FailError (_, s) ->
 	      user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)
 	  | e when Errors.is_anomaly e -> raise e

@@ -263,7 +263,6 @@ let set_prompt prompt =
 let rec is_pervasive_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> true
   | Error_in_file (_,_,e) -> is_pervasive_exn e
-  | Loc.Exc_located (_,e) -> is_pervasive_exn e
   | DuringCommandInterp (_,e) -> is_pervasive_exn e
   | _ -> false
 
@@ -279,15 +278,16 @@ let print_toplevel_error exc =
   in
   let (locstrm,exc) =
     match exc with
-      | Loc.Exc_located (loc, ie) ->
+      | Error_in_file (s, (inlibrary, fname, loc), ie) ->
+          (print_location_in_file s inlibrary fname loc, ie)
+      | ie ->
+        match Loc.get_loc ie with
+        | None -> (mt (), ie)
+        | Some loc ->
           if valid_buffer_loc top_buffer dloc loc then
             (print_highlight_location top_buffer loc, ie)
           else
-	    ((mt ()) (* print_command_location top_buffer dloc *), ie)
-      | Error_in_file (s, (inlibrary, fname, loc), ie) ->
-          (print_location_in_file s inlibrary fname loc, ie)
-      | _ ->
-	  ((mt ()) (* print_command_location top_buffer dloc *), exc)
+            (mt () (* print_command_location top_buffer dloc *), ie)
   in
   match exc with
     | End_of_input ->
@@ -314,7 +314,7 @@ let parse_to_dot =
 let rec discard_to_dot () =
   try
     Gram.entry_parse parse_to_dot top_buffer.tokens
-  with Loc.Exc_located(_,(Compat.Token.Error _|Lexer.Error.E _)) ->
+  with (Compat.Token.Error _|Lexer.Error.E _) ->
     discard_to_dot()
 
 

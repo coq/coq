@@ -73,8 +73,13 @@ let catch_error call_trace tac g =
   let e = Errors.push e in
   let inner_trace,loc,e = match e with
   | LtacLocated (inner_trace,loc,e) -> inner_trace,loc,e
-  | Loc.Exc_located (loc,e) -> [],loc,e
-  | e -> [],Loc.ghost,e in
+  | e ->
+    let loc = match Loc.get_loc e with
+    | None -> Loc.ghost
+    | Some loc -> loc
+    in
+    [], loc, e
+  in
   if List.is_empty call_trace & List.is_empty inner_trace then raise e
   else
     raise (LtacLocated(inner_trace@call_trace,loc,e))
@@ -1188,15 +1193,16 @@ and eval_with_fail ist is_lazy goal tac =
 	let tac = eval_tactic {ist with lfun=lfun; trace=trace} t in
 	VRTactic (catch_error trace tac { goal with sigma=sigma })
     | a -> a)
-  with
-    | FailError (0,s) | Loc.Exc_located(_, FailError (0,s))
-    | LtacLocated (_,_,FailError (0,s)) ->
+  with e ->
+    (** FIXME: Should we add [Errors.push]? *)
+    match e with
+    | FailError (0,s) | LtacLocated (_,_,FailError (0,s)) ->
 	raise (Eval_fail (Lazy.force s))
-    | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
-    | Loc.Exc_located(s,FailError (lvl,s')) ->
-	raise (Loc.Exc_located(s,FailError (lvl - 1, s')))
+    | FailError (lvl,s) ->
+      raise (Exninfo.copy e (FailError (lvl - 1, s)))
     | LtacLocated (s'',loc,FailError (lvl,s')) ->
 	raise (LtacLocated (s'',loc,FailError (lvl - 1, s')))
+    | _ -> raise e
 
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist gl llc u =

@@ -41,7 +41,6 @@ exception RefinerError of refiner_error
 open Pretype_errors
 
 let rec catchable_exception = function
-  | Loc.Exc_located(_,e) -> catchable_exception e
   | LtacLocated(_,_,e) -> catchable_exception e
   | Errors.UserError _ | TypeError _ | PretypeError (_,_,TypingError _)
   | RefinerError _ | Indrec.RecursionSchemeError _

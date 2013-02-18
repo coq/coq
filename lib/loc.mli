@@ -10,8 +10,6 @@
 
 type t
 
-exception Exc_located of t * exn
-
 type 'a located = t * 'a
 (** Embed a location in a type *)
 
@@ -37,11 +35,19 @@ val is_ghost : t -> bool
 
 val merge : t -> t -> t
 
-val raise : t -> exn -> 'a
-(** Raise a located exception *)
-
 val represent : t -> (string * int * int * int * int)
 (** Return the arguments given in [create] *)
+
+(** {5 Located exceptions} *)
+
+val add_loc : exn -> t -> exn
+(** Adding location to an exception *)
+
+val get_loc : exn -> t option
+(** Retrieving the optional location of an exception *)
+
+val raise : t -> exn -> 'a
+(** [raise loc e] is the same as [Pervasives.raise (add_loc e loc)]. *)
 
 (** {5 Location utilities} *)
 

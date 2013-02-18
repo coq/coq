@@ -293,10 +293,13 @@ let eval_call c =
       | Errors.Quit -> None, "Quit is not allowed by coqide!"
       | Vernac.DuringCommandInterp (_,inner) -> handle_exn inner
       | Error_in_file (_,_,inner) -> None, pr_exn inner
-      | Loc.Exc_located (loc, inner) ->
-        let loc = if Loc.is_ghost loc then None else Some (Loc.unloc loc) in
-        loc, pr_exn inner
-      | e -> None, pr_exn e
+      | e ->
+        let loc = match Loc.get_loc e with
+        | None -> None
+        | Some loc ->
+          if Loc.is_ghost loc then None else Some (Loc.unloc loc)
+        in
+        loc, pr_exn e
   in
   let interruptible f x =
     catch_break := true;

@@ -53,8 +53,7 @@ exception PretypeError of env * Evd.evar_map * pretype_error
 
 let precatchable_exception = function
   | Errors.UserError _ | TypeError _ | PretypeError _
-  | Loc.Exc_located(_,(Errors.UserError _ | TypeError _ |
-    Nametab.GlobalizationError _ | PretypeError _)) -> true
+  | Nametab.GlobalizationError _ -> true
   | _ -> false
 
 (* This simplifies the typing context of Cases clauses *)

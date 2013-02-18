@@ -769,9 +769,7 @@ let rec pr_vernac = function
   | VernacSolve (i,tac,deftac) ->
       (if i = 1 then mt() else int i ++ str ": ") ++
       pr_raw_tactic tac
-      ++ (try if deftac then str ".." else mt ()
-      with UserError _|Loc.Exc_located _ -> mt())
-
+      ++ (if deftac then str ".." else mt ())
   | VernacSolveExistential (i,c) ->
       str"Existential " ++ int i ++ pr_lconstrarg c
 
