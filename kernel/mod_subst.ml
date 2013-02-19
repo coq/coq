@@ -19,7 +19,7 @@ open Names
 open Term
 
 (* For Inline, the int is an inlining level, and the constr (if present)
-   is the term into which we should inline *)
+   is the term into which we should inline. *)
 
 type delta_hint =
   | Inline of int * constr option
@@ -44,6 +44,9 @@ module Deltamap = struct
     MPmap.fold fmp mm (KNmap.fold fkn km i)
   let join map1 map2 = fold add_mp add_kn map1 map2
 end
+
+(* Invariant: in the [delta_hint] map, an [Equiv] should only
+   relate [kernel_name] with the same label (and section dirpath). *)
 
 type delta_resolver = Deltamap.t
 
@@ -120,7 +123,9 @@ let debug_pr_subst sub =
 
 let add_inline_delta_resolver kn (lev,oc) = Deltamap.add_kn kn (Inline (lev,oc))
 
-let add_kn_delta_resolver kn kn' = Deltamap.add_kn kn (Equiv kn')
+let add_kn_delta_resolver kn kn' =
+  assert (Label.equal (label kn) (label kn'));
+  Deltamap.add_kn kn (Equiv kn')
 
 let add_mp_delta_resolver mp1 mp2 = Deltamap.add_mp mp1 mp2
 
