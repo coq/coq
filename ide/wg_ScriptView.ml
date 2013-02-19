@@ -85,62 +85,7 @@ let rec negate_action act = match act with
 
 type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
 
-let is_substring s1 s2 =
-  let s1 = Glib.Utf8.to_unistring s1 in
-  let s2 = Glib.Utf8.to_unistring s2 in
-  let break = ref true in
-  let i = ref 0 in
-  let len1 = Array.length s1 in
-  let len2 = Array.length s2 in
-  while !break && !i < len1 & !i < len2 do
-    break := s1.(!i) = s2.(!i);
-    incr i;
-  done;
-  if !break then len2 - len1
-  else -1
-
-module StringOrd =
-struct
-  type t = string
-  let compare = Pervasives.compare
-end
-
-module Proposals = Set.Make(StringOrd)
-
-(** Retrieve completion proposals in the buffer *)
-let get_syntactic_completion (buffer : GText.buffer) pattern accu =
-  let rec get_aux accu (iter : GText.iter) =
-    match iter#forward_search pattern with
-    | None -> accu
-    | Some (start, stop) ->
-      if starts_word start then
-        let ne = find_word_end stop in
-        if ne#compare stop = 0 then get_aux accu stop
-        else
-          let proposal = buffer#get_text ~start ~stop:ne () in
-          let accu = Proposals.add proposal accu in
-          get_aux accu stop
-      else get_aux accu stop
-  in
-  get_aux accu buffer#start_iter
-
-(** Retrieve completion proposals in Coq libraries *)
-let get_semantic_completion pattern accu =
-  let flags = [Interface.Name_Pattern ("^" ^ pattern), true] in
-  (** Only get the last part of the qualified name *)
-  let rec last accu = function
-  | [] -> accu
-  | [basename] -> Proposals.add basename accu
-  | _ :: l -> last accu l
-  in
-  let next = function
-  | Interface.Good l ->
-    let fold accu elt = last accu elt.Interface.coq_object_qualid in
-    let ans = List.fold_left fold accu l in
-    Coq.return ans
-  | _ -> Coq.return accu
-  in
-  Coq.bind (Coq.search flags) next
+module Proposals = Wg_Completion.Proposals
 
 class undo_manager (buffer : GText.buffer) =
 object(self)
@@ -333,110 +278,23 @@ end
 
 class script_view (tv : source_view) (ct : Coq.coqtop) =
 
-let _obj_ = new GSourceView2.source_view (Gobject.unsafe_cast tv) in
+let view = new GSourceView2.source_view (Gobject.unsafe_cast tv) in
+let completion = new Wg_Completion.complete_model ct view#buffer in
+let _ = new Wg_Completion.complete_popup completion (view :> GText.view) in
 
 object (self)
   inherit GSourceView2.source_view (Gobject.unsafe_cast tv) as super
 
-  val mutable auto_complete = false
-  val mutable auto_complete_length = 3
-  val mutable last_completion = (-1, "", Proposals.empty)
-  val mutable insert_offset = -1
-  (* this variable prevents CoqIDE from autocompleting when we have deleted something *)
-  val mutable is_auto_completing = false
-  (* this mutex ensure that CoqIDE will not try to autocomplete twice *)
-  val mutable lock_auto_completing = true
-  val undo_manager = new undo_manager _obj_#buffer
+  val undo_manager = new undo_manager view#buffer
 
-  method auto_complete = auto_complete
+  method auto_complete = completion#active
 
   method set_auto_complete flag =
-    auto_complete <- flag
+    completion#set_active flag
 
   method recenter_insert =
     self#scroll_to_mark
       ~use_align:false ~yalign:0.75 ~within_margin:0.25 `INSERT
-
-  method private handle_insert iter s =
-    (* we're inserting, so we may autocomplete *)
-    is_auto_completing <- true
-
-  method private handle_delete ~start ~stop =
-    (* disable autocomplete *)
-    is_auto_completing <- false
-
-  method private handle_proposals word =
-    let (start_offset, _, props) = last_completion in
-    let filter prop = 0 < is_substring word prop in
-    let props = Proposals.filter filter props in
-    (* [iter] might be invalid now, get a new one to please gtk *)
-    let iter = self#buffer#get_iter `INSERT in
-    (* We cancel completion when the buffer has changed recently *)
-    if iter#offset = insert_offset && not (Proposals.is_empty props) then begin
-      let proposal = Proposals.choose props in
-      let suffix =
-        let len1 = String.length proposal in
-        let len2 = insert_offset - start_offset in
-        String.sub proposal len2 (len1 - len2)
-      in
-      self#buffer#begin_user_action ();
-      ignore (self#buffer#delete_selection ());
-      let iter = self#buffer#get_iter (`OFFSET insert_offset) in
-      ignore (self#buffer#insert_interactive ~iter suffix);
-      let ins = self#buffer#get_iter (`OFFSET insert_offset) in
-      let sel = self#buffer#get_iter `INSERT in
-      self#buffer#select_range sel ins;
-      self#buffer#end_user_action ();
-    end
-
-  method private do_auto_complete k =
-    let iter = self#buffer#get_iter `INSERT in
-    let () = insert_offset <- iter#offset in
-    let log = Printf.sprintf "Completion at offset: %i" insert_offset in
-    let () = Minilib.log log in
-    let prefix =
-      if ends_word iter#backward_char then
-        let start = find_word_start iter in
-        let w = self#buffer#get_text ~start ~stop:iter () in
-        if String.length w >= auto_complete_length then Some (w, start)
-        else None
-      else None
-    in
-    match prefix with
-    | Some (w, start) ->
-      let () = Minilib.log ("Completion of prefix: '" ^ w ^ "'") in
-      let (off, prefix, props) = last_completion in
-      let start_offset = start#offset in
-      (* check whether we have the last request in cache *)
-      if (start_offset = off) && (0 <= is_substring prefix w) then
-        let () = self#handle_proposals w in
-        k ()
-      else
-        let update prop = last_completion <- (start_offset, w, prop) in
-        (** If not in the cache, we recompute it: first syntactic *)
-        let synt = get_syntactic_completion self#buffer w Proposals.empty in
-        (** Then semantic *)
-        let next prop =
-          let () = update prop in
-          let () = self#handle_proposals w in
-          Coq.lift k
-        in
-        let query = Coq.bind (get_semantic_completion w synt) next in
-        (** If coqtop is computing, do the syntactic completion altogether *)
-        let occupied () =
-          let () = update synt in
-          let () = self#handle_proposals w in
-          k ()
-        in
-        Coq.try_grab ct query occupied
-    | None -> k ()
-
-  method private may_auto_complete () =
-    if auto_complete && is_auto_completing && lock_auto_completing then begin
-      let () = lock_auto_completing <- false in
-      let unlock () = lock_auto_completing <- true in
-      self#do_auto_complete unlock
-    end
 
   (* HACK: missing gtksourceview features *)
   method right_margin_position =
@@ -546,11 +404,6 @@ object (self)
   method clear_undo = undo_manager#clear_undo
 
   initializer
-    (* Install undo managing *)
-    (* Install auto-completion *)
-    ignore (self#buffer#connect#insert_text ~callback:self#handle_insert);
-    ignore (self#buffer#connect#delete_range ~callback:self#handle_delete);
-    ignore (self#buffer#connect#after#end_user_action ~callback:self#may_auto_complete);
     (* HACK: Redirect the undo/redo signals of the underlying GtkSourceView *)
     ignore (self#connect#undo
 	      ~callback:(fun _ -> ignore (self#undo ()); GtkSignal.stop_emit()));

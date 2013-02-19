@@ -22,6 +22,7 @@ Gtk_parsing
 Wg_ProofView
 Wg_MessageView
 Wg_Find
+Wg_Completion
 Wg_ScriptView
 Coq_commands
 Wg_Command
