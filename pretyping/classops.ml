@@ -39,6 +39,8 @@ type cl_info_typ = {
 
 type coe_typ = global_reference
 
+module CoeTypMap = Refmap_env
+
 type coe_info_typ = {
   coe_value : constr;
   coe_type : types;
@@ -53,13 +55,20 @@ let coe_info_typ_equal c1 c2 =
     c1.coe_is_identity == c2.coe_is_identity &&
     Int.equal c1.coe_param c2.coe_param
 
-let cl_typ_eq t1 t2 = match t1, t2 with
-| CL_SORT, CL_SORT -> true
-| CL_FUN, CL_FUN -> true
-| CL_SECVAR v1, CL_SECVAR v2 -> Id.equal v1 v2
-| CL_CONST c1, CL_CONST c2 -> eq_constant c1 c2
-| CL_IND i1, CL_IND i2 -> eq_ind i1 i2
-| _ -> false
+let cl_typ_ord t1 t2 = match t1, t2 with
+  | CL_SECVAR v1, CL_SECVAR v2 -> Id.compare v1 v2
+  | CL_CONST c1, CL_CONST c2 -> con_user_ord c1 c2
+  | CL_IND i1, CL_IND i2 -> ind_user_ord i1 i2
+  | _ -> Pervasives.compare t1 t2
+
+module ClTyp = struct
+  type t = cl_typ
+  let compare = cl_typ_ord
+end
+
+module ClTypMap = Map.Make(ClTyp)
+
+let cl_typ_eq t1 t2 = Int.equal (cl_typ_ord t1 t2) 0
 
 type cl_index = int
 
@@ -70,25 +79,25 @@ type inheritance_path = coe_index list
 (* table des classes, des coercions et graphe d'heritage *)
 
 module Bijint = struct
-  type ('a,'b) t = { v : ('a * 'b) array; s : int; inv : ('a,int) Gmap.t }
-  let empty = { v = [||]; s = 0; inv = Gmap.empty }
-  let mem y b = Gmap.mem y b.inv
+  type 'a t = { v : (cl_typ * 'a) array; s : int; inv : int ClTypMap.t }
+  let empty = { v = [||]; s = 0; inv = ClTypMap.empty }
+  let mem y b = ClTypMap.mem y b.inv
   let map x b = if 0 <= x & x < b.s then b.v.(x) else raise Not_found
-  let revmap y b = let n = Gmap.find y b.inv in (n, snd (b.v.(n)))
+  let revmap y b = let n = ClTypMap.find y b.inv in (n, snd (b.v.(n)))
   let add x y b =
     let v =
       if Int.equal b.s (Array.length b.v) then
 	(let v = Array.make (b.s + 8) (x,y) in Array.blit b.v 0 v 0 b.s; v)
       else b.v in
-    v.(b.s) <- (x,y); { v = v; s = b.s+1; inv = Gmap.add x b.s b.inv }
-  let dom b = Gmap.dom b.inv
+    v.(b.s) <- (x,y); { v = v; s = b.s+1; inv = ClTypMap.add x b.s b.inv }
+  let dom b = List.rev (ClTypMap.fold (fun x _ acc -> x::acc) b.inv [])
 end
 
 let class_tab =
-  ref (Bijint.empty : (cl_typ, cl_info_typ) Bijint.t)
+  ref (Bijint.empty : cl_info_typ Bijint.t)
 
 let coercion_tab =
-  ref (Gmap.empty : (coe_typ, coe_info_typ) Gmap.t)
+  ref (CoeTypMap.empty : coe_info_typ CoeTypMap.t)
 
 let inheritance_graph =
   ref (Gmap.empty : (cl_index * cl_index, inheritance_path) Gmap.t)
@@ -107,7 +116,7 @@ let add_new_class cl s =
     class_tab := Bijint.add cl s !class_tab
 
 let add_new_coercion coe s =
-  coercion_tab := Gmap.add coe s !coercion_tab
+  coercion_tab := CoeTypMap.add coe s !coercion_tab
 
 let add_new_path x y =
   inheritance_graph := Gmap.add x y !inheritance_graph
@@ -116,7 +125,7 @@ let init () =
   class_tab:= Bijint.empty;
   add_new_class CL_FUN  { cl_param = 0 };
   add_new_class CL_SORT { cl_param = 0 };
-  coercion_tab:= Gmap.empty;
+  coercion_tab:= CoeTypMap.empty;
   inheritance_graph:= Gmap.empty
 
 let _ =
@@ -143,9 +152,9 @@ let cl_sort_index = fst(class_info CL_SORT)
 
 (* coercion_info : coe_typ -> coe_info_typ *)
 
-let coercion_info coe = Gmap.find coe !coercion_tab
+let coercion_info coe = CoeTypMap.find coe !coercion_tab
 
-let coercion_exists coe = Gmap.mem coe !coercion_tab
+let coercion_exists coe = CoeTypMap.mem coe !coercion_tab
 
 (* find_class_type : evar_map -> constr -> cl_typ * constr list *)
 
@@ -437,7 +446,8 @@ let get_coercion_value v = v.coe_value
 let pr_cl_index n = int n
 
 let classes () = Bijint.dom !class_tab
-let coercions () = Gmap.rng !coercion_tab
+let coercions () =
+  List.rev (CoeTypMap.fold (fun _ y acc -> y::acc) !coercion_tab [])
 let inheritance_graph () = Gmap.to_list !inheritance_graph
 
 let coercion_of_reference r =

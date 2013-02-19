@@ -59,6 +59,9 @@ end
 module Refset : Set.S with type elt = global_reference
 module Refmap : Map.S with type key = global_reference
 
+module Refset_env : Set.S with type elt = global_reference
+module Refmap_env : Map.S with type key = global_reference
+
 (** {6 Extended global references } *)
 
 type syndef_name = kernel_name

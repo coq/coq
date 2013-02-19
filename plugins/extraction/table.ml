@@ -24,8 +24,8 @@ open Miniml
 (** Sets and maps for [global_reference] that use the "user" [kernel_name]
     instead of the canonical one *)
 
-module Refmap' = Map.Make(RefOrdered_env)
-module Refset' = Set.Make(RefOrdered_env)
+module Refmap' = Refmap_env
+module Refset' = Refset_env
 
 (*S Utilities about [module_path] and [kernel_names] and [global_reference] *)
 

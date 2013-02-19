@@ -103,6 +103,11 @@ end
 module Refset = Set.Make(RefOrdered)
 module Refmap = Map.Make(RefOrdered)
 
+(* Alternative sets and maps indexed by the user part of the kernel names *)
+
+module Refset_env = Set.Make(RefOrdered_env)
+module Refmap_env = Map.Make(RefOrdered_env)
+
 (* Extended global references *)
 
 type syndef_name = kernel_name
