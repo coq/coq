@@ -126,7 +126,7 @@ module ModIdmap = Id.Map
 
 let default_module_name = "If you see this, it's a bug"
 
-module Dir_path =
+module DirPath =
 struct
   type t = module_ident list
 
@@ -181,7 +181,7 @@ end
 
 module MBId =
 struct
-  type t = int * Id.t * Dir_path.t
+  type t = int * Id.t * DirPath.t
 
   let gen =
     let seed = ref 0 in fun () ->
@@ -194,7 +194,7 @@ struct
   let repr mbid = mbid
 
   let to_string (i, s, p) =
-    Dir_path.to_string p ^ "." ^ s
+    DirPath.to_string p ^ "." ^ s
 
   let debug_to_string (i, s, p) =
     "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
@@ -209,7 +209,7 @@ struct
         let ans = Id.compare idl idr in
         if not (Int.equal ans 0) then ans
         else
-          Dir_path.compare dpl dpr
+          DirPath.compare dpl dpr
 
   let equal x y = Int.equal (compare x y) 0
 
@@ -219,7 +219,7 @@ struct
     struct
       type _t = t
       type t = _t
-      type u = (Id.t -> Id.t) * (Dir_path.t -> Dir_path.t)
+      type u = (Id.t -> Id.t) * (DirPath.t -> DirPath.t)
       let hashcons (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
       let equal ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
         (x == y) ||
@@ -229,7 +229,7 @@ struct
 
   module HashMBId = Hashcons.Make(Self_Hashcons)
 
-  let hcons = Hashcons.simple_hcons HashMBId.generate (Id.hcons, Dir_path.hcons)
+  let hcons = Hashcons.simple_hcons HashMBId.generate (Id.hcons, DirPath.hcons)
 
 end
 
@@ -248,7 +248,7 @@ end
 module ModPath = struct
 
   type t =
-    | MPfile of Dir_path.t
+    | MPfile of DirPath.t
     | MPbound of MBId.t
     | MPdot of t * Label.t
 
@@ -260,7 +260,7 @@ module ModPath = struct
     | _ -> false
 
   let rec to_string = function
-    | MPfile sl -> Dir_path.to_string sl
+    | MPfile sl -> DirPath.to_string sl
     | MPbound uid -> MBId.to_string uid
     | MPdot (mp,l) -> to_string mp ^ "." ^ Label.to_string l
 
@@ -268,7 +268,7 @@ module ModPath = struct
   let rec compare mp1 mp2 =
     if mp1 == mp2 then 0
     else match mp1, mp2 with
-      | MPfile p1, MPfile p2 -> Dir_path.compare p1 p2
+      | MPfile p1, MPfile p2 -> DirPath.compare p1 p2
       | MPbound id1, MPbound id2 -> MBId.compare id1 id2
       | MPdot (mp1, l1), MPdot (mp2, l2) ->
         let c = String.compare l1 l2 in
@@ -281,11 +281,11 @@ module ModPath = struct
 
   let equal mp1 mp2 = Int.equal (compare mp1 mp2) 0
 
-  let initial = MPfile Dir_path.initial
+  let initial = MPfile DirPath.initial
 
   module Self_Hashcons = struct
     type t = module_path
-    type u = (Dir_path.t -> Dir_path.t) * (MBId.t -> MBId.t) *
+    type u = (DirPath.t -> DirPath.t) * (MBId.t -> MBId.t) *
 	(string -> string)
     let rec hashcons (hdir,huniqid,hstr as hfuns) = function
       | MPfile dir -> MPfile (hdir dir)
@@ -305,7 +305,7 @@ module ModPath = struct
 
   let hcons =
     Hashcons.simple_hcons HashMP.generate
-      (Dir_path.hcons,MBId.hcons,String.hcons)
+      (DirPath.hcons,MBId.hcons,String.hcons)
 
 end
 
@@ -316,7 +316,7 @@ module MPmap = Map.Make(ModPath)
 
 module KerName = struct
 
-  type t = ModPath.t * Dir_path.t * Label.t
+  type t = ModPath.t * DirPath.t * Label.t
 
   type kernel_name = t
 
@@ -328,8 +328,8 @@ module KerName = struct
 
   let to_string (mp,dir,l) =
     let dp =
-      if Dir_path.is_empty dir then "."
-      else "#" ^ Dir_path.to_string dir ^ "#"
+      if DirPath.is_empty dir then "."
+      else "#" ^ DirPath.to_string dir ^ "#"
     in
     ModPath.to_string mp ^ dp ^ Label.to_string l
 
@@ -342,7 +342,7 @@ module KerName = struct
       let c = String.compare l1 l2 in
       if not (Int.equal c 0) then c
       else
-        let c = Dir_path.compare dir1 dir2 in
+        let c = DirPath.compare dir1 dir2 in
         if not (Int.equal c 0) then c
         else ModPath.compare mp1 mp2
 
@@ -350,7 +350,7 @@ module KerName = struct
 
   module Self_Hashcons = struct
     type t = kernel_name
-    type u = (ModPath.t -> ModPath.t) * (Dir_path.t -> Dir_path.t)
+    type u = (ModPath.t -> ModPath.t) * (DirPath.t -> DirPath.t)
         * (string -> string)
     let hashcons (hmod,hdir,hstr) (mp,dir,l) =
       (hmod mp,hdir dir,hstr l)
@@ -363,7 +363,7 @@ module KerName = struct
 
   let hcons =
     Hashcons.simple_hcons HashKN.generate
-      (ModPath.hcons,Dir_path.hcons,String.hcons)
+      (ModPath.hcons,DirPath.hcons,String.hcons)
 
 end
 
@@ -479,7 +479,7 @@ let debug_pr_con cst = str (debug_string_of_con cst)
 let con_with_label cst lbl =
   let (mp1,dp1,l1) = KerName.repr (user_con cst)
   and (mp2,dp2,l2) = KerName.repr (canonical_con cst) in
-  assert (String.equal l1 l2 && Dir_path.equal dp1 dp2);
+  assert (String.equal l1 l2 && DirPath.equal dp1 dp2);
   if String.equal lbl l1
   then cst
   else make_con_equiv mp1 mp2 dp1 lbl
@@ -669,17 +669,17 @@ module Idpred = Id.Pred
 
 let name_eq = Name.equal
 
-(** Compatibility layer for [Dir_path] *)
+(** Compatibility layer for [DirPath] *)
 
-type dir_path = Dir_path.t
-let dir_path_ord = Dir_path.compare
-let dir_path_eq = Dir_path.equal
-let make_dirpath = Dir_path.make
-let repr_dirpath = Dir_path.repr
-let empty_dirpath = Dir_path.empty
-let is_empty_dirpath = Dir_path.is_empty
-let string_of_dirpath = Dir_path.to_string
-let initial_dir = Dir_path.initial
+type dir_path = DirPath.t
+let dir_path_ord = DirPath.compare
+let dir_path_eq = DirPath.equal
+let make_dirpath = DirPath.make
+let repr_dirpath = DirPath.repr
+let empty_dirpath = DirPath.empty
+let is_empty_dirpath = DirPath.is_empty
+let string_of_dirpath = DirPath.to_string
+let initial_dir = DirPath.initial
 
 (** Compatibility layer for [MBId] *)
 
@@ -705,7 +705,7 @@ let eq_label = Label.equal
 (** Compatibility layer for [ModPath] *)
 
 type module_path = ModPath.t =
-  | MPfile of Dir_path.t
+  | MPfile of DirPath.t
   | MPbound of MBId.t
   | MPdot of module_path * Label.t
 let check_bound_mp = ModPath.is_bound

@@ -123,7 +123,7 @@ let modtab_objects =
 (* currently started interactive module (if any) - its arguments (if it
    is a functor) and declared output type *)
 let openmod_info =
-  ref ((MPfile(Dir_path.initial),[],None,[])
+  ref ((MPfile(DirPath.initial),[],None,[])
 	 : module_path *  MBId.t list *
            (module_struct_entry * int option) option *
 	   module_type_body list)
@@ -146,16 +146,16 @@ let _ = Summary.declare_summary "MODULE-INFO"
 	    Summary.init_function = (fun () ->
 				       modtab_substobjs := MPmap.empty;
 				       modtab_objects := MPmap.empty;
-				       openmod_info := ((MPfile(Dir_path.initial),
+				       openmod_info := ((MPfile(DirPath.initial),
 							 [],None,[]));
 				       library_cache := Dirmap.empty) }
 
 (* auxiliary functions to transform full_path and kernel_name given
-   by Lib into module_path and Dir_path.t needed for modules *)
+   by Lib into module_path and DirPath.t needed for modules *)
 
 let mp_of_kn kn =
   let mp,sec,l = repr_kn kn in
-    if Dir_path.is_empty sec then
+    if DirPath.is_empty sec then
       MPdot (mp,l)
     else
       anomaly (str "Non-empty section in module name!" ++ spc () ++ pr_kn kn)
@@ -246,8 +246,8 @@ let compute_visibility exists what i dir dirinfo =
       Nametab.Until i
 (*
 let do_load_and_subst_module i dir mp substobjs keep =
-  let prefix = (dir,(mp,Dir_path.empty)) in
-  let dirinfo = DirModule (dir,(mp,Dir_path.empty)) in
+  let prefix = (dir,(mp,DirPath.empty)) in
+  let dirinfo = DirModule (dir,(mp,DirPath.empty)) in
   let vis = compute_visibility false "load_and_subst" i dir dirinfo in
   let objects = compute_subst_objects mp substobjs resolver in
   Nametab.push_dir vis dir dirinfo;
@@ -263,8 +263,8 @@ let do_load_and_subst_module i dir mp substobjs keep =
 *)
 
 let do_module exists what iter_objects i dir mp substobjs keep=
-  let prefix = (dir,(mp,Dir_path.empty)) in
-  let dirinfo = DirModule (dir,(mp,Dir_path.empty)) in
+  let prefix = (dir,(mp,DirPath.empty)) in
+  let dirinfo = DirModule (dir,(mp,DirPath.empty)) in
   let vis = compute_visibility exists what i dir dirinfo in
     Nametab.push_dir vis dir dirinfo;
     modtab_substobjs := MPmap.add mp substobjs !modtab_substobjs;
@@ -314,7 +314,7 @@ let cache_keep _ = anomaly (Pp.str "This module should not be cached!")
 
 let load_keep i ((sp,kn),seg) =
   let mp = mp_of_kn kn in
-  let prefix = dir_of_sp sp, (mp,Dir_path.empty) in
+  let prefix = dir_of_sp sp, (mp,DirPath.empty) in
     begin
       try
 	let prefix',objects = MPmap.find mp !modtab_objects in
@@ -328,7 +328,7 @@ let load_keep i ((sp,kn),seg) =
 
 let open_keep i ((sp,kn),seg) =
   let dirpath,mp = dir_of_sp sp, mp_of_kn kn in
-    open_objects i (dirpath,(mp,Dir_path.empty)) seg
+    open_objects i (dirpath,(mp,DirPath.empty)) seg
 
 let in_modkeep : lib_objects -> obj =
   declare_object {(default_object "MODULE KEEP OBJECTS") with
@@ -506,7 +506,7 @@ let rec get_modtype_substobjs env mp_from inline = function
 (* add objects associated to them *)
 let process_module_bindings argids args =
   let process_arg id (mbid,(mty,ann)) =
-    let dir = Dir_path.make [id] in
+    let dir = DirPath.make [id] in
     let mp = MPbound mbid in
     let (mbids,mp_from,objs) =
       get_modtype_substobjs (Global.env()) mp (inline_annot ann) mty in
@@ -539,7 +539,7 @@ let intern_args interp_modtype (idl,(arg,ann)) =
   let lib_dir = Lib.library_dp() in
   let mbids = List.map (fun (_,id) -> MBId.make lib_dir id) idl in
   let mty = interp_modtype (Global.env()) arg in
-  let dirs = List.map (fun (_,id) -> Dir_path.make [id]) idl in
+  let dirs = List.map (fun (_,id) -> DirPath.make [id]) idl in
   let (mbi,mp_from,objs) = get_modtype_substobjs (Global.env())
     (MPbound (List.hd mbids)) inl mty in
   List.map2
@@ -643,7 +643,7 @@ let module_objects mp =
 (************************************************************************)
 (* libraries *)
 
-type library_name = Dir_path.t
+type library_name = DirPath.t
 
 (* The first two will form substitutive_objects, the last one is keep *)
 type library_objects =
@@ -890,18 +890,18 @@ let lift_oname (sp,kn) =
 
 let cache_include (oname,(me,(mbis,mp1,objs))) =
   let dir,mp1 = lift_oname oname in
-  let prefix = (dir,(mp1,Dir_path.empty)) in
+  let prefix = (dir,(mp1,DirPath.empty)) in
     load_objects 1 prefix objs;
     open_objects 1 prefix objs
 
 let load_include  i (oname,(me,(mbis,mp1,objs))) =
   let dir,mp1 = lift_oname oname in
-  let prefix = (dir,(mp1,Dir_path.empty)) in
+  let prefix = (dir,(mp1,DirPath.empty)) in
     load_objects i prefix objs
 
 let open_include i (oname,(me,(mbis,mp1,objs))) =
   let dir,mp1 = lift_oname oname in
-  let prefix = (dir,(mp1,Dir_path.empty)) in
+  let prefix = (dir,(mp1,DirPath.empty)) in
     open_objects i prefix objs
 
 let subst_include (subst,(me,substobj)) =

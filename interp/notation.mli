@@ -65,7 +65,7 @@ val find_delimiters_scope : Loc.t -> delimiters -> scope_name
    negative numbers are not supported, the interpreter must fail with
    an appropriate error message *)
 
-type notation_location = (Dir_path.t * Dir_path.t) * string
+type notation_location = (DirPath.t * DirPath.t) * string
 type required_module = full_path * string list
 type cases_pattern_status = bool (** true = use prim token in patterns *)
 

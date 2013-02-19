@@ -50,7 +50,7 @@ let coq_base_constant s =
     (Coqlib.init_modules @ [["Coq";"Arith";"Le"];["Coq";"Arith";"Lt"]]) s;;
 
 let find_reference sl s =
-  let dp = Names.Dir_path.make (List.rev_map Id.of_string sl) in
+  let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
   locate (make_qualid dp (Id.of_string s))
 
 let (declare_fun : Id.t -> logical_kind -> constr -> global_reference) =

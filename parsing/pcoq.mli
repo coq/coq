@@ -174,7 +174,7 @@ module Prim :
     val reference : reference Gram.entry
     val by_notation : (Loc.t * string * string option) Gram.entry
     val smart_global : reference or_by_notation Gram.entry
-    val dirpath : Dir_path.t Gram.entry
+    val dirpath : DirPath.t Gram.entry
     val ne_string : string Gram.entry
     val ne_lstring : string located Gram.entry
     val var : Id.t located Gram.entry

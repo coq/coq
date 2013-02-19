@@ -30,7 +30,7 @@ let is_imported_modpath mp =
     match mp with
       | MPfile dp ->
 	  let rec find_prefix = function
-	    |MPfile dp1 -> not (Dir_path.equal dp1 dp)
+	    |MPfile dp1 -> not (DirPath.equal dp1 dp)
 	    |MPdot(mp,_) -> find_prefix mp
 	    |MPbound(_) -> false
 	  in find_prefix current_mp

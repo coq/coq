@@ -118,7 +118,7 @@ let plain_display accu ref a c =
 
 let format_display l = prlist_with_sep fnl (fun x -> x) (List.rev l)
 
-let filter_by_module (module_list:Dir_path.t list) (accept:bool)
+let filter_by_module (module_list:DirPath.t list) (accept:bool)
   (ref:global_reference) _ _ =
     let sp = path_of_global ref in
     let sl = dirpath sp in
@@ -180,7 +180,7 @@ let name_of_reference ref = Id.to_string (basename_of_global ref)
 
 let full_name_of_reference ref =
   let (dir,id) = repr_path (path_of_global ref) in
-  Dir_path.to_string dir ^ "." ^ Id.to_string id
+  DirPath.to_string dir ^ "." ^ Id.to_string id
 
 (*
  * functions to use the new Libtypes facility
@@ -317,10 +317,10 @@ let interface_search flags =
   in
   let ans = ref [] in
   let print_function ref env constr =
-    let fullpath = Dir_path.repr (Nametab.dirpath_of_global ref) in
+    let fullpath = DirPath.repr (Nametab.dirpath_of_global ref) in
     let qualid = Nametab.shortest_qualid_of_global Id.Set.empty ref in
     let (shortpath, basename) = Libnames.repr_qualid qualid in
-    let shortpath = Dir_path.repr shortpath in
+    let shortpath = DirPath.repr shortpath in
     (* [shortpath] is a suffix of [fullpath] and we're looking for the missing
        prefix *)
     let rec prefix full short accu = match full, short with

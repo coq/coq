@@ -33,8 +33,8 @@ let mlexpr_of_name = function
       <:expr< Names.Name (Names.Id.of_string $str:Names.Id.to_string id$) >>
 
 let mlexpr_of_dirpath dir =
-  let l = Names.Dir_path.repr dir in
-  <:expr< Names.Dir_path.make $mlexpr_of_list mlexpr_of_ident l$ >>
+  let l = Names.DirPath.repr dir in
+  <:expr< Names.DirPath.make $mlexpr_of_list mlexpr_of_ident l$ >>
 
 let mlexpr_of_qualid qid =
   let (dir, id) = Libnames.repr_qualid qid in

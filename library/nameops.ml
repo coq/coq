@@ -138,11 +138,11 @@ let name_fold_map f e = function
 
 let pr_lab l = str (Label.to_string l)
 
-let default_library = Names.Dir_path.initial (* = ["Top"] *)
+let default_library = Names.DirPath.initial (* = ["Top"] *)
 
 (*s Roots of the space of absolute names *)
 let coq_root = Id.of_string "Coq"
-let default_root_prefix = Dir_path.empty
+let default_root_prefix = DirPath.empty
 
 (* Metavariables *)
 let pr_meta = Pp.int

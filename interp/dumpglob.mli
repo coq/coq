@@ -29,7 +29,7 @@ val dump_definition : Loc.t * Names.Id.t -> bool -> string -> unit
 val dump_moddef : Loc.t -> Names.module_path -> string -> unit
 val dump_modref  : Loc.t -> Names.module_path -> string -> unit
 val dump_reference  : Loc.t -> string -> string -> string -> unit
-val dump_libref : Loc.t -> Names.Dir_path.t -> string -> unit
+val dump_libref : Loc.t -> Names.DirPath.t -> string -> unit
 val dump_notation_location : (int * int) list -> Constrexpr.notation ->
   (Notation.notation_location * Notation_term.scope_name option) -> unit
 val dump_binding : Loc.t -> Names.Id.Set.elt -> unit

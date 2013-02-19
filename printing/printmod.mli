@@ -9,7 +9,7 @@
 open Names
 
 (** false iff the module is an element of an open module type *)
-val printable_body : Dir_path.t -> bool
+val printable_body : DirPath.t -> bool
 
 val print_module : bool -> module_path -> Pp.std_ppcmds
 

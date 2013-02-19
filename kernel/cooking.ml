@@ -25,9 +25,9 @@ open Environ
 
 type work_list = Id.t array Cmap.t * Id.t array Mindmap.t
 
-let pop_dirpath p = match Dir_path.repr p with
+let pop_dirpath p = match DirPath.repr p with
   | [] -> anomaly ~label:"dirpath_prefix" (Pp.str "empty dirpath")
-  | _::l -> Dir_path.make l
+  | _::l -> DirPath.make l
 
 let pop_mind kn =
   let (mp,dir,l) = Names.repr_mind kn in

@@ -53,7 +53,7 @@ type section_variable_entry =
   | SectionLocalDef of constr * types option * bool (* opacity *)
   | SectionLocalAssum of types * bool (* Implicit status *)
 
-type variable_declaration = Dir_path.t * section_variable_entry * logical_kind
+type variable_declaration = DirPath.t * section_variable_entry * logical_kind
 
 let cache_variable ((sp,_),o) =
   match o with

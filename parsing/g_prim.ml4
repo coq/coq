@@ -18,7 +18,7 @@ let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "'"]
 let _ = List.iter Lexer.add_keyword prim_kw
 
 
-let local_make_qualid l id = make_qualid (Dir_path.make l) id
+let local_make_qualid l id = make_qualid (DirPath.make l) id
 
 let my_int_of_string loc s =
   try
@@ -101,7 +101,7 @@ GEXTEND Gram
   ;
   dirpath:
     [ [ id = ident; l = LIST0 field ->
-        Dir_path.make (List.rev (id::l)) ] ]
+        DirPath.make (List.rev (id::l)) ] ]
   ;
   string:
     [ [ s = STRING -> s ] ]

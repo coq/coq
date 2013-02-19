@@ -76,7 +76,7 @@ type module_ident = Id.t
 
 (** {6 Directory paths = section names paths } *)
 
-module Dir_path :
+module DirPath :
 sig
   type t
   (** Type of directory paths. Essentially a list of module identifiers. The
@@ -155,11 +155,11 @@ sig
   val compare : t -> t -> int
   (** Comparison over unique bound names. *)
 
-  val make : Dir_path.t -> Id.t -> t
+  val make : DirPath.t -> Id.t -> t
   (** The first argument is a file name, to prevent conflict between different
       files. *)
 
-  val repr : t -> int * Id.t * Dir_path.t
+  val repr : t -> int * Id.t * DirPath.t
   (** Reverse of [make]. *)
 
   val to_id : t -> Id.t
@@ -180,7 +180,7 @@ module ModIdmap : Map.S with type key = module_ident
 module ModPath :
 sig
   type t =
-    | MPfile of Dir_path.t
+    | MPfile of DirPath.t
     | MPbound of MBId.t
     | MPdot of t * Label.t
 
@@ -206,8 +206,8 @@ sig
   type t
 
   (** Constructor and destructor *)
-  val make : ModPath.t -> Dir_path.t -> Label.t -> t
-  val repr : t -> ModPath.t * Dir_path.t * Label.t
+  val make : ModPath.t -> DirPath.t -> Label.t -> t
+  val repr : t -> ModPath.t * DirPath.t * Label.t
 
   (** Projections *)
   val modpath : t -> ModPath.t
@@ -255,12 +255,12 @@ module Constrmap_env : Map.S with type key = constructor
 
 val constant_of_kn : KerName.t -> constant
 val constant_of_kn_equiv : KerName.t -> KerName.t -> constant
-val make_con : ModPath.t -> Dir_path.t -> Label.t -> constant
-val make_con_equiv : ModPath.t -> ModPath.t -> Dir_path.t
+val make_con : ModPath.t -> DirPath.t -> Label.t -> constant
+val make_con_equiv : ModPath.t -> ModPath.t -> DirPath.t
   -> Label.t -> constant
 val user_con : constant -> KerName.t
 val canonical_con : constant -> KerName.t
-val repr_con : constant -> ModPath.t * Dir_path.t * Label.t
+val repr_con : constant -> ModPath.t * DirPath.t * Label.t
 val eq_constant : constant -> constant -> bool
 val con_ord : constant -> constant -> int
 val con_user_ord : constant -> constant -> int
@@ -277,12 +277,12 @@ val debug_string_of_con : constant -> string
 
 val mind_of_kn : KerName.t -> mutual_inductive
 val mind_of_kn_equiv : KerName.t -> KerName.t -> mutual_inductive
-val make_mind : ModPath.t -> Dir_path.t -> Label.t -> mutual_inductive
-val make_mind_equiv : ModPath.t -> ModPath.t -> Dir_path.t 
+val make_mind : ModPath.t -> DirPath.t -> Label.t -> mutual_inductive
+val make_mind_equiv : ModPath.t -> ModPath.t -> DirPath.t 
   -> Label.t -> mutual_inductive
 val user_mind : mutual_inductive -> KerName.t
 val canonical_mind : mutual_inductive -> KerName.t
-val repr_mind : mutual_inductive -> ModPath.t * Dir_path.t * Label.t
+val repr_mind : mutual_inductive -> ModPath.t * DirPath.t * Label.t
 val eq_mind : mutual_inductive -> mutual_inductive -> bool
 val mind_ord : mutual_inductive -> mutual_inductive -> int
 val mind_user_ord : mutual_inductive -> mutual_inductive -> int
@@ -393,32 +393,32 @@ end
 
 (** {5 Directory paths} *)
 
-type dir_path = Dir_path.t
-(** @deprecated Alias for [Dir_path.t]. *)
+type dir_path = DirPath.t
+(** @deprecated Alias for [DirPath.t]. *)
 
 val dir_path_ord : dir_path -> dir_path -> int
-(** @deprecated Same as [Dir_path.compare]. *)
+(** @deprecated Same as [DirPath.compare]. *)
 
 val dir_path_eq : dir_path -> dir_path -> bool
-(** @deprecated Same as [Dir_path.equal]. *)
+(** @deprecated Same as [DirPath.equal]. *)
 
 val make_dirpath : module_ident list -> dir_path
-(** @deprecated Same as [Dir_path.make]. *)
+(** @deprecated Same as [DirPath.make]. *)
 
 val repr_dirpath : dir_path -> module_ident list
-(** @deprecated Same as [Dir_path.repr]. *)
+(** @deprecated Same as [DirPath.repr]. *)
 
 val empty_dirpath : dir_path
-(** @deprecated Same as [Dir_path.empty]. *)
+(** @deprecated Same as [DirPath.empty]. *)
 
 val is_empty_dirpath : dir_path -> bool
-(** @deprecated Same as [Dir_path.is_empty]. *)
+(** @deprecated Same as [DirPath.is_empty]. *)
 
 val string_of_dirpath : dir_path -> string
-(** @deprecated Same as [Dir_path.to_string]. *)
+(** @deprecated Same as [DirPath.to_string]. *)
 
-val initial_dir : Dir_path.t
-(** @deprecated Same as [Dir_path.initial]. *)
+val initial_dir : DirPath.t
+(** @deprecated Same as [DirPath.initial]. *)
 
 (** {5 Labels} *)
 
@@ -454,10 +454,10 @@ val mod_bound_id_ord : mod_bound_id -> mod_bound_id -> int
 val mod_bound_id_eq : mod_bound_id -> mod_bound_id -> bool
 (** @deprecated Same as [MBId.equal]. *)
 
-val make_mbid : Dir_path.t -> Id.t -> mod_bound_id
+val make_mbid : DirPath.t -> Id.t -> mod_bound_id
 (** @deprecated Same as [MBId.make]. *)
 
-val repr_mbid : mod_bound_id -> int * Id.t * Dir_path.t
+val repr_mbid : mod_bound_id -> int * Id.t * DirPath.t
 (** @deprecated Same as [MBId.repr]. *)
 
 val id_of_mbid : mod_bound_id -> Id.t
@@ -477,7 +477,7 @@ val name_eq : name -> name -> bool
 (** {5 Module paths} *)
 
 type module_path = ModPath.t =
-  | MPfile of Dir_path.t
+  | MPfile of DirPath.t
   | MPbound of MBId.t
   | MPdot of module_path * Label.t
 (** @deprecated Alias type *)
@@ -502,10 +502,10 @@ val initial_path : module_path
 type kernel_name = KerName.t
 (** @deprecated Alias type *)
 
-val make_kn : ModPath.t -> Dir_path.t -> Label.t -> kernel_name
+val make_kn : ModPath.t -> DirPath.t -> Label.t -> kernel_name
 (** @deprecated Same as [KerName.make]. *)
 
-val repr_kn : kernel_name -> module_path * Dir_path.t * Label.t
+val repr_kn : kernel_name -> module_path * DirPath.t * Label.t
 (** @deprecated Same as [KerName.repr]. *)
 
 val modpath : kernel_name -> module_path

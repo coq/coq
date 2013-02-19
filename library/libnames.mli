@@ -13,31 +13,31 @@ open Names
 (** {6 Dirpaths } *)
 (** FIXME: ought to be in Names.dir_path *)
 
-val pr_dirpath : Dir_path.t -> Pp.std_ppcmds
+val pr_dirpath : DirPath.t -> Pp.std_ppcmds
 
-val dirpath_of_string : string -> Dir_path.t
-val string_of_dirpath : Dir_path.t -> string
+val dirpath_of_string : string -> DirPath.t
+val string_of_dirpath : DirPath.t -> string
 
-(** Pop the suffix of a [Dir_path.t] *)
-val pop_dirpath : Dir_path.t -> Dir_path.t
+(** Pop the suffix of a [DirPath.t] *)
+val pop_dirpath : DirPath.t -> DirPath.t
 
 (** Pop the suffix n times *)
-val pop_dirpath_n : int -> Dir_path.t -> Dir_path.t
+val pop_dirpath_n : int -> DirPath.t -> DirPath.t
 
-(** Give the immediate prefix and basename of a [Dir_path.t] *)
-val split_dirpath : Dir_path.t -> Dir_path.t * Id.t
+(** Give the immediate prefix and basename of a [DirPath.t] *)
+val split_dirpath : DirPath.t -> DirPath.t * Id.t
 
-val add_dirpath_suffix : Dir_path.t -> module_ident -> Dir_path.t
-val add_dirpath_prefix : module_ident -> Dir_path.t -> Dir_path.t
+val add_dirpath_suffix : DirPath.t -> module_ident -> DirPath.t
+val add_dirpath_prefix : module_ident -> DirPath.t -> DirPath.t
 
-val chop_dirpath : int -> Dir_path.t -> Dir_path.t * Dir_path.t
-val append_dirpath : Dir_path.t -> Dir_path.t -> Dir_path.t
+val chop_dirpath : int -> DirPath.t -> DirPath.t * DirPath.t
+val append_dirpath : DirPath.t -> DirPath.t -> DirPath.t
 
-val drop_dirpath_prefix : Dir_path.t -> Dir_path.t -> Dir_path.t
-val is_dirpath_prefix_of : Dir_path.t -> Dir_path.t -> bool
+val drop_dirpath_prefix : DirPath.t -> DirPath.t -> DirPath.t
+val is_dirpath_prefix_of : DirPath.t -> DirPath.t -> bool
 
-module Dirset : Set.S with type elt = Dir_path.t
-module Dirmap : Map.S with type key = Dir_path.t
+module Dirset : Set.S with type elt = DirPath.t
+module Dirmap : Map.S with type key = DirPath.t
 
 (** {6 Full paths are {e absolute} paths of declarations } *)
 type full_path
@@ -45,11 +45,11 @@ type full_path
 val eq_full_path : full_path -> full_path -> bool
 
 (** Constructors of [full_path] *)
-val make_path : Dir_path.t -> Id.t -> full_path
+val make_path : DirPath.t -> Id.t -> full_path
 
 (** Destructors of [full_path] *)
-val repr_path : full_path -> Dir_path.t * Id.t
-val dirpath : full_path -> Dir_path.t
+val repr_path : full_path -> DirPath.t * Id.t
+val dirpath : full_path -> DirPath.t
 val basename : full_path -> Id.t
 
 (** Parsing and printing of section path as ["coq_root.module.id"] *)
@@ -69,8 +69,8 @@ val restrict_path : int -> full_path -> full_path
 
 type qualid
 
-val make_qualid : Dir_path.t -> Id.t -> qualid
-val repr_qualid : qualid -> Dir_path.t * Id.t
+val make_qualid : DirPath.t -> Id.t -> qualid
+val repr_qualid : qualid -> DirPath.t * Id.t
 
 val qualid_eq : qualid -> qualid -> bool
 
@@ -82,7 +82,7 @@ val qualid_of_string : string -> qualid
    qualified name denoting the same name *)
 
 val qualid_of_path : full_path -> qualid
-val qualid_of_dirpath : Dir_path.t -> qualid
+val qualid_of_dirpath : DirPath.t -> qualid
 val qualid_of_ident : Id.t -> qualid
 
 (** Both names are passed to objects: a "semantic" [kernel_name], which
@@ -91,19 +91,19 @@ val qualid_of_ident : Id.t -> qualid
 
 type object_name = full_path * kernel_name
 
-type object_prefix = Dir_path.t * (module_path * Dir_path.t)
+type object_prefix = DirPath.t * (module_path * DirPath.t)
 
 val eq_op : object_prefix -> object_prefix -> bool
 
 val make_oname : object_prefix -> Id.t -> object_name
 
-(** to this type are mapped [Dir_path.t]'s in the nametab *)
+(** to this type are mapped [DirPath.t]'s in the nametab *)
 type global_dir_reference =
   | DirOpenModule of object_prefix
   | DirOpenModtype of object_prefix
   | DirOpenSection of object_prefix
   | DirModule of object_prefix
-  | DirClosedSection of Dir_path.t
+  | DirClosedSection of DirPath.t
       (** this won't last long I hope! *)
 
 val eq_global_dir_reference : 

@@ -258,10 +258,10 @@ and check_module env mp mb =
 
 and check_structure_field env mp lab res = function
   | SFBconst cb ->
-      let c = make_con mp Dir_path.empty lab in
+      let c = make_con mp DirPath.empty lab in
 	check_constant_declaration env c cb
   | SFBmind mib ->
-      let kn = make_mind mp Dir_path.empty lab in
+      let kn = make_mind mp DirPath.empty lab in
       let kn = mind_of_delta res kn in
 	Indtypes.check_inductive env kn mib
   | SFBmodule msb ->

@@ -27,8 +27,8 @@ val engagement : env -> Declarations.engagement option
 val set_engagement : Declarations.engagement -> env -> env
 
 (* Digests *)
-val add_digest : env -> Dir_path.t -> Digest.t -> env
-val lookup_digest : env -> Dir_path.t -> Digest.t
+val add_digest : env -> DirPath.t -> Digest.t -> env
+val lookup_digest : env -> DirPath.t -> Digest.t
 
 (* de Bruijn variables *)
 val rel_context : env -> rel_context

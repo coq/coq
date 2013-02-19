@@ -43,9 +43,9 @@ let check_engagement env c =
 
 let report_clash f caller dir =
   let msg =
-    str "compiled library " ++ str(Dir_path.to_string caller) ++
+    str "compiled library " ++ str(DirPath.to_string caller) ++
     spc() ++ str "makes inconsistent assumptions over library" ++ spc() ++
-    str(Dir_path.to_string dir) ++ fnl() in
+    str(DirPath.to_string dir) ++ fnl() in
   f msg
 
 
@@ -55,15 +55,15 @@ let check_imports f caller env needed =
       let actual_stamp = lookup_digest env dp in
       if stamp <> actual_stamp then report_clash f caller dp
     with Not_found ->
-      error ("Reference to unknown module " ^ (Dir_path.to_string dp))
+      error ("Reference to unknown module " ^ (DirPath.to_string dp))
   in
   List.iter check needed
 
 
 type compiled_library =
-    Dir_path.t *
+    DirPath.t *
     module_body *
-    (Dir_path.t * Digest.t) list *
+    (DirPath.t * Digest.t) list *
     engagement option
 
  (* Store the body of modules' opaque constants inside a table.  

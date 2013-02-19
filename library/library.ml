@@ -20,7 +20,7 @@ open Lib
 (*************************************************************************)
 (*s Load path. Mapping from physical to logical paths etc.*)
 
-type logical_path = Dir_path.t
+type logical_path = DirPath.t
 
 let load_paths = ref ([] : (CUnix.physical_path * logical_path * bool) list)
 
@@ -49,15 +49,15 @@ let add_load_path isroot (phys_path,coq_path) =
   let filter (p, _, _) = String.equal p phys_path in
     match List.filter filter !load_paths with
       | [_,dir,_] ->
-	  if not (Dir_path.equal coq_path dir)
+	  if not (DirPath.equal coq_path dir)
             (* If this is not the default -I . to coqtop *)
             && not
             (String.equal phys_path (CUnix.canonical_path_name Filename.current_dir_name)
-		&& Dir_path.equal coq_path (Nameops.default_root_prefix))
+		&& DirPath.equal coq_path (Nameops.default_root_prefix))
 	  then
 	    begin
               (* Assume the user is concerned by library naming *)
-	      if not (Dir_path.equal dir Nameops.default_root_prefix) then
+	      if not (DirPath.equal dir Nameops.default_root_prefix) then
 		Flags.if_warn msg_warning
 		  (str phys_path ++ strbrk " was previously bound to " ++
 		   pr_dirpath dir ++ strbrk "; it is remapped to " ++
@@ -71,7 +71,7 @@ let add_load_path isroot (phys_path,coq_path) =
 
 let extend_path_with_dirpath p dir =
   List.fold_left Filename.concat p
-    (List.rev_map Id.to_string (Dir_path.repr dir))
+    (List.rev_map Id.to_string (DirPath.repr dir))
 
 let root_paths_matching_dir_path dir =
   let rec aux = function
@@ -90,7 +90,7 @@ let root_paths_matching_dir_path dir =
 
 let intersections d1 d2 =
   let rec aux d1 =
-    if Dir_path.is_empty d1 then [d2] else
+    if DirPath.is_empty d1 then [d2] else
       let rest = aux (snd (chop_dirpath 1 d1)) in
       if is_dirpath_prefix_of d1 d2 then drop_dirpath_prefix d1 d2 :: rest
       else rest in
@@ -114,7 +114,7 @@ let get_full_load_paths () = List.map (fun (a,b,c) -> (a,b)) !load_paths
 (*s Modules on disk contain the following informations (after the magic
     number, and before the digest). *)
 
-type compilation_unit_name = Dir_path.t
+type compilation_unit_name = DirPath.t
 
 type library_disk = {
   md_name : compilation_unit_name;
@@ -134,7 +134,7 @@ type library_t = {
   library_imports : compilation_unit_name list;
   library_digest : Digest.t }
 
-module LibraryOrdered = Dir_path
+module LibraryOrdered = DirPath
 module LibraryMap = Map.Make(LibraryOrdered)
 module LibraryFilenameMap = Map.Make(LibraryOrdered)
 
@@ -182,7 +182,7 @@ let find_library dir =
 let try_find_library dir =
   try find_library dir
   with Not_found ->
-    error ("Unknown library " ^ (Dir_path.to_string dir))
+    error ("Unknown library " ^ (DirPath.to_string dir))
 
 let register_library_filename dir f =
   (* Not synchronized: overwrite the previous binding if one existed *)
@@ -205,7 +205,7 @@ let library_is_loaded dir =
   with Not_found -> false
 
 let library_is_opened dir =
-  List.exists (fun m -> Dir_path.equal m.library_name dir) !libraries_imports_list
+  List.exists (fun m -> DirPath.equal m.library_name dir) !libraries_imports_list
 
 let loaded_libraries () =
   List.map (fun m -> m.library_name) !libraries_loaded_list
@@ -226,7 +226,7 @@ let register_loaded_library m =
   in
   let rec aux = function
     | [] -> link m; [m]
-    | m'::_ as l when Dir_path.equal m'.library_name m.library_name -> l
+    | m'::_ as l when DirPath.equal m'.library_name m.library_name -> l
     | m'::l' -> m' :: aux l' in
   libraries_loaded_list := aux !libraries_loaded_list;
   libraries_table := LibraryMap.add m.library_name m !libraries_table
@@ -240,7 +240,7 @@ let register_loaded_library m =
 let rec remember_last_of_each l m =
   match l with
   | [] -> [m]
-  | m'::l' when Dir_path.equal m'.library_name m.library_name -> remember_last_of_each l' m
+  | m'::l' when DirPath.equal m'.library_name m.library_name -> remember_last_of_each l' m
   | m'::l' -> m' :: remember_last_of_each l' m
 
 let register_open_library export m =
@@ -254,7 +254,7 @@ let register_open_library export m =
 (* [open_library export explicit m] opens library [m] if not already
    opened _or_ if explicitly asked to be (re)opened *)
 
-let eq_lib_name m1 m2 = Dir_path.equal m1.library_name m2.library_name
+let eq_lib_name m1 m2 = DirPath.equal m1.library_name m2.library_name
 
 let open_library export explicit_libs m =
   if
@@ -303,7 +303,7 @@ let subst_import (_,o) = o
 let classify_import (_,export as obj) =
   if export then Substitute obj else Dispose
 
-let in_import : Dir_path.t * bool -> obj =
+let in_import : DirPath.t * bool -> obj =
   declare_object {(default_object "IMPORT LIBRARY") with
        cache_function = cache_import;
        open_function = open_import;
@@ -434,7 +434,7 @@ let rec intern_library needed (dir, f) =
   with Not_found ->
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
   let m = intern_from_file f in
-  if not (Dir_path.equal dir m.library_name) then
+  if not (DirPath.equal dir m.library_name) then
     errorlabstrm "load_physical_library"
       (str ("The file " ^ f ^ " contains library") ++ spc () ++
        pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
@@ -447,9 +447,9 @@ and intern_library_deps needed dir m =
 and intern_mandatory_library caller needed (dir,d) =
   let m,needed = intern_library needed (try_locate_absolute_library dir) in
   if not (String.equal d m.library_digest) then
-    errorlabstrm "" (strbrk ("Compiled library "^(Dir_path.to_string caller)^
+    errorlabstrm "" (strbrk ("Compiled library "^(DirPath.to_string caller)^
 	   ".vo makes inconsistent assumptions over library "
-	   ^(Dir_path.to_string dir)));
+	   ^(DirPath.to_string dir)));
   needed
 
 let rec_intern_library needed mref =
@@ -533,7 +533,7 @@ let discharge_require (_,o) = Some o
 
 (* open_function is never called from here because an Anticipate object *)
 
-type require_obj = library_t list * Dir_path.t list * bool option
+type require_obj = library_t list * DirPath.t list * bool option
 
 let in_require : require_obj -> obj =
   declare_object {(default_object "REQUIRE") with
@@ -604,11 +604,11 @@ let import_module export (loc,qid) =
 (*s Initializing the compilation of a library. *)
 
 let check_coq_overwriting p id =
-  let l = Dir_path.repr p in
+  let l = DirPath.repr p in
   let is_empty = match l with [] -> true | _ -> false in
   if not !Flags.boot && not is_empty && String.equal (Id.to_string (List.last l)) "Coq" then
     errorlabstrm ""
-      (strbrk ("Cannot build module "^Dir_path.to_string p^"."^Id.to_string id^
+      (strbrk ("Cannot build module "^DirPath.to_string p^"."^Id.to_string id^
       ": it starts with prefix \"Coq\" which is reserved for the Coq library."))
 
 let start_library f =

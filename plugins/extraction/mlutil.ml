@@ -1304,9 +1304,9 @@ let inline_test r t =
        not (is_fix t2) && ml_size t < 12 && is_not_strict t)
 
 let con_of_string s =
-  let null = Dir_path.empty in
-  match Dir_path.repr (dirpath_of_string s) with
-    | id :: d -> make_con (MPfile (Dir_path.make d)) null (Label.of_id id)
+  let null = DirPath.empty in
+  match DirPath.repr (dirpath_of_string s) with
+    | id :: d -> make_con (MPfile (DirPath.make d)) null (Label.of_id id)
     | [] -> assert false
 
 let manual_inline_set =

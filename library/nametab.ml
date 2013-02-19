@@ -42,7 +42,7 @@ type visibility = Until of int | Exactly of int
 (* Data structure for nametabs *******************************************)
 
 
-(* This module type will be instantiated by [full_path] of [Dir_path.t] *)
+(* This module type will be instantiated by [full_path] of [DirPath.t] *)
 (* The [repr] function is assumed to return the reversed list of idents. *)
 module type UserName = sig
   type t
@@ -194,7 +194,7 @@ let rec search tree = function
 
 let find_node qid tab =
   let (dir,id) = repr_qualid qid in
-    search (Id.Map.find id tab) (Dir_path.repr dir)
+    search (Id.Map.find id tab) (DirPath.repr dir)
 
 let locate qid tab =
   let o = match find_node qid tab with
@@ -238,7 +238,7 @@ let shortest_qualid ctx uname tab =
   in
   let ptab = Id.Map.find id tab in
   let found_dir = find_uname [] dir ptab in
-    make_qualid (Dir_path.make found_dir) id
+    make_qualid (DirPath.make found_dir) id
 
 let push_node node l =
   match node with
@@ -256,7 +256,7 @@ let rec search_prefixes tree = function
 let find_prefixes qid tab =
   try
     let (dir,id) = repr_qualid qid in
-    search_prefixes (Id.Map.find id tab) (Dir_path.repr dir)
+    search_prefixes (Id.Map.find id tab) (DirPath.repr dir)
   with Not_found -> []
 
 end
@@ -272,7 +272,7 @@ struct
   let to_string = string_of_path
   let repr sp =
     let dir,id = repr_path sp in
-      id, (Dir_path.repr dir)
+      id, (DirPath.repr dir)
 end
 
 module ExtRefEqual =
@@ -298,12 +298,10 @@ let the_tactictab = ref (KnTab.empty : kntab)
 type mptab = MPTab.t
 let the_modtypetab = ref (MPTab.empty : mptab)
 
-module DirPath =
+module DirPath' =
 struct
-  type t = Dir_path.t
-  let equal = Dir_path.equal
-  let to_string = Dir_path.to_string
-  let repr dir = match Dir_path.repr dir with
+  include DirPath
+  let repr dir = match DirPath.repr dir with
     | [] -> anomaly (Pp.str "Empty dirpath")
     | id :: l -> (id, l)
 end
@@ -314,7 +312,7 @@ struct
   let equal = eq_global_dir_reference
 end
 
-module DirTab = Make(DirPath)(GlobDir)
+module DirTab = Make(DirPath')(GlobDir)
 
 (* If we have a (closed) module M having a submodule N, than N does not
    have the entry in [the_dirtab]. *)
@@ -331,7 +329,7 @@ type globrevtab = full_path Globrevtab.t
 let the_globrevtab = ref (Globrevtab.empty : globrevtab)
 
 
-type mprevtab = Dir_path.t MPmap.t
+type mprevtab = DirPath.t MPmap.t
 let the_modrevtab = ref (MPmap.empty : mprevtab)
 
 type mptrevtab = full_path MPmap.t
@@ -479,7 +477,7 @@ let exists_modtype sp = MPTab.exists sp !the_modtypetab
 
 let path_of_global ref =
   match ref with
-    | VarRef id -> make_path Dir_path.empty id
+    | VarRef id -> make_path DirPath.empty id
     | _ -> Globrevtab.find (TrueGlobal ref) !the_globrevtab
 
 let dirpath_of_global ref =
@@ -501,7 +499,7 @@ let path_of_tactic kn =
 
 let shortest_qualid_of_global ctx ref =
   match ref with
-    | VarRef id -> make_qualid Dir_path.empty id
+    | VarRef id -> make_qualid DirPath.empty id
     | _ ->
         let sp = Globrevtab.find (TrueGlobal ref) !the_globrevtab in
         ExtRefTab.shortest_qualid ctx sp !the_ccitab

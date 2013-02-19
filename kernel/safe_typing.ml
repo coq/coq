@@ -76,7 +76,7 @@ type modvariant =
   | NONE
   | SIG of (* funsig params *) (MBId.t * module_type_body) list
   | STRUCT of (* functor params *) (MBId.t * module_type_body) list
-  | LIBRARY of Dir_path.t
+  | LIBRARY of DirPath.t
 
 type module_info =
     {modpath : module_path;
@@ -90,7 +90,7 @@ let set_engagement_opt oeng env =
       Some eng -> set_engagement eng env
     | _ -> env
 
-type library_info = Dir_path.t * Digest.t
+type library_info = DirPath.t * Digest.t
 
 type safe_environment =
     { old : safe_environment;
@@ -271,7 +271,7 @@ let add_constant dir l decl senv =
     | ConstantEntry ce -> translate_constant senv.env kn ce
     | GlobalRecipe r ->
       let cb = translate_recipe senv.env kn r in
-      if Dir_path.is_empty dir then hcons_const_body cb else cb
+      if DirPath.is_empty dir then hcons_const_body cb else cb
   in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
   let senv'' = match cb.const_body with
@@ -482,10 +482,10 @@ let end_module l restype senv =
    let add senv ((l,elem) as field) =
      let new_name = match elem with
        | SFBconst _ ->
-	   let kn = make_kn mp_sup Dir_path.empty l in
+	   let kn = make_kn mp_sup DirPath.empty l in
 	   C (constant_of_delta_kn resolver kn)
        | SFBmind _ ->
-	   let kn = make_kn mp_sup Dir_path.empty l in
+	   let kn = make_kn mp_sup DirPath.empty l in
 	   I (mind_of_delta_kn resolver kn)
        | SFBmodule _ -> M
        | SFBmodtype _ -> MT (MPdot(senv.modinfo.modpath, l))
@@ -630,7 +630,7 @@ let set_engagement c senv =
 (* Libraries = Compiled modules *)
 
 type compiled_library =
-    Dir_path.t * module_body * library_info list * engagement option
+    DirPath.t * module_body * library_info list * engagement option
       * Nativecode.symbol array
 
 type native_library = Nativecode.global list
@@ -646,10 +646,10 @@ let start_library dir senv =
   if not (is_empty senv) then
     anomaly ~label:"Safe_typing.start_library" (Pp.str "environment should be empty");
   let dir_path,l =
-    match (Dir_path.repr dir) with
+    match (DirPath.repr dir) with
 	[] -> anomaly (Pp.str "Empty dirpath in Safe_typing.start_library")
       | hd::tl ->
-	  Dir_path.make tl, Label.of_id hd
+	  DirPath.make tl, Label.of_id hd
   in
   let mp = MPfile dir in
   let modinfo = {modpath = mp;
@@ -685,7 +685,7 @@ let export senv dir =
   begin
     match modinfo.variant with
       | LIBRARY dp ->
-	  if not (Dir_path.equal dir dp) then
+	  if not (DirPath.equal dir dp) then
 	    anomaly (Pp.str "We are not exporting the right library!")
       | _ ->
 	  anomaly (Pp.str "We are not exporting the library")
@@ -720,9 +720,9 @@ let check_imports senv needed =
       let actual_stamp = List.assoc id imports in
       if not (String.equal stamp actual_stamp) then
 	error
-	  ("Inconsistent assumptions over module "^(Dir_path.to_string id)^".")
+	  ("Inconsistent assumptions over module "^(DirPath.to_string id)^".")
     with Not_found ->
-      error ("Reference to unknown module "^(Dir_path.to_string id)^".")
+      error ("Reference to unknown module "^(DirPath.to_string id)^".")
   in
   List.iter check needed
 

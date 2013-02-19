@@ -322,7 +322,7 @@ let print_pure_constr csr =
   and sp_display sp =
 (*    let dir,l = decode_kn sp in
     let ls =
-      match List.rev_map Id.to_string (Dir_path.repr dir) with
+      match List.rev_map Id.to_string (DirPath.repr dir) with
           ("Top"::l)-> l
 	| ("Coq"::_::l) -> l
 	| l             -> l
@@ -331,7 +331,7 @@ let print_pure_constr csr =
   and sp_con_display sp =
 (*    let dir,l = decode_kn sp in
     let ls =
-      match List.rev_map Id.to_string (Dir_path.repr dir) with
+      match List.rev_map Id.to_string (DirPath.repr dir) with
           ("Top"::l)-> l
 	| ("Coq"::_::l) -> l
 	| l             -> l
@@ -449,10 +449,10 @@ let encode_path loc prefix mpdir suffix id =
   let dir = match mpdir with
     | None -> []
     | Some (mp,dir) ->
-	(Dir_path.repr (dirpath_of_string (string_of_mp mp))@
-	Dir_path.repr dir) in
+	(DirPath.repr (dirpath_of_string (string_of_mp mp))@
+	DirPath.repr dir) in
   Qualid (loc, make_qualid
-    (Dir_path.make (List.rev (Id.of_string prefix::dir@suffix))) id)
+    (DirPath.make (List.rev (Id.of_string prefix::dir@suffix))) id)
 
 let raw_string_of_ref loc = function
   | ConstRef cst ->

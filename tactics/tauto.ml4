@@ -298,7 +298,7 @@ let tauto_intuitionistic flags g =
 
 let coq_nnpp_path =
   let dir = List.map Id.of_string ["Classical_Prop";"Logic";"Coq"] in
-  Libnames.make_path (Dir_path.make dir) (Id.of_string "NNPP")
+  Libnames.make_path (DirPath.make dir) (Id.of_string "NNPP")
 
 let tauto_classical flags nnpp g =
   try tclTHEN (apply nnpp) (tauto_intuitionistic flags) g

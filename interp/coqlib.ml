@@ -21,7 +21,7 @@ open Smartlocate
 
 type message = string
 
-let make_dir l = Dir_path.make (List.rev_map Id.of_string l)
+let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 
 let find_reference locstr dir s =
   let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
@@ -64,10 +64,10 @@ let gen_constant_in_modules locstr dirs s =
 
 let check_required_library d =
   let d' = List.map Id.of_string d in
-  let dir = Dir_path.make (List.rev d') in
+  let dir = DirPath.make (List.rev d') in
   let mp = (fst(Lib.current_prefix())) in
   let current_dir = match mp with
-    | MPfile dp -> Dir_path.equal dir dp
+    | MPfile dp -> DirPath.equal dir dp
     | _ -> false
   in
   if not (Library.library_is_loaded dir) then
@@ -75,10 +75,10 @@ let check_required_library d =
 (* Loading silently ...
     let m, prefix = List.sep_last d' in
     read_library
-     (Loc.ghost,make_qualid (Dir_path.make (List.rev prefix)) m)
+     (Loc.ghost,make_qualid (DirPath.make (List.rev prefix)) m)
 *)
 (* or failing ...*)
-      error ("Library "^(Dir_path.to_string dir)^" has to be required first.")
+      error ("Library "^(DirPath.to_string dir)^" has to be required first.")
 
 (************************************************************************)
 (* Specific Coq objects *)

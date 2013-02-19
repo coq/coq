@@ -46,7 +46,7 @@ val info_file : string -> unit
 (*s utilities about [module_path] and [kernel_names] and [global_reference] *)
 
 val occur_kn_in_ref : mutual_inductive -> global_reference -> bool
-val repr_of_r : global_reference -> module_path * Dir_path.t * Label.t
+val repr_of_r : global_reference -> module_path * DirPath.t * Label.t
 val modpath_of_r : global_reference -> module_path
 val label_of_r : global_reference -> Label.t
 val current_toplevel : unit -> module_path

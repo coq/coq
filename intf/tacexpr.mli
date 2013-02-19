@@ -167,7 +167,7 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
 
   (* For syntax extensions *)
   | TacAlias of Loc.t * string *
-      (Id.t * 'lev generic_argument) list * (Dir_path.t * glob_tactic_expr)
+      (Id.t * 'lev generic_argument) list * (DirPath.t * glob_tactic_expr)
 
 (** Possible arguments of a tactic definition *)
 

@@ -56,7 +56,7 @@ let is_modfile = function
   | _ -> false
 
 let raw_string_of_modfile = function
-  | MPfile f -> String.capitalize (Id.to_string (List.hd (Dir_path.repr f)))
+  | MPfile f -> String.capitalize (Id.to_string (List.hd (DirPath.repr f)))
   | _ -> assert false
 
 let current_toplevel () = fst (Lib.current_prefix ())
@@ -175,7 +175,7 @@ let add_recursors env kn =
     make_con_equiv
       (modpath (user_mind kn))
       (modpath (canonical_mind kn))
-      Dir_path.empty (Label.of_id id)
+      DirPath.empty (Label.of_id id)
   in
   let mib = Environ.lookup_mind kn env in
   Array.iter
@@ -272,7 +272,7 @@ let safe_pr_long_global r =
     | _ -> assert false
 
 let pr_long_mp mp =
-  let lid = Dir_path.repr (Nametab.dirpath_of_module mp) in
+  let lid = DirPath.repr (Nametab.dirpath_of_module mp) in
   str (String.concat "." (List.rev_map Id.to_string lid))
 
 let pr_long_global ref = pr_path (Nametab.path_of_global ref)
@@ -424,7 +424,7 @@ let check_loaded_modfile mp = match base_mp mp with
       if not (Library.library_is_loaded dp) then begin
 	match base_mp (current_toplevel ()) with
 	  | MPfile dp' when dp<>dp' ->
-	      err (str ("Please load library "^(Dir_path.to_string dp^" first.")))
+	      err (str ("Please load library "^(DirPath.to_string dp^" first.")))
 	  | _ -> ()
       end
   | _ -> ()
@@ -727,7 +727,7 @@ let string_of_modfile mp =
 
 let file_of_modfile mp =
   let s0 = match mp with
-    | MPfile f -> Id.to_string (List.hd (Dir_path.repr f))
+    | MPfile f -> Id.to_string (List.hd (DirPath.repr f))
     | _ -> assert false
   in
   let s = String.copy (string_of_modfile mp) in

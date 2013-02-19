@@ -43,12 +43,12 @@ type global_declaration =
   | GlobalRecipe of Cooking.recipe
 
 val add_constant :
-  Dir_path.t -> Label.t -> global_declaration -> safe_environment ->
+  DirPath.t -> Label.t -> global_declaration -> safe_environment ->
       constant * safe_environment
 
 (** Adding an inductive type *)
 val add_mind :
-  Dir_path.t -> Label.t -> mutual_inductive_entry -> safe_environment ->
+  DirPath.t -> Label.t -> mutual_inductive_entry -> safe_environment ->
     mutual_inductive * safe_environment
 
 (** Adding a module *)
@@ -103,10 +103,10 @@ type compiled_library
 
 type native_library = Nativecode.global list
 
-val start_library : Dir_path.t -> safe_environment
+val start_library : DirPath.t -> safe_environment
       -> module_path * safe_environment
 
-val export : safe_environment -> Dir_path.t
+val export : safe_environment -> DirPath.t
       -> module_path * compiled_library * native_library
 
 val import : compiled_library -> Digest.t -> safe_environment

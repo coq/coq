@@ -92,7 +92,7 @@ let segment_of_objects prefix =
    sections, but on the contrary there are many constructions of section
    paths based on the library path. *)
 
-let initial_prefix = default_library,(Names.initial_path,Names.Dir_path.empty)
+let initial_prefix = default_library,(Names.initial_path,Names.DirPath.empty)
 
 let lib_stk = ref ([] : library_segment)
 
@@ -106,10 +106,10 @@ let library_dp () =
 let path_prefix = ref initial_prefix
 
 let sections_depth () =
-  List.length (Names.Dir_path.repr (snd (snd !path_prefix)))
+  List.length (Names.DirPath.repr (snd (snd !path_prefix)))
 
 let sections_are_opened () =
-  match Names.Dir_path.repr (snd (snd !path_prefix)) with
+  match Names.DirPath.repr (snd (snd !path_prefix)) with
       [] -> false
     | _ -> true
 
@@ -127,10 +127,10 @@ let make_path id = Libnames.make_path (cwd ()) id
 let make_path_except_section id = Libnames.make_path (cwd_except_section ()) id
 
 let path_of_include () =
-  let dir = Names.Dir_path.repr (cwd ()) in
+  let dir = Names.DirPath.repr (cwd ()) in
   let new_dir = List.tl dir in
   let id = List.hd dir in
-    Libnames.make_path (Names.Dir_path.make new_dir) id
+    Libnames.make_path (Names.DirPath.make new_dir) id
 
 let current_prefix () = snd !path_prefix
 
@@ -275,7 +275,7 @@ let current_mod_id () =
 
 let start_mod is_type export id mp fs =
   let dir = add_dirpath_suffix (fst !path_prefix) id in
-  let prefix = dir,(mp,Names.Dir_path.empty) in
+  let prefix = dir,(mp,Names.DirPath.empty) in
   let sp = make_path id in
   let oname = sp, make_kn id in
   let exists =
@@ -328,9 +328,9 @@ let contents_after = function
 let start_compilation s mp =
   if !comp_name != None then
     error "compilation unit is already started";
-  if not (Names.Dir_path.equal (snd (snd (!path_prefix))) Names.Dir_path.empty) then
+  if not (Names.DirPath.equal (snd (snd (!path_prefix))) Names.DirPath.empty) then
     error "some sections are already opened";
-  let prefix = s, (mp, Names.Dir_path.empty) in
+  let prefix = s, (mp, Names.DirPath.empty) in
   let _ = add_anonymous_entry (CompilingLibrary prefix) in
   comp_name := Some s;
   path_prefix := prefix
@@ -356,7 +356,7 @@ let end_compilation dir =
     match !comp_name with
       | None -> anomaly (Pp.str "There should be a module name...")
       | Some m ->
-	  if not (Names.Dir_path.equal m dir) then anomaly
+	  if not (Names.DirPath.equal m dir) then anomaly
 	    (str "The current open module has name" ++ spc () ++ pr_dirpath m ++
              spc () ++ str "and not" ++ spc () ++ pr_dirpath m);
   in
@@ -621,7 +621,7 @@ let label_before_name (loc,id) =
 
 (* State and initialization. *)
 
-type frozen = Names.Dir_path.t option * library_segment
+type frozen = Names.DirPath.t option * library_segment
 
 let freeze () = (!comp_name, !lib_stk)
 
@@ -654,11 +654,11 @@ let rec dp_of_mp modp =
 
 let rec split_mp mp =
   match mp with
-    | Names.MPfile dp -> dp,  Names.Dir_path.empty
+    | Names.MPfile dp -> dp,  Names.DirPath.empty
     | Names.MPdot (prfx, lbl) ->
 	let mprec, dprec = split_mp prfx in
-	  mprec, Names.Dir_path.make (Names.Id.of_string (Names.Label.to_string lbl) :: (Names.Dir_path.repr dprec))
-    | Names.MPbound mbid -> let (_, id, dp) = Names.MBId.repr mbid in  library_dp(), Names.Dir_path.make [id]
+	  mprec, Names.DirPath.make (Names.Id.of_string (Names.Label.to_string lbl) :: (Names.DirPath.repr dprec))
+    | Names.MPbound mbid -> let (_, id, dp) = Names.MBId.repr mbid in  library_dp(), Names.DirPath.make [id]
 
 let split_modpath mp =
   let rec aux = function
@@ -695,13 +695,13 @@ let remove_section_part ref =
 
 let con_defined_in_sec kn =
   let _,dir,_ = Names.repr_con kn in
-  not (Names.Dir_path.is_empty dir) &&
-  Names.Dir_path.equal (fst (split_dirpath dir)) (snd (current_prefix ()))
+  not (Names.DirPath.is_empty dir) &&
+  Names.DirPath.equal (fst (split_dirpath dir)) (snd (current_prefix ()))
 
 let defined_in_sec kn =
   let _,dir,_ = Names.repr_mind kn in
-  not (Names.Dir_path.is_empty dir) &&
-  Names.Dir_path.equal (fst (split_dirpath dir)) (snd (current_prefix ()))
+  not (Names.DirPath.is_empty dir) &&
+  Names.DirPath.equal (fst (split_dirpath dir)) (snd (current_prefix ()))
 
 let discharge_global = function
   | ConstRef kn when con_defined_in_sec kn ->

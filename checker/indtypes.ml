@@ -19,12 +19,12 @@ open Declarations
 open Environ
 
 let rec debug_string_of_mp = function
-  | MPfile sl -> Dir_path.to_string sl
+  | MPfile sl -> DirPath.to_string sl
   | MPbound uid -> "bound("^MBId.to_string uid^")"
   | MPdot (mp,l) -> debug_string_of_mp mp ^ "." ^ Label.to_string l
 
 let rec string_of_mp = function
-  | MPfile sl -> Dir_path.to_string sl
+  | MPfile sl -> DirPath.to_string sl
   | MPbound uid -> MBId.to_string uid
   | MPdot (mp,l) -> string_of_mp mp ^ "." ^ Label.to_string l
 

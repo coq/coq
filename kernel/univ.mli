@@ -20,7 +20,7 @@ sig
   val equal : t -> t -> bool
   (** Equality function *)
 
-  val make : Names.Dir_path.t -> int -> t
+  val make : Names.DirPath.t -> int -> t
   (** Create a new universe level from a unique identifier and an associated
       module path. *)
 

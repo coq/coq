@@ -138,26 +138,26 @@ let constr_of_global_or_constr = function
 
 (** {6 Temporary function to brutally form kernel names from section paths } *)
 
-let encode_mind dir id = make_mind (MPfile dir) Dir_path.empty (Label.of_id id)
+let encode_mind dir id = make_mind (MPfile dir) DirPath.empty (Label.of_id id)
 
-let encode_con dir id = make_con (MPfile dir) Dir_path.empty (Label.of_id id)
+let encode_con dir id = make_con (MPfile dir) DirPath.empty (Label.of_id id)
 
 let check_empty_section dp =
-  if not (Dir_path.is_empty dp) then
+  if not (DirPath.is_empty dp) then
     anomaly (Pp.str "Section part should be empty!")
 
 let decode_mind kn =
   let rec dir_of_mp = function
-    | MPfile dir -> Dir_path.repr dir
+    | MPfile dir -> DirPath.repr dir
     | MPbound mbid ->
 	let _,_,dp = MBId.repr mbid in
 	let id = MBId.to_id mbid in
-	  id::(Dir_path.repr dp)
+	  id::(DirPath.repr dp)
     | MPdot(mp,l) -> (Label.to_id l)::(dir_of_mp mp)
   in
   let mp,sec_dir,l = repr_mind kn in
   check_empty_section sec_dir;
-  (Dir_path.make (dir_of_mp mp)),Label.to_id l
+  (DirPath.make (dir_of_mp mp)),Label.to_id l
 
 let decode_con kn =
   let mp,sec_dir,l = repr_con kn in

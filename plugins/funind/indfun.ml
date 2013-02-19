@@ -460,7 +460,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
     match wf_rel_expr_opt with 
       | None ->
 	  let ltof =
-	    let make_dir l = Dir_path.make (List.rev_map Id.of_string l) in
+	    let make_dir l = DirPath.make (List.rev_map Id.of_string l) in
 	    Libnames.Qualid (Loc.ghost,Libnames.qualid_of_path
 			       (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (Id.of_string "ltof")))
 	  in

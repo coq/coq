@@ -54,8 +54,8 @@ val check_required_library : string list -> unit
 (** {6 Global references } *)
 
 (** Modules *)
-val logic_module : Dir_path.t
-val logic_type_module : Dir_path.t
+val logic_module : DirPath.t
+val logic_type_module : DirPath.t
 
 val datatypes_module_name : string list
 val logic_module_name : string list

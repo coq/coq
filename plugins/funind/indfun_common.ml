@@ -132,7 +132,7 @@ let coq_constant s =
     Coqlib.init_modules s;;
 
 let find_reference sl s =
-  let dp = Names.Dir_path.make (List.rev_map Id.of_string sl) in
+  let dp = Names.DirPath.make (List.rev_map Id.of_string sl) in
   Nametab.locate (make_qualid dp (Id.of_string s))
 
 let eq = lazy(coq_constant "eq")

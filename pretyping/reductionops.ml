@@ -259,7 +259,7 @@ let magicaly_constant_of_fixbody env bd = function
   | Name.Name id ->
     try
       let cst = Nametab.locate_constant
-	(Libnames.make_qualid Dir_path.empty id) in
+	(Libnames.make_qualid DirPath.empty id) in
       match constant_opt_value env cst with
       | None -> bd
       | Some t -> if eq_constr t bd then mkConst cst else bd

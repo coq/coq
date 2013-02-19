@@ -23,7 +23,7 @@ open Glob_term
 
 let binnums = ["Coq";"Numbers";"BinNums"]
 
-let make_dir l = Dir_path.make (List.rev_map Id.of_string l)
+let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 let make_path dir id = Libnames.make_path (make_dir dir) (Id.of_string id)
 
 let positive_path = make_path binnums "positive"

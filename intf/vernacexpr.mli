@@ -38,11 +38,11 @@ type printable =
   | PrintSectionContext of reference
   | PrintInspect of int
   | PrintGrammar of string
-  | PrintLoadPath of Dir_path.t option
+  | PrintLoadPath of DirPath.t option
   | PrintModules
   | PrintModule of reference
   | PrintModuleType of reference
-  | PrintNamespace of Dir_path.t
+  | PrintNamespace of DirPath.t
   | PrintMLLoadPath
   | PrintMLModules
   | PrintName of reference or_by_notation
@@ -289,7 +289,7 @@ type vernac_expr =
 
   (* Auxiliary file and library management *)
   | VernacRequireFrom of export_flag option * string
-  | VernacAddLoadPath of rec_flag * string * Dir_path.t option
+  | VernacAddLoadPath of rec_flag * string * DirPath.t option
   | VernacRemoveLoadPath of string
   | VernacAddMLPath of rec_flag * string
   | VernacDeclareMLModule of locality_flag * string list

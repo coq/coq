@@ -33,10 +33,10 @@ module UniverseLevel = struct
 
   type t =
     | Set
-    | Level of int * Names.Dir_path.t
+    | Level of int * Names.DirPath.t
 
   (* A specialized comparison function: we compare the [int] part first.
-     This way, most of the time, the [Dir_path.t] part is not considered.
+     This way, most of the time, the [DirPath.t] part is not considered.
 
      Normally, placing the [int] first in the pair above in enough in Ocaml,
      but to be sure, we write below our own comparison function.
@@ -53,19 +53,19 @@ module UniverseLevel = struct
     | Level (i1, dp1), Level (i2, dp2) ->
       if i1 < i2 then -1
       else if i1 > i2 then 1
-      else Names.Dir_path.compare dp1 dp2)
+      else Names.DirPath.compare dp1 dp2)
 
   let equal u v = match u,v with
     | Set, Set -> true
     | Level (i1, dp1), Level (i2, dp2) ->
-      Int.equal i1 i2 && Int.equal (Names.Dir_path.compare dp1 dp2) 0
+      Int.equal i1 i2 && Int.equal (Names.DirPath.compare dp1 dp2) 0
     | _ -> false
 
   let make m n = Level (n, m)
 
   let to_string = function
     | Set -> "Set"
-    | Level (n,d) -> Names.Dir_path.to_string d^"."^string_of_int n
+    | Level (n,d) -> Names.DirPath.to_string d^"."^string_of_int n
 end
 
 module UniverseLMap = Map.Make (UniverseLevel)
@@ -776,7 +776,7 @@ let bellman_ford bottom g =
     graph already contains [Type.n] nodes (calling a module Type is
     probably a bad idea anyway). *)
 let sort_universes orig =
-  let mp = Names.Dir_path.make [Names.Id.of_string "Type"] in
+  let mp = Names.DirPath.make [Names.Id.of_string "Type"] in
   let rec make_level accu g i =
     let type0 = UniverseLevel.Level (i, mp) in
     let distances = bellman_ford type0 g in
@@ -838,7 +838,7 @@ let sort_universes orig =
 
 let fresh_level =
   let n = ref 0 in
-  fun () -> incr n; UniverseLevel.Level (!n, Names.Dir_path.empty)
+  fun () -> incr n; UniverseLevel.Level (!n, Names.DirPath.empty)
 
 let fresh_local_univ () = Atom (fresh_level ())
 
@@ -972,7 +972,7 @@ module Hunivlevel =
   Hashcons.Make(
     struct
       type t = universe_level
-      type u = Names.Dir_path.t -> Names.Dir_path.t
+      type u = Names.DirPath.t -> Names.DirPath.t
       let hashcons hdir = function
 	| UniverseLevel.Set -> UniverseLevel.Set
 	| UniverseLevel.Level (n,d) -> UniverseLevel.Level (n,hdir d)
@@ -1005,7 +1005,7 @@ module Huniv =
       let hash = Hashtbl.hash
     end)
 
-let hcons_univlevel = Hashcons.simple_hcons Hunivlevel.generate Names.Dir_path.hcons
+let hcons_univlevel = Hashcons.simple_hcons Hunivlevel.generate Names.DirPath.hcons
 let hcons_univ = Hashcons.simple_hcons Huniv.generate hcons_univlevel
 
 module Hconstraint =
