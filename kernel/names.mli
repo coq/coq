@@ -177,44 +177,54 @@ module ModIdmap : Map.S with type key = module_ident
 
 (** {6 The module part of the kernel name } *)
 
-type module_path =
-  | MPfile of Dir_path.t
-  | MPbound of MBId.t
-  | MPdot of module_path * Label.t
+module ModPath :
+sig
+  type t =
+    | MPfile of Dir_path.t
+    | MPbound of MBId.t
+    | MPdot of t * Label.t
 
-val mp_ord : module_path -> module_path -> int
-val mp_eq : module_path -> module_path -> bool
+  val compare : t -> t -> int
+  val equal : t -> t -> bool
 
-val check_bound_mp : module_path -> bool
+  val is_bound : t -> bool
 
-val string_of_mp : module_path -> string
+  val to_string : t -> string
 
-module MPset : Set.S with type elt = module_path
-module MPmap : Map.S with type key = module_path
+  val initial : t
+  (** Name of the toplevel structure ([= MPfile initial_dir]) *)
 
-(** Name of the toplevel structure *)
-val initial_path : module_path (** [= MPfile initial_dir] *)
+end
+
+module MPset : Set.S with type elt = ModPath.t
+module MPmap : Map.S with type key = ModPath.t
 
 (** {6 The absolute names of objects seen by kernel } *)
 
-type kernel_name
+module KerName :
+sig
+  type t
 
-(** Constructor and destructor *)
-val make_kn : module_path -> Dir_path.t -> Label.t -> kernel_name
-val repr_kn : kernel_name -> module_path * Dir_path.t * Label.t
+  (** Constructor and destructor *)
+  val make : ModPath.t -> Dir_path.t -> Label.t -> t
+  val repr : t -> ModPath.t * Dir_path.t * Label.t
 
-val modpath : kernel_name -> module_path
-val label : kernel_name -> Label.t
+  (** Projections *)
+  val modpath : t -> ModPath.t
+  val label : t -> Label.t
 
-val string_of_kn : kernel_name -> string
-val pr_kn : kernel_name -> Pp.std_ppcmds
+  (** Display *)
+  val to_string : t -> string
+  val print : t -> Pp.std_ppcmds
 
-val kn_ord : kernel_name -> kernel_name -> int
-val kn_equal : kernel_name -> kernel_name -> bool
+  (** Comparisons *)
+  val compare : t -> t -> int
+  val equal : t -> t -> bool
+end
 
-module KNset  : Set.S with type elt = kernel_name
-module KNpred : Predicate.S with type elt = kernel_name
-module KNmap  : Map.S with type key = kernel_name
+module KNset  : Set.S with type elt = KerName.t
+module KNpred : Predicate.S with type elt = KerName.t
+module KNmap  : Map.S with type key = KerName.t
 
 
 (** {6 Specific paths for declarations } *)
@@ -243,14 +253,14 @@ module Constrmap : Map.S with type key = constructor
 module Indmap_env : Map.S with type key = inductive
 module Constrmap_env : Map.S with type key = constructor
 
-val constant_of_kn : kernel_name -> constant
-val constant_of_kn_equiv : kernel_name -> kernel_name -> constant
-val make_con : module_path -> Dir_path.t -> Label.t -> constant
-val make_con_equiv : module_path -> module_path -> Dir_path.t 
+val constant_of_kn : KerName.t -> constant
+val constant_of_kn_equiv : KerName.t -> KerName.t -> constant
+val make_con : ModPath.t -> Dir_path.t -> Label.t -> constant
+val make_con_equiv : ModPath.t -> ModPath.t -> Dir_path.t
   -> Label.t -> constant
-val user_con : constant -> kernel_name
-val canonical_con : constant -> kernel_name
-val repr_con : constant -> module_path * Dir_path.t * Label.t
+val user_con : constant -> KerName.t
+val canonical_con : constant -> KerName.t
+val repr_con : constant -> ModPath.t * Dir_path.t * Label.t
 val eq_constant : constant -> constant -> bool
 val con_ord : constant -> constant -> int
 val con_user_ord : constant -> constant -> int
@@ -258,36 +268,36 @@ val con_with_label : constant -> Label.t -> constant
 
 val string_of_con : constant -> string
 val con_label : constant -> Label.t
-val con_modpath : constant -> module_path
+val con_modpath : constant -> ModPath.t
 val pr_con : constant -> Pp.std_ppcmds
 val debug_pr_con : constant -> Pp.std_ppcmds
 val debug_string_of_con : constant -> string
 
 
 
-val mind_of_kn : kernel_name -> mutual_inductive
-val mind_of_kn_equiv : kernel_name -> kernel_name -> mutual_inductive
-val make_mind : module_path -> Dir_path.t -> Label.t -> mutual_inductive
-val make_mind_equiv : module_path -> module_path -> Dir_path.t 
+val mind_of_kn : KerName.t -> mutual_inductive
+val mind_of_kn_equiv : KerName.t -> KerName.t -> mutual_inductive
+val make_mind : ModPath.t -> Dir_path.t -> Label.t -> mutual_inductive
+val make_mind_equiv : ModPath.t -> ModPath.t -> Dir_path.t 
   -> Label.t -> mutual_inductive
-val user_mind : mutual_inductive -> kernel_name
-val canonical_mind : mutual_inductive -> kernel_name
-val repr_mind : mutual_inductive -> module_path * Dir_path.t * Label.t
+val user_mind : mutual_inductive -> KerName.t
+val canonical_mind : mutual_inductive -> KerName.t
+val repr_mind : mutual_inductive -> ModPath.t * Dir_path.t * Label.t
 val eq_mind : mutual_inductive -> mutual_inductive -> bool
 val mind_ord : mutual_inductive -> mutual_inductive -> int
 val mind_user_ord : mutual_inductive -> mutual_inductive -> int
 
 val string_of_mind : mutual_inductive -> string
 val mind_label : mutual_inductive -> Label.t
-val mind_modpath : mutual_inductive -> module_path
+val mind_modpath : mutual_inductive -> ModPath.t
 val pr_mind : mutual_inductive -> Pp.std_ppcmds
 val debug_pr_mind : mutual_inductive -> Pp.std_ppcmds
 val debug_string_of_mind : mutual_inductive -> string
 
 
 
-val ind_modpath : inductive -> module_path
-val constr_modpath : constructor -> module_path
+val ind_modpath : inductive -> ModPath.t
+val constr_modpath : constructor -> ModPath.t
 
 val ith_mutual_inductive : inductive -> int -> inductive
 val ith_constructor_of_inductive : inductive -> int -> constructor
@@ -463,3 +473,52 @@ val debug_string_of_mbid : mod_bound_id -> string
 
 val name_eq : name -> name -> bool
 (** @deprecated Same as [Name.equal]. *)
+
+(** {5 Module paths} *)
+
+type module_path = ModPath.t =
+  | MPfile of Dir_path.t
+  | MPbound of MBId.t
+  | MPdot of module_path * Label.t
+(** @deprecated Alias type *)
+
+val mp_ord : module_path -> module_path -> int
+(** @deprecated Same as [ModPath.compare]. *)
+
+val mp_eq : module_path -> module_path -> bool
+(** @deprecated Same as [ModPath.equal]. *)
+
+val check_bound_mp : module_path -> bool
+(** @deprecated Same as [ModPath.is_bound]. *)
+
+val string_of_mp : module_path -> string
+(** @deprecated Same as [ModPath.to_string]. *)
+
+val initial_path : module_path
+(** @deprecated Same as [ModPath.initial]. *)
+
+(** {5 Kernel names} *)
+
+type kernel_name = KerName.t
+(** @deprecated Alias type *)
+
+val make_kn : ModPath.t -> Dir_path.t -> Label.t -> kernel_name
+(** @deprecated Same as [KerName.make]. *)
+
+val repr_kn : kernel_name -> module_path * Dir_path.t * Label.t
+(** @deprecated Same as [KerName.repr]. *)
+
+val modpath : kernel_name -> module_path
+(** @deprecated Same as [KerName.modpath]. *)
+
+val label : kernel_name -> Label.t
+(** @deprecated Same as [KerName.label]. *)
+
+val string_of_kn : kernel_name -> string
+(** @deprecated Same as [KerName.to_string]. *)
+
+val pr_kn : kernel_name -> Pp.std_ppcmds
+(** @deprecated Same as [KerName.print]. *)
+
+val kn_ord : kernel_name -> kernel_name -> int
+(** @deprecated Same as [KerName.compare]. *)

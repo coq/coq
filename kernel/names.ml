@@ -245,94 +245,131 @@ end
 
 (** {6 The module part of the kernel name } *)
 
-type module_path =
-  | MPfile of Dir_path.t
-  | MPbound of MBId.t
-  | MPdot of module_path * Label.t
+module ModPath = struct
 
-let rec check_bound_mp = function
-  | MPbound _ -> true
-  | MPdot(mp,_) ->check_bound_mp mp
-  | _ -> false
+  type t =
+    | MPfile of Dir_path.t
+    | MPbound of MBId.t
+    | MPdot of t * Label.t
 
-let rec string_of_mp = function
-  | MPfile sl -> Dir_path.to_string sl
-  | MPbound uid -> MBId.to_string uid
-  | MPdot (mp,l) -> string_of_mp mp ^ "." ^ Label.to_string l
+  type module_path = t
 
-(** we compare labels first if both are MPdots *)
-let rec mp_ord mp1 mp2 =
-  if mp1 == mp2 then 0
-  else match (mp1, mp2) with
-  | MPfile p1, MPfile p2 ->
-    Dir_path.compare p1 p2
-  | MPbound id1, MPbound id2 ->
-    MBId.compare id1 id2
-  | MPdot (mp1, l1), MPdot (mp2, l2) ->
-      let c = String.compare l1 l2 in
+  let rec is_bound = function
+    | MPbound _ -> true
+    | MPdot(mp,_) -> is_bound mp
+    | _ -> false
+
+  let rec to_string = function
+    | MPfile sl -> Dir_path.to_string sl
+    | MPbound uid -> MBId.to_string uid
+    | MPdot (mp,l) -> to_string mp ^ "." ^ Label.to_string l
+
+  (** we compare labels first if both are MPdots *)
+  let rec compare mp1 mp2 =
+    if mp1 == mp2 then 0
+    else match mp1, mp2 with
+      | MPfile p1, MPfile p2 -> Dir_path.compare p1 p2
+      | MPbound id1, MPbound id2 -> MBId.compare id1 id2
+      | MPdot (mp1, l1), MPdot (mp2, l2) ->
+        let c = String.compare l1 l2 in
         if not (Int.equal c 0) then c
-        else mp_ord mp1 mp2
-  | MPfile _, _ -> -1
-  | MPbound _, MPfile _ -> 1
-  | MPbound _, MPdot _ -> -1
-  | MPdot _, _ -> 1
+        else compare mp1 mp2
+      | MPfile _, _ -> -1
+      | MPbound _, MPfile _ -> 1
+      | MPbound _, MPdot _ -> -1
+      | MPdot _, _ -> 1
 
-let mp_eq mp1 mp2 = Int.equal (mp_ord mp1 mp2) 0
+  let equal mp1 mp2 = Int.equal (compare mp1 mp2) 0
 
-module MPord = struct
-  type t = module_path
-  let compare = mp_ord
+  let initial = MPfile Dir_path.initial
+
+  module Self_Hashcons = struct
+    type t = module_path
+    type u = (Dir_path.t -> Dir_path.t) * (MBId.t -> MBId.t) *
+	(string -> string)
+    let rec hashcons (hdir,huniqid,hstr as hfuns) = function
+      | MPfile dir -> MPfile (hdir dir)
+      | MPbound m -> MPbound (huniqid m)
+      | MPdot (md,l) -> MPdot (hashcons hfuns md, hstr l)
+    let rec equal d1 d2 =
+      d1 == d2 ||
+      match d1,d2 with
+      | MPfile dir1, MPfile dir2 -> dir1 == dir2
+      | MPbound m1, MPbound m2 -> m1 == m2
+      | MPdot (mod1,l1), MPdot (mod2,l2) -> l1 == l2 && equal mod1 mod2
+      | _ -> false
+    let hash = Hashtbl.hash
+  end
+
+  module HashMP = Hashcons.Make(Self_Hashcons)
+
+  let hcons =
+    Hashcons.simple_hcons HashMP.generate
+      (Dir_path.hcons,MBId.hcons,String.hcons)
+
 end
 
-module MPset = Set.Make(MPord)
-module MPmap = Map.Make(MPord)
-
-let initial_path = MPfile Dir_path.initial
+module MPset = Set.Make(ModPath)
+module MPmap = Map.Make(ModPath)
 
 (** {6 Kernel names } *)
 
-type kernel_name = module_path * Dir_path.t * Label.t
+module KerName = struct
 
-let make_kn mp dir l = (mp,dir,l)
-let repr_kn kn = kn
+  type t = ModPath.t * Dir_path.t * Label.t
 
-let modpath kn =
-  let mp,_,_ = repr_kn kn in mp
+  type kernel_name = t
 
-let label kn =
-  let _,_,l = repr_kn kn in l
+  let make mp dir l = (mp,dir,l)
+  let repr kn = kn
 
-let string_of_kn (mp,dir,l) =
-  let str_dir = match dir with
-  | [] -> "."
-  | _ -> "#" ^ Dir_path.to_string dir ^ "#"
-  in
-  string_of_mp mp ^ str_dir ^ Label.to_string l
+  let modpath (mp,_,_) = mp
+  let label (_,_,l) = l
 
-let pr_kn kn = str (string_of_kn kn)
+  let to_string (mp,dir,l) =
+    let dp =
+      if Dir_path.is_empty dir then "."
+      else "#" ^ Dir_path.to_string dir ^ "#"
+    in
+    ModPath.to_string mp ^ dp ^ Label.to_string l
 
-let kn_ord (kn1 : kernel_name) (kn2 : kernel_name) =
-  if kn1 == kn2 then 0
-  else
-    let mp1, dir1, l1 = kn1 in
-    let mp2, dir2, l2 = kn2 in
-    let c = String.compare l1 l2 in
+  let print kn = str (to_string kn)
+
+  let compare (kn1 : kernel_name) (kn2 : kernel_name) =
+    if kn1 == kn2 then 0
+    else
+      let mp1,dir1,l1 = kn1 and mp2,dir2,l2 = kn2 in
+      let c = String.compare l1 l2 in
       if not (Int.equal c 0) then c
       else
         let c = Dir_path.compare dir1 dir2 in
         if not (Int.equal c 0) then c
-        else MPord.compare mp1 mp2
+        else ModPath.compare mp1 mp2
 
-let kn_equal kn1 kn2 = Int.equal (kn_ord kn1 kn2) 0
+  let equal kn1 kn2 = Int.equal (compare kn1 kn2) 0
 
-module KNord = struct
-  type t = kernel_name
-  let compare = kn_ord
+  module Self_Hashcons = struct
+    type t = kernel_name
+    type u = (ModPath.t -> ModPath.t) * (Dir_path.t -> Dir_path.t)
+        * (string -> string)
+    let hashcons (hmod,hdir,hstr) (mp,dir,l) =
+      (hmod mp,hdir dir,hstr l)
+    let equal (mp1,dir1,l1) (mp2,dir2,l2) =
+      mp1 == mp2 && dir1 == dir2 && l1 == l2
+    let hash = Hashtbl.hash
+  end
+
+  module HashKN = Hashcons.Make(Self_Hashcons)
+
+  let hcons =
+    Hashcons.simple_hcons HashKN.generate
+      (ModPath.hcons,Dir_path.hcons,String.hcons)
+
 end
 
-module KNmap = Map.Make(KNord)
-module KNpred = Predicate.Make(KNord)
-module KNset = Set.Make(KNord)
+module KNmap = Map.Make(KerName)
+module KNpred = Predicate.Make(KerName)
+module KNset = Set.Make(KerName)
 
 (** {6 Kernel pairs } *)
 
@@ -351,13 +388,13 @@ module KNset = Set.Make(KNord)
    Note: since most of the time the canonical and user parts are equal,
    we handle this case with a particular constructor to spare some memory *)
 
-module KernelPair = struct
+module KerPair = struct
 
-  type kernel_pair =
-    | Same of kernel_name (** user = canonical *)
-    | Dual of kernel_name * kernel_name (** user then canonical *)
+  type t =
+    | Same of KerName.t (** user = canonical *)
+    | Dual of KerName.t * KerName.t (** user then canonical *)
 
-  type t = kernel_pair
+  type kernel_pair = t
 
   let canonical = function
     | Same kn -> kn
@@ -372,11 +409,12 @@ module KernelPair = struct
   let make knu knc = if knu == knc then Same knc else Dual (knu,knc)
 
   let debug_to_string = function
-    | Same kn -> "(" ^ string_of_kn kn ^ ")"
-    | Dual (knu,knc) -> "(" ^ string_of_kn knu ^ "," ^ string_of_kn knc ^ ")"
+    | Same kn -> "(" ^ KerName.to_string kn ^ ")"
+    | Dual (knu,knc) ->
+      "(" ^ KerName.to_string knu ^ "," ^ KerName.to_string knc ^ ")"
 
   (** Default comparison is on the canonical part *)
-  let equal x y = x == y || kn_equal (canonical x) (canonical y)
+  let equal x y = x == y || KerName.equal (canonical x) (canonical y)
 
   (** For ordering kernel pairs, both user or canonical parts may make
       sense, according to your needs : user for the environments, canonical
@@ -384,12 +422,12 @@ module KernelPair = struct
 
   module UserOrd = struct
     type t = kernel_pair
-    let compare x y = kn_ord (user x) (user y)
+    let compare x y = KerName.compare (user x) (user y)
   end
 
   module CanOrd = struct
     type t = kernel_pair
-    let compare x y = kn_ord (canonical x) (canonical y)
+    let compare x y = KerName.compare (canonical x) (canonical y)
   end
 
   (** Hash-consing : we discriminate only on the user part, since having
@@ -399,7 +437,7 @@ module KernelPair = struct
   module Self_Hashcons =
     struct
       type t = kernel_pair
-      type u = kernel_name -> kernel_name
+      type u = KerName.t -> KerName.t
       let hashcons hkn = function
         | Same kn -> Same (hkn kn)
         | Dual (knu,knc) -> make (hkn knu) (hkn knc)
@@ -413,42 +451,44 @@ end
 
 (** {6 Constant names } *)
 
-type constant = KernelPair.t
+type constant = KerPair.t
 
-let canonical_con = KernelPair.canonical
-let user_con = KernelPair.user
-let constant_of_kn = KernelPair.same
-let constant_of_kn_equiv = KernelPair.make
-let make_con mp dir l = KernelPair.same (mp,dir,l)
-let make_con_dual mpu mpc dir l = KernelPair.dual (mpu,dir,l) (mpc,dir,l)
+let canonical_con = KerPair.canonical
+let user_con = KerPair.user
+let constant_of_kn = KerPair.same
+let constant_of_kn_equiv = KerPair.make
+let make_con mp dir l = KerPair.same (KerName.make mp dir l)
+let make_con_dual mpu mpc dir l =
+  KerPair.dual (KerName.make mpu dir l) (KerName.make mpc dir l)
 let make_con_equiv mpu mpc dir l =
   if mpu == mpc then make_con mpc dir l else make_con_dual mpu mpc dir l
-let repr_con = user_con
+let repr_con c = KerName.repr (user_con c)
 
-let eq_constant = KernelPair.equal
-let con_ord = KernelPair.CanOrd.compare
-let con_user_ord = KernelPair.UserOrd.compare
+let eq_constant = KerPair.equal
+let con_ord = KerPair.CanOrd.compare
+let con_user_ord = KerPair.UserOrd.compare
 
-let con_label cst = label (canonical_con cst)
-let con_modpath cst = modpath (canonical_con cst)
+let con_label cst = KerName.label (canonical_con cst)
+let con_modpath cst = KerName.modpath (canonical_con cst)
 
-let string_of_con cst = string_of_kn (canonical_con cst)
+let string_of_con cst = KerName.to_string (canonical_con cst)
 let pr_con cst = str (string_of_con cst)
-let debug_string_of_con = KernelPair.debug_to_string
+let debug_string_of_con = KerPair.debug_to_string
 let debug_pr_con cst = str (debug_string_of_con cst)
 
 let con_with_label cst lbl =
-  let (mp1,dp1,l1) = user_con cst and (mp2,dp2,l2) = canonical_con cst in
+  let (mp1,dp1,l1) = KerName.repr (user_con cst)
+  and (mp2,dp2,l2) = KerName.repr (canonical_con cst) in
   assert (String.equal l1 l2 && Dir_path.equal dp1 dp2);
   if String.equal lbl l1
   then cst
   else make_con_equiv mp1 mp2 dp1 lbl
 
-module Cmap = Map.Make(KernelPair.CanOrd)
-module Cmap_env = Map.Make(KernelPair.UserOrd)
-module Cpred = Predicate.Make(KernelPair.CanOrd)
-module Cset = Set.Make(KernelPair.CanOrd)
-module Cset_env = Set.Make(KernelPair.UserOrd)
+module Cmap = Map.Make(KerPair.CanOrd)
+module Cmap_env = Map.Make(KerPair.UserOrd)
+module Cpred = Predicate.Make(KerPair.CanOrd)
+module Cset = Set.Make(KerPair.CanOrd)
+module Cset_env = Set.Make(KerPair.UserOrd)
 
 
 (** {6 Names of mutual inductive types } *)
@@ -459,32 +499,33 @@ module Cset_env = Set.Make(KernelPair.UserOrd)
 (** Beware: first inductive has index 0 *)
 (** Beware: first constructor has index 1 *)
 
-type mutual_inductive = KernelPair.t
+type mutual_inductive = KerPair.t
 type inductive = mutual_inductive * int
 type constructor = inductive * int
 
-let mind_modpath mind = modpath (KernelPair.user mind)
+let mind_modpath mind = KerName.modpath (KerPair.user mind)
 let ind_modpath ind = mind_modpath (fst ind)
 let constr_modpath c = ind_modpath (fst c)
 
-let mind_of_kn = KernelPair.same
-let mind_of_kn_equiv = KernelPair.make
-let make_mind mp dir l = KernelPair.same (mp,dir,l)
-let make_mind_dual mpu mpc dir l = KernelPair.dual (mpu,dir,l) (mpc,dir,l)
+let mind_of_kn = KerPair.same
+let mind_of_kn_equiv = KerPair.make
+let make_mind mp dir l = KerPair.same (KerName.make mp dir l)
+let make_mind_dual mpu mpc dir l =
+  KerPair.dual (KerName.make mpu dir l) (KerName.make mpc dir l)
 let make_mind_equiv mpu mpc dir l =
   if mpu == mpc then make_mind mpu dir l else make_mind_dual mpu mpc dir l
-let canonical_mind = KernelPair.canonical
-let user_mind = KernelPair.user
-let repr_mind = user_mind
-let mind_label mind = label (user_mind mind)
+let canonical_mind = KerPair.canonical
+let user_mind = KerPair.user
+let repr_mind mind = KerName.repr (user_mind mind)
+let mind_label mind = KerName.label (user_mind mind)
 
-let eq_mind = KernelPair.equal
-let mind_ord = KernelPair.CanOrd.compare
-let mind_user_ord = KernelPair.UserOrd.compare
+let eq_mind = KerPair.equal
+let mind_ord = KerPair.CanOrd.compare
+let mind_user_ord = KerPair.UserOrd.compare
 
-let string_of_mind mind = string_of_kn (user_mind mind)
+let string_of_mind mind = KerName.to_string (user_mind mind)
 let pr_mind mind = str (string_of_mind mind)
-let debug_string_of_mind = KernelPair.debug_to_string
+let debug_string_of_mind = KerPair.debug_to_string
 let debug_pr_mind con = str (debug_string_of_mind con)
 
 let ith_mutual_inductive (kn, _) i = (kn, i)
@@ -508,9 +549,9 @@ let constructor_user_ord (ind1, j1) (ind2, j2) =
   let c = Int.compare j1 j2 in
   if Int.equal c 0 then ind_user_ord ind1 ind2 else c
 
-module Mindmap = Map.Make(KernelPair.CanOrd)
-module Mindset = Set.Make(KernelPair.CanOrd)
-module Mindmap_env = Map.Make(KernelPair.UserOrd)
+module Mindmap = Map.Make(KerPair.CanOrd)
+module Mindset = Set.Make(KerPair.CanOrd)
+module Mindmap_env = Map.Make(KerPair.UserOrd)
 
 module InductiveOrdered = struct
   type t = inductive
@@ -550,37 +591,6 @@ let eq_egr e1 e2 = match e1, e2 with
 
 (** {6 Hash-consing of name objects } *)
 
-module Hmod = Hashcons.Make(
-  struct
-    type t = module_path
-    type u = (Dir_path.t -> Dir_path.t) * (MBId.t -> MBId.t) *
-	(string -> string)
-    let rec hashcons (hdir,huniqid,hstr as hfuns) = function
-      | MPfile dir -> MPfile (hdir dir)
-      | MPbound m -> MPbound (huniqid m)
-      | MPdot (md,l) -> MPdot (hashcons hfuns md, hstr l)
-    let rec equal d1 d2 =
-      d1 == d2 ||
-      match (d1,d2) with
-      | MPfile dir1, MPfile dir2 -> dir1 == dir2
-      | MPbound m1, MPbound m2 -> m1 == m2
-      | MPdot (mod1,l1), MPdot (mod2,l2) -> l1 == l2 && equal mod1 mod2
-      | _ -> false
-    let hash = Hashtbl.hash
-  end)
-
-module Hkn = Hashcons.Make(
-  struct
-    type t = kernel_name
-    type u = (module_path -> module_path)
-	* (Dir_path.t -> Dir_path.t) * (string -> string)
-    let hashcons (hmod,hdir,hstr) (md,dir,l) =
-      (hmod md, hdir dir, hstr l)
-    let equal (mod1,dir1,l1) (mod2,dir2,l2) =
-      mod1 == mod2 && dir1 == dir2 && l1 == l2
-    let hash = Hashtbl.hash
-  end)
-
 module Hind = Hashcons.Make(
   struct
     type t = inductive
@@ -599,11 +609,8 @@ module Hconstruct = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-let hcons_mp =
-  Hashcons.simple_hcons Hmod.generate (Dir_path.hcons,MBId.hcons,String.hcons)
-let hcons_kn = Hashcons.simple_hcons Hkn.generate (hcons_mp,Dir_path.hcons,String.hcons)
-let hcons_con = Hashcons.simple_hcons KernelPair.HashKP.generate hcons_kn
-let hcons_mind = Hashcons.simple_hcons KernelPair.HashKP.generate hcons_kn
+let hcons_con = Hashcons.simple_hcons KerPair.HashKP.generate KerName.hcons
+let hcons_mind = Hashcons.simple_hcons KerPair.HashKP.generate KerName.hcons
 let hcons_ind = Hashcons.simple_hcons Hind.generate hcons_mind
 let hcons_construct = Hashcons.simple_hcons Hconstruct.generate hcons_ind
 
@@ -632,18 +639,18 @@ type id_key = inv_rel_key tableKey
 let eq_id_key ik1 ik2 =
   if ik1 == ik2 then true
   else match ik1,ik2 with
-  | ConstKey cst1, ConstKey cst2 -> kn_equal (user_con cst1) (user_con cst2)
+  | ConstKey c1, ConstKey c2 -> KerName.equal (user_con c1) (user_con c2)
   | VarKey id1, VarKey id2 -> Id.equal id1 id2
   | RelKey k1, RelKey k2 -> Int.equal k1 k2
   | _ -> false
 
-let eq_con_chk cst1 cst2 = kn_equal (user_con cst1) (user_con cst2)
-let eq_mind_chk mind1 mind2 = kn_equal (user_mind mind1) (user_mind mind2)
+let eq_con_chk cst1 cst2 = KerName.equal (user_con cst1) (user_con cst2)
+let eq_mind_chk mind1 mind2 = KerName.equal (user_mind mind1) (user_mind mind2)
 let eq_ind_chk (kn1,i1) (kn2,i2) = Int.equal i1 i2 && eq_mind_chk kn1 kn2
 
 (** Compatibility layers *)
 
-(** Backward compatibility for [Id.t] *)
+(** Backward compatibility for [Id] *)
 
 type identifier = Id.t
 
@@ -658,7 +665,9 @@ module Idset = Id.Set
 module Idmap = Id.Map
 module Idpred = Id.Pred
 
-(** / End of backward compatibility *)
+(** Compatibility layer for [Name] *)
+
+let name_eq = Name.equal
 
 (** Compatibility layer for [Dir_path] *)
 
@@ -672,8 +681,6 @@ let is_empty_dirpath = Dir_path.is_empty
 let string_of_dirpath = Dir_path.to_string
 let initial_dir = Dir_path.initial
 
-(** / End of compatibility layer for [Dir_path] *)
-
 (** Compatibility layer for [MBId] *)
 
 type mod_bound_id = MBId.t
@@ -685,12 +692,9 @@ let debug_string_of_mbid = MBId.debug_to_string
 let string_of_mbid = MBId.to_string
 let id_of_mbid = MBId.to_id
 
-(** / End of compatibility layer for [MBId] *)
-
 (** Compatibility layer for [Label] *)
 
 type label = Id.t
-
 let mk_label = Label.make
 let string_of_label = Label.to_string
 let pr_label = Label.print
@@ -698,10 +702,26 @@ let id_of_label = Label.to_id
 let label_of_id = Label.of_id
 let eq_label = Label.equal
 
-(** / End of compatibility layer for [Label] *)
+(** Compatibility layer for [ModPath] *)
 
-(** Compatibility layer for [Name] *)
+type module_path = ModPath.t =
+  | MPfile of Dir_path.t
+  | MPbound of MBId.t
+  | MPdot of module_path * Label.t
+let check_bound_mp = ModPath.is_bound
+let string_of_mp = ModPath.to_string
+let mp_ord = ModPath.compare
+let mp_eq = ModPath.equal
+let initial_path = ModPath.initial
 
-let name_eq = Name.equal
+(** Compatibility layer for [KerName] *)
 
-(** / End of compatibility layer for [Name] *)
+type kernel_name = KerName.t
+let make_kn = KerName.make
+let repr_kn = KerName.repr
+let modpath = KerName.modpath
+let label = KerName.label
+let string_of_kn = KerName.to_string
+let pr_kn = KerName.print
+let kn_ord = KerName.compare
+let kn_equal = KerName.equal

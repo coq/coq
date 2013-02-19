@@ -281,17 +281,9 @@ struct
   let equal e1 e2 = Int.equal (ExtRefOrdered.compare e1 e2) 0
 end
 
-module KnEqual =
-struct
-  type t = kernel_name
-  let equal = Names.kn_equal
-end
+module KnEqual = Names.KerName
 
-module MPEqual =
-struct
-  type t = module_path
-  let equal = mp_eq
-end
+module MPEqual = Names.ModPath
 
 module ExtRefTab = Make(FullPath)(ExtRefEqual)
 module KnTab = Make(FullPath)(KnEqual)
