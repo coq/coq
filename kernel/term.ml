@@ -345,7 +345,7 @@ let isRelN n c = match kind_of_term c with Rel n' -> Int.equal n n' | _ -> false
 
 (* Tests if a variable *)
 let isVar c = match kind_of_term c with Var _ -> true | _ -> false
-let isVarId id c = match kind_of_term c with Var id' -> Int.equal (Id.compare id id') 0 | _ -> false
+let isVarId id c = match kind_of_term c with Var id' -> Id.equal id id' | _ -> false
 
 (* Tests if an inductive *)
 let isInd c = match kind_of_term c with Ind _ -> true | _ -> false
@@ -578,7 +578,7 @@ let compare_constr f t1 t2 =
   match kind_of_term t1, kind_of_term t2 with
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
-  | Var id1, Var id2 -> Int.equal (Id.compare id1 id2) 0
+  | Var id1, Var id2 -> Id.equal id1 id2
   | Sort s1, Sort s2 -> Int.equal (sorts_ord s1 s2) 0
   | Cast (c1,_,_), _ -> f c1 t2
   | _, Cast (c2,_,_) -> f t1 c2
@@ -849,7 +849,7 @@ let subst1_named_decl = subst1_decl
 let rec thin_val = function
   | [] -> []
   | (((id,{ sit = v }) as s)::tl) when isVar v ->
-      if Int.equal (Id.compare id (destVar v)) 0 then thin_val tl else s::(thin_val tl)
+      if Id.equal id (destVar v) then thin_val tl else s::(thin_val tl)
   | h::tl -> h::(thin_val tl)
 
 (* (replace_vars sigma M) applies substitution sigma to term M *)

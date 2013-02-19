@@ -221,7 +221,7 @@ let lookup_rel_id id sign =
     | []                     -> raise Not_found
     | (Anonymous, _, _) :: l -> lookrec (n + 1) l
     | (Name id', b, t) :: l  ->
-      if Int.equal (Names.Id.compare id' id) 0 then (n, b, t) else lookrec (n + 1) l
+      if Names.Id.equal id' id then (n, b, t) else lookrec (n + 1) l
   in
   lookrec 1 sign
 

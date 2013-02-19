@@ -662,7 +662,7 @@ let is_self from e =
     | (ETName,ETName | ETReference, ETReference | ETBigint,ETBigint
       | ETPattern, ETPattern) -> true
     | ETOther(s1,s2), ETOther(s1',s2') ->
-      Int.equal (String.compare s1 s1') 0 && Int.equal (String.compare s2 s2') 0
+      String.equal s1 s1' && String.equal s2 s2'
     | _ -> false
 
 let is_binder_level from e =

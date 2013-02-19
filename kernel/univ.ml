@@ -58,7 +58,7 @@ module UniverseLevel = struct
   let equal u v = match u,v with
     | Set, Set -> true
     | Level (i1, dp1), Level (i2, dp2) ->
-      Int.equal i1 i2 && Int.equal (Names.DirPath.compare dp1 dp2) 0
+      Int.equal i1 i2 && Names.DirPath.equal dp1 dp2
     | _ -> false
 
   let make m n = Level (n, m)
@@ -908,8 +908,7 @@ let subst_large_constraints =
 let no_upper_constraints u cst =
   match u with
   | Atom u ->
-    let test (u1, _, _) =
-      not (Int.equal (UniverseLevel.compare u1 u) 0) in
+    let test (u1, _, _) = not (UniverseLevel.equal u1 u) in
     Constraint.for_all test cst
   | Max _ -> anomaly (Pp.str "no_upper_constraints")
 

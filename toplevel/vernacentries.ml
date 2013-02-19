@@ -259,7 +259,7 @@ let print_namespace ns =
         begin match match_dirpath ns dir with
         | Some [] as y -> y
         | Some (a::ns') ->
-            if Int.equal (Names.Id.compare a id) 0 then Some ns'
+            if Names.Id.equal a id then Some ns'
             else None
         | None -> None
         end
@@ -272,7 +272,7 @@ let print_namespace ns =
         begin match match_modulepath ns mp with
         | Some [] as y -> y
         | Some (a::ns') ->
-            if Int.equal (Names.Id.compare a id) 0 then Some ns'
+            if Names.Id.equal a id then Some ns'
             else None
         | None -> None
         end

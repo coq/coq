@@ -586,7 +586,7 @@ type evaluable_global_reference =
 
 let eq_egr e1 e2 = match e1, e2 with
     EvalConstRef con1, EvalConstRef con2 -> eq_constant con1 con2
-  | EvalVarRef id1, EvalVarRef id2 -> Int.equal (Id.compare id1 id2) 0
+  | EvalVarRef id1, EvalVarRef id2 -> Id.equal id1 id2
   | _, _ -> false
 
 (** {6 Hash-consing of name objects } *)
