@@ -638,16 +638,9 @@ let constr_ord_int f t1 t2 =
     | App (c1,l1), App (c2,l2) -> (f =? (Array.compare f)) c1 c2 l1 l2
     | Evar (e1,l1), Evar (e2,l2) ->
 	((-) =? (Array.compare f)) e1 e2 l1 l2
-    | Const c1, Const c2 -> kn_ord (canonical_con c1) (canonical_con c2)
-    | Ind (spx, ix), Ind (spy, iy) ->
-        let c = Int.compare ix iy in
-        if Int.equal c 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c
-    | Construct ((spx, ix), jx), Construct ((spy, iy), jy) ->
-        let c = Int.compare jx jy in
-        if Int.equal c 0 then
-	  (let c = Int.compare ix iy in
-          if Int.equal c 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c)
-	else c
+    | Const c1, Const c2 -> con_ord c1 c2
+    | Ind ind1, Ind ind2 -> ind_ord ind1 ind2
+    | Construct ct1, Construct ct2 -> constructor_ord ct1 ct2
     | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
 	((f =? f) ==? (Array.compare f)) p1 p2 c1 c2 bl1 bl2
     | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->

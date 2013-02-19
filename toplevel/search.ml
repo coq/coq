@@ -128,9 +128,8 @@ let filter_by_module (module_list:Dir_path.t list) (accept:bool)
     in
     xor accept (filter_aux module_list)
 
-let ref_eq = Globnames.encode_mind Coqlib.logic_module (Id.of_string "eq"), 0
-let c_eq = mkInd ref_eq
-let gref_eq = IndRef ref_eq
+let gref_eq = Coqlib.glob_eq
+let c_eq = mkInd (Globnames.destIndRef gref_eq)
 
 let mk_rewrite_pattern1 eq pattern =
   PApp (PRef eq, [| PMeta None; pattern; PMeta None |])

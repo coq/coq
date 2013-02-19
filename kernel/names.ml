@@ -323,6 +323,8 @@ let kn_ord (kn1 : kernel_name) (kn2 : kernel_name) =
         if not (Int.equal c 0) then c
         else MPord.compare mp1 mp2
 
+let kn_equal kn1 kn2 = Int.equal (kn_ord kn1 kn2) 0
+
 module KNord = struct
   type t = kernel_name
   let compare = kn_ord
@@ -332,58 +334,121 @@ module KNmap = Map.Make(KNord)
 module KNpred = Predicate.Make(KNord)
 module KNset = Set.Make(KNord)
 
+(** {6 Kernel pairs } *)
+
+(** For constant and inductive names, we use a kernel name couple (kn1,kn2)
+   where kn1 corresponds to the name used at toplevel (i.e. what the user see)
+   and kn2 corresponds to the canonical kernel name i.e. in the environment
+   we have {% kn1 \rhd_{\delta}^* kn2 \rhd_{\delta} t %}
+
+   Invariants :
+    - the user and canonical kn may differ only on their [module_path],
+      the dirpaths and labels should be the same
+    - when user and canonical parts differ, we cannot be in a section
+      anymore, hence the dirpath must be empty
+    - two pairs with the same user part should have the same canonical part
+
+   Note: since most of the time the canonical and user parts are equal,
+   we handle this case with a particular constructor to spare some memory *)
+
+module KernelPair = struct
+
+  type kernel_pair =
+    | Same of kernel_name (** user = canonical *)
+    | Dual of kernel_name * kernel_name (** user then canonical *)
+
+  type t = kernel_pair
+
+  let canonical = function
+    | Same kn -> kn
+    | Dual (_,kn) -> kn
+
+  let user = function
+    | Same kn -> kn
+    | Dual (kn,_) -> kn
+
+  let same kn = Same kn
+  let dual knu knc = Dual (knu,knc)
+  let make knu knc = if knu == knc then Same knc else Dual (knu,knc)
+
+  let debug_to_string = function
+    | Same kn -> "(" ^ string_of_kn kn ^ ")"
+    | Dual (knu,knc) -> "(" ^ string_of_kn knu ^ "," ^ string_of_kn knc ^ ")"
+
+  (** Default comparison is on the canonical part *)
+  let equal x y = x == y || kn_equal (canonical x) (canonical y)
+
+  (** For ordering kernel pairs, both user or canonical parts may make
+      sense, according to your needs : user for the environments, canonical
+      for other uses (ex: non-logical things). *)
+
+  module UserOrd = struct
+    type t = kernel_pair
+    let compare x y = kn_ord (user x) (user y)
+  end
+
+  module CanOrd = struct
+    type t = kernel_pair
+    let compare x y = kn_ord (canonical x) (canonical y)
+  end
+
+  (** Hash-consing : we discriminate only on the user part, since having
+      the same user part implies having the same canonical part
+      (invariant of the system). *)
+
+  module Self_Hashcons =
+    struct
+      type t = kernel_pair
+      type u = kernel_name -> kernel_name
+      let hashcons hkn = function
+        | Same kn -> Same (hkn kn)
+        | Dual (knu,knc) -> make (hkn knu) (hkn knc)
+      let equal x y = (user x) == (user y)
+      let hash = Hashtbl.hash
+    end
+
+  module HashKP = Hashcons.Make(Self_Hashcons)
+
+end
+
 (** {6 Constant names } *)
 
-(** a constant name is a kernel name couple (kn1,kn2)
-   where kn1 corresponds to the name used at toplevel
-   (i.e. what the user see)
-   and kn2 corresponds to the canonical kernel name
-   i.e. in the environment we have
-   {% kn1 \rhd_{\delta}^* kn2 \rhd_{\delta} t %} *)
-type constant = kernel_name*kernel_name
+type constant = KernelPair.t
 
-let constant_of_kn kn = (kn,kn)
-let constant_of_kn_equiv kn1 kn2 = (kn1,kn2)
-let make_con mp dir l = constant_of_kn (mp,dir,l)
-let make_con_equiv mp1 mp2 dir l = ((mp1,dir,l),(mp2,dir,l))
-let canonical_con con = snd con
-let user_con con = fst con
-let repr_con con = fst con
+let canonical_con = KernelPair.canonical
+let user_con = KernelPair.user
+let constant_of_kn = KernelPair.same
+let constant_of_kn_equiv = KernelPair.make
+let make_con mp dir l = KernelPair.same (mp,dir,l)
+let make_con_dual mpu mpc dir l = KernelPair.dual (mpu,dir,l) (mpc,dir,l)
+let make_con_equiv mpu mpc dir l =
+  if mpu == mpc then make_con mpc dir l else make_con_dual mpu mpc dir l
+let repr_con = user_con
 
-let eq_constant (_, kn1) (_, kn2) = Int.equal (kn_ord kn1 kn2) 0
+let eq_constant = KernelPair.equal
+let con_ord = KernelPair.CanOrd.compare
+let con_user_ord = KernelPair.UserOrd.compare
 
-let con_label con = label (fst con)
-let con_modpath con = modpath (fst con)
+let con_label cst = label (canonical_con cst)
+let con_modpath cst = modpath (canonical_con cst)
 
-let string_of_con con = string_of_kn (fst con)
-let pr_con con = str (string_of_con con)
-let debug_string_of_con con =
-  "(" ^ string_of_kn (fst con) ^ "," ^ string_of_kn (snd con) ^ ")"
-let debug_pr_con con = str (debug_string_of_con con)
+let string_of_con cst = string_of_kn (canonical_con cst)
+let pr_con cst = str (string_of_con cst)
+let debug_string_of_con = KernelPair.debug_to_string
+let debug_pr_con cst = str (debug_string_of_con cst)
 
-let con_with_label ((mp1,dp1,l1),(mp2,dp2,l2) as con) lbl =
-  if String.equal lbl l1 && String.equal lbl l2
-    then con
-    else ((mp1, dp1, lbl), (mp2, dp2, lbl))
+let con_with_label cst lbl =
+  let (mp1,dp1,l1) = user_con cst and (mp2,dp2,l2) = canonical_con cst in
+  assert (String.equal l1 l2 && Dir_path.equal dp1 dp2);
+  if String.equal lbl l1
+  then cst
+  else make_con_equiv mp1 mp2 dp1 lbl
 
-(** For the environment we distinguish constants by their user part*)
-module User_ord = struct
-  type t = kernel_name*kernel_name
-  let compare x y= kn_ord (fst x) (fst y)
-end
-
-(** For other uses (ex: non-logical things) it is enough
-    to deal with the canonical part *)
-module Canonical_ord = struct
-  type t = kernel_name*kernel_name
-  let compare x y= kn_ord (snd x) (snd y)
-end
-
-module Cmap = Map.Make(Canonical_ord)
-module Cmap_env = Map.Make(User_ord)
-module Cpred = Predicate.Make(Canonical_ord)
-module Cset = Set.Make(Canonical_ord)
-module Cset_env = Set.Make(User_ord)
+module Cmap = Map.Make(KernelPair.CanOrd)
+module Cmap_env = Map.Make(KernelPair.UserOrd)
+module Cpred = Predicate.Make(KernelPair.CanOrd)
+module Cset = Set.Make(KernelPair.CanOrd)
+module Cset_env = Set.Make(KernelPair.UserOrd)
 
 
 (** {6 Names of mutual inductive types } *)
@@ -394,29 +459,32 @@ module Cset_env = Set.Make(User_ord)
 (** Beware: first inductive has index 0 *)
 (** Beware: first constructor has index 1 *)
 
-type mutual_inductive = kernel_name*kernel_name
+type mutual_inductive = KernelPair.t
 type inductive = mutual_inductive * int
 type constructor = inductive * int
 
-let mind_modpath mind = modpath (fst mind)
+let mind_modpath mind = modpath (KernelPair.user mind)
 let ind_modpath ind = mind_modpath (fst ind)
 let constr_modpath c = ind_modpath (fst c)
 
-let mind_of_kn kn = (kn,kn)
-let mind_of_kn_equiv kn1 kn2 = (kn1,kn2)
-let make_mind mp dir l = ((mp,dir,l),(mp,dir,l))
-let make_mind_equiv mp1 mp2 dir l = ((mp1,dir,l),(mp2,dir,l))
-let canonical_mind mind = snd mind
-let user_mind mind = fst mind
-let repr_mind mind = fst mind
-let mind_label mind = label (fst mind)
+let mind_of_kn = KernelPair.same
+let mind_of_kn_equiv = KernelPair.make
+let make_mind mp dir l = KernelPair.same (mp,dir,l)
+let make_mind_dual mpu mpc dir l = KernelPair.dual (mpu,dir,l) (mpc,dir,l)
+let make_mind_equiv mpu mpc dir l =
+  if mpu == mpc then make_mind mpu dir l else make_mind_dual mpu mpc dir l
+let canonical_mind = KernelPair.canonical
+let user_mind = KernelPair.user
+let repr_mind = user_mind
+let mind_label mind = label (user_mind mind)
 
-let eq_mind (_, kn1) (_, kn2) = Int.equal (kn_ord kn1 kn2) 0
+let eq_mind = KernelPair.equal
+let mind_ord = KernelPair.CanOrd.compare
+let mind_user_ord = KernelPair.UserOrd.compare
 
-let string_of_mind mind = string_of_kn (fst mind)
+let string_of_mind mind = string_of_kn (user_mind mind)
 let pr_mind mind = str (string_of_mind mind)
-let debug_string_of_mind mind =
-  "(" ^ string_of_kn (fst mind) ^ "," ^ string_of_kn (snd mind) ^ ")"
+let debug_string_of_mind = KernelPair.debug_to_string
 let debug_pr_mind con = str (debug_string_of_mind con)
 
 let ith_mutual_inductive (kn, _) i = (kn, i)
@@ -424,26 +492,34 @@ let ith_constructor_of_inductive ind i = (ind, i)
 let inductive_of_constructor (ind, i) = ind
 let index_of_constructor (ind, i) = i
 
-let eq_ind (kn1, i1) (kn2, i2) = Int.equal i1 i2 && eq_mind kn1 kn2
+let eq_ind (m1, i1) (m2, i2) = Int.equal i1 i2 && eq_mind m1 m2
+let ind_ord (m1, i1) (m2, i2) =
+  let c = Int.compare i1 i2 in
+  if Int.equal c 0 then mind_ord m1 m2 else c
+let ind_user_ord (m1, i1) (m2, i2) =
+  let c = Int.compare i1 i2 in
+  if Int.equal c 0 then mind_user_ord m1 m2 else c
 
-let eq_constructor (kn1, i1) (kn2, i2) = Int.equal i1 i2 && eq_ind kn1 kn2
+let eq_constructor (ind1, j1) (ind2, j2) = Int.equal j1 j2 && eq_ind ind1 ind2
+let constructor_ord (ind1, j1) (ind2, j2) =
+  let c = Int.compare j1 j2 in
+  if Int.equal c 0 then ind_ord ind1 ind2 else c
+let constructor_user_ord (ind1, j1) (ind2, j2) =
+  let c = Int.compare j1 j2 in
+  if Int.equal c 0 then ind_user_ord ind1 ind2 else c
 
-module Mindmap = Map.Make(Canonical_ord)
-module Mindset = Set.Make(Canonical_ord)
-module Mindmap_env = Map.Make(User_ord)
+module Mindmap = Map.Make(KernelPair.CanOrd)
+module Mindset = Set.Make(KernelPair.CanOrd)
+module Mindmap_env = Map.Make(KernelPair.UserOrd)
 
 module InductiveOrdered = struct
   type t = inductive
-  let compare (spx,ix) (spy,iy) =
-    let c = Int.compare ix iy in
-    if Int.equal c 0 then Canonical_ord.compare spx spy else c
+  let compare = ind_ord
 end
 
 module InductiveOrdered_env = struct
   type t = inductive
-  let compare (spx,ix) (spy,iy) =
-    let c = Int.compare ix iy in
-    if Int.equal c 0 then User_ord.compare spx spy else c
+  let compare = ind_user_ord
 end
 
 module Indmap = Map.Make(InductiveOrdered)
@@ -451,16 +527,12 @@ module Indmap_env = Map.Make(InductiveOrdered_env)
 
 module ConstructorOrdered = struct
   type t = constructor
-  let compare (indx,ix) (indy,iy) =
-    let c = Int.compare ix iy in
-    if Int.equal c 0 then InductiveOrdered.compare indx indy else c
+  let compare = constructor_ord
 end
 
 module ConstructorOrdered_env = struct
   type t = constructor
-  let compare (indx,ix) (indy,iy) =
-    let c = Int.compare ix iy in
-    if Int.equal c 0 then InductiveOrdered_env.compare indx indy else c
+  let compare = constructor_user_ord
 end
 
 module Constrmap = Map.Make(ConstructorOrdered)
@@ -509,19 +581,6 @@ module Hkn = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-(** For [constant] and [mutual_inductive], we discriminate only on
-    the user part : having the same user part implies having the
-    same canonical part (invariant of the system). *)
-
-module Hcn = Hashcons.Make(
-  struct
-    type t = kernel_name*kernel_name
-    type u = kernel_name -> kernel_name
-    let hashcons hkn (user,can) = (hkn user, hkn can)
-    let equal (user1,_) (user2,_) = user1 == user2
-    let hash (user,_) = Hashtbl.hash user
-  end)
-
 module Hind = Hashcons.Make(
   struct
     type t = inductive
@@ -543,8 +602,8 @@ module Hconstruct = Hashcons.Make(
 let hcons_mp =
   Hashcons.simple_hcons Hmod.generate (Dir_path.hcons,MBId.hcons,String.hcons)
 let hcons_kn = Hashcons.simple_hcons Hkn.generate (hcons_mp,Dir_path.hcons,String.hcons)
-let hcons_con = Hashcons.simple_hcons Hcn.generate hcons_kn
-let hcons_mind = Hashcons.simple_hcons Hcn.generate hcons_kn
+let hcons_con = Hashcons.simple_hcons KernelPair.HashKP.generate hcons_kn
+let hcons_mind = Hashcons.simple_hcons KernelPair.HashKP.generate hcons_kn
 let hcons_ind = Hashcons.simple_hcons Hind.generate hcons_mind
 let hcons_construct = Hashcons.simple_hcons Hconstruct.generate hcons_ind
 
@@ -573,17 +632,13 @@ type id_key = inv_rel_key tableKey
 let eq_id_key ik1 ik2 =
   if ik1 == ik2 then true
   else match ik1,ik2 with
-  | ConstKey (u1, kn1), ConstKey (u2, kn2) ->
-    let ans = Int.equal (kn_ord u1 u2) 0 in
-    if ans then Int.equal (kn_ord kn1 kn2) 0
-    else ans
-  | VarKey id1, VarKey id2 ->
-    Int.equal (Id.compare id1 id2) 0
+  | ConstKey cst1, ConstKey cst2 -> kn_equal (user_con cst1) (user_con cst2)
+  | VarKey id1, VarKey id2 -> Id.equal id1 id2
   | RelKey k1, RelKey k2 -> Int.equal k1 k2
   | _ -> false
 
-let eq_con_chk (kn1,_) (kn2,_) = Int.equal (kn_ord kn1 kn2) 0
-let eq_mind_chk (kn1,_) (kn2,_) = Int.equal (kn_ord kn1 kn2) 0
+let eq_con_chk cst1 cst2 = kn_equal (user_con cst1) (user_con cst2)
+let eq_mind_chk mind1 mind2 = kn_equal (user_mind mind1) (user_mind mind2)
 let eq_ind_chk (kn1,i1) (kn2,i2) = Int.equal i1 i2 && eq_mind_chk kn1 kn2
 
 (** Compatibility layers *)

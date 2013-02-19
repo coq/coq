@@ -188,8 +188,7 @@ let val_mp =
 
 let val_kn = val_tuple ~name:"kernel_name" [|val_mp;val_dp;val_id|]
 
-let val_con =
-  val_tuple ~name:"constant/mutind" [|val_kn;val_kn|]
+let val_con = val_sum "constant/mutind" 0 [|[|val_kn|];[|val_kn;val_kn|]|]
 
 let val_ind = val_tuple ~name:"inductive"[|val_con;val_int|]
 let val_cstr = val_tuple ~name:"constructor"[|val_ind;val_int|]

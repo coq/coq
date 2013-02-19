@@ -284,7 +284,7 @@ end
 module KnEqual =
 struct
   type t = kernel_name
-  let equal kn1 kn2 = Int.equal (kn_ord kn1 kn2) 0
+  let equal = Names.kn_equal
 end
 
 module MPEqual =

@@ -190,7 +190,7 @@ let split_lib_gen test =
       | Some r -> r
 
 let eq_object_name (fp1, kn1) (fp2, kn2) =
-  eq_full_path fp1 fp2 && Int.equal (Names.kn_ord kn1 kn2) 0
+  eq_full_path fp1 fp2 && Names.kn_equal kn1 kn2
 
 let split_lib sp =
   let is_sp (nsp, _) = eq_object_name sp nsp in

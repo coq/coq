@@ -210,6 +210,7 @@ val string_of_kn : kernel_name -> string
 val pr_kn : kernel_name -> Pp.std_ppcmds
 
 val kn_ord : kernel_name -> kernel_name -> int
+val kn_equal : kernel_name -> kernel_name -> bool
 
 module KNset  : Set.S with type elt = kernel_name
 module KNpred : Predicate.S with type elt = kernel_name
@@ -251,6 +252,8 @@ val user_con : constant -> kernel_name
 val canonical_con : constant -> kernel_name
 val repr_con : constant -> module_path * Dir_path.t * Label.t
 val eq_constant : constant -> constant -> bool
+val con_ord : constant -> constant -> int
+val con_user_ord : constant -> constant -> int
 val con_with_label : constant -> Label.t -> constant
 
 val string_of_con : constant -> string
@@ -271,6 +274,8 @@ val user_mind : mutual_inductive -> kernel_name
 val canonical_mind : mutual_inductive -> kernel_name
 val repr_mind : mutual_inductive -> module_path * Dir_path.t * Label.t
 val eq_mind : mutual_inductive -> mutual_inductive -> bool
+val mind_ord : mutual_inductive -> mutual_inductive -> int
+val mind_user_ord : mutual_inductive -> mutual_inductive -> int
 
 val string_of_mind : mutual_inductive -> string
 val mind_label : mutual_inductive -> Label.t
@@ -289,7 +294,11 @@ val ith_constructor_of_inductive : inductive -> int -> constructor
 val inductive_of_constructor : constructor -> inductive
 val index_of_constructor : constructor -> int
 val eq_ind : inductive -> inductive -> bool
+val ind_ord : inductive -> inductive -> int
+val ind_user_ord : inductive -> inductive -> int
 val eq_constructor : constructor -> constructor -> bool
+val constructor_ord : constructor -> constructor -> int
+val constructor_user_ord : constructor -> constructor -> int
 
 (** Better to have it here that in Closure, since required in grammar.cma *)
 type evaluable_global_reference =
