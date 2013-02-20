@@ -79,46 +79,52 @@ let create_script coqtop source_buffer =
   untagged and then retagged. *)
 
 let set_buffer_handlers buffer script =
-  let start_of_input () = buffer#get_iter_at_mark (`NAME "start_of_input") in
-  let get_insert () = buffer#get_iter_at_mark `INSERT
+  let get_start () = buffer#get_iter_at_mark (`NAME "start_of_input") in
+  let get_insert () = buffer#get_iter_at_mark `INSERT in
+  let insert_cb it s =
+    (* If a #insert happens in the locked zone, we discard it.
+        Other solution: always use #insert_interactive and similar *)
+    let () =
+      let start = get_start () in
+      if it#compare start < 0 then GtkSignal.stop_emit ()
+    in
+    if String.length s > 1 then
+      let () = Minilib.log "insert_text: Placing cursor" in
+      let () = buffer#place_cursor ~where:it in
+      if String.contains s '\n' then
+        let () = Minilib.log "insert_text: Recentering" in
+        script#recenter_insert
   in
-  let _ = buffer#connect#insert_text
-    ~callback:(fun it s ->
-      (* If a #insert happens in the locked zone, we discard it.
-         Other solution: always use #insert_interactive and similar *)
-      if (it#compare (start_of_input ()))<0 then
-        GtkSignal.stop_emit ();
-      if String.length s > 1 then
-        let () = Minilib.log "insert_text: Placing cursor" in
-        buffer#place_cursor ~where:it;
-        if String.contains s '\n' then
-          let () = Minilib.log "insert_text: Recentering" in
-          script#recenter_insert)
+  let begin_action_cb () =
+    (* We remove any error red zone, and place the [prev_insert] mark *)
+    let where = get_insert () in
+    let () = buffer#move_mark (`NAME "prev_insert") ~where in
+    let start = get_start () in
+    let stop = buffer#end_iter in
+    buffer#remove_tag Tags.Script.error ~start ~stop
   in
-  let _ = buffer#connect#begin_user_action
-    ~callback:(fun () ->
-      (* We remove any error red zone, and place the [prev_insert] mark *)
-      let where = get_insert () in
-      buffer#move_mark (`NAME "prev_insert") ~where;
-      let start = start_of_input () in
-      let stop = buffer#end_iter in
-      buffer#remove_tag Tags.Script.error ~start ~stop)
+  let end_action_cb () =
+    let start = get_start () in
+    let ins = get_insert () in
+    if 0 <= ins#compare start then Sentence.tag_on_insert buffer
   in
-  let _ = buffer#connect#end_user_action
-    ~callback:(fun () -> Sentence.tag_on_insert buffer)
+  let mark_set_cb it m =
+    let ins = get_insert () in
+    let line = ins#line + 1 in
+    let off = ins#line_offset + 1 in
+    let msg = Printf.sprintf "Line: %5d Char: %3d" line off in
+    let () = !Ideutils.set_location msg in
+    match GtkText.Mark.get_name m with
+    | Some "insert" -> ()
+    | Some s -> Minilib.log (s^" moved")
+    | None -> ()
   in
-  let _ = buffer#connect#after#mark_set
-    ~callback:(fun it m ->
-      let ins = get_insert () in
-      !Ideutils.set_location
-        (Printf.sprintf "Line: %5d Char: %3d"
-           (ins#line + 1)
-           (ins#line_offset + 1));
-      match GtkText.Mark.get_name m with
-        | Some "insert" -> ()
-        | Some s -> Minilib.log (s^" moved")
-        | None -> ())
-  in ()
+  (** Pluging callbacks *)
+  let _ = buffer#connect#insert_text ~callback:insert_cb in
+  let _ = buffer#connect#begin_user_action ~callback:begin_action_cb in
+  let _ = buffer#connect#end_user_action ~callback:end_action_cb in
+  let _ = buffer#connect#after#mark_set ~callback:mark_set_cb in
+  ()
 
 let create_proof () =
   let proof = Wg_ProofView.proof_view () in
