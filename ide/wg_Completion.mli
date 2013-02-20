@@ -23,4 +23,5 @@ end
 class complete_popup : complete_model -> GText.view ->
 object
   method coerce : GObj.widget
+  method proposal : string option
 end

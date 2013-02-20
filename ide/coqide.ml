@@ -538,17 +538,20 @@ let printopts_callback opts v =
 
 (** Templates menu *)
 
-let get_current_word () = match Ideutils.cb#text with
-  |Some t -> Minilib.log ("get_current_word : selection = " ^ t); t
-  |None ->
-    Minilib.log "get_current_word : none selected";
-    let b = current_buffer () in
-    let it = b#get_iter_at_mark `INSERT in
-    let start = find_word_start it in
-    let stop = find_word_end start in
-    b#move_mark `SEL_BOUND ~where:start;
-    b#move_mark `INSERT ~where:stop;
-    b#get_text ~slice:true ~start ~stop ()
+let get_current_word () =
+  let term = notebook#current_term in
+  (** First look to find if autocompleting *)
+  match term.script#complete_popup#proposal with
+  | Some p -> p
+  | None ->
+  (** Then look at the current selected word *)
+  if term.script#buffer#has_selection then
+    let (start, stop) = term.script#buffer#selection_bounds in
+    term.script#buffer#get_text ~slice:true ~start ~stop ()
+  (** Otherwise try to recover the clipboard *)
+  else match Ideutils.cb#text with
+  | Some t -> t
+  | None -> ""
 
 let print_branch c l =
   Format.fprintf c " | @[<hov 1>%a@]=> _@\n"

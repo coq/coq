@@ -289,6 +289,17 @@ object (self)
       let () = model#handle_proposal path in
       self#hide ()
 
+  method proposal =
+    let sel = data#selection#get_selected_rows in
+    if obj#misc#visible then match sel with
+    | [] -> None
+    | path :: _ ->
+      let row = model#store#get_iter path in
+      let column = model#column in
+      let proposal = model#store#get ~row ~column in
+      Some proposal
+    else None
+
   method private manage_scrollbar () =
     (** HACK: we don't have access to the treeview size because of the lack of
         LablGTK binding for certain functions, so we bypass it by approximating

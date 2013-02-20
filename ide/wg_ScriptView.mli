@@ -25,6 +25,7 @@ object
   method comment : unit -> unit
   method uncomment : unit -> unit
   method recenter_insert : unit
+  method complete_popup : Wg_Completion.complete_popup
 end
 
 val script_view : Coq.coqtop ->

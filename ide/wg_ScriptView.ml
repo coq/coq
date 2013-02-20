@@ -278,7 +278,7 @@ class script_view (tv : source_view) (ct : Coq.coqtop) =
 
 let view = new GSourceView2.source_view (Gobject.unsafe_cast tv) in
 let completion = new Wg_Completion.complete_model ct view#buffer in
-let _ = new Wg_Completion.complete_popup completion (view :> GText.view) in
+let popup = new Wg_Completion.complete_popup completion (view :> GText.view) in
 
 object (self)
   inherit GSourceView2.source_view (Gobject.unsafe_cast tv) as super
@@ -396,6 +396,8 @@ object (self)
       let () = self#buffer#end_user_action () in
       self#buffer#delete_mark (`MARK stop_mark)
     | _ -> ()
+
+  method complete_popup = popup
 
   method undo = undo_manager#undo
   method redo = undo_manager#redo
