@@ -231,6 +231,7 @@ class complete_popup (model : complete_model) (view : GText.view) =
   let col = GTree.view_column ~renderer () in
   let _ = data#append_column col in
   let () = col#set_sizing `AUTOSIZE in
+  let page_size = 16 in
 
 object (self)
 
@@ -258,28 +259,79 @@ object (self)
     (** Absolute position *)
     (x + lx + ux - dx, y + ly + uy - dy, w, h)
 
-  method private select_first () =
-    match model#store#get_iter_first with
+  method private select_any f =
+    let sel = data#selection#get_selected_rows in
+    let path = match sel with
+    | [] ->
+      begin match model#store#get_iter_first with
+      | None -> None
+      | Some iter -> Some (model#store#get_path iter)
+      end
+    | path :: _ -> Some path
+    in
+    match path with
     | None -> ()
-    | Some iter -> data#selection#select_iter iter
+    | Some path ->
+      let path = f path in
+      let _ = data#selection#select_path path in
+      data#scroll_to_cell path col
 
   method private select_previous () =
-    let sel = data#selection#get_selected_rows in
-    match sel with
-    | [] -> ()
-    | path :: _ ->
-      let _ = GTree.Path.prev path in
-      let _ = data#selection#select_path path in
-      data#scroll_to_cell path col
+    let prev path =
+      let copy = GTree.Path.copy path in
+      if GTree.Path.prev path then path
+      else copy
+    in
+    self#select_any prev
 
   method private select_next () =
-    let sel = data#selection#get_selected_rows in
-    match sel with
-    | [] -> ()
-    | path :: _ ->
-      let _ = GTree.Path.next path in
-      let _ = data#selection#select_path path in
-      data#scroll_to_cell path col
+    let next path =
+      let () = GTree.Path.next path in
+      path
+    in
+    self#select_any next
+
+  method private select_previous_page () =
+    let rec up i path =
+      if i = 0 then path
+      else
+        let copy = GTree.Path.copy path in
+        let has_prev = GTree.Path.prev path in
+        if has_prev then up (pred i) path
+        else copy
+    in
+    self#select_any (up page_size)
+
+  method private select_next_page () =
+    let rec down i path =
+      if i = 0 then path
+      else
+        let copy = GTree.Path.copy path in
+        let iter = model#store#get_iter path in
+        let has_next = model#store#iter_next iter in
+        if has_next then down (pred i) (model#store#get_path iter)
+        else copy
+    in
+    self#select_any (down page_size)
+
+  method private select_first () =
+    let rec up path =
+      let copy = GTree.Path.copy path in
+      let has_prev = GTree.Path.prev path in
+      if has_prev then up path
+      else copy
+    in
+    self#select_any up
+
+  method private select_last () =
+    let rec down path =
+      let copy = GTree.Path.copy path in
+      let iter = model#store#get_iter path in
+      let has_next = model#store#iter_next iter in
+      if has_next then down (model#store#get_path iter)
+      else copy
+    in
+    self#select_any down
 
   method private select_enter () =
     let sel = data#selection#get_selected_rows in
@@ -310,12 +362,12 @@ object (self)
       let path = model#store#get_path iter in
       let area = data#get_cell_area ~path ~col () in
       let height = Gdk.Rectangle.height area in
-      let height = 16 * height in
+      let height = page_size * height in
       height
     in
     let len = ref 0 in
     let () = model#store#foreach (fun _ _ -> incr len; false) in
-    if !len > 15 then
+    if !len > page_size then
       let () = frame#set_vpolicy `ALWAYS in
       data#misc#set_size_request ~height ()
     else
@@ -323,7 +375,6 @@ object (self)
 
   method private refresh () =
     let () = frame#set_vpolicy `NEVER in
-(*     let () = obj#resize 1 1 in *)
     let () = self#select_first () in
     let () = obj#misc#show () in
     let () = self#manage_scrollbar () in
@@ -347,13 +398,17 @@ object (self)
   initializer
     let move_cb _ _ ~extend = self#hide () in
     let key_cb ev =
-      let is_key key ev = ev = fst (GtkData.AccelGroup.parse key) in
+      let eval cb = cb (); true in
       let ev_key = GdkEvent.Key.keyval ev in
       if obj#misc#visible then
-        if is_key "Up" ev_key then (self#select_previous (); true)
-        else if is_key "Down" ev_key then (self#select_next (); true)
-        else if is_key "Return" ev_key then (self#select_enter (); true)
-        else if is_key "Escape" ev_key then (self#hide (); true)
+        if ev_key = GdkKeysyms._Up then eval self#select_previous
+        else if ev_key = GdkKeysyms._Down then eval self#select_next
+        else if ev_key = GdkKeysyms._Return then eval self#select_enter
+        else if ev_key = GdkKeysyms._Escape then eval self#hide
+        else if ev_key = GdkKeysyms._Page_Down then eval self#select_next_page
+        else if ev_key = GdkKeysyms._Page_Up then eval self#select_previous_page
+        else if ev_key = GdkKeysyms._Home then eval self#select_first
+        else if ev_key = GdkKeysyms._End then eval self#select_last
         else false
       else false
     in
