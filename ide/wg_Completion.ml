@@ -274,7 +274,7 @@ object (self)
     | Some path ->
       let path = f path in
       let _ = data#selection#select_path path in
-      data#scroll_to_cell path col
+      data#scroll_to_cell ~align:(0.,0.) path col
 
   method private select_previous () =
     let prev path =

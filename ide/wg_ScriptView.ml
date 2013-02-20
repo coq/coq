@@ -403,12 +403,26 @@ object (self)
   method redo = undo_manager#redo
   method clear_undo = undo_manager#clear_undo
 
+  method private paste () =
+    let cb = GData.clipboard Gdk.Atom.clipboard in
+    match cb#text with
+    | None -> ()
+    | Some text ->
+      let () = self#buffer#begin_user_action () in
+      let _ = self#buffer#delete_selection () in
+      let _ = self#buffer#insert_interactive text in
+      self#buffer#end_user_action ()
+
   initializer
+    let supersed cb _ =
+      let _ = cb () in
+      GtkSignal.stop_emit()
+    in
     (* HACK: Redirect the undo/redo signals of the underlying GtkSourceView *)
-    ignore (self#connect#undo
-	      ~callback:(fun _ -> ignore (self#undo ()); GtkSignal.stop_emit()));
-    ignore (self#connect#redo
-	      ~callback:(fun _ -> ignore (self#redo ()); GtkSignal.stop_emit()));
+    let _ = self#connect#undo ~callback:(supersed self#undo) in
+    let _ = self#connect#redo ~callback:(supersed self#redo) in
+    (* HACK: Redirect the paste signal *)
+    let _ = self#connect#paste_clipboard ~callback:(supersed self#paste) in
     (* HACK: Redirect the move_line signal of the underlying GtkSourceView *)
     let move_line_marshal = GtkSignal.marshal2
       Gobject.Data.boolean Gobject.Data.int "move_line_marshal"
@@ -436,7 +450,7 @@ object (self)
       in
       if not proceed then GtkSignal.stop_emit ()
     in
-    ignore(GtkSignal.connect ~sgn:move_line_signal ~callback obj);
+    let _ = GtkSignal.connect ~sgn:move_line_signal ~callback obj in
     ()
 
 end
