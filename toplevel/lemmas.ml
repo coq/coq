@@ -229,23 +229,32 @@ let get_proof opacity =
   id,{const with const_entry_opaque = opacity},do_guard,persistence,hook
 
 let save_named opacity =
-  let id,const,do_guard,persistence,hook = get_proof opacity in
-  save id const do_guard persistence hook
+  let p = Proof_global.give_me_the_proof () in
+  Proof.transaction p begin fun () ->
+    let id,const,do_guard,persistence,hook = get_proof opacity in
+    save id const do_guard persistence hook
+  end
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> string_of_id (default_thm_id) then
     error "This command can only be used for unnamed theorem."
 
 let save_anonymous opacity save_ident =
-  let id,const,do_guard,persistence,hook = get_proof opacity in
-  check_anonymity id save_ident;
-  save save_ident const do_guard persistence hook
+  let p = Proof_global.give_me_the_proof () in
+  Proof.transaction p begin fun () ->
+    let id,const,do_guard,persistence,hook = get_proof opacity in
+    check_anonymity id save_ident;
+    save save_ident const do_guard persistence hook
+  end
 
 let save_anonymous_with_strength kind opacity save_ident =
-  let id,const,do_guard,_,hook = get_proof opacity in
-  check_anonymity id save_ident;
-  (* we consider that non opaque behaves as local for discharge *)
-  save save_ident const do_guard (Global, Proof kind) hook
+  let p = Proof_global.give_me_the_proof () in
+  Proof.transaction p begin fun () ->
+    let id,const,do_guard,_,hook = get_proof opacity in
+    check_anonymity id save_ident;
+    (* we consider that non opaque behaves as local for discharge *)
+    save save_ident const do_guard (Global, Proof kind) hook
+  end
 
 (* Starting a goal *)
 
