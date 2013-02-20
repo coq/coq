@@ -6,13 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-module Proposals : Set.S with type elt = string
+module Proposals : sig type t end
 
 class complete_model : Coq.coqtop -> GText.buffer ->
 object
   method active : bool
   method set_active : bool -> unit
-  method store : GTree.model
+  method store : GTree.model_filter
   method column : string GTree.column
   method handle_proposal : Gtk.tree_path -> unit
   method start_completion_callback : (int -> unit) -> unit

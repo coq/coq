@@ -109,7 +109,7 @@ object (self)
     (* disable autocomplete *)
     is_auto_completing <- false
 
-  method store = (filtered_store :> GTree.model)
+  method store = filtered_store
 
   method column = column
 
@@ -289,10 +289,34 @@ object (self)
       let () = model#handle_proposal path in
       self#hide ()
 
+  method private manage_scrollbar () =
+    (** HACK: we don't have access to the treeview size because of the lack of
+        LablGTK binding for certain functions, so we bypass it by approximating
+        it through the size of the proposals *)
+    let height = match model#store#get_iter_first with
+    | None -> -1
+    | Some iter ->
+      let path = model#store#get_path iter in
+      let area = data#get_cell_area ~path ~col () in
+      let height = Gdk.Rectangle.height area in
+      let height = 16 * height in
+      height
+    in
+    let len = ref 0 in
+    let () = model#store#foreach (fun _ _ -> incr len; false) in
+    if !len > 15 then
+      let () = frame#set_vpolicy `ALWAYS in
+      data#misc#set_size_request ~height ()
+    else
+      data#misc#set_size_request ~height:(-1) ()
+
   method private refresh () =
-    let () = obj#resize 1 1 in
+    let () = frame#set_vpolicy `NEVER in
+(*     let () = obj#resize 1 1 in *)
     let () = self#select_first () in
-    obj#misc#show ()
+    let () = obj#misc#show () in
+    let () = self#manage_scrollbar () in
+    obj#resize 1 1
 
   method private start_callback off =
     let (x, y, w, h) = self#coordinates (`OFFSET off) in
@@ -300,7 +324,6 @@ object (self)
     ()
 
   method private update_callback off word props =
-    let () = frame#set_vpolicy `NEVER in
     if Proposals.is_empty props then self#hide ()
     else if Proposals.mem word props then self#hide ()
     else self#refresh ()

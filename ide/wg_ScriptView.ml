@@ -85,8 +85,6 @@ let rec negate_action act = match act with
 
 type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
 
-module Proposals = Wg_Completion.Proposals
-
 class undo_manager (buffer : GText.buffer) =
 object(self)
   val mutable lock_undo = true
