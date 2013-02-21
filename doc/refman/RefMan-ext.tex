@@ -1871,6 +1871,47 @@ printed in the DOT language, and can be processed by Graphviz
 tools. The format is unspecified if {\str} doesn't end in
 \texttt{.dot} or \texttt{.gv}.
 
+\section[Existential variables]{Existential variables\label{ExistentialVariables}}
+
+Coq terms can include existential variables. An existential variable
+is a placeholder intended to eventually be replaced by an actual
+subterm though which subterm it will be replaced by is still unknown.
+
+Existential variables are generated in place of unsolvable implicit
+arguments when using commands such as \texttt{Check} (see
+Section~\ref{Check}) or in place of unsolvable instances when using
+tactics such as \texttt{eapply} (see Section~\ref{eapply}). They can
+only appear as the result of a command displaying a term and they are
+represented by ``?'' followed by a number. They cannot be entered by
+the user (though they can be generated from ``\_'' when the
+corresponding implicit argument is unsolvable).
+
+A given existential variable name can occur several times in a term
+meaning the corresponding expected instance is shared. Each
+existential variable is relative to a context, as shown by {\tt Show
+  Existential} when in the process of proving a goal (see
+Section~\ref{ShowExistentials}). Henceforth, each occurrence of an
+existential variable in a term is subject to an instance of the
+variables of its context of definition which is specific to this
+occurrence.
+
+\subsection{Explicit displaying of existential instances for pretty-printing
+\comindex{Set Printing Existential Instances}
+\comindex{Unset Printing Existential Instances}}
+
+The command:
+\begin{quote}
+{\tt Set Printing Existential Instances}
+\end{quote}
+activates the display of how the context of an existential variable is
+instantiated on each of its occurrences.
+
+To deactivate the display of the instances of existential variables, use
+\begin{quote}
+{\tt Unset Printing Existential Instances.}
+\end{quote}
+
+
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
