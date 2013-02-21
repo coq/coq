@@ -468,8 +468,8 @@ let eq_constant = KerPair.equal
 let con_ord = KerPair.CanOrd.compare
 let con_user_ord = KerPair.UserOrd.compare
 
-let con_label cst = KerName.label (canonical_con cst)
-let con_modpath cst = KerName.modpath (canonical_con cst)
+let con_label cst = KerName.label (user_con cst)
+let con_modpath cst = KerName.modpath (user_con cst)
 
 let string_of_con cst = KerName.to_string (canonical_con cst)
 let pr_con cst = str (string_of_con cst)
