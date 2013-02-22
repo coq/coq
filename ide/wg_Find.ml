@@ -15,12 +15,12 @@ class finder (view : GText.view) =
   let find_box = GPack.hbox ~packing:widget#add () in
   let _ =
     GMisc.label ~text:"Find:"
-      ~xalign:1.0
+      ~xalign:1.0 ~xpad:5
       ~packing:find_box#pack ()
   in
   let find_entry = GEdit.entry
     ~editable:true
-    ~packing:(find_box#pack ~expand:true)
+    ~packing:(find_box#pack ~padding:3 ~expand:true)
     ()
   in
   let next_button =
@@ -28,7 +28,7 @@ class finder (view : GText.view) =
       ~label:"_Next"
       ~use_mnemonic:true
 (*       ~stock:`GO_DOWN *)
-      ~packing:find_box#pack
+      ~packing:(find_box#pack ~padding:3)
       ()
   in
   let previous_button =
@@ -36,7 +36,7 @@ class finder (view : GText.view) =
       ~label:"_Previous"
       ~use_mnemonic:true
 (*       ~stock:`GO_UP *)
-      ~packing:find_box#pack
+      ~packing:(find_box#pack ~padding:3)
       ()
   in
   (* Find and replace part *)
@@ -46,45 +46,45 @@ class finder (view : GText.view) =
   let _ =
     GMisc.label ~text:"Find:"
       ~xalign:1.0
-      ~packing:(replace_box#attach ~left:0 ~top:0 ~fill:`X) ()
+      ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:0 ~top:0 ~fill:`X) ()
   in
   let _ =
     GMisc.label ~text:"Replace:"
       ~xalign:1.0
-      ~packing:(replace_box#attach ~left:0 ~top:1 ~fill:`X) ()
+      ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:0 ~top:1 ~fill:`X) ()
   in
   let r_find_entry = GEdit.entry
     ~editable:true
-    ~packing:(replace_box#attach ~left:1 ~top:0 ~expand:`X ~fill:`X)
+    ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:1 ~top:0 ~expand:`X ~fill:`X)
     ()
   in
   let r_replace_entry = GEdit.entry
     ~editable:true
-    ~packing:(replace_box#attach ~left:1 ~top:1 ~expand:`X ~fill:`X)
+    ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:1 ~top:1 ~expand:`X ~fill:`X)
     ()
   in
   let r_next_button =
     GButton.button
       ~label:"_Next" ~use_mnemonic:true
-      ~packing:(replace_box#attach ~left:2 ~top:0)
+      ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:2 ~top:0)
       ()
   in
   let r_previous_button =
     GButton.button
       ~label:"_Previous" ~use_mnemonic:true
-      ~packing:(replace_box#attach ~left:3 ~top:0)
+      ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:3 ~top:0)
       ()
   in
   let r_replace_button =
     GButton.button
       ~label:"_Replace" ~use_mnemonic:true
-      ~packing:(replace_box#attach ~left:2 ~top:1)
+      ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:2 ~top:1)
       ()
   in
   let r_replace_all_button =
     GButton.button
       ~label:"Replace _All" ~use_mnemonic:true
-      ~packing:(replace_box#attach ~left:3 ~top:1)
+      ~packing:(replace_box#attach ~xpadding:3 ~ypadding:3 ~left:3 ~top:1)
       ()
   in
 
@@ -213,12 +213,16 @@ class finder (view : GText.view) =
 
     initializer
       let _ = self#hide () in
+
+      (** Widget button interaction *)
       let _ = next_button#connect#clicked ~callback:self#find_forward in
       let _ = previous_button#connect#clicked ~callback:self#find_backward in
       let _ = r_next_button#connect#clicked ~callback:self#find_forward in
       let _ = r_previous_button#connect#clicked ~callback:self#find_backward in
       let _ = r_replace_button#connect#clicked ~callback:self#replace in
       let _ = r_replace_all_button#connect#clicked ~callback:self#replace_all in
+
+      (** Keypress interaction *)
       let generic_cb esc_cb ret_cb ev =
         let ev_key = GdkEvent.Key.keyval ev in
         let (return, _) = GtkData.AccelGroup.parse "Return" in
@@ -232,6 +236,16 @@ class finder (view : GText.view) =
       let _ = find_entry#event#connect#key_press find_cb in
       let _ = r_find_entry#event#connect#key_press replace_cb in
       let _ = r_replace_entry#event#connect#key_press find_cb in
+
+      (** TextView interaction *)
+      let view_cb ev =
+        if self#coerce#misc#visible then
+          let ev_key = GdkEvent.Key.keyval ev in
+          if ev_key = GdkKeysyms._Escape then (self#hide (); true)
+          else false
+        else false
+      in
+      let _ = view#event#connect#key_press view_cb in
       ()
 
   end
