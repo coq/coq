@@ -77,15 +77,21 @@ let compile ml_filename code =
   write_ml_code ml_filename code;
   call_compiler ml_filename (!get_load_paths())
 
+(* call_linker dynamic links code for constants in environment or a          *)
+(* conversion test. Silently fails if the file does not exist in bytecode    *)
+(* mode, since the standard library is not compiled to bytecode with default *)
+(* settings.                                                                 *)
 let call_linker ~fatal prefix f upds =
   rt1 := dummy_value ();
   rt2 := dummy_value ();
+  if Dynlink.is_native || Sys.file_exists f then
   (try
     if Dynlink.is_native then Dynlink.loadfile f else !load_obj f;
     register_native_file prefix
    with | Dynlink.Error e ->
           let msg = "Dynlink error, " ^ Dynlink.error_message e in
           if fatal then anomaly (Pp.str msg) else Pp.msg_warning (Pp.str msg)
-        | _ -> let msg = "Dynlink error" in
+        | _ ->
+          let msg = "Dynlink error" in
           if fatal then anomaly (Pp.str msg) else Pp.msg_warning (Pp.str msg));
   match upds with Some upds -> update_locations upds | _ -> ()
