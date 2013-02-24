@@ -594,8 +594,9 @@ let explain_not_match_error = function
     str "types given to " ++ str (Id.to_string id) ++ str " differ"
   | NotConvertibleBodyField ->
     str "the body of definitions differs"
-  | NotConvertibleTypeField ->
-    str "types differ"
+  | NotConvertibleTypeField (typ1, typ2) ->
+    str "expected type" ++ spc ()  ++ pr_lconstr typ2 ++ spc () ++
+    str "but found type" ++ spc () ++ pr_lconstr typ1
   | NotSameConstructorNamesField ->
     str "constructor names differ"
   | NotSameInductiveNameInBlockField ->

@@ -8,6 +8,7 @@
 
 open Names
 open Univ
+open Term
 open Environ
 open Declarations
 open Entries
@@ -59,7 +60,7 @@ type signature_mismatch_error =
   | NotConvertibleInductiveField of Id.t
   | NotConvertibleConstructorField of Id.t
   | NotConvertibleBodyField
-  | NotConvertibleTypeField
+  | NotConvertibleTypeField of types * types
   | NotSameConstructorNamesField
   | NotSameInductiveNameInBlockField
   | FiniteInductiveFieldExpected of bool

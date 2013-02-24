@@ -217,6 +217,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
   let check_conv cst f = check_conv_error error cst f in
   let check_type cst env t1 t2 =
 
+    let err = NotConvertibleTypeField (t1, t2) in
+
     (* If the type of a constant is generated, it may mention
        non-variable algebraic universes that the general conversion
        algorithm is not ready to handle. Anyway, generated types of
@@ -255,12 +257,12 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
                  (the user has to use an explicit type in the interface *)
                 error NoTypeConstraintExpected
           with NotArity ->
-            error NotConvertibleTypeField end
+            error err end
         | _ ->
 	  t1,t2
       else
         (t1,t2) in
-    check_conv NotConvertibleTypeField cst conv_leq env t1 t2
+    check_conv err cst conv_leq env t1 t2
   in
 
   match info1 with
@@ -299,7 +301,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       if constant_has_body cb2 then error DefinitionFieldExpected;
       let arity1 = type_of_inductive env (mind1,mind1.mind_packets.(i)) in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
-       check_conv NotConvertibleTypeField cst conv_leq env arity1 typ2
+      let error = NotConvertibleTypeField (arity1, typ2) in
+       check_conv error cst conv_leq env arity1 typ2
    | IndConstr (((kn,i),j) as cstr,mind1) ->
       ignore (Errors.error (
        "The kernel does not recognize yet that a parameter can be " ^
@@ -310,7 +313,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       if constant_has_body cb2 then error DefinitionFieldExpected;
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in
-       check_conv NotConvertibleTypeField cst conv env ty1 ty2
+      let error = NotConvertibleTypeField (ty1, ty2) in
+       check_conv error cst conv env ty1 ty2
 
 let rec check_modules cst env msb1 msb2 subst1 subst2 =
   let mty1 = module_type_of_module None msb1 in
