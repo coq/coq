@@ -89,7 +89,9 @@ usage () {
     echo "-typerex"
     printf "\tCompiles Coq using typerex wrapper\n"
     echo "-makecmd <command>"
-    printf "\tName of GNU Make command.\n"
+    printf "\tName of GNU Make command\n"
+    echo "-no-native-compiler"
+    printf "\tDisables compilation to native code for conversion and normalization\n"
 }
 
 
@@ -142,6 +144,7 @@ with_doc_spec=no
 force_caml_version=no
 force_caml_version_spec=no
 usecamlp5=yes
+no_native_compiler=false
 
 # Parse command-line arguments
 
@@ -249,6 +252,7 @@ while : ; do
     -profile|--profile) coq_profile_flag=-p;;
     -annotate|--annotate) coq_annotate_flag=-dtypes;;
     -typerex|--typerex) coq_typerex_wrapper=$default_typerex_wrapper;;
+    -no-native-compiler|--no-native-compiler) no_native_compiler=true;;
     -force-caml-version|--force-caml-version|-force-ocaml-version|--force-ocaml-version) 
           force_caml_version_spec=yes
 	  force_caml_version=yes;;
@@ -901,6 +905,11 @@ echo "  Web browser                       : $BROWSER"
 echo "  Coq web site                      : $WWWCOQ"
 echo ""
 
+if test "$no_native_compiler" = "true"; then
+echo "  Native compiler for conversion and normalization disabled"
+echo ""
+fi
+
 if test "$local" = "true"; then
 echo "  Local build, no installation..."
 echo ""
@@ -1051,6 +1060,8 @@ let wwwcoq = "$WWWCOQ"
 let wwwrefman = wwwcoq ^ "distrib/" ^ version ^ "/refman/"
 let wwwstdlib = wwwcoq ^ "distrib/" ^ version ^ "/stdlib/"
 let localwwwrefman = "file:/" ^ docdir ^ "html/refman"
+let no_native_compiler = $no_native_compiler
+
 
 END_OF_COQ_CONFIG
 

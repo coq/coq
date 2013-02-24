@@ -69,3 +69,4 @@ val wwwrefman : string
 val wwwstdlib : string
 val localwwwrefman : string
 
+val no_native_compiler : bool
