@@ -1194,7 +1194,7 @@ let filter_candidates evd evk filter candidates =
 
 let closure_of_filter evd evk filter =
   let evi = Evd.find_undefined evd evk in
-  let vars = collect_vars (Evarutil.nf_evar evd (evar_concl evi)) in
+  let vars = collect_vars (nf_evar evd (evar_concl evi)) in
   let ids = List.map pi1 (evar_context evi) in
   let test id b = b || Idset.mem id vars in
   let newfilter = List.map2 test ids filter in
