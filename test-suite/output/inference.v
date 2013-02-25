@@ -12,3 +12,6 @@ Definition P (e:option L) :=
   end.
 
 Print P.
+
+(* Check that plus is folded even if reduction is involved *)
+Check (fun m n p (H : S m <= (S n) + p) => le_S_n _ _ H).

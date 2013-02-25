@@ -4,3 +4,5 @@ fun e : option L => match e with
                     | None => None
                     end
      : option L -> option L
+fun (m n p : nat) (H : S m <= S n + p) => le_S_n m (n + p) H
+     : forall m n p : nat, S m <= S n + p -> m <= n + p

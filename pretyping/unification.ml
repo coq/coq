@@ -343,7 +343,7 @@ let oracle_order env cf1 cf2 =
       | Some k2 -> Some (Conv_oracle.oracle_order false k1 k2)
 
 let do_reduce ts (env, nb) sigma c =
-  zip (whd_betaiota_deltazeta_for_iota_state ts env sigma (c, empty_stack))
+  zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma Cst_stack.empty (c, empty_stack)))
 
 let use_full_betaiota flags =
   flags.modulo_betaiota && Flags.version_strictly_greater Flags.V8_3

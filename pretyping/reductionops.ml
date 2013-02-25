@@ -911,20 +911,22 @@ let is_sort env sigma arity =
 (* reduction to head-normal-form allowing delta/zeta only in argument
    of case/fix (heuristic used by evar_conv) *)
 
-let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
-  let rec whrec s =
-    let (t, stack as s) = whd_betaiota_state sigma s in
+let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
+  let rec whrec csts s =
+    let (t, stack as s),csts' = whd_state_gen ~csts false betaiota env sigma s in
     match strip_app stack with
       |args, (Zcase _ :: _ as stack') ->
 	let seq = (t,append_stack_app_list args empty_stack) in
-	let t_o,stack_o = whd_betadeltaiota_state_using ts env sigma seq in
-	if reducible_mind_case t_o then whrec (t_o, stack_o@stack') else s
+	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
+	  (Closure.RedFlags.red_add_transparent betadeltaiota ts) env sigma seq in
+	if reducible_mind_case t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
       |args, (Zfix _ :: _ as stack') ->
 	let seq = (t,append_stack_app_list args empty_stack) in
-	let t_o,stack_o = whd_betadeltaiota_state_using ts env sigma seq in
-	if isConstruct t_o then whrec (t_o, stack_o@stack') else s
-      |_ -> s
-  in whrec s
+	let (t_o,stack_o),csts_o = whd_state_gen ~csts:csts' false
+	  (Closure.RedFlags.red_add_transparent betadeltaiota ts) env sigma seq in
+	if isConstruct t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
+      |_ -> s,csts'
+  in whrec csts s
 
 (* A reduction function like whd_betaiota but which keeps casts
  * and does not reduce redexes containing existential variables.

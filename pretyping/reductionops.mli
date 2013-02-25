@@ -230,7 +230,8 @@ val head_unfold_under_prod : transparent_state -> reduction_function
 (** {6 Heuristic for Conversion with Evar } *)
 
 val whd_betaiota_deltazeta_for_iota_state :
-  transparent_state -> state_reduction_function
+  transparent_state -> Environ.env -> Evd.evar_map -> Cst_stack.t -> state ->
+  state * Cst_stack.t
 
 (** {6 Meta-related reduction functions } *)
 val meta_instance : evar_map -> constr freelisted -> constr
