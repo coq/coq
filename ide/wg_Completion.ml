@@ -403,6 +403,7 @@ object (self)
       if obj#misc#visible then
         if ev_key = GdkKeysyms._Up then eval self#select_previous
         else if ev_key = GdkKeysyms._Down then eval self#select_next
+        else if ev_key = GdkKeysyms._Tab then eval self#select_enter
         else if ev_key = GdkKeysyms._Return then eval self#select_enter
         else if ev_key = GdkKeysyms._Escape then eval self#hide
         else if ev_key = GdkKeysyms._Page_Down then eval self#select_next_page
