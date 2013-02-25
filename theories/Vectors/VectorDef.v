@@ -88,19 +88,15 @@ End SCHEMES.
 
 Section BASES.
 (** The first element of a non empty vector *)
-Definition hd {A} {n} (v:t A (S n)) := Eval cbv delta beta in
-(caseS (fun n v => A) (fun h n t => h) v).
+Definition hd {A} := @caseS _ (fun n v => A) (fun h n t => h).
+Global Arguments hd {A} {n} v.
 
 (** The last element of an non empty vector *)
-Definition last {A} {n} (v : t A (S n)) := Eval cbv delta in
-(rectS (fun _ _ => A) (fun a => a) (fun _ _ _ H => H) v).
+Definition last {A} := @rectS _ (fun _ _ => A) (fun a => a) (fun _ _ _ H => H).
+Global Arguments last {A} {n} v.
 
 (** Build a vector of n{^ th} [a] *)
-Fixpoint const {A} (a:A) (n:nat) :=
-  match n return t A n with
-  | O => nil A
-  | S n => a :: (const a n)
-  end.
+Definition const {A} (a:A) := nat_rect _ [] (fun n x => cons _ a n x).
 
 (** The [p]{^ th} element of a vector of length [m].
 
@@ -109,7 +105,7 @@ ocaml function. *)
 Definition nth {A} := 
 fix nth_fix {m} (v' : t A m) (p : Fin.t m) {struct v'} : A :=
 match p in Fin.t m' return t A m' -> A with
- |Fin.F1 => fun v => caseS (fun n v' => A) (fun h n t => h) v
+ |Fin.F1 => caseS (fun n v' => A) (fun h n t => h)
  |Fin.FS p' => fun v => (caseS (fun n v' => Fin.t n -> A)
    (fun h n t p0 => nth_fix t p0) v) p'
 end v'.
@@ -131,13 +127,13 @@ Definition replace_order {A n} (v: t A n) {p} (H: p < n) :=
 replace v (Fin.of_nat_lt H).
 
 (** Remove the first element of a non empty vector *)
-Definition tl {A} {n} (v:t A (S n)) := Eval cbv delta beta in
-(caseS (fun n v => t A n) (fun h n t => t) v).
+Definition tl {A} := @caseS _ (fun n v => t A n) (fun h n t => t).
+Global Arguments tl {A} {n} v.
 
 (** Remove last element of a non-empty vector *)
-Definition shiftout {A} {n:nat} (v:t A (S n)) : t A n :=
-Eval cbv delta beta in (rectS (fun n _ => t A n) (fun a => [])
-  (fun h _ _ H => h :: H) v).
+Definition shiftout {A} := @rectS _ (fun n _ => t A n) (fun a => [])
+  (fun h _ _ H => h :: H).
+Global Arguments shiftout {A} {n} v.
 
 (** Add an element at the end of a vector *)
 Fixpoint shiftin {A} {n:nat} (a : A) (v:t A n) : t A (S n) :=
@@ -147,9 +143,9 @@ match v with
 end.
 
 (** Copy last element of a vector *)
-Definition shiftrepeat {A} {n} (v:t A (S n)) : t A (S (S n)) :=
-Eval cbv delta beta in (rectS (fun n _ => t A (S (S n)))
-  (fun h =>  h :: h :: []) (fun h _ _ H => h :: H) v).
+Definition shiftrepeat {A} := @rectS _ (fun n _ => t A (S (S n)))
+  (fun h =>  h :: h :: []) (fun h _ _ H => h :: H).
+Global Arguments shiftrepeat {A} {n} v.
 
 (** Remove [p] last elements of a vector *)
 Lemma trunc : forall {A} {n} (p:nat), n > p -> t A n
@@ -216,10 +212,9 @@ Definition map {A} {B} (f : A -> B) : forall {n} (v:t A n), t B n :=
   end.
 
 (** map2 g [x1 .. xn] [y1 .. yn] = [(g x1 y1) .. (g xn yn)] *)
-Definition map2 {A B C} (g:A -> B -> C) {n} (v1:t A n) (v2:t B n)
-  : t C n :=
-Eval cbv delta beta in rect2 (fun n _ _ => t C n) (nil C)
-  (fun _ _ _ H a b => (g a b) :: H) v1 v2.
+Definition map2 {A B C} (g:A -> B -> C) :=
+@rect2 _ _ (fun n _ _ => t C n) (nil C) (fun _ _ _ H a b => (g a b) :: H).
+Global Arguments map2 {A B C} g {n} v1 v2.
 
 (** fold_left f b [x1 .. xn] = f .. (f (f b x1) x2) .. xn *)
 Definition fold_left {A B:Type} (f:B->A->B): forall (b:B) {n} (v:t A n), B :=
@@ -237,11 +232,11 @@ Definition fold_right {A B : Type} (f : A->B->B) :=
     | a :: w => f a (fold_right_fix w b)
   end.
 
-(** fold_right2 g [x1 .. xn] [y1 .. yn] c = g x1 y1 (g x2 y2 .. (g xn yn c) .. ) *)
-Definition fold_right2 {A B C} (g:A -> B -> C -> C) {n} (v:t A n)
-  (w : t B n) (c:C) : C :=
-Eval cbv delta beta in rect2 (fun _ _ _ => C) c
-  (fun _ _ _ H a b => g a b H) v w.
+(** fold_right2 g c [x1 .. xn] [y1 .. yn] = g x1 y1 (g x2 y2 .. (g xn yn c) .. )
+    c is before the vectors to be compliant with "refolding". *)
+Definition fold_right2 {A B C} (g:A -> B -> C -> C) (c: C) :=
+@rect2 _ _ (fun _ _ _ => C) c (fun _ _ _ H a b => g a b H).
+
 
 (** fold_left2 f b [x1 .. xn] [y1 .. yn] = g .. (g (g a x1 y1) x2 y2) .. xn yn *)
 Definition fold_left2 {A B C: Type} (f : A -> B -> C -> A) :=
