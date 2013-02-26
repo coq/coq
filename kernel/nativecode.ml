@@ -1319,7 +1319,7 @@ and compile_named env auxdefs id =
 let compile_constant env prefix con body =
   match body with
   | Def t ->
-      let t = Declarations.force t in
+      let t = Lazyconstr.force t in
       let code = lambda_of_constr env t in
       let code, name =
         if is_lazy t then mk_lazy code, LinkedLazy prefix
@@ -1414,7 +1414,7 @@ let rec compile_deps env prefix ~interactive init t =
       then init
       else
       let comp_stack, (mind_updates, const_updates) = match cb.const_body with
-        | Def t -> compile_deps env prefix ~interactive init (Declarations.force t)
+        | Def t -> compile_deps env prefix ~interactive init (Lazyconstr.force t)
         | _ -> init
       in
       let code, name = compile_constant env prefix c cb.const_body in
@@ -1429,7 +1429,7 @@ let compile_constant_field env prefix con (code, symb, (mupds, cupds)) cb =
   let acc = (code, (mupds, cupds)) in
   match cb.const_body with
   | Def t ->
-    let t = Declarations.force t in
+    let t = Lazyconstr.force t in
     let (code, (mupds, cupds)) = compile_deps env prefix ~interactive:false acc t in
     let (gl, name) = compile_constant env prefix con cb.const_body in
     let cupds = Cmap_env.add con (cb.const_native_name, name) cupds in

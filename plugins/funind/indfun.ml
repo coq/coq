@@ -8,6 +8,7 @@ open Libnames
 open Globnames
 open Glob_term
 open Declarations
+open Declareops
 open Misctypes
 open Decl_kinds
 
@@ -770,7 +771,7 @@ let make_graph (f_ref:global_reference) =
      | None -> error "Cannot build a graph over an axiom !"
      | Some b ->
 	 let env = Global.env () in
-	 let body = (force b) in
+	 let body = Lazyconstr.force b in
 	 let extern_body,extern_type =
 	   with_full_print
 	     (fun () ->

@@ -20,6 +20,7 @@ open Nameops
 open Term
 open Namegen
 open Declarations
+open Declareops
 open Inductive
 open Inductiveops
 open Environ

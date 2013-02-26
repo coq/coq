@@ -121,8 +121,8 @@ let const_of_id id =
 let def_of_const t =
    match (Term.kind_of_term t) with
     Term.Const sp ->
-      (try (match Declarations.body_of_constant (Global.lookup_constant sp) with
-             | Some c -> Declarations.force c
+      (try (match Declareops.body_of_constant (Global.lookup_constant sp) with
+             | Some c -> Lazyconstr.force c
 	     | _ -> assert false)
        with _ -> assert false)
     |_ -> assert false

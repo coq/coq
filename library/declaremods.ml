@@ -524,7 +524,7 @@ let rec seb2mse = function
   | SEBwith (s,With_module_body (l,mp)) -> MSEwith(seb2mse s,With_Module(l,mp))
   | SEBwith (s,With_definition_body(l,cb)) ->
       (match cb.const_body with
-	| Def c -> MSEwith(seb2mse s,With_Definition(l,Declarations.force c))
+	| Def c -> MSEwith(seb2mse s,With_Definition(l,Lazyconstr.force c))
 	| _ -> assert false)
   | _ -> failwith "seb2mse: received a non-atomic seb"
 

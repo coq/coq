@@ -11,6 +11,7 @@ open Util
 open Names
 open Term
 open Declarations
+open Declareops
 open Environ
 open Reduction
 open Reductionops
@@ -277,7 +278,7 @@ let rec extract_type env db j c args =
 		  | Undef _ | OpaqueDef _ -> mlt
 		  | Def _ when is_custom r -> mlt
 		  | Def lbody ->
-		      let newc = applist (Declarations.force lbody, args) in
+		      let newc = applist (Lazyconstr.force lbody, args) in
 		      let mlt' = extract_type env db j newc [] in
 		      (* ML type abbreviations interact badly with Coq *)
 		      (* reduction, so [mlt] and [mlt'] might be different: *)
@@ -291,7 +292,7 @@ let rec extract_type env db j c args =
 		  | Undef _  | OpaqueDef _ -> Tunknown (* Brutal approx ... *)
 		  | Def lbody ->
 		      (* We try to reduce. *)
-		      let newc = applist (Declarations.force lbody, args) in
+		      let newc = applist (Lazyconstr.force lbody, args) in
 		      extract_type env db j newc []))
     | Ind (kn,i) ->
 	let s = (extract_ind env kn).ind_packets.(i).ip_sign in
@@ -515,7 +516,7 @@ and mlt_env env r = match r with
 	   | Def l_body ->
 	       (match flag_of_type env typ with
 		  | Info,TypeScheme ->
-		      let body = Declarations.force l_body in
+		      let body = Lazyconstr.force l_body in
 		      let s,vl = type_sign_vl env typ in
 		      let db = db_from_sign s in
 		      let t = extract_type_scheme env db body (List.length s)
@@ -986,17 +987,21 @@ let extract_constant env kn cb =
     | (Info,TypeScheme) ->
         (match cb.const_body with
 	  | Undef _ -> warn_info (); mk_typ_ax ()
-	  | Def c -> mk_typ (force c)
+	  | Def c -> mk_typ (Lazyconstr.force c)
 	  | OpaqueDef c ->
 	    add_opaque r;
-	    if access_opaque () then mk_typ (force_opaque c) else mk_typ_ax ())
+	    if access_opaque () then
+              mk_typ (Lazyconstr.force_opaque c)
+            else mk_typ_ax ())
     | (Info,Default) ->
         (match cb.const_body with
 	  | Undef _ -> warn_info (); mk_ax ()
-	  | Def c -> mk_def (force c)
+	  | Def c -> mk_def (Lazyconstr.force c)
 	  | OpaqueDef c ->
 	    add_opaque r;
-	    if access_opaque () then mk_def (force_opaque c) else mk_ax ())
+	    if access_opaque () then
+              mk_def (Lazyconstr.force_opaque c)
+            else mk_ax ())
 
 let extract_constant_spec env kn cb =
   let r = ConstRef kn in
@@ -1010,7 +1015,8 @@ let extract_constant_spec env kn cb =
 	  | Undef _ | OpaqueDef _ -> Stype (r, vl, None)
 	  | Def body ->
 	      let db = db_from_sign s in
-	      let t = extract_type_scheme env db (force body) (List.length s)
+              let body = Lazyconstr.force body in
+	      let t = extract_type_scheme env db body (List.length s)
 	      in Stype (r, vl, Some t))
     | (Info, Default) ->
 	let t = snd (record_constant_type env kn (Some typ)) in
@@ -1023,7 +1029,7 @@ let extract_with_type env cb =
 	let s,vl = type_sign_vl env typ in
 	let db = db_from_sign s in
 	let c = match cb.const_body with
-	  | Def body -> force body
+	  | Def body -> Lazyconstr.force body
 	  (* A "with Definition ..." is necessarily transparent *)
 	  | Undef _ | OpaqueDef _ -> assert false
 	in

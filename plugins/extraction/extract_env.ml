@@ -136,7 +136,7 @@ let check_arity env cb =
 let check_fix env cb i =
   match cb.const_body with
     | Def lbody ->
-	(match kind_of_term (Declarations.force lbody) with
+	(match kind_of_term (Lazyconstr.force lbody) with
 	  | Fix ((_,j),recd) when i=j -> check_arity env cb; (true,recd)
 	  | CoFix (j,recd) when i=j -> check_arity env cb; (false,recd)
 	  | _ -> raise Impossible)

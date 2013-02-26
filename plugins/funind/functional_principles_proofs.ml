@@ -5,6 +5,7 @@ open Term
 open Namegen
 open Names
 open Declarations
+open Declareops
 open Pp
 open Hiddentac
 open Tacmach
@@ -947,7 +948,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
   let f_def = Global.lookup_constant (destConst f) in
   let eq_lhs = mkApp(f,Array.init (nb_params + nb_args) (fun i -> mkRel(nb_params + nb_args - i))) in
   let f_body =
-    force (Option.get (body_of_constant f_def))
+    Lazyconstr.force (Option.get (body_of_constant f_def))
   in
   let params,f_body_with_params = decompose_lam_n nb_params f_body in
   let (_,num),(_,_,bodies) = destFix f_body_with_params in
@@ -1065,7 +1066,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
     let get_body const =
       match body_of_constant (Global.lookup_constant const) with
 	| Some b ->
-	     let body = force b in
+	     let body = Lazyconstr.force b in
 	     Tacred.cbv_norm_flags
 	       (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
 	       (Global.env ())

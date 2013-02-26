@@ -151,7 +151,7 @@ let lookup_constant_in_impl cst fallback =
 let lookup_constant cst =
   try
     let cb = Global.lookup_constant cst in
-    if constant_has_body cb then cb
+    if Declareops.constant_has_body cb then cb
     else lookup_constant_in_impl cst (Some cb)
   with Not_found -> lookup_constant_in_impl cst None
 
@@ -227,8 +227,8 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st (* t *) =
 	(s,ContextObjectMap.add cst ctype acc)
     in
     let (s,acc) =
-      if Declarations.constant_has_body cb then
-        if Declarations.is_opaque cb || not (Cpred.mem kn knst) then
+      if Declareops.constant_has_body cb then
+        if Declareops.is_opaque cb || not (Cpred.mem kn knst) then
           (** it is opaque *)
           if add_opaque then do_type (Opaque kn)
           else (s, acc)
@@ -237,9 +237,9 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st (* t *) =
           else (s, acc)
       else (s, acc)
     in
-      match Declarations.body_of_constant cb with
+      match Declareops.body_of_constant cb with
       | None -> do_type (Axiom kn)
-      | Some body -> do_constr (Declarations.force body) s acc
+      | Some body -> do_constr (Lazyconstr.force body) s acc
 
   and do_memoize_kn kn =
     try_and_go (Axiom kn) (add_kn kn)

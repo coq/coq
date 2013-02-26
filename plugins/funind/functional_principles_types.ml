@@ -5,6 +5,7 @@ open Term
 open Namegen
 open Names
 open Declarations
+open Declareops
 open Pp
 open Entries
 open Tactics
@@ -404,7 +405,7 @@ let get_funs_constant mp dp =
     let find_constant_body const =
       match body_of_constant (Global.lookup_constant const) with
 	| Some b ->
-	    let body = force b in
+	    let body = Lazyconstr.force b in
 	    let body = Tacred.cbv_norm_flags
 	      (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
 	      (Global.env ())
@@ -539,7 +540,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
     let finfos = find_Function_infos this_block_funs.(0) in
     try
       let equation =  Option.get finfos.equation_lemma in
-      Declarations.is_opaque (Global.lookup_constant equation)
+      Declareops.is_opaque (Global.lookup_constant equation)
     with Option.IsNone -> (* non recursive definition *)
       false
   in

@@ -14,6 +14,7 @@ open Term
 open Termops
 open Namegen
 open Declarations
+open Declareops
 open Environ
 open Reductionops
 

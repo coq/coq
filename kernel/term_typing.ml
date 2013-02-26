@@ -96,8 +96,8 @@ let infer_declaration env dcl =
       let (typ,cst) = constrain_type env j cst c.const_entry_type in
       let def =
 	if c.const_entry_opaque
-	then OpaqueDef (Declarations.opaque_from_val j.uj_val)
-	else Def (Declarations.from_val j.uj_val)
+	then OpaqueDef (Lazyconstr.opaque_from_val j.uj_val)
+	else Def (Lazyconstr.from_val j.uj_val)
       in
       def, typ, cst, c.const_entry_inline_code, c.const_entry_secctx
   | ParameterEntry (ctx,t,nl) ->
@@ -119,9 +119,9 @@ let build_constant_declaration env kn (def,typ,cst,inline_code,ctx) =
       let ids_typ = global_vars_set_constant_type env typ in
       let ids_def = match def with
       | Undef _ -> Id.Set.empty
-      | Def cs -> global_vars_set env (Declarations.force cs)
+      | Def cs -> global_vars_set env (Lazyconstr.force cs)
       | OpaqueDef lc -> 
-          global_vars_set env (Declarations.force_opaque lc) in
+          global_vars_set env (Lazyconstr.force_opaque lc) in
       keep_hyps env (Id.Set.union ids_typ ids_def) in
     let declared = match ctx with
       | None -> inferred 

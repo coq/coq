@@ -47,7 +47,8 @@ Cbytecodes
 Copcodes
 Cemitcodes
 Nativevalues
-Declarations
+Lazyconstr
+Declareops
 Retroknowledge
 Pre_env
 Nativelambda

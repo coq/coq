@@ -10,6 +10,7 @@ open Term
 open Namegen
 open Environ
 open Declarations
+open Declareops
 open Entries
 open Pp
 open Names
@@ -68,7 +69,7 @@ let def_of_const t =
    match (kind_of_term t) with
     Const sp ->
       (try (match body_of_constant (Global.lookup_constant sp) with
-             | Some c -> Declarations.force c
+             | Some c -> Lazyconstr.force c
 	     | _ -> assert false)
        with _ ->
 	 anomaly (str "Cannot find definition of constant " ++

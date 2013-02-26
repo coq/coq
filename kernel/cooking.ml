@@ -121,14 +121,14 @@ type recipe = {
 
 let on_body f = function
   | Undef inl -> Undef inl
-  | Def cs -> Def (Declarations.from_val (f (Declarations.force cs)))
+  | Def cs -> Def (Lazyconstr.from_val (f (Lazyconstr.force cs)))
   | OpaqueDef lc ->
-    OpaqueDef (Declarations.opaque_from_val (f (Declarations.force_opaque lc)))
+    OpaqueDef (Lazyconstr.opaque_from_val (f (Lazyconstr.force_opaque lc)))
 
 let constr_of_def = function
   | Undef _ -> assert false
-  | Def cs -> Declarations.force cs
-  | OpaqueDef lc -> Declarations.force_opaque lc
+  | Def cs -> Lazyconstr.force cs
+  | OpaqueDef lc -> Lazyconstr.force_opaque lc
 
 let cook_constant env r =
   let cb = r.d_from in

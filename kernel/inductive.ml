@@ -12,6 +12,7 @@ open Names
 open Univ
 open Term
 open Declarations
+open Declareops
 open Environ
 open Reduction
 open Type_errors
@@ -414,8 +415,10 @@ type subterm_spec =
   | Dead_code
   | Not_subterm
 
+let eq_wf_paths = Rtree.eq_rtree Declareops.eq_recarg
+
 let spec_of_tree t = lazy
-  (if Rtree.eq_rtree eq_recarg (Lazy.force t) mk_norec
+  (if eq_wf_paths (Lazy.force t) mk_norec
    then Not_subterm
    else Subterm(Strict,Lazy.force t))
 
@@ -427,7 +430,7 @@ let subterm_spec_glb =
       | Not_subterm, _ -> Not_subterm
       | _, Not_subterm -> Not_subterm
       | Subterm (a1,t1), Subterm (a2,t2) ->
-          if Rtree.eq_rtree eq_recarg t1 t2 then Subterm (size_glb a1 a2, t1)
+          if eq_wf_paths t1 t2 then Subterm (size_glb a1 a2, t1)
           (* branches do not return objects with same spec *)
           else Not_subterm in
   Array.fold_left glb2 Dead_code
@@ -877,7 +880,7 @@ let check_one_cofix env nbfix def deftype =
             let realargs = List.skipn mib.mind_nparams args in
             let rec process_args_of_constr = function
               | (t::lr), (rar::lrar) ->
-                  if Rtree.eq_rtree eq_recarg rar mk_norec then
+                  if eq_wf_paths rar mk_norec then
                     if noccur_with_meta n nbfix t
                     then process_args_of_constr (lr, lrar)
                     else raise (CoFixGuardError

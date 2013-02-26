@@ -94,10 +94,10 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   let check_conv why cst f = check_conv_error error why cst f in
   let mib1 =
     match info1 with
-      | IndType ((_,0), mib) -> subst_mind subst1 mib
+      | IndType ((_,0), mib) -> Declareops.subst_mind subst1 mib
       | _ -> error (InductiveFieldExpected mib2)
   in
-  let mib2 =  subst_mind subst2 mib2 in
+  let mib2 =  Declareops.subst_mind subst2 mib2 in
   let check_inductive_type cst name env t1 t2 =
 
     (* Due to sort-polymorphism in inductive types, the conclusions of
@@ -270,8 +270,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
   match info1 with
     | Constant cb1 ->
       let () = assert (List.is_empty cb1.const_hyps && List.is_empty cb2.const_hyps) in
-      let cb1 = subst_const_body subst1 cb1 in
-      let cb2 = subst_const_body subst2 cb2 in
+      let cb1 = Declareops.subst_const_body subst1 cb1 in
+      let cb2 = Declareops.subst_const_body subst2 cb2 in
       (* Start by checking types*)
       let typ1 = Typeops.type_of_constant_type env cb1.const_type in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
@@ -290,8 +290,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 	    | Def lc1 ->
 	      (* NB: cb1 might have been strengthened and appear as transparent.
 		 Anyway [check_conv] will handle that afterwards. *)
-	      let c1 = Declarations.force lc1 in
-	      let c2 = Declarations.force lc2 in
+	      let c1 = Lazyconstr.force lc1 in
+	      let c2 = Lazyconstr.force lc2 in
 	      check_conv NotConvertibleBodyField cst conv env c1 c2))
    | IndType ((kn,i),mind1) ->
        ignore (Errors.error (
@@ -300,7 +300,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
        "inductive type and give a definition to map the old name to the new " ^
        "name."));
       let () = assert (List.is_empty mind1.mind_hyps && List.is_empty cb2.const_hyps) in
-      if constant_has_body cb2 then error DefinitionFieldExpected;
+      if Declareops.constant_has_body cb2 then error DefinitionFieldExpected;
       let arity1 = type_of_inductive env (mind1,mind1.mind_packets.(i)) in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
       let error = NotConvertibleTypeField (arity1, typ2) in
@@ -312,7 +312,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
        "constructor and give a definition to map the old name to the new " ^
        "name."));
       let () = assert (List.is_empty mind1.mind_hyps && List.is_empty cb2.const_hyps) in
-      if constant_has_body cb2 then error DefinitionFieldExpected;
+      if Declareops.constant_has_body cb2 then error DefinitionFieldExpected;
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in
       let error = NotConvertibleTypeField (ty1, ty2) in

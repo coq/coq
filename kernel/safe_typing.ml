@@ -271,7 +271,7 @@ let add_constant dir l decl senv =
     | ConstantEntry ce -> translate_constant senv.env kn ce
     | GlobalRecipe r ->
       let cb = translate_recipe senv.env kn r in
-      if DirPath.is_empty dir then hcons_const_body cb else cb
+      if DirPath.is_empty dir then Declareops.hcons_const_body cb else cb
   in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
   let senv'' = match cb.const_body with
@@ -296,7 +296,8 @@ let add_mind dir l mie senv =
 	     type do not match");
   let kn = make_mind senv.modinfo.modpath dir l in
   let mib = translate_mind senv.env kn mie in
-  let mib = match mib.mind_hyps with [] -> hcons_mind mib | _ -> mib in
+  let mib = match mib.mind_hyps with [] -> Declareops.hcons_mind mib | _ -> mib
+  in
   let senv' = add_field (l,SFBmind mib) (I kn) senv in
   kn, senv'
 
@@ -780,9 +781,9 @@ end = struct
      [lightened_compiled_library] is abstract and only meant for writing
      to .vo via Marshal (which doesn't care about types).
   *)
-  type table = constr_substituted array
-  let key_as_lazy_constr (i:int) = (Obj.magic i : lazy_constr)
-  let key_of_lazy_constr (c:lazy_constr) = (Obj.magic c : int)
+  type table = Lazyconstr.constr_substituted array
+  let key_as_lazy_constr (i:int) = (Obj.magic i : Lazyconstr.lazy_constr)
+  let key_of_lazy_constr (c:Lazyconstr.lazy_constr) = (Obj.magic c : int)
 
   (* To avoid any future misuse of the lightened library that could 
      interpret encoded keys as real [constr_substituted], we hide 
@@ -812,7 +813,7 @@ end = struct
 	    }    
     and traverse_struct struc =
       let traverse_body (l,body) = (l,match body with
-	| SFBconst cb when is_opaque cb ->
+	| SFBconst cb when Declareops.is_opaque cb ->
 	  SFBconst {cb with const_body = on_opaque_const_body cb.const_body}
 	| (SFBconst _ | SFBmind _ ) as x ->
 	  x
@@ -855,7 +856,7 @@ end = struct
       ((* Insert inside the table. *) 
 	(fun def ->
 	  let opaque_definition = match def with
-	    | OpaqueDef lc -> force_lazy_constr lc
+	    | OpaqueDef lc -> Lazyconstr.force_lazy_constr lc
 	    | _ -> assert false
 	  in
 	  incr counter;
@@ -886,10 +887,10 @@ end = struct
 	  match load_proof with
 	    | Flags.Force ->
 	      let lc = Lazy.lazy_from_val (access k) in
-	      OpaqueDef (make_lazy_constr lc)
+	      OpaqueDef (Lazyconstr.make_lazy_constr lc)
 	    | Flags.Lazy ->
 	      let lc = lazy (access k) in
-	      OpaqueDef (make_lazy_constr lc)
+	      OpaqueDef (Lazyconstr.make_lazy_constr lc)
 	    | Flags.Dont ->
 	      Undef None
     in

@@ -1289,6 +1289,7 @@ let is_not_strict t =
 *)
 
 open Declarations
+open Declareops
 
 let inline_test r t =
   if not (auto_inline ()) then false

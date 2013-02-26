@@ -229,12 +229,11 @@ let mk_constant_obj id bo ty variables hyps =
       Acic.Constant (Names.Id.to_string id,None,ty,params)
    | Some c ->
       Acic.Constant
-       (Names.Id.to_string id, Some (Unshare.unshare (Declarations.force c)),
+       (Names.Id.to_string id, Some (Unshare.unshare (Lazyconstr.force c)),
          ty,params)
 ;;
 
 let mk_inductive_obj sp mib packs variables nparams hyps finite =
- let module D = Declarations in
   let hyps = string_list_of_named_context_list hyps in
   let params = filter_params variables hyps in
 (*  let nparams = extract_nparams packs in *)
@@ -243,8 +242,8 @@ let mk_inductive_obj sp mib packs variables nparams hyps finite =
     Array.fold_right
      (fun p i ->
        decr tyno ;
-       let {D.mind_consnames=consnames ;
-            D.mind_typename=typename } = p
+       let {Declarations.mind_consnames=consnames ;
+            Declarations.mind_typename=typename } = p
        in
         let arity = Inductive.type_of_inductive (Global.env()) (mib,p) in
         let lc = Inductiveops.arities_of_constructors (Global.env ()) (sp,!tyno) in
@@ -368,7 +367,7 @@ let print_object_kind uri (xmltag,variation) =
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
 let print internal glob_ref kind xml_library_root =
- let module D = Declarations in
+ let module D = Declareops in
  let module De = Declare in
  let module G = Global in
  let module N = Names in
@@ -392,16 +391,16 @@ let print internal glob_ref kind xml_library_root =
        let id = N.Label.to_id (N.con_label kn) in
        let cb = G.lookup_constant kn in
        let val0 = D.body_of_constant cb in
-       let typ = cb.D.const_type in
-       let hyps = cb.D.const_hyps in
+       let typ = cb.Declarations.const_type in
+       let hyps = cb.Declarations.const_hyps in
        let typ = Typeops.type_of_constant_type (Global.env()) typ in
         Cic2acic.Constant kn,mk_constant_obj id val0 typ variables hyps
     | Gn.IndRef (kn,_) ->
        let mib = G.lookup_mind kn in
-       let {D.mind_nparams=nparams;
-	    D.mind_packets=packs ;
-            D.mind_hyps=hyps;
-            D.mind_finite=finite} = mib in
+       let {Declarations.mind_nparams=nparams;
+	    Declarations.mind_packets=packs ;
+            Declarations.mind_hyps=hyps;
+            Declarations.mind_finite=finite} = mib in
           Cic2acic.Inductive kn,mk_inductive_obj kn mib packs variables nparams hyps finite
     | Gn.ConstructRef _ ->
        Errors.error ("a single constructor cannot be printed in XML")

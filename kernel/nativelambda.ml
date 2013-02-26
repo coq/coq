@@ -631,11 +631,13 @@ and lambda_of_app env f args =
       let cb = lookup_constant kn !global_env in
       begin match cb.const_body with
       | Def csubst ->
-          if cb.const_inline_code then lambda_of_app env (force csubst) args
+          if cb.const_inline_code then
+            lambda_of_app env (Lazyconstr.force csubst) args
           else
           let prefix = get_const_prefix !global_env kn in
           let t =
-            if is_lazy (force csubst) then mkLapp Lforce [|Lconst (prefix, kn)|]
+            if is_lazy (Lazyconstr.force csubst) then
+              mkLapp Lforce [|Lconst (prefix, kn)|]
             else Lconst (prefix, kn)
           in
         mkLapp t (lambda_of_args env 0 args)

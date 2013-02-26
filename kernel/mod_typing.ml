@@ -105,12 +105,12 @@ and check_with_def env sign (idl,c) mp equiv =
 			(union_constraints cb.const_constraints cst1)
 			cst2
 		    in
-		    let def = Def (Declarations.from_val j.uj_val) in
+		    let def = Def (Lazyconstr.from_val j.uj_val) in
 		    def,cst
 		| Def cs ->
-		    let cst1 = Reduction.conv env' c (Declarations.force cs) in
+		    let cst1 = Reduction.conv env' c (Lazyconstr.force cs) in
 		    let cst = union_constraints cb.const_constraints cst1 in
-		    let def = Def (Declarations.from_val c) in
+		    let def = Def (Lazyconstr.from_val c) in
 		    def,cst
 	      in
 	      let cb' =

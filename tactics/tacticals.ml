@@ -201,7 +201,7 @@ let compute_construtor_signatures isrec (_,k as ity) =
   let rec analrec c recargs =
     match kind_of_term c, recargs with
     | Prod (_,_,c), recarg::rest ->
-	let b = match dest_recarg recarg with
+	let b = match Declareops.dest_recarg recarg with
 	  | Norec | Imbr _  -> false
 	  | Mrec (_,j)  -> isrec && Int.equal j k
 	in b :: (analrec c rest)
@@ -213,7 +213,7 @@ let compute_construtor_signatures isrec (_,k as ity) =
   let n = mib.mind_nparams in
   let lc =
     Array.map (fun c -> snd (decompose_prod_n_assum n c)) mip.mind_nf_lc in
-  let lrecargs = dest_subterms mip.mind_recargs in
+  let lrecargs = Declareops.dest_subterms mip.mind_recargs in
   Array.map2 analrec lc lrecargs
 
 let elimination_sort_of_goal gl =

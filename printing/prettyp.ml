@@ -399,7 +399,7 @@ let gallina_print_section_variable id =
   with_line_skip (print_name_infos (VarRef id))
 
 let print_body = function
-  | Some lc  -> pr_lconstr (Declarations.force lc)
+  | Some lc  -> pr_lconstr (Lazyconstr.force lc)
   | None -> (str"<no body>")
 
 let print_typed_body (val_0,typ) =
@@ -411,7 +411,7 @@ let ungeneralized_type_of_constant_type = function
 
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
-  let val_0 = body_of_constant cb in
+  let val_0 = Declareops.body_of_constant cb in
   let typ = ungeneralized_type_of_constant_type cb.const_type in
   hov 0 (
     match val_0 with
@@ -566,11 +566,11 @@ let print_full_pure_context () =
 	      | OpaqueDef lc ->
 		str "Theorem " ++ print_basename con ++ cut () ++
 		str " : " ++ pr_ltype typ ++ str "." ++ fnl () ++
-		str "Proof " ++ pr_lconstr (Declarations.force_opaque lc)
+		str "Proof " ++ pr_lconstr (Lazyconstr.force_opaque lc)
 	      | Def c ->
 		str "Definition " ++ print_basename con ++ cut () ++
 		str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
-		pr_lconstr (Declarations.force c))
+		pr_lconstr (Lazyconstr.force c))
           ++ str "." ++ fnl () ++ fnl ()
       | "INDUCTIVE" ->
 	  let mind = Global.mind_of_delta_kn kn in
@@ -654,7 +654,7 @@ let print_opaque_name qid =
   match global qid with
     | ConstRef cst ->
 	let cb = Global.lookup_constant cst in
-        if constant_has_body cb then
+        if Declareops.constant_has_body cb then
 	  print_constant_with_infos cst
         else
 	  error "Not a defined constant."
