@@ -88,8 +88,8 @@ let check_conv_error error why cst f env a1 a2 =
 (* for now we do not allow reorderings *)
 
 let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2= 
-  let kn1 = make_mind mp1 DirPath.empty l in
-  let kn2 = make_mind mp2 DirPath.empty l in
+  let kn1 = make_kn mp1 DirPath.empty l in
+  let kn2 = make_kn mp2 DirPath.empty l in
   let error why = error_signature_mismatch l spec2 why in
   let check_conv why cst f = check_conv_error error why cst f in
   let mib1 =
@@ -153,13 +153,14 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
       in
 	cst
   in
+  let mind = mind_of_kn kn1 in
   let check_cons_types i cst p1 p2 =
     Array.fold_left3
       (fun cst id t1 t2 -> check_conv (NotConvertibleConstructorField id) cst conv env t1 t2)
       cst
       p2.mind_consnames
-      (arities_of_specif kn1 (mib1,p1))
-      (arities_of_specif kn1 (mib2,p2))
+      (arities_of_specif mind (mib1,p1))
+      (arities_of_specif mind (mib2,p2))
   in
   let check f test why = if not (test (f mib1) (f mib2)) then error (why (f mib2)) in
   check (fun mib -> mib.mind_finite) (==) (fun x -> FiniteInductiveFieldExpected x);
@@ -176,11 +177,12 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   check (fun mib -> mib.mind_nparams) Int.equal (fun x -> InductiveParamsNumberField x);
 
   begin
-  match mind_of_delta reso2 kn2  with
-      | kn2' when eq_mind kn2 kn2' -> ()
-      | kn2' -> 
-	  if not (eq_mind (mind_of_delta reso1 kn1) (subst_ind subst2 kn2')) then 
-	    error NotEqualInductiveAliases
+    let kn2' = kn_of_delta reso2 kn2 in
+    if KerName.equal kn2 kn2' ||
+       eq_mind (mind_of_delta_kn reso1 kn1)
+               (subst_ind subst2 (mind_of_kn_equiv kn2 kn2'))
+    then ()
+    else error NotEqualInductiveAliases
   end;
   (* we check that records and their field names are preserved. *)
   check (fun mib -> mib.mind_record) (==) (fun x -> RecordFieldExpected x);

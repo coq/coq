@@ -122,14 +122,12 @@ let constant_of_delta_kn kn =
   (* TODO : are resolver and resolver_param orthogonal ?
      the effect of resolver is lost if resolver_param isn't
      trivial at that spot. *)
-    Mod_subst.constant_of_delta resolver_param
-      (Mod_subst.constant_of_delta_kn resolver kn)
+  Mod_subst.constant_of_deltas_kn resolver_param resolver kn
 
 let mind_of_delta_kn kn =
   let resolver,resolver_param = (delta_of_senv !global_env) in
   (* TODO idem *)
-    Mod_subst.mind_of_delta resolver_param
-      (Mod_subst.mind_of_delta_kn resolver kn)
+  Mod_subst.mind_of_deltas_kn resolver_param resolver kn
 
 let exists_objlabel id = exists_objlabel id !global_env
 

@@ -30,16 +30,25 @@ val add_inline_delta_resolver :
 
 val add_delta_resolver : delta_resolver -> delta_resolver -> delta_resolver
 
-(** Effect of a [delta_resolver] on kernel name, constant, inductive, etc *)
-
-val kn_of_delta : delta_resolver -> kernel_name -> kernel_name
-val constant_of_delta_kn : delta_resolver -> kernel_name -> constant
-val constant_of_delta : delta_resolver -> constant -> constant
-
-val mind_of_delta_kn : delta_resolver -> kernel_name -> mutual_inductive
-val mind_of_delta : delta_resolver -> mutual_inductive -> mutual_inductive
+(** Effect of a [delta_resolver] on a module path, on a kernel name *)
 
 val mp_of_delta : delta_resolver -> module_path -> module_path
+val kn_of_delta : delta_resolver -> kernel_name -> kernel_name
+
+(** Build a constant whose canonical part is obtained via a resolver *)
+
+val constant_of_delta_kn : delta_resolver -> kernel_name -> constant
+
+(** Same, but a 2nd resolver is tried if the 1st one had no effect *)
+
+val constant_of_deltas_kn :
+  delta_resolver -> delta_resolver -> kernel_name -> constant
+
+(** Same for inductive names *)
+
+val mind_of_delta_kn : delta_resolver -> kernel_name -> mutual_inductive
+val mind_of_deltas_kn :
+  delta_resolver -> delta_resolver -> kernel_name -> mutual_inductive
 
 (** Extract the set of inlined constant in the resolver *)
 val inline_of_delta : int option -> delta_resolver -> (int * kernel_name) list
