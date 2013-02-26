@@ -323,6 +323,8 @@ module KerName = struct
   let make mp dir l = (mp,dir,l)
   let repr kn = kn
 
+  let make2 mp l = (mp,DirPath.empty,l)
+
   let modpath (mp,_,_) = mp
   let label (_,_,l) = l
 
@@ -409,7 +411,7 @@ module KerPair = struct
   let make knu knc = if knu == knc then Same knc else Dual (knu,knc)
 
   let make1 = same
-  let make2 = make
+  let make2 mp l = same (KerName.make2 mp l)
   let make3 mp dir l = same (KerName.make mp dir l)
   let repr3 kp = KerName.repr (user kp)
   let label kp = KerName.label (user kp)
@@ -701,7 +703,7 @@ let kn_equal = KerName.equal
 type constant = Constant.t
 
 let constant_of_kn = Constant.make1
-let constant_of_kn_equiv = Constant.make2
+let constant_of_kn_equiv = Constant.make
 let make_con = Constant.make3
 let repr_con = Constant.repr3
 let canonical_con = Constant.canonical
@@ -721,7 +723,7 @@ let con_with_label = Constant.change_label
 
 type mutual_inductive = MutInd.t
 let mind_of_kn = MutInd.make1
-let mind_of_kn_equiv = MutInd.make2
+let mind_of_kn_equiv = MutInd.make
 let make_mind = MutInd.make3
 let canonical_mind = MutInd.canonical
 let user_mind = MutInd.user

@@ -482,11 +482,9 @@ let end_module l restype senv =
    let add senv ((l,elem) as field) =
      let new_name = match elem with
        | SFBconst _ ->
-	   let kn = make_kn mp_sup DirPath.empty l in
-	   C (constant_of_delta_kn resolver kn)
+           C (constant_of_delta_kn resolver (KerName.make2 mp_sup l))
        | SFBmind _ ->
-	   let kn = make_kn mp_sup DirPath.empty l in
-	   I (mind_of_delta_kn resolver kn)
+	   I (mind_of_delta_kn resolver (KerName.make2 mp_sup l))
        | SFBmodule _ -> M
        | SFBmodtype _ -> MT (MPdot(senv.modinfo.modpath, l))
      in

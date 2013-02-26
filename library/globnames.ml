@@ -138,9 +138,9 @@ let constr_of_global_or_constr = function
 
 (** {6 Temporary function to brutally form kernel names from section paths } *)
 
-let encode_mind dir id = make_mind (MPfile dir) DirPath.empty (Label.of_id id)
+let encode_mind dir id = MutInd.make2 (MPfile dir) (Label.of_id id)
 
-let encode_con dir id = make_con (MPfile dir) DirPath.empty (Label.of_id id)
+let encode_con dir id = Constant.make2 (MPfile dir) (Label.of_id id)
 
 let check_empty_section dp =
   if not (DirPath.is_empty dp) then

@@ -67,9 +67,9 @@ let module_body_of_type mp mtb =
 
 let rec add_signature mp sign resolver env = 
   let add_one env (l,elem) =
-    let kn = make_kn mp DirPath.empty l in
-    let con = constant_of_kn kn in
-    let mind = mind_of_delta resolver (mind_of_kn kn) in
+    let kn = KerName.make2 mp l in
+    let con = Constant.make1 kn in
+    let mind = mind_of_delta resolver (MutInd.make1 kn) in
       match elem with
 	| SFBconst cb -> 
 	   (* let con =  constant_of_delta resolver con in*)
@@ -97,7 +97,7 @@ let strengthen_const mp_from l cb resolver =
   match cb.const_body with
     | Def _ -> cb
     | _ ->
-      let con = make_con mp_from DirPath.empty l in
+      let con = Constant.make2 mp_from l in
       (* let con =  constant_of_delta resolver con in*)
       { cb with const_body = Def (Declarations.from_val (Const con)) }
 

@@ -207,6 +207,7 @@ sig
 
   (** Constructor and destructor *)
   val make : ModPath.t -> DirPath.t -> Label.t -> t
+  val make2 : ModPath.t -> Label.t -> t
   val repr : t -> ModPath.t * DirPath.t * Label.t
 
   (** Projections *)
@@ -235,11 +236,14 @@ sig
 
   (** Constructors *)
 
-  val make2 : KerName.t -> KerName.t -> t
+  val make : KerName.t -> KerName.t -> t
   (** Builds a constant name from a user and a canonical kernel name. *)
 
   val make1 : KerName.t -> t
-  (** Special case of [make2] where the user name is canonical.  *)
+  (** Special case of [make] where the user name is canonical.  *)
+
+  val make2 : ModPath.t -> Label.t -> t
+  (** Shortcut for [(make1 (KerName.make2 ...))] *)
 
   val make3 : ModPath.t -> DirPath.t -> Label.t -> t
   (** Shortcut for [(make1 (KerName.make ...))] *)
@@ -301,11 +305,14 @@ sig
 
   (** Constructors *)
 
-  val make2 : KerName.t -> KerName.t -> t
+  val make : KerName.t -> KerName.t -> t
   (** Builds a mutual inductive name from a user and a canonical kernel name. *)
 
   val make1 : KerName.t -> t
-  (** Special case of [make2] where the user name is canonical.  *)
+  (** Special case of [make] where the user name is canonical.  *)
+
+  val make2 : ModPath.t -> Label.t -> t
+  (** Shortcut for [(make1 (KerName.make2 ...))] *)
 
   val make3 : ModPath.t -> DirPath.t -> Label.t -> t
   (** Shortcut for [(make1 (KerName.make ...))] *)
@@ -595,7 +602,7 @@ type constant = Constant.t
 (** @deprecated Alias type *)
 
 val constant_of_kn_equiv : KerName.t -> KerName.t -> constant
-(** @deprecated Same as [Constant.make2] *)
+(** @deprecated Same as [Constant.make] *)
 
 val constant_of_kn : KerName.t -> constant
 (** @deprecated Same as [Constant.make1] *)

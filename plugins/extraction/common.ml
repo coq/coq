@@ -584,7 +584,7 @@ let pp_module mp =
     the constants are directly turned into chars *)
 
 let mk_ind path s =
-  make_mind (MPfile (dirpath_of_string path)) DirPath.empty (Label.make s)
+  MutInd.make2 (MPfile (dirpath_of_string path)) (Label.make s)
 
 let ind_ascii = mk_ind "Coq.Strings.Ascii" "ascii"
 

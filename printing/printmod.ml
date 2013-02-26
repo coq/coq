@@ -90,9 +90,9 @@ let nametab_register_body mp fp (l,body) =
     | SFBmodule _ -> () (* TODO *)
     | SFBmodtype _ -> () (* TODO *)
     | SFBconst _ ->
-      push (Label.to_id l) (ConstRef (make_con mp DirPath.empty l))
+      push (Label.to_id l) (ConstRef (Constant.make2 mp l))
     | SFBmind mib ->
-      let mind = make_mind mp DirPath.empty l in
+      let mind = MutInd.make2 mp l in
       Array.iteri
 	(fun i mip ->
 	  push mip.mind_typename (IndRef (mind,i));
@@ -126,7 +126,7 @@ let print_body is_impl env mp (l,body) =
     | SFBmind mib ->
       try
 	let env = Option.get env in
-	Printer.pr_mutual_inductive_body env (make_mind mp DirPath.empty l) mib
+	Printer.pr_mutual_inductive_body env (MutInd.make2 mp l) mib
       with _ ->
 	(if mib.mind_finite then str "Inductive " else str "CoInductive")
 	++ name)

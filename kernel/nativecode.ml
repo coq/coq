@@ -1440,7 +1440,7 @@ let compile_constant_field env prefix con (code, symb, (mupds, cupds)) cb =
     gl@code, !symbols_list, (mupds, cupds)
 
 let compile_mind_field prefix mp l (code, symb, (mupds, cupds)) mb =
-  let mind = make_mind mp empty_dirpath l in
+  let mind = MutInd.make2 mp l in
   reset_symbols_list symb;
   let code, upd = compile_mind prefix mb mind code in
   let mupds = Mindmap_env.add mind upd mupds in

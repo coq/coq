@@ -442,7 +442,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  List.skipn mib.mind_nparams (names_prod mip0.mind_user_lc.(0)) in
 	assert (List.length field_names = List.length typ);
 	let projs = ref Cset.empty in
-	let mp,d,_ = repr_mind kn in
+	let mp = MutInd.modpath kn in
 	let rec select_fields l typs = match l,typs with
 	  | [],[] -> []
 	  | _::l, typ::typs when isDummy (expand env typ) ->
@@ -450,7 +450,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  | Anonymous::l, typ::typs ->
 	      None :: (select_fields l typs)
 	  | Name id::l, typ::typs ->
-	      let knp = make_con mp d (Label.of_id id) in
+	      let knp = Constant.make2 mp (Label.of_id id) in
 	      (* Is it safe to use [id] for projections [foo.id] ? *)
 	      if List.for_all ((=) Keep) (type2signature env typ)
 	      then projs := Cset.add knp !projs;

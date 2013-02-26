@@ -39,7 +39,7 @@ type namedmodule =
    constructors *)
 
 let add_mib_nameobjects mp l mib map =
-  let ind = make_mind mp DirPath.empty l in
+  let ind = MutInd.make2 mp l in
   let add_mip_nameobjects j oib map =
     let ip = (ind,j) in
     let map =
@@ -88,8 +88,8 @@ let check_conv_error error why cst f env a1 a2 =
 (* for now we do not allow reorderings *)
 
 let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2= 
-  let kn1 = make_kn mp1 DirPath.empty l in
-  let kn2 = make_kn mp2 DirPath.empty l in
+  let kn1 = KerName.make2 mp1 l in
+  let kn2 = KerName.make2 mp2 l in
   let error why = error_signature_mismatch l spec2 why in
   let check_conv why cst f = check_conv_error error why cst f in
   let mib1 =
@@ -180,7 +180,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     let kn2' = kn_of_delta reso2 kn2 in
     if KerName.equal kn2 kn2' ||
        MutInd.equal (mind_of_delta_kn reso1 kn1)
-                    (subst_ind subst2 (MutInd.make2 kn2 kn2'))
+                    (subst_ind subst2 (MutInd.make kn2 kn2'))
     then ()
     else error NotEqualInductiveAliases
   end;

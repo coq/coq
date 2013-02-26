@@ -219,13 +219,13 @@ let env_for_mtb_with_def env mp seb idl =
 let rec extract_sfb_spec env mp = function
   | [] -> []
   | (l,SFBconst cb) :: msig ->
-      let kn = make_con mp DirPath.empty l in
+      let kn = Constant.make2 mp l in
       let s = extract_constant_spec env kn cb in
       let specs = extract_sfb_spec env mp msig in
       if logical_spec s then specs
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
   | (l,SFBmind _) :: msig ->
-      let mind = make_mind mp DirPath.empty l in
+      let mind = MutInd.make2 mp l in
       let s = Sind (mind, extract_inductive env mind) in
       let specs = extract_sfb_spec env mp msig in
       if logical_spec s then specs
@@ -288,7 +288,7 @@ let rec extract_sfb env mp all = function
   | (l,SFBconst cb) :: msb ->
       (try
 	 let vl,recd,msb = factor_fix env l cb msb in
-	 let vc = Array.map (make_con mp DirPath.empty) vl in
+	 let vc = Array.map (Constant.make2 mp) vl in
 	 let ms = extract_sfb env mp all msb in
 	 let b = Array.exists Visit.needed_con vc in
 	 if all || b then
@@ -298,7 +298,7 @@ let rec extract_sfb env mp all = function
 	 else ms
        with Impossible ->
 	 let ms = extract_sfb env mp all msb in
-	 let c = make_con mp DirPath.empty l in
+	 let c = Constant.make2 mp l in
 	 let b = Visit.needed_con c in
 	 if all || b then
 	   let d = extract_constant env c cb in
@@ -307,7 +307,7 @@ let rec extract_sfb env mp all = function
 	 else ms)
   | (l,SFBmind mib) :: msb ->
       let ms = extract_sfb env mp all msb in
-      let mind = make_mind mp DirPath.empty l in
+      let mind = MutInd.make2 mp l in
       let b = Visit.needed_ind mind in
       if all || b then
 	let d = Dind (mind, extract_inductive env mind) in
