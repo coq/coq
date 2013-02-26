@@ -223,6 +223,11 @@ let gen_subst_mp f sub mp1 mp2 =
     | None, Some (mp',resolve) -> Canonical, (f mp1 mp'), resolve
     | Some (mp1',_), Some (mp2',resolve2) -> Canonical, (f mp1' mp2'), resolve2
 
+let make_mind_equiv mpu mpc dir l =
+  let knu = make_kn mpu dir l in
+  if mpu == mpc then mind_of_kn knu
+  else mind_of_kn_equiv knu (make_kn mpc dir l)
+
 let subst_ind sub mind =
   let kn1,kn2 = user_mind mind, canonical_mind mind in
   let mp1,dir,l = repr_kn kn1 in
@@ -234,6 +239,11 @@ let subst_ind sub mind =
       | User -> mind_of_delta resolve mind'
       | Canonical -> mind_of_delta2 resolve mind'
   with No_subst -> mind
+
+let make_con_equiv mpu mpc dir l =
+  let knu = make_kn mpu dir l in
+  if mpu == mpc then constant_of_kn knu
+  else constant_of_kn_equiv knu (make_kn mpc dir l)
 
 let subst_con0 sub con =
   let kn1,kn2 = user_con con,canonical_con con in

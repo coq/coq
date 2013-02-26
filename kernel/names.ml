@@ -408,13 +408,32 @@ module KerPair = struct
   let dual knu knc = Dual (knu,knc)
   let make knu knc = if knu == knc then Same knc else Dual (knu,knc)
 
+  let make1 = same
+  let make2 = make
+  let make3 mp dir l = same (KerName.make mp dir l)
+  let repr3 kp = KerName.repr (user kp)
+  let label kp = KerName.label (user kp)
+  let modpath kp = KerName.modpath (user kp)
+
+  let change_label kp lbl =
+    let (mp1,dp1,l1) = KerName.repr (user kp)
+    and (mp2,dp2,l2) = KerName.repr (canonical kp) in
+    assert (String.equal l1 l2 && DirPath.equal dp1 dp2);
+    if String.equal lbl l1 then kp
+    else
+      let kn = KerName.make mp1 dp1 lbl in
+      if mp1 == mp2 then same kn
+      else make kn (KerName.make mp2 dp2 lbl)
+
+  let to_string kp = KerName.to_string (user kp)
+  let print kp = str (to_string kp)
+
   let debug_to_string = function
     | Same kn -> "(" ^ KerName.to_string kn ^ ")"
     | Dual (knu,knc) ->
       "(" ^ KerName.to_string knu ^ "," ^ KerName.to_string knc ^ ")"
 
-  (** Default comparison is on the canonical part *)
-  let equal x y = x == y || KerName.equal (canonical x) (canonical y)
+  let debug_print kp = str (debug_to_string kp)
 
   (** For ordering kernel pairs, both user or canonical parts may make
       sense, according to your needs : user for the environments, canonical
@@ -423,12 +442,17 @@ module KerPair = struct
   module UserOrd = struct
     type t = kernel_pair
     let compare x y = KerName.compare (user x) (user y)
+    let equal x y = x == y || KerName.equal (user x) (user y)
   end
 
   module CanOrd = struct
     type t = kernel_pair
     let compare x y = KerName.compare (canonical x) (canonical y)
+    let equal x y = x == y || KerName.equal (canonical x) (canonical y)
   end
+
+  (** Default comparison is on the canonical part *)
+  let equal = CanOrd.equal
 
   (** Hash-consing : we discriminate only on the user part, since having
       the same user part implies having the same canonical part
@@ -449,97 +473,45 @@ module KerPair = struct
 
 end
 
-(** {6 Constant names } *)
+(** {6 Constant Names} *)
 
-type constant = KerPair.t
+module Constant = KerPair
 
-let canonical_con = KerPair.canonical
-let user_con = KerPair.user
-let constant_of_kn = KerPair.same
-let constant_of_kn_equiv = KerPair.make
-let make_con mp dir l = KerPair.same (KerName.make mp dir l)
-let make_con_dual mpu mpc dir l =
-  KerPair.dual (KerName.make mpu dir l) (KerName.make mpc dir l)
-let make_con_equiv mpu mpc dir l =
-  if mpu == mpc then make_con mpc dir l else make_con_dual mpu mpc dir l
-let repr_con c = KerName.repr (user_con c)
-
-let eq_constant = KerPair.equal
-let con_ord = KerPair.CanOrd.compare
-let con_user_ord = KerPair.UserOrd.compare
-
-let con_label cst = KerName.label (user_con cst)
-let con_modpath cst = KerName.modpath (user_con cst)
-
-let string_of_con cst = KerName.to_string (canonical_con cst)
-let pr_con cst = str (string_of_con cst)
-let debug_string_of_con = KerPair.debug_to_string
-let debug_pr_con cst = str (debug_string_of_con cst)
-
-let con_with_label cst lbl =
-  let (mp1,dp1,l1) = KerName.repr (user_con cst)
-  and (mp2,dp2,l2) = KerName.repr (canonical_con cst) in
-  assert (String.equal l1 l2 && DirPath.equal dp1 dp2);
-  if String.equal lbl l1
-  then cst
-  else make_con_equiv mp1 mp2 dp1 lbl
-
-module Cmap = Map.Make(KerPair.CanOrd)
-module Cmap_env = Map.Make(KerPair.UserOrd)
-module Cpred = Predicate.Make(KerPair.CanOrd)
-module Cset = Set.Make(KerPair.CanOrd)
-module Cset_env = Set.Make(KerPair.UserOrd)
-
+module Cmap = Map.Make(Constant.CanOrd)
+module Cmap_env = Map.Make(Constant.UserOrd)
+module Cpred = Predicate.Make(Constant.CanOrd)
+module Cset = Set.Make(Constant.CanOrd)
+module Cset_env = Set.Make(Constant.UserOrd)
 
 (** {6 Names of mutual inductive types } *)
 
-(** The same thing is done for mutual inductive names
-    it replaces also the old mind_equiv field of mutual
-    inductive types *)
+module MutInd = KerPair
+
+module Mindmap = Map.Make(MutInd.CanOrd)
+module Mindset = Set.Make(MutInd.CanOrd)
+module Mindmap_env = Map.Make(MutInd.UserOrd)
+
 (** Beware: first inductive has index 0 *)
 (** Beware: first constructor has index 1 *)
 
-type mutual_inductive = KerPair.t
-type inductive = mutual_inductive * int
+type inductive = MutInd.t * int
 type constructor = inductive * int
 
-let mind_modpath mind = KerName.modpath (KerPair.user mind)
-let ind_modpath ind = mind_modpath (fst ind)
-let constr_modpath c = ind_modpath (fst c)
+let ind_modpath (mind,_) = MutInd.modpath mind
+let constr_modpath (ind,_) = ind_modpath ind
 
-let mind_of_kn = KerPair.same
-let mind_of_kn_equiv = KerPair.make
-let make_mind mp dir l = KerPair.same (KerName.make mp dir l)
-let make_mind_dual mpu mpc dir l =
-  KerPair.dual (KerName.make mpu dir l) (KerName.make mpc dir l)
-let make_mind_equiv mpu mpc dir l =
-  if mpu == mpc then make_mind mpu dir l else make_mind_dual mpu mpc dir l
-let canonical_mind = KerPair.canonical
-let user_mind = KerPair.user
-let repr_mind mind = KerName.repr (user_mind mind)
-let mind_label mind = KerName.label (user_mind mind)
-
-let eq_mind = KerPair.equal
-let mind_ord = KerPair.CanOrd.compare
-let mind_user_ord = KerPair.UserOrd.compare
-
-let string_of_mind mind = KerName.to_string (user_mind mind)
-let pr_mind mind = str (string_of_mind mind)
-let debug_string_of_mind = KerPair.debug_to_string
-let debug_pr_mind con = str (debug_string_of_mind con)
-
-let ith_mutual_inductive (kn, _) i = (kn, i)
+let ith_mutual_inductive (mind, _) i = (mind, i)
 let ith_constructor_of_inductive ind i = (ind, i)
 let inductive_of_constructor (ind, i) = ind
 let index_of_constructor (ind, i) = i
 
-let eq_ind (m1, i1) (m2, i2) = Int.equal i1 i2 && eq_mind m1 m2
+let eq_ind (m1, i1) (m2, i2) = Int.equal i1 i2 && MutInd.equal m1 m2
 let ind_ord (m1, i1) (m2, i2) =
   let c = Int.compare i1 i2 in
-  if Int.equal c 0 then mind_ord m1 m2 else c
+  if Int.equal c 0 then MutInd.CanOrd.compare m1 m2 else c
 let ind_user_ord (m1, i1) (m2, i2) =
   let c = Int.compare i1 i2 in
-  if Int.equal c 0 then mind_user_ord m1 m2 else c
+  if Int.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
 
 let eq_constructor (ind1, j1) (ind2, j2) = Int.equal j1 j2 && eq_ind ind1 ind2
 let constructor_ord (ind1, j1) (ind2, j2) =
@@ -548,10 +520,6 @@ let constructor_ord (ind1, j1) (ind2, j2) =
 let constructor_user_ord (ind1, j1) (ind2, j2) =
   let c = Int.compare j1 j2 in
   if Int.equal c 0 then ind_user_ord ind1 ind2 else c
-
-module Mindmap = Map.Make(KerPair.CanOrd)
-module Mindset = Set.Make(KerPair.CanOrd)
-module Mindmap_env = Map.Make(KerPair.UserOrd)
 
 module InductiveOrdered = struct
   type t = inductive
@@ -582,10 +550,10 @@ module Constrmap_env = Map.Make(ConstructorOrdered_env)
 (* Better to have it here that in closure, since used in grammar.cma *)
 type evaluable_global_reference =
   | EvalVarRef of Id.t
-  | EvalConstRef of constant
+  | EvalConstRef of Constant.t
 
 let eq_egr e1 e2 = match e1, e2 with
-    EvalConstRef con1, EvalConstRef con2 -> eq_constant con1 con2
+    EvalConstRef con1, EvalConstRef con2 -> Constant.equal con1 con2
   | EvalVarRef id1, EvalVarRef id2 -> Id.equal id1 id2
   | _, _ -> false
 
@@ -594,7 +562,7 @@ let eq_egr e1 e2 = match e1, e2 with
 module Hind = Hashcons.Make(
   struct
     type t = inductive
-    type u = mutual_inductive -> mutual_inductive
+    type u = MutInd.t -> MutInd.t
     let hashcons hmind (mind, i) = (hmind mind, i)
     let equal (mind1,i1) (mind2,i2) = mind1 == mind2 && Int.equal i1 i2
     let hash = Hashtbl.hash
@@ -609,8 +577,8 @@ module Hconstruct = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-let hcons_con = Hashcons.simple_hcons KerPair.HashKP.generate KerName.hcons
-let hcons_mind = Hashcons.simple_hcons KerPair.HashKP.generate KerName.hcons
+let hcons_con = Hashcons.simple_hcons Constant.HashKP.generate KerName.hcons
+let hcons_mind = Hashcons.simple_hcons MutInd.HashKP.generate KerName.hcons
 let hcons_ind = Hashcons.simple_hcons Hind.generate hcons_mind
 let hcons_construct = Hashcons.simple_hcons Hconstruct.generate hcons_ind
 
@@ -625,7 +593,7 @@ let var_full_transparent_state = (Id.Pred.full, Cpred.empty)
 let cst_full_transparent_state = (Id.Pred.empty, Cpred.full)
 
 type 'a tableKey =
-  | ConstKey of constant
+  | ConstKey of Constant.t
   | VarKey of Id.t
   | RelKey of 'a
 
@@ -639,15 +607,17 @@ type id_key = inv_rel_key tableKey
 let eq_id_key ik1 ik2 =
   if ik1 == ik2 then true
   else match ik1,ik2 with
-  | ConstKey c1, ConstKey c2 -> KerName.equal (user_con c1) (user_con c2)
+  | ConstKey c1, ConstKey c2 -> Constant.UserOrd.equal c1 c2
   | VarKey id1, VarKey id2 -> Id.equal id1 id2
   | RelKey k1, RelKey k2 -> Int.equal k1 k2
   | _ -> false
 
-let eq_con_chk cst1 cst2 = KerName.equal (user_con cst1) (user_con cst2)
-let eq_mind_chk mind1 mind2 = KerName.equal (user_mind mind1) (user_mind mind2)
+let eq_con_chk = Constant.UserOrd.equal
+let eq_mind_chk = MutInd.UserOrd.equal
 let eq_ind_chk (kn1,i1) (kn2,i2) = Int.equal i1 i2 && eq_mind_chk kn1 kn2
 
+
+(*******************************************************************)
 (** Compatibility layers *)
 
 (** Backward compatibility for [Id] *)
@@ -725,3 +695,43 @@ let string_of_kn = KerName.to_string
 let pr_kn = KerName.print
 let kn_ord = KerName.compare
 let kn_equal = KerName.equal
+
+(** Compatibility layer for [Constant] *)
+
+type constant = Constant.t
+
+let constant_of_kn = Constant.make1
+let constant_of_kn_equiv = Constant.make2
+let make_con = Constant.make3
+let repr_con = Constant.repr3
+let canonical_con = Constant.canonical
+let user_con = Constant.user
+let con_label = Constant.label
+let con_modpath = Constant.modpath
+let eq_constant = Constant.equal
+let con_ord = Constant.CanOrd.compare
+let con_user_ord = Constant.UserOrd.compare
+let string_of_con = Constant.to_string
+let pr_con = Constant.print
+let debug_string_of_con = Constant.debug_to_string
+let debug_pr_con = Constant.debug_print
+let con_with_label = Constant.change_label
+
+(** Compatibility layer for [MutInd] *)
+
+type mutual_inductive = MutInd.t
+let mind_of_kn = MutInd.make1
+let mind_of_kn_equiv = MutInd.make2
+let make_mind = MutInd.make3
+let canonical_mind = MutInd.canonical
+let user_mind = MutInd.user
+let repr_mind = MutInd.repr3
+let mind_label = MutInd.label
+let mind_modpath = MutInd.modpath
+let eq_mind = MutInd.equal
+let mind_ord = MutInd.CanOrd.compare
+let mind_user_ord = MutInd.UserOrd.compare
+let string_of_mind = MutInd.to_string
+let pr_mind = MutInd.print
+let debug_string_of_mind = MutInd.debug_to_string
+let debug_pr_mind = MutInd.debug_print

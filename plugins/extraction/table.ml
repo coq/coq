@@ -165,29 +165,27 @@ let record_fields_of_type = function
 (*s Recursors table. *)
 
 (* NB: here we can use the equivalence between canonical
-   and user constant names : Cset is fine, no need for [Cset_env] *)
+   and user constant names. *)
 
-let recursors = ref Cset.empty
-let init_recursors () = recursors := Cset.empty
+let recursors = ref KNset.empty
+let init_recursors () = recursors := KNset.empty
 
-let add_recursors env kn =
-  let mk_con id =
-    make_con_equiv
-      (modpath (user_mind kn))
-      (modpath (canonical_mind kn))
-      DirPath.empty (Label.of_id id)
+let add_recursors env ind =
+  let kn = MutInd.canonical ind in
+  let mk_kn id =
+    KerName.make (KerName.modpath kn) DirPath.empty (Label.of_id id)
   in
-  let mib = Environ.lookup_mind kn env in
+  let mib = Environ.lookup_mind ind env in
   Array.iter
     (fun mip ->
        let id = mip.mind_typename in
-       let c_rec = mk_con (Nameops.add_suffix id "_rec")
-       and c_rect = mk_con (Nameops.add_suffix id "_rect") in
-       recursors := Cset.add c_rec (Cset.add c_rect !recursors))
+       let kn_rec = mk_kn (Nameops.add_suffix id "_rec")
+       and kn_rect = mk_kn (Nameops.add_suffix id "_rect") in
+       recursors := KNset.add kn_rec (KNset.add kn_rect !recursors))
     mib.mind_packets
 
 let is_recursor = function
-  | ConstRef kn -> Cset.mem kn !recursors
+  | ConstRef c -> KNset.mem (Constant.canonical c) !recursors
   | _ -> false
 
 (*s Record tables. *)

@@ -146,8 +146,8 @@ let kn_in_delta kn resolver =
       | Inline _ -> false
   with Not_found -> false
 
-let con_in_delta con resolver = kn_in_delta (user_con con) resolver
-let mind_in_delta mind resolver = kn_in_delta (user_mind mind) resolver
+let con_in_delta con resolver = kn_in_delta (Constant.user con) resolver
+let mind_in_delta mind resolver = kn_in_delta (MutInd.user mind) resolver
 
 let mp_of_delta resolve mp =
  try Deltamap.find_mp mp resolve with Not_found -> mp
@@ -190,16 +190,16 @@ let kn_of_deltas resolve1 resolve2 kn =
   if kn' == kn then kn_of_delta resolve2 kn else kn'
 
 let constant_of_delta_kn resolve kn =
-  constant_of_kn_equiv kn (kn_of_delta resolve kn)
+  Constant.make2 kn (kn_of_delta resolve kn)
 
 let constant_of_deltas_kn resolve1 resolve2 kn =
-  constant_of_kn_equiv kn (kn_of_deltas resolve1 resolve2 kn)
+  Constant.make2 kn (kn_of_deltas resolve1 resolve2 kn)
 
 let mind_of_delta_kn resolve kn =
-  mind_of_kn_equiv kn (kn_of_delta resolve kn)
+  MutInd.make2 kn (kn_of_delta resolve kn)
 
 let mind_of_deltas_kn resolve1 resolve2 kn =
-  mind_of_kn_equiv kn (kn_of_deltas resolve1 resolve2 kn)
+  MutInd.make2 kn (kn_of_deltas resolve1 resolve2 kn)
 
 let inline_of_delta inline resolver =
   match inline with
@@ -279,8 +279,8 @@ let progress f x ~orelse =
   if y != x then y else orelse
 
 let subst_ind sub mind =
-  let mpu,dir,l = repr_kn (user_mind mind) in
-  let mpc,_,_ = repr_kn (canonical_mind mind) in
+  let mpu,dir,l = MutInd.repr3 mind in
+  let mpc = KerName.modpath (MutInd.canonical mind) in
   try
     let mpu,mpc,resolve,user = subst_dual_mp sub mpu mpc in
     let knu = KerName.make mpu dir l in
@@ -288,29 +288,29 @@ let subst_ind sub mind =
     let knc' =
       progress (kn_of_delta resolve) (if user then knu else knc) ~orelse:knc
     in
-    mind_of_kn_equiv knu knc'
+    MutInd.make2 knu knc'
   with No_subst -> mind
 
-let subst_con0 sub con =
-  let mpu,dir,l = repr_kn (user_con con) in
-  let mpc,_,_ = repr_kn (canonical_con con) in
+let subst_con0 sub cst =
+  let mpu,dir,l = Constant.repr3 cst in
+  let mpc = KerName.modpath (Constant.canonical cst) in
   let mpu,mpc,resolve,user = subst_dual_mp sub mpu mpc in
-  let knu = make_kn mpu dir l in
-  let knc = if mpu == mpc then knu else make_kn mpc dir l in
+  let knu = KerName.make mpu dir l in
+  let knc = if mpu == mpc then knu else KerName.make mpc dir l in
   match search_delta_inline resolve knu knc with
     | Some t ->
       (* In case of inlining, discard the canonical part (cf #2608) *)
-      constant_of_kn knu, t
+      Constant.make1 knu, t
     | None ->
       let knc' =
         progress (kn_of_delta resolve) (if user then knu else knc) ~orelse:knc
       in
-      let con' = constant_of_kn_equiv knu knc' in
-      con', mkConst con'
+      let cst' = Constant.make2 knu knc' in
+      cst', mkConst cst'
 
-let subst_con sub con =
-  try subst_con0 sub con
-  with No_subst -> con, mkConst con
+let subst_con sub cst =
+  try subst_con0 sub cst
+  with No_subst -> cst, mkConst cst
 
 (* Here the semantics is completely unclear.
    What does "Hint Unfold t" means when "t" is a parameter?
