@@ -1170,7 +1170,7 @@ let _ =
     { optsync  = true;
       optdepr  = false;
       optname  = "use of the program extension";
-      optkey   = ["Program"];
+      optkey   = ["Program";"Mode"];
       optread  = (fun () -> !Flags.program_mode);
       optwrite = (fun b -> Flags.program_mode:=b) }
 
@@ -1796,7 +1796,8 @@ let interp c =
   Obligations.set_program_mode isprogcmd;
   try
     interp c; Locality.check_locality ();
-    Flags.program_mode := mode;
+    if not (not mode && !Flags.program_mode && not isprogcmd) then
+      Flags.program_mode := mode;
     true
   with e ->
     let e = Errors.push e in
