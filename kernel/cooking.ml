@@ -119,6 +119,12 @@ type recipe = {
   d_abstract : named_context;
   d_modlist : work_list }
 
+type inline = bool
+
+type result =
+  constant_def * constant_type * Univ.constraints * inline
+    * Sign.section_context option
+
 let on_body f = function
   | Undef inl -> Undef inl
   | Def cs -> Def (Lazyconstr.from_val (f (Lazyconstr.force cs)))
@@ -151,4 +157,4 @@ let cook_constant env r =
 	let j = make_judge (constr_of_def body) typ in
 	Typeops.make_polymorphic_if_constant_for_ind env j
   in
-  (body, typ, cb.const_constraints, cb.const_inline_code, const_hyps)
+  (body, typ, cb.const_constraints, cb.const_inline_code, Some const_hyps)

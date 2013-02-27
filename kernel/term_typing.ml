@@ -20,7 +20,6 @@ open Term
 open Declarations
 open Environ
 open Entries
-open Indtypes
 open Typeops
 
 let constrain_type env j cst1 = function
@@ -29,9 +28,9 @@ let constrain_type env j cst1 = function
   | Some t ->
       let (tj,cst2) = infer_type env t in
       let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
-	assert (eq_constr t tj.utj_val);
-	let cstrs = union_constraints (union_constraints cst1 cst2) cst3 in
-	  NonPolymorphicType t, cstrs
+      assert (eq_constr t tj.utj_val);
+      let cstrs = union_constraints (union_constraints cst1 cst2) cst3 in
+      NonPolymorphicType t, cstrs
 
 let local_constrain_type env j cst1 = function
   | None ->
@@ -52,42 +51,10 @@ let translate_local_assum env t =
   let t = Typeops.assumption_of_judgment env j in
     (t,cst)
 
-(*
-
-(* Same as push_named, but check that the variable is not already
-   there. Should *not* be done in Environ because tactics add temporary
-   hypothesis many many times, and the check performed here would
-   cost too much. *)
-let safe_push_named (id,_,_ as d) env =
-  let _ =
-    try
-      let _ = lookup_named id env in
-      error ("Identifier "^Id.to_string id^" already defined.")
-    with Not_found -> () in
-  push_named d env
-
-let push_named_def = push_rel_or_named_def safe_push_named
-let push_rel_def = push_rel_or_named_def push_rel
-
-let push_rel_or_named_assum push (id,t) env =
-  let (j,cst) = safe_infer env t in
-  let t = Typeops.assumption_of_judgment env j in
-  let env' = add_constraints cst env in
-  let env'' = push (id,None,t) env' in
-  (cst,env'')
-
-let push_named_assum = push_rel_or_named_assum push_named
-let push_rel_assum d env = snd (push_rel_or_named_assum push_rel d env)
-
-let push_rels_with_univ vars env =
-  List.fold_left (fun env nvar -> push_rel_assum nvar env) env vars
-*)
-
 
 (* Insertion of constants and parameters in environment. *)
 
-let infer_declaration env dcl =
-  match dcl with
+let infer_declaration env = function
   | DefinitionEntry c ->
       let (j,cst) = infer env c.const_entry_body in
       let j =
@@ -113,7 +80,7 @@ let global_vars_set_constant_type env = function
 	  (fun t c -> Id.Set.union (global_vars_set env t) c))
       ctx ~init:Id.Set.empty
 
-let build_constant_declaration env kn (def,typ,cst,inline_code,ctx) =
+let build_constant_declaration env (def,typ,cst,inline_code,ctx) =
   let hyps = 
     let inferred =
       let ids_typ = global_vars_set_constant_type env typ in
@@ -144,14 +111,12 @@ let build_constant_declaration env kn (def,typ,cst,inline_code,ctx) =
 
 (*s Global and local constant declaration. *)
 
-let translate_constant env kn ce =
-  build_constant_declaration env kn (infer_declaration env ce)
+let translate_constant env ce =
+  build_constant_declaration env (infer_declaration env ce)
 
-let translate_recipe env kn r =
-  build_constant_declaration env kn 
-    (let def,typ,cst,inline,hyps = Cooking.cook_constant env r in
-     def,typ,cst,inline,Some hyps)
+let translate_recipe env r =
+  build_constant_declaration env (Cooking.cook_constant env r)
 
 (* Insertion of inductive types. *)
 
-let translate_mind env kn mie = check_inductive env kn mie
+let translate_mind env kn mie = Indtypes.check_inductive env kn mie

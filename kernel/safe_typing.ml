@@ -65,7 +65,6 @@ open Declarations
 open Environ
 open Entries
 open Typeops
-open Term_typing
 open Modops
 open Subtyping
 open Mod_typing
@@ -247,13 +246,13 @@ let safe_push_named (id,_,_ as d) env =
   Environ.push_named d env
 
 let push_named_def (id,b,topt) senv =
-  let (c,typ,cst) = translate_local_def senv.env (b,topt) in
+  let (c,typ,cst) = Term_typing.translate_local_def senv.env (b,topt) in
   let senv' = add_constraints cst senv in
   let env'' = safe_push_named (id,Some c,typ) senv'.env in
   (cst, {senv' with env=env''})
 
 let push_named_assum (id,t) senv =
-  let (t,cst) = translate_local_assum senv.env t in
+  let (t,cst) = Term_typing.translate_local_assum senv.env t in
   let senv' = add_constraints cst senv in
   let env'' = safe_push_named (id,None,t) senv'.env in
   (cst, {senv' with env=env''})
@@ -268,9 +267,9 @@ type global_declaration =
 let add_constant dir l decl senv =
   let kn = make_con senv.modinfo.modpath dir l in
   let cb = match decl with
-    | ConstantEntry ce -> translate_constant senv.env kn ce
+    | ConstantEntry ce -> Term_typing.translate_constant senv.env ce
     | GlobalRecipe r ->
-      let cb = translate_recipe senv.env kn r in
+      let cb = Term_typing.translate_recipe senv.env r in
       if DirPath.is_empty dir then Declareops.hcons_const_body cb else cb
   in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
@@ -295,7 +294,7 @@ let add_mind dir l mie senv =
     anomaly (Pp.str "the label of inductive packet and its first inductive \
 	     type do not match");
   let kn = make_mind senv.modinfo.modpath dir l in
-  let mib = translate_mind senv.env kn mie in
+  let mib = Term_typing.translate_mind senv.env kn mie in
   let mib = match mib.mind_hyps with [] -> Declareops.hcons_mind mib | _ -> mib
   in
   let senv' = add_field (l,SFBmind mib) (I kn) senv in
