@@ -124,19 +124,19 @@ let arith_module = make_dir arith_module_name
 let jmeq_module_name = ["Coq";"Logic";"JMeq"]
 let jmeq_module = make_dir jmeq_module_name
 
-(* TODO: temporary hack *)
-let make_kn dir id = Globnames.encode_mind dir id
-let make_con dir id = Globnames.encode_con dir id
+(* TODO: temporary hack. Works only if the module isn't an alias *)
+let make_ind dir id = Globnames.encode_mind dir (Id.of_string id)
+let make_con dir id = Globnames.encode_con dir (Id.of_string id)
 
 (** Identity *)
 
-let id = make_con datatypes_module (Id.of_string "id")
-let type_of_id = make_con datatypes_module (Id.of_string "ID")
+let id = make_con datatypes_module "id"
+let type_of_id = make_con datatypes_module "ID"
 
 let _ = Termops.set_impossible_default_clause (mkConst id,mkConst type_of_id)
 
 (** Natural numbers *)
-let nat_kn = make_kn datatypes_module (Id.of_string "nat")
+let nat_kn = make_ind datatypes_module "nat"
 let nat_path = Libnames.make_path datatypes_module (Id.of_string "nat")
 
 let glob_nat = IndRef (nat_kn,0)
@@ -147,7 +147,7 @@ let glob_O = ConstructRef path_of_O
 let glob_S = ConstructRef path_of_S
 
 (** Booleans *)
-let bool_kn = make_kn datatypes_module (Id.of_string "bool")
+let bool_kn = make_ind datatypes_module "bool"
 
 let glob_bool = IndRef (bool_kn,0)
 
@@ -157,13 +157,13 @@ let glob_true  = ConstructRef path_of_true
 let glob_false  = ConstructRef path_of_false
 
 (** Equality *)
-let eq_kn = make_kn logic_module (Id.of_string "eq")
+let eq_kn = make_ind logic_module "eq"
 let glob_eq = IndRef (eq_kn,0)
 
-let identity_kn = make_kn datatypes_module (Id.of_string "identity")
+let identity_kn = make_ind datatypes_module "identity"
 let glob_identity = IndRef (identity_kn,0)
 
-let jmeq_kn = make_kn jmeq_module (Id.of_string "JMeq")
+let jmeq_kn = make_ind jmeq_module "JMeq"
 let glob_jmeq = IndRef (jmeq_kn,0)
 
 type coq_sigma_data = {
