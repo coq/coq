@@ -31,10 +31,25 @@ exception Elimconst
 type 'a stack_member =
   | Zapp of 'a list
   | Zcase of case_info * 'a * 'a array * ('a * 'a list) option
-  | Zfix of fixpoint * 'a list * ('a * 'a list) option
+  | Zfix of fixpoint * 'a stack * ('a * 'a list) option
   | Zshift of int
   | Zupdate of 'a
 and 'a stack = 'a stack_member list
+
+let compare_stack_shape stk1 stk2 =
+  let rec compare_rec bal stk1 stk2 =
+  match (stk1,stk2) with
+      ([],[]) -> Int.equal bal 0
+    | ((Zupdate _|Zshift _)::s1, _) -> compare_rec bal s1 stk2
+    | (_, (Zupdate _|Zshift _)::s2) -> compare_rec bal stk1 s2
+    | (Zapp l1::s1, _) -> compare_rec (bal+List.length l1) s1 stk2
+    | (_, Zapp l2::s2) -> compare_rec (bal-List.length l2) stk1 s2
+    | (Zcase(c1,_,_,_)::s1, Zcase(c2,_,_,_)::s2) ->
+        Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
+    | (Zfix(_,a1,_)::s1, Zfix(_,a2,_)::s2) ->
+        Int.equal bal 0 && compare_rec 0 a1 a2 && compare_rec 0 s1 s2
+    | (_,_) -> false in
+  compare_rec 0 stk1 stk2
 
 let empty_stack = []
 let append_stack_app_list l s =
@@ -111,9 +126,9 @@ let rec zip ?(refold=false) = function
   | f, (Zcase (ci,rt,br,_)::s) -> zip ~refold (mkCase (ci,rt,f,br), s)
   | f, (Zfix (fix,st,Some(cst, params))::s) when refold -> zip ~refold
     (cst, append_stack_app_list (List.rev params)
-      (append_stack_app_list st (append_stack_app_list [f] s)))
+      (st @ (append_stack_app_list [f] s)))
   | f, (Zfix (fix,st,_)::s) -> zip ~refold
-    (mkFix fix, append_stack_app_list st (append_stack_app_list [f] s))
+    (mkFix fix, st @ (append_stack_app_list [f] s))
   | f, (Zshift n::s) -> zip ~refold (lift n f, s)
   | _ -> assert false
 
@@ -395,7 +410,7 @@ let rec whd_state_gen ?csts refold flags env sigma =
     | Fix ((ri,n),_ as f) ->
       (match strip_n_app ri.(n) stack with
       |None -> fold ()
-      |Some (bef,arg,s') -> whrec noth (arg, Zfix(f,bef,Cst_stack.best_cst cst_l)::s'))
+      |Some (bef,arg,s') -> whrec noth (arg, Zfix(f,[Zapp bef],Cst_stack.best_cst cst_l)::s'))
 
     | Construct (ind,c) ->
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
@@ -405,7 +420,7 @@ let rec whd_state_gen ?csts refold flags env sigma =
 	|args, (Zfix (f,s',cst)::s'') ->
 	  let x' = applist(x,args) in
 	  whrec noth ((if refold then contract_fix ~env f else contract_fix f) cst,
-		      append_stack_app_list s' (append_stack_app_list [x'] s''))
+		      s' @ (append_stack_app_list [x'] s''))
 	|_ -> fold ()
       else fold ()
 
@@ -458,7 +473,7 @@ let local_whd_state_gen flags sigma =
     | Fix ((ri,n),_ as f) ->
       (match strip_n_app ri.(n) stack with
       |None -> s
-      |Some (bef,arg,s') -> whrec (arg, Zfix(f,bef,None)::s'))
+      |Some (bef,arg,s') -> whrec (arg, Zfix(f,[Zapp bef],None)::s'))
 
     | Evar ev ->
       (match safe_evar_value sigma ev with
@@ -477,7 +492,7 @@ let local_whd_state_gen flags sigma =
 	  whrec (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
 	|args, (Zfix (f,s',cst)::s'') ->
 	  let x' = applist(x,args) in
-	  whrec (contract_fix f cst,append_stack_app_list s' (append_stack_app_list [x'] s''))
+	  whrec (contract_fix f cst, s' @ (append_stack_app_list [x'] s''))
 	|_ -> s
       else s
 
@@ -664,7 +679,7 @@ let whd_betaiota_preserving_vm_cast env sigma t =
 	     whrec (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
 	   |args, (Zfix (f,s',cst)::s'') ->
 	     let x' = applist(x,args) in
-	     whrec (contract_fix f cst,append_stack_app_list s' (append_stack_app_list [x'] s''))
+	     whrec (contract_fix f cst,s' @ (append_stack_app_list [x'] s''))
 	   |_ -> s
        end
 
@@ -960,14 +975,14 @@ let whd_programs_stack env sigma =
       | Fix ((ri,n),_ as f) ->
 	(match strip_n_app ri.(n) stack with
 	  |None -> s
-	  |Some (bef,arg,s') -> whrec (arg, Zfix(f,bef,None)::s'))
+	  |Some (bef,arg,s') -> whrec (arg, Zfix(f,[Zapp bef],None)::s'))
       | Construct (ind,c) -> begin
 	match strip_app stack with
 	  |args, (Zcase(ci, _, lf,_)::s') ->
 	    whrec (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
 	  |args, (Zfix (f,s',cst)::s'') ->
 	    let x' = applist(x,args) in
-	    whrec (contract_fix f cst,append_stack_app_list s' (append_stack_app_list [x'] s''))
+	    whrec (contract_fix f cst,s' @ (append_stack_app_list [x'] s''))
 	  |_ -> s
       end
       | CoFix cofix -> begin

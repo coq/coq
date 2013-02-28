@@ -17,21 +17,19 @@ open Closure
 
 exception Elimconst
 
-(***********************************************************************
-  s A [stack] is a context of arguments, arguments are pushed by
-   [append_stack] one array at a time but popped with [decomp_stack]
-   one by one *)
-
+(** 90% copy-paste of kernel/closure.ml but polymorphic and with extra
+    arguments for storing refold *)
 type 'a stack_member =
-  | Zapp of 'a list
-  | Zcase of case_info * 'a * 'a array * ('a * 'a list) option
-  | Zfix of fixpoint * 'a list * ('a * 'a list) option
-  | Zshift of int
-  | Zupdate of 'a
+| Zapp of 'a list
+| Zcase of case_info * 'a * 'a array * ('a * 'a list) option
+| Zfix of fixpoint * 'a stack * ('a * 'a list) option
+| Zshift of int
+| Zupdate of 'a
 
 and 'a stack = 'a stack_member list
 
 val empty_stack : 'a stack
+val compare_stack_shape : 'a stack -> 'a stack -> bool
 val append_stack_app : 'a array -> 'a stack -> 'a stack
 val append_stack_app_list : 'a list -> 'a stack -> 'a stack
 

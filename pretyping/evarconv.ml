@@ -152,6 +152,12 @@ let ise_and evd l =
    it reaches the end of a list, it returns the remaining elements in
    the other list if there are some.
 *)
+let ise_exact ise x1 x2 =
+  match ise x1 x2 with
+  | None, out -> out
+  | _, (UnifFailure _ as out) -> out
+  | Some _, Success i -> UnifFailure (i,NotSameArgSize)
+
 let generic_ise_list2 i f l1 l2 =
   let rec aux i l1 l2 =
     match l1,l2 with
@@ -166,10 +172,7 @@ let generic_ise_list2 i f l1 l2 =
 
 (* Same but the 2 lists must have the same length *)
 let ise_list2 evd f l1 l2 =
-  match generic_ise_list2 evd f l1 l2 with
-  | None, out -> out
-  | _, (UnifFailure _ as out) -> out
-  | Some _, Success i -> UnifFailure (i,NotSameArgSize)
+  ise_exact (generic_ise_list2 evd f) l1 l2
 
 let ise_array2 evd f v1 v2 =
   let rec allrec i = function
@@ -204,7 +207,7 @@ let ise_stack2 no_app env evd f sk1 sk2 =
         match ise_and i [
 	  (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
 	  (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
-	  (fun i -> ise_list2 i (fun ii -> f env ii CONV) a1 a2)] with
+	  (fun i -> ise_exact (ise_stack2 false i) a1 a2)] with
         | Success i' -> ise_stack2 true i' q1 q2
         | UnifFailure _ as x -> fail x
       else fail (UnifFailure (i,NotSameHead))
@@ -228,7 +231,9 @@ let ise_stack2 no_app env evd f sk1 sk2 =
 
 (* Make sure that the matching suffix is the all stack *)
 let exact_ise_stack2 env evd f sk1 sk2 =
-  match ise_stack2 false env evd f sk1 sk2 with | None, out -> out | _ -> UnifFailure (evd, NotSameArgSize)
+  if Reductionops.compare_stack_shape sk1 sk2 then
+    ise_exact (ise_stack2 false env evd f) sk1 sk2
+  else UnifFailure (evd, (* Dummy *) NotSameHead)
 
 let rec evar_conv_x ts env evd pbty term1 term2 =
   let term1 = whd_head_evar evd term1 in
@@ -587,17 +592,19 @@ and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) 
 	 (i', ev :: ks, m - 1))
       (evd,[],List.length bs - 1) bs
   in
+  if Reductionops.compare_stack_shape ts ts1 then
   ise_and evd'
     [(fun i ->
-      ise_list2 i
-        (fun i' x1 x -> evar_conv_x trs env i' CONV x1 (substl ks x))
-        params1 params);
-     (fun i ->
        ise_list2 i
-         (fun i' u1 u -> evar_conv_x trs env i' CONV u1 (substl ks u))
-         us2 us);
-     (fun i -> exact_ise_stack2 env i (evar_conv_x trs) ts ts1);
-     (fun i -> evar_conv_x trs env i CONV c1 (applist (c,(List.rev ks))))]
+         (fun i' x1 x -> evar_conv_x trs env i' CONV x1 (substl ks x))
+         params1 params);
+    (fun i ->
+      ise_list2 i
+        (fun i' u1 u -> evar_conv_x trs env i' CONV u1 (substl ks u))
+        us2 us);
+    (fun i -> evar_conv_x trs env i CONV c1 (applist (c,(List.rev ks))));
+    (fun i -> exact_ise_stack2 env i (evar_conv_x trs) ts ts1)]
+  else UnifFailure(evd,(*dummy*)NotSameHead)
 
 (* We assume here |l1| <= |l2| *)
 
