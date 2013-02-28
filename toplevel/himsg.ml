@@ -60,10 +60,11 @@ let explain_bad_assumption env j =
   brk(1,1) ++ pc ++ spc () ++ str "of type" ++ spc () ++ pt ++ spc () ++
   str "because this term is not a type."
 
-let explain_reference_variables c =
-  let pc = pr_lconstr c in
-  str "The constant" ++ spc () ++ pc ++ spc () ++
-  str "refers to variables which are not in the context."
+let explain_reference_variables id c =
+  (* c is intended to be a global reference *)
+  let pc = pr_global (Globnames.global_of_constr c) in
+  pc ++ strbrk " depends on the variable " ++ pr_id id ++
+  strbrk " which is not declared in the context."
 
 let rec pr_disjunction pr = function
   | [a] -> pr  a
@@ -528,8 +529,8 @@ let explain_type_error env sigma err =
       explain_not_type env sigma j
   | BadAssumption c ->
       explain_bad_assumption env c
-  | ReferenceVariables id ->
-      explain_reference_variables id
+  | ReferenceVariables (id,c) ->
+      explain_reference_variables id c
   | ElimArity (ind, aritylst, c, pj, okinds) ->
       explain_elim_arity env ind aritylst c pj okinds
   | CaseNotInductive cj ->

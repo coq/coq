@@ -42,7 +42,7 @@ type type_error =
   | UnboundVar of variable
   | NotAType of unsafe_judgment
   | BadAssumption of unsafe_judgment
-  | ReferenceVariables of constr
+  | ReferenceVariables of identifier * constr
   | ElimArity of inductive * sorts_family list * constr * unsafe_judgment
       * (sorts_family * sorts_family * arity_error) option
   | CaseNotInductive of unsafe_judgment
@@ -68,7 +68,7 @@ val error_not_type : env -> unsafe_judgment -> 'a
 
 val error_assumption : env -> unsafe_judgment -> 'a
 
-val error_reference_variables : env -> constr -> 'a
+val error_reference_variables : env -> identifier -> constr -> 'a
 
 val error_elim_arity :
   env -> inductive -> sorts_family list -> constr -> unsafe_judgment ->

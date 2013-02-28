@@ -249,8 +249,10 @@ and nf_fun env f typ =
   let vb = body_of_vfun k f in
   let name,dom,codom =
     try decompose_prod env typ
-    with _ ->
-      raise (Type_errors.TypeError(env,Type_errors.ReferenceVariables typ))
+    with Invalid_argument _ ->
+      (* 27/2/13: Turned this into an anomaly *)
+      Errors.anomaly
+        (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
   in
   let body = nf_val (push_rel (name,None,dom) env) vb codom in
   mkLambda(name,dom,body)

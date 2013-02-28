@@ -91,33 +91,20 @@ let judge_of_variable env id =
 
 (* Management of context of variables. *)
 
-(* Checks if a context of variable can be instantiated by the
+(* Checks if a context of variables can be instantiated by the
    variables of the current env *)
 (* TODO: check order? *)
-let check_hyps_inclusion env sign =
+let check_hyps_inclusion env c sign =
   Sign.fold_named_context
     (fun (id,_,ty1) () ->
-      let ty2 = named_type id env in
-      if not (eq_constr ty2 ty1) then
-        error "types do not match")
+      try
+        let ty2 = named_type id env in
+        if not (eq_constr ty2 ty1) then raise Exit
+      with Not_found | Exit ->
+        error_reference_variables env id c)
     sign
     ~init:()
 
-
-let check_args env c hyps =
-  try check_hyps_inclusion env hyps
-  with UserError _ | Not_found ->
-    error_reference_variables env c
-
-
-(* Checks if the given context of variables [hyps] is included in the
-   current context of [env]. *)
-(*
-let check_hyps id env hyps =
-  let hyps' = named_context env in
-  if not (hyps_inclusion env hyps hyps') then
-    error_reference_variables env id
-*)
 (* Instantiation of terms on real arguments. *)
 
 (* Make a type polymorphic if an arity *)
@@ -162,7 +149,7 @@ let type_of_constant env cst =
 let judge_of_constant_knowing_parameters env cst jl =
   let c = mkConst cst in
   let cb = lookup_constant cst env in
-  let _ = check_args env c cb.const_hyps in
+  let _ = check_hyps_inclusion env c cb.const_hyps in
   let paramstyp = Array.map (fun j -> j.uj_type) jl in
   let t = type_of_constant_knowing_parameters env cb.const_type paramstyp in
   make_judge c t
@@ -308,7 +295,7 @@ let judge_of_cast env cj k tj =
 let judge_of_inductive_knowing_parameters env ind jl =
   let c = mkInd ind in
   let (mib,mip) = lookup_mind_specif env ind in
-  check_args env c mib.mind_hyps;
+  check_hyps_inclusion env c mib.mind_hyps;
   let paramstyp = Array.map (fun j -> j.uj_type) jl in
   let t = Inductive.type_of_inductive_knowing_parameters env mip paramstyp in
   make_judge c t
@@ -323,7 +310,7 @@ let judge_of_constructor env c =
   let _ =
     let ((kn,_),_) = c in
     let mib = lookup_mind kn env in
-    check_args env constr mib.mind_hyps in
+    check_hyps_inclusion env constr mib.mind_hyps in
   let specif = lookup_mind_specif env (inductive_of_constructor c) in
   make_judge constr (type_of_constructor c specif)
 

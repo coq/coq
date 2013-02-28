@@ -167,8 +167,9 @@ let rec nf_val env v typ =
       let lvl = nb_rel env in
       let name,dom,codom = 
 	try decompose_prod env typ
-	with _ -> (* TODO: is this the right exception to raise? *)
-	  raise (Type_errors.TypeError(env,Type_errors.ReferenceVariables typ))
+	with Invalid_argument _ ->
+          Errors.anomaly
+            (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
       in
       let env = push_rel (name,None,dom) env in
       let body = nf_val env (f (mk_rel_accu lvl)) codom in

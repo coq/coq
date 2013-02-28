@@ -41,7 +41,7 @@ type type_error =
   | UnboundVar of variable
   | NotAType of unsafe_judgment
   | BadAssumption of unsafe_judgment
-  | ReferenceVariables of constr
+  | ReferenceVariables of identifier * constr
   | ElimArity of inductive * sorts_family list * constr * unsafe_judgment
       * (sorts_family * sorts_family * arity_error) option
   | CaseNotInductive of unsafe_judgment
@@ -74,8 +74,8 @@ let error_not_type env j =
 let error_assumption env j =
   raise (TypeError (env, BadAssumption j))
 
-let error_reference_variables env id =
-  raise (TypeError (env, ReferenceVariables id))
+let error_reference_variables env id c =
+  raise (TypeError (env, ReferenceVariables (id,c)))
 
 let error_elim_arity env ind aritylst c pj okinds =
   raise (TypeError (env, ElimArity (ind,aritylst,c,pj,okinds)))
