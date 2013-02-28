@@ -22,7 +22,7 @@ type unification_error =
   | NoCanonicalStructure
   | ConversionFailed of env * constr * constr
   | MetaOccurInBody of existential_key
-  | InstanceNotSameType of existential_key
+  | InstanceNotSameType of existential_key * env * types * types
   | UnifUnivInconsistency
 
 type pretype_error =

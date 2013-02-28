@@ -183,9 +183,12 @@ let explain_unification_error env sigma p1 p2 = function
     | MetaOccurInBody evk ->
         spc () ++ str "(instance for " ++ quote (pr_existential_key evk) ++
 	strbrk " refers to a metavariable - please report your example)"
-    | InstanceNotSameType evk ->
+    | InstanceNotSameType (evk,env,t,u) ->
         spc () ++ str "(unable to find a well-typed instantiation for " ++
-	quote (pr_existential_key evk) ++ str ")"
+	quote (pr_existential_key evk) ++ str ":" ++ spc () ++
+          str "cannot unify" ++
+          pr_lconstr_env env t ++ spc () ++ str "and" ++ spc () ++
+          pr_lconstr_env env u ++ str ")"
     | UnifUnivInconsistency ->
         spc () ++ str "(Universe inconsistency)"
 

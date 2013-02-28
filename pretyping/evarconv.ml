@@ -854,8 +854,9 @@ let rec solve_unconstrained_evars_with_canditates evd =
             match reconsider_conv_pbs conv_algo evd with
             | Success evd -> solve_unconstrained_evars_with_canditates evd
             | UnifFailure _ -> aux l
-          with e when Pretype_errors.precatchable_exception e ->
-            aux l in
+          with
+          | IllTypedInstance _ as e
+          | e when Pretype_errors.precatchable_exception e -> aux l in
       (* List.rev is there to favor most dependent solutions *)
       (* and favor progress when used with the refine tactics *)
       let evd = aux (List.rev l) in

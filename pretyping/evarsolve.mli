@@ -54,5 +54,8 @@ val is_unification_pattern : env * int -> evar_map -> constr -> constr list ->
 
 val solve_pattern_eqn : env -> constr list -> constr -> constr
 
-val check_evar_instance : evar_map -> existential_key -> constr -> conv_fun ->
-  evar_map
+exception IllTypedInstance of env * types * types
+
+(* May raise IllTypedInstance if types are not convertible *)
+val check_evar_instance :
+  evar_map -> existential_key -> constr -> conv_fun -> evar_map

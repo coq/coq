@@ -1034,6 +1034,8 @@ type conv_fun =
 type conv_fun_bool =
   env ->  evar_map -> conv_pb -> constr -> constr -> bool
 
+exception IllTypedInstance of env * types * types
+
 let check_evar_instance evd evk1 body conv_algo =
   let evi = Evd.find evd evk1 in
   let evenv = evar_env evi in
@@ -1044,10 +1046,7 @@ let check_evar_instance evd evk1 body conv_algo =
   in
   match conv_algo evenv evd Reduction.CUMUL ty evi.evar_concl with
   | Success evd -> evd
-  | UnifFailure (evd,d) ->
-      (* TODO: use the error? *)
-      user_err_loc (fst (evar_source evk1 evd),"",
-                  str "Unable to find a well-typed instantiation")
+  | UnifFailure _ -> raise (IllTypedInstance (evenv,ty,evi.evar_concl))
 
 (* Solve pbs ?e[t1..tn] = ?e[u1..un] which arise often in fixpoint
  * definitions. We try to unify the ti with the ui pairwise. The pairs
@@ -1128,7 +1127,6 @@ exception NotInvertibleUsingOurAlgorithm of constr
 exception NotEnoughInformationToProgress of (Id.t * evar_projection) list
 exception OccurCheckIn of evar_map * constr
 exception MetaOccurInBodyInternal
-exception InstanceNotSameTypeInternal
 
 let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
   let aliases = make_alias_map env in
@@ -1310,8 +1308,8 @@ and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
            str "----> " ++ int ev ++ str " := " ++
            print_constr body);
         raise e in*)
-    let evd' = Evd.define evk body evd' in
-    check_evar_instance evd' evk body conv_algo
+    let evd' = check_evar_instance evd' evk body conv_algo in
+    Evd.define evk body evd'
   with
     | NotEnoughInformationToProgress sols ->
         postpone_non_unique_projection env evd ev sols rhs
@@ -1391,6 +1389,6 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
         UnifFailure (evd,OccurCheck (evk1,rhs))
     | MetaOccurInBodyInternal ->
         UnifFailure (evd,MetaOccurInBody evk1)
-    | InstanceNotSameTypeInternal ->
-        UnifFailure (evd,InstanceNotSameType evk1)
+    | IllTypedInstance (env,t,u) ->
+        UnifFailure (evd,InstanceNotSameType (evk1,env,t,u))
 
