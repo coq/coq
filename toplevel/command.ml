@@ -412,7 +412,7 @@ let inductive_levels env evdref arities inds =
     !evdref (Array.to_list levels') destarities sizes
   in evdref := evd; arities
 
-let interp_mutual_inductive (paramsl,indl) notations poly finite =
+let interp_mutual_inductive (paramsl,indl) notations poly prv finite =
   check_all_names_different indl;
   let env0 = Global.env() in
   let evdref = ref Evd.(from_env env0) in
@@ -487,6 +487,7 @@ let interp_mutual_inductive (paramsl,indl) notations poly finite =
     mind_entry_finite = finite;
     mind_entry_inds = entries;
     mind_entry_polymorphic = poly;
+    mind_entry_private = if prv then Some false else None;
     mind_entry_universes = Evd.universe_context evd },
     impls
 
@@ -535,7 +536,7 @@ let declare_mutual_inductive_with_eliminations isrecord mie impls =
 		       constrimpls)
       impls;
   if_verbose msg_info (minductive_message names);
-  declare_default_schemes mind;
+  if mie.mind_entry_private == None then declare_default_schemes mind;
   mind
 
 type one_inductive_impls =
@@ -545,10 +546,10 @@ type one_inductive_impls =
 type one_inductive_expr =
   lident * local_binder list * constr_expr option * constructor_expr list
 
-let do_mutual_inductive indl poly finite =
+let do_mutual_inductive indl poly prv finite =
   let indl,coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)
-  let mie,impls = interp_mutual_inductive indl ntns poly finite in
+  let mie,impls = interp_mutual_inductive indl ntns poly prv finite in
   (* Declare the mutual inductive block with its associated schemes *)
   ignore (declare_mutual_inductive_with_eliminations UserVerbose mie impls);
   (* Declare the possible notations of inductive types *)

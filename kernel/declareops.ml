@@ -227,7 +227,8 @@ let subst_mind_body sub mib =
       Context.map_rel_context (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_polymorphic = mib.mind_polymorphic;
-    mind_universes = mib.mind_universes }
+    mind_universes = mib.mind_universes;
+    mind_private = mib.mind_private }
 
 (** {6 Hash-consing of inductive declarations } *)
 

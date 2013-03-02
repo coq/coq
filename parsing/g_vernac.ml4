@@ -190,11 +190,11 @@ GEXTEND Gram
       | IDENT "Let"; id = identref; b = def_body ->
           VernacDefinition ((Some Discharge, Definition), id, b)
       (* Gallina inductive declarations *)
-      | f = finite_token;
+      | priv = private_token; f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
 	  let (k,f) = f in
 	  let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
-          VernacInductive (f,false,indl)
+          VernacInductive (priv,f,false,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
           VernacFixpoint (None, recs)
       | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
@@ -212,13 +212,14 @@ GEXTEND Gram
   ;
 
   gallina_ext:
-    [ [ b = record_token; infer = infer_token; oc = opt_coercion; name = identref;
+    [ [ priv = private_token; 
+	b = record_token; infer = infer_token; oc = opt_coercion; name = identref;
         ps = binders;
 	s = OPT [ ":"; s = lconstr -> s ];
 	cfs = [ ":="; l = constructor_list_or_record_decl -> l
 	  | -> RecordDecl (None, []) ] ->
 	  let (recf,indf) = b in
-	    VernacInductive (indf,infer,[((oc,name),ps,s,recf,cfs),[]])
+	    VernacInductive (priv,indf,infer,[((oc,name),ps,s,recf,cfs),[]])
   ] ]
   ;
   thm_token:
@@ -259,6 +260,9 @@ GEXTEND Gram
   ;
   infer_token:
     [ [ IDENT "Infer" -> true | -> false ] ]
+  ;
+  private_token:
+    [ [ IDENT "Private" -> true | -> false ] ]
   ;
   record_token:
     [ [ IDENT "Record" -> (Record,BiFinite)

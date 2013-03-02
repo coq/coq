@@ -1298,6 +1298,7 @@ and match_current pb (initial,tomatch) =
 	compile_all_variables initial tomatch pb
     | IsInd (_,(IndType(indf,realargs) as indt),names) ->
 	let mind,_ = dest_ind_family indf in
+        let mind = Tacred.check_privacy pb.env mind in
 	let cstrs = get_constructors pb.env indf in
 	let arsign, _ = get_arity pb.env indf in
 	let eqns,onlydflt = group_equations pb (fst mind) current cstrs pb.mat in

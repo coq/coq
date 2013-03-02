@@ -340,6 +340,7 @@ let declare_structure finite infer poly ctx id idbuild paramimpls params arity f
       mind_entry_finite = finite != CoFinite;
       mind_entry_inds = [mie_ind];
       mind_entry_polymorphic = poly;
+      mind_entry_private = None;
       mind_entry_universes = ctx } in
   let kn = Command.declare_mutual_inductive_with_eliminations KernelVerbose mie [(paramimpls,[])] in
   let rsp = (kn,0) in (* This is ind path of idstruc *)

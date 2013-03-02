@@ -755,7 +755,8 @@ let descend_then sigma env head dirn =
     try find_rectype env sigma (get_type_of env sigma head)
     with Not_found ->
       error "Cannot project on an inductive type derived from a dependency." in
-  let (ind,_),_ = dest_ind_family indf in
+  let indp,_ = (dest_ind_family indf) in
+  let ind, _ = check_privacy env indp in
   let (mib,mip) = lookup_mind_specif env ind in
   let cstr = get_constructors env indf in
   let dirn_nlams = cstr.(dirn-1).cs_nargs in
@@ -804,7 +805,8 @@ let construct_discriminator sigma env dirn c sort =
       errorlabstrm "Equality.construct_discriminator"
 	(str "Cannot discriminate on inductive constructors with \
 		 dependent types.") in
-  let ((ind,_),_) = dest_ind_family indf in
+  let (indp,_) = dest_ind_family indf in
+  let ind, _ = check_privacy env indp in
   let (mib,mip) = lookup_mind_specif env ind in
   let (true_0,false_0,sort_0) = build_coq_True(),build_coq_False(),Prop Null in
   let deparsign = make_arity_signature env true indf in

@@ -102,5 +102,6 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
     mind_entry_params = params';
     mind_entry_inds = inds';
     mind_entry_polymorphic = mib.mind_polymorphic;
+    mind_entry_private = mib.mind_private;
     mind_entry_universes = univs
   }

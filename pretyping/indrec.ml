@@ -45,6 +45,15 @@ let mkLambda_string s t c = mkLambda (Name (Id.of_string s), t, c)
 (* Building curryfied elimination          *)
 (*******************************************)
 
+let is_private mib =
+  match mib.mind_private with
+  | Some true -> true
+  | _ -> false
+
+let check_privacy_block mib =
+  if is_private mib then
+    errorlabstrm ""(str"case analysis on a private inductive type")
+      
 (**********************************************************************)
 (* Building case analysis schemes *)
 (* Christine Paulin, 1996 *)
@@ -54,12 +63,13 @@ let mis_make_case_com dep env sigma (ind, u as pind) (mib,mip as specif) kind =
   let lnamespar = Vars.subst_univs_context usubst
     mib.mind_params_ctxt
   in
-
-  if not (Sorts.List.mem kind (elim_sorts specif)) then
-    raise
-      (RecursionSchemeError
-	 (NotAllowedCaseAnalysis (false, fst (Universes.fresh_sort_in_family env kind), pind)));
-
+  let () = check_privacy_block mib in
+  let () = 
+    if not (Sorts.List.mem kind (elim_sorts specif)) then
+      raise
+	(RecursionSchemeError
+	   (NotAllowedCaseAnalysis (false, fst (Universes.fresh_sort_in_family env kind), pind)))
+  in
   let ndepar = mip.mind_nrealargs_ctxt + 1 in
 
   (* Pas génant car env ne sert pas à typer mais juste à renommer les Anonym *)

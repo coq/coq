@@ -1093,6 +1093,10 @@ let pattern_occs loccs_trm env sigma c =
 
 (* Used in several tactics. *)
 
+let check_privacy env ind =
+  if (fst (Inductive.lookup_mind_specif env (fst ind))).Declarations.mind_private = Some true then
+    errorlabstrm "" (str "case analysis on a private type")
+  else ind
 (* put t as t'=(x1:A1)..(xn:An)B with B an inductive definition of name name
    return name, B and t' *)
 
@@ -1100,7 +1104,7 @@ let reduce_to_ind_gen allow_product env sigma t =
   let rec elimrec env t l =
     let t = hnf_constr env sigma t in
     match kind_of_term (fst (decompose_app t)) with
-      | Ind ind-> (ind, it_mkProd_or_LetIn t l)
+      | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t l)
       | Prod (n,ty,t') ->
 	  if allow_product then
 	    elimrec (push_rel (n,None,ty) env) t' ((n,None,ty)::l)
@@ -1111,7 +1115,7 @@ let reduce_to_ind_gen allow_product env sigma t =
 	     was partially the case between V5.10 and V8.1 *)
 	  let t' = whd_betadeltaiota env sigma t in
 	  match kind_of_term (fst (decompose_app t')) with
-	    | Ind ind-> (ind, it_mkProd_or_LetIn t' l)
+	    | Ind ind-> (check_privacy env ind, it_mkProd_or_LetIn t' l)
 	    | _ -> errorlabstrm "" (str"Not an inductive product.")
   in
   elimrec env t []

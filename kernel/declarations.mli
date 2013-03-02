@@ -172,7 +172,9 @@ type mutual_inductive_body = {
 
     mind_universes : Univ.universe_context; (** Local universe variables and constraints *)
 
-  }
+    mind_private : bool option; (** allow pattern-matching: Some true ok, Some false blocked *)
+  
+}
 
 (** {6 Module declarations } *)
 

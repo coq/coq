@@ -628,6 +628,7 @@ let used_section_variables env inds =
     (fun l c -> Id.Set.union (Environ.global_vars_set env c) l)
       Id.Set.empty inds in
   keep_hyps env ids
+
 let lift_decl n d = 
   map_rel_declaration (lift n) d
 
@@ -660,7 +661,7 @@ let compute_expansion ((kn, _ as ind), u) params ctx =
  	     (Array.map (fun p -> mkProj (p, mkRel 1)) projarr))
    in exp, projarr
 
-let build_inductive env p ctx env_ar params kn isrecord isfinite inds nmr recargs =
+let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr recargs =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
   let hyps =  used_section_variables env inds in
@@ -743,6 +744,7 @@ let build_inductive env p ctx env_ar params kn isrecord isfinite inds nmr recarg
       mind_packets = packets;
       mind_polymorphic = p;
       mind_universes = ctx;
+      mind_private = prv;
     }
 
 (************************************************************************)
@@ -757,7 +759,7 @@ let check_inductive env kn mie =
   (* Then check positivity conditions *)
   let (nmr,recargs) = check_positivity kn env_ar params inds in
   (* Build the inductive packets *)
-    build_inductive env mie.mind_entry_polymorphic 
+    build_inductive env mie.mind_entry_polymorphic mie.mind_entry_private
       mie.mind_entry_universes
       env_ar params kn mie.mind_entry_record mie.mind_entry_finite
       inds nmr recargs

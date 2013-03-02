@@ -86,7 +86,8 @@ type one_inductive_impls =
   Impargs.manual_implicits list (** for constrs *)
 
 val interp_mutual_inductive :
-  structured_inductive_expr -> decl_notation list -> polymorphic -> bool(*finite*) ->
+  structured_inductive_expr -> decl_notation list -> polymorphic ->
+    private_flag -> bool(*finite*) ->
     mutual_inductive_entry * one_inductive_impls list
 
 (** Registering a mutual inductive definition together with its
@@ -99,7 +100,8 @@ val declare_mutual_inductive_with_eliminations :
 (** Entry points for the vernacular commands Inductive and CoInductive *)
 
 val do_mutual_inductive :
-  (one_inductive_expr * decl_notation list) list -> polymorphic -> bool -> unit
+  (one_inductive_expr * decl_notation list) list -> polymorphic -> 
+  private_flag -> bool -> unit
 
 (** {6 Fixpoints and cofixpoints} *)
 
