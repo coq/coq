@@ -41,6 +41,7 @@ type delta_hint =
 module Deltamap = struct
   type t = module_path MPmap.t * delta_hint KNmap.t
   let empty = MPmap.empty, KNmap.empty
+  let is_empty (mm, km) = MPmap.is_empty mm && KNmap.is_empty km
   let add_kn kn hint (mm,km) = (mm,KNmap.add kn hint km)
   let add_mp mp mp' (mm,km) = (MPmap.add mp mp' mm, km)
   let remove_mp mp (mm,km) = (MPmap.remove mp mm, km)
@@ -347,7 +348,7 @@ let from_val a = ref (LSval a)
  
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
-    | _ when mp = mpfrom -> mpto
+    | _ when ModPath.equal mp mpfrom -> mpto
     | MPdot (mp1,l) ->
 	let mp1' = replace_mp_in_mp mpfrom mpto mp1 in
 	  if mp1==mp1' then mp
@@ -356,7 +357,7 @@ let rec replace_mp_in_mp mpfrom mpto mp =
 
 let rec mp_in_mp mp mp1 =
   match mp1 with
-    | _ when mp1 = mp -> true
+    | _ when ModPath.equal mp1 mp -> true
     | MPdot (mp2,l) -> mp_in_mp mp mp2
     | _ -> false
 
@@ -429,14 +430,14 @@ let update_delta_resolver resolver1 resolver2 =
 let add_delta_resolver resolver1 resolver2 =
   if resolver1 == resolver2 then
     resolver2
-  else if resolver2 = empty_delta_resolver then
+  else if Deltamap.is_empty resolver2 then
     resolver1
   else
     Deltamap.join (update_delta_resolver resolver1 resolver2) resolver2
 
 let substition_prefixed_by k mp subst =
   let mp_prefixmp kmp (mp_to,reso) sub =
-    if mp_in_mp mp kmp && mp <> kmp then
+    if mp_in_mp mp kmp && not (ModPath.equal mp kmp) then
       let new_key = replace_mp_in_mp mp k kmp in
       Umap.add_mp new_key (mp_to,reso) sub
     else sub
@@ -722,7 +723,7 @@ let subst_arity sub = function
 (* NB: we leave bytecode and native code fields untouched *)
 let subst_const_body sub cb =
  { cb with
-    const_hyps = (assert (cb.const_hyps=[]); []);
+    const_hyps = (assert (List.is_empty cb.const_hyps); []);
     const_body = subst_constant_def sub cb.const_body;
     const_type = subst_arity sub cb.const_type }
 
@@ -755,7 +756,7 @@ let subst_mind sub mib =
   { mind_record = mib.mind_record ;
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
-    mind_hyps = (assert (mib.mind_hyps=[]); []) ;
+    mind_hyps = (assert (List.is_empty mib.mind_hyps); []) ;
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =

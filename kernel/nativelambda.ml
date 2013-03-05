@@ -48,14 +48,14 @@ and fix_decl =  name array * lambda array * lambda array
 (*s Constructors *)
   
 let mkLapp f args =
-  if Array.length args = 0 then f
+  if Array.is_empty args then f
   else
     match f with
     | Lapp(f', args') -> Lapp (f', Array.append args' args)
     | _ -> Lapp(f, args)
 	  
 let mkLlam ids body =
-  if Array.length ids = 0 then body
+  if Array.is_empty ids then body
   else 
     match body with
     | Llam(ids', body) -> Llam(Array.append ids ids', body)
@@ -134,8 +134,7 @@ let map_lam_with_binders g f n lam =
       let on_b b = 
 	let (cn,ids,body) = b in
 	let body' = 
-	  let len = Array.length ids in
-	  if len = 0 then f n body 
+	  if Array.is_empty ids then f n body 
 	  else f (g (Array.length ids) n) body in
 	if body == body' then b else (cn,ids,body') in
       let br' = Array.smartmap on_b br in
@@ -172,7 +171,7 @@ let rec lam_exlift el lam =
   | _ -> map_lam_with_binders el_liftn lam_exlift el lam
 
 let lam_lift k lam =
-  if k = 0 then lam
+  if Int.equal k 0 then lam
   else lam_exlift (el_shft k el_id) lam
 
 let lam_subst_rel lam id n subst =
@@ -226,7 +225,7 @@ let merge_if t bt bf =
   let nt = Array.length idst in
   let nf = Array.length idsf in
   let common,idst,idsf = 
-    if nt = nf then idst, [||], [||] 
+    if Int.equal nt nf then idst, [||], [||] 
     else
       if nt < nf then idst,[||], Array.sub idsf nt (nf - nt)
       else idsf, Array.sub idst nf (nt - nf), [||] in
@@ -315,7 +314,7 @@ and reduce_lapp substf lids body substa largs =
 let rec occurence k kind lam =   
   match lam with
   | Lrel (_,n) -> 
-      if n = k then 
+      if Int.equal n k then 
 	if kind then false else raise Not_found
       else kind
   | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _
@@ -379,13 +378,13 @@ let rec remove_let subst lam =
 let is_value lc =
   match lc with
   | Lval _ -> true
-  | Lmakeblock(_,_,_,args) when Array.length args = 0 -> true
+  | Lmakeblock(_,_,_,args) when Array.is_empty args -> true
   | _ -> false
 	
 let get_value lc =
   match lc with
   | Lval v -> v
-  | Lmakeblock(_,_,tag,args) when Array.length args = 0 -> 
+  | Lmakeblock(_,_,tag,args) when Array.is_empty args -> 
       Nativevalues.mk_int tag
   | _ -> raise Not_found
 	
@@ -436,7 +435,7 @@ module Vect =
     let length v = v.size
 
     let extend v =
-      if v.size = Array.length v.elems then 
+      if Int.equal v.size (Array.length v.elems) then 
 	let new_size = min (2*v.size) Sys.max_array_length in
 	if new_size <= v.size then raise (Invalid_argument "Vect.extend");
 	let new_elems = Array.make new_size v.elems.(0) in
@@ -470,7 +469,7 @@ module Vect =
 
 
     let last v =
-      if v.size = 0 then raise
+      if Int.equal v.size 0 then raise
 	  (Invalid_argument "Vect.last:index out of bounds");
       v.elems.(v.size - 1)
 
@@ -598,10 +597,10 @@ let rec lambda_of_constr env c =
 	let cn = (ind,i+1) in
 	let _, arity = tbl.(i) in
 	let b = lambda_of_constr env b in
-	if arity = 0 then (cn, empty_ids, b)
+	if Int.equal arity 0 then (cn, empty_ids, b)
 	else 
 	  match b with
-	  | Llam(ids, body) when Array.length ids = arity -> (cn, ids, body)
+	  | Llam(ids, body) when Int.equal (Array.length ids) arity -> (cn, ids, body)
 	  | _ -> 
 	      let ids = Array.make arity Anonymous in
 	      let args = make_args arity 1 in
@@ -649,7 +648,7 @@ and lambda_of_app env f args =
       let tag, nparams, arity = Renv.get_construct_info env c in
       let expected = nparams + arity in
       let nargs = Array.length args in
-      if nargs = expected then 
+      if Int.equal nargs expected then 
 	let args = lambda_of_args env nparams args in
 	makeblock !global_env c tag args
       else

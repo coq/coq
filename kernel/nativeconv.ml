@@ -30,13 +30,14 @@ let rec conv_val pb lvl v1 v2 cu =
 	let v = mk_rel_accu lvl in
 	conv_val CONV (lvl+1) (f1 v) (f2 v) cu
     | Vconst i1, Vconst i2 -> 
-	if i1 = i2 then cu else raise NotConvertible
+	if Int.equal i1 i2 then cu else raise NotConvertible
     | Vblock b1, Vblock b2 ->
 	let n1 = block_size b1 in
-	if block_tag b1 <> block_tag b2 || n1 <> block_size b2 then
+        let n2 = block_size b2 in
+	if not (Int.equal (block_tag b1) (block_tag b2)) || not (Int.equal n1 n2) then
 	  raise NotConvertible;
 	let rec aux lvl max b1 b2 i cu =
-	  if i = max then 
+	  if Int.equal i max then 
 	    conv_val CONV lvl (block_field b1 i) (block_field b2 i) cu
 	  else
 	    let cu = 
@@ -51,8 +52,9 @@ let rec conv_val pb lvl v1 v2 cu =
 
 and conv_accu pb lvl k1 k2 cu = 
   let n1 = accu_nargs k1 in
-  if n1 <> accu_nargs k2 then raise NotConvertible;
-  if n1 = 0 then 
+  let n2 = accu_nargs k2 in
+  if not (Int.equal n1 n2) then raise NotConvertible;
+  if Int.equal n1 0 then 
     conv_atom pb lvl (atom_of_accu k1) (atom_of_accu k2) cu
   else
     let cu = conv_atom pb lvl (atom_of_accu k1) (atom_of_accu k2) cu in
@@ -63,7 +65,7 @@ and conv_atom pb lvl a1 a2 cu =
   else
     match a1, a2 with
     | Arel i1, Arel i2 -> 
-	if i1 <> i2 then raise NotConvertible;
+	if not (Int.equal i1 i2) then raise NotConvertible;
 	cu
     | Aind ind1, Aind ind2 ->
 	if not (eq_ind ind1 ind2) then raise NotConvertible;
@@ -74,36 +76,36 @@ and conv_atom pb lvl a1 a2 cu =
     | Asort s1, Asort s2 -> 
 	sort_cmp pb s1 s2 cu
     | Avar id1, Avar id2 ->
-	if id1 <> id2 then raise NotConvertible;
+	if not (Id.equal id1 id2) then raise NotConvertible;
 	cu
     | Acase(a1,ac1,p1,bs1), Acase(a2,ac2,p2,bs2) ->
-	if a1.asw_ind <> a2.asw_ind then raise NotConvertible;
+	if not (eq_ind a1.asw_ind a2.asw_ind) then raise NotConvertible;
 	let cu = conv_accu CONV lvl ac1 ac2 cu in
 	let tbl = a1.asw_reloc in
 	let len = Array.length tbl in
-	if len = 0 then conv_val CONV lvl p1 p2 cu 
+	if Int.equal len 0 then conv_val CONV lvl p1 p2 cu 
 	else
 	  let cu = conv_val CONV lvl p1 p2 cu in
 	  let max = len - 1 in
 	  let rec aux i cu =
 	    let tag,arity = tbl.(i) in
 	    let ci = 
-	      if arity = 0 then mk_const tag
+	      if Int.equal arity 0 then mk_const tag
 	      else mk_block tag (mk_rels_accu lvl arity) in
 	    let bi1 = bs1 ci and bi2 = bs2 ci in
-	    if i = max then conv_val CONV (lvl + arity) bi1 bi2 cu
+	    if Int.equal i max then conv_val CONV (lvl + arity) bi1 bi2 cu
 	    else aux (i+1) (conv_val CONV (lvl + arity) bi1 bi2 cu) in
 	  aux 0 cu
     | Afix(t1,f1,rp1,s1), Afix(t2,f2,rp2,s2) ->
-	if s1 <> s2 || rp1 <> rp2 then raise NotConvertible;
+	if not (Int.equal s1 s2) || not (Array.equal Int.equal rp1 rp2) then raise NotConvertible;
 	if f1 == f2 then cu
 	else conv_fix lvl t1 f1 t2 f2 cu
     | (Acofix(t1,f1,s1,_) | Acofixe(t1,f1,s1,_)),
       (Acofix(t2,f2,s2,_) | Acofixe(t2,f2,s2,_)) ->
-	if s1 <> s2 then raise NotConvertible;
+	if not (Int.equal s1 s2) then raise NotConvertible;
 	if f1 == f2 then cu
 	else
-	  if Array.length f1 <> Array.length f2 then raise NotConvertible
+	  if not (Int.equal (Array.length f1) (Array.length f2)) then raise NotConvertible
 	  else conv_fix lvl t1 f1 t2 f2 cu 
     | Aprod(_,d1,c1), Aprod(_,d2,c2) ->
 	let cu = conv_val CONV lvl d1 d2 cu in
@@ -121,7 +123,7 @@ and conv_fix lvl t1 f1 t2 f2 cu =
     let cu = conv_val CONV lvl t1.(i) t2.(i) cu in
     let fi1 = napply f1.(i) fargs in
     let fi2 = napply f2.(i) fargs in
-    if i = max then conv_val CONV flvl fi1 fi2 cu 
+    if Int.equal i max then conv_val CONV flvl fi1 fi2 cu 
     else aux (i+1) (conv_val CONV flvl fi1 fi2 cu) in
   aux 0 cu
 

@@ -510,7 +510,7 @@ let merge g arcu arcv =
 let merge_disc g arc1 arc2 =
   let arcu, arcv = if arc1.rank < arc2.rank then arc2, arc1 else arc1, arc2 in
   let arcu, g = 
-    if arc1.rank <> arc2.rank then arcu, g
+    if not (Int.equal arc1.rank arc2.rank) then arcu, g
     else
       let arcu = {arcu with rank = succ arcu.rank} in 
       arcu, enter_arc arcu g

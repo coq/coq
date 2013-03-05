@@ -456,8 +456,9 @@ let is_non_terminal = function
   | NonTerminal _ | SProdList _ -> true
   | _ -> false
 
-let is_next_non_terminal prods =
-  prods <> [] && is_non_terminal (List.hd prods)
+let is_next_non_terminal = function
+| [] -> false
+| pr :: _ -> is_non_terminal pr
 
 let is_next_terminal = function Terminal _ :: _ -> true | _ -> false
 

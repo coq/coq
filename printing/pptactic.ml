@@ -423,17 +423,20 @@ let pr_in_hyp_as pr_id = function
 
 let pr_clauses default_is_concl pr_id = function
   | { onhyps=Some []; concl_occs=AllOccurrences }
-      when default_is_concl = Some true -> mt ()
+      when (match default_is_concl with Some true -> true | _ -> false) -> mt ()
   | { onhyps=None; concl_occs=AllOccurrences }
-      when default_is_concl = Some false -> mt ()
+      when (match default_is_concl with Some false -> true | _ -> false) -> mt ()
+  | { onhyps=None; concl_occs=NoOccurrences } ->
+      pr_in (str " * |-")
   | { onhyps=None; concl_occs=occs } ->
-      if occs = NoOccurrences then pr_in (str " * |-")
-      else pr_in (pr_with_occurrences (fun () -> str " *") (occs,()))
+      pr_in (pr_with_occurrences (fun () -> str " *") (occs,()))
   | { onhyps=Some l; concl_occs=occs } ->
+      let pr_occs = match occs with
+      | NoOccurrences -> mt ()
+      | _ -> pr_with_occurrences (fun () -> str" |- *") (occs,())
+      in
       pr_in
-        (prlist_with_sep (fun () -> str",") (pr_hyp_location pr_id) l ++
-	 (if occs = NoOccurrences then mt ()
-	  else pr_with_occurrences (fun () -> str" |- *") (occs,())))
+        (prlist_with_sep (fun () -> str",") (pr_hyp_location pr_id) l ++ pr_occs)
 
 let pr_orient b = if b then mt () else str "<- "
 
@@ -483,7 +486,7 @@ let pr_match_rule m pr pr_pat = function
   | Pat (rl,mp,t) ->
       hov 0 (
 	hv 0 (prlist_with_sep pr_comma (pr_match_hyps pr_pat) rl) ++
-        (if rl <> [] then spc () else mt ()) ++
+        (if not (List.is_empty rl) then spc () else mt ()) ++
         hov 0 (
 	  str "|-" ++ spc () ++ pr_match_pattern pr_pat mp ++ spc () ++
 	  str "=>" ++ brk (1,4) ++ pr t))
@@ -706,7 +709,7 @@ and pr_atom1 = function
   | TacGeneralizeDep c ->
       hov 1 (str "generalize" ++ spc () ++ str "dependent" ++
              pr_constrarg c)
-  | TacLetTac (na,c,cl,true,_) when cl = Locusops.nowhere ->
+  | TacLetTac (na,c,cl,true,_) when Locusops.is_nowhere cl ->
       hov 1 (str "pose" ++ pr_pose pr_lconstr pr_constr na c)
   | TacLetTac (na,c,cl,b,e) ->
       hov 1 ((if b then str "set" else str "remember") ++
@@ -921,7 +924,8 @@ let rec pr_tac inherited tac =
              pr_tac (lorelse,E) t2),
       lorelse
   | TacFail (n,l) ->
-      hov 1 (str "fail" ++ (if n=ArgArg 0 then mt () else pr_arg (pr_or_var int) n) ++
+      let arg = match n with ArgArg 0 -> mt () | _ -> pr_arg (pr_or_var int) n in
+      hov 1 (str "fail" ++ arg ++
       prlist (pr_arg (pr_message_token pr_ident)) l), latom
   | TacFirst tl ->
       str "first" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet

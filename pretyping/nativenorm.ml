@@ -29,7 +29,7 @@ let invert_tag cst tag reloc_tbl =
   try
     for j = 0 to Array.length reloc_tbl - 1 do
       let tagj,arity = reloc_tbl.(j) in
-      if tag = tagj && (cst && arity = 0 || not(cst || arity = 0)) then
+      if Int.equal tag tagj && (cst && Int.equal arity 0 || not(cst || Int.equal arity 0)) then
 	raise (Find_at j)
       else ()
     done;raise Not_found
@@ -37,8 +37,9 @@ let invert_tag cst tag reloc_tbl =
 
 let decompose_prod env t =
   let (name,dom,codom as res) = destProd (whd_betadeltaiota env t) in
-  if name = Anonymous then (Name (id_of_string "x"),dom,codom)
-  else res
+  match name with
+  | Anonymous -> (Name (id_of_string "x"),dom,codom)
+  | _ -> res
 
 let app_type env c =
   let t = whd_betadeltaiota env c in
@@ -57,7 +58,7 @@ let type_constructor mind mib typ params =
   let s = ind_subst mind mib in
   let ctyp = substl s typ in
   let nparams = Array.length params in
-  if nparams = 0 then ctyp
+  if Int.equal nparams 0 then ctyp
   else
     let _,ctyp = decompose_prod_n nparams ctyp in   
     substl (List.rev (Array.to_list params)) ctyp
@@ -135,12 +136,14 @@ let sort_of_product env domsort rangsort =
     | (Prop _,  Prop Pos) -> rangsort
     (* Product rule (Type,Set,?) *)
     | (Type u1, Prop Pos) ->
-        if engagement env = Some ImpredicativeSet then
+        begin match engagement env with
+        | Some ImpredicativeSet ->
           (* Rule is (Type,Set,Set) in the Set-impredicative calculus *)
           rangsort
-        else
+        | _ ->
           (* Rule is (Type_i,Set,Type_i) in the Set-predicative calculus *)
           Type (sup u1 type0_univ)
+        end
     (* Product rule (Prop,Type_i,Type_i) *)
     | (Prop Pos,  Type u2)  -> Type (sup type0_univ u2)
     (* Product rule (Prop,Type_i,Type_i) *)
@@ -155,7 +158,7 @@ let branch_of_switch lvl ans bs =
   let branch i = 
     let tag,arity = tbl.(i) in
     let ci = 
-      if arity = 0 then mk_const tag
+      if Int.equal arity 0 then mk_const tag
       else mk_block tag (mk_rels_accu lvl arity) in
     bs ci in
   Array.init (Array.length tbl) branch
@@ -195,7 +198,7 @@ and nf_type_sort env v =
 
 and nf_accu env accu =
   let atom = atom_of_accu accu in
-  if accu_nargs accu = 0 then nf_atom env atom
+  if Int.equal (accu_nargs accu) 0 then nf_atom env atom
   else
     let a,typ = nf_atom_type env atom in
     let _, args = nf_args env accu typ in
@@ -203,7 +206,7 @@ and nf_accu env accu =
 
 and nf_accu_type env accu =
   let atom = atom_of_accu accu in
-  if accu_nargs accu = 0 then nf_atom_type env atom
+  if Int.equal (accu_nargs accu) 0 then nf_atom_type env atom
   else
     let a,typ = nf_atom_type env atom in
     let t, args = nf_args env accu typ in
@@ -320,7 +323,7 @@ and  nf_predicate env ind mip params v pT =
       let name = Name (id_of_string "c") in
       let n = mip.mind_nrealargs in
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
-      let params = if n=0 then params else Array.map (lift n) params in
+      let params = if Int.equal n 0 then params else Array.map (lift n) params in
       let dom = mkApp(mkInd ind,Array.append params rargs) in
       let body = nf_type (push_rel (name,None,dom) env) vb in
       true, mkLambda(name,dom,body)

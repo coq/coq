@@ -165,18 +165,18 @@ let explain_unification_error env sigma p1 p2 = function
         spc () ++ str "(cannot instantiate " ++ quote (pr_existential_key evk)
         ++ strbrk " because " ++ pr_lconstr_env env c ++
 	strbrk " is not in its scope" ++
-        (if args = [||] then mt() else
+        (if Array.is_empty args then mt() else
          strbrk ": available arguments are " ++
          pr_sequence (pr_lconstr_env env) (List.rev (Array.to_list args))) ++
         str ")"
     | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
         (* Error speaks from itself *) mt ()
     | ConversionFailed (env,t1,t2) ->
-        if eq_constr t1 p1 & eq_constr t2 p2 then mt () else
+        if eq_constr t1 p1 && eq_constr t2 p2 then mt () else
         let env = make_all_name_different env in
         let t1 = Evarutil.nf_evar sigma t1 in
         let t2 = Evarutil.nf_evar sigma t2 in
-        if t1 <> p1 || t2 <> p2 then
+        if not (eq_constr t1 p1) || not (eq_constr t2 p2) then
           spc () ++ str "(cannot unify " ++ pr_lconstr_env env t1 ++
 	  strbrk " and " ++ pr_lconstr_env env t2 ++ str ")"
 	else mt ()

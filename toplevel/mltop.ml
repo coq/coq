@@ -101,10 +101,10 @@ let report_on_load_obj_error exc =
   let x = Obj.repr exc in
   (* Try an horrible (fragile) hack to report on Symtable dynlink errors *)
   (* (we follow ocaml's Printexc.to_string decoding of exceptions) *)
-  if Obj.is_block x && Obj.magic(Obj.field (Obj.field x 0) 0) = "Symtable.Error"
+  if Obj.is_block x && String.equal (Obj.magic (Obj.field (Obj.field x 0) 0)) "Symtable.Error"
   then
     let err_block = Obj.field x 1 in
-    if Obj.tag err_block = 0 then
+    if Int.equal (Obj.tag err_block) 0 then
       (* Symtable.Undefined_global of string *)
       str "reference to undefined global " ++
       str (Obj.magic (Obj.field err_block 0))

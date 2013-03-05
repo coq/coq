@@ -292,14 +292,14 @@ let fv_lam l =
 
 
 let mkMLlam params body =
-  if Array.length params = 0 then body 
+  if Array.is_empty params then body 
   else
     match body with
     | MLlam (params', body) -> MLlam(Array.append params params', body)
     | _ -> MLlam(params,body)
 
 let mkMLapp f args =
-  if Array.length args = 0 then f
+  if Array.is_empty args then f
   else
     match f with
     | MLapp(f,args') -> MLapp(f,Array.append args' args)
@@ -404,18 +404,18 @@ let get_lname (_,l) =
 let fv_params env = 
   let fvn, fvr = !(env.env_named), !(env.env_urel) in 
   let size = List.length fvn + List.length fvr in
-  if size = 0 then empty_params 
+  if Int.equal size 0 then empty_params 
   else begin
     let params = Array.make size dummy_lname in
     let fvn = ref fvn in
     let i = ref 0 in
-    while !fvn <> [] do
+    while not (List.is_empty !fvn) do
       params.(!i) <- get_lname (List.hd !fvn);
       fvn := List.tl !fvn;
       incr i
     done;
     let fvr = ref fvr in
-    while !fvr <> [] do
+    while not (List.is_empty !fvr) do
       params.(!i) <- get_lname (List.hd !fvr);
       fvr := List.tl !fvr;
       incr i
@@ -430,19 +430,19 @@ let empty_args = [||]
 
 let fv_args env fvn fvr =
   let size = List.length fvn + List.length fvr in
-  if size = 0 then empty_args 
+  if Int.equal size 0 then empty_args 
   else 
     begin
       let args = Array.make size (MLint (false,0)) in
       let fvn = ref fvn in
       let i = ref 0 in
-      while !fvn <> [] do
+      while not (List.is_empty !fvn) do
 	args.(!i) <- get_var env (fst (List.hd !fvn));
 	fvn := List.tl !fvn;
 	incr i
       done;
       let fvr = ref fvr in
-      while !fvr <> [] do
+      while not (List.is_empty !fvr) do
 	let (k,_ as kml) = List.hd !fvr in
 	let n = get_lname kml in 
 	args.(!i) <- get_rel env n.lname k;
@@ -486,7 +486,7 @@ let rec insert cargs body rl =
      let params = rm_params fv params in
      rl:= Rcons(ref [(c,params)], fv, body, ref Rnil)
  | Rcons(l,fv,body',rl) ->
-     if body = body' then 
+     if Pervasives.(=) body body' then (** FIXME *)
        let (c,params) = cargs in
        let params = rm_params fv params in
        l := (c,params)::!l
@@ -761,7 +761,7 @@ let mllambda_of_lambda auxdefs l t =
    | _ -> assert false in
   let params = 
     List.append (List.map get_lname fv_rel) (List.map get_lname fv_named) in
-  if params = [] then
+  if List.is_empty params then
     (!global_stack, ([],[]), ml)
   (* final result : global list, fv, ml *)
   else
@@ -803,12 +803,12 @@ let subst s l =
 
 let add_subst id v s =
   match v with
-  | MLlocal id' when id.luid = id'.luid -> s
+  | MLlocal id' when Int.equal id.luid id'.luid -> s
   | _ -> LNmap.add id v s
 
 let subst_norm params args s =
   let len = Array.length params in
-  assert (Array.length args = len && Array.for_all can_subst args);
+  assert (Int.equal (Array.length args) len && Array.for_all can_subst args);
   let s = ref s in
   for i = 0 to len - 1 do
     s := add_subst params.(i) args.(i) !s
@@ -818,7 +818,7 @@ let subst_norm params args s =
 let subst_case params args s =
   let len = Array.length params in
   assert (len > 0 && 
-	  Array.length args = len && 
+	  Int.equal (Array.length args) len && 
 	  let r = ref true and i = ref 0 in
 	  (* we test all arguments excepted the last *)
 	  while !i < len - 1  && !r do r := can_subst args.(!i); incr i done;
@@ -836,7 +836,7 @@ let get_case (_, gcase) i = Int.Map.find i gcase
 let all_lam n bs = 
   let f (_, l) = 
     match l with
-    | MLlam(params, _) -> Array.length params = n
+    | MLlam(params, _) -> Int.equal (Array.length params) n
     | _ -> false in
   Array.for_all f bs
 
@@ -894,7 +894,7 @@ let optimize gdef l =
 	let b2 = optimize s b2 in
 	begin match t, b2 with
 	| MLapp(MLprimitive Is_accu,[| l1 |]), MLmatch(annot, l2, _, bs)
-	    when l1 = l2 -> MLmatch(annot, l1, b1, bs)	
+	    when Pervasives.(=) l1 l2 -> MLmatch(annot, l1, b1, bs) (** FIXME *)
         | _, _ -> MLif(t, b1, b2)
 	end
     | MLmatch(annot,a,accu,bs) ->
@@ -1190,8 +1190,8 @@ let pp_mllam fmt l =
     | Ceq o -> pp_vprim o "eq"
     | Clt o -> pp_vprim o "lt"
     | Cle o -> pp_vprim o "le"
-    | Clt_b  -> if Sys.word_size = 64 then Format.fprintf fmt "(<)" else Format.fprintf fmt "lt_b"
-    | Cle_b -> if Sys.word_size = 64 then Format.fprintf fmt "(<=)" else Format.fprintf fmt "le_b"
+    | Clt_b  -> if Int.equal (Sys.word_size) 64 then Format.fprintf fmt "(<)" else Format.fprintf fmt "lt_b"
+    | Cle_b -> if Int.equal (Sys.word_size) 64 then Format.fprintf fmt "(<=)" else Format.fprintf fmt "le_b"
     | Ccompare o -> pp_vprim o "compare"
     | Cprint o -> pp_vprim o "print"
     | Carraymake o -> pp_vprim o "arraymake"
@@ -1243,7 +1243,7 @@ let pp_global fmt g =
   | Gtype ((mind, i), lar) ->
       let l = string_of_mind mind in
       let rec aux s ar = 
-	if ar = 0 then s else aux (s^" * Nativevalues.t") (ar-1) in
+	if Int.equal ar 0 then s else aux (s^" * Nativevalues.t") (ar-1) in
       let pp_const_sig i fmt j ar =
         let sig_str = if ar > 0 then aux "of Nativevalues.t" (ar-1) else "" in
         Format.fprintf fmt "  | Construct_%s_%i_%i %s@\n" l i j sig_str
@@ -1267,7 +1267,7 @@ let pp_global fmt g =
 (** Compilation of elements in environment {{{**)
 let rec compile_with_fv env auxdefs l t =
   let (auxdefs,(fv_named,fv_rel),ml) = mllambda_of_lambda auxdefs l t in
-  if fv_named = [] && fv_rel = [] then (auxdefs,ml)
+  if List.is_empty fv_named && List.is_empty fv_rel then (auxdefs,ml)
   else apply_fv env (fv_named,fv_rel) auxdefs ml
 
 and apply_fv env (fv_named,fv_rel) auxdefs ml =

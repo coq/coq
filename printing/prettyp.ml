@@ -53,13 +53,13 @@ let print_closed_sections = ref false
 
 let pr_infos_list l = v 0 (prlist_with_sep cut (fun x -> x) l)
 
-let with_line_skip l = if l = [] then mt() else fnl() ++ fnl () ++ pr_infos_list l
+let with_line_skip l = if List.is_empty l then mt() else fnl() ++ fnl () ++ pr_infos_list l
 
 let blankline = mt() (* add a blank sentence in the list of infos *)
 
 let add_colon prefix = if ismt prefix then mt () else prefix ++ str ": "
 
-let int_or_no n = if n=0 then str "no" else int n
+let int_or_no n = if Int.equal n 0 then str "no" else int n
 
 (*******************)
 (** Basic printing *)
@@ -108,8 +108,8 @@ let print_impargs_list prefix l =
        [v 2 (prlist_with_sep cut (fun x -> x)
 	 [(if ismt prefix then str "When" else prefix ++ str ", when") ++
 	   str " applied to " ++
-	   (if n1 = n2 then int_or_no n2 else
-	    if n1 = 0 then str "less than " ++ int n2
+	   (if Int.equal n1 n2 then int_or_no n2 else
+	    if Int.equal n1 0 then str "less than " ++ int n2
 	    else int n1 ++ str " to " ++ int_or_no n2) ++
 	    str (String.plural n2 " argument") ++ str ":";
           v 0 (prlist_with_sep cut (fun x -> x)
@@ -118,22 +118,22 @@ let print_impargs_list prefix l =
 	    else [str "No implicit arguments"]))])]) l)
 
 let print_renames_list prefix l =
-  if l = [] then [] else
+  if List.is_empty l then [] else
   [add_colon prefix ++ str "Arguments are renamed to " ++
     hv 2 (prlist_with_sep pr_comma (fun x -> x) (List.map pr_name l))]
 
 let need_expansion impl ref =
   let typ = Global.type_of_global ref in
-  let ctx = (prod_assum typ) in
-  let nprods = List.length (List.filter (fun (_,b,_) -> b=None) ctx) in
-  impl <> [] & List.length impl >= nprods &
+  let ctx = prod_assum typ in
+  let nprods = List.length (List.filter (fun (_,b,_) -> Option.is_empty b) ctx) in
+  not (List.is_empty impl) && List.length impl >= nprods &
     let _,lastimpl = List.chop nprods impl in
-      List.filter is_status_implicit lastimpl <> []
+      List.exists is_status_implicit lastimpl
 
 let print_impargs ref =
   let ref = Smartlocate.smart_global ref in
   let impl = implicits_of_global ref in
-  let has_impl = impl <> [] in
+  let has_impl = not (List.is_empty impl) in
   (* Need to reduce since implicits are computed with products flattened *)
   pr_infos_list
     ([ print_ref (need_expansion (select_impargs_size 0 impl) ref) ref;
@@ -147,7 +147,7 @@ let print_impargs ref =
 let print_argument_scopes prefix = function
   | [Some sc] ->
       [add_colon prefix ++ str"Argument scope is [" ++ str sc ++ str"]"]
-  | l when not (List.for_all ((=) None) l) ->
+  | l when not (List.for_all Option.is_empty l) ->
      [add_colon prefix ++ hov 2 (str"Argument scopes are" ++ spc() ++
       str "[" ++
       pr_sequence (function Some sc -> str sc | None -> str "_") l ++
@@ -196,7 +196,7 @@ type opacity =
   | TransparentMaybeOpacified of Conv_oracle.level
 
 let opacity env = function
-  | VarRef v when pi2 (Environ.lookup_named v env) <> None ->
+  | VarRef v when not (Option.is_empty (pi2 (Environ.lookup_named v env))) ->
       Some(TransparentMaybeOpacified (Conv_oracle.get_strategy(VarKey v)))
   | ConstRef cst ->
       let cb = Environ.lookup_constant cst env in
@@ -216,7 +216,7 @@ let print_opacity ref =
           | FullyOpaque -> "opaque"
           | TransparentMaybeOpacified Conv_oracle.Opaque ->
               "basically transparent but considered opaque for reduction"
-          | TransparentMaybeOpacified lev when lev = Conv_oracle.transparent ->
+          | TransparentMaybeOpacified lev when Conv_oracle.is_transparent lev ->
               "transparent"
           | TransparentMaybeOpacified (Conv_oracle.Level n) ->
               "transparent (with expansion weight "^string_of_int n^")"
@@ -261,18 +261,18 @@ let print_args_data_of_inductive_ids get test pr sp mipv =
 
 let print_inductive_implicit_args =
   print_args_data_of_inductive_ids
-    implicits_of_global (fun l -> positions_of_implicits l <> [])
+    implicits_of_global (fun l -> not (List.is_empty (positions_of_implicits l)))
     print_impargs_list
 
 let print_inductive_renames =
   print_args_data_of_inductive_ids
     (fun r -> try List.hd (Arguments_renaming.arguments_names r) with _ -> [])
-    ((<>) Anonymous)
+    ((!=) Anonymous)
     print_renames_list
 
 let print_inductive_argument_scopes =
   print_args_data_of_inductive_ids
-    Notation.find_arguments_scope ((<>) None) print_argument_scopes
+    Notation.find_arguments_scope (Option.has_some) print_argument_scopes
 
 (*********************)
 (* "Locate" commands *)
@@ -339,7 +339,7 @@ let print_located_qualid ref =
 	prlist_with_sep fnl
 	(fun (o,oqid) ->
 	  hov 2 (pr_located_qualid o ++
-	  (if oqid <> qid then
+	  (if not (qualid_eq oqid qid) then
 	    spc() ++ str "(shorter name to refer to it in current context is " ++ pr_qualid oqid ++ str")"
 	  else
 	    mt ()))) l
@@ -483,7 +483,7 @@ let gallina_print_library_entry with_values ent =
 
 let gallina_print_context with_values =
   let rec prec n = function
-    | h::rest when n = None or Option.get n > 0 ->
+    | h::rest when Option.is_empty n || Option.get n > 0 ->
 	(match gallina_print_library_entry with_values h with
 	  | None -> prec n rest
 	  | Some pp -> prec (Option.map ((+) (-1)) n) rest ++ pp ++ fnl ())
@@ -606,7 +606,7 @@ let read_sec_context r =
       user_err_loc (loc,"read_sec_context", str "Unknown section.") in
   let rec get_cxt in_cxt = function
     | (_,Lib.OpenedSection ((dir',_),_) as hd)::rest ->
-        if dir = dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
+        if DirPath.equal dir dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | (_,Lib.ClosedSection _)::rest ->
         error "Cannot print the contents of a closed section."
 	(* LEM: Actually, we could if we wanted to. *)

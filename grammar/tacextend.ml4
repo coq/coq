@@ -34,7 +34,7 @@ let rec make_when loc = function
       let l = make_when loc l in
       let loc = CompatLoc.merge loc' loc in
       let t = mlexpr_of_argtype loc' t in
-      <:expr< Genarg.genarg_tag $lid:p$ = $t$ && $l$ >>
+      <:expr< Genarg.argument_type_eq (Genarg.genarg_tag $lid:p$) $t$ && $l$ >>
   | _::l -> make_when loc l
 
 let rec make_let e = function

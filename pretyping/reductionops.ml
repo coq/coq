@@ -285,7 +285,7 @@ let contract_cofix ?env (bodynum,(names,types,bodies as typedbodies)) cst =
   let nbodies = Array.length bodies in
   let make_Fi j =
     let ind = nbodies-j-1 in
-    if bodynum = ind && not (Option.is_empty cst) then
+    if Int.equal bodynum ind && not (Option.is_empty cst) then
       let (c,params) = Option.get cst in
       applist(c, List.rev params)
     else
@@ -314,7 +314,7 @@ let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies))
     let nbodies = Array.length recindices in
     let make_Fi j =
       let ind = nbodies-j-1 in
-      if bodynum = ind && not (Option.is_empty cst) then
+      if Int.equal bodynum ind && not (Option.is_empty cst) then
 	let (c,params) = Option.get cst in
 	applist(c, List.rev params)
       else

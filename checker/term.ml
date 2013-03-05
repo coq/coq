@@ -197,7 +197,7 @@ let closed0 = closedn 0
 
 let noccurn n term =
   let rec occur_rec n c = match c with
-    | Rel m -> if m = n then raise LocalOccur
+    | Rel m -> if Int.equal m n then raise LocalOccur
     | _ -> iter_constr_with_binders succ occur_rec n c
   in
   try occur_rec n term; true with LocalOccur -> false
@@ -221,7 +221,7 @@ let noccur_between n m term =
 
 let noccur_with_meta n m term =
   let rec occur_rec n c = match c with
-    | Rel p -> if n<=p & p<n+m then raise LocalOccur
+    | Rel p -> if n<=p && p<n+m then raise LocalOccur
     | App(f,cl) ->
 	(match f with
            | (Cast (Meta _,_,_)| Meta _) -> ()
@@ -291,7 +291,7 @@ let make_substituend c = { sinfo=Unknown; sit=c }
 
 let substn_many lamv n c =
   let lv = Array.length lamv in
-  if lv = 0 then c
+  if Int.equal lv 0 then c
   else
     let rec substrec depth c = match c with
       | Rel k     ->
@@ -383,7 +383,7 @@ let decompose_lam_n_assum n =
   if n < 0 then
     error "decompose_lam_n_assum: integer parameter must be positive";
   let rec lamdec_rec l n c =
-    if n=0 then l,c
+    if Int.equal n 0 then l,c
     else match c with
     | Lambda (x,t,c)  -> lamdec_rec ((x,None,t) :: l) (n-1) c
     | LetIn (x,b,t,c) -> lamdec_rec ((x,Some b,t) :: l) n c
@@ -416,7 +416,7 @@ let decompose_prod_n_assum n =
   if n < 0 then
     error "decompose_prod_n_assum: integer parameter must be positive";
   let rec prodec_rec l n c =
-    if n=0 then l,c
+    if Int.equal n 0 then l,c
     else match c with
     | Prod (x,t,c)    -> prodec_rec ((x,None,t) :: l) (n-1) c
     | LetIn (x,b,t,c) -> prodec_rec ((x,Some b,t) :: l) (n-1) c
@@ -459,40 +459,52 @@ let rec isArity c =
 
 (* alpha conversion : ignore print names and casts *)
 
+let compare_sorts s1 s2 = match s1, s2 with
+| Prop c1, Prop c2 ->
+  begin match c1, c2 with
+  | Pos, Pos | Null, Null -> true
+  | Pos, Null -> false
+  | Null, Pos -> false
+  end
+| Type u1, Type u2 -> Universe.equal u1 u2
+| Prop _, Type _ -> false
+| Type _, Prop _ -> false
+
 let compare_constr f t1 t2 =
   match t1, t2 with
-  | Rel n1, Rel n2 -> n1 = n2
-  | Meta m1, Meta m2 -> m1 = m2
-  | Var id1, Var id2 -> id1 = id2
-  | Sort s1, Sort s2 -> s1 = s2
+  | Rel n1, Rel n2 -> Int.equal n1 n2
+  | Meta m1, Meta m2 -> Int.equal m1 m2
+  | Var id1, Var id2 -> Id.equal id1 id2
+  | Sort s1, Sort s2 -> compare_sorts s1 s2
   | Cast (c1,_,_), _ -> f c1 t2
   | _, Cast (c2,_,_) -> f t1 c2
-  | Prod (_,t1,c1), Prod (_,t2,c2) -> f t1 t2 & f c1 c2
-  | Lambda (_,t1,c1), Lambda (_,t2,c2) -> f t1 t2 & f c1 c2
-  | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> f b1 b2 & f t1 t2 & f c1 c2
+  | Prod (_,t1,c1), Prod (_,t2,c2) -> f t1 t2 && f c1 c2
+  | Lambda (_,t1,c1), Lambda (_,t2,c2) -> f t1 t2 && f c1 c2
+  | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> f b1 b2 && f t1 t2 && f c1 c2
   | App (c1,l1), App (c2,l2) ->
-      if Array.length l1 = Array.length l2 then
-        f c1 c2 & Array.for_all2 f l1 l2
+      if Int.equal (Array.length l1) (Array.length l2) then
+        f c1 c2 && Array.for_all2 f l1 l2
       else
         let (h1,l1) = decompose_app t1 in
         let (h2,l2) = decompose_app t2 in
-        if List.length l1 = List.length l2 then
-          f h1 h2 & List.for_all2 f l1 l2
+        if Int.equal (List.length l1) (List.length l2) then
+          f h1 h2 && List.for_all2 f l1 l2
         else false
-  | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & Array.for_all2 f l1 l2
+  | Evar (e1,l1), Evar (e2,l2) -> Int.equal e1 e2 && Array.equal f l1 l2
   | Const c1, Const c2 -> eq_con_chk c1 c2
   | Ind c1, Ind c2 -> eq_ind_chk c1 c2
-  | Construct (c1,i1), Construct (c2,i2) -> i1=i2 && eq_ind_chk c1 c2
+  | Construct (c1,i1), Construct (c2,i2) -> Int.equal i1 i2 && eq_ind_chk c1 c2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
-      f p1 p2 & f c1 c2 & Array.for_all2 f bl1 bl2
-  | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
-      ln1 = ln2 & Array.for_all2 f tl1 tl2 & Array.for_all2 f bl1 bl2
+      f p1 p2 && f c1 c2 && Array.equal f bl1 bl2
+  | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
+      Int.equal i1 i2 && Array.equal Int.equal ln1 ln2 &&
+      Array.equal f tl1 tl2 && Array.equal f bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-      ln1 = ln2 & Array.for_all2 f tl1 tl2 & Array.for_all2 f bl1 bl2
+      Int.equal ln1 ln2 && Array.equal f tl1 tl2 && Array.equal f bl1 bl2
   | _ -> false
 
 let rec eq_constr m n =
-  (m==n) or
+  (m == n) ||
   compare_constr eq_constr m n
 
 let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)

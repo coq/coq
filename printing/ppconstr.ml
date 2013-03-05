@@ -46,7 +46,7 @@ let lsimpleconstr = (8,E)
 let lsimplepatt = (1,E)
 
 let prec_less child (parent,assoc) =
-  if parent < 0 && child = lprod then true
+  if parent < 0 && Int.equal child lprod then true
   else
     let parent = abs parent in
     match assoc with
@@ -100,7 +100,7 @@ let pr_generalization bk ak c =
     str "`" ++ str hd ++ c ++ str tl
 
 let pr_com_at n =
-  if Flags.do_beautify() && n <> 0 then comment n
+  if Flags.do_beautify() && not (Int.equal n 0) then comment n
   else mt()
 
 let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)
@@ -136,7 +136,7 @@ let pr_opt_type_spc pr = function
   | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
 
 let pr_lident (loc,id) =
-  if loc <> Loc.ghost then
+  if not (Loc.is_ghost loc) then
     let (b,_) = Loc.unloc loc in
     pr_located pr_id (Loc.make_loc (b,b+String.length(Id.to_string id)),id)
   else pr_id id
@@ -191,8 +191,8 @@ let rec pr_patt sep inh p =
       pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
   | CPatNotation (_,s,(l,ll),args) ->
     let strm_not, l_not = pr_notation (pr_patt mt) (fun _ _ _ -> mt()) s (l,ll,[]) in
-    (if args=[]||prec_less l_not (lapp,L) then strm_not else surround strm_not)
-    ++ prlist (pr_patt spc (lapp,L)) args, if args<>[] then lapp else l_not
+    (if List.is_empty args||prec_less l_not (lapp,L) then strm_not else surround strm_not)
+    ++ prlist (pr_patt spc (lapp,L)) args, if not (List.is_empty args) then lapp else l_not
   | CPatPrim (_,p) -> pr_prim_token p, latom
   | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt mt lsimplepatt p), 1
   in
@@ -233,7 +233,7 @@ let surround_implicit k p =
 let pr_binder many pr (nal,k,t) =
   match k with
     | Generalized (b, b', t') ->
-      assert (b=Implicit);
+      assert (match b with Implicit -> true | _ -> false);
       begin match nal with
 	|[loc,Anonymous] ->
 	  hov 1 (str"`" ++ (surround_impl b'
@@ -447,7 +447,7 @@ let pr pr sep inherited a =
 	       pr_fun_sep ++ pr spc ltop a),
       llambda
   | CLetIn (_,(_,Name x),(CFix(_,(_,x'),[_])|CCoFix(_,(_,x'),[_]) as fx), b)
-      when x=x' ->
+      when Id.equal x x' ->
       hv 0 (
         hov 2 (str "let " ++ pr mt ltop fx ++ str " in") ++
         pr spc ltop b),
@@ -462,21 +462,21 @@ let pr pr sep inherited a =
       let l1,l2 = List.chop i l in
       let c,l1 = List.sep_last l1 in
       let p = pr_proj (pr mt) pr_appexpl c f l1 in
-      if l2<>[] then
+      if not (List.is_empty l2) then
 	p ++ prlist (pr spc (lapp,L)) l2, lapp
       else
 	p, lproj
   | CAppExpl (_,(None,Ident (_,var)),[t])
   | CApp (_,(_,CRef(Ident(_,var))),[t,None])
-        when var = Notation_ops.ldots_var ->
+        when Id.equal var Notation_ops.ldots_var ->
       hov 0 (str ".." ++ pr spc (latom,E) t ++ spc () ++ str ".."), larg
   | CAppExpl (_,(None,f),l) -> pr_appexpl (pr mt) f l, lapp
   | CApp (_,(Some i,f),l) ->
       let l1,l2 = List.chop i l in
       let c,l1 = List.sep_last l1 in
-      assert (snd c = None);
+      assert (Option.is_empty (snd c));
       let p = pr_proj (pr mt) pr_app (fst c) f l1 in
-      if l2<>[] then
+      if not (List.is_empty l2) then
 	p ++ prlist (fun a -> spc () ++ pr_expl_args (pr mt) a) l2, lapp
       else
 	p, lproj
@@ -605,7 +605,7 @@ let pr_red_flag pr r =
   (if r.rBeta then pr_arg str "beta" else mt ()) ++
   (if r.rIota then pr_arg str "iota" else mt ()) ++
   (if r.rZeta then pr_arg str "zeta" else mt ()) ++
-  (if r.rConst = [] then
+  (if List.is_empty r.rConst then
      if r.rDelta then pr_arg str "delta"
      else mt ()
    else
@@ -619,7 +619,7 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) = function
   | Hnf -> str "hnf"
   | Simpl o -> str "simpl" ++ pr_opt (pr_with_occurrences pr_pattern) o
   | Cbv f ->
-      if f = {rBeta=true;rIota=true;rZeta=true;rDelta=true;rConst=[]} then
+      if f.rBeta && f.rIota && f.rZeta && f.rDelta && List.is_empty f.rConst then
 	str "compute"
       else
 	hov 1 (str "cbv" ++ pr_red_flag pr_ref f)

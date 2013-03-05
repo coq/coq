@@ -76,6 +76,8 @@ let sorts_ord s1 s2 =
   | Prop _, Type _ -> -1
   | Type _, Prop _ -> 1
 
+let sorts_eq s1 s2 = Int.equal (sorts_ord s1 s2) 0
+
 let is_prop_sort = function
 | Prop Null -> true
 | _ -> false

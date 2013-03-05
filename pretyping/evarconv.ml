@@ -294,9 +294,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       ev apprF apprM i
     and f2 i =
       match switch (ise_stack2 not_only_app env i (evar_conv_x ts)) skF skM with
-      |Some (l,r), Success i' when on_left && (not_only_app || l = []) ->
+      |Some (l,r), Success i' when on_left && (not_only_app || List.is_empty l) ->
 	switch (evar_conv_x ts env i' pbty) (zip(termF,l)) (zip(termM,r))
-      |Some (r,l), Success i' when not on_left && (not_only_app || l = []) ->
+      |Some (r,l), Success i' when not on_left && (not_only_app || List.is_empty l) ->
 	switch (evar_conv_x ts env i' pbty) (zip(termF,l)) (zip(termM,r))
       |None, Success i' -> switch (evar_conv_x ts env i' pbty) termF termM
       |_, (UnifFailure _ as x) -> x

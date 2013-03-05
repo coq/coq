@@ -33,7 +33,7 @@ let home ~warn =
 	Filename.current_dir_name))
 
 let path_to_list p =
-  let sep = if Sys.os_type = "Win32" then ';' else ':' in
+  let sep = if String.equal Sys.os_type "Win32" then ';' else ':' in
     String.split sep p
 
 let user_path () = 
@@ -53,12 +53,12 @@ let rec which l f =
 let expand_path_macros ~warn s =
   let rec expand_atom s i =
     let l = String.length s in
-    if i<l && (Util.is_digit s.[i] or Util.is_letter s.[i] or s.[i] = '_')
+    if i<l && (Util.is_digit s.[i] || Util.is_letter s.[i] || s.[i] == '_')
     then expand_atom s (i+1)
     else i in
   let rec expand_macros s i =
     let l = String.length s in
-    if i=l then s else
+    if Int.equal i l then s else
       match s.[i] with
 	| '$' ->
 	  let n = expand_atom s (i+1) in
@@ -68,7 +68,7 @@ let expand_path_macros ~warn s =
 	| '~' when Int.equal i 0 ->
 	  let n = expand_atom s (i+1) in
 	  let v =
-	    if n=i+1 then home ~warn
+	    if Int.equal n (i + 1) then home ~warn
 	    else (Unix.getpwnam (String.sub s (i+1) (n-i-1))).Unix.pw_dir
 	  in
 	  let s = v^(String.sub s n (l-n)) in
@@ -94,7 +94,7 @@ let coqroot =
 (** On win32, we add coqbin to the PATH at launch-time (this used to be
     done in a .bat script). *)
 let _ =
-  if Coq_config.arch = "win32" then
+  if String.equal Coq_config.arch "win32" then
     Unix.putenv "PATH" (coqbin ^ ";" ^ getenv_else "PATH" (fun () -> ""))
 
 (** [reldir instdir testfile oth] checks if [testfile] exists in 
@@ -109,7 +109,7 @@ let reldir instdir testfile oth =
 
 let guess_coqlib fail =
   let file = "theories/Init/Prelude.vo" in
-    reldir (if Coq_config.arch = "win32" then ["lib"] else ["lib";"coq"]) file
+    reldir (if String.equal Coq_config.arch "win32" then ["lib"] else ["lib";"coq"]) file
       (fun () ->
         let coqlib = match Coq_config.coqlib with
           | Some coqlib -> coqlib
@@ -130,7 +130,7 @@ let coqlib ~fail =
 
 let docdir () =
   reldir (
-    if Coq_config.arch = "win32" then 
+    if String.equal Coq_config.arch "win32" then 
       ["doc"] 
     else 
       ["share";"doc";"coq"]
@@ -210,7 +210,7 @@ let xdg_data_dirs warn =
     try
       List.map coqify (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
     with
-      | Not_found when Sys.os_type = "Win32" -> [relative_base / "share"]
+      | Not_found when String.equal Sys.os_type "Win32" -> [relative_base / "share"]
       | Not_found -> ["/usr/local/share/coq";"/usr/share/coq"]
   in
   xdg_data_home warn :: sys_dirs @ opt2list Coq_config.datadir
@@ -220,7 +220,7 @@ let xdg_config_dirs warn =
     try 
       List.map coqify (path_to_list (Sys.getenv "XDG_CONFIG_DIRS"))
     with
-      | Not_found when Sys.os_type = "Win32" -> [relative_base / "config"]
+      | Not_found when String.equal Sys.os_type "Win32" -> [relative_base / "config"]
       | Not_found -> ["/etc/xdg/coq"]
   in
   xdg_config_home warn :: sys_dirs @ opt2list Coq_config.configdir

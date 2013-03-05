@@ -123,7 +123,7 @@ let possibly_empty_subentries loc (prods,act) =
     | Some id ->
         let s = Names.Id.to_string id in <:expr< let $lid:s$ = $v$ in $e$ >> in
   let rec aux = function
-    | [] -> <:expr< let loc = $default_loc$ in let _ = loc = loc in $act$ >>
+    | [] -> <:expr< let loc = $default_loc$ in let _ = loc in $act$ >>
     | GramNonTerminal(_,OptArgType _,_,p) :: tl ->
         bind_name p <:expr< None >> (aux tl)
     | GramNonTerminal(_,List0ArgType _,_,p) :: tl ->

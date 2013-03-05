@@ -209,8 +209,8 @@ let pr_context_unlimited env =
   (sign_env ++ db_env)
 
 let pr_ne_context_of header env =
-  if Environ.rel_context env = empty_rel_context &
-    Environ.named_context env = empty_named_context  then (mt ())
+  if List.is_empty (Environ.rel_context env) &&
+    List.is_empty (Environ.named_context env)  then (mt ())
   else let penv = pr_context_unlimited env in (header ++ penv ++ fnl ())
 
 let pr_context_limit n env =
@@ -253,9 +253,9 @@ let pr_predicate pr_elt (b, elts) =
   let pr_elts = prlist_with_sep spc pr_elt elts in
     if b then
       str"all" ++
-	(if elts = [] then mt () else str" except: " ++ pr_elts)
+	(if List.is_empty elts then mt () else str" except: " ++ pr_elts)
     else
-      if elts = [] then str"none" else pr_elts
+      if List.is_empty elts then str"none" else pr_elts
 
 let pr_cpred p = pr_predicate (pr_constant (Global.env())) (Cpred.elements p)
 let pr_idpred p = pr_predicate Nameops.pr_id (Id.Pred.elements p)
@@ -299,7 +299,7 @@ let pr_evgl_sign gl =
   let _, l = List.filter2 (fun b c -> not b) (evar_filter gl) (evar_context gl) in
   let ids = List.rev_map pi1 l in
   let warn =
-    if ids = [] then mt () else
+    if List.is_empty ids then mt () else
       (str "(" ++ prlist_with_sep pr_comma pr_id ids ++ str " cannot be used)")
   in
   let pc = pr_lconstr gl.evar_concl in
@@ -324,7 +324,7 @@ let default_pr_subgoal n sigma =
   let rec prrec p = function
     | [] -> error "No such goal."
     | g::rest ->
-	if p = 1 then
+	if Int.equal p 1 then
           let pg = default_pr_goal { sigma=sigma ; it=g } in
           v 0 (str "subgoal " ++ int n ++ pr_goal_tag g
 	       ++ str " is:" ++ cut () ++ pg)
@@ -390,7 +390,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
 	       str ".")
 	| None ->
 	    let exl = Evarutil.non_instantiated sigma in
-	    if exl = [] then
+	    if List.is_empty exl then
 	      (str"No more subgoals."
 	       ++ emacs_print_dependent_evars sigma seeds)
 	    else
@@ -515,7 +515,7 @@ let pr_prim_rule = function
       (str"fix " ++ pr_id f ++ str"/" ++ int n)
 
   | FixRule (f,n,others,j) ->
-      if j<>0 then msg_warning (strbrk "Unsupported printing of \"fix\"");
+      if not (Int.equal j 0) then msg_warning (strbrk "Unsupported printing of \"fix\"");
       let rec print_mut = function
 	| (f,n,ar)::oth ->
            pr_id f ++ str"/" ++ int n ++ str" : " ++ pr_lconstr ar ++ print_mut oth
@@ -527,7 +527,7 @@ let pr_prim_rule = function
       (str"cofix " ++ pr_id f)
 
   | Cofix (f,others,j) ->
-      if j<>0 then msg_warning (strbrk "Unsupported printing of \"fix\"");
+      if not (Int.equal j 0) then msg_warning (strbrk "Unsupported printing of \"fix\"");
       let rec print_mut = function
 	| (f,ar)::oth ->
 	  (pr_id f ++ str" : " ++ pr_lconstr ar ++ print_mut oth)
@@ -647,7 +647,7 @@ open Termops
 open Reduction
 
 let print_params env params =
-  if params = [] then mt () else pr_rel_context env params ++ brk(1,2)
+  if List.is_empty params then mt () else pr_rel_context env params ++ brk(1,2)
 
 let print_constructors envpar names types =
   let pc =
