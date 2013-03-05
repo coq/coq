@@ -47,6 +47,9 @@ sig
   val equal : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
   (** Lift equality to array type. *)
 
+  val is_empty : 'a array -> bool
+  (** True whenever the array is empty. *)
+
   val exists : ('a -> bool) -> 'a array -> bool
   (** As [List.exists] but on arrays. *)
 

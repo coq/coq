@@ -41,6 +41,7 @@ sig
   include S
   val compare : ('a -> 'a -> int) -> 'a array -> 'a array -> int
   val equal : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
+  val is_empty : 'a array -> bool
   val exists : ('a -> bool) -> 'a array -> bool
   val for_all : ('a -> bool) -> 'a array -> bool
   val for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
@@ -107,6 +108,8 @@ let equal cmp t1 t2 =
   let rec aux i =
     (i = Array.length t1) || (cmp t1.(i) t2.(i) && aux (i + 1))
   in aux 0
+
+let is_empty array = (Array.length array) = 0
 
 let exists f v =
   let rec exrec = function
