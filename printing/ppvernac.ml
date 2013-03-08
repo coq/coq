@@ -257,15 +257,16 @@ let pr_require_token = function
 let pr_module_vardecls pr_c (export,idl,(mty,inl)) =
   let m = pr_module_ast pr_c mty in
   (* Update the Nametab for interpreting the body of module/modtype *)
-  let lib_dir = Lib.library_dp() in
-  List.iter (fun (_,id) ->
-    Declaremods.process_module_bindings [id]
-      [MBId.make lib_dir id,
-       (Modintern.interp_modtype (Global.env()) mty, inl)]) idl;
-  (* Builds the stream *)
-  spc() ++
-  hov 1 (str"(" ++ pr_require_token export ++
-   prlist_with_sep spc pr_lident idl ++ str":" ++ m ++ str")")
+  States.with_state_protection (fun () ->
+    let lib_dir = Lib.library_dp() in
+    List.iter (fun (_,id) ->
+      Declaremods.process_module_bindings [id]
+        [MBId.make lib_dir id,
+         (Modintern.interp_modtype (Global.env()) mty, inl)]) idl;
+    (* Builds the stream *)
+    spc() ++
+    hov 1 (str"(" ++ pr_require_token export ++
+     prlist_with_sep spc pr_lident idl ++ str":" ++ m ++ str")")) ()
 
 let pr_module_binders l pr_c =
   (* Effet de bord complexe pour garantir la declaration des noms des
