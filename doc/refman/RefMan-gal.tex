@@ -446,7 +446,7 @@ expression ``{\tt fun}~{\ident$_{1}$}~{\ldots}~{\ident$_{n}$}~{\tt
 :}~\type~{\tt =>}~{\term}'' denotes the same function as ``{\tt
 fun}~{\ident$_{1}$}~{\tt :}~\type~{\tt =>}~{\ldots}~{\tt
 fun}~{\ident$_{n}$}~{\tt :}~\type~{\tt =>}~{\term}''. If a let-binder
-occurs in the list of binders, it is expanded to a local definition
+occurs in the list of binders, it is expanded to a let-in definition
 (see Section~\ref{let-in}).
 
 \subsection{Products
@@ -508,16 +508,16 @@ Expressions often contain redundant pieces of information. Subterms that
 can be automatically inferred by {\Coq} can be replaced by the
 symbol ``\_'' and {\Coq} will guess the missing piece of information.
 
-\subsection{Local definitions (let-in)
+\subsection{Let-in definitions
 \label{let-in}
-\index{Local definitions}
+\index{Let-in definitions}
 \index{let-in}}
 
 
 {\tt let}~{\ident}~{\tt :=}~{\term$_1$}~{\tt in}~{\term$_2$} denotes
 the local binding of \term$_1$ to the variable $\ident$ in
 \term$_2$. 
-There is a syntactic sugar for local definition of functions: {\tt
+There is a syntactic sugar for let-in definition of functions: {\tt
 let} {\ident} {\binder$_1$} {\ldots} {\binder$_n$} {\tt :=} {\term$_1$}
 {\tt in} {\term$_2$} stands for {\tt let} {\ident} {\tt := fun}
 {\binder$_1$} {\ldots} {\binder$_n$} {\tt =>} {\term$_2$} {\tt in}
@@ -698,7 +698,7 @@ definition have a special syntax: ``{\tt let fix}~$f$~{\ldots}~{\tt
 &&\\
 %% Definitions
 {\definition} & ::= & 
-         {\tt Definition} {\ident} \zeroone{\binders} {\typecstr} {\tt :=} {\term} {\tt .} \\
+         \zeroone{\tt Local} {\tt Definition} {\ident} \zeroone{\binders} {\typecstr} {\tt :=} {\term} {\tt .} \\
  & $|$ & {\tt Let} {\ident} \zeroone{\binders} {\typecstr} {\tt :=} {\term} {\tt .} \\
 &&\\
 %% Inductives
@@ -878,6 +878,11 @@ environment, provided that {\term} is well-typed.
        {\tt fun}\,{\binder$_1$} {\ldots} {\binder$_n$}\,{\tt =>}\,{\term$_2$}\,%
        {\tt .}
 
+\item {\tt Local Definition} {\ident} := {\term}\\
+\comindex{Local Definition}
+  Such definitions are never made accessible through their unqualified name by
+  {\tt Import} and its variants (see \ref{Import}). You have to explicitly
+  give their fully qualified name to refer to them.
 \item {\tt Example {\ident} := {\term}.}\\
 {\tt Example} {\ident} {\tt :} {\term$_1$} {\tt :=} {\term$_2$}{\tt .}\\
 {\tt Example} {\ident} {\binder$_1$} {\ldots} {\binder$_n$}
@@ -899,7 +904,7 @@ This command binds the value {\term} to the name {\ident} in the
 environment of the current section. The name {\ident} disappears
 when the current section is eventually closed, and, all
 persistent objects (such as theorems) defined within the
-section and depending on {\ident} are prefixed by the local definition
+section and depending on {\ident} are prefixed by the let-in definition
 {\tt let {\ident} := {\term} in}.
 
 \begin{ErrMsgs}
@@ -1616,7 +1621,7 @@ and {\tt Transparent}) and~\ref{unfold} (tactic {\tt unfold}).
 \item {\tt Let {\ident} \zeroone{\binders} : {\type}.}
 
 Like {\tt Definition {\ident} \zeroone{\binders} : {\type}.} except
-that the definition is turned into a local definition generalized over
+that the definition is turned into a let-in definition generalized over
 the declarations depending on it after closing the current section.
 
 \item {\tt Fixpoint \nelist{{\ident} {\binders} \zeroone{\annotation} {\typecstr} \zeroone{{\tt :=} {\term}}}{with}.}

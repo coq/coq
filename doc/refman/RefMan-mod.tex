@@ -372,6 +372,22 @@ Some features defined in modules are activated only when a module is
 imported. This is for instance the case of notations (see
 Section~\ref{Notation}).
 
+Declarations made with the {\tt Local} flag are never imported by the
+{\tt Import} command. Such declarations are only accessible through their
+fully qualified name.
+
+Example:
+
+\begin{coq_example}
+Module A.
+Module B.
+Local Definition T := nat.
+End B.
+End A.
+Import A.
+Check B.T.
+\end{coq_example}
+
 \begin{Variants}
 \item{\tt Export {\qualid}}\comindex{Export}
 

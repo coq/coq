@@ -994,7 +994,8 @@ declaration is added to the context. An absolute name is called {\it
 visible} from a given short or partially qualified name when this
 latter name is enough to denote it. This means that the short or
 partially qualified name is mapped to the absolute name in {\Coq} name
-table.
+table. Definitions flagged as {\tt Local} are only accessible with their
+fully qualified name (see \ref{Definition}).
 
 A similar table exists for library file names. It is updated by the
 vernacular commands {\tt Add LoadPath} and {\tt Add Rec LoadPath} (or
