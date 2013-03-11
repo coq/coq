@@ -459,8 +459,10 @@ let vernac_definition_hook = function
 
 let vernac_definition (local,k) (loc,id as lid) def =
   let hook = vernac_definition_hook k in
-  if local == Local then Dumpglob.dump_definition lid true "var"
-  else Dumpglob.dump_definition lid false "def";
+  let () = match local with
+  | Discharge -> Dumpglob.dump_definition lid true "var"
+  | Local | Global -> Dumpglob.dump_definition lid false "def"
+  in
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
  	  start_proof_and_print (local,DefinitionBody Definition)
@@ -768,13 +770,13 @@ let vernac_coercion stre ref qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
-  Class.try_add_new_coercion_with_target ref' stre ~source ~target;
+  Class.try_add_new_coercion_with_target ref' ~local:stre ~source ~target;
   if_verbose msg_info (pr_global ref' ++ str " is now a coercion")
 
 let vernac_identity_coercion stre id qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  Class.try_add_new_identity_coercion id stre ~source ~target
+  Class.try_add_new_identity_coercion id ~local:stre ~source ~target
 
 (* Type classes *)
 

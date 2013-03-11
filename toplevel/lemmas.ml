@@ -166,14 +166,18 @@ let save id const do_guard (locality,kind) hook =
        const_entry_opaque = opacity } = const in
   let k = Kindops.logical_kind_of_goal_kind kind in
   let l,r = match locality with
-    | Local when Lib.sections_are_opened () ->
+    | Discharge when Lib.sections_are_opened () ->
 	let c = SectionLocalDef (pft, tpo, opacity) in
 	let _ = declare_variable id (Lib.cwd(), c, k) in
 	(Local, VarRef id)
-    | Local | Global ->
-        let kn = declare_constant id (DefinitionEntry const, k) in
+    | Local | Global | Discharge ->
+        let local = match locality with
+        | Local | Discharge -> true
+        | Global -> false
+        in
+        let kn = declare_constant id ~local (DefinitionEntry const, k) in
 	Autoinstance.search_declaration (ConstRef kn);
-	(Global, ConstRef kn) in
+	(locality, ConstRef kn) in
   Pfedit.delete_current_proof ();
   definition_message id;
   hook l r
@@ -191,41 +195,51 @@ let compute_proof_name locality = function
   | None ->
       next_global_ident_away default_thm_id (Pfedit.get_all_proof_names ()) 
 
-let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
+let save_remaining_recthms (locality,kind) body opaq i (id,(t_i,(_,imps))) =
   match body with
   | None ->
-      (match local with
-      | Local ->
-          let impl=false in (* copy values from Vernacentries *)
+      (match locality with
+      | Discharge ->
+          let impl = false in (* copy values from Vernacentries *)
           let k = IsAssumption Conjectural in
           let c = SectionLocalAssum (t_i,impl) in
 	  let _ = declare_variable id (Lib.cwd(),c,k) in
-          (Local,VarRef id,imps)
-      | Global ->
+          (Discharge, VarRef id,imps)
+      | Local | Global ->
           let k = IsAssumption Conjectural in
-          let kn = declare_constant id (ParameterEntry (None,t_i,None), k) in
-          (Global,ConstRef kn,imps))
+          let local = match locality with
+          | Local -> true
+          | Global -> false
+          | Discharge -> assert false
+          in
+          let decl = (ParameterEntry (None,t_i,None), k) in
+          let kn = declare_constant id ~local decl in
+          (locality,ConstRef kn,imps))
   | Some body ->
       let k = Kindops.logical_kind_of_goal_kind kind in
       let body_i = match kind_of_term body with
         | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
         | CoFix (0,decls) -> mkCoFix (i,decls)
         | _ -> anomaly (Pp.str "Not a proof by induction") in
-      match local with
-      | Local ->
+      match locality with
+      | Discharge ->
 	  let c = SectionLocalDef (body_i, Some t_i, opaq) in
 	  let _ = declare_variable id (Lib.cwd(), c, k) in
-          (Local,VarRef id,imps)
-      | Global ->
-          let const =
-            { const_entry_body = body_i;
-              const_entry_secctx = None;
-              const_entry_type = Some t_i;
-              const_entry_opaque = opaq;
-	      const_entry_inline_code = false
-	    } in
-          let kn = declare_constant id (DefinitionEntry const, k) in
-          (Global,ConstRef kn,imps)
+          (Discharge,VarRef id,imps)
+      | Local | Global ->
+        let local = match locality with
+        | Local -> true
+        | Global -> false
+        | Discharge -> assert false
+        in
+        let const = { const_entry_body = body_i;
+            const_entry_secctx = None;
+            const_entry_type = Some t_i;
+            const_entry_opaque = opaq;
+            const_entry_inline_code = false
+        } in
+        let kn = declare_constant id ~local (DefinitionEntry const, k) in
+        (locality,ConstRef kn,imps)
 
 let save_hook = ref ignore
 let set_save_hook f = save_hook := f
@@ -345,8 +359,7 @@ let start_proof_com kind thms hook =
 let admit () =
   let (id,k,typ,hook) = Pfedit.current_proof_statement () in
   let e = Pfedit.get_used_variables(), typ, None in
-  let kn =
-    declare_constant id (ParameterEntry e,IsAssumption Conjectural) in
+  let kn = declare_constant id (ParameterEntry e,IsAssumption Conjectural) in
   Pfedit.delete_current_proof ();
   assumption_message id;
   hook Global (ConstRef kn)

@@ -196,26 +196,26 @@ GEXTEND Gram
   ;
   def_token:
     [ [ "Definition" ->
-	(Global, Definition)
+	(use_locality_exp (), Definition)
       | IDENT "Let" ->
-	(Local, Definition)
+	(Discharge, Definition)
       | IDENT "Example" ->
-	(Global, Example)
+	(use_locality_exp (), Example)
       | IDENT "SubClass"  ->
         (use_locality_exp (), SubClass) ] ]
   ;
   assumption_token:
-    [ [ "Hypothesis" -> (Local, Logical)
-      | "Variable" -> (Local, Definitional)
-      | "Axiom" -> (Global, Logical)
-      | "Parameter" -> (Global, Definitional)
-      | IDENT "Conjecture" -> (Global, Conjectural) ] ]
+    [ [ "Hypothesis" -> (Discharge, Logical)
+      | "Variable" -> (Discharge, Definitional)
+      | "Axiom" -> (use_locality_exp (), Logical)
+      | "Parameter" -> (use_locality_exp (), Definitional)
+      | IDENT "Conjecture" -> (use_locality_exp (), Conjectural) ] ]
   ;
   assumptions_token:
-    [ [ IDENT "Hypotheses" -> (Local, Logical)
-      | IDENT "Variables" -> (Local, Definitional)
-      | IDENT "Axioms" -> (Global, Logical)
-      | IDENT "Parameters" -> (Global, Definitional) ] ]
+    [ [ IDENT "Hypotheses" -> (Discharge, Logical)
+      | IDENT "Variables" -> (Discharge, Definitional)
+      | IDENT "Axioms" -> (use_locality_exp (), Logical)
+      | IDENT "Parameters" -> (use_locality_exp (), Definitional) ] ]
   ;
   inline:
     [ [ IDENT "Inline"; "("; i = INT; ")" -> Some (int_of_string i)
@@ -544,22 +544,22 @@ GEXTEND Gram
 	  VernacDefinition ((enforce_locality_exp true,Coercion),(Loc.ghost,s),d)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr ->
-	   VernacIdentityCoercion (enforce_locality_exp true, f, s, t)
+	   VernacIdentityCoercion (enforce_locality true, f, s, t)
       | IDENT "Identity"; IDENT "Coercion"; f = identref; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr ->
-	   VernacIdentityCoercion (use_locality_exp (), f, s, t)
+	   VernacIdentityCoercion (use_locality (), f, s, t)
       | IDENT "Coercion"; IDENT "Local"; qid = global; ":";
 	 s = class_rawexpr; ">->"; t = class_rawexpr ->
-	  VernacCoercion (enforce_locality_exp true, AN qid, s, t)
+	  VernacCoercion (enforce_locality true, AN qid, s, t)
       | IDENT "Coercion"; IDENT "Local"; ntn = by_notation; ":";
 	 s = class_rawexpr; ">->"; t = class_rawexpr ->
-	  VernacCoercion (enforce_locality_exp true, ByNotation ntn, s, t)
+	  VernacCoercion (enforce_locality true, ByNotation ntn, s, t)
       | IDENT "Coercion"; qid = global; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
-	  VernacCoercion (use_locality_exp (), AN qid, s, t)
+	  VernacCoercion (use_locality (), AN qid, s, t)
       | IDENT "Coercion"; ntn = by_notation; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
-	  VernacCoercion (use_locality_exp (), ByNotation ntn, s, t)
+	  VernacCoercion (use_locality (), ByNotation ntn, s, t)
 
       | IDENT "Context"; c = binders ->
 	  VernacContext c

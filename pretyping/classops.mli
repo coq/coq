@@ -65,7 +65,7 @@ val class_args_of : env -> evar_map -> types -> constr list
 
 (** {6 [declare_coercion] adds a coercion in the graph of coercion paths } *)
 val declare_coercion :
-  coe_typ -> locality -> isid:bool ->
+  coe_typ -> ?local:bool -> isid:bool ->
       src:cl_typ -> target:cl_typ -> params:int -> unit
 
 (** {6 Access to coercions infos } *)

@@ -3528,7 +3528,10 @@ let abstract_subproof id tac gl =
   let const = Pfedit.build_constant_by_tactic id secsign concl
     (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)) in
   let cd = Entries.DefinitionEntry const in
-  let lem = mkConst (Declare.declare_constant ~internal:Declare.KernelSilent id (cd,IsProof Lemma)) in
+  let decl = (cd, IsProof Lemma) in
+  (** ppedrot: seems legit to have abstracted subproofs as local*)
+  let cst = Declare.declare_constant ~internal:Declare.KernelSilent ~local:true id decl in
+  let lem = mkConst cst in
   exact_no_check
     (applist (lem,List.rev (Array.to_list (instance_from_named_context sign))))
     gl
@@ -3556,12 +3559,12 @@ let admit_as_an_axiom gl =
   let na = next_global_ident_away name (pf_ids_of_hyps gl) in
   let concl = it_mkNamedProd_or_LetIn (pf_concl gl) sign in
   if occur_existential concl then error"\"admit\" cannot handle existentials.";
-  let axiom =
-    let cd = 
-      Entries.ParameterEntry (Pfedit.get_used_variables(),concl,None) in
-    let con = Declare.declare_constant ~internal:Declare.KernelSilent na (cd,IsAssumption Logical) in
-    constr_of_global (ConstRef con)
-  in
+  let entry = (Pfedit.get_used_variables (), concl, None) in
+  let cd = Entries.ParameterEntry entry in
+  let decl = (cd, IsAssumption Logical) in
+  (** ppedrot: seems legit to have admitted subproofs as local*)
+  let con = Declare.declare_constant ~internal:Declare.KernelSilent ~local:true na decl in
+  let axiom = constr_of_global (ConstRef con) in
   exact_no_check
     (applist (axiom,
               List.rev (Array.to_list (instance_from_named_context sign))))

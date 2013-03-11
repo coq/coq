@@ -8,6 +8,7 @@ Vernacular commands
   A flag "Set/Unset Record Elimination Schemes" allows to change this.
   The tactic "induction" on a record is now actually doing "destruct".
 - The "Open Scope" command can now be given also a delimiter (e.g. Z).
+- The "Definition" command now allows the "Local" modifier.
 
 Specification Language
 

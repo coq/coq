@@ -348,8 +348,7 @@ let generate_functional_principle
 	  Declare.declare_constant
 	    name
 	    (Entries.DefinitionEntry ce,
-	     Decl_kinds.IsDefinition (Decl_kinds.Scheme)
-	    )
+	     Decl_kinds.IsDefinition (Decl_kinds.Scheme))
 	);
 	Declare.definition_message name;
 	names := name :: !names

@@ -100,20 +100,30 @@ let declare_variable id obj =
 
 (** Declaration of constants and parameters *)
 
+type constant_obj = {
+  cst_decl : global_declaration;
+  cst_hyps : Dischargedhypsmap.discharged_hyps;
+  cst_kind : logical_kind;
+  cst_locl : bool;
+}
+
 type constant_declaration = constant_entry * logical_kind
 
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
-let load_constant i ((sp,kn),(_,_,kind)) =
+let load_constant i ((sp,kn), obj) =
   if Nametab.exists_cci sp then
     alreadydeclared (pr_id (basename sp) ++ str " already exists");
   let con = Global.constant_of_delta_kn kn in
   Nametab.push (Nametab.Until i) sp (ConstRef con);
-  add_constant_kind con kind
+  add_constant_kind con obj.cst_kind
 
 (* Opening means making the name without its module qualification available *)
-let open_constant i ((sp,kn),_) =
-  let con = Global.constant_of_delta_kn kn in
+let open_constant i ((sp,kn), obj) =
+  (** Never open a local definition *)
+  if obj.cst_locl then ()
+  else
+    let con = Global.constant_of_delta_kn kn in
     Nametab.push (Nametab.Exactly i) sp (ConstRef con)
 
 let exists_name id =
@@ -123,16 +133,16 @@ let check_exists sp =
   let id = basename sp in
   if exists_name id then alreadydeclared (pr_id id ++ str " already exists")
 
-let cache_constant ((sp,kn),(cdt,dhyps,kind)) =
+let cache_constant ((sp,kn), obj) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
-  check_exists sp;
-  let kn' = Global.add_constant dir id cdt in
+  let () = check_exists sp in
+  let kn' = Global.add_constant dir id obj.cst_decl in
   assert (eq_constant kn' (constant_of_kn kn));
   Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
   add_section_constant kn' (Global.lookup_constant kn').const_hyps;
-  Dischargedhypsmap.set_discharged_hyps sp dhyps;
-  add_constant_kind (constant_of_kn kn) kind;
+  Dischargedhypsmap.set_discharged_hyps sp obj.cst_hyps;
+  add_constant_kind (constant_of_kn kn) obj.cst_kind;
   !cache_hook sp
 
 let discharged_hyps kn sechyps =
@@ -140,23 +150,27 @@ let discharged_hyps kn sechyps =
   let args = Array.to_list (instance_from_variable_context sechyps) in
   List.rev_map (Libnames.make_path dir) args
 
-let discharge_constant ((sp,kn),(cdt,dhyps,kind)) =
+let discharge_constant ((sp, kn), obj) =
   let con = constant_of_kn kn in
   let cb = Global.lookup_constant con in
   let repl = replacement_context () in
   let sechyps = section_segment_of_constant con in
   let recipe = { d_from=cb; d_modlist=repl; d_abstract=named_of_variable_context sechyps } in
-  Some (GlobalRecipe recipe,(discharged_hyps kn sechyps)@dhyps,kind)
+  let new_hyps = (discharged_hyps kn sechyps) @ obj.cst_hyps in
+  let new_decl = GlobalRecipe recipe in
+  Some { obj with cst_hyps = new_hyps; cst_decl = new_decl; }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = ConstantEntry (ParameterEntry (None,mkProp,None))
 
-let dummy_constant (ce,_,mk) = dummy_constant_entry,[],mk
+let dummy_constant cst = {
+  cst_decl = dummy_constant_entry;
+  cst_hyps = [];
+  cst_kind = cst.cst_kind;
+  cst_locl = cst.cst_locl;
+}
 
 let classify_constant cst = Substitute (dummy_constant cst)
-
-type constant_obj =
-    global_declaration * Dischargedhypsmap.discharged_hyps * logical_kind
 
 let inConstant : constant_obj -> obj =
   declare_object { (default_object "CONSTANT") with
@@ -167,20 +181,27 @@ let inConstant : constant_obj -> obj =
     subst_function = ident_subst_function;
     discharge_function = discharge_constant }
 
-let declare_constant_common id dhyps (cd,kind) =
-  let (sp,kn) = add_leaf id (inConstant (cd,dhyps,kind)) in
+let declare_constant_common id cst =
+  let (sp,kn) = add_leaf id (inConstant cst) in
   let c = Global.constant_of_delta_kn kn in
   declare_constant_implicits c;
   Heads.declare_head (EvalConstRef c);
   Notation.declare_ref_arguments_scope (ConstRef c);
   c
 
-let declare_constant ?(internal = UserVerbose) id (cd,kind) =
-  let kn = declare_constant_common id [] (ConstantEntry cd,kind) in
-  !xml_declare_constant (internal,kn);
+let declare_constant ?(internal = UserVerbose) ?(local = false) id (cd, kind) =
+  let cst = {
+    cst_decl = ConstantEntry cd;
+    cst_hyps = [] ;
+    cst_kind = kind;
+    cst_locl = local;
+  } in
+  let kn = declare_constant_common id cst in
+  let () = !xml_declare_constant (internal, kn) in
   kn
 
-let declare_definition ?(internal=UserVerbose) ?(opaque=false) ?(kind=Decl_kinds.Definition)
+let declare_definition ?(internal=UserVerbose)
+  ?(opaque=false) ?(kind=Decl_kinds.Definition) ?(local = false)
   id ?types body =
   let cb = 
     { Entries.const_entry_body = body;
@@ -189,8 +210,8 @@ let declare_definition ?(internal=UserVerbose) ?(opaque=false) ?(kind=Decl_kinds
       const_entry_inline_code = false;
       const_entry_secctx = None }
   in
-    declare_constant ~internal id
-      (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind) 
+    declare_constant ~internal ~local id
+      (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind)
 
 (** Declaration of inductive blocks *)
 

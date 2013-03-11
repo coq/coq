@@ -327,16 +327,20 @@ let pr_class_rawexpr = function
   | RefClass qid -> pr_smart_global qid
 
 let pr_assumption_token many = function
-  | (Local,Logical) ->
+  | (Discharge,Logical) ->
       str (if many then "Hypotheses" else "Hypothesis")
-  | (Local,Definitional) ->
+  | (Discharge,Definitional) ->
       str (if many then "Variables" else "Variable")
   | (Global,Logical) ->
       str (if many then "Axioms" else "Axiom")
   | (Global,Definitional) ->
       str (if many then "Parameters" else "Parameter")
+  | (Local, Logical) ->
+      str (if many then "Local Axioms" else "Local Axiom")
+  | (Local,Definitional) ->
+      str (if many then "Local Parameters" else "Local Parameter")
   | (Global,Conjectural) -> str"Conjecture"
-  | (Local,Conjectural) ->
+  | ((Discharge | Local),Conjectural) ->
       anomaly (Pp.str "Don't know how to beautify a local conjecture")
 
 let pr_params pr_c (xl,(c,t)) =
@@ -706,14 +710,14 @@ let rec pr_vernac = function
   | VernacCanonical q -> str"Canonical Structure" ++ spc() ++ pr_smart_global q
   | VernacCoercion (s,id,c1,c2) ->
       hov 1 (
-	str"Coercion" ++ (match s with | Local -> spc() ++
-	  str"Local" ++ spc() | Global -> spc()) ++
+	str"Coercion" ++ (if s then spc() ++
+	  str"Local" ++ spc() else spc()) ++
 	pr_smart_global id ++ spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++
 	spc() ++ str">->" ++ spc() ++ pr_class_rawexpr c2)
   | VernacIdentityCoercion (s,id,c1,c2) ->
       hov 1 (
-	str"Identity Coercion" ++ (match s with | Local -> spc() ++
-	  str"Local" ++ spc() | Global -> spc()) ++ pr_lident id ++
+	str"Identity Coercion" ++ (if s then spc() ++
+	  str"Local" ++ spc() else spc()) ++ pr_lident id ++
 	spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++ spc() ++ str">->" ++
 	spc() ++ pr_class_rawexpr c2)
 

@@ -55,11 +55,11 @@ type internal_flag =
   | UserVerbose
 
 val declare_constant :
- ?internal:internal_flag -> Id.t -> constant_declaration -> constant
+ ?internal:internal_flag -> ?local:bool -> Id.t -> constant_declaration -> constant
 
 val declare_definition : 
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
-  Id.t -> ?types:constr -> constr -> constant
+  ?local:bool -> Id.t -> ?types:constr -> constr -> constant
 
 (** [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of

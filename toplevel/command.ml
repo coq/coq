@@ -112,35 +112,43 @@ let check_definition (ce, evd, imps) =
     Option.iter (check_evars env Evd.empty evd) ce.const_entry_type;
     ce
 
+let get_locality id = function
+| Discharge ->
+  (** If a Let is defined outside a section, then we consider it as a local definition *)
+  let msg = pr_id id ++ strbrk " is declared as a local definition" in
+  let () = if Flags.is_verbose () then msg_warning msg in
+  true
+| Local -> true
+| Global -> false
+
 let declare_global_definition ident ce local k imps =
-  let kn = declare_constant ident (DefinitionEntry ce,IsDefinition k) in
+  let local = get_locality ident local in
+  let kn = declare_constant ident ~local (DefinitionEntry ce, IsDefinition k) in
   let gr = ConstRef kn in
-    maybe_declare_manual_implicits false gr imps;
-    if local == Local && Flags.is_verbose() then
-      msg_warning (pr_id ident ++ strbrk " is declared as a global definition");
-    definition_message ident;
-    Autoinstance.search_declaration (ConstRef kn);
-    gr
+  let () = maybe_declare_manual_implicits false gr imps in
+  let () = definition_message ident in
+  let () = Autoinstance.search_declaration (ConstRef kn) in
+  gr
 
 let declare_definition_hook = ref ignore
 let set_declare_definition_hook = (:=) declare_definition_hook
 let get_declare_definition_hook () = !declare_definition_hook
 
-let declare_definition ident (local,k) ce imps hook =
-  !declare_definition_hook ce;
+let declare_definition ident (local, k) ce imps hook =
+  let () = !declare_definition_hook ce in
   let r = match local with
-    | Local when Lib.sections_are_opened () ->
-        let c =
-          SectionLocalDef(ce.const_entry_body ,ce.const_entry_type,false) in
-        let _ = declare_variable ident (Lib.cwd(),c,IsDefinition k) in
-        definition_message ident;
-        if Pfedit.refining () then
-          Flags.if_warn msg_warning
-	    (strbrk "Local definition " ++ pr_id ident ++
-             strbrk " is not visible from current goals");
-        VarRef ident
-    | (Global|Local) ->
-        declare_global_definition ident ce local k imps in
+  | Discharge when Lib.sections_are_opened () ->
+    let c = SectionLocalDef(ce.const_entry_body, ce.const_entry_type, false) in
+    let _ = declare_variable ident (Lib.cwd(), c, IsDefinition k) in
+    let () = definition_message ident in
+    let () = if Pfedit.refining () then
+      let msg = strbrk "Section definition " ++
+        pr_id ident ++ strbrk " is not visible from current goals" in
+      Flags.if_warn msg_warning msg
+    in
+    VarRef ident
+  | Discharge | Local | Global ->
+    declare_global_definition ident ce local k imps in
   hook local r
 
 let _ = Obligations.declare_definition_ref := declare_definition
@@ -158,40 +166,37 @@ let do_definition ident k bl red_option c ctypopt hook =
       let obls, _, c, cty = 
 	Obligations.eterm_obligations env ident evd 0 c typ
       in
-	ignore(Obligations.add_definition ident ~term:c cty ~implicits:imps ~kind:k ~hook obls)
+      ignore(Obligations.add_definition ident ~term:c cty ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
       declare_definition ident k ce imps hook
 
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
-let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =
-  let r,status = match local with
-    | Local when Lib.sections_are_opened () ->
-        let _ =
-          declare_variable ident
-            (Lib.cwd(), SectionLocalAssum (c,impl), IsAssumption kind) in
-        assumption_message ident;
-        if is_verbose () && Pfedit.refining () then
-          msg_warning (str"Variable" ++ spc () ++ pr_id ident ++
-          strbrk " is not visible from current goals");
-	let r = VarRef ident in
-	  Typeclasses.declare_instance None true r; r,true
-    | (Global|Local) ->
-        let kn =
-          declare_constant ident 
-            (ParameterEntry (None,c,nl), IsAssumption kind) in
-	let gr = ConstRef kn in
-	  maybe_declare_manual_implicits false gr imps;
-        assumption_message ident;
-        if local == Local && Flags.is_verbose () then
-          msg_warning (pr_id ident ++ strbrk " is declared as a parameter" ++
-          strbrk " because it is at a global level");
-	Autoinstance.search_declaration (ConstRef kn);
-	Typeclasses.declare_instance None false gr;
-        gr , (Lib.is_modtype_strict ())
+let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) = match local with
+| Discharge when Lib.sections_are_opened () ->
+  let decl = (Lib.cwd(), SectionLocalAssum (c,impl), IsAssumption kind) in
+  let _ = declare_variable ident decl in
+  let () = assumption_message ident in
+  let () =
+    if is_verbose () && Pfedit.refining () then
+    msg_warning (str"Variable" ++ spc () ++ pr_id ident ++
+    strbrk " is not visible from current goals")
   in
-    if is_coe then Class.try_add_new_coercion r local;
-    status
+  let r = VarRef ident in
+  let () = Typeclasses.declare_instance None true r in
+  let () = if is_coe then Class.try_add_new_coercion r ~local:true in
+  true
+| Global | Local | Discharge ->
+  let local = get_locality ident local in
+  let decl = (ParameterEntry (None,c,nl), IsAssumption kind) in
+  let kn = declare_constant ident ~local decl in
+  let gr = ConstRef kn in
+  let () = maybe_declare_manual_implicits false gr imps in
+  let () = assumption_message ident in
+  let () = Autoinstance.search_declaration (ConstRef kn) in
+  let () = Typeclasses.declare_instance None false gr in
+  let () = if is_coe then Class.try_add_new_coercion gr local in
+  Lib.is_modtype_strict ()
 
 let declare_assumptions_hook = ref ignore
 let set_declare_assumptions_hook = (:=) declare_assumptions_hook
@@ -399,7 +404,7 @@ let do_mutual_inductive indl finite =
   (* Declare the possible notations of inductive types *)
   List.iter Metasyntax.add_notation_interpretation ntns;
   (* Declare the coercions *)
-  List.iter (fun qid -> Class.try_add_new_coercion (locate qid) Global) coes
+  List.iter (fun qid -> Class.try_add_new_coercion (locate qid) false) coes
 
 (* 3c| Fixpoints and co-fixpoints *)
 
@@ -510,6 +515,7 @@ let declare_fix kind f def t imps =
     const_entry_opaque = false;
     const_entry_inline_code = false
   } in
+  (** FIXME: include locality *)
   let kn = declare_constant f (DefinitionEntry ce,IsDefinition kind) in
   let gr = ConstRef kn in
   Autoinstance.search_declaration (ConstRef kn);
@@ -704,6 +710,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
         const_entry_opaque = false;
         const_entry_inline_code = false}
 	in 
+	(** FIXME: include locality *)
 	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
 	let gr = ConstRef c in
 	  if Impargs.is_implicit_args () || not (List.is_empty impls) then

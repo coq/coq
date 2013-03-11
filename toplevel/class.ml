@@ -20,7 +20,9 @@ open Globnames
 open Nametab
 open Decl_kinds
 
-let strength_min l = if List.mem Local l then Local else Global
+let strength_min l = if List.mem `LOCAL l then `LOCAL else `GLOBAL
+
+let loc_of_bool b = if b then `LOCAL else `GLOBAL
 
 (* Errors *)
 
@@ -147,13 +149,13 @@ let prods_of t =
   aux [] t
 
 let strength_of_cl = function
-  | CL_CONST kn -> Global
-  | CL_SECVAR id -> Local
-  | _ -> Global
+  | CL_CONST kn -> `GLOBAL
+  | CL_SECVAR id -> `LOCAL
+  | _ -> `GLOBAL
 
 let strength_of_global = function
-  | VarRef _ -> Local
-  | _ -> Global
+  | VarRef _ -> `LOCAL
+  | _ -> `GLOBAL
 
 let get_strength stre ref cls clt =
   let stres = strength_of_cl cls in
@@ -220,7 +222,8 @@ let build_id_coercion idf_opt source =
         const_entry_opaque = false;
 	const_entry_inline_code = true
       } in
-  let kn = declare_constant idf (constr_entry,IsDefinition IdentityCoercion) in
+  let decl = (constr_entry, IsDefinition IdentityCoercion) in
+  let kn = declare_constant idf decl in
   ConstRef kn
 
 let check_source = function
@@ -263,37 +266,50 @@ let add_new_coercion_core coef stre source target isid =
   check_target clt target;
   check_arity cls;
   check_arity clt;
-  let stre' = get_strength stre coef cls clt in
-  declare_coercion coef stre' ~isid ~src:cls ~target:clt ~params:(List.length lvs)
+  let local = match get_strength stre coef cls clt with
+  | `LOCAL -> true
+  | `GLOBAL -> false
+  in
+  declare_coercion coef ~local ~isid ~src:cls ~target:clt ~params:(List.length lvs)
 
-let try_add_new_coercion_core ref b c d e =
-  try add_new_coercion_core ref b c d e
+let try_add_new_coercion_core ref ~local c d e =
+  try add_new_coercion_core ref (loc_of_bool local) c d e
   with CoercionError e ->
       errorlabstrm "try_add_new_coercion_core"
         (explain_coercion_error ref e ++ str ".")
 
-let try_add_new_coercion ref stre =
-  try_add_new_coercion_core ref stre None None false
+let try_add_new_coercion ref ~local =
+  try_add_new_coercion_core ref ~local None None false
 
-let try_add_new_coercion_subclass cl stre =
+let try_add_new_coercion_subclass cl ~local =
   let coe_ref = build_id_coercion None cl in
-  try_add_new_coercion_core coe_ref stre (Some cl) None true
+  try_add_new_coercion_core coe_ref ~local (Some cl) None true
 
-let try_add_new_coercion_with_target ref stre ~source ~target =
-  try_add_new_coercion_core ref stre (Some source) (Some target) false
+let try_add_new_coercion_with_target ref ~local ~source ~target =
+  try_add_new_coercion_core ref ~local (Some source) (Some target) false
 
-let try_add_new_identity_coercion id stre ~source ~target =
+let try_add_new_identity_coercion id ~local ~source ~target =
   let ref = build_id_coercion (Some id) source in
-  try_add_new_coercion_core ref stre (Some source) (Some target) true
+  try_add_new_coercion_core ref ~local (Some source) (Some target) true
 
-let try_add_new_coercion_with_source ref stre ~source =
-  try_add_new_coercion_core ref stre (Some source) None false
+let try_add_new_coercion_with_source ref ~local ~source =
+  try_add_new_coercion_core ref ~local (Some source) None false
 
-let add_coercion_hook stre ref =
-  try_add_new_coercion ref stre;
-  Flags.if_verbose msg_info
-    (pr_global_env Id.Set.empty ref ++ str " is now a coercion")
+let add_coercion_hook local ref =
+  let stre = match local with
+  | Local -> true
+  | Global -> false
+  | Discharge -> assert false
+  in
+  let () = try_add_new_coercion ref stre in
+  let msg = pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
+  Flags.if_verbose msg_info msg
 
-let add_subclass_hook stre ref =
+let add_subclass_hook local ref =
+  let stre = match local with
+  | Local -> true
+  | Global -> false
+  | Discharge -> assert false
+  in
   let cl = class_of_global ref in
   try_add_new_coercion_subclass cl stre

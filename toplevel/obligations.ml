@@ -590,7 +590,8 @@ let declare_obligation prg obl body =
 	  const_entry_opaque = opaque;
 	  const_entry_inline_code = false} 
       in
-      let constant = Declare.declare_constant obl.obl_name
+    (** ppedrot: seems legit to have obligations as local *)
+      let constant = Declare.declare_constant obl.obl_name ~local:true
 	(DefinitionEntry ce,IsProof Property)
       in
 	if not opaque then
@@ -945,7 +946,8 @@ let admit_prog prg =
         match x.obl_body with
         | None ->
             let x = subst_deps_obl obls x in
-            let kn = Declare.declare_constant x.obl_name 
+            (** ppedrot: seems legit to have admitted obligations as local *)
+            let kn = Declare.declare_constant x.obl_name ~local:true
               (ParameterEntry (None, x.obl_type,None), IsAssumption Conjectural)
             in
               assumption_message x.obl_name;

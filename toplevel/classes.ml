@@ -99,16 +99,15 @@ let instance_hook k pri global imps ?hook cst =
   (match hook with Some h -> h cst | None -> ())
 
 let declare_instance_constant k pri global imps ?hook id term termtype =
-  let cdecl =
-    let kind = IsDefinition Instance in
-    let entry =
-      { const_entry_body   = term;
-        const_entry_secctx = None;
-	const_entry_type   = Some termtype;
-	const_entry_opaque = false;
-	const_entry_inline_code = false }
-    in DefinitionEntry entry, kind
+  let kind = IsDefinition Instance in
+  let entry = {
+    const_entry_body   = term;
+    const_entry_secctx = None;
+    const_entry_type   = Some termtype;
+    const_entry_opaque = false;
+    const_entry_inline_code = false }
   in
+  let cdecl = (DefinitionEntry entry, kind) in
   let kn = Declare.declare_constant id cdecl in
     Declare.definition_message id;
     instance_hook k pri global imps ?hook (ConstRef kn);
@@ -321,27 +320,27 @@ let context l =
   let _, ((env', fullctx), impls) = interp_context_evars evars env l in
   let fullctx = Evarutil.nf_rel_context_evar !evars fullctx in
   let ce t = Evarutil.check_evars env Evd.empty !evars t in
-  List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx;
+  let () = List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx in
   let ctx = try named_of_rel_context fullctx with _ ->
     error "Anonymous variables not allowed in contexts."
   in
   let fn status (id, _, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
-      let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
-	(ParameterEntry (None,t,None), IsAssumption Logical)
-      in
+      let decl = (ParameterEntry (None,t,None), IsAssumption Logical) in
+      let cst = Declare.declare_constant ~internal:Declare.KernelSilent id decl in
 	match class_of_constr t with
 	| Some (rels, (tc, args) as _cl) ->
 	    add_instance (Typeclasses.new_instance tc None false (ConstRef cst));
             status
 	    (* declare_subclasses (ConstRef cst) cl *)
 	| None -> status
-    else (
-      let impl = List.exists 
-	(fun (x,_) ->
-	   match x with ExplByPos (_, Some id') -> Id.equal id id' | _ -> false) impls
+    else
+      let test (x, _) = match x with
+      | ExplByPos (_, Some id') -> Id.equal id id'
+      | _ -> false
       in
-	Command.declare_assumption false (Local (* global *), Definitional) t
-	  [] impl (* implicit *) None (* inline *) (Loc.ghost, id) && status)
+      let impl = List.exists test impls in
+      let decl = (Discharge, Definitional) in
+      let nstatus = Command.declare_assumption false decl t [] impl None (Loc.ghost, id) in
+      status && nstatus
   in List.fold_left fn true (List.rev ctx)
-       

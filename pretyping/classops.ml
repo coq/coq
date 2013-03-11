@@ -44,14 +44,14 @@ module CoeTypMap = Refmap_env
 type coe_info_typ = {
   coe_value : constr;
   coe_type : types;
-  coe_strength : locality;
+  coe_local : bool;
   coe_is_identity : bool;
   coe_param : int }
 
 let coe_info_typ_equal c1 c2 =
   eq_constr c1.coe_value c2.coe_value &&
     eq_constr c1.coe_type c2.coe_type &&
-    c1.coe_strength == c2.coe_strength &&
+    c1.coe_local == c2.coe_local &&
     c1.coe_is_identity == c2.coe_is_identity &&
     Int.equal c1.coe_param c2.coe_param
 
@@ -342,7 +342,14 @@ let add_coercion_in_graph (ic,source,target) =
   if is_ambig && is_verbose () then
     msg_warning (message_ambig !ambig_paths)
 
-type coercion = coe_typ * locality * bool * cl_typ * cl_typ * int
+type coercion = {
+  coercion_type   : coe_typ;
+  coercion_local  : bool;
+  coercion_is_id  : bool;
+  coercion_source : cl_typ;
+  coercion_target : cl_typ;
+  coercion_params : int;
+}
 
 (* Calcul de l'arité d'une classe *)
 
@@ -373,18 +380,18 @@ let _ =
       optread  = (fun () -> !automatically_import_coercions);
       optwrite = (:=) automatically_import_coercions }
 
-let cache_coercion (_,(coe,stre,isid,cls,clt,ps)) =
-  add_class cls;
-  add_class clt;
-  let is,_ = class_info cls in
-  let it,_ = class_info clt in
+let cache_coercion (_, c) =
+  let () = add_class c.coercion_source in
+  let () = add_class c.coercion_target in
+  let is, _ = class_info c.coercion_source in
+  let it, _ = class_info c.coercion_target in
   let xf =
-    { coe_value = constr_of_global coe;
-      coe_type = Global.type_of_global coe;
-      coe_strength = stre;
-      coe_is_identity = isid;
-      coe_param = ps } in
-  add_new_coercion coe xf;
+    { coe_value = constr_of_global c.coercion_type;
+      coe_type = Global.type_of_global c.coercion_type;
+      coe_local = c.coercion_local;
+      coe_is_identity = c.coercion_is_id;
+      coe_param = c.coercion_params } in
+  let () = add_new_coercion c.coercion_type xf in
   add_coercion_in_graph (xf,is,it)
 
 let load_coercion _ o =
@@ -399,34 +406,38 @@ let open_coercion i o =
   then
     cache_coercion o
 
-let subst_coercion (subst,(coe,stre,isid,cls,clt,ps as obj)) =
-  let coe' = subst_coe_typ subst coe in
-  let cls' = subst_cl_typ subst cls in
-  let clt' = subst_cl_typ subst clt in
-    if coe' == coe && cls' == cls & clt' == clt then obj else
-      (coe',stre,isid,cls',clt',ps)
+let subst_coercion (subst, c) =
+  let coe = subst_coe_typ subst c.coercion_type in
+  let cls = subst_cl_typ subst c.coercion_source in
+  let clt = subst_cl_typ subst c.coercion_target in
+  if c.coercion_type == coe && c.coercion_source == cls && c.coercion_target == clt then c
+  else { c with coercion_type = coe; coercion_source = cls; coercion_target = clt }
+
 
 let discharge_cl = function
   | CL_CONST kn -> CL_CONST (Lib.discharge_con kn)
   | CL_IND ind -> CL_IND (Lib.discharge_inductive ind)
   | cl -> cl
 
-let discharge_coercion (_,(coe,stre,isid,cls,clt,ps)) =
-  match stre with
-  | Local -> None
-  | Global ->
-    let n = try Array.length (Lib.section_instance coe) with Not_found -> 0 in
-    Some (Lib.discharge_global coe,
-          stre,
-	  isid,
-          discharge_cl cls,
-	  discharge_cl clt,
-          n + ps)
+let discharge_coercion (_, c) =
+  if c.coercion_local then None
+  else
+    let n =
+      try
+        let ins = Lib.section_instance c.coercion_type in
+        Array.length ins
+      with Not_found -> 0
+    in
+    let nc = { c with
+      coercion_type = Lib.discharge_global c.coercion_type;
+      coercion_source = discharge_cl c.coercion_source;
+      coercion_target = discharge_cl c.coercion_target;
+      coercion_params = n + c.coercion_params;
+    } in
+    Some nc
 
-let classify_coercion (coe,stre,isid,cls,clt,ps as obj) =
-  match stre with
-  | Local -> Dispose
-  | Global -> Substitute obj
+let classify_coercion obj =
+  if obj.coercion_local then Dispose else Substitute obj
 
 let inCoercion : coercion -> obj =
   declare_object {(default_object "COERCION") with
@@ -437,8 +448,16 @@ let inCoercion : coercion -> obj =
     classify_function = classify_coercion;
     discharge_function = discharge_coercion }
 
-let declare_coercion coef stre ~isid ~src:cls ~target:clt ~params:ps =
-  Lib.add_anonymous_leaf (inCoercion (coef,stre,isid,cls,clt,ps))
+let declare_coercion coef ?(local = false) ~isid ~src:cls ~target:clt ~params:ps =
+  let c = {
+    coercion_type = coef;
+    coercion_local = local;
+    coercion_is_id = isid;
+    coercion_source = cls;
+    coercion_target = clt;
+    coercion_params = ps;
+  } in
+  Lib.add_anonymous_leaf (inCoercion c)
 
 (* For printing purpose *)
 let get_coercion_value v = v.coe_value

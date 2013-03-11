@@ -123,18 +123,18 @@ let compute_name internal id =
 let define internal id c =
   let fd = declare_constant ~internal in
   let id = compute_name internal id in
-  let kn = fd id
-    (DefinitionEntry
-      { const_entry_body = c;
-        const_entry_secctx = None;
-        const_entry_type = None;
-        const_entry_opaque = false;
-	const_entry_inline_code = false
-      },
-      Decl_kinds.IsDefinition Scheme) in
-  (match internal with
+  let entry = {
+    const_entry_body = c;
+    const_entry_secctx = None;
+    const_entry_type = None;
+    const_entry_opaque = false;
+    const_entry_inline_code = false
+  } in
+  let kn = fd id (DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
+  let () = match internal with
   | KernelSilent -> ()
-  | _-> definition_message id);
+  | _-> definition_message id
+  in
   kn
 
 let define_individual_scheme_base kind suff f internal idopt (mind,i as ind) =

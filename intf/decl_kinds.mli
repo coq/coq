@@ -8,7 +8,7 @@
 
 (** Informal mathematical status of declarations *)
 
-type locality = Local | Global
+type locality = Discharge | Local | Global
 
 type binding_kind = Explicit | Implicit
 

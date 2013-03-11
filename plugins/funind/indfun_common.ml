@@ -148,25 +148,28 @@ open Declare
 
 let definition_message = Declare.definition_message
 
+let get_locality = function
+| Discharge -> true
+| Local -> true
+| Global -> false
+
 let save with_clean id const (locality,kind) hook =
   let {const_entry_body = pft;
        const_entry_secctx = _;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
   let l,r = match locality with
-    | Local when Lib.sections_are_opened () ->
+    | Discharge when Lib.sections_are_opened () ->
         let k = Kindops.logical_kind_of_goal_kind kind in
 	let c = SectionLocalDef (pft, tpo, opacity) in
 	let _ = declare_variable id (Lib.cwd(), c, k) in
 	(Local, VarRef id)
-    | Local ->
+    | Discharge | Local | Global ->
+        let local = get_locality locality in
         let k = Kindops.logical_kind_of_goal_kind kind in
-        let kn = declare_constant id (DefinitionEntry const, k) in
-	(Global, ConstRef kn)
-    | Global ->
-        let k = Kindops.logical_kind_of_goal_kind kind in
-        let kn = declare_constant id (DefinitionEntry const, k) in
-	(Global, ConstRef kn) in
+        let kn = declare_constant id ~local (DefinitionEntry const, k) in
+	(locality, ConstRef kn)
+  in
   if with_clean then  Pfedit.delete_current_proof ();
   hook l r;
   definition_message id

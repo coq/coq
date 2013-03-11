@@ -24,18 +24,44 @@ let string_of_theorem_kind = function
   | Corollary -> "Corollary"
 
 let string_of_definition_kind def =
-  match def with
-  | Local, Coercion -> "Coercion Local"
-  | Global, Coercion -> "Coercion"
-  | Local, Definition -> "Let"
-  | Global, Definition -> "Definition"
-  | Local, SubClass -> "Local SubClass"
-  | Global, SubClass -> "SubClass"
-  | Global, CanonicalStructure -> "Canonical Structure"
-  | Global, Example -> "Example"
-  | Local, (CanonicalStructure|Example) ->
-      Errors.anomaly (Pp.str "Unsupported local definition kind")
-  | Local, Instance -> "Instance"
-  | Global, Instance -> "Global Instance"
-  | _, (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method)
-      -> Errors.anomaly (Pp.str "Internal definition kind")
+  let (locality, kind) = def in
+  let error () = Errors.anomaly (Pp.str "Internal definition kind") in
+  match kind with
+  | Definition ->
+    begin match locality with
+    | Discharge -> "Let"
+    | Local -> "Local Definition"
+    | Global -> "Definition"
+    end
+  | Example ->
+    begin match locality with
+    | Discharge -> error ()
+    | Local -> "Local Example"
+    | Global -> "Example"
+    end
+  | Coercion ->
+    begin match locality with
+    | Discharge -> error ()
+    | Local -> "Local Coercion"
+    | Global -> "Coercion"
+    end
+  | SubClass ->
+    begin match locality with
+    | Discharge -> error ()
+    | Local -> "Local SubClass"
+    | Global -> "SubClass"
+    end
+  | CanonicalStructure ->
+    begin match locality with
+    | Discharge -> error ()
+    | Local -> error ()
+    | Global -> "Canonical Structure"
+    end
+  | Instance ->
+    begin match locality with
+    | Discharge -> error ()
+    | Local -> "Instance"
+    | Global -> "Global Instance"
+    end
+  | (StructureComponent|Scheme|CoFixpoint|Fixpoint|IdentityCoercion|Method) ->
+    Errors.anomaly (Pp.str "Internal definition kind")
