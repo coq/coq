@@ -704,9 +704,9 @@ let dependencies obls n =
       obls;
     !res
 
-let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition
+let goal_kind = Decl_kinds.Local, Decl_kinds.DefinitionBody Decl_kinds.Definition
 
-let goal_proof_kind = Decl_kinds.Global, Decl_kinds.Proof Decl_kinds.Lemma
+let goal_proof_kind = Decl_kinds.Local, Decl_kinds.Proof Decl_kinds.Lemma
 
 let kind_of_opacity o =
   match o with
