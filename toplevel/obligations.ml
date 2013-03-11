@@ -567,7 +567,7 @@ let declare_mutual_definition l =
 	  None, List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 l
   in
   (* Declare the recursive definitions *)
-  let kns = List.map4 (!declare_fix_ref kind) fixnames fixdecls fixtypes fiximps in
+  let kns = List.map4 (!declare_fix_ref (local, kind)) fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter Metasyntax.add_notation_interpretation first.prg_notations;
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;

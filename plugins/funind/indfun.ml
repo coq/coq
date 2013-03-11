@@ -364,7 +364,7 @@ let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexp
 	Command.do_definition fname (Decl_kinds.Global,Decl_kinds.Definition)
 	  bl None body (Some ret_type) (fun _ _ -> ())
     | _ ->
-	Command.do_fixpoint fixpoint_exprl
+	Command.do_fixpoint Global fixpoint_exprl
 
 let generate_correction_proof_wf f_ref tcc_lemma_ref
     is_mes functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation

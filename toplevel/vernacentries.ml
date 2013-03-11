@@ -574,15 +574,15 @@ let vernac_inductive finite infer indl =
     let indl = List.map unpack indl in
     do_mutual_inductive indl (finite != CoFinite)
 
-let vernac_fixpoint l =
+let vernac_fixpoint local l =
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_fixpoint l
+  do_fixpoint local l
 
-let vernac_cofixpoint l =
+let vernac_cofixpoint local l =
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_cofixpoint l
+  do_cofixpoint local l
 
 let vernac_scheme l =
   if Dumpglob.dump () then
@@ -1683,8 +1683,8 @@ let interp c = match c with
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption stre l nl
   | VernacInductive (finite,infer,l) -> vernac_inductive finite infer l
-  | VernacFixpoint l -> vernac_fixpoint l
-  | VernacCoFixpoint l -> vernac_cofixpoint l
+  | VernacFixpoint (local, l) -> vernac_fixpoint local l
+  | VernacCoFixpoint (local, l) -> vernac_cofixpoint local l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
 

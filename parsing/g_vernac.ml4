@@ -161,6 +161,8 @@ GEXTEND Gram
 	  VernacAssumption (stre, nl, bl)
       | d = def_token; id = identref; b = def_body ->
           VernacDefinition (d, id, b)
+      | IDENT "Let"; id = identref; b = def_body ->
+          VernacDefinition ((Discharge, Definition), id, b)
       (* Gallina inductive declarations *)
       | f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
@@ -168,9 +170,13 @@ GEXTEND Gram
 	  let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
           VernacInductive (f,false,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint recs
+          VernacFixpoint (use_locality_exp (), recs)
+      | IDENT "Let"; "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+          VernacFixpoint (Discharge, recs)
       | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint corecs
+          VernacCoFixpoint (use_locality_exp (), corecs)
+      | IDENT "Let"; "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
+          VernacCoFixpoint (Discharge, corecs)
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
 	l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l) ] ]
@@ -197,8 +203,6 @@ GEXTEND Gram
   def_token:
     [ [ "Definition" ->
 	(use_locality_exp (), Definition)
-      | IDENT "Let" ->
-	(Discharge, Definition)
       | IDENT "Example" ->
 	(use_locality_exp (), Example)
       | IDENT "SubClass"  ->

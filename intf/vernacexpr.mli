@@ -240,8 +240,8 @@ type vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of assumption_kind * inline * simple_binder with_coercion list
   | VernacInductive of inductive_flag * infer_flag * (inductive_expr * decl_notation list) list
-  | VernacFixpoint of (fixpoint_expr * decl_notation list) list
-  | VernacCoFixpoint of (cofixpoint_expr * decl_notation list) list
+  | VernacFixpoint of locality * (fixpoint_expr * decl_notation list) list
+  | VernacCoFixpoint of locality * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
 

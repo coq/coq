@@ -515,12 +515,7 @@ let declare_fix kind f def t imps =
     const_entry_opaque = false;
     const_entry_inline_code = false
   } in
-  (** FIXME: include locality *)
-  let kn = declare_constant f (DefinitionEntry ce,IsDefinition kind) in
-  let gr = ConstRef kn in
-  Autoinstance.search_declaration (ConstRef kn);
-  maybe_declare_manual_implicits false gr imps;
-  gr
+  declare_definition f kind ce imps (fun _ r -> r)
 
 let _ = Obligations.declare_fix_ref := declare_fix
 
@@ -798,7 +793,7 @@ let check_recursive isfix ((env,rec_sign,evd),(fixnames,fixdefs,fixtypes),info) 
 let interp_fixpoint l ntns = check_recursive true (interp_recursive true l ntns)
 let interp_cofixpoint l ntns = check_recursive false (interp_recursive false l ntns)
     
-let declare_fixpoint ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
+let declare_fixpoint local ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
   if List.mem None fixdefs then
     (* Some bodies to define by proof *)
     let thms =
@@ -816,14 +811,14 @@ let declare_fixpoint ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     let fixdecls =
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
-    ignore (List.map4 (declare_fix Fixpoint) fixnames fixdecls fixtypes fiximps);
+    ignore (List.map4 (declare_fix (local, Fixpoint)) fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     fixpoint_message (Some indexes) fixnames;
   end;
   (* Declare notations *)
   List.iter Metasyntax.add_notation_interpretation ntns
 
-let declare_cofixpoint ((fixnames,fixdefs,fixtypes),fiximps) ntns =
+let declare_cofixpoint local ((fixnames,fixdefs,fixtypes),fiximps) ntns =
   if List.mem None fixdefs then
     (* Some bodies to define by proof *)
     let thms =
@@ -839,7 +834,7 @@ let declare_cofixpoint ((fixnames,fixdefs,fixtypes),fiximps) ntns =
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
-    ignore (List.map4 (declare_fix CoFixpoint) fixnames fixdecls fixtypes fiximps);
+    ignore (List.map4 (declare_fix (local, CoFixpoint)) fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     cofixpoint_message fixnames
   end;
@@ -874,7 +869,7 @@ let collect_evars_of_term evd c ty =
     Int.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evd ev))
       evars Evd.empty
       
-let do_program_recursive fixkind fixl ntns =
+let do_program_recursive local fixkind fixl ntns =
   let isfix = fixkind != Obligations.IsCoFixpoint in
   let (env, rec_sign, evd), fix, info = 
     interp_recursive isfix fixl ntns 
@@ -901,7 +896,7 @@ let do_program_recursive fixkind fixl ntns =
   let fiximps = List.map pi2 info in
   let fixdefs = List.map Option.get fixdefs in
   let defs = List.map4 collect_evars fixnames fixdefs fixtypes fiximps in
-    if isfix then begin
+  let () = if isfix then begin
       let possible_indexes = List.map compute_possible_guardness_evidences info in
       let fixdecls = Array.of_list (List.map (fun x -> Name x) fixnames),
 	Array.of_list fixtypes,
@@ -910,10 +905,14 @@ let do_program_recursive fixkind fixl ntns =
       let indexes = 
 	Pretyping.search_guard Loc.ghost (Global.env ()) possible_indexes fixdecls in
 	List.iteri (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) fixl
-    end;
-    Obligations.add_mutual_definitions defs ntns fixkind
+  end in
+  let kind = match fixkind with
+  | Obligations.IsFixpoint _ -> (local, Fixpoint)
+  | Obligations.IsCoFixpoint -> (local, CoFixpoint)
+  in
+  Obligations.add_mutual_definitions defs ~kind ntns fixkind
 
-let do_program_fixpoint l =
+let do_program_fixpoint local l =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
     match g, l with
     | [(n, CWfRec r)], [(((_,id),_,bl,typ,def),ntn)] ->
@@ -932,24 +931,25 @@ let do_program_fixpoint l =
     | _, _ when List.for_all (fun (n, ro) -> ro == CStructRec) g ->
 	let fixl,ntns = extract_fixpoint_components true l in
 	let fixkind = Obligations.IsFixpoint g in
-	  do_program_recursive fixkind fixl ntns
+	  do_program_recursive local fixkind fixl ntns
 
     | _, _ ->
 	errorlabstrm "do_program_fixpoint"
 	  (str "Well-founded fixpoints not allowed in mutually recursive blocks")
 
-let do_fixpoint l =
-  if Flags.is_program_mode () then do_program_fixpoint l else
-  let fixl,ntns = extract_fixpoint_components true l in
-  let fix = interp_fixpoint fixl ntns in
-  let possible_indexes =
-    List.map compute_possible_guardness_evidences (snd fix) in
-  declare_fixpoint fix possible_indexes ntns
+let do_fixpoint local l =
+  if Flags.is_program_mode () then do_program_fixpoint local l
+  else
+    let fixl, ntns = extract_fixpoint_components true l in
+    let fix = interp_fixpoint fixl ntns in
+    let possible_indexes =
+      List.map compute_possible_guardness_evidences (snd fix) in
+    declare_fixpoint local fix possible_indexes ntns
 
-let do_cofixpoint l =
+let do_cofixpoint local l =
   let fixl,ntns = extract_cofixpoint_components l in
     if Flags.is_program_mode () then
-      do_program_recursive Obligations.IsCoFixpoint fixl ntns
+      do_program_recursive local Obligations.IsCoFixpoint fixl ntns
     else
       let cofix = interp_cofixpoint fixl ntns in
-	declare_cofixpoint cofix ntns
+	declare_cofixpoint local cofix ntns

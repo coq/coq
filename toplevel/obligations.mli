@@ -21,11 +21,11 @@ open Decl_kinds
 open Tacexpr
 
 (** Forward declaration. *)
-val declare_fix_ref : (definition_object_kind -> Id.t ->
+val declare_fix_ref : (definition_kind -> Id.t ->
   constr -> types -> Impargs.manual_implicits -> global_reference) ref
 
 val declare_definition_ref :
-  (Id.t -> locality * definition_object_kind ->
+  (Id.t -> definition_kind ->
      Entries.definition_entry -> Impargs.manual_implicits
        -> global_reference declaration_hook -> global_reference) ref
 

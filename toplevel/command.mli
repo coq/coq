@@ -134,24 +134,24 @@ val interp_cofixpoint :
 (** Registering fixpoints and cofixpoints in the environment *)
 
 val declare_fixpoint :
-  recursive_preentry * (Name.t list * Impargs.manual_implicits * int option) list ->
+  locality -> recursive_preentry * (Name.t list * Impargs.manual_implicits * int option) list ->
   lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint :
-  recursive_preentry * (Name.t list * Impargs.manual_implicits * int option) list ->
+  locality -> recursive_preentry * (Name.t list * Impargs.manual_implicits * int option) list ->
     decl_notation list -> unit
 
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint :
-  (fixpoint_expr * decl_notation list) list -> unit
+  locality -> (fixpoint_expr * decl_notation list) list -> unit
 
 val do_cofixpoint :
-  (cofixpoint_expr * decl_notation list) list -> unit
+  locality -> (cofixpoint_expr * decl_notation list) list -> unit
 
 (** Utils *)
 
 val check_mutuality : Environ.env -> bool -> (Id.t * types) list -> unit
 
-val declare_fix : definition_object_kind -> Id.t ->
+val declare_fix : definition_kind -> Id.t ->
   constr -> types -> Impargs.manual_implicits -> global_reference
