@@ -1106,6 +1106,8 @@ exception Not_dep_pair
 let eq_dec_scheme_kind_name = ref (fun _ -> failwith "eq_dec_scheme undefined")
 let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 
+let eqdep_dec = qualid_of_string "Coq.Logic.Eqdep_dec"
+
 let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
   let env = eq_clause.env in
@@ -1123,7 +1125,7 @@ let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
 	let t1 = try_delta_expand env sigma t1 in
 	let t2 = try_delta_expand env sigma t2 in
 *)
-        try (
+      try
 (* fetch the informations of the  pair *)
         let ceq = constr_of_global Coqlib.glob_eq in
         let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ in
@@ -1131,33 +1133,31 @@ let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
         let _,ar1 = destApp t1 and
             _,ar2 = destApp t2 in
         let ind = destInd ar1.(0) in
-        let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
-            ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
 (* check whether the equality deals with dep pairs or not *)
 (* if yes, check if the user has declared the dec principle *)
 (* and compare the fst arguments of the dep pair *)
-        let new_eq_args = [|type_of env sigma (ar1.(3));ar1.(3);ar2.(3)|] in
-        if ( (eq_constr eqTypeDest (sigTconstr())) &&
-             (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) ind) &&
-             (is_conv env sigma (ar1.(2)) (ar2.(2))))
-              then (
-(* Require Import Eqdec_dec copied from vernac_require in vernacentries.ml*)
-              let qidl = qualid_of_reference
-                (Ident (Loc.ghost,Id.of_string "Eqdep_dec")) in
-              Library.require_library [qidl] (Some false);
-(* cut with the good equality and prove the requested goal *)
-              tclTHENS (cut (mkApp (ceq,new_eq_args)) )
-               [tclIDTAC; tclTHEN (apply (
-                  mkApp(inj2,
-                        [|ar1.(0);mkConst (find_scheme (!eq_dec_scheme_kind_name()) ind);
-                          ar1.(1);ar1.(2);ar1.(3);ar2.(3)|])
-                  )) (Auto.trivial [] [])
-                ]
-(* not a dep eq or no decidable type found *)
-            ) else (raise Not_dep_pair)
-        ) with _ ->
-	  inject_at_positions env sigma u eq_clause posns
-	    (fun _ -> intros_pattern MoveLast ipats)
+        let new_eq_args = [|type_of env sigma ar1.(3);ar1.(3);ar2.(3)|] in
+        if (eq_constr eqTypeDest (sigTconstr())) &&
+           (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) ind) &&
+           (is_conv env sigma ar1.(2) ar2.(2))
+        then begin
+          Library.require_library [Loc.ghost,eqdep_dec] (Some false);
+          let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
+            ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
+          (* cut with the good equality and prove the requested goal *)
+          tclTHENS (cut (mkApp (ceq,new_eq_args)) )
+            [tclIDTAC; tclTHEN (apply (
+              mkApp(inj2,
+                    [|ar1.(0);mkConst (find_scheme (!eq_dec_scheme_kind_name()) ind);
+                      ar1.(1);ar1.(2);ar1.(3);ar2.(3)|])
+             )) (Auto.trivial [] [])
+            ]
+        (* not a dep eq or no decidable type found *)
+        end
+        else raise Not_dep_pair
+      with e ->
+	inject_at_positions env sigma u eq_clause posns
+	  (fun _ -> intros_pattern MoveLast ipats)
 
 let inj ipats with_evars = onEquality with_evars (injEq ipats)
 
