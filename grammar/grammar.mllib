@@ -1,8 +1,10 @@
 Coq_config
 
+Int
+Option
+Store
 Exninfo
 Backtrace
-Int
 Pp_control
 Flags
 Pp
@@ -17,7 +19,6 @@ CArray
 Util
 Bigint
 Predicate
-Option
 Segmenttree
 Unicodetable
 Unicode

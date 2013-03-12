@@ -1,8 +1,10 @@
 Coq_config
 
+Int
+Option
+Store
 Exninfo
 Backtrace
-Int
 Pp_control
 Loc
 Compat
@@ -24,7 +26,6 @@ Dyn
 CUnix
 System
 Envars
-Store
 Gmap
 Fset
 Fmap
@@ -34,7 +35,6 @@ Explore
 Predicate
 Rtree
 Heap
-Option
 Dnet
 
 Names

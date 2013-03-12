@@ -8,7 +8,7 @@
 
 (** Additional information worn by exceptions. *)
 
-type +'a t
+type 'a t
 (** Information containing a given type. *)
 
 val make : unit -> 'a t

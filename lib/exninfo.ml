@@ -10,35 +10,14 @@
     containing a pair composed of the distinguishing [token] and the backtrace
     information. We discriminate the token by pointer equality. *)
 
-type 'a t = int
-(** Information is retrieved through this identifier. *)
+module Store = Store.Make(struct end)
+
+type 'a t = 'a Store.field
 
 let token = Obj.repr "HACK"
 (** Unique token used to recognize enriched exceptions. *)
 
-let make =
-  let cnt = ref 0 in fun () ->
-    let ans = !cnt in
-    let () = incr cnt in
-    ans
-
-let rec assoc_aux (i : int) = function
-| [] -> raise Exit
-| (j, v) :: l ->
-  if i = j then v else assoc_aux i l
-
-let assoc i l =
-  try Some (assoc_aux i l) with Exit -> None
-
-let rec add_assoc (i : int) v = function
-| [] -> [i, v]
-| (j, w) :: l ->
-  if i = j then (j, v) :: l
-  else (j, w) :: add_assoc i v l
-
-let rec merge_assoc l1 l2 = match l1 with
-| [] -> l2
-| (i, v) :: l1 -> add_assoc i v (merge_assoc l1 l2)
+let make = Store.field
 
 (** Discriminate normal data w.r.t enriched exceptions *)
 let is_data obj =
@@ -58,7 +37,7 @@ let get (e : exn) i =
   let lst = Obj.field obj (len - 1) in
   if is_data lst then
     let data = Obj.obj (Obj.field lst 1) in
-    assoc i data
+    Store.get data i
   else None
 
 (** Add data to any exception *)
@@ -70,7 +49,7 @@ let add e i v : exn =
     (** The exception was already enriched *)
     let data = Obj.obj (Obj.field lst 1) in
     (** We retrieve the old information and update it *)
-    let data = add_assoc i v data in
+    let data = Store.set data i v in
     let ans = Obj.dup obj in
     let data = Obj.repr (token, data) in
     let () = Obj.set_field ans (len - 1) data in
@@ -80,7 +59,8 @@ let add e i v : exn =
     let ans = Obj.new_block 0 (succ len) in
     (** We build the new enriched exception from scratch *)
     let () = blit obj 0 ans 0 len in
-    let data = Obj.repr (token, [i, v]) in
+    let data = Store.set Store.empty i v in
+    let data = Obj.repr (token, data) in
     let () = Obj.set_field ans len data in
     Obj.obj ans
 
@@ -108,7 +88,7 @@ let copy (src : exn) (dst : exn) =
       (** second object has data *)
       let dst_data = Obj.obj (Obj.field lst 1) in
       let ans = Obj.dup obj in
-      let data = Obj.repr (token, merge_assoc dst_data src_data) in
+      let data = Obj.repr (token, Store.merge src_data dst_data) in
       let () = Obj.set_field ans len data in
       Obj.obj ans
     else
