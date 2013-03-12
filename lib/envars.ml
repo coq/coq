@@ -154,7 +154,7 @@ let guess_camlbin () = which (user_path ()) (exe "ocamlc")
 let camlbin () =
   if !Flags.camlbin_spec then !Flags.camlbin else
     if !Flags.boot then Coq_config.camlbin else
-      try guess_camlbin () with _ -> Coq_config.camlbin
+      try guess_camlbin () with Not_found -> Coq_config.camlbin
 
 let ocamlc () = camlbin () / Coq_config.ocamlc
 
@@ -175,15 +175,13 @@ let guess_camlp4bin () = which (user_path ()) (exe Coq_config.camlp4)
 let camlp4bin () =
   if !Flags.camlp4bin_spec then !Flags.camlp4bin else
     if !Flags.boot then Coq_config.camlp4bin else
-      try 
-	guess_camlp4bin () 
-      with _ -> 
-	if Sys.file_exists (camlbin () / exe Coq_config.camlp4) then
-	  camlbin ()
-	else 
-	  Coq_config.camlp4bin
+      try guess_camlp4bin ()
+      with Not_found ->
+        let cb = camlbin () in
+        if Sys.file_exists (cb / exe Coq_config.camlp4) then cb
+        else Coq_config.camlp4bin
 
-let camlp4 () = camlp4bin () / Coq_config.camlp4
+let camlp4 () = camlp4bin () / exe Coq_config.camlp4
 
 let camlp4lib () =
   if !Flags.boot then 

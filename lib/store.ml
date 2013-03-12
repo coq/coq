@@ -50,7 +50,7 @@ let set s (id : 'a field) (x : 'a) = Int.Map.add id (Obj.repr x) s
 
 let get s (id : 'a field) : 'a option =
   try Some (Obj.obj (Int.Map.find id s))
-  with _ -> None
+  with Not_found -> None
 
 let remove s (id : 'a field) =
   Int.Map.remove id s
