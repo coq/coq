@@ -1563,7 +1563,7 @@ let prove_principle_for_gen
   let args_ids = List.map (fun (na,_,_) -> Nameops.out_name na) princ_info.args in
   let lemma =
     match !tcc_lemma_ref with
-     | None -> anomaly (str "No tcc proof !!")
+     | None -> error "No tcc proof !!"
      | Some lemma -> lemma
   in
 (*   let rec list_diff del_list check_list = *)
