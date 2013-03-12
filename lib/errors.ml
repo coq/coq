@@ -124,3 +124,13 @@ let _ = register_handler begin function
   | UserError(s,pps) -> hov 0 (str "Error: " ++ where (Some s) ++ pps)
   | _ -> raise Unhandled
 end
+
+(** Critical exceptions shouldn't be catched and ignored by mistake
+    by inner functions during a [vernacinterp]. They should be handled
+    only at the very end of interp, to be displayed to the user. *)
+
+let noncritical = function
+  | Sys.Break | Out_of_memory | Stack_overflow
+  | Assert_failure _ | Match_failure _ | Anomaly _
+  | Timeout | Drop | Quit -> false
+  | _ -> true
