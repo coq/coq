@@ -425,14 +425,25 @@ let compare_list cmp l1 l2 =
   (l1 == l2)
   || (incl_list cmp l1 l2 && incl_list cmp l2 l1)
 
-let check_eq g u v =
+(** [check_eq] is also used in [Evd.set_eq_sort],
+    hence [Evarconv] and [Unification]. In this case,
+    it seems that the Atom/Max case may occur,
+    hence a relaxed version. *)
+
+let gen_check_eq strict g u v =
   match u,v with
     | Atom ul, Atom vl -> check_equal g ul vl
     | Max(ule,ult), Max(vle,vlt) ->
         (* TODO: remove elements of lt in le! *)
         compare_list (check_equal g) ule vle &&
         compare_list (check_equal g) ult vlt
-    | _ -> anomaly (str "check_eq") (* not complete! (Atom(u) = Max([u],[]) *)
+    | _ ->
+      (* not complete! (Atom(u) = Max([u],[]) *)
+      if strict then anomaly (str "check_eq")
+      else false (* in non-strict mode, under-approximation *)
+
+let check_eq = gen_check_eq true
+let lax_check_eq = gen_check_eq false
 
 let check_leq g u v =
   match u,v with

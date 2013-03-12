@@ -574,8 +574,9 @@ let set_eq_sort ({evars = (sigma, (us, sm))} as d) s1 s2 =
       | Type u, Type v when (is_univ_level_var us u) || (is_univ_level_var us v) ->
 	  add_constraints d (Univ.enforce_eq u1 u2 Univ.empty_constraint)
       | Prop c, Type u when is_univ_var_or_set u &&
-	  Univ.check_eq sm u1 u2 -> d
-      | Type u, Prop c when is_univ_var_or_set u && Univ.check_eq sm u1 u2 -> d
+	  Univ.lax_check_eq sm u1 u2 -> d
+      | Type u, Prop c when is_univ_var_or_set u &&
+          Univ.lax_check_eq sm u1 u2 -> d
       | Type u, Type v when is_univ_var_or_set u && is_univ_var_or_set v ->
 	  add_constraints d (Univ.enforce_eq u1 u2 Univ.empty_constraint)
       | _, _ -> raise (Univ.UniverseInconsistency (Univ.Eq, u1, u2, []))

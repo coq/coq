@@ -77,6 +77,7 @@ type universes
 type check_function = universes -> universe -> universe -> bool
 val check_leq : check_function
 val check_eq : check_function
+val lax_check_eq : check_function (* same, without anomaly *)
 
 (** The empty graph of universes *)
 val initial_universes : universes
