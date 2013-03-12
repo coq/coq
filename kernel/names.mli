@@ -20,15 +20,16 @@ sig
   (** Comparison over identifiers *)
 
   val check : string -> unit
-  (** Check that a string may be converted to an identifier. Raise an exception
-      related to the problem when this is not the case. *)
+  (** Check that a string may be converted to an identifier.
+      Raise a [UserError _] exception related to the problem
+      when this is not the case. *)
 
   val check_soft : string -> unit
   (** As [check], but may raise a warning instead of failing when the string is
       not an identifier, but is a well-formed string. *)
 
   val of_string : string -> t
-  (** Converts a string into an identifier. *)
+  (** Converts a string into an identifier. May raise [UserError _] *)
 
   val to_string : t -> string
   (** Converts a identifier into an string. *)

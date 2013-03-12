@@ -70,8 +70,9 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
 
 let convert_string d =
   try Id.of_string d
-  with _ ->
-    if_verbose msg_warning (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
+  with Errors.UserError _ ->
+    if_verbose msg_warning
+      (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
     raise Exit
 
 let add_rec_path ~unix_path ~coq_root =
@@ -279,9 +280,9 @@ let rec explain_exn = function
 	       report ())
   | e when is_anomaly e ->
       print_anomaly e
-  | reraise ->
+  | e ->
       hov 0 (anomaly_string () ++ str "Uncaught exception " ++
-	       str (Printexc.to_string reraise)++report())
+	       str (Printexc.to_string e)++report())
 
 let parse_args argv =
   let rec parse = function
@@ -334,13 +335,7 @@ let parse_args argv =
         fatal_error (str "Unknown option " ++ str s)
     | s :: rem ->  add_compile s; parse rem
   in
-  try
-    parse (List.tl (Array.to_list argv))
-  with
-    | UserError(_, s) as e ->
-      if Pp.is_empty s then exit 1
-      else fatal_error (explain_exn e)
-    | e -> begin fatal_error (explain_exn e) end
+  parse (List.tl (Array.to_list argv))
 
 
 (* To prevent from doing the initialization twice *)

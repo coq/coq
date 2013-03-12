@@ -358,34 +358,30 @@ let locate_qualified_library warn qid =
     else (LibInPath, dir, file)
   with Not_found -> raise LibNotFound
 
-let explain_locate_library_error qid = function
-  | LibUnmappedDir ->
-      let prefix, _ = repr_qualid qid in
-      errorlabstrm "load_absolute_library_from"
-      (str "Cannot load " ++ pr_qualid qid ++ str ":" ++ spc () ++
-      str "no physical path bound to" ++ spc () ++ pr_dirpath prefix ++ fnl ())
-  | LibNotFound ->
-      errorlabstrm "load_absolute_library_from"
-      (str"Cannot find library " ++ pr_qualid qid ++ str" in loadpath")
-  | e ->
-    let e = Errors.push e in
-    raise e
+let error_unmapped_dir qid =
+  let prefix, _ = repr_qualid qid in
+  errorlabstrm "load_absolute_library_from"
+    (str "Cannot load " ++ pr_qualid qid ++ str ":" ++ spc () ++
+     str "no physical path bound to" ++ spc () ++ pr_dirpath prefix ++ fnl ())
+
+let error_lib_not_found qid =
+  errorlabstrm "load_absolute_library_from"
+    (str"Cannot find library " ++ pr_qualid qid ++ str" in loadpath")
 
 let try_locate_absolute_library dir =
   try
     locate_absolute_library dir
-  with e ->
-    let e = Errors.push e in
-    explain_locate_library_error (qualid_of_dirpath dir) e
+  with
+    | LibUnmappedDir -> error_unmapped_dir (qualid_of_dirpath dir)
+    | LibNotFound -> error_lib_not_found (qualid_of_dirpath dir)
 
 let try_locate_qualified_library (loc,qid) =
   try
     let (_,dir,f) = locate_qualified_library (Flags.is_verbose()) qid in
     dir,f
-  with e ->
-    let e = Errors.push e in
-    explain_locate_library_error qid e
-
+  with
+    | LibUnmappedDir -> error_unmapped_dir qid
+    | LibNotFound -> error_lib_not_found qid
 
 (************************************************************************)
 (* Internalise libraries *)

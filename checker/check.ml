@@ -234,28 +234,29 @@ let locate_qualified_library qid =
       (dir, file)
   with Not_found -> raise LibNotFound
 
-let explain_locate_library_error qid = function
-  | LibUnmappedDir ->
-      let prefix = qid.dirpath in
-      errorlabstrm "load_absolute_library_from"
-      (str "Cannot load " ++ pr_path qid ++ str ":" ++ spc () ++
-      str "no physical path bound to" ++ spc () ++ pr_dirlist prefix ++ fnl ())
-  | LibNotFound ->
-      errorlabstrm "load_absolute_library_from"
-      (str"Cannot find library " ++ pr_path qid ++ str" in loadpath")
-  | e -> raise e
+let error_unmapped_dir qid =
+  let prefix = qid.dirpath in
+  errorlabstrm "load_absolute_library_from"
+    (str "Cannot load " ++ pr_path qid ++ str ":" ++ spc () ++
+     str "no physical path bound to" ++ spc () ++ pr_dirlist prefix ++ fnl ())
+
+let error_lib_not_found qid =
+  errorlabstrm "load_absolute_library_from"
+    (str"Cannot find library " ++ pr_path qid ++ str" in loadpath")
 
 let try_locate_absolute_library dir =
   try
     locate_absolute_library dir
-  with e ->
-    explain_locate_library_error (path_of_dirpath dir) e
+  with
+    | LibUnmappedDir -> error_unmapped_dir (path_of_dirpath dir)
+    | LibNotFound -> error_lib_not_found (path_of_dirpath dir)
 
 let try_locate_qualified_library qid =
   try
     locate_qualified_library qid
-  with e ->
-    explain_locate_library_error qid e
+  with
+    | LibUnmappedDir -> error_unmapped_dir qid
+    | LibNotFound -> error_lib_not_found qid
 
 (************************************************************************)
 (*s Low-level interning/externing of libraries to files *)
