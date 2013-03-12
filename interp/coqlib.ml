@@ -26,7 +26,8 @@ let make_dir l = DirPath.make (List.rev_map Id.of_string l)
 let find_reference locstr dir s =
   let sp = Libnames.make_path (make_dir dir) (Id.of_string s) in
   try global_of_extended_global (Nametab.extended_global_of_path sp)
-  with Not_found -> anomaly ~label:locstr (str "cannot find " ++ Libnames.pr_path sp)
+  with Not_found ->
+    anomaly ~label:locstr (str "cannot find " ++ Libnames.pr_path sp)
 
 let coq_reference locstr dir s = find_reference locstr ("Coq"::dir) s
 let coq_constant locstr dir s = constr_of_global (coq_reference locstr dir s)
@@ -63,15 +64,14 @@ let gen_constant_in_modules locstr dirs s =
 (* For tactics/commands requiring vernacular libraries *)
 
 let check_required_library d =
-  let d' = List.map Id.of_string d in
-  let dir = DirPath.make (List.rev d') in
-  let mp = (fst(Lib.current_prefix())) in
-  let current_dir = match mp with
-    | MPfile dp -> DirPath.equal dir dp
-    | _ -> false
-  in
-  if not (Library.library_is_loaded dir) then
-    if not current_dir then
+  let dir = make_dir d in
+  if Library.library_is_loaded dir then ()
+  else
+    let in_current_dir = match Lib.current_prefix () with
+      | MPfile dp, _ -> DirPath.equal dir dp
+      | _ -> false
+    in
+    if not in_current_dir then
 (* Loading silently ...
     let m, prefix = List.sep_last d' in
     read_library

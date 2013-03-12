@@ -352,9 +352,10 @@ let is_sigma_type t=op2bool (match_with_sigma_type t)
 
 let rec first_match matcher = function
   | [] -> raise PatternMatchingFailure
-  | (pat,build_set)::l ->
-      try (build_set (),matcher pat)
-      with PatternMatchingFailure -> first_match matcher l
+  | (pat,check,build_set)::l when check () ->
+      (try (build_set (),matcher pat)
+       with PatternMatchingFailure -> first_match matcher l)
+  | _::l -> first_match matcher l
 
 (*** Equality *)
 
@@ -375,10 +376,13 @@ let match_eq eqn eq_pat =
 	HeterogenousEq (t,x,t',x')
     | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 or 4 terms")
 
+let no_check () = true
+let check_jmeq_loaded () = Library.library_is_loaded Coqlib.jmeq_module
+
 let equalities =
-  [coq_eq_pattern, build_coq_eq_data;
-   coq_jmeq_pattern, build_coq_jmeq_data;
-   coq_identity_pattern, build_coq_identity_data]
+  [coq_eq_pattern, no_check, build_coq_eq_data;
+   coq_jmeq_pattern, check_jmeq_loaded, build_coq_jmeq_data;
+   coq_identity_pattern, no_check, build_coq_identity_data]
 
 let find_eq_data eqn = (* fails with PatternMatchingFailure *)
   first_match (match_eq eqn) equalities
@@ -439,8 +443,8 @@ let match_sigma ex ex_pat =
 
 let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
   first_match (match_sigma ex)
-    [coq_existT_pattern, build_sigma_type;
-     coq_exist_pattern, build_sigma]
+    [coq_existT_pattern, no_check, build_sigma_type;
+     coq_exist_pattern, no_check, build_sigma]
 
 (* Pattern "(sig ?1 ?2)" *)
 let coq_sig_pattern = lazy PATTERN [ %coq_sig_ref ?X1 ?X2 ]
