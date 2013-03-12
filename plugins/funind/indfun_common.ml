@@ -13,9 +13,6 @@ let mk_equation_id id = Nameops.add_suffix id "_equation"
 let msgnl m =
   ()
 
-let invalid_argument s = raise (Invalid_argument s)
-
-
 let fresh_id avoid s = Namegen.next_ident_away_in_goal (Id.of_string s) avoid
 
 let fresh_name avoid s = Name (fresh_id avoid s)
@@ -30,7 +27,7 @@ let array_get_start a =
       (Array.length a - 1)
       (fun i -> a.(i))
   with Invalid_argument "index out of bounds" ->
-    invalid_argument "array_get_start"
+    invalid_arg "array_get_start"
 
 let id_of_name = function
     Name id -> id

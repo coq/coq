@@ -497,8 +497,8 @@ let rec get_allias env kn =
 
 let rec compile_constr reloc c sz cont =
   match kind_of_term c with
-  | Meta _ -> raise (Invalid_argument "Cbytegen.compile_constr : Meta")
-  | Evar _ -> raise (Invalid_argument "Cbytegen.compile_constr : Evar")
+  | Meta _ -> invalid_arg "Cbytegen.compile_constr : Meta"
+  | Evar _ -> invalid_arg "Cbytegen.compile_constr : Evar"
 
   | Cast(c,_,_) -> compile_constr reloc c sz cont
 

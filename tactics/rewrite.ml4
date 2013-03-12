@@ -471,8 +471,8 @@ let rec decomp_pointwise n c =
 	decomp_pointwise (pred n) relb
     | App (f, [| a; b; arelb |]) when eq_constr f (Lazy.force forall_relation) ->
 	decomp_pointwise (pred n) (Reductionops.beta_applist (arelb, [mkRel 1]))
-    | _ -> raise (Invalid_argument "decomp_pointwise")
-	
+    | _ -> invalid_arg "decomp_pointwise"
+
 let rec apply_pointwise rel = function
   | arg :: args ->
       (match kind_of_term rel with
@@ -480,7 +480,7 @@ let rec apply_pointwise rel = function
 	  apply_pointwise relb args
       | App (f, [| a; b; arelb |]) when eq_constr f (Lazy.force forall_relation) ->
 	  apply_pointwise (Reductionops.beta_applist (arelb, [arg])) args
-      | _ -> raise (Invalid_argument "apply_pointwise"))
+      | _ -> invalid_arg "apply_pointwise")
   | [] -> rel
 
 let pointwise_or_dep_relation n t car rel =
@@ -577,7 +577,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' cstr evars 
   let evars, morph_instance, proj, sigargs, m', args, args' =
     let first = match (Array.findi (fun _ b -> not (Option.is_empty b)) args') with
     | Some i -> i
-    | None -> raise (Invalid_argument "resolve_morphism") in
+    | None -> invalid_arg "resolve_morphism" in
     let morphargs, morphobjs = Array.chop first args in
     let morphargs', morphobjs' = Array.chop first args' in
     let appm = mkApp(m, morphargs) in

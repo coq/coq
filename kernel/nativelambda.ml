@@ -437,7 +437,7 @@ module Vect =
     let extend v =
       if Int.equal v.size (Array.length v.elems) then 
 	let new_size = min (2*v.size) Sys.max_array_length in
-	if new_size <= v.size then raise (Invalid_argument "Vect.extend");
+	if new_size <= v.size then invalid_arg "Vect.extend";
 	let new_elems = Array.make new_size v.elems.(0) in
 	Array.blit v.elems 0 new_elems 0 (v.size);
 	v.elems <- new_elems
@@ -458,19 +458,16 @@ module Vect =
     let pop v = popn v 1
 	
     let get v n =
-      if v.size <= n then raise 
-	  (Invalid_argument "Vect.get:index out of bounds");
+      if v.size <= n then invalid_arg "Vect.get:index out of bounds";
       v.elems.(n)
 
     let get_last v n =
-      if v.size <= n then raise 
-	  (Invalid_argument "Vect.get:index out of bounds");
+      if v.size <= n then invalid_arg "Vect.get:index out of bounds";
       v.elems.(v.size - n - 1)
 
 
     let last v =
-      if Int.equal v.size 0 then raise
-	  (Invalid_argument "Vect.last:index out of bounds");
+      if Int.equal v.size 0 then invalid_arg "Vect.last:index out of bounds";
       v.elems.(v.size - 1)
 
     let clear v = v.size <- 0
@@ -532,13 +529,13 @@ let empty_ids = [||]
 let rec lambda_of_constr env c =
 (*  try *)
   match kind_of_term c with
-  | Meta _ -> raise (Invalid_argument "Nativelambda.lambda_of_constr: Meta")
-  | Evar _ -> raise (Invalid_argument "Nativelambda.lambda_of_constr : Evar")
-	
+  | Meta _ -> invalid_arg "Nativelambda.lambda_of_constr: Meta"
+  | Evar _ -> invalid_arg "Nativelambda.lambda_of_constr : Evar"
+
   | Cast (c, _, _) -> lambda_of_constr env c
-	
+
   | Rel i -> Renv.get env i
-	
+
   | Var id -> Lvar id
 
   | Sort s -> Lsort s

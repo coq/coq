@@ -55,7 +55,7 @@ let mk_coq_not x = mkApp (delayed_force coq_not, [| x |])
 
 let unsafe_fold_right f = function
     hd :: tl -> List.fold_right f tl hd
-  | [] -> raise (Invalid_argument "unsafe_fold_right")
+  | [] -> invalid_arg "unsafe_fold_right"
 
 let mk_coq_and l =
   let and_typ = delayed_force coq_and in

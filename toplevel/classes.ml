@@ -308,7 +308,7 @@ let named_of_rel_context l =
   let acc, ctx =
     List.fold_right
       (fun (na, b, t) (subst, ctx) ->
-	let id = match na with Anonymous -> raise (Invalid_argument "named_of_rel_context") | Name id -> id in
+	let id = match na with Anonymous -> invalid_arg "named_of_rel_context" | Name id -> id in
 	let d = (id, Option.map (substl subst) b, substl subst t) in
 	  (mkVar id :: subst, d :: ctx))
       l ([], [])

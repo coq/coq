@@ -13,8 +13,6 @@ val mk_equation_id : Id.t -> Id.t
 
 val msgnl : std_ppcmds -> unit
 
-val invalid_argument : string -> 'a
-
 val fresh_id : Id.t list -> string -> Id.t
 val fresh_name : Id.t list -> string -> Name.t
 val get_name : Id.t list -> ?default:string -> Name.t -> Name.t

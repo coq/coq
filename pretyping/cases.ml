@@ -1958,7 +1958,7 @@ let vars_of_ctx ctx =
 		   [hole; GVar (Loc.ghost, prev)])) :: vars
 	| _ ->
 	    match na with
-		Anonymous -> raise (Invalid_argument "vars_of_ctx")
+		Anonymous -> invalid_arg "vars_of_ctx"
 	      | Name n -> n, GVar (Loc.ghost, n) :: vars)
       ctx (Id.of_string "vars_of_ctx_error", [])
   in List.rev y

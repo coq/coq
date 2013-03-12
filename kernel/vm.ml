@@ -249,9 +249,9 @@ let nargs : arguments -> int = fun args -> (Obj.size (Obj.repr args)) - 2
 let arg args i =
   if  0 <= i && i < (nargs args) then
     val_of_obj (Obj.field (Obj.repr args) (i+2))
-  else raise (Invalid_argument
+  else invalid_arg
 		("Vm.arg size = "^(string_of_int (nargs args))^
-		 " acces "^(string_of_int i)))
+		 " acces "^(string_of_int i))
 
 let apply_arguments vf vargs =
   let n = nargs vargs in
@@ -488,7 +488,7 @@ let btag : vblock -> int = fun b -> Obj.tag (Obj.repr b)
 let bsize : vblock -> int = fun b -> Obj.size (Obj.repr b)
 let bfield b i =
   if 0 <= i && i < (bsize b) then val_of_obj (Obj.field (Obj.repr b) i)
-  else raise (Invalid_argument "Vm.bfield")
+  else invalid_arg "Vm.bfield"
 
 
 (* Functions over vswitch *)

@@ -400,7 +400,7 @@ let list_split_rev_at index l =
   in aux 0 [] l
 
 let fold_left' f = function
-    [] -> raise (Invalid_argument "fold_left'")
+    [] -> invalid_arg "fold_left'"
   | hd :: tl -> List.fold_left f hd tl
 
 let build_combined_scheme env schemes =

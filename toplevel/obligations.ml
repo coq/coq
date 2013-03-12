@@ -167,9 +167,9 @@ let evar_dependencies evm oev =
     Int.Set.fold (fun ev s ->
       let evi = Evd.find evm ev in
       let deps' = evars_of_evar_info evi in
-	if Int.Set.mem oev deps' then
-	  raise (Invalid_argument ("Ill-formed evar map: cycle detected for evar " ^ string_of_int oev))
-	else Int.Set.union deps' s)
+      if Int.Set.mem oev deps' then
+	invalid_arg ("Ill-formed evar map: cycle detected for evar " ^ string_of_int oev)
+      else Int.Set.union deps' s)
       deps deps
   in
   let rec aux deps =

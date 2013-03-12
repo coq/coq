@@ -788,7 +788,7 @@ let rec combine3 x y z =
   | [], [], [] -> []
   | (x :: xs), (y :: ys), (z :: zs) ->
       (x, y, z) :: combine3 xs ys zs
-  | _, _, _ -> raise (Invalid_argument "List.combine3")
+  | _, _, _ -> invalid_arg "List.combine3"
   
 (* Keep only those products that do not return None *)
 

@@ -91,14 +91,14 @@ let run_com inst =
       let s = String.sub inst i (String.length inst - i) in
       if inst.[0] >= '0' && inst.[0] <= '9' then
         let num = int_of_string s in
-        if num<0 then raise (Invalid_argument "run_com");
+        if num<0 then invalid_arg "run_com";
         skip:=num;skipped:=0
       else
         breakpoint:=Some (possibly_unquote s)
     else
-      raise (Invalid_argument "run_com")
+      invalid_arg "run_com"
   else
-    raise (Invalid_argument "run_com")
+    invalid_arg "run_com"
 
 (* Prints the run counter *)
 let run ini =

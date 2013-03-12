@@ -108,7 +108,7 @@ let glob_make_or t1 t2 = mkGApp (mkGRef(Lazy.force Coqlib.coq_or_ref),[t1;t2])
    to [P1 \/ ( .... \/ Pn)]
 *)
 let rec glob_make_or_list = function
-  | [] -> raise (Invalid_argument "mk_or")
+  | [] -> invalid_arg "mk_or"
   | [e] -> e
   | e::l -> glob_make_or e (glob_make_or_list l)
 

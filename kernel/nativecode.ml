@@ -399,7 +399,7 @@ let get_prod_name codom =
 let get_lname (_,l) = 
   match l with
   | MLlocal id -> id
-  | _ -> raise (Invalid_argument "Nativecode.get_lname")
+  | _ -> invalid_arg "Nativecode.get_lname"
 
 let fv_params env = 
   let fvn, fvr = !(env.env_named), !(env.env_urel) in 
@@ -1401,8 +1401,8 @@ let compile_mind_deps env prefix ~interactive
    reverse order, as well as linking information updates *)
 let rec compile_deps env prefix ~interactive init t =
   match kind_of_term t with
-  | Meta _ -> raise (Invalid_argument "Nativecode.get_deps: Meta")
-  | Evar _ -> raise (Invalid_argument "Nativecode.get_deps: Evar")
+  | Meta _ -> invalid_arg "Nativecode.get_deps: Meta"
+  | Evar _ -> invalid_arg "Nativecode.get_deps: Evar"
   | Ind (mind,_) -> compile_mind_deps env prefix ~interactive init mind
   | Const c ->
       let c = get_allias env c in

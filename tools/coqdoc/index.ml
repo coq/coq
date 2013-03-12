@@ -288,7 +288,7 @@ let type_of_string = function
   | "mod" | "modtype" -> Module
   | "tac" -> TacticDefinition
   | "sec" -> Section
-  | s -> raise (Invalid_argument ("type_of_string:" ^ s))
+  | s -> invalid_arg ("type_of_string:" ^ s)
 
 let ill_formed_glob_file f =
   eprintf "Warning: ill-formed file %s (links will not be available)\n" f

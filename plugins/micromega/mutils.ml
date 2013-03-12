@@ -72,7 +72,7 @@ let rec map3 f l1 l2 l3 =
   match l1 , l2 ,l3 with
     | [] , [] , [] -> []
     | e1::l1 , e2::l2 , e3::l3 -> (f e1 e2 e3)::(map3 f l1 l2 l3)
-    |      _   -> raise (Invalid_argument "map3")
+    |      _   -> invalid_arg "map3"
 
 let rec is_sublist l1 l2 =
   match l1 ,l2 with
