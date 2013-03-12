@@ -122,7 +122,7 @@ let rec make_form atom_env gls term =
 		  let fb=make_form atom_env gls argv.(1) in
 		    Disjunct (fa,fb)
 		else make_atom atom_env (normalize term)
-	    with Invalid_argument _ -> make_atom atom_env (normalize term)
+	    with DestKO -> make_atom atom_env (normalize term)
 	  end
       | _ -> make_atom atom_env (normalize term)
 

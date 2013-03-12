@@ -271,34 +271,37 @@ let kind_of_type = function
 (**********************************************************************)
 
 (* Destructor operations : partial functions
-   Raise invalid_arg "dest*" if the const has not the expected form *)
+   Raise [DestKO] if the const has not the expected form *)
+
+exception DestKO
 
 (* Destructs a DeBrujin index *)
 let destRel c = match kind_of_term c with
   | Rel n -> n
-  | _ -> invalid_arg "destRel"
+  | _ -> raise DestKO
 
 (* Destructs an existential variable *)
 let destMeta c = match kind_of_term c with
   | Meta n -> n
-  | _ -> invalid_arg "destMeta"
+  | _ -> raise DestKO
 
 let isMeta c = match kind_of_term c with Meta _ -> true | _ -> false
-let isMetaOf mv c = match kind_of_term c with Meta mv' -> Int.equal mv mv' | _ -> false
+let isMetaOf mv c =
+  match kind_of_term c with Meta mv' -> Int.equal mv mv' | _ -> false
 
 (* Destructs a variable *)
 let destVar c = match kind_of_term c with
   | Var id -> id
-  | _ -> invalid_arg "destVar"
+  | _ -> raise DestKO
 
 (* Destructs a type *)
 let isSort c = match kind_of_term c with
-  | Sort s -> true
+  | Sort _ -> true
   | _ -> false
 
 let destSort c = match kind_of_term c with
   | Sort s -> s
-  | _ -> invalid_arg "destSort"
+  | _ -> raise DestKO
 
 let rec isprop c = match kind_of_term c with
   | Sort (Prop _) -> true
@@ -336,18 +339,20 @@ let isEvar_or_Meta c = match kind_of_term c with
 (* Destructs a casted term *)
 let destCast c = match kind_of_term c with
   | Cast (t1,k,t2) -> (t1,k,t2)
-  | _ -> invalid_arg "destCast"
+  | _ -> raise DestKO
 
 let isCast c = match kind_of_term c with Cast _ -> true | _ -> false
 
 
 (* Tests if a de Bruijn index *)
 let isRel c = match kind_of_term c with Rel _ -> true | _ -> false
-let isRelN n c = match kind_of_term c with Rel n' -> Int.equal n n' | _ -> false
+let isRelN n c =
+  match kind_of_term c with Rel n' -> Int.equal n n' | _ -> false
 
 (* Tests if a variable *)
 let isVar c = match kind_of_term c with Var _ -> true | _ -> false
-let isVarId id c = match kind_of_term c with Var id' -> Id.equal id id' | _ -> false
+let isVarId id c =
+  match kind_of_term c with Var id' -> Id.equal id id' | _ -> false
 
 (* Tests if an inductive *)
 let isInd c = match kind_of_term c with Ind _ -> true | _ -> false
@@ -355,28 +360,28 @@ let isInd c = match kind_of_term c with Ind _ -> true | _ -> false
 (* Destructs the product (x:t1)t2 *)
 let destProd c = match kind_of_term c with
   | Prod (x,t1,t2) -> (x,t1,t2)
-  | _ -> invalid_arg "destProd"
+  | _ -> raise DestKO
 
 let isProd c = match kind_of_term c with | Prod _ -> true | _ -> false
 
 (* Destructs the abstraction [x:t1]t2 *)
 let destLambda c = match kind_of_term c with
   | Lambda (x,t1,t2) -> (x,t1,t2)
-  | _ -> invalid_arg "destLambda"
+  | _ -> raise DestKO
 
 let isLambda c = match kind_of_term c with | Lambda _ -> true | _ -> false
 
 (* Destructs the let [x:=b:t1]t2 *)
 let destLetIn c = match kind_of_term c with
   | LetIn (x,b,t1,t2) -> (x,b,t1,t2)
-  | _ -> invalid_arg "destLetIn"
+  | _ -> raise DestKO
 
 let isLetIn c =  match kind_of_term c with LetIn _ -> true | _ -> false
 
 (* Destructs an application *)
 let destApp c = match kind_of_term c with
   | App (f,a) -> (f, a)
-  | _ -> invalid_arg "destApplication"
+  | _ -> raise DestKO
 
 let destApplication = destApp
 
@@ -385,43 +390,43 @@ let isApp c = match kind_of_term c with App _ -> true | _ -> false
 (* Destructs a constant *)
 let destConst c = match kind_of_term c with
   | Const kn -> kn
-  | _ -> invalid_arg "destConst"
+  | _ -> raise DestKO
 
 let isConst c = match kind_of_term c with Const _ -> true | _ -> false
 
 (* Destructs an existential variable *)
 let destEvar c = match kind_of_term c with
   | Evar (kn, a as r) -> r
-  | _ -> invalid_arg "destEvar"
+  | _ -> raise DestKO
 
 (* Destructs a (co)inductive type named kn *)
 let destInd c = match kind_of_term c with
   | Ind (kn, a as r) -> r
-  | _ -> invalid_arg "destInd"
+  | _ -> raise DestKO
 
 (* Destructs a constructor *)
 let destConstruct c = match kind_of_term c with
   | Construct (kn, a as r) -> r
-  | _ -> invalid_arg "dest"
+  | _ -> raise DestKO
 
 let isConstruct c = match kind_of_term c with Construct _ -> true | _ -> false
 
 (* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
 let destCase c = match kind_of_term c with
   | Case (ci,p,c,v) -> (ci,p,c,v)
-  | _ -> invalid_arg "destCase"
+  | _ -> raise DestKO
 
 let isCase c =  match kind_of_term c with Case _ -> true | _ -> false
 
 let destFix c = match kind_of_term c with
   | Fix fix -> fix
-  | _ -> invalid_arg "destFix"
+  | _ -> raise DestKO
 
 let isFix c =  match kind_of_term c with Fix _ -> true | _ -> false
 
 let destCoFix c = match kind_of_term c with
   | CoFix cofix -> cofix
-  | _ -> invalid_arg "destCoFix"
+  | _ -> raise DestKO
 
 let isCoFix c =  match kind_of_term c with CoFix _ -> true | _ -> false
 

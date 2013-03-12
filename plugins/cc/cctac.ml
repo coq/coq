@@ -220,9 +220,7 @@ let make_prb gls depth additionnal_terms =
 
 let build_projection intype outtype (cstr:constructor) special default gls=
   let env=pf_env gls in
-  let (h,argv) =
-    try destApp intype with
-	Invalid_argument _ -> (intype,[||])  in
+  let (h,argv) = try destApp intype with DestKO -> (intype,[||]) in
   let ind=destInd h in
   let types=Inductiveops.arities_of_constructors env ind in
   let lp=Array.length types in

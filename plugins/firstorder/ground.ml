@@ -20,7 +20,8 @@ let update_flags ()=
     try
       let kn=destConst (Classops.get_coercion_value coe) in
 	predref:=Names.Cpred.add kn !predref
-    with Invalid_argument "destConst"-> () in
+    with DestKO -> ()
+  in
     List.iter f (Classops.coercions ());
     red_flags:=
     Closure.RedFlags.red_add_transparent

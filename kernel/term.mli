@@ -262,7 +262,9 @@ val is_small : sorts -> bool
 
 (** {6 Term destructors } *)
 (** Destructor operations are partial functions and
-    @raise Invalid_argument "dest*" if the term has not the expected form. *)
+    @raise [DestKO] if the term has not the expected form. *)
+
+exception DestKO
 
 (** Destructs a DeBrujin index *)
 val destRel : constr -> int

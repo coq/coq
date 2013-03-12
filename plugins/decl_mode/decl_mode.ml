@@ -113,8 +113,7 @@ let get_top_stack pts =
     let info = get_info sigma gl in
     info.pm_stack
 
-let get_last env =
-  try
-    let (id,_,_) =  List.hd (Environ.named_context env) in id
-  with Invalid_argument _ -> error "no previous statement to use"
+let get_last env = match Environ.named_context env with
+  | (id,_,_)::_ -> id
+  | [] -> error "no previous statement to use"
 
