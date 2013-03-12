@@ -57,13 +57,13 @@ let tcl_change_info_gen info_gen =
      let sigma = Goal.V82.partial_solution sigma (sig_it gls) ev in
      { it = [gl] ; sigma= sigma } )
 
-open Store.Field
-
-let tcl_change_info info gls =  
-  let info_gen = Decl_mode.info.set info in
+let tcl_change_info info gls =
+  let info_gen s = Store.set s Decl_mode.info info in
   tcl_change_info_gen info_gen gls
 
-let tcl_erase_info gls =  tcl_change_info_gen (Decl_mode.info.remove) gls
+let tcl_erase_info gls =
+  let info_gen s = Store.remove s Decl_mode.info in
+  tcl_change_info_gen info_gen gls
 
 let special_whd gl=
   let infos=Closure.create_clos_infos Closure.betadeltaiota (pf_env gl) in

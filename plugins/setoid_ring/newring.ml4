@@ -174,7 +174,7 @@ let carg c = TacDynamic(Loc.ghost,Pretyping.constr_in c)
 
 let dummy_goal env =
   let (gl,_,sigma) = 
-    Goal.V82.mk_goal Evd.empty (named_context_val env) mkProp Store.empty in
+    Goal.V82.mk_goal Evd.empty (named_context_val env) mkProp Evd.Store.empty in
   {Evd.it = gl;
    Evd.sigma = sigma}
 

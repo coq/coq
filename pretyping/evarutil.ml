@@ -378,8 +378,6 @@ type clear_dependency_error =
 
 exception ClearDependencyError of Id.t * clear_dependency_error
 
-open Store.Field
-
 let cleared = Store.field ()
 
 let rec check_and_clear_in_constr evdref err ids c =
@@ -448,7 +446,7 @@ let rec check_and_clear_in_constr evdref err ids c =
 	    (* spiwack: hacking session to mark the old [evk] as having been "cleared" *)
 	      let evi = Evd.find !evdref evk in
 	      let extra = evi.evar_extra in
-	      let extra' = cleared.set true extra in
+	      let extra' = Store.set extra cleared true in
 	      let evi' = { evi with evar_extra = extra' } in
 	      evdref := Evd.add !evdref evk evi' ;
 	    (* spiwack: /hacking session *)

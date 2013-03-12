@@ -56,7 +56,6 @@ type oblinfo =
     ev_deps: Int.Set.t }
 
 (* spiwack: Store field for internalizing ev_tac in evar_infos' evar_extra. *)
-open Store.Field
 let evar_tactic = Store.field ()
 
 (** Substitute evar references in t using De Bruijn indices,
@@ -239,7 +238,7 @@ let eterm_obligations env name evm fs ?status t ty =
 	   | Some s -> s, None
 	   | None -> Evar_kinds.Define true, None
 	 in
-	 let tac = match evar_tactic.get ev.evar_extra with
+	 let tac = match Store.get ev.evar_extra evar_tactic with
 	   | Some t ->
 	       if String.equal (Dyn.tag t) "tactic" then
 		 Some (Tacinterp.interp 

@@ -20,8 +20,6 @@ let get_daimon_flag () = !daimon_flag
 
 
 
-(* Information associated to goals. *)
-open Store.Field
 
 type split_tree=
     Skip_patt of Id.Set.t * split_tree
@@ -69,10 +67,9 @@ let mode_of_pftreestate pts =
   (* spiwack: it used to be "top_goal_..." but this should be fine *)
   let { it = goals ; sigma = sigma } = Proof.V82.subgoals pts in
   let goal = List.hd goals in
-    if info.get (Goal.V82.extra sigma goal) = None then
-      Mode_tactic 
-    else
-      Mode_proof
+  match Store.get (Goal.V82.extra sigma goal) info with
+  | None -> Mode_tactic 
+  | Some _ -> Mode_proof
 	  
 let get_current_mode () =
   try 
@@ -84,12 +81,12 @@ let check_not_proof_mode str =
    error str
 
 let get_info sigma gl=
-  match info.get (Goal.V82.extra sigma gl) with
+  match Store.get (Goal.V82.extra sigma gl) info with
   | None ->  invalid_arg "get_info"
   | Some pm -> pm
 
 let try_get_info sigma gl =
-  info.get (Goal.V82.extra sigma gl)
+  Store.get (Goal.V82.extra sigma gl) info
 
 let get_stack pts =
   let { it = goals ; sigma = sigma } = Proof.V82.subgoals pts in

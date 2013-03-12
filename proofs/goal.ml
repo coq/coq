@@ -56,10 +56,9 @@ let descendent gl e =
 (* [advance sigma g] returns [Some g'] if [g'] is undefined and
     is the current avatar of [g] (for instance [g] was changed by [clear]
     into [g']). It returns [None] if [g] has been (partially) solved. *)
-open Store.Field
 let rec advance sigma g =
   let evi = Evd.find sigma g.content in
-  if Option.default false (Evarutil.cleared.get evi.Evd.evar_extra) then
+  if Option.default false (Evd.Store.get evi.Evd.evar_extra Evarutil.cleared) then
     let v =
       match evi.Evd.evar_body with
       | Evd.Evar_defined c -> c

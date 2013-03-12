@@ -95,6 +95,8 @@ type evar_body =
   | Evar_empty
   | Evar_defined of constr
 
+module Store : Store.S
+
 type evar_info = {
   evar_concl : constr;
   evar_hyps : named_context_val;

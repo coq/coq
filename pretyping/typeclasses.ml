@@ -485,14 +485,13 @@ let is_implicit_arg = function
  *)
 
 let resolvable = Store.field ()
-open Store.Field
 
 let is_resolvable evi =
   assert (match evi.evar_body with Evar_empty -> true | _ -> false);
-  Option.default true (resolvable.get evi.evar_extra)
+  Option.default true (Store.get evi.evar_extra resolvable)
 
 let mark_resolvability_undef b evi =
-  let t = resolvable.set b evi.evar_extra in
+  let t = Store.set evi.evar_extra resolvable b in
   { evi with evar_extra = t }
 
 let mark_resolvability b evi =

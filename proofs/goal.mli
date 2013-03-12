@@ -28,7 +28,6 @@ val pr_goal : goal -> Pp.std_ppcmds
 (* [advance sigma g] returns [Some g'] if [g'] is undefined and 
     is the current avatar of [g] (for instance [g] was changed by [clear]
     into [g']). It returns [None] if [g] has been (partially) solved. *)
-open Store.Field
 val advance : Evd.evar_map -> goal -> goal option
 
 
@@ -189,7 +188,7 @@ module V82 : sig
   val concl : Evd.evar_map -> goal -> Term.constr
 
   (* Access to ".evar_extra" *)
-  val extra : Evd.evar_map -> goal -> Store.t
+  val extra : Evd.evar_map -> goal -> Evd.Store.t
 
   (* Old style filtered_context primitive *)
   val filtered_context : Evd.evar_map -> goal -> Sign.named_context
@@ -200,7 +199,7 @@ module V82 : sig
   val mk_goal : Evd.evar_map -> 
                          Environ.named_context_val ->
                          Term.constr ->
-                         Store.t ->
+                         Evd.Store.t ->
                          goal * Term.constr * Evd.evar_map
 
   (* Equality function on goals *)

@@ -59,7 +59,7 @@ type stack_info =
 type pm_info =
     {pm_stack : stack_info list }
 
-val info : pm_info Store.Field.t
+val info : pm_info Store.field
 
 val get_info : Evd.evar_map -> Proof_type.goal -> pm_info
 

@@ -21,6 +21,9 @@ open Mod_subst
 
 (* The type of mappings for existential variables *)
 
+module Dummy = struct end
+module Store = Store.Make(Dummy)
+
 type evar = Term.existential_key
 
 let string_of_existential evk = "?" ^ string_of_int evk
