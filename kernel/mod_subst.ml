@@ -181,7 +181,7 @@ let solve_delta_kn resolve kn =
 
 let kn_of_delta resolve kn =
   try solve_delta_kn resolve kn
-  with _ -> kn
+  with Change_equiv_to_inline _ -> kn
 
 (** Try a 1st resolver, and then a 2nd in case it had no effect *)
 

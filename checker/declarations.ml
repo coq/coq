@@ -139,10 +139,8 @@ let solve_delta_kn resolve kn =
       make_kn new_mp dir l
 
 let gen_of_delta resolve x kn fix_can =
-  try
-    let new_kn = solve_delta_kn resolve kn in
-    if kn == new_kn then x else fix_can new_kn
-  with _ -> x
+  let new_kn = solve_delta_kn resolve kn in
+  if kn == new_kn then x else fix_can new_kn
 
 let constant_of_delta resolve con =
   let kn = user_con con in
