@@ -675,12 +675,15 @@ let dump_extended_global loc = function
   | SynDef sp -> Dumpglob.add_glob_kn loc sp
 
 let intern_extended_global_of_qualid (loc,qid) =
-  try let r = Nametab.locate_extended qid in dump_extended_global loc r; r
-  with Not_found -> error_global_not_found_loc loc qid
+  let r = Nametab.locate_extended qid in dump_extended_global loc r; r
 
 let intern_reference ref =
-  Smartlocate.global_of_extended_global
-    (intern_extended_global_of_qualid (qualid_of_reference ref))
+  let qid = qualid_of_reference ref in
+  let r =
+    try intern_extended_global_of_qualid qid
+    with Not_found -> error_global_not_found_loc (fst qid) (snd qid)
+  in
+  Smartlocate.global_of_extended_global r
 
 (* Is it a global reference or a syntactic definition? *)
 let intern_qualid loc qid intern env lvar args =
@@ -699,12 +702,15 @@ let intern_qualid loc qid intern env lvar args =
 (* Rule out section vars since these should have been found by intern_var *)
 let intern_non_secvar_qualid loc qid intern env lvar args =
   match intern_qualid loc qid intern env lvar args with
-    | GRef (loc, VarRef id),_ -> error_global_not_found_loc loc qid
+    | GRef (_, VarRef _),_ -> raise Not_found
     | r -> r
 
 let intern_applied_reference intern env namedctx lvar args = function
   | Qualid (loc, qid) ->
-      let r,args2 = intern_qualid loc qid intern env lvar args in
+      let r,args2 =
+	try intern_qualid loc qid intern env lvar args
+	with Not_found -> error_global_not_found_loc loc qid
+      in
       find_appl_head_data r, args2
   | Ident (loc, id) ->
       try intern_var env lvar namedctx loc id, args
@@ -713,12 +719,11 @@ let intern_applied_reference intern env namedctx lvar args = function
       try
 	let r,args2 = intern_non_secvar_qualid loc qid intern env lvar args in
 	find_appl_head_data r, args2
-      with e ->
-        let e = Errors.push e in
+      with Not_found ->
 	(* Extra allowance for non globalizing functions *)
 	if !interning_grammar || env.unb then
 	  (GVar (loc,id), [], [], []),args
-	else raise e
+	else error_global_not_found_loc loc qid
 
 let interp_reference vars r =
   let (r,_,_,_),_ =
