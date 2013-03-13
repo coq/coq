@@ -509,12 +509,13 @@ let process_module_bindings argids args =
     let dir = DirPath.make [id] in
     let mp = MPbound mbid in
     let (mbids,mp_from,objs) =
-      get_modtype_substobjs (Global.env()) mp (inline_annot ann) mty in
-    let substobjs = (mbids,mp,subst_objects
-		       (map_mp mp_from mp empty_delta_resolver) objs)in
-      do_module false "start" load_objects 1 dir mp substobjs []
+      get_modtype_substobjs (Global.env()) mp (inline_annot ann) mty
     in
-      List.iter2 process_arg argids args
+    let subst = map_mp mp_from mp empty_delta_resolver in
+    let substobjs = (mbids,mp,subst_objects subst objs) in
+    do_module false "start" load_objects 1 dir mp substobjs []
+  in
+  List.iter2 process_arg argids args
 
 (* Same with module_type_body *)
 
@@ -540,16 +541,17 @@ let intern_args interp_modtype (idl,(arg,ann)) =
   let mbids = List.map (fun (_,id) -> MBId.make lib_dir id) idl in
   let mty = interp_modtype (Global.env()) arg in
   let dirs = List.map (fun (_,id) -> DirPath.make [id]) idl in
-  let (mbi,mp_from,objs) = get_modtype_substobjs (Global.env())
-    (MPbound (List.hd mbids)) inl mty in
+  let (mbi,mp_from,objs) =
+    get_modtype_substobjs (Global.env()) (MPbound (List.hd mbids)) inl mty
+  in
   List.map2
     (fun dir mbid ->
        let resolver = Global.add_module_parameter mbid mty inl in
        let mp = MPbound mbid in
-       let substobjs = (mbi,mp,subst_objects
-			  (map_mp mp_from mp resolver) objs) in
-	 do_module false "interp" load_objects 1 dir mp substobjs [];
-	 (mbid,(mty,inl)))
+       let subst = map_mp mp_from mp resolver in
+       let substobjs = (mbi,mp,subst_objects subst objs) in
+       do_module false "interp" load_objects 1 dir mp substobjs [];
+       (mbid,(mty,inl)))
     dirs mbids
 
 let start_module_ interp_modtype export id args res fs =
@@ -769,9 +771,8 @@ let declare_modtype_ interp_modtype id args mtys (mty,ann) fs =
   (* and declare the module type as a whole *)
 
   register_scope_subst ann.ann_scope_subst;
-  let substobjs = (mbids,mmp,
-		   subst_objects (map_mp mp_from mmp empty_delta_resolver) objs)
-  in
+  let subst = map_mp mp_from mmp empty_delta_resolver in
+  let substobjs = (mbids,mmp, subst_objects subst objs) in
   reset_scope_subst ();
   Summary.unfreeze_summaries fs;
   ignore (add_leaf id (in_modtype (Some (entry,inl), substobjs, sub_mty_l)));
@@ -850,17 +851,15 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
   in (* PLTODO *)
   let mp_env,resolver = Global.add_module id entry inl in
 
-  if not (mp_eq mp_env mp) then anomaly (Pp.str "Kernel and Library names do not match");
+  if not (mp_eq mp_env mp)
+  then anomaly (Pp.str "Kernel and Library names do not match");
 
-  
   check_subtypes mp subs;
   register_scope_subst scl;
-  let substobjs = (mbids,mp_env,
-		   subst_objects(map_mp mp_from mp_env resolver) objs) in
+  let subst = map_mp mp_from mp_env resolver in
+  let substobjs = (mbids,mp_env, subst_objects subst objs) in
   reset_scope_subst ();
-  ignore (add_leaf
-	    id
-	    (in_module substobjs));
+  ignore (add_leaf id (in_module substobjs));
   mmp
 
 (* Include *)
@@ -986,8 +985,8 @@ let declare_one_include_inner annot (me,is_mod) =
   let id = current_mod_id() in
   let resolver =  Global.add_include me is_mod inl in
   register_scope_subst annot.ann_scope_subst;
-  let substobjs = (mbids,mp1,
-		   subst_objects (map_mp mp mp1 resolver) objs) in
+  let subst = map_mp mp mp1 resolver in
+  let substobjs = (mbids,mp1, subst_objects subst objs) in
   reset_scope_subst ();
   ignore (add_leaf id (in_include (me, substobjs)))
 
