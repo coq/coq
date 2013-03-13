@@ -99,8 +99,8 @@ val cook_proof : (Proof.proof -> unit) ->
 val set_xml_cook_proof : (goal_kind * Proof.proof -> unit) -> unit
 
 (** {6 ... } *)
-(** [get_Proof.proof ()] returns the current focused pending proof or
-   raises [UserError "no focused proof"] *)
+(** [get_pftreestate ()] returns the current focused pending proof or
+   @raise NoCurrentProof *)
 
 val get_pftreestate : unit -> Proof.proof
 

@@ -70,6 +70,8 @@ val get_stack : Proof.proof -> stack_info list
 val get_top_stack : Proof.proof -> stack_info list
 
 val get_last:  Environ.env -> Id.t
+(** [get_last] raises a [UserError] when it cannot find a previous
+    statement in the environment. *)
 
 val focus : Proof.proof -> unit
 

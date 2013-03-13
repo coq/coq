@@ -262,7 +262,7 @@ val is_small : sorts -> bool
 
 (** {6 Term destructors } *)
 (** Destructor operations are partial functions and
-    @raise [DestKO] if the term has not the expected form. *)
+    @raise DestKO if the term has not the expected form. *)
 
 exception DestKO
 

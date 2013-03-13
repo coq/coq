@@ -45,7 +45,7 @@ val set_proof_mode : string -> unit
 
 exception NoCurrentProof
 val give_me_the_proof : unit -> Proof.proof
-
+(** @raise NoCurrentProof when outside proof mode. *)
 
 (** [start_proof s str goals ~init_tac ~compute_guard hook] starts 
     a proof of name [s] and

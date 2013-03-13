@@ -36,9 +36,8 @@ let path_to_list p =
   let sep = if String.equal Sys.os_type "Win32" then ';' else ':' in
     String.split sep p
 
-let user_path () = 
-  let path = try Sys.getenv "PATH" with _ -> raise Not_found in
-  path_to_list path 
+let user_path () =
+  path_to_list (Sys.getenv "PATH") (* may raise Not_found *)
 
 let rec which l f =
   match l with

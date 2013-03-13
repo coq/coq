@@ -266,7 +266,8 @@ let print_inductive_implicit_args =
 
 let print_inductive_renames =
   print_args_data_of_inductive_ids
-    (fun r -> try List.hd (Arguments_renaming.arguments_names r) with _ -> [])
+    (fun r ->
+      try List.hd (Arguments_renaming.arguments_names r) with Not_found -> [])
     ((!=) Anonymous)
     print_renames_list
 
@@ -731,7 +732,7 @@ let print_coercions () =
 let index_of_class cl =
   try
     fst (class_info cl)
-  with _ ->
+  with Not_found ->
     errorlabstrm "index_of_class"
       (pr_class cl ++ spc() ++ str "not a defined class.")
 
@@ -741,7 +742,7 @@ let print_path_between cls clt =
   let p =
     try
       lookup_path_between_class (i,j)
-    with _ ->
+    with Not_found ->
       errorlabstrm "index_cl_of_id"
         (str"No path between " ++ pr_class cls ++ str" and " ++ pr_class clt
 	 ++ str ".")

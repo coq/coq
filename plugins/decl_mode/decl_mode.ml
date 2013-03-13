@@ -74,7 +74,7 @@ let mode_of_pftreestate pts =
 let get_current_mode () =
   try 
     mode_of_pftreestate (Pfedit.get_pftreestate ())
-  with _ -> Mode_none
+  with Proof_global.NoCurrentProof -> Mode_none
 
 let check_not_proof_mode str =
  if get_current_mode () = Mode_proof then
