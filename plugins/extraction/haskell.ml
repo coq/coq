@@ -86,7 +86,9 @@ let pp_global k r =
 let rec pp_type par vl t =
   let rec pp_rec par = function
     | Tmeta _ | Tvar' _ -> assert false
-    | Tvar i -> (try pr_id (List.nth vl (pred i)) with _ -> (str "a" ++ int i))
+    | Tvar i ->
+      (try pr_id (List.nth vl (pred i))
+       with Failure _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_global Type r
     | Tglob (IndRef(kn,0),l)
 	when not (keep_singleton ()) && kn = mk_ind "Coq.Init.Specif" "sig" ->

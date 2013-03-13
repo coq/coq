@@ -531,8 +531,8 @@ let rec are_unifiable_aux  = function
 	     then raise NotUnifiable
 	     else
 	       let eqs' =
- 		 try  ((List.combine cpl1 cpl2)@eqs)
-		 with _ -> anomaly (Pp.str "are_unifiable_aux")
+		 try (List.combine cpl1 cpl2) @ eqs
+		 with Invalid_argument _ -> anomaly (Pp.str "are_unifiable_aux")
 	       in
 	       are_unifiable_aux eqs'
 
@@ -553,8 +553,8 @@ let rec eq_cases_pattern_aux  = function
 	     then raise NotUnifiable
 	     else
 	       let eqs' =
- 		 try  ((List.combine cpl1 cpl2)@eqs)
-		 with _ -> anomaly (Pp.str "eq_cases_pattern_aux")
+		 try (List.combine cpl1 cpl2) @ eqs
+		 with Invalid_argument _ -> anomaly (Pp.str "eq_cases_pattern_aux")
 	       in
 	       eq_cases_pattern_aux eqs'
 	 | _ -> raise NotUnifiable

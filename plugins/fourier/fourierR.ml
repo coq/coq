@@ -44,8 +44,7 @@ let flin_coef f x = try Constrhash.find f.fhom x with Not_found -> r0;;
 
 let flin_add f x c =
     let cx = flin_coef f x in
-    Constrhash.remove f.fhom x;
-    Constrhash.add f.fhom x (rplus cx c);
+    Constrhash.replace f.fhom x (rplus cx c);
     f
 ;;
 let flin_add_cste f c =
@@ -92,6 +91,8 @@ let rec string_of_R_constr c =
   |Const c -> string_of_R_constant c
   | _ -> "not_of_constant"
 
+exception NoRational
+
 let rec rational_of_constr c =
   match kind_of_term c with
   | Cast (c,_,_) -> (rational_of_constr c)
@@ -113,14 +114,16 @@ let rec rational_of_constr c =
 	 | "Rminus" ->
 	     rminus (rational_of_constr args.(0))
                     (rational_of_constr args.(1))
-	 | _ -> failwith "not a rational")
+	 | _ -> raise NoRational)
   | Const kn ->
       (match (string_of_R_constant kn) with
 	       "R1" -> r1
               |"R0" -> r0
-              |  _ -> failwith "not a rational")
-  |  _ -> failwith "not a rational"
+              |  _ -> raise NoRational)
+  |  _ -> raise NoRational
 ;;
+
+exception NoLinear
 
 let rec flin_of_constr c =
   try(
@@ -137,35 +140,34 @@ let rec flin_of_constr c =
              flin_minus (flin_of_constr args.(0))
 	                (flin_of_constr args.(1))
 	 | "Rmult"->
-	     (try (let a=(rational_of_constr args.(0)) in
-                     try (let b = (rational_of_constr args.(1)) in
-			    (flin_add_cste (flin_zero()) (rmult a b)))
-		     with _-> (flin_add (flin_zero())
-				 args.(1)
-				 a))
-	      with _-> (flin_add (flin_zero())
-			  args.(0)
-			  (rational_of_constr args.(1))))
+	     (try
+                let a = rational_of_constr args.(0) in
+                try
+                  let b = rational_of_constr args.(1) in
+		  flin_add_cste (flin_zero()) (rmult a b)
+		with NoRational ->
+                  flin_add (flin_zero()) args.(1) a
+	      with NoRational ->
+                flin_add (flin_zero()) args.(0)
+		  (rational_of_constr args.(1)))
 	 | "Rinv"->
-	     let a=(rational_of_constr args.(0)) in
-	       flin_add_cste (flin_zero()) (rinv a)
+	     let a = rational_of_constr args.(0) in
+	     flin_add_cste (flin_zero()) (rinv a)
 	 | "Rdiv"->
-	     (let b=(rational_of_constr args.(1)) in
-		try (let a = (rational_of_constr args.(0)) in
-		       (flin_add_cste (flin_zero()) (rdiv a b)))
-		with _-> (flin_add (flin_zero())
-		            args.(0)
-                            (rinv b)))
-         |_->assert false)
+	     (let b = rational_of_constr args.(1) in
+	      try
+                let a = rational_of_constr args.(0) in
+	        flin_add_cste (flin_zero()) (rdiv a b)
+	      with NoRational ->
+                flin_add (flin_zero()) args.(0) (rinv b))
+         |_-> raise NoLinear)
   | Const c ->
         (match (string_of_R_constant c) with
 	       "R1" -> flin_one ()
               |"R0" -> flin_zero ()
-              |_-> assert false)
-  |_-> assert false)
-  with _ -> flin_add (flin_zero())
-                     c
-	             r1
+              |_-> raise NoLinear)
+  |_-> raise NoLinear)
+  with NoRational | NoLinear -> flin_add (flin_zero()) c r1
 ;;
 
 let flin_to_alist f =
@@ -186,52 +188,55 @@ type hineq={hname:constr; (* le nom de l'hypothèse *)
 
 (* Transforme une hypothese h:t en inéquation flin<0 ou flin<=0
 *)
+
+exception NoIneq
+
 let ineq1_of_constr (h,t) =
     match (kind_of_term t) with
-       App (f,args) ->
-         (match kind_of_term f with
-           Const c when Array.length args = 2 ->
-             let t1= args.(0) in
-             let t2= args.(1) in
+      | App (f,args) ->
+        (match kind_of_term f with
+          | Const c when Array.length args = 2 ->
+            let t1= args.(0) in
+            let t2= args.(1) in
             (match (string_of_R_constant c) with
-		 "Rlt" -> [{hname=h;
+	      |"Rlt" -> [{hname=h;
                            htype="Rlt";
 		           hleft=t1;
 			   hright=t2;
 			   hflin= flin_minus (flin_of_constr t1)
                                              (flin_of_constr t2);
 			   hstrict=true}]
-		|"Rgt" -> [{hname=h;
+	      |"Rgt" -> [{hname=h;
                            htype="Rgt";
 		           hleft=t2;
 			   hright=t1;
 			   hflin= flin_minus (flin_of_constr t2)
                                              (flin_of_constr t1);
 			   hstrict=true}]
-		|"Rle" -> [{hname=h;
+	      |"Rle" -> [{hname=h;
                            htype="Rle";
 		           hleft=t1;
 			   hright=t2;
 			   hflin= flin_minus (flin_of_constr t1)
                                              (flin_of_constr t2);
 			   hstrict=false}]
-		|"Rge" -> [{hname=h;
+	      |"Rge" -> [{hname=h;
                            htype="Rge";
 		           hleft=t2;
 			   hright=t1;
 			   hflin= flin_minus (flin_of_constr t2)
                                              (flin_of_constr t1);
 			   hstrict=false}]
-                |_->assert false)
+              |_-> raise NoIneq)
           | Ind (kn,i) ->
-	      if IndRef(kn,i) = Coqlib.glob_eq then
-		           let t0= args.(0) in
-                           let t1= args.(1) in
-                           let t2= args.(2) in
-		    (match (kind_of_term t0) with
-                         Const c ->
-			   (match (string_of_R_constant c) with
-			      "R"->
+            if not (eq_gr (IndRef(kn,i)) Coqlib.glob_eq) then raise NoIneq;
+            let t0= args.(0) in
+            let t1= args.(1) in
+            let t2= args.(2) in
+	    (match (kind_of_term t0) with
+              | Const c ->
+		(match (string_of_R_constant c) with
+		  | "R"->
                          [{hname=h;
                            htype="eqTLR";
 		           hleft=t1;
@@ -246,12 +251,10 @@ let ineq1_of_constr (h,t) =
 			   hflin= flin_minus (flin_of_constr t2)
                                              (flin_of_constr t1);
 			   hstrict=false}]
-                           |_-> assert false)
-                         |_-> assert false)
-	      else
-		assert false
-          |_-> assert false)
-        |_-> assert false
+                  |_-> raise NoIneq)
+              |_-> raise NoIneq)
+          |_-> raise NoIneq)
+      |_-> raise NoIneq
 ;;
 
 (* Applique la méthode de Fourier à une liste d'hypothèses (type hineq)
@@ -459,6 +462,8 @@ let mkAppL a =
    mkApp(List.hd l, Array.of_list (List.tl l))
 ;;
 
+exception GoalDone
+
 (* Résolution d'inéquations linéaires dans R *)
 let rec fourier gl=
     Coqlib.check_required_library ["Coq";"fourier";"Fourier"];
@@ -490,16 +495,16 @@ let rec fourier gl=
 	      (tclTHEN (apply (get coq_Rfourier_not_lt_ge))
 		       (intro_using  fhyp))
 	      fourier)
-	    |_->assert false)
-        |_->assert false
+	    |_-> raise GoalDone)
+        |_-> raise GoalDone
       in tac gl)
-     with _ ->
+     with GoalDone ->
     (* les hypothèses *)
     let hyps = List.map (fun (h,t)-> (mkVar h,t))
                         (list_of_sign (pf_hyps gl)) in
     let lineq =ref [] in
     List.iter (fun h -> try (lineq:=(ineq1_of_constr h)@(!lineq))
-		        with _ -> ())
+		        with NoIneq _ -> ())
               hyps;
     (* lineq = les inéquations découlant des hypothèses *)
     if !lineq=[] then Errors.error "No inequalities";

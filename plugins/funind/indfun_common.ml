@@ -118,7 +118,7 @@ let def_of_const t =
       (try (match Declareops.body_of_constant (Global.lookup_constant sp) with
              | Some c -> Lazyconstr.force c
 	     | _ -> assert false)
-       with _ -> assert false)
+       with Not_found -> assert false)
     |_ -> assert false
 
 let coq_constant s =
@@ -204,13 +204,13 @@ let with_full_print f a =
     Dumpglob.continue ();
     res
   with
-    | e ->
+    | reraise ->
 	Impargs.make_implicit_args old_implicit_args;
 	Impargs.make_strict_implicit_args old_strict_implicit_args;
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
 	Flags.raw_print := old_rawprint;
 	Dumpglob.continue ();
-	raise e
+	raise reraise
 
 
 

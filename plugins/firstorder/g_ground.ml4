@@ -81,7 +81,7 @@ let gen_ground_tac flag taco ids bases gl=
 	extend_with_auto_hints bases (extend_with_ref_list ids seq gl) gl in
       let result=ground_tac solver startseq gl in
 	qflag:=backup;result
-    with e ->qflag:=backup;raise e
+    with reraise -> qflag:=backup;raise reraise
 
 (* special for compatibility with Intuition
 

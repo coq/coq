@@ -489,8 +489,8 @@ let print_structure_to_file (fn,si,mo) dry struc =
     pp_with ft (d.preamble mo comment opened unsafe_needs);
     pp_with ft (d.pp_struct struc);
     Option.iter close_out cout;
-  with e ->
-    Option.iter close_out cout; raise e
+  with reraise ->
+    Option.iter close_out cout; raise reraise
   end;
   if not dry then Option.iter info_file fn;
   (* Now, let's print the signature *)
@@ -503,8 +503,8 @@ let print_structure_to_file (fn,si,mo) dry struc =
 	 pp_with ft (d.sig_preamble mo comment opened unsafe_needs);
 	 pp_with ft (d.pp_sig (signature_of_structure struc));
 	 close_out cout;
-       with e ->
-	 close_out cout; raise e
+       with reraise ->
+	 close_out cout; raise reraise
        end;
        info_file si)
     (if dry then None else si);

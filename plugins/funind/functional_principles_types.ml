@@ -363,7 +363,7 @@ let generate_functional_principle
      Don't forget to close the goal if an error is raised !!!!
   *)
   save false new_princ_name entry g_kind hook
-  with e ->
+  with e when Errors.noncritical e ->
     begin
       begin
 	try
@@ -375,7 +375,7 @@ let generate_functional_principle
 	  then Pfedit.delete_current_proof ()
 	  else ()
 	  else ()
-	with _ -> ()
+	with e when Errors.noncritical e -> ()
       end;
       raise (Defining_principle e)
     end
@@ -516,7 +516,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
 	0
 	(prove_princ_for_struct false 0 (Array.of_list funs))
 	(fun _ _ _ -> ())
-  with e ->
+  with e when Errors.noncritical e ->
     begin
       begin
 	try
@@ -528,7 +528,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
 	  then Pfedit.delete_current_proof ()
 	  else ()
 	  else ()
-	with _ -> ()
+	with e when Errors.noncritical e -> ()
       end;
       raise (Defining_principle e)
     end

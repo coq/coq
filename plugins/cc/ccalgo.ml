@@ -400,9 +400,12 @@ let rec canonize_name c =
 (* rebuild a term from a pattern and a substitution *)
 
 let build_subst uf subst =
-  Array.map (fun i ->
-	       try term uf i
-	       with _ -> anomaly (Pp.str "incomplete matching")) subst
+  Array.map
+    (fun i ->
+      try term uf i
+      with e when Errors.noncritical e ->
+        anomaly (Pp.str "incomplete matching"))
+    subst
 
 let rec inst_pattern subst = function
     PVar i ->

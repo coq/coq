@@ -209,14 +209,14 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
 		    try Functional_principles_types.build_scheme fas
 		    with Functional_principles_types.No_graph_found ->
 		      Errors.error ("Cannot generate induction principle(s)")
-    		      | e ->
+		      | e when Errors.noncritical e ->
 			  let names = List.map (fun (_,na,_) -> na) fas in
 			  warning_error names e
 
 		  end
 	      | _ -> assert false (* we can only have non empty  list *)
 	  end
-	  | e -> 
+	  | e when Errors.noncritical e ->
 	      let names = List.map (fun (_,na,_) -> na) fas in
 	      warning_error names e
       end
