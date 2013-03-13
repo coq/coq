@@ -333,7 +333,8 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
 	  try
 	    rewrite_side_tac (!general_rewrite_clause cls
 				 lft2rgt occs (c,l) ~new_goals:[]) tac gl
-	  with e -> (* Try to see if there's an equality hidden *)
+	  with e when Errors.noncritical e ->
+            (* Try to see if there's an equality hidden *)
             let e = Errors.push e in
 	    let env' = push_rel_context rels env in
 	    let rels',t' = splay_prod_assum env' sigma t in (* Search for underlying eq *)
@@ -1155,7 +1156,7 @@ let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
         (* not a dep eq or no decidable type found *)
         end
         else raise Not_dep_pair
-      with e ->
+      with e when Errors.noncritical e ->
 	inject_at_positions env sigma u eq_clause posns
 	  (fun _ -> intros_pattern MoveLast ipats)
 

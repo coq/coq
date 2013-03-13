@@ -442,13 +442,13 @@ let dump_glob_red_expr = function
     try
       Dumpglob.add_glob (loc_of_or_by_notation Libnames.loc_of_reference r)
 	(Smartlocate.smart_global r)
-    with _ -> ()) occs
+    with e when Errors.noncritical e -> ()) occs
   | Cbv grf | Lazy grf ->
     List.iter (fun r ->
       try
         Dumpglob.add_glob (loc_of_or_by_notation Libnames.loc_of_reference r)
 	  (Smartlocate.smart_global r)
-      with _ -> ()) grf.rConst
+      with e when Errors.noncritical e -> ()) grf.rConst
   | _ -> ()
 
 let intern_red_expr ist = function

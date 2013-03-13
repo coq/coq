@@ -1039,9 +1039,10 @@ let apply_in_once_main flags innerclause (d,lbind) gl =
   let thm = nf_betaiota gl.sigma (pf_type_of gl d) in
   let rec aux clause =
     try progress_with_clause flags innerclause clause
-    with err ->
+    with e when Errors.noncritical e ->
     try aux (clenv_push_prod clause)
-    with NotExtensibleClause -> raise err in
+    with NotExtensibleClause -> raise e
+  in
   aux (make_clenv_binding gl (d,thm) lbind)
 
 let apply_in_once sidecond_first with_delta with_destruct with_evars id
@@ -1730,7 +1731,7 @@ let make_pattern_test env sigma0 (sigma,c) =
   let flags = default_matching_flags sigma0 in
   let matching_fun t =
     try let sigma = w_unify env sigma Reduction.CONV ~flags c t in Some(sigma,t)
-    with _ -> raise NotUnifiable in
+    with e when Errors.noncritical e -> raise NotUnifiable in
   let merge_fun c1 c2 =
     match c1, c2 with
     | Some (_,c1), Some (_,c2) when not (is_fconv Reduction.CONV env sigma0 c1 c2) ->
@@ -2578,8 +2579,11 @@ let specialize_eqs id gl =
       
 
 let specialize_eqs id gl =
-  if try ignore(clear [id] gl); false with _ -> true then
-    tclFAIL 0 (str "Specialization not allowed on dependent hypotheses") gl 
+  if
+    (try ignore(clear [id] gl); false
+     with e when Errors.noncritical e -> true)
+  then
+    tclFAIL 0 (str "Specialization not allowed on dependent hypotheses") gl
   else specialize_eqs id gl
 
 let occur_rel n c =
@@ -2739,7 +2743,8 @@ let compute_elim_sig ?elimc elimt =
       | Some ( _,None,ind) ->
 	  let indhd,indargs = decompose_app ind in
 	  try {!res with indref = Some (global_of_constr indhd) }
-	  with _ -> error "Cannot find the inductive type of the inductive scheme.";;
+	  with e when Errors.noncritical e ->
+            error "Cannot find the inductive type of the inductive scheme.";;
 
 let compute_scheme_signature scheme names_info ind_type_guess =
   let f,l = decompose_app scheme.concl in
@@ -3579,4 +3584,4 @@ let unify ?(state=full_transparent_state) x y gl =
     in
     let evd = w_unify (pf_env gl) (project gl) Reduction.CONV ~flags x y
     in tclEVARS evd gl
-  with _ -> tclFAIL 0 (str"Not unifiable") gl
+  with e when Errors.noncritical e -> tclFAIL 0 (str"Not unifiable") gl

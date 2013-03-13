@@ -69,12 +69,13 @@ let _ =
       Summary.unfreeze_function = unfreeze;
       Summary.init_function     = init }
 
+let raw_find_base bas = String.Map.find bas !rewtab
+
 let find_base bas =
- try String.Map.find bas !rewtab
- with
-  Not_found ->
-   errorlabstrm "AutoRewrite"
-     (str ("Rewriting base "^(bas)^" does not exist."))
+  try raw_find_base bas
+  with Not_found ->
+    errorlabstrm "AutoRewrite"
+      (str ("Rewriting base "^(bas)^" does not exist."))
 
 let find_rewrites bas =
   List.rev_map snd (HintDN.find_all (find_base bas))
@@ -204,8 +205,9 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl gl =
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =
-  let base = try find_base rbase with _ -> HintDN.empty in
-  let max = try fst (Util.List.last (HintDN.find_all base)) with _ -> 0 in
+  let base = try raw_find_base rbase with Not_found -> HintDN.empty in
+  let max = try fst (Util.List.last (HintDN.find_all base)) with Failure _ -> 0
+  in
   let lrl = HintDN.map (fun (i,h) -> (i + max, h)) lrl in
     rewtab:=String.Map.add rbase (HintDN.union lrl base) !rewtab
 
