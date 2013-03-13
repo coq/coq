@@ -351,7 +351,7 @@ let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
          if computeinnertypes then
 try
           Acic.CicHash.find terms_to_types tt
-with _ ->
+with e when Errors.noncritical e ->
 (*CSC: Warning: it really happens, for example in Ring_theory!!! *)
 Pp.msg_debug (Pp.(++) (Pp.str "BUG: this subterm was not visited during the double-type-inference: ") (Printer.pr_lconstr tt)) ; assert false
          else

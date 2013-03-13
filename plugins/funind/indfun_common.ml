@@ -335,17 +335,25 @@ let discharge_Function (_,finfos) =
 	 }
 
 open Term
+
+let pr_ocst c =
+  Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) c (mt ())
+
 let pr_info f_info =
-  str "function_constant := " ++ Printer.pr_lconstr (mkConst f_info.function_constant)++ fnl () ++
-    str "function_constant_type := " ++
-    (try Printer.pr_lconstr (Global.type_of_global (ConstRef f_info.function_constant)) with _ -> mt ()) ++ fnl () ++
-    str "equation_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.equation_lemma (mt ()) ) ++ fnl () ++
-    str "completeness_lemma :=" ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.completeness_lemma (mt ()) ) ++ fnl () ++
-    str "correctness_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.correctness_lemma (mt ()) ) ++ fnl () ++
-    str "rect_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.rect_lemma (mt ()) ) ++ fnl () ++
-    str "rec_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.rec_lemma (mt ()) ) ++ fnl () ++
-    str "prop_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.prop_lemma (mt ()) ) ++ fnl () ++
-    str "graph_ind := " ++ Printer.pr_lconstr (mkInd f_info.graph_ind) ++ fnl ()
+  str "function_constant := " ++
+  Printer.pr_lconstr (mkConst f_info.function_constant)++ fnl () ++
+  str "function_constant_type := " ++
+  (try
+     Printer.pr_lconstr
+       (Global.type_of_global (ConstRef f_info.function_constant))
+   with e when Errors.noncritical e -> mt ()) ++ fnl () ++
+  str "equation_lemma := " ++ pr_ocst f_info.equation_lemma ++ fnl () ++
+  str "completeness_lemma :=" ++ pr_ocst f_info.completeness_lemma ++ fnl () ++
+  str "correctness_lemma := " ++ pr_ocst f_info.correctness_lemma ++ fnl () ++
+  str "rect_lemma := " ++ pr_ocst f_info.rect_lemma ++ fnl () ++
+  str "rec_lemma := " ++ pr_ocst f_info.rec_lemma ++ fnl () ++
+  str "prop_lemma := " ++ pr_ocst f_info.prop_lemma ++ fnl () ++
+  str "graph_ind := " ++ Printer.pr_lconstr (mkInd f_info.graph_ind) ++ fnl ()
 
 let pr_table tb =
   let l = Cmap.fold (fun k v acc -> v::acc) tb [] in
@@ -486,22 +494,17 @@ exception Building_graph of exn
 exception Defining_principle of exn
 exception ToShow of exn
 
-let init_constant dir s =
-  try
-    Coqlib.gen_constant "Function" dir s
-  with e -> raise (ToShow e)
-
 let jmeq () =
   try
-    (Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
-     init_constant ["Logic";"JMeq"] "JMeq")
-  with e -> raise (ToShow e)
+    Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
+    Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq"
+  with e when Errors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
   try
     Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
-    init_constant ["Logic";"JMeq"] "JMeq_refl"
-  with e -> raise (ToShow e)
+    Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq_refl"
+  with e when Errors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
   tclMAP h_intro l

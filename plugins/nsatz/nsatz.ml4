@@ -54,7 +54,7 @@ module BigInt = struct
   let to_int x = int_of_big_int x
   let hash x =
     try (int_of_big_int x)
-    with _-> 1
+    with Failure _ -> 1
   let puis = power_big_int_positive_int
 
   (* a et b positifs, résultat positif *)

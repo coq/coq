@@ -786,10 +786,10 @@ let merge_inductive_body (shift:merge_infos) avoid (oib1:one_inductive_body)
 
   let params1 =
     try fst (glob_decompose_prod_n shift.nrecprms1 (List.hd lcstr1))
-    with _ -> [] in
+    with e when Errors.noncritical e -> [] in
   let params2 =
     try fst (glob_decompose_prod_n shift.nrecprms2 (List.hd lcstr2))
-    with _ -> [] in
+    with e when Errors.noncritical e -> [] in
 
   let lcstr1 = List.combine (Array.to_list oib1.mind_consnames) lcstr1 in
   let lcstr2 = List.combine (Array.to_list oib2.mind_consnames) lcstr2 in

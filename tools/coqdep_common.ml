@@ -50,7 +50,7 @@ let rec get_extension f = function
 
 let basename_noext filename =
   let fn = Filename.basename filename in
-  try Filename.chop_extension fn with _ -> fn
+  try Filename.chop_extension fn with Invalid_argument _ -> fn
 
 (** ML Files specified on the command line. In the entries:
     - the first string is the basename of the file, without extension nor

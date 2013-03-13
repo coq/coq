@@ -60,9 +60,13 @@ let observe strm =
 
 
 let do_observe_tac s tac g =
-  let goal = begin try (Printer.pr_goal g) with _ -> assert false end in
+  let goal =
+    try Printer.pr_goal g
+    with e when Errors.noncritical e -> assert false
+  in
   try
-    let v = tac g in msgnl (goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
+    let v = tac g in
+    msgnl (goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
   with reraise ->
     let e = Cerrors.process_vernac_interp_error reraise in
     msgnl (str "observation "++ s++str " raised exception " ++

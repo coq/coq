@@ -423,7 +423,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) =
 	try
 	  check_not_nested (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info
-	with _ -> 
+	with e when Errors.noncritical e ->
 	  errorlabstrm "Recdef.travel" (str "the term " ++ Printer.pr_lconstr expr_info.info ++ str " can not contain a recursive call to " ++ pr_id expr_info.f_id)
       end
     | Lambda(n,t,b) -> 
@@ -431,7 +431,7 @@ let rec travel_aux jinfo continuation_tac (expr_info:constr infos) =
 	try
 	  check_not_nested (expr_info.f_id::expr_info.forbidden_ids) expr_info.info;
 	  jinfo.otherS () expr_info continuation_tac expr_info
-	with _ -> 
+	with e when Errors.noncritical e ->
 	  errorlabstrm "Recdef.travel" (str "the term " ++ Printer.pr_lconstr expr_info.info ++ str " can not contain a recursive call to " ++ pr_id expr_info.f_id)
       end
     | Case(ci,t,a,l) -> 
@@ -1240,8 +1240,9 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
   let name = match goal_name with
     | Some s -> s
     | None   ->
-	try (add_suffix current_proof_name "_subproof")
-	with _ -> anomaly (Pp.str "open_new_goal with an unamed theorem")
+	try add_suffix current_proof_name "_subproof"
+	with e when Errors.noncritical e ->
+          anomaly (Pp.str "open_new_goal with an unamed theorem")
   in
   let sign = initialize_named_context_for_proof () in
   let na = next_global_ident_away name [] in
