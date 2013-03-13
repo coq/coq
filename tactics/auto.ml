@@ -1181,9 +1181,9 @@ let tclLOG (dbg,depth,trace) pp tac =
 	  let out = tac gl in
 	  msg_debug (str s ++ spc () ++ pp () ++ str ". (*success*)");
 	  out
-	with e ->
+	with reraise ->
 	  msg_debug (str s ++ spc () ++ pp () ++ str ". (*fail*)");
-	  raise e
+	  raise reraise
       end
     | Info ->
       (* For "info (trivial/auto)", we store a log trace *)
@@ -1192,9 +1192,9 @@ let tclLOG (dbg,depth,trace) pp tac =
 	  let out = tac gl in
 	  trace := (depth, Some pp) :: !trace;
 	  out
-	with e ->
+	with reraise ->
 	  trace := (depth, None) :: !trace;
-	  raise e
+	  raise reraise
       end
 
 (** For info, from the linear trace information, we reconstitute the part

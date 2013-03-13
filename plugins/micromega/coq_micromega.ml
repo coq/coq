@@ -935,7 +935,8 @@ struct
                            let (expr,env) = parse_expr env args.(0) in
                            let power = (parse_exp expr args.(1)) in
                              (power  , env)
-			 with _ ->   (* if the exponent is a variable *)
+			 with e when Errors.noncritical e ->
+                           (* if the exponent is a variable *)
                            let (env,n) = Env.compute_rank_add env term in (Mc.PEX n, env)
                        end
                    | Ukn  s ->
@@ -1102,8 +1103,11 @@ struct
   
   let parse_formula parse_atom env tg term =
 
-    let parse_atom env tg t = try let (at,env) = parse_atom env t in
-                                    (A(at,tg,t), env,Tag.next tg) with _ -> (X(t),env,tg) in
+    let parse_atom env tg t =
+      try
+        let (at,env) = parse_atom env t in
+        (A(at,tg,t), env,Tag.next tg)
+      with e when Errors.noncritical e -> (X(t),env,tg) in
 
     let rec xparse_formula env tg term =
      match kind_of_term term with
@@ -1179,7 +1183,8 @@ let same_proof sg cl1 cl2 =
  let rec xsame_proof sg =
   match sg with
    | [] -> true
-   | n::sg -> (try List.nth cl1 n = List.nth cl2 n with _ -> false)
+   | n::sg ->
+     (try List.nth cl1 n = List.nth cl2 n with Invalid_argument _ -> false)
       && (xsame_proof sg ) in
   xsame_proof sg
 
@@ -1243,7 +1248,7 @@ let btree_of_array typ a  =
 let btree_of_array typ a =
  try
   btree_of_array typ a
- with x ->
+ with x when Errors.noncritical x ->
   failwith (Printf.sprintf "btree of array : %s" (Printexc.to_string x))
 
 let dump_varmap typ env =
@@ -1312,7 +1317,7 @@ let rec parse_hyps parse_arith env tg hyps =
       try
        let (c,env,tg) = parse_formula parse_arith env  tg t in
 	((i,c)::lhyps, env,tg)
-      with _ -> 		(lhyps,env,tg)
+      with e when Errors.noncritical e -> (lhyps,env,tg)
        (*(if debug then Printf.printf "parse_arith : %s\n" x);*)
 
 
@@ -1456,7 +1461,7 @@ let compact_proofs (cnf_ff: 'cst cnf) res (cnf_ff': 'cst cnf) =
           (pp_ml_list prover.pp_f) (List.map fst new_cl)   ;
           flush stdout
       end ; *)
-    let res = try prover.compact prf remap with x ->
+    let res = try prover.compact prf remap with x when Errors.noncritical x ->
       if debug then Printf.fprintf stdout "Proof compaction %s" (Printexc.to_string x) ;
       (* This should not happen -- this is the recovery plan... *)
       match prover.prover (List.map fst new_cl) with
@@ -2017,13 +2022,13 @@ let xlia gl =
   try 
     micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
       [ linear_Z ] gl
-  with z -> (*Printexc.print_backtrace stdout ;*) raise z
+  with reraise -> (*Printexc.print_backtrace stdout ;*) raise reraise
 
 let xnlia gl =
   try 
     micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
       [ nlinear_Z ] gl
-  with z -> (*Printexc.print_backtrace stdout ;*) raise z
+  with reraise -> (*Printexc.print_backtrace stdout ;*) raise reraise
 
 
 

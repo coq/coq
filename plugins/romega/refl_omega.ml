@@ -225,7 +225,7 @@ let add_reified_atom t env =
     env.terms <- env.terms @ [t]; i
 
 let get_reified_atom env =
-  try List.nth env.terms with _ -> failwith "get_reified_atom"
+  try List.nth env.terms with Invalid_argument _ -> failwith "get_reified_atom"
 
 (* \subsection{Gestion de l'environnement de proposition pour Omega} *)
 (* ajout d'une proposition *)
@@ -235,7 +235,8 @@ let add_prop env t =
     let i = List.length env.props in  env.props <- env.props @ [t]; i
 
 (* accès a une proposition *)
-let get_prop v env = try List.nth v env with _ -> failwith "get_prop"
+let get_prop v env =
+  try List.nth v env with Invalid_argument _ -> failwith "get_prop"
 
 (* \subsection{Gestion du nommage des équations} *)
 (* Ajout d'une equation dans l'environnement de reification *)

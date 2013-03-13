@@ -71,7 +71,7 @@ let ident_global_exist id =
     let ans = CRef (Libnames.Ident (Loc.ghost,id)) in
     let _ = ignore (Constrintern.intern_constr Evd.empty (Global.env()) ans) in
     true
-  with _ -> false
+  with e when Errors.noncritical e -> false
 
 (** [next_ident_fresh id] returns a fresh identifier (ie not linked in
     global env) with base [id]. *)

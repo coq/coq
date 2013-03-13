@@ -73,16 +73,9 @@ let do_observe_tac s tac g =
     ignore(Stack.pop debug_queue);
     v
   with reraise ->
-    begin
-      if not (Stack.is_empty debug_queue)
-      then
-	begin
-	  let reraise : exn = Cerrors.process_vernac_interp_error reraise in
-	  print_debug_queue true reraise
-	end
-      ;
-      raise reraise
-    end
+    if not (Stack.is_empty debug_queue)
+    then print_debug_queue true (Cerrors.process_vernac_interp_error reraise);
+    raise reraise
 
 let observe_tac_stream s tac g =
   if do_observe ()
