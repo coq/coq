@@ -65,7 +65,7 @@ let display_cmd_header loc com =
   let (start,stop) = Loc.unloc loc in
   let safe_pr_vernac x =
     try Ppvernac.pr_vernac x
-    with e -> str (Printexc.to_string e) in
+    with e when Errors.noncritical e -> str (Printexc.to_string e) in
   let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
   in
   Pp.pp (str "Chars " ++ int start ++ str " - " ++ int stop ++
