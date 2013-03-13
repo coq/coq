@@ -105,12 +105,14 @@ let is_in_system_path filename =
   is_in_path lpath filename
 
 let open_trapping_failure name =
-  try open_out_bin name with _ -> error ("Can't open " ^ name)
+  try open_out_bin name
+  with e when Errors.noncritical e -> error ("Can't open " ^ name)
 
 let try_remove filename =
   try Sys.remove filename
-  with _ -> msg_warning
-    (str"Could not remove file " ++ str filename ++ str" which is corrupted!")
+  with e when Errors.noncritical e ->
+    msg_warning
+      (str"Could not remove file " ++ str filename ++ str" which is corrupted!")
 
 let marshal_out ch v = Marshal.to_channel ch v []
 let marshal_in filename ch =
@@ -143,10 +145,10 @@ let extern_intern ?(warn=true) magic suffix =
       try
         marshal_out channel val_0;
         close_out channel
-      with e ->
-	let e = Errors.push e in
+      with reraise ->
+	let reraise = Errors.push reraise in
         let () = try_remove filename in
-        raise e
+        raise reraise
     with Sys_error s -> error ("System error: " ^ s)
   and intern_state paths name =
     try

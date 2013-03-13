@@ -73,7 +73,7 @@ let rec print_gen bottom stk e =
     try h e
     with
     | Unhandled -> print_gen bottom stk' e
-    | e' -> print_gen bottom stk' e'
+    | any -> print_gen bottom stk' any
 
 (** Only anomalies should reach the bottom of the handler stack.
     In usual situation, the [handle_stack] is treated as it if was always

@@ -645,7 +645,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
 	let scopes = find_arguments_scope ref in
 	Dumpglob.dump_reference loc "<>" (string_of_qualid (Decls.variable_secpath id)) "var";
 	GRef (loc, ref), impls, scopes, []
-      with _ ->
+      with e when Errors.noncritical e ->
 	(* [id] a goal variable *)
 	GVar (loc,id), [], [], []
 

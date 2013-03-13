@@ -262,10 +262,10 @@ let pp_dirs ft =
   fun (dirstream : _ ppdirs) ->
     try
       Stream.iter pp_dir dirstream; com_brk ft
-    with e ->
-      let e = Backtrace.add_backtrace e in
+    with reraise ->
+      let reraise = Backtrace.add_backtrace reraise in
       let () = Format.pp_print_flush ft () in
-      raise e
+      raise reraise
 
 
 (* pretty print on stdout and stderr *)

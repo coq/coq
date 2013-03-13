@@ -406,7 +406,7 @@ let fetch_opaque_table (f,pos,digest) =
     let table = (System.marshal_in f ch : LightenLibrary.table) in
     close_in ch;
     table
-  with _ ->
+  with e when Errors.noncritical e ->
     error
       ("The file "^f^" is inaccessible or has changed,\n" ^
        "cannot load some opaque constant bodies in it.\n")
@@ -667,12 +667,12 @@ let save_library_to dir f =
       | 0 -> ()
       | _ -> anomaly (Pp.str "Library compilation failure")
     end
-  with e ->
-    let e = Errors.push e in
+  with reraise ->
+    let reraise = Errors.push reraise in
     let () = msg_warning (str ("Removed file "^f')) in
     let () = close_out ch in
     let () = Sys.remove f' in
-    raise e
+    raise reraise
 
 (************************************************************************)
 (*s Display the memory use of a library. *)

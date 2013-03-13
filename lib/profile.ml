@@ -260,7 +260,7 @@ let time_overhead_B_C () =
       let _dw = dummy_spent_alloc () in
       let _dt = get_time () in
       ()
-    with _ -> assert false
+    with e when Errors.noncritical e -> assert false
   done;
   let after = get_time () in
   let beforeloop =  get_time () in
@@ -390,7 +390,7 @@ let profile1 e f a =
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
-  with exn ->
+  with reraise ->
     let dw = spent_alloc () in
     let dt = get_time () - t in
     e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
@@ -403,7 +403,7 @@ let profile1 e f a =
     if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
-    raise exn
+    raise reraise
 
 let profile2 e f a b =
   let dw = spent_alloc () in
@@ -432,7 +432,7 @@ let profile2 e f a b =
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
-  with exn ->
+  with reraise ->
     let dw = spent_alloc () in
     let dt = get_time () - t in
     e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
@@ -445,7 +445,7 @@ let profile2 e f a b =
     if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
-    raise exn
+    raise reraise
 
 let profile3 e f a b c =
   let dw = spent_alloc () in
@@ -474,7 +474,7 @@ let profile3 e f a b c =
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
-  with exn ->
+  with reraise ->
     let dw = spent_alloc () in
     let dt = get_time () - t in
     e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
@@ -487,7 +487,7 @@ let profile3 e f a b c =
     if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
-    raise exn
+    raise reraise
 
 let profile4 e f a b c d =
   let dw = spent_alloc () in
@@ -516,7 +516,7 @@ let profile4 e f a b c d =
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
-  with exn ->
+  with reraise ->
     let dw = spent_alloc () in
     let dt = get_time () - t in
     e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
@@ -529,7 +529,7 @@ let profile4 e f a b c d =
     if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
-    raise exn
+    raise reraise
 
 let profile5 e f a b c d g =
   let dw = spent_alloc () in
@@ -558,7 +558,7 @@ let profile5 e f a b c d g =
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
-  with exn ->
+  with reraise ->
     let dw = spent_alloc () in
     let dt = get_time () - t in
     e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
@@ -571,7 +571,7 @@ let profile5 e f a b c d g =
     if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
-    raise exn
+    raise reraise
 
 let profile6 e f a b c d g h =
   let dw = spent_alloc () in
@@ -600,7 +600,7 @@ let profile6 e f a b c d g h =
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
-  with exn ->
+  with reraise ->
     let dw = spent_alloc () in
     let dt = get_time () - t in
     e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
@@ -613,7 +613,7 @@ let profile6 e f a b c d g h =
     if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
-    raise exn
+    raise reraise
 
 let profile7 e f a b c d g h i =
   let dw = spent_alloc () in
@@ -642,7 +642,7 @@ let profile7 e f a b c d g h i =
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
     r
-  with exn ->
+  with reraise ->
     let dw = spent_alloc () in
     let dt = get_time () - t in
     e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
@@ -655,7 +655,7 @@ let profile7 e f a b c d g h i =
     if not (p==e) then
       (match !stack with [] -> assert false | _::s -> stack := s);
     last_alloc := get_alloc ();
-    raise exn
+    raise reraise
 
 let print_logical_stats a =
   let (c, s, d) = CObj.obj_stats a in

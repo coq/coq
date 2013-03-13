@@ -160,11 +160,11 @@ and eval_to_patch env (buff,pl,fv) =
 and val_of_constr env c =
   let (_,fun_code,_ as ccfv) =
     try compile env c
-    with e ->
-      let e = Errors.push e in
+    with reraise ->
+      let reraise = Errors.push reraise in
       let () = print_string "can not compile \n" in
       let () = Format.print_flush () in
-      raise e
+      raise reraise
   in
   eval_to_patch env (to_memory ccfv)
 

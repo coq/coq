@@ -341,7 +341,7 @@ let _ =
 let with_grammar_rule_protection f x =
   let fs = freeze () in
   try let a = f x in unfreeze fs; a
-  with e ->
-    let e = Errors.push e in
+  with reraise ->
+    let reraise = Errors.push reraise in
     let () = unfreeze fs in
-    raise e
+    raise reraise

@@ -782,7 +782,7 @@ let subst s l =
   else
     let rec aux l =
       match l with
-      | MLlocal id -> (try LNmap.find id s with _ -> l)
+      | MLlocal id -> (try LNmap.find id s with Not_found -> l)
       | MLglobal _ | MLprimitive _ | MLint _ -> l
       | MLlam(params,body) -> MLlam(params, aux body)
       | MLletrec(defs,body) ->
@@ -851,7 +851,7 @@ let commutative_cut annot a accu bs args =
 let optimize gdef l =   
   let rec optimize s l =
     match l with
-    | MLlocal id -> (try LNmap.find id s with _ -> l)
+    | MLlocal id -> (try LNmap.find id s with Not_found -> l)
     | MLglobal _ | MLprimitive _ | MLint _ -> l
     | MLlam(params,body) -> 
 	MLlam(params, optimize s body)

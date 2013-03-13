@@ -9,18 +9,18 @@
 let with_option o f x =
   let old = !o in o:=true;
   try let r = f x in o := old; r
-  with e ->
-    let e = Backtrace.add_backtrace e in
+  with reraise ->
+    let reraise = Backtrace.add_backtrace reraise in
     let () = o := old in
-    raise e
+    raise reraise
 
 let without_option o f x =
   let old = !o in o:=false;
   try let r = f x in o := old; r
-  with e ->
-    let e = Backtrace.add_backtrace e in
+  with reraise ->
+    let reraise = Backtrace.add_backtrace reraise in
     let () = o := old in
-    raise e
+    raise reraise
 
 let boot = ref false
 

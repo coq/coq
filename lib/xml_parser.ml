@@ -177,9 +177,9 @@ let do_parse xparser =
 		if xparser.check_eof && pop xparser <> Xml_lexer.Eof then raise (Internal_error EOFExpected);
 		Xml_lexer.close ();
 		x
-	with e ->
+	with any ->
 	  Xml_lexer.close ();
-	  raise (!xml_error (error_of_exn xparser e) xparser.source)
+	  raise (!xml_error (error_of_exn xparser any) xparser.source)
 
 let parse p = do_parse p
 

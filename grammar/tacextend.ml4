@@ -168,7 +168,7 @@ let declare_tactic loc s cl =
                  Tacexpr.TacExtend($default_loc$,$se$,l)))
            | None -> () ])
           $atomic_tactics$
-      with e ->
+      with e when Errors.noncritical e ->
 	Pp.msg_warning
 	  (Pp.app
 	     (Pp.str ("Exception in tactic extend " ^ $se$ ^": "))

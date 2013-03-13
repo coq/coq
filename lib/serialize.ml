@@ -100,8 +100,8 @@ let abstract_eval_call handler c =
             | Quit -> Obj.magic (handler.quit () : unit)
             | About -> Obj.magic (handler.about () : coq_info)
           in Good res
-  with e ->
-    let (l, str) = handler.handle_exn e in
+  with any ->
+    let (l, str) = handler.handle_exn any in
     Fail (l,str)
 
 (** * XML data marshalling *)
@@ -282,7 +282,7 @@ let to_value f = function
         let loc_s = int_of_string (List.assoc "loc_s" attrs) in
         let loc_e = int_of_string (List.assoc "loc_e" attrs) in
         Some (loc_s, loc_e)
-      with _ -> None
+      with Not_found | Failure _ -> None
     in
     let msg = raw_string l in
     Fail (loc, msg)
