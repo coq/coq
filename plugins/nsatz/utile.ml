@@ -26,19 +26,6 @@ let set_of_list_eq eq l =
    List.iter (fun x -> if not (list_mem_eq eq x (!res)) then res:=x::(!res)) l;
    List.rev !res
 
-
-(* Memoization
-   f is compatible with nf: f(nf(x)) = f(x)
-*)
-
-let memos s memoire nf f x =
-   try (let v = Hashtbl.find memoire (nf x) in pr s;v)
-   with _ -> (pr "#";
-	      let v = f x in
-	      Hashtbl.add memoire (nf x) v;
-	      v)
-
-
 (**********************************************************************
   Eléments minimaux pour un ordre partiel de division.
   E est un ensemble, avec une multiplication

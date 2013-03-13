@@ -40,7 +40,7 @@ type flin = {fhom: rational Constrhash.t;
 
 let flin_zero () = {fhom=Constrhash.create 50;fcste=r0};;
 
-let flin_coef f x = try (Constrhash.find f.fhom x) with _-> r0;;
+let flin_coef f x = try Constrhash.find f.fhom x with Not_found -> r0;;
 
 let flin_add f x c =
     let cx = flin_coef f x in

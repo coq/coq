@@ -1491,7 +1491,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
     let stop = 
       try com_eqn (List.length res_vars) equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type);
 	  false
-      with e ->
+      with e when Errors.noncritical e ->
 	begin
 	  if do_observe ()
 	  then msg_debug (str "Cannot create equation Lemma " ++ Errors.print e)
@@ -1526,10 +1526,8 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       using_lemmas
       (List.length res_vars)
       hook 
-  with e ->
-    begin
-      (try ignore (Backtrack.backto previous_label) with _ -> ());
-      (*       anomaly (Pp.str "Cannot create termination Lemma") *)
-      raise e
-    end
+  with reraise ->
+    ignore (Backtrack.backto previous_label);
+    (*       anomaly (Pp.str "Cannot create termination Lemma") *)
+    raise reraise
 

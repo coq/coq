@@ -49,11 +49,8 @@ let locate_constant ref =
 
 
 let locate_with_msg msg f x =
-  try
-    f x
-  with
-    | Not_found -> raise (Errors.UserError("", msg))
-    | e -> raise e
+  try f x
+  with Not_found -> raise (Errors.UserError("", msg))
 
 
 let filter_map filter f =

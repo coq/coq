@@ -164,20 +164,19 @@ qui donne 0 < c si s=true
        ou 0 <= c sinon
 cette inéquation étant absurde.
 *)
+
+exception Contradiction of (rational * bool * rational list) list
+
 let unsolvable lie =
    let lr = deduce lie in
-   let res = ref [] in
-   (try (List.iter (fun e ->
-         match e with
-           {coef=[c];hist=lc;strict=s} ->
-		  if (rinf c r0 && (not s)) || (rinfeq c r0 && s)
-                  then (res := [c,s,lc];
-			raise (Failure "contradiction found"))
-          |_->assert false)
-			     lr)
-   with _ -> ());
-   !res
-;;
+   let check = function
+     | {coef=[c];hist=lc;strict=s} ->
+       if (rinf c r0 && (not s)) || (rinfeq c r0 && s)
+       then raise (Contradiction [c,s,lc])
+     |_->assert false
+   in
+   try List.iter check lr; []
+   with Contradiction l -> l
 
 (* Exemples:
 

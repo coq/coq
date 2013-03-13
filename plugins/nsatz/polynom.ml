@@ -163,17 +163,12 @@ let max_var l = Array.fold_right (fun p m -> max (max_var_pol2 p) m) l 0
 
 (* equality between polynomials *)
 
+exception Failed
+
 let rec equal p q =
   match (p,q) with
       (Pint a,Pint b) -> C.equal a b
-    |(Prec(x,p1),Prec(y,q1)) ->
-       if x<>y then false
-       else if (Array.length p1)<>(Array.length q1) then false
-       else (try (Array.iteri (fun i a -> if not (equal a q1.(i))
-			       then failwith "raté")
-		    p1;
-		  true)
-	     with _ -> false)
+    |(Prec(x,p1),Prec(y,q1)) -> (x=y) && Array.for_all2 equal p1 q1
     | (_,_) -> false
 
 (* normalize polynomial: remove head zeros, coefficients are normalized
@@ -519,12 +514,11 @@ let divP p q=
 
 let div_pol_rat p q=
   let x = max (max_var_pol p) (max_var_pol q) in
-    try (let s = div_pol (multP p (puisP (Pint(coef_int_tete q))
-				     (1+(deg x p) - (deg x q))))
-		   q x in
-         (* degueulasse, mais c 'est pour enlever un warning *)
-         if s==s then true else true)
-    with _ -> false
+  try
+    let r = puisP (Pint(coef_int_tete q)) (1+(deg x p)-(deg x q)) in
+    let _ = div_pol (multP p r) q x in
+    true
+  with Failure _ -> false
 
 (***********************************************************************
   5. Pseudo-division and gcd with subresultants.

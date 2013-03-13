@@ -85,10 +85,7 @@ let functional_induction with_clean c princl pat =
     let princ' = Some (princ,bindings) in
     let princ_vars =
       List.fold_right
-	(fun a acc ->
-	  try Id.Set.add (destVar a) acc
-	  with _ -> acc
-	)
+	(fun a acc -> try Id.Set.add (destVar a) acc with DestKO -> acc)
 	args
 	Id.Set.empty
     in
