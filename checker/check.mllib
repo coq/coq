@@ -1,8 +1,9 @@
 Coq_config
+Int
+Option
 Store
 Exninfo
 Backtrace
-Int
 Pp_control
 Flags
 Pp
@@ -18,7 +19,6 @@ CList
 CString
 CArray
 Util
-Option
 CUnix
 System
 Envars
