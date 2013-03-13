@@ -380,7 +380,7 @@ let obl_substitution expand obls deps =
        let xobl = obls.(x) in
        let oblb =
 	 try get_obligation_body expand xobl
-	 with _ -> assert(false)
+	 with e when Errors.noncritical e -> assert false
        in (xobl.obl_name, (xobl.obl_type, oblb)) :: acc)
     deps []
 
@@ -735,10 +735,10 @@ let solve_by_tac evi t =
       Inductiveops.control_only_guard (Global.env ())
 	const.Entries.const_entry_body;
       const.Entries.const_entry_body
-  with e ->
-    let e = Errors.push e in
+  with reraise ->
+    let reraise = Errors.push reraise in
     Pfedit.delete_current_proof();
-    raise e
+    raise reraise
 
 let rec solve_obligation prg num tac =
   let user_num = succ num in
@@ -771,8 +771,10 @@ let rec solve_obligation prg num tac =
 		in
 		let obls = Array.copy obls in
 		let _ = obls.(num) <- obl in
-		let res = try update_obls prg obls (pred rem)
-		  with e -> pperror (Errors.print (Cerrors.process_vernac_interp_error e))
+		let res =
+                  try update_obls prg obls (pred rem)
+		  with e when Errors.noncritical e ->
+                    pperror (Errors.print (Cerrors.process_vernac_interp_error e))
 		in
 		  match res with
 		  | Remain n when n > 0 ->
@@ -819,13 +821,12 @@ and solve_obligation_by_tac prg obls i tac =
 	      obls.(i) <- declare_obligation prg obl t;
 	      true
 	  else false
-	with e ->
+	with e when Errors.noncritical e ->
           let e = Errors.push e in
           match e with
 	  | Proof_type.LtacLocated (_, _, Refiner.FailError (_, s))
 	  | Refiner.FailError (_, s) ->
 	      user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)
-	  | e when Errors.is_anomaly e -> raise e
           | e -> false
 
 and solve_prg_obligations prg ?oblset tac =

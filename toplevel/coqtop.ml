@@ -28,7 +28,8 @@ let get_version_date () =
     let ver = input_line ch in
     let rev = input_line ch in
       (ver,rev)
-  with _ -> (Coq_config.version,Coq_config.date)
+  with e when Errors.noncritical e ->
+    (Coq_config.version,Coq_config.date)
 
 let print_header () =
   let (ver,rev) = (get_version_date ()) in
@@ -351,7 +352,7 @@ let parse_args arglist =
     | UserError(_, s) as e ->
       if is_empty s then exit 1
       else fatal_error (Errors.print e)
-    | e -> fatal_error (Errors.print e)
+    | any -> fatal_error (Errors.print any)
 
 let init arglist =
   init_gc ();
@@ -386,12 +387,13 @@ let init arglist =
       load_vernacular ();
       compile_files ();
       outputstate ()
-    with e ->
+    with any ->
       flush_all();
-      if not !batch_mode then
-        fatal_error (str "Error during initialization:" ++ fnl () ++ Toplevel.print_toplevel_error e)
-      else
-        fatal_error (Toplevel.print_toplevel_error e)
+      let msg =
+        if !batch_mode then mt ()
+        else str "Error during initialization:" ++ fnl ()
+      in
+      fatal_error (msg ++ Toplevel.print_toplevel_error any)
   end;
   if !batch_mode then
     (flush_all();

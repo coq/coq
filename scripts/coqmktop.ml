@@ -316,6 +316,6 @@ let main () =
     clean main_file; raise reraise
 
 let retcode =
-  try Printexc.print main () with _ -> 1
+  try Printexc.print main () with any -> 1
 
 let _ = exit retcode

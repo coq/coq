@@ -141,7 +141,7 @@ let pattern_filter pat _ a c =
   try
     try
       is_matching pat (head c)
-    with _ ->
+    with e when Errors.noncritical e ->
       is_matching
 	pat (head (Typing.type_of (Global.env()) Evd.empty c))
     with UserError _ ->
@@ -264,7 +264,8 @@ let interface_search flags =
   | (Interface.Name_Pattern s, b) :: l ->
     let regexp =
       try Str.regexp s
-      with _ -> Errors.error ("Invalid regexp: " ^ s)
+      with e when Errors.noncritical e ->
+        Errors.error ("Invalid regexp: " ^ s)
     in
     extract_flags ((regexp, b) :: name) tpe subtpe mods blacklist l
   | (Interface.Type_Pattern s, b) :: l ->

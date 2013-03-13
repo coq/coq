@@ -209,7 +209,7 @@ let insert texfile coq_output result =
 
 (* Process of one TeX file *)
 
-let rm f = try Sys.remove f with _ -> ()
+let rm f = try Sys.remove f with any -> ()
 
 let one_file texfile =
   let inputv = Filename.temp_file "coq_tex" ".v" in
@@ -233,9 +233,9 @@ let one_file texfile =
     insert texfile coq_output result;
     (* 4. clean up *)
     rm inputv; rm coq_output
-  with e -> begin
+  with reraise -> begin
     rm inputv; rm coq_output;
-    raise e
+    raise reraise
   end
 
 (* Parsing of the command line, check of the Coq command and process

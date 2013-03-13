@@ -591,7 +591,8 @@ let pr_assumptionset env s =
 	str (string_of_mp mp ^ "." ^ Label.to_string lab)
     in
     let safe_pr_ltype typ =
-      try str " : " ++ pr_ltype typ with _ -> mt ()
+      try str " : " ++ pr_ltype typ
+      with e when Errors.noncritical e -> mt ()
     in
     let fold t typ accu =
       let (v, a, o, tr) = accu in

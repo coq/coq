@@ -424,21 +424,23 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
     | ([],[]) -> []
     | _ -> error "Both side of the equality must have the same arity."
   in
-  let (ind1,ca1) = try destApp lft with
-    DestKO -> error "replace failed."
-  and (ind2,ca2) = try destApp rgt with
-    DestKO -> error "replace failed."
+  let (ind1,ca1) =
+    try destApp lft with DestKO -> error "replace failed."
+  and (ind2,ca2) =
+    try destApp rgt with DestKO -> error "replace failed."
   in
-  let (sp1,i1) = try destInd ind1 with
-    DestKO -> (try fst (destConstruct ind1) with _ ->
-                error "The expected type is an inductive one.")
-  and (sp2,i2) = try destInd ind2 with
-    DestKO -> (try fst (destConstruct ind2)  with _ ->
-                error "The expected type is an inductive one.")
+  let (sp1,i1) =
+    try destInd ind1 with DestKO ->
+      try fst (destConstruct ind1) with DestKO ->
+        error "The expected type is an inductive one."
+  and (sp2,i2) =
+    try destInd ind2 with DestKO ->
+      try fst (destConstruct ind2)  with DestKO ->
+        error "The expected type is an inductive one."
   in
-    if not (eq_mind sp1 sp2) || not (Int.equal i1 i2)
-      then (error "Eq should be on the same type")
-      else (aux (Array.to_list ca1) (Array.to_list ca2))
+  if not (eq_mind sp1 sp2) || not (Int.equal i1 i2)
+  then error "Eq should be on the same type"
+  else aux (Array.to_list ca1) (Array.to_list ca2)
 
 (*
   create, from a list of ids [i1,i2,...,in] the list

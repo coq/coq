@@ -97,7 +97,9 @@ let mark_command ast =
   Stack.push
     { label = Lib.current_command_label ();
       nproofs = List.length (Pfedit.get_all_proof_names ());
-      prfname = (try Some (Pfedit.get_current_proof_name ()) with _ -> None);
+      prfname =
+        (try Some (Pfedit.get_current_proof_name ())
+         with Proof_global.NoCurrentProof -> None);
       prfdepth = max 0 (Pfedit.current_proof_depth ());
       reachable = true;
       ngoals = get_ngoals ();

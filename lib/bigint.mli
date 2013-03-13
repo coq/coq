@@ -11,7 +11,7 @@
 type bigint
 
 val of_string : string -> bigint
-(** May a Failure just as [int_of_string] on non-numerical strings *)
+(** May raise a Failure just as [int_of_string] on non-numerical strings *)
 
 val to_string : bigint -> string
 

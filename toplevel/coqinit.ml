@@ -50,10 +50,10 @@ let load_rcfile() =
 	  mSGNL (str ("No coqrc or coqrc."^Coq_config.version^
 			 " found. Skipping rcfile loading."))
 	*)
-    with e ->
-      let e = Errors.push e in
+    with reraise ->
+      let reraise = Errors.push reraise in
       let () = msg_info (str"Load of rcfile failed.") in
-      raise e
+      raise reraise
   else
     Flags.if_verbose msg_info (str"Skipping rcfile loading.")
 

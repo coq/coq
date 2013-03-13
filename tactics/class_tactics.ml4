@@ -690,7 +690,7 @@ let resolve_typeclass_evars debug m env evd filter split fail =
   let evd = 
     try Evarconv.consider_remaining_unif_problems
       ~ts:(Typeclasses.classes_transparent_state ()) env evd
-    with _ -> evd
+    with e when Errors.noncritical e -> evd
   in
     resolve_all_evars debug m env (initial_select_evars filter) evd split fail
 
@@ -780,7 +780,11 @@ END
 
 let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl =
   try 
-    let dbs = List.map_filter (fun db -> try Some (Auto.searchtable_map db) with _ -> None) dbs in
+    let dbs = List.map_filter
+      (fun db -> try Some (Auto.searchtable_map db)
+        with e when Errors.noncritical e -> None)
+      dbs
+    in
     let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
       eauto ?limit:!typeclasses_depth ~only_classes ~st dbs gl
    with Not_found -> tclFAIL 0 (str" typeclasses eauto failed on: " ++ Printer.pr_goal gl) gl

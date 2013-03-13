@@ -321,8 +321,10 @@ let context l =
   let fullctx = Evarutil.nf_rel_context_evar !evars fullctx in
   let ce t = Evarutil.check_evars env Evd.empty !evars t in
   let () = List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx in
-  let ctx = try named_of_rel_context fullctx with _ ->
-    error "Anonymous variables not allowed in contexts."
+  let ctx =
+    try named_of_rel_context fullctx
+    with e when Errors.noncritical e ->
+      error "Anonymous variables not allowed in contexts."
   in
   let fn status (id, _, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then

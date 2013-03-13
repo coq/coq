@@ -178,7 +178,7 @@ let print_location_in_file s inlibrary fname loc =
            str", line " ++ int line ++ str", characters " ++
            Cerrors.print_loc (Loc.make_loc (bp-bol,ep-bol))) ++ str":" ++
         fnl ()
-      with e ->
+      with e when Errors.noncritical e ->
         (close_in ic;
          hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ())
 
@@ -199,7 +199,7 @@ let valid_buffer_loc ib dloc loc =
 let make_prompt () =
   try
     (Names.Id.to_string (Pfedit.get_current_proof_name ())) ^ " < "
-  with _ ->
+  with Proof_global.NoCurrentProof ->
     "Coq < "
 
 (*let build_pending_list l =
@@ -331,7 +331,7 @@ let process_error = function
 	  discard_to_dot (); e
 	with
           | End_of_input -> End_of_input
-          | de -> if is_pervasive_exn de then de else e
+          | any -> if is_pervasive_exn any then any else e
 
 (* do_vernac reads and executes a toplevel phrase, and print error
    messages when an exception is raised, except for the following:
@@ -345,8 +345,8 @@ let do_vernac () =
   begin
     try
       ignore (raw_do_vernac top_buffer.tokens)
-    with e ->
-      ppnl (print_toplevel_error (process_error e))
+    with any ->
+      ppnl (print_toplevel_error (process_error any))
   end;
   flush_all()
 
@@ -365,6 +365,6 @@ let rec loop () =
     | Errors.Drop -> ()
     | End_of_input -> msgerrnl (mt ()); pp_flush(); exit 0
     | Errors.Quit -> exit 0
-    | e ->
+    | any ->
 	msgerrnl (str"Anomaly. Please report.");
 	loop ()

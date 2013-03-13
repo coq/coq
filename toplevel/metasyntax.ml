@@ -266,7 +266,7 @@ let parse_format ((loc, str) : lstring) =
       | _ -> error "Box closed without being opened in format."
     else
       error "Empty format."
-  with e ->
+  with e when Errors.noncritical e ->
     let e = Errors.push e in
     Loc.raise loc e
 
@@ -371,7 +371,7 @@ let rec raw_analyze_notation_tokens = function
 let is_numeral symbs =
   match List.filter (function Break _ -> false | _ -> true) symbs with
   | ([Terminal "-"; Terminal x] | [Terminal x]) ->
-      (try let _ = Bigint.of_string x in true with _ -> false)
+      (try let _ = Bigint.of_string x in true with Failure _ -> false)
   | _ ->
       false
 
@@ -1074,10 +1074,10 @@ let inNotation : notation_obj -> obj =
 let with_lib_stk_protection f x =
   let fs = Lib.freeze () in
   try let a = f x in Lib.unfreeze fs; a
-  with e ->
-    let e = Errors.push e in
+  with reraise ->
+    let reraise = Errors.push reraise in
     let () = Lib.unfreeze fs in
-    raise e
+    raise reraise
 
 let with_syntax_protection f x =
   with_lib_stk_protection

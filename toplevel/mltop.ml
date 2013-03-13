@@ -117,11 +117,10 @@ let dir_ml_load s =
     | WithTop t ->
       (try t.load_obj s
        with
-       | e ->
+       | e when Errors.noncritical e ->
         let e = Errors.push e in
         match e with
         | (UserError _ | Failure _ | Not_found as u) -> raise u
-        | u when is_anomaly u -> raise u
         | exc ->
             let msg = report_on_load_obj_error exc in
             errorlabstrm "Mltop.load_object" (str"Cannot link ml-object " ++
@@ -164,7 +163,7 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
 
 let convert_string d =
   try Names.Id.of_string d
-  with _ ->
+  with UserError _ ->
     if_warn msg_warning (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
     raise Exit
 
@@ -293,9 +292,9 @@ let if_verbose_load verb f name fname =
     try
       f name fname;
       msg_info (str (info^" done]"));
-    with e ->
+    with reraise ->
       msg_info (str (info^" failed]"));
-      raise e
+      raise reraise
 
 (** Load a module for the first time (i.e. dynlink it)
     or simulate its reload (i.e. doing nothing except maybe

@@ -366,7 +366,10 @@ let coq_identity_pattern = coq_eq_pattern_gen coq_identity_ref
 let coq_jmeq_pattern = lazy PATTERN [ %coq_jmeq_ref ?X1 ?X2 ?X3 ?X4 ]
 
 let match_eq eqn eq_pat =
-  let pat = try Lazy.force eq_pat with _ -> raise PatternMatchingFailure in
+  let pat =
+    try Lazy.force eq_pat
+    with e when Errors.noncritical e -> raise PatternMatchingFailure
+  in
   match matches pat eqn with
     | [(m1,t);(m2,x);(m3,y)] ->
 	assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);

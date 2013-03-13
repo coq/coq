@@ -52,7 +52,8 @@ let is_reset = function
 let time = ref false
 
 let display_cmd_header loc com =
-  let shorten s = try (String.sub s 0 30)^"..." with _ -> s in
+  let shorten s =
+    try (String.sub s 0 30)^"..." with Invalid_argument _ -> s in
   let noblank s =
     for i = 0 to String.length s - 1 do
       match s.[i] with
@@ -204,7 +205,7 @@ let close_input in_chan (_,verb) =
     match verb with
       | Some verb_ch -> close_in verb_ch
       | _ -> ()
-  with _ -> ()
+  with e when Errors.noncritical e -> ()
 
 let verbose_phrase verbch loc =
   let loc = Loc.unloc loc in
@@ -287,10 +288,10 @@ let rec vernac_com interpfun checknav (loc,com) =
 	    let status = read_vernac_file verbosely (CUnix.make_suffix fname ".v") in
 	    restore_translator_coqdoc st;
             status
-	  with e ->
-            let e = Errors.push e in
+	  with reraise ->
+            let reraise = Errors.push reraise in
 	    restore_translator_coqdoc st;
-	    raise e
+	    raise reraise
 	end
 
     | VernacList l ->
@@ -303,17 +304,16 @@ let rec vernac_com interpfun checknav (loc,com) =
 	  (* If the command actually works, ignore its effects on the state *)
 	  States.with_state_protection
 	    (fun v -> ignore (interp v); raise HasNotFailed) v
-	with e ->
+	with e when Errors.noncritical e ->
           let e = Errors.push e in
           match real_error e with
 	  | HasNotFailed ->
 	      errorlabstrm "Fail" (str "The command has not failed !")
 	  | e ->
-	      (* Anomalies are re-raised by the next line *)
-	      let msg = Errors.print_no_anomaly e in
+              (* NB: e here cannot be an anomaly *)
 	      if_verbose msg_info
 		(str "The command has indeed failed with message:" ++
-		 fnl () ++ str "=> " ++ hov 0 msg);
+		 fnl () ++ str "=> " ++ hov 0 (Errors.print e));
               true
 	end
 
@@ -338,10 +338,10 @@ let rec vernac_com interpfun checknav (loc,com) =
             in
 	    restore_timeout psh;
             status
-	  with e ->
-            let e = Errors.push e in
+	  with reraise ->
+            let reraise = Errors.push reraise in
             restore_timeout psh;
-            raise e
+            raise reraise
   in
     try
       checknav loc com;
@@ -350,7 +350,8 @@ let rec vernac_com interpfun checknav (loc,com) =
       if !time then display_cmd_header loc com;
       let com = if !time then VernacTime com else com in
       interp com
-    with e ->
+    with e -> (* TODO: restrict to Errors.noncritical or not ?
+                 Morally, this is a reraise ... *)
       let e = Errors.push e in
       Format.set_formatter_out_channel stdout;
       raise (DuringCommandInterp (loc, e))
@@ -386,6 +387,8 @@ and read_vernac_file verbosely s =
     done;
     assert false
   with e ->   (* whatever the exception *)
+    (* TODO: restrict to Errors.noncritical or not ?
+       Morally, this is a reraise ... *)
     let e = Errors.push e in
     Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
@@ -432,6 +435,8 @@ let load_vernac verb file =
     let _ = read_vernac_file verb file in
     if !Flags.beautify_file then close_out !chan_beautify;
   with e ->
+    (* TODO: restrict to Errors.noncritical or not ?
+       Morally, this is a reraise ... *)
     let e = Errors.push e in
     if !Flags.beautify_file then close_out !chan_beautify;
     raise_with_file file e

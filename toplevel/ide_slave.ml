@@ -240,7 +240,7 @@ let status () =
   in
   let proof =
     try Some (Names.Id.to_string (Proof_global.get_current_proof_name ()))
-    with _ -> None
+    with Proof_global.NoCurrentProof -> None
   in
   let allproofs =
     let l = Proof_global.get_all_proof_names () in
@@ -376,8 +376,8 @@ let loop () =
       | Serialize.Marshal_error ->
         pr_debug "Incorrect query.";
 	exit 1
-      | e ->
-	pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string e);
+      | any ->
+	pr_debug ("Fatal exception in coqtop:\n" ^ Printexc.to_string any);
 	exit 1
   done;
   pr_debug "Exiting gracefully.";

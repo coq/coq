@@ -354,8 +354,7 @@ let dump_universes_gen g s =
     Univ.dump_universes output_constraint g;
     close ();
     msg_info (str ("Universes written to file \""^s^"\"."))
-  with
-      e -> close (); raise e
+  with reraise -> close (); raise reraise
 
 let dump_universes sorted s =
   let g = Global.universes () in
@@ -378,21 +377,23 @@ let msg_found_library = function
       msg_info (hov 0
 	(pr_dirpath fulldir ++ strbrk " is bound to file " ++ str file))
 
-let msg_notfound_library loc qid = function
-  | Library.LibUnmappedDir ->
-      let dir = fst (repr_qualid qid) in
-      user_err_loc (loc,"locate_library",
-        strbrk "Cannot find a physical path bound to logical path " ++
-           pr_dirpath dir ++ str".")
-  | Library.LibNotFound ->
-      msg_error (hov 0
-	(strbrk "Unable to locate library " ++ pr_qualid qid ++ str"."))
-  | e -> assert false
+let err_unmapped_library loc qid =
+  let dir = fst (repr_qualid qid) in
+  user_err_loc
+    (loc,"locate_library",
+     strbrk "Cannot find a physical path bound to logical path " ++
+       pr_dirpath dir ++ str".")
+
+let err_notfound_library loc qid =
+  msg_error
+    (hov 0 (strbrk "Unable to locate library " ++ pr_qualid qid ++ str"."))
 
 let print_located_library r =
   let (loc,qid) = qualid_of_reference r in
   try msg_found_library (Library.locate_qualified_library false qid)
-  with e -> msg_notfound_library loc qid e
+  with
+    | Library.LibUnmappedDir -> err_unmapped_library loc qid
+    | Library.LibNotFound -> err_notfound_library loc qid
 
 let print_located_module r =
   let (loc,qid) = qualid_of_reference r in
@@ -422,7 +423,7 @@ let dump_global r =
   try
     let gr = Smartlocate.smart_global r in
     Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr
-  with _ -> ()
+  with e when Errors.noncritical e -> ()
 (**********)
 (* Syntax *)
 
@@ -988,9 +989,11 @@ let vernac_declare_arguments local r l nargs flags =
   | [[]] -> false | _ -> true in
   let scopes = List.map (function
     | None -> None
-    | Some (o, k) -> 
-        try Some(ignore(Notation.find_scope k); k)
-        with _ -> Some (Notation.find_delimiters_scope o k)) scopes in
+    | Some (o, k) ->
+        try ignore (Notation.find_scope k); Some k
+        with UserError _ ->
+          Some (Notation.find_delimiters_scope o k)) scopes
+  in
   let some_scopes_specified = List.exists ((!=) None) scopes in
   let rargs =
     Util.List.map_filter (function (n, true) -> Some n | _ -> None)
@@ -1496,7 +1499,7 @@ let vernac_reset_name id =
 	let gr = Smartlocate.global_with_alias (Ident id) in
 	Dumpglob.add_glob (fst id) gr;
 	true
-      with _ -> false in
+      with e when Errors.noncritical e -> false in
 
     if not globalized then begin
        try begin match Lib.find_opening_node (snd id) with
@@ -1801,7 +1804,7 @@ let interp c =
     if not (not mode && !Flags.program_mode && not isprogcmd) then
       Flags.program_mode := mode;
     true
-  with e ->
+  with e when Errors.noncritical e ->
     let e = Errors.push e in
     match e with
     | UnsafeSuccess ->
