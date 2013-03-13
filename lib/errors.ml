@@ -88,6 +88,7 @@ let print_anomaly askreport e =
   let bt_info = match Backtrace.get_backtrace e with
   | None -> mt ()
   | Some bt ->
+    let bt = Backtrace.repr bt in
     let pr_frame f = str (Backtrace.print_frame f) in
     let bt = prlist_with_sep fnl pr_frame bt in
     fnl () ++ hov 0 bt

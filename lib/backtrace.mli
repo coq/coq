@@ -32,15 +32,18 @@ type frame = { frame_location : location option; frame_raised : bool; }
 (** A frame contains two informations: its optional physical location, and
     whether it raised the exception or let it pass through. *)
 
-type t = frame list
-(** Type of backtraces. They're just stack of frames. [None] indicates that we
-    don't care about recording the backtraces. *)
+type t
+(** Type of backtraces. They're essentially stack of frames. *)
 
 val empty : t
 (** Empty frame stack. *)
 
 val push : t -> t
 (** Add the current backtrace information to a given backtrace. *)
+
+val repr : t -> frame list
+(** Represent a backtrace as a list of frames. Leftmost element is the outermost
+    call. *)
 
 (** {5 Utilities} *)
 
