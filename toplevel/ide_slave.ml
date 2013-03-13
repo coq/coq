@@ -285,20 +285,17 @@ let quit = ref false
 (** Grouping all call handlers together + error handling *)
 
 let eval_call c =
-  let rec handle_exn e =
+  let handle_exn e =
     catch_break := false;
-    let pr_exn e = (read_stdout ())^("\n"^(string_of_ppcmds (Errors.print e))) in
     match e with
       | Errors.Drop -> None, "Drop is not allowed by coqide!"
       | Errors.Quit -> None, "Quit is not allowed by coqide!"
-      | Error_in_file (_,_,inner) -> None, pr_exn inner
       | e ->
         let loc = match Loc.get_loc e with
-        | None -> None
-        | Some loc ->
-          if Loc.is_ghost loc then None else Some (Loc.unloc loc)
+          | Some loc when not (Loc.is_ghost loc) -> Some (Loc.unloc loc)
+          | _ -> None
         in
-        loc, pr_exn e
+        loc, (read_stdout ())^"\n"^(string_of_ppcmds (Errors.print e))
   in
   let interruptible f x =
     catch_break := true;

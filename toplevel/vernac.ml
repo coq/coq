@@ -94,24 +94,24 @@ let _ =
       Goptions.optread  = (fun () -> !atomic_load);
       Goptions.optwrite = ((:=) atomic_load) }
 
-(* Specifies which file is read. The intermediate file names are
-   discarded here. The Drop exception becomes an error. We forget
-   if the error ocurred during interpretation or not *)
+(* In case of error, register the file being currently Load'ed and the
+   inner file in which the error has been encountered. Any intermediate files
+   between the two are discarded. *)
 
-let raise_with_file file exc =
-  let (inner,inex) =
-    match exc with
-      | Error_in_file (_, (b,f,loc), e) when not (Loc.is_ghost loc) ->
-          ((b, f, loc), e)
-      | e ->
-        match Loc.get_loc e with
-        | Some loc when not (Loc.is_ghost loc) -> ((false,file,loc), e)
-        | _ -> ((false,file,Loc.ghost), e)
-  in
-  raise (Error_in_file (file, inner, disable_drop inex))
+type location_files = { outer : string; inner : string }
 
-let real_error = function
-  | Error_in_file (_, _, e) -> e
+let files_of_exn : location_files Exninfo.t = Exninfo.make ()
+
+let get_exn_files e = Exninfo.get e files_of_exn
+
+let add_exn_files e f = Exninfo.add e files_of_exn f
+
+let raise_with_file f e =
+  let inner_f = match get_exn_files e with None -> f | Some ff -> ff.inner in
+  raise (add_exn_files e { outer = f; inner = inner_f })
+
+let disable_drop = function
+  | Drop -> Errors.error "Drop is forbidden."
   | e -> e
 
 let user_error loc s = Errors.user_err_loc (loc,"_",str s)
@@ -292,22 +292,20 @@ let rec vernac_com interpfun checknav (loc,com) =
     | v when !just_parsing -> true
 
     | VernacFail v ->
-	begin try
+      begin
+        try
 	  (* If the command actually works, ignore its effects on the state *)
 	  States.with_state_protection
 	    (fun v -> ignore (interp v); raise HasNotFailed) v
-	with e when Errors.noncritical e ->
-          let e = Errors.push e in
-          match real_error e with
-	  | HasNotFailed ->
-	      errorlabstrm "Fail" (str "The command has not failed !")
-	  | e ->
-              (* NB: e here cannot be an anomaly *)
+        with
+          | HasNotFailed ->
+              errorlabstrm "Fail" (str "The command has not failed !")
+          | e when Errors.noncritical e -> (* In particular e is no anomaly *)
 	      if_verbose msg_info
 		(str "The command has indeed failed with message:" ++
 		 fnl () ++ str "=> " ++ hov 0 (Errors.print e));
               true
-	end
+      end
 
     | VernacTime v ->
 	  let tstart = System.get_time() in
@@ -378,17 +376,15 @@ and read_vernac_file verbosely s =
       pp_flush ()
     done;
     assert false
-  with e ->   (* whatever the exception *)
-    (* TODO: restrict to Errors.noncritical or not ?
-       Morally, this is a reraise ... *)
-    let e = Errors.push e in
+  with any ->   (* whatever the exception *)
+    let e = Errors.push any in
     Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
-    match real_error e with
+    match e with
       | End_of_input ->
           if do_beautify () then pr_new_syntax (Loc.make_loc (max_int,max_int)) None;
           !status
-      | _ -> raise_with_file fname e
+      | _ -> raise_with_file fname (disable_drop e)
 
 (** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
    It executes one vernacular command. By default the command is
@@ -425,7 +421,7 @@ let load_vernac verb file =
   with any ->
     let e = Errors.push any in
     if !Flags.beautify_file then close_out !chan_beautify;
-    raise_with_file file e
+    raise_with_file file (disable_drop e)
 
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =

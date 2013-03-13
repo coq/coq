@@ -49,3 +49,9 @@ val is_navigation_vernac : Vernacexpr.vernac_expr -> bool
 
 (** Should we display timings for each command ? *)
 val time : bool ref
+
+(** Has an exception been annotated with some file locations ? *)
+
+type location_files = { outer : string; inner : string }
+
+val get_exn_files : exn -> location_files option

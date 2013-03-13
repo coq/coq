@@ -9,10 +9,6 @@
 open Pp
 open Errors
 
-let disable_drop e =
-  if e <> Drop then e
-  else UserError("Vernac.disable_drop",(str"Drop is forbidden."))
-
 (* Table of vernac entries *)
 let vernac_tab =
   (Hashtbl.create 51 :

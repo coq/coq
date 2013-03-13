@@ -47,11 +47,6 @@ let todo s = prerr_string ("TODO: "^s^"\n")
 let user_err_loc (loc,s,strm) = Loc.raise loc (UserError (s,strm))
 let invalid_arg_loc (loc,s) = Loc.raise loc (Invalid_argument s)
 
-(* Like Exc_located, but specifies the outermost file read, the filename
-   associated to the location of the error, and the error itself. *)
-
-exception Error_in_file of string * (bool * string * Loc.t) * exn
-
 exception Timeout
 exception Drop
 exception Quit

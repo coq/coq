@@ -51,12 +51,6 @@ exception Timeout
 exception Drop
 exception Quit
 
-(** Like [Exc_located], but specifies the outermost file read, the
-   input buffer associated to the location of the error (or the module name
-   if boolean is true), and the error itself. *)
-
-exception Error_in_file of string * (bool * string * Loc.t) * exn
-
 (** [register_handler h] registers [h] as a handler.
     When an expression is printed with [print e], it
     goes through all registered handles (the most

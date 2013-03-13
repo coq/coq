@@ -150,37 +150,34 @@ let print_highlight_location ib loc =
 
 (* Functions to report located errors in a file. *)
 
-let print_location_in_file s inlibrary fname loc =
+let print_location_in_file {outer=s;inner=fname} loc =
   let errstrm = str"Error while reading " ++ str s in
   if Loc.is_ghost loc then
     hov 1 (errstrm ++ spc() ++ str" (unknown location):") ++ fnl ()
   else
     let errstrm =
-      if String.equal s fname then mt() else errstrm ++ str":" ++ fnl() in
-    if inlibrary then
-      hov 0 (errstrm ++ str"Module " ++ str ("\""^fname^"\"") ++ spc() ++
-             str"characters " ++ Cerrors.print_loc loc) ++ fnl ()
-    else
-      let (bp,ep) = Loc.unloc loc in
-      let ic = open_in fname in
-      let rec line_of_pos lin bol cnt =
-        if cnt < bp then
-          if input_char ic == '\n'
-          then line_of_pos (lin + 1) (cnt +1) (cnt+1)
-          else line_of_pos lin bol (cnt+1)
-        else (lin, bol)
-      in
-      try
-        let (line, bol) = line_of_pos 1 0 0 in
-        close_in ic;
-        hov 0 (* No line break so as to follow emacs error message format *)
-          (errstrm ++ str"File " ++ str ("\""^fname^"\"") ++
+      if String.equal s fname then mt() else errstrm ++ str":" ++ fnl()
+    in
+    let (bp,ep) = Loc.unloc loc in
+    let ic = open_in fname in
+    let rec line_of_pos lin bol cnt =
+      if cnt < bp then
+        if input_char ic == '\n'
+        then line_of_pos (lin + 1) (cnt +1) (cnt+1)
+        else line_of_pos lin bol (cnt+1)
+      else (lin, bol)
+    in
+    try
+      let (line, bol) = line_of_pos 1 0 0 in
+      close_in ic;
+      hov 0 (* No line break so as to follow emacs error message format *)
+        (errstrm ++ str"File " ++ str ("\""^fname^"\"") ++
            str", line " ++ int line ++ str", characters " ++
            Cerrors.print_loc (Loc.make_loc (bp-bol,ep-bol))) ++ str":" ++
         fnl ()
-      with e when Errors.noncritical e ->
-        (close_in ic;
-         hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ())
+    with e when Errors.noncritical e ->
+      (close_in ic;
+       hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ())
 
 let valid_buffer_loc ib loc =
   not (Loc.is_ghost loc) &&
@@ -251,25 +248,24 @@ let set_prompt prompt =
     ^ prompt ()
     ^ emacs_prompt_endstring())
 
-(* Removes and prints the location of the error. The following exceptions
-   need not be located. *)
-let rec is_pervasive_exn = function
-  | Out_of_memory | Stack_overflow | Sys.Break -> true
-  | Error_in_file (_,_,e) -> is_pervasive_exn e
-  | _ -> false
+(* The following exceptions need not be located. *)
 
-(* Toplevel error explanation, dealing with locations, Drop, Ctrl-D
-   May raise only the following exceptions: Drop and End_of_input,
-   meaning we get out of the Coq loop *)
-let print_toplevel_error = function
-  | Error_in_file (s, (inlibrary, fname, loc), e) ->
-      print_location_in_file s inlibrary fname loc ++ Errors.print e
-  | e ->
-      if is_pervasive_exn e then Errors.print e
-      else match Loc.get_loc e with
-        | Some loc when valid_buffer_loc top_buffer loc ->
-          print_highlight_location top_buffer loc ++ Errors.print e
-        | _ -> Errors.print e
+let rec locate_exn = function
+  | Out_of_memory | Stack_overflow | Sys.Break -> false
+  | _ -> true
+
+(* Toplevel error explanation. *)
+
+let print_toplevel_error e =
+  let loc = Option.default Loc.ghost (Loc.get_loc e) in
+  let locmsg = match Vernac.get_exn_files e with
+    | Some files -> print_location_in_file files loc
+    | None ->
+      if locate_exn e && valid_buffer_loc top_buffer loc then
+        print_highlight_location top_buffer loc
+      else mt ()
+  in
+  locmsg ++ Errors.print e
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =
