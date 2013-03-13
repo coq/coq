@@ -33,7 +33,7 @@ val set_prompt : (unit -> string) -> unit
 
 val print_toplevel_error : exn -> std_ppcmds
 
-(** Parse and execute a vernac command. *)
+(** Parse and execute one vernac command. *)
 
 val do_vernac : unit -> unit
 

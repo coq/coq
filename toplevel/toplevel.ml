@@ -292,11 +292,15 @@ let read_sentence () =
   try Vernac.parse_sentence (top_buffer.tokens, None)
   with reraise -> discard_to_dot (); raise reraise
 
-(* do_vernac reads and executes a toplevel phrase, and print error
-   messages when an exception is raised, except for the following:
-     Drop: kill the Coq toplevel, going down to the Caml toplevel if it exists.
+(** [do_vernac] reads and executes a toplevel phrase, and print error
+    messages when an exception is raised, except for the following:
+    - Drop: kill the Coq toplevel, going down to the Caml toplevel if it exists.
            Otherwise, exit.
-     End_of_input: Ctrl-D was typed in, we will quit *)
+    - End_of_input: Ctrl-D was typed in, we will quit.
+
+    In particular, this is normally the only place where a Sys.Break
+    is catched and handled (i.e. not re-raised).
+*)
 
 let do_vernac () =
   msgerrnl (mt ());
@@ -311,11 +315,11 @@ let do_vernac () =
         else ppnl (str"Error: There is no ML toplevel." ++ fnl ())
     | any -> ppnl (print_toplevel_error any)
 
-(* coq and go read vernacular expressions until Drop is entered.
- * Ctrl-C will raise the exception Break instead of aborting Coq.
- * Here we catch the exceptions terminating the Coq loop, and decide
- * if we really must quit.
- *)
+(** Main coq loop : read vernacular expressions until Drop is entered.
+    Ctrl-C is handled internally as Sys.Break instead of aborting Coq.
+    Normally, the only exceptions that can come out of [do_vernac] and
+    exit the loop are Drop and Quit. Any other exception there indicates
+    an issue with [print_toplevel_error] above. *)
 
 let rec loop () =
   Sys.catch_break true;
