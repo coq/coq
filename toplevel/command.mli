@@ -51,11 +51,11 @@ val interp_assumption :
     nor in a module type and meant to be instantiated. *)
 val declare_assumption : coercion_flag -> assumption_kind -> types ->
   Impargs.manual_implicits ->
-  bool (** implicit *) -> Entries.inline -> variable Loc.located -> bool
+  bool (** implicit *) -> Vernacexpr.inline -> variable Loc.located -> bool
 
 val declare_assumptions : variable Loc.located list ->
   coercion_flag -> assumption_kind -> types -> Impargs.manual_implicits ->
-  bool -> Entries.inline -> bool
+  bool -> Vernacexpr.inline -> bool
 
 (** {6 Inductive and coinductive types} *)
 

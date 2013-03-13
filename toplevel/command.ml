@@ -34,6 +34,7 @@ open Evarutil
 open Evarconv
 open Indschemes
 open Misctypes
+open Vernacexpr
 
 let rec under_binders env f n c =
   if Int.equal n 0 then f env Evd.empty c else
@@ -188,7 +189,12 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) = match loca
   true
 | Global | Local | Discharge ->
   let local = get_locality ident local in
-  let decl = (ParameterEntry (None,c,nl), IsAssumption kind) in
+  let inl = match nl with
+    | NoInline -> None
+    | DefaultInline -> Some (Flags.get_inline_level())
+    | InlineAt i -> Some i
+  in
+  let decl = (ParameterEntry (None,c,inl), IsAssumption kind) in
   let kn = declare_constant ident ~local decl in
   let gr = ConstRef kn in
   let () = maybe_declare_manual_implicits false gr imps in
@@ -385,8 +391,6 @@ let declare_mutual_inductive_with_eliminations isrecord mie impls =
   if_verbose msg_info (minductive_message names);
   declare_default_schemes mind;
   mind
-
-open Vernacexpr
 
 type one_inductive_impls =
   Impargs.manual_explicitation list (* for inds *)*

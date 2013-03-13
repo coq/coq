@@ -16,16 +16,7 @@ open Libnames
 open Libobject
 open Lib
 open Mod_subst
-
-(** Rigid / flexible signature *)
-
-type 'a module_signature =
-  | Enforce of 'a (** ... : T *)
-  | Check of 'a list (** ... <: T1 <: T2, possibly empty *)
-
-(** Should we adapt a few scopes during functor application ? *)
-
-type scope_subst = (string * string) list
+open Vernacexpr
 
 let scope_subst = ref (String.Map.empty : string String.Map.t)
 
@@ -41,14 +32,6 @@ let subst_scope sc =
 let reset_scope_subst () =
   scope_subst := String.Map.empty
 
-(** Which inline annotations should we honor, either None or the ones
-    whose level is less or equal to the given integer *)
-
-type inline =
-  | NoInline
-  | DefaultInline
-  | InlineAt of int
-
 let default_inline () = Some (Flags.get_inline_level ())
 
 let inl2intopt = function
@@ -56,14 +39,7 @@ let inl2intopt = function
   | InlineAt i -> Some i
   | DefaultInline -> default_inline ()
 
-type funct_app_annot =
-  { ann_inline : inline;
-    ann_scope_subst : scope_subst }
-
 let inline_annot a = inl2intopt a.ann_inline
-
-type 'a annotated = ('a * funct_app_annot)
-
 
 (* modules and components *)
 

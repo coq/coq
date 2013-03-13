@@ -7,12 +7,8 @@
 (************************************************************************)
 
 open Loc
-open Pp
 open Names
 open Libnames
-open Glob_term
-open Term
-open Mod_subst
 open Misctypes
 open Decl_kinds
 open Constrexpr
@@ -22,7 +18,7 @@ open Notation_term
 
 val oldfashion_patterns : bool ref
 
-(** Utilities on constr_expr                                           *)
+(** Utilities on constr_expr *)
 
 val replace_vars_constr_expr :
   (Id.t * Id.t) list -> constr_expr -> constr_expr

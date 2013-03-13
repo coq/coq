@@ -21,7 +21,6 @@ open Libnames
 open Constrexpr
 open Constrexpr_ops
 open Decl_kinds
-open Declaremods
 
 let pr_spc_lconstr = pr_sep_com spc pr_lconstr_expr
 
@@ -256,26 +255,12 @@ let pr_require_token = function
 
 let pr_module_vardecls pr_c (export,idl,(mty,inl)) =
   let m = pr_module_ast pr_c mty in
-  (* Update the Nametab for interpreting the body of module/modtype *)
-  States.with_state_protection (fun () ->
-    let lib_dir = Lib.library_dp() in
-    List.iter (fun (_,id) ->
-      Declaremods.process_module_bindings [id]
-        [MBId.make lib_dir id,
-         (Modintern.interp_modtype (Global.env()) mty, inl)]) idl;
-    (* Builds the stream *)
-    spc() ++
-    hov 1 (str"(" ++ pr_require_token export ++
-     prlist_with_sep spc pr_lident idl ++ str":" ++ m ++ str")")) ()
+  spc() ++
+  hov 1 (str"(" ++ pr_require_token export ++
+  prlist_with_sep spc pr_lident idl ++ str":" ++ m ++ str")")
 
 let pr_module_binders l pr_c =
-  (* Effet de bord complexe pour garantir la declaration des noms des
-  modules parametres dans la Nametab des l'appel de pr_module_binders
-  malgre l'aspect paresseux des streams *)
-  let ml = List.map (pr_module_vardecls pr_c) l in
-  prlist (fun id -> id) ml
-
-let pr_module_binders_list l pr_c = pr_module_binders l pr_c
+  prlist_strict (pr_module_vardecls pr_c) l
 
 let pr_type_option pr_c = function
   | CHole (loc, k) -> mt()
@@ -740,9 +725,9 @@ let rec pr_vernac = function
 	Anonymous -> mt ()) ++
        pr_and_type_binders_arg sup ++
        str":" ++ spc () ++
-       pr_constr_expr cl ++ spc () ++
+       pr_constr cl ++ spc () ++
 	 (match props with
-	  | Some p -> spc () ++ str":=" ++ spc () ++ pr_constr_expr p
+	  | Some p -> spc () ++ str":=" ++ spc () ++ pr_constr p
 	  | None -> mt()))
 
  | VernacContext l ->
@@ -760,7 +745,7 @@ let rec pr_vernac = function
 
   (* Modules and Module Types *)
   | VernacDefineModule (export,m,bl,tys,bd) ->
-      let b = pr_module_binders_list bl pr_lconstr in
+      let b = pr_module_binders bl pr_lconstr in
       hov 2 (str"Module" ++ spc() ++ pr_require_token export ++
                pr_lident m ++ b ++
                pr_of_module_type pr_lconstr tys ++
@@ -768,12 +753,12 @@ let rec pr_vernac = function
 	       prlist_with_sep (fun () -> str " <+ ")
 	        (pr_module_ast_inl pr_lconstr) bd)
   | VernacDeclareModule (export,id,bl,m1) ->
-      let b = pr_module_binders_list bl pr_lconstr in
+      let b = pr_module_binders bl pr_lconstr in
 	hov 2 (str"Declare Module" ++ spc() ++ pr_require_token export ++
              pr_lident id ++ b ++
              pr_module_ast_inl pr_lconstr m1)
   | VernacDeclareModuleType (id,bl,tyl,m) ->
-      let b = pr_module_binders_list bl pr_lconstr in
+      let b = pr_module_binders bl pr_lconstr in
       let pr_mt = pr_module_ast_inl pr_lconstr in
 	hov 2 (str"Module Type " ++ pr_lident id ++ b ++
 		 prlist_strict (fun m -> str " <: " ++ pr_mt m) tyl ++

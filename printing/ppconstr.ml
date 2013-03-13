@@ -17,7 +17,6 @@ open Pputils
 open Ppextend
 open Constrexpr
 open Constrexpr_ops
-open Topconstr
 open Decl_kinds
 open Misctypes
 open Locus
@@ -309,7 +308,8 @@ let split_lambda = function
 
 let rename na na' t c =
   match (na,na') with
-    | (_,Name id), (_,Name id') -> (na',t,replace_vars_constr_expr [id,id'] c)
+    | (_,Name id), (_,Name id') ->
+      (na',t,Topconstr.replace_vars_constr_expr [id,id'] c)
     | (_,Name id), (_,Anonymous) -> (na,t,c)
     | _ -> (na',t,c)
 

@@ -222,9 +222,9 @@ GEXTEND Gram
       | IDENT "Parameters" -> (use_locality_exp (), Definitional) ] ]
   ;
   inline:
-    [ [ IDENT "Inline"; "("; i = INT; ")" -> Some (int_of_string i)
-      | IDENT "Inline" -> Some (Flags.get_inline_level())
-      | -> None] ]
+    [ [ IDENT "Inline"; "("; i = INT; ")" -> InlineAt (int_of_string i)
+      | IDENT "Inline" -> DefaultInline
+      | -> NoInline] ]
   ;
   finite_token:
     [ [ "Inductive" -> (Inductive_kw,Finite)

@@ -12,7 +12,6 @@ open Names
 open Tacexpr
 open Misctypes
 open Constrexpr
-open Notation_term
 open Decl_kinds
 open Libnames
 
@@ -26,6 +25,7 @@ type lreference = reference
 type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
 
 type goal_identifier = string
+type scope_name = string
 
 type goal_reference =
   | OpenSubgoals
@@ -179,9 +179,6 @@ type inductive_expr =
 type one_inductive_expr =
   lident * local_binder list * constr_expr option * constructor_expr list
 
-type module_ast_inl = module_ast Declaremods.annotated
-type module_binder = bool option * lident list * module_ast_inl
-
 type grammar_tactic_prod_item_expr =
   | TacTerm of string
   | TacNonTerm of Loc.t * string * (Names.Id.t * string) option
@@ -203,12 +200,44 @@ type scheme =
   | CaseScheme of bool * reference or_by_notation * sort_expr
   | EqualityScheme of reference or_by_notation
 
-type inline = int option (* inlining level, none for no inlining *)
-
 type bullet =
     | Dash
     | Star
     | Plus
+
+(** {6 Types concerning the module layer} *)
+
+(** Rigid / flexible module signature *)
+
+type 'a module_signature =
+  | Enforce of 'a (** ... : T *)
+  | Check of 'a list (** ... <: T1 <: T2, possibly empty *)
+
+(** Which module inline annotations should we honor,
+    either None or the ones whose level is less or equal
+    to the given integer *)
+
+type inline =
+  | NoInline
+  | DefaultInline
+  | InlineAt of int
+
+(** Should we adapt a few scopes during functor application ? *)
+
+type scope_subst = (string * string) list
+
+(** The type of annotations for functor applications *)
+
+type funct_app_annot =
+  { ann_inline : inline;
+    ann_scope_subst : scope_subst }
+
+type 'a annotated = ('a * funct_app_annot)
+
+type module_ast_inl = module_ast annotated
+type module_binder = bool option * lident list * module_ast_inl
+
+(** {6 The type of vernacular expressions} *)
 
 type vernac_expr =
   (* Control *)
@@ -277,7 +306,7 @@ type vernac_expr =
   | VernacDeclareModule of bool option * lident *
       module_binder list * module_ast_inl
   | VernacDefineModule of bool option * lident * module_binder list *
-      module_ast_inl Declaremods.module_signature * module_ast_inl list
+      module_ast_inl module_signature * module_ast_inl list
   | VernacDeclareModuleType of lident *
       module_binder list * module_ast_inl list * module_ast_inl list
   | VernacInclude of module_ast_inl list

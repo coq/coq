@@ -14,37 +14,12 @@ open Environ
 open Libnames
 open Libobject
 open Lib
+open Vernacexpr
 
 (** This modules provides official functions to declare modules and
   module types *)
 
-(** Rigid / flexible signature *)
-
-type 'a module_signature =
-  | Enforce of 'a (** ... : T *)
-  | Check of 'a list (** ... <: T1 <: T2, possibly empty *)
-
-(** Should we adapt a few scopes during functor application ? *)
-
-type scope_subst = (string * string) list
-
 val subst_scope : string -> string
-
-(** Which inline annotations should we honor, either None or the ones
-   whose level is less or equal to the given integer *)
-
-type inline =
-  | NoInline
-  | DefaultInline
-  | InlineAt of int
-
-(** The type of annotations for functor applications *)
-
-type funct_app_annot =
-  { ann_inline : inline;
-    ann_scope_subst : scope_subst }
-
-type 'a annotated = ('a * funct_app_annot)
 
 (** {6 Modules } *)
 
