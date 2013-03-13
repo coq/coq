@@ -151,13 +151,15 @@ val path_of_tactic : ltac_constant -> full_path
 val dirpath_of_global : global_reference -> DirPath.t
 val basename_of_global : global_reference -> Id.t
 
-(** Printing of global references using names as short as possible *)
+(** Printing of global references using names as short as possible.
+    @raise Not_found when the reference is not in the global tables. *)
 val pr_global_env : Id.Set.t -> global_reference -> std_ppcmds
 
 
 (** The [shortest_qualid] functions given an object with [user_name]
    Coq.A.B.x, try to find the shortest among x, B.x, A.B.x and
-   Coq.A.B.x that denotes the same object. *)
+   Coq.A.B.x that denotes the same object.
+   @raise Not_found for unknown objects. *)
 
 val shortest_qualid_of_global : Id.Set.t -> global_reference -> qualid
 val shortest_qualid_of_syndef : Id.Set.t -> syndef_name -> qualid

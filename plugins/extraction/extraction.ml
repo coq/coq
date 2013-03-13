@@ -144,11 +144,11 @@ let sign_with_implicits r s nb_params =
 
 let rec handle_exn r n fn_name = function
   | MLexn s ->
-      (try Scanf.sscanf s "UNBOUND %d"
+      (try Scanf.sscanf s "UNBOUND %d%!"
 	 (fun i ->
 	    assert ((0 < i) && (i <= n));
 	    MLexn ("IMPLICIT "^ msg_non_implicit r (n+1-i) (fn_name i)))
-       with _ -> MLexn s)
+       with Scanf.Scan_failure _ | End_of_file -> MLexn s)
   | a -> ast_map (handle_exn r n fn_name) a
 
 (*S Management of type variable contexts. *)

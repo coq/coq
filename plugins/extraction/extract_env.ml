@@ -402,8 +402,10 @@ let mono_filename f =
 	in
 	let id =
 	  if lang () <> Haskell then default_id
-	  else try Id.of_string (Filename.basename f)
-	  with _ -> error "Extraction: provided filename is not a valid identifier"
+	  else
+            try Id.of_string (Filename.basename f)
+	    with UserError _ ->
+              error "Extraction: provided filename is not a valid identifier"
 	in
 	Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id
 
@@ -541,7 +543,9 @@ let rec locate_ref = function
   | r::l ->
       let q = snd (qualid_of_reference r) in
       let mpo = try Some (Nametab.locate_module q) with Not_found -> None
-      and ro = try Some (Smartlocate.global_with_alias r) with _ -> None
+      and ro =
+        try Some (Smartlocate.global_with_alias r)
+        with Not_found | UserError _ -> None
       in
       match mpo, ro with
 	| None, None -> Nametab.error_global_not_found q

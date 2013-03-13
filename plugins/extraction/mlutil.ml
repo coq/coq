@@ -856,15 +856,11 @@ let is_imm_apply = function MLapp (MLrel 1, _) -> true | _ -> false
     Unfolding them leads to more natural code (and more dummy removal) *)
 
 let is_program_branch = function
+  | Tmp _ | Dummy -> false
   | Id id ->
     let s = Id.to_string id in
-    let br = "program_branch_" in
-    let n = String.length br in
-    (try
-       ignore (int_of_string (String.sub s n (String.length s - n)));
-       String.sub s 0 n = br
-     with _ -> false)
-  | Tmp _ | Dummy -> false
+    try Scanf.sscanf s "program_branch_%d%!" (fun _ -> true)
+    with Scanf.Scan_failure _ | End_of_file -> false
 
 let expand_linear_let o id e =
    o.opt_lin_let || is_tmp id || is_program_branch id || is_imm_apply e
@@ -1297,7 +1293,7 @@ let inline_test r t =
     let c = match r with ConstRef c -> c | _ -> assert false in
     let has_body =
       try constant_has_body (Global.lookup_constant c)
-      with _ -> false
+      with Not_found -> false
     in
     has_body &&
       (let t1 = eta_red t in

@@ -255,7 +255,7 @@ let safe_basename_of_global r =
 
 let string_of_global r =
  try string_of_qualid (Nametab.shortest_qualid_of_global Id.Set.empty r)
- with _ -> Id.to_string (safe_basename_of_global r)
+ with Not_found -> Id.to_string (safe_basename_of_global r)
 
 let safe_pr_global r = str (string_of_global r)
 
@@ -263,7 +263,7 @@ let safe_pr_global r = str (string_of_global r)
 
 let safe_pr_long_global r =
   try Printer.pr_global r
-  with _ -> match r with
+  with Not_found -> match r with
     | ConstRef kn ->
 	let mp,_,l = repr_con kn in
 	str ((string_of_mp mp)^"."^(Label.to_string l))
