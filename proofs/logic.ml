@@ -100,7 +100,7 @@ let clear_hyps sigma ids sign cl =
 
 let recheck_typability (what,id) env sigma t =
   try check_typability env sigma t
-  with _ ->
+  with e when Errors.noncritical e ->
     let s = match what with
       | None -> "the conclusion"
       | Some id -> "hypothesis "^(Id.to_string id) in

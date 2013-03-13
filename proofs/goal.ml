@@ -275,7 +275,7 @@ let check_typability env sigma c =
 
 let recheck_typability (what,id) env sigma t =
   try check_typability env sigma t
-  with _ ->
+  with e when Errors.noncritical e ->
     let s = match what with
       | None -> "the conclusion"
       | Some id -> "hypothesis "^(Names.Id.to_string id) in

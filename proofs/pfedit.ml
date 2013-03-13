@@ -55,10 +55,10 @@ let start_proof id str hyps c ?init_tac ?compute_guard hook =
    | None -> Proofview.tclUNIT ()
   in
   try Proof_global.run_tactic tac
-  with e ->
-    let e = Errors.push e in
+  with reraise ->
+    let reraise = Errors.push reraise in
     Proof_global.discard_current ();
-    raise e
+    raise reraise
 
 let restart_proof () = undo_todepth 1
 
@@ -154,9 +154,9 @@ let build_constant_by_tactic id sign typ tac =
     let _,(const,_,_,_) = cook_proof (fun _ -> ()) in
     delete_current_proof ();
     const
-  with e ->
+  with reraise ->
     delete_current_proof ();
-    raise e
+    raise reraise
 
 let build_by_tactic env typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in

@@ -321,7 +321,7 @@ let rec rollback pr =
 let transaction pr t =
   init_transaction pr;
   try t (); commit pr
-  with e -> rollback pr; raise e
+  with reraise -> rollback pr; raise reraise
 
 
 (* Focus command (focuses on the [i]th subgoal) *)
@@ -416,9 +416,9 @@ let run_tactic env tac pr =
     let tacticced_proofview = Proofview.apply env tac sp in
     pr.state <- { pr.state with proofview = tacticced_proofview };
     push_undo starting_point pr
-  with e -> 
+  with reraise ->
     restore_state starting_point pr;
-    raise e
+    raise reraise
 
 (*** Commands ***)
 
@@ -463,7 +463,7 @@ module V82 = struct
 	let new_proofview = Proofview.V82.instantiate_evar n com sp in
 	pr.state <- { pr.state with proofview = new_proofview };
 	push_undo starting_point pr
-      with e -> 
+      with reraise ->
 	restore_state starting_point pr;
-	raise e
+	raise reraise
 end
