@@ -43,7 +43,7 @@ let decompose_prod env t =
 
 let app_type env c =
   let t = whd_betadeltaiota env c in
-  try destApp t with _ -> (t,[||])
+  try destApp t with DestKO -> (t,[||])
 
  
 let find_rectype_a env c =
@@ -192,7 +192,7 @@ and nf_type_sort env v =
   match kind_of_value v with
   | Vaccu accu -> 
       let t,s = nf_accu_type env accu in
-      let s = try destSort s with _ -> assert false in
+      let s = try destSort s with DestKO -> assert false in
       t, s
   | _ -> assert false
 
@@ -214,7 +214,7 @@ and nf_accu_type env accu =
 
 and nf_args env accu t =
   let aux arg (t,l) = 
-	let _,dom,codom = try decompose_prod env t with _ -> exit 123 in
+	let _,dom,codom = try decompose_prod env t with DestKO -> exit 123 in
 	let c = nf_val env arg dom in
 	(subst1 c codom, c::l)
   in
@@ -226,7 +226,7 @@ and nf_bargs env b t =
   let len = block_size b in
   Array.init len
     (fun i ->
-      let _,dom,codom = try decompose_prod env !t with _ -> exit 124 in
+      let _,dom,codom = try decompose_prod env !t with DestKO -> exit 124 in
       let c = nf_val env (block_field b i) dom in
       t := subst1 c codom; c)
 
@@ -313,7 +313,7 @@ and  nf_predicate env ind mip params v pT =
   | Vfun f, Prod _ ->
       let k = nb_rel env in
       let vb = f (mk_rel_accu k) in
-      let name,dom,codom = try decompose_prod env pT with _ -> exit 121 in
+      let name,dom,codom = try decompose_prod env pT with DestKO -> exit 121 in
       let dep,body = 
 	nf_predicate (push_rel (name,None,dom) env) ind mip params vb codom in
       dep, mkLambda(name,dom,body)

@@ -68,8 +68,9 @@ let search_guard loc env possible_indexes fixdefs =
   if List.for_all is_singleton possible_indexes then
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
     let fix = ((indexes, 0),fixdefs) in
-    (try check_fix env fix with
-       | e -> let e = Errors.push e in Loc.raise loc e);
+    (try check_fix env fix
+     with e when Errors.noncritical e ->
+       let e = Errors.push e in Loc.raise loc e);
     indexes
   else
     (* we now search recursively amoungst all combinations *)
@@ -112,9 +113,11 @@ let resolve_evars env evdref fail_evar resolve_classes =
        ~filter:Typeclasses.all_evars ~split:true ~fail:false env !evdref;     
     );
   (* Resolve eagerly, potentially making wrong choices *)
-  evdref := (try consider_remaining_unif_problems
-	       ~ts:(Typeclasses.classes_transparent_state ()) env !evdref
-	     with e -> let e = Errors.push e in if fail_evar then raise e else !evdref)
+  evdref :=
+    (try consider_remaining_unif_problems
+	   ~ts:(Typeclasses.classes_transparent_state ()) env !evdref
+     with e when Errors.noncritical e ->
+       let e = Errors.push e in if fail_evar then raise e else !evdref)
 
 let solve_remaining_evars fail_evar use_classes hook env initial_sigma (evd,c) =
   let evdref = ref evd in
@@ -362,9 +365,12 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 		make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	  | GCoFix i ->
 	      let cofix = (i,(names,ftys,fdefs)) in
-		(try check_cofix env cofix with e -> let e = Errors.push e in Loc.raise loc e);
-		make_judge (mkCoFix cofix) ftys.(i) in
-	  inh_conv_coerce_to_tycon loc env evdref fixj tycon
+	      (try check_cofix env cofix
+               with e when Errors.noncritical e ->
+                 let e = Errors.push e in Loc.raise loc e);
+	      make_judge (mkCoFix cofix) ftys.(i)
+        in
+	inh_conv_coerce_to_tycon loc env evdref fixj tycon
 
   | GSort (loc,s) ->
       let j = pretype_sort evdref s in

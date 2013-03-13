@@ -1042,7 +1042,7 @@ let check_evar_instance evd evk1 body conv_algo =
   (* FIXME: The body might be ill-typed when this is called from w_merge *)
   let ty =
     try Retyping.get_type_of evenv evd body
-    with _ -> error "Ill-typed evar instance"
+    with e when Errors.noncritical e -> error "Ill-typed evar instance"
   in
   match conv_algo evenv evd Reduction.CUMUL ty evi.evar_concl with
   | Success evd -> evd
@@ -1248,7 +1248,7 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
                   map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
                     imitate envk t in
                 t::l
-              with _ -> l in
+              with e when Errors.noncritical e -> l in
             (match candidates with
             | [x] -> x
             | _ ->

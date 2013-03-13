@@ -335,7 +335,7 @@ let apply_coercion env sigma p hj typ_cl =
 		   jres),
 	      jres.uj_type)
            (hj,typ_cl) p)
-  with _ -> anomaly (Pp.str "apply_coercion")
+  with e when Errors.noncritical e -> anomaly (Pp.str "apply_coercion")
 
 let inh_app_fun env evd j =
   let t = whd_betadeltaiota env evd j.uj_type in
