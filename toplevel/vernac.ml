@@ -20,8 +20,6 @@ open Vernacinterp
    Use the module Coqtoplevel, which catches these exceptions
    (the exceptions are explained only at the toplevel). *)
 
-exception DuringCommandInterp of Loc.t * exn
-
 exception HasNotFailed
 
 (* The navigation vernac commands will be handled separately *)
@@ -101,20 +99,14 @@ let _ =
    if the error ocurred during interpretation or not *)
 
 let raise_with_file file exc =
-  let (cmdloc,re) =
-    match exc with
-      | DuringCommandInterp(loc,e) -> (loc,e)
-      | e -> (Loc.ghost,e)
-  in
   let (inner,inex) =
-    match re with
+    match exc with
       | Error_in_file (_, (b,f,loc), e) when not (Loc.is_ghost loc) ->
           ((b, f, loc), e)
       | e ->
         match Loc.get_loc e with
-        | Some loc when not (Loc.is_ghost loc) ->
-          ((false,file, loc), e)
-        | _ -> ((false,file,cmdloc), e)
+        | Some loc when not (Loc.is_ghost loc) -> ((false,file,loc), e)
+        | _ -> ((false,file,Loc.ghost), e)
   in
   raise (Error_in_file (file, inner, disable_drop inex))
 
@@ -350,11 +342,11 @@ let rec vernac_com interpfun checknav (loc,com) =
       if !time then display_cmd_header loc com;
       let com = if !time then VernacTime com else com in
       interp com
-    with e -> (* TODO: restrict to Errors.noncritical or not ?
-                 Morally, this is a reraise ... *)
-      let e = Errors.push e in
+    with reraise ->
+      let reraise = Errors.push reraise in
       Format.set_formatter_out_channel stdout;
-      raise (DuringCommandInterp (loc, e))
+      if Loc.is_ghost loc || Loc.get_loc reraise != None then raise reraise
+      else Loc.raise loc reraise
 
 and read_vernac_file verbosely s =
   Flags.make_warn verbosely;
@@ -415,10 +407,6 @@ let eval_expr ?(preserving=false) loc_ast =
     Backtrack.mark_command (snd loc_ast);
   status
 
-(* raw_do_vernac : Pcoq.Gram.parsable -> unit
- * vernac_step . parse_sentence *)
-let raw_do_vernac po = eval_expr (parse_sentence (po,None))
-
 (* XML output hooks *)
 let xml_start_library = ref (fun _ -> ())
 let xml_end_library = ref (fun _ -> ())
@@ -434,10 +422,8 @@ let load_vernac verb file =
     Lib.mark_end_of_command (); (* in case we're still in coqtop init *)
     let _ = read_vernac_file verb file in
     if !Flags.beautify_file then close_out !chan_beautify;
-  with e ->
-    (* TODO: restrict to Errors.noncritical or not ?
-       Morally, this is a reraise ... *)
-    let e = Errors.push e in
+  with any ->
+    let e = Errors.push any in
     if !Flags.beautify_file then close_out !chan_beautify;
     raise_with_file file e
 

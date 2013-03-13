@@ -17,7 +17,6 @@ val parse_sentence : Pcoq.Gram.parsable * in_channel option ->
 (** Reads and executes vernac commands from a stream.
    The boolean [just_parsing] disables interpretation of commands. *)
 
-exception DuringCommandInterp of Loc.t * exn
 exception End_of_input
 
 val just_parsing : bool ref
@@ -30,7 +29,6 @@ val just_parsing : bool ref
 (* spiwack: return value: [true] if safe (general case), [false] if
    unsafe (like [Admitted]). *)
 val eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> bool
-val raw_do_vernac : Pcoq.Gram.parsable -> bool
 
 (** Set XML hooks *)
 val set_xml_start_library : (unit -> unit) -> unit

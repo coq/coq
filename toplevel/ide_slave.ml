@@ -291,7 +291,6 @@ let eval_call c =
     match e with
       | Errors.Drop -> None, "Drop is not allowed by coqide!"
       | Errors.Quit -> None, "Quit is not allowed by coqide!"
-      | Vernac.DuringCommandInterp (_,inner) -> handle_exn inner
       | Error_in_file (_,_,inner) -> None, pr_exn inner
       | e ->
         let loc = match Loc.get_loc e with
