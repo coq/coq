@@ -41,10 +41,6 @@ let explain_exn_default = function
   | Timeout -> hov 0 (str "Timeout!")
   | Sys.Break -> hov 0 (fnl () ++ str "User interrupt.")
   (* Meta-exceptions *)
-(*  | Loc.Exc_located (loc,exc) ->
-      hov 0 ((if Loc.is_ghost loc then (mt ())
-               else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
-               ++ Errors.print_no_anomaly exc)*)
   | EvaluatedError (msg,None) -> msg
   | EvaluatedError (msg,Some reraise) -> msg ++ Errors.print_no_anomaly reraise
   (* Otherwise, not handled here *)
@@ -58,9 +54,6 @@ let _ = Errors.register_handler explain_exn_default
 let wrap_vernac_error exn strm =
   let e = EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None) in
   Exninfo.copy exn e
-
-let is_mt t =
-  Pervasives.(=) (Lazy.force t) (mt ()) (* FIXME *)
 
 let rec process_vernac_interp_error exn = match exn with
   | Univ.UniverseInconsistency (o,u,v,p) ->
@@ -112,13 +105,15 @@ let rec process_vernac_interp_error exn = match exn with
         (str "No constant of this name:" ++ spc () ++
          Libnames.pr_qualid q ++ str ".")
   | Refiner.FailError (i,s) ->
+      let s = Lazy.force s in
       wrap_vernac_error exn
 	(str "Tactic failure" ++
-           (if not (is_mt s) then str ":" ++ Lazy.force s else mt ()) ++ (* FIXME *)
-           if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
+         (if Pp.is_empty s then s else str ":" ++ s) ++
+         if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
   | AlreadyDeclared msg ->
       wrap_vernac_error exn (msg ++ str ".")
-  | Proof_type.LtacLocated (_,_,(Refiner.FailError (i,s) as exc)) when not (is_mt s) ->
+  | Proof_type.LtacLocated (_,_,(Refiner.FailError (i,s) as exc))
+      when not (Pp.is_empty (Lazy.force s)) ->
       (* Ltac error is intended, trace is irrelevant *)
       process_vernac_interp_error exc
   | Proof_type.LtacLocated (s,loc,exc) ->
