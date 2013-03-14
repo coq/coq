@@ -110,10 +110,6 @@ let print_no_report e = print_gen (print_anomaly false) !handle_stack e
 
 let print_anomaly e = print_anomaly true e
 
-(** Same as [print], except that anomalies are not printed but re-raised
-    (used for the Fail command) *)
-let print_no_anomaly e = print_gen (fun e -> raise e) !handle_stack e
-
 (** Predefined handlers **)
 
 let _ = register_handler begin function

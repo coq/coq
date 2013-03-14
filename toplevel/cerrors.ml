@@ -23,6 +23,8 @@ let print_loc loc =
 
 let guill s = "\""^s^"\""
 
+(** Invariant : exceptions embedded in EvaluatedError satisfy
+    Errors.noncritical *)
 
 exception EvaluatedError of std_ppcmds * exn option
 
@@ -40,9 +42,9 @@ let explain_exn_default = function
   | Stack_overflow -> hov 0 (str "Stack overflow.")
   | Timeout -> hov 0 (str "Timeout!")
   | Sys.Break -> hov 0 (fnl () ++ str "User interrupt.")
-  (* Meta-exceptions *)
+  (* Exceptions with pre-evaluated error messages *)
   | EvaluatedError (msg,None) -> msg
-  | EvaluatedError (msg,Some reraise) -> msg ++ Errors.print_no_anomaly reraise
+  | EvaluatedError (msg,Some reraise) -> msg ++ Errors.print reraise
   (* Otherwise, not handled here *)
   | _ -> raise Errors.Unhandled
 
@@ -117,12 +119,11 @@ let rec process_vernac_interp_error exn = match exn with
       (* Ltac error is intended, trace is irrelevant *)
       process_vernac_interp_error exc
   | Proof_type.LtacLocated (s,loc,exc) ->
-      (match
-          Himsg.extract_ltac_trace s loc (process_vernac_interp_error exc)
-       with
-       | None,loc,e -> Loc.add_loc e loc
-       | Some msg, loc, e ->
-        Loc.add_loc (EvaluatedError (msg,Some e)) loc)
+      let e = process_vernac_interp_error exc in
+      assert (Errors.noncritical e);
+      (match Himsg.extract_ltac_trace s loc with
+        | None,loc -> Loc.add_loc e loc
+        | Some msg, loc -> Loc.add_loc (EvaluatedError (msg,Some e)) loc)
   | exc ->
       exc
 

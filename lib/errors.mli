@@ -81,10 +81,6 @@ val print_anomaly : exn -> Pp.std_ppcmds
     isn't printed (used in Ltac debugging). *)
 val print_no_report : exn -> Pp.std_ppcmds
 
-(** Same as [print], except that anomalies are not printed but re-raised
-    (used for the Fail command) *)
-val print_no_anomaly : exn -> Pp.std_ppcmds
-
 (** Critical exceptions shouldn't be catched and ignored by mistake
     by inner functions during a [vernacinterp]. They should be handled
     only at the very end of interp, to be displayed to the user.

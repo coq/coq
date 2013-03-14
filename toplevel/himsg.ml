@@ -1093,13 +1093,13 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
   else
     mt ()
 
-let extract_ltac_trace trace eloc e =
+let extract_ltac_trace trace eloc =
   let (nrep,loc,c),tail = List.sep_last trace in
   if is_defined_ltac trace then
     (* We entered a user-defined tactic,
        we display the trace with location of the call *)
     let msg = hov 0 (explain_ltac_call_trace (nrep,c,tail,eloc) ++ fnl()) in
-    Some msg, loc, e
+    Some msg, loc
   else
     (* We entered a primitive tactic, we don't display trace but
        report on the finest location *)
@@ -1111,4 +1111,4 @@ let extract_ltac_trace trace eloc e =
         | _::tail -> aux tail
         | [] -> Loc.ghost in
         aux trace in
-    None, best_loc, e
+    None, best_loc

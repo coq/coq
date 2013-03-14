@@ -81,8 +81,10 @@ let catch_error call_trace tac g =
     [], loc, e
   in
   if List.is_empty call_trace & List.is_empty inner_trace then raise e
-  else
+  else begin
+    assert (Errors.noncritical e); (* preserved invariant about LtacLocated *)
     raise (LtacLocated(inner_trace@call_trace,loc,e))
+  end
 
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
