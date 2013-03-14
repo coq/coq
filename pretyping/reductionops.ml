@@ -623,7 +623,7 @@ let clos_norm_flags flgs env sigma t =
     norm_val
       (create_clos_infos ~evars:(safe_evar_value sigma) flgs env)
       (inject t)
-  with e when is_anomaly e -> error "Tried to normalized ill-typed term"
+  with e when is_anomaly e -> error "Tried to normalize ill-typed term"
 
 let nf_beta = clos_norm_flags Closure.beta empty_env
 let nf_betaiota = clos_norm_flags Closure.betaiota empty_env
