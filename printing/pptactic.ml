@@ -559,26 +559,13 @@ let linfo = 5
 let level_of (n,p) = match p with E -> n | L -> n-1 | Prec n -> n | Any -> lseq
 
 (** A printer for tactics that polymorphically works on the three
-    "raw", "glob" and "typed" levels; in practice, the environment is
-    used only at the glob and typed level: it is used to feed the
-    constr printers *)
+    "raw", "glob" and "typed" levels *)
 
-let make_pr_tac
-  (pr_tac_level,pr_constr,pr_lconstr,pr_pat,
-   pr_cst,pr_ind,pr_ref,pr_ident,
-   pr_extend,strip_prod_binders) env =
+let make_pr_tac pr_tac_level
+  (pr_constr,pr_lconstr,pr_pat,pr_lpat,
+   pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders) =
 
-(* The environment is not used by the tactic printer: it is passed to the
-   constr and cst printers; hence we can make some abbreviations *)
-let pr_constr = pr_constr env in
-let pr_lconstr = pr_lconstr env in
-let pr_lpat = pr_pat true in
-let pr_pat = pr_pat false in
-let pr_cst = pr_cst env in
-let pr_ind = pr_ind env in
-let pr_tac_level = pr_tac_level env in
-
-(* Other short cuts *)
+(* some shortcuts *)
 let pr_bindings = pr_bindings pr_lconstr pr_constr in
 let pr_ex_bindings = pr_bindings_gen true pr_lconstr pr_constr in
 let pr_with_bindings = pr_with_bindings pr_lconstr pr_constr in
@@ -975,7 +962,7 @@ and pr_tacarg = function
   | (TacCall _|Tacexp _|Integer _) as a ->
       str "ltac:" ++ pr_tac (latom,E) (TacArg (Loc.ghost,a))
 
-in (pr_tac, pr_match_rule)
+in pr_tac
 
 let strip_prod_binders_glob_constr n (ty,_) =
   let rec strip_ty acc n ty =
@@ -986,48 +973,45 @@ let strip_prod_binders_glob_constr n (ty,_) =
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
-let drop_env f _env = f
-
-let pr_constr_or_lconstr_pattern_expr b =
-  if b then pr_lconstr_pattern_expr else pr_constr_pattern_expr
-
-let rec raw_printers =
-    (pr_raw_tactic_level,
-     drop_env pr_constr_expr,
-     drop_env pr_lconstr_expr,
-     pr_constr_or_lconstr_pattern_expr,
-     drop_env (pr_or_by_notation pr_reference),
-     drop_env (pr_or_by_notation pr_reference),
+let raw_printers =
+    (pr_constr_expr,
+     pr_lconstr_expr,
+     pr_constr_pattern_expr,
+     pr_lconstr_pattern_expr,
+     pr_or_by_notation pr_reference,
+     pr_or_by_notation pr_reference,
      pr_reference,
      pr_or_metaid pr_lident,
      pr_raw_extend,
      strip_prod_binders_expr)
 
-and pr_raw_tactic_level env n (t:raw_tactic_expr) =
-  fst (make_pr_tac raw_printers env) n t
+let rec pr_raw_tactic_level n (t:raw_tactic_expr) =
+  make_pr_tac pr_raw_tactic_level raw_printers n t
+
+let pr_raw_tactic = pr_raw_tactic_level ltop
 
 let pr_and_constr_expr pr (c,_) = pr c
 
-let pr_pat_and_constr_expr b (c,_) =
-  pr_and_constr_expr ((if b then pr_lglob_constr_env else pr_glob_constr_env)
-    (Global.env())) c
+let pr_pat_and_constr_expr pr ((c,_),_) = pr c
 
-let rec glob_printers =
-    (pr_glob_tactic_level,
-     (fun env -> pr_and_constr_expr (pr_glob_constr_env env)),
-     (fun env -> pr_and_constr_expr (pr_lglob_constr_env env)),
-     pr_pat_and_constr_expr,
-     (fun env -> pr_or_var (pr_and_short_name (pr_evaluable_reference_env env))),
-     (fun env -> pr_or_var (pr_inductive env)),
+let pr_glob_tactic_level env =
+  let glob_printers =
+    (pr_and_constr_expr (pr_glob_constr_env env),
+     pr_and_constr_expr (pr_lglob_constr_env env),
+     pr_pat_and_constr_expr (pr_glob_constr_env env),
+     pr_pat_and_constr_expr (pr_lglob_constr_env env),
+     pr_or_var (pr_and_short_name (pr_evaluable_reference_env env)),
+     pr_or_var (pr_inductive env),
      pr_ltac_or_var (pr_located pr_ltac_constant),
      pr_lident,
      pr_glob_extend,
      strip_prod_binders_glob_constr)
+  in
+  let rec prtac n (t:glob_tactic_expr) =
+    make_pr_tac prtac glob_printers n t
+  in
+  prtac
 
-and pr_glob_tactic_level env n (t:glob_tactic_expr) =
-  fst (make_pr_tac glob_printers env) n t
-
-let pr_raw_tactic env = pr_raw_tactic_level env ltop
 let pr_glob_tactic env = pr_glob_tactic_level env ltop
 
 let _ = Tactic_debug.set_tactic_printer

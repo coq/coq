@@ -65,13 +65,13 @@ let sep_end = function
 let pr_raw_tactic_env l env t =
   pr_glob_tactic env (Tacintern.glob_tactic_env l env t)
 
-let pr_gen env t =
+let pr_gen t =
   pr_raw_generic
     pr_constr_expr
     pr_lconstr_expr
-    (pr_raw_tactic_level env) pr_constr_expr pr_reference t
-
-let pr_raw_tactic tac = pr_raw_tactic (Global.env()) tac
+    pr_raw_tactic_level
+    pr_constr_expr
+    pr_reference t
 
 let rec extract_signature = function
   | [] -> []
@@ -955,7 +955,7 @@ let rec pr_vernac = function
 
 and pr_extend s cl =
   let pr_arg a =
-    try pr_gen (Global.env()) a
+    try pr_gen a
     with Failure _ -> str ("<error in "^s^">") in
   try
     let rls = List.assoc s (Egramml.get_extend_vernac_grammars()) in

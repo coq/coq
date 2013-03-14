@@ -134,7 +134,7 @@ open Pp
 let () =
   let printer _ _ _ = function
   | None -> mt ()
-  | Some tac -> str "with" ++ spc () ++ Pptactic.pr_raw_tactic (Global.env ()) tac
+  | Some tac -> str "with" ++ spc () ++ Pptactic.pr_raw_tactic tac
   in
   (* should not happen *)
   let dummy _ _ _ expr = assert false in

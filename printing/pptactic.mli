@@ -86,9 +86,9 @@ val pr_extend :
 
 val pr_ltac_constant : Nametab.ltac_constant -> std_ppcmds
 
-val pr_raw_tactic : env -> raw_tactic_expr -> std_ppcmds
+val pr_raw_tactic : raw_tactic_expr -> std_ppcmds
 
-val pr_raw_tactic_level : env -> tolerability -> raw_tactic_expr -> std_ppcmds
+val pr_raw_tactic_level : tolerability -> raw_tactic_expr -> std_ppcmds
 
 val pr_glob_tactic : env -> glob_tactic_expr -> std_ppcmds
 
