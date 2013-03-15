@@ -545,7 +545,7 @@ let rec locate_ref = function
       let mpo = try Some (Nametab.locate_module q) with Not_found -> None
       and ro =
         try Some (Smartlocate.global_with_alias r)
-        with Not_found | UserError _ -> None
+        with Nametab.GlobalizationError _ | UserError _ -> None
       in
       match mpo, ro with
 	| None, None -> Nametab.error_global_not_found q

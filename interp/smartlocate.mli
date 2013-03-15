@@ -14,8 +14,8 @@ open Globnames
 open Misctypes
 
 (** [locate_global_with_alias] locates global reference possibly following
-   a notation if this notation has a role of aliasing; raise Not_found
-   if not bound in the global env; raise an error if bound to a
+   a notation if this notation has a role of aliasing; raise [Not_found]
+   if not bound in the global env; raise a [UserError] if bound to a
    syntactic def that does not denote a reference *)
 
 val locate_global_with_alias : qualid located -> global_reference
@@ -23,7 +23,10 @@ val locate_global_with_alias : qualid located -> global_reference
 (** Extract a global_reference from a reference that can be an "alias" *)
 val global_of_extended_global : extended_global_reference -> global_reference
 
-(** Locate a reference taking into account possible "alias" notations *)
+(** Locate a reference taking into account possible "alias" notations.
+    May raise [Nametab.GlobalizationError _] for an unknown reference,
+    or a [UserError] if bound to a syntactic def that does not denote
+    a reference. *)
 val global_with_alias : reference -> global_reference
 
 (** The same for inductive types *)
