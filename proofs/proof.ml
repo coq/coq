@@ -321,7 +321,9 @@ let rec rollback pr =
 let transaction pr t =
   init_transaction pr;
   try t (); commit pr
-  with reraise -> rollback pr; raise reraise
+  with reraise ->
+    let reraise = Errors.push reraise in
+    rollback pr; raise reraise
 
 
 (* Focus command (focuses on the [i]th subgoal) *)
