@@ -55,11 +55,11 @@ let declare_command loc s nt cl =
   declare_str_items loc
     [ <:str_item< do {
 	try Vernacinterp.vinterp_add $se$ $funcl$
-	with e when Errors.noncritical e ->
+	with [ e when Errors.noncritical e ->
 	  Pp.msg_warning
 	    (Pp.app
 	       (Pp.str ("Exception in vernac extend " ^ $se$ ^": "))
-	       (Errors.print e));
+	       (Errors.print e)) ];
 	Egramml.extend_vernac_command_grammar $se$ $nt$ $gl$
       } >> ]
 
