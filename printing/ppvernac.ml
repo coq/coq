@@ -60,11 +60,6 @@ let sep_end = function
   | VernacEndSubproof -> str""
   | _ -> str"."
 
-(* Warning: [pr_raw_tactic] globalises and fails if globalisation fails *)
-
-let pr_raw_tactic_env l env t =
-  pr_glob_tactic env (Tacintern.glob_tactic_env l env t)
-
 let pr_gen t =
   pr_raw_generic
     pr_constr_expr
@@ -805,12 +800,8 @@ let rec pr_vernac = function
 	prlist (function None -> str " _"
                        | Some id -> spc () ++ pr_id id) idl
 	++ (if redef then str" ::=" else str" :=") ++ brk(1,1) ++
-	let idl = List.map_filter (fun x -> x) idl in
-        pr_raw_tactic_env
-	  (idl @ List.map coerce_reference_to_id
-	    (List.map (fun (x, _, _) -> x) (List.filter (fun (_, redef, _) -> not redef) l)))
-	  (Global.env())
-	  body in
+        pr_raw_tactic body
+      in
       hov 1
         (pr_locality local ++ str "Ltac " ++
         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
