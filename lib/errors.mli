@@ -29,7 +29,9 @@ val anomaly : ?loc:Loc.t -> ?label:string -> std_ppcmds -> 'a
     label identifying the anomaly. *)
 
 val is_anomaly : exn -> bool
-(** Check whether a given exception is an anomaly. *)
+(** Check whether a given exception is an anomaly.
+    This is mostly provided for compatibility. Please avoid doing specific
+    tricks with anomalies thanks to it. See rather [noncritical] below. *)
 
 exception UserError of string * std_ppcmds
 val error : string -> 'a
@@ -74,16 +76,13 @@ val register_handler : (exn -> Pp.std_ppcmds) -> unit
 (** The standard exception printer *)
 val print : exn -> Pp.std_ppcmds
 
-(** Exception printer dedicated to anomalies. *)
-val print_anomaly : exn -> Pp.std_ppcmds
-
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)
 val print_no_report : exn -> Pp.std_ppcmds
 
 (** Critical exceptions shouldn't be catched and ignored by mistake
     by inner functions during a [vernacinterp]. They should be handled
-    only at the very end of interp, to be displayed to the user.
+    only in [Toplevel.do_vernac] (or Ideslave), to be displayed to the user.
     Typical example: [Sys.Break], [Assert_failure], [Anomaly] ...
 *)
 val noncritical : exn -> bool

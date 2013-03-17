@@ -278,11 +278,7 @@ let rec explain_exn = function
 		   str ", characters " ++ int e ++ str "-" ++
 		   int (e+6) ++ str ")")) ++
 	       report ())
-  | e when is_anomaly e ->
-      print_anomaly e
-  | e ->
-      hov 0 (anomaly_string () ++ str "Uncaught exception " ++
-	       str (Printexc.to_string e)++report())
+  | e -> Errors.print e (* for anomalies and other uncaught exceptions *)
 
 let parse_args argv =
   let rec parse = function
