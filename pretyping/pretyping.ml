@@ -196,9 +196,11 @@ let invert_ltac_bound_name env id0 id =
 		       str " which is not bound in current context.")
 
 let protected_get_type_of env sigma c =
-  try Retyping.get_type_of env sigma c
-  with e when is_anomaly e ->
-    errorlabstrm "" (str "Cannot reinterpret " ++ quote (print_constr c) ++ str " in the current environment.")
+  try Retyping.get_type_of ~lax:true env sigma c
+  with Retyping.RetypeError _ ->
+    errorlabstrm ""
+      (str "Cannot reinterpret " ++ quote (print_constr c) ++
+       str " in the current environment.")
 
 let pretype_id loc env sigma (lvar,unbndltacvars) id =
   (* Look for the binder of [id] *)

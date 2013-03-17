@@ -20,8 +20,15 @@ open Environ
 (** The "polyprop" optional argument is used by the extraction to
     disable "Prop-polymorphism", cf comment in [inductive.ml] *)
 
+(** The "lax" optional argument provides a relaxed version of
+    [get_type_of] that won't raise any anomaly but RetypeError instead *)
+
+type retype_error
+exception RetypeError of retype_error
+
 val get_type_of :
-  ?polyprop:bool -> ?refresh:bool -> env -> evar_map -> constr -> types
+  ?polyprop:bool -> ?refresh:bool -> ?lax:bool ->
+  env -> evar_map -> constr -> types
 
 val get_sort_of :
   ?polyprop:bool -> env -> evar_map -> types -> sorts

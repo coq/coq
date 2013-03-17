@@ -18,12 +18,39 @@ open Environ
 open Declarations
 open Termops
 
+type retype_error =
+  | NotASort
+  | NotAnArity
+  | NotAType
+  | BadVariable of Id.t
+  | BadMeta of int
+  | BadRecursiveType
+  | NonFunctionalConstruction
+
+let print_retype_error = function
+  | NotASort -> str "Not a sort"
+  | NotAnArity -> str "Not an arity"
+  | NotAType -> str "Not a type (1)"
+  | BadVariable id -> str "variable " ++ Id.print id ++ str " unbound"
+  | BadMeta n -> str "unknown meta " ++ int n
+  | BadRecursiveType -> str "Bad recursive type"
+  | NonFunctionalConstruction -> str "Non-functional construction"
+
+exception RetypeError of retype_error
+
+let retype_error re = raise (RetypeError re)
+
+let anomaly_on_error f x =
+ try f x
+ with RetypeError e -> anomaly ~label:"retyping" (print_retype_error e)
+
+
 let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
       match kind_of_term (whd_betadeltaiota env sigma typ) with
         | Prod (na,c1,c2) -> subst_type env sigma (subst1 h c2) rest
-        | _ -> anomaly (str "Non-functional construction")
+        | _ -> retype_error NonFunctionalConstruction
 
 (* If ft is the type of f which itself is applied to args, *)
 (* [sort_of_atomic_type] computes ft[args] which has to be a sort *)
@@ -33,13 +60,12 @@ let sort_of_atomic_type env sigma ft args =
     match kind_of_term (whd_betadeltaiota env sigma ar), args with
     | Prod (na, t, b), h::l -> concl_of_arity (push_rel (na,Some h,t) env) b l
     | Sort s, [] -> s
-    | _ -> anomaly (str "Not a sort")
+    | _ -> retype_error NotASort
   in concl_of_arity env ft (Array.to_list args)
 
 let type_of_var env id =
   try let (_,_,ty) = lookup_named id env in ty
-  with Not_found ->
-    anomaly ~label:"type_of" (str "variable " ++ Id.print id ++ str " unbound")
+  with Not_found -> retype_error (BadVariable id)
 
 let is_impredicative_set env = match Environ.engagement env with
 | Some ImpredicativeSet -> true
@@ -50,7 +76,7 @@ let retype ?(polyprop=true) sigma =
     match kind_of_term cstr with
     | Meta n ->
       (try strip_outer_cast (Evd.meta_ftype sigma n).Evd.rebus
-       with Not_found -> anomaly ~label:"type_of" (str "unknown meta " ++ int n))
+       with Not_found -> retype_error (BadMeta n))
     | Rel n ->
         let (_,_,ty) = lookup_rel n env in
         lift n ty
@@ -62,7 +88,8 @@ let retype ?(polyprop=true) sigma =
     | Case (_,p,c,lf) ->
         let Inductiveops.IndType(_,realargs) =
           try Inductiveops.find_rectype env sigma (type_of env c)
-          with Not_found -> anomaly ~label:"type_of" (str "Bad recursive type") in
+          with Not_found -> retype_error BadRecursiveType
+        in
         let t = whd_beta sigma (applist (p, realargs)) in
         (match kind_of_term (whd_betadeltaiota env sigma (type_of env t)) with
           | Prod _ -> whd_beta sigma (applist (t, [c]))
@@ -102,8 +129,7 @@ let retype ?(polyprop=true) sigma =
 	let t = type_of_global_reference_knowing_parameters env f args in
         sort_of_atomic_type env sigma t args
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
-    | Lambda _ | Fix _ | Construct _ ->
-        anomaly ~label:"sort_of" (str "Not a type (1)")
+    | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
     | _ -> decomp_sort env sigma (type_of env t)
 
   and sort_family_of env t =
@@ -120,8 +146,7 @@ let retype ?(polyprop=true) sigma =
         family_of_sort (sort_of_atomic_type env sigma t args)
     | App(f,args) ->
 	family_of_sort (sort_of_atomic_type env sigma (type_of env f) args)
-    | Lambda _ | Fix _ | Construct _ ->
-        anomaly ~label:"sort_of" (str "Not a type (1)")
+    | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
     | _ -> family_of_sort (decomp_sort env sigma (type_of env t))
 
   and type_of_global_reference_knowing_parameters env c args =
@@ -131,11 +156,11 @@ let retype ?(polyprop=true) sigma =
       let (_,mip) = lookup_mind_specif env ind in
 	(try Inductive.type_of_inductive_knowing_parameters
 	       ~polyprop env mip argtyps
-	 with Reduction.NotArity -> anomaly ~label:"type_of" (str "Not an arity"))
+	 with Reduction.NotArity -> retype_error NotAnArity)
     | Const cst ->
       let t = constant_type env cst in
 	(try Typeops.type_of_constant_knowing_parameters env t argtyps
-	 with Reduction.NotArity -> anomaly ~label:"type_of" (str "Not an arity"))
+	 with Reduction.NotArity -> retype_error NotAnArity)
     | Var id -> type_of_var env id
     | Construct cstr -> type_of_constructor env cstr
     | _ -> assert false
@@ -144,11 +169,11 @@ let retype ?(polyprop=true) sigma =
      type_of_global_reference_knowing_parameters
 
 let get_sort_of ?(polyprop=true) env sigma t =
-  let _,f,_,_ = retype ~polyprop sigma in f env t
+  let _,f,_,_ = retype ~polyprop sigma in anomaly_on_error (f env) t
 let get_sort_family_of ?(polyprop=true) env sigma c =
-  let _,_,f,_ = retype ~polyprop sigma in f env c
+  let _,_,f,_ = retype ~polyprop sigma in anomaly_on_error (f env) c
 let type_of_global_reference_knowing_parameters env sigma c args =
-  let _,_,_,f = retype sigma in f env c args
+  let _,_,_,f = retype sigma in anomaly_on_error (f env c) args
 
 let type_of_global_reference_knowing_conclusion env sigma c conclty =
   let conclty = nf_evar sigma conclty in
@@ -166,10 +191,10 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
 
 (* We are outside the kernel: we take fresh universes *)
 (* to avoid tactics and co to refresh universes themselves *)
-let get_type_of ?(polyprop=true) ?(refresh=true) env sigma c =
+let get_type_of ?(polyprop=true) ?(refresh=true) ?(lax=false) env sigma c =
   let f,_,_,_ = retype ~polyprop sigma in
-  let t = f env c in
-    if refresh then refresh_universes t else t
+  let t = if lax then f env c else anomaly_on_error (f env) c in
+  if refresh then refresh_universes t else t
 
 (* Makes an assumption from a constr *)
 let get_assumption_of env evc c = c
