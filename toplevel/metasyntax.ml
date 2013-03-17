@@ -266,8 +266,8 @@ let parse_format ((loc, str) : lstring) =
       | _ -> error "Box closed without being opened in format."
     else
       error "Empty format."
-  with e when Errors.noncritical e ->
-    let e = Errors.push e in
+  with reraise ->
+    let e = Errors.push reraise in
     Loc.raise loc e
 
 (***********************)

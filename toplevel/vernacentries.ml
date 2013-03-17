@@ -1804,12 +1804,11 @@ let interp c =
     if not (not mode && !Flags.program_mode && not isprogcmd) then
       Flags.program_mode := mode;
     true
-  with e when Errors.noncritical e ->
-    let e = Errors.push e in
-    match e with
+  with
     | UnsafeSuccess ->
-        Flags.program_mode := mode;
-        false
-    | e ->
+      Flags.program_mode := mode;
+      false
+    | reraise ->
+      let e = Errors.push reraise in
       Flags.program_mode := mode;
       raise e

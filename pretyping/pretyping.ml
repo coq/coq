@@ -69,8 +69,8 @@ let search_guard loc env possible_indexes fixdefs =
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
     let fix = ((indexes, 0),fixdefs) in
     (try check_fix env fix
-     with e when Errors.noncritical e ->
-       let e = Errors.push e in Loc.raise loc e);
+     with reraise ->
+       let e = Errors.push reraise in Loc.raise loc e);
     indexes
   else
     (* we now search recursively amoungst all combinations *)
@@ -368,8 +368,8 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	  | GCoFix i ->
 	      let cofix = (i,(names,ftys,fdefs)) in
 	      (try check_cofix env cofix
-               with e when Errors.noncritical e ->
-                 let e = Errors.push e in Loc.raise loc e);
+               with reraise ->
+                 let e = Errors.push reraise in Loc.raise loc e);
 	      make_judge (mkCoFix cofix) ftys.(i)
         in
 	inh_conv_coerce_to_tycon loc env evdref fixj tycon
