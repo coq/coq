@@ -1,3 +1,11 @@
+Changes from V8.4pl1 to V8.4pl2
+===============================
+
+Extraction
+
+- The option Extraction AccessOpaque is now set by default,
+  restoring compatibility of older versions of Coq (cf bug #2952).
+
 Changes from V8.4 to V8.4pl1
 ============================
 
