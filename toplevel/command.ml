@@ -117,7 +117,7 @@ let get_locality id = function
 | Discharge ->
   (** If a Let is defined outside a section, then we consider it as a local definition *)
   let msg = pr_id id ++ strbrk " is declared as a local definition" in
-  let () = if Flags.is_verbose () then msg_warning msg in
+  let () = msg_warning msg in
   true
 | Local -> true
 | Global -> false
