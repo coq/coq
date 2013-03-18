@@ -129,7 +129,7 @@ let mk_open_instance id gl m t=
 	| _-> anomaly "can't happen" in
   let ntt=try
     Pretyping.Default.understand evmap env (raux m rawt)
-  with _ ->
+  with e when Errors.noncritical e ->
     error "Untypable instance, maybe higher-order non-prenex quantification" in
     decompose_lam_n_assum m ntt
 

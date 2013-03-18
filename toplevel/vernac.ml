@@ -156,7 +156,7 @@ let close_input in_chan (_,verb) =
     match verb with
       | Some verb_ch -> close_in verb_ch
       | _ -> ()
-  with _ -> ()
+  with e when Errors.noncritical e -> ()
 
 let verbose_phrase verbch loc =
   let loc = unloc loc in
@@ -232,13 +232,13 @@ let rec vernac_com interpfun checknav (loc,com) =
               Lexer.restore_com_state cs;
               Pp.comments := cl;
               Dumpglob.coqdoc_unfreeze cds
-	    with e ->
+	    with reraise ->
 	      if !Flags.beautify_file then close_out !chan_beautify;
               chan_beautify := ch;
               Lexer.restore_com_state cs;
               Pp.comments := cl;
               Dumpglob.coqdoc_unfreeze cds;
-	      raise e
+	      raise reraise
 	  end
 
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
@@ -250,7 +250,7 @@ let rec vernac_com interpfun checknav (loc,com) =
 	  (* If the command actually works, ignore its effects on the state *)
 	  States.with_state_protection
 	    (fun v -> interp v; raise HasNotFailed) v
-	with e -> match real_error e with
+	with e when Errors.noncritical e -> match real_error e with
 	  | HasNotFailed ->
 	      errorlabstrm "Fail" (str "The command has not failed !")
 	  | e ->
@@ -278,16 +278,16 @@ let rec vernac_com interpfun checknav (loc,com) =
             States.with_heavy_rollback interpfun
               Cerrors.process_vernac_interp_error v;
 	    restore_timeout psh
-	  with e -> restore_timeout psh; raise e
+	  with reraise -> restore_timeout psh; raise reraise
   in
     try
       checknav loc com;
       current_timeout := !default_timeout;
       if do_beautify () then pr_new_syntax loc (Some com);
       interp com
-    with e ->
+    with any ->
       Format.set_formatter_out_channel stdout;
-      raise (DuringCommandInterp (loc, e))
+      raise (DuringCommandInterp (loc, any))
 
 and read_vernac_file verbosely s =
   Flags.make_warn verbosely;
@@ -316,13 +316,13 @@ and read_vernac_file verbosely s =
       end_inner_command (snd loc_ast);
       pp_flush ()
     done
-  with e ->   (* whatever the exception *)
+  with reraise ->   (* whatever the exception *)
     Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
-    match real_error e with
+    match real_error reraise with
       | End_of_input ->
           if do_beautify () then pr_new_syntax (make_loc (max_int,max_int)) None
-      | _ -> raise_with_file fname e
+      | _ -> raise_with_file fname reraise
 
 (** [eval_expr : ?preserving:bool -> Pp.loc * Vernacexpr.vernac_expr -> unit]
    It executes one vernacular command. By default the command is
@@ -359,9 +359,9 @@ let load_vernac verb file =
     Lib.mark_end_of_command (); (* in case we're still in coqtop init *)
     read_vernac_file verb file;
     if !Flags.beautify_file then close_out !chan_beautify;
-  with e ->
+  with reraise ->
     if !Flags.beautify_file then close_out !chan_beautify;
-    raise_with_file file e
+    raise_with_file file reraise
 
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =

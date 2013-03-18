@@ -879,7 +879,7 @@ let is_program_branch = function
     (try
        ignore (int_of_string (String.sub s n (String.length s - n)));
        String.sub s 0 n = br
-     with _ -> false)
+     with e when Errors.noncritical e -> false)
   | Tmp _ | Dummy -> false
 
 let expand_linear_let o id e =
@@ -1312,7 +1312,7 @@ let inline_test r t =
     let c = match r with ConstRef c -> c | _ -> assert false in
     let has_body =
       try constant_has_body (Global.lookup_constant c)
-      with _ -> false
+      with e when Errors.noncritical e -> false
     in
     has_body &&
       (let t1 = eta_red t in

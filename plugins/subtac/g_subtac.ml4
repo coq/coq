@@ -90,7 +90,8 @@ VERNAC COMMAND EXTEND Subtac
 
 let try_catch_exn f e =
   try f e
-  with exn -> errorlabstrm "Program" (Errors.print exn)
+  with exn when Errors.noncritical exn ->
+    errorlabstrm "Program" (Errors.print exn)
 
 let subtac_obligation e = try_catch_exn Subtac_obligations.subtac_obligation e
 let next_obligation e = try_catch_exn Subtac_obligations.next_obligation e

@@ -88,8 +88,8 @@ let is_freevar ids env x =
     if Idset.mem x ids then false
     else
       try ignore(Environ.lookup_named x env) ; false
-      with _ -> not (is_global x)
-  with _ -> true
+      with e when Errors.noncritical e -> not (is_global x)
+  with e when Errors.noncritical e -> true
 
 (* Auxiliary functions for the inference of implicitly quantified variables. *)
 

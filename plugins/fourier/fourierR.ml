@@ -40,7 +40,7 @@ type flin = {fhom: rational Constrhash.t;
 
 let flin_zero () = {fhom=Constrhash.create 50;fcste=r0};;
 
-let flin_coef f x = try (Constrhash.find f.fhom x) with _-> r0;;
+let flin_coef f x = try (Constrhash.find f.fhom x) with Not_found -> r0;;
 
 let flin_add f x c =
     let cx = flin_coef f x in
@@ -141,10 +141,12 @@ let rec flin_of_constr c =
 	     (try (let a=(rational_of_constr args.(0)) in
                      try (let b = (rational_of_constr args.(1)) in
 			    (flin_add_cste (flin_zero()) (rmult a b)))
-		     with _-> (flin_add (flin_zero())
+		     with e when Errors.noncritical e ->
+                       (flin_add (flin_zero())
 				 args.(1)
 				 a))
-	      with _-> (flin_add (flin_zero())
+	      with e when Errors.noncritical e ->
+                (flin_add (flin_zero())
 			  args.(0)
 			  (rational_of_constr args.(1))))
 	 | "Rinv"->
@@ -154,7 +156,8 @@ let rec flin_of_constr c =
 	     (let b=(rational_of_constr args.(1)) in
 		try (let a = (rational_of_constr args.(0)) in
 		       (flin_add_cste (flin_zero()) (rdiv a b)))
-		with _-> (flin_add (flin_zero())
+		with e when Errors.noncritical e ->
+                  (flin_add (flin_zero())
 		            args.(0)
                             (rinv b)))
          |_->assert false)
@@ -164,7 +167,8 @@ let rec flin_of_constr c =
               |"R0" -> flin_zero ()
               |_-> assert false)
   |_-> assert false)
-  with _ -> flin_add (flin_zero())
+  with e when Errors.noncritical e ->
+    flin_add (flin_zero())
                      c
 	             r1
 ;;
@@ -494,13 +498,13 @@ let rec fourier gl=
 	    |_->assert false)
         |_->assert false
       in tac gl)
-     with _ ->
+     with e when Errors.noncritical e ->
     (* les hypothèses *)
     let hyps = List.map (fun (h,t)-> (mkVar h,t))
                         (list_of_sign (pf_hyps gl)) in
     let lineq =ref [] in
     List.iter (fun h -> try (lineq:=(ineq1_of_constr h)@(!lineq))
-		        with _ -> ())
+		        with e when Errors.noncritical e -> ())
               hyps;
     (* lineq = les inéquations découlant des hypothèses *)
     if !lineq=[] then Util.error "No inequalities";

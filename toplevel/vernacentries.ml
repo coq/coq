@@ -295,7 +295,7 @@ let dump_universes_gen g s =
     close ();
     msgnl (str ("Universes written to file \""^s^"\"."))
   with
-      e -> close (); raise e
+      reraise -> close (); raise reraise
 
 let dump_universes sorted s =
   let g = Global.universes () in
@@ -331,7 +331,7 @@ let msg_notfound_library loc qid = function
 let print_located_library r =
   let (loc,qid) = qualid_of_reference r in
   try msg_found_library (Library.locate_qualified_library false qid)
-  with e -> msg_notfound_library loc qid e
+  with e when Errors.noncritical e -> msg_notfound_library loc qid e
 
 let print_located_module r =
   let (loc,qid) = qualid_of_reference r in
@@ -364,7 +364,7 @@ let dump_global r =
   try
     let gr = Smartlocate.smart_global r in
     Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr
-  with _ -> ()
+  with e when Errors.noncritical e -> ()
 (**********)
 (* Syntax *)
 
@@ -910,7 +910,9 @@ let vernac_declare_arguments local r l nargs flags =
     | None -> None
     | Some (o, k) -> 
         try Some(ignore(Notation.find_scope k); k)
-        with _ -> Some (Notation.find_delimiters_scope o k)) scopes in
+        with e when Errors.noncritical e ->
+          Some (Notation.find_delimiters_scope o k)) scopes
+  in
   let some_scopes_specified = List.exists ((<>) None) scopes in
   let rargs =
     Util.list_map_filter (function (n, true) -> Some n | _ -> None)
@@ -1417,7 +1419,7 @@ let vernac_reset_name id =
 	let gr = Smartlocate.global_with_alias (Ident id) in
 	Dumpglob.add_glob (fst id) gr;
 	true
-      with _ -> false in
+      with e when Errors.noncritical e -> false in
 
     if not globalized then begin
        try begin match Lib.find_opening_node (snd id) with

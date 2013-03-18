@@ -33,10 +33,11 @@ let set_of_list_eq eq l =
 
 let memos s memoire nf f x =
    try (let v = Hashtbl.find memoire (nf x) in pr s;v)
-   with _ -> (pr "#";
-	      let v = f x in
-	      Hashtbl.add memoire (nf x) v;
-	      v)
+   with e when Errors.noncritical e ->
+     (pr "#";
+      let v = f x in
+      Hashtbl.add memoire (nf x) v;
+      v)
 
 
 (**********************************************************************
@@ -64,7 +65,7 @@ let facteurs_liste div constant lp =
                                    if not (constant r)
 				   then l1:=r::(!l1)
                                    else p_dans_lmin:=true)
-			      with _ -> ())
+			      with e when Errors.noncritical e -> ())
                      lmin;
           if !p_dans_lmin
           then factor lmin lp1
@@ -75,7 +76,8 @@ let facteurs_liste div constant lp =
                 List.iter (fun q -> try (let r = div q p in
 					 if not (constant r)
 					 then l1:=r::(!l1))
-				    with _ -> lmin1:=q::(!lmin1))
+				    with e when Errors.noncritical e ->
+                                      lmin1:=q::(!lmin1))
                           lmin;
 	        factor (List.rev (p::(!lmin1))) !l1)
           (* au moins un q de lmin divise p non trivialement *)
@@ -105,7 +107,7 @@ let factorise_tableau div zero c f l1 =
       	                       li:=j::(!li);
                                r:=rr;
 			   done)
-                      with _ -> ())
+                      with e when Errors.noncritical e -> ())
                   l1;
       res.(i)<-(!r,!li))
      f;

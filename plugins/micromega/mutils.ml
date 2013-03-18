@@ -29,10 +29,10 @@ let finally f rst =
   try
     let res = f () in
       rst () ; res
-  with x ->
+  with reraise ->
     (try rst ()
-    with _  -> raise x
-    ); raise x
+    with any  -> raise reraise
+    ); raise reraise
 
 let map_option f x =
   match x with
@@ -431,14 +431,16 @@ let command exe_path args vl =
 	    | Unix.WEXITED 0 ->
 		let inch  = Unix.in_channel_of_descr stdout_read in
 		  begin try Marshal.from_channel inch 
-                        with x -> failwith (Printf.sprintf "command \"%s\" exited %s" exe_path (Printexc.to_string x)) 
+                        with x when x <> Sys.Break ->
+                          failwith (Printf.sprintf "command \"%s\" exited %s" exe_path (Printexc.to_string x))
                   end
 	    | Unix.WEXITED i   -> failwith (Printf.sprintf "command \"%s\" exited %i" exe_path i)
 	    | Unix.WSIGNALED i -> failwith (Printf.sprintf "command \"%s\" killed %i" exe_path i)
 	    | Unix.WSTOPPED i  -> failwith (Printf.sprintf "command \"%s\" stopped %i" exe_path i))
         (* Cleanup  *)
 	(fun () ->
-	  List.iter (fun x -> try Unix.close x with _ -> ()) [stdin_read; stdin_write; stdout_read; stdout_write; stderr_read; stderr_write])
+	  List.iter (fun x -> try Unix.close x with e when e <> Sys.Break -> ())
+            [stdin_read; stdin_write; stdout_read; stdout_write; stderr_read; stderr_write])
 
 (* Local Variables: *)
 (* coding: utf-8 *)

@@ -365,4 +365,4 @@ let _ =
 let with_grammar_rule_protection f x =
   let fs = freeze () in
   try let a = f x in unfreeze fs; a
-  with e -> unfreeze fs; raise e
+  with reraise -> unfreeze fs; raise reraise

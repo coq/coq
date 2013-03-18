@@ -92,8 +92,9 @@ let dir_ml_load s =
       (try t.load_obj s
        with
        | (UserError _ | Failure _ | Anomaly _ | Not_found as u) -> raise u
-       | _ -> errorlabstrm "Mltop.load_object" (str"Cannot link ml-object " ++
-                str s ++ str" to Coq code."))
+       | e when Errors.noncritical e ->
+         errorlabstrm "Mltop.load_object"
+           (str"Cannot link ml-object " ++ str s ++ str" to Coq code."))
 (* TO DO: .cma loading without toplevel *)
     | WithoutTop ->
       IFDEF HasDynlink THEN
@@ -142,7 +143,7 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
 
 let convert_string d =
   try Names.id_of_string d
-  with _ ->
+  with e when Errors.noncritical e ->
     if_warn msg_warning
       (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
     flush_all ();
@@ -269,9 +270,9 @@ let if_verbose_load verb f name fname =
     try
       f name fname;
       msgnl (str (info^" done]"));
-    with e ->
+    with reraise ->
       msgnl (str (info^" failed]"));
-      raise e
+      raise reraise
 
 (** Load a module for the first time (i.e. dynlink it)
     or simulate its reload (i.e. doing nothing except maybe

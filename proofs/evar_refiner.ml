@@ -42,7 +42,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
   let sigma',typed_c =
     try Pretyping.Default.understand_ltac ~resolve_classes:true true sigma env ltac_var
 	  (Pretyping.OfType (Some evi.evar_concl)) rawc
-    with _ ->
+    with e when Errors.noncritical e ->
       let loc = Glob_term.loc_of_glob_constr rawc in
       user_err_loc
         (loc,"",Pp.str ("Instance is not well-typed in the environment of " ^

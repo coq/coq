@@ -650,7 +650,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
 	let scopes = find_arguments_scope ref in
 	Dumpglob.dump_reference loc "<>" (string_of_qualid (Decls.variable_secpath id)) "var";
 	GRef (loc, ref), impls, scopes, []
-      with _ ->
+      with e when Errors.noncritical e ->
 	(* [id] a goal variable *)
 	GVar (loc,id), [], [], []
 
@@ -716,7 +716,7 @@ let intern_applied_reference intern env namedctx lvar args = function
       try
 	let r,args2 = intern_non_secvar_qualid loc qid intern env lvar args in
 	find_appl_head_data r, args2
-      with e ->
+      with e when Errors.noncritical e ->
 	(* Extra allowance for non globalizing functions *)
 	if !interning_grammar || env.unb then
 	  (GVar (loc,id), [], [], []),args

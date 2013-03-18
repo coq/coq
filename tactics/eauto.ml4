@@ -205,7 +205,8 @@ module SearchProblem = struct
 (* 	    let gl = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
 (* 	      msg (hov 1 (pptac ++ str" gives: \n" ++ pr_goals lgls ++ str"\n")); *)
 	      (lgls,pptac) :: aux tacl
-	  with e -> Refiner.catch_failerror e; aux tacl
+	  with e when Errors.noncritical e ->
+            Refiner.catch_failerror e; aux tacl
     in aux l
 
   (* Ordering of states is lexicographic on depth (greatest first) then

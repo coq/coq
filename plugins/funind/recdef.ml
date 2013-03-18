@@ -94,11 +94,11 @@ let do_observe_tac s tac g =
     let v = tac g in 
     ignore(Stack.pop debug_queue);
     v
-  with e -> 
+  with reraise ->
     if not (Stack.is_empty debug_queue)
     then
-      print_debug_queue true e;
-    raise e
+      print_debug_queue true reraise;
+    raise reraise
 
 let observe_tac s tac g =
   if Tacinterp.get_debug () <> Tactic_debug.DebugOff
@@ -140,7 +140,7 @@ let def_of_const t =
       (try (match body_of_constant (Global.lookup_constant sp) with
              | Some c -> Declarations.force c
 	     | _ -> assert false)
-       with _ ->
+       with e when Errors.noncritical e ->
 	 anomaly ("Cannot find definition of constant "^
 		    (string_of_id (id_of_label (con_label sp))))
       )
@@ -380,7 +380,11 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
 		(fun g1 ->
 		   let ty_teq = pf_type_of g1 (mkVar teq) in
 		   let teq_lhs,teq_rhs =
-		     let _,args = try destApp ty_teq with _ -> Pp.msgnl (Printer.pr_goal g1 ++ fnl () ++ pr_id teq ++ str ":" ++ Printer.pr_lconstr ty_teq); assert false in
+		     let _,args =
+                       try destApp ty_teq
+                       with e when Errors.noncritical e ->
+                         Pp.msgnl (Printer.pr_goal g1 ++ fnl () ++ pr_id teq ++ str ":" ++ Printer.pr_lconstr ty_teq); assert false
+                     in
 		     args.(1),args.(2)
 		   in
 	           cont_function (mkVar teq::eqs) (Termops.replace_term teq_lhs teq_rhs expr) g1
@@ -701,12 +705,17 @@ let proveterminate nb_arg rec_arg_id is_mes acc_inv (hrec:identifier)
             (match find_call_occs  nb_arg 0 f_constr expr with
 	      _,[] ->
 	      (try observe_tac "base_leaf" (base_leaf func eqs expr)
-	       with e -> (msgerrnl (str "failure in base case");raise e ))
+	       with reraise ->
+                 (msgerrnl (str "failure in base case");raise reraise ))
 	    | _, _::_ ->
 	      observe_tac "rec_leaf"
 	        (rec_leaf is_mes acc_inv hrec func eqs expr)) in
       v
-    with e -> begin msgerrnl(str "failure in proveterminate"); raise e end
+    with reraise ->
+      begin
+        msgerrnl(str "failure in proveterminate");
+        raise reraise
+      end
   in
   proveterminate
 
@@ -931,7 +940,7 @@ let is_rec_res id =
   let id_name = string_of_id id in
   try
     String.sub id_name 0 (String.length rec_res_name) = rec_res_name
-  with _ -> false
+  with e when Errors.noncritical e -> false
 
 let clear_goals =
   let rec clear_goal t =
@@ -969,7 +978,8 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     | Some s -> s
     | None   ->
 	try (add_suffix current_proof_name "_subproof")
-	with _ -> anomaly "open_new_goal with an unamed theorem"
+	with e when Errors.noncritical e ->
+          anomaly "open_new_goal with an unamed theorem"
   in
   let sign = initialize_named_context_for_proof () in
   let na = next_global_ident_away name [] in
@@ -1439,7 +1449,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
     let stop = ref false in
     begin
       try com_eqn (List.length res_vars) equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type)
-      with e ->
+      with e when Errors.noncritical e ->
 	begin
 	  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
 	  then pperrnl (str "Cannot create equation Lemma " ++ Errors.print e)
@@ -1474,9 +1484,10 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       using_lemmas
       (List.length res_vars)
       hook
-  with e ->
+  with reraise ->
     begin
-      (try ignore (Backtrack.backto previous_label) with _ -> ());
+      (try ignore (Backtrack.backto previous_label)
+       with e when Errors.noncritical e -> ());
       (*       anomaly "Cannot create termination Lemma" *)
-      raise e
+      raise reraise
     end

@@ -221,6 +221,6 @@ let subtac (loc, command) =
   | (Loc.Exc_located (loc, Proof_type.LtacLocated (_,e')) |
      Loc.Exc_located (loc, e') as e) -> raise e
 
-  | e -> 
+  | reraise ->
       (*       msg_warning (str "Uncaught exception: " ++ Errors.print e); *)
-      raise e
+      raise reraise

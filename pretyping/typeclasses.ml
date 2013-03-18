@@ -118,7 +118,7 @@ let _ =
 
 let class_info c =
   try Gmap.find c !classes
-  with _ -> not_a_class (Global.env()) (constr_of_global c)
+  with Not_found -> not_a_class (Global.env()) (constr_of_global c)
 
 let global_class_of_constr env c =
   try class_info (global_of_constr c)
@@ -132,7 +132,9 @@ let dest_class_arity env c =
   let rels, c = Term.decompose_prod_assum c in
     rels, dest_class_app env c
 
-let class_of_constr c = try Some (dest_class_arity (Global.env ()) c) with _ -> None
+let class_of_constr c =
+  try Some (dest_class_arity (Global.env ()) c)
+  with e when Errors.noncritical e -> None
 
 let rec is_class_type evd c =
   match kind_of_term c with
@@ -215,7 +217,7 @@ let rebuild_class cl =
   try 
     let cst = Tacred.evaluable_of_global_reference (Global.env ()) cl.cl_impl in
       set_typeclass_transparency cst false false; cl
-  with _ -> cl
+  with e when Errors.noncritical e -> cl
 
 let class_input : typeclass -> obj =
   declare_object
@@ -238,7 +240,7 @@ let check_instance env sigma c =
     let (evd, c) = resolve_one_typeclass env sigma
       (Retyping.get_type_of env sigma c) in
       Evd.is_empty (Evd.undefined_evars evd)
-  with _ -> false
+  with e when Errors.noncritical e -> false
 
 let build_subclasses ~check env sigma glob pri =
   let rec aux pri c =

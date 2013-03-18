@@ -74,9 +74,9 @@ let with_implicits flags f x =
     let rslt = f x in
     implicit_args := oflags;
     rslt
-  with e -> begin
+  with reraise -> begin
     implicit_args := oflags;
-    raise e
+    raise reraise
   end
 
 let set_maximality imps b =

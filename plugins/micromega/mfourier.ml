@@ -728,7 +728,8 @@ struct
 	    try
 	      Some (bound_of_variable IMap.empty fresh s.sys)
 	    with
-		x -> Printf.printf "optimise Exception : %s" (Printexc.to_string x) ; None
+	      x when x <> Sys.Break ->
+                Printf.printf "optimise Exception : %s" (Printexc.to_string x) ; None
 
 
   let find_point cstrs =

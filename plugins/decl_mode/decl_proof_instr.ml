@@ -381,7 +381,7 @@ let find_subsubgoal c ctyp skip submetas gls =
 		  se.se_meta submetas se.se_meta_list}
 	  else
 	      dfs (pred n)
-      with _ ->
+      with e when Errors.noncritical e ->
 	begin
 	  enstack_subsubgoals env se stack gls;
 	  dfs n
@@ -519,7 +519,10 @@ let decompose_eq id gls =
 
 let instr_rew _thus rew_side cut gls0 =
   let last_id =
-    try get_last (pf_env gls0) with _ -> error "No previous equality." in
+    try get_last (pf_env gls0)
+    with e when Errors.noncritical e ->
+      error "No previous equality."
+  in
   let typ,lhs,rhs = decompose_eq last_id gls0 in
   let items_tac gls =
     match cut.cut_by with
@@ -849,7 +852,7 @@ let build_per_info etype casee gls =
   let ind =
     try
       destInd hd
-    with _ ->
+    with e when Errors.noncritical e ->
       error "Case analysis must be done on an inductive object." in
   let mind,oind = Global.lookup_inductive ind in
   let nparams,index =

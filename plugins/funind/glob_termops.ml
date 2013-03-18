@@ -534,7 +534,8 @@ let rec are_unifiable_aux  = function
 	     else
 	       let eqs' =
  		 try  ((List.combine cpl1 cpl2)@eqs)
-		 with _ -> anomaly "are_unifiable_aux"
+		 with e when Errors.noncritical e ->
+                   anomaly "are_unifiable_aux"
 	       in
 	       are_unifiable_aux eqs'
 
@@ -556,7 +557,8 @@ let rec eq_cases_pattern_aux  = function
 	     else
 	       let eqs' =
  		 try  ((List.combine cpl1 cpl2)@eqs)
-		 with _ -> anomaly "eq_cases_pattern_aux"
+		 with e when Errors.noncritical e ->
+                   anomaly "eq_cases_pattern_aux"
 	       in
 	       eq_cases_pattern_aux eqs'
 	 | _ -> raise NotUnifiable

@@ -90,7 +90,7 @@ let push_rel d env =
 
 let lookup_rel_val n env =
   try List.nth env.env_rel_val (n - 1)
-  with _ -> raise Not_found
+  with e when Errors.noncritical e -> raise Not_found
 
 let env_of_rel n env =
   { env with

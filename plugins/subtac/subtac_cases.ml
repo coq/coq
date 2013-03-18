@@ -342,7 +342,7 @@ let prepare_predicate_from_arsign_tycon loc env evm tomatchs arsign c =
       let pred = predicate 0 c in
       let env' = push_rel_context (context_of_arsign arsign) env in
 	ignore(Typing.sort_of env' evm pred); pred
-    with _ -> lift nar c
+    with e when Errors.noncritical e -> lift nar c
 
 module Cases_F(Coercion : Coercion.S) : S = struct
 
@@ -1465,7 +1465,8 @@ let extract_arity_signatures env0 tomatchl tmsign =
 	      | None -> list_tabulate (fun _ -> Anonymous) nrealargs in
 	  let arsign = fst (get_arity env0 indf) in
 	    (na,None,build_dependent_inductive env0 indf)
-	    ::(try List.map2 (fun x (_,c,t) ->(x,c,t)) realnal arsign with _ -> assert false) in
+	    ::(try List.map2 (fun x (_,c,t) ->(x,c,t)) realnal arsign
+              with e when Errors.noncritical e -> assert false) in
   let rec buildrec = function
     | [],[] -> []
     | (_,tm)::ltm, x::tmsign ->

@@ -303,10 +303,10 @@ let make_notation_gen loc ntn mknot mkprim destprim l =
 	match decompose_notation_key ntn, l with
 	| [Terminal "-"; Terminal x], [] ->
 	    (try mkprim (loc, Numeral (Bigint.neg (Bigint.of_string x)))
-	     with _ -> mknot (loc,ntn,[]))
+	     with e when Errors.noncritical e -> mknot (loc,ntn,[]))
 	| [Terminal x], [] ->
 	    (try mkprim (loc, Numeral (Bigint.of_string x))
-	     with _ -> mknot (loc,ntn,[]))
+	     with e when Errors.noncritical e -> mknot (loc,ntn,[]))
 	| _ ->
 	    mknot (loc,ntn,l)
 
@@ -816,12 +816,14 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
                 match f with
                 | GRef (_,ref) ->
 	          let subscopes =
-		    try list_skipn n (find_arguments_scope ref) with _ -> [] in
+		    try list_skipn n (find_arguments_scope ref)
+                    with e when Errors.noncritical e -> [] in
 	          let impls =
 		    let impls =
 		      select_impargs_size
 		        (List.length args) (implicits_of_global ref) in
-		    try list_skipn n impls with _ -> [] in
+		    try list_skipn n impls
+                    with e when Errors.noncritical e -> [] in
                   subscopes,impls
                 | _ ->
                   [], [] in

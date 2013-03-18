@@ -104,7 +104,8 @@ let get_xml_sort al = sort_of_cdata (get_xml_attr "value" al)
 
 let get_xml_inductive_kn al =
   inductive_of_cdata (* uriType apparent synonym of uri *)
-    (try get_xml_attr "uri" al with _ -> get_xml_attr "uriType" al)
+    (try get_xml_attr "uri" al
+     with e when Errors.noncritical e -> get_xml_attr "uriType" al)
 
 let get_xml_constant al = constant_of_cdata (get_xml_attr "uri" al)
 

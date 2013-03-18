@@ -126,7 +126,7 @@ let mk_cofix_tac (loc,id,bl,ann,ty) =
 let induction_arg_of_constr (c,lbind as clbind) =
   if lbind = NoBindings then
     try ElimOnIdent (constr_loc c,snd(coerce_to_id c))
-    with _ -> ElimOnConstr clbind
+    with e when Errors.noncritical e -> ElimOnConstr clbind
   else ElimOnConstr clbind
 
 let mkTacCase with_evar = function

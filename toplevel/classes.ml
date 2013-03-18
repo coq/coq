@@ -37,7 +37,10 @@ let set_typeclass_transparency c local b =
 let _ =
   Typeclasses.register_add_instance_hint
     (fun inst local pri ->
-     let path = try Auto.PathHints [global_of_constr inst] with _ -> Auto.PathAny in
+     let path =
+       try Auto.PathHints [global_of_constr inst]
+       with e when Errors.noncritical e -> Auto.PathAny
+     in
       Flags.silently (fun () ->
 	Auto.add_hints local [typeclasses_db]
 	  (Auto.HintsResolveEntry
@@ -300,8 +303,10 @@ let context l =
   let fullctx = Evarutil.nf_rel_context_evar !evars fullctx in
   let ce t = Evarutil.check_evars env Evd.empty !evars t in
   List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx;
-  let ctx = try named_of_rel_context fullctx with _ ->
-    error "Anonymous variables not allowed in contexts."
+  let ctx =
+    try named_of_rel_context fullctx
+    with e when Errors.noncritical e ->
+      error "Anonymous variables not allowed in contexts."
   in
   let fn (id, _, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then

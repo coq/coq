@@ -146,7 +146,7 @@ let possibly_empty_subentries loc (prods,act) =
     (* an exception rather than returning a value; *)
     (* declares loc because some code can refer to it; *)
     (* ensures loc is used to avoid "unused variable" warning *)
-    (true, <:expr< try Some $aux prods$ with [ _ -> None ] >>)
+    (true, <:expr< try Some $aux prods$ with [ e when Errors.noncritical e -> None ] >>)
   else
     (* Static optimisation *)
     (false, aux prods)

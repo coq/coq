@@ -225,7 +225,8 @@ let add_reified_atom t env =
     env.terms <- env.terms @ [t]; i
 
 let get_reified_atom env =
-  try List.nth env.terms with _ -> failwith "get_reified_atom"
+  try List.nth env.terms
+  with e when Errors.noncritical e -> failwith "get_reified_atom"
 
 (* \subsection{Gestion de l'environnement de proposition pour Omega} *)
 (* ajout d'une proposition *)
@@ -235,7 +236,9 @@ let add_prop env t =
     let i = List.length env.props in  env.props <- env.props @ [t]; i
 
 (* accès a une proposition *)
-let get_prop v env = try List.nth v env with _ -> failwith "get_prop"
+let get_prop v env =
+  try List.nth v env
+  with e when Errors.noncritical e -> failwith "get_prop"
 
 (* \subsection{Gestion du nommage des équations} *)
 (* Ajout d'une equation dans l'environnement de reification *)
@@ -247,7 +250,8 @@ let add_equation env e =
 (* accès a une equation *)
 let get_equation env id =
   try Hashtbl.find env.equations id
-  with e -> Printf.printf "Omega Equation %d non trouvée\n" id; raise e
+  with Not_found as e ->
+    Printf.printf "Omega Equation %d non trouvée\n" id; raise e
 
 (* Affichage des termes réifiés *)
 let rec oprint ch = function
@@ -349,7 +353,8 @@ let rec reified_of_formula env = function
       app coq_t_minus [| reified_of_formula env t1; reified_of_formula env t2 |]
 
 let reified_of_formula env f =
-  begin try reified_of_formula env f with e -> oprint stderr f; raise e end
+  try reified_of_formula env f
+  with reraise -> oprint stderr f; raise reraise
 
 let rec reified_of_proposition env = function
     Pequa (_,{ e_comp=Eq; e_left=t1; e_right=t2 }) ->
@@ -380,8 +385,8 @@ let rec reified_of_proposition env = function
   | Pprop t -> app coq_p_prop [| mk_nat (add_prop env t) |]
 
 let reified_of_proposition env f =
-  begin try reified_of_proposition env f
-  with e -> pprint stderr f; raise e end
+  try reified_of_proposition env f
+  with reraise -> pprint stderr f; raise reraise
 
 (* \subsection{Omega vers COQ réifié} *)
 
@@ -397,11 +402,11 @@ let reified_of_omega env body constant =
   List.fold_right mk_coeff body coeff_constant
 
 let reified_of_omega env body c  =
-  begin try
+  try
     reified_of_omega env body c
-  with e ->
-    display_eq display_omega_var (body,c); raise e
-  end
+  with reraise ->
+    display_eq display_omega_var (body,c); raise reraise
+
 
 (* \section{Opérations sur les équations}
 Ces fonctions préparent les traces utilisées par la tactique réfléchie
@@ -1000,10 +1005,11 @@ let rec solve_with_constraints all_solutions path =
   let weighted = filter_compatible_systems path all_solutions in
   let (winner_sol,winner_deps) =
     try select_smaller weighted
-    with e ->
+    with reraise ->
       Printf.printf "%d - %d\n"
 	(List.length weighted) (List.length all_solutions);
-      List.iter display_depend path; raise e in
+      List.iter display_depend path; raise reraise
+  in
   build_tree winner_sol (List.rev path) winner_deps
 
 let find_path {o_hyp=id;o_path=p} env =

@@ -232,7 +232,7 @@ let build_dependent_sum l =
 	let hyptype = substl names t in
 	  trace (spc () ++ str ("treating evar " ^ string_of_id n));
 	  (try trace (str " assert: " ++ my_print_constr (Global.env ()) hyptype)
-	   with _ -> ());
+	   with e when Errors.noncritical e -> ());
 	let tac = assert_tac (Name n) hyptype in
 	let conttac =
 	  (fun cont ->
@@ -331,7 +331,7 @@ let destruct_ex ext ex =
 	       Ind i when i = Term.destInd (delayed_force ex_ind) && Array.length args = 2 ->
 		 let (dom, rng) =
 		   try (args.(0), args.(1))
-		   with _ -> assert(false)
+		   with e when Errors.noncritical e -> assert(false)
 		 in
 		 let pi1 = (mk_ex_pi1 dom rng acc) in
 		 let rng_body =
@@ -375,9 +375,9 @@ let solve_by_tac evi t =
       Inductiveops.control_only_guard (Global.env ())
 	const.Entries.const_entry_body;
       const.Entries.const_entry_body
-  with e ->
+  with reraise ->
     Pfedit.delete_current_proof();
-    raise e
+    raise reraise
 
 (* let apply_tac t goal = t goal *)
 

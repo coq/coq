@@ -150,7 +150,7 @@ let real_nonlinear_prover d l =
    S (Some proof)
  with
   | Sos_lib.TooDeep -> S None
-  |    x        ->   F (Printexc.to_string x)
+  | x when x <> Sys.Break -> F (Printexc.to_string x)
 
 (* This is somewhat buggy, over Z, strict inequality vanish... *)
 let pure_sos  l =
@@ -174,7 +174,7 @@ let pure_sos  l =
     S (Some proof)
  with
 (*   | Sos.CsdpNotFound -> F "Sos.CsdpNotFound" *)
-   |  x        -> (* May be that could be refined *) S None
+   | x when x <> Sys.Break -> (* May be that could be refined *) S None
 
 
 
@@ -203,7 +203,7 @@ let main () =
       Marshal.to_channel  chan (cert:csdp_certificate) [] ;
       flush chan ;
       exit 0
-  with  x -> (Printf.fprintf chan "error %s" (Printexc.to_string x)  ; exit 1)
+  with any -> (Printf.fprintf chan "error %s" (Printexc.to_string any)  ; exit 1)
 
 ;;
 

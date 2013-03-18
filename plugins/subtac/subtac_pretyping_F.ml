@@ -302,7 +302,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	      make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	  | GCoFix i ->
 	      let cofix = (i,(names,ftys,fdefs)) in
-	      (try check_cofix env cofix with e -> Loc.raise loc e);
+	      (try check_cofix env cofix
+               with e when Errors.noncritical e -> Loc.raise loc e);
 	      make_judge (mkCoFix cofix) ftys.(i) in
 	inh_conv_coerce_to_tycon loc env evdref fixj tycon
 
@@ -601,7 +602,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	     ~split:true ~fail:true env !evdref;
 	   evdref := Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
 	     ~split:true ~fail:false env !evdref
-	 with e -> if fail_evar then raise e else ());
+	 with e when Errors.noncritical e ->
+           if fail_evar then raise e else ());
       evdref := consider_remaining_unif_problems env !evdref;
       let c = if expand_evar then nf_evar !evdref c' else c' in
       if fail_evar then check_evars env Evd.empty !evdref c;

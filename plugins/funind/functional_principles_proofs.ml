@@ -33,9 +33,12 @@ let observennl strm =
 
 let do_observe_tac s tac g =
  try let v = tac g in (* msgnl (goal ++ fnl () ++ (str s)++(str " ")++(str "finished")); *) v
- with e ->
-   let e = Cerrors.process_vernac_interp_error e in
-   let goal = begin try (Printer.pr_goal g) with _ -> assert false end in
+ with reraise ->
+   let e = Cerrors.process_vernac_interp_error reraise in
+   let goal =
+     try (Printer.pr_goal g)
+     with e when Errors.noncritical e -> assert false
+   in
    msgnl (str "observation "++ s++str " raised exception " ++
 	    Errors.print e ++ str " on goal " ++ goal );
    raise e;;
@@ -119,7 +122,7 @@ let is_trivial_eq t =
 	    eq_constr t1 t2 && eq_constr a1 a2
 	| _ -> false
     end
-  with _ -> false
+  with e when Errors.noncritical e -> false
   in
 (*   observe (str "is_trivial_eq " ++ Printer.pr_lconstr t ++ (if res then str " true" else str " false")); *)
   res
@@ -145,7 +148,7 @@ let is_incompatible_eq t =
 	    (eq_constr u1 u2 &&
 	       incompatible_constructor_terms t1 t2)
 	| _ -> false
-    with _ -> false
+    with e when Errors.noncritical e -> false
   in
   if res then   observe (str "is_incompatible_eq " ++ Printer.pr_lconstr t);
   res
@@ -232,7 +235,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	  then
 	    (jmeq_refl (),(args.(1),args.(0)),(args.(3),args.(2)),args.(0))
 	  else nochange "not an equality"
-      with _ -> nochange "not an equality"
+      with e when Errors.noncritical e -> nochange "not an equality"
     in
     if not ((closed0 (fst t1)) && (closed0 (snd t1)))then nochange "not a closed lhs";
     let rec compute_substitution sub t1 t2 =
@@ -608,7 +611,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 let my_orelse tac1 tac2 g =
   try
     tac1 g
-  with e ->
+  with e when Errors.noncritical e ->
 (*     observe (str "using snd tac since : " ++ Errors.print e); *)
     tac2 g
 
@@ -1212,7 +1215,11 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	let ctxt,pte_app =  (decompose_prod_assum (pf_concl gl)) in
 	let pte,pte_args = (decompose_app pte_app) in
 	try
-	  let pte = try destVar pte with _ -> anomaly "Property is not a variable"  in
+	  let pte =
+            try destVar pte
+            with e when Errors.noncritical e ->
+              anomaly "Property is not a variable"
+          in
 	  let fix_info = Idmap.find  pte ptes_to_fix in
 	  let nb_args = fix_info.nb_realargs in
 	  tclTHENSEQ

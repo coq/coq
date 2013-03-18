@@ -320,10 +320,12 @@ let rec tclDISPATCHGEN null join tacs env = { go = fun sk fk step ->
 (* takes a tactic which can raise exception and makes it pure by *failing* 
     on with these exceptions. Does not catch anomalies. *)
 let purify t = 
-  let t' env = { go = fun sk fk step -> try (t env).go (fun x -> sk (Util.Inl x)) fk step
-     	                                                     with Util.Anomaly _ as e -> raise e
-							           | e -> sk (Util.Inr e) fk step
-	       }
+  let t' env =
+    { go = fun sk fk step ->
+      try (t env).go (fun x -> sk (Util.Inl x)) fk step
+      with Util.Anomaly _ as e -> raise e
+	| e when Errors.noncritical e -> sk (Util.Inr e) fk step
+    }
   in
   tclBIND t' begin function
     | Util.Inl x -> tclUNIT x

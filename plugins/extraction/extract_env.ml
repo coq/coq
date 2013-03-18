@@ -397,8 +397,10 @@ let mono_filename f =
 	in
 	let id =
 	  if lang () <> Haskell then default_id
-	  else try id_of_string (Filename.basename f)
-	  with _ -> error "Extraction: provided filename is not a valid identifier"
+	  else
+            try id_of_string (Filename.basename f)
+	    with e when Errors.noncritical e ->
+              error "Extraction: provided filename is not a valid identifier"
 	in
 	Some (f^d.file_suffix), Option.map ((^) f) d.sig_suffix, id
 
@@ -473,8 +475,8 @@ let print_structure_to_file (fn,si,mo) dry struc =
     msg_with ft (d.preamble mo opened unsafe_needs);
     msg_with ft (d.pp_struct struc);
     Option.iter close_out cout;
-  with e ->
-    Option.iter close_out cout; raise e
+  with reraise ->
+    Option.iter close_out cout; raise reraise
   end;
   if not dry then Option.iter info_file fn;
   (* Now, let's print the signature *)
@@ -487,8 +489,8 @@ let print_structure_to_file (fn,si,mo) dry struc =
 	 msg_with ft (d.sig_preamble mo opened unsafe_needs);
 	 msg_with ft (d.pp_sig (signature_of_structure struc));
 	 close_out cout;
-       with e ->
-	 close_out cout; raise e
+       with reraise ->
+	 close_out cout; raise reraise
        end;
        info_file si)
     (if dry then None else si);
@@ -527,7 +529,9 @@ let rec locate_ref = function
   | r::l ->
       let q = snd (qualid_of_reference r) in
       let mpo = try Some (Nametab.locate_module q) with Not_found -> None
-      and ro = try Some (Smartlocate.global_with_alias r) with _ -> None
+      and ro =
+        try Some (Smartlocate.global_with_alias r)
+        with e when Errors.noncritical e -> None
       in
       match mpo, ro with
 	| None, None -> Nametab.error_global_not_found q

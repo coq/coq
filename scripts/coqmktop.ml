@@ -256,8 +256,8 @@ let create_tmp_main_file modules =
     output_string oc "Coqtop.start();;\n";
     close_out oc;
     main_name
-  with e ->
-    clean main_name; raise e
+  with reraise ->
+    clean main_name; raise reraise
 
 (* main part *)
 let main () =
@@ -310,10 +310,10 @@ let main () =
 	clean main_file;
 	(* command gives the exit code in HSB, and signal in LSB !!! *)
 	if retcode > 255 then retcode lsr 8 else retcode
-  with e ->
-    clean main_file; raise e
+  with reraise ->
+    clean main_file; raise reraise
 
 let retcode =
-  try Printexc.print main () with _ -> 1
+  try Printexc.print main () with any -> 1
 
 let _ = exit retcode

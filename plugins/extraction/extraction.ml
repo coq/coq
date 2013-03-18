@@ -149,7 +149,7 @@ let rec handle_exn r n fn_name = function
 	 (fun i ->
 	    assert ((0 < i) && (i <= n));
 	    MLexn ("IMPLICIT "^ msg_non_implicit r (n+1-i) (fn_name i)))
-       with _ -> MLexn s)
+       with e when Errors.noncritical e -> MLexn s)
   | a -> ast_map (handle_exn r n fn_name) a
 
 (*S Management of type variable contexts. *)
@@ -683,7 +683,7 @@ and extract_cst_app env mle mlt kn args =
 	let l,l' = list_chop (projection_arity (ConstRef kn)) mla in
 	if l' <> [] then (List.map (fun _ -> MLexn "Proj Args") l) @ l'
 	else mla
-      with _ -> mla
+      with e when Errors.noncritical e -> mla
   in
   (* For strict languages, purely logical signatures with at least
      one [Kill Kother] lead to a dummy lam. So a [MLdummy] is left

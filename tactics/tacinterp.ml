@@ -50,7 +50,7 @@ open Compat
 open Evd
 
 let safe_msgnl s =
-    try msgnl s with e ->
+    try msgnl s with e when Errors.noncritical e ->
       msgnl
 	(str "bug in the debugger: " ++
          str "an exception is raised while printing debug information")
@@ -92,7 +92,7 @@ let catch_error call_trace tac g =
   if call_trace = [] then tac g else try tac g with
   | LtacLocated _ as e -> raise e
   | Loc.Exc_located (_,LtacLocated _) as e -> raise e
-  | e ->
+  | e when Errors.noncritical e ->
     let (nrep,loc',c),tail = list_sep_last call_trace in
     let loc,e' = match e with Loc.Exc_located(loc,e) -> loc,e | _ ->dloc,e in
     if tail = [] then
@@ -569,13 +569,13 @@ let dump_glob_red_expr = function
     try
       Dumpglob.add_glob (loc_of_or_by_notation Libnames.loc_of_reference r)
 	(Smartlocate.smart_global r)
-    with _ -> ()) occs
+    with e when Errors.noncritical e -> ()) occs
   | Cbv grf | Lazy grf ->
     List.iter (fun r ->
       try
         Dumpglob.add_glob (loc_of_or_by_notation Libnames.loc_of_reference r)
 	  (Smartlocate.smart_global r)
-      with _ -> ()) grf.rConst
+      with e when Errors.noncritical e -> ()) grf.rConst
   | _ -> ()
 
 let intern_red_expr ist = function
@@ -1412,19 +1412,20 @@ let interp_may_eval f ist gl = function
   | ConstrTerm c ->
      try
 	f ist gl c
-     with e ->
-       debugging_exception_step ist false e (fun () ->
+     with reraise ->
+       debugging_exception_step ist false reraise (fun () ->
          str"interpretation of term " ++ pr_glob_constr_env (pf_env gl) (fst c));
-       raise e
+       raise reraise
 
 (* Interprets a constr expression possibly to first evaluate *)
 let interp_constr_may_eval ist gl c =
   let (sigma,csr) =
     try
       interp_may_eval pf_interp_constr ist gl c
-    with e ->
-      debugging_exception_step ist false e (fun () -> str"evaluation of term");
-      raise e
+    with reraise ->
+      debugging_exception_step ist false reraise (fun () ->
+        str"evaluation of term");
+      raise reraise
   in
   begin
     db_constr ist.debug (pf_env gl) csr;
@@ -1922,9 +1923,11 @@ and interp_app loc ist gl fv largs =
 	    try
 	      catch_error trace
 		(val_interp {ist with lfun=newlfun@olfun; trace=trace} gl) body
-	    with e ->
-              debugging_exception_step ist false e (fun () -> str "evaluation");
-	      raise e in
+	    with reraise ->
+              debugging_exception_step ist false reraise
+                (fun () -> str "evaluation");
+	      raise reraise
+          in
 	  let gl = { gl with sigma=sigma } in
           debugging_step ist
 	    (fun () ->
@@ -2209,19 +2212,20 @@ and interp_match ist g lz constr lmr =
         (try
             let lmatch =
               try extended_matches c csr
-              with e ->
-                debugging_exception_step ist false e (fun () ->
+              with reraise ->
+                debugging_exception_step ist false reraise (fun () ->
                   str "matching with pattern" ++ fnl () ++
                   pr_constr_pattern_env (pf_env g) c);
-                raise e in
+                raise reraise
+            in
             try
               let lfun = extend_values_with_bindings lmatch ist.lfun in
               eval_with_fail { ist with lfun=lfun } lz g mt
-            with e ->
-              debugging_exception_step ist false e (fun () ->
+            with reraise ->
+              debugging_exception_step ist false reraise (fun () ->
                 str "rule body for pattern" ++
                 pr_constr_pattern_env (pf_env g) c);
-              raise e
+              raise reraise
          with e when is_match_catchable e ->
            debugging_step ist (fun () -> str "switching to the next rule");
            apply_match ist sigma csr tl)
@@ -2233,15 +2237,16 @@ and interp_match ist g lz constr lmr =
       errorlabstrm "Tacinterp.apply_match" (str
         "No matching clauses for match.") in
   let (sigma,csr) =
-      try interp_ltac_constr ist g constr with e ->
-        debugging_exception_step ist true e
+      try interp_ltac_constr ist g constr with reraise ->
+        debugging_exception_step ist true reraise
           (fun () -> str "evaluation of the matched expression");
-        raise e in
+        raise reraise in
   let ilr = read_match_rule (fst (extract_ltac_constr_values ist (pf_env g))) ist (pf_env g) sigma lmr in
   let res =
-     try apply_match ist sigma csr ilr with e ->
-       debugging_exception_step ist true e (fun () -> str "match expression");
-       raise e in
+     try apply_match ist sigma csr ilr with reraise ->
+       debugging_exception_step ist true reraise
+         (fun () -> str "match expression");
+       raise reraise in
   debugging_step ist (fun () ->
     str "match expression returns " ++ pr_value (Some (pf_env g)) (snd res));
   res
@@ -3178,7 +3183,8 @@ let globTacticIn t = TacArg (dloc,TacDynamic (dloc,tactic_in t))
 let tacticIn t =
   globTacticIn (fun ist ->
     try glob_tactic (t ist)
-    with e -> anomalylabstrm "tacticIn"
+    with e when Errors.noncritical e ->
+      anomalylabstrm "tacticIn"
       (str "Incorrect tactic expression. Received exception is:" ++
        Errors.print e))
 

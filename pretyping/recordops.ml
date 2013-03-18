@@ -207,16 +207,16 @@ let cs_pattern_of_constr t =
   match kind_of_term t with
       App (f,vargs) ->
 	begin
-	  try  Const_cs (global_of_constr f) , -1, Array.to_list vargs with
-	      _ -> raise Not_found
+	  try  Const_cs (global_of_constr f) , -1, Array.to_list vargs
+          with e when Errors.noncritical e -> raise Not_found
 	end
     | Rel n -> Default_cs, pred n, []
     | Prod (_,a,b) when not (Termops.dependent (mkRel 1) b) -> Prod_cs, -1, [a; Termops.pop b]
     | Sort s -> Sort_cs (family_of_sort s), -1, []
     | _ ->
 	begin
-	  try  Const_cs (global_of_constr t) , -1, [] with
-	      _ -> raise Not_found
+	  try  Const_cs (global_of_constr t) , -1, []
+          with e when Errors.noncritical e -> raise Not_found
 	end
 
 (* Intended to always succeed *)

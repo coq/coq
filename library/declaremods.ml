@@ -990,9 +990,9 @@ let declare_include_ interp_struct me_asts =
 let protect_summaries f =
   let fs = Summary.freeze_summaries () in
   try f fs
-  with e ->
+  with reraise ->
     (* Something wrong: undo the whole process *)
-    Summary.unfreeze_summaries fs; raise e
+    Summary.unfreeze_summaries fs; raise reraise
 
 let declare_include interp_struct me_asts =
   protect_summaries

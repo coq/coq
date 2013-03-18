@@ -589,7 +589,7 @@ let pr_assumptionset env s =
 	str (string_of_mp mp ^ "." ^ string_of_label lab)
     in
     let safe_pr_ltype typ =
-      try str " : " ++ pr_ltype typ with _ -> mt ()
+      try str " : " ++ pr_ltype typ with e when Errors.noncritical e -> mt ()
     in
     let (vars,axioms,opaque) =
       ContextObjectMap.fold (fun t typ r ->

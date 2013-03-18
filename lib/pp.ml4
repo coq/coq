@@ -279,7 +279,7 @@ let pp_dirs ft =
     try
       Stream.iter pp_dir dirstream; com_brk ft
     with
-      | e -> Format.pp_print_flush ft () ; raise e
+      | reraise -> Format.pp_print_flush ft () ; raise reraise
 
 
 (* pretty print on stdout and stderr *)

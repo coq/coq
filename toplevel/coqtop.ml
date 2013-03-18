@@ -24,7 +24,8 @@ let get_version_date () =
     let ver = input_line ch in
     let rev = input_line ch in
       (ver,rev)
-  with _ -> (Coq_config.version,Coq_config.date)
+  with e when Errors.noncritical e ->
+    (Coq_config.version,Coq_config.date)
 
 let print_header () =
   let (ver,rev) = (get_version_date ()) in
@@ -310,7 +311,7 @@ let parse_args arglist =
 	with Stream.Failure ->
 	  msgnl (Errors.print e); exit 1
       end
-    | e -> begin msgnl (Errors.print e); exit 1 end
+    | any -> begin msgnl (Errors.print any); exit 1 end
 
 let init arglist =
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
@@ -344,10 +345,10 @@ let init arglist =
       load_vernacular ();
       compile_files ();
       outputstate ()
-    with e ->
+    with any ->
       flush_all();
       if not !batch_mode then message "Error during initialization:";
-      msgnl (Toplevel.print_toplevel_error e);
+      msgnl (Toplevel.print_toplevel_error any);
       exit 1
   end;
   if !batch_mode then

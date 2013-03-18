@@ -111,7 +111,7 @@ let mkFullInd ind n =
 
 let check_bool_is_defined () =
   try let _ = Global.type_of_global Coqlib.glob_bool in ()
-  with _ -> raise (UndefinedCst "bool")
+  with e when Errors.noncritical e -> raise (UndefinedCst "bool")
 
 let beq_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
@@ -304,8 +304,9 @@ let destruct_ind c =
     try let u,v =  destApp c in
           let indc = destInd u in
             indc,v
-    with _-> let indc = destInd c in
-            indc,[||]
+    with e when Errors.noncritical e ->
+      let indc = destInd c in
+      indc,[||]
 
 (*
   In the following, avoid is the list of names to avoid.
@@ -329,8 +330,9 @@ let do_replace_lb lb_scheme_key aavoid narg gls p q =
             else error ("Var "^(string_of_id s)^" seems unknown.")
       )
     in mkVar (find 1)
-  with _ -> (* if this happen then the args have to be already declared as a
-              Parameter*)
+  with e when Errors.noncritical e ->
+      (* if this happen then the args have to be already declared as a
+         Parameter*)
       (
         let mp,dir,lbl = repr_con (destConst v) in
           mkConst (make_con mp dir (mk_label (
@@ -376,8 +378,9 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
             else error ("Var "^(string_of_id s)^" seems unknown.")
       )
     in mkVar (find 1)
-  with _ -> (* if this happen then the args have to be already declared as a
-              Parameter*)
+  with e when Errors.noncritical e ->
+      (* if this happen then the args have to be already declared as a
+         Parameter*)
       (
         let mp,dir,lbl = repr_con (destConst v) in
           mkConst (make_con mp dir (mk_label (
@@ -394,7 +397,7 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
         else (
           let u,v = try  destruct_ind tt1
           (* trick so that the good sequence is returned*)
-                with _ -> ind,[||]
+                with e when Errors.noncritical e -> ind,[||]
           in if u = ind
              then (Equality.replace t1 t2)::(Auto.default_auto)::(aux q1 q2)
              else (
@@ -427,17 +430,19 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
     | ([],[]) -> []
     | _ -> error "Both side of the equality must have the same arity."
   in
-  let (ind1,ca1) = try destApp lft with
-    _ -> error "replace failed."
-  and (ind2,ca2) = try destApp rgt with
-    _ -> error "replace failed."
+  let (ind1,ca1) =
+    try destApp lft with e when Errors.noncritical e -> error "replace failed."
+  and (ind2,ca2) =
+    try destApp rgt with e when Errors.noncritical e -> error "replace failed."
   in
-  let (sp1,i1) = try destInd ind1 with
-    _ -> (try fst (destConstruct ind1) with _ ->
-                error "The expected type is an inductive one.")
-  and (sp2,i2) = try destInd ind2 with
-    _ -> (try fst (destConstruct ind2)  with _ ->
-                error "The expected type is an inductive one.")
+  let (sp1,i1) =
+    try destInd ind1 with e when Errors.noncritical e ->
+      try fst (destConstruct ind1) with e when Errors.noncritical e ->
+        error "The expected type is an inductive one."
+  and (sp2,i2) =
+    try destInd ind2 with e when Errors.noncritical e ->
+      try fst (destConstruct ind2) with e when Errors.noncritical e ->
+        error "The expected type is an inductive one."
   in
     if (sp1 <> sp2) || (i1 <> i2)
       then (error "Eq should be on the same type")
@@ -714,7 +719,8 @@ let _ = lb_scheme_kind_aux := fun () -> lb_scheme_kind
 (* Decidable equality *)
 
 let check_not_is_defined () =
-  try ignore (Coqlib.build_coq_not ()) with _ -> raise (UndefinedCst "not")
+  try ignore (Coqlib.build_coq_not ())
+  with e when Errors.noncritical e -> raise (UndefinedCst "not")
 
 (* {n=m}+{n<>m}  part  *)
 let compute_dec_goal ind lnamesparrec nparrec =

@@ -82,7 +82,7 @@ let functional_induction with_clean c princl pat =
       List.fold_right
 	(fun a acc ->
 	  try Idset.add (destVar a) acc
-	  with _ -> acc
+	  with e when Errors.noncritical e -> acc
 	)
 	args
 	Idset.empty
@@ -166,8 +166,8 @@ let build_newrecursive
 	       sigma rec_sign rec_impls def
 	  )
           lnameargsardef
-	with e ->
-	States.unfreeze fs; raise e in
+	with reraise ->
+	States.unfreeze fs; raise reraise in
     States.unfreeze fs; def
   in
   recdef,rec_impls
@@ -251,12 +251,12 @@ let derive_inversion fix_names =
 	   (fun id -> destInd (Constrintern.global_reference (mk_rel_id id)))
 	   fix_names
 	)
-    with e ->
+    with e when Errors.noncritical e ->
       let e' = Cerrors.process_vernac_interp_error e in
       msg_warning
 	(str "Cannot build inversion information" ++
 	   if do_observe () then (fnl() ++ Errors.print e') else mt ())
-  with _ -> ()
+  with e when Errors.noncritical e -> ()
 
 let warning_error names e =
   let e = Cerrors.process_vernac_interp_error e in
@@ -346,7 +346,7 @@ let generate_principle  on_error
 	Array.iter (add_Function is_general) funs_kn;
 	()
       end
-  with e ->
+  with e when Errors.noncritical e ->
     on_error names e
 
 let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
@@ -413,7 +413,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	   functional_ref eq_ref rec_arg_num rec_arg_type nb_args relation
 	);
       derive_inversion [fname]
-    with e ->
+    with e when Errors.noncritical e ->
       (* No proof done *)
       ()
   in

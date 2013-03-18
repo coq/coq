@@ -121,7 +121,7 @@ let is_applied_rewrite_relation env sigma rels t =
 	      let inst = mkApp (Lazy.force rewrite_relation_class, [| evar; mkApp (c, params) |]) in
 	      let _ = Typeclasses.resolve_one_typeclass env' evd inst in
 		Some (it_mkProd_or_LetIn t rels)
-	  with _ -> None)
+	  with e when Errors.noncritical e -> None)
   | _ -> None
 
 let _ =
@@ -227,7 +227,7 @@ let cstrevars evars = snd evars
 
 let evd_convertible env evd x y =
   try ignore(Evarconv.the_conv_x env x y evd); true
-  with _ -> false
+  with e when Errors.noncritical e -> false
 
 let rec decompose_app_rel env evd t = 
   match kind_of_term t with
@@ -1048,7 +1048,8 @@ module Strategies =
 	let sigma, c = Constrintern.interp_open_constr (goalevars evars) env c in
 	let unfolded =
 	  try Tacred.try_red_product env sigma c
-	  with _ -> error "fold: the term is not unfoldable !"
+	  with e when Errors.noncritical e ->
+            error "fold: the term is not unfoldable !"
 	in
 	  try
 	    let sigma = Unification.w_unify env sigma CONV ~flags:Unification.elim_flags unfolded t in
@@ -1056,7 +1057,7 @@ module Strategies =
 	      Some (Some { rew_car = ty; rew_from = t; rew_to = c';
 			   rew_prf = RewCast DEFAULTcast; 
 			   rew_evars = sigma, cstrevars evars })
-	  with _ -> None
+	  with e when Errors.noncritical e -> None
 
     let fold_glob c : strategy =
       fun env avoid t ty cstr evars ->
@@ -1064,7 +1065,8 @@ module Strategies =
 	let sigma, c = Pretyping.Default.understand_tcc (goalevars evars) env c in
 	let unfolded =
 	  try Tacred.try_red_product env sigma c
-	  with _ -> error "fold: the term is not unfoldable !"
+	  with e when Errors.noncritical e ->
+            error "fold: the term is not unfoldable !"
 	in
 	  try
 	    let sigma = Unification.w_unify env sigma CONV ~flags:Unification.elim_flags unfolded t in
@@ -1072,7 +1074,7 @@ module Strategies =
 	      Some (Some { rew_car = ty; rew_from = t; rew_to = c';
 			   rew_prf = RewCast DEFAULTcast; 
 			   rew_evars = sigma, cstrevars evars })
-	  with _ -> None
+	  with e when Errors.noncritical e -> None
   
 
 end
@@ -1977,7 +1979,7 @@ let setoid_proof gl ty fn fallback =
       let evm = project gl in
       let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
 	fn env evm car rel gl
-    with e ->
+    with e when Errors.noncritical e ->
       try fallback gl
       with Hipattern.NoEquationFound ->
 	  match e with

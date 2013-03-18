@@ -248,7 +248,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
 	  | [(_, None, t); (_, None, u)], Sort (Prop Null)
 	      when Reductionops.is_conv env !isevars t u -> t
 	  | _, _ -> error ()
-      with _ -> error ()
+      with e when Errors.noncritical e -> error ()
   in
   let measure = interp_casted_constr isevars binders_env measure relargty in
   let wf_rel, wf_rel_fun, measure_fn =
@@ -440,7 +440,7 @@ let interp_recursive fixkind l =
       let sort = Retyping.get_type_of env !evdref t in
       let fixprot =
 	try mkApp (delayed_force Subtac_utils.fix_proto, [|sort; t|])
-	with e -> t
+	with e when Errors.noncritical e -> t
       in
 	(id,None,fixprot) :: env')
       [] fixnames fixtypes

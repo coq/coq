@@ -208,8 +208,14 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl gl =
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =
-  let base = try find_base rbase with _ -> HintDN.empty in
-  let max = try fst (Util.list_last (HintDN.find_all base)) with _ -> 0 in
+  let base =
+    try find_base rbase
+    with e when Errors.noncritical e -> HintDN.empty
+  in
+  let max =
+    try fst (Util.list_last (HintDN.find_all base))
+    with e when Errors.noncritical e -> 0
+  in
   let lrl = HintDN.map (fun (i,h) -> (i + max, h)) lrl in
     rewtab:=Stringmap.add rbase (HintDN.union lrl base) !rewtab
 
@@ -248,7 +254,7 @@ let evd_convertible env evd x y =
   try
     ignore(Unification.w_unify ~flags:Unification.elim_flags env evd Reduction.CONV x y); true 
   (* try ignore(Evarconv.the_conv_x env x y evd); true *)
-  with _ -> false
+  with e when Errors.noncritical e -> false
 
 let decompose_applied_relation metas env sigma c ctype left2right =
   let find_rel ty =

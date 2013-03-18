@@ -55,7 +55,6 @@ let locate_with_msg msg f x =
     f x
   with
     | Not_found -> raise (Util.UserError("", msg))
-    | e -> raise e
 
 
 let filter_map filter f =
@@ -123,7 +122,7 @@ let def_of_const t =
       (try (match Declarations.body_of_constant (Global.lookup_constant sp) with
              | Some c -> Declarations.force c
 	     | _ -> assert false)
-       with _ -> assert false)
+       with e when Errors.noncritical e -> assert false)
     |_ -> assert false
 
 let coq_constant s =
@@ -215,13 +214,13 @@ let with_full_print f a =
     Dumpglob.continue ();
     res
   with
-    | e ->
+    | reraise ->
 	Impargs.make_implicit_args old_implicit_args;
 	Impargs.make_strict_implicit_args old_strict_implicit_args;
 	Impargs.make_contextual_implicit_args old_contextual_implicit_args;
 	Flags.raw_print := old_rawprint;
 	Dumpglob.continue ();
-	raise e
+	raise reraise
 
 
 
@@ -350,7 +349,8 @@ open Term
 let pr_info f_info =
   str "function_constant := " ++ Printer.pr_lconstr (mkConst f_info.function_constant)++ fnl () ++
     str "function_constant_type := " ++
-    (try Printer.pr_lconstr (Global.type_of_global (ConstRef f_info.function_constant)) with _ -> mt ()) ++ fnl () ++
+    (try Printer.pr_lconstr (Global.type_of_global (ConstRef f_info.function_constant))
+     with e when Errors.noncritical e -> mt ()) ++ fnl () ++
     str "equation_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.equation_lemma (mt ()) ) ++ fnl () ++
     str "completeness_lemma :=" ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.completeness_lemma (mt ()) ) ++ fnl () ++
     str "correctness_lemma := " ++ (Option.fold_right (fun v acc -> Printer.pr_lconstr (mkConst v)) f_info.correctness_lemma (mt ()) ) ++ fnl () ++
@@ -502,22 +502,22 @@ exception ToShow of exn
 let init_constant dir s =
   try
     Coqlib.gen_constant "Function" dir s
-  with e -> raise (ToShow e)
+  with e when Errors.noncritical e -> raise (ToShow e)
 
 let jmeq () =
   try
     (Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
      init_constant ["Logic";"JMeq"] "JMeq")
-  with e -> raise (ToShow e)
+  with e when Errors.noncritical e -> raise (ToShow e)
 
 let jmeq_rec () =
   try
     Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
 	  init_constant ["Logic";"JMeq"] "JMeq_rec"
-  with e -> raise (ToShow e)
+  with e when Errors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
   try
     Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
     init_constant ["Logic";"JMeq"] "JMeq_refl"
-  with e -> raise (ToShow e)
+  with e when Errors.noncritical e -> raise (ToShow e)

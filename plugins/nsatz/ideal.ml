@@ -237,7 +237,8 @@ open Format
 
 let getvar lv i =
   try (nth lv i)
-  with _ -> (fold_left (fun r x -> r^" "^x) "lv= " lv)
+  with e when Errors.noncritical e ->
+    (fold_left (fun r x -> r^" "^x) "lv= " lv)
     ^" i="^(string_of_int i)
 
 let string_of_pol zeroP hdP tlP coefterm monterm string_of_coef
@@ -590,7 +591,7 @@ let coefpoldep = Hashtbl.create 51
 (* coef of q in p = sum_i c_i*q_i *)
 let coefpoldep_find p q =
   try (Hashtbl.find coefpoldep (p.num,q.num))
-  with _ -> []
+  with Not_found -> []
 
 let coefpoldep_remove p q =
   Hashtbl.remove coefpoldep (p.num,q.num)

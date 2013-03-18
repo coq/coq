@@ -147,7 +147,8 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
 (*CSC: universes.                                                        *)
 (try
         Typeops.judge_of_type u
- with _ -> (* Successor of a non universe-variable universe anomaly *)
+ with e when e <> Sys.Break ->
+ (* Successor of a non universe-variable universe anomaly *)
  (Pp.ppnl (Pp.str "Warning: universe refresh performed!!!") ; flush stdout ) ;
   Typeops.judge_of_type (Termops.new_univ ())
 )

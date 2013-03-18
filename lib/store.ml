@@ -53,7 +53,7 @@ let field () =
   in
   let get s =
     try Some (Obj.obj (Util.Intmap.find fid s))
-    with _ -> None
+    with Not_found -> None
   in
   let remove s =
     Util.Intmap.remove fid s

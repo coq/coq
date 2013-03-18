@@ -159,7 +159,7 @@ let try_declare_scheme what f internal names kn =
 	  (strbrk "Required constant " ++ str s ++ str " undefined.")
     | AlreadyDeclared msg ->
         alarm what internal (msg ++ str ".")
-    | _ -> 
+    | e when Errors.noncritical e ->
 	alarm what internal
 	  (str "Unknown exception during scheme creation.")
 
@@ -245,7 +245,8 @@ let try_declare_eq_decidability kn =
 
 let declare_eq_decidability = declare_eq_decidability_scheme_with []
 
-let ignore_error f x = try ignore (f x) with _ -> ()
+let ignore_error f x =
+  try ignore (f x) with e when Errors.noncritical e -> ()
 
 let declare_rewriting_schemes ind =
   if Hipattern.is_inductive_equality ind then begin
@@ -266,7 +267,7 @@ let declare_congr_scheme ind =
   if Hipattern.is_equality_type (mkInd ind) then begin
     if
       try Coqlib.check_required_library Coqlib.logic_module_name; true
-      with _ -> false
+      with e when Errors.noncritical e -> false
     then
       ignore (define_individual_scheme congr_scheme_kind KernelVerbose None ind)
     else

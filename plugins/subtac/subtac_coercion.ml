@@ -356,7 +356,7 @@ module Coercion = struct
 		     jres),
 		jres.uj_type)
              (hj,typ_cl) p)
-    with _ -> anomaly "apply_coercion"
+    with e when Errors.noncritical e -> anomaly "apply_coercion"
 
   let inh_app_fun env isevars j =
     let isevars = ref isevars in
@@ -506,5 +506,5 @@ module Coercion = struct
 	    with NoSubtacCoercion ->
 	      error_cannot_coerce env' isevars (t, t'))
 	else isevars
-      with _ -> isevars
+      with e when Errors.noncritical e -> isevars
 end

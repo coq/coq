@@ -924,7 +924,10 @@ let meta_reducible_instance evd b =
     let u = whd_betaiota Evd.empty u in
     match kind_of_term u with
     | Case (ci,p,c,bl) when isMeta c or isCast c & isMeta (pi1 (destCast c)) ->
-	let m = try destMeta c with _ -> destMeta (pi1 (destCast c)) in
+	let m =
+          try destMeta c
+          with e when Errors.noncritical e -> destMeta (pi1 (destCast c))
+        in
 	(match
 	  try
 	    let g,s = List.assoc m metas in
@@ -934,7 +937,10 @@ let meta_reducible_instance evd b =
 	    | Some g -> irec (mkCase (ci,p,g,bl))
 	    | None -> mkCase (ci,irec p,c,Array.map irec bl))
     | App (f,l) when isMeta f or isCast f & isMeta (pi1 (destCast f)) ->
-	let m = try destMeta f with _ -> destMeta (pi1 (destCast f)) in
+        let m =
+          try destMeta f
+          with e when Errors.noncritical e -> destMeta (pi1 (destCast f))
+        in
 	(match
 	  try
 	    let g,s = List.assoc m metas in

@@ -237,7 +237,7 @@ let status () =
   in
   let proof =
     try Some (Names.string_of_id (Proof_global.get_current_proof_name ()))
-    with _ -> None
+    with Proof_global.NoCurrentProof -> None
   in
   let allproofs =
     let l = Proof_global.get_all_proof_names () in
@@ -259,7 +259,8 @@ let search flags =
   | (Interface.Name_Pattern s, b) :: l ->
     let regexp =
       try Str.regexp s
-      with _ -> Util.error ("Invalid regexp: " ^ s)
+      with e when Errors.noncritical e ->
+        Util.error ("Invalid regexp: " ^ s)
     in
     extract_flags ((regexp, b) :: name) tpe subtpe mods blacklist l
   | (Interface.Type_Pattern s, b) :: l ->
@@ -454,12 +455,12 @@ let loop () =
       Xml_utils.print_xml !orig_stdout xml_answer;
       flush !orig_stdout
     done
-  with e ->
-    let msg = Printexc.to_string e in
+  with any ->
+    let msg = Printexc.to_string any in
     let r = "Fatal exception in coqtop:\n" ^ msg in
     pr_debug ("==> " ^ r);
     (try
       Xml_utils.print_xml !orig_stdout (fail r);
       flush !orig_stdout
-    with _ -> ());
+    with any -> ());
     exit 1

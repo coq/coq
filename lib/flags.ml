@@ -9,12 +9,12 @@
 let with_option o f x =
   let old = !o in o:=true;
   try let r = f x in o := old; r
-  with e -> o := old; raise e
+  with reraise -> o := old; raise reraise
 
 let without_option o f x =
   let old = !o in o:=false;
   try let r = f x in o := old; r
-  with e -> o := old; raise e
+  with reraise -> o := old; raise reraise
 
 let boot = ref false
 

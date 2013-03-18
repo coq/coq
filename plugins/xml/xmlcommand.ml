@@ -143,7 +143,7 @@ let rec join_dirs cwd =
   | he::tail ->
       (try
         Unix.mkdir cwd 0o775
-       with _ -> () (* Let's ignore the errors on mkdir *)
+       with e when e <> Sys.Break -> () (* Let's ignore the errors on mkdir *)
       ) ;
      let newcwd = cwd ^ "/" ^ he in
       join_dirs newcwd tail

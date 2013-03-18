@@ -126,7 +126,7 @@ module Default = struct
 		     jres),
 		jres.uj_type)
              (hj,typ_cl) p)
-    with _ -> anomaly "apply_coercion"
+    with e when Errors.noncritical e -> anomaly "apply_coercion"
 
   let inh_app_fun env evd j =
     let t = whd_betadeltaiota env evd j.uj_type in

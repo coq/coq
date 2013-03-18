@@ -404,7 +404,8 @@ let rec canonize_name c =
 let build_subst uf subst =
   Array.map (fun i ->
 	       try term uf i
-	       with _ -> anomaly "incomplete matching") subst
+	       with e when Errors.noncritical e ->
+                 anomaly "incomplete matching") subst
 
 let rec inst_pattern subst = function
     PVar i ->

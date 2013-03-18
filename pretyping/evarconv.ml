@@ -454,7 +454,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 		 else Evd.set_leq_sort evd s1 s2 
 	       in (evd', true)
 	     with Univ.UniverseInconsistency _ -> (evd, false)
-	     | _ -> (evd, false))
+	     | e when Errors.noncritical e -> (evd, false))
 
 	| Prod (n,c1,c'1), Prod (_,c2,c'2) when l1=[] & l2=[] ->
             ise_and evd

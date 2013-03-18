@@ -175,7 +175,7 @@ let do_parse xparser source =
 		if xparser.check_eof && pop s <> Xml_lexer.Eof then raise (Internal_error EOFExpected);
 		Xml_lexer.close source;
 		x
-	with e ->
+	with e when e <> Sys.Break ->
 	  Xml_lexer.close source;
 	  raise (!xml_error (error_of_exn stk e) source)
 
@@ -190,9 +190,9 @@ let parse p = function
 			close_in ch;
 			x
 		with
-			e ->
+			reraise ->
 				close_in ch;
-				raise e
+				raise reraise
 
 
 let error_msg = function

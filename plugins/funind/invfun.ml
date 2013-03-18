@@ -59,14 +59,17 @@ let observennl strm =
 
 
 let do_observe_tac s tac g =
-  let goal = begin try (Printer.pr_goal g) with _ -> assert false end in
+  let goal =
+    try Printer.pr_goal g
+    with e when Errors.noncritical e -> assert false
+  in
   try
     let v = tac g in msgnl (goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
-  with e ->
-    let e' = Cerrors.process_vernac_interp_error e in
+  with reraise ->
+    let e' = Cerrors.process_vernac_interp_error reraise in
     msgnl (str "observation "++ s++str " raised exception " ++
 	     Errors.print e' ++ str " on goal " ++ goal );
-    raise e;;
+    raise reraise;;
 
 
 let observe_tac s tac g =
@@ -568,7 +571,7 @@ let rec reflexivity_with_destruct_cases g =
 	      observe_tac "reflexivity_with_destruct_cases" reflexivity_with_destruct_cases
 	    ]
 	| _ -> reflexivity
-    with _ -> reflexivity
+    with e when Errors.noncritical e -> reflexivity
   in
   let eq_ind =     Coqlib.build_coq_eq () in
   let discr_inject =
@@ -862,11 +865,11 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	 update_Function {finfo with completeness_lemma = Some lem_cst}
       )
       funs;
-  with e ->
+  with reraise ->
     (* In case of problem, we reset all the lemmas *)
     Pfedit.delete_all_proofs ();
     States.unfreeze previous_state;
-    raise e
+    raise reraise
 
 
 

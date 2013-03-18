@@ -873,7 +873,8 @@ end = struct
 	  let k = key_of_lazy_constr k in
 	  let access key =
 	    try (Lazy.force table).(key)
-	    with _ -> error "Error while retrieving an opaque body"
+	    with e when Errors.noncritical e ->
+              error "Error while retrieving an opaque body"
 	  in
 	  match load_proof with
 	    | Flags.Force ->

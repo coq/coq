@@ -302,11 +302,8 @@ let defined () =
 	  "defined"
 	  ((try
 	      str "On goal : " ++ fnl () ++  pr_open_subgoals () ++ fnl ()
-	    with _ -> mt ()
+	    with e when Errors.noncritical e -> mt ()
 	   ) ++msg)
-    | e -> raise e
-
-
 
 let build_functional_principle interactive_proof old_princ_type sorts funs i proof_tac hook =
   (* First we get the type of the old graph principle *)
@@ -401,7 +398,7 @@ let generate_functional_principle
      Don't forget to close the goal if an error is raised !!!!
   *)
   save false new_princ_name entry g_kind hook
-  with e ->
+  with e when Errors.noncritical e ->
     begin
       begin
 	try
@@ -413,7 +410,7 @@ let generate_functional_principle
 	  then Pfedit.delete_current_proof ()
 	  else ()
 	  else ()
-	with _ -> ()
+	with e when Errors.noncritical e -> ()
       end;
       raise (Defining_principle e)
     end
@@ -554,7 +551,7 @@ let make_scheme (fas : (constant*Glob_term.glob_sort) list) : Entries.definition
 	0
 	(prove_princ_for_struct false 0 (Array.of_list funs))
 	(fun _ _ _ -> ())
-  with e ->
+  with e when Errors.noncritical e ->
     begin
       begin
 	try
@@ -566,7 +563,7 @@ let make_scheme (fas : (constant*Glob_term.glob_sort) list) : Entries.definition
 	  then Pfedit.delete_current_proof ()
 	  else ()
 	  else ()
-	with _ -> ()
+	with e when Errors.noncritical e -> ()
       end;
       raise (Defining_principle e)
     end

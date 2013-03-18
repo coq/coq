@@ -129,7 +129,9 @@ let non_trivial = function
 
 let patterns_of_constr env sigma nrels term=
   let f,args=
-    try destApp (whd_delta env term) with _ -> raise Not_found in
+    try destApp (whd_delta env term)
+    with e when Errors.noncritical e -> raise Not_found
+  in
 	if eq_constr f (Lazy.force _eq) && (Array.length args)=3
 	then
 	  let patt1,rels1 = pattern_of_constr env sigma args.(1)

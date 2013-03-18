@@ -221,7 +221,10 @@ let compute_rhs bodyi index_of_f =
 (*s Now the function [compute_ivs] itself *)
 
 let compute_ivs gl f cs =
-  let cst = try destConst f with _ -> i_can't_do_that () in
+  let cst =
+    try destConst f
+    with e when Errors.noncritical e -> i_can't_do_that ()
+  in
   let body = Environ.constant_value (Global.env()) cst in
   match decomp_term body with
     | Fix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->

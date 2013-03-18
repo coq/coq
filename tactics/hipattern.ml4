@@ -355,7 +355,10 @@ let coq_jmeq_pattern = lazy PATTERN [ %coq_jmeq_ref ?X1 ?X2 ?X3 ?X4 ]
 let coq_eq_true_pattern = lazy PATTERN [ %coq_eq_true_ref ?X1 ]
 
 let match_eq eqn eq_pat =
-  let pat = try Lazy.force eq_pat with _ -> raise PatternMatchingFailure in
+  let pat =
+    try Lazy.force eq_pat
+    with e when Errors.noncritical e -> raise PatternMatchingFailure
+  in
   match matches pat eqn with
     | [(m1,t);(m2,x);(m3,y)] ->
 	assert (m1 = meta1 & m2 = meta2 & m3 = meta3);

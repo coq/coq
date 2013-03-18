@@ -60,7 +60,7 @@ let call (opn,converted_args) =
     hunk()
   with
     | Drop -> raise Drop
-    | e ->
+    | reraise ->
         if !Flags.debug then
 	  msgnl (str"Vernac Interpreter " ++ str !loc);
-        raise e
+        raise reraise

@@ -173,7 +173,7 @@ let rec equal p q =
 			       then failwith "raté")
 		    p1;
 		  true)
-	     with _ -> false)
+	     with e when Errors.noncritical e -> false)
     | (_,_) -> false
 
 (* normalize polynomial: remove head zeros, coefficients are normalized
@@ -524,7 +524,7 @@ let div_pol_rat p q=
 		   q x in
          (* degueulasse, mais c 'est pour enlever un warning *)
          if s==s then true else true)
-    with _ -> false
+    with e when Errors.noncritical e -> false
 
 (***********************************************************************
   5. Pseudo-division and gcd with subresultants.

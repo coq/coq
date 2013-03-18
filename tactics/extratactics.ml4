@@ -606,7 +606,7 @@ let hResolve_auto id c t gl =
       hResolve id c n t gl
     with
     | UserError _ as e -> raise e
-    | _ -> resolve_auto (n+1)
+    | e when Errors.noncritical e -> resolve_auto (n+1)
   in
   resolve_auto 1
 

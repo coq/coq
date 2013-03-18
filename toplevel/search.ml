@@ -137,7 +137,7 @@ let pattern_filter pat _ a c =
   try
     try
       is_matching pat (head c)
-    with _ ->
+    with e when Errors.noncritical e ->
       is_matching
 	pat (head (Typing.type_of (Global.env()) Evd.empty c))
     with UserError _ ->

@@ -829,7 +829,8 @@ let prepare_hint env (sigma,c) =
 
 let path_of_constr_expr c =
   match c with
-  | Topconstr.CRef r -> (try PathHints [global r] with _ -> PathAny)
+  | Topconstr.CRef r ->
+    (try PathHints [global r] with e when Errors.noncritical e -> PathAny)
   | _ -> PathAny
       
 let interp_hints h =
@@ -1170,9 +1171,9 @@ let tclLOG (dbg,depth,trace) pp tac =
 	  let out = tac gl in
 	  msg_debug (str s ++ spc () ++ pp () ++ str ". (*success*)");
 	  out
-	with e ->
+	with reraise ->
 	  msg_debug (str s ++ spc () ++ pp () ++ str ". (*fail*)");
-	  raise e
+	  raise reraise
       end
     | Info ->
       (* For "info (trivial/auto)", we store a log trace *)
@@ -1181,9 +1182,9 @@ let tclLOG (dbg,depth,trace) pp tac =
 	  let out = tac gl in
 	  trace := (depth, Some pp) :: !trace;
 	  out
-	with e ->
+	with reraise ->
 	  trace := (depth, None) :: !trace;
-	  raise e
+	  raise reraise
       end
 
 (** For info, from the linear trace information, we reconstitute the part

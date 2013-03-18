@@ -28,7 +28,7 @@ let rec print_gen bottom stk e =
     try h e
     with
     | Unhandled -> print_gen bottom stk' e
-    | e' -> print_gen bottom stk' e'
+    | any -> print_gen bottom stk' any
 
 (** Only anomalies should reach the bottom of the handler stack.
     In usual situation, the [handle_stack] is treated as it if was always
@@ -65,4 +65,15 @@ let _ = register_handler begin function
   | Util.UserError(s,pps) -> hov 0 (str "Error: " ++ where s ++ pps)
   | _ -> raise Unhandled
 end
+
+(** Critical exceptions shouldn't be catched and ignored by mistake
+    by inner functions during a [vernacinterp]. They should be handled
+    only at the very end of interp, to be displayed to the user. *)
+
+(** NB: in the 8.4 branch, for maximal compatibility, anomalies
+    are considered non-critical *)
+
+let noncritical = function
+  | Sys.Break | Out_of_memory | Stack_overflow -> false
+  | _ -> true
 

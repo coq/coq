@@ -126,7 +126,7 @@ let print_body is_impl env mp (l,body) =
       try
 	let env = Option.get env in
 	Printer.pr_mutual_inductive_body env (make_mind mp empty_dirpath l) mib
-      with _ ->
+      with e when Errors.noncritical e ->
 	(if mib.mind_finite then str "Inductive " else str "CoInductive")
 	++ name)
 
@@ -134,7 +134,7 @@ let print_struct is_impl env mp struc =
   begin
     (* If [mp] is a globally visible module, we simply import it *)
     try Declaremods.really_import_module mp
-    with _ ->
+    with e when Errors.noncritical e ->
     (* Otherwise we try to emulate an import by playing with nametab *)
       let fp = nametab_register_dir mp in
       List.iter (nametab_register_body mp fp) struc
@@ -156,7 +156,8 @@ let rec print_modtype env mp locals mty =
       let seb1 = Option.default mtb1.typ_expr mtb1.typ_expr_alg in
       let locals' = (mbid, get_new_id locals (id_of_mbid mbid))::locals
       in
-      (try Declaremods.process_module_seb_binding mbid seb1 with _ -> ());
+      (try Declaremods.process_module_seb_binding mbid seb1
+       with e when Errors.noncritical e -> ());
       hov 2 (str "Funsig" ++ spc () ++ str "(" ++
 	       pr_id (id_of_mbid mbid) ++ str ":" ++
 	       print_modtype env mp1 locals seb1 ++
@@ -190,7 +191,8 @@ let rec print_modexpr env mp locals mexpr = match mexpr with
 	(Modops.add_module (Modops.module_body_of_type mp' mty)) env in
       let typ = Option.default mty.typ_expr mty.typ_expr_alg in
       let locals' = (mbid, get_new_id locals (id_of_mbid mbid))::locals in
-      (try Declaremods.process_module_seb_binding mbid typ with _ -> ());
+      (try Declaremods.process_module_seb_binding mbid typ
+       with e when Errors.noncritical e -> ());
       hov 2 (str "Functor" ++ spc() ++ str"(" ++ pr_id(id_of_mbid mbid) ++
 	     str ":" ++ print_modtype env mp' locals typ ++
       str ")" ++ spc () ++ print_modexpr env' mp locals' mexpr)
@@ -243,7 +245,7 @@ let print_module with_body mp =
   try
     if !short then raise ShortPrinting;
     print_module' (Some (Global.env ())) mp with_body me ++ fnl ()
-  with _ ->
+  with e when Errors.noncritical e ->
     print_module' None mp with_body me ++ fnl ()
 
 let print_modtype kn =
@@ -254,5 +256,5 @@ let print_modtype kn =
      (try
 	if !short then raise ShortPrinting;
 	print_modtype' (Some (Global.env ())) kn mtb.typ_expr
-      with _ ->
+      with e when Errors.noncritical e ->
 	print_modtype' None kn mtb.typ_expr))

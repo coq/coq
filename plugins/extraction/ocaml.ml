@@ -119,7 +119,8 @@ let rec pp_type par vl t =
   let rec pp_rec par = function
     | Tmeta _ | Tvar' _ | Taxiom -> assert false
     | Tvar i -> (try pp_tvar (List.nth vl (pred i))
-		 with _ -> (str "'a" ++ int i))
+		 with e when Errors.noncritical e ->
+                   (str "'a" ++ int i))
     | Tglob (r,[a1;a2]) when is_infix r ->
 	pp_par par (pp_rec true a1 ++ str (get_infix r) ++ pp_rec true a2)
     | Tglob (r,[]) -> pp_global Type r
@@ -188,7 +189,7 @@ let rec pp_expr par env args =
 	   let args = list_skipn (projection_arity r) args in
 	   let record = List.hd args in
 	   pp_apply (record ++ str "." ++ pp_global Term r) par (List.tl args)
-	 with _ -> apply (pp_global Term r))
+	 with e when Errors.noncritical e -> apply (pp_global Term r))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
 	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args

@@ -69,8 +69,9 @@ let search_guard loc env possible_indexes fixdefs =
   if List.for_all (fun l->1=List.length l) possible_indexes then
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
     let fix = ((indexes, 0),fixdefs) in
-    (try check_fix env fix with
-       | e -> if loc = dummy_loc then raise e else Loc.raise loc e);
+    (try check_fix env fix
+     with e when Errors.noncritical e ->
+       if loc = dummy_loc then raise e else Loc.raise loc e);
     indexes
   else
     (* we now search recursively amoungst all combinations *)
@@ -109,7 +110,8 @@ let resolve_evars env evdref fail_evar resolve_classes =
   (* Resolve eagerly, potentially making wrong choices *)
   evdref := (try consider_remaining_unif_problems
 	       ~ts:(Typeclasses.classes_transparent_state ()) env !evdref
-	     with e -> if fail_evar then raise e else !evdref)
+	     with e when Errors.noncritical e ->
+               if fail_evar then raise e else !evdref)
 
 let solve_remaining_evars fail_evar use_classes hook env initial_sigma (evd,c) =
   let evdref = ref evd in
@@ -441,7 +443,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	      make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
 	  | GCoFix i ->
 	      let cofix = (i,(names,ftys,fdefs)) in
-	      (try check_cofix env cofix with e -> Loc.raise loc e);
+	      (try check_cofix env cofix
+               with e when Errors.noncritical e -> Loc.raise loc e);
 	      make_judge (mkCoFix cofix) ftys.(i) in
 	inh_conv_coerce_to_tycon loc env evdref fixj tycon
 

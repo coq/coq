@@ -121,7 +121,7 @@ let obl_substitution expand obls deps =
        let xobl = obls.(x) in
        let oblb =
 	 try get_obligation_body expand xobl
-	 with _ -> assert(false)
+	 with e when Errors.noncritical e -> assert(false)
        in (xobl.obl_name, (xobl.obl_type, oblb)) :: acc)
     deps []
 
@@ -498,7 +498,8 @@ let rec solve_obligation prg num tac =
 		let obls = Array.copy obls in
 		let _ = obls.(num) <- obl in
 		let res = try update_obls prg obls (pred rem)
-		  with e -> pperror (Errors.print (Cerrors.process_vernac_interp_error e))
+		  with e when Errors.noncritical e ->
+                    pperror (Errors.print (Cerrors.process_vernac_interp_error e))
 		in
 		  match res with
 		  | Remain n when n > 0 ->
@@ -552,7 +553,7 @@ and solve_obligation_by_tac prg obls i tac =
 	| Refiner.FailError (_, s) ->
 	    user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)
 	| Util.Anomaly _ as e -> raise e
-	| e -> false
+	| e when Errors.noncritical e -> false
 
 and solve_prg_obligations prg ?oblset tac =
   let obls, rem = prg.prg_obligations in
