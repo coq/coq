@@ -452,7 +452,7 @@ let my_bool_option name initval =
 
 (*s Extraction AccessOpaque *)
 
-let access_opaque = my_bool_option "AccessOpaque" false
+let access_opaque = my_bool_option "AccessOpaque" true
 
 (*s Extraction AutoInline *)
 
