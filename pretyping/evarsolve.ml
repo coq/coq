@@ -948,7 +948,10 @@ let rec is_constrainable_in k (ev,(fv_rels,fv_ids) as g) t =
   let f,args = decompose_app_vect t in
   match kind_of_term f with
   | Construct (ind,_) ->
-      let params,_ = Array.chop (Inductiveops.inductive_nparams ind) args in
+    let n = Inductiveops.inductive_nparams ind in
+    if n > Array.length args then true (* We don't try to be more clever *)
+    else
+      let params = fst (Array.chop n args) in
       Array.for_all (is_constrainable_in k g) params
   | Ind _ -> Array.for_all (is_constrainable_in k g) args
   | Prod (_,t1,t2) -> is_constrainable_in k g t1 && is_constrainable_in k g t2
