@@ -1352,9 +1352,14 @@ let rec is_constrainable_in k (ev,(fv_rels,fv_ids) as g) t =
   let f,args = decompose_app_vect t in
   match kind_of_term f with
   | Construct (ind,_) ->
-      let nparams = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
-      let params,_ = array_chop nparams args in
-      array_for_all (is_constrainable_in k g) params
+      let nparams =
+        (fst (Global.lookup_inductive ind)).Declarations.mind_nparams
+      in
+      if nparams > Array.length args
+      then true (* We don't try to be more clever *)
+      else
+        let params,_ = array_chop nparams args in
+        array_for_all (is_constrainable_in k g) params
   | Ind _ -> array_for_all (is_constrainable_in k g) args
   | Prod (_,t1,t2) -> is_constrainable_in k g t1 && is_constrainable_in k g t2
   | Evar (ev',_) -> ev' <> ev (*If ev' needed, one may also try to restrict it*)
