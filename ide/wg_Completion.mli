@@ -8,16 +8,23 @@
 
 module Proposals : sig type t end
 
+class type complete_model_signals =
+  object ('a)
+    method after : 'a
+    method disconnect : GtkSignal.id -> unit
+    method start_completion : callback:(int -> unit) -> GtkSignal.id
+    method update_completion : callback:(int * string * Proposals.t -> unit) -> GtkSignal.id
+    method end_completion : callback:(unit -> unit) -> GtkSignal.id
+  end
+
 class complete_model : Coq.coqtop -> GText.buffer ->
 object
   method active : bool
+  method connect : complete_model_signals
   method set_active : bool -> unit
   method store : GTree.model_filter
   method column : string GTree.column
   method handle_proposal : Gtk.tree_path -> unit
-  method start_completion_callback : (int -> unit) -> unit
-  method update_completion_callback : (int -> string -> Proposals.t -> unit) -> unit
-  method end_completion_callback : (unit -> unit) -> unit
 end
 
 class complete_popup : complete_model -> GText.view ->

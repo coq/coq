@@ -67,13 +67,43 @@ let is_substring s1 s2 =
   if !break then len2 - len1
   else -1
 
+class type complete_model_signals =
+  object ('a)
+    method after : 'a
+    method disconnect : GtkSignal.id -> unit
+    method start_completion : callback:(int -> unit) -> GtkSignal.id
+    method update_completion : callback:(int * string * Proposals.t -> unit) -> GtkSignal.id
+    method end_completion : callback:(unit -> unit) -> GtkSignal.id
+  end
+
+let complete_model_signals
+  (start_s : int GUtil.signal)
+  (update_s : (int * string * Proposals.t) GUtil.signal)
+  (end_s : unit GUtil.signal) : complete_model_signals =
+let signals = [
+  start_s#disconnect;
+  update_s#disconnect;
+  end_s#disconnect;
+] in
+object (self : 'a)
+  inherit GUtil.ml_signals signals as super
+  method start_completion = start_s#connect ~after
+  method update_completion = update_s#connect ~after
+  method end_completion = end_s#connect ~after
+end
+
 class complete_model coqtop (buffer : GText.buffer) =
   let cols = new GTree.column_list in
   let column = cols#add Gobject.Data.string in
   let store = GTree.list_store cols in
   let filtered_store = GTree.model_filter store in
+  let start_completion_signal = new GUtil.signal () in
+  let update_completion_signal = new GUtil.signal () in
+  let end_completion_signal = new GUtil.signal () in
 object (self)
 
+  val signals = complete_model_signals
+    start_completion_signal update_completion_signal end_completion_signal
   val mutable active = false
   val mutable auto_complete_length = 3
   (* this variable prevents CoqIDE from autocompleting when we have deleted something *)
@@ -83,19 +113,8 @@ object (self)
   val mutable insert_offset = -1
   val mutable current_completion = ("", Proposals.empty)
   val mutable lock_auto_completing = true
-  val mutable start_callback = (fun i -> ())
-  val mutable update_callback =
-    (fun (off : int) (prefix : string) (s : Proposals.t) -> ())
-  val mutable end_callback = (fun () -> ())
 
-  method start_completion_callback f =
-    start_callback <- f
-
-  method update_completion_callback f =
-    update_callback <- f
-
-  method end_completion_callback f =
-    end_callback <- f
+  method connect = signals
 
   method active = active
 
@@ -169,14 +188,14 @@ object (self)
       (* check whether we have the last request in cache *)
       if (start_offset = off) && (0 <= is_substring prefix w) then
         let props = self#update_proposals w in
-        let () = update_callback start_offset w props in
+        let () = update_completion_signal#call (start_offset, w, props) in
         k ()
       else
-        let () = start_callback start_offset in
+        let () = start_completion_signal#call start_offset in
         let update props =
           let () = cache <- (start_offset, w, props) in
           let () = self#init_proposals w props in
-          update_callback start_offset w props
+          update_completion_signal#call (start_offset, w, props)
         in
         (** If not in the cache, we recompute it: first syntactic *)
         let synt = get_syntactic_completion buffer w Proposals.empty in
@@ -192,7 +211,7 @@ object (self)
           k ()
         in
         Coq.try_grab coqtop query occupied
-    | None -> end_callback (); k ()
+    | None -> end_completion_signal#call (); k ()
 
   method private may_auto_complete () =
     if active && is_auto_completing && lock_auto_completing then begin
@@ -385,7 +404,7 @@ object (self)
     let () = obj#move x (y + 3 * h / 2) in
     ()
 
-  method private update_callback off word props =
+  method private update_callback (off, word, props) =
     if Proposals.is_empty props then self#hide ()
     else if Proposals.mem word props then self#hide ()
     else self#refresh ()
@@ -419,9 +438,9 @@ object (self)
     let _ = data#set_resize_mode `PARENT in
     let _ = frame#set_resize_mode `PARENT in
     (** Callback to model *)
-    let _ = model#start_completion_callback self#start_callback in
-    let _ = model#update_completion_callback self#update_callback in
-    let _ = model#end_completion_callback self#end_callback in
+    let _ = model#connect#start_completion self#start_callback in
+    let _ = model#connect#update_completion self#update_callback in
+    let _ = model#connect#end_completion self#end_callback in
     (** Popup interaction *)
     let _ = view#event#connect#key_press key_cb in
     (** Hiding the popup when necessary*)
