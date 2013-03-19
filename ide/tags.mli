@@ -31,6 +31,7 @@ module Message :
 sig
   val table : GText.tag_table
   val error : GText.tag
+  val warning : GText.tag
   val item : GText.tag
 end
 

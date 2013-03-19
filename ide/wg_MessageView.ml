@@ -35,6 +35,7 @@ let message_view () : message_view =
     method push level msg =
       let tags = match level with
       | Interface.Error -> [Tags.Message.error]
+      | Interface.Warning -> [Tags.Message.warning]
       | _ -> []
       in
       buffer#insert ~tags msg;
