@@ -32,6 +32,8 @@ type instance_decl_function = global_reference -> rel_context -> constr list -> 
  * Search algorithm
  *)
 
+let reduce x = x
+
 let rec subst_evar evar def n c =
   match kind_of_term c with
     | Evar (e,_) when Int.equal e evar -> lift n def
@@ -65,8 +67,8 @@ let rec safe_define evm ev c =
     | Evd.Evar_defined def ->
 	define_subst evm (Termops.filtering [] Reduction.CUMUL def c)
     | Evd.Evar_empty ->
-	let t = Libtypes.reduce (Typing.type_of (Global.env()) evm c) in
-	let u = Libtypes.reduce (evar_concl evi) in
+	let t = reduce (Typing.type_of (Global.env()) evm c) in
+	let u = reduce (evar_concl evi) in
 	let evm = subst_evar_in_evm ev c evm in
 	define_subst (Evd.define ev c evm) (Termops.filtering [] Reduction.CUMUL t u)
 
@@ -94,10 +96,14 @@ module SubstSet : Set.S with type elt = Termops.subst
 		     let compare = Int.Map.compare (Pervasives.compare)
 	      end)
 
+let search_concl typ = assert false
+(** FIXME: if one ever wants to maintain this code, he has to plug the Search
+    machinery into this assertion failure. *)
+
 (* searches instatiations in the library for just one evar [ev] of a
    signature. [k] is called on each resulting signature *)
 let complete_evar (cl,gen,evm:signature) (ev,evi) (k:signature -> unit) =
-  let ev_typ = Libtypes.reduce (evar_concl evi) in
+  let ev_typ = reduce (evar_concl evi) in
   let sort_is_prop = is_Prop (Typing.type_of (Global.env()) evm (evar_concl evi)) in
 (*  msgnl(str"cherche "++pr_constr ev_typ++str" pour "++Pp.int ev);*)
   let substs = ref SubstSet.empty in
@@ -116,7 +122,7 @@ let complete_evar (cl,gen,evm:signature) (ev,evi) (k:signature -> unit) =
 	  if sort_is_prop && SubstSet.mem s !substs then raise Exit;
 	  substs := SubstSet.add s !substs
 	with Termops.CannotFilter -> ()
-    ) (Libtypes.search_concl ev_typ)
+    ) (search_concl ev_typ)
   with Exit -> ()
 
 let evm_fold_rev f evm acc =

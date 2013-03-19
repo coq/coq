@@ -23,26 +23,25 @@ type glob_search_about_item =
 type filter_function = global_reference -> env -> constr -> bool
 type display_function = global_reference -> env -> constr -> unit
 
-val search_by_head : constr -> DirPath.t list * bool -> std_ppcmds
-val search_rewrite : constr -> DirPath.t list * bool -> std_ppcmds
-val search_pattern : constr -> DirPath.t list * bool -> std_ppcmds
-val search_about  :
-  (bool * glob_search_about_item) list -> DirPath.t list * bool -> std_ppcmds
+(** {6 Generic filter functions} *)
 
+val blacklist_filter : filter_function
+(** Check whether a reference is blacklisted. *)
+
+val module_filter : DirPath.t list * bool -> filter_function
+(** Check whether a reference pertains or not to a set of modules *)
+
+(** {6 Specialized search functions} *)
+
+val search_by_head : constr_pattern -> DirPath.t list * bool -> std_ppcmds
+val search_rewrite : constr_pattern -> DirPath.t list * bool -> std_ppcmds
+val search_pattern : constr_pattern -> DirPath.t list * bool -> std_ppcmds
+val search_about   : (bool * glob_search_about_item) list ->
+  DirPath.t list * bool -> std_ppcmds
 val interface_search : (Interface.search_constraint * bool) list ->
   string Interface.coq_object list
 
-(** The filtering function that is by standard search facilities.
-   It can be passed as argument to the raw search functions. *)
+(** {6 Generic search function} *)
 
-val filter_by_module_from_list : DirPath.t list * bool -> filter_function
-
-val filter_blacklist : filter_function
-
-(** raw search functions can be used for various extensions. *)
-val gen_filtered_search : filter_function -> display_function -> unit
-val filtered_search : filter_function -> display_function -> global_reference -> unit
-val raw_pattern_search : filter_function -> display_function -> constr_pattern -> unit
-val raw_search_rewrite : filter_function -> display_function -> constr_pattern -> unit
-val raw_search_about : filter_function -> display_function -> (bool * glob_search_about_item) list -> unit
-val raw_search_by_head : filter_function -> display_function -> constr_pattern -> unit
+val generic_search : display_function -> unit
+(** This function iterates over all known declarations *)

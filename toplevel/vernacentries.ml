@@ -1444,16 +1444,15 @@ let interp_search_about_item = function
 
 let vernac_search s r =
   let r = interp_search_restriction r in
+  let env = Global.env () in
+  let get_pattern c = snd (Constrintern.intern_constr_pattern Evd.empty env c) in
   match s with
   | SearchPattern c ->
-      let (_,c) = interp_open_constr_patvar Evd.empty (Global.env()) c in
-      msg_notice (Search.search_pattern c r)
+      msg_notice (Search.search_pattern (get_pattern c) r)
   | SearchRewrite c ->
-      let _,pat = interp_open_constr_patvar Evd.empty (Global.env()) c in
-      msg_notice (Search.search_rewrite pat r)
+      msg_notice (Search.search_rewrite (get_pattern c) r)
   | SearchHead c ->
-      let _,pat = interp_open_constr_patvar Evd.empty (Global.env()) c in
-      msg_notice (Search.search_by_head pat r)
+      msg_notice (Search.search_by_head (get_pattern c) r)
   | SearchAbout sl ->
       msg_notice (Search.search_about (List.map (on_snd interp_search_about_item) sl) r)
 

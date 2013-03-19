@@ -1685,15 +1685,15 @@ let interp_open_constr sigma env c =
 let interp_open_constr_patvar sigma env c =
   let raw = intern_gen (OfType None) sigma env c ~allow_patvar:true in
   let sigma = ref sigma in
-  let evars = ref (Gmap.empty : (Id.t,glob_constr) Gmap.t) in
+  let evars = ref (Id.Map.empty : glob_constr Id.Map.t) in
   let rec patvar_to_evar r = match r with
     | GPatVar (loc,(_,id)) ->
-	( try Gmap.find id !evars
+	( try Id.Map.find id !evars
 	  with Not_found ->
 	    let ev = Evarutil.e_new_evar sigma env (Termops.new_Type()) in
 	    let ev = Evarutil.e_new_evar sigma env ev in
 	    let rev = GEvar (loc,(fst (Term.destEvar ev)),None) (*TODO*) in
-	    evars := Gmap.add id rev !evars;
+	    evars := Id.Map.add id rev !evars;
 	    rev
 	)
     | _ -> map_glob_constr patvar_to_evar r in
