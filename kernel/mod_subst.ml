@@ -224,8 +224,10 @@ let constant_of_delta_with_inline resolve con =
   let kn1,kn2 = canonical_con con,user_con con in
   try find_inline_of_delta kn2 resolve
   with Not_found ->
-    try find_inline_of_delta kn1 resolve
-    with Not_found -> None
+    if kn1 == kn2 then None
+    else
+      try find_inline_of_delta kn1 resolve
+      with Not_found -> None
 
 let subst_mp0 sub mp = (* 's like subst *)
  let rec aux mp =
@@ -273,7 +275,9 @@ type sideconstantsubst =
   | Canonical
 
 let gen_subst_mp f sub mp1 mp2 =
-  match subst_mp0 sub mp1, subst_mp0 sub mp2 with
+  let o1 = subst_mp0 sub mp1 in
+  let o2 = if mp1 == mp2 then o1 else subst_mp0 sub mp2 in
+  match o1, o2 with
     | None, None -> raise No_subst
     | Some (mp',resolve), None -> User, (f mp' mp2), resolve
     | None, Some (mp',resolve) -> Canonical, (f mp1 mp'), resolve

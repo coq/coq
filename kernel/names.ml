@@ -205,7 +205,9 @@ type constant = kernel_name*kernel_name
 let constant_of_kn kn = (kn,kn)
 let constant_of_kn_equiv kn1 kn2 = (kn1,kn2)
 let make_con mp dir l = constant_of_kn (mp,dir,l)
-let make_con_equiv mp1 mp2 dir l = ((mp1,dir,l),(mp2,dir,l))
+let make_con_equiv mp1 mp2 dir l =
+  if mp1 == mp2 then make_con mp1 dir l
+  else ((mp1,dir,l),(mp2,dir,l))
 let canonical_con con = snd con
 let user_con con = fst con
 let repr_con con = fst con
@@ -263,8 +265,10 @@ let constr_modpath c = ind_modpath (fst c)
 
 let mind_of_kn kn = (kn,kn)
 let mind_of_kn_equiv kn1 kn2 = (kn1,kn2)
-let make_mind mp dir l = ((mp,dir,l),(mp,dir,l))
-let make_mind_equiv mp1 mp2 dir l = ((mp1,dir,l),(mp2,dir,l))
+let make_mind mp dir l = mind_of_kn (mp,dir,l)
+let make_mind_equiv mp1 mp2 dir l =
+  if mp1 == mp2 then make_mind mp1 dir l
+  else ((mp1,dir,l),(mp2,dir,l))
 let canonical_mind mind = snd mind
 let user_mind mind = fst mind
 let repr_mind mind = fst mind
