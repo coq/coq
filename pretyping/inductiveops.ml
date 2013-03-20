@@ -290,6 +290,7 @@ let find_rectype env sigma c =
   match kind_of_term t with
     | Ind ind ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
+        if mib.mind_nparams > List.length l then raise Not_found;
         let (par,rargs) = list_chop mib.mind_nparams l in
         IndType((ind, par),rargs)
     | _ -> raise Not_found
