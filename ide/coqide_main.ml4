@@ -38,6 +38,11 @@ let catch_gtk_messages () =
 
 let () = catch_gtk_messages ()
 
+(* We anticipate a bit the argument parsing and look for -debug *)
+
+let early_set_debug () =
+  Ideutils.debug := List.mem "-debug" (Array.to_list Sys.argv)
+
 (* On win32, we add the directory of coqide to the PATH at launch-time
    (this used to be done in a .bat script). *)
 
@@ -46,47 +51,31 @@ let set_win32_path () =
     (Filename.dirname Sys.executable_name ^ ";" ^
       (try Sys.getenv "PATH" with _ -> ""))
 
-(* On win32, since coqide is now console-free, we re-route stdout/stderr
-   to avoid Sys_error if someone writes to them. We write to a pipe which
-   is never read (by default) or to a temp log file (when in debug mode).
-*)
+(* On win32, in debug mode we duplicate stdout/stderr in a log file. *)
 
-let reroute_stdout_stderr () =
-  (* We anticipate a bit the argument parsing and look for -debug *)
-  let debug = List.mem "-debug" (Array.to_list Sys.argv) in
-  Ideutils.debug := debug;
-  let out_descr =
-    if debug then
-      let (name,chan) = Filename.open_temp_file "coqide_" ".log" in
-      Coqide.logfile := Some name;
-      Unix.descr_of_out_channel chan
-    else
-      snd (Unix.pipe ())
-  in
+let log_stdout_stderr () =
+  let (name,chan) = Filename.open_temp_file "coqide_" ".log" in
+  Coqide.logfile := Some name;
+  let out_descr = Unix.descr_of_out_channel chan in
   Unix.set_close_on_exec out_descr;
   Unix.dup2 out_descr Unix.stdout;
   Unix.dup2 out_descr Unix.stderr
 
 (* We also provide specific kill and interrupt functions. *)
 
-(* Since [win32_interrupt] involves some hack about the process console,
-   only one should run at the same time, we simply skip execution of
-   [win32_interrupt] if another instance is already running *)
-
-let ctrl_c_mtx = Mutex.create ()
-
-let ctrl_c_protect f i =
-  if not (Mutex.try_lock ctrl_c_mtx) then ()
-  else try f i; Mutex.unlock ctrl_c_mtx with _ -> Mutex.unlock ctrl_c_mtx
-
 IFDEF WIN32 THEN
 external win32_kill : int -> unit = "win32_kill"
-external win32_interrupt : int -> unit = "win32_interrupt"
+external win32_interrupt_all : unit -> unit = "win32_interrupt_all"
+external win32_hide_console : unit -> unit = "win32_hide_console"
+
 let () =
-  Coq.killer := win32_kill;
-  Coq.interrupter := ctrl_c_protect win32_interrupt;
   set_win32_path ();
-  reroute_stdout_stderr ()
+  Coq.killer := win32_kill;
+  Coq.interrupter := (fun pid -> win32_interrupt_all ());
+  if !Ideutils.debug then
+    log_stdout_stderr ()
+  else
+    win32_hide_console ()
 END
 
 IFDEF QUARTZ THEN

@@ -19,31 +19,33 @@ CAMLprim value win32_kill(value pseudopid) {
   CAMLreturn(Val_unit);
 }
 
-
 /* Win32 emulation of a kill -2 (SIGINT) */
 
-/* This code rely of the fact that coqide is now without initial console.
-   Otherwise, no console creation in win32unix/createprocess.c, hence
-   the same console for coqide and all coqtop, and everybody will be
-   signaled at the same time by the code below. */
+/* For simplicity, we signal all processes sharing a console with coqide.
+   This shouldn't be an issue since currently at most one coqtop is busy
+   at a given time. Earlier, we tried to be more precise via
+   FreeConsole and AttachConsole before generating the Ctrl-C, but
+   that wasn't working so well (see #2869).
+   This code rely now on the fact that coqide is a console app,
+   and that coqide itself ignores Ctrl-C.
+*/
 
-/* Moreover, AttachConsole exists only since WinXP, and GetProcessId
-   since WinXP SP1. For avoiding the GetProcessId, we could adapt code
-   from win32unix/createprocess.c to make it return both the pid and the
-   handle. For avoiding the AttachConsole, I don't know, maybe having
-   an intermediate process between coqide and coqtop ? */
+CAMLprim value win32_interrupt_all(value unit) {
+  CAMLparam1(unit);
+  GenerateConsoleCtrlEvent(CTRL_C_EVENT,0);
+  CAMLreturn(Val_unit);
+}
 
-CAMLprim value win32_interrupt(value pseudopid) {
-  CAMLparam1(pseudopid);
-  HANDLE h;
+/* Get rid of the nasty console window (only if we created it) */
+
+CAMLprim value win32_hide_console (value unit) {
+  CAMLparam1(unit);
   DWORD pid;
-  FreeConsole(); /* Normally unnecessary, just to be sure... */
-  h = (HANDLE)(Long_val(pseudopid));
-  pid = GetProcessId(h);
-  AttachConsole(pid);
-  /* We want to survive the Ctrl-C that will also concerns us */
-  SetConsoleCtrlHandler(NULL,TRUE); /* NULL + TRUE means ignore */
-  GenerateConsoleCtrlEvent(CTRL_C_EVENT,0); /* signal our co-console */
-  FreeConsole();
+  HWND hw = GetConsoleWindow();
+  if (hw != NULL) {
+    GetWindowThreadProcessId(hw, &pid);
+    if (pid == GetCurrentProcessId())
+      ShowWindow(hw, SW_HIDE);
+  }
   CAMLreturn(Val_unit);
 }

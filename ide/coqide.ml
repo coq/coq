@@ -212,6 +212,9 @@ let ignore_break () =
       try Sys.set_signal i (Sys.Signal_handle crash_save)
       with _ -> prerr_endline "Signal ignored (normal if Win32)")
     signals_to_crash;
+  (* We ignore the Ctrl-C, this is required for the Stop button to work,
+     since we will actually send Ctrl-C to all processes sharing
+     our console (including us) *)
   Sys.set_signal Sys.sigint Sys.Signal_ignore
 
 

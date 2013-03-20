@@ -393,14 +393,17 @@ let extra_rules () = begin
        Cmd (S [P w32res;A "--input-format";A "rc";A "--input";P rc;
 	       A "--output-format";A "coff";A "--output"; Px o]));
 
-(** The windows version of Coqide is now a console-free win32 app,
-    which moreover contains the Coq icon. If necessary, the mkwinapp
-    tool can be used later to restore or suppress the console of Coqide. *)
+(** Embed the Coq icon inside the windows version of Coqide *)
 
   if w32 then dep ["link"; "ocaml"; "program"; "ide"] [w32ico];
+  if w32 then flag ["link"; "ocaml"; "program"; "ide"] (P w32ico);
 
-  if w32 then flag ["link"; "ocaml"; "program"; "ide"]
-    (S [A "-ccopt"; A "-link -Wl,-subsystem,windows"; P w32ico]);
+(** Ealier we tried to make Coqide a console-free win32 app,
+    but that was troublesome (unavailable stdout/stderr, issues
+    with the stop button,...). If somebody really want to try again,
+    the extra args to add are :
+      [A "-ccopt"; A "-link -Wl,-subsystem,windows"]
+    Other solution: use the mkwinapp tool. *)
 
 (** The mingw32-ocaml cross-compiler currently uses Filename.dir_sep="/".
     Let's tweak that... *)
