@@ -748,7 +748,7 @@ let refresh_editor_prefs () =
     (* Fonts *)
     sn.script#misc#modify_font fd;
     sn.proof#misc#modify_font fd;
-    sn.messages#misc#modify_font fd;
+    sn.messages#modify_font fd;
     sn.command#refresh_font ();
 
     (* Colors *)

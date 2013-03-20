@@ -16,6 +16,7 @@ class type message_view =
       (** same as [add], but with an explicit level instead of [Notice] *)
     method buffer : GText.buffer
       (** for more advanced text edition *)
+    method modify_font : Pango.font_description -> unit
   end
 
 val message_view : unit -> message_view

@@ -198,8 +198,6 @@ let build_layout (sn:session) =
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:proof_frame#add () in
   let message_frame = GBin.frame ~shadow_type:`IN
     ~packing:state_paned#add2 () in
-  let message_scroll = GBin.scrolled_window
-    ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:message_frame#add () in
   let session_tab = GPack.hbox ~homogeneous:false () in
   let img = GMisc.image ~icon_size:`SMALL_TOOLBAR
     ~packing:session_tab#pack () in
@@ -229,7 +227,7 @@ let build_layout (sn:session) =
   session_paned#pack2 ~shrink:false ~resize:false (sn.command#frame#coerce);
   script_scroll#add sn.script#coerce;
   proof_scroll#add sn.proof#coerce;
-  message_scroll#add sn.messages#coerce;
+  message_frame#add sn.messages#coerce;
   session_tab#pack sn.tab_label#coerce;
   img#set_stock `YES;
   eval_paned#set_position 1;

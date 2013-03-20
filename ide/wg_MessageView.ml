@@ -16,18 +16,22 @@ class type message_view =
       (** same as [add], but with an explicit level instead of [Notice] *)
     method buffer : GText.buffer
       (** for more advanced text edition *)
+    method modify_font : Pango.font_description -> unit
   end
 
 let message_view () : message_view =
   let buffer = GText.buffer ~tag_table:Tags.Message.table () in
-  let view = GText.view ~buffer
+  let box = GPack.vbox () in
+  let scroll = GBin.scrolled_window
+    ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:(box#pack ~expand:true) () in
+  let view = GText.view ~buffer ~packing:scroll#add
     ~editable:false ~cursor_visible:false ~wrap_mode:`WORD ()
   in
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
   let _ = buffer#add_selection_clipboard default_clipboard in
   let () = view#set_left_margin 2 in
   object (self)
-    inherit GObj.widget view#as_widget
+    inherit GObj.widget box#as_widget
 
     method clear =
       buffer#set_text ""
@@ -46,5 +50,7 @@ let message_view () : message_view =
     method set msg = self#clear; self#add msg
 
     method buffer = buffer
+
+    method modify_font fd = view#misc#modify_font fd
 
   end
