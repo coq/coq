@@ -72,6 +72,7 @@ let () =
   set_win32_path ();
   Coq.killer := win32_kill;
   Coq.interrupter := (fun pid -> win32_interrupt_all ());
+  early_set_debug ();
   if !Ideutils.debug then
     log_stdout_stderr ()
   else
