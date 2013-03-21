@@ -69,8 +69,15 @@ let print_kn locals kn =
 	with
 	    Not_found -> print_modpath locals kn
 
+(** Each time we have to print a non-globally visible structure,
+    we place its elements in a fake fresh namespace. *)
+
+let mk_fake_top =
+  let r = ref 0 in
+  fun () -> incr r; Id.of_string ("FAKETOP"^(string_of_int !r))
+
 let nametab_register_dir mp =
-  let id = Id.of_string "FAKETOP" in
+  let id = mk_fake_top () in
   let fp = Libnames.make_path DirPath.empty id in
   let dir = DirPath.make [id] in
   Nametab.push_dir (Nametab.Until 1) dir (DirModule (dir,(mp,DirPath.empty)));
