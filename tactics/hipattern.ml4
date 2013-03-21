@@ -67,9 +67,12 @@ let is_non_recursive_type t = op2bool (match_with_non_recursive_type t)
 
 (* Test dependencies *)
 
+(* NB: we consider also the let-in case in the following function,
+   since they may appear in types of inductive constructors (see #2629) *)
+
 let rec has_nodep_prod_after n c =
   match kind_of_term c with
-    | Prod (_,_,b) ->
+    | Prod (_,_,b) | LetIn (_,_,_,b) ->
 	( n>0 || not (dependent (mkRel 1) b))
 	&& (has_nodep_prod_after (n-1) b)
     | _            -> true
