@@ -123,12 +123,11 @@ let marshal_in filename ch =
 
 exception Bad_magic_number of string
 
-let raw_extern_intern magic suffix =
-  let extern_state name =
-    let filename = CUnix.make_suffix name suffix in
+let raw_extern_intern magic =
+  let extern_state filename =
     let channel = open_trapping_failure filename in
     output_binary_int channel magic;
-    filename,channel
+    filename, channel
   and intern_state filename =
     let channel = open_in_bin filename in
     if not (Int.equal (input_binary_int channel) magic) then
@@ -137,8 +136,8 @@ let raw_extern_intern magic suffix =
   in
   (extern_state,intern_state)
 
-let extern_intern ?(warn=true) magic suffix =
-  let (raw_extern,raw_intern) = raw_extern_intern magic suffix in
+let extern_intern ?(warn=true) magic =
+  let (raw_extern,raw_intern) = raw_extern_intern magic in
   let extern_state name val_0 =
     try
       let (filename,channel) = raw_extern name in
@@ -152,7 +151,7 @@ let extern_intern ?(warn=true) magic suffix =
     with Sys_error s -> error ("System error: " ^ s)
   and intern_state paths name =
     try
-      let _,filename = find_file_in_path ~warn paths (CUnix.make_suffix name suffix) in
+      let _,filename = find_file_in_path ~warn paths name in
       let channel = raw_intern filename in
       let v = marshal_in filename channel in
       close_in channel;

@@ -318,7 +318,7 @@ let in_import : DirPath.t * bool -> obj =
 (*s Loading from disk to cache (preparation phase) *)
 
 let (raw_extern_library, raw_intern_library) =
-  System.raw_extern_intern Coq_config.vo_magic_number ".vo"
+  System.raw_extern_intern Coq_config.vo_magic_number
 
 (************************************************************************)
 (*s Locate absolute or partially qualified library names in the path *)
@@ -401,10 +401,10 @@ let mk_library md table digest =
 let fetch_opaque_table (f,pos,digest) =
   try
     let ch = System.with_magic_number_check raw_intern_library f in
-    seek_in ch pos;
+    let () = seek_in ch pos in
     if not (String.equal (System.marshal_in f ch) digest) then failwith "File changed!";
     let table = (System.marshal_in f ch : LightenLibrary.table) in
-    close_in ch;
+    let () = close_in ch in
     table
   with e when Errors.noncritical e ->
     error

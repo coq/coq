@@ -264,7 +264,7 @@ let try_locate_qualified_library qid =
 (*s Loading from disk to cache (preparation phase) *)
 
 let raw_intern_library =
-  snd (System.raw_extern_intern Coq_config.vo_magic_number ".vo")
+  snd (System.raw_extern_intern Coq_config.vo_magic_number)
 
 let with_magic_number_check f a =
   try f a
