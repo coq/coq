@@ -786,9 +786,8 @@ let closure_of_filter evd evk = function
   | Some filter ->
   let evi = Evd.find_undefined evd evk in
   let vars = collect_vars (Evarutil.nf_evar evd (evar_concl evi)) in
-  let ids = List.map pi1 (evar_context evi) in
-  let test id b = b || Id.Set.mem id vars in
-  let newfilter = List.map2 test ids filter in
+  let test (id,c,_) b = b || Idset.mem id vars || c <> None in
+  let newfilter = List.map2 test (evar_context evi) filter in
   if eq_filter newfilter (evar_filter evi) then None else Some newfilter
 
 let restrict_hyps evd evk filter candidates =
