@@ -976,7 +976,8 @@ let decline_string n s =
 
 let explain_wrong_numarg_constructor env cstr n =
   str "The constructor " ++ pr_constructor env cstr ++
-  str " expects " ++ str (decline_string n "argument") ++ str "."
+  str " (in type " ++ pr_inductive env (inductive_of_constructor cstr) ++
+  str ") expects " ++ str (decline_string n "argument") ++ str "."
 
 let explain_wrong_numarg_inductive env ind n =
   str "The inductive type " ++ pr_inductive env ind ++
