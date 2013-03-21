@@ -447,6 +447,7 @@ let vernac_notation = Metasyntax.add_notation
 (* Gallina *)
 
 let start_proof_and_print k l hook =
+  Locality.check_locality (); (* early check, cf #2975 *)
   start_proof_com k l hook;
   print_subgoals ()
 
