@@ -24,6 +24,9 @@ open Cases
 open Logic
 open Printer
 open Evd
+open Libnames
+open Globnames
+open Declarations
 
 let pr_lconstr c = quote (pr_lconstr c)
 let pr_lconstr_env e c = quote (pr_lconstr_env e c)
@@ -598,9 +601,11 @@ let explain_not_match_error = function
     str "types given to " ++ str (Id.to_string id) ++ str " differ"
   | NotConvertibleBodyField ->
     str "the body of definitions differs"
-  | NotConvertibleTypeField (typ1, typ2) ->
-    str "expected type" ++ spc ()  ++ pr_lconstr typ2 ++ spc () ++
-    str "but found type" ++ spc () ++ pr_lconstr typ1
+  | NotConvertibleTypeField (env, typ1, typ2) ->
+    str "expected type" ++ spc ()  ++
+    quote (Printer.safe_pr_lconstr_env env typ2) ++ spc () ++
+    str "but found type" ++ spc () ++
+    quote (Printer.safe_pr_lconstr_env env typ1)
   | NotSameConstructorNamesField ->
     str "constructor names differ"
   | NotSameInductiveNameInBlockField ->

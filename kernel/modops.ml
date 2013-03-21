@@ -33,7 +33,7 @@ type signature_mismatch_error =
   | NotConvertibleInductiveField of Id.t
   | NotConvertibleConstructorField of Id.t
   | NotConvertibleBodyField
-  | NotConvertibleTypeField of types * types
+  | NotConvertibleTypeField of env * types * types
   | NotSameConstructorNamesField
   | NotSameInductiveNameInBlockField
   | FiniteInductiveFieldExpected of bool
