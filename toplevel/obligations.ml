@@ -470,7 +470,7 @@ let close sec =
       errorlabstrm "Program" 
 	(str "Unsolved obligations when closing " ++ str sec ++ str":" ++ spc () ++
 	   prlist_with_sep spc (fun x -> Nameops.pr_id x) keys ++
-	   (str (if Int.equal (List.length keys) 1 then " has " else "have ") ++
+	   (str (if Int.equal (List.length keys) 1 then " has " else " have ") ++
 	      str "unsolved obligations"))
 
 let input : program_info ProgMap.t -> obj =
