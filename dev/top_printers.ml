@@ -459,7 +459,7 @@ let encode_path loc prefix mpdir suffix id =
   Qualid (loc, make_qualid
     (make_dirpath (List.rev (id_of_string prefix::dir@suffix))) id)
 
-let raw_string_of_ref loc = function
+let raw_string_of_ref loc _ = function
   | ConstRef cst ->
       let (mp,dir,id) = repr_con cst in
       encode_path loc "CST" (Some (mp,dir)) [] (id_of_label id)
@@ -475,7 +475,7 @@ let raw_string_of_ref loc = function
   | VarRef id ->
       encode_path loc "SECVAR" None [] id
 
-let short_string_of_ref loc = function
+let short_string_of_ref loc _ = function
   | VarRef id -> Ident (loc,id)
   | ConstRef cst -> Ident (loc,id_of_label (pi3 (repr_con cst)))
   | IndRef (kn,0) -> Ident (loc,id_of_label (pi3 (repr_mind kn)))
@@ -491,5 +491,5 @@ let short_string_of_ref loc = function
    pretty-printer should not make calls to the global env since ocamldebug
    runs in a different process and does not have the proper env at hand *)
 let _ = Constrextern.in_debugger := true
-let _ = Constrextern.set_debug_global_reference_printer
+let _ = Constrextern.set_extern_reference
   (if !rawdebug then raw_string_of_ref else short_string_of_ref)

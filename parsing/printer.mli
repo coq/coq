@@ -31,6 +31,17 @@ val pr_lconstr             : constr -> std_ppcmds
 val pr_constr_env          : env -> constr -> std_ppcmds
 val pr_constr              : constr -> std_ppcmds
 
+(** Same, but resilient to [Nametab] errors. Prints fully-qualified
+    names when [shortest_qualid_of_global] has failed. Prints "??"
+    in case of remaining issues (such as reference not in env). *)
+
+val safe_pr_lconstr_env         : env -> constr -> std_ppcmds
+val safe_pr_lconstr             : constr -> std_ppcmds
+
+val safe_pr_constr_env          : env -> constr -> std_ppcmds
+val safe_pr_constr              : constr -> std_ppcmds
+
+
 val pr_open_constr_env     : env -> open_constr -> std_ppcmds
 val pr_open_constr         : open_constr -> std_ppcmds
 

@@ -24,6 +24,7 @@ open Pfedit
 open Ppconstr
 open Constrextern
 open Tacexpr
+open Declarations
 
 open Store.Field
 
@@ -117,6 +118,63 @@ let pr_constr_pattern t =
 let pr_sort s = pr_glob_sort (extern_sort s)
 
 let _ = Termops.set_print_constr pr_lconstr_env
+
+
+(** Term printers resilient to [Nametab] errors *)
+
+(** When the nametab isn't up-to-date, the term printers above
+    could raise [Not_found] during [Nametab.shortest_qualid_of_global].
+    In this case, we build here a fully-qualified name based upon
+    the kernel modpath and label of constants, and the idents in
+    the [mutual_inductive_body] for the inductives and constructors
+    (needs an environment for this). *)
+
+let id_of_global env = function
+  | ConstRef kn -> id_of_label (con_label kn)
+  | IndRef (kn,0) -> id_of_label (mind_label kn)
+  | IndRef (kn,i) ->
+    (Environ.lookup_mind kn env).mind_packets.(i).mind_typename
+  | ConstructRef ((kn,i),j) ->
+    (Environ.lookup_mind kn env).mind_packets.(i).mind_consnames.(j-1)
+  | VarRef v -> v
+
+let cons_dirpath id dp = make_dirpath (id :: repr_dirpath dp)
+
+let rec dirpath_of_mp = function
+  | MPfile sl -> sl
+  | MPbound uid -> make_dirpath [id_of_mbid uid]
+  | MPdot (mp,l) -> cons_dirpath (id_of_label l) (dirpath_of_mp mp)
+
+let dirpath_of_global = function
+  | ConstRef kn -> dirpath_of_mp (con_modpath kn)
+  | IndRef (kn,_) | ConstructRef ((kn,_),_) ->
+    dirpath_of_mp (mind_modpath kn)
+  | VarRef _ -> empty_dirpath
+
+let qualid_of_global env r =
+  Libnames.make_qualid (dirpath_of_global r) (id_of_global env r)
+
+let safe_gen f env c =
+  let orig_extern_ref = Constrextern.get_extern_reference () in
+  let extern_ref loc vars r =
+    try orig_extern_ref loc vars r
+    with e when Errors.noncritical e ->
+      Libnames.Qualid (loc, qualid_of_global env r)
+  in
+  Constrextern.set_extern_reference extern_ref;
+  try
+    let p = f env c in
+    Constrextern.set_extern_reference orig_extern_ref;
+    p
+  with e when Errors.noncritical e ->
+    Constrextern.set_extern_reference orig_extern_ref;
+    str "??"
+
+let safe_pr_lconstr_env = safe_gen pr_lconstr_env
+let safe_pr_constr_env = safe_gen pr_constr_env
+let safe_pr_lconstr t = safe_pr_lconstr_env (Global.env()) t
+let safe_pr_constr t = safe_pr_constr_env (Global.env()) t
+
 
 (**********************************************************************)
 (* Global references *)
@@ -647,7 +705,6 @@ let pr_instance_gmap insts =
 
 (** Inductive declarations *)
 
-open Declarations
 open Termops
 open Reduction
 open Inductive

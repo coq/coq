@@ -200,8 +200,8 @@ let pf_e gl s =
 
 (* Set usual printing since the global env is available from the tracer *)
 let _ = Constrextern.in_debugger := false
-let _ = Constrextern.set_debug_global_reference_printer
-  (fun loc r -> Libnames.Qualid (loc,Nametab.shortest_qualid_of_global Idset.empty r));;
+let _ = Constrextern.set_extern_reference
+  (fun loc _ r -> Libnames.Qualid (loc,Nametab.shortest_qualid_of_global Idset.empty r));;
 
 open Toplevel
 let go = loop
