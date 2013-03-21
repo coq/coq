@@ -438,6 +438,10 @@ let rec intro_then_gen loc name_flag move_flag force_flag dep_flag tac gl =
 	  gl
     | _ ->
 	if not force_flag then raise (RefinerError IntroNeedsProduct);
+        (* Note: red_in_concl includes betaiotazeta and this was like *)
+        (* this since at least V6.3 (a pity *)
+        (* that intro do betaiotazeta only when reduction is needed; and *)
+        (* probably also a pity that intro does zeta *)
 	try
 	  tclTHEN try_red_in_concl
 	    (intro_then_gen loc name_flag move_flag force_flag dep_flag tac) gl

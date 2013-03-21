@@ -2899,7 +2899,9 @@ computational expressions (i.e. with few dead code).
 \tacindex{red}
 
 This tactic applies to a goal that has the form {\tt
-  forall (x:T1)\dots(xk:Tk), c t1 \dots\ tn} where {\tt c} is a constant.  If
+  forall (x:T1)\dots(xk:Tk), t} with {\tt t}
+$\beta\iota\zeta$-reducing to {\tt c t1 \dots\ tn} and {\tt c} a
+constant.  If
 {\tt c} is transparent then it replaces {\tt c} with its definition
 (say {\tt t}) and then reduces {\tt (t t1 \dots\ tn)} according to
 $\beta\iota\zeta$-reduction rules.

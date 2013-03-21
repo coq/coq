@@ -783,6 +783,7 @@ and whd_construct_stack env sigma s =
 let try_red_product env sigma c =
   let simpfun = clos_norm_flags betaiotazeta env sigma in
   let rec redrec env x =
+    let x = whd_betaiota sigma x in
     match kind_of_term x with
       | App (f,l) ->
           (match kind_of_term f with
