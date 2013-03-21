@@ -447,7 +447,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
 	| None ->
 	    let exl = Evarutil.non_instantiated sigma in
 	    if exl = [] then
-	      (str"No more subgoals."
+	      (str"No more subgoals." ++ fnl ()
 	       ++ emacs_print_dependent_evars sigma seeds)
 	    else
 	      let pei = pr_evars_int 1 exl in
@@ -473,7 +473,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
       v 0 (
 	int(List.length rest+1) ++ str" subgoals" ++
           str (emacs_str ", subgoal 1") ++ pr_goal_tag g1 ++ cut ()
-	++ goals
+	++ goals ++ fnl ()
 	++ emacs_print_dependent_evars sigma seeds
       )
   | g1::rest,a::l ->
