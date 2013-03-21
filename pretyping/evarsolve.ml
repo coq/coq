@@ -781,7 +781,9 @@ let eq_filter f1 f2 =
   let eq_bool b1 b2 = if b1 then b2 else not b2 in
   List.equal eq_bool f1 f2
 
-let closure_of_filter evd evk filter =
+let closure_of_filter evd evk = function
+  | None -> None
+  | Some filter ->
   let evi = Evd.find_undefined evd evk in
   let vars = collect_vars (Evarutil.nf_evar evd (evar_concl evi)) in
   let ids = List.map pi1 (evar_context evi) in
@@ -801,7 +803,7 @@ let restrict_hyps evd evk filter candidates =
        it for future work. In any case, thanks to the use of filters, the whole
        (unrestricted) context remains consistent. *)
     let candidates = filter_candidates evd evk (Some filter) candidates in
-    let typablefilter = closure_of_filter evd evk filter in
+    let typablefilter = closure_of_filter evd evk (Some filter) in
     (typablefilter,candidates)
 
 exception EvarSolvedWhileRestricting of evar_map * constr
@@ -828,16 +830,14 @@ let postpone_non_unique_projection env evd (evk,argsv as ev) sols rhs =
       (* Keep only variables that occur in rhs *)
       (* This is not safe: is the variable is a local def, its body *)
       (* may contain references to variables that are removed, leading to *)
-      (* a ill-formed context. We would actually need a notion of filter *)
+      (* an ill-formed context. We would actually need a notion of filter *)
       (* that says that the body is hidden. Note that expand_vars_in_term *)
       (* expands only rels and vars aliases, not rels or vars bound to an *)
       (* arbitrary complex term *)
       (fun a -> not (isRel a || isVar a)
                 || dependent a rhs || List.exists (fun (id,_) -> isVarId id a) sols)
       (Array.to_list argsv) in
-  let filter = match filter with
-  | None -> None
-  | Some filter -> closure_of_filter evd evk filter in
+  let filter = closure_of_filter evd evk filter in
   let candidates = extract_candidates sols in
   match candidates with
   | None ->
@@ -1065,9 +1065,7 @@ let solve_refl ?(can_drop=false) conv_algo env evd evk argsv1 argsv2 =
       (fun (a1,a2) -> conv_algo env evd Reduction.CONV a1 a2)
       (List.combine (Array.to_list argsv1) (Array.to_list argsv2)) in
   let candidates = filter_candidates evd evk untypedfilter None in
-  let filter = match untypedfilter with
-    | None -> None
-    | Some filter -> closure_of_filter evd evk filter in
+  let filter = closure_of_filter evd evk untypedfilter in
   let evd,ev1 = restrict_applied_evar evd (evk,argsv1) filter candidates in
   if Int.equal (fst ev1) evk && can_drop then (* No refinement *) evd else
     (* either progress, or not allowed to drop, e.g. to preserve possibly *)
@@ -1168,9 +1166,8 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
             materialize_evar (evar_define conv_algo) env !evdref 0 ev ty' in
           let ts = expansions_of_var aliases t in
           let test c = isEvar c or List.mem c ts in
-          let filter = Array.map_to_list test argsv' in
-          let filter = apply_subfilter (evar_filter (Evd.find_undefined evd evk)) filter in
-
+          let filter =
+            restrict_upon_filter evd evk test (Array.to_list argsv') in
           let filter = closure_of_filter evd evk' filter in
           let candidates = extract_candidates sols in
           let evd = match candidates with

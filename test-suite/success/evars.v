@@ -392,3 +392,10 @@ Definition tri_iffT : tri iffT iffT iffT :=
     (fun X0 X1 X2 E01 E02 =>
      (mkIff _ _ (fun x1 => iffLR _ _ E02 (iffRL _ _ E01 x1))
      (fun x2 => iffLR _ _ E01 (iffRL _ _ E02 x2))))).
+
+(* Check that local defs names are preserved if possible during unification *)
+
+Goal forall x (x':=x) (f:forall y, y=y:>nat -> Prop), f _ (eq_refl x').
+intros.
+unfold x' at 2. (* A way to check that there are indeed 2 occurrences of x' *)
+Abort.
