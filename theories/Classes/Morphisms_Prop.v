@@ -93,20 +93,8 @@ Program Instance all_iff_morphism {A : Type} :
 Program Instance all_impl_morphism {A : Type} :
   Proper (pointwise_relation A impl ==> impl) (@all A) | 1.
 
-  Next Obligation.
-  Proof.
-    unfold pointwise_relation, all in *.
-    intuition ; specialize (H x0) ; intuition.
-  Qed.
-
 Program Instance all_inverse_impl_morphism {A : Type} :
   Proper (pointwise_relation A (inverse impl) ==> inverse impl) (@all A) | 1.
-
-  Next Obligation.
-  Proof.
-    unfold pointwise_relation, all in *.
-    intuition ; specialize (H x0) ; intuition.
-  Qed.
 
 (** Equivalent points are simultaneously accessible or not *)
 

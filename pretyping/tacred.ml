@@ -812,7 +812,7 @@ let try_red_product env sigma c =
 
 let red_product env sigma c =
   try try_red_product env sigma c
-  with Redelimination -> error "Not reducible."
+  with Redelimination -> error "No head constant to reduce."
 
 (*
 (* This old version of hnf uses betadeltaiota instead of itself (resp
@@ -882,8 +882,9 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
               | CoFix _ | Fix _ -> s'
 	      | _ -> redrec (applist(c, stack)))
 	| None -> s'
-    else s'
-  in applist (redrec c)
+    else s' in
+  let simpfun = clos_norm_flags betaiota env sigma in
+  simpfun (applist (redrec c))
 
 let hnf_constr = whd_simpl_orelse_delta_but_fix
 

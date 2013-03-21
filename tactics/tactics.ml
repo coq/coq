@@ -443,9 +443,9 @@ let rec intro_then_gen loc name_flag move_flag force_flag dep_flag tac gl =
         (* that intro do betaiotazeta only when reduction is needed; and *)
         (* probably also a pity that intro does zeta *)
 	try
-	  tclTHEN try_red_in_concl
-	    (intro_then_gen loc name_flag move_flag force_flag dep_flag tac) gl
-	with Redelimination ->
+	  tclTHEN hnf_in_concl
+	    (intro_then_gen loc name_flag move_flag false dep_flag tac) gl
+	with RefinerError IntroNeedsProduct ->
 	  user_err_loc(loc,"Intro",str "No product even after head-reduction.")
 
 let intro_gen loc n m f d = intro_then_gen loc n m f d (fun _ -> tclIDTAC)

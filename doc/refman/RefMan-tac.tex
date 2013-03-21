@@ -671,8 +671,8 @@ H}{\it n} or {\tt X}{\it n} is a fresh identifier.
 In both cases, the new subgoal is $U$.
 
 If the goal is neither a product nor starting with a let definition,
-the tactic {\tt intro} applies the tactic {\tt red} until the tactic
-{\tt intro} can be applied or the goal is not reducible.
+the tactic {\tt intro} applies the tactic {\tt hnf} until the tactic
+{\tt intro} can be applied or the goal is not head-reducible.
 
 \begin{ErrMsgs}
 \item \errindex{No product even after head-reduction}
@@ -2916,7 +2916,8 @@ $\beta\iota\zeta$-reduction rules.
 This tactic applies to any goal. It replaces the current goal with its
 head normal form according to the $\beta\delta\iota\zeta$-reduction
 rules, i.e.  it reduces the head of the goal until it becomes a
-product or an irreducible term.
+product or an irreducible term. All inner $\beta\iota$-redexes are also
+reduced.
 
 \Example
 The term \verb+forall n:nat, (plus (S n) (S n))+ is not reduced by {\tt hnf}.

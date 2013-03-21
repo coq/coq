@@ -32,6 +32,10 @@ Tactics
 - Tactic notations can now be defined locally to a module (use "Local" prefix).
 - Tactic "red" now reduces head beta-iota redexes (potential source of
   rare incompatibilities).
+- Tactic "hnf" now reduces inner beta-iota redexes
+  (potential source of rare incompatibilities).
+- Tactic "intro H" now reduces beta-iota redexes if these hide a product
+  (potential source of rare incompatibilities).
 
 Program
 
