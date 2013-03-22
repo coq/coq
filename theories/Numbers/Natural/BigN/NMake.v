@@ -475,7 +475,7 @@ Module Make (W0:CyclicType) <: NType.
     DoubleDivn1.double_divn1 zd zero ww head0 add_mul_div div21 compare sub in
   fun m x y => let (u,v) := ddivn1 (S m) x y in (mk_t_w' n m u, mk_t n v).
 
- Let div_gtnm n m wx wy :=
+ Definition div_gtnm n m wx wy :=
     let mn := Max.max n m in
     let d := diff n m in
     let op := make_op mn in
@@ -522,7 +522,7 @@ Module Make (W0:CyclicType) <: NType.
   case (ZnZ.spec_to_Z y); auto.
  Qed.
 
- Let spec_divn1 n :=
+ Definition spec_divn1 n :=
    DoubleDivn1.spec_double_divn1
     (ZnZ.zdigits (dom_op n)) (ZnZ.zero:dom_t n)
     ZnZ.WW ZnZ.head0
@@ -643,7 +643,7 @@ Module Make (W0:CyclicType) <: NType.
     DoubleDivn1.double_modn1 zd zero head0 add_mul_div div21 compare sub in
   fun m x y => reduce n (dmodn1 (S m) x y).
 
- Let mod_gtnm n m wx wy :=
+ Definition mod_gtnm n m wx wy :=
     let mn := Max.max n m in
     let d := diff n m in
     let op := make_op mn in
@@ -671,7 +671,7 @@ Module Make (W0:CyclicType) <: NType.
   reflexivity.
  Qed.
 
- Let spec_modn1 n :=
+ Definition spec_modn1 n :=
    DoubleDivn1.spec_double_modn1
     (ZnZ.zdigits (dom_op n)) (ZnZ.zero:dom_t n)
     ZnZ.WW ZnZ.head0

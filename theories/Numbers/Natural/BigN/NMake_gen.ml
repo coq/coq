@@ -234,7 +234,7 @@ pr
   | S n1 => mk_zn2z_ops (nmake_op ww ww_op n1)
   end.
 
- Let eval n m := ZnZ.to_Z (Ops:=nmake_op _ (dom_op n) m).
+ Definition eval n m := ZnZ.to_Z (Ops:=nmake_op _ (dom_op n) m).
 
  Theorem nmake_op_S: forall ww (w_op: ZnZ.Ops ww) x,
    nmake_op _ w_op (S x) = mk_zn2z_ops (nmake_op _ w_op x).
@@ -533,7 +533,7 @@ pr "
 for i = 0 to size-1 do
 let pattern = (iter_str (size+1-i) "(S ") ^ "_" ^ (iter_str (size+1-i) ")") in
 pr
-" Let mk_t_%iw m := Eval cbv beta zeta iota delta [ mk_t plus ] in
+" Definition mk_t_%iw m := Eval cbv beta zeta iota delta [ mk_t plus ] in
   match m return word w%i (S m) -> t with
     | %s as p => mk_t_w %i (S p)
     | p => mk_t (%i+p)
@@ -542,7 +542,7 @@ pr
 done;
 
 pr
-" Let mk_t_w' n : forall m, word (dom_t n) (S m) -> t :=
+" Definition mk_t_w' n : forall m, word (dom_t n) (S m) -> t :=
   match n return (forall m, word (dom_t n) (S m) -> t) with";
 for i = 0 to size-1 do pr "    | %i => mk_t_%iw" i i done;
 pr
