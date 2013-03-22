@@ -142,11 +142,14 @@ let build_signature evars env m (cstrs : (types * types option) option list)
     new_cstr_evar evars env
       (* ~src:(Loc.ghost, ImplicitArg (ConstRef (Lazy.force respectful), (n, Some na))) *) t
   in
-  let mk_relty evars env ty obj =
+  let mk_relty evars newenv ty obj =
     match obj with
       | None | Some (_, None) ->
 	  let relty = mk_relation ty in
-	    new_evar evars env relty
+	    if closed0 ty then 
+	      let env' = Environ.reset_with_named_context (Environ.named_context_val env) env in
+		new_evar evars env' relty
+	    else new_evar evars newenv relty
       | Some (x, Some rel) -> evars, rel
   in
   let rec aux env evars ty l =
@@ -484,7 +487,7 @@ let rec apply_pointwise rel = function
   | [] -> rel
 
 let pointwise_or_dep_relation n t car rel =
-  if noccurn 1 car then
+  if noccurn 1 car && noccurn 1 rel then
     mkApp (Lazy.force pointwise_relation, [| t; lift (-1) car; lift (-1) rel |])
   else
     mkApp (Lazy.force forall_relation, 

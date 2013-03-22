@@ -69,7 +69,7 @@ let red_constant_entry n ce = function
       { ce with const_entry_body =
         under_binders (Global.env()) (fst (reduction_of_red_expr red)) n body }
 
-let interp_definition bl red_option c ctypopt =
+let interp_definition bl red_option fail_evar c ctypopt =
   let env = Global.env() in
   let evdref = ref Evd.empty in
   let impls, ((env_bl, ctx), imps1) = interp_context_evars evdref env bl in
@@ -77,7 +77,7 @@ let interp_definition bl red_option c ctypopt =
   let imps,ce =
     match ctypopt with
       None ->
-	let c, imps2 = interp_constr_evars_impls ~impls ~evdref ~fail_evar:false env_bl c in
+	let c, imps2 = interp_constr_evars_impls ~impls ~evdref ~fail_evar env_bl c in
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	imps1@(Impargs.lift_implicits nb_args imps2),
 	{ const_entry_body = body;
@@ -88,7 +88,7 @@ let interp_definition bl red_option c ctypopt =
 	}
     | Some ctyp ->
 	let ty, impsty = interp_type_evars_impls ~impls ~evdref ~fail_evar:false env_bl ctyp in
-	let c, imps2 = interp_casted_constr_evars_impls ~impls ~evdref ~fail_evar:false env_bl c ty in
+	let c, imps2 = interp_casted_constr_evars_impls ~impls ~evdref ~fail_evar env_bl c ty in
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	let typ = nf_evar !evdref (it_mkProd_or_LetIn ty ctx) in
         let beq b1 b2 = if b1 then b2 else not b2 in
@@ -155,7 +155,7 @@ let declare_definition ident (local, k) ce imps hook =
 let _ = Obligations.declare_definition_ref := declare_definition
 
 let do_definition ident k bl red_option c ctypopt hook =
-  let (ce, evd, imps as def) = interp_definition bl red_option c ctypopt in
+  let (ce, evd, imps as def) = interp_definition bl red_option (not (Flags.is_program_mode ())) c ctypopt in
     if Flags.is_program_mode () then
       let env = Global.env () in
       let c = ce.const_entry_body in

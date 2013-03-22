@@ -382,7 +382,9 @@ let add_class cl =
   List.iter (fun (n, inst, body) ->
 	     match inst with
 	     | Some (Backward, pri) ->
-	       declare_instance pri false (ConstRef (Option.get body))
+	       (match body with
+	       | None -> Errors.error "Non-definable projection can not be declared as a subinstance"
+	       | Some b -> declare_instance pri false (ConstRef b))
 	     | _ -> ())
   cl.cl_projs
 
