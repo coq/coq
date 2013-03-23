@@ -52,7 +52,7 @@ let apply_pattern_coercion loc pat p =
   List.fold_left
     (fun pat (co,n) ->
        let f i = if i<n then Glob_term.PatVar (loc, Anonymous) else pat in
-	 Glob_term.PatCstr (loc, co, List.tabulate f (n+1), Anonymous))
+	 Glob_term.PatCstr (loc, co, List.init (n+1) f, Anonymous))
     pat p
 
 (* raise Not_found if no coercion found *)

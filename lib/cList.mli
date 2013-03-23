@@ -66,6 +66,9 @@ sig
   val is_empty : 'a list -> bool
   (** Checks whether a list is empty *)
 
+  val init : int -> (int -> 'a) -> 'a list
+  (** [init n f] constructs the list [f 0; ... ; f (n - 1)]. *)
+
   val add_set : 'a -> 'a list -> 'a list
   (** [add_set x l] adds [x] in [l] if it is not already there, or returns [l]
       otherwise. *)
@@ -78,9 +81,6 @@ sig
   val unionq : 'a list -> 'a list -> 'a list
   val subtract : 'a list -> 'a list -> 'a list
   val subtractq : 'a list -> 'a list -> 'a list
-
-  val tabulate : (int -> 'a) -> int -> 'a list
-  (** [tabulate f n] builds [[f 0; ...; f (n-1)]] *)
 
   val interval : int -> int -> int list
   (** [interval i j] creates the list [[i; i + 1; ...; j]], or [[]] when 

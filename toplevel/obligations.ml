@@ -31,7 +31,7 @@ let trace s =
 let succfix (depth, fixrels) =
   (succ depth, List.map succ fixrels)
 
-let mkMetas n = List.tabulate (fun _ -> Evarutil.mk_new_meta ()) n
+let mkMetas n = List.init n (fun _ -> Evarutil.mk_new_meta ())
 
 let check_evars env evm =
   List.iter

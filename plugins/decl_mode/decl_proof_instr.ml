@@ -1190,7 +1190,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	  match List.assoc id args with
 	      [None,br_args] -> 
 		let all_metas = 
-		  List.tabulate (fun n -> mkMeta (succ n)) (nparams + nhyps)  in
+		  List.init (nparams + nhyps) (fun n -> mkMeta (succ n))  in
 		let param_metas,hyp_metas = List.chop nparams all_metas in
 		  tclTHEN
 		    (tclDO nhrec introf)

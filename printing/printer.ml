@@ -735,7 +735,7 @@ let print_one_inductive env mib ((_,i) as ind) =
   brk(0,2) ++ print_constructors envpar mip.mind_consnames cstrtypes
 
 let print_mutual_inductive env mind mib =
-  let inds = List.tabulate (fun x -> (mind,x)) (Array.length mib.mind_packets)
+  let inds = List.init (Array.length mib.mind_packets) (fun x -> (mind, x))
   in
   hov 0 (
     str (if mib.mind_finite then "Inductive " else "CoInductive ") ++

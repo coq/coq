@@ -119,7 +119,7 @@ let kind_of_head env t =
         else
           (* enough arguments to [cst] *)
           k,List.skipn n l,List.nth l (i-1) in
-      let l' = List.tabulate (fun _ -> mkMeta 0) q @ rest in
+      let l' = List.make q (mkMeta 0) @ rest in
       aux k' l' a (with_subcase or with_case)
   | ConstructorHead when with_case -> NotImmediatelyComputableHead
   | x -> x

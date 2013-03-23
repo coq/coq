@@ -178,7 +178,7 @@ let beq_scheme_msg mind =
   (* TODO: mutual inductive case *)
   str "Boolean equality on " ++
     pr_enum (fun ind -> quote (Printer.pr_inductive (Global.env()) ind))
-    (List.tabulate (fun i -> (mind,i)) (Array.length mib.mind_packets))
+    (List.init (Array.length mib.mind_packets) (fun i -> (mind,i)))
 
 let declare_beq_scheme_with l kn =
   try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen UserVerbose l kn

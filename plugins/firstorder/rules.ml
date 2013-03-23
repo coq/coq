@@ -129,7 +129,7 @@ let ll_ind_tac ind largs backtrack id continue seq gl=
        let head=mkApp ((lift p (constr_of_global id)),[|capply|]) in
 	 it_mkLambda_or_LetIn head rc in
        let lp=Array.length rcs in
-       let newhyps=List.tabulate myterm lp in
+       let newhyps=List.init lp myterm in
 	 tclIFTHENELSE
 	   (tclTHENLIST
 	      [generalize newhyps;

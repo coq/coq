@@ -432,7 +432,7 @@ let mis_make_indrec env sigma listdepkind mib =
 	mis_make_case_com dep env sigma indi (mibi,mipi) kind
   in
     (* Body of mis_make_indrec *)
-    List.tabulate make_one_rec nrec
+    List.init nrec make_one_rec
 
 (**********************************************************************)
 (* This builds elimination predicate for Case tactic *)

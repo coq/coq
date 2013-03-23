@@ -112,7 +112,7 @@ let mk_open_instance id gl m t=
 	match nam with
 	    Name id -> id
 	  | Anonymous ->  dummy_bvid in
-  let revt=substl (List.tabulate (fun i->mkRel (m-i)) m) t in
+  let revt=substl (List.init m (fun i->mkRel (m-i))) t in
   let rec aux n avoid=
     if n=0 then [] else
       let nid=(fresh_id avoid var_id gl) in

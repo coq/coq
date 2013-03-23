@@ -58,7 +58,7 @@ let inductive_params (mib,_) = mib.mind_nparams
 let ind_subst mind mib =
   let ntypes = mib.mind_ntypes in
   let make_Ik k = Ind (mind,ntypes-k-1) in
-  List.tabulate make_Ik ntypes
+  List.init ntypes make_Ik
 
 (* Instantiate inductives in constructor type *)
 let constructor_instantiate mind mib c =
@@ -527,7 +527,7 @@ let branches_specif renv c_spec ci =
 		    vra
 	      | Dead_code -> Array.make nca Dead_code
 	      | _ -> Array.make nca Not_subterm) in
-	 List.tabulate (fun j -> lazy (Lazy.force lvra).(j)) nca)
+	 List.init nca (fun j -> lazy (Lazy.force lvra).(j)))
       car 
 
 (* [subterm_specif renv t] computes the recursive structure of [t] and

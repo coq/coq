@@ -386,8 +386,8 @@ let abstract_mind_lc env ntyps npars lc =
     lc
   else
     let make_abs =
-      List.tabulate
-	(function i -> lambda_implicit_lift npars (mkRel (i+1))) ntyps
+      List.init ntyps
+	(function i -> lambda_implicit_lift npars (mkRel (i+1)))
     in
     Array.map (substl make_abs) lc
 
@@ -552,7 +552,7 @@ let check_positivity kn env_ar params inds =
   let nmr = rel_context_nhyps params in
   let check_one i (_,lcnames,lc,(sign,_)) =
     let ra_env =
-      List.tabulate (fun _ -> (Norec,mk_norec)) lparams @ lra_ind in
+      List.init lparams (fun _ -> (Norec,mk_norec)) @ lra_ind in
     let ienv = (env_ar, 1+lparams, ntypes, ra_env) in
     let nargs = rel_context_nhyps sign - nmr in
     check_positivity_one ienv params (kn,i) nargs lcnames lc

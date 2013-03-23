@@ -240,8 +240,8 @@ let rec build_tree na isgoal e ci cl =
   let mkpat n rhs pl = PatCstr(dl,(ci.ci_ind,n+1),pl,update_name na rhs) in
   let cnl = ci.ci_cstr_ndecls in
   List.flatten
-    (List.tabulate (fun i -> contract_branch isgoal e (cnl.(i),mkpat i,cl.(i)))
-       (Array.length cl))
+    (List.init (Array.length cl)
+      (fun i -> contract_branch isgoal e (cnl.(i),mkpat i,cl.(i))))
 
 and align_tree nal isgoal (e,c as rhs) = match nal with
   | [] -> [[],rhs]

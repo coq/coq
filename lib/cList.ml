@@ -57,6 +57,7 @@ sig
   val compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
   val equal : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
   val is_empty : 'a list -> bool
+  val init : int -> (int -> 'a) -> 'a list
   val add_set : 'a -> 'a list -> 'a list
   val eq_set : 'a list -> 'a list -> bool
   val intersect : 'a list -> 'a list -> 'a list
@@ -64,9 +65,6 @@ sig
   val unionq : 'a list -> 'a list -> 'a list
   val subtract : 'a list -> 'a list -> 'a list
   val subtractq : 'a list -> 'a list -> 'a list
-
-  (** [tabulate f n] builds [[f 0; ...; f (n-1)]] *)
-  val tabulate : (int -> 'a) -> int -> 'a list
   val interval : int -> int -> int list
   val make : int -> 'a -> 'a list
   val assign : 'a list -> int -> 'a -> 'a list
@@ -76,9 +74,6 @@ sig
   val map_filter : ('a -> 'b option) -> 'a list -> 'b list
   val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
   val filter_with : bool list -> 'a list -> 'a list
-
-  (** [smartmap f [a1...an] = List.map f [a1...an]] but if for all i
-    [ f ai == ai], then [smartmap f l==l] *)
   val smartmap : ('a -> 'a) -> 'a list -> 'a list
   val map_left : ('a -> 'b) -> 'a list -> 'b list
   val map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
@@ -90,19 +85,10 @@ sig
     ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list -> 'd list -> 'e list
   val filteri :
     (int -> 'a -> bool) -> 'a list -> 'a list
-
-  (** [smartfilter f [a1...an] = List.filter f [a1...an]] but if for all i
-    [f ai = true], then [smartfilter f l==l] *)
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
-
-  (** [index] returns the 1st index of an element in a list (counting from 1) *)
   val index : 'a -> 'a list -> int
   val index_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
-
-  (** [unique_index x l] returns [Not_found] if [x] doesn't occur exactly once *)
   val unique_index : 'a -> 'a list -> int
-
-  (** [index0] behaves as [index] except that it starts counting at 0 *)
   val index0 : 'a -> 'a list -> int
   val index0_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
   val iteri :  (int -> 'a -> unit) -> 'a list -> unit
@@ -121,12 +107,9 @@ sig
   val sep_last : 'a list -> 'a * 'a list
   val find_map : ('a -> 'b option) -> 'a list -> 'b
   val uniquize : 'a list -> 'a list
-
-  (** merges two sorted lists and preserves the uniqueness property: *)
   val merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
   val subset : 'a list -> 'a list -> bool
   val chop : int -> 'a list -> 'a list * 'a list
-  (* former [split_at] was a duplicate of [chop] *)
   val split_when : ('a -> bool) -> 'a list -> 'a list * 'a list
   val split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
   val firstn : int -> 'a list -> 'a list
@@ -136,42 +119,21 @@ sig
   val skipn_at_least : int -> 'a list -> 'a list
   val addn : int -> 'a -> 'a list -> 'a list
   val prefix_of : 'a list -> 'a list -> bool
-
-  (** [drop_prefix p l] returns [t] if [l=p++t] else return [l] *)
   val drop_prefix : 'a list -> 'a list -> 'a list
   val drop_last : 'a list -> 'a list
-
-  (** [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)] *)
   val map_append : ('a -> 'b list) -> 'a list -> 'b list
-
-  (** raises [Invalid_argument] if the two lists don't have the same length *)
   val map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
   val share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
-
-  (** [fold_map f e_0 [l_1...l_n] = e_n,[k_1...k_n]]
-    where [(e_i,k_i)=f e_{i-1} l_i] *)
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   val fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
   val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
   val assoc_f : ('a -> 'a -> bool) -> 'a -> ('a * 'b) list -> 'b
-
-  (** A generic cartesian product: for any operator (**),
-    [cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]],
-    and so on if there are more elements in the lists. *)
   val cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-
-  (** [cartesians] is an n-ary cartesian product: it iterates
-    [cartesian] over a list of lists.  *)
   val cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
-
-  (** combinations [[a;b];[c;d]] returns [[a;c];[a;d];[b;c];[b;d]] *)
   val combinations : 'a list list -> 'a list list
   val combine3 : 'a list -> 'b list -> 'c list -> ('a * 'b * 'c) list
-
   val cartesians_filter :
     ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
-  (** Keep only those products that do not return None *)
-
   val factorize_left : ('a * 'b) list -> ('a * 'b list) list
 
 end
@@ -238,6 +200,21 @@ let rec copy p = function
   let c = { head = x; tail = [] } in
   p.tail <- cast c;
   copy c l
+
+let rec init_loop len f p i =
+  if Int.equal i len then ()
+  else
+    let c = { head = f i; tail = [] } in
+    p.tail <- cast c;
+    init_loop len f c (succ i)
+
+let init len f =
+  if len < 0 then invalid_arg "List.init"
+  else if Int.equal len 0 then []
+  else
+    let c = { head = f 0; tail = [] } in
+    init_loop len f c 1;
+    cast c
 
 let rec concat_loop p = function
 | [] -> ()
@@ -362,17 +339,7 @@ let subtract l1 l2 =
 let subtractq l1 l2 =
   if l2 = [] then l1 else List.filter (fun x -> not (List.memq x l2)) l1
 
-let rec tabulate_loop f len p i =
-  if len <= i then ()
-  else
-    let c = { head = f i; tail = [] } in
-    let () = p.tail <- cast c in
-    tabulate_loop f len c (succ i)
-
-let tabulate f len =
-  let dummy = { head = Obj.magic 0; tail = [] } in
-  tabulate_loop f len dummy 0;
-  dummy.tail
+let tabulate = init
 
 let interval n m =
   let rec interval_n (l,m) =

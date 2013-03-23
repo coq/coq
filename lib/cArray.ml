@@ -90,31 +90,43 @@ include Array
 
 (* Arrays *)
 
-let compare item_cmp v1 v2 =
-  let c = compare (Array.length v1) (Array.length v2) in
-  if c<>0 then c else
-    let rec cmp = function
-        -1 -> 0
-      | i ->
-          let c' = item_cmp v1.(i) v2.(i) in
-          if c'<>0 then c'
-          else cmp (i-1) in
-    cmp (Array.length v1 - 1)
+let compare cmp v1 v2 =
+  if v1 == v2 then 0
+  else
+    let len = Array.length v1 in
+    let c = Int.compare len (Array.length v2) in
+    if c <> 0 then c else
+      let rec loop i =
+        if i < 0 then 0
+        else
+          let x = Array.unsafe_get v1 i in
+          let y = Array.unsafe_get v2 i in
+          let c = cmp x y in
+          if c <> 0 then c
+          else loop (i - 1)
+      in
+      loop (len - 1)
 
 let equal cmp t1 t2 =
   if t1 == t2 then true else
-  if not (Array.length t1 = Array.length t2) then false
-  else
-  let rec aux i =
-    (i = Array.length t1) || (cmp t1.(i) t2.(i) && aux (i + 1))
-  in aux 0
+    let len = Array.length t1 in
+    if not (Int.equal len (Array.length t2)) then false
+    else
+      let rec aux i =
+        if i < 0 then true
+        else
+          let x = Array.unsafe_get t1 i in
+          let y = Array.unsafe_get t2 i in
+          cmp x y && aux (pred i)
+      in
+      aux (len - 1)
 
-let is_empty array = (Array.length array) = 0
+let is_empty array = Int.equal (Array.length array) 0
 
 let exists f v =
   let rec exrec = function
     | -1 -> false
-    | n -> (f v.(n)) || (exrec (n-1))
+    | n -> f (Array.unsafe_get v n) || (exrec (n-1))
   in
   exrec ((Array.length v)-1)
 

@@ -293,7 +293,7 @@ let contract_cofix ?env (bodynum,(names,types,bodies as typedbodies)) cst =
       match env with
       | None -> bd
       | Some e -> magicaly_constant_of_fixbody e bd names.(ind) in
-  let closure = List.tabulate make_Fi nbodies in
+  let closure = List.init nbodies make_Fi in
   substl closure bodies.(bodynum)
 
 let reduce_mind_case mia =
@@ -322,7 +322,7 @@ let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies))
 	match env with
 	| None -> bd
 	| Some e -> magicaly_constant_of_fixbody e bd names.(ind) in
-    let closure = List.tabulate make_Fi nbodies in
+    let closure = List.init nbodies make_Fi in
     substl closure bodies.(bodynum)
 
 let fix_recarg ((recindices,bodynum),_) stack =

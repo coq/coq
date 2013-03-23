@@ -938,14 +938,14 @@ let descend_in_conjunctions tac exit c gl =
 	    let elim = pf_apply build_case_analysis_scheme gl ind false sort in
 	    NotADefinedRecordUseScheme elim in
 	tclFIRST
-	  (List.tabulate (fun i gl ->
+	  (List.init n (fun i gl ->
 	    match make_projection (project gl) params cstr sign elim i n c with
 	    | None -> tclFAIL 0 (mt()) gl
 	    | Some (p,pt) ->
 	    tclTHENS
 	      (internal_cut id pt)
 	      [refine p; (* Might be ill-typed due to forbidden elimination. *)
-	       tclTHEN (tac (not isrec) (mkVar id)) (thin [id])] gl) n)
+	       tclTHEN (tac (not isrec) (mkVar id)) (thin [id])] gl))
 	  gl
     | None ->
 	raise Exit

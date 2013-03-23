@@ -873,10 +873,9 @@ let interp_hints =
       let constr_hints_of_ind qid =
         let ind = global_inductive_with_alias qid in
 	Dumpglob.dump_reference (fst (qualid_of_reference qid)) "<>" (string_of_reference qid) "ind";
-        List.tabulate (fun i -> let c = (ind,i+1) in
+        List.init (nconstructors ind) (fun i -> let c = (ind,i+1) in
 				let gr = ConstructRef c in
-			 None, true, PathHints [gr], IsGlobal gr)
-	  (nconstructors ind) in
+			 None, true, PathHints [gr], IsGlobal gr) in
 	HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
   | HintsExtern (pri, patcom, tacexp) ->
       let pat =	Option.map fp patcom in
@@ -1069,7 +1068,7 @@ let expand_constructor_hints env lems =
   List.map_append (fun (sigma,lem) ->
     match kind_of_term lem with
     | Ind ind ->
-	List.tabulate (fun i -> mkConstruct (ind,i+1)) (nconstructors ind)
+	List.init (nconstructors ind) (fun i -> mkConstruct (ind,i+1))
     | _ ->
 	[prepare_hint env (sigma,lem)]) lems
 

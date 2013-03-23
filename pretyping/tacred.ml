@@ -457,7 +457,7 @@ let contract_fix_use_function env sigma f
   ((recindices,bodynum),(_names,_types,bodies as typedbodies)) =
   let nbodies = Array.length recindices in
   let make_Fi j = (mkFix((recindices,j),typedbodies), f j) in
-  let lbodies = List.tabulate make_Fi nbodies in
+  let lbodies = List.init nbodies make_Fi in
   substl_checking_arity env (List.rev lbodies) (nf_beta sigma bodies.(bodynum))
 
 let reduce_fix_use_function env sigma f whfun fix stack =
@@ -480,7 +480,7 @@ let contract_cofix_use_function env sigma f
   (bodynum,(_names,_,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
   let make_Fi j = (mkCoFix(j,typedbodies), f j) in
-  let subbodies = List.tabulate make_Fi nbodies in
+  let subbodies = List.init nbodies make_Fi in
   substl_checking_arity env (List.rev subbodies)
     (nf_beta sigma bodies.(bodynum))
 

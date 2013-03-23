@@ -472,7 +472,7 @@ let raw_inversion inv_kind id status names gl =
         (fun id ->
            (tclTHEN
               (apply_term (mkVar id)
-                 (List.tabulate (fun _ -> Evarutil.mk_new_meta()) neqns))
+                 (List.init neqns (fun _ -> Evarutil.mk_new_meta())))
               reflexivity))])
   gl
 

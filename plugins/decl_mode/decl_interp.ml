@@ -341,9 +341,8 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	(fun (loc,(id,_)) ->
 	   GVar (loc,id)) params in
     let dum_args=
-      List.tabulate
-	(fun _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark (Evar_kinds.Define false)))
-	oib.Declarations.mind_nrealargs in
+      List.init oib.Declarations.mind_nrealargs
+	(fun _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark (Evar_kinds.Define false))) in
       glob_app(Loc.ghost,rind,rparams@rparams_rec@dum_args) in
   let pat_vars,aliases,patt = interp_pattern env pat in
   let inject = function
