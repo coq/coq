@@ -68,6 +68,8 @@ type extended_global_reference =
   | TrueGlobal of global_reference
   | SynDef of syndef_name
 
+val compare_egr : extended_global_reference -> extended_global_reference -> int
+
 (*s Dirpaths *)
 val pr_dirpath : dir_path -> Pp.std_ppcmds
 

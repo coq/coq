@@ -109,6 +109,10 @@ type extended_global_reference =
   | TrueGlobal of global_reference
   | SynDef of syndef_name
 
+let compare_egr x y = match x, y with
+  | TrueGlobal x, TrueGlobal y -> RefOrdered.compare x y
+  | _ -> Pervasives.compare x y
+
 (**********************************************)
 
 let pr_dirpath sl = (str (string_of_dirpath sl))

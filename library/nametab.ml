@@ -290,7 +290,7 @@ let the_dirtab = ref (DirTab.empty : dirtab)
 (* This table translates extended_global_references back to section paths *)
 module Globrevtab = Map.Make(struct
 			       type t=extended_global_reference
-			       let compare = compare
+			       let compare = Libnames.compare_egr
 			     end)
 
 type globrevtab = full_path Globrevtab.t
