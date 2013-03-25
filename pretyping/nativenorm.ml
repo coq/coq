@@ -348,5 +348,9 @@ let native_norm env c ty =
         let t1 = Sys.time () in
         let time_info = Format.sprintf "Evaluation done in %.5f@." (t1 -. t0) in
         if !Flags.debug then Pp.msg_debug (Pp.str time_info);
-        nf_val env !Nativelib.rt1 ty
+        let res = nf_val env !Nativelib.rt1 ty in
+        let t2 = Sys.time () in
+        let time_info = Format.sprintf "Reification done in %.5f@." (t2 -. t1) in
+        if !Flags.debug then Pp.msg_debug (Pp.str time_info);
+        res
     | _ -> anomaly (Pp.str "Compilation failure") 
