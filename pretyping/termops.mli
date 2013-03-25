@@ -45,7 +45,11 @@ val lookup_rel_id : Id.t -> rel_context -> int * constr option * types
 (** Associates the contents of an identifier in a [rel_context]. Raise
     [Not_found] if there is no such identifier. *)
 
-(** builds argument lists matching a block of binders or a context *)
+(** Functions that build argument lists matching a block of binders or a context.
+    [rel_vect n m] builds [|Rel (n+m);...;Rel(n+1)|]
+    [extended_rel_vect n ctx] extends the [ctx] context of length [m]
+    with [n] elements.
+*)
 val rel_vect : int -> int -> constr array
 val rel_list : int -> int -> constr list
 val extended_rel_list : int -> rel_context -> constr list

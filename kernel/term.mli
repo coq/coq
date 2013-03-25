@@ -377,7 +377,9 @@ val empty_rel_context : rel_context
 val add_rel_decl : rel_declaration -> rel_context -> rel_context
 
 val lookup_rel : int -> rel_context -> rel_declaration
+(** Size of the [rel_context] including LetIns *)
 val rel_context_length : rel_context -> int
+(** Size of the [rel_context] without LetIns *)
 val rel_context_nhyps : rel_context -> int
 
 (** Constructs either [(x:t)c] or [[x=b:t]c] *)
