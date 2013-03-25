@@ -969,15 +969,15 @@ let sort_fields mode loc l completer =
 		    | [] -> anomaly "Number of projections mismatch"
 		    | (_, regular)::tm ->
 		       let boolean = not regular in
-		       if ConstRef name = global_reference_of_reference refer
-		       then
+                       (match global_reference_of_reference refer with
+                       | ConstRef name' when eq_constant name name' ->
 			 if boolean && mode then
 			   user_err_loc (loc, "", str"No local fields allowed in a record construction.")
 			 else build_patt b tm (i + 1) (i, snd acc) (* we found it *)
-		       else
+                       | _ ->
 			  build_patt b tm (if boolean&&mode then i else i + 1)
 			    (if boolean && mode then acc
-			     else fst acc, (i, ConstRef name) :: snd acc))
+			     else fst acc, (i, ConstRef name) :: snd acc)))
 	      | None :: b-> (* we don't want anonymous fields *)
 		 if mode then
 		   user_err_loc (loc, "", str "This record contains anonymous fields.")
@@ -1009,7 +1009,7 @@ let sort_fields mode loc l completer =
 			 (loc, "",
 			  str "This record contains fields of different records.")
 		   | (i, a) :: b->
-		       if glob_refer = a
+		       if eq_gr glob_refer a
 		       then (i,List.rev_append acc l)
 		       else add_patt b ((i,a)::acc)
 	         in
