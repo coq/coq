@@ -8,6 +8,7 @@
 open Term
 open Names
 open Errors
+open Util
 
 (** This modules defines the representation of values internally used by
 the native compiler *)
@@ -30,9 +31,21 @@ type annot_sw = {
     asw_prefix : string
   }
 
+(* We compare only what is relevant for generation of ml code *)
+let eq_annot_sw asw1 asw2 =
+  eq_ind asw1.asw_ind asw2.asw_ind &&
+  String.equal asw1.asw_prefix asw2.asw_prefix
+
+open Hashset.Combine
+
+let hash_annot_sw asw =
+  combine (Hashtbl.hash asw.asw_ind) (Hashtbl.hash asw.asw_prefix)
+
 type sort_annot = string * int
 
 type rec_pos = int array
+
+let eq_rec_pos = Array.equal Int.equal
 
 type atom = 
   | Arel of int

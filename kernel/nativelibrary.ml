@@ -26,7 +26,7 @@ let rec translate_mod prefix mp env mod_expr acc =
   | SEBfunctor (mbid,mtb,meb) -> acc
   | SEBapply (f,x,_) -> assert false
   | SEBwith _ -> assert false
-and translate_field prefix mp env (code, values, upds as acc) (l,x) =
+and translate_field prefix mp env (code, upds as acc) (l,x) =
   match x with
   | SFBconst cb ->
       let con = make_con mp empty_dirpath l in
@@ -45,14 +45,14 @@ let dump_library mp dp env mod_expr =
       let env = add_signature mp msb empty_delta_resolver env in
       let prefix = mod_uid_of_dirpath dp ^ "." in
       let t0 = Sys.time () in 
-      let mlcode, values, upds =
-        List.fold_left (translate_field prefix mp env) ([],[],empty_updates)
-          msb
+      clear_symb_tbl ();
+      let mlcode, upds =
+        List.fold_left (translate_field prefix mp env) ([],empty_updates) msb
       in
       let t1 = Sys.time () in
-      let time_info = Format.sprintf "Compiled library. Time: %.5f@." (t1-.t0) in
-      if !Flags.debug then Pp.msg_debug (Pp.str time_info);
-      List.rev mlcode, Array.of_list (List.rev values), upds
+      let time_info = Format.sprintf "Time spent generating this code: %.5fs" (t1-.t0) in
+      let mlcode = add_header_comment (List.rev mlcode) time_info in
+      mlcode, get_symbols_tbl (), upds
   | _ -> assert false
 
 

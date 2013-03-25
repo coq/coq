@@ -29,9 +29,15 @@ type annot_sw = {
     asw_prefix : string
   }
 
+val eq_annot_sw : annot_sw -> annot_sw -> bool
+
+val hash_annot_sw : annot_sw -> int
+
 type sort_annot = string * int
       
 type rec_pos = int array
+
+val eq_rec_pos : rec_pos -> rec_pos -> bool
 
 type atom =
   | Arel of int

@@ -20,13 +20,11 @@ type lambda =
   | Lvar          of identifier
   | Lprod         of lambda * lambda 
   | Llam          of name array * lambda  
-  | Lrec          of name * lambda
   | Llet          of name * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of string * constant (* prefix, constant name *)
   | Lcase         of annot_sw * lambda * lambda * lam_branches 
                   (* annotations, term being matched, accu, branches *)
-  | Lareint       of lambda array 
   | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * int) * fix_decl 
   | Lcofix        of int * fix_decl 
@@ -117,9 +115,6 @@ let map_lam_with_binders g f n lam =
   | Llam(ids,body) ->
       let body' = f (g (Array.length ids) n) body in
       if body == body' then lam else mkLlam ids body'
-  | Lrec(id,body) ->
-      let body' = f (g 1 n) body in
-      if body == body' then lam else Lrec(id,body')
   | Llet(id,def,body) ->
       let def' = f n def in
       let body' = f (g 1 n) body in
@@ -139,9 +134,6 @@ let map_lam_with_binders g f n lam =
 	if body == body' then b else (cn,ids,body') in
       let br' = Array.smartmap on_b br in
       if t == t' && a == a' && br == br' then lam else Lcase(annot,t',a',br')
-  | Lareint a ->
-      let a' = Array.smartmap (f n) a in
-      if a == a' then lam else Lareint a' 
   | Lif(t,bt,bf) ->
       let t' = f n t in
       let bt' = f n bt in
@@ -323,8 +315,6 @@ let rec occurence k kind lam =
       occurence k (occurence k kind dom) codom
   | Llam(ids,body) ->
       let _ = occurence (k+Array.length ids) false body in kind
-  | Lrec(id,body) ->
-      let _ = occurence (k+1) false body in kind
   | Llet(_,def,body) ->
       occurence (k+1) (occurence k kind def) body
   | Lapp(f, args) ->
@@ -337,8 +327,6 @@ let rec occurence k kind lam =
       Array.iter (fun (_,ids,c) -> 
 	r := occurence (k+Array.length ids) kind c && !r) br;
       !r 
-  | Lareint a -> 
-      occurence_args k kind a
   | Lif (t, bt, bf) ->
       let kind = occurence k kind t in
       kind && occurence k kind bt && occurence k kind bf

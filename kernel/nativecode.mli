@@ -24,6 +24,8 @@ val mk_open : string -> global
 
 type symbol
 
+val clear_symb_tbl : unit -> unit
+
 val get_value : symbol array -> int -> Nativevalues.t
 
 val get_sort : symbol array -> int -> sorts
@@ -47,14 +49,14 @@ val empty_updates : code_location_updates
 val register_native_file : string -> unit
 
 val compile_constant_field : env -> string -> constant ->
-  global list * symbol list * code_location_updates ->
+  global list * code_location_updates ->
   constant_body ->
-    global list * symbol list * code_location_updates
+    global list * code_location_updates
 
 val compile_mind_field : string -> module_path -> label ->
-  global list * symbol list * code_location_updates ->
+  global list * code_location_updates ->
   mutual_inductive_body ->
-    global list * symbol list * code_location_updates
+    global list * code_location_updates
 
 val mk_conv_code : env -> string -> constr -> constr -> linkable_code
 val mk_norm_code : env -> string -> constr -> linkable_code
@@ -64,3 +66,5 @@ val mk_library_header : dir_path -> global list
 val mod_uid_of_dirpath : dir_path -> string
 
 val update_locations : code_location_updates -> unit
+
+val add_header_comment : global list -> string -> global list

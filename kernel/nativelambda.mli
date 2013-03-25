@@ -20,13 +20,11 @@ type lambda =
   | Lvar          of identifier
   | Lprod         of lambda * lambda 
   | Llam          of name array * lambda  
-  | Lrec          of name * lambda
   | Llet          of name * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of string * constant (* prefix, constant name *)
   | Lcase         of annot_sw * lambda * lambda * lam_branches 
                   (* annotations, term being matched, accu, branches *)
-  | Lareint       of lambda array 
   | Lif           of lambda * lambda * lambda
   | Lfix          of (int array * int) * fix_decl 
   | Lcofix        of int * fix_decl 
