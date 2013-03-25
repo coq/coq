@@ -583,27 +583,27 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       end
 
 and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
-  let (evd',ks,_) =
-    List.fold_left
-      (fun (i,ks,m) b ->
-	 if Int.equal m n then (i,t2::ks, m-1) else
-	 let dloc = (Loc.ghost,Evar_kinds.InternalHole) in
-         let (i',ev) = new_evar i env ~src:dloc (substl ks b) in
-	 (i', ev :: ks, m - 1))
-      (evd,[],List.length bs - 1) bs
-  in
   if Reductionops.compare_stack_shape ts ts1 then
-  ise_and evd'
-    [(fun i ->
-       ise_list2 i
-         (fun i' x1 x -> evar_conv_x trs env i' CONV x1 (substl ks x))
-         params1 params);
-    (fun i ->
-      ise_list2 i
-        (fun i' u1 u -> evar_conv_x trs env i' CONV u1 (substl ks u))
-        us2 us);
-    (fun i -> evar_conv_x trs env i CONV c1 (applist (c,(List.rev ks))));
-    (fun i -> exact_ise_stack2 env i (evar_conv_x trs) ts ts1)]
+    let (evd',ks,_) =
+      List.fold_left
+	(fun (i,ks,m) b ->
+	  if Int.equal m n then (i,t2::ks, m-1) else
+	    let dloc = (Loc.ghost,Evar_kinds.InternalHole) in
+            let (i',ev) = new_evar i env ~src:dloc (substl ks b) in
+	    (i', ev :: ks, m - 1))
+	(evd,[],List.length bs - 1) bs
+    in
+    ise_and evd'
+      [(fun i ->
+	ise_list2 i
+          (fun i' x1 x -> evar_conv_x trs env i' CONV x1 (substl ks x))
+          params1 params);
+       (fun i ->
+	 ise_list2 i
+           (fun i' u1 u -> evar_conv_x trs env i' CONV u1 (substl ks u))
+           us2 us);
+       (fun i -> evar_conv_x trs env i CONV c1 (applist (c,(List.rev ks))));
+       (fun i -> exact_ise_stack2 env i (evar_conv_x trs) ts ts1)]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 (* We assume here |l1| <= |l2| *)

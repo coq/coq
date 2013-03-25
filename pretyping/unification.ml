@@ -617,29 +617,28 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       try Evarconv.check_conv_record f1l1 f2l2
       with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
-    let (evd,ks,_) =
-      List.fold_left
-	(fun (evd,ks,m) b ->
-	  if Int.equal m n then (evd,t2::ks, m-1) else
-            let mv = new_meta () in
-	    let evd' = meta_declare mv (substl ks b) evd in
+    if Reductionops.compare_stack_shape ts ts1 then
+      let (evd,ks,_) =
+	List.fold_left
+	  (fun (evd,ks,m) b ->
+	    if Int.equal m n then (evd,t2::ks, m-1) else
+              let mv = new_meta () in
+	      let evd' = meta_declare mv (substl ks b) evd in
 	      (evd', mkMeta mv :: ks, m - 1))
-	(sigma,[],List.length bs - 1) bs
-    in
-    let unilist2 f substn l l' =
-      try List.fold_left2 f substn l l'
-      with Invalid_argument "List.fold_left2" -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
-    in
-    let substn = unilist2 (fun s u1 u -> unirec_rec curenvnb pb b false s u1 (substl ks u))
-      (evd,ms,es) us2 us in
-    let substn = unilist2 (fun s u1 u -> unirec_rec curenvnb pb b false s u1 (substl ks u))
-      substn params1 params in
-    match Option.lift2 (unilist2 (unirec_rec curenvnb pb b false) substn)
-      (list_of_app_stack ts) (list_of_app_stack ts1) with
-      |Some substn ->
+	  (sigma,[],List.length bs - 1) bs
+      in
+      let unilist2 f substn l l' =
+	try List.fold_left2 f substn l l'
+	with Invalid_argument "List.fold_left2" -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
+      in
+      let substn = unilist2 (fun s u1 u -> unirec_rec curenvnb pb b false s u1 (substl ks u))
+	(evd,ms,es) us2 us in
+      let substn = unilist2 (fun s u1 u -> unirec_rec curenvnb pb b false s u1 (substl ks u))
+	substn params1 params in
+	let (substn,_,_) = Reductionops.fold_stack2 (unirec_rec curenvnb pb b false) substn ts ts1 in
 	unirec_rec curenvnb pb b false substn c1 (applist (c,(List.rev ks)))
-      |None -> anomaly (Pp.str "As expected, solve_canonical_projection breaks the term too much")
-  in
+    else error_cannot_unify (fst curenvnb) sigma (cM,cN)
+      in
   let evd = sigma in
     if (if occur_meta_or_undefined_evar evd m || occur_meta_or_undefined_evar evd n
         || subterm_restriction conv_at_top flags then false

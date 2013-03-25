@@ -30,6 +30,10 @@ and 'a stack = 'a stack_member list
 
 val empty_stack : 'a stack
 val compare_stack_shape : 'a stack -> 'a stack -> bool
+(** [fold_stack2 f x sk1 sk2] folds [f] on any pair of term in [(sk1,sk2)].
+@return the result and the lifts to apply on the terms *)
+val fold_stack2 : ('a -> Term.constr -> Term.constr -> 'a) -> 'a ->
+  Term.constr stack -> Term.constr stack -> 'a * int * int
 val append_stack_app : 'a array -> 'a stack -> 'a stack
 val append_stack_app_list : 'a list -> 'a stack -> 'a stack
 
