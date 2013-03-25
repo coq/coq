@@ -212,7 +212,8 @@ Definition map {A} {B} (f : A -> B) : forall {n} (v:t A n), t B n :=
   end.
 
 (** map2 g [x1 .. xn] [y1 .. yn] = [(g x1 y1) .. (g xn yn)] *)
-Definition map2 {A B C} (g:A -> B -> C) :=
+Definition map2 {A B C} (g:A -> B -> C) :
+  forall (n : nat), t A n -> t B n -> t C n :=
 @rect2 _ _ (fun n _ _ => t C n) (nil C) (fun _ _ _ H a b => (g a b) :: H).
 Global Arguments map2 {A B C} g {n} v1 v2.
 
