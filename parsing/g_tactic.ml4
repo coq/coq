@@ -357,6 +357,7 @@ GEXTEND Gram
       | IDENT "hnf" -> Hnf
       | IDENT "simpl"; po = OPT pattern_occ -> Simpl po
       | IDENT "cbv"; s = strategy_flag -> Cbv s
+      | IDENT "cbn"; s = strategy_flag -> Cbn s
       | IDENT "lazy"; s = strategy_flag -> Lazy s
       | IDENT "compute"; delta = delta_flag -> Cbv (all_with delta)
       | IDENT "vm_compute"; po = OPT pattern_occ -> CbvVm po
