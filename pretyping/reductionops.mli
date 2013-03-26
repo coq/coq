@@ -46,6 +46,7 @@ module Stack : sig
   val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
 
   val empty : 'a t
+  val is_empty : 'a t -> bool
   val append_app : 'a array -> 'a t -> 'a t
   val decomp : 'a t -> ('a * 'a t) option
 
@@ -56,6 +57,7 @@ module Stack : sig
       @return the result and the lifts to apply on the terms *)
   val fold2 : ('a -> Term.constr -> Term.constr -> 'a) -> 'a ->
     Term.constr t -> Term.constr t -> 'a * int * int
+  val map : (Term.constr -> Term.constr) -> Term.constr t -> Term.constr t
   val append_app_list : 'a list -> 'a t -> 'a t
 
   (** if [strip_app s] = [(a,b)], then [s = a @ b] and [b] does not
@@ -124,6 +126,9 @@ val stacklam : (state -> 'a) -> constr list -> constr -> constr Stack.t -> 'a
 
 val whd_state_gen : ?csts:Cst_stack.t -> bool -> Closure.RedFlags.reds ->
   Environ.env -> Evd.evar_map -> state -> state * Cst_stack.t
+
+val iterate_whd_gen : bool -> Closure.RedFlags.reds ->
+  Environ.env -> Evd.evar_map -> Term.constr -> Term.constr
 
 (** {6 Generic Optimized Reduction Function using Closures } *)
 

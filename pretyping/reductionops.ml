@@ -149,12 +149,14 @@ sig
   and 'a t = 'a member list
   val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
   val empty : 'a t
+  val is_empty : 'a t -> bool
   val append_app : 'a array -> 'a t -> 'a t
   val decomp : 'a t -> ('a * 'a t) option
   val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
   val equal : ('a * int -> 'a * int -> bool) -> (fixpoint * int -> fixpoint * int -> bool)
     -> 'a t -> 'a t -> (int * int) option
   val compare_shape : 'a t -> 'a t -> bool
+  val map : (constr -> constr) -> constr t -> constr t
   val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
     constr t -> constr t -> 'a * int * int
   val append_app_list : 'a list -> 'a t -> 'a t
@@ -215,6 +217,7 @@ struct
     prlist_with_sep pr_semicolon (fun x -> hov 1 (pr_member pr_c x)) l
 
   let empty = []
+  let is_empty = CList.is_empty
 
   let append_app v s =
     let le = Array.length v in
@@ -300,6 +303,16 @@ struct
 	aux o' lft1 q1 lft2 q2
       | _, _ -> raise (Invalid_argument "Reductionops.Stack.fold2")
     in aux o 0 (List.rev sk1) 0 (List.rev sk2)
+
+  let rec map f x = List.map (function
+			       | Update _ -> assert false
+			       | Shift k as e -> e
+			       | App (i,a,j) ->
+				  let le = j - i + 1 in
+				  App (0,Array.map f (Array.sub a i le), le-1)
+			       | Case (info,ty,br,alt) -> Case (info, f ty, Array.map f br, alt)
+			       | Fix ((r,(na,ty,bo)),arg,alt) ->
+				  Fix ((r,(na,Array.map f ty, Array.map f bo)),map f arg,alt)) x
 
   let append_app_list l s =
     let a = Array.of_list l in
@@ -840,6 +853,14 @@ let raw_whd_state_gen flags env =
 let stack_red_of_state_red f =
   let f sigma x = decompose_app (Stack.zip (f sigma (x, Stack.empty))) in
   f
+
+(* Drops the Cst_stack *)
+let iterate_whd_gen refold flags env sigma s =
+  let rec aux t =
+  let (hd,sk),_ = whd_state_gen refold flags env sigma (t,Stack.empty) in
+  let whd_sk = Stack.map aux sk in
+  Stack.zip ~refold (hd,whd_sk)
+  in aux s
 
 let red_of_state_red f sigma x =
   Stack.zip (f sigma (x,Stack.empty))
