@@ -200,17 +200,22 @@ let show_match id =
 
 (* "Print" commands *)
 
-let print_path_entry (s,l) =
-  (str (DirPath.to_string l) ++ str " " ++ tbrk (0,0) ++ str s)
+let print_path_entry p =
+  let dir = str (DirPath.to_string (Loadpath.logical p)) in
+  let path = str (Loadpath.physical p) in
+  (dir ++ str " " ++ tbrk (0, 0) ++ path)
 
 let print_loadpath dir =
-  let l = Library.get_full_load_paths () in
+  let l = Loadpath.get_load_paths () in
   let l = match dir with
-    | None -> l
-    | Some dir -> List.filter (fun (s,l) -> is_dirpath_prefix_of dir l) l in
-    Pp.t (str "Logical Path:                 " ++
-                  tab () ++ str "Physical path:" ++ fnl () ++
-                  prlist_with_sep fnl print_path_entry l)
+  | None -> l
+  | Some dir ->
+    let filter p = is_dirpath_prefix_of dir (Loadpath.logical p) in
+    List.filter filter l
+  in
+  Pp.t (str "Logical Path:                 " ++
+                tab () ++ str "Physical path:" ++ fnl () ++
+                prlist_with_sep fnl print_path_entry l)
 
 let print_modules () =
   let opened = Library.opened_libraries ()
@@ -365,7 +370,8 @@ let dump_universes sorted s =
 (* "Locate" commands *)
 
 let locate_file f =
-  let _,file = System.find_file_in_path ~warn:false (Library.get_load_paths ()) f in
+  let paths = Loadpath.get_paths () in
+  let _, file = System.find_file_in_path ~warn:false paths f in
   str file
 
 let msg_found_library = function
@@ -857,7 +863,7 @@ let vernac_add_loadpath isrec pdir ldiropt =
     ~unix_path:pdir ~coq_root:alias
 
 let vernac_remove_loadpath path =
-  Library.remove_load_path (expand path)
+  Loadpath.remove_load_path (expand path)
 
   (* Coq syntax for ML or system commands *)
 

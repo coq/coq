@@ -17,99 +17,6 @@ open Safe_typing
 open Libobject
 open Lib
 
-(*************************************************************************)
-(*s Load path. Mapping from physical to logical paths etc.*)
-
-type logical_path = DirPath.t
-
-let load_paths = ref ([] : (CUnix.physical_path * logical_path * bool) list)
-
-let get_load_paths () = List.map pi1 !load_paths
-
-let find_logical_path phys_dir =
-  let phys_dir = CUnix.canonical_path_name phys_dir in
-  let filter (p, _, _) = String.equal p phys_dir in
-  let paths = List.filter filter !load_paths in
-  match paths with
-  | [_,dir,_] -> dir
-  | [] -> Nameops.default_root_prefix
-  | l -> anomaly (str "Two logical paths are associated to" ++ spc () ++ str phys_dir)
-
-let is_in_load_paths phys_dir =
-  let dir = CUnix.canonical_path_name phys_dir in
-  let lp = get_load_paths () in
-  let check_p = fun p -> (String.compare dir p) == 0 in
-    List.exists check_p lp
-
-let remove_load_path dir =
-  load_paths := List.filter (fun (p,_,_) -> not (String.equal p dir)) !load_paths
-
-let add_load_path isroot (phys_path,coq_path) =
-  let phys_path = CUnix.canonical_path_name phys_path in
-  let filter (p, _, _) = String.equal p phys_path in
-    match List.filter filter !load_paths with
-      | [_,dir,_] ->
-	  if not (DirPath.equal coq_path dir)
-            (* If this is not the default -I . to coqtop *)
-            && not
-            (String.equal phys_path (CUnix.canonical_path_name Filename.current_dir_name)
-		&& DirPath.equal coq_path (Nameops.default_root_prefix))
-	  then
-	    begin
-              (* Assume the user is concerned by library naming *)
-	      if not (DirPath.equal dir Nameops.default_root_prefix) then
-		Flags.if_warn msg_warning
-		  (str phys_path ++ strbrk " was previously bound to " ++
-		   pr_dirpath dir ++ strbrk "; it is remapped to " ++
-		   pr_dirpath coq_path);
-	      remove_load_path phys_path;
-	      load_paths := (phys_path,coq_path,isroot) :: !load_paths;
-	    end
-      | [] ->
-	  load_paths := (phys_path,coq_path,isroot) :: !load_paths;
-      | _ -> anomaly (str "Two logical paths are associated to" ++ spc () ++ str phys_path)
-
-let extend_path_with_dirpath p dir =
-  List.fold_left Filename.concat p
-    (List.rev_map Id.to_string (DirPath.repr dir))
-
-let root_paths_matching_dir_path dir =
-  let rec aux = function
-  | [] -> []
-  | (p,d,true) :: l when is_dirpath_prefix_of d dir ->
-      let suffix = drop_dirpath_prefix d dir in
-      extend_path_with_dirpath p suffix :: aux l
-  | _ :: l -> aux l in
-  aux !load_paths
-
-(* Root p is bound to A.B.C.D and we require file C.D.E.F *)
-(* We may mean A.B.C.D.E.F, or A.B.C.D.C.D.E.F *)
-
-(* Root p is bound to A.B.C.C and we require file C.C.E.F *)
-(* We may mean A.B.C.C.E.F, or A.B.C.C.C.E.F, or A.B.C.C.C.C.E.F *)
-
-let intersections d1 d2 =
-  let rec aux d1 =
-    if DirPath.is_empty d1 then [d2] else
-      let rest = aux (snd (chop_dirpath 1 d1)) in
-      if is_dirpath_prefix_of d1 d2 then drop_dirpath_prefix d1 d2 :: rest
-      else rest in
-  aux d1
-
-let loadpaths_matching_dir_path dir =
-  let rec aux = function
-  | [] -> []
-  | (p,d,true) :: l ->
-      let inters = intersections d dir in
-      List.map (fun tl -> (extend_path_with_dirpath p tl,append_dirpath d tl))
-	inters @
-	aux l
-  | (p,d,_) :: l ->
-      (extend_path_with_dirpath p dir,append_dirpath d dir) :: aux l in
-  aux !load_paths
-
-let get_full_load_paths () = List.map (fun (a,b,c) -> (a,b)) !load_paths
-
 (************************************************************************)
 (*s Modules on disk contain the following informations (after the magic
     number, and before the digest). *)
@@ -330,7 +237,7 @@ type library_location = LibLoaded | LibInPath
 let locate_absolute_library dir =
   (* Search in loadpath *)
   let pref, base = split_dirpath dir in
-  let loadpath = root_paths_matching_dir_path pref in
+  let loadpath = Loadpath.expand_root_path pref in
   let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
   try
     let name = (Id.to_string base)^".vo" in
@@ -347,7 +254,7 @@ let locate_qualified_library warn qid =
   try
     (* Search library in loadpath *)
     let dir, base = repr_qualid qid in
-    let loadpath = loadpaths_matching_dir_path dir in
+    let loadpath = Loadpath.expand_path dir in
     let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
     let name = Id.to_string base ^ ".vo" in
     let lpath, file = System.where_in_path ~warn (List.map fst loadpath) name in
@@ -480,7 +387,7 @@ let rec_intern_by_filename_only id f =
 
 let rec_intern_library_from_file idopt f =
   (* A name is specified, we have to check it contains library id *)
-  let paths = get_load_paths () in
+  let paths = Loadpath.get_paths () in
   let _, f =
     System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".vo") in
   rec_intern_by_filename_only idopt f
@@ -609,10 +516,15 @@ let check_coq_overwriting p id =
       ": it starts with prefix \"Coq\" which is reserved for the Coq library."))
 
 let start_library f =
-  let paths = get_load_paths () in
-  let _,longf =
+  let paths = Loadpath.get_paths () in
+  let _, longf =
     System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
-  let ldir0 = find_logical_path (Filename.dirname longf) in
+  let ldir0 =
+    try
+      let lp = Loadpath.find_load_path (Filename.dirname longf) in
+      Loadpath.logical lp
+    with Not_found -> Nameops.default_root_prefix
+  in
   let id = Id.of_string (Filename.basename f) in
   check_coq_overwriting ldir0 id;
   let ldir = add_dirpath_suffix ldir0 id in
@@ -661,7 +573,9 @@ let save_library_to dir f =
     System.marshal_out ch table;
     close_out ch;
     if not !Flags.no_native_compiler then begin
-    let lp = List.map CUnix.string_of_physical_path (get_load_paths ()) in
+    let lp = Loadpath.get_load_paths () in
+    let map_path p = CUnix.string_of_physical_path (Loadpath.physical p) in
+    let lp = List.map map_path lp in
     let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
     match Nativelibrary.compile_library dir ast lp fn with
       | 0 -> ()
@@ -686,6 +600,8 @@ let mem s =
 		 (CObj.size_kb m.library_objects)))
 
 let get_load_paths_str () =
-  List.map CUnix.string_of_physical_path (get_load_paths ())
+  let lp = Loadpath.get_load_paths () in
+  let map_path p = CUnix.string_of_physical_path (Loadpath.physical p) in
+  List.map map_path lp
 
 let _ = Nativelib.get_load_paths := get_load_paths_str

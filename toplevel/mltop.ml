@@ -156,7 +156,7 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
   if exists_dir dir then
     begin
       add_ml_dir dir;
-      Library.add_load_path true (dir,coq_dirpath)
+      Loadpath.add_load_path dir true coq_dirpath
     end
   else
     msg_warning (str ("Cannot open " ^ dir))
@@ -178,10 +178,11 @@ let add_rec_path ~unix_path ~coq_root =
       with Exit -> None
     in
     let dirs = List.map_filter convert_dirs dirs in
-    List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs;
-    add_ml_dir unix_path;
-    List.iter (Library.add_load_path false) dirs;
-    Library.add_load_path true (unix_path, coq_root)
+    let () = List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs in
+    let () = add_ml_dir unix_path in
+    let add (path, dir) = Loadpath.add_load_path path false dir in
+    let () = List.iter add dirs in
+    Loadpath.add_load_path unix_path true coq_root
   else
     msg_warning (str ("Cannot open " ^ unix_path))
 

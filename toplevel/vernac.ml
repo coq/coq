@@ -182,7 +182,7 @@ let open_utf8_file_in fname =
    the file we parse seems a bit risky to me.  B.B.  *)
 
 let open_file_twice_if verbosely fname =
-  let paths = Library.get_load_paths () in
+  let paths = Loadpath.get_paths () in
   let _,longfname =
     find_file_in_path ~warn:(Flags.is_verbose()) paths fname in
   let in_chan = open_utf8_file_in longfname in
@@ -269,8 +269,9 @@ let rec vernac_com interpfun checknav (loc,com) =
 	let st = save_translator_coqdoc () in
 	if !Flags.beautify_file then
 	  begin
+            let paths = Loadpath.get_paths () in
             let _,f = find_file_in_path ~warn:(Flags.is_verbose())
-	      (Library.get_load_paths ())
+	      paths
 	      (CUnix.make_suffix fname ".v") in
 	    chan_beautify := open_out (f^beautify_suffix);
 	    Pp.comments := []

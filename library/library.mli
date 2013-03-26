@@ -58,18 +58,6 @@ val overwrite_library_filenames : string -> unit
 (** {6 Hook for the xml exportation of libraries } *)
 val set_xml_require : (DirPath.t -> unit) -> unit
 
-(** {6 ... } *)
-(** Global load paths: a load path is a physical path in the file
-    system; to each load path is associated a Coq [DirPath.t] (the "logical"
-    path of the physical path) *)
-
-val get_load_paths : unit -> CUnix.physical_path list
-val get_full_load_paths : unit -> (CUnix.physical_path * DirPath.t) list
-val add_load_path : bool -> CUnix.physical_path * DirPath.t -> unit
-val remove_load_path : CUnix.physical_path -> unit
-val find_logical_path : CUnix.physical_path -> DirPath.t
-val is_in_load_paths : CUnix.physical_path -> bool
-
 (** {6 Locate a library in the load paths } *)
 exception LibUnmappedDir
 exception LibNotFound

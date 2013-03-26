@@ -28,8 +28,8 @@ let (extern_state,intern_state) =
     raw_extern s (freeze())),
   (fun s ->
     let s = ensure_suffix s in
-    unfreeze
-      (with_magic_number_check (raw_intern (Library.get_load_paths ())) s);
+    let paths = Loadpath.get_paths () in
+    unfreeze (with_magic_number_check (raw_intern paths) s);
     Library.overwrite_library_filenames s)
 
 (* Rollback. *)

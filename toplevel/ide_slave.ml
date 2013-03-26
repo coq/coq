@@ -228,7 +228,7 @@ let hints () =
 (** Other API calls *)
 
 let inloadpath dir =
-  Library.is_in_load_paths (CUnix.physical_path_of_string dir)
+  Loadpath.is_in_load_paths (CUnix.physical_path_of_string dir)
 
 let status () =
   (** We remove the initial part of the current [DirPath.t]
