@@ -20,11 +20,17 @@ type t = {
   path_is_root : bool;
 }
 
+let load_paths = ref ([] : t list)
+
+let () = Summary.declare_summary "LOADPATHS" {
+  Summary.freeze_function = (fun () -> !load_paths);
+  Summary.unfreeze_function = (fun l -> load_paths := l);
+  Summary.init_function = (fun () -> load_paths := []);
+}
+
 let logical p = p.path_logical
 
 let physical p = p.path_physical
-
-let load_paths = ref ([] : t list)
 
 let get_load_paths () = !load_paths
 
