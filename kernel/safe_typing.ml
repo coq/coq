@@ -627,9 +627,13 @@ let set_engagement c senv =
 
 (* Libraries = Compiled modules *)
 
-type compiled_library =
-    DirPath.t * module_body * library_info list * engagement option
-      * Nativecode.symbol array
+type compiled_library = {
+  comp_name : DirPath.t;
+  comp_mod : module_body;
+  comp_deps : library_info list;
+  comp_enga : engagement option;
+  comp_natsymbs : Nativecode.symbol array
+}
 
 type native_library = Nativecode.global list
 
@@ -708,8 +712,14 @@ let export senv dir =
     Nativecode.update_locations upds;
     ast, values
   in
-   mp, (dir,mb,senv.imports,engagement senv.env,values), ast
-
+  let lib = {
+    comp_name = dir;
+    comp_mod = mb;
+    comp_deps = senv.imports;
+    comp_enga = engagement senv.env;
+    comp_natsymbs = values }
+  in
+  mp, lib, ast
 
 let check_imports senv needed =
   let imports = senv.imports in
@@ -739,21 +749,22 @@ loaded by side-effect once and for all (like it is done in OCaml).
 Would this be correct with respect to undo's and stuff ?
 *)
 
-let import (dp,mb,depends,engmt,values) digest senv =
-  check_imports senv depends;
-  check_engagement senv.env engmt;
-  let mp = MPfile dp in
+let import lib digest senv =
+  check_imports senv lib.comp_deps;
+  check_engagement senv.env lib.comp_enga;
+  let mp = MPfile lib.comp_name in
+  let mb = lib.comp_mod in
   let env = senv.env in
   let env = Environ.add_constraints mb.mod_constraints env in
   let env = Modops.add_module mb env in
-  mp, { senv with
-	  env = env;
-	  modinfo = 
-      {senv.modinfo with 
-	 resolver = 
-	    add_delta_resolver mb.mod_delta senv.modinfo.resolver};
-	  imports = (dp,digest)::senv.imports;
-	  loads = (mp,mb)::senv.loads }, values
+  let reso = add_delta_resolver mb.mod_delta senv.modinfo.resolver in
+  let senv = { senv with
+    env = env;
+    modinfo = { senv.modinfo with resolver = reso };
+    imports = (lib.comp_name,digest)::senv.imports;
+    loads = (mp,mb)::senv.loads }
+  in
+  mp, senv, lib.comp_natsymbs
 
 
  (* Store the body of modules' opaque constants inside a table.  
@@ -837,7 +848,7 @@ end = struct
       | SEBwith (seb,wdcl) ->
 	SEBwith (traverse_modexpr seb,wdcl)
     in
-    fun (dp,mb,depends,s,val_tbl) -> (dp,traverse_module mb,depends,s,val_tbl)
+    fun clib -> { clib with comp_mod = traverse_module clib.comp_mod }
 
   (* To disburden a library from opaque definitions, we simply 
      traverse it and add an indirection between the module body 
