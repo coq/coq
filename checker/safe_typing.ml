@@ -57,13 +57,13 @@ let check_imports f caller env needed =
     with Not_found ->
       error ("Reference to unknown module " ^ (DirPath.to_string dp))
   in
-  List.iter check needed
+  Array.iter check needed
 
 
 type compiled_library =
     DirPath.t *
     module_body *
-    (DirPath.t * Digest.t) list *
+    (DirPath.t * Digest.t) array *
     engagement option
 
  (* Store the body of modules' opaque constants inside a table.  
@@ -168,7 +168,7 @@ end = struct
 end
 
 open Validate
-let val_deps = val_list (val_tuple ~name:"dep"[|val_dp;no_val|])
+let val_deps = val_array (val_tuple ~name:"dep"[|val_dp;no_val|])
 let val_vo = val_tuple ~name:"vo" [|val_dp;val_module;val_deps;val_opt val_eng|]
 
 (* This function should append a certificate to the .vo file.

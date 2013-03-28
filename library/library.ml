@@ -13,7 +13,6 @@ open Util
 open Names
 open Libnames
 open Nameops
-open Safe_typing
 open Libobject
 open Lib
 
@@ -25,20 +24,20 @@ type compilation_unit_name = DirPath.t
 
 type library_disk = {
   md_name : compilation_unit_name;
-  md_compiled : LightenLibrary.lightened_compiled_library;
+  md_compiled : Safe_typing.LightenLibrary.lightened_compiled_library;
   md_objects : Declaremods.library_objects;
-  md_deps : (compilation_unit_name * Digest.t) list;
-  md_imports : compilation_unit_name list }
+  md_deps : (compilation_unit_name * Digest.t) array;
+  md_imports : compilation_unit_name array }
 
 (*s Modules loaded in memory contain the following informations. They are
     kept in the global table [libraries_table]. *)
 
 type library_t = {
   library_name : compilation_unit_name;
-  library_compiled : compiled_library;
+  library_compiled : Safe_typing.compiled_library;
   library_objects : Declaremods.library_objects;
-  library_deps : (compilation_unit_name * Digest.t) list;
-  library_imports : compilation_unit_name list;
+  library_deps : (compilation_unit_name * Digest.t) array;
+  library_imports : compilation_unit_name array;
   library_digest : Digest.t }
 
 module LibraryOrdered = DirPath
@@ -186,7 +185,7 @@ let open_libraries export modl =
     List.fold_left
       (fun l m ->
          let subimport =
-           List.fold_left
+           Array.fold_left
              (fun l m -> remember_last_of_each l (try_find_library m))
              l m.library_imports
          in remember_last_of_each subimport m)
@@ -295,7 +294,8 @@ let try_locate_qualified_library (loc,qid) =
 
 let mk_library md table digest =
   let md_compiled =
-    LightenLibrary.load ~load_proof:!Flags.load_proofs table md.md_compiled
+    Safe_typing.LightenLibrary.load ~load_proof:!Flags.load_proofs
+      table md.md_compiled
   in {
     library_name     = md.md_name;
     library_compiled = md_compiled;
@@ -310,7 +310,7 @@ let fetch_opaque_table (f,pos,digest) =
     let ch = System.with_magic_number_check raw_intern_library f in
     let () = seek_in ch pos in
     if not (String.equal (System.marshal_in f ch) digest) then failwith "File changed!";
-    let table = (System.marshal_in f ch : LightenLibrary.table) in
+    let table = (System.marshal_in f ch : Safe_typing.LightenLibrary.table) in
     let () = close_in ch in
     table
   with e when Errors.noncritical e ->
@@ -346,7 +346,7 @@ let rec intern_library needed (dir, f) =
   m, intern_library_deps needed dir m
 
 and intern_library_deps needed dir m =
-  (dir,m)::List.fold_left (intern_mandatory_library dir) needed m.library_deps
+  (dir,m)::Array.fold_left (intern_mandatory_library dir) needed m.library_deps
 
 and intern_mandatory_library caller needed (dir,d) =
   let m,needed = intern_library needed (try_locate_absolute_library dir) in
@@ -550,14 +550,14 @@ let error_recursively_dependent_library dir =
    writing the content and computing the checksum... *)
 let save_library_to dir f =
   let cenv, seg, ast = Declaremods.end_library dir in
-  let cenv, table = LightenLibrary.save cenv in
+  let cenv, table = Safe_typing.LightenLibrary.save cenv in
   let md = {
     md_name = dir;
     md_compiled = cenv;
     md_objects = seg;
-    md_deps = current_deps ();
-    md_imports = current_reexports () } in
-  if List.mem_assoc dir md.md_deps then
+    md_deps = Array.of_list (current_deps ());
+    md_imports = Array.of_list (current_reexports ()) } in
+  if Array.exists (fun (d,_) -> DirPath.equal d dir) md.md_deps then
     error_recursively_dependent_library dir;
   let (f',ch) = raw_extern_library f in
   try

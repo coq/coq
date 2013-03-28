@@ -630,7 +630,7 @@ let set_engagement c senv =
 type compiled_library = {
   comp_name : DirPath.t;
   comp_mod : module_body;
-  comp_deps : library_info list;
+  comp_deps : library_info array;
   comp_enga : engagement option;
   comp_natsymbs : Nativecode.symbol array
 }
@@ -715,7 +715,7 @@ let export senv dir =
   let lib = {
     comp_name = dir;
     comp_mod = mb;
-    comp_deps = senv.imports;
+    comp_deps = Array.of_list senv.imports;
     comp_enga = engagement senv.env;
     comp_natsymbs = values }
   in
@@ -732,7 +732,7 @@ let check_imports senv needed =
     with Not_found ->
       error ("Reference to unknown module "^(DirPath.to_string id)^".")
   in
-  List.iter check needed
+  Array.iter check needed
 
 
 

@@ -42,8 +42,8 @@ type library_disk = {
   md_name : compilation_unit_name;
   md_compiled : Safe_typing.LightenLibrary.lightened_compiled_library;
   md_objects : library_objects;
-  md_deps : (compilation_unit_name * Digest.t) list;
-  md_imports : compilation_unit_name list }
+  md_deps : (compilation_unit_name * Digest.t) array;
+  md_imports : compilation_unit_name array }
 
 (************************************************************************)
 (*s Modules on disk contain the following informations (after the magic
@@ -56,7 +56,7 @@ type library_t = {
   library_name : compilation_unit_name;
   library_filename : CUnix.physical_path;
   library_compiled : Safe_typing.compiled_library;
-  library_deps : (compilation_unit_name * Digest.t) list;
+  library_deps : (compilation_unit_name * Digest.t) array;
   library_digest : Digest.t }
 
 module LibraryOrdered =
@@ -330,8 +330,9 @@ let rec intern_library seen (dir, f) needed =
     let m = intern_from_file (dir,f) in
     let seen' = LibrarySet.add dir seen in
     let deps =
-      List.map (fun (d,_) -> try_locate_absolute_library d) m.library_deps in
-    (dir,m) :: List.fold_right (intern_library seen') deps needed
+      Array.map (fun (d,_) -> try_locate_absolute_library d) m.library_deps
+    in
+    (dir,m) :: Array.fold_right (intern_library seen') deps needed
 
 (* Compute the reflexive transitive dependency closure *)
 let rec fold_deps seen ff (dir,f) (s,acc) =
@@ -339,9 +340,9 @@ let rec fold_deps seen ff (dir,f) (s,acc) =
   if LibrarySet.mem dir s then (s,acc)
   else
     let deps = get_deps (dir,f) in
-    let deps = List.map (fun (d,_) -> try_locate_absolute_library d) deps in
+    let deps = Array.map (fun (d,_) -> try_locate_absolute_library d) deps in
     let seen' = LibrarySet.add dir seen in
-    let (s',acc') = List.fold_right (fold_deps seen' ff) deps (s,acc) in
+    let (s',acc') = Array.fold_right (fold_deps seen' ff) deps (s,acc) in
     (LibrarySet.add dir s', ff dir acc')
 
 and fold_deps_list seen ff modl needed =
