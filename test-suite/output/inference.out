@@ -4,3 +4,7 @@ fun e : option L => match e with
                     | None => None
                     end
      : option L -> option L
+fun n : nat => let x := A n in ?12 ?15:T n
+     : forall n : nat, T n
+fun n : nat => ?20 ?23:T n
+     : forall n : nat, T n
