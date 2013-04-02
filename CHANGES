@@ -1,6 +1,25 @@
 Changes from V8.4pl1 to V8.4pl2
 ===============================
 
+Bug fixes
+
+- Solved bugs :
+  #2466 #2629 #2668 #2750 #2839 #2869 #2954 #2955 #2959 #2962 #2966 #2967
+  #2969 #2970 #2975 #2976 #2977 #2978 #2981 #2983 #2995 #3000 #3004 #3008 
+- Partially fixed bugs : #2830 #2949
+- Coqtop should now react more reliably when receiving interrupt signals:
+  all the "try...with" constructs have been protected against undue
+  handling of the Sys.Break exception.
+
+Coqide
+
+- The Windows-specific code handling the interrupt button of Coqide
+  had to be reworked (cf. bug #2869). Now, in Win32 this button does
+  not target a specific coqtop client, but instead sends a Ctrl-C to
+  any process sharing its console with Coqide. To avoid awkward
+  effects, it is recommended to launch Coqide via its icon, its menu,
+  or in a dedicated console window.
+
 Extraction
 
 - The option Extraction AccessOpaque is now set by default,
@@ -2446,3 +2465,5 @@ New user contributions
 
 - Correctness proof of Stalmarck tautology checker algorithm
   [Stalmarck] (Laurent Théry, Pierre Letouzey, Sophia-Antipolis)
+
+ LocalWords:  recommended
