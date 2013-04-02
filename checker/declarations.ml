@@ -59,12 +59,6 @@ type delta_resolver = Deltamap.t
 
 let empty_delta_resolver = Deltamap.empty
 
-module MBImap = Map.Make
-  (struct
-    type t = MBId.t
-    let compare = Pervasives.compare
-   end)
-
 module Umap = struct
   type 'a t = 'a MPmap.t * 'a MBImap.t
   let empty = MPmap.empty, MBImap.empty

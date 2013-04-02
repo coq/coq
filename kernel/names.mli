@@ -75,6 +75,8 @@ type name = Name.t = Name of Id.t | Anonymous
 type variable = Id.t
 type module_ident = Id.t
 
+module ModIdmap : Map.S with type key = module_ident
+
 (** {6 Directory paths = section names paths } *)
 
 module DirPath :
@@ -174,7 +176,7 @@ sig
 
 end
 
-module ModIdmap : Map.S with type key = module_ident
+module MBImap : Map.S with type key = MBId.t
 
 (** {6 The module part of the kernel name } *)
 
