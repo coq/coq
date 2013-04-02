@@ -464,10 +464,13 @@ let force fsubst r =
   match !r with
   | LSval a -> a
   | LSlazy(s,a) ->
-      let subst = List.fold_left join empty_subst (List.rev s) in
-      let a' = fsubst subst a in
-      r := LSval a';
-      a'
+    match List.rev s with
+      | [] -> assert false
+      | sub0::subs ->
+        let subst = List.fold_left join sub0 subs in
+        let a' = fsubst subst a in
+        r := LSval a';
+        a'
 
 let subst_substituted s r =
   match !r with
