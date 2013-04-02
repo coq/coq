@@ -31,6 +31,9 @@ val blacklist_filter : filter_function
 val module_filter : DirPath.t list * bool -> filter_function
 (** Check whether a reference pertains or not to a set of modules *)
 
+val search_about_filter : glob_search_about_item -> filter_function
+(** Check whether a reference matches a SearchAbout query. *)
+
 (** {6 Specialized search functions} *)
 
 val search_by_head : constr_pattern -> DirPath.t list * bool -> std_ppcmds

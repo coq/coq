@@ -23,6 +23,10 @@ open Nametab
 type filter_function = global_reference -> env -> constr -> bool
 type display_function = global_reference -> env -> constr -> unit
 
+type glob_search_about_item =
+  | GlobSearchSubPattern of constr_pattern
+  | GlobSearchString of string
+
 module SearchBlacklist =
   Goptions.MakeStringTable
     (struct
@@ -135,6 +139,15 @@ let module_filter (mods, outside) ref env typ =
   if outside then List.for_all is_outside mods
   else List.is_empty mods || List.exists is_inside mods
 
+let name_of_reference ref = Id.to_string (basename_of_global ref)
+
+let search_about_filter query gr env typ = match query with
+| GlobSearchSubPattern pat ->
+  Matching.is_matching_appsubterm ~closed:false pat typ
+| GlobSearchString s ->
+  String.string_contains ~where:(name_of_reference gr) ~what:s
+
+
 (** SearchPattern *)
 
 let search_pattern pat mods =
@@ -187,24 +200,12 @@ let search_by_head = search_pattern
 
 (** SearchAbout *)
 
-let name_of_reference ref = Id.to_string (basename_of_global ref)
-
-type glob_search_about_item =
-  | GlobSearchSubPattern of constr_pattern
-  | GlobSearchString of string
-
-let search_about_item (itemref,typ) = function
-  | GlobSearchSubPattern pat ->
-    Matching.is_matching_appsubterm ~closed:false pat typ
-  | GlobSearchString s ->
-    String.string_contains ~where:(name_of_reference itemref) ~what:s
-
 let search_about items mods =
   let ans = ref [] in
   let filter ref env typ =
     let eqb b1 b2 = if b1 then b2 else not b2 in
     let f_module = module_filter mods ref env typ in
-    let f_about (b, i) = eqb b (search_about_item (ref, typ) i) in
+    let f_about (b, i) = eqb b (search_about_filter i ref env typ) in
     let f_blacklist = blacklist_filter ref env typ in
     f_module && List.for_all f_about items && f_blacklist
   in
