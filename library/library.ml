@@ -24,7 +24,7 @@ type compilation_unit_name = DirPath.t
 
 type library_disk = {
   md_name : compilation_unit_name;
-  md_compiled : Safe_typing.LightenLibrary.lightened_compiled_library;
+  md_compiled : Safe_typing.compiled_library;
   md_objects : Declaremods.library_objects;
   md_deps : (compilation_unit_name * Digest.t) array;
   md_imports : compilation_unit_name array }
@@ -290,42 +290,114 @@ let try_locate_qualified_library (loc,qid) =
     | LibNotFound -> error_lib_not_found qid
 
 (************************************************************************)
+(** {6 Tables of opaque proof terms} *)
+
+(** We now store opaque proof terms apart from the rest of the environment.
+    See the [Indirect] contructor in [Lazyconstr.lazy_constr]. This way,
+    we can quickly load a first half of a .vo file without these opaque
+    terms, and access them only when a specific command (e.g. Print or
+    Print Assumptions) needs it. *)
+
+exception Faulty
+
+(** Fetching a table of opaque terms at position [pos] in file [f],
+    expecting to find first a copy of [digest]. *)
+
+let fetch_opaque_table (f,pos,digest) =
+  if !Flags.load_proofs == Flags.Dont then
+    error "Not accessing an opaque term due to option -dont-load-proofs.";
+  try
+    Pp.msg_info (Pp.str "Fetching opaque terms in " ++ str f);
+    let ch = System.with_magic_number_check raw_intern_library f in
+    let () = seek_in ch pos in
+    if not (String.equal (System.marshal_in f ch) digest) then raise Faulty;
+    let table = (System.marshal_in f ch : Term.constr array) in
+    (* Verification of the final digest (the one also covering the opaques) *)
+    let pos' = pos_in ch in
+    let digest' = (System.marshal_in f ch : Digest.t) in
+    let () = close_in ch in
+    let ch' = open_in f in
+    if not (String.equal (Digest.channel ch' pos') digest') then raise Faulty;
+    let () = close_in ch' in
+    table
+  with e when Errors.noncritical e ->
+    error
+      ("The file "^f^" is inaccessible or corrupted,\n"
+       ^ "cannot load some opaque constant bodies in it.\n")
+
+(** Delayed / available tables of opaque terms *)
+
+type opaque_table_status =
+  | ToFetch of string * int * Digest.t
+  | Fetched of Term.constr array
+
+let opaque_tables = ref (LibraryMap.empty : opaque_table_status LibraryMap.t)
+
+let add_opaque_table dp st =
+  opaque_tables := LibraryMap.add dp st !opaque_tables
+
+let access_opaque_table dp i =
+  let t = match LibraryMap.find dp !opaque_tables with
+    | Fetched t -> t
+    | ToFetch (f,pos,digest) ->
+      let t = fetch_opaque_table (f,pos,digest) in
+      add_opaque_table dp (Fetched t);
+      t
+  in
+  assert (i < Array.length t); t.(i)
+
+(** Table of opaque terms from the library currently being compiled *)
+
+module OpaqueTables = struct
+
+ let a_constr = Term.mkRel 1
+
+ let local_table = ref (Array.make 100 a_constr)
+ let local_index = ref 0
+
+ let get dp i =
+   if DirPath.equal dp (Lib.library_dp ())
+   then (!local_table).(i)
+   else access_opaque_table dp i
+
+ let store c =
+  let n = !local_index in
+  incr local_index;
+  if n = Array.length !local_table then begin
+    let t = Array.make (2*n) a_constr in
+    Array.blit !local_table 0 t 0 n;
+    local_table := t
+  end;
+  (!local_table).(n) <- c;
+  Some (Lib.library_dp (), n)
+
+ let dump () = Array.sub !local_table 0 !local_index
+
+end
+
+let _ = Lazyconstr.set_indirect_opaque_accessor OpaqueTables.get
+
+(************************************************************************)
 (* Internalise libraries *)
 
-let mk_library md table digest =
-  let md_compiled =
-    Safe_typing.LightenLibrary.load ~load_proof:!Flags.load_proofs
-      table md.md_compiled
-  in {
+let mk_library md digest =
+  {
     library_name     = md.md_name;
-    library_compiled = md_compiled;
+    library_compiled = md.md_compiled;
     library_objects  = md.md_objects;
     library_deps     = md.md_deps;
     library_imports  = md.md_imports;
     library_digest    = digest
   }
 
-let fetch_opaque_table (f,pos,digest) =
-  try
-    let ch = System.with_magic_number_check raw_intern_library f in
-    let () = seek_in ch pos in
-    if not (String.equal (System.marshal_in f ch) digest) then failwith "File changed!";
-    let table = (System.marshal_in f ch : Safe_typing.LightenLibrary.table) in
-    let () = close_in ch in
-    table
-  with e when Errors.noncritical e ->
-    error
-      ("The file "^f^" is inaccessible or has changed,\n" ^
-       "cannot load some opaque constant bodies in it.\n")
-
 let intern_from_file f =
   let ch = System.with_magic_number_check raw_intern_library f in
   let lmd = System.marshal_in f ch in
   let pos = pos_in ch in
   let digest = System.marshal_in f ch in
-  let table = lazy (fetch_opaque_table (f,pos,digest)) in
   register_library_filename lmd.md_name f;
-  let library = mk_library lmd table digest in
+  add_opaque_table lmd.md_name (ToFetch (f,pos,digest));
+  let library = mk_library lmd digest in
   close_in ch;
   library
 
@@ -528,6 +600,7 @@ let start_library f =
   let id = Id.of_string (Filename.basename f) in
   check_coq_overwriting ldir0 id;
   let ldir = add_dirpath_suffix ldir0 id in
+  Lazyconstr.set_indirect_opaque_creator OpaqueTables.store;
   Declaremods.start_library ldir;
   ldir,longf
 
@@ -546,11 +619,21 @@ let error_recursively_dependent_library dir =
      strbrk " to save current library because" ++
      strbrk " it already depends on a library of this name.")
 
+(* We now use two different digests in a .vo file. The first one
+   only covers half of the file, without the opaque table. It is
+   used for identifying this version of this library : this digest
+   is the one leading to "inconsistent assumptions" messages.
+   The other digest comes at the very end, and covers everything
+   before it. This one is used for integrity check of the whole
+   file when loading the opaque table. *)
+
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
+
 let save_library_to dir f =
+  Lazyconstr.reset_indirect_opaque_creator ();
   let cenv, seg, ast = Declaremods.end_library dir in
-  let cenv, table = Safe_typing.LightenLibrary.save cenv in
+  let table = OpaqueTables.dump () in
   let md = {
     md_name = dir;
     md_compiled = cenv;
@@ -563,14 +646,12 @@ let save_library_to dir f =
   try
     System.marshal_out ch md;
     flush ch;
-    (* The loading of the opaque definitions table is optional whereas
-       the digest is loaded all the time. As a consequence, the digest
-       must be serialized before the table (if we want to keep the
-       current simple layout of .vo files). This also entails that the
-       digest does not take opaque terms into account anymore. *)
     let di = Digest.file f' in
     System.marshal_out ch di;
     System.marshal_out ch table;
+    flush ch;
+    let di = Digest.file f' in
+    System.marshal_out ch di;
     close_out ch;
     if not !Flags.no_native_compiler then begin
     let lp = Loadpath.get_load_paths () in

@@ -766,9 +766,8 @@ let make_graph (f_ref:global_reference) =
   Dumpglob.pause ();
   (match body_of_constant c_body with
      | None -> error "Cannot build a graph over an axiom !"
-     | Some b ->
+     | Some body ->
 	 let env = Global.env () in
-	 let body = Lazyconstr.force b in
 	 let extern_body,extern_type =
 	   with_full_print
 	     (fun () ->

@@ -80,26 +80,31 @@ let global_vars_set_constant_type env = function
 	  (fun t c -> Id.Set.union (global_vars_set env t) c))
       ctx ~init:Id.Set.empty
 
+let check_declared_variables declared inferred =
+  let mk_set l = List.fold_right Id.Set.add (List.map pi1 l) Id.Set.empty in
+  let undeclared_set = Id.Set.diff (mk_set inferred) (mk_set declared) in
+  if not (Id.Set.is_empty undeclared_set) then
+    error ("The following section variables are used but not declared:\n"^
+              (String.concat ", "
+                 (List.map Id.to_string (Id.Set.elements undeclared_set))))
+
 let build_constant_declaration env (def,typ,cst,inline_code,ctx) =
-  let hyps = 
+  let hyps =
     let inferred =
       let ids_typ = global_vars_set_constant_type env typ in
       let ids_def = match def with
-      | Undef _ -> Id.Set.empty
-      | Def cs -> global_vars_set env (Lazyconstr.force cs)
-      | OpaqueDef lc -> 
-          global_vars_set env (Lazyconstr.force_opaque lc) in
-      keep_hyps env (Id.Set.union ids_typ ids_def) in
-    let declared = match ctx with
-      | None -> inferred 
-      | Some declared -> declared in
-    let mk_set l = List.fold_right Id.Set.add (List.map pi1 l) Id.Set.empty in
-    let inferred_set, declared_set = mk_set inferred, mk_set declared in
-    if not (Id.Set.subset inferred_set declared_set) then
-      error ("The following section variable are used but not declared:\n"^
-        (String.concat ", " (List.map Id.to_string
-          (Id.Set.elements (Id.Set.diff inferred_set declared_set)))));
-    declared in
+        | Undef _ -> Id.Set.empty
+        | Def cs -> global_vars_set env (Lazyconstr.force cs)
+        | OpaqueDef lc -> global_vars_set env (Lazyconstr.force_opaque lc)
+      in
+      keep_hyps env (Id.Set.union ids_typ ids_def)
+    in
+    match ctx with
+      | None -> inferred
+      | Some declared ->
+        check_declared_variables declared inferred;
+        declared
+  in
   let tps = Cemitcodes.from_val (compile_constant_body env def) in
   { const_hyps = hyps;
     const_body = def;

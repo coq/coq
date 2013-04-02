@@ -480,24 +480,34 @@ let subst_substituted s r =
 
 let force_constr = force subst_mps
 
+let from_val c = ref (LSval c)
+
 type constr_substituted = constr substituted
 
 let val_cstr_subst = val_substituted val_constr
 
 let subst_constr_subst = subst_substituted
 
-(** Beware! In .vo files, lazy_constr are stored as integers
-   used as indexes for a separate table. The actual lazy_constr is restored
-   later, by [Safe_typing.LightenLibrary.load]. This allows us
-   to use here a different definition of lazy_constr than coqtop:
-   since the checker will inspect all proofs parts, even opaque
-   ones, no need to use Lazy.t here *)
+(* Nota : in coqtop, the [lazy_constr] type also have a [Direct]
+   constructor, but it shouldn't occur inside a .vo, so we ignore it *)
 
-type lazy_constr = constr_substituted
-let subst_lazy_constr = subst_substituted
-let force_lazy_constr = force_constr
-let lazy_constr_from_val c = c
-let val_lazy_constr = val_cstr_subst
+type lazy_constr =
+  | Indirect of substitution list * DirPath.t * int
+(* | Direct of constr_substituted *)
+
+let subst_lazy_constr sub = function
+  | Indirect (l,dp,i) -> Indirect (sub::l,dp,i)
+
+let indirect_opaque_access =
+  ref ((fun dp i -> assert false) : DirPath.t -> int -> constr)
+
+let force_lazy_constr = function
+  | Indirect (l,dp,i) ->
+    let c = !indirect_opaque_access dp i in
+    force_constr (List.fold_right subst_constr_subst l (from_val c))
+
+let val_lazy_constr =
+  val_sum "lazy_constr" 0 [|[|val_list val_subst;val_dp;val_int|]|]
 
 (** Inlining level of parameters at functor applications.
     This is ignored by the checker. *)
@@ -532,8 +542,8 @@ type constant_body = {
 
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
-  | Def c -> Some c
-  | OpaqueDef c -> Some c
+  | Def c -> Some (force_constr c)
+  | OpaqueDef c -> Some (force_lazy_constr c)
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false

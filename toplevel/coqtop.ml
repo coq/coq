@@ -218,8 +218,7 @@ let parse_args arglist =
     | "-batch" :: rem -> set_batch_mode (); parse rem
     | "-boot" :: rem -> boot := true; no_load_rc (); parse rem
     | "-quality" :: rem -> term_quality := true; no_load_rc (); parse rem
-    | "-outputstate" :: s :: rem ->
-      Flags.load_proofs := Flags.Force; set_outputstate s; parse rem
+    | "-outputstate" :: s :: rem -> set_outputstate s; parse rem
     | "-outputstate" :: []       -> usage ()
 
     | ("-noinit"|"-nois") :: rem -> load_init := false; parse rem

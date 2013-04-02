@@ -229,8 +229,7 @@ let mk_constant_obj id bo ty variables hyps =
       Acic.Constant (Names.Id.to_string id,None,ty,params)
    | Some c ->
       Acic.Constant
-       (Names.Id.to_string id, Some (Unshare.unshare (Lazyconstr.force c)),
-         ty,params)
+       (Names.Id.to_string id, Some (Unshare.unshare c), ty,params)
 ;;
 
 let mk_inductive_obj sp mib packs variables nparams hyps finite =

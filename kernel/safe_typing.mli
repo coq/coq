@@ -112,17 +112,6 @@ val export : safe_environment -> DirPath.t
 val import : compiled_library -> Digest.t -> safe_environment
       -> module_path * safe_environment * Nativecode.symbol array
 
-(** Remove the body of opaque constants *)
-
-module LightenLibrary :
-sig
-  type table
-  type lightened_compiled_library
-  val save : compiled_library -> lightened_compiled_library * table
-  val load : load_proof:Flags.load_proofs -> table Lazy.t ->
-    lightened_compiled_library -> compiled_library
-end
-
 (** {6 Typing judgments } *)
 
 type judgment

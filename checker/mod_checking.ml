@@ -35,7 +35,7 @@ let check_constant_declaration env kn cb =
         let _ = infer_type envty ty in
         (match body_of_constant cb with
           | Some bd ->
-              let j = infer env' (force_constr bd) in
+              let j = infer env' bd in
               conv_leq envty j ty
           | None -> ())
     | PolymorphicArity(ctxt,par) ->

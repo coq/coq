@@ -40,7 +40,7 @@ type compilation_unit_name = DirPath.t
 
 type library_disk = {
   md_name : compilation_unit_name;
-  md_compiled : Safe_typing.LightenLibrary.lightened_compiled_library;
+  md_compiled : Safe_typing.compiled_library;
   md_objects : library_objects;
   md_deps : (compilation_unit_name * Digest.t) array;
   md_imports : compilation_unit_name array }
@@ -56,6 +56,7 @@ type library_t = {
   library_name : compilation_unit_name;
   library_filename : CUnix.physical_path;
   library_compiled : Safe_typing.compiled_library;
+  library_opaques : Term.constr array;
   library_deps : (compilation_unit_name * Digest.t) array;
   library_digest : Digest.t }
 
@@ -91,6 +92,19 @@ let library_full_filename dir = (find_library dir).library_filename
 let register_loaded_library m =
   libraries_table := LibraryMap.add m.library_name m !libraries_table
 
+(* Map from library names to table of opaque terms *)
+let opaque_tables = ref LibraryMap.empty
+
+let access_opaque_table dp i =
+  let t =
+    try LibraryMap.find dp !opaque_tables
+    with Not_found -> assert false
+  in
+  assert (i < Array.length t);
+  t.(i)
+
+let _ = Declarations.indirect_opaque_access := access_opaque_table
+
 let check_one_lib admit (dir,m) =
   let file = m.library_filename in
   let md = m.library_compiled in
@@ -105,7 +119,7 @@ let check_one_lib admit (dir,m) =
   else
     (Flags.if_verbose ppnl
       (str "Checking library: " ++ pr_dirpath dir);
-      Safe_typing.import file md dig);
+      Safe_typing.import file md m.library_opaques dig);
   Flags.if_verbose pp (fnl());
   pp_flush ();
   register_loaded_library m
@@ -280,7 +294,8 @@ let with_magic_number_check f a =
 let mk_library md f table digest = {
   library_name = md.md_name;
   library_filename = f;
-  library_compiled = Safe_typing.LightenLibrary.load table md.md_compiled;
+  library_compiled = md.md_compiled;
+  library_opaques = table;
   library_deps = md.md_deps;
   library_digest = digest }
 
@@ -298,16 +313,24 @@ let intern_from_file (dir, f) =
     try
       let ch = with_magic_number_check raw_intern_library f in
       let (md:library_disk) = System.marshal_in f ch in
-      let digest = System.marshal_in f ch in
-      let table = (System.marshal_in f ch : Safe_typing.LightenLibrary.table) in
-      close_in ch;
+      let (digest:Digest.t) = System.marshal_in f ch in
+      let (table:Term.constr array) = System.marshal_in f ch in
+      (* Verification of the final checksum *)
+      let pos = pos_in ch in
+      let (checksum:Digest.t) = System.marshal_in f ch in
+      let () = close_in ch in
+      let ch = open_in f in
+      if not (String.equal (Digest.channel ch pos) checksum) then
+        errorlabstrm "intern_from_file" (str "Checksum mismatch");
+      let () = close_in ch in
       if dir <> md.md_name then
-        errorlabstrm "load_physical_library"
+        errorlabstrm "intern_from_file"
           (name_clash_message dir md.md_name f);
       Flags.if_verbose ppnl (str" done]");
       md,table,digest
     with e -> Flags.if_verbose ppnl (str" failed!]"); raise e in
   depgraph := LibraryMap.add md.md_name md.md_deps !depgraph;
+  opaque_tables := LibraryMap.add md.md_name table !opaque_tables;
   mk_library md f table digest
 
 let get_deps (dir, f) =

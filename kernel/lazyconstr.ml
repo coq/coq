@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Names
 open Term
 open Mod_subst
 
@@ -20,24 +21,56 @@ let force = force subst_mps
 
 let subst_constr_subst = subst_substituted
 
-(** Opaque proof terms are not loaded immediately, but are there
-    in a lazy form. Forcing this lazy may trigger some unmarshal of
-    the necessary structure. The ['a substituted] type isn't really great
-    here, so we store "manually" a substitution list, the younger one at top.
+(** Opaque proof terms might be in some external tables.
+    The [force_opaque] function below allows to access these tables,
+    this might trigger the read of some extra parts of .vo files.
+    In the [Indirect] case, we accumulate "manually" a substitution
+    list, the younger one coming first. Nota: no [Direct] constructor
+    should end in a .vo, this is checked by coqchk.
 *)
 
-type lazy_constr = constr_substituted Lazy.t * substitution list
+type lazy_constr =
+  | Indirect of substitution list * DirPath.t * int (* lib,index *)
+  | Direct of constr_substituted (* opaque in section or interactive session *)
 
-let force_lazy_constr (c,l) =
-  List.fold_right subst_constr_subst l (Lazy.force c)
+(* TODO : this hcons function could probably be improved (for instance
+   hash the dir_path in the Indirect case) *)
 
-let lazy_constr_is_val (c,_) = Lazy.lazy_is_val c
+let hcons_lazy_constr = function
+  | Direct c -> Direct (from_val (hcons_constr (force c)))
+  | Indirect _ as lc -> lc
 
-let make_lazy_constr c = (c, [])
+let subst_lazy_constr sub = function
+  | Direct cs -> Direct (subst_constr_subst sub cs)
+  | Indirect (l,dp,i) -> Indirect (sub::l,dp,i)
+
+let default_get_opaque dp _ =
+  Errors.error
+    ("Cannot access an opaque term in library " ^ DirPath.to_string dp)
+
+let default_mk_opaque _ = None
+
+let get_opaque = ref default_get_opaque
+let mk_opaque = ref default_mk_opaque
+let set_indirect_opaque_accessor f = (get_opaque := f)
+let set_indirect_opaque_creator f = (mk_opaque := f)
+let reset_indirect_opaque_creator () = (mk_opaque := default_mk_opaque)
+
+let force_lazy_constr = function
+  | Direct c -> c
+  | Indirect (l,dp,i) ->
+    List.fold_right subst_constr_subst l (from_val (!get_opaque dp i))
+
+let turn_indirect lc = match lc with
+  | Indirect _ ->
+    Errors.anomaly (Pp.str "Indirecting an already indirect opaque")
+  | Direct c ->
+    (* this constr_substituted shouldn't have been substituted yet *)
+    assert (fst (Mod_subst.repr_substituted c) == None);
+    match !mk_opaque (force c) with
+      | None -> lc
+      | Some (dp,i) -> Indirect ([],dp,i)
 
 let force_opaque lc = force (force_lazy_constr lc)
 
-let opaque_from_val c = (Lazy.lazy_from_val (from_val c), [])
-
-let subst_lazy_constr sub (c,l) = (c,sub::l)
-
+let opaque_from_val c = Direct (from_val c)

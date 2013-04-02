@@ -403,8 +403,7 @@ let get_funs_constant mp dp =
   function const ->
     let find_constant_body const =
       match body_of_constant (Global.lookup_constant const) with
-	| Some b ->
-	    let body = Lazyconstr.force b in
+	| Some body ->
 	    let body = Tacred.cbv_norm_flags
 	      (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
 	      (Global.env ())

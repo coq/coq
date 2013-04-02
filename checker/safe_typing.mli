@@ -19,22 +19,6 @@ type compiled_library
 
 val set_engagement : Declarations.engagement -> unit
 val import         :
-  CUnix.physical_path -> compiled_library -> Digest.t -> unit
+  CUnix.physical_path -> compiled_library -> constr array -> Digest.t -> unit
 val unsafe_import  :
   CUnix.physical_path -> compiled_library -> Digest.t -> unit
-
-(** Store the body of modules' opaque constants inside a table. 
-
-    This module is used during the serialization and deserialization
-    of vo files. 
-*)
-module LightenLibrary :
-sig
-  type table 
-  type lightened_compiled_library 
-
-  (** [load table lcl] builds a compiled library from a
-      lightened library [lcl] by remplacing every index by its related
-      opaque terms inside [table]. *)
-  val load : table -> lightened_compiled_library -> compiled_library
-end

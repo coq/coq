@@ -41,7 +41,7 @@ let retrieve_first_recthm = function
       (pi2 (Global.lookup_named id),variable_opacity id)
   | ConstRef cst ->
       let cb = Global.lookup_constant cst in
-      (Option.map Lazyconstr.force (body_of_constant cb), is_opaque cb)
+      (body_of_constant cb, is_opaque cb)
   | _ -> assert false
 
 let adjust_guardness_conditions const = function

@@ -239,7 +239,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st (* t *) =
     in
       match Declareops.body_of_constant cb with
       | None -> do_type (Axiom kn)
-      | Some body -> do_constr (Lazyconstr.force body) s acc
+      | Some body -> do_constr body s acc
 
   and do_memoize_kn kn =
     try_and_go (Axiom kn) (add_kn kn)

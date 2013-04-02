@@ -272,6 +272,13 @@ let add_constant dir l decl senv =
       let cb = Term_typing.translate_recipe senv.env r in
       if DirPath.is_empty dir then Declareops.hcons_const_body cb else cb
   in
+  let cb = match cb.const_body with
+    | OpaqueDef lc when DirPath.is_empty dir ->
+      (* In coqc, opaque constants outside sections will be stored
+         indirectly in a specific table *)
+      { cb with const_body = OpaqueDef (Lazyconstr.turn_indirect lc) }
+    | _ -> cb
+  in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
   let senv'' = match cb.const_body with
     | Undef (Some lev) ->
@@ -766,148 +773,6 @@ let import lib digest senv =
   in
   mp, senv, lib.comp_natsymbs
 
-
- (* Store the body of modules' opaque constants inside a table.  
-
-    This module is used during the serialization and deserialization
-    of vo files. 
-
-    By adding an indirection to the opaque constant definitions, we
-    gain the ability not to load them. As these constant definitions
-    are usually big terms, we save a deserialization time as well as
-    some memory space. *)
-module LightenLibrary : sig
-  type table 
-  type lightened_compiled_library 
-  val save : compiled_library -> lightened_compiled_library * table
-  val load : load_proof:Flags.load_proofs -> table Lazy.t
-    -> lightened_compiled_library -> compiled_library
-end = struct
-
-  (* The table is implemented as an array of [constr_substituted].
-     Keys are hence integers. To avoid changing the [compiled_library]
-     type, we brutally encode integers into [lazy_constr]. This isn't
-     pretty, but shouldn't be dangerous since the produced structure
-     [lightened_compiled_library] is abstract and only meant for writing
-     to .vo via Marshal (which doesn't care about types).
-  *)
-  type table = Lazyconstr.constr_substituted array
-  let key_as_lazy_constr (i:int) = (Obj.magic i : Lazyconstr.lazy_constr)
-  let key_of_lazy_constr (c:Lazyconstr.lazy_constr) = (Obj.magic c : int)
-
-  (* To avoid any future misuse of the lightened library that could 
-     interpret encoded keys as real [constr_substituted], we hide 
-     these kind of values behind an abstract datatype. *)
-  type lightened_compiled_library = compiled_library
-
-  (* Map a [compiled_library] to another one by just updating 
-     the opaque term [t] to [on_opaque_const_body t]. *)
-  let traverse_library on_opaque_const_body =
-    let rec traverse_module mb =
-      match mb.mod_expr with 
-	  None -> 
-	    { mb with
-		mod_expr = None;
-		mod_type = traverse_modexpr mb.mod_type;
-	    }
-	| Some impl when impl == mb.mod_type-> 
-	    let mtb =  traverse_modexpr mb.mod_type in 
-	      { mb with
-		  mod_expr = Some mtb;
-		  mod_type = mtb;
-	      }    
-	| Some impl -> 
-	    { mb with
-		mod_expr = Option.map traverse_modexpr mb.mod_expr;
-		mod_type = traverse_modexpr mb.mod_type;
-	    }    
-    and traverse_struct struc =
-      let traverse_body (l,body) = (l,match body with
-	| SFBconst cb when Declareops.is_opaque cb ->
-	  SFBconst {cb with const_body = on_opaque_const_body cb.const_body}
-	| (SFBconst _ | SFBmind _ ) as x ->
-	  x
-	| SFBmodule m -> 
-	  SFBmodule (traverse_module m)
-	| SFBmodtype m -> 
-	  SFBmodtype ({m with typ_expr = traverse_modexpr m.typ_expr}))
-      in
-      List.map traverse_body struc
-	
-    and traverse_modexpr = function
-      | SEBfunctor (mbid,mty,mexpr) ->
-	SEBfunctor (mbid,
-		    ({mty with
-		      typ_expr = traverse_modexpr mty.typ_expr}),
-		    traverse_modexpr mexpr)
-      | SEBident mp as x -> x
-      | SEBstruct (struc) ->
-	SEBstruct  (traverse_struct struc)
-      | SEBapply (mexpr,marg,u) ->
-	SEBapply (traverse_modexpr mexpr,traverse_modexpr marg,u)
-      | SEBwith (seb,wdcl) ->
-	SEBwith (traverse_modexpr seb,wdcl)
-    in
-    fun clib -> { clib with comp_mod = traverse_module clib.comp_mod }
-
-  (* To disburden a library from opaque definitions, we simply 
-     traverse it and add an indirection between the module body 
-     and its reference to a [const_body]. *)
-  let save library = 
-    let ((insert    : constant_def -> constant_def),
-	 (get_table : unit -> table)) = 
-      (* We use an integer as a key inside the table. *)
-      let counter = ref (-1) in
-
-      (* During the traversal, the table is implemented by a list 
-	 to get constant time insertion. *)
-      let opaque_definitions = ref [] in
-      
-      ((* Insert inside the table. *) 
-	(fun def ->
-	  let opaque_definition = match def with
-	    | OpaqueDef lc -> Lazyconstr.force_lazy_constr lc
-	    | _ -> assert false
-	  in
-	  incr counter;
-	  opaque_definitions := opaque_definition :: !opaque_definitions;
-	  OpaqueDef (key_as_lazy_constr !counter)),
-
-       (* Get the final table representation. *)
-       (fun () -> Array.of_list (List.rev !opaque_definitions)))
-    in
-    let lightened_library = traverse_library insert library in
-    (lightened_library, get_table ())
-
-  (* Loading is also a traversing that decodes the embedded keys that
-     are inside the [lightened_library]. If the [load_proof] flag is
-     set, we lookup inside the table to graft the
-     [constr_substituted]. Otherwise, we set the [const_body] field
-     to [None]. 
-  *)
-  let load ~load_proof (table : table Lazy.t) lightened_library =
-    let decode_key = function
-      | Undef _ | Def _ -> assert false
-      | OpaqueDef k ->
-	  let k = key_of_lazy_constr k in
-	  let access key =
-	    try (Lazy.force table).(key)
-	    with e when Errors.noncritical e ->
-              error "Error while retrieving an opaque body"
-	  in
-	  match load_proof with
-	    | Flags.Force ->
-	      let lc = Lazy.lazy_from_val (access k) in
-	      OpaqueDef (Lazyconstr.make_lazy_constr lc)
-	    | Flags.Lazy ->
-	      let lc = lazy (access k) in
-	      OpaqueDef (Lazyconstr.make_lazy_constr lc)
-	    | Flags.Dont ->
-	      Undef None
-    in
-    traverse_library decode_key lightened_library
-
-end
 
 type judgment = unsafe_judgment
 

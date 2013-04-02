@@ -8,7 +8,6 @@
 
 open Declarations
 open Mod_subst
-open Lazyconstr
 
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
@@ -18,13 +17,14 @@ open Lazyconstr
 val subst_const_def : substitution -> constant_def -> constant_def
 val subst_const_body : substitution -> constant_body -> constant_body
 
-(** Is there a actual body in const_body or const_body_opaque ? *)
+(** Is there a actual body in const_body ? *)
 
 val constant_has_body : constant_body -> bool
 
-(** Accessing const_body_opaque or const_body *)
+(** Accessing const_body, forcing access to opaque proof term if needed.
+    Only use this function if you know what you're doing. *)
 
-val body_of_constant : constant_body -> constr_substituted option
+val body_of_constant : constant_body -> Term.constr option
 
 val is_opaque : constant_body -> bool
 

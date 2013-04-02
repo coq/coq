@@ -59,117 +59,19 @@ let check_imports f caller env needed =
   in
   Array.iter check needed
 
+type nativecode_symb_array
 
 type compiled_library =
     DirPath.t *
     module_body *
     (DirPath.t * Digest.t) array *
-    engagement option
-
- (* Store the body of modules' opaque constants inside a table.  
-
-    This module is used during the serialization and deserialization
-    of vo files. 
-
-    By adding an indirection to the opaque constant definitions, we
-    gain the ability not to load them. As these constant definitions
-    are usually big terms, we save a deserialization time as well as
-    some memory space. *)
-module LightenLibrary : sig
-  type table 
-  type lightened_compiled_library 
-  val load : table -> lightened_compiled_library -> compiled_library
-end = struct
-
-  (* The table is implemented as an array of [constr_substituted].
-     Keys are hence integers. To avoid changing the [compiled_library]
-     type, we brutally encode integers into [lazy_constr]. This isn't
-     pretty, but shouldn't be dangerous since the produced structure
-     [lightened_compiled_library] is abstract and only meant for writing
-     to .vo via Marshal (which doesn't care about types).
-  *)
-  type table = constr_substituted array
-  let key_of_lazy_constr (c:lazy_constr) = (Obj.magic c : int)
-
-  (* To avoid any future misuse of the lightened library that could 
-     interpret encoded keys as real [constr_substituted], we hide 
-     these kind of values behind an abstract datatype. *)
-  type lightened_compiled_library = compiled_library
-
-  (* Map a [compiled_library] to another one by just updating 
-     the opaque term [t] to [on_opaque_const_body t]. *)
-  let traverse_library on_opaque_const_body =
-    let rec traverse_module mb =
-      match mb.mod_expr with 
-	  None -> 
-	    { mb with
-		mod_expr = None;
-		mod_type = traverse_modexpr mb.mod_type;
-	    }
-	| Some impl when impl == mb.mod_type-> 
-	    let mtb =  traverse_modexpr mb.mod_type in 
-	      { mb with
-		  mod_expr = Some mtb;
-		  mod_type = mtb;
-	      }    
-	| Some impl -> 
-	    { mb with
-		mod_expr = Option.map traverse_modexpr mb.mod_expr;
-		mod_type = traverse_modexpr mb.mod_type;
-	    }    
-    and traverse_struct struc =
-      let traverse_body (l,body) = (l,match body with
-	| (SFBconst cb) when is_opaque cb ->
-	  SFBconst {cb with const_body = on_opaque_const_body cb.const_body}
-	| (SFBconst _ | SFBmind _ ) as x -> 
-	  x
-	| SFBmodule m -> 
-	  SFBmodule (traverse_module m)
-	| SFBmodtype m -> 
-	  SFBmodtype ({m with typ_expr = traverse_modexpr m.typ_expr}))
-      in
-      List.map traverse_body struc
-	
-    and traverse_modexpr = function
-      | SEBfunctor (mbid,mty,mexpr) ->
-	SEBfunctor (mbid,
-		    ({mty with
-		      typ_expr = traverse_modexpr mty.typ_expr}),
-		    traverse_modexpr mexpr)
-      | SEBident mp as x -> x
-      | SEBstruct (struc) ->
-	SEBstruct  (traverse_struct struc)
-      | SEBapply (mexpr,marg,u) ->
-	SEBapply (traverse_modexpr mexpr,traverse_modexpr marg,u)
-      | SEBwith (seb,wdcl) ->
-	SEBwith (traverse_modexpr seb,wdcl)
-    in
-    fun (dp,mb,depends,s) -> (dp,traverse_module mb,depends,s) 
-
-  (* Loading is also a traversing that decodes the embedded keys that
-     are inside the [lightened_library]. If the [load_proof] flag is
-     set, we lookup inside the table to graft the
-     [constr_substituted]. Otherwise, we set the [const_body] field
-     to [None]. 
-  *)
-  let load table lightened_library =
-    let decode_key = function
-      | Undef _ | Def _ -> assert false
-      | OpaqueDef k ->
-          let k = key_of_lazy_constr k in
-	  let body =
-	    try table.(k)
-	    with _ -> error "Error while retrieving an opaque body"
-	  in
-	  OpaqueDef (lazy_constr_from_val body)
-    in
-    traverse_library decode_key lightened_library
-
-end
+    engagement option *
+    nativecode_symb_array
 
 open Validate
 let val_deps = val_array (val_tuple ~name:"dep"[|val_dp;no_val|])
-let val_vo = val_tuple ~name:"vo" [|val_dp;val_module;val_deps;val_opt val_eng|]
+let val_vo = val_tuple ~name:"vo"
+  [|val_dp;val_module;val_deps;val_opt val_eng; no_val|]
 
 (* This function should append a certificate to the .vo file.
    The digest must be part of the certicate to rule out attackers
@@ -180,8 +82,9 @@ let stamp_library file digest = ()
 
 (* When the module is checked, digests do not need to match, but a
    warning is issued in case of mismatch *)
-let import file (dp,mb,depends,engmt as vo) digest =
+let import file (dp,mb,depends,engmt,_ as vo) table digest =
   Validate.apply !Flags.debug val_vo vo;
+  Validate.apply !Flags.debug (val_array Term.val_constr) table;
   Flags.if_verbose ppnl (str "*** vo structure validated ***"); pp_flush ();
   let env = !genv in
   check_imports msg_warning dp env depends;
@@ -193,7 +96,7 @@ let import file (dp,mb,depends,engmt as vo) digest =
   full_add_module dp mb digest
 
 (* When the module is admitted, digests *must* match *)
-let unsafe_import file (dp,mb,depends,engmt as vo) digest =
+let unsafe_import file (dp,mb,depends,engmt,_ as vo) digest =
   if !Flags.debug then ignore vo; (*Validate.apply !Flags.debug val_vo vo;*)
   let env = !genv in
   check_imports (errorlabstrm"unsafe_import") dp env depends;

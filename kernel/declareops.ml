@@ -18,8 +18,8 @@ open Util
 
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
-  | Def c -> Some c
-  | OpaqueDef lc -> Some (force_lazy_constr lc)
+  | Def c -> Some (Lazyconstr.force c)
+  | OpaqueDef lc -> Some (Lazyconstr.force_opaque lc)
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false
@@ -84,14 +84,8 @@ let hcons_const_type = function
 
 let hcons_const_def = function
   | Undef inl -> Undef inl
-  | Def l_constr ->
-    let constr = force l_constr in
-    Def (from_val (Term.hcons_constr constr))
-  | OpaqueDef lc ->
-    if lazy_constr_is_val lc then
-      let constr = force_opaque lc in
-      OpaqueDef (opaque_from_val (Term.hcons_constr constr))
-    else OpaqueDef lc
+  | Def cs -> Def (from_val (Term.hcons_constr (Lazyconstr.force cs)))
+  | OpaqueDef lc -> OpaqueDef (Lazyconstr.hcons_lazy_constr lc)
 
 let hcons_const_body cb =
   { cb with

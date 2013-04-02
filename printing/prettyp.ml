@@ -400,7 +400,7 @@ let gallina_print_section_variable id =
   with_line_skip (print_name_infos (VarRef id))
 
 let print_body = function
-  | Some lc  -> pr_lconstr (Lazyconstr.force lc)
+  | Some c  -> pr_lconstr c
   | None -> (str"<no body>")
 
 let print_typed_body (val_0,typ) =

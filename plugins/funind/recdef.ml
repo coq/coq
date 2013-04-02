@@ -69,7 +69,7 @@ let def_of_const t =
    match (kind_of_term t) with
     Const sp ->
       (try (match body_of_constant (Global.lookup_constant sp) with
-             | Some c -> Lazyconstr.force c
+             | Some c -> c
 	     | _ -> raise Not_found)
        with Not_found ->
 	 anomaly (str "Cannot find definition of constant " ++

@@ -116,7 +116,7 @@ let def_of_const t =
    match (Term.kind_of_term t) with
     Term.Const sp ->
       (try (match Declareops.body_of_constant (Global.lookup_constant sp) with
-             | Some c -> Lazyconstr.force c
+             | Some c -> c
 	     | _ -> assert false)
        with Not_found -> assert false)
     |_ -> assert false
