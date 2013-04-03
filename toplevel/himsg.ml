@@ -775,10 +775,10 @@ let pr_constraints printenv env evm =
 
 let explain_unsatisfiable_constraints env evd constr =
   let evm = Evd.undefined_evars (Evarutil.nf_evar_map_undefined evd) in
-  (* Remove goal evars *)
+  (* Remove evars that are not subject to resolution. *)
   let undef = fold_undefined 
     (fun ev evi evm' -> 
-       if is_goal_evar evi then Evd.remove evm' ev else evm') evm evm
+       if not (Typeclasses.is_resolvable evi) then Evd.remove evm' ev else evm') evm evm
   in
   match constr with
   | None ->

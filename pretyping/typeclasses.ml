@@ -513,13 +513,6 @@ let mark_resolvability b sigma =
 let mark_unresolvables sigma = mark_resolvability false sigma
 let mark_resolvables sigma = mark_resolvability true sigma
 
-let has_typeclasses evd =
-  Evd.fold_undefined (fun ev evi has -> has ||
-    (is_class_evar evd evi && is_resolvable evi))
-    evd false
-
-let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)
-
 open Evar_kinds
 type evar_filter = Evar_kinds.t -> bool
 
@@ -529,6 +522,13 @@ let no_goals_or_obligations = function
   | GoalEvar | QuestionMark _ -> false
   | _ -> true
 
+let has_typeclasses filter evd =
+  Evd.fold_undefined (fun ev evi has -> has ||
+    (filter (snd evi.evar_source) && is_class_evar evd evi && is_resolvable evi))
+    evd false
+
+let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)
+
 let resolve_typeclasses ?(filter=no_goals) ?(split=true) ?(fail=true) env evd =
-  if not (has_typeclasses evd) then evd
+  if not (has_typeclasses filter evd) then evd
   else !solve_instanciations_problem env evd filter split fail
