@@ -628,6 +628,9 @@ let constr_ord_int f t1 t2 =
   let (==?) fg h i1 i2 j1 j2 k1 k2=
     let c=fg i1 i2 j1 j2 in
     if Int.equal c 0 then h k1 k2 else c in
+  let fix_cmp (a1, i1) (a2, i2) =
+    ((Array.compare Int.compare) =? Int.compare) a1 a2 i1 i2
+  in
   match kind_of_term t1, kind_of_term t2 with
     | Rel n1, Rel n2 -> Int.compare n1 n2
     | Meta m1, Meta m2 -> Int.compare m1 m2
@@ -651,10 +654,10 @@ let constr_ord_int f t1 t2 =
     | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
 	((f =? f) ==? (Array.compare f)) p1 p2 c1 c2 bl1 bl2
     | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
-	((Pervasives.compare =? (Array.compare f)) ==? (Array.compare f))
+	((fix_cmp =? (Array.compare f)) ==? (Array.compare f))
 	ln1 ln2 tl1 tl2 bl1 bl2
     | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-	((Pervasives.compare =? (Array.compare f)) ==? (Array.compare f))
+	((Int.compare =? (Array.compare f)) ==? (Array.compare f))
 	ln1 ln2 tl1 tl2 bl1 bl2
     | t1, t2 -> Pervasives.compare t1 t2
 
