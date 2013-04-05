@@ -52,6 +52,7 @@ let rec catchable_exception = function
 		   |NoOccurrenceFound _|CannotUnifyBindingType _
 		   |ActualTypeNotCoercible _|UnifOccurCheck _
                    |CannotFindWellTypedAbstraction _
+		   |WrongAbstractionType _
 		   |UnsolvableImplicit _|AbstractionOverMeta _)) -> true
   | Typeclasses_errors.TypeClassError
       (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true
