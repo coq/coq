@@ -3,6 +3,7 @@ Option
 Store
 Exninfo
 Backtrace
+IArray
 Pp_control
 Pp
 Coq_config
