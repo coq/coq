@@ -236,15 +236,27 @@ let register_general_rewrite_clause = (:=) general_rewrite_clause
 let is_applied_rewrite_relation = ref (fun _ _ _ _ -> None)
 let register_is_applied_rewrite_relation = (:=) is_applied_rewrite_relation
 
+(* Do we have a JMeq instance on twice the same domains ? *)
+
+let jmeq_same_dom gl = function
+  | None -> true (* already checked in Hipattern.find_eq_data_decompose *)
+  | Some t ->
+    let rels, t = decompose_prod_assum t in
+    let env = Environ.push_rel_context rels (pf_env gl) in
+    match decompose_app t with
+      | _, [dom1; _; dom2;_] -> is_conv env (project gl) dom1 dom2
+      | _ -> false
+
 (* find_elim determines which elimination principle is necessary to
    eliminate lbeq on sort_of_gl. *)
 
-let find_elim hdcncl lft2rgt dep cls args gl =
-  let inccl = (cls = None) in
-  if (eq_constr hdcncl (constr_of_reference (Coqlib.glob_eq)) ||
-      eq_constr hdcncl (constr_of_reference (Coqlib.glob_jmeq)) &&
-      pf_conv_x gl (List.nth args 0) (List.nth args 2)) && not dep
-    || Flags.version_less_or_equal Flags.V8_2
+let find_elim hdcncl lft2rgt dep cls ot gl =
+  let inccl = not (Option.has_some cls) in
+  let hdcncl_is u = eq_constr hdcncl (constr_of_reference u) in
+  if (hdcncl_is (Coqlib.glob_eq) ||
+      hdcncl_is (Coqlib.glob_jmeq) && jmeq_same_dom gl ot)
+     && not dep
+     || Flags.version_less_or_equal Flags.V8_2
   then
     match kind_of_term hdcncl with 
       | Ind ind_sp -> 
@@ -295,7 +307,7 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars frze
   let isatomic = isProd (whd_zeta hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let dep = dep_proof_ok && dep_fun c (type_of_clause gl cls) in
-  let elim = find_elim hdcncl lft2rgt dep cls (snd (decompose_app t)) gl in
+  let elim = find_elim hdcncl lft2rgt dep cls (Some t) gl in
   general_elim_clause with_evars frzevars tac cls sigma c t l
     (match lft2rgt with None -> false | Some b -> b)
     {elimindex = None; elimbody = (elim,NoBindings)} gl
@@ -1208,7 +1220,7 @@ let swapEquandsInConcl gls =
 
 let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
   (* find substitution scheme *)
-  let eq_elim = find_elim lbeq.eq (Some false) false None [e1;e2] gls in
+  let eq_elim = find_elim lbeq.eq (Some false) false None None gls in
   (* build substitution predicate *)
   let p = lambda_create (pf_env gls) (t,body) in
   (* apply substitution scheme *)
