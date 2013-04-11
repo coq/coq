@@ -559,14 +559,18 @@ and solve_prg_obligations prg ?oblset tac =
   let obls, rem = prg.prg_obligations in
   let rem = ref rem in
   let obls' = Array.copy obls in
+  let set = ref Intset.empty in
   let p = match oblset with
     | None -> (fun _ -> true)
-    | Some s -> (fun i -> Intset.mem i s)
+    | Some s -> set := s;
+      (fun i -> Intset.mem i !set)
   in
   let _ =
     Array.iteri (fun i x ->
-		 if p i && solve_obligation_by_tac prg obls' i tac then
-		   decr rem)
+      if p i && solve_obligation_by_tac prg obls' i tac then
+	let deps = dependencies obls i in
+	  (set := Intset.union !set deps;
+	   decr rem))
       obls'
   in
     update_obls prg obls' !rem
