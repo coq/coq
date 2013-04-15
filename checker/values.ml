@@ -8,7 +8,14 @@
 
 (** Abstract representations of values in a vo *)
 
-(** NB: UPDATE THIS FILE EACH TIME cic.mli IS MODIFIED ! *)
+(** NB: UPDATE THIS FILE EACH TIME cic.mli IS MODIFIED !
+
+To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
+with a copy we maintain here:
+
+MD5 9a9abd32a97761c8de8902f314cb0649  checker/cic.mli
+
+*)
 
 (** We reify here the types of values present in a vo (see cic.mli),
     in order to validate its structure. Maybe this reification
@@ -274,7 +281,7 @@ let v_libobj = Tuple ("libobj", [|v_id;v_obj|])
 let v_libobjs = List v_libobj
 let v_libraryobjs = Tuple ("library_objects",[|v_mp;v_libobjs;v_libobjs|])
 
-(** Main structures of a vo *)
+(** Toplevel structures in a vo (see Cic.mli) *)
 
 let v_lib =
   Tuple ("library",[|v_dp;v_compiled_lib;v_libraryobjs;v_deps;Array v_dp|])
