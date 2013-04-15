@@ -331,12 +331,40 @@ and module_type_body =
 
 type nativecode_symb_array
 
-type library_info = DirPath.t * Digest.t
+type compilation_unit_name = DirPath.t
+
+type library_info = compilation_unit_name * Digest.t
+
+type library_deps = library_info array
 
 type compiled_library = {
-  comp_name : DirPath.t;
+  comp_name : compilation_unit_name;
   comp_mod : module_body;
-  comp_deps : library_info array;
+  comp_deps : library_deps;
   comp_enga : engagement option;
   comp_natsymbs : nativecode_symb_array
 }
+
+
+(*************************************************************************)
+(** {4 From library.ml} *)
+
+type library_objects
+
+type library_disk = {
+  md_name : compilation_unit_name;
+  md_compiled : compiled_library;
+  md_objects : library_objects;
+  md_deps : library_deps;
+  md_imports : compilation_unit_name array }
+
+type opaque_table = constr array
+
+(** A .vo file is currently made of :
+
+    1) a magic number
+    2) a marshalled [library_disk] structure
+    3) a marshalled [Digest.t] string
+    4) a marshalled [opaque_table]
+    5) a marshalled [Digest.t] string
+*)

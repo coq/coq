@@ -267,14 +267,16 @@ let v_deps = Array (v_tuple "dep" [|v_dp;String|])
 let v_compiled_lib =
   v_tuple "compiled" [|v_dp;v_module;v_deps;Opt v_engagement;Any|]
 
-(** Library objects (unused by the checker) *)
+(** Library objects *)
 
 let v_obj = Tuple ("Dyn.t",[|String;Any|])
 let v_libobj = Tuple ("libobj", [|v_id;v_obj|])
 let v_libobjs = List v_libobj
 let v_libraryobjs = Tuple ("library_objects",[|v_mp;v_libobjs;v_libobjs|])
 
-(** Main structure of a vo (opaque tables left aside) *)
+(** Main structures of a vo *)
 
 let v_lib =
-  Tuple ("library",[|v_dp;v_compiled_lib;v_libraryobjs;v_deps; List v_dp|])
+  Tuple ("library",[|v_dp;v_compiled_lib;v_libraryobjs;v_deps;Array v_dp|])
+
+let v_opaques = Array v_constr

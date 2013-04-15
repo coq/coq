@@ -34,30 +34,17 @@ let pr_path sp =
       [] -> str sp.basename
     | sl -> pr_dirlist sl ++ str"." ++ str sp.basename
 
-type library_objects
-
-type compilation_unit_name = DirPath.t
-
-type library_disk = {
-  md_name : compilation_unit_name;
-  md_compiled : Cic.compiled_library;
-  md_objects : library_objects;
-  md_deps : (compilation_unit_name * Digest.t) array;
-  md_imports : compilation_unit_name array }
-
 (************************************************************************)
-(*s Modules on disk contain the following informations (after the magic
-    number, and before the digest). *)
 
 (*s Modules loaded in memory contain the following informations. They are
     kept in the global table [libraries_table]. *)
 
 type library_t = {
-  library_name : compilation_unit_name;
+  library_name : Cic.compilation_unit_name;
   library_filename : CUnix.physical_path;
   library_compiled : Cic.compiled_library;
-  library_opaques : Cic.constr array;
-  library_deps : (compilation_unit_name * Digest.t) array;
+  library_opaques : Cic.opaque_table;
+  library_deps : Cic.library_deps;
   library_digest : Digest.t }
 
 module LibraryOrdered =
@@ -119,7 +106,7 @@ let check_one_lib admit (dir,m) =
   else
     (Flags.if_verbose ppnl
       (str "Checking library: " ++ pr_dirpath dir);
-      Safe_typing.import file md m.library_opaques dig);
+      Safe_typing.import file md dig);
   Flags.if_verbose pp (fnl());
   pp_flush ();
   register_loaded_library m
@@ -291,6 +278,8 @@ let with_magic_number_check f a =
 (************************************************************************)
 (* Internalise libraries *)
 
+open Cic
+
 let mk_library md f table digest = {
   library_name = md.md_name;
   library_filename = f;
@@ -312,9 +301,9 @@ let intern_from_file (dir, f) =
   let (md,table,digest) =
     try
       let ch = with_magic_number_check raw_intern_library f in
-      let (md:library_disk) = System.marshal_in f ch in
+      let (md:Cic.library_disk) = System.marshal_in f ch in
       let (digest:Digest.t) = System.marshal_in f ch in
-      let (table:Cic.constr array) = System.marshal_in f ch in
+      let (table:Cic.opaque_table) = System.marshal_in f ch in
       (* Verification of the final checksum *)
       let pos = pos_in ch in
       let (checksum:Digest.t) = System.marshal_in f ch in
@@ -326,7 +315,10 @@ let intern_from_file (dir, f) =
       if dir <> md.md_name then
         errorlabstrm "intern_from_file"
           (name_clash_message dir md.md_name f);
-      Flags.if_verbose ppnl (str" done]");
+      (* Verification of the unmarshalled values *)
+      Validate.validate !Flags.debug Values.v_lib md;
+      Validate.validate !Flags.debug Values.v_opaques table;
+      Flags.if_verbose ppnl (str" done]"); pp_flush ();
       md,table,digest
     with e -> Flags.if_verbose ppnl (str" failed!]"); raise e in
   depgraph := LibraryMap.add md.md_name md.md_deps !depgraph;

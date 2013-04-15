@@ -16,6 +16,6 @@ val get_env : unit -> env
 
 val set_engagement : engagement -> unit
 val import         :
-  CUnix.physical_path -> compiled_library -> constr array -> Digest.t -> unit
+  CUnix.physical_path -> compiled_library -> Digest.t -> unit
 val unsafe_import  :
   CUnix.physical_path -> compiled_library -> Digest.t -> unit

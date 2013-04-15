@@ -39,9 +39,9 @@ Typeops
 Indtypes
 Subtyping
 Mod_checking
+Safe_typing
 Values
 Validate
-Safe_typing
 Check
 Check_stat
 Checker

@@ -60,8 +60,6 @@ let check_imports f caller env needed =
   in
   Array.iter check needed
 
-open Validate
-
 (* This function should append a certificate to the .vo file.
    The digest must be part of the certicate to rule out attackers
    that could change the .vo file between the time it was read and
@@ -71,10 +69,7 @@ let stamp_library file digest = ()
 
 (* When the module is checked, digests do not need to match, but a
    warning is issued in case of mismatch *)
-let import file clib table digest =
-  Validate.validate !Flags.debug Values.v_compiled_lib clib;
-  Validate.validate !Flags.debug (Values.Array Values.v_constr) table;
-  Flags.if_verbose ppnl (str "*** vo structure validated ***"); pp_flush ();
+let import file clib digest =
   let env = !genv in
   check_imports msg_warning clib.comp_name env clib.comp_deps;
   check_engagement env clib.comp_enga;
