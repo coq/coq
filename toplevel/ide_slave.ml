@@ -74,12 +74,12 @@ let coqide_known_option table = List.mem table [
   ["Printing";"Universes"]]
 
 let is_known_option cmd = match cmd with
-  | VernacSetOption (_,o,BoolValue true)
-  | VernacUnsetOption (_,o) -> coqide_known_option o
+  | VernacSetOption (o,BoolValue true)
+  | VernacUnsetOption o -> coqide_known_option o
   | _ -> false
 
 let is_debug cmd = match cmd with
-  | VernacSetOption (_,["Ltac";"Debug"], _) -> true
+  | VernacSetOption (["Ltac";"Debug"], _) -> true
   | _ -> false
 
 let is_query cmd = match cmd with

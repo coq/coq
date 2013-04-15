@@ -8,30 +8,27 @@
 
 (** * Managing locality *)
 
-let locality_flag = ref None
-
 let local_of_bool = function
   | true -> Decl_kinds.Local
   | false -> Decl_kinds.Global
 
-let check_locality () =
-  match !locality_flag with
-  | Some (loc,b) ->
+let check_locality locality_flag =
+  match locality_flag with
+  | Some b ->
     let s = if b then "Local" else "Global" in
-    Errors.user_err_loc
-      (loc,"",Pp.str ("This command does not support the \""^s^"\" prefix."))
+    Errors.error ("This command does not support the \""^s^"\" prefix.")
   | None -> ()
 
 (** Extracting the locality flag *)
 
 (* Commands which supported an inlined Local flag *)
 
-let enforce_locality_full local =
+let enforce_locality_full locality_flag local =
   let local =
-    match !locality_flag with
-    | Some (_,false) when local ->
+    match locality_flag with
+    | Some false when local ->
 	Errors.error "Cannot be simultaneously Local and Global."
-    | Some (_,true) when local ->
+    | Some true when local ->
 	Errors.error "Use only prefix \"Local\"."
     | None ->
 	if local then begin
@@ -40,17 +37,8 @@ let enforce_locality_full local =
 	  Some true
 	end else
 	None
-    | Some (_,b) -> Some b in
-  locality_flag := None;
+    | Some b -> Some b in
   local
-
-(* Commands which did not supported an inlined Local flag (synonym of
-   [enforce_locality_full false]) *)
-
-let use_locality_full () =
-  let r = Option.map snd !locality_flag in
-  locality_flag := None;
-   r
 
 (** Positioning locality for commands supporting discharging and export
      outside of modules *)
@@ -59,23 +47,19 @@ let use_locality_full () =
    Global is the default and is neutral;
    Local in a section deactivates discharge,
    Local not in a section deactivates export *)
+let make_non_locality = function Some false -> false | _ -> true
 
 let make_locality = function Some true -> true | _ -> false
 
-let use_locality () = make_locality (use_locality_full ())
+let enforce_locality locality_flag local =
+   make_locality (enforce_locality_full locality_flag local)
 
-let use_locality_exp () = local_of_bool (use_locality ())
-
-let enforce_locality local = make_locality (enforce_locality_full local)
-
-let enforce_locality_exp local = local_of_bool (enforce_locality local)
-
-(* For commands whose default is not to discharge and not to export:
-   Global forces discharge and export;
-   Local is the default and is neutral *)
-
-let use_non_locality () =
-  match use_locality_full () with Some false -> false | _ -> true
+let enforce_locality_exp locality_flag local =
+  match locality_flag, local with
+  | None, Some local -> local
+  | Some b, None -> local_of_bool b
+  | None, None -> Decl_kinds.Global
+  | Some _, Some _ -> Errors.error "Local non allowed in this case"
 
 (* For commands whose default is to not discharge but to export:
    Global in sections forces discharge, Global not in section is the default;
@@ -84,11 +68,8 @@ let use_non_locality () =
 let make_section_locality =
   function Some b -> b | None -> Lib.sections_are_opened ()
 
-let use_section_locality () =
-  make_section_locality (use_locality_full ())
-
-let enforce_section_locality local =
-  make_section_locality (enforce_locality_full local)
+let enforce_section_locality locality_flag local =
+  make_section_locality (enforce_locality_full locality_flag local)
 
 (** Positioning locality for commands supporting export but not discharge *)
 
@@ -105,8 +86,15 @@ let make_module_locality = function
   | Some true -> true
   | None -> false
 
-let use_module_locality () =
-  make_module_locality (use_locality_full ())
+let enforce_module_locality locality_flag local =
+  make_module_locality (enforce_locality_full locality_flag local)
 
-let enforce_module_locality local =
-  make_module_locality (enforce_locality_full local)
+module LocalityFixme = struct
+  let locality = ref None
+  let set l = locality := l
+  let consume () =
+    let l = !locality in
+    locality := None;
+    l
+  let assert_consumed () = check_locality !locality
+end

@@ -8,19 +8,9 @@
 
 (** * Managing locality *)
 
-val locality_flag : (Loc.t * bool) option ref
-val check_locality : unit -> unit
-
-(** * Extracting the locality flag *)
-
 (** Commands which supported an inlined Local flag *)
 
-val enforce_locality_full : bool -> bool option
-
-(** Commands which did not supported an inlined Local flag
-    (synonym of [enforce_locality_full false]) *)
-
-val use_locality_full : unit -> bool option
+val enforce_locality_full : bool option -> bool -> bool option
 
 (** * Positioning locality for commands supporting discharging and export
     outside of modules *)
@@ -31,24 +21,17 @@ val use_locality_full : unit -> bool option
     Local not in a section deactivates export *)
 
 val make_locality : bool option -> bool
-val use_locality : unit -> bool
-val use_locality_exp : unit -> Decl_kinds.locality
-val enforce_locality : bool -> bool
-val enforce_locality_exp : bool -> Decl_kinds.locality
-
-(** For commands whose default is not to discharge and not to export:
-    Global forces discharge and export;
-    Local is the default and is neutral *)
-
-val use_non_locality : unit -> bool
+val make_non_locality : bool option -> bool
+val enforce_locality : bool option -> bool -> bool
+val enforce_locality_exp :
+  bool option -> Decl_kinds.locality option -> Decl_kinds.locality
 
 (** For commands whose default is to not discharge but to export:
     Global in sections forces discharge, Global not in section is the default;
     Local in sections is the default, Local not in section forces non-export *)
 
 val make_section_locality : bool option -> bool
-val use_section_locality : unit -> bool
-val enforce_section_locality : bool -> bool
+val enforce_section_locality : bool option -> bool -> bool
 
 (** * Positioning locality for commands supporting export but not discharge *)
 
@@ -57,5 +40,12 @@ val enforce_section_locality : bool -> bool
     Local in sections is the default, Local not in section forces non-export *)
 
 val make_module_locality : bool option -> bool
-val use_module_locality : unit -> bool
-val enforce_module_locality : bool -> bool
+val enforce_module_locality : bool option -> bool -> bool
+
+(* This is the old imperative interface that is still used for
+ * VernacExtend vernaculars.  Time permitting this could be trashed too *)
+module LocalityFixme : sig
+  val set : bool option -> unit
+  val consume : unit -> bool option
+  val assert_consumed : unit -> unit
+end

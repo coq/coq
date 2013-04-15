@@ -84,11 +84,6 @@ let auto_intros = ref true
 let make_auto_intros flag = auto_intros := flag
 let is_auto_intros () = version_strictly_greater V8_2 && !auto_intros
 
-(** [program_cmd] indicates that the current command is a Program one.
-    [program_mode] tells that Program mode has been activated, either
-    globally via [Set Program] or locally via the Program command prefix. *)
-
-let program_cmd = ref false
 let program_mode = ref false
 let is_program_mode () = !program_mode
 

@@ -52,11 +52,6 @@ val is_auto_intros : unit -> bool
 val make_term_color : bool -> unit
 val is_term_color : unit -> bool
 
-(** [program_cmd] indicates that the current command is a Program one.
-    [program_mode] tells that Program mode has been activated, either
-    globally via [Set Program] or locally via the Program command prefix. *)
-
-val program_cmd : bool ref
 val program_mode : bool ref
 val is_program_mode : unit -> bool
 

@@ -121,18 +121,21 @@ type search_restriction =
 type rec_flag       = bool (* true = Rec;           false = NoRec          *)
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
 type opacity_flag   = bool (* true = Opaque;        false = Transparent    *)
-type locality_flag  = bool (* true = Local;         false = Global         *)
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option
   (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
 type export_flag    = bool (* true = Export;        false = Import         *)
 type inductive_flag = Decl_kinds.recursivity_kind
 type infer_flag     = bool (* true = try to Infer record; false = nothing  *)
-type full_locality_flag = bool option (* true = Local; false = Global      *)
 type onlyparsing_flag = Flags.compat_version option
  (* Some v = Parse only;  None = Print also.
     If v<>Current, it contains the name of the coq version
     which this notation is trying to be compatible with *)
+type locality_flag  = bool (* true = Local *)
+type obsolete_locality = bool
+(* Some grammar entries use obsolete_locality.  This bool is to be backward
+ * compatible.  If the grammar is fixed removing deprecated syntax, this
+ * bool should go away too *)
 
 type option_value = Interface.option_value =
   | BoolValue of bool
@@ -249,28 +252,33 @@ type vernac_expr =
 
   (* Syntax *)
   | VernacTacticNotation of
-      locality_flag * int * grammar_tactic_prod_item_expr list * raw_tactic_expr
-  | VernacSyntaxExtension of locality_flag * (lstring * syntax_modifier list)
-  | VernacOpenCloseScope of (locality_flag * bool * scope_name)
+      int * grammar_tactic_prod_item_expr list * raw_tactic_expr
+  | VernacSyntaxExtension of
+      obsolete_locality * (lstring * syntax_modifier list)
+  | VernacOpenCloseScope of obsolete_locality * (bool * scope_name)
   | VernacDelimiters of scope_name * string
   | VernacBindScope of scope_name * reference or_by_notation list
-  | VernacInfix of locality_flag * (lstring * syntax_modifier list) *
+  | VernacInfix of obsolete_locality * (lstring * syntax_modifier list) *
       constr_expr * scope_name option
   | VernacNotation of
-      locality_flag * constr_expr * (lstring * syntax_modifier list) *
+      obsolete_locality * constr_expr * (lstring * syntax_modifier list) *
       scope_name option
 
   (* Gallina *)
-  | VernacDefinition of definition_kind * lident * definition_expr
+  | VernacDefinition of
+      (locality option * definition_object_kind) * lident * definition_expr
   | VernacStartTheoremProof of theorem_kind *
       (lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)) list *
         bool
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
-  | VernacAssumption of assumption_kind * inline * simple_binder with_coercion list
+  | VernacAssumption of (locality option * assumption_object_kind) *
+      inline * simple_binder with_coercion list
   | VernacInductive of inductive_flag * infer_flag * (inductive_expr * decl_notation list) list
-  | VernacFixpoint of locality * (fixpoint_expr * decl_notation list) list
-  | VernacCoFixpoint of locality * (cofixpoint_expr * decl_notation list) list
+  | VernacFixpoint of
+      locality option * (fixpoint_expr * decl_notation list) list
+  | VernacCoFixpoint of
+      locality option * (cofixpoint_expr * decl_notation list) list
   | VernacScheme of (lident option * scheme) list
   | VernacCombinedScheme of lident * lident list
 
@@ -281,15 +289,14 @@ type vernac_expr =
       export_flag option * lreference list
   | VernacImport of export_flag * lreference list
   | VernacCanonical of reference or_by_notation
-  | VernacCoercion of locality_flag * reference or_by_notation *
+  | VernacCoercion of obsolete_locality * reference or_by_notation *
       class_rawexpr * class_rawexpr
-  | VernacIdentityCoercion of locality_flag * lident *
+  | VernacIdentityCoercion of obsolete_locality * lident *
       class_rawexpr * class_rawexpr
 
   (* Type classes *)
   | VernacInstance of
       bool * (* abstract instance *)
-      bool * (* global *)
       local_binder list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
 	constr_expr option * (* props *)
@@ -297,8 +304,7 @@ type vernac_expr =
 
   | VernacContext of local_binder list
 
-  | VernacDeclareInstances of
-      bool (* global *) * reference list (* instance names *)
+  | VernacDeclareInstances of reference list (* instance names *)
 
   | VernacDeclareClass of reference (* inductive or definition name *)
 
@@ -321,7 +327,7 @@ type vernac_expr =
   | VernacAddLoadPath of rec_flag * string * DirPath.t option
   | VernacRemoveLoadPath of string
   | VernacAddMLPath of rec_flag * string
-  | VernacDeclareMLModule of locality_flag * string list
+  | VernacDeclareMLModule of string list
   | VernacChdir of string option
 
   (* State management *)
@@ -336,33 +342,34 @@ type vernac_expr =
 
   (* Commands *)
   | VernacDeclareTacticDefinition of
-      (locality_flag * rec_flag * (reference * bool * raw_tactic_expr) list)
-  | VernacCreateHintDb of locality_flag * string * bool
-  | VernacRemoveHints of locality_flag * string list * reference list
-  | VernacHints of locality_flag * string list * hints_expr
+      (rec_flag * (reference * bool * raw_tactic_expr) list)
+  | VernacCreateHintDb of string * bool
+  | VernacRemoveHints of string list * reference list
+  | VernacHints of obsolete_locality * string list * hints_expr
   | VernacSyntacticDefinition of Id.t located * (Id.t list * constr_expr) *
-      locality_flag * onlyparsing_flag
-  | VernacDeclareImplicits of locality_flag * reference or_by_notation *
+      obsolete_locality * onlyparsing_flag
+  | VernacDeclareImplicits of reference or_by_notation *
       (explicitation * bool * bool) list list
-  | VernacArguments of locality_flag * reference or_by_notation *
+  | VernacArguments of reference or_by_notation *
       ((Name.t * bool * (Loc.t * string) option * bool * bool) list) list *
       int * [ `SimplDontExposeCase | `SimplNeverUnfold | `Rename | `ExtraScopes
             | `ClearImplicits | `ClearScopes | `DefaultImplicits ] list
-  | VernacArgumentsScope of locality_flag * reference or_by_notation *
+  | VernacArgumentsScope of reference or_by_notation *
       scope_name option list
   | VernacReserve of simple_binder list
-  | VernacGeneralizable of locality_flag * (lident list) option
-  | VernacSetOpacity of
-      locality_flag * (Conv_oracle.level * reference or_by_notation list) list
-  | VernacUnsetOption of full_locality_flag * Goptions.option_name
-  | VernacSetOption of full_locality_flag * Goptions.option_name * option_value
+  | VernacGeneralizable of (lident list) option
+  | VernacSetOpacity of (Conv_oracle.level * reference or_by_notation list)
+  | VernacSetStrategy of
+      (Conv_oracle.level * reference or_by_notation list) list
+  | VernacUnsetOption of Goptions.option_name
+  | VernacSetOption of Goptions.option_name * option_value
   | VernacAddOption of Goptions.option_name * option_ref_value list
   | VernacRemoveOption of Goptions.option_name * option_ref_value list
   | VernacMemOption of Goptions.option_name * option_ref_value list
   | VernacPrintOption of Goptions.option_name
   | VernacCheckMayEval of raw_red_expr option * int option * constr_expr
   | VernacGlobalCheck of constr_expr
-  | VernacDeclareReduction of locality_flag * string * raw_red_expr
+  | VernacDeclareReduction of string * raw_red_expr
   | VernacPrint of printable
   | VernacSearch of searchable * search_restriction
   | VernacLocate of locatable
@@ -392,5 +399,9 @@ type vernac_expr =
 
   (* For extension *)
   | VernacExtend of string * raw_generic_argument list
+
+  (* Flags *)
+  | VernacProgram of vernac_expr
+  | VernacLocal of bool * vernac_expr
 
 and located_vernac_expr = Loc.t * vernac_expr

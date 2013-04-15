@@ -83,17 +83,17 @@ GEXTEND Gram
       (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;
 	  id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
-	    VernacCreateHintDb (use_module_locality (), id, b)
+	    VernacCreateHintDb (id, b)
       | IDENT "Remove"; IDENT "Hints"; ids = LIST1 global; dbnames = opt_hintbases ->
-	  VernacRemoveHints (use_module_locality (), dbnames, ids)
+	  VernacRemoveHints (dbnames, ids)
       | IDENT "Hint"; local = obsolete_locality; h = hint;
 	  dbnames = opt_hintbases ->
-	  VernacHints (enforce_module_locality local,dbnames, h)
+	  VernacHints (local,dbnames, h)
       (* Declare "Resolve" explicitly so as to be able to later extend with
          "Resolve ->" and "Resolve <-" *)
       | IDENT "Hint"; IDENT "Resolve"; lc = LIST1 reference_or_constr; n = OPT natural;
 	  dbnames = opt_hintbases ->
-	  VernacHints (use_module_locality (),dbnames,
+	  VernacHints (false,dbnames,
 	    HintsResolve (List.map (fun x -> (n, true, x)) lc))
       ] ];
 

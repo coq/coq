@@ -40,14 +40,16 @@ let vinterp_init () = Hashtbl.clear vernac_tab
 
 (* Interpretation of a vernac command *)
 
-let call (opn,converted_args) =
+let call ?locality (opn,converted_args) =
   let loc = ref "Looking up command" in
   try
     let callback = vinterp_map opn in
     loc:= "Checking arguments";
     let hunk = callback converted_args in
     loc:= "Executing command";
-    hunk()
+    Locality.LocalityFixme.set locality;
+    hunk();
+    Locality.LocalityFixme.assert_consumed()
   with
     | Drop -> raise Drop
     | reraise ->

@@ -15,4 +15,4 @@ val overwriting_vinterp_add :
   string -> (raw_generic_argument list -> unit -> unit) -> unit
 
 val vinterp_init : unit -> unit
-val call : string * raw_generic_argument list -> unit
+val call : ?locality:bool -> string * raw_generic_argument list -> unit
