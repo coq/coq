@@ -14,9 +14,6 @@ open Environ
 
 val get_env : unit -> env
 
-(* exporting and importing modules *)
-type compiled_library
-
 val set_engagement : engagement -> unit
 val import         :
   CUnix.physical_path -> compiled_library -> constr array -> Digest.t -> unit

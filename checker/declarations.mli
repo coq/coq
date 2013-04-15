@@ -43,8 +43,3 @@ val subst_structure : substitution -> structure_body -> structure_body
 val subst_module : substitution -> module_body -> module_body
 
 val join : substitution -> substitution -> substitution
-
-(* Validation *)
-val val_eng : Validate.func
-val val_module : Validate.func
-val val_modtype : Validate.func

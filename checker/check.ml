@@ -40,7 +40,7 @@ type compilation_unit_name = DirPath.t
 
 type library_disk = {
   md_name : compilation_unit_name;
-  md_compiled : Safe_typing.compiled_library;
+  md_compiled : Cic.compiled_library;
   md_objects : library_objects;
   md_deps : (compilation_unit_name * Digest.t) array;
   md_imports : compilation_unit_name array }
@@ -55,7 +55,7 @@ type library_disk = {
 type library_t = {
   library_name : compilation_unit_name;
   library_filename : CUnix.physical_path;
-  library_compiled : Safe_typing.compiled_library;
+  library_compiled : Cic.compiled_library;
   library_opaques : Cic.constr array;
   library_deps : (compilation_unit_name * Digest.t) array;
   library_digest : Digest.t }

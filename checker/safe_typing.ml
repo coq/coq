@@ -60,19 +60,7 @@ let check_imports f caller env needed =
   in
   Array.iter check needed
 
-type nativecode_symb_array
-
-type compiled_library =
-    DirPath.t *
-    module_body *
-    (DirPath.t * Digest.t) array *
-    engagement option *
-    nativecode_symb_array
-
 open Validate
-let val_deps = val_array (val_tuple ~name:"dep"[|val_dp;no_val|])
-let val_vo = val_tuple ~name:"vo"
-  [|val_dp;val_module;val_deps;val_opt val_eng; no_val|]
 
 (* This function should append a certificate to the .vo file.
    The digest must be part of the certicate to rule out attackers
@@ -83,25 +71,22 @@ let stamp_library file digest = ()
 
 (* When the module is checked, digests do not need to match, but a
    warning is issued in case of mismatch *)
-let import file (dp,mb,depends,engmt,_ as vo) table digest =
-  Validate.apply !Flags.debug val_vo vo;
-  Validate.apply !Flags.debug (val_array Term.val_constr) table;
+let import file clib table digest =
+  Validate.validate !Flags.debug Values.v_compiled_lib clib;
+  Validate.validate !Flags.debug (Values.Array Values.v_constr) table;
   Flags.if_verbose ppnl (str "*** vo structure validated ***"); pp_flush ();
   let env = !genv in
-  check_imports msg_warning dp env depends;
-  check_engagement env engmt;
-  Mod_checking.check_module (add_constraints mb.mod_constraints env) mb.mod_mp mb;
+  check_imports msg_warning clib.comp_name env clib.comp_deps;
+  check_engagement env clib.comp_enga;
+  let mb = clib.comp_mod in
+  Mod_checking.check_module
+    (add_constraints mb.mod_constraints env) mb.mod_mp mb;
   stamp_library file digest;
-  (* We drop proofs once checked *)
-(*  let mb = lighten_module mb in*)
-  full_add_module dp mb digest
+  full_add_module clib.comp_name mb digest
 
 (* When the module is admitted, digests *must* match *)
-let unsafe_import file (dp,mb,depends,engmt,_ as vo) digest =
-  if !Flags.debug then ignore vo; (*Validate.apply !Flags.debug val_vo vo;*)
+let unsafe_import file clib digest =
   let env = !genv in
-  check_imports (errorlabstrm"unsafe_import") dp env depends;
-  check_engagement env engmt;
-  (* We drop proofs once checked *)
-(*  let mb = lighten_module mb in*)
-  full_add_module dp mb digest
+  check_imports (errorlabstrm"unsafe_import") clib.comp_name env clib.comp_deps;
+  check_engagement env clib.comp_enga;
+  full_add_module clib.comp_name clib.comp_mod digest

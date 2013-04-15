@@ -21,7 +21,7 @@
     The following types are also described in a reified manner in values.ml,
     for validating the layout of structures after de-marshalling. So:
 
-    IF YOU ADAPT THIS FILE, PLEASE MODIFY ACCORDINGLY values.ml !
+    IF YOU ADAPT THIS FILE, YOU SHOULD MODIFY values.ml ACCORDINGLY !
 *)
 
 open Names
@@ -329,3 +329,19 @@ and module_type_body =
       typ_constraints : Univ.constraints;
       (** quotiented set of equivalent constant and inductive name  *)
       typ_delta : delta_resolver}
+
+
+(*************************************************************************)
+(** {4 From safe_typing.ml} *)
+
+type nativecode_symb_array
+
+type library_info = DirPath.t * Digest.t
+
+type compiled_library = {
+  comp_name : DirPath.t;
+  comp_mod : module_body;
+  comp_deps : library_info array;
+  comp_enga : engagement option;
+  comp_natsymbs : nativecode_symb_array
+}

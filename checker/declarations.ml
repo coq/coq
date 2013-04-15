@@ -2,15 +2,6 @@ open Util
 open Names
 open Cic
 open Term
-open Validate
-
-let val_eng = val_enum "eng" 1
-
-let val_pol_arity =
-  val_tuple ~name:"polyorphic_arity"[|val_list(val_opt val_univ);val_univ|]
-
-let val_cst_type =
-  val_sum "constant_type" 0 [|[|val_constr|];[|val_rctxt;val_pol_arity|]|]
 
 (** Substitutions, code imported from kernel/mod_subst *)
 
@@ -54,22 +45,6 @@ type 'a subst_fun = substitution -> 'a -> 'a
 let empty_subst = Umap.empty
 
 let is_empty_subst = Umap.is_empty
-
-let val_delta_hint =
-  val_sum "delta_hint" 0
-    [|[|val_int; val_opt val_constr|];[|val_kn|]|]
-
-let val_res =
-  val_tuple ~name:"delta_resolver"
-    [|val_map ~name:"delta_resolver" val_mp val_mp;
-      val_map ~name:"delta_resolver" val_kn val_delta_hint|]
-
-let val_mp_res = val_tuple [|val_mp;val_res|]
-
-let val_subst =
-  val_tuple ~name:"substitution"
-    [|val_map ~name:"substitution" val_mp val_mp_res;
-      val_map ~name:"substitution" val_uid val_mp_res|]
 
 let add_mbid mbid mp = Umap.add_mbi mbid (mp,empty_delta_resolver)
 let add_mp mp1 mp2 = Umap.add_mp mp1 (mp2,empty_delta_resolver)
@@ -297,11 +272,6 @@ let subst_mps sub c =
   if is_empty_subst sub then c
   else map_kn (subst_ind sub) (subst_con0 sub) c
 
-let val_substituted val_a =
-  val_ref
-    (val_sum "constr_substituted" 0
-      [|[|val_a|];[|val_list val_subst;val_a|]|])
-
 let from_val a = ref (LSval a)
  
 let rec replace_mp_in_mp mpfrom mpto mp =
@@ -448,8 +418,6 @@ let force_constr = force subst_mps
 
 let from_val c = ref (LSval c)
 
-let val_cstr_subst = val_substituted val_constr
-
 let subst_constr_subst = subst_substituted
 
 let subst_lazy_constr sub = function
@@ -462,13 +430,6 @@ let force_lazy_constr = function
   | Indirect (l,dp,i) ->
     let c = !indirect_opaque_access dp i in
     force_constr (List.fold_right subst_constr_subst l (from_val c))
-
-let val_lazy_constr =
-  val_sum "lazy_constr" 0 [|[|val_list val_subst;val_dp;val_int|]|]
-
-let val_cst_def =
-  val_sum "constant_def" 0
-    [|[|val_opt val_int|]; [|val_cstr_subst|]; [|val_lazy_constr|]|]
 
 let subst_constant_def sub = function
   | Undef inl -> Undef inl
@@ -488,15 +449,6 @@ let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
   | Def _ | Undef _ -> false
 
-let val_cb = val_tuple ~name:"constant_body"
-  [|val_nctxt;
-    val_cst_def;
-    val_cst_type;
-    no_val;
-    val_cstrs;
-    no_val;
-    val_bool|]
-
 let subst_rel_declaration sub (id,copt,t as x) =
   let copt' = Option.smartmap (subst_mps sub) copt in
   let t' = subst_mps sub t in
@@ -504,20 +456,10 @@ let subst_rel_declaration sub (id,copt,t as x) =
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
-let val_recarg = val_sum "recarg" 1 (* Norec *)
-  [|[|val_ind|] (* Mrec *);[|val_ind|] (* Imbr *)|]
-
 let subst_recarg sub r = match r with
   | Norec  -> r
   | (Mrec(kn,i)|Imbr (kn,i)) -> let kn' = subst_ind sub kn in
       if kn==kn' then r else Imbr (kn',i)
-
-let val_wfp = val_rec_sum "wf_paths" 0
-  (fun val_wfp ->
-    [|[|val_int;val_int|]; (* Rtree.Param *)
-      [|val_recarg;val_array val_wfp|]; (* Rtree.Node *)
-      [|val_int;val_array val_wfp|] (* Rtree.Rec *)
-    |])
 
 let mk_norec = Rtree.mk_node Norec [||]
 
@@ -540,22 +482,6 @@ let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
    ...
    with      In (params) : Un := cn1 : Tn1 | ... | cnpn : Tnpn
 *)
-
-let val_mono_ind_arity =
-  val_tuple ~name:"monomorphic_inductive_arity"[|val_constr;val_sort|]
-
-let val_ind_arity = val_sum "inductive_arity" 0
-  [|[|val_mono_ind_arity|];[|val_pol_arity|]|]
-
-let val_one_ind = val_tuple ~name:"one_inductive_body"
-  [|val_id;val_rctxt;val_ind_arity;val_array val_id;val_array val_constr;
-    val_int;val_int;val_list val_sortfam;val_array val_constr;val_array val_int;
-    val_wfp;val_int;val_int;no_val|]
-
-let val_ind_pack = val_tuple ~name:"mutual_inductive_body"
-  [|val_array val_one_ind;val_bool;val_bool;val_int;val_nctxt;
-    val_int; val_int; val_rctxt;val_cstrs;no_val|]
-
 
 let subst_arity sub = function
 | NonPolymorphicType s -> NonPolymorphicType (subst_mps sub s)
@@ -608,31 +534,6 @@ let subst_mind sub mib =
     mind_native_name = mib.mind_native_name}
 
 (* Modules *)
-
-(* the validation functions: *)
-let rec val_sfb o = val_sum "struct_field_body" 0
-  [|[|val_cb|];       (* SFBconst *)
-    [|val_ind_pack|]; (* SFBmind *)
-    [|val_module|];   (* SFBmodule *)
-    [|val_modtype|]   (* SFBmodtype *)
-  |] o
-and val_sb o = val_list (val_tuple ~name:"label*sfb"[|val_id;val_sfb|]) o
-and val_seb o = val_sum "struct_expr_body" 0
-  [|[|val_mp|];                      (* SEBident *)
-    [|val_uid;val_modtype;val_seb|]; (* SEBfunctor *)
-    [|val_seb;val_seb;val_cstrs|];   (* SEBapply *)
-    [|val_sb|];              (* SEBstruct *)
-    [|val_seb;val_with|]             (* SEBwith *)
-  |] o
-and val_with o = val_sum "with_declaration_body" 0
-  [|[|val_list val_id;val_mp|];
-    [|val_list val_id;val_cb|]|] o
-and val_module o = val_tuple ~name:"module_body"
-  [|val_mp;val_opt val_seb;val_seb;
-    val_opt val_seb;val_cstrs;val_res;no_val|] o
-and val_modtype o = val_tuple ~name:"module_type_body"
-  [|val_mp;val_seb;val_opt val_seb;val_cstrs;val_res|] o
-
 
 let rec subst_with_body sub = function
   | With_module_body(id,mp) ->

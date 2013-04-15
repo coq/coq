@@ -55,10 +55,3 @@ val destArity : constr -> arity
 val isArity : constr -> bool
 val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 val eq_constr : constr -> constr -> bool
-
-(* Validation *)
-val val_sortfam : Validate.func
-val val_sort : Validate.func
-val val_constr : Validate.func
-val val_rctxt : Validate.func
-val val_nctxt : Validate.func
