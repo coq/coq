@@ -456,18 +456,18 @@ let rec compute_subst env mbids sign mp_l inl =
 	in
 	mbid_left,join (map_mbid mbid mp resolver) subst
 
-let rec get_modtype_substobjs env mp_from inline = function
-    MSEident ln -> 
-      MPmap.find ln !modtypetab 
+let rec get_modtype_substobjs env inline = function
+  | MSEident ln ->
+      MPmap.find ln !modtypetab
   | MSEfunctor (mbid,_,mte) ->
-      let (mbids, mp, objs) = get_modtype_substobjs env mp_from inline mte in
-	(mbid::mbids, mp, objs)
+      let (mbids, mp, objs) = get_modtype_substobjs env inline mte in
+      (mbid::mbids, mp, objs)
   | MSEwith (mty, With_Definition _) ->
-      get_modtype_substobjs env mp_from inline mty
-  | MSEwith (mty, With_Module (idl,mp1)) -> 
-      let substobjs = get_modtype_substobjs env mp_from inline mty in
+      get_modtype_substobjs env inline mty
+  | MSEwith (mty, With_Module (idl,mp1)) ->
+      let substobjs = get_modtype_substobjs env inline mty in
       let modobjs = MPmap.find mp1 !modtab_substobjs in
-	replace_module_object idl substobjs modobjs mp1
+      replace_module_object idl substobjs modobjs mp1
   | MSEapply (fexpr, MSEident mp) as me ->
       let (mbids, mp1, objs),mtb_mp1,mp_l =
 	get_objs_modtype_application env me in
@@ -478,20 +478,17 @@ let rec get_modtype_substobjs env mp_from inline = function
   | MSEapply (_,mexpr) ->
       Modops.error_application_to_not_path mexpr
 
-(* push names of bound modules (and their components) to Nametab *)
-(* add objects associated to them *)
-let process_module_bindings argids args =
-  let process_arg id (mbid,(mty,ann)) =
-    let dir = DirPath.make [id] in
-    let mp = MPbound mbid in
-    let (mbids,mp_from,objs) =
-      get_modtype_substobjs (Global.env()) mp (inline_annot ann) mty
-    in
-    let subst = map_mp mp_from mp empty_delta_resolver in
-    let substobjs = (mbids,mp,subst_objects subst objs) in
-    do_module false "start" load_objects 1 dir mp substobjs []
+(* push names of a bound module (and its component) to Nametab *)
+(* add objects associated to it *)
+let process_module_binding mbid mty =
+  let dir = DirPath.make [MBId.to_id mbid] in
+  let mp = MPbound mbid in
+  let (mbids,mp_from,objs) =
+    get_modtype_substobjs (Global.env()) (default_inline ()) mty
   in
-  List.iter2 process_arg argids args
+  let subst = map_mp mp_from mp empty_delta_resolver in
+  let substobjs = (mbids,mp,subst_objects subst objs) in
+  do_module false "start" load_objects 1 dir mp substobjs []
 
 (* Same with module_type_body *)
 
@@ -506,29 +503,25 @@ let rec seb2mse = function
   | _ -> failwith "seb2mse: received a non-atomic seb"
 
 let process_module_seb_binding mbid seb =
-  process_module_bindings [MBId.to_id mbid]
-    [mbid,
-     (seb2mse seb,
-      { ann_inline = DefaultInline; ann_scope_subst = [] })]
+  process_module_binding mbid (seb2mse seb)
 
 let intern_args interp_modtype (idl,(arg,ann)) =
   let inl = inline_annot ann in
   let lib_dir = Lib.library_dp() in
-  let mbids = List.map (fun (_,id) -> MBId.make lib_dir id) idl in
-  let mty = interp_modtype (Global.env()) arg in
-  let dirs = List.map (fun (_,id) -> DirPath.make [id]) idl in
-  let (mbi,mp_from,objs) =
-    get_modtype_substobjs (Global.env()) (MPbound (List.hd mbids)) inl mty
-  in
-  List.map2
-    (fun dir mbid ->
-       let resolver = Global.add_module_parameter mbid mty inl in
-       let mp = MPbound mbid in
-       let subst = map_mp mp_from mp resolver in
-       let substobjs = (mbi,mp,subst_objects subst objs) in
-       do_module false "interp" load_objects 1 dir mp substobjs [];
-       (mbid,(mty,inl)))
-    dirs mbids
+  let env = Global.env() in
+  let mty = interp_modtype env arg in
+  let (mbi,mp_from,objs) = get_modtype_substobjs env inl mty in
+  List.map
+    (fun (_,id) ->
+      let dir = DirPath.make [id] in
+      let mbid = MBId.make lib_dir id in
+      let mp = MPbound mbid in
+      let resolver = Global.add_module_parameter mbid mty inl in
+      let subst = map_mp mp_from mp resolver in
+      let substobjs = (mbi,mp,subst_objects subst objs) in
+      do_module false "interp" load_objects 1 dir mp substobjs [];
+      (mbid,(mty,inl)))
+    idl
 
 let start_module_ interp_modtype export id args res fs =
   let mp = Global.start_module id in
@@ -562,17 +555,17 @@ let end_module () =
 	  None,( mbids, mp, substitute), keep, special
       | Some (MSEident ln as mty, inline) ->
 	  let (mbids1,mp1,objs) =
-	    get_modtype_substobjs (Global.env()) mp inline mty in
+	    get_modtype_substobjs (Global.env()) inline mty in
 	  Some mp1,(mbids@mbids1,mp1,objs), [], []
       | Some (MSEwith _ as mty, inline) ->
 	  let (mbids1,mp1,objs) =
-	    get_modtype_substobjs (Global.env()) mp inline mty in
+	    get_modtype_substobjs (Global.env()) inline mty in
 	  Some mp1,(mbids@mbids1,mp1,objs), [], []
       | Some (MSEfunctor _, _) ->
 	  anomaly (Pp.str "Funsig cannot be here...")
       | Some (MSEapply _ as mty, inline) ->
 	  let (mbids1,mp1,objs) =
-	    get_modtype_substobjs (Global.env()) mp inline mty in
+	    get_modtype_substobjs (Global.env()) inline mty in
 	  Some mp1,(mbids@mbids1,mp1,objs), [], []
   with
 	Not_found -> anomaly (Pp.str "Module objects not found...")
@@ -742,7 +735,7 @@ let declare_modtype_ interp_modtype id args mtys (mty,ann) fs =
   let entry = funct_entry arg_entries (interp_modtype (Global.env()) mty) in
   (* NB: check of subtyping will be done in cache_modtype *)
   let sub_mty_l = build_subtypes interp_modtype mmp arg_entries mtys in
-  let (mbids,mp_from,objs) = get_modtype_substobjs (Global.env()) mmp inl entry in
+  let (mbids,mp_from,objs) = get_modtype_substobjs (Global.env()) inl entry in
   (* Undo the simulated interactive building of the module type *)
   (* and declare the module type as a whole *)
 
@@ -767,11 +760,11 @@ let rec get_objs_module_application env = function
 | _ -> error "Application of a non-functor."
 
 
-let rec get_module_substobjs env mp_from inl = function
+let rec get_module_substobjs env inl = function
   | MSEident mp -> MPmap.find mp !modtab_substobjs
   | MSEfunctor (mbid,mty,mexpr) ->
-       let (mbids, mp, objs) = get_module_substobjs env mp_from inl mexpr in
-	(mbid::mbids, mp, objs)
+      let (mbids, mp, objs) = get_module_substobjs env inl mexpr in
+      (mbid::mbids, mp, objs)
   | MSEapply (fexpr, MSEident mp) as me ->
       let (mbids, mp1, objs),mb_mp1,mp_l =
 	get_objs_module_application env me
@@ -780,7 +773,7 @@ let rec get_module_substobjs env mp_from inl = function
 	compute_subst env mbids mb_mp1.mod_type (List.rev mp_l) inl in
       (mbids_left, mp1,subst_objects subst objs)
   | MSEapply (_,mexpr) -> Modops.error_application_to_not_path mexpr
-  | MSEwith (mty, With_Definition _) -> get_module_substobjs env mp_from inl mty
+  | MSEwith (mty, With_Definition _) -> get_module_substobjs env inl mty
   | MSEwith (mty, With_Module (idl,mp)) -> assert false
 
 
@@ -812,8 +805,8 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
 
   let substobjs =
     match entry with
-      | {mod_entry_type = Some mte} -> get_modtype_substobjs env mmp inl_res mte
-      | {mod_entry_expr = Some mexpr} -> get_module_substobjs env mmp inl_expr mexpr
+      | {mod_entry_type = Some mte} -> get_modtype_substobjs env inl_res mte
+      | {mod_entry_expr = Some mexpr} -> get_module_substobjs env inl_expr mexpr
       | _ -> anomaly ~label:"declare_module" (Pp.str "No type, no body ...")
   in
   let (mbids,mp_from,objs) = substobjs in
@@ -876,21 +869,20 @@ let (in_include : include_obj -> obj),
     subst_function = subst_include;
     classify_function = classify_include }
 
-let rec include_subst env mb mbids sign inline =
+let rec include_subst env mp reso mbids sign inline =
   match mbids with
     | [] -> empty_subst
     | mbid::mbids ->
 	let farg_id, farg_b, fbody_b = Modops.destr_functor env sign in
-	let subst = include_subst env mb mbids fbody_b inline in
+	let subst = include_subst env mp reso mbids fbody_b inline in
 	let mp_delta =
-	  Modops.inline_delta_resolver env inline mb.mod_mp
-	    farg_id farg_b mb.mod_delta
+	  Modops.inline_delta_resolver env inline mp farg_id farg_b reso
 	in
-	join (map_mbid mbid mb.mod_mp mp_delta) subst
+	join (map_mbid mbid mp mp_delta) subst
 
 exception NothingToDo
 
-let get_includeself_substobjs env objs me is_mod inline =
+let get_includeself_substobjs env mp1 mbids objs me is_mod inline =
   try
     let mb_mp = match me with
       | MSEident mp ->
@@ -914,10 +906,9 @@ let get_includeself_substobjs env objs me is_mod inline =
 	    mb_mp mp_l
       | _ -> raise NothingToDo
     in
-    let (mbids,mp_self,objects) = objs in
-    let mb = Global.pack_module() in
-    let subst = include_subst env mb mbids mb_mp.mod_type inline in
-    ([],mp_self,subst_objects subst objects)
+    let reso = fst (Safe_typing.delta_of_senv (Global.safe_env ())) in
+    let subst = include_subst env mp1 reso mbids mb_mp.mod_type inline in
+    subst_objects subst objs
   with NothingToDo -> objs
 
 
@@ -925,22 +916,21 @@ let get_includeself_substobjs env objs me is_mod inline =
 
 let declare_one_include_inner annot (me,is_mod) =
   let env = Global.env() in
-  let mp1,_ = current_prefix () in
+  let cur_mp = fst (current_prefix ()) in
   let inl = inline_annot annot in
   let (mbids,mp,objs)=
     if is_mod then
-      get_module_substobjs env mp1 inl me
+      get_module_substobjs env inl me
     else
-      get_modtype_substobjs env mp1 inl me in
-  let (mbids,mp,objs) =
-    if not (List.is_empty mbids) then
-      get_includeself_substobjs env (mbids,mp,objs) me is_mod inl
-    else
-      (mbids,mp,objs) in
+      get_modtype_substobjs env inl me in
+  let objs =
+    if List.is_empty mbids then objs
+    else get_includeself_substobjs env cur_mp mbids objs me is_mod inl
+  in
   let id = current_mod_id() in
-  let resolver =  Global.add_include me is_mod inl in
+  let resolver = Global.add_include me is_mod inl in
   register_scope_subst annot.ann_scope_subst;
-  let subst = map_mp mp mp1 resolver in
+  let subst = map_mp mp cur_mp resolver in
   let substobjs = subst_objects subst objs in
   reset_scope_subst ();
   ignore (add_leaf id (in_include substobjs))

@@ -126,12 +126,6 @@ val iter_all_segments : (object_name -> obj -> unit) -> unit
 
 val debug_print_modtab : unit -> Pp.std_ppcmds
 
-(*i val debug_print_modtypetab : unit -> Pp.std_ppcmds i*)
-
-(** For translator *)
-val process_module_bindings : module_ident list ->
-  (MBId.t * (module_struct_entry annotated)) list -> unit
-
 (** For Printer *)
 val process_module_seb_binding :
   MBId.t -> Declarations.struct_expr_body -> unit

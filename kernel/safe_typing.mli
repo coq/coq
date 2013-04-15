@@ -91,10 +91,7 @@ val add_include :
   module_struct_entry -> bool -> inline -> safe_environment ->
    delta_resolver * safe_environment
 
-val pack_module : safe_environment -> module_body
-val current_modpath : safe_environment -> module_path
 val delta_of_senv : safe_environment -> delta_resolver*delta_resolver
-  
 
 (** Loading and saving compilation units *)
 

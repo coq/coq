@@ -75,7 +75,6 @@ val add_module_parameter :
 
 val start_modtype : Id.t -> module_path
 val end_modtype : Summary.frozen -> Id.t -> module_path
-val pack_module : unit -> module_body
 
 
 (** Queries *)

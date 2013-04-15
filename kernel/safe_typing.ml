@@ -616,7 +616,6 @@ let end_modtype l senv =
           local_retroknowledge = 
         senv.local_retroknowledge@oldsenv.local_retroknowledge}
 
-let current_modpath senv = senv.modinfo.modpath
 let delta_of_senv senv = senv.modinfo.resolver,senv.modinfo.resolver_of_param
 
 (* Check that the engagement expected by a library matches the initial one *)
@@ -678,16 +677,6 @@ let start_library dir senv =
 	imports = senv.imports;
 	loads = [];
         local_retroknowledge = [] }
-
-let pack_module senv =
-  {mod_mp=senv.modinfo.modpath;
-   mod_expr=None;
-   mod_type= SEBstruct (List.rev senv.revstruct);
-   mod_type_alg=None;
-   mod_constraints=empty_constraint;
-   mod_delta=senv.modinfo.resolver;
-   mod_retroknowledge=[];
-  }
 
 let export senv dir =
   let modinfo = senv.modinfo in

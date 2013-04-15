@@ -104,10 +104,6 @@ let end_modtype fs id =
     global_env := newenv;
     kn
 
-let pack_module () = 
-  pack_module !global_env
-
-
 
 let lookup_named id = lookup_named id (env())
 let lookup_constant kn = lookup_constant kn (env())
