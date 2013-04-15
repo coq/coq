@@ -1587,7 +1587,7 @@ let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance global binders instance fields =
   new_instance binders instance (Some (CRecord (Loc.ghost,None,fields)))
-    ~global:(not (Locality.use_section_locality ())) ~generalize:false None
+    ~global ~generalize:false None
 
 let declare_instance_refl global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
