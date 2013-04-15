@@ -541,6 +541,12 @@ $(FAKEIDE): lib/xml_lexer$(BESTOBJ) lib/xml_parser$(BESTOBJ) lib/xml_utils$(BEST
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,unix)
 
+# votour: a small vo explorer (based on the checker)
+
+bin/votour: lib/cObj$(BESTOBJ) checker/values$(BESTOBJ) checker/votour.ml
+	$(SHOW)'OCAMLBEST -o $@'
+	$(HIDE)$(call bestocaml, -I checker,)
+
 # Special rule for the compatibility-with-camlp5 extension for camlp4
 
 ifeq ($(CAMLP4),camlp4)
