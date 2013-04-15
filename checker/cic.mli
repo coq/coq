@@ -81,9 +81,9 @@ type 'constr pcofixpoint =
 
 type constr =
   | Rel       of int
-  | Var       of Id.t
-  | Meta      of metavariable
-  | Evar      of constr pexistential
+  | Var       of Id.t (** Shouldn't occur in a .vo *)
+  | Meta      of metavariable (** Shouldn't occur in a .vo *)
+  | Evar      of constr pexistential (** Shouldn't occur in a .vo *)
   | Sort      of sorts
   | Cast      of constr * cast_kind * constr
   | Prod      of Name.t * constr * constr

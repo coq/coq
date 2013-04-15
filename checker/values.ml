@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 9a9abd32a97761c8de8902f314cb0649  checker/cic.mli
+MD5 1e607e046b15faeee5912eda83dbb1ba  checker/cic.mli
 
 *)
 
@@ -22,6 +22,7 @@ MD5 9a9abd32a97761c8de8902f314cb0649  checker/cic.mli
     could become automatically generated someday ?
 
     - [Any] stands for a value that we won't check,
+    - [Fail] means a value that shouldn't be there at all,
     - [Tuple] provides a name and sub-values in this block
     - [Sum] provides a name, a number of constant constructors,
       and sub-values at each position of each possible constructed
@@ -32,6 +33,7 @@ MD5 9a9abd32a97761c8de8902f314cb0649  checker/cic.mli
 
 type value =
   | Any
+  | Fail
   | Tuple of string * value array
   | Sum of string * int * value array array
   | Array of value
@@ -111,9 +113,9 @@ let v_cast = v_enum "cast_kind" 3
 let rec v_constr =
   Sum ("constr",0,[|
     [|Int|]; (* Rel *)
-    [|v_id|]; (* Var *)
-    [|Int|]; (* Meta *)
-    [|v_evar|]; (* Evar *)
+    [|Fail|]; (* Var *)
+    [|Fail|]; (* Meta *)
+    [|Fail|]; (* Evar *)
     [|v_sort|]; (* Sort *)
     [|v_constr;v_cast;v_constr|]; (* Cast *)
     [|v_name;v_constr;v_constr|]; (* Prod *)
@@ -128,7 +130,6 @@ let rec v_constr =
     [|v_cofix|] (* CoFix *)
   |])
 
-and v_evar = Tuple ("pexistential",[|Int;Array v_constr|])
 and v_prec = Tuple ("prec_declaration",
                     [|Array v_name; Array v_constr; Array v_constr|])
 and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
