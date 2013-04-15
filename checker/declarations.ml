@@ -491,7 +491,6 @@ let subst_arity sub = function
 (* NB: we leave bytecode and native code fields untouched *)
 let subst_const_body sub cb =
  { cb with
-    const_hyps = (assert (List.is_empty cb.const_hyps); []);
     const_body = subst_constant_def sub cb.const_body;
     const_type = subst_arity sub cb.const_type }
 
@@ -507,7 +506,7 @@ let subst_mind_packet sub mbp =
   { mind_consnames = mbp.mind_consnames;
     mind_consnrealdecls = mbp.mind_consnrealdecls;
     mind_typename = mbp.mind_typename;
-   mind_nf_lc = Array.smartmap (subst_mps sub) mbp.mind_nf_lc;
+    mind_nf_lc = Array.smartmap (subst_mps sub) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
     mind_arity = subst_arity sub mbp.mind_arity;
     mind_user_lc = Array.smartmap (subst_mps sub) mbp.mind_user_lc;
@@ -521,17 +520,9 @@ let subst_mind_packet sub mbp =
 
 
 let subst_mind sub mib =
-  { mind_record = mib.mind_record ;
-    mind_finite = mib.mind_finite ;
-    mind_ntypes = mib.mind_ntypes ;
-    mind_hyps = (assert (List.is_empty mib.mind_hyps); []) ;
-    mind_nparams = mib.mind_nparams;
-    mind_nparams_rec = mib.mind_nparams_rec;
-    mind_params_ctxt =
-      map_rel_context (subst_mps sub) mib.mind_params_ctxt;
-    mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
-    mind_constraints = mib.mind_constraints;
-    mind_native_name = mib.mind_native_name}
+  { mib with
+    mind_params_ctxt = map_rel_context (subst_mps sub) mib.mind_params_ctxt;
+    mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets }
 
 (* Modules *)
 

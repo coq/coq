@@ -29,9 +29,12 @@ val substnl : constr list -> int -> constr -> constr
 val substl : constr list -> constr -> constr
 val subst1 : constr -> constr -> constr
 
+type named_declaration = Id.t * constr option * constr
+type named_context = named_declaration list
 val empty_named_context : named_context
 val fold_named_context :
   (named_declaration -> 'a -> 'a) -> named_context -> init:'a -> 'a
+
 val empty_rel_context : rel_context
 val rel_context_length : rel_context -> int
 val rel_context_nhyps : rel_context -> int

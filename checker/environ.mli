@@ -1,6 +1,6 @@
 open Names
 open Cic
-
+open Term
 
 (* Environments *)
 

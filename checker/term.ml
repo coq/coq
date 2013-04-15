@@ -209,6 +209,9 @@ let subst1 lam = substl [lam]
 (*     Type of assumptions and contexts                                    *)
 (***************************************************************************)
 
+type named_declaration = Id.t * constr option * constr
+type named_context = named_declaration list
+
 let empty_named_context = []
 let fold_named_context f l ~init = List.fold_right f l init
 

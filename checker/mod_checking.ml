@@ -28,15 +28,14 @@ let refresh_arity ar =
 let check_constant_declaration env kn cb =
   Flags.if_verbose ppnl (str "  checking cst: " ++ prcon kn);
 (*  let env = add_constraints cb.const_constraints env in*)
-  let env' = check_named_ctxt env cb.const_hyps in
   (match cb.const_type with
       NonPolymorphicType ty ->
         let ty, cu = refresh_arity ty in
-        let envty = add_constraints cu env' in
+        let envty = add_constraints cu env in
         let _ = infer_type envty ty in
         (match body_of_constant cb with
           | Some bd ->
-              let j = infer env' bd in
+              let j = infer env bd in
               conv_leq envty j ty
           | None -> ())
     | PolymorphicArity(ctxt,par) ->
@@ -110,7 +109,6 @@ let check_definition_sub env cb1 cb2 =
         (t1,t2) in
     Reduction.conv_leq env t1 t2
   in
-  assert (cb1.const_hyps=[] && cb2.const_hyps=[]) ;
   (*Start by checking types*)
   let typ1 = Typeops.type_of_constant_type env cb1.const_type in
   let typ2 = Typeops.type_of_constant_type env cb2.const_type in

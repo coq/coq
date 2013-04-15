@@ -104,17 +104,12 @@ type cofixpoint = constr pcofixpoint
 
 (** {6 Type of assumptions and contexts}  *)
 
-type named_declaration = Id.t * constr option * constr
 type rel_declaration = Name.t * constr option * constr
-
 type rel_context = rel_declaration list
 
-
-(*************************************************************************)
-(** {4 From sign.ml} *)
-
-type named_context = named_declaration list
-type section_context = named_context
+(** The declarations below in .vo should be outside sections,
+    so we expect there a value compatible with an empty list *)
+type section_context = unit
 
 
 (*************************************************************************)

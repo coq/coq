@@ -9,6 +9,7 @@
 (*i*)
 open Names
 open Cic
+open Term
 open Environ
 (*i*)
 
@@ -17,7 +18,6 @@ open Environ
 val infer      : env -> constr      -> constr
 val infer_type : env -> constr      -> sorts
 val check_ctxt : env -> rel_context -> env
-val check_named_ctxt : env -> named_context -> env
 val check_polymorphic_arity :
   env -> rel_context -> polymorphic_arity -> unit
 

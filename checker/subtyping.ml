@@ -154,7 +154,6 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   let check f = if f mib1 <> f mib2 then error () in
   check (fun mib -> mib.mind_finite);
   check (fun mib -> mib.mind_ntypes);
-  assert (mib1.mind_hyps=[] && mib2.mind_hyps=[]);
   assert (Array.length mib1.mind_packets >= 1
 	    && Array.length mib2.mind_packets >= 1);
 
@@ -248,7 +247,6 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
   in
     match info1 with
       | Constant cb1 ->
-	assert (cb1.const_hyps=[] && cb2.const_hyps=[]) ;
 	let cb1 = subst_const_body subst1 cb1 in
 	let cb2 = subst_const_body subst2 cb2 in
 	(*Start by checking types*)
@@ -278,7 +276,6 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
 		      "instantiated by an inductive type. Hint: you can rename the " ^
 		      "inductive type and give a definition to map the old name to the new " ^
 		      "name."));
-      assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
       if constant_has_body cb2 then error () ;
       let arity1 = type_of_inductive env (mind1,mind1.mind_packets.(i)) in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
@@ -289,7 +286,6 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
        "instantiated by a constructor. Hint: you can rename the " ^
        "constructor and give a definition to map the old name to the new " ^
        "name."));
-      assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
       if constant_has_body cb2 then error () ;
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in

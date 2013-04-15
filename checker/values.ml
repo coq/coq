@@ -128,10 +128,10 @@ and v_fix = Tuple ("pfixpoint", [|Tuple ("fix2",[|Array Int;Int|]);v_prec|])
 and v_cofix = Tuple ("pcofixpoint",[|Int;v_prec|])
 
 
-let v_ndecl = v_tuple "named_declaration" [|v_id;Opt v_constr;v_constr|]
 let v_rdecl = v_tuple "rel_declaration" [|v_name;Opt v_constr;v_constr|]
-let v_nctxt = List v_ndecl
 let v_rctxt = List v_rdecl
+
+let v_section_ctxt = v_enum "emptylist" 1
 
 
 (** kernel/mod_subst *)
@@ -181,7 +181,7 @@ let v_cst_def =
     [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]|]
 
 let v_cb = v_tuple "constant_body"
-  [|v_nctxt;
+  [|v_section_ctxt;
     v_cst_def;
     v_cst_type;
     Any;
@@ -225,7 +225,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     v_bool;
     v_bool;
     Int;
-    v_nctxt;
+    v_section_ctxt;
     Int;
     Int;
     v_rctxt;

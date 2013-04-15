@@ -535,9 +535,6 @@ let check_inductive env kn mib =
   (* check mind_ntypes *)
   if Array.length mib.mind_packets <> mib.mind_ntypes then
     error "not the right number of packets";
-  (* check mind_hyps: should be empty *)
-  if mib.mind_hyps <> empty_named_context then
-    error "section context not empty";
   (* check mind_params_ctxt *)
   let params = mib.mind_params_ctxt in
   let _ = check_ctxt env params in
