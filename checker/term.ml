@@ -209,12 +209,6 @@ let subst1 lam = substl [lam]
 (*     Type of assumptions and contexts                                    *)
 (***************************************************************************)
 
-type named_declaration = Id.t * constr option * constr
-type named_context = named_declaration list
-
-let empty_named_context = []
-let fold_named_context f l ~init = List.fold_right f l init
-
 let empty_rel_context = []
 let rel_context_length = List.length
 let rel_context_nhyps hyps =
@@ -225,7 +219,7 @@ let rel_context_nhyps hyps =
   nhyps 0 hyps
 let fold_rel_context f l ~init = List.fold_right f l init
 
-let map_context f l =
+let map_rel_context f l =
   let map_decl (n, body_o, typ as decl) =
     let body_o' = Option.smartmap f body_o in
     let typ' = f typ in
@@ -233,8 +227,6 @@ let map_context f l =
 	(n, body_o', typ')
   in
     List.smartmap map_decl l
-
-let map_rel_context = map_context
 
 let extended_rel_list n hyps =
   let rec reln l p = function

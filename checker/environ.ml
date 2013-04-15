@@ -20,7 +20,6 @@ type stratification = {
 
 type env = {
     env_globals       : globals;
-    env_named_context : named_context;
     env_rel_context   : rel_context;
     env_stratification : stratification;
     env_imports : Digest.t MPmap.t }
@@ -32,7 +31,6 @@ let empty_env = {
     env_inductives_eq = KNmap.empty;
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
-  env_named_context = [];
   env_rel_context = [];
   env_stratification =
   { env_universes = Univ.initial_universes;
@@ -41,7 +39,6 @@ let empty_env = {
 
 let engagement env = env.env_stratification.env_engagement
 let universes env = env.env_stratification.env_universes
-let named_context env = env.env_named_context
 let rel_context env = env.env_rel_context
 
 let set_engagement c env =
@@ -77,26 +74,6 @@ let push_rel_context ctxt x = fold_rel_context push_rel ctxt ~init:x
 let push_rec_types (lna,typarray,_) env =
   let ctxt = Array.map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> push_rel assum e) env ctxt
-
-(* Named context *)
-
-let push_named d env =
-(*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
-  assert (env.env_rel_context = []); *)
-    { env with
-      env_named_context = d :: env.env_named_context }
-
-let lookup_named id env =
-  let rec lookup_named id = function
-    | (id',_,_ as decl) :: _ when id=id' -> decl
-    | _ :: sign -> lookup_named id sign
-    | [] -> raise Not_found in
-  lookup_named id env.env_named_context
-
-(* A local const is evaluable if it is defined  *)
-
-let named_type id env =
-  let (_,_,t) = lookup_named id env in t
 
 (* Universe constraints *)
 let add_constraints c env =

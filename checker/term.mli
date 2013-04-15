@@ -29,18 +29,11 @@ val substnl : constr list -> int -> constr -> constr
 val substl : constr list -> constr -> constr
 val subst1 : constr -> constr -> constr
 
-type named_declaration = Id.t * constr option * constr
-type named_context = named_declaration list
-val empty_named_context : named_context
-val fold_named_context :
-  (named_declaration -> 'a -> 'a) -> named_context -> init:'a -> 'a
-
 val empty_rel_context : rel_context
 val rel_context_length : rel_context -> int
 val rel_context_nhyps : rel_context -> int
 val fold_rel_context :
   (rel_declaration -> 'a -> 'a) -> rel_context -> init:'a -> 'a
-val map_context : (constr -> constr) -> named_context -> named_context
 val map_rel_context : (constr -> constr) -> rel_context -> rel_context
 val extended_rel_list : int -> rel_context -> constr list
 val compose_lam : (name * constr) list -> constr -> constr

@@ -151,7 +151,6 @@ let betaiotazeta = mkflags [fBETA;fIOTA;fZETA]
  *         is stored in the table.
  *  * i_rels = (4,[(1,c);(3,d)]) means there are 4 free rel variables
  *    and only those with index 1 and 3 have bodies which are c and d resp.
- *  * i_vars is the list of _defined_ named variables.
  *
  * ref_value_cache searchs in the tab, otherwise uses i_repr to
  * compute the result and store it in the table. If the constant can't
@@ -171,7 +170,6 @@ type 'a infos = {
   i_repr : 'a infos -> constr -> 'a;
   i_env : env;
   i_rels : int * (int * constr) list;
-  i_vars : (Id.t * constr) list;
   i_tab : (table_key, 'a) Hashtbl.t }
 
 let ref_value_cache info ref =
@@ -183,7 +181,7 @@ let ref_value_cache info ref =
       match ref with
 	| RelKey n ->
 	    let (s,l) = info.i_rels in lift n (List.assoc (s-n) l)
-	| VarKey id -> List.assoc id info.i_vars
+	| VarKey id -> raise Not_found
 	| ConstKey cst -> constant_value info.i_env cst
     in
     let v = info.i_repr info body in
@@ -193,16 +191,6 @@ let ref_value_cache info ref =
     | Not_found (* List.assoc *)
     | NotEvaluableConst _ (* Const *)
       -> None
-
-let defined_vars flags env =
-(*  if red_local_const (snd flags) then*)
-    fold_named_context
-      (fun (id,b,_) e ->
-	 match b with
-	   | None -> e
-	   | Some body -> (id, body)::e)
-       (named_context env) ~init:[]
-(*  else []*)
 
 let defined_rels flags env =
 (*  if red_local_const (snd flags) then*)
@@ -226,7 +214,6 @@ let create mk_cl flgs env =
     i_repr = mk_cl;
     i_env = env;
     i_rels = defined_rels flgs env;
-    i_vars = defined_vars flgs env;
     i_tab = Hashtbl.create 17 }
 
 

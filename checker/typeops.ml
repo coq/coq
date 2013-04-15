@@ -65,12 +65,6 @@ let judge_of_relative env n =
   with Not_found ->
     error_unbound_rel env n
 
-(* Type of variables *)
-let judge_of_variable env id =
-  try named_type id env
-  with Not_found ->
-    error_unbound_var env id
-
 (* Type of constants *)
 
 let type_of_constant_knowing_parameters env t paramtyps =
@@ -247,7 +241,7 @@ let rec execute env cstr =
 
     | Rel n -> judge_of_relative env n
 
-    | Var id -> judge_of_variable env id
+    | Var _ -> anomaly (Pp.str "Section variable in Coqchk !")
 
     | Const c -> judge_of_constant env c
 

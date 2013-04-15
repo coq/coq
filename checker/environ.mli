@@ -16,7 +16,6 @@ type stratification = {
 }
 type env = {
   env_globals : globals;
-  env_named_context : named_context;
   env_rel_context : rel_context;
   env_stratification : stratification;
   env_imports : Digest.t MPmap.t;
@@ -37,12 +36,6 @@ val lookup_rel : int -> env -> rel_declaration
 val push_rel : rel_declaration -> env -> env
 val push_rel_context : rel_context -> env -> env
 val push_rec_types : name array * constr array * 'a -> env -> env
-
-(* Named variables *)
-val named_context : env -> named_context
-val push_named : named_declaration -> env -> env
-val lookup_named : Id.t -> env -> named_declaration
-val named_type : Id.t -> env -> constr
 
 (* Universes *)
 val universes : env -> Univ.universes

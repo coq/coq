@@ -752,16 +752,7 @@ let check_one_fix renv recpos def =
         | (Ind _ | Construct _) ->
             List.iter (check_rec_call renv []) l
 
-        | Var id ->
-            begin
-              match pi2 (lookup_named id renv.env) with
-              | None ->
-                  List.iter (check_rec_call renv []) l
-              | Some c ->
-                  try List.iter (check_rec_call renv []) l
-                  with (FixGuardError _) -> 
-		    check_rec_call renv stack (applist(c,l))
-            end
+        | Var _ -> anomaly (Pp.str "Section variable in Coqchk !")
 
 	| Sort _ -> assert (l = [])
 
