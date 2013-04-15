@@ -95,7 +95,7 @@ val mkSet  : types
 val mkType : Univ.universe -> types
 
 
-(* This defines the strategy to use for verifiying a Cast *)
+(** This defines the strategy to use for verifiying a Cast *)
 type cast_kind = VMcast | NATIVEcast | DEFAULTcast | REVERTcast
 
 (** Constructs the term [t1::t2], i.e. the term t{_ 1} casted with the
@@ -331,7 +331,7 @@ val destFix : constr -> fixpoint
 val destCoFix : constr -> cofixpoint
 
 
-(** {6 Local } *)
+(** {6 Local context} *)
 (** A {e declaration} has the form [(name,body,type)]. It is either an
     {e assumption} if [body=None] or a {e definition} if
     [body=Some actualbody]. It is referred by {e name} if [na] is an

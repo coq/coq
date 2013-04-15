@@ -9,7 +9,7 @@
 (*i*)
 open Pp
 open Names
-open Term
+open Cic
 open Esubst
 open Environ
 (*i*)

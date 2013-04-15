@@ -8,6 +8,7 @@
 
 open Pp
 open Names
+open Cic
 open Declarations
 open Environ
 

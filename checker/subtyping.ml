@@ -11,6 +11,7 @@ open Errors
 open Util
 open Names
 open Univ
+open Cic
 open Term
 open Declarations
 open Environ

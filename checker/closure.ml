@@ -8,8 +8,9 @@
 
 open Util
 open Pp
-open Term
 open Names
+open Cic
+open Term
 open Esubst
 open Environ
 

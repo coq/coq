@@ -284,7 +284,7 @@ let parse_args argv =
   let rec parse = function
     | [] -> ()
     | "-impredicative-set" :: rem ->
-      set_engagement Declarations.ImpredicativeSet; parse rem
+      set_engagement Cic.ImpredicativeSet; parse rem
 
     | "-coqlib" :: s :: rem ->
       if not (exists_dir s) then 

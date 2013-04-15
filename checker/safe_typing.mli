@@ -8,7 +8,7 @@
 
 (*i*)
 open Names
-open Term
+open Cic
 open Environ
 (*i*)
 
@@ -17,7 +17,7 @@ val get_env : unit -> env
 (* exporting and importing modules *)
 type compiled_library
 
-val set_engagement : Declarations.engagement -> unit
+val set_engagement : engagement -> unit
 val import         :
   CUnix.physical_path -> compiled_library -> constr array -> Digest.t -> unit
 val unsafe_import  :

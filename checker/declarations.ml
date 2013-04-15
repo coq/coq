@@ -1,45 +1,21 @@
 open Util
 open Names
+open Cic
 open Term
 open Validate
 
-(* Bytecode *)
-type values
-type reloc_table
-type to_patch_substituted
-(* Native code *)
-type native_name
-(*Retroknowledge *)
-type action
-type retroknowledge
-
-type engagement = ImpredicativeSet
 let val_eng = val_enum "eng" 1
 
-
-type polymorphic_arity = {
-  poly_param_levels : Univ.universe option list;
-  poly_level : Univ.universe;
-}
 let val_pol_arity =
   val_tuple ~name:"polyorphic_arity"[|val_list(val_opt val_univ);val_univ|]
-
-type constant_type =
-  | NonPolymorphicType of constr
-  | PolymorphicArity of rel_context * polymorphic_arity
 
 let val_cst_type =
   val_sum "constant_type" 0 [|[|val_constr|];[|val_rctxt;val_pol_arity|]|]
 
 (** Substitutions, code imported from kernel/mod_subst *)
 
-type delta_hint =
-  | Inline of int * constr option
-  | Equiv of kernel_name
-
-
 module Deltamap = struct
-  type t = module_path MPmap.t * delta_hint KNmap.t
+  type t = delta_resolver
   let empty = MPmap.empty, KNmap.empty
   let is_empty (mm, km) = MPmap.is_empty mm && KNmap.is_empty km
   let add_kn kn hint (mm,km) = (mm,KNmap.add kn hint km)
@@ -55,12 +31,10 @@ module Deltamap = struct
   let join map1 map2 = fold add_mp add_kn map1 map2
 end
 
-type delta_resolver = Deltamap.t
-
 let empty_delta_resolver = Deltamap.empty
 
 module Umap = struct
-  type 'a t = 'a MPmap.t * 'a MBImap.t
+  type 'a t = 'a umap_t
   let empty = MPmap.empty, MBImap.empty
   let is_empty (m1,m2) = MPmap.is_empty m1 && MBImap.is_empty m2
   let add_mbi mbi x (m1,m2) = (m1,MBImap.add mbi x m2)
@@ -75,7 +49,6 @@ module Umap = struct
   let join map1 map2 = fold add_mp add_mbi map1 map2
 end
 
-type substitution = (module_path * delta_resolver) Umap.t
 type 'a subst_fun = substitution -> 'a -> 'a
 
 let empty_subst = Umap.empty
@@ -324,13 +297,6 @@ let subst_mps sub c =
   if is_empty_subst sub then c
   else map_kn (subst_ind sub) (subst_con0 sub) c
 
-
-type 'a lazy_subst =
-  | LSval of 'a
-  | LSlazy of substitution list * 'a
-
-type 'a substituted = 'a lazy_subst ref
-
 let val_substituted val_a =
   val_ref
     (val_sum "constr_substituted" 0
@@ -482,18 +448,9 @@ let force_constr = force subst_mps
 
 let from_val c = ref (LSval c)
 
-type constr_substituted = constr substituted
-
 let val_cstr_subst = val_substituted val_constr
 
 let subst_constr_subst = subst_substituted
-
-(* Nota : in coqtop, the [lazy_constr] type also have a [Direct]
-   constructor, but it shouldn't occur inside a .vo, so we ignore it *)
-
-type lazy_constr =
-  | Indirect of substitution list * DirPath.t * int
-(* | Direct of constr_substituted *)
 
 let subst_lazy_constr sub = function
   | Indirect (l,dp,i) -> Indirect (sub::l,dp,i)
@@ -509,19 +466,6 @@ let force_lazy_constr = function
 let val_lazy_constr =
   val_sum "lazy_constr" 0 [|[|val_list val_subst;val_dp;val_int|]|]
 
-(** Inlining level of parameters at functor applications.
-    This is ignored by the checker. *)
-
-type inline = int option
-
-(** A constant can have no body (axiom/parameter), or a
-    transparent body, or an opaque one *)
-
-type constant_def =
-  | Undef of inline
-  | Def of constr_substituted
-  | OpaqueDef of lazy_constr
-
 let val_cst_def =
   val_sum "constant_def" 0
     [|[|val_opt val_int|]; [|val_cstr_subst|]; [|val_lazy_constr|]|]
@@ -530,15 +474,6 @@ let subst_constant_def sub = function
   | Undef inl -> Undef inl
   | Def c -> Def (subst_constr_subst sub c)
   | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
-
-type constant_body = {
-    const_hyps : section_context; (* New: younger hyp at top *)
-    const_body : constant_def;
-    const_type : constant_type;
-    const_body_code : to_patch_substituted;
-    const_constraints : Univ.constraints;
-    const_native_name : native_name ref;
-    const_inline_code : bool }
 
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
@@ -569,10 +504,6 @@ let subst_rel_declaration sub (id,copt,t as x) =
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
-type recarg =
-  | Norec
-  | Mrec of inductive
-  | Imbr of inductive
 let val_recarg = val_sum "recarg" 1 (* Norec *)
   [|[|val_ind|] (* Mrec *);[|val_ind|] (* Imbr *)|]
 
@@ -581,7 +512,6 @@ let subst_recarg sub r = match r with
   | (Mrec(kn,i)|Imbr (kn,i)) -> let kn' = subst_ind sub kn in
       if kn==kn' then r else Imbr (kn',i)
 
-type wf_paths = recarg Rtree.t
 let val_wfp = val_rec_sum "wf_paths" 0
   (fun val_wfp ->
     [|[|val_int;val_int|]; (* Rtree.Param *)
@@ -611,110 +541,17 @@ let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
    with      In (params) : Un := cn1 : Tn1 | ... | cnpn : Tnpn
 *)
 
-type monomorphic_inductive_arity = {
-  mind_user_arity : constr;
-  mind_sort : sorts;
-}
 let val_mono_ind_arity =
   val_tuple ~name:"monomorphic_inductive_arity"[|val_constr;val_sort|]
 
-type inductive_arity =
-| Monomorphic of monomorphic_inductive_arity
-| Polymorphic of polymorphic_arity
 let val_ind_arity = val_sum "inductive_arity" 0
   [|[|val_mono_ind_arity|];[|val_pol_arity|]|]
-
-type one_inductive_body = {
-
-(* Primitive datas *)
-
- (* Name of the type: [Ii] *)
-    mind_typename : Id.t;
-
- (* Arity context of [Ii] with parameters: [forall params, Ui] *)
-    mind_arity_ctxt : rel_context;
-
- (* Arity sort, original user arity, and allowed elim sorts, if monomorphic *)
-    mind_arity : inductive_arity;
-
- (* Names of the constructors: [cij] *)
-    mind_consnames : Id.t array;
-
- (* Types of the constructors with parameters: [forall params, Tij],
-    where the Ik are replaced by de Bruijn index in the context
-    I1:forall params, U1 ..  In:forall params, Un *)
-    mind_user_lc : constr array;
-
-(* Derived datas *)
-
- (* Number of expected real arguments of the type (no let, no params) *)
-    mind_nrealargs : int;
-
- (* Length of realargs context (with let, no params) *)
-    mind_nrealargs_ctxt : int;
-
- (* List of allowed elimination sorts *)
-    mind_kelim : sorts_family list;
-
- (* Head normalized constructor types so that their conclusion is atomic *)
-    mind_nf_lc : constr array;
-
- (* Length of the signature of the constructors (with let, w/o params) *)
-    mind_consnrealdecls : int array;
-
- (* Signature of recursive arguments in the constructors *)
-    mind_recargs : wf_paths;
-
-(* Datas for bytecode compilation *)
-
- (* number of constant constructor *)
-    mind_nb_constant : int;
-
- (* number of no constant constructor *)
-    mind_nb_args : int;
-
-    mind_reloc_tbl :  reloc_table;
-  }
 
 let val_one_ind = val_tuple ~name:"one_inductive_body"
   [|val_id;val_rctxt;val_ind_arity;val_array val_id;val_array val_constr;
     val_int;val_int;val_list val_sortfam;val_array val_constr;val_array val_int;
     val_wfp;val_int;val_int;no_val|]
 
-
-type mutual_inductive_body = {
-
-  (* The component of the mutual inductive block *)
-    mind_packets : one_inductive_body array;
-
-  (* Whether the inductive type has been declared as a record *)
-    mind_record : bool;
-
-  (* Whether the type is inductive or coinductive *)
-    mind_finite : bool;
-
-  (* Number of types in the block *)
-    mind_ntypes : int;
-
-  (* Section hypotheses on which the block depends *)
-    mind_hyps : section_context;
-
-  (* Number of expected parameters *)
-    mind_nparams : int;
-
-  (* Number of recursively uniform (i.e. ordinary) parameters *)
-    mind_nparams_rec : int;
-
-  (* The context of parameters (includes let-in declaration) *)
-    mind_params_ctxt : rel_context;
-
-  (* Universes constraints enforced by the inductive declaration *)
-    mind_constraints : Univ.constraints;
-
-  (* Data for native compilation *)
-    mind_native_name : native_name ref;
-
-  }
 let val_ind_pack = val_tuple ~name:"mutual_inductive_body"
   [|val_array val_one_ind;val_bool;val_bool;val_int;val_nctxt;
     val_int; val_int; val_rctxt;val_cstrs;no_val|]
@@ -771,43 +608,6 @@ let subst_mind sub mib =
     mind_native_name = mib.mind_native_name}
 
 (* Modules *)
-
-(* Whenever you change these types, please do update the validation
-   functions below *)
-type structure_field_body =
-  | SFBconst of constant_body
-  | SFBmind of mutual_inductive_body
-  | SFBmodule of module_body
-  | SFBmodtype of module_type_body
-
-and structure_body = (label * structure_field_body) list
-
-and struct_expr_body =
-  | SEBident of module_path
-  | SEBfunctor of MBId.t * module_type_body * struct_expr_body
-  | SEBapply of struct_expr_body * struct_expr_body * Univ.constraints
-  | SEBstruct of structure_body
-  | SEBwith of struct_expr_body * with_declaration_body
-
-and with_declaration_body =
-    With_module_body of Id.t list * module_path
-  | With_definition_body of  Id.t list * constant_body
-
-and module_body =
-    { mod_mp : module_path;
-      mod_expr : struct_expr_body option; 
-      mod_type : struct_expr_body;
-      mod_type_alg : struct_expr_body option;
-      mod_constraints : Univ.constraints;
-      mod_delta : delta_resolver;
-      mod_retroknowledge : action list}
-
-and module_type_body =
-    { typ_mp : module_path;
-      typ_expr : struct_expr_body;
-      typ_expr_alg : struct_expr_body option ;
-      typ_constraints : Univ.constraints;
-      typ_delta :delta_resolver}
 
 (* the validation functions: *)
 let rec val_sfb o = val_sum "struct_field_body" 0

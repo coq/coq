@@ -56,7 +56,7 @@ type library_t = {
   library_name : compilation_unit_name;
   library_filename : CUnix.physical_path;
   library_compiled : Safe_typing.compiled_library;
-  library_opaques : Term.constr array;
+  library_opaques : Cic.constr array;
   library_deps : (compilation_unit_name * Digest.t) array;
   library_digest : Digest.t }
 
@@ -314,7 +314,7 @@ let intern_from_file (dir, f) =
       let ch = with_magic_number_check raw_intern_library f in
       let (md:library_disk) = System.marshal_in f ch in
       let (digest:Digest.t) = System.marshal_in f ch in
-      let (table:Term.constr array) = System.marshal_in f ch in
+      let (table:Cic.constr array) = System.marshal_in f ch in
       (* Verification of the final checksum *)
       let pos = pos_in ch in
       let (checksum:Digest.t) = System.marshal_in f ch in

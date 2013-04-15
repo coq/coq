@@ -11,6 +11,7 @@ open Errors
 open Util
 open Pp
 open Names
+open Cic
 open Term
 open Declarations
 (*i*)

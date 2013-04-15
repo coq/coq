@@ -9,9 +9,8 @@
 (*i*)
 open Names
 open Univ
-open Term
+open Cic
 open Typeops
-open Declarations
 open Environ
 (*i*)
 

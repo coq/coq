@@ -7,9 +7,7 @@
 (************************************************************************)
 
 (*i*)
-open Univ
-open Term
-open Declarations
+open Cic
 open Environ
 (*i*)
 

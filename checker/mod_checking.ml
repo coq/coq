@@ -3,6 +3,7 @@ open Pp
 open Errors
 open Util
 open Names
+open Cic
 open Term
 open Reduction
 open Typeops

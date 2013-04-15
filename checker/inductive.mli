@@ -8,8 +8,7 @@
 
 (*i*)
 open Names
-open Term
-open Declarations
+open Cic
 open Environ
 (*i*)
 

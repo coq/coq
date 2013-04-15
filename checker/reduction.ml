@@ -8,6 +8,7 @@
 
 open Errors
 open Util
+open Cic
 open Term
 open Univ
 open Closure
