@@ -840,53 +840,32 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
 
 (* Include *)
 
-let rec subst_inc_expr subst me =
-  match me with
-    | MSEident mp -> MSEident (subst_mp subst mp)
-    | MSEwith (me,With_Module(idl,mp)) ->
-	MSEwith (subst_inc_expr subst me,
-		 With_Module(idl,subst_mp subst mp))
-    | MSEwith (me,With_Definition(idl,const))->
-	let const1 = Mod_subst.from_val const in
-	let force = Mod_subst.force subst_mps in
-	MSEwith (subst_inc_expr subst me,
-		 With_Definition(idl,force (subst_substituted
-					   subst const1)))
-    | MSEapply (me1,me2) ->
-	MSEapply (subst_inc_expr subst me1,
-		  subst_inc_expr subst me2)
-    | MSEfunctor(mbid,me1,me2) ->
-        MSEfunctor (mbid, subst_inc_expr subst me1, subst_inc_expr subst me2)
-
 let lift_oname (sp,kn) =
   let mp,_,_ = Names.repr_kn kn in
   let dir,_ = Libnames.repr_path sp in
-    (dir,mp)
+  (dir,mp)
 
-let cache_include (oname,(me,(mbis,mp1,objs))) =
+let cache_include (oname,objs) =
   let dir,mp1 = lift_oname oname in
   let prefix = (dir,(mp1,DirPath.empty)) in
-    load_objects 1 prefix objs;
-    open_objects 1 prefix objs
+  load_objects 1 prefix objs;
+  open_objects 1 prefix objs
 
-let load_include  i (oname,(me,(mbis,mp1,objs))) =
+let load_include  i (oname,objs) =
   let dir,mp1 = lift_oname oname in
   let prefix = (dir,(mp1,DirPath.empty)) in
-    load_objects i prefix objs
+  load_objects i prefix objs
 
-let open_include i (oname,(me,(mbis,mp1,objs))) =
+let open_include i (oname,objs) =
   let dir,mp1 = lift_oname oname in
   let prefix = (dir,(mp1,DirPath.empty)) in
-    open_objects i prefix objs
+  open_objects i prefix objs
 
-let subst_include (subst,(me,substobj)) =
-  let (mbids,mp,objs) = substobj in
-  let substobjs = (mbids,subst_mp subst mp,subst_objects subst objs) in
-    (subst_inc_expr subst me,substobjs)
+let subst_include (subst,objs) = subst_objects subst objs
 
-let classify_include (me,substobjs) = Substitute (me,substobjs)
+let classify_include objs = Substitute objs
 
-type include_obj = module_struct_entry * substitutive_objects
+type include_obj = Lib.lib_objects
 
 let (in_include : include_obj -> obj),
     (out_include : obj -> include_obj) =
@@ -962,9 +941,9 @@ let declare_one_include_inner annot (me,is_mod) =
   let resolver =  Global.add_include me is_mod inl in
   register_scope_subst annot.ann_scope_subst;
   let subst = map_mp mp mp1 resolver in
-  let substobjs = (mbids,mp1, subst_objects subst objs) in
+  let substobjs = subst_objects subst objs in
   reset_scope_subst ();
-  ignore (add_leaf id (in_include (me, substobjs)))
+  ignore (add_leaf id (in_include substobjs))
 
 let declare_one_include interp_struct (me_ast,annot) =
   declare_one_include_inner annot
@@ -1024,13 +1003,11 @@ let iter_all_segments f =
   let _ =
     MPmap.iter
       (fun _ (prefix,objects) ->
-	 let rec apply_obj (id,obj) = match object_tag obj with 
-	   | "INCLUDE" -> 
-	       let (_,(_,_,objs)) =  out_include obj in 
-		 List.iter apply_obj objs
-		   
-	   | _ -> f (make_oname prefix id) obj in
-	   List.iter apply_obj objects)
+	 let rec apply_obj (id,obj) = match object_tag obj with
+	   | "INCLUDE" -> List.iter apply_obj (out_include obj)
+	   | _ -> f (make_oname prefix id) obj
+         in
+	 List.iter apply_obj objects)
       !modtab_objects
   in
   let apply_node = function
