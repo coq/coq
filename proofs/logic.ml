@@ -40,20 +40,29 @@ exception RefinerError of refiner_error
 
 open Pretype_errors
 
+(** FIXME: this is quite brittle. Why not accept any PretypeError? *)
+let is_typing_error = function
+| UnexpectedType (_, _) | NotProduct _
+| VarNotFound _ | TypingError _ -> true
+| _ -> false
+
+let is_unification_error = function
+| CannotUnify _ | CannotUnifyLocal _| CannotGeneralize _
+| NoOccurrenceFound _ | CannotUnifyBindingType _
+| ActualTypeNotCoercible _ | UnifOccurCheck _
+| CannotFindWellTypedAbstraction _ | WrongAbstractionType _
+| UnsolvableImplicit _| AbstractionOverMeta _ -> true
+| _ -> false
+
 let rec catchable_exception = function
   | LtacLocated(_,_,e) -> catchable_exception e
-  | Errors.UserError _ | TypeError _ | PretypeError (_,_,TypingError _)
+  | Errors.UserError _ | TypeError _
   | RefinerError _ | Indrec.RecursionSchemeError _
-  | Nametab.GlobalizationError _ | PretypeError (_,_,VarNotFound _)
+  | Nametab.GlobalizationError _
   (* reduction errors *)
-  | Tacred.ReductionTacticError _ 
-  (* unification errors *)
-  | PretypeError(_,_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
-		   |NoOccurrenceFound _|CannotUnifyBindingType _
-		   |ActualTypeNotCoercible _|UnifOccurCheck _
-                   |CannotFindWellTypedAbstraction _
-		   |WrongAbstractionType _
-		   |UnsolvableImplicit _|AbstractionOverMeta _)) -> true
+  | Tacred.ReductionTacticError _ -> true
+  (* unification and typing errors *)
+  | PretypeError(_,_, e) -> is_unification_error e || is_typing_error e
   | Typeclasses_errors.TypeClassError
       (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true
   | _ -> false
