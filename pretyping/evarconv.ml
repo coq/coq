@@ -197,6 +197,18 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
 
 and evar_eqappr_x ?(rhs_is_already_stuck = false)
   ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
+
+  let eta env evd onleft term l term' l' =
+    assert (l = []);
+    let (na,c,body) = destLambda term in
+    let c = nf_evar evd c in
+    let env' = push_rel (na,None,c) env in
+    let appr1 = evar_apprec ts env' evd [] body in
+    let appr2 = (lift 1 term2, List.map (lift 1) l' @ [mkRel 1]) in
+    if onleft then evar_eqappr_x ts env' evd CONV appr1 appr2
+    else evar_eqappr_x ts env' evd CONV appr2 appr1
+  in
+
   (* Evar must be undefined since we have flushed evars *)
   match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
@@ -382,6 +394,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	  solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem true pbty,ev1,t2)
         | None ->
+          if isLambda term2 then
+            eta env evd false term2 l2 term1 l1
+          else
 	  (* Postpone the use of an heuristic *)
 	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd,
 	  true)
@@ -396,6 +411,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	  solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem false pbty,ev2,t1)
         | None ->
+          if isLambda term1 then
+            eta env evd true term1 l1 term2 l2
+          else
 	  (* Postpone the use of an heuristic *)
 	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd,
 	  true)
@@ -408,7 +426,11 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	  match eval_flexible_term ts env flex1 with
 	    | Some v1 ->
 		evar_eqappr_x ts env i pbty (evar_apprec ts env i l1 v1) appr2
-	    | None -> (i,false)
+	    | None ->
+                if isLambda term2 then
+                  eta env i false term2 l2 term1 l1
+                else
+                  (i,false)
 	in
 	ise_try evd [f3; f4]
 
@@ -420,28 +442,20 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	  match eval_flexible_term ts env flex2 with
 	    | Some v2 ->
 		evar_eqappr_x ts env i pbty appr1 (evar_apprec ts env i l2 v2)
-	    | None -> (i,false)
+	    | None ->
+                if isLambda term1 then
+                  eta env i true term1 l1 term2 l2
+                else
+                  (i,false)
 	in
 	ise_try evd [f3; f4]
 
     (* Eta-expansion *)
     | Rigid c1, _ when isLambda c1 ->
-	assert (l1 = []);
-	let (na,c1,c'1) = destLambda c1 in
-        let c = nf_evar evd c1 in
-	let env' = push_rel (na,None,c) env in
-        let appr1 = evar_apprec ts env' evd [] c'1 in
-	let appr2 = (lift 1 term2, List.map (lift 1) l2 @ [mkRel 1]) in
-	evar_eqappr_x ts env' evd CONV appr1 appr2
+        eta env evd true term1 l1 term2 l2
 
     | _, Rigid c2 when isLambda c2 ->
-	assert (l2 = []);
-	let (na,c2,c'2) = destLambda c2 in
-        let c = nf_evar evd c2 in
-	let env' = push_rel (na,None,c) env in
-	let appr1 = (lift 1 term1, List.map (lift 1) l1 @ [mkRel 1]) in
-        let appr2 = evar_apprec ts env' evd [] c'2 in
-	evar_eqappr_x ts env' evd CONV appr1 appr2
+        eta env evd false term2 l2 term1 l1
 
     | Rigid c1, Rigid c2 -> begin
         match kind_of_term c1, kind_of_term c2 with
