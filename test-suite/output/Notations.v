@@ -68,7 +68,7 @@ Coercion Zpos: nat >-> znat.
 Delimit Scope znat_scope with znat.
 Open Scope znat_scope.
 
-Variable addz : znat -> znat -> znat.
+Parameter addz : znat -> znat -> znat.
 Notation "z1 + z2" := (addz z1 z2) : znat_scope.
 
   (* Check that "3+3", where 3 is in nat and the coercion to znat is implicit,

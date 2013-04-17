@@ -1,6 +1,6 @@
 (* Test the behaviour of hnf and simpl introduced in revision *)
 
-Variable n:nat.
+Parameter n:nat.
 Definition a:=0.
 
 Eval simpl in (fix plus (n m : nat) {struct n} : nat :=
