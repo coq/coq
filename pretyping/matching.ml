@@ -181,12 +181,15 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
       | PApp (PApp (h, a1), a2), _ ->
           sorec stk subst (PApp(h,Array.append a1 a2)) t
 
-      | PApp (PMeta (Some n),args1), App (c2,args2) when allow_partial_app ->
+      | PApp (PMeta meta,args1), App (c2,args2) when allow_partial_app ->
           let p = Array.length args2 - Array.length args1 in
           if p >= 0 then
             let args21, args22 = Array.chop p args2 in
 	    let c = mkApp(c2,args21) in
-            let subst = merge_binding allow_bound_rels stk n c subst in
+            let subst =
+              match meta with
+              | None -> subst
+              | Some n -> merge_binding allow_bound_rels stk n c subst in
             Array.fold_left2 (sorec stk) subst args1 args22
           else raise PatternMatchingFailure
 
@@ -257,7 +260,7 @@ let matches_core_closed convert allow_partial_app pat c =
 
 let extended_matches = matches_core None true true
 
-let matches c p = snd (matches_core_closed None true c p)
+let matches pat c = snd (matches_core_closed None true pat c)
 
 let special_meta = (-1)
 
@@ -267,6 +270,19 @@ type 'a matching_result =
       m_nxt : unit -> 'a matching_result }
 
 let mkresult s c n = { m_sub=s; m_ctx=c; m_nxt=n }
+
+let isPMeta = function PMeta _ -> true | _ -> false
+
+let matches_head pat c =
+  let head =
+    match pat, kind_of_term c with
+    | PApp (c1,arg1), App (c2,arg2) ->
+        if isPMeta c1 then c else
+        let n1 = Array.length arg1 in
+        if n1 < Array.length arg2 then mkApp (c2,Array.sub arg2 0 n1) else c
+    | c1, App (c2,arg2) when not (isPMeta c1) -> c2
+    | _ -> c in
+  matches pat head
 
 (* Tells if it is an authorized occurrence and if the instance is closed *)
 let authorized_occ partial_app closed pat c mk_ctx next =
@@ -354,6 +370,10 @@ let match_subterm_gen app pat c = sub_match ~partial_app:app pat c
 
 let is_matching pat c =
   try let _ = matches pat c in true
+  with PatternMatchingFailure -> false
+
+let is_matching_head pat c =
+  try let _ = matches_head pat c in true
   with PatternMatchingFailure -> false
 
 let is_matching_appsubterm ?(closed=true) pat c =

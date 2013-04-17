@@ -33,6 +33,10 @@ type bound_ident_map = (Id.t * Id.t) list
    numbers given in the pattern *)
 val matches : constr_pattern -> constr -> patvar_map
 
+(** [matches_head pat c] does the same as |matches pat c] but accepts
+    [pat] to match an applicative prefix of [c] *)
+val matches_head : constr_pattern -> constr -> patvar_map
+
 (** [extended_matches pat c] also returns the names of bound variables
    in [c] that matches the bound variables in [pat]; if several bound
    variables or metavariables have the same name, the metavariable,
@@ -42,6 +46,10 @@ val extended_matches :
 
 (** [is_matching pat c] just tells if [c] matches against [pat] *)
 val is_matching : constr_pattern -> constr -> bool
+
+(** [is_matching_head pat c] just tells if [c] or an applicative
+    prefix of it matches against [pat] *)
+val is_matching_head : constr_pattern -> constr -> bool
 
 (** [matches_conv env sigma] matches up to conversion in environment
    [(env,sigma)] when constants in pattern are concerned; it raises

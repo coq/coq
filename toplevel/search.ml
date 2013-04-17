@@ -120,6 +120,14 @@ let rec pattern_filter pat ref env typ =
   | LetIn (_, _, _, typ) -> pattern_filter pat ref env typ
   | _ -> false
 
+let rec head_filter pat ref env typ =
+  let typ = strip_outer_cast typ in
+  if Matching.is_matching_head pat typ then true
+  else match kind_of_term typ with
+  | Prod (_, _, typ)
+  | LetIn (_, _, _, typ) -> head_filter pat ref env typ
+  | _ -> false
+
 let full_name_of_reference ref =
   let (dir,id) = repr_path (path_of_global ref) in
   DirPath.to_string dir ^ "." ^ Id.to_string id
@@ -195,8 +203,19 @@ let search_rewrite pat mods =
 
 (** Search *)
 
-let search_by_head = search_pattern
-(** Now search_by_head is the same as search_pattern... *)
+let search_by_head pat mods =
+  let ans = ref [] in
+  let filter ref env typ =
+    let f_module = module_filter mods ref env typ in
+    let f_blacklist = blacklist_filter ref env typ in
+    let f_pattern () = head_filter pat ref env typ in
+    f_module && f_pattern () && f_blacklist
+  in
+  let iter ref env typ =
+    if filter ref env typ then plain_display ans ref env typ
+  in
+  let () = generic_search iter in
+  format_display !ans
 
 (** SearchAbout *)
 
