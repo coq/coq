@@ -344,8 +344,9 @@ let rec vernac_com interpfun checknav (loc,com) =
     with reraise ->
       let reraise = Errors.push reraise in
       Format.set_formatter_out_channel stdout;
-      if Loc.is_ghost loc || Loc.get_loc reraise != None then raise reraise
-      else Loc.raise loc reraise
+      let loc' = Option.default Loc.ghost (Loc.get_loc reraise) in
+      if Loc.is_ghost loc' then Loc.raise loc reraise
+      else raise reraise
 
 and read_vernac_file verbosely s =
   Flags.make_warn verbosely;
