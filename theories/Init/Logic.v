@@ -416,6 +416,45 @@ Proof.
   destruct 1; destruct 1; destruct 1; destruct 1; destruct 1; reflexivity.
 Qed.
 
+Theorem f_equal_compose : forall A B C (a b:A) (f:A->B) (g:B->C) (e:a=b),
+  f_equal g (f_equal f e) = f_equal (fun a => g (f a)) e.
+Proof.
+  destruct e. reflexivity.
+Defined.
+
+(** The goupoid structure of equality *)
+
+Theorem eq_trans_refl_l : forall A (x y:A) (e:x=y), eq_trans eq_refl e = e.
+Proof.
+  destruct e. reflexivity.
+Defined.
+
+Theorem eq_trans_refl_r : forall A (x y:A) (e:x=y), eq_trans e eq_refl = e.
+Proof.
+  destruct e. reflexivity.
+Defined.
+
+Theorem eq_sym_involutive : forall A (x y:A) (e:x=y), eq_sym (eq_sym e) = e.
+Proof.
+  destruct e; reflexivity.
+Defined.
+
+Theorem eq_trans_sym_inv_l : forall A (x y:A) (e:x=y), eq_trans (eq_sym e) e = eq_refl.
+Proof.
+  destruct e; reflexivity.
+Defined.
+
+Theorem eq_trans_sym_inv_r : forall A (x y:A) (e:x=y), eq_trans e (eq_sym e) = eq_refl.
+Proof.
+  destruct e; reflexivity.
+Defined.
+
+Theorem eq_trans_assoc : forall A (x y z t:A) (e:x=y) (e':y=z) (e'':z=t),
+  eq_trans e (eq_trans e' e'') = eq_trans (eq_trans e e') e''.
+Proof.
+  destruct e''; reflexivity.
+Defined.
+
 (* Aliases *)
 
 Notation sym_eq := eq_sym (compat "8.3").
