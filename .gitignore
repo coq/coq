@@ -1,0 +1,15 @@
+# Probably not exact
+
+*.vo
+*.cm*
+*.o
+*.a
+bin
+states
+config/Makefile
+config/coq_config.ml
+scripts/tolink.ml
+toplevel/mltop.optml
+ide/undo.mli
+ide/undo_lablgtk_ge212.mli
+dev/ocamldebug-v7
