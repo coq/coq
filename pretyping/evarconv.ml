@@ -871,7 +871,7 @@ let rec solve_unconstrained_evars_with_canditates evd =
             | Success evd -> solve_unconstrained_evars_with_canditates evd
             | UnifFailure _ -> aux l
           with
-          | IllTypedInstance _ as e
+          | IllTypedInstance _ -> aux l
           | e when Pretype_errors.precatchable_exception e -> aux l in
       (* List.rev is there to favor most dependent solutions *)
       (* and favor progress when used with the refine tactics *)
