@@ -110,7 +110,7 @@ let init () =
     %s
   </menu>
   <menu action='Queries'>
-    <menuitem action='SearchAbout' />
+    <menuitem action='Search' />
     <menuitem action='Check' />
     <menuitem action='Print' />
     <menuitem action='About' />

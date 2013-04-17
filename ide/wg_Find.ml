@@ -253,10 +253,10 @@ class finder (view : GText.view) =
 class info (coqtop : Coq.coqtop) (view : GText.view) (msg_view : Wg_MessageView.message_view) =
 
   let widget = GPack.vbox () in
-  (* SearchAbout part *)
+  (* Search part *)
   let query_box = GPack.hbox ~packing:widget#add () in
   let _ =
-    GMisc.label ~text:"SearchAbout:"
+    GMisc.label ~text:"Search:"
       ~xalign:1.0
       ~packing:query_box#pack ()
   in

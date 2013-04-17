@@ -766,15 +766,18 @@ GEXTEND Gram
       | IDENT "About"; qid = smart_global -> VernacPrint (PrintAbout qid)
 
       (* Searching the environment *)
-      | IDENT "Search"; c = constr_pattern; l = in_or_out_modules ->
+      | IDENT "SearchHead"; c = constr_pattern; l = in_or_out_modules ->
 	  VernacSearch (SearchHead c, l)
       | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules ->
 	  VernacSearch (SearchPattern c, l)
       | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules ->
 	  VernacSearch (SearchRewrite c, l)
+      | IDENT "Search"; s = searchabout_query; l = searchabout_queries ->
+	  let (sl,m) = l in VernacSearch (SearchAbout (s::sl), m)
+      (* compatibility: SearchAbout *)
       | IDENT "SearchAbout"; s = searchabout_query; l = searchabout_queries ->
 	  let (sl,m) = l in VernacSearch (SearchAbout (s::sl), m)
-      (* compatibility format of SearchAbout, with "[ ... ]" *)
+      (* compatibility: SearchAbout with "[ ... ]" *)
       | IDENT "SearchAbout"; "["; sl = LIST1 searchabout_query; "]";
 	  l = in_or_out_modules -> VernacSearch (SearchAbout sl, l)
 

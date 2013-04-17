@@ -207,7 +207,8 @@ let state_preserving = [
   "Recursive Extraction Library";
 
   "Search";
-  "SearchAbout";
+  "SearchAbout (* deprecated *)";
+  "SearchHead";
   "SearchPattern";
   "SearchRewrite";
 

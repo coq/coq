@@ -41,7 +41,7 @@ let is_keyword =
       "Mutual"; "Parameter"; "Parameters"; "Print"; "Printing"; "All"; "Proof"; "Proof with"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme"; "Assumptions"; "Axioms"; "Universes";
       "Induction"; "for"; "Sort"; "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem";
-      "Search"; "SearchAbout"; "SearchRewrite";
+      "Search"; "SearchAbout"; "SearchHead"; "SearchPattern"; "SearchRewrite";
       "Set"; "Types"; "Undo"; "Unset"; "Variable"; "Variables"; "Context";
       "Notation"; "Reserved Notation"; "Tactic Notation";
       "Delimit"; "Bind"; "Open"; "Scope"; "Inline";

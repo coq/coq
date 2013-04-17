@@ -626,7 +626,7 @@ let otherquery command _ =
     Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query) ignore
 
 let query command _ =
-  if command = "SearchAbout"
+  if command = "Search" || command = "SearchAbout"
   then searchabout ()
   else otherquery command ()
 
@@ -1054,7 +1054,7 @@ let build_ui () =
   let qitem s accel = item s ~label:("_"^s) ?accel ~callback:(Query.query s) in
   menu queries_menu [
     item "Queries" ~label:"_Queries";
-    qitem "SearchAbout" (Some "F2");
+    qitem "Search" (Some "F2");
     qitem "Check" (Some "F3");
     qitem "Print" (Some "F4");
     qitem "About" (Some "F5");

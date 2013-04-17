@@ -164,37 +164,7 @@ relies.
   Displays all assumptions and constants {\qualid} relies on.
 \end{Variants}
 
-\subsection[\tt Search {\term}.]{\tt Search {\term}.\comindex{Search}}
-This command displays the name and type of all theorems of the current
-context whose statement's conclusion has the form {\tt ({\term} t1 ..
-  tn)}.  This command is useful to remind the user of the name of
-library lemmas.
-
-\begin{coq_example}
-Search le.
-Search (@eq bool).
-\end{coq_example}
-
-\begin{Variants}
-\item
-{\tt Search} {\term} {\tt inside} {\module$_1$} \ldots{} {\module$_n$}{\tt .}
-
-This restricts the search to constructions defined in modules
-{\module$_1$} \ldots{} {\module$_n$}.
-
-\item {\tt Search} {\term} {\tt outside} {\module$_1$} \ldots{} {\module$_n$}{\tt .}
-
-This restricts the search to constructions not defined in modules
-{\module$_1$} \ldots{} {\module$_n$}.
-
-\begin{ErrMsgs}
-\item \errindex{Module/section \module{} not found}
-No module \module{} has been required (see Section~\ref{Require}).
-\end{ErrMsgs}
-
-\end{Variants}
-
-\subsection[\tt SearchAbout {\qualid}.]{\tt SearchAbout {\qualid}.\comindex{SearchAbout}}
+\subsection[\tt Search {\qualid}.]{\tt Search {\qualid}.\comindex{Search}}
 This command displays the name and type of all objects (theorems,
 axioms, etc) of the current context whose statement contains \qualid.
 This command is useful to remind the user of the name of library
@@ -209,36 +179,36 @@ environment}\\
 \newcommand{\termpatternorstr}{{\termpattern}\textrm{\textsl{-}}{\str}}
 
 \begin{Variants}
-\item {\tt SearchAbout {\str}.}
+\item {\tt Search {\str}.}
 
 If {\str} is a valid identifier, this command displays the name and type
 of all objects (theorems, axioms, etc) of the current context whose
 name contains {\str}. If {\str} is a notation's string denoting some
 reference {\qualid} (referred to by its main symbol as in \verb="+"=
 or by its notation's string as in \verb="_ + _"= or \verb="_ 'U' _"=, see
-Section~\ref{Notation}), the command works like {\tt SearchAbout
+Section~\ref{Notation}), the command works like {\tt Search
 {\qualid}}.
 
-\item {\tt SearchAbout {\str}\%{\delimkey}.}
+\item {\tt Search {\str}\%{\delimkey}.}
 
 The string {\str} must be a notation or the main symbol of a notation
 which is then interpreted in the scope bound to the delimiting key
 {\delimkey} (see Section~\ref{scopechange}).
 
-\item {\tt SearchAbout {\termpattern}.}
+\item {\tt Search {\termpattern}.}
 
 This searches for all statements or types of definition that contains
 a subterm that matches the pattern {\termpattern} (holes of the
 pattern are either denoted by ``{\texttt \_}'' or
 by ``{\texttt ?{\ident}}'' when non linear patterns are expected).
 
-\item {\tt SearchAbout \nelist{\zeroone{-}{\termpatternorstr}}{}.}\\
+\item {\tt Search \nelist{\zeroone{-}{\termpatternorstr}}{}.}\\
 
 \noindent where {\termpatternorstr} is a
 {\termpattern} or a {\str}, or a {\str} followed by a scope
 delimiting key {\tt \%{\delimkey}}.
 
-This generalization of {\tt SearchAbout} searches for all objects
+This generalization of {\tt Search} searches for all objects
 whose statement or type contains a subterm matching {\termpattern} (or
 {\qualid} if {\str} is the notation for a reference {\qualid}) and
 whose name contains all {\str} of the request that correspond to valid
@@ -247,23 +217,18 @@ search excludes the objects that mention that {\termpattern} or that
 {\str}.
 
 \item
-  {\tt SearchAbout} \nelist{{\termpatternorstr}}{}
+  {\tt Search} \nelist{{\termpatternorstr}}{}
     {\tt inside} {\module$_1$} \ldots{} {\module$_n$}{\tt .}
 
 This restricts the search to constructions defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
 
 \item
-  {\tt SearchAbout \nelist{{\termpatternorstr}}{}
+  {\tt Search \nelist{{\termpatternorstr}}{}
      outside {\module$_1$}...{\module$_n$}.}
 
 This restricts the search to constructions not defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
-
-\item {\tt SearchAbout [ ... ]. }
-
-For compatibility with older versions, the list of objects to search
-may be enclosed by optional {\tt [  ]} delimiters.
 
 \end{Variants}
 
@@ -273,17 +238,61 @@ may be enclosed by optional {\tt [  ]} delimiters.
 Require Import ZArith.
 \end{coq_example*}
 \begin{coq_example}
-SearchAbout Z.mul Z.add "distr".
-SearchAbout "+"%Z "*"%Z "distr" -positive -Prop.
-SearchAbout (?x * _ + ?x * _)%Z outside OmegaLemmas.
+Search Z.mul Z.add "distr".
+Search "+"%Z "*"%Z "distr" -positive -Prop.
+Search (?x * _ + ?x * _)%Z outside OmegaLemmas.
 \end{coq_example}
+
+\Warning \comindex{SearchAbout} Up to Coq version 8.4, {\tt Search}
+had the behavior of current {\tt SearchHead} and the behavior of
+current {\tt Search} was obtained with command {\tt SearchAbout}. For
+compatibility, the deprecated name {\tt SearchAbout} can still be used
+as a synonym of {\tt Search}. For compatibility, the list of objects to
+search when using {\tt SearchAbout} may also be enclosed by optional
+{\tt [ ]} delimiters.
+
+\subsection[\tt SearchHead {\term}.]{\tt SearchHead {\term}.\comindex{SearchHead}}
+This command displays the name and type of all theorems of the current
+context whose statement's conclusion has the form {\tt ({\term} t1 ..
+  tn)}.  This command is useful to remind the user of the name of
+library lemmas.
+
+\begin{coq_example*}
+Reset Initial.
+\end{coq_example*}
+
+\begin{coq_example}
+SearchHead le.
+SearchHead (@eq bool).
+\end{coq_example}
+
+\begin{Variants}
+\item
+{\tt SearchHead} {\term} {\tt inside} {\module$_1$} \ldots{} {\module$_n$}{\tt .}
+
+This restricts the search to constructions defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
+
+\item {\tt SearchHead} {\term} {\tt outside} {\module$_1$} \ldots{} {\module$_n$}{\tt .}
+
+This restricts the search to constructions not defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
+
+\begin{ErrMsgs}
+\item \errindex{Module/section \module{} not found}
+No module \module{} has been required (see Section~\ref{Require}).
+\end{ErrMsgs}
+
+\end{Variants}
+
+\Warning Up to Coq version 8.4, {\tt SearchHead} was named {\tt Search}.
 
 \subsection[\tt SearchPattern {\termpattern}.]{\tt SearchPattern {\term}.\comindex{SearchPattern}}
 
 This command displays the name and type of all theorems of the current
 context whose statement's conclusion or last hypothesis and conclusion
 matches the expression {\term} where holes in the latter are denoted
-by ``{\texttt \_}''. It is a variant of {\tt SearchAbout
+by ``{\texttt \_}''. It is a variant of {\tt Search
   {\termpattern}} that does not look for subterms but searches for
 statements whose conclusion has exactly the expected form, or whose
 statement finishes by the given series of hypothesis/conclusion.
@@ -344,7 +353,7 @@ This restricts the search to constructions not defined in modules
 \end{Variants}
 
 \subsubsection{Nota Bene:}
-For the {\tt Search}, {\tt SearchAbout}, {\tt SearchPattern} and
+For the {\tt Search}, {\tt SearchHead}, {\tt SearchPattern} and
 {\tt SearchRewrite} queries, it is possible to globally filter
 the search results via the command
 {\tt Add Search Blacklist "substring1"}.

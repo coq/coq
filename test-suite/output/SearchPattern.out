@@ -1,32 +1,32 @@
-false: bool
 true: bool
-xorb: bool -> bool -> bool
-orb: bool -> bool -> bool
-negb: bool -> bool
-implb: bool -> bool -> bool
+false: bool
 andb: bool -> bool -> bool
-S: nat -> nat
+orb: bool -> bool -> bool
+implb: bool -> bool -> bool
+xorb: bool -> bool -> bool
+negb: bool -> bool
 O: nat
+S: nat -> nat
+length: forall A : Type, list A -> nat
 pred: nat -> nat
 plus: nat -> nat -> nat
 mult: nat -> nat -> nat
 minus: nat -> nat -> nat
-min: nat -> nat -> nat
 max: nat -> nat -> nat
-length: forall A : Type, list A -> nat
+min: nat -> nat -> nat
 
 S: nat -> nat
 pred: nat -> nat
 plus: nat -> nat -> nat
 mult: nat -> nat -> nat
 minus: nat -> nat -> nat
-min: nat -> nat -> nat
 max: nat -> nat -> nat
+min: nat -> nat -> nat
 mult_n_Sm: forall n m : nat, n * m + n = n * S m
-le_n: forall n : nat, n <= n
 identity_refl: forall (A : Type) (a : A), identity a a
-eq_refl: forall (A : Type) (x : A), x = x
 iff_refl: forall A : Prop, A <-> A
+eq_refl: forall (A : Type) (x : A), x = x
+le_n: forall n : nat, n <= n
 pair: forall A B : Type, A -> B -> A * B
 conj: forall A B : Prop, A -> B -> A /\ B
 

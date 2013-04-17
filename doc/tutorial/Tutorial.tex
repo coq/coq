@@ -1539,17 +1539,17 @@ you should use \verb:Require Export M: in your module \verb:N:.
 
 It is often difficult to remember the names of all lemmas and
 definitions available in the current context, especially if large
-libraries have been loaded. A convenient \verb:SearchAbout: command
+libraries have been loaded. A convenient \verb:Search: command
 is available to lookup all known facts 
 concerning a given predicate. For instance, if you want to know all the
 known lemmas about the less or equal relation, just ask:
 \begin{coq_example}
-SearchAbout le.
+Search le.
 \end{coq_example}
-Another command \verb:Search: displays only lemmas where the searched
+Another command \verb:SearchHead: displays only lemmas where the searched
 predicate appears at the head position in the conclusion.
 \begin{coq_example}
-Search le.
+SearchHead le.
 \end{coq_example}
 
 A new and more convenient search tool is \textsf{SearchPattern}

@@ -126,10 +126,10 @@ let pr_search_about (b,c) =
   | SearchString (s,sc) -> qs s ++ pr_opt (fun sc -> str "%" ++ str sc) sc
 
 let pr_search a b pr_p = match a with
-  | SearchHead c -> str"Search" ++ spc() ++ pr_p c ++ pr_in_out_modules b
+  | SearchHead c -> str"SearchHead" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchPattern c -> str"SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchRewrite c -> str"SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
-  | SearchAbout sl -> str"SearchAbout" ++ spc() ++ str "[" ++ prlist_with_sep spc pr_search_about sl ++ str "]" ++ pr_in_out_modules b
+  | SearchAbout sl -> str"Search" ++ spc() ++ prlist_with_sep spc pr_search_about sl ++ pr_in_out_modules b
 
 let pr_locality_full = function
   | None -> mt ()
