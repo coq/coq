@@ -23,9 +23,14 @@ let safe_sys_command =
 
 (* Objects to link *)
 
+(* NB: dynlink is now always linked, it is used for loading plugins
+   and compiled vm code (see native-compiler). We now reject platforms
+   with ocamlopt but no dynlink.cmxa during ./configure, and give
+   instructions there about how to build a dummy dynlink.cmxa,
+   cf. dev/dynlink.ml. *)
+
 (* 1. Core objects *)
-let ocamlobjs = ["str.cma";"unix.cma";"nums.cma"]
-let dynobjs = ["dynlink.cma"]
+let ocamlobjs = ["str.cma";"unix.cma";"nums.cma";"dynlink.cma"]
 let camlp4objs =
   if Coq_config.camlp4 = "camlp5" then ["gramlib.cma"] else ["camlp4lib.cma"]
 let libobjs = ocamlobjs @ camlp4objs
@@ -96,14 +101,12 @@ let module_of_file name =
 
 (* Build the list of files to link and the list of modules names *)
 let files_to_link userfiles =
-  let dyn_objs =
-    if not !opt || Coq_config.has_natdynlink then dynobjs else [] in
   let toplevel_objs =
     if !top then topobjs else if !opt then notopobjs else [] in
-  let objs = dyn_objs @ libobjs @ core_objs @ toplevel_objs in
+  let objs = libobjs @ core_objs @ toplevel_objs in
   let modules = List.map module_of_file (objs @ userfiles)
   in
-  let libs = dyn_objs @ libobjs @ core_libs @ toplevel_objs in
+  let libs = libobjs @ core_libs @ toplevel_objs in
   let libstolink =
     (if !opt then List.map native_suffix libs else libs) @ userfiles
   in
@@ -211,12 +214,6 @@ let clean file =
     rm (basename ^ ".cmx")
   end
 
-(* Creates another temporary file for Dynlink if needed *)
-let tmp_dynlink()=
-  let tmp = Filename.temp_file "coqdynlink" ".ml" in
-  let _ = Sys.command ("echo \"Dynlink.init();;\" > "^tmp) in
-  tmp
-
 (* Initializes the kind of loading in the main program *)
 let declare_loading_string () =
   if not !top then
@@ -282,19 +279,11 @@ let main () =
   in
   (* files to link *)
   let (modules, tolink) = files_to_link userfiles in
-  (*file for dynlink *)
-  let dynlink=
-    if not (!opt || !top) then
-      [tmp_dynlink()]
-    else
-      []
-  in
   (* the list of the loaded modules *)
   let main_file = create_tmp_main_file modules in
   try
     let args =
-      options @ (includes ()) @ copts @ tolink @ dynlink @
-	[ Filename.quote main_file ]
+      options @ (includes ()) @ copts @ tolink @ [ Filename.quote main_file ]
     in
     (* add topstart.cmo explicitly because we shunted ocamlmktop wrapper *)
     let args = if !top then args @ [ "topstart.cmo" ] else args in

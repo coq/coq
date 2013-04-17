@@ -31,12 +31,8 @@ CAMLP4MOD:=gramlib
 endif
 
 ifeq ($(HASNATDYNLINK)-$(BEST),true-opt)
-  DYNLINKCMXA:=dynlink.cmxa
-  NATDYNLINKDEF:=-DHasDynlink
   DEPNATDYN:=
 else
-  DYNLINKCMXA:=
-  NATDYNLINKDEF:=
   DEPNATDYN:=-natdynlink no
 endif
 

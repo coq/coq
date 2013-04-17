@@ -88,7 +88,6 @@ let opt = (Coq_config.best = "opt")
 let ide = Coq_config.has_coqide
 let hasdynlink = Coq_config.has_natdynlink
 let os5fix = (Coq_config.natdynlinkflag = "os5fixme")
-let flag_dynlink = if hasdynlink then A"-DHasDynlink" else N
 let dep_dynlink = if hasdynlink then N else Sh"-natdynlink no"
 let lablgtkincl = Sh Coq_config.coqideincl
 let local = Coq_config.local
