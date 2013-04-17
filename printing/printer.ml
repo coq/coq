@@ -47,6 +47,9 @@ let pr_lconstr_core goal_concl_style env t =
 let pr_lconstr_env env = pr_lconstr_core false env
 let pr_constr_env env = pr_constr_core false env
 
+let pr_lconstr_goal_style_env env = pr_lconstr_core true env
+let pr_constr_goal_style_env env = pr_constr_core true env
+
 let pr_open_lconstr_env env (_,c) = pr_lconstr_env env c
 let pr_open_constr_env env (_,c) = pr_constr_env env c
 

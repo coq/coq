@@ -28,9 +28,11 @@ open Tacexpr
 
 val pr_lconstr_env         : env -> constr -> std_ppcmds
 val pr_lconstr             : constr -> std_ppcmds
+val pr_lconstr_goal_style_env : env -> constr -> std_ppcmds
 
 val pr_constr_env          : env -> constr -> std_ppcmds
 val pr_constr              : constr -> std_ppcmds
+val pr_constr_goal_style_env : env -> constr -> std_ppcmds
 
 (** Same, but resilient to [Nametab] errors. Prints fully-qualified
     names when [shortest_qualid_of_global] has failed. Prints "??"

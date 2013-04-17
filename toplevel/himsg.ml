@@ -503,7 +503,7 @@ let explain_cannot_find_well_typed_abstraction env p l e =
   str "Abstracting over the " ++
   str (String.plural (List.length l) "term") ++ spc () ++
   hov 0 (pr_enum (pr_lconstr_env env) l) ++ spc () ++
-  str "leads to a term" ++ spc () ++ pr_lconstr_env env p ++ spc () ++
+  str "leads to a term" ++ spc () ++ pr_lconstr_goal_style_env env p ++ spc () ++
   str "which is ill-typed." ++
   (match e with None -> mt () | Some e -> fnl () ++ str "Reason is: " ++ e)
 
