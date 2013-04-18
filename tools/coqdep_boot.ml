@@ -26,7 +26,7 @@ let rec parse = function
        (* To solve conflict (e.g. same filename in kernel and checker)
           we allow to state an explicit order *)
        add_dir add_known r [];
-       norecdir_list:=r::!norecdir_list;
+       norec_dirs:=r::!norec_dirs;
        parse ll
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()
