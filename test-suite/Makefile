@@ -46,6 +46,7 @@ SHOW := $(if $(VERBOSE),@true,@echo)
 HIDE := $(if $(VERBOSE),,@)
 REDIR := $(if $(VERBOSE),,> /dev/null 2>&1)
 
+bogomips :=
 ifneq (,$(wildcard /proc/cpuinfo))
   sedbogo := -e "s/bogomips.*: \([0-9]*\).*/\1/p" # i386, ppc
   sedbogo += -e "s/Cpu0Bogo.*: \([0-9]*\).*/\1/p" # sparc
