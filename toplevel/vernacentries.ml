@@ -1007,7 +1007,11 @@ let vernac_declare_arguments locality r l nargs flags =
             error ("Argument "^Id.to_string x^" cannot be declared implicit.")
         | (Name iid, _,_, true, max), Name id ->
            b || not (Id.equal iid id), Some (ExplByName id, max, false)
-        | (Name iid, _,_, _, _), Name id -> b || not (Id.equal iid id), None
+        | (Name iid, _,_, false, _), Name id ->
+           if not (Id.equal iid id) then
+             error("Argument "^Id.to_string id^" cannot be renamed to "^
+               Id.to_string iid^" because it is not declared as implicit");
+           b, None
         | _ -> b, None)
         sr (List.combine il inf_names) in
       sr || sr', List.map_filter (fun x -> x) impl)
