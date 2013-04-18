@@ -6,26 +6,24 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Afin de rendre Coq plus portable, ce programme Caml remplace le script
-   coqc.
+(** Coq compiler : coqc *)
 
-   Ici, on trie la ligne de commande pour en extraire les fichiers à compiler,
-   puis on les compile un par un en passant le reste de la ligne de commande
-   à un process "coqtop -batch -load-vernac-source <fichier>".
+(** For improving portability, coqc is now an OCaml program instead
+    of a shell script. We use as much as possible the Sys and Filename
+    module for better portability, but the Unix module is still used
+    here and there (with explicitly qualified function names Unix.foo).
 
-   On essaye au maximum d'utiliser les modules Sys et Filename pour que la
-   portabilité soit maximale, mais il reste encore des appels à des fonctions
-   du module Unix. Ceux-ci sont préfixés par "Unix."
+    We process here the commmand line to extract names of files to compile,
+    then we compile them one by one while passing by the rest of the command
+    line to a process running "coqtop -batch -compile <file>".
 *)
 
-(* environment *)
+(* Environment *)
 
 let environment = Unix.environment ()
 
 let binary = ref "coqtop"
 let image = ref ""
-
-(* coqc options *)
 
 let verbose = ref false
 
@@ -56,18 +54,14 @@ let check_module_name s =
 let rec make_compilation_args = function
   | [] -> []
   | file :: fl ->
-      let dirname = Filename.dirname file in
-      let basename = Filename.basename file in
-      let modulename =
-        if Filename.check_suffix basename ".v" then
-          Filename.chop_suffix basename ".v"
-        else
-          basename
+      let file_noext =
+        if Filename.check_suffix file ".v" then
+          Filename.chop_suffix file ".v"
+        else file
       in
-      check_module_name modulename;
-      let file = Filename.concat dirname modulename in
+      check_module_name (Filename.basename file_noext);
       (if !verbose then "-compile-verbose" else "-compile")
-      :: file :: (make_compilation_args fl)
+      :: file_noext :: (make_compilation_args fl)
 
 (* compilation of files [files] with command [command] and args [args] *)
 
@@ -87,15 +81,12 @@ let compile command args files =
   | _ ->
      Unix.execvpe command (Array.of_list args') environment
 
-(* parsing of the command line
- *
- * special treatment for -bindir and -i.
- * other options are passed to coqtop *)
-
 let usage () =
   Usage.print_usage_coqc () ;
   flush stderr ;
   exit 1
+
+(* parsing of the command line *)
 
 let parse_args () =
   let rec parse (cfiles,args) = function
@@ -103,22 +94,47 @@ let parse_args () =
 	List.rev cfiles, List.rev args
     | ("-verbose" | "--verbose") :: rem ->
 	verbose := true ; parse (cfiles,args) rem
-    | "-image" :: f :: rem ->
-	image := f; parse (cfiles,args) rem
-    | "-image" :: [] ->
-	usage ()
-    | "-byte" :: rem ->
-       binary := "coqtop.byte"; parse (cfiles,args) rem
+    | "-image" :: f :: rem -> image := f; parse (cfiles,args) rem
+    | "-image" :: [] ->	usage ()
+    | "-byte" :: rem -> binary := "coqtop.byte"; parse (cfiles,args) rem
     | "-opt" :: rem -> (* now a no-op *) parse (cfiles,args) rem
+
+(* Obsolete options *)
+
     | "-libdir" :: _ :: rem ->
-        print_string "Warning: option -libdir deprecated and ignored\n"; flush stdout;
+        print_string "Warning: option -libdir deprecated and ignored\n";
+        flush stdout;
         parse (cfiles,args) rem
     | ("-db"|"-debugger") :: rem ->
-        print_string "Warning: option -db/-debugger deprecated and ignored\n";flush stdout;
+        print_string "Warning: option -db/-debugger deprecated and ignored\n";
+        flush stdout;
         parse (cfiles,args) rem
 
+(* Informative options *)
+
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
-    | ("-outputstate"|"-inputstate"|"-is"
+
+    | ("-v"|"--version") :: _ -> Usage.version 0
+
+    | ("-where") :: _ ->
+	print_endline (Envars.coqlib (fun x -> x)); exit 0
+
+    | ("-config" | "--config") :: _ -> Usage.print_config (); exit 0
+
+(* Options for coqtop : a) options with 0 argument *)
+
+    | ("-notactics"|"-debug"|"-nolib"|"-boot"|"-time"
+      |"-batch"|"-noinit"|"-nois"|"-noglob"|"-no-glob"
+      |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
+      |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-beautify"|"-strict-implicit"
+      |"-dont-load-proofs"|"-load-proofs"|"-force-load-proofs"
+      |"-impredicative-set"|"-vm"|"-no-native-compiler"
+      |"-verbose-compat-notations"|"-no-compat-notations" as o) :: rem ->
+	parse (cfiles,o::args) rem
+
+(* Options for coqtop : a) options with 1 argument *)
+
+    | ("-outputstate"|"-inputstate"|"-is"|"-exclude-dir"
       |"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib" as o) :: rem ->
@@ -127,6 +143,9 @@ let parse_args () =
 	    | s :: rem' -> parse (cfiles,s::o::args) rem'
 	    | []        -> usage ()
 	end
+
+(* Options for coqtop : a) options with 1 argument and possibly more *)
+
     | ("-I"|"-include" as o) :: rem ->
 	begin
 	  match rem with
@@ -139,22 +158,8 @@ let parse_args () =
     | "-R" :: s :: "-as" :: [] -> usage ()
     | "-R" :: s :: t :: rem -> parse (cfiles,t::s::"-R"::args) rem
 
-    | ("-notactics"|"-debug"|"-nolib"|"-boot"|"-time"
-      |"-batch"|"-noinit"|"-nois"|"-noglob"|"-no-glob"
-      |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
-      |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-beautify"|"-strict-implicit"
-      |"-dont-load-proofs"|"-load-proofs"|"-force-load-proofs"
-      |"-impredicative-set"|"-vm"|"-no-native-compiler" as o) :: rem ->
-	parse (cfiles,o::args) rem
+(* Anything else is interpreted as a file *)
 
-    | ("-where") :: _ ->
-	print_endline (Envars.coqlib (fun x -> x));
-	exit 0
-
-    | ("-config" | "--config") :: _ -> Usage.print_config (); exit 0
-
-    | ("-v"|"--version") :: _ ->
-        Usage.version 0
     | f :: rem ->
 	if Sys.file_exists f then
 	  parse (f::cfiles,args) rem
