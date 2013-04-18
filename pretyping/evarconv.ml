@@ -204,7 +204,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
     let c = nf_evar evd c in
     let env' = push_rel (na,None,c) env in
     let appr1 = evar_apprec ts env' evd [] body in
-    let appr2 = (lift 1 term2, List.map (lift 1) l' @ [mkRel 1]) in
+    let appr2 = (lift 1 term', List.map (lift 1) l' @ [mkRel 1]) in
     if onleft then evar_eqappr_x ts env' evd CONV appr1 appr2
     else evar_eqappr_x ts env' evd CONV appr2 appr1
   in
