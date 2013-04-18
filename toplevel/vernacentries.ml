@@ -895,7 +895,11 @@ let vernac_declare_arguments local r l nargs flags =
             error ("Argument "^string_of_id x^" cannot be declared implicit.")
         | (Name iid, _,_, true, max), Name id ->
            b || iid <> id, Some (ExplByName id, max, false)
-        | (Name iid, _,_, _, _), Name id -> b || iid <> id, None
+        | (Name iid, _,_, false, _), Name id ->
+           if iid <> id then
+             error("Argument "^string_of_id id^" cannot be renamed to "^
+               string_of_id iid^" because it is not declared as implicit");
+           b, None
         | _ -> b, None)
         sr (List.combine il inf_names) in
       sr || sr', Util.list_map_filter (fun x -> x) impl)
