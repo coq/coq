@@ -131,7 +131,7 @@ let parse_args () =
         parse (cfiles,args) rem
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
-    | ("-outputstate"|"-inputstate"|"-is"
+    | ("-outputstate"|"-inputstate"|"-is"|"-exclude-dir"
       |"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"|"-user"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib" as o) :: rem ->
