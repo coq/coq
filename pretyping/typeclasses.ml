@@ -505,22 +505,26 @@ let mark_resolvability b evi =
 let mark_unresolvable evi = mark_resolvability false evi
 let mark_resolvable evi = mark_resolvability true evi
 
-let mark_resolvability b sigma =
-  Evd.fold_undefined (fun ev evi evs ->
-    Evd.add evs ev (mark_resolvability_undef b evi))
-    sigma (Evd.defined_evars sigma)
-
-let mark_unresolvables sigma = mark_resolvability false sigma
-let mark_resolvables sigma = mark_resolvability true sigma
-
 open Evar_kinds
 type evar_filter = Evar_kinds.t -> bool
 
 let all_evars _ = true
-let no_goals = function GoalEvar -> false | _ -> true
+let all_goals = function GoalEvar -> true | _ -> false
+let no_goals evi = not (all_goals evi)
 let no_goals_or_obligations = function
   | GoalEvar | QuestionMark _ -> false
   | _ -> true
+
+let mark_resolvability filter b sigma =
+  Evd.fold_undefined 
+    (fun ev evi evs ->
+     if filter (snd evi.evar_source) then
+       Evd.add evs ev (mark_resolvability_undef b evi)
+     else Evd.add evs ev evi)
+  sigma (Evd.defined_evars sigma)
+
+let mark_unresolvables ?(filter=all_evars) sigma = mark_resolvability filter false sigma
+let mark_resolvables sigma = mark_resolvability all_evars true sigma
 
 let has_typeclasses filter evd =
   Evd.fold_undefined (fun ev evi has -> has ||

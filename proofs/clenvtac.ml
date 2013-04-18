@@ -63,7 +63,7 @@ let clenv_refine with_evars ?(with_classes=true) clenv gls =
     if with_classes then
       let evd' = Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
         ~fail:(not with_evars) clenv.env clenv.evd
-      in Typeclasses.mark_unresolvables evd'
+      in Typeclasses.mark_unresolvables ~filter:Typeclasses.all_goals evd'
     else clenv.evd
   in
   let clenv = { clenv with evd = evd' } in

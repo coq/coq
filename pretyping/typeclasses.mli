@@ -77,21 +77,22 @@ val is_implicit_arg : Evar_kinds.t -> bool
 
 val instance_constructor : typeclass -> constr list -> constr option * types
 
+(** Filter which evars to consider for resolution. *)
+type evar_filter = Evar_kinds.t -> bool
+val all_evars : evar_filter
+val all_goals : evar_filter
+val no_goals : evar_filter
+val no_goals_or_obligations : evar_filter
+
 (** Resolvability.
     Only undefined evars can be marked or checked for resolvability. *)
 
 val is_resolvable : evar_info -> bool
 val mark_unresolvable : evar_info -> evar_info
-val mark_unresolvables : evar_map -> evar_map
+val mark_unresolvables : ?filter:evar_filter -> evar_map -> evar_map
 val mark_resolvable : evar_info -> evar_info
 val mark_resolvables : evar_map -> evar_map
 val is_class_evar : evar_map -> evar_info -> bool
-
-(** Filter which evars to consider for resolution. *)
-type evar_filter = Evar_kinds.t -> bool
-val all_evars : evar_filter
-val no_goals : evar_filter
-val no_goals_or_obligations : evar_filter
 
 val resolve_typeclasses : ?filter:evar_filter -> ?split:bool -> ?fail:bool ->
   env -> evar_map -> evar_map
