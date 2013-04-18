@@ -117,7 +117,7 @@ let dir_ml_load s =
 let dir_ml_use s =
   match !load with
     | WithTop t -> t.use_file s
-    | _ -> warning "Cannot access the ML compiler"
+    | _ -> msg_warn "Cannot access the ML compiler"
 
 (* Adds a path to the ML paths *)
 let add_ml_dir s =

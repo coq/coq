@@ -433,46 +433,46 @@ let kind_of_constant kn =
     | DK.IsAssumption DK.Definitional -> "AXIOM","Declaration"
     | DK.IsAssumption DK.Logical -> "AXIOM","Axiom"
     | DK.IsAssumption DK.Conjectural ->
-        Pp.warning "Conjecture not supported in dtd (used Declaration instead)";
+        Pp.msg_warn "Conjecture not supported in dtd (used Declaration instead)";
         "AXIOM","Declaration"
     | DK.IsDefinition DK.Definition -> "DEFINITION","Definition"
     | DK.IsDefinition DK.Example ->
-        Pp.warning "Example not supported in dtd (used Definition instead)";
+        Pp.msg_warn "Example not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsDefinition DK.Coercion ->
-        Pp.warning "Coercion not supported in dtd (used Definition instead)";
+        Pp.msg_warn "Coercion not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsDefinition DK.SubClass ->
-        Pp.warning "SubClass not supported in dtd (used Definition instead)";
+        Pp.msg_warn "SubClass not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsDefinition DK.CanonicalStructure ->
-        Pp.warning "CanonicalStructure not supported in dtd (used Definition instead)";
+        Pp.msg_warn "CanonicalStructure not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsDefinition DK.Fixpoint ->
-        Pp.warning "Fixpoint not supported in dtd (used Definition instead)";
+        Pp.msg_warn "Fixpoint not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsDefinition DK.CoFixpoint ->
-        Pp.warning "CoFixpoint not supported in dtd (used Definition instead)";
+        Pp.msg_warn "CoFixpoint not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsDefinition DK.Scheme ->
-        Pp.warning "Scheme not supported in dtd (used Definition instead)";
+        Pp.msg_warn "Scheme not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsDefinition DK.StructureComponent ->
-        Pp.warning "StructureComponent not supported in dtd (used Definition instead)";
+        Pp.msg_warn "StructureComponent not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsDefinition DK.IdentityCoercion ->
-        Pp.warning "IdentityCoercion not supported in dtd (used Definition instead)";
+        Pp.msg_warn "IdentityCoercion not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsDefinition DK.Instance ->
-        Pp.warning "Instance not supported in dtd (used Definition instead)";
+        Pp.msg_warn "Instance not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsDefinition DK.Method ->
-        Pp.warning "Method not supported in dtd (used Definition instead)";
+        Pp.msg_warn "Method not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
     | DK.IsProof (DK.Theorem|DK.Lemma|DK.Corollary|DK.Fact|DK.Remark as thm) ->
         "THEOREM",DK.string_of_theorem_kind thm
     | DK.IsProof _ ->
-        Pp.warning "Unsupported theorem kind (used Theorem instead)";
+        Pp.msg_warn "Unsupported theorem kind (used Theorem instead)";
         "THEOREM",DK.string_of_theorem_kind DK.Theorem
 ;;
 

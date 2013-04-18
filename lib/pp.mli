@@ -116,6 +116,7 @@ val msgnl : std_ppcmds -> unit
 val msgerr : std_ppcmds -> unit
 val msgerrnl : std_ppcmds -> unit
 val msg_warning : std_ppcmds -> unit
+val msg_warn : string -> unit
 
 (** Same specific display in emacs as warning, but without the "Warning:" **)
 val msg_debug : std_ppcmds -> unit

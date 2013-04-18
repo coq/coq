@@ -341,6 +341,7 @@ let msgnl x = msgnl_with !std_ft x
 let msgerr x = msg_with !err_ft x
 let msgerrnl x = msgnl_with !err_ft x
 let msg_warning x = msg_warning_with !err_ft x
+let msg_warn x = msg_warning (str x)
 
 (* Same specific display in emacs as warning, but without the "Warning:" *)
 let msg_debug x = msgnl (emacs_quote x)

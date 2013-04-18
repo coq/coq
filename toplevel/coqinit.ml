@@ -140,6 +140,6 @@ let get_compat_version = function
   | "8.3" -> Flags.V8_3
   | "8.2" -> Flags.V8_2
   | ("8.1" | "8.0") as s ->
-    warning ("Compatibility with version "^s^" not supported.");
+    msg_warn ("Compatibility with version "^s^" not supported.");
     Flags.V8_2
   | s -> Util.error ("Unknown compatibility version \""^s^"\".")

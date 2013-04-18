@@ -161,7 +161,7 @@ let type0_univ = Atom UniverseLevel.Set
 
 let is_type0_univ = function
   | Atom UniverseLevel.Set -> true
-  | Max ([UniverseLevel.Set], []) -> warning "Non canonical Set"; true
+  | Max ([UniverseLevel.Set], []) -> msg_warn "Non canonical Set"; true
   | u -> false
 
 let is_univ_variable = function

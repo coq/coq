@@ -271,7 +271,7 @@ let declare_congr_scheme ind =
     then
       ignore (define_individual_scheme congr_scheme_kind KernelVerbose None ind)
     else
-      warning "Cannot build congruence scheme because eq is not found"
+      msg_warn "Cannot build congruence scheme because eq is not found"
   end
 
 let declare_sym_scheme ind =

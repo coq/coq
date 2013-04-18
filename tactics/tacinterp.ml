@@ -227,7 +227,7 @@ let add_tactic s t =
 let overwriting_add_tactic s t =
   if Hashtbl.mem tac_tab s then begin
     Hashtbl.remove tac_tab s;
-    warning ("Overwriting definition of tactic "^s)
+    msg_warn ("Overwriting definition of tactic "^s)
   end;
   Hashtbl.add tac_tab s t
 
@@ -265,7 +265,7 @@ let lookup_genarg id =
   try Gmap.find id !extragenargtab
   with Not_found ->
     let msg = "No interpretation function found for entry " ^ id in
-    warning msg;
+    msg_warn msg;
     let f = (fun _ _ -> failwith msg), (fun _ _ _ -> failwith msg), (fun _ a -> a) in
     add_interp_genarg id f;
     f

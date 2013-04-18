@@ -571,7 +571,7 @@ let pr_prim_rule = function
       (str"fix " ++ pr_id f ++ str"/" ++ int n)
 
   | FixRule (f,n,others,j) ->
-      if j<>0 then warning "Unsupported printing of \"fix\"";
+      if j<>0 then msg_warn "Unsupported printing of \"fix\"";
       let rec print_mut = function
 	| (f,n,ar)::oth ->
            pr_id f ++ str"/" ++ int n ++ str" : " ++ pr_lconstr ar ++ print_mut oth
@@ -583,7 +583,7 @@ let pr_prim_rule = function
       (str"cofix " ++ pr_id f)
 
   | Cofix (f,others,j) ->
-      if j<>0 then warning "Unsupported printing of \"fix\"";
+      if j<>0 then msg_warn "Unsupported printing of \"fix\"";
       let rec print_mut = function
 	| (f,ar)::oth ->
 	  (pr_id f ++ str" : " ++ pr_lconstr ar ++ print_mut oth)

@@ -255,7 +255,7 @@ let add_new_coercion_core coef stre source target isid =
   in
   check_source (Some cls);
   if not (uniform_cond (llp-ind) lvs) then
-    warning (Pp.string_of_ppcmds (explain_coercion_error coef NotUniform));
+    msg_warn (Pp.string_of_ppcmds (explain_coercion_error coef NotUniform));
   let clt =
     try
       get_target tg ind
