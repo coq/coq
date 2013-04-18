@@ -9,7 +9,6 @@ library
 plugins
 pretyping
 proofs
-scripts
 states
 tactics
 theories

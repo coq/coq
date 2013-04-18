@@ -72,7 +72,7 @@ PLUGINS:=\
 
 SRCDIRS:=\
   $(CORESRCDIRS)  \
-  tools 	tools/coqdoc 	scripts	\
+  tools 	tools/coqdoc	\
   $(addprefix plugins/, $(PLUGINS))
 
 IDESRCDIRS:=\
@@ -224,9 +224,9 @@ IDEMOD:=$(shell cat ide/ide.mllib)
 
 COQENVCMO:=lib/clib.cma lib/loc.cmo lib/errors.cmo
 
-COQMKTOPCMO:=$(COQENVCMO) scripts/tolink.cmo scripts/coqmktop.cmo
+COQMKTOPCMO:=$(COQENVCMO) tools/tolink.cmo tools/coqmktop.cmo
 
-COQCCMO:=$(COQENVCMO) toplevel/usage.cmo scripts/coqc.cmo
+COQCCMO:=$(COQENVCMO) toplevel/usage.cmo tools/coqc.cmo
 
 ## Misc
 

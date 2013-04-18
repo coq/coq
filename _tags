@@ -1,8 +1,8 @@
 
 ## tags for binaries
 
-<scripts/coqmktop.{native,byte}> : use_str, use_unix
-<scripts/coqc.{native,byte}> : use_str, use_unix
+<tools/coqmktop.{native,byte}> : use_str, use_unix
+<tools/coqc.{native,byte}> : use_str, use_unix
 <tools/coqdep_boot.{native,byte}> : use_unix
 <tools/coqdep.{native,byte}> : use_str, use_unix
 <tools/coq_tex.{native,byte}> : use_str
@@ -68,8 +68,6 @@
 "pretyping": include
 "printing": include
 "proofs": include
-"scripts": include
-"states": include
 "tactics": include
 "theories": include
 "tools": include

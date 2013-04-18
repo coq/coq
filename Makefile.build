@@ -254,7 +254,7 @@ $(COQMKTOP): $(patsubst %.cma,%$(BESTLIB),$(COQMKTOPCMO:.cmo=$(BESTOBJ)))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
 
-scripts/tolink.ml: Makefile.build Makefile.common
+tools/tolink.ml: Makefile.build Makefile.common
 	$(SHOW)"ECHO... >" $@
 	$(HIDE)echo "let copts = \"-cclib -lcoqrun\"" > $@
 	$(HIDE)echo "let core_libs = \""$(LINKCMO)"\"" >> $@

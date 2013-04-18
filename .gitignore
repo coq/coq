@@ -145,7 +145,7 @@ ide/coqide_main_opt.ml
 
 kernel/byterun/coq_jumptbl.h
 kernel/copcodes.ml
-scripts/tolink.ml
+tools/tolink.ml
 theories/Numbers/Natural/BigN/NMake_gen.v
 ide/index_urls.txt
 

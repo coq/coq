@@ -78,7 +78,7 @@ EXISTINGMLI := $(call find, '*.mli')
 
 GENML4FILES:= $(ML4FILES:.ml4=.ml)
 GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
-  scripts/tolink.ml kernel/copcodes.ml
+  tools/tolink.ml kernel/copcodes.ml
 GENMLIFILES:=$(YACCFILES:.mly=.mli)
 GENPLUGINSMOD:=$(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml))
 export GENHFILES:=kernel/byterun/coq_jumptbl.h

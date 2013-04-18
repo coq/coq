@@ -111,7 +111,7 @@ let core_cma = List.map (fun s -> s^".cma") core_libs
 let core_cmxa = List.map (fun s -> s^".cmxa") core_libs
 let core_mllib = List.map (fun s -> s^".mllib") core_libs
 
-let tolink = "scripts/tolink.ml"
+let tolink = "tools/tolink.ml"
 
 let c_headers_base =
   ["coq_fix_code.h";"coq_instruct.h"; "coq_memory.h"; "int64_emul.h";
@@ -155,7 +155,7 @@ let coqdepdeps = theoriesv @ pluginsv @ pluginsmllib
 let coqtop = "toplevel/coqtop"
 let coqide = "ide/coqide"
 let coqdepboot = "tools/coqdep_boot"
-let coqmktop = "scripts/coqmktop"
+let coqmktop = "tools/coqmktop"
 
 (** The list of binaries to build:
     (name of link in bin/, name in _build, install both or only best) *)
@@ -167,7 +167,7 @@ let all_binaries =
  [ "coqtop", coqtop, Both;
    "coqide", "ide/coqide_main", Ide;
    "coqmktop", coqmktop, Both;
-   "coqc", "scripts/coqc", Both;
+   "coqc", "tools/coqc", Both;
    "coqchk", "checker/main", Both;
    "coqdep_boot", coqdepboot, Best;
    "coqdep", "tools/coqdep", Best;
