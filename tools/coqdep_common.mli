@@ -11,7 +11,8 @@ val option_noglob : bool ref
 val option_slash : bool ref
 val option_natdynlk : bool ref
 val option_mldep : string option ref
-val norecdir_list : string list ref
+val norec_dirs : string list ref
+val norec_dirnames : string list ref
 val suffixe : string ref
 type dir = string option
 val ( // ) : string -> string -> string

@@ -26,7 +26,8 @@ let option_slash = ref false
 let option_natdynlk = ref true
 let option_mldep = ref None
 
-let norecdir_list = ref ([]:string list)
+let norec_dirs = ref ([] : string list)
+let norec_dirnames = ref ["CVS"; "_darcs"]
 
 let suffixe = ref ".vo"
 
@@ -439,14 +440,17 @@ let rec add_directory recur add_file phys_dir log_dir =
   try
     while true do
       let f = readdir dirh in
-      (* we avoid . .. and all hidden files and subdirs (e.g. .svn, _darcs) *)
-      if f.[0] <> '.' && f.[0] <> '_' then
+      (* we avoid all files and subdirs starting by '.' (e.g. .svn),
+         plus CVS and _darcs and any subdirs given via -exclude-dirs *)
+      if f.[0] <> '.' then
         let phys_f = if phys_dir = "." then f else phys_dir//f in
 	match try (stat phys_f).st_kind with _ -> S_BLK with
 	  | S_DIR when recur ->
-	      if List.mem phys_f !norecdir_list then ()
-	      else
-		add_directory recur add_file phys_f (log_dir@[f])
+              if List.mem f !norec_dirnames then ()
+              else
+	        if List.mem phys_f !norec_dirs then ()
+	        else
+		  add_directory recur add_file phys_f (log_dir@[f])
 	  | S_REG -> add_file phys_dir log_dir f
 	  | _ -> ()
     done
