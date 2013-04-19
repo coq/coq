@@ -86,8 +86,8 @@ type search_constraint =
     the flag should be negated. *)
 type search_flags = (search_constraint * bool) list
 
-(** A named object in Coq. [coq_object_qualid] is the shortest path defined for 
-    the user. [coq_object_prefix] is the missing part to recover the fully 
+(** A named object in Coq. [coq_object_qualid] is the shortest path defined for
+    the user. [coq_object_prefix] is the missing part to recover the fully
     qualified name, i.e [fully_qualified = coq_object_prefix + coq_object_qualid].
     [coq_object_object] is the actual content of the object. *)
 type 'a coq_object = {
@@ -123,3 +123,98 @@ type 'a value =
   | Good of 'a
   | Unsafe of 'a
   | Fail of (location * string)
+
+(* Request/Reply message protocol between Coq and CoqIde *)
+
+(** Running a command (given as a string).
+    The 1st flag indicates whether to use "raw" mode
+    (less sanity checks, no impact on the undo stack).
+    Suitable e.g. for queries, or for the Set/Unset
+    of display options that coqide performs all the time.
+    The 2nd flag controls the verbosity.
+    The returned string contains the messages produced
+    by this command, but not the updated goals (they are
+    to be fetch by a separated [current_goals]). *)
+type interp_sty = raw * verbose * string
+(* spiwack: [Inl] for safe and [Inr] for unsafe. *)
+type interp_rty = (string,string) Util.union
+
+(** Backtracking by at least a certain number of phrases.
+    No finished proofs will be re-opened. Instead,
+    we continue backtracking until before these proofs,
+    and answer the amount of extra backtracking performed.
+    Backtracking by more than the number of phrases already
+    interpreted successfully (and not yet undone) will fail. *)
+type rewind_sty = int
+type rewind_rty = int
+
+(** Fetching the list of current goals. Return [None] if no proof is in
+    progress, [Some gl] otherwise. *)
+type goals_sty = unit
+type goals_rty = goals option
+
+(** Retrieve the list of unintantiated evars in the current proof. [None] if no
+    proof is in progress. *)
+type evars_sty = unit
+type evars_rty = evar list option
+
+(** Retrieving the tactics applicable to the current goal. [None] if there is
+    no proof in progress. *)
+type hints_sty = unit
+type hints_rty = (hint list * hint) option
+
+(** The status, for instance "Ready in SomeSection, proving Foo" *)
+type status_sty = unit
+type status_rty = status
+
+(** Search for objects satisfying the given search flags. *)
+type search_sty = search_flags
+type search_rty = string coq_object list
+
+(** Retrieve the list of options of the current toplevel *)
+type get_options_sty = unit
+type get_options_rty = (option_name * option_state) list
+
+(** Set the options to the given value. Warning: this is not atomic, so whenever
+    the call fails, the option state can be messed up... This is the caller duty
+    to check that everything is correct. *)
+type set_options_sty = (option_name * option_value) list
+type set_options_rty = unit
+
+(** Is a directory part of Coq's loadpath ? *)
+type inloadpath_sty = string
+type inloadpath_rty = bool
+
+(** Create a "match" template for a given inductive type.
+    For each branch of the match, we list the constructor name
+    followed by enough pattern variables. *)
+type mkcases_sty = string
+type mkcases_rty = string list list
+
+(** Quit gracefully the interpreter. *)
+type quit_sty = unit
+type quit_rty = unit
+
+type about_sty = unit
+type about_rty = coq_info
+
+type handle_exn_rty = location * string
+type handle_exn_sty = exn
+
+type handler = {
+  interp      : interp_sty      -> interp_rty;
+  rewind      : rewind_sty      -> rewind_rty;
+  goals       : goals_sty       -> goals_rty;
+  evars       : evars_sty       -> evars_rty;
+  hints       : hints_sty       -> hints_rty;
+  status      : status_sty      -> status_rty;
+  search      : search_sty      -> search_rty;
+  get_options : get_options_sty -> get_options_rty;
+  set_options : set_options_sty -> set_options_rty;
+  inloadpath  : inloadpath_sty  -> inloadpath_rty;
+  mkcases     : mkcases_sty     -> mkcases_rty;
+  quit        : quit_sty        -> quit_rty;
+  about       : about_sty       -> about_rty;
+  handle_exn  : handle_exn_sty  -> handle_exn_rty;
+}
+

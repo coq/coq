@@ -540,13 +540,18 @@ let eval_call ?(logger=default_logger) call handle k =
   Minilib.log "End eval_call";
   Void
 
-let interp ?(logger=default_logger) ?(raw=false) ?(verbose=true) s =
-  eval_call ~logger (Serialize.interp (raw,verbose,s))
+let interp ?(logger=default_logger) ?(raw=false) ?(verbose=true) s h k =
+  eval_call ~logger (Serialize.interp (raw,verbose,s)) h
+    (function
+     | Interface.Good (Util.Inl v) -> k (Interface.Good v)
+     | Interface.Good (Util.Inr v) -> k (Interface.Unsafe v)
+     | Interface.Fail v -> k (Interface.Fail v)
+     | Interface.Unsafe _ -> assert false)
 let rewind i = eval_call (Serialize.rewind i)
 let inloadpath s = eval_call (Serialize.inloadpath s)
 let mkcases s = eval_call (Serialize.mkcases s)
-let status = eval_call Serialize.status
-let hints = eval_call Serialize.hints
+let status = eval_call (Serialize.status ())
+let hints = eval_call (Serialize.hints ())
 let search flags = eval_call (Serialize.search flags)
 
 module PrintOpt =
@@ -612,7 +617,7 @@ struct
 end
 
 let goals h k =
-  PrintOpt.enforce h (fun () -> eval_call Serialize.goals h k)
+  PrintOpt.enforce h (fun () -> eval_call (Serialize.goals ()) h k)
 
 let evars h k =
-  PrintOpt.enforce h (fun () -> eval_call Serialize.evars h k)
+  PrintOpt.enforce h (fun () -> eval_call (Serialize.evars ()) h k)

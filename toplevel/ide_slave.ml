@@ -305,20 +305,20 @@ let eval_call c =
     r
   in
   let handler = {
-    Serialize.interp = interruptible interp;
-    Serialize.rewind = interruptible Backtrack.back;
-    Serialize.goals = interruptible goals;
-    Serialize.evars = interruptible evars;
-    Serialize.hints = interruptible hints;
-    Serialize.status = interruptible status;
-    Serialize.search = interruptible search;
-    Serialize.inloadpath = interruptible inloadpath;
-    Serialize.get_options = interruptible get_options;
-    Serialize.set_options = interruptible set_options;
-    Serialize.mkcases = interruptible Vernacentries.make_cases;
-    Serialize.quit = (fun () -> quit := true);
-    Serialize.about = interruptible about;
-    Serialize.handle_exn = handle_exn; }
+    Interface.interp = interruptible interp;
+    Interface.rewind = interruptible Backtrack.back;
+    Interface.goals = interruptible goals;
+    Interface.evars = interruptible evars;
+    Interface.hints = interruptible hints;
+    Interface.status = interruptible status;
+    Interface.search = interruptible search;
+    Interface.inloadpath = interruptible inloadpath;
+    Interface.get_options = interruptible get_options;
+    Interface.set_options = interruptible set_options;
+    Interface.mkcases = interruptible Vernacentries.make_cases;
+    Interface.quit = (fun () -> quit := true);
+    Interface.about = interruptible about;
+    Interface.handle_exn = handle_exn; }
   in
   (* If the messages of last command are still there, we remove them *)
   ignore (read_stdout ());
