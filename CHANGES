@@ -3,9 +3,17 @@ Changes from V8.4pl2 to V8.4pl3
 
 Ide_slave XML interface
 
-- new variant of value : val="unsafe". It is exactly like val="good" but it
-  informs the user that its sentence is logically unafe (like 'Admitted.' or
-  'Axiom bar ...')
+- 20120712 : new variant of value : val="unsafe". It is exactly like val="good"
+  but it informs the user that its sentence is logically unafe (like 'Admitted.'
+  or 'Axiom bar ...')
+
+- 20130419 :
+  * extra datastructure : union
+   (Inl "" = <union val="in_l"><string></string></union>,
+    Inr _ = <union val="in_r">...)
+  * <call val="interp"> answers a (string * string) union
+    Inl means good and is the only answer of coqtop v8.4
+    Inr means unsafe
 
 Bug fixes
 

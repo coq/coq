@@ -372,7 +372,7 @@ let eval_call c =
         (* Here we do send an acknowledgement message to prove everything went 
           OK. *)
         let dummy = Interface.Good () in
-        let xml_answer = Ide_intf.of_answer Ide_intf.quit dummy in
+        let xml_answer = Ide_intf.of_answer (Ide_intf.quit ()) dummy in
         let () = Xml_utils.print_xml !orig_stdout xml_answer in
         let () = flush !orig_stdout in
         let () = pr_debug "Exiting gracefully." in
@@ -393,20 +393,20 @@ let eval_call c =
     r
   in
   let handler = {
-    Ide_intf.interp = interruptible interp;
-    Ide_intf.rewind = interruptible Backtrack.back;
-    Ide_intf.goals = interruptible goals;
-    Ide_intf.evars = interruptible evars;
-    Ide_intf.hints = interruptible hints;
-    Ide_intf.status = interruptible status;
-    Ide_intf.search = interruptible search;
-    Ide_intf.inloadpath = interruptible inloadpath;
-    Ide_intf.get_options = interruptible get_options;
-    Ide_intf.set_options = interruptible set_options;
-    Ide_intf.mkcases = interruptible Vernacentries.make_cases;
-    Ide_intf.quit = (fun () -> raise Quit);
-    Ide_intf.about = interruptible about;
-    Ide_intf.handle_exn = handle_exn; }
+    Interface.interp = interruptible interp;
+    Interface.rewind = interruptible Backtrack.back;
+    Interface.goals = interruptible goals;
+    Interface.evars = interruptible evars;
+    Interface.hints = interruptible hints;
+    Interface.status = interruptible status;
+    Interface.search = interruptible search;
+    Interface.inloadpath = interruptible inloadpath;
+    Interface.get_options = interruptible get_options;
+    Interface.set_options = interruptible set_options;
+    Interface.mkcases = interruptible Vernacentries.make_cases;
+    Interface.quit = (fun () -> raise Quit);
+    Interface.about = interruptible about;
+    Interface.handle_exn = handle_exn; }
   in
   (* If the messages of last command are still there, we remove them *)
   ignore (read_stdout ());
