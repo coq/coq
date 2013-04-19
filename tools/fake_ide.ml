@@ -43,10 +43,10 @@ let commands =
     "INTERPSILENT", (fun s -> eval_call (Serialize.interp (false,false,s)));
     "INTERP", (fun s -> eval_call (Serialize.interp (false,true,s)));
     "REWIND", (fun s -> eval_call (Serialize.rewind (int_of_string s)));
-    "GOALS", (fun _ -> eval_call Serialize.goals);
-    "HINTS", (fun _ -> eval_call Serialize.hints);
-    "GETOPTIONS", (fun _ -> eval_call Serialize.get_options);
-    "STATUS", (fun _ -> eval_call Serialize.status);
+    "GOALS", (fun _ -> eval_call (Serialize.goals ()));
+    "HINTS", (fun _ -> eval_call (Serialize.hints ()));
+    "GETOPTIONS", (fun _ -> eval_call (Serialize.get_options ()));
+    "STATUS", (fun _ -> eval_call (Serialize.status ()));
     "INLOADPATH", (fun s -> eval_call (Serialize.inloadpath s));
     "MKCASES", (fun s -> eval_call (Serialize.mkcases s));
     "#", (fun _ -> raise Comment);
