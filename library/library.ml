@@ -45,40 +45,16 @@ module LibraryMap = Map.Make(LibraryOrdered)
 module LibraryFilenameMap = Map.Make(LibraryOrdered)
 
 (* This is a map from names to loaded libraries *)
-let libraries_table = ref LibraryMap.empty
+let libraries_table = Summary.ref LibraryMap.empty ~name:"LIBRARY"
 
 (* This is the map of loaded libraries filename *)
 (* (not synchronized so as not to be caught in the states on disk) *)
 let libraries_filename_table = ref LibraryFilenameMap.empty
 
 (* These are the _ordered_ sets of loaded, imported and exported libraries *)
-let libraries_loaded_list = ref []
-let libraries_imports_list = ref []
-let libraries_exports_list = ref []
-
-let freeze () =
-  !libraries_table,
-  !libraries_loaded_list,
-  !libraries_imports_list,
-  !libraries_exports_list
-
-let unfreeze (mt,mo,mi,me) =
-  libraries_table := mt;
-  libraries_loaded_list := mo;
-  libraries_imports_list := mi;
-  libraries_exports_list := me
-
-let init () =
-  libraries_table := LibraryMap.empty;
-  libraries_loaded_list := [];
-  libraries_imports_list := [];
-  libraries_exports_list := []
-
-let _ =
-  Summary.declare_summary "MODULES"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
+let libraries_loaded_list = Summary.ref [] ~name:"LIBRARY-LOAD"
+let libraries_imports_list = Summary.ref [] ~name:"LIBRARY-IMPORT"
+let libraries_exports_list = Summary.ref [] ~name:"LIBRARY-EXPORT"
 
 (* various requests to the tables *)
 

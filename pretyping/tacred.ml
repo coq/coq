@@ -134,22 +134,7 @@ type constant_evaluation =
 
 type frozen = constant_evaluation Cmap.t
 
-let eval_table = ref (Cmap.empty : frozen)
-
-let init () =
-  eval_table := Cmap.empty
-
-let freeze () =
-  !eval_table
-
-let unfreeze ct =
-  eval_table := ct
-
-let _ =
-  Summary.declare_summary "evaluation"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
+let eval_table = Summary.ref (Cmap.empty : frozen) ~name:"evaluation"
 
 (* [compute_consteval] determines whether c is an "elimination constant"
 
@@ -548,13 +533,8 @@ type behaviour = {
   b_dont_expose_case: bool;
 }
 
-let behaviour_table = ref (Refmap.empty : behaviour Refmap.t)
-
-let _ =
-  Summary.declare_summary "simplbehaviour"
-    { Summary.freeze_function = (fun () -> !behaviour_table);
-      Summary.unfreeze_function = (fun x -> behaviour_table := x);
-      Summary.init_function = (fun () -> behaviour_table := Refmap.empty) }
+let behaviour_table =
+  Summary.ref (Refmap.empty : behaviour Refmap.t) ~name:"simplbehaviour"
 
 type simpl_flag = [ `SimplDontExposeCase | `SimplNeverUnfold ]
 type req =

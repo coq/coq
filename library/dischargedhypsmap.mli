@@ -13,8 +13,8 @@ open Nametab
 
 type discharged_hyps = full_path list
 
-(** Discharged hypothesis. Here we store the discharged hypothesis of each 
-    constant or inductive type declaration.                                *)
+(** Discharged hypothesis. Here we store the discharged hypothesis of each
+    constant or inductive type declaration. *)
 
 val set_discharged_hyps : full_path -> discharged_hyps -> unit
 val get_discharged_hyps : full_path -> discharged_hyps

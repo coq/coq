@@ -10,28 +10,10 @@ open Libnames
 
 type discharged_hyps = full_path list
 
-let discharged_hyps_map = ref Spmap.empty
+let discharged_hyps_map = Summary.ref Spmap.empty ~name:"discharged_hypothesis"
 
 let set_discharged_hyps sp hyps =
   discharged_hyps_map := Spmap.add sp hyps !discharged_hyps_map
 
 let get_discharged_hyps sp =
-  try
-   Spmap.find sp !discharged_hyps_map
-  with Not_found ->
-    []
-
-(*s Registration as global tables and rollback. *)
-
-let init () =
-  discharged_hyps_map := Spmap.empty
-
-let freeze () = !discharged_hyps_map
-
-let unfreeze dhm = discharged_hyps_map := dhm
-
-let _ =
-  Summary.declare_summary "discharged_hypothesis"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
+  try Spmap.find sp !discharged_hyps_map with Not_found -> []

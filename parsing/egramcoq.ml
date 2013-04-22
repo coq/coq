@@ -330,13 +330,11 @@ let init_grammar () =
 let init () =
   init_grammar ()
 
-open Summary
-
 let _ =
-  declare_summary "GRAMMAR_LEXER"
-    { freeze_function = freeze;
-      unfreeze_function = unfreeze;
-      init_function = init }
+  Summary.declare_summary "GRAMMAR_LEXER"
+    { Summary.freeze_function = freeze;
+      Summary.unfreeze_function = unfreeze;
+      Summary.init_function = init }
 
 let with_grammar_rule_protection f x =
   let fs = freeze () in

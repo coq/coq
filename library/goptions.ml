@@ -65,17 +65,10 @@ module MakeTable =
 
     module MySet = Set.Make (struct type t = A.t let compare = compare end)
 
-    let t = ref (MySet.empty : MySet.t)
-
-    let _ =
-      if A.synchronous then
-	let freeze () = !t in
-	let unfreeze c = t := c in
-	let init () = t := MySet.empty in
-	Summary.declare_summary nick
-          { Summary.freeze_function = freeze;
-            Summary.unfreeze_function = unfreeze;
-            Summary.init_function = init }
+    let t =
+      if A.synchronous
+      then Summary.ref MySet.empty ~name:nick
+      else ref MySet.empty
 
     let (add_option,remove_option) =
       if A.synchronous then
@@ -216,7 +209,6 @@ with Not_found ->
     or List.mem_assoc (nickname key) !ref_table
   then error "Sorry, this option name is already used."
 
-open Summary
 open Libobject
 open Lib
 
@@ -247,10 +239,10 @@ let declare_option cast uncast
 		       discharge_function = (fun (_,v) -> Some v);
 		       load_function = (fun _ (_,v) -> write v)}
     in
-    let _ = declare_summary (nickname key)
-	     { freeze_function = read;
-	       unfreeze_function = write;
-	       init_function = (fun () -> write default) }
+    let _ = Summary.declare_summary (nickname key)
+	     { Summary.freeze_function = read;
+	       Summary.unfreeze_function = write;
+	       Summary.init_function = (fun () -> write default) }
     in
     begin fun v -> add_anonymous_leaf (decl_obj v) end ,
     begin fun v -> add_anonymous_leaf (ldecl_obj v) end ,

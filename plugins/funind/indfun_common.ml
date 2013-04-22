@@ -238,8 +238,9 @@ type function_info =
 (* let function_table = ref ([] : function_db) *)
 
 
-let from_function = ref Cmap.empty
-let from_graph = ref Indmap.empty
+let from_function = Summary.ref Cmap.empty ~name:"functions_db_fn"
+let from_graph = Summary.ref Indmap.empty ~name:"functions_db_gr"
+
 (*
 let rec do_cache_info finfo = function
   | [] -> raise Not_found
@@ -370,26 +371,6 @@ let in_Function : function_info -> Libobject.obj =
 (*        Libobject.open_function = open_Function; *)
     }
 
-
-
-(* Synchronisation with reset *)
-let freeze () =
-  !from_function,!from_graph
-let unfreeze (functions,graphs) =
-(*   Pp.msgnl (str "unfreezing function_table : " ++ pr_table l); *)
-  from_function := functions;
-  from_graph := graphs
-
-let init () =
-(*   Pp.msgnl (str "reseting function_table");  *)
-  from_function := Cmap.empty;
-  from_graph := Indmap.empty
-
-let _ =
-  Summary.declare_summary "functions_db_sum"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
 
 let find_or_none id =
   try Some

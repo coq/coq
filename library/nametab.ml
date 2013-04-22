@@ -540,18 +540,8 @@ let global_inductive r =
 (********************************************************************)
 (* Registration of tables as a global table and rollback            *)
 
-type frozen = ccitab * dirtab * mptab * kntab 
+type frozen = ccitab * dirtab * mptab * kntab
     * globrevtab * mprevtab * mptrevtab * knrevtab
-
-let init () =
-  the_ccitab := ExtRefTab.empty;
-  the_dirtab := DirTab.empty;
-  the_modtypetab := MPTab.empty;
-  the_tactictab := KnTab.empty;
-  the_globrevtab := Globrevtab.empty;
-  the_modrevtab := MPmap.empty;
-  the_modtyperevtab := MPmap.empty;
-  the_tacticrevtab := KNmap.empty
 
 let freeze () : frozen =
   !the_ccitab,
@@ -577,7 +567,7 @@ let _ =
   Summary.declare_summary "names"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
+      Summary.init_function = Summary.nop }
 
 (* Deprecated synonyms *)
 

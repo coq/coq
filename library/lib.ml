@@ -13,7 +13,6 @@ open Libnames
 open Globnames
 open Nameops
 open Libobject
-open Summary
 
 type is_type = bool (* Module Type or just Module *)
 type export = bool option (* None for a Module Type *)
@@ -217,10 +216,7 @@ let anonymous_id =
   fun () -> incr n; Names.Id.of_string ("_" ^ (string_of_int !n))
 
 let add_anonymous_entry node =
-  let id = anonymous_id () in
-  let name = make_oname id in
-  add_entry name node;
-  name
+  add_entry (make_oname (anonymous_id ())) node
 
 let add_leaf id obj =
   let (path, _) = current_prefix () in
@@ -253,7 +249,7 @@ let add_anonymous_leaf obj =
   add_entry oname (Leaf obj)
 
 let add_frozen_state () =
-  let _ = add_anonymous_entry (FrozenState (freeze_summaries())) in ()
+  add_anonymous_entry (FrozenState (Summary.freeze_summaries()))
 
 (* Modules. *)
 
@@ -331,7 +327,7 @@ let start_compilation s mp =
   if not (Names.DirPath.equal (snd (snd (!path_prefix))) Names.DirPath.empty) then
     error "some sections are already opened";
   let prefix = s, (mp, Names.DirPath.empty) in
-  let _ = add_anonymous_entry (CompilingLibrary prefix) in
+  let () = add_anonymous_entry (CompilingLibrary prefix) in
   comp_name := Some s;
   path_prefix := prefix
 
@@ -406,8 +402,9 @@ type variable_context = variable_info list
 type abstr_list = variable_context Names.Cmap.t * variable_context Names.Mindmap.t
 
 let sectab =
-  ref ([] : ((Names.Id.t * Decl_kinds.binding_kind) list *
-		Cooking.work_list * abstr_list) list)
+  Summary.ref ([] : ((Names.Id.t * Decl_kinds.binding_kind) list *
+		        Cooking.work_list * abstr_list) list)
+    ~name:"section-context"
 
 let add_section () =
   sectab := ([],(Names.Cmap.empty,Names.Mindmap.empty),(Names.Cmap.empty,Names.Mindmap.empty)) :: !sectab
@@ -475,16 +472,6 @@ let section_instance = function
 let is_in_section ref =
   try ignore (section_instance ref); true with Not_found -> false
 
-let init_sectab () = sectab := []
-let freeze_sectab () = !sectab
-let unfreeze_sectab s = sectab := s
-
-let _ =
-  Summary.declare_summary "section-context"
-    { Summary.freeze_function = freeze_sectab;
-      Summary.unfreeze_function = unfreeze_sectab;
-      Summary.init_function = init_sectab }
-
 (*************)
 (* Sections. *)
 
@@ -502,7 +489,7 @@ let open_section id =
   let name = make_path id, make_kn id (* this makes little sense however *) in
   if Nametab.exists_section dir then
     errorlabstrm "open_section" (pr_id id ++ str " already exists.");
-  let fs = freeze_summaries() in
+  let fs = Summary.freeze_summaries() in
   add_entry name (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
@@ -564,7 +551,7 @@ let set_lib_stk new_lib_stk =
   lib_stk := new_lib_stk;
   recalc_path_prefix ();
   let spf = match find_entry_p is_frozen_state with
-    | (sp, FrozenState f) -> unfreeze_summaries f; sp
+    | (sp, FrozenState f) -> Summary.unfreeze_summaries f; sp
     | _ -> assert false
   in
   let (after,_,_) = split_lib spf in
@@ -635,7 +622,7 @@ let init () =
   add_frozen_state ();
   comp_name := None;
   path_prefix := initial_prefix;
-  init_summaries()
+  Summary.init_summaries ()
 
 (* Misc *)
 

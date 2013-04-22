@@ -20,7 +20,6 @@ open Tacred
 open Closure
 open RedFlags
 open Libobject
-open Summary
 open Misctypes
 
 (* call by value normalisation function using the virtual machine *)
@@ -106,10 +105,10 @@ let inStrategy : strategy_obj -> obj =
 let set_strategy local str =
   Lib.add_anonymous_leaf (inStrategy (local,str))
 
-let _ = declare_summary "Transparent constants and variables"
-    { freeze_function = Conv_oracle.freeze;
-      unfreeze_function = Conv_oracle.unfreeze;
-      init_function = Conv_oracle.init }
+let _ = Summary.declare_summary "Transparent constants and variables"
+  { Summary.freeze_function = Conv_oracle.freeze;
+    Summary.unfreeze_function = Conv_oracle.unfreeze;
+    Summary.init_function = Summary.nop }
 
 
 (* Generic reduction: reduction functions used in reduction tactics *)
@@ -148,7 +147,7 @@ let reduction_tab = ref String.Map.empty
 
 (* table of custom reduction expressions, synchronized,
    filled by command Declare Reduction *)
-let red_expr_tab = ref String.Map.empty
+let red_expr_tab = Summary.ref String.Map.empty ~name:"Declare Reduction"
 
 let declare_reduction s f =
   if String.Map.mem s !reduction_tab || String.Map.mem s !red_expr_tab
@@ -253,8 +252,3 @@ let inReduction : bool * string * red_expr -> obj =
 
 let declare_red_expr locality s expr =
     Lib.add_anonymous_leaf (inReduction (locality,s,expr))
-
-let _ = declare_summary "Declare Reduction"
-  { freeze_function = (fun () -> !red_expr_tab);
-    unfreeze_function = ((:=) red_expr_tab);
-    init_function = (fun () -> red_expr_tab := String.Map.empty) }

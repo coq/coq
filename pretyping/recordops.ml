@@ -39,8 +39,10 @@ type struc_typ = {
   s_PROJKIND : (Name.t * bool) list;
   s_PROJ : constant option list }
 
-let structure_table = ref (Indmap.empty : struc_typ Indmap.t)
-let projection_table = ref Cmap.empty
+let structure_table =
+  Summary.ref (Indmap.empty : struc_typ Indmap.t) ~name:"record-structs"
+let projection_table =
+  Summary.ref Cmap.empty ~name:"record-projs"
 
 (* TODO: could be unify struc_typ and struc_tuple ? in particular,
    is the inductive always (fst constructor) ? It seems so... *)
@@ -126,15 +128,7 @@ module MethodsDnet : Term_dnet.S
      let direction = true
    end)
 
-let meth_dnet = ref MethodsDnet.empty
-
-open Summary
-
-let _ =
-  declare_summary "record-methods-state"
-    { freeze_function = (fun () -> !meth_dnet);
-      unfreeze_function = (fun m -> meth_dnet := m);
-      init_function = (fun () -> meth_dnet := MethodsDnet.empty) }
+let meth_dnet = Summary.ref MethodsDnet.empty ~name:"record-methods-state"
 
 open Libobject
 
@@ -194,7 +188,9 @@ type cs_pattern =
   | Sort_cs of sorts_family
   | Default_cs
 
-let object_table = ref (Refmap.empty : (cs_pattern * obj_typ) list Refmap.t)
+let object_table =
+  Summary.ref (Refmap.empty : (cs_pattern * obj_typ) list Refmap.t)
+    ~name:"record-canonical-structs"
 
 let canonical_projections () =
   Refmap.fold (fun x -> List.fold_right (fun (y,c) acc -> ((x,y),c)::acc))
@@ -346,21 +342,3 @@ let is_open_canonical_projection env sigma (c,args) =
       not (isConstruct hd) 
     with Failure _ -> false
   with Not_found -> false
-
-let freeze () =
-  !structure_table, !projection_table, !object_table
-
-let unfreeze (s,p,o) =
-  structure_table := s; projection_table := p; object_table := o
-
-let init () =
-  structure_table := Indmap.empty; projection_table := Cmap.empty;
-  object_table := Refmap.empty
-
-let _ = init()
-
-let _ =
-  Summary.declare_summary "objdefs"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }

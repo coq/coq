@@ -164,11 +164,7 @@ let whd_head_evar sigma c = applist (whd_head_evar_stack sigma c)
 
 (* Generator of metavariables *)
 let new_meta =
-  let meta_ctr = ref 0 in
-  Summary.declare_summary "meta counter"
-    { Summary.freeze_function = (fun () -> !meta_ctr);
-      Summary.unfreeze_function = (fun n -> meta_ctr := n);
-      Summary.init_function = (fun () -> meta_ctr := 0) };
+  let meta_ctr = Summary.ref 0 ~name:"meta counter" in
   fun () -> incr meta_ctr; !meta_ctr
 
 let mk_new_meta () = mkMeta(new_meta())
@@ -262,11 +258,7 @@ let make_pure_subst evi args =
 
 (* Generator of existential names *)
 let new_untyped_evar =
-  let evar_ctr = ref 0 in
-  Summary.declare_summary "evar counter"
-    { Summary.freeze_function = (fun () -> !evar_ctr);
-      Summary.unfreeze_function = (fun n -> evar_ctr := n);
-      Summary.init_function = (fun () -> evar_ctr := 0) };
+  let evar_ctr = Summary.ref 0 ~name:"evar counter" in
   fun () -> incr evar_ctr; existential_of_int !evar_ctr
 
 (*------------------------------------*

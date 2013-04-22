@@ -22,8 +22,8 @@ type key =
   | RefKey of global_reference
   | Oth
 
-let reserve_table = ref Id.Map.empty
-let reserve_revtable = ref Gmapl.empty
+let reserve_table = Summary.ref Id.Map.empty ~name:"reserved-type"
+let reserve_revtable = Summary.ref Gmapl.empty ~name:"reserved-type-rev"
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
   | NApp (NRef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
@@ -40,17 +40,6 @@ let cache_reserved_type (_,(id,t)) =
 let in_reserved : Id.t * notation_constr -> obj =
   declare_object {(default_object "RESERVED-TYPE") with
     cache_function = cache_reserved_type }
-
-let freeze_reserved () = (!reserve_table,!reserve_revtable)
-let unfreeze_reserved (r,rr) = reserve_table := r; reserve_revtable := rr
-let init_reserved () =
-  reserve_table := Id.Map.empty; reserve_revtable := Gmapl.empty
-
-let _ =
-  Summary.declare_summary "reserved-type"
-    { Summary.freeze_function = freeze_reserved;
-      Summary.unfreeze_function = unfreeze_reserved;
-      Summary.init_function = init_reserved }
 
 let declare_reserved_type_binding (loc,id) t =
   if not (Id.equal id (root_of_id id)) then

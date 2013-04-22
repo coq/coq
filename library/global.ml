@@ -10,24 +10,17 @@ open Names
 open Term
 open Environ
 open Safe_typing
-open Summary
 
 (* We introduce here the global environment of the system, and we declare it
    as a synchronized table. *)
 
-let global_env = ref empty_environment
+let global_env = Summary.ref empty_environment ~name:"Global environment"
 
 let safe_env () = !global_env
 
 let env () = env_of_safe_env !global_env
 
 let env_is_empty () = is_empty !global_env
-
-let _ =
-  declare_summary "Global environment"
-    { freeze_function = (fun () -> !global_env);
-      unfreeze_function = (fun fr -> global_env := fr);
-      init_function = (fun () -> global_env := empty_environment) }
 
 (* Then we export the functions of [Typing] on that environment. *)
 

@@ -11,7 +11,6 @@ open Term
 open Declarations
 open Nameops
 open Namegen
-open Summary
 open Libobject
 open Goptions
 open Libnames
@@ -561,7 +560,7 @@ let _ = declare_string_option
 
 type lang = Ocaml | Haskell | Scheme
 
-let lang_ref = ref Ocaml
+let lang_ref = Summary.ref Ocaml ~name:"ExtrLang"
 
 let lang () = !lang_ref
 
@@ -571,18 +570,13 @@ let extr_lang : lang -> obj =
        cache_function = (fun (_,l) -> lang_ref := l);
        load_function = (fun _ (_,l) -> lang_ref := l)}
 
-let _ = declare_summary "Extraction Lang"
-	  { freeze_function = (fun () -> !lang_ref);
-	    unfreeze_function = ((:=) lang_ref);
-	    init_function = (fun () -> lang_ref := Ocaml) }
-
 let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
 
 (*s Extraction Inline/NoInline *)
 
 let empty_inline_table = (Refset'.empty,Refset'.empty)
 
-let inline_table = ref empty_inline_table
+let inline_table = Summary.ref empty_inline_table ~name:"ExtrInline"
 
 let to_inline r = Refset'.mem r (fst !inline_table)
 
@@ -608,11 +602,6 @@ let inline_extraction : bool * global_reference list -> obj =
        subst_function =
         (fun (s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))
     }
-
-let _ = declare_summary "Extraction Inline"
-	  { freeze_function = (fun () -> !inline_table);
-	    unfreeze_function = ((:=) inline_table);
-	    init_function = (fun () -> inline_table := empty_inline_table) }
 
 (* Grammar entries. *)
 
@@ -652,7 +641,7 @@ let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
 type int_or_id = ArgInt of int | ArgId of Id.t
 
-let implicits_table = ref Refmap'.empty
+let implicits_table = Summary.ref Refmap'.empty ~name:"ExtrImplicit"
 
 let implicits_of_global r =
  try Refmap'.find r !implicits_table with Not_found -> []
@@ -688,11 +677,6 @@ let implicit_extraction : global_reference * int_or_id list -> obj =
        subst_function = (fun (s,(r,l)) -> (fst (subst_global s r), l))
     }
 
-let _ = declare_summary "Extraction Implicit"
-	  { freeze_function = (fun () -> !implicits_table);
-	    unfreeze_function = ((:=) implicits_table);
-	    init_function = (fun () -> implicits_table := Refmap'.empty) }
-
 (* Grammar entries. *)
 
 let extraction_implicit r l =
@@ -702,7 +686,7 @@ let extraction_implicit r l =
 
 (*s Extraction Blacklist of filenames not to use while extracting *)
 
-let blacklist_table = ref Id.Set.empty
+let blacklist_table = Summary.ref Id.Set.empty ~name:"ExtrBlacklist"
 
 let modfile_ids = ref []
 let modfile_mps = ref MPmap.empty
@@ -747,11 +731,6 @@ let blacklist_extraction : string list -> obj =
        subst_function = (fun (_,x) -> x)
     }
 
-let _ = declare_summary "Extraction Blacklist"
-	  { freeze_function = (fun () -> !blacklist_table);
-	    unfreeze_function = ((:=) blacklist_table);
-	    init_function = (fun () -> blacklist_table := Id.Set.empty) }
-
 (* Grammar entries. *)
 
 let extraction_blacklist l =
@@ -779,7 +758,7 @@ let reset_extraction_blacklist () = Lib.add_anonymous_leaf (reset_blacklist ())
 let use_type_scheme_nb_args, register_type_scheme_nb_args =
   let r = ref (fun _ _ -> 0) in (fun x y -> !r x y), (:=) r
 
-let customs = ref Refmap'.empty
+let customs = Summary.ref Refmap'.empty ~name:"ExtrCustom"
 
 let add_custom r ids s = customs := Refmap'.add r (ids,s) !customs
 
@@ -791,7 +770,7 @@ let find_custom r = snd (Refmap'.find r !customs)
 
 let find_type_custom r = Refmap'.find r !customs
 
-let custom_matchs = ref Refmap'.empty
+let custom_matchs = Summary.ref Refmap'.empty ~name:"ExtrCustomMatchs"
 
 let add_custom_match r s =
   custom_matchs := Refmap'.add r s !custom_matchs
@@ -823,11 +802,6 @@ let in_customs : global_reference * string list * string -> obj =
         (fun (s,(r,ids,str)) -> (fst (subst_global s r), ids, str))
     }
 
-let _ = declare_summary "ML extractions"
-	  { freeze_function = (fun () -> !customs);
-	    unfreeze_function = ((:=) customs);
-	    init_function = (fun () -> customs := Refmap'.empty) }
-
 let in_custom_matchs : global_reference * string -> obj =
   declare_object
     {(default_object "ML extractions custom matchs") with
@@ -836,11 +810,6 @@ let in_custom_matchs : global_reference * string -> obj =
        classify_function = (fun o -> Substitute o);
        subst_function = (fun (subs,(r,s)) -> (fst (subst_global subs r), s))
     }
-
-let _ = declare_summary "ML extractions custom match"
-	  { freeze_function = (fun () -> !custom_matchs);
-	    unfreeze_function = ((:=) custom_matchs);
-	    init_function = (fun () -> custom_matchs := Refmap'.empty) }
 
 (* Grammar entries. *)
 

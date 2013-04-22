@@ -155,16 +155,11 @@ let lookup_tactic s =
 
 (* Summary and Object declaration *)
 
-let mactab = ref (Gmap.empty : (ltac_constant,glob_tactic_expr) Gmap.t)
+let mactab =
+  Summary.ref (Gmap.empty : (ltac_constant,glob_tactic_expr) Gmap.t)
+    ~name:"tactic-definition"
 
 let lookup_ltacref r = Gmap.find r !mactab
-
-let _ =
-  Summary.declare_summary "tactic-definition"
-    { Summary.freeze_function   = (fun () -> !mactab);
-      Summary.unfreeze_function = (fun fs -> mactab := fs);
-      Summary.init_function     = (fun () -> mactab := Gmap.empty); }
-
 
 
 (* We have identifier <| global_reference <| constr *)

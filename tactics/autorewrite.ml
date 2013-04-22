@@ -58,16 +58,7 @@ module HintDN = Term_dnet.Make(HintIdent)(HintOpt)
 
 (* Summary and Object declaration *)
 let rewtab =
-  ref (String.Map.empty : HintDN.t String.Map.t)
-
-let _ =
-  let init () = rewtab := String.Map.empty in
-  let freeze () = !rewtab in
-  let unfreeze fs = rewtab := fs in
-  Summary.declare_summary "autorewrite"
-    { Summary.freeze_function   = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function     = init }
+  Summary.ref (String.Map.empty : HintDN.t String.Map.t) ~name:"autorewrite"
 
 let raw_find_base bas = String.Map.find bas !rewtab
 

@@ -28,6 +28,10 @@ type oracle = level Id.Map.t * level Cmap.t
 let var_opacity = ref Id.Map.empty
 let cst_opacity = ref Cmap.empty
 
+(* summary operations *)
+let freeze () = (!var_opacity, !cst_opacity)
+let unfreeze (vo,co) = (cst_opacity := co; var_opacity := vo)
+
 let get_strategy = function
   | VarKey id ->
       (try Id.Map.find id !var_opacity
@@ -65,8 +69,3 @@ let oracle_order l2r k1 k2 =
     | Level n1, Opaque -> true
     | Level n1, Level n2 -> n1 < n2
     | _ -> l2r (* use recommended default *)
-
-(* summary operations *)
-let init() = (cst_opacity := Cmap.empty; var_opacity := Id.Map.empty)
-let freeze () = (!var_opacity, !cst_opacity)
-let unfreeze (vo,co) = (cst_opacity := co; var_opacity := vo)

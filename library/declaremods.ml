@@ -83,10 +83,14 @@ type substitutive_objects =
    * Modules which where created with Module M:=mexpr or with
      Module M:SIG. ... End M. have the keep list empty.
 *)
+
 let modtab_substobjs =
-  ref (MPmap.empty : substitutive_objects MPmap.t)
+  Summary.ref (MPmap.empty : substitutive_objects MPmap.t)
+    ~name:"MODULE-INFO-1"
+
 let modtab_objects =
-  ref (MPmap.empty : (object_prefix * lib_objects) MPmap.t)
+  Summary.ref (MPmap.empty : (object_prefix * lib_objects) MPmap.t)
+    ~name:"MODULE-INFO-2"
 
 type current_module_info = {
   cur_mp : module_path; (** current started interactive module (if any) *)
@@ -101,34 +105,12 @@ let default_module_info =
     cur_typ = None;
     cur_typs = [] }
 
-let openmod_info = ref default_module_info
+let openmod_info = Summary.ref default_module_info ~name:"MODULE-INFO-3"
 
 (* The library_cache here is needed to avoid recalculations of
    substituted modules object during "reloading" of libraries *)
-let library_cache = ref Dirmap.empty
+let library_cache = Summary.ref Dirmap.empty ~name:"MODULE-INFO-4"
 
-let freeze_mod_tables () =
-  !modtab_substobjs,
-  !modtab_objects,
-  !openmod_info,
-  !library_cache
-
-let unfreeze_mod_tables (sobjs,objs,info,libcache) =
-  modtab_substobjs := sobjs;
-  modtab_objects := objs;
-  openmod_info := info;
-  library_cache := libcache
-
-let init_mod_tables () =
-  modtab_substobjs := MPmap.empty;
-  modtab_objects := MPmap.empty;
-  openmod_info := default_module_info;
-  library_cache := Dirmap.empty
-
-let _ = Summary.declare_summary "MODULE-INFO"
-  { Summary.freeze_function = freeze_mod_tables;
-    Summary.unfreeze_function = unfreeze_mod_tables;
-    Summary.init_function = init_mod_tables }
 
 (* auxiliary functions to transform full_path and kernel_name given
    by Lib into module_path and DirPath.t needed for modules *)
@@ -303,24 +285,14 @@ let in_modkeep : lib_objects -> obj =
    The module M gets its objects from SIG
 *)
 let modtypetab =
-  ref (MPmap.empty : substitutive_objects MPmap.t)
+  Summary.ref (MPmap.empty : substitutive_objects MPmap.t)
+    ~name:"MODTYPE-INFO-1"
 
 (* currently started interactive module type. We remember its arguments
    if it is a functor type *)
 let openmodtype_info =
-  ref ([],[] : MBId.t list * module_type_body list)
-
-let freeze_modtyp_tables () =
-  !modtypetab, !openmodtype_info
-let unfreeze_modtyp_tables (mtt,omti) =
-  modtypetab := mtt; openmodtype_info := omti
-let init_modtyp_tables () =
-  modtypetab := MPmap.empty; openmodtype_info := [],[]
-
-let _ = Summary.declare_summary "MODTYPE-INFO"
-  { Summary.freeze_function = freeze_modtyp_tables;
-    Summary.unfreeze_function = unfreeze_modtyp_tables;
-    Summary.init_function = init_modtyp_tables }
+  Summary.ref ([],[] : MBId.t list * module_type_body list)
+    ~name:"MODTYPE-INFO-2"
 
 let cache_modtype ((sp,kn),(entry,modtypeobjs,sub_mty_l)) =
   let mp = mp_of_kn kn in

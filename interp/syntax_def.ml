@@ -21,13 +21,9 @@ open Nametab
 
 type version = Flags.compat_version option
 
-let syntax_table = ref (KNmap.empty : (interpretation*version) KNmap.t)
-
-let _ = Summary.declare_summary
-	  "SYNTAXCONSTANT"
-	  { Summary.freeze_function = (fun () -> !syntax_table);
-	    Summary.unfreeze_function = (fun ft -> syntax_table := ft);
-	    Summary.init_function = (fun () -> syntax_table := KNmap.empty) }
+let syntax_table =
+  Summary.ref (KNmap.empty : (interpretation*version) KNmap.t)
+    ~name:"SYNTAXCONSTANT"
 
 let add_syntax_constant kn c onlyparse =
   syntax_table := KNmap.add kn (c,onlyparse) !syntax_table

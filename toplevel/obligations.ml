@@ -446,23 +446,8 @@ let map_first m =
     assert(false)
   with Found x -> x
 
-let from_prg : program_info ProgMap.t ref = ref ProgMap.empty
-
-let freeze () = !from_prg
-let unfreeze v = from_prg := v
-let init () = from_prg := ProgMap.empty
-
-(** Beware: if this code is dynamically loaded via dynlink after the start
-    of Coq, then this [init] function will not be run by [Lib.init ()].
-    Luckily, here we can launch [init] at load-time. *)
-
-let _ = init ()
-
-let _ =
-  Summary.declare_summary "program-tcc-table"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
+let from_prg : program_info ProgMap.t ref =
+  Summary.ref ProgMap.empty ~name:"program-tcc-table"
 
 let close sec =
   if not (ProgMap.is_empty !from_prg) then

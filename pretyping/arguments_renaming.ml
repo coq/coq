@@ -15,14 +15,9 @@ open Util
 open Libobject
 (*i*)
 
-let empty_name_table = (Refmap.empty : Name.t list list Refmap.t)
-let name_table = ref empty_name_table
-
-let _ =
-  Summary.declare_summary "rename-arguments"
-    { Summary.freeze_function = (fun () -> !name_table);
-      Summary.unfreeze_function = (fun r -> name_table := r);
-      Summary.init_function = (fun () -> name_table := empty_name_table) }
+let name_table =
+  Summary.ref (Refmap.empty : Name.t list list Refmap.t)
+    ~name:"rename-arguments"
 
 type req =
   | ReqLocal

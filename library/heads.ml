@@ -52,19 +52,7 @@ module Evalrefmap =
   Map.Make (Evalreford)
 
 
-let head_map = ref Evalrefmap.empty
-
-let init () = head_map := Evalrefmap.empty
-
-let freeze () = !head_map
-
-let unfreeze hm = head_map := hm
-
-let _ =
-  Summary.declare_summary "Head_decl"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
+let head_map = Summary.ref Evalrefmap.empty ~name:"Head_decl"
 
 let variable_head id  = Evalrefmap.find (EvalVarRef id) !head_map
 let constant_head cst = Evalrefmap.find (EvalConstRef cst) !head_map

@@ -20,12 +20,8 @@ open Libnames
 type variable_data =
     DirPath.t * bool (* opacity *) * Univ.constraints * logical_kind
 
-let vartab = ref (Id.Map.empty : variable_data Id.Map.t)
-
-let _ = Summary.declare_summary "VARIABLE"
-  { Summary.freeze_function = (fun () -> !vartab);
-    Summary.unfreeze_function = (fun ft -> vartab := ft);
-    Summary.init_function = (fun () -> vartab := Id.Map.empty) }
+let vartab =
+  Summary.ref (Id.Map.empty : variable_data Id.Map.t) ~name:"VARIABLE"
 
 let add_variable_data id o = vartab := Id.Map.add id o !vartab
 
@@ -42,12 +38,7 @@ let variable_exists id = Id.Map.mem id !vartab
 
 (** Datas associated to global parameters and constants *)
 
-let csttab = ref (Cmap.empty : logical_kind Cmap.t)
-
-let _ = Summary.declare_summary "CONSTANT"
-	  { Summary.freeze_function = (fun () -> !csttab);
-	    Summary.unfreeze_function = (fun ft -> csttab := ft);
-	    Summary.init_function = (fun () -> csttab := Cmap.empty) }
+let csttab = Summary.ref (Cmap.empty : logical_kind Cmap.t) ~name:"CONSTANT"
 
 let add_constant_kind kn k = csttab := Cmap.add kn k !csttab
 

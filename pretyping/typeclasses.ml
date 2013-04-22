@@ -93,25 +93,8 @@ let new_instance cl pri glob impl =
  * states management
  *)
 
-let classes : typeclasses ref = ref Gmap.empty
-
-let instances : instances ref = ref Gmap.empty
-
-let freeze () = !classes, !instances
-
-let unfreeze (cl,is) =
-  classes:=cl;
-  instances:=is
-
-let init () =
-  classes:= Gmap.empty;
-  instances:= Gmap.empty
-
-let _ =
-  Summary.declare_summary "classes_and_instances"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
+let classes : typeclasses ref = Summary.ref Gmap.empty ~name:"classes"
+let instances : instances ref = Summary.ref Gmap.empty ~name:"instances"
 
 let class_info c =
   try Gmap.find c !classes

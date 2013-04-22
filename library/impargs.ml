@@ -463,7 +463,7 @@ type implicit_discharge_request =
   | ImplInteractive of global_reference * implicits_flags *
       implicit_interactive_request
 
-let implicits_table = ref Refmap.empty
+let implicits_table = Summary.ref Refmap.empty ~name:"implicits"
 
 let implicits_of_global ref =
   try
@@ -713,15 +713,3 @@ let rec select_impargs_size n = function
 let select_stronger_impargs = function
   | [] -> [] (* Tolerance for (DefaultImpArgs,[]) *)
   | (_,impls)::_ -> impls
-
-(*s Registration as global tables *)
-
-let init () = implicits_table := Refmap.empty
-let freeze () = !implicits_table
-let unfreeze t = implicits_table := t
-
-let _ =
-  Summary.declare_summary "implicits"
-    { Summary.freeze_function = freeze;
-      Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }

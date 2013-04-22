@@ -23,13 +23,7 @@ open Nameops
 open Misctypes
 (*i*)
 
-let generalizable_table = ref Id.Pred.empty
-
-let _ =
-  Summary.declare_summary "generalizable-ident"
-    { Summary.freeze_function = (fun () -> !generalizable_table);
-      Summary.unfreeze_function = (fun r -> generalizable_table := r);
-      Summary.init_function = (fun () -> generalizable_table := Id.Pred.empty) }
+let generalizable_table = Summary.ref Id.Pred.empty ~name:"generalizable-ident"
 
 let declare_generalizable_ident table (loc,id) =
   if not (Id.equal id (root_of_id id)) then

@@ -406,7 +406,6 @@ END
 
 open Tactics
 open Glob_term
-open Summary
 open Libobject
 open Lib
 
@@ -415,8 +414,8 @@ open Lib
      x R y -> x == z -> z R y    (in the left table)
 *)
 
-let transitivity_right_table = ref []
-let transitivity_left_table = ref []
+let transitivity_right_table = Summary.ref [] ~name:"transitivity-steps-r"
+let transitivity_left_table = Summary.ref [] ~name:"transitivity-steps-l"
 
 (* [step] tries to apply a rewriting lemma; then apply [tac] intended to
    complete to proof of the last hypothesis (assumed to state an equality) *)
@@ -447,24 +446,6 @@ let inTransitivity : bool * constr -> obj =
     open_function = (fun i o -> if Int.equal i 1 then cache_transitivity_lemma o);
     subst_function = subst_transitivity_lemma;
     classify_function = (fun o -> Substitute o) }
-
-(* Synchronisation with reset *)
-
-let freeze () = !transitivity_left_table, !transitivity_right_table
-
-let unfreeze (l,r) =
-  transitivity_left_table := l;
-  transitivity_right_table := r
-
-let init () =
-  transitivity_left_table := [];
-  transitivity_right_table := []
-
-let _ =
-  declare_summary "transitivity-steps"
-    { freeze_function = freeze;
-      unfreeze_function = unfreeze;
-      init_function = init }
 
 (* Main entry points *)
 

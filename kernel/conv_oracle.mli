@@ -36,6 +36,5 @@ val get_transp_state : unit -> transparent_state
 (****************************
    Summary operations *)
 type oracle
-val init     : unit -> unit
 val freeze   : unit -> oracle
 val unfreeze : oracle -> unit

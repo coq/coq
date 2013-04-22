@@ -16,7 +16,6 @@ open Term
 open Nametab
 open Libnames
 open Globnames
-open Summary
 open Constrexpr
 open Notation_term
 open Glob_term
@@ -920,10 +919,10 @@ let init () =
   scope_class_map := Gmap.add ScopeSort "type_scope" Gmap.empty
 
 let _ =
-  declare_summary "symbols"
-    { freeze_function = freeze;
-      unfreeze_function = unfreeze;
-      init_function = init }
+  Summary.declare_summary "symbols"
+    { Summary.freeze_function = freeze;
+      Summary.unfreeze_function = unfreeze;
+      Summary.init_function = init }
 
 let with_notation_protection f x =
   let fs = freeze () in

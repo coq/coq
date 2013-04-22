@@ -19,6 +19,9 @@ let summaries =
   (Hashtbl.create 17 : (string, Dyn.t summary_declaration) Hashtbl.t)
 
 let internal_declare_summary sumname sdecl =
+  if Hashtbl.mem summaries sumname then
+    anomaly ~label:"Summary.declare_summary"
+      (str "Cannot declare a summary twice: " ++ str sumname);
   let (infun,outfun) = Dyn.create sumname in
   let dyn_freeze () = infun (sdecl.freeze_function())
   and dyn_unfreeze sum = sdecl.unfreeze_function (outfun sum)
@@ -28,9 +31,6 @@ let internal_declare_summary sumname sdecl =
     unfreeze_function = dyn_unfreeze;
     init_function = dyn_init }
   in
-  if Hashtbl.mem summaries sumname then
-    anomaly ~label:"Summary.declare_summary"
-      (str "Cannot declare a summary twice: " ++ str sumname);
   Hashtbl.add summaries sumname ddecl
 
 let declare_summary sumname decl =
@@ -45,7 +45,6 @@ let freeze_summaries () =
     summaries;
   !m
 
-
 let unfreeze_summaries fs =
   Hashtbl.iter
     (fun id decl ->
@@ -55,3 +54,18 @@ let unfreeze_summaries fs =
 
 let init_summaries () =
   Hashtbl.iter (fun _ decl -> decl.init_function()) summaries
+
+(** For global tables registered statically before the end of coqtop
+    launch, the following empty [init_function] could be used. *)
+
+let nop () = ()
+
+(** All-in-one reference declaration + registration *)
+
+let ref ~name x =
+  let r = ref x in
+  declare_summary name
+    { freeze_function = (fun () -> !r);
+      unfreeze_function = ((:=) r);
+      init_function = (fun () -> r := x) };
+  r

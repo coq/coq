@@ -333,9 +333,9 @@ type ring_info =
 
 module Cmap = Map.Make(struct type t = constr let compare = constr_ord end)
 
-let from_carrier = ref Cmap.empty
-let from_relation = ref Cmap.empty
-let from_name = ref Spmap.empty
+let from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
+let from_relation = Summary.ref Cmap.empty ~name:"ring-tac-rel-table"
+let from_name = Summary.ref Spmap.empty ~name:"ring-tac-name-table"
 
 let ring_for_carrier r = Cmap.find r !from_carrier
 let ring_for_relation rel = Cmap.find rel !from_relation
@@ -365,18 +365,6 @@ let find_ring_structure env sigma l =
           errorlabstrm "ring"
             (str"cannot find a declared ring structure for equality"++
              spc()++str"\""++pr_constr req++str"\"")) *)
-
-let _ =
-  Summary.declare_summary "tactic-new-ring-table"
-    { Summary.freeze_function =
-        (fun () -> !from_carrier,!from_relation,!from_name);
-      Summary.unfreeze_function =
-        (fun (ct,rt,nt) ->
-          from_carrier := ct; from_relation := rt; from_name := nt);
-      Summary.init_function =
-        (fun () ->
-          from_carrier := Cmap.empty; from_relation := Cmap.empty;
-          from_name := Spmap.empty) }
 
 let add_entry (sp,_kn) e =
 (*  let _ = ty e.ring_lemma1 in
@@ -910,10 +898,9 @@ type field_info =
       field_pre_tac : glob_tactic_expr;
       field_post_tac : glob_tactic_expr }
 
-let field_from_carrier = ref Cmap.empty
-let field_from_relation = ref Cmap.empty
-let field_from_name = ref Spmap.empty
-
+let field_from_carrier = Summary.ref Cmap.empty ~name:"field-tac-carrier-table"
+let field_from_relation = Summary.ref Cmap.empty ~name:"field-tac-rel-table"
+let field_from_name = Summary.ref Spmap.empty ~name:"field-tac-name-table"
 
 let field_for_carrier r = Cmap.find r !field_from_carrier
 let field_for_relation rel = Cmap.find rel !field_from_relation
@@ -942,19 +929,6 @@ let find_field_structure env sigma l =
           errorlabstrm "field"
             (str"cannot find a declared field structure for equality"++
              spc()++str"\""++pr_constr req++str"\"")) *)
-
-let _ =
-  Summary.declare_summary "tactic-new-field-table"
-    { Summary.freeze_function =
-        (fun () -> !field_from_carrier,!field_from_relation,!field_from_name);
-      Summary.unfreeze_function =
-        (fun (ct,rt,nt) ->
-          field_from_carrier := ct; field_from_relation := rt;
-          field_from_name := nt);
-      Summary.init_function =
-        (fun () ->
-          field_from_carrier := Cmap.empty; field_from_relation := Cmap.empty;
-          field_from_name := Spmap.empty) }
 
 let add_field_entry (sp,_kn) e =
 (*

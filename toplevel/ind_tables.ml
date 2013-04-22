@@ -32,7 +32,7 @@ type individual_scheme_object_function = inductive -> constr
 
 type 'a scheme_kind = string
 
-let scheme_map = ref Indmap.empty
+let scheme_map = Summary.ref Indmap.empty ~name:"Schemes"
 
 let cache_one_scheme kind (ind,const) =
   let map = try Indmap.find ind !scheme_map with Not_found -> String.Map.empty in
@@ -59,19 +59,6 @@ let inScheme : string * (inductive * constant) array -> obj =
                     subst_function = subst_scheme;
 		    classify_function = (fun obj -> Substitute obj);
 		    discharge_function = discharge_scheme}
-
-(**********************************************************************)
-(* Saving/restoring the table of scheme *)
-
-let freeze_schemes () = !scheme_map
-let unfreeze_schemes sch = scheme_map := sch
-let init_schemes () = scheme_map := Indmap.empty
-
-let _ =
-  Summary.declare_summary "Schemes"
-    { Summary.freeze_function = freeze_schemes;
-      Summary.unfreeze_function = unfreeze_schemes;
-      Summary.init_function = init_schemes }
 
 (**********************************************************************)
 (* The table of scheme building functions *)
