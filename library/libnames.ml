@@ -72,8 +72,8 @@ let dirpath_of_string s =
 
 let string_of_dirpath = Names.DirPath.to_string
 
-module Dirset = Set.Make(struct type t = DirPath.t let compare = DirPath.compare end)
-module Dirmap = Map.Make(struct type t = DirPath.t let compare = DirPath.compare end)
+module Dirset = Set.Make(DirPath)
+module Dirmap = Map.Make(DirPath)
 
 (*s Section paths are absolute names *)
 
@@ -81,13 +81,16 @@ type full_path = {
   dirpath : DirPath.t ;
   basename : Id.t }
 
-let eq_full_path p1 p2 =
-  Id.equal p1.basename p2.basename &&
-  DirPath.equal p1.dirpath p2.dirpath
+let dirpath sp = sp.dirpath
+let basename sp = sp.basename
 
 let make_path pa id = { dirpath = pa; basename = id }
 
 let repr_path { dirpath = pa; basename = id } = (pa,id)
+
+let eq_full_path p1 p2 =
+  Id.equal p1.basename p2.basename &&
+  DirPath.equal p1.dirpath p2.dirpath
 
 (* parsing and printing of section paths *)
 let string_of_path sp =
@@ -109,9 +112,6 @@ module SpOrdered =
   end
 
 module Spmap = Map.Make(SpOrdered)
-
-let dirpath sp = let (p,_) = repr_path sp in p
-let basename sp = let (_,id) = repr_path sp in id
 
 let path_of_string s =
   try
