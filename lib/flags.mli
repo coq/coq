@@ -58,8 +58,6 @@ val is_program_mode : unit -> bool
 val make_warn : bool -> unit
 val if_warn : ('a -> unit) -> 'a -> unit
 
-val hash_cons_proofs : bool ref
-
 (** Temporary activate an option (to activate option [o] on [f x y z],
    use [with_option o (f x y) z]) *)
 val with_option : bool ref -> ('a -> 'b) -> 'a -> 'b

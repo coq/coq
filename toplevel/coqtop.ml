@@ -329,8 +329,6 @@ let parse_args arglist =
     | "-v7" :: rem -> error "This version of Coq does not support v7 syntax"
     | "-v8" :: rem -> parse rem
 
-    | "-no-hash-consing" :: rem -> Flags.hash_cons_proofs := false; parse rem
-
     | "-ideslave" :: rem -> ide_slave := true; parse rem
 
     | "-filteropts" :: rem -> filter_opts := true; parse rem

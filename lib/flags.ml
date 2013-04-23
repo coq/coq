@@ -87,8 +87,6 @@ let is_auto_intros () = version_strictly_greater V8_2 && !auto_intros
 let program_mode = ref false
 let is_program_mode () = !program_mode
 
-let hash_cons_proofs = ref true
-
 let warn = ref true
 let make_warn flag = warn := flag;  ()
 let if_warn f x = if !warn then f x

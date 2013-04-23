@@ -316,8 +316,6 @@ let parse_args argv =
     | ("-o" | "--output-context") :: rem ->
         Check_stat.output_context := true; parse rem
 
-    | "-no-hash-consing" :: rem -> Flags.hash_cons_proofs := false; parse rem
-
     | "-admit" :: s :: rem -> add_admit s; parse rem
     | "-admit" :: [] -> usage ()
 
