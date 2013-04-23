@@ -292,12 +292,14 @@ let extend_grammar gram =
 
 let recover_notation_grammar ntn prec =
   let filter = function
-  | _, Notation (prec', vars, ng) when Notation.level_eq prec prec' && String.equal ntn ng.notgram_notation ->
-    Some (vars, ng)
-  | _ -> None in
-  let l = List.map_filter filter !grammar_state in
-  let () = match l with [_] -> () | _ -> assert false in
-  List.hd l
+  | _, Notation (prec', vars, ng) when
+      Notation.level_eq prec prec' &&
+      String.equal ntn ng.notgram_notation -> Some (vars, ng)
+  | _ -> None
+  in
+  match List.map_filter filter !grammar_state with
+  | [x] -> x
+  | _ -> assert false
 
 (* Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
