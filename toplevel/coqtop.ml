@@ -110,22 +110,31 @@ let require () =
     (List.rev !require_list)
 
 let compile_list = ref ([] : (bool * string) list)
+
 let add_compile verbose s =
   set_batch_mode ();
   Flags.make_silent true;
   compile_list := (verbose,s) :: !compile_list
+
+let compile_file (v,f) =
+  if Flags.do_beautify () then
+    with_option beautify_file (Vernac.compile v) f
+  else
+    Vernac.compile v f
+
 let compile_files () =
-  let init_state = States.freeze() in
-  let coqdoc_init_state = Lexer.location_table () in
-    List.iter
-      (fun (v,f) ->
-	 States.unfreeze init_state;
-	 Lexer.restore_location_table coqdoc_init_state;
-	 if Flags.do_beautify () then
-	   with_option beautify_file (Vernac.compile v) f
-	 else
-	   Vernac.compile v f)
-      (List.rev !compile_list)
+  match !compile_list with
+    | [] -> ()
+    | [vf] -> compile_file vf (* One compilation : no need to save init state *)
+    | l ->
+      let init_state = States.freeze() in
+      let coqdoc_init_state = Lexer.location_table () in
+      List.iter
+        (fun vf ->
+	  States.unfreeze init_state;
+	  Lexer.restore_location_table coqdoc_init_state;
+          compile_file vf)
+        (List.rev l)
 
 (*s options for the virtual machine *)
 
