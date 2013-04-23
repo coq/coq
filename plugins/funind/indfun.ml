@@ -154,19 +154,12 @@ let build_newrecursive
       (env0,Constrintern.empty_internalization_env) lnameargsardef in
   let recdef =
     (* Declare local notations *)
-    let fs = States.freeze() in
-    let def =
-      try
-	List.map
-	  (fun (_,bl,_,def)  ->
-             let def = abstract_glob_constr def bl in
-             interp_casted_constr_with_implicits
-	       sigma rec_sign rec_impls def
-	  )
-          lnameargsardef
-	with reraise ->
-	States.unfreeze fs; raise reraise in
-    States.unfreeze fs; def
+    let f (_,bl,_,def) =
+      let def = abstract_glob_constr def bl in
+      interp_casted_constr_with_implicits
+        sigma rec_sign rec_impls def
+    in
+    States.with_state_protection (List.map f) lnameargsardef
   in
   recdef,rec_impls
 
