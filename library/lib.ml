@@ -282,7 +282,6 @@ let start_mod is_type export id mp fs =
   add_entry oname (OpenedModule (is_type,export,prefix,fs));
   path_prefix := prefix;
   prefix
-(*  add_frozen_state () must be called in declaremods *)
 
 let start_module = start_mod false
 let start_modtype = start_mod true None
@@ -307,8 +306,6 @@ let end_mod is_type =
   add_entry oname (ClosedModule (List.rev (mark::after)));
   let prefix = !path_prefix in
   recalc_path_prefix ();
-  (* add_frozen_state must be called after processing the module,
-     because we cannot recache interactive modules  *)
   (oname, prefix, fs, after)
 
 let end_module () = end_mod false
@@ -407,7 +404,8 @@ let sectab =
     ~name:"section-context"
 
 let add_section () =
-  sectab := ([],(Names.Cmap.empty,Names.Mindmap.empty),(Names.Cmap.empty,Names.Mindmap.empty)) :: !sectab
+  sectab := ([],(Names.Cmap.empty,Names.Mindmap.empty),
+                (Names.Cmap.empty,Names.Mindmap.empty)) :: !sectab
 
 let add_section_variable id impl =
   match !sectab with
@@ -550,15 +548,13 @@ let is_frozen_state = function (_,FrozenState _) -> true | _ -> false
 let set_lib_stk new_lib_stk =
   lib_stk := new_lib_stk;
   recalc_path_prefix ();
-  let spf = match find_entry_p is_frozen_state with
-    | (sp, FrozenState f) -> Summary.unfreeze_summaries f; sp
+  (* Always at least one frozen state in the libstack *)
+  match find_entry_p is_frozen_state with
+    | (sp, FrozenState f) ->
+      Summary.unfreeze_summaries f;
+      let (after,_,_) = split_lib sp in
+      recache_context after
     | _ -> assert false
-  in
-  let (after,_,_) = split_lib spf in
-  try
-    recache_context after
-  with
-    | Not_found -> error "Tried to set environment to an incoherent state."
 
 let reset_to test =
   let (_,_,before) = split_lib_gen test in
@@ -591,6 +587,8 @@ let reset_label n =
   (* forget state numbers after n only if reset succeeded *)
   reset_command_label n
 
+let raw_reset_initial () = reset_label first_command_label
+
 (** Search the last label registered before defining [id] *)
 
 let label_before_name (loc,id) =
@@ -618,11 +616,10 @@ let unfreeze (mn,stk) =
   recalc_path_prefix ()
 
 let init () =
-  lib_stk := [];
-  add_frozen_state ();
-  comp_name := None;
-  path_prefix := initial_prefix;
-  Summary.init_summaries ()
+  unfreeze (None,[]);
+  Summary.init_summaries ();
+  add_frozen_state (); (* Stores e.g. the keywords declared in g_*.ml4 *)
+  mark_end_of_command () (* For allowing Reset Initial in coqtop -l *)
 
 (* Misc *)
 

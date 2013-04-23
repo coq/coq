@@ -179,25 +179,15 @@ let backtrack snum pnum naborts =
 
 (** [reset_initial] resets the system and clears the command history
     stack, only pushing back the initial entry. It should be equivalent
-    to [backto Lib.first_command_label], but sligthly more efficient. *)
+    to [backto n0] where [n0] is the first label stored in the history.
+    Note that there might be other labels before [n0] in the libstack,
+    created during evaluation of .coqrc or initial Load's. *)
 
 let reset_initial () =
-  let init_label = Lib.first_command_label in
-  if Int.equal (Lib.current_command_label ()) init_label then ()
-  else begin
-    Pfedit.delete_all_proofs ();
-    Lib.reset_label init_label;
-    Stack.clear history;
-    Stack.push
-      { label = init_label;
-	nproofs = 0;
-	prfname = None;
-	prfdepth = 0;
-	ngoals = 0;
-	reachable = true;
-	cmd = VernacNop }
-      history
-  end
+  let n = Stack.length history in
+  npop (n-1);
+  Pfedit.delete_all_proofs ();
+  Lib.reset_label (top ()).label
 
 (** Reset to the last known state just before defining [id] *)
 

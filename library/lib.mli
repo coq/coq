@@ -155,13 +155,15 @@ val mark_end_of_command : unit -> unit
 (** Returns the current label number *)
 val current_command_label : unit -> int
 
-(** The first label number *)
-val first_command_label : int
-
 (** [reset_label n] resets [lib_stk] to the label n registered by
    [mark_end_of_command()]. It forgets anything registered after
    this label. The label should be strictly in the past. *)
 val reset_label : int -> unit
+
+(** [raw_reset_initial] is now [reset_label] to the first label.
+    This is meant to be used during initial Load's and compilations.
+    Otherwise, consider instead [Backtrack.reset_initial] *)
+val raw_reset_initial : unit -> unit
 
 (** search the label registered immediately before adding some definition *)
 val label_before_name : Names.Id.t Loc.located -> int

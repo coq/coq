@@ -1582,7 +1582,7 @@ let vernac_reset_initial () =
     Backtrack.reset_initial ()
   else begin
     Pp.msg_warning (str "Reset command occurred in non-interactive mode.");
-    Lib.reset_label Lib.first_command_label
+    Lib.raw_reset_initial ()
   end
 
 (* For compatibility with ProofGeneral: *)

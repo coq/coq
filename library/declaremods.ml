@@ -223,10 +223,10 @@ let conv_names_do_module exists what iter_objects i ((sp,kn),substobjs) =
   let dir = dir_of_sp sp and mp = mp_of_kn kn in
   do_module exists what iter_objects i dir mp substobjs []
 
-(* Interactive modules and module types cannot be recached! cache_mod*
-   functions can be called only once (and "end_mod*" set the flag to
-   false then)
-*)
+(* Nota: Interactive modules and module types cannot be recached!
+   This used to be checked here via a flag along the substobjs.
+   The check is still there for module types (see cache_modtype). *)
+
 let cache_module ((sp,kn),substobjs) =
   let dir = dir_of_sp sp and mp = mp_of_kn kn in
   do_module false "cache" load_objects 1 dir mp substobjs []
