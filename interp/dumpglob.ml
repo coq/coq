@@ -32,7 +32,7 @@ let noglob () = glob_output := NoGlob
 
 let dump_to_stdout () = glob_output := StdOut; glob_file := Pervasives.stdout
 
-let dump_to_dotglob f = glob_output := MultFiles
+let dump_to_dotglob () = glob_output := MultFiles
 
 let dump_into_file f = glob_output := File f; open_glob_file f
 

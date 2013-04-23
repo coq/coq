@@ -111,9 +111,10 @@ let require () =
 
 let compile_list = ref ([] : (bool * string) list)
 
-let add_compile verbose s =
+let add_compile verbose glob_opt s =
   set_batch_mode ();
   Flags.make_silent true;
+  if not glob_opt then Dumpglob.dump_to_dotglob ();
   compile_list := (verbose,s) :: !compile_list
 
 let compile_file (v,f) =
@@ -265,10 +266,10 @@ let parse_args arglist =
     | "-print-mod-uid" :: f :: rem -> Flags.print_mod_uid := true;
                                       add_require f; parse rem
 
-    | "-compile" :: f :: rem -> add_compile false f; if not !glob_opt then Dumpglob.dump_to_dotglob (); parse rem
+    | "-compile" :: f :: rem -> add_compile false !glob_opt f; parse rem
     | "-compile" :: []       -> usage ()
 
-    | "-compile-verbose" :: f :: rem -> add_compile true f;  if not !glob_opt then Dumpglob.dump_to_dotglob (); parse rem
+    | "-compile-verbose" :: f :: rem -> add_compile true !glob_opt f; parse rem
     | "-compile-verbose" :: []       -> usage ()
 
     | "-force-load-proofs" :: rem -> Flags.load_proofs := Flags.Force; parse rem
@@ -401,12 +402,13 @@ let init arglist =
       in
       fatal_error (msg ++ Toplevel.print_toplevel_error any)
   end;
-  if !batch_mode then
-    (flush_all();
-     if !output_context then
-       Pp.ppnl (with_option raw_print Prettyp.print_full_pure_context ());
-     Profile.print_profile ();
-     exit 0);
+  if !batch_mode then begin
+    flush_all();
+    if !output_context then
+      Pp.ppnl (with_option raw_print Prettyp.print_full_pure_context ());
+    Profile.print_profile ();
+    exit 0
+  end;
   (* We initialize the command history stack with a first entry *)
   Backtrack.mark_command Vernacexpr.VernacNop
 
