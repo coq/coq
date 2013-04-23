@@ -321,11 +321,14 @@ let rec vernac_com interpfun checknav (loc,com) =
 	  interp v
 
     | v ->
+          let rollback =
+            if !Flags.batch_mode then States.without_rollback
+            else States.with_heavy_rollback
+          in
 	  let psh = default_set_timeout () in
 	  try
             let status =
-              States.with_heavy_rollback interpfun
-                Cerrors.process_vernac_interp_error v
+              rollback interpfun Cerrors.process_vernac_interp_error v
             in
 	    restore_timeout psh;
             status

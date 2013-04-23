@@ -39,6 +39,10 @@ let with_heavy_rollback f h x =
   with reraise ->
     let e = h reraise in (unfreeze st; raise e)
 
+let without_rollback f h x =
+  try f x
+  with reraise -> raise (h reraise)
+
 let with_state_protection f x =
   let st = freeze () in
   try
