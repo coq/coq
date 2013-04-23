@@ -231,14 +231,7 @@ let remove_keyword str =
 type frozen_t = ttree
 
 let freeze () = !token_tree
-
-let unfreeze tt =
-  token_tree := tt
-
-let init () =
-  unfreeze empty_ttree
-
-let _ = init()
+let unfreeze tt = (token_tree := tt)
 
 (* The string buffering machinery *)
 

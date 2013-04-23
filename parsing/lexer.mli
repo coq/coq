@@ -26,7 +26,6 @@ val check_keyword : string -> unit
 type frozen_t
 val freeze : unit -> frozen_t
 val unfreeze : frozen_t -> unit
-val init : unit -> unit
 
 type com_state
 val com_state: unit -> com_state

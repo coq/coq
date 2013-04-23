@@ -325,18 +325,16 @@ let unfreeze (grams, lex) =
   Lexer.unfreeze lex;
   List.iter extend_grammar (List.rev_map snd redo)
 
-let init_grammar () =
-  remove_grammars (number_of_entries !grammar_state);
-  grammar_state := []
-
-let init () =
-  init_grammar ()
+(** No need to provide an init function : the grammar state is
+    statically available, and already empty initially, while
+    the lexer state should not be resetted, since it contains
+    keywords declared in g_*.ml4 *)
 
 let _ =
   Summary.declare_summary "GRAMMAR_LEXER"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
-      Summary.init_function = init }
+      Summary.init_function = Summary.nop }
 
 let with_grammar_rule_protection f x =
   let fs = freeze () in
