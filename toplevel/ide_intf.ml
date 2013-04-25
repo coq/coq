@@ -144,19 +144,19 @@ let expected_answer_type call : value_type =
   let options = pair_t (list_t string_t) option_state_t in
   let objs = coq_object_t string_t in
   match call with
-  | Interp _     -> check (union_t string_t string_t     : interp_rty      val_t)
-  | Rewind _     -> check (int_t                         : rewind_rty      val_t)
-  | Goal _       -> check (option_t goals_t              : goals_rty       val_t)
-  | Evars _      -> check (option_t (list_t evar_t)      : evars_rty       val_t)
-  | Hints  _     -> check (option_t hints                : hints_rty       val_t)
-  | Status _     -> check (state_t                       : status_rty      val_t)
-  | Search _     -> check (list_t objs                   : search_rty      val_t)
-  | GetOptions _ -> check (list_t options                : get_options_rty val_t)
-  | SetOptions _ -> check (unit_t                        : set_options_rty val_t)
-  | InLoadPath _ -> check (bool_t                        : inloadpath_rty  val_t)
-  | MkCases _    -> check (list_t (list_t string_t)      : mkcases_rty     val_t)
-  | Quit _       -> check (unit_t                        : quit_rty        val_t)
-  | About _      -> check (coq_info_t                    : about_rty       val_t)
+  | Interp _     -> check (union_t string_t string_t    : interp_rty      val_t)
+  | Rewind _     -> check (int_t                        : rewind_rty      val_t)
+  | Goal _       -> check (option_t goals_t             : goals_rty       val_t)
+  | Evars _      -> check (option_t (list_t evar_t)     : evars_rty       val_t)
+  | Hints  _     -> check (option_t hints               : hints_rty       val_t)
+  | Status _     -> check (state_t                      : status_rty      val_t)
+  | Search _     -> check (list_t objs                  : search_rty      val_t)
+  | GetOptions _ -> check (list_t options               : get_options_rty val_t)
+  | SetOptions _ -> check (unit_t                       : set_options_rty val_t)
+  | InLoadPath _ -> check (bool_t                       : inloadpath_rty  val_t)
+  | MkCases _    -> check (list_t (list_t string_t)     : mkcases_rty     val_t)
+  | Quit _       -> check (unit_t                       : quit_rty        val_t)
+  | About _      -> check (coq_info_t                   : about_rty       val_t)
 
 (** * XML data marshalling *)
 

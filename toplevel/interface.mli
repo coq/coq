@@ -103,13 +103,13 @@ type coq_info = {
   compile_date : string;
 }
 
-(** * Coq answers to CoqIde *)
+(** Coq messages *)
 
 type location = (int * int) option (* start and end of the error *)
 
 type 'a value =
   | Good of 'a
-  |Unsafe of 'a
+  | Unsafe of 'a
   | Fail of (location * string)
 
 (* Request/Reply message protocol between Coq and CoqIde *)
