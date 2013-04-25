@@ -324,7 +324,7 @@ let rec vernac_com interpfun checknav (loc,com) =
           in
 	  let psh = default_set_timeout () in
 	  try
-            rollback interpfun Cerrors.process_vernac_interp_error v
+            rollback interpfun Cerrors.process_vernac_interp_error v;
 	    restore_timeout psh;
 	  with reraise ->
             let reraise = Errors.push reraise in
