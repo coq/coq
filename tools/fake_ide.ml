@@ -31,6 +31,8 @@ let eval_call call coqtop =
       let content = message.Interface.message_content in
       let () = logger level content in
       loop ()
+    else if Serialize.is_feedback xml then
+      loop ()
     else (Serialize.to_answer xml call)
   in
   let res = loop () in
@@ -38,10 +40,10 @@ let eval_call call coqtop =
   match res with Interface.Fail _ -> exit 1 | _ -> ()
 
 let commands =
-  [ "INTERPRAWSILENT", (fun s -> eval_call (Serialize.interp (true,false,s)));
-    "INTERPRAW", (fun s -> eval_call (Serialize.interp (true,true,s)));
-    "INTERPSILENT", (fun s -> eval_call (Serialize.interp (false,false,s)));
-    "INTERP", (fun s -> eval_call (Serialize.interp (false,true,s)));
+  [ "INTERPRAWSILENT", (fun s -> eval_call (Serialize.interp (0,true,false,s)));
+    "INTERPRAW", (fun s -> eval_call (Serialize.interp (0,true,true,s)));
+    "INTERPSILENT", (fun s -> eval_call (Serialize.interp (0,false,false,s)));
+    "INTERP", (fun s -> eval_call (Serialize.interp (0,false,true,s)));
     "REWIND", (fun s -> eval_call (Serialize.rewind (int_of_string s)));
     "GOALS", (fun _ -> eval_call (Serialize.goals ()));
     "HINTS", (fun _ -> eval_call (Serialize.hints ()));

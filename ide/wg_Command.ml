@@ -111,10 +111,9 @@ object(self)
 	if String.get com (String.length com - 1) = '.'
 	then com ^ " " else com ^ " " ^ entry#text ^" . "
       in
-      let log level message = result#buffer#insert (message^"\n")
-      in
+      let log level message = result#buffer#insert (message^"\n") in
       let process =
-	Coq.bind (Coq.interp ~logger:log ~raw:true phrase) (function
+	Coq.bind (Coq.interp ~logger:log ~raw:true 0 phrase) (function
           | Interface.Fail (l,str) ->
             result#buffer#insert ("Error while interpreting "^phrase^":\n"^str);
 	    Coq.return ()

@@ -63,6 +63,9 @@ val spawn_coqtop : string list -> coqtop
 val set_reset_handler : coqtop -> (reset_kind -> unit task) -> unit
 (** Register a handler called when a coqtop dies (badly or on purpose) *)
 
+val set_feedback_handler : coqtop -> (Interface.feedback -> unit) -> unit
+(** Register a handler called when coqtop sends a feedback message *)
+
 val init_coqtop : coqtop -> unit task -> unit
 (** Finish initializing a freshly spawned coqtop, by running a first task on it.
     The task should run its inner continuation at the end. *)
@@ -113,8 +116,11 @@ val try_grab : coqtop -> unit task -> (unit -> unit) -> unit
 type 'a query = 'a Interface.value task
 (** A type abbreviation for coqtop specific answers *)
 
-val interp : ?logger:Ideutils.logger -> ?raw:bool -> ?verbose:bool ->
-  string -> string query
+val interp :
+  ?logger:Ideutils.logger ->
+  ?raw:bool ->
+  ?verbose:bool ->
+    int -> string -> string query
 val rewind : int -> int query
 val status : Interface.status query
 val goals : Interface.goals option query

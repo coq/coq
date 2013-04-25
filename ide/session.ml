@@ -155,8 +155,8 @@ let create file coqtop_args =
   let finder = new Wg_Find.finder (script :> GText.view) in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
-  let cops = new CoqOps.coqops script proof messages (fun () -> fops#filename)
-  in
+  let cops =
+    new CoqOps.coqops script proof messages coqtop (fun () -> fops#filename) in
   let _ = Coq.set_reset_handler coqtop cops#handle_reset_initial in
   let _ = Coq.init_coqtop coqtop cops#initialize in
   {

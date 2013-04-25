@@ -354,6 +354,18 @@ let msg_debug x = !logger (Debug "_") x
 
 let set_logger l = logger := l
 
+(** Feedback *)
+
+let feeder = ref ignore
+let feedback_id = ref 0
+let set_id_for_feedback i = feedback_id := i
+let feedback what =
+  !feeder {
+     Interface.edit_id = !feedback_id;
+     Interface.content = what
+  }
+let set_feeder f = feeder := f
+
 (** Utility *)
 
 let string_of_ppcmds c =

@@ -106,6 +106,22 @@ val std_logger : logger
 
 val set_logger : logger -> unit
 
+(** {6 Feedback sent, even asynchronously, to the user interface *)
+
+(* This stuff should be available to most of the system, line msg_* above.
+ * But I'm unsure this is the right place, especially for the global edit_id.
+ *
+ * Morally the parser gets a string and an edit_id, and gives back an AST.
+ * Feedbacks during the parsing phase are attached to this edit_id.
+ * The interpreter assignes an exec_id to the ast, and feedbacks happening
+ * during interpretation are attached to the exec_id (still unimplemented,
+ * since the two phases are performed sequentially) *)
+
+val feedback : Interface.feedback_content -> unit
+
+val set_id_for_feedback : Interface.edit_id -> unit
+val set_feeder : (Interface.feedback -> unit) -> unit
+
 (** {6 Utilities} *)
 
 val string_of_ppcmds : std_ppcmds -> string

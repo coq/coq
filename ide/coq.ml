@@ -275,6 +275,8 @@ type coqtop = {
   sup_args : string list;
   (* called whenever coqtop dies *)
   mutable reset_handler : reset_kind -> unit task;
+  (* called whenever coqtop sends a feedback message *)
+  mutable feedback_handler : Interface.feedback -> unit;
   (* actual coqtop process and its status *)
   mutable handle : handle;
   mutable status : status;
@@ -360,6 +362,11 @@ let handle_intermediate_message logger xml =
   let content = message.Interface.message_content in
   logger level content
 
+let handle_feedback feedback_processor xml =
+  let () = Minilib.log "Handling some feedback" in
+  let feedback = Serialize.to_feedback xml in
+  feedback_processor feedback
+
 let handle_final_answer handle ccb xml =
   let () = Minilib.log "Handling coqtop answer" in
   let () = handle.waiting_for <- None in
@@ -370,7 +377,7 @@ type input_state = {
   mutable lexerror : int option;
 }
 
-let unsafe_handle_input handle state conds =
+let unsafe_handle_input handle feedback_processor state conds =
   let chan = Glib.Io.channel_of_descr handle.cout in
   let () = check_errors conds in
   let s = io_read_all chan in
@@ -391,6 +398,12 @@ let unsafe_handle_input handle state conds =
       let () = state.fragment <- remaining in
       let () = state.lexerror <- None in
       let () = handle_intermediate_message logger xml in
+      loop ()
+    else if Serialize.is_feedback xml then
+      let remaining = String.sub s l_end (String.length s - l_end) in
+      let () = state.fragment <- remaining in
+      let () = state.lexerror <- None in
+      let () = handle_feedback feedback_processor xml in
       loop ()
     else
       (* We should have finished decoding s *)
@@ -413,7 +426,7 @@ let unsafe_handle_input handle state conds =
     let () = state.lexerror <- Some l_end in
     ()
 
-let install_input_watch handle respawner =
+let install_input_watch handle respawner feedback_processor =
   let io_chan = Glib.Io.channel_of_descr handle.cout in
   let all_conds = [`ERR; `HUP; `IN; `NVAL; `PRI] in (* all except `OUT *)
   let state = {
@@ -429,7 +442,7 @@ let install_input_watch handle respawner =
     if not handle.alive then false (* coqtop already terminated *)
     else
       try
-        let () = unsafe_handle_input handle state conds in
+        let () = unsafe_handle_input handle feedback_processor state conds in
         true
       with e ->
 	let () = Minilib.log ("Coqtop reader failed, resetting: "^print_exception e) in
@@ -472,7 +485,9 @@ let rec respawn_coqtop ?(why=Unexpected) coqtop =
      If not, there isn't much we can do ... *)
   assert (coqtop.handle.alive = true);
   coqtop.status <- New;
-  install_input_watch coqtop.handle (fun () -> respawn_coqtop coqtop);
+  install_input_watch coqtop.handle
+    (fun () -> respawn_coqtop coqtop)
+    (fun msg -> coqtop.feedback_handler msg);
   ignore (coqtop.reset_handler why coqtop.handle (mkready coqtop))
 
 let spawn_coqtop sup_args =
@@ -481,13 +496,17 @@ let spawn_coqtop sup_args =
     handle = spawn_handle sup_args;
     sup_args = sup_args;
     reset_handler = (fun _ _ k -> k ());
+    feedback_handler = (fun _ -> ());
     status = New;
   }
   in
-  install_input_watch ct.handle (fun () -> respawn_coqtop ct);
+  install_input_watch ct.handle
+    (fun () -> respawn_coqtop ct) (fun msg -> ct.feedback_handler msg);
   ct
 
 let set_reset_handler coqtop hook = coqtop.reset_handler <- hook
+
+let set_feedback_handler coqtop hook = coqtop.feedback_handler <- hook
 
 let is_computing coqtop = (coqtop.status = Busy)
 
@@ -540,8 +559,8 @@ let eval_call ?(logger=default_logger) call handle k =
   Minilib.log "End eval_call";
   Void
 
-let interp ?(logger=default_logger) ?(raw=false) ?(verbose=true) s h k =
-  eval_call ~logger (Serialize.interp (raw,verbose,s)) h
+let interp ?(logger=default_logger) ?(raw=false) ?(verbose=true) i s h k =
+  eval_call ~logger (Serialize.interp (i,raw,verbose,s)) h
     (function
      | Interface.Good (Util.Inl v) -> k (Interface.Good v)
      | Interface.Good (Util.Inr v) -> k (Interface.Unsafe v)

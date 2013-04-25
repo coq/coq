@@ -359,9 +359,10 @@ let to_value f = function
 | _ -> raise Marshal_error
 
 let of_call = function
-| Interp (raw, vrb, cmd) ->
+| Interp (id,raw, vrb, cmd) ->
   let flags = (bool_arg "raw" raw) @ (bool_arg "verbose" vrb) in
-  Element ("call", ("val", "interp") :: flags, [PCData cmd])
+  Element ("call", ("val", "interp") :: ("id", string_of_int id) :: flags,
+  [PCData cmd])
 | Rewind n ->
   Element ("call", ("val", "rewind") :: ["steps", string_of_int n], [])
 | Goal () ->
@@ -394,9 +395,10 @@ let to_call = function
   let ans = massoc "val" attrs in
   begin match ans with
   | "interp" ->
+    let id = List.assoc "id" attrs in
     let raw = List.mem_assoc "raw" attrs in
     let vrb = List.mem_assoc "verbose" attrs in
-    Interp (raw, vrb, raw_string l)
+    Interp (int_of_string id, raw, vrb, raw_string l)
   | "rewind" ->
     let steps = int_of_string (massoc "steps" attrs) in
     Rewind steps
@@ -525,6 +527,30 @@ let is_message = function
 | Element ("message", _, _) -> true
 | _ -> false
 
+let to_feedback_content xml = do_match xml "feedback_content"
+  (fun s args -> match s with
+  | "addedaxiom" -> AddedAxiom
+  | "processed" -> Processed
+  | _ -> raise Marshal_error)
+
+let of_feedback_content = function
+| AddedAxiom -> constructor "feedback_content" "addedaxiom" []
+| Processed -> constructor "feedback_content" "processed" []
+
+let of_feedback msg =
+  let content = of_feedback_content msg.content in
+  Element ("feedback", ["id",string_of_int msg.edit_id], [content])
+
+let to_feedback xml = match xml with
+| Element ("feedback", ["id",id], [content]) ->
+  { edit_id = int_of_string id;
+    content = to_feedback_content content }
+| _ -> raise Marshal_error
+
+let is_feedback = function
+| Element ("feedback", _, _) -> true
+| _ -> false
+
 (** Conversions between ['a value] and xml answers
 
   When decoding an xml answer, we dynamically check that it is compatible
@@ -617,10 +643,10 @@ let pr_pair pr1 pr2 (a,b) = "("^pr1 a^","^pr2 b^")"
 let pr_union pr1 pr2 = function Util.Inl x -> pr1 x | Util.Inr x -> pr2 x
 
 let pr_call = function
-  | Interp (r,b,s) ->
+  | Interp (id,r,b,s) ->
     let raw = if r then "RAW" else "" in
     let verb = if b then "" else "SILENT" in
-    "INTERP"^raw^verb^" ["^s^"]"
+    "INTERP"^raw^verb^" "^string_of_int id^" ["^s^"]"
   | Rewind i -> "REWIND "^(string_of_int i)
   | Goal _ -> "GOALS"
   | Evars _ -> "EVARS"

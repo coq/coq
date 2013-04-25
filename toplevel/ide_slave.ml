@@ -114,7 +114,8 @@ let coqide_cmd_checks (loc,ast) =
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
-let interp (raw,verbosely,s) =
+let interp (id,raw,verbosely,s) =
+  Pp.set_id_for_feedback id;
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   let loc_ast = Vernac.parse_sentence (pa,None) in
   if not raw then coqide_cmd_checks loc_ast;
@@ -338,6 +339,11 @@ let slave_logger level message =
   Xml_utils.print_xml !orig_stdout xml;
   flush !orig_stdout
 
+let slave_feeder msg =
+  let xml = Serialize.of_feedback msg in
+  Xml_utils.print_xml !orig_stdout xml;
+  flush !orig_stdout
+
 (** The main loop *)
 
 (** Exceptions during eval_call should be converted into [Interface.Fail]
@@ -348,6 +354,7 @@ let loop () =
   init_signal_handler ();
   catch_break := false;
   Pp.set_logger slave_logger;
+  Pp.set_feeder slave_feeder;
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;

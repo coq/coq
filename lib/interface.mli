@@ -103,7 +103,7 @@ type coq_info = {
   compile_date : string;
 }
 
-(** Coq messages *)
+(** Coq unstructured messages *)
 
 type message_level =
   | Debug of string
@@ -117,6 +117,20 @@ type message = {
   message_content : string;
 }
 
+(** Coq "semantic" infos obtained during parsing/execution *)
+type edit_id = int
+
+type feedback_content =
+  | AddedAxiom
+  | Processed
+
+type feedback = {
+  edit_id : edit_id;
+  content : feedback_content;
+}
+
+(** Calls result *)
+
 type location = (int * int) option (* start and end of the error *)
 
 type 'a value =
@@ -126,18 +140,16 @@ type 'a value =
 
 (* Request/Reply message protocol between Coq and CoqIde *)
 
-(** Running a command (given as a string).
-    The 1st flag indicates whether to use "raw" mode
-    (less sanity checks, no impact on the undo stack).
-    Suitable e.g. for queries, or for the Set/Unset
+(** Running a command (given as its id and its text).
+    "raw" mode (less sanity checks, no impact on the undo stack)
+    is suitable for queries, or for the Set/Unset
     of display options that coqide performs all the time.
-    The 2nd flag controls the verbosity.
     The returned string contains the messages produced
-    by this command, but not the updated goals (they are
+    but not the updated goals (they are
     to be fetch by a separated [current_goals]). *)
-type interp_sty = raw * verbose * string
 (* spiwack: [Inl] for safe and [Inr] for unsafe. *)
 type interp_rty = (string,string) Util.union
+type interp_sty = edit_id * raw * verbose * string
 
 (** Backtracking by at least a certain number of phrases.
     No finished proofs will be re-opened. Instead,

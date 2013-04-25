@@ -11,11 +11,40 @@ open Ideutils
 
 type flag = [ `COMMENT | `UNSAFE ]
 
-type ide_info = {
-  start : GText.mark;
-  stop : GText.mark;
-  flags : flag list;
-}
+module SentenceId : sig
+
+  type sentence = private {
+    start : GText.mark;
+    stop : GText.mark;
+    mutable flags : flag list;
+    id : int;
+  }
+
+  val mk_sentence :
+    start:GText.mark -> stop:GText.mark -> flag list -> sentence
+  val set_flags : sentence -> flag list -> unit
+
+end = struct
+
+  type sentence = {
+    start : GText.mark;
+    stop : GText.mark;
+    mutable flags : flag list;
+    id : int;
+  }
+
+  let id = ref 0
+  let mk_sentence ~start ~stop flags = decr id; {
+    start = start;
+    stop = stop;
+    flags = flags;
+    id = !id;
+  }
+
+  let set_flags s f = s.flags <- f
+
+end
+open SentenceId
 
 let prefs = Preferences.current
 
@@ -39,6 +68,7 @@ class coqops
   (_script:Wg_ScriptView.script_view)
   (_pv:Wg_ProofView.proof_view)
   (_mv:Wg_MessageView.message_view)
+  (_ct:Coq.coqtop)
   get_filename =
 object(self)
   val script = _script
@@ -47,6 +77,9 @@ object(self)
   val messages = _mv
 
   val cmd_stack = Stack.create ()
+
+  initializer
+    Coq.set_feedback_handler _ct self#process_feedback
 
   method private get_start_of_input =
     buffer#get_iter_at_mark (`NAME "start_of_input")
@@ -81,7 +114,8 @@ object(self)
         flash_info "This error is so nasty that I can't even display it."
       else messages#add s;
     in
-    let query = Coq.interp ~logger:messages#push ~raw:true ~verbose:false phrase in
+    let query =
+      Coq.interp ~logger:messages#push ~raw:true ~verbose:false 0 phrase in
     let next = function
     | Interface.Fail (_, err) -> display_error err; Coq.return ()
     | Interface.Good msg | Interface.Unsafe msg ->
@@ -103,12 +137,12 @@ object(self)
         let is_comment =
           stop#backward_char#has_tag Tags.Script.comment_sentence
         in
-        let payload = {
-          start = `MARK (buffer#create_mark start);
-          stop = `MARK (buffer#create_mark stop);
-          flags = if is_comment then [`COMMENT] else [];
-        } in
-        Queue.push payload queue;
+        let sentence =
+          mk_sentence
+            ~start:(`MARK (buffer#create_mark start))
+            ~stop:(`MARK (buffer#create_mark stop))
+            (if is_comment then [`COMMENT] else []) in
+        Queue.push sentence queue;
         if not stop#is_end then loop (succ len) stop
     in
     try loop 0 self#get_start_of_input with Exit -> ()
@@ -123,22 +157,37 @@ object(self)
       buffer#delete_mark sentence.stop;
     done
 
-  method private commit_queue_transaction queue sentence newflags =
+  method private mark_as_needed sentence =
+    let start = buffer#get_iter_at_mark sentence.start in
+    let stop = buffer#get_iter_at_mark sentence.stop in
+    let tag =
+      if List.mem `UNSAFE sentence.flags then Tags.Script.unjustified
+      else Tags.Script.processed in
+    buffer#apply_tag tag ~start ~stop
+
+  method private process_feedback msg =
+    let id = msg.Interface.edit_id in
+    if id = 0 || Stack.is_empty cmd_stack then () else
+    let sentence =
+      let last_sentence = Stack.top cmd_stack in
+      if last_sentence.id = id then Some last_sentence else None in
+    match msg.Interface.content, sentence with
+    | Interface.AddedAxiom, Some sentence ->
+        set_flags sentence (CList.add_set `UNSAFE sentence.flags);
+        self#mark_as_needed sentence
+    | Interface.Processed, Some sentence -> self#mark_as_needed sentence
+    | _, None -> Minilib.log "Coqide/Coq is really asynchronous now!"
+         (* In this case we shoud look for (exec_)id into cmd_stack *)
+
+  method private commit_queue_transaction sentence =
     (* A queued command has been successfully done, we push it to [cmd_stack].
        We reget the iters here because Gtk is unable to warranty that they
        were not modified meanwhile. Not really necessary but who knows... *)
+    self#mark_as_needed sentence;
     let start = buffer#get_iter_at_mark sentence.start in
     let stop = buffer#get_iter_at_mark sentence.stop in
-    let sentence = { sentence with flags = newflags @ sentence.flags } in
-    let tag =
-      if List.mem `UNSAFE newflags then Tags.Script.unjustified
-      else Tags.Script.processed
-    in
     buffer#move_mark ~where:stop (`NAME "start_of_input");
-    buffer#apply_tag tag ~start ~stop;
-    buffer#remove_tag Tags.Script.to_process ~start ~stop;
-    ignore (Queue.pop queue);
-    Stack.push sentence cmd_stack
+    buffer#remove_tag Tags.Script.to_process ~start ~stop
 
   method private process_error queue phrase loc msg =
     Coq.bind (Coq.return ()) (function () ->
@@ -153,6 +202,10 @@ object(self)
         buffer#apply_tag Tags.Script.error ~start ~stop;
         buffer#place_cursor ~where:start
     in
+    let sentence = Stack.pop cmd_stack in
+    let start = buffer#get_iter_at_mark sentence.start in
+    let stop = buffer#get_iter_at_mark sentence.stop in
+    buffer#remove_tag Tags.Script.to_process ~start ~stop;
     self#discard_command_queue queue;
     pop_info ();
     position_error loc;
@@ -183,9 +236,10 @@ object(self)
         let () = script#recenter_insert in
         self#show_goals
       else
-        let sentence = Queue.peek queue in
+        let sentence = Queue.pop queue in
+        Stack.push sentence cmd_stack;
         if List.mem `COMMENT sentence.flags then
-          (self#commit_queue_transaction queue sentence []; loop ())
+          (self#commit_queue_transaction sentence; loop ())
         else
           (* If the line is not a comment, we interpret it. *)
           let phrase =
@@ -193,17 +247,18 @@ object(self)
             let stop = buffer#get_iter_at_mark sentence.stop in
             start#get_slice ~stop
           in
-          let commit_and_continue msg flags =
+          let commit_and_continue msg =
             push_msg Interface.Notice msg;
-            self#commit_queue_transaction queue sentence flags;
+            self#commit_queue_transaction sentence;
             loop ()
           in
-          let query = Coq.interp ~logger:push_msg ~verbose phrase in
+          let query = Coq.interp ~logger:push_msg ~verbose sentence.id phrase in
           let next = function
-          | Interface.Good msg -> commit_and_continue msg []
-          | Interface.Unsafe msg -> commit_and_continue msg [`UNSAFE]
-          | Interface.Fail (loc, msg) ->
-            self#process_error queue phrase loc msg
+          | Interface.Good msg -> commit_and_continue msg
+          | Interface.Unsafe msg ->
+              set_flags sentence (CList.add_set `UNSAFE sentence.flags);
+              commit_and_continue msg
+          | Interface.Fail (loc, msg) -> self#process_error queue phrase loc msg
           in
           Coq.bind query next
     in
@@ -329,12 +384,12 @@ object(self)
       buffer#apply_tag tag ~start ~stop;
       if self#get_insert#compare stop <= 0 then
         buffer#place_cursor ~where:stop;
-      let ide_payload = {
-        start = `MARK (buffer#create_mark start);
-        stop = `MARK (buffer#create_mark stop);
-        flags = [];
-      } in
-      Stack.push ide_payload cmd_stack;
+      let sentence =
+        mk_sentence
+          ~start:(`MARK (buffer#create_mark start))
+          ~stop:(`MARK (buffer#create_mark stop))
+          [] in
+      Stack.push sentence cmd_stack;
       messages#clear;
       self#show_goals
     in
@@ -345,7 +400,7 @@ object(self)
     in
     let try_phrase phrase stop more =
       let action = log "Sending to coq now" in
-      let query = Coq.interp ~verbose:false phrase in
+      let query = Coq.interp ~verbose:false 0 phrase in
       let next = function
       | Interface.Fail (l, str) ->
         display_error (l, str);
@@ -400,7 +455,7 @@ object(self)
       | Interface.Good true | Interface.Unsafe true -> Coq.return ()
       | Interface.Good false | Interface.Unsafe false ->
         let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
-        let cmd = Coq.interp cmd in
+        let cmd = Coq.interp 0 cmd in
         let next = function
         | Interface.Fail (l, str) ->
           messages#set ("Couln't add loadpath:\n"^str);
