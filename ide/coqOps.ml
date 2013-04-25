@@ -93,12 +93,12 @@ object(self)
     | Interface.Fail (l, str) ->
       messages#set ("Error in coqtop:\n"^str);
       Coq.return ()
-    | Interface.Good goals | Interface.Unsafe goals ->
+    | Interface.Good goals ->
       Coq.bind Coq.evars (function
         | Interface.Fail (l, str)->
           messages#set ("Error in coqtop:\n"^str);
           Coq.return ()
-        | Interface.Good evs | Interface.Unsafe evs ->
+        | Interface.Good evs ->
           proof#set_goals goals;
           proof#set_evars evs;
           proof#refresh ();
@@ -118,7 +118,7 @@ object(self)
       Coq.interp ~logger:messages#push ~raw:true ~verbose:false 0 phrase in
     let next = function
     | Interface.Fail (_, err) -> display_error err; Coq.return ()
-    | Interface.Good msg | Interface.Unsafe msg ->
+    | Interface.Good msg ->
       messages#add msg; Coq.return ()
     in
     Coq.bind (Coq.seq action query) next
@@ -255,9 +255,6 @@ object(self)
           let query = Coq.interp ~logger:push_msg ~verbose sentence.id phrase in
           let next = function
           | Interface.Good msg -> commit_and_continue msg
-          | Interface.Unsafe msg ->
-              set_flags sentence (CList.add_set `UNSAFE sentence.flags);
-              commit_and_continue msg
           | Interface.Fail (loc, msg) -> self#process_error queue phrase loc msg
           in
           Coq.bind query next
@@ -322,7 +319,7 @@ object(self)
   (** Actually performs the undoing *)
   method private undo_command_stack n clear_zone =
     let next = function
-    | Interface.Good n | Interface.Unsafe n ->
+    | Interface.Good n ->
       let until _ len _ _ = n <= len in
       (* Coqtop requested [n] more ACTUAL backtrack *)
       let _, zone = self#prepare_clear_zone until clear_zone in
@@ -409,9 +406,6 @@ object(self)
       | Interface.Good msg ->
         messages#add msg;
         stop Tags.Script.processed
-      | Interface.Unsafe msg ->
-        messages#add msg;
-        stop Tags.Script.unjustified
       in
       Coq.bind (Coq.seq action query) next
     in
@@ -452,15 +446,15 @@ object(self)
         messages#set
           ("Could not determine lodpath, this might lead to problems:\n"^s);
         Coq.return ()
-      | Interface.Good true | Interface.Unsafe true -> Coq.return ()
-      | Interface.Good false | Interface.Unsafe false ->
+      | Interface.Good true -> Coq.return ()
+      | Interface.Good false ->
         let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
         let cmd = Coq.interp 0 cmd in
         let next = function
         | Interface.Fail (l, str) ->
           messages#set ("Couln't add loadpath:\n"^str);
           Coq.return ()
-        | Interface.Good _ | Interface.Unsafe _ ->
+        | Interface.Good _ ->
           Coq.return ()
         in
         Coq.bind cmd next

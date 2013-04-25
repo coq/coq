@@ -278,9 +278,8 @@ let rec vernac_com interpfun checknav (loc,com) =
           end;
 	begin
 	  try
-	    let status = read_vernac_file verbosely (CUnix.make_suffix fname ".v") in
+            read_vernac_file verbosely (CUnix.make_suffix fname ".v");
 	    restore_translator_coqdoc st;
-            status
 	  with reraise ->
             let reraise = Errors.push reraise in
 	    restore_translator_coqdoc st;
@@ -288,9 +287,9 @@ let rec vernac_com interpfun checknav (loc,com) =
 	end
 
     | VernacList l ->
-        List.fold_left (fun status (_,v) -> interp v && true) true l
+        List.iter (fun (_,v) -> interp v) l
 
-    | v when !just_parsing -> true
+    | v when !just_parsing -> ()
 
     | VernacFail v ->
       begin
@@ -304,17 +303,15 @@ let rec vernac_com interpfun checknav (loc,com) =
           | e when Errors.noncritical e -> (* In particular e is no anomaly *)
 	      if_verbose msg_info
 		(str "The command has indeed failed with message:" ++
-		 fnl () ++ str "=> " ++ hov 0 (Errors.print e));
-              true
+		 fnl () ++ str "=> " ++ hov 0 (Errors.print e))
       end
 
     | VernacTime v ->
 	  let tstart = System.get_time() in
-          let status = interp v in
+          interp v;
 	  let tend = System.get_time() in
 	  let msg = if !time then "" else "Finished transaction in " in
-          msg_info (str msg ++ System.fmt_time_difference tstart tend);
-          status
+          msg_info (str msg ++ System.fmt_time_difference tstart tend)
 
     | VernacTimeout(n,v) ->
 	  current_timeout := Some n;
@@ -327,11 +324,8 @@ let rec vernac_com interpfun checknav (loc,com) =
           in
 	  let psh = default_set_timeout () in
 	  try
-            let status =
-              rollback interpfun Cerrors.process_vernac_interp_error v
-            in
+            rollback interpfun Cerrors.process_vernac_interp_error v
 	    restore_timeout psh;
-            status
 	  with reraise ->
             let reraise = Errors.push reraise in
             restore_timeout psh;
@@ -369,26 +363,23 @@ and read_vernac_file verbosely s =
   in
   let (in_chan, fname, input) =
     open_file_twice_if verbosely s in
-  let status = ref true in
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       let loc_ast = parse_sentence input in
-      let command_status = vernac_com interpfun checknav loc_ast in
-      status := !status && command_status;
+      vernac_com interpfun checknav loc_ast;
       end_inner_command (snd loc_ast);
       pp_flush ()
-    done;
-    assert false
+    done
   with any ->   (* whatever the exception *)
     let e = Errors.push any in
     Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
     match e with
       | End_of_input ->
-          if do_beautify () then pr_new_syntax (Loc.make_loc (max_int,max_int)) None;
-          !status
+          if do_beautify () then
+            pr_new_syntax (Loc.make_loc (max_int,max_int)) None
       | _ -> raise_with_file fname (disable_drop e)
 
 (** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
@@ -403,10 +394,9 @@ let checknav loc ast =
     user_error loc "Navigation commands forbidden in nested commands"
 
 let eval_expr ?(preserving=false) loc_ast =
-  let status = vernac_com Vernacentries.interp checknav loc_ast in
+  vernac_com Vernacentries.interp checknav loc_ast;
   if not preserving && not (is_navigation_vernac (snd loc_ast)) then
-    Backtrack.mark_command (snd loc_ast);
-  status
+    Backtrack.mark_command (snd loc_ast)
 
 (* XML output hooks *)
 let xml_start_library = ref (fun _ -> ())
@@ -421,7 +411,7 @@ let load_vernac verb file =
     if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout;
   try
     Lib.mark_end_of_command (); (* in case we're still in coqtop init *)
-    let _ = read_vernac_file verb file in
+    read_vernac_file verb file;
     if !Flags.beautify_file then close_out !chan_beautify;
   with any ->
     let e = Errors.push any in

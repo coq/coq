@@ -117,7 +117,7 @@ object(self)
           | Interface.Fail (l,str) ->
             result#buffer#insert ("Error while interpreting "^phrase^":\n"^str);
 	    Coq.return ()
-          | Interface.Good res | Interface.Unsafe res ->
+          | Interface.Good res ->
             result#buffer#insert ("Result for command " ^ phrase ^ ":\n" ^ res);
 	    Coq.return ())
       in

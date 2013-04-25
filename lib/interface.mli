@@ -135,7 +135,6 @@ type location = (int * int) option (* start and end of the error *)
 
 type 'a value =
   | Good of 'a
-  | Unsafe of 'a
   | Fail of (location * string)
 
 (* Request/Reply message protocol between Coq and CoqIde *)
@@ -147,9 +146,8 @@ type 'a value =
     The returned string contains the messages produced
     but not the updated goals (they are
     to be fetch by a separated [current_goals]). *)
-(* spiwack: [Inl] for safe and [Inr] for unsafe. *)
-type interp_rty = (string,string) Util.union
 type interp_sty = edit_id * raw * verbose * string
+type interp_rty = string
 
 (** Backtracking by at least a certain number of phrases.
     No finished proofs will be re-opened. Instead,

@@ -480,7 +480,7 @@ let update_status =
   | Interface.Fail (l, str) ->
     display "Oops, problem while fetching coq status.";
     Coq.return ()
-  | Interface.Good status | Interface.Unsafe status ->
+  | Interface.Good status ->
     let path = match status.Interface.status_path with
       | [] | _ :: [] -> "" (* Drop the topmost level, usually "Top" *)
       | _ :: l -> " in " ^ String.concat "." l
@@ -564,7 +564,7 @@ let print_branches c cases =
 let display_match = function
   |Interface.Fail _ ->
     flash_info "Not an inductive type"; Coq.return ()
-  |Interface.Good cases | Interface.Unsafe cases ->
+  |Interface.Good cases ->
     let text =
       let buf = Buffer.create 1024 in
       let () = print_branches (Format.formatter_of_buffer buf) cases in

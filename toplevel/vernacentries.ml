@@ -44,10 +44,6 @@ let cl_of_qualid = function
 let scope_class_of_qualid qid =
   Notation.scope_class_of_reference (Smartlocate.smart_global qid)
 
-(** Vernac commands can raise this [UnsafeSuccess] to notify they
-    modified the environment in an unsafe manner, such as [Admitted]. *)
-exception UnsafeSuccess
-
 (*******************)
 (* "Show" commands *)
 
@@ -511,7 +507,7 @@ let vernac_end_proof = function
   | Admitted ->
     Backtrack.mark_unreachable [Pfedit.get_current_proof_name ()];
     admit ();
-    raise UnsafeSuccess
+    Pp.feedback Interface.AddedAxiom
   | Proved (is_opaque,idopt) ->
     let prf = Pfedit.get_current_proof_name () in
     if is_verbose () && !qed_display_script then show_script ();
@@ -546,7 +542,7 @@ let vernac_assumption locality (local, kind) l nl=
       let t,imps = interp_assumption [] c in
       declare_assumptions idl is_coe kind t imps false nl && status) true l
   in
-  if not status then raise UnsafeSuccess
+  if not status then Pp.feedback Interface.AddedAxiom
 
 let vernac_record k finite infer struc binders sort nameopt cfs =
   let const = match nameopt with
@@ -810,7 +806,7 @@ let vernac_instance abst locality sup inst props pri =
   ignore(Classes.new_instance ~abstract:abst ~global:glob sup inst props pri)
 
 let vernac_context l =
-  if not (Classes.context l) then raise UnsafeSuccess
+  if not (Classes.context l) then Pp.feedback Interface.AddedAxiom
 
 let vernac_declare_instances locality ids =
   let glob = not (make_section_locality locality) in
@@ -1902,12 +1898,8 @@ let interp c =
         try
           interp locality c;
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
-            Flags.program_mode := orig_program_mode;
-          true
+            Flags.program_mode := orig_program_mode
         with
-          | UnsafeSuccess ->
-            Flags.program_mode := orig_program_mode;
-            false
           | reraise ->
             let e = Errors.push reraise in
             Flags.program_mode := orig_program_mode;

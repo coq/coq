@@ -120,10 +120,10 @@ let interp (id,raw,verbosely,s) =
   let loc_ast = Vernac.parse_sentence (pa,None) in
   if not raw then coqide_cmd_checks loc_ast;
   Flags.make_silent (not verbosely);
-  let status = Vernac.eval_expr ~preserving:raw loc_ast in
+  Vernac.eval_expr ~preserving:raw loc_ast;
   Flags.make_silent true;
-  let ret = read_stdout () in
-  if status then Util.Inl ret else Util.Inr ret
+  Pp.feedback Interface.Processed;
+  read_stdout ()
 
 (** Goal display *)
 

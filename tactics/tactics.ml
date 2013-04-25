@@ -3574,10 +3574,13 @@ let admit_as_an_axiom gl =
   (** ppedrot: seems legit to have admitted subproofs as local*)
   let con = Declare.declare_constant ~internal:Declare.KernelSilent ~local:true na decl in
   let axiom = constr_of_global (ConstRef con) in
-  exact_no_check
-    (applist (axiom,
+  let gl =
+    exact_no_check
+      (applist (axiom,
               List.rev (Array.to_list (instance_from_named_context sign))))
-    gl
+    gl in
+  Pp.feedback Interface.AddedAxiom;
+  gl
 
 let unify ?(state=full_transparent_state) x y gl =
   try

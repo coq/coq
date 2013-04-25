@@ -559,13 +559,8 @@ let eval_call ?(logger=default_logger) call handle k =
   Minilib.log "End eval_call";
   Void
 
-let interp ?(logger=default_logger) ?(raw=false) ?(verbose=true) i s h k =
-  eval_call ~logger (Serialize.interp (i,raw,verbose,s)) h
-    (function
-     | Interface.Good (Util.Inl v) -> k (Interface.Good v)
-     | Interface.Good (Util.Inr v) -> k (Interface.Unsafe v)
-     | Interface.Fail v -> k (Interface.Fail v)
-     | Interface.Unsafe _ -> assert false)
+let interp ?(logger=default_logger) ?(raw=false) ?(verbose=true) i s =
+  eval_call ~logger (Serialize.interp (i,raw,verbose,s))
 let rewind i = eval_call (Serialize.rewind i)
 let inloadpath s = eval_call (Serialize.inloadpath s)
 let mkcases s = eval_call (Serialize.mkcases s)
