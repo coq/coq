@@ -19,7 +19,12 @@ module Table = struct
   let remove_all l i =
     l := List.filter (fun (j,_) -> not (overlap_interval i j)) !l
   let find_all l x =
-    CList.map_filter (fun (i,c) -> if in_interval x i then Some c else None) !l
+    let res =
+      CList.map_filter
+        (fun (i,c) -> if in_interval x i then Some c else None)
+        !l
+    in
+    if res = [] then raise Not_found else res
 end
 
 let table : string lazy_t Table.t = Table.create ()
