@@ -103,14 +103,14 @@ type coq_info = {
   compile_date : string;
 }
 
-(** * Coq answers to CoqIde *)
+(** Coq messages *)
 
 type message_level =
-| Debug of string
-| Info
-| Notice
-| Warning
-| Error
+  | Debug of string
+  | Info
+  | Notice
+  | Warning
+  | Error
 
 type message = {
   message_level : message_level;
