@@ -20,6 +20,8 @@ val term_quality : bool ref
 
 val xml_export : bool ref
 
+val ide_slave : bool ref
+
 type load_proofs = Force | Lazy | Dont
 val load_proofs : load_proofs ref
 

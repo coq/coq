@@ -184,7 +184,6 @@ let usage () =
 
 let warning s = msg_warning (strbrk s)
 
-let ide_slave = ref false
 let filter_opts = ref false
 
 let verb_compat_ntn = ref false
@@ -339,7 +338,7 @@ let parse_args arglist =
     | "-v7" :: rem -> error "This version of Coq does not support v7 syntax"
     | "-v8" :: rem -> parse rem
 
-    | "-ideslave" :: rem -> ide_slave := true; parse rem
+    | "-ideslave" :: rem -> Flags.ide_slave := true; parse rem
 
     | "-filteropts" :: rem -> filter_opts := true; parse rem
 
@@ -372,7 +371,7 @@ let init arglist =
       let foreign_args = parse_args arglist in
       if !filter_opts then
         (print_string (String.concat "\n" foreign_args); exit 0);
-      if !ide_slave then begin
+      if !Flags.ide_slave then begin
         Flags.make_silent true;
         Ide_slave.init_stdout ()
       end;
@@ -421,7 +420,7 @@ let start () =
   let () = if Dumpglob.dump () then
     let () = if_verbose warning "Dumpglob cannot be used in interactive mode." in
     Dumpglob.noglob () in
-  if !ide_slave then
+  if !Flags.ide_slave then
     Ide_slave.loop ()
   else
     Toplevel.loop();
