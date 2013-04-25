@@ -79,7 +79,8 @@ object(self)
   val cmd_stack = Stack.create ()
 
   initializer
-    Coq.set_feedback_handler _ct self#process_feedback
+    Coq.set_feedback_handler _ct self#process_feedback;
+    Wg_Tooltip.set_tooltip_callback (script :> GText.view)
 
   method private get_start_of_input =
     buffer#get_iter_at_mark (`NAME "start_of_input")
@@ -165,6 +166,18 @@ object(self)
       else Tags.Script.processed in
     buffer#apply_tag tag ~start ~stop
 
+  method private attach_tooltip sentence loc text =
+    let pre_chars, post_chars = Loc.unloc loc in
+    let start_sentence = buffer#get_iter_at_mark sentence.start in
+    let stop_sentence = buffer#get_iter_at_mark sentence.stop in
+    let phrase = start_sentence#get_slice ~stop:stop_sentence in
+    let pre = Ideutils.glib_utf8_pos_to_offset phrase ~off:pre_chars in
+    let post = Ideutils.glib_utf8_pos_to_offset phrase ~off:post_chars in
+    let start = start_sentence#forward_chars pre in
+    let stop = start_sentence#forward_chars post in
+    let markup = lazy text in
+    Wg_Tooltip.apply_tooltip_tag buffer ~start ~stop ~markup
+
   method private process_feedback msg =
     let id = msg.Interface.edit_id in
     if id = 0 || Stack.is_empty cmd_stack then () else
@@ -176,8 +189,14 @@ object(self)
         set_flags sentence (CList.add_set `UNSAFE sentence.flags);
         self#mark_as_needed sentence
     | Interface.Processed, Some sentence -> self#mark_as_needed sentence
-    | _, None -> Minilib.log "Coqide/Coq is really asynchronous now!"
-         (* In this case we shoud look for (exec_)id into cmd_stack *)
+    | Interface.GlobRef(loc, filepath, modpath, ident, ty), Some sentence ->
+        self#attach_tooltip sentence loc
+          (Printf.sprintf "%s %s %s" filepath ident ty)
+    | _ ->
+        if sentence = None then
+          Minilib.log "Coqide/Coq is really asynchronous now!"
+          (* In this case we shoud look for (exec_)id into cmd_stack *)
+        else Minilib.log "Unsupported feedback message"
 
   method private commit_queue_transaction sentence =
     (* A queued command has been successfully done, we push it to [cmd_stack].
@@ -312,6 +331,7 @@ object(self)
       let stop = buffer#get_iter_at_mark stop_mark in
       buffer#remove_tag Tags.Script.processed ~start ~stop;
       buffer#remove_tag Tags.Script.unjustified ~start ~stop;
+      buffer#remove_tag Tags.Script.tooltip ~start ~stop;
       buffer#move_mark ~where:start (`NAME "start_of_input");
       buffer#delete_mark start_mark;
       buffer#delete_mark stop_mark

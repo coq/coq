@@ -101,7 +101,8 @@ let set_buffer_handlers buffer script =
     let () = buffer#move_mark (`NAME "prev_insert") ~where in
     let start = get_start () in
     let stop = buffer#end_iter in
-    buffer#remove_tag Tags.Script.error ~start ~stop
+    buffer#remove_tag Tags.Script.error ~start ~stop;
+    buffer#remove_tag Tags.Script.tooltip ~start ~stop
   in
   let end_action_cb () =
     let start = get_start () in

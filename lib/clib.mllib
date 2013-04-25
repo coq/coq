@@ -15,6 +15,7 @@ CList
 CString
 CArray
 Util
+Loc
 Serialize
 Xml_utils
 Flags

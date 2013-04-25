@@ -123,6 +123,7 @@ type edit_id = int
 type feedback_content =
   | AddedAxiom
   | Processed
+  | GlobRef of Loc.t * string * string * string * string
 
 type feedback = {
   edit_id : edit_id;
