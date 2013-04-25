@@ -16,6 +16,7 @@ sig
   val unjustified : GText.tag
   val found : GText.tag
   val sentence : GText.tag
+  val tooltip : GText.tag
   val all : GText.tag list
 end
 
