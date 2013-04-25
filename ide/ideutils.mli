@@ -91,3 +91,5 @@ val io_read_all : Glib.Io.channel -> string
 
 val run_command :
   (string -> unit) -> (Unix.process_status -> unit) -> string -> unit
+
+val glib_utf8_pos_to_offset : string -> off:int -> int
