@@ -178,12 +178,15 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
       | PApp (PApp (h, a1), a2), _ ->
           sorec stk subst (PApp(h,Array.append a1 a2)) t
 
-      | PApp (PMeta (Some n),args1), App (c2,args2) when allow_partial_app ->
+      | PApp (PMeta meta,args1), App (c2,args2) when allow_partial_app ->
           let p = Array.length args2 - Array.length args1 in
           if p>=0 then
             let args21, args22 = array_chop p args2 in
 	    let c = mkApp(c2,args21) in
-            let subst = merge_binding allow_bound_rels stk n c subst in
+            let subst =
+              match meta with
+              | None -> subst
+              | Some n -> merge_binding allow_bound_rels stk n c subst in
             array_fold_left2 (sorec stk) subst args1 args22
           else raise PatternMatchingFailure
 
