@@ -28,6 +28,8 @@ open Names
 open Sign
 open Evd
 open Term
+open Vars
+open Context
 open Termops
 open Reductionops
 open Environ

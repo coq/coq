@@ -11,6 +11,7 @@ open Errors
 open Util
 open Names
 open Term
+open Vars
 open Pp
 open Globnames
 open Tacticals

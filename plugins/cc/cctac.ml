@@ -13,6 +13,7 @@ open Names
 open Inductiveops
 open Declarations
 open Term
+open Vars
 open Tacmach
 open Tactics
 open Tacticals
@@ -226,7 +227,7 @@ let build_projection intype outtype (cstr:constructor) special default gls=
   let lp=Array.length types in
   let ci=pred (snd cstr) in
   let branch i=
-    let ti=Term.prod_appvect types.(i) argv in
+    let ti= prod_appvect types.(i) argv in
     let rc=fst (decompose_prod_assum ti) in
     let head=
       if i=ci then special else default in

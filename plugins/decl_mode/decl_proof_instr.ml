@@ -25,6 +25,7 @@ open Declarations
 open Tactics
 open Tacticals
 open Term
+open Vars
 open Termops
 open Namegen
 open Reductionops
@@ -301,7 +302,7 @@ let enstack_subsubgoals env se stack gls=
 	    let constructor = mkConstruct(ind,succ i)
 	      (* constructors numbering*) in
 	    let appterm = applist (constructor,params) in
-	    let apptype = Term.prod_applist gentyp params in
+	    let apptype = prod_applist gentyp params in
 	    let rc,_ = Reduction.dest_prod env apptype in
 	    let rec meta_aux last lenv = function
 		[] -> (last,lenv,[])
@@ -638,7 +639,7 @@ let rec build_applist prod = function
     [] -> [],prod
   | n::q ->
       let (_,typ,_) = destProd prod in
-      let ctx,head = build_applist (Term.prod_applist prod [mkMeta n]) q in
+      let ctx,head = build_applist (prod_applist prod [mkMeta n]) q in
 	(n,typ)::ctx,head
 
 let instr_suffices _then cut gls0 =
@@ -671,7 +672,7 @@ let conjunction_arity id gls =
           let gentypes=
             Inductive.arities_of_constructors ind (mib,oib) in
 	  let _ = if Array.length gentypes <> 1 then raise Not_found in
-	  let apptype = Term.prod_applist gentypes.(0) params in
+	  let apptype = prod_applist gentypes.(0) params in
 	  let rc,_ = Reduction.dest_prod env apptype in
 	    List.length rc
       | _ -> raise Not_found
@@ -1218,7 +1219,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	let gen_arities = Inductive.arities_of_constructors ind spec in
 	let f_ids typ =
 	  let sign =
-	    (prod_assum (Term.prod_applist typ params)) in
+	    (prod_assum (prod_applist typ params)) in
 	    find_intro_names sign gls in
 	let constr_args_ids = Array.map f_ids gen_arities in
 	let case_term =

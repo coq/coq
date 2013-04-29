@@ -17,6 +17,7 @@ open Errors
 open Util
 open Names
 open Term
+open Context
 open Sign
 open Declarations
 open Environ

@@ -23,9 +23,11 @@
 open Errors
 open Util
 open Names
-open Sign
-open Univ
 open Term
+open Context
+open Sign
+open Vars
+open Univ
 open Declarations
 open Pre_env
 

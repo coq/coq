@@ -9,6 +9,7 @@
 open Pp
 open Names
 open Term
+open Context
 open Termops
 open Sign
 open Environ

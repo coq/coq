@@ -9,6 +9,7 @@
 open Hipattern
 open Names
 open Term
+open Vars
 open Termops
 open Tacmach
 open Util
@@ -50,12 +51,11 @@ let construct_nhyps ind gls =
 (* indhyps builds the array of arrays of constructor hyps for (ind largs)*)
 let ind_hyps nevar ind largs gls=
   let types= Inductiveops.arities_of_constructors (pf_env gls) ind in
-  let lp=Array.length types in
-  let myhyps i=
-    let t1=Term.prod_applist types.(i) largs in
+  let myhyps t =
+    let t1=prod_applist t largs in
     let t2=snd (decompose_prod_n_assum nevar t1) in
       fst (decompose_prod_assum t2) in
-    Array.init lp myhyps
+    Array.map myhyps types
 
 let special_nf gl=
   let infos=Closure.create_clos_infos !red_flags (pf_env gl) in

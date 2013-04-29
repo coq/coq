@@ -9,6 +9,7 @@
 open Names
 open Univ
 open Term
+open Context
 open Declarations
 open Entries
 open Indtypes

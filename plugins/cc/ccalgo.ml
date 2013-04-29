@@ -15,6 +15,7 @@ open Pp
 open Goptions
 open Names
 open Term
+open Vars
 open Tacmach
 open Evd
 

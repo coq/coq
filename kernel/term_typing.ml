@@ -17,6 +17,7 @@ open Util
 open Names
 open Univ
 open Term
+open Context
 open Declarations
 open Environ
 open Entries

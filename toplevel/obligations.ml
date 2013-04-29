@@ -14,6 +14,7 @@ open Declare
 
 open Term
 open Sign
+open Vars
 open Names
 open Evd
 open Pp
@@ -386,7 +387,7 @@ let obl_substitution expand obls deps =
 
 let subst_deps expand obls deps t =
   let subst = obl_substitution expand obls deps in
-    Term.replace_vars (List.map (fun (n, (_, b)) -> n, b) subst) t
+    Vars.replace_vars (List.map (fun (n, (_, b)) -> n, b) subst) t
 
 let rec prod_app t n =
   match kind_of_term (strip_outer_cast t) with
@@ -420,8 +421,8 @@ let subst_prog expand obls ints prg =
        replace_appvars subst (Termops.refresh_universes prg.prg_type))
     else 
       let subst' = List.map (fun (n, (_, b)) -> n, b) subst in
-	(Term.replace_vars subst' prg.prg_body,
-	 Term.replace_vars subst' (Termops.refresh_universes prg.prg_type))
+	(Vars.replace_vars subst' prg.prg_body,
+	 Vars.replace_vars subst' (Termops.refresh_universes prg.prg_type))
 
 let subst_deps_obl obls obl =
   let t' = subst_deps true obls obl.obl_deps obl.obl_type in
@@ -518,7 +519,7 @@ let compute_possible_guardness_evidences (n,_) fixbody fixtype =
 	 but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
 	 fixpoints ?) *)
-      let m = Term.nb_prod fixtype in
+      let m = nb_prod fixtype in
       let ctx = fst (decompose_prod_n_assum m fixtype) in
 	List.map_i (fun i _ -> i) 0 ctx
 

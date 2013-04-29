@@ -13,6 +13,8 @@ open Names
 open Nameops
 open Sign
 open Term
+open Vars
+open Context
 open Termops
 open Namegen
 open Declarations

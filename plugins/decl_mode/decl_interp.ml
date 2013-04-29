@@ -17,6 +17,7 @@ open Decl_mode
 open Pretyping
 open Glob_term
 open Term
+open Vars
 open Pp
 open Decl_kinds
 open Misctypes

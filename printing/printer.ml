@@ -11,7 +11,9 @@ open Errors
 open Util
 open Names
 open Term
+open Vars
 open Sign
+open Context
 open Environ
 open Globnames
 open Nametab

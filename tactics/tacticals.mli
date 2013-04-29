@@ -10,6 +10,7 @@ open Loc
 open Pp
 open Names
 open Term
+open Context
 open Sign
 open Tacmach
 open Proof_type

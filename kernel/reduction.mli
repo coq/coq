@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Term
+open Context
 open Environ
 open Closure
 

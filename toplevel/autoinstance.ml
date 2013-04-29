@@ -12,6 +12,8 @@ open Pp
 open Printer
 open Names
 open Term
+open Vars
+open Context
 open Evd
 open Globnames
 (*i*)

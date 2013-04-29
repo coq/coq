@@ -8,6 +8,7 @@
 
 open Names
 open Term
+open Context
 open Declarations
 open Environ
 open Evd

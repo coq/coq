@@ -40,6 +40,10 @@ Dnet
 Names
 Univ
 Esubst
+Sorts
+Constr
+Context
+Vars
 Term
 Mod_subst
 Sign

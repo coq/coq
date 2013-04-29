@@ -14,6 +14,7 @@
 
 open Names
 open Term
+open Context
 open Vm
 open Cemitcodes
 open Cbytecodes

@@ -10,6 +10,8 @@ open Errors
 open Util
 open Names
 open Term
+open Vars
+open Context
 open Termops
 open Univ
 open Evd
@@ -54,7 +56,7 @@ let compare_stack_shape stk1 stk2 =
 let fold_stack2 f o sk1 sk2 =
   let rec aux o lft1 sk1 lft2 sk2 =
   let fold_array =
-    Array.fold_left2 (fun a x y -> f a (Term.lift lft1 x) (Term.lift lft2 y))
+    Array.fold_left2 (fun a x y -> f a (Vars.lift lft1 x) (Vars.lift lft2 y))
   in
   match sk1,sk2 with
   | [], [] -> o,lft1,lft2
@@ -63,11 +65,11 @@ let fold_stack2 f o sk1 sk2 =
   | Zapp [] :: q1, _ -> aux o lft1 q1 lft2 sk2
   | _, Zapp [] :: q2 -> aux o lft1 sk1 lft2 q2
   | Zapp (t1::l1) :: q1, Zapp (t2::l2) :: q2 ->
-    aux (f o (Term.lift lft1 t1) (Term.lift lft2 t2))
+    aux (f o (Vars.lift lft1 t1) (Vars.lift lft2 t2))
       lft1 (Zapp l1 :: q1) lft2 (Zapp l2 :: q2)
   | Zcase (_,t1,a1,_) :: q1, Zcase (_,t2,a2,_) :: q2 ->
     aux (fold_array
-	   (f o (Term.lift lft1 t1) (Term.lift lft2 t2))
+	   (f o (Vars.lift lft1 t1) (Vars.lift lft2 t2))
 	   a1 a2) lft1 q1 lft2 q2
   | Zfix ((_,(_,a1,b1)),s1,_) :: q1, Zfix ((_,(_,a2,b2)),s2,_) :: q2 ->
     let (o',_,_) = aux (fold_array (fold_array o b1 b2) a1 a2)

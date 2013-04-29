@@ -22,8 +22,9 @@
 open Errors
 open Util
 open Pp
-open Term
 open Names
+open Term
+open Vars
 open Environ
 open Esubst
 

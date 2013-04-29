@@ -15,6 +15,7 @@
 
 open Util
 open Names
+open Context
 open Sign
 open Univ
 open Term

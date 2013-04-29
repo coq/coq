@@ -7,8 +7,9 @@
 (************************************************************************)
 
 open Util
-open Term
 open Names
+open Term
+open Vars
 open Closure
 open Esubst
 

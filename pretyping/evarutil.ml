@@ -11,6 +11,8 @@ open Util
 open Pp
 open Names
 open Term
+open Vars
+open Context
 open Termops
 open Namegen
 open Pre_env

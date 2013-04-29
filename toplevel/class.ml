@@ -11,6 +11,7 @@ open Util
 open Pp
 open Names
 open Term
+open Vars
 open Termops
 open Entries
 open Environ

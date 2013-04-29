@@ -8,6 +8,9 @@
 
 open Names
 open Term
+open Context
+
+(** TODO: Merge this with Context *)
 
 (** {6 Signatures of ordered named declarations } *)
 
@@ -41,7 +44,7 @@ val instance_from_named_context : named_context -> constr array
 (** Signatures of ordered optionally named variables, intended to be
    accessed by de Bruijn indices *)
 
-val push_named_to_rel_context : named_context -> rel_context -> rel_context
+(* val push_named_to_rel_context : named_context -> rel_context -> rel_context *)
 
 (** {6 Recurrence on [rel_context]: older declarations processed first } *)
 val fold_rel_context :

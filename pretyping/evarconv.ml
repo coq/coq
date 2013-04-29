@@ -10,6 +10,7 @@ open Errors
 open Util
 open Names
 open Term
+open Vars
 open Closure
 open Reduction
 open Reductionops

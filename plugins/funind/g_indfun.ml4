@@ -9,6 +9,7 @@
 open Compat
 open Util
 open Term
+open Vars
 open Names
 open Pp
 open Constrexpr

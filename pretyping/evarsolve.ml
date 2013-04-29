@@ -11,6 +11,8 @@ open Util
 open Errors
 open Names
 open Term
+open Vars
+open Context
 open Environ
 open Termops
 open Evd

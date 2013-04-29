@@ -111,7 +111,7 @@ val clear_body : Names.Id.t list -> subgoals sensitive
 
 (* Changes an hypothesis of the goal with a convertible type and body.
    Checks convertibility if the boolean argument is true. *)
-val convert_hyp : bool -> Term.named_declaration -> subgoals sensitive
+val convert_hyp : bool -> Context.named_declaration -> subgoals sensitive
 
 (* Changes the conclusion of the goal with a convertible type and body.
    Checks convertibility if the boolean argument is true. *)

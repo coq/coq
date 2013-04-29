@@ -10,6 +10,7 @@ open Names
 open Globnames
 open Decl_kinds
 open Term
+open Context
 open Sign
 open Evd
 open Environ

@@ -9,6 +9,7 @@
 open Names
 open Declarations
 open Term
+open Vars
 open Environ
 open Inductive
 open Reduction

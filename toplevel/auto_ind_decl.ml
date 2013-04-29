@@ -13,9 +13,10 @@ open Tacmach
 open Errors
 open Util
 open Pp
+open Term
+open Vars
 open Termops
 open Declarations
-open Term
 open Names
 open Globnames
 open Inductiveops

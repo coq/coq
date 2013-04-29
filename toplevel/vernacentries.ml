@@ -170,7 +170,7 @@ let make_cases s =
 	      = Global.lookup_inductive i in
 	Util.Array.fold_right2
 	  (fun consname typ l ->
-	     let al = List.rev (fst (Term.decompose_prod typ)) in
+	     let al = List.rev (fst (decompose_prod typ)) in
 	     let al = Util.List.skipn np al in
 	     let rec rename avoid = function
 	       | [] -> []
@@ -303,7 +303,7 @@ let print_namespace ns =
   let print_constant k body =
     let t =
       match body.Declarations.const_type with
-      | Declarations.PolymorphicArity (ctx,a) -> Term.mkArity (ctx, Term.Type a.Declarations.poly_level)
+      | Declarations.PolymorphicArity (ctx,a) -> mkArity (ctx, Term.Type a.Declarations.poly_level)
       | Declarations.NonPolymorphicType t -> t
     in
     print_kn k ++ str":" ++ spc() ++ Printer.pr_type t

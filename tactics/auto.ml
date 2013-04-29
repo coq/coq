@@ -13,6 +13,7 @@ open Names
 open Nameops
 open Namegen
 open Term
+open Vars
 open Termops
 open Inductiveops
 open Environ

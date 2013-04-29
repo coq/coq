@@ -11,6 +11,8 @@ open Names
 open Globnames
 open Decl_kinds
 open Term
+open Vars
+open Context
 open Sign
 open Evd
 open Environ
@@ -109,7 +111,7 @@ let dest_class_app env c =
     global_class_of_constr env cl, args
 
 let dest_class_arity env c =
-  let rels, c = Term.decompose_prod_assum c in
+  let rels, c = decompose_prod_assum c in
     rels, dest_class_app env c
 
 let class_of_constr c =

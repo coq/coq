@@ -16,6 +16,8 @@ open Nameops
 open Termops
 open Reductionops
 open Term
+open Vars
+open Context
 open Pattern
 open Patternops
 open Misctypes

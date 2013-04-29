@@ -8,6 +8,7 @@
 
 open Util
 open Term
+open Vars
 open Termops
 open Reductionops
 

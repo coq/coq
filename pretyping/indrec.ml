@@ -18,6 +18,8 @@ open Libnames
 open Globnames
 open Nameops
 open Term
+open Vars
+open Context
 open Namegen
 open Declarations
 open Declareops

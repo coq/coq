@@ -10,6 +10,7 @@ open Names
 open Sign
 open Univ
 open Term
+open Context
 open Declarations
 
 (** The type of environments. *)

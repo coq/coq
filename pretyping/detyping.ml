@@ -11,6 +11,8 @@ open Errors
 open Util
 open Names
 open Term
+open Vars
+open Context
 open Inductiveops
 open Environ
 open Glob_term

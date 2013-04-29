@@ -19,6 +19,8 @@ open Errors
 open Util
 open Names
 open Term
+open Vars
+open Context
 open Univ
 open Environ
 open Closure

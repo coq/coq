@@ -15,6 +15,7 @@
 open Util
 open Names
 open Term
+open Vars
 open Nametab
 open Nameops
 open Libnames

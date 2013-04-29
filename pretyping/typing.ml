@@ -10,6 +10,7 @@ open Pp
 open Errors
 open Util
 open Term
+open Vars
 open Environ
 open Reductionops
 open Type_errors

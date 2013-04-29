@@ -9,6 +9,8 @@
 (*i*)
 open Names
 open Term
+open Vars
+open Context
 open Evd
 open Environ
 open Nametab

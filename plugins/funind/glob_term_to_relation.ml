@@ -2,6 +2,7 @@ open Printer
 open Pp
 open Names
 open Term
+open Vars
 open Glob_term
 open Glob_ops
 open Globnames

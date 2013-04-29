@@ -271,6 +271,7 @@ END
 (* Hint Resolve                                                       *)
 
 open Term
+open Vars
 open Coqlib
 
 let project_hint pri l2r r =

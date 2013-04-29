@@ -6,8 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 open Errors
-open Term
 open Names
+open Term
+open Context
 open Declarations
 open Util
 open Nativevalues

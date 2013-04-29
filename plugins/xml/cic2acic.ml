@@ -170,6 +170,7 @@ let family_of_term ty =
 module CPropRetyping =
  struct
   module T = Term
+  module V = Vars
 
   let outsort env sigma t =
    family_of_term (DoubleTypeInference.whd_betadeltaiotacprop env sigma t)
@@ -178,7 +179,7 @@ module CPropRetyping =
   | [] -> typ
   | h::rest ->
       match T.kind_of_term (DoubleTypeInference.whd_betadeltaiotacprop env sigma typ) with
-        | T.Prod (na,c1,c2) -> subst_type env sigma (T.subst1 h c2) rest
+        | T.Prod (na,c1,c2) -> subst_type env sigma (V.subst1 h c2) rest
         | _ -> Errors.anomaly (Pp.str "Non-functional construction")
 
 
@@ -198,7 +199,7 @@ let typeur sigma metamap =
            with Not_found -> Errors.anomaly ~label:"type_of" (Pp.str "this is not a well-typed term"))
     | T.Rel n ->
         let (_,_,ty) = Environ.lookup_rel n env in
-        T.lift n ty
+        V.lift n ty
     | T.Var id ->
         (try
           let (_,_,ty) = Environ.lookup_named id env in
@@ -222,7 +223,7 @@ let typeur sigma metamap =
     | T.Lambda (name,c1,c2) ->
           T.mkProd (name, c1, type_of (Environ.push_rel (name,None,c1) env) c2)
     | T.LetIn (name,b,c1,c2) ->
-         T.subst1 b (type_of (Environ.push_rel (name,Some b,c1) env) c2)
+         V.subst1 b (type_of (Environ.push_rel (name,Some b,c1) env) c2)
     | T.Fix ((_,i),(_,tys,_)) -> tys.(i)
     | T.CoFix (i,(_,tys,_)) -> tys.(i)
     | T.App(f,args)->
@@ -326,6 +327,7 @@ let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
  let module N = Names in
  let module A = Acic in
  let module T = Term in
+ let module V = Vars in
   let fresh_id' = fresh_id seed ids_to_terms constr_to_ids ids_to_father_ids in
    (* CSC: do you have any reasonable substitute for 503? *)
    let terms_to_types = Acic.CicHash.create 503 in
@@ -473,7 +475,7 @@ print_endline "PASSATO" ; flush stdout ;
              in
               let eta_expanded =
                let arguments =
-                List.map (T.lift uninst_vars_length) t @
+                List.map (V.lift uninst_vars_length) t @
                  Termops.rel_list 0 uninst_vars_length
                in
                 Unshare.unshare
@@ -528,7 +530,7 @@ print_endline "PASSATO" ; flush stdout ;
                match n with
                   N.Anonymous -> N.Anonymous
                 | _ ->
-                  if not fake_dependent_products && T.noccurn 1 t then
+                  if not fake_dependent_products && V.noccurn 1 t then
                    N.Anonymous
                   else
                    N.Name

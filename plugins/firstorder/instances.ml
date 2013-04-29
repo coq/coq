@@ -11,6 +11,7 @@ open Rules
 open Errors
 open Util
 open Term
+open Vars
 open Glob_term
 open Tacmach
 open Tactics

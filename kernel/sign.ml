@@ -18,6 +18,7 @@
 open Names
 open Util
 open Term
+open Context
 
 (*s Signatures of named hypotheses. Used for section variables and
     goal assumptions. *)
@@ -71,7 +72,7 @@ let iter_named_context f = List.iter (fun (_,b,t) -> f t; Option.iter f b)
 
 (* Push named declarations on top of a rel context *)
 (* Bizarre. Should be avoided. *)
-let push_named_to_rel_context hyps ctxt =
+(*let push_named_to_rel_context hyps ctxt =
   let rec push = function
     | (id,b,t) :: l ->
 	let s, hyps = push l in
@@ -84,4 +85,4 @@ let push_named_to_rel_context hyps ctxt =
 	let n, ctxt = subst l in
 	(n+1), (map_rel_declaration (substn_vars n s) d)::ctxt
     | [] -> 1, hyps in
-  snd (subst ctxt)
+  snd (subst ctxt)*)

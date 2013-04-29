@@ -12,6 +12,8 @@ open Util
 open Names
 open Nameops
 open Term
+open Vars
+open Context
 open Termops
 open Environ
 open Reductionops
@@ -538,7 +540,7 @@ let prim_refiner r sigma goal =
 	     push_named_context_val (id,None,t) sign,cl,sigma) in
         let (sg2,ev2,sigma) = 
 	  Goal.V82.mk_goal sigma sign cl (Goal.V82.extra sigma goal) in
-	let oterm = Term.mkApp (Term.mkNamedLambda id t ev2 , [| ev1 |]) in
+	let oterm = Term.mkApp (mkNamedLambda id t ev2 , [| ev1 |]) in
 	let sigma = Goal.V82.partial_solution sigma goal oterm in
         if b then ([sg1;sg2],sigma) else ([sg2;sg1],sigma)
 
@@ -579,7 +581,7 @@ let prim_refiner r sigma goal =
 	let (gls_evs,sigma) =  mk_sign sign all in
 	let (gls,evs) = List.split gls_evs in
 	let ids = List.map pi1 all in
-	let evs = List.map (Term.subst_vars (List.rev ids)) evs in
+	let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
 	let indxs = Array.of_list (List.map (fun n -> n-1) (List.map pi2 all)) in
 	let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
 	let typarray = Array.of_list (List.map pi3 all) in
@@ -622,7 +624,7 @@ let prim_refiner r sigma goal =
 	let (gls_evs,sigma) =  mk_sign sign all in
 	let (gls,evs) = List.split gls_evs in
 	let (ids,types) = List.split all in
-	let evs = List.map (Term.subst_vars (List.rev ids)) evs in
+	let evs = List.map (Vars.subst_vars (List.rev ids)) evs in
 	let funnames = Array.of_list (List.map (fun i -> Name i) ids) in
 	let typarray = Array.of_list types in
 	let bodies = Array.of_list evs in
@@ -695,7 +697,7 @@ let prim_refiner r sigma goal =
         let sign' = rename_hyp id1 id2 sign in
         let cl' = replace_vars [id1,mkVar id2] cl in
 	let (gl,ev,sigma) = mk_goal sign' cl' in
-	let ev = Term.replace_vars [(id2,mkVar id1)] ev in
+	let ev = Vars.replace_vars [(id2,mkVar id1)] ev in
 	let sigma = Goal.V82.partial_solution sigma goal ev in
           ([gl], sigma)
 

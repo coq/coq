@@ -11,6 +11,7 @@ open Evd
 open Names
 open Libnames
 open Term
+open Context
 open Pp
 open Tacexpr
 open Glob_term

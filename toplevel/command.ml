@@ -11,6 +11,8 @@ open Errors
 open Util
 open Flags
 open Term
+open Vars
+open Context
 open Termops
 open Entries
 open Environ

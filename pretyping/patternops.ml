@@ -12,6 +12,7 @@ open Names
 open Globnames
 open Nameops
 open Term
+open Vars
 open Glob_term
 open Glob_ops
 open Pp

@@ -7,195 +7,61 @@
 (************************************************************************)
 
 open Names
+open Context
 
+(** {5 Redeclaration of types from module Constr and Sorts}
 
-(** {6 The sorts of CCI. } *)
+    This reexports constructors of inductive types defined in module [Constr],
+    for compatibility purposes. Refer to this module for further info.
 
-type contents = Pos | Null
+*)
 
-type sorts =
+type contents = Sorts.contents = Pos | Null
+
+type sorts = Sorts.t =
   | Prop of contents       (** Prop and Set *)
   | Type of Univ.universe  (** Type *)
 
-val set_sort  : sorts
-val prop_sort : sorts
-val type1_sort  : sorts
+type sorts_family = Sorts.family = InProp | InSet | InType
 
-val sorts_ord : sorts -> sorts -> int
-val is_prop_sort : sorts -> bool
+type constr = Constr.constr
+(** Alias types, for compatibility. *)
 
-(** {6 The sorts family of CCI. } *)
+type types = Constr.types
+(** Same as [constr], for documentation purposes. *)
 
-type sorts_family = InProp | InSet | InType
+type existential_key = Constr.existential_key
 
-val family_of_sort : sorts -> sorts_family
+type existential = Constr.existential
 
-(** {6 Useful types } *)
+type metavariable = Constr.metavariable
 
-(** {6 Existential variables } *)
-type existential_key = int
+type case_style = Constr.case_style =
+  LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
 
-(** {6 Existential variables } *)
-type metavariable = int
+type case_printing = Constr.case_printing =
+  { ind_nargs : int; style     : case_style }
 
-(** {6 Case annotation } *)
-type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle 
-  | RegularStyle (** infer printing form from number of constructor *)
-type case_printing =
-  { ind_nargs : int; (** length of the arity of the inductive type *)
-    style     : case_style }
-
-(** the integer is the number of real args, needed for reduction *)
-type case_info =
+type case_info = Constr.case_info =
   { ci_ind        : inductive;
     ci_npar       : int;
-    ci_cstr_ndecls : int array; (** number of real args of each constructor *)
-    ci_pp_info    : case_printing (** not interpreted by the kernel *)
+    ci_cstr_ndecls : int array;
+    ci_pp_info    : case_printing
   }
 
-(** {6 The type of constructions } *)
+type cast_kind = Constr.cast_kind =
+  VMcast | NATIVEcast | DEFAULTcast | REVERTcast
 
-type constr
-
-(** [eq_constr a b] is true if [a] equals [b] modulo alpha, casts,
-   and application grouping *)
-val eq_constr : constr -> constr -> bool
-
-(** [types] is the same as [constr] but is intended to be used for
-   documentation to indicate that such or such function specifically works
-   with {e types} (i.e. terms of type a sort).
-   (Rem:plurial form since [type] is a reserved ML keyword) *)
-
-type types = constr
-
-(** {5 Functions for dealing with constr terms. }
-  The following functions are intended to simplify and to uniform the
-  manipulation of terms. Some of these functions may be overlapped with
-  previous ones. *)
-
-(** {6 Term constructors. } *)
-
-(** Constructs a DeBrujin index (DB indices begin at 1) *)
-val mkRel : int -> constr
-
-(** Constructs a Variable *)
-val mkVar : Id.t -> constr
-
-(** Constructs an patvar named "?n" *)
-val mkMeta : metavariable -> constr
-
-(** Constructs an existential variable *)
-type existential = existential_key * constr array
-val mkEvar : existential -> constr
-
-(** Construct a sort *)
-val mkSort : sorts -> types
-val mkProp : types
-val mkSet  : types
-val mkType : Univ.universe -> types
-
-
-(** This defines the strategy to use for verifiying a Cast *)
-type cast_kind = VMcast | NATIVEcast | DEFAULTcast | REVERTcast
-
-(** Constructs the term [t1::t2], i.e. the term t{_ 1} casted with the
-   type t{_ 2} (that means t2 is declared as the type of t1). *)
-val mkCast : constr * cast_kind * constr -> constr
-
-(** Constructs the product [(x:t1)t2] *)
-val mkProd : Name.t * types * types -> types
-val mkNamedProd : Id.t -> types -> types -> types
-
-(** non-dependent product [t1 -> t2], an alias for
-   [forall (_:t1), t2]. Beware [t_2] is NOT lifted.
-   Eg: in context [A:Prop], [A->A] is built by [(mkArrow (mkRel 0) (mkRel 1))]
-*)
-val mkArrow : types -> types -> constr
-
-(** Constructs the abstraction \[x:t{_ 1}\]t{_ 2} *)
-val mkLambda : Name.t * types * constr -> constr
-val mkNamedLambda : Id.t -> types -> constr -> constr
-
-(** Constructs the product [let x = t1 : t2 in t3] *)
-val mkLetIn : Name.t * constr * types * constr -> constr
-val mkNamedLetIn : Id.t -> constr -> types -> constr -> constr
-
-(** [mkApp (f,[| t_1; ...; t_n |]] constructs the application
-   {% $(f~t_1~\dots~t_n)$ %}. *)
-val mkApp : constr * constr array -> constr
-
-(** Constructs a constant 
-   The array of terms correspond to the variables introduced in the section *)
-val mkConst : constant -> constr
-
-(** Inductive types *)
-
-(** Constructs the ith (co)inductive type of the block named kn 
-   The array of terms correspond to the variables introduced in the section *)
-val mkInd : inductive -> constr
-
-(** Constructs the jth constructor of the ith (co)inductive type of the
-   block named kn. The array of terms correspond to the variables
-   introduced in the section *)
-val mkConstruct : constructor -> constr
-
-(** Constructs a destructor of inductive type.
-    
-    [mkCase ci p c ac] stand for match [c] as [x] in [I args] return [p] with [ac] 
-    presented as describe in [ci].
-
-    [p] stucture is [fun args x -> "return clause"]
-
-    [ac]{^ ith} element is ith constructor case presented as 
-    {e lambda construct_args (without params). case_term } *)
-val mkCase : case_info * constr * constr * constr array -> constr
-
-(** If [recindxs = [|i1,...in|]]
-      [funnames = [|f1,.....fn|]]
-      [typarray = [|t1,...tn|]]
-      [bodies   = [|b1,.....bn|]]
-   then [mkFix ((recindxs,i), funnames, typarray, bodies) ]
-   constructs the {% $ %}i{% $ %}th function of the block (counting from 0)
-
-    [Fixpoint f1 [ctx1] = b1
-     with     f2 [ctx2] = b2
-     ...
-     with     fn [ctxn] = bn.]
-
-   where the length of the {% $ %}j{% $ %}th context is {% $ %}ij{% $ %}.
-*)
-type rec_declaration = Name.t array * types array * constr array
-type fixpoint = (int array * int) * rec_declaration
-val mkFix : fixpoint -> constr
-
-(** If [funnames = [|f1,.....fn|]]
-      [typarray = [|t1,...tn|]]
-      [bodies   = [b1,.....bn]] 
-   then [mkCoFix (i, (funnames, typarray, bodies))]
-   constructs the ith function of the block
-   
-    [CoFixpoint f1 = b1
-     with       f2 = b2
-     ...
-     with       fn = bn.]
- *)
-type cofixpoint = int * rec_declaration
-val mkCoFix : cofixpoint -> constr
-
-
-(** {6 Concrete type for making pattern-matching. } *)
-
-(** [constr array] is an instance matching definitional [named_context] in
-   the same order (i.e. last argument first) *)
-type 'constr pexistential = existential_key * 'constr array
+type rec_declaration = Constr.rec_declaration
+type fixpoint = Constr.fixpoint
+type cofixpoint = Constr.cofixpoint
+type 'constr pexistential = 'constr Constr.pexistential
 type ('constr, 'types) prec_declaration =
-    Name.t array * 'types array * 'constr array
-type ('constr, 'types) pfixpoint =
-    (int array * int) * ('constr, 'types) prec_declaration
-type ('constr, 'types) pcofixpoint =
-    int * ('constr, 'types) prec_declaration
+  ('constr, 'types) Constr.prec_declaration
+type ('constr, 'types) pfixpoint = ('constr, 'types) Constr.pfixpoint
+type ('constr, 'types) pcofixpoint = ('constr, 'types) Constr.pcofixpoint
 
-type ('constr, 'types) kind_of_term =
+type ('constr, 'types) kind_of_term = ('constr, 'types) Constr.kind_of_term =
   | Rel       of int
   | Var       of Id.t
   | Meta      of metavariable
@@ -213,23 +79,9 @@ type ('constr, 'types) kind_of_term =
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
 
-(** User view of [constr]. For [App], it is ensured there is at
-   least one argument and the function is not itself an applicative
-   term *)
+type values = Constr.values
 
-val kind_of_term : constr -> (constr, types) kind_of_term
-
-(** Experimental, used in Presburger contrib *)
-type ('constr, 'types) kind_of_type =
-  | SortType   of sorts
-  | CastType   of 'types * 'types
-  | ProdType   of Name.t * 'types * 'types
-  | LetInType  of Name.t * 'constr * 'types * 'types
-  | AtomicType of 'constr * 'constr array
-
-val kind_of_type : types -> (constr, types) kind_of_type
-
-(** {6 Simple term case analysis. } *)
+(** {5 Simple term case analysis. } *)
 
 val isRel  : constr -> bool
 val isRelN : int -> constr -> bool
@@ -260,7 +112,7 @@ val iskind : constr -> bool
 val is_small : sorts -> bool
 
 
-(** {6 Term destructors } *)
+(** {5 Term destructors } *)
 (** Destructor operations are partial functions and
     @raise DestKO if the term has not the expected form. *)
 
@@ -331,56 +183,18 @@ val destFix : constr -> fixpoint
 val destCoFix : constr -> cofixpoint
 
 
-(** {6 Local context} *)
-(** A {e declaration} has the form [(name,body,type)]. It is either an
-    {e assumption} if [body=None] or a {e definition} if
-    [body=Some actualbody]. It is referred by {e name} if [na] is an
-    identifier or by {e relative index} if [na] is not an identifier
-    (in the latter case, [na] is of type [name] but just for printing
-    purpose) *)
+(** {5 Derived constructors} *)
 
-type named_declaration = Id.t * constr option * types
-type rel_declaration = Name.t * constr option * types
+(** non-dependent product [t1 -> t2], an alias for
+   [forall (_:t1), t2]. Beware [t_2] is NOT lifted.
+   Eg: in context [A:Prop], [A->A] is built by [(mkArrow (mkRel 0) (mkRel 1))]
+*)
+val mkArrow : types -> types -> constr
 
-val map_named_declaration :
-  (constr -> constr) -> named_declaration -> named_declaration
-val map_rel_declaration :
-  (constr -> constr) -> rel_declaration -> rel_declaration
-
-val fold_named_declaration :
-  (constr -> 'a -> 'a) -> named_declaration -> 'a -> 'a
-val fold_rel_declaration :
-  (constr -> 'a -> 'a) -> rel_declaration -> 'a -> 'a
-
-val exists_named_declaration :
-  (constr -> bool) -> named_declaration -> bool
-val exists_rel_declaration :
-  (constr -> bool) -> rel_declaration -> bool
-
-val for_all_named_declaration :
-  (constr -> bool) -> named_declaration -> bool
-val for_all_rel_declaration :
-  (constr -> bool) -> rel_declaration -> bool
-
-val eq_named_declaration :
-  named_declaration -> named_declaration -> bool
-
-val eq_rel_declaration :
-    rel_declaration -> rel_declaration -> bool
-
-(** {6 Contexts of declarations referred to by de Bruijn indices } *)
-
-(** In [rel_context], more recent declaration is on top *)
-type rel_context = rel_declaration list
-
-val empty_rel_context : rel_context
-val add_rel_decl : rel_declaration -> rel_context -> rel_context
-
-val lookup_rel : int -> rel_context -> rel_declaration
-(** Size of the [rel_context] including LetIns *)
-val rel_context_length : rel_context -> int
-(** Size of the [rel_context] without LetIns *)
-val rel_context_nhyps : rel_context -> int
+(** Named version of the functions from [Term]. *)
+val mkNamedLambda : Id.t -> types -> constr -> constr
+val mkNamedLetIn : Id.t -> constr -> types -> constr -> constr
+val mkNamedProd : Id.t -> types -> types -> types
 
 (** Constructs either [(x:t)c] or [[x=b:t]c] *)
 val mkProd_or_LetIn : rel_declaration -> types -> types
@@ -392,7 +206,7 @@ val mkNamedProd_wo_LetIn : named_declaration -> types -> types
 val mkLambda_or_LetIn : rel_declaration -> constr -> constr
 val mkNamedLambda_or_LetIn : named_declaration -> constr -> constr
 
-(** {6 Other term constructors. } *)
+(** {5 Other term constructors. } *)
 
 (** [applist (f,args)] and its variants work as [mkApp] *)
 
@@ -441,7 +255,7 @@ val prod_applist : constr -> constr list -> constr
 val it_mkLambda_or_LetIn : constr -> rel_context -> constr
 val it_mkProd_or_LetIn : types -> rel_context -> types
 
-(** {6 Other term destructors. } *)
+(** {5 Other term destructors. } *)
 
 (** Transforms a product term {% $ %}(x_1:T_1)..(x_n:T_n)T{% $ %} into the pair
    {% $ %}([(x_n,T_n);...;(x_1,T_1)],T){% $ %}, where {% $ %}T{% $ %} is not a product. *)
@@ -512,7 +326,7 @@ val under_casts : (constr -> constr) -> constr -> constr
 (** Apply a function under components of Cast if any *)
 val under_outer_cast : (constr -> constr) -> constr -> constr
 
-(** {6 ... } *)
+(** {5 ... } *)
 (** An "arity" is a term of the form [[x1:T1]...[xn:Tn]s] with [s] a sort.
     Such a term can canonically be seen as the pair of a context of types
     and of a sort *)
@@ -528,117 +342,102 @@ val destArity : types -> arity
 (** Tells if a term has the form of an arity *)
 val isArity : types -> bool
 
-(** {6 Occur checks } *)
+(** {5 Kind of type} *)
 
-(** [closedn n M] is true iff [M] is a (deBruijn) closed term under n binders *)
-val closedn : int -> constr -> bool
+type ('constr, 'types) kind_of_type =
+  | SortType   of sorts
+  | CastType   of 'types * 'types
+  | ProdType   of Name.t * 'types * 'types
+  | LetInType  of Name.t * 'constr * 'types * 'types
+  | AtomicType of 'constr * 'constr array
 
-(** [closed0 M] is true iff [M] is a (deBruijn) closed term *)
-val closed0 : constr -> bool
+val kind_of_type : types -> (constr, types) kind_of_type
 
-(** [noccurn n M] returns true iff [Rel n] does NOT occur in term [M]  *)
-val noccurn : int -> constr -> bool
+(** {5 Redeclaration of stuff from module [Sorts]} *)
 
-(** [noccur_between n m M] returns true iff [Rel p] does NOT occur in term [M]
-  for n <= p < n+m *)
-val noccur_between : int -> int -> constr -> bool
+val set_sort  : sorts
+(** Alias for Sorts.set *)
 
-(** Checking function for terms containing existential- or
-   meta-variables.  The function [noccur_with_meta] does not consider
-   meta-variables applied to some terms (intended to be its local
-   context) (for existential variables, it is necessarily the case) *)
-val noccur_with_meta : int -> int -> constr -> bool
+val prop_sort : sorts
+(** Alias for Sorts.prop *)
 
-(** {6 Relocation and substitution } *)
+val type1_sort  : sorts
+(** Alias for Sorts.type1 *)
 
-(** [exliftn el c] lifts [c] with lifting [el] *)
-val exliftn : Esubst.lift -> constr -> constr
+val sorts_ord : sorts -> sorts -> int
+(** Alias for Sorts.compare *)
 
-(** [liftn n k c] lifts by [n] indexes above or equal to [k] in [c] *)
-val liftn : int -> int -> constr -> constr
+val is_prop_sort : sorts -> bool
+(** Alias for Sorts.is_prop *)
 
-(** [lift n c] lifts by [n] the positive indexes in [c] *)
-val lift : int -> constr -> constr
+val family_of_sort : sorts -> sorts_family
+(** Alias for Sorts.family *)
 
-(** [substnl [a1;...;an] k c] substitutes in parallel [a1],...,[an]
-    for respectively [Rel(k+1)],...,[Rel(k+n)] in [c]; it relocates
-    accordingly indexes in [a1],...,[an] *)
-val substnl : constr list -> int -> constr -> constr
-val substl : constr list -> constr -> constr
-val subst1 : constr -> constr -> constr
+(** {5 Redeclaration of stuff from module [Constr]}
 
-val substnl_decl : constr list -> int -> rel_declaration -> rel_declaration
-val substl_decl : constr list -> rel_declaration -> rel_declaration
-val subst1_decl : constr -> rel_declaration -> rel_declaration
+    See module [Constr] for further info. *)
 
-val subst1_named_decl : constr -> named_declaration -> named_declaration
-val substl_named_decl : constr list -> named_declaration -> named_declaration
+(** {6 Term constructors. } *)
 
-val replace_vars : (Id.t * constr) list -> constr -> constr
-val subst_var : Id.t -> constr -> constr
+val mkRel : int -> constr
+val mkVar : Id.t -> constr
+val mkMeta : metavariable -> constr
+val mkEvar : existential -> constr
+val mkSort : sorts -> types
+val mkProp : types
+val mkSet  : types
+val mkType : Univ.universe -> types
+val mkCast : constr * cast_kind * constr -> constr
+val mkProd : Name.t * types * types -> types
+val mkLambda : Name.t * types * constr -> constr
+val mkLetIn : Name.t * constr * types * constr -> constr
+val mkApp : constr * constr array -> constr
+val mkConst : constant -> constr
+val mkInd : inductive -> constr
+val mkConstruct : constructor -> constr
+val mkCase : case_info * constr * constr * constr array -> constr
+val mkFix : fixpoint -> constr
+val mkCoFix : cofixpoint -> constr
 
-(** [subst_vars [id1;...;idn] t] substitute [VAR idj] by [Rel j] in [t]
-   if two names are identical, the one of least indice is kept *)
-val subst_vars : Id.t list -> constr -> constr
+(** {6 Aliases} *)
 
-(** [substn_vars n [id1;...;idn] t] substitute [VAR idj] by [Rel j+n-1] in [t]
-   if two names are identical, the one of least indice is kept *)
-val substn_vars : int -> Id.t list -> constr -> constr
+val eq_constr : constr -> constr -> bool
+(** Alias for [Constr.eq] *)
 
+val kind_of_term : constr -> (constr, types) kind_of_term
+(** Alias for [Constr.kind] *)
 
-(** {6 Functionals working on the immediate subterm of a construction } *)
-
-(** [fold_constr f acc c] folds [f] on the immediate subterms of [c]
-   starting from [acc] and proceeding from left to right according to
-   the usual representation of the constructions; it is not recursive *)
+val constr_ord : constr -> constr -> int
+(** Alias for [Constr.compare] *)
 
 val fold_constr : ('a -> constr -> 'a) -> 'a -> constr -> 'a
-
-(** [map_constr f c] maps [f] on the immediate subterms of [c]; it is
-   not recursive and the order with which subterms are processed is
-   not specified *)
+(** Alias for [Constr.fold] *)
 
 val map_constr : (constr -> constr) -> constr -> constr
-
-(** [map_constr_with_binders g f n c] maps [f n] on the immediate
-   subterms of [c]; it carries an extra data [n] (typically a lift
-   index) which is processed by [g] (which typically add 1 to [n]) at
-   each binder traversal; it is not recursive and the order with which
-   subterms are processed is not specified *)
+(** Alias for [Constr.map] *)
 
 val map_constr_with_binders :
   ('a -> 'a) -> ('a -> constr -> constr) -> 'a -> constr -> constr
-
-(** [iter_constr f c] iters [f] on the immediate subterms of [c]; it is
-   not recursive and the order with which subterms are processed is
-   not specified *)
+(** Alias for [Constr.map_with_binders] *)
 
 val iter_constr : (constr -> unit) -> constr -> unit
-
-(** [iter_constr_with_binders g f n c] iters [f n] on the immediate
-   subterms of [c]; it carries an extra data [n] (typically a lift
-   index) which is processed by [g] (which typically add 1 to [n]) at
-   each binder traversal; it is not recursive and the order with which
-   subterms are processed is not specified *)
+(** Alias for [Constr.iter] *)
 
 val iter_constr_with_binders :
   ('a -> 'a) -> ('a -> constr -> unit) -> 'a -> constr -> unit
-
-(** [compare_constr f c1 c2] compare [c1] and [c2] using [f] to compare
-   the immediate subterms of [c1] of [c2] if needed; Cast's, binders
-   name and Cases annotations are not taken into account *)
+(** Alias for [Constr.iter_with_binders] *)
 
 val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
+(** Alias for [Constr.compare_head] *)
 
-val constr_ord : constr -> constr -> int
 val hash_constr : constr -> int
-
-(*********************************************************************)
+(** Alias for [Constr.hash] *)
 
 val hcons_sorts : sorts -> sorts
+(** Alias for [Constr.hashcons_sorts] *)
+
 val hcons_constr : constr -> constr
+(** Alias for [Constr.hashcons] *)
+
 val hcons_types : types -> types
-
-(**************************************)
-
-type values
+(** Alias for [Constr.hashcons] *)

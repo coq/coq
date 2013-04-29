@@ -8,6 +8,7 @@
 open Pp
 open Errors
 open Term
+open Vars
 open Environ
 open Reduction
 open Univ

@@ -11,6 +11,7 @@ open Sequent
 open Rules
 open Instances
 open Term
+open Vars
 open Tacmach
 open Tacticals
 

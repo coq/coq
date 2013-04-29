@@ -10,6 +10,7 @@ open Loc
 open Pp
 open Names
 open Term
+open Context
 open Environ
 open Sign
 open Tacmach

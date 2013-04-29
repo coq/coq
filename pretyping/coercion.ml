@@ -18,6 +18,7 @@ open Errors
 open Util
 open Names
 open Term
+open Vars
 open Reductionops
 open Environ
 open Typeops
@@ -80,7 +81,7 @@ let disc_subset x =
        Ind i ->
 	 let len = Array.length l in
 	 let sigty = delayed_force sig_typ in
-	   if Int.equal len 2 && eq_ind i (Term.destInd sigty)
+	   if Int.equal len 2 && eq_ind i (destInd sigty)
 	   then
 	     let (a, b) = pair_of_array l in
 	       Some (a, b)
@@ -190,7 +191,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 		   (fun f ->
 		      mkLambda (name', a',
 				app_opt env' isevars c2
-				  (mkApp (Term.lift 1 f, [| coec1 |])))))
+				  (mkApp (lift 1 f, [| coec1 |])))))
 
       | App (c, l), App (c', l') ->
 	  (match kind_of_term c, kind_of_term c' with
@@ -200,9 +201,9 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 	     let prod = delayed_force prod_typ in
 	       (* Sigma types *)
 	       if Int.equal len (Array.length l') && Int.equal len 2 && eq_ind i i'
-		 && (eq_ind i (Term.destInd sigT) || eq_ind i (Term.destInd prod))
+		 && (eq_ind i (destInd sigT) || eq_ind i (destInd prod))
 	       then
-		 if eq_ind i (Term.destInd sigT)
+		 if eq_ind i (destInd sigT)
 		 then
 		   begin
 		     let (a, pb), (a', pb') =

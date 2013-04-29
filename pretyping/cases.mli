@@ -9,6 +9,7 @@
 open Pp
 open Names
 open Term
+open Context
 open Evd
 open Environ
 open Inductiveops
@@ -57,11 +58,11 @@ val compile_cases :
 val constr_of_pat : 
            Environ.env ->
            Evd.evar_map ref ->
-           Term.rel_declaration list ->
+           rel_declaration list ->
            Glob_term.cases_pattern ->
            Names.Id.t list ->
            Glob_term.cases_pattern *
-           (Term.rel_declaration list * Term.constr *
+           (rel_declaration list * Term.constr *
             (Term.types * Term.constr list) * Glob_term.cases_pattern) *
            Names.Id.t list
 

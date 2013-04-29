@@ -59,6 +59,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
  (*CSC: functions used do checks that we do not need                       *)
  let rec execute env sigma cstr expectedty =
   let module T = Term in
+  let module V = Vars in
   let module E = Environ in
    (* the type part is the synthesized type *)
    let judgement =
@@ -84,7 +85,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
                 (function (m,bo,ty) ->
                   (* Warning: the substitution should be performed also on bo *)
                   (* This is not done since bo is not used later yet          *)
-                  (m,bo,Unshare.unshare (T.replace_vars [n,he1] ty))
+                  (m,bo,Unshare.unshare (V.replace_vars [n,he1] ty))
                 ) tl2
               in
                iter tl1 tl2'
@@ -161,7 +162,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
               match T.kind_of_term (Reduction.whd_betadeltaiota env typ) with
                  T.Prod (_,c1,c2) ->
                   (Some (Reductionops.nf_beta sigma c1)) ::
-                   (aux (T.subst1 hj c2) restjl)
+                   (aux (V.subst1 hj c2) restjl)
                | _ -> assert false
          in
           Array.of_list (aux j.Environ.uj_type (Array.to_list args))
@@ -249,7 +250,7 @@ if Acic.CicHash.mem subterms_to_types cstr then
    let lara = Array.map (assumption_of_judgment env sigma) larj in
    let env1 = Environ.push_rec_types (names,lara,vdef) env in
    let expectedtypes =
-    Array.map (function i -> Some (Term.lift length i)) lar
+    Array.map (function i -> Some (Vars.lift length i)) lar
    in
    let vdefj = execute_array env1 sigma vdef expectedtypes in
    let vdefv = Array.map Environ.j_val vdefj in

@@ -9,6 +9,8 @@
 open Util
 open Pp
 open Term
+open Vars
+open Context
 
 (* This module implements the abstract interface to goals *)
 (* A general invariant of the module, is that a goal whose associated
@@ -64,7 +66,7 @@ let rec advance sigma g =
       | Evd.Evar_defined c -> c
       | _ -> Errors.anomaly (Pp.str "Some goal is marked as 'cleared' but is uninstantiated")
     in
-    let (e,_) = Term.destEvar v in
+    let (e,_) = destEvar v in
     let g' = { g with content = e } in
     advance sigma g'
   else
@@ -141,7 +143,7 @@ module Refinable = struct
 
   let mkEvar handle env typ _ rdefs _ _ =
     let ev = Evarutil.e_new_evar rdefs env typ in
-    let (e,_) = Term.destEvar ev in
+    let (e,_) = destEvar ev in
     handle := e::!handle;
     ev
 
@@ -260,7 +262,7 @@ let clear ids env rdefs gl info =
   let (hyps,concl) = Evarutil.clear_hyps_in_evi rdefs hyps concl ids in
   let cleared_env = Environ.reset_with_named_context hyps env in
   let cleared_concl = Evarutil.e_new_evar rdefs cleared_env concl in
-  let (cleared_evar,_) = Term.destEvar cleared_concl in
+  let (cleared_evar,_) = destEvar cleared_concl in
   let cleared_goal = descendent gl cleared_evar in
   rdefs := Evd.define gl.content cleared_concl !rdefs;
   { subgoals = [cleared_goal] }
@@ -396,7 +398,7 @@ let convert_hyp check (id,b,bt as d) env rdefs gl info =
   let new_constr =
     Evarutil.e_new_evar rdefs new_env (concl env rdefs gl info)
   in
-  let (new_evar,_) = Term.destEvar new_constr in
+  let (new_evar,_) = destEvar new_constr in
   let new_goal = descendent gl new_evar in
   rdefs := Evd.define gl.content new_constr !rdefs;
   { subgoals = [new_goal] }
@@ -409,7 +411,7 @@ let convert_concl check cl' env rdefs gl info =
     let new_constr =
       Evarutil.e_new_evar rdefs env cl'
     in
-    let (new_evar,_) = Term.destEvar new_constr in
+    let (new_evar,_) = destEvar new_constr in
     let new_goal = descendent gl new_evar in
     rdefs := Evd.define gl.content new_constr !rdefs;
     { subgoals = [new_goal] }
@@ -431,10 +433,10 @@ let rename_hyp id1 id2 env rdefs gl info =
        Errors.error ((Names.Id.to_string id2)^" is already used.");
   let new_hyps = rename_hyp_sign id1 id2 hyps in
   let new_env = Environ.reset_with_named_context new_hyps env in
-  let new_concl = Term.replace_vars [id1,mkVar id2] (concl env rdefs gl info) in
+  let new_concl = Vars.replace_vars [id1,mkVar id2] (concl env rdefs gl info) in
   let new_subproof = Evarutil.e_new_evar rdefs new_env new_concl in
-  let new_subproof = Term.replace_vars [id2,mkVar id1] new_subproof in
-  let (new_evar,_) = Term.destEvar new_subproof in
+  let new_subproof = Vars.replace_vars [id2,mkVar id1] new_subproof in
+  let (new_evar,_) = destEvar new_subproof in
   let new_goal = descendent gl new_evar in
   rdefs := Evd.define gl.content new_subproof !rdefs;
   { subgoals = [new_goal] }

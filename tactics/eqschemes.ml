@@ -48,6 +48,8 @@ open Errors
 open Util
 open Names
 open Term
+open Vars
+open Context
 open Declarations
 open Environ
 open Inductive

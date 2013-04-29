@@ -10,9 +10,12 @@ open Util
 open Pp
 open Names
 open Term
+open Context
 open Sign
 open Environ
 open Locus
+
+(** TODO: merge this with Term *)
 
 (** Universes *)
 val new_univ_level : unit -> Univ.universe_level

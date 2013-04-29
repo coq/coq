@@ -8,6 +8,7 @@
 
 open Names
 open Term
+open Context
 
 (** This module defines the internal representation of global
    declarations. This includes global constants/axioms, mutual

@@ -2,6 +2,8 @@ open Printer
 open Errors
 open Util
 open Term
+open Vars
+open Context
 open Namegen
 open Names
 open Declarations

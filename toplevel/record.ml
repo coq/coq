@@ -13,6 +13,7 @@ open Names
 open Globnames
 open Nameops
 open Term
+open Vars
 open Environ
 open Declarations
 open Entries
