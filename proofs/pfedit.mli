@@ -10,7 +10,7 @@ open Loc
 open Pp
 open Names
 open Term
-open Sign
+open Context
 open Environ
 open Decl_kinds
 open Tacmach
@@ -141,7 +141,7 @@ val set_end_tac : tactic -> unit
 (** [set_used_variables l] declares that section variables [l] will be
     used in the proof *)
 val set_used_variables : Id.t list -> unit
-val get_used_variables : unit -> Sign.section_context option
+val get_used_variables : unit -> Context.section_context option
 
 (** {6 ... } *)
 (** [solve_nth n tac] applies tactic [tac] to the [n]th subgoal of the

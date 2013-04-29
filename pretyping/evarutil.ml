@@ -62,10 +62,10 @@ let env_nf_betaiotaevar sigma env =
       push_rel (map_rel_declaration (Reductionops.nf_betaiota sigma) d) e) env
 
 let nf_named_context_evar sigma ctx =
-  Sign.map_named_context (Reductionops.nf_evar sigma) ctx
+  Context.map_named_context (Reductionops.nf_evar sigma) ctx
 
 let nf_rel_context_evar sigma ctx =
-  Sign.map_rel_context (Reductionops.nf_evar sigma) ctx
+  Context.map_rel_context (Reductionops.nf_evar sigma) ctx
 
 let nf_env_evar sigma env =
   let nc' = nf_named_context_evar sigma (Environ.named_context env) in
@@ -305,7 +305,7 @@ let push_rel_context_to_named_context env typ =
   (* with vars of the rel context *)
   (* We do keep the instances corresponding to local definition (see above) *)
   let (subst, _, env) =
-    Sign.fold_rel_context
+    Context.fold_rel_context
       (fun (na,c,t) (subst, avoid, env) ->
 	let id = next_name_away na avoid in
 	let d = (id,Option.map (substl subst) c,substl subst t) in
@@ -433,7 +433,7 @@ let rec check_and_clear_in_constr evdref err ids c =
             begin match rids with
             | [] -> c
             | _ ->
-	      let env = Sign.fold_named_context push_named nhyps ~init:(empty_env) in
+	      let env = Context.fold_named_context push_named nhyps ~init:(empty_env) in
 	      let ev'= e_new_evar evdref env ~src:(evar_source evk !evdref) nconcl in
 	      evdref := Evd.define evk ev' !evdref;
 	      let (evk',_) = destEvar ev' in

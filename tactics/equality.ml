@@ -1392,7 +1392,7 @@ user = raise user error specific to rewrite
 let unfold_body x gl =
   let hyps = pf_hyps gl in
   let xval =
-    match Sign.lookup_named x hyps with
+    match Context.lookup_named x hyps with
         (_,Some xval,_) -> xval
       | _ -> errorlabstrm "unfold_body"
           (pr_id x ++ str" is not a defined hypothesis.") in
@@ -1474,7 +1474,7 @@ let subst_one_var dep_proof_ok x gl =
   let (hyp,rhs,dir) =
     try
       let test hyp _ = is_eq_x gl varx hyp in
-      Sign.fold_named_context test ~init:() hyps;
+      Context.fold_named_context test ~init:() hyps;
       errorlabstrm "Subst"
         (str "Cannot find any non-recursive equality over " ++ pr_id x ++
 	 str".")

@@ -8,7 +8,7 @@
 
 open Names
 open Term
-open Sign
+open Context
 open Environ
 open Evd
 open Evarutil

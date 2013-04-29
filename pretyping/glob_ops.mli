@@ -8,7 +8,7 @@
 
 open Pp
 open Names
-open Sign
+open Context
 open Term
 open Libnames
 open Nametab

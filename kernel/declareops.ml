@@ -166,7 +166,7 @@ let subst_mind sub mib =
     mind_nparams = mib.mind_nparams;
     mind_nparams_rec = mib.mind_nparams_rec;
     mind_params_ctxt =
-      Sign.map_rel_context (subst_mps sub) mib.mind_params_ctxt;
+      Context.map_rel_context (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = Array.smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_constraints = mib.mind_constraints;
     mind_native_name = ref NotLinked }

@@ -191,7 +191,7 @@ module V82 : sig
   val extra : Evd.evar_map -> goal -> Evd.Store.t
 
   (* Old style filtered_context primitive *)
-  val filtered_context : Evd.evar_map -> goal -> Sign.named_context
+  val filtered_context : Evd.evar_map -> goal -> Context.named_context
 
   (* Old style mk_goal primitive, returns a new goal with corresponding 
        hypotheses and conclusion, together with a term which is precisely
@@ -228,7 +228,7 @@ module V82 : sig
   val same_goal : Evd.evar_map -> goal -> Evd.evar_map -> goal -> bool
 
  (* Used for congruence closure *)
-  val new_goal_with : Evd.evar_map -> goal -> Sign.named_context -> goal Evd.sigma
+  val new_goal_with : Evd.evar_map -> goal -> Context.named_context -> goal Evd.sigma
 
   (* Used by the compatibility layer and typeclasses *)
   val nf_evar : Evd.evar_map -> goal -> goal * Evd.evar_map

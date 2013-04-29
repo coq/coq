@@ -9,7 +9,7 @@
 open Names
 open Errors
 open Util
-open Sign
+open Context
 open Term
 open Vars
 open Entries

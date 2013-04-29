@@ -11,7 +11,6 @@ open Names
 open Term
 open Context
 open Termops
-open Sign
 open Environ
 open Libnames
 open Globnames

@@ -12,7 +12,6 @@ open Context
 open Declarations
 open Environ
 open Evd
-open Sign
 
 (** The following three functions are similar to the ones defined in
    Inductive, but they expect an env *)

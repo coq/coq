@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Term
-open Sign
+open Context
 open Evd
 open Proof_type
 open Tacexpr

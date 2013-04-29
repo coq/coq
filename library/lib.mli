@@ -187,7 +187,7 @@ type variable_info = Names.Id.t * Decl_kinds.binding_kind *
 type variable_context = variable_info list
 
 val instance_from_variable_context : variable_context -> Names.Id.t array
-val named_of_variable_context : variable_context -> Sign.named_context
+val named_of_variable_context : variable_context -> Context.named_context
 
 val section_segment_of_constant : Names.constant -> variable_context
 val section_segment_of_mutual_inductive: Names.mutual_inductive -> variable_context
@@ -197,8 +197,8 @@ val is_in_section : Globnames.global_reference -> bool
 
 val add_section_variable : Names.Id.t -> Decl_kinds.binding_kind -> unit
 
-val add_section_constant : Names.constant -> Sign.named_context -> unit
-val add_section_kn : Names.mutual_inductive -> Sign.named_context -> unit
+val add_section_constant : Names.constant -> Context.named_context -> unit
+val add_section_kn : Names.mutual_inductive -> Context.named_context -> unit
 val replacement_context : unit ->
   (Names.Id.t array Names.Cmap.t * Names.Id.t array Names.Mindmap.t)
 

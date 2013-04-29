@@ -68,7 +68,7 @@ let instantiate_params full t args sign =
   let fail () =
     anomaly ~label:"instantiate_params" (Pp.str "type, ctxt and args mismatch") in
   let (rem_args, subs, ty) =
-    Sign.fold_rel_context
+    Context.fold_rel_context
       (fun (_,copt,_) (largs,subs,ty) ->
         match (copt, largs, kind_of_term ty) with
           | (None, a::args, Prod(_,_,t)) -> (args, a::subs, t)
@@ -240,7 +240,7 @@ let type_of_constructors ind (mib,mip) =
 
 let local_rels ctxt =
   let (rels,_) =
-    Sign.fold_rel_context_reverse
+    Context.fold_rel_context_reverse
       (fun (rels,n) (_,copt,_) ->
         match copt with
             None   -> (mkRel n :: rels, n+1)

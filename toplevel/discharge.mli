@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Sign
+open Context
 open Cooking
 open Declarations
 open Entries

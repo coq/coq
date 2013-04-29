@@ -16,7 +16,6 @@
 open Util
 open Names
 open Context
-open Sign
 open Univ
 open Term
 open Declarations
@@ -105,7 +104,7 @@ let env_of_rel n env =
 let push_named_context_val d (ctxt,vals) =
   let id,_,_ = d in
   let rval = ref VKnone in
-    Sign.add_named_decl d ctxt, (id,rval)::vals
+    Context.add_named_decl d ctxt, (id,rval)::vals
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
@@ -113,7 +112,7 @@ let push_named d env =
   let id,body,_ = d in
   let rval = ref VKnone in
     { env with
-      env_named_context = Sign.add_named_decl d env.env_named_context;
+      env_named_context = Context.add_named_decl d env.env_named_context;
       env_named_vals =  (id,rval):: env.env_named_vals }
 
 let lookup_named_val id env =

@@ -190,10 +190,10 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
    something similar (better?) in the xml protocol. *)
 let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
     :Proof_type.goal list Evd.sigma =
-  let oldhyps:Sign.named_context = pf_hyps goal in
+  let oldhyps:Context.named_context = pf_hyps goal in
   let rslt:Proof_type.goal list Evd.sigma = tac goal in
   let {it=gls;sigma=sigma} = rslt in
-  let hyps:Sign.named_context list =
+  let hyps:Context.named_context list =
     List.map (fun gl -> pf_hyps { it = gl; sigma=sigma}) gls in
   let newhyps =
     List.map (fun hypl -> List.subtract hypl oldhyps) hyps in

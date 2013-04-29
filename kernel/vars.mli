@@ -9,7 +9,6 @@
 open Names
 open Term
 open Context
-open Sign
 
 (** {6 Occur checks } *)
 

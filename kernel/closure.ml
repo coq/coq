@@ -262,7 +262,7 @@ let evar_value info ev =
 
 let defined_vars flags env =
 (*  if red_local_const (snd flags) then*)
-    Sign.fold_named_context
+    Context.fold_named_context
       (fun (id,b,_) e ->
 	 match b with
 	   | None -> e

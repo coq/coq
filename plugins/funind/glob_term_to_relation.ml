@@ -357,7 +357,7 @@ let add_pat_variables pat typ env : Environ.env =
   let new_env = add_pat_variables  env pat typ in
   let res =
     fst (
-      Sign.fold_rel_context
+      Context.fold_rel_context
 	(fun (na,v,t) (env,ctxt) ->
 	 match na with
 	   | Anonymous -> assert false

@@ -98,7 +98,7 @@ let global_reference id =
 
 let construct_reference ctx id =
   try
-    Term.mkVar (let _ = Sign.lookup_named id ctx in id)
+    Term.mkVar (let _ = Context.lookup_named id ctx in id)
   with Not_found ->
     global_reference id
 
@@ -636,7 +636,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
       | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
   with Not_found ->
     (* Is [id] a goal or section variable *)
-    let _ = Sign.lookup_named id namedctx in
+    let _ = Context.lookup_named id namedctx in
       try
 	(* [id] a section variable *)
 	(* Redundant: could be done in intern_qualid *)

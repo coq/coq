@@ -139,8 +139,8 @@ val is_last_focus : 'a focus_kind -> proof -> bool
 val no_focused_goal : proof -> bool
 
 (* Sets the section variables assumed by the proof *)
-val set_used_variables : Sign.section_context -> proof -> unit
-val get_used_variables : proof -> Sign.section_context option
+val set_used_variables : Context.section_context -> proof -> unit
+val get_used_variables : proof -> Context.section_context option
 
 (*** Endline tactic ***)
 

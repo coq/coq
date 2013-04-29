@@ -10,7 +10,7 @@ open Loc
 open Pp
 open Names
 open Term
-open Sign
+open Context
 open Environ
 open Libnames
 open Mod_subst

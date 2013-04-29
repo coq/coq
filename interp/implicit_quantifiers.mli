@@ -10,7 +10,7 @@ open Loc
 open Names
 open Decl_kinds
 open Term
-open Sign
+open Context
 open Evd
 open Environ
 open Nametab

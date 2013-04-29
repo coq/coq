@@ -12,7 +12,6 @@ open Typeclasses
 open Names
 open Evd
 open Context
-open Sign
 
 (** {6 Automatic detection of (some) record instances } *)
 

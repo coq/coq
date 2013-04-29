@@ -18,7 +18,6 @@ open Util
 open Names
 open Term
 open Context
-open Sign
 open Declarations
 open Environ
 
@@ -124,7 +123,7 @@ type inline = bool
 
 type result =
   constant_def * constant_type * Univ.constraints * inline
-    * Sign.section_context option
+    * Context.section_context option
 
 let on_body f = function
   | Undef inl -> Undef inl
@@ -139,13 +138,13 @@ let constr_of_def = function
 
 let cook_constant env r =
   let cb = r.d_from in
-  let hyps = Sign.map_named_context (expmod_constr r.d_modlist) r.d_abstract in
+  let hyps = Context.map_named_context (expmod_constr r.d_modlist) r.d_abstract in
   let body = on_body
     (fun c -> abstract_constant_body (expmod_constr r.d_modlist c) hyps)
     cb.const_body
   in
   let const_hyps =
-    Sign.fold_named_context (fun (h,_,_) hyps ->
+    Context.fold_named_context (fun (h,_,_) hyps ->
       List.filter (fun (id,_,_) -> not (Id.equal id h)) hyps)
       hyps ~init:cb.const_hyps in
   let typ = match cb.const_type with

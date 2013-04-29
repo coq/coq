@@ -97,7 +97,7 @@ let judge_of_variable env id =
    variables of the current env *)
 (* TODO: check order? *)
 let check_hyps_inclusion env c sign =
-  Sign.fold_named_context
+  Context.fold_named_context
     (fun (id,_,ty1) () ->
       try
         let ty2 = named_type id env in

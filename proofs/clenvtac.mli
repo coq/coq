@@ -8,7 +8,7 @@
 
 open Names
 open Term
-open Sign
+open Context
 open Evd
 open Clenv
 open Proof_type

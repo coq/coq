@@ -13,7 +13,7 @@ open Declare
 *)
 
 open Term
-open Sign
+open Context
 open Vars
 open Names
 open Evd
@@ -205,7 +205,7 @@ open Environ
 let eterm_obligations env name evm fs ?status t ty = 
   (* 'Serialize' the evars *)
   let nc = Environ.named_context env in
-  let nc_len = Sign.named_context_length nc in
+  let nc_len = Context.named_context_length nc in
   let evm = Evarutil.nf_evar_map_undefined evm in
   let evl = List.rev (Evarutil.non_instantiated evm) in
   let evl = List.map (fun (id, ev) -> (id, ev, evar_dependencies evm id)) evl in

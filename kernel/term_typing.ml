@@ -76,7 +76,7 @@ let infer_declaration env = function
 let global_vars_set_constant_type env = function
   | NonPolymorphicType t -> global_vars_set env t
   | PolymorphicArity (ctx,_) ->
-      Sign.fold_rel_context
+      Context.fold_rel_context
         (fold_rel_declaration
 	  (fun t c -> Id.Set.union (global_vars_set env t) c))
       ctx ~init:Id.Set.empty

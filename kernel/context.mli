@@ -8,7 +8,9 @@
 
 open Names
 
-(** {6 Local } *)
+(** TODO: cleanup *)
+
+(** {6 Declarations} *)
 (** A {e declaration} has the form [(name,body,type)]. It is either an
     {e assumption} if [body=None] or a {e definition} if
     [body=Some actualbody]. It is referred by {e name} if [na] is an
@@ -45,10 +47,61 @@ val eq_named_declaration :
 val eq_rel_declaration :
     rel_declaration -> rel_declaration -> bool
 
-(** {6 Contexts of declarations referred to by de Bruijn indices } *)
+(** {6 Signatures of ordered named declarations } *)
 
-(** In [rel_context], more recent declaration is on top *)
+type named_context = named_declaration list
+type section_context = named_context
 type rel_context = rel_declaration list
+(** In [rel_context], more recent declaration is on top *)
+
+val empty_named_context : named_context
+val add_named_decl : named_declaration -> named_context -> named_context
+val vars_of_named_context : named_context -> Id.t list
+
+val lookup_named : Id.t -> named_context -> named_declaration
+
+(** number of declarations *)
+val named_context_length : named_context -> int
+
+(** named context equality *)
+val named_context_equal : named_context -> named_context -> bool
+
+(** {6 Recurrence on [named_context]: older declarations processed first } *)
+val fold_named_context :
+  (named_declaration -> 'a -> 'a) -> named_context -> init:'a -> 'a
+
+(** newer declarations first *)
+val fold_named_context_reverse :
+  ('a -> named_declaration -> 'a) -> init:'a -> named_context -> 'a
+
+(** {6 Section-related auxiliary functions } *)
+val instance_from_named_context : named_context -> Constr.t array
+
+(** {6 ... } *)
+(** Signatures of ordered optionally named variables, intended to be
+   accessed by de Bruijn indices *)
+
+(** {6 Recurrence on [rel_context]: older declarations processed first } *)
+val fold_rel_context :
+  (rel_declaration -> 'a -> 'a) -> rel_context -> init:'a -> 'a
+
+(** newer declarations first *)
+val fold_rel_context_reverse :
+  ('a -> rel_declaration -> 'a) -> init:'a -> rel_context -> 'a
+
+(** {6 Map function of [rel_context] } *)
+val map_rel_context : (Constr.t -> Constr.t) -> rel_context -> rel_context
+
+(** {6 Map function of [named_context] } *)
+val map_named_context : (Constr.t -> Constr.t) -> named_context -> named_context
+
+(** {6 Map function of [rel_context] } *)
+val iter_rel_context : (Constr.t -> unit) -> rel_context -> unit
+
+(** {6 Map function of [named_context] } *)
+val iter_named_context : (Constr.t -> unit) -> named_context -> unit
+
+(** {6 Contexts of declarations referred to by de Bruijn indices } *)
 
 val empty_rel_context : rel_context
 val add_rel_decl : rel_declaration -> rel_context -> rel_context

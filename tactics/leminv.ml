@@ -14,7 +14,7 @@ open Term
 open Vars
 open Termops
 open Namegen
-open Sign
+open Context
 open Evd
 open Printer
 open Reductionops

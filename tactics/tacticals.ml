@@ -12,7 +12,7 @@ open Util
 open Names
 open Term
 open Termops
-open Sign
+open Context
 open Declarations
 open Tacmach
 open Clenv

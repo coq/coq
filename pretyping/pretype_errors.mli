@@ -9,7 +9,7 @@
 open Pp
 open Names
 open Term
-open Sign
+open Context
 open Environ
 open Glob_term
 open Inductiveops

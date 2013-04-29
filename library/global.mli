@@ -31,7 +31,7 @@ val env_is_empty : unit -> bool
 
 val universes : unit -> universes
 val named_context_val : unit -> Environ.named_context_val
-val named_context : unit -> Sign.named_context
+val named_context : unit -> Context.named_context
 
 val env_is_empty : unit -> bool
 

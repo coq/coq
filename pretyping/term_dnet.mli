@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Term
-open Sign
+open Context
 open Libnames
 open Mod_subst
 

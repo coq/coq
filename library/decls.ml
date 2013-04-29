@@ -11,7 +11,7 @@
 
 open Util
 open Names
-open Sign
+open Context
 open Decl_kinds
 open Libnames
 

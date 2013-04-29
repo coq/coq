@@ -11,7 +11,6 @@ open Errors
 open Util
 open Names
 open Nameops
-open Sign
 open Term
 open Vars
 open Context
@@ -1552,7 +1551,7 @@ let generalize_dep ?(with_let=false) c gl =
       d::toquant
     else
       toquant in
-  let to_quantify = Sign.fold_named_context seek sign ~init:[] in
+  let to_quantify = Context.fold_named_context seek sign ~init:[] in
   let to_quantify_rev = List.rev to_quantify in
   let qhyps = List.map (fun (id,_,_) -> id) to_quantify_rev in
   let tothin = List.filter (fun id -> not (List.mem id init_ids)) qhyps in
@@ -1837,7 +1836,7 @@ let assert_by na t tac = forward (Some tac) (ipat_of_name na) t
 let unfold_body x gl =
   let hyps = pf_hyps gl in
   let xval =
-    match Sign.lookup_named x hyps with
+    match Context.lookup_named x hyps with
         (_,Some xval,_) -> xval
       | _ -> errorlabstrm "unfold_body"
           (pr_id x ++ str" is not a defined hypothesis.") in
@@ -2387,7 +2386,7 @@ let hyps_of_vars env sign nogen hyps =
   if Id.Set.is_empty hyps then [] 
   else
     let (_,lh) =
-      Sign.fold_named_context_reverse
+      Context.fold_named_context_reverse
         (fun (hs,hl) (x,_,_ as d) ->
 	  if Id.Set.mem x nogen then (hs,hl)
 	  else if Id.Set.mem x hs then (hs,x::hl)
@@ -3526,7 +3525,7 @@ let abstract_subproof id tac gl =
     List.fold_right
       (fun (id,_,_ as d) (s1,s2) ->
 	if mem_named_context id current_sign &
-          interpretable_as_section_decl (Sign.lookup_named id current_sign) d
+          interpretable_as_section_decl (Context.lookup_named id current_sign) d
         then (s1,push_named_context_val d s2)
 	else (add_named_decl d s1,s2))
       global_sign (empty_named_context,empty_named_context_val) in
@@ -3562,7 +3561,7 @@ let admit_as_an_axiom gl =
     List.fold_right
       (fun (id,_,_ as d) (s1,s2) ->
 	 if mem_named_context id current_sign &
-           interpretable_as_section_decl (Sign.lookup_named id current_sign) d
+           interpretable_as_section_decl (Context.lookup_named id current_sign) d
          then (s1,add_named_decl d s2)
 	 else (add_named_decl d s1,s2))
       global_sign (empty_named_context,empty_named_context) in

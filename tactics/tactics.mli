@@ -12,7 +12,6 @@ open Names
 open Term
 open Context
 open Environ
-open Sign
 open Tacmach
 open Proof_type
 open Reduction

@@ -14,7 +14,6 @@ open Util
 open Nativevalues
 open Nativelambda
 open Pre_env
-open Sign
 
 (** This file defines the mllambda code generation phase of the native
 compiler. mllambda represents a fragment of ML, and can easily be printed

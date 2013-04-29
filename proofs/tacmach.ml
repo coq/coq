@@ -51,7 +51,7 @@ let pf_last_hyp gl = List.hd (pf_hyps gl)
 
 let pf_get_hyp gls id =
   try
-    Sign.lookup_named id (pf_hyps gls)
+    Context.lookup_named id (pf_hyps gls)
   with Not_found ->
     error ("No such hypothesis: " ^ (Id.to_string id))
 

@@ -12,7 +12,6 @@ open Libnames
 open Globnames
 open Term
 open Context
-open Sign
 open Environ
 open Glob_term
 open Pattern

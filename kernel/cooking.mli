@@ -18,14 +18,14 @@ type work_list = Id.t array Cmap.t * Id.t array Mindmap.t
 
 type recipe = {
   d_from : constant_body;
-  d_abstract : Sign.named_context;
+  d_abstract : Context.named_context;
   d_modlist : work_list }
 
 type inline = bool
 
 type result =
   constant_def * constant_type * constraints * inline
-    * Sign.section_context option
+    * Context.section_context option
 
 val cook_constant : env -> recipe -> result
 

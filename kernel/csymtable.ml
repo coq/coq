@@ -115,7 +115,7 @@ and slot_for_fv env fv =
 	match !nv with
 	| VKvalue (v,_) -> v
 	| VKnone ->
-	    let (_, b, _) = Sign.lookup_named id env.env_named_context in
+	    let (_, b, _) = Context.lookup_named id env.env_named_context in
 	    let v,d =
 	      match b with
 		| None -> (val_of_named id, Id.Set.empty)

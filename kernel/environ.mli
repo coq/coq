@@ -10,7 +10,6 @@ open Names
 open Term
 open Context
 open Declarations
-open Sign
 
 (** Unsafe environments. We define here a datatype for environments.
    Since typing is not yet defined, it is not possible to check the

@@ -827,9 +827,9 @@ let subst_closed_term_occ_decl_modulo (plocs,hyploc) test d =
 
 let vars_of_env env =
   let s =
-    Sign.fold_named_context (fun (id,_,_) s -> Id.Set.add id s)
+    Context.fold_named_context (fun (id,_,_) s -> Id.Set.add id s)
       (named_context env) ~init:Id.Set.empty in
-  Sign.fold_rel_context
+  Context.fold_rel_context
     (fun (na,_,_) s -> match na with Name id -> Id.Set.add id s | _ -> s)
     (rel_context env) ~init:s
 
@@ -855,12 +855,12 @@ let lookup_rel_of_name id names =
 let empty_names_context = []
 
 let ids_of_rel_context sign =
-  Sign.fold_rel_context
+  Context.fold_rel_context
     (fun (na,_,_) l -> match na with Name id -> id::l | Anonymous -> l)
     sign ~init:[]
 
 let ids_of_named_context sign =
-  Sign.fold_named_context (fun (id,_,_) idl -> id::idl) sign ~init:[]
+  Context.fold_named_context (fun (id,_,_) idl -> id::idl) sign ~init:[]
 
 let ids_of_context env =
   (ids_of_rel_context (rel_context env))
@@ -997,10 +997,10 @@ let process_rel_context f env =
   let sign = named_context_val env in
   let rels = rel_context env in
   let env0 = reset_with_named_context sign env in
-  Sign.fold_rel_context f rels ~init:env0
+  Context.fold_rel_context f rels ~init:env0
 
 let assums_of_rel_context sign =
-  Sign.fold_rel_context
+  Context.fold_rel_context
     (fun (na,c,t) l ->
       match c with
           Some _ -> l
@@ -1072,7 +1072,7 @@ let global_vars_set_of_decl env = function
 let dependency_closure env sign hyps =
   if Id.Set.is_empty hyps then [] else
     let (_,lh) =
-      Sign.fold_named_context_reverse
+      Context.fold_named_context_reverse
         (fun (hs,hl) (x,_,_ as d) ->
           if Id.Set.mem x hs then
             (Id.Set.union (global_vars_set_of_decl env d) (Id.Set.remove x hs),

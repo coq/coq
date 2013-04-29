@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Sign
 open Univ
 open Term
 open Context

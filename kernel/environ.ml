@@ -25,7 +25,6 @@ open Util
 open Names
 open Term
 open Context
-open Sign
 open Vars
 open Univ
 open Declarations
@@ -68,7 +67,7 @@ let nb_rel env = env.env_nb_rel
 
 let push_rel = push_rel
 
-let push_rel_context ctxt x = Sign.fold_rel_context push_rel ctxt ~init:x
+let push_rel_context ctxt x = Context.fold_rel_context push_rel ctxt ~init:x
 
 let push_rec_types (lna,typarray,_) env =
   let ctxt = Array.map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
@@ -110,8 +109,8 @@ let val_of_named_context ctxt =
   List.fold_right push_named_context_val ctxt empty_named_context_val
 
 
-let lookup_named id env = Sign.lookup_named id env.env_named_context
-let lookup_named_val id (ctxt,_) = Sign.lookup_named id ctxt
+let lookup_named id env = Context.lookup_named id env.env_named_context
+let lookup_named_val id (ctxt,_) = Context.lookup_named id ctxt
 
 let eq_named_context_val c1 c2 =
    c1 == c2 || named_context_equal (named_context_of_val c1) (named_context_of_val c2)
@@ -150,7 +149,7 @@ let fold_named_context f env ~init =
   in fold_right env
 
 let fold_named_context_reverse f ~init env =
-  Sign.fold_named_context_reverse f ~init:init (named_context env)
+  Context.fold_named_context_reverse f ~init:init (named_context env)
 
 (* Global constants *)
 
@@ -216,11 +215,11 @@ let set_engagement c env = (* Unsafe *)
 (* Lookup of section variables *)
 let lookup_constant_variables c env =
   let cmap = lookup_constant c env in
-  Sign.vars_of_named_context cmap.const_hyps
+  Context.vars_of_named_context cmap.const_hyps
 
 let lookup_inductive_variables (kn,i) env =
   let mis = lookup_mind kn env in
-  Sign.vars_of_named_context mis.mind_hyps
+  Context.vars_of_named_context mis.mind_hyps
 
 let lookup_constructor_variables (ind,_) env =
   lookup_inductive_variables ind env
@@ -254,7 +253,7 @@ let global_vars_set env constr =
 
 let keep_hyps env needed =
   let really_needed =
-    Sign.fold_named_context_reverse
+    Context.fold_named_context_reverse
       (fun need (id,copt,t) ->
         if Id.Set.mem id need then
           let globc =
@@ -267,7 +266,7 @@ let keep_hyps env needed =
         else need)
       ~init:needed
       (named_context env) in
-  Sign.fold_named_context
+  Context.fold_named_context
     (fun (id,_,_ as d) nsign ->
       if Id.Set.mem id really_needed then add_named_decl d nsign
       else nsign)

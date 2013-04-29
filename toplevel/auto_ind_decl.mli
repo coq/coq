@@ -10,7 +10,7 @@ open Term
 open Names
 open Libnames
 open Mod_subst
-open Sign
+open Context
 open Proof_type
 open Ind_tables
 

@@ -14,7 +14,7 @@ open Namegen
 open Term
 open Termops
 open Indtypes
-open Sign
+open Context
 open Environ
 open Pretype_errors
 open Type_errors

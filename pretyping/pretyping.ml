@@ -25,7 +25,6 @@ open Pp
 open Errors
 open Util
 open Names
-open Sign
 open Evd
 open Term
 open Vars

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Sign
+open Context
 open Libnames
 open Decl_kinds
 

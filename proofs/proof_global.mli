@@ -78,7 +78,7 @@ val set_endline_tactic : unit Proofview.tactic -> unit
 
 (** Sets the section variables assumed by the proof *)
 val set_used_variables : Names.Id.t list -> unit
-val get_used_variables : unit -> Sign.section_context option
+val get_used_variables : unit -> Context.section_context option
 
 (** Appends the endline tactic of the current proof to a tactic. *)
 val with_end_tac : unit Proofview.tactic -> unit Proofview.tactic

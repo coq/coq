@@ -127,7 +127,7 @@ type proof_state = {
 
 type proof_info = {
   mutable endline_tactic : unit Proofview.tactic ;
-  mutable section_vars : Sign.section_context option;
+  mutable section_vars : Context.section_context option;
   initial_conclusions : Term.types list
 }
 

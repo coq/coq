@@ -9,7 +9,7 @@
 open Names
 open Libnames
 open Term
-open Sign
+open Context
 open Declarations
 open Entries
 open Indtypes

@@ -9,7 +9,6 @@
 open Names
 open Term
 open Context
-open Sign
 open Environ
 open Evd
 open Reduction

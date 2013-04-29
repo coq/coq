@@ -10,7 +10,7 @@ open Term
 open Names
 open Libnames
 open Mod_subst
-open Sign
+open Context
 open Declarations
 
 (** This module provides support for registering inductive scheme builders,

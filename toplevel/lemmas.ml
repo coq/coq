@@ -344,7 +344,7 @@ let start_proof_com kind thms hook =
   let thms = List.map (fun (sopt,(bl,t,guard)) ->
     let impls, ((env, ctx), imps) = interp_context_evars evdref env0 bl in
     let t', imps' = interp_type_evars_impls ~impls ~evdref env t in
-    Sign.iter_rel_context (check_evars env Evd.empty !evdref) ctx;
+    Context.iter_rel_context (check_evars env Evd.empty !evdref) ctx;
     let ids = List.map pi1 ctx in
       (compute_proof_name (fst kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),

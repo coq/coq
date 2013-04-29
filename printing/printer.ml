@@ -12,7 +12,6 @@ open Util
 open Names
 open Term
 open Vars
-open Sign
 open Context
 open Environ
 open Globnames
@@ -245,7 +244,7 @@ let pr_named_context_of env =
   hv 0 (prlist_with_sep (fun _ -> ws 2) (fun x -> x) psl)
 
 let pr_named_context env ne_context =
-  hv 0 (Sign.fold_named_context
+  hv 0 (Context.fold_named_context
 	  (fun d pps -> pps ++ ws 2 ++ pr_var_decl env d)
           ne_context ~init:(mt ()))
 

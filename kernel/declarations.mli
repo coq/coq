@@ -47,7 +47,7 @@ type native_name =
   | NotLinked
 
 type constant_body = {
-    const_hyps : Sign.section_context; (** New: younger hyp at top *)
+    const_hyps : Context.section_context; (** New: younger hyp at top *)
     const_body : constant_def;
     const_type : constant_type;
     const_body_code : Cemitcodes.to_patch_substituted;
@@ -132,7 +132,7 @@ type mutual_inductive_body = {
 
     mind_ntypes : int;  (** Number of types in the block *)
 
-    mind_hyps : Sign.section_context;  (** Section hypotheses on which the block depends *)
+    mind_hyps : Context.section_context;  (** Section hypotheses on which the block depends *)
 
     mind_nparams : int;  (** Number of expected parameters *)
 

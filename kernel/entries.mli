@@ -50,14 +50,14 @@ type mutual_inductive_entry = {
 
 type definition_entry = {
   const_entry_body   : constr;
-  const_entry_secctx : Sign.section_context option;
+  const_entry_secctx : Context.section_context option;
   const_entry_type        : types option;
   const_entry_opaque      : bool;
   const_entry_inline_code : bool }
 
 type inline = int option (* inlining level, None for no inlining *)
 
-type parameter_entry = Sign.section_context option * types * inline
+type parameter_entry = Context.section_context option * types * inline
 
 type constant_entry =
   | DefinitionEntry of definition_entry

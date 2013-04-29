@@ -10,7 +10,7 @@ open Pp
 open Evd
 open Names
 open Term
-open Sign
+open Context
 open Environ
 open Evarutil
 open Glob_term

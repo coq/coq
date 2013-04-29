@@ -11,7 +11,6 @@ open Pp
 open Names
 open Term
 open Context
-open Sign
 open Environ
 open Locus
 

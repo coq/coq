@@ -12,7 +12,6 @@ open Names
 open Glob_term
 open Term
 open Context
-open Sign
 open Evd
 open Environ
 open Reductionops
