@@ -506,8 +506,8 @@ let mk_dep_patt_row (pats,_,eqn) =
   List.map (is_dep_patt_in eqn) pats
 
 let dependencies_in_pure_rhs nargs eqns =
-  if List.is_empty eqns && not (Flags.is_program_mode ()) then
-    List.make nargs false (* Only "_" patts *) else
+  if List.is_empty eqns then
+    List.make nargs (not (Flags.is_program_mode ()))  (* Only "_" patts *) else
   let deps_rows = List.map mk_dep_patt_row eqns in
   let deps_columns = matrix_transpose deps_rows in
   List.map (List.exists (fun x -> x)) deps_columns
