@@ -23,8 +23,6 @@ module Metamap : Map.S with type key = metavariable
 
 module Metaset : Set.S with type elt = metavariable
 
-val meta_exists : (metavariable -> bool) -> Metaset.t -> bool
-
 type 'a freelisted = {
   rebus : 'a;
   freemetas : Metaset.t }

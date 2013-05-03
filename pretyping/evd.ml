@@ -317,8 +317,6 @@ let clb_name = function
 
 module Metaset = Int.Set
 
-let meta_exists p s = Metaset.fold (fun x b -> b || (p x)) s false
-
 module Metamap = Int.Map
 
 let metamap_to_list m =

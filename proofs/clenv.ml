@@ -157,7 +157,7 @@ let mentions clenv mv0 =
       | Some (b,_) -> b.freemetas
       | None -> Metaset.empty
       with Not_found -> Metaset.empty in
-    meta_exists menrec mlist
+    Metaset.exists menrec mlist
   in menrec
 
 let error_incompatible_inst clenv mv  =
@@ -173,7 +173,7 @@ let error_incompatible_inst clenv mv  =
 (* TODO: replace by clenv_unify (mkMeta mv) rhs ? *)
 let clenv_assign mv rhs clenv =
   let rhs_fls = mk_freelisted rhs in
-  if meta_exists (mentions clenv mv) rhs_fls.freemetas then
+  if Metaset.exists (mentions clenv mv) rhs_fls.freemetas then
     error "clenv_assign: circularity in unification";
   try
     if meta_defined clenv.evd mv then
