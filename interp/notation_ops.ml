@@ -498,16 +498,29 @@ let rec alpha_var id1 id2 = function
   | _::idl -> alpha_var id1 id2 idl
   | [] -> Id.equal id1 id2
 
+let compare_var v1 v2 =
+  match v1, v2 with
+  | GHole _, _ -> (true,true)
+  | _, GHole _ -> (false,false)
+  | _, _ -> (true,Pervasives.(=) v1 v2 (** FIXME *))
+
+let add_env alp (sigma,sigmalist,sigmabinders) var v =
+  (* Check that no capture of binding variables occur *)
+  if List.exists (fun (id,_) ->occur_glob_constr id v) alp then raise No_match;
+  (* TODO: handle the case of multiple occs in different scopes *)
+  ((var,v)::sigma,sigmalist,sigmabinders)
+
 let bind_env alp (sigma,sigmalist,sigmabinders as fullsigma) var v =
   try
-    let vvar = List.assoc var sigma in
-    if Pervasives.(=) v vvar then fullsigma (** FIXME *)
-    else raise No_match
-  with Not_found ->
-    (* Check that no capture of binding variables occur *)
-    if List.exists (fun (id,_) ->occur_glob_constr id v) alp then raise No_match;
-    (* TODO: handle the case of multiple occs in different scopes *)
-    ((var,v)::sigma,sigmalist,sigmabinders)
+    let v' = List.assoc var sigma in
+    match v, v' with
+    | GHole _, _ -> fullsigma
+    | _, GHole _ ->
+        add_env alp (List.remove_assoc var sigma,sigmalist,sigmabinders) var v
+    | _, _ ->
+        if Pervasives.(=) v v' then fullsigma (** FIXME *)
+        else raise No_match
+  with Not_found -> add_env alp fullsigma var v
 
 let bind_binder (sigma,sigmalist,sigmabinders) x bl =
   (sigma,sigmalist,(x,List.rev bl)::sigmabinders)
@@ -703,13 +716,19 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   | a, NHole _ -> sigma
 
   (* On the fly eta-expansion so as to use notations of the form
-     "exists x, P x" for "ex P"; expects type not given because don't know
+     "exists x, P x" for "ex P"; ensure at least one constructor is
+     consumed to avoid looping; expects type not given because don't know
      otherwise how to ensure it corresponds to a well-typed eta-expansion;
-     ensure at least one constructor is consumed to avoid looping *)
-  | b1, NLambda (Name id,NHole _,b2) when inner ->
+     we make an exception for types which are metavariables: this is useful e.g.
+     to print "{x:_ & P x}" knowing that notation "{x & P x}" is not defined. *)
+  | b1, NLambda (Name id,(NHole _ | NVar _ as t2),b2) when inner ->
       let id' = Namegen.next_ident_away id (free_glob_vars b1) in
-      match_in u alp metas (bind_binder sigma id
-       [(Name id',Explicit,None,GHole(Loc.ghost,Evar_kinds.BinderType (Name id')))])
+      let t1 = GHole(Loc.ghost,Evar_kinds.BinderType (Name id')) in
+      let sigma = match t2 with
+      | NHole _ -> sigma
+      | NVar id2 -> bind_env alp sigma id2 t1
+      | _ -> assert false in
+      match_in u alp metas (bind_binder sigma id [(Name id',Explicit,None,t1)])
        (mkGApp Loc.ghost b1 (GVar (Loc.ghost,id'))) b2
 
   | (GRec _ | GEvar _), _
