@@ -1099,6 +1099,14 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
   else
     mt ()
 
+let skip_extensions trace =
+  let rec aux = function
+  | (_,_,Proof_type.LtacAtomCall
+      (Tacexpr.TacAlias _ | Tacexpr.TacExtend _) as tac) :: tail -> [tac]
+  | _ :: tail -> aux tail
+  | [] -> [] in
+  List.rev (aux (List.rev trace))
+
 let extract_ltac_trace trace eloc =
   let (nrep,loc,c),tail = List.sep_last trace in
   if is_defined_ltac trace then
@@ -1116,5 +1124,5 @@ let extract_ltac_trace trace eloc =
         | (_,loc,_)::tail when not (Loc.is_ghost loc) -> loc
         | _::tail -> aux tail
         | [] -> Loc.ghost in
-        aux trace in
+        aux (skip_extensions trace) in
     None, best_loc
