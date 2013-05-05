@@ -17,6 +17,19 @@ open Typeops
 open Declarations
 open Termops
 
+let get_type_from_constraints env sigma t =
+  if isEvar (fst (decompose_app t)) then
+    match
+      list_map_filter (fun (pbty,env,t1,t2) ->
+        if is_fconv Reduction.CONV env sigma t t1 then Some t2
+        else if is_fconv Reduction.CONV env sigma t t2 then Some t1
+        else None)
+        (snd (Evd.extract_all_conv_pbs sigma))
+    with
+    | t::l -> t
+    | _ -> raise Not_found
+  else raise Not_found
+ 
 let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
@@ -58,7 +71,12 @@ let retype ?(polyprop=true) sigma =
     | Construct cstr -> type_of_constructor env cstr
     | Case (_,p,c,lf) ->
         let Inductiveops.IndType(_,realargs) =
-          try Inductiveops.find_rectype env sigma (type_of env c)
+          let t = type_of env c in
+          try Inductiveops.find_rectype env sigma t
+          with Not_found ->
+          try
+            let t = get_type_from_constraints env sigma t in
+            Inductiveops.find_rectype env sigma t
           with Not_found -> anomaly "type_of: Bad recursive type" in
         let t = whd_beta sigma (applist (p, realargs)) in
         (match kind_of_term (whd_betadeltaiota env sigma (type_of env t)) with
