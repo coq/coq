@@ -354,17 +354,22 @@ End Logic_lemmas.
 
 Module EqNotations.
   Notation "'rew' H 'in' H'" := (eq_rect _ _ H' _ H)
-    (at level 10, H' at level 10).
+    (at level 10, H' at level 10,
+     format "'[' 'rew'  H  in  '/' H' ']'").
   Notation "'rew' [ P ] H 'in' H'" := (eq_rect _ P H' _ H)
-    (at level 10, H' at level 10).
+    (at level 10, H' at level 10,
+     format "'[' 'rew'  [ P ]  '/    ' H  in  '/' H' ']'").
   Notation "'rew' <- H 'in' H'" := (eq_rect_r _ H' H)
-    (at level 10, H' at level 10).
+    (at level 10, H' at level 10,
+     format "'[' 'rew'  <-  H  in  '/' H' ']'").
   Notation "'rew' <- [ P ] H 'in' H'" := (eq_rect_r P H' H)
-    (at level 10, H' at level 10).
+    (at level 10, H' at level 10,
+     format "'[' 'rew'  <-  [ P ]  '/    ' H  in  '/' H' ']'").
   Notation "'rew' -> H 'in' H'" := (eq_rect _ _ H' _ H)
     (at level 10, H' at level 10, only parsing).
   Notation "'rew' -> [ P ] H 'in' H'" := (eq_rect _ P H' _ H)
-    (at level 10, H' at level 10).
+    (at level 10, H' at level 10, only parsing).
+
 End EqNotations.
 
 Import EqNotations.
