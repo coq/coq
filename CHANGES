@@ -39,6 +39,10 @@ Tactics
   (potential source of rare incompatibilities).
 - Tactic "intro H" now reduces beta-iota redexes if these hide a product
   (potential source of rare incompatibilities).
+- In Ltac matching on patterns of the form "_ pat1 ... patn" now
+  behaves like if matching on "?X pat1 ... patn", i.e. accepting "_"
+  to be instantiated by an applicative term (experimental at this
+  stage, potential source of incompatibilities).
 
 Program
 
