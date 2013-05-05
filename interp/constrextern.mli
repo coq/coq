@@ -72,8 +72,11 @@ val with_coercions : ('a -> 'b) -> 'a -> 'b
 (** This forces printing universe names of Type\{.\} *)
 val with_universes : ('a -> 'b) -> 'a -> 'b
 
-(** This suppresses printing of numeral and symbols *)
+(** This suppresses printing of primitive tokens and notations *)
 val without_symbols : ('a -> 'b) -> 'a -> 'b
+
+(** This suppresses printing of specific notations only *)
+val without_specific_symbols : interp_rule list -> ('a -> 'b) -> 'a -> 'b
 
 (** This prints metas as anonymous holes *)
 val with_meta_as_hole : ('a -> 'b) -> 'a -> 'b

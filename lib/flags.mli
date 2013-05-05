@@ -60,12 +60,15 @@ val is_program_mode : unit -> bool
 val make_warn : bool -> unit
 val if_warn : ('a -> unit) -> 'a -> unit
 
-(** Temporary activate an option (to activate option [o] on [f x y z],
+(** Temporarily activate an option (to activate option [o] on [f x y z],
    use [with_option o (f x y) z]) *)
 val with_option : bool ref -> ('a -> 'b) -> 'a -> 'b
 
-(** Temporary deactivate an option *)
+(** Temporarily deactivate an option *)
 val without_option : bool ref -> ('a -> 'b) -> 'a -> 'b
+
+(** Temporarily extends the reference to a list *)
+val with_extra_values : 'c list ref -> 'c list -> ('a -> 'b) -> 'a -> 'b
 
 (** If [None], no limit *)
 val set_print_hyps_limit : int option -> unit

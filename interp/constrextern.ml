@@ -61,8 +61,11 @@ let print_coercions = ref false
 (* This forces printing universe names of Type{.} *)
 let print_universes = Detyping.print_universes
 
-(* This suppresses printing of primitive tokens (e.g. numeral) and symbols *)
+(* This suppresses printing of primitive tokens (e.g. numeral) and notations *)
 let print_no_symbol = ref false
+
+(* This tells which notations still not to used if print_no_symbol is true *)
+let print_non_active_notations = ref ([] : interp_rule list)
 
 (* This governs printing of projections using the dot notation symbols *)
 let print_projections = ref false
@@ -73,8 +76,10 @@ let with_arguments f = Flags.with_option print_arguments f
 let with_implicits f = Flags.with_option print_implicits f
 let with_coercions f = Flags.with_option print_coercions f
 let with_universes f = Flags.with_option print_universes f
-let without_symbols f = Flags.with_option print_no_symbol f
 let with_meta_as_hole f = Flags.with_option print_meta_as_hole f
+let without_symbols f = Flags.with_option print_no_symbol f
+let without_specific_symbols l f =
+  Flags.with_extra_values print_non_active_notations l f
 
 (**********************************************************************)
 (* Control printing of records *)
@@ -374,6 +379,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
+      if List.mem keyrule !print_non_active_notations then raise No_match;
       match t with
 	| PatCstr (loc,cstr,_,na) ->
 	  let p = apply_notation_to_pattern loc (ConstructRef cstr)
@@ -388,6 +394,7 @@ let rec extern_symbol_ind_pattern allscopes vars ind args = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
+      if List.mem keyrule !print_non_active_notations then raise No_match;
       apply_notation_to_pattern Loc.ghost (IndRef ind)
 	(match_notation_constr_ind_pattern ind args pat) allscopes vars keyrule
     with
@@ -802,6 +809,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
   | (keyrule,pat,n as _rule)::rules ->
       let loc = Glob_ops.loc_of_glob_constr t in
       try
+        if List.mem keyrule !print_non_active_notations then raise No_match;
 	(* Adjusts to the number of arguments expected by the notation *)
 	let (t,args,argsscopes,argsimpls) = match t,n with
 	  | GApp (_,f,args), Some n

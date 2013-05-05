@@ -439,7 +439,9 @@ let gallina_print_syntactic_def kn =
        (str "Notation " ++ pr_qualid qid ++
         prlist (fun id -> spc () ++ pr_id id) (List.map fst vars) ++
         spc () ++ str ":=") ++
-     spc () ++ Constrextern.without_symbols pr_glob_constr c)
+     spc () ++
+     Constrextern.without_specific_symbols
+       [Notation.SynDefRule kn] pr_glob_constr c)
 
 let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
   let sep = if with_values then " = " else " : "

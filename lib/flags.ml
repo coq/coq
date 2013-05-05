@@ -8,14 +8,22 @@
 
 let with_option o f x =
   let old = !o in o:=true;
+   try let r = f x in o := old; r
+   with reraise ->
+     let reraise = Backtrace.add_backtrace reraise in
+     let () = o := old in
+     raise reraise
+
+let without_option o f x =
+  let old = !o in o:=false;
   try let r = f x in o := old; r
   with reraise ->
     let reraise = Backtrace.add_backtrace reraise in
     let () = o := old in
     raise reraise
 
-let without_option o f x =
-  let old = !o in o:=false;
+let with_extra_values o l f x =
+  let old = !o in o:=old@l;
   try let r = f x in o := old; r
   with reraise ->
     let reraise = Backtrace.add_backtrace reraise in
