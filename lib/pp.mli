@@ -106,7 +106,7 @@ val std_logger : logger
 
 val set_logger : logger -> unit
 
-(** {6 Feedback sent, even asynchronously, to the user interface *)
+(** {6 Feedback sent, even asynchronously, to the user interface} *)
 
 (* This stuff should be available to most of the system, line msg_* above.
  * But I'm unsure this is the right place, especially for the global edit_id.

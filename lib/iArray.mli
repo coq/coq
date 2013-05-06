@@ -71,7 +71,7 @@ val singleton : 'a -> 'a t
 (** The singleton array. *)
 
 val diff : 'a t -> (int * 'a) list -> 'a t
-(** [diff t [(i1, x1); ...; (in, xn)] create an array identical to [t] except on
+(** [diff t [(i1, x1); ...; (in, xn)]] create an array identical to [t] except on
     indices [ik] that will contain [xk]. If the same index is present several
     times on the diff, which value is chosen is undefined. *)
 

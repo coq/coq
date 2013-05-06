@@ -33,7 +33,7 @@ type bound_ident_map = (Id.t * Id.t) list
    numbers given in the pattern *)
 val matches : constr_pattern -> constr -> patvar_map
 
-(** [matches_head pat c] does the same as |matches pat c] but accepts
+(** [matches_head pat c] does the same as [matches pat c] but accepts
     [pat] to match an applicative prefix of [c] *)
 val matches_head : constr_pattern -> constr -> patvar_map
 
