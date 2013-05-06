@@ -319,7 +319,7 @@ let unfreeze_ml_modules x =
 
 let _ =
   Summary.declare_summary "ML-MODULES"
-    { Summary.freeze_function = get_loaded_modules;
+    { Summary.freeze_function = (fun _ -> get_loaded_modules ());
       Summary.unfreeze_function = unfreeze_ml_modules;
       Summary.init_function = reset_loaded_modules }
 

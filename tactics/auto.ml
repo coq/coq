@@ -463,7 +463,7 @@ let add_auto_init f =
     auto_init := (fun () -> init (); f ())
 
 let init     () = searchtable := Hintdbmap.empty; !auto_init ()
-let freeze   () = !searchtable
+let freeze   _ = !searchtable
 let unfreeze fs = searchtable := fs
 
 let _ = Summary.declare_summary "search"

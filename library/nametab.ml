@@ -543,7 +543,7 @@ let global_inductive r =
 type frozen = ccitab * dirtab * mptab * kntab
     * globrevtab * mprevtab * mptrevtab * knrevtab
 
-let freeze () : frozen =
+let freeze _ : frozen =
   !the_ccitab,
   !the_dirtab,
   !the_modtypetab,

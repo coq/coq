@@ -240,7 +240,7 @@ let declare_option cast uncast
 		       load_function = (fun _ (_,v) -> write v)}
     in
     let _ = Summary.declare_summary (nickname key)
-	     { Summary.freeze_function = read;
+	     { Summary.freeze_function = (fun _ -> read ());
 	       Summary.unfreeze_function = write;
 	       Summary.init_function = (fun () -> write default) }
     in

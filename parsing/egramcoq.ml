@@ -306,7 +306,7 @@ let recover_notation_grammar ntn prec =
    grammar rules. *)
 type frozen_t = (int * all_grammar_command) list * Lexer.frozen_t
 
-let freeze () : frozen_t = (!grammar_state, Lexer.freeze ())
+let freeze _ : frozen_t = (!grammar_state, Lexer.freeze ())
 
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
@@ -337,7 +337,7 @@ let _ =
       Summary.init_function = Summary.nop }
 
 let with_grammar_rule_protection f x =
-  let fs = freeze () in
+  let fs = freeze false in
   try let a = f x in unfreeze fs; a
   with reraise ->
     let reraise = Errors.push reraise in

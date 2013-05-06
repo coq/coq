@@ -29,7 +29,7 @@ let var_opacity = ref Id.Map.empty
 let cst_opacity = ref Cmap.empty
 
 (* summary operations *)
-let freeze () = (!var_opacity, !cst_opacity)
+let freeze _ = (!var_opacity, !cst_opacity)
 let unfreeze (vo,co) = (cst_opacity := co; var_opacity := vo)
 
 let get_strategy = function

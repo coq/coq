@@ -111,7 +111,6 @@ let openmod_info = Summary.ref default_module_info ~name:"MODULE-INFO-3"
    substituted modules object during "reloading" of libraries *)
 let library_cache = Summary.ref Dirmap.empty ~name:"MODULE-INFO-4"
 
-
 (* auxiliary functions to transform full_path and kernel_name given
    by Lib into module_path and DirPath.t needed for modules *)
 
@@ -887,7 +886,7 @@ let declare_include_ interp_struct me_asts =
     of summaries *)
 
 let protect_summaries f =
-  let fs = Summary.freeze_summaries () in
+  let fs = Summary.freeze_summaries ~marshallable:false in
   try f fs
   with reraise ->
     (* Something wrong: undo the whole process *)

@@ -891,7 +891,7 @@ let find_notation_printing_rule ntn =
 (**********************************************************************)
 (* Synchronisation with reset *)
 
-let freeze () =
+let freeze _ =
  (!scope_map, !notation_level_map, !scope_stack, !arguments_scope,
   !delimiters_map, !notations_key_table, !printing_rules,
   !scope_class_map)
@@ -925,7 +925,7 @@ let _ =
       Summary.init_function = init }
 
 let with_notation_protection f x =
-  let fs = freeze () in
+  let fs = freeze false in
   try let a = f x in unfreeze fs; a
   with reraise ->
     let reraise = Errors.push reraise in

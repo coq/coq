@@ -10,7 +10,9 @@
    in synchronization during the various backtracks of the system. *)
 
 type 'a summary_declaration = {
-  freeze_function : unit -> 'a;
+  (** freeze_function [true] is for marshalling to disk. 
+   *  e.g. lazy must be forced *)
+  freeze_function : bool -> 'a;
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit }
 
@@ -30,9 +32,10 @@ val declare_summary : string -> 'a summary_declaration -> unit
 (** All-in-one reference declaration + summary registration.
     It behaves just as OCaml's standard [ref] function, except
     that a [declare_summary] is done, with [name] as string.
-    The [init_function] restores the reference to its initial value. *)
+    The [init_function] restores the reference to its initial value.
+    The [freeze_function] can be overridden *)
 
-val ref : name:string -> 'a -> 'a ref
+val ref : ?freeze:(bool -> 'a -> 'a) -> name:string -> 'a -> 'a ref
 
 (** For global tables registered statically before the end of coqtop
     launch, the following empty [init_function] could be used. *)
@@ -44,7 +47,7 @@ val nop : unit -> unit
 
 type frozen
 
-val freeze_summaries : unit -> frozen
+val freeze_summaries : marshallable:bool -> frozen
 val unfreeze_summaries : frozen -> unit
 val init_summaries : unit -> unit
 

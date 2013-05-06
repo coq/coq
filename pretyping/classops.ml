@@ -102,7 +102,7 @@ let coercion_tab =
 let inheritance_graph =
   ref (Gmap.empty : (cl_index * cl_index, inheritance_path) Gmap.t)
 
-let freeze () = (!class_tab, !coercion_tab, !inheritance_graph)
+let freeze _ = (!class_tab, !coercion_tab, !inheritance_graph)
 
 let unfreeze (fcl,fco,fig) =
   class_tab:=fcl;

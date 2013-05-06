@@ -1013,7 +1013,7 @@ let do_save () = Lemmas.save_named false
 *)
 
 let derive_correctness make_scheme functional_induction (funs: constant list) (graphs:inductive list) =
-  let previous_state = States.freeze () in
+  let previous_state = States.freeze ~marshallable:false in
   let funs = Array.of_list funs and graphs = Array.of_list graphs in
   let funs_constr = Array.map mkConst funs  in
   try

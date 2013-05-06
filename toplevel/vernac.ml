@@ -234,7 +234,7 @@ let set_formatter_translator() =
 let pr_new_syntax loc ocom =
   let loc = Loc.unloc loc in
   if !beautify_file then set_formatter_translator();
-  let fs = States.freeze () in
+  let fs = States.freeze ~marshallable:false in
   let com = match ocom with
     | Some VernacNop -> mt()
     | Some com -> Ppvernac.pr_vernac com

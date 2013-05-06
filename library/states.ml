@@ -10,8 +10,8 @@ open System
 
 type state = Lib.frozen * Summary.frozen
 
-let freeze () =
-  (Lib.freeze(), Summary.freeze_summaries())
+let freeze ~marshallable =
+  (Lib.freeze ~marshallable, Summary.freeze_summaries ~marshallable)
 
 let unfreeze (fl,fs) =
   Lib.unfreeze fl;
@@ -23,7 +23,7 @@ let (extern_state,intern_state) =
     extern_intern Coq_config.state_magic_number in
   (fun s ->
     let s = ensure_suffix s in
-    raw_extern s (freeze())),
+    raw_extern s (freeze ~marshallable:true)),
   (fun s ->
     let s = ensure_suffix s in
     let paths = Loadpath.get_paths () in
@@ -33,7 +33,7 @@ let (extern_state,intern_state) =
 (* Rollback. *)
 
 let with_heavy_rollback f h x =
-  let st = freeze () in
+  let st = freeze ~marshallable:false in
   try
     f x
   with reraise ->
@@ -44,8 +44,10 @@ let without_rollback f h x =
   with reraise -> raise (h reraise)
 
 let with_state_protection f x =
-  let st = freeze () in
+  let st = freeze ~marshallable:false in
   try
     let a = f x in unfreeze st; a
   with reraise ->
     (unfreeze st; raise reraise)
+
+

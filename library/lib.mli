@@ -172,7 +172,7 @@ val label_before_name : Names.Id.t Loc.located -> int
 
 type frozen
 
-val freeze : unit -> frozen
+val freeze : marshallable:bool -> frozen
 val unfreeze : frozen -> unit
 
 val init : unit -> unit
