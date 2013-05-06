@@ -62,6 +62,10 @@ let init () =
     <menuitem action='Previous tab' />
     <menuitem action='Next tab' />
     <separator/>
+    <menuitem action='Zoom in' />
+    <menuitem action='Zoom out' />
+    <menuitem action='Zoom fit' />
+    <separator/>
     <menuitem action='Show Toolbar' />
     <menuitem action='Show Query Pane' />
     <separator/>

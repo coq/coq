@@ -965,6 +965,32 @@ let build_ui () =
     item "Next tab" ~label:"_Next tab" ~accel:"<Alt>Right"
       ~stock:`GO_FORWARD
       ~callback:(fun _ -> notebook#next_page ());
+    item "Zoom in" ~label:"_Zoom in" ~accel:("<Control>plus")
+        ~stock:`ZOOM_IN ~callback:(fun _ ->
+          Pango.Font.set_size current.text_font
+            (Pango.Font.get_size current.text_font + Pango.scale);
+          save_pref ();
+          !refresh_editor_hook ());
+    item "Zoom out" ~label:"_Zoom out" ~accel:("<Control>minus")
+        ~stock:`ZOOM_OUT ~callback:(fun _ ->
+          Pango.Font.set_size current.text_font
+            (Pango.Font.get_size current.text_font - Pango.scale);
+          save_pref ();
+          !refresh_editor_hook ());
+    item "Zoom fit" ~label:"_Zoom fit" ~accel:("<Control>0")
+        ~stock:`ZOOM_FIT ~callback:(fun _ ->
+          let script = notebook#current_term.script in
+          let space = script#misc#allocation.Gtk.width in
+          let cols = script#right_margin_position in
+          let pango_ctx = script#misc#pango_context in
+          let layout = pango_ctx#create_layout in
+          let fsize = Pango.Font.get_size current.text_font in
+          Pango.Layout.set_text layout (String.make cols 'X');
+          let tlen = fst (Pango.Layout.get_pixel_size layout) in
+          Pango.Font.set_size current.text_font
+            (fsize * space / tlen / Pango.scale * Pango.scale);
+          save_pref ();
+          !refresh_editor_hook ());
     toggle_item "Show Toolbar" ~label:"Show _Toolbar"
       ~active:(prefs.show_toolbar)
       ~callback:(fun _ ->
