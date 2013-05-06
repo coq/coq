@@ -1,5 +1,6 @@
 Xml_lexer
 Xml_parser
+Xml_printer
 Errors
 Bigint
 Dyn

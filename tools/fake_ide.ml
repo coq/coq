@@ -12,7 +12,7 @@ exception Comment
 
 type coqtop = {
   in_chan : in_channel;
-  out_chan : out_channel;
+  xml_printer : Xml_printer.t;
   xml_parser : Xml_parser.t;
 }
 
@@ -21,8 +21,7 @@ let logger level content = ()
 let eval_call call coqtop =
   prerr_endline (Serialize.pr_call call);
   let xml_query = Serialize.of_call call in
-  Xml_utils.print_xml coqtop.out_chan xml_query;
-  flush coqtop.out_chan;
+  Xml_printer.print coqtop.xml_printer xml_query;
   let rec loop () =
     let xml = Xml_parser.parse coqtop.xml_parser in
     if Serialize.is_message xml then
@@ -88,11 +87,12 @@ let main =
   in
   let coqtop =
     let (cin, cout) = Unix.open_process (coqtop_name^" -ideslave") in
-    let p = Xml_parser.make (Xml_parser.SChannel cin) in
+    let ip = Xml_parser.make (Xml_parser.SChannel cin) in
+    let op = Xml_printer.make (Xml_printer.TChannel cout) in
     {
       in_chan = cin;
-      out_chan = cout;
-      xml_parser = p;
+      xml_printer = op;
+      xml_parser = ip;
     }
   in
   while true do

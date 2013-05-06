@@ -327,7 +327,7 @@ let eval_call c =
 
 (** Message dispatching. *)
 
-let slave_logger level message =
+let slave_logger xml_oc level message =
   (* convert the message into XML *)
   let msg = Pp.string_of_ppcmds (hov 0 message) in
   let message = {
@@ -335,14 +335,11 @@ let slave_logger level message =
     Interface.message_content = msg;
   } in
   let xml = Serialize.of_message message in
-  (* Send it to stdout *)
-  Xml_utils.print_xml !orig_stdout xml;
-  flush !orig_stdout
+  Xml_printer.print xml_oc xml
 
-let slave_feeder msg =
+let slave_feeder xml_oc msg =
   let xml = Serialize.of_feedback msg in
-  Xml_utils.print_xml !orig_stdout xml;
-  flush !orig_stdout
+  Xml_printer.print xml_oc xml
 
 (** The main loop *)
 
@@ -353,21 +350,23 @@ let slave_feeder msg =
 let loop () =
   init_signal_handler ();
   catch_break := false;
-  Pp.set_logger slave_logger;
-  Pp.set_feeder slave_feeder;
+  let xml_oc = Xml_printer.make (Xml_printer.TChannel !orig_stdout) in
+  let xml_ic = Xml_parser.make (Xml_parser.SChannel stdin) in
+  let () = Xml_parser.check_eof xml_ic false in
+  Pp.set_logger (slave_logger xml_oc);
+  Pp.set_feeder (slave_feeder xml_oc);
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;
   Flags.make_term_color false;
   while not !quit do
     try
-      let p = Xml_parser.make (Xml_parser.SChannel stdin) in
-      let xml_query = Xml_parser.parse p in
+      let xml_query = Xml_parser.parse xml_ic in
       let q = Serialize.to_call xml_query in
       let () = pr_debug_call q in
       let r = eval_call q in
       let () = pr_debug_answer q r in
-      Xml_utils.print_xml !orig_stdout (Serialize.of_answer q r);
+      Xml_printer.print xml_oc (Serialize.of_answer q r);
       flush !orig_stdout
     with
       | Xml_parser.Error (Xml_parser.Empty, _) ->

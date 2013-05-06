@@ -78,16 +78,3 @@ val map : (xml -> 'a) -> xml -> 'a list
  Raise {!Xml.Not_element} if the xml is not an element *)
 val fold : ('a -> xml -> 'a) -> 'a -> xml -> 'a
 
-(** {6 Xml Printing} *)
-
-(** Print the xml data structure to a channel into a compact xml string (without
- any user-readable formating ). *)
-val print_xml : out_channel -> xml -> unit
-
-(** Print the xml data structure into a compact xml string (without
- any user-readable formating ). *)
-val to_string : xml -> string
-
-(** Print the xml data structure into an user-readable string with
- tabs and lines break between different nodes. *)
-val to_string_fmt : xml -> string

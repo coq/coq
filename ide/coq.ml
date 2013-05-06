@@ -249,10 +249,12 @@ let _ = Glib.Timeout.add ~ms:300 ~callback:check_zombies
 
 type handle = {
   pid : unix_process_id;
-  cout : Unix.file_descr;
-  cin : out_channel;
   mutable alive : bool;
   mutable waiting_for : (ccb * logger) option; (* last call + callback + log *)
+  xml_oc : Xml_printer.t;
+  xml_ic : Xml_parser.t;
+  glib_ic : Glib.Io.channel;
+  close_xml_channels : unit -> unit
 }
 
 (** Coqtop process status :
@@ -336,7 +338,11 @@ let open_process_pid prog args =
   Unix.close ide2top_r;
   Unix.close top2ide_w;
   Unix.set_nonblock top2ide_r;
-  (pid,top2ide_r,Unix.out_channel_of_descr ide2top_w)
+  pid, 
+  Unix.in_channel_of_descr top2ide_r, 
+  Glib.Io.channel_of_descr top2ide_r,
+  Unix.out_channel_of_descr ide2top_w,
+  (fun () -> Unix.close top2ide_r; Unix.close ide2top_w)
 
 exception TubeError
 exception AnswerWithoutRequest
@@ -378,7 +384,7 @@ type input_state = {
 }
 
 let unsafe_handle_input handle feedback_processor state conds =
-  let chan = Glib.Io.channel_of_descr handle.cout in
+  let chan = handle.glib_ic in
   let () = check_errors conds in
   let s = io_read_all chan in
   let () = if String.length s = 0 then raise TubeError in
@@ -427,7 +433,7 @@ let unsafe_handle_input handle feedback_processor state conds =
     ()
 
 let install_input_watch handle respawner feedback_processor =
-  let io_chan = Glib.Io.channel_of_descr handle.cout in
+  let io_chan = handle.glib_ic in
   let all_conds = [`ERR; `HUP; `IN; `NVAL; `PRI] in (* all except `OUT *)
   let state = {
     fragment = "";
@@ -455,13 +461,18 @@ let install_input_watch handle respawner feedback_processor =
 let spawn_handle args =
   let prog = coqtop_path () in
   let args = Array.of_list (prog :: "-ideslave" :: args) in
-  let (pid, in_fd, oc) = open_process_pid prog args in
+  let pid, ic, gic, oc, close_channels = open_process_pid prog args in
+  let xml_ic = Xml_parser.make (Xml_parser.SChannel ic) in
+  let xml_oc = Xml_printer.make (Xml_printer.TChannel oc) in
+  Xml_parser.check_eof xml_ic false;
   {
     pid = pid;
-    cin = oc;
-    cout = in_fd;
     alive = true;
     waiting_for = None;
+    xml_oc = xml_oc;
+    xml_ic = xml_ic;
+    glib_ic = gic;
+    close_xml_channels = close_channels
   }
 
 (** This clears any potentially remaining open garbage. *)
@@ -469,8 +480,7 @@ let clear_handle h =
   if h.alive then begin
     (* invalidate the old handle *)
     h.alive <- false;
-    ignore_error close_out h.cin;
-    ignore_error Unix.close h.cout;
+    h.close_xml_channels ();
     (* we monitor the death of the old process *)
     zombies := (h.pid,0) :: !zombies
   end
@@ -554,8 +564,7 @@ let eval_call ?(logger=default_logger) call handle k =
   Minilib.log ("Start eval_call " ^ Serialize.pr_call call);
   assert (handle.alive && handle.waiting_for = None);
   handle.waiting_for <- Some (mk_ccb (call,k), logger);
-  Xml_utils.print_xml handle.cin (Serialize.of_call call);
-  flush handle.cin;
+  Xml_printer.print handle.xml_oc (Serialize.of_call call);
   Minilib.log "End eval_call";
   Void
 
