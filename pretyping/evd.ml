@@ -450,13 +450,6 @@ let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) ?filter 
        evar_candidates = candidates;
        evar_extra = Store.empty } }
 
-let is_defined_evar evd (evk,_) = EvarMap.is_defined evd.evars evk
-
-(* Does k corresponds to an (un)defined existential ? *)
-let is_undefined_evar evd c = match kind_of_term c with
-  | Evar ev -> not (is_defined_evar evd ev)
-  | _ -> false
-
 (* extracts conversion problems that satisfy predicate p *)
 (* Note: conv_pbs not satisying p are stored back in reverse order *)
 let extract_conv_pbs evd p =
@@ -585,8 +578,6 @@ let set_eq_sort ({evars = (sigma, (us, sm))} as d) s1 s2 =
 
 let meta_list evd = metamap_to_list evd.metas
 
-let find_meta evd mv = Metamap.find mv evd.metas
-
 let undefined_metas evd =
   let filter = function
     | (n,Clval(_,_,typ)) -> None
@@ -594,12 +585,6 @@ let undefined_metas evd =
   in
   let m = List.map_filter filter (meta_list evd) in
   List.sort (-) m
-
-let metas_of evd =
-  List.map (function
-    | (n,Clval(_,_,typ)) -> (n,typ.rebus)
-    | (n,Cltyp (_,typ))  -> (n,typ.rebus))
-    (meta_list evd)
 
 let map_metas_fvalue f evd =
   { evd with metas =

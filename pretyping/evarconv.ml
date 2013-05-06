@@ -257,16 +257,18 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
 	   destroy beta-redexes that can be used for 1st-order unification *)
         let term1 = apprec_nohdbeta ts env evd term1 in
         let term2 = apprec_nohdbeta ts env evd term2 in
-        if is_undefined_evar evd term1 then
+        begin match kind_of_term term1, kind_of_term term2 with
+        | Evar ev, _ when Evd.is_undefined evd (fst ev) ->
           solve_simple_eqn (evar_conv_x ts) env evd
-	    (position_problem true pbty,destEvar term1,term2)
-        else if is_undefined_evar evd term2 then
+            (position_problem true pbty,ev,term2)
+        | _, Evar ev when Evd.is_undefined evd (fst ev) ->
           solve_simple_eqn (evar_conv_x ts) env evd
-	    (position_problem false pbty,destEvar term2,term1)
-        else
+            (position_problem false pbty,ev,term1)
+        | _ ->
           evar_eqappr_x ts env evd pbty
             (whd_nored_state evd (term1,empty_stack), Cst_stack.empty)
-	    (whd_nored_state evd (term2,empty_stack), Cst_stack.empty)
+            (whd_nored_state evd (term2,empty_stack), Cst_stack.empty)
+        end
 
 and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     ((term1,sk1 as appr1),csts1) ((term2,sk2 as appr2),csts2) =
@@ -617,7 +619,7 @@ let first_order_unification ts env evd (ev1,l1) (term2,l2) =
     (fun i ->
       (* Then instantiate evar unless already done by unifying args *)
       let t2 = applist(term2,deb2) in
-      if is_defined_evar i ev1 then
+      if is_defined i (fst ev1) then
 	evar_conv_x ts env i CONV t2 (mkEvar ev1)
       else
 	solve_simple_eqn ~choose:true (evar_conv_x ts) env i (None,ev1,t2))]

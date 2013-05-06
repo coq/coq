@@ -172,9 +172,6 @@ val subst_evar_defs_light : substitution -> evar_map -> evar_map
 val evars_reset_evd  : ?with_conv_pbs:bool -> evar_map ->  evar_map -> evar_map
 
 
-(* spiwack: [is_undefined_evar] should be considered a candidate
-                   for moving to evarutils *)
-val is_undefined_evar :  evar_map -> constr -> bool
 val undefined_evars : evar_map -> evar_map
 val defined_evars : evar_map -> evar_map
 (* [fold_undefined f m] iterates ("folds") function [f] over the undefined
@@ -207,7 +204,6 @@ val evar_list : evar_map -> constr -> existential list
 val collect_evars : constr -> ExistentialSet.t
 
 (** Metas *)
-val find_meta : evar_map -> metavariable -> clbinding
 val meta_list : evar_map -> (metavariable * clbinding) list
 val meta_defined : evar_map -> metavariable -> bool
 
@@ -229,7 +225,6 @@ val meta_reassign  : metavariable -> constr * instance_status -> evar_map -> eva
 val meta_merge : evar_map -> evar_map -> evar_map
 
 val undefined_metas : evar_map -> metavariable list
-val metas_of : evar_map -> meta_type_map
 val map_metas_fvalue : (constr -> constr) -> evar_map -> evar_map
 
 type metabinding = metavariable * constr * instance_status
@@ -279,6 +274,5 @@ val pr_metaset : Metaset.t -> Pp.std_ppcmds
    create an [evar_map] with empty meta map: *)
 val create_evar_defs      : evar_map -> evar_map
 val create_goal_evar_defs : evar_map -> evar_map
-val is_defined_evar :  evar_map -> existential -> bool
 val subst_evar_map : substitution -> evar_map -> evar_map
 (*** /Deprecaded ***)

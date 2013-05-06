@@ -377,7 +377,7 @@ let inh_coerce_to_sort loc env evd j =
   let typ = whd_betadeltaiota env evd j.uj_type in
     match kind_of_term typ with
     | Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
-    | Evar ev when not (is_defined_evar evd ev) ->
+    | Evar ev when not (is_defined evd (fst ev)) ->
 	let (evd',s) = define_evar_as_sort evd ev in
 	  (evd',{ utj_val = j.uj_val; utj_type = s })
     | _ ->
