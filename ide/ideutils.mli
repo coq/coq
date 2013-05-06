@@ -14,7 +14,11 @@ val cb : GData.clipboard
 val doc_url : unit -> string
 val browse : (string -> unit) -> string -> unit
 val browse_keyword : (string -> unit) -> string -> unit
+
+(* These two functions are equivalent, the latter is named following
+   glib schema, and exists in glib but is not in lablgtk2 *)
 val byte_offset_to_char_offset : string -> int -> int
+val glib_utf8_pos_to_offset : string -> off:int -> int
 
 type timer = { run : ms:int -> callback:(unit->bool) -> unit;
                kill : unit -> unit }
@@ -92,4 +96,3 @@ val io_read_all : Glib.Io.channel -> string
 val run_command :
   (string -> unit) -> (Unix.process_status -> unit) -> string -> unit
 
-val glib_utf8_pos_to_offset : string -> off:int -> int

@@ -59,6 +59,8 @@ let byte_offset_to_char_offset s byte_offset =
   done;
   byte_offset - !extra_bytes
 
+let glib_utf8_pos_to_offset s ~off = byte_offset_to_char_offset s off
+
 let print_id id =
   Minilib.log ("GOT sig id :"^(string_of_int (Obj.magic id)))
 
@@ -404,11 +406,3 @@ let browse_keyword prerr text =
     browse prerr (doc_url() ^ u)
   with Not_found -> prerr ("No documentation found for \""^text^"\".\n")
 
-(* This is missing in lablgtk2.  This one is inefficient, n^2 I guess *)
-let glib_utf8_pos_to_offset s ~off =
-  let n = if Glib.Utf8.validate s then Glib.Utf8.length s else 0 in
-  let rec find i =
-    if i >= n then i
-    else if Glib.Utf8.offset_to_pos s ~pos:0 ~off:i >= off then i
-    else find (i+1)
-  in find 0
