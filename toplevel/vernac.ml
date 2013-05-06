@@ -429,5 +429,5 @@ let compile verbosely f =
   if not (List.is_empty pfs) then
     (pperrnl (str "Error: There are pending proofs"); flush_all (); exit 1);
   if !Flags.xml_export then !xml_end_library ();
-  Dumpglob.end_dump_glob ();
-  Library.save_library_to ldir (long_f_dot_v ^ "o")
+  Library.save_library_to ldir (long_f_dot_v ^ "o");
+  Dumpglob.end_dump_glob ()
