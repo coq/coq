@@ -89,6 +89,7 @@ let main =
     let (cin, cout) = Unix.open_process (coqtop_name^" -ideslave") in
     let ip = Xml_parser.make (Xml_parser.SChannel cin) in
     let op = Xml_printer.make (Xml_printer.TChannel cout) in
+    let () = Xml_parser.check_eof ip false in
     {
       in_chan = cin;
       xml_printer = op;
