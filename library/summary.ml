@@ -19,9 +19,6 @@ let summaries =
   (Hashtbl.create 17 : (string, Dyn.t summary_declaration) Hashtbl.t)
 
 let internal_declare_summary sumname sdecl =
-  if Hashtbl.mem summaries sumname then
-    anomaly ~label:"Summary.declare_summary"
-      (str "Cannot declare a summary twice: " ++ str sumname);
   let (infun,outfun) = Dyn.create sumname in
   let dyn_freeze () = infun (sdecl.freeze_function())
   and dyn_unfreeze sum = sdecl.unfreeze_function (outfun sum)
@@ -33,8 +30,16 @@ let internal_declare_summary sumname sdecl =
   in
   Hashtbl.add summaries sumname ddecl
 
+let mangle id = id ^ "-SUMMARY"
+
+let all_declared_summaries = ref CString.Set.empty
+
 let declare_summary sumname decl =
-  internal_declare_summary (sumname^"-SUMMARY") decl
+  if CString.Set.mem sumname !all_declared_summaries then
+    anomaly ~label:"Summary.declare_summary"
+      (str "Cannot declare a summary twice: " ++ str sumname);
+  all_declared_summaries := CString.Set.add sumname !all_declared_summaries;
+  internal_declare_summary (mangle sumname) decl;
 
 type frozen = Dyn.t String.Map.t
 
@@ -59,6 +64,31 @@ let init_summaries () =
     launch, the following empty [init_function] could be used. *)
 
 let nop () = ()
+
+(** Selective freeze *)
+
+type frozen_bits = (string * Dyn.t) list
+
+let freeze_summary ~marshallable ?(complement=false) ids =
+  let ids =
+    if not complement then ids
+    else
+      CString.Set.elements
+        (CString.Set.diff !all_declared_summaries
+          (List.fold_right CString.Set.add ids CString.Set.empty))
+  in
+    List.map (fun id ->
+      let id = mangle id in
+      let summary = Hashtbl.find summaries id in
+      id, summary.freeze_function marshallable)
+    ids
+
+let unfreeze_summary datas =
+  List.iter
+    (fun (id, data) ->
+      let summary = Hashtbl.find summaries id in
+      summary.unfreeze_function data)
+  datas
 
 (** All-in-one reference declaration + registration *)
 

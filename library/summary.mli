@@ -47,3 +47,10 @@ type frozen
 val freeze_summaries : unit -> frozen
 val unfreeze_summaries : frozen -> unit
 val init_summaries : unit -> unit
+
+(** The type [frozen_bits] is a snapshot of some of the registered tables *)
+type frozen_bits
+
+val freeze_summary :
+  marshallable:bool -> ?complement:bool -> string list -> frozen_bits
+val unfreeze_summary : frozen_bits -> unit
