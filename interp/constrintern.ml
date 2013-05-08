@@ -159,6 +159,10 @@ let error_parameter_not_implicit loc =
    "The parameters do not bind in patterns;" ++ spc () ++ str
     "they must be replaced by '_'.")
 
+let error_ldots_var loc =
+  user_err_loc (loc,"",str "Special token " ++ pr_id ldots_var ++
+    str " is for use in the Notation command.")
+
 (**********************************************************************)
 (* Pre-computing the implicit arguments and arguments scopes needed   *)
 (* for interpretation *)
@@ -376,7 +380,9 @@ let push_name_env ?(global_level=false) lvar implargs env =
       env
   | loc,Name id ->
       check_hidden_implicit_parameters id env.impls ;
-      set_var_scope loc id false env (let (_,ntnvars) = lvar in ntnvars);
+      let (_,ntnvars) = lvar in
+      if ntnvars = [] && Id.equal id ldots_var then error_ldots_var loc;
+      set_var_scope loc id false env ntnvars;
       if global_level then Dumpglob.dump_definition (loc,id) true "var"
       else Dumpglob.dump_binding loc id;
       {env with ids = Id.Set.add id env.ids; impls = Id.Map.add id implargs env.impls}
@@ -619,14 +625,13 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
   then
     GVar (loc,id), [], [], []
   (* Is [id] a notation variable *)
-
   else if List.mem_assoc id ntnvars
   then
     (set_var_scope loc id true genv ntnvars; GVar (loc,id), [], [], [])
   (* Is [id] the special variable for recursive notations *)
-  else if ntnvars != [] && Id.equal id ldots_var
+  else if Id.equal id ldots_var
   then
-    GVar (loc,id), [], [], []
+    if ntnvars != [] then GVar (loc,id), [], [], [] else error_ldots_var loc
   else
   (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
   try
