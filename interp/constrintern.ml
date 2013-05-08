@@ -1004,7 +1004,7 @@ let alias_of = function
   | (id::_,_) -> Name id
 
 let message_redundant_alias (id1,id2) =
-  if_warn msg_warning
+  msg_warning
     (str "Alias variable " ++ pr_id id1 ++ str " is merged with " ++ pr_id id2)
 
 (** {6 Expanding notations }

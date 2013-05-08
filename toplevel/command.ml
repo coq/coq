@@ -147,7 +147,7 @@ let declare_definition ident (local, k) ce imps hook =
     let () = if Pfedit.refining () then
       let msg = strbrk "Section definition " ++
         pr_id ident ++ strbrk " is not visible from current goals" in
-      Flags.if_warn msg_warning msg
+      msg_warning msg
     in
     VarRef ident
   | Discharge | Local | Global ->
@@ -503,7 +503,7 @@ let check_mutuality env isfix fixl =
   let po = partial_order preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
     | (x,Inr xge)::(y,Inr yge)::rest ->
-	if_warn msg_warning (non_full_mutual_message x xge y yge isfix rest)
+	msg_warning (non_full_mutual_message x xge y yge isfix rest)
     | _ -> ()
 
 type structured_fixpoint_expr = {

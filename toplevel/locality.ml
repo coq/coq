@@ -32,8 +32,7 @@ let enforce_locality_full locality_flag local =
 	Errors.error "Use only prefix \"Local\"."
     | None ->
 	if local then begin
-	  Flags.if_warn
-	   Pp.msg_warning (Pp.str"Obsolete syntax: use \"Local\" as a prefix.");
+          Pp.msg_warning (Pp.str "Obsolete syntax: use \"Local\" as a prefix.");
 	  Some true
 	end else
 	None

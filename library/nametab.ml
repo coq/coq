@@ -120,7 +120,6 @@ struct
 	      | Absolute (n,_) ->
 		  (* This is an absolute name, we must keep it
 		     otherwise it may become unaccessible forever *)
-		  Flags.if_warn
 		    msg_warning (str ("Trying to mask the absolute name \""
 			     ^ U.to_string n ^ "\"!"));
 		  tree.path
@@ -160,7 +159,6 @@ let rec push_exactly uname o level tree = function
 	      | Absolute (n,_) ->
 		  (* This is an absolute name, we must keep it
 		     otherwise it may become unaccessible forever *)
-		  Flags.if_warn
 		    msg_warning (str ("Trying to mask the absolute name \""
 			     ^ U.to_string n ^ "\"!"));
 		  tree.path

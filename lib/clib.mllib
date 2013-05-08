@@ -1,3 +1,5 @@
+Coq_config
+
 Int
 Option
 Store
@@ -5,8 +7,8 @@ Exninfo
 Backtrace
 IArray
 Pp_control
+Flags
 Pp
-Coq_config
 Deque
 Hashset
 Hashcons
@@ -18,6 +20,5 @@ Util
 Loc
 Serialize
 Xml_utils
-Flags
 CUnix
 Envars

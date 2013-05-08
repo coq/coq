@@ -57,7 +57,7 @@ let constrain n (ids, m as x) (names, terms as subst) =
   with
       Not_found ->
         if List.mem_assoc n names then
-          Flags.if_warn Pp.msg_warning
+          msg_warning
               (str "Collision between bound variable " ++ pr_id n ++
                str " and a metavariable of same name.");
         (names,(n,x)::terms)
@@ -66,12 +66,12 @@ let add_binders na1 na2 (names,terms as subst) =
   match na1, na2 with
   | Name id1, Name id2 ->
       if List.mem_assoc id1 names then
-        (Flags.if_warn Pp.msg_warning
+        (Pp.msg_warning
           (str "Collision between bound variables of name " ++ pr_id id1);
          (names,terms))
       else
         (if List.mem_assoc id1 terms then
-            Flags.if_warn Pp.msg_warning
+            Pp.msg_warning
               (str "Collision between bound variable " ++ pr_id id1 ++
                str " and another bound variable of same name.");
          ((id1,id2)::names,terms));

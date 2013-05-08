@@ -177,7 +177,7 @@ let add_load_path (phys_path,coq_path) =
 	    begin
               (* Assume the user is concerned by library naming *)
 	      if dir <> default_root_prefix then
-		Flags.if_warn msg_warning
+		msg_warning
 		  (str phys_path ++ strbrk " was previously bound to " ++
 		   pr_dirpath dir ++ strbrk "; it is remapped to " ++
 		   pr_dirpath coq_path);

@@ -182,7 +182,7 @@ let declare_delimiters scope key =
     | None -> scope_map := Gmap.add scope newsc !scope_map
     | Some oldkey when String.equal oldkey key -> ()
     | Some oldkey ->
-	Flags.if_warn msg_warning
+	msg_warning
 	  (strbrk ("Overwriting previous delimiting key "^oldkey^" in scope "^scope));
 	scope_map := Gmap.add scope newsc !scope_map
   end;
@@ -190,7 +190,7 @@ let declare_delimiters scope key =
     let oldscope = Gmap.find key !delimiters_map in
     if String.equal oldscope scope then ()
     else begin
-      Flags.if_warn msg_warning (strbrk ("Hiding binding of key "^key^" to "^oldscope));
+      msg_warning (strbrk ("Hiding binding of key "^key^" to "^oldscope));
       delimiters_map := Gmap.add key scope !delimiters_map
     end
   with Not_found -> delimiters_map := Gmap.add key scope !delimiters_map
@@ -353,7 +353,7 @@ let declare_notation_interpretation ntn scopt pat df =
     | None -> ""
     | Some _ -> " in scope " ^ scope in
     let message = "Notation " ^ ntn ^ " was already used" ^ which_scope in
-    Flags.if_warn msg_warning (strbrk message)
+    msg_warning (strbrk message)
   in
   let sc = { sc with notations = Gmap.add ntn (pat,df) sc.notations } in
   let () = scope_map := Gmap.add scope sc !scope_map in

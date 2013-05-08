@@ -25,7 +25,7 @@ let threshold = of_int 5000
 let nat_of_int dloc n =
   if is_pos_or_zero n then begin
       if less_than threshold n then
-	Flags.if_warn msg_warning
+	msg_warning
 	  (strbrk "Stack overflow or segmentation fault happens when " ++
 	   strbrk "working with large numbers in nat (observed threshold " ++
 	   strbrk "may vary from 5000 to 70000 depending on your system " ++

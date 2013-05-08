@@ -330,8 +330,7 @@ let rec pat_of_raw metas vars = function
   | GHole _ ->
       PMeta None
   | GCast (_,c,_) ->
-      Flags.if_warn
-        Pp.msg_warning (strbrk "Cast not taken into account in constr pattern");
+      Pp.msg_warning (strbrk "Cast not taken into account in constr pattern");
       pat_of_raw metas vars c
   | GIf (_,c,(_,None),b1,b2) ->
       PIf (pat_of_raw metas vars c,

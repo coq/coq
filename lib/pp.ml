@@ -341,7 +341,7 @@ let std_logger level msg = match level with
 | Debug _ -> msgnl (debugbody msg) (* cyan *)
 | Info -> msgnl (print_color "37" (hov 0 msg)) (* gray *)
 | Notice -> msgnl msg
-| Warning -> msgnl_with !err_ft (warnbody msg) (* bright yellow *)
+| Warning -> Flags.if_warn (msgnl_with !err_ft) (warnbody msg) (* bright yellow *)
 | Error -> msgnl_with !err_ft (errorbody msg) (* bright red *)
 
 let logger = ref std_logger

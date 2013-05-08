@@ -424,7 +424,7 @@ let rec_intern_by_filename_only id f =
   (* We check no other file containing same library is loaded *)
   if library_is_loaded m.library_name then
     begin
-      Flags.if_warn msg_warning
+      msg_warning
 	(pr_dirpath m.library_name ++ str " is already loaded from file " ++
 	str (library_full_filename m.library_name));
       m.library_name, []
