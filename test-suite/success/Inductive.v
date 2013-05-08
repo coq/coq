@@ -107,3 +107,9 @@ Set Implicit Arguments.
 Inductive I A : A->Prop := C a : (forall A, A) -> I a.
 
  *)
+
+(* Test recursively non-uniform parameters (was formerly in params_ind.v) *)
+
+Inductive list (A : Set) : Set :=
+  | nil : list A
+  | cons : A -> list (A -> A) -> list A.
