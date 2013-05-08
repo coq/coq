@@ -268,14 +268,14 @@ let prepare_param = function
   | (na,Some b,_) -> out_name na, LocalDef b
 
 let interp_ind_arity evdref env ind =
-  interp_type_evars_impls ~evdref env ind.ind_arity
+  interp_type_evars_impls ~evdref ~fail_evar:false env ind.ind_arity
 
 let interp_cstrs evdref env impls mldata arity ind =
   let cnames,ctyps = List.split ind.ind_lc in
   (* Complete conclusions of constructor types if given in ML-style syntax *)
   let ctyps' = List.map2 (complete_conclusion mldata) cnames ctyps in
   (* Interpret the constructor types *)
-  let ctyps'', cimpls = List.split (List.map (interp_type_evars_impls ~evdref env ~impls) ctyps') in
+  let ctyps'', cimpls = List.split (List.map (interp_type_evars_impls ~evdref ~fail_evar:false env ~impls) ctyps') in
     (cnames, ctyps'', cimpls)
 
 let interp_mutual_inductive (paramsl,indl) notations finite =

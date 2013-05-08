@@ -113,3 +113,11 @@ Inductive I A : A->Prop := C a : (forall A, A) -> I a.
 Inductive list (A : Set) : Set :=
   | nil : list A
   | cons : A -> list (A -> A) -> list A.
+
+(* Check inference of evars in arity using information from constructors *)
+
+Inductive foo1 : forall p, Prop := cc1 : foo1 0.
+
+(* Check cross inference of evars from constructors *)
+
+Inductive foo2 : forall p, Prop := cc2 : forall q, foo2 q | cc3 : foo2 0.
