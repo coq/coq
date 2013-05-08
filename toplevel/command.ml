@@ -188,7 +188,7 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) = match loca
   let r = VarRef ident in
   let () = Typeclasses.declare_instance None true r in
   let () = if is_coe then Class.try_add_new_coercion r ~local:true in
-  true
+  (r,true)
 | Global | Local | Discharge ->
   let local = get_locality ident local in
   let inl = match nl with
@@ -204,19 +204,38 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) = match loca
   let () = Autoinstance.search_declaration (ConstRef kn) in
   let () = Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr local in
-  Lib.is_modtype_strict ()
+  (gr,Lib.is_modtype_strict ())
 
 let declare_assumptions_hook = ref ignore
 let set_declare_assumptions_hook = (:=) declare_assumptions_hook
 
-let interp_assumption bl c =
+let interp_assumption evdref env bl c =
   let c = prod_constr_expr c bl in
-  let env = Global.env () in
-  interp_type_evars_impls env c
+  interp_type_evars_impls ~evdref ~fail_evar:false env c
 
 let declare_assumptions idl is_coe k c imps impl_is_on nl =
   !declare_assumptions_hook c;
-  List.fold_left (fun status id -> declare_assumption is_coe k c imps impl_is_on nl id && status) true idl
+  List.fold_left (fun (refs,status) id ->
+    let ref',status' = declare_assumption is_coe k c imps impl_is_on nl id in
+    ref'::refs, status' && status) ([],true) idl
+
+let do_assumptions kind nl l =
+  let env = Global.env () in
+  let evdref = ref Evd.empty in
+  let _,l = List.fold_map (fun env (is_coe,(idl,c)) ->
+    let t,imps = interp_assumption evdref env [] c in
+    let env =
+      push_named_context (List.map (fun (_,id) -> (id,None,t)) idl) env in
+    (env,((is_coe,idl),t,imps))) env l in
+  let evd = consider_remaining_unif_problems env !evdref in
+  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
+  let l = List.map (on_pi2 (nf_evar evd)) l in
+  List.iter (fun (_,c,_) -> check_evars env Evd.empty evd c) l;
+  snd (List.fold_left (fun (subst,status) ((is_coe,idl),t,imps) ->
+    let t = replace_vars subst t in
+    let (refs,status') = declare_assumptions idl is_coe kind t imps false nl in
+    let subst' = List.map2 (fun (_,id) c -> (id,constr_of_global c)) idl refs in
+    (subst'@subst, status' && status)) ([],true) l)
 
 (* 3a| Elimination schemes for mutual inductive definitions *)
 

@@ -346,8 +346,8 @@ let context l =
       let impl = List.exists test impls in
       let decl = (Discharge, Definitional) in
       let nstatus =
-        Command.declare_assumption false decl t [] impl
-          Vernacexpr.NoInline (Loc.ghost, id)
+        snd (Command.declare_assumption false decl t [] impl
+          Vernacexpr.NoInline (Loc.ghost, id))
       in
       status && nstatus
   in List.fold_left fn true (List.rev ctx)

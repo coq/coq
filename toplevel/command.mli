@@ -44,18 +44,15 @@ val do_definition : Id.t -> definition_kind ->
 
 (** {6 Parameters/Assumptions} *)
 
-val interp_assumption :
-  local_binder list -> constr_expr -> types * Impargs.manual_implicits
-
 (** returns [false] if the assumption is neither local to a section,
     nor in a module type and meant to be instantiated. *)
 val declare_assumption : coercion_flag -> assumption_kind -> types ->
   Impargs.manual_implicits ->
-  bool (** implicit *) -> Vernacexpr.inline -> variable Loc.located -> bool
+  bool (** implicit *) -> Vernacexpr.inline -> variable Loc.located ->
+  global_reference * bool
 
-val declare_assumptions : variable Loc.located list ->
-  coercion_flag -> assumption_kind -> types -> Impargs.manual_implicits ->
-  bool -> Vernacexpr.inline -> bool
+val do_assumptions : locality * assumption_object_kind ->
+  Vernacexpr.inline -> simple_binder with_coercion list -> bool
 
 (** {6 Inductive and coinductive types} *)
 

@@ -529,19 +529,16 @@ let vernac_exact_proof c =
   save_named true;
   Backtrack.mark_unreachable [prf]
 
-let vernac_assumption locality (local, kind) l nl=
+let vernac_assumption locality (local, kind) l nl =
   let local = enforce_locality_exp locality local in
   let global = local == Global in
   let kind = local, kind in
-  let status =
-    List.fold_left (fun status (is_coe,(idl,c)) ->
-      if Dumpglob.dump () then
-	List.iter (fun lid ->
-	  if global then Dumpglob.dump_definition lid false "ax"
-	  else Dumpglob.dump_definition lid true "var") idl;
-      let t,imps = interp_assumption [] c in
-      declare_assumptions idl is_coe kind t imps false nl && status) true l
-  in
+  List.iter (fun (is_coe,(idl,c)) ->
+    if Dumpglob.dump () then
+      List.iter (fun lid ->
+	if global then Dumpglob.dump_definition lid false "ax"
+	else Dumpglob.dump_definition lid true "var") idl) l;
+  let status = do_assumptions kind nl l in
   if not status then Pp.feedback Interface.AddedAxiom
 
 let vernac_record k finite infer struc binders sort nameopt cfs =

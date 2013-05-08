@@ -17,3 +17,7 @@ Fixpoint app {A : Type} {n m : nat} (v : vector A n) (w : vector A m) : vector A
     | vnil => w
     | vcons a v' => vcons a (app v' w)
   end.
+
+(* Test sharing information between different hypotheses *)
+
+Parameters (a:_) (b:a=0).
