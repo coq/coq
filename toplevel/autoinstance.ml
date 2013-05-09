@@ -223,22 +223,38 @@ let rec iter_under_prod (f:rel_context->constr->unit) (ctx:rel_context) t = f ct
     | Prod (n,t,c) -> iter_under_prod f ((n,None,t)::ctx) c
     | _ -> ()
 
+module GREMOrd =
+struct
+  type t = Globnames.global_reference * Evd.evar_map
+  let compare (gr1, _) (gr2, _) = Globnames.RefOrdered.compare gr1 gr2
+  (** ppedrot: this code was actually already broken before this modification,
+      and used polymorphic equality over evar maps, which is just bad. Now we
+      simply ignore it, which looks more sensible. *)
+end
+
+module GREM = Map.Make(GREMOrd)
+
+let grem_add key data map =
+  try
+    let l = GREM.find key map in
+    GREM.add key (data :: l) map
+  with Not_found ->
+    GREM.add key [data] map
+
 (* main search function: search for total instances containing gr, and
    apply k to each of them *)
 let complete_signature_with_def gr deftyp (k:instance_decl_function -> signature -> unit) : unit =
   let gr_c = Globnames.constr_of_global gr in
-  let (smap:(Globnames.global_reference * Evd.evar_map,
-   ('a * 'b * Term.constr) list * Evd.evar)
-  Gmapl.t ref) = ref Gmapl.empty in
+  let smap = ref GREM.empty in
   iter_under_prod
     ( fun ctx typ ->
 	List.iter
 	  (fun ((cl,ev,evm),_,_) ->
 (*	     msgnl(pr_global gr++str" : "++pr_constr typ++str" matche ?"++Pp.int ev++str " dans "++pr_evar_map evm);*)
-	     smap := Gmapl.add (cl,evm) (ctx,ev) !smap)
+	     smap := grem_add (cl,evm) (ctx,ev) !smap)
 	  (Recordops.methods_matching typ)
     ) [] deftyp;
-  Gmapl.iter
+  GREM.iter
     ( fun (cl,evm) evl ->
 	let f = if Typeclasses.is_class cl then
 	  declare_class_instance else declare_record_instance in

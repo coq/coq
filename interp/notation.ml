@@ -214,8 +214,37 @@ type key =
   | RefKey of global_reference
   | Oth
 
+let key_compare k1 k2 = match k1, k2 with
+| RefKey gr1, RefKey gr2 -> RefOrdered.compare gr1 gr2
+| RefKey _, Oth -> -1
+| Oth, RefKey _ -> 1
+| Oth, Oth -> 0
+
+module KeyOrd = struct type t = key let compare = key_compare end
+module KeyMap = Map.Make(KeyOrd)
+
+module InterpretationOrd =
+struct
+  type t = interp_rule * interpretation * int option
+  let compare = Pervasives.compare (* FIXME: to be explicitely written *)
+end
+
+module InterpretationSet = Set.Make (InterpretationOrd)
+(** ppedrot: We changed the semantics here. Before it was a FIFO stack, now it
+    is an ordered set with an badly defined comparison... *)
+
+let keymap_add key interp map =
+  let old = try KeyMap.find key map with Not_found -> InterpretationSet.empty in
+  KeyMap.add key (InterpretationSet.add interp old) map
+
+let keymap_find key map =
+  try
+    let set = KeyMap.find key map in
+    InterpretationSet.elements set
+  with Not_found -> []
+
 (* Scopes table : interpretation -> scope_name *)
-let notations_key_table = ref Gmapl.empty
+let notations_key_table = ref (KeyMap.empty : InterpretationSet.t KeyMap.t)
 let prim_token_key_table = Hashtbl.create 7
 
 let glob_prim_constr_key = function
@@ -364,7 +393,7 @@ let declare_notation_interpretation ntn scopt pat df =
 
 let declare_uninterpretation rule (metas,c as pat) =
   let (key,n) = notation_constr_key c in
-  notations_key_table := Gmapl.add key (rule,pat,n) !notations_key_table
+  notations_key_table := keymap_add key (rule,pat,n) !notations_key_table
 
 let rec find_interpretation ntn find = function
   | [] -> raise Not_found
@@ -422,14 +451,14 @@ let interp_notation loc ntn local_scopes =
     (loc,"",str ("Unknown interpretation for notation \""^ntn^"\"."))
 
 let uninterp_notations c =
-  List.map_append (fun key -> Gmapl.find key !notations_key_table)
+  List.map_append (fun key -> keymap_find key !notations_key_table)
     (glob_constr_keys c)
 
 let uninterp_cases_pattern_notations c =
-  Gmapl.find (cases_pattern_key c) !notations_key_table
+  keymap_find (cases_pattern_key c) !notations_key_table
 
 let uninterp_ind_pattern_notations ind =
-  Gmapl.find (RefKey (canonical_gr (IndRef ind))) !notations_key_table
+  keymap_find (RefKey (canonical_gr (IndRef ind))) !notations_key_table
 
 let availability_of_notation (ntn_scope,ntn) scopes =
   let f scope =
@@ -932,7 +961,7 @@ let init () =
 *)
   notation_level_map := String.Map.empty;
   delimiters_map := String.Map.empty;
-  notations_key_table := Gmapl.empty;
+  notations_key_table := KeyMap.empty;
   printing_rules := String.Map.empty;
   scope_class_map := ScopeClassMap.add ScopeSort "type_scope" ScopeClassMap.empty
 

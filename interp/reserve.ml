@@ -16,14 +16,38 @@ open Nameops
 open Libobject
 open Lib
 open Notation_term
+open Notation_ops
 open Globnames
 
 type key =
   | RefKey of global_reference
   | Oth
 
+(** TODO: share code from Notation *)
+
+let key_compare k1 k2 = match k1, k2 with
+| RefKey gr1, RefKey gr2 -> RefOrdered.compare gr1 gr2
+| RefKey _, Oth -> -1
+| Oth, RefKey _ -> 1
+| Oth, Oth -> 0
+
+module KeyOrd = struct type t = key let compare = key_compare end
+module KeyMap = Map.Make(KeyOrd)
+
+module ReservedOrd =
+struct
+  type t = notation_constr * Id.t
+  let compare = Pervasives.compare (* FIXME *)
+end
+
+module ReservedSet = Set.Make(ReservedOrd)
+
+let keymap_add key data map =
+  let old = try KeyMap.find key map with Not_found -> ReservedSet.empty in
+  KeyMap.add key (ReservedSet.add data old) map
+
 let reserve_table = Summary.ref Id.Map.empty ~name:"reserved-type"
-let reserve_revtable = Summary.ref Gmapl.empty ~name:"reserved-type-rev"
+let reserve_revtable = Summary.ref KeyMap.empty ~name:"reserved-type-rev"
 
 let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
   | NApp (NRef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
@@ -35,7 +59,7 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
 let cache_reserved_type (_,(id,t)) =
   let key = fst (notation_constr_key t) in
   reserve_table := Id.Map.add id t !reserve_table;
-  reserve_revtable := Gmapl.add key (t,id) !reserve_revtable
+  reserve_revtable := keymap_add key (t,id) !reserve_revtable
 
 let in_reserved : Id.t * notation_constr -> obj =
   declare_object {(default_object "RESERVED-TYPE") with
@@ -64,15 +88,18 @@ let constr_key c =
 
 let revert_reserved_type t =
   try
-    let l = Gmapl.find (constr_key t) !reserve_revtable in
+    let reserved = KeyMap.find (constr_key t) !reserve_revtable in
     let t = Detyping.detype false [] [] t in
     (* pedrot: if [Notation_ops.match_notation_constr] may raise [Failure _]
         then I've introduced a bug... *)
-    let find (pat, id) =
-      try let _ = Notation_ops.match_notation_constr false t ([], pat) in true
-      with Notation_ops.No_match -> false
+    let filter (pat, id) =
+      try
+        let _ = match_notation_constr false t ([], pat) in
+        true
+      with No_match -> false
     in
-    let (_, id) = List.find find l in
+    let reserved = ReservedSet.filter filter reserved in
+    let (_, id) = ReservedSet.choose reserved in
     Name id
   with Not_found | Failure _ -> Anonymous
 
@@ -85,7 +112,7 @@ let anonymize_if_reserved na t = match na with
       (try
 	if not !Flags.raw_print &&
 	   (try
-            let ntn = Notation_ops.notation_constr_of_glob_constr [] [] t in
+            let ntn = notation_constr_of_glob_constr [] [] t in
             Pervasives.(=) ntn (find_reserved_type id) (** FIXME *)
             with UserError _ -> false)
 	then GHole (Loc.ghost,Evar_kinds.BinderType na)
