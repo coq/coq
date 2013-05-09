@@ -20,7 +20,7 @@
 
 open Printf
 
-type xml = Serialize.xml =
+type xml = Xml_datatype.xml =
         | Element of (string * (string * string) list * xml list)
         | PCData of string
 

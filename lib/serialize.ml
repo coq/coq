@@ -15,10 +15,7 @@ let protocol_version = "20120710"
 (** * Interface of calls to Coq by CoqIde *)
 
 open Interface
-
-type xml =
-        | Element of (string * (string * string) list * xml list)
-        | PCData of string
+open Xml_datatype
 
 (** We use phantom types and GADT to protect ourselves against wild casts *)
 

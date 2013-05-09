@@ -29,7 +29,7 @@
   {i (c)Copyright 2002-2003 Nicolas Cannasse}
 *)
 
-open Serialize
+open Xml_datatype
 
 (** {6 Xml Functions} *)
 

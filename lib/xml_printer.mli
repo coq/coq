@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type xml = Serialize.xml
+type xml = Xml_datatype.xml
 
 type t
 type target = TChannel of out_channel | TBuffer of Buffer.t

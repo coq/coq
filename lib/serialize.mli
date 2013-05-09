@@ -9,10 +9,7 @@
 (** * Applicative part of the interface of CoqIde calls to Coq *)
 
 open Interface
-
-type xml =
-        | Element of (string * (string * string) list * xml list)
-        | PCData of string
+open Xml_datatype
 
 type 'a call
 
