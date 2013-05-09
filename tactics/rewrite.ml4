@@ -1776,7 +1776,7 @@ let build_morphism_signature m =
   let env = Global.env () in
   let m = Constrintern.interp_constr Evd.empty env m in
   let t = Typing.type_of env Evd.empty m in
-  let isevars = ref (Evd.empty, Evd.empty) in
+  let evdref = ref (Evd.empty, Evd.empty) in
   let cstrs =
     let rec aux t =
       match kind_of_term t with
@@ -1785,21 +1785,21 @@ let build_morphism_signature m =
 	| _ -> []
     in aux t
   in
-  let evars, t', sig_, cstrs = build_signature !isevars env t cstrs None in
-  let _ = isevars := evars in
+  let evars, t', sig_, cstrs = build_signature !evdref env t cstrs None in
+  let _ = evdref := evars in
   let _ = List.iter
     (fun (ty, rel) ->
       Option.iter (fun rel ->
 	let default = mkApp (Lazy.force default_relation, [| ty; rel |]) in
-	let evars,c = new_cstr_evar !isevars env default in
-	  isevars := evars)
+	let evars,c = new_cstr_evar !evdref env default in
+	  evdref := evars)
 	rel)
     cstrs
   in
   let morph =
     mkApp (Lazy.force proper_type, [| t; sig_; m |])
   in
-  let evd = solve_constraints env !isevars in
+  let evd = solve_constraints env !evdref in
   let m = Evarutil.nf_evar evd morph in
     Evarutil.check_evars env Evd.empty evd m; m
 

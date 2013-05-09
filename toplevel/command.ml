@@ -615,27 +615,27 @@ let rec telescope = function
   | (n, Some b, t) :: tl -> let ty, subst, term = telescope tl in
       ty, ((n, Some b, t) :: subst), lift 1 term
 
-let nf_evar_context isevars ctx =
+let nf_evar_context sigma ctx =
   List.map (fun (n, b, t) ->
-    (n, Option.map (Evarutil.nf_evar isevars) b, Evarutil.nf_evar isevars t)) ctx
+    (n, Option.map (Evarutil.nf_evar sigma) b, Evarutil.nf_evar sigma t)) ctx
 
 let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let sigma = Evd.empty in
-  let isevars = ref (Evd.create_evar_defs sigma) in
+  let evdref = ref (Evd.create_evar_defs sigma) in
   let env = Global.env() in
-  let _, ((env', binders_rel), impls) = interp_context_evars isevars env bl in
+  let _, ((env', binders_rel), impls) = interp_context_evars evdref env bl in
   let len = List.length binders_rel in
   let top_env = push_rel_context binders_rel env in
-  let top_arity = interp_type_evars isevars top_env arityc in
+  let top_arity = interp_type_evars evdref top_env arityc in
   let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
   let argtyp, letbinders, make = telescope binders_rel in
   let argname = Id.of_string "recarg" in
   let arg = (Name argname, None, argtyp) in
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
-  let rel, _ = interp_constr_evars_impls ~evdref:isevars env r in
-  let relty = Typing.type_of env !isevars rel in
+  let rel, _ = interp_constr_evars_impls ~evdref env r in
+  let relty = Typing.type_of env !evdref rel in
   let relargty =
     let error () =
       user_err_loc (constr_loc r,
@@ -643,14 +643,14 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
 		    Printer.pr_constr_env env rel ++ str " is not an homogeneous binary relation.")
     in
       try
-	let ctx, ar = Reductionops.splay_prod_n env !isevars 2 relty in
+	let ctx, ar = Reductionops.splay_prod_n env !evdref 2 relty in
 	  match ctx, kind_of_term ar with
 	  | [(_, None, t); (_, None, u)], Sort (Prop Null)
-	      when Reductionops.is_conv env !isevars t u -> t
+	      when Reductionops.is_conv env !evdref t u -> t
 	  | _, _ -> error ()
       with e when Errors.noncritical e -> error ()
   in
-  let measure = interp_casted_constr_evars isevars binders_env measure relargty in
+  let measure = interp_casted_constr_evars evdref binders_env measure relargty in
   let wf_rel, wf_rel_fun, measure_fn =
     let measure_body, measure =
       it_mkLambda_or_LetIn measure letbinders,
@@ -703,7 +703,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
     let newimpls = Id.Map.singleton recname
       (r, l, impls @ [(Some (Id.of_string "recproof", Impargs.Manual, (true, false)))],
        scopes @ [None]) in
-      interp_casted_constr_evars isevars ~impls:newimpls
+      interp_casted_constr_evars evdref ~impls:newimpls
 	(push_rel_context ctx env) body (lift 1 top_arity)
   in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
@@ -711,14 +711,14 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   let def =
     mkApp (constr_of_global (delayed_force fix_sub_ref),
 	  [| argtyp ; wf_rel ;
-	     Evarutil.e_new_evar isevars env 
+	     Evarutil.e_new_evar evdref env 
 	       ~src:(Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define false)) wf_proof;
 	     prop ; intern_body_lam |])
   in
-  let _ = isevars := Evarutil.nf_evar_map !isevars in
-  let binders_rel = nf_evar_context !isevars binders_rel in
-  let binders = nf_evar_context !isevars binders in
-  let top_arity = Evarutil.nf_evar !isevars top_arity in
+  let _ = evdref := Evarutil.nf_evar_map !evdref in
+  let binders_rel = nf_evar_context !evdref binders_rel in
+  let binders = nf_evar_context !evdref binders in
+  let top_arity = Evarutil.nf_evar !evdref top_arity in
   let hook, recname, typ = 
     if List.length binders_rel > 1 then
       let name = add_suffix recname "_func" in
@@ -726,7 +726,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
 	let body = it_mkLambda_or_LetIn (mkApp (constr_of_global gr, [|make|])) binders_rel in
 	let ty = it_mkProd_or_LetIn top_arity binders_rel in
 	let ce =
-          { const_entry_body = Evarutil.nf_evar !isevars body;
+          { const_entry_body = Evarutil.nf_evar !evdref body;
             const_entry_secctx = None;
 	    const_entry_type = Some ty;
         const_entry_opaque = false;
@@ -747,11 +747,11 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
 	  Impargs.declare_manual_implicits false gr [impls]
       in hook, recname, typ
   in
-  let fullcoqc = Evarutil.nf_evar !isevars def in
-  let fullctyp = Evarutil.nf_evar !isevars typ in
-  Obligations.check_evars env !isevars;
+  let fullcoqc = Evarutil.nf_evar !evdref def in
+  let fullctyp = Evarutil.nf_evar !evdref typ in
+  Obligations.check_evars env !evdref;
   let evars, _, evars_def, evars_typ = 
-    Obligations.eterm_obligations env recname !isevars 0 fullcoqc fullctyp 
+    Obligations.eterm_obligations env recname !evdref 0 fullcoqc fullctyp 
   in
     ignore(Obligations.add_definition recname ~term:evars_def evars_typ evars ~hook)
 

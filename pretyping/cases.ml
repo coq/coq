@@ -1860,7 +1860,7 @@ let mk_JMeq_refl typ x = mkApp (delayed_force coq_JMeq_refl, [| typ; x |])
 
 let hole = GHole (Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define true))
 
-let constr_of_pat env isevars arsign pat avoid =
+let constr_of_pat env evdref arsign pat avoid =
   let rec typ env (ty, realargs) pat avoid =
     match pat with
     | PatVar (l,name) ->
@@ -1875,9 +1875,9 @@ let constr_of_pat env isevars arsign pat avoid =
     | PatCstr (l,((_, i) as cstr),args,alias) ->
 	let cind = inductive_of_constructor cstr in
 	let IndType (indf, _) = 
-	  try find_rectype env ( !isevars) (lift (-(List.length realargs)) ty)
+	  try find_rectype env ( !evdref) (lift (-(List.length realargs)) ty)
 	  with Not_found -> error_case_not_inductive env 
-	    {uj_val = ty; uj_type = Typing.type_of env !isevars ty}
+	    {uj_val = ty; uj_type = Typing.type_of env !evdref ty}
 	in
 	let ind, params = dest_ind_family indf in
 	if not (eq_ind ind cind) then error_bad_constructor_loc l cstr ind;
@@ -1903,8 +1903,8 @@ let constr_of_pat env isevars arsign pat avoid =
 	let cstr = mkConstruct ci.cs_cstr in
 	let app = applistc cstr (List.map (lift (List.length sign)) params) in
 	let app = applistc app args in
-	let apptype = Retyping.get_type_of env ( !isevars) app in
-	let IndType (indf, realargs) = find_rectype env ( !isevars) apptype in
+	let apptype = Retyping.get_type_of env ( !evdref) app in
+	let IndType (indf, realargs) = find_rectype env ( !evdref) apptype in
 	  match alias with
 	      Anonymous ->
 		pat', sign, app, apptype, realargs, n, avoid
@@ -1914,8 +1914,8 @@ let constr_of_pat env isevars arsign pat avoid =
 		let sign, i, avoid =
 		  try
 		    let env = push_rel_context sign env in
-		    isevars := the_conv_x_leq (push_rel_context sign env)
-		      (lift (succ m) ty) (lift 1 apptype) !isevars;
+		    evdref := the_conv_x_leq (push_rel_context sign env)
+		      (lift (succ m) ty) (lift 1 apptype) !evdref;
 		    let eq_t = mk_eq (lift (succ m) ty)
 		      (mkRel 1) (* alias *)
 		      (lift 1 app) (* aliased term *)
@@ -2018,7 +2018,7 @@ let build_ineqs prevpatterns pats liftsign =
   in match diffs with [] -> None
     | _ -> Some (mk_coq_and diffs)
 
-let constrs_of_pats typing_fun env isevars eqns tomatchs sign neqs arity =
+let constrs_of_pats typing_fun env evdref eqns tomatchs sign neqs arity =
   let i = ref 0 in
   let (x, y, z) =
     List.fold_left
@@ -2026,7 +2026,7 @@ let constrs_of_pats typing_fun env isevars eqns tomatchs sign neqs arity =
 	 let _, newpatterns, pats =
 	   List.fold_left2
 	     (fun (idents, newpatterns, pats) pat arsign ->
-		let pat', cpat, idents = constr_of_pat env isevars arsign pat idents in
+		let pat', cpat, idents = constr_of_pat env evdref arsign pat idents in
 		  (idents, pat' :: newpatterns, cpat :: pats))
 	      ([], [], []) eqn.patterns sign
 	 in

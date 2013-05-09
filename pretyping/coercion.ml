@@ -65,11 +65,11 @@ let inh_pattern_coerce_to loc pat ind1 ind2 =
 
 open Program
 
-let make_existential loc ?(opaque = Evar_kinds.Define true) env isevars c =
-  Evarutil.e_new_evar isevars env ~src:(loc, Evar_kinds.QuestionMark opaque) c
+let make_existential loc ?(opaque = Evar_kinds.Define true) env evdref c =
+  Evarutil.e_new_evar evdref env ~src:(loc, Evar_kinds.QuestionMark opaque) c
 
-let app_opt env evars f t =
-  whd_betaiota !evars (app_opt f t)
+let app_opt env evdref f t =
+  whd_betaiota !evdref (app_opt f t)
 
 let pair_of_array a = (a.(0), a.(1))
 let make_name s = Name (Id.of_string s)
@@ -91,8 +91,8 @@ let disc_subset x =
 
 exception NoSubtacCoercion
   
-let hnf env isevars c = whd_betadeltaiota env isevars c
-let hnf_nodelta env evars c = whd_betaiota evars c
+let hnf env evd c = whd_betadeltaiota env evd c
+let hnf_nodelta env evd c = whd_betaiota evd c
 
 let lift_args n sign =
   let rec liftrec k = function
@@ -101,34 +101,34 @@ let lift_args n sign =
   in
     liftrec (List.length sign) sign
 
-let mu env isevars t =
+let mu env evdref t =
   let rec aux v =
-    let v' = hnf env !isevars v in
+    let v' = hnf env !evdref v in
       match disc_subset v' with
       Some (u, p) ->
 	let f, ct = aux u in
-	let p = hnf_nodelta env !isevars p in
+	let p = hnf_nodelta env !evdref p in
 	  (Some (fun x ->
-		   app_opt env isevars 
+		   app_opt env evdref 
 		     f (mkApp (delayed_force sig_proj1,
 			       [| u; p; x |]))),
 	   ct)
       | None -> (None, v)
   in aux t
 
-and coerce loc env isevars (x : Term.constr) (y : Term.constr)
+and coerce loc env evdref (x : Term.constr) (y : Term.constr)
     : (Term.constr -> Term.constr) option
     =
   let rec coerce_unify env x y =
-    let x = hnf env !isevars x and y = hnf env !isevars y in
+    let x = hnf env !evdref x and y = hnf env !evdref y in
       try
-	isevars := the_conv_x_leq env x y !isevars;
+	evdref := the_conv_x_leq env x y !evdref;
 	None
       with UnableToUnify _ -> coerce' env x y
   and coerce' env x y : (Term.constr -> Term.constr) option =
-    let subco () = subset_coerce env isevars x y in
+    let subco () = subset_coerce env evdref x y in
     let dest_prod c =
-      match Reductionops.splay_prod_n env ( !isevars) 1 c with
+      match Reductionops.splay_prod_n env ( !evdref) 1 c with
       | [(na,b,t)], c -> (na,t), c
       | _ -> raise NoSubtacCoercion
     in
@@ -137,7 +137,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
       let rec aux tele typ typ' i co =
 	if i < len then
 	  let hdx = l.(i) and hdy = l'.(i) in
-	    try isevars := the_conv_x_leq env hdx hdy !isevars;
+	    try evdref := the_conv_x_leq env hdx hdy !evdref;
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
 		aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
@@ -145,7 +145,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 	      let (n, eqT), restT = dest_prod typ in
 	      let (n', eqT'), restT' = dest_prod typ' in
 	      let _ =
-		try isevars := the_conv_x_leq env eqT eqT' !isevars
+		try evdref := the_conv_x_leq env eqT eqT' !evdref
 		with UnableToUnify _ -> raise NoSubtacCoercion
 	      in
 		(* Disallow equalities on arities *)
@@ -156,7 +156,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 		let args = List.rev (restargs @ mkRel 1 :: List.map (lift 1) tele) in
 		let pred = mkLambda (n, eqT, applistc (lift 1 c) args) in
 		let eq = mkApp (delayed_force coq_eq_ind, [| eqT; hdx; hdy |]) in
-		let evar = make_existential loc env isevars eq in
+		let evar = make_existential loc env evdref eq in
 		let eq_app x = mkApp (delayed_force coq_eq_rect,
 				      [| eqT; hdx; pred; x; hdy; evar|]) in
 		  aux (hdy :: tele) (subst1 hdx restT) 
@@ -180,7 +180,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 	  let env' = push_rel (name', None, a') env in
 	  let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
 	    (* env, x : a' |- c1 : lift 1 a' > lift 1 a *)
-	  let coec1 = app_opt env' isevars c1 (mkRel 1) in
+	  let coec1 = app_opt env' evdref c1 (mkRel 1) in
 	    (* env, x : a' |- c1[x] : lift 1 a *)
 	  let c2 = coerce_unify env' (subst1 coec1 (liftn 1 2 b)) b' in
 	    (* env, x : a' |- c2 : b[c1[x]/x]] > b' *)
@@ -190,7 +190,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 		 Some
 		   (fun f ->
 		      mkLambda (name', a',
-				app_opt env' isevars c2
+				app_opt env' evdref c2
 				  (mkApp (lift 1 f, [| coec1 |])))))
 
       | App (c, l), App (c', l') ->
@@ -215,13 +215,13 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 		       | Lambda (n, t, t') -> c, t'
 			   (*| Prod (n, t, t') -> t'*)
 		       | Evar (k, args) ->
-			   let (evs, t) = Evarutil.define_evar_as_lambda env !isevars (k,args) in
-			     isevars := evs;
+			   let (evs, t) = Evarutil.define_evar_as_lambda env !evdref (k,args) in
+			     evdref := evs;
 			     let (n, dom, rng) = destLambda t in
-			     let dom = whd_evar !isevars dom in
+			     let dom = whd_evar !evdref dom in
 			       if isEvar dom then
 				 let (domk, args) = destEvar dom in
-				   isevars := define domk a !isevars;
+				   evdref := define domk a !evdref;
 			       else ();
 			       t, rng
 		       | _ -> raise NoSubtacCoercion
@@ -235,9 +235,9 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 			   Some
 			     (fun x ->
 				let x, y =
-				  app_opt env' isevars c1 (mkApp (delayed_force sigT_proj1,
+				  app_opt env' evdref c1 (mkApp (delayed_force sigT_proj1,
 								  [| a; pb; x |])),
-				  app_opt env' isevars c2 (mkApp (delayed_force sigT_proj2,
+				  app_opt env' evdref c2 (mkApp (delayed_force sigT_proj2,
 								  [| a; pb; x |]))
 				in
 				  mkApp (delayed_force sigT_intro, [| a'; pb'; x ; y |]))
@@ -255,16 +255,16 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 			   Some
 			     (fun x ->
 				let x, y =
-				  app_opt env isevars c1 (mkApp (delayed_force prod_proj1,
+				  app_opt env evdref c1 (mkApp (delayed_force prod_proj1,
 								 [| a; b; x |])),
-				  app_opt env isevars c2 (mkApp (delayed_force prod_proj2,
+				  app_opt env evdref c2 (mkApp (delayed_force prod_proj2,
 								 [| a; b; x |]))
 				in
 				  mkApp (delayed_force prod_intro, [| a'; b'; x ; y |]))
 		   end
 	       else
 		 if eq_ind i i' && Int.equal len (Array.length l') then
-		   let evm = !isevars in
+		   let evm = !evdref in
 		     (try subco ()
 		      with NoSubtacCoercion ->
 			let typ = Typing.type_of env evm c in
@@ -276,7 +276,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 		   subco ()
 	   | x, y when Pervasives.(=) x y -> (** FIXME *)
 	       if Int.equal (Array.length l) (Array.length l') then
-		 let evm =  !isevars in
+		 let evm =  !evdref in
 		 let lam_type = Typing.type_of env evm c in
 		 let lam_type' = Typing.type_of env evm c' in
 		   (* 			 if not (is_arity env evm lam_type) then ( *)
@@ -286,12 +286,12 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 	   | _ -> subco ())
       | _, _ ->  subco ()
 
-  and subset_coerce env isevars x y =
+  and subset_coerce env evdref x y =
     match disc_subset x with
     Some (u, p) ->
       let c = coerce_unify env u y in
       let f x =
-	app_opt env isevars c (mkApp (delayed_force sig_proj1,
+	app_opt env evdref c (mkApp (delayed_force sig_proj1,
 				      [| u; p; x |]))
       in Some f
     | None ->
@@ -300,23 +300,23 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 	  let c = coerce_unify env x u in
 	    Some
 	      (fun x ->
-		 let cx = app_opt env isevars c x in
-		 let evar = make_existential loc env isevars (mkApp (p, [| cx |]))
+		 let cx = app_opt env evdref c x in
+		 let evar = make_existential loc env evdref (mkApp (p, [| cx |]))
 		 in
 		   (mkApp
 		      (delayed_force sig_intro,
 		       [| u; p; cx; evar |])))
 	| None ->
 	    raise NoSubtacCoercion
-	      (*isevars := Evd.add_conv_pb (Reduction.CONV, x, y) !isevars;
+	      (*evdref := Evd.add_conv_pb (Reduction.CONV, x, y) !evdref;
 		None*)
   in coerce_unify env x y
 
-let coerce_itf loc env isevars v t c1 =
-  let evars = ref isevars in
-  let coercion = coerce loc env evars t c1 in
-  let t = Option.map (app_opt env evars coercion) v in
-    !evars, t
+let coerce_itf loc env evd v t c1 =
+  let evdref = ref evd in
+  let coercion = coerce loc env evdref t c1 in
+  let t = Option.map (app_opt env evdref coercion) v in
+    !evdref, t
 
 let saturate_evd env evd =
   Typeclasses.resolve_typeclasses
@@ -351,10 +351,10 @@ let inh_app_fun env evd j =
 	  (evd,apply_coercion env evd p j t)
 	with Not_found when Flags.is_program_mode () ->
 	  try
-	    let isevars = ref evd in
-	    let coercef, t = mu env isevars t in
-	    let res = { uj_val = app_opt env isevars coercef j.uj_val; uj_type = t } in
-	      (!isevars, res)
+	    let evdref = ref evd in
+	    let coercef, t = mu env evdref t in
+	    let res = { uj_val = app_opt env evdref coercef j.uj_val; uj_type = t } in
+	      (!evdref, res)
 	  with NoSubtacCoercion | NoCoercion ->
 	    (evd,j)
 
@@ -385,19 +385,19 @@ let inh_coerce_to_sort loc env evd j =
 
 let inh_coerce_to_base loc env evd j =
   if Flags.is_program_mode () then
-    let isevars = ref evd in
-    let ct, typ' = mu env isevars j.uj_type in
+    let evdref = ref evd in
+    let ct, typ' = mu env evdref j.uj_type in
     let res =
-      { uj_val = app_opt env isevars ct j.uj_val;
+      { uj_val = app_opt env evdref ct j.uj_val;
 	uj_type = typ' }
-    in !isevars, res
+    in !evdref, res
   else (evd, j)
 
 let inh_coerce_to_prod loc env evd t =
   if Flags.is_program_mode () then
-    let isevars = ref evd in
-    let _, typ' = mu env isevars t in
-      !isevars, typ'
+    let evdref = ref evd in
+    let _, typ' = mu env evdref t in
+      !evdref, typ'
   else (evd, t)
 
 let inh_coerce_to_fail env evd rigidonly v t c1 =
