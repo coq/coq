@@ -79,9 +79,17 @@ let _ =
       optread  = (fun () -> !dependent_propositions_elimination) ;
       optwrite = (fun b -> dependent_propositions_elimination := b) }
 
-let finish_evar_resolution env initial_sigma c =
-  snd (Pretyping.solve_remaining_evars true true solve_by_implicit_tactic
-         env initial_sigma c)
+let tactic_infer_flags = {
+  Pretyping.use_typeclasses = true;
+  Pretyping.use_unif_heuristics = true;
+  Pretyping.use_hook = Some solve_by_implicit_tactic;
+  Pretyping.fail_evar = true;
+  Pretyping.expand_evars = true }
+
+let finish_evar_resolution env initial_sigma (sigma,c) =
+  let sigma =
+    Pretyping.solve_remaining_evars tactic_infer_flags env initial_sigma sigma
+  in nf_evar sigma c
 
 (*********************************************)
 (*                 Tactics                   *)
@@ -1110,7 +1118,6 @@ let vm_cast_no_check c gl =
 
 
 let exact_proof c gl =
-  (* on experimente la synthese d'ise dans exact *)
   let c = Constrintern.interp_casted_constr (project gl) (pf_env gl) c (pf_concl gl)
   in refine_no_check c gl
 

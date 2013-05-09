@@ -55,6 +55,25 @@
   * move_location (now in Misctypes) has two new constructors
     MoveFirst and MoveLast replacing (MoveToEnd false) and (MoveToEnd true)
 
+- API of pretyping.ml and constrintern.ml has been made more uniform
+  * Parametrization of understand_* functions is now made using
+    "inference flags"
+  * Functions removed:
+    - interp_constr_judgment (inline its former body if really needed)
+    - interp_casted_constr, interp_type: use instead interp_constr with
+      expected_type set to OfType or to IsType
+    - interp_gen: use any of interp_constr, interp_casted_constr, interp_type
+    - interp_open_constr_patvar
+    - interp_context: use interp_context_evars (with a "evar_map ref") and
+      call solve_remaining_evars afterwards with a failing flag
+      (e.g. all_and_fail_flags)
+    - understand_type, understand_gen: use understand with appropriate
+      parameters
+  * Change of semantics:
+    - Functions interp_*_evars_impls have a different interface and do
+      not any longer check resolution of evars by default; use
+      check_evars_are_solved explicitly to check that evars are solved.
+  See also the corresponding commit log.
 
 =========================================
 = CHANGES BETWEEN COQ V8.3 AND COQ V8.4 =

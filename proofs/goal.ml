@@ -111,9 +111,7 @@ let return v _ _ _ _ = v
     In an ideal world, this could/should be the other way round.
     As of now, though, it seems at least quite useful to build tactics. *)
 let interp_constr cexpr env rdefs _ _ =
-  let (defs,c) = Constrintern.interp_open_constr !rdefs env cexpr in
-  rdefs := defs ;
-  c
+  Constrintern.interp_constr_evars rdefs env cexpr
 
 (* Type of constr with holes used by refine. *)
 (* The list of evars doesn't necessarily contain all the evars in the constr,
@@ -217,11 +215,14 @@ module Refinable = struct
     let init_defs = !rdefs in
     (* if [check_type] is true, then creates a type constraint for the
        proof-to-be *)
-    let tycon = Pretyping.OfType (Option.init check_type (Evd.evar_concl info)) in
+    let tycon = if check_type then Pretyping.OfType (Evd.evar_concl info) else Pretyping.WithoutTypeConstraint in
     (* call to [understand_tcc_evars] returns a constr with undefined evars
        these evars will be our new goals *)
+    let flags =
+      if resolve_classes then Pretyping.all_no_fail_flags
+      else Pretyping.no_classes_no_fail_inference_flags in
     let open_constr =
-      Pretyping.understand_tcc_evars ~resolve_classes rdefs env tycon rawc
+      Pretyping.understand_tcc_evars ~flags rdefs env ~expected_type:tycon rawc
     in
       ignore(update_handle handle init_defs !rdefs);
       open_constr

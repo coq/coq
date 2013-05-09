@@ -1280,7 +1280,7 @@ let understand_my_constr c gls =
     | GEvar _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark Evar_kinds.Expand)
     | rc ->  map_glob_constr frob rc
   in
-  Pretyping.understand_tcc (sig_sig gls) env ~expected_type:(pf_concl gls) (frob rawc)
+  Pretyping.understand_tcc (sig_sig gls) env ~expected_type:(Pretyping.OfType (pf_concl gls)) (frob rawc)
 
 let my_refine c gls =
   let oc = understand_my_constr c gls in

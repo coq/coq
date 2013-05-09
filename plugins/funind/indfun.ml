@@ -131,7 +131,7 @@ let rec abstract_glob_constr c = function
         (abstract_glob_constr c bl)
 
 let interp_casted_constr_with_implicits sigma env impls c  =
-  Constrintern.intern_gen (Pretyping.OfType None) sigma env ~impls
+  Constrintern.intern_gen Pretyping.WithoutTypeConstraint sigma env ~impls
     ~allow_patvar:false  ~ltacvars:([],[]) c
 
 (*

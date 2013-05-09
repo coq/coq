@@ -32,7 +32,7 @@ val set_declare_assumptions_hook : (types -> unit) -> unit
 (** {6 Definitions/Let} *)
 
 val interp_definition :
-  local_binder list -> red_expr option -> bool (* Fail if evars remain *) -> constr_expr ->
+  local_binder list -> red_expr option -> constr_expr ->
   constr_expr option -> definition_entry * Evd.evar_map * Impargs.manual_implicits
 
 val declare_definition : Id.t -> definition_kind ->

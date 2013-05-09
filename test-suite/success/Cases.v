@@ -2,21 +2,21 @@
 (* Pattern-matching when non inductive terms occur                          *)
 
 (* Dependent form of annotation *)
-Type match 0 as n, eq return nat with
+Type match 0 as n, @eq return nat with
      | O, x => 0
      | S x, y => x
      end.
-Type match 0, eq, 0 return nat with
+Type match 0, 0, @eq return nat with
      | O, x, y => 0
      | S x, y, z => x
      end.
-Type match 0, eq, 0 return _ with
+Type match 0, @eq, 0 return _ with
      | O, x, y => 0
      | S x, y, z => x
      end.
 
 (* Non dependent form of annotation *)
-Type match 0, eq return nat with
+Type match 0, @eq return nat with
      | O, x => 0
      | S x, y => x
      end.

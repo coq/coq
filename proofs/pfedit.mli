@@ -174,4 +174,4 @@ val build_by_tactic : env -> types -> tactic -> constr
 val declare_implicit_tactic : tactic -> unit
 
 (* Raise Exit if cannot solve *)
-val solve_by_implicit_tactic : env -> Evd.evar_map -> existential -> constr
+val solve_by_implicit_tactic : env -> Evd.evar_map -> Evd.evar -> constr

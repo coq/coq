@@ -44,7 +44,7 @@ open Evarconv
 open Pattern
 open Misctypes
 
-type typing_constraint = OfType of types option | IsType
+type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 type var_map = (Id.t * constr_under_binders) list
 type unbound_ltac_var_map = (Id.t * Id.t option) list
 type ltac_var_map = var_map * unbound_ltac_var_map
@@ -103,46 +103,78 @@ let interp_elimination_sort = function
   | GSet  -> InSet
   | GType _ -> InType
 
-let resolve_evars env evdref fail_evar resolve_classes =
-  if resolve_classes then
-    (evdref := Typeclasses.resolve_typeclasses 
+type inference_flags = {
+  use_typeclasses : bool;
+  use_unif_heuristics : bool;
+  use_hook : (env -> evar_map -> evar -> constr) option;
+  fail_evar : bool;
+  expand_evars : bool
+}
+
+let apply_typeclasses env evdref fail_evar =
+  evdref := Typeclasses.resolve_typeclasses
      ~filter:(if Flags.is_program_mode () 
 	      then Typeclasses.no_goals_or_obligations else Typeclasses.no_goals)
      ~split:true ~fail:fail_evar env !evdref;
-     if Flags.is_program_mode () then (* Try optionally solving the obligations *)
-       evdref := Typeclasses.resolve_typeclasses 
-       ~filter:Typeclasses.all_evars ~split:true ~fail:false env !evdref;     
-    );
-  (* Resolve eagerly, potentially making wrong choices *)
-  evdref :=
-    (try consider_remaining_unif_problems
-	   ~ts:(Typeclasses.classes_transparent_state ()) env !evdref
-     with e when Errors.noncritical e ->
-       let e = Errors.push e in if fail_evar then raise e else !evdref)
+  if Flags.is_program_mode () then (* Try optionally solving the obligations *)
+    evdref := Typeclasses.resolve_typeclasses
+      ~filter:Typeclasses.all_evars ~split:true ~fail:false env !evdref
 
-let solve_remaining_evars fail_evar use_classes hook env initial_sigma (evd,c) =
-  let evdref = ref evd in
-  resolve_evars env evdref fail_evar use_classes;
-  let rec proc_rec c =
-    let c = Reductionops.whd_evar !evdref c in
-    match kind_of_term c with
-    | Evar (evk,args as ev) when not (Evd.mem initial_sigma evk) ->
-        let sigma = !evdref in
-	(try
-	   let c = hook env sigma ev in
-	   evdref := Evd.define evk c !evdref;
-	   c
-	 with Exit ->
-           if fail_evar then
-	     let evi = Evd.find_undefined sigma evk in
-             let (loc,src) = evar_source evk !evdref in
-	     Pretype_errors.error_unsolvable_implicit loc env sigma evi src None
-           else
-             c)
-    | _ -> map_constr proc_rec c in
-  let c = proc_rec c in
-  (* Side-effect *)
-  !evdref,c
+let apply_inference_hook hook initial_sigma evdref =
+  evdref := fold_undefined (fun evk evi sigma ->
+    if not (Evd.mem initial_sigma evk) &&
+      is_undefined sigma evk (* i.e. not defined by side-effect *)
+    then
+      try
+        let c = hook sigma evk in
+        Evd.define evk c sigma
+      with Exit ->
+        sigma
+    else
+      sigma) !evdref !evdref
+
+let apply_heuristics env evdref fail_evar =
+  (* Resolve eagerly, potentially making wrong choices *)
+  try evdref := consider_remaining_unif_problems
+	~ts:(Typeclasses.classes_transparent_state ()) env !evdref
+  with e when Errors.noncritical e ->
+    let e = Errors.push e in if fail_evar then raise e
+
+let check_typeclasses_instances_are_solved env sigma =
+  (* Naive way, call resolution again with failure flag *)
+  apply_typeclasses env (ref sigma) true
+
+let check_extra_evars_are_solved env initial_sigma sigma =
+  Evd.fold_undefined
+    (fun evk evi () ->
+      if not (Evd.mem initial_sigma evk) then
+        let (loc,k) = evar_source evk sigma in
+	match k with
+	| Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
+	| _ ->
+	    let evi = nf_evar_info sigma (Evd.find_undefined sigma evk) in
+	    error_unsolvable_implicit loc env sigma evi k None) sigma ()
+
+let check_evars_are_solved env initial_sigma sigma =
+  check_typeclasses_instances_are_solved env sigma;
+  check_problems_are_solved sigma;
+  check_extra_evars_are_solved env initial_sigma sigma
+
+(* Try typeclasses, hooks, unification heuristics ... *)
+
+let solve_remaining_evars flags env initial_sigma sigma =
+  let evdref = ref sigma in
+  if flags.use_typeclasses then apply_typeclasses env evdref false;
+  if Option.has_some flags.use_hook then
+    apply_inference_hook (Option.get flags.use_hook env) initial_sigma evdref;
+  if flags.use_unif_heuristics then apply_heuristics env evdref false;
+  if flags.fail_evar then check_evars_are_solved env initial_sigma !evdref;
+  !evdref
+
+let process_inference_flags flags env initial_sigma (sigma,c) =
+  let sigma = solve_remaining_evars flags env initial_sigma sigma in
+  let c = if flags.expand_evars then nf_evar sigma c else c in
+  sigma,c
 
 (* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
 let allow_anonymous_refs = ref false
@@ -717,62 +749,72 @@ and pretype_type valcon env evdref lvar = function
 	      error_unexpected_type_loc
                 (loc_of_glob_constr c) env !evdref tj.utj_val v
 
-let pretype_gen expand_evar fail_evar resolve_classes evdref env lvar kind c =
+let ise_pretype_gen flags sigma env lvar kind c =
+  let evdref = ref sigma in
   let c' = match kind with
+    | WithoutTypeConstraint ->
+        (pretype empty_tycon env evdref lvar c).uj_val
     | OfType exptyp ->
-	let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
-	  (pretype tycon env evdref lvar c).uj_val
+	(pretype (mk_tycon exptyp) env evdref lvar c).uj_val
     | IsType ->
 	(pretype_type empty_valcon env evdref lvar c).utj_val 
   in
-    resolve_evars env evdref fail_evar resolve_classes;
-    let c = if expand_evar then nf_evar !evdref c' else c' in
-      if fail_evar then check_evars env Evd.empty !evdref c;
-      c
+  process_inference_flags flags env sigma (!evdref,c')
 
 (* TODO: comment faire remonter l'information si le typage a resolu des
    variables du sigma original. il faudrait que la fonction de typage
    retourne aussi le nouveau sigma...
 *)
 
+let default_inference_flags fail = {
+  use_typeclasses = true;
+  use_unif_heuristics = true;
+  use_hook = None;
+  fail_evar = fail;
+  expand_evars = true }
+
+let no_classes_no_fail_inference_flags = {
+  use_typeclasses = false;
+  use_unif_heuristics = true;
+  use_hook = None;
+  fail_evar = false;
+  expand_evars = true }
+
+let all_and_fail_flags = default_inference_flags true
+let all_no_fail_flags = default_inference_flags false
+
+let on_judgment f j =
+  let c = mkCast(j.uj_val,DEFAULTcast, j.uj_type) in
+  let (c,_,t) = destCast (f c) in
+  {uj_val = c; uj_type = t}
+
 let understand_judgment sigma env c =
   let evdref = ref sigma in
   let j = pretype empty_tycon env evdref ([],[]) c in
-    resolve_evars env evdref true true;
-    let j = j_nf_evar !evdref j in
-      check_evars env sigma !evdref (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
-      j
+  on_judgment (fun c ->
+    snd (process_inference_flags all_and_fail_flags env sigma (!evdref,c))) j
 
 let understand_judgment_tcc evdref env c =
   let j = pretype empty_tycon env evdref ([],[]) c in
-    resolve_evars env evdref false true;
-    j_nf_evar !evdref j
-
-(* Raw calls to the unsafe inference machine: boolean says if we must
-   fail on unresolved evars; the unsafe_judgment list allows us to
-   extend env with some bindings *)
-
-let ise_pretype_gen expand_evar fail_evar resolve_classes sigma env lvar kind c =
-  let evdref = ref sigma in
-  let c = pretype_gen expand_evar fail_evar resolve_classes evdref env lvar kind c in
-    !evdref, c
+  on_judgment (fun c ->
+    let (evd,c) = process_inference_flags all_no_fail_flags env Evd.empty (!evdref,c) in
+    evdref := evd; c) j
 
 (** Entry points of the high-level type synthesis algorithm *)
 
-let understand_gen kind sigma env c =
-  snd (ise_pretype_gen true true true sigma env ([],[]) kind c)
+let understand
+    ?(flags=all_and_fail_flags)
+    ?(expected_type=WithoutTypeConstraint)
+    sigma env c =
+  snd (ise_pretype_gen flags sigma env ([],[]) expected_type c)
 
-let understand sigma env ?expected_type:exptyp c =
-  snd (ise_pretype_gen true true true sigma env ([],[]) (OfType exptyp) c)
+let understand_tcc ?(flags=all_no_fail_flags) sigma env ?(expected_type=WithoutTypeConstraint) c =
+  ise_pretype_gen flags sigma env ([],[]) expected_type c
 
-let understand_type sigma env c =
-  snd (ise_pretype_gen true true true sigma env ([],[]) IsType c)
+let understand_tcc_evars ?(flags=all_no_fail_flags) evdref env ?(expected_type=WithoutTypeConstraint) c =
+  let sigma, c = ise_pretype_gen flags !evdref env ([],[]) expected_type c in
+  evdref := sigma;
+  c
 
-let understand_ltac ?(resolve_classes=false) expand_evar sigma env lvar kind c =
-  ise_pretype_gen expand_evar false resolve_classes sigma env lvar kind c
-
-let understand_tcc ?(resolve_classes=true) sigma env ?expected_type:exptyp c =
-  ise_pretype_gen true false resolve_classes sigma env ([],[]) (OfType exptyp) c
-
-let understand_tcc_evars ?(fail_evar=false) ?(resolve_classes=true) evdref env kind c =
-  pretype_gen true fail_evar resolve_classes evdref env ([],[]) kind c
+let understand_ltac flags sigma env lvar kind c =
+  ise_pretype_gen flags sigma env lvar kind c

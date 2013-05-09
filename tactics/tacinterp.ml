@@ -465,7 +465,7 @@ let interp_fresh_id ist env l =
 
 let pf_interp_fresh_id ist gl = interp_fresh_id ist (pf_env gl)
 
-let interp_gen kind ist allow_patvar expand_evar fail_evar use_classes env sigma (c,ce) =
+let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let (ltacvars,unbndltacvars as vars) = extract_ltac_constr_values ist env in
   let c = match ce with
   | None -> c
@@ -478,42 +478,66 @@ let interp_gen kind ist allow_patvar expand_evar fail_evar use_classes env sigma
   in
   let trace =
     push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist.trace in
-  let evdc =
-    catch_error trace 
-      (understand_ltac ~resolve_classes:use_classes expand_evar sigma env vars kind) c 
-  in
   let (evd,c) =
-    if expand_evar then
-      solve_remaining_evars fail_evar use_classes
-        solve_by_implicit_tactic env sigma evdc
-    else
-      evdc in
+    catch_error trace (understand_ltac flags sigma env vars kind) c
+  in
   db_constr ist.debug env c;
   (evd,c)
 
+let constr_flags = {
+  use_typeclasses = true;
+  use_unif_heuristics = true;
+  use_hook = Some solve_by_implicit_tactic;
+  fail_evar = true;
+  expand_evars = true }
+
 (* Interprets a constr; expects evars to be solved *)
 let interp_constr_gen kind ist env sigma c =
-  interp_gen kind ist false true true true env sigma c
+  interp_gen kind ist false constr_flags env sigma c
 
-let interp_constr = interp_constr_gen (OfType None)
+let interp_constr = interp_constr_gen WithoutTypeConstraint
 
 let interp_type = interp_constr_gen IsType
 
+let open_constr_use_classes_flags = {
+  use_typeclasses = true;
+  use_unif_heuristics = true;
+  use_hook = Some solve_by_implicit_tactic;
+  fail_evar = false;
+  expand_evars = true }
+
+let open_constr_no_classes_flags = {
+  use_typeclasses = false;
+  use_unif_heuristics = true;
+  use_hook = Some solve_by_implicit_tactic;
+  fail_evar = false;
+  expand_evars = true }
+
+let pure_open_constr_flags = {
+  use_typeclasses = false;
+  use_unif_heuristics = true;
+  use_hook = None;
+  fail_evar = false;
+  expand_evars = false }
+
 (* Interprets an open constr *)
-let interp_open_constr ccl ist =
-  interp_gen (OfType ccl) ist false true false (not (Option.is_empty ccl))
+let interp_open_constr ?(expected_type=WithoutTypeConstraint) ist =
+  let flags =
+    if expected_type == WithoutTypeConstraint then open_constr_no_classes_flags
+    else open_constr_use_classes_flags in
+  interp_gen expected_type ist false flags
 
 let interp_pure_open_constr ist =
-  interp_gen (OfType None) ist false false false false
+  interp_gen WithoutTypeConstraint ist false pure_open_constr_flags
 
 let interp_typed_pattern ist env sigma (c,_) =
   let sigma, c =
-    interp_gen (OfType None) ist true false false false env sigma c in
+    interp_gen WithoutTypeConstraint ist true pure_open_constr_flags env sigma c in
   pattern_of_constr sigma c
 
 (* Interprets a constr expression casted by the current goal *)
 let pf_interp_casted_constr ist gl c =
-  interp_constr_gen (OfType (Some (pf_concl gl))) ist (pf_env gl) (project gl) c
+  interp_constr_gen (OfType (pf_concl gl)) ist (pf_env gl) (project gl) c
 
 (* Interprets a constr expression *)
 let pf_interp_constr ist gl =
@@ -542,8 +566,7 @@ let interp_constr_list ist env sigma c =
   interp_constr_in_compound_list (fun x -> x) (fun x -> x) interp_constr ist env sigma c
 
 let interp_open_constr_list =
-  interp_constr_in_compound_list (fun x -> x) (fun x -> x)
-    (interp_open_constr None)
+  interp_constr_in_compound_list (fun x -> x) (fun x -> x) interp_open_constr
 
 let interp_auto_lemmas ist env sigma lems =
   let local_sigma, lems = interp_open_constr_list ist env sigma lems in
@@ -743,7 +766,7 @@ let interp_declared_or_quantified_hypothesis ist gl = function
       with Not_found -> NamedHyp id
 
 let interp_binding ist env sigma (loc,b,c) =
-  let sigma, c = interp_open_constr None ist env sigma c in
+  let sigma, c = interp_open_constr ist env sigma c in
   sigma, (loc,interp_binding_name ist b,c)
 
 let interp_bindings ist env sigma = function
@@ -758,12 +781,12 @@ let interp_bindings ist env sigma = function
 
 let interp_constr_with_bindings ist env sigma (c,bl) =
   let sigma, bl = interp_bindings ist env sigma bl in
-  let sigma, c = interp_open_constr None ist env sigma c in
+  let sigma, c = interp_open_constr ist env sigma c in
   sigma, (c,bl)
 
 let interp_open_constr_with_bindings ist env sigma (c,bl) =
   let sigma, bl = interp_bindings ist env sigma bl in
-  let sigma, c = interp_open_constr None ist env sigma c in
+  let sigma, c = interp_open_constr ist env sigma c in
   sigma, (c, bl)
 
 let loc_of_bindings = function
@@ -985,7 +1008,7 @@ let mk_constr_value ist gl c =
   let (sigma,c_interp) = pf_interp_constr ist gl c in
   sigma,VConstr ([],c_interp)
 let mk_open_constr_value ist gl c = 
-  let (sigma,c_interp) = pf_apply (interp_open_constr None ist) gl c in
+  let (sigma,c_interp) = pf_apply (interp_open_constr ist) gl c in
   sigma,VConstr ([],c_interp)
 let mk_hyp_value ist gl c = VConstr ([],mkVar (interp_hyp ist gl c))
 let mk_int_or_var_value ist c = VInteger (interp_int_or_var ist c)
@@ -1370,8 +1393,10 @@ and interp_genarg ist gl x =
       evdref := sigma;
       in_gen wit_red_expr r_interp
     | OpenConstrArgType casted ->
+      let expected_type =
+        if casted then OfType (pf_concl gl) else WithoutTypeConstraint in
       in_gen (wit_open_constr_gen casted)
-        (interp_open_constr (if casted then Some (pf_concl gl) else None)
+        (interp_open_constr ~expected_type
            ist (pf_env gl) (project gl)
            (snd (out_gen (globwit_open_constr_gen casted) x)))
     | ConstrWithBindingsArgType ->

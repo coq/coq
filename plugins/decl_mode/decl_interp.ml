@@ -150,7 +150,7 @@ let interp_justification_items sigma env =
 
 let interp_constr check_sort sigma env c =
   if check_sort then
-    understand_type sigma env (fst c)
+    understand sigma env ~expected_type:IsType (fst c)
   else
     understand sigma env (fst c)
 
@@ -175,7 +175,7 @@ let get_eq_typ info env =
     typ
 
 let interp_constr_in_type typ sigma env c =
-  understand sigma env (fst c) ~expected_type:typ
+  understand sigma env (fst c) ~expected_type:(OfType typ)
 
 let interp_statement interp_it sigma env st =
   {st_label=st.st_label;

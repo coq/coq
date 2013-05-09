@@ -71,7 +71,7 @@ let red_constant_entry n ce = function
       { ce with const_entry_body =
         under_binders (Global.env()) (fst (reduction_of_red_expr red)) n body }
 
-let interp_definition bl red_option fail_evar c ctypopt =
+let interp_definition bl red_option c ctypopt =
   let env = Global.env() in
   let evdref = ref Evd.empty in
   let impls, ((env_bl, ctx), imps1) = interp_context_evars evdref env bl in
@@ -79,7 +79,7 @@ let interp_definition bl red_option fail_evar c ctypopt =
   let imps,ce =
     match ctypopt with
       None ->
-	let c, imps2 = interp_constr_evars_impls ~impls ~evdref ~fail_evar env_bl c in
+	let c, imps2 = interp_constr_evars_impls ~impls evdref env_bl c in
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	imps1@(Impargs.lift_implicits nb_args imps2),
 	{ const_entry_body = body;
@@ -89,8 +89,8 @@ let interp_definition bl red_option fail_evar c ctypopt =
 	  const_entry_inline_code = false
 	}
     | Some ctyp ->
-	let ty, impsty = interp_type_evars_impls ~impls ~evdref ~fail_evar:false env_bl ctyp in
-	let c, imps2 = interp_casted_constr_evars_impls ~impls ~evdref ~fail_evar env_bl c ty in
+	let ty, impsty = interp_type_evars_impls ~impls evdref env_bl ctyp in
+	let c, imps2 = interp_casted_constr_evars_impls ~impls evdref env_bl c ty in
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	let typ = nf_evar !evdref (it_mkProd_or_LetIn ty ctx) in
         let beq b1 b2 = if b1 then b2 else not b2 in
@@ -110,10 +110,8 @@ let interp_definition bl red_option fail_evar c ctypopt =
   red_constant_entry (rel_context_length ctx) ce red_option, !evdref, imps
 
 let check_definition (ce, evd, imps) =
-  let env = Global.env () in
-    check_evars env Evd.empty evd ce.const_entry_body;
-    Option.iter (check_evars env Evd.empty evd) ce.const_entry_type;
-    ce
+  check_evars_are_solved (Global.env ()) Evd.empty evd;
+  ce
 
 let get_locality id = function
 | Discharge ->
@@ -157,7 +155,7 @@ let declare_definition ident (local, k) ce imps hook =
 let _ = Obligations.declare_definition_ref := declare_definition
 
 let do_definition ident k bl red_option c ctypopt hook =
-  let (ce, evd, imps as def) = interp_definition bl red_option (not (Flags.is_program_mode ())) c ctypopt in
+  let (ce, evd, imps as def) = interp_definition bl red_option c ctypopt in
     if Flags.is_program_mode () then
       let env = Global.env () in
       let c = ce.const_entry_body in
@@ -211,7 +209,7 @@ let set_declare_assumptions_hook = (:=) declare_assumptions_hook
 
 let interp_assumption evdref env bl c =
   let c = prod_constr_expr c bl in
-  interp_type_evars_impls ~evdref ~fail_evar:false env c
+  interp_type_evars_impls evdref env c
 
 let declare_assumptions idl is_coe k c imps impl_is_on nl =
   !declare_assumptions_hook c;
@@ -229,10 +227,8 @@ let do_assumptions kind nl l =
     let env =
       push_named_context (List.map (fun (_,id) -> (id,None,t)) idl) env in
     (env,((is_coe,idl),t,imps))) env l in
-  let evd = consider_remaining_unif_problems env !evdref in
-  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
+  let evd = solve_remaining_evars all_and_fail_flags env Evd.empty !evdref in
   let l = List.map (on_pi2 (nf_evar evd)) l in
-  List.iter (fun (_,c,_) -> check_evars env Evd.empty evd c) l;
   snd (List.fold_left (fun (subst,status) ((is_coe,idl),t,imps) ->
     let t = replace_vars subst t in
     let (refs,status') = declare_assumptions idl is_coe kind t imps false nl in
@@ -289,14 +285,14 @@ let prepare_param = function
   | (na,Some b,_) -> out_name na, LocalDef b
 
 let interp_ind_arity evdref env ind =
-  interp_type_evars_impls ~evdref ~fail_evar:false env ind.ind_arity
+  interp_type_evars_impls evdref env ind.ind_arity
 
 let interp_cstrs evdref env impls mldata arity ind =
   let cnames,ctyps = List.split ind.ind_lc in
   (* Complete conclusions of constructor types if given in ML-style syntax *)
   let ctyps' = List.map2 (complete_conclusion mldata) cnames ctyps in
   (* Interpret the constructor types *)
-  let ctyps'', cimpls = List.split (List.map (interp_type_evars_impls ~evdref ~fail_evar:false env ~impls) ctyps') in
+  let ctyps'', cimpls = List.split (List.map (interp_type_evars_impls evdref env ~impls) ctyps') in
     (cnames, ctyps'', cimpls)
 
 let interp_mutual_inductive (paramsl,indl) notations finite =
@@ -332,18 +328,11 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
      List.map3 (interp_cstrs evdref env_ar_params impls) mldatas arities indl)
      () in
 
-  (* Instantiate evars and check all are resolved *)
-  let evd = consider_remaining_unif_problems env_params !evdref in
-  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env_params evd in
-  let sigma = evd in
+  (* Try further to solve evars, and instantiate them *)
+  let sigma = solve_remaining_evars all_and_fail_flags env_params Evd.empty !evdref in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map (nf_evar sigma) cl,impsl)) constructors in
   let ctx_params = Context.map_rel_context (nf_evar sigma) ctx_params in
   let arities = List.map (nf_evar sigma) arities in
-  List.iter (check_evars env_params Evd.empty evd) arities;
-  Context.iter_rel_context (check_evars env0 Evd.empty evd) ctx_params;
-  List.iter (fun (_,ctyps,_) ->
-    List.iter (check_evars env_ar_params Evd.empty evd) ctyps)
-    constructors;
 
   (* Build the inductive entries *)
   let entries = List.map3 (fun ind arity (cnames,ctypes,cimpls) -> {
@@ -524,7 +513,7 @@ let interp_fix_context evdref env isfix fix =
     ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
 
 let interp_fix_ccl evdref impls (env,_) fix =
-  interp_type_evars_impls ~impls ~evdref ~fail_evar:false env fix.fix_type
+  interp_type_evars_impls ~impls evdref env fix.fix_type
 
 let interp_fix_body evdref env_rec impls (_,ctx) fix ccl =
   Option.map (fun body ->
@@ -634,7 +623,8 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   let arg = (Name argname, None, argtyp) in
   let binders = letbinders @ [arg] in
   let binders_env = push_rel_context binders_rel env in
-  let rel, _ = interp_constr_evars_impls ~evdref env r in
+  let rel, _ = interp_constr_evars_impls evdref env r in
+  let () = check_evars_are_solved env Evd.empty !evdref in
   let relty = Typing.type_of env !evdref rel in
   let relargty =
     let error () =
@@ -807,18 +797,22 @@ let interp_recursive isfix fixl notations =
   (* Build the fix declaration block *)
   (env,rec_sign,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxnames fiximps fixannots
 
-let check_recursive isfix ((env,rec_sign,evd),(fixnames,fixdefs,fixtypes),info) =
-  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
-  List.iter (Option.iter (check_evars (push_named_context rec_sign env) Evd.empty evd)) fixdefs;
-  List.iter (check_evars env Evd.empty evd) fixtypes;
+let check_recursive isfix env evd (fixnames,fixdefs,_) =
+  check_evars_are_solved env Evd.empty evd;
   if not (List.mem None fixdefs) then begin
     let fixdefs = List.map Option.get fixdefs in
     check_mutuality env isfix (List.combine fixnames fixdefs)
-  end;
-  ((fixnames,fixdefs,fixtypes),info)
+  end
 
-let interp_fixpoint l ntns = check_recursive true (interp_recursive true l ntns)
-let interp_cofixpoint l ntns = check_recursive false (interp_recursive false l ntns)
+let interp_fixpoint l ntns =
+  let (env,_,evd),fix,info = interp_recursive true l ntns in
+  check_recursive true env evd fix;
+  fix,info
+
+let interp_cofixpoint l ntns =
+  let (env,_,evd),fix,info = interp_recursive false l ntns in
+  check_recursive false  env evd fix;
+  fix,info
     
 let declare_fixpoint local ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
   if List.mem None fixdefs then

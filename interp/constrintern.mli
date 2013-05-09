@@ -88,51 +88,47 @@ val intern_pattern : env -> cases_pattern_expr ->
 
 val intern_context : bool -> evar_map -> env -> internalization_env -> local_binder list -> internalization_env * glob_binder list
 
-(** {6 Composing internalization with pretyping } *)
+(** {6 Composing internalization with type inference (pretyping) } *)
 
-(** Main interpretation function *)
+(** Main interpretation functions expecting evars to be all resolved *)
 
-val interp_gen : typing_constraint -> evar_map -> env ->
-  ?impls:internalization_env -> ?allow_patvar:bool -> ?ltacvars:ltac_sign ->
+val interp_constr : evar_map -> env -> ?impls:internalization_env ->
   constr_expr -> constr
-
-(** Particular instances *)
-
-val interp_constr : evar_map -> env ->
-  constr_expr -> constr
-
-val interp_type : evar_map -> env -> ?impls:internalization_env ->
-  constr_expr -> types
-
-val interp_open_constr   : evar_map -> env -> constr_expr -> evar_map * constr
-
-val interp_open_constr_patvar   : evar_map -> env -> constr_expr -> evar_map * constr
 
 val interp_casted_constr : evar_map -> env -> ?impls:internalization_env ->
   constr_expr -> types -> constr
 
-(** Accepting evars and giving back the manual implicits in addition. *)
+val interp_type : evar_map -> env -> ?impls:internalization_env ->
+  constr_expr -> types
 
-val interp_casted_constr_evars_impls : ?evdref:(evar_map ref) -> ?fail_evar:bool -> env ->
-  ?impls:internalization_env -> constr_expr -> types -> constr * Impargs.manual_implicits
+(** Main interpretation function expecting evars to be all resolved *)
 
-val interp_type_evars_impls : ?evdref:(evar_map ref) -> ?fail_evar:bool ->
-  env -> ?impls:internalization_env ->
-  constr_expr -> types * Impargs.manual_implicits
+val interp_open_constr   : evar_map -> env -> constr_expr -> evar_map * constr
 
-val interp_constr_evars_impls : ?evdref:(evar_map ref) -> ?fail_evar:bool ->
-  env -> ?impls:internalization_env ->
-  constr_expr -> constr * Impargs.manual_implicits
+(** Accepting unresolved evars *)
+
+val interp_constr_evars : evar_map ref -> env ->
+  ?impls:internalization_env -> constr_expr -> constr
 
 val interp_casted_constr_evars : evar_map ref -> env ->
   ?impls:internalization_env -> constr_expr -> types -> constr
 
-val interp_type_evars : evar_map ref -> env -> ?impls:internalization_env ->
-  constr_expr -> types
+val interp_type_evars : evar_map ref -> env ->
+  ?impls:internalization_env -> constr_expr -> types
 
-(** {6 Build a judgment  } *)
+(** Accepting unresolved evars and giving back the manual implicit arguments *)
 
-val interp_constr_judgment : evar_map -> env -> constr_expr -> unsafe_judgment
+val interp_constr_evars_impls : evar_map ref -> env ->
+  ?impls:internalization_env -> constr_expr ->
+  constr * Impargs.manual_implicits
+
+val interp_casted_constr_evars_impls : evar_map ref -> env ->
+  ?impls:internalization_env -> constr_expr -> types ->
+  constr * Impargs.manual_implicits
+
+val interp_type_evars_impls : evar_map ref -> env ->
+  ?impls:internalization_env -> constr_expr ->
+  types * Impargs.manual_implicits
 
 (** Interprets constr patterns *)
 
@@ -154,16 +150,10 @@ val interp_binder_evars : evar_map ref -> env -> Name.t -> constr_expr -> types
 
 (** Interpret contexts: returns extended env and context *)
 
-val interp_context_gen : (env -> glob_constr -> types) ->
-  (env -> glob_constr -> unsafe_judgment) ->
+val interp_context_evars :
   ?global_level:bool -> ?impl_env:internalization_env ->
-  evar_map -> env -> local_binder list -> internalization_env * ((env * rel_context) * Impargs.manual_implicits)
-  
-val interp_context : ?global_level:bool -> ?impl_env:internalization_env ->
-  evar_map -> env -> local_binder list -> internalization_env * ((env * rel_context) * Impargs.manual_implicits)
-
-val interp_context_evars : ?global_level:bool -> ?impl_env:internalization_env ->
-  evar_map ref -> env -> local_binder list -> internalization_env * ((env * rel_context) * Impargs.manual_implicits)
+  evar_map ref -> env -> local_binder list ->
+  internalization_env * ((env * rel_context) * Impargs.manual_implicits)
 
 (** Locating references of constructions, possibly via a syntactic definition 
    (these functions do not modify the glob file) *)

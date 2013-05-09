@@ -1379,7 +1379,7 @@ let vernac_check_may_eval redexp glopt rc =
   let module P = Pretype_errors in
   let (sigma, env) = get_current_context_of_args glopt in
   let sigma', c = interp_open_constr sigma env rc in
-  let sigma' = Evarconv.consider_remaining_unif_problems env sigma' in
+  Evarconv.check_problems_are_solved sigma';
   let j =
     try
       Evarutil.check_evars env sigma sigma' c;

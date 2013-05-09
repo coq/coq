@@ -37,6 +37,11 @@ val e_cumul : ?ts:transparent_state -> env -> evar_map ref -> constr -> constr -
 
 val consider_remaining_unif_problems : ?ts:transparent_state -> env -> evar_map -> evar_map
 
+(** Check all pending unification problems are solved and raise an
+    error otherwise *)
+
+val check_problems_are_solved : evar_map -> unit
+
 (** Check if a canonical structure is applicable *)
 
 val check_conv_record : constr * types stack -> constr * types stack ->

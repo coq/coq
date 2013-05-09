@@ -1449,7 +1449,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
   let equation_lemma_type = 
     nf_betaiotazeta
-      (interp_gen (OfType None) Evd.empty env ~impls:rec_impls eq) 
+      (interp_constr Evd.empty env ~impls:rec_impls eq)
   in
  (* Pp.msgnl (str "lemma type := " ++ Printer.pr_lconstr equation_lemma_type ++ fnl ()); *)
   let res_vars,eq' = decompose_prod equation_lemma_type in

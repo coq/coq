@@ -342,7 +342,7 @@ let intern_binding_name ist x =
 
 let intern_constr_gen allow_patvar isarity {ltacvars=lfun; gsigma=sigma; genv=env} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
-  let scope = if isarity then Pretyping.IsType else Pretyping.OfType None in
+  let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
   let c' =
     warn (Constrintern.intern_gen scope ~allow_patvar ~ltacvars:(fst lfun,[]) sigma env) c
   in

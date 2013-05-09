@@ -837,7 +837,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       (* Some head evar have been instantiated, or unknown kind of problem *)
       evar_conv_x ts env evd pbty t1 t2
 
-let check_problems_are_solved env evd =
+let check_problems_are_solved evd =
   match snd (extract_all_conv_pbs evd) with
   | (pbty,env,t1,t2)::_ -> Pretype_errors.error_cannot_unify env evd (t1, t2)
   | _ -> ()
@@ -915,7 +915,7 @@ let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =
   in
   let (evd,pbs) = extract_all_conv_pbs evd in
   let heuristic_solved_evd = aux evd pbs false [] in
-  check_problems_are_solved env heuristic_solved_evd;
+  check_problems_are_solved heuristic_solved_evd;
   solve_unconstrained_impossible_cases heuristic_solved_evd
 
 (* Main entry points *)
