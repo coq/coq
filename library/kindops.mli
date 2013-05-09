@@ -12,5 +12,4 @@ open Decl_kinds
 
 val logical_kind_of_goal_kind : goal_object_kind -> logical_kind
 val string_of_theorem_kind : theorem_kind -> string
-val string_of_definition_kind :
-  locality * definition_object_kind -> string
+val string_of_definition_kind : definition_kind -> string
