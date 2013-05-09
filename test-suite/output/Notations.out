@@ -121,9 +121,9 @@ fun x : option Z => match x with
                     end
      : option Z -> Z
 fun x : list ?103 => match x with
-                    | NIL => NONE2
-                    | (_ :') t => SOME2 t
-                    end
+                     | NIL => NONE2
+                     | (_ :') t => SOME2 t
+                     end
      : list ?103 -> option (list ?103)
 s
      : s
