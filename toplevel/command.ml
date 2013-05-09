@@ -215,9 +215,11 @@ let interp_assumption evdref env bl c =
 
 let declare_assumptions idl is_coe k c imps impl_is_on nl =
   !declare_assumptions_hook c;
-  List.fold_left (fun (refs,status) id ->
-    let ref',status' = declare_assumption is_coe k c imps impl_is_on nl id in
-    ref'::refs, status' && status) ([],true) idl
+  let refs, status =
+    List.fold_left (fun (refs,status) id ->
+      let ref',status' = declare_assumption is_coe k c imps impl_is_on nl id in
+      ref'::refs, status' && status) ([],true) idl in
+  List.rev refs, status
 
 let do_assumptions kind nl l =
   let env = Global.env () in
