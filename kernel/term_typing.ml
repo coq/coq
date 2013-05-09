@@ -42,9 +42,9 @@ let local_constrain_type env j cst1 = function
       assert (eq_constr t tj.utj_val);
       t, union_constraints (union_constraints cst1 cst2) cst3
 
-let translate_local_def env (b,topt) =
-  let (j,cst) = infer env b in
-  let (typ,cst) = local_constrain_type env j cst topt in
+let translate_local_def env de =
+  let (j,cst) = infer env de.const_entry_body in
+  let (typ,cst) = local_constrain_type env j cst de.const_entry_type in
     (j.uj_val,typ,cst)
 
 let translate_local_assum env t =

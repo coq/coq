@@ -245,8 +245,8 @@ let safe_push_named (id,_,_ as d) env =
     with Not_found -> () in
   Environ.push_named d env
 
-let push_named_def (id,b,topt) senv =
-  let (c,typ,cst) = Term_typing.translate_local_def senv.env (b,topt) in
+let push_named_def (id,de) senv =
+  let (c,typ,cst) = Term_typing.translate_local_def senv.env de in
   let senv' = add_constraints cst senv in
   let env'' = safe_push_named (id,Some c,typ) senv'.env in
   (cst, {senv' with env=env''})

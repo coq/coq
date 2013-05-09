@@ -161,13 +161,10 @@ let look_for_possibly_mutual_statements = function
 
 let save id const do_guard (locality,kind) hook =
   let const = adjust_guardness_conditions const do_guard in
-  let {const_entry_body = pft;
-       const_entry_type = tpo;
-       const_entry_opaque = opacity } = const in
   let k = Kindops.logical_kind_of_goal_kind kind in
   let l,r = match locality with
     | Discharge when Lib.sections_are_opened () ->
-	let c = SectionLocalDef (pft, tpo, opacity) in
+	let c = SectionLocalDef const in
 	let _ = declare_variable id (Lib.cwd(), c, k) in
 	(Local, VarRef id)
     | Local | Global | Discharge ->
@@ -223,7 +220,13 @@ let save_remaining_recthms (locality,kind) body opaq i (id,(t_i,(_,imps))) =
         | _ -> anomaly (Pp.str "Not a proof by induction") in
       match locality with
       | Discharge ->
-	  let c = SectionLocalDef (body_i, Some t_i, opaq) in
+          let const = { const_entry_body = body_i;
+              const_entry_secctx = None;
+              const_entry_type = Some t_i;
+              const_entry_opaque = opaq;
+              const_entry_inline_code = false
+          } in
+	  let c = SectionLocalDef const in
 	  let _ = declare_variable id (Lib.cwd(), c, k) in
           (Discharge,VarRef id,imps)
       | Local | Global ->

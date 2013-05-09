@@ -13,7 +13,7 @@ open Environ
 open Declarations
 open Entries
 
-val translate_local_def : env -> constr * types option ->
+val translate_local_def : env -> definition_entry ->
   constr * types * constraints
 
 val translate_local_assum : env -> types -> types * constraints

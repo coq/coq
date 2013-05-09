@@ -29,7 +29,7 @@ open Nametab
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 
 type section_variable_entry =
-  | SectionLocalDef of constr * types option * bool (** opacity *)
+  | SectionLocalDef of definition_entry
   | SectionLocalAssum of types * bool (** Implicit status *)
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
@@ -59,7 +59,7 @@ val declare_constant :
 
 val declare_definition : 
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
-  ?local:bool -> Id.t -> ?types:constr -> constr -> constant
+  ?local:bool -> Id.t -> ?types:constr -> Entries.const_entry_body -> constant
 
 (** [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of

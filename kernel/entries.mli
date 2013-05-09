@@ -47,9 +47,10 @@ type mutual_inductive_entry = {
   mind_entry_inds : one_inductive_entry list }
 
 (** {6 Constants (Definition/Axiom) } *)
+type const_entry_body = constr
 
 type definition_entry = {
-  const_entry_body   : constr;
+  const_entry_body   : const_entry_body;
   const_entry_secctx : Context.section_context option;
   const_entry_type        : types option;
   const_entry_opaque      : bool;

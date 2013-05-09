@@ -50,7 +50,7 @@ let add_cache_hook f = cache_hook := f
 (** Declaration of section variables and local definitions *)
 
 type section_variable_entry =
-  | SectionLocalDef of constr * types option * bool (* opacity *)
+  | SectionLocalDef of definition_entry
   | SectionLocalAssum of types * bool (* Implicit status *)
 
 type variable_declaration = DirPath.t * section_variable_entry * logical_kind
@@ -67,9 +67,9 @@ let cache_variable ((sp,_),o) =
         let cst = Global.push_named_assum (id,ty) in
 	let impl = if impl then Implicit else Explicit in
 	impl, true, cst
-    | SectionLocalDef (c,t,opaq) ->
-        let cst = Global.push_named_def (id,c,t) in
-        Explicit, opaq, cst in
+    | SectionLocalDef de ->
+        let cst = Global.push_named_def (id,de) in
+        Explicit, de.const_entry_opaque, cst in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl;
   Dischargedhypsmap.set_discharged_hyps sp [];

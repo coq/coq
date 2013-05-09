@@ -34,7 +34,7 @@ val push_named_assum :
   Id.t * types -> safe_environment ->
     Univ.constraints * safe_environment
 val push_named_def :
-  Id.t * constr * types option -> safe_environment ->
+  Id.t * definition_entry -> safe_environment ->
     Univ.constraints * safe_environment
 
 (** Adding global axioms or definitions *)

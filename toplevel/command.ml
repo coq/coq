@@ -139,7 +139,7 @@ let declare_definition ident (local, k) ce imps hook =
   let () = !declare_definition_hook ce in
   let r = match local with
   | Discharge when Lib.sections_are_opened () ->
-    let c = SectionLocalDef(ce.const_entry_body, ce.const_entry_type, false) in
+    let c = SectionLocalDef ce in
     let _ = declare_variable ident (Lib.cwd(), c, IsDefinition k) in
     let () = definition_message ident in
     let () = if Pfedit.refining () then
