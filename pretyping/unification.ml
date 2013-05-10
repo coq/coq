@@ -388,9 +388,9 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
             if wt && flags.check_applied_meta_types then
               (try
                  let tyM = Typing.meta_type sigma k in
-                 let tyN = get_type_of curenv ~lax:true sigma cN in
+                 let tyN = get_type_of curenv sigma cN in
                  check_compatibility curenv substn tyM tyN
-               with RetypeError _ ->
+               with Anomaly _ (* Hack *) ->
                  (* Renounce, maybe metas/evars prevents typing *) ());
 	    (* Here we check that [cN] does not contain any local variables *)
 	    if nb = 0 then
@@ -407,7 +407,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
                  let tyM = get_type_of curenv sigma cM in
                  let tyN = Typing.meta_type sigma k in
                  check_compatibility curenv substn tyM tyN
-               with RetypeError _ ->
+               with Anomaly _ (* Hack *) ->
                  (* Renounce, maybe metas/evars prevents typing *) ());
 	    (* Here we check that [cM] does not contain any local variables *)
 	    if nb = 0 then
