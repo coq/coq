@@ -156,10 +156,10 @@ let lookup_tactic s =
 (* Summary and Object declaration *)
 
 let mactab =
-  Summary.ref (Gmap.empty : (ltac_constant,glob_tactic_expr) Gmap.t)
+  Summary.ref (KNmap.empty : glob_tactic_expr KNmap.t)
     ~name:"tactic-definition"
 
-let lookup_ltacref r = Gmap.find r !mactab
+let lookup_ltacref r = KNmap.find r !mactab
 
 
 (* We have identifier <| global_reference <| constr *)
@@ -858,8 +858,8 @@ let glob_tactic_env l env x =
 (* Tactic registration *)
 
 (* Declaration of the TAC-DEFINITION object *)
-let add (kn,td) = mactab := Gmap.add kn td !mactab
-let replace (kn,td) = mactab := Gmap.add kn td (Gmap.remove kn !mactab)
+let add (kn,td) = mactab := KNmap.add kn td !mactab
+let replace (kn,td) = mactab := KNmap.add kn td (KNmap.remove kn !mactab)
 
 type tacdef_kind =
   | NewTac of Id.t
@@ -943,7 +943,7 @@ let make_absolute_name ident repl =
       else let id = coerce_reference_to_id ident in
 	     Some id, Lib.make_kn id
     in
-      if Gmap.mem kn !mactab then
+      if KNmap.mem kn !mactab then
 	if repl then id, kn
 	else
 	  user_err_loc (loc,"Tacinterp.add_tacdef",
