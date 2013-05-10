@@ -400,7 +400,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
             when not (dependent cN cM) (* helps early trying alternatives *) ->
             if wt && flags.check_applied_meta_types then
               (try
-                 let tyM = get_type_of curenv sigma cM in
+                 let tyM = get_type_of curenv ~lax:true sigma cM in
                  let tyN = Typing.meta_type sigma k in
                  check_compatibility curenv substn tyM tyN
                with RetypeError _ ->
