@@ -1355,17 +1355,20 @@ and compile_alias pb (na,orig,(expanded,expanded_typ)) rest =
         else
           mkLetIn (na,c,t,j.uj_val);
       uj_type = subst1 c j.uj_type } in
+  let sigma = !(pb.evdref) in
   if not (Flags.is_program_mode ()) && (isRel orig or isVar orig) then
     (* Try to compile first using non expanded alias *)
     try f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
     with e when precatchable_exception e ->
     (* Try then to compile using expanded alias *)
+    pb.evdref := sigma;
     f expanded expanded_typ
   else
     (* Try to compile first using expanded alias *)
     try f expanded expanded_typ
     with e when precatchable_exception e ->
     (* Try then to compile using non expanded alias *)
+    pb.evdref := sigma;
     f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
 
 
