@@ -3687,12 +3687,12 @@ every moment.
 
 \end{Variants}
 
-\subsection{\tt Hint Rewrite \term$_1$ \mbox{\dots} \term$_n$ :~\ident}
+\subsection{\tt Hint Rewrite \term$_1$ \mbox{\dots} \term$_n$ :~ \ident$_1$ \mbox{\dots} \ident$_m$}
 \label{HintRewrite}
 \comindex{Hint Rewrite}
 
 This vernacular command adds the terms {\tt \term$_1$ \mbox{\dots} \term$_n$}
-(their types must be equalities) in the rewriting base {\tt \ident}
+(their types must be equalities) in the rewriting bases \ident$_1$, \dots, \ident$_m$
 with the default orientation (left to right). Notice that the
 rewriting bases are distinct from the {\tt auto} hint bases and that
 {\tt auto} does not take them into account.
@@ -3703,19 +3703,19 @@ section are lost. Conversely, when loading a module, all \texttt{Hint Rewrite}
 declarations at the global level of that module are loaded.
 
 \begin{Variants}
-\item {\tt Hint Rewrite -> \term$_1$ \mbox{\dots} \term$_n$ :~\ident}
+\item {\tt Hint Rewrite -> \term$_1$ \mbox{\dots} \term$_n$ :~\ident$_1$ \mbox{\dots} \ident$_m$}
 
 This is strictly equivalent to the command above (we only make explicit the
 orientation which otherwise defaults to {\tt ->}).
 
-\item {\tt Hint Rewrite <- \term$_1$ \mbox{\dots} \term$_n$ :~\ident}
+\item {\tt Hint Rewrite <- \term$_1$ \mbox{\dots} \term$_n$ :~\ident$_1$ \mbox{\dots} \ident$_m$}
 
 Adds the rewriting rules {\tt \term$_1$ \mbox{\dots} \term$_n$} with a right-to-left
-orientation in the base {\tt \ident}.
+orientation in the bases \ident$_1$, \dots, \ident$_m$.
 
-\item {\tt Hint Rewrite \term$_1$ \mbox{\dots} \term$_n$ using {\tac} :~\ident}
+\item {\tt Hint Rewrite \term$_1$ \mbox{\dots} \term$_n$ using {\tac} :~\ident$_1$ \mbox{\dots} \ident$_m$}
 
-When the rewriting rules {\tt \term$_1$ \mbox{\dots} \term$_n$} in {\tt \ident} will
+When the rewriting rules {\tt \term$_1$ \mbox{\dots} \term$_n$} in \ident$_1$, \dots, \ident$_m$ will
 be used, the tactic {\tt \tac} will be applied to the generated subgoals, the
 main subgoal excluded.
 
