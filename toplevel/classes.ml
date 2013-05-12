@@ -35,14 +35,14 @@ let set_typeclass_transparency c local b =
     (Auto.HintsTransparencyEntry ([c], b))
     
 let _ =
-  Typeclasses.register_add_instance_hint
+  Hook.set Typeclasses.add_instance_hint_hook
     (fun inst path local pri ->
       Flags.silently (fun () ->
 	Auto.add_hints local [typeclasses_db]
 	  (Auto.HintsResolveEntry
 	     [pri, false, Auto.PathHints path, inst])) ());
-  Typeclasses.register_set_typeclass_transparency set_typeclass_transparency;
-  Typeclasses.register_classes_transparent_state 
+  Hook.set Typeclasses.set_typeclass_transparency_hook set_typeclass_transparency;
+  Hook.set Typeclasses.classes_transparent_state_hook
     (fun () -> Auto.Hint_db.transparent_state (Auto.searchtable_map typeclasses_db))
     
 let declare_class g =

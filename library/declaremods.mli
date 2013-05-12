@@ -95,9 +95,6 @@ val end_library :
   library_name ->
     Safe_typing.compiled_library * library_objects * Safe_typing.native_library
 
-(** set a function to be executed at end_library *)
-val set_end_library_hook : (unit -> unit) -> unit
-
 (** [really_import_module mp] opens the module [mp] (in a Caml sense).
    It modifies Nametab and performs the [open_object] function for
    every object of the module. Raises [Not_found] when [mp] is unknown. *)

@@ -204,15 +204,11 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) = match loca
   let () = if is_coe then Class.try_add_new_coercion gr local in
   (gr,Lib.is_modtype_strict ())
 
-let declare_assumptions_hook = ref ignore
-let set_declare_assumptions_hook = (:=) declare_assumptions_hook
-
 let interp_assumption evdref env bl c =
   let c = prod_constr_expr c bl in
   interp_type_evars_impls evdref env c
 
 let declare_assumptions idl is_coe k c imps impl_is_on nl =
-  !declare_assumptions_hook c;
   let refs, status =
     List.fold_left (fun (refs,status) id ->
       let ref',status' = declare_assumption is_coe k c imps impl_is_on nl id in

@@ -600,11 +600,7 @@ let start_library dir =
   Lib.start_compilation dir mp;
   Lib.add_frozen_state ()
 
-let end_library_hook = ref ignore
-let set_end_library_hook f = end_library_hook := f
-
 let end_library dir =
-  !end_library_hook();
   let prefix, lib_stack = Lib.end_compilation dir in
   let mp,cenv,ast = Global.export dir in
   let substitute, keep, _ = Lib.classify_segment lib_stack in

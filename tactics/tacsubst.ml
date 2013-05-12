@@ -347,4 +347,4 @@ and subst_genarg subst (x:glob_generic_argument) =
       | None ->
           lookup_genarg_subst s subst x
 
-let _ = Auto.set_extern_subst_tactic subst_tactic
+let _ = Hook.set Auto.extern_subst_tactic subst_tactic

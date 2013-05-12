@@ -441,12 +441,7 @@ let proof_to_export = ref None (* holds the proof-tree to export *)
 ;;
 
 let _ =
-  Pfedit.set_xml_cook_proof
-   (function pftreestate -> proof_to_export := Some pftreestate)
-;;
-
-let _ =
-  Declare.set_xml_declare_variable
+  Hook.set Declare.xml_declare_variable
    (function (sp,kn) ->
      let id = Libnames.basename sp in
      print Declare.UserVerbose (Globnames.VarRef id) (kind_of_variable id) xml_library_root ;
@@ -454,7 +449,7 @@ let _ =
 ;;
 
 let _ =
-  Declare.set_xml_declare_constant
+  Hook.set Declare.xml_declare_constant
    (function (internal,kn) ->
      match !proof_to_export with
         None ->
@@ -470,7 +465,7 @@ let _ =
 ;;
 
 let _ =
-  Declare.set_xml_declare_inductive
+  Hook.set Declare.xml_declare_inductive
    (function (isrecord,(sp,kn)) ->
       print Declare.UserVerbose (Globnames.IndRef (Names.mind_of_kn kn,0))
         (kind_of_inductive isrecord (Names.mind_of_kn kn))
@@ -478,7 +473,7 @@ let _ =
 ;;
 
 let _ =
-  Vernac.set_xml_start_library
+  Hook.set Vernac.xml_start_library
    (function () ->
      Buffer.reset theory_buffer;
      theory_output_string "<?xml version=\"1.0\" encoding=\"latin1\"?>\n";
@@ -495,7 +490,7 @@ let _ =
 ;;
 
 let _ =
-  Vernac.set_xml_end_library
+  Hook.set Vernac.xml_end_library
    (function () ->
       theory_output_string "</body>\n</html>\n";
       let ofn = theory_filename xml_library_root in
@@ -525,7 +520,7 @@ let _ =
        ofn)
 ;;
 
-let _ = Lexer.set_xml_output_comment (theory_output_string ~do_not_quote:true) ;;
+let _ = Hook.set Lexer.xml_output_comment (theory_output_string ~do_not_quote:true) ;;
 
 let uri_of_dirpath dir =
   "/" ^ String.concat "/"
@@ -533,19 +528,19 @@ let uri_of_dirpath dir =
 ;;
 
 let _ =
-  Lib.set_xml_open_section
+  Hook.set Lib.xml_open_section
     (fun _ ->
       let s = "cic:" ^ uri_of_dirpath (Lib.cwd ()) in
       theory_output_string ("<ht:SECTION uri=\""^s^"\">"))
 ;;
 
 let _ =
-  Lib.set_xml_close_section
+  Hook.set Lib.xml_close_section
     (fun _ -> theory_output_string "</ht:SECTION>")
 ;;
 
 let _ =
-  Library.set_xml_require
+  Hook.set Library.xml_require
     (fun d -> theory_output_string
       (Printf.sprintf "<b>Require</b> <a helm:helm_link=\"href\" href=\"theory:%s.theory\">%s</a>.<br/>"
        (uri_of_dirpath d) (Names.DirPath.to_string d)))

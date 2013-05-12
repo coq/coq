@@ -67,12 +67,9 @@ val declare_definition :
 val declare_mind : internal_flag -> mutual_inductive_entry -> object_name
 
 (** Hooks for XML output *)
-val set_xml_declare_variable : (object_name -> unit) -> unit
-val set_xml_declare_constant : (internal_flag * constant -> unit) -> unit
-val set_xml_declare_inductive : (internal_flag * object_name -> unit) -> unit
-
-(** Hook for the cache function of constants and inductives *)
-val add_cache_hook : (full_path -> unit) -> unit
+val xml_declare_variable : (object_name -> unit) Hook.t
+val xml_declare_constant : (internal_flag * constant -> unit) Hook.t
+val xml_declare_inductive : (internal_flag * object_name -> unit) Hook.t
 
 (** Declaration messages *)
 

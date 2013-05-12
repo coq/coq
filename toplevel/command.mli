@@ -27,7 +27,6 @@ open Pfedit
 
 val set_declare_definition_hook : (definition_entry -> unit) -> unit
 val get_declare_definition_hook : unit -> (definition_entry -> unit)
-val set_declare_assumptions_hook : (types -> unit) -> unit
 
 (** {6 Definitions/Let} *)
 

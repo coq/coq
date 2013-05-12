@@ -34,18 +34,11 @@ type internal_flag =
 
 (** XML output hooks *)
 
-let xml_declare_variable = ref (fun (sp:object_name) -> ())
-let xml_declare_constant = ref (fun (sp:internal_flag * constant)-> ())
-let xml_declare_inductive = ref (fun (sp:internal_flag * object_name) -> ())
+let (f_xml_declare_variable, xml_declare_variable) = Hook.make ~default:ignore ()
+let (f_xml_declare_constant, xml_declare_constant) = Hook.make ~default:ignore ()
+let (f_xml_declare_inductive, xml_declare_inductive) = Hook.make ~default:ignore ()
 
 let if_xml f x = if !Flags.xml_export then f x else ()
-
-let set_xml_declare_variable f = xml_declare_variable := if_xml f
-let set_xml_declare_constant f = xml_declare_constant := if_xml f
-let set_xml_declare_inductive f = xml_declare_inductive := if_xml f
-
-let cache_hook = ref ignore
-let add_cache_hook f = cache_hook := f
 
 (** Declaration of section variables and local definitions *)
 
@@ -94,7 +87,7 @@ let declare_variable id obj =
   declare_var_implicits id;
   Notation.declare_ref_arguments_scope (VarRef id);
   Heads.declare_head (EvalVarRef id);
-  !xml_declare_variable oname;
+  if_xml (Hook.get f_xml_declare_variable) oname;
   oname
 
 
@@ -142,8 +135,7 @@ let cache_constant ((sp,kn), obj) =
   Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
   add_section_constant kn' (Global.lookup_constant kn').const_hyps;
   Dischargedhypsmap.set_discharged_hyps sp obj.cst_hyps;
-  add_constant_kind (constant_of_kn kn) obj.cst_kind;
-  !cache_hook sp
+  add_constant_kind (constant_of_kn kn) obj.cst_kind
 
 let discharged_hyps kn sechyps =
   let (_,dir,_) = repr_kn kn in
@@ -197,7 +189,7 @@ let declare_constant ?(internal = UserVerbose) ?(local = false) id (cd, kind) =
     cst_locl = local;
   } in
   let kn = declare_constant_common id cst in
-  let () = !xml_declare_constant (internal, kn) in
+  let () = if_xml (Hook.get f_xml_declare_constant) (internal, kn) in
   kn
 
 let declare_definition ?(internal=UserVerbose)
@@ -260,9 +252,7 @@ let cache_inductive ((sp,kn),(dhyps,mie)) =
   assert (eq_mind kn' (mind_of_kn kn));
   add_section_kn kn' (Global.lookup_mind kn').mind_hyps;
   Dischargedhypsmap.set_discharged_hyps sp dhyps;
-  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names;
-  List.iter (fun (sp,_) -> !cache_hook sp) (inductive_names sp kn mie)
-
+  List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until 1) sp ref) names
 
 let discharge_inductive ((sp,kn),(dhyps,mie)) =
   let mind = Global.mind_of_delta_kn kn in
@@ -306,7 +296,7 @@ let declare_mind isrecord mie =
   let mind = Global.mind_of_delta_kn kn in
   declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
-  !xml_declare_inductive (isrecord,oname);
+  if_xml (Hook.get f_xml_declare_inductive) (isrecord,oname);
   oname
 
 (* Declaration messages *)

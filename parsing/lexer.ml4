@@ -288,8 +288,7 @@ let rec string in_comments bp len = parser
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
 
 (* Hook for exporting comment into xml theory files *)
-let xml_output_comment = ref (fun _ -> ())
-let set_xml_output_comment f = xml_output_comment := f
+let (f_xml_output_comment, xml_output_comment) = Hook.make ~default:ignore ()
 
 (* Utilities for comments in beautify *)
 let comment_begin = ref None
@@ -335,7 +334,7 @@ let comment_stop ep =
   let current_s = Buffer.contents current in
   if !Flags.xml_export && Buffer.length current > 0 &&
     (!between_com || not(null_comment current_s)) then
-      !xml_output_comment current_s;
+      Hook.get f_xml_output_comment current_s;
   (if Flags.do_beautify() && Buffer.length current > 0 &&
     (!between_com || not(null_comment current_s)) then
     let bp = match !comment_begin with

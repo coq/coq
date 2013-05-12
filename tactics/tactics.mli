@@ -337,19 +337,19 @@ val simplest_split       : tactic
 
 (** {6 Logical connective tactics. } *)
 
-val register_setoid_reflexivity : tactic -> unit
+val setoid_reflexivity          : tactic Hook.t
 val reflexivity_red             : bool -> tactic
 val reflexivity                 : tactic
 val intros_reflexivity          : tactic
 
-val register_setoid_symmetry : tactic -> unit
+val setoid_symmetry             : tactic Hook.t
 val symmetry_red                : bool -> tactic
 val symmetry                    : tactic
-val register_setoid_symmetry_in : (Id.t -> tactic) -> unit
+val setoid_symmetry_in          : (Id.t -> tactic) Hook.t
 val symmetry_in                 : Id.t -> tactic
 val intros_symmetry             : clause -> tactic
 
-val register_setoid_transitivity : (constr option -> tactic) -> unit
+val setoid_transitivity         : (constr option -> tactic) Hook.t
 val transitivity_red            : bool -> constr option -> tactic
 val transitivity                : constr -> tactic
 val etransitivity               : tactic
@@ -385,8 +385,8 @@ val admit_as_an_axiom : tactic
 val abstract_generalize : ?generalize_vars:bool -> ?force_dep:bool -> Id.t -> tactic
 val specialize_eqs : Id.t -> tactic
 
-val register_general_multi_rewrite :
-  (bool -> evars_flag -> constr with_bindings -> clause -> tactic) -> unit
+val general_multi_rewrite :
+  (bool -> evars_flag -> constr with_bindings -> clause -> tactic) Hook.t
 
-val register_subst_one :
-  (bool -> Id.t -> Id.t * constr * bool -> tactic) -> unit
+val subst_one :
+  (bool -> Id.t -> Id.t * constr * bool -> tactic) Hook.t

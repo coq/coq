@@ -12,12 +12,9 @@ open Pp
 open Tacexpr
 open Termops
 
-let prtac = ref (fun _ -> assert false)
-let set_tactic_printer f = prtac := f
-let prmatchpatt = ref (fun _ _ -> assert false)
-let set_match_pattern_printer f = prmatchpatt := f
-let prmatchrl = ref (fun _ -> assert false)
-let set_match_rule_printer f = prmatchrl := f
+let (prtac, tactic_printer) = Hook.make ()
+let (prmatchpatt, match_pattern_printer) = Hook.make ()
+let (prmatchrl, match_rule_printer) = Hook.make ()
 
 (* This module intends to be a beginning of debugger for tactic expressions.
    Currently, it is quite simple and we can hope to have, in the future, a more
@@ -62,7 +59,7 @@ let help () =
 let goal_com g tac =
   begin
     db_pr_goal g;
-    msg_tac_debug (str "Going to execute:" ++ fnl () ++ !prtac tac)
+    msg_tac_debug (str "Going to execute:" ++ fnl () ++ Hook.get prtac tac)
   end
 
 let skipped = ref 0
@@ -164,7 +161,7 @@ let db_pattern_rule debug num r =
   if is_debug debug then
   begin
     msg_tac_debug (str "Pattern rule " ++ int num ++ str ":" ++ fnl () ++
-      str "|" ++ spc () ++ !prmatchrl r)
+      str "|" ++ spc () ++ Hook.get prmatchrl r)
   end
 
 (* Prints the hypothesis pattern identifier if it exists *)
@@ -195,7 +192,7 @@ let db_hyp_pattern_failure debug env (na,hyp) =
   if is_debug debug then
     msg_tac_debug (str ("The pattern hypothesis"^(hyp_bound na)^
                 " cannot match: ") ++
-           !prmatchpatt env hyp)
+           Hook.get prmatchpatt env hyp)
 
 (* Prints a matching failure message for a rule *)
 let db_matching_failure debug =

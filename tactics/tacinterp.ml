@@ -2023,7 +2023,7 @@ let tacticIn t =
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
-let _ = Auto.set_extern_interp
+let _ = Hook.set Auto.extern_interp
   (fun l ->
     let l = List.map (fun (id,c) -> (id,VConstr ([],c))) l in
     interp_tactic {lfun=l;avoid_ids=[];debug=get_debug(); trace=[]})

@@ -228,11 +228,8 @@ let general_elim_clause with_evars frzevars tac cls sigma c t l l2r elim gl =
   If occurrences are set, use general rewrite.
 *)
 
-let general_rewrite_clause = ref (fun _ -> assert false)
-let register_general_rewrite_clause = (:=) general_rewrite_clause
-
-let is_applied_rewrite_relation = ref (fun _ _ _ _ -> None)
-let register_is_applied_rewrite_relation = (:=) is_applied_rewrite_relation
+let (forward_general_rewrite_clause, general_rewrite_clause) = Hook.make ()
+let (forward_is_applied_rewrite_relation, is_applied_rewrite_relation) = Hook.make ()
 
 (* Do we have a JMeq instance on twice the same domains ? *)
 
@@ -331,7 +328,7 @@ let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
 let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
     ((c,l) : constr with_bindings) with_evars gl =
   if occs != AllOccurrences then (
-    rewrite_side_tac (!general_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac gl)
+    rewrite_side_tac (Hook.get forward_general_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac gl)
   else
     let env = pf_env gl in
     let sigma = project gl in
@@ -344,7 +341,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
 	    l with_evars frzevars dep_proof_ok gl hdcncl
       | None ->
 	  try
-	    rewrite_side_tac (!general_rewrite_clause cls
+	    rewrite_side_tac (Hook.get forward_general_rewrite_clause cls
 				 lft2rgt occs (c,l) ~new_goals:[]) tac gl
 	  with e when Errors.noncritical e ->
             (* Try to see if there's an equality hidden *)
@@ -1562,7 +1559,8 @@ let replace_multi_term dir_opt c  =
   in
   rewrite_multi_assumption_cond cond_eq_fun
 
-let _ = Tactics.register_general_multi_rewrite
-  (fun b evars t cls -> general_multi_rewrite b evars t cls)
+let _ =
+  let gmr l2r with_evars tac c = general_multi_rewrite l2r with_evars tac c in
+  Hook.set Tactics.general_multi_rewrite gmr
 
-let _ = Tactics.register_subst_one (fun b -> subst_one b)
+let _ = Hook.set Tactics.subst_one subst_one

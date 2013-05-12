@@ -110,7 +110,7 @@ let rec type_scheme_nb_args env c =
 	if is_info_scheme env t then n+1 else n
     | _ -> 0
 
-let _ = register_type_scheme_nb_args type_scheme_nb_args
+let _ = Hook.set type_scheme_nb_args_hook type_scheme_nb_args
 
 (*s [type_sign_vl] does the same, plus a type var list. *)
 

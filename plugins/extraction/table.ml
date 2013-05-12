@@ -755,8 +755,7 @@ let reset_extraction_blacklist () = Lib.add_anonymous_leaf (reset_blacklist ())
 (*s Extract Constant/Inductive. *)
 
 (* UGLY HACK: to be defined in [extraction.ml] *)
-let use_type_scheme_nb_args, register_type_scheme_nb_args =
-  let r = ref (fun _ _ -> 0) in (fun x y -> !r x y), (:=) r
+let (use_type_scheme_nb_args, type_scheme_nb_args_hook) = Hook.make ()
 
 let customs = Summary.ref Refmap'.empty ~name:"ExtrCustom"
 
@@ -823,7 +822,7 @@ let extract_constant_inline inline r ids s =
 	let typ = Reduction.whd_betadeltaiota env typ in
 	if Reduction.is_arity env typ
 	  then begin
-	    let nargs = use_type_scheme_nb_args env typ in
+	    let nargs = Hook.get use_type_scheme_nb_args env typ in
 	    if List.length ids <> nargs then error_axiom_scheme g nargs
 	  end;
 	Lib.add_anonymous_leaf (inline_extraction (inline,[g]));

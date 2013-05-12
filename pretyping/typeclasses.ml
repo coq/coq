@@ -21,24 +21,17 @@ open Libobject
 (*i*)
 
 
-let add_instance_hint_ref = ref (fun id path local pri -> assert false)
-let register_add_instance_hint =
-  (:=) add_instance_hint_ref
-let add_instance_hint id = !add_instance_hint_ref id
+let (add_instance_hint, add_instance_hint_hook) = Hook.make ()
+let add_instance_hint id = Hook.get add_instance_hint id
 
-let remove_instance_hint_ref = ref (fun id -> assert false)
-let register_remove_instance_hint =
-  (:=) remove_instance_hint_ref
-let remove_instance_hint id = !remove_instance_hint_ref id
+let (remove_instance_hint, remove_instance_hint_hook) = Hook.make ()
+let remove_instance_hint id = Hook.get remove_instance_hint id
 
-let set_typeclass_transparency_ref = ref (fun id local c -> assert false)
-let register_set_typeclass_transparency =
-  (:=) set_typeclass_transparency_ref
-let set_typeclass_transparency gr local c = !set_typeclass_transparency_ref gr local c
+let (set_typeclass_transparency, set_typeclass_transparency_hook) = Hook.make ()
+let set_typeclass_transparency gr local c = Hook.get set_typeclass_transparency gr local c
 
-let classes_transparent_state_ref = ref (fun () -> assert false)
-let register_classes_transparent_state = (:=) classes_transparent_state_ref
-let classes_transparent_state () = !classes_transparent_state_ref ()
+let (classes_transparent_state, classes_transparent_state_hook) = Hook.make ()
+let classes_transparent_state () = Hook.get classes_transparent_state ()
 
 let solve_instanciation_problem = ref (fun _ _ _ -> assert false)
 

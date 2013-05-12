@@ -643,10 +643,7 @@ let cache_autohint (_,(local,name,hints)) =
   | RemoveHints grs -> remove_hint name grs
   | AddCut path -> add_cut name path
 
-let forward_subst_tactic =
-  ref (fun _ -> failwith "subst_tactic is not installed for auto")
-
-let set_extern_subst_tactic f = forward_subst_tactic := f
+let (forward_subst_tactic, extern_subst_tactic) = Hook.make ()
 
 let subst_autohint (subst,(local,name,hintlist as obj)) =
   let subst_key gr =
@@ -679,7 +676,7 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
           let ref' = subst_evaluable_reference subst ref in
           if ref==ref' then data.code else Unfold_nth ref'
       | Extern tac ->
-	  let tac' = !forward_subst_tactic subst tac in
+	  let tac' = Hook.get forward_subst_tactic subst tac in
 	  if tac==tac' then data.code else Extern tac'
     in
     let name' = subst_path_atom subst data.name in
@@ -793,10 +790,7 @@ let add_trivials env sigma l local dbnames =
 		    AddHints (List.map (fun (name, c) -> make_trivial env sigma ~name c) l))))
     dbnames
 
-let forward_intern_tac =
-  ref (fun _ -> failwith "intern_tac is not installed for auto")
-
-let set_extern_intern_tac f = forward_intern_tac := f
+let (forward_intern_tac, extern_intern_tac) = Hook.make ()
 
 type hints_entry =
   | HintsResolveEntry of (int option * bool * hints_path_atom * global_reference_or_constr) list
@@ -880,7 +874,8 @@ let interp_hints =
 	HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
   | HintsExtern (pri, patcom, tacexp) ->
       let pat =	Option.map fp patcom in
-      let tacexp = !forward_intern_tac (match pat with None -> [] | Some (l, _) -> l) tacexp in
+      let l = match pat with None -> [] | Some (l, _) -> l in
+      let tacexp = Hook.get forward_intern_tac l tacexp in
       HintsExternEntry (pri, pat, tacexp)
 
 let add_hints local dbnames0 h =
@@ -1104,10 +1099,7 @@ si après Intros la conclusion matche le pattern.
 
 (* conclPattern doit échouer avec error car il est rattraper par tclFIRST *)
 
-let forward_interp_tactic =
-  ref (fun _ -> failwith "interp_tactic is not installed for auto")
-
-let set_extern_interp f = forward_interp_tactic := f
+let (forward_interp_tactic, extern_interp) = Hook.make ()
 
 let conclPattern concl pat tac gl =
   let constr_bindings =
@@ -1116,7 +1108,7 @@ let conclPattern concl pat tac gl =
     | Some pat ->
 	try matches pat concl
 	with PatternMatchingFailure -> error "conclPattern" in
-    !forward_interp_tactic constr_bindings tac gl
+    Hook.get forward_interp_tactic constr_bindings tac gl
 
 (***********************************************************)
 (** A debugging / verbosity framework for trivial and auto *)

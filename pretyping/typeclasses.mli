@@ -98,16 +98,16 @@ val resolve_typeclasses : ?filter:evar_filter -> ?split:bool -> ?fail:bool ->
   env -> evar_map -> evar_map
 val resolve_one_typeclass : env -> evar_map -> types -> open_constr
 
-val register_set_typeclass_transparency : (evaluable_global_reference -> bool (*local?*) -> bool -> unit) -> unit
+val set_typeclass_transparency_hook : (evaluable_global_reference -> bool (*local?*) -> bool -> unit) Hook.t
 val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> unit
 
-val register_classes_transparent_state : (unit -> transparent_state) -> unit
+val classes_transparent_state_hook : (unit -> transparent_state) Hook.t
 val classes_transparent_state : unit -> transparent_state
 
-val register_add_instance_hint : 
-  (global_reference_or_constr -> global_reference list -> 
-   bool (* local? *) -> int option -> unit) -> unit
-val register_remove_instance_hint : (global_reference -> unit) -> unit
+val add_instance_hint_hook : 
+  (global_reference_or_constr -> global_reference list ->
+   bool (* local? *) -> int option -> unit) Hook.t
+val remove_instance_hint_hook : (global_reference -> unit) Hook.t
 val add_instance_hint : global_reference_or_constr -> global_reference list -> 
   bool -> int option -> unit
 val remove_instance_hint : global_reference -> unit

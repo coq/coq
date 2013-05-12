@@ -123,7 +123,7 @@ let is_applied_rewrite_relation env sigma rels t =
   | _ -> None
 
 let _ =
-  Equality.register_is_applied_rewrite_relation is_applied_rewrite_relation
+  Hook.set Equality.is_applied_rewrite_relation is_applied_rewrite_relation
 
 let split_head = function
     hd :: tl -> hd, tl
@@ -1970,7 +1970,7 @@ let general_s_rewrite_clause x =
     | None -> general_s_rewrite None
     | Some id -> general_s_rewrite (Some id)
 
-let _ = Equality.register_general_rewrite_clause general_s_rewrite_clause
+let _ = Hook.set Equality.general_rewrite_clause general_s_rewrite_clause
 
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
@@ -2032,10 +2032,10 @@ let setoid_symmetry_in id gl =
 	tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ] ]
       gl
 
-let _ = Tactics.register_setoid_reflexivity setoid_reflexivity
-let _ = Tactics.register_setoid_symmetry setoid_symmetry
-let _ = Tactics.register_setoid_symmetry_in setoid_symmetry_in
-let _ = Tactics.register_setoid_transitivity setoid_transitivity
+let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity
+let _ = Hook.set Tactics.setoid_symmetry setoid_symmetry
+let _ = Hook.set Tactics.setoid_symmetry_in setoid_symmetry_in
+let _ = Hook.set Tactics.setoid_transitivity setoid_transitivity
 
 TACTIC EXTEND setoid_symmetry
    [ "setoid_symmetry" ] -> [ setoid_symmetry ]

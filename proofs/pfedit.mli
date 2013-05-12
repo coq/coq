@@ -95,9 +95,6 @@ val cook_proof : (Proof.proof -> unit) ->
     (Entries.definition_entry * lemma_possible_guards * goal_kind *
      unit declaration_hook)
 
-(** To export completed proofs to xml *)
-val set_xml_cook_proof : (goal_kind * Proof.proof -> unit) -> unit
-
 (** {6 ... } *)
 (** [get_pftreestate ()] returns the current focused pending proof.
    @raise NoCurrentProof if there is no pending proof. *)

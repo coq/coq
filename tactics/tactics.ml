@@ -1286,18 +1286,10 @@ let simplest_split = split NoBindings
 (*****************************)
 
 (* Rewriting function for rewriting one hypothesis at the time *)
-let forward_general_multi_rewrite =
-  ref (fun _ -> failwith "general_multi_rewrite undefined")
+let (forward_general_multi_rewrite, general_multi_rewrite) = Hook.make ()
 
 (* Rewriting function for substitution (x=t) everywhere at the same time *)
-let forward_subst_one =
-  ref (fun _ -> failwith "subst_one undefined")
-
-let register_general_multi_rewrite f =
-  forward_general_multi_rewrite := f
-
-let register_subst_one f =
-  forward_subst_one := f
+let (forward_subst_one, subst_one) = Hook.make ()
 
 let error_unexpected_extra_pattern loc nb pat =
   let s1,s2,s3 = match pat with
@@ -1331,9 +1323,9 @@ let intro_or_and_pattern loc b ll l' tac id gl =
 
 let rewrite_hyp l2r id gl =
   let rew_on l2r =
-    !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) in
+    Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) in
   let subst_on l2r x rhs =
-    !forward_subst_one true x (id,rhs,l2r) in
+    Hook.get forward_subst_one true x (id,rhs,l2r) in
   let clear_var_and_eq c =
     tclTRY (tclTHEN (clear [id]) (tclTRY (clear [destVar c]))) in
   let t = pf_whd_betadeltaiota gl (pf_type_of gl (mkVar id)) in
@@ -1444,7 +1436,7 @@ let prepare_intros s ipat gl = match ipat with
   | IntroWildcard -> let id = make_id s gl in id, clear_wildcards [dloc,id]
   | IntroRewrite l2r ->
       let id = make_id s gl in
-      id, !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
+      id, Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | IntroOrAndPattern ll -> make_id s gl,
       onLastHypId
 	(intro_or_and_pattern loc true ll []
@@ -1479,7 +1471,7 @@ let assert_tac na = assert_as true (ipat_of_name na)
 
 let as_tac id ipat = match ipat with
   | Some (loc,IntroRewrite l2r) ->
-      !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
+      Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | Some (loc,IntroOrAndPattern ll) ->
       intro_or_and_pattern loc true ll []
         (intros_patterns true [] [] [] MoveLast (fun _ -> clear_wildcards))
@@ -3371,8 +3363,7 @@ let dImp cls =
 
 (* Reflexivity tactics *)
 
-let setoid_reflexivity = ref (fun _ -> assert false)
-let register_setoid_reflexivity f = setoid_reflexivity := f
+let (forward_setoid_reflexivity, setoid_reflexivity) = Hook.make ()
 
 let reflexivity_red allowred gl =
   (* PL: usual reflexivity don't perform any reduction when searching
@@ -3386,7 +3377,8 @@ let reflexivity_red allowred gl =
     | Some _ -> one_constructor 1 NoBindings gl
 
 let reflexivity gl =
-  try reflexivity_red false gl with NoEquationFound -> !setoid_reflexivity gl
+  try reflexivity_red false gl
+  with NoEquationFound -> Hook.get forward_setoid_reflexivity gl
 
 let intros_reflexivity  = (tclTHEN intros reflexivity)
 
@@ -3397,8 +3389,7 @@ let intros_reflexivity  = (tclTHEN intros reflexivity)
    defined and the conclusion is a=b, it solves the goal doing (Cut
    b=a;Intro H;Case H;Constructor 1) *)
 
-let setoid_symmetry = ref (fun _ -> assert false)
-let register_setoid_symmetry f = setoid_symmetry := f
+let (forward_setoid_symmetry, setoid_symmetry) = Hook.make ()
 
 (* This is probably not very useful any longer *)
 let prove_symmetry hdcncl eq_kind =
@@ -3428,10 +3419,9 @@ let symmetry_red allowred gl =
   | None,eq,eq_kind -> prove_symmetry eq eq_kind gl
 
 let symmetry gl =
-  try symmetry_red false gl with NoEquationFound -> !setoid_symmetry gl
+  try symmetry_red false gl with NoEquationFound -> Hook.get forward_setoid_symmetry gl
 
-let setoid_symmetry_in = ref (fun _ _ -> assert false)
-let register_setoid_symmetry_in f = setoid_symmetry_in := f
+let (forward_setoid_symmetry_in, setoid_symmetry_in) = Hook.make ()
 
 let symmetry_in id gl =
   let ctype = pf_type_of gl (mkVar id) in
@@ -3446,7 +3436,7 @@ let symmetry_in id gl =
       [ intro_replacing id;
         tclTHENLIST [ intros; symmetry; apply (mkVar id); assumption ] ]
       gl
-  with NoEquationFound -> !setoid_symmetry_in id gl
+  with NoEquationFound -> Hook.get forward_setoid_symmetry_in id gl
 
 let intros_symmetry =
   onClause
@@ -3466,8 +3456,7 @@ let intros_symmetry =
    --Eduardo (19/8/97)
 *)
 
-let setoid_transitivity = ref (fun _ _ -> assert false)
-let register_setoid_transitivity f = setoid_transitivity := f
+let (forward_setoid_transitivity, setoid_transitivity) = Hook.make ()
 
 (* This is probably not very useful any longer *)
 let prove_transitivity hdcncl eq_kind t gl =
@@ -3509,7 +3498,7 @@ let transitivity_red allowred t gl =
 
 let transitivity_gen t gl =
   try transitivity_red false t gl
-  with NoEquationFound -> !setoid_transitivity t gl
+  with NoEquationFound -> Hook.get forward_setoid_transitivity t gl
 
 let etransitivity = transitivity_gen None
 let transitivity t = transitivity_gen (Some t)

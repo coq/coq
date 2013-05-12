@@ -399,11 +399,8 @@ let eval_expr ?(preserving=false) loc_ast =
     Backtrack.mark_command (snd loc_ast)
 
 (* XML output hooks *)
-let xml_start_library = ref (fun _ -> ())
-let xml_end_library = ref (fun _ -> ())
-
-let set_xml_start_library f = xml_start_library := f
-let set_xml_end_library f = xml_end_library := f
+let (f_xml_start_library, xml_start_library) = Hook.make ~default:ignore ()
+let (f_xml_end_library, xml_end_library) = Hook.make ~default:ignore ()
 
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =
@@ -423,11 +420,11 @@ let compile verbosely f =
   let ldir,long_f_dot_v = Flags.verbosely Library.start_library f in
   Dumpglob.start_dump_glob long_f_dot_v;
   Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
-  if !Flags.xml_export then !xml_start_library ();
+  if !Flags.xml_export then Hook.get f_xml_start_library ();
   let _ = load_vernac verbosely long_f_dot_v in
   let pfs = Pfedit.get_all_proof_names () in
   if not (List.is_empty pfs) then
     (pperrnl (str "Error: There are pending proofs"); flush_all (); exit 1);
-  if !Flags.xml_export then !xml_end_library ();
+  if !Flags.xml_export then Hook.get f_xml_end_library ();
   Library.save_library_to ldir (long_f_dot_v ^ "o");
   Dumpglob.end_dump_glob ()

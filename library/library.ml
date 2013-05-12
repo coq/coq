@@ -498,8 +498,7 @@ let in_require : require_obj -> obj =
 (* Require libraries, import them if [export <> None], mark them for export
    if [export = Some true] *)
 
-let xml_require = ref (fun d -> ())
-let set_xml_require f = xml_require := f
+let (f_xml_require, xml_require) = Hook.make ~default:ignore ()
 
 let require_library_from_dirpath modrefl export =
   let needed = List.fold_left rec_intern_library [] modrefl in
@@ -514,7 +513,7 @@ let require_library_from_dirpath modrefl export =
       end
     else
       add_anonymous_leaf (in_require (needed,modrefl,export));
-    if !Flags.xml_export then List.iter !xml_require modrefl;
+    if !Flags.xml_export then List.iter (Hook.get f_xml_require) modrefl;
   add_frozen_state ()
 
 let require_library qidl export =
@@ -531,7 +530,7 @@ let require_library_from_file idopt file export =
   end
   else
     add_anonymous_leaf (in_require (needed,[modref],export));
-  if !Flags.xml_export then !xml_require modref;
+  if !Flags.xml_export then Hook.get f_xml_require modref;
   add_frozen_state ()
 
 (* the function called by Vernacentries.vernac_import *)

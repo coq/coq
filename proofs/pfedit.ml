@@ -69,9 +69,6 @@ let cook_proof hook =
   | (i,([e],cg,str,h)) -> (i,(e,cg,str,h))
   | _ -> Errors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
 
-let xml_cook_proof = ref (fun _ -> ())
-let set_xml_cook_proof f = xml_cook_proof := f
-
 let get_pftreestate () =
   Proof_global.give_me_the_proof ()
 

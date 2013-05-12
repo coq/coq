@@ -983,7 +983,8 @@ let add_tacdef local isrec tacl =
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
-let _ = Auto.set_extern_intern_tac
-  (fun l ->
-    Flags.with_option strict_check
-    (intern_pure_tactic { (make_empty_glob_sign()) with ltacvars=(l,[])}))
+let _ =
+  let f l = Flags.with_option strict_check
+    (intern_pure_tactic { (make_empty_glob_sign()) with ltacvars=(l,[])})
+  in
+  Hook.set Auto.extern_intern_tac f

@@ -1014,13 +1014,13 @@ let pr_glob_tactic_level env =
 
 let pr_glob_tactic env = pr_glob_tactic_level env ltop
 
-let _ = Tactic_debug.set_tactic_printer
+let _ = Hook.set Tactic_debug.tactic_printer
   (fun x -> pr_glob_tactic (Global.env()) x)
 
-let _ = Tactic_debug.set_match_pattern_printer
+let _ = Hook.set Tactic_debug.match_pattern_printer
   (fun env hyp -> pr_match_pattern (pr_constr_pattern_env env) hyp)
 
-let _ = Tactic_debug.set_match_rule_printer
+let _ = Hook.set Tactic_debug.match_rule_printer
   (fun rl ->
     pr_match_rule false (pr_glob_tactic (Global.env()))
       (fun (_,p) -> pr_constr_pattern p) rl)

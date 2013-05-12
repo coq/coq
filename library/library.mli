@@ -56,7 +56,7 @@ val library_full_filename : DirPath.t -> string
 val overwrite_library_filenames : string -> unit
 
 (** {6 Hook for the xml exportation of libraries } *)
-val set_xml_require : (DirPath.t -> unit) -> unit
+val xml_require : (DirPath.t -> unit) Hook.t
 
 (** {6 Locate a library in the load paths } *)
 exception LibUnmappedDir

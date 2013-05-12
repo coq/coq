@@ -173,16 +173,14 @@ val make_extern :
   int -> constr_pattern option -> Tacexpr.glob_tactic_expr
       -> hint_entry
 
-val set_extern_interp :
-  (patvar_map -> Tacexpr.glob_tactic_expr -> tactic) -> unit
+val extern_interp :
+  (patvar_map -> Tacexpr.glob_tactic_expr -> tactic) Hook.t
 
-val set_extern_intern_tac :
-  (patvar list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr)
-  -> unit
+val extern_intern_tac :
+  (patvar list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr) Hook.t
 
-val set_extern_subst_tactic :
-  (substitution -> Tacexpr.glob_tactic_expr -> Tacexpr.glob_tactic_expr)
-  -> unit
+val extern_subst_tactic :
+  (substitution -> Tacexpr.glob_tactic_expr -> Tacexpr.glob_tactic_expr) Hook.t
 
 (** Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints;
