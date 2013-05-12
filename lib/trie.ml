@@ -23,18 +23,16 @@ end
 module Make (Y : Map.OrderedType) (X : Set.OrderedType) =
 struct
 
-module T_dom = Fset.Make(X)
-module T_codom = Fmap.Make(Y)
+module T_dom = Set.Make(X)
+module T_codom = Map.Make(Y)
 
 type data = X.t
 type label = Y.t
 type t = Node of T_dom.t * t T_codom.t
 
-let codom_to_list m = T_codom.fold (fun x y l -> (x,y)::l) m []
-
-let codom_rng m = T_codom.fold (fun _ y acc -> y::acc) m []
-
-let codom_dom m = T_codom.fold (fun x _ acc -> x::acc) m []
+let codom_for_all f m =
+  let fold key v accu = f v && accu in
+  T_codom.fold fold m true
 
 let empty = Node (T_dom.empty, T_codom.empty)
 
@@ -42,11 +40,13 @@ let next (Node (_,m)) lbl = T_codom.find lbl m
 
 let get (Node (hereset,_)) = T_dom.elements hereset
 
-let labels (Node (_,m)) = codom_dom m
+let labels (Node (_,m)) =
+  (** FIXME: this is order-dependent. Try to find a more robust presentation? *)
+  List.rev (T_codom.fold (fun x _ acc -> x::acc) m [])
 
 let in_dom (Node (_,m)) lbl = T_codom.mem lbl m
 
-let is_empty_node (Node(a,b)) = (T_dom.elements a = []) && (codom_to_list b = [])
+let is_empty_node (Node(a,b)) = (T_dom.is_empty a) && (T_codom.is_empty b)
 
 let assure_arc m lbl =
   if T_codom.mem lbl m then
@@ -55,8 +55,8 @@ let assure_arc m lbl =
     T_codom.add lbl (Node (T_dom.empty,T_codom.empty)) m
 
 let cleanse_arcs (Node (hereset,m)) =
-  let l = codom_rng m in
-  Node(hereset, if List.for_all is_empty_node l then T_codom.empty else m)
+  let m = if codom_for_all is_empty_node m then T_codom.empty else m in
+  Node(hereset, m)
 
 let rec at_path f (Node (hereset,m)) = function
   | [] ->
@@ -79,13 +79,5 @@ let iter f tlm =
     T_codom.iter (fun l tm -> apprec (l::pfx) tm) m
   in
   apprec [] tlm
-
-let to_list tlm =
-  let rec torec pfx (Node(hereset,m)) =
-    let path = List.rev pfx in
-    List.flatten((List.map (fun v -> (path,v)) (T_dom.elements hereset))::
-		 (List.map (fun (l,tm) -> torec (l::pfx) tm) (codom_to_list m)))
-  in
-  torec [] tlm
 
 end
