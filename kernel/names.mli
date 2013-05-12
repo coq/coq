@@ -124,6 +124,9 @@ sig
   val equal : t -> t -> bool
   (** Equality over labels *)
 
+  val compare : t -> t -> int
+  (** Comparison over labels. *)
+
   val make : string -> t
   (** Create a label out of a string. *)
 

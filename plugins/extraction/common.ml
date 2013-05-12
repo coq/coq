@@ -280,14 +280,24 @@ let add_visible ks l = Hashtbl.add (top_visible ()).content ks l
 
 (* table of local module wrappers used to provide non-ambiguous names *)
 
+module DupOrd =
+struct
+  type t = ModPath.t * Label.t
+  let compare (mp1, l1) (mp2, l2) =
+    let c = Label.compare l1 l2 in
+    if c = 0 then ModPath.compare mp1 mp2 else c
+end
+
+module DupMap = Map.Make(DupOrd)
+
 let add_duplicate, check_duplicate =
-  let index = ref 0 and dups = ref Gmap.empty in
-  register_cleanup (fun () -> index := 0; dups := Gmap.empty);
+  let index = ref 0 and dups = ref DupMap.empty in
+  register_cleanup (fun () -> index := 0; dups := DupMap.empty);
   let add mp l =
      incr index;
-     let ren = "Coq__" ^ string_of_int (!index) in
-     dups := Gmap.add (mp,l) ren !dups
-  and check mp l = Gmap.find (mp, l) !dups
+     let ren = "Coq__" ^ string_of_int !index in
+     dups := DupMap.add (mp,l) ren !dups
+  and check mp l = DupMap.find (mp, l) !dups
   in (add,check)
 
 type reset_kind = AllButExternal | Everything
