@@ -250,21 +250,23 @@ TACTIC EXTEND rewrite_star
 (**********************************************************************)
 (* Hint Rewrite                                                       *)
 
-let add_rewrite_hint name ort t lcsr =
+let add_rewrite_hint bases ort t lcsr =
   let env = Global.env() and sigma = Evd.empty in
   let f c = Constrexpr_ops.constr_loc c, Constrintern.interp_constr sigma env c, ort, t in
-  add_rew_rules name (List.map f lcsr)
+  let eqs = List.map f lcsr in
+  let add_hints base = add_rew_rules base eqs in
+  List.iter add_hints bases
 
 VERNAC COMMAND EXTEND HintRewrite
-  [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident(b) ] ->
-  [ add_rewrite_hint b o (Tacexpr.TacId []) l ]
+  [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
+  [ add_rewrite_hint bl o (Tacexpr.TacId []) l ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
-    ":" preident(b) ] ->
-  [ add_rewrite_hint b o t l ]
+    ":" preident_list(bl) ] ->
+  [ add_rewrite_hint bl o t l ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ] ->
-  [ add_rewrite_hint "core" o (Tacexpr.TacId []) l ]
+  [ add_rewrite_hint ["core"] o (Tacexpr.TacId []) l ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t) ] ->
-  [ add_rewrite_hint "core" o t l ]
+  [ add_rewrite_hint ["core"] o t l ]
 END
 
 (**********************************************************************)
