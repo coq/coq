@@ -85,6 +85,10 @@ val define_evar_as_product : evar_map -> existential -> evar_map * types
 val define_evar_as_lambda : env -> evar_map -> existential -> evar_map * types
 val define_evar_as_sort : evar_map -> existential -> evar_map * sorts
 
+(** Instantiate an evar by as many lambda's as needed so that its arguments
+    are moved to the evar substitution (i.e. turn [?x[vars1:=args1] args] into
+    [?y[vars1:=args1,vars:=args]] with
+    [vars1 |- ?x:=\vars.?y[vars1:=vars1,vars:=vars]] *)
 val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
   evar_map * existential
 
