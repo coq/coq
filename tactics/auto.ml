@@ -436,11 +436,11 @@ module Hint_db = struct
 
 end
 
-module Hintdbmap = Gmap
+module Hintdbmap = String.Map
 
 type hint_db = Hint_db.t
 
-type hint_db_table = (string,hint_db) Hintdbmap.t ref
+type hint_db_table = hint_db Hintdbmap.t ref
 
 type hint_db_name = string
 
@@ -451,7 +451,12 @@ let searchtable_map name =
 let searchtable_add (name,db) =
   searchtable := Hintdbmap.add name db !searchtable
 let current_db_names () =
-  Hintdbmap.dom !searchtable
+  let fold k _ acc = k :: acc in
+  List.rev (Hintdbmap.fold fold !searchtable [])
+(** FIXME: from 3.12 use Map.keys *)
+let current_db () =
+  let fold k v acc = (k, v) :: acc in
+  List.rev (Hintdbmap.fold fold !searchtable [])
 
 (**************************************************************************)
 (*                       Definition of the summary                        *)
@@ -921,7 +926,7 @@ let pr_hints_db (name,db,hintlist) =
 
 (* Print all hints associated to head c in any database *)
 let pr_hint_list_for_head c =
-  let dbs = Hintdbmap.to_list !searchtable in
+  let dbs = current_db () in
   let validate (name, db) =
     let hints = List.map (fun v -> 0, v) (Hint_db.map_all c db) in
     (name, db, hints)
@@ -940,7 +945,7 @@ let pr_hint_ref ref = pr_hint_list_for_head ref
 
 let pr_hint_term cl =
   try
-    let dbs = Hintdbmap.to_list !searchtable in
+    let dbs = current_db () in
     let valid_dbs =
       let fn = try
 	  let (hdc,args) = head_constr_bound cl in
@@ -1006,7 +1011,8 @@ let pr_hint_db_by_name dbname =
 (* displays all the hints of all databases *)
 let pr_searchtable () =
   let fold name db accu =
-    str "In the database " ++ str name ++ str ":" ++ fnl () ++ pr_hint_db db
+    accu ++ str "In the database " ++ str name ++ str ":" ++ fnl () ++
+    pr_hint_db db ++ fnl ()
   in
   Hintdbmap.fold fold !searchtable (mt ())
 
@@ -1364,7 +1370,7 @@ let trivial ?(debug=Off) lems dbnames gl =
     (trivial_fail_db d false db_list (make_local_hint_db false lems gl)) gl
 
 let full_trivial ?(debug=Off) lems gl =
-  let dbnames = Hintdbmap.dom !searchtable in
+  let dbnames = current_db_names () in
   let dbnames = List.remove "v62" dbnames in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let d = mk_trivial_dbg debug in
@@ -1437,7 +1443,7 @@ let new_auto ?(debug=Off) n = delta_auto ~debug true n
 let default_auto = auto !default_search_depth [] []
 
 let delta_full_auto ?(debug=Off) mod_delta n lems gl =
-  let dbnames = Hintdbmap.dom !searchtable in
+  let dbnames = current_db_names () in
   let dbnames = List.remove "v62" dbnames in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let d = mk_auto_dbg debug in
