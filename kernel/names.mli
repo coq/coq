@@ -19,17 +19,12 @@ sig
   val compare : t -> t -> int
   (** Comparison over identifiers *)
 
-  val check : string -> unit
-  (** Check that a string may be converted to an identifier.
-      Raise a [UserError _] exception related to the problem
-      when this is not the case. *)
-
-  val check_soft : string -> unit
-  (** As [check], but may raise a warning instead of failing when the string is
-      not an identifier, but is a well-formed string. *)
+  val is_valid : string -> bool
+  (** Check that a string may be converted to an identifier. *)
 
   val of_string : string -> t
-  (** Converts a string into an identifier. May raise [UserError _] *)
+  (** Converts a string into an identifier. May raise [UserError _] if the
+      string is not valid. *)
 
   val to_string : t -> string
   (** Converts a identifier into an string. *)
@@ -438,12 +433,6 @@ val eq_ind_chk : inductive -> inductive -> bool
 
 type identifier = Id.t
 (** @deprecated Alias for [Id.t] *)
-
-val check_ident : string -> unit
-(** @deprecated Same as [Id.check]. *)
-
-val check_ident_soft : string -> unit
-(** @deprecated Same as [Id.check_soft]. *)
 
 val string_of_id : identifier -> string
 (** @deprecated Same as [Id.to_string]. *)

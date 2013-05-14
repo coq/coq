@@ -1472,13 +1472,11 @@ let interp_search_restriction = function
 
 open Search
 
-let is_ident s = try ignore (Id.check s); true with UserError _ -> false
-
 let interp_search_about_item = function
   | SearchSubPattern pat ->
       let _,pat = intern_constr_pattern Evd.empty (Global.env()) pat in
       GlobSearchSubPattern pat
-  | SearchString (s,None) when is_ident s ->
+  | SearchString (s,None) when Id.is_valid s ->
       GlobSearchString s
   | SearchString (s,sc) ->
       try

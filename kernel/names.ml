@@ -38,9 +38,9 @@ struct
     in
     Option.iter iter (Unicode.ident_refutation x)
 
-  let check x =
-    let iter (_, x) = Errors.error x in
-    Option.iter iter (Unicode.ident_refutation x)
+  let is_valid s = match Unicode.ident_refutation s with
+  | None -> true
+  | Some _ -> false
 
   let of_string s =
     let () = check_soft s in
@@ -630,8 +630,6 @@ type identifier = Id.t
 
 let id_eq = Id.equal
 let id_ord = Id.compare
-let check_ident_soft = Id.check_soft
-let check_ident = Id.check
 let string_of_id = Id.to_string
 let id_of_string = Id.of_string
 

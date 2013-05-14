@@ -74,8 +74,10 @@ let scheme_object_table =
   (Hashtbl.create 17 : (string, string * scheme_object_function) Hashtbl.t)
 
 let declare_scheme_object s aux f =
-  (try Id.check ("ind"^s) with UserError _ ->
-    error ("Illegal induction scheme suffix: "^s));
+  let () =
+    if not (Id.is_valid ("ind" ^ s)) then
+      error ("Illegal induction scheme suffix: " ^ s)
+  in
   let key = if String.is_empty aux then s else aux in
   try
     let _ = Hashtbl.find scheme_object_table key in
