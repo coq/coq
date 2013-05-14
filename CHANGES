@@ -43,6 +43,10 @@ Tactics
   behaves like if matching on "?X pat1 ... patn", i.e. accepting "_"
   to be instantiated by an applicative term (experimental at this
   stage, potential source of incompatibilities).
+- "change ... in ..." and "simpl ... in ..." now consider nested
+  occurrences (possible source of incompatibilities since this alters
+  the numbering of occurrences).
+
 
 Program
 
