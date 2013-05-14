@@ -1082,8 +1082,9 @@ let solve_refl ?(can_drop=false) conv_algo env evd evk argsv1 argsv2 =
    in advance, we check which of them apply *)
 
 exception NoCandidates
+exception IncompatibleCandidates
 
-let solve_candidates conv_algo env evd (evk,argsv as ev) rhs =
+let solve_candidates conv_algo env evd (evk,argsv) rhs =
   let evi = Evd.find evd evk in
   let args = Array.to_list argsv in
   match evi.evar_candidates with
@@ -1093,7 +1094,7 @@ let solve_candidates conv_algo env evd (evk,argsv as ev) rhs =
         List.map_filter
           (filter_compatible_candidates conv_algo env evd evi args rhs) l in
       match l' with
-      | [] -> error_cannot_unify env evd (mkEvar ev, rhs)
+      | [] -> raise IncompatibleCandidates
       | [c,evd] ->
           (* solve_candidates might have been called recursively in the mean *)
           (* time and the evar been solved by the filtering process *)
@@ -1393,4 +1394,6 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
         UnifFailure (evd,MetaOccurInBody evk1)
     | IllTypedInstance (env,t,u) ->
         UnifFailure (evd,InstanceNotSameType (evk1,env,t,u))
+    | IncompatibleCandidates ->
+        UnifFailure (evd,ConversionFailed (env,mkEvar ev1,t2))
 
