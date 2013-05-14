@@ -55,9 +55,7 @@ type typeclass = {
   cl_projs : (Name.t * (direction * int option) option * constant option) list;
 }
 
-module Gmap = Fmap.Make(RefOrdered)
-
-type typeclasses = typeclass Gmap.t
+type typeclasses = typeclass Refmap.t
 
 type instance = {
   is_class: global_reference;
@@ -69,7 +67,7 @@ type instance = {
   is_impl: global_reference;
 }
 
-type instances = (instance Gmap.t) Gmap.t
+type instances = (instance Refmap.t) Refmap.t
 
 let instance_impl is = is.is_impl
 
@@ -87,11 +85,11 @@ let new_instance cl pri glob impl =
  * states management
  *)
 
-let classes : typeclasses ref = Summary.ref Gmap.empty ~name:"classes"
-let instances : instances ref = Summary.ref Gmap.empty ~name:"instances"
+let classes : typeclasses ref = Summary.ref Refmap.empty ~name:"classes"
+let instances : instances ref = Summary.ref Refmap.empty ~name:"instances"
 
 let class_info c =
-  try Gmap.find c !classes
+  try Refmap.find c !classes
   with Not_found -> not_a_class (Global.env()) (constr_of_global c)
 
 let global_class_of_constr env c =
@@ -128,7 +126,7 @@ let is_class_evar evd evi =
  *)
 
 let load_class (_, cl) =
-  classes := Gmap.add cl.cl_impl cl !classes
+  classes := Refmap.add cl.cl_impl cl !classes
 
 let cache_class = load_class
 
@@ -271,17 +269,17 @@ type instance_action =
 
 let load_instance inst = 
   let insts = 
-    try Gmap.find inst.is_class !instances 
-    with Not_found -> Gmap.empty in
-  let insts = Gmap.add inst.is_impl inst insts in
-  instances := Gmap.add inst.is_class insts !instances
+    try Refmap.find inst.is_class !instances
+    with Not_found -> Refmap.empty in
+  let insts = Refmap.add inst.is_impl inst insts in
+  instances := Refmap.add inst.is_class insts !instances
 
 let remove_instance inst =
   let insts = 
-    try Gmap.find inst.is_class !instances 
+    try Refmap.find inst.is_class !instances
     with Not_found -> assert false in
-  let insts = Gmap.remove inst.is_impl insts in
-  instances := Gmap.add inst.is_class insts !instances
+  let insts = Refmap.remove inst.is_impl insts in
+  instances := Refmap.add inst.is_class insts !instances
 
 let cache_instance (_, (action, i)) =
   match action with 
@@ -416,23 +414,23 @@ let instance_constructor cl args =
 	  term, applistc (mkConst cst) pars
       | _ -> assert false
 
-let typeclasses () = Gmap.fold (fun _ l c -> l :: c) !classes []
+let typeclasses () = Refmap.fold (fun _ l c -> l :: c) !classes []
 
-let cmap_elements c = Gmap.fold (fun k v acc -> v :: acc) c []
+let cmap_elements c = Refmap.fold (fun k v acc -> v :: acc) c []
 
 let instances_of c =
-  try cmap_elements (Gmap.find c.cl_impl !instances) with Not_found -> []
+  try cmap_elements (Refmap.find c.cl_impl !instances) with Not_found -> []
 
 let all_instances () = 
-  Gmap.fold (fun k v acc -> 
-    Gmap.fold (fun k v acc -> v :: acc) v acc)
+  Refmap.fold (fun k v acc ->
+    Refmap.fold (fun k v acc -> v :: acc) v acc)
     !instances []
 
 let instances r = 
   let cl = class_info r in instances_of cl    
-      
+
 let is_class gr = 
-  Gmap.fold (fun k v acc -> acc || eq_gr v.cl_impl gr) !classes false
+  Refmap.fold (fun k v acc -> acc || eq_gr v.cl_impl gr) !classes false
 
 let is_instance = function
   | ConstRef c ->
