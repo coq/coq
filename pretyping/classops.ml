@@ -99,8 +99,18 @@ let class_tab =
 let coercion_tab =
   ref (CoeTypMap.empty : coe_info_typ CoeTypMap.t)
 
+module ClPairOrd =
+struct
+  type t = cl_index * cl_index
+  let compare (i1, j1) (i2, j2) =
+    let c = Int.compare i1 i2 in
+    if c = 0 then Int.compare j1 j2 else c
+end
+
+module ClPairMap = Map.Make(ClPairOrd)
+
 let inheritance_graph =
-  ref (Gmap.empty : (cl_index * cl_index, inheritance_path) Gmap.t)
+  ref (ClPairMap.empty : inheritance_path ClPairMap.t)
 
 let freeze _ = (!class_tab, !coercion_tab, !inheritance_graph)
 
@@ -119,14 +129,14 @@ let add_new_coercion coe s =
   coercion_tab := CoeTypMap.add coe s !coercion_tab
 
 let add_new_path x y =
-  inheritance_graph := Gmap.add x y !inheritance_graph
+  inheritance_graph := ClPairMap.add x y !inheritance_graph
 
 let init () =
   class_tab:= Bijint.empty;
   add_new_class CL_FUN  { cl_param = 0 };
   add_new_class CL_SORT { cl_param = 0 };
   coercion_tab:= CoeTypMap.empty;
-  inheritance_graph:= Gmap.empty
+  inheritance_graph:= ClPairMap.empty
 
 let _ =
   Summary.declare_summary "inh_graph"
@@ -221,7 +231,7 @@ let pr_class x = str (string_of_class x)
 (* lookup paths *)
 
 let lookup_path_between_class (s,t) =
-  Gmap.find (s,t) !inheritance_graph
+  ClPairMap.find (s,t) !inheritance_graph
 
 let lookup_path_to_fun_from_class s =
   lookup_path_between_class (s,cl_fun_index)
@@ -271,7 +281,7 @@ let get_coercion_constructor coe =
 let lookup_pattern_path_between (s,t) =
   let i = inductive_class_of s in
   let j = inductive_class_of t in
-  List.map get_coercion_constructor (Gmap.find (i,j) !inheritance_graph)
+  List.map get_coercion_constructor (ClPairMap.find (i,j) !inheritance_graph)
 
 (* coercion_value : coe_index -> unsafe_judgment * bool *)
 
@@ -323,12 +333,12 @@ let add_coercion_in_graph (ic,source,target) =
     let _ = try_add_new_path ij p in ()
   in
   if try_add_new_path (source,target) [ic] then begin
-    Gmap.iter
+    ClPairMap.iter
       (fun (s,t) p ->
          if not (Int.equal s t) then begin
 	   if Int.equal t source then begin
              try_add_new_path1 (s,target) (p@[ic]);
-             Gmap.iter
+             ClPairMap.iter
 	       (fun (u,v) q ->
                   if not (Int.equal u v) && Int.equal u target &&  not (List.equal coe_info_typ_equal p q) then
 		    try_add_new_path1 (s,v) (p@[ic]@q))
@@ -467,7 +477,11 @@ let pr_cl_index n = int n
 let classes () = Bijint.dom !class_tab
 let coercions () =
   List.rev (CoeTypMap.fold (fun _ y acc -> y::acc) !coercion_tab [])
-let inheritance_graph () = Gmap.to_list !inheritance_graph
+
+let inheritance_graph () =
+  (** FIXME: in 3.12 use Map.keys *)
+  let fold k v acc = (k, v) :: acc in
+  ClPairMap.fold fold !inheritance_graph []
 
 let coercion_of_reference r =
   let ref = Nametab.global r in
