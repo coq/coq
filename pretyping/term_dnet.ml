@@ -315,11 +315,11 @@ struct
     fold_pattern (fun acc (mset,m,dn) -> if Int.equal m neutral_meta then acc else f m dn acc)
 
   let fold_pattern_nonlin f =
-    let defined = ref Gmap.empty in
+    let defined = ref Int.Map.empty in
     fold_pattern_neutral
       ( fun m dn acc ->
-	 let dn = try TDnet.inter dn (Gmap.find m !defined) with Not_found -> dn in
-	 defined := Gmap.add m dn !defined;
+	 let dn = try TDnet.inter dn (Int.Map.find m !defined) with Not_found -> dn in
+	 defined := Int.Map.add m dn !defined;
 	 f m dn acc )
 
   let fold_pattern_up f acc dpat cpat dn (up,plug) =

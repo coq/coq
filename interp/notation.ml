@@ -955,10 +955,6 @@ let unfreeze (scm,nlm,scs,asc,dlm,fkm,pprules,clsc) =
 
 let init () =
   init_scope_map ();
-(*
-  scope_stack := Gmap.empty
-  arguments_scope := Refmap.empty
-*)
   notation_level_map := String.Map.empty;
   delimiters_map := String.Map.empty;
   notations_key_table := KeyMap.empty;

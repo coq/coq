@@ -698,11 +698,6 @@ open Typeclasses
 let pr_instance i =
   pr_global (instance_impl i)
 
-let pr_instance_gmap insts =
-  prlist_with_sep fnl (fun (gr, insts) ->
-    prlist_with_sep fnl pr_instance (cmap_to_list insts))
-    (Gmap.to_list insts)
-
 (** Inductive declarations *)
 
 open Termops
