@@ -152,7 +152,7 @@ let judge_of_constant_knowing_parameters env cst jl =
   let c = mkConst cst in
   let cb = lookup_constant cst env in
   let _ = check_hyps_inclusion env c cb.const_hyps in
-  let paramstyp = Array.map (fun j -> j.uj_type) jl in
+  let paramstyp = Array.map (fun j -> lazy j.uj_type) jl in
   let t = type_of_constant_knowing_parameters env cb.const_type paramstyp in
   make_judge c t
 
@@ -298,7 +298,7 @@ let judge_of_inductive_knowing_parameters env ind jl =
   let c = mkInd ind in
   let (mib,mip) = lookup_mind_specif env ind in
   check_hyps_inclusion env c mib.mind_hyps;
-  let paramstyp = Array.map (fun j -> j.uj_type) jl in
+  let paramstyp = Array.map (fun j -> lazy j.uj_type) jl in
   let t = Inductive.type_of_inductive_knowing_parameters env mip paramstyp in
   make_judge c t
 

@@ -384,7 +384,7 @@ let add_inductive_class ind =
     let ctx = oneind.mind_arity_ctxt in
     let ty = Inductive.type_of_inductive_knowing_parameters
       (push_rel_context ctx (Global.env ()))
-	  oneind (Termops.extended_rel_vect 0 ctx)
+	  oneind (Array.map (fun x -> lazy x) (Termops.extended_rel_vect 0 ctx))
     in
       { cl_impl = IndRef ind;
 	cl_context = List.map (const None) ctx, ctx;

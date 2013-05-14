@@ -27,12 +27,12 @@ let meta_type evd mv =
   meta_instance evd ty
 
 let constant_type_knowing_parameters env cst jl =
-  let paramstyp = Array.map (fun j -> j.uj_type) jl in
+  let paramstyp = Array.map (fun j -> lazy j.uj_type) jl in
   type_of_constant_knowing_parameters env (constant_type env cst) paramstyp
 
 let inductive_type_knowing_parameters env ind jl =
   let (mib,mip) = lookup_mind_specif env ind in
-  let paramstyp = Array.map (fun j -> j.uj_type) jl in
+  let paramstyp = Array.map (fun j -> lazy j.uj_type) jl in
   Inductive.type_of_inductive_knowing_parameters env mip paramstyp
 
 let e_type_judgment env evdref j =

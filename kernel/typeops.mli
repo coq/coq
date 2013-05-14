@@ -101,7 +101,7 @@ val type_of_constant : env -> constant -> types
 val type_of_constant_type : env -> constant_type -> types
 
 val type_of_constant_knowing_parameters :
-  env -> constant_type -> constr array -> types
+  env -> constant_type -> types Lazy.t array -> types
 
 (** Make a type polymorphic if an arity *)
 val make_polymorphic_if_constant_for_ind : env -> unsafe_judgment ->

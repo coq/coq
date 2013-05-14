@@ -148,7 +148,7 @@ let rec make_subst env = function
       (* arity is a global level which, at typing time, will be enforce *)
       (* to be greater than the level of the argument; this is probably *)
       (* a useless extra constraint *)
-      let s = sort_as_univ (snd (dest_arity env a)) in
+      let s = sort_as_univ (snd (dest_arity env (Lazy.force a))) in
       let ctx,subst = make_subst env (sign, exp, args) in
       d::ctx, cons_subst u s subst
   | (na,None,t as d)::sign, Some u::exp, [] ->
