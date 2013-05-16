@@ -171,7 +171,7 @@ let strbrk s =
 	else str (String.sub s p (n-p)) :: spc () :: aux (n+1) (n+1)
       else aux p (n + 1)
     else if p = n then [] else [str (String.sub s p (n-p))]
-  in List.fold_left (++) Glue.empty (List.rev (aux 0 0))
+  in List.fold_left (++) Glue.empty (aux 0 0)
 
 let ismt = is_empty
 
