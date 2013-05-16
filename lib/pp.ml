@@ -6,6 +6,34 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+module Glue : sig
+
+  (* A left associative glue implements efficient glue operator
+     when used as left associative.  If glue is denoted ++ then
+
+        a ++ b ++ c ++ d = ((a ++ b) ++ c) ++ d = [d] @ ([c] @ ([b] @  [a]))
+
+     I.e. if the short list is the second argument
+  *)
+  type 'a t
+  
+  val atom : 'a -> 'a t
+  val glue : 'a t -> 'a t -> 'a t
+  val empty : 'a t
+  val iter : ('a -> unit) -> 'a t -> unit
+
+end = struct
+
+  type 'a t = 'a list
+
+  let atom x = [x]
+  let glue x y = y @ x
+  let empty = []
+
+  let iter f g = List.iter f (List.rev g)
+
+end
+
 open Pp_control
 
 (* This should not be used outside of this file. Use
@@ -50,7 +78,7 @@ type block_type =
 
 type 'a ppcmd_token =
   | Ppcmd_print of 'a
-  | Ppcmd_box of block_type * ('a ppcmd_token Stream.t)
+  | Ppcmd_box of block_type * ('a ppcmd_token Glue.t)
   | Ppcmd_print_break of int * int
   | Ppcmd_set_tab
   | Ppcmd_print_tbreak of int * int
@@ -63,18 +91,22 @@ type 'a ppcmd_token =
   | Ppcmd_comment of int
 
 type 'a ppdir_token =
-  | Ppdir_ppcmds of 'a ppcmd_token Stream.t
+  | Ppdir_ppcmds of 'a ppcmd_token Glue.t
   | Ppdir_print_newline
   | Ppdir_print_flush
 
 type ppcmd = (int*string) ppcmd_token
 
-type std_ppcmds = ppcmd Stream.t
+type std_ppcmds = ppcmd Glue.t
 
-type 'a ppdirs = 'a ppdir_token Stream.t
+type 'a ppdirs = 'a ppdir_token Glue.t
 
-let is_empty s =
-  try Stream.empty s; true with Stream.Failure -> false
+let (++) = Glue.glue
+
+let app = Glue.glue
+
+let is_empty g = g = Glue.empty
+
 
 (* Compute length of an UTF-8 encoded string
    Rem 1 : utf8_length <= String.length (equal if pure ascii)
@@ -113,21 +145,21 @@ let utf8_length s =
   !cnt
 
 (* formatting commands *)
-let str s = Stream.of_list [Ppcmd_print (utf8_length s,s)]
-let stras (i,s) = Stream.of_list [Ppcmd_print (i,s)]
-let brk (a,b) = Stream.of_list [Ppcmd_print_break (a,b)]
-let tbrk (a,b) = Stream.of_list [Ppcmd_print_tbreak (a,b)]
-let tab () = Stream.of_list [Ppcmd_set_tab]
-let fnl () = Stream.of_list [Ppcmd_force_newline]
-let pifb () = Stream.of_list [Ppcmd_print_if_broken]
-let ws n = Stream.of_list [Ppcmd_white_space n]
-let comment n = Stream.of_list [Ppcmd_comment n]
+let str s = Glue.atom(Ppcmd_print (utf8_length s,s))
+let stras (i,s) = Glue.atom(Ppcmd_print (i,s))
+let brk (a,b) = Glue.atom(Ppcmd_print_break (a,b))
+let tbrk (a,b) = Glue.atom(Ppcmd_print_tbreak (a,b))
+let tab () = Glue.atom(Ppcmd_set_tab)
+let fnl () = Glue.atom(Ppcmd_force_newline)
+let pifb () = Glue.atom(Ppcmd_print_if_broken)
+let ws n = Glue.atom(Ppcmd_white_space n)
+let comment n = Glue.atom(Ppcmd_comment n)
 
 (* derived commands *)
-let mt () = Stream.of_list []
-let spc () = Stream.of_list [Ppcmd_print_break (1,0)]
-let cut () = Stream.of_list [Ppcmd_print_break (0,0)]
-let align () = Stream.of_list [Ppcmd_print_break (0,0)]
+let mt () = Glue.empty
+let spc () = Glue.atom(Ppcmd_print_break (1,0))
+let cut () = Glue.atom(Ppcmd_print_break (0,0))
+let align () = Glue.atom(Ppcmd_print_break (0,0))
 let int n = str (string_of_int n)
 let real r = str (string_of_float r)
 let bool b = str (string_of_bool b)
@@ -135,44 +167,31 @@ let strbrk s =
   let rec aux p n =
     if n < String.length s then
       if s.[n] = ' ' then
-	if p = n then Stream.lapp spc (aux (n+1) (n+1))
-	else Stream.iapp (str (String.sub s p (n-p))) (Stream.lapp spc (aux (n+1) (n+1)))
+	if p = n then spc() :: aux (n+1) (n+1)
+	else str (String.sub s p (n-p)) :: spc () :: aux (n+1) (n+1)
       else aux p (n + 1)
-    else if p = n then Stream.sempty else str (String.sub s p (n-p))
-  in aux 0 0
+    else if p = n then [] else [str (String.sub s p (n-p))]
+  in List.fold_left (++) Glue.empty (List.rev (aux 0 0))
 
-let ismt s = try let _ = Stream.empty s in true with Stream.Failure -> false
+let ismt = is_empty
 
 (* boxing commands *)
-let h n s = Stream.of_list [Ppcmd_box(Pp_hbox n,s)]
-let v n s = Stream.of_list [Ppcmd_box(Pp_vbox n,s)]
-let hv n s = Stream.of_list [Ppcmd_box(Pp_hvbox n,s)]
-let hov n s = Stream.of_list [Ppcmd_box(Pp_hovbox n,s)]
-let t s = Stream.of_list [Ppcmd_box(Pp_tbox,s)]
+let h n s = Glue.atom(Ppcmd_box(Pp_hbox n,s))
+let v n s = Glue.atom(Ppcmd_box(Pp_vbox n,s))
+let hv n s = Glue.atom(Ppcmd_box(Pp_hvbox n,s))
+let hov n s = Glue.atom(Ppcmd_box(Pp_hovbox n,s))
+let t s = Glue.atom(Ppcmd_box(Pp_tbox,s))
 
 (* Opening and closing of boxes *)
-let hb n = Stream.of_list [Ppcmd_open_box(Pp_hbox n)]
-let vb n = Stream.of_list [Ppcmd_open_box(Pp_vbox n)]
-let hvb n = Stream.of_list [Ppcmd_open_box(Pp_hvbox n)]
-let hovb n = Stream.of_list [Ppcmd_open_box(Pp_hovbox n)]
-let tb () = Stream.of_list [Ppcmd_open_box Pp_tbox]
-let close () = Stream.of_list [Ppcmd_close_box]
-let tclose () = Stream.of_list [Ppcmd_close_tbox]
+let hb n = Glue.atom(Ppcmd_open_box(Pp_hbox n))
+let vb n = Glue.atom(Ppcmd_open_box(Pp_vbox n))
+let hvb n = Glue.atom(Ppcmd_open_box(Pp_hvbox n))
+let hovb n = Glue.atom(Ppcmd_open_box(Pp_hovbox n))
+let tb () = Glue.atom(Ppcmd_open_box Pp_tbox)
+let close () = Glue.atom(Ppcmd_close_box)
+let tclose () = Glue.atom(Ppcmd_close_tbox)
 
-let (++) = Stream.iapp
-
-let app = Stream.iapp
-
-let rec eval_ppcmds l =
-  let rec aux l =
-    try
-      let a = match Stream.next l with
-      | Ppcmd_box (b,s) -> Ppcmd_box (b,eval_ppcmds s)
-      | a -> a in
-      let rest = aux l in
-      a :: rest
-    with Stream.Failure -> [] in
-  Stream.of_list (aux l)
+let eval_ppcmds l = l
 
 (* In new syntax only double quote char is escaped by repeating it *)
 let escape_string s =
@@ -231,7 +250,7 @@ let pp_dirs ft =
     | Ppcmd_box(bty,ss)       -> (* Prevent evaluation of the stream! *)
         com_if ft (Lazy.lazy_from_val());
         pp_open_box bty ;
-        if not (Format.over_max_boxes ()) then Stream.iter pp_cmd ss;
+        if not (Format.over_max_boxes ()) then Glue.iter pp_cmd ss;
         Format.pp_close_box ft ()
     | Ppcmd_open_box bty      -> com_if ft (Lazy.lazy_from_val()); pp_open_box bty
     | Ppcmd_close_box         -> Format.pp_close_box ft ()
@@ -254,14 +273,14 @@ let pp_dirs ft =
         Format.pp_close_box ft ()*)
   in
   let pp_dir = function
-    | Ppdir_ppcmds cmdstream -> Stream.iter pp_cmd cmdstream
+    | Ppdir_ppcmds cmdstream -> Glue.iter pp_cmd cmdstream
     | Ppdir_print_newline    ->
         com_brk ft; Format.pp_print_newline ft ()
     | Ppdir_print_flush      -> Format.pp_print_flush ft ()
   in
   fun (dirstream : _ ppdirs) ->
     try
-      Stream.iter pp_dir dirstream; com_brk ft
+      Glue.iter pp_dir dirstream; com_brk ft
     with reraise ->
       let reraise = Backtrace.add_backtrace reraise in
       let () = Format.pp_print_flush ft () in
@@ -274,27 +293,26 @@ let pp_dirs ft =
 let emacs_quote_start = String.make 1 (Char.chr 254)
 let emacs_quote_end = String.make 1 (Char.chr 255)
 
-let emacs_quote strm =
-  if !print_emacs then
-    Stream.iapp (str emacs_quote_start) (Stream.iapp (hov 0 strm) (str emacs_quote_end))
-  else hov 0 strm
+let emacs_quote g =
+  if !print_emacs then str emacs_quote_start ++ hov 0 g ++ str emacs_quote_end
+  else hov 0 g
 
 
 (* pretty printing functions WITHOUT FLUSH *)
 let pp_with ft strm =
-  pp_dirs ft (Stream.ising (Ppdir_ppcmds strm))
+  pp_dirs ft (Glue.atom (Ppdir_ppcmds strm))
 
 let ppnl_with ft strm =
-  pp_dirs ft (Stream.ising (Ppdir_ppcmds (Stream.iapp strm (Stream.slazy fnl))))
+  pp_dirs ft (Glue.atom (Ppdir_ppcmds (strm ++ fnl ())))
 
 let pp_flush_with ft = Format.pp_print_flush ft
 
 (* pretty printing functions WITH FLUSH *)
 let msg_with ft strm =
-  pp_dirs ft (Stream.of_list [Ppdir_ppcmds strm ; Ppdir_print_flush])
+  pp_dirs ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_flush))
 
 let msgnl_with ft strm =
-  pp_dirs ft (Stream.of_list [Ppdir_ppcmds strm ; Ppdir_print_newline])
+  pp_dirs ft (Glue.atom(Ppdir_ppcmds strm) ++ Glue.atom(Ppdir_print_newline))
 
 (* pretty printing functions WITHOUT FLUSH *)
 let pp        x = pp_with   !std_ft x
@@ -386,9 +404,7 @@ let pr_nth n =
 
 (* [prlist pr [a ; ... ; c]] outputs [pr a ++ ... ++ pr c] *)
 
-let rec prlist elem l = match l with
-  | []   -> mt ()
-  | h::t -> Stream.lapp (fun () -> elem h) (prlist elem t)
+let prlist elem l = List.fold_left (++) Glue.empty (List.rev (List.map elem l))
 
 (* unlike all other functions below, [prlist] works lazily.
    if a strict behavior is needed, use [prlist_strict] instead.
