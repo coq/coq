@@ -404,7 +404,7 @@ let pr_nth n =
 
 (* [prlist pr [a ; ... ; c]] outputs [pr a ++ ... ++ pr c] *)
 
-let prlist elem l = List.fold_left (++) Glue.empty (List.rev (List.map elem l))
+let prlist pr l = List.fold_left (fun x e -> x ++ pr e) Glue.empty l
 
 (* unlike all other functions below, [prlist] works lazily.
    if a strict behavior is needed, use [prlist_strict] instead.
