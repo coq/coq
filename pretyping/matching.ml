@@ -45,99 +45,96 @@ open Misctypes
 
  *)
 
-type bound_ident_map = (Id.t * Id.t) list
+type bound_ident_map = Id.t Id.Map.t
 
 exception PatternMatchingFailure
 
+let warn_bound_meta name =
+  msg_warning (str "Collision between bound variable " ++ pr_id name ++
+    str " and a metavariable of same name.")
+
+let warn_bound_bound name =
+  msg_warning (str "Collision between bound variables of name " ++ pr_id name)
+
+let warn_bound_again name =
+  msg_warning (str "Collision between bound variable " ++ pr_id name ++
+    str " and another bound variable of same name.")
+
 let constrain n (ids, m as x) (names, terms as subst) =
   try
-    let (ids',m') = List.assoc n terms in
+    let (ids', m') = List.assoc n terms in
     if List.equal Id.equal ids ids' && eq_constr m m' then subst
     else raise PatternMatchingFailure
-  with
-      Not_found ->
-        if List.mem_assoc n names then
-          msg_warning
-              (str "Collision between bound variable " ++ pr_id n ++
-               str " and a metavariable of same name.");
-        (names,(n,x)::terms)
+  with Not_found ->
+    let () = if Id.Map.mem n names then warn_bound_meta n in
+    (names, (n, x) :: terms)
 
-let add_binders na1 na2 (names,terms as subst) =
-  match na1, na2 with
-  | Name id1, Name id2 ->
-      if List.mem_assoc id1 names then
-        (Pp.msg_warning
-          (str "Collision between bound variables of name " ++ pr_id id1);
-         (names,terms))
-      else
-        (if List.mem_assoc id1 terms then
-            Pp.msg_warning
-              (str "Collision between bound variable " ++ pr_id id1 ++
-               str " and another bound variable of same name.");
-         ((id1,id2)::names,terms));
-  | _ -> subst
+let add_binders na1 na2 (names, terms as subst) = match na1, na2 with
+| Name id1, Name id2 ->
+  if Id.Map.mem id1 names then
+    let () = warn_bound_bound id1 in
+    (names, terms)
+  else
+    let names = Id.Map.add id1 id2 names in
+    let () = if List.mem_assoc id1 terms then warn_bound_again id1 in
+    (names, terms)
+| _ -> subst
 
 let build_lambda toabstract stk (m : constr) =
-  let rec buildrec m p_0 p_1 = match p_0,p_1 with
-    | (_, []) -> m
-    | (n, (_,na,t)::tl) ->
-	if Int.Set.mem n toabstract then
-          buildrec (mkLambda (na,t,m)) (n+1) tl
-        else
-	  buildrec (lift (-1) m) (n+1) tl
+  let rec buildrec m k stk = match stk with
+  | [] -> m
+  | (_, na, t) :: tl ->
+    if Int.Set.mem k toabstract then
+      buildrec (mkLambda (na, t, m)) (k + 1) tl
+    else
+      buildrec (lift (-1) m) (k + 1) tl
   in
   buildrec m 1 stk
 
-let rec list_insert a = function
-| [] -> [a]
-| b :: l ->
-  let ord = Id.compare a b in
-  if ord < 0 then a :: b :: l
-  else if ord > 0 then b :: list_insert a l
-  else raise PatternMatchingFailure
+let rec extract_bound_aux k accu frels stk = match stk with
+| [] -> accu
+| (na1, na2, _) :: stk ->
+  if Int.Set.mem k frels then
+    begin match na1 with
+    | Name id ->
+      let () = assert (match na2 with Anonymous -> false | Name _ -> true) in
+      let () = if Id.Set.mem id accu then raise PatternMatchingFailure in
+      extract_bound_aux (k + 1) (Id.Set.add id accu) frels stk
+    | Anonymous -> raise PatternMatchingFailure
+    end
+  else extract_bound_aux (k + 1) accu frels stk
 
-let extract_bound_vars =
-  let rec aux k = function
-  | ([],_) -> []
-  | (n :: l, (na1, na2, _) :: stk) when Int.equal k n ->
-      begin match na1, na2 with
-      | Name id1, Name _ -> list_insert id1 (aux (k + 1) (l, stk))
-      | Name _, Anonymous -> anomaly (Pp.str "Unnamed bound variable")
-      | Anonymous, _ -> raise PatternMatchingFailure
-      end
-  | (l, _ :: stk) -> aux (k + 1) (l, stk)
-  | (_, []) -> assert false
-  in aux 1
+let extract_bound_vars frels stk =
+  extract_bound_aux 1 Id.Set.empty frels stk
 
 let dummy_constr = mkProp
 
-let rec make_renaming ids = function
-  | (Name id,Name _,_)::stk ->
-      let renaming = make_renaming ids stk in
-      (try mkRel (List.index id ids) :: renaming
-       with Not_found -> dummy_constr :: renaming)
-  | (_,_,_)::stk ->
-      dummy_constr :: make_renaming ids stk
-  | [] ->
-      []
+let make_renaming ids = function
+| (Name id, Name _, _) ->
+  begin
+    try mkRel (List.index id ids)
+    with Not_found -> dummy_constr
+  end
+| _ -> dummy_constr
 
 let merge_binding allow_bound_rels stk n cT subst =
-  let depth = List.length stk in
-  let c =
-    if Int.equal depth 0 then
-      (* Optimization *)
-      ([],cT)
+  let c = match stk with
+  | [] -> (* Optimization *)
+    ([], cT)
+  | _ ->
+    let frels = free_rels cT in
+    if allow_bound_rels then
+      let vars = extract_bound_vars frels stk in
+      let ordered_vars = Id.Set.elements vars in
+      let rename binding = make_renaming ordered_vars binding in
+      let renaming = List.map rename stk in
+      (ordered_vars, substl renaming cT)
     else
-      let frels = Int.Set.elements (free_rels cT) in
-      let frels = List.filter (fun i -> i <= depth) frels in
-      if allow_bound_rels then
-	let frels = Sort.list (<) frels in
-	let canonically_ordered_vars = extract_bound_vars (frels,stk) in
-	let renaming = make_renaming canonically_ordered_vars stk in
-	(canonically_ordered_vars, substl renaming cT)
-      else match frels with
-      | [] -> ([], lift (- depth) cT)
-      | _ -> raise PatternMatchingFailure
+      let depth = List.length stk in
+      let min_elt = try Int.Set.min_elt frels with Not_found -> succ depth in
+      if depth < min_elt then
+        ([], lift (- depth) cT)
+      else raise PatternMatchingFailure
   in
   constrain n c subst
 
@@ -253,11 +250,11 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
       | _ -> raise PatternMatchingFailure
 
   in
-  let names,terms = sorec [] ([],[]) pat c in
+  let names, terms = sorec [] (Id.Map.empty, []) pat c in
   (names, List.sort (fun (a, _) (b, _) -> Id.compare a b) terms)
 
 let matches_core_closed convert allow_partial_app pat c =
-  let names,subst = matches_core convert allow_partial_app false pat c in
+  let names, subst = matches_core convert allow_partial_app false pat c in
   (names, List.map (fun (a,(_,b)) -> (a,b)) subst)
 
 let extended_matches = matches_core None true true

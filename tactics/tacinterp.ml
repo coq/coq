@@ -195,7 +195,7 @@ let extern_request ch req gl la =
 let value_of_ident id = VIntroPattern (IntroIdentifier id)
 
 let extend_values_with_bindings (ln,lm) lfun =
-  let lnames = List.map (fun (id,id') ->(id,value_of_ident id')) ln in
+  let lnames = Id.Map.fold (fun id id' accu -> (id,value_of_ident id') :: accu) ln [] in
   let lmatch = List.map (fun (id,(ids,c)) -> (id,VConstr (ids,c))) lm in
   (* For compatibility, bound variables are visible only if no other
      binding of the same name exists *)
@@ -919,7 +919,9 @@ let verify_metas_coherence gl (ln1,lcm) (ln,lm) =
       else
 	raise Not_coherent_metas
   | [] -> lcm in
-  (ln@ln1,aux lm)
+  (** ppedrot: Is that even correct? *)
+  let merged = Id.Map.fold Id.Map.add ln ln1 in
+  (merged, aux lm)
 
 let adjust (l,lc) = (l,List.map (fun (id,c) -> (id,([],c))) lc)
 
