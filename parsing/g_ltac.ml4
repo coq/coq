@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Pp
 open Compat
 open Constrexpr
 open Tacexpr
@@ -163,9 +164,11 @@ GEXTEND Gram
   match_pattern:
     [ [ IDENT "context";  oid = OPT Constr.ident;
           "["; pc = Constr.lconstr_pattern; "]" ->
-        Subterm (false,oid, pc)
+        let mode = not (!Flags.tactic_context_compat) in
+        Subterm (mode, oid, pc)
       | IDENT "appcontext";  oid = OPT Constr.ident;
           "["; pc = Constr.lconstr_pattern; "]" ->
+        msg_warning (strbrk "appcontext is deprecated");
         Subterm (true,oid, pc)
       | pc = Constr.lconstr_pattern -> Term pc ] ]
   ;

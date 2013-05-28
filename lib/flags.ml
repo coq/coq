@@ -175,3 +175,5 @@ let no_native_compiler = ref Coq_config.no_native_compiler
 
 (* Print the mod uid associated to a vo file by the native compiler *)
 let print_mod_uid = ref false
+
+let tactic_context_compat = ref false

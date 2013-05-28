@@ -65,10 +65,13 @@ let typ_of = Retyping.get_type_of
 (* Option for 8.2 compatibility *)
 open Goptions
 let dependent_propositions_elimination = ref true
+let tactic_compat_context = ref false
 
 let use_dependent_propositions_elimination () =
   !dependent_propositions_elimination
   && Flags.version_strictly_greater Flags.V8_2
+
+let use_tactic_context_compat () = !tactic_compat_context
 
 let _ =
   declare_bool_option
@@ -78,6 +81,15 @@ let _ =
       optkey   = ["Dependent";"Propositions";"Elimination"];
       optread  = (fun () -> !dependent_propositions_elimination) ;
       optwrite = (fun b -> dependent_propositions_elimination := b) }
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "trigger bugged context matching compatibility";
+      optkey   = ["Tactic";"Compat";"Context"];
+      optread  = (fun () -> !Flags.tactic_context_compat) ;
+      optwrite = (fun b -> Flags.tactic_context_compat := b) }
 
 let tactic_infer_flags = {
   Pretyping.use_typeclasses = true;
