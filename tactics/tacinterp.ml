@@ -927,82 +927,73 @@ let adjust (l,lc) = (l,List.map (fun (id,c) -> (id,([],c))) lc)
 
 type 'a extended_matching_result =
     { e_ctx : 'a;
-      e_sub : bound_ident_map * extended_patvar_map;
-      e_nxt : unit -> 'a extended_matching_result }
+      e_sub : bound_ident_map * extended_patvar_map; }
+
+let push_id_couple id name env = match name with
+| Name idpat ->
+  let binding = idpat, VConstr ([], mkVar id) in
+  binding :: env
+| Anonymous -> env
+
+let match_pat refresh lmatch hyp gl = function
+| Term t ->
+  let hyp = if refresh then refresh_universes_strict hyp else hyp in
+  begin
+    try
+      let lmeta = extended_matches t hyp in
+      let lmeta = verify_metas_coherence gl lmatch lmeta in
+      let ans = { e_ctx = []; e_sub = lmeta; } in
+      IStream.cons ans IStream.lempty
+    with PatternMatchingFailure | Not_coherent_metas -> IStream.empty
+  end
+| Subterm (b,ic,t) ->
+  let hyp = if refresh then refresh_universes_strict hyp else hyp in
+  let matches = match_subterm_gen b t hyp in
+  let filter s =
+    try
+      let lmeta = verify_metas_coherence gl lmatch (adjust s.m_sub) in
+      let context = give_context s.m_ctx ic in
+      Some { e_ctx = context; e_sub = lmeta; }
+    with Not_coherent_metas -> None
+  in
+  IStream.map_filter filter matches
 
 (* Tries to match one hypothesis pattern with a list of hypotheses *)
 let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
-  let get_id_couple id = function
-    | Name idpat -> [idpat,VConstr ([],mkVar id)]
-    | Anonymous -> [] in
-  let match_pat lmatch hyp pat =
-    match pat with
-    | Term t ->
-        let lmeta = extended_matches t hyp in
-        (try
-            let lmeta = verify_metas_coherence gl lmatch lmeta in
-            { e_ctx = [];
-	      e_sub = lmeta;
-	      e_nxt = fun () -> raise PatternMatchingFailure }
-          with
-            | Not_coherent_metas -> raise PatternMatchingFailure)
-    | Subterm (b,ic,t) ->
-        let rec match_next_pattern find_next () =
-          let s = find_next () in
-          try
-            let lmeta = verify_metas_coherence gl lmatch (adjust s.m_sub) in
-            { e_ctx = give_context s.m_ctx ic;
-	      e_sub = lmeta;
-	      e_nxt = match_next_pattern s.m_nxt }
-          with
-            | Not_coherent_metas -> match_next_pattern s.m_nxt ()
-	in
-        match_next_pattern (fun () -> match_subterm_gen b t hyp) ()
-  in
   let rec apply_one_mhyp_context_rec = function
-    | (id,b,hyp as hd)::tl ->
-	(match patv with
-	| None ->
-            let rec match_next_pattern find_next () =
-              try
-                let s = find_next () in
-		{ e_ctx = (get_id_couple id hypname @ s.e_ctx), hd;
-		  e_sub = s.e_sub;
-                  e_nxt = match_next_pattern s.e_nxt }
-              with
-                | PatternMatchingFailure -> apply_one_mhyp_context_rec tl in
-            match_next_pattern (fun () ->
-	      let hyp = if Option.is_empty b then hyp else refresh_universes_strict hyp in
-	      match_pat lmatch hyp pat) ()
-	| Some patv ->
-	    match b with
-	    | Some body ->
-                let rec match_next_pattern_in_body next_in_body () =
-                  try
-                    let s1 = next_in_body() in
-                    let rec match_next_pattern_in_typ next_in_typ () =
-                      try
-			let s2 = next_in_typ() in
-		        { e_ctx = (get_id_couple id hypname@s1.e_ctx@s2.e_ctx), hd;
-			  e_sub = s2.e_sub;
-			  e_nxt = match_next_pattern_in_typ s2.e_nxt }
-                      with
-                        | PatternMatchingFailure ->
-                            match_next_pattern_in_body s1.e_nxt () in
-                    match_next_pattern_in_typ
-                      (fun () ->
-			let hyp = refresh_universes_strict hyp in
-			match_pat s1.e_sub hyp pat) ()
-                  with PatternMatchingFailure -> apply_one_mhyp_context_rec tl
-                in
-                match_next_pattern_in_body
-                  (fun () -> match_pat lmatch body patv) ()
-            | None -> apply_one_mhyp_context_rec tl)
     | [] ->
-        db_hyp_pattern_failure ist.debug env (hypname,pat);
-        raise PatternMatchingFailure
+(*      db_hyp_pattern_failure ist.debug env (hypname,pat);*)
+      IStream.empty
+    | (id, b, hyp as hd) :: tl ->
+      (match patv with
+      | None ->
+        let refresh = not (Option.is_empty b) in
+        let ans = IStream.thunk (lazy (match_pat refresh lmatch hyp gl pat)) in
+        let map s =
+          let context = (push_id_couple id hypname s.e_ctx), hd in
+          { e_ctx = context; e_sub = s.e_sub; }
+        in
+        let next = lazy (apply_one_mhyp_context_rec tl) in
+        IStream.app (IStream.map map ans) (IStream.thunk next)
+      | Some patv ->
+        match b with
+        | Some body ->
+          let body = match_pat false lmatch body gl patv in
+          let map_body s1 =
+            let types = lazy (match_pat true s1.e_sub hyp gl pat) in
+            let map_types s2 =
+              let env = push_id_couple id hypname s1.e_ctx in
+              let context = (env @s2.e_ctx), hd in
+              { e_ctx = context; e_sub = s2.e_sub; }
+            in
+            IStream.map map_types (IStream.thunk types)
+          in
+          let next = IStream.thunk (lazy (apply_one_mhyp_context_rec tl)) in
+          let body = IStream.map map_body body in
+          IStream.app (IStream.concat body) next
+        | None -> apply_one_mhyp_context_rec tl)
   in
-    apply_one_mhyp_context_rec lhyps
+  apply_one_mhyp_context_rec lhyps
 
 (* misc *)
 
@@ -1261,12 +1252,15 @@ and interp_match_goal ist goal lz lr lmr =
   let concl = pf_concl goal in
   let env = pf_env goal in
   let apply_goal_sub app ist (id,c) csr mt mhyps hyps =
-    let rec match_next_pattern find_next () =
-      let { m_sub=lgoal; m_ctx=ctxt; m_nxt=find_next' } = find_next () in
+    let matches = match_subterm_gen app c csr in
+    let rec match_next_pattern next = match IStream.peek next with
+    | None -> raise PatternMatchingFailure
+    | Some ({ m_sub=lgoal; m_ctx=ctxt }, next) ->
       let lctxt = give_context ctxt id in
       try apply_hyps_context ist env lz goal mt lctxt (adjust lgoal) mhyps hyps
-      with e when is_match_catchable e -> match_next_pattern find_next' () in
-    match_next_pattern (fun () -> match_subterm_gen app c csr) () in
+      with e when is_match_catchable e -> match_next_pattern next in
+    match_next_pattern matches
+  in
   let rec apply_match_goal ist env goal nrs lex lpt =
     begin
       let () = match lex with
@@ -1320,8 +1314,9 @@ and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
 	  | Hyp ((_,hypname),mhyp) -> hypname,  None, mhyp
 	  | Def ((_,hypname),mbod,mhyp) -> hypname, Some mbod, mhyp
 	in
-        let rec match_next_pattern find_next =
-          let s = find_next () in
+        let rec match_next_pattern next = match IStream.peek next with
+        | None -> raise PatternMatchingFailure
+        | Some (s, next) ->
 	  let lids,hyp_match = s.e_ctx in
           db_matched_hyp ist.debug (pf_env goal) hyp_match hypname;
 	  try
@@ -1329,9 +1324,8 @@ and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
             let nextlhyps = List.remove_assoc_in_triple id_match lhyps_rest in
             apply_hyps_context_rec (lfun@lids) s.e_sub nextlhyps tl
           with e when is_match_catchable e ->
-	    match_next_pattern s.e_nxt in
-        let init_match_pattern () =
-          apply_one_mhyp_context ist env goal lmatch hyp_pat lhyps_rest in
+	    match_next_pattern next in
+        let init_match_pattern = apply_one_mhyp_context ist env goal lmatch hyp_pat lhyps_rest in
         match_next_pattern init_match_pattern
     | [] ->
         let lfun = extend_values_with_bindings lmatch (lfun@ist.lfun) in
@@ -1460,14 +1454,14 @@ and interp_genarg_var_list1 ist gl x =
 (* Interprets the Match expressions *)
 and interp_match ist g lz constr lmr =
   let apply_match_subterm app ist (id,c) csr mt =
-    let rec match_next_pattern find_next () =
-      let { m_sub=lmatch; m_ctx=ctxt; m_nxt=find_next' } = find_next () in
+    let rec match_next_pattern next = match IStream.peek next with
+    | None -> raise PatternMatchingFailure
+    | Some ({ m_sub=lmatch; m_ctx=ctxt; }, next) ->
       let lctxt = give_context ctxt id in
       let lfun = extend_values_with_bindings (adjust lmatch) (lctxt@ist.lfun) in
       try eval_with_fail {ist with lfun=lfun} lz g mt
-      with e when is_match_catchable e ->
-        match_next_pattern find_next' () in
-    match_next_pattern (fun () -> match_subterm_gen app c csr) () in
+      with e when is_match_catchable e -> match_next_pattern next in
+    match_next_pattern (match_subterm_gen app c csr) in
   let rec apply_match ist sigma csr = let g = { g with sigma=sigma } in function
     | (All t)::tl ->
         (try eval_with_fail ist lz g t

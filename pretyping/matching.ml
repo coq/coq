@@ -263,12 +263,11 @@ let matches pat c = snd (matches_core_closed None true pat c)
 
 let special_meta = (-1)
 
-type 'a matching_result =
+type matching_result =
     { m_sub : bound_ident_map * patvar_map;
-      m_ctx : 'a;
-      m_nxt : unit -> 'a matching_result }
+      m_ctx : constr; }
 
-let mkresult s c n = { m_sub=s; m_ctx=c; m_nxt=n }
+let mkresult s c n = IStream.cons { m_sub=s; m_ctx=c; } (IStream.thunk n)
 
 let isPMeta = function PMeta _ -> true | _ -> false
 
@@ -288,64 +287,70 @@ let authorized_occ partial_app closed pat c mk_ctx next =
   try
     let sigma = matches_core_closed None partial_app pat c in
     if closed && not (List.for_all (fun (_,c) -> closed0 c) (snd sigma))
-    then next ()
+    then Lazy.force next
     else mkresult sigma (mk_ctx (mkMeta special_meta)) next
-  with
-    PatternMatchingFailure -> next ()
+  with PatternMatchingFailure -> Lazy.force next
 
 (* Tries to match a subterm of [c] with [pat] *)
 let sub_match ?(partial_app=false) ?(closed=true) pat c =
   let rec aux c mk_ctx next =
   match kind_of_term c with
   | Cast (c1,k,c2) ->
-      authorized_occ partial_app closed pat c mk_ctx (fun () ->
-        let mk_ctx lc = mk_ctx (mkCast (List.hd lc, k,c2)) in
-        try_aux [c1] mk_ctx next)
+      let next_mk_ctx lc = mk_ctx (mkCast (List.hd lc, k,c2)) in
+      let next = lazy (try_aux [c1] next_mk_ctx next) in
+      authorized_occ partial_app closed pat c mk_ctx next
   | Lambda (x,c1,c2) ->
-      authorized_occ partial_app closed pat c mk_ctx (fun () ->
-        let mk_ctx lc = mk_ctx (mkLambda (x,List.hd lc,List.nth lc 1)) in
-        try_aux [c1;c2] mk_ctx next)
+      let next_mk_ctx lc = mk_ctx (mkLambda (x,List.hd lc,List.nth lc 1)) in
+      let next = lazy (try_aux [c1;c2] next_mk_ctx next) in
+      authorized_occ partial_app closed pat c mk_ctx next
   | Prod (x,c1,c2) ->
-      authorized_occ partial_app closed pat c mk_ctx (fun () ->
-        let mk_ctx lc = mk_ctx (mkProd (x,List.hd lc,List.nth lc 1)) in
-        try_aux [c1;c2] mk_ctx next)
+      let next_mk_ctx lc = mk_ctx (mkProd (x,List.hd lc,List.nth lc 1)) in
+      let next = lazy (try_aux [c1;c2] next_mk_ctx next) in
+      authorized_occ partial_app closed pat c mk_ctx next
   | LetIn (x,c1,t,c2) ->
-      authorized_occ partial_app closed pat c mk_ctx (fun () ->
-        let mk_ctx = function [c1;c2] -> mkLetIn (x,c1,t,c2) | _ -> assert false
-        in try_aux [c1;c2] mk_ctx next)
+      let next_mk_ctx = function
+      | [c1;c2] -> mkLetIn (x,c1,t,c2)
+      | _ -> assert false
+      in
+      let next = lazy (try_aux [c1;c2] next_mk_ctx next) in
+      authorized_occ partial_app closed pat c mk_ctx next
   | App (c1,lc) ->
-      authorized_occ partial_app closed pat c mk_ctx (fun () ->
+      let next = lazy (
         let topdown = true in
-	if partial_app then
+        if partial_app then
           if topdown then
             let lc1 = Array.sub lc 0 (Array.length lc - 1) in
             let app = mkApp (c1,lc1) in
             let mk_ctx = function
               | [app';c] -> mk_ctx (mkApp (app',[|c|]))
               | _ -> assert false in
-	    try_aux [app;Array.last lc] mk_ctx next
+            try_aux [app;Array.last lc] mk_ctx next
           else
             let rec aux2 app args next =
               match args with
               | [] ->
                   let mk_ctx le =
                     mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
-	          try_aux (c1::Array.to_list lc) mk_ctx next
-	      | arg :: args ->
+                  try_aux (c1::Array.to_list lc) mk_ctx next
+              | arg :: args ->
                   let app = mkApp (app,[|arg|]) in
-                  let next () = aux2 app args next in
+                  let next = lazy (aux2 app args next) in
                   let mk_ctx ce = mk_ctx (mkApp (ce, Array.of_list args)) in
                   aux app mk_ctx next in
             aux2 c1 (Array.to_list lc) next
         else
           let mk_ctx le =
             mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
-	  try_aux (c1::Array.to_list lc) mk_ctx next)
+          try_aux (c1::Array.to_list lc) mk_ctx next)
+      in
+      authorized_occ partial_app closed pat c mk_ctx next
   | Case (ci,hd,c1,lc) ->
-      authorized_occ partial_app closed pat c mk_ctx (fun () ->
-        let mk_ctx le =
-          mk_ctx (mkCase (ci,hd,List.hd le,Array.of_list (List.tl le))) in
-        try_aux (c1::Array.to_list lc) mk_ctx next)
+      let next_mk_ctx = function
+      | [] -> assert false
+      | c1 :: lc -> mk_ctx (mkCase (ci,hd,c1,Array.of_list lc))
+      in
+      let next = lazy (try_aux (c1 :: Array.to_list lc) next_mk_ctx next) in
+      authorized_occ partial_app closed pat c mk_ctx next
   | Construct _ | Fix _ | Ind _|CoFix _ |Evar _|Const _
   | Rel _|Meta _|Var _|Sort _ ->
       authorized_occ partial_app closed pat c mk_ctx next
@@ -353,13 +358,15 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
   (* Tries [sub_match] for all terms in the list *)
   and try_aux lc mk_ctx next =
     let rec try_sub_match_rec lacc = function
-      | [] -> next ()
+      | [] -> Lazy.force next
       | c::tl ->
           let mk_ctx ce = mk_ctx (List.rev_append lacc (ce::tl)) in
-          let next () = try_sub_match_rec (c::lacc) tl in
+          let next = lazy (try_sub_match_rec (c::lacc) tl) in
           aux c mk_ctx next in
     try_sub_match_rec [] lc in
-  aux c (fun x -> x) (fun () -> raise PatternMatchingFailure)
+  let lempty = lazy IStream.empty in
+  let result = lazy (aux c (fun x -> x) lempty) in
+  IStream.thunk result
 
 let match_subterm pat c = sub_match pat c
 
@@ -376,8 +383,8 @@ let is_matching_head pat c =
   with PatternMatchingFailure -> false
 
 let is_matching_appsubterm ?(closed=true) pat c =
-  try let _ = sub_match ~partial_app:true ~closed pat c in true
-  with PatternMatchingFailure -> false
+  let results = sub_match ~partial_app:true ~closed pat c in
+  not (IStream.is_empty results)
 
 let matches_conv env sigma c p =
   snd (matches_core_closed (Some (env,sigma)) false c p)
