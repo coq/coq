@@ -959,10 +959,9 @@ let match_pat refresh lmatch hyp gl = function
   IStream.map_filter filter matches
 
 (* Tries to match one hypothesis pattern with a list of hypotheses *)
-let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
+let apply_one_mhyp_context gl lmatch (hypname,patv,pat) lhyps =
   let rec apply_one_mhyp_context_rec = function
     | [] ->
-(*      db_hyp_pattern_failure ist.debug env (hypname,pat);*)
       IStream.empty
     | (id, b, hyp as hd) :: tl ->
       (match patv with
@@ -1309,13 +1308,15 @@ and interp_match_goal ist goal lz lr lmr =
 and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
   let rec apply_hyps_context_rec lfun lmatch lhyps_rest = function
     | hyp_pat::tl ->
-	let (hypname, _, _ as hyp_pat) =
+	let (hypname, _, pat as hyp_pat) =
 	  match hyp_pat with
 	  | Hyp ((_,hypname),mhyp) -> hypname,  None, mhyp
 	  | Def ((_,hypname),mbod,mhyp) -> hypname, Some mbod, mhyp
 	in
         let rec match_next_pattern next = match IStream.peek next with
-        | None -> raise PatternMatchingFailure
+        | None ->
+          db_hyp_pattern_failure ist.debug env (hypname, pat);
+          raise PatternMatchingFailure
         | Some (s, next) ->
 	  let lids,hyp_match = s.e_ctx in
           db_matched_hyp ist.debug (pf_env goal) hyp_match hypname;
@@ -1325,7 +1326,7 @@ and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
             apply_hyps_context_rec (lfun@lids) s.e_sub nextlhyps tl
           with e when is_match_catchable e ->
 	    match_next_pattern next in
-        let init_match_pattern = apply_one_mhyp_context ist env goal lmatch hyp_pat lhyps_rest in
+        let init_match_pattern = apply_one_mhyp_context goal lmatch hyp_pat lhyps_rest in
         match_next_pattern init_match_pattern
     | [] ->
         let lfun = extend_values_with_bindings lmatch (lfun@ist.lfun) in
