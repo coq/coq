@@ -57,7 +57,7 @@ let wrap_vernac_error exn strm =
   let e = EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None) in
   Exninfo.copy exn e
 
-let rec process_vernac_interp_error exn = match exn with
+let process_vernac_interp_error exn = match exn with
   | Univ.UniverseInconsistency (o,u,v,p) ->
     let pr_rel r =
       match r with
@@ -114,18 +114,18 @@ let rec process_vernac_interp_error exn = match exn with
          if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
   | AlreadyDeclared msg ->
       wrap_vernac_error exn (msg ++ str ".")
-  | Proof_type.LtacLocated (_,_,(Refiner.FailError (i,s) as exc))
-      when not (Pp.is_empty (Lazy.force s)) ->
-      (* Ltac error is intended, trace is irrelevant *)
-      process_vernac_interp_error exc
-  | Proof_type.LtacLocated (s,loc,exc) ->
-      let e = process_vernac_interp_error exc in
-      assert (Errors.noncritical e);
-      (match Himsg.extract_ltac_trace s loc with
-        | None,loc -> Loc.add_loc e loc
-        | Some msg, loc -> Loc.add_loc (EvaluatedError (msg,Some e)) loc)
   | exc ->
       exc
+
+let process_vernac_interp_error exc =
+  let e = process_vernac_interp_error exc in
+  let ltac_trace = Exninfo.get exc Proof_type.ltac_trace_info in
+  match ltac_trace with
+  | None -> e
+  | Some (trace, loc) ->
+    match Himsg.extract_ltac_trace trace loc with
+    | None, loc -> Loc.add_loc e loc
+    | Some msg, loc -> Loc.add_loc (EvaluatedError (msg, Some e)) loc
 
 let _ = Tactic_debug.explain_logic_error :=
   (fun e -> Errors.print (process_vernac_interp_error e))

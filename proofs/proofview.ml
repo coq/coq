@@ -334,7 +334,6 @@ let tclEXTEND tacs1 rtac tacs2 env =
     this should be maintained synchronized, probably. *)
 open Pretype_errors
 let rec catchable_exception = function
-  | Proof_type.LtacLocated(_,_,e) -> catchable_exception e
   | Errors.UserError _
   | Type_errors.TypeError _ | PretypeError (_,_,TypingError _)
   | Indrec.RecursionSchemeError _

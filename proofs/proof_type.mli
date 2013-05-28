@@ -73,6 +73,8 @@ type tactic = goal sigma -> goal list sigma
 
 (** Ltac traces *)
 
+(** TODO: Move those definitions somewhere sensible *)
+
 type ltac_call_kind =
   | LtacNotationCall of string
   | LtacNameCall of ltac_constant
@@ -83,7 +85,4 @@ type ltac_call_kind =
 
 type ltac_trace = (int * Loc.t * ltac_call_kind) list
 
-(** Invariant: the exceptions embedded in LtacLocated satisfy
-    Errors.noncritical *)
-
-exception LtacLocated of ltac_trace * Loc.t * exn
+val ltac_trace_info : (ltac_trace * Loc.t) Exninfo.t

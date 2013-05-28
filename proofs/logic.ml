@@ -57,7 +57,6 @@ let is_unification_error = function
 | _ -> false
 
 let rec catchable_exception = function
-  | LtacLocated(_,_,e) -> catchable_exception e
   | Errors.UserError _ | TypeError _
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _
