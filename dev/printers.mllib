@@ -6,6 +6,7 @@ Option
 Store
 Exninfo
 Backtrace
+IStream
 Pp_control
 Loc
 Compat
@@ -120,7 +121,6 @@ Pretyping
 Declaremods
 
 Tok
-Int
 Lexer
 Ppextend
 Pputils

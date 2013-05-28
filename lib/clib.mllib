@@ -7,6 +7,7 @@ Store
 Exninfo
 Backtrace
 IArray
+IStream
 Pp_control
 Flags
 Pp
