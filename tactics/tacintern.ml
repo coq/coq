@@ -129,30 +129,6 @@ let is_atomic_kn kn =
   let (_,_,l) = repr_kn kn in
   Id.Map.mem (Label.to_id l) !atomic_mactab
 
-(* Tactics table (TacExtend). *)
-
-let tac_tab = Hashtbl.create 17
-
-let add_tactic s t =
-  if Hashtbl.mem tac_tab s then
-    errorlabstrm ("Refiner.add_tactic: ")
-      (str ("Cannot redeclare tactic "^s^"."));
-  Hashtbl.add tac_tab s t
-
-let overwriting_add_tactic s t =
-  if Hashtbl.mem tac_tab s then begin
-    Hashtbl.remove tac_tab s;
-    msg_warning (strbrk ("Overwriting definition of tactic "^s))
-  end;
-  Hashtbl.add tac_tab s t
-
-let lookup_tactic s =
-  try
-    Hashtbl.find tac_tab s
-  with Not_found ->
-    errorlabstrm "Refiner.lookup_tactic"
-      (str"The tactic " ++ str s ++ str" is not installed.")
-
 (* Summary and Object declaration *)
 
 let mactab =
@@ -528,6 +504,9 @@ let clause_app f = function
   | { onhyps=Some l; concl_occs=nl } ->
       { onhyps=Some(List.map f l); concl_occs=nl}
 
+let assert_tactic_installed = ref (fun _ -> ())
+let set_assert_tactic_installed f = assert_tactic_installed := f
+
 (* Globalizes tactics : raw_tactic_expr -> glob_tactic_expr *)
 let rec intern_atomic lf ist x =
   match (x:raw_atomic_tactic_expr) with
@@ -660,7 +639,7 @@ let rec intern_atomic lf ist x =
 
   (* For extensions *)
   | TacExtend (loc,opn,l) ->
-      let _ = lookup_tactic opn in
+      !assert_tactic_installed opn;
       TacExtend (adjust_loc loc,opn,List.map (intern_genarg ist) l)
   | TacAlias (loc,s,l,(dir,body)) ->
       let l = List.map (fun (id,a) -> (id,intern_genarg ist a)) l in

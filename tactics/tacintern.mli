@@ -72,14 +72,6 @@ val add_tacdef :
   (Libnames.reference * bool * raw_tactic_expr) list -> unit
 val add_primitive_tactic : string -> glob_tactic_expr -> unit
 
-(** Tactic extensions *)
-val add_tactic :
-  string -> (typed_generic_argument list -> tactic) -> unit
-val overwriting_add_tactic :
-  string -> (typed_generic_argument list -> tactic) -> unit
-val lookup_tactic :
-  string -> (typed_generic_argument list) -> tactic
-
 val lookup_ltacref : ltac_constant -> glob_tactic_expr
 
 (** printing *)
@@ -89,3 +81,6 @@ val print_ltac : Libnames.qualid -> std_ppcmds
 
 val intern_red_expr : glob_sign -> raw_red_expr -> glob_red_expr
 val dump_glob_red_expr : raw_red_expr -> unit
+
+(* Implemented in tacinterp *)
+val set_assert_tactic_installed : (string -> unit) -> unit

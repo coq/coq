@@ -38,7 +38,7 @@ let rec make_when loc = function
   | _::l -> make_when loc l
 
 let rec make_let e = function
-  | [] -> e
+  | [] -> <:expr< fun $lid:"ist"$ -> $e$ >>
   | GramNonTerminal(loc,t,_,Some p)::l ->
       let loc = of_coqloc loc in
       let p = Names.Id.to_string p in
@@ -159,7 +159,7 @@ let declare_tactic loc s cl =
   declare_str_items loc
     [ <:str_item< do {
       try
-        let _=Tacintern.add_tactic $se$ $make_fun_clauses loc s cl$ in
+        let _=Tacinterp.add_tactic $se$ $make_fun_clauses loc s cl$ in
         List.iter
           (fun (s,l) -> match l with
            [ Some l ->

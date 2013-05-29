@@ -137,6 +137,34 @@ let ((value_in : value -> Dyn.t),
 
 let valueIn t = TacDynamic (Loc.ghost,value_in t)
 
+(* Tactics table (TacExtend). *)
+
+let tac_tab = Hashtbl.create 17
+
+let add_tactic s t =
+  if Hashtbl.mem tac_tab s then
+    errorlabstrm ("Refiner.add_tactic: ")
+      (str ("Cannot redeclare tactic "^s^"."));
+  Hashtbl.add tac_tab s t
+
+let overwriting_add_tactic s t =
+  if Hashtbl.mem tac_tab s then begin
+    Hashtbl.remove tac_tab s;
+    msg_warning (strbrk ("Overwriting definition of tactic "^s))
+  end;
+  Hashtbl.add tac_tab s t
+
+let lookup_tactic s =
+  try
+    Hashtbl.find tac_tab s
+  with Not_found ->
+    errorlabstrm "Refiner.lookup_tactic"
+      (str"The tactic " ++ str s ++ str" is not installed.")
+
+let () =
+  Tacintern.set_assert_tactic_installed (fun opn ->
+     let _ignored = lookup_tactic opn in ())
+
 (** Generic arguments : table of interpretation functions *)
 
 type interp_genarg_type =
@@ -1855,7 +1883,7 @@ and interp_atomic ist gl tac =
 	  sigma , a_interp::acc
 	end l (project gl,[])
       in
-      tac args
+      tac args ist
   | TacAlias (loc,s,l,(_,body)) -> fun gl ->
     let evdref = ref gl.sigma in
     let f x = match genarg_tag x with

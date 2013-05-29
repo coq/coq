@@ -42,6 +42,14 @@ and interp_sign =
 val extract_ltac_constr_values : interp_sign -> Environ.env ->
   Pretyping.ltac_var_map
 
+(** Tactic extensions *)
+val add_tactic :
+  string -> (typed_generic_argument list -> interp_sign -> tactic) -> unit
+val overwriting_add_tactic :
+  string -> (typed_generic_argument list -> interp_sign -> tactic) -> unit
+val lookup_tactic :
+  string -> (typed_generic_argument list) -> interp_sign -> tactic
+
 (** To embed several objects in Coqast.t *)
 val tactic_in : (interp_sign -> glob_tactic_expr) -> Dyn.t
 val tactic_out : Dyn.t -> (interp_sign -> glob_tactic_expr)
