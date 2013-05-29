@@ -46,6 +46,9 @@ Tactics
 - "change ... in ..." and "simpl ... in ..." now consider nested
   occurrences (possible source of incompatibilities since this alters
   the numbering of occurrences).
+- Now "appcontext" and "context" behave the same. The old buggy behaviour of
+  "context" can be retrieved at parse time by setting the
+  "Tactic Compat Context" flag. (possible source of incompatibilities).
 
 
 Program
