@@ -6,81 +6,75 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type 'a t =
+type 'a node =
 | Nil
 | Cons of 'a * 'a t
-| Lazy of 'a t Lazy.t
 
-let empty = Nil
+and 'a t = 'a node Lazy.t
 
-let cons x s = Cons (x, s)
+let empty = Lazy.lazy_from_val Nil
 
-let thunk s = Lazy s
+let cons x s = Lazy.lazy_from_val (Cons (x, s))
 
-let rec force = function
+let thunk s = lazy (Lazy.force (Lazy.force s))
+
+let rec force s = match Lazy.force s with
 | Nil -> ()
 | Cons (_, s) -> force s
-| Lazy t -> force (Lazy.force t)
 
 let force s = force s; s
 
-let rec is_empty = function
+let rec is_empty s = match Lazy.force s with
 | Nil -> true
 | Cons (_, _) -> false
-| Lazy t -> is_empty (Lazy.force t)
 
-let rec peek = function
+let peek s = match Lazy.force s with
 | Nil -> None
 | Cons (x, s) -> Some (x, s)
-| Lazy t -> peek (Lazy.force t)
 
 let rec of_list = function
-| [] -> Nil
-| x :: l -> Cons (x, of_list l)
+| [] -> empty
+| x :: l -> cons x (of_list l)
 
-let rec to_list = function
+let rec to_list s = match Lazy.force s with
 | Nil -> []
 | Cons (x, s) -> x :: (to_list s)
-| Lazy t -> to_list (Lazy.force t)
 
-let rec iter f = function
+let rec iter f s = match Lazy.force s with
 | Nil -> ()
 | Cons (x, s) -> f x; iter f s
-| Lazy t -> iter f (Lazy.force t)
 
-let rec map f = function
+let rec map_node f = function
 | Nil -> Nil
 | Cons (x, s) -> Cons (f x, map f s)
-| Lazy t -> Lazy (lazy (map f (Lazy.force t)))
 
-let rec app s1 s2 = match s1 with
-| Nil -> s2
+and map f s = lazy (map_node f (Lazy.force s))
+
+let rec app_node n1 s2 = match n1 with
+| Nil -> Lazy.force s2
 | Cons (x, s1) -> Cons (x, app s1 s2)
-| Lazy t ->
-  let t = lazy (app (Lazy.force t) s2) in
-  Lazy t
 
-let rec fold f accu = function
+and app s1 s2 = lazy (app_node (Lazy.force s1) s2)
+
+let rec fold f accu s = match Lazy.force s with
 | Nil -> accu
 | Cons (x, s) -> fold f (f accu x) s
-| Lazy t -> fold f accu (Lazy.force t)
 
-let rec map_filter f = function
+let rec map_filter_node f = function
 | Nil -> Nil
 | Cons (x, s) ->
   begin match f x with
-  | None -> map_filter f s
+  | None -> map_filter_node f (Lazy.force s)
   | Some y -> Cons (y, map_filter f s)
   end
-| Lazy t ->
-  let t = lazy (map_filter f (Lazy.force t)) in
-  Lazy t
 
-let rec concat = function
-| Nil -> Nil
+and map_filter f s = lazy (map_filter_node f (Lazy.force s))
+
+let rec concat_node = function
+| Nil -> empty
 | Cons (s, sl) -> app s (concat sl)
-| Lazy t ->
-  let t = lazy (concat (Lazy.force t)) in
-  Lazy t
 
-let lempty = Lazy (lazy Nil)
+and concat (s : 'a t t) =
+  thunk (lazy (concat_node (Lazy.force s)))
+
+let lempty = empty
