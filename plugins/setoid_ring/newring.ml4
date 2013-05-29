@@ -576,10 +576,10 @@ let dest_morph env sigma m_spec =
     | _ -> error "bad morphism structure"
 
 
-type coeff_spec =
-    Computational of constr (* equality test *)
+type 'constr coeff_spec =
+    Computational of 'constr (* equality test *)
   | Abstract (* coeffs = Z *)
-  | Morphism of constr (* general morphism *)
+  | Morphism of 'constr (* general morphism *)
 
 
 let reflect_coeff rkind =
@@ -708,8 +708,8 @@ let add_theory name rth eqth morphth cst_tac (pre,post) power sign div =
           ring_post_tac = posttac }) in
   ()
 
-type ring_mod =
-    Ring_kind of coeff_spec
+type 'constr ring_mod =
+    Ring_kind of 'constr coeff_spec
   | Const_tac of cst_tac_spec
   | Pre_tac of raw_tactic_expr
   | Post_tac of raw_tactic_expr
@@ -719,11 +719,16 @@ type ring_mod =
   | Sign_spec of Constrexpr.constr_expr
   | Div_spec of Constrexpr.constr_expr
 
+let ic_coeff_spec = function
+  | Computational t -> Computational (ic t)
+  | Morphism t -> Morphism (ic t)
+  | Abstract -> Abstract
+
 
 VERNAC ARGUMENT EXTEND ring_mod
-  | [ "decidable" constr(eq_test) ] -> [ Ring_kind(Computational (ic eq_test)) ]
+  | [ "decidable" constr(eq_test) ] -> [ Ring_kind(Computational eq_test) ]
   | [ "abstract" ] -> [ Ring_kind Abstract ]
-  | [ "morphism" constr(morph) ] -> [ Ring_kind(Morphism (ic morph)) ]
+  | [ "morphism" constr(morph) ] -> [ Ring_kind(Morphism morph) ]
   | [ "constants" "[" tactic(cst_tac) "]" ] -> [ Const_tac(CstTac cst_tac) ]
   | [ "closed" "[" ne_global_list(l) "]" ] -> [ Const_tac(Closed l) ]
   | [ "preprocess" "[" tactic(pre) "]" ] -> [ Pre_tac pre ]
@@ -758,7 +763,7 @@ let process_ring_mods l =
     | Pow_spec(t,spec) -> set_once "power" power (t,spec)
     | Sign_spec t -> set_once "sign" sign t
     | Div_spec t -> set_once "div" div t) l;
-  let k = match !kind with Some k -> k | None -> Abstract in
+  let k = match !kind with Some k -> ic_coeff_spec k | None -> Abstract in
   (k, !set, !cst_tac, !pre, !post, !power, !sign, !div)
 
 VERNAC COMMAND EXTEND AddSetoidRing
@@ -1055,8 +1060,8 @@ let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign odi
           field_pre_tac = pretac;
           field_post_tac = posttac }) in  ()
 
-type field_mod =
-    Ring_mod of ring_mod
+type 'constr field_mod =
+    Ring_mod of 'constr ring_mod
   | Inject of Constrexpr.constr_expr
 
 VERNAC ARGUMENT EXTEND field_mod
@@ -1085,7 +1090,7 @@ let process_field_mods l =
     | Ring_mod(Sign_spec t) -> set_once "sign" sign t
     | Ring_mod(Div_spec t) -> set_once "div" div t
     | Inject i -> set_once "infinite property" inj (ic i)) l;
-  let k = match !kind with Some k -> k | None -> Abstract in
+  let k = match !kind with Some k -> ic_coeff_spec k | None -> Abstract in
   (k, !set, !inj, !cst_tac, !pre, !post, !power, !sign, !div)
 
 VERNAC COMMAND EXTEND AddSetoidField
