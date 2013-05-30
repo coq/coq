@@ -58,4 +58,4 @@ type ltac_call_kind =
 
 type ltac_trace = (int * Loc.t * ltac_call_kind) list
 
-let (ltac_trace_info : (ltac_trace * Loc.t) Exninfo.t) = Exninfo.make ()
+let (ltac_trace_info : ltac_trace Exninfo.t) = Exninfo.make ()

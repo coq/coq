@@ -71,20 +71,15 @@ let dloc = Loc.ghost
 let catch_error call_trace tac g =
   try tac g with e when Errors.noncritical e ->
   let e = Errors.push e in
-  let inner_trace,loc,e = match Exninfo.get e ltac_trace_info with
-  | Some (inner_trace,loc) -> inner_trace,loc,e
-  | None ->
-    let loc = match Loc.get_loc e with
-    | None -> Loc.ghost
-    | Some loc -> loc
-    in
-    [], loc, e
+  let inner_trace, e = match Exninfo.get e ltac_trace_info with
+  | Some inner_trace -> inner_trace, e
+  | None -> [], e
   in
   if List.is_empty call_trace && List.is_empty inner_trace then raise e
   else begin
     assert (Errors.noncritical e); (* preserved invariant *)
     let new_trace = inner_trace @ call_trace in
-    let located_exc = Exninfo.add e ltac_trace_info (new_trace, loc) in
+    let located_exc = Exninfo.add e ltac_trace_info new_trace in
     raise located_exc
   end
 

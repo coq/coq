@@ -120,9 +120,10 @@ let process_vernac_interp_error exn = match exn with
 let process_vernac_interp_error exc =
   let e = process_vernac_interp_error exc in
   let ltac_trace = Exninfo.get exc Proof_type.ltac_trace_info in
+  let loc = Option.default Loc.ghost (Loc.get_loc e) in
   match ltac_trace with
   | None -> e
-  | Some (trace, loc) ->
+  | Some trace ->
     match Himsg.extract_ltac_trace trace loc with
     | None, loc -> Loc.add_loc e loc
     | Some msg, loc -> Loc.add_loc (EvaluatedError (msg, Some e)) loc
