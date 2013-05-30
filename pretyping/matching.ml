@@ -351,8 +351,24 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
       in
       let next = lazy (try_aux (c1 :: Array.to_list lc) next_mk_ctx next) in
       authorized_occ partial_app closed pat c mk_ctx next
-  | Construct _ | Fix _ | Ind _|CoFix _ |Evar _|Const _
-  | Rel _|Meta _|Var _|Sort _ ->
+  | Fix (indx,(names,types,bodies)) ->
+    let nb_fix = Array.length types in
+    let next_mk_ctx le =
+      let (ntypes,nbodies) = CList.chop nb_fix le in
+      mk_ctx (mkFix (indx,(names, Array.of_list ntypes, Array.of_list nbodies))) in
+    let next = lazy
+      (try_aux
+	 ((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next) in
+    authorized_occ partial_app closed pat c mk_ctx next
+  | CoFix (i,(names,types,bodies)) ->
+    let nb_fix = Array.length types in
+    let next_mk_ctx le =
+      let (ntypes,nbodies) = CList.chop nb_fix le in
+      mk_ctx (mkCoFix (i,(names, Array.of_list ntypes, Array.of_list nbodies))) in
+    let next = lazy
+      (try_aux ((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next) in
+    authorized_occ partial_app closed pat c mk_ctx next
+  | Construct _| Ind _|Evar _|Const _ | Rel _|Meta _|Var _|Sort _ ->
       authorized_occ partial_app closed pat c mk_ctx next
 
   (* Tries [sub_match] for all terms in the list *)
