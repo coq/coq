@@ -44,7 +44,7 @@ val lift : int -> constr -> constr
 
 (** [substnl [a1;...;an] k c] substitutes in parallel [a1],...,[an]
     for respectively [Rel(k+1)],...,[Rel(k+n)] in [c]; it relocates
-    accordingly indexes in [a1],...,[an] *)
+    accordingly indexes in [a1],...,[an] and [c] *)
 val substnl : constr list -> int -> constr -> constr
 val substl : constr list -> constr -> constr
 val subst1 : constr -> constr -> constr
@@ -57,6 +57,7 @@ val subst1_named_decl : constr -> named_declaration -> named_declaration
 val substl_named_decl : constr list -> named_declaration -> named_declaration
 
 val replace_vars : (Id.t * constr) list -> constr -> constr
+(** (subst_var str t) substitute (VAR str) by (Rel 1) in t *)
 val subst_var : Id.t -> constr -> constr
 
 (** [subst_vars [id1;...;idn] t] substitute [VAR idj] by [Rel j] in [t]

@@ -15,7 +15,7 @@ open Reductionops
 open Evd
 open Locus
 
-(** Unification for type inference. } *)
+(** {4 Unification for type inference. } *)
 
 exception UnableToUnify of evar_map * Pretype_errors.unification_error
 

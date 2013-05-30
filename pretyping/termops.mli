@@ -115,6 +115,8 @@ val occur_var_in_decl :
   env ->
   Id.t -> 'a * types option * types -> bool
 val free_rels : constr -> Int.Set.t
+
+(** [dependent m t] tests whether [m] is a subterm of [t] *)
 val dependent : constr -> constr -> bool
 val dependent_no_evar : constr -> constr -> bool
 val count_occurrences : constr -> constr -> int
