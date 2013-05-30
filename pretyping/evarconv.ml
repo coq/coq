@@ -276,22 +276,20 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     UnifFailure (i,ConversionFailed (env, zip appr1, zip appr2)) in
   let miller_pfenning on_left fallback ev (_,skF) apprM evd =
     let tM = zip apprM in
-    Option.cata
-      (fun lF -> Option.cata
-	(fun l1' ->
-      (* Miller-Pfenning's patterns unification *)
-      let t2 = nf_evar evd tM in
-      let t2 = solve_pattern_eqn env l1' t2 in
-      solve_simple_eqn (evar_conv_x ts) env evd
-	(position_problem on_left pbty,ev,t2)
-	) fallback
-	(is_unification_pattern_evar env evd ev lF tM)
-      ) (default_fail evd) (list_of_app_stack skF) in
+    match list_of_app_stack skF with
+    | None -> default_fail evd
+    | Some lF -> match is_unification_pattern_evar env evd ev lF tM with
+      | None -> fallback ()
+      | Some l1' -> (* Miller-Pfenning's patterns unification *)
+	let t2 = nf_evar evd tM in
+	let t2 = solve_pattern_eqn env l1' t2 in
+	solve_simple_eqn (evar_conv_x ts) env evd
+	  (position_problem on_left pbty,ev,t2) in
   let flex_maybeflex on_left ev ((termF,skF as apprF),cstsF) ((termM, skM as apprM),cstsM) =
     let switch f a b = if on_left then f a b else f b a in
     let not_only_app = not_purely_applicative_stack skM in
     let f1 i = miller_pfenning on_left
-      (if not_only_app then (* Postpone the use of an heuristic *)
+      (fun () -> if not_only_app then (* Postpone the use of an heuristic *)
 	switch (fun x y -> Success (add_conv_pb (pbty,env,zip x,zip y) i)) apprF apprM
        else default_fail i)
       ev apprF apprM i
@@ -457,7 +455,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     | Flexible ev1, Rigid ->
       let f1 evd =
 	miller_pfenning true
-	(Success ((* Postpone the use of an heuristic *)
+	(fun () -> Success ((* Postpone the use of an heuristic *)
 	  add_conv_pb (pbty,env,zip appr1,zip appr2) evd))
 	ev1 appr1 appr2 evd
       and f2 evd =
@@ -469,7 +467,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     | Rigid, Flexible ev2 ->
       let f1 evd =
 	miller_pfenning false
-	  (Success ((* Postpone the use of an heuristic *)
+	  (fun () -> Success ((* Postpone the use of an heuristic *)
 	     add_conv_pb (pbty,env,zip appr1,zip appr2) evd))
 	ev2 appr2 appr1 evd
       and f2 evd =
