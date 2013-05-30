@@ -30,7 +30,7 @@ module Refset' = Refset_env
 
 let occur_kn_in_ref kn = function
   | IndRef (kn',_)
-  | ConstructRef ((kn',_),_) -> kn = kn'
+  | ConstructRef ((kn',_),_) -> Names.eq_mind kn kn'
   | ConstRef _ -> false
   | VarRef _ -> assert false
 
