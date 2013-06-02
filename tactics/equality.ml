@@ -60,6 +60,21 @@ let _ =
       optread  = (fun () -> !discriminate_introduction);
       optwrite = (:=) discriminate_introduction }
 
+let injection_pattern_l2r_order = ref true
+
+let use_injection_pattern_l2r_order () =
+  !injection_pattern_l2r_order
+  && Flags.version_strictly_greater Flags.V8_4
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "injection left-to-right pattern order";
+      optkey   = ["Injection";"L2R";"Pattern";"Order"];
+      optread  = (fun () -> !injection_pattern_l2r_order) ;
+      optwrite = (fun b -> injection_pattern_l2r_order := b) }
+
 (* Rewriting tactics *)
 
 type dep_proof_flag = bool (* true = support rewriting dependent proofs *)
@@ -1171,10 +1186,25 @@ let injEq_then tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
           (tac (clenv_value eq_clause))
 
 let injEq ipats =
+  let l2r =
+    if use_injection_pattern_l2r_order () & ipats <> None then true else false
+  in
   injEq_then
-    (fun c _ ->
-      tclTHEN (clear_if_overwritten c ipats) (intros_pattern MoveLast ipats))
-    false
+    (fun c n -> match ipats with
+      | Some ipats ->
+          let clear_tac =
+            if use_injection_pattern_l2r_order () && isVar c
+            then tclTRY (clear [destVar c])
+            else tclIDTAC in
+          let ipats =
+            if use_injection_pattern_l2r_order ()
+            then adjust_intro_patterns n ipats
+            else ipats in
+          tclTHEN
+            (clear_tac)
+            (intros_pattern MoveLast ipats)
+      | None -> tclIDTAC)
+    l2r
 
 let inj ipats with_evars = onEquality with_evars (injEq ipats)
 
@@ -1182,8 +1212,8 @@ let injClause ipats with_evars = function
   | None -> onNegatedEquality with_evars (injEq ipats)
   | Some c -> onInductionArg (inj ipats with_evars) c
 
-let injConcl gls  = injClause [] false None gls
-let injHyp id gls = injClause [] false (Some (ElimOnIdent (Loc.ghost,id))) gls
+let injConcl gls  = injClause None false None gls
+let injHyp id gls = injClause None false (Some (ElimOnIdent (Loc.ghost,id))) gls
 
 let _ = declare_injector (fun tac -> injEq_then (fun _ -> tac) true)
 

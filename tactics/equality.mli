@@ -91,9 +91,9 @@ val discrHyp     : Id.t -> tactic
 val discrEverywhere : evars_flag -> tactic
 val discr_tac    : evars_flag ->
   constr with_bindings induction_arg option -> tactic
-val inj          : intro_pattern_expr Loc.located list -> evars_flag ->
+val inj          : intro_pattern_expr Loc.located list option -> evars_flag ->
   constr with_bindings -> tactic
-val injClause    : intro_pattern_expr Loc.located list -> evars_flag ->
+val injClause    : intro_pattern_expr Loc.located list option -> evars_flag ->
   constr with_bindings induction_arg option -> tactic
 val injHyp       : Id.t -> tactic
 val injConcl     : tactic

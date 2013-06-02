@@ -313,7 +313,7 @@ Qed.
 Lemma Permutation_length_1_inv: forall a l, Permutation [a] l -> l = [a].
 Proof.
   intros a l H; remember [a] as m in H.
-  induction H; try (injection Heqm as -> ->; clear Heqm);
+  induction H; try (injection Heqm as -> ->);
     discriminate || auto.
   apply Permutation_nil in H as ->; trivial.
 Qed.

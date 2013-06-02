@@ -118,44 +118,44 @@ let discrHyp id gl =
   discr_main {it = Term.mkVar id,NoBindings; sigma = Refiner.project gl} gl
 
 let injection_main c =
- elimOnConstrWithHoles (injClause []) false c
+ elimOnConstrWithHoles (injClause None) false c
 
 TACTIC EXTEND injection_main
 | [ "injection" constr_with_bindings(c) ] ->
     [ injection_main c ]
 END
 TACTIC EXTEND injection
-| [ "injection" ] -> [ injClause [] false None ]
+| [ "injection" ] -> [ injClause None false None ]
 | [ "injection" quantified_hypothesis(h) ] ->
-    [ injClause [] false (Some (induction_arg_of_quantified_hyp h)) ]
+    [ injClause None false (Some (induction_arg_of_quantified_hyp h)) ]
 END
 TACTIC EXTEND einjection_main
 | [ "einjection" constr_with_bindings(c) ] ->
-    [ elimOnConstrWithHoles (injClause []) true c ]
+    [ elimOnConstrWithHoles (injClause None) true c ]
 END
 TACTIC EXTEND einjection
-| [ "einjection" ] -> [ injClause [] true None ]
-| [ "einjection" quantified_hypothesis(h) ] -> [ injClause [] true (Some (induction_arg_of_quantified_hyp h)) ]
+| [ "einjection" ] -> [ injClause None true None ]
+| [ "einjection" quantified_hypothesis(h) ] -> [ injClause None true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 TACTIC EXTEND injection_as_main
 | [ "injection" constr_with_bindings(c) "as" simple_intropattern_list(ipat)] ->
-    [ elimOnConstrWithHoles (injClause ipat) false c ]
+    [ elimOnConstrWithHoles (injClause (Some ipat)) false c ]
 END
 TACTIC EXTEND injection_as
 | [ "injection" "as" simple_intropattern_list(ipat)] ->
-    [ injClause ipat false None ]
+    [ injClause (Some ipat) false None ]
 | [ "injection" quantified_hypothesis(h) "as" simple_intropattern_list(ipat) ] ->
-    [ injClause ipat false (Some (induction_arg_of_quantified_hyp h)) ]
+    [ injClause (Some ipat) false (Some (induction_arg_of_quantified_hyp h)) ]
 END
 TACTIC EXTEND einjection_as_main
 | [ "einjection" constr_with_bindings(c) "as" simple_intropattern_list(ipat)] ->
-    [ elimOnConstrWithHoles (injClause ipat) true c ]
+    [ elimOnConstrWithHoles (injClause (Some ipat)) true c ]
 END
 TACTIC EXTEND einjection_as
 | [ "einjection" "as" simple_intropattern_list(ipat)] ->
-    [ injClause ipat true None ]
+    [ injClause (Some ipat) true None ]
 | [ "einjection" quantified_hypothesis(h) "as" simple_intropattern_list(ipat) ] ->
-    [ injClause ipat true (Some (induction_arg_of_quantified_hyp h)) ]
+    [ injClause (Some ipat) true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
 let injHyp id gl =

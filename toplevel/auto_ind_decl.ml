@@ -666,7 +666,7 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec gsig =
                      tclTRY (
                       tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     Equality.inj [] false (mkVar freshz,NoBindings);
+                     Equality.inj None false (mkVar freshz,NoBindings);
 		     intros; simpl_in_concl;
                      Auto.default_auto;
                      tclREPEAT (
