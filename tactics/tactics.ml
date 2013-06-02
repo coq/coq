@@ -490,11 +490,12 @@ let intros = tclREPEAT intro
 let intro_erasing id = tclTHEN (thin [id]) (introduction id)
 
 let intro_forthcoming_then_gen loc name_flag move_flag dep_flag tac =
-  let rec aux ids =
-    tclORELSE0
-      (intro_then_gen loc name_flag  move_flag false dep_flag
-         (fun id -> aux (id::ids)))
-      (tac ids) in
+  let rec aux ids gl =
+    try
+      intro_then_gen loc name_flag  move_flag false dep_flag
+         (fun id -> aux (id::ids)) gl
+    with RefinerError IntroNeedsProduct ->
+      tac ids gl in
   aux []
 
 let rec get_next_hyp_position id = function
