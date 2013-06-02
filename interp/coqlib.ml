@@ -83,11 +83,17 @@ let check_required_library d =
 (************************************************************************)
 (* Specific Coq objects *)
 
-let init_reference dir s = gen_reference "Coqlib" ("Init"::dir) s
+let init_reference dir s =
+  let d = "Init"::dir in
+  check_required_library ("Coq"::d); gen_reference "Coqlib" d s
 
-let init_constant dir s = gen_constant "Coqlib" ("Init"::dir) s
+let init_constant dir s =
+  let d = "Init"::dir in
+  check_required_library ("Coq"::d); gen_constant "Coqlib" d s
 
-let logic_constant dir s = gen_constant "Coqlib" ("Logic"::dir) s
+let logic_constant dir s =
+  let d = "Logic"::dir in
+  check_required_library ("Coq"::d); gen_constant "Coqlib" d s
 
 let arith_dir = ["Coq";"Arith"]
 let arith_modules = [arith_dir]
