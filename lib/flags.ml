@@ -57,7 +57,7 @@ let record_print = ref true
 (* Current means no particular compatibility consideration.
    For correct comparisons, this constructor should remain the last one. *)
 
-type compat_version = V8_2 | V8_3 | Current
+type compat_version = V8_2 | V8_3 | V8_4 | Current
 let compat_version = ref Current
 let version_strictly_greater v = !compat_version > v
 let version_less_or_equal v = not (version_strictly_greater v)
@@ -65,6 +65,7 @@ let version_less_or_equal v = not (version_strictly_greater v)
 let pr_version = function
   | V8_2 -> "8.2"
   | V8_3 -> "8.3"
+  | V8_4 -> "8.4"
   | Current -> "current"
 
 (* Translate *)
