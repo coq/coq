@@ -37,7 +37,7 @@ through the <tt>Require Import</tt> command.</p>
   </dd>
   
   <dt> <b>Logic</b>:
-      Classical logic and dependent equality
+      Classical logic, dependent equality, extensionality, choice axioms
   </dt>
   <dd>
     theories/Logic/SetIsType.v
@@ -69,6 +69,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/IndefiniteDescription.v
     theories/Logic/FunctionalExtensionality.v
     theories/Logic/ExtensionalityFacts.v
+    theories/Logic/Fan.v
   </dd>
     
   <dt> <b>Structures</b>:
