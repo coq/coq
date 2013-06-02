@@ -1087,7 +1087,7 @@ let simplify_args env sigma t =
     | eq, [t1;c1;t2;c2] -> applist (eq,[t1;simpl env sigma c1;t2;simpl env sigma c2])
     | _ -> t
 
-let inject_at_positions env sigma (eq,_,(t,t1,t2)) eq_clause posns tac =
+let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
   let e = next_ident_away eq_baseid (ids_of_context env) in
   let e_env = push_named (e, None,t) env in
   let filter (cpath, t1', t2') =
@@ -1109,7 +1109,7 @@ let inject_at_positions env sigma (eq,_,(t,t1,t2)) eq_clause posns tac =
   tclTHEN
     (tclMAP
       (fun (pf,ty) -> tclTHENS (cut ty) [tclIDTAC; refine pf])
-      injectors)
+      (if l2r then List.rev injectors else injectors))
     (tac (List.length injectors))
 
 exception Not_dep_pair
@@ -1119,7 +1119,7 @@ let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 
 let eqdep_dec = qualid_of_string "Coq.Logic.Eqdep_dec"
 
-let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
+let injEq_then tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
   let env = eq_clause.env in
   match find_positions env sigma t1 t2 with
@@ -1167,8 +1167,14 @@ let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
         end
         else raise Not_dep_pair
       with e when Errors.noncritical e ->
-	inject_at_positions env sigma u eq_clause posns
-	  (fun _ -> intros_pattern MoveLast ipats)
+	inject_at_positions env sigma l2r u eq_clause posns
+          (tac (clenv_value eq_clause))
+
+let injEq ipats =
+  injEq_then
+    (fun c _ ->
+      tclTHEN (clear_if_overwritten c ipats) (intros_pattern MoveLast ipats))
+    false
 
 let inj ipats with_evars = onEquality with_evars (injEq ipats)
 
@@ -1178,6 +1184,8 @@ let injClause ipats with_evars = function
 
 let injConcl gls  = injClause [] false None gls
 let injHyp id gls = injClause [] false (Some (ElimOnIdent (Loc.ghost,id))) gls
+
+let _ = declare_injector (fun tac -> injEq_then (fun _ -> tac) true)
 
 let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause gls =
   let sort = pf_apply get_type_of gls (pf_concl gls) in
@@ -1189,7 +1197,7 @@ let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause gls =
     | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
         ntac 0 gls
     | Inr posns ->
-	inject_at_positions env sigma u clause (List.rev posns) ntac gls
+	inject_at_positions env sigma false u clause (List.rev posns) ntac gls
 
 let dEqThen with_evars ntac = function
   | None -> onNegatedEquality with_evars (decompEqThen ntac)

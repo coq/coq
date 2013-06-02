@@ -1314,23 +1314,49 @@ let error_unexpected_extra_pattern loc nb pat =
        str (if Int.equal nb 1 then "was" else "were") ++
       strbrk " expected in the branch).")
 
-let intro_or_and_pattern loc b ll l' tac id gl =
-    let c = mkVar id in
-    let ind,_ = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+let adjust_intro_patterns nb ipats =
+  let rec aux n = function
+  | [] when Int.equal n 0 -> []
+  | [] -> (dloc,IntroAnonymous) :: aux (n-1) []
+  | (loc',pat) :: _ when Int.equal n 0 ->
+      error_unexpected_extra_pattern loc' nb pat
+  | ip :: l -> ip :: aux (n-1) l in
+  aux nb ipats
+
+let inj_function = ref (fun _ -> failwith "Not implemented")
+
+let declare_injector f = inj_function := f
+
+let my_find_eq_data_decompose gl t =
+  try find_eq_data_decompose gl t
+  with e when is_anomaly e
+    (* Hack in case equality is not yet defined... one day, maybe,
+       known equalities will be dynamically registered *)
+      -> raise Matching.PatternMatchingFailure
+
+let intro_or_and_pattern loc b ll l' thin tac id gl =
+  let c = mkVar id in
+  let ind,t = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+  try
+    (* Use injection if an equality type *)
+    let eq,eq_args = my_find_eq_data_decompose gl t in
+    match fix_empty_or_and_pattern 1 ll with
+    | [l] ->
+        let eq_clause = make_clenv_binding gl (c,t) NoBindings in
+        !inj_function
+          (fun n -> tac ((dloc,id)::thin) (adjust_intro_patterns n l @ l'))
+          (eq,t,eq_args) eq_clause gl
+    | ll -> check_or_and_pattern_size loc ll 1; assert false
+  with Matching.PatternMatchingFailure ->
+    (* Use "destruct" otherwise *)
     let nv = mis_constr_nargs ind in
     let bracketed = b || not (List.is_empty l') in
-    let rec adjust_names_length nb n = function
-      | [] when Int.equal n 0 or not bracketed -> []
-      | [] -> (dloc,IntroAnonymous) :: adjust_names_length nb (n-1) []
-      | (loc',pat) :: _ as l when Int.equal n 0 ->
-	  if bracketed then error_unexpected_extra_pattern loc' nb pat;
-	  l
-      | ip :: l -> ip :: adjust_names_length nb (n-1) l in
+    let adjust n l = if bracketed then adjust_intro_patterns n l else l in
     let ll = fix_empty_or_and_pattern (Array.length nv) ll in
     check_or_and_pattern_size loc ll (Array.length nv);
     tclTHENLASTn
       (tclTHEN (simplest_case c) (clear [id]))
-      (Array.map2 (fun n l -> tac ((adjust_names_length n n l)@l'))
+      (Array.map2 (fun n l -> tac thin ((adjust n l)@l'))
 	nv (Array.of_list ll))
       gl
 
@@ -1413,8 +1439,8 @@ let rec intros_patterns b avoid ids thin destopt tac = function
         (fun ids -> intros_patterns b avoid ids thin destopt tac l)
   | (loc, IntroOrAndPattern ll) :: l' ->
       intro_then_force
-	(intro_or_and_pattern loc b ll l'
-	   (intros_patterns b avoid ids thin destopt tac))
+	(intro_or_and_pattern loc b ll l' thin
+	   (fun thin -> intros_patterns b avoid ids thin destopt tac))
   | (loc, IntroRewrite l2r) :: l ->
       intro_then_gen loc (IntroAvoid(avoid@explicit_intro_names l))
 	MoveLast true false
@@ -1452,8 +1478,8 @@ let prepare_intros s ipat gl = match ipat with
       id, Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | IntroOrAndPattern ll -> make_id s gl,
       onLastHypId
-	(intro_or_and_pattern loc true ll []
-	  (intros_patterns true [] [] [] MoveLast (fun _ -> clear_wildcards)))
+	(intro_or_and_pattern loc true ll [] []
+	  (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ -> clear_wildcards)))
   | IntroForthcoming _ -> user_err_loc
       (loc,"",str "Introduction pattern for one hypothesis expected")
 
@@ -1461,18 +1487,23 @@ let ipat_of_name = function
   | Anonymous -> None
   | Name id -> Some (dloc, IntroIdentifier id)
 
-let allow_replace c gl = function (* A rather arbitrary condition... *)
+let allow_replace c = function (* A rather arbitrary condition... *)
   | Some (_, IntroIdentifier id) ->
       let c = fst (decompose_app ((strip_lam_assum c))) in
-      isVar c && Id.equal (destVar c) id
+      if isVar c && Id.equal (destVar c) id then Some id else None
   | _ ->
-      false
+      None
+
+let clear_if_overwritten c ipats =
+  match List.map_filter (fun ipat -> allow_replace c (Some ipat)) ipats with
+  | [id] -> thin [id]
+  | _ -> tclIDTAC
 
 let assert_as first ipat c gl =
   match kind_of_term (pf_hnf_type_of gl c) with
   | Sort s ->
       let id,tac = prepare_intros s ipat gl in
-      let repl = allow_replace c gl ipat in
+      let repl = allow_replace c ipat <> None in
       tclTHENS
 	((if first then internal_cut_gen else internal_cut_rev_gen) repl id c)
 	(if first then [tclIDTAC; tac] else [tac; tclIDTAC]) gl
@@ -1486,8 +1517,8 @@ let as_tac id ipat = match ipat with
   | Some (loc,IntroRewrite l2r) ->
       Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | Some (loc,IntroOrAndPattern ll) ->
-      intro_or_and_pattern loc true ll []
-        (intros_patterns true [] [] [] MoveLast (fun _ -> clear_wildcards))
+      intro_or_and_pattern loc true ll [] []
+        (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ -> clear_wildcards))
         id
   | Some (loc,
       (IntroIdentifier _ | IntroAnonymous | IntroFresh _ |

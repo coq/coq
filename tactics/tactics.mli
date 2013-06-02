@@ -105,6 +105,12 @@ val onInductionArg :
   (constr with_bindings -> tactic) ->
     constr with_bindings induction_arg -> tactic
 
+(** Complete intro_patterns up to some length; fails if more patterns
+   than required *)
+
+val adjust_intro_patterns : int -> intro_pattern_expr located list ->
+  intro_pattern_expr located list
+
 (** {6 Introduction tactics with eliminations. } *)
 
 val intro_pattern  : Id.t move_location -> intro_pattern_expr -> tactic
@@ -162,6 +168,7 @@ val unfold_constr     : global_reference -> tactic
 val clear         : Id.t list -> tactic
 val clear_body    : Id.t list -> tactic
 val keep          : Id.t list -> tactic
+val clear_if_overwritten : constr -> intro_pattern_expr located list -> tactic
 
 val specialize    : int option -> constr with_bindings -> tactic
 
@@ -390,3 +397,8 @@ val general_multi_rewrite :
 
 val subst_one :
   (bool -> Id.t -> Id.t * constr * bool -> tactic) Hook.t
+
+val declare_injector :
+  ((int -> tactic) -> Coqlib.coq_eq_data * types *
+   (types * constr * constr) ->
+   clausenv -> tactic) -> unit

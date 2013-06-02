@@ -66,6 +66,13 @@ einjection (H O).
 instantiate (1:=O).
 Abort.
 
+(* Test the injection intropattern *)
+
+Goal forall (a b:nat) l l', cons a l = cons b l' -> a=b.
+intros * (H1,H2).
+exact H1.
+Qed.
+
 (* Injection does not projects at positions in Prop... allow it?
 
 Inductive t (A:Prop) : Set := c : A -> t A.
