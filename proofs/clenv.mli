@@ -73,7 +73,7 @@ val evar_clenv_unique_resolver :
 
 val clenv_dependent : clausenv -> metavariable list
 
-val clenv_pose_metas_as_evars : clausenv -> metavariable list -> clausenv * existential list
+val clenv_pose_metas_as_evars : clausenv -> metavariable list -> clausenv
 
 (** {6 Bindings } *)
 

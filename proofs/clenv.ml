@@ -308,19 +308,19 @@ let clenv_unique_resolver ?(flags=default_unify_flags) clenv gl =
 *)
 
 let clenv_pose_metas_as_evars clenv dep_mvs =
-  let rec fold clenv l = function
-  | [] -> clenv, l
+  let rec fold clenv = function
+  | [] -> clenv
   | mv::mvs ->
       let ty = clenv_meta_type clenv mv in
       (* Postpone the evar-ization if dependent on another meta *)
       (* This assumes no cycle in the dependencies - is it correct ? *)
-      if occur_meta ty then fold clenv l (mvs@[mv])
+      if occur_meta ty then fold clenv (mvs@[mv])
       else
 	let (evd,evar) =
 	  new_evar clenv.evd (cl_env clenv) ~src:(Loc.ghost,Evar_kinds.GoalEvar) ty in
 	let clenv = clenv_assign mv evar {clenv with evd=evd} in
-	fold clenv (destEvar evar::l) mvs in
-  fold clenv [] dep_mvs
+	fold clenv mvs in
+  fold clenv dep_mvs
 
 let evar_clenv_unique_resolver = clenv_unique_resolver
 
