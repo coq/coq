@@ -348,7 +348,22 @@ let refresh_hypinfo env sigma hypinfo =
 	| _ -> hypinfo
   else hypinfo
 
-let unify_eqn env sigma hypinfo t =
+
+let solve_remaining_by by env prf =
+  match by with
+  | None -> env, prf
+  | Some tac ->
+    let indep = clenv_independent env in
+    let tac = eval_tactic tac in
+    let evd' = 
+      List.fold_right (fun mv evd ->
+        let ty = Clenv.clenv_nf_meta env (meta_type evd mv) in
+	let c = Pfedit.build_by_tactic env.env ty (tclCOMPLETE tac) in
+	  meta_assign mv (c, (Conv,TypeNotProcessed)) evd)
+      indep env.evd
+    in { env with evd = evd' }, prf
+
+let unify_eqn env sigma hypinfo by t =
   if isEvar t then None
   else try
     let {cl=cl; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in
@@ -365,10 +380,11 @@ let unify_eqn env sigma hypinfo t =
 (* 	  let env' = Clenv.clenv_pose_metas_as_evars env' (Evd.undefined_metas env'.evd) in *)
 	  let evd' = Typeclasses.resolve_typeclasses ~fail:true env'.env env'.evd in
 	  let env' = { env' with evd = evd' } in
-	  let nf c = Evarutil.nf_evar evd' (Clenv.clenv_nf_meta env' c) in
+	  let env', prf = solve_remaining_by by env' (Clenv.clenv_value env') in	   
+	  let nf c = Evarutil.nf_evar env'.evd (Clenv.clenv_nf_meta env' c) in
 	  let c1 = nf c1 and c2 = nf c2
 	  and car = nf car and rel = nf rel
-	  and prf = nf (Clenv.clenv_value env') in
+	  and prf = nf prf in
 	  let ty1 = Typing.type_of env'.env env'.evd c1
 	  and ty2 = Typing.type_of env'.env env'.evd c2
 	  in
@@ -633,7 +649,7 @@ let apply_constraint env avoid car rel prf cstr res =
 
 let eq_env x y = x == y
 
-let apply_rule hypinfo loccs : strategy =
+let apply_rule hypinfo by loccs : strategy =
   let (nowhere_except_in,occs) = convert_occs loccs in
   let is_occ occ =
     if nowhere_except_in then List.mem occ occs else not (List.mem occ occs) in
@@ -641,7 +657,7 @@ let apply_rule hypinfo loccs : strategy =
     fun env avoid t ty cstr evars ->
       if not (eq_env !hypinfo.cl.env env) then
 	hypinfo := refresh_hypinfo env (goalevars evars) !hypinfo;
-      let unif = unify_eqn env (goalevars evars) hypinfo t in
+      let unif = unify_eqn env (goalevars evars) hypinfo by t in
 	if not (Option.is_empty unif) then incr occ;
 	match unif with
 	| Some (evd', (prf, (car, rel, c1, c2))) when is_occ !occ ->
@@ -655,10 +671,10 @@ let apply_rule hypinfo loccs : strategy =
 	    end
 	| _ -> None
 
-let apply_lemma flags (evm,c) left2right loccs : strategy =
+let apply_lemma flags (evm,c) left2right by loccs : strategy =
   fun env avoid t ty cstr evars ->
     let hypinfo = ref (decompose_applied_relation env (goalevars evars) flags None c left2right) in
-      apply_rule hypinfo loccs env avoid t ty cstr evars
+      apply_rule hypinfo by loccs env avoid t ty cstr evars
 
 let make_leibniz_proof c ty r =
   let prf = 
@@ -1010,8 +1026,8 @@ module Strategies =
       fix (fun out -> choice s (one_subterm out))
 
     let lemmas flags cs : strategy =
-      List.fold_left (fun tac (l,l2r) ->
-	choice tac (apply_lemma flags l l2r AllOccurrences))
+      List.fold_left (fun tac (l,l2r,by) ->
+	choice tac (apply_lemma flags l l2r by AllOccurrences))
 	fail cs
 
     let inj_open c = (Evd.empty,c)
@@ -1019,12 +1035,13 @@ module Strategies =
     let old_hints (db : string) : strategy =
       let rules = Autorewrite.find_rewrites db in
 	lemmas rewrite_unif_flags
-	  (List.map (fun hint -> (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r)) rules)
+	  (List.map (fun hint -> (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r, hint.Autorewrite.rew_tac)) rules)
 
     let hints (db : string) : strategy =
       fun env avoid t ty cstr evars ->
       let rules = Autorewrite.find_matches db t in
-      let lemma hint = (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r) in
+      let lemma hint = (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r,
+			hint.Autorewrite.rew_tac) in
       let lems = List.map lemma rules in
 	lemmas rewrite_unif_flags lems env avoid t ty cstr evars
 
@@ -1078,7 +1095,7 @@ end
 (** The strategy for a single rewrite, dealing with occurences. *)
 
 let rewrite_strat flags occs hyp =
-  let app = apply_rule hyp occs in
+  let app = apply_rule hyp None occs in
   let rec aux () =
     Strategies.choice app (subterm true flags (fun env -> aux () env))
   in aux ()
@@ -1359,22 +1376,22 @@ let occurrences_of = function
 let apply_constr_expr c l2r occs = fun env avoid t ty cstr evars ->
   let evd, c = Constrintern.interp_open_constr (goalevars evars) env c in
     apply_lemma (general_rewrite_unif_flags ()) (evd, (c, NoBindings)) 
-      l2r occs env avoid t ty cstr (evd, cstrevars evars)
+      l2r None occs env avoid t ty cstr (evd, cstrevars evars)
 
 let apply_glob_constr c l2r occs = fun env avoid t ty cstr evars ->
   let evd, c = (Pretyping.understand_tcc (goalevars evars) env c) in
     apply_lemma (general_rewrite_unif_flags ()) (evd, (c, NoBindings)) 
-      l2r occs env avoid t ty cstr (evd, cstrevars evars)
+      l2r None occs env avoid t ty cstr (evd, cstrevars evars)
 
 let interp_constr_list env sigma =
   List.map (fun c -> 
 	      let evd, c = Constrintern.interp_open_constr sigma env c in
-		(evd, (c, NoBindings)), true)
+		(evd, (c, NoBindings)), true, None)
 
 let interp_glob_constr_list env sigma =
   List.map (fun c -> 
 	      let evd, c = Pretyping.understand_tcc sigma env c in
-		(evd, (c, NoBindings)), true)
+		(evd, (c, NoBindings)), true, None)
 
 (* Syntax for rewriting with strategies *)
 
@@ -1945,7 +1962,7 @@ let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 let apply_lemma gl (c,l) cl l2r occs =
   let sigma = project gl in
   let hypinfo = ref (get_hyp gl sigma (c,l) cl l2r) in
-  let app = apply_rule hypinfo occs in
+  let app = apply_rule hypinfo None occs in
   let rec aux () =
     Strategies.choice app (subterm true general_rewrite_flags (fun env -> aux () env))
   in !hypinfo, aux ()

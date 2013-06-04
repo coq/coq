@@ -25,13 +25,13 @@ type rew_rule = { rew_lemma: constr;
 		  rew_type: types;
 		  rew_pat: constr;
 		  rew_l2r: bool;
-		  rew_tac: glob_tactic_expr }
+		  rew_tac: glob_tactic_expr option }
 
 let subst_hint subst hint =
   let cst' = subst_mps subst hint.rew_lemma in
   let typ' = subst_mps subst hint.rew_type in
   let pat' = subst_mps subst hint.rew_pat in
-  let t' = Tacsubst.subst_tactic subst hint.rew_tac in
+  let t' = Option.smartmap (Tacsubst.subst_tactic subst) hint.rew_tac in
     if hint.rew_lemma == cst' && hint.rew_type == typ' && hint.rew_tac == t' then hint else
       { hint with
 	rew_lemma = cst'; rew_type = typ';
@@ -82,16 +82,18 @@ let print_rewrite_hintdb bas =
 	   (fun h ->
 	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++
 	       Printer.pr_lconstr h.rew_lemma ++ str " of type " ++ Printer.pr_lconstr h.rew_type ++
-	       str " then use tactic " ++
-	       Pptactic.pr_glob_tactic (Global.env()) h.rew_tac)
+	       Option.cata (fun tac -> str " then use tactic " ++
+	       Pptactic.pr_glob_tactic (Global.env()) tac) (mt ()) h.rew_tac)
 	   (find_rewrites bas))
 
-type raw_rew_rule = Loc.t * constr * bool * raw_tactic_expr
+type raw_rew_rule = Loc.t * constr * bool * raw_tactic_expr option
 
 (* Applies all the rules of one base *)
 let one_base general_rewrite_maybe_in tac_main bas =
   let lrul = find_rewrites bas in
-  let lrul = List.map (fun h -> (h.rew_lemma,h.rew_l2r,Tacinterp.eval_tactic h.rew_tac)) lrul in
+  let lrul = List.map (fun h -> 
+  let tac = match h.rew_tac with None -> tclIDTAC | Some t -> Tacinterp.eval_tactic t in
+    (h.rew_lemma,h.rew_l2r,tac)) lrul in
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac
         (tclREPEAT_MAIN
@@ -104,7 +106,7 @@ let autorewrite ?(conds=Naive) tac_main lbas =
     (List.fold_left (fun tac bas ->
        tclTHEN tac
         (one_base (fun dir c tac ->
-	  let tac = tac, conds in
+	  let tac = (tac, conds) in
 	    general_rewrite dir AllOccurrences true false ~tac c)
 	  tac_main bas))
       tclIDTAC lbas))
@@ -238,7 +240,7 @@ let decompose_applied_relation metas env sigma c ctype left2right =
     let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ty) in
     let eqclause =
       if metas then eqclause
-      else clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd)
+      else fst (clenv_pose_metas_as_evars eqclause (Evd.undefined_metas eqclause.evd))
     in
     let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
     let rec split_last_two = function
@@ -286,7 +288,7 @@ let add_rew_rules base lrul =
 	let pat = if b then info.hyp_left else info.hyp_right in
 	let rul = { rew_lemma = c; rew_type = info.hyp_ty;
 		    rew_pat = pat; rew_l2r = b;
-		    rew_tac = Tacintern.glob_tactic t}
+		    rew_tac = Option.map Tacintern.glob_tactic t}
 	in incr counter;
 	  HintDN.add pat (!counter, rul) dn) HintDN.empty lrul
   in Lib.add_anonymous_leaf (inHintRewrite (base,lrul))
