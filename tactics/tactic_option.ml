@@ -15,7 +15,7 @@ let declare_tactic_option ?(default=Tacexpr.TacId []) name =
     Summary.ref default ~name:(name^"-default-tacexpr")
   in
   let default_tactic : Proof_type.tactic ref =
-    ref (Tacinterp.eval_tactic !default_tactic_expr)
+    Summary.ref (Tacinterp.eval_tactic !default_tactic_expr) ~name:(name^"-default-tactic")
   in
   let set_default_tactic local t =
     locality := local;
