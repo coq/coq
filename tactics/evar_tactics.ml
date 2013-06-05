@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Util
+open Names
 open Errors
 open Evar_refiner
 open Tacmach
@@ -41,7 +42,9 @@ let instantiate n (ist,rawc) ido gl =
     if n <= 0 then error "Incorrect existential variable index.";
     let evk,_ = List.nth evl (n-1) in
     let evi = Evd.find sigma evk in
-    let ltac_vars = Tacinterp.extract_ltac_constr_values ist (Evd.evar_filtered_env evi) in
+    let filtered = Evd.evar_filtered_env evi in
+    let (bvars, uvars) = Tacinterp.extract_ltac_constr_values ist filtered in
+    let ltac_vars = (Id.Map.bindings bvars, uvars) in
     let sigma' = w_refine (evk,evi) (ltac_vars,rawc) sigma in
       tclTHEN
         (tclEVARS sigma')

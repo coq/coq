@@ -203,7 +203,7 @@ let instantiate_pattern sigma lvar c =
   let rec aux vars = function
   | PVar id as x ->
       (try
-	let ctx,c = List.assoc id lvar in
+	let ctx,c = Id.Map.find id lvar in
 	try
 	  let inst =
 	    List.map (fun id -> mkRel (List.index (Name id) vars)) ctx in
@@ -213,7 +213,7 @@ let instantiate_pattern sigma lvar c =
 	  let vars =
 	    List.map_filter (function Name id -> Some id | _ -> None) vars in
 	  error_instantiate_pattern id (List.subtract ctx vars)
-       with Not_found (* List.assoc failed *) ->
+       with Not_found (* Map.find failed *) ->
 	 x)
   | (PFix _ | PCoFix _) -> error ("Non instantiable pattern.")
   | c ->

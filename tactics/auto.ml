@@ -1110,7 +1110,7 @@ let (forward_interp_tactic, extern_interp) = Hook.make ()
 let conclPattern concl pat tac gl =
   let constr_bindings =
     match pat with
-    | None -> []
+    | None -> Id.Map.empty
     | Some pat ->
 	try matches pat concl
 	with PatternMatchingFailure -> error "conclPattern" in

@@ -40,7 +40,8 @@ and interp_sign =
     trace : ltac_trace }
 
 val extract_ltac_constr_values : interp_sign -> Environ.env ->
-  Pretyping.ltac_var_map
+  Pattern.constr_under_binders Id.Map.t * (Id.Map.key * Id.t option) list
+(* should be Pretyping.ltac_var_map *)
 
 (** Tactic extensions *)
 val add_tactic :

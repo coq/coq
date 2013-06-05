@@ -289,7 +289,8 @@ let is_equality_type t = op2bool (match_with_equality_type t)
 let coq_arrow_pattern = PATTERN [ ?X1 -> ?X2 ]
 
 let match_arrow_pattern t =
-  match matches coq_arrow_pattern t with
+  let result = matches coq_arrow_pattern t in
+  match Id.Map.bindings result with
     | [(m1,arg);(m2,mind)] ->
       assert (Id.equal m1 meta1 && Id.equal m2 meta2); (arg, mind)
     | _ -> anomaly (Pp.str "Incorrect pattern matching")
@@ -373,7 +374,7 @@ let match_eq eqn eq_pat =
     try Lazy.force eq_pat
     with e when Errors.noncritical e -> raise PatternMatchingFailure
   in
-  match matches pat eqn with
+  match Id.Map.bindings (matches pat eqn) with
     | [(m1,t);(m2,x);(m3,y)] ->
 	assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
 	PolymorphicLeibnizEq (t,x,y)
@@ -420,7 +421,7 @@ let find_this_eq_data_decompose gl eqn =
 open Tacmach
 
 let match_eq_nf gls eqn eq_pat =
-  match pf_matches gls (Lazy.force eq_pat) eqn with
+  match Id.Map.bindings (pf_matches gls (Lazy.force eq_pat) eqn) with
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
 	(t,pf_whd_betadeltaiota gls x,pf_whd_betadeltaiota gls y)
@@ -440,7 +441,7 @@ let coq_existT_pattern = coq_ex_pattern_gen coq_existT_ref
 let coq_exist_pattern = coq_ex_pattern_gen coq_exist_ref
 
 let match_sigma ex ex_pat =
-  match matches (Lazy.force ex_pat) ex with
+  match Id.Map.bindings (matches (Lazy.force ex_pat) ex) with
     | [(m1,a);(m2,p);(m3,car);(m4,cdr)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3 && Id.equal m4 meta4);
 	(a,p,car,cdr)
@@ -456,7 +457,7 @@ let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
 let coq_sig_pattern = lazy PATTERN [ %coq_sig_ref ?X1 ?X2 ]
 
 let match_sigma t =
-  match matches (Lazy.force coq_sig_pattern) t with
+  match Id.Map.bindings (matches (Lazy.force coq_sig_pattern) t) with
     | [(_,a); (_,p)] -> (a,p)
     | _ -> anomaly (Pp.str "Unexpected pattern")
 
@@ -493,7 +494,7 @@ let match_eqdec t =
     try true,op_or,matches (Lazy.force coq_eqdec_pattern) t
     with PatternMatchingFailure ->
         false,op_or,matches (Lazy.force coq_eqdec_rev_pattern) t in
-  match subst with
+  match Id.Map.bindings subst with
   | [(_,typ);(_,c1);(_,c2)] ->
       eqonleft, Globnames.constr_of_global (Lazy.force op), c1, c2, typ
   | _ -> anomaly (Pp.str "Unexpected pattern")

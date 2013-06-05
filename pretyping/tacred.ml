@@ -897,7 +897,7 @@ let contextually byhead (occs,c) f env sigma t =
 	else not (List.mem !pos locs) in
       incr pos;
       if ok then
-        let subst' = List.map (on_snd (traverse envc)) subst in
+        let subst' = Id.Map.map (traverse envc) subst in
 	f subst' env sigma t
       else if byhead then
 	(* find other occurrences of c in t; TODO: ensure left-to-right *)

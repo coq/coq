@@ -324,7 +324,7 @@ let change_on_subterm cv_pb t = function
   | None -> change_and_check cv_pb t
   | Some occl ->
       contextually false occl
-        (fun subst -> change_and_check Reduction.CONV (replace_vars subst t))
+        (fun subst -> change_and_check Reduction.CONV (replace_vars (Id.Map.bindings subst) t))
 
 let change_in_concl occl t =
   reduct_in_concl ((change_on_subterm Reduction.CUMUL t occl),DEFAULTcast)

@@ -221,7 +221,7 @@ let value_of_ident id = VIntroPattern (IntroIdentifier id)
 
 let extend_values_with_bindings (ln,lm) lfun =
   let lnames = Id.Map.fold (fun id id' accu -> (id,value_of_ident id') :: accu) ln [] in
-  let lmatch = List.map (fun (id,(ids,c)) -> (id,VConstr (ids,c))) lm in
+  let lmatch = Id.Map.fold (fun id (ids,c) accu -> (id, VConstr (ids, c)) :: accu) lm [] in
   (* For compatibility, bound variables are visible only if no other
      binding of the same name exists *)
   lmatch@lfun@lnames
@@ -449,13 +449,13 @@ let extract_ltac_constr_values ist env =
   let rec aux = function
   | (id,v)::tl ->
       let (l1,l2) = aux tl in
-      (try ((id,constr_of_value env v)::l1,l2)
+      (try (Id.Map.add id (constr_of_value env v) l1,l2)
        with Not_found ->
 	 let ido = match v with
 	   | VIntroPattern (IntroIdentifier id0) -> Some id0
 	   | _ -> None in
 	 (l1,(id,ido)::l2))
-  | [] -> ([],[]) in
+  | [] -> (Id.Map.empty,[]) in
   aux ist.lfun
 
 (* Extract the identifier list from lfun: join all branches (what to do else?)*)
@@ -492,18 +492,21 @@ let pf_interp_fresh_id ist gl = interp_fresh_id ist (pf_env gl)
 
 let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let (ltacvars,unbndltacvars as vars) = extract_ltac_constr_values ist env in
+  let ltacbnd = Id.Map.bindings ltacvars in
   let c = match ce with
   | None -> c
     (* If at toplevel (ce<>None), the error can be due to an incorrect
        context at globalization time: we retype with the now known
        intros/lettac/inversion hypothesis names *)
   | Some c ->
-      let ltacdata = (List.map fst ltacvars,unbndltacvars) in
+      let ltacdata = (List.map fst ltacbnd, unbndltacvars) in
       intern_gen kind ~allow_patvar ~ltacvars:ltacdata sigma env c
   in
   let trace =
     push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist.trace in
   let (evd,c) =
+    (** FIXME: we should propagate the use of Id.Map.t everywhere *)
+    let vars = (ltacbnd, unbndltacvars) in
     catch_error trace (understand_ltac flags sigma env vars kind) c
   in
   db_constr ist.debug env c;
@@ -936,19 +939,18 @@ let equal_instances gl (ctx',c') (ctx,c) =
 (* While non-linear matching is modulo eq_constr in matches, merge of *)
 (* different instances of the same metavars is here modulo conversion... *)
 let verify_metas_coherence gl (ln1,lcm) (ln,lm) =
-  let rec aux = function
-  | (id,c as x)::tl ->
-      if List.for_all (fun (id',c') -> not (Id.equal id' id) || equal_instances gl c' c) lcm
-      then
-	x :: aux tl
-      else
-	raise Not_coherent_metas
-  | [] -> lcm in
+  let merge id oc1 oc2 = match oc1, oc2 with
+  | None, None -> None
+  | None, Some c | Some c, None -> Some c
+  | Some c1, Some c2 ->
+    if equal_instances gl c1 c2 then Some c1
+    else raise Not_coherent_metas
+  in
   (** ppedrot: Is that even correct? *)
   let merged = Id.Map.fold Id.Map.add ln ln1 in
-  (merged, aux lm)
+  (merged, Id.Map.merge merge lcm lm)
 
-let adjust (l,lc) = (l,List.map (fun (id,c) -> (id,([],c))) lc)
+let adjust (l, lc) = (l, Id.Map.map (fun c -> [], c) lc)
 
 type 'a extended_matching_result =
     { e_ctx : 'a;
@@ -2045,5 +2047,5 @@ let tacticIn t =
 
 let _ = Hook.set Auto.extern_interp
   (fun l ->
-    let l = List.map (fun (id,c) -> (id,VConstr ([],c))) l in
-    interp_tactic {lfun=l;avoid_ids=[];debug=get_debug(); trace=[]})
+    let l = Id.Map.mapi (fun id c -> VConstr ([], c)) l in
+    interp_tactic {lfun=Id.Map.bindings l;avoid_ids=[];debug=get_debug(); trace=[]})

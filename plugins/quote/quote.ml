@@ -399,7 +399,7 @@ let quote_terms ivs lc gl =
       match l with
         | (lhs, rhs)::tail ->
             begin try
-              let s1 = matches rhs c in
+              let s1 = Id.Map.bindings (matches rhs c) in
               let s2 = List.map (fun (i,c_i) -> (coerce_meta_out i,aux c_i)) s1
 	      in
               Termops.subst_meta s2 lhs

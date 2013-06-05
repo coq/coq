@@ -62,12 +62,12 @@ let warn_bound_again name =
 
 let constrain n (ids, m as x) (names, terms as subst) =
   try
-    let (ids', m') = List.assoc n terms in
+    let (ids', m') = Id.Map.find n terms in
     if List.equal Id.equal ids ids' && eq_constr m m' then subst
     else raise PatternMatchingFailure
   with Not_found ->
     let () = if Id.Map.mem n names then warn_bound_meta n in
-    (names, (n, x) :: terms)
+    (names, Id.Map.add n x terms)
 
 let add_binders na1 na2 (names, terms as subst) = match na1, na2 with
 | Name id1, Name id2 ->
@@ -76,7 +76,7 @@ let add_binders na1 na2 (names, terms as subst) = match na1, na2 with
     (names, terms)
   else
     let names = Id.Map.add id1 id2 names in
-    let () = if List.mem_assoc id1 terms then warn_bound_again id1 in
+    let () = if Id.Map.mem id1 terms then warn_bound_again id1 in
     (names, terms)
 | _ -> subst
 
@@ -250,12 +250,11 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
       | _ -> raise PatternMatchingFailure
 
   in
-  let names, terms = sorec [] (Id.Map.empty, []) pat c in
-  (names, List.sort (fun (a, _) (b, _) -> Id.compare a b) terms)
+  sorec [] (Id.Map.empty, Id.Map.empty) pat c
 
 let matches_core_closed convert allow_partial_app pat c =
   let names, subst = matches_core convert allow_partial_app false pat c in
-  (names, List.map (fun (a,(_,b)) -> (a,b)) subst)
+  (names, Id.Map.map snd subst)
 
 let extended_matches = matches_core None true true
 
@@ -286,7 +285,7 @@ let matches_head pat c =
 let authorized_occ partial_app closed pat c mk_ctx next =
   try
     let sigma = matches_core_closed None partial_app pat c in
-    if closed && not (List.for_all (fun (_,c) -> closed0 c) (snd sigma))
+    if closed && Id.Map.exists (fun _ c -> not (closed0 c)) (snd sigma)
     then Lazy.force next
     else mkresult sigma (mk_ctx (mkMeta special_meta)) next
   with PatternMatchingFailure -> Lazy.force next

@@ -1080,12 +1080,12 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
 	     function (id,None) -> None | (id,Some id') -> Some(id,([],mkVar id')) in
 	   let unboundvars = List.map_filter filter unboundvars in
 	   quote (pr_glob_constr_env (Global.env()) c) ++
-	     (if not (List.is_empty unboundvars) || not (List.is_empty vars) then
+	     (if not (List.is_empty unboundvars) || not (Id.Map.is_empty vars) then
 		strbrk " (with " ++
 		  prlist_with_sep pr_comma
 		  (fun (id,c) ->
 		     pr_id id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
-		  (List.rev vars @ unboundvars) ++ str ")"
+		  (List.rev (Id.Map.bindings vars) @ unboundvars) ++ str ")"
 	      else mt())) ++
       (if Int.equal n 2 then str " (repeated twice)"
        else if n>2 then str " (repeated "++int n++str" times)"

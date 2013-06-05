@@ -47,8 +47,8 @@ type constr_under_binders = Id.t list * constr
 
 (** Types of substitutions with or w/o bound variables *)
 
-type patvar_map = (patvar * constr) list
-type extended_patvar_map = (patvar * constr_under_binders) list
+type patvar_map = constr Id.Map.t
+type extended_patvar_map = constr_under_binders Id.Map.t
 
 (** {5 Patterns} *)
 
