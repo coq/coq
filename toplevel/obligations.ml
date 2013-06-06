@@ -354,8 +354,6 @@ let hide_obligations = ref false
 let set_hide_obligations = (:=) hide_obligations
 let get_hide_obligations () = !hide_obligations
 
-open Goptions
-
 let _ =
   declare_bool_option
     { optsync  = true;
@@ -364,6 +362,20 @@ let _ =
       optkey   = ["Hide";"Obligations"];
       optread  = get_hide_obligations;
       optwrite = set_hide_obligations; }
+
+let shrink_obligations = ref false
+
+let set_shrink_obligations = (:=) shrink_obligations
+let get_shrink_obligations () = !shrink_obligations
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "Shrinking of Program obligations";
+      optkey   = ["Shrink";"Obligations"];
+      optread  = get_shrink_obligations;
+      optwrite = set_shrink_obligations; }
 
 let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
 
@@ -560,6 +572,16 @@ let declare_mutual_definition l =
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in
       first.prg_hook local gr;
       List.iter progmap_remove l; kn
+
+let shrink_body c = 
+  let ctx, b = decompose_lam c in
+  let b', n, args = 
+    List.fold_left (fun (b, i, args) (n,t) ->
+      if noccurn 1 b then 
+	subst1 mkProp b, succ i, args
+      else mkLambda (n,t,b), succ i, mkRel i :: args)
+     (b, 1, []) ctx
+  in List.map (fun (c,t) -> (c,None,t)) ctx, b', Array.of_list args
       
 let declare_obligation prg obl body =
   let body = prg.prg_reduce body in
@@ -568,10 +590,13 @@ let declare_obligation prg obl body =
   | Evar_kinds.Expand -> { obl with obl_body = Some body }
   | Evar_kinds.Define opaque ->
       let opaque = if get_proofs_transparency () then false else opaque in
+      let ctx, body, args = 
+	if get_shrink_obligations () then shrink_body body else [], body, [||] 
+      in
       let ce = 
 	{ const_entry_body = body;
           const_entry_secctx = None;
-	  const_entry_type = Some ty;
+	  const_entry_type = if ctx = [] then Some ty else None;
 	  const_entry_opaque = opaque;
 	  const_entry_inline_code = false} 
       in
@@ -583,7 +608,7 @@ let declare_obligation prg obl body =
 	  Auto.add_hints false [Id.to_string prg.prg_name]
 	    (Auto.HintsUnfoldEntry [EvalConstRef constant]);
 	definition_message obl.obl_name;
-	{ obl with obl_body = Some (mkConst constant) }
+	{ obl with obl_body = Some (it_mkLambda_or_LetIn (mkApp (mkConst constant, args)) ctx) }
 
 let init_prog_info n b t deps fixkind notations obls impls kind reduce hook =
   let obls', b = 
