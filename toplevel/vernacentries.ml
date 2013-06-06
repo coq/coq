@@ -1625,7 +1625,9 @@ let vernac_focus gln =
   if Int.equal n 0 then
     Errors.error "Invalid goal number: 0. Goal numbering starts with 1."
   else
-    Proof.focus focus_command_cond () n p; print_subgoals ()
+    try Proof.focus focus_command_cond () n p; print_subgoals ()
+    with Proofview.IndexOutOfRange ->
+      Errors.error "No such unproven subgoal."
 
   (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus () =

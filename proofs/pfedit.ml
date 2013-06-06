@@ -126,7 +126,7 @@ let solve_nth ?(with_end_tac=false) gi tac =
     Proof_global.run_tactic (Proofview.tclFOCUS gi gi tac) 
   with 
     | Proof_global.NoCurrentProof  -> Errors.error "No focused proof"
-    | Proofview.IndexOutOfRange | Failure "List.chop" -> 
+    | Proofview.IndexOutOfRange ->
 	let msg = str "No such goal: " ++ int gi ++ str "." in
 	Errors.errorlabstrm "" msg
 
