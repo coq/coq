@@ -92,6 +92,83 @@ ExtraArgType of string         '_a                      '_b
 {% \end{%}verbatim{% }%}
 *)
 
+(** {5 Base type combinators} *)
+
+type ('raw, 'glob, 'top) genarg_type
+(** Generic types. ['raw] is the OCaml lowest level, ['glob] is the globalized
+    one, and ['top] the internalized one. *)
+
+type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
+(** Alias for concision when the three types agree. *)
+
+val create_arg : 'raw option -> string -> ('raw, 'glob, 'top) genarg_type
+(** Create a new generic type of argument: force to associate
+   unique ML types at each of the three levels. *)
+
+(** {6 Type constructors} *)
+
+val wit_bool : bool uniform_genarg_type
+
+val wit_int : int uniform_genarg_type
+
+val wit_int_or_var : int or_var uniform_genarg_type
+
+val wit_string : string uniform_genarg_type
+
+val wit_pre_ident : string uniform_genarg_type
+
+val wit_intro_pattern : intro_pattern_expr located uniform_genarg_type
+
+val wit_ident : Id.t uniform_genarg_type
+
+val wit_pattern_ident : Id.t uniform_genarg_type
+
+val wit_ident_gen : bool -> Id.t uniform_genarg_type
+
+val wit_var : (Id.t located, Id.t located, Id.t) genarg_type
+
+val wit_ref : (reference, global_reference located or_var, global_reference) genarg_type
+
+val wit_quant_hyp : quantified_hypothesis uniform_genarg_type
+
+val wit_sort : (glob_sort, glob_sort, sorts) genarg_type
+
+val wit_constr : (constr_expr, glob_constr_and_expr, constr) genarg_type
+
+val wit_constr_may_eval :
+  ((constr_expr,reference or_by_notation,constr_expr) may_eval,
+  (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) may_eval,
+  constr) genarg_type
+
+val wit_open_constr_gen : bool -> (open_constr_expr, open_glob_constr, open_constr) genarg_type
+
+val wit_open_constr : (open_constr_expr, open_glob_constr, open_constr) genarg_type
+
+val wit_casted_open_constr : (open_constr_expr, open_glob_constr, open_constr) genarg_type
+
+val wit_constr_with_bindings :
+  (constr_expr with_bindings,
+  glob_constr_and_expr with_bindings,
+  constr with_bindings sigma) genarg_type
+
+val wit_bindings :
+  (constr_expr bindings,
+  glob_constr_and_expr bindings,
+  constr bindings sigma) genarg_type
+
+val wit_red_expr :
+  ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,
+  (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,
+  (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type
+
+val wit_list0 : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
+val wit_list1 : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
+val wit_opt : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type
+val wit_pair : ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
+  ('a1 * 'a2, 'b1 * 'b2, 'c1 * 'c2) genarg_type
+
+(** {5 Specialized types} *)
+
 (** All of [rlevel], [glevel] and [tlevel] must be non convertible
    to ensure the injectivity of the type inference from type
    ['co generic_argument] to [('a,'co) abstract_argument_type];
@@ -103,109 +180,28 @@ type rlevel
 type glevel
 type tlevel
 
-type ('a,'co) abstract_argument_type
+type ('a, 'co) abstract_argument_type
+(** Type at level ['co] represented by an OCaml value of type ['a]. *)
 
-val rawwit_bool : (bool,rlevel) abstract_argument_type
-val globwit_bool : (bool,glevel) abstract_argument_type
-val wit_bool : (bool,tlevel) abstract_argument_type
+val rawwit : ('a, 'b, 'c) genarg_type -> ('a, 'co) abstract_argument_type
+(** Projection on the raw type constructor. *)
 
-val rawwit_int : (int,rlevel) abstract_argument_type
-val globwit_int : (int,glevel) abstract_argument_type
-val wit_int : (int,tlevel) abstract_argument_type
+val glbwit : ('a, 'b, 'c) genarg_type -> ('b, 'co) abstract_argument_type
+(** Projection on the globalized type constructor. *)
 
-val rawwit_int_or_var : (int or_var,rlevel) abstract_argument_type
-val globwit_int_or_var : (int or_var,glevel) abstract_argument_type
-val wit_int_or_var : (int or_var,tlevel) abstract_argument_type
+val topwit : ('a, 'b, 'c) genarg_type -> ('c, 'co) abstract_argument_type
+(** Projection on the internalized type constructor. *)
 
-val rawwit_string : (string,rlevel) abstract_argument_type
-val globwit_string : (string,glevel) abstract_argument_type
+(** {5 Generic arguments} *)
 
-val wit_string : (string,tlevel) abstract_argument_type
-
-val rawwit_pre_ident : (string,rlevel) abstract_argument_type
-val globwit_pre_ident : (string,glevel) abstract_argument_type
-val wit_pre_ident : (string,tlevel) abstract_argument_type
-
-val rawwit_intro_pattern : (intro_pattern_expr located,rlevel) abstract_argument_type
-val globwit_intro_pattern : (intro_pattern_expr located,glevel) abstract_argument_type
-val wit_intro_pattern : (intro_pattern_expr located,tlevel) abstract_argument_type
-
-val rawwit_ident : (Id.t,rlevel) abstract_argument_type
-val globwit_ident : (Id.t,glevel) abstract_argument_type
-val wit_ident : (Id.t,tlevel) abstract_argument_type
-
-val rawwit_pattern_ident : (Id.t,rlevel) abstract_argument_type
-val globwit_pattern_ident : (Id.t,glevel) abstract_argument_type
-val wit_pattern_ident : (Id.t,tlevel) abstract_argument_type
-
-val rawwit_ident_gen : bool -> (Id.t,rlevel) abstract_argument_type
-val globwit_ident_gen : bool -> (Id.t,glevel) abstract_argument_type
-val wit_ident_gen : bool -> (Id.t,tlevel) abstract_argument_type
-
-val rawwit_var : (Id.t located,rlevel) abstract_argument_type
-val globwit_var : (Id.t located,glevel) abstract_argument_type
-val wit_var : (Id.t,tlevel) abstract_argument_type
-
-val rawwit_ref : (reference,rlevel) abstract_argument_type
-val globwit_ref : (global_reference located or_var,glevel) abstract_argument_type
-val wit_ref : (global_reference,tlevel) abstract_argument_type
-
-val rawwit_quant_hyp : (quantified_hypothesis,rlevel) abstract_argument_type
-val globwit_quant_hyp : (quantified_hypothesis,glevel) abstract_argument_type
-val wit_quant_hyp : (quantified_hypothesis,tlevel) abstract_argument_type
-
-val rawwit_sort : (glob_sort,rlevel) abstract_argument_type
-val globwit_sort : (glob_sort,glevel) abstract_argument_type
-val wit_sort : (sorts,tlevel) abstract_argument_type
-
-val rawwit_constr : (constr_expr,rlevel) abstract_argument_type
-val globwit_constr : (glob_constr_and_expr,glevel) abstract_argument_type
-val wit_constr : (constr,tlevel) abstract_argument_type
-
-val rawwit_constr_may_eval : ((constr_expr,reference or_by_notation,constr_expr) may_eval,rlevel) abstract_argument_type
-val globwit_constr_may_eval : ((glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) may_eval,glevel) abstract_argument_type
-val wit_constr_may_eval : (constr,tlevel) abstract_argument_type
-
-val rawwit_open_constr_gen : bool -> (open_constr_expr,rlevel) abstract_argument_type
-val globwit_open_constr_gen : bool -> (open_glob_constr,glevel) abstract_argument_type
-val wit_open_constr_gen : bool -> (open_constr,tlevel) abstract_argument_type
-
-val rawwit_open_constr : (open_constr_expr,rlevel) abstract_argument_type
-val globwit_open_constr : (open_glob_constr,glevel) abstract_argument_type
-val wit_open_constr : (open_constr,tlevel) abstract_argument_type
-
-val rawwit_casted_open_constr : (open_constr_expr,rlevel) abstract_argument_type
-val globwit_casted_open_constr : (open_glob_constr,glevel) abstract_argument_type
-val wit_casted_open_constr : (open_constr,tlevel) abstract_argument_type
-
-val rawwit_constr_with_bindings : (constr_expr with_bindings,rlevel) abstract_argument_type
-val globwit_constr_with_bindings : (glob_constr_and_expr with_bindings,glevel) abstract_argument_type
-val wit_constr_with_bindings : (constr with_bindings sigma,tlevel) abstract_argument_type
-
-val rawwit_bindings : (constr_expr bindings,rlevel) abstract_argument_type
-val globwit_bindings : (glob_constr_and_expr bindings,glevel) abstract_argument_type
-val wit_bindings : (constr bindings sigma,tlevel) abstract_argument_type
-
-val rawwit_red_expr : ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,rlevel) abstract_argument_type
-val globwit_red_expr : ((glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,glevel) abstract_argument_type
-val wit_red_expr : ((constr,evaluable_global_reference,constr_pattern) red_expr_gen,tlevel) abstract_argument_type
-
-val wit_list0 :
-  ('a,'co) abstract_argument_type -> ('a list,'co) abstract_argument_type
-
-val wit_list1 :
-  ('a,'co) abstract_argument_type -> ('a list,'co) abstract_argument_type
-
-val wit_opt :
-  ('a,'co) abstract_argument_type -> ('a option,'co) abstract_argument_type
-
-val wit_pair :
-  ('a,'co) abstract_argument_type ->
-  ('b,'co) abstract_argument_type ->
-      ('a * 'b,'co) abstract_argument_type
-
-(** ['a generic_argument] = (Sigma t:type. t[[constr/'a]]) *)
 type 'a generic_argument
+(** A inhabitant of ['level generic_argument] is a inhabitant of some type at
+    level ['level], together with the representation of this type. *)
+
+(** {6 Manipulation of generic arguments}
+
+Those functions fail if they are applied to an argument which has not the right
+dynamic type. *)
 
 val fold_list0 :
  ('a generic_argument -> 'c -> 'c) -> 'a generic_argument -> 'c -> 'c
@@ -236,16 +232,6 @@ val app_pair :
   ('a generic_argument -> 'b generic_argument) ->
       ('a generic_argument -> 'b generic_argument)
    -> 'a generic_argument -> 'b generic_argument
-
-(** create a new generic type of argument: force to associate
-   unique ML types at each of the three levels *)
-val create_arg : 'rawa option ->
-    string ->
-      ('a,tlevel) abstract_argument_type
-      * ('globa,glevel) abstract_argument_type
-      * ('rawa,rlevel) abstract_argument_type
-
-val exists_argtype : string -> bool
 
 type argument_type =
   (** Basic types *)
@@ -298,4 +284,4 @@ type an_arg_of_this_type
 val in_generic :
   argument_type -> an_arg_of_this_type -> 'co generic_argument
 
-val default_empty_value : ('a,rlevel) abstract_argument_type -> 'a option
+val default_empty_value : ('raw, 'glb, 'top) genarg_type -> 'raw option

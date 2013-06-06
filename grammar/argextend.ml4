@@ -16,65 +16,15 @@ open Compat
 let loc = CompatLoc.ghost
 let default_loc = <:expr< Loc.ghost >>
 
-let mk_extraarg prefix s =
+let mk_extraarg s =
   if Extrawit.tactic_genarg_level s = None then
-    <:expr< $lid:prefix^s$ >>
+    <:expr< $lid:"wit_"^s$ >>
   else
     <:expr<
       let module WIT = struct
         open Extrawit;
-        value wit = $lid:prefix^s$;
+        value wit = $lid:"wit_"^s$;
       end in WIT.wit >>
-
-let rec make_rawwit loc = function
-  | BoolArgType -> <:expr< Genarg.rawwit_bool >>
-  | IntArgType -> <:expr< Genarg.rawwit_int >>
-  | IntOrVarArgType -> <:expr< Genarg.rawwit_int_or_var >>
-  | StringArgType -> <:expr< Genarg.rawwit_string >>
-  | PreIdentArgType -> <:expr< Genarg.rawwit_pre_ident >>
-  | IntroPatternArgType -> <:expr< Genarg.rawwit_intro_pattern >>
-  | IdentArgType b -> <:expr< Genarg.rawwit_ident_gen $mlexpr_of_bool b$ >>
-  | VarArgType -> <:expr< Genarg.rawwit_var >>
-  | RefArgType -> <:expr< Genarg.rawwit_ref >>
-  | SortArgType -> <:expr< Genarg.rawwit_sort >>
-  | ConstrArgType -> <:expr< Genarg.rawwit_constr >>
-  | ConstrMayEvalArgType -> <:expr< Genarg.rawwit_constr_may_eval >>
-  | QuantHypArgType -> <:expr< Genarg.rawwit_quant_hyp >>
-  | RedExprArgType -> <:expr< Genarg.rawwit_red_expr >>
-  | OpenConstrArgType b -> <:expr< Genarg.rawwit_open_constr_gen $mlexpr_of_bool b$ >>
-  | ConstrWithBindingsArgType -> <:expr< Genarg.rawwit_constr_with_bindings >>
-  | BindingsArgType -> <:expr< Genarg.rawwit_bindings >>
-  | List0ArgType t -> <:expr< Genarg.wit_list0 $make_rawwit loc t$ >>
-  | List1ArgType t -> <:expr< Genarg.wit_list1 $make_rawwit loc t$ >>
-  | OptArgType t -> <:expr< Genarg.wit_opt $make_rawwit loc t$ >>
-  | PairArgType (t1,t2) ->
-      <:expr< Genarg.wit_pair $make_rawwit loc t1$ $make_rawwit loc t2$ >>
-  | ExtraArgType s -> mk_extraarg "rawwit_" s
-
-let rec make_globwit loc = function
-  | BoolArgType -> <:expr< Genarg.globwit_bool >>
-  | IntArgType -> <:expr< Genarg.globwit_int >>
-  | IntOrVarArgType -> <:expr< Genarg.globwit_int_or_var >>
-  | StringArgType -> <:expr< Genarg.globwit_string >>
-  | PreIdentArgType -> <:expr< Genarg.globwit_pre_ident >>
-  | IntroPatternArgType -> <:expr< Genarg.globwit_intro_pattern >>
-  | IdentArgType b -> <:expr< Genarg.globwit_ident_gen $mlexpr_of_bool b$ >>
-  | VarArgType -> <:expr< Genarg.globwit_var >>
-  | RefArgType -> <:expr< Genarg.globwit_ref >>
-  | QuantHypArgType -> <:expr< Genarg.globwit_quant_hyp >>
-  | SortArgType -> <:expr< Genarg.globwit_sort >>
-  | ConstrArgType -> <:expr< Genarg.globwit_constr >>
-  | ConstrMayEvalArgType -> <:expr< Genarg.globwit_constr_may_eval >>
-  | RedExprArgType -> <:expr< Genarg.globwit_red_expr >>
-  | OpenConstrArgType b -> <:expr< Genarg.globwit_open_constr_gen $mlexpr_of_bool b$ >>
-  | ConstrWithBindingsArgType -> <:expr< Genarg.globwit_constr_with_bindings >>
-  | BindingsArgType -> <:expr< Genarg.globwit_bindings >>
-  | List0ArgType t -> <:expr< Genarg.wit_list0 $make_globwit loc t$ >>
-  | List1ArgType t -> <:expr< Genarg.wit_list1 $make_globwit loc t$ >>
-  | OptArgType t -> <:expr< Genarg.wit_opt $make_globwit loc t$ >>
-  | PairArgType (t1,t2) ->
-      <:expr< Genarg.wit_pair $make_globwit loc t1$ $make_globwit loc t2$ >>
-  | ExtraArgType s ->  mk_extraarg "globwit_" s
 
 let rec make_wit loc = function
   | BoolArgType -> <:expr< Genarg.wit_bool >>
@@ -99,7 +49,11 @@ let rec make_wit loc = function
   | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>
   | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_wit loc t1$ $make_wit loc t2$ >>
-  | ExtraArgType s -> mk_extraarg "wit_" s
+  | ExtraArgType s -> mk_extraarg s
+
+let make_rawwit loc arg = <:expr< Genarg.rawwit $make_wit loc arg$ >>
+let make_globwit loc arg = <:expr< Genarg.glbwit $make_wit loc arg$ >>
+let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 
 let has_extraarg =
   List.exists (function GramNonTerminal(_,ExtraArgType _,_,_) -> true | _ -> false)
@@ -131,7 +85,7 @@ let possibly_empty_subentries loc (prods,act) =
     | GramNonTerminal(_,(ExtraArgType _ as t),_,p) :: tl ->
         (* We check at runtime if extraarg s parses "epsilon" *)
         let s = match p with None -> "_" | Some id -> Names.Id.to_string id in
-        <:expr< let $lid:s$ = match Genarg.default_empty_value $make_rawwit loc t$ with
+        <:expr< let $lid:s$ = match Genarg.default_empty_value $make_wit loc t$ with
           [ None -> raise Exit
           | Some v -> v ] in $aux tl$ >>
     | _ -> assert false (* already filtered out *) in
@@ -201,7 +155,7 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
 	    Tacinterp.interp_genarg ist gl
                (Genarg.in_gen $make_globwit loc globtyp$ x)
 	  in
-          (sigma , out_gen $make_wit loc globtyp$ a_interp)>>
+          (sigma , out_gen $make_topwit loc globtyp$ a_interp)>>
     | Some f -> <:expr< $lid:f$>> in
   let substitute = match h with
     | None ->
@@ -212,13 +166,14 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
     | Some f -> <:expr< $lid:f$>> in
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
-  let rawwit = <:expr< $lid:"rawwit_"^s$ >> in
-  let globwit = <:expr< $lid:"globwit_"^s$ >> in
+  let rawwit = <:expr< Genarg.rawwit $wit$ >> in
+  let globwit = <:expr< Genarg.glbwit $wit$ >> in
+  let topwit = <:expr< Genarg.topwit $wit$ >> in
   let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
   let default_value = <:expr< $make_possibly_empty_subentries loc s cl$ >> in
   declare_str_items loc
    [ <:str_item<
-      value ($lid:"wit_"^s$, $lid:"globwit_"^s$, $lid:"rawwit_"^s$) =
+      value ($lid:"wit_"^s$) =
       Genarg.create_arg $default_value$ $se$>>;
      <:str_item<
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
@@ -229,41 +184,37 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
       Tacinterp.add_interp_genarg $se$
         (fun ist gl x ->
 	  let (sigma,a_interp) = $interp$ ist gl (out_gen $globwit$ x) in
-          (sigma , Genarg.in_gen $wit$ a_interp));
+          (sigma , Genarg.in_gen $topwit$ a_interp));
       Tacsubst.add_genarg_subst $se$
         (fun subst x ->
           (Genarg.in_gen $globwit$ ($substitute$ subst (out_gen $globwit$ x))));
       Compat.maybe_uncurry (Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.entry 'a))
 	(None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule
-        ($rawwit$, $lid:rawpr$)
-        ($globwit$, $lid:globpr$)
-        ($wit$, $lid:pr$) }
+        $wit$ $lid:rawpr$ $lid:globpr$ $lid:pr$ }
      >> ]
 
 let declare_vernac_argument loc s pr cl =
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
-  let rawwit = <:expr< $lid:"rawwit_"^s$ >> in
-  let globwit = <:expr< $lid:"globwit_"^s$ >> in
+  let rawwit = <:expr< Genarg.rawwit $wit$ >> in
   let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
   let pr_rules = match pr with
     | None -> <:expr< fun _ _ _ _ -> str $str:"[No printer for "^s^"]"$ >>
     | Some pr -> <:expr< fun _ _ _ -> $lid:pr$ >> in
   declare_str_items loc
    [ <:str_item<
-      value (($lid:"wit_"^s$:Genarg.abstract_argument_type unit Genarg.tlevel),
-             ($lid:"globwit_"^s$:Genarg.abstract_argument_type unit Genarg.glevel),
-              $lid:"rawwit_"^s$) = Genarg.create_arg None $se$ >>;
+      value ($lid:"wit_"^s$ : Genarg.genarg_type 'a unit unit) =
+        Genarg.create_arg None $se$ >>;
      <:str_item<
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
     <:str_item< do {
       Compat.maybe_uncurry (Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.entry 'a))
 	(None, [(None, None, $rules$)]);
-      Pptactic.declare_extra_genarg_pprule
-        ($rawwit$, $pr_rules$)
-        ($globwit$, fun _ _ _ _ -> Errors.anomaly (Pp.str "vernac argument needs not globwit printer"))
-        ($wit$, fun _ _ _ _ -> Errors.anomaly (Pp.str "vernac argument needs not wit printer")) }
+      Pptactic.declare_extra_genarg_pprule $wit$
+        $pr_rules$
+        (fun _ _ _ _ -> Errors.anomaly (Pp.str "vernac argument needs not globwit printer"))
+        (fun _ _ _ _ -> Errors.anomaly (Pp.str "vernac argument needs not wit printer")) }
       >> ]
 
 open Pcoq

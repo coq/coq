@@ -286,7 +286,7 @@ let create_entry (u, utab) s etyp =
     new_entry etyp (u, utab) s
 
 let create_constr_entry s =
-  outGramObj rawwit_constr (create_entry uconstr s ConstrArgType)
+  outGramObj (rawwit wit_constr) (create_entry uconstr s ConstrArgType)
 
 let create_generic_entry s wit =
   outGramObj wit (create_entry utactic s (unquote wit))
@@ -306,22 +306,22 @@ module Prim =
 
     (* Entries that can be refered via the string -> Gram.entry table *)
     (* Typically for tactic or vernac extensions *)
-    let preident = gec_gen rawwit_pre_ident "preident"
-    let ident = gec_gen rawwit_ident "ident"
-    let natural = gec_gen rawwit_int "natural"
-    let integer = gec_gen rawwit_int "integer"
+    let preident = gec_gen (rawwit wit_pre_ident) "preident"
+    let ident = gec_gen (rawwit wit_ident) "ident"
+    let natural = gec_gen (rawwit wit_int) "natural"
+    let integer = gec_gen (rawwit wit_int) "integer"
     let bigint = Gram.entry_create "Prim.bigint"
-    let string = gec_gen rawwit_string "string"
-    let reference = make_gen_entry uprim rawwit_ref "reference"
+    let string = gec_gen (rawwit wit_string) "string"
+    let reference = make_gen_entry uprim (rawwit wit_ref) "reference"
     let by_notation = Gram.entry_create "by_notation"
     let smart_global = Gram.entry_create "smart_global"
 
     (* parsed like ident but interpreted as a term *)
-    let var = gec_gen rawwit_var "var"
+    let var = gec_gen (rawwit wit_var) "var"
 
     let name = Gram.entry_create "Prim.name"
     let identref = Gram.entry_create "Prim.identref"
-    let pattern_ident = gec_gen rawwit_pattern_ident "pattern_ident"
+    let pattern_ident = gec_gen (rawwit wit_pattern_ident) "pattern_ident"
     let pattern_identref = Gram.entry_create "pattern_identref"
 
     (* A synonym of ident - maybe ident will be located one day *)
@@ -338,7 +338,7 @@ module Prim =
 
 module Constr =
   struct
-    let gec_constr = make_gen_entry uconstr rawwit_constr
+    let gec_constr = make_gen_entry uconstr (rawwit wit_constr)
 
     (* Entries that can be refered via the string -> Gram.entry table *)
     let constr = gec_constr "constr"
@@ -346,9 +346,9 @@ module Constr =
     let constr_eoi = eoi_entry constr
     let lconstr = gec_constr "lconstr"
     let binder_constr = create_constr_entry "binder_constr"
-    let ident = make_gen_entry uconstr rawwit_ident "ident"
-    let global = make_gen_entry uconstr rawwit_ref "global"
-    let sort = make_gen_entry uconstr rawwit_sort "sort"
+    let ident = make_gen_entry uconstr (rawwit wit_ident) "ident"
+    let global = make_gen_entry uconstr (rawwit wit_ref) "global"
+    let sort = make_gen_entry uconstr (rawwit wit_sort) "sort"
     let pattern = Gram.entry_create "constr:pattern"
     let constr_pattern = gec_constr "constr_pattern"
     let lconstr_pattern = gec_constr "lconstr_pattern"
@@ -376,27 +376,27 @@ module Tactic =
     (* Entries that can be refered via the string -> Gram.entry table *)
     (* Typically for tactic user extensions *)
     let open_constr =
-      make_gen_entry utactic (rawwit_open_constr_gen false) "open_constr"
+      make_gen_entry utactic (rawwit (wit_open_constr_gen false)) "open_constr"
     let casted_open_constr =
-      make_gen_entry utactic (rawwit_open_constr_gen true) "casted_open_constr"
+      make_gen_entry utactic (rawwit (wit_open_constr_gen true)) "casted_open_constr"
     let constr_with_bindings =
-      make_gen_entry utactic rawwit_constr_with_bindings "constr_with_bindings"
+      make_gen_entry utactic (rawwit wit_constr_with_bindings) "constr_with_bindings"
     let bindings =
-      make_gen_entry utactic rawwit_bindings "bindings"
-    let constr_may_eval = make_gen_entry utactic rawwit_constr_may_eval "constr_may_eval"
+      make_gen_entry utactic (rawwit wit_bindings) "bindings"
+    let constr_may_eval = make_gen_entry utactic (rawwit wit_constr_may_eval) "constr_may_eval"
     let quantified_hypothesis =
-      make_gen_entry utactic rawwit_quant_hyp "quantified_hypothesis"
-    let int_or_var = make_gen_entry utactic rawwit_int_or_var "int_or_var"
-    let red_expr = make_gen_entry utactic rawwit_red_expr "red_expr"
+      make_gen_entry utactic (rawwit wit_quant_hyp) "quantified_hypothesis"
+    let int_or_var = make_gen_entry utactic (rawwit wit_int_or_var) "int_or_var"
+    let red_expr = make_gen_entry utactic (rawwit wit_red_expr) "red_expr"
     let simple_intropattern =
-      make_gen_entry utactic rawwit_intro_pattern "simple_intropattern"
+      make_gen_entry utactic (rawwit wit_intro_pattern) "simple_intropattern"
 
     (* Main entries for ltac *)
     let tactic_arg = Gram.entry_create "tactic:tactic_arg"
     let tactic_expr = Gram.entry_create "tactic:tactic_expr"
     let binder_tactic = Gram.entry_create "tactic:binder_tactic"
 
-    let tactic = make_gen_entry utactic (rawwit_tactic tactic_main_level) "tactic"
+    let tactic = make_gen_entry utactic (rawwit (wit_tactic tactic_main_level)) "tactic"
 
     (* Main entry for quotations *)
     let tactic_eoi = eoi_entry tactic

@@ -1665,13 +1665,10 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	     (Ident (Loc.ghost,Id.of_string "Equivalence_Symmetric"), lemma2);
 	     (Ident (Loc.ghost,Id.of_string "Equivalence_Transitive"), lemma3)])
 
-type 'a binders_argtype = (local_binder list, 'a) Genarg.abstract_argument_type
+type binders_argtype = local_binder list
 
-let _, _, rawwit_binders =
- (Genarg.create_arg None "binders" :
-    Genarg.tlevel binders_argtype *
-    Genarg.glevel binders_argtype *
-    Genarg.rlevel binders_argtype)
+let wit_binders =
+ (Genarg.create_arg None "binders" : binders_argtype Genarg.uniform_genarg_type)
 
 open Pcoq.Constr
 

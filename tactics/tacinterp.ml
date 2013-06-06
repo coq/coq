@@ -1371,63 +1371,63 @@ and interp_genarg ist gl x =
   let rec interp_genarg ist gl x =
     let gl = { gl with sigma = !evdref } in
     match genarg_tag x with
-    | BoolArgType -> in_gen wit_bool (out_gen globwit_bool x)
-    | IntArgType -> in_gen wit_int (out_gen globwit_int x)
+    | BoolArgType -> in_gen (topwit wit_bool) (out_gen (glbwit wit_bool) x)
+    | IntArgType -> in_gen (topwit wit_int) (out_gen (glbwit wit_int) x)
     | IntOrVarArgType ->
-      in_gen wit_int_or_var
-        (ArgArg (interp_int_or_var ist (out_gen globwit_int_or_var x)))
+      in_gen (topwit wit_int_or_var)
+        (ArgArg (interp_int_or_var ist (out_gen (glbwit wit_int_or_var) x)))
     | StringArgType ->
-      in_gen wit_string (out_gen globwit_string x)
+      in_gen (topwit wit_string) (out_gen (glbwit wit_string) x)
     | PreIdentArgType ->
-      in_gen wit_pre_ident (out_gen globwit_pre_ident x)
+      in_gen (topwit wit_pre_ident) (out_gen (glbwit wit_pre_ident) x)
     | IntroPatternArgType ->
-      in_gen wit_intro_pattern
-        (interp_intro_pattern ist gl (out_gen globwit_intro_pattern x))
+      in_gen (topwit wit_intro_pattern)
+        (interp_intro_pattern ist gl (out_gen (glbwit wit_intro_pattern) x))
     | IdentArgType b ->
-      in_gen (wit_ident_gen b)
-        (pf_interp_fresh_ident ist gl (out_gen (globwit_ident_gen b) x))
+      in_gen (topwit (wit_ident_gen b))
+        (pf_interp_fresh_ident ist gl (out_gen (glbwit (wit_ident_gen b)) x))
     | VarArgType ->
-      in_gen wit_var (interp_hyp ist gl (out_gen globwit_var x))
+      in_gen (topwit wit_var) (interp_hyp ist gl (out_gen (glbwit wit_var) x))
     | RefArgType ->
-      in_gen wit_ref (pf_interp_reference ist gl (out_gen globwit_ref x))
+      in_gen (topwit wit_ref) (pf_interp_reference ist gl (out_gen (glbwit wit_ref) x))
     | SortArgType ->
       let (sigma,c_interp) =
 	pf_interp_constr ist gl
-	  (GSort (dloc,out_gen globwit_sort x), None)
+	  (GSort (dloc,out_gen (glbwit wit_sort) x), None)
       in
       evdref := sigma;
-      in_gen wit_sort
+      in_gen (topwit wit_sort)
         (destSort c_interp)
     | ConstrArgType ->
-      let (sigma,c_interp) = pf_interp_constr ist gl (out_gen globwit_constr x) in
+      let (sigma,c_interp) = pf_interp_constr ist gl (out_gen (glbwit wit_constr) x) in
       evdref := sigma;
-      in_gen wit_constr c_interp
+      in_gen (topwit wit_constr) c_interp
     | ConstrMayEvalArgType ->
-      let (sigma,c_interp) = interp_constr_may_eval ist gl (out_gen globwit_constr_may_eval x) in
+      let (sigma,c_interp) = interp_constr_may_eval ist gl (out_gen (glbwit wit_constr_may_eval) x) in
       evdref := sigma;
-      in_gen wit_constr_may_eval c_interp
+      in_gen (topwit wit_constr_may_eval) c_interp
     | QuantHypArgType ->
-      in_gen wit_quant_hyp
+      in_gen (topwit wit_quant_hyp)
         (interp_declared_or_quantified_hypothesis ist gl
-           (out_gen globwit_quant_hyp x))
+           (out_gen (glbwit wit_quant_hyp) x))
     | RedExprArgType ->
-      let (sigma,r_interp) = pf_interp_red_expr ist gl (out_gen globwit_red_expr x) in
+      let (sigma,r_interp) = pf_interp_red_expr ist gl (out_gen (glbwit wit_red_expr) x) in
       evdref := sigma;
-      in_gen wit_red_expr r_interp
+      in_gen (topwit wit_red_expr) r_interp
     | OpenConstrArgType casted ->
       let expected_type =
         if casted then OfType (pf_concl gl) else WithoutTypeConstraint in
-      in_gen (wit_open_constr_gen casted)
+      in_gen (topwit (wit_open_constr_gen casted))
         (interp_open_constr ~expected_type
            ist (pf_env gl) (project gl)
-           (snd (out_gen (globwit_open_constr_gen casted) x)))
+           (snd (out_gen (glbwit (wit_open_constr_gen casted)) x)))
     | ConstrWithBindingsArgType ->
-      in_gen wit_constr_with_bindings
+      in_gen (topwit wit_constr_with_bindings)
         (pack_sigma (interp_constr_with_bindings ist (pf_env gl) (project gl)
-		       (out_gen globwit_constr_with_bindings x)))
+		       (out_gen (glbwit wit_constr_with_bindings) x)))
     | BindingsArgType ->
-      in_gen wit_bindings
-        (pack_sigma (interp_bindings ist (pf_env gl) (project gl) (out_gen globwit_bindings x)))
+      in_gen (topwit wit_bindings)
+        (pack_sigma (interp_bindings ist (pf_env gl) (project gl) (out_gen (glbwit wit_bindings) x)))
     | List0ArgType ConstrArgType ->
         let (sigma,v) = interp_genarg_constr_list0 ist gl x in
 	evdref := sigma;
@@ -1446,9 +1446,9 @@ and interp_genarg ist gl x =
       match tactic_genarg_level s with
       | Some n ->
           (* Special treatment of tactic arguments *)
-        in_gen (wit_tactic n)
+        in_gen (topwit (wit_tactic n))
 	  (TacArg(dloc,valueIn(VFun(ist.trace,ist.lfun,[],
-				    out_gen (globwit_tactic n) x))))
+				    out_gen (glbwit (wit_tactic n)) x))))
       | None ->
         let (sigma,v) = lookup_interp_genarg s ist gl x in
 	evdref:=sigma;
@@ -1458,24 +1458,24 @@ and interp_genarg ist gl x =
   !evdref , v
 
 and interp_genarg_constr_list0 ist gl x =
-  let lc = out_gen (wit_list0 globwit_constr) x in
+  let lc = out_gen (glbwit (wit_list0 wit_constr)) x in
   let (sigma,lc) = pf_apply (interp_constr_list ist) gl lc in
-  sigma , in_gen (wit_list0 wit_constr) lc
+  sigma , in_gen (topwit (wit_list0 wit_constr)) lc
 
 and interp_genarg_constr_list1 ist gl x =
-  let lc = out_gen (wit_list1 globwit_constr) x in
+  let lc = out_gen (glbwit (wit_list1 wit_constr)) x in
   let (sigma,lc) = pf_apply (interp_constr_list ist) gl lc in
-  sigma , in_gen (wit_list1 wit_constr) lc
+  sigma , in_gen (topwit (wit_list1 wit_constr)) lc
 
 and interp_genarg_var_list0 ist gl x =
-  let lc = out_gen (wit_list0 globwit_var) x in
+  let lc = out_gen (glbwit (wit_list0 wit_var)) x in
   let lc = interp_hyp_list ist gl lc in
-  in_gen (wit_list0 wit_var) lc
+  in_gen (topwit (wit_list0 wit_var)) lc
 
 and interp_genarg_var_list1 ist gl x =
-  let lc = out_gen (wit_list1 globwit_var) x in
+  let lc = out_gen (glbwit (wit_list1 wit_var)) x in
   let lc = interp_hyp_list ist gl lc in
-  in_gen (wit_list1 wit_var) lc
+  in_gen (topwit (wit_list1 wit_var)) lc
 
 (* Interprets the Match expressions *)
 and interp_match ist g lz constr lmr =
@@ -1885,45 +1885,45 @@ and interp_atomic ist gl tac =
     let evdref = ref gl.sigma in
     let f x = match genarg_tag x with
     | IntArgType ->
-        VInteger (out_gen globwit_int x)
+        VInteger (out_gen (glbwit wit_int) x)
     | IntOrVarArgType ->
-        mk_int_or_var_value ist (out_gen globwit_int_or_var x)
+        mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x)
     | PreIdentArgType ->
 	failwith "pre-identifiers cannot be bound"
     | IntroPatternArgType ->
 	VIntroPattern
-	  (snd (interp_intro_pattern ist gl (out_gen globwit_intro_pattern x)))
+	  (snd (interp_intro_pattern ist gl (out_gen (glbwit wit_intro_pattern) x)))
     | IdentArgType b ->
 	value_of_ident (interp_fresh_ident ist env
-	  (out_gen (globwit_ident_gen b) x))
+	  (out_gen (glbwit (wit_ident_gen b)) x))
     | VarArgType ->
-        mk_hyp_value ist gl (out_gen globwit_var x)
+        mk_hyp_value ist gl (out_gen (glbwit wit_var) x)
     | RefArgType ->
         VConstr ([],constr_of_global
-          (pf_interp_reference ist gl (out_gen globwit_ref x)))
+          (pf_interp_reference ist gl (out_gen (glbwit wit_ref) x)))
     | SortArgType ->
-        VConstr ([],mkSort (interp_sort (out_gen globwit_sort x)))
+        VConstr ([],mkSort (interp_sort (out_gen (glbwit wit_sort) x)))
     | ConstrArgType ->
-        let (sigma,v) = mk_constr_value ist gl (out_gen globwit_constr x) in
+        let (sigma,v) = mk_constr_value ist gl (out_gen (glbwit wit_constr) x) in
 	evdref := sigma;
 	v
     | OpenConstrArgType false ->
-        let (sigma,v) = mk_open_constr_value ist gl (snd (out_gen globwit_open_constr x)) in
+        let (sigma,v) = mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x)) in
 	evdref := sigma;
 	v
     | ConstrMayEvalArgType ->
-        let (sigma,c_interp) = interp_constr_may_eval ist gl (out_gen globwit_constr_may_eval x) in
+        let (sigma,c_interp) = interp_constr_may_eval ist gl (out_gen (glbwit wit_constr_may_eval) x) in
 	evdref := sigma;
 	VConstr ([],c_interp)
     | ExtraArgType s when not (Option.is_empty (tactic_genarg_level s)) ->
           (* Special treatment of tactic arguments *)
 	let (sigma,v) = val_interp ist gl
-          (out_gen (globwit_tactic (Option.get (tactic_genarg_level s))) x)
+          (out_gen (glbwit (wit_tactic (Option.get (tactic_genarg_level s)))) x)
 	in
 	evdref := sigma;
 	v
     | List0ArgType ConstrArgType ->
-        let wit = wit_list0 globwit_constr in
+        let wit = glbwit (wit_list0 wit_constr) in
 	let (sigma,l_interp) =
 	  List.fold_right begin fun c (sigma,acc) ->
 	    let (sigma,c_interp) = mk_constr_value ist { gl with sigma=sigma } c in
@@ -1933,24 +1933,24 @@ and interp_atomic ist gl tac =
 	evdref := sigma;
         VList (l_interp)
     | List0ArgType VarArgType ->
-        let wit = wit_list0 globwit_var in
+        let wit = glbwit (wit_list0 wit_var) in
         VList (List.map (mk_hyp_value ist gl) (out_gen wit x))
     | List0ArgType IntArgType ->
-        let wit = wit_list0 globwit_int in
+        let wit = glbwit (wit_list0 wit_int) in
         VList (List.map (fun x -> VInteger x) (out_gen wit x))
     | List0ArgType IntOrVarArgType ->
-        let wit = wit_list0 globwit_int_or_var in
+        let wit = glbwit (wit_list0 wit_int_or_var) in
         VList (List.map (mk_int_or_var_value ist) (out_gen wit x))
     | List0ArgType (IdentArgType b) ->
-        let wit = wit_list0 (globwit_ident_gen b) in
+        let wit = glbwit (wit_list0 (wit_ident_gen b)) in
 	let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
         VList (List.map mk_ident (out_gen wit x))
     | List0ArgType IntroPatternArgType ->
-        let wit = wit_list0 globwit_intro_pattern in
+        let wit = glbwit (wit_list0 wit_intro_pattern) in
 	let mk_ipat x = VIntroPattern (snd (interp_intro_pattern ist gl x)) in
         VList (List.map mk_ipat (out_gen wit x))
     | List1ArgType ConstrArgType ->
-        let wit = wit_list1 globwit_constr in
+        let wit = glbwit (wit_list1 wit_constr) in
 	let (sigma, l_interp) =
 	  List.fold_right begin fun c (sigma,acc) ->
 	    let (sigma,c_interp) = mk_constr_value ist { gl with sigma=sigma } c in
@@ -1960,20 +1960,20 @@ and interp_atomic ist gl tac =
 	evdref:=sigma;
         VList l_interp
     | List1ArgType VarArgType ->
-        let wit = wit_list1 globwit_var in
+        let wit = glbwit (wit_list1 wit_var) in
         VList (List.map (mk_hyp_value ist gl) (out_gen wit x))
     | List1ArgType IntArgType ->
-        let wit = wit_list1 globwit_int in
+        let wit = glbwit (wit_list1 wit_int) in
         VList (List.map (fun x -> VInteger x) (out_gen wit x))
     | List1ArgType IntOrVarArgType ->
-        let wit = wit_list1 globwit_int_or_var in
+        let wit = glbwit (wit_list1 wit_int_or_var) in
         VList (List.map (mk_int_or_var_value ist) (out_gen wit x))
     | List1ArgType (IdentArgType b) ->
-        let wit = wit_list1 (globwit_ident_gen b) in
+        let wit = glbwit (wit_list1 (wit_ident_gen b)) in
 	let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
         VList (List.map mk_ident (out_gen wit x))
     | List1ArgType IntroPatternArgType ->
-        let wit = wit_list1 globwit_intro_pattern in
+        let wit = glbwit (wit_list1 wit_intro_pattern) in
 	let mk_ipat x = VIntroPattern (snd (interp_intro_pattern ist gl x)) in
         VList (List.map mk_ipat (out_gen wit x))
     | StringArgType | BoolArgType

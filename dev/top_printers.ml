@@ -410,7 +410,7 @@ let _ =
     Vernacinterp.vinterp_add "PrintConstr"
       (function
          [c] when genarg_tag c = ConstrArgType && true ->
-           let c = out_gen rawwit_constr c in
+           let c = out_gen (rawwit wit_constr) c in
            (fun () -> in_current_context constr_display c)
        | _ -> failwith "Vernac extension: cannot occur")
   with
@@ -427,7 +427,7 @@ let _ =
     Vernacinterp.vinterp_add "PrintPureConstr"
       (function
          [c] when genarg_tag c = ConstrArgType && true ->
-           let c = out_gen rawwit_constr c in
+           let c = out_gen (rawwit wit_constr) c in
            (fun () -> in_current_context print_pure_constr c)
        | _ -> failwith "Vernac extension: cannot occur")
   with

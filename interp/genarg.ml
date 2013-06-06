@@ -74,6 +74,11 @@ type open_glob_constr = unit * glob_constr_and_expr
 
 type glob_constr_pattern_and_expr = glob_constr_and_expr * Pattern.constr_pattern
 
+type ('raw, 'glob, 'top) genarg_type = argument_type
+
+type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
+(** Alias for concision *)
+
 (* Dynamics but tagged by a type expression *)
 
 type 'a generic_argument = argument_type * Obj.t
@@ -82,88 +87,50 @@ type rlevel
 type glevel
 type tlevel
 
-let rawwit_bool = BoolArgType
-let globwit_bool = BoolArgType
+let rawwit t = t
+let glbwit t = t
+let topwit t = t
+
 let wit_bool = BoolArgType
 
-let rawwit_int = IntArgType
-let globwit_int = IntArgType
 let wit_int = IntArgType
 
-let rawwit_int_or_var = IntOrVarArgType
-let globwit_int_or_var = IntOrVarArgType
 let wit_int_or_var = IntOrVarArgType
 
-let rawwit_string = StringArgType
-let globwit_string = StringArgType
 let wit_string = StringArgType
 
-let rawwit_pre_ident = PreIdentArgType
-let globwit_pre_ident = PreIdentArgType
 let wit_pre_ident = PreIdentArgType
 
-let rawwit_intro_pattern = IntroPatternArgType
-let globwit_intro_pattern = IntroPatternArgType
 let wit_intro_pattern = IntroPatternArgType
 
-let rawwit_ident_gen b = IdentArgType b
-let globwit_ident_gen b = IdentArgType b
 let wit_ident_gen b = IdentArgType b
 
-let rawwit_ident = rawwit_ident_gen true
-let globwit_ident = globwit_ident_gen true
 let wit_ident = wit_ident_gen true
 
-let rawwit_pattern_ident = rawwit_ident_gen false
-let globwit_pattern_ident = globwit_ident_gen false
 let wit_pattern_ident = wit_ident_gen false
 
-let rawwit_var = VarArgType
-let globwit_var = VarArgType
 let wit_var = VarArgType
 
-let rawwit_ref = RefArgType
-let globwit_ref = RefArgType
 let wit_ref = RefArgType
 
-let rawwit_quant_hyp = QuantHypArgType
-let globwit_quant_hyp = QuantHypArgType
 let wit_quant_hyp = QuantHypArgType
 
-let rawwit_sort = SortArgType
-let globwit_sort = SortArgType
 let wit_sort = SortArgType
 
-let rawwit_constr = ConstrArgType
-let globwit_constr = ConstrArgType
 let wit_constr = ConstrArgType
 
-let rawwit_constr_may_eval = ConstrMayEvalArgType
-let globwit_constr_may_eval = ConstrMayEvalArgType
 let wit_constr_may_eval = ConstrMayEvalArgType
 
-let rawwit_open_constr_gen b = OpenConstrArgType b
-let globwit_open_constr_gen b = OpenConstrArgType b
 let wit_open_constr_gen b = OpenConstrArgType b
 
-let rawwit_open_constr = rawwit_open_constr_gen false
-let globwit_open_constr = globwit_open_constr_gen false
 let wit_open_constr = wit_open_constr_gen false
 
-let rawwit_casted_open_constr = rawwit_open_constr_gen true
-let globwit_casted_open_constr = globwit_open_constr_gen true
 let wit_casted_open_constr = wit_open_constr_gen true
 
-let rawwit_constr_with_bindings = ConstrWithBindingsArgType
-let globwit_constr_with_bindings = ConstrWithBindingsArgType
 let wit_constr_with_bindings = ConstrWithBindingsArgType
 
-let rawwit_bindings = BindingsArgType
-let globwit_bindings = BindingsArgType
 let wit_bindings = BindingsArgType
 
-let rawwit_red_expr = RedExprArgType
-let globwit_red_expr = RedExprArgType
 let wit_red_expr = RedExprArgType
 
 let wit_list0 t = List0ArgType t
@@ -242,9 +209,7 @@ let create_arg v s =
     Errors.anomaly ~label:"Genarg.create" (str ("already declared generic argument " ^ s));
   let t = ExtraArgType s in
   dyntab := (s,Option.map (in_gen t) v) :: !dyntab;
-  (t,t,t)
-
-let exists_argtype s = List.mem_assoc s !dyntab
+  t
 
 let default_empty_argtype_value s = List.assoc s !dyntab
 

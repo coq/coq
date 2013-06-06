@@ -62,15 +62,15 @@ type 'a extra_genarg_printer =
 
 let genarg_pprule = ref String.Map.empty
 
-let declare_extra_genarg_pprule (rawwit, f) (globwit, g) (wit, h) =
-  let s = match unquote wit with
+let declare_extra_genarg_pprule wit f g h =
+  let s = match unquote (topwit wit) with
     | ExtraArgType s -> s
     | _ -> error
 	"Can declare a pretty-printing rule only for extra argument types."
   in
-  let f prc prlc prtac x = f prc prlc prtac (out_gen rawwit x) in
-  let g prc prlc prtac x = g prc prlc prtac (out_gen globwit x) in
-  let h prc prlc prtac x = h prc prlc prtac (out_gen wit x) in
+  let f prc prlc prtac x = f prc prlc prtac (out_gen (rawwit wit) x) in
+  let g prc prlc prtac x = g prc prlc prtac (out_gen (glbwit wit) x) in
+  let h prc prlc prtac x = h prc prlc prtac (out_gen (topwit wit) x) in
   genarg_pprule := String.Map.add s (f,g,h) !genarg_pprule
 
 let pr_arg pr x = spc () ++ pr x
@@ -141,29 +141,29 @@ let if_pattern_ident b pr c = (if b then str "?" else mt()) ++ pr c
 
 let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generic_argument) =
   match Genarg.genarg_tag x with
-  | BoolArgType -> str (if out_gen rawwit_bool x then "true" else "false")
-  | IntArgType -> int (out_gen rawwit_int x)
-  | IntOrVarArgType -> pr_or_var int (out_gen rawwit_int_or_var x)
-  | StringArgType -> str "\"" ++ str (out_gen rawwit_string x) ++ str "\""
-  | PreIdentArgType -> str (out_gen rawwit_pre_ident x)
-  | IntroPatternArgType -> pr_intro_pattern (out_gen rawwit_intro_pattern x)
-  | IdentArgType b -> if_pattern_ident b pr_id (out_gen rawwit_ident x)
-  | VarArgType -> pr_located pr_id (out_gen rawwit_var x)
-  | RefArgType -> prref (out_gen rawwit_ref x)
-  | SortArgType -> pr_glob_sort (out_gen rawwit_sort x)
-  | ConstrArgType -> prc (out_gen rawwit_constr x)
+  | BoolArgType -> str (if out_gen (rawwit wit_bool) x then "true" else "false")
+  | IntArgType -> int (out_gen (rawwit wit_int) x)
+  | IntOrVarArgType -> pr_or_var int (out_gen (rawwit wit_int_or_var) x)
+  | StringArgType -> str "\"" ++ str (out_gen (rawwit wit_string) x) ++ str "\""
+  | PreIdentArgType -> str (out_gen (rawwit wit_pre_ident) x)
+  | IntroPatternArgType -> pr_intro_pattern (out_gen (rawwit wit_intro_pattern) x)
+  | IdentArgType b -> if_pattern_ident b pr_id (out_gen (rawwit wit_ident) x)
+  | VarArgType -> pr_located pr_id (out_gen (rawwit wit_var) x)
+  | RefArgType -> prref (out_gen (rawwit wit_ref) x)
+  | SortArgType -> pr_glob_sort (out_gen (rawwit wit_sort) x)
+  | ConstrArgType -> prc (out_gen (rawwit wit_constr) x)
   | ConstrMayEvalArgType ->
       pr_may_eval prc prlc (pr_or_by_notation prref) prpat
-        (out_gen rawwit_constr_may_eval x)
-  | QuantHypArgType -> pr_quantified_hypothesis (out_gen rawwit_quant_hyp x)
+        (out_gen (rawwit wit_constr_may_eval) x)
+  | QuantHypArgType -> pr_quantified_hypothesis (out_gen (rawwit wit_quant_hyp) x)
   | RedExprArgType ->
       pr_red_expr (prc,prlc,pr_or_by_notation prref,prpat)
-        (out_gen rawwit_red_expr x)
-  | OpenConstrArgType b -> prc (snd (out_gen (rawwit_open_constr_gen b) x))
+        (out_gen (rawwit wit_red_expr) x)
+  | OpenConstrArgType b -> prc (snd (out_gen (rawwit (wit_open_constr_gen b)) x))
   | ConstrWithBindingsArgType ->
-      pr_with_bindings prc prlc (out_gen rawwit_constr_with_bindings x)
+      pr_with_bindings prc prlc (out_gen (rawwit wit_constr_with_bindings) x)
   | BindingsArgType ->
-      pr_bindings_no_with prc prlc (out_gen rawwit_bindings x)
+      pr_bindings_no_with prc prlc (out_gen (rawwit wit_bindings) x)
   | List0ArgType _ ->
       hov 0 (pr_sequence (pr_raw_generic prc prlc prtac prpat prref)
 	(fold_list0 (fun a l -> a::l) x []))
@@ -184,32 +184,32 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
 
 let rec pr_glob_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
-  | BoolArgType -> str (if out_gen globwit_bool x then "true" else "false")
-  | IntArgType -> int (out_gen globwit_int x)
-  | IntOrVarArgType -> pr_or_var int (out_gen globwit_int_or_var x)
-  | StringArgType -> str "\"" ++ str (out_gen globwit_string x) ++ str "\""
-  | PreIdentArgType -> str (out_gen globwit_pre_ident x)
-  | IntroPatternArgType -> pr_intro_pattern (out_gen globwit_intro_pattern x)
-  | IdentArgType b -> if_pattern_ident b pr_id (out_gen globwit_ident x)
-  | VarArgType -> pr_located pr_id (out_gen globwit_var x)
-  | RefArgType -> pr_or_var (pr_located pr_global) (out_gen globwit_ref x)
-  | SortArgType -> pr_glob_sort (out_gen globwit_sort x)
-  | ConstrArgType -> prc (out_gen globwit_constr x)
+  | BoolArgType -> str (if out_gen (glbwit wit_bool) x then "true" else "false")
+  | IntArgType -> int (out_gen (glbwit wit_int) x)
+  | IntOrVarArgType -> pr_or_var int (out_gen (glbwit wit_int_or_var) x)
+  | StringArgType -> str "\"" ++ str (out_gen (glbwit wit_string) x) ++ str "\""
+  | PreIdentArgType -> str (out_gen (glbwit wit_pre_ident) x)
+  | IntroPatternArgType -> pr_intro_pattern (out_gen (glbwit wit_intro_pattern) x)
+  | IdentArgType b -> if_pattern_ident b pr_id (out_gen (glbwit wit_ident) x)
+  | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
+  | RefArgType -> pr_or_var (pr_located pr_global) (out_gen (glbwit wit_ref) x)
+  | SortArgType -> pr_glob_sort (out_gen (glbwit wit_sort) x)
+  | ConstrArgType -> prc (out_gen (glbwit wit_constr) x)
   | ConstrMayEvalArgType ->
       pr_may_eval prc prlc
         (pr_or_var (pr_and_short_name pr_evaluable_reference)) prpat
-        (out_gen globwit_constr_may_eval x)
+        (out_gen (glbwit wit_constr_may_eval) x)
   | QuantHypArgType ->
-      pr_quantified_hypothesis (out_gen globwit_quant_hyp x)
+      pr_quantified_hypothesis (out_gen (glbwit wit_quant_hyp) x)
   | RedExprArgType ->
       pr_red_expr
         (prc,prlc,pr_or_var (pr_and_short_name pr_evaluable_reference),prpat)
-        (out_gen globwit_red_expr x)
-  | OpenConstrArgType b -> prc (snd (out_gen (globwit_open_constr_gen b) x))
+        (out_gen (glbwit wit_red_expr) x)
+  | OpenConstrArgType b -> prc (snd (out_gen (glbwit (wit_open_constr_gen b)) x))
   | ConstrWithBindingsArgType ->
-      pr_with_bindings prc prlc (out_gen globwit_constr_with_bindings x)
+      pr_with_bindings prc prlc (out_gen (glbwit wit_constr_with_bindings) x)
   | BindingsArgType ->
-      pr_bindings_no_with prc prlc (out_gen globwit_bindings x)
+      pr_bindings_no_with prc prlc (out_gen (glbwit wit_bindings) x)
   | List0ArgType _ ->
       hov 0 (pr_sequence (pr_glob_generic prc prlc prtac prpat)
 	(fold_list0 (fun a l -> a::l) x []))
@@ -228,28 +228,28 @@ let rec pr_glob_generic prc prlc prtac prpat x =
 
 let rec pr_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
-  | BoolArgType -> str (if out_gen wit_bool x then "true" else "false")
-  | IntArgType -> int (out_gen wit_int x)
-  | IntOrVarArgType -> pr_or_var int (out_gen wit_int_or_var x)
-  | StringArgType -> str "\"" ++ str (out_gen wit_string x) ++ str "\""
-  | PreIdentArgType -> str (out_gen wit_pre_ident x)
-  | IntroPatternArgType -> pr_intro_pattern (out_gen wit_intro_pattern x)
-  | IdentArgType b -> if_pattern_ident b pr_id (out_gen wit_ident x)
-  | VarArgType -> pr_id (out_gen wit_var x)
-  | RefArgType -> pr_global (out_gen wit_ref x)
-  | SortArgType -> pr_sort (out_gen wit_sort x)
-  | ConstrArgType -> prc (out_gen wit_constr x)
-  | ConstrMayEvalArgType -> prc (out_gen wit_constr_may_eval x)
-  | QuantHypArgType -> pr_quantified_hypothesis (out_gen wit_quant_hyp x)
+  | BoolArgType -> str (if out_gen (topwit wit_bool) x then "true" else "false")
+  | IntArgType -> int (out_gen (topwit wit_int) x)
+  | IntOrVarArgType -> pr_or_var int (out_gen (topwit wit_int_or_var) x)
+  | StringArgType -> str "\"" ++ str (out_gen (topwit wit_string) x) ++ str "\""
+  | PreIdentArgType -> str (out_gen (topwit wit_pre_ident) x)
+  | IntroPatternArgType -> pr_intro_pattern (out_gen (topwit wit_intro_pattern) x)
+  | IdentArgType b -> if_pattern_ident b pr_id (out_gen (topwit wit_ident) x)
+  | VarArgType -> pr_id (out_gen (topwit wit_var) x)
+  | RefArgType -> pr_global (out_gen (topwit wit_ref) x)
+  | SortArgType -> pr_sort (out_gen (topwit wit_sort) x)
+  | ConstrArgType -> prc (out_gen (topwit wit_constr) x)
+  | ConstrMayEvalArgType -> prc (out_gen (topwit wit_constr_may_eval) x)
+  | QuantHypArgType -> pr_quantified_hypothesis (out_gen (topwit wit_quant_hyp) x)
   | RedExprArgType ->
       pr_red_expr (prc,prlc,pr_evaluable_reference,prpat)
-        (out_gen wit_red_expr x)
-  | OpenConstrArgType b -> prc (snd (out_gen (wit_open_constr_gen b) x))
+        (out_gen (topwit wit_red_expr) x)
+  | OpenConstrArgType b -> prc (snd (out_gen (topwit (wit_open_constr_gen b)) x))
   | ConstrWithBindingsArgType ->
-      let (c,b) = (out_gen wit_constr_with_bindings x).Evd.it in
+      let (c,b) = (out_gen (topwit wit_constr_with_bindings) x).Evd.it in
       pr_with_bindings prc prlc (c,b)
   | BindingsArgType ->
-      pr_bindings_no_with prc prlc (out_gen wit_bindings x).Evd.it
+      pr_bindings_no_with prc prlc (out_gen (topwit wit_bindings) x).Evd.it
   | List0ArgType _ ->
       hov 0 (pr_sequence (pr_generic prc prlc prtac prpat)
 	(fold_list0 (fun a l -> a::l) x []))

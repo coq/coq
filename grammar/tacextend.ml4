@@ -44,7 +44,7 @@ let rec make_let e = function
       let p = Names.Id.to_string p in
       let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
       let e = make_let e l in
-      let v = <:expr< Genarg.out_gen $make_wit loc t$ $lid:p$ >> in
+      let v = <:expr< Genarg.out_gen $make_topwit loc t$ $lid:p$ >> in
       <:expr< let $lid:p$ = $v$ in $e$ >>
   | _::l -> make_let e l
 
@@ -74,7 +74,7 @@ let rec make_args = function
   | GramNonTerminal(loc,t,_,Some p)::l ->
       let loc = of_coqloc loc in
       let p = Names.Id.to_string p in
-      <:expr< [ Genarg.in_gen $make_wit loc t$ $lid:p$ :: $make_args l$ ] >>
+      <:expr< [ Genarg.in_gen $make_topwit loc t$ $lid:p$ :: $make_args l$ ] >>
   | _::l -> make_args l
 
 let mlexpr_terminals_of_grammar_tactic_prod_item_expr = function
@@ -124,8 +124,9 @@ let rec possibly_empty_subentries loc = function
                              OptArgType _|
                              ExtraArgType _ as t),_,_)->
             (* This possibly parses epsilon *)
+            let wit = make_wit loc t in
             let rawwit = make_rawwit loc t in
-            <:expr< match Genarg.default_empty_value $rawwit$ with
+            <:expr< match Genarg.default_empty_value $wit$ with
                     [ None -> failwith ""
                     | Some v ->
                         Tacintern.intern_genarg Tacintern.fully_empty_glob_sign

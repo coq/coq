@@ -300,40 +300,40 @@ and subst_match_rule subst = function
 
 and subst_genarg subst (x:glob_generic_argument) =
   match genarg_tag x with
-  | BoolArgType -> in_gen globwit_bool (out_gen globwit_bool x)
-  | IntArgType -> in_gen globwit_int (out_gen globwit_int x)
-  | IntOrVarArgType -> in_gen globwit_int_or_var (out_gen globwit_int_or_var x)
-  | StringArgType -> in_gen globwit_string (out_gen globwit_string x)
-  | PreIdentArgType -> in_gen globwit_pre_ident (out_gen globwit_pre_ident x)
+  | BoolArgType -> in_gen (glbwit wit_bool) (out_gen (glbwit wit_bool) x)
+  | IntArgType -> in_gen (glbwit wit_int) (out_gen (glbwit wit_int) x)
+  | IntOrVarArgType -> in_gen (glbwit wit_int_or_var) (out_gen (glbwit wit_int_or_var) x)
+  | StringArgType -> in_gen (glbwit wit_string) (out_gen (glbwit wit_string) x)
+  | PreIdentArgType -> in_gen (glbwit wit_pre_ident) (out_gen (glbwit wit_pre_ident) x)
   | IntroPatternArgType ->
-      in_gen globwit_intro_pattern (out_gen globwit_intro_pattern x)
+      in_gen (glbwit wit_intro_pattern) (out_gen (glbwit wit_intro_pattern) x)
   | IdentArgType b ->
-      in_gen (globwit_ident_gen b) (out_gen (globwit_ident_gen b) x)
-  | VarArgType -> in_gen globwit_var (out_gen globwit_var x)
+      in_gen (glbwit (wit_ident_gen b)) (out_gen (glbwit (wit_ident_gen b)) x)
+  | VarArgType -> in_gen (glbwit wit_var) (out_gen (glbwit wit_var) x)
   | RefArgType ->
-      in_gen globwit_ref (subst_global_reference subst
-	(out_gen globwit_ref x))
+      in_gen (glbwit wit_ref) (subst_global_reference subst
+	(out_gen (glbwit wit_ref) x))
   | SortArgType ->
-      in_gen globwit_sort (out_gen globwit_sort x)
+      in_gen (glbwit wit_sort) (out_gen (glbwit wit_sort) x)
   | ConstrArgType ->
-      in_gen globwit_constr (subst_glob_constr subst (out_gen globwit_constr x))
+      in_gen (glbwit wit_constr) (subst_glob_constr subst (out_gen (glbwit wit_constr) x))
   | ConstrMayEvalArgType ->
-      in_gen globwit_constr_may_eval (subst_raw_may_eval subst (out_gen globwit_constr_may_eval x))
+      in_gen (glbwit wit_constr_may_eval) (subst_raw_may_eval subst (out_gen (glbwit wit_constr_may_eval) x))
   | QuantHypArgType ->
-      in_gen globwit_quant_hyp
+      in_gen (glbwit wit_quant_hyp)
         (subst_declared_or_quantified_hypothesis subst
-          (out_gen globwit_quant_hyp x))
+          (out_gen (glbwit wit_quant_hyp) x))
   | RedExprArgType ->
-      in_gen globwit_red_expr (subst_redexp subst (out_gen globwit_red_expr x))
+      in_gen (glbwit wit_red_expr) (subst_redexp subst (out_gen (glbwit wit_red_expr) x))
   | OpenConstrArgType b ->
-      in_gen (globwit_open_constr_gen b)
-        ((),subst_glob_constr subst (snd (out_gen (globwit_open_constr_gen b) x)))
+      in_gen (glbwit (wit_open_constr_gen b))
+        ((),subst_glob_constr subst (snd (out_gen (glbwit (wit_open_constr_gen b)) x)))
   | ConstrWithBindingsArgType ->
-      in_gen globwit_constr_with_bindings
-        (subst_glob_with_bindings subst (out_gen globwit_constr_with_bindings x))
+      in_gen (glbwit wit_constr_with_bindings)
+        (subst_glob_with_bindings subst (out_gen (glbwit wit_constr_with_bindings) x))
   | BindingsArgType ->
-      in_gen globwit_bindings
-        (subst_bindings subst (out_gen globwit_bindings x))
+      in_gen (glbwit wit_bindings)
+        (subst_bindings subst (out_gen (glbwit wit_bindings) x))
   | List0ArgType _ -> app_list0 (subst_genarg subst) x
   | List1ArgType _ -> app_list1 (subst_genarg subst) x
   | OptArgType _ -> app_opt (subst_genarg subst) x
@@ -342,8 +342,8 @@ and subst_genarg subst (x:glob_generic_argument) =
       match Extrawit.tactic_genarg_level s with
       | Some n ->
           (* Special treatment of tactic arguments *)
-          in_gen (Extrawit.globwit_tactic n)
-            (subst_tactic subst (out_gen (Extrawit.globwit_tactic n) x))
+          in_gen (glbwit (Extrawit.wit_tactic n))
+            (subst_tactic subst (out_gen (glbwit (Extrawit.wit_tactic n)) x))
       | None ->
           lookup_genarg_subst s subst x
 

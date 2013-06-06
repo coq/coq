@@ -55,9 +55,7 @@ GEXTEND Gram
 
 type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_argument_type
 
-let (wit_withtac : Genarg.tlevel withtac_argtype),
-  (globwit_withtac : Genarg.glevel withtac_argtype),
-  (rawwit_withtac : Genarg.rlevel withtac_argtype) =
+let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
   Genarg.create_arg None "withtac"
 
 open Obligations
@@ -138,7 +136,4 @@ let () =
   in
   (* should not happen *)
   let dummy _ _ _ expr = assert false in
-  Pptactic.declare_extra_genarg_pprule
-    (rawwit_withtac, printer)
-    (globwit_withtac, dummy)
-    (wit_withtac, dummy)
+  Pptactic.declare_extra_genarg_pprule wit_withtac printer dummy dummy

@@ -100,27 +100,25 @@ let proof_instr = Gram.entry_create "proofmode:instr"
 (* spiwack: proposal: doing that directly from argextend.ml4, maybe ? *)
 
 (* [Genarg.create_arg] creates a new embedding into Genarg. *)
-let (wit_proof_instr,globwit_proof_instr,rawwit_proof_instr) =
+let wit_proof_instr =
   Genarg.create_arg None "proof_instr"
 let _ = Tacintern.add_intern_genarg "proof_instr"
   begin fun e x -> (* declares the globalisation function *)
-    Genarg.in_gen globwit_proof_instr 
-      (Decl_interp.intern_proof_instr e (Genarg.out_gen rawwit_proof_instr x))
+    Genarg.in_gen (Genarg.glbwit wit_proof_instr)
+      (Decl_interp.intern_proof_instr e (Genarg.out_gen (Genarg.rawwit wit_proof_instr) x))
   end
 let _ = Tacinterp.add_interp_genarg "proof_instr"
   begin fun ist gl x -> (* declares the interpretation function *)
     Tacmach.project gl ,
-    Genarg.in_gen wit_proof_instr 
-      (interp_proof_instr ist gl (Genarg.out_gen globwit_proof_instr x))
+    Genarg.in_gen (Genarg.topwit wit_proof_instr)
+      (interp_proof_instr ist gl (Genarg.out_gen (Genarg.glbwit wit_proof_instr) x))
   end
 (* declares the substitution function, irrelevant in our case : *)
 let _ = Tacsubst.add_genarg_subst "proof_instr" (fun _ x -> x)
 
 
-let _ = Pptactic.declare_extra_genarg_pprule
-  (rawwit_proof_instr, pr_raw_proof_instr)
-  (globwit_proof_instr, pr_glob_proof_instr)
-  (wit_proof_instr, pr_proof_instr)
+let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
+  pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr
 
 (* We use the VERNAC EXTEND facility with a custom non-terminal
     to populate [proof_mode] with a new toplevel interpreter.

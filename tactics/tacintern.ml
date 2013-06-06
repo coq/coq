@@ -765,49 +765,49 @@ and intern_match_rule onlytac ist = function
 
 and intern_genarg ist x =
   match genarg_tag x with
-  | BoolArgType -> in_gen globwit_bool (out_gen rawwit_bool x)
-  | IntArgType -> in_gen globwit_int (out_gen rawwit_int x)
+  | BoolArgType -> in_gen (glbwit wit_bool) (out_gen (rawwit wit_bool) x)
+  | IntArgType -> in_gen (glbwit wit_int) (out_gen (rawwit wit_int) x)
   | IntOrVarArgType ->
-      in_gen globwit_int_or_var
-        (intern_or_var ist (out_gen rawwit_int_or_var x))
+      in_gen (glbwit wit_int_or_var)
+        (intern_or_var ist (out_gen (rawwit wit_int_or_var) x))
   | StringArgType ->
-      in_gen globwit_string (out_gen rawwit_string x)
+      in_gen (glbwit wit_string) (out_gen (rawwit wit_string) x)
   | PreIdentArgType ->
-      in_gen globwit_pre_ident (out_gen rawwit_pre_ident x)
+      in_gen (glbwit wit_pre_ident) (out_gen (rawwit wit_pre_ident) x)
   | IntroPatternArgType ->
       let lf = ref ([],[]) in
       (* how to know which names are bound by the intropattern *)
-      in_gen globwit_intro_pattern
-        (intern_intro_pattern lf ist (out_gen rawwit_intro_pattern x))
+      in_gen (glbwit wit_intro_pattern)
+        (intern_intro_pattern lf ist (out_gen (rawwit wit_intro_pattern) x))
   | IdentArgType b ->
       let lf = ref ([],[]) in
-      in_gen (globwit_ident_gen b)
-	(intern_ident lf ist (out_gen (rawwit_ident_gen b) x))
+      in_gen (glbwit (wit_ident_gen b))
+	(intern_ident lf ist (out_gen (rawwit (wit_ident_gen b)) x))
   | VarArgType ->
-      in_gen globwit_var (intern_hyp ist (out_gen rawwit_var x))
+      in_gen (glbwit wit_var) (intern_hyp ist (out_gen (rawwit wit_var) x))
   | RefArgType ->
-      in_gen globwit_ref (intern_global_reference ist (out_gen rawwit_ref x))
+      in_gen (glbwit wit_ref) (intern_global_reference ist (out_gen (rawwit wit_ref) x))
   | SortArgType ->
-      in_gen globwit_sort (out_gen rawwit_sort x)
+      in_gen (glbwit wit_sort) (out_gen (rawwit wit_sort) x)
   | ConstrArgType ->
-      in_gen globwit_constr (intern_constr ist (out_gen rawwit_constr x))
+      in_gen (glbwit wit_constr) (intern_constr ist (out_gen (rawwit wit_constr) x))
   | ConstrMayEvalArgType ->
-      in_gen globwit_constr_may_eval
-        (intern_constr_may_eval ist (out_gen rawwit_constr_may_eval x))
+      in_gen (glbwit wit_constr_may_eval)
+        (intern_constr_may_eval ist (out_gen (rawwit wit_constr_may_eval) x))
   | QuantHypArgType ->
-      in_gen globwit_quant_hyp
-        (intern_quantified_hypothesis ist (out_gen rawwit_quant_hyp x))
+      in_gen (glbwit wit_quant_hyp)
+        (intern_quantified_hypothesis ist (out_gen (rawwit wit_quant_hyp) x))
   | RedExprArgType ->
-      in_gen globwit_red_expr (intern_red_expr ist (out_gen rawwit_red_expr x))
+      in_gen (glbwit wit_red_expr) (intern_red_expr ist (out_gen (rawwit wit_red_expr) x))
   | OpenConstrArgType b ->
-      in_gen (globwit_open_constr_gen b)
-        ((),intern_constr ist (snd (out_gen (rawwit_open_constr_gen b) x)))
+      in_gen (glbwit (wit_open_constr_gen b))
+        ((),intern_constr ist (snd (out_gen (rawwit (wit_open_constr_gen b)) x)))
   | ConstrWithBindingsArgType ->
-      in_gen globwit_constr_with_bindings
-        (intern_constr_with_bindings ist (out_gen rawwit_constr_with_bindings x))
+      in_gen (glbwit wit_constr_with_bindings)
+        (intern_constr_with_bindings ist (out_gen (rawwit wit_constr_with_bindings) x))
   | BindingsArgType ->
-      in_gen globwit_bindings
-        (intern_bindings ist (out_gen rawwit_bindings x))
+      in_gen (glbwit wit_bindings)
+        (intern_bindings ist (out_gen (rawwit wit_bindings) x))
   | List0ArgType _ -> app_list0 (intern_genarg ist) x
   | List1ArgType _ -> app_list1 (intern_genarg ist) x
   | OptArgType _ -> app_opt (intern_genarg ist) x
@@ -816,8 +816,8 @@ and intern_genarg ist x =
       match tactic_genarg_level s with
       | Some n ->
           (* Special treatment of tactic arguments *)
-          in_gen (globwit_tactic n) (intern_tactic_or_tacarg ist
-	    (out_gen (rawwit_tactic n) x))
+          in_gen (glbwit (wit_tactic n)) (intern_tactic_or_tacarg ist
+	    (out_gen (rawwit (wit_tactic n)) x))
       | None ->
           lookup_intern_genarg s ist x
 

@@ -39,11 +39,11 @@ type 'a extra_genarg_printer =
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
     'a -> std_ppcmds
 
-  (** if the boolean is false then the extension applies only to old syntax *)
 val declare_extra_genarg_pprule :
-  ('c raw_abstract_argument_type * 'c raw_extra_genarg_printer) ->
-  ('a glob_abstract_argument_type * 'a glob_extra_genarg_printer) ->
-  ('b typed_abstract_argument_type * 'b extra_genarg_printer) -> unit
+  ('a, 'b, 'c) genarg_type ->
+  'a raw_extra_genarg_printer ->
+  'b glob_extra_genarg_printer ->
+  'c extra_genarg_printer -> unit
 
 type grammar_terminals = string option list
 
