@@ -20,6 +20,7 @@ open Term
 open Evd
 open Misctypes
 
+(** FIXME: nothing to do there. *)
 val loc_of_or_by_notation : ('a -> Loc.t) -> 'a or_by_notation -> Loc.t
 
 (** In globalize tactics, we need to keep the initial [constr_expr] to recompute
@@ -92,7 +93,7 @@ ExtraArgType of string         '_a                      '_b
 {% \end{%}verbatim{% }%}
 *)
 
-(** {5 Base type combinators} *)
+(** {5 Generic types} *)
 
 type ('raw, 'glob, 'top) genarg_type
 (** Generic types. ['raw] is the OCaml lowest level, ['glob] is the globalized
@@ -105,7 +106,133 @@ val create_arg : 'raw option -> string -> ('raw, 'glob, 'top) genarg_type
 (** Create a new generic type of argument: force to associate
    unique ML types at each of the three levels. *)
 
-(** {6 Type constructors} *)
+(** {5 Specialized types} *)
+
+(** All of [rlevel], [glevel] and [tlevel] must be non convertible
+   to ensure the injectivity of the type inference from type
+   ['co generic_argument] to [('a,'co) abstract_argument_type];
+   this guarantees that, for 'co fixed, the type of
+   out_gen is monomorphic over 'a, hence type-safe
+*)
+
+type rlevel
+type glevel
+type tlevel
+
+type ('a, 'co) abstract_argument_type
+(** Type at level ['co] represented by an OCaml value of type ['a]. *)
+
+type 'a raw_abstract_argument_type = ('a, rlevel) abstract_argument_type
+(** Specialized type at raw level. *)
+
+type 'a glob_abstract_argument_type = ('a, glevel) abstract_argument_type
+(** Specialized type at globalized level. *)
+
+type 'a typed_abstract_argument_type = ('a, tlevel) abstract_argument_type
+(** Specialized type at internalized level. *)
+
+(** {6 Projections} *)
+
+val rawwit : ('a, 'b, 'c) genarg_type -> ('a, rlevel) abstract_argument_type
+(** Projection on the raw type constructor. *)
+
+val glbwit : ('a, 'b, 'c) genarg_type -> ('b, glevel) abstract_argument_type
+(** Projection on the globalized type constructor. *)
+
+val topwit : ('a, 'b, 'c) genarg_type -> ('c, tlevel) abstract_argument_type
+(** Projection on the internalized type constructor. *)
+
+(** {5 Generic arguments} *)
+
+type 'a generic_argument
+(** A inhabitant of ['level generic_argument] is a inhabitant of some type at
+    level ['level], together with the representation of this type. *)
+
+type raw_generic_argument = rlevel generic_argument
+type glob_generic_argument = glevel generic_argument
+type typed_generic_argument = tlevel generic_argument
+
+(** {6 Constructors} *)
+
+val in_gen : ('a, 'co) abstract_argument_type -> 'a -> 'co generic_argument
+(** [in_gen t x] embeds an argument of type [t] into a generic argument. *)
+
+val out_gen : ('a, 'co) abstract_argument_type -> 'co generic_argument -> 'a
+(** [out_gen t x] recovers an argument of type [t] from a generic argument. It
+    fails if [x] has not the right dynamic type. *)
+
+(** {6 Manipulation of generic arguments}
+
+Those functions fail if they are applied to an argument which has not the right
+dynamic type. *)
+
+val fold_list0 :
+ ('a generic_argument -> 'c -> 'c) -> 'a generic_argument -> 'c -> 'c
+
+val fold_list1 :
+ ('a generic_argument -> 'c -> 'c) -> 'a generic_argument -> 'c -> 'c
+
+val fold_opt :
+ ('a generic_argument -> 'c) -> 'c -> 'a generic_argument -> 'c
+
+val fold_pair :
+ ('a generic_argument -> 'a generic_argument -> 'c) ->
+      'a generic_argument -> 'c
+
+(** [app_list0] fails if applied to an argument not of tag [List0 t]
+    for some [t]; it's the responsability of the caller to ensure it *)
+
+val app_list0 : ('a generic_argument -> 'b generic_argument) ->
+'a generic_argument -> 'b generic_argument
+
+val app_list1 : ('a generic_argument -> 'b generic_argument) ->
+'a generic_argument -> 'b generic_argument
+
+val app_opt : ('a generic_argument -> 'b generic_argument) ->
+'a generic_argument -> 'b generic_argument
+
+val app_pair :
+  ('a generic_argument -> 'b generic_argument) ->
+      ('a generic_argument -> 'b generic_argument)
+   -> 'a generic_argument -> 'b generic_argument
+
+(** {6 Type reification} *)
+
+type argument_type =
+  (** Basic types *)
+  | BoolArgType
+  | IntArgType
+  | IntOrVarArgType
+  | StringArgType
+  | PreIdentArgType
+  | IntroPatternArgType
+  | IdentArgType of bool
+  | VarArgType
+  | RefArgType
+  (** Specific types *)
+  | SortArgType
+  | ConstrArgType
+  | ConstrMayEvalArgType
+  | QuantHypArgType
+  | OpenConstrArgType of bool
+  | ConstrWithBindingsArgType
+  | BindingsArgType
+  | RedExprArgType
+  | List0ArgType of argument_type
+  | List1ArgType of argument_type
+  | OptArgType of argument_type
+  | PairArgType of argument_type * argument_type
+  | ExtraArgType of string
+
+val argument_type_eq : argument_type -> argument_type -> bool
+
+val genarg_tag : 'a generic_argument -> argument_type
+
+val unquote : ('a, 'co) abstract_argument_type -> argument_type
+
+(** {5 Basic generic type constructors} *)
+
+(** {6 Ground types} *)
 
 val wit_bool : bool uniform_genarg_type
 
@@ -161,114 +288,15 @@ val wit_red_expr :
   (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,
   (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type
 
+(** {6 Parameterized types} *)
+
 val wit_list0 : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
 val wit_list1 : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
 val wit_opt : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type
 val wit_pair : ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
   ('a1 * 'a2, 'b1 * 'b2, 'c1 * 'c2) genarg_type
 
-(** {5 Specialized types} *)
-
-(** All of [rlevel], [glevel] and [tlevel] must be non convertible
-   to ensure the injectivity of the type inference from type
-   ['co generic_argument] to [('a,'co) abstract_argument_type];
-   this guarantees that, for 'co fixed, the type of
-   out_gen is monomorphic over 'a, hence type-safe
-*)
-
-type rlevel
-type glevel
-type tlevel
-
-type ('a, 'co) abstract_argument_type
-(** Type at level ['co] represented by an OCaml value of type ['a]. *)
-
-val rawwit : ('a, 'b, 'c) genarg_type -> ('a, 'co) abstract_argument_type
-(** Projection on the raw type constructor. *)
-
-val glbwit : ('a, 'b, 'c) genarg_type -> ('b, 'co) abstract_argument_type
-(** Projection on the globalized type constructor. *)
-
-val topwit : ('a, 'b, 'c) genarg_type -> ('c, 'co) abstract_argument_type
-(** Projection on the internalized type constructor. *)
-
-(** {5 Generic arguments} *)
-
-type 'a generic_argument
-(** A inhabitant of ['level generic_argument] is a inhabitant of some type at
-    level ['level], together with the representation of this type. *)
-
-(** {6 Manipulation of generic arguments}
-
-Those functions fail if they are applied to an argument which has not the right
-dynamic type. *)
-
-val fold_list0 :
- ('a generic_argument -> 'c -> 'c) -> 'a generic_argument -> 'c -> 'c
-
-val fold_list1 :
- ('a generic_argument -> 'c -> 'c) -> 'a generic_argument -> 'c -> 'c
-
-val fold_opt :
- ('a generic_argument -> 'c) -> 'c -> 'a generic_argument -> 'c
-
-val fold_pair :
- ('a generic_argument -> 'a generic_argument -> 'c) ->
-      'a generic_argument -> 'c
-
-(** [app_list0] fails if applied to an argument not of tag [List0 t]
-    for some [t]; it's the responsability of the caller to ensure it *)
-
-val app_list0 : ('a generic_argument -> 'b generic_argument) ->
-'a generic_argument -> 'b generic_argument
-
-val app_list1 : ('a generic_argument -> 'b generic_argument) ->
-'a generic_argument -> 'b generic_argument
-
-val app_opt : ('a generic_argument -> 'b generic_argument) ->
-'a generic_argument -> 'b generic_argument
-
-val app_pair :
-  ('a generic_argument -> 'b generic_argument) ->
-      ('a generic_argument -> 'b generic_argument)
-   -> 'a generic_argument -> 'b generic_argument
-
-type argument_type =
-  (** Basic types *)
-  | BoolArgType
-  | IntArgType
-  | IntOrVarArgType
-  | StringArgType
-  | PreIdentArgType
-  | IntroPatternArgType
-  | IdentArgType of bool
-  | VarArgType
-  | RefArgType
-  (** Specific types *)
-  | SortArgType
-  | ConstrArgType
-  | ConstrMayEvalArgType
-  | QuantHypArgType
-  | OpenConstrArgType of bool
-  | ConstrWithBindingsArgType
-  | BindingsArgType
-  | RedExprArgType
-  | List0ArgType of argument_type
-  | List1ArgType of argument_type
-  | OptArgType of argument_type
-  | PairArgType of argument_type * argument_type
-  | ExtraArgType of string
-
-val argument_type_eq : argument_type -> argument_type -> bool
-
-val genarg_tag : 'a generic_argument -> argument_type
-
-val unquote : ('a,'co) abstract_argument_type -> argument_type
-
-val in_gen :
-  ('a,'co) abstract_argument_type -> 'a -> 'co generic_argument
-val out_gen :
-  ('a,'co) abstract_argument_type -> 'co generic_argument -> 'a
+(** {5 Magic used by the parser} *)
 
 (** [in_generic] is used in combination with camlp4 [Gramext.action] magic
 

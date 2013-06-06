@@ -398,7 +398,7 @@ type vernac_expr =
   | VernacToplevelControl of exn
 
   (* For extension *)
-  | VernacExtend of string * raw_generic_argument list
+  | VernacExtend of string * Genarg.raw_generic_argument list
 
   (* Flags *)
   | VernacProgram of vernac_expr

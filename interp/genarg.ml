@@ -81,11 +81,14 @@ type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 
 (* Dynamics but tagged by a type expression *)
 
-type 'a generic_argument = argument_type * Obj.t
-
 type rlevel
 type glevel
 type tlevel
+
+type 'a generic_argument = argument_type * Obj.t
+type raw_generic_argument = rlevel generic_argument
+type glob_generic_argument = glevel generic_argument
+type typed_generic_argument = tlevel generic_argument
 
 let rawwit t = t
 let glbwit t = t
@@ -203,6 +206,9 @@ let in_generic t x = (t, Obj.repr x)
 let dyntab = ref ([] : (string * glevel generic_argument option) list)
 
 type ('a,'b) abstract_argument_type = argument_type
+type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
+type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
+type 'a typed_abstract_argument_type = ('a,tlevel) abstract_argument_type
 
 let create_arg v s =
   if List.mem_assoc s !dyntab then

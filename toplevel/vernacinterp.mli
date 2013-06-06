@@ -10,9 +10,9 @@ open Tacexpr
 
 (** Interpretation of extended vernac phrases. *)
 
-val vinterp_add : string -> (raw_generic_argument list -> unit -> unit) -> unit
+val vinterp_add : string -> (Genarg.raw_generic_argument list -> unit -> unit) -> unit
 val overwriting_vinterp_add :
-  string -> (raw_generic_argument list -> unit -> unit) -> unit
+  string -> (Genarg.raw_generic_argument list -> unit -> unit) -> unit
 
 val vinterp_init : unit -> unit
-val call : ?locality:bool -> string * raw_generic_argument list -> unit
+val call : ?locality:bool -> string * Genarg.raw_generic_argument list -> unit

@@ -12,7 +12,7 @@ open Errors
 (* Table of vernac entries *)
 let vernac_tab =
   (Hashtbl.create 51 :
-    (string, Tacexpr.raw_generic_argument list -> unit -> unit) Hashtbl.t)
+    (string, Genarg.raw_generic_argument list -> unit -> unit) Hashtbl.t)
 
 let vinterp_add s f =
   try
