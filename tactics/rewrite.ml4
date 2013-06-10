@@ -207,6 +207,7 @@ let build_signature evars env m (cstrs : (types * types option) option list)
   
 type hypinfo = {
   cl : clausenv;
+  ext : Int.Set.t; (* New evars in this clausenv *)
   prf : constr;
   car : constr;
   rel : constr;
@@ -265,10 +266,12 @@ let decompose_applied_relation env sigma flags orig (c,l) left2right =
     in
       if not (evd_convertible env eqclause.evd ty1 ty2) then None
       else
-	Some { cl=eqclause; prf=(Clenv.clenv_value eqclause);
-	       car=ty1; rel = equiv;
-	       l2r=left2right; c1=c1; c2=c2; c=orig; abs=None;
-	       flags = flags }
+	let value = Clenv.clenv_value eqclause in
+	let ext = Evarutil.evars_of_term value in
+	  Some { cl=eqclause; ext=ext; prf=value;
+		 car=ty1; rel = equiv;
+		 l2r=left2right; c1=c1; c2=c2; c=orig; abs=None;
+		 flags = flags }
   in
     match find_rel ctype with
     | Some c -> c
@@ -370,17 +373,25 @@ let solve_remaining_by by env prf =
       indep env.evd
     in { env with evd = evd' }, prf
 
+let extend_evd sigma ext sigma' =
+  Int.Set.fold (fun i acc ->
+    Evd.add acc i (Evd.find sigma' i))
+    ext sigma
+
 let unify_eqn env sigma hypinfo by t =
   if isEvar t then None
   else try
-    let {cl=cl; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in
+    let {cl=cl; ext=ext; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = 
+      !hypinfo in
     let left = if l2r then c1 else c2 in
-    let cl = { cl with evd = Evd.evars_reset_evd ~with_conv_pbs:true sigma cl.evd } in
-    let env', prf, c1, c2, car, rel =
+    let evd' = Evd.evars_reset_evd ~with_conv_pbs:true sigma cl.evd in
+    let evd'' = extend_evd evd' ext cl.evd in
+    let cl = { cl with evd = evd'' } in
+    let evd', prf, c1, c2, car, rel =
       match abs with
       | Some (absprf, absprfty) ->
 	  let env' = clenv_unify ~flags:rewrite_unif_flags CONV left t cl in
-	    env', prf, c1, c2, car, rel
+	    env'.evd, prf, c1, c2, car, rel
       | None ->
 	  let env' = clenv_unify ~flags:!hypinfo.flags CONV left t cl in
 	  let env' = Clenvtac.clenv_pose_dependent_evars true env' in
@@ -394,21 +405,23 @@ let unify_eqn env sigma hypinfo by t =
 	  let ty1 = Typing.type_of env'.env env'.evd c1
 	  and ty2 = Typing.type_of env'.env env'.evd c2
 	  in
-	    if convertible env env'.evd ty1 ty2 then (
-	      if occur_meta_or_existential prf then
-		hypinfo := refresh_hypinfo env env'.evd !hypinfo;
-	      env', prf, c1, c2, car, rel)
+	    if convertible env env'.evd ty1 ty2 then 
+	      (if occur_meta_or_existential prf then
+		(hypinfo := refresh_hypinfo env env'.evd !hypinfo;
+		 env'.evd, prf, c1, c2, car, rel)
+	       else (** Evars have been solved, we can go back to the initial evd *)
+		 sigma, prf, c1, c2, car, rel)
 	    else raise Reduction.NotConvertible
     in
     let res =
       if l2r then (prf, (car, rel, c1, c2))
       else
-	try (mkApp (get_symmetric_proof env env'.evd car rel,
+	try (mkApp (get_symmetric_proof env evd' car rel,
 		   [| c1 ; c2 ; prf |]),
 	    (car, rel, c2, c1))
 	with Not_found ->
 	  (prf, (car, inverse car rel, c2, c1))
-    in Some (env'.evd, res)
+    in Some (evd', res)
   with e when Class_tactics.catchable e -> None
 
 let unfold_impl t =
@@ -1079,8 +1092,7 @@ let rewrite_with flags c left2right loccs : strategy =
 
 let apply_strategy (s : strategy) env avoid concl cstr evars =
   let res =
-    s env avoid
- concl (Typing.type_of env (goalevars evars) concl)
+    s env avoid concl (Typing.type_of env (goalevars evars) concl)
       (Option.map snd cstr) evars
   in
     match res with
@@ -1890,7 +1902,7 @@ let unification_rewrite flags l2r c1 c2 cl car rel but gl =
   check_evar_map_of_evars_defs cl'.evd;
   let prf = nf (Clenv.clenv_value cl') and prfty = nf (Clenv.clenv_type cl') in
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
-    {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; 
+    {cl=cl'; ext=Int.Set.empty; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; 
      c1=c1; c2=c2; c=None; abs=Some (prf, prfty); flags = flags}
 
 let get_hyp gl evars (c,l) clause l2r =

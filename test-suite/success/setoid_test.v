@@ -153,7 +153,7 @@ End mult.
    does not fix the instance at the first unification, use [at], or simply rewrite for 
    this semantics. *)
 
-Require Import Arith.
+Parameter beq_nat : forall x y : nat, bool.
 
 Class Foo (A : Type) := {foo_neg : A -> A ; foo_prf : forall x : A, x = foo_neg x}.
 Instance: Foo nat. admit. Defined.
