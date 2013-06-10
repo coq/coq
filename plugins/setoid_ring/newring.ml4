@@ -193,9 +193,9 @@ let exec_tactic env n f args =
     Tacinterp.eval_tactic(ltac_call f (args@[getter])) (dummy_goal env) in
   !res
 
-let constr_of = function
-  | VConstr ([],c) -> c
-  | _ -> failwith "Ring.exec_tactic: anomaly"
+let constr_of v = match Value.to_constr v with
+  | Some c -> c
+  | None -> failwith "Ring.exec_tactic: anomaly"
 
 let stdlib_modules =
   [["Coq";"Setoids";"Setoid"];

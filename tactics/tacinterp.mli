@@ -19,21 +19,21 @@ open Mod_subst
 open Redexpr
 open Misctypes
 
+module Value :
+sig
+  type t
+  val of_constr : constr -> t
+  val to_constr : t -> constr option
+  val of_int : int -> t
+  val to_int : t -> int option
+  val to_list : t -> t list option
+end
+
 (** Values for interpretation *)
-type value =
-  | VRTactic of (goal list sigma)
-  | VFun of ltac_trace * (Id.t*value) list *
-      Id.t option list * glob_tactic_expr
-  | VVoid
-  | VInteger of int
-  | VIntroPattern of intro_pattern_expr
-  | VConstr of Pattern.constr_under_binders
-  | VConstr_context of constr
-  | VList of value list
-  | VRec of (Id.t*value) list ref * glob_tactic_expr
+type value = Value.t
 
 (** Signature for interpretation: val\_interp and interpretation functions *)
-and interp_sign =
+type interp_sign =
   { lfun : (Id.t * value) list;
     avoid_ids : Id.t list;
     debug : debug_info;

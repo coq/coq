@@ -50,13 +50,13 @@ let occurrences_of = function
         Errors.error "Illegal negative occurrence number.";
       OnlyOccurrences nl
 
-let coerce_to_int = function
-  | VInteger n -> n
-  | v -> raise (CannotCoerceTo "an integer")
+let coerce_to_int v = match Value.to_int v with
+  | None -> raise (CannotCoerceTo "an integer")
+  | Some n -> n
 
-let int_list_of_VList = function
-  | VList l -> List.map (fun n -> coerce_to_int n) l
-  | _ -> raise Not_found
+let int_list_of_VList v = match Value.to_list v with
+| Some l -> List.map (fun n -> coerce_to_int n) l
+| _ -> raise (CannotCoerceTo "an integer")
 
 let interp_occs ist gl l =
   match l with

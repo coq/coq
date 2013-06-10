@@ -66,6 +66,30 @@ type value =
   | VList of value list
   | VRec of (Id.t*value) list ref * glob_tactic_expr
 
+module Value =
+struct
+
+type t = value
+
+let of_constr c = VConstr ([], c)
+
+let to_constr = function
+| VConstr (vars, c) ->
+  let () = assert (List.is_empty vars) in Some c
+| _ -> None
+
+let of_int i = VInteger i
+
+let to_int = function
+| VInteger i -> Some i
+| _ -> None
+
+let to_list = function
+| VList l -> Some l
+| _ -> None
+
+end
+
 let dloc = Loc.ghost
 
 let catch_error call_trace tac g =

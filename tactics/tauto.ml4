@@ -20,9 +20,10 @@ open Errors
 open Util
 
 let assoc_var s ist =
-  match List.assoc (Names.Id.of_string s) ist.lfun with
-    | VConstr ([],c) -> c
-    | _ -> failwith "tauto: anomaly"
+  let v = List.assoc (Names.Id.of_string s) ist.lfun in
+  match Value.to_constr v with
+    | Some c -> c
+    | None -> failwith "tauto: anomaly"
 
 (** Parametrization of tauto *)
 
@@ -134,8 +135,8 @@ let flatten_contravariant_conj flags ist =
           ~onlybinary:flags.binary_mode typ
   with
   | Some (_,args) ->
-      let newtyp = valueIn (VConstr ([],List.fold_right mkArrow args c)) in
-      let hyp = valueIn (VConstr ([],hyp)) in
+      let newtyp = valueIn (Value.of_constr (List.fold_right mkArrow args c)) in
+      let hyp = valueIn (Value.of_constr hyp) in
       let intros =
 	iter_tac (List.map (fun _ -> <:tactic< intro >>) args)
 	<:tactic< idtac >> in
@@ -170,9 +171,9 @@ let flatten_contravariant_disj flags ist =
           ~onlybinary:flags.binary_mode
           typ with
   | Some (_,args) ->
-      let hyp = valueIn (VConstr ([],hyp)) in
+      let hyp = valueIn (Value.of_constr hyp) in
       iter_tac (List.map_i (fun i arg ->
-	let typ = valueIn (VConstr ([],mkArrow arg c)) in
+	let typ = valueIn (Value.of_constr (mkArrow arg c)) in
 	let i = Tacexpr.Integer i in
 	<:tactic<
           let typ := $typ in
