@@ -63,9 +63,9 @@ let includes () =
     List.fold_right
       (fun d l -> "-I" :: ("\"" ^ List.fold_left Filename.concat coqlib d ^ "\"") :: l)
       (src_dirs ())
-      (["-I"; "\"" ^ camlp4lib ^ "\""] @
+      ((["-I"; "\"" ^ camlp4lib ^ "\""] @
 	 ["-I"; "\"" ^ coqlib ^ "\""] @
-	 if is_ocaml4 then ["-I"; "+compiler-libs"] else [] @
+	 if is_ocaml4 then ["-I"; "+compiler-libs"] else []) @
 	 (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []))
 
 (* Transform bytecode object file names in native object file names *)
