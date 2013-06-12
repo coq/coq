@@ -197,6 +197,8 @@ let app_pair f1 f2 = function
       (u, Obj.repr (o1,o2))
   | _ -> failwith "Genarg: not a pair"
 
+let has_type (t, v) u = argument_type_eq t u
+
 let unquote x = x
 
 type an_arg_of_this_type = Obj.t

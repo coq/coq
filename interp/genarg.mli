@@ -161,6 +161,10 @@ val out_gen : ('a, 'co) abstract_argument_type -> 'co generic_argument -> 'a
 (** [out_gen t x] recovers an argument of type [t] from a generic argument. It
     fails if [x] has not the right dynamic type. *)
 
+val has_type : 'co generic_argument -> ('a, 'co) abstract_argument_type -> bool
+(** [has_type v t] tells whether [v] has type [t]. If true, it ensures that
+    [out_gen t v] will not raise a dynamic type exception. *)
+
 (** {6 Manipulation of generic arguments}
 
 Those functions fail if they are applied to an argument which has not the right

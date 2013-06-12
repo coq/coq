@@ -34,6 +34,14 @@ val is_digit : char -> bool
 val is_ident_tail : char -> bool
 val is_blank : char -> bool
 
+(** {6 Empty type} *)
+
+module Empty :
+sig
+  type t
+  val abort : t -> 'a
+end
+
 (** {6 Strings. } *)
 
 module String : CString.ExtS

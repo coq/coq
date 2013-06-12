@@ -34,6 +34,12 @@ let is_blank = function
   | ' ' | '\r' | '\t' | '\n' -> true
   | _ -> false
 
+module Empty =
+struct
+  type t
+  let abort (x : t) = assert false
+end
+
 (* Strings *)
 
 module String : CString.ExtS = CString
