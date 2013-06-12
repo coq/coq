@@ -1561,6 +1561,8 @@ and interp_genarg ist gl x =
       in_gen (topwit wit_var) (interp_hyp ist gl (out_gen (glbwit wit_var) x))
     | RefArgType ->
       in_gen (topwit wit_ref) (pf_interp_reference ist gl (out_gen (glbwit wit_ref) x))
+    | GenArgType ->
+      in_gen (topwit wit_genarg) (interp_genarg ist gl (out_gen (glbwit wit_genarg) x))
     | SortArgType ->
       let (sigma,c_interp) =
 	pf_interp_constr ist gl
@@ -2057,7 +2059,7 @@ and interp_atomic ist gl tac =
       tac args ist
   | TacAlias (loc,s,l,(_,body)) -> fun gl ->
     let evdref = ref gl.sigma in
-    let f x = match genarg_tag x with
+    let rec f x = match genarg_tag x with
     | IntArgType ->
         of_tacvalue (VInteger (out_gen (glbwit wit_int) x))
     | IntOrVarArgType ->
@@ -2075,6 +2077,7 @@ and interp_atomic ist gl tac =
     | RefArgType ->
         of_tacvalue (VConstr ([],constr_of_global
           (pf_interp_reference ist gl (out_gen (glbwit wit_ref) x))))
+    | GenArgType -> f (out_gen (glbwit wit_genarg) x)
     | SortArgType ->
         of_tacvalue (VConstr ([],mkSort (interp_sort (out_gen (glbwit wit_sort) x))))
     | ConstrArgType ->

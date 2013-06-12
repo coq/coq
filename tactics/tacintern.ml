@@ -787,6 +787,8 @@ and intern_genarg ist x =
       in_gen (glbwit wit_var) (intern_hyp ist (out_gen (rawwit wit_var) x))
   | RefArgType ->
       in_gen (glbwit wit_ref) (intern_global_reference ist (out_gen (rawwit wit_ref) x))
+  | GenArgType ->
+      in_gen (glbwit wit_genarg) (intern_genarg ist (out_gen (rawwit wit_genarg) x))
   | SortArgType ->
       in_gen (glbwit wit_sort) (out_gen (rawwit wit_sort) x)
   | ConstrArgType ->

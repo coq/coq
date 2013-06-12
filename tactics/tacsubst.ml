@@ -313,6 +313,7 @@ and subst_genarg subst (x:glob_generic_argument) =
   | RefArgType ->
       in_gen (glbwit wit_ref) (subst_global_reference subst
 	(out_gen (glbwit wit_ref) x))
+  | GenArgType -> in_gen (glbwit wit_genarg) (subst_genarg subst (out_gen (glbwit wit_genarg) x))
   | SortArgType ->
       in_gen (glbwit wit_sort) (out_gen (glbwit wit_sort) x)
   | ConstrArgType ->

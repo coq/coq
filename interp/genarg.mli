@@ -214,6 +214,7 @@ type argument_type =
   | VarArgType
   | RefArgType
   (** Specific types *)
+  | GenArgType
   | SortArgType
   | ConstrArgType
   | ConstrMayEvalArgType
@@ -261,6 +262,8 @@ val wit_var : (Id.t located, Id.t located, Id.t) genarg_type
 val wit_ref : (reference, global_reference located or_var, global_reference) genarg_type
 
 val wit_quant_hyp : quantified_hypothesis uniform_genarg_type
+
+val wit_genarg : (raw_generic_argument, glob_generic_argument, typed_generic_argument) genarg_type
 
 val wit_sort : (glob_sort, glob_sort, sorts) genarg_type
 
