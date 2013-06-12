@@ -375,7 +375,7 @@ let solve_remaining_by by env prf =
 
 let extend_evd sigma ext sigma' =
   Int.Set.fold (fun i acc ->
-    Evd.add acc i (Evd.find sigma' i))
+    Evd.add acc i (Evarutil.nf_evar_info sigma' (Evd.find sigma' i)))
     ext sigma
 
 let no_constraints cstrs = 
