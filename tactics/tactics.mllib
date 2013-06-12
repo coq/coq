@@ -16,6 +16,7 @@ Refine
 Inv
 Leminv
 Tacsubst
+Taccoerce
 Tacintern
 Tacinterp
 Evar_tactics

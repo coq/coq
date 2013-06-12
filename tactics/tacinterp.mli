@@ -21,7 +21,7 @@ open Misctypes
 
 module Value :
 sig
-  type t
+  type t = tlevel generic_argument
   val of_constr : constr -> t
   val to_constr : t -> constr option
   val of_int : int -> t
@@ -118,8 +118,6 @@ val declare_xml_printer :
   (out_channel -> Environ.env -> Evd.evar_map -> constr -> unit) -> unit
 
 (** Internals that can be useful for syntax extensions. *)
-
-exception CannotCoerceTo of string
 
 val interp_ltac_var : (value -> 'a) -> interp_sign -> Environ.env option -> Id.t Loc.located -> 'a
 

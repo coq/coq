@@ -41,6 +41,7 @@ open Misctypes
 open Miscops
 open Locus
 open Tacintern
+open Taccoerce
 
 let safe_msgnl s =
   let _ =
@@ -62,58 +63,10 @@ type tacvalue =
 let (wit_tacvalue : (Empty.t, Empty.t, tacvalue) Genarg.genarg_type) =
   Genarg.create_arg None "tacvalue"
 
-let (wit_unit : (unit, unit, unit) Genarg.genarg_type) =
-  Genarg.create_arg None "unit"
-
-let (wit_constr_context : (Empty.t, Empty.t, constr) Genarg.genarg_type) =
-  Genarg.create_arg None "constr_context"
-
-(* includes idents known to be bound and references *)
-let (wit_constr_under_binders : (Empty.t, Empty.t, constr_under_binders) Genarg.genarg_type) =
-  Genarg.create_arg None "constr_under_binders"
-
 let of_tacvalue v = in_gen (topwit wit_tacvalue) v
 let to_tacvalue v = out_gen (topwit wit_tacvalue) v
 
-module Value =
-struct
-
-type t = value
-
-let rec normalize v =
-  if has_type v (topwit wit_genarg) then
-    normalize (out_gen (topwit wit_genarg) v)
-  else v
-
-let of_constr c = in_gen (topwit wit_constr) c
-
-let to_constr v =
-  let v = normalize v in
-  if has_type v (topwit wit_constr) then
-    let c = out_gen (topwit wit_constr) v in
-    Some c
-  else if has_type v (topwit wit_constr_under_binders) then
-    let vars, c = out_gen (topwit wit_constr_under_binders) v in
-    match vars with [] -> Some c | _ -> None
-  else None
-
-let of_int i = in_gen (topwit wit_int) i
-
-let to_int v =
-  let v = normalize v in
-  if has_type v (topwit wit_int) then
-    Some (out_gen (topwit wit_int) v)
-  else None
-
-let to_list v =
-  let v = normalize v in
-  try Some (fold_list0 (fun v accu -> v :: accu) v [])
-  with Failure _ ->
-    try Some (fold_list1 (fun v accu -> v :: accu) v [])
-    with Failure _ ->
-      None
-
-end
+module Value = Taccoerce.Value
 
 let dloc = Loc.ghost
 
@@ -149,13 +102,6 @@ let check_is_value v =
       error "Immediate match producing tactics not allowed in local definitions."
     | _ -> ()
   else ()
-
-(* Gives the constr corresponding to a Constr_context tactic_arg *)
-let coerce_to_constr_context v =
-  let v = Value.normalize v in
-  if has_type v (topwit wit_constr_context) then
-    out_gen (topwit wit_constr_context) v
-  else errorlabstrm "coerce_to_constr_context" (str "Not a context variable.")
 
 (* Displays a value *)
 let rec pr_value env v = str "a tactic"
@@ -340,8 +286,6 @@ let error_ltac_variable loc id env v s =
    strbrk " is bound to" ++ spc () ++ pr_value env v ++ spc () ++
    strbrk "which cannot be coerced to " ++ str s ++ str".")
 
-exception CannotCoerceTo of string
-
 (* Raise Not_found if not in interpretation sign *)
 let try_interp_ltac_var coerce ist env (loc,id) =
   let v = List.assoc id ist.lfun in
@@ -350,22 +294,6 @@ let try_interp_ltac_var coerce ist env (loc,id) =
 let interp_ltac_var coerce ist env locid =
   try try_interp_ltac_var coerce ist env locid
   with Not_found -> anomaly (str "Detected '" ++ Id.print (snd locid) ++ str "' as ltac var at interning time")
-
-(* Interprets an identifier which must be fresh *)
-let coerce_to_ident fresh env v =
-  let v = Value.normalize v in
-  let fail () = raise (CannotCoerceTo "a fresh identifier") in
-  if has_type v (topwit wit_intro_pattern) then
-    match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroIdentifier id -> id
-    | _ -> fail ()
-  else match Value.to_constr v with
-  | None -> fail ()
-  | Some c ->
-    (* We need it fresh for intro e.g. in "Tac H = clear H; intro H" *)
-    if isVar c && not (fresh && is_variable env (destVar c)) then
-      destVar c
-    else fail ()
 
 let interp_ident_gen fresh ist env id =
   try try_interp_ltac_var (coerce_to_ident fresh env) ist (Some env) (dloc,id)
@@ -381,38 +309,13 @@ let interp_fresh_name ist env = function
   | Anonymous -> Anonymous
   | Name id -> Name (interp_fresh_ident ist env id)
 
-let coerce_to_intro_pattern env v =
-  let v = Value.normalize v in
-  if has_type v (topwit wit_intro_pattern) then
-    snd (out_gen (topwit wit_intro_pattern) v)
-  else match Value.to_constr v with
-  | Some c when isVar c ->
-      (* This happens e.g. in definitions like "Tac H = clear H; intro H" *)
-      (* but also in "destruct H as (H,H')" *)
-      IntroIdentifier (destVar c)
-  | _ -> raise (CannotCoerceTo "an introduction pattern")
-
 let interp_intro_pattern_var loc ist env id =
   try try_interp_ltac_var (coerce_to_intro_pattern env) ist (Some env) (loc,id)
   with Not_found -> IntroIdentifier id
 
-let coerce_to_hint_base v =
-  let v = Value.normalize v in
-  if has_type v (topwit wit_intro_pattern) then
-    match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroIdentifier id -> Id.to_string id
-    | _ -> raise (CannotCoerceTo "a hint base name")
-  else raise (CannotCoerceTo "a hint base name")
-
 let interp_hint_base ist s =
   try try_interp_ltac_var coerce_to_hint_base ist None (dloc,Id.of_string s)
   with Not_found -> s
-
-let coerce_to_int v =
-  let v = Value.normalize v in
-  if has_type v (topwit wit_int) then
-    out_gen (topwit wit_int) v
-  else raise (CannotCoerceTo "an integer")
 
 let interp_int ist locid =
   try try_interp_ltac_var coerce_to_int ist None locid
@@ -424,50 +327,14 @@ let interp_int_or_var ist = function
   | ArgVar locid -> interp_int ist locid
   | ArgArg n -> n
 
-let int_or_var_list_of_VList v =
-  match Value.to_list v with
-  | None -> raise Not_found
-  | Some l ->
-    let map n = ArgArg (coerce_to_int n) in
-    List.map map l
-
 let interp_int_or_var_as_list ist = function
   | ArgVar (_,id as locid) ->
-      (try int_or_var_list_of_VList (List.assoc id ist.lfun)
+      (try coerce_to_int_or_var_list (List.assoc id ist.lfun)
        with Not_found | CannotCoerceTo _ -> [ArgArg (interp_int ist locid)])
   | ArgArg n as x -> [x]
 
 let interp_int_or_var_list ist l =
   List.flatten (List.map (interp_int_or_var_as_list ist) l)
-
-let coerce_to_constr env v =
-  let v = Value.normalize v in
-  if has_type v (topwit wit_intro_pattern) then
-    match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroIdentifier id -> ([],constr_of_id env id)
-    | _ -> raise Not_found
-  else if has_type v (topwit wit_constr) then
-    let c = out_gen (topwit wit_constr) v in
-    ([], c)
-  else if has_type v (topwit wit_constr_under_binders) then
-    out_gen (topwit wit_constr_under_binders) v
-  else raise Not_found
-
-let coerce_to_closed_constr env v =
-  let ids,c = coerce_to_constr env v in
-  if not (List.is_empty ids) then raise Not_found;
-  c
-
-let coerce_to_hyp env v =
-  let fail () = raise (CannotCoerceTo "a variable") in
-  let v = Value.normalize v in
-  if has_type v (topwit wit_intro_pattern) then
-    match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroIdentifier id when is_variable env id -> id
-    | _ -> fail ()
-  else match Value.to_constr v with
-  | Some c when isVar c -> destVar c
-  | _ -> fail ()
 
 (* Interprets a bound variable (especially an existing hypothesis) *)
 let interp_hyp ist gl (loc,id as locid) =
@@ -479,14 +346,6 @@ let interp_hyp ist gl (loc,id as locid) =
   if is_variable env id then id
   else user_err_loc (loc,"eval_variable",
     str "No such hypothesis: " ++ pr_id id ++ str ".")
-
-let coerce_to_hyp_list env v =
-  let v = Value.to_list v in
-  match v with
-  | Some l ->
-    let map n = coerce_to_hyp env n in
-    List.map map l
-  | None -> raise Not_found
 
 let interp_hyp_list_as_list ist gl (loc,id as x) =
   try coerce_to_hyp_list (pf_env gl) (List.assoc id ist.lfun)
@@ -501,17 +360,6 @@ let interp_move_location ist gl = function
   | MoveFirst -> MoveFirst
   | MoveLast -> MoveLast
 
-(* Interprets a qualified name *)
-let coerce_to_reference env v =
-  let v = Value.normalize v in
-  match Value.to_constr v with
-  | Some c ->
-    begin
-      try global_of_constr c
-      with Not_found -> raise (CannotCoerceTo "a reference")
-    end
-  | None -> raise (CannotCoerceTo "a reference")
-
 let interp_reference ist env = function
   | ArgArg (_,r) -> r
   | ArgVar locid ->
@@ -519,29 +367,9 @@ let interp_reference ist env = function
 
 let pf_interp_reference ist gl = interp_reference ist (pf_env gl)
 
-let coerce_to_inductive v =
-  match Value.to_constr v with
-  | Some c when isInd c -> destInd c
-  | _ -> raise (CannotCoerceTo "an inductive type")
-
 let interp_inductive ist = function
   | ArgArg r -> r
   | ArgVar locid -> interp_ltac_var coerce_to_inductive ist None locid
-
-let coerce_to_evaluable_ref env v =
-  let fail () = raise (CannotCoerceTo "an evaluable reference") in
-  let v = Value.normalize v in
-  if has_type v (topwit wit_intro_pattern) then
-    match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroIdentifier id when List.mem id (ids_of_context env) -> EvalVarRef id
-    | _ -> fail ()
-  else
-    let ev = match Value.to_constr v with
-    | Some c when isConst c -> EvalConstRef (destConst c)
-    | Some c when isVar c -> EvalVarRef (destVar c)
-    | _ -> fail ()
-    in
-    if Tacred.is_evaluable env ev then ev else fail ()
 
 let interp_evaluable ist env = function
   | ArgArg (r,Some (loc,id)) ->
@@ -706,14 +534,6 @@ let pf_interp_casted_constr ist gl c =
 (* Interprets a constr expression *)
 let pf_interp_constr ist gl =
   interp_constr ist (pf_env gl) (project gl)
-
-let coerce_to_constr_list env v =
-  let v = Value.to_list v in
-  match v with
-  | Some l ->
-    let map v = coerce_to_closed_constr env v in
-    List.map map l
-  | None -> raise Not_found
 
 let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
   let try_expand_ltac_var sigma x =
@@ -880,13 +700,6 @@ let interp_message ist gl l =
      are raised now and not at printing time *)
   prlist (fun x -> spc () ++ x) (List.map (interp_message_token ist gl) l)
 
-let coerce_to_intro_pattern_list loc env v =
-  match Value.to_list v with
-  | None -> raise Not_found
-  | Some l ->
-    let map v = (loc, coerce_to_intro_pattern env v) in
-    List.map map l
-
 let rec interp_intro_pattern ist gl = function
   | loc, IntroOrAndPattern l ->
       loc, IntroOrAndPattern (interp_or_and_intro_pattern ist gl l)
@@ -910,19 +723,6 @@ and interp_intro_pattern_list_as_list ist gl = function
 let interp_in_hyp_as ist gl (id,ipat) =
   (interp_hyp ist gl id,Option.map (interp_intro_pattern ist gl) ipat)
 
-(* Quantified named or numbered hypothesis or hypothesis in context *)
-(* (as in Inversion) *)
-let coerce_to_quantified_hypothesis v =
-  let v = Value.normalize v in
-  if has_type v (topwit wit_intro_pattern) then
-    let v = out_gen (topwit wit_intro_pattern) v in
-    match v with
-    | _, IntroIdentifier id -> NamedHyp id
-    | _ -> raise (CannotCoerceTo "a quantified hypothesis")
-  else if has_type v (topwit wit_int) then
-    AnonHyp (out_gen (topwit wit_int) v)
-  else raise (CannotCoerceTo "a quantified hypothesis")
-
 let interp_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
@@ -937,19 +737,6 @@ let interp_binding_name ist = function
       (* a name intented to be used as a (non-variable) identifier *)
       try try_interp_ltac_var coerce_to_quantified_hypothesis ist None(dloc,id)
       with Not_found -> NamedHyp id
-
-(* Quantified named or numbered hypothesis or hypothesis in context *)
-(* (as in Inversion) *)
-let coerce_to_decl_or_quant_hyp env v =
-  let v = Value.normalize v in
-  if has_type v (topwit wit_int) then
-    AnonHyp (out_gen (topwit wit_int) v)
-  else
-    try
-      let hyp = coerce_to_hyp env v in
-      NamedHyp hyp
-    with CannotCoerceTo _ ->
-      raise (CannotCoerceTo "a declared or quantified hypothesis")
 
 let interp_declared_or_quantified_hypothesis ist gl = function
   | AnonHyp n -> AnonHyp n

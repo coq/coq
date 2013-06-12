@@ -12,6 +12,7 @@ open Pp
 open Genarg
 open Names
 open Tacexpr
+open Taccoerce
 open Tacinterp
 open Misctypes
 open Locus
