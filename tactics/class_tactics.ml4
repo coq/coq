@@ -677,7 +677,7 @@ let resolve_all_evars debug m env p oevd do_split fail =
 
 let initial_select_evars filter =
   fun evd ev evi ->
-    filter (snd evi.Evd.evar_source) &&
+    filter ev (snd evi.Evd.evar_source) &&
     Typeclasses.is_class_evar evd evi
 
 let resolve_typeclass_evars debug m env evd filter split fail =

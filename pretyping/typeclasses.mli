@@ -78,7 +78,7 @@ val is_implicit_arg : Evar_kinds.t -> bool
 val instance_constructor : typeclass -> constr list -> constr option * types
 
 (** Filter which evars to consider for resolution. *)
-type evar_filter = Evar_kinds.t -> bool
+type evar_filter = existential_key -> Evar_kinds.t -> bool
 val all_evars : evar_filter
 val all_goals : evar_filter
 val no_goals : evar_filter

@@ -304,7 +304,7 @@ let rewrite_unif_flags = {
   Unification.modulo_delta_types = full_transparent_state;
   Unification.modulo_delta_in_merge = None;
   Unification.check_applied_meta_types = true;
-  Unification.resolve_evars = true;
+  Unification.resolve_evars = false;
   Unification.use_pattern_unification = true;
   Unification.use_meta_bound_pattern_unification = true;
   Unification.frozen_evars = ExistentialSet.empty;
@@ -321,7 +321,7 @@ let rewrite2_unif_flags =
      Unification.modulo_delta_types = conv_transparent_state;
      Unification.modulo_delta_in_merge = None;
      Unification.check_applied_meta_types = true;
-     Unification.resolve_evars = true;
+     Unification.resolve_evars = false;
      Unification.use_pattern_unification = true;
      Unification.use_meta_bound_pattern_unification = true;
      Unification.frozen_evars = ExistentialSet.empty;
@@ -339,7 +339,7 @@ let general_rewrite_unif_flags () =
        Unification.modulo_delta_types = ts;
        Unification.modulo_delta_in_merge = None;
        Unification.check_applied_meta_types = true;
-       Unification.resolve_evars = true;
+       Unification.resolve_evars = false;
        Unification.use_pattern_unification = true;
        Unification.use_meta_bound_pattern_unification = true;
        Unification.frozen_evars = ExistentialSet.empty;
@@ -378,7 +378,10 @@ let extend_evd sigma ext sigma' =
     Evd.add acc i (Evd.find sigma' i))
     ext sigma
 
-let unify_eqn env sigma hypinfo by t =
+let no_constraints cstrs = 
+  fun ev _ -> not (Int.Set.mem ev cstrs)
+
+let unify_eqn env (sigma, cstrs) hypinfo by t =
   if isEvar t then None
   else try
     let {cl=cl; ext=ext; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = 
@@ -395,7 +398,8 @@ let unify_eqn env sigma hypinfo by t =
       | None ->
 	  let env' = clenv_unify ~flags:!hypinfo.flags CONV left t cl in
 	  let env' = Clenvtac.clenv_pose_dependent_evars true env' in
-	  let evd' = Typeclasses.resolve_typeclasses ~fail:true env'.env env'.evd in
+	  let evd' = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
+	    ~fail:true env'.env env'.evd in
 	  let env' = { env' with evd = evd' } in
 	  let env', prf = solve_remaining_by by env' (Clenv.clenv_value env') in	   
 	  let nf c = Evarutil.nf_evar env'.evd (Clenv.clenv_nf_meta env' c) in
@@ -635,7 +639,7 @@ let apply_rule hypinfo by loccs : strategy =
     fun env avoid t ty cstr evars ->
       if not (eq_env !hypinfo.cl.env env) then
 	hypinfo := refresh_hypinfo env (goalevars evars) !hypinfo;
-      let unif = unify_eqn env (goalevars evars) hypinfo by t in
+      let unif = unify_eqn env evars hypinfo by t in
 	if not (Option.is_empty unif) then incr occ;
 	match unif with
 	| Some (evd', (prf, (car, rel, c1, c2))) when is_occ !occ ->
