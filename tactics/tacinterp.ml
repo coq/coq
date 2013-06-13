@@ -404,7 +404,7 @@ let extract_ltac_constr_values ist env =
     try
       let c = coerce_to_constr env v in
       (Id.Map.add id c vars1, vars2)
-    with Not_found ->
+    with CannotCoerceTo _ ->
       let ido =
         let v = Value.normalize v in
         if has_type v (topwit wit_intro_pattern) then
@@ -543,8 +543,8 @@ let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
         List.map inj_fun (coerce_to_constr_list env (List.assoc id ist.lfun))
     | _ ->
         raise Not_found
-    with Not_found ->
-      (*all of dest_fun, List.assoc, coerce_to_constr_list may raise Not_found*)
+    with CannotCoerceTo _ | Not_found ->
+      (* dest_fun, List.assoc may raise Not_found *)
       let sigma, c = interp_fun ist env sigma x in
       sigma, [c] in
   let sigma, l = List.fold_map try_expand_ltac_var sigma l in
@@ -1531,14 +1531,13 @@ and interp_ltac_constr ist gl e =
     raise Not_found in
   let result = Value.normalize result in
   try
-    let cresult = coerce_to_constr (pf_env gl) result in
+    let cresult = coerce_to_closed_constr (pf_env gl) result in
     debugging_step ist (fun () ->
       Pptactic.pr_glob_tactic (pf_env gl) e ++ fnl() ++
       str " has value " ++ fnl() ++
-      pr_constr_under_binders_env (pf_env gl) cresult);
-    if not (List.is_empty (fst cresult)) then raise Not_found;
-    sigma , snd cresult
-  with Not_found ->
+      pr_constr_env (pf_env gl) cresult);
+    sigma, cresult
+  with CannotCoerceTo _ ->
     errorlabstrm ""
       (str "Must evaluate to a closed term" ++ fnl() ++
 	  str "offending expression: " ++ fnl() ++

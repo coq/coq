@@ -79,7 +79,7 @@ let coerce_to_constr_context v =
   let v = Value.normalize v in
   if has_type v (topwit wit_constr_context) then
     out_gen (topwit wit_constr_context) v
-  else errorlabstrm "coerce_to_constr_context" (str "Not a context variable.")
+  else raise (CannotCoerceTo "a term context")
 
 (* Interprets an identifier which must be fresh *)
 let coerce_to_ident fresh env v =
@@ -124,20 +124,22 @@ let coerce_to_int v =
 
 let coerce_to_constr env v =
   let v = Value.normalize v in
+  let fail () = raise (CannotCoerceTo "a term") in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroIdentifier id -> ([],constr_of_id env id)
-    | _ -> raise Not_found
+    | _, IntroIdentifier id ->
+      (try ([], constr_of_id env id) with Not_found -> fail ())
+    | _ -> fail ()
   else if has_type v (topwit wit_constr) then
     let c = out_gen (topwit wit_constr) v in
     ([], c)
   else if has_type v (topwit wit_constr_under_binders) then
     out_gen (topwit wit_constr_under_binders) v
-  else raise Not_found
+  else fail ()
 
 let coerce_to_closed_constr env v =
   let ids,c = coerce_to_constr env v in
-  if not (List.is_empty ids) then raise Not_found;
+  let () = if not (List.is_empty ids) then raise (CannotCoerceTo "a term") in
   c
 
 let coerce_to_evaluable_ref env v =
@@ -161,11 +163,11 @@ let coerce_to_constr_list env v =
   | Some l ->
     let map v = coerce_to_closed_constr env v in
     List.map map l
-  | None -> raise Not_found
+  | None -> raise (CannotCoerceTo "a term list")
 
 let coerce_to_intro_pattern_list loc env v =
   match Value.to_list v with
-  | None -> raise Not_found
+  | None -> raise (CannotCoerceTo "an intro pattern list")
   | Some l ->
     let map v = (loc, coerce_to_intro_pattern env v) in
     List.map map l
@@ -187,7 +189,7 @@ let coerce_to_hyp_list env v =
   | Some l ->
     let map n = coerce_to_hyp env n in
     List.map map l
-  | None -> raise Not_found
+  | None -> raise (CannotCoerceTo "a variable list")
 
 (* Interprets a qualified name *)
 let coerce_to_reference env v =
@@ -233,7 +235,7 @@ let coerce_to_decl_or_quant_hyp env v =
 
 let coerce_to_int_or_var_list v =
   match Value.to_list v with
-  | None -> raise Not_found
+  | None -> raise (CannotCoerceTo "an int list")
   | Some l ->
     let map n = ArgArg (coerce_to_int n) in
     List.map map l
