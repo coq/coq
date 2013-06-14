@@ -1085,7 +1085,9 @@ let rewrite_strat flags occs hyp =
 let get_hypinfo_ids {c = opt} =
   match opt with
   | None -> []
-  | Some (is, gc) -> List.map fst is.lfun @ is.avoid_ids
+  | Some (is, gc) ->
+    let avoid = Option.default [] (TacStore.get is.extra f_avoid_ids) in
+    List.map fst is.lfun @ avoid
 
 let rewrite_with flags c left2right loccs : strategy =
   fun env avoid t ty cstr evars ->

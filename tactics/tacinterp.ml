@@ -36,6 +36,9 @@ open Genarg
 open Printer
 open Pretyping
 open Extrawit
+
+module TacStore = Store.Make(struct end)
+
 open Evd
 open Misctypes
 open Miscops
@@ -85,13 +88,19 @@ let catch_error call_trace tac g =
     raise located_exc
   end
 
+let f_avoid_ids : Id.t list TacStore.field = TacStore.field ()
+(* ids inherited from the call context (needed to get fresh ids) *)
+let f_debug : debug_info TacStore.field = TacStore.field ()
+let f_trace : ltac_trace TacStore.field = TacStore.field ()
+
 (* Signature for interpretation: val_interp and interpretation functions *)
-type interp_sign =
-    { lfun : (Id.t * value) list;
-      avoid_ids : Id.t list; (* ids inherited from the call context
-				      (needed to get fresh ids) *)
-      debug : debug_info;
-      trace : ltac_trace }
+type interp_sign = {
+  lfun : (Id.t * value) list;
+  extra : TacStore.t }
+
+let curr_debug ist = match TacStore.get ist.extra f_debug with
+| None -> DebugOff
+| Some level -> level
 
 let check_is_value v =
   let v = Value.normalize v in
@@ -184,9 +193,16 @@ let lookup_interp_genarg id =
     add_interp_genarg id f;
     f
 
-let push_trace (loc,ck) = function
+let push_trace (loc, ck) ist = match TacStore.get ist.extra f_trace with
+| None -> [1, loc, ck]
+| Some trace ->
+  match trace with
   | (n,loc',ck')::trl when Pervasives.(=) ck ck' -> (n+1,loc,ck)::trl (** FIXME *)
   | trl -> (1,loc,ck)::trl
+
+let extract_trace ist = match TacStore.get ist.extra f_trace with
+| None -> []
+| Some l -> l
 
 let propagate_trace ist loc id v =
   let v = Value.normalize v in
@@ -195,7 +211,7 @@ let propagate_trace ist loc id v =
     match tacv with
     | VFun (_,lfun,it,b) ->
         let t = if List.is_empty it then b else TacFun (it,b) in
-        let ans = VFun (push_trace(loc,LtacVarCall (id,t)) ist.trace,lfun,it,b) in
+        let ans = VFun (push_trace(loc,LtacVarCall (id,t)) ist,lfun,it,b) in
         of_tacvalue ans
     | _ ->  v
   else v
@@ -268,8 +284,7 @@ let set_debug pos = debug := pos
 (* Gives the state of debug *)
 let get_debug () = !debug
 
-let debugging_step ist pp =
-  match ist.debug with
+let debugging_step ist pp = match curr_debug ist with
   | DebugOn lev ->
       safe_msgnl (str "Level " ++ int lev ++ str": " ++ pp () ++ fnl())
   | _ -> ()
@@ -440,7 +455,11 @@ let default_fresh_id = Id.of_string "H"
 
 let interp_fresh_id ist env l =
   let ids = List.map_filter (function ArgVar (_, id) -> Some id | _ -> None) l in
-  let avoid = (extract_ids ids ist.lfun) @ ist.avoid_ids in
+  let avoid = match TacStore.get ist.extra f_avoid_ids with
+  | None -> []
+  | Some l -> l
+  in
+  let avoid = (extract_ids ids ist.lfun) @ avoid in
   let id =
     if List.is_empty l then default_fresh_id
     else
@@ -467,13 +486,13 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
       intern_gen kind ~allow_patvar ~ltacvars:ltacdata sigma env c
   in
   let trace =
-    push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist.trace in
+    push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist in
   let (evd,c) =
     (** FIXME: we should propagate the use of Id.Map.t everywhere *)
     let vars = (ltacbnd, unbndltacvars) in
     catch_error trace (understand_ltac flags sigma env vars kind) c
   in
-  db_constr ist.debug env c;
+  db_constr (curr_debug ist) env c;
   (evd,c)
 
 let constr_flags = {
@@ -656,7 +675,7 @@ let interp_constr_may_eval ist gl c =
       raise reraise
   in
   begin
-    db_constr ist.debug (pf_env gl) csr;
+    db_constr (curr_debug ist) (pf_env gl) csr;
     sigma , csr
   end
 
@@ -1002,7 +1021,7 @@ let rec val_interp ist gl (tac:glob_tactic_expr) : Evd.evar_map * typed_generic_
   let value_interp ist = match tac with
   (* Immediate evaluation *)
   | TacFun (it,body) ->
-    let v = VFun (ist.trace,ist.lfun,it,body) in
+    let v = VFun (extract_trace ist,ist.lfun,it,body) in
     project gl, of_tacvalue v
   | TacLetIn (true,l,u) -> interp_letrec ist gl l u
   | TacLetIn (false,l,u) -> interp_letin ist gl l u
@@ -1011,13 +1030,17 @@ let rec val_interp ist gl (tac:glob_tactic_expr) : Evd.evar_map * typed_generic_
   | TacArg (loc,a) -> interp_tacarg ist gl a
   (* Delayed evaluation *)
   | t ->
-    let v = VFun (ist.trace,ist.lfun,[],t) in
+    let v = VFun (extract_trace ist,ist.lfun,[],t) in
     project gl, of_tacvalue v
 
   in check_for_interrupt ();
-    match ist.debug with
+    match curr_debug ist with
     | DebugOn lev ->
-	debug_prompt lev gl tac (fun v -> value_interp {ist with debug=v})
+        let eval v =
+          let ist = { ist with extra = TacStore.set ist.extra f_debug v } in
+          value_interp ist
+        in
+	debug_prompt lev gl tac eval
     | _ -> value_interp ist
 
 and eval_tactic ist = function
@@ -1025,15 +1048,15 @@ and eval_tactic ist = function
       fun gl ->
 	let call = LtacAtomCall t in
 	let tac = (* catch error in the interpretation *)
-	  catch_error (push_trace(dloc,call)ist.trace)
+	  catch_error (push_trace(dloc,call)ist)
 	    (interp_atomic ist gl) t	in
 	(* catch error in the evaluation *)
-	catch_error (push_trace(loc,call)ist.trace) tac gl
+	catch_error (push_trace(loc,call)ist) tac gl
   | TacFun _ | TacLetIn _ -> assert false
   | TacMatchGoal _ | TacMatch _ -> assert false
   | TacId s -> fun gl ->
       let res = tclIDTAC_MESSAGE (interp_message_nl ist gl s) gl in
-      db_breakpoint ist.debug s; res
+      db_breakpoint (curr_debug ist) s; res
   | TacFail (n,s) -> fun gl -> tclFAIL (interp_int_or_var ist n) (interp_message ist gl s) gl
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
   | TacShowHyps tac -> tclSHOWHYPS (interp_tactic ist tac)
@@ -1078,9 +1101,9 @@ and interp_ltac_reference loc' mustbetac ist gl = function
   | ArgArg (loc,r) ->
       let ids = extract_ids [] ist.lfun in
       let loc_info = ((if Loc.is_ghost loc' then loc else loc'),LtacNameCall r) in
-      let ist =
-        { lfun=[]; debug=ist.debug; avoid_ids=ids;
-          trace = push_trace loc_info ist.trace } in
+      let extra = TacStore.set ist.extra f_avoid_ids ids in 
+      let extra = TacStore.set extra f_trace (push_trace loc_info ist) in
+      let ist = { lfun = []; extra = extra; } in
       val_interp ist gl (lookup_ltacref r)
 
 and interp_tacarg ist gl arg =
@@ -1168,8 +1191,10 @@ and interp_app loc ist gl fv largs =
           (* Check evaluation and report problems with current trace *)
 	  let (sigma,v) =
 	    try
-              catch_error trace
-		(val_interp {ist with lfun=newlfun@olfun; trace=[]} gl) body
+              let ist = {
+                lfun = newlfun@olfun;
+                extra = TacStore.set ist.extra f_trace []; } in
+              catch_error trace (val_interp ist gl) body
 	    with reraise ->
               let reraise = Errors.push reraise in
               debugging_exception_step ist false reraise
@@ -1196,7 +1221,10 @@ and tactic_of_value ist vle g =
   match to_tacvalue vle with
   | VRTactic res -> res
   | VFun (trace,lfun,[],t) ->
-      let tac = eval_tactic {ist with lfun=lfun; trace=[]} t in
+      let ist = {
+        lfun = lfun;
+        extra = TacStore.set ist.extra f_trace []; } in
+      let tac = eval_tactic ist t in
       catch_error trace tac g
   | (VFun _|VRec _) -> error "A fully applied tactic is expected."
   else errorlabstrm "" (str"Expression does not evaluate to a tactic.")
@@ -1209,7 +1237,10 @@ and eval_with_fail ist is_lazy goal tac =
     sigma ,
     (if has_type v (topwit wit_tacvalue) then match to_tacvalue v with
     | VFun (trace,lfun,[],t) when not is_lazy ->
-	let tac = eval_tactic {ist with lfun=lfun; trace=trace} t in
+        let ist = {
+          lfun = lfun;
+          extra = TacStore.set ist.extra f_trace trace; } in
+	let tac = eval_tactic ist t in
 	of_tacvalue (VRTactic (catch_error trace tac { goal with sigma=sigma }))
     | _ -> v
     else v)
@@ -1262,13 +1293,13 @@ and interp_match_goal ist goal lz lr lmr =
   let rec apply_match_goal ist env goal nrs lex lpt =
     begin
       let () = match lex with
-      | r :: _ -> db_pattern_rule ist.debug nrs r
+      | r :: _ -> db_pattern_rule (curr_debug ist) nrs r
       | _ -> ()
       in
       match lpt with
 	| (All t)::tl ->
 	    begin
-              db_mc_pattern_success ist.debug;
+              db_mc_pattern_success (curr_debug ist);
               try eval_with_fail ist lz goal t
               with e when is_match_catchable e ->
 		apply_match_goal ist env goal (nrs+1) (List.tl lex) tl
@@ -1279,13 +1310,13 @@ and interp_match_goal ist goal lz lr lmr =
              | Term mg ->
 		 (try
 		     let lmatch = extended_matches mg concl in
-		     db_matched_concl ist.debug env concl;
+		     db_matched_concl (curr_debug ist) env concl;
 		     apply_hyps_context ist env lz goal mt [] lmatch mhyps hyps
 		   with e when is_match_catchable e ->
 		     (match e with
-		       | PatternMatchingFailure -> db_matching_failure ist.debug
-		       | Eval_fail s -> db_eval_failure ist.debug s
-		       | _ -> db_logic_failure ist.debug e);
+		       | PatternMatchingFailure -> db_matching_failure (curr_debug ist)
+		       | Eval_fail s -> db_eval_failure (curr_debug ist) s
+		       | _ -> db_logic_failure (curr_debug ist) e);
 		     apply_match_goal ist env goal (nrs+1) (List.tl lex) tl)
 	     | Subterm (b,id,mg) ->
 		 (try apply_goal_sub b ist (id,mg) concl mt mhyps hyps
@@ -1295,7 +1326,7 @@ and interp_match_goal ist goal lz lr lmr =
 	| _ ->
 	    errorlabstrm "Tacinterp.apply_match_goal"
               (v 0 (str "No matching clauses for match goal" ++
-		      (if ist.debug == DebugOff then
+		      (if (curr_debug ist) == DebugOff then
 			 fnl() ++ str "(use \"Set Ltac Debug\" for more info)"
 		       else mt()) ++ str"."))
     end in
@@ -1314,11 +1345,11 @@ and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
 	in
         let rec match_next_pattern next = match IStream.peek next with
         | None ->
-          db_hyp_pattern_failure ist.debug env (hypname, pat);
+          db_hyp_pattern_failure (curr_debug ist) env (hypname, pat);
           raise PatternMatchingFailure
         | Some (s, next) ->
 	  let lids,hyp_match = s.e_ctx in
-          db_matched_hyp ist.debug (pf_env goal) hyp_match hypname;
+          db_matched_hyp (curr_debug ist) (pf_env goal) hyp_match hypname;
 	  try
             let id_match = pi1 hyp_match in
             let nextlhyps = List.remove_assoc_in_triple id_match lhyps_rest in
@@ -1329,7 +1360,7 @@ and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
         match_next_pattern init_match_pattern
     | [] ->
         let lfun = extend_values_with_bindings lmatch (lfun@ist.lfun) in
-        db_mc_pattern_success ist.debug;
+        db_mc_pattern_success (curr_debug ist);
         eval_with_fail {ist with lfun=lfun} lz goal mt
   in
   apply_hyps_context_rec lctxt lgmatch hyps mhyps
@@ -1421,7 +1452,7 @@ and interp_genarg ist gl x =
     | ExtraArgType s ->
       match tactic_genarg_level s with
       | Some n ->
-        let f = VFun(ist.trace,ist.lfun,[],
+        let f = VFun(extract_trace ist,ist.lfun,[],
           out_gen (glbwit (wit_tactic n)) x)
         in
         (* Special treatment of tactic arguments *)
@@ -1976,21 +2007,30 @@ and interp_atomic ist gl tac =
 
     in
     let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
-    let trace = push_trace (loc,LtacNotationCall s) ist.trace in
+    let trace = push_trace (loc,LtacNotationCall s) ist in
     let gl = { gl with sigma = !evdref } in
-    interp_tactic { ist with lfun=lfun; trace=trace } body gl
+    let ist = {
+      lfun = lfun;
+      extra = TacStore.set ist.extra f_trace trace; } in
+    interp_tactic ist body gl
 
 (* Initial call for interpretation *)
 
+let default_ist () =
+  let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
+  { lfun = []; extra = extra }
+
 let eval_tactic t gls =
   db_initialize ();
-  interp_tactic { lfun=[]; avoid_ids=[]; debug=get_debug(); trace=[] }
-    t gls
+  interp_tactic (default_ist ()) t gls
 
 (* globalization + interpretation *)
 
 let interp_tac_gen lfun avoid_ids debug t gl =
-  interp_tactic { lfun=lfun; avoid_ids=avoid_ids; debug=debug; trace=[] }
+  let extra = TacStore.set TacStore.empty f_debug debug in
+  let extra = TacStore.set extra f_avoid_ids avoid_ids in
+  let ist = { lfun = lfun; extra = extra } in
+  interp_tactic ist
     (intern_pure_tactic {
       ltacvars = (List.map fst lfun, []); ltacrecvars = [];
       gsigma = project gl; genv = pf_env gl } t) gl
@@ -1998,8 +2038,7 @@ let interp_tac_gen lfun avoid_ids debug t gl =
 let interp t = interp_tac_gen [] [] (get_debug()) t
 
 let eval_ltac_constr gl t =
-  interp_ltac_constr
-    { lfun=[]; avoid_ids=[]; debug=get_debug(); trace=[] } gl
+  interp_ltac_constr (default_ist ()) gl
     (intern_tactic_or_tacarg (make_empty_glob_sign ()) t )
 
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
@@ -2017,7 +2056,7 @@ let hide_interp t ot gl =
 (* Other entry points *)
 
 let interp_redexp env sigma r =
-  let ist = { lfun=[]; avoid_ids=[]; debug=get_debug (); trace=[] } in
+  let ist = default_ist () in
   let gist = { fully_empty_glob_sign with genv = env; gsigma = sigma } in
   interp_red_expr ist sigma env (intern_red_expr gist r)
 
@@ -2038,4 +2077,5 @@ let tacticIn t =
 let _ = Hook.set Auto.extern_interp
   (fun l ->
     let l = Id.Map.map (fun c -> Value.of_constr c) l in
-    interp_tactic {lfun=Id.Map.bindings l;avoid_ids=[];debug=get_debug(); trace=[]})
+    let ist = { (default_ist ()) with lfun = Id.Map.bindings l; } in
+    interp_tactic ist)

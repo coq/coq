@@ -32,12 +32,14 @@ end
 (** Values for interpretation *)
 type value = Value.t
 
+module TacStore : Store.S
+
 (** Signature for interpretation: val\_interp and interpretation functions *)
-type interp_sign =
-  { lfun : (Id.t * value) list;
-    avoid_ids : Id.t list;
-    debug : debug_info;
-    trace : ltac_trace }
+type interp_sign = {
+  lfun : (Id.t * value) list;
+  extra : TacStore.t }
+
+val f_avoid_ids : Id.t list TacStore.field
 
 val extract_ltac_constr_values : interp_sign -> Environ.env ->
   Pattern.constr_under_binders Id.Map.t * (Id.Map.key * Id.t option) list
