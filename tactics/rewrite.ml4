@@ -1887,16 +1887,17 @@ let unification_rewrite flags l2r c1 c2 cl car rel but gl =
       (* ~flags:(false,true) to allow to mark occurrences that must not be
          rewritten simply by replacing them with let-defined definitions
          in the context *)
-      Unification.w_unify_to_subterm ~flags:rewrite_unif_flags env
+      Unification.w_unify_to_subterm 
+       ~flags:{ rewrite_unif_flags with Unification.resolve_evars = true } env
         cl.evd ((if l2r then c1 else c2),but)
     with
 	Pretype_errors.PretypeError _ ->
 	  (* ~flags:(true,true) to make Ring work (since it really
              exploits conversion) *)
-	  Unification.w_unify_to_subterm ~flags:flags
+	  Unification.w_unify_to_subterm 
+	  ~flags:{ flags with Unification.resolve_evars = true }
 	    env cl.evd ((if l2r then c1 else c2),but)
   in
-  let evd' = Typeclasses.resolve_typeclasses ~fail:false env evd' in
   let cl' = {cl with evd = evd'} in
   let cl' = Clenvtac.clenv_pose_dependent_evars true cl' in
   let nf c = Evarutil.nf_evar cl'.evd (Clenv.clenv_nf_meta cl' c) in
