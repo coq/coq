@@ -40,6 +40,7 @@ type interp_sign = {
   extra : TacStore.t }
 
 val f_avoid_ids : Id.t list TacStore.field
+val f_debug : debug_info TacStore.field
 
 val extract_ltac_constr_values : interp_sign -> Environ.env ->
   Pattern.constr_under_binders Id.Map.t * (Id.Map.key * Id.t option) list
