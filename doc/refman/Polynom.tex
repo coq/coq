@@ -222,7 +222,9 @@ that can be parameterized. This can be used to improve the handling of
 closed expressions when operations are effective. It consists in
 introducing a type of \emph{coefficients} and an implementation of the
 ring operations, and a morphism from the coefficient type to the ring
-carrier type. The morphism needs not be injective, nor surjective.  As
+carrier type. The morphism needs not be injective, nor surjective.  
+
+As
 an example, one can consider the real numbers. The set of coefficients
 could be the rational numbers, upon which the ring operations can be
 implemented. The fact that there exists a morphism is defined by the
@@ -250,7 +252,15 @@ where {\tt c0} and {\tt cI} denote the 0 and 1 of the coefficient set,
 {\tt +!}, {\tt *!}, {\tt -!} are the implementations of the ring
 operations, {\tt ==} is the equality of the coefficients, {\tt ?+!} is
 an implementation of this equality, and {\tt [x]} is a notation for
-the image of {\tt x} by the ring morphism.
+the image of {\tt x} by the ring morphism. Moreover, the term 
+{\tt [c0]} (resp. {\tt [c1]}), image by the morphism of the 0
+(resp. the 1) of the coefficient set,
+should be \emph{convertible} to the term {\tt 0} (resp. the term
+{\tt 1}) of the ring structure. This requirement is not enforced by
+the command registering a new ring but the tactic is otherwise very
+much incomplete.
+
+
 
 Since {\tt Z} is an initial ring (and {\tt N} is an initial
 semi-ring), it can always be considered as a set of
