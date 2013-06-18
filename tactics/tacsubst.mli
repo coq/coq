@@ -18,10 +18,7 @@ val subst_tactic : substitution -> glob_tactic_expr -> glob_tactic_expr
 (** For generic arguments, we declare and store substitutions
     in a table *)
 
-type subst_genarg_type =
-    substitution -> glob_generic_argument -> glob_generic_argument
-val subst_genarg : subst_genarg_type
-val add_genarg_subst : string -> subst_genarg_type -> unit
+val subst_genarg : substitution -> glob_generic_argument -> glob_generic_argument
 
 (** Misc *)
 

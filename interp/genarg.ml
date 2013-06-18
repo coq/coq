@@ -210,35 +210,10 @@ type an_arg_of_this_type = Obj.t
 
 let in_generic t x = (t, Obj.repr x)
 
-let dyntab = ref ([] : (string * glevel generic_argument option) list)
-
 type ('a,'b) abstract_argument_type = argument_type
 type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
 type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
 type 'a typed_abstract_argument_type = ('a,tlevel) abstract_argument_type
-
-let create_arg v s =
-  if List.mem_assoc s !dyntab then
-    Errors.anomaly ~label:"Genarg.create" (str ("already declared generic argument " ^ s));
-  let t = ExtraArgType s in
-  dyntab := (s,Option.map (in_gen t) v) :: !dyntab;
-  t
-
-let default_empty_argtype_value s = List.assoc s !dyntab
-
-let default_empty_value t =
-  let rec aux = function
-  | List0ArgType _ -> Some (in_gen t [])
-  | OptArgType _ -> Some (in_gen t None)
-  | PairArgType(t1,t2) ->
-      (match aux t1, aux t2 with
-      | Some (_,v1), Some (_,v2) -> Some (in_gen t (v1,v2))
-      | _ -> None)
-  | ExtraArgType s -> default_empty_argtype_value s
-  | _ -> None in
-  match aux t with
-  | Some v -> Some (out_gen t v)
-  | None -> None
 
 (** New interface for genargs. *)
 
@@ -344,3 +319,23 @@ let rec interpret ist gl (tpe, v) = match tpe with
   let (ist, ans) = obj.arg0_interp ist gl v in
   (ist, (tpe, ans))
 | _ -> assert false (* TODO *)
+
+(** Compatibility layer *)
+
+let create_arg v s = make0 v s (default_arg0 s)
+
+let default_empty_value t =
+  let rec aux = function
+  | List0ArgType _ -> Some (Obj.repr [])
+  | OptArgType _ -> Some (Obj.repr None)
+  | PairArgType(t1,t2) ->
+      (match aux t1, aux t2 with
+      | Some v1, Some v2 -> Some (Obj.repr (v1, v2))
+      | _ -> None)
+  | ExtraArgType s ->
+    let (_, def) = String.Map.find s !arg0_map in
+    def
+  | _ -> None in
+  match aux t with
+  | Some v -> Some (Obj.obj v)
+  | None -> None

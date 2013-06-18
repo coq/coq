@@ -67,24 +67,6 @@ let fully_empty_glob_sign =
 let make_empty_glob_sign () =
   { fully_empty_glob_sign with genv = Global.env () }
 
-type intern_genarg_type =
-    glob_sign -> raw_generic_argument -> glob_generic_argument
-
-let genarginterns =
-  ref (String.Map.empty : intern_genarg_type String.Map.t)
-
-let add_intern_genarg id f =
-  genarginterns := String.Map.add id f !genarginterns
-
-let lookup_intern_genarg id =
-  try String.Map.find id !genarginterns
-  with Not_found ->
-    let msg = "No globalization function found for entry "^id in
-    Pp.msg_warning (Pp.strbrk msg);
-    let dflt = fun _ _ -> failwith msg in
-    add_intern_genarg id dflt;
-    dflt
-
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 
 let atomic_mactab = ref Id.Map.empty
@@ -821,7 +803,7 @@ and intern_genarg ist x =
           in_gen (glbwit (wit_tactic n)) (intern_tactic_or_tacarg ist
 	    (out_gen (rawwit (wit_tactic n)) x))
       | None ->
-          lookup_intern_genarg s ist x
+          snd (Genarg.globalize ist x)
 
 (** Other entry points *)
 

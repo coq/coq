@@ -73,13 +73,8 @@ val get_debug : unit -> debug_info
 
 (** Adds an interpretation function for extra generic arguments *)
 
-type interp_genarg_type =
-    interp_sign -> goal sigma -> glob_generic_argument ->
-      Evd.evar_map * typed_generic_argument
-
-val add_interp_genarg : string -> interp_genarg_type -> unit
-
-val interp_genarg : interp_genarg_type
+val interp_genarg : interp_sign -> goal sigma -> glob_generic_argument ->
+  Evd.evar_map * typed_generic_argument
 
 (** Interprets any expression *)
 val val_interp : interp_sign -> goal sigma -> glob_tactic_expr -> Evd.evar_map * value

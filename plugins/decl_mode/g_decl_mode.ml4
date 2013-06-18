@@ -99,23 +99,18 @@ let proof_instr = Gram.entry_create "proofmode:instr"
     indirect through the [proof_instr] grammar entry. *)
 (* spiwack: proposal: doing that directly from argextend.ml4, maybe ? *)
 
-(* [Genarg.create_arg] creates a new embedding into Genarg. *)
-let wit_proof_instr =
-  Genarg.create_arg None "proof_instr"
-let _ = Tacintern.add_intern_genarg "proof_instr"
-  begin fun e x -> (* declares the globalisation function *)
-    Genarg.in_gen (Genarg.glbwit wit_proof_instr)
-      (Decl_interp.intern_proof_instr e (Genarg.out_gen (Genarg.rawwit wit_proof_instr) x))
-  end
-let _ = Tacinterp.add_interp_genarg "proof_instr"
-  begin fun ist gl x -> (* declares the interpretation function *)
-    Tacmach.project gl ,
-    Genarg.in_gen (Genarg.topwit wit_proof_instr)
-      (interp_proof_instr ist gl (Genarg.out_gen (Genarg.glbwit wit_proof_instr) x))
-  end
 (* declares the substitution function, irrelevant in our case : *)
-let _ = Tacsubst.add_genarg_subst "proof_instr" (fun _ x -> x)
-
+let wit_proof_instr =
+  let name = "proof_instr" in
+  let subst _ x = x in
+  let glob ist v = (ist, Decl_interp.intern_proof_instr ist v) in
+  let interp ist gl x = (Tacmach.project gl, interp_proof_instr ist gl x) in
+  let arg = { Genarg.default_arg0 name with
+    Genarg.arg0_subst = subst;
+    Genarg.arg0_glob = glob;
+    Genarg.arg0_interp = interp;
+  } in
+  Genarg.make0 None name arg
 
 let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
   pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr

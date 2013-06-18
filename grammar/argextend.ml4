@@ -139,56 +139,69 @@ let make_rule loc (prods,act) =
 
 let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   let rawtyp, rawpr, globtyp, globpr = match typ with
-    | `Uniform typ -> typ, pr, typ, pr
+    | `Uniform typ ->
+      typ, pr, typ, pr
     | `Specialized (a, b, c, d) -> a, b, c, d
   in
   let glob = match g with
     | None ->
-	<:expr< fun e x ->
-          out_gen $make_globwit loc rawtyp$
-            (Tacintern.intern_genarg e
-               (Genarg.in_gen $make_rawwit loc rawtyp$ x)) >>
-    | Some f -> <:expr< $lid:f$>> in
+      begin match rawtyp with
+      | Genarg.ExtraArgType s' when CString.equal s s' ->
+        <:expr< fun ist v -> (ist, v) >>
+      | _ ->
+        <:expr< fun ist v ->
+          let ans = out_gen $make_globwit loc rawtyp$
+          (Tacintern.intern_genarg ist
+          (Genarg.in_gen $make_rawwit loc rawtyp$ v)) in
+          (ist, ans) >>
+      end
+    | Some f ->
+      <:expr< fun ist v -> (ist, $lid:f$ ist v) >>
+  in
   let interp = match f with
     | None ->
+      begin match globtyp with
+      | Genarg.ExtraArgType s' when CString.equal s s' ->
+        <:expr< fun ist gl v -> (gl.Evd.sigma, v) >>
+      | _ ->
 	<:expr< fun ist gl x ->
 	  let (sigma,a_interp) =
 	    Tacinterp.interp_genarg ist gl
                (Genarg.in_gen $make_globwit loc globtyp$ x)
 	  in
           (sigma , out_gen $make_topwit loc globtyp$ a_interp)>>
+      end
     | Some f -> <:expr< $lid:f$>> in
-  let substitute = match h with
+  let subst = match h with
     | None ->
-	<:expr< fun s x ->
+      begin match globtyp with
+      | Genarg.ExtraArgType s' when CString.equal s s' ->
+        <:expr< fun s v -> v >>
+      | _ ->
+        <:expr< fun s x ->
           out_gen $make_globwit loc globtyp$
-	    (Tacsubst.subst_genarg s
-               (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
+          (Tacsubst.subst_genarg s
+            (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
+      end
     | Some f -> <:expr< $lid:f$>> in
+  let defs = [
+    <:patt< Genarg.arg0_subst >>, subst;
+    <:patt< Genarg.arg0_glob >>, glob;
+    <:patt< Genarg.arg0_interp >>, interp;
+  ] in
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
   let rawwit = <:expr< Genarg.rawwit $wit$ >> in
-  let globwit = <:expr< Genarg.glbwit $wit$ >> in
-  let topwit = <:expr< Genarg.topwit $wit$ >> in
   let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
   let default_value = <:expr< $make_possibly_empty_subentries loc s cl$ >> in
   declare_str_items loc
    [ <:str_item<
       value ($lid:"wit_"^s$) =
-      Genarg.create_arg $default_value$ $se$>>;
+        let arg = { (Genarg.default_arg0 $se$) with $list:defs$ } in
+      Genarg.make0 $default_value$ $se$ arg >>;
      <:str_item<
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
      <:str_item< do {
-      Tacintern.add_intern_genarg $se$
-        (fun e x ->
-          (Genarg.in_gen $globwit$ ($glob$ e (out_gen $rawwit$ x))));
-      Tacinterp.add_interp_genarg $se$
-        (fun ist gl x ->
-	  let (sigma,a_interp) = $interp$ ist gl (out_gen $globwit$ x) in
-          (sigma , Genarg.in_gen $topwit$ a_interp));
-      Tacsubst.add_genarg_subst $se$
-        (fun subst x ->
-          (Genarg.in_gen $globwit$ ($substitute$ subst (out_gen $globwit$ x))));
       Compat.maybe_uncurry (Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.entry 'a))
 	(None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule

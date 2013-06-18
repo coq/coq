@@ -59,12 +59,7 @@ val intern_hyp : glob_sign -> Id.t Loc.located -> Id.t Loc.located
 
 (** Adds a globalization function for extra generic arguments *)
 
-type intern_genarg_type =
-    glob_sign -> raw_generic_argument -> glob_generic_argument
-
-val add_intern_genarg : string -> intern_genarg_type -> unit
-
-val intern_genarg : intern_genarg_type
+val intern_genarg : glob_sign -> raw_generic_argument -> glob_generic_argument
 
 (** Adds a definition of tactics in the table *)
 val add_tacdef :

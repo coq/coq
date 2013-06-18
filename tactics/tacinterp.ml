@@ -175,23 +175,6 @@ let () =
 
 (** Generic arguments : table of interpretation functions *)
 
-type interp_genarg_type =
-  interp_sign -> goal sigma -> glob_generic_argument ->
-    Evd.evar_map * typed_generic_argument
-
-let extragenargtab =
-  ref (String.Map.empty : interp_genarg_type String.Map.t)
-let add_interp_genarg id f =
-  extragenargtab := String.Map.add id f !extragenargtab
-let lookup_interp_genarg id =
-  try String.Map.find id !extragenargtab
-  with Not_found ->
-    let msg = "No interpretation function found for entry " ^ id in
-    msg_warning (strbrk msg);
-    let f = fun _ _ _ -> failwith msg in
-    add_interp_genarg id f;
-    f
-
 let push_trace (loc, ck) ist = match TacStore.get ist.extra f_trace with
 | None -> [1, loc, ck]
 | Some trace ->
@@ -1458,7 +1441,7 @@ and interp_genarg ist gl x =
         in_gen (topwit (wit_tactic n)) 
 	  (TacArg(dloc,valueIn (of_tacvalue f)))
       | None ->
-        let (sigma,v) = lookup_interp_genarg s ist gl x in
+        let (sigma,v) = interpret ist gl x in
 	evdref:=sigma;
 	v
   in

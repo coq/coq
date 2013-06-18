@@ -23,20 +23,6 @@ open Pretyping
 (** For generic arguments, we declare and store substitutions
     in a table *)
 
-type subst_genarg_type =
-    substitution -> glob_generic_argument -> glob_generic_argument
-let genargsubs =
-  ref (String.Map.empty : subst_genarg_type String.Map.t)
-let add_genarg_subst id f =
-  genargsubs := String.Map.add id f !genargsubs
-let lookup_genarg_subst id =
-  try String.Map.find id !genargsubs
-  with Not_found ->
-    Pp.msg_warning (Pp.strbrk ("No substitution found for entry "^id));
-    let dflt = fun _ x -> x in
-    add_genarg_subst id dflt;
-    dflt
-
 let subst_quantified_hypothesis _ x = x
 
 let subst_declared_or_quantified_hypothesis _ x = x
@@ -346,6 +332,6 @@ and subst_genarg subst (x:glob_generic_argument) =
           in_gen (glbwit (Extrawit.wit_tactic n))
             (subst_tactic subst (out_gen (glbwit (Extrawit.wit_tactic n)) x))
       | None ->
-          lookup_genarg_subst s subst x
+          Genarg.substitute subst x
 
 let _ = Hook.set Auto.extern_subst_tactic subst_tactic
