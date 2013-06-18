@@ -5,6 +5,7 @@ Ppextend
 Notation
 Dumpglob
 Genarg
+Stdarg
 Syntax_def
 Smartlocate
 Reserve

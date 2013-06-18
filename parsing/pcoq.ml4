@@ -13,6 +13,7 @@ open Errors
 open Util
 open Extend
 open Genarg
+open Stdarg
 open Tacexpr
 open Extrawit
 

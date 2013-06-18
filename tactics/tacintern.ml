@@ -747,15 +747,9 @@ and intern_match_rule onlytac ist = function
 
 and intern_genarg ist x =
   match genarg_tag x with
-  | BoolArgType -> in_gen (glbwit wit_bool) (out_gen (rawwit wit_bool) x)
-  | IntArgType -> in_gen (glbwit wit_int) (out_gen (rawwit wit_int) x)
   | IntOrVarArgType ->
       in_gen (glbwit wit_int_or_var)
         (intern_or_var ist (out_gen (rawwit wit_int_or_var) x))
-  | StringArgType ->
-      in_gen (glbwit wit_string) (out_gen (rawwit wit_string) x)
-  | PreIdentArgType ->
-      in_gen (glbwit wit_pre_ident) (out_gen (rawwit wit_pre_ident) x)
   | IntroPatternArgType ->
       let lf = ref ([],[]) in
       (* how to know which names are bound by the intropattern *)

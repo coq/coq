@@ -125,6 +125,7 @@ Lexer
 Ppextend
 Pputils
 Genarg
+Stdarg
 Constrexpr_ops
 Notation_ops
 Topconstr

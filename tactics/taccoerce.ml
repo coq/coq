@@ -14,6 +14,7 @@ open Term
 open Pattern
 open Misctypes
 open Genarg
+open Stdarg
 
 exception CannotCoerceTo of string
 

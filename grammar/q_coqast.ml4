@@ -201,15 +201,11 @@ let mlexpr_of_red_expr = function
       <:expr< Genredexpr.ExtraRedExpr $mlexpr_of_string s$ >>
 
 let rec mlexpr_of_argtype loc = function
-  | Genarg.BoolArgType -> <:expr< Genarg.BoolArgType >>
-  | Genarg.IntArgType -> <:expr< Genarg.IntArgType >>
   | Genarg.IntOrVarArgType -> <:expr< Genarg.IntOrVarArgType >>
   | Genarg.RefArgType -> <:expr< Genarg.RefArgType >>
-  | Genarg.PreIdentArgType -> <:expr< Genarg.PreIdentArgType >>
   | Genarg.IntroPatternArgType -> <:expr< Genarg.IntroPatternArgType >>
   | Genarg.IdentArgType b -> <:expr< Genarg.IdentArgType $mlexpr_of_bool b$ >>
   | Genarg.VarArgType -> <:expr< Genarg.VarArgType >>
-  | Genarg.StringArgType -> <:expr< Genarg.StringArgType >>
   | Genarg.QuantHypArgType -> <:expr< Genarg.QuantHypArgType >>
   | Genarg.OpenConstrArgType b -> <:expr< Genarg.OpenConstrArgType $mlexpr_of_bool b$ >>
   | Genarg.ConstrWithBindingsArgType -> <:expr< Genarg.ConstrWithBindingsArgType >>

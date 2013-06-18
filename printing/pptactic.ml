@@ -141,11 +141,7 @@ let if_pattern_ident b pr c = (if b then str "?" else mt()) ++ pr c
 
 let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generic_argument) =
   match Genarg.genarg_tag x with
-  | BoolArgType -> str (if out_gen (rawwit wit_bool) x then "true" else "false")
-  | IntArgType -> int (out_gen (rawwit wit_int) x)
   | IntOrVarArgType -> pr_or_var int (out_gen (rawwit wit_int_or_var) x)
-  | StringArgType -> str "\"" ++ str (out_gen (rawwit wit_string) x) ++ str "\""
-  | PreIdentArgType -> str (out_gen (rawwit wit_pre_ident) x)
   | IntroPatternArgType -> pr_intro_pattern (out_gen (rawwit wit_intro_pattern) x)
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen (rawwit wit_ident) x)
   | VarArgType -> pr_located pr_id (out_gen (rawwit wit_var) x)
@@ -180,16 +176,12 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
 	  x)
   | ExtraArgType s ->
       try pi1 (String.Map.find s !genarg_pprule) prc prlc prtac x
-      with Not_found -> str "[no printer for " ++ str s ++ str "]"
+      with Not_found -> Genarg.raw_print x
 
 
 let rec pr_glob_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
-  | BoolArgType -> str (if out_gen (glbwit wit_bool) x then "true" else "false")
-  | IntArgType -> int (out_gen (glbwit wit_int) x)
   | IntOrVarArgType -> pr_or_var int (out_gen (glbwit wit_int_or_var) x)
-  | StringArgType -> str "\"" ++ str (out_gen (glbwit wit_string) x) ++ str "\""
-  | PreIdentArgType -> str (out_gen (glbwit wit_pre_ident) x)
   | IntroPatternArgType -> pr_intro_pattern (out_gen (glbwit wit_intro_pattern) x)
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen (glbwit wit_ident) x)
   | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
@@ -226,15 +218,11 @@ let rec pr_glob_generic prc prlc prtac prpat x =
 	  x)
   | ExtraArgType s ->
       try pi2 (String.Map.find s !genarg_pprule) prc prlc prtac x
-      with Not_found -> str "[no printer for " ++ str s ++ str "]"
+      with Not_found -> Genarg.glb_print x
 
 let rec pr_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
-  | BoolArgType -> str (if out_gen (topwit wit_bool) x then "true" else "false")
-  | IntArgType -> int (out_gen (topwit wit_int) x)
   | IntOrVarArgType -> pr_or_var int (out_gen (topwit wit_int_or_var) x)
-  | StringArgType -> str "\"" ++ str (out_gen (topwit wit_string) x) ++ str "\""
-  | PreIdentArgType -> str (out_gen (topwit wit_pre_ident) x)
   | IntroPatternArgType -> pr_intro_pattern (out_gen (topwit wit_intro_pattern) x)
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen (topwit wit_ident) x)
   | VarArgType -> pr_id (out_gen (topwit wit_var) x)
@@ -267,7 +255,7 @@ let rec pr_generic prc prlc prtac prpat x =
 	  x)
   | ExtraArgType s ->
       try pi3 (String.Map.find s !genarg_pprule) prc prlc prtac x
-      with Not_found -> str "[no printer for " ++ str s ++ str "]"
+      with Not_found -> Genarg.top_print x
 
 let rec tacarg_using_rule_token pr_gen = function
   | Some s :: l, al -> str s :: tacarg_using_rule_token pr_gen (l,al)

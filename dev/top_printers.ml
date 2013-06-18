@@ -351,11 +351,7 @@ let pploc x = let (l,r) = Loc.unloc x in
 (* extendable tactic arguments *)
 let rec pr_argument_type = function
   (* Basic types *)
-  | BoolArgType -> str"bool"
-  | IntArgType -> str"int"
   | IntOrVarArgType -> str"int-or-var"
-  | StringArgType -> str"string"
-  | PreIdentArgType -> str"pre-ident"
   | IntroPatternArgType -> str"intro-pattern"
   | IdentArgType true -> str"ident"
   | IdentArgType false -> str"pattern_ident"

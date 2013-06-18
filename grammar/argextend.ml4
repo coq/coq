@@ -18,20 +18,20 @@ let default_loc = <:expr< Loc.ghost >>
 
 let mk_extraarg s =
   if Extrawit.tactic_genarg_level s = None then
-    <:expr< $lid:"wit_"^s$ >>
+    try
+      let name = Genarg.get_name0 s in
+      <:expr< $lid:name$ >>
+    with Not_found ->
+      <:expr< $lid:"wit_"^s$ >>
   else
-    <:expr<
-      let module WIT = struct
-        open Extrawit;
-        value wit = $lid:"wit_"^s$;
-      end in WIT.wit >>
+      <:expr<
+        let module WIT = struct
+          open Extrawit;
+          value wit = $lid:"wit_"^s$;
+        end in WIT.wit >>
 
 let rec make_wit loc = function
-  | BoolArgType -> <:expr< Genarg.wit_bool >>
-  | IntArgType -> <:expr< Genarg.wit_int >>
   | IntOrVarArgType -> <:expr< Genarg.wit_int_or_var >>
-  | StringArgType -> <:expr< Genarg.wit_string >>
-  | PreIdentArgType -> <:expr< Genarg.wit_pre_ident >>
   | IntroPatternArgType -> <:expr< Genarg.wit_intro_pattern >>
   | IdentArgType b -> <:expr< Genarg.wit_ident_gen $mlexpr_of_bool b$ >>
   | VarArgType -> <:expr< Genarg.wit_var >>

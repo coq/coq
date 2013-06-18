@@ -27,6 +27,7 @@ Unicode
 Names
 Libnames
 Genarg
+Stdarg
 Tok
 Lexer
 Extrawit

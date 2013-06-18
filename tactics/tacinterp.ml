@@ -33,6 +33,7 @@ open Termops
 open Tacexpr
 open Hiddentac
 open Genarg
+open Stdarg
 open Printer
 open Pretyping
 open Extrawit
@@ -1358,15 +1359,9 @@ and interp_genarg ist gl x =
   let rec interp_genarg ist gl x =
     let gl = { gl with sigma = !evdref } in
     match genarg_tag x with
-    | BoolArgType -> in_gen (topwit wit_bool) (out_gen (glbwit wit_bool) x)
-    | IntArgType -> in_gen (topwit wit_int) (out_gen (glbwit wit_int) x)
     | IntOrVarArgType ->
       in_gen (topwit wit_int_or_var)
         (ArgArg (interp_int_or_var ist (out_gen (glbwit wit_int_or_var) x)))
-    | StringArgType ->
-      in_gen (topwit wit_string) (out_gen (glbwit wit_string) x)
-    | PreIdentArgType ->
-      in_gen (topwit wit_pre_ident) (out_gen (glbwit wit_pre_ident) x)
     | IntroPatternArgType ->
       in_gen (topwit wit_intro_pattern)
         (interp_intro_pattern ist gl (out_gen (glbwit wit_intro_pattern) x))
@@ -1876,12 +1871,8 @@ and interp_atomic ist gl tac =
   | TacAlias (loc,s,l,(_,body)) -> fun gl ->
     let evdref = ref gl.sigma in
     let rec f x = match genarg_tag x with
-    | IntArgType ->
-        in_gen (topwit wit_int) (out_gen (glbwit wit_int) x)
     | IntOrVarArgType ->
         mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x)
-    | PreIdentArgType ->
-	failwith "pre-identifiers cannot be bound"
     | IntroPatternArgType ->
 	let ipat = interp_intro_pattern ist gl (out_gen (glbwit wit_intro_pattern) x) in
 	in_gen (topwit wit_intro_pattern) ipat
@@ -1929,10 +1920,6 @@ and interp_atomic ist gl tac =
         let wit = glbwit (wit_list0 wit_var) in
         let ans = List.map (mk_hyp_value ist gl) (out_gen wit x) in
         in_gen (topwit (wit_list0 wit_genarg)) ans
-    | List0ArgType IntArgType ->
-        let wit = glbwit (wit_list0 wit_int) in
-        let ans = List.map (fun x -> in_gen (topwit wit_int) x) (out_gen wit x) in
-        in_gen (topwit (wit_list0 wit_genarg)) ans
     | List0ArgType IntOrVarArgType ->
         let wit = glbwit (wit_list0 wit_int_or_var) in
         let ans = List.map (mk_int_or_var_value ist) (out_gen wit x) in
@@ -1961,10 +1948,6 @@ and interp_atomic ist gl tac =
         let wit = glbwit (wit_list1 wit_var) in
         let ans = List.map (mk_hyp_value ist gl) (out_gen wit x) in
         in_gen (topwit (wit_list1 wit_genarg)) ans
-    | List1ArgType IntArgType ->
-        let wit = glbwit (wit_list1 wit_int) in
-        let ans = List.map (fun x -> in_gen (topwit wit_int) x) (out_gen wit x) in
-        in_gen (topwit (wit_list1 wit_genarg)) ans
     | List1ArgType IntOrVarArgType ->
         let wit = glbwit (wit_list1 wit_int_or_var) in
         let ans = List.map (mk_int_or_var_value ist) (out_gen wit x) in
@@ -1979,12 +1962,16 @@ and interp_atomic ist gl tac =
 	let mk_ipat x = interp_intro_pattern ist gl x in
 	let ans = List.map mk_ipat (out_gen wit x) in
         in_gen (topwit (wit_list1 wit_intro_pattern)) ans
-    | StringArgType | BoolArgType
+    | List0ArgType _ -> app_list0 f x
+    | List1ArgType _ -> app_list1 f x
+    | ExtraArgType _ ->
+      let (sigma, v) = Genarg.interpret ist { gl with sigma = !evdref } x in
+      evdref := sigma;
+      v
     | QuantHypArgType | RedExprArgType
     | OpenConstrArgType _ | ConstrWithBindingsArgType
-    | ExtraArgType _ | BindingsArgType
+    | BindingsArgType
     | OptArgType _ | PairArgType _
-    | List0ArgType _ | List1ArgType _
 	-> error "This argument type is not supported in tactic notations."
 
     in

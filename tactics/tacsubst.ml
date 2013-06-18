@@ -286,11 +286,7 @@ and subst_match_rule subst = function
 
 and subst_genarg subst (x:glob_generic_argument) =
   match genarg_tag x with
-  | BoolArgType -> in_gen (glbwit wit_bool) (out_gen (glbwit wit_bool) x)
-  | IntArgType -> in_gen (glbwit wit_int) (out_gen (glbwit wit_int) x)
   | IntOrVarArgType -> in_gen (glbwit wit_int_or_var) (out_gen (glbwit wit_int_or_var) x)
-  | StringArgType -> in_gen (glbwit wit_string) (out_gen (glbwit wit_string) x)
-  | PreIdentArgType -> in_gen (glbwit wit_pre_ident) (out_gen (glbwit wit_pre_ident) x)
   | IntroPatternArgType ->
       in_gen (glbwit wit_intro_pattern) (out_gen (glbwit wit_intro_pattern) x)
   | IdentArgType b ->

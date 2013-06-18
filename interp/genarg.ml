@@ -15,11 +15,7 @@ open Misctypes
 
 type argument_type =
   (* Basic types *)
-  | BoolArgType
-  | IntArgType
   | IntOrVarArgType
-  | StringArgType
-  | PreIdentArgType
   | IntroPatternArgType
   | IdentArgType of bool
   | VarArgType
@@ -41,11 +37,7 @@ type argument_type =
   | ExtraArgType of string
 
 let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
-| BoolArgType, BoolArgType -> true
-| IntArgType, IntArgType -> true
 | IntOrVarArgType, IntOrVarArgType -> true
-| StringArgType, StringArgType -> true
-| PreIdentArgType, PreIdentArgType -> true
 | IntroPatternArgType, IntroPatternArgType -> true
 | IdentArgType b1, IdentArgType b2 -> (b1 : bool) == b2
 | VarArgType, VarArgType -> true
@@ -97,15 +89,7 @@ let rawwit t = t
 let glbwit t = t
 let topwit t = t
 
-let wit_bool = BoolArgType
-
-let wit_int = IntArgType
-
 let wit_int_or_var = IntOrVarArgType
-
-let wit_string = StringArgType
-
-let wit_pre_ident = PreIdentArgType
 
 let wit_intro_pattern = IntroPatternArgType
 
@@ -339,3 +323,19 @@ let default_empty_value t =
   match aux t with
   | Some v -> Some (Obj.obj v)
   | None -> None
+
+(** Hackish part *)
+
+let arg0_names = ref (String.Map.empty : string String.Map.t)
+(** We use this table to associate a name to a given witness, to use it with
+    the extension mechanism. This is REALLY ad-hoc, but I do not know how to
+    do so nicely either. *)
+
+let register_name0 t name = match t with
+| ExtraArgType s ->
+  let () = assert (not (String.Map.mem s !arg0_names)) in
+  arg0_names := String.Map.add s name !arg0_names
+| _ -> failwith "register_name0"
+
+let get_name0 name =
+  String.Map.find name !arg0_names

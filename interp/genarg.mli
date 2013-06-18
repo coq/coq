@@ -274,11 +274,7 @@ val interpret : interp_sign -> Goal.goal Evd.sigma ->
 
 type argument_type =
   (** Basic types *)
-  | BoolArgType
-  | IntArgType
   | IntOrVarArgType
-  | StringArgType
-  | PreIdentArgType
   | IntroPatternArgType
   | IdentArgType of bool
   | VarArgType
@@ -311,15 +307,7 @@ val unquote : ('a, 'co) abstract_argument_type -> argument_type
 
 open Evd
 
-val wit_bool : bool uniform_genarg_type
-
-val wit_int : int uniform_genarg_type
-
 val wit_int_or_var : int or_var uniform_genarg_type
-
-val wit_string : string uniform_genarg_type
-
-val wit_pre_ident : string uniform_genarg_type
 
 val wit_intro_pattern : intro_pattern_expr located uniform_genarg_type
 
@@ -392,3 +380,11 @@ val in_generic :
   argument_type -> an_arg_of_this_type -> 'co generic_argument
 
 val default_empty_value : ('raw, 'glb, 'top) genarg_type -> 'raw option
+
+val register_name0 : ('a, 'b, 'c) genarg_type -> string -> unit
+(** Used by the extension to give a name to types. The string should be the
+    absolute path of the argument witness, e.g.
+    [register_name0 wit_toto "MyArg.wit_toto"]. *)
+
+val get_name0 : string -> string
+(** Return the absolute path of a given witness. *)
