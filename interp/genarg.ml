@@ -253,3 +253,94 @@ module TacStore = Store.Make(struct end)
 type interp_sign = {
   lfun : (Id.t * tlevel generic_argument) list;
   extra : TacStore.t }
+
+type ('raw, 'glb, 'top) arg0 = {
+  arg0_rprint : 'raw -> std_ppcmds;
+  arg0_gprint : 'glb -> std_ppcmds;
+  arg0_tprint : 'top -> std_ppcmds;
+  arg0_glob : glob_sign -> 'raw -> glob_sign * 'glb;
+  arg0_subst : Mod_subst.substitution -> 'glb -> 'glb;
+  arg0_interp : interp_sign ->
+    Goal.goal Evd.sigma -> 'glb -> Evd.evar_map * 'top;
+}
+
+let default_arg0 name = {
+  arg0_rprint = (fun _ -> str "<abstract>");
+  arg0_gprint = (fun _ -> str "<abstract>");
+  arg0_tprint = (fun _ -> str "<abstract>");
+  arg0_glob = (fun _ _ -> failwith ("undefined globalizer for " ^ name));
+  arg0_subst = (fun _ _ -> failwith ("undefined substitutor for " ^ name));
+  arg0_interp = (fun _ _ _ -> failwith ("undefined interpreter for " ^ name));
+}
+
+let default_uniform_arg0 name = {
+  arg0_rprint = (fun _ -> str "<abstract>");
+  arg0_gprint = (fun _ -> str "<abstract>");
+  arg0_tprint = (fun _ -> str "<abstract>");
+  arg0_glob = (fun ist x -> (ist, x));
+  arg0_subst = (fun _ x -> x);
+  arg0_interp = (fun _ gl x -> (gl.Evd.sigma, x));
+}
+
+let arg0_map = ref (String.Map.empty : (Obj.t * Obj.t option) String.Map.t)
+(** First component is the argument itself, second is the default raw
+    inhabitant. *)
+
+let make0 def name arg =
+  let () =
+    if String.Map.mem name !arg0_map then
+      Errors.anomaly (str "Genarg " ++ str name ++ str " already defined")
+  in
+  let arg = Obj.repr arg in
+  let def = Obj.magic def in
+  let () = arg0_map := String.Map.add name (arg, def) !arg0_map in
+  ExtraArgType name
+
+let get_obj name =
+  let (obj, _) = String.Map.find name !arg0_map in
+  (Obj.obj obj : (Obj.t, Obj.t, Obj.t) arg0)
+
+(** For now, the following functions are quite dummy and should only be applied
+    to an extra argument type, otherwise, they will badly fail. *)
+
+let arg_gen = function
+| ExtraArgType name -> Obj.magic (get_obj name)
+| _ -> assert false
+
+let rec raw_print (tpe, v) = match tpe with
+| ExtraArgType name ->
+  let obj = get_obj name in
+  obj.arg0_rprint v
+| _ -> assert false (* TODO *)
+
+let rec glb_print (tpe, v) = match tpe with
+| ExtraArgType name ->
+  let obj = get_obj name in
+  obj.arg0_gprint v
+| _ -> assert false (* TODO *)
+
+let rec top_print (tpe, v) = match tpe with
+| ExtraArgType name ->
+  let obj = get_obj name in
+  obj.arg0_rprint v
+| _ -> assert false (* TODO *)
+
+let rec globalize ist (tpe, v) = match tpe with
+| ExtraArgType name ->
+  let obj = get_obj name in
+  let (ist, ans) = obj.arg0_glob ist v in
+  (ist, (tpe, ans))
+| _ -> assert false (* TODO *)
+
+let rec substitute subst (tpe, v) = match tpe with
+| ExtraArgType name ->
+  let obj = get_obj name in
+  (tpe, obj.arg0_subst subst v)
+| _ -> assert false (* TODO *)
+
+let rec interpret ist gl (tpe, v) = match tpe with
+| ExtraArgType name ->
+  let obj = get_obj name in
+  let (ist, ans) = obj.arg0_interp ist gl v in
+  (ist, (tpe, ans))
+| _ -> assert false (* TODO *)

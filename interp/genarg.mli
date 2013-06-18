@@ -103,7 +103,7 @@ type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 
 val create_arg : 'raw option -> string -> ('raw, 'glob, 'top) genarg_type
 (** Create a new generic type of argument: force to associate
-   unique ML types at each of the three levels. *)
+   unique ML types at each of the three levels. FIXME: almost deprecated. *)
 
 (** {5 Specialized types} *)
 
@@ -201,6 +201,8 @@ val app_pair :
 
 (** {6 High-level creation} *)
 
+(** {5 Genarg environments} *)
+
 type glob_sign = {
   ltacvars : Id.t list * Id.t list;
   ltacrecvars : (Id.t * Nametab.ltac_constant) list;
@@ -212,6 +214,61 @@ module TacStore : Store.S
 type interp_sign = {
   lfun : (Id.t * tlevel generic_argument) list;
   extra : TacStore.t }
+
+(** {5 Generic arguments} *)
+
+type ('raw, 'glb, 'top) arg0 = {
+  arg0_rprint : 'raw -> std_ppcmds;
+  (** Printing at raw level function. *)
+  arg0_gprint : 'glb -> std_ppcmds;
+  (** Printing at glob level function. *)
+  arg0_tprint : 'top -> std_ppcmds;
+  (** Printing at top level function. *)
+  arg0_glob : glob_sign -> 'raw -> glob_sign * 'glb;
+  (** Globalization function. *)
+  arg0_subst : Mod_subst.substitution -> 'glb -> 'glb;
+  (** Substitution function. *)
+  arg0_interp : interp_sign ->
+    Goal.goal Evd.sigma -> 'glb -> Evd.evar_map * 'top;
+  (** Intepretation function. *)
+}
+
+val make0 : 'raw option -> string -> ('raw, 'glb, 'top) arg0 ->
+  ('raw, 'glb, 'top) genarg_type
+(** [make0 def name arg] create a generic argument named [name] with the
+    manipulation functions defined in [arg], and with a default empty value
+    [def]. FIXME: [def] is related to parsing and should be put elsewhere. *)
+
+val default_arg0 : string -> ('raw, 'glb, 'top) arg0
+(** A default [arg0] with a given name. Printing functions print a dummy value
+    and glob/subst/interp all fail. *)
+
+val default_uniform_arg0 : string -> ('a, 'a, 'a) arg0
+(** A default uniform [arg0] with a given name. Printing functions print a dummy
+    value and glob/subst/interp are all identity. *)
+
+val arg_gen : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb, 'top) arg0
+(** Create the manipulation functions for any generic argument type. *)
+
+(** {5 Generic manipulation functions}
+
+  Those functions are the counterparts of [arg0] fields, but they apply on any
+  generic argument.
+
+  FIXME: only partially implemented for now. *)
+
+val raw_print : rlevel generic_argument -> std_ppcmds
+val glb_print : glevel generic_argument -> std_ppcmds
+val top_print : tlevel generic_argument -> std_ppcmds
+
+val globalize : glob_sign ->
+  rlevel generic_argument -> glob_sign * glevel generic_argument
+
+val substitute : Mod_subst.substitution ->
+  glevel generic_argument -> glevel generic_argument
+
+val interpret : interp_sign -> Goal.goal Evd.sigma ->
+  glevel generic_argument -> Evd.evar_map * tlevel generic_argument
 
 (** {6 Type reification} *)
 
