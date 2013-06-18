@@ -52,7 +52,7 @@ let skip_metaid = function
 
 (** Generic arguments *)
 
-type glob_sign = {
+type glob_sign = Genarg.glob_sign = {
   ltacvars : Id.t list * Id.t list;
      (* ltac variables and the subset of vars introduced by Intro/Let/... *)
   ltacrecvars : (Id.t * ltac_constant) list;

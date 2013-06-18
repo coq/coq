@@ -36,9 +36,6 @@ open Genarg
 open Printer
 open Pretyping
 open Extrawit
-
-module TacStore = Store.Make(struct end)
-
 open Evd
 open Misctypes
 open Miscops
@@ -88,13 +85,15 @@ let catch_error call_trace tac g =
     raise located_exc
   end
 
+module TacStore = Genarg.TacStore
+
 let f_avoid_ids : Id.t list TacStore.field = TacStore.field ()
 (* ids inherited from the call context (needed to get fresh ids) *)
 let f_debug : debug_info TacStore.field = TacStore.field ()
 let f_trace : ltac_trace TacStore.field = TacStore.field ()
 
 (* Signature for interpretation: val_interp and interpretation functions *)
-type interp_sign = {
+type interp_sign = Genarg.interp_sign = {
   lfun : (Id.t * value) list;
   extra : TacStore.t }
 

@@ -8,6 +8,7 @@
 
 open Pp
 open Util
+open Names
 open Glob_term
 open Constrexpr
 open Misctypes
@@ -238,3 +239,17 @@ let default_empty_value t =
   match aux t with
   | Some v -> Some (out_gen t v)
   | None -> None
+
+(** New interface for genargs. *)
+
+type glob_sign = {
+  ltacvars : Id.t list * Id.t list;
+  ltacrecvars : (Id.t * Nametab.ltac_constant) list;
+  gsigma : Evd.evar_map;
+  genv : Environ.env }
+
+module TacStore = Store.Make(struct end)
+
+type interp_sign = {
+  lfun : (Id.t * tlevel generic_argument) list;
+  extra : TacStore.t }

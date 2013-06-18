@@ -17,7 +17,6 @@ open Genredexpr
 open Pattern
 open Constrexpr
 open Term
-open Evd
 open Misctypes
 
 (** FIXME: nothing to do there. *)
@@ -200,6 +199,20 @@ val app_pair :
       ('a generic_argument -> 'b generic_argument)
    -> 'a generic_argument -> 'b generic_argument
 
+(** {6 High-level creation} *)
+
+type glob_sign = {
+  ltacvars : Id.t list * Id.t list;
+  ltacrecvars : (Id.t * Nametab.ltac_constant) list;
+  gsigma : Evd.evar_map;
+  genv : Environ.env }
+
+module TacStore : Store.S
+
+type interp_sign = {
+  lfun : (Id.t * tlevel generic_argument) list;
+  extra : TacStore.t }
+
 (** {6 Type reification} *)
 
 type argument_type =
@@ -238,6 +251,8 @@ val unquote : ('a, 'co) abstract_argument_type -> argument_type
 (** {5 Basic generic type constructors} *)
 
 (** {6 Ground types} *)
+
+open Evd
 
 val wit_bool : bool uniform_genarg_type
 

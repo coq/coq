@@ -32,10 +32,12 @@ end
 (** Values for interpretation *)
 type value = Value.t
 
-module TacStore : Store.S
+module TacStore : Store.S with
+  type t = Genarg.TacStore.t
+  and type 'a field = 'a Genarg.TacStore.field
 
 (** Signature for interpretation: val\_interp and interpretation functions *)
-type interp_sign = {
+type interp_sign = Genarg.interp_sign = {
   lfun : (Id.t * value) list;
   extra : TacStore.t }
 
