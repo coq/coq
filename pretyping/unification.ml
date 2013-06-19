@@ -816,7 +816,7 @@ let w_coerce env evd mv c =
 
 let unify_to_type env sigma flags c status u =
   let c = refresh_universes c in
-  let t = get_type_of env sigma c in
+  let t = get_type_of env sigma (nf_meta sigma c) in
   let t = nf_betaiota sigma (nf_meta sigma t) in
     unify_0 env sigma CUMUL flags t u
 

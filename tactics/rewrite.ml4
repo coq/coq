@@ -378,6 +378,9 @@ let extend_evd sigma ext sigma' =
     Evd.add acc i (Evarutil.nf_evar_info sigma' (Evd.find sigma' i)))
     ext sigma
 
+let shrink_evd sigma ext =
+  Int.Set.fold (fun i acc -> Evd.remove acc i) ext sigma
+
 let no_constraints cstrs = 
   fun ev _ -> not (Int.Set.mem ev cstrs)
 
@@ -413,8 +416,10 @@ let unify_eqn env (sigma, cstrs) hypinfo by t =
 	      (if occur_meta_or_existential prf then
 		(hypinfo := refresh_hypinfo env env'.evd !hypinfo;
 		 env'.evd, prf, c1, c2, car, rel)
-	       else (** Evars have been solved, we can go back to the initial evd *)
-		 sigma, prf, c1, c2, car, rel)
+	       else (** Evars have been solved, we can go back to the initial evd,
+			but keep the potential refinement of existing evars. *)
+		let evd' = shrink_evd env'.evd ext in
+		  evd', prf, c1, c2, car, rel)
 	    else raise Reduction.NotConvertible
     in
     let res =
