@@ -15,6 +15,11 @@ let def_uniform name pr = { (default_uniform_arg0 name) with
   arg0_tprint = pr;
 }
 
+let wit_unit : unit uniform_genarg_type =
+  let pr_unit _ = str "()" in
+  let arg = def_uniform "unit" pr_unit in
+  make0 None "unit" arg
+
 let wit_bool : bool uniform_genarg_type =
   let pr_bool b = str (if b then "true" else "false") in
   let arg = def_uniform "bool" pr_bool in

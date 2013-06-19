@@ -10,6 +10,8 @@
 
 open Genarg
 
+val wit_unit : unit uniform_genarg_type
+
 val wit_bool : bool uniform_genarg_type
 
 val wit_int : int uniform_genarg_type

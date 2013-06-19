@@ -82,8 +82,6 @@ val coerce_to_int_or_var_list : Value.t -> int or_var list
 
 (** {5 Missing generic arguments} *)
 
-val wit_unit : (unit, unit, unit) genarg_type
-
 val wit_constr_context : (Empty.t, Empty.t, constr) genarg_type
 
 val wit_constr_under_binders : (Empty.t, Empty.t, constr_under_binders) genarg_type

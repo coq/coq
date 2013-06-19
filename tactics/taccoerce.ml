@@ -18,9 +18,6 @@ open Stdarg
 
 exception CannotCoerceTo of string
 
-let (wit_unit : (unit, unit, unit) Genarg.genarg_type) =
-  Genarg.create_arg None "unit"
-
 let (wit_constr_context : (Empty.t, Empty.t, constr) Genarg.genarg_type) =
   Genarg.create_arg None "constr_context"
 
