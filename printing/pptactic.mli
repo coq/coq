@@ -66,6 +66,21 @@ val pr_raw_generic :
   (Libnames.reference -> std_ppcmds) -> rlevel generic_argument ->
     std_ppcmds
 
+val pr_glb_generic :
+  (glob_constr_and_expr -> Pp.std_ppcmds) ->
+  (glob_constr_and_expr -> Pp.std_ppcmds) ->
+  (tolerability -> glob_tactic_expr -> std_ppcmds) ->
+  (glob_constr_pattern_and_expr -> std_ppcmds) ->
+  glevel generic_argument -> std_ppcmds
+
+val pr_top_generic :
+  (Term.constr -> std_ppcmds) ->
+  (Term.constr -> std_ppcmds) ->
+  (tolerability -> glob_tactic_expr -> std_ppcmds) ->
+  (Pattern.constr_pattern -> std_ppcmds) ->
+  tlevel generic_argument ->
+    std_ppcmds
+
 val pr_raw_extend:
   (constr_expr -> std_ppcmds) -> (constr_expr -> std_ppcmds) ->
   (tolerability -> raw_tactic_expr -> std_ppcmds) ->

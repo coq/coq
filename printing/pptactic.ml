@@ -179,14 +179,14 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
       with Not_found -> Genarg.raw_print x
 
 
-let rec pr_glob_generic prc prlc prtac prpat x =
+let rec pr_glb_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
   | IntOrVarArgType -> pr_or_var int (out_gen (glbwit wit_int_or_var) x)
   | IntroPatternArgType -> pr_intro_pattern (out_gen (glbwit wit_intro_pattern) x)
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen (glbwit wit_ident) x)
   | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
   | RefArgType -> pr_or_var (pr_located pr_global) (out_gen (glbwit wit_ref) x)
-  | GenArgType -> pr_glob_generic prc prlc prtac prpat (out_gen (glbwit wit_genarg) x)
+  | GenArgType -> pr_glb_generic prc prlc prtac prpat (out_gen (glbwit wit_genarg) x)
   | SortArgType -> pr_glob_sort (out_gen (glbwit wit_sort) x)
   | ConstrArgType -> prc (out_gen (glbwit wit_constr) x)
   | ConstrMayEvalArgType ->
@@ -205,29 +205,29 @@ let rec pr_glob_generic prc prlc prtac prpat x =
   | BindingsArgType ->
       pr_bindings_no_with prc prlc (out_gen (glbwit wit_bindings) x)
   | List0ArgType _ ->
-      hov 0 (pr_sequence (pr_glob_generic prc prlc prtac prpat)
+      hov 0 (pr_sequence (pr_glb_generic prc prlc prtac prpat)
 	(fold_list0 (fun a l -> a::l) x []))
   | List1ArgType _ ->
-      hov 0 (pr_sequence (pr_glob_generic prc prlc prtac prpat)
+      hov 0 (pr_sequence (pr_glb_generic prc prlc prtac prpat)
 	(fold_list1 (fun a l -> a::l) x []))
-  | OptArgType _ -> hov 0 (fold_opt (pr_glob_generic prc prlc prtac prpat) (mt()) x)
+  | OptArgType _ -> hov 0 (fold_opt (pr_glb_generic prc prlc prtac prpat) (mt()) x)
   | PairArgType _ ->
       hov 0
         (fold_pair
-	  (fun a b -> pr_sequence (pr_glob_generic prc prlc prtac prpat) [a;b])
+	  (fun a b -> pr_sequence (pr_glb_generic prc prlc prtac prpat) [a;b])
 	  x)
   | ExtraArgType s ->
       try pi2 (String.Map.find s !genarg_pprule) prc prlc prtac x
       with Not_found -> Genarg.glb_print x
 
-let rec pr_generic prc prlc prtac prpat x =
+let rec pr_top_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
   | IntOrVarArgType -> pr_or_var int (out_gen (topwit wit_int_or_var) x)
   | IntroPatternArgType -> pr_intro_pattern (out_gen (topwit wit_intro_pattern) x)
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen (topwit wit_ident) x)
   | VarArgType -> pr_id (out_gen (topwit wit_var) x)
   | RefArgType -> pr_global (out_gen (topwit wit_ref) x)
-  | GenArgType -> pr_generic prc prlc prtac prpat (out_gen (topwit wit_genarg) x)
+  | GenArgType -> pr_top_generic prc prlc prtac prpat (out_gen (topwit wit_genarg) x)
   | SortArgType -> pr_sort (out_gen (topwit wit_sort) x)
   | ConstrArgType -> prc (out_gen (topwit wit_constr) x)
   | ConstrMayEvalArgType -> prc (out_gen (topwit wit_constr_may_eval) x)
@@ -242,15 +242,15 @@ let rec pr_generic prc prlc prtac prpat x =
   | BindingsArgType ->
       pr_bindings_no_with prc prlc (out_gen (topwit wit_bindings) x).Evd.it
   | List0ArgType _ ->
-      hov 0 (pr_sequence (pr_generic prc prlc prtac prpat)
+      hov 0 (pr_sequence (pr_top_generic prc prlc prtac prpat)
 	(fold_list0 (fun a l -> a::l) x []))
   | List1ArgType _ ->
-      hov 0 (pr_sequence (pr_generic prc prlc prtac prpat)
+      hov 0 (pr_sequence (pr_top_generic prc prlc prtac prpat)
 	(fold_list1 (fun a l -> a::l) x []))
-  | OptArgType _ -> hov 0 (fold_opt (pr_generic prc prlc prtac prpat) (mt()) x)
+  | OptArgType _ -> hov 0 (fold_opt (pr_top_generic prc prlc prtac prpat) (mt()) x)
   | PairArgType _ ->
       hov 0
-        (fold_pair (fun a b -> pr_sequence (pr_generic prc prlc prtac prpat)
+        (fold_pair (fun a b -> pr_sequence (pr_top_generic prc prlc prtac prpat)
           [a;b])
 	  x)
   | ExtraArgType s ->
@@ -285,9 +285,9 @@ let pr_extend_gen pr_gen lev s l =
 let pr_raw_extend prc prlc prtac prpat =
   pr_extend_gen (pr_raw_generic prc prlc prtac prpat pr_reference)
 let pr_glob_extend prc prlc prtac prpat =
-  pr_extend_gen (pr_glob_generic prc prlc prtac prpat)
+  pr_extend_gen (pr_glb_generic prc prlc prtac prpat)
 let pr_extend prc prlc prtac prpat =
-  pr_extend_gen (pr_generic prc prlc prtac prpat)
+  pr_extend_gen (pr_top_generic prc prlc prtac prpat)
 
 (**********************************************************************)
 (* The tactic printer                                                 *)
