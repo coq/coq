@@ -234,7 +234,7 @@ GLOBAL: proof_instr;
   ;    
   elim_obj:
     [[ IDENT "on"; c=constr -> Real c
-     | IDENT "of"; c=simple_cut -> Virtual c ]]
+     | KEYID "of"; c=simple_cut -> Virtual c ]]
   ;  
   elim_step:
     [[ IDENT "consider" ; 
