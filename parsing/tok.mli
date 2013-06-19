@@ -13,6 +13,7 @@ type t =
   | METAIDENT of string
   | PATTERNIDENT of string
   | IDENT of string
+  | KEYID of string
   | FIELD of string
   | INT of string
   | STRING of string
