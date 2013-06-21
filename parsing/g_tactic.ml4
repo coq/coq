@@ -370,9 +370,9 @@ GEXTEND Gram
   hypident:
     [ [ id = id_or_meta ->
           id,InHyp
-      | "("; IDENT "type"; KEYID "of"; id = id_or_meta; ")" ->
+      | "("; IDENT "type"; IDENT "of"; id = id_or_meta; ")" ->
 	  id,InHypTypeOnly
-      | "("; IDENT "value"; KEYID "of"; id = id_or_meta; ")" ->
+      | "("; IDENT "value"; IDENT "of"; id = id_or_meta; ")" ->
 	  id,InHypValueOnly
     ] ]
   ;

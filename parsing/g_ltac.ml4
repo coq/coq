@@ -135,7 +135,7 @@ GEXTEND Gram
           ConstrEval (rtc,c)
       | IDENT "context"; id = identref; "["; c = Constr.lconstr; "]" ->
           ConstrContext (id,c)
-      | IDENT "type"; KEYID "of" ; c = Constr.constr ->
+      | IDENT "type"; IDENT "of"; c = Constr.constr ->
           ConstrTypeOf c ] ]
   ;
   constr_may_eval: (* For extensions *)
