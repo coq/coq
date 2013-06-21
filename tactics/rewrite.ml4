@@ -214,7 +214,7 @@ type hypinfo = {
   l2r : bool;
   c1 : constr;
   c2 : constr;
-  c  : (Tacinterp.interp_sign * Genarg.glob_constr_and_expr with_bindings) option;
+  c  : (Tacinterp.interp_sign * Tacexpr.glob_constr_and_expr with_bindings) option;
   abs : (constr * types) option;
   flags : Unification.unify_flags;
 }
@@ -1372,8 +1372,8 @@ let interp_glob_constr_list env sigma =
 (* Syntax for rewriting with strategies *)
 
 type constr_expr_with_bindings = constr_expr with_bindings
-type glob_constr_with_bindings = glob_constr_and_expr with_bindings
-type glob_constr_with_bindings_sign = interp_sign * glob_constr_and_expr with_bindings
+type glob_constr_with_bindings = Tacexpr.glob_constr_and_expr with_bindings
+type glob_constr_with_bindings_sign = interp_sign * Tacexpr.glob_constr_and_expr with_bindings
 
 let pr_glob_constr_with_bindings_sign _ _ _ (ge : glob_constr_with_bindings_sign) = Printer.pr_glob_constr (fst (fst (snd ge)))
 let pr_glob_constr_with_bindings _ _ _ (ge : glob_constr_with_bindings) = Printer.pr_glob_constr (fst (fst ge))
@@ -1461,7 +1461,7 @@ let rec strategy_of_ast = function
 
 
 type raw_strategy = (constr_expr, Tacexpr.raw_red_expr) strategy_ast
-type glob_strategy = (glob_constr_and_expr, Tacexpr.raw_red_expr) strategy_ast
+type glob_strategy = (Tacexpr.glob_constr_and_expr, Tacexpr.raw_red_expr) strategy_ast
 
 let interp_strategy ist gl s = 
   let sigma = project gl in

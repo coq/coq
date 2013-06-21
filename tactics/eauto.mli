@@ -20,8 +20,8 @@ val hintbases : hint_db_name list option Pcoq.Gram.entry
 val wit_hintbases : hint_db_name list option Genarg.uniform_genarg_type
 
 val wit_auto_using :
-  (Genarg.open_constr_expr list,
-  Genarg.open_glob_constr list, Evd.open_constr list)
+  (Tacexpr.open_constr_expr list,
+  Tacexpr.open_glob_constr list, Evd.open_constr list)
     Genarg.genarg_type
 
 

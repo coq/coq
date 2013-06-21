@@ -33,20 +33,20 @@ let mk_extraarg s =
     qualified_name ("Extrawit.wit_" ^ s)
 
 let rec make_wit loc = function
-  | IntOrVarArgType -> <:expr< Genarg.wit_int_or_var >>
-  | IntroPatternArgType -> <:expr< Genarg.wit_intro_pattern >>
-  | IdentArgType b -> <:expr< Genarg.wit_ident_gen $mlexpr_of_bool b$ >>
-  | VarArgType -> <:expr< Genarg.wit_var >>
-  | RefArgType -> <:expr< Genarg.wit_ref >>
-  | QuantHypArgType -> <:expr< Genarg.wit_quant_hyp >>
-  | GenArgType -> <:expr< Genarg.wit_genarg >>
-  | SortArgType -> <:expr< Genarg.wit_sort >>
-  | ConstrArgType -> <:expr< Genarg.wit_constr >>
-  | ConstrMayEvalArgType -> <:expr< Genarg.wit_constr_may_eval >>
-  | RedExprArgType -> <:expr< Genarg.wit_red_expr >>
-  | OpenConstrArgType b -> <:expr< Genarg.wit_open_constr_gen $mlexpr_of_bool b$ >>
-  | ConstrWithBindingsArgType -> <:expr< Genarg.wit_constr_with_bindings >>
-  | BindingsArgType -> <:expr< Genarg.wit_bindings >>
+  | IntOrVarArgType -> <:expr< Constrarg.wit_int_or_var >>
+  | IntroPatternArgType -> <:expr< Constrarg.wit_intro_pattern >>
+  | IdentArgType b -> <:expr< Constrarg.wit_ident_gen $mlexpr_of_bool b$ >>
+  | VarArgType -> <:expr< Constrarg.wit_var >>
+  | RefArgType -> <:expr< Constrarg.wit_ref >>
+  | QuantHypArgType -> <:expr< Constrarg.wit_quant_hyp >>
+  | GenArgType -> <:expr< Constrarg.wit_genarg >>
+  | SortArgType -> <:expr< Constrarg.wit_sort >>
+  | ConstrArgType -> <:expr< Constrarg.wit_constr >>
+  | ConstrMayEvalArgType -> <:expr< Constrarg.wit_constr_may_eval >>
+  | RedExprArgType -> <:expr< Constrarg.wit_red_expr >>
+  | OpenConstrArgType b -> <:expr< Constrarg.wit_open_constr_gen $mlexpr_of_bool b$ >>
+  | ConstrWithBindingsArgType -> <:expr< Constrarg.wit_constr_with_bindings >>
+  | BindingsArgType -> <:expr< Constrarg.wit_bindings >>
   | List0ArgType t -> <:expr< Genarg.wit_list0 $make_wit loc t$ >>
   | List1ArgType t -> <:expr< Genarg.wit_list1 $make_wit loc t$ >>
   | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>

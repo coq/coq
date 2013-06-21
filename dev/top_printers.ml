@@ -409,6 +409,7 @@ END
 
 open Pcoq
 open Genarg
+open Constrarg
 open Egramml
 
 let _ =

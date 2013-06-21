@@ -25,6 +25,7 @@ open Constrexpr_ops
 open Termops
 open Tacexpr
 open Genarg
+open Constrarg
 open Mod_subst
 open Extrawit
 open Misctypes

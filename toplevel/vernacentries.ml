@@ -419,13 +419,13 @@ let print_located_tactic r =
 
 let smart_global r =
   let gr = Smartlocate.smart_global r in
-    Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr;
+    Dumpglob.add_glob (Constrarg.loc_of_or_by_notation loc_of_reference r) gr;
     gr
 
 let dump_global r =
   try
     let gr = Smartlocate.smart_global r in
-    Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr
+    Dumpglob.add_glob (Constrarg.loc_of_or_by_notation loc_of_reference r) gr
   with e when Errors.noncritical e -> ()
 (**********)
 (* Syntax *)

@@ -87,6 +87,18 @@ type ('a,'t) match_rule =
   | Pat of 'a match_context_hyps list * 'a match_pattern * 't
   | All of 't
 
+(** Composite types *)
+
+(** In globalize tactics, we need to keep the initial [constr_expr] to recompute
+   in the environment by the effective calls to Intro, Inversion, etc 
+   The [constr_expr] field is [None] in TacDef though *)
+type glob_constr_and_expr = Glob_term.glob_constr * constr_expr option
+
+type open_constr_expr = unit * constr_expr
+type open_glob_constr = unit * glob_constr_and_expr
+
+type glob_constr_pattern_and_expr = glob_constr_and_expr * constr_pattern
+
 (** Generic expressions for atomic tactics *)
 
 type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =

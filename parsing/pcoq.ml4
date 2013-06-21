@@ -14,6 +14,7 @@ open Util
 open Extend
 open Genarg
 open Stdarg
+open Constrarg
 open Tacexpr
 open Extrawit
 

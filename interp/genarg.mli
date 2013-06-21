@@ -9,28 +9,6 @@
 open Loc
 open Pp
 open Names
-open Term
-open Libnames
-open Globnames
-open Glob_term
-open Genredexpr
-open Pattern
-open Constrexpr
-open Term
-open Misctypes
-
-(** FIXME: nothing to do there. *)
-val loc_of_or_by_notation : ('a -> Loc.t) -> 'a or_by_notation -> Loc.t
-
-(** In globalize tactics, we need to keep the initial [constr_expr] to recompute
-   in the environment by the effective calls to Intro, Inversion, etc 
-   The [constr_expr] field is [None] in TacDef though *)
-type glob_constr_and_expr = glob_constr * constr_expr option
-
-type open_constr_expr = unit * constr_expr
-type open_glob_constr = unit * glob_constr_and_expr
-
-type glob_constr_pattern_and_expr = glob_constr_and_expr * constr_pattern
 
 (** The route of a generic argument, from parsing to evaluation.
 In the following diagram, "object" can be tactic_expr, constr, tactic_arg, etc.
@@ -302,58 +280,6 @@ val genarg_tag : 'a generic_argument -> argument_type
 val unquote : ('a, 'co) abstract_argument_type -> argument_type
 
 (** {5 Basic generic type constructors} *)
-
-(** {6 Ground types} *)
-
-open Evd
-
-val wit_int_or_var : int or_var uniform_genarg_type
-
-val wit_intro_pattern : intro_pattern_expr located uniform_genarg_type
-
-val wit_ident : Id.t uniform_genarg_type
-
-val wit_pattern_ident : Id.t uniform_genarg_type
-
-val wit_ident_gen : bool -> Id.t uniform_genarg_type
-
-val wit_var : (Id.t located, Id.t located, Id.t) genarg_type
-
-val wit_ref : (reference, global_reference located or_var, global_reference) genarg_type
-
-val wit_quant_hyp : quantified_hypothesis uniform_genarg_type
-
-val wit_genarg : (raw_generic_argument, glob_generic_argument, typed_generic_argument) genarg_type
-
-val wit_sort : (glob_sort, glob_sort, sorts) genarg_type
-
-val wit_constr : (constr_expr, glob_constr_and_expr, constr) genarg_type
-
-val wit_constr_may_eval :
-  ((constr_expr,reference or_by_notation,constr_expr) may_eval,
-  (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) may_eval,
-  constr) genarg_type
-
-val wit_open_constr_gen : bool -> (open_constr_expr, open_glob_constr, open_constr) genarg_type
-
-val wit_open_constr : (open_constr_expr, open_glob_constr, open_constr) genarg_type
-
-val wit_casted_open_constr : (open_constr_expr, open_glob_constr, open_constr) genarg_type
-
-val wit_constr_with_bindings :
-  (constr_expr with_bindings,
-  glob_constr_and_expr with_bindings,
-  constr with_bindings sigma) genarg_type
-
-val wit_bindings :
-  (constr_expr bindings,
-  glob_constr_and_expr bindings,
-  constr bindings sigma) genarg_type
-
-val wit_red_expr :
-  ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,
-  (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,
-  (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type
 
 (** {6 Parameterized types} *)
 

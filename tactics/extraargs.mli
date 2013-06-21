@@ -26,7 +26,7 @@ val occurrences_of : int list -> Locus.occurrences
 
 val wit_glob :
   (constr_expr,
-  Genarg.glob_constr_and_expr,
+  Tacexpr.glob_constr_and_expr,
   Tacinterp.interp_sign * glob_constr) Genarg.genarg_type
 val glob : constr_expr Pcoq.Gram.entry
 

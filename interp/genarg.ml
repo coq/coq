@@ -9,9 +9,6 @@
 open Pp
 open Util
 open Names
-open Glob_term
-open Constrexpr
-open Misctypes
 
 type argument_type =
   (* Basic types *)
@@ -59,16 +56,6 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | ExtraArgType s1, ExtraArgType s2 -> CString.equal s1 s2
 | _ -> false
 
-let loc_of_or_by_notation f = function
-  | AN c -> f c
-  | ByNotation (loc,s,_) -> loc
-
-type glob_constr_and_expr = glob_constr * constr_expr option
-type open_constr_expr = unit * constr_expr
-type open_glob_constr = unit * glob_constr_and_expr
-
-type glob_constr_pattern_and_expr = glob_constr_and_expr * Pattern.constr_pattern
-
 type ('raw, 'glob, 'top) genarg_type = argument_type
 
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
@@ -88,42 +75,6 @@ type typed_generic_argument = tlevel generic_argument
 let rawwit t = t
 let glbwit t = t
 let topwit t = t
-
-let wit_int_or_var = IntOrVarArgType
-
-let wit_intro_pattern = IntroPatternArgType
-
-let wit_ident_gen b = IdentArgType b
-
-let wit_ident = wit_ident_gen true
-
-let wit_pattern_ident = wit_ident_gen false
-
-let wit_var = VarArgType
-
-let wit_ref = RefArgType
-
-let wit_quant_hyp = QuantHypArgType
-
-let wit_genarg = GenArgType
-
-let wit_sort = SortArgType
-
-let wit_constr = ConstrArgType
-
-let wit_constr_may_eval = ConstrMayEvalArgType
-
-let wit_open_constr_gen b = OpenConstrArgType b
-
-let wit_open_constr = wit_open_constr_gen false
-
-let wit_casted_open_constr = wit_open_constr_gen true
-
-let wit_constr_with_bindings = ConstrWithBindingsArgType
-
-let wit_bindings = BindingsArgType
-
-let wit_red_expr = RedExprArgType
 
 let wit_list0 t = List0ArgType t
 

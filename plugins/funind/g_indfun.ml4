@@ -82,7 +82,7 @@ let pr_intro_as_pat prc _ _ pat =
     | None -> mt ()
 
 
-ARGUMENT EXTEND with_names TYPED AS intro_pattern_opt PRINTED BY pr_intro_as_pat
+ARGUMENT EXTEND with_names TYPED AS simple_intropattern_opt PRINTED BY pr_intro_as_pat
 |   [ "as"  simple_intropattern(ipat) ] -> [ Some ipat ]
 | []  ->[ None ]
 END

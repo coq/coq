@@ -34,6 +34,7 @@ open Tacexpr
 open Hiddentac
 open Genarg
 open Stdarg
+open Constrarg
 open Printer
 open Pretyping
 open Extrawit
