@@ -13,7 +13,6 @@ type t =
   | METAIDENT of string
   | PATTERNIDENT of string
   | IDENT of string
-  | KEYID of string
   | FIELD of string
   | INT of string
   | STRING of string
@@ -23,7 +22,6 @@ type t =
 let extract_string = function
   | KEYWORD s -> s
   | IDENT s -> s
-  | KEYID s -> s
   | STRING s -> s
   | METAIDENT s -> s
   | PATTERNIDENT s -> s
@@ -35,7 +33,6 @@ let extract_string = function
 let to_string = function
   | KEYWORD s -> Format.sprintf "%S" s
   | IDENT s -> Format.sprintf "IDENT %S" s
-  | KEYID s -> Format.sprintf "KEYID %S" s
   | METAIDENT s -> Format.sprintf "METAIDENT %S" s
   | PATTERNIDENT s -> Format.sprintf "PATTERNIDENT %S" s
   | FIELD s -> Format.sprintf "FIELD %S" s
@@ -46,7 +43,6 @@ let to_string = function
 
 let match_keyword kwd = function
   | KEYWORD kwd' when kwd = kwd' -> true
-  | KEYID kwd' when kwd = kwd' -> true
   | _ -> false
 
 (* Needed to fix Camlp4 signature.
@@ -59,7 +55,6 @@ let print ppf tok = Format.pp_print_string ppf (to_string tok)
 let of_pattern = function
   | "", s -> KEYWORD s
   | "IDENT", s -> IDENT s
-  | "KEYID", s -> KEYID s
   | "METAIDENT", s -> METAIDENT s
   | "PATTERNIDENT", s -> PATTERNIDENT s
   | "FIELD", s -> FIELD s
@@ -72,7 +67,6 @@ let of_pattern = function
 let to_pattern = function
   | KEYWORD s -> "", s
   | IDENT s -> "IDENT", s
-  | KEYID s -> "KEYID", s
   | METAIDENT s -> "METAIDENT", s
   | PATTERNIDENT s -> "PATTERNIDENT", s
   | FIELD s -> "FIELD", s
@@ -86,7 +80,6 @@ let match_pattern =
   function
     | "", "" -> (function KEYWORD s -> s | _ -> err ())
     | "IDENT", "" -> (function IDENT s -> s | _ -> err ())
-    | "KEYID", "" -> (function _ -> err ())
     | "METAIDENT", "" -> (function METAIDENT s -> s | _ -> err ())
     | "PATTERNIDENT", "" -> (function PATTERNIDENT s -> s | _ -> err ())
     | "FIELD", "" -> (function FIELD s -> s | _ -> err ())
@@ -96,9 +89,4 @@ let match_pattern =
     | "EOI", "" -> (function EOI -> "" | _ -> err ())
     | pat ->
 	let tok = of_pattern pat in
-	function tok' -> 
-          match tok, tok' with
-          | KEYID s, KEYWORD s' when s = s' -> snd pat
-          | KEYID s, IDENT s' when s = s' -> snd pat
-          | _, KEYID _ -> assert false
-          | _ -> if tok = tok' then snd pat else err ()
+	function tok' -> if tok = tok' then snd pat else err ()
