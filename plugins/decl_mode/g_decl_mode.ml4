@@ -105,12 +105,11 @@ let wit_proof_instr =
   let subst _ x = x in
   let glob ist v = (ist, Decl_interp.intern_proof_instr ist v) in
   let interp ist gl x = (Tacmach.project gl, interp_proof_instr ist gl x) in
-  let arg = { Genarg.default_arg0 name with
-    Genarg.arg0_subst = subst;
-    Genarg.arg0_glob = glob;
-    Genarg.arg0_interp = interp;
-  } in
-  Genarg.make0 None name arg
+  let arg = Genarg.make0 None name in
+  let () = Genintern.register_intern0 arg glob in
+  let () = Genintern.register_subst0 arg subst in
+  let () = Geninterp.register_interp0 arg interp in
+  arg
 
 let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
   pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr

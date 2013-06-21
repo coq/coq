@@ -23,7 +23,7 @@ let make_generic_action
     | None :: tl -> (* parse a non-binding item *)
         Gram.action (fun _ -> make env tl)
     | Some (p, t) :: tl -> (* non-terminal *)
-        Gram.action (fun v -> make ((p,in_generic t v) :: env) tl) in
+        Gram.action (fun v -> make ((p, Unsafe.inj t v) :: env) tl) in
   make [] (List.rev pil)
 
 (** Grammar extensions declared at ML level *)

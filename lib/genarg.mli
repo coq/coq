@@ -6,10 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Loc
-open Pp
-open Names
-
 (** The route of a generic argument, from parsing to evaluation.
 In the following diagram, "object" can be tactic_expr, constr, tactic_arg, etc.
 
@@ -79,9 +75,12 @@ type ('raw, 'glob, 'top) genarg_type
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type
 (** Alias for concision when the three types agree. *)
 
-val create_arg : 'raw option -> string -> ('raw, 'glob, 'top) genarg_type
+val make0 : 'raw option -> string -> ('raw, 'glob, 'top) genarg_type
 (** Create a new generic type of argument: force to associate
-   unique ML types at each of the three levels. FIXME: almost deprecated. *)
+    unique ML types at each of the three levels. *)
+
+val create_arg : 'raw option -> string -> ('raw, 'glob, 'top) genarg_type
+(** Alias for [make0]. *)
 
 (** {5 Specialized types} *)
 
@@ -177,77 +176,6 @@ val app_pair :
       ('a generic_argument -> 'b generic_argument)
    -> 'a generic_argument -> 'b generic_argument
 
-(** {6 High-level creation} *)
-
-(** {5 Genarg environments} *)
-
-type glob_sign = {
-  ltacvars : Id.t list * Id.t list;
-  ltacrecvars : (Id.t * Nametab.ltac_constant) list;
-  gsigma : Evd.evar_map;
-  genv : Environ.env }
-
-module TacStore : Store.S
-
-type interp_sign = {
-  lfun : (Id.t * tlevel generic_argument) list;
-  extra : TacStore.t }
-
-(** {5 Generic arguments} *)
-
-type ('raw, 'glb, 'top) arg0 = {
-  arg0_rprint : 'raw -> std_ppcmds;
-  (** Printing at raw level function. *)
-  arg0_gprint : 'glb -> std_ppcmds;
-  (** Printing at glob level function. *)
-  arg0_tprint : 'top -> std_ppcmds;
-  (** Printing at top level function. *)
-  arg0_glob : glob_sign -> 'raw -> glob_sign * 'glb;
-  (** Globalization function. *)
-  arg0_subst : Mod_subst.substitution -> 'glb -> 'glb;
-  (** Substitution function. *)
-  arg0_interp : interp_sign ->
-    Goal.goal Evd.sigma -> 'glb -> Evd.evar_map * 'top;
-  (** Intepretation function. *)
-}
-
-val make0 : 'raw option -> string -> ('raw, 'glb, 'top) arg0 ->
-  ('raw, 'glb, 'top) genarg_type
-(** [make0 def name arg] create a generic argument named [name] with the
-    manipulation functions defined in [arg], and with a default empty value
-    [def]. FIXME: [def] is related to parsing and should be put elsewhere. *)
-
-val default_arg0 : string -> ('raw, 'glb, 'top) arg0
-(** A default [arg0] with a given name. Printing functions print a dummy value
-    and glob/subst/interp all fail. *)
-
-val default_uniform_arg0 : string -> ('a, 'a, 'a) arg0
-(** A default uniform [arg0] with a given name. Printing functions print a dummy
-    value and glob/subst/interp are all identity. *)
-
-val arg_gen : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb, 'top) arg0
-(** Create the manipulation functions for any generic argument type. *)
-
-(** {5 Generic manipulation functions}
-
-  Those functions are the counterparts of [arg0] fields, but they apply on any
-  generic argument.
-
-  FIXME: only partially implemented for now. *)
-
-val raw_print : rlevel generic_argument -> std_ppcmds
-val glb_print : glevel generic_argument -> std_ppcmds
-val top_print : tlevel generic_argument -> std_ppcmds
-
-val globalize : glob_sign ->
-  rlevel generic_argument -> glob_sign * glevel generic_argument
-
-val substitute : Mod_subst.substitution ->
-  glevel generic_argument -> glevel generic_argument
-
-val interpret : interp_sign -> Goal.goal Evd.sigma ->
-  glevel generic_argument -> Evd.evar_map * tlevel generic_argument
-
 (** {6 Type reification} *)
 
 type argument_type =
@@ -291,20 +219,6 @@ val wit_pair : ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
 
 (** {5 Magic used by the parser} *)
 
-(** [in_generic] is used in combination with camlp4 [Gramext.action] magic
-
-   [in_generic: !l:type, !a:argument_type -> |a|_l -> 'l generic_argument]
-
-   where |a|_l is the interpretation of a at level l
-
-   [in_generic] is not typable; we replace the second argument by an absurd
-   type (with no introduction rule)
-*)
-type an_arg_of_this_type
-
-val in_generic :
-  argument_type -> an_arg_of_this_type -> 'co generic_argument
-
 val default_empty_value : ('raw, 'glb, 'top) genarg_type -> 'raw option
 
 val register_name0 : ('a, 'b, 'c) genarg_type -> string -> unit
@@ -314,3 +228,23 @@ val register_name0 : ('a, 'b, 'c) genarg_type -> string -> unit
 
 val get_name0 : string -> string
 (** Return the absolute path of a given witness. *)
+
+(** {5 Unsafe loophole} *)
+
+module Unsafe :
+sig
+
+(** Unsafe magic functions. Not for kids. This is provided here as a loophole to
+    escape this module. Do NOT use outside of the dedicated areas. NOT. EVER. *)
+
+val inj : argument_type -> Obj.t -> 'lev generic_argument
+(** Injects an object as generic argument. !!!BEWARE!!! only do this as
+    [inj tpe x] where:
+
+    1. [tpe] is the reification of a [('a, 'b, 'c) genarg_type];
+    2. [x] has type ['a], ['b] or ['c] according to the return level ['lev]. *)
+
+val prj : 'lev generic_argument -> Obj.t
+(** Recover the contents of a generic argument. *)
+
+end

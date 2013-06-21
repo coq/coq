@@ -1,11 +1,10 @@
+Genintern
 Constrexpr_ops
 Notation_ops
 Topconstr
 Ppextend
 Notation
 Dumpglob
-Genarg
-Stdarg
 Syntax_def
 Smartlocate
 Reserve
@@ -17,4 +16,5 @@ Constrextern
 Coqlib
 Discharge
 Declare
+Stdarg
 Constrarg

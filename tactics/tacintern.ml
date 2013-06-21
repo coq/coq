@@ -53,7 +53,7 @@ let skip_metaid = function
 
 (** Generic arguments *)
 
-type glob_sign = Genarg.glob_sign = {
+type glob_sign = Genintern.glob_sign = {
   ltacvars : Id.t list * Id.t list;
      (* ltac variables and the subset of vars introduced by Intro/Let/... *)
   ltacrecvars : (Id.t * ltac_constant) list;
@@ -798,7 +798,7 @@ and intern_genarg ist x =
           in_gen (glbwit (wit_tactic n)) (intern_tactic_or_tacarg ist
 	    (out_gen (rawwit (wit_tactic n)) x))
       | None ->
-          snd (Genarg.globalize ist x)
+          snd (Genintern.generic_intern ist x)
 
 (** Other entry points *)
 

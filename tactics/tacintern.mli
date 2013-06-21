@@ -23,7 +23,7 @@ open Nametab
 (** Globalization of tactic expressions :
     Conversion from [raw_tactic_expr] to [glob_tactic_expr] *)
 
-type glob_sign = Genarg.glob_sign = {
+type glob_sign = Genintern.glob_sign = {
   ltacvars : Id.t list * Id.t list;
   ltacrecvars : (Id.t * ltac_constant) list;
   gsigma : Evd.evar_map;

@@ -87,7 +87,7 @@ let catch_error call_trace tac g =
     raise located_exc
   end
 
-module TacStore = Genarg.TacStore
+module TacStore = Geninterp.TacStore
 
 let f_avoid_ids : Id.t list TacStore.field = TacStore.field ()
 (* ids inherited from the call context (needed to get fresh ids) *)
@@ -95,7 +95,7 @@ let f_debug : debug_info TacStore.field = TacStore.field ()
 let f_trace : ltac_trace TacStore.field = TacStore.field ()
 
 (* Signature for interpretation: val_interp and interpretation functions *)
-type interp_sign = Genarg.interp_sign = {
+type interp_sign = Geninterp.interp_sign = {
   lfun : (Id.t * value) list;
   extra : TacStore.t }
 
@@ -1437,7 +1437,7 @@ and interp_genarg ist gl x =
         in_gen (topwit (wit_tactic n)) 
 	  (TacArg(dloc,valueIn (of_tacvalue f)))
       | None ->
-        let (sigma,v) = interpret ist gl x in
+        let (sigma,v) = Geninterp.generic_interp ist gl x in
 	evdref:=sigma;
 	v
   in
@@ -1966,7 +1966,7 @@ and interp_atomic ist gl tac =
     | List0ArgType _ -> app_list0 f x
     | List1ArgType _ -> app_list1 f x
     | ExtraArgType _ ->
-      let (sigma, v) = Genarg.interpret ist { gl with sigma = !evdref } x in
+      let (sigma, v) = Geninterp.generic_interp ist { gl with sigma = !evdref } x in
       evdref := sigma;
       v
     | QuantHypArgType | RedExprArgType
@@ -2021,6 +2021,36 @@ let hide_interp t ot gl =
   | None -> t gl
   | Some t' -> (tclTHEN t t') gl
 
+(***************************************************************************)
+(** Register standard arguments *)
+
+let def_intern ist x = (ist, x)
+let def_subst _ x = x
+let def_interp ist gl x = (gl.Evd.sigma, x)
+
+let declare_uniform t pr =
+  Genintern.register_intern0 t def_intern;
+  Genintern.register_subst0 t def_subst;
+  Geninterp.register_interp0 t def_interp;
+  Genprint.register_print0 t pr pr pr
+
+let () =
+  let pr_unit _ = str "()" in
+  declare_uniform wit_unit pr_unit
+
+let () =
+  declare_uniform wit_int int
+
+let () =
+  let pr_bool b = if b then str "true" else str "false" in
+  declare_uniform wit_bool pr_bool
+
+let () =
+  let pr_string s = str "\"" ++ str s ++ str "\"" in
+  declare_uniform wit_string pr_string
+
+let () =
+  declare_uniform wit_pre_ident str
 
 (***************************************************************************)
 (* Other entry points *)

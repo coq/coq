@@ -186,21 +186,16 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
             (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
       end
     | Some f -> <:expr< $lid:f$>> in
-  let defs = [
-    <:patt< Genarg.arg0_subst >>, subst;
-    <:patt< Genarg.arg0_glob >>, glob;
-    <:patt< Genarg.arg0_interp >>, interp;
-  ] in
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
   let rawwit = <:expr< Genarg.rawwit $wit$ >> in
   let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
   let default_value = <:expr< $make_possibly_empty_subentries loc s cl$ >> in
   declare_str_items loc
-   [ <:str_item<
-      value ($lid:"wit_"^s$) =
-        let arg = { (Genarg.default_arg0 $se$) with $list:defs$ } in
-      Genarg.make0 $default_value$ $se$ arg >>;
+   [ <:str_item< value ($lid:"wit_"^s$) = Genarg.make0 $default_value$ $se$ >>;
+     <:str_item< Genintern.register_intern0 $wit$ $glob$ >>;
+     <:str_item< Genintern.register_subst0 $wit$ $subst$ >>;
+     <:str_item< Geninterp.register_interp0 $wit$ $interp$ >>;
      <:str_item<
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$ >>;
      <:str_item< do {

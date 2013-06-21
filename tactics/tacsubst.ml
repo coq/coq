@@ -329,6 +329,6 @@ and subst_genarg subst (x:glob_generic_argument) =
           in_gen (glbwit (Extrawit.wit_tactic n))
             (subst_tactic subst (out_gen (glbwit (Extrawit.wit_tactic n)) x))
       | None ->
-          Genarg.substitute subst x
+          Genintern.generic_substitute subst x
 
 let _ = Hook.set Auto.extern_subst_tactic subst_tactic

@@ -9,41 +9,23 @@
 open Pp
 open Genarg
 
-let def_uniform name pr = { (default_uniform_arg0 name) with
-  arg0_rprint = pr;
-  arg0_gprint = pr;
-  arg0_tprint = pr;
-}
-
 let wit_unit : unit uniform_genarg_type =
-  let pr_unit _ = str "()" in
-  let arg = def_uniform "unit" pr_unit in
-  make0 None "unit" arg
+  make0 None "unit"
 
 let wit_bool : bool uniform_genarg_type =
-  let pr_bool b = str (if b then "true" else "false") in
-  let arg = def_uniform "bool" pr_bool in
-  make0 None "bool" arg
-
-let () = register_name0 wit_bool "Stdarg.wit_bool"
+  make0 None "bool"
 
 let wit_int : int uniform_genarg_type =
-  let pr_int = int in
-  let arg = def_uniform "int" pr_int in
-  make0 None "int" arg
-
-let () = register_name0 wit_int "Stdarg.wit_int"
+  make0 None "int"
 
 let wit_string : string uniform_genarg_type =
-  let pr_string s = str "\"" ++ str s ++ str "\"" in
-  let arg = def_uniform "string" pr_string in
-  make0 None "string" arg
-
-let () = register_name0 wit_string "Stdarg.wit_string"
+  make0 None "string"
 
 let wit_pre_ident : string uniform_genarg_type =
-  let pr_pre_ident = str in
-  let arg = def_uniform "preident" pr_pre_ident in
-  make0 None "preident" arg
+  make0 None "preident"
 
+let () = register_name0 wit_unit "Stdarg.wit_unit"
+let () = register_name0 wit_bool "Stdarg.wit_bool"
+let () = register_name0 wit_int "Stdarg.wit_int"
+let () = register_name0 wit_string "Stdarg.wit_string"
 let () = register_name0 wit_pre_ident "Stdarg.wit_pre_ident"

@@ -177,7 +177,7 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
 	  x)
   | ExtraArgType s ->
       try pi1 (String.Map.find s !genarg_pprule) prc prlc prtac x
-      with Not_found -> Genarg.raw_print x
+      with Not_found -> Genprint.generic_raw_print x
 
 
 let rec pr_glb_generic prc prlc prtac prpat x =
@@ -219,7 +219,7 @@ let rec pr_glb_generic prc prlc prtac prpat x =
 	  x)
   | ExtraArgType s ->
       try pi2 (String.Map.find s !genarg_pprule) prc prlc prtac x
-      with Not_found -> Genarg.glb_print x
+      with Not_found -> Genprint.generic_glb_print x
 
 let rec pr_top_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
@@ -256,7 +256,7 @@ let rec pr_top_generic prc prlc prtac prpat x =
 	  x)
   | ExtraArgType s ->
       try pi3 (String.Map.find s !genarg_pprule) prc prlc prtac x
-      with Not_found -> Genarg.top_print x
+      with Not_found -> Genprint.generic_top_print x
 
 let rec tacarg_using_rule_token pr_gen = function
   | Some s :: l, al -> str s :: tacarg_using_rule_token pr_gen (l,al)
