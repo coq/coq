@@ -399,7 +399,7 @@ let interp_clause ist gl { onhyps=ol; concl_occs=occs } =
 
 (* Extract the constr list from lfun *)
 let extract_ltac_constr_values ist env =
-  let fold (vars1, vars2) (id, v) =
+  let fold (id, v) (vars1, vars2) =
     try
       let c = coerce_to_constr env v in
       (Id.Map.add id c vars1, vars2)
@@ -414,7 +414,7 @@ let extract_ltac_constr_values ist env =
       in
       (vars1, Id.Map.add id ido vars2)
   in
-  List.fold_left fold (Id.Map.empty, Id.Map.empty) ist.lfun
+  List.fold_right fold ist.lfun (Id.Map.empty, Id.Map.empty)
 
 (* Extract the identifier list from lfun: join all branches (what to do else?)*)
 let rec intropattern_ids (loc,pat) = match pat with
