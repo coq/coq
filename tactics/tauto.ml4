@@ -20,7 +20,7 @@ open Errors
 open Util
 
 let assoc_var s ist =
-  let v = List.assoc (Names.Id.of_string s) ist.lfun in
+  let v = Id.Map.find (Names.Id.of_string s) ist.lfun in
   match Value.to_constr v with
     | Some c -> c
     | None -> failwith "tauto: anomaly"

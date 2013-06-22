@@ -183,7 +183,7 @@ let exec_tactic env n f args =
   let lid = List.init n (fun i -> Id.of_string("x"^string_of_int i)) in
   let res = ref [||] in
   let get_res ist =
-    let l = List.map (fun id ->  List.assoc id ist.lfun) lid in
+    let l = List.map (fun id ->  Id.Map.find id ist.lfun) lid in
     res := Array.of_list l;
     TacId[] in
   let getter =

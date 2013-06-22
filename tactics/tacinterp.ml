@@ -58,9 +58,9 @@ type value = tlevel generic_argument
 type tacvalue =
   | VRTactic of (goal list sigma) (* For Match results *)
                                                (* Not a true tacvalue *)
-  | VFun of ltac_trace * (Id.t * value) list *
+  | VFun of ltac_trace * value Id.Map.t *
       Id.t option list * glob_tactic_expr
-  | VRec of (Id.t * value) list ref * glob_tactic_expr
+  | VRec of value Id.Map.t ref * glob_tactic_expr
 
 let (wit_tacvalue : (Empty.t, Empty.t, tacvalue) Genarg.genarg_type) =
   Genarg.create_arg None "tacvalue"
@@ -96,7 +96,7 @@ let f_trace : ltac_trace TacStore.field = TacStore.field ()
 
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign = Geninterp.interp_sign = {
-  lfun : (Id.t * value) list;
+  lfun : value Id.Map.t;
   extra : TacStore.t }
 
 let curr_debug ist = match TacStore.get ist.extra f_debug with
@@ -242,16 +242,18 @@ let extern_request ch req gl la =
 let value_of_ident id =
   in_gen (topwit wit_intro_pattern) (Loc.ghost, IntroIdentifier id)
 
+let (+++) lfun1 lfun2 = Id.Map.fold Id.Map.add lfun1 lfun2
+
 let extend_values_with_bindings (ln,lm) lfun =
   let of_cub c = match c with
   | [], c -> Value.of_constr c
   | _ -> in_gen (topwit wit_constr_under_binders) c
   in
-  let lnames = Id.Map.fold (fun id id' accu -> (id,value_of_ident id') :: accu) ln [] in
-  let lmatch = Id.Map.fold (fun id c accu -> (id, of_cub c) :: accu) lm [] in
   (* For compatibility, bound variables are visible only if no other
      binding of the same name exists *)
-  lmatch@lfun@lnames
+  let accu = Id.Map.map value_of_ident ln in
+  let accu = lfun +++ accu in
+  Id.Map.fold (fun id c accu -> Id.Map.add id (of_cub c) accu) lm accu
 
 (***************************************************************************)
 (* Evaluation/interpretation *)
@@ -287,7 +289,7 @@ let error_ltac_variable loc id env v s =
 
 (* Raise Not_found if not in interpretation sign *)
 let try_interp_ltac_var coerce ist env (loc,id) =
-  let v = List.assoc id ist.lfun in
+  let v = Id.Map.find id ist.lfun in
   try coerce v with CannotCoerceTo s -> error_ltac_variable loc id env v s
 
 let interp_ltac_var coerce ist env locid =
@@ -328,7 +330,7 @@ let interp_int_or_var ist = function
 
 let interp_int_or_var_as_list ist = function
   | ArgVar (_,id as locid) ->
-      (try coerce_to_int_or_var_list (List.assoc id ist.lfun)
+      (try coerce_to_int_or_var_list (Id.Map.find id ist.lfun)
        with Not_found | CannotCoerceTo _ -> [ArgArg (interp_int ist locid)])
   | ArgArg n as x -> [x]
 
@@ -347,7 +349,7 @@ let interp_hyp ist gl (loc,id as locid) =
     str "No such hypothesis: " ++ pr_id id ++ str ".")
 
 let interp_hyp_list_as_list ist gl (loc,id as x) =
-  try coerce_to_hyp_list (pf_env gl) (List.assoc id ist.lfun)
+  try coerce_to_hyp_list (pf_env gl) (Id.Map.find id ist.lfun)
   with Not_found | CannotCoerceTo _ -> [interp_hyp ist gl x]
 
 let interp_hyp_list ist gl l =
@@ -399,7 +401,7 @@ let interp_clause ist gl { onhyps=ol; concl_occs=occs } =
 
 (* Extract the constr list from lfun *)
 let extract_ltac_constr_values ist env =
-  let fold (id, v) (vars1, vars2) =
+  let fold id v (vars1, vars2) =
     try
       let c = coerce_to_constr env v in
       (Id.Map.add id c vars1, vars2)
@@ -414,7 +416,11 @@ let extract_ltac_constr_values ist env =
       in
       (vars1, Id.Map.add id ido vars2)
   in
-  List.fold_right fold ist.lfun (Id.Map.empty, Id.Map.empty)
+  Id.Map.fold fold ist.lfun (Id.Map.empty, Id.Map.empty)
+(** ppedrot: I have changed the semantics here. Before this patch, closure was
+    implemented as a list and a variable could be bound several times with
+    different types, resulting in its possible appearance on both sides. This
+    could barely be defined as a feature... *)
 
 (* Extract the identifier list from lfun: join all branches (what to do else?)*)
 let rec intropattern_ids (loc,pat) = match pat with
@@ -425,7 +431,7 @@ let rec intropattern_ids (loc,pat) = match pat with
   | IntroForthcoming _ -> []
 
 let rec extract_ids ids lfun =
-  let fold accu (id, v) =
+  let fold id v accu =
     let v = Value.normalize v in
     if has_type v (topwit wit_intro_pattern) then
       let (_, ipat) = out_gen (topwit wit_intro_pattern) v in
@@ -433,7 +439,7 @@ let rec extract_ids ids lfun =
       else accu @ intropattern_ids (dloc, ipat)
     else accu
   in
-  List.fold_left fold [] lfun
+  Id.Map.fold fold lfun []
 
 let default_fresh_id = Id.of_string "H"
 
@@ -540,9 +546,9 @@ let pf_interp_constr ist gl =
 let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
   let try_expand_ltac_var sigma x =
     try match dest_fun x with
-    | GVar (_,id), _ ->	
-        sigma,
-        List.map inj_fun (coerce_to_constr_list env (List.assoc id ist.lfun))
+    | GVar (_,id), _ ->
+      let v = Id.Map.find id ist.lfun in
+      sigma, List.map inj_fun (coerce_to_constr_list env v)
     | _ ->
         raise Not_found
     with CannotCoerceTo _ | Not_found ->
@@ -628,7 +634,7 @@ let interp_may_eval f ist gl = function
   | ConstrContext ((loc,s),c) ->
       (try
 	let (sigma,ic) = f ist gl c
-	and ctxt = coerce_to_constr_context (List.assoc s ist.lfun) in
+	and ctxt = coerce_to_constr_context (Id.Map.find s ist.lfun) in
 	sigma , subst_meta [special_meta,ic] ctxt
       with
 	| Not_found ->
@@ -689,7 +695,7 @@ let interp_message_token ist gl = function
   | MsgInt n -> int n
   | MsgIdent (loc,id) ->
       let v =
-	try List.assoc id ist.lfun
+	try Id.Map.find id ist.lfun
 	with Not_found -> user_err_loc (loc,"",pr_id id ++ str" not found.") in
       message_of_value gl v
 
@@ -717,7 +723,7 @@ and interp_or_and_intro_pattern ist gl =
 
 and interp_intro_pattern_list_as_list ist gl = function
   | [loc,IntroIdentifier id] as l ->
-      (try coerce_to_intro_pattern_list loc (pf_env gl) (List.assoc id ist.lfun)
+      (try coerce_to_intro_pattern_list loc (pf_env gl) (Id.Map.find id ist.lfun)
        with Not_found | CannotCoerceTo _ ->
 	List.map (interp_intro_pattern ist gl) l)
   | l -> List.map (interp_intro_pattern ist gl) l
@@ -796,7 +802,7 @@ let interp_induction_arg ist gl arg =
         strbrk " neither to a quantified hypothesis nor to a term.")
       in
       try
-        let v = List.assoc id ist.lfun in
+        let v = Id.Map.find id ist.lfun in
         let v = Value.normalize v in
         if has_type v (topwit wit_intro_pattern) then
           let v = out_gen (topwit wit_intro_pattern) v in
@@ -836,12 +842,12 @@ let head_with_value (lvar,lval) =
     | (vr,[]) -> (lacc,vr,[])
     | ([],ve) -> (lacc,[],ve)
   in
-    head_with_value_rec [] (lvar,lval)
+  head_with_value_rec [] (lvar,lval)
 
 (* Gives a context couple if there is a context identifier *)
 let give_context ctxt = function
-  | None -> []
-  | Some id -> [id, in_gen (topwit wit_constr_context) ctxt]
+  | None -> Id.Map.empty
+  | Some id -> Id.Map.singleton id (in_gen (topwit wit_constr_context) ctxt)
 
 (* Reads a pattern by substituting vars of lfun *)
 let use_types = false
@@ -909,7 +915,7 @@ let verify_metas_coherence gl (ln1,lcm) (ln,lm) =
     else raise Not_coherent_metas
   in
   (** ppedrot: Is that even correct? *)
-  let merged = Id.Map.fold Id.Map.add ln ln1 in
+  let merged = ln +++ ln1 in
   (merged, Id.Map.merge merge lcm lm)
 
 let adjust (l, lc) = (l, Id.Map.map (fun c -> [], c) lc)
@@ -920,8 +926,7 @@ type 'a extended_matching_result =
 
 let push_id_couple id name env = match name with
 | Name idpat ->
-  let binding = idpat, Value.of_constr (mkVar id) in
-  binding :: env
+  Id.Map.add idpat (Value.of_constr (mkVar id)) env
 | Anonymous -> env
 
 let match_pat refresh lmatch hyp gl = function
@@ -931,7 +936,7 @@ let match_pat refresh lmatch hyp gl = function
     try
       let lmeta = extended_matches t hyp in
       let lmeta = verify_metas_coherence gl lmatch lmeta in
-      let ans = { e_ctx = []; e_sub = lmeta; } in
+      let ans = { e_ctx = Id.Map.empty; e_sub = lmeta; } in
       IStream.cons ans IStream.lempty
     with PatternMatchingFailure | Not_coherent_metas -> IStream.empty
   end
@@ -971,7 +976,7 @@ let apply_one_mhyp_context gl lmatch (hypname,patv,pat) lhyps =
             let types = lazy (match_pat true s1.e_sub hyp gl pat) in
             let map_types s2 =
               let env = push_id_couple id hypname s1.e_ctx in
-              let context = (env @s2.e_ctx), hd in
+              let context = (env +++ s2.e_ctx), hd in
               { e_ctx = context; e_sub = s2.e_sub; }
             in
             IStream.map map_types (IStream.thunk types)
@@ -1077,7 +1082,7 @@ and force_vrec ist gl v =
 
 and interp_ltac_reference loc' mustbetac ist gl = function
   | ArgVar (loc,id) ->
-      let v = List.assoc id ist.lfun in
+      let v = Id.Map.find id ist.lfun in
       let (sigma,v) = force_vrec ist gl v in
       let v = propagate_trace ist loc id v in
       sigma , if mustbetac then coerce_to_tactic loc id v else v
@@ -1086,7 +1091,7 @@ and interp_ltac_reference loc' mustbetac ist gl = function
       let loc_info = ((if Loc.is_ghost loc' then loc else loc'),LtacNameCall r) in
       let extra = TacStore.set ist.extra f_avoid_ids ids in 
       let extra = TacStore.set extra f_trace (push_trace loc_info ist) in
-      let ist = { lfun = []; extra = extra; } in
+      let ist = { lfun = Id.Map.empty; extra = extra; } in
       val_interp ist gl (lookup_ltacref r)
 
 and interp_tacarg ist gl arg =
@@ -1169,13 +1174,15 @@ and interp_app loc ist gl fv largs =
     | (VFun(trace,olfun,(_::_ as var),body)
       |VFun(trace,olfun,([] as var),
          (TacFun _|TacLetIn _|TacMatchGoal _|TacMatch _| TacArg _ as body))) ->
-	let (newlfun,lvar,lval)=head_with_value (var,largs) in
+	let (extfun,lvar,lval)=head_with_value (var,largs) in
+        let fold accu (id, v) = Id.Map.add id v accu in
+	let newlfun = List.fold_left fold olfun extfun in
 	if List.is_empty lvar then
           (* Check evaluation and report problems with current trace *)
 	  let (sigma,v) =
 	    try
               let ist = {
-                lfun = newlfun@olfun;
+                lfun = newlfun;
                 extra = TacStore.set ist.extra f_trace []; } in
               catch_error trace (val_interp ist gl) body
 	    with reraise ->
@@ -1193,7 +1200,7 @@ and interp_app loc ist gl fv largs =
 	       str"evaluation returns"++fnl()++pr_value (Some (pf_env gl)) v);
           if List.is_empty lval then sigma,v else interp_app loc ist gl v lval
 	else
-          project gl , of_tacvalue (VFun(trace,newlfun@olfun,lvar,body))
+          project gl , of_tacvalue (VFun(trace,newlfun,lvar,body))
     | _ -> fail ()
   else fail ()
 
@@ -1237,23 +1244,25 @@ and eval_with_fail ist is_lazy goal tac =
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist gl llc u =
   let lref = ref ist.lfun in
-  let map ((_, id), b) = (id, of_tacvalue (VRec (lref,TacArg (dloc,b)))) in
-  let lve = List.map_left map llc in
-  lref := lve@ist.lfun;
-  let ist = { ist with lfun = lve@ist.lfun } in
+  let fold accu ((_, id), b) =
+    let v = of_tacvalue (VRec (lref, TacArg (dloc, b))) in
+    Id.Map.add id v accu
+  in
+  let lfun = List.fold_left fold ist.lfun llc in
+  let () = lref := lfun in
+  let ist = { ist with lfun } in
   val_interp ist gl u
 
 (* Interprets the clauses of a LetIn *)
 and interp_letin ist gl llc u =
-  let (sigma,lve) =
-    List.fold_right begin fun ((_,id),body) (sigma,acc) ->
-      let (sigma,v) = interp_tacarg ist { gl with sigma=sigma } body in
-      check_is_value v;
-      sigma, (id,v)::acc
-    end llc (project gl,[])
+  let fold ((_, id), body) (sigma, acc) =
+    let (sigma, v) = interp_tacarg ist { gl with sigma } body in
+    let () = check_is_value v in
+    sigma, Id.Map.add id v acc
   in
-  let ist = { ist with lfun = lve@ist.lfun } in
-  val_interp ist { gl with sigma=sigma } u
+  let (sigma, lfun) = List.fold_right fold llc (project gl, ist.lfun) in
+  let ist = { ist with lfun } in
+  val_interp ist { gl with sigma } u
 
 (* Interprets the Match Context expressions *)
 and interp_match_goal ist goal lz lr lmr =
@@ -1294,7 +1303,7 @@ and interp_match_goal ist goal lz lr lmr =
 		 (try
 		     let lmatch = extended_matches mg concl in
 		     db_matched_concl (curr_debug ist) env concl;
-		     apply_hyps_context ist env lz goal mt [] lmatch mhyps hyps
+		     apply_hyps_context ist env lz goal mt Id.Map.empty lmatch mhyps hyps
 		   with e when is_match_catchable e ->
 		     (match e with
 		       | PatternMatchingFailure -> db_matching_failure (curr_debug ist)
@@ -1336,15 +1345,17 @@ and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
 	  try
             let id_match = pi1 hyp_match in
             let nextlhyps = List.remove_assoc_in_triple id_match lhyps_rest in
-            apply_hyps_context_rec (lfun@lids) s.e_sub nextlhyps tl
+            let lfun = lfun +++ lids in
+            apply_hyps_context_rec lfun s.e_sub nextlhyps tl
           with e when is_match_catchable e ->
 	    match_next_pattern next in
         let init_match_pattern = apply_one_mhyp_context goal lmatch hyp_pat lhyps_rest in
         match_next_pattern init_match_pattern
     | [] ->
-        let lfun = extend_values_with_bindings lmatch (lfun@ist.lfun) in
+        let lfun = lfun +++ ist.lfun in
+        let lfun = extend_values_with_bindings lmatch lfun in
         db_mc_pattern_success (curr_debug ist);
-        eval_with_fail {ist with lfun=lfun} lz goal mt
+        eval_with_fail { ist with lfun } lz goal mt
   in
   apply_hyps_context_rec lctxt lgmatch hyps mhyps
 
@@ -1470,7 +1481,7 @@ and interp_match ist g lz constr lmr =
     | None -> raise PatternMatchingFailure
     | Some ({ m_sub=lmatch; m_ctx=ctxt; }, next) ->
       let lctxt = give_context ctxt id in
-      let lfun = extend_values_with_bindings (adjust lmatch) (lctxt@ist.lfun) in
+      let lfun = extend_values_with_bindings (adjust lmatch) (lctxt +++ ist.lfun) in
       try eval_with_fail {ist with lfun=lfun} lz g mt
       with e when is_match_catchable e -> match_next_pattern next in
     match_next_pattern (match_subterm_gen app c csr) in
@@ -1556,9 +1567,8 @@ and interp_ltac_constr ist gl e =
                 (str "VFun with body " ++ fnl() ++
                     Pptactic.pr_glob_tactic (pf_env gl) b ++ fnl() ++
 		    str "instantiated arguments " ++ fnl() ++
-                    List.fold_right
-                    (fun p s ->
-                      let (i,v) = p in str (Id.to_string i) ++ str ", " ++ s)
+                    Id.Map.fold
+                    (fun i v s -> str (Id.to_string i) ++ str ", " ++ s)
                     il (str "") ++
                     str "uninstantiated arguments " ++ fnl() ++
                     List.fold_right
@@ -1975,7 +1985,8 @@ and interp_atomic ist gl tac =
 	-> error "This argument type is not supported in tactic notations."
 
     in
-    let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
+    let addvar (x, v) accu = Id.Map.add x (f v) accu in
+    let lfun = List.fold_right addvar l ist.lfun in
     let trace = push_trace (loc,LtacNotationCall s) ist in
     let gl = { gl with sigma = !evdref } in
     let ist = {
@@ -1987,7 +1998,7 @@ and interp_atomic ist gl tac =
 
 let default_ist () =
   let extra = TacStore.set TacStore.empty f_debug (get_debug ()) in
-  { lfun = []; extra = extra }
+  { lfun = Id.Map.empty; extra = extra }
 
 let eval_tactic t gls =
   db_initialize ();
@@ -1999,12 +2010,13 @@ let interp_tac_gen lfun avoid_ids debug t gl =
   let extra = TacStore.set TacStore.empty f_debug debug in
   let extra = TacStore.set extra f_avoid_ids avoid_ids in
   let ist = { lfun = lfun; extra = extra } in
+  let ltacvars = List.map fst (Id.Map.bindings lfun), [] in
   interp_tactic ist
     (intern_pure_tactic {
-      ltacvars = (List.map fst lfun, []); ltacrecvars = [];
+      ltacvars; ltacrecvars = [];
       gsigma = project gl; genv = pf_env gl } t) gl
 
-let interp t = interp_tac_gen [] [] (get_debug()) t
+let interp t = interp_tac_gen Id.Map.empty [] (get_debug()) t
 
 let eval_ltac_constr gl t =
   interp_ltac_constr (default_ist ()) gl
@@ -2075,6 +2087,6 @@ let tacticIn t =
 
 let _ = Hook.set Auto.extern_interp
   (fun l ->
-    let l = Id.Map.map (fun c -> Value.of_constr c) l in
-    let ist = { (default_ist ()) with lfun = Id.Map.bindings l; } in
+    let lfun = Id.Map.map (fun c -> Value.of_constr c) l in
+    let ist = { (default_ist ()) with lfun; } in
     interp_tactic ist)

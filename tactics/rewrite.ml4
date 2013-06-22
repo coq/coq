@@ -1092,7 +1092,7 @@ let get_hypinfo_ids {c = opt} =
   | None -> []
   | Some (is, gc) ->
     let avoid = Option.default [] (TacStore.get is.extra f_avoid_ids) in
-    List.map fst is.lfun @ avoid
+    Id.Map.fold (fun id _ accu -> id :: accu) is.lfun avoid
 
 let rewrite_with flags c left2right loccs : strategy =
   fun env avoid t ty cstr evars ->

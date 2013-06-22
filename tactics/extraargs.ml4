@@ -63,7 +63,7 @@ let interp_occs ist gl l =
   match l with
     | ArgArg x -> x
     | ArgVar (_,id as locid) ->
-	(try int_list_of_VList (List.assoc id ist.lfun)
+	(try int_list_of_VList (Id.Map.find id ist.lfun)
 	  with Not_found | CannotCoerceTo _ -> [interp_int ist locid])
 let interp_occs ist gl l =
   Tacmach.project gl , interp_occs ist gl l

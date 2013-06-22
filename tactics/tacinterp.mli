@@ -38,7 +38,7 @@ module TacStore : Store.S with
 
 (** Signature for interpretation: val\_interp and interpretation functions *)
 type interp_sign = Geninterp.interp_sign = {
-  lfun : (Id.t * value) list;
+  lfun : value Id.Map.t;
   extra : TacStore.t }
 
 val f_avoid_ids : Id.t list TacStore.field
@@ -101,7 +101,7 @@ val eval_tactic : glob_tactic_expr -> tactic
 
 (** Globalization + interpretation *)
 
-val interp_tac_gen : (Id.t * value) list -> Id.t list ->
+val interp_tac_gen : value Id.Map.t -> Id.t list ->
                  debug_info -> raw_tactic_expr -> tactic
 
 val interp : raw_tactic_expr -> tactic

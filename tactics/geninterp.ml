@@ -14,7 +14,7 @@ open Genarg
 module TacStore = Store.Make(struct end)
 
 type interp_sign = {
-  lfun : (Id.t * tlevel generic_argument) list;
+  lfun : tlevel generic_argument Id.Map.t;
   extra : TacStore.t }
 
 type ('glb, 'top) interp_fun = interp_sign ->
