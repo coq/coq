@@ -399,7 +399,7 @@ let interp_clause ist gl { onhyps=ol; concl_occs=occs } =
 
 (* Extract the constr list from lfun *)
 let extract_ltac_constr_values ist env =
-  let fold (id, v) (vars1, vars2) =
+  let fold (vars1, vars2) (id, v) =
     try
       let c = coerce_to_constr env v in
       (Id.Map.add id c vars1, vars2)
@@ -412,9 +412,9 @@ let extract_ltac_constr_values ist env =
           | _ -> None
         else None
       in
-      (vars1, (id, ido) :: vars2)
+      (vars1, Id.Map.add id ido vars2)
   in
-  List.fold_right fold ist.lfun (Id.Map.empty, [])
+  List.fold_left fold (Id.Map.empty, Id.Map.empty) ist.lfun
 
 (* Extract the identifier list from lfun: join all branches (what to do else?)*)
 let rec intropattern_ids (loc,pat) = match pat with
@@ -459,21 +459,20 @@ let pf_interp_fresh_id ist gl = interp_fresh_id ist (pf_env gl)
 
 let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let (ltacvars,unbndltacvars as vars) = extract_ltac_constr_values ist env in
-  let ltacbnd = Id.Map.bindings ltacvars in
   let c = match ce with
   | None -> c
     (* If at toplevel (ce<>None), the error can be due to an incorrect
        context at globalization time: we retype with the now known
        intros/lettac/inversion hypothesis names *)
   | Some c ->
-      let ltacdata = (List.map fst ltacbnd, unbndltacvars) in
+      let fold id _ accu = id :: accu in
+      let ltacvars = Id.Map.fold fold ltacvars [] in
+      let ltacdata = (ltacvars, unbndltacvars) in
       intern_gen kind ~allow_patvar ~ltacvars:ltacdata sigma env c
   in
   let trace =
     push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist in
   let (evd,c) =
-    (** FIXME: we should propagate the use of Id.Map.t everywhere *)
-    let vars = (ltacbnd, unbndltacvars) in
     catch_error trace (understand_ltac flags sigma env vars kind) c
   in
   db_constr (curr_debug ist) env c;

@@ -302,8 +302,9 @@ let intern_binding_name ist x =
 let intern_constr_gen allow_patvar isarity {ltacvars=lfun; gsigma=sigma; genv=env} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
+  let ltacvars = (fst lfun, Id.Map.empty) in
   let c' =
-    warn (Constrintern.intern_gen scope ~allow_patvar ~ltacvars:(fst lfun,[]) sigma env) c
+    warn (Constrintern.intern_gen scope ~allow_patvar ~ltacvars sigma env) c
   in
   (c',if !strict_check then None else Some c)
 
@@ -440,11 +441,11 @@ let intern_hyp_location ist ((occs,id),hl) =
 (* Reads a pattern *)
 let intern_pattern ist ?(as_type=false) lfun = function
   | Subterm (b,ido,pc) ->
-      let ltacvars = (lfun,[]) in
+      let ltacvars = (lfun, Id.Map.empty) in
       let (metas,pc) = intern_constr_pattern ist ltacvars pc in
       ido, metas, Subterm (b,ido,pc)
   | Term pc ->
-      let ltacvars = (lfun,[]) in
+      let ltacvars = (lfun, Id.Map.empty) in
       let (metas,pc) = intern_constr_pattern ist ltacvars pc in
       None, metas, Term pc
 

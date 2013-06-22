@@ -28,8 +28,8 @@ val search_guard :
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 
-type var_map = (Id.t * Pattern.constr_under_binders) list
-type unbound_ltac_var_map = (Id.t * Id.t option) list
+type var_map = Pattern.constr_under_binders Id.Map.t
+type unbound_ltac_var_map = Id.t option Id.Map.t
 type ltac_var_map = var_map * unbound_ltac_var_map
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr

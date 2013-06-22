@@ -53,8 +53,7 @@ type ltac_call_kind =
   | LtacNameCall of ltac_constant
   | LtacAtomCall of glob_atomic_tactic_expr
   | LtacVarCall of Id.t * glob_tactic_expr
-  | LtacConstrInterp of glob_constr *
-      (extended_patvar_map * (Id.t * Id.t option) list)
+  | LtacConstrInterp of glob_constr * Pretyping.ltac_var_map
 
 type ltac_trace = (int * Loc.t * ltac_call_kind) list
 

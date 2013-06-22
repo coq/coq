@@ -45,8 +45,8 @@ open Pattern
 open Misctypes
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
-type var_map = (Id.t * constr_under_binders) list
-type unbound_ltac_var_map = (Id.t * Id.t option) list
+type var_map = constr_under_binders Id.Map.t
+type unbound_ltac_var_map = Id.t option Id.Map.t
 type ltac_var_map = var_map * unbound_ltac_var_map
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr
@@ -243,7 +243,7 @@ let pretype_id loc env sigma (lvar,unbndltacvars) id =
   with Not_found ->
     (* Check if [id] is an ltac variable *)
     try
-      let (ids,c) = List.assoc id lvar in
+      let (ids,c) = Id.Map.find id lvar in
       let subst = List.map (invert_ltac_bound_name env id) ids in
       let c = substl subst c in
 	{ uj_val = c; uj_type = protected_get_type_of env sigma c }
@@ -255,7 +255,7 @@ let pretype_id loc env sigma (lvar,unbndltacvars) id =
       with Not_found ->
 	(* [id] not found, build nice error message if [id] yet known from ltac *)
 	try
-	  match List.assoc id unbndltacvars with
+	  match Id.Map.find id unbndltacvars with
 	  | None -> user_err_loc (loc,"",
 				  str "Variable " ++ pr_id id ++ str " should be bound to a term.")
 	  | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
@@ -783,6 +783,8 @@ let no_classes_no_fail_inference_flags = {
 let all_and_fail_flags = default_inference_flags true
 let all_no_fail_flags = default_inference_flags false
 
+let empty_lvar : ltac_var_map = (Id.Map.empty, Id.Map.empty)
+
 let on_judgment f j =
   let c = mkCast(j.uj_val,DEFAULTcast, j.uj_type) in
   let (c,_,t) = destCast (f c) in
@@ -790,12 +792,12 @@ let on_judgment f j =
 
 let understand_judgment sigma env c =
   let evdref = ref sigma in
-  let j = pretype empty_tycon env evdref ([],[]) c in
+  let j = pretype empty_tycon env evdref empty_lvar c in
   on_judgment (fun c ->
     snd (process_inference_flags all_and_fail_flags env sigma (!evdref,c))) j
 
 let understand_judgment_tcc evdref env c =
-  let j = pretype empty_tycon env evdref ([],[]) c in
+  let j = pretype empty_tycon env evdref empty_lvar c in
   on_judgment (fun c ->
     let (evd,c) = process_inference_flags all_no_fail_flags env Evd.empty (!evdref,c) in
     evdref := evd; c) j
@@ -806,13 +808,13 @@ let understand
     ?(flags=all_and_fail_flags)
     ?(expected_type=WithoutTypeConstraint)
     sigma env c =
-  snd (ise_pretype_gen flags sigma env ([],[]) expected_type c)
+  snd (ise_pretype_gen flags sigma env empty_lvar expected_type c)
 
 let understand_tcc ?(flags=all_no_fail_flags) sigma env ?(expected_type=WithoutTypeConstraint) c =
-  ise_pretype_gen flags sigma env ([],[]) expected_type c
+  ise_pretype_gen flags sigma env empty_lvar expected_type c
 
 let understand_tcc_evars ?(flags=all_no_fail_flags) evdref env ?(expected_type=WithoutTypeConstraint) c =
-  let sigma, c = ise_pretype_gen flags !evdref env ([],[]) expected_type c in
+  let sigma, c = ise_pretype_gen flags !evdref env empty_lvar expected_type c in
   evdref := sigma;
   c
 

@@ -635,7 +635,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
   else
   (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
   try
-    match List.assoc id unbndltacvars with
+    match Id.Map.find id unbndltacvars with
       | None -> user_err_loc (loc,"intern_var",
 	  str "variable " ++ pr_id id ++ str " should be bound to a term.")
       | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
@@ -1662,8 +1662,12 @@ let scope_of_type_kind = function
   | OfType typ -> compute_type_scope typ
   | WithoutTypeConstraint -> None
 
+type ltac_sign = Id.t list * unbound_ltac_var_map
+
+let empty_ltac_sign = ([], Id.Map.empty)
+
 let intern_gen kind sigma env
-               ?(impls=empty_internalization_env) ?(allow_patvar=false) ?(ltacvars=([],[]))
+               ?(impls=empty_internalization_env) ?(allow_patvar=false) ?(ltacvars=empty_ltac_sign)
                c =
   let tmp_scope = scope_of_type_kind kind in
   internalize sigma env {ids = extract_ids env; unb = false;
@@ -1742,9 +1746,7 @@ let interp_type_evars evdref env ?(impls=empty_internalization_env) c =
 
 (* Miscellaneous *)
 
-type ltac_sign = Id.t list * unbound_ltac_var_map
-
-let intern_constr_pattern sigma env ?(as_type=false) ?(ltacvars=([],[])) c =
+let intern_constr_pattern sigma env ?(as_type=false) ?(ltacvars=empty_ltac_sign) c =
   let c = intern_gen (if as_type then IsType else WithoutTypeConstraint)
             ~allow_patvar:true ~ltacvars sigma env c in
   pattern_of_glob_constr c
@@ -1755,7 +1757,7 @@ let interp_notation_constr ?(impls=empty_internalization_env) vars recvars a =
   let vl = List.map (fun (id,typ) -> (id,(ref None,typ))) vars in
   let c = internalize Evd.empty (Global.env()) {ids = extract_ids env; unb = false;
 						tmp_scope = None; scopes = []; impls = impls}
-    false (([],[]),vl) a in
+    false (empty_ltac_sign, vl) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a = notation_constr_of_glob_constr vars recvars c in
   (* Splits variables into those that are binding, bound, or both *)
@@ -1784,7 +1786,7 @@ let my_intern_constr sigma env lvar acc c =
 
 let intern_context global_level sigma env impl_env binders =
   try
-  let lvar = (([],[]), []) in
+  let lvar = (empty_ltac_sign, []) in
   let lenv, bl = List.fold_left
 	    (intern_local_binder_aux ~global_level (my_intern_constr sigma env lvar) lvar)
 	    ({ids = extract_ids env; unb = false;
