@@ -45,7 +45,9 @@ val f_avoid_ids : Id.t list TacStore.field
 val f_debug : debug_info TacStore.field
 
 val extract_ltac_constr_values : interp_sign -> Environ.env ->
-  Pretyping.ltac_var_map
+  Pattern.constr_under_binders Id.Map.t
+(** Given an interpretation signature, extract all values which are coercible to
+    a [constr]. *)
 
 (** Tactic extensions *)
 val add_tactic :

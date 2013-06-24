@@ -401,14 +401,13 @@ let interp_clause ist gl { onhyps=ol; concl_occs=occs } =
 
 (* Extract the constr list from lfun *)
 let extract_ltac_constr_values ist env =
-  let fold id v (vars1, vars2) =
+  let fold id v accu =
     try
       let c = coerce_to_constr env v in
-      (Id.Map.add id c vars1, vars2)
-    with CannotCoerceTo _ ->
-      (vars1, Id.Map.add id v vars2)
+      Id.Map.add id c accu
+    with CannotCoerceTo _ -> accu
   in
-  Id.Map.fold fold ist.lfun (Id.Map.empty, Id.Map.empty)
+  Id.Map.fold fold ist.lfun Id.Map.empty
 (** ppedrot: I have changed the semantics here. Before this patch, closure was
     implemented as a list and a variable could be bound several times with
     different types, resulting in its possible appearance on both sides. This
@@ -456,7 +455,8 @@ let interp_fresh_id ist env l =
 let pf_interp_fresh_id ist gl = interp_fresh_id ist (pf_env gl)
 
 let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
-  let (ltacvars,unbndltacvars as vars) = extract_ltac_constr_values ist env in
+  let constrvars = extract_ltac_constr_values ist env in
+  let vars = (constrvars, ist.lfun) in
   let c = match ce with
   | None -> c
     (* If at toplevel (ce<>None), the error can be due to an incorrect
@@ -464,8 +464,8 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
        intros/lettac/inversion hypothesis names *)
   | Some c ->
       let fold id _ accu = id :: accu in
-      let ltacvars = Id.Map.fold fold ltacvars [] in
-      let ltacdata = (ltacvars, unbndltacvars) in
+      let ltacvars = Id.Map.fold fold constrvars [] in
+      let ltacdata = (ltacvars, ist.lfun) in
       intern_gen kind ~allow_patvar ~ltacvars:ltacdata sigma env c
   in
   let trace =
@@ -1315,7 +1315,7 @@ and interp_match_goal ist goal lz lr lmr =
 		       else mt()) ++ str"."))
     end in
     apply_match_goal ist env goal 0 lmr
-      (read_match_rule (fst (extract_ltac_constr_values ist env))
+      (read_match_rule (extract_ltac_constr_values ist env)
 	ist env (project goal) lmr)
 
 (* Tries to match the hypotheses in a Match Context *)
@@ -1519,7 +1519,7 @@ and interp_match ist g lz constr lmr =
           (fun () -> str "evaluation of the matched expression");
         raise reraise
   in
-  let ilr = read_match_rule (fst (extract_ltac_constr_values ist (pf_env g))) ist (pf_env g) sigma lmr in
+  let ilr = read_match_rule (extract_ltac_constr_values ist (pf_env g)) ist (pf_env g) sigma lmr in
   let res =
      try apply_match ist sigma csr ilr
      with reraise ->

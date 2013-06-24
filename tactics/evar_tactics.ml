@@ -43,8 +43,8 @@ let instantiate n (ist,rawc) ido gl =
     let evk,_ = List.nth evl (n-1) in
     let evi = Evd.find sigma evk in
     let filtered = Evd.evar_filtered_env evi in
-    let ltac_vars = Tacinterp.extract_ltac_constr_values ist filtered in
-    let sigma' = w_refine (evk,evi) (ltac_vars,rawc) sigma in
+    let constrvars = Tacinterp.extract_ltac_constr_values ist filtered in
+    let sigma' = w_refine (evk,evi) ((constrvars, ist.Geninterp.lfun),rawc) sigma in
       tclTHEN
         (tclEVARS sigma')
         tclNORMEVAR
