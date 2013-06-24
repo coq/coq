@@ -632,14 +632,11 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
   else if Id.equal id ldots_var
   then
     if ntnvars != [] then GVar (loc,id), [], [], [] else error_ldots_var loc
+  else if Id.Map.mem id unbndltacvars then
+    (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
+    user_err_loc (loc,"intern_var",
+      str "variable " ++ pr_id id ++ str " should be bound to a term.")
   else
-  (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
-  try
-    match Id.Map.find id unbndltacvars with
-      | None -> user_err_loc (loc,"intern_var",
-	  str "variable " ++ pr_id id ++ str " should be bound to a term.")
-      | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
-  with Not_found ->
     (* Is [id] a goal or section variable *)
     let _ = Context.lookup_named id namedctx in
       try

@@ -46,7 +46,7 @@ open Misctypes
 
 type typing_constraint = OfType of types | IsType | WithoutTypeConstraint
 type var_map = constr_under_binders Id.Map.t
-type unbound_ltac_var_map = Id.t option Id.Map.t
+type unbound_ltac_var_map = Genarg.tlevel Genarg.generic_argument Id.Map.t
 type ltac_var_map = var_map * unbound_ltac_var_map
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
 type pure_open_constr = evar_map * constr
@@ -254,12 +254,10 @@ let pretype_id loc env sigma (lvar,unbndltacvars) id =
 	  { uj_val  = mkVar id; uj_type = typ }
       with Not_found ->
 	(* [id] not found, build nice error message if [id] yet known from ltac *)
-	try
-	  match Id.Map.find id unbndltacvars with
-	  | None -> user_err_loc (loc,"",
-				  str "Variable " ++ pr_id id ++ str " should be bound to a term.")
-	  | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
-	with Not_found ->
+	if Id.Map.mem id unbndltacvars then
+	  user_err_loc (loc,"",
+            str "Variable " ++ pr_id id ++ str " should be bound to a term.")
+        else
 	  (* [id] not found, standard error message *)
 	  error_var_not_found_loc loc id
 

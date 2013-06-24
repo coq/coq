@@ -1076,18 +1076,13 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
 	   quote (Pptactic.pr_glob_tactic (Global.env())
 		    (Tacexpr.TacAtom (Loc.ghost,te)))
        | Proof_type.LtacConstrInterp (c,(vars,unboundvars)) ->
-          let fold id v accu = match v with
-          | None -> accu
-          | Some id' -> (id, ([], mkVar id')) :: accu
-          in
-          let unboundvars = Id.Map.fold fold unboundvars [] in
 	   quote (pr_glob_constr_env (Global.env()) c) ++
-	     (if not (List.is_empty unboundvars) || not (Id.Map.is_empty vars) then
+	     (if not (Id.Map.is_empty vars) then
 		strbrk " (with " ++
 		  prlist_with_sep pr_comma
 		  (fun (id,c) ->
 		     pr_id id ++ str ":=" ++ Printer.pr_lconstr_under_binders c)
-		  (List.rev (Id.Map.bindings vars) @ unboundvars) ++ str ")"
+		  (List.rev (Id.Map.bindings vars)) ++ str ")"
 	      else mt())) ++
       (if Int.equal n 2 then str " (repeated twice)"
        else if n>2 then str " (repeated "++int n++str" times)"

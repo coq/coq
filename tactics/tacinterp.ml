@@ -406,15 +406,7 @@ let extract_ltac_constr_values ist env =
       let c = coerce_to_constr env v in
       (Id.Map.add id c vars1, vars2)
     with CannotCoerceTo _ ->
-      let ido =
-        let v = Value.normalize v in
-        if has_type v (topwit wit_intro_pattern) then
-          match out_gen (topwit wit_intro_pattern) v with
-          | _, IntroIdentifier id0 -> Some id0
-          | _ -> None
-        else None
-      in
-      (vars1, Id.Map.add id ido vars2)
+      (vars1, Id.Map.add id v vars2)
   in
   Id.Map.fold fold ist.lfun (Id.Map.empty, Id.Map.empty)
 (** ppedrot: I have changed the semantics here. Before this patch, closure was
