@@ -465,7 +465,8 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   | Some c ->
       let fold id _ accu = id :: accu in
       let ltacvars = Id.Map.fold fold constrvars [] in
-      let ltacdata = (ltacvars, ist.lfun) in
+      let bndvars = Id.Map.fold (fun x _ accu -> Id.Set.add x accu) ist.lfun Id.Set.empty in
+      let ltacdata = (ltacvars, bndvars) in
       intern_gen kind ~allow_patvar ~ltacvars:ltacdata sigma env c
   in
   let trace =

@@ -632,7 +632,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
   else if Id.equal id ldots_var
   then
     if ntnvars != [] then GVar (loc,id), [], [], [] else error_ldots_var loc
-  else if Id.Map.mem id unbndltacvars then
+  else if Id.Set.mem id unbndltacvars then
     (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
     user_err_loc (loc,"intern_var",
       str "variable " ++ pr_id id ++ str " should be bound to a term.")
@@ -1659,9 +1659,9 @@ let scope_of_type_kind = function
   | OfType typ -> compute_type_scope typ
   | WithoutTypeConstraint -> None
 
-type ltac_sign = Id.t list * unbound_ltac_var_map
+type ltac_sign = Id.t list * Id.Set.t
 
-let empty_ltac_sign = ([], Id.Map.empty)
+let empty_ltac_sign = ([], Id.Set.empty)
 
 let intern_gen kind sigma env
                ?(impls=empty_internalization_env) ?(allow_patvar=false) ?(ltacvars=empty_ltac_sign)
