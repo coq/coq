@@ -44,8 +44,7 @@ let intern_constr_or_thesis globs = function
   | This c -> This (intern_constr globs c)
 
 let add_var id globs=
-  let l1,l2=globs.ltacvars in
-    {globs with ltacvars= (id::l1),(id::l2)}
+    {globs with ltacvars = Id.Set.add id globs.ltacvars}
 
 let add_name nam globs=
  match nam with

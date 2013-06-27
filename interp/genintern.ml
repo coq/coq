@@ -13,7 +13,7 @@ open Mod_subst
 open Genarg
 
 type glob_sign = {
-  ltacvars : Id.t list * Id.t list;
+  ltacvars : Id.Set.t;
   ltacrecvars : (Id.t * Nametab.ltac_constant) list;
   gsigma : Evd.evar_map;
   genv : Environ.env }

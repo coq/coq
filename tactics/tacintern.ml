@@ -54,7 +54,7 @@ let skip_metaid = function
 (** Generic arguments *)
 
 type glob_sign = Genintern.glob_sign = {
-  ltacvars : Id.t list * Id.t list;
+  ltacvars : Id.Set.t;
      (* ltac variables and the subset of vars introduced by Intro/Let/... *)
   ltacrecvars : (Id.t * ltac_constant) list;
      (* ltac recursive names *)
@@ -62,7 +62,7 @@ type glob_sign = Genintern.glob_sign = {
   genv : Environ.env }
 
 let fully_empty_glob_sign =
-  { ltacvars = ([],[]); ltacrecvars = [];
+  { ltacvars = Id.Set.empty; ltacrecvars = [];
     gsigma = Evd.empty; genv = Environ.empty_env }
 
 let make_empty_glob_sign () =
@@ -124,28 +124,28 @@ let lookup_ltacref r = KNmap.find r !mactab
 (* We have identifier <| global_reference <| constr *)
 
 let find_ident id ist =
-  List.mem id (fst ist.ltacvars) or
+  Id.Set.mem id ist.ltacvars ||
   List.mem id (ids_of_named_context (Environ.named_context ist.genv))
 
 let find_recvar qid ist = List.assoc qid ist.ltacrecvars
 
 (* a "var" is a ltac var or a var introduced by an intro tactic *)
-let find_var id ist = List.mem id (fst ist.ltacvars)
+let find_var id ist = Id.Set.mem id ist.ltacvars
 
 (* a "ctxvar" is a var introduced by an intro tactic (Intro/LetTac/...) *)
-let find_ctxvar id ist = List.mem id (snd ist.ltacvars)
+let find_ctxvar id ist = Id.Set.mem id ist.ltacvars
 
 (* a "ltacvar" is an ltac var (Let-In/Fun/...) *)
-let find_ltacvar id ist = find_var id ist & not (find_ctxvar id ist)
+let find_ltacvar id ist = Id.Set.mem id ist.ltacvars
 
 let find_hyp id ist =
   List.mem id (ids_of_named_context (Environ.named_context ist.genv))
 
 (* Globalize a name introduced by Intro/LetTac/... ; it is allowed to *)
 (* be fresh in which case it is binding later on *)
-let intern_ident l ist id =
+let intern_ident s ist id =
   (* We use identifier both for variables and new names; thus nothing to do *)
-  if not (find_ident id ist) then l:=(id::fst !l,id::snd !l);
+  if not (find_ident id ist) then s := Id.Set.add id !s;
   id
 
 let intern_name l ist = function
@@ -304,7 +304,7 @@ let intern_binding_name ist x =
 let intern_constr_gen allow_patvar isarity {ltacvars=lfun; gsigma=sigma; genv=env} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
-  let ltacvars = (fst lfun, Id.Set.empty) in
+  let ltacvars = (Id.Set.elements lfun, Id.Set.empty) in
   let c' =
     warn (Constrintern.intern_gen scope ~allow_patvar ~ltacvars sigma env) c
   in
@@ -377,6 +377,7 @@ let intern_flag ist red =
 let intern_constr_with_occurrences ist (l,c) = (l,intern_constr ist c)
 
 let intern_constr_pattern ist ~as_type ~ltacvars pc =
+  let ltacvars = Id.Set.elements ltacvars, Id.Set.empty in
   let metas,pat = Constrintern.intern_constr_pattern
     ist.gsigma ist.genv ~as_type ~ltacvars pc
   in
@@ -442,13 +443,11 @@ let intern_hyp_location ist ((occs,id),hl) =
    intern_hyp_or_metaid ist id), hl)
 
 (* Reads a pattern *)
-let intern_pattern ist ?(as_type=false) lfun = function
+let intern_pattern ist ?(as_type=false) ltacvars = function
   | Subterm (b,ido,pc) ->
-      let ltacvars = (lfun, Id.Set.empty) in
       let (metas,pc) = intern_constr_pattern ist ~as_type ~ltacvars pc in
       ido, metas, Subterm (b,ido,pc)
   | Term pc ->
-      let ltacvars = (lfun, Id.Set.empty) in
       let (metas,pc) = intern_constr_pattern ist ~as_type ~ltacvars pc in
       None, metas, Term pc
 
@@ -459,31 +458,37 @@ let intern_constr_may_eval ist = function
   | ConstrTypeOf c -> ConstrTypeOf (intern_constr ist c)
   | ConstrTerm c -> ConstrTerm (intern_constr ist c)
 
+let name_cons accu = function
+| Anonymous -> accu
+| Name id -> Id.Set.add id accu
+
+let opt_cons accu = function
+| None -> accu
+| Some id -> Id.Set.add id accu
 
 (* Reads the hypotheses of a "match goal" rule *)
 let rec intern_match_goal_hyps ist lfun = function
   | (Hyp ((_,na) as locna,mp))::tl ->
       let ido, metas1, pat = intern_pattern ist ~as_type:true lfun mp in
       let lfun, metas2, hyps = intern_match_goal_hyps ist lfun tl in
-      let lfun' = name_cons na (Option.List.cons ido lfun) in
+      let lfun' = name_cons (opt_cons lfun ido) na in
       lfun', metas1@metas2, Hyp (locna,pat)::hyps
   | (Def ((_,na) as locna,mv,mp))::tl ->
       let ido, metas1, patv = intern_pattern ist ~as_type:false lfun mv in
       let ido', metas2, patt = intern_pattern ist ~as_type:true lfun mp in
       let lfun, metas3, hyps = intern_match_goal_hyps ist lfun tl in
-      let lfun' = name_cons na (Option.List.cons ido' (Option.List.cons ido lfun)) in
+      let lfun' = name_cons (opt_cons (opt_cons lfun ido) ido') na in
       lfun', metas1@metas2@metas3, Def (locna,patv,patt)::hyps
   | [] -> lfun, [], []
 
 (* Utilities *)
 let extract_let_names lrc =
-  List.fold_right
-    (fun ((loc,name),_) l ->
-      if List.mem name l then
-	user_err_loc
-	  (loc, "glob_tactic", str "This variable is bound several times.");
-      name::l)
-    lrc []
+  let fold accu ((loc, name), _) =
+    if Id.Set.mem name accu then user_err_loc
+      (loc, "glob_tactic", str "This variable is bound several times.")
+    else Id.Set.add name accu
+  in
+  List.fold_left fold Id.Set.empty lrc
 
 let clause_app f = function
     { onhyps=None; concl_occs=nl } ->
@@ -641,8 +646,8 @@ and intern_tactic_seq onlytac ist = function
       !lf, TacAtom (adjust_loc loc, t)
   | TacFun tacfun -> ist.ltacvars, TacFun (intern_tactic_fun ist tacfun)
   | TacLetIn (isrec,l,u) ->
-      let (l1,l2) = ist.ltacvars in
-      let ist' = { ist with ltacvars = (extract_let_names l @ l1, l2) } in
+      let ltacvars = Id.Set.union (extract_let_names l) ist.ltacvars in
+      let ist' = { ist with ltacvars } in
       let l = List.map (fun (n,b) ->
 	  (n,intern_tacarg !strict_check false (if isrec then ist' else ist) b)) l in
       ist.ltacvars, TacLetIn (isrec,l,intern_tactic onlytac ist' u)
@@ -702,9 +707,8 @@ and intern_tactic_or_tacarg ist = intern_tactic false ist
 and intern_pure_tactic ist = intern_tactic true ist
 
 and intern_tactic_fun ist (var,body) =
-  let (l1,l2) = ist.ltacvars in
-  let lfun' = List.rev_append (Option.List.flatten var) l1 in
-  (var,intern_tactic_or_tacarg { ist with ltacvars = (lfun',l2) } body)
+  let lfun = List.fold_left opt_cons ist.ltacvars var in
+  (var,intern_tactic_or_tacarg { ist with ltacvars = lfun } body)
 
 and intern_tacarg strict onlytac ist = function
   | Reference r -> intern_non_tactic_reference strict ist r
@@ -740,11 +744,13 @@ and intern_match_rule onlytac ist = function
   | (All tc)::tl ->
       All (intern_tactic onlytac ist tc) :: (intern_match_rule onlytac ist tl)
   | (Pat (rl,mp,tc))::tl ->
-      let {ltacvars=(lfun,l2); gsigma=sigma; genv=env} = ist in
+      let {ltacvars=lfun; gsigma=sigma; genv=env} = ist in
       let lfun',metas1,hyps = intern_match_goal_hyps ist lfun rl in
       let ido,metas2,pat = intern_pattern ist lfun mp in
-      let metas = List.uniquize (metas1@metas2) in
-      let ist' = { ist with ltacvars = (metas@(Option.List.cons ido lfun'),l2) } in
+      let fold accu x = Id.Set.add x accu in
+      let ltacvars = List.fold_left fold (opt_cons lfun' ido) metas1 in
+      let ltacvars = List.fold_left fold ltacvars metas2 in
+      let ist' = { ist with ltacvars } in
       Pat (hyps,pat,intern_tactic onlytac ist' tc) :: (intern_match_rule onlytac ist tl)
   | [] -> []
 
@@ -754,7 +760,7 @@ and intern_genarg ist x =
       in_gen (glbwit wit_int_or_var)
         (intern_or_var ist (out_gen (rawwit wit_int_or_var) x))
   | IdentArgType b ->
-      let lf = ref ([],[]) in
+      let lf = ref Id.Set.empty in
       in_gen (glbwit (wit_ident_gen b))
 	(intern_ident lf ist (out_gen (rawwit (wit_ident_gen b)) x))
   | VarArgType ->
@@ -804,9 +810,11 @@ let glob_tactic x =
     (intern_pure_tactic (make_empty_glob_sign ())) x
 
 let glob_tactic_env l env x =
+  let ltacvars =
+    List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
   Flags.with_option strict_check
   (intern_pure_tactic
-    { ltacvars = (l,[]); ltacrecvars = []; gsigma = Evd.empty; genv = env })
+    { ltacvars; ltacrecvars = []; gsigma = Evd.empty; genv = env })
     x
 
 (***************************************************************************)
@@ -939,7 +947,7 @@ let add_tacdef local isrec tacl =
 
 let () =
   let intern_intro_pattern ist pat =
-    let lf = ref ([], []) in
+    let lf = ref Id.Set.empty in
     let ans = intern_intro_pattern lf ist pat in
     let ist = { ist with ltacvars = !lf } in
     (ist, ans)
@@ -950,7 +958,11 @@ let () =
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
 let _ =
-  let f l = Flags.with_option strict_check
-    (intern_pure_tactic { (make_empty_glob_sign()) with ltacvars=(l,[])})
+  let f l =
+    let ltacvars =
+      List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l
+    in
+    Flags.with_option strict_check
+    (intern_pure_tactic { (make_empty_glob_sign()) with ltacvars })
   in
   Hook.set Auto.extern_intern_tac f

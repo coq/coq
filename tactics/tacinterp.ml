@@ -363,8 +363,13 @@ let interp_move_location ist gl = function
 
 let interp_reference ist env = function
   | ArgArg (_,r) -> r
-  | ArgVar locid ->
-      interp_ltac_var (coerce_to_reference env) ist (Some env) locid
+  | ArgVar (loc, id) ->
+    try try_interp_ltac_var (coerce_to_reference env) ist (Some env) (loc, id)
+    with Not_found ->
+      try
+        let (v, _, _) = Environ.lookup_named id env in
+        VarRef v
+      with Not_found -> error_global_not_found_loc loc (qualid_of_ident id)
 
 let pf_interp_reference ist gl = interp_reference ist (pf_env gl)
 
@@ -372,19 +377,28 @@ let interp_inductive ist = function
   | ArgArg r -> r
   | ArgVar locid -> interp_ltac_var coerce_to_inductive ist None locid
 
+let try_interp_evaluable env (loc, id) =
+  let v = Environ.lookup_named id env in
+  match v with
+  | (_, Some _, _) -> EvalVarRef id
+  | _ -> error_not_evaluable (VarRef id)
+
 let interp_evaluable ist env = function
   | ArgArg (r,Some (loc,id)) ->
-      (* Maybe [id] has been introduced by Intro-like tactics *)
-      (try match Environ.lookup_named id env with
-       | (_,Some _,_) -> EvalVarRef id
-       | _ -> error_not_evaluable (VarRef id)
-       with Not_found ->
-       match r with
-       | EvalConstRef _ -> r
-       | _ -> error_global_not_found_loc loc (qualid_of_ident id))
+    (* Maybe [id] has been introduced by Intro-like tactics *)
+    begin
+      try try_interp_evaluable env (loc, id)
+      with Not_found ->
+        match r with
+        | EvalConstRef _ -> r
+        | _ -> error_global_not_found_loc loc (qualid_of_ident id)
+    end
   | ArgArg (r,None) -> r
-  | ArgVar locid ->
-      interp_ltac_var (coerce_to_evaluable_ref env) ist (Some env) locid
+  | ArgVar (loc, id) ->
+    try try_interp_ltac_var (coerce_to_evaluable_ref env) ist (Some env) (loc, id)
+    with Not_found ->
+      try try_interp_evaluable env (loc, id)
+      with Not_found -> error_global_not_found_loc loc (qualid_of_ident id)
 
 (* Interprets an hypothesis name *)
 let interp_occurrences ist occs =
@@ -794,21 +808,27 @@ let interp_induction_arg ist gl arg =
         strbrk "Cannot coerce " ++ pr_id id ++
         strbrk " neither to a quantified hypothesis nor to a term.")
       in
+      let try_cast_id id' =
+        if Tactics.is_quantified_hypothesis id' gl
+        then ElimOnIdent (loc,id')
+        else
+          (try ElimOnConstr (sigma,(constr_of_id env id',NoBindings))
+          with Not_found ->
+            user_err_loc (loc,"",
+            pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis."))
+      in
       try
+        (** FIXME: should be moved to taccoerce *)
         let v = Id.Map.find id ist.lfun in
         let v = Value.normalize v in
         if has_type v (topwit wit_intro_pattern) then
           let v = out_gen (topwit wit_intro_pattern) v in
           match v with
-          | _, IntroIdentifier id' ->
-              if Tactics.is_quantified_hypothesis id' gl
-              then ElimOnIdent (loc,id')
-              else
-                (try ElimOnConstr (sigma,(constr_of_id env id',NoBindings))
-                with Not_found ->
-                  user_err_loc (loc,"",
-                  pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis."))
+          | _, IntroIdentifier id -> try_cast_id id
           | _ -> error ()
+        else if has_type v (topwit wit_var) then
+          let id = out_gen (topwit wit_var) v in
+          try_cast_id id
         else if has_type v (topwit wit_int) then
           ElimOnAnonHyp (out_gen (topwit wit_int) v)
         else match Value.to_constr v with
@@ -1075,7 +1095,10 @@ and force_vrec ist gl v =
 
 and interp_ltac_reference loc' mustbetac ist gl = function
   | ArgVar (loc,id) ->
-      let v = Id.Map.find id ist.lfun in
+      let v =
+        try Id.Map.find id ist.lfun
+        with Not_found -> in_gen (topwit wit_var) id
+      in
       let (sigma,v) = force_vrec ist gl v in
       let v = propagate_trace ist loc id v in
       sigma , if mustbetac then coerce_to_tactic loc id v else v
@@ -1987,7 +2010,8 @@ let interp_tac_gen lfun avoid_ids debug t gl =
   let extra = TacStore.set TacStore.empty f_debug debug in
   let extra = TacStore.set extra f_avoid_ids avoid_ids in
   let ist = { lfun = lfun; extra = extra } in
-  let ltacvars = List.map fst (Id.Map.bindings lfun), [] in
+  let fold x _ accu = Id.Set.add x accu in
+  let ltacvars = Id.Map.fold fold lfun Id.Set.empty in
   interp_tactic ist
     (intern_pure_tactic {
       ltacvars; ltacrecvars = [];
@@ -2001,7 +2025,7 @@ let eval_ltac_constr gl t =
 
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
 let hide_interp t ot gl =
-  let ist = { ltacvars = ([],[]); ltacrecvars = [];
+  let ist = { ltacvars = Id.Set.empty; ltacrecvars = [];
             gsigma = project gl; genv = pf_env gl } in
   let te = intern_pure_tactic ist t in
   let t = eval_tactic te in

@@ -24,7 +24,7 @@ open Nametab
     Conversion from [raw_tactic_expr] to [glob_tactic_expr] *)
 
 type glob_sign = Genintern.glob_sign = {
-  ltacvars : Id.t list * Id.t list;
+  ltacvars : Id.Set.t;
   ltacrecvars : (Id.t * ltac_constant) list;
   gsigma : Evd.evar_map;
   genv : Environ.env }

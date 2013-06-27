@@ -88,6 +88,8 @@ let coerce_to_ident fresh env v =
     match out_gen (topwit wit_intro_pattern) v with
     | _, IntroIdentifier id -> id
     | _ -> fail ()
+  else if has_type v (topwit wit_var) then
+    out_gen (topwit wit_var) v
   else match Value.to_constr v with
   | None -> fail ()
   | Some c ->
@@ -100,6 +102,9 @@ let coerce_to_intro_pattern env v =
   let v = Value.normalize v in
   if has_type v (topwit wit_intro_pattern) then
     snd (out_gen (topwit wit_intro_pattern) v)
+  else if has_type v (topwit wit_var) then
+    let id = out_gen (topwit wit_var) v in
+    IntroIdentifier id
   else match Value.to_constr v with
   | Some c when isVar c ->
       (* This happens e.g. in definitions like "Tac H = clear H; intro H" *)
@@ -134,6 +139,9 @@ let coerce_to_constr env v =
     ([], c)
   else if has_type v (topwit wit_constr_under_binders) then
     out_gen (topwit wit_constr_under_binders) v
+  else if has_type v (topwit wit_var) then
+    let id = out_gen (topwit wit_var) v in
+    (try [], constr_of_id env id with Not_found -> fail ())
   else fail ()
 
 let coerce_to_closed_constr env v =
@@ -146,8 +154,12 @@ let coerce_to_evaluable_ref env v =
   let v = Value.normalize v in
   if has_type v (topwit wit_intro_pattern) then
     match out_gen (topwit wit_intro_pattern) v with
-    | _, IntroIdentifier id when List.mem id (Termops.ids_of_context env) -> EvalVarRef id
+    | _, IntroIdentifier id when is_variable env id -> EvalVarRef id
     | _ -> fail ()
+  else if has_type v (topwit wit_var) then
+    let id = out_gen (topwit wit_var) v in
+    if List.mem id (Termops.ids_of_context env) then EvalVarRef id
+    else fail ()
   else
     let ev = match Value.to_constr v with
     | Some c when isConst c -> EvalConstRef (destConst c)
@@ -178,6 +190,9 @@ let coerce_to_hyp env v =
     match out_gen (topwit wit_intro_pattern) v with
     | _, IntroIdentifier id when is_variable env id -> id
     | _ -> fail ()
+  else if has_type v (topwit wit_var) then
+    let id = out_gen (topwit wit_var) v in
+    if is_variable env id then id else fail ()
   else match Value.to_constr v with
   | Some c when isVar c -> destVar c
   | _ -> fail ()
@@ -215,6 +230,9 @@ let coerce_to_quantified_hypothesis v =
     match v with
     | _, IntroIdentifier id -> NamedHyp id
     | _ -> raise (CannotCoerceTo "a quantified hypothesis")
+  else if has_type v (topwit wit_var) then
+    let id = out_gen (topwit wit_var) v in
+    NamedHyp id
   else if has_type v (topwit wit_int) then
     AnonHyp (out_gen (topwit wit_int) v)
   else raise (CannotCoerceTo "a quantified hypothesis")
