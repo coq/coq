@@ -343,3 +343,30 @@ let with_grammar_rule_protection f x =
     let reraise = Errors.push reraise in
     let () = unfreeze fs in
     raise reraise
+
+(**********************************************************************)
+(** Ltac quotations                                                   *)
+
+let ltac_quotations = ref String.Set.empty
+
+let create_ltac_quotation name cast wit e =
+  let () =
+    if String.Set.mem name !ltac_quotations then
+      failwith ("Ltac quotation " ^ name ^ " already registered")
+  in
+  let () = ltac_quotations := String.Set.add name !ltac_quotations in
+(*   let level = Some "1" in *)
+  let level = None in
+  let assoc = Some (of_coq_assoc Extend.RightA) in
+  let rule = [
+    gram_token_of_string name;
+    gram_token_of_string ":";
+    symbol_of_prod_entry_key (Agram (Gram.Entry.obj e));
+  ] in
+  let action v _ _ loc =
+    let loc = !@loc in
+    let arg = TacGeneric (Genarg.in_gen (Genarg.rawwit wit) (cast (loc, v))) in
+    TacArg (loc, arg)
+  in
+  let gram = (level, assoc, [rule, Gram.action action]) in
+  maybe_uncurry (Gram.extend Tactic.tactic_expr) (None, [gram])

@@ -66,3 +66,11 @@ val recover_notation_grammar :
   notation_var_internalization_type list * notation_grammar
 
 val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b
+
+(** Adding tactic quotations *)
+
+val create_ltac_quotation : string -> ('grm Loc.located -> 'raw) ->
+  ('raw, 'glb, 'top) genarg_type -> 'grm Gram.entry -> unit
+(** [create_ltac_quotation name f wit e] adds a quotation rule to Ltac, that is,
+    Ltac grammar now accepts arguments of the form ["name" ":" <e>], and
+    generates a generic argument using [f] on the entry parsed by [e]. *)
