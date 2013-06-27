@@ -1090,12 +1090,15 @@ and interp_ltac_reference loc' mustbetac ist gl = function
 and interp_tacarg ist gl arg =
   let evdref = ref (project gl) in
   let v = match arg with
-    | TacVoid -> in_gen (topwit wit_unit) ()
+    | TacGeneric arg ->
+      let gl = { gl with sigma = !evdref } in
+      let (sigma, v) = Geninterp.generic_interp ist gl arg in
+      evdref := sigma;
+      v
     | Reference r ->
       let (sigma,v) = interp_ltac_reference dloc false ist gl r in
       evdref := sigma;
       v
-    | Integer n -> in_gen (topwit wit_int) n
     | IntroPattern ipat ->
       let ans = interp_intro_pattern ist gl ipat in
       in_gen (topwit wit_intro_pattern) ans

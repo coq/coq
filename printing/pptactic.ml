@@ -555,7 +555,7 @@ let level_of (n,p) = match p with E -> n | L -> n-1 | Prec n -> n | Any -> lseq
 
 let make_pr_tac pr_tac_level
   (pr_constr,pr_lconstr,pr_pat,pr_lpat,
-   pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders) =
+   pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders, pr_gen) =
 
 (* some shortcuts *)
 let pr_bindings = pr_bindings pr_lconstr pr_constr in
@@ -926,7 +926,7 @@ let rec pr_tac inherited tac =
   | TacArg(_,ConstrMayEval c) ->
       pr_may_eval pr_constr pr_lconstr pr_cst pr_pat c, leval
   | TacArg(_,TacFreshId l) -> str "fresh" ++ pr_fresh_ids l, latom
-  | TacArg(_,Integer n) -> int n, latom
+  | TacArg(_,TacGeneric arg) -> pr_gen arg, latom
   | TacArg(_,TacCall(loc,f,[])) -> pr_ref f, latom
   | TacArg(_,TacCall(loc,f,l)) ->
       pr_with_comments loc
@@ -944,14 +944,13 @@ and pr_tacarg = function
   | MetaIdArg (loc,true,s) -> pr_with_comments loc (str ("$" ^ s))
   | MetaIdArg (loc,false,s) -> pr_with_comments loc (str ("constr: $" ^ s))
   | IntroPattern ipat -> str "ipattern:" ++ pr_intro_pattern ipat
-  | TacVoid -> str "()"
   | Reference r -> pr_ref r
   | ConstrMayEval c -> pr_may_eval pr_constr pr_lconstr pr_cst pr_pat c
   | TacFreshId l -> str "fresh" ++ pr_fresh_ids l
   | TacExternal (_,com,req,la) ->
       str "external" ++ spc() ++ qs com ++ spc() ++ qs req ++
       spc() ++ prlist_with_sep spc pr_tacarg la
-  | (TacCall _|Tacexp _|Integer _) as a ->
+  | (TacCall _|Tacexp _ | TacGeneric _) as a ->
       str "ltac:" ++ pr_tac (latom,E) (TacArg (Loc.ghost,a))
 
 in pr_tac
@@ -975,7 +974,8 @@ let raw_printers =
      pr_reference,
      pr_or_metaid pr_lident,
      pr_raw_extend,
-     strip_prod_binders_expr)
+     strip_prod_binders_expr,
+     Genprint.generic_raw_print)
 
 let rec pr_raw_tactic_level n (t:raw_tactic_expr) =
   make_pr_tac pr_raw_tactic_level raw_printers n t
@@ -997,7 +997,8 @@ let pr_glob_tactic_level env =
      pr_ltac_or_var (pr_located pr_ltac_constant),
      pr_lident,
      pr_glob_extend,
-     strip_prod_binders_glob_constr)
+     strip_prod_binders_glob_constr,
+     Genprint.generic_glb_print)
   in
   let rec prtac n (t:glob_tactic_expr) =
     make_pr_tac prtac glob_printers n t

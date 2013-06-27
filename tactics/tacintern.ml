@@ -688,10 +688,10 @@ and intern_tactic_seq onlytac ist = function
 
 and intern_tactic_as_arg loc onlytac ist a =
   match intern_tacarg !strict_check onlytac ist a with
-  | TacCall _ | TacExternal _ | Reference _ | TacDynamic _ as a -> TacArg (loc,a)
+  | TacCall _ | TacExternal _ | Reference _
+  | TacDynamic _ | TacGeneric _ as a -> TacArg (loc,a)
   | Tacexp a -> a
-  | TacVoid | IntroPattern _ | Integer _
-  | ConstrMayEval _ | TacFreshId _ as a ->
+  | IntroPattern _ | ConstrMayEval _ | TacFreshId _ as a ->
       if onlytac then error_tactic_expected loc else TacArg (loc,a)
   | MetaIdArg _ -> assert false
 
@@ -705,12 +705,10 @@ and intern_tactic_fun ist (var,body) =
   (var,intern_tactic_or_tacarg { ist with ltacvars = (lfun',l2) } body)
 
 and intern_tacarg strict onlytac ist = function
-  | TacVoid -> TacVoid
   | Reference r -> intern_non_tactic_reference strict ist r
   | IntroPattern ipat ->
       let lf = ref([],[]) in (*How to know what names the intropattern binds?*)
       IntroPattern (intern_intro_pattern lf ist ipat)
-  | Integer n -> Integer n
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
   | MetaIdArg (loc,istac,s) ->
       (* $id can occur in Grammar tactic... *)
@@ -728,6 +726,9 @@ and intern_tacarg strict onlytac ist = function
       TacExternal (loc,com,req,List.map (intern_tacarg !strict_check false ist) la)
   | TacFreshId x -> TacFreshId (List.map (intern_or_var ist) x)
   | Tacexp t -> Tacexp (intern_tactic onlytac ist t)
+  | TacGeneric arg ->
+    let (_, arg) = Genintern.generic_intern ist arg in
+    TacGeneric arg
   | TacDynamic(loc,t) as x ->
       (match Dyn.tag t with
 	| "tactic" | "value" -> x

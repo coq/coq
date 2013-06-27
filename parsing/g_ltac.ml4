@@ -11,6 +11,7 @@ open Compat
 open Constrexpr
 open Tacexpr
 open Misctypes
+open Genarg
 open Genredexpr
 open Tok
 
@@ -23,6 +24,9 @@ let fail_default_value = ArgArg 0
 let arg_of_expr = function
     TacArg (loc,a) -> a
   | e -> Tacexp (e:raw_tactic_expr)
+
+let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
+let genarg_of_int n = in_gen (rawwit Stdarg.wit_int) n
 
 (* Tactics grammar rules *)
 
@@ -114,14 +118,14 @@ GEXTEND Gram
   (* Tactic arguments *)
   tactic_arg:
     [ [ IDENT "ltac"; ":"; a = tactic_expr LEVEL "0" -> arg_of_expr a
-      | IDENT "ltac"; ":"; n = natural -> Integer n
+      | IDENT "ltac"; ":"; n = natural -> TacGeneric (genarg_of_int n)
       | IDENT "ipattern"; ":"; ipat = simple_intropattern -> IntroPattern ipat
       | a = may_eval_arg -> a
       | r = reference -> Reference r
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c)
       (* Unambigous entries: tolerated w/o "ltac:" modifier *)
       | id = METAIDENT -> MetaIdArg (!@loc,true,id)
-      | "()" -> TacVoid ] ]
+      | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
   may_eval_arg:
     [ [ c = constr_eval -> ConstrMayEval c
@@ -144,9 +148,9 @@ GEXTEND Gram
   ;
   tactic_atom:
     [ [ id = METAIDENT -> MetaIdArg (!@loc,true,id)
-      | n = integer -> Integer n
+      | n = integer -> TacGeneric (genarg_of_int n)
       | r = reference -> TacCall (!@loc,r,[])
-      | "()" -> TacVoid ] ]
+      | "()" -> TacGeneric (genarg_of_unit ()) ] ]
   ;
   match_key:
     [ [ "match" -> false | "lazymatch" -> true ] ]

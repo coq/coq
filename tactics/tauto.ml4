@@ -13,6 +13,8 @@ open Hipattern
 open Names
 open Globnames
 open Pp
+open Genarg
+open Stdarg
 open Tacticals
 open Tacinterp
 open Tactics
@@ -174,7 +176,7 @@ let flatten_contravariant_disj flags ist =
       let hyp = valueIn (Value.of_constr hyp) in
       iter_tac (List.map_i (fun i arg ->
 	let typ = valueIn (Value.of_constr (mkArrow arg c)) in
-	let i = Tacexpr.Integer i in
+	let i = Tacexpr.TacGeneric (in_gen (rawwit wit_int) i) in
 	<:tactic<
           let typ := $typ in
           let hyp := $hyp in

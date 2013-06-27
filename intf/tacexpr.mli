@@ -185,12 +185,11 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
 
 and ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_arg =
   | TacDynamic     of Loc.t * Dyn.t
-  | TacVoid
+  | TacGeneric     of 'lev generic_argument
   | MetaIdArg      of Loc.t * bool * string
   | ConstrMayEval  of ('trm,'cst,'pat) may_eval
   | IntroPattern   of intro_pattern_expr located
   | Reference      of 'ref
-  | Integer        of int
   | TacCall of Loc.t * 'ref *
       ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_arg list
   | TacExternal of Loc.t * string * string *
