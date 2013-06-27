@@ -352,7 +352,6 @@ let pploc x = let (l,r) = Loc.unloc x in
 let rec pr_argument_type = function
   (* Basic types *)
   | IntOrVarArgType -> str"int-or-var"
-  | IntroPatternArgType -> str"intro-pattern"
   | IdentArgType true -> str"ident"
   | IdentArgType false -> str"pattern_ident"
   | VarArgType -> str"var"

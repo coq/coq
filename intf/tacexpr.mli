@@ -188,7 +188,6 @@ and ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_arg =
   | TacGeneric     of 'lev generic_argument
   | MetaIdArg      of Loc.t * bool * string
   | ConstrMayEval  of ('trm,'cst,'pat) may_eval
-  | IntroPattern   of intro_pattern_expr located
   | Reference      of 'ref
   | TacCall of Loc.t * 'ref *
       ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_arg list

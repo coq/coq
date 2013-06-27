@@ -264,7 +264,7 @@ and subst_tacarg subst = function
       TacCall (_loc, subst_reference subst f, List.map (subst_tacarg subst) l)
   | TacExternal (_loc,com,req,la) ->
       TacExternal (_loc,com,req,List.map (subst_tacarg subst) la)
-  | (IntroPattern _ | TacFreshId _) as x -> x
+  | TacFreshId _ as x -> x
   | Tacexp t -> Tacexp (subst_tactic subst t)
   | TacGeneric arg -> TacGeneric (Genintern.generic_substitute subst arg)
   | TacDynamic(the_loc,t) as x ->
@@ -289,8 +289,6 @@ and subst_match_rule subst = function
 and subst_genarg subst (x:glob_generic_argument) =
   match genarg_tag x with
   | IntOrVarArgType -> in_gen (glbwit wit_int_or_var) (out_gen (glbwit wit_int_or_var) x)
-  | IntroPatternArgType ->
-      in_gen (glbwit wit_intro_pattern) (out_gen (glbwit wit_intro_pattern) x)
   | IdentArgType b ->
       in_gen (glbwit (wit_ident_gen b)) (out_gen (glbwit (wit_ident_gen b)) x)
   | VarArgType -> in_gen (glbwit wit_var) (out_gen (glbwit wit_var) x)
@@ -331,5 +329,9 @@ and subst_genarg subst (x:glob_generic_argument) =
             (subst_tactic subst (out_gen (glbwit (Extrawit.wit_tactic n)) x))
       | None ->
           Genintern.generic_substitute subst x
+
+(** Registering *)
+
+let () = Genintern.register_subst0 wit_intro_pattern (fun _ v -> v)
 
 let _ = Hook.set Auto.extern_subst_tactic subst_tactic

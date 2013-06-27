@@ -1099,9 +1099,6 @@ and interp_tacarg ist gl arg =
       let (sigma,v) = interp_ltac_reference dloc false ist gl r in
       evdref := sigma;
       v
-    | IntroPattern ipat ->
-      let ans = interp_intro_pattern ist gl ipat in
-      in_gen (topwit wit_intro_pattern) ans
     | ConstrMayEval c ->
       let (sigma,c_interp) = interp_constr_may_eval ist gl c in
       evdref := sigma;
@@ -1369,9 +1366,6 @@ and interp_genarg ist gl x =
     | IntOrVarArgType ->
       in_gen (topwit wit_int_or_var)
         (ArgArg (interp_int_or_var ist (out_gen (glbwit wit_int_or_var) x)))
-    | IntroPatternArgType ->
-      in_gen (topwit wit_intro_pattern)
-        (interp_intro_pattern ist gl (out_gen (glbwit wit_intro_pattern) x))
     | IdentArgType b ->
       in_gen (topwit (wit_ident_gen b))
         (pf_interp_fresh_ident ist gl (out_gen (glbwit (wit_ident_gen b)) x))
@@ -1879,9 +1873,6 @@ and interp_atomic ist gl tac =
     let rec f x = match genarg_tag x with
     | IntOrVarArgType ->
         mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x)
-    | IntroPatternArgType ->
-	let ipat = interp_intro_pattern ist gl (out_gen (glbwit wit_intro_pattern) x) in
-	in_gen (topwit wit_intro_pattern) ipat
     | IdentArgType b ->
 	value_of_ident (interp_fresh_ident ist env
 	  (out_gen (glbwit (wit_ident_gen b)) x))
@@ -1935,11 +1926,6 @@ and interp_atomic ist gl tac =
 	let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
 	let ans = List.map mk_ident (out_gen wit x) in
         in_gen (topwit (wit_list0 wit_genarg)) ans
-    | List0ArgType IntroPatternArgType ->
-        let wit = glbwit (wit_list0 wit_intro_pattern) in
-	let mk_ipat x = interp_intro_pattern ist gl x in
-	let ans = List.map mk_ipat (out_gen wit x) in
-        in_gen (topwit (wit_list0 wit_intro_pattern)) ans
     | List1ArgType ConstrArgType ->
         let wit = glbwit (wit_list1 wit_constr) in
 	let (sigma, l_interp) =
@@ -1963,11 +1949,6 @@ and interp_atomic ist gl tac =
 	let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
 	let ans = List.map mk_ident (out_gen wit x) in
         in_gen (topwit (wit_list1 wit_genarg)) ans
-    | List1ArgType IntroPatternArgType ->
-        let wit = glbwit (wit_list1 wit_intro_pattern) in
-	let mk_ipat x = interp_intro_pattern ist gl x in
-	let ans = List.map mk_ipat (out_gen wit x) in
-        in_gen (topwit (wit_list1 wit_intro_pattern)) ans
     | List0ArgType _ -> app_list0 f x
     | List1ArgType _ -> app_list1 f x
     | ExtraArgType _ ->
@@ -2058,6 +2039,10 @@ let () =
 
 let () =
   declare_uniform wit_pre_ident str
+
+let () =
+  let interp ist gl pat = (gl.sigma, interp_intro_pattern ist gl pat) in
+  Geninterp.register_interp0 wit_intro_pattern interp
 
 (***************************************************************************)
 (* Other entry points *)

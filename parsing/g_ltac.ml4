@@ -27,6 +27,7 @@ let arg_of_expr = function
 
 let genarg_of_unit () = in_gen (rawwit Stdarg.wit_unit) ()
 let genarg_of_int n = in_gen (rawwit Stdarg.wit_int) n
+let genarg_of_ipattern pat = in_gen (rawwit Constrarg.wit_intro_pattern) pat
 
 (* Tactics grammar rules *)
 
@@ -98,7 +99,7 @@ GEXTEND Gram
       | IDENT "constr"; ":"; c = Constr.constr ->
           TacArg(!@loc,ConstrMayEval(ConstrTerm c))
       | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
-	  TacArg(!@loc,IntroPattern ipat)
+	  TacArg(!@loc, TacGeneric (genarg_of_ipattern ipat))
       | r = reference; la = LIST0 tactic_arg ->
           TacArg(!@loc,TacCall (!@loc,r,la)) ]
     | "0"
@@ -119,7 +120,8 @@ GEXTEND Gram
   tactic_arg:
     [ [ IDENT "ltac"; ":"; a = tactic_expr LEVEL "0" -> arg_of_expr a
       | IDENT "ltac"; ":"; n = natural -> TacGeneric (genarg_of_int n)
-      | IDENT "ipattern"; ":"; ipat = simple_intropattern -> IntroPattern ipat
+      | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
+        TacGeneric (genarg_of_ipattern ipat)
       | a = may_eval_arg -> a
       | r = reference -> Reference r
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c)

@@ -181,7 +181,6 @@ val app_pair :
 type argument_type =
   (** Basic types *)
   | IntOrVarArgType
-  | IntroPatternArgType
   | IdentArgType of bool
   | VarArgType
   | RefArgType

@@ -263,7 +263,9 @@ let intern_non_tactic_reference strict ist r =
   with Not_found ->
   (* By convention, use IntroIdentifier for unbound ident, when not in a def *)
   match r with
-  | Ident (loc,id) when not strict -> IntroPattern (loc,IntroIdentifier id)
+  | Ident (loc,id) when not strict ->
+    let ipat = in_gen (glbwit wit_intro_pattern) (loc, IntroIdentifier id) in
+    TacGeneric ipat
   | _ ->
   (* Reference not found *)
   error_global_not_found_loc (qualid_of_reference r)
@@ -691,7 +693,7 @@ and intern_tactic_as_arg loc onlytac ist a =
   | TacCall _ | TacExternal _ | Reference _
   | TacDynamic _ | TacGeneric _ as a -> TacArg (loc,a)
   | Tacexp a -> a
-  | IntroPattern _ | ConstrMayEval _ | TacFreshId _ as a ->
+  | ConstrMayEval _ | TacFreshId _ as a ->
       if onlytac then error_tactic_expected loc else TacArg (loc,a)
   | MetaIdArg _ -> assert false
 
@@ -706,9 +708,6 @@ and intern_tactic_fun ist (var,body) =
 
 and intern_tacarg strict onlytac ist = function
   | Reference r -> intern_non_tactic_reference strict ist r
-  | IntroPattern ipat ->
-      let lf = ref([],[]) in (*How to know what names the intropattern binds?*)
-      IntroPattern (intern_intro_pattern lf ist ipat)
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
   | MetaIdArg (loc,istac,s) ->
       (* $id can occur in Grammar tactic... *)
@@ -754,11 +753,6 @@ and intern_genarg ist x =
   | IntOrVarArgType ->
       in_gen (glbwit wit_int_or_var)
         (intern_or_var ist (out_gen (rawwit wit_int_or_var) x))
-  | IntroPatternArgType ->
-      let lf = ref ([],[]) in
-      (* how to know which names are bound by the intropattern *)
-      in_gen (glbwit wit_intro_pattern)
-        (intern_intro_pattern lf ist (out_gen (rawwit wit_intro_pattern) x))
   | IdentArgType b ->
       let lf = ref ([],[]) in
       in_gen (glbwit (wit_ident_gen b))
@@ -940,6 +934,17 @@ let add_tacdef local isrec tacl =
 				 (if b then str " is redefined"
 				   else str " is defined")))
     tacl
+
+(** Registering *)
+
+let () =
+  let intern_intro_pattern ist pat =
+    let lf = ref ([], []) in
+    let ans = intern_intro_pattern lf ist pat in
+    let ist = { ist with ltacvars = !lf } in
+    (ist, ans)
+  in
+  Genintern.register_intern0 wit_intro_pattern intern_intro_pattern
 
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)

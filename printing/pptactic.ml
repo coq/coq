@@ -143,7 +143,6 @@ let if_pattern_ident b pr c = (if b then str "?" else mt()) ++ pr c
 let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generic_argument) =
   match Genarg.genarg_tag x with
   | IntOrVarArgType -> pr_or_var int (out_gen (rawwit wit_int_or_var) x)
-  | IntroPatternArgType -> pr_intro_pattern (out_gen (rawwit wit_intro_pattern) x)
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen (rawwit wit_ident) x)
   | VarArgType -> pr_located pr_id (out_gen (rawwit wit_var) x)
   | RefArgType -> prref (out_gen (rawwit wit_ref) x)
@@ -183,7 +182,6 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
 let rec pr_glb_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
   | IntOrVarArgType -> pr_or_var int (out_gen (glbwit wit_int_or_var) x)
-  | IntroPatternArgType -> pr_intro_pattern (out_gen (glbwit wit_intro_pattern) x)
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen (glbwit wit_ident) x)
   | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
   | RefArgType -> pr_or_var (pr_located pr_global) (out_gen (glbwit wit_ref) x)
@@ -224,7 +222,6 @@ let rec pr_glb_generic prc prlc prtac prpat x =
 let rec pr_top_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
   | IntOrVarArgType -> pr_or_var int (out_gen (topwit wit_int_or_var) x)
-  | IntroPatternArgType -> pr_intro_pattern (out_gen (topwit wit_intro_pattern) x)
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen (topwit wit_ident) x)
   | VarArgType -> pr_id (out_gen (topwit wit_var) x)
   | RefArgType -> pr_global (out_gen (topwit wit_ref) x)
@@ -943,7 +940,6 @@ and pr_tacarg = function
       pr_with_comments loc (str ("<dynamic ["^(Dyn.tag t)^"]>"))
   | MetaIdArg (loc,true,s) -> pr_with_comments loc (str ("$" ^ s))
   | MetaIdArg (loc,false,s) -> pr_with_comments loc (str ("constr: $" ^ s))
-  | IntroPattern ipat -> str "ipattern:" ++ pr_intro_pattern ipat
   | Reference r -> pr_ref r
   | ConstrMayEval c -> pr_may_eval pr_constr pr_lconstr pr_cst pr_pat c
   | TacFreshId l -> str "fresh" ++ pr_fresh_ids l
@@ -1006,6 +1002,14 @@ let pr_glob_tactic_level env =
   prtac
 
 let pr_glob_tactic env = pr_glob_tactic_level env ltop
+
+(** Registering *)
+
+let register_uniform_printer wit pr =
+  Genprint.register_print0 wit pr pr pr
+
+let () = Genprint.register_print0 Constrarg.wit_intro_pattern
+  pr_intro_pattern pr_intro_pattern pr_intro_pattern
 
 let _ = Hook.set Tactic_debug.tactic_printer
   (fun x -> pr_glob_tactic (Global.env()) x)

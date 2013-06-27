@@ -12,7 +12,6 @@ open Util
 type argument_type =
   (* Basic types *)
   | IntOrVarArgType
-  | IntroPatternArgType
   | IdentArgType of bool
   | VarArgType
   | RefArgType
@@ -34,7 +33,6 @@ type argument_type =
 
 let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | IntOrVarArgType, IntOrVarArgType -> true
-| IntroPatternArgType, IntroPatternArgType -> true
 | IdentArgType b1, IdentArgType b2 -> (b1 : bool) == b2
 | VarArgType, VarArgType -> true
 | RefArgType, RefArgType -> true
