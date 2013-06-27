@@ -374,9 +374,10 @@ let intern_flag ist red =
 
 let intern_constr_with_occurrences ist (l,c) = (l,intern_constr ist c)
 
-let intern_constr_pattern ist ltacvars pc =
-  let metas,pat =
-    Constrintern.intern_constr_pattern ist.gsigma ist.genv ~ltacvars pc in
+let intern_constr_pattern ist ~as_type ~ltacvars pc =
+  let metas,pat = Constrintern.intern_constr_pattern
+    ist.gsigma ist.genv ~as_type ~ltacvars pc
+  in
   let c = intern_constr_gen true false ist pc in
   metas,(c,pat)
 
@@ -442,11 +443,11 @@ let intern_hyp_location ist ((occs,id),hl) =
 let intern_pattern ist ?(as_type=false) lfun = function
   | Subterm (b,ido,pc) ->
       let ltacvars = (lfun, Id.Set.empty) in
-      let (metas,pc) = intern_constr_pattern ist ltacvars pc in
+      let (metas,pc) = intern_constr_pattern ist ~as_type ~ltacvars pc in
       ido, metas, Subterm (b,ido,pc)
   | Term pc ->
       let ltacvars = (lfun, Id.Set.empty) in
-      let (metas,pc) = intern_constr_pattern ist ltacvars pc in
+      let (metas,pc) = intern_constr_pattern ist ~as_type ~ltacvars pc in
       None, metas, Term pc
 
 let intern_constr_may_eval ist = function
