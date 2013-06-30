@@ -147,6 +147,19 @@ type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
 type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
 type 'a typed_abstract_argument_type = ('a,tlevel) abstract_argument_type
 
+type 'r raw_unpack =
+  { raw_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'a -> 'r }
+
+type 'r glb_unpack =
+  { glb_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'b -> 'r }
+
+type 'r top_unpack =
+  { top_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'c -> 'r }
+
+let raw_unpack pack (t, obj) = pack.raw_unpack t (Obj.obj obj)
+let glb_unpack pack (t, obj) = pack.glb_unpack t (Obj.obj obj)
+let top_unpack pack (t, obj) = pack.top_unpack t (Obj.obj obj)
+
 (** Creating args *)
 
 let (arg0_map : Obj.t option String.Map.t ref) = ref String.Map.empty
@@ -174,6 +187,41 @@ let default_empty_value t =
   match aux t with
   | Some v -> Some (Obj.obj v)
   | None -> None
+
+(** Registering genarg-manipulating functions *)
+
+module type GenObj =
+sig
+  type ('raw, 'glb, 'top) obj
+  val name : string
+end
+
+module Register (M : GenObj) =
+struct
+  let arg0_map =
+    ref (String.Map.empty : (Obj.t, Obj.t, Obj.t) M.obj String.Map.t)
+
+  let register0 arg f = match arg with
+  | ExtraArgType s ->
+    if String.Map.mem s !arg0_map then
+      let msg = str M.name ++ str " function already registered: " ++ str s in
+      Errors.anomaly msg
+    else
+      arg0_map := String.Map.add s (Obj.magic f) !arg0_map
+  | _ -> assert false
+
+  let get_obj0 name =
+    try String.Map.find name !arg0_map
+    with Not_found ->
+      Errors.anomaly (str M.name ++ str " function not found: " ++ str name)
+
+  (** For now, the following function is quite dummy and should only be applied
+      to an extra argument type, otherwise, it will badly fail. *)
+  let rec obj t = match t with
+  | ExtraArgType s -> Obj.magic (get_obj0 s)
+  | _ -> assert false
+
+end
 
 (** Hackish part *)
 

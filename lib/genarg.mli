@@ -141,6 +141,22 @@ val has_type : 'co generic_argument -> ('a, 'co) abstract_argument_type -> bool
 (** [has_type v t] tells whether [v] has type [t]. If true, it ensures that
     [out_gen t v] will not raise a dynamic type exception. *)
 
+(** {6 Destructors} *)
+
+type 'r raw_unpack =
+  { raw_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'a -> 'r }
+
+type 'r glb_unpack =
+  { glb_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'b -> 'r }
+
+type 'r top_unpack =
+  { top_unpack : 'a 'b 'c. ('a, 'b, 'c) genarg_type -> 'c -> 'r }
+
+val raw_unpack : 'r raw_unpack -> rlevel generic_argument -> 'r
+val glb_unpack : 'r glb_unpack -> glevel generic_argument -> 'r
+val top_unpack : 'r top_unpack -> tlevel generic_argument -> 'r
+(** Existential-type destructors. *)
+
 (** {6 Manipulation of generic arguments}
 
 Those functions fail if they are applied to an argument which has not the right
@@ -205,6 +221,30 @@ val argument_type_eq : argument_type -> argument_type -> bool
 val genarg_tag : 'a generic_argument -> argument_type
 
 val unquote : ('a, 'co) abstract_argument_type -> argument_type
+
+(** {6 Registering genarg-manipulating functions}
+
+  This is boilerplate code used here and there in the code of Coq. *)
+
+module type GenObj =
+sig
+  type ('raw, 'glb, 'top) obj
+  (** An object manipulating generic arguments. *)
+
+  val name : string
+  (** A name for such kind of manipulation, e.g. [interp]. *)
+end
+
+module Register (M : GenObj) :
+sig
+  val register0 : ('raw, 'glb, 'top) genarg_type ->
+    ('raw, 'glb, 'top) M.obj -> unit
+  (** Register a ground type manipulation function. *)
+
+  val obj : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb, 'top) M.obj
+  (** Recover a manipulation function at a given type. *)
+
+end
 
 (** {5 Basic generic type constructors} *)
 
