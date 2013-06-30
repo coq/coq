@@ -16,21 +16,20 @@ open Compat
 let loc = CompatLoc.ghost
 let default_loc = <:expr< Loc.ghost >>
 
-let qualified_name s =
+let qualified_name loc s =
   let path = CString.split '.' s in
   let (name, path) = CList.sep_last path in
-  let fold dir accu = <:expr< $uid:dir$.$accu$ >> in
-  List.fold_right fold path <:expr< $lid:name$ >>
+  qualified_name loc path name
 
-let mk_extraarg s =
+let mk_extraarg loc s =
   if Extrawit.tactic_genarg_level s = None then
     try
       let name = Genarg.get_name0 s in
-      qualified_name name
+      qualified_name loc name
     with Not_found ->
       <:expr< $lid:"wit_"^s$ >>
   else
-    qualified_name ("Extrawit.wit_" ^ s)
+    qualified_name loc ("Extrawit.wit_" ^ s)
 
 let rec make_wit loc = function
   | IntOrVarArgType -> <:expr< Constrarg.wit_int_or_var >>
@@ -51,7 +50,7 @@ let rec make_wit loc = function
   | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>
   | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_wit loc t1$ $make_wit loc t2$ >>
-  | ExtraArgType s -> mk_extraarg s
+  | ExtraArgType s -> mk_extraarg loc s
 
 let make_rawwit loc arg = <:expr< Genarg.rawwit $make_wit loc arg$ >>
 let make_globwit loc arg = <:expr< Genarg.glbwit $make_wit loc arg$ >>
