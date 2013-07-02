@@ -27,7 +27,6 @@ open Tacexpr
 open Genarg
 open Constrarg
 open Mod_subst
-open Extrawit
 open Misctypes
 open Locus
 
@@ -950,9 +949,7 @@ let () =
 
 let () =
   let intern ist tac = (ist, intern_tactic_or_tacarg ist tac) in
-  for i = 0 to 5 do
-    Genintern.register_intern0 (wit_tactic i) intern
-  done
+  Genintern.register_intern0 wit_tactic intern
 
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)

@@ -15,7 +15,6 @@ open Q_util
 open Q_coqast
 open Argextend
 open Pcoq
-open Extrawit
 open Egramml
 open Compat
 

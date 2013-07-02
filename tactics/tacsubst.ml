@@ -329,8 +329,6 @@ and subst_genarg subst (x:glob_generic_argument) =
 let () = Genintern.register_subst0 wit_intro_pattern (fun _ v -> v)
 
 let () =
-  for i = 0 to 5 do
-    Genintern.register_subst0 (Extrawit.wit_tactic i) subst_tactic
-  done
+  Genintern.register_subst0 wit_tactic subst_tactic
 
 let _ = Hook.set Auto.extern_subst_tactic subst_tactic

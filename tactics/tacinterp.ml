@@ -37,7 +37,6 @@ open Stdarg
 open Constrarg
 open Printer
 open Pretyping
-open Extrawit
 open Evd
 open Misctypes
 open Miscops
@@ -1910,13 +1909,6 @@ and interp_atomic ist gl tac =
         let (sigma,c_interp) = interp_constr_may_eval ist gl (out_gen (glbwit wit_constr_may_eval) x) in
 	evdref := sigma;
 	Value.of_constr c_interp
-    | ExtraArgType s when not (Option.is_empty (tactic_genarg_level s)) ->
-          (* Special treatment of tactic arguments *)
-	let (sigma,v) = val_interp ist gl
-          (out_gen (glbwit (wit_tactic (Option.get (tactic_genarg_level s)))) x)
-	in
-	evdref := sigma;
-	v
     | List0ArgType ConstrArgType ->
         let wit = glbwit (wit_list0 wit_constr) in
 	let (sigma,l_interp) =
@@ -1966,9 +1958,17 @@ and interp_atomic ist gl tac =
     | List0ArgType _ -> app_list0 f x
     | List1ArgType _ -> app_list1 f x
     | ExtraArgType _ ->
-      let (sigma, v) = Geninterp.generic_interp ist { gl with sigma = !evdref } x in
-      evdref := sigma;
-      v
+      (** Special treatment of tactics *)
+      let gl = { gl with sigma = !evdref } in
+      if has_type x (glbwit wit_tactic) then
+        let tac = out_gen (glbwit wit_tactic) x in
+        let (sigma, v) = val_interp ist gl tac in
+        let () = evdref := sigma in
+        v
+      else
+        let (sigma, v) = Geninterp.generic_interp ist gl x in
+        let () = evdref := sigma in
+        v
     | QuantHypArgType | RedExprArgType
     | OpenConstrArgType _ | ConstrWithBindingsArgType
     | BindingsArgType
@@ -2064,9 +2064,7 @@ let () =
     let f = VFun (extract_trace ist, ist.lfun, [], tac) in
     (gl.sigma, TacArg (dloc, valueIn (of_tacvalue f)))
   in
-  for i = 0 to 5 do
-    Geninterp.register_interp0 (wit_tactic i) interp
-  done
+  Geninterp.register_interp0 wit_tactic interp
 
 (***************************************************************************)
 (* Other entry points *)

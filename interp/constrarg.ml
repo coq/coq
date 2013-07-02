@@ -14,6 +14,7 @@ open Libnames
 open Globnames
 open Glob_term
 open Genredexpr
+open Tacexpr
 open Pattern
 open Constrexpr
 open Term
@@ -34,6 +35,9 @@ let wit_int_or_var = unsafe_of_type IntOrVarArgType
 
 let wit_intro_pattern : intro_pattern_expr located uniform_genarg_type =
   Genarg.make0 None "intropattern"
+
+let wit_tactic : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_type =
+  Genarg.make0 None "tactic"
 
 let wit_ident_gen b = unsafe_of_type (IdentArgType b)
 
@@ -69,4 +73,6 @@ let wit_red_expr = unsafe_of_type RedExprArgType
 
 (** Register location *)
 
-let () = register_name0 wit_intro_pattern "Constrarg.wit_intro_pattern"
+let () =
+  register_name0 wit_intro_pattern "Constrarg.wit_intro_pattern";
+  register_name0 wit_tactic "Constrarg.wit_tactic"

@@ -16,7 +16,6 @@ open Genarg
 open Stdarg
 open Constrarg
 open Tacexpr
-open Extrawit
 
 (** The parser of Coq *)
 
@@ -398,7 +397,7 @@ module Tactic =
     let tactic_expr = Gram.entry_create "tactic:tactic_expr"
     let binder_tactic = Gram.entry_create "tactic:binder_tactic"
 
-    let tactic = make_gen_entry utactic (rawwit (wit_tactic tactic_main_level)) "tactic"
+    let tactic = make_gen_entry utactic (rawwit wit_tactic) "tactic"
 
     (* Main entry for quotations *)
     let tactic_eoi = eoi_entry tactic
@@ -756,6 +755,15 @@ let coincide s pat off =
   done;
   !break
 
+let tactic_level s =
+  if Int.equal (String.length s) 7 && String.sub s 0 6 = "tactic" then
+    let c = s.[6] in if '5' >= c && c >= '0' then Some (Char.code c - 48)
+    else None
+  else None
+
+let type_of_entry u s =
+  type_of_typed_entry (get_entry u s)
+
 let rec interp_entry_name static up_level s sep =
   let l = String.length s in
   if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
@@ -784,20 +792,26 @@ let rec interp_entry_name static up_level s sep =
     | Some m -> Int.equal m n && not (Int.equal m 5)
     in
     let t, se =
-      match Extrawit.tactic_genarg_level s with
-	| Some n when check_lvl n -> None, Aself
-	| Some n when check_lvl (n + 1) -> None, Anext
-	| Some n -> None, Atactic n
-	| None ->
-      try Some (get_entry uprim s), Aentry ("prim",s) with Not_found ->
-      try Some (get_entry uconstr s), Aentry ("constr",s) with Not_found ->
-      try Some (get_entry utactic s), Aentry ("tactic",s) with Not_found ->
+      match tactic_level s with
+      | Some n ->
+        (** Quite ad-hoc *)
+        let t = unquote (rawwit wit_tactic) in
+        let se =
+          if check_lvl n then Aself
+          else if check_lvl (n + 1) then Anext
+          else Atactic n
+        in
+        (Some t, se)
+      | None ->
+      try Some (type_of_entry uprim s), Aentry ("prim",s) with Not_found ->
+      try Some (type_of_entry uconstr s), Aentry ("constr",s) with Not_found ->
+      try Some (type_of_entry utactic s), Aentry ("tactic",s) with Not_found ->
 	if static then
 	  error ("Unknown entry "^s^".")
 	else
 	  None, Aentry ("",s) in
     let t =
       match t with
-	| Some t -> type_of_typed_entry t
+	| Some t -> t
 	| None -> ExtraArgType s in
     t, se

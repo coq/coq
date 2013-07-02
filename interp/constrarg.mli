@@ -77,3 +77,5 @@ val wit_red_expr :
   ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,
   (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,
   (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type
+
+val wit_tactic : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_type

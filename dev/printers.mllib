@@ -155,7 +155,6 @@ Pfedit
 Tactic_debug
 Decl_mode
 Ppconstr
-Extrawit
 Pcoq
 Printer
 Pptactic

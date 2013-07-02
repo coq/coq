@@ -1011,6 +1011,10 @@ let register_uniform_printer wit pr =
 let () = Genprint.register_print0 Constrarg.wit_intro_pattern
   pr_intro_pattern pr_intro_pattern pr_intro_pattern
 
+let () =
+  let printer _ _ prtac = prtac (0, E) in
+  declare_extra_genarg_pprule wit_tactic printer printer printer
+
 let _ = Hook.set Tactic_debug.tactic_printer
   (fun x -> pr_glob_tactic (Global.env()) x)
 
