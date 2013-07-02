@@ -322,16 +322,15 @@ and subst_genarg subst (x:glob_generic_argument) =
   | OptArgType _ -> app_opt (subst_genarg subst) x
   | PairArgType _ -> app_pair (subst_genarg subst) (subst_genarg subst) x
   | ExtraArgType s ->
-      match Extrawit.tactic_genarg_level s with
-      | Some n ->
-          (* Special treatment of tactic arguments *)
-          in_gen (glbwit (Extrawit.wit_tactic n))
-            (subst_tactic subst (out_gen (glbwit (Extrawit.wit_tactic n)) x))
-      | None ->
-          Genintern.generic_substitute subst x
+      Genintern.generic_substitute subst x
 
 (** Registering *)
 
 let () = Genintern.register_subst0 wit_intro_pattern (fun _ v -> v)
+
+let () =
+  for i = 0 to 5 do
+    Genintern.register_subst0 (Extrawit.wit_tactic i) subst_tactic
+  done
 
 let _ = Hook.set Auto.extern_subst_tactic subst_tactic

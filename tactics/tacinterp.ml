@@ -1451,15 +1451,6 @@ and interp_genarg ist gl x =
     | OptArgType _ -> app_opt (interp_genarg ist gl) x
     | PairArgType _ -> app_pair (interp_genarg ist gl) (interp_genarg ist gl) x
     | ExtraArgType s ->
-      match tactic_genarg_level s with
-      | Some n ->
-        let f = VFun(extract_trace ist,ist.lfun,[],
-          out_gen (glbwit (wit_tactic n)) x)
-        in
-        (* Special treatment of tactic arguments *)
-        in_gen (topwit (wit_tactic n)) 
-	  (TacArg(dloc,valueIn (of_tacvalue f)))
-      | None ->
         let (sigma,v) = Geninterp.generic_interp ist gl x in
 	evdref:=sigma;
 	v
@@ -2067,6 +2058,15 @@ let () =
 let () =
   let interp ist gl pat = (gl.sigma, interp_intro_pattern ist gl pat) in
   Geninterp.register_interp0 wit_intro_pattern interp
+
+let () =
+  let interp ist gl tac =
+    let f = VFun (extract_trace ist, ist.lfun, [], tac) in
+    (gl.sigma, TacArg (dloc, valueIn (of_tacvalue f)))
+  in
+  for i = 0 to 5 do
+    Geninterp.register_interp0 (wit_tactic i) interp
+  done
 
 (***************************************************************************)
 (* Other entry points *)

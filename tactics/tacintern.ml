@@ -795,13 +795,7 @@ and intern_genarg ist x =
   | OptArgType _ -> app_opt (intern_genarg ist) x
   | PairArgType _ -> app_pair (intern_genarg ist) (intern_genarg ist) x
   | ExtraArgType s ->
-      match tactic_genarg_level s with
-      | Some n ->
-          (* Special treatment of tactic arguments *)
-          in_gen (glbwit (wit_tactic n)) (intern_tactic_or_tacarg ist
-	    (out_gen (rawwit (wit_tactic n)) x))
-      | None ->
-          snd (Genintern.generic_intern ist x)
+      snd (Genintern.generic_intern ist x)
 
 (** Other entry points *)
 
@@ -953,6 +947,12 @@ let () =
     (ist, ans)
   in
   Genintern.register_intern0 wit_intro_pattern intern_intro_pattern
+
+let () =
+  let intern ist tac = (ist, intern_tactic_or_tacarg ist tac) in
+  for i = 0 to 5 do
+    Genintern.register_intern0 (wit_tactic i) intern
+  done
 
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)

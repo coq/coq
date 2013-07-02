@@ -37,6 +37,8 @@ let tactic_genarg_level s =
     else None
   else None
 
-let is_tactic_genarg = function
-| ExtraArgType s -> tactic_genarg_level s <> None
-| _ -> false
+let () =
+  for i = 0 to 5 do
+    let name = Printf.sprintf "Extrawit.wit_tactic%i" i in
+    Genarg.register_name0 (wit_tactic i) name
+  done

@@ -24,6 +24,4 @@ val wit_tactic3 : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_t
 val wit_tactic4 : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_type
 val wit_tactic5 : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_type
 
-val is_tactic_genarg : argument_type -> bool
-
 val tactic_genarg_level : string -> int option

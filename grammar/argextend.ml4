@@ -22,14 +22,11 @@ let qualified_name loc s =
   qualified_name loc path name
 
 let mk_extraarg loc s =
-  if Extrawit.tactic_genarg_level s = None then
-    try
-      let name = Genarg.get_name0 s in
-      qualified_name loc name
-    with Not_found ->
-      <:expr< $lid:"wit_"^s$ >>
-  else
-    qualified_name loc ("Extrawit.wit_" ^ s)
+  try
+    let name = Genarg.get_name0 s in
+    qualified_name loc name
+  with Not_found ->
+    <:expr< $lid:"wit_"^s$ >>
 
 let rec make_wit loc = function
   | IntOrVarArgType -> <:expr< Constrarg.wit_int_or_var >>
