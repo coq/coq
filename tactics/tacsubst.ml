@@ -296,8 +296,6 @@ and subst_genarg subst (x:glob_generic_argument) =
       in_gen (glbwit wit_ref) (subst_global_reference subst
 	(out_gen (glbwit wit_ref) x))
   | GenArgType -> in_gen (glbwit wit_genarg) (subst_genarg subst (out_gen (glbwit wit_genarg) x))
-  | SortArgType ->
-      in_gen (glbwit wit_sort) (out_gen (glbwit wit_sort) x)
   | ConstrArgType ->
       in_gen (glbwit wit_constr) (subst_glob_constr subst (out_gen (glbwit wit_constr) x))
   | ConstrMayEvalArgType ->
@@ -325,9 +323,9 @@ and subst_genarg subst (x:glob_generic_argument) =
 
 (** Registering *)
 
-let () = Genintern.register_subst0 wit_intro_pattern (fun _ v -> v)
-
 let () =
-  Genintern.register_subst0 wit_tactic subst_tactic
+  Genintern.register_subst0 wit_intro_pattern (fun _ v -> v);
+  Genintern.register_subst0 wit_tactic subst_tactic;
+  Genintern.register_subst0 wit_sort (fun _ v -> v)
 
 let _ = Hook.set Auto.extern_subst_tactic subst_tactic

@@ -53,7 +53,8 @@ let wit_quant_hyp = unsafe_of_type QuantHypArgType
 
 let wit_genarg = unsafe_of_type GenArgType
 
-let wit_sort = unsafe_of_type SortArgType
+let wit_sort : (glob_sort, glob_sort, sorts) genarg_type =
+  Genarg.make0 None "sort"
 
 let wit_constr = unsafe_of_type ConstrArgType
 
@@ -75,4 +76,5 @@ let wit_red_expr = unsafe_of_type RedExprArgType
 
 let () =
   register_name0 wit_intro_pattern "Constrarg.wit_intro_pattern";
-  register_name0 wit_tactic "Constrarg.wit_tactic"
+  register_name0 wit_tactic "Constrarg.wit_tactic";
+  register_name0 wit_sort "Constrarg.wit_sort";

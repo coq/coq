@@ -147,7 +147,6 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
   | VarArgType -> pr_located pr_id (out_gen (rawwit wit_var) x)
   | RefArgType -> prref (out_gen (rawwit wit_ref) x)
   | GenArgType -> pr_raw_generic prc prlc prtac prpat prref (out_gen (rawwit wit_genarg) x)
-  | SortArgType -> pr_glob_sort (out_gen (rawwit wit_sort) x)
   | ConstrArgType -> prc (out_gen (rawwit wit_constr) x)
   | ConstrMayEvalArgType ->
       pr_may_eval prc prlc (pr_or_by_notation prref) prpat
@@ -183,7 +182,6 @@ let rec pr_glb_generic prc prlc prtac prpat x =
   | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
   | RefArgType -> pr_or_var (pr_located pr_global) (out_gen (glbwit wit_ref) x)
   | GenArgType -> pr_glb_generic prc prlc prtac prpat (out_gen (glbwit wit_genarg) x)
-  | SortArgType -> pr_glob_sort (out_gen (glbwit wit_sort) x)
   | ConstrArgType -> prc (out_gen (glbwit wit_constr) x)
   | ConstrMayEvalArgType ->
       pr_may_eval prc prlc
@@ -220,7 +218,6 @@ let rec pr_top_generic prc prlc prtac prpat x =
   | VarArgType -> pr_id (out_gen (topwit wit_var) x)
   | RefArgType -> pr_global (out_gen (topwit wit_ref) x)
   | GenArgType -> pr_top_generic prc prlc prtac prpat (out_gen (topwit wit_genarg) x)
-  | SortArgType -> pr_sort (out_gen (topwit wit_sort) x)
   | ConstrArgType -> prc (out_gen (topwit wit_constr) x)
   | ConstrMayEvalArgType -> prc (out_gen (topwit wit_constr_may_eval) x)
   | QuantHypArgType -> pr_quantified_hypothesis (out_gen (topwit wit_quant_hyp) x)
@@ -999,8 +996,11 @@ let pr_glob_tactic env = pr_glob_tactic_level env ltop
 let register_uniform_printer wit pr =
   Genprint.register_print0 wit pr pr pr
 
-let () = Genprint.register_print0 Constrarg.wit_intro_pattern
-  pr_intro_pattern pr_intro_pattern pr_intro_pattern
+let () =
+  Genprint.register_print0 Constrarg.wit_intro_pattern
+    pr_intro_pattern pr_intro_pattern pr_intro_pattern;
+  Genprint.register_print0 Constrarg.wit_sort
+    pr_glob_sort pr_glob_sort pr_sort
 
 let () =
   let printer _ _ prtac = prtac (0, E) in

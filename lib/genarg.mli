@@ -196,7 +196,6 @@ type argument_type =
   | RefArgType
   (** Specific types *)
   | GenArgType
-  | SortArgType
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType

@@ -1397,14 +1397,6 @@ and interp_genarg ist gl x =
       in_gen (topwit wit_ref) (pf_interp_reference ist gl (out_gen (glbwit wit_ref) x))
     | GenArgType ->
       in_gen (topwit wit_genarg) (interp_genarg ist gl (out_gen (glbwit wit_genarg) x))
-    | SortArgType ->
-      let (sigma,c_interp) =
-	pf_interp_constr ist gl
-	  (GSort (dloc,out_gen (glbwit wit_sort) x), None)
-      in
-      evdref := sigma;
-      in_gen (topwit wit_sort)
-        (destSort c_interp)
     | ConstrArgType ->
       let (sigma,c_interp) = pf_interp_constr ist gl (out_gen (glbwit wit_constr) x) in
       evdref := sigma;
@@ -1879,8 +1871,6 @@ and interp_atomic ist gl tac =
         Value.of_constr (constr_of_global
           (pf_interp_reference ist gl (out_gen (glbwit wit_ref) x)))
     | GenArgType -> f (out_gen (glbwit wit_genarg) x)
-    | SortArgType ->
-        Value.of_constr (mkSort (interp_sort (out_gen (glbwit wit_sort) x)))
     | ConstrArgType ->
         let (sigma,v) = mk_constr_value ist gl (out_gen (glbwit wit_constr) x) in
 	evdref := sigma;
@@ -2017,7 +2007,9 @@ let () =
 
 let () =
   let interp ist gl pat = (gl.sigma, interp_intro_pattern ist gl pat) in
-  Geninterp.register_interp0 wit_intro_pattern interp
+  Geninterp.register_interp0 wit_intro_pattern interp;
+  let interp ist gl s = (gl.sigma, interp_sort s) in
+  Geninterp.register_interp0 wit_sort interp
 
 let () =
   let interp ist gl tac =

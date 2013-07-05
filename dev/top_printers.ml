@@ -358,7 +358,6 @@ let rec pr_argument_type = function
   | RefArgType -> str"ref"
   (* Specific types *)
   | GenArgType -> str"genarg"
-  | SortArgType -> str"sort"
   | ConstrArgType -> str"constr"
   | ConstrMayEvalArgType -> str"constr-may-eval"
   | QuantHypArgType -> str"qhyp"

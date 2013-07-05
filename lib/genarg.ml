@@ -17,7 +17,6 @@ type argument_type =
   | RefArgType
   (* Specific types *)
   | GenArgType
-  | SortArgType
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
@@ -36,7 +35,6 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | VarArgType, VarArgType -> true
 | RefArgType, RefArgType -> true
 | GenArgType, GenArgType -> true
-| SortArgType, SortArgType -> true
 | ConstrArgType, ConstrArgType -> true
 | ConstrMayEvalArgType, ConstrMayEvalArgType -> true
 | QuantHypArgType, QuantHypArgType -> true

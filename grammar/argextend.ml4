@@ -36,7 +36,6 @@ let rec make_wit loc = function
   | RefArgType -> <:expr< Constrarg.wit_ref >>
   | QuantHypArgType -> <:expr< Constrarg.wit_quant_hyp >>
   | GenArgType -> <:expr< Constrarg.wit_genarg >>
-  | SortArgType -> <:expr< Constrarg.wit_sort >>
   | ConstrArgType -> <:expr< Constrarg.wit_constr >>
   | ConstrMayEvalArgType -> <:expr< Constrarg.wit_constr_may_eval >>
   | RedExprArgType -> <:expr< Constrarg.wit_red_expr >>

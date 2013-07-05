@@ -768,8 +768,6 @@ and intern_genarg ist x =
       in_gen (glbwit wit_ref) (intern_global_reference ist (out_gen (rawwit wit_ref) x))
   | GenArgType ->
       in_gen (glbwit wit_genarg) (intern_genarg ist (out_gen (rawwit wit_genarg) x))
-  | SortArgType ->
-      in_gen (glbwit wit_sort) (out_gen (rawwit wit_sort) x)
   | ConstrArgType ->
       in_gen (glbwit wit_constr) (intern_constr ist (out_gen (rawwit wit_constr) x))
   | ConstrMayEvalArgType ->
@@ -937,6 +935,8 @@ let add_tacdef local isrec tacl =
 
 (** Registering *)
 
+let lift intern = (); fun ist x -> (ist, intern ist x)
+
 let () =
   let intern_intro_pattern ist pat =
     let lf = ref Id.Set.empty in
@@ -947,8 +947,8 @@ let () =
   Genintern.register_intern0 wit_intro_pattern intern_intro_pattern
 
 let () =
-  let intern ist tac = (ist, intern_tactic_or_tacarg ist tac) in
-  Genintern.register_intern0 wit_tactic intern
+  Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
+  Genintern.register_intern0 wit_sort (fun ist s -> (ist, s))
 
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
