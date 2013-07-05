@@ -12,6 +12,7 @@ open Genarg
 open Q_util
 open Egramml
 open Compat
+open Pcoq
 
 let loc = CompatLoc.ghost
 let default_loc = <:expr< Loc.ghost >>
@@ -42,8 +43,7 @@ let rec make_wit loc = function
   | OpenConstrArgType b -> <:expr< Constrarg.wit_open_constr_gen $mlexpr_of_bool b$ >>
   | ConstrWithBindingsArgType -> <:expr< Constrarg.wit_constr_with_bindings >>
   | BindingsArgType -> <:expr< Constrarg.wit_bindings >>
-  | List0ArgType t -> <:expr< Genarg.wit_list0 $make_wit loc t$ >>
-  | List1ArgType t -> <:expr< Genarg.wit_list1 $make_wit loc t$ >>
+  | ListArgType t -> <:expr< Genarg.wit_list $make_wit loc t$ >>
   | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>
   | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_wit loc t1$ $make_wit loc t2$ >>
@@ -56,16 +56,26 @@ let make_topwit loc arg = <:expr< Genarg.topwit $make_wit loc arg$ >>
 let has_extraarg =
   List.exists (function GramNonTerminal(_,ExtraArgType _,_,_) -> true | _ -> false)
 
+let rec is_possibly_empty = function
+| Aopt _ | Alist0 _ | Alist0sep _ | Amodifiers _ -> true
+| Alist1 t | Alist1sep (t, _) -> is_possibly_empty t
+| _ -> false
+
+let rec get_empty_entry = function
+| Aopt _ -> <:expr< None >>
+| Alist0 _ | Alist0sep _ | Amodifiers _ -> <:expr< [] >>
+| Alist1 t | Alist1sep (t, _) -> <:expr< [$get_empty_entry t$] >>
+| _ -> assert false
+
 let statically_known_possibly_empty s (prods,_) =
   List.for_all (function
     | GramNonTerminal(_,ExtraArgType s',_,_) ->
         (* For ExtraArg we don't know (we'll have to test dynamically) *)
         (* unless it is a recursive call *)
         s <> s'
-    | GramNonTerminal(_,(OptArgType _|List0ArgType _),_,_) ->
-        (* Opt and List0 parses the empty string *)
-        true
-    | _ ->
+    | GramNonTerminal(_,_,e,_) ->
+        is_possibly_empty e
+    | GramTerminal _ ->
         (* This consumes a token for sure *) false)
       prods
 
@@ -76,10 +86,8 @@ let possibly_empty_subentries loc (prods,act) =
         let s = Names.Id.to_string id in <:expr< let $lid:s$ = $v$ in $e$ >> in
   let rec aux = function
     | [] -> <:expr< let loc = $default_loc$ in let _ = loc in $act$ >>
-    | GramNonTerminal(_,OptArgType _,_,p) :: tl ->
-        bind_name p <:expr< None >> (aux tl)
-    | GramNonTerminal(_,List0ArgType _,_,p) :: tl ->
-        bind_name p <:expr< [] >> (aux tl)
+    | GramNonTerminal(_,_,e,p) :: tl when is_possibly_empty e ->
+        bind_name p (get_empty_entry e) (aux tl)
     | GramNonTerminal(_,(ExtraArgType _ as t),_,p) :: tl ->
         (* We check at runtime if extraarg s parses "epsilon" *)
         let s = match p with None -> "_" | Some id -> Names.Id.to_string id in
@@ -93,7 +101,7 @@ let possibly_empty_subentries loc (prods,act) =
     (* declares loc because some code can refer to it; *)
     (* ensures loc is used to avoid "unused variable" warning *)
     (true, <:expr< try Some $aux prods$
-                   with [ e when Errors.noncritical e -> None ] >>)
+                   with [ Exit -> None ] >>)
   else
     (* Static optimisation *)
     (false, aux prods)
@@ -262,7 +270,7 @@ EXTEND
     [ "2"
       [ e1 = argtype; "*"; e2 = argtype -> PairArgType (e1, e2) ]
     | "1"
-      [ e = argtype; LIDENT "list" -> List0ArgType e
+      [ e = argtype; LIDENT "list" -> ListArgType e
       | e = argtype; LIDENT "option" -> OptArgType e ]
     | "0"
       [ e = LIDENT -> fst (interp_entry_name false None e "")

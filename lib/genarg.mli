@@ -162,10 +162,7 @@ val top_unpack : 'r top_unpack -> tlevel generic_argument -> 'r
 Those functions fail if they are applied to an argument which has not the right
 dynamic type. *)
 
-val fold_list0 :
- ('a generic_argument -> 'c -> 'c) -> 'a generic_argument -> 'c -> 'c
-
-val fold_list1 :
+val fold_list :
  ('a generic_argument -> 'c -> 'c) -> 'a generic_argument -> 'c -> 'c
 
 val fold_opt :
@@ -178,10 +175,7 @@ val fold_pair :
 (** [app_list0] fails if applied to an argument not of tag [List0 t]
     for some [t]; it's the responsability of the caller to ensure it *)
 
-val app_list0 : ('a generic_argument -> 'b generic_argument) ->
-'a generic_argument -> 'b generic_argument
-
-val app_list1 : ('a generic_argument -> 'b generic_argument) ->
+val app_list : ('a generic_argument -> 'b generic_argument) ->
 'a generic_argument -> 'b generic_argument
 
 val app_opt : ('a generic_argument -> 'b generic_argument) ->
@@ -210,8 +204,7 @@ type argument_type =
   | ConstrWithBindingsArgType
   | BindingsArgType
   | RedExprArgType
-  | List0ArgType of argument_type
-  | List1ArgType of argument_type
+  | ListArgType of argument_type
   | OptArgType of argument_type
   | PairArgType of argument_type * argument_type
   | ExtraArgType of string
@@ -250,8 +243,7 @@ end
 
 (** {6 Parameterized types} *)
 
-val wit_list0 : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
-val wit_list1 : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
+val wit_list : ('a, 'b, 'c) genarg_type -> ('a list, 'b list, 'c list) genarg_type
 val wit_opt : ('a, 'b, 'c) genarg_type -> ('a option, 'b option, 'c option) genarg_type
 val wit_pair : ('a1, 'b1, 'c1) genarg_type -> ('a2, 'b2, 'c2) genarg_type ->
   ('a1 * 'a2, 'b1 * 'b2, 'c1 * 'c2) genarg_type

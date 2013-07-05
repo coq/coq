@@ -123,14 +123,14 @@ let closed_term_ast l =
   TacFun([Some(Id.of_string"t")],
   TacAtom(Loc.ghost,TacExtend(Loc.ghost,"closed_term",
   [Genarg.in_gen Constrarg.wit_constr (mkVar(Id.of_string"t"));
-   Genarg.in_gen (Genarg.wit_list1 Constrarg.wit_ref) l])))
+   Genarg.in_gen (Genarg.wit_list Constrarg.wit_ref) l])))
 *)
 let closed_term_ast l =
   let l = List.map (fun gr -> ArgArg(Loc.ghost,gr)) l in
   TacFun([Some(Id.of_string"t")],
   TacAtom(Loc.ghost,TacExtend(Loc.ghost,"closed_term",
   [Genarg.in_gen (Genarg.glbwit Constrarg.wit_constr) (GVar(Loc.ghost,Id.of_string"t"),None);
-   Genarg.in_gen (Genarg.glbwit (Genarg.wit_list1 Constrarg.wit_ref)) l])))
+   Genarg.in_gen (Genarg.glbwit (Genarg.wit_list Constrarg.wit_ref)) l])))
 (*
 let _ = add_tacdef false ((Loc.ghost,Id.of_string"ring_closed_term"
 *)

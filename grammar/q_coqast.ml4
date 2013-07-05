@@ -214,8 +214,7 @@ let rec mlexpr_of_argtype loc = function
   | Genarg.SortArgType -> <:expr< Genarg.SortArgType >>
   | Genarg.ConstrArgType -> <:expr< Genarg.ConstrArgType >>
   | Genarg.ConstrMayEvalArgType -> <:expr< Genarg.ConstrMayEvalArgType >>
-  | Genarg.List0ArgType t -> <:expr< Genarg.List0ArgType $mlexpr_of_argtype loc t$ >>
-  | Genarg.List1ArgType t -> <:expr< Genarg.List1ArgType $mlexpr_of_argtype loc t$ >>
+  | Genarg.ListArgType t -> <:expr< Genarg.ListArgType $mlexpr_of_argtype loc t$ >>
   | Genarg.OptArgType t -> <:expr< Genarg.OptArgType $mlexpr_of_argtype loc t$ >>
   | Genarg.PairArgType (t1,t2) ->
       let t1 = mlexpr_of_argtype loc t1 in

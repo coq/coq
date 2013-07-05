@@ -58,11 +58,8 @@ let to_int v =
 
 let to_list v =
   let v = normalize v in
-  try Some (fold_list0 (fun v accu -> v :: accu) v [])
-  with Failure _ ->
-    try Some (fold_list1 (fun v accu -> v :: accu) v [])
-    with Failure _ ->
-      None
+  try Some (fold_list (fun v accu -> v :: accu) v [])
+  with Failure _ -> None
 
 end
 

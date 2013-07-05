@@ -789,8 +789,7 @@ and intern_genarg ist x =
   | BindingsArgType ->
       in_gen (glbwit wit_bindings)
         (intern_bindings ist (out_gen (rawwit wit_bindings) x))
-  | List0ArgType _ -> app_list0 (intern_genarg ist) x
-  | List1ArgType _ -> app_list1 (intern_genarg ist) x
+  | ListArgType _ -> app_list (intern_genarg ist) x
   | OptArgType _ -> app_opt (intern_genarg ist) x
   | PairArgType _ -> app_pair (intern_genarg ist) (intern_genarg ist) x
   | ExtraArgType s ->

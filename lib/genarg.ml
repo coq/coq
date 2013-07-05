@@ -25,8 +25,7 @@ type argument_type =
   | ConstrWithBindingsArgType
   | BindingsArgType
   | RedExprArgType
-  | List0ArgType of argument_type
-  | List1ArgType of argument_type
+  | ListArgType of argument_type
   | OptArgType of argument_type
   | PairArgType of argument_type * argument_type
   | ExtraArgType of string
@@ -45,8 +44,7 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | ConstrWithBindingsArgType, ConstrWithBindingsArgType -> true
 | BindingsArgType, BindingsArgType -> true
 | RedExprArgType, RedExprArgType -> true
-| List0ArgType arg1, List0ArgType arg2 -> argument_type_eq arg1 arg2
-| List1ArgType arg1, List1ArgType arg2 -> argument_type_eq arg1 arg2
+| ListArgType arg1, ListArgType arg2 -> argument_type_eq arg1 arg2
 | OptArgType arg1, OptArgType arg2 -> argument_type_eq arg1 arg2
 | PairArgType (arg1l, arg1r), PairArgType (arg2l, arg2r) ->
   argument_type_eq arg1l arg2l && argument_type_eq arg1r arg2r
@@ -73,9 +71,7 @@ let rawwit t = t
 let glbwit t = t
 let topwit t = t
 
-let wit_list0 t = List0ArgType t
-
-let wit_list1 t = List1ArgType t
+let wit_list t = ListArgType t
 
 let wit_opt t = OptArgType t
 
@@ -85,15 +81,10 @@ let in_gen t o = (t,Obj.repr o)
 let out_gen t (t',o) = if argument_type_eq t t' then Obj.magic o else failwith "out_gen"
 let genarg_tag (s,_) = s
 
-let fold_list0 f = function
-  | (List0ArgType t, l) ->
+let fold_list f = function
+  | (ListArgType t, l) ->
       List.fold_right (fun x -> f (in_gen t x)) (Obj.magic l)
-  | _ -> failwith "Genarg: not a list0"
-
-let fold_list1 f = function
-  | (List1ArgType t, l) ->
-      List.fold_right (fun x -> f (in_gen t x)) (Obj.magic l)
-  | _ -> failwith "Genarg: not a list1"
+  | _ -> failwith "Genarg: not a list"
 
 let fold_opt f a = function
   | (OptArgType t, l) ->
@@ -108,17 +99,11 @@ let fold_pair f = function
       f (in_gen t1 x1) (in_gen t2 x2)
   | _ -> failwith "Genarg: not a pair"
 
-let app_list0 f = function
-  | (List0ArgType t as u, l) ->
+let app_list f = function
+  | (ListArgType t as u, l) ->
       let o = Obj.magic l in
       (u, Obj.repr (List.map (fun x -> out_gen t (f (in_gen t x))) o))
   | _ -> failwith "Genarg: not a list0"
-
-let app_list1 f = function
-  | (List1ArgType t as u, l) ->
-      let o = Obj.magic l in
-      (u, Obj.repr (List.map (fun x -> out_gen t (f (in_gen t x))) o))
-  | _ -> failwith "Genarg: not a list1"
 
 let app_opt f = function
   | (OptArgType t as u, l) ->
@@ -175,7 +160,7 @@ let make0 = create_arg
 
 let default_empty_value t =
   let rec aux = function
-  | List0ArgType _ -> Some (Obj.repr [])
+  | ListArgType _ -> Some (Obj.repr [])
   | OptArgType _ -> Some (Obj.repr None)
   | PairArgType(t1, t2) ->
       (match aux t1, aux t2 with

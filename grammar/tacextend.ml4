@@ -111,6 +111,26 @@ let make_one_printing_rule se (pt,e) =
 
 let make_printing_rule se = mlexpr_of_list (make_one_printing_rule se)
 
+let make_empty_check = function
+| GramNonTerminal(_, t, e, _)->
+  let is_extra = match t with ExtraArgType _ -> true | _ -> false in
+  if is_possibly_empty e || is_extra then
+    (* This possibly parses epsilon *)
+    let wit = make_wit loc t in
+    let rawwit = make_rawwit loc t in
+    <:expr<
+      match Genarg.default_empty_value $wit$ with
+      [ None -> raise Exit
+      | Some v ->
+        Tacintern.intern_genarg Tacintern.fully_empty_glob_sign
+          (Genarg.in_gen $rawwit$ v) ] >>
+  else
+  (* This does not parse epsilon (this Exit is static time) *)
+    raise Exit
+| GramTerminal _ ->
+  (* Idem *)
+  raise Exit
+
 let rec possibly_empty_subentries loc = function
   | [] -> []
   | (s,prodsl) :: l ->
@@ -118,24 +138,10 @@ let rec possibly_empty_subentries loc = function
     | [] -> (false,<:expr< None >>)
     | prods :: rest ->
       try
-        let l = List.map (function
-        | GramNonTerminal(_,(List0ArgType _|
-                             OptArgType _|
-                             ExtraArgType _ as t),_,_)->
-            (* This possibly parses epsilon *)
-            let wit = make_wit loc t in
-            let rawwit = make_rawwit loc t in
-            <:expr< match Genarg.default_empty_value $wit$ with
-                    [ None -> failwith ""
-                    | Some v ->
-                        Tacintern.intern_genarg Tacintern.fully_empty_glob_sign
-                          (Genarg.in_gen $rawwit$ v) ] >>
-        | GramTerminal _ | GramNonTerminal(_,_,_,_) ->
-            (* This does not parse epsilon (this Exit is static time) *)
-             raise Exit) prods in
+        let l = List.map make_empty_check prods in
         if has_extraarg prods then
           (true,<:expr< try Some $mlexpr_of_list (fun x -> x) l$
-                        with [ Failure "" -> $snd (aux rest)$ ] >>)
+                        with [ Exit -> $snd (aux rest)$ ] >>)
         else
           (true, <:expr< Some $mlexpr_of_list (fun x -> x) l$ >>)
       with Exit -> aux rest in

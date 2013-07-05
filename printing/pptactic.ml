@@ -161,12 +161,9 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
       pr_with_bindings prc prlc (out_gen (rawwit wit_constr_with_bindings) x)
   | BindingsArgType ->
       pr_bindings_no_with prc prlc (out_gen (rawwit wit_bindings) x)
-  | List0ArgType _ ->
+  | ListArgType _ ->
       hov 0 (pr_sequence (pr_raw_generic prc prlc prtac prpat prref)
-	(fold_list0 (fun a l -> a::l) x []))
-  | List1ArgType _ ->
-      hov 0 (pr_sequence (pr_raw_generic prc prlc prtac prpat prref)
-	(fold_list1 (fun a l -> a::l) x []))
+	(fold_list (fun a l -> a::l) x []))
   | OptArgType _ -> hov 0 (fold_opt (pr_raw_generic prc prlc prtac prpat prref) (mt()) x)
   | PairArgType _ ->
       hov 0
@@ -203,12 +200,9 @@ let rec pr_glb_generic prc prlc prtac prpat x =
       pr_with_bindings prc prlc (out_gen (glbwit wit_constr_with_bindings) x)
   | BindingsArgType ->
       pr_bindings_no_with prc prlc (out_gen (glbwit wit_bindings) x)
-  | List0ArgType _ ->
+  | ListArgType _ ->
       hov 0 (pr_sequence (pr_glb_generic prc prlc prtac prpat)
-	(fold_list0 (fun a l -> a::l) x []))
-  | List1ArgType _ ->
-      hov 0 (pr_sequence (pr_glb_generic prc prlc prtac prpat)
-	(fold_list1 (fun a l -> a::l) x []))
+	(fold_list (fun a l -> a::l) x []))
   | OptArgType _ -> hov 0 (fold_opt (pr_glb_generic prc prlc prtac prpat) (mt()) x)
   | PairArgType _ ->
       hov 0
@@ -239,12 +233,9 @@ let rec pr_top_generic prc prlc prtac prpat x =
       pr_with_bindings prc prlc (c,b)
   | BindingsArgType ->
       pr_bindings_no_with prc prlc (out_gen (topwit wit_bindings) x).Evd.it
-  | List0ArgType _ ->
+  | ListArgType _ ->
       hov 0 (pr_sequence (pr_top_generic prc prlc prtac prpat)
-	(fold_list0 (fun a l -> a::l) x []))
-  | List1ArgType _ ->
-      hov 0 (pr_sequence (pr_top_generic prc prlc prtac prpat)
-	(fold_list1 (fun a l -> a::l) x []))
+	(fold_list (fun a l -> a::l) x []))
   | OptArgType _ -> hov 0 (fold_opt (pr_top_generic prc prlc prtac prpat) (mt()) x)
   | PairArgType _ ->
       hov 0

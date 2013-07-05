@@ -366,8 +366,7 @@ let rec pr_argument_type = function
   | ConstrWithBindingsArgType -> str"constr-with-bindings"
   | BindingsArgType -> str"bindings"
   | RedExprArgType -> str"redexp"
-  | List0ArgType t -> pr_argument_type t ++ str" list0"
-  | List1ArgType t -> pr_argument_type t ++ str" list1"
+  | ListArgType t -> pr_argument_type t ++ str" list"
   | OptArgType t -> pr_argument_type t ++ str" opt"
   | PairArgType (t1,t2) ->
       str"("++ pr_argument_type t1 ++ str"*" ++ pr_argument_type t2 ++str")"

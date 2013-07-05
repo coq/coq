@@ -768,23 +768,23 @@ let rec interp_entry_name static up_level s sep =
   let l = String.length s in
   if l > 8 && coincide s "ne_" 0 && coincide s "_list" (l - 5) then
     let t, g = interp_entry_name static up_level (String.sub s 3 (l-8)) "" in
-    List1ArgType t, Alist1 g
+    ListArgType t, Alist1 g
   else if l > 12 && coincide s "ne_" 0 &&
                    coincide s "_list_sep" (l-9) then
     let t, g = interp_entry_name static up_level (String.sub s 3 (l-12)) "" in
-    List1ArgType t, Alist1sep (g,sep)
+    ListArgType t, Alist1sep (g,sep)
   else if l > 5 && coincide s "_list" (l-5) then
     let t, g = interp_entry_name static up_level (String.sub s 0 (l-5)) "" in
-    List0ArgType t, Alist0 g
+    ListArgType t, Alist0 g
   else if l > 9 && coincide s "_list_sep" (l-9) then
     let t, g = interp_entry_name static up_level (String.sub s 0 (l-9)) "" in
-    List0ArgType t, Alist0sep (g,sep)
+    ListArgType t, Alist0sep (g,sep)
   else if l > 4 && coincide s "_opt" (l-4) then
     let t, g = interp_entry_name static up_level (String.sub s 0 (l-4)) "" in
     OptArgType t, Aopt g
   else if l > 5 && coincide s "_mods" (l-5) then
     let t, g = interp_entry_name static up_level (String.sub s 0 (l-1)) "" in
-    List0ArgType t, Amodifiers g
+    ListArgType t, Amodifiers g
   else
     let s = match s with "hyp" -> "var" | _ -> s in
     let check_lvl n = match up_level with

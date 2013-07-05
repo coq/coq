@@ -317,8 +317,7 @@ and subst_genarg subst (x:glob_generic_argument) =
   | BindingsArgType ->
       in_gen (glbwit wit_bindings)
         (subst_bindings subst (out_gen (glbwit wit_bindings) x))
-  | List0ArgType _ -> app_list0 (subst_genarg subst) x
-  | List1ArgType _ -> app_list1 (subst_genarg subst) x
+  | ListArgType _ -> app_list (subst_genarg subst) x
   | OptArgType _ -> app_opt (subst_genarg subst) x
   | PairArgType _ -> app_pair (subst_genarg subst) (subst_genarg subst) x
   | ExtraArgType s ->
