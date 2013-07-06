@@ -556,6 +556,8 @@ module HashtblGlobal = Hashtbl.Make(HashedTypeGlobal)
 
 let global_tbl = HashtblGlobal.create 19991
 
+let clear_global_tbl () = HashtblGlobal.clear global_tbl
+
 let push_global gn t =
   try HashtblGlobal.find global_tbl t
   with Not_found ->
@@ -1473,25 +1475,28 @@ and compile_named env auxdefs id =
   | None -> 
       Glet(Gnamed id, MLprimitive (Mk_var id))::auxdefs
 
-let compile_constant env prefix con body =
+let compile_constant env prefix ~interactive con body =
   match body with
   | Def t ->
       let t = Lazyconstr.force t in
       let code = lambda_of_constr env t in
-      let code, name =
-        if is_lazy t then mk_lazy code, LinkedLazy prefix
-        else code, Linked prefix
+      let is_lazy = is_lazy t in
+      let code = if is_lazy then mk_lazy code else code in
+      let name =
+        if interactive then LinkedInteractive (prefix, is_lazy)
+        else Linked (prefix, is_lazy)
       in
       let l = con_label con in
       let auxdefs,code = compile_with_fv env [] (Some l) code in
-      let l =
+      let code =
         optimize_stk (Glet(Gconstant ("",con),code)::auxdefs)
       in
-      l, name
+      code, name
   | _ -> 
       let i = push_symbol (SymbConst con) in
       [Glet(Gconstant ("",con), MLapp (MLprimitive Mk_const, [|get_const_code i|]))],
-      Linked prefix
+      if interactive then LinkedInteractive (prefix, false)
+      else Linked (prefix, false)
 
 let loaded_native_files = ref ([] : string list)
 
@@ -1502,16 +1507,17 @@ let register_native_file s =
 let is_code_loaded ~interactive name =
   match !name with
   | NotLinked -> false
-  | LinkedInteractive s ->
+  | LinkedInteractive (s,_) ->
       if (interactive && List.mem s !loaded_native_files) then true
       else (name := NotLinked; false)
-  | LinkedLazy s | Linked s ->
-   if List.mem s !loaded_native_files then true else (name := NotLinked; false)
+  | Linked (s,_) ->
+      if List.mem s !loaded_native_files then true
+      else (name := NotLinked; false)
 
 let param_name = Name (id_of_string "params")
 let arg_name = Name (id_of_string "arg")
 
-let compile_mind prefix mb mind stack =
+let compile_mind prefix ~interactive mb mind stack =
   let f i stack ob =
     let gtype = Gtype((mind, i), Array.map snd ob.mind_reloc_tbl) in
     let j = push_symbol (SymbInd (mind,i)) in
@@ -1531,7 +1537,11 @@ let compile_mind prefix mb mind stack =
     in
     Array.fold_left_i add_construct (gtype::accu::stack) ob.mind_reloc_tbl
   in
-  let upd = (mb.mind_native_name, Linked prefix) in
+  let name =
+    if interactive then LinkedInteractive (prefix, false)
+    else Linked (prefix, false)
+  in
+  let upd = (mb.mind_native_name, name) in
   Array.fold_left_i f stack mb.mind_packets, upd
 
 type code_location_update =
@@ -1550,7 +1560,7 @@ let compile_mind_deps env prefix ~interactive
     || Mindmap_env.mem mind mind_updates
   then init
   else
-    let comp_stack, upd = compile_mind prefix mib mind comp_stack in
+    let comp_stack, upd = compile_mind prefix ~interactive mib mind comp_stack in
     let mind_updates = Mindmap_env.add mind upd mind_updates in
     (comp_stack, (mind_updates, const_updates))
 
@@ -1558,8 +1568,8 @@ let compile_mind_deps env prefix ~interactive
    reverse order, as well as linking information updates *)
 let rec compile_deps env prefix ~interactive init t =
   match kind_of_term t with
-  | Meta _ -> invalid_arg "Nativecode.get_deps: Meta"
-  | Evar _ -> invalid_arg "Nativecode.get_deps: Evar"
+  | Meta _ -> invalid_arg "Nativecode.compile_deps: Meta"
+  | Evar _ -> invalid_arg "Nativecode.compile_deps: Evar"
   | Ind (mind,_) -> compile_mind_deps env prefix ~interactive init mind
   | Const c ->
       let c = get_allias env c in
@@ -1573,7 +1583,7 @@ let rec compile_deps env prefix ~interactive init t =
         | Def t -> compile_deps env prefix ~interactive init (Lazyconstr.force t)
         | _ -> init
       in
-      let code, name = compile_constant env prefix c cb.const_body in
+      let code, name = compile_constant env prefix ~interactive c cb.const_body in
       let comp_stack = code@comp_stack in
       let const_updates = Cmap_env.add c (cb.const_native_name, name) const_updates in
       comp_stack, (mind_updates, const_updates)
@@ -1589,18 +1599,24 @@ let compile_constant_field env prefix con (code, (mupds, cupds)) cb =
   match cb.const_body with
   | Def t ->
     let t = Lazyconstr.force t in
-    let (code, (mupds, cupds)) = compile_deps env prefix ~interactive:false acc t in
-    let (gl, name) = compile_constant env prefix con cb.const_body in
+    let (code, (mupds, cupds)) =
+      compile_deps env prefix ~interactive:false acc t
+    in
+    let (gl, name) =
+      compile_constant ~interactive:false env prefix con cb.const_body
+    in
     let cupds = Cmap_env.add con (cb.const_native_name, name) cupds in
     gl@code, (mupds, cupds)
   | _ ->
-    let (gl, name) = compile_constant env prefix con cb.const_body in
+    let (gl, name) =
+      compile_constant env prefix ~interactive:false con cb.const_body
+    in
     let cupds = Cmap_env.add con (cb.const_native_name, name) cupds in
     gl@code, (mupds, cupds)
 
 let compile_mind_field prefix mp l (code, (mupds, cupds)) mb =
   let mind = MutInd.make2 mp l in
-  let code, upd = compile_mind prefix mb mind code in
+  let code, upd = compile_mind prefix ~interactive:false mb mind code in
   let mupds = Mindmap_env.add mind upd mupds in
   code, (mupds, cupds)
 

@@ -40,10 +40,12 @@ type constant_def =
   | Def of Lazyconstr.constr_substituted
   | OpaqueDef of Lazyconstr.lazy_constr
 
+(** Linking information for the native compiler. The boolean flag indicates if
+  the term is protected by a lazy tag *)
+
 type native_name =
-  | Linked of string
-  | LinkedLazy of string
-  | LinkedInteractive of string
+  | Linked of string * bool
+  | LinkedInteractive of string * bool
   | NotLinked
 
 type constant_body = {

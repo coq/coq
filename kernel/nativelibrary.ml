@@ -45,6 +45,7 @@ let dump_library mp dp env mod_expr =
       let env = add_signature mp msb empty_delta_resolver env in
       let prefix = mod_uid_of_dirpath dp ^ "." in
       let t0 = Sys.time () in 
+      clear_global_tbl ();
       clear_symb_tbl ();
       let mlcode, upds =
         List.fold_left (translate_field prefix mp env) ([],empty_updates) msb

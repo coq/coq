@@ -90,17 +90,15 @@ let get_mind_prefix env mind =
    let mib = lookup_mind mind env in
    match !(mib.mind_native_name) with
    | NotLinked -> ""
-   | Linked s -> s
-   | LinkedLazy s -> s
-   | LinkedInteractive s -> s
+   | Linked (s,_) -> s
+   | LinkedInteractive (s,_) -> s
 
 let get_const_prefix env c =
    let cb = lookup_constant c env in
    match !(cb.const_native_name) with
    | NotLinked -> ""
-   | Linked s -> s
-   | LinkedLazy s -> s
-   | LinkedInteractive s -> s
+   | Linked (s,_) -> s
+   | LinkedInteractive (s,_) -> s
     
 (* A generic map function *)
 

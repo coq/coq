@@ -44,6 +44,8 @@ type code_location_update
 type code_location_updates
 type linkable_code = global list * code_location_updates
 
+val clear_global_tbl : unit -> unit
+
 val empty_updates : code_location_updates
 
 val register_native_file : string -> unit
