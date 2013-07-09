@@ -270,7 +270,7 @@ GEXTEND Gram
     [ [ c = smart_global; nl = occs -> (nl,c) ] ]
   ;
   intropatterns:
-    [ [ l = LIST0 simple_intropattern -> l ]]
+    [ [ l = LIST0 nonsimple_intropattern -> l ]]
   ;
   disjunctive_intropattern:
     [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> !@loc,IntroOrAndPattern tc
@@ -291,15 +291,18 @@ GEXTEND Gram
     [ [ prefix = pattern_ident -> !@loc, IntroFresh prefix
       | "?" -> !@loc, IntroAnonymous
       | id = ident -> !@loc, IntroIdentifier id
-      | "*" -> !@loc, IntroForthcoming true
-      | "**" -> !@loc, IntroForthcoming false ] ]
-  ;
-  simple_intropattern:
-    [ [ pat = disjunctive_intropattern -> pat
-      | pat = naming_intropattern -> pat
       | "_" -> !@loc, IntroWildcard
       | "->" -> !@loc, IntroRewrite true
       | "<-" -> !@loc, IntroRewrite false ] ]
+  ;
+  nonsimple_intropattern:
+    [ [ l = simple_intropattern -> l
+      | "*" -> !@loc, IntroForthcoming true
+      | "**" -> !@loc, IntroForthcoming false ]]
+  ;
+  simple_intropattern:
+    [ [ pat = disjunctive_intropattern -> pat
+      | pat = naming_intropattern -> pat ] ]
   ;
   simple_binding:
     [ [ "("; id = ident; ":="; c = lconstr; ")" -> (!@loc, NamedHyp id, c)
