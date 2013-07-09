@@ -29,6 +29,8 @@ let smartmap_cast_type f c =
 
 let rec pr_intro_pattern (_,pat) = match pat with
   | IntroOrAndPattern pll -> pr_or_and_intro_pattern pll
+  | IntroInjection pl ->
+      str "[=" ++ hv 0 (prlist_with_sep spc pr_intro_pattern pl) ++ str "]"
   | IntroWildcard -> str "_"
   | IntroRewrite true -> str "->"
   | IntroRewrite false -> str "<-"

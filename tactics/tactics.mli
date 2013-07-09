@@ -398,7 +398,7 @@ val general_multi_rewrite :
 val subst_one :
   (bool -> Id.t -> Id.t * constr * bool -> tactic) Hook.t
 
-val declare_injector :
+val declare_intro_decomp_eq :
   ((int -> tactic) -> Coqlib.coq_eq_data * types *
    (types * constr * constr) ->
    clausenv -> tactic) -> unit

@@ -1134,7 +1134,38 @@ let set_eq_dec_scheme_kind k = eq_dec_scheme_kind_name := (fun _ -> k)
 
 let eqdep_dec = qualid_of_string "Coq.Logic.Eqdep_dec"
 
-let injEq_then tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
+let inject_if_homogenous_dependent_pair env sigma (eq,_,(t,t1,t2)) =
+  (* fetch the informations of the  pair *)
+  let ceq = constr_of_global Coqlib.glob_eq in
+  let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ in
+  let eqTypeDest = fst (destApp t) in
+  let _,ar1 = destApp t1 and
+      _,ar2 = destApp t2 in
+  let ind = destInd ar1.(0) in
+  (* check whether the equality deals with dep pairs or not *)
+  (* if yes, check if the user has declared the dec principle *)
+  (* and compare the fst arguments of the dep pair *)
+  let new_eq_args = [|type_of env sigma ar1.(3);ar1.(3);ar2.(3)|] in
+  if (eq_constr eqTypeDest (sigTconstr())) &&
+    (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) ind) &&
+    (is_conv env sigma ar1.(2) ar2.(2))
+  then begin
+    Library.require_library [Loc.ghost,eqdep_dec] (Some false);
+    let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
+      ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
+      (* cut with the good equality and prove the requested goal *)
+    tclTHENS (cut (mkApp (ceq,new_eq_args)))
+      [tclIDTAC; tclTHEN (apply (
+        mkApp(inj2,
+              [|ar1.(0);mkConst (find_scheme (!eq_dec_scheme_kind_name()) ind);
+                ar1.(1);ar1.(2);ar1.(3);ar2.(3)|])
+       )) (Auto.trivial [] [])
+      ]
+  (* not a dep eq or no decidable type found *)
+  end
+  else raise Not_dep_pair
+
+let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
   let env = eq_clause.env in
   match find_positions env sigma t1 t2 with
@@ -1147,64 +1178,32 @@ let injEq_then tac l2r (eq,_,(t,t1,t2) as u) eq_clause =
     | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
         errorlabstrm "Equality.inj" (str"Nothing to inject.")
     | Inr posns ->
-(* Est-ce utile à partir du moment où les arguments projetés subissent "nf" ?
-	let t1 = try_delta_expand env sigma t1 in
-	let t2 = try_delta_expand env sigma t2 in
-*)
-      try
-(* fetch the informations of the  pair *)
-        let ceq = constr_of_global Coqlib.glob_eq in
-        let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ in
-        let eqTypeDest = fst (destApp t) in
-        let _,ar1 = destApp t1 and
-            _,ar2 = destApp t2 in
-        let ind = destInd ar1.(0) in
-(* check whether the equality deals with dep pairs or not *)
-(* if yes, check if the user has declared the dec principle *)
-(* and compare the fst arguments of the dep pair *)
-        let new_eq_args = [|type_of env sigma ar1.(3);ar1.(3);ar2.(3)|] in
-        if (eq_constr eqTypeDest (sigTconstr())) &&
-           (Ind_tables.check_scheme (!eq_dec_scheme_kind_name()) ind) &&
-           (is_conv env sigma ar1.(2) ar2.(2))
-        then begin
-          Library.require_library [Loc.ghost,eqdep_dec] (Some false);
-          let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
-            ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
-          (* cut with the good equality and prove the requested goal *)
-          tclTHENS (cut (mkApp (ceq,new_eq_args)) )
-            [tclIDTAC; tclTHEN (apply (
-              mkApp(inj2,
-                    [|ar1.(0);mkConst (find_scheme (!eq_dec_scheme_kind_name()) ind);
-                      ar1.(1);ar1.(2);ar1.(3);ar2.(3)|])
-             )) (Auto.trivial [] [])
-            ]
-        (* not a dep eq or no decidable type found *)
-        end
-        else raise Not_dep_pair
-      with e when Errors.noncritical e ->
-	inject_at_positions env sigma l2r u eq_clause posns
+        try inject_if_homogenous_dependent_pair env sigma u
+        with e when (Errors.noncritical e || e = Not_dep_pair) ->
+        inject_at_positions env sigma l2r u eq_clause posns
           (tac (clenv_value eq_clause))
+
+let postInjEqTac ipats c n =
+  match ipats with
+  | Some ipats ->
+      let clear_tac =
+        if use_injection_pattern_l2r_order () && isVar c
+        then tclTRY (clear [destVar c])
+        else tclIDTAC in
+      let ipats =
+        if use_injection_pattern_l2r_order ()
+        then adjust_intro_patterns n ipats
+        else ipats in
+      tclTHEN
+        (clear_tac)
+        (intros_pattern MoveLast ipats)
+  | None -> tclIDTAC
 
 let injEq ipats =
   let l2r =
     if use_injection_pattern_l2r_order () & ipats <> None then true else false
   in
-  injEq_then
-    (fun c n -> match ipats with
-      | Some ipats ->
-          let clear_tac =
-            if use_injection_pattern_l2r_order () && isVar c
-            then tclTRY (clear [destVar c])
-            else tclIDTAC in
-          let ipats =
-            if use_injection_pattern_l2r_order ()
-            then adjust_intro_patterns n ipats
-            else ipats in
-          tclTHEN
-            (clear_tac)
-            (intros_pattern MoveLast ipats)
-      | None -> tclIDTAC)
-    l2r
+  injEqThen (postInjEqTac ipats) l2r
 
 let inj ipats with_evars = onEquality with_evars (injEq ipats)
 
@@ -1215,25 +1214,26 @@ let injClause ipats with_evars = function
 let injConcl gls  = injClause None false None gls
 let injHyp id gls = injClause None false (Some (ElimOnIdent (Loc.ghost,id))) gls
 
-let _ = declare_injector (fun tac -> injEq_then (fun _ -> tac) true)
-
-let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause gls =
+let decompEqThen ntac l2r (lbeq,_,(t,t1,t2) as u) clause gls =
   let sort = pf_apply get_type_of gls (pf_concl gls) in
-  let sigma =  clause.evd in
+  let sigma = clause.evd in
   let env = pf_env gls in
   match find_positions env sigma t1 t2 with
     | Inl (cpath, (_,dirn), _) ->
 	discr_positions env sigma u clause cpath dirn sort gls
     | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
-        ntac 0 gls
+        ntac (clenv_value clause) 0 gls
     | Inr posns ->
-	inject_at_positions env sigma false u clause (List.rev posns) ntac gls
+	inject_at_positions env sigma l2r u clause (List.rev posns)
+          (ntac (clenv_value clause)) gls
 
 let dEqThen with_evars ntac = function
-  | None -> onNegatedEquality with_evars (decompEqThen ntac)
-  | Some c -> onInductionArg (onEquality with_evars (decompEqThen ntac)) c
+  | None -> onNegatedEquality with_evars (decompEqThen ntac false)
+  | Some c -> onInductionArg (onEquality with_evars (decompEqThen ntac false)) c
 
-let dEq with_evars = dEqThen with_evars (fun x -> tclIDTAC)
+let dEq with_evars = dEqThen with_evars (fun c x -> tclIDTAC)
+
+let _ = declare_intro_decomp_eq (fun tac -> decompEqThen (fun _ -> tac) true)
 
 let swap_equality_args = function
   | MonomorphicLeibnizEq (e1,e2) -> [e2;e1]

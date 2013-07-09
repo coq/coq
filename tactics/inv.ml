@@ -308,7 +308,7 @@ let projectAndApply thin id eqname names depids gls =
     | _, Var id2 -> generalizeRewriteIntros (subst_hyp false id) depids id2 gls
     | _ -> tac id gls
   in
-  let deq_trailer id neqns =
+  let deq_trailer id _ neqns =
     tclTHENSEQ
       [(if not (List.is_empty names) then clear [id] else tclIDTAC);
        (tclMAP_i neqns (fun idopt ->
@@ -387,6 +387,8 @@ let rec get_names allow_conj (loc,pat) = match pat with
         (Some n, n :: List.map get_name l)
       end else
 	error"Nested conjunctive patterns not allowed for inversion equations."
+  | IntroInjection l ->
+      error "Injection patterns not allowed for inversion equations."
   | IntroOrAndPattern l ->
       error "Disjunctive patterns not allowed for inversion equations."
   | IntroIdentifier id ->

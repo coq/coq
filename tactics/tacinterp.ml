@@ -431,6 +431,8 @@ let rec intropattern_ids (loc,pat) = match pat with
   | IntroIdentifier id -> [id]
   | IntroOrAndPattern ll ->
       List.flatten (List.map intropattern_ids (List.flatten ll))
+  | IntroInjection l ->
+      List.flatten (List.map intropattern_ids l)
   | IntroWildcard | IntroAnonymous | IntroFresh _ | IntroRewrite _
   | IntroForthcoming _ -> []
 
@@ -717,6 +719,8 @@ let interp_message ist gl l =
 let rec interp_intro_pattern ist gl = function
   | loc, IntroOrAndPattern l ->
       loc, IntroOrAndPattern (interp_or_and_intro_pattern ist gl l)
+  | loc, IntroInjection l ->
+      loc, IntroInjection (interp_intro_pattern_list_as_list ist gl l)
   | loc, IntroIdentifier id ->
       loc, interp_intro_pattern_var loc ist (pf_env gl) id
   | loc, IntroFresh id ->

@@ -278,6 +278,8 @@ let intern_message ist = List.map (intern_message_token ist)
 let rec intern_intro_pattern lf ist = function
   | loc, IntroOrAndPattern l ->
       loc, IntroOrAndPattern (intern_or_and_intro_pattern lf ist l)
+  | loc, IntroInjection l ->
+      loc, IntroInjection (List.map (intern_intro_pattern lf ist) l)
   | loc, IntroIdentifier id ->
       loc, IntroIdentifier (intern_ident lf ist id)
   | loc, IntroFresh id ->

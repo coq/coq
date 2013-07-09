@@ -65,7 +65,8 @@ let mlexpr_of_intro_pattern = function
   | Misctypes.IntroForthcoming b -> <:expr< Misctypes.IntroForthcoming (mlexpr_of_bool $dloc$ b) >>
   | Misctypes.IntroIdentifier id ->
       <:expr< Misctypes.IntroIdentifier (mlexpr_of_ident $dloc$ id) >>
-  | Misctypes.IntroOrAndPattern _ | Misctypes.IntroRewrite _ ->
+  | Misctypes.IntroOrAndPattern _ | Misctypes.IntroRewrite _
+  | Misctypes.IntroInjection _ ->
       failwith "mlexpr_of_intro_pattern: TODO"
 
 let mlexpr_of_ident_option = mlexpr_of_option (mlexpr_of_ident)

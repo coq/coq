@@ -73,6 +73,17 @@ intros * (H1,H2).
 exact H1.
 Qed.
 
+(* Test injection using K, knowing that an equality is decidable *)
+(* Basic case, using sigT *)
+
+Scheme Equality for nat.
+Goal forall n:nat, forall P:nat -> Type, forall H1 H2:P n,
+  existT P n H1 = existT P n H2 -> H1 = H2.
+intros.
+injection H.
+intro H0. exact H0.
+Abort.
+
 (* Injection does not projects at positions in Prop... allow it?
 
 Inductive t (A:Prop) : Set := c : A -> t A.

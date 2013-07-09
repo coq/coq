@@ -18,6 +18,7 @@ type patvar = Id.t
 
 type intro_pattern_expr =
   | IntroOrAndPattern of or_and_intro_pattern_expr
+  | IntroInjection of (Loc.t * intro_pattern_expr) list
   | IntroWildcard
   | IntroRewrite of bool
   | IntroIdentifier of Id.t

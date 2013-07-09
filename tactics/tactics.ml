@@ -1323,9 +1323,9 @@ let adjust_intro_patterns nb ipats =
   | ip :: l -> ip :: aux (n-1) l in
   aux nb ipats
 
-let inj_function = ref (fun _ -> failwith "Not implemented")
+let intro_decomp_eq_function = ref (fun _ -> failwith "Not implemented")
 
-let declare_injector f = inj_function := f
+let declare_intro_decomp_eq f = intro_decomp_eq_function := f
 
 let my_find_eq_data_decompose gl t =
   try find_eq_data_decompose gl t
@@ -1334,31 +1334,28 @@ let my_find_eq_data_decompose gl t =
        known equalities will be dynamically registered *)
       -> raise Matching.PatternMatchingFailure
 
+let intro_decomp_eq loc b l l' thin tac id gl =
+  let c = mkVar id in
+  let _,t = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+  let eq,eq_args = my_find_eq_data_decompose gl t in
+  let eq_clause = make_clenv_binding gl (c,t) NoBindings in
+  !intro_decomp_eq_function
+    (fun n -> tac ((dloc,id)::thin) (adjust_intro_patterns n l @ l'))
+    (eq,t,eq_args) eq_clause gl
+
 let intro_or_and_pattern loc b ll l' thin tac id gl =
   let c = mkVar id in
   let ind,t = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  try
-    (* Use injection if an equality type *)
-    let eq,eq_args = my_find_eq_data_decompose gl t in
-    match fix_empty_or_and_pattern 1 ll with
-    | [l] ->
-        let eq_clause = make_clenv_binding gl (c,t) NoBindings in
-        !inj_function
-          (fun n -> tac ((dloc,id)::thin) (adjust_intro_patterns n l @ l'))
-          (eq,t,eq_args) eq_clause gl
-    | ll -> check_or_and_pattern_size loc ll 1; assert false
-  with Matching.PatternMatchingFailure ->
-    (* Use "destruct" otherwise *)
-    let nv = mis_constr_nargs ind in
-    let bracketed = b || not (List.is_empty l') in
-    let adjust n l = if bracketed then adjust_intro_patterns n l else l in
-    let ll = fix_empty_or_and_pattern (Array.length nv) ll in
-    check_or_and_pattern_size loc ll (Array.length nv);
-    tclTHENLASTn
-      (tclTHEN (simplest_case c) (clear [id]))
-      (Array.map2 (fun n l -> tac thin ((adjust n l)@l'))
-	nv (Array.of_list ll))
-      gl
+  let nv = mis_constr_nargs ind in
+  let bracketed = b || not (List.is_empty l') in
+  let adjust n l = if bracketed then adjust_intro_patterns n l else l in
+  let ll = fix_empty_or_and_pattern (Array.length nv) ll in
+  check_or_and_pattern_size loc ll (Array.length nv);
+  tclTHENLASTn
+    (tclTHEN (simplest_case c) (clear [id]))
+    (Array.map2 (fun n l -> tac thin ((adjust n l)@l'))
+       nv (Array.of_list ll))
+    gl
 
 let rewrite_hyp l2r id gl =
   let rew_on l2r =
@@ -1393,6 +1390,8 @@ let rec explicit_intro_names = function
       | IntroRewrite _ | IntroForthcoming _)) :: l -> explicit_intro_names l
 | (_, IntroOrAndPattern ll) :: l' ->
     List.flatten (List.map (fun l -> explicit_intro_names (l@l')) ll)
+| (_, IntroInjection l) :: l' ->
+    explicit_intro_names (l@l')
 | [] ->
     []
 
@@ -1441,6 +1440,10 @@ let rec intros_patterns b avoid ids thin destopt tac = function
       intro_then_force
 	(intro_or_and_pattern loc b ll l' thin
 	   (fun thin -> intros_patterns b avoid ids thin destopt tac))
+  | (loc, IntroInjection l) :: l' ->
+      intro_then_force
+	(intro_decomp_eq loc b l l' thin
+	   (fun thin -> intros_patterns b avoid ids thin destopt tac))
   | (loc, IntroRewrite l2r) :: l ->
       intro_then_gen loc (IntroAvoid(avoid@explicit_intro_names l))
 	MoveLast true false
@@ -1480,6 +1483,10 @@ let prepare_intros s ipat gl = match ipat with
       onLastHypId
 	(intro_or_and_pattern loc true ll [] []
 	  (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ -> clear_wildcards)))
+  | IntroInjection l -> make_id s gl,
+      onLastHypId
+	(intro_decomp_eq loc true l [] []
+	  (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ -> clear_wildcards)))
   | IntroForthcoming _ -> user_err_loc
       (loc,"",str "Introduction pattern for one hypothesis expected")
 
@@ -1518,6 +1525,10 @@ let as_tac id ipat = match ipat with
       Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | Some (loc,IntroOrAndPattern ll) ->
       intro_or_and_pattern loc true ll [] []
+        (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ -> clear_wildcards))
+        id
+  | Some (loc,IntroInjection l) ->
+      intro_decomp_eq loc true l [] []
         (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ -> clear_wildcards))
         id
   | Some (loc,

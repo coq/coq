@@ -99,7 +99,7 @@ val injHyp       : Id.t -> tactic
 val injConcl     : tactic
 
 val dEq : evars_flag -> constr with_bindings induction_arg option -> tactic
-val dEqThen : evars_flag -> (int -> tactic) -> constr with_bindings induction_arg option -> tactic
+val dEqThen : evars_flag -> (constr -> int -> tactic) -> constr with_bindings induction_arg option -> tactic
 
 val make_iterated_tuple :
   env -> evar_map -> constr -> (constr * types) -> constr * constr * constr

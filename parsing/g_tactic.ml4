@@ -285,7 +285,9 @@ GEXTEND Gram
 	  let rec pairify = function
 	    | ([]|[_]|[_;_]) as l -> IntroOrAndPattern [l]
 	    | t::q -> IntroOrAndPattern [[t;(loc_of_ne_list q,pairify q)]]
-	  in !@loc,pairify (si::tc) ] ]
+	  in !@loc,pairify (si::tc)
+      | "[="; tc = intropatterns; "]" -> !@loc,IntroInjection tc
+ ] ]
   ;
   naming_intropattern:
     [ [ prefix = pattern_ident -> !@loc, IntroFresh prefix
