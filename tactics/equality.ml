@@ -1214,7 +1214,7 @@ let injClause ipats with_evars = function
 let injConcl gls  = injClause None false None gls
 let injHyp id gls = injClause None false (Some (ElimOnIdent (Loc.ghost,id))) gls
 
-let decompEqThen ntac l2r (lbeq,_,(t,t1,t2) as u) clause gls =
+let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause gls =
   let sort = pf_apply get_type_of gls (pf_concl gls) in
   let sigma = clause.evd in
   let env = pf_env gls in
@@ -1224,16 +1224,16 @@ let decompEqThen ntac l2r (lbeq,_,(t,t1,t2) as u) clause gls =
     | Inr [] -> (* Change: do not fail, simplify clear this trivial hyp *)
         ntac (clenv_value clause) 0 gls
     | Inr posns ->
-	inject_at_positions env sigma l2r u clause (List.rev posns)
+	inject_at_positions env sigma true u clause posns
           (ntac (clenv_value clause)) gls
 
 let dEqThen with_evars ntac = function
-  | None -> onNegatedEquality with_evars (decompEqThen ntac false)
-  | Some c -> onInductionArg (onEquality with_evars (decompEqThen ntac false)) c
+  | None -> onNegatedEquality with_evars (decompEqThen ntac)
+  | Some c -> onInductionArg (onEquality with_evars (decompEqThen ntac)) c
 
 let dEq with_evars = dEqThen with_evars (fun c x -> tclIDTAC)
 
-let _ = declare_intro_decomp_eq (fun tac -> decompEqThen (fun _ -> tac) true)
+let _ = declare_intro_decomp_eq (fun tac -> decompEqThen (fun _ -> tac))
 
 let swap_equality_args = function
   | MonomorphicLeibnizEq (e1,e2) -> [e2;e1]

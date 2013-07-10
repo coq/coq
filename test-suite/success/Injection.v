@@ -39,7 +39,7 @@ Qed.
 (* Test injection as *)
 
 Lemma l5 : forall x y z t : nat, (x,y) = (z,t) -> x=z.
-intros; injection H as Hyt Hxz.
+intros; injection H as Hxz Hyt.
 exact Hxz.
 Qed.
 
@@ -69,7 +69,7 @@ Abort.
 (* Test the injection intropattern *)
 
 Goal forall (a b:nat) l l', cons a l = cons b l' -> a=b.
-intros * (H1,H2).
+intros * [= H1 H2].
 exact H1.
 Qed.
 
