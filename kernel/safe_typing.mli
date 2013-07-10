@@ -136,3 +136,5 @@ val retroknowledge : (retroknowledge-> 'a) -> safe_environment -> 'a
 
 val register : safe_environment -> field -> Retroknowledge.entry -> constr
                                          -> safe_environment
+
+val register_inline : constant -> safe_environment -> safe_environment

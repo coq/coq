@@ -920,6 +920,9 @@ let rec pr_vernac = function
 	| LocateModule qid -> str"Module" ++ spc () ++ pr_module qid
 	| LocateTactic qid -> str"Ltac" ++ spc () ++ pr_ltac_ref qid
       in str"Locate" ++ spc() ++ pr_locate loc
+  | VernacRegister (id, RegisterInline) ->
+      hov 2
+        (str "Register Inline" ++ spc() ++ pr_lident id)
   | VernacComments l ->
       hov 2
         (str"Comments" ++ spc() ++ prlist_with_sep sep (pr_comment pr_constr) l)

@@ -771,3 +771,18 @@ let j_type j = j.uj_type
 let safe_infer senv = infer (env_of_senv senv)
 
 let typing senv = Typeops.typing (env_of_senv senv)
+
+(* This function serves only for inlining constants in native compiler for now,
+but it is meant to become a replacement for environ.register *)
+let register_inline kn senv =
+  if not (evaluable_constant kn senv.env) then
+    Errors.error "Register inline: an evaluable constant is expected";
+  let env = pre_env senv.env in
+  let (cb,r) = Cmap_env.find kn env.Pre_env.env_globals.Pre_env.env_constants in
+  let cb = {cb with const_inline_code = true} in 
+  let new_constants =
+    Cmap_env.add kn (cb,r) env.Pre_env.env_globals.Pre_env.env_constants
+  in
+  let new_globals = { env.Pre_env.env_globals with Pre_env.env_constants = new_constants } in
+  let env = { env with Pre_env.env_globals = new_globals } in
+  { senv with env = env_of_pre_env env }

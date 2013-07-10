@@ -203,6 +203,11 @@ type scheme =
   | CaseScheme of bool * reference or_by_notation * sort_expr
   | EqualityScheme of reference or_by_notation
 
+(* This type allows to register inline of constants in native compiler.
+   It will be extended with primitive inductive types and operators *)
+type register_kind = 
+  | RegisterInline
+
 type bullet =
     | Dash
     | Star
@@ -373,6 +378,7 @@ type vernac_expr =
   | VernacPrint of printable
   | VernacSearch of searchable * search_restriction
   | VernacLocate of locatable
+  | VernacRegister of lident * register_kind
   | VernacComments of comment list
   | VernacNop
 

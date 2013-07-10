@@ -177,7 +177,10 @@ GEXTEND Gram
           VernacCoFixpoint (Some Discharge, corecs)
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
-	l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l) ] ]
+	      l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l)
+      | IDENT "Register"; IDENT "Inline"; id = identref ->
+          VernacRegister(id, RegisterInline)
+  ] ]
   ;
   gallina_ext:
     [ [ b = record_token; infer = infer_token; oc = opt_coercion; name = identref;

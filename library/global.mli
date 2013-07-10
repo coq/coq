@@ -104,3 +104,5 @@ val env_of_context : Environ.named_context_val -> Environ.env
 
 (** spiwack: register/unregister function for retroknowledge *)
 val register : Retroknowledge.field -> constr -> constr -> unit
+
+val register_inline : constant -> unit

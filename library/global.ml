@@ -162,4 +162,5 @@ let register field value by_clause =
   let senv = Safe_typing.register !global_env field entry by_clause in
   global_env := senv
 
-
+let register_inline c =
+  global_env := Safe_typing.register_inline c !global_env

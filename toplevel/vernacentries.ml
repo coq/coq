@@ -1513,6 +1513,16 @@ let vernac_locate = function
   | LocateTactic qid -> print_located_tactic qid
   | LocateFile f -> msg_notice (locate_file f)
 
+let vernac_register id r =
+ if Pfedit.refining () then
+    error "Cannot register a primitive while in proof editing mode.";
+  let t = (Constrintern.global_reference (snd id)) in
+  if not (isConst t) then
+    error "Register inline: a constant is expected";
+  let kn = destConst t in
+  match r with
+  | RegisterInline -> Global.register_inline kn
+
 (****************)
 (* Backtracking *)
 
@@ -1823,6 +1833,7 @@ let interp locality c = match c with
   | VernacPrint p -> vernac_print p
   | VernacSearch (s,r) -> vernac_search s r
   | VernacLocate l -> vernac_locate l
+  | VernacRegister (id, r) -> vernac_register id r
   | VernacComments l -> if_verbose msg_info (str "Comments ok\n")
   | VernacNop -> ()
 
