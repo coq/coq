@@ -800,6 +800,8 @@ Include NProp
 
 End Nat.
 
+Bind Scope nat_scope with Nat.t nat.
+
 (** [Nat] contains an [order] tactic for natural numbers *)
 
 (** Note that [Nat.order] is domain-agnostic: it will not prove

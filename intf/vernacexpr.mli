@@ -230,19 +230,7 @@ type inline =
   | DefaultInline
   | InlineAt of int
 
-(** Should we adapt a few scopes during functor application ? *)
-
-type scope_subst = (string * string) list
-
-(** The type of annotations for functor applications *)
-
-type funct_app_annot =
-  { ann_inline : inline;
-    ann_scope_subst : scope_subst }
-
-type 'a annotated = ('a * funct_app_annot)
-
-type module_ast_inl = module_ast annotated
+type module_ast_inl = module_ast * inline
 type module_binder = bool option * lident list * module_ast_inl
 
 (** {6 The type of vernacular expressions} *)

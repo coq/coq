@@ -18,19 +18,7 @@ open Lib
 open Mod_subst
 open Vernacexpr
 
-let scope_subst = ref (String.Map.empty : string String.Map.t)
-
-let add_scope_subst sc sc' =
-  scope_subst := String.Map.add sc sc' !scope_subst
-
-let register_scope_subst scl =
-  List.iter (fun (sc1,sc2) -> add_scope_subst sc1 sc2) scl
-
-let subst_scope sc =
- try String.Map.find sc !scope_subst with Not_found -> sc
-
-let reset_scope_subst () =
-  scope_subst := String.Map.empty
+(** {6 Inlining levels} *)
 
 let default_inline () = Some (Flags.get_inline_level ())
 
@@ -38,8 +26,6 @@ let inl2intopt = function
   | NoInline -> None
   | InlineAt i -> Some i
   | DefaultInline -> default_inline ()
-
-let inline_annot a = inl2intopt a.ann_inline
 
 (* modules and components *)
 
@@ -168,7 +154,7 @@ let funct_entry args m =
 let build_subtypes interp_modtype mp args mtys =
   List.map
     (fun (m,ann) ->
-       let inl = inline_annot ann in
+       let inl = inl2intopt ann in
        let mte = interp_modtype (Global.env()) m in
        let mtb = Mod_typing.translate_module_type (Global.env()) mp inl mte in
        let funct_mtb =
@@ -462,7 +448,7 @@ let process_module_seb_binding mbid seb =
   process_module_binding mbid (seb2mse seb)
 
 let intern_args interp_modtype (idl,(arg,ann)) =
-  let inl = inline_annot ann in
+  let inl = inl2intopt ann in
   let lib_dir = Lib.library_dp() in
   let env = Global.env() in
   let mty = interp_modtype env arg in
@@ -484,7 +470,7 @@ let start_module_ interp_modtype export id args res fs =
   let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
   let res_entry_o, subtyps = match res with
     | Enforce (res,ann) ->
-        let inl = inline_annot ann in
+        let inl = inl2intopt ann in
 	let mte = interp_modtype (Global.env()) res in
 	let _ = Mod_typing.translate_struct_type_entry (Global.env()) inl mte in
 	Some (mte,inl), []
@@ -675,7 +661,7 @@ let end_modtype () =
 
 
 let declare_modtype_ interp_modtype id args mtys (mty,ann) fs =
-  let inl = inline_annot ann in
+  let inl = inl2intopt ann in
   let mmp = Global.start_modtype id in
   let arg_entries = List.concat (List.map (intern_args interp_modtype) args) in
   let entry = funct_entry arg_entries (interp_modtype (Global.env()) mty) in
@@ -685,10 +671,8 @@ let declare_modtype_ interp_modtype id args mtys (mty,ann) fs =
   (* Undo the simulated interactive building of the module type *)
   (* and declare the module type as a whole *)
 
-  register_scope_subst ann.ann_scope_subst;
   let subst = map_mp mp_from mmp empty_delta_resolver in
   let substobjs = (mbids,mmp, subst_objects subst objs) in
-  reset_scope_subst ();
   Summary.unfreeze_summaries fs;
   ignore (add_leaf id (in_modtype (Some (entry,inl), substobjs, sub_mty_l)));
   mmp
@@ -731,17 +715,17 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
   let env = Global.env() in
   let mty_entry_o, subs, inl_res = match res with
     | Enforce (mty,ann) ->
-        Some (funct interp_modtype mty), [], inline_annot ann
+        Some (funct interp_modtype mty), [], inl2intopt ann
     | Check mtys ->
 	None, build_subtypes interp_modtype mmp arg_entries mtys,
         default_inline ()
   in
  
   (*let subs = List.map (Mod_typing.translate_module_type env mmp) mty_sub_l in  *)
-  let mexpr_entry_o, inl_expr, scl = match mexpr_o with
-    | None -> None, default_inline (), []
+  let mexpr_entry_o, inl_expr = match mexpr_o with
+    | None -> None, default_inline ()
     | Some (mexpr,ann) ->
-      Some (funct interp_modexpr mexpr), inline_annot ann, ann.ann_scope_subst
+      Some (funct interp_modexpr mexpr), inl2intopt ann
 
   in
   let entry =
@@ -770,10 +754,8 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
   then anomaly (Pp.str "Kernel and Library names do not match");
 
   check_subtypes mp subs;
-  register_scope_subst scl;
   let subst = map_mp mp_from mp_env resolver in
   let substobjs = (mbids,mp_env, subst_objects subst objs) in
-  reset_scope_subst ();
   ignore (add_leaf id (in_module substobjs));
   mmp
 
@@ -853,7 +835,7 @@ let get_includeself_substobjs env mp1 mbids objs me is_mod inline =
 let declare_one_include_inner annot (me,is_mod) =
   let env = Global.env() in
   let cur_mp = fst (current_prefix ()) in
-  let inl = inline_annot annot in
+  let inl = inl2intopt annot in
   let (mbids,mp,objs)=
     if is_mod then
       get_module_substobjs env inl me
@@ -865,10 +847,8 @@ let declare_one_include_inner annot (me,is_mod) =
   in
   let id = current_mod_id() in
   let resolver = Global.add_include me is_mod inl in
-  register_scope_subst annot.ann_scope_subst;
   let subst = map_mp mp cur_mp resolver in
   let substobjs = subst_objects subst objs in
-  reset_scope_subst ();
   ignore (add_leaf id (in_include substobjs))
 
 let declare_one_include interp_struct (me_ast,annot) =

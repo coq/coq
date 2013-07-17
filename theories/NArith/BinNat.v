@@ -893,11 +893,9 @@ Qed.
 
 (** Instantiation of generic properties of natural numbers *)
 
-(** The Bind Scope prevents N to stay associated with abstract_scope.
-    (TODO FIX) *)
-
-Include NProp. Bind Scope N_scope with N.
-Include UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
+Include NProp
+ <+ UsualMinMaxLogicalProperties
+ <+ UsualMinMaxDecProperties.
 
 (** In generic statements, the predicates [lt] and [le] have been
   favored, whereas [gt] and [ge] don't even exist in the abstract
@@ -982,6 +980,8 @@ Proof.
 Qed.
 
 End N.
+
+Bind Scope N_scope with N.t N.
 
 (** Exportation of notations *)
 

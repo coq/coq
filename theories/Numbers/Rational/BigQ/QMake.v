@@ -39,8 +39,6 @@ Module Make (NN:NType)(ZZ:ZType)(Import NZ:NType_ZType NN ZZ) <: QType.
 
  Definition t := t_.
 
- Bind Scope abstract_scope with t t_.
-
  (** Specification with respect to [QArith] *)
 
  Local Open Scope Q_scope.

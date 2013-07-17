@@ -38,9 +38,8 @@ End BigN_BigZ.
 Delimit Scope bigQ_scope with bigQ.
 
 Module BigQ <: QType <: OrderedTypeFull <: TotalOrder.
- Include QMake.Make BigN BigZ BigN_BigZ [scope abstract_scope to bigQ_scope].
- Bind Scope bigQ_scope with t t_.
- Include !QProperties <+ HasEqBool2Dec
+ Include QMake.Make BigN BigZ BigN_BigZ
+  <+ !QProperties <+ HasEqBool2Dec
   <+ !MinMaxLogicalProperties <+ !MinMaxDecProperties.
  Ltac order := Private_Tac.order.
 End BigQ.

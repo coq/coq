@@ -1840,6 +1840,8 @@ Qed.
 
 End Pos.
 
+Bind Scope positive_scope with Pos.t positive.
+
 (** Exportation of notations *)
 
 Infix "+" := Pos.add : positive_scope.

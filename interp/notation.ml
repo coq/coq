@@ -546,10 +546,10 @@ end
 
 module ScopeClassMap = Map.Make(ScopeClassOrd)
 
-let scope_class_map = ref (ScopeClassMap.empty : scope_name ScopeClassMap.t)
+let initial_scope_class_map : scope_name ScopeClassMap.t =
+  ScopeClassMap.add ScopeSort "type_scope" ScopeClassMap.empty
 
-let _ =
-  scope_class_map := ScopeClassMap.add ScopeSort "type_scope" ScopeClassMap.empty
+let scope_class_map = ref initial_scope_class_map
 
 let declare_scope_class sc cl =
   scope_class_map := ScopeClassMap.add cl sc !scope_class_map
@@ -584,15 +584,20 @@ let compute_type_scope t =
 let compute_scope_of_global ref =
   find_scope_class_opt (Some (ScopeRef ref))
 
-(** When merging scope list, we give priority to the first one (computed
-    by substitution), using the second one (user given or earlier automatic)
-    as fallback *)
+(** Updating a scope list, thanks to a list of argument classes
+    and the current Bind Scope base. When some current scope
+    have been manually given, the corresponding argument class
+    is emptied below, so this manual scope will be preserved. *)
 
-let rec merge_scope sc1 sc2 = match sc1, sc2 with
-  | [], _ -> sc2
-  | _, [] -> sc1
-  | Some sc :: sc1, _ :: sc2 -> Some sc :: merge_scope sc1 sc2
-  | None :: sc1, sco :: sc2 -> sco :: merge_scope sc1 sc2
+let update_scope cl sco =
+  match find_scope_class_opt cl with
+  | None -> sco
+  | sco' -> sco'
+
+let rec update_scopes cls scl = match cls, scl with
+  | [], _ -> scl
+  | _, [] -> List.map find_scope_class_opt cls
+  | cl :: cls, sco :: scl -> update_scope cl sco :: update_scopes cls scl
 
 let arguments_scope = ref Refmap.empty
 
@@ -603,7 +608,8 @@ type arguments_scope_discharge_request =
 
 let load_arguments_scope _ (_,(_,r,scl,cls)) =
   List.iter (Option.iter check_scope) scl;
-  arguments_scope := Refmap.add r (scl,cls) !arguments_scope
+  let initial_stamp = ScopeClassMap.empty in
+  arguments_scope := Refmap.add r (scl,cls,initial_stamp) !arguments_scope
 
 let cache_arguments_scope o =
   load_arguments_scope 1 o
@@ -624,9 +630,7 @@ let subst_arguments_scope (subst,(req,r,scl,cls)) =
         | Some cl'  as ocl' when cl' != cl -> ocl'
         | _ -> ocl in
   let cls' = List.smartmap subst_cl cls in
-  let scl' = merge_scope (List.map find_scope_class_opt cls') scl in
-  let scl'' = List.map (Option.map Declaremods.subst_scope) scl' in
-  (ArgsScopeNoDischarge,r',scl'',cls')
+  (ArgsScopeNoDischarge,r',scl,cls')
 
 let discharge_arguments_scope (_,(req,r,l,_)) =
   if req == ArgsScopeNoDischarge || (isVarRef r && Lib.is_in_section r) then None
@@ -643,10 +647,13 @@ let rebuild_arguments_scope (req,r,l,_) =
 	(req,r,scs,cls)
     | ArgsScopeManual ->
 	(* Add to the manually given scopes the one found automatically
-           for the extra parameters of the section *)
+           for the extra parameters of the section. Discard the classes
+           of the manually given scopes to avoid further re-computations. *)
 	let l',cls = compute_arguments_scope_full (Global.type_of_global r) in
-	let l1,_ = List.chop (List.length l' - List.length l) l' in
-	(req,r,l1@l,cls)
+        let nparams = List.length l' - List.length l in
+	let l1 = List.firstn nparams l' in
+        let cls1 = List.firstn nparams cls in
+	(req,r,l1@l,cls1)
 
 type arguments_scope_obj =
     arguments_scope_discharge_request * global_reference *
@@ -666,13 +673,23 @@ let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
 let declare_arguments_scope_gen req r (scl,cls) =
   Lib.add_anonymous_leaf (inArgumentsScope (req,r,scl,cls))
 
-let declare_arguments_scope local ref scl =
-  let req =
-    if is_local local ref then ArgsScopeNoDischarge else ArgsScopeManual in
-  declare_arguments_scope_gen req ref (scl,[])
+let declare_arguments_scope local r scl =
+  let req = if is_local local r then ArgsScopeNoDischarge else ArgsScopeManual
+  in
+  (* We empty the list of argument classes to disable futher scope
+     re-computations and keep these manually given scopes. *)
+  declare_arguments_scope_gen req r (scl,[])
 
 let find_arguments_scope r =
-  try fst (Refmap.find r !arguments_scope)
+  try
+    let (scl,cls,stamp) = Refmap.find r !arguments_scope in
+    let cur_stamp = !scope_class_map in
+    if stamp == cur_stamp then scl
+    else
+      (* Recent changes in the Bind Scope base, we re-compute the scopes *)
+      let scl' = update_scopes cls scl in
+      arguments_scope := Refmap.add r (scl',cls,cur_stamp) !arguments_scope;
+      scl'
   with Not_found -> []
 
 let declare_ref_arguments_scope ref =
@@ -959,7 +976,7 @@ let init () =
   delimiters_map := String.Map.empty;
   notations_key_table := KeyMap.empty;
   printing_rules := String.Map.empty;
-  scope_class_map := ScopeClassMap.add ScopeSort "type_scope" ScopeClassMap.empty
+  scope_class_map := initial_scope_class_map
 
 let _ =
   Summary.declare_summary "symbols"

@@ -16,11 +16,6 @@ open Libobject
 open Lib
 open Vernacexpr
 
-(** This modules provides official functions to declare modules and
-  module types *)
-
-val subst_scope : string -> string
-
 (** {6 Modules } *)
 
 (** [declare_module interp_modtype interp_modexpr id fargs typ expr]
@@ -40,14 +35,14 @@ val declare_module :
   (env -> 'modast -> module_struct_entry) ->
   (env -> 'modast -> module_struct_entry * bool) ->
   Id.t ->
-  (Id.t located list * ('modast annotated)) list ->
-  ('modast annotated) module_signature ->
-  ('modast annotated) list -> module_path
+  (Id.t located list * ('modast * inline)) list ->
+  ('modast * inline) module_signature ->
+  ('modast * inline) list -> module_path
 
 val start_module : (env -> 'modast -> module_struct_entry) ->
   bool option -> Id.t ->
-  (Id.t located list * ('modast annotated)) list ->
-  ('modast annotated) module_signature -> module_path
+  (Id.t located list * ('modast * inline)) list ->
+  ('modast * inline) module_signature -> module_path
 
 val end_module : unit -> module_path
 
@@ -58,14 +53,14 @@ val end_module : unit -> module_path
 val declare_modtype : (env -> 'modast -> module_struct_entry) ->
   (env -> 'modast -> module_struct_entry * bool) ->
   Id.t ->
-  (Id.t located list * ('modast annotated)) list ->
-  ('modast annotated) list ->
-  ('modast annotated) list ->
+  (Id.t located list * ('modast * inline)) list ->
+  ('modast * inline) list ->
+  ('modast * inline) list ->
   module_path
 
 val start_modtype : (env -> 'modast -> module_struct_entry) ->
-  Id.t -> (Id.t located list * ('modast annotated)) list ->
-  ('modast annotated) list -> module_path
+  Id.t -> (Id.t located list * ('modast * inline)) list ->
+  ('modast * inline) list -> module_path
 
 val end_modtype : unit -> module_path
 
@@ -110,7 +105,7 @@ val import_module : bool -> module_path -> unit
 (** Include  *)
 
 val declare_include : (env -> 'struct_expr -> module_struct_entry * bool) ->
-  ('struct_expr annotated) list -> unit
+  ('struct_expr * inline) list -> unit
 
 (** {6 ... } *)
 (** [iter_all_segments] iterate over all segments, the modules'

@@ -138,8 +138,6 @@ pr
   pr "";
   pr " Definition t := t'.";
   pr "";
-  pr " Bind Scope abstract_scope with t t'.";
-  pr "";
 
   pr " (** * A generic toolbox for building and deconstructing [t] *)";
   pr "";

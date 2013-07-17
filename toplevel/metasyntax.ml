@@ -1280,7 +1280,7 @@ let subst_scope_command (subst,(scope,o as x)) = match o with
   | ScopeClasses cl ->
       let cl' = List.map_filter (subst_scope_class subst) cl in
       let cl' =
-        if Int.equal (List.length cl) (List.length cl') && List.for_all2 (==) cl cl' then cl
+        if List.for_all2eq (==) cl cl' then cl
         else cl' in
       scope, ScopeClasses cl'
   | _ -> x

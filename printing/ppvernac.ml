@@ -222,21 +222,13 @@ let rec pr_module_ast pr_c = function
       pr_module_ast pr_c me1 ++ spc() ++
       hov 1 (str"(" ++ pr_module_ast pr_c me2 ++ str")")
 
-let pr_annot { ann_inline = ann; ann_scope_subst = scl } =
-  let sep () = if List.is_empty scl then mt () else str "," in
-  if ann == DefaultInline && List.is_empty scl then mt ()
-  else
-    str " [" ++
-    (match ann with
-      | DefaultInline -> mt ()
-      | NoInline -> str "no inline" ++ sep ()
-      | InlineAt i -> str "inline at level " ++ int i ++ sep ()) ++
-    prlist_with_sep (fun () -> str ", ")
-      (fun (sc1,sc2) -> str ("scope "^sc1^" to "^sc2)) scl ++
-    str "]"
+let pr_inline = function
+  | DefaultInline -> mt ()
+  | NoInline -> str "[no inline]"
+  | InlineAt i -> str "[inline at level " ++ int i ++ str "]"
 
-let pr_module_ast_inl pr_c (mast,ann) =
-  pr_module_ast pr_c mast ++ pr_annot ann
+let pr_module_ast_inl pr_c (mast,inl) =
+  pr_module_ast pr_c mast ++ pr_inline inl
 
 let pr_of_module_type prc = function
   | Enforce mty -> str ":" ++ pr_module_ast_inl prc mty
