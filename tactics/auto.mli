@@ -261,3 +261,8 @@ val pr_autotactic : 'a auto_tactic -> Pp.std_ppcmds
 (** Hook for changing the initialization of auto *)
 
 val add_auto_init : (unit -> unit) -> unit
+
+(** Pre-created hint databases *)
+
+val typeclasses_db : hint_db_name
+val rewrite_db : hint_db_name

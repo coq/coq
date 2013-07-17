@@ -444,7 +444,17 @@ type hint_db_table = hint_db Hintdbmap.t ref
 
 type hint_db_name = string
 
-let searchtable = (ref Hintdbmap.empty : hint_db_table)
+(** Initially created hint databases, for typeclasses and rewrite *)
+
+let typeclasses_db = "typeclass_instances"
+let rewrite_db = "rewrite"
+
+let auto_init_db =
+  Hintdbmap.add typeclasses_db (Hint_db.empty full_transparent_state true)
+    (Hintdbmap.add rewrite_db (Hint_db.empty cst_full_transparent_state true)
+       Hintdbmap.empty)
+
+let searchtable : hint_db_table = ref auto_init_db
 
 let searchtable_map name =
   Hintdbmap.find name !searchtable
@@ -463,11 +473,11 @@ let current_db () =
 (**************************************************************************)
 
 let auto_init : (unit -> unit) ref = ref (fun () -> ())
-let add_auto_init f = 
+let add_auto_init f =
   let init = !auto_init in
-    auto_init := (fun () -> init (); f ())
+  auto_init := (fun () -> init (); f ())
 
-let init     () = searchtable := Hintdbmap.empty; !auto_init ()
+let init     () = searchtable := auto_init_db; !auto_init ()
 let freeze   _ = !searchtable
 let unfreeze fs = searchtable := fs
 

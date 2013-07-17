@@ -27,13 +27,12 @@ open Evd
 open Locus
 open Misctypes
 
-let typeclasses_db = "typeclass_instances"
+(** Hint database named "typeclass_instances", now created directly in Auto *)
+
+let typeclasses_db = Auto.typeclasses_db
+
 let typeclasses_debug = ref false
 let typeclasses_depth = ref None
-
-let _ = 
-  Auto.add_auto_init 
-    (fun () -> Auto.create_hint_db false typeclasses_db full_transparent_state true)
 
 exception Found of evar_map
 

@@ -285,14 +285,9 @@ let decompose_applied_relation_expr env sigma flags (is, (c,l)) left2right =
   let sigma, cbl = Tacinterp.interp_open_constr_with_bindings is env sigma (c,l) in
     decompose_applied_relation env sigma flags (Some (is, (c,l))) cbl left2right
 
-let rewrite_db = "rewrite"
+(** Hint database named "rewrite", now created directly in Auto *)
 
-let conv_transparent_state = (Id.Pred.empty, Cpred.full)
-
-let _ = 
-  Auto.add_auto_init
-    (fun () ->
-       Auto.create_hint_db false rewrite_db conv_transparent_state true)
+let rewrite_db = Auto.rewrite_db
 
 let rewrite_transparent_state () =
   Auto.Hint_db.transparent_state (Auto.searchtable_map rewrite_db)
@@ -315,10 +310,10 @@ let rewrite_unif_flags = {
 }
 
 let rewrite2_unif_flags =
-  {  Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
+  {  Unification.modulo_conv_on_closed_terms = Some cst_full_transparent_state;
      Unification.use_metas_eagerly_in_conv_on_closed_terms = true;
      Unification.modulo_delta = empty_transparent_state;
-     Unification.modulo_delta_types = conv_transparent_state;
+     Unification.modulo_delta_types = cst_full_transparent_state;
      Unification.modulo_delta_in_merge = None;
      Unification.check_applied_meta_types = true;
      Unification.resolve_evars = false;
