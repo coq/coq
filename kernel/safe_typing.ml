@@ -507,17 +507,18 @@ let add_module_parameter mbid mte inl senv =
     anomaly (Pp.str "Cannot add a module parameter to a non empty module")
   | _ -> ()
   in
-  let mtb = translate_module_type senv.env (MPbound mbid) inl mte in
-  let senv = 
-    full_add_module (module_body_of_type (MPbound mbid) mtb) senv
+  let mp = MPbound mbid in
+  let mtb = translate_module_type senv.env mp inl mte in
+  let senv = full_add_module (module_body_of_type mp mtb) senv
   in
   let new_variant = match senv.modinfo.variant with
     | STRUCT params -> STRUCT ((mbid,mtb) :: params)
     | SIG params -> SIG ((mbid,mtb) :: params)
     | _ ->
-	anomaly (Pp.str "Module parameters can only be added to modules or signatures")  
+      let msg = "Module parameters can only be added to modules or signatures"
+      in anomaly (Pp.str msg)
   in
-    
+
   let resolver_of_param = match mtb.typ_expr with
       SEBstruct _ -> mtb.typ_delta
     | _ -> empty_delta_resolver
