@@ -280,7 +280,7 @@ let v_compiled_lib =
 let v_obj = Tuple ("Dyn.t",[|String;Any|])
 let v_libobj = Tuple ("libobj", [|v_id;v_obj|])
 let v_libobjs = List v_libobj
-let v_libraryobjs = Tuple ("library_objects",[|v_mp;v_libobjs;v_libobjs|])
+let v_libraryobjs = Tuple ("library_objects",[|v_libobjs;v_libobjs|])
 
 (** Toplevel structures in a vo (see Cic.mli) *)
 

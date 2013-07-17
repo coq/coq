@@ -89,3 +89,8 @@ type 'a or_by_notation =
 
 (* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
    but this formulation avoids a useless dependency. *)
+
+
+(** Kinds of modules *)
+
+type module_kind = Module | ModType | ModAny

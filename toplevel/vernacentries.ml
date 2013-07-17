@@ -637,14 +637,13 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast =
        "Remove the \"Export\" and \"Import\" keywords from every functor " ^
        "argument.")
      else (idl,ty)) binders_ast in
-  let mp = Declaremods.declare_module
-    Modintern.interp_modtype Modintern.interp_modexpr
-    Modintern.interp_modexpr_or_modtype
-    id binders_ast (Enforce mty_ast) []
+  let mp =
+    Declaremods.declare_module Modintern.interp_module_ast
+      id binders_ast (Enforce mty_ast) []
   in
-    Dumpglob.dump_moddef loc mp "mod";
-    if_verbose msg_info (str ("Module "^ Id.to_string id ^" is declared"));
-    Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
+  Dumpglob.dump_moddef loc mp "mod";
+  if_verbose msg_info (str ("Module "^ Id.to_string id ^" is declared"));
+  Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
 
 let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
@@ -659,17 +658,18 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
          (fun (export,idl,ty) (args,argsexport) ->
            (idl,ty)::args, (List.map (fun (_,i) -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
-       let mp = Declaremods.start_module Modintern.interp_modtype export
-	 id binders_ast mty_ast_o
+       let mp =
+         Declaremods.start_module Modintern.interp_module_ast
+           export id binders_ast mty_ast_o
        in
-	 Dumpglob.dump_moddef loc mp "mod";
-	 if_verbose msg_info
-	   (str ("Interactive Module "^ Id.to_string id ^" started"));
-         List.iter
-           (fun (export,id) ->
-             Option.iter
-               (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
-           ) argsexport
+       Dumpglob.dump_moddef loc mp "mod";
+       if_verbose msg_info
+         (str ("Interactive Module "^ Id.to_string id ^" started"));
+       List.iter
+         (fun (export,id) ->
+           Option.iter
+             (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
+         ) argsexport
     | _::_ ->
        let binders_ast = List.map
         (fun (export,idl,ty) ->
@@ -678,16 +678,15 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
                   " the definition is interactive. Remove the \"Export\" and " ^
                   "\"Import\" keywords from every functor argument.")
           else (idl,ty)) binders_ast in
-       let mp =	Declaremods.declare_module
-	  Modintern.interp_modtype Modintern.interp_modexpr
-          Modintern.interp_modexpr_or_modtype
-	  id binders_ast mty_ast_o mexpr_ast_l
+       let mp =
+         Declaremods.declare_module Modintern.interp_module_ast
+	   id binders_ast mty_ast_o mexpr_ast_l
        in
-	 Dumpglob.dump_moddef loc mp "mod";
-	 if_verbose msg_info
-	   (str ("Module "^ Id.to_string id ^" is defined"));
-         Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)])
-           export
+       Dumpglob.dump_moddef loc mp "mod";
+       if_verbose msg_info
+	 (str ("Module "^ Id.to_string id ^" is defined"));
+       Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)])
+         export
 
 let vernac_end_module export (loc,id as lid) =
   let mp = Declaremods.end_module () in
@@ -702,21 +701,23 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
   match mty_ast_l with
     | [] ->
        check_no_pending_proofs ();
-       let binders_ast,argsexport =       
+       let binders_ast,argsexport =
 	 List.fold_right
          (fun (export,idl,ty) (args,argsexport) ->
            (idl,ty)::args, (List.map (fun (_,i) -> export,i)idl)@argsexport) binders_ast
              ([],[]) in
-       
-       let mp = Declaremods.start_modtype
-	 Modintern.interp_modtype id binders_ast mty_sign in
-        Dumpglob.dump_moddef loc mp "modtype";
-	if_verbose msg_info
-	  (str ("Interactive Module Type "^ Id.to_string id ^" started"));
-        List.iter
+
+       let mp =
+         Declaremods.start_modtype Modintern.interp_module_ast
+           id binders_ast mty_sign
+       in
+       Dumpglob.dump_moddef loc mp "modtype";
+       if_verbose msg_info
+	 (str ("Interactive Module Type "^ Id.to_string id ^" started"));
+       List.iter
          (fun (export,id) ->
            Option.iter
-            (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
+             (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
          ) argsexport
 
     | _ :: _ ->
@@ -727,12 +728,13 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
 			" the definition is interactive. Remove the \"Export\" " ^
 			"and \"Import\" keywords from every functor argument.")
             else (idl,ty)) binders_ast in
-	let mp = Declaremods.declare_modtype Modintern.interp_modtype
-          Modintern.interp_modexpr_or_modtype
-	  id binders_ast mty_sign mty_ast_l in
-          Dumpglob.dump_moddef loc mp "modtype";
-	  if_verbose msg_info
-	    (str ("Module Type "^ Id.to_string id ^" is defined"))
+	let mp =
+          Declaremods.declare_modtype Modintern.interp_module_ast
+	    id binders_ast mty_sign mty_ast_l
+        in
+        Dumpglob.dump_moddef loc mp "modtype";
+	if_verbose msg_info
+	  (str ("Module Type "^ Id.to_string id ^" is defined"))
 
 let vernac_end_modtype (loc,id) =
   let mp = Declaremods.end_modtype () in
@@ -740,7 +742,7 @@ let vernac_end_modtype (loc,id) =
   if_verbose msg_info (str ("Module Type "^ Id.to_string id ^" is defined"))
 
 let vernac_include l =
-  Declaremods.declare_include Modintern.interp_modexpr_or_modtype l
+  Declaremods.declare_include Modintern.interp_module_ast l
 
 (**********************)
 (* Gallina extensions *)

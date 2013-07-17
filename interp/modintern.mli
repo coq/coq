@@ -14,6 +14,7 @@ open Pp
 open Libnames
 open Names
 open Constrexpr
+open Misctypes
 
 (** Module internalization errors *)
 
@@ -25,17 +26,11 @@ type module_internalization_error =
 exception ModuleInternalizationError of module_internalization_error
 
 (** Module expressions and module types are interpreted relatively to
-   possible functor or functor signature arguments. *)
+   possible functor or functor signature arguments. When the input kind
+   is ModAny (i.e. module or module type), we tries to interprete this ast
+   as a module, and in case of failure, as a module type. The returned
+   kind is never ModAny, and it is equal to the input kind when this one
+   isn't ModAny. *)
 
-val interp_modtype : env -> module_ast -> module_struct_entry
-
-val interp_modexpr : env -> module_ast -> module_struct_entry
-
-(** The following function tries to interprete an ast as a module,
-   and in case of failure, interpretes this ast as a module type.
-   The boolean is true for a module, false for a module type *)
-
-val interp_modexpr_or_modtype : env -> module_ast ->
- module_struct_entry * bool
-
-val lookup_module : qualid located -> module_path
+val interp_module_ast :
+  env -> module_kind -> module_ast -> module_struct_entry * module_kind

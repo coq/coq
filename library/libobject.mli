@@ -45,7 +45,9 @@ open Mod_subst
 
    * a substitution function, performing the substitution;
      this function should be declared for substitutive objects
-     only (see above)
+     only (see above). NB: the substitution might now be delayed
+     instead of happening at module creation, so this function
+     should _not_ depend on the current environment
 
    * a discharge function, that is applied at section closing time to
      collect the data necessary to rebuild the discharged form of the

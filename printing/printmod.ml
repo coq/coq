@@ -116,7 +116,7 @@ let nametab_register_module_body mp struc =
 
 let nametab_register_module_param mbid seb =
   (* For algebraic seb, we use a Declaremods function that converts into mse *)
-  try Declaremods.process_module_seb_binding mbid seb
+  try Declaremods.process_module_binding mbid seb
   with e when Errors.noncritical e ->
     (* Otherwise, for expanded structure, we try to play with the nametab *)
     match seb with
