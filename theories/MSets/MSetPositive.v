@@ -19,14 +19,9 @@
 Require Import Bool BinPos Orders MSetInterface.
 
 Set Implicit Arguments.
-
 Local Open Scope lazy_bool_scope.
 Local Open Scope positive_scope.
-
 Local Unset Elimination Schemes.
-Local Unset Case Analysis Schemes.
-Local Unset Boolean Equality Schemes.
-
 
 (** Even if [positive] can be seen as an ordered type with respect to the
   usual order (see above), we can also use a lexicographic order over bits

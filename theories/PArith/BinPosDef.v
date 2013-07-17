@@ -30,8 +30,6 @@ Notation "p ~ 0" := (xO p)
  (at level 7, left associativity, format "p '~' '0'") : positive_scope.
 
 Local Open Scope positive_scope.
-Local Unset Boolean Equality Schemes.
-Local Unset Case Analysis Schemes.
 
 Module Pos.
 

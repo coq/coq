@@ -431,7 +431,6 @@ Module WRaw2SetsOn (E:DecidableType)(M:WRawSets E) <: WSetsOn E.
 
  (** We avoid creating induction principles for the Record *)
  Local Unset Elimination Schemes.
- Local Unset Case Analysis Schemes.
 
  Definition elt := E.t.
 

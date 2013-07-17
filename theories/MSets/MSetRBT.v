@@ -37,7 +37,6 @@ Local Open Scope list_scope.
 (* For nicer extraction, we create induction principles
    only when needed *)
 Local Unset Elimination Schemes.
-Local Unset Case Analysis Schemes.
 
 (** An extra function not (yet?) in MSetInterface.S *)
 

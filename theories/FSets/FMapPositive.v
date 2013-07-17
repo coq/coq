@@ -12,9 +12,7 @@ Require Import Bool ZArith OrderedType OrderedTypeEx FMapInterface.
 
 Set Implicit Arguments.
 Local Open Scope positive_scope.
-
 Local Unset Elimination Schemes.
-Local Unset Case Analysis Schemes.
 
 (** This file is an adaptation to the [FMap] framework of a work by
   Xavier Leroy and Sandrine Blazy (used for building certified compilers).

@@ -19,14 +19,9 @@
 Require Import Bool BinPos OrderedType OrderedTypeEx FSetInterface.
 
 Set Implicit Arguments.
-
 Local Open Scope lazy_bool_scope.
 Local Open Scope positive_scope.
-
 Local Unset Elimination Schemes.
-Local Unset Case Analysis Schemes.
-Local Unset Boolean Equality Schemes.
-
 
 Module PositiveSet <: S with Module E:=PositiveOrderedTypeBits.
 

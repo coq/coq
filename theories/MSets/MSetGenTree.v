@@ -34,7 +34,6 @@ Local Open Scope lazy_bool_scope.
 (* For nicer extraction, we create induction principles
    only when needed *)
 Local Unset Elimination Schemes.
-Local Unset Case Analysis Schemes.
 
 Module Type InfoTyp.
  Parameter t : Set.

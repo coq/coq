@@ -9,8 +9,6 @@
 (** * Binary Numerical Datatypes *)
 
 Set Implicit Arguments.
-(* For compatibility, we will not use generic equality functions *)
-Local Unset Boolean Equality Schemes.
 
 Declare ML Module "z_syntax_plugin".
 

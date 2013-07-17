@@ -38,7 +38,6 @@ Unset Strict Implicit.
 (* for nicer extraction, we create inductive principles
    only when needed *)
 Local Unset Elimination Schemes.
-Local Unset Case Analysis Schemes.
 
 (** * Ops : the pure functions *)
 
