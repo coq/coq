@@ -43,6 +43,7 @@ let toplevel_env () =
 	  | "MODULE TYPE" ->
             let modtype = Global.lookup_modtype (MPdot (mp, l)) in
             Some (l, SFBmodtype modtype)
+          | "INCLUDE" -> error "No extraction of toplevel Include yet."
 	  | _ -> None
         end
     | _ -> None
