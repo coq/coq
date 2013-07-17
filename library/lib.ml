@@ -312,9 +312,9 @@ let end_mod is_type =
 let end_module () = end_mod false
 let end_modtype () = end_mod true
 
-let contents_after = function
-  | None -> !lib_stk
-  | Some sp -> let (after,_,_) = split_lib sp in after
+let contents () = !lib_stk
+
+let contents_after sp = let (after,_,_) = split_lib sp in after
 
 (* Modules. *)
 

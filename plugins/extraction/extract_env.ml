@@ -26,7 +26,6 @@ open Mod_subst
 (***************************************)
 
 let toplevel_env () =
-  let seg = Lib.contents_after None in
   let get_reference = function
     | (_,kn), Lib.Leaf o ->
 	let mp,_,l = repr_kn kn in
@@ -48,7 +47,7 @@ let toplevel_env () =
         end
     | _ -> None
   in
-  SEBstruct (List.rev (List.map_filter get_reference seg))
+  SEBstruct (List.rev (List.map_filter get_reference (Lib.contents ())))
 
 
 let environment_until dir_opt =

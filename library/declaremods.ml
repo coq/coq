@@ -920,7 +920,7 @@ let iter_all_segments f =
     | sp, Leaf o -> f sp o
     | _ -> ()
   in
-    List.iter apply_node (Lib.contents_after None)
+    List.iter apply_node (Lib.contents ())
 
 
 let debug_print_modtab _ =

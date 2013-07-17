@@ -63,11 +63,15 @@ val add_leaves : Names.Id.t -> Libobject.obj list -> Libnames.object_name
 val add_frozen_state : unit -> unit
 
 (** {6 ... } *)
-(** The function [contents_after] returns the current library segment,
-  starting from a given section path. If not given, the entire segment
-  is returned. *)
 
-val contents_after : Libnames.object_name option -> library_segment
+(** The function [contents] gives access to the current entire segment *)
+
+val contents : unit -> library_segment
+
+(** The function [contents_after] returns the current library segment,
+  starting from a given section path. *)
+
+val contents_after : Libnames.object_name -> library_segment
 
 (** {6 Functions relative to current path } *)
 

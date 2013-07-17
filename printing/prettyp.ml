@@ -547,11 +547,8 @@ let print_safe_judgment env j =
 (*********************)
 (* *)
 
-let print_full_context () =
-  print_context true None (Lib.contents_after None)
-
-let print_full_context_typ () =
-  print_context false None (Lib.contents_after None)
+let print_full_context () = print_context true None (Lib.contents ())
+let print_full_context_typ () = print_context false None (Lib.contents ())
 
 let print_full_pure_context () =
   let rec prec = function
@@ -593,7 +590,7 @@ let print_full_pure_context () =
       prec rest ++ pp
   | _::rest -> prec rest
   | _ -> mt () in
-  prec (Lib.contents_after None)
+  prec (Lib.contents ())
 
 (* For printing an inductive definition with
    its constructors and elimination,
@@ -616,7 +613,7 @@ let read_sec_context r =
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest
   in
-  let cxt = (Lib.contents_after None) in
+  let cxt = Lib.contents () in
   List.rev (get_cxt [] cxt)
 
 let print_sec_context sec =
@@ -700,7 +697,7 @@ let print_about = function
 
 (* for debug *)
 let inspect depth =
-  print_context false (Some depth) (Lib.contents_after None)
+  print_context false (Some depth) (Lib.contents ())
 
 
 (*************************************************************************)
