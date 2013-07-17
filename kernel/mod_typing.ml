@@ -44,13 +44,10 @@ let rec list_split_assoc ((k,m) as km) rev_before = function
   | (k',b)::after when Label.equal k k' && (is_modular b) == (m : bool) -> rev_before,b,after
   | h::tail -> list_split_assoc km (h::rev_before) tail
 
-let discr_resolver env mtb =
-     match mtb.typ_expr with
-	SEBstruct _ -> 
-	  mtb.typ_delta
-      | _ -> (*case mp is a functor *)
-	  empty_delta_resolver
-	
+let discr_resolver mtb = match mtb.typ_expr with
+  | SEBstruct _ -> mtb.typ_delta
+  | _ -> empty_delta_resolver (* when mp is a functor *)
+
 let rec rebuild_mp mp l =
   match l with
       []-> mp
@@ -272,14 +269,14 @@ and translate_module env mp inl me =
 
 and translate_apply env inl ftrans mexpr mkalg =
   let sign,alg,resolver,cst1 = ftrans in
-  let farg_id, farg_b, fbody_b = destr_functor env sign in
+  let farg_id, farg_b, fbody_b = destr_functor sign in
   let mp1 =
     try path_of_mexpr mexpr
     with Not_path -> error_application_to_not_path mexpr
   in
   let mtb = module_type_of_module None (lookup_module mp1 env) in
   let cst2 = check_subtypes env mtb farg_b in
-  let mp_delta = discr_resolver env mtb in
+  let mp_delta = discr_resolver mtb in
   let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta in
   let subst = map_mbid farg_id mp1 mp_delta
   in

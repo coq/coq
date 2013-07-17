@@ -23,7 +23,7 @@ val module_type_of_module : module_path option -> module_body ->
   module_type_body
 
 val destr_functor :
-  env -> struct_expr_body -> MBId.t * module_type_body * struct_expr_body
+  struct_expr_body -> MBId.t * module_type_body * struct_expr_body
 
 val subst_struct_expr :  substitution -> struct_expr_body -> struct_expr_body
 

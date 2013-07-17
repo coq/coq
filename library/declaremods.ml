@@ -388,7 +388,7 @@ let rec compute_subst env mbids sign mp_l inl =
     | _,[] -> mbids,empty_subst
     | [],r -> error "Application of a functor with too few arguments."
     | mbid::mbids,mp::mp_l ->
-	let farg_id, farg_b, fbody_b = Modops.destr_functor env sign in
+	let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
 	let mb = Environ.lookup_module mp env in
 	let mbid_left,subst = compute_subst env mbids fbody_b mp_l inl in
 	let resolver = match discr_resolver mb with
@@ -791,7 +791,7 @@ let rec include_subst env mp reso mbids sign inline =
   match mbids with
     | [] -> empty_subst
     | mbid::mbids ->
-	let farg_id, farg_b, fbody_b = Modops.destr_functor env sign in
+	let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
 	let subst = include_subst env mp reso mbids fbody_b inline in
 	let mp_delta =
 	  Modops.inline_delta_resolver env inline mp farg_id farg_b reso

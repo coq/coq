@@ -119,7 +119,7 @@ let error_no_such_label_sub l l1 =
 
 (************************)
 
-let destr_functor env mtb =
+let destr_functor mtb =
   match mtb with
   | SEBfunctor (arg_id,arg_t,body_t) ->
       	    (arg_id,arg_t,body_t)
@@ -299,17 +299,20 @@ let rec strengthen_mod mp_from mp_to mb =
     match mb.mod_type with
      | SEBstruct (sign) ->
 	 let resolve_out,sign_out =
-	   strengthen_sig mp_from sign mp_to mb.mod_delta in
-	   { mb with
-	       mod_expr = Some (SEBident mp_to);
-	       mod_type = SEBstruct(sign_out);
-	       mod_type_alg = mb.mod_type_alg;
-	       mod_constraints = mb.mod_constraints;
-	       mod_delta = add_mp_delta_resolver mp_from mp_to
-	       (add_delta_resolver mb.mod_delta resolve_out);
-	       mod_retroknowledge = mb.mod_retroknowledge}
+           strengthen_sig mp_from sign mp_to mb.mod_delta
+         in
+	 { mb with
+	   mod_expr = Some (SEBident mp_to);
+	   mod_type = SEBstruct(sign_out);
+	   mod_type_alg = mb.mod_type_alg;
+	   mod_constraints = mb.mod_constraints;
+	   mod_delta = add_mp_delta_resolver mp_from mp_to
+	     (add_delta_resolver mb.mod_delta resolve_out);
+	   mod_retroknowledge = mb.mod_retroknowledge }
      | SEBfunctor _ -> mb
-     | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
+     | _ ->
+       anomaly ~label:"Modops"
+         (Pp.str "the evaluation of the structure failed ")
 
 and strengthen_sig mp_from sign mp_to resolver =
   match sign with
@@ -340,13 +343,16 @@ let strengthen mtb mp =
     match mtb.typ_expr with
       | SEBstruct (sign) ->
 	  let resolve_out,sign_out =
-	    strengthen_sig mtb.typ_mp sign mp mtb.typ_delta in
-	    {mtb with
-	       typ_expr = SEBstruct(sign_out);
-	       typ_delta = add_delta_resolver mtb.typ_delta
-		(add_mp_delta_resolver mtb.typ_mp mp resolve_out)}
+	    strengthen_sig mtb.typ_mp sign mp mtb.typ_delta
+          in
+	  {mtb with
+	    typ_expr = SEBstruct(sign_out);
+	    typ_delta = add_delta_resolver mtb.typ_delta
+	      (add_mp_delta_resolver mtb.typ_mp mp resolve_out)}
       | SEBfunctor _ -> mtb
-      | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
+      | _ ->
+        anomaly ~label:"Modops"
+          (Pp.str "the evaluation of the structure failed ")
 
 let module_type_of_module mp mb =
   match mp with
@@ -386,32 +392,32 @@ let inline_delta_resolver env inl mp mbid mtb delta =
   in
   make_inline delta constants
 
-let rec strengthen_and_subst_mod
-    mb subst mp_from mp_to resolver =
-     match mb.mod_type with
-	 SEBstruct(str) ->
-	   let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
-	   if mb_is_an_alias then 
-	     subst_module subst 
-	       (fun resolver subst-> subst_dom_delta_resolver subst resolver) mb 
-	   else
-	     let resolver,new_sig = 
-	       strengthen_and_subst_struct str subst
-		 mp_from mp_from mp_to false false mb.mod_delta 
-	     in
-	       {mb with 
-		  mod_mp = mp_to;
-		  mod_expr = Some (SEBident mp_from);
-		  mod_type = SEBstruct(new_sig);
-		  mod_delta = add_mp_delta_resolver mp_to mp_from resolver}
-       | SEBfunctor(arg_id,arg_b,body) ->
-	   let subst = add_mp mb.mod_mp mp_to empty_delta_resolver subst in
-	   subst_module subst 
-	     (fun resolver subst-> subst_dom_codom_delta_resolver subst resolver) mb  
-	
-       | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
-	   
-and strengthen_and_subst_struct 
+let rec strengthen_and_subst_mod mb subst mp_from mp_to resolver =
+  match mb.mod_type with
+    | SEBstruct str ->
+      let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
+      if mb_is_an_alias then
+	subst_module subst
+	  (fun resolver subst-> subst_dom_delta_resolver subst resolver) mb
+      else
+	let resolver,new_sig =
+	  strengthen_and_subst_struct str subst
+	    mp_from mp_from mp_to false false mb.mod_delta
+	in
+	{mb with
+	  mod_mp = mp_to;
+	  mod_expr = Some (SEBident mp_from);
+	  mod_type = SEBstruct(new_sig);
+	  mod_delta = add_mp_delta_resolver mp_to mp_from resolver}
+    | SEBfunctor(arg_id,arg_b,body) ->
+      let subst = add_mp mb.mod_mp mp_to empty_delta_resolver subst in
+      subst_module subst
+	(fun resolver subst-> subst_dom_codom_delta_resolver subst resolver) mb
+    | _ ->
+      anomaly ~label:"Modops"
+        (Pp.str "the evaluation of the structure failed ")
+
+and strengthen_and_subst_struct
     str subst mp_alias mp_from mp_to alias incl resolver =
   match str with
     | [] -> empty_delta_resolver,[]
@@ -485,10 +491,11 @@ and strengthen_and_subst_struct
 	let mty = subst_modtype subst' 
 	  (fun resolver subst -> subst_dom_codom_delta_resolver subst' resolver) mty in
 	let resolve_out,rest' = strengthen_and_subst_struct rest subst
-	    mp_alias mp_from mp_to alias incl resolver in
-	  (add_mp_delta_resolver 
-	     mp_to' mp_to' resolve_out),(l,SFBmodtype mty)::rest'
-    
+	    mp_alias mp_from mp_to alias incl resolver
+        in
+	(add_mp_delta_resolver mp_to' mp_to' resolve_out),
+        (l,SFBmodtype mty)::rest'
+
 
 (* Let P be a module path when we write "Module M:=P." or "Module M. Include P. End M."
    we need to perform two operations to compute the body of M. The first one is applying
