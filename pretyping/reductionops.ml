@@ -939,16 +939,10 @@ let splay_lam_n env sigma n =
   in
   decrec env n empty_rel_context
 
-exception NotASort
-
-let decomp_sort env sigma t =
+let is_sort env sigma t =
   match kind_of_term (whd_betadeltaiota env sigma t) with
-  | Sort s -> s
-  | _ -> raise NotASort
-
-let is_sort env sigma arity =
-  try let _ = decomp_sort env sigma arity in true
-  with NotASort -> false
+  | Sort s -> true
+  | _ -> false
 
 (* reduction to head-normal-form allowing delta/zeta only in argument
    of case/fix (heuristic used by evar_conv) *)

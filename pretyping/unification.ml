@@ -950,7 +950,7 @@ let w_merge env with_types flags (evd,metas,evars) =
     else Evd.define sp (Evarutil.nf_evar evd''' c) evd''' in
 
   (* merge constraints *)
-  w_merge_rec evd (order_metas metas) evars []
+  w_merge_rec evd (order_metas metas) (List.rev evars) []
 
 let w_unify_meta_types env ?(flags=default_unify_flags) evd =
   let metas,evd = retract_coercible_metas evd in

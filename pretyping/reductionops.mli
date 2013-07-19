@@ -181,8 +181,6 @@ val splay_prod_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_lam_n : env ->  evar_map -> int -> constr -> rel_context * constr
 val splay_prod_assum :
   env ->  evar_map -> constr -> rel_context * constr
-val decomp_sort : env -> evar_map -> types -> sorts
-val is_sort : env -> evar_map -> types -> bool
 
 type 'a miota_args = {
   mP      : constr;     (** the result type *)
@@ -196,6 +194,7 @@ val reduce_mind_case : constr miota_args -> constr
 
 val find_conclusion : env -> evar_map -> constr -> (constr,constr) kind_of_term
 val is_arity : env ->  evar_map -> constr -> bool
+val is_sort : env -> evar_map -> types -> bool
 
 val whd_programs :  reduction_function
 
