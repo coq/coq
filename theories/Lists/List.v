@@ -812,6 +812,33 @@ Section ListOps.
 
   End Reverse_Induction.
 
+  (*************************)
+  (** ** Concatenation     *)
+  (*************************)
+
+  Fixpoint concat (l : list (list A)) : list A :=
+  match l with
+  | nil => nil
+  | cons x l => x ++ concat l
+  end.
+
+  Lemma concat_nil : concat nil = nil.
+  Proof.
+  reflexivity.
+  Qed.
+
+  Lemma concat_cons : forall x l, concat (cons x l) = x ++ concat l.
+  Proof.
+  reflexivity.
+  Qed.
+
+  Lemma concat_app : forall l1 l2, concat (l1 ++ l2) = concat l1 ++ concat l2.
+  Proof.
+  intros l1; induction l1 as [|x l1 IH]; intros l2; simpl.
+  + reflexivity.
+  + rewrite IH; apply app_assoc.
+  Qed.
+
   (***********************************)
   (** ** Decidable equality on lists *)
   (***********************************)
@@ -915,6 +942,21 @@ Section Map.
   Qed.
 
 End Map.
+
+Lemma flat_map_concat_map : forall A B (f : A -> list B) l,
+  flat_map f l = concat (map f l).
+Proof.
+intros A B f l; induction l as [|x l IH]; simpl.
++ reflexivity.
++ rewrite IH; reflexivity.
+Qed.
+
+Lemma concat_map : forall A B (f : A -> B) l, map f (concat l) = concat (map (map f) l).
+Proof.
+intros A B f l; induction l as [|x l IH]; simpl.
++ reflexivity.
++ rewrite map_app, IH; reflexivity.
+Qed.
 
 Lemma map_id : forall (A :Type) (l : list A),
   map (fun x => x) l = l.
