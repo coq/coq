@@ -46,6 +46,20 @@ Section Transitive_Closure.
 
 End Transitive_Closure.
 
+(** ** Reflexive closure *)
+
+Section Reflexive_Closure.
+  Variable A : Type.
+  Variable R : relation A.
+
+  (** Definition by direct transitive closure *)
+
+  Inductive clos_refl (x: A) : A -> Prop :=
+    | r_step (y:A) : R x y -> clos_refl x y
+    | r_refl (y z:A) : clos_refl x x.
+
+End Reflexive_Closure.
+
 (** ** Reflexive-transitive closure *)
 
 Section Reflexive_Transitive_Closure.
@@ -204,7 +218,7 @@ Section Lexicographic_Exponentiation.
     | d_nil : Desc Nil
     | d_one (x:A) : Desc (x :: Nil)
     | d_conc (x y:A) (l:List) :
-        leA x y -> Desc (l ++ y :: Nil) -> Desc ((l ++ y :: Nil) ++ x :: Nil).
+        clos_refl A leA x y -> Desc (l ++ y :: Nil) -> Desc ((l ++ y :: Nil) ++ x :: Nil).
 
   Definition Pow : Set := sig Desc.
 

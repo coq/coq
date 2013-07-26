@@ -17,6 +17,7 @@ Require Import Relation_Operators.
 
 Section Properties.
 
+  Arguments clos_refl [A] R x _.
   Arguments clos_refl_trans [A] R x _.
   Arguments clos_refl_trans_1n [A] R x _.
   Arguments clos_refl_trans_n1 [A] R x _.
@@ -69,6 +70,26 @@ Section Properties.
       red.
       induction 1; auto with sets.
       apply rst_trans with y; auto with sets.
+    Qed.
+
+    (** Reflexive closure is included in the
+        reflexive-transitive closure *)
+
+    Lemma clos_r_clos_rt :
+      inclusion (clos_refl R) (clos_refl_trans R).
+    Proof.
+      induction 1 as [? ?| ].
+      constructor; auto.
+      constructor 2.
+    Qed.
+
+    Lemma clos_rt_t : forall x y z,
+      clos_refl_trans R x y -> clos_trans R y z ->
+      clos_trans R x z.
+    Proof.
+      induction 1 as [b d H1|b|a b d H1 H2 IH1 IH2]; auto.
+      intro H. apply t_trans with (y:=d); auto.
+      constructor. auto.
     Qed.
 
     (** Correctness of the reflexive-symmetric-transitive closure *)

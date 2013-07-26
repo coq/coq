@@ -13,6 +13,7 @@
 
 Require Import List.
 Require Import Relation_Operators.
+Require Import Operators_Properties.
 Require Import Transitive_Closure.
 
 Section Wf_Lexicographic_Exponentiation.
@@ -88,14 +89,14 @@ Section Wf_Lexicographic_Exponentiation.
 
   Lemma desc_tail :
     forall (x:List) (a b:A),
-      Descl (Cons b (x ++ Cons a Nil)) -> clos_trans A leA a b.
+      Descl (Cons b (x ++ Cons a Nil)) -> clos_refl_trans A leA a b.
   Proof.
     intro.
     apply rev_ind with
       (A := A)
       (P := fun x:List =>
         forall a b:A,
-          Descl (Cons b (x ++ Cons a Nil)) -> clos_trans A leA a b).
+          Descl (Cons b (x ++ Cons a Nil)) -> clos_refl_trans A leA a b).
     intros.
 
     inversion H.
@@ -110,7 +111,7 @@ Section Wf_Lexicographic_Exponentiation.
     generalize (app_inj_tail _ _ _ _ H6); simple induction 1; intros.
     generalize H1.
     rewrite <- H10; rewrite <- H7; intro.
-    apply (t_step A leA); auto with sets.
+    inversion H11; subst; [apply rt_step; assumption|apply rt_refl].
 
     intros.
     inversion H0.
@@ -124,9 +125,10 @@ Section Wf_Lexicographic_Exponentiation.
     generalize (desc_prefix (Cons b (l ++ Cons x0 Nil)) a H5); intro.
     generalize (H x0 b H6).
     intro.
-    apply t_trans with (A := A) (y := x0); auto with sets.
+    apply rt_trans with (A := A) (y := x0); auto with sets.
 
-    apply t_step.
+    match goal with [ |- clos_refl_trans ?A ?R ?x ?y ] => cut (clos_refl A R x y) end.
+    intros; inversion H8; subst; [apply rt_step|apply rt_refl]; assumption.
     generalize H1.
     rewrite H4; intro.
 
@@ -137,8 +139,7 @@ Section Wf_Lexicographic_Exponentiation.
     generalize H10.
     rewrite H12; intro.
     generalize (app_inj_tail _ _ _ _ H13); simple induction 1.
-    intros.
-    rewrite <- H11; rewrite <- H16; auto with sets.
+    intros; subst; assumption.
   Qed.
 
 
@@ -250,7 +251,7 @@ Section Wf_Lexicographic_Exponentiation.
     intros E; rewrite <- E; intros.
     generalize (desc_tail l a a0 H0); intro.
     inversion H1.
-    apply t_trans with (y := a0); auto with sets.
+    eapply clos_rt_t; [eassumption|apply t_step; assumption].
 
     inversion H4.
   Qed.
