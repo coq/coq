@@ -80,6 +80,12 @@ val reset_coqtop : coqtop -> unit
 (** Reset coqtop. Pending requests will be discarded. The reset handler
     of coqtop will be called with [Planned] as first argument *)
 
+val get_arguments : coqtop -> string list
+(** Get the current arguments used by coqtop. *)
+
+val set_arguments : coqtop -> string list -> unit
+(** Set process arguments. This also forces a planned reset. *)
+
 (** In win32, we'll use a different kill function than Unix.kill *)
 
 val killer : (int -> unit) ref

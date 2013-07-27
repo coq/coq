@@ -274,7 +274,7 @@ type reset_kind = Planned | Unexpected
 
 type coqtop = {
   (* non quoted command-line arguments of coqtop *)
-  sup_args : string list;
+  mutable sup_args : string list;
   (* called whenever coqtop dies *)
   mutable reset_handler : reset_kind -> unit task;
   (* called whenever coqtop sends a feedback message *)
@@ -534,6 +534,12 @@ let reset_coqtop coqtop = respawn_coqtop ~why:Planned coqtop
 let break_coqtop coqtop =
   try !interrupter coqtop.handle.pid
   with _ -> Minilib.log "Error while sending Ctrl-C"
+
+let get_arguments coqtop = coqtop.sup_args
+
+let set_arguments coqtop args =
+  coqtop.sup_args <- args;
+  reset_coqtop coqtop
 
 let process_task coqtop task =
   assert (coqtop.status = Ready || coqtop.status = New);

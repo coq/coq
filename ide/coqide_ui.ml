@@ -125,6 +125,8 @@ let init () =
   <menu name='Tools' action='Tools'>
     <menuitem action='Comment' />
     <menuitem action='Uncomment' />
+    <separator />
+    <menuitem action='Coqtop arguments' />
   </menu>
   <menu action='Compile'>
     <menuitem action='Compile buffer' />

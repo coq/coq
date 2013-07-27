@@ -714,6 +714,28 @@ let about _ =
   let comment _ = notebook#current_term.script#comment ()
   let uncomment _ = notebook#current_term.script#uncomment ()
 
+let coqtop_arguments _ =
+  let dialog = GWindow.dialog ~title:"Coqtop arguments" () in
+  let coqtop = notebook#current_term.coqtop in
+  (** Text entry *)
+  let args = Coq.get_arguments coqtop in
+  let text = String.concat " " args in
+  let entry = GEdit.entry ~text ~packing:dialog#vbox#add () in
+  (** Buttons *)
+  let box = dialog#action_area in
+  let ok = GButton.button ~stock:`OK ~packing:box#add () in
+  let ok_cb () =
+    let nargs = CString.split ' ' entry#text in
+    let () = if nargs <> args then Coq.set_arguments coqtop nargs in
+    dialog#destroy ()
+  in
+  let _ = entry#connect#activate ok_cb in
+  let _ = ok#connect#clicked ok_cb in
+  let cancel = GButton.button ~stock:`CANCEL ~packing:box#add () in
+  let cancel_cb () = dialog#destroy () in
+  let _ = cancel#connect#clicked cancel_cb in
+  dialog#show ()
+
 end
 
 (** Refresh functions *)
@@ -1095,6 +1117,8 @@ let build_ui () =
       ~callback:MiscMenu.comment;
     item "Uncomment" ~label:"_Uncomment" ~accel:"<CTRL><SHIFT>D"
       ~callback:MiscMenu.uncomment;
+    item "Coqtop arguments" ~label:"Coqtop _arguments"
+      ~callback:MiscMenu.coqtop_arguments;
   ];
 
   menu compile_menu [
