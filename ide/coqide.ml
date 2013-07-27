@@ -64,7 +64,13 @@ let notebook =
 
 (** {2 Callback functions for the user interface } *)
 
-let current_buffer () = notebook#current_term.buffer
+let on_current_term f =
+  let term = try Some notebook#current_term with Invalid_argument _ -> None in
+  match term with
+  | None -> ()
+  | Some t -> ignore (f t)
+
+let cb_on_current_term f _ = on_current_term f
 
 (** Nota: using && here has the advantage of working both under win32 and unix.
     If someday we want the main command to be tried even if the "cd" has failed,
@@ -218,15 +224,15 @@ let load _ =
     | None -> ()
     | Some f -> FileAux.load_file f
 
-let save _ =
-  ignore (FileAux.check_save ~saveas:false notebook#current_term)
+let save _ = on_current_term (FileAux.check_save ~saveas:false)
 
-let saveas _ =
-  let sn = notebook#current_term in
+let saveas sn =
   try
     let filename = sn.fileops#filename in
     ignore (FileAux.select_and_save ~saveas:true ?filename sn)
   with _ -> warning "Save Failed"
+
+let saveas = cb_on_current_term saveas
 
 let saveall _ =
   List.iter
@@ -244,11 +250,8 @@ let quit _ =
   try FileAux.check_quit saveall; Coq.final_countdown ()
   with FileAux.DontQuit -> ()
 
-let close_buffer _ =
-  let do_remove () =
-    notebook#remove_page notebook#current_page
-  in
-  let sn = notebook#current_term in
+let close_buffer sn =
+  let do_remove () = notebook#remove_page notebook#current_page in
   if not sn.buffer#modified then do_remove ()
   else
     let answ = GToolbox.question_box ~title:"Close"
@@ -264,8 +267,9 @@ let close_buffer _ =
       | 2 -> do_remove ()
       | _ -> ()
 
-let export kind _ =
-  let sn = notebook#current_term in
+let close_buffer = cb_on_current_term close_buffer
+
+let export kind sn =
   match sn.fileops#filename with
     |None -> flash_info "Cannot print: this buffer has no name"
     |Some f ->
@@ -286,8 +290,9 @@ let export kind _ =
       in
       run_command sn.messages#add finally cmd
 
-let print _ =
-  let sn = notebook#current_term in
+let export kind = cb_on_current_term (export kind)
+
+let print sn =
   match sn.fileops#filename with
     |None -> flash_info "Cannot print: this buffer has no name"
     |Some f_name ->
@@ -322,10 +327,13 @@ let print _ =
       let _ = ok#connect#clicked ~callback:callback_print in
       w#misc#show ()
 
-let highlight _ =
-  let sn = notebook#current_term in
+let print = cb_on_current_term print
+
+let highlight sn =
   Sentence.tag_all sn.buffer;
   sn.script#recenter_insert
+
+let highlight = cb_on_current_term highlight
 
 end
 
@@ -359,8 +367,7 @@ let do_load f = FileAux.load_file f
 
 module External = struct
 
-let coq_makefile _ =
-  let sn = notebook#current_term in
+let coq_makefile sn =
   match sn.fileops#filename with
     |None -> flash_info "Cannot make makefile: this buffer has no name"
     |Some f ->
@@ -369,8 +376,9 @@ let coq_makefile _ =
       in
       run_command ignore finally cmd
 
-let editor _ =
-  let sn = notebook#current_term in
+let coq_makefile = cb_on_current_term coq_makefile
+
+let editor sn =
   match sn.fileops#filename with
     |None -> warning "Call to external editor available only on named files"
     |Some f ->
@@ -379,8 +387,9 @@ let editor _ =
       let cmd = Util.subst_command_placeholder prefs.cmd_editor f in
       run_command ignore (fun _ -> sn.fileops#revert) cmd
 
-let compile _ =
-  let sn = notebook#current_term in
+let editor = cb_on_current_term editor
+
+let compile sn =
   File.save ();
   match sn.fileops#filename with
     |None -> flash_info "Active buffer has no name"
@@ -405,6 +414,8 @@ let compile _ =
       in
       run_command display finally cmd
 
+let compile = cb_on_current_term compile
+
 (** [last_make_buf] contains the output of the last make compilation.
     [last_make] is the same, but as a string, refreshed only when searching
     the next error. *)
@@ -414,8 +425,7 @@ let last_make = ref ""
 let last_make_index = ref 0
 let last_make_dir = ref ""
 
-let make _ =
-  let sn = notebook#current_term in
+let make sn =
   match sn.fileops#filename with
     |None -> flash_info "Cannot make: this buffer has no name"
     |Some f ->
@@ -433,6 +443,8 @@ let make _ =
       let finally st = flash_info (current.cmd_make ^ pr_exit_status st)
       in
       run_command display finally cmd
+
+let make = cb_on_current_term make
 
 let search_compile_error_regexp =
   Str.regexp
@@ -454,11 +466,10 @@ let search_next_error () =
   (Filename.concat !last_make_dir f, l, b, e,
    String.sub !last_make msg_index (String.length !last_make - msg_index))
 
-let next_error _ =
+let next_error sn =
   try
     let file,line,start,stop,error_msg = search_next_error () in
     FileAux.load_file file;
-    let sn = notebook#current_term in
     let b = sn.buffer in
     let starti = b#get_iter_at_byte ~line:(line-1) start in
     let stopi = b#get_iter_at_byte ~line:(line-1) stop in
@@ -468,7 +479,9 @@ let next_error _ =
     sn.script#misc#grab_focus ()
   with Not_found ->
     last_make_index := 0;
-    notebook#current_term.messages#set "No more errors.\n"
+    sn.messages#set "No more errors.\n"
+
+let next_error = cb_on_current_term next_error
 
 end
 
@@ -494,9 +507,8 @@ let update_status =
   in
   Coq.bind Coq.status next
 
-let find_next_occurrence ~backward =
+let find_next_occurrence ~backward sn =
   (** go to the next occurrence of the current word, forward or backward *)
-  let sn = notebook#current_term in
   let b = sn.buffer in
   let start = find_word_start (b#get_iter_at_mark `INSERT) in
   let stop = find_word_end start in
@@ -507,25 +519,28 @@ let find_next_occurrence ~backward =
     |None -> ()
     |Some(where, _) -> b#place_cursor ~where; sn.script#recenter_insert
 
-let send_to_coq f =
-  let sn = notebook#current_term in
+let send_to_coq f sn =
   let info () = Minilib.log ("Coq busy, discarding query") in
   let f = Coq.seq (f sn) update_status in
   Coq.try_grab sn.coqtop f info
+
+let send_to_coq f = on_current_term (send_to_coq f)
 
 module Nav = struct
   let forward_one _ = send_to_coq (fun sn -> sn.coqops#process_next_phrase)
   let backward_one _ = send_to_coq (fun sn -> sn.coqops#backtrack_last_phrase)
   let goto _ = send_to_coq (fun sn -> sn.coqops#go_to_insert)
   let goto_end _ = send_to_coq (fun sn -> sn.coqops#process_until_end_or_error)
-  let previous_occ _ = find_next_occurrence ~backward:true
-  let next_occ _ = find_next_occurrence ~backward:false
-  let restart _ =
+  let previous_occ = cb_on_current_term (find_next_occurrence ~backward:true)
+  let next_occ = cb_on_current_term (find_next_occurrence ~backward:false)
+  let restart sn =
     Minilib.log "Reset Initial";
-    Coq.reset_coqtop notebook#current_term.coqtop
-  let interrupt _ =
+    Coq.reset_coqtop sn.coqtop
+  let restart _ = on_current_term restart
+  let interrupt sn =
     Minilib.log "User break received";
-    Coq.break_coqtop notebook#current_term.coqtop
+    Coq.break_coqtop sn.coqtop
+  let interrupt = cb_on_current_term interrupt
 end
 
 let tactic_wizard_callback l _ =
@@ -538,8 +553,7 @@ let printopts_callback opts v =
 
 (** Templates menu *)
 
-let get_current_word () =
-  let term = notebook#current_term in
+let get_current_word term =
   (** First look to find if autocompleting *)
   match term.script#complete_popup#proposal with
   | Some p -> p
@@ -561,7 +575,7 @@ let print_branches c cases =
   Format.fprintf c "@[match var with@\n%aend@]@."
     (print_list print_branch) cases
 
-let display_match = function
+let display_match sn = function
   |Interface.Fail _ ->
     flash_info "Not an inductive type"; Coq.return ()
   |Interface.Good cases ->
@@ -571,7 +585,7 @@ let display_match = function
       Buffer.contents buf
     in
     Minilib.log ("match template :\n" ^ text);
-    let b = current_buffer () in
+    let b = sn.buffer in
     let _ =  b#delete_selection () in
     let m = b#create_mark (b#get_iter_at_mark `INSERT) in
     if b#insert_interactive text then begin
@@ -583,19 +597,20 @@ let display_match = function
     b#delete_mark (`MARK m);
     Coq.return ()
 
-let match_callback _ =
-  let w = get_current_word () in
-  let coqtop = notebook#current_term.coqtop in
-  let query = Coq.bind (Coq.mkcases w) display_match in
+let match_callback sn =
+  let w = get_current_word sn in
+  let coqtop = sn.coqtop in
+  let query = Coq.bind (Coq.mkcases w) (display_match sn) in
   Coq.try_grab coqtop query ignore
+
+let match_callback = cb_on_current_term match_callback
 
 (** Queries *)
 
 module Query = struct
 
-let searchabout () =
-  let word = get_current_word () in
-  let sn = notebook#current_term in
+let searchabout sn =
+  let word = get_current_word sn in
   let buf = sn.messages#buffer in
   let insert result =
     let qualid = result.Interface.coq_object_qualid in
@@ -617,13 +632,16 @@ let searchabout () =
   in
   Coq.try_grab sn.coqtop launch_query ignore
 
-let otherquery command _ =
-  let word = get_current_word () in
-  let sn = notebook#current_term in
+let searchabout () = on_current_term searchabout
+
+let otherquery command sn =
+  let word = get_current_word sn in
   if word <> "" then
     let query = command ^ " " ^ word ^ "." in
     sn.messages#clear;
     Coq.try_grab sn.coqtop (sn.coqops#raw_coq_query query) ignore
+
+let otherquery command = cb_on_current_term (otherquery command)
 
 let query command _ =
   if command = "Search" || command = "SearchAbout"
@@ -636,9 +654,8 @@ end
 
 module MiscMenu = struct
 
-let detach_view _ =
+let detach_view sn =
   (* Open a separate window containing the current buffer *)
-  let sn = notebook#current_term in
   let file = match sn.fileops#filename with
     |None -> "*scratch*"
     |Some f -> f
@@ -655,6 +672,8 @@ let detach_view _ =
   nv#misc#modify_font prefs.text_font;
   (* If the buffer in the main window is closed, destroy this detached view *)
   ignore (sn.script#connect#destroy ~callback:w#destroy)
+
+let detach_view = cb_on_current_term detach_view
 
 let log_file_message () =
   if !Minilib.debug then
@@ -711,12 +730,12 @@ let about _ =
   dialog#set_authors authors;
   dialog#show ()
 
-  let comment _ = notebook#current_term.script#comment ()
-  let uncomment _ = notebook#current_term.script#uncomment ()
+let comment = cb_on_current_term (fun t -> t.script#comment ())
+let uncomment = cb_on_current_term (fun t -> t.script#uncomment ())
 
-let coqtop_arguments _ =
+let coqtop_arguments sn =
   let dialog = GWindow.dialog ~title:"Coqtop arguments" () in
-  let coqtop = notebook#current_term.coqtop in
+  let coqtop = sn.coqtop in
   (** Text entry *)
   let args = Coq.get_arguments coqtop in
   let text = String.concat " " args in
@@ -735,6 +754,28 @@ let coqtop_arguments _ =
   let cancel_cb () = dialog#destroy () in
   let _ = cancel#connect#clicked cancel_cb in
   dialog#show ()
+
+let coqtop_arguments = cb_on_current_term coqtop_arguments
+
+let show_query_pane sn =
+  let ccw = sn.command in
+  if ccw#frame#misc#visible
+  then ccw#frame#misc#hide ()
+  else ccw#frame#misc#show ()
+
+let zoom_fit sn =
+  let script = sn.script in
+  let space = script#misc#allocation.Gtk.width in
+  let cols = script#right_margin_position in
+  let pango_ctx = script#misc#pango_context in
+  let layout = pango_ctx#create_layout in
+  let fsize = Pango.Font.get_size current.text_font in
+  Pango.Layout.set_text layout (String.make cols 'X');
+  let tlen = fst (Pango.Layout.get_pixel_size layout) in
+  Pango.Font.set_size current.text_font
+    (fsize * space / tlen / Pango.scale * Pango.scale);
+  save_pref ();
+  !refresh_editor_hook ()
 
 end
 
@@ -838,10 +879,10 @@ let alpha_items menu_name item_name l =
       then text ^"\n"
       else text ^" "
     in
-    item (item_name^" "^(no_under text)) ~label:text
-      ~callback:(fun _ ->
-	ignore ((current_buffer ())#insert_interactive text'))
-      menu_name
+    let callback _ =
+      on_current_term (fun sn -> sn.buffer#insert_interactive text')
+    in
+    item (item_name^" "^(no_under text)) ~label:text ~callback menu_name
   in
   let mk_items = function
     | [] -> ()
@@ -865,8 +906,8 @@ let template_item (text, offset, len, key) =
   let name = String.sub text 0 idx in
   let label = "_"^name^" __" in
   let negoffset = String.length text - offset - len in
-  let callback _ =
-    let b = current_buffer () in
+  let callback sn =
+    let b = sn.buffer in
     if b#insert_interactive text then begin
       let iter = b#get_iter_at_mark `INSERT in
       ignore (iter#nocopy#backward_chars negoffset);
@@ -875,7 +916,7 @@ let template_item (text, offset, len, key) =
       b#move_mark `SEL_BOUND ~where:iter;
     end
   in
-  item name ~label ~callback ~accel:(modifier^key)
+  item name ~label ~callback:(cb_on_current_term callback) ~accel:(modifier^key)
 
 let emit_to_focus window sgn =
   let focussed_widget = GtkWindow.Window.get_focus window#as_window in
@@ -924,7 +965,7 @@ let build_ui () =
     item "Revert all buffers" ~label:"_Revert all buffers"
       ~callback:File.revert_all ~stock:`REVERT_TO_SAVED;
     item "Close buffer" ~label:"_Close buffer" ~stock:`CLOSE
-      ~callback:File.close_buffer~tooltip:"Close current buffer";
+      ~callback:File.close_buffer ~tooltip:"Close current buffer";
     item "Print..." ~label:"_Print..."
       ~callback:File.print ~stock:`PRINT ~accel:"<Ctrl>p";
     item "Rehighlight" ~label:"Reh_ighlight" ~accel:"<Ctrl>l"
@@ -944,9 +985,9 @@ let build_ui () =
   menu edit_menu [
     item "Edit" ~label:"_Edit";
     item "Undo" ~accel:"<Ctrl>u" ~stock:`UNDO
-      ~callback:(fun _ -> notebook#current_term.script#undo ());
+      ~callback:(cb_on_current_term (fun t -> t.script#undo ()));
     item "Redo" ~stock:`REDO
-      ~callback:(fun _ -> notebook#current_term.script#redo ());
+      ~callback:(cb_on_current_term (fun t -> t.script#redo ()));
     item "Cut" ~stock:`CUT
       ~callback:(fun _ -> emit_to_focus w GtkText.View.S.cut_clipboard);
     item "Copy" ~stock:`COPY
@@ -954,20 +995,16 @@ let build_ui () =
     item "Paste" ~stock:`PASTE
       ~callback:(fun _ -> emit_to_focus w GtkText.View.S.paste_clipboard);
     item "Find" ~stock:`FIND
-      ~callback:(fun _ -> notebook#current_term.finder#show `FIND);
+      ~callback:(cb_on_current_term (fun t -> t.finder#show `FIND));
     item "Find Next" ~label:"Find _Next" ~stock:`GO_DOWN ~accel:"F3"
-      ~callback:(fun _ -> notebook#current_term.finder#find_forward ());
+      ~callback:(cb_on_current_term (fun t -> t.finder#find_forward ()));
     item "Find Previous" ~label:"Find _Previous" ~stock:`GO_UP
       ~accel:"<Shift>F3"
-      ~callback:(fun _ -> notebook#current_term.finder#find_backward ());
+      ~callback:(cb_on_current_term (fun t -> t.finder#find_backward ()));
     item "Replace" ~stock:`FIND_AND_REPLACE
-      ~callback:(fun _ -> notebook#current_term.finder#show `REPLACE);
+      ~callback:(cb_on_current_term (fun t -> t.finder#show `REPLACE));
     item "Complete Word" ~label:"Complete Word" ~accel:"<Ctrl>slash"
-      ~callback:(fun _ ->
-        ignore ( ()
-(*	       let av = notebook#current_term.analyzed_view in
-	       av#complete_at_offset (av#get_insert)#offset*)
-	));
+      ~callback:(fun _ -> ());
     item "External editor" ~label:"External editor" ~stock:`EDIT
       ~callback:External.editor;
     item "Preferences" ~accel:"<Ctrl>comma" ~stock:`PREFERENCES
@@ -1000,19 +1037,7 @@ let build_ui () =
           save_pref ();
           !refresh_editor_hook ());
     item "Zoom fit" ~label:"_Zoom fit" ~accel:("<Control>0")
-        ~stock:`ZOOM_FIT ~callback:(fun _ ->
-          let script = notebook#current_term.script in
-          let space = script#misc#allocation.Gtk.width in
-          let cols = script#right_margin_position in
-          let pango_ctx = script#misc#pango_context in
-          let layout = pango_ctx#create_layout in
-          let fsize = Pango.Font.get_size current.text_font in
-          Pango.Layout.set_text layout (String.make cols 'X');
-          let tlen = fst (Pango.Layout.get_pixel_size layout) in
-          Pango.Font.set_size current.text_font
-            (fsize * space / tlen / Pango.scale * Pango.scale);
-          save_pref ();
-          !refresh_editor_hook ());
+        ~stock:`ZOOM_FIT ~callback:(cb_on_current_term MiscMenu.zoom_fit);
     toggle_item "Show Toolbar" ~label:"Show _Toolbar"
       ~active:(prefs.show_toolbar)
       ~callback:(fun _ ->
@@ -1020,11 +1045,7 @@ let build_ui () =
         !refresh_toolbar_hook ());
     toggle_item "Show Query Pane" ~label:"Show _Query Pane"
       ~accel:"<Alt>Escape"
-      ~callback:(fun _ ->
-        let ccw = notebook#current_term.command in
-        if ccw#frame#misc#visible
-        then ccw#frame#misc#hide ()
-        else ccw#frame#misc#show ())
+      ~callback:(cb_on_current_term MiscMenu.show_query_pane)
   ];
   toggle_items view_menu Coq.PrintOpt.bool_items;
 
@@ -1145,8 +1166,8 @@ let build_ui () =
       ~callback:(fun _ ->
         browse notebook#current_term.messages#add prefs.library_url);
     item "Help for keyword" ~label:"Help for _keyword" ~stock:`HELP
-      ~callback:(fun _ ->
-        browse_keyword notebook#current_term.messages#add (get_current_word ()));
+      ~callback:(fun _ -> on_current_term (fun sn ->
+        browse_keyword sn.messages#add (get_current_word sn)));
     item "About Coq" ~label:"_About" ~stock:`ABOUT
       ~callback:MiscMenu.about
   ];
@@ -1203,11 +1224,9 @@ let build_ui () =
   let pbar = GRange.progress_bar ~pulse_step:0.2 () in
   let () = lower_hbox#pack pbar#coerce in
   let () = pbar#set_text "CoqIde started" in
-  let _ = Glib.Timeout.add ~ms:300 ~callback:(fun () ->
-    let curr_coq = notebook#current_term.coqtop in
-    if Coq.is_computing curr_coq then pbar#pulse ();
-    true)
-  in
+  let pulse sn = if Coq.is_computing sn.coqtop then pbar#pulse () in
+  let callback () = on_current_term pulse; true in
+  let _ = Glib.Timeout.add ~ms:300 ~callback in
 
   (* Initializing hooks *)
   let refresh_toolbar () =
@@ -1261,7 +1280,7 @@ let main files =
     | _ -> List.iter make_file_buffer files);
   notebook#goto_page 0;
   MiscMenu.initial_about ();
-  notebook#current_term.script#misc#grab_focus ();
+  on_current_term (fun t -> t.script#misc#grab_focus ());
   Minilib.log "End of Coqide.main"
 
 
@@ -1276,7 +1295,7 @@ let check_for_geoproof_input () =
     |None -> true
     |Some "Ack" -> true
     |Some s ->
-      (current_buffer ())#insert (s^"\n");
+      on_current_term (fun sn -> sn.buffer#insert (s ^ "\n"));
       (* cb_Dr#clear does not work so i use : *)
       cb_Dr#set_text "Ack";
       true
