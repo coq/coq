@@ -427,7 +427,8 @@ let rec add_term state t=
     try Termhash.find uf.syms t with
 	Not_found ->
 	  let b=next uf in
-	  let typ = pf_type_of state.gls (constr_of_term t) in
+          let trm = Termops.refresh_universes (constr_of_term t) in
+	  let typ = pf_type_of state.gls trm in
 	  let typ = canonize_name typ in
 	  let new_node=
 	    match t with
