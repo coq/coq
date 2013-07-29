@@ -986,6 +986,12 @@ let vernac_declare_arguments locality r l nargs flags =
       | x, _ -> x in
     List.map (fun ns -> List.map name_anons (List.combine ns inf_names)) l in
   let names_decl = List.map (List.map (fun (id, _,_,_,_) -> id)) l in
+  let renamed_arg = ref None in
+  let set_renamed a b =
+    if !renamed_arg = None && a <> b then renamed_arg := Some(b,a) in
+  let pr_renamed_arg () = match !renamed_arg with None -> ""
+    | Some (o,n) ->
+       "\nArgument "^string_of_id o ^" renamed to "^string_of_id n^"." in
   let some_renaming_specified =
     try
       let names = Arguments_renaming.arguments_names sr in
@@ -1001,15 +1007,19 @@ let vernac_declare_arguments locality r l nargs flags =
         | (Name x, _,_, true, _), Anonymous ->
             error ("Argument "^Id.to_string x^" cannot be declared implicit.")
         | (Name iid, _,_, true, max), Name id ->
+           set_renamed iid id;
            b || not (Id.equal iid id), Some (ExplByName id, max, false)
-        | (Name iid, _,_, _, _), Name id -> b || not (Id.equal iid id), None
+        | (Name iid, _,_, _, _), Name id ->
+           set_renamed iid id;
+           b || not (Id.equal iid id), None
         | _ -> b, None)
         sr (List.combine il inf_names) in
       sr || sr', List.map_filter (fun x -> x) impl)
       some_renaming_specified l in
   if some_renaming_specified then
     if not (List.mem `Rename flags) then
-      error "To rename arguments the \"rename\" flag must be specified."
+      error ("To rename arguments the \"rename\" flag must be specified."
+        ^ pr_renamed_arg ())
     else
       Arguments_renaming.rename_arguments
         (make_section_locality locality) sr names_decl;

@@ -50,5 +50,5 @@ Fail Arguments eq_refl {F}, [F].
 Fail Arguments eq_refl {F F}, [F] F.
 Fail Arguments eq {F} x [z].
 Fail Arguments eq {F} x z y.
-
+Fail Arguments eq {R} s t.
 
