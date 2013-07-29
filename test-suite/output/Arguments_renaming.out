@@ -1,7 +1,9 @@
 The command has indeed failed with message:
 => Error: To rename arguments the "rename" flag must be specified.
+Argument A renamed to B
 The command has indeed failed with message:
 => Error: To rename arguments the "rename" flag must be specified.
+Argument A renamed to T
 @eq_refl
      : forall (B : Type) (y : B), y = y
 eq_refl
@@ -106,3 +108,6 @@ The command has indeed failed with message:
 => Error: Argument z cannot be declared implicit.
 The command has indeed failed with message:
 => Error: Extra argument y.
+The command has indeed failed with message:
+=> Error: To rename arguments the "rename" flag must be specified.
+Argument A renamed to R
