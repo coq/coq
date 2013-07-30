@@ -252,7 +252,7 @@ let rec print_list print fmt = function
 
 let requote cmd = if Sys.os_type = "Win32" then "\""^cmd^"\"" else cmd
 
-let textview_width (view : #GText.view) =
+let textview_width (view : #GText.view_skel) =
   let rect = view#visible_rect in
   let pixel_width = Gdk.Rectangle.width rect in
   let metrics = view#misc#pango_context#get_metrics ()  in

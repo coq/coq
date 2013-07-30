@@ -64,7 +64,7 @@ val set_location : (string -> unit) ref
 
 val requote : string -> string
 
-val textview_width : #GText.view -> int
+val textview_width : #GText.view_skel -> int
 (** Returns an approximate value of the character width of a textview *)
 
 type logger = Interface.message_level -> string -> unit

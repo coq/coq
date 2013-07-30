@@ -43,7 +43,7 @@ let hook_tag_cb tag menu_content sel_cb hover_cb =
                      hover_cb start stop; false
                  | _ -> false))
 
-let mode_tactic sel_cb (proof:GText.view) goals hints = match goals with
+let mode_tactic sel_cb (proof : #GText.view_skel) goals hints = match goals with
   | [] -> assert false
   | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; } :: rem_goals ->
       let on_hover sel_start sel_stop =
@@ -107,7 +107,7 @@ let mode_tactic sel_cb (proof:GText.view) goals hints = match goals with
 			 (Some Tags.Proof.goal)));
       ignore(proof#scroll_to_mark ~use_align:true ~yalign:0.95 `INSERT)
 
-let mode_cesar (proof:GText.view) = function
+let mode_cesar (proof : #GText.view_skel) = function
   | [] -> assert false
   | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; } :: _ ->
       proof#buffer#insert "    *** Declarative Mode ***\n";
@@ -124,7 +124,7 @@ let rec flatten = function
   let inner = flatten l in
   List.rev_append lg inner @ rg
 
-let display mode (view:GText.view) goals hints evars =
+let display mode (view : #GText.view_skel) goals hints evars =
   let () = view#buffer#set_text "" in
   match goals with
   | None -> ()
@@ -156,8 +156,13 @@ let display mode (view:GText.view) goals hints evars =
     mode view fg hints
 
 let proof_view () =
-  let buffer = GText.buffer ~tag_table:Tags.Proof.table () in
-  let view = GText.view ~buffer ~editable:false ~wrap_mode:`WORD () in
+  let buffer = GSourceView2.source_buffer
+    ~highlight_matching_brackets:true
+    ~tag_table:Tags.Proof.table ()
+  in
+  let view = GSourceView2.source_view
+    ~source_buffer:buffer ~editable:false ~wrap_mode:`WORD ()
+  in
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
   let _ = buffer#add_selection_clipboard default_clipboard in
   object
@@ -173,9 +178,9 @@ let proof_view () =
 
     method refresh () =
       let dummy _ () = () in
-      display (mode_tactic dummy) view goals None evars
+      display (mode_tactic dummy) (view :> GText.view_skel) goals None evars
 
-    method width = Ideutils.textview_width view
+    method width = Ideutils.textview_width (view :> GText.view_skel)
   end
 
 (*     ignore (proof_buffer#add_selection_clipboard cb); *)

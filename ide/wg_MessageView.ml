@@ -20,11 +20,16 @@ class type message_view =
   end
 
 let message_view () : message_view =
-  let buffer = GText.buffer ~tag_table:Tags.Message.table () in
+  let buffer = GSourceView2.source_buffer
+    ~highlight_matching_brackets:true
+    ~tag_table:Tags.Message.table ()
+  in
+  let text_buffer = new GText.buffer buffer#as_buffer in
   let box = GPack.vbox () in
   let scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:(box#pack ~expand:true) () in
-  let view = GText.view ~buffer ~packing:scroll#add
+  let view = GSourceView2.source_view
+    ~source_buffer:buffer ~packing:scroll#add
     ~editable:false ~cursor_visible:false ~wrap_mode:`WORD ()
   in
   let default_clipboard = GData.clipboard Gdk.Atom.primary in
@@ -49,7 +54,7 @@ let message_view () : message_view =
 
     method set msg = self#clear; self#add msg
 
-    method buffer = buffer
+    method buffer = text_buffer
 
     method modify_font fd = view#misc#modify_font fd
 
