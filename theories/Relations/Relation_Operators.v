@@ -56,7 +56,7 @@ Section Reflexive_Closure.
 
   Inductive clos_refl (x: A) : A -> Prop :=
     | r_step (y:A) : R x y -> clos_refl x y
-    | r_refl (y z:A) : clos_refl x x.
+    | r_refl : clos_refl x x.
 
 End Reflexive_Closure.
 
