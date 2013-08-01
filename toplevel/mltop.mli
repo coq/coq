@@ -64,5 +64,5 @@ val init_known_plugins : unit -> unit
 val declare_ml_modules : Vernacexpr.locality_flag -> string list -> unit
 
 val print_ml_path : unit -> unit
-
 val print_ml_modules : unit -> unit
+val print_gc : unit -> unit

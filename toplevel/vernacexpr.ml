@@ -50,6 +50,7 @@ type printable =
   | PrintModuleType of reference
   | PrintMLLoadPath
   | PrintMLModules
+  | PrintDebugGC
   | PrintName of reference or_by_notation
   | PrintGraph
   | PrintClasses

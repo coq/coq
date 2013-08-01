@@ -886,6 +886,7 @@ let rec pr_vernac = function
 	| PrintModules -> str"Print Modules"
 	| PrintMLLoadPath -> str"Print ML Path"
 	| PrintMLModules -> str"Print ML Modules"
+	| PrintDebugGC -> str "Print Debug GC"
 	| PrintGraph -> str"Print Graph"
 	| PrintClasses -> str"Print Classes"
 	| PrintTypeClasses -> str"Print TypeClasses"

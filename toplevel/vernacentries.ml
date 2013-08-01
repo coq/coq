@@ -1302,6 +1302,7 @@ let vernac_print = function
   | PrintModuleType qid -> print_modtype qid
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
+  | PrintDebugGC -> Mltop.print_gc ()
   | PrintName qid ->
       if !pcoq <> None then (Option.get !pcoq).print_name qid
       else msg (print_name qid)
