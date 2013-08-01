@@ -357,18 +357,19 @@ priority as for auto hints.
 Besides the {\tt Class} and {\tt Instance} vernacular commands, there
 are a few other commands related to type classes.
 
-\subsection{\tt Existing Instance {\ident}}
+\subsection{\tt Existing Instance {\ident} [| \textit{priority}]}
 \comindex{Existing Instance}
 \label{ExistingInstance}
 
 This commands adds an arbitrary constant whose type ends with an applied
-type class to the instance database. It can be used for redeclaring
-instances at the end of sections, or declaring structure projections as
-instances. This is almost equivalent to {\tt Hint Resolve {\ident} :
-  typeclass\_instances}.
+type class to the instance database with an optional priority. It can be used
+for redeclaring instances at the end of sections, or declaring structure
+projections as instances. This is almost equivalent to {\tt Hint Resolve
+{\ident} : typeclass\_instances}.
 
 \begin{Variants}
-\item {\tt Existing Instances {\ident}$_1$ \ldots {\ident}$_n$}
+\item {\tt Existing Instances {\ident}$_1$ \ldots {\ident}$_n$
+  [| \textit{priority}]}
   \comindex{Existing Instances}
   With this command, several existing instances can be declared at once.
 \end{Variants}
