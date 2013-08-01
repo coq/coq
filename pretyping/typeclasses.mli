@@ -67,6 +67,8 @@ val class_of_constr : constr -> (rel_context * (typeclass * constr list)) option
   
 val instance_impl : instance -> global_reference
 
+val instance_priority : instance -> int option
+
 val is_class : global_reference -> bool
 val is_instance : global_reference -> bool
 

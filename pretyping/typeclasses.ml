@@ -71,6 +71,8 @@ type instances = (instance Refmap.t) Refmap.t
 
 let instance_impl is = is.is_impl
 
+let instance_priority is = is.is_pri
+
 let new_instance cl pri glob impl =
   let global =
     if glob then Lib.sections_depth ()
