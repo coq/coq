@@ -1429,6 +1429,7 @@ let vernac_print = function
   | PrintNamespace ns -> print_namespace ns
   | PrintMLLoadPath -> msg_notice (Mltop.print_ml_path ())
   | PrintMLModules -> msg_notice (Mltop.print_ml_modules ())
+  | PrintDebugGC -> msg_notice (Mltop.print_gc ())
   | PrintName qid -> dump_global qid; msg_notice (print_name qid)
   | PrintGraph -> msg_notice (Prettyp.print_graph())
   | PrintClasses -> msg_notice (Prettyp.print_classes())

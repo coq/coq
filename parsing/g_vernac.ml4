@@ -829,6 +829,7 @@ GEXTEND Gram
 
       | IDENT "ML"; IDENT "Path" -> PrintMLLoadPath
       | IDENT "ML"; IDENT "Modules" -> PrintMLModules
+      | IDENT "Debug"; IDENT "GC" -> PrintDebugGC
       | IDENT "Graph" -> PrintGraph
       | IDENT "Classes" ->  PrintClasses
       | IDENT "TypeClasses" -> PrintTypeClasses

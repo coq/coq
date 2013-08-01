@@ -358,3 +358,25 @@ let print_ml_path () =
 let print_ml_modules () =
   let l = get_loaded_modules () in
   str"Loaded ML Modules: " ++ pr_vertical_list str l
+
+let print_gc () =
+  let stat = Gc.stat () in
+  let msg =
+    str "minor words: " ++ real stat.Gc.minor_words ++ fnl () ++
+    str "promoted words: " ++ real stat.Gc.promoted_words ++ fnl () ++
+    str "major words :" ++ real stat.Gc.major_words ++ fnl () ++
+    str "minor_collections: " ++ int stat.Gc.minor_collections ++ fnl () ++
+    str "major_collections: " ++ int stat.Gc.major_collections ++ fnl () ++
+    str "heap_words: " ++ int stat.Gc.heap_words ++ fnl () ++
+    str "heap_chunks: " ++ int stat.Gc.heap_chunks ++ fnl () ++
+    str "live_words: " ++ int stat.Gc.live_words ++ fnl () ++
+    str "live_blocks: " ++ int stat.Gc.live_blocks ++ fnl () ++
+    str "free_words: " ++ int stat.Gc.free_words ++ fnl () ++
+    str "free_blocks: " ++ int stat.Gc.free_blocks ++ fnl () ++
+    str "largest_free: " ++ int stat.Gc.largest_free ++ fnl () ++
+    str "fragments: " ++ int stat.Gc.fragments ++ fnl () ++
+    str "compactions: " ++ int stat.Gc.compactions ++ fnl () ++
+    str "top_heap_words: " ++ int stat.Gc.top_heap_words ++ fnl () ++
+    str "stack_size: " ++ int stat.Gc.stack_size
+  in
+  hv 0 msg
