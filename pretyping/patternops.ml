@@ -360,7 +360,8 @@ let rec pat_of_raw metas vars = function
       in
       let pred = match p,indnames with
 	| Some p, Some (_,_,nal) ->
-	  rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas vars p))
+          let nvars = List.rev_append nal (na :: vars) in
+          rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas nvars p))
 	| _ -> PMeta None
       in
       let info =
