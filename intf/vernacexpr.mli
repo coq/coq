@@ -297,7 +297,8 @@ type vernac_expr =
 
   | VernacContext of local_binder list
 
-  | VernacDeclareInstances of reference list (* instance names *)
+  | VernacDeclareInstances of
+    reference list * int option (* instance names, priority *)
 
   | VernacDeclareClass of reference (* inductive or definition name *)
 

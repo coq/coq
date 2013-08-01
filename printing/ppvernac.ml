@@ -381,6 +381,10 @@ let pr_statement head (id,(bl,c,guard)) =
     pr_opt (pr_guard_annot pr_lconstr_expr bl) guard ++
     str":" ++ pr_spc_lconstr c)
 
+let pr_priority = function
+| None -> mt ()
+| Some i -> spc () ++ str "|" ++ spc () ++ int i
+
 (**************************************)
 (* Pretty printer for vernac commands *)
 (**************************************)
@@ -714,7 +718,7 @@ let rec pr_vernac = function
 	Anonymous -> mt ()) ++
        pr_and_type_binders_arg sup ++
        str":" ++ spc () ++
-       pr_constr cl ++ spc () ++
+       pr_constr cl ++ pr_priority pri ++
 	 (match props with
 	  | Some p -> spc () ++ str":=" ++ spc () ++ pr_constr p
 	  | None -> mt()))
@@ -724,10 +728,10 @@ let rec pr_vernac = function
        str"Context" ++ spc () ++ pr_and_type_binders_arg l)
 
 
- | VernacDeclareInstances ids ->
+ | VernacDeclareInstances (ids, pri) ->
      hov 1 ( str"Existing" ++ spc () ++ 
              str(String.plural (List.length ids) "Instance") ++
-             spc () ++ prlist_with_sep spc pr_reference ids)
+             spc () ++ prlist_with_sep spc pr_reference ids ++ pr_priority pri)
 
  | VernacDeclareClass id ->
      hov 1 (str"Existing" ++ spc () ++ str"Class" ++ spc () ++ pr_reference id)

@@ -32,7 +32,8 @@ val declare_class : reference -> unit
 
 (** Instance declaration *)
 
-val existing_instance : bool -> reference -> unit
+val existing_instance : bool -> reference -> int option -> unit
+(** globality, reference, priority *)
 
 val declare_instance_constant :
   typeclass ->

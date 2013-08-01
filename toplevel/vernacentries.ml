@@ -807,9 +807,9 @@ let vernac_instance abst locality sup inst props pri =
 let vernac_context l =
   if not (Classes.context l) then Pp.feedback Interface.AddedAxiom
 
-let vernac_declare_instances locality ids =
+let vernac_declare_instances locality ids pri =
   let glob = not (make_section_locality locality) in
-  List.iter (fun (id) -> Classes.existing_instance glob id) ids
+  List.iter (fun id -> Classes.existing_instance glob id pri) ids
 
 let vernac_declare_class id =
   Classes.declare_class id
@@ -1787,7 +1787,7 @@ let interp locality c = match c with
   | VernacInstance (abst, sup, inst, props, pri) ->
       vernac_instance abst locality sup inst props pri
   | VernacContext sup -> vernac_context sup
-  | VernacDeclareInstances ids -> vernac_declare_instances locality ids
+  | VernacDeclareInstances (ids, pri) -> vernac_declare_instances locality ids pri
   | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)

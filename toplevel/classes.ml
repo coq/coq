@@ -53,12 +53,12 @@ let declare_class g =
 		      Pp.str"Unsupported class type, only constants and inductives are allowed")
     
 (** TODO: add subinstances *)
-let existing_instance glob g =
+let existing_instance glob g pri =
   let c = global g in
   let instance = Typing.type_of (Global.env ()) Evd.empty (constr_of_global c) in
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
-      | Some (_, (tc, _)) -> add_instance (new_instance tc None glob c)
+      | Some (_, (tc, _)) -> add_instance (new_instance tc pri glob c)
       | None -> user_err_loc (loc_of_reference g, "declare_instance",
 			     Pp.str "Constant does not build instances of a declared type class.")
 
