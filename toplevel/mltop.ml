@@ -364,7 +364,7 @@ let print_gc () =
   let msg =
     str "minor words: " ++ real stat.Gc.minor_words ++ fnl () ++
     str "promoted words: " ++ real stat.Gc.promoted_words ++ fnl () ++
-    str "major words :" ++ real stat.Gc.major_words ++ fnl () ++
+    str "major words: " ++ real stat.Gc.major_words ++ fnl () ++
     str "minor_collections: " ++ int stat.Gc.minor_collections ++ fnl () ++
     str "major_collections: " ++ int stat.Gc.major_collections ++ fnl () ++
     str "heap_words: " ++ int stat.Gc.heap_words ++ fnl () ++
