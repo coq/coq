@@ -19,6 +19,12 @@ Proof.
   auto.
 Qed.
 
+Lemma equal_f_dep : forall {A B} {f g : forall (x : A), B x},
+  f = g -> forall x, f x = g x.
+Proof.
+intros A B f g <- H; reflexivity.
+Qed.
+
 (** Statements of functional extensionality for simple and dependent functions. *)
 
 Axiom functional_extensionality_dep : forall {A} {B : A -> Type},
