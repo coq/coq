@@ -888,7 +888,7 @@ let set_internalization_type typs =
 let make_internalization_vars recvars mainvars typs =
   let maintyps = List.combine mainvars typs in
   let extratyps = List.map (fun (x,y) -> (y,List.assoc x maintyps)) recvars in
-  maintyps@extratyps
+  maintyps @ extratyps
 
 let make_interpretation_type isrec = function
   | NtnInternTypeConstr when isrec -> NtnTypeConstrList
@@ -901,14 +901,17 @@ let make_interpretation_vars recvars allvars =
     Option.equal String.equal sc1 sc2 &&
     List.equal String.equal l1 l2
   in
-  List.iter (fun (x,y) ->
-    if not (eq_subscope (fst (List.assoc x allvars)) (fst (List.assoc y allvars))) then
-      error_not_same_scope x y) recvars;
+  let check (x, y) =
+    let (scope1, _) = Id.Map.find x allvars in
+    let (scope2, _) = Id.Map.find y allvars in
+    if not (eq_subscope scope1 scope2) then error_not_same_scope x y
+  in
+  let () = List.iter check recvars in
   let useless_recvars = List.map snd recvars in
   let mainvars =
-    List.filter (fun (x,_) -> not (List.mem x useless_recvars)) allvars in
-  List.map (fun (x,(sc,typ)) ->
-    (x,(sc,make_interpretation_type (List.mem_assoc x recvars) typ))) mainvars
+    Id.Map.filter (fun x _ -> not (List.mem x useless_recvars)) allvars in
+  Id.Map.mapi (fun x (sc, typ) ->
+    (sc, make_interpretation_type (List.mem_assoc x recvars) typ)) mainvars
 
 let check_rule_productivity l =
   if List.for_all (function NonTerminal _ -> true | _ -> false) l then
@@ -1160,6 +1163,10 @@ let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) =
 (**********************************************************************)
 (* Main functions about notations                                     *)
 
+let to_map l =
+  let fold accu (x, v) = Id.Map.add x v accu in
+  List.fold_left fold Id.Map.empty l
+
 let add_notation_in_scope local df c mods scope =
   let (msgs,i_data,i_typs,sy_data) = compute_syntax_data df mods in
   (* Prepare the parsing and printing rules *)
@@ -1167,13 +1174,15 @@ let add_notation_in_scope local df c mods scope =
   (* Prepare the interpretation *)
   let (onlyparse, recvars,mainvars, df') = i_data in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
-  let (acvars, ac) = interp_notation_constr i_vars recvars c in
+  let (acvars, ac) = interp_notation_constr (to_map i_vars) (to_map recvars) c in
   let interp = make_interpretation_vars recvars acvars in
+  let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse = onlyparse || is_not_printable ac in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
-    notobj_interp = (interp, ac);
+    notobj_interp = (List.map_filter map i_vars, ac);
+    (** Order is important here! *)
     notobj_onlyparse = onlyparse;
     notobj_notation = df';
   } in
@@ -1195,13 +1204,15 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
   let path = (Lib.library_dp(),Lib.current_dirpath true) in
   let df' = (make_notation_key symbs,(path,df)) in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
-  let (acvars,ac) = interp_notation_constr ~impls i_vars recvars c in
+  let (acvars, ac) = interp_notation_constr ~impls (to_map i_vars) (to_map recvars) c in
   let interp = make_interpretation_vars recvars acvars in
+  let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
   let onlyparse = onlyparse || is_not_printable ac in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
-    notobj_interp = (interp, ac);
+    notobj_interp = (List.map_filter map i_vars, ac);
+    (** Order is important here! *)
     notobj_onlyparse = onlyparse;
     notobj_notation = df';
   } in
@@ -1309,9 +1320,11 @@ let add_syntactic_definition ident (vars,c) local onlyparse =
   let vars,pat =
     try [], NRef (try_interp_name_alias (vars,c))
     with Not_found ->
-      let i_vars = List.map (fun id -> (id,NtnInternTypeConstr)) vars in
-      let vars,pat = interp_notation_constr i_vars [] c in
-      List.map (fun (id,(sc,kind)) -> (id,sc)) vars, pat
+      let fold accu id = Id.Map.add id NtnInternTypeConstr accu in
+      let i_vars = List.fold_left fold Id.Map.empty vars in
+      let nvars, pat = interp_notation_constr i_vars Id.Map.empty c in
+      let map id = let (sc, _) = Id.Map.find id nvars in (id, sc) in
+      List.map map vars, pat
   in
   let onlyparse = match onlyparse with
     | None when (is_not_printable pat) -> Some Flags.Current

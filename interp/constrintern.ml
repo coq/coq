@@ -271,7 +271,7 @@ let error_expect_binder_notation_type loc id =
 
 let set_var_scope loc id istermvar env ntnvars =
   try
-    let idscopes,typ = List.assoc id ntnvars in
+    let idscopes,typ = Id.Map.find id ntnvars in
     let () = if istermvar then
       (* scopes have no effect on the interpretation of identifiers *)
       begin match !idscopes with
@@ -381,7 +381,8 @@ let push_name_env ?(global_level=false) lvar implargs env =
   | loc,Name id ->
       check_hidden_implicit_parameters id env.impls ;
       let (_,ntnvars) = lvar in
-      if ntnvars = [] && Id.equal id ldots_var then error_ldots_var loc;
+      if Id.Map.is_empty ntnvars && Id.equal id ldots_var
+        then error_ldots_var loc;
       set_var_scope loc id false env ntnvars;
       if global_level then Dumpglob.dump_definition (loc,id) true "var"
       else Dumpglob.dump_binding loc id;
@@ -621,17 +622,18 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
     GVar (loc,id), make_implicits_list impls, argsc, expl_impls
   with Not_found ->
   (* Is [id] bound in current term or is an ltac var bound to constr *)
-  if Id.Set.mem id genv.ids or List.mem id ltacvars
+  if Id.Set.mem id genv.ids or Id.Set.mem id ltacvars
   then
     GVar (loc,id), [], [], []
   (* Is [id] a notation variable *)
-  else if List.mem_assoc id ntnvars
+  else if Id.Map.mem id ntnvars
   then
     (set_var_scope loc id true genv ntnvars; GVar (loc,id), [], [], [])
   (* Is [id] the special variable for recursive notations *)
   else if Id.equal id ldots_var
-  then
-    if ntnvars != [] then GVar (loc,id), [], [], [] else error_ldots_var loc
+  then if Id.Map.is_empty ntnvars
+    then error_ldots_var loc
+    else GVar (loc,id), [], [], []
   else if Id.Set.mem id unbndltacvars then
     (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
     user_err_loc (loc,"intern_var",
@@ -751,7 +753,7 @@ let interp_reference vars r =
     intern_applied_reference (fun _ -> error_not_enough_arguments Loc.ghost)
       {ids = Id.Set.empty; unb = false ;
        tmp_scope = None; scopes = []; impls = empty_internalization_env} []
-      (vars,[]) [] r
+      (vars, Id.Map.empty) [] r
   in r
 
 (**********************************************************************)
@@ -1536,7 +1538,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
     let tm' = intern env tm in
     (* the "as" part *)
     let extra_id,na = match tm', na with
-      | GVar (loc,id), None when not (List.mem_assoc id (snd lvar)) -> Some id,(loc,Name id)
+      | GVar (loc,id), None when not (Id.Map.mem id (snd lvar)) -> Some id,(loc,Name id)
       | GRef (loc, VarRef id), None -> Some id,(loc,Name id)
       | _, None -> None,(Loc.ghost,Anonymous)
       | _, Some (loc,na) -> None,(loc,na) in
@@ -1659,9 +1661,9 @@ let scope_of_type_kind = function
   | OfType typ -> compute_type_scope typ
   | WithoutTypeConstraint -> None
 
-type ltac_sign = Id.t list * Id.Set.t
+type ltac_sign = Id.Set.t * Id.Set.t
 
-let empty_ltac_sign = ([], Id.Set.empty)
+let empty_ltac_sign = (Id.Set.empty, Id.Set.empty)
 
 let intern_gen kind sigma env
                ?(impls=empty_internalization_env) ?(allow_patvar=false) ?(ltacvars=empty_ltac_sign)
@@ -1670,7 +1672,7 @@ let intern_gen kind sigma env
   internalize sigma env {ids = extract_ids env; unb = false;
 		         tmp_scope = tmp_scope; scopes = [];
 			 impls = impls}
-    allow_patvar (ltacvars, []) c
+    allow_patvar (ltacvars, Id.Map.empty) c
 
 let intern_constr sigma env c = intern_gen WithoutTypeConstraint sigma env c
 
@@ -1751,7 +1753,7 @@ let intern_constr_pattern sigma env ?(as_type=false) ?(ltacvars=empty_ltac_sign)
 let interp_notation_constr ?(impls=empty_internalization_env) vars recvars a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
-  let vl = List.map (fun (id,typ) -> (id,(ref None,typ))) vars in
+  let vl = Id.Map.map (fun typ -> (ref None, typ)) vars in
   let c = internalize Evd.empty (Global.env()) {ids = extract_ids env; unb = false;
 						tmp_scope = None; scopes = []; impls = impls}
     false (empty_ltac_sign, vl) a in
@@ -1760,7 +1762,7 @@ let interp_notation_constr ?(impls=empty_internalization_env) vars recvars a =
   (* Splits variables into those that are binding, bound, or both *)
   (* binding and bound *)
   let out_scope = function None -> None,[] | Some (a,l) -> a,l in
-  let vars = List.map (fun (id,(sc,typ)) -> (id,(out_scope !sc,typ))) vl in
+  let vars = Id.Map.map (fun (sc, typ) -> (out_scope !sc, typ)) vl in
   (* Returns [a] and the ordered list of variables with their scopes *)
   vars, a
 
@@ -1783,7 +1785,7 @@ let my_intern_constr sigma env lvar acc c =
 
 let intern_context global_level sigma env impl_env binders =
   try
-  let lvar = (empty_ltac_sign, []) in
+  let lvar = (empty_ltac_sign, Id.Map.empty) in
   let lenv, bl = List.fold_left
 	    (intern_local_binder_aux ~global_level (my_intern_constr sigma env lvar) lvar)
 	    ({ids = extract_ids env; unb = false;

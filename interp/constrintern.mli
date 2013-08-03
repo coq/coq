@@ -68,7 +68,7 @@ val compute_internalization_env : env -> var_internalization_type ->
   Id.t list -> types list -> Impargs.manual_explicitation list list ->
   internalization_env
 
-type ltac_sign = Id.t list * Id.Set.t
+type ltac_sign = Id.Set.t * Id.Set.t
 
 type glob_binder = (Name.t * binding_kind * glob_constr option * glob_constr)
 
@@ -163,14 +163,12 @@ val construct_reference : named_context -> Id.t -> constr
 val global_reference : Id.t -> constr
 val global_reference_in_absolute_module : DirPath.t -> Id.t -> constr
 
-(** Interprets a term as the left-hand side of a notation; the boolean
-    list is a set and this set is [true] for a variable occurring in
-    term position, [false] for a variable occurring in binding
-    position; [true;false] if in both kinds of position *)
+(** Interprets a term as the left-hand side of a notation. The returned map is
+    guaranteed to have the same domain as the input one. *)
 val interp_notation_constr : ?impls:internalization_env ->
-  (Id.t * notation_var_internalization_type) list ->
-  (Id.t * Id.t) list -> constr_expr ->
-  (Id.t * (subscopes * notation_var_internalization_type)) list *
+  notation_var_internalization_type Id.Map.t ->
+  Id.t Id.Map.t -> constr_expr ->
+  (subscopes * notation_var_internalization_type) Id.Map.t *
   notation_constr
 
 (** Globalization options *)

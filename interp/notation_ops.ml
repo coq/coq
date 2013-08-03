@@ -303,14 +303,16 @@ let rec list_rev_mem_assoc x = function
   | (_,x')::l -> Id.equal x x' || list_rev_mem_assoc x l
 
 let check_variables vars recvars (found,foundrec,foundrecbinding) =
-  let useless_vars = List.map snd recvars in
-  let vars = List.filter (fun (y,_) -> not (List.mem y useless_vars)) vars in
+  let fold _ y accu = Id.Set.add y accu in
+  let useless_vars = Id.Map.fold fold recvars Id.Set.empty in
+  let vars = Id.Map.filter (fun y _ -> not (Id.Set.mem y useless_vars)) vars in
   let check_recvar x =
     if List.mem x found then
       errorlabstrm "" (pr_id x ++
 	strbrk " should only be used in the recursive part of a pattern.") in
-  List.iter (fun (x,y) -> check_recvar x; check_recvar y)
-    (foundrec@foundrecbinding);
+  let check (x, y) = check_recvar x; check_recvar y in
+  let () = List.iter check foundrec in
+  let () = List.iter check foundrecbinding in
   let check_bound x =
     if not (List.mem x found) then
       if List.mem_assoc x foundrec or List.mem_assoc x foundrecbinding
@@ -324,20 +326,20 @@ let check_variables vars recvars (found,foundrec,foundrecbinding) =
       errorlabstrm "" (strbrk "in the right-hand side, " ++ pr_id x ++
 	str " and " ++ pr_id y ++ strbrk " should appear in " ++ str s ++
 	str " position as part of a recursive pattern.") in
-  let check_type (x,typ) =
+  let check_type x typ =
     match typ with
     | NtnInternTypeConstr ->
 	begin
-	  try check_pair "term" x (List.assoc x recvars) foundrec
+	  try check_pair "term" x (Id.Map.find x recvars) foundrec
 	  with Not_found -> check_bound x
 	end
     | NtnInternTypeBinder ->
 	begin
-	  try check_pair "binding" x (List.assoc x recvars) foundrecbinding
+	  try check_pair "binding" x (Id.Map.find x recvars) foundrecbinding
 	  with Not_found -> check_bound x
 	end
     | NtnInternTypeIdent -> check_bound x in
-  List.iter check_type vars
+  Id.Map.iter check_type vars
 
 let notation_constr_of_glob_constr vars recvars a =
   let a,found = notation_constr_and_vars_of_glob_constr a in
@@ -347,7 +349,8 @@ let notation_constr_of_glob_constr vars recvars a =
 (* Substitution of kernel names, avoiding a list of bound identifiers *)
 
 let notation_constr_of_constr avoiding t =
- notation_constr_of_glob_constr [] [] (Detyping.detype false avoiding [] t)
+  let t = Detyping.detype false avoiding [] t in
+  notation_constr_of_glob_constr Id.Map.empty Id.Map.empty t
 
 let rec subst_pat subst pat =
   match pat with
