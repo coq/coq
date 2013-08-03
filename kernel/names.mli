@@ -35,12 +35,7 @@ sig
   module Set : Set.S with type elt = t
   (** Finite sets of identifiers. *)
 
-  module Map : sig
-    include Map.S with type key = t
-    (** FIXME: this is included in OCaml 3.12 *)
-    val exists : (key -> 'a -> bool) -> 'a t -> bool
-    val singleton : key -> 'a -> 'a t
-  end
+  module Map : Map.S with type key = t
   (** Finite maps of identifiers. *)
 
   module Pred : Predicate.S with type elt = t

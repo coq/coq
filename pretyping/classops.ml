@@ -479,9 +479,7 @@ let coercions () =
   List.rev (CoeTypMap.fold (fun _ y acc -> y::acc) !coercion_tab [])
 
 let inheritance_graph () =
-  (** FIXME: in 3.12 use Map.keys *)
-  let fold k v acc = (k, v) :: acc in
-  ClPairMap.fold fold !inheritance_graph []
+  ClPairMap.bindings !inheritance_graph
 
 let coercion_of_reference r =
   let ref = Nametab.global r in

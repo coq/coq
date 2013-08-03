@@ -463,10 +463,7 @@ let searchtable_add (name,db) =
 let current_db_names () =
   let fold k _ acc = k :: acc in
   List.rev (Hintdbmap.fold fold !searchtable [])
-(** FIXME: from 3.12 use Map.keys *)
-let current_db () =
-  let fold k v acc = (k, v) :: acc in
-  List.rev (Hintdbmap.fold fold !searchtable [])
+let current_db () = Hintdbmap.bindings !searchtable
 
 (**************************************************************************)
 (*                       Definition of the summary                        *)

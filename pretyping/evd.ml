@@ -520,7 +520,7 @@ let univ_of_sort = function
   | Prop Null -> Univ.type0m_univ
 
 let is_eq_sort s1 s2 =
-  if Int.equal (sorts_ord s1 s2) 0 then None (* FIXME *)
+  if Sorts.equal s1 s2 then None
   else
     let u1 = univ_of_sort s1
     and u2 = univ_of_sort s2 in
