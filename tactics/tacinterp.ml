@@ -1959,7 +1959,7 @@ let interp_tac_gen lfun avoid_ids debug t gl =
   let ltacvars = Id.Map.fold fold lfun Id.Set.empty in
   interp_tactic ist
     (intern_pure_tactic {
-      ltacvars; ltacrecvars = [];
+      ltacvars; ltacrecvars = Id.Map.empty;
       gsigma = project gl; genv = pf_env gl } t) gl
 
 let interp t = interp_tac_gen Id.Map.empty [] (get_debug()) t
@@ -1970,7 +1970,7 @@ let eval_ltac_constr gl t =
 
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
 let hide_interp t ot gl =
-  let ist = { ltacvars = Id.Set.empty; ltacrecvars = [];
+  let ist = { ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty;
             gsigma = project gl; genv = pf_env gl } in
   let te = intern_pure_tactic ist t in
   let t = eval_tactic te in

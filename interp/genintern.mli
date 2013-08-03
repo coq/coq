@@ -12,7 +12,7 @@ open Genarg
 
 type glob_sign = {
   ltacvars : Id.Set.t;
-  ltacrecvars : (Id.t * Nametab.ltac_constant) list;
+  ltacrecvars : Nametab.ltac_constant Id.Map.t;
   gsigma : Evd.evar_map;
   genv : Environ.env }
 

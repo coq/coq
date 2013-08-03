@@ -55,13 +55,13 @@ let skip_metaid = function
 type glob_sign = Genintern.glob_sign = {
   ltacvars : Id.Set.t;
      (* ltac variables and the subset of vars introduced by Intro/Let/... *)
-  ltacrecvars : (Id.t * ltac_constant) list;
+  ltacrecvars : ltac_constant Id.Map.t;
      (* ltac recursive names *)
   gsigma : Evd.evar_map;
   genv : Environ.env }
 
 let fully_empty_glob_sign =
-  { ltacvars = Id.Set.empty; ltacrecvars = [];
+  { ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty;
     gsigma = Evd.empty; genv = Environ.empty_env }
 
 let make_empty_glob_sign () =
@@ -126,7 +126,7 @@ let find_ident id ist =
   Id.Set.mem id ist.ltacvars ||
   List.mem id (ids_of_named_context (Environ.named_context ist.genv))
 
-let find_recvar qid ist = List.assoc qid ist.ltacrecvars
+let find_recvar qid ist = Id.Map.find qid ist.ltacrecvars
 
 (* a "var" is a ltac var or a var introduced by an intro tactic *)
 let find_var id ist = Id.Set.mem id ist.ltacvars
@@ -806,7 +806,7 @@ let glob_tactic_env l env x =
     List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
   Flags.with_option strict_check
   (intern_pure_tactic
-    { ltacvars; ltacrecvars = []; gsigma = Evd.empty; genv = env })
+    { ltacvars; ltacrecvars = Id.Map.empty; gsigma = Evd.empty; genv = env })
     x
 
 (***************************************************************************)
@@ -913,11 +913,15 @@ let make_absolute_name ident repl =
 
 let add_tacdef local isrec tacl =
   let rfun = List.map (fun (ident, b, _) -> make_absolute_name ident b) tacl in
-  let ist =
-    { (make_empty_glob_sign ()) with ltacrecvars =
-	if isrec then List.map_filter
-	  (function (Some id, qid) -> Some (id, qid) | (None, _) -> None) rfun
-	else []} in
+  let ltacrecvars =
+    let fold accu (idopt, v) = match idopt with
+    | None -> accu
+    | Some id -> Id.Map.add id v accu
+    in
+    if isrec then List.fold_left fold Id.Map.empty rfun
+    else Id.Map.empty
+  in
+  let ist = { (make_empty_glob_sign ()) with ltacrecvars; } in
   let gtacl =
     List.map2 (fun (_,b,def) (id, qid) ->
       let k = if b then UpdateTac qid else NewTac (Option.get id) in
