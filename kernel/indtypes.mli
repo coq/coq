@@ -28,7 +28,7 @@ type inductive_error =
   | SameNamesTypes of Id.t
   | SameNamesConstructors of Id.t
   | SameNamesOverlap of Id.t list
-  | NotAnArity of Id.t
+  | NotAnArity of env * constr
   | BadEntry
   | LargeNonPropInductiveNotInType
 
