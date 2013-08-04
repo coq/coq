@@ -851,8 +851,8 @@ let error_same_names_overlap idl =
   str "names:" ++ spc () ++
   prlist_with_sep pr_comma pr_id idl ++ str "."
 
-let error_not_an_arity id =
-  str "The type of" ++ spc () ++ pr_id id ++ spc () ++ str "is not an arity."
+let error_not_an_arity env c =
+  str "The type" ++ spc () ++ pr_lconstr_env env c ++ spc () ++ str "is not an arity."
 
 let error_bad_entry () =
   str "Bad inductive definition."
@@ -888,7 +888,7 @@ let explain_inductive_error = function
   | SameNamesTypes id -> error_same_names_types id
   | SameNamesConstructors id -> error_same_names_constructors id
   | SameNamesOverlap idl -> error_same_names_overlap idl
-  | NotAnArity id -> error_not_an_arity id
+  | NotAnArity (env, c) -> error_not_an_arity env c
   | BadEntry -> error_bad_entry ()
   | LargeNonPropInductiveNotInType -> error_large_non_prop_inductive_not_in_type ()
 
