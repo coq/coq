@@ -75,7 +75,7 @@ val fold_named_context_reverse :
   ('a -> named_declaration -> 'a) -> init:'a -> named_context -> 'a
 
 (** {6 Section-related auxiliary functions } *)
-val instance_from_named_context : named_context -> Constr.t array
+val instance_from_named_context : named_context -> Constr.t list
 
 (** {6 ... } *)
 (** Signatures of ordered optionally named variables, intended to be

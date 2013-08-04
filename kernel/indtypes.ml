@@ -549,7 +549,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
 let check_positivity kn env_ar params inds =
   let ntypes = Array.length inds in
   let rc = Array.mapi (fun j t -> (Mrec (kn,j),t)) (Rtree.mk_rec_calls ntypes) in
-  let lra_ind = List.rev (Array.to_list rc) in
+  let lra_ind = Array.rev_to_list rc in
   let lparams = rel_context_length params in
   let nmr = rel_context_nhyps params in
   let check_one i (_,lcnames,lc,(sign,_)) =

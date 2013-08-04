@@ -93,11 +93,11 @@ let named_context_equal = List.equal eq_named_declaration
 let vars_of_named_context = List.map (fun (id,_,_) -> id)
 
 let instance_from_named_context sign =
-  let rec inst_rec = function
-    | (id,None,_) :: sign -> Constr.mkVar id :: inst_rec sign
-    | _ :: sign -> inst_rec sign
-    | [] -> [] in
-  Array.of_list (inst_rec sign)
+  let filter = function
+  | (id, None, _) -> Some (Constr.mkVar id)
+  | (_, Some _, _) -> None
+  in
+  List.map_filter filter sign
 
 let fold_named_context f l ~init = List.fold_right f l init
 let fold_named_context_reverse f ~init l = List.fold_left f init l

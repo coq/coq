@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Names
 open Declarations
 open Term
@@ -59,7 +60,7 @@ let type_constructor mind mib typ params =
   if nparams = 0 then ctyp
   else
     let _,ctyp = decompose_prod_n nparams ctyp in
-    substl (List.rev (Array.to_list params)) ctyp
+    substl (Array.rev_to_list params) ctyp
 
 
 

@@ -657,7 +657,8 @@ let bring_hyps hyps =
     (fun gl ->
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps (pf_concl gl) in
       let f = mkCast (Evarutil.mk_new_meta(),DEFAULTcast, newcl) in
-      refine_no_check (mkApp (f, instance_from_named_context hyps)) gl)
+      let args = Array.of_list (instance_from_named_context hyps) in
+      refine_no_check (mkApp (f, args)) gl)
 
 let resolve_classes gl =
   let env = pf_env gl and evd = project gl in
@@ -1624,7 +1625,7 @@ let generalize_dep ?(with_let=false) c gl =
     else None
   in
   let cl'' = generalize_goal gl 0 ((AllOccurrences,c,body),Anonymous) cl' in
-  let args = Array.to_list (instance_from_named_context to_quantify_rev) in
+  let args = instance_from_named_context to_quantify_rev in
   tclTHEN
     (apply_type cl'' (if Option.is_empty body then c::args else args))
     (thin (List.rev tothin'))
@@ -1753,7 +1754,7 @@ let letin_tac with_eq name c occs gl =
   let (depdecls,marks,ccl)= letin_abstract id c occs gl in
   let t = pf_type_of gl c in
   let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
-  let args = Array.to_list (instance_from_named_context depdecls) in
+  let args = instance_from_named_context depdecls in
   let newcl = mkNamedLetIn id c t tmpcl in
   let lastlhyp = if marks=[] then None else snd (List.hd marks) in
   tclTHENLIST
@@ -3594,7 +3595,7 @@ let abstract_subproof id tac gl =
   let cst = Declare.declare_constant ~internal:Declare.KernelSilent ~local:true id decl in
   let lem = mkConst cst in
   exact_no_check
-    (applist (lem,List.rev (Array.to_list (instance_from_named_context sign))))
+    (applist (lem,List.rev (instance_from_named_context sign)))
     gl
 
 let tclABSTRACT name_op tac gl =
@@ -3629,7 +3630,7 @@ let admit_as_an_axiom gl =
   let gl =
     exact_no_check
       (applist (axiom,
-              List.rev (Array.to_list (instance_from_named_context sign))))
+              List.rev (instance_from_named_context sign)))
     gl in
   Pp.feedback Interface.AddedAxiom;
   gl

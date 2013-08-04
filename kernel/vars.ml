@@ -131,8 +131,15 @@ let substkey = Profile.declare_profile "substn_many";;
 let substn_many lamv n c = Profile.profile3 substkey substn_many lamv n c;;
 *)
 
-let substnl laml n =
-  substn_many (Array.map make_substituend (Array.of_list laml)) n
+let make_subst = function
+| [] -> [||]
+| hd :: tl ->
+  let subst = Array.make (1 + List.length tl) (make_substituend hd) in
+  let iteri i x = Array.unsafe_set subst (succ i) (make_substituend x) in
+  let () = CList.iteri iteri tl in
+  subst
+
+let substnl laml n = substn_many (make_subst laml) n
 let substl laml = substnl laml 0
 let subst1 lam = substl [lam]
 

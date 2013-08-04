@@ -314,7 +314,7 @@ let fixpoint_message indexes l =
 		  spc () ++ str "are recursively defined" ++
 		  match indexes with
 		    | Some a -> spc () ++ str "(decreasing respectively on " ++
-			prlist_with_sep pr_comma pr_rank (Array.to_list a) ++
+			prvect_with_sep pr_comma pr_rank a ++
 			str " arguments)"
 		    | None -> mt ()))
 

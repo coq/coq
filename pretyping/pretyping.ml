@@ -307,7 +307,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	 sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
       let hyps = evar_filtered_context (Evd.find !evdref evk) in
       let args = match instopt with
-        | None -> instance_from_named_context hyps
+        | None -> Array.of_list (instance_from_named_context hyps)
         | Some inst -> failwith "Evar subtitutions not implemented" in
       let c = mkEvar (evk, args) in
       let j = (Retyping.get_judgment_of env !evdref c) in
