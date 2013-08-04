@@ -144,7 +144,6 @@ val undefined_list : evar_map -> (evar * evar_info) list
 val to_list : evar_map -> (evar * evar_info) list
 val fold : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 val fold_undefined : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
-val merge : evar_map -> evar_map -> evar_map
 val define : evar -> constr -> evar_map -> evar_map
 
 val is_evar : evar_map -> evar -> bool
@@ -182,10 +181,6 @@ val evar_declare :
   named_context_val -> evar -> types -> ?src:Loc.t * Evar_kinds.t ->
       ?filter:bool list -> ?candidates:constr list -> evar_map -> evar_map
 val evar_source : existential_key -> evar_map -> Evar_kinds.t located
-
-(* spiwack: this function seems to somewhat break the abstraction. 
-   [evar_merge evd ev1] extends the evars of [evd] with [evd1] *)
-val evar_merge : evar_map -> evar_map -> evar_map
 
 (** Unification constraints *)
 type conv_pb = Reduction.conv_pb

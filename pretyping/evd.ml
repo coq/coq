@@ -237,7 +237,6 @@ module EvarMap = struct
       (fun k v -> assert (v.evar_body == Evar_empty);
         EvarInfoMap.is_defined sigma2 k))
 
-  let merge e e' = fold e' (fun n v sigma -> add sigma n v) e
   let add_constraints (sigma, (us, sm)) cstrs =
     (sigma, (us, Univ.merge_constraints cstrs sm))
 end
@@ -339,14 +338,6 @@ type evar_map =
 let progress_evar_map d1 d2 =
   EvarMap.progress_evar_map d1.evars d2.evars
 
-(* spiwack: tentative. It might very well not be the semantics we want
-     for merging evar_map *)
-let merge d1 d2 = {
-  evars = EvarMap.merge d1.evars d2.evars ;
-  conv_pbs = List.rev_append d1.conv_pbs d2.conv_pbs ;
-  last_mods = ExistentialSet.union d1.last_mods d2.last_mods ;
-  metas = Metamap.fold (fun k m r -> Metamap.add k m r) d2.metas d1.metas
-}
 let add d e i = { d with evars=EvarMap.add d.evars e i }
 let remove d e = { d with evars=EvarMap.remove d.evars e }
 let find d e = EvarMap.find d.evars e
@@ -479,10 +470,6 @@ let loc_of_conv_pb evd (pbty,env,t1,t2) =
   match kind_of_term (fst (decompose_app t2)) with
   | Evar (evk2,_) -> fst (evar_source evk2 evd)
   | _ -> Loc.ghost
-
-(* spiwack: should it be replaced by Evd.merge? *)
-let evar_merge evd evars =
-  { evd with evars = EvarMap.merge evd.evars evars.evars }
 
 let evar_list evd c =
   let rec evrec acc c =
