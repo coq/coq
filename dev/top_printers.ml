@@ -348,29 +348,6 @@ let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
 let pploc x = let (l,r) = Loc.unloc x in
   print_string"(";print_int l;print_string",";print_int r;print_string")"
 
-(* extendable tactic arguments *)
-let rec pr_argument_type = function
-  (* Basic types *)
-  | IntOrVarArgType -> str"int-or-var"
-  | IdentArgType true -> str"ident"
-  | IdentArgType false -> str"pattern_ident"
-  | VarArgType -> str"var"
-  | RefArgType -> str"ref"
-  (* Specific types *)
-  | GenArgType -> str"genarg"
-  | ConstrArgType -> str"constr"
-  | ConstrMayEvalArgType -> str"constr-may-eval"
-  | QuantHypArgType -> str"qhyp"
-  | OpenConstrArgType _ -> str"open-constr"
-  | ConstrWithBindingsArgType -> str"constr-with-bindings"
-  | BindingsArgType -> str"bindings"
-  | RedExprArgType -> str"redexp"
-  | ListArgType t -> pr_argument_type t ++ str" list"
-  | OptArgType t -> pr_argument_type t ++ str" opt"
-  | PairArgType (t1,t2) ->
-      str"("++ pr_argument_type t1 ++ str"*" ++ pr_argument_type t2 ++str")"
-  | ExtraArgType s -> str"\"" ++ str s ++ str "\""
-
 let pp_argument_type t = pp (pr_argument_type t)
 
 let pp_generic_argument arg =

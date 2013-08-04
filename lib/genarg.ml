@@ -49,6 +49,27 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | ExtraArgType s1, ExtraArgType s2 -> CString.equal s1 s2
 | _ -> false
 
+let rec pr_argument_type = function
+| IntOrVarArgType -> str "int_or_var"
+| IdentArgType true -> str "ident"
+| IdentArgType false -> str "pattern_ident"
+| VarArgType -> str "var"
+| RefArgType -> str "ref"
+| GenArgType -> str "genarg"
+| ConstrArgType -> str "constr"
+| ConstrMayEvalArgType -> str "constr_may_eval"
+| QuantHypArgType -> str "qhyp"
+| OpenConstrArgType _ -> str "open_constr"
+| ConstrWithBindingsArgType -> str "constr_with_bindings"
+| BindingsArgType -> str "bindings"
+| RedExprArgType -> str "redexp"
+| ListArgType t -> pr_argument_type t ++ spc () ++ str "list"
+| OptArgType t -> pr_argument_type t ++ spc () ++ str "opt"
+| PairArgType (t1, t2) ->
+    str "("++ pr_argument_type t1 ++ spc () ++
+    str "*" ++ spc () ++ pr_argument_type t2 ++ str ")"
+| ExtraArgType s -> str s
+
 type ('raw, 'glob, 'top) genarg_type = argument_type
 
 type 'a uniform_genarg_type = ('a, 'a, 'a) genarg_type

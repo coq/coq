@@ -210,6 +210,9 @@ type argument_type =
 
 val argument_type_eq : argument_type -> argument_type -> bool
 
+val pr_argument_type : argument_type -> Pp.std_ppcmds
+(** Print a human-readable representation for a given type. *)
+
 val genarg_tag : 'a generic_argument -> argument_type
 
 val unquote : ('a, 'co) abstract_argument_type -> argument_type

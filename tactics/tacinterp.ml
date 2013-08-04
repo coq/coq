@@ -112,24 +112,55 @@ let check_is_value v =
     | _ -> ()
   else ()
 
-(* Displays a value *)
-let rec pr_value env v = str "a tactic"
+(** TODO: unify printing of generic Ltac values in case of coercion failure. *)
 
+(* Displays a value *)
 let pr_value env v =
   let v = Value.normalize v in
-  if has_type v (topwit wit_tacvalue) then
-    pr_value env (to_tacvalue v)
+  if has_type v (topwit wit_tacvalue) then str "a tactic"
   else if has_type v (topwit wit_constr_context) then
     let c = out_gen (topwit wit_constr_context) v in
-    match env with Some env -> pr_lconstr_env env c | _ -> str "a term"
+    match env with
+    | Some env -> pr_lconstr_env env c
+    | _ -> str "a term"
   else if has_type v (topwit wit_constr) then
     let c = out_gen (topwit wit_constr) v in
-    match env with Some env -> pr_lconstr_env env c | _ -> str "a term"
+    match env with
+    | Some env -> pr_lconstr_env env c
+    | _ -> str "a term"
   else if has_type v (topwit wit_constr_under_binders) then
     let c = out_gen (topwit wit_constr_under_binders) v in
-    match env with Some env -> pr_lconstr_under_binders_env  env c | _ -> str "a term"
+    match env with
+    | Some env -> pr_lconstr_under_binders_env  env c
+    | _ -> str "a term"
   else
-    str "an unknown type" (** TODO *)
+    str "a value of type" ++ spc () ++ pr_argument_type (genarg_tag v)
+
+let pr_inspect env expr result =
+  let pp_expr = Pptactic.pr_glob_tactic env expr in
+  let pp_result =
+    if has_type result (topwit wit_tacvalue) then
+    match to_tacvalue result with
+    | VRTactic _ -> str "a VRTactic"
+    | VFun (_, il, ul, b) ->
+      let pp_body = Pptactic.pr_glob_tactic env b in
+      let pr_sep () = str ", " in
+      let pr_iarg (id, _) = pr_id id in
+      let pr_uarg = function
+      | None -> str "_"
+      | Some id -> pr_id id
+      in
+      let pp_iargs = prlist_with_sep pr_sep pr_iarg (Id.Map.bindings il) in
+      let pp_uargs = prlist_with_sep pr_sep pr_uarg ul in
+      str "a VFun with body " ++ fnl() ++ pp_body ++ fnl() ++
+        str "instantiated arguments " ++ fnl() ++ pp_iargs ++ fnl () ++
+        str "uninstantiated arguments " ++ fnl() ++ pp_uargs
+    | VRec _ -> str "a VRec"
+    else
+      let pp_type = pr_argument_type (genarg_tag result) in
+      str "an object of type" ++ spc () ++ pp_type
+  in
+  pp_expr ++ fnl() ++ str "this is " ++ pp_result
 
 (* Transforms an id into a constr if possible, or fails with Not_found *)
 let constr_of_id env id =
@@ -1542,32 +1573,7 @@ and interp_ltac_constr ist gl e =
   with CannotCoerceTo _ ->
     errorlabstrm ""
       (str "Must evaluate to a closed term" ++ fnl() ++
-	  str "offending expression: " ++ fnl() ++
-          Pptactic.pr_glob_tactic (pf_env gl) e ++ fnl() ++ str "this is a " ++
-          (if has_type result (topwit wit_tacvalue) then match to_tacvalue result with
-            | VRTactic _ -> str "VRTactic"
-            | VFun (_,il,ul,b) ->
-                (str "VFun with body " ++ fnl() ++
-                    Pptactic.pr_glob_tactic (pf_env gl) b ++ fnl() ++
-		    str "instantiated arguments " ++ fnl() ++
-                    Id.Map.fold
-                    (fun i v s -> str (Id.to_string i) ++ str ", " ++ s)
-                    il (str "") ++
-                    str "uninstantiated arguments " ++ fnl() ++
-                    List.fold_right
-                    (fun opt_id s ->
-                      (match opt_id with
-                          Some id -> str (Id.to_string id)
-                        | None -> str "_") ++ str ", " ++ s)
-                    ul (mt()))
-(*             | VVoid -> str "VVoid" *)
-(*             | VInteger _ -> str "VInteger" *)
-(*             | VConstr _ -> str "VConstr" *)
-(*             | VIntroPattern _ -> str "VIntroPattern" *)
-(*             | VConstr_context _ -> str "VConstrr_context" *)
-            | VRec _ -> str "VRec"
-(*            | VList _ -> str "VList"*)
-          else str "unknown object") ++ str".")
+      str "offending expression: " ++ fnl() ++ pr_inspect (pf_env gl) e result)
 
 (* Interprets tactic expressions : returns a "tactic" *)
 and interp_tactic ist tac gl =
