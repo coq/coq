@@ -2028,11 +2028,11 @@ let induct_discharge dests avoid' tac (avoid,ra) names gl =
               let id' = next_ident_away (add_prefix "IH" id) avoid in
 	      (pat, [dloc, IntroIdentifier id'])
           | _ -> consume_pattern avoid recvarname deprec gl names in
-        let hyprec,names = consume_pattern avoid hyprecname depind gl names in
         let dest = get_recarg_dest dests in
-        safe_dest_intros_patterns avoid thin dest [recpat] (fun ids thin ->
+        safe_dest_intros_patterns avoid thin dest [recpat] (fun ids thin gl ->
+        let hyprec,names = consume_pattern avoid hyprecname depind gl names in
 	safe_dest_intros_patterns avoid thin MoveLast [hyprec] (fun ids' thin ->
-	peel_tac ra' (update_dest dests ids') names thin))
+	peel_tac ra' (update_dest dests ids') names thin) gl)
           gl
     | (IndArg,dep,hyprecname) :: ra' ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
