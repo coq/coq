@@ -32,6 +32,24 @@ let pr_lconstr c = quote (pr_lconstr c)
 let pr_lconstr_env e c = quote (pr_lconstr_env e c)
 let pr_ljudge_env e c = let v,t = pr_ljudge_env e c in (quote v,quote t)
 
+(** This function adds some explicit printing flags if the two arguments are
+    printed alike. *)
+let pr_explicit env t1 t2 =
+  let open Constrextern in
+  let ct1 = extern_constr false env t1 in
+  let ct2 = extern_constr false env t2 in
+  let equal = Constrexpr_ops.constr_expr_eq ct1 ct2 in
+  if equal then
+    let f () =
+      let t1 = pr_lconstr_env env t1 in
+      let t2 = pr_lconstr_env env t2 in
+      (t1, t2)
+    in
+    (** We only display implicit arguments. Maybe we could do more? *)
+    with_implicits f ()
+  else
+    (Ppconstr.pr_lconstr_expr ct1, Ppconstr.pr_lconstr_expr ct2)
+
 let pr_db env i =
   try
     match lookup_rel i env with
@@ -136,8 +154,7 @@ let explain_ill_formed_branch env sigma c ci actty expty =
   let c = Evarutil.nf_evar sigma c in
   let env = make_all_name_different env in
   let pc = pr_lconstr_env env c in
-  let pa = pr_lconstr_env env (simp actty) in
-  let pe = pr_lconstr_env env (simp expty) in
+  let pa, pe = pr_explicit env (simp actty) (simp expty) in
   strbrk "In pattern-matching on term" ++ brk(1,1) ++ pc ++
   spc () ++ strbrk "the branch for constructor" ++ spc () ++
   quote (pr_constructor env ci) ++
@@ -180,18 +197,19 @@ let explain_unification_error env sigma p1 p2 = function
         let t1 = Evarutil.nf_evar sigma t1 in
         let t2 = Evarutil.nf_evar sigma t2 in
         if not (eq_constr t1 p1) || not (eq_constr t2 p2) then
-          spc () ++ str "(cannot unify " ++ pr_lconstr_env env t1 ++
-	  strbrk " and " ++ pr_lconstr_env env t2 ++ str ")"
-	else mt ()
+          let t1, t2 = pr_explicit env t1 t2 in
+          spc () ++ str "(cannot unify " ++ t1 ++ strbrk " and " ++
+            t2 ++ str ")"
+        else mt ()
     | MetaOccurInBody evk ->
         spc () ++ str "(instance for " ++ quote (pr_existential_key evk) ++
 	strbrk " refers to a metavariable - please report your example)"
     | InstanceNotSameType (evk,env,t,u) ->
+        let t, u = pr_explicit env t u in
         spc () ++ str "(unable to find a well-typed instantiation for " ++
-	quote (pr_existential_key evk) ++ str ":" ++ spc () ++
-          str "cannot unify" ++
-          pr_lconstr_env env t ++ spc () ++ str "and" ++ spc () ++
-          pr_lconstr_env env u ++ str ")"
+        quote (pr_existential_key evk) ++ str ":" ++ spc () ++
+        str "cannot unify" ++ t ++ spc () ++ str "and" ++ spc () ++
+        u ++ str ")"
     | UnifUnivInconsistency ->
         spc () ++ str "(Universe inconsistency)"
 
@@ -199,9 +217,10 @@ let explain_actual_type env sigma j t reason =
   let env = make_all_name_different env in
   let j = Evarutil.j_nf_betaiotaevar sigma j in
   let t = Reductionops.nf_betaiota sigma t in
+  (** Actually print *)
   let pe = pr_ne_context_of (str "In environment") env in
-  let (pc,pct) = pr_ljudge_env env j in
-  let pt = pr_lconstr_env env t in
+  let pc = pr_lconstr_env env (Environ.j_val j) in
+  let (pt, pct) = pr_explicit env t (Environ.j_type j) in
   let ppreason = explain_unification_error env sigma j.uj_type t reason in
   pe ++
   hov 0 (
@@ -216,6 +235,7 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   let actualtyp = Reductionops.nf_betaiota sigma actualtyp in
   let rator = Evarutil.j_nf_evar sigma rator in
   let env = make_all_name_different env in
+  let actualtyp, exptyp = pr_explicit env actualtyp exptyp in
   let nargs = Array.length randl in
 (*  let pe = pr_ne_context_of (str "in environment") env in*)
   let pr,prt = pr_ljudge_env env rator in
@@ -232,9 +252,9 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   str "of type" ++ brk(1,1) ++ prt ++ spc () ++
   str "cannot be applied to the " ++ term_string1 ++ fnl () ++
   str " " ++ v 0 appl ++ fnl () ++ term_string2 ++ str " has type" ++
-  brk(1,1) ++ pr_lconstr_env env actualtyp ++ spc () ++
+  brk(1,1) ++ actualtyp ++ spc () ++
   str "which should be coercible to" ++ brk(1,1) ++
-  pr_lconstr_env env exptyp ++ str "."
+  exptyp ++ str "."
 
 let explain_cant_apply_not_functional env sigma rator randl =
   let randl = Evarutil.jv_nf_evar sigma randl in
@@ -260,8 +280,7 @@ let explain_cant_apply_not_functional env sigma rator randl =
 let explain_unexpected_type env sigma actual_type expected_type =
   let actual_type = Evarutil.nf_evar sigma actual_type in
   let expected_type = Evarutil.nf_evar sigma expected_type in
-  let pract = pr_lconstr_env env actual_type in
-  let prexp = pr_lconstr_env env expected_type in
+  let pract, prexp = pr_explicit env actual_type expected_type in
   str "Found type" ++ spc () ++ pract ++ spc () ++
   str "where" ++ spc () ++ prexp ++ str " was expected."
 
@@ -467,8 +486,7 @@ let explain_cannot_unify env sigma m n e =
   let env = make_all_name_different env in
   let m = Evarutil.nf_evar sigma m in
   let n = Evarutil.nf_evar sigma n in
-  let pm = pr_lconstr_env env m in
-  let pn = pr_lconstr_env env n in
+  let pm, pn = pr_explicit env m n in
   let ppreason = explain_unification_error env sigma m n e in
   let pe = pr_ne_context_of (str "In environment") (mt ()) env in
   pe ++ str "Unable to unify" ++ brk(1,1) ++ pm ++ spc () ++
