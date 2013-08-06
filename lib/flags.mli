@@ -64,6 +64,9 @@ val if_warn : ('a -> unit) -> 'a -> unit
    use [with_option o (f x y) z]) *)
 val with_option : bool ref -> ('a -> 'b) -> 'a -> 'b
 
+(** As [with_option], but on several flags. *)
+val with_options : bool ref list -> ('a -> 'b) -> 'a -> 'b
+
 (** Temporarily deactivate an option *)
 val without_option : bool ref -> ('a -> 'b) -> 'a -> 'b
 

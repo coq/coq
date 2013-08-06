@@ -34,21 +34,28 @@ let pr_ljudge_env e c = let v,t = pr_ljudge_env e c in (quote v,quote t)
 
 (** This function adds some explicit printing flags if the two arguments are
     printed alike. *)
-let pr_explicit env t1 t2 =
+let rec pr_explicit_aux env t1 t2 = function
+| [] ->
+  (** no specified flags: default. *)
+  (quote (Printer.pr_lconstr_env env t1), quote (Printer.pr_lconstr_env env t2))
+| flags :: rem ->
   let open Constrextern in
-  let ct1 = extern_constr false env t1 in
-  let ct2 = extern_constr false env t2 in
+  let ct1 = Flags.with_options flags (fun () -> extern_constr false env t1) () in
+  let ct2 = Flags.with_options flags (fun () -> extern_constr false env t2) () in
   let equal = Constrexpr_ops.constr_expr_eq ct1 ct2 in
   if equal then
-    let f () =
-      let t1 = pr_lconstr_env env t1 in
-      let t2 = pr_lconstr_env env t2 in
-      (t1, t2)
-    in
-    (** We only display implicit arguments. Maybe we could do more? *)
-    with_implicits f ()
+    (** The two terms are the same from the user point of view *)
+    pr_explicit_aux env t1 t2 rem
   else
-    (Ppconstr.pr_lconstr_expr ct1, Ppconstr.pr_lconstr_expr ct2)
+    (quote (Ppconstr.pr_lconstr_expr ct1), quote (Ppconstr.pr_lconstr_expr ct2))
+
+let explicit_flags =
+  let open Constrextern in
+  [ []; (** First, try with the current flags *)
+    [print_implicits]; (** Then with implicit *)
+    [print_implicits; print_coercions; print_no_symbol] (** Then more! *) ]
+
+let pr_explicit env t1 t2 = pr_explicit_aux env t1 t2 explicit_flags
 
 let pr_db env i =
   try

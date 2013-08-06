@@ -14,6 +14,17 @@ let with_option o f x =
      let () = o := old in
      raise reraise
 
+let with_options ol f x =
+  let vl = List.map (!) ol in
+  let () = List.iter (fun r -> r := true) ol in
+  try
+    let r = f x in
+    let () = List.iter2 (:=) ol vl in r
+  with reraise ->
+    let reraise = Backtrace.add_backtrace reraise in
+    let () = List.iter2 (:=) ol vl in
+    raise reraise
+
 let without_option o f x =
   let old = !o in o:=false;
   try let r = f x in o := old; r
