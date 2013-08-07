@@ -480,12 +480,17 @@ let option_mem_assoc id = function
   | None -> false
 
 let find_fresh_name renaming (terms,termlists,binders) id =
-  let fvs1 = List.map (fun (_,(c,_)) -> free_vars_of_constr_expr c) terms in
-  let fvs2 = List.flatten (List.map (fun (_,(l,_)) -> List.map free_vars_of_constr_expr l) termlists) in
-  let fvs3 = List.map snd renaming in
+  let fold1 _ (c, _) accu = Id.Set.union (free_vars_of_constr_expr c) accu in
+  let fold2 _ (l, _) accu =
+    let fold accu c = Id.Set.union (free_vars_of_constr_expr c) accu in
+    List.fold_left fold accu l
+  in
+  let fold3 _ x accu = Id.Set.add x accu in
+  let fvs1 = Id.Map.fold fold1 terms Id.Set.empty in
+  let fvs2 = Id.Map.fold fold2 termlists fvs1 in
+  let fvs3 = Id.Map.fold fold3 renaming fvs2 in
   (* TODO binders *)
-  let fvs = List.flatten (List.map Id.Set.elements (fvs1@fvs2)) @ fvs3 in
-  next_ident_away id fvs
+  next_ident_away_from id (fun id -> Id.Set.mem id fvs3)
 
 let traverse_binder (terms,_,_ as subst)
     (renaming,env)=
@@ -494,13 +499,15 @@ let traverse_binder (terms,_,_ as subst)
  | Name id ->
   try
     (* Binders bound in the notation are considered first-order objects *)
-    let _,na = coerce_to_name (fst (List.assoc id terms)) in
+    let _,na = coerce_to_name (fst (Id.Map.find id terms)) in
     (renaming,{env with ids = name_fold Id.Set.add na env.ids}), na
   with Not_found ->
     (* Binders not bound in the notation do not capture variables *)
     (* outside the notation (i.e. in the substitution) *)
     let id' = find_fresh_name renaming subst id in
-    let renaming' = if Id.equal id id' then renaming else (id,id')::renaming in
+    let renaming' =
+      if Id.equal id id' then renaming else Id.Map.add id id' renaming
+    in
     (renaming',env), Name id'
 
 let make_letins = List.fold_right (fun (loc,(na,b,t)) c -> GLetIn (loc,na,b,c))
@@ -530,12 +537,12 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
 	(* subst remembers the delimiters stack in the interpretation *)
 	(* of the notations *)
 	try
-	  let (a,(scopt,subscopes)) = List.assoc id terms in
+	  let (a,(scopt,subscopes)) = Id.Map.find id terms in
 	  intern {env with tmp_scope = scopt;
 		    scopes = subscopes @ env.scopes} a
 	with Not_found ->
 	try
-	  GVar (loc,List.assoc id renaming)
+	  GVar (loc, Id.Map.find id renaming)
 	with Not_found ->
 	  (* Happens for local notation joint with inductive/fixpoint defs *)
 	  GVar (loc,id)
@@ -543,23 +550,24 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
     | NList (x,_,iter,terminator,lassoc) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
-	let (l,(scopt,subscopes)) = List.assoc x termlists in
+	let (l,(scopt,subscopes)) = Id.Map.find x termlists in
         let termin = aux subst' subinfos terminator in
-	List.fold_right (fun a t ->
-          subst_iterator ldots_var t
-            (aux ((x,(a,(scopt,subscopes)))::terms,binderopt) subinfos iter))
-            (if lassoc then List.rev l else l) termin
+        let fold a t =
+          let nterms = Id.Map.add x (a, (scopt, subscopes)) terms in
+          subst_iterator ldots_var t (aux (nterms, binderopt) subinfos iter)
+        in
+	List.fold_right fold (if lassoc then List.rev l else l) termin
       with Not_found ->
           anomaly (Pp.str "Inconsistent substitution of recursive notation"))
     | NHole (Evar_kinds.BinderType (Name id as na)) ->
       let na =
-        try snd (coerce_to_name (fst (List.assoc id terms)))
+        try snd (coerce_to_name (fst (Id.Map.find id terms)))
         with Not_found -> na in
       GHole (loc,Evar_kinds.BinderType na)
     | NBinderList (x,_,iter,terminator) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
-	let (bl,(scopt,subscopes)) = List.assoc x binders in
+	let (bl,(scopt,subscopes)) = Id.Map.find x binders in
 	let env,bl = List.fold_left (intern_local_binder_aux intern lvar) (env,[]) bl in
 	let letins,bl = subordinate_letins [] bl in
         let termin = aux subst' (renaming,env) terminator in
@@ -588,7 +596,9 @@ let split_by_type ids =
     | NtnTypeConstrList -> (l1,(x,scl)::l2,l3)
     | NtnTypeBinderList -> (l1,l2,(x,scl)::l3)) ids ([],[],[])
 
-let make_subst ids l = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids l
+let make_subst ids l =
+  let fold accu (id, scl) a = Id.Map.add id (a, scl) accu in
+  List.fold_left2 fold Id.Map.empty ids l
 
 let intern_notation intern env lvar loc ntn fullargs =
   let ntn,(args,argslist,bll as fullargs) = contract_notation ntn fullargs in
@@ -599,7 +609,7 @@ let intern_notation intern env lvar loc ntn fullargs =
   let termlists = make_subst idsl argslist in
   let binders = make_subst idsbl bll in
   subst_aconstr_in_glob_constr loc intern lvar
-    (terms,termlists,binders) ([],env) c
+    (terms, termlists, binders) (Id.Map.empty, env) c
 
 (**********************************************************************)
 (* Discriminating between bound variables and global references       *)
@@ -719,8 +729,10 @@ let intern_qualid loc qid intern env lvar args =
       if List.length args < nids then error_not_enough_arguments loc;
       let args1,args2 = List.chop nids args in
       check_no_explicitation args1;
-      let subst = make_subst ids (List.map fst args1) in
-      subst_aconstr_in_glob_constr loc intern lvar (subst,[],[]) ([],env) c, args2
+      let terms = make_subst ids (List.map fst args1) in
+      let subst = (terms, Id.Map.empty, Id.Map.empty) in
+      let infos = (Id.Map.empty, env) in
+      subst_aconstr_in_glob_constr loc intern lvar subst infos c, args2
 
 (* Rule out section vars since these should have been found by intern_var *)
 let intern_non_secvar_qualid loc qid intern env lvar args =
@@ -1051,8 +1063,8 @@ let drop_notations_pattern looked_for =
 	      let nvars = List.length vars in
 	      if List.length pats < nvars then error_not_enough_arguments loc;
 	      let pats1,pats2 = List.chop nvars pats in
-	      let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) vars pats1 in
-	      let idspl1 = List.map (in_not false loc env (subst,[]) []) args in
+	      let subst = make_subst vars pats1 in
+	      let idspl1 = List.map (in_not false loc env (subst, Id.Map.empty) []) args in
 	      let (_,argscs) = find_remaining_scopes pats1 pats2 g in
 	      Some (g, idspl1, List.map2 (in_pat_sc env) argscs pats2)
 	    | _ -> raise Not_found)
@@ -1098,8 +1110,8 @@ let drop_notations_pattern looked_for =
       let ((ids',c),df) = Notation.interp_notation loc ntn (env.tmp_scope,env.scopes) in
       let (ids',idsl',_) = split_by_type ids' in
       Dumpglob.dump_notation_location (patntn_loc loc fullargs ntn) ntn df;
-      let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids' args in
-      let substlist = List.map2 (fun (id,scl) a -> (id,(a,scl))) idsl' argsl in
+      let substlist = make_subst idsl' argsl in
+      let subst = make_subst ids' args in
       in_not top loc env (subst,substlist) extrargs c
     | CPatDelimiters (loc, key, e) ->
       in_pat top {env with scopes=find_delimiters_scope loc key::env.scopes;
@@ -1123,7 +1135,7 @@ let drop_notations_pattern looked_for =
 	(* subst remembers the delimiters stack in the interpretation *)
 	(* of the notations *)
 	try
-	  let (a,(scopt,subscopes)) = List.assoc id subst in
+	  let (a,(scopt,subscopes)) = Id.Map.find id subst in
 	  in_pat top {env with scopes=subscopes@env.scopes;
 	    tmp_scope = scopt} a
 	with Not_found ->
@@ -1144,10 +1156,11 @@ let drop_notations_pattern looked_for =
       let () = assert (List.is_empty args) in
       (try
          (* All elements of the list are in scopes (scopt,subscopes) *)
-	 let (l,(scopt,subscopes)) = List.assoc x substlist in
+	 let (l,(scopt,subscopes)) = Id.Map.find x substlist in
          let termin = in_not top loc env fullsubst [] terminator in
 	 List.fold_right (fun a t ->
-           let u = in_not false loc env ((x,(a,(scopt,subscopes)))::subst,substlist) [] iter in
+           let nsubst = Id.Map.add x (a, (scopt, subscopes)) subst in
+           let u = in_not false loc env (nsubst, substlist) [] iter in
            subst_pat_iterator ldots_var t u)
            (if lassoc then List.rev l else l) termin
        with Not_found ->
@@ -1260,7 +1273,7 @@ let exists_implicit_name id =
 
 let extract_explicit_arg imps args =
   let rec aux = function
-  | [] -> [],[]
+  | [] -> Id.Map.empty, []
   | (a,e)::l ->
       let (eargs,rargs) = aux l in
       match e with
@@ -1271,7 +1284,7 @@ let extract_explicit_arg imps args =
 	      if not (exists_implicit_name id imps) then
 		user_err_loc
 		  (loc,"",str "Wrong argument name: " ++ pr_id id ++ str ".");
-	      if List.mem_assoc id eargs then
+	      if Id.Map.mem id eargs then
 		user_err_loc (loc,"",str "Argument name " ++ pr_id id
 		++ str " occurs more than once.");
 	      id
@@ -1285,11 +1298,11 @@ let extract_explicit_arg imps args =
 		  user_err_loc
 		    (loc,"",str"Wrong argument position: " ++ int p ++ str ".")
 	      in
-	      if List.mem_assoc id eargs then
+	      if Id.Map.mem id eargs then
 		user_err_loc (loc,"",str"Argument at position " ++ int p ++
 		  str " is mentioned more than once.");
 	      id in
-	  ((id,(loc,a))::eargs,rargs)
+	  (Id.Map.add id (loc, a) eargs, rargs)
   in aux args
 
 (**********************************************************************)
@@ -1596,10 +1609,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
     let l = select_impargs_size (List.length args) l in
     let eargs, rargs = extract_explicit_arg l args in
     if !parsing_explicit then
-      begin match eargs with
-      | [] -> intern_args env subscopes rargs
-      | _ -> error "Arguments given by name or position not supported in explicit mode."
-      end
+      if Id.Map.is_empty eargs then intern_args env subscopes rargs
+      else error "Arguments given by name or position not supported in explicit mode."
     else
     let rec aux n impl subscopes eargs rargs =
       let (enva,subscopes') = apply_scope_env env subscopes in
@@ -1607,11 +1618,11 @@ let internalize sigma globalenv env allow_patvar lvar c =
       | (imp::impl', rargs) when is_status_implicit imp ->
 	  begin try
 	    let id = name_of_implicit imp in
-	    let (_,a) = List.assoc id eargs in
-	    let eargs' = List.remove_assoc id eargs in
+	    let (_,a) = Id.Map.find id eargs in
+	    let eargs' = Id.Map.remove id eargs in
 	    intern enva a :: aux (n+1) impl' subscopes' eargs' rargs
 	  with Not_found ->
-	  if List.is_empty rargs && List.is_empty eargs && not (maximal_insertion_of imp) then
+	  if List.is_empty rargs && Id.Map.is_empty eargs && not (maximal_insertion_of imp) then
             (* Less regular arguments than expected: complete *)
             (* with implicit arguments if maximal insertion is set *)
 	    []
@@ -1622,14 +1633,14 @@ let internalize sigma globalenv env allow_patvar lvar c =
       | (imp::impl', a::rargs') ->
 	  intern enva a :: aux (n+1) impl' subscopes' eargs rargs'
       | (imp::impl', []) ->
-	  if not (List.is_empty eargs) then
-	    (let (id,(loc,_)) = List.hd eargs in
+	  if not (Id.Map.is_empty eargs) then
+	    (let (id,(loc,_)) = Id.Map.choose eargs in
 	       user_err_loc (loc,"",str "Not enough non implicit \
 	    arguments to accept the argument bound to " ++
 		 pr_id id ++ str"."));
 	  []
       | ([], rargs) ->
-	  assert (List.is_empty eargs);
+	  assert (Id.Map.is_empty eargs);
 	  intern_args env subscopes rargs
     in aux 1 l subscopes eargs rargs
 
