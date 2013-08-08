@@ -32,7 +32,7 @@ let loaded_accel_file =
   try get_config_file "coqide.keys"
   with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqide.keys"
 
-let mod_to_str (m:Gdk.Tags.modifier) =
+let mod_to_str m =
   match m with
     | `MOD1 -> "<Alt>"
     | `MOD2 -> "<Mod2>"
