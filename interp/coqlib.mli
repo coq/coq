@@ -150,6 +150,7 @@ val build_coq_sumbool : constr delayed
 (** Connectives 
    The False proposition *)
 val build_coq_False : constr delayed
+val build_coq_proof_admitted : constr delayed
 
 (** The True proposition and its unique proof *)
 val build_coq_True : constr delayed

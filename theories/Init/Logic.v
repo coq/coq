@@ -21,6 +21,9 @@ Inductive True : Prop :=
 (** [False] is the always false proposition *)
 Inductive False : Prop :=.
 
+(** [proof_admitted] is used to implement the admit tactic *)
+Axiom proof_admitted : False.
+
 (** [not A], written [~A], is the negation of [A] *)
 Definition not (A:Prop) := A -> False.
 
