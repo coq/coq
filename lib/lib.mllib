@@ -2,6 +2,7 @@ Xml_lexer
 Xml_parser
 Xml_printer
 Errors
+Searchstack
 Bigint
 Dyn
 Segmenttree
