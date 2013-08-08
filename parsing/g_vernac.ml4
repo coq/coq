@@ -83,6 +83,7 @@ GEXTEND Gram
       | IDENT "Stm"; IDENT "Observe"; id = INT; "." ->
           VernacStm (Observe (Stateid.state_id_of_int (int_of_string id)))
       | IDENT "Stm"; IDENT "Command"; v = vernac_aux -> VernacStm (Command v)
+      | IDENT "Stm"; IDENT "PGLast"; v = vernac_aux -> VernacStm (PGLast v)
 
       | v = vernac_aux -> v ] 
     ]

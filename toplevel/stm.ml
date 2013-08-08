@@ -831,6 +831,14 @@ let process_transaction verbosely (loc, expr) =
       | VtUnknown, VtLater ->
           anomaly(str"classifier: VtUnknown must imply VtNow")
     end;
+    (* Proof General *)
+    begin match v with 
+      | VernacStm (PGLast _) ->
+        if head <> VCS.master then
+          interp dummy_state_id
+            (true,Loc.ghost,VernacShow (ShowGoal OpenSubgoals))
+      | _ -> ()
+    end;
     prerr_endline "executed }}}";
     VCS.print ()
   with e ->

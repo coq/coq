@@ -222,6 +222,7 @@ type 'a stm_vernac =
   | Finish
   | Observe of Stateid.state_id
   | Command of 'a (* An out of flow command not to be recorded by Stm *)
+  | PGLast of 'a (* To ease the life of PG *)
 
 (** {6 Types concerning the module layer} *)
 

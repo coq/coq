@@ -50,6 +50,7 @@ let rec classify_vernac e =
     | VernacStm JoinDocument -> VtStm (VtJoinDocument, true), VtNow
     | VernacStm (Observe id) -> VtStm (VtObserve id, true), VtNow
     | VernacStm (Command x) -> elide_part_of_script_and_now (classify_vernac x)
+    | VernacStm (PGLast x) -> fst (classify_vernac x), VtNow
     (* Impossible, Vernac handles these *)
     | VernacList _ -> anomaly (str "VernacList not handled by Vernac")
     | VernacLoad _ -> anomaly (str "VernacLoad not handled by Vernac")

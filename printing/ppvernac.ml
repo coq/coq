@@ -482,6 +482,7 @@ let rec pr_vernac = function
   | VernacStm (Observe id) ->
       str"Stm Observe " ++ str(Stateid.string_of_state_id id)
   | VernacStm (Command v) -> str"Stm Command " ++ pr_vernac v
+  | VernacStm (PGLast v) -> str"Stm PGLast " ++ pr_vernac v
 
   (* Proof management *)
   | VernacAbortAll -> str "Abort All"

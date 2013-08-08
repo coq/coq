@@ -1814,6 +1814,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
     | VernacLocal (b, c) when locality = None -> aux ~locality:b isprogcmd c
     | VernacLocal _ -> Errors.error "Locality specified twice"
     | VernacStm (Command c) -> aux ?locality isprogcmd c
+    | VernacStm (PGLast c) -> aux ?locality isprogcmd c
     | VernacStm _ -> assert false (* Done by Stm *)
     | VernacFail v ->
 	begin try

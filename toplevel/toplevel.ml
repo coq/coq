@@ -306,7 +306,9 @@ let do_vernac () =
   msgerrnl (mt ());
   if !print_emacs then msgerr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
-  try Vernac.eval_expr (read_sentence ()); Stm.finish ()
+  try
+    Vernac.eval_expr (read_sentence ());
+    if not !Flags.print_emacs then Stm.finish ()
   with
     | End_of_input | Errors.Quit ->
         msgerrnl (mt ()); pp_flush(); raise Errors.Quit
@@ -331,8 +333,20 @@ let do_vernac () =
     exit the loop are Drop and Quit. Any other exception there indicates
     an issue with [print_toplevel_error] above. *)
 
+let feed_emacs = function
+  | { Interface.id = Interface.State id;
+      Interface.content = Interface.GlobRef (_,a,_,c,_) }  -> 
+    prerr_endline ("<info>" ^"<id>"^Stateid.string_of_state_id id ^"</id>"
+		   ^a^" "^c^ "</info>")
+  | _  -> ()
+
 let rec loop () =
   Sys.catch_break true;
+  if !Flags.print_emacs then begin
+    Pp.set_feeder feed_emacs;
+    Vernacentries.enable_goal_printing := false;
+    Vernacentries.qed_display_script := false;
+  end;
   try
     reset_input_buffer stdin top_buffer;
     while true do do_vernac(); flush_all() done

@@ -686,7 +686,7 @@ let check_no_explicitation l =
 
 (* This code is taken from dumpglob, and should be shared with it *)
 let feedback_global loc ref =
-  if !Flags.ide_slave then
+  if !Flags.ide_slave || !Flags.print_emacs then
     let remove_sections dir =
       if Libnames.is_dirpath_prefix_of dir (Lib.cwd ()) then
         Libnames.pop_dirpath_n (Lib.sections_depth ()) (Lib.cwd ())
