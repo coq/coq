@@ -494,24 +494,8 @@ let configure ?(apply=(fun () -> ())) () =
   let config_editor =
     let label = "Editor configuration" in
     let box = GPack.vbox () in
-    let table = GPack.table
-      ~row_spacings:5
-      ~col_spacings:5
-      ~border_width:2
-      ~packing:(box#pack ~expand:true) ()
-    in
-    let row = ref 0 in
     let gen_button text active =
-      let button = GButton.check_button
-        ~packing:(table#attach ~left:0 ~top:!row) ()
-      in
-      let _ = GMisc.label ~text ~xalign:0.
-        ~packing:(table#attach ~expand:`X ~left:1 ~top:!row) ()
-      in
-      let () = incr row in
-      let () = button#set_active active in
-      button
-    in
+      GButton.check_button ~label:text ~active ~packing:box#pack () in
     let wrap = gen_button "Dynamic word wrap" current.dynamic_word_wrap in
     let line = gen_button "Show line number" current.show_line_number in
     let auto_indent = gen_button "Auto indentation" current.auto_indent in
