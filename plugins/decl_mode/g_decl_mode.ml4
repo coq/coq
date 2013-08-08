@@ -16,6 +16,7 @@ open Tok
 open Decl_expr
 open Names
 open Pcoq
+open Vernacexpr
 
 open Pcoq.Constr
 open Pcoq.Tactic
@@ -114,11 +115,13 @@ let wit_proof_instr =
 let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
   pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr
 
+let classify_proof_instr _ = VtProofStep, VtLater
+
 (* We use the VERNAC EXTEND facility with a custom non-terminal
     to populate [proof_mode] with a new toplevel interpreter.
     The "-" indicates that the rule does not start with a distinguished
     string. *)
-VERNAC proof_mode EXTEND ProofInstr
+VERNAC proof_mode EXTEND ProofInstr CLASSIFIED BY classify_proof_instr
   [ - proof_instr(instr) ] -> [ vernac_proof_instr instr ]
 END
 
@@ -163,10 +166,13 @@ let _ =
 				   }
 
 (* Two new vernacular commands *)
-VERNAC COMMAND EXTEND DeclProof
+let classify_decl _ = VtProofStep, VtNow
+ 
+VERNAC COMMAND EXTEND DeclProof CLASSIFIED BY classify_decl
   [ "proof" ] -> [ vernac_decl_proof () ]
 END
-VERNAC COMMAND EXTEND  DeclReturn
+VERNAC COMMAND EXTEND  DeclReturn CLASSIFIED BY classify_decl
+
   [ "return" ] -> [ vernac_return () ]
 END
 
@@ -396,11 +402,3 @@ GLOBAL: proof_instr;
     [[ e=emphasis;i=bare_proof_instr;"." -> {emph=e;instr=i}]]
   ;
 END;;
-
-open Vernacexpr
-
-let () =
-  Vernac_classifier.declare_vernac_classifier "decl_mode" (function
-    | VernacExtend (("DeclProof"|"DeclReturn"), _) -> VtProofStep, VtNow
-    | VernacExtend ("ProofInstr", _) -> VtProofStep, VtLater
-    | _ -> VtUnknown, VtNow)

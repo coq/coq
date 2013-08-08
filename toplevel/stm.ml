@@ -40,8 +40,8 @@ let pr_ast (_, _, v) = pr_vernac v
 module Vcs_ = Vcs.Make(StateidOrderedType)
 
 type branch_type = [ `Master | `Proof of string * int ]
-type cmd_t = ast
-type fork_t = ast * Vcs_.branch_name * Names.Id.t list
+type cmd_t = ast * Id.t list
+type fork_t = ast * Vcs_.branch_name * Id.t list
 type qed_t =
   ast * vernac_qed_type * (Vcs_.branch_name * branch_type Vcs_.branch_info)
 type seff_t = ast option
@@ -153,7 +153,7 @@ end = struct (* {{{ *)
   let print_dag vcs () = (* {{{ *)
     let fname = "stm" in
     let string_of_transaction = function
-      | Cmd t | Fork (t, _, _) ->
+      | Cmd (t, _) | Fork (t, _, _) ->
           (try string_of_ppcmds (pr_ast t) with _ -> "ERR")
       | Sideff (Some t) ->
           sprintf "Sideff(%s)"
@@ -446,7 +446,7 @@ let collect_proof cur hd id =
  let rec collect last accn id =
     let view = VCS.visit id in
     match last, view.step with
-    | _, `Cmd x -> collect (Some (id,x)) (id::accn) view.next
+    | _, `Cmd (x, _) -> collect (Some (id,x)) (id::accn) view.next
     | _, `Alias _ -> collect None (id::accn) view.next
     | Some (parent, (_,_,VernacExactProof _)), `Fork _ ->
         `NotOptimizable `Immediate
@@ -510,7 +510,7 @@ let known_state ~cache id =
                  | DropProof ->
                      reach view.next;
                      Option.iter (interp start) proof_using_ast;
-                     interp id x
+                     interp id (pi1 x, pi2 x, VernacNop)
                  end;
                  Proof_global.discard_all ())
            | `NotOptimizable `Immediate -> assert (view.next = eop);
@@ -526,7 +526,7 @@ let known_state ~cache id =
                      interp id ~proof x
                  | DropProof ->
                      reach view.next;
-                     interp id x
+                     interp id (pi1 x, pi2 x, VernacNop)
                  end;
                  Proof_global.discard_all ())
            | `MaybeOptimizable (start, nodes) ->
@@ -594,18 +594,7 @@ end = struct (* {{{ *)
         if id = initial_state_id || id = dummy_state_id then [] else 
         match VCS.visit id with
         | { step = `Fork (_,_,l) } -> l
-        | { step = `Cmd (_,_, VernacFixpoint (_,l)) } -> 
-              List.map (fun (((_,id),_,_,_,_),_) -> id) l
-        | { step = `Cmd (_,_, VernacCoFixpoint (_,l)) } -> 
-              List.map (fun (((_,id),_,_,_),_) -> id) l
-        | { step = `Cmd (_,_, VernacAssumption (_,_,l)) } -> 
-              List.flatten (List.map (fun (_,(lid,_)) -> List.map snd lid) l)
-        | { step = `Cmd (_,_, VernacInductive (_,_,l)) } -> 
-              List.map (fun (((_,(_,id)),_,_,_,_),_) -> id) l
-        | { step = `Cmd (_,_, (VernacDefinition (_,(_,id),DefineBody _) |
-                               VernacDeclareModuleType ((_,id),_,_,_) |
-                               VernacDeclareModule (_,(_,id),_,_) |
-                               VernacDefineModule (_,(_,id),_,_,_))) } -> [id]
+        | { step = `Cmd (_,l) } -> l
         | _ -> [] }
     history
 
@@ -675,7 +664,7 @@ end (* }}} *)
 
 let init () =
   VCS.init initial_state_id;
-  declare_vernac_classifier "Stm" Backtrack.undo_vernac_classifier;
+  set_undo_classifier Backtrack.undo_vernac_classifier;
   State.define ~cache:true (fun () -> ()) initial_state_id;
   Backtrack.record ()
 
@@ -750,8 +739,7 @@ let process_transaction verbosely (loc, expr) =
           let bl = Backtrack.branches_of oid in
           List.iter (fun branch ->
             if not (List.mem branch bl) then
-              merge_proof_branch
-                (false,Loc.ghost,VernacAbortAll) DropProof branch)
+              merge_proof_branch x DropProof branch)
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           VCS.commit id (Alias oid);
@@ -773,7 +761,7 @@ let process_transaction verbosely (loc, expr) =
              raise(State.exn_on dummy_state_id e))
       | VtQuery true, w ->
           let id = VCS.new_node () in
-          VCS.commit id (Cmd x);
+          VCS.commit id (Cmd (x,[]));
           Backtrack.record (); if w = VtNow then finish ()
       | VtQuery false, VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script")
@@ -789,7 +777,7 @@ let process_transaction verbosely (loc, expr) =
           Backtrack.record (); if w = VtNow then finish ()
       | VtProofStep, w ->
           let id = VCS.new_node () in
-          VCS.commit id (Cmd x);
+          VCS.commit id (Cmd (x,[]));
           Backtrack.record (); if w = VtNow then finish ()
       | VtQed keep, w ->
           merge_proof_branch x keep head;
@@ -797,10 +785,10 @@ let process_transaction verbosely (loc, expr) =
           Backtrack.record (); if w = VtNow then finish ()
           
       (* Side effect on all branches *)
-      | VtSideff, w ->
+      | VtSideff l, w ->
           let id = VCS.new_node () in
           VCS.checkout VCS.master;
-          VCS.commit id (Cmd x);
+          VCS.commit id (Cmd (x,l));
           VCS.propagate_sideff (Some x);
           VCS.checkout_shallowest_proof_branch ();
           Backtrack.record (); if w = VtNow then finish ()
@@ -821,7 +809,7 @@ let process_transaction verbosely (loc, expr) =
               VCS.commit id (Fork (x,bname,[]));
               VCS.branch bname (`Proof ("Classic", VCS.proof_nesting () + 1))
             end else begin
-              VCS.commit id (Cmd x);
+              VCS.commit id (Cmd (x,[]));
               VCS.propagate_sideff (Some x);
               VCS.checkout_shallowest_proof_branch ();
             end in
@@ -893,7 +881,7 @@ let get_script prf =
     | `Qed ((x,_,_), proof) -> find [pi3 x, (VCS.get_info id).n_goals] proof
     | `Sideff (`Ast (x,id)) -> find ((pi3 x, (VCS.get_info id).n_goals)::acc) id
     | `Sideff (`Id id)  -> find acc id
-    | `Cmd x -> find ((pi3 x, (VCS.get_info id).n_goals)::acc) view.next 
+    | `Cmd (x,_) -> find ((pi3 x, (VCS.get_info id).n_goals)::acc) view.next 
     | `Alias id -> find acc id
     | `Fork _ -> find acc view.next
     in

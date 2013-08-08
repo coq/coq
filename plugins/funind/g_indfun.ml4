@@ -155,12 +155,21 @@ type function_rec_definition_loc_argtype = (Vernacexpr.fixpoint_expr * Vernacexp
 
 let (wit_function_rec_definition_loc : function_rec_definition_loc_argtype Genarg.uniform_genarg_type) =
   Genarg.create_arg None "function_rec_definition_loc"
-VERNAC COMMAND EXTEND Function
-   ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")] ->
-	[
-	  do_generate_principle false (List.map snd recsl);
 
-	]
+(* TASSI: n'importe quoi ! *)
+VERNAC COMMAND EXTEND Function
+   ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")]
+    => [ let hard = List.exists (function
+           | _,((_,(_,(CMeasureRec _|CWfRec _)),_,_,_),_) -> true
+           | _,((_,(_,CStructRec),_,_,_),_) -> false) recsl in
+         match
+           Vernac_classifier.classify_vernac
+             (Vernacexpr.VernacFixpoint(None, List.map snd recsl))
+         with
+         | Vernacexpr.VtSideff ids, _ when hard ->
+             Vernacexpr.VtStartProof ("Classic", ids), Vernacexpr.VtLater
+         | x -> x ]
+    -> [ do_generate_principle false (List.map snd recsl) ]
 END
 
 let pr_fun_scheme_arg (princ_name,fun_name,s) =
@@ -191,7 +200,9 @@ let warning_error names e =
 
 
 VERNAC COMMAND EXTEND NewFunctionalScheme
-   ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ] ->
+   ["Functional" "Scheme" ne_fun_scheme_arg_list_sep(fas,"with") ]
+   => [ Vernacexpr.VtSideff(List.map pi1 fas), Vernacexpr.VtLater ]
+   ->
     [
       begin
 	try
@@ -225,14 +236,13 @@ END
 (***** debug only ***)
 
 VERNAC COMMAND EXTEND NewFunctionalCase
-   ["Functional" "Case" fun_scheme_arg(fas) ] ->
-    [
-      Functional_principles_types.build_case_scheme fas
-    ]
+  ["Functional" "Case" fun_scheme_arg(fas) ]
+  => [ Vernacexpr.VtSideff[pi1 fas], Vernacexpr.VtLater ]
+  -> [ Functional_principles_types.build_case_scheme fas ]
 END
 
 (***** debug only ***)
-VERNAC COMMAND EXTEND GenerateGraph
+VERNAC COMMAND EXTEND GenerateGraph CLASSIFIED AS QUERY
 ["Generate" "graph" "for" reference(c)] -> [ make_graph (Nametab.global c) ]
 END
 
@@ -449,11 +459,11 @@ TACTIC EXTEND poseq
       [ poseq x c ]
 END
 
-VERNAC COMMAND EXTEND Showindinfo
+VERNAC COMMAND EXTEND Showindinfo CLASSIFIED AS QUERY
   [ "showindinfo" ident(x) ] -> [ Merge.showind x ]
 END
 
-VERNAC COMMAND EXTEND MergeFunind
+VERNAC COMMAND EXTEND MergeFunind CLASSIFIED AS SIDEFF
   [ "Mergeschemes" "(" ident(id1) ne_ident_list(cl1) ")"
       "with" "(" ident(id2) ne_ident_list(cl2)  ")" "using" ident(id) ] ->
      [

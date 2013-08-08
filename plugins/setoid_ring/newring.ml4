@@ -768,7 +768,7 @@ let process_ring_mods l =
   let k = match !kind with Some k -> ic_coeff_spec k | None -> Abstract in
   (k, !set, !cst_tac, !pre, !post, !power, !sign, !div)
 
-VERNAC COMMAND EXTEND AddSetoidRing
+VERNAC COMMAND EXTEND AddSetoidRing CLASSIFIED AS SIDEFF
   | [ "Add" "Ring" ident(id) ":" constr(t) ring_mods(l) ] ->
     [ let (k,set,cst,pre,post,power,sign, div) = process_ring_mods l in
       add_theory id (ic t) set k cst (pre,post) power sign div]
@@ -1095,7 +1095,7 @@ let process_field_mods l =
   let k = match !kind with Some k -> ic_coeff_spec k | None -> Abstract in
   (k, !set, !inj, !cst_tac, !pre, !post, !power, !sign, !div)
 
-VERNAC COMMAND EXTEND AddSetoidField
+VERNAC COMMAND EXTEND AddSetoidField CLASSIFIED AS SIDEFF
 | [ "Add" "Field" ident(id) ":" constr(t) field_mods(l) ] ->
   [ let (k,set,inj,cst_tac,pre,post,power,sign,div) = process_field_mods l in
     add_field_theory id (ic t) set k cst_tac inj (pre,post) power sign div]

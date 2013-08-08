@@ -735,12 +735,12 @@ let set_transparency cl b =
     let ev = Tacred.evaluable_of_global_reference (Global.env ()) gr in
       Classes.set_typeclass_transparency ev false b) cl
 
-VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
+VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings CLASSIFIED AS SIDEFF
 | [ "Typeclasses" "Transparent" reference_list(cl) ] -> [
     set_transparency cl true ]
 END
 
-VERNAC COMMAND EXTEND Typeclasses_Rigid_Settings
+VERNAC COMMAND EXTEND Typeclasses_Rigid_Settings CLASSIFIED AS SIDEFF
 | [ "Typeclasses" "Opaque" reference_list(cl) ] -> [
     set_transparency cl false ]
 END
@@ -765,7 +765,7 @@ END
 
 (* true = All transparent, false = Opaque if possible *)
 
-VERNAC COMMAND EXTEND Typeclasses_Settings
+VERNAC COMMAND EXTEND Typeclasses_Settings CLASSIFIED AS SIDEFF
  | [ "Typeclasses" "eauto" ":=" debug(d) depth(depth) ] -> [
      set_typeclasses_debug d;
      set_typeclasses_depth depth

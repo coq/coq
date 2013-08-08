@@ -25,7 +25,7 @@ END
 
 (* Print XML and Show XML *)
 
-VERNAC COMMAND EXTEND Xml
+VERNAC COMMAND EXTEND Xml CLASSIFIED AS QUERY
 | [ "Print" "XML" filename(fn) global(qid) ] -> [ Xmlcommand.print_ref qid fn ]
 
 | [ "Show" "XML" filename(fn) "Proof" ] -> [ Xmlcommand.show fn ]

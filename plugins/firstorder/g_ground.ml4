@@ -53,14 +53,14 @@ let _=
 let (set_default_solver, default_solver, print_default_solver) = 
   Tactic_option.declare_tactic_option ~default:(<:tactic<auto with *>>) "Firstorder default solver"
 
-VERNAC COMMAND EXTEND Firstorder_Set_Solver
+VERNAC COMMAND EXTEND Firstorder_Set_Solver CLASSIFIED AS SIDEFF
 | [ "Set" "Firstorder" "Solver" tactic(t) ] -> [
     set_default_solver 
       (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
       (Tacintern.glob_tactic t) ]
 END
 
-VERNAC COMMAND EXTEND Firstorder_Print_Solver
+VERNAC COMMAND EXTEND Firstorder_Print_Solver CLASSIFIED AS QUERY
 | [ "Print" "Firstorder" "Solver" ] -> [
     Pp.msg_info
       (Pp.(++) (Pp.str"Firstorder solver tactic is ") (print_default_solver ())) ]

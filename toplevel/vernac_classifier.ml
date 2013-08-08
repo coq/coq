@@ -16,7 +16,7 @@ let string_of_in_script b = if b then " (inside script)" else ""
 let string_of_vernac_type = function
   | VtUnknown -> "Unknown"
   | VtStartProof _ -> "StartProof"
-  | VtSideff -> "Sideff"
+  | VtSideff _ -> "Sideff"
   | VtQed _ -> "Qed"
   | VtProofStep -> "ProofStep"
   | VtQuery b -> "Query" ^ string_of_in_script b
@@ -31,10 +31,11 @@ let string_of_vernac_when = function
 let string_of_vernac_classification (t,w) =
   string_of_vernac_type t ^ " " ^ string_of_vernac_when w
 
-(* Since the set of vernaculars is extensible, also the classification function
-   has to be. *)
-let classifiers = Summary.ref ~name:"vernac_classifier" []
-let declare_vernac_classifier s (f : vernac_expr -> vernac_classification) =
+let classifiers = ref []
+let declare_vernac_classifier
+  (s : string)
+  (f : Genarg.raw_generic_argument list -> unit -> vernac_classification)
+=
   classifiers := !classifiers @ [s,f]
 
 let elide_part_of_script_and_now (a, _) =
@@ -42,6 +43,9 @@ let elide_part_of_script_and_now (a, _) =
   | VtQuery _ -> VtQuery false, VtNow
   | VtStm (x, _) -> VtStm (x, false), VtNow
   | x -> x, VtNow
+
+let undo_classifier = ref (fun _ -> assert false)
+let set_undo_classifier f = undo_classifier := f
 
 let rec classify_vernac e =
   let static_classifier e = match e with
@@ -83,24 +87,39 @@ let rec classify_vernac e =
     | VernacDefinition (_,(_,i),ProveBody _) ->
         VtStartProof("Classic",[i]), VtLater
     | VernacStartTheoremProof (_,l,_) ->
-        let names = 
+        let ids = 
           CList.map_filter (function (Some(_,i), _) -> Some i | _ -> None) l in
-        VtStartProof ("Classic", names), VtLater
+        VtStartProof ("Classic", ids), VtLater
     | VernacGoal _ -> VtStartProof ("Classic",[]), VtLater
-    | VernacFixpoint (_,l)
-      when List.exists (fun ((_,_,_,_,p),_) -> p = None) l ->
-        VtStartProof ("Classic",
-          List.map (fun (((_,id),_,_,_,_),_) -> id) l), VtLater
-    | VernacCoFixpoint (_,l)
-      when List.exists (fun ((_,_,_,p),_) -> p = None) l ->
-        VtStartProof ("Classic",
-          List.map (fun (((_,id),_,_,_),_) -> id) l), VtLater
+    | VernacFixpoint (_,l) ->
+        let ids, open_proof =
+          List.fold_left (fun (l,b) (((_,id),_,_,_,p),_) ->
+            id::l, b || p = None) ([],false) l in
+        if open_proof then VtStartProof ("Classic",ids), VtLater
+        else VtSideff ids, VtLater
+    | VernacCoFixpoint (_,l) ->
+        let ids, open_proof =
+          List.fold_left (fun (l,b) (((_,id),_,_,p),_) ->
+            id::l, b || p = None) ([],false) l in
+        if open_proof then VtStartProof ("Classic",ids), VtLater
+        else VtSideff ids, VtLater
     (* Sideff: apply to all open branches. usually run on master only *)
-    | VernacAssumption _
-    | VernacDefinition (_,_,DefineBody _)
-    | VernacFixpoint _ | VernacCoFixpoint _
-    | VernacInductive _
-    | VernacScheme _ | VernacCombinedScheme _
+    | VernacAssumption (_,_,l) ->
+        let ids = List.flatten (List.map (fun (_,(l,_)) -> List.map snd l) l) in
+        VtSideff ids, VtLater    
+    | VernacDefinition (_,(_,id),DefineBody _) -> VtSideff [id], VtLater
+    | VernacInductive (_,_,l) ->
+        let ids = List.map (fun (((_,(_,id)),_,_,_,cl),_) -> id :: match cl with
+        | Constructors l -> List.map (fun (_,((_,id),_)) -> id) l
+        | RecordDecl (oid,l) -> (match oid with Some (_,x) -> [x] | _ -> []) @
+           CList.map_filter (function
+            | ((_,AssumExpr((_,Names.Name n),_)),_),_ -> Some n
+            | _ -> None) l) l in
+        VtSideff (List.flatten ids), VtLater
+    | VernacScheme l ->
+        let ids = List.map snd (CList.map_filter (fun (x,_) -> x) l) in
+        VtSideff ids, VtLater
+    | VernacCombinedScheme ((_,id),_) -> VtSideff [id], VtLater
     | VernacBeginSection _
     | VernacCanonical _ | VernacCoercion _ | VernacIdentityCoercion _
     | VernacAddLoadPath _ | VernacRemoveLoadPath _ | VernacAddMLPath _
@@ -116,14 +135,15 @@ let rec classify_vernac e =
     | VernacGlobalCheck _
     | VernacDeclareReduction _
     | VernacDeclareClass _ | VernacDeclareInstances _
-    | VernacComments _ -> VtSideff, VtLater
+    | VernacRegister _
+    | VernacComments _ -> VtSideff [], VtLater
     (* (Local) Notations have to disappear *)
-    | VernacEndSegment _ -> VtSideff, VtNow
+    | VernacEndSegment _ -> VtSideff [], VtNow
     (* Modules with parameters have to be executed: can import notations *)
-    | VernacDeclareModule (_,_,bl,_)
-    | VernacDefineModule (_,_,bl,_,_)
-    | VernacDeclareModuleType (_,bl,_,_) ->
-        VtSideff, if bl = [] then VtLater else VtNow
+    | VernacDeclareModule (_,(_,id),bl,_)
+    | VernacDefineModule (_,(_,id),bl,_,_)
+    | VernacDeclareModuleType ((_,id),bl,_,_) ->
+        VtSideff [id], if bl = [] then VtLater else VtNow
     (* These commands alter the parser *)
     | VernacOpenCloseScope _ | VernacDelimiters _ | VernacBindScope _
     | VernacInfix _ | VernacNotation _ | VernacSyntaxExtension _ 
@@ -133,7 +153,7 @@ let rec classify_vernac e =
     | VernacDeclareMLModule _
     | VernacContext _ (* TASSI: unsure *)
     | VernacProofMode _ 
-    | VernacRequireFrom _ -> VtSideff, VtNow
+    | VernacRequireFrom _ -> VtSideff [], VtNow
     (* These are ambiguous *)
     | VernacInstance _ -> VtUnknown, VtNow
     (* Stm will install a new classifier to handle these *)
@@ -147,19 +167,11 @@ let rec classify_vernac e =
     | VernacRestoreState _
     | VernacWriteState _ -> VtUnknown, VtNow
     (* Plugins should classify their commands *)
-    | VernacExtend _ -> VtUnknown, VtNow in
-  let rec extended_classifier = function
-    | [] -> static_classifier e
-    | (name,f)::fs -> 
-        try
-          match f e with
-          | VtUnknown, _ -> extended_classifier fs
-          | x -> x
-        with e when Errors.noncritical e ->
-          let e = Errors.push e in
-          msg_warning(str"Exception raised by classifier: " ++ str name);
-          raise e
-
+    | VernacExtend (s,l) ->
+        try List.assoc s !classifiers l ()
+        with Not_found -> anomaly(str"No classifier for"++spc()++str s)
   in
-  extended_classifier !classifiers
+    static_classifier e
 
+let classify_as_query = VtQuery true, VtLater
+let classify_as_sideeff = VtSideff [], VtLater

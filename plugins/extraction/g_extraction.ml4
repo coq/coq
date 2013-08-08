@@ -51,7 +51,7 @@ END
 
 (* Extraction commands *)
 
-VERNAC COMMAND EXTEND Extraction
+VERNAC COMMAND EXTEND Extraction CLASSIFIED AS QUERY
 (* Extraction in the Coq toplevel *)
 | [ "Extraction" global(x) ] -> [ simple_extraction x ]
 | [ "Recursive" "Extraction" ne_global_list(l) ] -> [ full_extraction None l ]
@@ -61,85 +61,85 @@ VERNAC COMMAND EXTEND Extraction
   -> [ full_extraction (Some f) l ]
 END
 
-VERNAC COMMAND EXTEND SeparateExtraction
+VERNAC COMMAND EXTEND SeparateExtraction CLASSIFIED AS QUERY
 (* Same, with content splitted in several files *)
 | [ "Separate" "Extraction" ne_global_list(l) ]
   -> [ separate_extraction l ]
 END
 
 (* Modular extraction (one Coq library = one ML module) *)
-VERNAC COMMAND EXTEND ExtractionLibrary
+VERNAC COMMAND EXTEND ExtractionLibrary CLASSIFIED AS QUERY
 | [ "Extraction" "Library" ident(m) ]
   -> [ extraction_library false m ]
 END
 
-VERNAC COMMAND EXTEND RecursiveExtractionLibrary
+VERNAC COMMAND EXTEND RecursiveExtractionLibrary CLASSIFIED AS QUERY
 | [ "Recursive" "Extraction" "Library" ident(m) ]
   -> [ extraction_library true m ]
 END
 
 (* Target Language *)
-VERNAC COMMAND EXTEND ExtractionLanguage
+VERNAC COMMAND EXTEND ExtractionLanguage CLASSIFIED AS SIDEFF
 | [ "Extraction" "Language" language(l) ]
   -> [ extraction_language l ]
 END
 
-VERNAC COMMAND EXTEND ExtractionInline
+VERNAC COMMAND EXTEND ExtractionInline CLASSIFIED AS SIDEFF
 (* Custom inlining directives *)
 | [ "Extraction" "Inline" ne_global_list(l) ]
   -> [ extraction_inline true l ]
 END
 
-VERNAC COMMAND EXTEND ExtractionNoInline
+VERNAC COMMAND EXTEND ExtractionNoInline CLASSIFIED AS SIDEFF
 | [ "Extraction" "NoInline" ne_global_list(l) ]
   -> [ extraction_inline false l ]
 END
 
-VERNAC COMMAND EXTEND PrintExtractionInline
+VERNAC COMMAND EXTEND PrintExtractionInline CLASSIFIED AS QUERY
 | [ "Print" "Extraction" "Inline" ]
   -> [ msg_info (print_extraction_inline ()) ]
 END
 
-VERNAC COMMAND EXTEND ResetExtractionInline
+VERNAC COMMAND EXTEND ResetExtractionInline CLASSIFIED AS SIDEFF
 | [ "Reset" "Extraction" "Inline" ]
   -> [ reset_extraction_inline () ]
 END
 
-VERNAC COMMAND EXTEND ExtractionImplicit
+VERNAC COMMAND EXTEND ExtractionImplicit CLASSIFIED AS SIDEFF
 (* Custom implicit arguments of some csts/inds/constructors *)
 | [ "Extraction" "Implicit" global(r) "[" int_or_id_list(l) "]" ]
   -> [ extraction_implicit r l ]
 END
 
-VERNAC COMMAND EXTEND ExtractionBlacklist
+VERNAC COMMAND EXTEND ExtractionBlacklist CLASSIFIED AS SIDEFF
 (* Force Extraction to not use some filenames *)
 | [ "Extraction" "Blacklist" ne_ident_list(l) ]
   -> [ extraction_blacklist l ]
 END
 
-VERNAC COMMAND EXTEND PrintExtractionBlacklist
+VERNAC COMMAND EXTEND PrintExtractionBlacklist CLASSIFIED AS QUERY
 | [ "Print" "Extraction" "Blacklist" ]
   -> [ msg_info (print_extraction_blacklist ()) ]
 END
 
-VERNAC COMMAND EXTEND ResetExtractionBlacklist
+VERNAC COMMAND EXTEND ResetExtractionBlacklist CLASSIFIED AS SIDEFF
 | [ "Reset" "Extraction" "Blacklist" ]
   -> [ reset_extraction_blacklist () ]
 END
 
 
 (* Overriding of a Coq object by an ML one *)
-VERNAC COMMAND EXTEND ExtractionConstant
+VERNAC COMMAND EXTEND ExtractionConstant CLASSIFIED AS SIDEFF
 | [ "Extract" "Constant" global(x) string_list(idl) "=>" mlname(y) ]
   -> [ extract_constant_inline false x idl y ]
 END
 
-VERNAC COMMAND EXTEND ExtractionInlinedConstant
+VERNAC COMMAND EXTEND ExtractionInlinedConstant CLASSIFIED AS SIDEFF
 | [ "Extract" "Inlined" "Constant" global(x) "=>" mlname(y) ]
   -> [ extract_constant_inline true x [] y ]
 END
 
-VERNAC COMMAND EXTEND ExtractionInductive
+VERNAC COMMAND EXTEND ExtractionInductive CLASSIFIED AS SIDEFF
 | [ "Extract" "Inductive" global(x) "=>"
     mlname(id) "[" mlname_list(idl) "]" string_opt(o) ]
   -> [ extract_inductive x id idl o ]

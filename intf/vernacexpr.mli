@@ -422,7 +422,7 @@ and located_vernac_expr = Loc.t * vernac_expr
      a query like Check *)
 type vernac_type =
   | VtStartProof of vernac_start
-  | VtSideff
+  | VtSideff of vernac_sideff_type
   | VtQed of vernac_qed_type
   | VtProofStep
   | VtQuery of vernac_part_of_script
@@ -430,6 +430,7 @@ type vernac_type =
   | VtUnknown
 and vernac_qed_type = KeepProof | DropProof (* Qed, Admitted/Abort *)
 and vernac_start = string * Id.t list
+and vernac_sideff_type = Id.t list
 and vernac_is_alias = bool
 and vernac_part_of_script = bool
 and vernac_control =

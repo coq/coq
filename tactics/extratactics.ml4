@@ -259,7 +259,9 @@ let add_rewrite_hint bases ort t lcsr =
   let add_hints base = add_rew_rules base eqs in
   List.iter add_hints bases
 
-VERNAC COMMAND EXTEND HintRewrite
+let classify_hint _ = Vernacexpr.VtSideff [], Vernacexpr.VtLater
+
+VERNAC COMMAND EXTEND HintRewrite CLASSIFIED BY classify_hint
   [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident_list(bl) ] ->
   [ add_rewrite_hint bl o None l ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)
@@ -300,14 +302,14 @@ let add_hints_iff l2r lc n bl =
   Auto.add_hints true bl
     (Auto.HintsResolveEntry (List.map (project_hint n l2r) lc))
 
-VERNAC COMMAND EXTEND HintResolveIffLR
+VERNAC COMMAND EXTEND HintResolveIffLR CLASSIFIED AS SIDEFF
   [ "Hint" "Resolve" "->" ne_global_list(lc) natural_opt(n)
     ":" preident_list(bl) ] ->
   [ add_hints_iff true lc n bl ]
 | [ "Hint" "Resolve" "->" ne_global_list(lc) natural_opt(n) ] ->
   [ add_hints_iff true lc n ["core"] ]
 END
-VERNAC COMMAND EXTEND HintResolveIffRL
+VERNAC COMMAND EXTEND HintResolveIffRL CLASSIFIED AS SIDEFF
   [ "Hint" "Resolve" "<-" ne_global_list(lc) natural_opt(n)
     ":" preident_list(bl) ] ->
   [ add_hints_iff false lc n bl ]
@@ -332,17 +334,20 @@ let refine_tac = refine
 open Inv
 open Leminv
 
+let seff id = Vernacexpr.VtSideff [id], Vernacexpr.VtLater
+
 VERNAC COMMAND EXTEND DeriveInversionClear
-  [ "Derive" "Inversion_clear" ident(na) hyp(id) ]
+  [ "Derive" "Inversion_clear" ident(na) hyp(id) ] => [ seff na ]
   -> [ inversion_lemma_from_goal 1 na id Term.prop_sort false inv_clear_tac ]
 
-| [ "Derive" "Inversion_clear" natural(n) ident(na) hyp(id) ]
+| [ "Derive" "Inversion_clear" natural(n) ident(na) hyp(id) ] => [ seff na ]
   -> [ inversion_lemma_from_goal n na id Term.prop_sort false inv_clear_tac ]
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
+  => [ seff na ]
   -> [ add_inversion_lemma_exn na c s false inv_clear_tac ]
 
-| [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ]
+| [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ] => [ seff na ]
   -> [ add_inversion_lemma_exn na c GProp false inv_clear_tac ]
 END
 
@@ -350,25 +355,28 @@ open Term
 
 VERNAC COMMAND EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
+  => [ seff na ]
   -> [ add_inversion_lemma_exn na c s false inv_tac ]
 
-| [ "Derive" "Inversion" ident(na) "with" constr(c) ]
+| [ "Derive" "Inversion" ident(na) "with" constr(c) ] => [ seff na ]
   -> [ add_inversion_lemma_exn na c GProp false inv_tac ]
 
-| [ "Derive" "Inversion" ident(na) hyp(id) ]
+| [ "Derive" "Inversion" ident(na) hyp(id) ] => [ seff na ]
   -> [ inversion_lemma_from_goal 1 na id Term.prop_sort false inv_tac ]
 
-| [ "Derive" "Inversion" natural(n) ident(na) hyp(id) ]
+| [ "Derive" "Inversion" natural(n) ident(na) hyp(id) ] => [ seff na ]
   -> [ inversion_lemma_from_goal n na id Term.prop_sort false inv_tac ]
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion
 | [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
+  => [ seff na ]
   -> [ add_inversion_lemma_exn na c s true dinv_tac ]
-    END
+END
 
 VERNAC COMMAND EXTEND DeriveDependentInversionClear
 | [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
+  => [ seff na ]
   -> [ add_inversion_lemma_exn na c s true dinv_clear_tac ]
 END
 
@@ -470,17 +478,17 @@ TACTIC EXTEND stepr
 | ["stepr" constr(c) ] -> [ step false c tclIDTAC ]
 END
 
-VERNAC COMMAND EXTEND AddStepl
+VERNAC COMMAND EXTEND AddStepl CLASSIFIED AS SIDEFF
 | [ "Declare" "Left" "Step" constr(t) ] ->
     [ add_transitivity_lemma true t ]
 END
 
-VERNAC COMMAND EXTEND AddStepr
+VERNAC COMMAND EXTEND AddStepr CLASSIFIED AS SIDEFF
 | [ "Declare" "Right" "Step" constr(t) ] ->
     [ add_transitivity_lemma false t ]
 END
 
-VERNAC COMMAND EXTEND ImplicitTactic
+VERNAC COMMAND EXTEND ImplicitTactic CLASSIFIED AS SIDEFF
 | [ "Declare" "Implicit" "Tactic" tactic(tac) ] ->
     [ Pfedit.declare_implicit_tactic (Tacinterp.interp tac) ]
 END
@@ -491,7 +499,7 @@ END
 (**********************************************************************)
 (*spiwack : Vernac commands for retroknowledge                        *)
 
-VERNAC COMMAND EXTEND RetroknowledgeRegister
+VERNAC COMMAND EXTEND RetroknowledgeRegister CLASSIFIED AS SIDEFF
  | [ "Register" constr(c) "as" retroknowledge_field(f) "by" constr(b)] ->
            [ let tc = Constrintern.interp_constr Evd.empty (Global.env ()) c in
              let tb = Constrintern.interp_constr Evd.empty (Global.env ()) b in
@@ -766,7 +774,7 @@ END;;
    the semantics of the LCF-style tactics, hence with the classic tactic
    mode. *)
 VERNAC COMMAND EXTEND GrabEvars
-[ "Grab" "Existential" "Variables" ] ->
-  [ Proof_global.with_current_proof (fun _ p  ->
-      Proof.V82.grab_evars p) ]
+[ "Grab" "Existential" "Variables" ]
+  => [ Vernacexpr.VtProofStep, Vernacexpr.VtLater ]
+  -> [ Proof_global.with_current_proof (fun _ p  -> Proof.V82.grab_evars p) ]
 END

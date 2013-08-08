@@ -36,16 +36,18 @@ let rec make_when loc = function
       <:expr< Genarg.argument_type_eq (Genarg.genarg_tag $lid:p$) $t$ && $l$ >>
   | _::l -> make_when loc l
 
-let rec make_let e = function
+let rec make_let raw e = function
   | [] -> <:expr< fun $lid:"ist"$ -> $e$ >>
   | GramNonTerminal(loc,t,_,Some p)::l ->
       let loc = of_coqloc loc in
       let p = Names.Id.to_string p in
       let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
-      let e = make_let e l in
-      let v = <:expr< Genarg.out_gen $make_topwit loc t$ $lid:p$ >> in
+      let e = make_let raw e l in
+      let v =
+        if raw then <:expr< Genarg.out_gen $make_rawwit loc t$ $lid:p$ >>
+               else <:expr< Genarg.out_gen $make_topwit    loc t$ $lid:p$ >> in
       <:expr< let $lid:p$ = $v$ in $e$ >>
-  | _::l -> make_let e l
+  | _::l -> make_let raw e l
 
 let rec extract_signature = function
   | [] -> []
@@ -53,20 +55,38 @@ let rec extract_signature = function
   | _::l -> extract_signature l
 
 let check_unicity s l =
-  let l' = List.map (fun (l,_) -> extract_signature l) l in
+  let l' = List.map (fun (l,_,_) -> extract_signature l) l in
   if not (Util.List.distinct l') then
     Pp.msg_warning
       (strbrk ("Two distinct rules of tactic entry "^s^" have the same "^
       "non-terminals in the same order: put them in distinct tactic entries"))
 
-let make_clause (pt,e) =
+let make_clause (pt,_,e) =
   (make_patt pt,
    vala (Some (make_when (MLast.loc_of_expr e) pt)),
-   make_let e pt)
+   make_let false e pt)
 
 let make_fun_clauses loc s l =
   check_unicity s l;
   Compat.make_fun loc (List.map make_clause l)
+
+let make_clause_classifier cg s (pt,c,_) =
+  match c ,cg with
+  | Some c, _ ->
+     (make_patt pt,
+      vala (Some (make_when (MLast.loc_of_expr c) pt)),
+      make_let true c pt)
+  | None, Some cg ->
+     (make_patt pt,
+      vala (Some (make_when (MLast.loc_of_expr cg) pt)),
+      <:expr< fun () -> $cg$ $str:s$ >>)
+  | None, None ->
+    (make_patt pt,
+      vala (Some (make_when loc pt)),
+      <:expr< fun () -> (Vernacexpr.VtProofStep, Vernacexpr.VtLater) >>)
+  
+let make_fun_classifiers loc s c l =
+  Compat.make_fun loc (List.map (make_clause_classifier c s) l)
 
 let rec make_args = function
   | [] -> <:expr< [] >>
@@ -89,7 +109,7 @@ let make_prod_item = function
       $mlexpr_of_prod_entry_key g$ $mlexpr_of_option mlexpr_of_ident sopt$ >>
 
 let mlexpr_of_clause =
-  mlexpr_of_list (fun (a,b) -> mlexpr_of_list make_prod_item a)
+  mlexpr_of_list (fun (a,_,b) -> mlexpr_of_list make_prod_item a)
 
 let rec make_tags loc = function
   | [] -> <:expr< [] >>
@@ -101,7 +121,7 @@ let rec make_tags loc = function
       <:expr< [ $t$ :: $l$ ] >>
   | _::l -> make_tags loc l
 
-let make_one_printing_rule se (pt,e) =
+let make_one_printing_rule se (pt,_,e) =
   let level = mlexpr_of_int 0 in (* only level 0 supported here *)
   let loc = MLast.loc_of_expr e in
   let prods = mlexpr_of_list mlexpr_terminals_of_grammar_tactic_prod_item_expr pt in
@@ -151,11 +171,11 @@ let rec possibly_empty_subentries loc = function
 
 let possibly_atomic loc prods =
   let l = List.map_filter (function
-    | GramTerminal s :: l, _ -> Some (s,l)
+    | GramTerminal s :: l, _, _ -> Some (s,l)
     | _ -> None) prods in
   possibly_empty_subentries loc (List.factorize_left l)
 
-let declare_tactic loc s cl =
+let declare_tactic loc s c cl =
   let se = mlexpr_of_string s in
   let pp = make_printing_rule se cl in
   let gl = mlexpr_of_clause cl in
@@ -164,8 +184,10 @@ let declare_tactic loc s cl =
       (possibly_atomic loc cl) in
   declare_str_items loc
     [ <:str_item< do {
-      try
-        let _=Tacinterp.add_tactic $se$ $make_fun_clauses loc s cl$ in
+      try do {
+        Tacinterp.add_tactic $se$ $make_fun_clauses loc s cl$;
+        Vernac_classifier.declare_vernac_classifier
+          $se$ $make_fun_classifiers loc s c cl$;
         List.iter
           (fun (s,l) -> match l with
            [ Some l ->
@@ -173,7 +195,7 @@ let declare_tactic loc s cl =
               (Tacexpr.TacAtom($default_loc$,
                  Tacexpr.TacExtend($default_loc$,$se$,l)))
            | None -> () ])
-          $atomic_tactics$
+          $atomic_tactics$ }
       with [ e when Errors.noncritical e ->
 	Pp.msg_warning
 	  (Pp.app
@@ -190,17 +212,20 @@ EXTEND
   GLOBAL: str_item;
   str_item:
     [ [ "TACTIC"; "EXTEND"; s = tac_name;
+        c = OPT [ "CLASSIFIED"; "BY"; c = LIDENT -> <:expr< $lid:c$ >> ];
         OPT "|"; l = LIST1 tacrule SEP "|";
         "END" ->
-         declare_tactic loc s l ] ]
+         declare_tactic loc s c l ] ]
   ;
   tacrule:
-    [ [ "["; l = LIST1 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]" ->
+    [ [ "["; l = LIST1 tacargs; "]";
+        c = OPT [ "=>"; "["; c = Pcaml.expr; "]" -> c ];
+        "->"; "["; e = Pcaml.expr; "]" ->
 	(match l with
 	  | GramNonTerminal _ :: _ ->
 	    (* En attendant la syntaxe de tacticielles *)
 	    failwith "Tactic syntax must start with an identifier"
-	  | _ -> (l,e))
+	  | _ -> (l,c,e))
     ] ]
   ;
   tacargs:

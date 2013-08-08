@@ -211,14 +211,15 @@ VERNAC ARGUMENT EXTEND whelp_constr_request
 | [ "Instance" ] -> [ "instance" ]
 END
 
-VERNAC COMMAND EXTEND Whelp
+VERNAC COMMAND EXTEND Whelp CLASSIFIED AS QUERY
 | [ "Whelp" "Locate" string(s) ] -> [ whelp_locate s ]
 | [ "Whelp" "Locate" preident(s) ] -> [ whelp_locate s ]
 | [ "Whelp" "Elim" global(r) ] -> [ whelp_elim (Smartlocate.global_inductive_with_alias r) ]
 | [ "Whelp" whelp_constr_request(req) constr(c) ] -> [ whelp_constr_expr req c]
 END
 
-VERNAC COMMAND EXTEND WhelpHint
+VERNAC COMMAND EXTEND WhelpHint CLASSIFIED AS QUERY
 | [ "Whelp" "Hint" constr(c) ] -> [ whelp_constr_expr "hint" c ]
-| [ "Whelp" "Hint" ] -> [ on_goal (whelp_constr "hint") ]
+| [ "Whelp" "Hint" ] => [ Vernacexpr.VtProofStep, Vernacexpr.VtLater ] ->
+  [ on_goal (whelp_constr "hint") ]
 END

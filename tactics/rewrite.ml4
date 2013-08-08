@@ -1643,7 +1643,7 @@ let wit_binders =
  (Genarg.create_arg None "binders" : binders_argtype Genarg.uniform_genarg_type)
 
 
-VERNAC COMMAND EXTEND AddRelation
+VERNAC COMMAND EXTEND AddRelation CLASSIFIED AS SIDEFF
   | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
 	"symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
       [ declare_relation a aeq n (Some lemma1) (Some lemma2) None ]
@@ -1655,7 +1655,7 @@ VERNAC COMMAND EXTEND AddRelation
       [ declare_relation a aeq n None None None ]
 END
 
-VERNAC COMMAND EXTEND AddRelation2
+VERNAC COMMAND EXTEND AddRelation2 CLASSIFIED AS SIDEFF
     [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
       "as" ident(n) ] ->
       [ declare_relation a aeq n None (Some lemma2) None ]
@@ -1663,7 +1663,7 @@ VERNAC COMMAND EXTEND AddRelation2
       [ declare_relation a aeq n None (Some lemma2) (Some lemma3) ]
 END
 
-VERNAC COMMAND EXTEND AddRelation3
+VERNAC COMMAND EXTEND AddRelation3 CLASSIFIED AS SIDEFF
     [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "transitivity" "proved" "by" constr(lemma3) "as" ident(n) ] ->
       [ declare_relation a aeq n (Some lemma1) None (Some lemma3) ]
@@ -1676,7 +1676,7 @@ VERNAC COMMAND EXTEND AddRelation3
       [ declare_relation a aeq n None None (Some lemma3) ]
 END
 
-VERNAC COMMAND EXTEND AddParametricRelation
+VERNAC COMMAND EXTEND AddParametricRelation CLASSIFIED AS SIDEFF
   | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
 	"reflexivity" "proved" "by" constr(lemma1)
 	"symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
@@ -1689,7 +1689,7 @@ VERNAC COMMAND EXTEND AddParametricRelation
       [ declare_relation ~binders:b a aeq n None None None ]
 END
 
-VERNAC COMMAND EXTEND AddParametricRelation2
+VERNAC COMMAND EXTEND AddParametricRelation2 CLASSIFIED AS SIDEFF
     [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
       "as" ident(n) ] ->
       [ declare_relation ~binders:b a aeq n None (Some lemma2) None ]
@@ -1697,7 +1697,7 @@ VERNAC COMMAND EXTEND AddParametricRelation2
       [ declare_relation ~binders:b a aeq n None (Some lemma2) (Some lemma3) ]
 END
 
-VERNAC COMMAND EXTEND AddParametricRelation3
+VERNAC COMMAND EXTEND AddParametricRelation3 CLASSIFIED AS SIDEFF
     [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
       "transitivity" "proved" "by" constr(lemma3) "as" ident(n) ] ->
       [ declare_relation ~binders:b a aeq n (Some lemma1) None (Some lemma3) ]
@@ -1846,18 +1846,22 @@ let add_morphism glob binders m s n =
     ignore(new_instance ~global:glob binders instance (Some (CRecord (Loc.ghost,None,[])))
 	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) None)
 
-VERNAC COMMAND EXTEND AddSetoid1
+VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
    [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
      [ add_setoid (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) [] a aeq t n ]
   | [ "Add" "Parametric" "Setoid" binders(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
      [	add_setoid (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) binders a aeq t n ]
-  | [ "Add" "Morphism" constr(m) ":" ident(n) ] ->
-      [ add_morphism_infer (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) m n ]
-  | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ] ->
-      [ add_morphism (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) [] m s n ]
+  | [ "Add" "Morphism" constr(m) ":" ident(n) ]
+    (* This command may or may not open a goal *)
+    => [ Vernacexpr.VtUnknown, Vernacexpr.VtNow ]
+    -> [ add_morphism_infer (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) m n ]
+  | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
+    => [ Vernacexpr.VtStartProof("Classic",[n]), Vernacexpr.VtLater ]
+    -> [ add_morphism (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) [] m s n ]
   | [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
-	"with" "signature" lconstr(s) "as" ident(n) ] ->
-      [ add_morphism (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) binders m s n ]
+	"with" "signature" lconstr(s) "as" ident(n) ]
+    => [ Vernacexpr.VtStartProof("Classic",[n]), Vernacexpr.VtLater ]
+    -> [ add_morphism (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) binders m s n ]
 END
 
 (** Bind to "rewrite" too *)

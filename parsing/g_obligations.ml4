@@ -60,7 +60,9 @@ let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
 
 open Obligations
 
-VERNAC COMMAND EXTEND Obligations
+let classify_obbl _ = Vernacexpr.VtStartProof ("Classic",[]), Vernacexpr.VtLater
+
+VERNAC COMMAND EXTEND Obligations CLASSIFIED BY classify_obbl
 | [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) withtac(tac) ] ->
     [ obligation (num, Some name, Some t) tac ]
 | [ "Obligation" integer(num) "of" ident(name) withtac(tac) ] ->
@@ -74,35 +76,35 @@ VERNAC COMMAND EXTEND Obligations
 | [ "Next" "Obligation" withtac(tac) ] -> [ next_obligation None tac ]
 END
 
-VERNAC COMMAND EXTEND Solve_Obligation
+VERNAC COMMAND EXTEND Solve_Obligation CLASSIFIED AS SIDEFF
 | [ "Solve" "Obligation" integer(num) "of" ident(name) "with" tactic(t) ] ->
     [ try_solve_obligation num (Some name) (Some (Tacinterp.interp t)) ]
 | [ "Solve" "Obligation" integer(num) "with" tactic(t) ] ->
     [ try_solve_obligation num None (Some (Tacinterp.interp t)) ]
-      END
+END
 
-VERNAC COMMAND EXTEND Solve_Obligations
+VERNAC COMMAND EXTEND Solve_Obligations CLASSIFIED AS SIDEFF
 | [ "Solve" "Obligations" "of" ident(name) "with" tactic(t) ] ->
     [ try_solve_obligations (Some name) (Some (Tacinterp.interp t)) ]
 | [ "Solve" "Obligations" "with" tactic(t) ] ->
     [ try_solve_obligations None (Some (Tacinterp.interp t)) ]
 | [ "Solve" "Obligations" ] ->
     [ try_solve_obligations None None ]
-      END
+END
 
-VERNAC COMMAND EXTEND Solve_All_Obligations
+VERNAC COMMAND EXTEND Solve_All_Obligations CLASSIFIED AS SIDEFF
 | [ "Solve" "All" "Obligations" "with" tactic(t) ] ->
     [ solve_all_obligations (Some (Tacinterp.interp t)) ]
 | [ "Solve" "All" "Obligations" ] ->
     [ solve_all_obligations None ]
-      END
+END
 
-VERNAC COMMAND EXTEND Admit_Obligations
+VERNAC COMMAND EXTEND Admit_Obligations CLASSIFIED AS SIDEFF
 | [ "Admit" "Obligations" "of" ident(name) ] -> [ admit_obligations (Some name) ]
 | [ "Admit" "Obligations" ] -> [ admit_obligations None ]
-    END
+END
 
-VERNAC COMMAND EXTEND Set_Solver
+VERNAC COMMAND EXTEND Set_Solver CLASSIFIED AS SIDEFF
 | [ "Obligation" "Tactic" ":=" tactic(t) ] -> [
     set_default_tactic
       (Locality.make_section_locality (Locality.LocalityFixme.consume ()))
@@ -111,17 +113,17 @@ END
 
 open Pp
 
-VERNAC COMMAND EXTEND Show_Solver
+VERNAC COMMAND EXTEND Show_Solver CLASSIFIED AS QUERY
 | [ "Show" "Obligation" "Tactic" ] -> [
     msg_info (str"Program obligation tactic is " ++ print_default_tactic ()) ]
 END
 
-VERNAC COMMAND EXTEND Show_Obligations
+VERNAC COMMAND EXTEND Show_Obligations CLASSIFIED AS QUERY
 | [ "Obligations" "of" ident(name) ] -> [ show_obligations (Some name) ]
 | [ "Obligations" ] -> [ show_obligations None ]
 END
 
-VERNAC COMMAND EXTEND Show_Preterm
+VERNAC COMMAND EXTEND Show_Preterm CLASSIFIED AS QUERY
 | [ "Preterm" "of" ident(name) ] -> [ msg_info (show_term (Some name)) ]
 | [ "Preterm" ] -> [ msg_info (show_term None) ]
 END

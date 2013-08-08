@@ -600,7 +600,7 @@ ARGUMENT EXTEND opthints
 | [ ] -> [ None ]
 END
 
-VERNAC COMMAND EXTEND HintCut
+VERNAC COMMAND EXTEND HintCut CLASSIFIED AS SIDEFF
 | [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> [
   let entry = HintsCutEntry p in
     Auto.add_hints (Locality.make_section_locality (Locality.LocalityFixme.consume ()))

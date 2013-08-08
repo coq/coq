@@ -8,13 +8,21 @@
 
 open Stateid
 open Vernacexpr
+open Genarg
 
 val string_of_vernac_classification : vernac_classification -> string
 
 (** What does a vernacular do *)
 val classify_vernac : vernac_expr -> vernac_classification
 
-(** Install an additional vernacular classifier (that has precedence over
-    all classifiers already installed) *)
+(** Install a vernacular classifier for VernacExtend *)
 val declare_vernac_classifier :
-  string -> (vernac_expr -> vernac_classification) -> unit
+  string -> (raw_generic_argument list -> unit -> vernac_classification) -> unit
+
+(** Set by Stm *)
+val set_undo_classifier : (vernac_expr -> vernac_classification) -> unit
+
+(** Standard constant classifiers *)
+val classify_as_query : vernac_classification
+val classify_as_sideeff : vernac_classification
+

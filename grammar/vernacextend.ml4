@@ -28,33 +28,81 @@ let rec make_let e = function
   | _::l -> make_let e l
 
 let check_unicity s l =
-  let l' = List.map (fun (_,l,_) -> extract_signature l) l in
+  let l' = List.map (fun (_,l,_,_) -> extract_signature l) l in
   if not (Util.List.distinct l') then
-    Pp.msg_warning
+    msg_warning
       (strbrk ("Two distinct rules of entry "^s^" have the same "^
       "non-terminals in the same order: put them in distinct vernac entries"))
 
-let make_clause (_,pt,e) =
+let make_clause (_,pt,_,e) =
   (make_patt pt,
    vala (Some (make_when (MLast.loc_of_expr e) pt)),
    make_let e pt)
+
+(* To avoid warnings *)
+let mk_ignore c pt =
+  let names = CList.map_filter (function
+  | GramNonTerminal(_,_,_,Some p) -> Some (Names.Id.to_string p)
+  | _ -> None) pt in
+  let names = List.map (fun n -> <:expr< $lid:n$ >>) names in
+  <:expr< do { ignore($list:names$); $c$ } >>
+
+let make_clause_classifier cg s (_,pt,c,_) =
+  match c ,cg with
+  | Some c, _ ->
+     (make_patt pt,
+      vala (Some (make_when (MLast.loc_of_expr c) pt)),
+      make_let (mk_ignore c pt) pt)
+  | None, Some cg ->
+     (make_patt pt,
+      vala (Some (make_when (MLast.loc_of_expr cg) pt)),
+      <:expr< fun () -> $cg$ $str:s$ >>)
+  | None, None -> msg_warning
+      (strbrk("Vernac entry \""^s^"\" misses a classifier. "^
+         "A classifier is a function that returns an expression "^
+         "of type vernac_classification (see Vernacexpr). You can: ")++
+       str"- "++hov 0 (
+        strbrk("Use '... EXTEND "^s^" CLASSIFIED AS QUERY ...' if the "^
+          "new vernacular command does not alter the system state;"))++fnl()++
+       str"- "++hov 0 (
+        strbrk("Use '... EXTEND "^s^" CLASSIFIED AS SIDEFF ...' if the "^
+          "new vernacular command alters the system state but not the "^
+          "parser nor it starts a proof or ends one;"))++fnl()++
+       str"- "++hov 0 (
+        strbrk("Use '... EXTEND "^s^" CLASSIFIED BY f ...' to specify "^
+          "a global function f.  The function f will be called passing "^
+          "\""^s^"\" as the only argument;")) ++fnl()++
+       str"- "++hov 0 (
+        strbrk"Add a specific classifier in each clause using the syntax:"
+        ++fnl()++strbrk("'[...] => [ f ] -> [...]'. "))++fnl()++
+       strbrk("Specific classifiers have precedence over global "^
+         "classifiers. Only one classifier is called.")++fnl());
+    (make_patt pt,
+      vala (Some (make_when loc pt)),
+      <:expr< fun () -> (Vernacexpr.VtUnknown, Vernacexpr.VtNow) >>)
 
 let make_fun_clauses loc s l =
   check_unicity s l;
   Compat.make_fun loc (List.map make_clause l)
 
+let make_fun_classifiers loc s c l =
+  Compat.make_fun loc (List.map (make_clause_classifier c s) l)
+
 let mlexpr_of_clause =
   mlexpr_of_list
-    (fun (a,b,c) -> mlexpr_of_list make_prod_item
+    (fun (a,b,_,_) -> mlexpr_of_list make_prod_item
        (Option.List.cons (Option.map (fun a -> GramTerminal a) a) b))
 
-let declare_command loc s nt cl =
+let declare_command loc s c nt cl =
   let se = mlexpr_of_string s in
   let gl = mlexpr_of_clause cl in
   let funcl = make_fun_clauses loc s cl in
+  let classl = make_fun_classifiers loc s c cl in
   declare_str_items loc
     [ <:str_item< do {
-	try Vernacinterp.vinterp_add $se$ $funcl$
+	try do { 
+          Vernacinterp.vinterp_add $se$ $funcl$;
+          Vernac_classifier.declare_vernac_classifier $se$ $classl$ }
 	with [ e when Errors.noncritical e ->
 	  Pp.msg_warning
 	    (Pp.app
@@ -69,25 +117,37 @@ open PcamlSig
 EXTEND
   GLOBAL: str_item;
   str_item:
-    [ [ "VERNAC"; "COMMAND"; "EXTEND"; s = UIDENT;
+    [ [ "VERNAC"; "COMMAND"; "EXTEND"; s = UIDENT; c = OPT classification;
         OPT "|"; l = LIST1 rule SEP "|";
         "END" ->
-         declare_command loc s <:expr<None>> l
-      | "VERNAC"; nt = LIDENT ; "EXTEND"; s = UIDENT;
+         declare_command loc s c <:expr<None>> l
+      | "VERNAC"; nt = LIDENT ; "EXTEND"; s = UIDENT; c = OPT classification;
         OPT "|"; l = LIST1 rule SEP "|";
         "END" ->
-          declare_command loc s <:expr<Some $lid:nt$>> l ] ]
+          declare_command loc s c <:expr<Some $lid:nt$>> l ] ]
+  ;
+  classification:
+    [ [ "CLASSIFIED"; "BY"; c = LIDENT -> <:expr< $lid:c$ >>
+      | "CLASSIFIED"; "AS"; "SIDEFF" ->
+          <:expr< fun _ -> Vernac_classifier.classify_as_sideeff >>
+      | "CLASSIFIED"; "AS"; "QUERY" ->
+          <:expr< fun _ -> Vernac_classifier.classify_as_query >>
+    ] ]
   ;
   (* spiwack: comment-by-guessing: it seems that the isolated string (which
       otherwise could have been another argument) is not passed to the
       VernacExtend interpreter function to discriminate between the clauses. *)
   rule:
-    [ [ "["; s = STRING; l = LIST0 args; "]"; "->"; "["; e = Pcaml.expr; "]"
-        ->
-      if String.is_empty s then Errors.user_err_loc (!@loc,"",Pp.str"Command name is empty.");
-      (Some s,l,<:expr< fun () -> $e$ >>)
-      | "[" ; "-" ; l = LIST1 args ; "]" ; "->" ; "[" ; e = Pcaml.expr ; "]" ->
-	  (None,l,<:expr< fun () -> $e$ >>)
+    [ [ "["; s = STRING; l = LIST0 args; "]";
+        c = OPT [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun () -> $c$>> ];
+                  "->"; "["; e = Pcaml.expr; "]" ->
+      if String.is_empty s then
+        Errors.user_err_loc (!@loc,"",Pp.str"Command name is empty.");
+      (Some s,l,c,<:expr< fun () -> $e$ >>)
+      | "[" ; "-" ; l = LIST1 args ; "]" ;
+        c = OPT [ "=>"; "["; c = Pcaml.expr; "]" -> <:expr< fun () -> $c$>> ];
+                  "->"; "["; e = Pcaml.expr; "]" ->
+      (None,l,c,<:expr< fun () -> $e$ >>)
     ] ]
   ;
   args:
