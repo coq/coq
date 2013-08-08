@@ -26,6 +26,8 @@ val ide_slave : bool ref
 
 val time : bool ref
 
+val we_are_parsing : bool ref
+
 type load_proofs = Force | Lazy | Dont
 val load_proofs : load_proofs ref
 

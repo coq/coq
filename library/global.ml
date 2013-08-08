@@ -14,6 +14,14 @@ open Safe_typing
 (* We introduce here the global environment of the system, and we declare it
    as a synchronized table. *)
 
+module GlobalSafeEnv : sig
+
+  val safe_env : unit -> safe_environment
+  val set_safe_env : safe_environment -> unit
+  val join_safe_environment : unit -> unit
+
+end = struct
+
 let global_env = ref empty_environment
 
 let join_safe_environment () =
@@ -26,11 +34,24 @@ let () =
       unfreeze_function = (fun fr -> global_env := fr);
       init_function = (fun () -> global_env := empty_environment) }
 
-let safe_env () = !global_env
+let assert_not_parsing () =
+  if !Flags.we_are_parsing then
+    Errors.anomaly (
+      Pp.strbrk"The global environment cannot be accessed during parsing")
 
-let env () = env_of_safe_env !global_env
+let safe_env () = assert_not_parsing(); !global_env
 
-let env_is_empty () = is_empty !global_env
+let set_safe_env e = global_env := e
+
+end
+
+open GlobalSafeEnv
+let safe_env = safe_env
+let join_safe_environment = join_safe_environment
+
+let env () = env_of_safe_env (safe_env ())
+
+let env_is_empty () = is_empty (safe_env ())
 
 (* Then we export the functions of [Typing] on that environment. *)
 
@@ -39,18 +60,18 @@ let named_context () = named_context (env())
 let named_context_val () = named_context_val (env())
 
 let push_named_assum a =
-  let (cst,env) = push_named_assum a !global_env in
-  global_env := env;
+  let (cst,env) = push_named_assum a (safe_env ()) in
+  set_safe_env env;
   cst
 let push_named_def d =
-  let (cst,env) = push_named_def d !global_env in
-  global_env := env;
+  let (cst,env) = push_named_def d (safe_env ()) in
+  set_safe_env env;
   cst
 
 
 let add_thing add dir id thing =
-  let kn, newenv = add dir (Label.of_id id) thing !global_env in
-    global_env := newenv;
+  let kn, newenv = add dir (Label.of_id id) thing (safe_env ()) in
+    set_safe_env newenv;
     kn
 
 let add_constant = add_thing add_constant
@@ -60,51 +81,51 @@ let add_modtype x y inl = add_thing (fun _ x y -> add_modtype x y inl) () x y
 
 let add_module id me inl =
   let l = Label.of_id id in
-  let mp,resolve,new_env = add_module l me inl !global_env in
-    global_env := new_env;
+  let mp,resolve,new_env = add_module l me inl (safe_env ()) in
+    set_safe_env new_env;
     mp,resolve
     
 
-let add_constraints c = global_env := add_constraints c !global_env
+let add_constraints c = set_safe_env (add_constraints c (safe_env ()))
 
-let set_engagement c = global_env := set_engagement c !global_env
+let set_engagement c = set_safe_env (set_engagement c (safe_env ()))
 
 let add_include me is_module inl =
-  let resolve,newenv = add_include me is_module inl !global_env in
-    global_env := newenv;
+  let resolve,newenv = add_include me is_module inl (safe_env ()) in
+    set_safe_env newenv;
     resolve
 
 let start_module id =
   let l = Label.of_id id in
-  let mp,newenv = start_module l !global_env in
-    global_env := newenv;
+  let mp,newenv = start_module l (safe_env ()) in
+    set_safe_env newenv;
     mp
 
 let end_module fs id mtyo =
   let l = Label.of_id id in
-  let mp,resolve,newenv = end_module l mtyo !global_env in
+  let mp,resolve,newenv = end_module l mtyo (safe_env ()) in
     Summary.unfreeze_summaries fs;
-    global_env := newenv;
+    set_safe_env newenv;
     mp,resolve
 
 
 let add_module_parameter mbid mte inl =
-  let resolve,newenv = add_module_parameter mbid mte inl !global_env in
-    global_env := newenv;
+  let resolve,newenv = add_module_parameter mbid mte inl (safe_env ()) in
+    set_safe_env newenv;
     resolve
 
 
 let start_modtype id =
   let l = Label.of_id id in
-  let mp,newenv = start_modtype l !global_env in
-    global_env := newenv;
+  let mp,newenv = start_modtype l (safe_env ()) in
+    set_safe_env newenv;
     mp
 
 let end_modtype fs id =
   let l = Label.of_id id in
-  let kn,newenv = end_modtype l !global_env in
+  let kn,newenv = end_modtype l (safe_env ()) in
     Summary.unfreeze_summaries fs;
-    global_env := newenv;
+    set_safe_env newenv;
     kn
 
 
@@ -117,29 +138,29 @@ let lookup_module mp = lookup_module mp (env())
 let lookup_modtype kn = lookup_modtype kn (env())
 
 let constant_of_delta_kn kn =
-  let resolver,resolver_param = (delta_of_senv !global_env) in
+  let resolver,resolver_param = (delta_of_senv (safe_env ())) in
   (* TODO : are resolver and resolver_param orthogonal ?
      the effect of resolver is lost if resolver_param isn't
      trivial at that spot. *)
   Mod_subst.constant_of_deltas_kn resolver_param resolver kn
 
 let mind_of_delta_kn kn =
-  let resolver,resolver_param = (delta_of_senv !global_env) in
+  let resolver,resolver_param = (delta_of_senv (safe_env ())) in
   (* TODO idem *)
   Mod_subst.mind_of_deltas_kn resolver_param resolver kn
 
-let exists_objlabel id = exists_objlabel id !global_env
+let exists_objlabel id = exists_objlabel id (safe_env ())
 
 let start_library dir =
-  let mp,newenv = start_library dir !global_env in
-    global_env := newenv;
+  let mp,newenv = start_library dir (safe_env ()) in
+    set_safe_env newenv;
     mp
 
-let export s = export !global_env s
+let export s = export (safe_env ()) s
 
 let import cenv digest =
-  let mp,newenv,values = import cenv digest !global_env in
-    global_env := newenv;
+  let mp,newenv,values = import cenv digest (safe_env ()) in
+    set_safe_env newenv;
     mp, values
 
 
@@ -169,8 +190,8 @@ let type_of_global t = type_of_reference (env ()) t
 (* spiwack: register/unregister functions for retroknowledge *)
 let register field value by_clause =
   let entry = kind_of_term value in
-  let senv = Safe_typing.register !global_env field entry by_clause in
-  global_env := senv
+  let senv = Safe_typing.register (safe_env ()) field entry by_clause in
+  set_safe_env senv
 
 let register_inline c =
-  global_env := Safe_typing.register_inline c !global_env
+  set_safe_env (Safe_typing.register_inline c (safe_env ()))

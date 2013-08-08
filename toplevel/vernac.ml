@@ -166,10 +166,11 @@ let verbose_phrase verbch loc =
 
 exception End_of_input
 
-let parse_sentence (po, verbch) =
+let parse_sentence = Flags.with_option Flags.we_are_parsing
+  (fun (po, verbch) ->
   match Pcoq.Gram.entry_parse Pcoq.main_entry po with
     | Some (loc,_ as com) -> verbose_phrase verbch loc; com
-    | None -> raise End_of_input
+    | None -> raise End_of_input)
 
 (* vernac parses the given stream, executes interpfun on the syntax tree it
  * parses, and is verbose on "primitives" commands if verbosely is true *)
