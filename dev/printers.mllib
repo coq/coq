@@ -35,6 +35,8 @@ Rtree
 Heap
 Dnet
 Genarg
+Stateid
+Future
 
 Names
 Univ
@@ -49,6 +51,7 @@ Cbytecodes
 Copcodes
 Cemitcodes
 Nativevalues
+Future
 Lazyconstr
 Declareops
 Retroknowledge
