@@ -11,6 +11,7 @@ sig
   val table : GText.tag_table
   val comment_sentence : GText.tag
   val error : GText.tag
+  val error_bg : GText.tag
   val to_process : GText.tag
   val processed : GText.tag
   val unjustified : GText.tag

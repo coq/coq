@@ -102,6 +102,7 @@ let set_buffer_handlers buffer script =
     let start = get_start () in
     let stop = buffer#end_iter in
     buffer#remove_tag Tags.Script.error ~start ~stop;
+    buffer#remove_tag Tags.Script.error_bg ~start ~stop;
     buffer#remove_tag Tags.Script.tooltip ~start ~stop
   in
   let end_action_cb () =
@@ -152,7 +153,7 @@ let create file coqtop_args =
   let _ = set_buffer_handlers (buffer :> GText.buffer) script in
   let proof = create_proof () in
   let messages = create_messages () in
-  let command = new Wg_Command.command_window coqtop in
+  let command = new Wg_Command.command_window coqtop ~mark_as_broken:(fun _ -> ()) ~mark_as_processed:(fun _ -> ()) ~cur_state:(fun () -> Obj.magic 0) in
   let finder = new Wg_Find.finder (script :> GText.view) in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
@@ -177,6 +178,7 @@ let kill (sn:session) =
   (* To close the detached views of this script, we call manually
      [destroy] on it, triggering some callbacks in [detach_view].
      In a more modern lablgtk, rather use the page-removed signal ? *)
+  sn.coqops#destroy ();
   sn.script#destroy ();
   Coq.close_coqtop sn.coqtop
 

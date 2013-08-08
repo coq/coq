@@ -7,6 +7,9 @@
 (************************************************************************)
 
 class command_window : Coq.coqtop ->
+    mark_as_broken:(Stateid.state_id list -> unit) ->
+    mark_as_processed:(Stateid.state_id list -> unit) ->
+    cur_state:(unit -> Stateid.state_id) ->
   object
     method new_command : ?command:string -> ?term:string -> unit -> unit
     method frame : GBin.frame

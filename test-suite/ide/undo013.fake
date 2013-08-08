@@ -20,9 +20,6 @@ INTERP apply H.
 REWIND 2
 # We should now be just before "Lemma cc"
 # <replay>
-INTERP Lemma cc : False -> True.
-INTERP intro H.
-INTERP destruct H.
 INTERP Qed.
 INTERP apply H.
 # </replay>

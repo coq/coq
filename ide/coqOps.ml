@@ -8,8 +8,9 @@
 
 open Coq
 open Ideutils
+open Interface
 
-type flag = [ `COMMENT | `UNSAFE ]
+type flag = [ `COMMENT | `UNSAFE | `PROCESSING | `ERROR ]
 
 module SentenceId : sig
 
@@ -17,12 +18,19 @@ module SentenceId : sig
     start : GText.mark;
     stop : GText.mark;
     mutable flags : flag list;
-    id : int;
+    edit_id : int;
+    mutable state_id : Stateid.state_id option;
   }
 
   val mk_sentence :
     start:GText.mark -> stop:GText.mark -> flag list -> sentence
+
+  val assign_state_id : sentence -> Stateid.state_id -> unit
   val set_flags : sentence -> flag list -> unit
+  val add_flag : sentence -> flag -> unit
+  val remove_flag : sentence -> flag -> unit
+  val same_sentence : sentence -> sentence -> bool
+  val hidden_edit_id : unit -> int
 
 end = struct
 
@@ -30,7 +38,8 @@ end = struct
     start : GText.mark;
     stop : GText.mark;
     mutable flags : flag list;
-    id : int;
+    edit_id : int;
+    mutable state_id : Stateid.state_id option;
   }
 
   let id = ref 0
@@ -38,10 +47,19 @@ end = struct
     start = start;
     stop = stop;
     flags = flags;
-    id = !id;
+    edit_id = !id;
+    state_id = None;
   }
+  let hidden_edit_id () = decr id; !id
 
+  let assign_state_id s id =
+    assert(s.state_id = None);
+    assert(id <> Stateid.dummy_state_id);
+    s.state_id <- Some id
   let set_flags s f = s.flags <- f
+  let add_flag s f = s.flags <- CList.add_set f s.flags
+  let remove_flag s f = s.flags <- CList.remove f s.flags
+  let same_sentence s1 s2 = s1.edit_id = s2.edit_id && s1.state_id = s2.state_id
 
 end
 open SentenceId
@@ -62,6 +80,11 @@ object
   method show_goals : unit task
   method backtrack_last_phrase : unit task
   method initialize : unit task
+  method join_document : unit task
+
+  method handle_failure : handle_exn_rty -> unit task
+
+  method destroy : unit -> unit
 end
 
 class coqops
@@ -76,11 +99,20 @@ object(self)
   val proof = _pv
   val messages = _mv
 
-  val cmd_stack = Stack.create ()
+  val cmd_stack = Searchstack.create ()
+
+  val mutable initial_state = Stateid.initial_state_id
+
+  val feedbacks : feedback Queue.t = Queue.create ()
+  val feedback_timer = Ideutils.mktimer ()
 
   initializer
-    Coq.set_feedback_handler _ct self#process_feedback;
-    Wg_Tooltip.set_tooltip_callback (script :> GText.view)
+    Coq.set_feedback_handler _ct self#enqueue_feedback;
+    Wg_Tooltip.set_tooltip_callback (script :> GText.view);
+    feedback_timer.Ideutils.run ~ms:250 ~callback:self#process_feedback
+
+  method destroy () =
+    feedback_timer.Ideutils.kill ()
 
   method private get_start_of_input =
     buffer#get_iter_at_mark (`NAME "start_of_input")
@@ -90,16 +122,12 @@ object(self)
 
   method show_goals =
     Coq.PrintOpt.set_printing_width proof#width;
-    Coq.bind Coq.goals (function
-    | Interface.Fail (l, str) ->
-      messages#set ("Error in coqtop:\n"^str);
-      Coq.return ()
-    | Interface.Good goals ->
-      Coq.bind Coq.evars (function
-        | Interface.Fail (l, str)->
-          messages#set ("Error in coqtop:\n"^str);
-          Coq.return ()
-        | Interface.Good evs ->
+    Coq.bind (Coq.goals ~logger:messages#push ()) (function
+    | Fail x -> self#handle_failure x
+    | Good goals ->
+      Coq.bind (Coq.evars ()) (function
+        | Fail x -> self#handle_failure x
+        | Good evs ->
           proof#set_goals goals;
           proof#set_evars evs;
           proof#refresh ();
@@ -118,8 +146,8 @@ object(self)
     let query =
       Coq.interp ~logger:messages#push ~raw:true ~verbose:false 0 phrase in
     let next = function
-    | Interface.Fail (_, err) -> display_error err; Coq.return ()
-    | Interface.Good msg ->
+    | Fail (_, _, err) -> display_error err; Coq.return () (* XXX*)
+    | Good (_, msg) ->
       messages#add msg; Coq.return ()
     in
     Coq.bind (Coq.seq action query) next
@@ -161,16 +189,25 @@ object(self)
   method private mark_as_needed sentence =
     let start = buffer#get_iter_at_mark sentence.start in
     let stop = buffer#get_iter_at_mark sentence.stop in
-    let tag =
-      if List.mem `UNSAFE sentence.flags then Tags.Script.unjustified
-      else Tags.Script.processed in
-    buffer#apply_tag tag ~start ~stop
+    let to_process = Tags.Script.to_process in
+    let processed = Tags.Script.processed in
+    let unjustified = Tags.Script.unjustified in
+    let error_bg = Tags.Script.error_bg in
+    let all_tags = [ to_process; processed; unjustified ] in
+    let tags =
+      (if List.mem `PROCESSING sentence.flags then to_process else
+       if List.mem `ERROR sentence.flags then error_bg else
+       processed)
+      ::
+      (if [ `UNSAFE ] = sentence.flags then [unjustified] else [])
+    in
+    List.iter (fun t -> buffer#remove_tag t ~start ~stop) all_tags;
+    List.iter (fun t -> buffer#apply_tag t ~start ~stop) tags
 
   method private attach_tooltip sentence loc text =
-    let pre_chars, post_chars = Loc.unloc loc in
-    let start_sentence = buffer#get_iter_at_mark sentence.start in
-    let stop_sentence = buffer#get_iter_at_mark sentence.stop in
-    let phrase = start_sentence#get_slice ~stop:stop_sentence in
+    let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
+    let pre_chars, post_chars =
+      if Loc.is_ghost loc then 0, String.length phrase else Loc.unloc loc in
     let pre = Ideutils.glib_utf8_pos_to_offset phrase ~off:pre_chars in
     let post = Ideutils.glib_utf8_pos_to_offset phrase ~off:post_chars in
     let start = start_sentence#forward_chars pre in
@@ -178,59 +215,105 @@ object(self)
     let markup = lazy text in
     Wg_Tooltip.apply_tooltip_tag buffer ~start ~stop ~markup
 
-  method private process_feedback msg =
-    let id = msg.Interface.edit_id in
-    if id = 0 || Stack.is_empty cmd_stack then () else
-    let sentence =
-      let last_sentence = Stack.top cmd_stack in
-      if last_sentence.id = id then Some last_sentence else None in
-    match msg.Interface.content, sentence with
-    | Interface.AddedAxiom, Some sentence ->
-        set_flags sentence (CList.add_set `UNSAFE sentence.flags);
-        self#mark_as_needed sentence
-    | Interface.Processed, Some sentence -> self#mark_as_needed sentence
-    | Interface.GlobRef(loc, filepath, modpath, ident, ty), Some sentence ->
-        self#attach_tooltip sentence loc
-          (Printf.sprintf "%s %s %s" filepath ident ty)
-    | _ ->
-        if sentence = None then
-          Minilib.log "Coqide/Coq is really asynchronous now!"
-          (* In this case we shoud look for (exec_)id into cmd_stack *)
-        else Minilib.log "Unsupported feedback message"
+  method private is_dummy_id id =
+    match id with
+    | Edit 0 -> true
+    | State id when id = Stateid.dummy_state_id -> true
+    | _ -> false
+
+  method private enqueue_feedback msg =
+    let id = msg.id in
+    if self#is_dummy_id id then () else Queue.add msg feedbacks
+    
+  method private process_feedback () =
+    let rec eat_feedback n =
+      if n = 0 then true else
+      let msg = Queue.pop feedbacks in
+      let id = msg.id in
+      let sentence =
+        let finder () s =
+          match s.state_id, id with
+          | Some id', State id when id = id' -> `Stop s
+          | _, Edit id when id = s.edit_id -> `Stop s
+          | _ -> `Cont () in
+        try Some (Searchstack.find finder () cmd_stack)
+        with Not_found -> None in
+      let log s sentence =
+        Minilib.log ("Feedback " ^ s ^ " on " ^ Stateid.string_of_state_id
+          (Option.default Stateid.dummy_state_id sentence.state_id)) in
+      begin match msg.content, sentence with
+      | AddedAxiom, Some sentence ->
+          log "AddedAxiom" sentence;
+          remove_flag sentence `PROCESSING;
+          remove_flag sentence `ERROR;
+          add_flag sentence `UNSAFE;
+          self#mark_as_needed sentence
+      | Processed, Some sentence ->
+          log "Processed" sentence;
+          remove_flag sentence `PROCESSING;
+          remove_flag sentence `ERROR;
+          self#mark_as_needed sentence
+      | GlobRef(loc, filepath, modpath, ident, ty), Some sentence ->
+          log "GlobRef" sentence;
+          self#attach_tooltip sentence loc
+            (Printf.sprintf "%s %s %s" filepath ident ty)
+      | ErrorMsg(loc, msg), Some sentence ->
+          log "ErrorMsg" sentence;
+          remove_flag sentence `PROCESSING;
+          add_flag sentence `ERROR;
+          self#mark_as_needed sentence;
+          self#attach_tooltip sentence loc msg;
+          if not (Loc.is_ghost loc) then
+            self#position_error_tag_at_sentence sentence (Some (Loc.unloc loc))
+      | _ ->
+          if sentence <> None then Minilib.log "Unsupported feedback message"
+          else if Searchstack.is_empty cmd_stack then ()
+          else
+            match id, (Searchstack.top cmd_stack).state_id with
+            | Edit _, _ -> ()
+            | State id1, Some id2 when Stateid.newer_than id2 id1 -> ()
+            | _ -> Queue.add msg feedbacks (* Put back into the queue *)
+      end;
+        eat_feedback (n-1)
+    in
+      eat_feedback (Queue.length feedbacks)
 
   method private commit_queue_transaction sentence =
     (* A queued command has been successfully done, we push it to [cmd_stack].
        We reget the iters here because Gtk is unable to warranty that they
        were not modified meanwhile. Not really necessary but who knows... *)
     self#mark_as_needed sentence;
-    let start = buffer#get_iter_at_mark sentence.start in
     let stop = buffer#get_iter_at_mark sentence.stop in
     buffer#move_mark ~where:stop (`NAME "start_of_input");
-    buffer#remove_tag Tags.Script.to_process ~start ~stop
 
-  method private process_error queue phrase loc msg =
+  method private position_error_tag_at_iter iter phrase = function
+    | None -> ()
+    | Some (start, stop) ->
+        buffer#apply_tag Tags.Script.error
+          ~start:(iter#forward_chars (byte_offset_to_char_offset phrase start))
+          ~stop:(iter#forward_chars (byte_offset_to_char_offset phrase stop))
+
+  method private position_error_tag_at_sentence sentence loc =
+    let start, _, phrase = self#get_sentence sentence in
+    self#position_error_tag_at_iter start phrase loc
+
+  method private process_interp_error queue sentence loc msg id =
     Coq.bind (Coq.return ()) (function () ->
-    let position_error = function
-      | None -> ()
-      | Some (start, stop) ->
-        let soi = self#get_start_of_input in
-        let start =
-          soi#forward_chars (byte_offset_to_char_offset phrase start) in
-        let stop =
-          soi#forward_chars (byte_offset_to_char_offset phrase stop) in
-        buffer#apply_tag Tags.Script.error ~start ~stop;
-        buffer#place_cursor ~where:start
-    in
-    let sentence = Stack.pop cmd_stack in
-    let start = buffer#get_iter_at_mark sentence.start in
-    let stop = buffer#get_iter_at_mark sentence.stop in
+    let start, stop, phrase = self#get_sentence sentence in
     buffer#remove_tag Tags.Script.to_process ~start ~stop;
     self#discard_command_queue queue;
     pop_info ();
-    position_error loc;
+    self#position_error_tag_at_iter start phrase loc;
+    buffer#place_cursor ~where:start;
     messages#clear;
-    messages#push Interface.Error msg;
+    messages#push Error msg;
     self#show_goals)
+
+  method private get_sentence sentence =
+    let start = buffer#get_iter_at_mark sentence.start in
+    let stop = buffer#get_iter_at_mark sentence.stop in
+    let phrase = start#get_slice ~stop in
+    start, stop, phrase
 
   (** Compute the phrases until [until] returns [true]. *)
   method private process_until until verbose =
@@ -256,29 +339,40 @@ object(self)
         self#show_goals
       else
         let sentence = Queue.pop queue in
-        Stack.push sentence cmd_stack;
+        add_flag sentence `PROCESSING;
+        Searchstack.push sentence cmd_stack;
         if List.mem `COMMENT sentence.flags then
           (self#commit_queue_transaction sentence; loop ())
         else
           (* If the line is not a comment, we interpret it. *)
-          let phrase =
-            let start = buffer#get_iter_at_mark sentence.start in
-            let stop = buffer#get_iter_at_mark sentence.stop in
-            start#get_slice ~stop
-          in
+          let _, _, phrase = self#get_sentence sentence in
           let commit_and_continue msg =
-            push_msg Interface.Notice msg;
+            push_msg Notice msg;
             self#commit_queue_transaction sentence;
             loop ()
           in
-          let query = Coq.interp ~logger:push_msg ~verbose sentence.id phrase in
+          let query =
+            Coq.interp ~logger:push_msg ~verbose sentence.edit_id phrase in
           let next = function
-          | Interface.Good msg -> commit_and_continue msg
-          | Interface.Fail (loc, msg) -> self#process_error queue phrase loc msg
+          | Good (id, msg) ->
+              assign_state_id sentence id;
+              commit_and_continue msg
+          | Fail (id, loc, msg) ->
+              let sentence = Searchstack.pop cmd_stack in
+              self#process_interp_error queue sentence loc msg id
           in
           Coq.bind query next
     in
     loop ())
+  
+  method join_document =
+   let next = function
+     | Good _ ->
+         messages#clear;
+         messages#push Info "Document checked";
+         Coq.return ()
+     | Fail x -> self#handle_failure x in
+   Coq.bind (Coq.status ~logger:messages#push true) next
 
   method process_next_phrase =
     let until len start stop = 1 <= len in
@@ -297,94 +391,76 @@ object(self)
   method process_until_end_or_error =
     self#process_until_iter buffer#end_iter
 
-  (** Clear the command stack until [until] returns [true].
-      Returns the number of commands sent to Coqtop to backtrack. *)
-  method private prepare_clear_zone until zone =
-    let merge_zone phrase zone =
-      match zone with
-        | None -> Some (phrase.start, phrase.stop)
-        | Some (start,stop) ->
-          (* phrase should be just before the current clear zone *)
-          buffer#delete_mark phrase.stop;
-          buffer#delete_mark start;
-          Some (phrase.start, stop)
-    in
-    let rec loop len real_len zone =
-      if Stack.is_empty cmd_stack then real_len, zone
-      else
-        let phrase = Stack.top cmd_stack in
-        let is_comment = List.mem `COMMENT phrase.flags in
-        if until len real_len phrase.start phrase.stop then
-          real_len, zone
-        else
-          (* [until] has not been reached, so we'll clear this command *)
-          let _ = Stack.pop cmd_stack in
-          let zone = merge_zone phrase zone in
-          loop (succ len) (if is_comment then real_len else succ real_len) zone
-    in
-    loop 0 0 zone
-
-  method private commit_clear_zone = function
-    | None -> ()
-    | Some (start_mark, stop_mark) ->
-      let start = buffer#get_iter_at_mark start_mark in
-      let stop = buffer#get_iter_at_mark stop_mark in
-      buffer#remove_tag Tags.Script.processed ~start ~stop;
-      buffer#remove_tag Tags.Script.unjustified ~start ~stop;
-      buffer#remove_tag Tags.Script.tooltip ~start ~stop;
-      buffer#move_mark ~where:start (`NAME "start_of_input");
-      buffer#delete_mark start_mark;
-      buffer#delete_mark stop_mark
-
-  (** Actually performs the undoing *)
-  method private undo_command_stack n clear_zone =
-    let next = function
-    | Interface.Good n ->
-      let until _ len _ _ = n <= len in
-      (* Coqtop requested [n] more ACTUAL backtrack *)
-      let _, zone = self#prepare_clear_zone until clear_zone in
-      self#commit_clear_zone zone;
-      Coq.return ()
-    | Interface.Fail (l, str) ->
-      messages#set
-        ("Error while backtracking: " ^ str ^
-          "\nCoqIDE and coqtop may be out of sync," ^
-          "you may want to use Restart.");
-      Coq.return ()
-    in
-    Coq.bind (Coq.rewind n) next
+  method private segment_to_be_cleared until =
+    let finder (n, found, zone) ({ start; stop; state_id } as sentence) =
+      let found = found || until n state_id start stop in
+      match found, state_id with
+      | true, Some id -> `Stop (n, id, Some sentence, zone)
+      | _ -> `Cont (n + 1, found, sentence :: zone) in
+    try Searchstack.find finder (0, false, []) cmd_stack
+    with Not_found ->
+      Searchstack.length cmd_stack, initial_state,
+      None, List.rev (Searchstack.to_list cmd_stack)
 
   (** Wrapper around the raw undo command *)
   method private backtrack_until until =
-    let action () = 
-      push_info "Coq is undoing";
-      messages#clear
+    let opening () =
+      push_info "Coq is undoing" in
+    let conclusion () =
+      pop_info ();
+      buffer#place_cursor ~where:self#get_start_of_input;
+      self#show_goals in
+    let cleanup n l =
+      for i = 1 to n do ignore(Searchstack.pop cmd_stack) done;
+      if l <> [] then begin
+        let start = buffer#get_iter_at_mark (CList.hd l).start in
+        let stop = buffer#get_iter_at_mark (CList.last l).stop in
+        buffer#remove_tag Tags.Script.processed ~start ~stop;
+        buffer#remove_tag Tags.Script.unjustified ~start ~stop;
+(*         buffer#remove_tag Tags.Script.tooltip ~start ~stop; *)
+        buffer#remove_tag Tags.Script.to_process ~start ~stop;
+        buffer#move_mark ~where:start (`NAME "start_of_input")
+      end;
+      List.iter (fun { start } -> buffer#delete_mark start) l;
+      List.iter (fun { stop } -> buffer#delete_mark stop) l in
+    Coq.bind (Coq.lift opening) (fun () ->
+    let rec undo until =
+      let n, to_id, sentence, seg = self#segment_to_be_cleared until in
+      Coq.bind (Coq.backto to_id) (function
+      | Good () -> cleanup n seg; conclusion ()
+      | Fail (safe_id, loc, msg) ->
+          if loc <> None then messages#push Error "Fixme LOC";
+          messages#push Error msg;
+          undo (fun _ id _ _ -> id = Some safe_id))
     in
-    Coq.bind (Coq.lift action) (fun () ->
-    (* Instead of locking the whole buffer, we now simply remove
-       read-only tags *after* the actual backtrack *)
-      let to_undo, zone = self#prepare_clear_zone until None in
-      let next () = pop_info (); Coq.return () in
-      Coq.bind (self#undo_command_stack to_undo zone) next
-    )
+      undo until)
 
   method private backtrack_to_iter iter =
-    let until _ _ _ stop =
-      iter#compare (buffer#get_iter_at_mark stop) >= 0
-    in
-    Coq.seq (self#backtrack_until until)
-      (* We may have backtracked too much: let's replay *)
-      (self#process_until_iter iter)
+    let until _ _ _ stop = iter#compare (buffer#get_iter_at_mark stop) >= 0 in
+    self#backtrack_until until
+
+  method handle_failure (safe_id, (loc : (int * int) option), msg) =
+    if loc <> None then messages#push Error "Fixme LOC";
+    messages#clear;
+    messages#push Error msg;
+    ignore(self#process_feedback ());
+    let safe_flags s = s.flags = [ `UNSAFE ] || s.flags = [] in
+    let find_last_safe_id () s =
+      match s.state_id with
+      | Some id when safe_flags s -> `Stop id | _ -> `Cont () in
+    try
+      let last_safe_id = Searchstack.find find_last_safe_id () cmd_stack in
+      self#backtrack_until (fun _ id _ _ -> id = Some last_safe_id)
+    with Not_found -> self#backtrack_until (fun _ id _ _ -> id = Some safe_id)
 
   method backtrack_last_phrase =
-    let until len _ _ _ = 1 <= len in
-    Coq.bind (self#backtrack_until until)
-      (fun () ->
-        buffer#place_cursor ~where:self#get_start_of_input;
-        self#show_goals)
+    let until n _ _ _ = n >= 1 in
+    messages#clear;
+    self#backtrack_until until
 
   method go_to_insert =
     Coq.bind (Coq.return ()) (fun () ->
+    messages#clear;
     let point = self#get_insert in
     if point#compare self#get_start_of_input >= 0
     then self#process_until_iter point
@@ -406,7 +482,7 @@ object(self)
           ~start:(`MARK (buffer#create_mark start))
           ~stop:(`MARK (buffer#create_mark stop))
           [] in
-      Stack.push sentence cmd_stack;
+      Searchstack.push sentence cmd_stack;
       messages#clear;
       self#show_goals
     in
@@ -419,12 +495,12 @@ object(self)
       let action = log "Sending to coq now" in
       let query = Coq.interp ~verbose:false 0 phrase in
       let next = function
-      | Interface.Fail (l, str) ->
+      | Fail (_, l, str) -> (* FIXME: check *)
         display_error (l, str);
         messages#add ("Unsuccessfully tried: "^phrase);
         more
-      | Interface.Good msg ->
-        messages#add msg;
+      | Good (_, id) ->
+(*         messages#add msg; *)
         stop Tags.Script.processed
       in
       Coq.bind (Coq.seq action query) next
@@ -440,8 +516,8 @@ object(self)
     let action () =
       if why = Coq.Unexpected then warning "Coqtop died badly. Resetting.";
       (* clear the stack *)
-      while not (Stack.is_empty cmd_stack) do
-        let phrase = Stack.pop cmd_stack in
+      while not (Searchstack.is_empty cmd_stack) do
+        let phrase = Searchstack.pop cmd_stack in
         buffer#delete_mark phrase.start;
         buffer#delete_mark phrase.stop
       done;
@@ -457,38 +533,36 @@ object(self)
     in
     Coq.seq (Coq.lift action) self#initialize
 
-  method private include_file_dir_in_path =
-    let query f =
+  method initialize =
+    let get_initial_state =
+      let next = function
+      | Fail _ -> messages#set ("Couln't initialize Coq"); Coq.return ()
+      | Good id -> initial_state <- id; Coq.return () in
+      Coq.bind (Coq.init ()) next in
+    let add_load_path = match get_filename () with
+    | None -> Coq.return ()
+    | Some f ->
       let dir = Filename.dirname f in
       let loadpath = Coq.inloadpath dir in
       let next = function
-      | Interface.Fail (_, s) ->
+      | Fail (_, _, s) ->
         messages#set
           ("Could not determine lodpath, this might lead to problems:\n"^s);
         Coq.return ()
-      | Interface.Good true -> Coq.return ()
-      | Interface.Good false ->
+      | Good true -> Coq.return ()
+      | Good false ->
         let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
-        let cmd = Coq.interp 0 cmd in
+        let cmd = Coq.interp (hidden_edit_id ()) cmd in
         let next = function
-        | Interface.Fail (l, str) ->
+        | Fail (_, l, str) ->
           messages#set ("Couln't add loadpath:\n"^str);
           Coq.return ()
-        | Interface.Good _ ->
-          Coq.return ()
+        | Good (id, _) -> initial_state <- id; Coq.return ()
         in
         Coq.bind cmd next
       in
       Coq.bind loadpath next
     in
-    let next () = match get_filename () with
-    | None -> Coq.return ()
-    | Some f -> query f
-    in
-    Coq.bind (Coq.return ()) next
-
-  method initialize =
-    let next () = Coq.PrintOpt.enforce in
-    Coq.bind self#include_file_dir_in_path next
+    Coq.seq get_initial_state (Coq.seq add_load_path Coq.PrintOpt.enforce)
 
 end

@@ -16,7 +16,7 @@ type 'a call
 type unknown
 
 val interp      : interp_sty      -> interp_rty call
-val rewind      : rewind_sty      -> rewind_rty call
+val backto      : backto_sty      -> backto_rty call
 val goals       : goals_sty       -> goals_rty call
 val hints       : hints_sty       -> hints_rty call
 val status      : status_sty      -> status_rty call
@@ -27,6 +27,7 @@ val search      : search_sty      -> search_rty call
 val get_options : get_options_sty -> get_options_rty call
 val set_options : set_options_sty -> set_options_rty call
 val quit        : quit_sty        -> quit_rty call
+val init        : init_sty        -> init_rty call
 
 val abstract_eval_call : handler -> 'a call -> 'a value
 

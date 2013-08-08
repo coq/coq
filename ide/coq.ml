@@ -347,34 +347,29 @@ let open_process_pid prog args =
 exception TubeError
 exception AnswerWithoutRequest
 
-(* Check that a string is only composed by blank characters
-   from a position onwards *)
-let is_blank s pos =
-  try
-    for i = pos to String.length s - 1 do
-      if not (List.mem s.[i] [' ';'\n';'\t';'\r']) then raise Not_found
-    done;
-    true
-  with Not_found -> false
-
 let rec check_errors = function
 | [] -> ()
 | (`IN | `PRI) :: conds -> check_errors conds
 | e :: _ -> raise TubeError
 
-let handle_intermediate_message logger xml =
+let handle_intermediate_message handle xml =
   let message = Serialize.to_message xml in
   let level = message.Interface.message_level in
   let content = message.Interface.message_content in
+  let logger = match handle.waiting_for with
+    | None -> raise AnswerWithoutRequest
+    | Some (_, l) -> l in
   logger level content
 
 let handle_feedback feedback_processor xml =
-  let () = Minilib.log "Handling some feedback" in
   let feedback = Serialize.to_feedback xml in
   feedback_processor feedback
 
-let handle_final_answer handle ccb xml =
+let handle_final_answer handle xml =
   let () = Minilib.log "Handling coqtop answer" in
+  let ccb = match handle.waiting_for with
+    | None -> raise AnswerWithoutRequest
+    | Some (c, _) -> c in
   let () = handle.waiting_for <- None in
   with_ccb ccb { bind_ccb = fun (c, f) -> f (Serialize.to_answer xml c) }
 
@@ -390,33 +385,22 @@ let unsafe_handle_input handle feedback_processor state conds =
   let () = if String.length s = 0 then raise TubeError in
   let s = state.fragment ^ s in
   let () = state.fragment <- s in
-  let ccb, logger = match handle.waiting_for with
-  | None -> raise AnswerWithoutRequest
-  | Some (c, l) -> c, l
-  in
   let lex = Lexing.from_string s in
   let p = Xml_parser.make (Xml_parser.SLexbuf lex) in
   let rec loop () =
     let xml = Xml_parser.parse p in
     let l_end = Lexing.lexeme_end lex in
-    if Serialize.is_message xml then
-      let remaining = String.sub s l_end (String.length s - l_end) in
-      let () = state.fragment <- remaining in
-      let () = state.lexerror <- None in
-      let () = handle_intermediate_message logger xml in
+    state.fragment <- String.sub s l_end (String.length s - l_end);
+    state.lexerror <- None;
+    if Serialize.is_message xml then begin
+      handle_intermediate_message handle xml;
       loop ()
-    else if Serialize.is_feedback xml then
-      let remaining = String.sub s l_end (String.length s - l_end) in
-      let () = state.fragment <- remaining in
-      let () = state.lexerror <- None in
-      let () = handle_feedback feedback_processor xml in
+    end else if Serialize.is_feedback xml then begin
+      handle_feedback feedback_processor xml;
       loop ()
-    else
-      (* We should have finished decoding s *)
-      let () = if not (is_blank s l_end) then raise AnswerWithoutRequest in
-      let () = state.fragment <- "" in
-      let () = state.lexerror <- None in
-      ignore (handle_final_answer handle ccb xml)
+    end else begin
+      ignore (handle_final_answer handle xml)
+    end
   in
   try loop ()
   with Xml_parser.Error _ as e ->
@@ -576,12 +560,13 @@ let eval_call ?(logger=default_logger) call handle k =
 
 let interp ?(logger=default_logger) ?(raw=false) ?(verbose=true) i s =
   eval_call ~logger (Serialize.interp (i,raw,verbose,s))
-let rewind i = eval_call (Serialize.rewind i)
+let backto i = eval_call (Serialize.backto i)
 let inloadpath s = eval_call (Serialize.inloadpath s)
 let mkcases s = eval_call (Serialize.mkcases s)
-let status = eval_call (Serialize.status ())
-let hints = eval_call (Serialize.hints ())
+let status ?logger force = eval_call ?logger (Serialize.status force)
+let hints x = eval_call (Serialize.hints x)
 let search flags = eval_call (Serialize.search flags)
+let init x = eval_call (Serialize.init x)
 
 module PrintOpt =
 struct
@@ -645,8 +630,8 @@ struct
 
 end
 
-let goals h k =
-  PrintOpt.enforce h (fun () -> eval_call (Serialize.goals ()) h k)
+let goals ?logger x h k =
+  PrintOpt.enforce h (fun () -> eval_call ?logger (Serialize.goals x) h k)
 
-let evars h k =
-  PrintOpt.enforce h (fun () -> eval_call (Serialize.evars ()) h k)
+let evars x h k =
+  PrintOpt.enforce h (fun () -> eval_call (Serialize.evars x) h k)

@@ -122,19 +122,21 @@ val try_grab : coqtop -> unit task -> (unit -> unit) -> unit
 type 'a query = 'a Interface.value task
 (** A type abbreviation for coqtop specific answers *)
 
-val interp :
-  ?logger:Ideutils.logger ->
+val interp : ?logger:Ideutils.logger ->
   ?raw:bool ->
   ?verbose:bool ->
-    int -> string -> string query
-val rewind : int -> int query
-val status : Interface.status query
-val goals : Interface.goals option query
-val evars : Interface.evar list option query
-val hints : (Interface.hint list * Interface.hint) option query
-val inloadpath : string -> bool query
-val mkcases : string -> string list list query
-val search : Interface.search_flags -> string Interface.coq_object list query
+    Interface.edit_id -> string           -> Interface.interp_rty query
+val backto     : Interface.backto_sty     -> Interface.backto_rty query
+val status     : ?logger:Ideutils.logger ->
+                 Interface.status_sty -> Interface.status_rty query
+val goals      : ?logger:Ideutils.logger ->
+                 Interface.goals_sty      -> Interface.goals_rty query
+val evars      : Interface.evars_sty      -> Interface.evars_rty query
+val hints      : Interface.hints_sty      -> Interface.hints_rty query
+val inloadpath : Interface.inloadpath_sty -> Interface.inloadpath_rty query
+val mkcases    : Interface.mkcases_sty    -> Interface.mkcases_rty query
+val search     : Interface.search_sty     -> Interface.search_rty query
+val init       : Interface.init_sty       -> Interface.init_rty query
 
 (** A specialized version of [raw_interp] dedicated to set/unset options. *)
 

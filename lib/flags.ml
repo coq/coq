@@ -45,6 +45,8 @@ let boot = ref false
 
 let batch_mode = ref false
 
+let ide_slave_mode = ref false
+
 let debug = ref false
 
 let print_emacs = ref false

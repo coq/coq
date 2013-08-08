@@ -18,8 +18,6 @@ INTERP destruct H.
 REWIND 6
 # We should be just before "Lemma bb"
 # <replay>
-INTERP Lemma bb : False -> False.
-INTERP intro H.
 INTERP apply H.
 INTERP Qed.
 INTERP apply H.

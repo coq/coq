@@ -375,12 +375,15 @@ let set_logger l = logger := l
 (** Feedback *)
 
 let feeder = ref ignore
-let feedback_id = ref 0
+let feedback_id = ref (Interface.Edit 0)
 let set_id_for_feedback i = feedback_id := i
-let feedback what =
+let feedback ?state_id what =
   !feeder {
-     Interface.edit_id = !feedback_id;
-     Interface.content = what
+     Interface.content = what;
+     Interface.id =
+       match state_id with
+       | Some id -> Interface.State id
+       | None -> !feedback_id;
   }
 let set_feeder f = feeder := f
 

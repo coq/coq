@@ -402,6 +402,9 @@ end = struct (* {{{ *)
   let freeze id = VCS.set_state id (freeze_global_state ())
 
   let exn_on id ?valid e =
+    let loc = Option.default Loc.ghost (Loc.get_loc e) in
+    let msg = string_of_ppcmds (print e) in
+    Pp.feedback ~state_id:id (Interface.ErrorMsg (loc, msg));
     Stateid.add_state_id e ?valid id
 
   let define ?(cache=false) f id =

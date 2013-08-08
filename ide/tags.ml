@@ -21,6 +21,7 @@ struct
   let table = GText.tag_table ()
   let comment_sentence = make_tag table ~name:"comment_sentence" []
   let error = make_tag table ~name:"error" [`UNDERLINE `DOUBLE ; `FOREGROUND "red"]
+  let error_bg = make_tag table ~name:"error_bg" [`BACKGROUND "#FFCCCC"]
   let to_process = make_tag table ~name:"to_process" [`BACKGROUND !processing_color ;`EDITABLE false]
   let processed = make_tag table ~name:"processed" [`BACKGROUND !processed_color;`EDITABLE false]
   let unjustified = make_tag table ~name:"unjustified" [`BACKGROUND "gold";`EDITABLE false]
@@ -28,7 +29,7 @@ struct
   let sentence = make_tag table ~name:"sentence" []
   let tooltip = make_tag table ~name:"tooltip" [] (* debug:`BACKGROUND "blue" *)
   let all =
-    [comment_sentence; error; to_process; processed; unjustified;
+     [comment_sentence; error; error_bg; to_process; processed; unjustified;
      found; sentence; tooltip]
 end
 module Proof =

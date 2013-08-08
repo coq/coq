@@ -10,7 +10,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20120710"
+let protocol_version = "20130516"
 
 (** * Interface of calls to Coq by CoqIde *)
 
@@ -21,7 +21,7 @@ open Xml_datatype
 
 type 'a call =
   | Interp     of interp_sty
-  | Rewind     of rewind_sty
+  | Backto     of backto_sty
   | Goal       of goals_sty
   | Evars      of evars_sty
   | Hints      of hints_sty
@@ -33,13 +33,14 @@ type 'a call =
   | MkCases    of mkcases_sty
   | Quit       of quit_sty
   | About      of about_sty
+  | Init       of init_sty
 
 type unknown
 
 (** The actual calls *)
 
 let interp x      : interp_rty call      = Interp x
-let rewind x      : rewind_rty call      = Rewind x
+let backto x      : backto_rty call      = Backto x
 let goals x       : goals_rty call       = Goal x
 let evars x       : evars_rty call       = Evars x
 let hints x       : hints_rty call       = Hints x
@@ -50,6 +51,7 @@ let inloadpath x  : inloadpath_rty call  = InLoadPath x
 let mkcases x     : mkcases_rty call     = MkCases x
 let search x      : search_rty call      = Search x
 let quit x        : quit_rty call        = Quit x
+let init x        : init_rty call        = Init x
 
 (** * Coq answers to CoqIde *)
 
@@ -58,7 +60,7 @@ let abstract_eval_call handler (c : 'a call) =
   try
     match c with
       | Interp x     -> mkGood (handler.interp x)
-      | Rewind x     -> mkGood (handler.rewind x)
+      | Backto x     -> mkGood (handler.backto x)
       | Goal x       -> mkGood (handler.goals x)
       | Evars x      -> mkGood (handler.evars x)
       | Hints x      -> mkGood (handler.hints x)
@@ -70,6 +72,7 @@ let abstract_eval_call handler (c : 'a call) =
       | MkCases x    -> mkGood (handler.mkcases x)
       | Quit x       -> mkGood (handler.quit x)
       | About x      -> mkGood (handler.about x)
+      | Init x       -> mkGood (handler.init x)
   with any ->
     Fail (handler.handle_exn any)
 
@@ -83,36 +86,47 @@ module ReifType : sig
   val string_t       : string val_t
   val int_t          : int val_t
   val bool_t         : bool val_t
-  val goals_t        : goals val_t
-  val evar_t         : evar val_t
-  val state_t        : status val_t
-  val coq_info_t     : coq_info val_t
-  val option_state_t : option_state val_t
+  
   val option_t       : 'a val_t -> 'a option val_t
   val list_t         : 'a val_t -> 'a list val_t
-  val coq_object_t   : 'a val_t -> 'a coq_object val_t
   val pair_t         : 'a val_t -> 'b val_t -> ('a * 'b) val_t
   val union_t        : 'a val_t -> 'b val_t -> ('a ,'b) Util.union val_t
 
+  val goals_t        : goals val_t
+  val evar_t         : evar val_t
+  val state_t        : status val_t
+  val option_state_t : option_state val_t
+  val coq_info_t     : coq_info val_t
+  val coq_object_t   : 'a val_t -> 'a coq_object val_t
+  val state_id_t     : state_id val_t
+
   type value_type = private
-    | Unit | String | Int | Bool | Goals | Evar | State | Option_state | Coq_info
+    | Unit | String | Int | Bool
+
     | Option of value_type
     | List of value_type
-    | Coq_object of value_type
     | Pair of value_type * value_type
     | Union of value_type * value_type
+    
+    | Goals | Evar | State | Option_state | Coq_info
+    | Coq_object of value_type
+    | State_id
 
   val check : 'a val_t -> value_type
 
 end = struct
 
   type value_type =
-    | Unit | String | Int | Bool | Goals | Evar | State | Option_state | Coq_info
+    | Unit | String | Int | Bool
+
     | Option of value_type
     | List of value_type
-    | Coq_object of value_type
     | Pair of value_type * value_type
     | Union of value_type * value_type
+    
+    | Goals | Evar | State | Option_state | Coq_info
+    | Coq_object of value_type
+    | State_id
 
   type 'a val_t = value_type
   let check x = x
@@ -121,16 +135,19 @@ end = struct
   let string_t       = String
   let int_t          = Int
   let bool_t         = Bool
+
+  let option_t x     = Option x
+  let list_t x       = List x
+  let pair_t x y     = Pair (x, y)
+  let union_t x y    = Union (x, y)
+
   let goals_t        = Goals
   let evar_t         = Evar
   let state_t        = State
-  let coq_info_t     = Coq_info
   let option_state_t = Option_state
-  let option_t x     = Option x
-  let list_t x       = List x
+  let coq_info_t     = Coq_info
   let coq_object_t x = Coq_object x
-  let pair_t x y     = Pair (x, y)
-  let union_t x y    = Union (x, y)
+  let state_id_t     = State_id
 
 end
 
@@ -143,9 +160,10 @@ let expected_answer_type call : value_type =
   let hints = pair_t (list_t hint) hint in
   let options = pair_t (list_t string_t) option_state_t in
   let objs = coq_object_t string_t in
+  let interp_t = pair_t state_id_t string_t in
   match call with
-  | Interp _     -> check (string_t                     : interp_rty      val_t)
-  | Rewind _     -> check (int_t                        : rewind_rty      val_t)
+  | Interp _     -> check (interp_t                     : interp_rty      val_t)
+  | Backto _     -> check (unit_t                       : backto_rty      val_t)
   | Goal _       -> check (option_t goals_t             : goals_rty       val_t)
   | Evars _      -> check (option_t (list_t evar_t)     : evars_rty       val_t)
   | Hints  _     -> check (option_t hints               : hints_rty       val_t)
@@ -157,6 +175,7 @@ let expected_answer_type call : value_type =
   | MkCases _    -> check (list_t (list_t string_t)     : mkcases_rty     val_t)
   | Quit _       -> check (unit_t                       : quit_rty        val_t)
   | About _      -> check (coq_info_t                   : about_rty       val_t)
+  | Init _       -> check (state_id_t                   : init_rty        val_t)
 
 (** * XML data marshalling *)
 
@@ -327,15 +346,38 @@ let to_coq_object f = function
   }
 | _ -> raise Marshal_error
 
+let of_edit_id i = Element ("edit_id",["val",string_of_int i],[])
+let to_edit_id = function
+  | Element ("edit_id",["val",i],[]) ->
+      let id = int_of_string i in
+      assert (id <= 0 );
+      id
+  | _ -> raise Marshal_error
+
+let of_state_id id =
+  try Stateid.of_state_id id with Invalid_argument _ -> raise Marshal_error
+let to_state_id xml =
+  try Stateid.to_state_id xml with Invalid_argument _ -> raise Marshal_error
+
+let of_edit_or_state_id = function
+  | Interface.Edit id -> ["object","edit"], of_edit_id id
+  | Interface.State id -> ["object","state"], of_state_id id
+let to_edit_or_state_id attrs xml =
+  try
+    let obj = List.assoc "object" attrs in
+    if obj = "edit"then Interface.Edit (to_edit_id xml)
+    else if obj = "state" then Interface.State (to_state_id xml)
+    else raise Marshal_error
+  with Not_found -> raise Marshal_error
+
 let of_value f = function
 | Good x -> Element ("value", ["val", "good"], [f x])
-| Fail (loc, msg) ->
+| Fail (id,loc, msg) ->
   let loc = match loc with
   | None -> []
-  | Some (s, e) -> [("loc_s", string_of_int s); ("loc_e", string_of_int e)]
-  in
-  Element ("value", ["val", "fail"] @ loc, [PCData msg])
-
+  | Some (s, e) -> [("loc_s", string_of_int s); ("loc_e", string_of_int e)] in
+  let id = of_state_id id in
+  Element ("value", ["val", "fail"] @ loc, [id;PCData msg])
 let to_value f = function
 | Element ("value", attrs, l) ->
   let ans = massoc "val" attrs in
@@ -348,8 +390,9 @@ let to_value f = function
         Some (loc_s, loc_e)
       with Not_found | Failure _ -> None
     in
-    let msg = raw_string l in
-    Fail (loc, msg)
+    let id = to_state_id (List.hd l) in
+    let msg = raw_string (List.tl l) in
+    Fail (id, loc, msg)
   else raise Marshal_error
 | _ -> raise Marshal_error
 
@@ -358,16 +401,16 @@ let of_call = function
   let flags = (bool_arg "raw" raw) @ (bool_arg "verbose" vrb) in
   Element ("call", ("val", "interp") :: ("id", string_of_int id) :: flags,
   [PCData cmd])
-| Rewind n ->
-  Element ("call", ("val", "rewind") :: ["steps", string_of_int n], [])
+| Backto id ->
+  Element ("call", ["val", "backto"], [of_state_id id])
 | Goal () ->
   Element ("call", ["val", "goal"], [])
 | Evars () ->
   Element ("call", ["val", "evars"], [])
 | Hints () ->
   Element ("call", ["val", "hints"], [])
-| Status () ->
-  Element ("call", ["val", "status"], [])
+| Status b ->
+  Element ("call", ["val", "status";"force",string_of_bool b], [])
 | Search flags ->
   let args = List.map (of_pair of_search_constraint of_bool) flags in
   Element ("call", ["val", "search"], args)
@@ -384,6 +427,8 @@ let of_call = function
   Element ("call", ["val", "quit"], [])
 | About () ->
   Element ("call", ["val", "about"], [])
+| Init () ->
+  Element ("call", ["val", "init"], [])
 
 let to_call = function
 | Element ("call", attrs, l) ->
@@ -394,12 +439,15 @@ let to_call = function
     let raw = List.mem_assoc "raw" attrs in
     let vrb = List.mem_assoc "verbose" attrs in
     Interp (int_of_string id, raw, vrb, raw_string l)
-  | "rewind" ->
-    let steps = int_of_string (massoc "steps" attrs) in
-    Rewind steps
+  | "backto" ->
+      (match l with
+      | [id] -> Backto(to_state_id id)
+      | _ -> raise Marshal_error)
   | "goal" -> Goal ()
   | "evars" -> Evars ()
-  | "status" -> Status ()
+  | "status" ->
+      let force = List.assoc "force" attrs in
+      Status (bool_of_string force)
   | "search" ->
     let args = List.map (to_pair to_search_constraint to_bool) l in
     Search args
@@ -412,6 +460,7 @@ let to_call = function
   | "hints" -> Hints ()
   | "quit" -> Quit ()
   | "about" -> About ()
+  | "init" -> Init ()
   | _ -> raise Marshal_error
   end
 | _ -> raise Marshal_error
@@ -424,18 +473,16 @@ let of_status s =
       of_sl s.status_path;
       of_so s.status_proofname;
       of_sl s.status_allproofs;
-      of_int s.status_statenum;
       of_int s.status_proofnum;
     ]
   )
 
 let to_status = function
-| Element ("status", [], [path; name; prfs; snum; pnum]) ->
+| Element ("status", [], [path; name; prfs; pnum]) ->
   {
     status_path = to_list to_string path;
     status_proofname = to_option to_string name;
     status_allproofs = to_list to_string prfs;
-    status_statenum = to_int snum;
     status_proofnum = to_int pnum;
   }
 | _ -> raise Marshal_error
@@ -545,6 +592,10 @@ let to_feedback_content xml = do_match xml "feedback_content"
             GlobRef(to_loc loc, to_string filepath, to_string modpath,
                     to_string ident, to_string ty)
        | _ -> raise Marshal_error)
+  | "errormsg" ->
+       (match args with
+       | [loc;  s] -> ErrorMsg (to_loc loc, to_string s)
+       | _ -> raise Marshal_error)
   | _ -> raise Marshal_error)
 
 let of_feedback_content = function
@@ -558,14 +609,19 @@ let of_feedback_content = function
       of_string ident;
       of_string ty
     ]
+| ErrorMsg(loc, s) ->
+    constructor "feedback_content" "errormsg" [of_loc loc; of_string s]
 
 let of_feedback msg =
   let content = of_feedback_content msg.content in
-  Element ("feedback", ["id",string_of_int msg.edit_id], [content])
+  let obj, id = of_edit_or_state_id msg.id in
+  Element ("feedback", obj, [id;content])
 
 let to_feedback xml = match xml with
-| Element ("feedback", ["id",id], [content]) ->
-  { edit_id = int_of_string id;
+| Element ("feedback", ["object","edit"], [id;content]) ->
+  { id = Interface.Edit(to_edit_id id); content = to_feedback_content content }
+| Element ("feedback", ["object","state"], [id;content]) ->
+  { id = Interface.State(to_state_id id);
     content = to_feedback_content content }
 | _ -> raise Marshal_error
 
@@ -596,6 +652,7 @@ let of_answer (q : 'a call) (r : 'a value) : xml =
     | Coq_object t  -> Obj.magic (of_coq_object (convert t))
     | Pair (t1,t2)  -> Obj.magic (of_pair (convert t1) (convert t2))
     | Union (t1,t2) -> Obj.magic (of_union (convert t1) (convert t2))
+    | State_id      -> Obj.magic of_state_id
   in
   of_value (convert (expected_answer_type q)) r
 
@@ -615,6 +672,7 @@ let to_answer xml (c : 'a call) : 'a value =
     | Coq_object t  -> Obj.magic (to_coq_object (convert t))
     | Pair (t1,t2)  -> Obj.magic (to_pair (convert t1) (convert t2))
     | Union (t1,t2) -> Obj.magic (to_union (convert t1) (convert t2))
+    | State_id      -> Obj.magic to_state_id
   in
   to_value (convert (expected_answer_type c)) xml
 
@@ -669,11 +727,11 @@ let pr_call = function
     let raw = if r then "RAW" else "" in
     let verb = if b then "" else "SILENT" in
     "INTERP"^raw^verb^" "^string_of_int id^" ["^s^"]"
-  | Rewind i -> "REWIND "^(string_of_int i)
+  | Backto i -> "BACKTO "^(Stateid.string_of_state_id i)
   | Goal _ -> "GOALS"
   | Evars _ -> "EVARS"
   | Hints _ -> "HINTS"
-  | Status _ -> "STATUS"
+  | Status b -> "STATUS " ^ string_of_bool b
   | Search _ -> "SEARCH"
   | GetOptions _ -> "GETOPTIONS"
   | SetOptions l -> "SETOPTIONS" ^ " [" ^
@@ -683,9 +741,13 @@ let pr_call = function
   | MkCases s -> "MKCASES "^s
   | Quit _ -> "QUIT"
   | About _ -> "ABOUT"
+  | Init _ -> "INIT"
 let pr_value_gen pr = function
   | Good v -> "GOOD " ^ pr v
-  | Fail (_,str) -> "FAIL ["^str^"]"
+  | Fail (id,None,str) -> "FAIL "^Stateid.string_of_state_id id^" ["^str^"]"
+  | Fail (id,Some(i,j),str) ->
+      "FAIL "^Stateid.string_of_state_id id^
+        " ("^string_of_int i^","^string_of_int j^")["^str^"]"
 let pr_value v = pr_value_gen (fun _ -> "FIXME") v
 let pr_full_value call value =
   let rec pr = function
@@ -703,5 +765,6 @@ let pr_full_value call value =
   | Coq_object t  -> Obj.magic pr_coq_object
   | Pair (t1,t2)  -> Obj.magic (pr_pair (pr t1) (pr t2))
   | Union (t1,t2) -> Obj.magic (pr_union (pr t1) (pr t2))
+  | State_id      -> Obj.magic pr_int
   in
   pr_value_gen (pr (expected_answer_type call)) value

@@ -8,7 +8,9 @@
 
 open Preferences
 
-class command_window coqtop =
+class command_window coqtop
+  ~mark_as_broken ~mark_as_processed ~cur_state
+=
 (*  let window = GWindow.window
 		 ~allow_grow:true ~allow_shrink:true
 		 ~width:500 ~height:250
@@ -114,14 +116,14 @@ object(self)
       let log level message = result#buffer#insert (message^"\n") in
       let process =
 	Coq.bind (Coq.interp ~logger:log ~raw:true 0 phrase) (function
-          | Interface.Fail (l,str) ->
-            result#buffer#insert ("Error while interpreting "^phrase^":\n"^str);
+          | Interface.Fail (_,l,str) ->
+            result#buffer#insert str;
 	    Coq.return ()
-          | Interface.Good res ->
-            result#buffer#insert ("Result for command " ^ phrase ^ ":\n" ^ res);
+          | Interface.Good (_,res) ->
+            result#buffer#insert res; 
 	    Coq.return ())
       in
-      result#buffer#set_text "";
+      result#buffer#set_text ("Result for command " ^ phrase ^ ":\n");
       Coq.try_grab coqtop process ignore
     in
     ignore (combo#entry#connect#activate ~callback:(on_activate callback));

@@ -19,6 +19,11 @@ object
   method show_goals : unit task
   method backtrack_last_phrase : unit task
   method initialize : unit task
+  method join_document : unit task
+
+  method handle_failure : Interface.handle_exn_rty -> unit task
+  
+  method destroy : unit -> unit
 end
 
 class coqops :

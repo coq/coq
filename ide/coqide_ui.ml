@@ -153,6 +153,7 @@ let init () =
   <toolitem action='Go to' />
   <toolitem action='Start' />
   <toolitem action='End' />
+  <toolitem action='Force' />
   <toolitem action='Interrupt' />
   <toolitem action='Previous' />
   <toolitem action='Next' />

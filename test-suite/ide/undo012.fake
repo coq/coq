@@ -22,5 +22,5 @@ REWIND 1
 # We should now be just before aa, without opened proofs
 INTERPRAW Fail idtac.
 INTERPRAW Fail Check aa.
-INTERPRAW Fail Check bb.
-INTERPRAW Fail Check cc.
+INTERPRAW Check bb.
+INTERPRAW Check cc.

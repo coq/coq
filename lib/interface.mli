@@ -35,8 +35,6 @@ type status = {
   (** Current proof name. [None] if no focussed proof is in progress *)
   status_allproofs : string list;
   (** List of all pending proofs. Order is not significant *)
-  status_statenum : int;
-  (** A unique id describing the state of coqtop *)
   status_proofnum : int;
   (** An id describing the state of the current proof. *)
 }
@@ -119,14 +117,17 @@ type message = {
 
 (** Coq "semantic" infos obtained during parsing/execution *)
 type edit_id = int
+type state_id = Stateid.state_id
+type edit_or_state_id = Edit of edit_id | State of state_id
 
 type feedback_content =
   | AddedAxiom
   | Processed
   | GlobRef of Loc.t * string * string * string * string
+  | ErrorMsg of Loc.t * string
 
 type feedback = {
-  edit_id : edit_id;
+  id : edit_or_state_id;
   content : feedback_content;
 }
 
@@ -134,9 +135,11 @@ type feedback = {
 
 type location = (int * int) option (* start and end of the error *)
 
+(* The fail case carries the current state_id of the prover, the GUI
+   should probably retract to that point *)
 type 'a value =
   | Good of 'a
-  | Fail of (location * string)
+  | Fail of (state_id * location * string)
 
 (* Request/Reply message protocol between Coq and CoqIde *)
 
@@ -146,18 +149,15 @@ type 'a value =
     of display options that coqide performs all the time.
     The returned string contains the messages produced
     but not the updated goals (they are
-    to be fetch by a separated [current_goals]). *)
+    to be fetch by a separated [current_goals]).
+    If edit_id=0 then the command is not part of the proof script,
+    and the resulting state_id is going to be dummy *)
 type interp_sty = edit_id * raw * verbose * string
-type interp_rty = string
+type interp_rty = state_id * string
 
-(** Backtracking by at least a certain number of phrases.
-    No finished proofs will be re-opened. Instead,
-    we continue backtracking until before these proofs,
-    and answer the amount of extra backtracking performed.
-    Backtracking by more than the number of phrases already
-    interpreted successfully (and not yet undone) will fail. *)
-type rewind_sty = int
-type rewind_rty = int
+(** Backtracking to a particular state *)
+type backto_sty = state_id
+type backto_rty = unit
 
 (** Fetching the list of current goals. Return [None] if no proof is in
     progress, [Some gl] otherwise. *)
@@ -174,8 +174,10 @@ type evars_rty = evar list option
 type hints_sty = unit
 type hints_rty = (hint list * hint) option
 
-(** The status, for instance "Ready in SomeSection, proving Foo" *)
-type status_sty = unit
+(** The status, for instance "Ready in SomeSection, proving Foo", the
+    input boolean (if true) forces the evaluation of all unevaluated
+    statements *)
+type status_sty = bool
 type status_rty = status
 
 (** Search for objects satisfying the given search flags. *)
@@ -206,15 +208,19 @@ type mkcases_rty = string list list
 type quit_sty = unit
 type quit_rty = unit
 
+(* Initialize, and return the initial state id *)
+type init_sty = unit
+type init_rty = state_id
+
 type about_sty = unit
 type about_rty = coq_info
 
-type handle_exn_rty = location * string
 type handle_exn_sty = exn
+type handle_exn_rty = state_id * location * string
 
 type handler = {
   interp      : interp_sty      -> interp_rty;
-  rewind      : rewind_sty      -> rewind_rty;
+  backto      : backto_sty      -> backto_rty;
   goals       : goals_sty       -> goals_rty;
   evars       : evars_sty       -> evars_rty;
   hints       : hints_sty       -> hints_rty;
@@ -224,8 +230,9 @@ type handler = {
   set_options : set_options_sty -> set_options_rty;
   inloadpath  : inloadpath_sty  -> inloadpath_rty;
   mkcases     : mkcases_sty     -> mkcases_rty;
-  quit        : quit_sty        -> quit_rty;
   about       : about_sty       -> about_rty;
   handle_exn  : handle_exn_sty  -> handle_exn_rty;
+  init        : init_sty        -> init_rty;
+  quit        : quit_sty        -> quit_rty;
 }
 
