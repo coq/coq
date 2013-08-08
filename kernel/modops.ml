@@ -617,3 +617,55 @@ and join_struct_expr_body = function
        match wdcl with
        | With_module_body _ -> ()
        | With_definition_body (_, sb) -> join_constant_body sb
+
+let rec prune_module_body mb =
+  let me, mta, mt = mb.mod_expr, mb.mod_type_alg, mb.mod_type in
+  let me' = Option.smartmap prune_struct_expr_body me in
+  let mta' = Option.smartmap prune_struct_expr_body mta in
+  let mt' = prune_struct_expr_body mt in
+  if me' == me && mta' == mta && mt' == mt then mb
+  else {mb with mod_expr = me'; mod_type_alg = mta'; mod_type = mt'}
+and prune_structure_body struc =
+  let prune_body (l,body as orig) = match body with
+    | SFBconst sb ->
+        let sb' = prune_constant_body sb in
+        if sb == sb' then orig else (l, SFBconst sb')
+    | SFBmind _ -> orig
+    | SFBmodule m ->
+        let m' = prune_module_body m in
+        if m == m' then orig else (l, SFBmodule m')
+    | SFBmodtype m ->
+        let te, te_alg = m.typ_expr, m.typ_expr_alg in
+        let te' = prune_struct_expr_body te in
+        let te_alg' =
+          Option.smartmap prune_struct_expr_body te_alg in
+        if te' == te && te_alg' == te_alg then orig
+        else (l, SFBmodtype {m with typ_expr = te'; typ_expr_alg = te_alg'}) in
+  CList.smartmap prune_body struc
+and prune_struct_expr_body orig = match orig with
+  | SEBfunctor (id,t,e) ->
+      let te, ta = t.typ_expr, t.typ_expr_alg in
+      let te' = prune_struct_expr_body te in
+      let ta' = Option.smartmap prune_struct_expr_body ta in
+      let e' = prune_struct_expr_body e in
+      if te' == te && ta' == ta && e' == e then orig
+      else SEBfunctor(id, {t with typ_expr = te'; typ_expr_alg = ta'}, e')
+  | SEBident _ -> orig
+  | SEBstruct s ->
+      let s' = prune_structure_body s in
+      if s' == s then orig else SEBstruct s'
+  | SEBapply (mexpr,marg,u) ->
+      let mexpr' = prune_struct_expr_body mexpr in
+      let marg' = prune_struct_expr_body marg in
+      if mexpr' == mexpr && marg' == marg then orig
+      else SEBapply (mexpr', marg', u)
+  | SEBwith (seb,wdcl) ->
+      let seb' = prune_struct_expr_body seb in
+      let wdcl' = match wdcl with
+        | With_module_body _ -> wdcl
+        | With_definition_body (id, sb) ->
+            let sb' = prune_constant_body sb in
+            if sb' == sb then wdcl else With_definition_body (id, sb') in
+      if seb' == seb && wdcl' == wdcl then orig
+      else SEBwith (seb', wdcl')
+       

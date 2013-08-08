@@ -151,7 +151,7 @@ val close_section : unit -> unit
 
 type frozen
 
-val freeze : marshallable:bool -> frozen
+val freeze : marshallable:Summary.marshallable -> frozen
 val unfreeze : frozen -> unit
 
 val init : unit -> unit

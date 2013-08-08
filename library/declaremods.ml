@@ -822,7 +822,7 @@ end
 (** {6 Module operations handling summary freeze/unfreeze *)
 
 let protect_summaries f =
-  let fs = Summary.freeze_summaries ~marshallable:false in
+  let fs = Summary.freeze_summaries ~marshallable:`No in
   try f fs
   with reraise ->
     (* Something wrong: undo the whole process *)

@@ -9,10 +9,15 @@
 (** This module registers the declaration of global tables, which will be kept
    in synchronization during the various backtracks of the system. *)
 
+type marshallable =
+  [ `Yes       (* Full data will be marshalled to disk                        *)
+  | `No        (* Full data will be store in memory, e.g. for Undo            *)
+  | `Shallow ] (* Only part of the data will be marshalled to a slave process *)
+
 type 'a summary_declaration = {
   (** freeze_function [true] is for marshalling to disk. 
    *  e.g. lazy must be forced *)
-  freeze_function : bool -> 'a;
+  freeze_function : marshallable -> 'a;
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit }
 
@@ -35,7 +40,7 @@ val declare_summary : string -> 'a summary_declaration -> unit
     The [init_function] restores the reference to its initial value.
     The [freeze_function] can be overridden *)
 
-val ref : ?freeze:(bool -> 'a -> 'a) -> name:string -> 'a -> 'a ref
+val ref : ?freeze:(marshallable -> 'a -> 'a) -> name:string -> 'a -> 'a ref
 
 (** For global tables registered statically before the end of coqtop
     launch, the following empty [init_function] could be used. *)
@@ -47,7 +52,7 @@ val nop : unit -> unit
 
 type frozen
 
-val freeze_summaries : marshallable:bool -> frozen
+val freeze_summaries : marshallable:marshallable -> frozen
 val unfreeze_summaries : frozen -> unit
 val init_summaries : unit -> unit
 
@@ -55,5 +60,5 @@ val init_summaries : unit -> unit
 type frozen_bits
 
 val freeze_summary :
-  marshallable:bool -> ?complement:bool -> string list -> frozen_bits
+  marshallable:marshallable -> ?complement:bool -> string list -> frozen_bits
 val unfreeze_summary : frozen_bits -> unit

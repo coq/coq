@@ -10,8 +10,9 @@ open Pp
 open Errors
 open Util
 
+type marshallable = [ `Yes | `No | `Shallow ]
 type 'a summary_declaration = {
-  freeze_function : bool -> 'a;
+  freeze_function : marshallable -> 'a;
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit }
 
@@ -48,7 +49,7 @@ let freeze_summaries ~marshallable =
   Hashtbl.iter
     (fun id decl -> 
        (* to debug missing Lazy.force 
-       if marshallable then begin
+       if marshallable <> `No then begin
          prerr_endline ("begin marshalling " ^ id);
          ignore(Marshal.to_string (decl.freeze_function marshallable) []);
          prerr_endline ("end marshalling " ^ id);

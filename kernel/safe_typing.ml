@@ -132,11 +132,26 @@ let add_constraints cst senv =
 let is_curmod_library senv = 
   match senv.modinfo.variant with LIBRARY _ -> true | _ -> false
 
-let rec join_safe_environment e =
+let join_safe_environment e =
   join_structure_body e.revstruct;
   List.fold_left 
     (fun e fc -> add_constraints (Now (Future.join fc)) e)
     {e with future_cst = []} e.future_cst
+
+(* TODO : out of place and maybe incomplete w.r.t. modules *)
+let prune_env env =
+  let env = Environ.pre_env env in
+  let prune_ckey (cb,k) = Declareops.prune_constant_body cb, k in
+  let prune_globals glob =
+    {glob with Pre_env.env_constants =
+       Cmap_env.map prune_ckey glob.Pre_env.env_constants } in
+  Environ.env_of_pre_env
+    {env with Pre_env.env_globals = prune_globals env.Pre_env.env_globals}
+let prune_safe_environment e =
+  let e = {e with revstruct = prune_structure_body e.revstruct;
+                  future_cst = [];
+                  env = prune_env e.env} in
+  {e with old = e}
 
 let check_modlabel l senv =
   if exists_modlabel l senv then error_existing_label l

@@ -140,5 +140,5 @@ module V82 : sig
 end
 
 type state
-val freeze : unit -> state
+val freeze : marshallable:[`Yes | `No | `Shallow] -> state
 val unfreeze : state -> unit

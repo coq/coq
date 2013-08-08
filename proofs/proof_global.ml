@@ -391,6 +391,13 @@ module V82 = struct
 end
 
 type state = pstate list
-let freeze () = !pstates
+let drop_hook_mode p = { p with hook = None; mode = None }
+        
+let freeze ~marshallable =
+  match marshallable with
+  | `Yes ->
+      Errors.anomaly (Pp.str"full marshalling of proof state not supported")
+  | `Shallow -> List.map drop_hook_mode !pstates
+  | `No -> !pstates
 let unfreeze s = pstates := s; update_proof_mode ()
 

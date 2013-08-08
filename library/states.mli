@@ -17,7 +17,7 @@ val intern_state : string -> unit
 val extern_state : string -> unit
 
 type state
-val freeze : marshallable:bool -> state
+val freeze : marshallable:Summary.marshallable -> state
 val unfreeze : state -> unit
 
 (** {6 Rollback } *)

@@ -54,6 +54,8 @@ val join_module_body : module_body -> unit
 val join_structure_body : structure_body -> unit
 val join_struct_expr_body : struct_expr_body -> unit
 
+val prune_structure_body : structure_body -> structure_body
+
 (** Errors *)
 
 type signature_mismatch_error =

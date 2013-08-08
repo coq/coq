@@ -23,7 +23,7 @@ let (extern_state,intern_state) =
     extern_intern Coq_config.state_magic_number in
   (fun s ->
     let s = ensure_suffix s in
-    raw_extern s (freeze ~marshallable:true)),
+    raw_extern s (freeze ~marshallable:`Yes)),
   (fun s ->
     let s = ensure_suffix s in
     let paths = Loadpath.get_paths () in
@@ -33,7 +33,7 @@ let (extern_state,intern_state) =
 (* Rollback. *)
 
 let with_state_protection f x =
-  let st = freeze ~marshallable:false in
+  let st = freeze ~marshallable:`No in
   try
     let a = f x in unfreeze st; a
   with reraise ->

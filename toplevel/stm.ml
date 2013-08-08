@@ -382,7 +382,7 @@ end = struct (* {{{ *)
   (* hack to make futures functional *)
   let in_t, out_t = Dyn.create "state4future"
   let () = Future.set_freeze
-    (fun () -> in_t (freeze_global_state (), !cur_id))
+    (fun () -> in_t (freeze_global_state `No, !cur_id))
     (fun t -> let s,i = out_t t in unfreeze_global_state s; cur_id := i)
 
   let is_cached id =
@@ -407,14 +407,21 @@ end = struct (* {{{ *)
     Pp.feedback ~state_id:id (Interface.ErrorMsg (loc, msg));
     Stateid.add_state_id e ?valid id
 
-  let define ?(cache=false) f id =
+  let string_of_cache = function
+    | `Yes -> "Yes" | `No -> "No" | `Marshallable -> "Marshallable"
+  let marshallable_of_cache = function
+    | `Yes -> `No
+    | `No -> assert false
+    | `Marshallable -> `Shallow
+
+  let define ?(cache=`No) f id =
     if is_cached id then
       anomaly (str"defining state "++str(string_of_state_id id)++str" twice");
     try
       prerr_endline ("defining " ^
         string_of_state_id id ^ " (cache=" ^ string_of_bool cache ^ ")");
       f ();
-      if cache then freeze id;
+      if cache <> `No then freeze (marshallable_of_cache cache) id;
       cur_id := id;
       feedback ~state_id:id Interface.Processed;
       VCS.reached id true;
@@ -466,8 +473,8 @@ let known_state ~cache id =
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
    * side effects *)
   let cherry_pick_non_pstate () =
-    Summary.freeze_summary ~marshallable:false ~complement:true pstate,
-    Lib.freeze ~marshallable:false in
+    Summary.freeze_summary ~marshallable:`No ~complement:true pstate,
+    Lib.freeze ~marshallable:`No in
   let inject_non_pstate (s,l) = Summary.unfreeze_summary s; Lib.unfreeze l in
 
   let rec pure_cherry_pick_non_pstate id = Future.purify (fun id ->

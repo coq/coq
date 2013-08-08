@@ -211,6 +211,17 @@ let join_constant_body cb =
   | OpaqueDef d -> ignore(Future.join d)
   | _ -> ()
 
+let prune_constant_body cb =
+  let cst, cbo = cb.const_constraints, cb.const_body in
+  let cst' = Future.drop cst in
+  let cbo' = match cbo with
+    | OpaqueDef d ->
+        let d' = Future.drop d in
+        if d' == d then cbo else OpaqueDef d'
+    | _ -> cbo in
+  if cst' == cst && cbo' == cbo then cb
+  else {cb with const_constraints = cst'; const_body = cbo'}
+
 let string_of_side_effect = function
   | NewConstant (c,_) -> Names.string_of_con c
 type side_effects = side_effect list
