@@ -302,6 +302,14 @@ let parse_args arglist =
         Flags.make_term_color false;
 	parse ("-emacs" :: rem)
 
+    | "-coq-slaves" :: "off" :: rem -> Flags.coq_slave_mode := -1; parse rem
+    | "-coq-slaves" :: "on" :: rem -> Flags.coq_slave_mode := 0; parse rem
+
+    | "-coq-slaves" :: n :: rem -> (* internal use *)
+        assert (int_of_string n > 0);
+        Flags.coq_slave_mode := int_of_string n;
+        parse rem
+
     | "-unicode" :: rem -> add_require "Utf8_core"; parse rem
 
     | "-coqlib" :: d :: rem -> Flags.coqlib_spec:=true; Flags.coqlib:=d; parse rem
@@ -374,6 +382,9 @@ let init arglist =
       if !Flags.ide_slave then begin
         Flags.make_silent true;
         Ide_slave.init_stdout ()
+      end else if !Flags.coq_slave_mode > 0 then begin
+        Flags.make_silent true;
+        Stm.slave_init_stdout ()
       end;
       if_verbose print_header ();
       init_load_path ();
@@ -421,6 +432,8 @@ let start () =
     Dumpglob.noglob () in
   if !Flags.ide_slave then
     Ide_slave.loop ()
+  else if !Flags.coq_slave_mode > 0 then
+    Stm.slave_main_loop ()
   else
     Toplevel.loop();
   (* Initialise and launch the Ocaml toplevel *)

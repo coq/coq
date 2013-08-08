@@ -17,7 +17,8 @@ let string_of_vernac_type = function
   | VtUnknown -> "Unknown"
   | VtStartProof _ -> "StartProof"
   | VtSideff _ -> "Sideff"
-  | VtQed _ -> "Qed"
+  | VtQed VtKeep -> "Qed(keep)"
+  | VtQed VtDrop -> "Qed(drop)"
   | VtProofStep -> "ProofStep"
   | VtQuery b -> "Query" ^ string_of_in_script b
   | VtStm ((VtFinish|VtJoinDocument|VtObserve _), b) ->
@@ -69,8 +70,8 @@ let rec classify_vernac e =
         | VtQed _, _ -> VtProofStep, VtNow
         | (VtStartProof _ | VtUnknown), _ -> VtUnknown, VtNow)
     (* Qed *)
-    | VernacEndProof Admitted | VernacAbort _ -> VtQed DropProof, VtLater
-    | VernacEndProof _ | VernacExactProof _ -> VtQed KeepProof, VtLater
+    | VernacEndProof Admitted | VernacAbort _ -> VtQed VtDrop, VtLater
+    | VernacEndProof _ | VernacExactProof _ -> VtQed VtKeep, VtLater
     (* Query *)
     | VernacShow _ | VernacPrint _ | VernacSearch _ | VernacLocate _
     | VernacCheckMayEval _ -> VtQuery true, VtLater

@@ -264,30 +264,36 @@ type closed_proof =
   (Entries.definition_entry list * lemma_possible_guards *
     Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
 
-let close_proof ~now ?(fix_exn = fun x -> x) ps side_eff =
-  let { pid; section_vars; compute_guard; strength; hook; proof } = ps in
-  let entries = List.map (fun (c, t) -> { Entries.
-    const_entry_body = Future.chain side_eff (fun () ->
-      try Proof.return (cur_pstate ()).proof c with
-      | Proof.UnfinishedProof ->
-          raise (fix_exn(Errors.UserError("last tactic before Qed",
-            str"Attempt to save an incomplete proof")))
-      | Proof.HasUnresolvedEvar ->
-          raise (fix_exn(Errors.UserError("last tactic before Qed",
-            str"Attempt to save a proof with existential " ++
-            str"variables still non-instantiated"))));
+let close_proof ~now fpl =
+  let { pid;section_vars;compute_guard;strength;hook;proof } = cur_pstate () in
+  let initial_goals = Proof.initial_goals proof in
+  let entries = Future.map2 (fun p (c, t) -> { Entries.
+    const_entry_body = p;
     const_entry_secctx = section_vars;
     const_entry_type  = Some t;
     const_entry_inline_code = false;
-    const_entry_opaque = true }) (Proof.initial_goals proof) in
+    const_entry_opaque = true }) fpl initial_goals in
   if now then
     List.iter (fun x -> ignore(Future.join x.Entries.const_entry_body)) entries;
   (pid, (entries, compute_guard, strength, hook))
 
-let close_future_proof ~fix_exn proof =
-  close_proof ~now:false ~fix_exn (cur_pstate ()) proof
+let return_proof ~fix_exn =
+  let { proof } = cur_pstate () in
+  let initial_goals = Proof.initial_goals proof in
+  List.map (fun (c, _) ->
+   try Proof.return proof c with
+   | Proof.UnfinishedProof ->
+       raise (fix_exn(Errors.UserError("last tactic before Qed",
+         str"Attempt to save an incomplete proof")))
+   | Proof.HasUnresolvedEvar ->
+       raise (fix_exn(Errors.UserError("last tactic before Qed",
+         str"Attempt to save a proof with existential " ++
+         str"variables still non-instantiated"))))
+   initial_goals
+
+let close_future_proof proof = close_proof ~now:false proof
 let close_proof () =
-  close_proof ~now:true (cur_pstate ()) (Future.from_val())
+  close_proof ~now:true (Future.from_val (return_proof ~fix_exn:(fun x -> x)))
 
 (**********************************************************)
 (*                                                        *)

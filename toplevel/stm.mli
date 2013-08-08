@@ -25,3 +25,5 @@ val get_all_proof_names : unit -> Names.identifier list
 val get_current_proof_name : unit -> Names.identifier option
 
 val init : unit -> unit
+val slave_main_loop : unit -> unit
+val slave_init_stdout : unit -> unit

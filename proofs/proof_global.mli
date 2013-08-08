@@ -66,11 +66,12 @@ type closed_proof =
 
 val close_proof : unit -> closed_proof
 
-(* A future proof may be executed later on, out of the control of Stm
-   that knows which state was (for example) supposed to close the proof
-   bit did not. Hence fix_exn to enrich it *)
+(* Intermediate step necessary to delegate the future.
+ * Both access the current proof state. The formes is supposed to be
+ * chained with a computation that completed the proof *)
+val return_proof : fix_exn:(exn -> exn) -> Entries.proof_output list
 val close_future_proof :
-  fix_exn:(exn -> exn) -> unit Future.computation -> closed_proof
+  Entries.proof_output list Future.computation -> closed_proof
 
 exception NoSuchProof
 

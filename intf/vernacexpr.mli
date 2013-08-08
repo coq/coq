@@ -428,7 +428,7 @@ type vernac_type =
   | VtQuery of vernac_part_of_script
   | VtStm of vernac_control * vernac_part_of_script
   | VtUnknown
-and vernac_qed_type = KeepProof | DropProof (* Qed, Admitted/Abort *)
+and vernac_qed_type = VtKeep | VtDrop (* Qed/Admitted, Abort *)
 and vernac_start = string * Id.t list
 and vernac_sideff_type = Id.t list
 and vernac_is_alias = bool

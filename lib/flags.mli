@@ -13,6 +13,7 @@ val boot : bool ref
 val batch_mode : bool ref
 
 val ide_slave_mode : bool ref
+val coq_slave_mode : int ref
 
 val debug : bool ref
 

@@ -27,9 +27,11 @@ let interp ?proof id (verbosely, loc, expr) =
     | VernacResetName _ | VernacResetInitial | VernacBack _
     | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
     | VernacBacktrack _ | VernacAbortAll | VernacAbort _ -> true | _ -> false in
-  if internal_command expr then ()
-  else begin
+  if internal_command expr then begin
+    prerr_endline ("ignoring " ^ string_of_ppcmds(pr_vernac expr))
+  end else begin
     Pp.set_id_for_feedback (Interface.State id);
+    prerr_endline ("interpreting " ^ string_of_ppcmds(pr_vernac expr));
     try Vernacentries.interp ~verbosely ?proof (loc, expr)
     with e -> raise (Errors.push (Cerrors.process_vernac_interp_error e))
   end
@@ -57,6 +59,7 @@ type step =
   [ `Cmd    of cmd_t
   | `Fork   of fork_t
   | `Qed    of qed_t * state_id
+  (* TODO : is the state id carried by `Ast relevant? *)
   | `Sideff of [ `Ast of ast * state_id | `Id of state_id ]
   | `Alias  of alias_t ]
 type visit = { step : step; next : state_id }
@@ -106,6 +109,7 @@ module VCS : sig
   }
 
   type vcs = (branch_type, transaction, state_info) Vcs_.t
+  exception Expired
 
   val init : id -> unit
 
@@ -129,6 +133,10 @@ module VCS : sig
   val goals : id -> int -> unit
   val set_state : id -> state -> unit
   val forget_state : id -> unit
+
+  (* TODO: move elsewhere if possible, so that purify can be just called *)
+  (* cuts from start -> stop, raising Expired if some nodes are not there *)
+  val slice : start:id -> stop:id -> purify:(state -> state) -> vcs
   
   val create_cluster : id list -> unit
 
@@ -151,7 +159,7 @@ end = struct (* {{{ *)
   open Printf
 
   let print_dag vcs () = (* {{{ *)
-    let fname = "stm" in
+    let fname = "stm" ^ string_of_int (max 0 !Flags.coq_slave_mode) in
     let string_of_transaction = function
       | Cmd (t, _) | Fork (t, _, _) ->
           (try string_of_ppcmds (pr_ast t) with _ -> "ERR")
@@ -235,6 +243,7 @@ end = struct (* {{{ *)
       ("dot -Tpdf -Gcharset=latin1 " ^ fname_dot ^ " -o" ^ fname_ps))
   (* }}} *)
   
+  exception Expired
   type vcs = (branch_type, transaction, state_info) t
   let vcs : vcs ref = ref (empty dummy_state_id)
 
@@ -266,7 +275,7 @@ end = struct (* {{{ *)
   let get_info id =
     match get_info !vcs id with
     | Some x -> x
-    | None -> assert false
+    | None -> raise Expired
   let set_state id s = (get_info id).state <- Some s
   let forget_state id = (get_info id).state <- None
   let reached id b =
@@ -298,23 +307,55 @@ end = struct (* {{{ *)
     (List.filter ((<>) master) (branches ()))
   
   let visit id =
-    match Dag.from_node (dag !vcs) id with
-    | [n, Cmd x] -> { step = `Cmd x; next = n }
-    | [n, Alias x] -> { step = `Alias x; next = n }
-    | [n, Fork x] -> { step = `Fork x; next = n }
-    | [n, Qed x; p, Noop]
-    | [p, Noop; n, Qed x] -> { step = `Qed (x,p); next = n }
-    | [n, Sideff None; p, Noop]
-    | [p, Noop; n, Sideff None]-> { step = `Sideff (`Id p); next = n }
-    | [n, Sideff (Some x); p, Noop]
-    | [p, Noop; n, Sideff (Some x)]-> { step = `Sideff (`Ast (x,p)); next = n }
-    | _ -> anomaly (str "Malformed VCS, or visiting the root")
+    try
+      match Dag.from_node (dag !vcs) id with
+      | [n, Cmd x] -> { step = `Cmd x; next = n }
+      | [n, Alias x] -> { step = `Alias x; next = n }
+      | [n, Fork x] -> { step = `Fork x; next = n }
+      | [n, Qed x; p, Noop]
+      | [p, Noop; n, Qed x] -> { step = `Qed (x,p); next = n }
+      | [n, Sideff None; p, Noop]
+      | [p, Noop; n, Sideff None]-> { step = `Sideff (`Id p); next = n }
+      | [n, Sideff (Some x); p, Noop]
+      | [p, Noop; n, Sideff (Some x)]-> { step = `Sideff(`Ast (x,p)); next = n }
+      | [n, Sideff (Some x)]-> {step = `Sideff(`Ast (x,dummy_state_id)); next=n}
+      | _ -> anomaly (str ("Malformed VCS at node "^string_of_state_id id))
+    with Not_found -> raise Expired
 
-  module NB : sig
+  let slice ~start ~stop ~purify =
+    let l =
+      let rec aux id =
+        if id = stop then [] else
+        match visit id with
+        | { next = n; step = `Cmd x } -> (id,Cmd x) :: aux n
+        | { next = n; step = `Alias x } -> (id,Alias x) :: aux n
+        | { next = n; step = `Sideff (`Ast (x,_)) } ->
+             (id,Sideff (Some x)) :: aux n
+        | _ -> anomaly(str("Cannot slice from "^ string_of_state_id start ^
+                           " to "^string_of_state_id stop))
+      in aux start in
+    let v = Vcs_.empty stop in
+    let info = get_info stop in
+    (* Stm should have reached the beginning of proof *)
+    assert(info.state <> None);
+    (* This may be expensive *)
+    let info = { info with state = Some (purify (Option.get info.state)) } in
+    let v = Vcs_.set_info v stop info in
+    List.fold_right (fun (id,tr) v ->
+      let v = Vcs_.commit v id tr in
+      let info = get_info id in
+      (* TODO: we could drop all of them but for the last one and purify it,
+       * so that proofs partially executed in the main process are not
+       * completely re-executed in the slave process *)
+      let info = { info with state = None } in
+      let v = Vcs_.set_info v id info in
+      v) l v
+
+  module NB : sig (* Non blocking Sys.command *)
 
     val command : (unit -> unit) -> unit
 
-  end = struct
+  end = struct (* {{{ *)
     
     let m = Mutex.create ()
     let c = Condition.create ()
@@ -341,7 +382,7 @@ end = struct (* {{{ *)
       set_last_job job;
       if !worker = None then worker := Some (Thread.create run_command ())
 
-  end
+  end (* }}} *)
 
   let print () =
     if not !Flags.debug then () else NB.command (print_dag !vcs)
@@ -353,7 +394,7 @@ end (* }}} *)
 
 (* Fills in the nodes of the VCS *)
 module State : sig
-
+  
   (** The function is from unit, so it uses the current state to define
       a new one.  I.e. one may been to install the right state before
       defining a new one.
@@ -367,6 +408,11 @@ module State : sig
 
   val exn_on : state_id -> ?valid:state_id -> exn -> exn
 
+  (* TODO: rename *)
+  (* projects a state so that it can be marshalled and its content is
+   * sufficient for the execution of Coq on a proof branch *)
+  val purify : state -> state
+
 end = struct (* {{{ *)
 
   (* cur_id holds dummy_state_id in case the last attempt to define a state
@@ -374,8 +420,8 @@ end = struct (* {{{ *)
   let cur_id = ref dummy_state_id
 
   (* helpers *)
-  let freeze_global_state () =
-    States.freeze ~marshallable:false, Proof_global.freeze ()
+  let freeze_global_state marshallable =
+    States.freeze ~marshallable, Proof_global.freeze ~marshallable
   let unfreeze_global_state (s,p) =
     States.unfreeze s; Proof_global.unfreeze p
 
@@ -384,6 +430,12 @@ end = struct (* {{{ *)
   let () = Future.set_freeze
     (fun () -> in_t (freeze_global_state `No, !cur_id))
     (fun t -> let s,i = out_t t in unfreeze_global_state s; cur_id := i)
+
+  let purify s =
+    Future.purify (fun s ->
+            unfreeze_global_state s;
+            freeze_global_state `Shallow
+      ) s
 
   let is_cached id =
     id = !cur_id ||
@@ -399,29 +451,23 @@ end = struct (* {{{ *)
       | _ -> anomaly (str "unfreezing a non existing state") in
     unfreeze_global_state s; cur_id := id
 
-  let freeze id = VCS.set_state id (freeze_global_state ())
+  let freeze marhallable id = VCS.set_state id (freeze_global_state marhallable)
 
   let exn_on id ?valid e =
+    let e = Errors.push e in
     let loc = Option.default Loc.ghost (Loc.get_loc e) in
     let msg = string_of_ppcmds (print e) in
     Pp.feedback ~state_id:id (Interface.ErrorMsg (loc, msg));
     Stateid.add_state_id e ?valid id
 
-  let string_of_cache = function
-    | `Yes -> "Yes" | `No -> "No" | `Marshallable -> "Marshallable"
-  let marshallable_of_cache = function
-    | `Yes -> `No
-    | `No -> assert false
-    | `Marshallable -> `Shallow
-
-  let define ?(cache=`No) f id =
+  let define ?(cache=false) f id =
     if is_cached id then
       anomaly (str"defining state "++str(string_of_state_id id)++str" twice");
     try
       prerr_endline ("defining " ^
-        string_of_state_id id ^ " (cache=" ^ string_of_bool cache ^ ")");
+        string_of_state_id id ^ " (cache=" ^string_of_bool cache^")");
       f ();
-      if cache <> `No then freeze (marshallable_of_cache cache) id;
+      if cache then freeze `No id;
       cur_id := id;
       feedback ~state_id:id Interface.Processed;
       VCS.reached id true;
@@ -439,6 +485,240 @@ end = struct (* {{{ *)
 end
 (* }}} *)
 
+
+(* Slave processes (if initialized, otherwise local lazy evaluation) *)
+module Slaves : sig
+
+  (* (eventually) remote calls *)
+  val build_proof :
+    exn_info:(state_id * state_id) -> start:state_id -> stop:state_id ->
+      Entries.proof_output list Future.computation
+  
+  (* initialize the whole machinery (optional) *)
+  val init : unit -> unit
+
+  (* slave process main loop *)
+  val slave_main_loop : unit -> unit
+  val slave_init_stdout : unit -> unit
+
+  (* to disentangle modules *)
+  val set_reach_known_state : (cache:bool -> state_id -> unit) -> unit
+
+
+end = struct (* {{{ *)
+
+  module TQueue : sig
+
+    type 'a t
+    val create : unit -> 'a t
+    val pop : 'a t -> 'a
+    val push : 'a t -> 'a -> unit
+
+  end = struct (* {{{ *)
+
+    type 'a t = 'a Queue.t * Mutex.t * Condition.t
+
+    let create () =
+      Queue.create (), Mutex.create (), Condition.create ()
+
+    let pop (q,m,c) =
+      Mutex.lock m;
+      while Queue.is_empty q do Condition.wait c m done;
+      let x = Queue.pop q in
+      if not (Queue.is_empty q) then Condition.signal c;
+      Mutex.unlock m;
+      x
+
+    let push (q,m,c) x =
+      Mutex.lock m;
+      Queue.push x q;
+      Condition.signal c;
+      Mutex.unlock m
+
+  end (* }}} *)
+
+  module SlavesPool : sig
+  
+    val init : ((unit -> in_channel * out_channel * int) -> unit) -> unit
+    val is_empty : unit -> bool
+  
+  end = struct (* {{{ *)
+  
+    let slave_manager = ref (None : Thread.t option)
+    
+    let is_empty () = !slave_manager = None
+
+    let respawn () =
+      let c2s_r, c2s_w = Unix.pipe () in
+      let s2c_r, s2c_w = Unix.pipe () in
+      let prog, args =
+        Sys.argv.(0), [|Sys.argv.(0);"-debug";"-coq-slaves";"1"|] in
+      let pid = Unix.create_process prog args c2s_r s2c_w Unix.stderr in
+      Unix.close c2s_r;
+      Unix.close s2c_w;
+      let s =
+        Unix.in_channel_of_descr s2c_r, Unix.out_channel_of_descr c2s_w, pid in
+      at_exit(fun () -> Unix.kill pid 9);
+      s
+
+    let init manage_slave =
+      slave_manager := Some (Thread.create manage_slave respawn);
+
+  end (* }}} *)
+  
+  let reach_known_state = ref (fun ~cache id -> ())
+  let set_reach_known_state f = reach_known_state := f
+
+  type request = ReqBuildProof of (state_id * state_id) * state_id * VCS.vcs
+  type response =
+    | RespBuiltProof of Entries.proof_output list 
+    | RespError of std_ppcmds
+    | RespFeedback of Interface.feedback
+  let pr_response = function
+    | RespBuiltProof _ -> "Sucess"
+    | RespError _ -> "Error"
+    | RespFeedback { Interface.id = Interface.State id } ->
+        "Feedback on " ^ string_of_state_id id
+    | RespFeedback _ -> assert false
+ 
+  type task =
+    | TaskBuildProof of (state_id * state_id) * state_id * state_id *
+        (Entries.proof_output list Future.value -> unit)
+  let pr_task = function
+    | TaskBuildProof(_,bop,eop,_) ->
+        "TaskBuilProof("^string_of_state_id bop^","^string_of_state_id eop^")"
+
+  let request_of_task task =
+    match task with
+    | TaskBuildProof (exn_info,bop,eop,_) ->
+        ReqBuildProof(exn_info,eop,
+          VCS.slice ~start:eop ~stop:bop ~purify:State.purify)
+
+  let build_proof_here (id,valid) eop =
+    Future.create (fun () ->
+      !reach_known_state ~cache:false eop;
+      Proof_global.return_proof ~fix_exn:(State.exn_on id ~valid))
+
+  let slave_respond msg =
+    match msg with
+    | ReqBuildProof(exn_info,eop, vcs) ->
+        VCS.restore vcs;
+        VCS.print ();
+        let r = RespBuiltProof (Future.force (build_proof_here exn_info eop)) in
+        VCS.print ();
+        r
+
+  open Interface
+
+  exception MarshalError
+
+  let marshal_request oc req =
+    try Marshal.to_channel oc req []; flush oc
+    with Invalid_argument _ -> raise MarshalError
+
+  let unmarshal_response ic =
+    try (Marshal.from_channel ic : response)
+    with Invalid_argument _ -> raise MarshalError
+  
+  let unmarshal_request ic =
+    try (Marshal.from_channel ic : request)
+    with Invalid_argument _ -> raise MarshalError
+
+  let marshal_response oc res =
+    try Marshal.to_channel oc res []; flush oc
+    with Invalid_argument _ -> raise MarshalError
+
+  let queue : task TQueue.t = TQueue.create ()
+
+  let build_proof ~exn_info ~start ~stop =
+    if SlavesPool.is_empty () then
+      build_proof_here exn_info stop
+    else 
+      let f, assign = Future.create_delegate () in
+      TQueue.push queue (TaskBuildProof(exn_info,start,stop,assign));
+      f
+
+  exception RemoteException of std_ppcmds
+  let _ = Errors.register_handler (function
+    | RemoteException ppcmd -> ppcmd
+    | _ -> raise Unhandled)
+
+  let rec manage_slave respawn =
+    let ic, oc, pid = respawn () in
+    try
+      while true do
+        let task = TQueue.pop queue in
+        try
+          marshal_request oc (request_of_task task);
+          let rec loop () =
+            let response = unmarshal_response ic in
+            match task, response with
+            | TaskBuildProof(_,_,_, assign), RespBuiltProof pl ->
+                assign (`Val pl)
+            | TaskBuildProof(_,_,_, assign), RespError e ->
+                assign (`Exn (RemoteException e))
+            | _, RespFeedback {id = State state_id; content = msg} ->
+                Pp.feedback ~state_id msg;
+                loop ()
+            | _, RespFeedback _ -> assert false (* Parsing in master process *)
+          in loop ()
+        with
+        | VCS.Expired -> (* task cancelled: e.g. the user did backtrack *)
+            prerr_endline ("Task expired: " ^ pr_task task)
+        | MarshalError -> (* TODO *)
+            prerr_endline "TODO: Mathshalling Error";
+            prerr_endline "We should be resilient and fall back to lazy" 
+        | e ->
+            prerr_endline (string_of_ppcmds (print e))
+      done
+    with Sys_error _ | Invalid_argument _ | End_of_file ->
+      (* TODO *)
+      prerr_endline "TODO: The slave died";
+      prerr_endline "We should be resilient and fall back to lazy";
+      ignore(Unix.waitpid [] pid);
+      close_in ic;
+      close_out oc;
+      manage_slave respawn
+
+  let init () = SlavesPool.init manage_slave
+
+  let slave_ic = ref stdin
+  let slave_oc = ref stdout
+
+  let slave_init_stdout () =
+    slave_oc := Unix.out_channel_of_descr (Unix.dup Unix.stdout);
+    slave_ic := Unix.in_channel_of_descr (Unix.dup Unix.stdin);
+    set_binary_mode_out !slave_oc true;
+    set_binary_mode_in !slave_ic true;
+    Unix.dup2 Unix.stderr Unix.stdout
+
+  let slave_main_loop () =
+    let slave_feeder oc fb =
+      Marshal.to_channel oc (RespFeedback fb) [];
+      flush oc in
+    Pp.set_feeder (slave_feeder !slave_oc);
+    while true do
+      try
+        let request = unmarshal_request !slave_ic in
+        let response = slave_respond request in
+        marshal_response !slave_oc response;
+      with
+      | e when Errors.noncritical e ->
+        (* This can happen if the proof is broken.  The error has also been
+         * signalled as a feedback, hence we can silently recover *)
+        marshal_response !slave_oc (RespError (print e));
+        prerr_endline "Slave: failed with the following exception:";
+        prerr_endline (string_of_ppcmds (print e))
+      | e ->
+        (* TODO special exit code in case of MarshalError so that master
+         * can fall back to lazy *)
+        msg_error(str"Slave: failed with the following CRITICAL exception:");
+        msg_error(print e);
+        msg_error(str"Slave: bailing out");
+        exit 1
+    done
+
+end (* }}} *)
 
 (* Runs all transactions needed to reach a state *)
 module Reach : sig
@@ -506,18 +786,18 @@ let known_state ~cache id =
                  prerr_endline ("Optimizable " ^ string_of_state_id id);
                  VCS.create_cluster nodes;
                  begin match keep with
-                 | KeepProof ->
-                     let f = Future.create (fun () -> reach eop) in
-                     reach start;
-                     let proof =
-                       Proof_global.close_future_proof
-                         ~fix_exn:(State.exn_on id ~valid:eop) f in
+                 | VtKeep ->
+                     reach ~cache:true start;
+                     let fp =
+                       Slaves.build_proof
+                         ~exn_info:(id,eop) ~start ~stop:eop in
+                     let proof = Proof_global.close_future_proof fp in
                      reach view.next;
                      interp id ~proof x;
-                 | DropProof ->
+                 | VtDrop ->
                      reach view.next;
                      Option.iter (interp start) proof_using_ast;
-                     interp id (pi1 x, pi2 x, VernacNop)
+                     interp id x
                  end;
                  Proof_global.discard_all ())
            | `NotOptimizable `Immediate -> assert (view.next = eop);
@@ -527,13 +807,13 @@ let known_state ~cache id =
                  prerr_endline ("NotOptimizable " ^ string_of_state_id id);
                  reach eop;
                  begin match keep with
-                 | KeepProof ->
+                 | VtKeep ->
                      let proof = Proof_global.close_proof () in
                      reach view.next;
                      interp id ~proof x
-                 | DropProof ->
+                 | VtDrop ->
                      reach view.next;
-                     interp id (pi1 x, pi2 x, VernacNop)
+                     interp id x
                  end;
                  Proof_global.discard_all ())
            | `MaybeOptimizable (start, nodes) ->
@@ -562,6 +842,7 @@ let known_state ~cache id =
   reach id
 
 end (* }}} *)
+let _ = Slaves.set_reach_known_state Reach.known_state
 
 (* The backtrack module simulates the classic behavior of a linear document *)
 module Backtrack : sig
@@ -669,11 +950,15 @@ end = struct (* {{{ *)
 
 end (* }}} *)
 
+let slave_main_loop () = Slaves.slave_main_loop ()
+let slave_init_stdout () = Slaves.slave_init_stdout ()
+
 let init () =
   VCS.init initial_state_id;
   set_undo_classifier Backtrack.undo_vernac_classifier;
   State.define ~cache:true (fun () -> ()) initial_state_id;
-  Backtrack.record ()
+  Backtrack.record ();
+  if !Flags.coq_slave_mode = 0 then Slaves.init ()
 
 let observe id =
   let vcs = VCS.backup () in
@@ -695,7 +980,7 @@ let join_aborted_proofs () =
     if id = initial_state_id then () else
     let view = VCS.visit id in
     match view.step with
-    | `Qed ((_,DropProof,_),eop) -> observe eop; aux view.next
+    | `Qed ((_,VtDrop,_),eop) -> observe eop; aux view.next
     | `Sideff _ | `Alias _ | `Cmd _ | `Fork _ | `Qed _ -> aux view.next
   in
     aux (VCS.get_branch_pos VCS.master)
@@ -718,7 +1003,7 @@ let merge_proof_branch x keep branch =
   let id = VCS.new_node () in
   VCS.merge id ~ours:(Qed (x,keep,(branch, info))) branch;
   VCS.delete_branch branch;
-  if keep = KeepProof then VCS.propagate_sideff None
+  if keep = VtKeep then VCS.propagate_sideff None
 
 let process_transaction verbosely (loc, expr) =
   let warn_if_pos a b =
@@ -746,7 +1031,7 @@ let process_transaction verbosely (loc, expr) =
           let bl = Backtrack.branches_of oid in
           List.iter (fun branch ->
             if not (List.mem branch bl) then
-              merge_proof_branch x DropProof branch)
+              merge_proof_branch x VtDrop branch)
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           VCS.commit id (Alias oid);
@@ -886,7 +1171,8 @@ let get_script prf =
     match view.step with
     | `Fork (_,_,ns) when List.mem prf ns -> acc
     | `Qed ((x,_,_), proof) -> find [pi3 x, (VCS.get_info id).n_goals] proof
-    | `Sideff (`Ast (x,id)) -> find ((pi3 x, (VCS.get_info id).n_goals)::acc) id
+    | `Sideff (`Ast (x,_)) ->
+         find ((pi3 x, (VCS.get_info id).n_goals)::acc) view.next
     | `Sideff (`Id id)  -> find acc id
     | `Cmd (x,_) -> find ((pi3 x, (VCS.get_info id).n_goals)::acc) view.next 
     | `Alias id -> find acc id
