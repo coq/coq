@@ -12,9 +12,13 @@ type 'a node =
 
 and 'a t = 'a node Lazy.t
 
-let empty = Lazy.lazy_from_val Nil
+let lift (n : 'a node) : 'a t = Obj.magic n
+(** Small hack to overcome a missing optimization in OCaml compilation of lazy
+    values. *)
 
-let cons x s = Lazy.lazy_from_val (Cons (x, s))
+let empty = lift Nil
+
+let cons x s = lift (Cons (x, s))
 
 let thunk s = lazy (Lazy.force (Lazy.force s))
 
@@ -76,5 +80,3 @@ let rec concat_node = function
 
 and concat (s : 'a t t) =
   thunk (lazy (concat_node (Lazy.force s)))
-
-let lempty = empty

@@ -36,9 +36,7 @@ val peek : 'a t -> ('a * 'a t) option
 
 (** {6 Standard operations}
 
-  The complexity of stream-returning functions depends on the lazy status of the
-  actual content of the stream, i.e. a lazy stream will be processed lazily.
-  Other functions are eager. *)
+    All stream-returning functions are lazy. The other ones are eager. *)
 
 val app : 'a t -> 'a t -> 'a t
 (** Append two streams. Not tail-rec. *)
@@ -70,6 +68,3 @@ val to_list : 'a t -> 'a list
 
 val force : 'a t -> 'a t
 (** Forces the whole stream. *)
-
-val lempty : 'a t
-(** Lazy empty stream. *)

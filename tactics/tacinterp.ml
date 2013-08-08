@@ -984,7 +984,7 @@ let match_pat refresh lmatch hyp gl = function
       let lmeta = extended_matches t hyp in
       let lmeta = verify_metas_coherence gl lmatch lmeta in
       let ans = { e_ctx = Id.Map.empty; e_sub = lmeta; } in
-      IStream.cons ans IStream.lempty
+      IStream.cons ans IStream.empty
     with PatternMatchingFailure | Not_coherent_metas -> IStream.empty
   end
 | Subterm (b,ic,t) ->
