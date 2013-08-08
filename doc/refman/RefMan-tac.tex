@@ -882,7 +882,7 @@ Qed.
 Goal forall n:nat, n = 0 -> n = 0.
 intros [ | ] H.
 Show 2.
-Undo.
+Undo 2.
 intros [ | ]; intros H.
 Show 2.
 \end{coq_example}

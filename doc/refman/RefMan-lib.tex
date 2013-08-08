@@ -156,11 +156,13 @@ Section Projections.
 Variables A B : Prop.
 Theorem proj1 : A /\ B -> A.
 Theorem proj2 : A /\ B -> B.
-End Projections.
 \end{coq_example*}
 \begin{coq_eval}
 Abort All.
 \end{coq_eval}
+\begin{coq_example*}
+End Projections.
+\end{coq_example*}
 \ttindex{or}
 \ttindex{or\_introl}
 \ttindex{or\_intror}
@@ -384,10 +386,10 @@ Inductive prod (A B:Set) : Set := pair (_:A) (_:B).
 Section projections.
 Variables A B : Set.
 Definition fst (H: prod A B) := match H with
-                                | pair x y => x
+                                | pair _ _ x y => x
                                 end.
 Definition snd (H: prod A B) := match H with
-                                | pair x y => y
+                                | pair _ _ x y => y
                                 end.
 End projections.
 \end{coq_example*}
@@ -443,15 +445,15 @@ constructor of types in \verb:Type:.
 
 \begin{coq_example*}
 Inductive sigT (A:Type) (P:A -> Type) : Type := existT (x:A) (_:P x).
-Section Projections.
+Section Projections2.
 Variable A : Type.
 Variable P : A -> Type.
 Definition projT1 (H:sigT A P) := let (x, h) := H in x.
 Definition projT2 (H:sigT A P) :=
   match H return P (projT1 H) with
-    existT x h => h
+    existT _ _ x h => h
   end.
-End Projections.
+End Projections2.
 Inductive sigT2 (A: Type) (P Q:A -> Type) : Type :=
     existT2 (x:A) (_:P x) (_:Q x).
 \end{coq_example*}
@@ -537,7 +539,7 @@ interpretation.
 \begin{coq_example*}
 Definition except := False_rec.
 Theorem absurd_set : forall (A:Prop) (C:Set), A -> ~ A -> C.
-Theorem and_rect :
+Theorem and_rect2 :
  forall (A B:Prop) (P:Type), (A -> B -> P) -> A /\ B -> P.
 \end{coq_example*}
 %\begin{coq_eval}
@@ -626,7 +628,7 @@ Fixpoint plus (n m:nat) {struct n} : nat :=
   match n with
   | 0 => m
   | S p => S (p + m)
-  end.
+  end
 where "n + m" := (plus n m) : nat_scope.
 Lemma plus_n_O : forall n:nat, n = n + 0.
 Lemma plus_n_Sm : forall n m:nat, S (n + m) = n + S m.
@@ -639,7 +641,7 @@ Fixpoint mult (n m:nat) {struct n} : nat :=
   match n with
   | 0 => 0
   | S p => m + p * m
-  end.
+  end
 where "n * m" := (mult n m) : nat_scope.
 Lemma mult_n_O : forall n:nat, 0 = n * 0.
 Lemma mult_n_Sm : forall n m:nat, n * m + n = n * (S m).
@@ -660,7 +662,7 @@ Finally, it gives the definition of the usual orderings \verb:le:,
 \begin{coq_example*}
 Inductive le (n:nat) : nat -> Prop :=
   | le_n : le n n
-  | le_S : forall m:nat, n <= m -> n <= (S m).
+  | le_S : forall m:nat, n <= m -> n <= (S m)
 where "n <= m" := (le n m) : nat_scope.
 Definition lt (n m:nat) := S n <= m.
 Definition ge (n m:nat) := m <= n.
@@ -712,7 +714,7 @@ Variable A : Type.
 Variable R : A -> A -> Prop.
 Inductive Acc (x:A) : Prop :=
     Acc_intro : (forall y:A, R y x -> Acc y) -> Acc x.
-Lemma Acc_inv : Acc x -> forall y:A, R y x -> Acc y.
+Lemma Acc_inv x : Acc x -> forall y:A, R y x -> Acc y.
 \end{coq_example*}
 \begin{coq_eval}
 destruct 1; trivial.
