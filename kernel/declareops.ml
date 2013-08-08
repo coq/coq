@@ -19,7 +19,7 @@ open Util
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
   | Def c -> Some (Lazyconstr.force c)
-  | OpaqueDef lc -> Some (Lazyconstr.force_opaque lc)
+  | OpaqueDef lc -> Some (Lazyconstr.force_opaque (Future.force lc))
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false
@@ -50,7 +50,8 @@ let subst_const_type sub arity =
 let subst_const_def sub = function
   | Undef inl -> Undef inl
   | Def c -> Def (subst_constr_subst sub c)
-  | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
+  | OpaqueDef lc ->
+      OpaqueDef (Future.chain ~pure:true lc (subst_lazy_constr sub))
 
 let subst_const_body sub cb = {
   const_hyps = (match cb.const_hyps with [] -> [] | _ -> assert false);
@@ -84,14 +85,24 @@ let hcons_const_type = function
 
 let hcons_const_def = function
   | Undef inl -> Undef inl
-  | Def cs -> Def (from_val (Term.hcons_constr (Lazyconstr.force cs)))
-  | OpaqueDef lc -> OpaqueDef (Lazyconstr.hcons_lazy_constr lc)
+  | Def l_constr ->
+    let constr = force l_constr in
+    Def (from_val (Term.hcons_constr constr))
+  | OpaqueDef lc ->
+    if Future.is_val lc then
+      let constr = force_opaque (Future.force lc) in
+      OpaqueDef (Future.from_val (opaque_from_val (Term.hcons_constr constr)))
+    else OpaqueDef lc
 
 let hcons_const_body cb =
   { cb with
     const_body = hcons_const_def cb.const_body;
     const_type = hcons_const_type cb.const_type;
-    const_constraints = Univ.hcons_constraints cb.const_constraints }
+    const_constraints =
+      if Future.is_val cb.const_constraints then
+        Future.from_val
+          (Univ.hcons_constraints (Future.force cb.const_constraints))
+      else cb.const_constraints }
 
 (** Inductive types *)
 
@@ -193,3 +204,21 @@ let hcons_mind mib =
     mind_packets = Array.smartmap hcons_mind_packet mib.mind_packets;
     mind_params_ctxt = hcons_rel_context mib.mind_params_ctxt;
     mind_constraints = Univ.hcons_constraints mib.mind_constraints }
+
+let join_constant_body cb =
+  ignore(Future.join cb.const_constraints);
+  match cb.const_body with
+  | OpaqueDef d -> ignore(Future.join d)
+  | _ -> ()
+
+let string_of_side_effect = function
+  | NewConstant (c,_) -> Names.string_of_con c
+type side_effects = side_effect list
+let no_seff = ([] : side_effects)
+let iter_side_effects f l = List.iter f l
+let fold_side_effects f a l = List.fold_left f a l
+let uniquize_side_effects l = List.uniquize l
+let union_side_effects l1 l2 = l1 @ l2
+let flatten_side_effects l = List.flatten l
+let side_effects_of_list l = l
+let cons_side_effects x l = x :: l

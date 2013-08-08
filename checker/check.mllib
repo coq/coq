@@ -21,6 +21,7 @@ CList
 CString
 CArray
 Util
+Future
 CUnix
 System
 Envars

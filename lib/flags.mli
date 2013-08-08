@@ -22,6 +22,8 @@ val xml_export : bool ref
 
 val ide_slave : bool ref
 
+val time : bool ref
+
 type load_proofs = Force | Lazy | Dont
 val load_proofs : load_proofs ref
 

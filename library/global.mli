@@ -102,6 +102,8 @@ val import : compiled_library -> Digest.t ->
 val type_of_global : Globnames.global_reference -> types
 val env_of_context : Environ.named_context_val -> Environ.env
 
+val join_safe_environment : unit -> unit
+
 (** spiwack: register/unregister function for retroknowledge *)
 val register : Retroknowledge.field -> constr -> constr -> unit
 

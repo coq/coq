@@ -55,6 +55,8 @@ let xml_export = ref false
 
 let ide_slave = ref false
 
+let time = ref false
+
 type load_proofs = Force | Lazy | Dont
 
 let load_proofs = ref Lazy

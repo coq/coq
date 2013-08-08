@@ -23,7 +23,8 @@ val rew_r2l_dep_scheme_kind : individual scheme_kind
 val rew_r2l_scheme_kind : individual scheme_kind
 
 val build_r2l_rew_scheme : bool -> env -> inductive -> sorts_family -> constr
-val build_l2r_rew_scheme : bool -> env -> inductive -> sorts_family -> constr
+val build_l2r_rew_scheme :
+  bool -> env -> inductive -> sorts_family -> constr * Declareops.side_effects
 val build_r2l_forward_rew_scheme :
   bool -> env -> inductive -> sorts_family -> constr
 val build_l2r_forward_rew_scheme :
@@ -34,7 +35,8 @@ val build_l2r_forward_rew_scheme :
 val build_sym_scheme : env -> inductive -> constr
 val sym_scheme_kind : individual scheme_kind
 
-val build_sym_involutive_scheme : env -> inductive -> constr
+val build_sym_involutive_scheme :
+  env -> inductive -> constr * Declareops.side_effects
 val sym_involutive_scheme_kind : individual scheme_kind
 
 (** Builds a congruence scheme for an equality type *)

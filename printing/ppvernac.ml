@@ -389,7 +389,6 @@ let pr_priority = function
 (* Pretty printer for vernac commands *)
 (**************************************)
 let make_pr_vernac pr_constr pr_lconstr =
-
 let pr_constrarg c = spc () ++ pr_constr c in
 let pr_lconstrarg c = spc () ++ pr_lconstr c in
 let pr_intarg n = spc () ++ int n in
@@ -476,6 +475,13 @@ in
 let rec pr_vernac = function
   | VernacProgram v -> str"Program" ++ spc() ++ pr_vernac v
   | VernacLocal (local, v) -> pr_locality local ++ spc() ++ pr_vernac v
+
+  (* Stm *)
+  | VernacStm JoinDocument -> str"Stm JoinDocument"
+  | VernacStm Finish -> str"Stm Finish"
+  | VernacStm (Observe id) ->
+      str"Stm Observe " ++ str(Stateid.string_of_state_id id)
+  | VernacStm (Command v) -> str"Stm Command " ++ pr_vernac v
 
   (* Proof management *)
   | VernacAbortAll -> str "Abort All"
@@ -614,7 +620,7 @@ let rec pr_vernac = function
       let n = List.length (List.flatten (List.map fst (List.map snd l))) in
       hov 2
         (pr_assumption_token (n > 1) stre ++ spc() ++
-	 pr_ne_params_list pr_lconstr_expr l)
+        pr_ne_params_list pr_lconstr_expr l)
   | VernacInductive (f,i,l) ->
 
       let pr_constructor (coe,(id,c)) =
@@ -975,3 +981,8 @@ in pr_vernac
 let pr_vernac_body v = make_pr_vernac pr_constr_expr pr_lconstr_expr v
 
 let pr_vernac v = make_pr_vernac pr_constr_expr pr_lconstr_expr v ++ sep_end v
+
+let pr_vernac x =
+  try pr_vernac x
+  with e -> Errors.print e
+

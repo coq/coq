@@ -8,6 +8,8 @@
 
 open Loc
 open Pp
+open Util
+open Stateid
 open Names
 open Tacexpr
 open Misctypes
@@ -214,6 +216,13 @@ type bullet =
     | Star
     | Plus
 
+(** {6 Types concerning Stm} *)
+type 'a stm_vernac =
+  | JoinDocument
+  | Finish
+  | Observe of Stateid.state_id
+  | Command of 'a (* An out of flow command not to be recorded by Stm *)
+
 (** {6 Types concerning the module layer} *)
 
 (** Rigid / flexible module signature *)
@@ -372,6 +381,9 @@ type vernac_expr =
   | VernacComments of comment list
   | VernacNop
 
+  (* Stm backdoor *)
+  | VernacStm of vernac_expr stm_vernac
+
   (* Proof management *)
   | VernacGoal of constr_expr
   | VernacAbort of lident option
@@ -401,3 +413,30 @@ type vernac_expr =
   | VernacLocal of bool * vernac_expr
 
 and located_vernac_expr = Loc.t * vernac_expr
+
+(* A vernac classifier has to tell if a command:
+   vernac_when: has to be executed now (alters the parser) or later
+   vernac_type: if it is starts, ends, continues a proof or
+     alters the global state or is a control command like BackTo or is
+     a query like Check *)
+type vernac_type =
+  | VtStartProof of vernac_start
+  | VtSideff
+  | VtQed of vernac_qed_type
+  | VtProofStep
+  | VtQuery of vernac_part_of_script
+  | VtStm of vernac_control * vernac_part_of_script
+  | VtUnknown
+and vernac_qed_type = KeepProof | DropProof (* Qed, Admitted/Abort *)
+and vernac_start = string * Id.t list
+and vernac_is_alias = bool
+and vernac_part_of_script = bool
+and vernac_control =
+  | VtFinish
+  | VtJoinDocument
+  | VtObserve of state_id
+  | VtBack of state_id
+type vernac_when =
+  | VtNow
+  | VtLater
+type vernac_classification = vernac_type * vernac_when

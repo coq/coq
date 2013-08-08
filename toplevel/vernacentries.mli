@@ -17,7 +17,7 @@ val dump_global : Libnames.reference or_by_notation -> unit
 
 (** Vernacular entries *)
 
-val show_script : unit -> unit
+val show_script : (?proof:Proof_global.closed_proof -> unit -> unit) ref
 val show_prooftree : unit -> unit
 
 val show_node : unit -> unit
@@ -27,12 +27,16 @@ val show_node : unit -> unit
 val get_current_context_of_args : int option -> Evd.evar_map * Environ.env
 
 (** The main interpretation function of vernacular expressions *)
-val interp : Vernacexpr.vernac_expr -> unit
+val interp : 
+  ?verbosely:bool ->
+  ?proof:Proof_global.closed_proof ->
+    Loc.t * Vernacexpr.vernac_expr -> unit
 
 (** Print subgoals when the verbose flag is on.
     Meant to be used inside vernac commands from plugins. *)
 
 val print_subgoals : unit -> unit
+val try_print_subgoals : unit -> unit
 
 (** The printing of goals via [print_subgoals] or during
     [interp] can be controlled by the following flag.
@@ -53,3 +57,6 @@ val qed_display_script : bool ref
     a known inductive type. *)
 
 val make_cases : string -> string list list
+
+val vernac_end_proof :
+  ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit

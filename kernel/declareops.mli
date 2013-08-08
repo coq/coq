@@ -28,6 +28,19 @@ val body_of_constant : constant_body -> Term.constr option
 
 val is_opaque : constant_body -> bool
 
+(** Side effects *)
+
+val string_of_side_effect : side_effect -> string
+
+type side_effects
+val no_seff : side_effects
+val iter_side_effects : (side_effect -> unit) -> side_effects -> unit
+val fold_side_effects : ('a -> side_effect -> 'a) -> 'a -> side_effects -> 'a
+val uniquize_side_effects : side_effects -> side_effects
+val union_side_effects : side_effects -> side_effects -> side_effects
+val flatten_side_effects : side_effects list -> side_effects
+val side_effects_of_list : side_effect list -> side_effects
+val cons_side_effects : side_effect -> side_effects -> side_effects
 
 (** {6 Inductive types} *)
 
@@ -45,6 +58,7 @@ val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
 val subst_mind : substitution -> mutual_inductive_body -> mutual_inductive_body
 
+val join_constant_body : constant_body -> unit
 
 (** {6 Hash-consing} *)
 

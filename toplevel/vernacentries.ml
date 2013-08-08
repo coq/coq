@@ -34,6 +34,10 @@ open Declaremods
 open Misctypes
 open Locality
 
+let debug = false
+let prerr_endline =
+  if debug then prerr_endline else fun _ -> ()
+
 (* Misc *)
 
 let cl_of_qualid = function
@@ -58,60 +62,6 @@ let show_node () =
       could, possibly, be cleaned away. (Feb. 2010) *)
   ()
 
-(* indentation code for Show Script, initially contributed
-   by D. de Rauglaudre *)
-
-let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
-  (* ng1 : number of goals remaining at the current level (before cmd)
-     ngl1 : stack of previous levels with their remaining goals
-     ng : number of goals after the execution of cmd
-     beginend : special indentation stack for { } *)
-  let ngprev = List.fold_left (+) ng1 ngl1 in
-  let new_ngl =
-    if ng > ngprev then
-      (* We've branched *)
-      (ng - ngprev + 1, ng1 - 1 :: ngl1)
-    else if ng < ngprev then
-      (* A subgoal have been solved. Let's compute the new current level
-	 by discarding all levels with 0 remaining goals. *)
-      let _ = assert (Int.equal ng (ngprev - 1)) in
-      let rec loop = function
-	| (0, ng2::ngl2) -> loop (ng2,ngl2)
-	| p -> p
-      in loop (ng1-1, ngl1)
-    else
-      (* Standard case, same goal number as before *)
-      (ng1, ngl1)
-  in
-  (* When a subgoal have been solved, separate this block by an empty line *)
-  let new_nl = (ng < ngprev)
-  in
-  (* Indentation depth *)
-  let ind = List.length ngl1
-  in
-  (* Some special handling of bullets and { }, to get a nicer display *)
-  let pred n = max 0 (n-1) in
-  let ind, nl, new_beginend = match cmd with
-    | VernacSubproof _ -> pred ind, nl, (pred ind)::beginend
-    | VernacEndSubproof -> List.hd beginend, false, List.tl beginend
-    | VernacBullet _ -> pred ind, nl, beginend
-    | _ -> ind, nl, beginend
-  in
-  let pp =
-    (if nl then fnl () else mt ()) ++
-    (hov (ind+1) (str (String.make ind ' ') ++ Ppvernac.pr_vernac cmd))
-  in
-  (new_ngl, new_nl, new_beginend, pp :: ppl)
-
-let show_script () =
-  let prf = Pfedit.get_current_proof_name () in
-  let cmds = Backtrack.get_script prf in
-  let _,_,_,indented_cmds =
-    List.fold_left indent_script_item ((1,[]),false,[],[]) cmds
-  in
-  let indented_cmds = List.rev (indented_cmds) in
-  msg_notice (v 0 (Pp.prlist_with_sep Pp.fnl (fun x -> x) indented_cmds))
-
 let show_thesis () =
      msg_error (anomaly (Pp.str "TODO") )
 
@@ -130,7 +80,9 @@ let enable_goal_printing = ref true
 
 let print_subgoals () =
   if !enable_goal_printing && is_verbose ()
-  then msg_notice (pr_open_subgoals ())
+  then begin
+    msg_notice (pr_open_subgoals ())
+  end
 
 let try_print_subgoals () =
   Pp.flush_all();
@@ -141,8 +93,8 @@ let try_print_subgoals () =
 
 let show_intro all =
   let pf = get_pftreestate() in
-  let {Evd.it=gls ; sigma=sigma} = Proof.V82.subgoals pf in
-  let gl = {Evd.it=List.hd gls ; sigma = sigma} in
+  let {Evd.it=gls ; sigma=sigma; eff=eff} = Proof.V82.subgoals pf in
+  let gl = {Evd.it=List.hd gls ; sigma = sigma; eff=eff} in
   let l,_= decompose_prod_assum (strip_outer_cast (pf_concl gl)) in
   if all
   then
@@ -502,21 +454,20 @@ let vernac_start_proof kind l lettop =
   start_proof_and_print (Global, Proof kind) l no_hook
 
 let qed_display_script = ref true
+let show_script = ref (fun ?proof () -> ())
 
-let vernac_end_proof = function
+let vernac_end_proof ?proof = function
   | Admitted ->
-    Backtrack.mark_unreachable [Pfedit.get_current_proof_name ()];
     admit ();
     Pp.feedback Interface.AddedAxiom
   | Proved (is_opaque,idopt) ->
-    let prf = Pfedit.get_current_proof_name () in
-    if is_verbose () && !qed_display_script then show_script ();
+    if is_verbose () && !qed_display_script then !show_script ?proof ();
     begin match idopt with
-    | None -> save_named is_opaque
-    | Some ((_,id),None) -> save_anonymous is_opaque id
-    | Some ((_,id),Some kind) -> save_anonymous_with_strength kind is_opaque id
-    end;
-    Backtrack.mark_unreachable [prf]
+    | None -> save_named ?proof is_opaque
+    | Some ((_,id),None) -> save_anonymous ?proof is_opaque id
+    | Some ((_,id),Some kind) -> 
+        save_anonymous_with_strength ?proof kind is_opaque id
+    end
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
      the theories [??] *)
@@ -524,10 +475,8 @@ let vernac_end_proof = function
 let vernac_exact_proof c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
-  let prf = Pfedit.get_current_proof_name () in
   by (Tactics.exact_proof c);
-  save_named true;
-  Backtrack.mark_unreachable [prf]
+  save_named true
 
 let vernac_assumption locality (local, kind) l nl =
   let local = enforce_locality_exp locality local in
@@ -800,9 +749,10 @@ let vernac_identity_coercion locality local id qids qidt =
 (* Type classes *)
 
 let vernac_instance abst locality sup inst props pri =
-  let glob = not (make_section_locality locality) in
+  let global = not (make_section_locality locality) in
   Dumpglob.dump_constraint inst false "inst";
-  ignore(Classes.new_instance ~abstract:abst ~global:glob sup inst props pri)
+  ignore(Classes.new_instance 
+    ~abstract:abst ~global sup inst props pri)
 
 let vernac_context l =
   if not (Classes.context l) then Pp.feedback Interface.AddedAxiom
@@ -824,15 +774,15 @@ let focus_command_cond = Proof.no_cond command_focus
 let vernac_solve n tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
-  let p = Proof_global.give_me_the_proof () in
-  Proof.transaction p begin fun () ->
-    solve_nth n (Tacinterp.hide_interp tcom None) ~with_end_tac:b;
+  Proof_global.with_current_proof (fun etac p ->
+    let with_end_tac = if b then Some etac else None in
+    let p = solve_nth n (Tacinterp.hide_interp tcom None) ?with_end_tac p in
     (* in case a strict subtree was completed,
        go back to the top of the prooftree *)
-    Proof_global.maximal_unfocus command_focus p;
+    let p = Proof.maximal_unfocus command_focus p in
+    p);
     print_subgoals()
-  end
- 
+;;
 
   (* A command which should be a tactic. It has been
      added by Christine to patch an error in the design of the proof
@@ -1532,126 +1482,23 @@ let vernac_register id r =
   match r with
   | RegisterInline -> Global.register_inline kn
 
-(****************)
-(* Backtracking *)
-
-(** NB: these commands are now forbidden in non-interactive use,
-    e.g. inside VernacLoad, VernacList, ... *)
-
-let vernac_backto lbl =
-  try
-    let lbl' = Backtrack.backto lbl in
-    if not (Int.equal lbl lbl') then
-      Pp.msg_warning
-	(str "Actually back to state "++ Pp.int lbl' ++ str ".");
-    try_print_subgoals ()
-  with Backtrack.Invalid -> error "Invalid backtrack."
-
-let vernac_back n =
-  try
-    let extra = Backtrack.back n in
-    if not (Int.equal extra 0) then
-      Pp.msg_warning
-	(str "Actually back by " ++ Pp.int (extra+n) ++ str " steps.");
-    try_print_subgoals ()
-  with Backtrack.Invalid -> error "Invalid backtrack."
-
-let vernac_reset_name id =
-  try
-    let globalized =
-      try
-	let gr = Smartlocate.global_with_alias (Ident id) in
-	Dumpglob.add_glob (fst id) gr;
-	true
-      with e when Errors.noncritical e -> false in
-
-    if not globalized then begin
-       try begin match Lib.find_opening_node (snd id) with
-          | Lib.OpenedSection _ -> Dumpglob.dump_reference (fst id)
-              (DirPath.to_string (Lib.current_dirpath true)) "<>" "sec";
-          (* Might be nice to implement module cases, too.... *)
-          | _ -> ()
-       end with UserError _ -> ()
-    end;
-
-    if Backtrack.is_active () then
-      (Backtrack.reset_name id; try_print_subgoals ())
-    else
-      (* When compiling files, Reset is now allowed again
-	 as asked by A. Chlipala. we emulate a simple reset,
-	 that discards all proofs. *)
-      let lbl = Lib.label_before_name id in
-      Pfedit.delete_all_proofs ();
-      Pp.msg_warning (str "Reset command occurred in non-interactive mode.");
-      Lib.reset_label lbl
-  with Backtrack.Invalid | Not_found -> error "Invalid Reset."
-
-
-let vernac_reset_initial () =
-  if Backtrack.is_active () then
-    Backtrack.reset_initial ()
-  else begin
-    Pp.msg_warning (str "Reset command occurred in non-interactive mode.");
-    Lib.raw_reset_initial ()
-  end
-
-(* For compatibility with ProofGeneral: *)
-
-let vernac_backtrack snum pnum naborts =
-  Backtrack.backtrack snum pnum naborts;
-  try_print_subgoals ()
-
-
 (********************)
 (* Proof management *)
 
-let vernac_abort = function
-  | None ->
-      Backtrack.mark_unreachable [Pfedit.get_current_proof_name ()];
-      delete_current_proof ();
-      if_verbose msg_info (str "Current goal aborted")
-  | Some id ->
-      Backtrack.mark_unreachable [snd id];
-      delete_proof id;
-      let s = Id.to_string (snd id) in
-      if_verbose msg_info (str ("Goal "^s^" aborted"))
-
-let vernac_abort_all () =
-  if refining() then begin
-    Backtrack.mark_unreachable (Pfedit.get_all_proof_names ());
-    delete_all_proofs ();
-    msg_info (str "Current goals aborted")
-  end else
-    error "No proof-editing in progress."
-
-let vernac_restart () =
-  Backtrack.mark_unreachable [Pfedit.get_current_proof_name ()];
-  restart_proof(); print_subgoals ()
-
-let vernac_undo n =
-  let d = Pfedit.current_proof_depth () - n in
-  Backtrack.mark_unreachable ~after:d [Pfedit.get_current_proof_name ()];
-  Pfedit.undo n; print_subgoals ()
-
-let vernac_undoto n =
-  Backtrack.mark_unreachable ~after:n [Pfedit.get_current_proof_name ()];
-  Pfedit.undo_todepth n;
-  print_subgoals ()
-
 let vernac_focus gln =
-  let p = Proof_global.give_me_the_proof () in
-  let n = match gln with None -> 1 | Some n -> n in
-  if Int.equal n 0 then
-    Errors.error "Invalid goal number: 0. Goal numbering starts with 1."
-  else
-    try Proof.focus focus_command_cond () n p; print_subgoals ()
-    with Proofview.IndexOutOfRange ->
-      Errors.error "No such unproven subgoal."
+  Proof_global.with_current_proof (fun _ p ->
+    match gln with
+      | None -> Proof.focus focus_command_cond () 1 p
+      | Some 0 ->
+         Errors.error "Invalid goal number: 0. Goal numbering starts with 1."
+      | Some n ->
+         Proof.focus focus_command_cond () n p);
+  print_subgoals ()
 
   (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus () =
-  let p = Proof_global.give_me_the_proof () in
-  Proof.unfocus command_focus p; print_subgoals ()
+  Proof_global.with_current_proof (fun _ p -> Proof.unfocus command_focus p ());
+  print_subgoals ()
 
 (* Checks that a proof is fully unfocused. Raises an error if not. *)
 let vernac_unfocused () =
@@ -1672,22 +1519,20 @@ let subproof_kind = Proof.new_focus_kind ()
 let subproof_cond = Proof.done_cond subproof_kind
 
 let vernac_subproof gln =
-  let p = Proof_global.give_me_the_proof () in
-  begin match gln with
-  | None -> Proof.focus subproof_cond () 1 p
-  | Some n -> Proof.focus subproof_cond () n p
-  end ;
+  Proof_global.with_current_proof (fun _ p ->
+    match gln with
+    | None -> Proof.focus subproof_cond () 1 p
+    | Some n -> Proof.focus subproof_cond () n p);
   print_subgoals ()
 
 let vernac_end_subproof () =
-  let p = Proof_global.give_me_the_proof () in
-  Proof.unfocus subproof_kind p ; print_subgoals ()
+  Proof_global.with_current_proof (fun _ p -> Proof.unfocus subproof_kind p ());
+  print_subgoals ()
 
 
 let vernac_bullet (bullet:Proof_global.Bullet.t) =
-  let p = Proof_global.give_me_the_proof () in
-  Proof.transaction p 
-    (fun () -> Proof_global.Bullet.put p bullet);
+  Proof_global.with_current_proof (fun _ p ->
+    Proof_global.Bullet.put p bullet);
   (* Makes the focus visible in emacs by re-printing the goal. *)
   if !Flags.print_emacs then print_subgoals ()
 
@@ -1706,7 +1551,7 @@ let vernac_show = function
       Constrextern.with_implicits msg_notice (pr_nth_open_subgoal n)
   | ShowProof -> show_proof ()
   | ShowNode -> show_node ()
-  | ShowScript -> show_script ()
+  | ShowScript -> !show_script ()
   | ShowExistentials -> show_top_evars ()
   | ShowTree -> show_prooftree ()
   | ShowProofNames ->
@@ -1733,10 +1578,17 @@ let vernac_check_guard () =
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility *)
-let interp locality c = match c with
-  (* Control (done in vernac) *)
-  | (VernacTime _|VernacList _|VernacLoad _|VernacTimeout _|VernacFail _) ->
-      assert false
+let interp ?proof locality c =
+  prerr_endline ("interpreting: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac c));
+  match c with
+  (* Done in vernac *)
+  | (VernacList _|VernacLoad _) -> assert false
+
+  (* Done later in this file *)
+  | VernacFail _ -> assert false
+  | VernacTime _ -> assert false
+  | VernacTimeout _ -> assert false
+  | VernacStm _ -> assert false
 
   (* Syntax *)
   | VernacTacticNotation (n,r,e) ->
@@ -1754,7 +1606,7 @@ let interp locality c = match c with
   (* Gallina *)
   | VernacDefinition (k,lid,d) -> vernac_definition locality k lid d
   | VernacStartTheoremProof (k,l,top) -> vernac_start_proof k l top
-  | VernacEndProof e -> vernac_end_proof e
+  | VernacEndProof e -> vernac_end_proof ?proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption locality stre l nl
   | VernacInductive (finite,infer,l) -> vernac_inductive finite infer l
@@ -1808,10 +1660,10 @@ let interp locality c = match c with
   | VernacRestoreState s -> vernac_restore_state s
 
   (* Resetting *)
-  | VernacResetName id -> vernac_reset_name id
-  | VernacResetInitial -> vernac_reset_initial ()
-  | VernacBack n -> vernac_back n
-  | VernacBackTo n -> vernac_backto n
+  | VernacResetName _ -> anomaly (str "VernacResetName not handled by Stm")
+  | VernacResetInitial -> anomaly (str "VernacResetInitial not handled by Stm")
+  | VernacBack _ -> anomaly (str "VernacBack not handled by Stm")
+  | VernacBackTo _ -> anomaly (str "VernacBackTo not handled by Stm")
 
   (* Commands *)
   | VernacDeclareTacticDefinition def ->
@@ -1848,12 +1700,12 @@ let interp locality c = match c with
 
   (* Proof management *)
   | VernacGoal t -> vernac_start_proof Theorem [None,([],t,None)] false
-  | VernacAbort id -> vernac_abort id
-  | VernacAbortAll -> vernac_abort_all ()
-  | VernacRestart -> vernac_restart ()
-  | VernacUndo n -> vernac_undo n
-  | VernacUndoTo n -> vernac_undoto n
-  | VernacBacktrack (snum,pnum,naborts) -> vernac_backtrack snum pnum naborts
+  | VernacAbort id -> anomaly (str "VernacAbort not handled by Stm")
+  | VernacAbortAll -> anomaly (str "VernacAbortAll not handled by Stm")
+  | VernacRestart -> anomaly (str "VernacRestart not handled by Stm")
+  | VernacUndo _ -> anomaly (str "VernacUndo not handled by Stm")
+  | VernacUndoTo _ -> anomaly (str "VernacUndoTo not handled by Stm")
+  | VernacBacktrack _ -> anomaly (str "VernacBacktrack not handled by Stm")
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
   | VernacUnfocused -> vernac_unfocused ()
@@ -1902,24 +1754,119 @@ let check_vernac_supports_locality c l =
     | VernacExtend _ ) -> ()
   | Some _, _ -> Errors.error "This command does not support Locality"
 
-let interp c =
+(** A global default timeout, controled by option "Set Default Timeout n".
+    Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
+
+let default_timeout = ref None
+
+let _ =
+  Goptions.declare_int_option
+    { Goptions.optsync  = true;
+      Goptions.optdepr  = false;
+      Goptions.optname  = "the default timeout";
+      Goptions.optkey   = ["Default";"Timeout"];
+      Goptions.optread  = (fun () -> !default_timeout);
+      Goptions.optwrite = ((:=) default_timeout) }
+
+(** When interpreting a command, the current timeout is initially
+    the default one, but may be modified locally by a Timeout command. *)
+
+let current_timeout = ref None
+
+(** Installing and de-installing a timer.
+    Note: according to ocaml documentation, Unix.alarm isn't available
+    for native win32. *)
+
+let timeout_handler _ = raise Timeout
+
+let set_timeout n =
+  let psh =
+    Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
+  ignore (Unix.alarm n);
+  Some psh
+
+let default_set_timeout () =
+  match !current_timeout with
+    | Some n -> set_timeout n
+    | None -> None
+
+let restore_timeout = function
+  | None -> ()
+  | Some psh ->
+    (* stop alarm *)
+    ignore(Unix.alarm 0);
+    (* restore handler *)
+    Sys.set_signal Sys.sigalrm psh
+
+let locate_if_not_already loc exn =
+  match Loc.get_loc exn with
+  | None -> Loc.add_loc exn loc
+  | Some l -> if Loc.is_ghost l then Loc.add_loc exn loc else exn
+
+exception HasNotFailed
+exception HasFailed of string
+
+let interp ?(verbosely=true) ?proof (loc,c) =
   let orig_program_mode = Flags.is_program_mode () in
   let rec aux ?locality isprogcmd = function
     | VernacProgram c when not isprogcmd -> aux ?locality true c
     | VernacProgram _ -> Errors.error "Program mode specified twice"
     | VernacLocal (b, c) when locality = None -> aux ~locality:b isprogcmd c
     | VernacLocal _ -> Errors.error "Locality specified twice"
+    | VernacStm (Command c) -> aux ?locality isprogcmd c
+    | VernacStm _ -> assert false (* Done by Stm *)
+    | VernacFail v ->
+	begin try
+	  (* If the command actually works, ignore its effects on the state.
+           * Note that error has to be printed in the right state, hence
+           * within the purified function *)
+	  Future.purify
+	    (fun v ->
+               try
+                 aux ?locality isprogcmd v;
+                 raise HasNotFailed
+               with
+               | HasNotFailed as e -> raise e
+               | e -> raise (HasFailed (Pp.string_of_ppcmds
+                  (Errors.print (Cerrors.process_vernac_interp_error e)))))
+            v
+        with e when Errors.noncritical e -> 
+          let e = Errors.push e in
+          match e with
+	  | HasNotFailed ->
+	      errorlabstrm "Fail" (str "The command has not failed!")
+	  | HasFailed msg ->
+	      if_verbose msgnl
+		(str "The command has indeed failed with message:" ++
+		 fnl () ++ str "=> " ++ hov 0 (str msg))
+          | _ -> assert false
+	end
+    | VernacTimeout (n,v) ->
+        current_timeout := Some n;
+        aux ?locality isprogcmd v
+    | VernacTime v ->
+	let tstart = System.get_time() in
+        aux ?locality isprogcmd v;
+	let tend = System.get_time() in
+	let msg = if !Flags.time then "" else "Finished transaction in " in
+        msg_info (str msg ++ System.fmt_time_difference tstart tend)
     | c -> 
         check_vernac_supports_locality c locality;
         Obligations.set_program_mode isprogcmd;
+        let psh = default_set_timeout () in
         try
-          interp locality c;
+          if verbosely then Flags.verbosely (interp ?proof locality) c
+                       else Flags.silently  (interp ?proof locality) c;
+          restore_timeout psh;
           if orig_program_mode || not !Flags.program_mode || isprogcmd then
             Flags.program_mode := orig_program_mode
         with
-          | reraise ->
+          | reraise when Errors.noncritical reraise ->
             let e = Errors.push reraise in
+            let e = locate_if_not_already loc e in
+            restore_timeout psh;
             Flags.program_mode := orig_program_mode;
             raise e
   in
     aux false c
+

@@ -44,17 +44,20 @@ module LibraryOrdered = DirPath
 module LibraryMap = Map.Make(LibraryOrdered)
 module LibraryFilenameMap = Map.Make(LibraryOrdered)
 
+let join x = Safe_typing.join_compiled_library x.library_compiled
 (* This is a map from names to loaded libraries *)
-let libraries_table = Summary.ref LibraryMap.empty ~name:"LIBRARY"
+let freeze b l = if b then (LibraryMap.iter (fun _ x -> join x) l; l) else l
+let libraries_table = Summary.ref LibraryMap.empty ~name:"LIBRARY" ~freeze
 
 (* This is the map of loaded libraries filename *)
 (* (not synchronized so as not to be caught in the states on disk) *)
 let libraries_filename_table = ref LibraryFilenameMap.empty
 
 (* These are the _ordered_ sets of loaded, imported and exported libraries *)
-let libraries_loaded_list = Summary.ref [] ~name:"LIBRARY-LOAD"
-let libraries_imports_list = Summary.ref [] ~name:"LIBRARY-IMPORT"
-let libraries_exports_list = Summary.ref [] ~name:"LIBRARY-EXPORT"
+let freeze b l = if b then (List.iter join l; l) else l
+let libraries_loaded_list = Summary.ref [] ~name:"LIBRARY-LOAD" ~freeze
+let libraries_imports_list = Summary.ref [] ~name:"LIBRARY-IMPORT" ~freeze
+let libraries_exports_list = Summary.ref [] ~name:"LIBRARY-EXPORT" ~freeze
 
 (* various requests to the tables *)
 

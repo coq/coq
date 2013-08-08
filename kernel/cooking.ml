@@ -42,11 +42,7 @@ type my_global_reference =
   | IndRef of inductive
   | ConstructRef of constructor
 
-let cache = (Hashtbl.create 13 : (my_global_reference, constr) Hashtbl.t)
-
-let clear_cooking_sharing () = Hashtbl.clear cache
-
-let share r (cstl,knl) =
+let share cache r (cstl,knl) =
   try Hashtbl.find cache r
   with Not_found ->
   let f,l =
@@ -59,13 +55,12 @@ let share r (cstl,knl) =
 	mkConst (pop_con cst), Cmap.find cst cstl in
   let c = mkApp (f, Array.map mkVar l) in
   Hashtbl.add cache r c;
-  (* has raised Not_found if not in work_list *)
   c
 
-let update_case_info ci modlist =
+let update_case_info cache ci modlist =
   try
     let ind, n =
-      match kind_of_term (share (IndRef ci.ci_ind) modlist) with
+      match kind_of_term (share cache (IndRef ci.ci_ind) modlist) with
       | App (f,l) -> (destInd f, Array.length l)
       | Ind ind -> ind, 0
       | _ -> assert false in
@@ -78,7 +73,9 @@ let empty_modlist = (Cmap.empty, Mindmap.empty)
 let is_empty_modlist (cm, mm) =
   Cmap.is_empty cm && Mindmap.is_empty mm
 
-let expmod_constr modlist c =
+let expmod_constr cache modlist c =
+  let share = share cache in
+  let update_case_info = update_case_info cache in
   let rec substrec c =
     match kind_of_term c with
       | Case (ci,p,t,br) ->
@@ -122,25 +119,27 @@ type recipe = {
 type inline = bool
 
 type result =
-  constant_def * constant_type * Univ.constraints * inline
+  constant_def * constant_type * constant_constraints * inline
     * Context.section_context option
 
 let on_body f = function
-  | Undef inl -> Undef inl
+  | Undef _ as x -> x
   | Def cs -> Def (Lazyconstr.from_val (f (Lazyconstr.force cs)))
   | OpaqueDef lc ->
-    OpaqueDef (Lazyconstr.opaque_from_val (f (Lazyconstr.force_opaque lc)))
+    OpaqueDef (Future.chain ~id:"Cooking.on_body" ~pure:true lc (fun lc ->
+        (Lazyconstr.opaque_from_val (f (Lazyconstr.force_opaque lc)))))
 
 let constr_of_def = function
   | Undef _ -> assert false
   | Def cs -> Lazyconstr.force cs
-  | OpaqueDef lc -> Lazyconstr.force_opaque lc
+  | OpaqueDef lc -> Lazyconstr.force_opaque (Future.force lc)
 
 let cook_constant env r =
+  let cache = Hashtbl.create 13 in
   let cb = r.d_from in
-  let hyps = Context.map_named_context (expmod_constr r.d_modlist) r.d_abstract in
+  let hyps = Context.map_named_context (expmod_constr cache r.d_modlist) r.d_abstract in
   let body = on_body
-    (fun c -> abstract_constant_body (expmod_constr r.d_modlist c) hyps)
+    (fun c -> abstract_constant_body (expmod_constr cache r.d_modlist c) hyps)
     cb.const_body
   in
   let const_hyps =
@@ -149,12 +148,16 @@ let cook_constant env r =
       hyps ~init:cb.const_hyps in
   let typ = match cb.const_type with
     | NonPolymorphicType t ->
-	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
+	let typ =
+          abstract_constant_type (expmod_constr cache r.d_modlist t) hyps in
 	NonPolymorphicType typ
     | PolymorphicArity (ctx,s) ->
 	let t = mkArity (ctx,Type s.poly_level) in
-	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
+	let typ =
+          abstract_constant_type (expmod_constr cache r.d_modlist t) hyps in
 	let j = make_judge (constr_of_def body) typ in
 	Typeops.make_polymorphic_if_constant_for_ind env j
   in
   (body, typ, cb.const_constraints, cb.const_inline_code, Some const_hyps)
+
+let expmod_constr modlist c = expmod_constr (Hashtbl.create 13) modlist c

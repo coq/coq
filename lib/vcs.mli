@@ -43,7 +43,7 @@ module type S = sig
   
   type ('kind,'diff,'info) t constraint 'kind = [> `Master ]
   
-  val empty : default_info:'info -> id -> ('kind,'diff,'info) t
+  val empty : id -> ('kind,'diff,'info) t
   
   val current_branch : ('k,'e,'i) t -> branch_name
   val branches : ('k,'e,'i) t -> branch_name list
@@ -60,7 +60,7 @@ module type S = sig
   val checkout : ('k,'e,'i) t -> branch_name -> ('k,'e,'i) t
   
   val set_info : ('k,'e,'info) t -> id -> 'info -> ('k,'e,'info) t
-  val get_info : ('k,'e,'info) t -> id -> 'info
+  val get_info : ('k,'e,'info) t -> id -> 'info option
 
   val create_cluster : ('k,'e,'i) t -> id list -> ('k,'e,'i) t
 

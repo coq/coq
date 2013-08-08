@@ -47,7 +47,8 @@ type mutual_inductive_entry = {
   mind_entry_inds : one_inductive_entry list }
 
 (** {6 Constants (Definition/Axiom) } *)
-type const_entry_body = constr
+type proof_output = constr * Declareops.side_effects
+type const_entry_body = proof_output Future.computation
 
 type definition_entry = {
   const_entry_body   : const_entry_body;

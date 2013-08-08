@@ -115,7 +115,8 @@ TACTIC EXTEND ediscriminate
 END
 
 let discrHyp id gl =
-  discr_main {it = Term.mkVar id,NoBindings; sigma = Refiner.project gl} gl
+  discr_main {it = Term.mkVar id,NoBindings; sigma = Refiner.project gl;
+              eff = gl.eff} gl
 
 let injection_main c =
  elimOnConstrWithHoles (injClause None) false c
@@ -159,7 +160,8 @@ TACTIC EXTEND einjection_as
 END
 
 let injHyp id gl =
-  injection_main { it = Term.mkVar id,NoBindings; sigma = Refiner.project gl } gl
+  injection_main { it = Term.mkVar id,NoBindings; sigma = Refiner.project gl;
+                   eff = gl.eff } gl
 
 TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
@@ -765,6 +767,6 @@ END;;
    mode. *)
 VERNAC COMMAND EXTEND GrabEvars
 [ "Grab" "Existential" "Variables" ] ->
-  [ let p = Proof_global.give_me_the_proof () in
-    Proof.V82.grab_evars p ]
+  [ Proof_global.with_current_proof (fun _ p  ->
+      Proof.V82.grab_evars p) ]
 END

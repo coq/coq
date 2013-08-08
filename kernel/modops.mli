@@ -50,6 +50,10 @@ val subst_modtype_and_resolver : module_type_body -> module_path ->
 
 val clean_bounded_mod_expr : struct_expr_body -> struct_expr_body
 
+val join_module_body : module_body -> unit
+val join_structure_body : structure_body -> unit
+val join_struct_expr_body : struct_expr_body -> unit
+
 (** Errors *)
 
 type signature_mismatch_error =

@@ -523,84 +523,7 @@ let close_section () =
   let newdecls = List.map discharge_item secdecls in
   Summary.unfreeze_summaries fs;
   List.iter (Option.iter (fun (id,o) -> add_discharged_leaf id o)) newdecls;
-  Cooking.clear_cooking_sharing ();
   Nametab.push_dir (Nametab.Until 1) full_olddir (DirClosedSection full_olddir)
-
-(*****************)
-(* Backtracking. *)
-
-let (inLabel : int -> obj), (outLabel : obj -> int) =
-  declare_object_full {(default_object "DOT") with
-				classify_function = (fun _ -> Dispose)}
-
-let recache_decl = function
-  | (sp, Leaf o) -> cache_object (sp,o)
-  | (_,OpenedSection _) -> add_section ()
-  | _ -> ()
-
-let recache_context ctx =
-  List.iter recache_decl ctx
-
-let is_frozen_state = function (_,FrozenState _) -> true | _ -> false
-
-let set_lib_stk new_lib_stk =
-  lib_stk := new_lib_stk;
-  recalc_path_prefix ();
-  (* Always at least one frozen state in the libstack *)
-  match find_entry_p is_frozen_state with
-    | (sp, FrozenState f) ->
-      Summary.unfreeze_summaries f;
-      let (after,_,_) = split_lib sp in
-      recache_context after
-    | _ -> assert false
-
-let reset_to test =
-  let (_,_,before) = split_lib_gen test in
-  set_lib_stk before
-
-let first_command_label = 1
-
-let mark_end_of_command, current_command_label, reset_command_label =
-  let n = ref (first_command_label-1) in
-  (fun () ->
-    match !lib_stk with
-        (_,Leaf o)::_ when String.equal (object_tag o) "DOT" -> ()
-      | _ -> incr n;add_anonymous_leaf (inLabel !n)),
-  (fun () -> !n),
-  (fun x -> n:=x;add_anonymous_leaf (inLabel x))
-
-let is_label_n n x =
-  match x with
-    | (sp, Leaf o) when String.equal (object_tag o) "DOT" &&
-      Int.equal n (outLabel o) -> true
-    | _ -> false
-
-(** Reset the label registered by [mark_end_of_command()] with number n,
-    which should be strictly in the past. *)
-
-let reset_label n =
-  if n >= current_command_label () then
-    error "Cannot backtrack to the current label or a future one";
-  reset_to (is_label_n n);
-  (* forget state numbers after n only if reset succeeded *)
-  reset_command_label n
-
-let raw_reset_initial () = reset_label first_command_label
-
-(** Search the last label registered before defining [id] *)
-
-let label_before_name (loc,id) =
-  let found = ref false in
-  let search = function
-    | (_, Leaf o) when !found && String.equal (object_tag o) "DOT" -> true
-    | ((fp, _),_) ->
-      let (_, name) = repr_path fp in
-      let () = if Names.Id.equal id name then found := true in
-      false
-  in
-  match find_entry_p search with
-    | (_,Leaf o) -> outLabel o
-    | _ -> raise Not_found
 
 (* State and initialization. *)
 
@@ -616,8 +539,7 @@ let unfreeze (mn,stk) =
 let init () =
   unfreeze (None,[]);
   Summary.init_summaries ();
-  add_frozen_state (); (* Stores e.g. the keywords declared in g_*.ml4 *)
-  mark_end_of_command () (* For allowing Reset Initial in coqtop -l *)
+  add_frozen_state () (* Stores e.g. the keywords declared in g_*.ml4 *)
 
 (* Misc *)
 

@@ -13,20 +13,25 @@ open Environ
 open Declarations
 open Entries
 
-val translate_local_def : env -> definition_entry ->
-  constr * types * constraints
+val translate_local_def : env -> Id.t -> definition_entry ->
+  constant_def * types * constant_constraints
 
 val translate_local_assum : env -> types -> types * constraints
 
-val translate_constant : env -> constant_entry -> constant_body
+(* returns the same definition_entry but with side effects turned into
+ * let-ins or beta redexes. it is meant to get a term out of a not yet
+ * type checked proof *)
+val handle_side_effects : env -> definition_entry -> definition_entry
+
+val translate_constant : env -> constant -> constant_entry -> constant_body
 
 val translate_mind :
   env -> mutual_inductive -> mutual_inductive_entry -> mutual_inductive_body
 
-val translate_recipe : env -> Cooking.recipe -> constant_body
-
+val translate_recipe : env -> constant -> Cooking.recipe -> constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 
-val infer_declaration : env -> constant_entry -> Cooking.result
-val build_constant_declaration : env -> Cooking.result -> constant_body
+val infer_declaration : ?what:string -> env -> constant_entry -> Cooking.result
+val build_constant_declaration :
+  constant -> env -> Cooking.result -> constant_body

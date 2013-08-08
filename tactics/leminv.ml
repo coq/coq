@@ -196,7 +196,8 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     (str"Computed inversion goal was not closed in initial signature.");
   *)
   let pf = Proof.start [invEnv,invGoal] in
-  Proof.run_tactic env (Proofview.V82.tactic (tclTHEN intro (onLastHypId inv_op))) pf;
+  let pf = Proof.run_tactic env 
+    (Proofview.V82.tactic (tclTHEN intro (onLastHypId inv_op))) pf in
   let pfterm = List.hd (Proof.partial_proof pf) in
   let global_named_context = Global.named_context () in
   let ownSign = ref begin
@@ -227,7 +228,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
 let add_inversion_lemma name env sigma t sort dep inv_op =
   let invProof = inversion_scheme env sigma t sort dep inv_op in
   let entry = {
-    const_entry_body = invProof;
+    const_entry_body = Future.from_val (invProof,Declareops.no_seff);
     const_entry_secctx = None;
     const_entry_type = None;
     const_entry_opaque = false;
@@ -241,8 +242,8 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
 
 let inversion_lemma_from_goal n na (loc,id) sort dep_option inv_op =
   let pts = get_pftreestate() in
-  let { it=gls ; sigma=sigma } = Proof.V82.subgoals pts in
-  let gl = { it = List.nth gls (n-1) ; sigma=sigma } in
+  let { it=gls ; sigma=sigma; eff=eff } = Proof.V82.subgoals pts in
+  let gl = { it = List.nth gls (n-1) ; sigma=sigma; eff=eff } in
   let t =
     try pf_get_hyp_typ gl id
     with Not_found -> Pretype_errors.error_var_not_found_loc loc id in

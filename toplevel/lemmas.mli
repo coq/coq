@@ -35,22 +35,24 @@ val start_proof_with_initialization :
 val set_save_hook : (Proof.proof -> unit) -> unit
 
 (** {6 ... } *)
-(** [save_named b] saves the current completed proof under the name it
-was started; boolean [b] tells if the theorem is declared opaque; it
-fails if the proof is not completed *)
+(** [save_named b] saves the current completed (or the provided) proof
+    under the name it was started; boolean [b] tells if the theorem is 
+    declared opaque; it fails if the proof is not completed *)
 
-val save_named : bool -> unit
+val save_named : ?proof:Proof_global.closed_proof -> bool -> unit
 
 (** [save_anonymous b name] behaves as [save_named] but declares the theorem
 under the name [name] and respects the strength of the declaration *)
 
-val save_anonymous : bool -> Id.t -> unit
+val save_anonymous :
+  ?proof:Proof_global.closed_proof -> bool -> Id.t -> unit
 
 (** [save_anonymous_with_strength s b name] behaves as [save_anonymous] but
    declares the theorem under the name [name] and gives it the
    strength [strength] *)
 
-val save_anonymous_with_strength : theorem_kind -> bool -> Id.t -> unit
+val save_anonymous_with_strength :
+  ?proof:Proof_global.closed_proof -> theorem_kind -> bool -> Id.t -> unit
 
 (** [admit ()] aborts the current goal and save it as an assmumption *)
 

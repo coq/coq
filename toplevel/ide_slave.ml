@@ -104,10 +104,8 @@ let coqide_cmd_checks (loc,ast) =
   if is_debug ast then
     user_error "Debug mode not available within CoqIDE";
   if is_known_option ast then
-    user_error "Use CoqIDE display menu instead";
-  if Vernac.is_navigation_vernac ast then
-    user_error "Use CoqIDE navigation instead";
-  if is_undo ast then
+    msg_warning (strbrk"This will not work. Use CoqIDE display menu instead");
+  if Vernac.is_navigation_vernac ast || is_undo ast then
     msg_warning (strbrk "Rather use CoqIDE navigation instead");
   if is_query ast then
     msg_warning (strbrk "Query commands should not be inserted in scripts")
@@ -120,10 +118,14 @@ let interp (id,raw,verbosely,s) =
   let loc_ast = Vernac.parse_sentence (pa,None) in
   if not raw then coqide_cmd_checks loc_ast;
   Flags.make_silent (not verbosely);
-  Vernac.eval_expr ~preserving:raw loc_ast;
+  if id = 0 then Vernac.eval_expr (loc, VernacStm (Command ast))
+  else Vernac.eval_expr loc_ast;
   Flags.make_silent true;
-  Pp.feedback Interface.Processed;
-  read_stdout ()
+  Stm.get_current_state (), read_stdout ()
+
+let backto id =
+  Vernac.eval_expr (Loc.ghost,
+    VernacStm (Command (VernacBackTo (Stateid.int_of_state_id id))))
 
 (** Goal display *)
 
@@ -252,7 +254,7 @@ let status () =
     Interface.status_proofname = proof;
     Interface.status_allproofs = allproofs;
     Interface.status_statenum = Lib.current_command_label ();
-    Interface.status_proofnum = Pfedit.current_proof_depth ();
+    Interface.status_proofnum = Stm.current_proof_depth ();
   }
 
 let search flags = Search.interface_search flags
@@ -276,6 +278,17 @@ let about () = {
   Interface.release_date = Coq_config.date;
   Interface.compile_date = Coq_config.compile_date;
 }
+
+let handle_exn e =
+  let dummy = Stateid.dummy_state_id in
+  let loc_of e = match Loc.get_loc e with
+    | Some loc when not (Loc.is_ghost loc) -> Some (Loc.unloc loc)
+    | _ -> None in
+  let mk_msg e = read_stdout ()^"\n"^string_of_ppcmds (Errors.print e) in
+  match e with
+  | Errors.Drop -> dummy, None, "Drop is not allowed by coqide!"
+  | Errors.Quit -> dummy, None, "Quit is not allowed by coqide!"
+  | e -> dummy, loc_of e, mk_msg e
 
 (** When receiving the Quit call, we don't directly do an [exit 0],
     but rather set this reference, in order to send a final answer
@@ -307,7 +320,7 @@ let eval_call c =
   in
   let handler = {
     Interface.interp = interruptible interp;
-    Interface.rewind = interruptible Backtrack.back;
+    Interface.rewind = interruptible (fun _ -> 0);
     Interface.goals = interruptible goals;
     Interface.evars = interruptible evars;
     Interface.hints = interruptible hints;

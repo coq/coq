@@ -178,23 +178,30 @@ let build_beq_scheme kn =
       let rec aux c =
 	let (c,a) = Reductionops.whd_betaiota_stack Evd.empty c in
 	match kind_of_term c with
-        | Rel x -> mkRel (x-nlist+ndx)
-        | Var x -> mkVar (Id.of_string ("eq_"^(Id.to_string x)))
+        | Rel x -> mkRel (x-nlist+ndx), Declareops.no_seff
+        | Var x -> mkVar (id_of_string ("eq_"^(string_of_id x))), Declareops.no_seff
         | Cast (x,_,_) -> aux (applist (x,a))
         | App _ -> assert false
-        | Ind (kn',i as ind') -> if eq_mind kn kn' then mkRel(eqA-nlist-i+nb_ind-1)
-                        else ( try
-			  let a = Array.of_list a in
-                          let eq = mkConst (find_scheme (!beq_scheme_kind_aux()) (kn',i))
-                          and eqa = Array.map aux a
-			  in
-                            let args = Array.append
-                                (Array.map (fun x->lift lifti x) a) eqa
-                            in if Array.equal eq_constr args [||] then eq
-                               else mkApp (eq,Array.append
-                                      (Array.map (fun x->lift lifti x) a) eqa)
-                         with Not_found -> raise(EqNotFound (ind',ind))
-                        )
+        | Ind (kn',i as ind') -> 
+            if eq_mind kn kn' then mkRel(eqA-nlist-i+nb_ind-1), Declareops.no_seff
+            else begin
+              try
+                let eq, eff =
+                  let c, eff = find_scheme (!beq_scheme_kind_aux()) (kn',i) in
+                  mkConst c, eff in
+                let eqa, eff =
+                  let eqa, effs = List.split (List.map aux a) in
+                  Array.of_list eqa,
+                  Declareops.union_side_effects
+                    (Declareops.flatten_side_effects (List.rev effs))
+                    eff in
+                let args =
+                  Array.append 
+                    (Array.of_list (List.map (fun x -> lift lifti x) a)) eqa in
+                if Int.equal (Array.length args) 0 then eq, eff
+                else mkApp (eq, args), eff
+              with Not_found -> raise(EqNotFound (ind',ind))
+            end
         | Sort _  -> raise InductiveWithSort
         | Prod _ -> raise InductiveWithProduct
         | Lambda _-> raise (EqUnknown "Lambda")
@@ -229,6 +236,7 @@ let build_beq_scheme kn =
     let constrsi = constrs (3+nparrec) in
     let n = Array.length constrsi in
     let ar = Array.make n ff in
+        let eff = ref Declareops.no_seff in
 	for i=0 to n-1 do
 	  let nb_cstr_args = List.length constrsi.(i).cs_args in
 	  let ar2 = Array.make n ff in
@@ -240,12 +248,13 @@ let build_beq_scheme kn =
                     | _ -> let eqs = Array.make nb_cstr_args tt in
                       for ndx = 0 to nb_cstr_args-1 do
                         let _,_,cc = List.nth constrsi.(i).cs_args ndx in
-                          let eqA = compute_A_equality rel_list
+                          let eqA, eff' = compute_A_equality rel_list
                                           nparrec
                                           (nparrec+3+2*nb_cstr_args)
                                           (nb_cstr_args+ndx+1)
                                           cc
                           in
+                          eff := Declareops.union_side_effects eff' !eff;
                           Array.set eqs ndx
                               (mkApp (eqA,
                                 [|mkRel (ndx+1+nb_cstr_args);mkRel (ndx+1)|]
@@ -271,23 +280,28 @@ let build_beq_scheme kn =
 	done;
         mkNamedLambda (Id.of_string "X") (mkFullInd ind (nb_ind-1+1))  (
           mkNamedLambda (Id.of_string "Y") (mkFullInd ind (nb_ind-1+2))  (
- 	    mkCase (ci, do_predicate rel_list 0,mkVar (Id.of_string "X"),ar)))
+ 	    mkCase (ci, do_predicate rel_list 0,mkVar (Id.of_string "X"),ar))),
+        !eff
     in (* build_beq_scheme *)
     let names = Array.make nb_ind Anonymous and
         types = Array.make nb_ind mkSet and
         cores = Array.make nb_ind mkSet in
+    let eff = ref Declareops.no_seff in
     for i=0 to (nb_ind-1) do
         names.(i) <- Name (Id.of_string (rec_name i));
 	types.(i) <- mkArrow (mkFullInd (kn,i) 0)
                      (mkArrow (mkFullInd (kn,i) 1) bb);
-        cores.(i) <- make_one_eq i
+        let c, eff' = make_one_eq i in
+        cores.(i) <- c;
+        eff := Declareops.union_side_effects eff' !eff
     done;
     Array.init nb_ind (fun i ->
       let kelim = Inductive.elim_sorts (mib,mib.mind_packets.(i)) in
 	if not (List.mem InSet kelim) then
 	  raise (NonSingletonProp (kn,i));
         let fix = mkFix (((Array.make nb_ind 0),i),(names,types,cores)) in
-        create_input fix)
+        create_input fix),
+    !eff
 
 let beq_scheme_kind = declare_mutual_scheme_object "_beq" build_beq_scheme
 
@@ -338,8 +352,10 @@ let do_replace_lb lb_scheme_key aavoid narg gls p q =
   in
   let type_of_pq = pf_type_of gls p in
     let u,v = destruct_ind type_of_pq
-    in let lb_type_of_p =
-        try mkConst (find_scheme lb_scheme_key u)
+    in let lb_type_of_p, eff =
+        try 
+          let c, eff = find_scheme lb_scheme_key u in
+          mkConst c, eff
         with Not_found ->
           (* spiwack: the format of this error message should probably
 	              be improved. *)
@@ -357,7 +373,9 @@ let do_replace_lb lb_scheme_key aavoid narg gls p q =
                           (Array.map (fun x -> do_arg x 2) v)
         in let app =  if Array.equal eq_constr lb_args [||]
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
-            in [Equality.replace p q ; apply app ; Auto.default_auto]
+            in 
+            [Tactics.emit_side_effects eff;
+             Equality.replace p q ; apply app ; Auto.default_auto]
 
 (* used in the bool -> leib side *)
 let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
@@ -396,8 +414,10 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
           in if eq_ind u ind
              then (Equality.replace t1 t2)::(Auto.default_auto)::(aux q1 q2)
              else (
-               let bl_t1 =
-               try mkConst (find_scheme bl_scheme_key u)
+               let bl_t1, eff =
+               try 
+                 let c, eff = find_scheme bl_scheme_key u in
+                 mkConst c, eff
                with Not_found ->
 		 (* spiwack: the format of this error message should probably
 	                     be improved. *)
@@ -418,6 +438,7 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
                 let app =  if Array.equal eq_constr bl_args [||]
                            then bl_t1 else mkApp (bl_t1,bl_args)
                 in
+                  (Tactics.emit_side_effects eff)::
                   (Equality.replace_by t1 t2
                     (tclTHEN (apply app) (Auto.default_auto)))::(aux q1 q2)
               )
@@ -463,16 +484,17 @@ let eqI ind l =
   let list_id = list_id l in
   let eA = Array.of_list((List.map (fun (s,_,_,_) -> mkVar s) list_id)@
                            (List.map (fun (_,seq,_,_)-> mkVar seq) list_id ))
-  and  e = try mkConst (find_scheme beq_scheme_kind ind) with
-    Not_found -> error
+  and e, eff = 
+    try let c, eff = find_scheme beq_scheme_kind ind in mkConst c, eff 
+    with Not_found -> error
         ("The boolean equality on "^(string_of_mind (fst ind))^" is needed.");
-  in (if Array.equal eq_constr eA [||] then e else mkApp(e,eA))
+  in (if Array.equal eq_constr eA [||] then e else mkApp(e,eA)), eff
 
 (**********************************************************************)
 (* Boolean->Leibniz *)
 
 let compute_bl_goal ind lnamesparrec nparrec =
-  let eqI = eqI ind lnamesparrec in
+  let eqI, eff = eqI ind lnamesparrec in
   let list_id = list_id lnamesparrec in
   let create_input c =
     let x = Id.of_string "x" and
@@ -506,7 +528,7 @@ let compute_bl_goal ind lnamesparrec nparrec =
             mkArrow
               (mkApp(eq,[|bb;mkApp(eqI,[|mkVar n;mkVar m|]);tt|]))
               (mkApp(eq,[|mkFullInd ind (nparrec+3);mkVar n;mkVar m|]))
-        )))
+        ))), eff
 
 let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec gsig =
   let list_id = list_id lnamesparrec in
@@ -590,9 +612,10 @@ let make_bl_scheme mind =
   let nparrec = mib.mind_nparams_rec in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  [|Pfedit.build_by_tactic (Global.env())
-    (compute_bl_goal ind lnamesparrec nparrec)
-    (compute_bl_tact (!bl_scheme_kind_aux()) ind lnamesparrec nparrec)|]
+  let bl_goal, eff = compute_bl_goal ind lnamesparrec nparrec in
+  [|Pfedit.build_by_tactic (Global.env()) bl_goal
+    (compute_bl_tact (!bl_scheme_kind_aux()) ind lnamesparrec nparrec)|],
+  eff
 
 let bl_scheme_kind = declare_mutual_scheme_object "_dec_bl" make_bl_scheme
 
@@ -603,7 +626,7 @@ let _ = bl_scheme_kind_aux := fun () -> bl_scheme_kind
 
 let compute_lb_goal ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
-  let eqI = eqI ind lnamesparrec in
+  let eqI, eff = eqI ind lnamesparrec in
     let create_input c =
       let x = Id.of_string "x" and
           y = Id.of_string "y" in
@@ -636,7 +659,7 @@ let compute_lb_goal ind lnamesparrec nparrec =
             mkArrow
               (mkApp(eq,[|mkFullInd ind (nparrec+2);mkVar n;mkVar m|]))
               (mkApp(eq,[|bb;mkApp(eqI,[|mkVar n;mkVar m|]);tt|]))
-        )))
+        ))), eff
 
 let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec gsig =
   let list_id = list_id lnamesparrec in
@@ -702,9 +725,10 @@ let make_lb_scheme mind =
   let nparrec = mib.mind_nparams_rec in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  [|Pfedit.build_by_tactic (Global.env())
-    (compute_lb_goal ind lnamesparrec nparrec)
-    (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)|]
+  let lb_goal, eff = compute_lb_goal ind lnamesparrec nparrec in
+  [|Pfedit.build_by_tactic (Global.env()) lb_goal
+    (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)|],
+  eff
 
 let lb_scheme_kind = declare_mutual_scheme_object "_dec_lb" make_lb_scheme
 
@@ -771,7 +795,7 @@ let compute_dec_goal ind lnamesparrec nparrec =
 
 let compute_dec_tact ind lnamesparrec nparrec gsig =
   let list_id = list_id lnamesparrec in
-  let eqI = eqI ind lnamesparrec in
+  let eqI, eff = eqI ind lnamesparrec in
   let avoid = ref [] in
   let eqtrue x = mkApp(eq,[|bb;x;tt|]) in
   let eqfalse x = mkApp(eq,[|bb;x;ff|]) in
@@ -793,17 +817,22 @@ let compute_dec_tact ind lnamesparrec nparrec gsig =
   avoid := freshH::(!avoid);
   let arfresh = Array.of_list fresh_first_intros in
   let xargs = Array.sub arfresh 0 (2*nparrec) in
-  let blI = try mkConst (find_scheme bl_scheme_kind ind) with
+  let blI, eff' = 
+    try let c, eff = find_scheme bl_scheme_kind ind in mkConst c, eff with
             Not_found -> error (
               "Error during the decidability part, boolean to leibniz"^
               " equality is required.")
   in
-  let lbI = try mkConst (find_scheme lb_scheme_kind ind) with
+  let lbI, eff'' =
+    try let c, eff = find_scheme lb_scheme_kind ind in mkConst c, eff with
             Not_found -> error (
               "Error during the decidability part, leibniz to boolean"^
               " equality is required.")
   in
   tclTHENSEQ [
+        Tactics.emit_side_effects
+          (Declareops.union_side_effects eff''
+            (Declareops.union_side_effects eff' eff));
         intros_using fresh_first_intros;
         intros_using [freshn;freshm];
 	(*we do this so we don't have to prove the same goal twice *)
@@ -859,7 +888,7 @@ let make_eq_decidability mind =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   [|Pfedit.build_by_tactic (Global.env())
     (compute_dec_goal ind lnamesparrec nparrec)
-    (compute_dec_tact ind lnamesparrec nparrec)|]
+    (compute_dec_tact ind lnamesparrec nparrec)|], Declareops.no_seff
 
 let eq_dec_scheme_kind =
   declare_mutual_scheme_object "_eq_dec" make_eq_decidability

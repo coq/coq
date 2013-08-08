@@ -180,7 +180,7 @@ let build_sym_scheme env ind =
 
 let sym_scheme_kind =
   declare_individual_scheme_object "_sym_internal"
-  (fun ind -> build_sym_scheme (Global.env() (* side-effect! *)) ind)
+  (fun ind -> build_sym_scheme (Global.env() (* side-effect! *)) ind, Declareops.no_seff)
 
 (**********************************************************************)
 (* Build the involutivity of symmetry for an inductive type           *)
@@ -201,7 +201,8 @@ let sym_scheme_kind =
 let build_sym_involutive_scheme env ind =
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env ind in
-  let sym = mkConst (find_scheme sym_scheme_kind ind) in
+  let c, eff = find_scheme sym_scheme_kind ind in
+  let sym = mkConst c in
   let (eq,eqrefl) = get_coq_eq () in
   let cstr n = mkApp (mkConstruct(ind,1),extended_rel_vect n paramsctxt) in
   let varH = fresh env (default_id_of_sort (snd (mind_arity mip))) in
@@ -236,7 +237,8 @@ let build_sym_involutive_scheme env ind =
 	       [|mkRel 1|]])|]]);
 	 mkRel 1|])),
      mkRel 1 (* varH *),
-       [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|]))))
+       [|mkApp(eqrefl,[|applied_ind_C;cstr (nrealargs+1)|])|])))),
+  eff
 
 let sym_involutive_scheme_kind =
   declare_individual_scheme_object "_sym_involutive"
@@ -305,8 +307,10 @@ let sym_involutive_scheme_kind =
 let build_l2r_rew_scheme dep env ind kind =
   let (mib,mip as specif),nrealargs,realsign,paramsctxt,paramsctxt1 =
     get_sym_eq_data env ind in
-  let sym = mkConst (find_scheme sym_scheme_kind ind) in
-  let sym_involutive = mkConst (find_scheme sym_involutive_scheme_kind ind) in
+  let c, eff = find_scheme sym_scheme_kind ind in
+  let sym = mkConst c in
+  let c, eff' = find_scheme sym_involutive_scheme_kind ind in
+  let sym_involutive = mkConst c in
   let (eq,eqrefl) = get_coq_eq () in
   let cstr n p =
     mkApp (mkConstruct(ind,1),
@@ -384,7 +388,8 @@ let build_l2r_rew_scheme dep env ind kind =
          Array.append (extended_rel_vect 3 mip.mind_arity_ctxt) [|mkVar varH|]),
        [|main_body|])
    else
-     main_body))))))
+     main_body)))))),
+  Declareops.union_side_effects eff' eff
 
 (**********************************************************************)
 (* Build the left-to-right rewriting lemma for hypotheses associated  *)
@@ -613,7 +618,7 @@ let rew_l2r_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_dep_scheme_kind =
   declare_individual_scheme_object "_rew_dep"
-  (fun ind -> build_r2l_rew_scheme true (Global.env()) ind InType)
+  (fun ind -> build_r2l_rew_scheme true (Global.env()) ind InType,Declareops.no_seff)
 
 (**********************************************************************)
 (* Dependent rewrite from right-to-left in hypotheses                 *)
@@ -623,7 +628,7 @@ let rew_r2l_dep_scheme_kind =
 (**********************************************************************)
 let rew_r2l_forward_dep_scheme_kind =
   declare_individual_scheme_object "_rew_fwd_dep"
-  (fun ind -> build_r2l_forward_rew_scheme true (Global.env()) ind InType)
+  (fun ind -> build_r2l_forward_rew_scheme true (Global.env()) ind InType,Declareops.no_seff)
 
 (**********************************************************************)
 (* Dependent rewrite from left-to-right in hypotheses                 *)
@@ -633,7 +638,7 @@ let rew_r2l_forward_dep_scheme_kind =
 (**********************************************************************)
 let rew_l2r_forward_dep_scheme_kind =
   declare_individual_scheme_object "_rew_fwd_r_dep"
-  (fun ind -> build_l2r_forward_rew_scheme true (Global.env()) ind InType)
+  (fun ind -> build_l2r_forward_rew_scheme true (Global.env()) ind InType,Declareops.no_seff)
 
 (**********************************************************************)
 (* Non-dependent rewrite from either left-to-right in conclusion or   *)
@@ -647,7 +652,7 @@ let rew_l2r_forward_dep_scheme_kind =
 let rew_l2r_scheme_kind =
   declare_individual_scheme_object "_rew_r"
   (fun ind -> fix_r2l_forward_rew_scheme
-      (build_r2l_forward_rew_scheme false (Global.env()) ind InType))
+     (build_r2l_forward_rew_scheme false (Global.env()) ind InType), Declareops.no_seff)
 
 (**********************************************************************)
 (* Non-dependent rewrite from either right-to-left in conclusion or   *)
@@ -657,7 +662,7 @@ let rew_l2r_scheme_kind =
 (**********************************************************************)
 let rew_r2l_scheme_kind =
   declare_individual_scheme_object "_rew"
-  (fun ind -> build_r2l_rew_scheme false (Global.env()) ind InType)
+  (fun ind -> build_r2l_rew_scheme false (Global.env()) ind InType, Declareops.no_seff)
 
 (* End of rewriting schemes *)
 
@@ -728,4 +733,4 @@ let build_congr env (eq,refl) ind =
 let congr_scheme_kind = declare_individual_scheme_object "_congr"
   (fun ind ->
     (* May fail if equality is not defined *)
-    build_congr (Global.env()) (get_coq_eq ()) ind)
+          build_congr (Global.env()) (get_coq_eq ()) ind, Declareops.no_seff)

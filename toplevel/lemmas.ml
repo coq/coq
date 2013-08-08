@@ -48,17 +48,22 @@ let adjust_guardness_conditions const = function
   | [] -> const (* Not a recursive statement *)
   | possible_indexes ->
   (* Try all combinations... not optimal *)
-  match kind_of_term const.const_entry_body with
-  | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
+      (* XXX bug ignore(Future.join const.const_entry_body); *)
+     { const with const_entry_body =
+        Future.chain ~id:"adjust_guardness_conditions" const.const_entry_body
+        (fun (body, eff) ->
+          match kind_of_term body with
+          | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
 (*      let possible_indexes =
 	List.map2 (fun i c -> match i with Some i -> i | None ->
 	  List.interval 0 (List.length ((lam_assum c))))
 	  lemma_guard (Array.to_list fixdefs) in
 *)
-      let indexes =
-	search_guard Loc.ghost (Global.env()) possible_indexes fixdecls in
-      { const with const_entry_body = mkFix ((indexes,0),fixdecls) }
-  | c -> const
+              let indexes =
+	        search_guard Loc.ghost (Global.env())
+                  possible_indexes fixdecls in
+              mkFix ((indexes,0),fixdecls),  eff
+          | _ -> body, eff) }
 
 let find_mutually_recursive_statements thms =
     let n = List.length thms in
@@ -159,7 +164,7 @@ let look_for_possibly_mutual_statements = function
 
 (* Saving a goal *)
 
-let save id const do_guard (locality,kind) hook =
+let save ?proof id const do_guard (locality,kind) hook =
   let const = adjust_guardness_conditions const do_guard in
   let k = Kindops.logical_kind_of_goal_kind kind in
   let l,r = match locality with
@@ -175,7 +180,8 @@ let save id const do_guard (locality,kind) hook =
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
 	Autoinstance.search_declaration (ConstRef kn);
 	(locality, ConstRef kn) in
-  Pfedit.delete_current_proof ();
+  (* if the proof is given explicitly, nothing has to be deleted *)
+  if proof = None then Pfedit.delete_current_proof ();
   definition_message id;
   hook l r
 
@@ -220,7 +226,8 @@ let save_remaining_recthms (locality,kind) body opaq i (id,(t_i,(_,imps))) =
         | _ -> anomaly (Pp.str "Not a proof by induction") in
       match locality with
       | Discharge ->
-          let const = { const_entry_body = body_i;
+          let const = { const_entry_body =
+                Future.from_val (body_i,Declareops.no_seff);
               const_entry_secctx = None;
               const_entry_type = Some t_i;
               const_entry_opaque = opaq;
@@ -235,7 +242,8 @@ let save_remaining_recthms (locality,kind) body opaq i (id,(t_i,(_,imps))) =
         | Global -> false
         | Discharge -> assert false
         in
-        let const = { const_entry_body = body_i;
+        let const = { const_entry_body =
+              Future.from_val (body_i,Declareops.no_seff);
             const_entry_secctx = None;
             const_entry_type = Some t_i;
             const_entry_opaque = opaq;
@@ -247,37 +255,32 @@ let save_remaining_recthms (locality,kind) body opaq i (id,(t_i,(_,imps))) =
 let save_hook = ref ignore
 let set_save_hook f = save_hook := f
 
-let get_proof opacity =
-  let id,(const,do_guard,persistence,hook) = Pfedit.cook_proof !save_hook in
+let get_proof ?proof opacity =
+  let id,(const,do_guard,persistence,hook) = 
+    match proof with
+    | None -> Pfedit.cook_proof !save_hook 
+    | Some p -> Pfedit.cook_this_proof !save_hook p in
   id,{const with const_entry_opaque = opacity},do_guard,persistence,hook
 
-let save_named opacity =
-  let p = Proof_global.give_me_the_proof () in
-  Proof.transaction p begin fun () ->
-    let id,const,do_guard,persistence,hook = get_proof opacity in
-    save id const do_guard persistence hook
-  end
+let save_named ?proof opacity =
+  let id,const,do_guard,persistence,hook = get_proof ?proof opacity in
+  save ?proof id const do_guard persistence hook
 
 let check_anonymity id save_ident =
   if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
     error "This command can only be used for unnamed theorem."
 
-let save_anonymous opacity save_ident =
-  let p = Proof_global.give_me_the_proof () in
-  Proof.transaction p begin fun () ->
-    let id,const,do_guard,persistence,hook = get_proof opacity in
-    check_anonymity id save_ident;
-    save save_ident const do_guard persistence hook
-  end
 
-let save_anonymous_with_strength kind opacity save_ident =
-  let p = Proof_global.give_me_the_proof () in
-  Proof.transaction p begin fun () ->
-    let id,const,do_guard,_,hook = get_proof opacity in
-    check_anonymity id save_ident;
-    (* we consider that non opaque behaves as local for discharge *)
-    save save_ident const do_guard (Global, Proof kind) hook
-  end
+let save_anonymous ?proof opacity save_ident =
+  let id,const,do_guard,persistence,hook = get_proof ?proof opacity in
+  check_anonymity id save_ident;
+  save ?proof save_ident const do_guard persistence hook
+
+let save_anonymous_with_strength ?proof kind opacity save_ident =
+  let id,const,do_guard,_,hook = get_proof ?proof opacity in
+  check_anonymity id save_ident;
+  (* we consider that non opaque behaves as local for discharge *)
+  save ?proof save_ident const do_guard (Global, Proof kind) hook
 
 (* Starting a goal *)
 

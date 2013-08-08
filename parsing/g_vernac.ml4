@@ -76,6 +76,14 @@ GEXTEND Gram
       | IDENT "Fail"; v = vernac -> VernacFail v
       | IDENT "Local"; v = vernac_aux -> VernacLocal (true, v)
       | IDENT "Global"; v = vernac_aux -> VernacLocal (false, v)
+
+      (* Stm backdoor *)
+      | IDENT "Stm"; IDENT "JoinDocument"; "." -> VernacStm JoinDocument
+      | IDENT "Stm"; IDENT "Finish"; "." -> VernacStm Finish
+      | IDENT "Stm"; IDENT "Observe"; id = INT; "." ->
+          VernacStm (Observe (Stateid.state_id_of_int (int_of_string id)))
+      | IDENT "Stm"; IDENT "Command"; v = vernac_aux -> VernacStm (Command v)
+
       | v = vernac_aux -> v ] 
     ]
   ;

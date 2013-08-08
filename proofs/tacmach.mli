@@ -27,14 +27,16 @@ type 'a sigma   = 'a Evd.sigma;;
 type tactic     = Proof_type.tactic;;
 
 val sig_it  : 'a sigma   -> 'a
+val sig_eff : 'a sigma   -> Declareops.side_effects
 val project : goal sigma -> evar_map
 
-val re_sig : 'a -> evar_map -> 'a sigma
+val re_sig : 'a -> Declareops.side_effects -> evar_map -> 'a sigma
 
-val unpackage : 'a sigma -> evar_map ref * 'a
-val repackage : evar_map ref -> 'a -> 'a sigma
+val unpackage : 'a sigma -> evar_map ref * 'a * Declareops.side_effects ref
+val repackage : Declareops.side_effects ref -> evar_map ref -> 'a -> 'a sigma
 val apply_sig_tac :
-  evar_map ref -> (goal sigma -> (goal list) sigma) -> goal -> (goal list) 
+  Declareops.side_effects ref -> evar_map ref -> 
+  (goal sigma -> (goal list) sigma) -> goal -> (goal list) 
 
 val pf_concl              : goal sigma -> types
 val pf_env                : goal sigma -> env

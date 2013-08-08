@@ -282,7 +282,7 @@ let parse_args arglist =
 
     | "-debug" :: rem -> set_debug (); parse rem
 
-    | "-time" :: rem -> Vernac.time := true; parse rem
+    | "-time" :: rem -> Flags.time := true; parse rem
 
     | "-compat" :: v :: rem ->
         Flags.compat_version := get_compat_version v; parse rem
@@ -390,6 +390,7 @@ let init arglist =
       load_vernac_obj ();
       require ();
       load_rcfile();
+      Stm.init ();
       load_vernacular ();
       compile_files ();
       outputstate ()
@@ -407,9 +408,7 @@ let init arglist =
       Pp.ppnl (with_option raw_print Prettyp.print_full_pure_context ());
     Profile.print_profile ();
     exit 0
-  end;
-  (* We initialize the command history stack with a first entry *)
-  Backtrack.mark_command Vernacexpr.VernacNop
+  end
 
 let init_toplevel = init
 

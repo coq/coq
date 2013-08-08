@@ -26,6 +26,15 @@ type safe_environment
 
 val env_of_safe_env : safe_environment -> Environ.env
 
+val sideff_of_con : safe_environment -> constant -> side_effect 
+
+val is_curmod_library : safe_environment -> bool
+
+
+(* safe_environment has functional data affected by lazy computations,
+ * thus this function returns a new safe_environment *)
+val join_safe_environment : safe_environment -> safe_environment
+
 val empty_environment : safe_environment
 val is_empty : safe_environment -> bool
 
@@ -108,6 +117,8 @@ val export : safe_environment -> DirPath.t
 
 val import : compiled_library -> Digest.t -> safe_environment
       -> module_path * safe_environment * Nativecode.symbol array
+
+val join_compiled_library : compiled_library -> unit
 
 (** {6 Typing judgments } *)
 

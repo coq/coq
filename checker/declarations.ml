@@ -434,12 +434,15 @@ let force_lazy_constr = function
 let subst_constant_def sub = function
   | Undef inl -> Undef inl
   | Def c -> Def (subst_constr_subst sub c)
-  | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
+  | OpaqueDef lc ->
+      OpaqueDef (Future.from_val (subst_lazy_constr sub (Future.join lc)))
+
+type constant_constraints = Univ.constraints Future.computation
 
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
   | Def c -> Some (force_constr c)
-  | OpaqueDef c -> Some (force_lazy_constr c)
+  | OpaqueDef c -> Some (force_lazy_constr (Future.join c))
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false

@@ -28,7 +28,7 @@ module type S = sig
   
   type ('kind,'diff,'info) t constraint 'kind = [> `Master ]
   
-  val empty : default_info:'info -> id -> ('kind,'diff,'info) t
+  val empty : id -> ('kind,'diff,'info) t
   
   val current_branch : ('k,'e,'i) t -> branch_name
   val branches : ('k,'e,'i) t -> branch_name list
@@ -45,7 +45,7 @@ module type S = sig
   val checkout : ('k,'e,'i) t -> branch_name -> ('k,'e,'i) t
   
   val set_info : ('k,'e,'info) t -> id -> 'info -> ('k,'e,'info) t
-  val get_info : ('k,'e,'info) t -> id -> 'info
+  val get_info : ('k,'e,'info) t -> id -> 'info option
 
   val create_cluster : ('k,'e,'i) t -> id list -> ('k,'e,'i) t
 
@@ -78,14 +78,12 @@ type ('kind,'edge,'info) t = {
   cur_branch   : branch_name;
   heads        : (branch_name * 'kind branch_info) list;
   dag          : ('edge,'info) Dag.t;
-  default_info : 'info;
 }
 
-let empty ~default_info root = {
+let empty root = {
   cur_branch = master; 
   heads = [ master, { root = root; pos = root; kind = `Master } ];
   dag = Dag.empty;
-  default_info;
 }
 
 let add_node vcs id edges =
@@ -113,12 +111,10 @@ let delete_branch vcs name = { vcs with
 
 let merge vcs id ~ours:tr1 ~theirs:tr2 ?(into = vcs.cur_branch) name =
   assert (name <> into);
-  let local = into = vcs.cur_branch in
   let br_id = (get_branch vcs name).pos in
   let cur_id = (get_branch vcs into).pos in
   let vcs = add_node vcs id [tr1,cur_id; tr2,br_id] in
   let vcs = reset_branch vcs into id in
-  let vcs = if  local then reset_branch vcs name id else vcs in
   vcs
 
 let commit vcs id tr =
@@ -129,8 +125,7 @@ let commit vcs id tr =
 let checkout vcs name = { vcs with cur_branch = name }
 
 let set_info vcs id info = { vcs with dag = Dag.set_info vcs.dag id info }
-let get_info vcs id =
-  match Dag.get_info vcs.dag id with Some x -> x | None -> vcs.default_info
+let get_info vcs id = Dag.get_info vcs.dag id
 
 let create_cluster vcs l = { vcs with dag = Dag.create_cluster vcs.dag l }
 

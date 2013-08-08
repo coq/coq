@@ -213,9 +213,9 @@ let make_prompt () =
    "n |lem1|lem2|lem3| p < "
 *)
 let make_emacs_prompt() =
-  let statnum = string_of_int (Lib.current_command_label ()) in
-  let dpth = Pfedit.current_proof_depth() in
-  let pending = Pfedit.get_all_proof_names() in
+  let statnum = Stateid.string_of_state_id (Stm.get_current_state ()) in
+  let dpth = Stm.current_proof_depth() in
+  let pending = Stm.get_all_proof_names() in
   let pendingprompt =
     List.fold_left
       (fun acc x -> acc ^ (if String.is_empty acc then "" else "|") ^ Names.Id.to_string x)
@@ -306,14 +306,24 @@ let do_vernac () =
   msgerrnl (mt ());
   if !print_emacs then msgerr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
-  try ignore (Vernac.eval_expr (read_sentence ()))
+  try Vernac.eval_expr (read_sentence ()); Stm.finish ()
   with
     | End_of_input | Errors.Quit ->
         msgerrnl (mt ()); pp_flush(); raise Errors.Quit
     | Errors.Drop ->  (* Last chance *)
         if Mltop.is_ocaml_top() then raise Errors.Drop
         else ppnl (str"Error: There is no ML toplevel." ++ fnl ())
-    | any -> ppnl (print_toplevel_error any)
+    | any ->
+        Format.set_formatter_out_channel stdout;
+        ppnl (print_toplevel_error any);
+        pp_flush ();
+        match Stateid.get_state_id any with
+        | Some (valid_id,_) ->
+            let valid = Stateid.int_of_state_id valid_id in
+            Vernac.eval_expr (Loc.ghost,
+              (Vernacexpr.VernacStm (Vernacexpr.Command
+                (Vernacexpr.VernacBackTo valid))))
+        | _ -> ()
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.
@@ -330,5 +340,7 @@ let rec loop () =
     | Errors.Drop -> ()
     | Errors.Quit -> exit 0
     | any ->
-	msgerrnl (str"Anomaly: main loop exited. Please report.");
-	loop ()
+      msgerrnl (str"Anomaly: main loop exited with exception: " ++
+                str (Printexc.to_string any) ++
+                fnl() ++ str"Please report.");
+      loop ()

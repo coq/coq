@@ -30,7 +30,7 @@ let safe_sys_command =
    cf. dev/dynlink.ml. *)
 
 (* 1. Core objects *)
-let ocamlobjs = ["str.cma";"unix.cma";"nums.cma";"dynlink.cma"]
+let ocamlobjs = ["str.cma";"unix.cma";"nums.cma";"dynlink.cma";"threads.cma"]
 let camlp4objs =
   if Coq_config.camlp4 = "camlp5" then ["gramlib.cma"] else ["camlp4lib.cma"]
 let libobjs = ocamlobjs @ camlp4objs

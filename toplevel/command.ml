@@ -67,9 +67,11 @@ let rec complete_conclusion a cs = function
 let red_constant_entry n ce = function
   | None -> ce
   | Some red ->
-      let body = ce.const_entry_body in
-      { ce with const_entry_body =
-        under_binders (Global.env()) (fst (reduction_of_red_expr red)) n body }
+      let proof_out = ce.const_entry_body in
+      { ce with const_entry_body = Future.chain ~id:"red_constant_entry"
+          proof_out (fun (body,eff) ->
+          under_binders (Global.env()) 
+            (fst (reduction_of_red_expr red)) n body,eff) }
 
 let interp_definition bl red_option c ctypopt =
   let env = Global.env() in
@@ -82,7 +84,7 @@ let interp_definition bl red_option c ctypopt =
 	let c, imps2 = interp_constr_evars_impls ~impls evdref env_bl c in
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	imps1@(Impargs.lift_implicits nb_args imps2),
-	{ const_entry_body = body;
+	{ const_entry_body = Future.from_val (body,Declareops.no_seff);
           const_entry_secctx = None;
 	  const_entry_type = None;
           const_entry_opaque = false;
@@ -100,7 +102,7 @@ let interp_definition bl red_option c ctypopt =
 	then msg_warning (strbrk "Implicit arguments declaration relies on type." ++
 		     spc () ++ strbrk "The term declares more implicits than the type here.");
 	imps1@(Impargs.lift_implicits nb_args impsty),
-	{ const_entry_body = body;
+        { const_entry_body = Future.from_val(body,Declareops.no_seff);
           const_entry_secctx = None;
 	  const_entry_type = Some typ;
           const_entry_opaque = false;
@@ -135,7 +137,7 @@ let declare_definition_hook = ref ignore
 let set_declare_definition_hook = (:=) declare_definition_hook
 let get_declare_definition_hook () = !declare_definition_hook
 
-let declare_definition ident (local, k) ce imps hook =
+let declare_definition ident (local,k) ce imps hook =
   let () = !declare_definition_hook ce in
   let r = match local with
   | Discharge when Lib.sections_are_opened () ->
@@ -158,7 +160,8 @@ let do_definition ident k bl red_option c ctypopt hook =
   let (ce, evd, imps as def) = interp_definition bl red_option c ctypopt in
     if Flags.is_program_mode () then
       let env = Global.env () in
-      let c = ce.const_entry_body in
+      let c,sideff = Future.force ce.const_entry_body in
+      assert(sideff = Declareops.no_seff);
       let typ = match ce.const_entry_type with 
 	| Some t -> t
 	| None -> Retyping.get_type_of env evd c
@@ -173,7 +176,7 @@ let do_definition ident k bl red_option c ctypopt hook =
 
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
-let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) = match local with
+let declare_assumption is_coe (local, kind) c imps impl nl (_,ident) = match local with
 | Discharge when Lib.sections_are_opened () ->
   let decl = (Lib.cwd(), SectionLocalAssum (c,impl), IsAssumption kind) in
   let _ = declare_variable ident decl in
@@ -521,7 +524,7 @@ let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
 
 let declare_fix kind f def t imps =
   let ce = {
-    const_entry_body = def;
+    const_entry_body = Future.from_val def;
     const_entry_secctx = None;
     const_entry_type = Some t;
     const_entry_opaque = false;
@@ -712,7 +715,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
 	let body = it_mkLambda_or_LetIn (mkApp (constr_of_global gr, [|make|])) binders_rel in
 	let ty = it_mkProd_or_LetIn top_arity binders_rel in
 	let ce =
-          { const_entry_body = Evarutil.nf_evar !evdref body;
+          { const_entry_body = Future.from_val (Evarutil.nf_evar !evdref body,Declareops.no_seff);
             const_entry_secctx = None;
 	    const_entry_type = Some ty;
         const_entry_opaque = false;
@@ -824,10 +827,12 @@ let declare_fixpoint local ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
-    let indexes = search_guard Loc.ghost (Global.env()) indexes fixdecls in
+    let env = Global.env() in
+    let indexes = search_guard Loc.ghost env indexes fixdecls in
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     let fixdecls =
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
+    let fixdecls = List.map (fun c -> c, Declareops.no_seff) fixdecls in
     ignore (List.map4 (declare_fix (local, Fixpoint)) fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     fixpoint_message (Some indexes) fixnames;
@@ -850,6 +855,7 @@ let declare_cofixpoint local ((fixnames,fixdefs,fixtypes),fiximps) ntns =
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
+    let fixdecls = List.map (fun c-> c,Declareops.no_seff) fixdecls in
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
     ignore (List.map4 (declare_fix (local, CoFixpoint)) fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)

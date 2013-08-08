@@ -50,21 +50,6 @@ val delete_current_proof : unit -> unit
 val delete_all_proofs : unit -> unit
 
 (** {6 ... } *)
-(** [undo n] undoes the effect of the last [n] tactics applied to the
-    current proof; it fails if no proof is focused or if the ``undo''
-    stack is exhausted *)
-
-val undo : int -> unit
-
-(** [undo_todepth n] resets the proof to its nth step (does [undo (d-n)] where d
-   is the depth of the undo stack). *)
-val undo_todepth : int -> unit 
-
-(** Returns the depth of the current focused proof stack, this is used
-   to put informations in coq prompt (in emacs mode). *)
-val current_proof_depth: unit -> int
-
-(** {6 ... } *)
 (** [start_proof s str env t hook tac] starts a proof of name [s] and
     conclusion [t]; [hook] is optionally a function to be applied at
     proof end (e.g. to declare the built constructions as a coercion
@@ -79,16 +64,21 @@ val start_proof :
   ?init_tac:tactic -> ?compute_guard:lemma_possible_guards -> 
   unit declaration_hook -> unit
 
-(** [restart_proof ()] restarts the current focused proof from the beginning
-   or fails if no proof is focused *)
-
-val restart_proof : unit -> unit
-
 (** {6 ... } *)
 (** [cook_proof opacity] turns the current proof (assumed completed) into
     a constant with its name, kind and possible hook (see [start_proof]);
     it fails if there is no current proof of if it is not completed;
     it also tells if the guardness condition has to be inferred. *)
+
+val cook_this_proof : (Proof.proof -> unit) ->
+    Id.t *
+    (Entries.definition_entry list *
+    lemma_possible_guards *
+    Decl_kinds.goal_kind *
+    unit Tacexpr.declaration_hook) ->
+  Id.t *
+    (Entries.definition_entry * lemma_possible_guards * goal_kind *
+     unit declaration_hook)
 
 val cook_proof : (Proof.proof -> unit) ->
   Id.t *
@@ -145,7 +135,8 @@ val get_used_variables : unit -> Context.section_context option
    current focused proof or raises a UserError if no proof is focused or
    if there is no [n]th subgoal *)
 
-val solve_nth : ?with_end_tac:bool -> int -> tactic -> unit
+val solve_nth : ?with_end_tac:unit Proofview.tactic -> int -> tactic ->
+      Proof.proof -> Proof.proof
 
 (** [by tac] applies tactic [tac] to the 1st subgoal of the current
    focused proof or raises a UserError if there is no focused proof or
@@ -162,8 +153,9 @@ val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
 
 (** [build_by_tactic typ tac] returns a term of type [typ] by calling [tac] *)
 
-val build_constant_by_tactic : Id.t -> named_context_val -> types -> tactic ->
-  Entries.definition_entry
+val build_constant_by_tactic :
+  Id.t -> named_context_val -> ?goal_kind:goal_kind ->
+    types -> tactic -> Entries.definition_entry
 val build_by_tactic : env -> types -> tactic -> constr
 
 (** Declare the default tactic to fill implicit arguments *)

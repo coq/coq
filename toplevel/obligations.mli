@@ -22,7 +22,7 @@ open Tacexpr
 
 (** Forward declaration. *)
 val declare_fix_ref : (definition_kind -> Id.t ->
-  constr -> types -> Impargs.manual_implicits -> global_reference) ref
+  Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference) ref
 
 val declare_definition_ref :
   (Id.t -> definition_kind ->

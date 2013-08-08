@@ -51,12 +51,13 @@ let _ =
 
 let tcl_change_info_gen info_gen =
   (fun gls ->
+     let it, eff = sig_it gls, sig_eff gls in
      let concl = pf_concl gls in
-     let hyps = Goal.V82.hyps (project gls) (sig_it gls) in
-     let extra = Goal.V82.extra (project gls) (sig_it gls) in
+     let hyps = Goal.V82.hyps (project gls) it in
+     let extra = Goal.V82.extra (project gls) it in
      let (gl,ev,sigma) = Goal.V82.mk_goal (project gls) hyps concl (info_gen extra) in
-     let sigma = Goal.V82.partial_solution sigma (sig_it gls) ev in
-     { it = [gl] ; sigma= sigma } )
+     let sigma = Goal.V82.partial_solution sigma it ev in
+     { it = [gl] ; sigma= sigma; eff = eff } )
 
 let tcl_change_info info gls =
   let info_gen s = Store.set s Decl_mode.info info in
@@ -128,34 +129,34 @@ let go_to_proof_mode () =
 
 let daimon_tac gls =
   set_daimon_flag ();
-  {it=[];sigma=sig_sig gls}
+  {it=[];sigma=sig_sig gls;eff=gls.eff}
 
 (* post-instruction focus management *)
 
 (* spiwack: This used to fail if there was no focusing command
    above, but I don't think it ever happened. I hope it doesn't mess
    things up*)
-let goto_current_focus pts = 
-  Decl_mode.maximal_unfocus pts
+let goto_current_focus () = 
+  Decl_mode.maximal_unfocus ()
 
-let goto_current_focus_or_top pts =
-  goto_current_focus pts
+let goto_current_focus_or_top () =
+  goto_current_focus ()
 
 (* return *)
 
-let close_tactic_mode pts =
-  try goto_current_focus pts
+let close_tactic_mode () =
+  try goto_current_focus ()
   with Not_found ->
     error "\"return\" cannot be used outside of Declarative Proof Mode."
 
 let return_from_tactic_mode () =
-  close_tactic_mode (Proof_global.give_me_the_proof ())
+  close_tactic_mode ()
 
 (* end proof/claim *)
 
 let close_block bt pts =
     if Proof.no_focused_goal pts then
-      goto_current_focus pts
+      goto_current_focus ()
     else
       let stack =
 	if Proof.is_done pts then
@@ -165,7 +166,7 @@ let close_block bt pts =
       in
       match bt,stack with
 	B_claim, Claim::_ | B_focus, Focus_claim::_ | B_proof, [] ->
-	  (goto_current_focus pts)
+	  (goto_current_focus ())
       | _, Claim::_ ->
 	  error "\"end claim\" expected."
       | _, Focus_claim::_ ->
@@ -190,13 +191,13 @@ let close_previous_case pts =
     match get_top_stack pts with
 	Per (et,_,_,_) :: _ -> anomaly (Pp.str "Weird case occured ...")
       | Suppose_case :: Per (et,_,_,_) :: _ ->
-	  goto_current_focus (pts)
+	  goto_current_focus ()
       | _ -> error "Not inside a proof per cases or induction."
   else
     match get_stack pts with
 	Per (et,_,_,_) :: _ -> ()
       | Suppose_case :: Per (et,_,_,_) :: _ ->
-	  goto_current_focus ((pts))
+	  goto_current_focus ()
       | _ -> error "Not inside a proof per cases or induction."
 
 (* Proof instructions *)
@@ -1443,21 +1444,21 @@ let rec postprocess pts instr =
 	  in
 	    try
 	      Inductiveops.control_only_guard env pfterm;
-	      goto_current_focus_or_top pts
+	      goto_current_focus_or_top ()
  	    with
 		Type_errors.TypeError(env,
 				      Type_errors.IllFormedRecBody(_,_,_,_,_)) ->
 		  anomaly (Pp.str "\"end induction\" generated an ill-formed fixpoint")
 	end
     | Pend _ ->
-	goto_current_focus_or_top (pts)
+	goto_current_focus_or_top ()
 
 let do_instr raw_instr pts =
   let has_tactic = preprocess pts raw_instr.instr in
   begin
     if has_tactic then
-      let { it=gls ; sigma=sigma } = Proof.V82.subgoals pts in
-      let gl = { it=List.hd gls ; sigma=sigma } in
+            let { it=gls ; sigma=sigma; eff=eff } = Proof.V82.subgoals pts in
+      let gl = { it=List.hd gls ; sigma=sigma; eff=eff } in
       let env=  pf_env gl in
       let ist = {ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty;
 		 gsigma = sigma; genv = env} in
@@ -1469,7 +1470,7 @@ let do_instr raw_instr pts =
   postprocess pts raw_instr.instr;
   (* spiwack: this should restore a compatible semantics with
      v8.3 where we never stayed focused on 0 goal. *)
-  Decl_mode.maximal_unfocus pts
+  Decl_mode.maximal_unfocus ()
 
 let proof_instr raw_instr =
   let p = Proof_global.give_me_the_proof () in

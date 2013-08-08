@@ -150,4 +150,4 @@ val do_cofixpoint :
 val check_mutuality : Environ.env -> bool -> (Id.t * types) list -> unit
 
 val declare_fix : definition_kind -> Id.t ->
-  constr -> types -> Impargs.manual_implicits -> global_reference
+  Entries.proof_output -> types -> Impargs.manual_implicits -> global_reference

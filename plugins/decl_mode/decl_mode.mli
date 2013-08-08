@@ -75,6 +75,6 @@ val get_last:  Environ.env -> Id.t
 
 val focus : Proof.proof -> unit
 
-val unfocus : Proof.proof -> unit
+val unfocus : unit -> unit
 
-val maximal_unfocus : Proof.proof -> unit
+val maximal_unfocus : unit -> unit

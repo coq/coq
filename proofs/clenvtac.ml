@@ -113,7 +113,7 @@ let unifyTerms ?(flags=fail_quick_unif_flags) m n gls =
   let env = pf_env gls in
   let evd = create_goal_evar_defs (project gls) in
   let evd' = w_unify env evd CONV ~flags m n in
-  tclIDTAC {it = gls.it; sigma =  evd'}
+  tclIDTAC {it = gls.it; sigma =  evd'; eff = gls.eff}
 
 let unify ?(flags=fail_quick_unif_flags) m gls =
   let n = pf_concl gls in unifyTerms ~flags m n gls

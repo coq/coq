@@ -47,6 +47,7 @@ val proof : proof -> Goal.goal list * (Goal.goal list * Goal.goal list) list * E
 (*** General proof functions ***)
 
 val start : (Environ.env * Term.types) list -> proof
+val initial_goals : proof -> (Term.constr * Term.types) list
 
 (* Returns [true] if the considered proof is completed, that is if no goal remain
     to be considered (this does not require that all evars have been solved). *)
@@ -60,20 +61,8 @@ val partial_proof : proof -> Term.constr list
     Raises [HasUnresolvedEvar] if some evars have been left undefined. *)
 exception UnfinishedProof
 exception HasUnresolvedEvar
-val return : proof -> (Term.constr * Term.types) list
-
-(* Interpretes the Undo command. Raises [EmptyUndoStack] if 
-    the undo stack is empty. *)
-exception EmptyUndoStack
-val undo : proof -> unit
-
-(* Adds an undo effect to the undo stack. Use it with care, errors here might result
-    in inconsistent states.
-   An undo effect is meant to undo an effect on a proof (a canonical example
-   of which is {!Proofglobal.set_proof_mode} which changes the current parser for
-   tactics). Make sure it will work even if the effects have been only partially
-   applied at the time of failure. *)
-val add_undo : (unit -> unit) -> proof -> unit
+val return :
+  proof -> Term.constr -> Term.constr * Declareops.side_effects
 
 (*** Focusing actions ***)
 
@@ -113,7 +102,7 @@ val done_cond : ?loose_end:bool -> 'a focus_kind -> 'a focus_condition
 (* focus command (focuses on the [i]th subgoal) *)
 (* spiwack: there could also, easily be a focus-on-a-range tactic, is there 
    a need for it? *)
-val focus : 'a focus_condition -> 'a -> int -> proof -> unit
+val focus : 'a focus_condition -> 'a -> int -> proof -> proof
 
 exception FullyUnfocused
 exception CannotUnfocusThisWay
@@ -121,7 +110,7 @@ exception CannotUnfocusThisWay
    Raises [FullyUnfocused] if the proof is not focused.
    Raises [CannotUnfocusThisWay] if the proof the unfocusing condition
      is not met. *)
-val unfocus : 'a focus_kind -> proof -> unit
+val unfocus : 'a focus_kind -> proof -> unit -> proof
 
 (* [unfocused p] returns [true] when [p] is fully unfocused. *)
 val unfocused : proof -> bool
@@ -138,34 +127,13 @@ val is_last_focus : 'a focus_kind -> proof -> bool
 (* returns [true] if there is no goal under focus. *)
 val no_focused_goal : proof -> bool
 
-(* Sets the section variables assumed by the proof *)
-val set_used_variables : Context.section_context -> proof -> unit
-val get_used_variables : proof -> Context.section_context option
-
-(*** Endline tactic ***)
-
-(* Sets the tactic to be used when a tactic line is closed with [...] *)
-val set_endline_tactic : unit Proofview.tactic -> proof -> unit
-
-val with_end_tac : proof -> unit Proofview.tactic -> unit Proofview.tactic
-
 (*** Tactics ***)
 
-val run_tactic : Environ.env -> unit Proofview.tactic -> proof -> unit
+val run_tactic : Environ.env -> unit Proofview.tactic -> proof -> proof
 
+val emit_side_effects : Declareops.side_effects -> proof -> proof
 
-(*** Transactions ***)
-
-(* A transaction chains several commands into a single one. For instance,
-   a focusing command and a tactic. Transactions are such that if
-   any of the atomic action fails, the whole transaction fails.
-
-   During a transaction, the visible undo stack is constituted only
-   of the actions performed done during the transaction.
-
-   [transaction p f] can be called on an [f] using, itself, [transaction p].*)
-val transaction : proof -> (unit -> unit) -> unit
-
+val maximal_unfocus : 'a focus_kind -> proof -> proof
 
 (*** Commands ***)
 
@@ -178,19 +146,15 @@ module V82 : sig
   (* All the subgoals of the proof, including those which are not focused. *)
   val background_subgoals : proof -> Goal.goal list Evd.sigma
 
-  val get_initial_conclusions : proof -> Term.types list 
-
-  val depth : proof -> int 
-
   val top_goal : proof -> Goal.goal Evd.sigma
-  
+
   (* returns the existential variable used to start the proof *)
   val top_evars : proof -> Evd.evar list
 
   (* Turns the unresolved evars into goals.
      Raises [UnfinishedProof] if there are still unsolved goals. *)
-  val grab_evars : proof -> unit
+  val grab_evars : proof -> proof
 
   (* Implements the Existential command *)
-  val instantiate_evar : int -> Constrexpr.constr_expr -> proof -> unit
+  val instantiate_evar : int -> Constrexpr.constr_expr -> proof -> proof
 end

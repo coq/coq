@@ -2,6 +2,9 @@ Himsg
 Cerrors
 Class
 Locality
+Vernacexpr
+Ppextra
+Ppvernac
 Metasyntax
 Auto_ind_decl
 Search
@@ -13,11 +16,12 @@ Command
 Classes
 Record
 Ppvernac
-Backtrack
 Vernacinterp
 Mltop
 Vernacentries
 Whelp
+Vernac_classifier
+Stm
 Vernac
 Ide_slave
 Toplevel

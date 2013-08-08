@@ -44,8 +44,11 @@ val init : (Environ.env * Term.types) list -> proofview
 val finished : proofview -> bool
 
 (* Returns the current value of the proofview partial proofs. *)
-val return : proofview -> (constr*types) list
+val return : proofview -> constr -> constr * Declareops.side_effects
 
+val partial_proof : proofview -> constr list
+val initial_goals : proofview -> (constr * types) list
+val emit_side_effects : Declareops.side_effects -> proofview -> proofview
 
 (*** Focusing operations ***)
 
@@ -180,10 +183,6 @@ val tclSENSITIVE : Goal.subgoals Goal.sensitive -> unit tactic
 (*** Commands ***)
 
 val in_proofview : proofview -> (Evd.evar_map -> 'a) -> 'a
-
-
-
-
 
 (* Notations for building tactics. *)
 module Notations : sig

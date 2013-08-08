@@ -65,7 +65,7 @@ let vernac_decl_proof () =
   if Proof.is_done pf then 
     Errors.error "Nothing left to prove here."
   else
-    Proof.transaction pf begin fun () ->
+    begin
       Decl_proof_instr.go_to_proof_mode () ;
       Proof_global.set_proof_mode "Declarative" ;
       Vernacentries.print_subgoals ()
@@ -73,14 +73,14 @@ let vernac_decl_proof () =
 
 (* spiwack: some bureaucracy is not performed here *)
 let vernac_return () =
-  Proof.transaction (Proof_global.give_me_the_proof ()) begin fun () ->
+  begin
     Decl_proof_instr.return_from_tactic_mode () ;
     Proof_global.set_proof_mode "Declarative" ;
     Vernacentries.print_subgoals ()
   end
 
 let vernac_proof_instr instr =
-  Proof.transaction (Proof_global.give_me_the_proof ()) begin fun () ->
+  begin
     Decl_proof_instr.proof_instr instr;
     Vernacentries.print_subgoals ()
   end
@@ -397,4 +397,10 @@ GLOBAL: proof_instr;
   ;
 END;;
 
- 
+open Vernacexpr
+
+let () =
+  Vernac_classifier.declare_vernac_classifier "decl_mode" (function
+    | VernacExtend (("DeclProof"|"DeclReturn"), _) -> VtProofStep, VtNow
+    | VernacExtend ("ProofInstr", _) -> VtProofStep, VtLater
+    | _ -> VtUnknown, VtNow)

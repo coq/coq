@@ -387,7 +387,7 @@ let default_pr_subgoal n sigma =
     | [] -> error "No such goal."
     | g::rest ->
 	if Int.equal p 1 then
-          let pg = default_pr_goal { sigma=sigma ; it=g } in
+          let pg = default_pr_goal { sigma=sigma ; it=g; eff=Declareops.no_seff } in
           v 0 (str "subgoal " ++ int n ++ pr_goal_tag g
 	       ++ str " is:" ++ cut () ++ pg)
 	else
@@ -438,7 +438,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
   in
   let print_multiple_goals g l =
     if pr_first then
-      default_pr_goal { it = g ; sigma = sigma } ++
+      default_pr_goal { it = g ; sigma = sigma; eff=Declareops.no_seff } ++
       pr_rec 2 l
     else 
       pr_rec 1 (g::l)
@@ -463,13 +463,13 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
                  str "You can use Grab Existential Variables.")
       end
   | [g],[] when not !Flags.print_emacs ->
-      let pg = default_pr_goal { it = g ; sigma = sigma } in
+      let pg = default_pr_goal { it = g ; sigma = sigma; eff=Declareops.no_seff } in
       v 0 (
 	str "1 subgoal" ++ pr_goal_tag g ++ cut () ++ pg
 	++ emacs_print_dependent_evars sigma seeds
       )
   | [g],a::l when not !Flags.print_emacs ->
-      let pg = default_pr_goal { it = g ; sigma = sigma } in
+      let pg = default_pr_goal { it = g ; sigma = sigma; eff=Declareops.no_seff } in
       v 0 (
 	str "1 focused subgoal (" ++ print_unfocused a l ++ str")" ++ pr_goal_tag g ++ cut () ++ pg
 	++ emacs_print_dependent_evars sigma seeds
@@ -555,7 +555,7 @@ let pr_goal_by_id id =
 	 ++ pr_goal gs)
   in
   try
-    Proof.in_proof p (fun sigma -> pr {it=g;sigma=sigma})
+    Proof.in_proof p (fun sigma -> pr {it=g;sigma=sigma;eff=Declareops.no_seff})
   with Not_found -> error "Invalid goal identifier."
 
 (* Elementary tactics *)

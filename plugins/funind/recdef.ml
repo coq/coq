@@ -57,7 +57,8 @@ let find_reference sl s =
 
 let (declare_fun : Id.t -> logical_kind -> constr -> global_reference) =
   fun f_id kind value ->
-    let ce = {const_entry_body = value;
+    let ce = {const_entry_body = Future.from_val
+                (value, Declareops.no_seff);
               const_entry_secctx = None;
 	      const_entry_type = None;
           const_entry_opaque = false;
@@ -1261,7 +1262,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     ref_ := Some lemma ;
     let lid = ref [] in
     let h_num = ref (-1) in
-    ignore (Flags.silently Vernacentries.interp (Vernacexpr.VernacAbort None));
+    ignore (Flags.silently Vernacentries.interp (Loc.ghost,Vernacexpr.VernacAbort None));
     build_proof
       (  fun gls ->
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
@@ -1443,7 +1444,6 @@ let (com_eqn : int -> Id.t ->
 
 let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq
     generate_induction_principle using_lemmas : unit =
-  let previous_label = Lib.current_command_label () in
   let function_type = interp_constr Evd.empty (Global.env()) type_of_f in
   let env = push_named (function_name,None,function_type) (Global.env()) in
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
@@ -1513,7 +1513,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
 			   spc () ++ str"is defined" )
       )
   in
-  try 
+  States.with_state_protection (fun () ->
     com_terminate
       tcc_lemma_name
       tcc_lemma_constr
@@ -1523,9 +1523,6 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       term_id
       using_lemmas
       (List.length res_vars)
-      hook 
-  with reraise ->
-    ignore (Backtrack.backto previous_label);
-    (*       anomaly (Pp.str "Cannot create termination Lemma") *)
-    raise reraise
+      hook)
+    ()
 

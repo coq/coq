@@ -22,8 +22,10 @@ type mutual
 type individual
 type 'a scheme_kind
 
-type mutual_scheme_object_function = mutual_inductive -> constr array
-type individual_scheme_object_function = inductive -> constr
+type mutual_scheme_object_function =
+  mutual_inductive -> constr array * Declareops.side_effects
+type individual_scheme_object_function =
+  inductive -> constr * Declareops.side_effects
 
 (** Main functions to register a scheme builder *)
 
@@ -31,7 +33,8 @@ val declare_mutual_scheme_object : string -> ?aux:string ->
   mutual_scheme_object_function -> mutual scheme_kind
 
 val declare_individual_scheme_object : string -> ?aux:string ->
-  individual_scheme_object_function -> individual scheme_kind
+  individual_scheme_object_function ->
+  individual scheme_kind
 
 (*
 val declare_scheme : 'a scheme_kind -> (inductive * constant) array -> unit
@@ -41,12 +44,12 @@ val declare_scheme : 'a scheme_kind -> (inductive * constant) array -> unit
 
 val define_individual_scheme : individual scheme_kind -> 
   Declare.internal_flag (** internal *) ->
-  Id.t option -> inductive -> constant
+  Id.t option -> inductive -> constant * Declareops.side_effects
 
 val define_mutual_scheme : mutual scheme_kind -> Declare.internal_flag (** internal *) ->
-  (int * Id.t) list -> mutual_inductive -> constant array
+  (int * Id.t) list -> mutual_inductive -> constant array * Declareops.side_effects
 
 (** Main function to retrieve a scheme in the cache or to generate it *)
-val find_scheme : 'a scheme_kind -> inductive -> constant
+val find_scheme : 'a scheme_kind -> inductive -> constant * Declareops.side_effects
 
 val check_scheme : 'a scheme_kind -> inductive -> bool

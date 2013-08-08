@@ -22,7 +22,7 @@ open Proof_type
 open Logic
 open Refiner
 
-let re_sig it gc = { it = it; sigma = gc }
+let re_sig it eff  gc = { it = it; sigma = gc; eff = eff }
 
 (**************************************************************)
 (* Operations for handling terms under a local typing context *)
@@ -36,6 +36,7 @@ let repackage = Refiner.repackage
 let apply_sig_tac = Refiner.apply_sig_tac
 
 let sig_it   = Refiner.sig_it
+let sig_eff  = Refiner.sig_eff
 let project  = Refiner.project
 let pf_env   = Refiner.pf_env
 let pf_hyps  = Refiner.pf_hyps

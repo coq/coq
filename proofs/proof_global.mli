@@ -28,7 +28,6 @@ type proof_mode = {
     It corresponds to Coq default setting are they are set when coqtop starts. *)
 val register_proof_mode : proof_mode -> unit
 
-val there_is_a_proof : unit -> bool
 val there_are_pending_proofs : unit -> bool
 val check_no_pending_proof : unit -> unit
 
@@ -60,18 +59,27 @@ val start_proof : Names.Id.t ->
                           unit Tacexpr.declaration_hook -> 
                           unit
 
-val close_proof : unit -> 
-                           Names.Id.t * 
-                          (Entries.definition_entry list * 
-			    lemma_possible_guards * 
-			    Decl_kinds.goal_kind * 
-			    unit Tacexpr.declaration_hook)
+type closed_proof =
+  Names.Id.t *
+  (Entries.definition_entry list * lemma_possible_guards *
+    Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
+
+val close_proof : unit -> closed_proof
+
+(* A future proof may be executed later on, out of the control of Stm
+   that knows which state was (for example) supposed to close the proof
+   bit did not. Hence fix_exn to enrich it *)
+val close_future_proof :
+  fix_exn:(exn -> exn) -> unit Future.computation -> closed_proof
 
 exception NoSuchProof
 
+val get_open_goals : unit -> int
+
 (** Runs a tactic on the current proof. Raises [NoCurrentProof] is there is 
    no current proof. *)
-val run_tactic : unit Proofview.tactic -> unit
+val with_current_proof :
+  (unit Proofview.tactic -> Proof.proof -> Proof.proof) -> unit
 
 (** Sets the tactic to be used when a tactic line is closed with [...] *)
 val set_endline_tactic : unit Proofview.tactic -> unit
@@ -80,18 +88,19 @@ val set_endline_tactic : unit Proofview.tactic -> unit
 val set_used_variables : Names.Id.t list -> unit
 val get_used_variables : unit -> Context.section_context option
 
-(** Appends the endline tactic of the current proof to a tactic. *)
-val with_end_tac : unit Proofview.tactic -> unit Proofview.tactic
+val discard : Names.identifier Loc.located -> unit
+val discard_current : unit -> unit
+val discard_all : unit -> unit
 
 (**********************************************************)
-(*                                                                                                  *)
-(*                              Utility functions                                          *)
-(*                                                                                                  *)
+(*                                                        *)
+(*                            Proof modes                 *)
+(*                                                        *)
 (**********************************************************)
 
-(** [maximal_unfocus k p] unfocuses [p] until [p] has at least a
-    focused goal or that the last focus isn't of kind [k]. *)
-val maximal_unfocus : 'a Proof.focus_kind -> Proof.proof -> unit
+
+val activate_proof_mode : string -> unit
+val disactivate_proof_mode : string -> unit
 
 (**********************************************************)
 (*                                                        *)
@@ -107,7 +116,7 @@ module Bullet : sig
       with a name to identify it. *)
   type behavior = {
     name : string;
-    put : Proof.proof -> t -> unit
+    put : Proof.proof -> t -> Proof.proof
   }
 
   (** A registered behavior can then be accessed in Coq
@@ -123,9 +132,13 @@ module Bullet : sig
 
   (** Handles focusing/defocusing with bullets:
        *)
-  val put : Proof.proof -> t -> unit
+  val put : Proof.proof -> t -> Proof.proof
 end
 
 module V82 : sig
   val get_current_initial_conclusions : unit -> Names.Id.t *(Term.types list * Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
 end
+
+type state
+val freeze : unit -> state
+val unfreeze : state -> unit

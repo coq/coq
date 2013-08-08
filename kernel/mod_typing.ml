@@ -97,16 +97,17 @@ and check_with_def env sign (idl,c) mp equiv =
 		    let (j,cst1) = Typeops.infer env' c in
 		    let typ = Typeops.type_of_constant_type env' cb.const_type in
 		    let cst2 = Reduction.conv_leq env' j.uj_type typ in
-		    let cst =
-		      union_constraints
-			(union_constraints cb.const_constraints cst1)
+		    let cst = union_constraints
+			(union_constraints
+                          (Future.force cb.const_constraints) cst1)
 			cst2
 		    in
 		    let def = Def (Lazyconstr.from_val j.uj_val) in
 		    def,cst
 		| Def cs ->
 		    let cst1 = Reduction.conv env' c (Lazyconstr.force cs) in
-		    let cst = union_constraints cb.const_constraints cst1 in
+		    let cst = union_constraints
+                      (Future.force cb.const_constraints) cst1 in
 		    let def = Def (Lazyconstr.from_val c) in
 		    def,cst
 	      in
@@ -115,7 +116,7 @@ and check_with_def env sign (idl,c) mp equiv =
 		  const_body = def;
 		  const_body_code =
 		    Cemitcodes.from_val (compile_constant_body env' def);
-		  const_constraints = cst }
+		  const_constraints = Future.from_val cst }
 	      in
 	      SEBstruct(before@(l,SFBconst(cb'))::after),cb',cst
       | _ ->
@@ -373,13 +374,14 @@ let rec add_struct_expr_constraints env = function
 	  (add_struct_expr_constraints env meb1)
 	  meb2)
   | SEBwith(meb,With_definition_body(_,cb))->
-      Environ.add_constraints cb.const_constraints
+      Environ.add_constraints (Future.force cb.const_constraints)
 	(add_struct_expr_constraints env meb)
   | SEBwith(meb,With_module_body(_,_))->
       add_struct_expr_constraints env meb
 		
 and add_struct_elem_constraints env = function 
-  | SFBconst cb -> Environ.add_constraints cb.const_constraints env
+  | SFBconst cb -> 
+      Environ.add_constraints (Future.force cb.const_constraints) env
   | SFBmind mib -> Environ.add_constraints mib.mind_constraints env
   | SFBmodule mb -> add_module_constraints env mb
   | SFBmodtype mtb -> add_modtype_constraints env mtb
@@ -418,7 +420,7 @@ let rec struct_expr_constraints cst = function
 	meb2
   | SEBwith(meb,With_definition_body(_,cb))->
       struct_expr_constraints
-        (Univ.union_constraints cb.const_constraints cst) meb
+        (Univ.union_constraints (Future.force cb.const_constraints) cst) meb
   | SEBwith(meb,With_module_body(_,_))->
       struct_expr_constraints  cst meb	
 		

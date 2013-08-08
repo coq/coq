@@ -11,14 +11,13 @@
 exception Comment
 
 type coqtop = {
-  in_chan : in_channel;
   xml_printer : Xml_printer.t;
   xml_parser : Xml_parser.t;
 }
 
 let logger level content = ()
 
-let eval_call call coqtop =
+let base_eval_call call coqtop =
   prerr_endline (Serialize.pr_call call);
   let xml_query = Serialize.of_call call in
   Xml_printer.print coqtop.xml_printer xml_query;
@@ -36,18 +35,40 @@ let eval_call call coqtop =
   in
   let res = loop () in
   prerr_endline (Serialize.pr_full_value call res);
-  match res with Interface.Fail _ -> exit 1 | _ -> ()
+  match res with Interface.Fail _ -> exit 1 | x -> x
+
+let eval_call c q = ignore(base_eval_call c q)
+
+let ids = ref []
+let store_id = function
+  | Interface.Fail _ -> ()
+  | Interface.Good (id, _) -> ids := id :: !ids
+let rec erase_ids n =
+  if n = 0 then
+    match !ids with
+    | [] -> Stateid.initial_state_id
+    | x :: _ -> x
+  else match !ids with
+    | id :: rest -> ids := rest; erase_ids (n-1)
+    | [] -> exit 1
+let eid = ref 0
+let edit () = incr eid; !eid
 
 let commands =
   [ "INTERPRAWSILENT", (fun s -> eval_call (Serialize.interp (0,true,false,s)));
     "INTERPRAW", (fun s -> eval_call (Serialize.interp (0,true,true,s)));
-    "INTERPSILENT", (fun s -> eval_call (Serialize.interp (0,false,false,s)));
-    "INTERP", (fun s -> eval_call (Serialize.interp (0,false,true,s)));
-    "REWIND", (fun s -> eval_call (Serialize.rewind (int_of_string s)));
+    "INTERPSILENT", (fun s c ->
+      store_id (base_eval_call (Serialize.interp (edit(),false,false,s)) c));
+    "INTERP", (fun s c ->
+      store_id (base_eval_call (Serialize.interp (edit(),false,true,s)) c));
+    "REWIND", (fun s ->
+      let i = int_of_string s in
+      let id = erase_ids i in
+      eval_call (Serialize.backto id));
     "GOALS", (fun _ -> eval_call (Serialize.goals ()));
     "HINTS", (fun _ -> eval_call (Serialize.hints ()));
     "GETOPTIONS", (fun _ -> eval_call (Serialize.get_options ()));
-    "STATUS", (fun _ -> eval_call (Serialize.status ()));
+    "STATUS", (fun _ -> eval_call (Serialize.status false));
     "INLOADPATH", (fun s -> eval_call (Serialize.inloadpath s));
     "MKCASES", (fun s -> eval_call (Serialize.mkcases s));
     "#", (fun _ -> raise Comment);
@@ -91,7 +112,6 @@ let main =
     let op = Xml_printer.make (Xml_printer.TChannel cout) in
     let () = Xml_parser.check_eof ip false in
     {
-      in_chan = cin;
       xml_printer = op;
       xml_parser = ip;
     }

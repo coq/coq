@@ -3594,6 +3594,9 @@ let abstract_subproof id tac gl =
   (** ppedrot: seems legit to have abstracted subproofs as local*)
   let cst = Declare.declare_constant ~internal:Declare.KernelSilent ~local:true id decl in
   let lem = mkConst cst in
+  let gl = {gl with eff =
+    Declareops.cons_side_effects
+      (Safe_typing.sideff_of_con (Global.safe_env()) cst) gl.eff} in
   exact_no_check
     (applist (lem,List.rev (instance_from_named_context sign)))
     gl
@@ -3621,3 +3624,9 @@ let unify ?(state=full_transparent_state) x y gl =
     let evd = w_unify (pf_env gl) (project gl) Reduction.CONV ~flags x y
     in tclEVARS evd gl
   with e when Errors.noncritical e -> tclFAIL 0 (str"Not unifiable") gl
+
+let emit_side_effects eff gl = 
+  Declareops.iter_side_effects (fun e ->
+    prerr_endline ("emitting: " ^ Declareops.string_of_side_effect e))
+    eff;
+  {gl with it = [gl.it] ; eff = Declareops.union_side_effects eff gl.eff}

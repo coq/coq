@@ -14,7 +14,17 @@ open Safe_typing
 (* We introduce here the global environment of the system, and we declare it
    as a synchronized table. *)
 
-let global_env = Summary.ref empty_environment ~name:"Global environment"
+let global_env = ref empty_environment
+
+let join_safe_environment () =
+  global_env := Safe_typing.join_safe_environment !global_env
+
+let () =
+  Summary.declare_summary "Global environment"
+    { Summary.freeze_function = (fun b ->
+        if b then join_safe_environment (); !global_env);
+      unfreeze_function = (fun fr -> global_env := fr);
+      init_function = (fun () -> global_env := empty_environment) }
 
 let safe_env () = !global_env
 

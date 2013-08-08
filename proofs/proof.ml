@@ -38,7 +38,7 @@ type unfocusable =
   | Cannot of exn
   | Loose
   | Strict
-type _focus_condition = 
+type _focus_condition =
     (_focus_kind -> Proofview.proofview -> unfocusable) *
     (_focus_kind -> bool)
 type 'a focus_condition = _focus_condition
@@ -83,11 +83,11 @@ module Cond = struct
     else c
   let (&&&) c1 c2 k p=
     match c1 k p , c2 k p with
-    | Cannot e , _ 
+    | Cannot e , _
     | _ , Cannot e -> Cannot e
     | Strict, Strict -> Strict
     | _ , _ -> Loose
-  let kind e k0 k p = bool e (Int.equal k0 k) k p 
+  let kind e k0 k p = bool e (Int.equal k0 k) k p
   let pdone e k p = bool e (Proofview.finished p) k p
 end
 
@@ -116,7 +116,7 @@ let done_cond ?loose_end = done_cond_gen CannotUnfocusThisWay ?loose_end
 
 (* Subpart of the type of proofs. It contains the parts of the proof which
    are under control of the undo mechanism *)
-type proof_state = {
+type proof = {
   (* Current focused proofview *)
   proofview: Proofview.proofview;
   (* History of the focusings, provides information on how
@@ -125,29 +125,9 @@ type proof_state = {
   focus_stack: (_focus_condition*focus_info*Proofview.focus_context) list;
 }
 
-type proof_info = {
-  mutable endline_tactic : unit Proofview.tactic ;
-  mutable section_vars : Context.section_context option;
-  initial_conclusions : Term.types list
-}
-
-type undo_action = 
-  | State of proof_state
-  | Effect of (unit -> unit)
-
-type proof = { (* current proof_state *)
-               mutable state : proof_state;
-               (* The undo stack *)
-               mutable undo_stack : undo_action list;
-	       (* secondary undo stacks used for transactions *)
-	       mutable transactions : undo_action list list;
-	       info : proof_info
-             }
-
-
 (*** General proof functions ***)
 
-let proof { state = p } =
+let proof p =
   let (goals,sigma) = Proofview.proofview p.proofview in
   (* spiwack: beware, the bottom of the stack is used by [Proof]
      internally, and should not be exposed. *)
@@ -169,25 +149,22 @@ let rec unroll_focus pv = function
    doesn't hide any goal.
    Unfocusing is handled in {!return}. *)
 let is_done p =
-  Proofview.finished p.state.proofview && 
-  Proofview.finished (unroll_focus p.state.proofview p.state.focus_stack)
+  Proofview.finished p.proofview &&
+  Proofview.finished (unroll_focus p.proofview p.focus_stack)
 
 (* spiwack: for compatibility with <= 8.2 proof engine *)
 let has_unresolved_evar p =
-  Proofview.V82.has_unresolved_evar p.state.proofview
+  Proofview.V82.has_unresolved_evar p.proofview
 
 (* Returns the list of partial proofs to initial goals *)
-let partial_proof p =
-  List.map fst (Proofview.return p.state.proofview)
-
-
+let partial_proof p = Proofview.partial_proof p.proofview
 
 (*** The following functions implement the basic internal mechanisms
      of proofs, they are not meant to be exported in the .mli ***)
 
 (* An auxiliary function to push a {!focus_context} on the focus stack. *)
 let push_focus cond inf context pr =
-  pr.state <- { pr.state with focus_stack = (cond,inf,context)::pr.state.focus_stack }
+  { pr with focus_stack = (cond,inf,context)::pr.focus_stack }
 
 exception FullyUnfocused
 let _ = Errors.register_handler begin function
@@ -196,161 +173,51 @@ let _ = Errors.register_handler begin function
 end
 (* An auxiliary function to read the kind of the next focusing step *)
 let cond_of_focus pr =
-  match pr.state.focus_stack with
+  match pr.focus_stack with
   | (cond,_,_)::_ -> cond
   | _ -> raise FullyUnfocused
 
 (* An auxiliary function to pop and read the last {!Proofview.focus_context} 
    on the focus stack. *)
 let pop_focus pr =
-  match pr.state.focus_stack with
-  | focus::other_focuses -> 
-      pr.state <- { pr.state with focus_stack = other_focuses }; focus
-  | _ -> 
+  match pr.focus_stack with
+  | focus::other_focuses ->
+      { pr with focus_stack = other_focuses }, focus
+  | _ ->
       raise FullyUnfocused
-
-(* Auxiliary function to push a [proof_state] onto the undo stack. *)
-let push_undo save pr =
-  match pr.transactions with
-  | [] -> pr.undo_stack <- save::pr.undo_stack
-  | stack::trans' -> pr.transactions <- (save::stack)::trans'
-
-(* Auxiliary function to pop and read a [save_state] from the undo stack. *)
-exception EmptyUndoStack
-let _ = Errors.register_handler begin function
-  | EmptyUndoStack -> Errors.error "Cannot undo: no more undo information"
-  | _ -> raise Errors.Unhandled
-end
-let pop_undo pr =
-  match pr.transactions , pr.undo_stack with
-  | [] , state::stack -> pr.undo_stack <- stack; state
-  | (state::stack)::trans', _ -> pr.transactions <- stack::trans'; state
-  | _ -> raise EmptyUndoStack
-
 
 (* This function focuses the proof [pr] between indices [i] and [j] *)
 let _focus cond inf i j pr =
-  let (focused,context) = Proofview.focus i j pr.state.proofview in
-  push_focus cond inf context pr;
-  pr.state <- { pr.state with proofview = focused }
+  let focused, context = Proofview.focus i j pr.proofview in
+  let pr = push_focus cond inf context pr in
+  { pr with proofview = focused }
 
 (* This function unfocuses the proof [pr], it raises [FullyUnfocused],
    if the proof is already fully unfocused.
    This function does not care about the condition of the current focus. *)
 let _unfocus pr =
-  let (_,_,fc) = pop_focus pr in
-  pr.state <- { pr.state with proofview = Proofview.unfocus fc pr.state.proofview }
-
-
-let set_used_variables l p =
-  p.info.section_vars <- Some l
-
-let get_used_variables p = p.info.section_vars
-
-(*** Endline tactic ***)
-
-(* spiwack this is an information about the UI, it might be a good idea to move
-   it to the Proof_global module *)
-
-(* Sets the tactic to be used when a tactic line is closed with [...] *)
-let set_endline_tactic tac p =
- p.info.endline_tactic <- tac
-
-let with_end_tac pr tac =
-  Proofview.tclTHEN tac pr.info.endline_tactic
-
-(*** The following functions define the safety mechanism of the
-     proof system, they may be unsafe if not used carefully. There is
-     currently no reason to export them in the .mli ***)
-
-(* This functions saves the current state into a [proof_state]. *)
-let save_state { state = ps } = State ps
-
-(* This function stores the current proof state in the undo stack. *)
-let save pr =
-  push_undo (save_state pr) pr
-
-(* This function restores a state, presumably from the top of the undo stack. *)
-let restore_state save pr =
-  match save with
-  | State save -> pr.state <- save
-  | Effect undo -> undo ()
-
-(* Interpretes the Undo command. *)
-let undo pr =
-  (* On a single line, since the effects commute *)
-  restore_state (pop_undo pr) pr
-
-(* Adds an undo effect to the undo stack. Use it with care, errors here might result
-    in inconsistent states. *)
-let add_undo effect pr =
-  push_undo (Effect effect) pr
-
-
-
-(*** Transactions ***)
-
-let init_transaction pr =
-  pr.transactions <- []::pr.transactions
-
-let commit_stack pr stack =
-  let push s = push_undo s pr in
-  List.iter push (List.rev stack)
-
-(* Invariant: [commit] should be called only when a transaction
-   is open. It closes the current transaction. *)
-let commit pr =
-  match pr.transactions with
-  | stack::trans' ->
-    pr.transactions <- trans';
-    commit_stack pr stack
-  | [] -> assert false
-
-(* Invariant: [rollback] should be called only when a transaction
-   is open. It closes the current transaction. *)
-let rec rollback pr =
-  try
-    undo pr;
-    rollback pr
-  with EmptyUndoStack ->
-    match pr.transactions with
-    | []::trans' -> pr.transactions <- trans'
-    | _ -> assert false
-
-
-let transaction pr t =
-  init_transaction pr;
-  try t (); commit pr
-  with reraise ->
-    let reraise = Errors.push reraise in
-    rollback pr; raise reraise
-
+  let pr, (_,_,fc) = pop_focus pr in
+   { pr with proofview = Proofview.unfocus fc pr.proofview }
 
 (* Focus command (focuses on the [i]th subgoal) *)
 (* spiwack: there could also, easily be a focus-on-a-range tactic, is there 
    a need for it? *)
 let focus cond inf i pr =
-  save pr;
   _focus cond (Obj.repr inf) i i pr
 
 let rec unfocus kind pr () =
-  let starting_point = save_state pr in
   let cond = cond_of_focus pr in
-  match fst cond kind pr.state.proofview with
+  match fst cond kind pr.proofview with
   | Cannot e -> raise e
-  | Strict -> 
-    (_unfocus pr;
-     push_undo starting_point pr)
+  | Strict ->
+     let pr = _unfocus pr in
+     pr
   | Loose ->
     begin try
-	    _unfocus pr;
-	    push_undo starting_point pr;
+            let pr = _unfocus pr in
 	    unfocus kind pr ()
       with FullyUnfocused -> raise CannotUnfocusThisWay
     end
-
-let unfocus kind pr =
-  transaction pr (unfocus kind pr)
 
 exception NoSuchFocus
 (* no handler: should not be allowed to reach toplevel. *)
@@ -361,14 +228,20 @@ let rec get_in_focus_stack kind stack =
       else get_in_focus_stack kind stack
   | [] -> raise NoSuchFocus
 let get_at_focus kind pr =
-  Obj.magic (get_in_focus_stack kind pr.state.focus_stack)
+  Obj.magic (get_in_focus_stack kind pr.focus_stack)
 
 let is_last_focus kind pr =
-  let ((_,check),_,_) = List.hd pr.state.focus_stack in
+  let ((_,check),_,_) = List.hd pr.focus_stack in
   check kind
 
 let no_focused_goal p =
-  Proofview.finished p.state.proofview
+  Proofview.finished p.proofview
+
+let rec maximal_unfocus k p =
+  if no_focused_goal p then
+    try maximal_unfocus k (unfocus k p ())
+    with FullyUnfocused | CannotUnfocusThisWay -> p
+  else p
 
 (*** Proof Creation/Termination ***)
 
@@ -379,18 +252,10 @@ let end_of_stack = done_cond_gen FullyUnfocused end_of_stack_kind
 let unfocused = is_last_focus end_of_stack_kind
 
 let start goals =
-  let pr =
-    { state = { proofview = Proofview.init goals ;
-	        focus_stack = [] };
-      undo_stack = [] ;
-      transactions = [] ;
-      info = { endline_tactic = Proofview.tclUNIT ();
-               initial_conclusions = List.map snd goals;
-               section_vars = None }
-    }
-  in
-  _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr;
-  pr
+  let pr = {
+    proofview = Proofview.init goals ;
+    focus_stack = [] } in
+  _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
 
 exception UnfinishedProof
 exception HasUnresolvedEvar
@@ -399,73 +264,64 @@ let _ = Errors.register_handler begin function
   | HasUnresolvedEvar -> Errors.error "Some existential variables are uninstantiated."
   | _ -> raise Errors.Unhandled
 end
-let return p =
+
+let return p t =
   if not (is_done p) then
     raise UnfinishedProof
-  else if has_unresolved_evar p then 
+  else if has_unresolved_evar p then
     (* spiwack: for compatibility with <= 8.3 proof engine *)
     raise HasUnresolvedEvar
   else
-    unfocus end_of_stack_kind p;
-    Proofview.return p.state.proofview
+    let p = unfocus end_of_stack_kind p () in
+    Proofview.return p.proofview t
+
+let initial_goals p = Proofview.initial_goals p.proofview
+
+(*** Function manipulation proof extra informations ***)
 
 (*** Tactics ***)
 
 let run_tactic env tac pr =
-  let starting_point = save_state pr in
-  let sp = pr.state.proofview in
-  try
-    let tacticced_proofview = Proofview.apply env tac sp in
-    pr.state <- { pr.state with proofview = tacticced_proofview };
-    push_undo starting_point pr
-  with reraise ->
-    restore_state starting_point pr;
-    raise reraise
+  let sp = pr.proofview in
+  let tacticced_proofview = Proofview.apply env tac sp in
+  { pr with proofview = tacticced_proofview }
+
+let emit_side_effects eff pr =
+  {pr with proofview = Proofview.emit_side_effects eff pr.proofview}
 
 (*** Commands ***)
 
-let in_proof p k =
-  Proofview.in_proofview p.state.proofview k
-
+let in_proof p k = Proofview.in_proofview p.proofview k
 
 (*** Compatibility layer with <=v8.2 ***)
 module V82 = struct
   let subgoals p =
-    Proofview.V82.goals p.state.proofview
+    Proofview.V82.goals p.proofview
 
   let background_subgoals p =
-    Proofview.V82.goals (unroll_focus p.state.proofview p.state.focus_stack)
+    Proofview.V82.goals (unroll_focus p.proofview p.focus_stack)
 
-  let get_initial_conclusions p = 
-    p.info.initial_conclusions
-
-  let depth p = List.length p.undo_stack
-
-  let top_goal p = 
-    let { Evd.it=gls ; sigma=sigma } = 
-	Proofview.V82.top_goals p.state.proofview
+  let top_goal p =
+    let { Evd.it=gls ; sigma=sigma; eff=eff } =
+	Proofview.V82.top_goals p.proofview
     in
-    { Evd.it=List.hd gls ; sigma=sigma }
+    { Evd.it=List.hd gls ; sigma=sigma; eff=eff }
 
   let top_evars p =
-    Proofview.V82.top_evars p.state.proofview
+    Proofview.V82.top_evars p.proofview
 
   let grab_evars p =
     if not (is_done p) then
       raise UnfinishedProof
     else
-      save p;
-      p.state <- { p.state with proofview = Proofview.V82.grab p.state.proofview }
-    
+      { p with proofview = Proofview.V82.grab p.proofview }
+
 
     let instantiate_evar n com pr =
-      let starting_point = save_state pr in
-      let sp = pr.state.proofview in
+      let sp = pr.proofview in
       try
 	let new_proofview = Proofview.V82.instantiate_evar n com sp in
-	pr.state <- { pr.state with proofview = new_proofview };
-	push_undo starting_point pr
-      with reraise ->
-	restore_state starting_point pr;
-	raise reraise
+        { pr with proofview = new_proofview }
+      with e ->
+	raise e
 end

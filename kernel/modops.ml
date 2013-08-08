@@ -588,3 +588,32 @@ let clean_bounded_mod_expr = function
       let str_clean = collect_mbid [] str in 
 	if  str_clean == str then str else str_clean
   | str -> str
+
+let rec join_module_body mb =
+  Option.iter join_struct_expr_body mb.mod_expr;
+  Option.iter join_struct_expr_body mb.mod_type_alg;
+  join_struct_expr_body mb.mod_type
+and join_structure_body struc =
+  let join_body (l,body) = match body with
+    | SFBconst sb -> join_constant_body sb
+    | SFBmind _ -> ()
+    | SFBmodule m -> join_module_body m
+    | SFBmodtype m ->
+         join_struct_expr_body m.typ_expr;
+         Option.iter join_struct_expr_body m.typ_expr_alg in
+  List.iter join_body struc;
+and join_struct_expr_body = function
+  | SEBfunctor (_,t,e) ->
+      join_struct_expr_body t.typ_expr;
+      Option.iter join_struct_expr_body t.typ_expr_alg;
+      join_struct_expr_body e
+  | SEBident mp -> ()
+  | SEBstruct s -> join_structure_body s
+  | SEBapply (mexpr,marg,u) ->
+       join_struct_expr_body mexpr;
+       join_struct_expr_body marg
+  | SEBwith (seb,wdcl) ->
+       join_struct_expr_body seb;
+       match wdcl with
+       | With_module_body _ -> ()
+       | With_definition_body (_, sb) -> join_constant_body sb

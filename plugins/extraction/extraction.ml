@@ -993,7 +993,7 @@ let extract_constant env kn cb =
 	  | OpaqueDef c ->
 	    add_opaque r;
 	    if access_opaque () then
-              mk_typ (Lazyconstr.force_opaque c)
+              mk_typ (Lazyconstr.force_opaque (Future.force c))
             else mk_typ_ax ())
     | (Info,Default) ->
         (match cb.const_body with
@@ -1002,7 +1002,7 @@ let extract_constant env kn cb =
 	  | OpaqueDef c ->
 	    add_opaque r;
 	    if access_opaque () then
-              mk_def (Lazyconstr.force_opaque c)
+              mk_def (Lazyconstr.force_opaque (Future.force c))
             else mk_ax ())
 
 let extract_constant_spec env kn cb =

@@ -181,14 +181,14 @@ type inline = int option
 type constant_def =
   | Undef of inline
   | Def of constr_substituted
-  | OpaqueDef of lazy_constr
+  | OpaqueDef of lazy_constr Future.computation
 
 type constant_body = {
     const_hyps : section_context; (** New: younger hyp at top *)
     const_body : constant_def;
     const_type : constant_type;
     const_body_code : to_patch_substituted;
-    const_constraints : Univ.constraints;
+    const_constraints : Univ.constraints Future.computation;
     const_native_name : native_name ref;
     const_inline_code : bool }
 
