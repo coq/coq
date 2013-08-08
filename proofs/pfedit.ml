@@ -48,7 +48,6 @@ let get_pftreestate () =
   Proof_global.give_me_the_proof ()
 
 let set_end_tac tac =
-  let tac = Proofview.V82.tactic tac in
   Proof_global.set_endline_tactic tac
 
 let set_used_variables l =
@@ -117,7 +116,7 @@ open Decl_kinds
 let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id sign ?(goal_kind = Global,Proof Theorem) typ tac =
-  start_proof id goal_kind sign typ (fun _ _ -> ());
+  start_proof id goal_kind sign typ None;
   try
     by tac;
     let _,(const,_,_,_) = cook_proof (fun _ -> ()) in

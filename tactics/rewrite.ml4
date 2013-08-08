@@ -1825,12 +1825,12 @@ let add_morphism_infer glob m n =
 	Flags.silently
 	  (fun () ->
 	    Lemmas.start_proof instance_id kind instance
-	      (fun _ -> function
+	      (Some (fun _ -> function
 		Globnames.ConstRef cst ->
 		  add_instance (Typeclasses.new_instance (Lazy.force proper_class) None
 				   glob (ConstRef cst));
 		  declare_projection n instance_id (ConstRef cst)
-		| _ -> assert false);
+		| _ -> assert false));
 	    Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ()
 
 let add_morphism glob binders m s n =

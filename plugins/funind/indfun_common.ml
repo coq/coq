@@ -161,7 +161,7 @@ let save with_clean id const (locality,kind) hook =
 	(locality, ConstRef kn)
   in
   if with_clean then  Pfedit.delete_current_proof ();
-  hook l r;
+  Option.default (fun _ _ -> ()) hook l r;
   definition_message id
 
 

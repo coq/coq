@@ -35,7 +35,8 @@ val interp_definition :
   constr_expr option -> definition_entry * Evd.evar_map * Impargs.manual_implicits
 
 val declare_definition : Id.t -> definition_kind ->
-  definition_entry -> Impargs.manual_implicits -> 'a declaration_hook -> 'a
+  definition_entry -> Impargs.manual_implicits ->
+    Globnames.global_reference declaration_hook -> Globnames.global_reference
 
 val do_definition : Id.t -> definition_kind ->
   local_binder list -> red_expr option -> constr_expr ->

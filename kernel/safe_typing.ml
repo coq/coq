@@ -139,6 +139,8 @@ let join_safe_environment e =
     {e with future_cst = []} e.future_cst
 
 (* TODO : out of place and maybe incomplete w.r.t. modules *)
+(* this is there to explore the opaque pre-env structure but is
+ * not part of the trusted code base *)
 let prune_env env =
   let env = Environ.pre_env env in
   let prune_ckey (cb,k) = Declareops.prune_constant_body cb, k in

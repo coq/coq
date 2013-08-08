@@ -414,11 +414,11 @@ let start_proof_and_print k l hook =
   start_proof_com k l hook;
   print_subgoals ()
 
-let no_hook _ _ = ()
+let no_hook = None
 
 let vernac_definition_hook = function
 | Coercion -> Class.add_coercion_hook
-| CanonicalStructure -> fun _ -> Recordops.declare_canonical_structure
+| CanonicalStructure -> Some (fun _ -> Recordops.declare_canonical_structure)
 | SubClass -> Class.add_subclass_hook
 | _ -> no_hook
 
@@ -797,7 +797,7 @@ let vernac_set_end_tac tac =
     error "Unknown command of the non proof-editing mode.";
   match tac with
   | Tacexpr.TacId [] -> ()
-  | _ -> set_end_tac (Tacinterp.interp tac)
+  | _ -> set_end_tac tac
     (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
 
 let vernac_set_used_variables l =

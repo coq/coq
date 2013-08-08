@@ -74,7 +74,7 @@ val add_definition : Names.Id.t -> ?term:Term.constr -> Term.types ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:Proof_type.tactic ->
   ?reduce:(Term.constr -> Term.constr) ->
-  ?hook:(unit Tacexpr.declaration_hook) -> obligation_info -> progress
+  ?hook:unit Tacexpr.declaration_hook -> obligation_info -> progress
 
 type notations =
     (Vernacexpr.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list

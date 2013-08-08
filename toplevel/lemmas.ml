@@ -183,7 +183,7 @@ let save ?proof id const do_guard (locality,kind) hook =
   (* if the proof is given explicitly, nothing has to be deleted *)
   if proof = None then Pfedit.delete_current_proof ();
   definition_message id;
-  hook l r
+  Option.iter (fun f -> f l r) hook
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
@@ -341,8 +341,8 @@ let start_proof_with_initialization kind recguard thms snl hook =
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
-	  hook strength ref) thms_data in
-      start_proof id kind t ?init_tac hook ~compute_guard:guard
+	  Option.iter (fun f -> f strength ref) hook) thms_data in
+      start_proof id kind t ?init_tac (Some hook) ~compute_guard:guard
 
 let start_proof_com kind thms hook =
   let evdref = ref Evd.empty in
@@ -368,7 +368,7 @@ let admit () =
   let kn = declare_constant id (ParameterEntry e,IsAssumption Conjectural) in
   Pfedit.delete_current_proof ();
   assumption_message id;
-  hook Global (ConstRef kn)
+  Option.iter (fun f -> f Global (ConstRef kn)) hook
 
 (* Miscellaneous *)
 

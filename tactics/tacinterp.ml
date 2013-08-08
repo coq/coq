@@ -1969,6 +1969,7 @@ let interp_tac_gen lfun avoid_ids debug t gl =
       gsigma = project gl; genv = pf_env gl } t) gl
 
 let interp t = interp_tac_gen Id.Map.empty [] (get_debug()) t
+let _ = Proof_global.set_interp_tac interp
 
 let eval_ltac_constr gl t =
   interp_ltac_constr (default_ist ()) gl

@@ -65,13 +65,13 @@ type lemma_possible_guards = int list list
 
 type pstate = {
   pid : Id.t;
-  endline_tactic : unit Proofview.tactic;
+  endline_tactic : Tacexpr.raw_tactic_expr option;
   section_vars : Context.section_context option;
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
   compute_guard : lemma_possible_guards;
   hook : unit Tacexpr.declaration_hook;
-  mode : proof_mode;
+  mode : proof_mode option;
 }
 
 (* The head of [!pstates] is the actual current proof, the other ones are
@@ -84,7 +84,7 @@ let current_proof_mode = ref !default_proof_mode
 (* combinators for proof modes *)
 let update_proof_mode () =
   match !pstates with
-  | { mode = m } :: _ ->
+  | { mode = Some m } :: _ ->
       !current_proof_mode.reset ();
       current_proof_mode := m;
       !current_proof_mode.set ()
@@ -141,18 +141,25 @@ let cur_pstate () =
 let give_me_the_proof () = (cur_pstate ()).proof
 let get_current_proof_name () = (cur_pstate ()).pid
 
+let interp_tac = ref (fun _ _ -> assert false)
+let set_interp_tac f = interp_tac := f
+
 let with_current_proof f =
   match !pstates with
   | [] -> raise NoCurrentProof
   | p :: rest ->
-      let p = { p with proof = f p.endline_tactic p.proof } in
+      let et =
+        match p.endline_tactic with
+        | None -> Proofview.tclUNIT ()
+        | Some tac -> Proofview.V82.tactic (!interp_tac tac) in
+      let p = { p with proof = f et p.proof } in
       pstates := p :: rest
 
 (* Sets the tactic to be used when a tactic line is closed with [...] *)
 let set_endline_tactic tac =
   match !pstates with
   | [] -> raise NoCurrentProof
-  | p :: rest -> pstates := { p with endline_tactic = tac } :: rest
+  | p :: rest -> pstates := { p with endline_tactic = Some tac } :: rest
 
 (* spiwack: it might be considered to move error messages away.
     Or else to remove special exceptions from Proof_global.
@@ -201,7 +208,7 @@ let set_proof_mode m id =
   update_proof_mode ()
 
 let set_proof_mode mn =
-  set_proof_mode (find_proof_mode mn) (get_current_proof_name ())
+  set_proof_mode (Some (find_proof_mode mn)) (get_current_proof_name ())
 
 let activate_proof_mode mode = (find_proof_mode mode).set ()
 let disactivate_proof_mode mode = (find_proof_mode mode).reset ()
@@ -225,12 +232,12 @@ let start_proof id str goals ?(compute_guard=[]) hook =
   let initial_state = {
     pid = id;
     proof = Proof.start goals;
-    endline_tactic = Proofview.tclUNIT ();
+    endline_tactic = None;
     section_vars = None;
     strength = str;
     compute_guard = compute_guard;
     hook = hook;
-    mode = ! default_proof_mode } in
+    mode = None } in
   push initial_state pstates
 
 let get_used_variables () = (cur_pstate ()).section_vars

@@ -292,13 +292,13 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 		| None -> [||], None, termtype
 	      in
 		ignore (Obligations.add_definition id ?term:constr
-			typ ~kind:(Global,Instance) ~hook obls);
+			typ ~kind:(Global,Instance) ~hook:(Some hook) obls);
 		id
 	    else
 	      (Flags.silently 
 	       (fun () ->
 		Lemmas.start_proof id kind termtype
-		(fun _ -> instance_hook k pri global imps ?hook);
+		(Some (fun _ -> instance_hook k pri global imps ?hook));
 		if not (Option.is_empty term) then 
 		  Pfedit.by (!refine_ref (evm, Option.get term))
 		else if Flags.is_auto_intros () then

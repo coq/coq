@@ -297,7 +297,7 @@ let try_add_new_identity_coercion id ~local ~source ~target =
 let try_add_new_coercion_with_source ref ~local ~source =
   try_add_new_coercion_core ref ~local (Some source) None false
 
-let add_coercion_hook local ref =
+let add_coercion_hook = Some (fun local ref ->
   let stre = match local with
   | Local -> true
   | Global -> false
@@ -305,13 +305,13 @@ let add_coercion_hook local ref =
   in
   let () = try_add_new_coercion ref stre in
   let msg = pr_global_env Id.Set.empty ref ++ str " is now a coercion" in
-  Flags.if_verbose msg_info msg
+  Flags.if_verbose msg_info msg)
 
-let add_subclass_hook local ref =
+let add_subclass_hook = Some (fun local ref ->
   let stre = match local with
   | Local -> true
   | Global -> false
   | Discharge -> assert false
   in
   let cl = class_of_global ref in
-  try_add_new_coercion_subclass cl stre
+  try_add_new_coercion_subclass cl stre)

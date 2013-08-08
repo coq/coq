@@ -82,7 +82,10 @@ val with_current_proof :
   (unit Proofview.tactic -> Proof.proof -> Proof.proof) -> unit
 
 (** Sets the tactic to be used when a tactic line is closed with [...] *)
-val set_endline_tactic : unit Proofview.tactic -> unit
+val set_endline_tactic : Tacexpr.raw_tactic_expr -> unit
+val set_interp_tac :
+  (Tacexpr.raw_tactic_expr -> Goal.goal Evd.sigma -> Goal.goal list Evd.sigma)
+    -> unit
 
 (** Sets the section variables assumed by the proof *)
 val set_used_variables : Names.Id.t list -> unit
@@ -136,7 +139,8 @@ module Bullet : sig
 end
 
 module V82 : sig
-  val get_current_initial_conclusions : unit -> Names.Id.t *(Term.types list * Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
+  val get_current_initial_conclusions : unit -> Names.Id.t *(Term.types list *
+  Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
 end
 
 type state
