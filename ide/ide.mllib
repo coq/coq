@@ -31,4 +31,5 @@ FileOps
 CoqOps
 Session
 Coqide_ui
+NanoPG
 Coqide

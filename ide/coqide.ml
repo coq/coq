@@ -500,7 +500,7 @@ let update_status sn =
       | None -> ""
       | Some n -> ", proving " ^ n
     in
-    display ("Ready" ^ path ^ name);
+    display ("Ready"^ if current.nanoPG then ", [μPG]" else "" ^ path ^ name);
     Coq.return ()
   in
   Coq.bind (Coq.status ~logger:sn.messages#push false) next
@@ -955,6 +955,10 @@ let build_ui () =
   let compile_menu = GAction.action_group ~name:"Compile" () in
   let windows_menu = GAction.action_group ~name:"Windows" () in
   let help_menu = GAction.action_group ~name:"Help" () in
+  let all_menus = [
+    file_menu; edit_menu; view_menu; export_menu; navigation_menu; tactics_menu;
+    templates_menu; tools_menu; queries_menu; compile_menu; windows_menu;
+    help_menu; ] in
 
   menu file_menu [
     item "File" ~label:"_File";
@@ -1172,6 +1176,10 @@ let build_ui () =
     item "Help for keyword" ~label:"Help for _keyword" ~stock:`HELP
       ~callback:(fun _ -> on_current_term (fun sn ->
         browse_keyword sn.messages#add (get_current_word sn)));
+    item "Help for μPG mode" ~label:"Help for μPG mode"
+      ~callback:(fun _ -> on_current_term (fun sn ->
+         sn.messages#clear;
+         sn.messages#add (NanoPG.get_documentation ())));
     item "About Coq" ~label:"_About" ~stock:`ABOUT
       ~callback:MiscMenu.about
   ];
@@ -1204,6 +1212,9 @@ let build_ui () =
   let toolbar = new GObj.widget tbar in
   let () = vbox#pack toolbar in
 
+  (* Emacs/PG mode *)
+  NanoPG.init w notebook all_menus;
+
   (* Reset on tab switch *)
   let _ = notebook#connect#switch_page ~callback:(fun _ ->
     if prefs.reset_on_tab_switch then Nav.restart ())
@@ -1214,7 +1225,7 @@ let build_ui () =
   let () = refresh_notebook_pos () in
   let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
   let () = lower_hbox#pack ~expand:true status#coerce in
-  let () = push_info "Ready" in
+  let () = push_info ("Ready"^ if current.nanoPG then ", [μPG]" else "")  in
 
   (* Location display *)
   let l = GMisc.label

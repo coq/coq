@@ -80,6 +80,8 @@ type pref =
       mutable tab_length : int;
       mutable highlight_current_line : bool;
 
+      mutable nanoPG : bool;
+
     }
 
 val save_pref : unit -> unit

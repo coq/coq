@@ -153,6 +153,8 @@ type pref =
       mutable tab_length : int;
       mutable highlight_current_line : bool;
 
+      mutable nanoPG : bool;
+
 }
 
 let use_default_doc_url = "(automatic)"
@@ -228,6 +230,8 @@ let current = {
     spaces_instead_of_tabs = true;
     tab_length = 2;
     highlight_current_line = false;
+
+    nanoPG = false;
   }
 
 let save_pref () =
@@ -295,6 +299,7 @@ let save_pref () =
     add "spaces_instead_of_tabs" [string_of_bool p.spaces_instead_of_tabs] ++
     add "tab_length" [string_of_int p.tab_length] ++
     add "highlight_current_line" [string_of_bool p.highlight_current_line] ++
+    add "nanoPG" [string_of_bool p.nanoPG] ++
     Config_lexer.print_file pref_file
 
 let load_pref () =
@@ -378,6 +383,7 @@ let load_pref () =
     set_bool "spaces_instead_of_tabs" (fun v -> np.spaces_instead_of_tabs <- v);
     set_int "tab_length" (fun v -> np.tab_length <- v);
     set_bool "highlight_current_line" (fun v -> np.highlight_current_line <- v);
+    set_bool "nanoPG" (fun v -> np.nanoPG <- v);
     ()
 
 let configure ?(apply=(fun () -> ())) () =
@@ -520,6 +526,7 @@ let configure ?(apply=(fun () -> ())) () =
       gen_button "Highlight current line"
       current.highlight_current_line
     in
+    let nanoPG = gen_button "Emacs/PG keybindings (μPG mode)" current.nanoPG in
 (*     let lbox = GPack.hbox ~packing:box#pack () in *)
 (*     let _ = GMisc.label ~text:"Tab width" *)
 (*         ~xalign:0. *)
@@ -536,6 +543,7 @@ let configure ?(apply=(fun () -> ())) () =
       current.show_right_margin <- show_right_margin#active;
       current.spaces_instead_of_tabs <- spaces_instead_of_tabs#active;
       current.highlight_current_line <- highlight_current_line#active;
+      current.nanoPG <- nanoPG#active;
       current.auto_complete <- auto_complete#active;
 (*       current.tab_length <- tab_width#value_as_int; *)
       !refresh_editor_hook ()
