@@ -69,7 +69,7 @@ let rec val_gen v ctx o = match v with
     (try val_tag Obj.string_tag ctx o
      with Failure _ -> fail ctx o "expected a string")
   | Any -> ()
-  | Fail -> fail ctx o "unexpected object"
+  | Fail s -> fail ctx o ("unexpected object " ^ s)
   | Annot (s,v) -> val_gen v (ctx/s) o
 
 (* Check that an object is a tuple (or a record). vs is an array of

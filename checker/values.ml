@@ -33,7 +33,7 @@ MD5 1e607e046b15faeee5912eda83dbb1ba  checker/cic.mli
 
 type value =
   | Any
-  | Fail
+  | Fail of string
   | Tuple of string * value array
   | Sum of string * int * value array array
   | Array of value
@@ -113,9 +113,9 @@ let v_cast = v_enum "cast_kind" 3
 let rec v_constr =
   Sum ("constr",0,[|
     [|Int|]; (* Rel *)
-    [|Fail|]; (* Var *)
-    [|Fail|]; (* Meta *)
-    [|Fail|]; (* Evar *)
+    [|Fail "Var"|]; (* Var *)
+    [|Fail "Meta"|]; (* Meta *)
+    [|Fail "Evar"|]; (* Evar *)
     [|v_sort|]; (* Sort *)
     [|v_constr;v_cast;v_constr|]; (* Cast *)
     [|v_name;v_constr;v_constr|]; (* Prod *)
