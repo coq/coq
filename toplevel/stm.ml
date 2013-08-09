@@ -980,7 +980,8 @@ let join_aborted_proofs () =
     if id = initial_state_id then () else
     let view = VCS.visit id in
     match view.step with
-    | `Qed ((_,VtDrop,_),eop) -> observe eop; aux view.next
+    | `Qed ((_,VtDrop,_),eop) ->
+         observe eop; Proof_global.discard_all (); aux view.next
     | `Sideff _ | `Alias _ | `Cmd _ | `Fork _ | `Qed _ -> aux view.next
   in
     aux (VCS.get_branch_pos VCS.master)
