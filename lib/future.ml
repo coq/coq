@@ -29,11 +29,11 @@ let _ = Errors.register_handler (function
 (* Val is not necessarily a final state, so the
    computation restarts from the state stocked into Val *)
 type 'a comp =
+  | Delegated
+  | Dropped
   | Closure of (unit -> 'a)
   | Val of 'a * Dyn.t option
   | Exn of exn
-  | Delegated
-  | Dropped
 
 type 'a computation = 'a comp ref
 

@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 1e607e046b15faeee5912eda83dbb1ba  checker/cic.mli
+MD5 43e0b61e2a549058ae0a59bbadbb9d61 checker/cic.mli
 
 *)
 
@@ -64,6 +64,14 @@ let v_map vk vd =
     [|[|m; Annot("key",vk); Annot("data",vd); m; Annot("bal",Int)|]|])
   in m
 
+(* lib/future *)
+let v_computation f =
+  Annot ("Future.computation",
+  v_ref
+    (v_sum "computation" 2
+      [| [| Fail "Closure" |];
+         [| f ; v_sum "option" 1 [| [| Fail "Val(_,Some _)" |] |] |];
+     [| Fail "Exn" |] |]))
 
 (** kernel/names *)
 
@@ -186,7 +194,7 @@ let v_cst_type =
 
 let v_cst_def =
   v_sum "constant_def" 0
-    [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]|]
+    [|[|Opt Int|]; [|v_cstr_subst|]; [|v_computation v_lazy_constr|]|]
 
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
