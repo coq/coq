@@ -342,7 +342,9 @@ object(self)
         add_flag sentence `PROCESSING;
         Searchstack.push sentence cmd_stack;
         if List.mem `COMMENT sentence.flags then
-          (self#commit_queue_transaction sentence; loop ())
+          let () = remove_flag sentence `PROCESSING in
+          let () = self#commit_queue_transaction sentence in
+          loop ()
         else
           (* If the line is not a comment, we interpret it. *)
           let _, _, phrase = self#get_sentence sentence in
