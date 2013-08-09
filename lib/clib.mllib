@@ -20,6 +20,8 @@ CString
 CArray
 Util
 Loc
+Flags
+Stateid
 Serialize
 Xml_utils
 CUnix
