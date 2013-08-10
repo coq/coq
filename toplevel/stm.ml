@@ -730,6 +730,9 @@ end = struct (* {{{ *)
 let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
 
 let collect_proof cur hd id =
+ let is_defined = function
+   | _, (_, _, VernacEndProof (Proved (false,_))) -> true
+   | _ -> false in
  let rec collect last accn id =
     let view = VCS.visit id in
     match last, view.step with
@@ -746,6 +749,7 @@ let collect_proof cur hd id =
     | _, `Sideff se -> collect None (id::accn) view.next
     | _ -> `NotOptimizable `Unknown in
  if State.is_cached id then `NotOptimizable `Unknown
+ else if is_defined cur then `NotOptimizable `Transparent
  else collect (Some cur) [] id
 
 let known_state ~cache id =
@@ -802,7 +806,7 @@ let known_state ~cache id =
                  Proof_global.discard_all ())
            | `NotOptimizable `Immediate -> assert (view.next = eop);
                (fun () -> reach eop; interp id x; Proof_global.discard_all ())
-           | `NotOptimizable `Unknown ->
+           | `NotOptimizable _ ->
                (fun () ->
                  prerr_endline ("NotOptimizable " ^ string_of_state_id id);
                  reach eop;
