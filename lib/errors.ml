@@ -84,25 +84,23 @@ let raw_anomaly e = match e with
   | Assert_failure _ | Match_failure _ -> str (Printexc.to_string e ^ ".")
   | _ -> str ("Uncaught exception " ^ Printexc.to_string e ^ ".")
 
+let print_backtrace e = match Backtrace.get_backtrace e with
+| None -> mt ()
+| Some bt ->
+  let bt = Backtrace.repr bt in
+  let pr_frame f = str (Backtrace.print_frame f) in
+  let bt = prlist_with_sep fnl pr_frame bt in
+  fnl () ++ hov 0 bt
+
 let print_anomaly askreport e =
-  let bt_info = match Backtrace.get_backtrace e with
-  | None -> mt ()
-  | Some bt ->
-    let bt = Backtrace.repr bt in
-    let pr_frame f = str (Backtrace.print_frame f) in
-    let bt = prlist_with_sep fnl pr_frame bt in
-    fnl () ++ hov 0 bt
-  in
-  let info =
-    if askreport then
-      hov 0 (str "Anomaly: " ++ raw_anomaly e ++ spc () ++ str "Please report.")
-    else
-      hov 0 (raw_anomaly e)
-  in
-  info ++ bt_info
+  if askreport then
+    hov 0 (str "Anomaly: " ++ raw_anomaly e ++ spc () ++ str "Please report.")
+  else
+    hov 0 (raw_anomaly e)
 
 (** The standard exception printer *)
-let print e = print_gen (print_anomaly true) !handle_stack e
+let print e =
+  print_gen (print_anomaly true) !handle_stack e ++ print_backtrace e
 
 (** Same as [print], except that the "Please report" part of an anomaly
     isn't printed (used in Ltac debugging). *)
@@ -113,7 +111,8 @@ let print_anomaly e = print_anomaly true e
 (** Predefined handlers **)
 
 let _ = register_handler begin function
-  | UserError(s,pps) -> hov 0 (str "Error: " ++ where (Some s) ++ pps)
+  | UserError(s, pps) ->
+    hov 0 (str "Error: " ++ where (Some s) ++ pps)
   | _ -> raise Unhandled
 end
 
