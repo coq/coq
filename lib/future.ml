@@ -17,7 +17,7 @@ let _ = Errors.register_handler (function
   | NotReady ->
       Pp.strbrk("The value you are asking for is not ready yet. " ^
                 "Please wait or pass "^
-                "the \"-coq-slaves off\" option to CoqIDE to disable"^
+                "the \"-coq-slaves off\" option to CoqIDE to disable "^
                 "asynchronous script processing.")
   | NotHere ->
       Pp.strbrk("The value you are asking for is not available "^

@@ -666,7 +666,7 @@ end = struct (* {{{ *)
         | VCS.Expired -> (* task cancelled: e.g. the user did backtrack *)
             prerr_endline ("Task expired: " ^ pr_task task)
         | MarshalError -> (* TODO *)
-            prerr_endline "TODO: Mathshalling Error";
+            prerr_endline "TODO: Marshalling Error";
             prerr_endline "We should be resilient and fall back to lazy" 
         | e ->
             prerr_endline (string_of_ppcmds (print e))
