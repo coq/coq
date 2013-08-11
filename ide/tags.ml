@@ -22,9 +22,9 @@ struct
   let comment_sentence = make_tag table ~name:"comment_sentence" []
   let error = make_tag table ~name:"error" [`UNDERLINE `DOUBLE ; `FOREGROUND "red"]
   let error_bg = make_tag table ~name:"error_bg" [`BACKGROUND "#FFCCCC"]
-  let to_process = make_tag table ~name:"to_process" [`BACKGROUND !processing_color ;`EDITABLE false]
-  let processed = make_tag table ~name:"processed" [`BACKGROUND !processed_color;`EDITABLE false]
-  let unjustified = make_tag table ~name:"unjustified" [`BACKGROUND "gold";`EDITABLE false]
+  let to_process = make_tag table ~name:"to_process" [`BACKGROUND !processing_color]
+  let processed = make_tag table ~name:"processed" [`BACKGROUND !processed_color]
+  let unjustified = make_tag table ~name:"unjustified" [`BACKGROUND "gold"]
   let found = make_tag table ~name:"found" [`BACKGROUND "blue"; `FOREGROUND "white"]
   let sentence = make_tag table ~name:"sentence" []
   let tooltip = make_tag table ~name:"tooltip" [] (* debug:`BACKGROUND "blue" *)

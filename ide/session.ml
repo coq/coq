@@ -78,16 +78,17 @@ let create_script coqtop source_buffer =
   point. At the end, the zone between the mark and the cursor is to be
   untagged and then retagged. *)
 
-let set_buffer_handlers buffer script =
+let set_buffer_handlers
+  (buffer : GText.buffer) script (coqops : CoqOps.ops) coqtop
+=
+  let call_coq f =
+    let abort () =
+      Minilib.log ("Coq busy, discarding query");
+      GtkSignal.stop_emit () in
+    Coq.try_grab coqtop f abort in
   let get_start () = buffer#get_iter_at_mark (`NAME "start_of_input") in
   let get_insert () = buffer#get_iter_at_mark `INSERT in
   let insert_cb it s =
-    (* If a #insert happens in the locked zone, we discard it.
-        Other solution: always use #insert_interactive and similar *)
-    let () =
-      let start = get_start () in
-      if it#compare start < 0 then GtkSignal.stop_emit ()
-    in
     if String.length s > 1 then
       let () = Minilib.log "insert_text: Placing cursor" in
       let () = buffer#place_cursor ~where:it in
@@ -95,20 +96,31 @@ let set_buffer_handlers buffer script =
         let () = Minilib.log "insert_text: Recentering" in
         script#recenter_insert
   in
+  let begin_action_did_not_cancel = ref true in
   let begin_action_cb () =
+    begin_action_did_not_cancel := false;
     (* We remove any error red zone, and place the [prev_insert] mark *)
-    let where = get_insert () in
-    let () = buffer#move_mark (`NAME "prev_insert") ~where in
-    let start = get_start () in
-    let stop = buffer#end_iter in
-    buffer#remove_tag Tags.Script.error ~start ~stop;
-    buffer#remove_tag Tags.Script.error_bg ~start ~stop;
-    buffer#remove_tag Tags.Script.tooltip ~start ~stop
+    let cleanup () =
+      begin_action_did_not_cancel := true;
+      let where = get_insert () in
+      let start = get_start () in
+      let () = buffer#move_mark (`NAME "prev_insert") ~where in
+      let stop = buffer#end_iter in
+      buffer#remove_tag Tags.Script.error ~start ~stop;
+      buffer#remove_tag Tags.Script.error_bg ~start ~stop;
+      buffer#remove_tag Tags.Script.tooltip ~start ~stop in
+    if (get_insert ())#has_tag Tags.Script.to_process then
+      GtkSignal.stop_emit ()
+    else if (get_insert ())#compare (get_start()) < 0 then
+      call_coq (Coq.seq coqops#go_to_insert (Coq.lift cleanup))
+    else
+      cleanup ()
   in
   let end_action_cb () =
     let start = get_start () in
     let ins = get_insert () in
-    if 0 <= ins#compare start then Sentence.tag_on_insert buffer
+    if !begin_action_did_not_cancel &&
+       0 <= ins#compare start then Sentence.tag_on_insert buffer
   in
   let mark_set_cb it m =
     let ins = get_insert () in
@@ -150,7 +162,6 @@ let create file coqtop_args =
   let reset () = Coq.reset_coqtop coqtop in
   let buffer = create_buffer () in
   let script = create_script coqtop buffer in
-  let _ = set_buffer_handlers (buffer :> GText.buffer) script in
   let proof = create_proof () in
   let messages = create_messages () in
   let command = new Wg_Command.command_window coqtop ~mark_as_broken:(fun _ -> ()) ~mark_as_processed:(fun _ -> ()) ~cur_state:(fun () -> Obj.magic 0) in
@@ -159,6 +170,7 @@ let create file coqtop_args =
   let _ = fops#update_stats in
   let cops =
     new CoqOps.coqops script proof messages coqtop (fun () -> fops#filename) in
+  let _ = set_buffer_handlers (buffer :> GText.buffer) script cops coqtop in
   let _ = Coq.set_reset_handler coqtop cops#handle_reset_initial in
   let _ = Coq.init_coqtop coqtop cops#initialize in
   {

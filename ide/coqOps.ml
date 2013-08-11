@@ -72,6 +72,7 @@ let log msg : unit task =
 class type ops =
 object
   method go_to_insert : unit task
+  method go_to_mark : GText.mark -> unit task
   method tactic_wizard : string list -> unit task
   method process_next_phrase : unit task
   method process_until_end_or_error : unit task
@@ -405,12 +406,12 @@ object(self)
       None, List.rev (Searchstack.to_list cmd_stack)
 
   (** Wrapper around the raw undo command *)
-  method private backtrack_until until =
+  method private backtrack_until ?(move_insert=true) until =
     let opening () =
       push_info "Coq is undoing" in
     let conclusion () =
       pop_info ();
-      buffer#place_cursor ~where:self#get_start_of_input;
+      if move_insert then buffer#place_cursor ~where:self#get_start_of_input;
       self#show_goals in
     let cleanup n l =
       for i = 1 to n do ignore(Searchstack.pop cmd_stack) done;
@@ -437,9 +438,9 @@ object(self)
     in
       undo until)
 
-  method private backtrack_to_iter iter =
+  method private backtrack_to_iter ?move_insert iter =
     let until _ _ _ stop = iter#compare (buffer#get_iter_at_mark stop) >= 0 in
-    self#backtrack_until until
+    self#backtrack_until ?move_insert until
 
   method handle_failure (safe_id, (loc : (int * int) option), msg) =
     if loc <> None then messages#push Error "Fixme LOC";
@@ -466,7 +467,16 @@ object(self)
     let point = self#get_insert in
     if point#compare self#get_start_of_input >= 0
     then self#process_until_iter point
-    else self#backtrack_to_iter point)
+    else self#backtrack_to_iter ~move_insert:false point)
+
+  method go_to_mark m =
+    Coq.bind (Coq.return ()) (fun () ->
+    messages#clear;
+    let point = buffer#get_iter_at_mark m in
+    if point#compare self#get_start_of_input >= 0
+    then self#process_until_iter point
+    else self#backtrack_to_iter ~move_insert:false point)
+
 
   method tactic_wizard l =
     let insert_phrase phrase tag =
