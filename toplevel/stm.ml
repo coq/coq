@@ -740,6 +740,8 @@ let collect_proof cur hd id =
     | _, `Alias _ -> collect None (id::accn) view.next
     | Some (parent, (_,_,VernacExactProof _)), `Fork _ ->
         `NotOptimizable `Immediate
+    | _, `Fork(_,_,_::_::_)->
+        `NotOptimizable `MutualProofs (* TODO: enderstand where we need that *)
     | Some (parent, (_,_,VernacProof(_,Some _) as v)), `Fork (_, hd', _) ->
         assert( hd = hd' );
         `Optimizable (parent, Some v, accn)
