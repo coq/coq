@@ -454,7 +454,6 @@ end = struct (* {{{ *)
   let freeze marhallable id = VCS.set_state id (freeze_global_state marhallable)
 
   let exn_on id ?valid e =
-    let e = Errors.push e in
     let loc = Option.default Loc.ghost (Loc.get_loc e) in
     let msg = string_of_ppcmds (print e) in
     Pp.feedback ~state_id:id (Interface.ErrorMsg (loc, msg));
@@ -1129,6 +1128,7 @@ let process_transaction verbosely (loc, expr) =
     prerr_endline "executed }}}";
     VCS.print ()
   with e ->
+    let e = Errors.push e in
     match Stateid.get_state_id e with
     | None ->
         VCS.restore vcs;
@@ -1136,7 +1136,6 @@ let process_transaction verbosely (loc, expr) =
         anomaly (str ("execute: "^ 
           string_of_ppcmds (Errors.print_no_report e) ^ "}}}"))
     | Some (_, id) ->
-        let e = Errors.push e in
         prerr_endline ("Failed at state " ^ Stateid.string_of_state_id id);
         VCS.restore vcs;
         VCS.print ();

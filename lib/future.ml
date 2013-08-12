@@ -74,9 +74,11 @@ let compute ~pure c : 'a value = match !c with
         let data = f () in
         let state = if pure then None else Some (!freeze ()) in
         c := Val (data, state); `Val data
-      with
-      | NotReady as e -> let e = Errors.push e in `Exn e
-      | e -> let e = Errors.push e in c := Exn e; `Exn e
+      with e ->
+        let e = Errors.push e in
+        match e with
+        | NotReady -> `Exn e
+        | _ -> c := Exn e; `Exn e
 
 let force ~pure x = match compute ~pure x with
   | `Val v -> v
