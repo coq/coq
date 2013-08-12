@@ -35,9 +35,8 @@ let tooltip_callback (view : GText.view) ~x ~y ~kbd tooltip =
   if iter#has_tag Tags.Script.tooltip then begin
     try
       let ss = Table.find_all table iter#offset in
-      view#misc#set_tooltip_text
-        (String.concat "\n"
-          (CList.uniquize (List.map Lazy.force ss)))
+      let msg = String.concat "\n" (CList.uniquize (List.map Lazy.force ss)) in
+      view#misc#set_tooltip_markup ("<tt>" ^ msg ^ "</tt>")
     with Not_found -> ()
   end else begin
     view#misc#set_tooltip_text ""; view#misc#set_has_tooltip true
