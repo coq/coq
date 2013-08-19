@@ -36,6 +36,7 @@ let tooltip_callback (view : GText.view) ~x ~y ~kbd tooltip =
     try
       let ss = Table.find_all table iter#offset in
       let msg = String.concat "\n" (CList.uniquize (List.map Lazy.force ss)) in
+      GtkBase.Tooltip.set_icon_from_stock tooltip `INFO `BUTTON;
       view#misc#set_tooltip_markup ("<tt>" ^ msg ^ "</tt>")
     with Not_found -> ()
   end else begin
