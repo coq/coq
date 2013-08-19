@@ -8,8 +8,13 @@
 
 module type S = sig
 
-  type cluster_id
-  val string_of_cluster_id : cluster_id -> string
+  module Cluster :
+  sig
+    type t
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+    val to_string : t -> string
+  end
 
   type node
   type ('edge,'info) t
@@ -21,11 +26,11 @@ module type S = sig
   val mem : ('e,'i) t -> node -> bool
 
   val iter : ('e,'i) t -> 
-    (node -> cluster_id option -> 'i option ->
+    (node -> Cluster.t option -> 'i option ->
       (node * 'e) list -> unit) -> unit
 
   val create_cluster : ('e,'i) t -> node list -> ('e,'i) t
-  val cluster_of : ('e,'i) t -> node -> cluster_id option
+  val cluster_of : ('e,'i) t -> node -> Cluster.t option
 
   val get_info : ('e,'i) t -> node -> 'i option
   val set_info : ('e,'i) t -> node -> 'i -> ('e,'i) t
@@ -35,16 +40,22 @@ end
 
 module Make(OT : Map.OrderedType) = struct
 
+module Cluster =
+struct
+  type t = int
+  let equal = Int.equal
+  let compare = Int.compare
+  let to_string = string_of_int
+end
+
 type node = OT.t
-type cluster_id = int
-let string_of_cluster_id = string_of_int
 
 module NodeMap = Map.Make(OT)
 module NodeSet = Set.Make(OT)
 
 type ('edge,'info) t = {
   graph : (node * 'edge) list NodeMap.t;
-  clusters : cluster_id NodeMap.t;
+  clusters : Cluster.t NodeMap.t;
   infos : 'info NodeMap.t;
 }
 

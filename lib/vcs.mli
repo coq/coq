@@ -27,12 +27,16 @@
 
 module type S = sig
 
-  type branch_name
-  val mk_branch_name : string -> branch_name
-  val string_of_branch_name : branch_name -> string
-  
-  val master : branch_name
-  
+  module Branch :
+  sig
+    type t
+    val make : string -> t
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+    val to_string : t -> string
+    val master : t
+  end
+
   type id
   
   type ('kind) branch_info = {
@@ -45,19 +49,19 @@ module type S = sig
   
   val empty : id -> ('kind,'diff,'info) t
   
-  val current_branch : ('k,'e,'i) t -> branch_name
-  val branches : ('k,'e,'i) t -> branch_name list
+  val current_branch : ('k,'e,'i) t -> Branch.t
+  val branches : ('k,'e,'i) t -> Branch.t list
   
-  val get_branch : ('k,'e,'i) t -> branch_name -> 'k branch_info
-  val reset_branch : ('k,'e,'i) t -> branch_name -> id -> ('k,'e,'i) t
+  val get_branch : ('k,'e,'i) t -> Branch.t -> 'k branch_info
+  val reset_branch : ('k,'e,'i) t -> Branch.t -> id -> ('k,'e,'i) t
   val branch :
-    ('kind,'e,'i) t -> ?root:id -> branch_name -> 'kind -> ('kind,'e,'i) t
-  val delete_branch : ('k,'e,'i) t -> branch_name -> ('k,'e,'i) t
+    ('kind,'e,'i) t -> ?root:id -> Branch.t -> 'kind -> ('kind,'e,'i) t
+  val delete_branch : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
   val merge : (* a 'diff is always Nop, fix that XXX *)
-    ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> ?into:branch_name ->
-            branch_name -> ('k,'diff,'i) t
+    ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> ?into:Branch.t ->
+            Branch.t -> ('k,'diff,'i) t
   val commit : ('k,'diff,'i) t -> id -> 'diff -> ('k,'diff,'i) t
-  val checkout : ('k,'e,'i) t -> branch_name -> ('k,'e,'i) t
+  val checkout : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
   
   val set_info : ('k,'e,'info) t -> id -> 'info -> ('k,'e,'info) t
   val get_info : ('k,'e,'info) t -> id -> 'info option

@@ -43,9 +43,9 @@ module Vcs_ = Vcs.Make(StateidOrderedType)
 
 type branch_type = [ `Master | `Proof of string * int ]
 type cmd_t = ast * Id.t list
-type fork_t = ast * Vcs_.branch_name * Id.t list
+type fork_t = ast * Vcs_.Branch.t * Id.t list
 type qed_t =
-  ast * vernac_qed_type * (Vcs_.branch_name * branch_type Vcs_.branch_info)
+  ast * vernac_qed_type * (Vcs_.Branch.t * branch_type Vcs_.branch_info)
 type seff_t = ast option
 type alias_t = state_id
 type transaction =
@@ -78,7 +78,7 @@ module Vcs_aux : sig
   val proof_nesting : (branch_type, 't,'i) Vcs_.t -> int
   val find_proof_at_depth :
     (branch_type, 't, 'i) Vcs_.t -> int ->
-      Vcs_.branch_name * branch_type Vcs_.branch_info
+      Vcs_.Branch.t * branch_type Vcs_.branch_info
 
 end = struct (* {{{ *)
 
@@ -100,8 +100,8 @@ end (* }}} *)
 (* Imperative wrap around VCS to obtain _the_ VCS *)
 module VCS : sig
 
+  module Branch : (module type of Vcs_.Branch with type t = Vcs_.Branch.t)
   type id = state_id
-  type branch_name = Vcs_.branch_name
   type 'branch_type branch_info = 'branch_type Vcs_.branch_info = {
     kind : [> `Master] as 'branch_type;
     root : id;
@@ -113,20 +113,17 @@ module VCS : sig
 
   val init : id -> unit
 
-  val string_of_branch_name : branch_name -> string
-
-  val current_branch : unit -> branch_name
-  val checkout : branch_name -> unit
-  val master : branch_name
-  val branches : unit -> branch_name list
-  val get_branch : branch_name -> branch_type branch_info
-  val get_branch_pos : branch_name -> id
+  val current_branch : unit -> Branch.t
+  val checkout : Branch.t -> unit
+  val branches : unit -> Branch.t list
+  val get_branch : Branch.t -> branch_type branch_info
+  val get_branch_pos : Branch.t -> id
   val new_node : unit -> id
-  val merge : id -> ours:transaction -> ?into:branch_name -> branch_name -> unit
-  val delete_branch : branch_name -> unit
+  val merge : id -> ours:transaction -> ?into:Branch.t -> Branch.t -> unit
+  val delete_branch : Branch.t -> unit
   val commit : id -> transaction -> unit
-  val mk_branch_name : ast -> branch_name
-  val branch : branch_name -> branch_type -> unit
+  val mk_branch_name : ast -> Branch.t
+  val branch : Branch.t -> branch_type -> unit
   
   val get_info : id -> state_info
   val reached : id -> bool -> unit
@@ -227,7 +224,7 @@ end = struct (* {{{ *)
     );
     StateidSet.iter (nodefmt oc) !ids;
     Hashtbl.iter (fun c nodes ->
-       fprintf oc "subgraph cluster_%s {\n" (Dag.string_of_cluster_id c);
+       fprintf oc "subgraph cluster_%s {\n" (Dag.Cluster.to_string c);
        List.iter (nodefmt oc) nodes;
        fprintf oc "color=blue; }\n"
     ) clus;
@@ -235,7 +232,7 @@ end = struct (* {{{ *)
       let shape = if head = b then "box3d" else "box" in
       fprintf oc "b%d -> %s;\n" i (node id);
       fprintf oc "b%d [shape=%s,label=\"%s\"];\n" i shape
-        (string_of_branch_name b);
+        (Branch.to_string b);
     ) heads;
     output_string oc "}\n";
     close_out oc;
@@ -254,7 +251,7 @@ end = struct (* {{{ *)
   let current_branch () = current_branch !vcs
 
   let checkout head = vcs := checkout !vcs head
-  let master = master
+  let master = Branch.master
   let branches () = branches !vcs
   let get_branch head = get_branch !vcs head
   let get_branch_pos head = (get_branch head).pos
@@ -266,7 +263,7 @@ end = struct (* {{{ *)
     vcs := merge !vcs id ~ours ~theirs:Noop ?into branch
   let delete_branch branch = vcs := delete_branch !vcs branch
   let commit id t = vcs := commit !vcs id t
-  let mk_branch_name (_, _, x) = mk_branch_name
+  let mk_branch_name (_, _, x) = Branch.make
     (match x with
     | VernacDefinition (_,(_,i),_) -> string_of_id i
     | VernacStartTheoremProof (_,[Some (_,i),_],_) -> string_of_id i
@@ -295,7 +292,7 @@ end = struct (* {{{ *)
       checkout branch;
       Proof_global.activate_proof_mode mode
     with Failure _ ->
-      checkout master;
+      checkout Branch.master;
       Proof_global.disactivate_proof_mode "Classic" (* XXX *)
 
   (* copies the transaction on every open branch *)
@@ -303,8 +300,8 @@ end = struct (* {{{ *)
     List.iter (fun b ->
       checkout b;
       let id = new_node () in
-      merge id ~ours:(Sideff t) ~into:b master)
-    (List.filter ((<>) master) (branches ()))
+      merge id ~ours:(Sideff t) ~into:b Branch.master)
+    (List.filter ((<>) Branch.master) (branches ()))
   
   let visit id =
     try
@@ -857,7 +854,7 @@ module Backtrack : sig
   val cur : unit -> state_id
 
   (* we could navigate the dag, but this ways easy *)
-  val branches_of : state_id -> VCS.branch_name list
+  val branches_of : state_id -> VCS.Branch.t list
 
   (* To be installed during initialization *)
   val undo_vernac_classifier : vernac_expr -> vernac_classification
@@ -989,7 +986,7 @@ let join_aborted_proofs () =
          Future.purify observe eop; aux view.next
     | `Sideff _ | `Alias _ | `Cmd _ | `Fork _ | `Qed _ -> aux view.next
   in
-    aux (VCS.get_branch_pos VCS.master)
+    aux (VCS.get_branch_pos VCS.Branch.master)
 
 let join () =
   finish ();
@@ -1002,10 +999,10 @@ let join () =
   VCS.print ()
 
 let merge_proof_branch x keep branch =
-  if branch = VCS.master then
+  if VCS.Branch.equal branch VCS.Branch.master then
     raise(State.exn_on dummy_state_id Proof_global.NoCurrentProof);
   let info = VCS.get_branch branch in
-  VCS.checkout VCS.master;
+  VCS.checkout VCS.Branch.master;
   let id = VCS.new_node () in
   VCS.merge id ~ours:(Qed (x,keep,(branch, info))) branch;
   VCS.delete_branch branch;
@@ -1068,7 +1065,7 @@ let process_transaction verbosely (loc, expr) =
       | VtStartProof (mode, names), w ->
           let id = VCS.new_node () in
           let bname = VCS.mk_branch_name x in
-          VCS.checkout VCS.master;
+          VCS.checkout VCS.Branch.master;
           VCS.commit id (Fork (x, bname, names));
           VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1));
           Proof_global.activate_proof_mode mode;
@@ -1085,7 +1082,7 @@ let process_transaction verbosely (loc, expr) =
       (* Side effect on all branches *)
       | VtSideff l, w ->
           let id = VCS.new_node () in
-          VCS.checkout VCS.master;
+          VCS.checkout VCS.Branch.master;
           VCS.commit id (Cmd (x,l));
           VCS.propagate_sideff (Some x);
           VCS.checkout_shallowest_proof_branch ();
@@ -1095,12 +1092,12 @@ let process_transaction verbosely (loc, expr) =
       | VtUnknown, VtNow ->
           let id = VCS.new_node () in
           let step () =
-            VCS.checkout VCS.master;
-            let mid = VCS.get_branch_pos VCS.master in
+            VCS.checkout VCS.Branch.master;
+            let mid = VCS.get_branch_pos VCS.Branch.master in
             Reach.known_state ~cache:(interactive ()) mid;
             interp id x;
             (* Vernac x may or may not start a proof *)
-            if head = VCS.master &&
+            if VCS.Branch.equal head VCS.Branch.master &&
                Proof_global.there_are_pending_proofs ()
             then begin
               let bname = VCS.mk_branch_name x in
@@ -1120,7 +1117,7 @@ let process_transaction verbosely (loc, expr) =
     (* Proof General *)
     begin match v with 
       | VernacStm (PGLast _) ->
-        if head <> VCS.master then
+        if head <> VCS.Branch.master then
           interp dummy_state_id
             (true,Loc.ghost,VernacShow (ShowGoal OpenSubgoals))
       | _ -> ()
@@ -1156,7 +1153,7 @@ let current_proof_depth () =
       distance cur
 
 let unmangle n =
-  let n = VCS.string_of_branch_name n in
+  let n = VCS.Branch.to_string n in
   let idx = String.index n '_' + 1 in
   Names.id_of_string (String.sub n idx (String.length n - idx))
 
@@ -1184,7 +1181,7 @@ let get_script prf =
     | `Alias id -> find acc id
     | `Fork _ -> find acc view.next
     in
-  find [] (VCS.get_branch_pos VCS.master)
+  find [] (VCS.get_branch_pos VCS.Branch.master)
 
 (* indentation code for Show Script, initially contributed
    by D. de Rauglaudre *)

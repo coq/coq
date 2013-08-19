@@ -11,39 +11,43 @@ open Errors
 
 module type S = sig
 
-  type branch_name
-  val mk_branch_name : string -> branch_name
-  val string_of_branch_name : branch_name -> string
-  
-  val master : branch_name
-  
+  module Branch :
+  sig
+    type t
+    val make : string -> t
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+    val to_string : t -> string
+    val master : t
+  end
+
   type id
-  
+
   (* Branches have [branch_info] attached to them. *)
   type ('kind) branch_info = {
     kind : [> `Master] as 'kind;
     root : id;
     pos  : id;
   }
-  
+
   type ('kind,'diff,'info) t constraint 'kind = [> `Master ]
-  
+
   val empty : id -> ('kind,'diff,'info) t
-  
-  val current_branch : ('k,'e,'i) t -> branch_name
-  val branches : ('k,'e,'i) t -> branch_name list
-  
-  val get_branch : ('k,'e,'i) t -> branch_name -> 'k branch_info
-  val reset_branch : ('k,'e,'i) t -> branch_name -> id -> ('k,'e,'i) t
+
+  val current_branch : ('k,'e,'i) t -> Branch.t
+  val branches : ('k,'e,'i) t -> Branch.t list
+
+  val get_branch : ('k,'e,'i) t -> Branch.t -> 'k branch_info
+  val reset_branch : ('k,'e,'i) t -> Branch.t -> id -> ('k,'e,'i) t
   val branch :
-    ('kind,'e,'i) t -> ?root:id -> branch_name -> 'kind -> ('kind,'e,'i) t
-  val delete_branch : ('k,'e,'i) t -> branch_name -> ('k,'e,'i) t
+    ('kind,'e,'i) t -> ?root:id -> Branch.t -> 'kind -> ('kind,'e,'i) t
+  val delete_branch : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
   val merge : (* a 'diff is always Nop, fix that XXX *)
-    ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> ?into:branch_name ->
-            branch_name -> ('k,'diff,'i) t
+    ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> ?into:Branch.t ->
+            Branch.t -> ('k,'diff,'i) t
   val commit : ('k,'diff,'i) t -> id -> 'diff -> ('k,'diff,'i) t
-  val checkout : ('k,'e,'i) t -> branch_name -> ('k,'e,'i) t
-  
+  val checkout : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
+
   val set_info : ('k,'e,'info) t -> id -> 'info -> ('k,'e,'info) t
   val get_info : ('k,'e,'info) t -> id -> 'info option
 
@@ -60,13 +64,19 @@ module Dag = Dag.Make(OT)
 
 type id = OT.t
 
-type branch_name = string
-let mk_branch_name = 
-  let bid = ref 0 in
-  fun s -> incr bid; string_of_int !bid ^ "_" ^ s
-let string_of_branch_name s = s
-  
-let master = "master"
+module Branch =
+struct
+  type t = string
+  let make =
+    let bid = ref 0 in
+    fun s -> incr bid; string_of_int !bid ^ "_" ^ s
+  let equal = CString.equal
+  let compare = CString.compare
+  let to_string s = s
+  let master = "master"
+end
+
+module BranchMap = Map.Make(Branch)
 
 type 'kind branch_info = {
   kind : [> `Master] as 'kind;
@@ -75,42 +85,43 @@ type 'kind branch_info = {
 }
 
 type ('kind,'edge,'info) t = {
-  cur_branch   : branch_name;
-  heads        : (branch_name * 'kind branch_info) list;
+  cur_branch   : Branch.t;
+  heads        : 'kind branch_info BranchMap.t;
   dag          : ('edge,'info) Dag.t;
 }
 
 let empty root = {
-  cur_branch = master; 
-  heads = [ master, { root = root; pos = root; kind = `Master } ];
+  cur_branch = Branch.master;
+  heads = BranchMap.singleton Branch.master { root = root; pos = root; kind = `Master };
   dag = Dag.empty;
 }
 
 let add_node vcs id edges =
-  assert (edges <> []);
+  assert (not (CList.is_empty edges));
   { vcs with dag =
      List.fold_left (fun g (t,tgt) -> Dag.add_edge g id t tgt) vcs.dag edges }
 
 let get_branch vcs head =
-  try List.assoc head vcs.heads
+  try BranchMap.find head vcs.heads
   with Not_found -> anomaly (str"head " ++ str head ++ str" not found")
 
-let reset_branch vcs head id = { vcs with
-  heads =
-    List.map (fun (name, h as orig) -> 
-      if name = head then name, { h with pos = id } else orig)
-    vcs.heads }
+let reset_branch vcs head id =
+  let map name h =
+    if Branch.equal name head then { h with pos = id } else h
+  in
+  { vcs with heads = BranchMap.mapi map vcs.heads; }
 
 let branch vcs ?(root = (get_branch vcs vcs.cur_branch).pos) name kind =
   { vcs with
-      heads = (name, { root; pos = root; kind }) :: vcs.heads;
+      heads = BranchMap.add name { root; pos = root; kind } vcs.heads;
       cur_branch = name }
 
-let delete_branch vcs name = { vcs with
-  heads = List.filter (fun (n, _) -> n <> name) vcs.heads }
+let delete_branch vcs name =
+  let filter n _ = not (Branch.equal n name) in
+  { vcs with heads = BranchMap.filter filter vcs.heads }
 
 let merge vcs id ~ours:tr1 ~theirs:tr2 ?(into = vcs.cur_branch) name =
-  assert (name <> into);
+  assert (not (Branch.equal name into));
   let br_id = (get_branch vcs name).pos in
   let cur_id = (get_branch vcs into).pos in
   let vcs = add_node vcs id [tr1,cur_id; tr2,br_id] in
@@ -130,7 +141,7 @@ let get_info vcs id = Dag.get_info vcs.dag id
 let create_cluster vcs l = { vcs with dag = Dag.create_cluster vcs.dag l }
 
 let current_branch vcs = vcs.cur_branch
-let branches vcs = List.map fst vcs.heads
+let branches vcs = BranchMap.fold (fun x _ accu -> x :: accu) vcs.heads []
 let dag vcs = vcs.dag
 
 end
