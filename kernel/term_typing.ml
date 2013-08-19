@@ -79,41 +79,26 @@ let infer_declaration ?(what="UNKNOWN") env dcl =
   | DefinitionEntry c ->
       let ctx, entry_body = c.const_entry_secctx, c.const_entry_body in
       if c.const_entry_opaque && c.const_entry_type <> None then
-        let _ = prerr_endline ("deferring typing of "^what) in
-        let body_cst = Future.chain ~id:("infer_declaration " ^ what)
-            entry_body (fun entry_body ->
-          let _ = prerr_endline ("forcing deferred typing of "^what) in
-          let body, side_eff = entry_body in
-          let _ = prerr_endline ("... got proof of "^what) in
-          let body = if side_eff = Declareops.no_seff then body else
-            let _ = prerr_endline ("    Handling the following side eff:") in
-            Declareops.iter_side_effects (fun e -> 
-              prerr_endline("     " ^ Declareops.string_of_side_effect e)) 
-              side_eff;
-            handle_side_effects env body side_eff in
-          let (j,cst) = infer env body in
-          let _ = prerr_endline ("... typed proof of "^what) in
-          let j =
-            {uj_val = hcons_constr j.uj_val;
-             uj_type = hcons_constr j.uj_type} in
-          let (_typ,cst) = constrain_type env j cst c.const_entry_type in
-          Lazyconstr.opaque_from_val j.uj_val, cst) in
+        let id = "infer_declaration " ^ what in
+        let body_cst =
+          Future.chain ~id entry_body (fun (body, side_eff) ->
+            let body = handle_side_effects env body side_eff in
+            let j, cst = infer env body in
+            let j =
+              {uj_val = hcons_constr j.uj_val;
+               uj_type = hcons_constr j.uj_type} in
+            let _typ, cst = constrain_type env j cst c.const_entry_type in
+            Lazyconstr.opaque_from_val j.uj_val, cst) in
         let body, cst = Future.split2 body_cst in
         let def = OpaqueDef body in
         let typ = match c.const_entry_type with
         | None -> assert false
         | Some typ -> NonPolymorphicType typ in
-        (def, typ, cst, c.const_entry_inline_code, ctx)
+        def, typ, cst, c.const_entry_inline_code, ctx
       else
-        let _ = prerr_endline ("typing now "^what) in
         let body, side_eff = Future.force entry_body in
-        let body = if side_eff = Declareops.no_seff then body else
-          let _ = prerr_endline ("    Handling the following side eff:") in
-          Declareops.iter_side_effects (fun e -> 
-            prerr_endline("     " ^ Declareops.string_of_side_effect e))
-            side_eff;
-          handle_side_effects env body side_eff in
-        let (j,cst) =
+        let body = handle_side_effects env body side_eff in
+        let j, cst =
           try infer env body 
           with Not_found as e -> 
             prerr_endline ("infer not found " ^ what);
@@ -121,12 +106,11 @@ let infer_declaration ?(what="UNKNOWN") env dcl =
         let j =
           {uj_val = hcons_constr j.uj_val;
            uj_type = hcons_constr j.uj_type} in
-        let (typ,cst) = constrain_type env j cst c.const_entry_type in
-        let _ = prerr_endline ("...typed "^what) in
+        let typ, cst = constrain_type env j cst c.const_entry_type in
         let def = Def (Lazyconstr.from_val j.uj_val) in
-        (def, typ, Future.from_val cst, c.const_entry_inline_code, ctx)
+        def, typ, Future.from_val cst, c.const_entry_inline_code, ctx
   | ParameterEntry (ctx,t,nl) ->
-      let (j,cst) = infer env t in
+      let j, cst = infer env t in
       let t = hcons_constr (Typeops.assumption_of_judgment env j) in
       Undef nl, NonPolymorphicType t, Future.from_val cst, false, ctx
 
