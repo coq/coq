@@ -226,7 +226,7 @@ let string_of_side_effect = function
   | NewConstant (c,_) -> Names.string_of_con c
 type side_effects = side_effect list
 let no_seff = ([] : side_effects)
-let iter_side_effects f l = List.iter f l
+let iter_side_effects f l = List.iter f (List.rev l)
 let fold_side_effects f a l = List.fold_left f a l
 let uniquize_side_effects l = List.uniquize l
 let union_side_effects l1 l2 = l1 @ l2

@@ -181,7 +181,47 @@ let declare_constant_common id cst =
   Notation.declare_ref_arguments_scope (ConstRef c);
   c
 
+let declare_sideff (NewConstant (c, cb)) =
+  let id = Names.Label.to_id (Names.Constant.label c) in
+  let pt, opaque =
+    match cb with
+    | { const_body = Def sc } -> Lazyconstr.force sc, false
+    | { const_body = OpaqueDef fc } ->
+          Lazyconstr.force_opaque (Future.force fc), true
+    | { const_body = Undef _ } -> anomaly(str"Undefined side effect")
+  in
+  let ty =
+    match cb.Declarations.const_type with
+    | Declarations.NonPolymorphicType t -> Some t
+    | _ -> None in
+  let cst = {
+    cst_decl = ConstantEntry (DefinitionEntry {
+        const_entry_body = Future.from_val (pt,Declareops.no_seff);
+        const_entry_secctx = Some cb.Declarations.const_hyps;
+        const_entry_type = ty;
+        const_entry_opaque = opaque;
+        const_entry_inline_code = false;
+    });
+    cst_hyps = [] ;
+    cst_kind =  Decl_kinds.IsDefinition Decl_kinds.Definition;
+    cst_locl = true;
+  } in
+  ignore(declare_constant_common id cst)
+
 let declare_constant ?(internal = UserVerbose) ?(local = false) id (cd, kind) =
+  let cd = (* We deal with side effects of non-opaque constants *)
+    match cd with
+    | Entries.DefinitionEntry ({
+      const_entry_opaque = false; const_entry_body = bo } as de) ->
+        let pt, seff = Future.force bo in
+        if seff = Declareops.no_seff then cd
+        else begin
+          Declareops.iter_side_effects declare_sideff seff;
+          Entries.DefinitionEntry { de with
+            const_entry_body = Future.from_val (pt, Declareops.no_seff) }
+        end
+    | _ -> cd
+  in
   let cst = {
     cst_decl = ConstantEntry cd;
     cst_hyps = [] ;
