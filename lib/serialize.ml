@@ -355,9 +355,9 @@ let to_edit_id = function
   | _ -> raise Marshal_error
 
 let of_state_id id =
-  try Stateid.of_state_id id with Invalid_argument _ -> raise Marshal_error
+  try Stateid.to_xml id with Invalid_argument _ -> raise Marshal_error
 let to_state_id xml =
-  try Stateid.to_state_id xml with Invalid_argument _ -> raise Marshal_error
+  try Stateid.of_xml xml with Invalid_argument _ -> raise Marshal_error
 
 let of_edit_or_state_id = function
   | Interface.Edit id -> ["object","edit"], of_edit_id id
@@ -727,7 +727,7 @@ let pr_call = function
     let raw = if r then "RAW" else "" in
     let verb = if b then "" else "SILENT" in
     "INTERP"^raw^verb^" "^string_of_int id^" ["^s^"]"
-  | Backto i -> "BACKTO "^(Stateid.string_of_state_id i)
+  | Backto i -> "BACKTO "^(Stateid.to_string i)
   | Goal _ -> "GOALS"
   | Evars _ -> "EVARS"
   | Hints _ -> "HINTS"
@@ -744,9 +744,9 @@ let pr_call = function
   | Init _ -> "INIT"
 let pr_value_gen pr = function
   | Good v -> "GOOD " ^ pr v
-  | Fail (id,None,str) -> "FAIL "^Stateid.string_of_state_id id^" ["^str^"]"
+  | Fail (id,None,str) -> "FAIL "^Stateid.to_string id^" ["^str^"]"
   | Fail (id,Some(i,j),str) ->
-      "FAIL "^Stateid.string_of_state_id id^
+      "FAIL "^Stateid.to_string id^
         " ("^string_of_int i^","^string_of_int j^")["^str^"]"
 let pr_value v = pr_value_gen (fun _ -> "FIXME") v
 let pr_full_value call value =

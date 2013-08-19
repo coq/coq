@@ -213,7 +213,7 @@ let make_prompt () =
    "n |lem1|lem2|lem3| p < "
 *)
 let make_emacs_prompt() =
-  let statnum = Stateid.string_of_state_id (Stm.get_current_state ()) in
+  let statnum = Stateid.to_string (Stm.get_current_state ()) in
   let dpth = Stm.current_proof_depth() in
   let pending = Stm.get_all_proof_names() in
   let pendingprompt =
@@ -319,9 +319,9 @@ let do_vernac () =
         Format.set_formatter_out_channel stdout;
         ppnl (print_toplevel_error any);
         pp_flush ();
-        match Stateid.get_state_id any with
+        match Stateid.get any with
         | Some (valid_id,_) ->
-            let valid = Stateid.int_of_state_id valid_id in
+            let valid = Stateid.to_int valid_id in
             Vernac.eval_expr (Loc.ghost,
               (Vernacexpr.VernacStm (Vernacexpr.Command
                 (Vernacexpr.VernacBackTo valid))))
@@ -336,7 +336,7 @@ let do_vernac () =
 let feed_emacs = function
   | { Interface.id = Interface.State id;
       Interface.content = Interface.GlobRef (_,a,_,c,_) }  -> 
-    prerr_endline ("<info>" ^"<id>"^Stateid.string_of_state_id id ^"</id>"
+    prerr_endline ("<info>" ^"<id>"^Stateid.to_string id ^"</id>"
 		   ^a^" "^c^ "</info>")
   | _  -> ()
 

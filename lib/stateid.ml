@@ -8,18 +8,18 @@
 
 open Xml_datatype
 
-type state_id = int
-let initial_state_id = 1
-let dummy_state_id = 0
-let fresh_state_id, in_range =
-  let cur = ref initial_state_id in
+type t = int
+let initial = 1
+let dummy = 0
+let fresh, in_range =
+  let cur = ref initial in
   (fun () -> incr cur; !cur), (fun id -> id >= 0 && id <= !cur)
-let string_of_state_id = string_of_int
-let state_id_of_int id = assert(in_range id); id
-let int_of_state_id id = id
+let to_string = string_of_int
+let of_int id = assert(in_range id); id
+let to_int id = id
 let newer_than id1 id2 = id1 > id2
 
-let to_state_id = function
+let of_xml = function
   | Element ("state_id",["val",i],[]) ->
       let id = int_of_string i in
       (* Coqide too to parse ids too, but cannot check if they are valid.
@@ -27,11 +27,12 @@ let to_state_id = function
       if !Flags.ide_slave then assert(in_range id);
       id
   | _ -> raise (Invalid_argument "to_state_id")
-let of_state_id i = Element ("state_id",["val",string_of_int i],[])
+let to_xml i = Element ("state_id",["val",string_of_int i],[])
 
-let state_id_info : (state_id * state_id) Exninfo.t = Exninfo.make ()
-let add_state_id exn ?(valid = initial_state_id) id =
+let state_id_info : (t * t) Exninfo.t = Exninfo.make ()
+let add exn ?(valid = initial) id =
   Exninfo.add exn state_id_info (valid, id)
-let get_state_id exn = Exninfo.get exn state_id_info
+let get exn = Exninfo.get exn state_id_info
 
-module StateidOrderedType = struct type t = state_id let compare = compare end
+let equal = Int.equal
+let compare = Int.compare

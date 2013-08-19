@@ -14,12 +14,12 @@ val process_transaction : bool -> Vernacexpr.located_vernac_expr -> unit
 val finish : unit -> unit
 
 (* Evaluates a particular state id (does not move the current tip) *)
-val observe : Stateid.state_id -> unit
+val observe : Stateid.t -> unit
 
 (* Joins the entire document.  Implies finish, but also checks proofs *)
 val join : unit -> unit
 
-val get_current_state : unit -> Stateid.state_id
+val get_current_state : unit -> Stateid.t
 val current_proof_depth : unit -> int
 val get_all_proof_names : unit -> Names.identifier list
 val get_current_proof_name : unit -> Names.identifier option

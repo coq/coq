@@ -46,7 +46,7 @@ let store_id = function
 let rec erase_ids n =
   if n = 0 then
     match !ids with
-    | [] -> Stateid.initial_state_id
+    | [] -> Stateid.initial
     | x :: _ -> x
   else match !ids with
     | id :: rest -> ids := rest; erase_ids (n-1)

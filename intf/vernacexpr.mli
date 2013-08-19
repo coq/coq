@@ -9,7 +9,6 @@
 open Loc
 open Pp
 open Util
-open Stateid
 open Names
 open Tacexpr
 open Misctypes
@@ -220,7 +219,7 @@ type bullet =
 type 'a stm_vernac =
   | JoinDocument
   | Finish
-  | Observe of Stateid.state_id
+  | Observe of Stateid.t
   | Command of 'a (* An out of flow command not to be recorded by Stm *)
   | PGLast of 'a (* To ease the life of PG *)
 
@@ -436,8 +435,8 @@ and vernac_part_of_script = bool
 and vernac_control =
   | VtFinish
   | VtJoinDocument
-  | VtObserve of state_id
-  | VtBack of state_id
+  | VtObserve of Stateid.t
+  | VtBack of Stateid.t
 type vernac_when =
   | VtNow
   | VtLater

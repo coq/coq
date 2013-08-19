@@ -8,7 +8,6 @@
 
 let prerr_endline s = if !Flags.debug then prerr_endline s else ()
 
-open Stateid
 open Vernacexpr
 open Errors
 open Pp
@@ -39,7 +38,7 @@ let interp ?proof id (verbosely, loc, expr) =
 type ast = bool * Loc.t * vernac_expr
 let pr_ast (_, _, v) = pr_vernac v
 
-module Vcs_ = Vcs.Make(StateidOrderedType)
+module Vcs_ = Vcs.Make(Stateid)
 
 type branch_type = [ `Master | `Proof of string * int ]
 type cmd_t = ast * Id.t list
@@ -47,7 +46,7 @@ type fork_t = ast * Vcs_.Branch.t * Id.t list
 type qed_t =
   ast * vernac_qed_type * (Vcs_.Branch.t * branch_type Vcs_.branch_info)
 type seff_t = ast option
-type alias_t = state_id
+type alias_t = Stateid.t
 type transaction =
   | Cmd    of cmd_t
   | Fork   of fork_t
@@ -58,11 +57,11 @@ type transaction =
 type step =
   [ `Cmd    of cmd_t
   | `Fork   of fork_t
-  | `Qed    of qed_t * state_id
+  | `Qed    of qed_t * Stateid.t
   (* TODO : is the state id carried by `Ast relevant? *)
-  | `Sideff of [ `Ast of ast * state_id | `Id of state_id ]
+  | `Sideff of [ `Ast of ast * Stateid.t | `Id of Stateid.t ]
   | `Alias  of alias_t ]
-type visit = { step : step; next : state_id }
+type visit = { step : step; next : Stateid.t }
 
 type state = States.state * Proof_global.state
 type state_info = { (* Make private *)
@@ -90,7 +89,7 @@ end = struct (* {{{ *)
 
   let find_proof_at_depth vcs pl =
     try List.find (function
-          | _, { Vcs_.kind = `Proof(m, n) } -> n = pl
+          | _, { Vcs_.kind = `Proof(m, n) } -> Int.equal n pl
           | _ -> false)
         (List.map (fun h -> h, Vcs_.get_branch vcs h) (Vcs_.branches vcs))
     with Not_found -> failwith "find_proof_at_depth"
@@ -101,7 +100,7 @@ end (* }}} *)
 module VCS : sig
 
   module Branch : (module type of Vcs_.Branch with type t = Vcs_.Branch.t)
-  type id = state_id
+  type id = Stateid.t
   type 'branch_type branch_info = 'branch_type Vcs_.branch_info = {
     kind : [> `Master] as 'branch_type;
     root : id;
@@ -152,7 +151,7 @@ end = struct (* {{{ *)
 
   include Vcs_
 
-  module StateidSet = Set.Make(StateidOrderedType)
+  module StateidSet = Set.Make(Stateid)
   open Printf
 
   let print_dag vcs () = (* {{{ *)
@@ -165,7 +164,7 @@ end = struct (* {{{ *)
             (try string_of_ppcmds (pr_ast t) with _ -> "ERR")
       | Sideff None -> "EnvChange"
       | Noop -> " "
-      | Alias id -> sprintf "Alias(%s)" (string_of_state_id id)
+      | Alias id -> sprintf "Alias(%s)" (Stateid.to_string id)
       | Qed (a,_,_) -> string_of_ppcmds (pr_ast a) in
     let is_green id = 
       match get_info vcs id with
@@ -173,7 +172,7 @@ end = struct (* {{{ *)
       | _ -> false in
     let is_red id =
       match get_info vcs id with
-      | Some s -> s.n_reached = ~-1
+      | Some s -> Int.equal s.n_reached ~-1
       | _ -> false in
     let head = current_branch vcs in
     let heads =
@@ -189,7 +188,7 @@ end = struct (* {{{ *)
     let fname_dot, fname_ps =
       let f = "/tmp/" ^ Filename.basename fname in
       f ^ ".dot", f ^ ".pdf" in
-    let node id = "s" ^ string_of_state_id id in
+    let node id = "s" ^ Stateid.to_string id in
     let edge tr =
       sprintf "<<FONT POINT-SIZE=\"12\" FACE=\"sans\">%s</FONT>>"
         (quote (string_of_transaction tr)) in
@@ -199,7 +198,7 @@ end = struct (* {{{ *)
       match get_info vcs id with
       | None -> ""
       | Some info ->
-          sprintf "<<FONT POINT-SIZE=\"12\">%s</FONT>" (string_of_state_id id) ^
+          sprintf "<<FONT POINT-SIZE=\"12\">%s</FONT>" (Stateid.to_string id) ^
           sprintf " <FONT POINT-SIZE=\"11\">r:%d g:%d</FONT>>"
             info.n_reached info.n_goals in
     let color id =
@@ -229,7 +228,7 @@ end = struct (* {{{ *)
        fprintf oc "color=blue; }\n"
     ) clus;
     List.iteri (fun i (b,id) ->
-      let shape = if head = b then "box3d" else "box" in
+      let shape = if Branch.equal head b then "box3d" else "box" in
       fprintf oc "b%d -> %s;\n" i (node id);
       fprintf oc "b%d [shape=%s,label=\"%s\"];\n" i shape
         (Branch.to_string b);
@@ -242,7 +241,7 @@ end = struct (* {{{ *)
   
   exception Expired
   type vcs = (branch_type, transaction, state_info) t
-  let vcs : vcs ref = ref (empty dummy_state_id)
+  let vcs : vcs ref = ref (empty Stateid.dummy)
 
   let init id =
     vcs := empty id;
@@ -256,7 +255,7 @@ end = struct (* {{{ *)
   let get_branch head = get_branch !vcs head
   let get_branch_pos head = (get_branch head).pos
   let new_node () =
-    let id = Stateid.fresh_state_id () in
+    let id = Stateid.fresh () in
     vcs := set_info !vcs id (default_info ());
     id
   let merge id ~ours ?into branch =
@@ -301,7 +300,7 @@ end = struct (* {{{ *)
       checkout b;
       let id = new_node () in
       merge id ~ours:(Sideff t) ~into:b Branch.master)
-    (List.filter ((<>) Branch.master) (branches ()))
+    (List.filter (fun b -> not (Branch.equal b Branch.master)) (branches ()))
   
   let visit id =
     try
@@ -315,26 +314,26 @@ end = struct (* {{{ *)
       | [p, Noop; n, Sideff None]-> { step = `Sideff (`Id p); next = n }
       | [n, Sideff (Some x); p, Noop]
       | [p, Noop; n, Sideff (Some x)]-> { step = `Sideff(`Ast (x,p)); next = n }
-      | [n, Sideff (Some x)]-> {step = `Sideff(`Ast (x,dummy_state_id)); next=n}
-      | _ -> anomaly (str ("Malformed VCS at node "^string_of_state_id id))
+      | [n, Sideff (Some x)]-> {step = `Sideff(`Ast (x,Stateid.dummy)); next=n}
+      | _ -> anomaly (str ("Malformed VCS at node "^Stateid.to_string id))
     with Not_found -> raise Expired
 
   let slice ~start ~stop ~purify =
     let l =
       let rec aux id =
-        if id = stop then [] else
+        if Stateid.equal id stop then [] else
         match visit id with
         | { next = n; step = `Cmd x } -> (id,Cmd x) :: aux n
         | { next = n; step = `Alias x } -> (id,Alias x) :: aux n
         | { next = n; step = `Sideff (`Ast (x,_)) } ->
              (id,Sideff (Some x)) :: aux n
-        | _ -> anomaly(str("Cannot slice from "^ string_of_state_id start ^
-                           " to "^string_of_state_id stop))
+        | _ -> anomaly(str("Cannot slice from "^ Stateid.to_string start ^
+                           " to "^Stateid.to_string stop))
       in aux start in
     let v = Vcs_.empty stop in
     let info = get_info stop in
     (* Stm should have reached the beginning of proof *)
-    assert(info.state <> None);
+    assert (not (Option.is_empty info.state));
     (* This may be expensive *)
     let info = { info with state = Some (purify (Option.get info.state)) } in
     let v = Vcs_.set_info v stop info in
@@ -367,7 +366,7 @@ end = struct (* {{{ *)
 
     let get_last_job () =
       Mutex.lock m;
-      while !job = None do Condition.wait c m; done;
+      while Option.is_empty !job do Condition.wait c m; done;
       match !job with
       | None -> assert false
       | Some x -> job := None; Mutex.unlock m; x
@@ -377,7 +376,7 @@ end = struct (* {{{ *)
 
     let command job =
       set_last_job job;
-      if !worker = None then worker := Some (Thread.create run_command ())
+      if Option.is_empty !worker then worker := Some (Thread.create run_command ())
 
   end (* }}} *)
 
@@ -398,12 +397,12 @@ module State : sig
 
       Warning: an optimization requires that state modifying functions
       are always executed using this wrapper. *)
-  val define : ?cache:bool -> (unit -> unit) -> state_id -> unit
+  val define : ?cache:bool -> (unit -> unit) -> Stateid.t -> unit
 
-  val install_cached : state_id -> unit
-  val is_cached : state_id -> bool
+  val install_cached : Stateid.t -> unit
+  val is_cached : Stateid.t -> bool
 
-  val exn_on : state_id -> ?valid:state_id -> exn -> exn
+  val exn_on : Stateid.t -> ?valid:Stateid.t -> exn -> exn
 
   (* TODO: rename *)
   (* projects a state so that it can be marshalled and its content is
@@ -412,9 +411,9 @@ module State : sig
 
 end = struct (* {{{ *)
 
-  (* cur_id holds dummy_state_id in case the last attempt to define a state
+  (* cur_id holds Stateid.dummy in case the last attempt to define a state
    * failed, so the global state may contain garbage *)
-  let cur_id = ref dummy_state_id
+  let cur_id = ref Stateid.dummy
 
   (* helpers *)
   let freeze_global_state marshallable =
@@ -435,13 +434,13 @@ end = struct (* {{{ *)
       ) s
 
   let is_cached id =
-    id = !cur_id ||
+    Stateid.equal id !cur_id ||
     match VCS.get_info id with
     | { state = Some _ } -> true
     | _ -> false
 
   let install_cached id =
-    if id = !cur_id then () else (* optimization *)
+    if Stateid.equal id !cur_id then () else (* optimization *)
     let s =
       match VCS.get_info id with
       | { state = Some s } -> s
@@ -454,14 +453,14 @@ end = struct (* {{{ *)
     let loc = Option.default Loc.ghost (Loc.get_loc e) in
     let msg = string_of_ppcmds (print e) in
     Pp.feedback ~state_id:id (Interface.ErrorMsg (loc, msg));
-    Stateid.add_state_id e ?valid id
+    Stateid.add e ?valid id
 
   let define ?(cache=false) f id =
     if is_cached id then
-      anomaly (str"defining state "++str(string_of_state_id id)++str" twice");
+      anomaly (str"defining state "++str(Stateid.to_string id)++str" twice");
     try
       prerr_endline ("defining " ^
-        string_of_state_id id ^ " (cache=" ^string_of_bool cache^")");
+        Stateid.to_string id ^ " (cache=" ^string_of_bool cache^")");
       f ();
       if cache then freeze `No id;
       cur_id := id;
@@ -472,9 +471,9 @@ end = struct (* {{{ *)
     with e ->
       let e = Errors.push e in
       let good_id = !cur_id in
-      cur_id := dummy_state_id;
+      cur_id := Stateid.dummy;
       VCS.reached id false;
-      match Stateid.get_state_id e with
+      match Stateid.get e with
       | Some _ -> raise e
       | None -> raise (exn_on id ~valid:good_id e)
 
@@ -487,7 +486,7 @@ module Slaves : sig
 
   (* (eventually) remote calls *)
   val build_proof :
-    exn_info:(state_id * state_id) -> start:state_id -> stop:state_id ->
+    exn_info:(Stateid.t * Stateid.t) -> start:Stateid.t -> stop:Stateid.t ->
       Entries.proof_output list Future.computation
   
   (* initialize the whole machinery (optional) *)
@@ -498,7 +497,7 @@ module Slaves : sig
   val slave_init_stdout : unit -> unit
 
   (* to disentangle modules *)
-  val set_reach_known_state : (cache:bool -> state_id -> unit) -> unit
+  val set_reach_known_state : (cache:bool -> Stateid.t -> unit) -> unit
 
 
 end = struct (* {{{ *)
@@ -542,7 +541,7 @@ end = struct (* {{{ *)
   
     let slave_manager = ref (None : Thread.t option)
     
-    let is_empty () = !slave_manager = None
+    let is_empty () = Option.is_empty !slave_manager
 
     let respawn () =
       let c2s_r, c2s_w = Unix.pipe () in
@@ -565,7 +564,7 @@ end = struct (* {{{ *)
   let reach_known_state = ref (fun ~cache id -> ())
   let set_reach_known_state f = reach_known_state := f
 
-  type request = ReqBuildProof of (state_id * state_id) * state_id * VCS.vcs
+  type request = ReqBuildProof of (Stateid.t * Stateid.t) * Stateid.t * VCS.vcs
   type response =
     | RespBuiltProof of Entries.proof_output list 
     | RespError of std_ppcmds
@@ -574,15 +573,15 @@ end = struct (* {{{ *)
     | RespBuiltProof _ -> "Sucess"
     | RespError _ -> "Error"
     | RespFeedback { Interface.id = Interface.State id } ->
-        "Feedback on " ^ string_of_state_id id
+        "Feedback on " ^ Stateid.to_string id
     | RespFeedback _ -> assert false
  
   type task =
-    | TaskBuildProof of (state_id * state_id) * state_id * state_id *
+    | TaskBuildProof of (Stateid.t * Stateid.t) * Stateid.t * Stateid.t *
         (Entries.proof_output list Future.value -> unit)
   let pr_task = function
     | TaskBuildProof(_,bop,eop,_) ->
-        "TaskBuilProof("^string_of_state_id bop^","^string_of_state_id eop^")"
+        "TaskBuilProof("^Stateid.to_string bop^","^Stateid.to_string eop^")"
 
   let request_of_task task =
     match task with
@@ -719,7 +718,7 @@ end (* }}} *)
 (* Runs all transactions needed to reach a state *)
 module Reach : sig
 
-  val known_state : cache:bool -> state_id -> unit
+  val known_state : cache:bool -> Stateid.t -> unit
 
 end = struct (* {{{ *)
 
@@ -739,10 +738,10 @@ let collect_proof cur hd id =
     | _, `Fork(_,_,_::_::_)->
         `NotOptimizable `MutualProofs (* TODO: enderstand where we need that *)
     | Some (parent, (_,_,VernacProof(_,Some _) as v)), `Fork (_, hd', _) ->
-        assert( hd = hd' );
+        assert (VCS.Branch.equal hd hd');
         `Optimizable (parent, Some v, accn)
     | Some (parent, _), `Fork (_, hd', _) ->
-        assert( hd = hd' );
+        assert (VCS.Branch.equal hd hd');
         `MaybeOptimizable (parent, accn)
     | _, `Sideff se -> collect None (id::accn) view.next
     | _ -> `NotOptimizable `Unknown in
@@ -760,13 +759,13 @@ let known_state ~cache id =
   let inject_non_pstate (s,l) = Summary.unfreeze_summary s; Lib.unfreeze l in
 
   let rec pure_cherry_pick_non_pstate id = Future.purify (fun id ->
-    prerr_endline ("cherry-pick non pstate " ^ string_of_state_id id);
+    prerr_endline ("cherry-pick non pstate " ^ Stateid.to_string id);
     reach id;
     cherry_pick_non_pstate ()) id
 
   (* traverses the dag backward from nodes being already calculated *)
   and reach ?(cache=cache) id =
-    prerr_endline ("reaching: " ^ string_of_state_id id);
+    prerr_endline ("reaching: " ^ Stateid.to_string id);
     if State.is_cached id then begin
       State.install_cached id;
       feedback ~state_id:id Interface.Processed;
@@ -785,7 +784,7 @@ let known_state ~cache id =
            let rec aux = function
            | `Optimizable (start, proof_using_ast, nodes) ->
                (fun () ->
-                 prerr_endline ("Optimizable " ^ string_of_state_id id);
+                 prerr_endline ("Optimizable " ^ Stateid.to_string id);
                  VCS.create_cluster nodes;
                  begin match keep with
                  | VtKeep ->
@@ -802,11 +801,11 @@ let known_state ~cache id =
                      interp id x
                  end;
                  Proof_global.discard_all ())
-           | `NotOptimizable `Immediate -> assert (view.next = eop);
+           | `NotOptimizable `Immediate -> assert (Stateid.equal view.next eop);
                (fun () -> reach eop; interp id x; Proof_global.discard_all ())
            | `NotOptimizable _ ->
                (fun () ->
-                 prerr_endline ("NotOptimizable " ^ string_of_state_id id);
+                 prerr_endline ("NotOptimizable " ^ Stateid.to_string id);
                  reach eop;
                  begin match keep with
                  | VtKeep ->
@@ -820,10 +819,10 @@ let known_state ~cache id =
                  Proof_global.discard_all ())
            | `MaybeOptimizable (start, nodes) ->
                (fun () ->
-                 prerr_endline ("MaybeOptimizable " ^ string_of_state_id id);
+                 prerr_endline ("MaybeOptimizable " ^ Stateid.to_string id);
                  reach ~cache:true start;
                  (* no sections and no modules *)
-                 if Environ.named_context (Global.env ()) = [] &&
+                 if List.is_empty (Environ.named_context (Global.env ())) &&
                     Safe_typing.is_curmod_library (Global.safe_env ()) then
                    aux (`Optimizable (start, None, nodes)) ()
                  else
@@ -840,7 +839,7 @@ let known_state ~cache id =
            cache
     in
     State.define ~cache:cache_step step id;
-    prerr_endline ("reached: "^ string_of_state_id id) in
+    prerr_endline ("reached: "^ Stateid.to_string id) in
   reach id
 
 end (* }}} *)
@@ -850,11 +849,11 @@ let _ = Slaves.set_reach_known_state Reach.known_state
 module Backtrack : sig
 
   val record : unit -> unit
-  val backto : state_id -> unit
-  val cur : unit -> state_id
+  val backto : Stateid.t -> unit
+  val cur : unit -> Stateid.t
 
   (* we could navigate the dag, but this ways easy *)
-  val branches_of : state_id -> VCS.Branch.t list
+  val branches_of : Stateid.t -> VCS.Branch.t list
 
   (* To be installed during initialization *)
   val undo_vernac_classifier : vernac_expr -> vernac_classification
@@ -864,7 +863,7 @@ end = struct (* {{{ *)
   module S  = Searchstack
 
   type hystory_elt = {
-    id : state_id ;
+    id : Stateid.t ;
     vcs : VCS.vcs;
     label : Names.Id.t list; (* To implement a limited form of reset *)
   }
@@ -881,7 +880,7 @@ end = struct (* {{{ *)
       id = id;
       vcs = VCS.backup ();
       label =
-        if id = initial_state_id || id = dummy_state_id then [] else 
+        if Stateid.equal id Stateid.initial || Stateid.equal id Stateid.dummy then [] else 
         match VCS.visit id with
         | { step = `Fork (_,_,l) } -> l
         | { step = `Cmd (_,l) } -> l
@@ -892,23 +891,23 @@ end = struct (* {{{ *)
     assert(not (S.is_empty history));
     let rec pop_until_oid () =
       let id = (S.top history).id in
-      if id = initial_state_id || id = oid then ()
+      if Stateid.equal id Stateid.initial || Stateid.equal id oid then ()
       else begin ignore (S.pop history); pop_until_oid (); end in
     pop_until_oid ();
     let backup = S.top history in
     VCS.restore backup.vcs;
-    if backup.id <> oid then anomaly (str "Backto an unknown state")
+    if not (Stateid.equal backup.id oid) then anomaly (str "Backto an unknown state")
 
   let branches_of id =
     try
       let s = S.find (fun n s ->
-        if s.id = id then `Stop s else `Cont ()) () history in
+        if Stateid.equal s.id id then `Stop s else `Cont ()) () history in
       Vcs_.branches s.vcs
     with Not_found -> assert false
  
   let undo_vernac_classifier = function
     | VernacResetInitial ->
-        VtStm (VtBack initial_state_id, true), VtNow
+        VtStm (VtBack Stateid.initial, true), VtNow
     | VernacResetName (_,name) ->
         msg_warning
           (str"Reset not implemented for automatically generated constants");
@@ -922,11 +921,11 @@ end = struct (* {{{ *)
           VtStm (VtBack (S.top history).id, true), VtNow)
     | VernacBack n ->
         let s = S.find (fun n s ->
-          if n = 0 then `Stop s else `Cont (n-1)) n history in
+          if Int.equal n 0 then `Stop s else `Cont (n-1)) n history in
         VtStm (VtBack s.id, true), VtNow
     | VernacUndo n ->
         let s = S.find (fun n s ->
-          if n = 0 then `Stop s else `Cont (n-1)) n history in
+          if Int.equal n 0 then `Stop s else `Cont (n-1)) n history in
         VtStm (VtBack s.id, true), VtLater
     | VernacUndoTo _
     | VernacRestart as e ->
@@ -938,16 +937,16 @@ end = struct (* {{{ *)
           if List.mem cb (Vcs_.branches vcs) then `Cont (n+1) else `Stop n)
           0 history in
         let s = S.find (fun n s ->
-          if n = 0 then `Stop s else `Cont (n-1)) (n-m-1) history in
+          if Int.equal n 0 then `Stop s else `Cont (n-1)) (n-m-1) history in
         VtStm (VtBack s.id, true), VtLater
     | VernacAbortAll ->
         let s = S.find (fun () s ->
-          if List.length (Vcs_.branches s.vcs) = 1 then `Stop s else `Cont ())
+          match Vcs_.branches s.vcs with [_] -> `Stop s | _ -> `Cont ())
           () history in
         VtStm (VtBack s.id, true), VtLater
     | VernacBacktrack (id,_,_)
     | VernacBackTo id ->
-        VtStm (VtBack (Stateid.state_id_of_int id), true), VtNow
+        VtStm (VtBack (Stateid.of_int id), true), VtNow
     | _ -> VtUnknown, VtNow
 
 end (* }}} *)
@@ -956,11 +955,11 @@ let slave_main_loop () = Slaves.slave_main_loop ()
 let slave_init_stdout () = Slaves.slave_init_stdout ()
 
 let init () =
-  VCS.init initial_state_id;
+  VCS.init Stateid.initial;
   set_undo_classifier Backtrack.undo_vernac_classifier;
-  State.define ~cache:true (fun () -> ()) initial_state_id;
+  State.define ~cache:true (fun () -> ()) Stateid.initial;
   Backtrack.record ();
-  if !Flags.coq_slave_mode = 0 then Slaves.init ()
+  if Int.equal !Flags.coq_slave_mode 0 then Slaves.init ()
 
 let observe id =
   let vcs = VCS.backup () in
@@ -979,7 +978,7 @@ let finish () =
 
 let join_aborted_proofs () =
   let rec aux id =
-    if id = initial_state_id then () else
+    if Stateid.equal id Stateid.initial then () else
     let view = VCS.visit id in
     match view.step with
     | `Qed ((_,VtDrop,_),eop) ->
@@ -1000,13 +999,13 @@ let join () =
 
 let merge_proof_branch x keep branch =
   if VCS.Branch.equal branch VCS.Branch.master then
-    raise(State.exn_on dummy_state_id Proof_global.NoCurrentProof);
+    raise(State.exn_on Stateid.dummy Proof_global.NoCurrentProof);
   let info = VCS.get_branch branch in
   VCS.checkout VCS.Branch.master;
   let id = VCS.new_node () in
   VCS.merge id ~ours:(Qed (x,keep,(branch, info))) branch;
   VCS.delete_branch branch;
-  if keep = VtKeep then VCS.propagate_sideff None
+  if keep == VtKeep then VCS.propagate_sideff None
 
 let process_transaction verbosely (loc, expr) =
   let warn_if_pos a b =
@@ -1038,9 +1037,9 @@ let process_transaction verbosely (loc, expr) =
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           VCS.commit id (Alias oid);
-          Backtrack.record (); if w = VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish ()
       | VtStm (VtBack id, false), VtNow ->
-          prerr_endline ("undo to state " ^ string_of_state_id id);
+          prerr_endline ("undo to state " ^ Stateid.to_string id);
           Backtrack.backto id;
           VCS.checkout_shallowest_proof_branch ();
           Reach.known_state ~cache:(interactive ()) id;
@@ -1050,14 +1049,14 @@ let process_transaction verbosely (loc, expr) =
       (* Query *)
       | VtQuery false, VtNow ->
           finish ();
-          (try Future.purify (interp dummy_state_id) (true,loc,expr)
+          (try Future.purify (interp Stateid.dummy) (true,loc,expr)
            with e when Errors.noncritical e ->
              let e = Errors.push e in
-             raise(State.exn_on dummy_state_id e))
+             raise(State.exn_on Stateid.dummy e))
       | VtQuery true, w ->
           let id = VCS.new_node () in
           VCS.commit id (Cmd (x,[]));
-          Backtrack.record (); if w = VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish ()
       | VtQuery false, VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script")
 
@@ -1069,15 +1068,15 @@ let process_transaction verbosely (loc, expr) =
           VCS.commit id (Fork (x, bname, names));
           VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1));
           Proof_global.activate_proof_mode mode;
-          Backtrack.record (); if w = VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish ()
       | VtProofStep, w ->
           let id = VCS.new_node () in
           VCS.commit id (Cmd (x,[]));
-          Backtrack.record (); if w = VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish ()
       | VtQed keep, w ->
           merge_proof_branch x keep head;
           VCS.checkout_shallowest_proof_branch ();
-          Backtrack.record (); if w = VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish ()
           
       (* Side effect on all branches *)
       | VtSideff l, w ->
@@ -1086,7 +1085,7 @@ let process_transaction verbosely (loc, expr) =
           VCS.commit id (Cmd (x,l));
           VCS.propagate_sideff (Some x);
           VCS.checkout_shallowest_proof_branch ();
-          Backtrack.record (); if w = VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish ()
 
       (* Unknown: we execute it, check for open goals and propagate sideeff *)
       | VtUnknown, VtNow ->
@@ -1117,8 +1116,8 @@ let process_transaction verbosely (loc, expr) =
     (* Proof General *)
     begin match v with 
       | VernacStm (PGLast _) ->
-        if head <> VCS.Branch.master then
-          interp dummy_state_id
+        if not (VCS.Branch.equal head VCS.Branch.master) then
+          interp Stateid.dummy
             (true,Loc.ghost,VernacShow (ShowGoal OpenSubgoals))
       | _ -> ()
     end;
@@ -1126,14 +1125,14 @@ let process_transaction verbosely (loc, expr) =
     VCS.print ()
   with e ->
     let e = Errors.push e in
-    match Stateid.get_state_id e with
+    match Stateid.get e with
     | None ->
         VCS.restore vcs;
         VCS.print ();
         anomaly (str ("execute: "^ 
           string_of_ppcmds (Errors.print_no_report e) ^ "}}}"))
     | Some (_, id) ->
-        prerr_endline ("Failed at state " ^ Stateid.string_of_state_id id);
+        prerr_endline ("Failed at state " ^ Stateid.to_string id);
         VCS.restore vcs;
         VCS.print ();
         raise e
@@ -1148,7 +1147,7 @@ let current_proof_depth () =
   | { VCS.kind = `Master } -> 0
   | { VCS.pos = cur; VCS.kind = `Proof (_,n); VCS.root = root } ->
       let rec distance cur =
-        if cur = root then 0
+        if Stateid.equal cur root then 0
         else 1 + distance (VCS.visit cur).next in
       distance cur
 
@@ -1169,7 +1168,7 @@ let get_current_proof_name () =
 
 let get_script prf =
   let rec find acc id =
-    if id = initial_state_id || id = dummy_state_id then acc else
+    if Stateid.equal id Stateid.initial || Stateid.equal id Stateid.dummy then acc else
     let view = VCS.visit id in
     match view.step with
     | `Fork (_,_,ns) when List.mem prf ns -> acc

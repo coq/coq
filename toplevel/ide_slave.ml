@@ -125,7 +125,7 @@ let interp (id,raw,verbosely,s) =
 
 let backto id =
   Vernac.eval_expr (Loc.ghost,
-    VernacStm (Command (VernacBackTo (Stateid.int_of_state_id id))))
+    VernacStm (Command (VernacBackTo (Stateid.to_int id))))
 
 (** Goal display *)
 
@@ -292,7 +292,7 @@ let about () = {
 }
 
 let handle_exn e =
-  let dummy = Stateid.dummy_state_id in
+  let dummy = Stateid.dummy in
   let loc_of e = match Loc.get_loc e with
     | Some loc when not (Loc.is_ghost loc) -> Some (Loc.unloc loc)
     | _ -> None in
@@ -301,7 +301,7 @@ let handle_exn e =
   | Errors.Drop -> dummy, None, "Drop is not allowed by coqide!"
   | Errors.Quit -> dummy, None, "Quit is not allowed by coqide!"
   | e ->
-      match Stateid.get_state_id e with
+      match Stateid.get e with
       | Some (valid, _) -> valid, loc_of e, mk_msg e
       | None -> dummy, loc_of e, mk_msg e
 

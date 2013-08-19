@@ -19,13 +19,13 @@ module SentenceId : sig
     stop : GText.mark;
     mutable flags : flag list;
     edit_id : int;
-    mutable state_id : Stateid.state_id option;
+    mutable state_id : Stateid.t option;
   }
 
   val mk_sentence :
     start:GText.mark -> stop:GText.mark -> flag list -> sentence
 
-  val assign_state_id : sentence -> Stateid.state_id -> unit
+  val assign_state_id : sentence -> Stateid.t -> unit
   val set_flags : sentence -> flag list -> unit
   val add_flag : sentence -> flag -> unit
   val remove_flag : sentence -> flag -> unit
@@ -39,7 +39,7 @@ end = struct
     stop : GText.mark;
     mutable flags : flag list;
     edit_id : int;
-    mutable state_id : Stateid.state_id option;
+    mutable state_id : Stateid.t option;
   }
 
   let id = ref 0
@@ -54,7 +54,7 @@ end = struct
 
   let assign_state_id s id =
     assert(s.state_id = None);
-    assert(id <> Stateid.dummy_state_id);
+    assert(id <> Stateid.dummy);
     s.state_id <- Some id
   let set_flags s f = s.flags <- f
   let add_flag s f = s.flags <- CList.add_set f s.flags
@@ -102,7 +102,7 @@ object(self)
 
   val cmd_stack = Searchstack.create ()
 
-  val mutable initial_state = Stateid.initial_state_id
+  val mutable initial_state = Stateid.initial
 
   val feedbacks : feedback Queue.t = Queue.create ()
   val feedback_timer = Ideutils.mktimer ()
@@ -219,7 +219,7 @@ object(self)
   method private is_dummy_id id =
     match id with
     | Edit 0 -> true
-    | State id when id = Stateid.dummy_state_id -> true
+    | State id when Stateid.equal id Stateid.dummy -> true
     | _ -> false
 
   method private enqueue_feedback msg =
@@ -240,8 +240,8 @@ object(self)
         try Some (Searchstack.find finder () cmd_stack)
         with Not_found -> None in
       let log s sentence =
-        Minilib.log ("Feedback " ^ s ^ " on " ^ Stateid.string_of_state_id
-          (Option.default Stateid.dummy_state_id sentence.state_id)) in
+        Minilib.log ("Feedback " ^ s ^ " on " ^ Stateid.to_string
+          (Option.default Stateid.dummy sentence.state_id)) in
       begin match msg.content, sentence with
       | AddedAxiom, Some sentence ->
           log "AddedAxiom" sentence;

@@ -117,7 +117,7 @@ type message = {
 
 (** Coq "semantic" infos obtained during parsing/execution *)
 type edit_id = int
-type state_id = Stateid.state_id
+type state_id = Stateid.t
 type edit_or_state_id = Edit of edit_id | State of state_id
 
 type feedback_content =
