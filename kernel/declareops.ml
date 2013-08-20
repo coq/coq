@@ -89,10 +89,9 @@ let hcons_const_def = function
     let constr = force l_constr in
     Def (from_val (Term.hcons_constr constr))
   | OpaqueDef lc ->
-    if Future.is_val lc then
-      let constr = force_opaque (Future.force lc) in
-      OpaqueDef (Future.from_val (opaque_from_val (Term.hcons_constr constr)))
-    else OpaqueDef lc
+    OpaqueDef
+      (Future.chain ~pure:true lc
+         (fun lc -> opaque_from_val (Term.hcons_constr (force_opaque lc))))
 
 let hcons_const_body cb =
   { cb with
