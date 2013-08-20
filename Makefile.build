@@ -125,7 +125,7 @@ endif
 
 PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo) # works also with new camlp4
 
-SYSMOD:=str unix dynlink
+SYSMOD:=str unix dynlink threads
 SYSCMA:=$(addsuffix .cma,$(SYSMOD))
 SYSCMXA:=$(addsuffix .cmxa,$(SYSMOD))
 
