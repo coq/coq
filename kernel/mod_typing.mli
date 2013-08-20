@@ -12,40 +12,40 @@ open Entries
 open Mod_subst
 open Names
 
+(** Main functions for translating module entries
+
+    Note : [module_body] and [module_type_body] obtained this way
+    won't have any [MEstruct] in their algebraic fields.
+*)
 
 val translate_module :
   env -> module_path -> inline -> module_entry -> module_body
 
-val translate_module_type :
-  env -> module_path -> inline -> module_struct_entry -> module_type_body
+val translate_modtype :
+  env -> module_path -> inline -> module_type_entry -> module_type_body
 
-val translate_struct_module_entry :
+(** Low-level function for translating a module struct entry :
+    - We translate to a module when a [module_path] is given,
+      otherwise to a module type.
+    - The first output is the expanded signature
+    - The second output is the algebraic expression, kept for the extraction.
+      It is never None when translating to a module, but for module type
+      it could not be contain applications or functors.
+      Moreover algebraic expressions obtained here cannot contain [MEstruct].
+*)
+
+type 'alg translation =
+  module_signature * 'alg option * delta_resolver * Univ.constraints
+
+val translate_mse :
+  env -> module_path option -> inline -> module_struct_entry ->
+    module_alg_expr translation
+
+val translate_mse_incl :
   env -> module_path -> inline -> module_struct_entry ->
-  struct_expr_body (* Signature *)
-  * struct_expr_body option  (* Algebraic expr, in fact never None *)
-  * delta_resolver
-  * Univ.constraints
+    module_alg_expr translation
 
-val translate_struct_type_entry :
-  env -> inline -> module_struct_entry ->
-  struct_expr_body
-  * struct_expr_body option
-  * delta_resolver
-  * Univ.constraints
-
-val translate_struct_include_module_entry :
-  env -> module_path -> inline -> module_struct_entry ->
-  struct_expr_body
-  * struct_expr_body option (* Algebraic expr, always None *)
-  * delta_resolver
-  * Univ.constraints
-
-val add_modtype_constraints : env -> module_type_body -> env
-
-val add_module_constraints : env -> module_body -> env
-
-val add_struct_expr_constraints : env -> struct_expr_body -> env
-
-val struct_expr_constraints : struct_expr_body -> Univ.constraints
-
-val module_constraints : module_body -> Univ.constraints
+val finalize_module :
+  env -> module_path -> module_expression translation ->
+  (module_type_entry * inline) option ->
+  module_body

@@ -529,71 +529,50 @@ let subst_mind sub mib =
 
 (* Modules *)
 
-let rec subst_with_body sub = function
-  | With_module_body(id,mp) ->
-      With_module_body(id,subst_mp sub mp)
-  | With_definition_body(id,cb) ->
-      With_definition_body( id,subst_const_body sub cb)
+let rec functor_map fty f0 = function
+  | NoFunctor a -> NoFunctor (f0 a)
+  | MoreFunctor (mbid,ty,e) -> MoreFunctor(mbid,fty ty,functor_map fty f0 e)
+
+let implem_map fs fa = function
+  | Struct s -> Struct (fs s)
+  | Algebraic a -> Algebraic (fa a)
+  | impl -> impl
+
+let subst_with_body sub = function
+  | WithMod(id,mp) -> WithMod(id,subst_mp sub mp)
+  | WithDef(id,c) -> WithDef(id,subst_mps sub c)
+
+let rec subst_expr sub = function
+  | MEident mp -> MEident (subst_mp sub mp)
+  | MEapply (me1,mp2)-> MEapply (subst_expr sub me1, subst_mp sub mp2)
+  | MEwith (me,wd)-> MEwith (subst_expr sub me, subst_with_body sub wd)
+
+let rec subst_expression sub me =
+  functor_map (subst_modtype sub) (subst_expr sub) me
+
+and subst_signature sub sign =
+  functor_map (subst_modtype sub) (subst_structure sub) sign
 
 and subst_modtype sub mtb=
-  let typ_expr' = subst_struct_expr sub mtb.typ_expr in
-  let typ_alg' = 
-    Option.smartmap 
-      (subst_struct_expr sub) mtb.typ_expr_alg in
-  let mp = subst_mp sub mtb.typ_mp
-  in
-    if typ_expr'==mtb.typ_expr && 
-      typ_alg'==mtb.typ_expr_alg && mp==mtb.typ_mp then
-	mtb
-    else
-      {mtb with 
-	 typ_mp = mp;
-	 typ_expr = typ_expr';
-	 typ_expr_alg = typ_alg'}
+  { mtb with
+    typ_mp = subst_mp sub mtb.typ_mp;
+    typ_expr = subst_signature sub mtb.typ_expr;
+    typ_expr_alg = Option.smartmap (subst_expression sub) mtb.typ_expr_alg }
 
-and subst_structure sub sign = 
+and subst_structure sub struc =
   let subst_body = function
-      SFBconst cb -> 
-	SFBconst (subst_const_body sub cb)
-    | SFBmind mib -> 
-	SFBmind (subst_mind sub mib)
-    | SFBmodule mb -> 
-	SFBmodule (subst_module sub  mb)
-    | SFBmodtype mtb -> 
-	SFBmodtype (subst_modtype sub mtb)
+    | SFBconst cb -> SFBconst (subst_const_body sub cb)
+    | SFBmind mib -> SFBmind (subst_mind sub mib)
+    | SFBmodule mb -> SFBmodule (subst_module sub  mb)
+    | SFBmodtype mtb -> SFBmodtype (subst_modtype sub mtb)
   in
-    List.map (fun (l,b) -> (l,subst_body b)) sign
-
+  List.map (fun (l,b) -> (l,subst_body b)) struc
 
 and subst_module sub mb =
-  let mtb' = subst_struct_expr sub mb.mod_type in
-  let typ_alg' = Option.smartmap 
-    (subst_struct_expr sub ) mb.mod_type_alg in
-  let me' = Option.smartmap 
-    (subst_struct_expr sub) mb.mod_expr in
-  let mp = subst_mp sub mb.mod_mp in
-     if mtb'==mb.mod_type && mb.mod_expr == me' 
-       && mp == mb.mod_mp
-    then mb else
-      { mb with
-	  mod_mp = mp;
-	  mod_expr = me';
-	  mod_type_alg = typ_alg';
-	  mod_type=mtb'}
-
-and subst_struct_expr sub = function
-    | SEBident mp -> SEBident (subst_mp sub mp)
-    | SEBfunctor (mbid, mtb, meb') -> 
-	SEBfunctor(mbid,subst_modtype sub mtb
-		     ,subst_struct_expr sub meb')
-    | SEBstruct (str)->
-	SEBstruct( subst_structure sub  str)
-    | SEBapply (meb1,meb2,cst)->
-	SEBapply(subst_struct_expr sub meb1,
-		 subst_struct_expr sub meb2,
-		 cst)
-    | SEBwith (meb,wdb)-> 
-	SEBwith(subst_struct_expr sub meb,
-		subst_with_body sub wdb)
-
+  { mb with
+    mod_mp = subst_mp sub mb.mod_mp;
+    mod_expr =
+      implem_map (subst_signature sub) (subst_expression sub) mb.mod_expr;
+    mod_type = subst_signature sub mb.mod_type;
+    mod_type_alg = Option.map (subst_expression sub) mb.mod_type_alg }
 

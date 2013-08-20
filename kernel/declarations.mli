@@ -155,8 +155,30 @@ type mutual_inductive_body = {
 
   }
 
-(** {6 Modules: signature component specifications, module types, and
-  module declarations } *)
+(** {6 Module declarations } *)
+
+(** Functor expressions are forced to be on top of other expressions *)
+
+type ('ty,'a) functorize =
+  | NoFunctor of 'a
+  | MoreFunctor of MBId.t * 'ty * ('ty,'a) functorize
+
+(** The fully-algebraic module expressions : names, applications, 'with ...'.
+    They correspond to the user entries of non-interactive modules.
+    They will be later expanded into module structures in [Mod_typing],
+    and won't play any role into the kernel after that : they are kept
+    only for short module printing and for extraction. *)
+
+type with_declaration =
+  | WithMod of Id.t list * module_path
+  | WithDef of Id.t list * constr
+
+type module_alg_expr =
+  | MEident of module_path
+  | MEapply of module_alg_expr * module_path
+  | MEwith of module_alg_expr * with_declaration
+
+(** A component of a module structure *)
 
 type structure_field_body =
   | SFBconst of constant_body
@@ -164,47 +186,58 @@ type structure_field_body =
   | SFBmodule of module_body
   | SFBmodtype of module_type_body
 
-(** NB: we may encounter now (at most) twice the same label in
+(** A module structure is a list of labeled components.
+
+    Note : we may encounter now (at most) twice the same label in
     a [structure_body], once for a module ([SFBmodule] or [SFBmodtype])
     and once for an object ([SFBconst] or [SFBmind]) *)
 
 and structure_body = (Label.t * structure_field_body) list
 
-and struct_expr_body =
-  | SEBident of module_path
-  | SEBfunctor of MBId.t * module_type_body * struct_expr_body
-  | SEBapply of struct_expr_body * struct_expr_body * Univ.constraints
-  | SEBstruct of structure_body
-  | SEBwith of struct_expr_body * with_declaration_body
+(** A module signature is a structure, with possibly functors on top of it *)
 
-and with_declaration_body =
-    With_module_body of Id.t list * module_path
-  | With_definition_body of  Id.t list * constant_body
+and module_signature = (module_type_body,structure_body) functorize
+
+(** A module expression is an algebraic expression, possibly functorized. *)
+
+and module_expression = (module_type_body,module_alg_expr) functorize
+
+and module_implementation =
+  | Abstract (** no accessible implementation *)
+  | Algebraic of module_expression (** non-interactive algebraic expression *)
+  | Struct of module_signature (** interactive body *)
+  | FullStruct (** special case of [Struct] : the body is exactly [mod_type] *)
 
 and module_body =
-    {  (** absolute path of the module *)
-      mod_mp : module_path;
-      (** Implementation *)
-      mod_expr : struct_expr_body option;
-      (** Signature *)
-      mod_type : struct_expr_body;
-      (** algebraic structure expression is kept
-	 if it's relevant for extraction  *)
-      mod_type_alg : struct_expr_body option;
-      (** set of all constraint in the module  *)
-      mod_constraints : Univ.constraints;
-      (** quotiented set of equivalent constant and inductive name  *)
-      mod_delta : Mod_subst.delta_resolver;
-      mod_retroknowledge : Retroknowledge.action list}
+  { mod_mp : module_path; (** absolute path of the module *)
+    mod_expr : module_implementation; (** implementation *)
+    mod_type : module_signature; (** expanded type *)
+    (** algebraic type, kept if it's relevant for extraction *)
+    mod_type_alg : module_expression option;
+    (** set of all constraints in the module  *)
+    mod_constraints : Univ.constraints;
+    (** quotiented set of equivalent constants and inductive names *)
+    mod_delta : Mod_subst.delta_resolver;
+    mod_retroknowledge : Retroknowledge.action list }
+
+(** A [module_type_body] is similar to a [module_body], with
+    no implementation and retroknowledge fields *)
 
 and module_type_body =
-    {
-      (** Path of the module type *)
-      typ_mp : module_path;
-      typ_expr : struct_expr_body;
-      (** algebraic structure expression is kept
-	 if it's relevant for extraction  *)
-      typ_expr_alg : struct_expr_body option ;
-      typ_constraints : Univ.constraints;
-      (** quotiented set of equivalent constant and inductive name  *)
-      typ_delta : Mod_subst.delta_resolver}
+  { typ_mp : module_path; (** path of the module type *)
+    typ_expr : module_signature; (** expanded type *)
+    (** algebraic expression, kept if it's relevant for extraction  *)
+    typ_expr_alg : module_expression option;
+    typ_constraints : Univ.constraints;
+    (** quotiented set of equivalent constants and inductive names *)
+    typ_delta : Mod_subst.delta_resolver}
+
+(** Extra invariants :
+
+    - No [MEwith] inside a [mod_expr] implementation : the 'with' syntax
+      is only supported for module types
+
+    - A module application is atomic, for instance ((M N) P) :
+      * the head of [MEapply] can only be another [MEapply] or a [MEident]
+      * the argument of [MEapply] is now directly forced to be a [module_path].
+*)

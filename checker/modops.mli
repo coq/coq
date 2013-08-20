@@ -15,19 +15,17 @@ open Environ
 
 (* Various operations on modules and module types *)
 
-(* make the envirconment entry out of type *)
-val module_body_of_type : module_path -> module_type_body -> module_body
+val module_type_of_module :
+  module_path option -> module_body -> module_type_body
 
-val module_type_of_module : module_path option -> module_body ->
-  module_type_body
+val is_functor : ('ty,'a) functorize -> bool
 
-val destr_functor :
-  env -> struct_expr_body -> MBId.t * module_type_body * struct_expr_body
-
-val add_signature : module_path -> structure_body -> delta_resolver -> env -> env
+val destr_functor : ('ty,'a) functorize -> MBId.t * 'ty * ('ty,'a) functorize
 
 (* adds a module and its components, but not the constraints *)
 val add_module : module_body ->  env -> env
+
+val add_module_type : module_path -> module_type_body -> env -> env
 
 val strengthen : module_type_body -> module_path -> module_type_body
 
@@ -38,19 +36,13 @@ val error_incompatible_modtypes :
 
 val error_not_match : label -> structure_field_body -> 'a
 
-val error_with_incorrect : label -> 'a
+val error_with_module : unit -> 'a
 
 val error_no_such_label : label -> 'a
 
 val error_no_such_label_sub :
   label -> module_path -> 'a
 
-val error_signature_expected : struct_expr_body -> 'a
-
 val error_not_a_constant : label -> 'a
 
 val error_not_a_module : label -> 'a
-
-val error_a_generative_module_expected : label -> 'a
-
-val error_application_to_not_path : struct_expr_body -> 'a

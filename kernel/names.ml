@@ -234,6 +234,7 @@ struct
 end
 
 module MBImap = Map.Make(MBId)
+module MBIset = Set.Make(MBId)
 
 (** {6 Names of structure elements } *)
 

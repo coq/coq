@@ -19,13 +19,11 @@ compiler *)
 
 let rec translate_mod prefix mp env mod_expr acc =
   match mod_expr with
-  | SEBident mp' -> assert false
-  | SEBstruct msb ->
-      let env' = add_signature mp msb empty_delta_resolver env in
-      List.fold_left (translate_field prefix mp env') acc msb
-  | SEBfunctor (mbid,mtb,meb) -> acc
-  | SEBapply (f,x,_) -> assert false
-  | SEBwith _ -> assert false
+  | NoFunctor struc ->
+      let env' = add_structure mp struc empty_delta_resolver env in
+      List.fold_left (translate_field prefix mp env') acc struc
+  | MoreFunctor _ -> acc
+
 and translate_field prefix mp env (code, upds as acc) (l,x) =
   match x with
   | SFBconst cb ->
@@ -41,14 +39,14 @@ and translate_field prefix mp env (code, upds as acc) (l,x) =
 let dump_library mp dp env mod_expr =
   if !Flags.debug then Pp.msg_debug (Pp.str "Compiling library...");
   match mod_expr with
-  | SEBstruct msb ->
-      let env = add_signature mp msb empty_delta_resolver env in
+  | NoFunctor struc ->
+      let env = add_structure mp struc empty_delta_resolver env in
       let prefix = mod_uid_of_dirpath dp ^ "." in
-      let t0 = Sys.time () in 
+      let t0 = Sys.time () in
       clear_global_tbl ();
       clear_symb_tbl ();
       let mlcode, upds =
-        List.fold_left (translate_field prefix mp env) ([],empty_updates) msb
+        List.fold_left (translate_field prefix mp env) ([],empty_updates) struc
       in
       let t1 = Sys.time () in
       let time_info = Format.sprintf "Time spent generating this code: %.5fs" (t1-.t0) in

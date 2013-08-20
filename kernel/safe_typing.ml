@@ -194,8 +194,8 @@ let is_curmod_library senv =
   match senv.modvariant with LIBRARY -> true | _ -> false
 
 let join_safe_environment e =
-  Modops.join_structure_body e.revstruct;
-  List.fold_left 
+  Modops.join_structure e.revstruct;
+  List.fold_left
     (fun e fc -> add_constraints (Now (Future.join fc)) e)
     {e with future_cst = []} e.future_cst
 
@@ -213,7 +213,7 @@ let prune_env env =
 let prune_safe_environment e =
   { e with
     modvariant = (match e.modvariant with LIBRARY -> LIBRARY | _ -> NONE);
-    revstruct = Modops.prune_structure_body e.revstruct;
+    revstruct = Modops.prune_structure e.revstruct;
     future_cst = [];
     env = prune_env e.env }
 
@@ -433,9 +433,9 @@ let add_mind dir l mie senv =
 
 (** Insertion of module types *)
 
-let add_modtype l mte inl senv =
+let add_modtype l params_mte inl senv =
   let mp = MPdot(senv.modpath, l) in
-  let mtb = Mod_typing.translate_module_type senv.env mp inl mte  in
+  let mtb = Mod_typing.translate_modtype senv.env mp inl params_mte  in
   let senv' = add_field (l,SFBmodtype mtb) MT senv in
   mp, senv'
 
@@ -445,16 +445,19 @@ let full_add_module mb senv =
   let senv = add_constraints (Now mb.mod_constraints) senv in
   { senv with env = Modops.add_module mb senv.env }
 
+let full_add_module_type mp mt senv =
+  let senv = add_constraints (Now mt.typ_constraints) senv in
+  { senv with env = Modops.add_module_type mp mt senv.env }
+
 (** Insertion of modules *)
 
 let add_module l me inl senv =
   let mp = MPdot(senv.modpath, l) in
   let mb = Mod_typing.translate_module senv.env mp inl me in
   let senv' = add_field (l,SFBmodule mb) M senv in
-  let senv'' = match mb.mod_type with
-    | SEBstruct _ ->
-      update_resolver (Mod_subst.add_delta_resolver mb.mod_delta) senv'
-    | _ -> senv'
+  let senv'' =
+    if Modops.is_functor mb.mod_type then senv'
+    else update_resolver (Mod_subst.add_delta_resolver mb.mod_delta) senv'
   in
   (mp,mb.mod_delta),senv''
 
@@ -489,27 +492,24 @@ let start_modtype l senv =
 let add_module_parameter mbid mte inl senv =
   let () = check_empty_struct senv in
   let mp = MPbound mbid in
-  let mtb = Mod_typing.translate_module_type senv.env mp inl mte in
-  let senv = full_add_module (Modops.module_body_of_type mp mtb) senv in
+  let mtb = Mod_typing.translate_modtype senv.env mp inl ([],mte) in
+  let senv = full_add_module_type mp mtb senv in
   let new_variant = match senv.modvariant with
     | STRUCT (params,oldenv) -> STRUCT ((mbid,mtb) :: params, oldenv)
     | SIG (params,oldenv) -> SIG ((mbid,mtb) :: params, oldenv)
     | _ -> assert false
   in
-  let new_paramresolver = match mtb.typ_expr with
-    | SEBstruct _ ->
-      Mod_subst.add_delta_resolver mtb.typ_delta senv.paramresolver
-    | _ -> senv.paramresolver
+  let new_paramresolver =
+    if Modops.is_functor mtb.typ_expr then senv.paramresolver
+    else Mod_subst.add_delta_resolver mtb.typ_delta senv.paramresolver
   in
   mtb.typ_delta,
   { senv with
     modvariant = new_variant;
     paramresolver = new_paramresolver }
 
-let functorize_struct params seb0 =
-  List.fold_left
-    (fun seb (arg_id,arg_b) -> SEBfunctor(arg_id,arg_b,seb))
-    seb0 params
+let functorize params init =
+  List.fold_left (fun e (mbid,mt) -> MoreFunctor(mbid,mt,e)) init params
 
 let propagate_loads senv =
   List.fold_left
@@ -520,36 +520,22 @@ let propagate_loads senv =
 (** Build the module body of the current module, taking in account
     a possible return type (_:T) *)
 
+let functorize_module params mb =
+  let f x = functorize params x in
+  { mb with
+    mod_expr = Modops.implem_smartmap f f mb.mod_expr;
+    mod_type = f mb.mod_type;
+    mod_type_alg = Option.map f mb.mod_type_alg }
+
 let build_module_body params restype senv =
-  let mp = senv.modpath in
-  let mexpr = SEBstruct (List.rev senv.revstruct) in
-  let mexpr' = functorize_struct params mexpr in
-  match restype with
-  | None ->
-    { mod_mp = mp;
-      mod_expr = Some mexpr';
-      mod_type = mexpr';
-      mod_type_alg = None;
-      mod_constraints = senv.univ;
-      mod_delta = senv.modresolver;
-      mod_retroknowledge = senv.local_retroknowledge }
-  | Some (res,inl) ->
-    let res_mtb = Mod_typing.translate_module_type senv.env mp inl res in
-    let auto_mtb = {
-      typ_mp = mp;
-      typ_expr = mexpr;
-      typ_expr_alg = None;
-      typ_constraints = Univ.empty_constraint;
-      typ_delta = Mod_subst.empty_delta_resolver} in
-    let cst = Subtyping.check_subtypes senv.env auto_mtb res_mtb in
-    { mod_mp = mp;
-      mod_expr = Some mexpr';
-      mod_type = functorize_struct params res_mtb.typ_expr;
-      mod_type_alg =
-        Option.map (functorize_struct params) res_mtb.typ_expr_alg;
-      mod_constraints = Univ.union_constraints cst senv.univ;
-      mod_delta = res_mtb.typ_delta;
-      mod_retroknowledge = senv.local_retroknowledge }
+  let struc = NoFunctor (List.rev senv.revstruct) in
+  let restype' = Option.map (fun (ty,inl) -> (([],ty),inl)) restype in
+  let mb =
+    Mod_typing.finalize_module senv.env senv.modpath
+      (struc,None,senv.modresolver,senv.univ) restype'
+  in
+  let mb' = functorize_module params mb in
+  { mb' with mod_retroknowledge = senv.local_retroknowledge }
 
 (** Returning back to the old pre-interactive-module environment,
     with one extra component and some updated fields
@@ -582,10 +568,9 @@ let end_module l restype senv =
   let senv'= propagate_loads {senv with env=newenv} in
   let newenv = Environ.add_constraints mb.mod_constraints senv'.env in
   let newenv = Modops.add_module mb newenv in
-  let newresolver = match mb.mod_type with
-    | SEBstruct _ ->
-      Mod_subst.add_delta_resolver mb.mod_delta oldsenv.modresolver
-    | _ -> oldsenv.modresolver
+  let newresolver =
+    if Modops.is_functor mb.mod_type then oldsenv.modresolver
+    else Mod_subst.add_delta_resolver mb.mod_delta oldsenv.modresolver
   in
   (mp,mbids,mb.mod_delta),
   propagate_senv (l,SFBmodule mb) newenv newresolver senv' oldsenv
@@ -596,14 +581,14 @@ let end_modtype l senv =
   let () = check_current_label l mp in
   let () = check_empty_context senv in
   let mbids = List.rev_map fst params in
-  let auto_tb = SEBstruct (List.rev senv.revstruct) in
+  let auto_tb = NoFunctor (List.rev senv.revstruct) in
   let newenv = oldsenv.env in
   let newenv = Environ.add_constraints senv.univ newenv in
   let newenv = set_engagement_opt newenv senv.engagement in
   let senv' = propagate_loads {senv with env=newenv} in
   let mtb =
     { typ_mp = mp;
-      typ_expr = functorize_struct params auto_tb;
+      typ_expr = functorize params auto_tb;
       typ_expr_alg = None;
       typ_constraints = senv'.univ;
       typ_delta = senv.modresolver }
@@ -616,22 +601,21 @@ let end_modtype l senv =
 (** {6 Inclusion of module or module type } *)
 
 let add_include me is_module inl senv =
+  let open Mod_typing in
   let mp_sup = senv.modpath in
   let sign,cst,resolver =
     if is_module then
-      let sign,_,resolver,cst =
-	Mod_typing.translate_struct_include_module_entry senv.env mp_sup inl me
-      in
-      sign,cst,resolver
+      let sign,_,reso,cst = translate_mse_incl senv.env mp_sup inl me in
+      sign,cst,reso
     else
-      let mtb = Mod_typing.translate_module_type senv.env mp_sup inl me in
+      let mtb = translate_modtype senv.env mp_sup inl ([],me) in
       mtb.typ_expr,mtb.typ_constraints,mtb.typ_delta
   in
   let senv = add_constraints (Now cst) senv in
   (* Include Self support  *)
   let rec compute_sign sign mb resolver senv =
     match sign with
-    | SEBfunctor(mbid,mtb,str) ->
+    | MoreFunctor(mbid,mtb,str) ->
       let cst_sub = Subtyping.check_subtypes senv.env mb mtb in
       let senv = add_constraints (Now cst_sub) senv in
       let mpsup_delta =
@@ -639,21 +623,21 @@ let add_include me is_module inl senv =
       in
       let subst = Mod_subst.map_mbid mbid mp_sup mpsup_delta in
       let resolver = Mod_subst.subst_codom_delta_resolver subst resolver in
-      compute_sign (Modops.subst_struct_expr subst str) mb resolver senv
+      compute_sign (Modops.subst_signature subst str) mb resolver senv
     | str -> resolver,str,senv
   in
   let resolver,sign,senv =
     let mtb =
       { typ_mp = mp_sup;
-	typ_expr = SEBstruct (List.rev senv.revstruct);
+	typ_expr = NoFunctor (List.rev senv.revstruct);
 	typ_expr_alg = None;
 	typ_constraints = Univ.empty_constraint;
 	typ_delta = senv.modresolver } in
     compute_sign sign mtb resolver senv
   in
   let str = match sign with
-    | SEBstruct str_l -> str_l
-    | _ -> Modops.error_higher_order_include ()
+    | NoFunctor struc -> struc
+    | MoreFunctor _ -> Modops.error_higher_order_include ()
   in
   let senv = update_resolver (Mod_subst.add_delta_resolver resolver) senv
   in
@@ -682,7 +666,7 @@ type compiled_library = {
 
 type native_library = Nativecode.global list
 
-let join_compiled_library l = Modops.join_module_body l.comp_mod
+let join_compiled_library l = Modops.join_module l.comp_mod
 
 let start_library dir senv =
   check_initial senv;
@@ -702,10 +686,10 @@ let export senv dir =
   in
   let () = check_current_library dir senv in
   let mp = senv.modpath in
-  let str = SEBstruct (List.rev senv.revstruct) in
+  let str = NoFunctor (List.rev senv.revstruct) in
   let mb =
     { mod_mp = mp;
-      mod_expr = Some str;
+      mod_expr = FullStruct;
       mod_type = str;
       mod_type_alg = None;
       mod_constraints = senv.univ;

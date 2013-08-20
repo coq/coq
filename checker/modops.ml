@@ -19,7 +19,7 @@ open Declarations
 let error_not_a_constant l =
   error ("\""^(Label.to_string l)^"\" is not a constant")
 
-let error_not_a_functor _ = error "Application of not a functor"
+let error_not_a_functor () = error "Application of not a functor"
 
 let error_incompatible_modtypes _ _ = error "Incompatible module types"
 
@@ -38,61 +38,52 @@ let error_not_a_module_loc loc s =
 
 let error_not_a_module s = error_not_a_module_loc Loc.ghost s
 
-let error_with_incorrect l =
-  error ("Incorrect constraint for label \""^(Label.to_string l)^"\"")
+let error_with_module () =
+  error "Unsupported 'with' constraint in module implementation"
 
-let error_a_generative_module_expected l =
-  error ("The module " ^ Label.to_string l ^ " is not generative. Only " ^
-         "component of generative modules can be changed using the \"with\" " ^
-         "construct.")
+let is_functor = function
+  | MoreFunctor _ -> true
+  | NoFunctor _ -> false
 
-let error_signature_expected mtb =
-  error "Signature expected"
+let destr_functor = function
+  | MoreFunctor (arg_id,arg_t,body_t) -> (arg_id,arg_t,body_t)
+  | NoFunctor _ -> error_not_a_functor ()
 
-let error_application_to_not_path _ = error "Application to not path"
-
-let destr_functor env mtb =
-  match mtb with
-  | SEBfunctor (arg_id,arg_t,body_t) ->
-      	    (arg_id,arg_t,body_t)
-  | _ -> error_not_a_functor mtb
-
-let module_body_of_type mp mtb = 
+let module_body_of_type mp mtb =
   { mod_mp = mp;
     mod_type = mtb.typ_expr;
     mod_type_alg = mtb.typ_expr_alg;
-    mod_expr = None;
+    mod_expr = Abstract;
     mod_constraints = mtb.typ_constraints;
     mod_delta = mtb.typ_delta;
     mod_retroknowledge = []}
 
-let rec add_signature mp sign resolver env = 
+let rec add_structure mp sign resolver env =
   let add_one env (l,elem) =
     let kn = KerName.make2 mp l in
     let con = Constant.make1 kn in
     let mind = mind_of_delta resolver (MutInd.make1 kn) in
       match elem with
-	| SFBconst cb -> 
+	| SFBconst cb ->
 	   (* let con =  constant_of_delta resolver con in*)
 	      Environ.add_constant con cb env
-	| SFBmind mib -> 
+	| SFBmind mib ->
 	   (* let mind =  mind_of_delta resolver mind in*)
 	    Environ.add_mind mind mib env
 	| SFBmodule mb -> add_module mb env
 	      (* adds components as well *)
 	| SFBmodtype mtb -> Environ.add_modtype mtb.typ_mp mtb env
   in
-    List.fold_left add_one env sign
+  List.fold_left add_one env sign
 
-and add_module mb env = 
+and add_module mb env =
   let mp = mb.mod_mp in
   let env = Environ.shallow_add_module mp mb env in
-    match mb.mod_type with
-      | SEBstruct (sign) -> 
-	    add_signature mp sign mb.mod_delta env
-      | SEBfunctor _ -> env
-      | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
+  match mb.mod_type with
+  | NoFunctor struc -> add_structure mp struc mb.mod_delta env
+  | MoreFunctor _ -> env
 
+let add_module_type mp mtb env = add_module (module_body_of_type mp mtb) env
 
 let strengthen_const mp_from l cb resolver =
   match cb.const_body with
@@ -107,20 +98,20 @@ let rec strengthen_mod mp_from mp_to mb =
     mb
   else
     match mb.mod_type with
-     | SEBstruct (sign) -> 
-	 let resolve_out,sign_out = 
-	   strengthen_sig mp_from sign mp_to mb.mod_delta in
-	   { mb with
-	       mod_expr = Some (SEBident mp_to);
-	       mod_type = SEBstruct(sign_out);
-	       mod_type_alg = mb.mod_type_alg;
-	       mod_constraints = mb.mod_constraints;
-	       mod_delta = resolve_out(*add_mp_delta_resolver mp_from mp_to 
-	       (add_delta_resolver mb.mod_delta resolve_out)*);
-	       mod_retroknowledge = mb.mod_retroknowledge}
-     | SEBfunctor _ -> mb
-     | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
-	 
+     | NoFunctor (sign) ->
+	 let resolve_out,sign_out =
+	   strengthen_sig mp_from sign mp_to mb.mod_delta
+         in
+	 { mb with
+	   mod_expr = Algebraic (NoFunctor (MEident mp_to));
+	   mod_type = NoFunctor sign_out;
+	   mod_type_alg = mb.mod_type_alg;
+	   mod_constraints = mb.mod_constraints;
+	   mod_delta = resolve_out(*add_mp_delta_resolver mp_from mp_to
+	   (add_delta_resolver mb.mod_delta resolve_out)*);
+	   mod_retroknowledge = mb.mod_retroknowledge}
+     | MoreFunctor _ -> mb
+
 and strengthen_sig mp_from sign mp_to resolver =
   match sign with
     | [] -> empty_delta_resolver,[]
@@ -139,21 +130,20 @@ and strengthen_sig mp_from sign mp_to resolver =
 	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
 	resolve_out (*add_delta_resolver resolve_out mb.mod_delta*),
 	item':: rest'
-    | (l,SFBmodtype mty as item) :: rest -> 
+    | (l,SFBmodtype mty as item) :: rest ->
 	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
 	resolve_out,item::rest'
 
-let strengthen mtb mp =
-    match mtb.typ_expr with
-      | SEBstruct (sign) -> 
-	  let resolve_out,sign_out =
-	    strengthen_sig mtb.typ_mp sign mp mtb.typ_delta in
-	    {mtb with
-	       typ_expr = SEBstruct(sign_out);
-	       typ_delta = resolve_out(*add_delta_resolver mtb.typ_delta
-		(add_mp_delta_resolver mtb.typ_mp mp resolve_out)*)}
-      | SEBfunctor _ -> mtb
-      | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
+let strengthen mtb mp = match mtb.typ_expr with
+  | NoFunctor sign ->
+    let resolve_out,sign_out =
+      strengthen_sig mtb.typ_mp sign mp mtb.typ_delta
+    in
+    { mtb with
+      typ_expr = NoFunctor sign_out;
+      typ_delta = resolve_out(*add_delta_resolver mtb.typ_delta
+      (add_mp_delta_resolver mtb.typ_mp mp resolve_out)*)}
+  | MoreFunctor _ -> mtb
 
 let subst_and_strengthen mb mp =
   strengthen_mod mb.mod_mp mp (subst_module (map_mp mb.mod_mp mp) mb)
@@ -161,17 +151,16 @@ let subst_and_strengthen mb mp =
 
 let module_type_of_module mp mb =
   match mp with
-      Some mp ->
-	strengthen {
-	  typ_mp = mp;
-	  typ_expr = mb.mod_type;
-	  typ_expr_alg = None;
-	  typ_constraints = mb.mod_constraints;
-	  typ_delta = mb.mod_delta} mp
-	  
-    | None ->
-	{typ_mp = mb.mod_mp;
-	 typ_expr = mb.mod_type;
-	 typ_expr_alg = None;
-	 typ_constraints = mb.mod_constraints;
-	 typ_delta = mb.mod_delta}
+  | Some mp ->
+    strengthen {
+      typ_mp = mp;
+      typ_expr = mb.mod_type;
+      typ_expr_alg = None;
+      typ_constraints = mb.mod_constraints;
+      typ_delta = mb.mod_delta} mp
+  | None ->
+    { typ_mp = mb.mod_mp;
+      typ_expr = mb.mod_type;
+      typ_expr_alg = None;
+      typ_constraints = mb.mod_constraints;
+      typ_delta = mb.mod_delta}

@@ -73,7 +73,7 @@ val add_module :
   Label.t -> Entries.module_entry -> Declarations.inline ->
     (module_path * Mod_subst.delta_resolver) safe_transformer
 val add_modtype :
-  Label.t -> Entries.module_struct_entry -> Declarations.inline ->
+  Label.t -> Entries.module_type_entry -> Declarations.inline ->
     module_path safe_transformer
 
 (** Adding universe constraints *)
@@ -93,6 +93,8 @@ val start_modtype : Label.t -> module_path safe_transformer
 val add_module_parameter :
   MBId.t -> Entries.module_struct_entry -> Declarations.inline ->
     Mod_subst.delta_resolver safe_transformer
+
+(** The optional result type is given without its functorial part *)
 
 val end_module :
   Label.t -> (Entries.module_struct_entry * Declarations.inline) option ->

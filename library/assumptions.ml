@@ -67,6 +67,23 @@ let rec search_cst_label lab = function
   | (l, SFBconst cb) :: _ when Label.equal l lab -> cb
   | _ :: fields -> search_cst_label lab fields
 
+(* TODO: using [empty_delta_resolver] below is probably slightly incorrect. But:
+    a) I don't see currently what should be used instead
+    b) this shouldn't be critical for Print Assumption. At worse some
+       constants will have a canonical name which is non-canonical,
+       leading to failures in [Global.lookup_constant], but our own
+       [lookup_constant] should work.
+*)
+
+let rec fields_of_functor f subs mp0 args = function
+  |NoFunctor a -> f subs mp0 args a
+  |MoreFunctor (mbid,_,e) ->
+    match args with
+    | [] -> assert false (* we should only encounter applied functors *)
+    | mpa :: args ->
+      let subs = add_mbid mbid mpa empty_delta_resolver (*TODO*) subs in
+      fields_of_functor f subs mp0 args e
+
 let rec lookup_module_in_impl mp =
   try Global.lookup_module mp
   with Not_found ->
@@ -93,43 +110,29 @@ and fields_of_mp mp =
     if mp_eq inner_mp mp then subs
     else add_mp inner_mp mp mb.mod_delta subs
   in
-  Modops.subst_signature subs fields
+  Modops.subst_structure subs fields
 
-and fields_of_mb subs mb args =
-  let seb = match mb.mod_expr with
-    | None -> mb.mod_type (* cf. Declare Module *)
-    | Some seb -> seb
-  in
-  fields_of_seb subs mb.mod_mp seb args
+and fields_of_mb subs mb args = match mb.mod_expr with
+  |Algebraic expr -> fields_of_expression subs mb.mod_mp args expr
+  |Struct sign -> fields_of_signature subs mb.mod_mp args sign
+  |Abstract|FullStruct -> fields_of_signature subs mb.mod_mp args mb.mod_type
 
-(* TODO: using [empty_delta_resolver] below in [fields_of_seb]
-   is probably slightly incorrect. But:
-    a) I don't see currently what should be used instead
-    b) this shouldn't be critical for Print Assumption. At worse some
-       constants will have a canonical name which is non-canonical,
-       leading to failures in [Global.lookup_constant], but our own
-       [lookup_constant] should work.
-*)
+(** The Abstract case above corresponds to [Declare Module] *)
 
-and fields_of_seb subs mp0 seb args = match seb with
-  | SEBstruct l ->
-    let () = assert (List.is_empty args) in
-    l, mp0, subs
-  | SEBident mp ->
+and fields_of_signature x =
+  fields_of_functor
+    (fun subs mp0 args struc ->
+      assert (List.is_empty args);
+      (struc, mp0, subs)) x
+
+and fields_of_expr subs mp0 args = function
+  |MEident mp ->
     let mb = lookup_module_in_impl (subst_mp subs mp) in
     fields_of_mb subs mb args
-  | SEBapply (seb1,seb2,_) ->
-    (match seb2 with
-      | SEBident mp2 -> fields_of_seb subs mp0 seb1 (mp2::args)
-      | _ -> assert false) (* only legal application is to module names *)
-  | SEBfunctor (mbid,mtb,seb) ->
-    (match args with
-      | [] -> assert false (* we should only encounter applied functors *)
-      | mpa :: args ->
-	let subs = add_mbid mbid mpa empty_delta_resolver subs in
-	fields_of_seb subs mp0 seb args)
-  | SEBwith _ -> assert false (* should not appear in a mod_expr
-				   or mod_type field *)
+  |MEapply (me1,mp2) -> fields_of_expr subs mp0 (mp2::args) me1
+  |MEwith _ -> assert false (* no 'with' in [mod_expr] *)
+
+and fields_of_expression x = fields_of_functor fields_of_expr x
 
 let lookup_constant_in_impl cst fallback =
   try

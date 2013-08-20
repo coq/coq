@@ -118,4 +118,4 @@ val debug_print_modtab : unit -> Pp.std_ppcmds
     bound module hasn't an atomic type. *)
 
 val process_module_binding :
-  MBId.t -> Declarations.struct_expr_body -> unit
+  MBId.t -> Declarations.module_alg_expr -> unit

@@ -1024,17 +1024,12 @@ let extract_constant_spec env kn cb =
 	let t = snd (record_constant_type env kn (Some typ)) in
 	Sval (r, type_expunge env t)
 
-let extract_with_type env cb =
-  let typ = Typeops.type_of_constant_type env cb.const_type in
+let extract_with_type env c =
+  let typ = type_of env c in
   match flag_of_type env typ with
     | (Info, TypeScheme) ->
 	let s,vl = type_sign_vl env typ in
 	let db = db_from_sign s in
-	let c = match cb.const_body with
-	  | Def body -> Lazyconstr.force body
-	  (* A "with Definition ..." is necessarily transparent *)
-	  | Undef _ | OpaqueDef _ -> assert false
-	in
 	let t = extract_type_scheme env db c (List.length s) in
 	Some (vl, t)
     | _ -> None

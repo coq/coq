@@ -169,6 +169,7 @@ sig
 
 end
 
+module MBIset : Set.S with type elt = MBId.t
 module MBImap : Map.S with type key = MBId.t
 
 (** {6 The module part of the kernel name } *)

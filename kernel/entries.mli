@@ -67,16 +67,14 @@ type constant_entry =
 
 (** {6 Modules } *)
 
-type module_struct_entry =
-    MSEident of module_path
-  | MSEfunctor of MBId.t * module_struct_entry * module_struct_entry
-  | MSEwith of module_struct_entry * with_declaration
-  | MSEapply of module_struct_entry * module_struct_entry
+type module_struct_entry = Declarations.module_alg_expr
 
-and with_declaration =
-    With_Module of Id.t list * module_path
-  | With_Definition of Id.t list * constr
+type module_params_entry =
+  (MBId.t * module_struct_entry) list (** older first *)
 
-and module_entry =
-    { mod_entry_type : module_struct_entry option;
-      mod_entry_expr : module_struct_entry option}
+type module_type_entry = module_params_entry * module_struct_entry
+
+type module_entry =
+  | MType of module_params_entry * module_struct_entry
+  | MExpr of
+      module_params_entry * module_struct_entry * module_struct_entry option

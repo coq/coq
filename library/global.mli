@@ -46,7 +46,7 @@ val add_module :
   Id.t -> Entries.module_entry -> Declarations.inline ->
     module_path * Mod_subst.delta_resolver
 val add_modtype :
-  Id.t -> Entries.module_struct_entry -> Declarations.inline -> module_path
+  Id.t -> Entries.module_type_entry -> Declarations.inline -> module_path
 val add_include :
   Entries.module_struct_entry -> bool -> Declarations.inline ->
     Mod_subst.delta_resolver

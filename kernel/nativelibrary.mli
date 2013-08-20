@@ -13,7 +13,7 @@ open Nativecode
 (** This file implements separate compilation for libraries in the native
 compiler *)
 
-val dump_library : module_path -> dir_path -> env -> struct_expr_body ->
+val dump_library : module_path -> dir_path -> env -> module_signature ->
   global list * symbol array * code_location_updates
 
 val compile_library :

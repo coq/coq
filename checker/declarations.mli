@@ -37,9 +37,7 @@ val mind_of_delta : delta_resolver -> mutual_inductive -> mutual_inductive
 
 val subst_const_body : constant_body subst_fun
 val subst_mind : mutual_inductive_body subst_fun
-val subst_modtype : substitution -> module_type_body -> module_type_body
-val subst_struct_expr :  substitution -> struct_expr_body -> struct_expr_body
-val subst_structure : substitution -> structure_body -> structure_body
+val subst_signature :  substitution -> module_signature -> module_signature
 val subst_module : substitution -> module_body -> module_body
 
 val join : substitution -> substitution -> substitution

@@ -671,8 +671,11 @@ let explain_label_already_declared l =
 let explain_application_to_not_path _ =
   str "Application of modules is restricted to paths."
 
-let explain_not_a_functor mtb =
-  str "Application of not a functor."
+let explain_not_a_functor () =
+  str "Application of a non-functor."
+
+let explain_is_a_functor () =
+  str "Illegal use of a functor."
 
 let explain_incompatible_module_types mexpr1 mexpr2 =
   str "Incompatible module types."
@@ -686,9 +689,6 @@ let explain_no_such_label l =
 let explain_incompatible_labels l l' =
   str "Opening and closing labels are not the same: " ++
   str (Label.to_string l) ++ str " <> " ++ str (Label.to_string l') ++ str "!"
-
-let explain_signature_expected mtb =
-  str "Signature expected."
 
 let explain_not_a_module s =
   quote (str s) ++ str " is not a module."
@@ -719,12 +719,12 @@ let explain_module_error = function
   | SignatureMismatch (l,spec,err) -> explain_signature_mismatch l spec err
   | LabelAlreadyDeclared l -> explain_label_already_declared l
   | ApplicationToNotPath mexpr -> explain_application_to_not_path mexpr
-  | NotAFunctor mtb -> explain_not_a_functor mtb
+  | NotAFunctor -> explain_not_a_functor ()
+  | IsAFunctor -> explain_is_a_functor ()
   | IncompatibleModuleTypes (m1,m2) -> explain_incompatible_module_types m1 m2
   | NotEqualModulePaths (mp1,mp2) -> explain_not_equal_module_paths mp1 mp2
   | NoSuchLabel l -> explain_no_such_label l
   | IncompatibleLabels (l1,l2) -> explain_incompatible_labels l1 l2
-  | SignatureExpected mtb -> explain_signature_expected mtb
   | NotAModule s -> explain_not_a_module s
   | NotAModuleType s -> explain_not_a_module_type s
   | NotAConstant l -> explain_not_a_constant l

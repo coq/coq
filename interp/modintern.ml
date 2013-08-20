@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Declarations
 open Entries
 open Libnames
 open Constrexpr
@@ -59,16 +60,12 @@ let lookup_module lqid = fst (lookup_module_or_modtype Module lqid)
 
 let transl_with_decl env = function
   | CWith_Module ((_,fqid),qid) ->
-      With_Module (fqid,lookup_module qid)
+      WithMod (fqid,lookup_module qid)
   | CWith_Definition ((_,fqid),c) ->
-      With_Definition (fqid,interp_constr Evd.empty env c)
+      WithDef (fqid,interp_constr Evd.empty env c)
 
 let loc_of_module = function
   | CMident (loc,_) | CMapply (loc,_,_) | CMwith (loc,_,_) -> loc
-
-let is_path = function
-  | CMident _ -> true
-  | CMapply _ | CMwith _ -> false
 
 (* Invariant : the returned kind is never ModAny, and it is
    equal to the input kind when this one isn't ModAny. *)
@@ -76,17 +73,19 @@ let is_path = function
 let rec interp_module_ast env kind = function
   | CMident qid ->
       let (mp,kind) = lookup_module_or_modtype kind qid in
-      (MSEident mp, kind)
+      (MEident mp, kind)
   | CMapply (_,me1,me2) ->
       let me1',kind1 = interp_module_ast env kind me1 in
       let me2',kind2 = interp_module_ast env ModAny me2 in
-      if not (is_path me2) then
-        error_application_to_not_path (loc_of_module me2) me2';
+      let mp2 = match me2' with
+        | MEident mp -> mp
+        | _ -> error_application_to_not_path (loc_of_module me2) me2'
+      in
       if kind2 == ModType then
         error_application_to_module_type (loc_of_module me2);
-      (MSEapply (me1',me2'), kind1)
+      (MEapply (me1',mp2), kind1)
   | CMwith (loc,me,decl) ->
       let me,kind = interp_module_ast env kind me in
       if kind == Module then error_incorrect_with_in_module loc;
       let decl = transl_with_decl env decl in
-      (MSEwith(me,decl), kind)
+      (MEwith(me,decl), kind)

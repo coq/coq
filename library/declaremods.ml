@@ -336,15 +336,14 @@ let () = ModSubstObjs.set_missing_handler handle_missing_substobjs
 
 (** Turn a chain of [MSEapply] into the head module_path and the
     list of module_path parameters (deepest param coming first).
-    Currently, right part of [MSEapply] must be [MSEident],
-    and left part must be either [MSEident] or another [MSEapply]. *)
+    The left part of a [MSEapply] must be either [MSEident] or
+    another [MSEapply]. *)
 
 let get_applications mexpr =
   let rec get params = function
-    | MSEident mp -> mp, params
-    | MSEapply (fexpr, MSEident mp) -> get (mp::params) fexpr
-    | MSEapply (_,mexpr) -> Modops.error_application_to_not_path mexpr
-    | _ -> error "Application of a non-functor."
+    | MEident mp -> mp, params
+    | MEapply (fexpr, mp) -> get (mp::params) fexpr
+    | MEwith _ -> error "Non-atomic functor application."
   in get [] mexpr
 
 (** Create the substitution corresponding to some functor applications *)
@@ -357,10 +356,10 @@ let rec compute_subst env mbids sign mp_l inl =
 	let farg_id, farg_b, fbody_b = Modops.destr_functor sign in
 	let mb = Environ.lookup_module mp env in
 	let mbid_left,subst = compute_subst env mbids fbody_b mp_l inl in
-	let resolver = match mb.mod_type with
-          | SEBstruct _ ->
-	    Modops.inline_delta_resolver env inl mp farg_id farg_b mb.mod_delta
-          | _ -> empty_delta_resolver (* case of a functor *)
+	let resolver =
+          if Modops.is_functor mb.mod_type then empty_delta_resolver
+          else
+            Modops.inline_delta_resolver env inl mp farg_id farg_b mb.mod_delta
 	in
 	mbid_left,join (map_mbid mbid mp resolver) subst
 
@@ -386,25 +385,21 @@ let type_of_mod mp env = function
   |false -> (Environ.lookup_modtype mp env).typ_expr
 
 let rec get_module_path = function
-  |MSEident mp -> mp
-  |MSEfunctor (_,_,me) -> get_module_path me
-  |MSEwith (me,_) -> get_module_path me
-  |MSEapply _ as me -> fst (get_applications me)
+  |MEident mp -> mp
+  |MEwith (me,_) -> get_module_path me
+  |MEapply (me,_) -> get_module_path me
 
 (** Substitutive objects of a module expression (or module type) *)
 
 let rec get_module_sobjs is_mod env inl = function
-  |MSEident mp ->
+  |MEident mp ->
     begin match ModSubstObjs.get mp with
     |(mbids,Objs _) when not (ModPath.is_bound mp) ->
       (mbids,Ref (mp, empty_subst)) (* we create an alias *)
     |sobjs -> sobjs
     end
-  |MSEfunctor (mbid,_,mexpr) ->
-    let (mbids, aobjs) = get_module_sobjs is_mod env inl mexpr in
-    (mbid::mbids, aobjs)
-  |MSEwith (mty, With_Definition _) -> get_module_sobjs is_mod env inl mty
-  |MSEwith (mty, With_Module (idl,mp1)) ->
+  |MEwith (mty, WithDef _) -> get_module_sobjs is_mod env inl mty
+  |MEwith (mty, WithMod (idl,mp1)) ->
     assert (not is_mod);
     let sobjs0 = get_module_sobjs is_mod env inl mty in
     assert (sobjs_no_functor sobjs0);
@@ -413,35 +408,27 @@ let rec get_module_sobjs is_mod env inl = function
     let objs0 = expand_sobjs sobjs0 in
     let objs1 = expand_sobjs (ModSubstObjs.get mp1) in
     ([], Objs (replace_module_object idl mp0 objs0 mp1 objs1))
-  |MSEapply _ as me ->
+  |MEapply _ as me ->
     let mp1, mp_l = get_applications me in
-    let mbids, aobjs = get_module_sobjs is_mod env inl (MSEident mp1) in
+    let mbids, aobjs = get_module_sobjs is_mod env inl (MEident mp1) in
     let typ = type_of_mod mp1 env is_mod in
     let mbids_left,subst = compute_subst env mbids typ mp_l inl in
     (mbids_left, subst_aobjs subst aobjs)
+
+let get_functor_sobjs is_mod env inl (params,mexpr) =
+  let (mbids, aobjs) = get_module_sobjs is_mod env inl mexpr in
+  (List.map fst params @ mbids, aobjs)
 
 
 (** {6 Handling of module parameters} *)
 
 (** For printing modules, [process_module_binding] adds names of
     bound module (and its components) to Nametab. It also loads
-    objects associated to it. It may raise a [Failure] when the
-    bound module hasn't an atomic type. *)
+    objects associated to it. *)
 
-let rec seb2mse = function
-  | SEBident mp -> MSEident mp
-  | SEBapply (s,s',_) -> MSEapply(seb2mse s, seb2mse s')
-  | SEBwith (s,With_module_body (l,mp)) -> MSEwith(seb2mse s,With_Module(l,mp))
-  | SEBwith (s,With_definition_body(l,cb)) ->
-      (match cb.const_body with
-	| Def c -> MSEwith(seb2mse s,With_Definition(l,Lazyconstr.force c))
-	| _ -> assert false)
-  | _ -> failwith "seb2mse: received a non-atomic seb"
-
-let process_module_binding mbid seb =
+let process_module_binding mbid me =
   let dir = DirPath.make [MBId.to_id mbid] in
   let mp = MPbound mbid in
-  let me = seb2mse seb in
   let sobjs = get_module_sobjs false (Global.env()) (default_inline ()) me in
   let subst = map_mp (get_module_path me) mp empty_delta_resolver in
   let sobjs = subst_sobjs subst sobjs in
@@ -468,7 +455,7 @@ let intern_arg interp_modast acc (idl,(typ,ann)) =
       let resolver = Global.add_module_parameter mbid mty inl in
       let sobjs = subst_sobjs (map_mp mp0 mp resolver) sobjs in
       do_module false Lib.load_objects 1 dir mp sobjs [];
-      (mbid,(mty,inl))::acc)
+      (mbid,mty,inl)::acc)
     acc idl
 
 (** Process a list of declarations of functor parameters
@@ -504,7 +491,7 @@ let check_subtypes mp sub_mtb_l =
   let mb =
     try Global.lookup_module mp with Not_found -> assert false
   in
-  let mtb = Modops.module_type_of_module None mb in
+  let mtb = Modops.module_type_of_module mb in
   check_sub mtb sub_mtb_l
 
 (** Same for module type [mp] *)
@@ -515,24 +502,21 @@ let check_subtypes_mt mp sub_mtb_l =
   in
   check_sub mtb sub_mtb_l
 
-(** Create a functor entry.
+(** Create a params entry.
     In [args], the youngest module param now comes first. *)
 
-let mk_funct_entry args entry0 =
-  List.fold_left
-    (fun entry (arg_id,(arg_t,_)) ->
-      MSEfunctor (arg_id,arg_t,entry))
-    entry0 args
+let mk_params_entry args =
+  List.rev_map (fun (mbid,arg_t,_) -> (mbid,arg_t)) args
 
 (** Create a functor type struct.
     In [args], the youngest module param now comes first. *)
 
 let mk_funct_type env args seb0 =
   List.fold_left
-    (fun seb (arg_id,(arg_t,arg_inl)) ->
+    (fun seb (arg_id,arg_t,arg_inl) ->
       let mp = MPbound arg_id in
-      let arg_t = Mod_typing.translate_module_type env mp arg_inl arg_t in
-      SEBfunctor(arg_id,arg_t,seb))
+      let arg_t = Mod_typing.translate_modtype env mp arg_inl ([],arg_t) in
+      MoreFunctor(arg_id,arg_t,seb))
     seb0 args
 
 (** Prepare the module type list for check of subtypes *)
@@ -542,7 +526,7 @@ let build_subtypes interp_modast env mp args mtys =
     (fun (m,ann) ->
        let inl = inl2intopt ann in
        let mte,_ = interp_modast env ModType m in
-       let mtb = Mod_typing.translate_module_type env mp inl mte in
+       let mtb = Mod_typing.translate_modtype env mp inl ([],mte) in
        { mtb with typ_expr = mk_funct_type env args mtb.typ_expr })
     mtys
 
@@ -583,7 +567,8 @@ let start_module interp_modast export id args res fs =
     | Enforce (res,ann) ->
         let inl = inl2intopt ann in
 	let mte,_ = interp_modast env ModType res in
-	let _ = Mod_typing.translate_struct_type_entry env inl mte in
+        (* We check immediately that mte is well-formed *)
+	let _ = Mod_typing.translate_mse env None inl mte in
 	Some (mte,inl), []
     | Check resl ->
 	None, build_subtypes interp_modast env mp arg_entries_r resl
@@ -636,32 +621,31 @@ let declare_module interp_modast id args res mexpr_o fs =
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp = Global.start_module id in
-  let arg_entries_r = intern_args interp_modast args
-  in
+  let arg_entries_r = intern_args interp_modast args in
+  let params = mk_params_entry arg_entries_r in
   let env = Global.env () in
-  let mk_entry k m = mk_funct_entry arg_entries_r (fst (interp_modast env k m))
-  in
   let mty_entry_o, subs, inl_res = match res with
     | Enforce (mty,ann) ->
-        Some (mk_entry ModType mty), [], inl2intopt ann
+        Some (fst (interp_modast env ModType mty)), [], inl2intopt ann
     | Check mtys ->
 	None, build_subtypes interp_modast env mp arg_entries_r mtys,
         default_inline ()
   in
   let mexpr_entry_o, inl_expr = match mexpr_o with
     | None -> None, default_inline ()
-    | Some (mexpr,ann) -> Some (mk_entry Module mexpr), inl2intopt ann
+    | Some (mexpr,ann) ->
+      Some (fst (interp_modast env Module mexpr)), inl2intopt ann
   in
-  let entry =
-    {mod_entry_type = mty_entry_o;
-     mod_entry_expr = mexpr_entry_o }
+  let entry = match mexpr_entry_o, mty_entry_o with
+    | None, None -> assert false (* No body, no type ... *)
+    | None, Some typ -> MType (params, typ)
+    | Some body, otyp -> MExpr (params, body, otyp)
   in
   let sobjs, mp0 = match entry with
-    | {mod_entry_type = Some mte} ->
-      get_module_sobjs false env inl_res mte, get_module_path mte
-    | {mod_entry_expr = Some me} ->
-      get_module_sobjs true env inl_expr me, get_module_path me
-    | _ -> assert false (* No type, no body ... *)
+    | MType (_,mte) | MExpr (_,_,Some mte) ->
+      get_functor_sobjs false env inl_res (params,mte), get_module_path mte
+    | MExpr (_,me,None) ->
+      get_functor_sobjs true env inl_expr (params,me), get_module_path me
   in
   (* Undo the simulated interactive building of the module
      and declare the module as a whole *)
@@ -720,16 +704,13 @@ let declare_modtype interp_modast id args mtys (mty,ann) fs =
   (* We simulate the beginning of an interactive module,
      then we adds the module parameters to the global env. *)
   let mp = Global.start_modtype id in
-  let arg_entries_r = intern_args interp_modast args
-  in
+  let arg_entries_r = intern_args interp_modast args in
+  let params = mk_params_entry arg_entries_r in
   let env = Global.env () in
-  let entry,_ = interp_modast env ModType mty in
-  let entry = mk_funct_entry arg_entries_r entry in
-
+  let entry = params, fst (interp_modast env ModType mty) in
   let sub_mty_l = build_subtypes interp_modast env mp arg_entries_r mtys in
-
-  let sobjs = get_module_sobjs false env inl entry in
-  let subst = map_mp (get_module_path entry) mp empty_delta_resolver in
+  let sobjs = get_functor_sobjs false env inl entry in
+  let subst = map_mp (get_module_path (snd entry)) mp empty_delta_resolver in
   let sobjs = subst_sobjs subst sobjs in
 
   (* Undo the simulated interactive building of the module type
@@ -767,17 +748,17 @@ let rec include_subst env mp reso mbids sign inline = match mbids with
 let rec decompose_functor mpl typ =
   match mpl, typ with
   | [], _ -> typ
-  | _::mpl, SEBfunctor(_,_,str) -> decompose_functor mpl str
+  | _::mpl, MoreFunctor(_,_,str) -> decompose_functor mpl str
   | _ -> error "Application of a functor with too much arguments."
 
 exception NoIncludeSelf
 
 let type_of_incl env is_mod = function
-  |MSEident mp -> type_of_mod mp env is_mod
-  |MSEapply _ as me ->
+  |MEident mp -> type_of_mod mp env is_mod
+  |MEapply _ as me ->
     let mp0, mp_l = get_applications me in
     decompose_functor mp_l (type_of_mod mp0 env is_mod)
-  |_ -> raise NoIncludeSelf
+  |MEwith _ -> raise NoIncludeSelf
 
 let declare_one_include interp_modast (me_ast,annot) =
   let env = Global.env() in

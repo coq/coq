@@ -320,55 +320,52 @@ and check_signatures env mp1 sig1 sig2 subst1 subst2 =
 		| Modtype mtb -> mtb
 		| _ -> error_not_match l spec2
 	    in
-	    let env = add_module (module_body_of_type mtb2.typ_mp mtb2)
-	      (add_module (module_body_of_type mtb1.typ_mp mtb1) env) in
-	      check_modtypes  env mtb1 mtb2 subst1 subst2 true
+	    let env =
+              add_module_type mtb2.typ_mp mtb2
+	        (add_module_type mtb1.typ_mp mtb1 env)
+            in
+	    check_modtypes env mtb1 mtb2 subst1 subst2 true
   in
-    List.iter check_one_body sig2
+  List.iter check_one_body sig2
 
-and check_modtypes  env mtb1 mtb2 subst1 subst2 equiv = 
-  if mtb1==mtb2 then () else 
-  let mtb1',mtb2'=mtb1.typ_expr,mtb2.typ_expr in
-  let rec check_structure  env str1 str2 equiv subst1 subst2 = 
-	match str1,str2 with
-	  | SEBstruct (list1), 
-	    SEBstruct (list2) -> 
-	       check_signatures env
-		mtb1.typ_mp list1 list2 subst1 subst2;
-		if equiv then
-		  check_signatures  env 
-		     mtb2.typ_mp list2 list1 subst1 subst2
-		else
-		  ()
-	  | SEBfunctor (arg_id1,arg_t1,body_t1),
-	      SEBfunctor (arg_id2,arg_t2,body_t2) ->
-	       check_modtypes env 
-		arg_t2 arg_t1
-		(map_mp arg_t1.typ_mp arg_t2.typ_mp) subst2
-		equiv ;
-		(* contravariant *)
-	      let env = add_module 
-		(module_body_of_type (MPbound arg_id2) arg_t2) env 
-	      in
-	      let env = match body_t1 with
-		  SEBstruct str ->
-		    let env = shallow_remove_module mtb1.typ_mp env in
-		    add_module {mod_mp = mtb1.typ_mp;
-				mod_expr = None;
-				mod_type = body_t1;
-				mod_type_alg= None;
-				mod_constraints=mtb1.typ_constraints;
-				mod_retroknowledge = [];
-				mod_delta = mtb1.typ_delta} env
-		| _ -> env
-	      in
-		check_structure env body_t1 body_t2 equiv 
-		  (join (map_mbid arg_id1 (MPbound arg_id2)) subst1)
-		  subst2
-	  | _ , _ -> error_incompatible_modtypes mtb1 mtb2
-      in
-     if mtb1'== mtb2' then ()
-     else check_structure  env mtb1' mtb2' equiv subst1 subst2
+and check_modtypes env mtb1 mtb2 subst1 subst2 equiv =
+  if mtb1==mtb2 || mtb1.typ_expr == mtb2.typ_expr then ()
+  else
+    let rec check_structure  env str1 str2 equiv subst1 subst2 =
+      match str1,str2 with
+      | NoFunctor (list1),
+        NoFunctor (list2) ->
+	  check_signatures env mtb1.typ_mp list1 list2 subst1 subst2;
+	  if equiv then
+	    check_signatures env mtb2.typ_mp list2 list1 subst1 subst2
+	  else
+	    ()
+      | MoreFunctor (arg_id1,arg_t1,body_t1),
+	MoreFunctor (arg_id2,arg_t2,body_t2) ->
+	  check_modtypes env
+	    arg_t2 arg_t1
+	    (map_mp arg_t1.typ_mp arg_t2.typ_mp) subst2
+	    equiv;
+	  (* contravariant *)
+	  let env = add_module_type (MPbound arg_id2) arg_t2 env in
+	  let env =
+            if is_functor body_t1 then env
+            else
+	      let env = shallow_remove_module mtb1.typ_mp env in
+	      add_module {mod_mp = mtb1.typ_mp;
+			  mod_expr = Abstract;
+			  mod_type = body_t1;
+			  mod_type_alg = None;
+			  mod_constraints = mtb1.typ_constraints;
+			  mod_retroknowledge = [];
+			  mod_delta = mtb1.typ_delta} env
+	  in
+	  check_structure env body_t1 body_t2 equiv
+	    (join (map_mbid arg_id1 (MPbound arg_id2)) subst1)
+	    subst2
+      | _ , _ -> error_incompatible_modtypes mtb1 mtb2
+    in
+    check_structure env mtb1.typ_expr mtb2.typ_expr equiv subst1 subst2
 
 let check_subtypes env sup super =
   check_modtypes env (strengthen sup sup.typ_mp) super empty_subst

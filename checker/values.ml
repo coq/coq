@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 43e0b61e2a549058ae0a59bbadbb9d61 checker/cic.mli
+MD5 09a4e5d657809e040f50837a78fe6dfe checker/cic.mli
 
 *)
 
@@ -248,6 +248,18 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     v_cstrs;
     Any|]
 
+let v_with =
+  Sum ("with_declaration_body",0,
+       [|[|List v_id;v_mp|];
+         [|List v_id;v_constr|]|])
+
+let rec v_mae =
+  Sum ("module_alg_expr",0,
+  [|[|v_mp|];         (* SEBident *)
+    [|v_mae;v_mp|];   (* SEBapply *)
+    [|v_mae;v_with|]  (* SEBwith *)
+  |])
+
 let rec v_sfb =
   Sum ("struct_field_body",0,
   [|[|v_cb|];       (* SFBconst *)
@@ -255,27 +267,25 @@ let rec v_sfb =
     [|v_module|];   (* SFBmodule *)
     [|v_modtype|]   (* SFBmodtype *)
   |])
-and v_sb = List (Tuple ("label*sfb",[|v_id;v_sfb|]))
-and v_seb =
-  Sum ("struct_expr_body",0,
-  [|[|v_mp|];                  (* SEBident *)
-    [|v_uid;v_modtype;v_seb|]; (* SEBfunctor *)
-    [|v_seb;v_seb;v_cstrs|];   (* SEBapply *)
-    [|v_sb|];                  (* SEBstruct *)
-    [|v_seb;v_with|]           (* SEBwith *)
-  |])
-and v_with =
-  Sum ("with_declaration_body",0,
-       [|[|List v_id;v_mp|];
-         [|List v_id;v_cb|]|])
+and v_struc = List (Tuple ("label*sfb",[|v_id;v_sfb|]))
+and v_sign =
+  Sum ("module_sign",0,
+  [|[|v_struc|];                   (* NoFunctor *)
+    [|v_uid;v_modtype;v_sign|]|])  (* MoreFunctor *)
+and v_mexpr =
+  Sum ("module_expr",0,
+  [|[|v_mae|];                     (* NoFunctor *)
+    [|v_uid;v_modtype;v_mexpr|]|]) (* MoreFunctor *)
+and v_impl =
+  Sum ("module_impl",2,
+  [|[|v_mexpr|];  (* Algebraic *)
+    [|v_sign|]|])  (* Struct *)
 and v_module =
   Tuple ("module_body",
-         [|v_mp;Opt v_seb;v_seb;
-           Opt v_seb;v_cstrs;v_resolver;Any|])
+         [|v_mp;v_impl;v_sign;Opt v_mexpr;v_cstrs;v_resolver;Any|])
 and v_modtype =
   Tuple ("module_type_body",
-         [|v_mp;v_seb;Opt v_seb;v_cstrs;v_resolver|])
-
+         [|v_mp;v_sign;Opt v_mexpr;v_cstrs;v_resolver|])
 
 (** kernel/safe_typing *)
 

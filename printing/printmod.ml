@@ -114,18 +114,24 @@ let nametab_register_module_body mp struc =
     nametab_register_dir mp;
     List.iter (nametab_register_body mp DirPath.empty) struc
 
-let nametab_register_module_param mbid seb =
-  (* For algebraic seb, we use a Declaremods function that converts into mse *)
-  try Declaremods.process_module_binding mbid seb
-  with e when Errors.noncritical e ->
-    (* Otherwise, for expanded structure, we try to play with the nametab *)
-    match seb with
-      | SEBstruct struc ->
-        let mp = MPbound mbid in
-        let dir = DirPath.make [MBId.to_id mbid] in
-        nametab_register_dir mp;
-        List.iter (nametab_register_body mp dir) struc
-      | _ -> ()
+let get_typ_expr_alg mtb = match mtb.typ_expr_alg with
+  | Some (NoFunctor me) -> me
+  | _ -> raise Not_found
+
+let nametab_register_modparam mbid mtb =
+  match mtb.typ_expr with
+  | MoreFunctor _ -> () (* functorial param : nothing to register *)
+  | NoFunctor struc ->
+    (* We first try to use the algebraic type expression if any,
+       via a Declaremods function that converts back to module entries *)
+    try
+      Declaremods.process_module_binding mbid (get_typ_expr_alg mtb)
+    with e when Errors.noncritical e ->
+      (* Otherwise, we try to play with the nametab ourselves *)
+      let mp = MPbound mbid in
+      let dir = DirPath.make [MBId.to_id mbid] in
+      nametab_register_dir mp;
+      List.iter (nametab_register_body mp dir) struc
 
 let print_body is_impl env mp (l,body) =
   let name = str (Label.to_string l) in
@@ -161,71 +167,71 @@ let print_body is_impl env mp (l,body) =
 let print_struct is_impl env mp struc =
   prlist_with_sep spc (print_body is_impl env mp) struc
 
-let rec flatten_app mexpr l = match mexpr with
-  | SEBapply (mexpr, SEBident arg,_) -> flatten_app mexpr (arg::l)
-  | SEBident mp -> mp::l
-  | _ -> assert false
+let print_structure is_type env mp locals struc =
+  let env' = Option.map
+    (Modops.add_structure mp struc Mod_subst.empty_delta_resolver) env in
+  nametab_register_module_body mp struc;
+  let kwd = if is_type then "Sig" else "Struct" in
+  hv 2 (str kwd ++ spc () ++ print_struct false env' mp struc ++
+	brk (1,-2) ++ str "End")
 
-let rec print_modtype env mp locals mty =
+let rec flatten_app mexpr l = match mexpr with
+  | MEapply (mexpr, arg) -> flatten_app mexpr (arg::l)
+  | MEident mp -> mp::l
+  | MEwith _ -> assert false
+
+let rec print_typ_expr env mp locals mty =
   match mty with
-    | SEBident kn -> print_kn locals kn
-    | SEBfunctor (mbid,mtb1,mtb2) ->
-      let mp1 = MPbound mbid in
-      let env' = Option.map
-	  (Modops.add_module (Modops.module_body_of_type mp1 mtb1)) env in
-      let seb1 = Option.default mtb1.typ_expr mtb1.typ_expr_alg in
-      let locals' = (mbid, get_new_id locals (MBId.to_id mbid))::locals
-      in
-      nametab_register_module_param mbid seb1;
-      hov 2 (str "Funsig" ++ spc () ++ str "(" ++
-	       pr_id (MBId.to_id mbid) ++ str ":" ++
-	       print_modtype env mp1 locals seb1 ++
-	       str ")" ++ spc() ++ print_modtype env' mp locals' mtb2)
-  | SEBstruct (sign) ->
-      let env' = Option.map
-	(Modops.add_signature mp sign Mod_subst.empty_delta_resolver) env in
-      nametab_register_module_body mp sign;
-      hv 2 (str "Sig" ++ spc () ++ print_struct false env' mp sign ++
-	    brk (1,-2) ++ str "End")
-  | SEBapply _ ->
+  | MEident kn -> print_kn locals kn
+  | MEapply _ ->
       let lapp = flatten_app mty [] in
       let fapp = List.hd lapp in
       let mapp = List.tl lapp in
       hov 3 (str"(" ++ (print_kn locals fapp) ++ spc () ++
 		 prlist_with_sep spc (print_modpath locals) mapp ++ str")")
-  | SEBwith(seb,With_definition_body(idl,cb))->
+  | MEwith(me,WithDef(idl,c))->
       let env' = None in (* TODO: build a proper environment if env <> None *)
-      let s = (String.concat "." (List.map Id.to_string idl)) in
-      hov 2 (print_modtype env' mp locals seb ++ spc() ++ str "with" ++ spc() ++
-	       str "Definition"++ spc() ++ str s ++ spc() ++  str ":="++ spc())
-  | SEBwith(seb,With_module_body(idl,mp))->
-      let s =(String.concat "." (List.map Id.to_string idl)) in
-      hov 2 (print_modtype env mp locals seb ++ spc() ++ str "with" ++ spc() ++
-	       str "Module"++ spc() ++ str s ++ spc() ++ str ":="++ spc())
+      let s = String.concat "." (List.map Id.to_string idl) in
+      hov 2 (print_typ_expr env' mp locals me ++ spc() ++ str "with" ++ spc()
+             ++ str "Definition"++ spc() ++ str s ++ spc() ++  str ":="++ spc())
+  | MEwith(me,WithMod(idl,mp))->
+      let s = String.concat "." (List.map Id.to_string idl) in
+      hov 2 (print_typ_expr env mp locals me ++ spc() ++ str "with" ++ spc() ++
+             str "Module"++ spc() ++ str s ++ spc() ++ str ":="++ spc())
 
-let rec print_modexpr env mp locals mexpr = match mexpr with
-  | SEBident mp -> print_modpath locals mp
-  | SEBfunctor (mbid,mty,mexpr) ->
-      let mp' = MPbound mbid in
-      let env' = Option.map
-	(Modops.add_module (Modops.module_body_of_type mp' mty)) env in
-      let typ = Option.default mty.typ_expr mty.typ_expr_alg in
+let print_mod_expr env mp locals = function
+  | MEident mp -> print_modpath locals mp
+  | MEapply _ as me ->
+      let lapp = flatten_app me [] in
+      hov 3
+        (str"(" ++ prlist_with_sep spc (print_modpath locals) lapp ++ str")")
+  | MEwith _ -> assert false (* No 'with' syntax for modules *)
+
+let rec print_functor fty fatom is_type env mp locals = function
+  |NoFunctor me -> fatom is_type env mp locals me
+  |MoreFunctor (mbid,mtb1,me2) ->
+      nametab_register_modparam mbid mtb1;
+      let mp1 = MPbound mbid in
+      let pr_mtb1 = fty env mp1 locals mtb1 in
+      let env' = Option.map (Modops.add_module_type mp1 mtb1) env in
       let locals' = (mbid, get_new_id locals (MBId.to_id mbid))::locals in
-      nametab_register_module_param mbid typ;
-      hov 2 (str "Functor" ++ spc() ++ str"(" ++ pr_id(MBId.to_id mbid) ++
-	     str ":" ++ print_modtype env mp' locals typ ++
-      str ")" ++ spc () ++ print_modexpr env' mp locals' mexpr)
-  | SEBstruct struc ->
-      let env' = Option.map
-	(Modops.add_signature mp struc Mod_subst.empty_delta_resolver) env in
-      nametab_register_module_body mp struc;
-      hv 2 (str "Struct" ++ spc () ++ print_struct true env' mp struc ++
-	    brk (1,-2) ++ str "End")
-  | SEBapply _ ->
-      let lapp = flatten_app mexpr [] in
-      hov 3 (str"(" ++ prlist_with_sep spc (print_modpath locals) lapp ++ str")")
-  | SEBwith (_,_)-> anomaly (Pp.str "Not available yet")
+      let kwd = if is_type then "Funsig" else "Functor" in
+      hov 2
+        (str kwd ++ spc () ++
+	 str "(" ++ pr_id (MBId.to_id mbid) ++ str ":" ++ pr_mtb1 ++ str ")" ++
+	 spc() ++ print_functor fty fatom is_type env' mp locals' me2)
 
+let rec print_expression x =
+  print_functor
+    print_modtype
+    (function true -> print_typ_expr | false -> print_mod_expr) x
+
+and print_signature x =
+  print_functor print_modtype print_structure x
+
+and print_modtype env mp locals mtb = match mtb.typ_expr_alg with
+  | Some me -> print_expression true env mp locals me
+  | None -> print_signature true env mp locals mtb.typ_expr
 
 let rec printable_body dir =
   let dir = pop_dirpath dir in
@@ -241,23 +247,28 @@ let rec printable_body dir =
 (** Since we might play with nametab above, we should reset to prior
     state after the printing *)
 
-let print_modexpr' env mp mexpr =
+let print_expression' is_type env mp me =
   States.with_state_protection
-    (fun e -> eval_ppcmds (print_modexpr env mp [] e)) mexpr
+    (fun e -> eval_ppcmds (print_expression is_type env mp [] e)) me
 
-let print_modtype' env mp mty =
+let print_signature' is_type env mp me =
   States.with_state_protection
-    (fun e -> eval_ppcmds (print_modtype env mp [] e)) mty
+    (fun e -> eval_ppcmds (print_signature is_type env mp [] e)) me
 
-let print_module' env mp with_body mb =
+let unsafe_print_module env mp with_body mb =
   let name = print_modpath [] mp in
+  let pr_equals = spc () ++ str ":= " in
   let body = match with_body, mb.mod_expr with
     | false, _
-    | true, None -> mt()
-    | true, Some mexpr ->
-	spc () ++ str ":= " ++ print_modexpr' env mp mexpr
+    | true, Abstract -> mt()
+    | _, Algebraic me -> pr_equals ++ print_expression' false env mp me
+    | _, Struct sign -> pr_equals ++ print_signature' false env mp sign
+    | _, FullStruct -> pr_equals ++ print_signature' false env mp mb.mod_type
   in
-  let modtype = brk (1,1) ++ str": " ++ print_modtype' env mp mb.mod_type
+  let modtype = match mb.mod_expr, mb.mod_type_alg with
+    | FullStruct, _ -> mt ()
+    | _, Some ty -> brk (1,1) ++ str": " ++ print_expression' true env mp ty
+    | _, _ -> brk (1,1) ++ str": " ++ print_signature' true env mp mb.mod_type
   in
   hv 0 (str "Module " ++ name ++ modtype ++ body)
 
@@ -267,9 +278,9 @@ let print_module with_body mp =
   let me = Global.lookup_module mp in
   try
     if !short then raise ShortPrinting;
-    print_module' (Some (Global.env ())) mp with_body me ++ fnl ()
+    unsafe_print_module (Some (Global.env ())) mp with_body me ++ fnl ()
   with e when Errors.noncritical e ->
-    print_module' None mp with_body me ++ fnl ()
+    unsafe_print_module None mp with_body me ++ fnl ()
 
 let print_modtype kn =
   let mtb = Global.lookup_modtype kn in
@@ -278,6 +289,6 @@ let print_modtype kn =
     (str "Module Type " ++ name ++ str " =" ++ spc () ++
      (try
 	if !short then raise ShortPrinting;
-	print_modtype' (Some (Global.env ())) kn mtb.typ_expr
+	print_signature' true (Some (Global.env ())) kn mtb.typ_expr
       with e when Errors.noncritical e ->
-	print_modtype' None kn mtb.typ_expr))
+	print_signature' true None kn mtb.typ_expr))
