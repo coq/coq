@@ -140,8 +140,9 @@ let rec classify_vernac e =
     (* (Local) Notations have to disappear *)
     | VernacEndSegment _ -> VtSideff [], VtNow
     (* Modules with parameters have to be executed: can import notations *)
-    | VernacDeclareModule (_,(_,id),bl,_)
-    | VernacDefineModule (_,(_,id),bl,_,_)
+    | VernacDeclareModule (exp,(_,id),bl,_)
+    | VernacDefineModule (exp,(_,id),bl,_,_) ->
+        VtSideff [id], if bl = [] && exp = None then VtLater else VtNow
     | VernacDeclareModuleType ((_,id),bl,_,_) ->
         VtSideff [id], if bl = [] then VtLater else VtNow
     (* These commands alter the parser *)
