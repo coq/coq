@@ -851,7 +851,9 @@ let fresh_level =
   let n = ref 0 in
   fun () -> incr n; UniverseLevel.Level (!n, Names.DirPath.empty)
 
-let fresh_local_univ () = Atom (fresh_level ())
+let fresh_local_univ, set_remote_fresh_local_univ =
+  RemoteCounter.new_counter 0 ~incr:((+) 1)
+    ~build:(fun n -> Atom (UniverseLevel.Level (n, Names.DirPath.empty)))
 
 (* Miscellaneous functions to remove or test local univ assumed to
    occur only in the le constraints *)

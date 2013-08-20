@@ -18,6 +18,7 @@ open Locus
 
 (** Universes *)
 val new_univ_level : unit -> Univ.universe_level
+val set_remote_new_univ_level : Univ.universe_level RemoteCounter.installer
 val new_univ : unit -> Univ.universe
 val new_sort_in_family : sorts_family -> sorts
 val new_Type : unit -> types

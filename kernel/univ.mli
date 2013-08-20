@@ -129,6 +129,7 @@ val sort_universes : universes -> universes
 (** {6 Support for sort-polymorphic inductive types } *)
 
 val fresh_local_univ : unit -> universe
+val set_remote_fresh_local_univ : universe RemoteCounter.installer
 
 val solve_constraints_system : universe option array -> universe array ->
   universe array

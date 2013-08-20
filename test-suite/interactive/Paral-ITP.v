@@ -22,6 +22,7 @@ Qed.
 
 Lemma b : True.
 Proof. 
+  do 11 (cut Type; [ intro foo; clear foo | exact Type]).
   sleep time.
   idtac.
   (* change in semantics: Print a. *)

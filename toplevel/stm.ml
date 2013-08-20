@@ -565,16 +565,25 @@ end = struct (* {{{ *)
   let set_reach_known_state f = reach_known_state := f
 
   type request = ReqBuildProof of (Stateid.t * Stateid.t) * Stateid.t * VCS.vcs
+
   type response =
     | RespBuiltProof of Entries.proof_output list 
     | RespError of std_ppcmds
     | RespFeedback of Interface.feedback
+    | RespGetCounterFreshLocalUniv
+    | RespGetCounterNewUnivLevel
   let pr_response = function
     | RespBuiltProof _ -> "Sucess"
     | RespError _ -> "Error"
     | RespFeedback { Interface.id = Interface.State id } ->
         "Feedback on " ^ Stateid.to_string id
     | RespFeedback _ -> assert false
+    | RespGetCounterFreshLocalUniv -> "GetCounterFreshLocalUniv"
+    | RespGetCounterNewUnivLevel -> "GetCounterNewUnivLevel"
+
+  type more_data =
+    | MoreDataLocalUniv of Univ.universe list
+    | MoreDataUnivLevel of Univ.universe_level list
  
   type task =
     | TaskBuildProof of (Stateid.t * Stateid.t) * Stateid.t * Stateid.t *
@@ -607,20 +616,28 @@ end = struct (* {{{ *)
 
   exception MarshalError
 
-  let marshal_request oc req =
+  let marshal_request oc (req : request) =
     try Marshal.to_channel oc req []; flush oc
     with Invalid_argument _ -> raise MarshalError
 
-  let unmarshal_response ic =
-    try (Marshal.from_channel ic : response)
-    with Invalid_argument _ -> raise MarshalError
-  
   let unmarshal_request ic =
     try (Marshal.from_channel ic : request)
     with Invalid_argument _ -> raise MarshalError
 
-  let marshal_response oc res =
+  let marshal_response oc (res : response) =
     try Marshal.to_channel oc res []; flush oc
+    with Invalid_argument _ -> raise MarshalError
+  
+  let unmarshal_response ic =
+    try (Marshal.from_channel ic : response)
+    with Invalid_argument _ -> raise MarshalError
+  
+  let marshal_more_data oc (res : more_data) =
+    try Marshal.to_channel oc res []; flush oc
+    with Invalid_argument _ -> raise MarshalError
+  
+  let unmarshal_more_data ic =
+    try (Marshal.from_channel ic : more_data)
     with Invalid_argument _ -> raise MarshalError
 
   let queue : task TQueue.t = TQueue.create ()
@@ -652,6 +669,14 @@ end = struct (* {{{ *)
                 assign (`Val pl)
             | TaskBuildProof(_,_,_, assign), RespError e ->
                 assign (`Exn (RemoteException e))
+            | _, RespGetCounterFreshLocalUniv ->
+                marshal_more_data oc (MoreDataLocalUniv
+                  (CList.init 10 (fun _ -> Univ.fresh_local_univ ())));
+                loop ()
+            | _, RespGetCounterNewUnivLevel ->
+                marshal_more_data oc (MoreDataUnivLevel
+                  (CList.init 10 (fun _ -> Termops.new_univ_level ())));
+                loop ()
             | _, RespFeedback {id = State state_id; content = msg} ->
                 Pp.feedback ~state_id msg;
                 loop ()
@@ -687,11 +712,26 @@ end = struct (* {{{ *)
     set_binary_mode_in !slave_ic true;
     Unix.dup2 Unix.stderr Unix.stdout
 
+  let bufferize f =
+    let l = ref [] in
+    fun () ->
+      match !l with
+      | [] -> let data = f () in l := List.tl data; List.hd data
+      | x::tl -> l := tl; x
+
   let slave_main_loop () =
     let slave_feeder oc fb =
       Marshal.to_channel oc (RespFeedback fb) [];
       flush oc in
     Pp.set_feeder (slave_feeder !slave_oc);
+    Termops.set_remote_new_univ_level (bufferize (fun () ->
+      marshal_response !slave_oc RespGetCounterNewUnivLevel;
+      match unmarshal_more_data !slave_ic with
+      | MoreDataUnivLevel l -> l | _ -> assert false));
+    Univ.set_remote_fresh_local_univ (bufferize (fun () ->
+      marshal_response !slave_oc RespGetCounterFreshLocalUniv;
+      match unmarshal_more_data !slave_ic with
+      | MoreDataLocalUniv l -> l | _ -> assert false));
     while true do
       try
         let request = unmarshal_request !slave_ic in
