@@ -14,7 +14,7 @@ open Values
 
 let rec get_name ?(extra=false) = function
   |Any -> "?"
-  |Fail -> assert false
+  |Fail _ -> assert false
   |Tuple (name,_) -> name
   |Sum (name,_,_) -> name
   |Array v -> "array"^(if extra then "/"^get_name ~extra v else "")
@@ -80,7 +80,7 @@ let rec get_children v o pos = match v with
     if Obj.is_block o && Obj.tag o < Obj.no_scan_tag then
       Array.init (Obj.size o) (fun i -> (Any,Obj.field o i,i::pos))
     else [||]
-  |Fail -> assert false
+  |Fail _ -> assert false
 
 type info = {
   nam : string;
