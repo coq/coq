@@ -87,15 +87,13 @@ type module_typing_error =
   | NoSuchLabel of Label.t
   | IncompatibleLabels of Label.t * Label.t
   | SignatureExpected of struct_expr_body
-  | NoModuleToEnd
-  | NoModuleTypeToEnd
   | NotAModule of string
   | NotAModuleType of string
   | NotAConstant of Label.t
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
-  | NonEmptyLocalContect of Label.t option
   | LabelMissing of Label.t * string
+  | HigherOrderInclude
 
 exception ModuleTypingError of module_typing_error
 
@@ -115,10 +113,6 @@ val error_no_such_label : Label.t -> 'a
 
 val error_signature_expected : struct_expr_body -> 'a
 
-val error_no_module_to_end : unit -> 'a
-
-val error_no_modtype_to_end : unit -> 'a
-
 val error_not_a_module : string -> 'a
 
 val error_not_a_constant : Label.t -> 'a
@@ -127,6 +121,6 @@ val error_incorrect_with_constraint : Label.t -> 'a
 
 val error_generative_module_expected : Label.t -> 'a
 
-val error_non_empty_local_context : Label.t option -> 'a
-
 val error_no_such_label_sub : Label.t->string->'a
+
+val error_higher_order_include : unit -> 'a

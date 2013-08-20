@@ -220,7 +220,7 @@ let add_anonymous_entry node =
 
 let add_leaf id obj =
   let (path, _) = current_prefix () in
-  if Names.mp_eq path Names.initial_path then
+  if Names.ModPath.equal path Names.initial_path then
     error ("No session module started (use -top dir)");
   let oname = make_oname id in
   cache_object (oname,obj);
@@ -296,7 +296,7 @@ let end_mod is_type =
   let oname,fs =
     try match find_entry_p is_opening_node with
       | oname,OpenedModule (ty,_,_,fs) ->
-	if Pervasives.(=) ty is_type then oname, fs
+	if ty == is_type then oname, fs
 	else error_still_opened (module_kind ty) oname
       | oname,OpenedSection _ -> error_still_opened "section" oname
       | _ -> assert false

@@ -143,10 +143,10 @@ val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
 
 (** {5 Modules } *)
 
-val add_modtype : module_path -> module_type_body -> env -> env
+val add_modtype : module_type_body -> env -> env
 
 (** [shallow_add_module] does not add module components *)
-val shallow_add_module : module_path -> module_body -> env -> env
+val shallow_add_module : module_body -> env -> env
 
 val lookup_module : module_path -> env -> module_body
 val lookup_modtype : module_path -> env -> module_type_body

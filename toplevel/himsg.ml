@@ -683,12 +683,6 @@ let explain_incompatible_labels l l' =
 let explain_signature_expected mtb =
   str "Signature expected."
 
-let explain_no_module_to_end () =
-  str "No open module to end."
-
-let explain_no_module_type_to_end () =
-  str "No open module type to end."
-
 let explain_not_a_module s =
   quote (str s) ++ str " is not a module."
 
@@ -706,15 +700,12 @@ let explain_generative_module_expected l =
   str "The module " ++ str (Label.to_string l) ++
   strbrk " is not generative. Only components of generative modules can be changed using the \"with\" construct."
 
-let explain_non_empty_local_context = function
-  | None -> str "The local context is not empty."
-  | Some l ->
-      str "The local context of the component " ++
-      str (Label.to_string l) ++ str " is not empty."
-
 let explain_label_missing l s =
   str "The field " ++ str (Label.to_string l) ++ str " is missing in "
   ++ str s ++ str "."
+
+let explain_higher_order_include () =
+  str "You cannot Include a higher-order structure."
 
 let explain_module_error = function
   | SignatureMismatch (l,spec,err) -> explain_signature_mismatch l spec err
@@ -726,15 +717,13 @@ let explain_module_error = function
   | NoSuchLabel l -> explain_no_such_label l
   | IncompatibleLabels (l1,l2) -> explain_incompatible_labels l1 l2
   | SignatureExpected mtb -> explain_signature_expected mtb
-  | NoModuleToEnd -> explain_no_module_to_end ()
-  | NoModuleTypeToEnd -> explain_no_module_type_to_end ()
   | NotAModule s -> explain_not_a_module s
   | NotAModuleType s -> explain_not_a_module_type s
   | NotAConstant l -> explain_not_a_constant l
   | IncorrectWithConstraint l -> explain_incorrect_label_constraint l
   | GenerativeModuleExpected l -> explain_generative_module_expected l
-  | NonEmptyLocalContect lopt -> explain_non_empty_local_context lopt
   | LabelMissing (l,s) -> explain_label_missing l s
+  | HigherOrderInclude -> explain_higher_order_include ()
 
 (* Module internalization errors *)
 

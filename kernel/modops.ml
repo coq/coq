@@ -54,15 +54,13 @@ type module_typing_error =
   | NoSuchLabel of Label.t
   | IncompatibleLabels of Label.t * Label.t
   | SignatureExpected of struct_expr_body
-  | NoModuleToEnd
-  | NoModuleTypeToEnd
   | NotAModule of string
   | NotAModuleType of string
   | NotAConstant of Label.t
   | IncorrectWithConstraint of Label.t
   | GenerativeModuleExpected of Label.t
-  | NonEmptyLocalContect of Label.t option
   | LabelMissing of Label.t * string
+  | HigherOrderInclude
 
 exception ModuleTypingError of module_typing_error
 
@@ -93,12 +91,6 @@ let error_incompatible_labels l l' =
 let error_signature_expected mtb =
   raise (ModuleTypingError (SignatureExpected mtb))
 
-let error_no_module_to_end _ =
-  raise (ModuleTypingError NoModuleToEnd)
-
-let error_no_modtype_to_end _ =
-  raise (ModuleTypingError NoModuleTypeToEnd)
-
 let error_not_a_module s =
   raise (ModuleTypingError (NotAModule s))
 
@@ -111,13 +103,11 @@ let error_incorrect_with_constraint l =
 let error_generative_module_expected l =
   raise (ModuleTypingError (GenerativeModuleExpected l))
 
-let error_non_empty_local_context lo =
-  raise (ModuleTypingError (NonEmptyLocalContect lo))
-
 let error_no_such_label_sub l l1 =
   raise (ModuleTypingError (LabelMissing (l,l1)))
 
-(************************)
+let error_higher_order_include () =
+  raise (ModuleTypingError HigherOrderInclude)
 
 let destr_functor mtb =
   match mtb with
@@ -267,19 +257,21 @@ let rec add_signature mp sign resolver env =
       | SFBmind mib ->
 	Environ.add_mind (mind_of_delta_kn resolver kn) mib env
       | SFBmodule mb -> add_module mb env (* adds components as well *)
-      | SFBmodtype mtb -> Environ.add_modtype mtb.typ_mp mtb env
+      | SFBmodtype mtb -> Environ.add_modtype mtb env
   in
     List.fold_left add_one env sign
 
-and add_module mb env = 
+and add_module mb env =
   let mp = mb.mod_mp in
-  let env = Environ.shallow_add_module mp mb env in
-    match mb.mod_type with
-      | SEBstruct (sign) -> 
-	  add_retroknowledge mp mb.mod_retroknowledge 
-	    (add_signature mp sign mb.mod_delta env)
-      | SEBfunctor _ -> env
-      | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
+  let env = Environ.shallow_add_module mb env in
+  match mb.mod_type with
+  | SEBstruct (sign) ->
+    add_retroknowledge mp mb.mod_retroknowledge
+      (add_signature mp sign mb.mod_delta env)
+  | SEBfunctor _ -> env
+  | _ ->
+    anomaly ~label:"Modops"
+      (Pp.str "the evaluation of the structure failed ")
 
 let strengthen_const mp_from l cb resolver =
   match cb.const_body with

@@ -553,17 +553,11 @@ let build_subtypes interp_modast env mp args mtys =
     in a later [end_module]. *)
 
 type current_module_info = {
-  cur_mp : module_path; (** current started interactive module (if any) *)
-  cur_args : MBId.t list; (** its arguments *)
   cur_typ : (module_struct_entry * int option) option; (** type via ":" *)
   cur_typs : module_type_body list (** types via "<:" *)
 }
 
-let default_module_info =
-  { cur_mp = MPfile DirPath.initial;
-    cur_args = [];
-    cur_typ = None;
-    cur_typs = [] }
+let default_module_info = { cur_typ = None; cur_typs = [] }
 
 let openmod_info = Summary.ref default_module_info ~name:"MODULE-INFO"
 
@@ -574,8 +568,7 @@ let openmod_info = Summary.ref default_module_info ~name:"MODULE-INFO"
    in a later [end_modtype]. *)
 
 let openmodtype_info =
-  Summary.ref ([],[] : MBId.t list * module_type_body list)
-    ~name:"MODTYPE-INFO"
+  Summary.ref ([] : module_type_body list) ~name:"MODTYPE-INFO"
 
 
 (** {6 Modules : start, end, declare} *)
@@ -595,12 +588,7 @@ let start_module interp_modast export id args res fs =
     | Check resl ->
 	None, build_subtypes interp_modast env mp arg_entries_r resl
   in
-  let mbids = List.rev_map fst arg_entries_r in
-  openmod_info:=
-    { cur_mp = mp;
-      cur_args = mbids;
-      cur_typ = res_entry_o;
-      cur_typs = subtyps };
+  openmod_info := { cur_typ = res_entry_o; cur_typs = subtyps };
   let prefix = Lib.start_module export id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
   Lib.add_frozen_state (); mp
@@ -611,14 +599,14 @@ let end_module () =
   let m_info = !openmod_info in
 
   (* For sealed modules, we use the substitutive objects of their signatures *)
-  let sobjs, keep, special = match m_info.cur_typ with
-    | None -> (m_info.cur_args, Objs substitute), keep, special
+  let sobjs0, keep, special = match m_info.cur_typ with
+    | None -> ([], Objs substitute), keep, special
     | Some (mty, inline) ->
-      let (mbids,aobjs) = get_module_sobjs false (Global.env()) inline mty
-      in (m_info.cur_args@mbids,aobjs), [], []
+      get_module_sobjs false (Global.env()) inline mty, [], []
   in
   let id = basename (fst oldoname) in
-  let mp,resolver = Global.end_module fs id m_info.cur_typ in
+  let mp,mbids,resolver = Global.end_module fs id m_info.cur_typ in
+  let sobjs = let (ms,objs) = sobjs0 in (mbids@ms,objs) in
 
   check_subtypes mp m_info.cur_typs;
 
@@ -631,7 +619,7 @@ let end_module () =
   in
   let node = in_module sobjs in
   (* We add the keep objects, if any, and if this isn't a functor *)
-  let objects = match keep, m_info.cur_args with
+  let objects = match keep, mbids with
     | [], _ | _, _ :: _ -> special@[node]
     | _ -> special@[node;in_modkeep keep]
   in
@@ -705,8 +693,7 @@ let start_modtype interp_modast id args mtys fs =
   let arg_entries_r = intern_args interp_modast args in
   let env = Global.env () in
   let sub_mty_l = build_subtypes interp_modast env mp arg_entries_r mtys in
-  let mbids = List.rev_map fst arg_entries_r in
-  openmodtype_info := mbids, sub_mty_l;
+  openmodtype_info := sub_mty_l;
   let prefix = Lib.start_modtype id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModtype prefix);
   Lib.add_frozen_state (); mp
@@ -715,8 +702,8 @@ let end_modtype () =
   let oldoname,prefix,fs,lib_stack = Lib.end_modtype () in
   let id = basename (fst oldoname) in
   let substitute, _, special = Lib.classify_segment lib_stack in
-  let mbids, sub_mty_l = !openmodtype_info in
-  let mp = Global.end_modtype fs id in
+  let sub_mty_l = !openmodtype_info in
+  let mp, mbids = Global.end_modtype fs id in
   let modtypeobjs = (mbids, Objs substitute) in
   check_subtypes_mt mp sub_mty_l;
   let oname = Lib.add_leaves id (special@[in_modtype modtypeobjs])
@@ -901,7 +888,7 @@ let get_library_symbols_tbl dir = Dirmap.find dir !library_values
 
 let start_library dir =
   let mp = Global.start_library dir in
-  openmod_info := { default_module_info with cur_mp = mp };
+  openmod_info := default_module_info;
   Lib.start_compilation dir mp;
   Lib.add_frozen_state ()
 

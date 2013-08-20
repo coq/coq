@@ -275,18 +275,16 @@ let keep_hyps env needed =
 
 (* Modules *)
 
-let add_modtype ln mtb env =
-  let new_modtypes = MPmap.add ln mtb env.env_globals.env_modtypes in
-  let new_globals =
-    { env.env_globals with
-	env_modtypes = new_modtypes } in
+let add_modtype mtb env =
+  let mp = mtb.typ_mp in
+  let new_modtypes = MPmap.add mp mtb env.env_globals.env_modtypes in
+  let new_globals = { env.env_globals with env_modtypes = new_modtypes } in
   { env with env_globals = new_globals }
 
-let shallow_add_module mp mb env =
+let shallow_add_module mb env =
+  let mp = mb.mod_mp in
   let new_mods = MPmap.add mp mb env.env_globals.env_modules in
-  let new_globals =
-    { env.env_globals with
-	env_modules = new_mods } in
+  let new_globals = { env.env_globals with env_modules = new_mods } in
   { env with env_globals = new_globals }
 
 let lookup_module mp env =

@@ -395,8 +395,9 @@ let init arglist =
       (* Be careful to set these variables after the inputstate *)
       Syntax_def.set_verbose_compat_notations !verb_compat_ntn;
       Syntax_def.set_compat_notations (not !no_compat_ntn);
-      if (not !batch_mode|| List.is_empty !compile_list) && Global.env_is_empty() then
-        Option.iter Declaremods.start_library !toplevel_name;
+      if (not !batch_mode || List.is_empty !compile_list)
+         && Global.env_is_initial ()
+      then Option.iter Declaremods.start_library !toplevel_name;
       init_library_roots ();
       load_vernac_obj ();
       require ();

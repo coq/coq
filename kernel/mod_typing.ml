@@ -353,7 +353,7 @@ let rec translate_struct_include_module_entry env mp inl = function
   | MSEapply (fexpr,mexpr) ->
       let ftrans = translate_struct_include_module_entry env mp inl fexpr in
       translate_apply env inl ftrans mexpr (fun _ _ _ -> None)
-  | _ -> error ("You cannot Include a high-order structure.")
+  | _ -> Modops.error_higher_order_include ()
 
 let rec add_struct_expr_constraints env = function
   | SEBident _ -> env
