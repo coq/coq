@@ -14,7 +14,6 @@ open Mod_subst
 
 (** {6 Constants} *)
 
-val subst_const_def : substitution -> constant_def -> constant_def
 val subst_const_body : substitution -> constant_body -> constant_body
 
 (** Is there a actual body in const_body ? *)

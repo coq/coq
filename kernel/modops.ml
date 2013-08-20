@@ -25,6 +25,8 @@ open Environ
 open Entries
 open Mod_subst
 
+(** {6 Errors } *)
+
 type signature_mismatch_error =
   | InductiveFieldExpected of mutual_inductive_body
   | DefinitionFieldExpected
@@ -45,7 +47,8 @@ type signature_mismatch_error =
   | NoTypeConstraintExpected
 
 type module_typing_error =
-  | SignatureMismatch of Label.t * structure_field_body * signature_mismatch_error
+  | SignatureMismatch of
+      Label.t * structure_field_body * signature_mismatch_error
   | LabelAlreadyDeclared of Label.t
   | ApplicationToNotPath of module_struct_entry
   | NotAFunctor of struct_expr_body
@@ -109,17 +112,17 @@ let error_no_such_label_sub l l1 =
 let error_higher_order_include () =
   raise (ModuleTypingError HigherOrderInclude)
 
-let destr_functor mtb =
-  match mtb with
-  | SEBfunctor (arg_id,arg_t,body_t) ->
-      	    (arg_id,arg_t,body_t)
-  | _ -> error_not_a_functor mtb
+(** {6 Misc operations } *)
+
+let destr_functor = function
+  | SEBfunctor (arg_id,arg_t,body_t) -> (arg_id,arg_t,body_t)
+  | mtb -> error_not_a_functor mtb
 
 let is_functor = function
- | SEBfunctor (arg_id,arg_t,body_t) -> true
- | _ -> false
+  | SEBfunctor _ -> true
+  | _ -> false
 
-let module_body_of_type mp mtb = 
+let module_body_of_type mp mtb =
   { mod_mp = mp;
     mod_type = mtb.typ_expr;
     mod_type_alg = mtb.typ_expr_alg;
@@ -128,103 +131,119 @@ let module_body_of_type mp mtb =
     mod_delta = mtb.typ_delta;
     mod_retroknowledge = []}
 
-let check_modpath_equiv env mp1 mp2 = 
-  if mp_eq mp1 mp2 then () else
-    let mb1=lookup_module  mp1 env in
-    let mb2=lookup_module mp2 env in
-      if mp_eq (mp_of_delta mb1.mod_delta mp1) (mp_of_delta mb2.mod_delta mp2)
-      then ()
-      else error_not_equal_modpaths mp1 mp2
-	
+let check_modpath_equiv env mp1 mp2 =
+  if ModPath.equal mp1 mp2 then ()
+  else
+    let mp1' = mp_of_delta (lookup_module mp1 env).mod_delta mp1 in
+    let mp2' = mp_of_delta (lookup_module mp2 env).mod_delta mp2 in
+    if ModPath.equal mp1' mp2' then ()
+    else error_not_equal_modpaths mp1 mp2
+
+(** {6 Substitutions of modular structures } *)
+
+let id_delta x y = x
+
 let rec subst_with_body sub = function
-  | With_module_body(id,mp) ->
-      With_module_body(id,subst_mp sub mp)
-  | With_definition_body(id,cb) ->
-      With_definition_body( id,subst_const_body sub cb)
+  |With_module_body(id,mp) as orig ->
+    let mp' = subst_mp sub mp in
+    if mp==mp' then orig else With_module_body(id,mp')
+  |With_definition_body(id,cb) as orig ->
+    let cb' = subst_const_body sub cb in
+    if cb==cb' then orig else With_definition_body(id,cb')
 
 and subst_modtype sub do_delta mtb=
-  let mp = subst_mp sub mtb.typ_mp in
-  let sub = add_mp mtb.typ_mp mp empty_delta_resolver sub in
-  let typ_expr' = subst_struct_expr sub do_delta mtb.typ_expr in
-  let typ_alg' = 
-    Option.smartmap 
-      (subst_struct_expr sub (fun x y-> x)) mtb.typ_expr_alg in
-  let mtb_delta = do_delta mtb.typ_delta sub in
-    if typ_expr'==mtb.typ_expr && 
-      typ_alg'==mtb.typ_expr_alg && mp==mtb.typ_mp then
-	mtb
-    else
-      {mtb with 
-	 typ_mp = mp;
-	 typ_expr = typ_expr';
-	 typ_expr_alg = typ_alg';
-	 typ_delta = mtb_delta}
-	
-and subst_structure sub do_delta sign = 
-  let subst_body = function
-      SFBconst cb -> 
-	SFBconst (subst_const_body sub cb)
-    | SFBmind mib -> 
-	SFBmind (subst_mind sub mib)
-    | SFBmodule mb -> 
-	SFBmodule (subst_module sub do_delta mb)
-    | SFBmodtype mtb -> 
-	SFBmodtype (subst_modtype sub do_delta mtb)
+  let { typ_mp = mp; typ_expr = ty; typ_expr_alg = aty } = mtb in
+  let mp' = subst_mp sub mp in
+  let sub =
+    if ModPath.equal mp mp' then sub
+    else add_mp mp mp' empty_delta_resolver sub
   in
-    List.map (fun (l,b) -> (l,subst_body b)) sign
+  let ty' = subst_struct_expr sub do_delta ty in
+  let aty' = Option.smartmap (subst_struct_expr sub id_delta) aty in
+  let delta' = do_delta mtb.typ_delta sub in
+  if mp==mp' && ty==ty' && aty==aty' && delta'==mtb.typ_delta
+  then mtb
+  else
+    { mtb with
+      typ_mp = mp';
+      typ_expr = ty';
+      typ_expr_alg = aty';
+      typ_delta = delta' }
+
+and subst_structure sub do_delta sign =
+  let subst_body ((l,body) as orig) = match body with
+    | SFBconst cb ->
+      let cb' = subst_const_body sub cb in
+      if cb==cb' then orig else (l,SFBconst cb')
+    | SFBmind mib ->
+      let mib' = subst_mind sub mib in
+      if mib==mib' then orig else (l,SFBmind mib')
+    | SFBmodule mb ->
+      let mb' = subst_module sub do_delta mb in
+      if mb==mb' then orig else (l,SFBmodule mb')
+    | SFBmodtype mtb ->
+      let mtb' = subst_modtype sub do_delta mtb in
+      if mtb==mtb' then orig else (l,SFBmodtype mtb')
+  in
+  List.smartmap subst_body sign
 
 and subst_module sub do_delta mb =
-  let mp = subst_mp sub mb.mod_mp in
-  let sub = if is_functor mb.mod_type && not (mp_eq mp mb.mod_mp) then
-    add_mp mb.mod_mp mp
-      empty_delta_resolver sub else sub in 
-  let id_delta = (fun x y-> x) in
-  let mtb',me' = 
-    let mtb = subst_struct_expr sub do_delta mb.mod_type in 
-      match mb.mod_expr with
-	  None -> mtb,None
-	| Some me -> if me==mb.mod_type then
-	    mtb,Some mtb
-	  else mtb,Option.smartmap 
-	    (subst_struct_expr sub id_delta) mb.mod_expr
+  let { mod_mp=mp; mod_expr=me; mod_type=ty; mod_type_alg=aty } = mb in
+  let mp' = subst_mp sub mp in
+  let sub =
+    if not (is_functor ty) || ModPath.equal mp mp' then sub
+    else add_mp mp mp' empty_delta_resolver sub
   in
-  let typ_alg' = Option.smartmap 
-    (subst_struct_expr sub id_delta) mb.mod_type_alg in
-  let mb_delta = do_delta mb.mod_delta sub in
-    if mtb'==mb.mod_type && mb.mod_expr == me' 
-      && mb_delta == mb.mod_delta && mp == mb.mod_mp
-    then mb else
-      { mb with
-	  mod_mp = mp;
-	  mod_expr = me';
-	  mod_type_alg = typ_alg';
-	  mod_type=mtb'; 
-	  mod_delta = mb_delta}
+  let ty' = subst_struct_expr sub do_delta ty in
+  (* Special optim : maintain sharing between [mod_expr] and [mod_type] *)
+  let me' = match me with
+    | Some m when m == ty -> if ty == ty' then me else Some ty'
+    | _ -> Option.smartmap (subst_struct_expr sub id_delta) me
+  in
+  let aty' = Option.smartmap (subst_struct_expr sub id_delta) aty in
+  let delta' = do_delta mb.mod_delta sub in
+  if mp==mp' && me==me' && ty==ty' && aty==aty' && delta'==mb.mod_delta
+  then mb
+  else
+    { mb with
+      mod_mp = mp';
+      mod_expr = me';
+      mod_type = ty';
+      mod_type_alg = aty';
+      mod_delta = delta' }
 
-and subst_struct_expr sub do_delta = function
-    | SEBident mp -> SEBident (subst_mp sub mp)
-    | SEBfunctor (mbid, mtb, meb') -> 
-	SEBfunctor(mbid,subst_modtype sub do_delta mtb
-		     ,subst_struct_expr sub do_delta meb')
-    | SEBstruct (str)->
-	SEBstruct( subst_structure sub do_delta str)
-    | SEBapply (meb1,meb2,cst)->
-	SEBapply(subst_struct_expr sub do_delta meb1,
-		 subst_struct_expr sub do_delta meb2,
-		 cst)
-    | SEBwith (meb,wdb)-> 
-	SEBwith(subst_struct_expr sub do_delta meb,
-		subst_with_body sub wdb)
+and subst_struct_expr sub do_delta seb = match seb with
+  |SEBident mp ->
+    let mp' = subst_mp sub mp in
+    if mp==mp' then seb else SEBident mp'
+  |SEBfunctor (mbid, mtb, meb) ->
+    let mtb' = subst_modtype sub do_delta mtb in
+    let meb' = subst_struct_expr sub do_delta meb in
+    if mtb==mtb' && meb==meb' then seb
+    else SEBfunctor(mbid,mtb',meb')
+  |SEBstruct str ->
+    let str' = subst_structure sub do_delta str in
+    if str==str' then seb else SEBstruct str'
+  |SEBapply (meb1,meb2,cst) ->
+    let meb1' = subst_struct_expr sub do_delta meb1 in
+    let meb2' = subst_struct_expr sub do_delta meb2 in
+    if meb1==meb1' && meb2==meb2' then seb else SEBapply(meb1',meb2',cst)
+  |SEBwith (meb,wdb) ->
+    let meb' = subst_struct_expr sub do_delta meb in
+    let wdb' = subst_with_body sub wdb in
+    if meb==meb' && wdb==wdb' then seb else SEBwith(meb',wdb')
 
 let subst_signature subst =
-  subst_structure subst 
+  subst_structure subst
     (fun resolver subst-> subst_codom_delta_resolver subst resolver)
 
-let subst_struct_expr subst = 
+let subst_struct_expr subst =
   subst_struct_expr subst
     (fun resolver subst-> subst_codom_delta_resolver subst resolver)
 
-(* spiwack: here comes the function which takes care of importing 
+(** {6 Retroknowledge } *)
+
+(* spiwack: here comes the function which takes care of importing
    the retroknowledge declared in the library *)
 (* lclrk : retroknowledge_action list, rkaction : retroknowledge action *)
 let add_retroknowledge mp =
@@ -235,7 +254,9 @@ let add_retroknowledge mp =
 	  (match e with 
 	    | Const kn -> kind_of_term (mkConst kn)
 	    | Ind ind -> kind_of_term (mkInd ind)
-	    | _ -> anomaly ~label:"Modops.add_retroknowledge" (Pp.str "had to import an unsupported kind of term"))
+	    | _ ->
+              anomaly ~label:"Modops.add_retroknowledge"
+                (Pp.str "had to import an unsupported kind of term"))
   in
   fun lclrk env ->
   (* The order of the declaration matters, for instance (and it's at the
@@ -243,23 +264,25 @@ let add_retroknowledge mp =
      int31 type registration absolutely needs int31 bits to be registered.
      Since the local_retroknowledge is stored in reverse order (each new
      registration is added at the top of the list) we need a fold_right
-     for things to go right (the pun is not intented). So we lose 
+     for things to go right (the pun is not intented). So we lose
      tail recursivity, but the world will have exploded before any module
      imports 10 000 retroknowledge registration.*)
   List.fold_right perform lclrk env
 
-let rec add_signature mp sign resolver env = 
-  let add_one env (l,elem) =
-    let kn = KerName.make2 mp l in
-    match elem with
-      | SFBconst cb ->
-	Environ.add_constant (constant_of_delta_kn resolver kn) cb env
-      | SFBmind mib ->
-	Environ.add_mind (mind_of_delta_kn resolver kn) mib env
-      | SFBmodule mb -> add_module mb env (* adds components as well *)
-      | SFBmodtype mtb -> Environ.add_modtype mtb env
+(** {6 Adding a module in the environment } *)
+
+let rec add_signature mp sign resolver env =
+  let add_one env (l,elem) = match elem with
+    |SFBconst cb ->
+      let c = constant_of_delta_kn resolver (KerName.make2 mp l) in
+      Environ.add_constant c cb env
+    |SFBmind mib ->
+      let mind = mind_of_delta_kn resolver (KerName.make2 mp l) in
+      Environ.add_mind mind mib env
+    |SFBmodule mb -> add_module mb env (* adds components as well *)
+    |SFBmodtype mtb -> Environ.add_modtype mtb env
   in
-    List.fold_left add_one env sign
+  List.fold_left add_one env sign
 
 and add_module mb env =
   let mp = mb.mod_mp in
@@ -272,6 +295,8 @@ and add_module mb env =
   | _ ->
     anomaly ~label:"Modops"
       (Pp.str "the evaluation of the structure failed ")
+
+(** {6 Strengtening } *)
 
 let strengthen_const mp_from l cb resolver =
   match cb.const_body with
@@ -489,48 +514,54 @@ and strengthen_and_subst_struct
         (l,SFBmodtype mty)::rest'
 
 
-(* Let P be a module path when we write "Module M:=P." or "Module M. Include P. End M."
-   we need to perform two operations to compute the body of M. The first one is applying
-   the substitution {P <- M} on the type of P and the second one is strenghtening. *)
-let strengthen_and_subst_mb mb mp include_b =
-    match mb.mod_type with
-	SEBstruct str ->
-	  let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
-	    (*if mb.mod_mp is an alias then the strengthening is useless 
-	      (i.e. it is already done)*)
-	  let mp_alias = mp_of_delta mb.mod_delta mb.mod_mp in
-	  let subst_resolver = map_mp mb.mod_mp mp empty_delta_resolver in
-	  let new_resolver = 
-	    add_mp_delta_resolver mp mp_alias
-	      (subst_dom_delta_resolver subst_resolver mb.mod_delta) in
-	  let subst = map_mp mb.mod_mp mp new_resolver in 
-	  let resolver_out,new_sig = 
-	    strengthen_and_subst_struct str subst
-	     mp_alias mb.mod_mp mp mb_is_an_alias include_b mb.mod_delta 
-	  in
-	    {mb with 
-	       mod_mp = mp;
-	       mod_type = SEBstruct(new_sig);
-	       mod_expr = Some (SEBident mb.mod_mp);
-	       mod_delta = if include_b then resolver_out 
-	       else add_delta_resolver new_resolver resolver_out}
-      | SEBfunctor(arg_id,argb,body) ->
-	  let subst = map_mp mb.mod_mp mp empty_delta_resolver in
-	  subst_module subst 
-	    (fun resolver subst -> subst_dom_codom_delta_resolver subst resolver) mb 
-      | _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
+(** Let P be a module path when we write:
+     "Module M:=P." or "Module M. Include P. End M."
+    We need to perform two operations to compute the body of M.
+    - The first one is applying the substitution {P <- M} on the type of P
+    - The second one is strenghtening. *)
+
+let strengthen_and_subst_mb mb mp include_b = match mb.mod_type with
+  |SEBstruct str ->
+    let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
+    (* if mb.mod_mp is an alias then the strengthening is useless
+       (i.e. it is already done)*)
+    let mp_alias = mp_of_delta mb.mod_delta mb.mod_mp in
+    let subst_resolver = map_mp mb.mod_mp mp empty_delta_resolver in
+    let new_resolver =
+      add_mp_delta_resolver mp mp_alias
+	(subst_dom_delta_resolver subst_resolver mb.mod_delta) in
+    let subst = map_mp mb.mod_mp mp new_resolver in
+    let resolver_out,new_sig =
+      strengthen_and_subst_struct str subst
+	mp_alias mb.mod_mp mp mb_is_an_alias include_b mb.mod_delta
+    in
+    { mb with
+      mod_mp = mp;
+      mod_type = SEBstruct(new_sig);
+      mod_expr = Some (SEBident mb.mod_mp);
+      mod_delta =
+        if include_b then resolver_out
+	else add_delta_resolver new_resolver resolver_out }
+  |SEBfunctor(arg_id,argb,body) ->
+    let subst = map_mp mb.mod_mp mp empty_delta_resolver in
+    subst_module subst
+      (fun resolver subst -> subst_dom_codom_delta_resolver subst resolver) mb
+  | _ ->
+    anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
 
 
 let subst_modtype_and_resolver mtb mp =
   let subst = (map_mp mtb.typ_mp mp empty_delta_resolver) in
-  let new_delta = subst_dom_codom_delta_resolver subst mtb.typ_delta in 
+  let new_delta = subst_dom_codom_delta_resolver subst mtb.typ_delta in
   let full_subst = (map_mp mtb.typ_mp mp new_delta) in
-    subst_modtype full_subst
-      (fun resolver subst -> subst_dom_codom_delta_resolver subst resolver) mtb
+  subst_modtype full_subst
+    (fun resolver subst -> subst_dom_codom_delta_resolver subst resolver) mtb
+
+(** {6 Cleaning a bounded module expression } *)
 
 let rec is_bounded_expr l = function
   | SEBident mp -> List.mem mp l
-  | SEBapply (fexpr,mexpr,_) ->  
+  | SEBapply (fexpr,mexpr,_) ->
       is_bounded_expr l mexpr || is_bounded_expr l fexpr
   | _ -> false
 
@@ -560,9 +591,9 @@ and clean_expr l = function
        if  str_clean == str && Int.equal (Pervasives.compare sig_clean sigt.typ_expr) 0 then (** FIXME **)
 	 s else SEBfunctor (mbid,{sigt with typ_expr=sig_clean},str_clean)
   | SEBstruct str as s->
-      let str_clean = Util.List.smartmap (clean_struct l) str in 
-	if  str_clean == str then s else SEBstruct(str_clean)
-  |  str -> str 
+      let str_clean = List.smartmap (clean_struct l) str in
+      if str_clean == str then s else SEBstruct(str_clean)
+  |  str -> str
 
 let rec collect_mbid l = function
   | SEBfunctor (mbid,sigt,str) as s->
@@ -570,8 +601,8 @@ let rec collect_mbid l = function
 	if  str_clean == str then s else 
       SEBfunctor (mbid,sigt,str_clean)
   | SEBstruct str as s->
-      let str_clean = Util.List.smartmap (clean_struct l) str in 
-	if  str_clean == str then s else SEBstruct(str_clean)
+      let str_clean = List.smartmap (clean_struct l) str in
+      if str_clean == str then s else SEBstruct(str_clean)
   |  _ -> anomaly ~label:"Modops" (Pp.str "the evaluation of the structure failed ")
        
        
@@ -580,6 +611,8 @@ let clean_bounded_mod_expr = function
       let str_clean = collect_mbid [] str in 
 	if  str_clean == str then str else str_clean
   | str -> str
+
+(** {6 Stm machinery : join and prune } *)
 
 let rec join_module_body mb =
   Option.iter join_struct_expr_body mb.mod_expr;
@@ -632,8 +665,9 @@ and prune_structure_body struc =
         let te_alg' =
           Option.smartmap prune_struct_expr_body te_alg in
         if te' == te && te_alg' == te_alg then orig
-        else (l, SFBmodtype {m with typ_expr = te'; typ_expr_alg = te_alg'}) in
-  CList.smartmap prune_body struc
+        else (l, SFBmodtype {m with typ_expr = te'; typ_expr_alg = te_alg'})
+  in
+  List.smartmap prune_body struc
 and prune_struct_expr_body orig = match orig with
   | SEBfunctor (id,t,e) ->
       let te, ta = t.typ_expr, t.typ_expr_alg in
@@ -660,4 +694,3 @@ and prune_struct_expr_body orig = match orig with
             if sb' == sb then wdcl else With_definition_body (id, sb') in
       if seb' == seb && wdcl' == wdcl then orig
       else SEBwith (seb', wdcl')
-       

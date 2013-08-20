@@ -14,20 +14,25 @@ open Declarations
 open Entries
 open Mod_subst
 
-(** Various operations on modules and module types *)
+(** {6 Various operations on modules and module types } *)
 
+val module_body_of_type : module_path -> module_type_body  -> module_body
 
-val module_body_of_type : module_path -> module_type_body  -> module_body 
-
-val module_type_of_module : module_path option -> module_body ->
-  module_type_body
+val module_type_of_module :
+  module_path option -> module_body -> module_type_body
 
 val destr_functor :
   struct_expr_body -> MBId.t * module_type_body * struct_expr_body
 
+val check_modpath_equiv : env -> module_path -> module_path -> unit
+
+(** {6 Substitutions } *)
+
 val subst_struct_expr :  substitution -> struct_expr_body -> struct_expr_body
 
 val subst_signature : substitution -> structure_body -> structure_body
+
+(** {6 Adding to an environment } *)
 
 val add_signature :
   module_path -> structure_body -> delta_resolver -> env -> env
@@ -35,7 +40,7 @@ val add_signature :
 (** adds a module and its components, but not the constraints *)
 val add_module : module_body -> env -> env
 
-val check_modpath_equiv : env -> module_path -> module_path -> unit
+(** {6 Strengthening } *)
 
 val strengthen : module_type_body -> module_path -> module_type_body
 
@@ -48,7 +53,11 @@ val strengthen_and_subst_mb : module_body -> module_path -> bool -> module_body
 val subst_modtype_and_resolver : module_type_body -> module_path ->
   module_type_body
 
+(** {6 Cleaning a bound module expression } *)
+
 val clean_bounded_mod_expr : struct_expr_body -> struct_expr_body
+
+(** {6 Stm machinery : join and prune } *)
 
 val join_module_body : module_body -> unit
 val join_structure_body : structure_body -> unit
@@ -56,7 +65,7 @@ val join_struct_expr_body : struct_expr_body -> unit
 
 val prune_structure_body : structure_body -> structure_body
 
-(** Errors *)
+(** {6 Errors } *)
 
 type signature_mismatch_error =
   | InductiveFieldExpected of mutual_inductive_body
@@ -78,7 +87,8 @@ type signature_mismatch_error =
   | NoTypeConstraintExpected
 
 type module_typing_error =
-  | SignatureMismatch of Label.t * structure_field_body * signature_mismatch_error
+  | SignatureMismatch of
+      Label.t * structure_field_body * signature_mismatch_error
   | LabelAlreadyDeclared of Label.t
   | ApplicationToNotPath of module_struct_entry
   | NotAFunctor of struct_expr_body
