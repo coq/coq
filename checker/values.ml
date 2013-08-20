@@ -201,7 +201,7 @@ let v_cb = v_tuple "constant_body"
     v_cst_def;
     v_cst_type;
     Any;
-    v_cstrs;
+    v_computation v_cstrs;
     Any;
     v_bool|]
 
