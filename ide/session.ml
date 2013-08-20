@@ -81,47 +81,52 @@ let create_script coqtop source_buffer =
 let set_buffer_handlers
   (buffer : GText.buffer) script (coqops : CoqOps.ops) coqtop
 =
-  let call_coq f =
-    let abort () =
-      Minilib.log ("Coq busy, discarding query");
-      GtkSignal.stop_emit () in
-    Coq.try_grab coqtop f abort in
+  let action_was_cancelled = ref true in
+  let cancel_signal reason =
+    Minilib.log ("user_action cancelled: "^reason);
+    action_was_cancelled := true;
+    GtkSignal.stop_emit () in
+  let del_mark () =
+    try buffer#delete_mark (`NAME "target")
+    with GText.No_such_mark _ -> () in
+  let add_mark it = del_mark (); buffer#create_mark ~name:"target" it in
+  let call_coq_or_cancel_action f =
+    Coq.try_grab coqtop f (fun () -> cancel_signal "Coq busy") in
   let get_start () = buffer#get_iter_at_mark (`NAME "start_of_input") in
   let get_insert () = buffer#get_iter_at_mark `INSERT in
-  let insert_cb it s =
-    if String.length s > 1 then
-      let () = Minilib.log "insert_text: Placing cursor" in
-      let () = buffer#place_cursor ~where:it in
-      if String.contains s '\n' then
-        let () = Minilib.log "insert_text: Recentering" in
-        script#recenter_insert
-  in
-  let begin_action_did_not_cancel = ref true in
+  let insert_cb it s = if String.length s = 0 then () else begin
+    Minilib.log ("insert_cb " ^ string_of_int it#offset);
+    let text_mark = add_mark it in
+    if it#has_tag Tags.Script.to_process then
+      cancel_signal "Altering to the script being processed in not implemented"
+    else if it#has_tag Tags.Script.processed then
+      call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
+    end in
+  let delete_cb ~start ~stop =
+    Minilib.log (Printf.sprintf "delete_cb %d %d" start#offset stop#offset);
+    let min_iter = if start#compare stop < 0 then start else stop in
+    let text_mark = add_mark min_iter in
+    if min_iter#has_tag Tags.Script.to_process then
+      cancel_signal "Altering to the script being processed in not implemented"
+    else if min_iter#has_tag Tags.Script.processed then
+      call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark)) in
   let begin_action_cb () =
-    begin_action_did_not_cancel := false;
-    (* We remove any error red zone, and place the [prev_insert] mark *)
-    let cleanup () =
-      begin_action_did_not_cancel := true;
-      let where = get_insert () in
+    action_was_cancelled := false;
+    let where = get_insert () in
+    buffer#move_mark (`NAME "prev_insert") ~where in
+  let end_action_cb () =
+    Minilib.log "end_action_cb";
+    if not !action_was_cancelled then begin
+      Minilib.log "cleanup tags";
       let start = get_start () in
-      let () = buffer#move_mark (`NAME "prev_insert") ~where in
       let stop = buffer#end_iter in
       buffer#remove_tag Tags.Script.error ~start ~stop;
       buffer#remove_tag Tags.Script.error_bg ~start ~stop;
-      buffer#remove_tag Tags.Script.tooltip ~start ~stop in
-    if (get_insert ())#has_tag Tags.Script.to_process then
-      GtkSignal.stop_emit ()
-    else if (get_insert ())#compare (get_start()) < 0 then
-      call_coq (Coq.seq coqops#go_to_insert (Coq.lift cleanup))
-    else
-      cleanup ()
-  in
-  let end_action_cb () =
-    let start = get_start () in
-    let ins = get_insert () in
-    if !begin_action_did_not_cancel &&
-       0 <= ins#compare start then Sentence.tag_on_insert buffer
-  in
+      buffer#remove_tag Tags.Script.tooltip ~start ~stop;
+      buffer#remove_tag Tags.Script.processed ~start ~stop;
+      buffer#remove_tag Tags.Script.to_process ~start ~stop;
+      Sentence.tag_on_insert buffer;
+    end in
   let mark_set_cb it m =
     let ins = get_insert () in
     let line = ins#line + 1 in
@@ -135,6 +140,7 @@ let set_buffer_handlers
   in
   (** Pluging callbacks *)
   let _ = buffer#connect#insert_text ~callback:insert_cb in
+  let _ = buffer#connect#delete_range ~callback:delete_cb in
   let _ = buffer#connect#begin_user_action ~callback:begin_action_cb in
   let _ = buffer#connect#end_user_action ~callback:end_action_cb in
   let _ = buffer#connect#after#mark_set ~callback:mark_set_cb in
