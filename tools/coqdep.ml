@@ -198,7 +198,8 @@ let coqdep () =
     add_rec_dir add_known "theories" ["Coq"];
     add_rec_dir add_known "plugins" ["Coq"]
   end else begin
-    let coqlib = Envars.coqlib Errors.error in
+    Envars.set_coqlib ~fail:Errors.error;
+    let coqlib = Envars.coqlib () in
     add_rec_dir add_coqlib_known (coqlib//"theories") ["Coq"];
     add_rec_dir add_coqlib_known (coqlib//"plugins") ["Coq"];
     let user = coqlib//"user-contrib" in

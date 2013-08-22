@@ -25,7 +25,10 @@ val expand_path_macros : warn:(string -> unit) -> string -> string
 val home : warn:(string -> unit) -> string
 
 (** [coqlib] is the path to the Coq library. *)
-val coqlib : fail:(string -> string) -> string
+val coqlib : unit -> string
+
+(** [set_coqlib] must be runned once before any access to [coqlib] *)
+val set_coqlib : fail:(string -> string) -> unit
 
 (** [docdir] is the path to the Coq documentation. *)
 val docdir : unit -> string

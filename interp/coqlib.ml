@@ -117,6 +117,9 @@ let init_modules = [
   init_dir@["Wf"]
 ]
 
+let prelude_module_name = init_dir@["Prelude"]
+let prelude_module = make_dir prelude_module_name
+
 let logic_module_name = init_dir@["Logic"]
 let logic_module = make_dir logic_module_name
 

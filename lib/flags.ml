@@ -168,11 +168,7 @@ let canonical_path_name p =
 
 (* Options for changing coqlib *)
 let coqlib_spec = ref false
-let coqlib = ref (
-  (* same as Envars.coqroot, but copied here because of dependencies *)
-  Filename.dirname
-    (canonical_path_name (Filename.dirname Sys.executable_name))
-)
+let coqlib = ref "(not initialized yet)"
 
 (* Options for changing camlbin (used by coqmktop) *)
 let camlbin_spec = ref false

@@ -117,9 +117,14 @@ let parse_args () =
     | ("-v"|"--version") :: _ -> Usage.version 0
 
     | ("-where") :: _ ->
-	print_endline (Envars.coqlib (fun x -> x)); exit 0
+        Envars.set_coqlib (fun x -> x);
+        print_endline (Envars.coqlib ());
+        exit 0
 
-    | ("-config" | "--config") :: _ -> Usage.print_config (); exit 0
+    | ("-config" | "--config") :: _ ->
+        Envars.set_coqlib (fun x -> x);
+        Usage.print_config ();
+        exit 0
 
 (* Options for coqtop : a) options with 0 argument *)
 
@@ -132,7 +137,7 @@ let parse_args () =
       |"-verbose-compat-notations"|"-no-compat-notations" as o) :: rem ->
 	parse (cfiles,o::args) rem
 
-(* Options for coqtop : a) options with 1 argument *)
+(* Options for coqtop : b) options with 1 argument *)
 
     | ("-outputstate"|"-inputstate"|"-is"|"-exclude-dir"
       |"-load-vernac-source"|"-l"|"-load-vernac-object"
@@ -144,7 +149,7 @@ let parse_args () =
 	    | []        -> usage ()
 	end
 
-(* Options for coqtop : a) options with 1 argument and possibly more *)
+(* Options for coqtop : c) options with 1 argument and possibly more *)
 
     | ("-I"|"-include" as o) :: rem ->
 	begin

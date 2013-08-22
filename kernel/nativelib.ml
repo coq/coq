@@ -32,13 +32,12 @@ let open_header = List.map mk_open open_header
 let compiler_name =
   Filename.quote (if Dynlink.is_native then ocamlopt () else ocamlc ())
 
-let ( / ) a b = Filename.concat a b
+let ( / ) = Filename.concat
 
 (* We have to delay evaluation of include_dirs because coqlib cannot be guessed
 until flags have been properly initialized *)
-let include_dirs () = [Filename.temp_dir_name;
-                    coqlib ~fail:Errors.error / "kernel";
-                    coqlib ~fail:Errors.error / "library"]
+let include_dirs () =
+  [Filename.temp_dir_name; coqlib () / "kernel"; coqlib () / "library"]
 
 (* Pointer to the function linking an ML object into coq's toplevel *)
 let load_obj = ref (fun x -> () : string -> unit)

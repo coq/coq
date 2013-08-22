@@ -30,11 +30,13 @@ let dump () = !glob_output != NoGlob
 
 let noglob () = glob_output := NoGlob
 
-let dump_to_stdout () = glob_output := StdOut; glob_file := Pervasives.stdout
-
 let dump_to_dotglob () = glob_output := MultFiles
 
-let dump_into_file f = glob_output := File f; open_glob_file f
+let dump_into_file f =
+  if String.equal f "stdout" then
+    (glob_output := StdOut; glob_file := Pervasives.stdout)
+  else
+    (glob_output := File f; open_glob_file f)
 
 let dump_string s =
   if dump () then Pervasives.output_string !glob_file s

@@ -11,7 +11,6 @@ open Nametab
 open Term
 open Globnames
 open Libobject
-open Library
 
 (** Operations concerning records and canonical structures *)
 

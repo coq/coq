@@ -87,53 +87,48 @@ let coqbin =
 
 (** The following only makes sense when executables are running from
     source tree (e.g. during build or in local mode). *)
-let coqroot = 
+let coqroot =
   Filename.dirname coqbin
-    
+
 (** On win32, we add coqbin to the PATH at launch-time (this used to be
     done in a .bat script). *)
 let _ =
-  if String.equal Coq_config.arch "win32" then
+  if Coq_config.arch_is_win32 then
     Unix.putenv "PATH" (coqbin ^ ";" ^ getenv_else "PATH" (fun () -> ""))
 
-(** [reldir instdir testfile oth] checks if [testfile] exists in 
-    the installation directory [instdir] given relatively to 
-    [coqroot]. If this Coq is only locally built, then [testfile]
-    must be found at [coqroot]. 
+(** [check_file_else ~dir ~file oth] checks if [file] exists in
+    the installation directory [dir] given relatively to [coqroot].
+    If this Coq is only locally built, then [file] must be in [coqroot].
     If the check fails, then [oth ()] is evaluated. *)
-let reldir instdir testfile oth =
-  let rpath = if Coq_config.local then [] else instdir in
-  let out = List.fold_left ( / ) coqroot rpath in
-  if Sys.file_exists (out / testfile) then out else oth ()
+let check_file_else ~dir ~file oth =
+  let path = if Coq_config.local then coqroot else coqroot / dir in
+  if Sys.file_exists (path / file) then path else oth ()
 
 let guess_coqlib fail =
-  let file = "theories/Init/Prelude.vo" in
-    reldir (if String.equal Coq_config.arch "win32" then ["lib"] else ["lib";"coq"]) file
-      (fun () ->
-        let coqlib = match Coq_config.coqlib with
-          | Some coqlib -> coqlib
-          | None -> coqroot
-        in
-        if Sys.file_exists (coqlib / file) then 
-	  coqlib
-        else 
-	  fail "cannot guess a path for Coq libraries; please use -coqlib option")
+  let prelude = "theories/Init/Prelude.vo" in
+  let dir = if Coq_config.arch_is_win32 then "lib" else "lib/coq" in
+  check_file_else ~dir ~file:prelude
+    (fun () ->
+      let coqlib = match Coq_config.coqlib with
+        | Some coqlib -> coqlib
+        | None -> coqroot
+      in
+      if Sys.file_exists (coqlib / prelude) then coqlib
+      else
+        fail "cannot guess a path for Coq libraries; please use -coqlib option")
 
-let coqlib ~fail =
-  if !Flags.coqlib_spec then 
-    !Flags.coqlib 
-  else if !Flags.boot then 
-    coqroot 
-  else 
-    guess_coqlib fail
+(** coqlib is now computed once during coqtop initialization *)
+
+let set_coqlib ~fail =
+  if not !Flags.coqlib_spec then
+    let lib = if !Flags.boot then coqroot else guess_coqlib fail in
+    Flags.coqlib := lib
+
+let coqlib () = !Flags.coqlib
 
 let docdir () =
-  reldir (
-    if String.equal Coq_config.arch "win32" then 
-      ["doc"] 
-    else 
-      ["share";"doc";"coq"]
-  ) "html" (fun () -> Coq_config.docdir)
+  let dir = if Coq_config.arch_is_win32 then "doc" else "share/doc/coq" in
+  check_file_else ~dir ~file:"html" (fun () -> Coq_config.docdir)
 
 let coqpath =
   let coqpath = getenv_else "COQPATH" (fun () -> "") in

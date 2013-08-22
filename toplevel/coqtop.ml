@@ -18,22 +18,24 @@ open Coqinit
 
 let () = at_exit flush_all
 
+let ( / ) = Filename.concat
+
 let fatal_error info =
   pperrnl info; flush_all (); exit 1
 
 let get_version_date () =
   try
-    let coqlib = Envars.coqlib ~fail:Errors.error in
-    let ch = open_in (Filename.concat coqlib "revision") in
+    let ch = open_in (Envars.coqlib () / "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
-      (ver,rev)
+    let () = close_in ch in
+    (ver,rev)
   with e when Errors.noncritical e ->
     (Coq_config.version,Coq_config.date)
 
 let print_header () =
-  let (ver,rev) = (get_version_date ()) in
-  pp (str "Welcome to Coq "++ str ver ++ str " (" ++ str rev ++ str ")" ++ fnl ());
+  let (ver,rev) = get_version_date () in
+  ppnl (str ("Welcome to Coq "^ver^" ("^rev^")"));
   pp_flush ()
 
 let output_context = ref false
@@ -42,7 +44,8 @@ let memory_stat = ref false
 
 let print_memory_stat () =
   if !memory_stat then
-    pp (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes" ++ fnl ())
+    ppnl
+      (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes")
 
 let _ = at_exit print_memory_stat
 
@@ -99,8 +102,8 @@ let load_vernac_obj () =
 let load_init = ref true
 
 let require_prelude () =
-  let q = qualid_of_string "Coq.Init.Prelude" in
-  Library.require_library [Loc.ghost,q] (Some true)
+  let vo = Envars.coqlib () / "theories/Init/Prelude.vo" in
+  Library.require_library_from_dirpath [Coqlib.prelude_module,vo] (Some true)
 
 let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
@@ -111,10 +114,12 @@ let require () =
 
 let compile_list = ref ([] : (bool * string) list)
 
-let add_compile verbose glob_opt s =
+let glob_opt = ref false
+
+let add_compile verbose s =
   set_batch_mode ();
   Flags.make_silent true;
-  if not glob_opt then Dumpglob.dump_to_dotglob ();
+  if not !glob_opt then Dumpglob.dump_to_dotglob ();
   compile_list := (verbose,s) :: !compile_list
 
 let compile_file (v,f) =
@@ -145,6 +150,14 @@ let use_vm = ref false
 let set_vm_opt () =
   Vm.set_transp_values (not !boxed_val);
   Vconv.set_use_vm !use_vm
+
+(** Options for proof general *)
+
+let set_emacs () =
+  Flags.print_emacs := true;
+  Pp.make_pp_emacs ();
+  Vernacentries.qed_display_script := false;
+  Flags.make_term_color false
 
 (** GC tweaking *)
 
@@ -182,186 +195,134 @@ let usage () =
   flush stderr ;
   exit 1
 
+let error_missing_arg s =
+  prerr_endline ("Error: extra argument expected after option "^s);
+  prerr_endline "See --help for the syntax of supported options";
+  exit 1
+
 let warning s = msg_warning (strbrk s)
 
 let filter_opts = ref false
+let exitcode () = if !filter_opts then 2 else 0
 
 let verb_compat_ntn = ref false
 let no_compat_ntn = ref false
 
+let print_where = ref false
+let print_config = ref false
+
+let get_slave_number = function
+  | "off" -> -1
+  | "on" -> 0
+  | s -> let n = int_of_string s in assert (n > 0); n
+
+let get_bool opt = function
+  | "yes" -> true
+  | "no" -> false
+  | _ -> prerr_endline ("Error: yes/no expected after option "^opt); exit 1
+
 let parse_args arglist =
-  let glob_opt = ref false in
-  let rec parse = function
-    | [] -> []
-    | "-with-geoproof" :: s :: rem ->
-	if String.equal s "yes" then Coq_config.with_geoproof := true
-	else if String.equal s "no" then Coq_config.with_geoproof := false
-	else usage ();
-	parse rem
-    | "-impredicative-set" :: rem ->
-        set_engagement Declarations.ImpredicativeSet; parse rem
+  let args = ref arglist in
+  let extras = ref [] in
+  let rec parse () = match !args with
+  | [] -> List.rev !extras
+  | opt :: rem ->
+    args := rem;
+    let next () = match rem with
+      | x::rem -> args := rem; x
+      | [] -> error_missing_arg opt
+    in
+    begin match opt with
 
-    | ("-I"|"-include") :: d :: "-as" :: p :: rem -> set_include d p; parse rem
-    | ("-I"|"-include") :: d :: "-as" :: [] -> usage ()
-    | ("-I"|"-include") :: d :: rem -> set_default_include d; parse rem
-    | ("-I"|"-include") :: []       -> usage ()
+    (* Complex options with many args *)
+    |"-I"|"-include" ->
+      begin match rem with
+      | d :: "-as" :: p :: rem -> set_include d p; args := rem
+      | d :: "-as" :: [] -> error_missing_arg "-as"
+      | d :: rem -> set_default_include d; args := rem
+      | [] -> error_missing_arg opt
+      end
+    |"-R" ->
+      begin match rem with
+      | d :: "-as" :: p :: rem -> set_rec_include d p; args := rem
+      | d :: "-as" :: [] -> error_missing_arg "-as"
+      | d :: p :: rem -> set_rec_include d p; args := rem
+      | _ -> error_missing_arg opt
+      end
 
-    | "-R" :: d :: "-as" :: p :: rem -> set_rec_include d p;parse rem
-    | "-R" :: d :: "-as" :: [] -> usage ()
-    | "-R" :: d :: p :: rem -> set_rec_include d p;parse rem
-    | "-R" :: ([] | [_]) -> usage ()
+    (* Options with one arg *)
+    |"-coqlib" -> Flags.coqlib_spec:=true; Flags.coqlib:=(next ())
+    |"-coq-slaves" -> Flags.coq_slave_mode := (get_slave_number (next ()))
+    |"-compat" -> Flags.compat_version := get_compat_version (next ())
+    |"-compile" -> add_compile false (next ())
+    |"-compile-verbose" -> add_compile true (next ())
+    |"-dump-glob" -> Dumpglob.dump_into_file (next ()); glob_opt := true
+    |"-exclude-dir" -> exclude_search_in_dirname (next ())
+    |"-init-file" -> set_rcfile (next ())
+    |"-inputstate"|"-is" -> set_inputstate (next ())
+    |"-load-ml-object" -> Mltop.dir_ml_load (next ())
+    |"-load-ml-source" -> Mltop.dir_ml_use (next ())
+    |"-load-vernac-object" -> add_vernac_obj (next ())
+    |"-load-vernac-source"|"-l" -> add_load_vernacular false (next ())
+    |"-load-vernac-source-verbose"|"-lv" -> add_load_vernacular true (next ())
+    |"-outputstate" -> set_outputstate (next ())
+    |"-print-mod-uid" -> Flags.print_mod_uid := true; add_require (next ())
+    |"-require" -> add_require (next ())
+    |"-top" -> set_toplevel_name (dirpath_of_string (next ()))
+    |"-unsafe" -> add_unsafe (next ())
+    |"-with-geoproof" -> Coq_config.with_geoproof := get_bool opt (next ())
 
-    | "-top" :: d :: rem -> set_toplevel_name (dirpath_of_string d); parse rem
-    | "-top" :: [] -> usage ()
+    (* Options with zero arg *)
+    |"-batch" -> set_batch_mode ()
+    |"-beautify" -> make_beautify true
+    |"-boot" -> boot := true; no_load_rc ()
+    |"-color" -> Flags.make_term_color true
+    |"-config"|"--config" -> print_config := true
+    |"-debug" -> set_debug ()
+    |"-dont-load-proofs" -> Flags.load_proofs := Flags.Dont
+    |"-emacs" -> set_emacs ()
+    |"-filteropts" -> filter_opts := true
+    |"-force-load-proofs" -> Flags.load_proofs := Flags.Force
+    |"-h"|"-H"|"-?"|"-help"|"--help" -> usage ()
+    |"-ideslave" -> Flags.ide_slave := true
+    |"-impredicative-set" -> set_engagement Declarations.ImpredicativeSet
+    |"-just-parsing" -> Vernac.just_parsing := true
+    |"-lazy-load-proofs" -> Flags.load_proofs := Flags.Lazy
+    |"-m"|"--memory" -> memory_stat := true
+    |"-noinit"|"-nois" -> load_init := false
+    |"-no-compat-notations" -> no_compat_ntn := true
+    |"-no-glob"|"-noglob" -> Dumpglob.noglob (); glob_opt := true
+    |"-no-native-compiler" -> no_native_compiler := true
+    |"-notop" -> unset_toplevel_name ()
+    |"-output-context" -> output_context := true
+    |"-q" -> no_load_rc ()
+    |"-quality" -> term_quality := true; no_load_rc ()
+    |"-quiet"|"-silent" -> Flags.make_silent true
+    |"-time" -> Flags.time := true
+    |"-unicode" -> add_require "Utf8_core"
+    |"-v"|"--version" -> Usage.version (exitcode ())
+    |"-verbose-compat-notations" -> verb_compat_ntn := true
+    |"-vm" -> use_vm := true
+    |"-where" -> print_where := true
+    |"-xml" -> Flags.xml_export := true
 
-    | "-exclude-dir" :: f :: rem -> exclude_search_in_dirname f; parse rem
-    | "-exclude-dir" :: [] -> usage ()
+    (* Deprecated options *)
+    |"-byte" -> warning "option -byte deprecated, call with .byte suffix"
+    |"-opt" -> warning "option -opt deprecated, call with .opt suffix"
+    |"-full" -> warning "option -full deprecated"
+    |"-notactics" -> warning "Obsolete option \"-notactics\"."; remove_top_ml ()
+    |"-emacs-U" ->
+      warning "Obsolete option \"-emacs-U\", use -emacs instead."; set_emacs ()
+    |"-v7" -> error "This version of Coq does not support v7 syntax"
+    |"-v8" -> warning "Obsolete option \"-v8\"."
 
-    | "-notop" :: rem -> unset_toplevel_name (); parse rem
-    | "-q" :: rem -> no_load_rc (); parse rem
-
-    | "-opt" :: rem -> warning "option -opt deprecated, call with .opt suffix\n"; parse rem
-    | "-byte" :: rem -> warning "option -byte deprecated, call with .byte suffix\n"; parse rem
-    | "-full" :: rem -> warning "option -full deprecated\n"; parse rem
-
-    | "-batch" :: rem -> set_batch_mode (); parse rem
-    | "-boot" :: rem -> boot := true; no_load_rc (); parse rem
-    | "-quality" :: rem -> term_quality := true; no_load_rc (); parse rem
-    | "-outputstate" :: s :: rem -> set_outputstate s; parse rem
-    | "-outputstate" :: []       -> usage ()
-
-    | ("-noinit"|"-nois") :: rem -> load_init := false; parse rem
-
-    | ("-inputstate"|"-is") :: s :: rem -> set_inputstate s; parse rem
-    | ("-inputstate"|"-is") :: []       -> usage ()
-
-    | "-load-ml-object" :: f :: rem -> Mltop.dir_ml_load f; parse rem
-    | "-load-ml-object" :: []       -> usage ()
-
-    | "-load-ml-source" :: f :: rem -> Mltop.dir_ml_use f; parse rem
-    | "-load-ml-source" :: []       -> usage ()
-
-    | ("-load-vernac-source"|"-l") :: f :: rem ->
-	add_load_vernacular false f; parse rem
-    | ("-load-vernac-source"|"-l") :: []       -> usage ()
-
-    | ("-load-vernac-source-verbose"|"-lv") :: f :: rem ->
-	add_load_vernacular true f; parse rem
-    | ("-load-vernac-source-verbose"|"-lv") :: []       -> usage ()
-
-    | "-load-vernac-object" :: f :: rem -> add_vernac_obj f; parse rem
-    | "-load-vernac-object" :: []       -> usage ()
-
-    | "-dump-glob" :: "stdout" :: rem -> Dumpglob.dump_to_stdout (); glob_opt := true; parse rem
-	  (* À ne pas documenter : l'option 'stdout' n'étant
-	     éventuellement utile que pour le debugging... *)
-    | "-dump-glob" :: f :: rem -> Dumpglob.dump_into_file f; glob_opt := true; parse rem
-    | "-dump-glob" :: []       -> usage ()
-    | ("-no-glob" | "-noglob") :: rem -> Dumpglob.noglob (); glob_opt := true; parse rem
-
-    | "-require" :: f :: rem -> add_require f; parse rem
-    | "-require" :: []       -> usage ()
-
-    | "-print-mod-uid" :: f :: rem -> Flags.print_mod_uid := true;
-                                      add_require f; parse rem
-
-    | "-compile" :: f :: rem -> add_compile false !glob_opt f; parse rem
-    | "-compile" :: []       -> usage ()
-
-    | "-compile-verbose" :: f :: rem -> add_compile true !glob_opt f; parse rem
-    | "-compile-verbose" :: []       -> usage ()
-
-    | "-force-load-proofs" :: rem -> Flags.load_proofs := Flags.Force; parse rem
-    | "-lazy-load-proofs" :: rem -> Flags.load_proofs := Flags.Lazy; parse rem
-    | "-dont-load-proofs" :: rem -> Flags.load_proofs := Flags.Dont; parse rem
-
-    | "-beautify" :: rem -> make_beautify true; parse rem
-
-    | "-unsafe" :: f :: rem -> add_unsafe f; parse rem
-    | "-unsafe" :: []       -> usage ()
-
-    | "-debug" :: rem -> set_debug (); parse rem
-
-    | "-time" :: rem -> Flags.time := true; parse rem
-
-    | "-compat" :: v :: rem ->
-        Flags.compat_version := get_compat_version v; parse rem
-    | "-compat" :: []       -> usage ()
-
-    | "-verbose-compat-notations" :: rem -> verb_compat_ntn := true; parse rem
-    | "-no-compat-notations" :: rem -> no_compat_ntn := true; parse rem
-
-    | "-vm" :: rem -> use_vm := true; parse rem
-    | "-emacs" :: rem ->
-	Flags.print_emacs := true; Pp.make_pp_emacs();
-	Vernacentries.qed_display_script := false;
-        Flags.make_term_color false;
-	parse rem
-    | "-emacs-U" :: rem ->
-	warning "Obsolete option \"-emacs-U\", use -emacs instead.";	
-        Flags.make_term_color false;
-	parse ("-emacs" :: rem)
-
-    | "-coq-slaves" :: "off" :: rem -> Flags.coq_slave_mode := -1; parse rem
-    | "-coq-slaves" :: "on" :: rem -> Flags.coq_slave_mode := 0; parse rem
-
-    | "-coq-slaves" :: n :: rem -> (* internal use *)
-        assert (int_of_string n > 0);
-        Flags.coq_slave_mode := int_of_string n;
-        parse rem
-
-    | "-unicode" :: rem -> add_require "Utf8_core"; parse rem
-
-    | "-coqlib" :: d :: rem -> Flags.coqlib_spec:=true; Flags.coqlib:=d; parse rem
-    | "-coqlib" :: [] -> usage ()
-
-    | "-where" :: _ ->
-        print_endline (Envars.coqlib ~fail:Errors.error);
-        exit (if !filter_opts then 2 else 0)
-
-    | ("-config"|"--config") :: _ -> Usage.print_config (); exit (if !filter_opts then 2 else 0)
-
-    | ("-quiet"|"-silent") :: rem -> Flags.make_silent true; parse rem
-
-    | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
-
-    | ("-v"|"--version") :: _ -> Usage.version (if !filter_opts then 2 else 0)
-
-    | "-init-file" :: f :: rem -> set_rcfile f; parse rem
-    | "-init-file" :: []       -> usage ()
-
-    | "-notactics" :: rem ->
-	warning "Obsolete option \"-notactics\".";
-	remove_top_ml (); parse rem
-
-    | "-just-parsing" :: rem -> Vernac.just_parsing := true; parse rem
-
-    | ("-m" | "--memory") :: rem -> memory_stat := true; parse rem
-
-    | "-xml" :: rem -> Flags.xml_export := true; parse rem
-
-    | "-output-context" :: rem -> output_context := true; parse rem
-
-    (* Scanned in Flags. *)
-    | "-v7" :: rem -> error "This version of Coq does not support v7 syntax"
-    | "-v8" :: rem -> parse rem
-
-    | "-ideslave" :: rem -> Flags.ide_slave := true; parse rem
-
-    | "-filteropts" :: rem -> filter_opts := true; parse rem
-
-    | "-color" :: rem -> Flags.make_term_color true; parse rem
-
-    | "-no-native-compiler" :: rem -> no_native_compiler := true; parse rem
-
-    | s :: rem ->
-      if !filter_opts then
-       s :: (parse rem)
-      else
-       (prerr_endline ("Don't know what to do with " ^ s); usage ())
+    (* Unknown option *)
+    | s -> extras := s :: !extras
+    end;
+    parse ()
   in
   try
-    parse arglist
+    parse ()
   with
     | UserError(_, s) as e ->
       if is_empty s then exit 1
@@ -376,9 +337,16 @@ let init arglist =
   Goptions.set_string_option_value ["Default";"Proof";"Mode"] "Classic";
   begin
     try
-      let foreign_args = parse_args arglist in
-      if !filter_opts then
-        (print_string (String.concat "\n" foreign_args); exit 0);
+      let extras = parse_args arglist in
+      if not (List.is_empty extras) && not !filter_opts then begin
+        prerr_endline ("Don't know what to do with " ^ String.concat " " extras);
+        prerr_endline "See --help for the list of supported options";
+        exit 1
+      end;
+      Envars.set_coqlib Errors.error;
+      if !print_where then (print_endline (Envars.coqlib ()); exit (exitcode ()));
+      if !print_config then (Usage.print_config (); exit (exitcode ()));
+      if !filter_opts then (print_string (String.concat "\n" extras); exit 0);
       if !Flags.ide_slave then begin
         Flags.make_silent true;
         Ide_slave.init_stdout ()

@@ -72,10 +72,10 @@ let is_ocaml4 = Coq_config.caml_version.[0] <> '3'
    below (for accessing the corresponding .cmi). *)
 
 let src_dirs =
-  [ []; ["lib"]; ["toplevel"]; ["kernel";"byterun"]  ]
+  [ []; ["lib"]; ["toplevel"]; ["kernel/byterun"]  ]
 
 let includes () =
-  let coqlib = if !Flags.boot then "." else Envars.coqlib ~fail:Errors.error in
+  let coqlib = if !Flags.boot then "." else Envars.coqlib () in
   let mkdir d = "\"" ^ List.fold_left Filename.concat coqlib d ^ "\"" in
   (List.fold_right (fun d l -> "-I" :: mkdir d :: l) src_dirs [])
   @ ["-I"; "\"" ^ Envars.camlp4lib () ^ "\""]
@@ -259,6 +259,7 @@ let create_tmp_main_file modules =
 (* main part *)
 let main () =
   let (options, userfiles) = parse_args () in
+  let () = Envars.set_coqlib ~fail:Errors.error in
   (* which ocaml command to invoke *)
   let camlbin = Envars.camlbin () in
   let prog =

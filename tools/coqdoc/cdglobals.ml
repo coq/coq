@@ -25,12 +25,14 @@ let out_to = ref MultFiles
 
 let out_channel = ref stdout
 
+let ( / ) = Filename.concat
+
 let coqdoc_out f =
   if !output_dir <> "" && Filename.is_relative f then
     if not (Sys.file_exists !output_dir) then
       (Printf.eprintf "No such directory: %s\n" !output_dir; exit 1)
     else
-      Filename.concat !output_dir f
+      !output_dir / f
   else
     f
 
@@ -73,15 +75,17 @@ let normalize_filename f =
 let guess_coqlib () =
   let file = "theories/Init/Prelude.vo" in
   match Coq_config.coqlib with
-    | Some coqlib when Sys.file_exists (Filename.concat coqlib file) ->
-      coqlib
+    | Some coqlib when Sys.file_exists (coqlib / file) -> coqlib
     | Some _ | None ->
       let coqbin = normalize_path (Filename.dirname Sys.executable_name) in
       let prefix = Filename.dirname coqbin in
-      let rpath = if Coq_config.local then [] else
-	  (if Coq_config.arch = "win32" then ["lib"] else ["lib";"coq"]) in
-      let coqlib = List.fold_left Filename.concat prefix rpath in
-      if Sys.file_exists (Filename.concat coqlib file) then coqlib
+      let rpath =
+        if Coq_config.local then []
+        else if Coq_config.arch_is_win32 then ["lib"]
+        else ["lib/coq"]
+      in
+      let coqlib = List.fold_left (/) prefix rpath in
+      if Sys.file_exists (coqlib / file) then coqlib
       else prefix
 
 let header_trailer = ref true

@@ -58,7 +58,7 @@ let _ = begin
   Options.ocamllex := A Coq_config.ocamllex;
 end
 
-let w32 = (Coq_config.arch = "win32")
+let w32 = Coq_config.arch_is_win32
 
 let w32pref = "i586-mingw32msvc"
 let w32ocamlc = w32pref^"-ocamlc"

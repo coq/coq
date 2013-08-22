@@ -311,10 +311,12 @@ esac
 # executable extension
 
 case $ARCH in
-    win32) 
+    win32)
+      ARCH_WIN32=true
       EXE=".exe"
       DLLEXT=".dll";;
-    *) EXE=""
+    *) ARCH_WIN32=false
+       EXE=""
        DLLEXT=".so"
 esac
 
@@ -1042,6 +1044,7 @@ let coqideincl = "$LABLGTKINCLUDES"
 let cflags = "$cflags"
 let best = "$best_compiler"
 let arch = "$ARCH"
+let arch_is_win32 = $ARCH_WIN32
 let has_coqide = "$COQIDE"
 let gtk_platform = \`$IDEARCHDEF
 let has_natdynlink = $HASNATDYNLINK

@@ -42,21 +42,21 @@ let path_of_string s =
       [] -> invalid_arg "path_of_string"
     | l::dir -> {dirpath=dir; basename=l}
 
-let (/) = Filename.concat
+let ( / ) = Filename.concat
 
 let get_version_date () =
   try
-    let coqlib = Envars.coqlib error in
-    let ch = open_in (Filename.concat coqlib "revision") in
+    let ch = open_in (Envars.coqlib () / "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
-      (ver,rev)
+    let () = close_in ch in
+    (ver,rev)
   with _ -> (Coq_config.version,Coq_config.date)
 
 let print_header () =
   let (ver,rev) = (get_version_date ()) in
-    Printf.printf "Welcome to Chicken %s (%s)\n" ver rev;
-    flush stdout
+  Printf.printf "Welcome to Chicken %s (%s)\n" ver rev;
+  flush stdout
 
 (* Adding files to Coq loadpath *)
 
@@ -107,7 +107,7 @@ let set_rec_include d p =
 
 (* Initializes the LoadPath *)
 let init_load_path () =
-  let coqlib = Envars.coqlib error in
+  let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs in
   let coqpath = Envars.coqpath in
@@ -306,7 +306,9 @@ let parse_args argv =
     | "-debug" :: rem -> set_debug (); parse rem
 
     | "-where" :: _ ->
-        print_endline (Envars.coqlib error); exit 0
+        Envars.set_coqlib ~fail:Errors.error;
+        print_endline (Envars.coqlib ());
+        exit 0
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 
@@ -341,6 +343,7 @@ let init_with_argv argv =
     Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
     try
       parse_args argv;
+      Envars.set_coqlib ~fail:Errors.error;
       if_verbose print_header ();
       init_load_path ();
       engage ();

@@ -9,7 +9,7 @@
 open Util
 open Pp
 
-let (/) = Filename.concat
+let ( / ) = Filename.concat
 
 let set_debug () =
   let () = Backtrace.record_backtrace true in
@@ -97,7 +97,7 @@ let theories_dirs_map = [
 
 (* Initializes the LoadPath *)
 let init_load_path () =
-  let coqlib = Envars.coqlib ~fail:Errors.error in
+  let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> msg_warning (str x)) in
   let coqpath = Envars.coqpath in
@@ -135,7 +135,7 @@ let init_ocaml_path () =
   let add_subdir dl =
     Mltop.add_ml_dir (List.fold_left (/) Envars.coqroot dl)
   in
-    Mltop.add_ml_dir (Envars.coqlib ~fail:Errors.error);
+    Mltop.add_ml_dir (Envars.coqlib ());
     List.iter add_subdir
       [ [ "config" ]; [ "dev" ]; [ "lib" ]; [ "kernel" ]; [ "library" ];
 	[ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
