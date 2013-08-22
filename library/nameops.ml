@@ -141,7 +141,8 @@ let pr_lab l = str (Label.to_string l)
 let default_library = Names.DirPath.initial (* = ["Top"] *)
 
 (*s Roots of the space of absolute names *)
-let coq_root = Id.of_string "Coq"
+let coq_string = "Coq"
+let coq_root = Id.of_string coq_string
 let default_root_prefix = DirPath.empty
 
 (* Metavariables *)

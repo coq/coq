@@ -2553,7 +2553,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     else None
       
 let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id gl =
-  Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
+  Coqlib.check_required_library Coqlib.jmeq_module_name;
   let f, args, def, id, oldid = 
     let oldid = pf_get_new_id id gl in
     let (_, b, t) = pf_get_hyp gl id in

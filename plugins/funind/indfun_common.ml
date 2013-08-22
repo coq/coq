@@ -473,13 +473,13 @@ exception ToShow of exn
 
 let jmeq () =
   try
-    Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
+    Coqlib.check_required_library Coqlib.jmeq_module_name;
     Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq"
   with e when Errors.noncritical e -> raise (ToShow e)
 
 let jmeq_refl () =
   try
-    Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
+    Coqlib.check_required_library Coqlib.jmeq_module_name;
     Coqlib.gen_constant "Function" ["Logic";"JMeq"] "JMeq_refl"
   with e when Errors.noncritical e -> raise (ToShow e)
 

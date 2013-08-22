@@ -371,7 +371,7 @@ let build_term_to_complete uf meta pac =
     applistc (mkConstruct cinfo.ci_constr) all_args
 
 let cc_tactic depth additionnal_terms gls=
-  Coqlib.check_required_library ["Coq";"Init";"Logic"];
+  Coqlib.check_required_library Coqlib.logic_module_name;
   let _ = debug (Pp.str "Reading subgoal ...") in
   let state = make_prb gls depth additionnal_terms in
   let _ = debug (Pp.str "Problem built, solving ...") in

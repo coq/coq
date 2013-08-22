@@ -43,7 +43,8 @@ val pr_lab : Label.t -> Pp.std_ppcmds
 val default_library : DirPath.t
 
 (** This is the root of the standard library of Coq *)
-val coq_root : module_ident
+val coq_root : module_ident (** "Coq" *)
+val coq_string : string (** "Coq" *)
 
 (** This is the default root prefix for developments which doesn't
    mention a root *)

@@ -1008,7 +1008,7 @@ let next_obligation n tac =
   solve_obligation prg i tac
 
 let init_program () =
-  Coqlib.check_required_library ["Coq";"Init";"Datatypes"];
+  Coqlib.check_required_library Coqlib.datatypes_module_name;
   Coqlib.check_required_library ["Coq";"Init";"Specif"];
   Coqlib.check_required_library ["Coq";"Program";"Tactics"]
 

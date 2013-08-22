@@ -16,6 +16,8 @@ open Globnames
 open Nametab
 open Smartlocate
 
+let coq = Nameops.coq_string (* "Coq" *)
+
 (************************************************************************)
 (* Generic functions to find Coq objects *)
 
@@ -29,7 +31,7 @@ let find_reference locstr dir s =
   with Not_found ->
     anomaly ~label:locstr (str "cannot find " ++ Libnames.pr_path sp)
 
-let coq_reference locstr dir s = find_reference locstr ("Coq"::dir) s
+let coq_reference locstr dir s = find_reference locstr (coq::dir) s
 let coq_constant locstr dir s = constr_of_global (coq_reference locstr dir s)
 
 let gen_reference = coq_reference
@@ -85,27 +87,27 @@ let check_required_library d =
 
 let init_reference dir s =
   let d = "Init"::dir in
-  check_required_library ("Coq"::d); gen_reference "Coqlib" d s
+  check_required_library (coq::d); gen_reference "Coqlib" d s
 
 let init_constant dir s =
   let d = "Init"::dir in
-  check_required_library ("Coq"::d); gen_constant "Coqlib" d s
+  check_required_library (coq::d); gen_constant "Coqlib" d s
 
 let logic_constant dir s =
   let d = "Logic"::dir in
-  check_required_library ("Coq"::d); gen_constant "Coqlib" d s
+  check_required_library (coq::d); gen_constant "Coqlib" d s
 
-let arith_dir = ["Coq";"Arith"]
+let arith_dir = [coq;"Arith"]
 let arith_modules = [arith_dir]
 
-let numbers_dir = [ "Coq";"Numbers"]
-let parith_dir = ["Coq";"PArith"]
-let narith_dir = ["Coq";"NArith"]
-let zarith_dir = ["Coq";"ZArith"]
+let numbers_dir = [coq;"Numbers"]
+let parith_dir = [coq;"PArith"]
+let narith_dir = [coq;"NArith"]
+let zarith_dir = [coq;"ZArith"]
 
 let zarith_base_modules = [numbers_dir;parith_dir;narith_dir;zarith_dir]
 
-let init_dir = ["Coq";"Init"]
+let init_dir = [coq;"Init"]
 let init_modules = [
   init_dir@["Datatypes"];
   init_dir@["Logic"];
@@ -115,19 +117,19 @@ let init_modules = [
   init_dir@["Wf"]
 ]
 
-let logic_module_name = ["Coq";"Init";"Logic"]
+let logic_module_name = init_dir@["Logic"]
 let logic_module = make_dir logic_module_name
 
-let logic_type_module_name = ["Coq";"Init";"Logic_Type"]
+let logic_type_module_name = init_dir@["Logic_Type"]
 let logic_type_module = make_dir logic_type_module_name
 
-let datatypes_module_name = ["Coq";"Init";"Datatypes"]
+let datatypes_module_name = init_dir@["Datatypes"]
 let datatypes_module = make_dir datatypes_module_name
 
-let arith_module_name = ["Coq";"Arith";"Arith"]
+let arith_module_name = arith_dir@["Arith"]
 let arith_module = make_dir arith_module_name
 
-let jmeq_module_name = ["Coq";"Logic";"JMeq"]
+let jmeq_module_name = [coq;"Logic";"JMeq"]
 let jmeq_module = make_dir jmeq_module_name
 
 (* TODO: temporary hack. Works only if the module isn't an alias *)

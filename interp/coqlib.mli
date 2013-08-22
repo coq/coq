@@ -55,11 +55,14 @@ val check_required_library : string list -> unit
 
 (** Modules *)
 val logic_module : DirPath.t
+val logic_module_name : string list
+
 val logic_type_module : DirPath.t
+
 val jmeq_module : DirPath.t
+val jmeq_module_name : string list
 
 val datatypes_module_name : string list
-val logic_module_name : string list
 
 (** Natural numbers *)
 val nat_path : full_path

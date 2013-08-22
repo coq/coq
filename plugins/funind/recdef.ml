@@ -150,7 +150,7 @@ let coq_S = function () -> (coq_base_constant "S")
 let lt_n_O = function () -> (coq_base_constant "lt_n_O")
 let max_ref = function () -> (find_reference ["Recdef"] "max")
 let max_constr = function () -> (constr_of_global (delayed_force max_ref))
-let coq_conj = function () -> find_reference ["Coq";"Init";"Logic"] "conj"
+let coq_conj = function () -> find_reference Coqlib.logic_module_name "conj"
 
 let f_S t = mkApp(delayed_force coq_S, [|t|]);;
 
