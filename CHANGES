@@ -88,6 +88,8 @@ Internal Infrastructure
 - The file states/initial.coq does not exist anymore. Instead, coqtop
   initially does a "Require" of Prelude.vo (or nothing when given
   the options -noinit or -nois).
+- The format of vo files has slightly changed : cf final comments in
+  checker/cic.mli
 - The build system does not produce anymore programs named coqtop.opt
   and a symbolic link to coqtop. Instead, coqtop is now directly
   an executable compiled with the best OCaml compiler available.

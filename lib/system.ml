@@ -114,12 +114,17 @@ let try_remove filename =
     msg_warning
       (str"Could not remove file " ++ str filename ++ str" which is corrupted!")
 
-let marshal_out ch v = Marshal.to_channel ch v []
+let error_corrupted file = error (file ^ " is corrupted, try to rebuild it.")
+
+let marshal_out ch v = Marshal.to_channel ch v []; flush ch
 let marshal_in filename ch =
   try Marshal.from_channel ch
-  with
-    | End_of_file | Failure _ (* e.g. "truncated object" *) ->
-      error (filename ^ " is corrupted, try to rebuild it.")
+  with End_of_file | Failure _ -> error_corrupted filename
+
+let digest_out = Digest.output
+let digest_in filename ch =
+  try Digest.input ch
+  with End_of_file | Failure _ -> error_corrupted filename
 
 exception Bad_magic_number of string
 

@@ -302,11 +302,11 @@ let intern_from_file (dir, f) =
     try
       let ch = with_magic_number_check raw_intern_library f in
       let (md:Cic.library_disk) = System.marshal_in f ch in
-      let (digest:Digest.t) = System.marshal_in f ch in
+      let digest = System.digest_in f ch in
       let (table:Cic.opaque_table) = System.marshal_in f ch in
       (* Verification of the final checksum *)
       let pos = pos_in ch in
-      let (checksum:Digest.t) = System.marshal_in f ch in
+      let checksum = System.digest_in f ch in
       let () = close_in ch in
       let ch = open_in f in
       if not (String.equal (Digest.channel ch pos) checksum) then

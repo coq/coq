@@ -286,11 +286,11 @@ let fetch_opaque_table (f,pos,digest) =
     Pp.msg_info (Pp.str "Fetching opaque terms in " ++ str f);
     let ch = System.with_magic_number_check raw_intern_library f in
     let () = seek_in ch pos in
-    if not (String.equal (System.marshal_in f ch) digest) then raise Faulty;
+    if not (String.equal (System.digest_in f ch) digest) then raise Faulty;
     let table = (System.marshal_in f ch : Term.constr array) in
-    (* Verification of the final digest (the one also covering the opaques) *)
+    (* Check of the final digest (the one also covering the opaques) *)
     let pos' = pos_in ch in
-    let digest' = (System.marshal_in f ch : Digest.t) in
+    let digest' = System.digest_in f ch in
     let () = close_in ch in
     let ch' = open_in f in
     if not (String.equal (Digest.channel ch' pos') digest') then raise Faulty;
@@ -368,9 +368,9 @@ let mk_library md digest =
 
 let intern_from_file f =
   let ch = System.with_magic_number_check raw_intern_library f in
-  let lmd = System.marshal_in f ch in
+  let lmd = (System.marshal_in f ch : library_disk) in
   let pos = pos_in ch in
-  let digest = System.marshal_in f ch in
+  let digest = System.digest_in f ch in
   register_library_filename lmd.md_name f;
   add_opaque_table lmd.md_name (ToFetch (f,pos,digest));
   let library = mk_library lmd digest in
@@ -617,17 +617,16 @@ let save_library_to dir f =
     md_imports = Array.of_list (current_reexports ()) } in
   if Array.exists (fun (d,_) -> DirPath.equal d dir) md.md_deps then
     error_recursively_dependent_library dir;
+  (* Open the vo file and write the magic number *)
   let (f',ch) = raw_extern_library f in
   try
-    System.marshal_out ch md;
-    flush ch;
-    let di = Digest.file f' in
-    System.marshal_out ch di;
-    System.marshal_out ch table;
-    flush ch;
-    let di = Digest.file f' in
-    System.marshal_out ch di;
+    (* Writing vo payload *)
+    System.marshal_out ch md; (* env + objs *)
+    System.digest_out ch (Digest.file f'); (* 1st checksum *)
+    System.marshal_out ch table; (* opaques *)
+    System.digest_out ch (Digest.file f'); (* 2nd checksum *)
     close_out ch;
+    (* Writing native code files *)
     if not !Flags.no_native_compiler then begin
     let lp = Loadpath.get_load_paths () in
     let map_path p = CUnix.string_of_physical_path (Loadpath.physical p) in

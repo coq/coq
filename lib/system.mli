@@ -31,9 +31,6 @@ val find_file_in_path :
   and a suffix. The intern functions raise the exception [Bad_magic_number]
   when the check fails, with the full file name. *)
 
-val marshal_out : out_channel -> 'a -> unit
-val marshal_in : string -> in_channel -> 'a
-
 exception Bad_magic_number of string
 
 val raw_extern_intern : int ->
@@ -43,6 +40,17 @@ val extern_intern : ?warn:bool -> int ->
   (string -> 'a -> unit) * (CUnix.load_path -> string -> 'a)
 
 val with_magic_number_check : ('a -> 'b) -> 'a -> 'b
+
+(** Clones of Marshal.to_channel (with flush) and
+    Marshal.from_channel (with nice error message) *)
+
+val marshal_out : out_channel -> 'a -> unit
+val marshal_in : string -> in_channel -> 'a
+
+(** Clones of Digest.output and Digest.input (with nice error message) *)
+
+val digest_out : out_channel -> Digest.t -> unit
+val digest_in : string -> in_channel -> Digest.t
 
 (** {6 Sending/receiving once with external executable } *)
 

@@ -390,9 +390,9 @@ type opaque_table = constr array
 
 (** A .vo file is currently made of :
 
-    1) a magic number
+    1) a magic number (4 bytes, cf output_binary_int)
     2) a marshalled [library_disk] structure
-    3) a marshalled [Digest.t] string
+    3) a [Digest.t] string (16 bytes)
     4) a marshalled [opaque_table]
-    5) a marshalled [Digest.t] string
+    5) a [Digest.t] string (16 bytes)
 *)
