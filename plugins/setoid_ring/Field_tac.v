@@ -542,10 +542,9 @@ Ltac field_lemmas set ext inv_m fspec pspec sspec dspec rk :=
          let field_ok2 := constr:(field_ok1 _ _ _ pp_spec) in
          match s_spec with
          | mkhypo ?ss_spec =>
-           let field_ok3 := constr:(field_ok2 _ ss_spec) in
            match d_spec with
            | mkhypo ?dd_spec =>
-             let field_ok := constr:(field_ok3 _ dd_spec) in
+             let field_ok := constr:(field_ok2 _ dd_spec) in
              let mk_lemma lemma :=
               constr:(lemma _ _ _  _ _ _  _ _ _ _
                    set ext_r inv_m afth
