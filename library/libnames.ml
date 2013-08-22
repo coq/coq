@@ -17,32 +17,33 @@ let pr_dirpath sl = (str (DirPath.to_string sl))
 
 (*s Operations on dirpaths *)
 
-(* Pop the last n module idents *)
-let pop_dirpath_n n dir =
-  DirPath.make (List.skipn n (DirPath.repr dir))
+let split_dirpath d = match DirPath.repr d with
+  | id :: l -> DirPath.make l, id
+  | _ -> failwith "split_dirpath"
 
 let pop_dirpath p = match DirPath.repr p with
-  | [] -> anomaly (str "dirpath_prefix: empty dirpath")
   | _::l -> DirPath.make l
+  | [] -> failwith "pop_dirpath"
+
+(* Pop the last n module idents *)
+let pop_dirpath_n n dir = DirPath.make (List.skipn n (DirPath.repr dir))
 
 let is_dirpath_prefix_of d1 d2 =
   List.prefix_of (List.rev (DirPath.repr d1)) (List.rev (DirPath.repr d2))
 
 let chop_dirpath n d =
   let d1,d2 = List.chop n (List.rev (DirPath.repr d)) in
-    DirPath.make (List.rev d1), DirPath.make (List.rev d2)
+  DirPath.make (List.rev d1), DirPath.make (List.rev d2)
 
 let drop_dirpath_prefix d1 d2 =
-  let d = Util.List.drop_prefix (List.rev (DirPath.repr d1)) (List.rev (DirPath.repr d2)) in
-    DirPath.make (List.rev d)
+  let d =
+    List.drop_prefix (List.rev (DirPath.repr d1)) (List.rev (DirPath.repr d2))
+  in
+  DirPath.make (List.rev d)
 
 let append_dirpath d1 d2 = DirPath.make (DirPath.repr d2 @ DirPath.repr d1)
 
-(* To know how qualified a name should be to be understood in the current env*)
 let add_dirpath_prefix id d = DirPath.make (DirPath.repr d @ [id])
-
-let split_dirpath d =
-  let l = DirPath.repr d in (DirPath.make (List.tl l), List.hd l)
 
 let add_dirpath_suffix p id = DirPath.make (id :: DirPath.repr p)
 

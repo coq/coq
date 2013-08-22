@@ -49,7 +49,6 @@ val occur_kn_in_ref : mutual_inductive -> global_reference -> bool
 val repr_of_r : global_reference -> module_path * DirPath.t * Label.t
 val modpath_of_r : global_reference -> module_path
 val label_of_r : global_reference -> Label.t
-val current_toplevel : unit -> module_path
 val base_mp : module_path -> module_path
 val is_modfile : module_path -> bool
 val string_of_modfile : module_path -> string

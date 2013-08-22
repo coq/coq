@@ -81,12 +81,10 @@ val cwd_except_section : unit -> Names.DirPath.t
 val current_dirpath : bool -> Names.DirPath.t (* false = except sections *)
 val make_path : Names.Id.t -> Libnames.full_path
 val make_path_except_section : Names.Id.t -> Libnames.full_path
-val path_of_include : unit -> Libnames.full_path
 
 (** Kernel-side names *)
-val current_prefix : unit -> Names.module_path * Names.DirPath.t
+val current_mp : unit -> Names.module_path
 val make_kn : Names.Id.t -> Names.kernel_name
-val make_con : Names.Id.t -> Names.constant
 
 (** Are we inside an opened section *)
 val sections_are_opened : unit -> bool

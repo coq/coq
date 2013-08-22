@@ -26,16 +26,14 @@ open Termops
 (**********************************************************************)
 (* Globality of identifiers *)
 
-let is_imported_modpath mp =
-  let current_mp,_ = Lib.current_prefix() in
-    match mp with
-      | MPfile dp ->
-	  let rec find_prefix = function
-	    |MPfile dp1 -> not (DirPath.equal dp1 dp)
-	    |MPdot(mp,_) -> find_prefix mp
-	    |MPbound(_) -> false
-	  in find_prefix current_mp
-      | p -> false
+let is_imported_modpath = function
+  | MPfile dp ->
+    let rec find_prefix = function
+      |MPfile dp1 -> not (DirPath.equal dp1 dp)
+      |MPdot(mp,_) -> find_prefix mp
+      |MPbound(_) -> false
+    in find_prefix (Lib.current_mp ())
+  | _ -> false
 
 let is_imported_ref = function
   | VarRef _ -> false

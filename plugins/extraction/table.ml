@@ -58,18 +58,16 @@ let raw_string_of_modfile = function
   | MPfile f -> String.capitalize (Id.to_string (List.hd (DirPath.repr f)))
   | _ -> assert false
 
-let current_toplevel () = fst (Lib.current_prefix ())
-
 let is_toplevel mp =
-  mp = initial_path || mp = current_toplevel ()
+  ModPath.equal mp initial_path || ModPath.equal mp (Lib.current_mp ())
 
 let at_toplevel mp =
   is_modfile mp || is_toplevel mp
 
 let mp_length mp =
-  let mp0 = current_toplevel () in
+  let mp0 = Lib.current_mp () in
   let rec len = function
-    | mp when mp = mp0 -> 1
+    | mp when ModPath.equal mp mp0 -> 1
     | MPdot (mp,_) -> 1 + len mp
     | _ -> 1
   in len mp
@@ -97,7 +95,7 @@ let rec parse_labels2 ll mp1 = function
   | mp -> mp,ll
 
 let labels_of_ref r =
-  let mp_top = current_toplevel () in
+  let mp_top = Lib.current_mp () in
   let mp,_,l = repr_of_r r in
   parse_labels2 [l] mp_top mp
 
@@ -419,8 +417,8 @@ let error_non_implicit msg =
 let check_loaded_modfile mp = match base_mp mp with
   | MPfile dp ->
       if not (Library.library_is_loaded dp) then begin
-	match base_mp (current_toplevel ()) with
-	  | MPfile dp' when dp<>dp' ->
+	match base_mp (Lib.current_mp ()) with
+	  | MPfile dp' when not (DirPath.equal dp dp') ->
 	      err (str ("Please load library "^(DirPath.to_string dp^" first.")))
 	  | _ -> ()
       end

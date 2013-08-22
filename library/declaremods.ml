@@ -764,7 +764,7 @@ let declare_one_include interp_modast (me_ast,annot) =
   let env = Global.env() in
   let me,kind = interp_modast env ModAny me_ast in
   let is_mod = (kind == Module) in
-  let cur_mp = fst (Lib.current_prefix ()) in
+  let cur_mp = Lib.current_mp () in
   let inl = inl2intopt annot in
   let mbids,aobjs = get_module_sobjs is_mod env inl me in
   let subst_self =

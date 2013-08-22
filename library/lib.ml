@@ -104,15 +104,13 @@ let library_dp () =
    module path and relative section path *)
 let path_prefix = ref initial_prefix
 
-let sections_depth () =
-  List.length (Names.DirPath.repr (snd (snd !path_prefix)))
-
-let sections_are_opened () =
-  match Names.DirPath.repr (snd (snd !path_prefix)) with
-      [] -> false
-    | _ -> true
-
 let cwd () = fst !path_prefix
+let current_prefix () = snd !path_prefix
+let current_mp () = fst (snd !path_prefix)
+let current_sections () = snd (snd !path_prefix)
+
+let sections_depth () = List.length (Names.DirPath.repr (current_sections ()))
+let sections_are_opened () = not (Names.DirPath.is_empty (current_sections ()))
 
 let cwd_except_section () =
   Libnames.pop_dirpath_n (sections_depth ()) (cwd ())
@@ -123,26 +121,14 @@ let current_dirpath sec =
 
 let make_path id = Libnames.make_path (cwd ()) id
 
-let make_path_except_section id = Libnames.make_path (cwd_except_section ()) id
-
-let path_of_include () =
-  let dir = Names.DirPath.repr (cwd ()) in
-  let new_dir = List.tl dir in
-  let id = List.hd dir in
-    Libnames.make_path (Names.DirPath.make new_dir) id
-
-let current_prefix () = snd !path_prefix
+let make_path_except_section id =
+  Libnames.make_path (cwd_except_section ()) id
 
 let make_kn id =
   let mp,dir = current_prefix () in
-    Names.make_kn mp dir (Names.Label.of_id id)
+  Names.make_kn mp dir (Names.Label.of_id id)
 
-let make_con id =
-  let mp,dir = current_prefix () in
-    Names.make_con mp dir (Names.Label.of_id id)
-
-
-let make_oname id = make_path id, make_kn id
+let make_oname id = Libnames.make_oname !path_prefix id
 
 let recalc_path_prefix () =
   let rec recalc = function
@@ -156,7 +142,7 @@ let recalc_path_prefix () =
 
 let pop_path_prefix () =
   let dir,(mp,sec) = !path_prefix in
-    path_prefix := fst (split_dirpath dir), (mp, fst (split_dirpath sec))
+  path_prefix := pop_dirpath dir, (mp, pop_dirpath sec)
 
 let find_entry_p p =
   let rec find = function
@@ -219,8 +205,7 @@ let add_anonymous_entry node =
   add_entry (make_oname (anonymous_id ())) node
 
 let add_leaf id obj =
-  let (path, _) = current_prefix () in
-  if Names.ModPath.equal path Names.initial_path then
+  if Names.ModPath.equal (current_mp ()) Names.initial_path then
     error ("No session module started (use -top dir)");
   let oname = make_oname id in
   cache_object (oname,obj);
@@ -271,16 +256,15 @@ let current_mod_id () =
 
 
 let start_mod is_type export id mp fs =
-  let dir = add_dirpath_suffix (fst !path_prefix) id in
+  let dir = add_dirpath_suffix (cwd ()) id in
   let prefix = dir,(mp,Names.DirPath.empty) in
-  let sp = make_path id in
-  let oname = sp, make_kn id in
   let exists =
-    if is_type then Nametab.exists_cci sp else Nametab.exists_module dir
+    if is_type then Nametab.exists_cci (make_path id)
+    else Nametab.exists_module dir
   in
   if exists then
     errorlabstrm "open_module" (pr_id id ++ str " already exists");
-  add_entry oname (OpenedModule (is_type,export,prefix,fs));
+  add_entry (make_oname id) (OpenedModule (is_type,export,prefix,fs));
   path_prefix := prefix;
   prefix
 
@@ -322,7 +306,7 @@ let contents_after sp = let (after,_,_) = split_lib sp in after
 let start_compilation s mp =
   if !comp_name != None then
     error "compilation unit is already started";
-  if not (Names.DirPath.equal (snd (snd (!path_prefix))) Names.DirPath.empty) then
+  if not (Names.DirPath.is_empty (current_sections ())) then
     error "some sections are already opened";
   let prefix = s, (mp, Names.DirPath.empty) in
   let () = add_anonymous_entry (CompilingLibrary prefix) in
@@ -482,11 +466,10 @@ let open_section id =
   let olddir,(mp,oldsec) = !path_prefix in
   let dir = add_dirpath_suffix olddir id in
   let prefix = dir, (mp, add_dirpath_suffix oldsec id) in
-  let name = make_path id, make_kn id (* this makes little sense however *) in
   if Nametab.exists_section dir then
     errorlabstrm "open_section" (pr_id id ++ str " already exists.");
   let fs = Summary.freeze_summaries ~marshallable:`No in
-  add_entry name (OpenedSection (prefix, fs));
+  add_entry (make_oname id) (OpenedSection (prefix, fs));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
   Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
   path_prefix := prefix;
@@ -545,42 +528,36 @@ let init () =
 
 (* Misc *)
 
-let mp_of_global ref =
-  match ref with
-    | VarRef id -> fst (current_prefix ())
-    | ConstRef cst -> Names.con_modpath cst
-    | IndRef ind -> Names.ind_modpath ind
-    | ConstructRef constr -> Names.constr_modpath constr
+let mp_of_global = function
+  |VarRef id -> current_mp ()
+  |ConstRef cst -> Names.con_modpath cst
+  |IndRef ind -> Names.ind_modpath ind
+  |ConstructRef constr -> Names.constr_modpath constr
 
-let rec dp_of_mp modp =
-  match modp with
-    | Names.MPfile dp -> dp
-    | Names.MPbound _ -> library_dp ()
-    | Names.MPdot (mp,_) -> dp_of_mp mp
+let rec dp_of_mp = function
+  |Names.MPfile dp -> dp
+  |Names.MPbound _ -> library_dp ()
+  |Names.MPdot (mp,_) -> dp_of_mp mp
 
-let rec split_mp mp =
-  match mp with
-    | Names.MPfile dp -> dp,  Names.DirPath.empty
-    | Names.MPdot (prfx, lbl) ->
-	let mprec, dprec = split_mp prfx in
-	  mprec, Names.DirPath.make (Names.Id.of_string (Names.Label.to_string lbl) :: (Names.DirPath.repr dprec))
-    | Names.MPbound mbid -> let (_, id, dp) = Names.MBId.repr mbid in  library_dp(), Names.DirPath.make [id]
+let rec split_mp = function
+  |Names.MPfile dp -> dp, Names.DirPath.empty
+  |Names.MPdot (prfx, lbl) ->
+    let mprec, dprec = split_mp prfx in
+    mprec, Libnames.add_dirpath_suffix dprec (Names.Label.to_id lbl)
+  |Names.MPbound mbid ->
+    let (_,id,dp) = Names.MBId.repr mbid in
+    library_dp (), Names.DirPath.make [id]
 
-let split_modpath mp =
-  let rec aux = function
-    | Names.MPfile dp -> dp, []
-    | Names.MPbound mbid ->
-	library_dp (), [Names.MBId.to_id mbid]
-    | Names.MPdot (mp,l) -> let (mp', lab) = aux mp in
-			      (mp', Names.Label.to_id l :: lab)
-  in
-  let (mp, l) = aux mp in
-    mp, l
+let rec split_modpath = function
+  |Names.MPfile dp -> dp, []
+  |Names.MPbound mbid -> library_dp (), [Names.MBId.to_id mbid]
+  |Names.MPdot (mp,l) ->
+    let (dp,ids) = split_modpath mp in
+    (dp, Names.Label.to_id l :: ids)
 
-let library_part ref =
-  match ref with
-    | VarRef id -> library_dp ()
-    | _ -> dp_of_mp (mp_of_global ref)
+let library_part = function
+  |VarRef id -> library_dp ()
+  |ref -> dp_of_mp (mp_of_global ref)
 
 let remove_section_part ref =
   let sp = Nametab.path_of_global ref in
@@ -602,12 +579,12 @@ let remove_section_part ref =
 let con_defined_in_sec kn =
   let _,dir,_ = Names.repr_con kn in
   not (Names.DirPath.is_empty dir) &&
-  Names.DirPath.equal (fst (split_dirpath dir)) (snd (current_prefix ()))
+  Names.DirPath.equal (pop_dirpath dir) (current_sections ())
 
 let defined_in_sec kn =
   let _,dir,_ = Names.repr_mind kn in
   not (Names.DirPath.is_empty dir) &&
-  Names.DirPath.equal (fst (split_dirpath dir)) (snd (current_prefix ()))
+  Names.DirPath.equal (pop_dirpath dir) (current_sections ())
 
 let discharge_global = function
   | ConstRef kn when con_defined_in_sec kn ->

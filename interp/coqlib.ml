@@ -69,8 +69,8 @@ let check_required_library d =
   let dir = make_dir d in
   if Library.library_is_loaded dir then ()
   else
-    let in_current_dir = match Lib.current_prefix () with
-      | MPfile dp, _ -> DirPath.equal dir dp
+    let in_current_dir = match Lib.current_mp () with
+      | MPfile dp -> DirPath.equal dir dp
       | _ -> false
     in
     if not in_current_dir then

@@ -1301,9 +1301,8 @@ let inline_test r t =
        not (is_fix t2) && ml_size t < 12 && is_not_strict t)
 
 let con_of_string s =
-  match DirPath.repr (dirpath_of_string s) with
-    | id :: d -> Constant.make2 (MPfile (DirPath.make d)) (Label.of_id id)
-    | [] -> assert false
+  let d, id = Libnames.split_dirpath (dirpath_of_string s) in
+  Constant.make2 (MPfile d) (Label.of_id id)
 
 let manual_inline_set =
   List.fold_right (fun x -> Cset_env.add (con_of_string x))

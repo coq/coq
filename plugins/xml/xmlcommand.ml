@@ -380,10 +380,7 @@ let print internal glob_ref kind xml_library_root =
    match glob_ref with
       Gn.VarRef id ->
        (* this kn is fake since it is not provided by Coq *)
-       let kn =
-        let (mod_path,dir_path) = Lib.current_prefix () in
-        N.make_kn mod_path dir_path (N.Label.of_id id)
-       in
+       let kn = Lib.make_kn id in
        let (_,body,typ) = G.lookup_named id in
         Cic2acic.Variable kn,mk_variable_obj id body typ
     | Gn.ConstRef kn ->

@@ -1258,7 +1258,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 	  ConstRef c -> is_opaque_constant c
 	| _ -> anomaly ~label:"equation_lemma" (Pp.str "not a constant")
     in
-    let lemma = mkConst (Lib.make_con na) in
+    let lemma = mkConst (Names.Constant.make1 (Lib.make_kn na)) in
     ref_ := Some lemma ;
     let lid = ref [] in
     let h_num = ref (-1) in

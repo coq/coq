@@ -18,13 +18,13 @@ val pr_dirpath : DirPath.t -> Pp.std_ppcmds
 val dirpath_of_string : string -> DirPath.t
 val string_of_dirpath : DirPath.t -> string
 
-(** Pop the suffix of a [DirPath.t] *)
+(** Pop the suffix of a [DirPath.t]. Raises a [Failure] for an empty path *)
 val pop_dirpath : DirPath.t -> DirPath.t
 
 (** Pop the suffix n times *)
 val pop_dirpath_n : int -> DirPath.t -> DirPath.t
 
-(** Give the immediate prefix and basename of a [DirPath.t] *)
+(** Immediate prefix and basename of a [DirPath.t]. May raise [Failure] *)
 val split_dirpath : DirPath.t -> DirPath.t * Id.t
 
 val add_dirpath_suffix : DirPath.t -> module_ident -> DirPath.t

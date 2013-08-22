@@ -52,7 +52,7 @@ let toplevel_env () =
 
 let environment_until dir_opt =
   let rec parse = function
-    | [] when dir_opt = None -> [current_toplevel (), toplevel_env ()]
+    | [] when dir_opt = None -> [Lib.current_mp (), toplevel_env ()]
     | [] -> []
     | d :: l ->
       let meb =

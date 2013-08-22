@@ -144,12 +144,11 @@ let id_of_global env = function
     (Environ.lookup_mind kn env).mind_packets.(i).mind_consnames.(j-1)
   | VarRef v -> v
 
-let cons_dirpath id dp = DirPath.make (id :: DirPath.repr dp)
-
 let rec dirpath_of_mp = function
   | MPfile sl -> sl
   | MPbound uid -> DirPath.make [MBId.to_id uid]
-  | MPdot (mp,l) -> cons_dirpath (Label.to_id l) (dirpath_of_mp mp)
+  | MPdot (mp,l) ->
+    Libnames.add_dirpath_suffix (dirpath_of_mp mp) (Label.to_id l)
 
 let dirpath_of_global = function
   | ConstRef kn -> dirpath_of_mp (Constant.modpath kn)
