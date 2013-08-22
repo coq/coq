@@ -126,6 +126,25 @@ let register_hcons h u =
 (* Basic hashcons modules for string and obj. Integers do not need be
    hashconsed.  *)
 
+(* list *)
+module type SomeData = sig type t end
+module Hlist (D:SomeData) =
+  Make(
+    struct
+      type t = D.t list
+      type u = (t -> t) * (D.t -> D.t)
+      let hashcons (hrec,hdata) = function
+        | x :: l -> hdata x :: hrec l
+        | l -> l
+      let equal l1 l2 =
+        l1 == l2 ||
+          match l1, l2 with
+          | [], [] -> true
+          | x1::l1, x2::l2 -> x1==x2 && l1==l2
+          | _ -> false
+      let hash = Hashtbl.hash
+    end)
+
 (* string *)
 module Hstring = Make(
   struct

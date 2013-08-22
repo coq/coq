@@ -156,24 +156,9 @@ struct
 
   let initial = [default_module_name]
 
-  module Self_Hashcons =
-    struct
-      type t_ = t
-      type t = t_
-      type u = Id.t -> Id.t
-      let hashcons hident d = List.smartmap hident d
-      let rec equal d1 d2 =
-        d1 == d2 ||
-        match (d1, d2) with
-        | [], [] -> true
-        | id1 :: d1, id2 :: d2 -> id1 == id2 && equal d1 d2
-        | _ -> false
-      let hash = Hashtbl.hash
-    end
+  module Hdir = Hashcons.Hlist(Id)
 
-  module Hdir = Hashcons.Make(Self_Hashcons)
-
-  let hcons = Hashcons.simple_hcons Hdir.generate Id.hcons
+  let hcons = Hashcons.recursive_hcons Hdir.generate Id.hcons
 
 end
 

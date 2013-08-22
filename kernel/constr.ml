@@ -492,10 +492,17 @@ let hasheq t1 t2 =
 (** Note that the following Make has the side effect of creating
     once and for all the table we'll use for hash-consing all constr *)
 
-module HashsetTerm = Hashset.Make(struct type t = constr let equal = hasheq end)
+module HashsetTerm =
+  Hashset.Make(struct type t = constr let equal = hasheq end)
+
+module HashsetTermArray =
+  Hashset.Make(struct type t = constr array let equal = array_eqeq end)
 
 let term_table = HashsetTerm.create 19991
 (* The associative table to hashcons terms. *)
+
+let term_array_table = HashsetTermArray.create 4999
+(* The associative table to hashcons term arrays. *)
 
 open Hashset.Combine
 
@@ -503,19 +510,7 @@ open Hashset.Combine
    representation for [constr] using [hash_consing_functions] on
    leaves. *)
 let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
-
-  (* Note : we hash-cons constr arrays *in place* *)
-
-  let rec hash_term_array t =
-    let accu = ref 0 in
-    for i = 0 to Array.length t - 1 do
-      let x, h = sh_rec t.(i) in
-      accu := combine !accu h;
-      t.(i) <- x
-    done;
-    !accu
-
-  and hash_term t =
+  let rec hash_term t =
     match t with
       | Var i ->
 	(Var (sh_id i), combinesmall 1 (Hashtbl.hash i))
@@ -540,12 +535,11 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 	(LetIn (sh_na na, b, t, c), combinesmall 6 (combine4 (Hashtbl.hash na) hb ht hc))
       | App (c,l) ->
 	let c, hc = sh_rec c in
-	let hl = hash_term_array l in
-	(App (c, l), combinesmall 7 (combine hl hc))
+	let l, hl = hash_term_array l in
+	(App (c,l), combinesmall 7 (combine hl hc))
       | Evar (e,l) ->
-	let hl = hash_term_array l in
-	(* since the array have been hashed in place : *)
-	(t, combinesmall 8 (combine (Hashtbl.hash e) hl))
+	let l, hl = hash_term_array l in
+	(Evar (e,l), combinesmall 8 (combine (Hashtbl.hash e) hl))
       | Const c ->
 	(Const (sh_con c), combinesmall 9 (Hashtbl.hash c))
       | Ind ((kn,i) as ind) ->
@@ -555,21 +549,21 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Case (ci,p,c,bl) ->
 	let p, hp = sh_rec p
 	and c, hc = sh_rec c in
-	let hbl = hash_term_array bl in
+	let bl,hbl = hash_term_array bl in
 	let hbl = combine (combine hc hp) hbl in
 	(Case (sh_ci ci, p, c, bl), combinesmall 12 hbl)
       | Fix (ln,(lna,tl,bl)) ->
-	let hbl = hash_term_array  bl in
-	let htl = hash_term_array  tl in
+	let bl,hbl = hash_term_array bl in
+	let tl,htl = hash_term_array tl in
 	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
-	(* since the three arrays have been hashed in place : *)
-	(t, combinesmall 13 (combine (Hashtbl.hash lna) (combine hbl htl)))
+        let h = combine3 (Hashtbl.hash lna) hbl htl in
+	(Fix (ln,(lna,tl,bl)), combinesmall 13 h)
       | CoFix(ln,(lna,tl,bl)) ->
-	let hbl = hash_term_array bl in
-	let htl = hash_term_array tl in
+	let bl,hbl = hash_term_array bl in
+	let tl,htl = hash_term_array tl in
 	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
-	(* since the three arrays have been hashed in place : *)
-	(t, combinesmall 14 (combine (Hashtbl.hash lna) (combine hbl htl)))
+        let h = combine3 (Hashtbl.hash lna) hbl htl in
+	(CoFix (ln,(lna,tl,bl)), combinesmall 14 h)
       | Meta n ->
 	(t, combinesmall 15 n)
       | Rel n ->
@@ -580,6 +574,19 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
     (* [h] must be positive. *)
     let h = h land 0x3FFFFFFF in
     (HashsetTerm.repr h y term_table, h)
+
+  (* Note : During hash-cons of arrays, we modify them *in place* *)
+
+  and hash_term_array t =
+    let accu = ref 0 in
+    for i = 0 to Array.length t - 1 do
+      let x, h = sh_rec t.(i) in
+      accu := combine !accu h;
+      t.(i) <- x
+    done;
+    (* [h] must be positive. *)
+    let h = !accu land 0x3FFFFFFF in
+    (HashsetTermArray.repr h t term_array_table, h)
 
   in
   (* Make sure our statically allocated Rels (1 to 16) are considered

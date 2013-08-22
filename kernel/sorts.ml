@@ -51,13 +51,12 @@ module Hsorts =
       type t = _t
       type u = universe -> universe
       let hashcons huniv = function
-          Prop c -> Prop c
         | Type u -> Type (huniv u)
-      let equal s1 s2 =
-        match (s1,s2) with
-            (Prop c1, Prop c2) -> c1 == c2
-          | (Type u1, Type u2) -> u1 == u2
-          |_ -> false
+        | s -> s
+      let equal s1 s2 = match (s1,s2) with
+        | (Prop c1, Prop c2) -> c1 == c2
+        | (Type u1, Type u2) -> u1 == u2
+        |_ -> false
       let hash = Hashtbl.hash
     end)
 
