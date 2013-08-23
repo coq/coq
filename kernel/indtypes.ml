@@ -598,8 +598,12 @@ let allowed_sorts issmall isunit s =
   | InProp -> logical_sorts
 
 let fold_inductive_blocks f =
-  Array.fold_left (fun acc (_,_,lc,(arsign,_)) ->
-    f (Array.fold_left f acc lc) (it_mkProd_or_LetIn (* dummy *) mkSet arsign))
+  let concl = function
+    | Inr _ -> mkSet (* dummy *)
+    | Inl (_,ar,_) -> ar
+  in
+    Array.fold_left (fun acc (_,_,lc,(arsign,ar)) ->
+      f (Array.fold_left f acc lc) (it_mkProd_or_LetIn (concl ar) arsign))
 
 let used_section_variables env inds =
   let ids = fold_inductive_blocks
