@@ -896,6 +896,8 @@ Section MakeRingPol.
  (** Definition of polynomial expressions *)
 
  Inductive PExpr : Type :=
+  | PEO : PExpr
+  | PEI : PExpr            
   | PEc : C -> PExpr
   | PEX : positive -> PExpr
   | PEadd : PExpr -> PExpr -> PExpr
@@ -904,6 +906,7 @@ Section MakeRingPol.
   | PEopp : PExpr -> PExpr
   | PEpow : PExpr -> N -> PExpr.
 
+
  (** evaluation of polynomial expressions towards R *)
  Definition mk_X j := mkPinj_pred j mkX.
 
@@ -911,6 +914,8 @@ Section MakeRingPol.
 
  Fixpoint PEeval (l:list R) (pe:PExpr) {struct pe} : R :=
    match pe with
+   | PEO => rO
+   | PEI => rI
    | PEc c => phi c
    | PEX j => nth 0 j l
    | PEadd pe1 pe2 => (PEeval l pe1) + (PEeval l pe2)
@@ -979,6 +984,8 @@ Section POWER.
 
   Fixpoint norm_aux (pe:PExpr) : Pol :=
    match pe with
+   | PEO => Pc cO
+   | PEI => Pc cI
    | PEc c => Pc c
    | PEX j => mk_X j
    | PEadd (PEopp pe1) pe2 => (norm_aux pe2) -- (norm_aux pe1)
@@ -1010,7 +1017,7 @@ Section POWER.
     end.
   Proof.
   simpl (norm_aux (PEadd _ _)).
-  destruct pe1; [ | | | | | reflexivity | ];
+  destruct pe1; [ | | | | | | | reflexivity | ];
    destruct pe2; simpl get_PEopp; reflexivity.
   Qed.
 
@@ -1028,6 +1035,8 @@ Section POWER.
   Proof.
    intros.
    induction pe.
+   - now rewrite (morph0 CRmorph).
+   - now rewrite (morph1 CRmorph).
    - reflexivity.
    - apply mkX_ok.
    - simpl PEeval. rewrite IHpe1, IHpe2.
@@ -1472,3 +1481,6 @@ Qed.
  Qed.
 
 End MakeRingPol.
+
+Arguments PEO [C].
+Arguments PEI [C].

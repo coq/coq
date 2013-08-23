@@ -127,7 +127,6 @@ Definition list_reifyl (R:Type) lexpr lvar lterm
 
 Unset Implicit Arguments.
 
-
 Ltac lterm_goal g :=
   match g with
   | ?t1 == ?t2 => constr:(t1::t2::nil)
@@ -137,6 +136,7 @@ Ltac lterm_goal g :=
 
 Lemma Zeqb_ok: forall x y : Z, Zeq_bool x y = true -> x == y.
  intros x y H. rewrite (Zeq_bool_eq x y H). reflexivity. Qed. 
+
 
 Ltac reify_goal lvar lexpr lterm:=
   (*idtac lvar; idtac lexpr; idtac lterm;*)

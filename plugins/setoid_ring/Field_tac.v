@@ -10,12 +10,19 @@ Require Import Ring_tac BinList Ring_polynom InitialRing.
 Require Export Field_theory.
 
  (* syntaxification *)
- Ltac mkFieldexpr C Cst CstPow radd rmul rsub ropp rdiv rinv rpow t fv :=
+ (* We do not assume that Cst recognizes the rO and rI terms as constants, as *)
+ (* the tactic could be used to discriminate occurrences of an opaque *)
+ (* constant phi, with (phi 0) not convertible to 0 for instance *)
+ Ltac mkFieldexpr C Cst CstPow rO rI radd rmul rsub ropp rdiv rinv rpow t fv :=
  let rec mkP t :=
     let f :=
     match Cst t with
     | InitialRing.NotConstant =>
         match t with
+        | rO => 
+          fun _ => constr:(@FEO C)
+        | rI => 
+          fun _ => constr:(@FEI C)
         | (radd ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
@@ -54,11 +61,16 @@ Require Export Field_theory.
     f ()
  in mkP t.
 
-Ltac FFV Cst CstPow add mul sub opp div inv pow t fv :=
+ (* We do not assume that Cst recognizes the rO and rI terms as constants, as *)
+ (* the tactic could be used to discriminate occurrences of an opaque *)
+ (* constant phi, with (phi 0) not convertible to 0 for instance *)
+Ltac FFV Cst CstPow rO rI add mul sub opp div inv pow t fv :=
  let rec TFV t fv :=
   match Cst t with
   | InitialRing.NotConstant =>
       match t with
+      | rO => fv
+      | rI => fv
       | (add ?t1 ?t2) => TFV t2 ltac:(TFV t1 fv)
       | (mul ?t1 ?t2) => TFV t2 ltac:(TFV t1 fv)
       | (sub ?t1 ?t2) => TFV t2 ltac:(TFV t1 fv)
@@ -83,60 +95,60 @@ Ltac FFV Cst CstPow add mul sub opp div inv pow t fv :=
 Ltac PackField F req Cst_tac Pow_tac L1 L2 L3 L4 cond_ok pre post :=
   let FLD :=
     match type of L1 with
-    | context [req (@FEeval ?R ?rO ?radd ?rmul ?rsub ?ropp ?rdiv ?rinv
+    | context [req (@FEeval ?R ?rO ?rI ?radd ?rmul ?rsub ?ropp ?rdiv ?rinv
                                       ?C ?phi ?Cpow ?Cp_phi ?rpow _ _) _ ] =>
         (fun proj =>
            proj Cst_tac Pow_tac pre post
-             req radd rmul rsub ropp rdiv rinv rpow C L1 L2 L3 L4 cond_ok)
+             req rO rI radd rmul rsub ropp rdiv rinv rpow C L1 L2 L3 L4 cond_ok)
     | _ => fail 1 "field anomaly: bad correctness lemma (parse)"
     end in
   F FLD.
 
 Ltac get_FldPre FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
        pre).
 
 Ltac get_FldPost FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
        post).
 
 Ltac get_L1 FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
        L1).
 
 Ltac get_SimplifyEqLemma FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
        L2).
 
 Ltac get_SimplifyLemma FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
        L3).
 
 Ltac get_L4 FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
        L4).
 
 Ltac get_CondLemma FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
        cond_ok).
 
 Ltac get_FldEq FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
        req).
 
@@ -146,33 +158,33 @@ Ltac get_FldCarrier FLD :=
 
 Ltac get_RingFV FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
-       FV Cst_tac Pow_tac radd rmul rsub ropp rpow).
+       FV Cst_tac Pow_tac r0 r1 radd rmul rsub ropp rpow).
 
 Ltac get_FFV FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
-       FFV Cst_tac Pow_tac radd rmul rsub ropp rdiv rinv rpow).
+       FFV Cst_tac Pow_tac r0 r1 radd rmul rsub ropp rdiv rinv rpow).
 
 Ltac get_RingMeta FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
-       mkPolexpr C Cst_tac Pow_tac radd rmul rsub ropp rpow).
+       mkPolexpr C Cst_tac Pow_tac r0 r1 radd rmul rsub ropp rpow).
 
 Ltac get_Meta FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
-       mkFieldexpr C Cst_tac Pow_tac radd rmul rsub ropp rdiv rinv rpow).
+       mkFieldexpr C Cst_tac Pow_tac r0 r1 radd rmul rsub ropp rdiv rinv rpow).
 
 Ltac get_Hyp_tac FLD :=
   FLD ltac:
-      (fun Cst_tac Pow_tac pre post req radd rmul rsub ropp rdiv rinv rpow C
+      (fun Cst_tac Pow_tac pre post req r0 r1 radd rmul rsub ropp rdiv rinv rpow C
            L1 L2 L3 L4 cond_ok =>
-       let mkPol := mkPolexpr C Cst_tac Pow_tac radd rmul rsub ropp rpow in
+       let mkPol := mkPolexpr C Cst_tac Pow_tac r0 r1 radd rmul rsub ropp rpow in
        fun fv lH => mkHyp_tac C req ltac:(fun t => mkPol t fv) lH).
 
 Ltac get_FEeval FLD :=
@@ -180,8 +192,8 @@ Ltac get_FEeval FLD :=
   match type of L1 with
   | context
     [(@FEeval
-      ?R ?r0 ?add ?mul ?sub ?opp ?div ?inv ?C ?phi ?Cpow ?powphi ?pow _ _)] =>
-       constr:(@FEeval R r0 add mul sub opp div inv C phi Cpow powphi pow)
+      ?R ?r0 ?r1 ?add ?mul ?sub ?opp ?div ?inv ?C ?phi ?Cpow ?powphi ?pow _ _)] =>
+       constr:(@FEeval R r0 r1 add mul sub opp div inv C phi Cpow powphi pow)
   | _ => fail 1 "field anomaly: bad correctness lemma (get_FEeval)"
   end.
 
@@ -560,7 +572,7 @@ Ltac field_lemmas set ext inv_m fspec pspec sspec dspec rk :=
              (fun f =>
                f afth ext_r morph field_ok field_simpl_ok field_simpl_eq_ok field_simpl_eq_in
                   cond1_ok cond2_ok)
-           | _ => fail 4 "field: bad coefficiant division specification"
+           | _ => fail 4 "field: bad coefficient division specification"
            end
          | _ => fail 3 "field: bad sign specification"
          end

@@ -21,6 +21,7 @@ Require Export Ncring_tac.
 Class Cring {R:Type}`{Rr:Ring R} := 
  cring_mul_comm: forall x y:R, x * y == y * x.
 
+
 Ltac reify_goal lvar lexpr lterm:=
   (*idtac lvar; idtac lexpr; idtac lterm;*)
   match lexpr with
@@ -30,10 +31,10 @@ Ltac reify_goal lvar lexpr lterm:=
           |- (?op ?u1 ?u2) =>
            change (op 
              (@Ring_polynom.PEeval
-               _ zero _+_ _*_ _-_ -_ Z Ncring_initial.gen_phiZ N (fun n:N => n)
+               _ zero one _+_ _*_ _-_ -_ Z Ncring_initial.gen_phiZ N (fun n:N => n)
                (@Ring_theory.pow_N _ 1 multiplication) lvar e1)
              (@Ring_polynom.PEeval
-               _ zero _+_ _*_ _-_ -_ Z Ncring_initial.gen_phiZ N (fun n:N => n)
+               _ zero one _+_ _*_ _-_ -_ Z Ncring_initial.gen_phiZ N (fun n:N => n)
                (@Ring_theory.pow_N _ 1 multiplication) lvar e2))
         end
   end.

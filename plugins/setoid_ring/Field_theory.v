@@ -135,7 +135,7 @@ Let rpow_pow := pow_th.(rpow_pow_N).
 Bind Scope PE_scope with PExpr.
 Delimit Scope PE_scope with poly.
 
-Notation NPEeval := (PEeval rO radd rmul rsub ropp phi Cp_phi rpow).
+Notation NPEeval := (PEeval rO rI radd rmul rsub ropp phi Cp_phi rpow).
 Notation "P @ l" := (NPEeval l P) (at level 10, no associativity).
 
 Infix "+" := PEadd : PE_scope.
@@ -698,6 +698,8 @@ Fixpoint PEsimp (e : PExpr C) : PExpr C :=
 Theorem PEsimp_ok e : (PEsimp e === e)%poly.
 Proof.
 induction e; simpl.
+- reflexivity.
+- reflexivity.
 - intro l; trivial.
 - intro l; trivial.
 - rewrite NPEadd_ok. now f_equiv.
@@ -717,7 +719,9 @@ Qed.
 (* The input: syntax of a field expression *)
 
 Inductive FExpr : Type :=
-   FEc: C ->  FExpr
+ | FEO : FExpr
+ | FEI : FExpr
+ | FEc: C ->  FExpr
  | FEX: positive ->  FExpr
  | FEadd: FExpr -> FExpr ->  FExpr
  | FEsub: FExpr -> FExpr ->  FExpr
@@ -729,6 +733,8 @@ Inductive FExpr : Type :=
 
 Fixpoint FEeval (l : list R) (pe : FExpr) {struct pe} : R :=
   match pe with
+  | FEO       => rO
+  | FEI       => rI
   | FEc c     => phi c
   | FEX x     => BinList.nth 0 x l
   | FEadd x y => FEeval l x + FEeval l y
@@ -1024,6 +1030,8 @@ Qed.
 
 Fixpoint Fnorm (e : FExpr) : linear :=
   match e with
+  | FEO => mk_linear (PEc cO) (PEc cI) nil
+  | FEI => mk_linear (PEc cI) (PEc cI) nil
   | FEc c => mk_linear (PEc c) (PEc cI) nil
   | FEX x => mk_linear (PEX C x) (PEc cI) nil
   | FEadd e1 e2 =>
@@ -1083,6 +1091,8 @@ Theorem Pcond_Fnorm l e :
 Proof.
 induction e; simpl condition; rewrite ?PCond_cons, ?PCond_app;
  simpl denum; intros (Hc1,Hc2) || intros Hc; rewrite ?NPEmul_ok.
+- simpl. rewrite phi_1; exact rI_neq_rO.
+- simpl. rewrite phi_1; exact rI_neq_rO.
 - simpl; intros. rewrite phi_1; exact rI_neq_rO.
 - simpl; intros. rewrite phi_1; exact rI_neq_rO.
 - rewrite <- split_ok_r. simpl. apply field_is_integral_domain.
@@ -1125,6 +1135,8 @@ induction fe; simpl condition; rewrite ?PCond_cons, ?PCond_app; simpl;
  try (specialize (IHfe2 Hc2);apply Pcond_Fnorm in Hc2);
  try set (F1 := Fnorm fe1) in *; try set (F2 := Fnorm fe2) in *.
 
+- now rewrite phi_1, phi_0, rdiv_def.
+- now rewrite phi_1; apply rdiv1.
 - rewrite phi_1; apply rdiv1.
 - rewrite phi_1; apply rdiv1.
 - rewrite NPEadd_ok, !NPEmul_ok. simpl.
@@ -1177,7 +1189,7 @@ apply cross_product_eq; trivial;
 Qed.
 
 (* Correctness lemmas of reflexive tactics *)
-Notation Ninterp_PElist := (interp_PElist rO radd rmul rsub ropp req phi Cp_phi rpow).
+Notation Ninterp_PElist := (interp_PElist rO rI radd rmul rsub ropp req phi Cp_phi rpow).
 Notation Nmk_monpol_list := (mk_monpol_list cO cI cadd cmul csub copp ceqb cdiv).
 
 Theorem Fnorm_ok:
@@ -1747,3 +1759,6 @@ Qed.
 End Field.
 
 End Complete.
+
+Arguments FEO [C].
+Arguments FEI [C].

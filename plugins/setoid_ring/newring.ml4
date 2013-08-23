@@ -599,26 +599,8 @@ let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
     | Some (Closed lc) ->
         closed_term_ast (List.map Smartlocate.global_with_alias lc)
     | None ->
-        (match rk, opp, kind with
-            Abstract, None, _ ->
-              let t = ArgArg(Loc.ghost,Lazy.force ltac_inv_morphN) in
-              TacArg(Loc.ghost,TacCall(Loc.ghost,t,List.map carg [zero;one;add;mul]))
-          | Abstract, Some opp, Some _ ->
-              let t = ArgArg(Loc.ghost, Lazy.force ltac_inv_morphZ) in
-              TacArg(Loc.ghost,TacCall(Loc.ghost,t,List.map carg [zero;one;add;mul;opp]))
-          | Abstract, Some opp, None ->
-              let t = ArgArg(Loc.ghost, Lazy.force ltac_inv_morphNword) in
-              TacArg
-                (Loc.ghost,TacCall(Loc.ghost,t,List.map carg [zero;one;add;mul;opp]))
-          | Computational _,_,_ ->
-              let t = ArgArg(Loc.ghost, Lazy.force ltac_inv_morph_gen) in
-              TacArg
-                (Loc.ghost,TacCall(Loc.ghost,t,List.map carg [zero;one;zero;one]))
-          | Morphism mth,_,_ ->
-              let (_,czero,cone,_,_,_,_,_,_) = dest_morph env sigma mth in
-              let t = ArgArg(Loc.ghost, Lazy.force ltac_inv_morph_gen) in
-              TacArg
-                (Loc.ghost,TacCall(Loc.ghost,t,List.map carg [zero;one;czero;cone])))
+        let t = ArgArg(Loc.ghost,Lazy.force ltac_inv_morph_nothing) in
+              TacArg(Loc.ghost,TacCall(Loc.ghost,t,[]))
 
 let make_hyp env c =
   let t = Retyping.get_type_of env Evd.empty c in
@@ -857,8 +839,8 @@ let _ = add_map "field_cond"
      coq_nil, (function -1->Eval|_ -> Prot);
     (* PCond: evaluate morphism and denum list, protect ring
        operations and make recursive call on the var map *)
-     my_constant "PCond", (function -1|8|10|13->Eval|12->Rec|_->Prot)]);;
-(*                       (function -1|8|10->Eval|9->Rec|_->Prot)]);;*)
+     my_constant "PCond", (function -1|9|11|14->Eval|13->Rec|_->Prot)]);;
+(*                       (function -1|9|11->Eval|10->Rec|_->Prot)]);;*)
 
 
 let _ = Redexpr.declare_reduction "simpl_field_expr"

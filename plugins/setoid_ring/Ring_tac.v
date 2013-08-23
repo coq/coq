@@ -196,12 +196,17 @@ Ltac get_MonPol lemma :=
 (********************************************************)
 
 (* Building the atom list of a ring expression *)
-Ltac FV Cst CstPow add mul sub opp pow t fv :=
+(* We do not assume that Cst recognizes the rO and rI terms as constants, as *)
+(* the tactic could be used to discriminate occurrences of an opaque *)
+(* constant phi, with (phi 0) not convertible to 0 for instance *)
+Ltac FV Cst CstPow rO rI add mul sub opp pow t fv :=
  let rec TFV t fv :=
   let f :=
   match Cst t with
   | NotConstant =>
       match t with
+      | rO =>  fun _ => fv
+      | rI =>  fun _ => fv
       | (add ?t1 ?t2) => fun _ => TFV t2 ltac:(TFV t1 fv)
       | (mul ?t1 ?t2) => fun _ => TFV t2 ltac:(TFV t1 fv)
       | (sub ?t1 ?t2) => fun _ => TFV t2 ltac:(TFV t1 fv)
@@ -219,12 +224,19 @@ Ltac FV Cst CstPow add mul sub opp pow t fv :=
  in TFV t fv.
 
  (* syntaxification of ring expressions *)
-Ltac mkPolexpr C Cst CstPow radd rmul rsub ropp rpow t fv :=
+ (* We do not assume that Cst recognizes the rO and rI terms as constants, as *)
+ (* the tactic could be used to discriminate occurrences of an opaque *)
+ (* constant phi, with (phi 0) not convertible to 0 for instance *)
+Ltac mkPolexpr C Cst CstPow rO rI radd rmul rsub ropp rpow t fv :=
  let rec mkP t :=
     let f :=
     match Cst t with
     | InitialRing.NotConstant =>
         match t with
+        | rO => 
+          fun _ => constr:(@PEO C)
+        | rI => 
+          fun _ => constr:(@PEI C)
         | (radd ?t1 ?t2) =>
           fun _ =>
           let e1 := mkP t1 in
@@ -260,58 +272,58 @@ Ltac PackRing F req sth ext morph arth cst_tac pow_tac lemma1 lemma2 pre post :=
   let RNG :=
     match type of lemma1 with
     | context
-       [@PEeval ?R ?rO ?add ?mul ?sub ?opp ?C ?phi ?Cpow ?powphi ?pow _ _] =>
+       [@PEeval ?R ?r0 ?r1 ?add ?mul ?sub ?opp ?C ?phi ?Cpow ?powphi ?pow _ _] =>
         (fun proj => proj
              cst_tac pow_tac pre post
-             R req add mul sub opp C Cpow powphi pow lemma1 lemma2)
+             R req r0 r1 add mul sub opp C Cpow powphi pow lemma1 lemma2)
     | _ => fail 1 "field anomaly: bad correctness lemma (parse)"
     end in
   F RNG.
 
 Ltac get_Carrier RNG :=
   RNG ltac:(fun cst_tac pow_tac pre post
-             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+             R req r0 r1 add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
             R).
 
 Ltac get_Eq RNG :=
   RNG ltac:(fun cst_tac pow_tac pre post
-             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+             R req r0 r1 add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
             req).
 
 Ltac get_Pre RNG :=
   RNG ltac:(fun cst_tac pow_tac pre post
-             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+             R req r0 r1 add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
             pre).
 
 Ltac get_Post RNG :=
   RNG ltac:(fun cst_tac pow_tac pre post
-             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+             R req r0 r1 add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
             post).
 
 Ltac get_NormLemma RNG :=
   RNG ltac:(fun cst_tac pow_tac pre post
-             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+             R req r0 r1 add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
             lemma1).
 
 Ltac get_SimplifyLemma RNG :=
   RNG ltac:(fun cst_tac pow_tac pre post
-             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+             R req r0 r1 add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
             lemma2).
 
 Ltac get_RingFV RNG :=
   RNG ltac:(fun cst_tac pow_tac pre post
-             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
-            FV cst_tac pow_tac add mul sub opp pow).
+             R req r0 r1 add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+            FV cst_tac pow_tac r0 r1 add mul sub opp pow).
 
 Ltac get_RingMeta RNG :=
   RNG ltac:(fun cst_tac pow_tac pre post
-             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
-            mkPolexpr C cst_tac pow_tac add mul sub opp pow).
+             R req r0 r1 add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+            mkPolexpr C cst_tac pow_tac r0 r1 add mul sub opp pow).
 
 Ltac get_RingHypTac RNG :=
   RNG ltac:(fun cst_tac pow_tac pre post
-             R req add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
-       let mkPol := mkPolexpr C cst_tac pow_tac add mul sub opp pow in
+             R req r0 r1 add mul sub opp C Cpow powphi pow lemma1 lemma2 =>
+       let mkPol := mkPolexpr C cst_tac pow_tac r0 r1 add mul sub opp pow in
        fun fv lH => mkHyp_tac C req ltac:(fun t => mkPol t fv) lH).
 
 (* ring tactics *)
@@ -338,7 +350,7 @@ Ltac Ring RNG lemma lH :=
     (apply (lemma vfv vlpe pe1 pe2)
       || fail "typing error while applying ring");
     [ ((let prh := proofHyp_tac lH in exact prh)
-        || idtac "can not automatically proof hypothesis :";
+        || idtac "can not automatically prove hypothesis :";
            idtac " maybe a left member of a hypothesis is not a monomial")
     | vm_compute;
       (exact (eq_refl true) || fail "not a valid ring equation")]).
