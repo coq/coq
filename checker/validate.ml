@@ -56,6 +56,13 @@ let val_block ctx o =
       fail ctx o "block: found no scan tag")
   else fail ctx o "expected block obj"
 
+let val_dyn ctx o =
+  let fail () = fail ctx o "expected a Dyn.t" in
+  if not (Obj.is_block o) then fail ()
+  else if not (Obj.size o = 2) then fail ()
+  else if not (Obj.tag (Obj.field o 0) = Obj.string_tag) then fail ()
+  else ()
+
 open Values
 
 let rec val_gen v ctx o = match v with
@@ -71,6 +78,7 @@ let rec val_gen v ctx o = match v with
   | Any -> ()
   | Fail s -> fail ctx o ("unexpected object " ^ s)
   | Annot (s,v) -> val_gen v (ctx/s) o
+  | Dyn -> val_dyn ctx o
 
 (* Check that an object is a tuple (or a record). vs is an array of
    value representation for each field. Its size corresponds to the

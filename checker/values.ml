@@ -42,6 +42,7 @@ type value =
   | Int
   | String
   | Annot of string * value
+  | Dyn
 
 (** Some pseudo-constructors *)
 
@@ -295,7 +296,7 @@ let v_compiled_lib =
 
 (** Library objects *)
 
-let v_obj = Tuple ("Dyn.t",[|String;Any|])
+let v_obj = Dyn
 let v_libobj = Tuple ("libobj", [|v_id;v_obj|])
 let v_libobjs = List v_libobj
 let v_libraryobjs = Tuple ("library_objects",[|v_libobjs;v_libobjs|])
@@ -306,3 +307,22 @@ let v_lib =
   Tuple ("library",[|v_dp;v_compiled_lib;v_libraryobjs;v_deps;Array v_dp|])
 
 let v_opaques = Array v_constr
+
+(** Registering dynamic values *)
+
+module StringOrd =
+struct
+  type t = string
+  let compare (x : t) (y : t) = compare x y
+end
+
+module StringMap = Map.Make(StringOrd)
+
+let dyn_table : value StringMap.t ref = ref StringMap.empty
+
+let register_dyn name t =
+  dyn_table := StringMap.add name t !dyn_table
+
+let find_dyn name =
+  try StringMap.find name !dyn_table
+  with Not_found -> Any

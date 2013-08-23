@@ -12,6 +12,10 @@ open Values
 
 (** Name of a value *)
 
+type dyn = { dyn_tag : string; dyn_obj : Obj.t; }
+
+let to_dyn obj = (Obj.magic obj : dyn)
+
 let rec get_name ?(extra=false) = function
   |Any -> "?"
   |Fail _ -> assert false
@@ -23,6 +27,7 @@ let rec get_name ?(extra=false) = function
   |Int -> "int"
   |String -> "string"
   |Annot (s,v) -> s^"/"^get_name ~extra v
+  |Dyn -> "<dynamic>"
 
 (** For tuples, its quite handy to display the inner 1st string (if any).
     Cf. [structure_body] for instance *)
@@ -80,6 +85,10 @@ let rec get_children v o pos = match v with
     if Obj.is_block o && Obj.tag o < Obj.no_scan_tag then
       Array.init (Obj.size o) (fun i -> (Any,Obj.field o i,i::pos))
     else [||]
+  |Dyn ->
+    let t = to_dyn o in
+    let tpe = find_dyn t.dyn_tag in
+    [|(String, Obj.repr t.dyn_tag, 0 :: pos); (tpe, t.dyn_obj, 1 :: pos)|]
   |Fail _ -> assert false
 
 type info = {
