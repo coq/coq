@@ -432,7 +432,7 @@ let instances r =
   let cl = class_info r in instances_of cl    
 
 let is_class gr = 
-  Refmap.fold (fun k v acc -> acc || eq_gr v.cl_impl gr) !classes false
+  Refmap.exists (fun _ v -> eq_gr v.cl_impl gr) !classes
 
 let is_instance = function
   | ConstRef c ->

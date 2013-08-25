@@ -146,7 +146,7 @@ module EvarInfoMap = struct
   let fold_undefined (def,undef) f a =
     ExistentialMap.fold f undef a
   let exists_undefined (def,undef) f =
-    ExistentialMap.fold (fun k v b -> b || f k v) undef false
+    ExistentialMap.exists f undef
 
   let add (def,undef) evk newinfo = match newinfo.evar_body with
   | Evar_empty -> (def, ExistentialMap.add evk newinfo undef)

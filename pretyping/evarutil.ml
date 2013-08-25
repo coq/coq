@@ -429,7 +429,7 @@ let rec check_and_clear_in_constr evdref err ids c =
 	       in the type of ev and adjust the source of the dependency *)
 	    let nconcl =
 	      try
-                let nids = Id.Map.fold (fun x _ accu -> Id.Set.add x accu) rids Id.Set.empty in
+                let nids = Id.Map.domain rids in
                 check_and_clear_in_constr evdref (EvarTypingBreak ev) nids (evar_concl evi)
 	      with ClearDependencyError (rid,err) ->
 		raise (ClearDependencyError (Id.Map.find rid rids,err)) in

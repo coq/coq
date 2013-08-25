@@ -358,11 +358,9 @@ let locate_if_isevar loc na = function
   | x -> x
 
 let reset_hidden_inductive_implicit_test env =
-  { env with impls = Id.Map.fold (fun id x ->
-       let x = match x with
+  { env with impls = Id.Map.map (function
          | (Inductive _,b,c,d) -> (Inductive [],b,c,d)
-         | x -> x
-       in Id.Map.add id x) env.impls Id.Map.empty }
+         | x -> x) env.impls }
 
 let check_hidden_implicit_parameters id impls =
   if Id.Map.exists (fun _ -> function

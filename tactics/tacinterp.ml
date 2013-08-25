@@ -509,9 +509,8 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
        context at globalization time: we retype with the now known
        intros/lettac/inversion hypothesis names *)
   | Some c ->
-      let fold id _ accu = Id.Set.add id accu in
-      let ltacvars = Id.Map.fold fold constrvars Id.Set.empty in
-      let bndvars = Id.Map.fold fold ist.lfun Id.Set.empty in
+      let ltacvars = Id.Map.domain constrvars in
+      let bndvars = Id.Map.domain ist.lfun in
       let ltacdata = (ltacvars, bndvars) in
       intern_gen kind ~allow_patvar ~ltacvars:ltacdata sigma env c
   in
@@ -1961,8 +1960,7 @@ let interp_tac_gen lfun avoid_ids debug t gl =
   let extra = TacStore.set TacStore.empty f_debug debug in
   let extra = TacStore.set extra f_avoid_ids avoid_ids in
   let ist = { lfun = lfun; extra = extra } in
-  let fold x _ accu = Id.Set.add x accu in
-  let ltacvars = Id.Map.fold fold lfun Id.Set.empty in
+  let ltacvars = Id.Map.domain lfun in
   interp_tactic ist
     (intern_pure_tactic {
       ltacvars; ltacrecvars = Id.Map.empty;

@@ -2447,7 +2447,7 @@ let hyps_of_vars env sign nogen hyps =
 	  else if Id.Set.mem x hs then (hs,x::hl)
 	  else
 	    let xvars = global_vars_set_of_decl env d in
-	      if not (Id.Set.equal (Id.Set.diff xvars hs) Id.Set.empty) then
+	      if not (Id.Set.is_empty (Id.Set.diff xvars hs)) then
 		(Id.Set.add x hs, x :: hl)
 	      else (hs, hl))
         ~init:(hyps,[])

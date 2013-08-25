@@ -771,7 +771,7 @@ let pr_notation_info prglob ntn c =
 
 let pr_named_scope prglob scope sc =
  (if String.equal scope default_scope then
-   match String.Map.fold (fun _ _ x -> x+1) sc.notations 0 with
+   match String.Map.cardinal sc.notations with
      | 0 -> str "No lonely notation"
      | n -> str "Lonely notation" ++ (if Int.equal n 1 then mt() else str"s")
   else
