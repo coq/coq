@@ -103,7 +103,7 @@ val refine : refinable -> subgoals sensitive
 (*** Cleaning  goals ***)
 
 (* Implements the [clear] tactic *)
-val clear : Names.Id.t list -> subgoals sensitive
+val clear : Names.Id.Set.t -> subgoals sensitive
 
 (* Implements the [clearbody] tactic *)
 val clear_body : Names.Id.t list -> subgoals sensitive

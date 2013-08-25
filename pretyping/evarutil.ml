@@ -374,12 +374,14 @@ exception ClearDependencyError of Id.t * clear_dependency_error
 
 let cleared = Store.field ()
 
+exception Depends of Id.t
+
 let rec check_and_clear_in_constr evdref err ids c =
   (* returns a new constr where all the evars have been 'cleaned'
      (ie the hypotheses ids have been removed from the contexts of
      evars) *)
   let check id' =
-    if List.mem id' ids then
+    if Id.Set.mem id' ids then
       raise (ClearDependencyError (id',err))
   in
     match kind_of_term c with
@@ -404,35 +406,36 @@ let rec check_and_clear_in_constr evdref err ids c =
 	    let evi = Evd.find_undefined !evdref evk in
 	    let ctxt = Evd.evar_filtered_context evi in
 	    let (nhyps,nargs,rids) =
-	      List.fold_right2
-		(fun (rid,ob,c as h) a (hy,ar,ri) ->
-		  (* Check if some id to clear occurs in the instance
-		     a of rid in ev and remember the dependency *)
-		  match
-		    List.filter (fun id -> List.mem id ids) (Id.Set.elements (collect_vars a))
-		  with
-		  | id :: _ -> (hy,ar,(rid,id)::ri)
-		  | _ ->
-		  (* Check if some rid to clear in the context of ev
-		     has dependencies in another hyp of the context of ev
-		     and transitively remember the dependency *)
-		  match List.filter (fun (id,_) -> occur_var_in_decl (Global.env()) id h) ri with
-		  | (_,id') :: _ -> (hy,ar,(rid,id')::ri)
-		  | _ ->
-		  (* No dependency at all, we can keep this ev's context hyp *)
-		      (h::hy,a::ar,ri))
-		ctxt (Array.to_list l) ([],[],[]) in
+              List.fold_right2
+                (fun (rid, ob,c as h) a (hy,ar,ri) ->
+                  try
+                  (* Check if some id to clear occurs in the instance
+                     a of rid in ev and remember the dependency *)
+                    let check id = if Id.Set.mem id ids then raise (Depends id) in
+                    let () = Id.Set.iter check (collect_vars a) in
+                  (* Check if some rid to clear in the context of ev
+                     has dependencies in another hyp of the context of ev
+                     and transitively remember the dependency *)
+                    let check id _ =
+                      if occur_var_in_decl (Global.env ()) id h
+                      then raise (Depends id)
+                    in
+                    let () = Id.Map.iter check ri in
+                  (* No dependency at all, we can keep this ev's context hyp *)
+                    (h::hy, a::ar, ri)
+                  with Depends id -> (hy, ar, Id.Map.add rid id ri))
+		ctxt (Array.to_list l) ([],[],Id.Map.empty) in
 	    (* Check if some rid to clear in the context of ev has dependencies
 	       in the type of ev and adjust the source of the dependency *)
 	    let nconcl =
-	      try check_and_clear_in_constr evdref (EvarTypingBreak ev)
-		    (List.map fst rids) (evar_concl evi)
+	      try
+                let nids = Id.Map.fold (fun x _ accu -> Id.Set.add x accu) rids Id.Set.empty in
+                check_and_clear_in_constr evdref (EvarTypingBreak ev) nids (evar_concl evi)
 	      with ClearDependencyError (rid,err) ->
-		raise (ClearDependencyError (List.assoc rid rids,err)) in
+		raise (ClearDependencyError (Id.Map.find rid rids,err)) in
 
-            begin match rids with
-            | [] -> c
-            | _ ->
+            if Id.Map.is_empty rids then c
+            else
 	      let env = Context.fold_named_context push_named nhyps ~init:(empty_env) in
 	      let ev'= e_new_evar evdref env ~src:(evar_source evk !evdref) nconcl in
 	      evdref := Evd.define evk ev' !evdref;
@@ -445,7 +448,6 @@ let rec check_and_clear_in_constr evdref err ids c =
 	      evdref := Evd.add !evdref evk evi' ;
 	    (* spiwack: /hacking session *)
 	      mkEvar(evk', Array.of_list nargs)
-            end
 
       | _ -> map_constr (check_and_clear_in_constr evdref err ids) c
 
@@ -465,7 +467,7 @@ let clear_hyps_in_evi evdref hyps concl ids =
       match !vk with
 	| VKnone -> vk
 	| VKvalue (v,d) ->
-	    if (List.for_all (fun e -> not (Id.Set.mem e d)) ids) then
+	    if (Id.Set.for_all (fun e -> not (Id.Set.mem e d)) ids) then
 	      (* v does depend on any of ids, it's ok *)
 	      vk
 	    else

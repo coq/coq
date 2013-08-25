@@ -362,7 +362,7 @@ let insert_after_hyp (ctxt,vals) id d check =
 (* To be used in Logic.clear_hyps *)
 let remove_hyps ids check_context check_value (ctxt, vals) =
   List.fold_right2 (fun (id,_,_ as d) (id',v) (ctxt,vals) ->
-      if List.mem id ids then
+      if Id.Set.mem id ids then
 	(ctxt,vals)
       else
 	let nd = check_context d in

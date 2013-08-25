@@ -529,7 +529,7 @@ let prim_refiner r sigma goal =
 	let sign,cl,sigma =
 	  if replace then
 	    let nexthyp = get_hyp_after id (named_context_of_val sign) in
-	    let sign,cl,sigma = clear_hyps sigma [id] sign cl in
+	    let sign,cl,sigma = clear_hyps sigma (Id.Set.singleton id) sign cl in
 	    move_hyp true false ([],(id,None,t),named_context_of_val sign)
 	      nexthyp,
 	      cl,sigma
@@ -654,6 +654,7 @@ let prim_refiner r sigma goal =
 
     (* And now the structural rules *)
     | Thin ids ->
+        let ids = List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty ids in
 	let (hyps,concl,nsigma) = clear_hyps sigma ids sign cl in
 	let (gl,ev,sigma) =
 	  Goal.V82.mk_goal nsigma hyps concl (Goal.V82.extra nsigma goal)
