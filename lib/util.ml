@@ -71,6 +71,10 @@ let (@) = CList.append
 
 module Array : CArray.ExtS = CArray
 
+(* Maps *)
+
+module Map = CMap
+
 (* Matrices *)
 
 let matrix_transpose mat =

@@ -59,7 +59,7 @@ sig
   val split : char -> string -> string list
   val is_sub : string -> string -> int -> bool
   module Set : Set.S with type elt = t
-  module Map : Map.S with type key = t
+  module Map : CMap.ExtS with type key = t and module Set := Set
   val hcons : string -> string
 end
 
@@ -178,6 +178,6 @@ struct
 end
 
 module Set = Set.Make(Self)
-module Map = Map.Make(Self)
+module Map = CMap.Make(Self)
 
 let hcons = Hashcons.simple_hcons Hashcons.Hstring.generate ()

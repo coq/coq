@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Names
 open Term
 open Environ
@@ -19,8 +20,9 @@ type context_object =
   | Transparent of constant (** A transparent constant *)
 
 (** AssumptionSet.t is a set of [assumption] *)
-module OrderedContextObject :  Set.OrderedType with type t = context_object
-module ContextObjectMap : Map.S with type key = context_object
+module ContextObjectSet : Set.S with type elt = context_object
+module ContextObjectMap : Map.ExtS
+  with type key = context_object and module Set := ContextObjectSet
 
 (** collects all the assumptions (optionally including opaque definitions)
    on which a term relies (together with their type) *)

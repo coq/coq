@@ -93,7 +93,7 @@ sig
   module Set : Set.S with type elt = t
   (** Finite sets on [string] *)
 
-  module Map : Map.S with type key = t
+  module Map : CMap.ExtS with type key = t and module Set := Set
   (** Finite maps on [string] *)
 
   val hcons : string -> string

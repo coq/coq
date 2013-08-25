@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
+
 (** {6 Identifiers } *)
 
 module Id :
@@ -35,7 +37,7 @@ sig
   module Set : Set.S with type elt = t
   (** Finite sets of identifiers. *)
 
-  module Map : Map.S with type key = t
+  module Map : Map.ExtS with type key = t and module Set := Set
   (** Finite maps of identifiers. *)
 
   module Pred : Predicate.S with type elt = t
@@ -133,7 +135,7 @@ sig
   (** Pretty-printer. *)
 
   module Set : Set.S with type elt = t
-  module Map : Map.S with type key = t
+  module Map : Map.ExtS with type key = t and module Set := Set
 
 end
 
@@ -170,7 +172,7 @@ sig
 end
 
 module MBIset : Set.S with type elt = MBId.t
-module MBImap : Map.S with type key = MBId.t
+module MBImap : Map.ExtS with type key = MBId.t and module Set := MBIset
 
 (** {6 The module part of the kernel name } *)
 
@@ -194,7 +196,7 @@ sig
 end
 
 module MPset : Set.S with type elt = ModPath.t
-module MPmap : Map.S with type key = ModPath.t
+module MPmap : Map.ExtS with type key = ModPath.t and module Set := MPset
 
 (** {6 The absolute names of objects seen by kernel } *)
 
@@ -222,7 +224,7 @@ end
 
 module KNset  : Set.S with type elt = KerName.t
 module KNpred : Predicate.S with type elt = KerName.t
-module KNmap  : Map.S with type key = KerName.t
+module KNmap  : Map.ExtS with type key = KerName.t and module Set := KNset
 
 
 (** {6 Constant Names } *)
@@ -288,11 +290,11 @@ end
 
 (** The [*_env] modules consider an order on user part of names
    the others consider an order on canonical part of names*)
-module Cmap  : Map.S with type key = Constant.t
-module Cmap_env  : Map.S with type key = Constant.t
-module Cpred  : Predicate.S with type elt = Constant.t
-module Cset  : Set.S with type elt = Constant.t
+module Cpred : Predicate.S with type elt = Constant.t
+module Cset : Set.S with type elt = Constant.t
 module Cset_env  : Set.S with type elt = Constant.t
+module Cmap : Map.ExtS with type key = Constant.t and module Set := Cset
+module Cmap_env : Map.ExtS with type key = Constant.t  and module Set := Cset_env
 
 (** {6 Inductive names} *)
 
@@ -352,9 +354,9 @@ sig
 
 end
 
-module Mindmap : Map.S with type key = MutInd.t
-module Mindmap_env : Map.S with type key = MutInd.t
 module Mindset : Set.S with type elt = MutInd.t
+module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
+module Mindmap_env : Map.S with type key = MutInd.t
 
 (** Beware: first inductive has index 0 *)
 type inductive = MutInd.t * int
@@ -448,11 +450,7 @@ module Idset  : Set.S with type elt = identifier and type t = Id.Set.t
 module Idpred : Predicate.S with type elt = identifier and type t = Id.Pred.t
 (** @deprecated Same as [Id.Pred]. *)
 
-module Idmap  : sig
-  include Map.S with type key = identifier
-  val exists : (identifier -> 'a -> bool) -> 'a t -> bool
-  val singleton : key -> 'a -> 'a t
-end
+module Idmap : module type of Id.Map
 (** @deprecated Same as [Id.Map]. *)
 
 (** {5 Directory paths} *)

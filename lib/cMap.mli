@@ -6,15 +6,30 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** A native integer module with usual utility functions. *)
+(** {5 Extended version of OCaml's maps} *)
 
-type t = int
+module type OrderedType =
+sig
+  type t
+  val compare : t -> t -> int
+end
 
-external equal : t -> t -> bool = "%eq"
+module type S = Map.S
 
-external compare : t -> t -> int = "caml_int_compare"
+module type ExtS =
+sig
+  include Map.S
+  (** The underlying Map library *)
 
-val hash : t -> int
+  module Set : Set.S with type elt = key
+  (** Sets used by the domain function *)
 
-module Set : Set.S with type elt = t
-module Map : CMap.ExtS with type key = t and module Set := Set
+  val domain : 'a t -> Set.t
+  (** Recover the set of keys defined in the map. *)
+
+end
+
+module Make(M : Map.OrderedType) : ExtS with
+  type key = M.t
+  and type 'a t = 'a Map.Make(M).t
+  and module Set := Set.Make(M)

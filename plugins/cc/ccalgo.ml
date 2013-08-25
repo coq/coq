@@ -83,13 +83,20 @@ type pa_mark=
     Fmark of pa_fun
   | Cmark of pa_constructor
 
-module PacMap=Map.Make(struct
-			 type t=pa_constructor
-			 let compare=Pervasives.compare end)
+module PacOrd =
+struct
+  type t = pa_constructor
+  let compare = Pervasives.compare (** FIXME *)
+end
 
-module PafMap=Map.Make(struct
-			 type t=pa_fun
-			 let compare=Pervasives.compare end)
+module PafOrd =
+struct
+  type t = pa_fun
+  let compare = Pervasives.compare (** FIXME *)
+end
+
+module PacMap=Map.Make(PacOrd)
+module PafMap=Map.Make(PafOrd)
 
 type cinfo=
     {ci_constr: constructor; (* inductive type *)

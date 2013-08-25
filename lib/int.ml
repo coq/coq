@@ -21,4 +21,4 @@ struct
 end
 
 module Set = Set.Make(Self)
-module Map = Map.Make(Self)
+module Map = CMap.Make(Self)

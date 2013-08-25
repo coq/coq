@@ -58,15 +58,7 @@ struct
   end
 
   module Set = Set.Make(Self)
-  module Map =
-  struct
-    include Map.Make(Self)
-    exception Finded
-    let exists f m =
-      try iter (fun a b -> if f a b then raise Finded) m ; false
-      with Finded -> true
-    let singleton k v = add k v empty
-  end
+  module Map = CMap.Make(Self)
 
   module Pred = Predicate.Make(Self)
 
@@ -218,7 +210,7 @@ struct
 
 end
 
-module MBImap = Map.Make(MBId)
+module MBImap = CMap.Make(MBId)
 module MBIset = Set.Make(MBId)
 
 (** {6 Names of structure elements } *)
@@ -298,7 +290,7 @@ module ModPath = struct
 end
 
 module MPset = Set.Make(ModPath)
-module MPmap = Map.Make(ModPath)
+module MPmap = CMap.Make(ModPath)
 
 (** {6 Kernel names } *)
 
@@ -357,7 +349,7 @@ module KerName = struct
 
 end
 
-module KNmap = Map.Make(KerName)
+module KNmap = CMap.Make(KerName)
 module KNpred = Predicate.Make(KerName)
 module KNset = Set.Make(KerName)
 
@@ -467,8 +459,8 @@ end
 
 module Constant = KerPair
 
-module Cmap = Map.Make(Constant.CanOrd)
-module Cmap_env = Map.Make(Constant.UserOrd)
+module Cmap = CMap.Make(Constant.CanOrd)
+module Cmap_env = CMap.Make(Constant.UserOrd)
 module Cpred = Predicate.Make(Constant.CanOrd)
 module Cset = Set.Make(Constant.CanOrd)
 module Cset_env = Set.Make(Constant.UserOrd)
@@ -477,7 +469,7 @@ module Cset_env = Set.Make(Constant.UserOrd)
 
 module MutInd = KerPair
 
-module Mindmap = Map.Make(MutInd.CanOrd)
+module Mindmap = CMap.Make(MutInd.CanOrd)
 module Mindset = Set.Make(MutInd.CanOrd)
 module Mindmap_env = Map.Make(MutInd.UserOrd)
 

@@ -332,7 +332,7 @@ type ring_info =
       ring_pre_tac : glob_tactic_expr;
       ring_post_tac : glob_tactic_expr }
 
-module Cmap = Map.Make(struct type t = constr let compare = constr_ord end)
+module Cmap = Map.Make(Constr)
 
 let from_carrier = Summary.ref Cmap.empty ~name:"ring-tac-carrier-table"
 let from_relation = Summary.ref Cmap.empty ~name:"ring-tac-rel-table"

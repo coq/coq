@@ -60,6 +60,10 @@ val (@) : 'a list -> 'a list -> 'a list
 
 module Array : CArray.ExtS
 
+(** {6 Maps. } *)
+
+module Map : module type of CMap
+
 (** {6 Streams. } *)
 
 val stream_nth : int -> 'a Stream.t -> 'a

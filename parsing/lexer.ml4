@@ -14,7 +14,8 @@ open Tok
 (* Dictionaries: trees annotated with string options, each node being a map
    from chars to dictionaries (the subtrees). A trie, in other words. *)
 
-module CharMap = Map.Make (struct type t = char let compare = compare end)
+module CharOrd = struct type t = char let compare : char -> char -> int = compare end
+module CharMap = Map.Make (CharOrd)
 
 type ttree = {
   node : string option;

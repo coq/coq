@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Pp
 open Names
 open Term
@@ -57,10 +58,12 @@ module RefOrdered_env : sig
 end
 
 module Refset : Set.S with type elt = global_reference
-module Refmap : Map.S with type key = global_reference
+module Refmap : Map.ExtS
+  with type key = global_reference and module Set := Refset
 
 module Refset_env : Set.S with type elt = global_reference
-module Refmap_env : Map.S with type key = global_reference
+module Refmap_env : Map.ExtS
+  with type key = global_reference and module Set := Refset_env
 
 (** {6 Extended global references } *)
 

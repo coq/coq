@@ -192,8 +192,13 @@ type 'a option_sig = {
   optread  : unit -> 'a;
   optwrite : 'a -> unit }
 
-module OptionMap =
-  Map.Make (struct  type t = option_name let compare = compare end)
+module OptionOrd =
+struct
+  type t = option_name
+  let compare = compare
+end
+
+module OptionMap = Map.Make(OptionOrd)
 
 let value_tab = ref OptionMap.empty
 

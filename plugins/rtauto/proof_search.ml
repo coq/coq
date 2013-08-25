@@ -62,7 +62,8 @@ type form=
   | Conjunct of form * form
   | Disjunct of form * form
 
-module Fmap=Map.Make(struct type t=form let compare=compare end)
+module FOrd = struct type t = form let compare = Pervasives.compare (** FIXME *) end
+module Fmap = Map.Make(FOrd)
 
 type sequent =
     {rev_hyps: form Int.Map.t;

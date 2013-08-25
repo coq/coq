@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Loc
 open Pp
 open Names
@@ -19,9 +20,8 @@ open Termops
 (********************************************************************
    Meta map *)
 
-module Metamap : Map.S with type key = metavariable
-
 module Metaset : Set.S with type elt = metavariable
+module Metamap : Map.ExtS with type key = metavariable and module Set := Metaset
 
 type 'a freelisted = {
   rebus : 'a;
@@ -187,8 +187,10 @@ type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * env * constr * constr
 val add_conv_pb :  evar_constraint -> evar_map -> evar_map
 
-module ExistentialMap : Map.S with type key = existential_key
 module ExistentialSet : Set.S with type elt = existential_key
+module ExistentialMap : Map.ExtS
+  with type key = existential_key and module Set := ExistentialSet
+
 val extract_changed_conv_pbs : evar_map ->
       (ExistentialSet.t -> evar_constraint -> bool) ->
       evar_map * evar_constraint list
