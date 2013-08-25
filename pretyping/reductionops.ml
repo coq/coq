@@ -782,7 +782,7 @@ let whd_meta sigma c = match kind_of_term c with
  * Differs from (strong whd_meta). *)
 let plain_instance s c =
   let rec irec n u = match kind_of_term u with
-    | Meta p -> (try lift n (List.assoc p s) with Not_found -> u)
+    | Meta p -> (try lift n (Metamap.find p s) with Not_found -> u)
     | App (f,l) when isCast f ->
         let (f,_,t) = destCast f in
         let l' = Array.map (irec n) l in
@@ -791,7 +791,7 @@ let plain_instance s c =
 	    (* Don't flatten application nodes: this is used to extract a
                proof-term from a proof-tree and we want to keep the structure
                of the proof-tree *)
-	    (try let g = List.assoc p s in
+	    (try let g = Metamap.find p s in
 	    match kind_of_term g with
             | App _ ->
                 let h = Id.of_string "H" in
@@ -800,13 +800,12 @@ let plain_instance s c =
 	    with Not_found -> mkApp (f,l'))
         | _ -> mkApp (irec n f,l'))
     | Cast (m,_,_) when isMeta m ->
-	(try lift n (List.assoc (destMeta m) s) with Not_found -> u)
+	(try lift n (Metamap.find (destMeta m) s) with Not_found -> u)
     | _ ->
 	map_constr_with_binders succ irec n u
   in
-  match s with
-  | [] -> c
-  | _ -> irec 0 c
+  if Metamap.is_empty s then c
+  else irec 0 c
 
 (* [instance] is used for [res_pf]; the call to [local_strong whd_betaiota]
    has (unfortunately) different subtle side effects:
@@ -1041,32 +1040,32 @@ let meta_value evd mv =
   let rec valrec mv =
     match meta_opt_fvalue evd mv with
     | Some (b,_) ->
-      instance evd
-        (List.map (fun mv' -> (mv',valrec mv')) (Metaset.elements b.freemetas))
-        b.rebus
+      let metas = Metamap.bind valrec b.freemetas in
+      instance evd metas b.rebus
     | None -> mkMeta mv
   in
   valrec mv
 
 let meta_instance sigma b =
-  let c_sigma =
-    List.map
-      (fun mv -> (mv,meta_value sigma mv)) (Metaset.elements b.freemetas)
-  in
-  match c_sigma with
-  | [] -> b.rebus
-  | _ -> instance sigma c_sigma b.rebus
+  let fm = b.freemetas in
+  if Metaset.is_empty fm then b.rebus
+  else
+    let c_sigma = Metamap.bind (fun mv -> meta_value sigma mv) fm in
+    instance sigma c_sigma b.rebus
 
 let nf_meta sigma c = meta_instance sigma (mk_freelisted c)
 
 (* Instantiate metas that create beta/iota redexes *)
 
 let meta_reducible_instance evd b =
-  let fm = Metaset.elements b.freemetas in
-  let metas = List.fold_left (fun l mv ->
-    match (try meta_opt_fvalue evd mv with Not_found -> None) with
-    | Some (g,(_,s)) -> (mv,(g.rebus,s))::l
-    | None -> l) [] fm in
+  let fm = b.freemetas in
+  let fold mv accu =
+    let fvalue = try meta_opt_fvalue evd mv with Not_found -> None in
+    match fvalue with
+    | None -> accu
+    | Some (g, (_, s)) -> Metamap.add mv (g.rebus, s) accu
+  in
+  let metas = Metaset.fold fold fm Metamap.empty in
   let rec irec u =
     let u = whd_betaiota Evd.empty u in
     match kind_of_term u with
@@ -1074,7 +1073,7 @@ let meta_reducible_instance evd b =
 	let m = destMeta (strip_outer_cast c) in
 	(match
 	  try
-	    let g, s = List.assoc m metas in
+	    let g, s = Metamap.find m metas in
             let is_coerce = match s with CoerceToType -> true | _ -> false in
 	    if isConstruct g || not is_coerce then Some g else None
 	  with Not_found -> None
@@ -1085,7 +1084,7 @@ let meta_reducible_instance evd b =
 	let m = destMeta (strip_outer_cast f) in
 	(match
 	  try
-	    let g, s = List.assoc m metas in
+	    let g, s = Metamap.find m metas in
             let is_coerce = match s with CoerceToType -> true | _ -> false in
 	    if isLambda g || not is_coerce then Some g else None
 	  with Not_found -> None
@@ -1093,15 +1092,14 @@ let meta_reducible_instance evd b =
 	   | Some g -> irec (mkApp (g,l))
 	   | None -> mkApp (f,Array.map irec l))
     | Meta m ->
-	(try let g, s = List.assoc m metas in
+	(try let g, s = Metamap.find m metas in
           let is_coerce = match s with CoerceToType -> true | _ -> false in
           if not is_coerce then irec g else u
 	 with Not_found -> u)
     | _ -> map_constr irec u
   in
-  match fm with
-  | [] -> (* nf_betaiota? *) b.rebus
-  | _ -> irec b.rebus
+  if Metaset.is_empty fm then (* nf_betaiota? *) b.rebus
+  else irec b.rebus
 
 
 let head_unfold_under_prod ts env _ c =

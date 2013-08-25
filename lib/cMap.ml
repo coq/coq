@@ -19,11 +19,13 @@ sig
   include Map.S
   module Set : Set.S with type elt = key
   val domain : 'a t -> Set.t
+  val bind : (key -> 'a) -> Set.t -> 'a t
 end
 
-module Domain (M : Map.OrderedType) :
+module MapExt (M : Map.OrderedType) :
 sig
   val domain : 'a Map.Make(M).t -> Set.Make(M).t
+  val bind : (M.t -> 'a) -> Set.Make(M).t -> 'a Map.Make(M).t
 end =
 struct
   (** This unsafe module is a way to access to the actual implementations of
@@ -50,11 +52,17 @@ struct
   (** This function is essentially identity, but OCaml current stdlib does not
       take advantage of the similarity of the two structures, so we introduce
       this unsafe loophole. *)
- 
+
+  let rec bind f (s : set) : 'a map = match Obj.magic s with
+  | SEmpty -> Obj.magic MEmpty
+  | SNode (l, k, r, h) ->
+    Obj.magic (MNode (bind f l, k, f k, bind f r, h))
+  (** Dual operation of [domain]. *)
+
 end
 
 module Make(M : Map.OrderedType) =
 struct
   include Map.Make(M)
-  include Domain(M)
+  include MapExt(M)
 end

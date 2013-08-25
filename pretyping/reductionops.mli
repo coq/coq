@@ -225,8 +225,8 @@ val is_trans_fconv : conv_pb -> transparent_state -> env ->  evar_map -> constr 
 (** {6 Special-Purpose Reduction Functions } *)
 
 val whd_meta : evar_map -> constr -> constr
-val plain_instance : (metavariable * constr) list -> constr -> constr
-val instance :evar_map -> (metavariable * constr) list -> constr -> constr
+val plain_instance : constr Metamap.t -> constr -> constr
+val instance : evar_map -> constr Metamap.t -> constr -> constr
 val head_unfold_under_prod : transparent_state -> reduction_function
 
 (** {6 Heuristic for Conversion with Evar } *)

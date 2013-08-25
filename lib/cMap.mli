@@ -27,6 +27,10 @@ sig
   val domain : 'a t -> Set.t
   (** Recover the set of keys defined in the map. *)
 
+  val bind : (key -> 'a) -> Set.t -> 'a t
+  (** [bind f s] transform the set [x1; ...; xn] into [x1 := f x1; ...;
+      xn := f xn]. *)
+
 end
 
 module Make(M : Map.OrderedType) : ExtS with
