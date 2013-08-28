@@ -366,8 +366,14 @@ let admit () =
   let (id,k,typ,hook) = Pfedit.current_proof_statement () in
   let e = Pfedit.get_used_variables(), typ, None in
   let kn = declare_constant id (ParameterEntry e,IsAssumption Conjectural) in
-  Pfedit.delete_current_proof ();
-  assumption_message id;
+  let () = Pfedit.delete_current_proof () in
+  let () = match fst k with
+  | Global -> ()
+  | Local | Discharge ->
+    msg_warning (str "Let definition" ++ spc () ++ pr_id id ++ spc () ++
+      str "declared as an axiom.")
+  in
+  let () = assumption_message id in
   Option.iter (fun f -> f Global (ConstRef kn)) hook
 
 (* Miscellaneous *)
