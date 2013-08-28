@@ -183,8 +183,17 @@ exception Marshal_error
 
 (** Utility functions *)
 
+let rec has_flag (f : string) = function
+| [] -> false
+| (k, _) :: l -> CString.equal k f || has_flag f l
+
+let rec get_attr attr = function
+| [] -> raise Not_found
+| (k, v) :: l ->
+  if CString.equal k attr then v else get_attr attr l
+
 let massoc x l =
-  try List.assoc x l
+  try get_attr x l
   with Not_found -> raise Marshal_error
 
 let constructor t c args = Element (t, ["val", c], args)
@@ -364,7 +373,7 @@ let of_edit_or_state_id = function
   | Interface.State id -> ["object","state"], of_state_id id
 let to_edit_or_state_id attrs xml =
   try
-    let obj = List.assoc "object" attrs in
+    let obj = get_attr "object" attrs in
     if obj = "edit"then Interface.Edit (to_edit_id xml)
     else if obj = "state" then Interface.State (to_state_id xml)
     else raise Marshal_error
@@ -385,8 +394,8 @@ let to_value f = function
   else if ans = "fail" then
     let loc =
       try
-        let loc_s = int_of_string (List.assoc "loc_s" attrs) in
-        let loc_e = int_of_string (List.assoc "loc_e" attrs) in
+        let loc_s = int_of_string (get_attr "loc_s" attrs) in
+        let loc_e = int_of_string (get_attr "loc_e" attrs) in
         Some (loc_s, loc_e)
       with Not_found | Failure _ -> None
     in
@@ -435,9 +444,9 @@ let to_call = function
   let ans = massoc "val" attrs in
   begin match ans with
   | "interp" ->
-    let id = List.assoc "id" attrs in
-    let raw = List.mem_assoc "raw" attrs in
-    let vrb = List.mem_assoc "verbose" attrs in
+    let id = get_attr "id" attrs in
+    let raw = has_flag "raw" attrs in
+    let vrb = has_flag "verbose" attrs in
     Interp (int_of_string id, raw, vrb, raw_string l)
   | "backto" ->
       (match l with
@@ -446,7 +455,7 @@ let to_call = function
   | "goal" -> Goal ()
   | "evars" -> Evars ()
   | "status" ->
-      let force = List.assoc "force" attrs in
+      let force = get_attr "force" attrs in
       Status (bool_of_string force)
   | "search" ->
     let args = List.map (to_pair to_search_constraint to_bool) l in
@@ -576,8 +585,8 @@ let of_loc loc =
 let to_loc xml = match xml with
 | Element ("loc", l,[]) ->
     (try
-      let start = List.assoc "start" l in
-      let stop = List.assoc "stop" l in
+      let start = get_attr "start" l in
+      let stop = get_attr "stop" l in
       Loc.make_loc (int_of_string start, int_of_string stop)
     with Not_found | Invalid_argument _ -> raise Marshal_error)
 | _ -> raise Marshal_error

@@ -135,9 +135,6 @@ sig
 
   val index_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
 
-  val unique_index : 'a -> 'a list -> int
-  (** [unique_index x l] returns [Not_found] if [x] doesn't occur exactly once. *)
-
   val index0 : 'a -> 'a list -> int
   (** [index0] behaves as [index] except that it starts counting at 0. *)
 

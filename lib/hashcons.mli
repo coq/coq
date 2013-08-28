@@ -75,11 +75,6 @@ val simple_hcons : (unit -> 'u -> 't -> 't) -> ('u -> 't -> 't)
 val recursive_hcons : (unit -> ('t -> 't) * 'u -> 't -> 't) -> ('u -> 't -> 't)
 (** As [simple_hcons] but intended to be used with well-founded data structures. *)
 
-val recursive_loop_hcons :
-    (unit -> ('t -> 't) * 'u -> 't -> 't) -> ('u -> 't -> 't)
-(** As [simple_hcons] but intended to be used with any recursive data structure,
-    in particular if they contain loops. *)
-
 val recursive2_hcons :
   (unit -> ('t1 -> 't1) * ('t2 -> 't2) * 'u1 -> 't1 -> 't1) ->
     (unit -> ('t1 -> 't1) * ('t2 -> 't2) * 'u2 -> 't2 -> 't2) ->

@@ -15,7 +15,7 @@ type t = string * Obj.t
 let dyntab = ref ([] : string list)
 
 let create s =
-  if List.mem s !dyntab then
+  if List.exists (fun s' -> CString.equal s s') !dyntab then
     anomaly ~label:"Dyn.create" (Pp.str ("already declared dynamic " ^ s));
   dyntab := s :: !dyntab;
   ((fun v -> (s,Obj.repr v)),

@@ -48,7 +48,6 @@ module String : CString.ExtS
 
 (** Substitute %s in the first chain by the second chain *)
 val subst_command_placeholder : string -> string -> string
-val parse_loadpath : string -> string list
 
 (** {6 Lists. } *)
 

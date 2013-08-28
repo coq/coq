@@ -92,15 +92,6 @@ let recursive_hcons h u =
   let rec hrec x = hc (hrec,u) x in
   hrec
 
-(* If the structure may contain loops, use this one. *)
-let recursive_loop_hcons h u =
-  let hc = h () in
-  let rec hrec visited x =
-    if List.memq x visited then x
-    else hc (hrec (x::visited),u) x
-  in
-  hrec []
-
 (* For 2 mutually recursive types *)
 let recursive2_hcons h1 h2 u1 u2 =
   let hc1 = h1 () in

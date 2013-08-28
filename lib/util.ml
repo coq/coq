@@ -44,12 +44,6 @@ end
 
 module String : CString.ExtS = CString
 
-let parse_loadpath s =
-  let l = String.split '/' s in
-  if List.mem "" l then
-    invalid_arg "parse_loadpath: find an empty dir in loadpath";
-  l
-
 let subst_command_placeholder s t =
   let buff = Buffer.create (String.length s + String.length t) in
   let i = ref 0 in

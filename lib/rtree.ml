@@ -8,7 +8,6 @@
 
 open Util
 
-
 (* Type of regular trees:
    - Param denotes tree variables (like de Bruijn indices)
      the first int is the depth of the occurrence, and the second int
@@ -65,12 +64,13 @@ let rec expand = function
    directly one of the parameters of depth 0. Some care is taken to
    accept definitions like  rec X=Y and Y=f(X,Y) *)
 let mk_rec defs =
-  let rec check histo d =
-    match expand d with
-        Param(0,j) when List.mem j histo -> failwith "invalid rec call"
-      | Param(0,j) -> check (j::histo) defs.(j)
-      | _ -> () in
-  Array.mapi (fun i d -> check [i] d; Rec(i,defs)) defs
+  let rec check histo d = match expand d with
+  | Param (0, j) ->
+    if Int.Set.mem j histo then failwith "invalid rec call"
+    else check (Int.Set.add j histo) defs.(j)
+  | _ -> ()
+  in
+  Array.mapi (fun i d -> check (Int.Set.singleton i) d; Rec(i,defs)) defs
 (*
 let v(i,j) = lift i (mk_rec_calls(j+1)).(j);;
 let r = (mk_rec[|(mk_rec[|v(1,0)|]).(0)|]).(0);;

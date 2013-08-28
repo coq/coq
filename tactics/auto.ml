@@ -775,21 +775,12 @@ let add_transparency l b local dbnames =
     dbnames
 
 let add_extern pri pat tacast local dbname =
-  (* We check that all metas that appear in tacast have at least
-     one occurence in the left pattern pat *)
-  let tacmetas = [] in
-    match pat with
-    | Some (patmetas,pat) ->
-	(match (List.subtract tacmetas patmetas) with
-	| i::_ ->
-	    errorlabstrm "add_extern"
-	      (str "The meta-variable ?" ++ Ppconstr.pr_patvar i ++ str" is not bound.")
-	| []  ->
-	    Lib.add_anonymous_leaf
-	      (inAutoHint(local,dbname, AddHints [make_extern pri (Some pat) tacast])))
-    | None ->
-	Lib.add_anonymous_leaf
-	  (inAutoHint(local,dbname, AddHints [make_extern pri None tacast]))
+  let pat = match pat with
+  | None -> None
+  | Some (_, pat) -> Some pat
+  in
+  let hint = local, dbname, AddHints [make_extern pri pat tacast] in
+  Lib.add_anonymous_leaf (inAutoHint hint)
 
 let add_externs pri pat tacast local dbnames =
   List.iter (add_extern pri pat tacast local) dbnames

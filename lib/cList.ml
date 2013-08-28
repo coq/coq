@@ -88,7 +88,6 @@ sig
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
   val index : 'a -> 'a list -> int
   val index_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
-  val unique_index : 'a -> 'a list -> int
   val index0 : 'a -> 'a list -> int
   val index0_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
   val iteri :  (int -> 'a -> unit) -> 'a list -> unit
@@ -424,16 +423,6 @@ let index x =
   index_x 1
 
 let index0 x l = index x l - 1
-
-let unique_index x =
-  let rec index_x n = function
-    | y::l ->
-        if x = y then
-          if List.mem x l then raise Not_found
-          else n
-        else index_x (succ n) l
-    | [] -> raise Not_found
-  in index_x 1
 
 let fold_right_i f i l =
   let rec it_f i l a = match l with
