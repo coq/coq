@@ -488,6 +488,9 @@ module Slaves : sig
   val build_proof :
     exn_info:(Stateid.t * Stateid.t) -> start:Stateid.t -> stop:Stateid.t ->
       Entries.proof_output list Future.computation
+
+  (* blocking function that waits for the task queue to be empty *)
+  val wait_all_done : unit -> unit
   
   (* initialize the whole machinery (optional) *)
   val init : unit -> unit
@@ -508,26 +511,40 @@ end = struct (* {{{ *)
     val create : unit -> 'a t
     val pop : 'a t -> 'a
     val push : 'a t -> 'a -> unit
+    val wait_until_n_are_waiting_and_queue_empty : int -> 'a t -> unit
 
   end = struct (* {{{ *)
 
-    type 'a t = 'a Queue.t * Mutex.t * Condition.t
+                 (* queue, lock, cond_q, n_waiting, cond_n_waiting *)
+    type 'a t = 'a Queue.t * Mutex.t * Condition.t * int ref * Condition.t
 
     let create () =
-      Queue.create (), Mutex.create (), Condition.create ()
+      Queue.create (), Mutex.create (), Condition.create (),
+      ref 0, Condition.create ()
 
-    let pop (q,m,c) =
+    let pop (q,m,c,n,cn) =
       Mutex.lock m;
-      while Queue.is_empty q do Condition.wait c m done;
+      while Queue.is_empty q do
+        n := !n+1;
+        Condition.signal cn;
+        Condition.wait c m;
+        n := !n-1
+      done;
       let x = Queue.pop q in
-      if not (Queue.is_empty q) then Condition.signal c;
+      Condition.signal c;
+      Condition.signal cn;
       Mutex.unlock m;
       x
 
-    let push (q,m,c) x =
+    let push (q,m,c,n,cn) x =
       Mutex.lock m;
       Queue.push x q;
       Condition.signal c;
+      Mutex.unlock m
+
+    let wait_until_n_are_waiting_and_queue_empty j (q,m,c,n,cn) =
+      Mutex.lock m;
+      while not (Queue.is_empty q) || !n < j do Condition.wait cn m done;
       Mutex.unlock m
 
   end (* }}} *)
@@ -536,12 +553,14 @@ end = struct (* {{{ *)
   
     val init : ((unit -> in_channel * out_channel * int) -> unit) -> unit
     val is_empty : unit -> bool
+    val n_slaves : unit -> int
   
   end = struct (* {{{ *)
   
     let slave_manager = ref (None : Thread.t option)
     
     let is_empty () = Option.is_empty !slave_manager
+    let n_slaves () = if !slave_manager = None then 0 else 1
 
     let respawn () =
       let c2s_r, c2s_w = Unix.pipe () in
@@ -652,6 +671,9 @@ end = struct (* {{{ *)
     with Invalid_argument _ -> raise MarshalError
 
   let queue : task TQueue.t = TQueue.create ()
+
+  let wait_all_done () =
+    TQueue.wait_until_n_are_waiting_and_queue_empty (SlavesPool.n_slaves ()) queue
 
   let build_proof ~exn_info ~start ~stop =
     if SlavesPool.is_empty () then
@@ -1049,6 +1071,7 @@ let join_aborted_proofs () =
 let join () =
   finish ();
   VCS.print ();
+  Slaves.wait_all_done ();
   prerr_endline "Joining the environment";
   Global.join_safe_environment ();
   VCS.print ();
