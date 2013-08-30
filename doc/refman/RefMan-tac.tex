@@ -4505,6 +4505,7 @@ integers. This tactic must be loaded by the command \texttt{Require Import
 \tacindex{ring}
 \tacindex{ring\_simplify}
 \comindex{Add Ring}
+\comindex{Print Rings}
 
 The {\tt ring} tactic solves equations upon polynomial expressions of
 a ring (or semi-ring) structure. It proceeds by normalizing both hand
@@ -4519,7 +4520,8 @@ forms. If no term is given, then the conclusion should be an equation
 and both hand sides are normalized.
 
 See Chapter~\ref{ring} for more information on the tactic and how to
-declare new ring structures.
+declare new ring structures.  All declared field structures can be
+printed with the {\tt Print Rings} command.
 
 \subsection{{\tt field}, {\tt field\_simplify \term$_1$ \mbox{\dots}
   \term$_n$}, and \tt field\_simplify\_eq}
@@ -4527,6 +4529,7 @@ declare new ring structures.
 \tacindex{field\_simplify}
 \tacindex{field\_simplify\_eq}
 \comindex{Add Field}
+\comindex{Print Fields}
 
 The {\tt field} tactic is built on the same ideas as {\tt ring}: this
 is a reflexive tactic that solves or simplifies equations in a field
@@ -4545,7 +4548,8 @@ All of these 3 tactics may generate a subgoal in order to prove that
 denominators are different from zero.
 
 See Chapter~\ref{ring} for more information on the tactic and how to
-declare new field structures.
+declare new field structures.  All declared field structures can be
+printed with the {\tt Print Fields} command.
 
 \Example
 \begin{coq_example*}
