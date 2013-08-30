@@ -96,9 +96,9 @@ let chain ?(id="none") ?(pure=false) c f = ref (match !c with
   | Closure _ | Delegated | Dropped -> Closure (fun () -> f (force ~pure c))
   | Exn _ as x -> x
   | Val (v, None) -> Closure (fun () -> f v)
-  | Val (v, Some _) when pure ->  Closure (fun () -> f v)
+  | Val (v, Some _) when pure -> Closure (fun () -> f v)
   | Val (v, Some state) ->
-       prerr_endline ("Future: restarting (check if optimizable): " ^ id);
+(*        prerr_endline ("Future: restarting (check if optimizable): " ^ id); *)
        Closure (fun () -> !unfreeze state; f v))
 
 let create_here f = chain ~pure:false (from_here ()) f
@@ -127,17 +127,17 @@ let join x =
   v
 
 let split2 x =
-  chain ~pure:true x (fun x -> fst x),
-  chain ~pure:true x (fun x -> snd x)
+  chain ~pure:false x (fun x -> fst x),
+  chain ~pure:false x (fun x -> snd x)
 
 let split3 x =
-  chain ~pure:true x (fun x -> Util.pi1 x),
-  chain ~pure:true x (fun x -> Util.pi2 x),
-  chain ~pure:true x (fun x -> Util.pi3 x)
+  chain ~pure:false x (fun x -> Util.pi1 x),
+  chain ~pure:false x (fun x -> Util.pi2 x),
+  chain ~pure:false x (fun x -> Util.pi3 x)
 
 let map2 f x l =
   CList.map_i (fun i y ->
-    let xi = chain ~pure:true x (fun x ->
+    let xi = chain ~pure:false x (fun x ->
         try List.nth x i
         with Failure _ | Invalid_argument _ ->
           Errors.anomaly (Pp.str "Future.map2 length mismatch")) in
