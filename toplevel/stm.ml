@@ -546,8 +546,19 @@ end = struct (* {{{ *)
     let respawn () =
       let c2s_r, c2s_w = Unix.pipe () in
       let s2c_r, s2c_w = Unix.pipe () in
-      let prog, args =
-        Sys.argv.(0), [|Sys.argv.(0);"-debug";"-coq-slaves";"1"|] in
+      Unix.set_close_on_exec c2s_w;
+      Unix.set_close_on_exec s2c_r;
+      let prog =  Sys.argv.(0) in
+      let rec set_slave_opt = function
+        | [] -> ["-coq-slaves";"1"]
+        | ("-ideslave"|"-emacs"|"-emacs-U")::tl -> set_slave_opt tl
+        | ("-coq-slaves"
+          |"-compile"
+          |"-compile-verbose")::_::tl -> set_slave_opt tl
+        | x::tl -> x :: set_slave_opt tl in
+      let args = Array.of_list (set_slave_opt (Array.to_list Sys.argv)) in
+      prerr_endline ("EXEC: " ^ prog ^ " " ^
+        (String.concat " " (Array.to_list args)));
       let pid = Unix.create_process prog args c2s_r s2c_w Unix.stderr in
       Unix.close c2s_r;
       Unix.close s2c_w;
