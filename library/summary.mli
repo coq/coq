@@ -42,6 +42,11 @@ val declare_summary : string -> 'a summary_declaration -> unit
 
 val ref : ?freeze:(marshallable -> 'a -> 'a) -> name:string -> 'a -> 'a ref
 
+(** Special name for the summary of ML modules.  This summary entry is
+    special because its unfreeze may load ML code and hence add summary
+    entries.  Thus is has to be recognizable, and handled appropriately *)
+val ml_modules : string
+
 (** For global tables registered statically before the end of coqtop
     launch, the following empty [init_function] could be used. *)
 

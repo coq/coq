@@ -59,11 +59,22 @@ let freeze_summaries ~marshallable =
     summaries;
   !m
 
+let ml_modules = "ML-MODULES"
+let ml_modules_summary = mangle ml_modules
+
 let unfreeze_summaries fs =
+  (* The unfreezing of [ml_modules_summary] has to be anticipated since it
+   * may modify the content of [summaries] ny loading new ML modules *)
+  (try
+    (Hashtbl.find summaries ml_modules_summary).unfreeze_function 
+      (String.Map.find ml_modules_summary fs)
+  with Not_found -> anomaly (str"Undeclared summary "++str ml_modules_summary));
   Hashtbl.iter
     (fun id decl ->
-       try decl.unfreeze_function (String.Map.find id fs)
-       with Not_found -> decl.init_function())
+       if id = ml_modules_summary then () (* already unfreezed *)
+       else
+         try decl.unfreeze_function (String.Map.find id fs)
+         with Not_found -> decl.init_function())
     summaries
 
 let init_summaries () =

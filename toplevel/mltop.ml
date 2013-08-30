@@ -318,7 +318,7 @@ let unfreeze_ml_modules x =
   List.iter (cache_ml_object false false) x
 
 let _ =
-  Summary.declare_summary "ML-MODULES"
+  Summary.declare_summary Summary.ml_modules
     { Summary.freeze_function = (fun _ -> get_loaded_modules ());
       Summary.unfreeze_function = unfreeze_ml_modules;
       Summary.init_function = reset_loaded_modules }
