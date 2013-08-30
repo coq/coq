@@ -308,7 +308,7 @@ let do_vernac () =
   resynch_buffer top_buffer;
   try
     Vernac.eval_expr (read_sentence ());
-    if not !Flags.print_emacs then Stm.finish ()
+    Stm.finish ()
   with
     | End_of_input | Errors.Quit ->
         msgerrnl (mt ()); pp_flush(); raise Errors.Quit
