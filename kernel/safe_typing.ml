@@ -169,12 +169,8 @@ let check_engagement env c =
 
 (** {6 Stm machinery } *)
 
-(* type to be maintained isomorphic to Entries.side_effects *)
-(* XXX ideally this function obtains a valid side effect that 
- * can be pushed into another (safe) environment without re-typechecking *)
-type side_effect = NewConstant of constant * constant_body
-let sideff_of_con env c = 
-  Obj.magic (NewConstant (c, Environ.lookup_constant c env.env))
+type side_effect = Declarations.side_effect
+let sideff_of_con env c = NewConstant (c, Environ.lookup_constant c env.env)
 
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
