@@ -1256,7 +1256,7 @@ let invfun qhyp f g =
 			 functional_inversion kn hid  f2 f_correct g
 		       with
 			 | Failure "" ->
-			     errorlabstrm "" (str "Hypothesis" ++ Ppconstr.pr_id hid ++ str " must contain at leat one Function")
+			     errorlabstrm "" (str "Hypothesis " ++ Ppconstr.pr_id hid ++ str " must contain at least one Function")
 			 | Option.IsNone  ->
 			     if do_observe ()
 			     then
