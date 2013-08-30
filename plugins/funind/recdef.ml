@@ -1262,6 +1262,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     ref_ := Some lemma ;
     let lid = ref [] in
     let h_num = ref (-1) in
+    Proof_global.discard_all ();
     build_proof
       (  fun gls ->
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
@@ -1512,7 +1513,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
 			   spc () ++ str"is defined" )
       )
   in
-  States.with_state_protection (fun () ->
+  States.with_state_protection_on_exception (fun () ->
     com_terminate
       tcc_lemma_name
       tcc_lemma_constr

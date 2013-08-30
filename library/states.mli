@@ -27,3 +27,10 @@ val unfreeze : state -> unit
 
 val with_state_protection : ('a -> 'b) -> 'a -> 'b
 
+(** [with_state_protection_on_exception f x] applies [f] to [x] and restores the
+  state of the whole system as it was before applying [f] only if an
+  exception is raised.  Unlike [with_state_protection] it also takes into
+  account the proof state *)
+
+val with_state_protection_on_exception : ('a -> 'b) -> 'a -> 'b
+

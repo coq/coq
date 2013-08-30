@@ -39,4 +39,4 @@ let with_state_protection f x =
   with reraise ->
     (unfreeze st; raise reraise)
 
-
+let with_state_protection_on_exception = Future.transactify

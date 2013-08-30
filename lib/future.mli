@@ -59,4 +59,6 @@ val set_freeze : (unit -> Dyn.t) -> (Dyn.t -> unit) -> unit
 
 (* Once set_freeze is called we can purify a computation *)
 val purify : ('a -> 'b) -> 'a -> 'b
+(* And also let a function alter the state but backtrack if it raises exn *)
+val transactify : ('a -> 'b) -> 'a -> 'b
 

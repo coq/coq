@@ -111,6 +111,11 @@ let purify f x =
     v
   with e -> let e = Errors.push e in !unfreeze state; raise e
 
+let transactify f x =
+  let state = !freeze () in
+  try f x
+  with e -> let e = Errors.push e in !unfreeze state; raise e
+
 let purify_future f x =
   match !x with
   | Val _ | Exn _ | Delegated | Dropped -> f x

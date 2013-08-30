@@ -1015,7 +1015,7 @@ let do_save () = Lemmas.save_named false
 let derive_correctness make_scheme functional_induction (funs: constant list) (graphs:inductive list) =
   let funs = Array.of_list funs and graphs = Array.of_list graphs in
   let funs_constr = Array.map mkConst funs  in
-  States.with_state_protection (fun () ->
+  States.with_state_protection_on_exception (fun () ->
     let graphs_constr = Array.map mkInd graphs in
     let lemmas_types_infos =
       Util.Array.map2_i
