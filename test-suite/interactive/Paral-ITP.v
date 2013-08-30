@@ -12,10 +12,14 @@ Let time := 15.
 (* BEGIN MINI DEMO *)
 (* JUMP TO "JUMP HERE" *)
 
+Require Import ZArith Psatz.
+
 Lemma a : True.
 Proof.
   sleep time.
   idtac.
+  assert(forall n m : Z, n + m = m + n)%Z.
+    intros; lia.
   sleep time.
   exact (I I).
 Qed.
@@ -25,7 +29,9 @@ Proof.
   do 11 (cut Type; [ intro foo; clear foo | exact Type]).
   sleep time.
   idtac.
-  (* change in semantics: Print a. *)
+  assert(forall n m : Z, n + m = m + n)%Z.
+    intros; lia.
+ (* change in semantics: Print a. *)
   sleep time.
   exact a.
 Qed. (* JUMP HERE *)
@@ -33,9 +39,12 @@ Qed. (* JUMP HERE *)
 Lemma work_here : True.
 Proof.
 cut True.
+Print b.
 Abort.
 
 (* END MINI DEMO *)
+
+
 
 Require Import Unicode.Utf8.
 Notation "a ⊃ b" := (a → b) (at level 91, left associativity).
