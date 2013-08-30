@@ -254,7 +254,9 @@ let prune_constant_body cb =
   else {cb with const_constraints = cst'; const_body = cbo'}
 
 let string_of_side_effect = function
-  | NewConstant (c,_) -> Names.string_of_con c
+  | SEsubproof (c,_) -> Names.string_of_con c
+  | SEscheme (cl,_) ->
+      String.concat ", " (List.map (fun (_,c,_) -> Names.string_of_con c) cl)
 type side_effects = side_effect list
 let no_seff = ([] : side_effects)
 let iter_side_effects f l = List.iter f (List.rev l)

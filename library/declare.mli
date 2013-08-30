@@ -61,6 +61,11 @@ val declare_definition :
   ?internal:internal_flag -> ?opaque:bool -> ?kind:definition_object_kind ->
   ?local:bool -> Id.t -> ?types:constr -> Entries.const_entry_body -> constant
 
+(** Since transparent constant's side effects are globally declared, we
+ *  need that *)
+val set_declare_scheme :
+  (string -> (inductive * constant) array -> unit) -> unit
+
 (** [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
    the whole block (boolean must be true iff it is a record) *)

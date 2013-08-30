@@ -59,7 +59,9 @@ type constant_body = {
     const_native_name : native_name ref;
     const_inline_code : bool }
 
-type side_effect = NewConstant of constant * constant_body
+type side_effect =
+  | SEsubproof of constant * constant_body
+  | SEscheme of (inductive * constant * constant_body) list * string
     
 (** {6 Representation of mutual inductive types in the kernel } *)
 

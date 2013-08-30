@@ -34,6 +34,9 @@ type 'a safe_transformer = safe_environment -> 'a * safe_environment
 (** {6 Stm machinery } *)
 
 val sideff_of_con : safe_environment -> constant -> Declarations.side_effect
+val sideff_of_scheme :
+  string -> safe_environment -> (inductive * constant) list ->
+    Declarations.side_effect
 
 val is_curmod_library : safe_environment -> bool
 

@@ -47,27 +47,32 @@ let translate_local_assum env t =
 (* Insertion of constants and parameters in environment. *)
 
 let handle_side_effects env body side_eff =
-  let handle_sideff t (NewConstant (c,cb)) =
-    let cname = 
+  let handle_sideff t se =
+    let cbl = match se with
+      | SEsubproof (c,cb) -> [c,cb]
+      | SEscheme (cl,_) -> List.map (fun (_,c,cb) -> c,cb) cl in
+    let cname c = 
       let name = string_of_con c in
       for i = 0 to String.length name - 1 do
         if name.[i] = '.' || name.[i] = '#' then name.[i] <- '_' done;
       Name (id_of_string name) in
-    let rec sub i x = match kind_of_term x with
+    let rec sub c i x = match kind_of_term x with
       | Const c' when eq_constant c c' -> mkRel i
-      | _ -> map_constr_with_binders ((+) 1) sub i x in
-    match cb.const_body with
-    | Undef _ -> assert false
-    | Def b ->
-        let b = Lazyconstr.force b in
-        let b_ty = Typeops.type_of_constant_type env cb.const_type in
-        let t = sub 1 (Vars.lift 1 t) in
-        mkLetIn (cname, b, b_ty, t)
-    | OpaqueDef b -> 
-        let b = Lazyconstr.force_opaque (Future.force b) in
-        let b_ty = Typeops.type_of_constant_type env cb.const_type in
-        let t = sub 1 (Vars.lift 1 t) in
-        mkApp (mkLambda (cname, b_ty, t), [|b|])
+      | _ -> map_constr_with_binders ((+) 1) (sub c) i x in
+    let fix_body (c,cb) t =
+      match cb.const_body with
+      | Undef _ -> assert false
+      | Def b ->
+          let b = Lazyconstr.force b in
+          let b_ty = Typeops.type_of_constant_type env cb.const_type in
+          let t = sub c 1 (Vars.lift 1 t) in
+          mkLetIn (cname c, b, b_ty, t)
+      | OpaqueDef b -> 
+          let b = Lazyconstr.force_opaque (Future.force b) in
+          let b_ty = Typeops.type_of_constant_type env cb.const_type in
+          let t = sub c 1 (Vars.lift 1 t) in
+          mkApp (mkLambda (cname c, b_ty, t), [|b|]) in
+    List.fold_right fix_body cbl t
   in
   (* CAVEAT: we assure a proper order *)
   Declareops.fold_side_effects handle_sideff body

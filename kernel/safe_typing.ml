@@ -169,8 +169,10 @@ let check_engagement env c =
 
 (** {6 Stm machinery } *)
 
-type side_effect = Declarations.side_effect
-let sideff_of_con env c = NewConstant (c, Environ.lookup_constant c env.env)
+let sideff_of_con env c = SEsubproof (c, Environ.lookup_constant c env.env)
+let sideff_of_scheme kind env cl =
+  SEscheme(
+    List.map (fun (i,c) -> i, c, Environ.lookup_constant c env.env) cl,kind)
 
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
