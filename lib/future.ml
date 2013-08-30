@@ -59,9 +59,15 @@ let proj = function
 
 let create f = ref (Closure f)
 
+type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
 let create_delegate () =
   let c = ref Delegated in
-  c, (function `Val v -> c := Val (v, None) | `Exn e -> c := Exn e)
+  c, (fun v ->
+      assert (!c = Delegated);
+      match v with
+      | `Val v -> c := Val (v, None)
+      | `Exn e -> c := Exn e
+      | `Comp f -> c := !f)
 
 (* TODO: get rid of try/catch *)
 let compute ~pure c : 'a value = match !c with

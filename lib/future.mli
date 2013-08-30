@@ -19,7 +19,8 @@ val create : (unit -> 'a) -> 'a computation
 val from_val : 'a -> 'a computation
 
 (* Run remotely, returns the function to assign *)
-val create_delegate : unit -> 'a computation * ('a value -> unit)
+type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
+val create_delegate : unit -> 'a computation * ('a assignement -> unit)
 
 (* Variants to stock a copy of the current environment *)
 val create_here : (unit -> 'a) -> 'a computation

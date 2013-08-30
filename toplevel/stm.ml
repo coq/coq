@@ -598,7 +598,7 @@ end = struct (* {{{ *)
  
   type task =
     | TaskBuildProof of (Stateid.t * Stateid.t) * Stateid.t * Stateid.t *
-        (Entries.proof_output list Future.value -> unit)
+        (Entries.proof_output list Future.assignement -> unit)
   let pr_task = function
     | TaskBuildProof(_,bop,eop,_) ->
         "TaskBuilProof("^Stateid.to_string bop^","^Stateid.to_string eop^")"
@@ -668,9 +668,11 @@ end = struct (* {{{ *)
 
   let rec manage_slave respawn =
     let ic, oc, pid = respawn () in
+    let last_task = ref None in
     try
       while true do
         let task = TQueue.pop queue in
+        last_task := Some task;
         try
           marshal_request oc (request_of_task task);
           let rec loop () =
@@ -692,20 +694,28 @@ end = struct (* {{{ *)
                 Pp.feedback ~state_id msg;
                 loop ()
             | _, RespFeedback _ -> assert false (* Parsing in master process *)
-          in loop ()
+          in
+            loop (); last_task := None
         with
         | VCS.Expired -> (* task cancelled: e.g. the user did backtrack *)
             prerr_endline ("Task expired: " ^ pr_task task)
-        | MarshalError -> (* TODO *)
-            prerr_endline "TODO: Marshalling Error";
-            prerr_endline "We should be resilient and fall back to lazy" 
-        | e ->
+        | MarshalError ->
+            msg_warning(strbrk("Marshalling error. "^
+              "The system state could not be sent to the slave process. "^
+              "Falling back to local, lazy, evaluation."));
+            let TaskBuildProof (exn_info, _, stop, assign) = task in
+            assign(`Comp(build_proof_here exn_info stop))
+        | e -> (* TODO: do something sensible here *)
             prerr_endline (string_of_ppcmds (print e))
       done
     with Sys_error _ | Invalid_argument _ | End_of_file ->
-      (* TODO *)
-      prerr_endline "TODO: The slave died";
-      prerr_endline "We should be resilient and fall back to lazy";
+      msg_warning(strbrk "The slave process died badly.");
+      (match !last_task with
+      | Some task ->
+         msg_warning(strbrk "Falling back to local, lazy, evaluation.");
+         let TaskBuildProof (exn_info, _, stop, assign) = task in
+         assign(`Comp(build_proof_here exn_info stop));
+      | None -> ());
       ignore(Unix.waitpid [] pid);
       close_in ic;
       close_out oc;
@@ -756,8 +766,6 @@ end = struct (* {{{ *)
         prerr_endline "Slave: failed with the following exception:";
         prerr_endline (string_of_ppcmds (print e))
       | e ->
-        (* TODO special exit code in case of MarshalError so that master
-         * can fall back to lazy *)
         msg_error(str"Slave: failed with the following CRITICAL exception:");
         msg_error(print e);
         msg_error(str"Slave: bailing out");
