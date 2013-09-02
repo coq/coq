@@ -87,13 +87,13 @@ module Error = struct
   let to_string x =
     "Syntax Error: Lexer: " ^
       (match x with
-	 | Illegal_character -> "Illegal character"
-	 | Unterminated_comment -> "Unterminated comment"
-	 | Unterminated_string -> "Unterminated string"
-	 | Undefined_token -> "Undefined token"
-	 | Bad_token tok -> Format.sprintf "Bad token %S" tok
-	 | UnsupportedUnicode x ->
-	     Printf.sprintf "Unsupported Unicode character (0x%x)" x)
+         | Illegal_character -> "Illegal character"
+         | Unterminated_comment -> "Unterminated comment"
+         | Unterminated_string -> "Unterminated string"
+         | Undefined_token -> "Undefined token"
+         | Bad_token tok -> Format.sprintf "Bad token %S" tok
+         | UnsupportedUnicode x ->
+             Printf.sprintf "Unsupported Unicode character (0x%x)" x)
 
   (* Require to fix the Camlp4 signature *)
   let print ppf x = Pp.pp_with ppf (Pp.str (to_string x))
@@ -144,22 +144,22 @@ let lookup_utf8_tail c cs =
       if Int.equal (c1 land 0x20) 0 then
       match Stream.npeek 2 cs with
       | [_;c2] ->
-	  check_utf8_trailing_byte cs c2;
-	  2, (c1 land 0x1F) lsl 6 + (Char.code c2 land 0x3F)
+          check_utf8_trailing_byte cs c2;
+          2, (c1 land 0x1F) lsl 6 + (Char.code c2 land 0x3F)
       | _ -> error_utf8 cs
       else if Int.equal (c1 land 0x10) 0 then
       match Stream.npeek 3 cs with
       | [_;c2;c3] ->
-	  check_utf8_trailing_byte cs c2; check_utf8_trailing_byte cs c3;
-	  3, (c1 land 0x0F) lsl 12 + (Char.code c2 land 0x3F) lsl 6 +
-	  (Char.code c3 land 0x3F)
+          check_utf8_trailing_byte cs c2; check_utf8_trailing_byte cs c3;
+          3, (c1 land 0x0F) lsl 12 + (Char.code c2 land 0x3F) lsl 6 +
+          (Char.code c3 land 0x3F)
       | _ -> error_utf8 cs
       else match Stream.npeek 4 cs with
       | [_;c2;c3;c4] ->
-	  check_utf8_trailing_byte cs c2; check_utf8_trailing_byte cs c3;
-	  check_utf8_trailing_byte cs c4;
-	  4, (c1 land 0x07) lsl 18 + (Char.code c2 land 0x3F) lsl 12 +
-	  (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
+          check_utf8_trailing_byte cs c2; check_utf8_trailing_byte cs c3;
+          check_utf8_trailing_byte cs c4;
+          4, (c1 land 0x07) lsl 18 + (Char.code c2 land 0x3F) lsl 12 +
+          (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
       | _ -> error_utf8 cs
     in
     try Unicode.classify unicode, n
@@ -180,10 +180,10 @@ let check_keyword str =
   let rec loop_symb = parser
     | [< ' (' ' | '\n' | '\r' | '\t' | '"') >] -> bad_token str
     | [< s >] ->
-	match unlocated lookup_utf8 s with
-	| Utf8Token (_,n) -> njunk n s; loop_symb s
-	| AsciiChar -> Stream.junk s; loop_symb s
-	| EmptyStream -> ()
+        match unlocated lookup_utf8 s with
+        | Utf8Token (_,n) -> njunk n s; loop_symb s
+        | AsciiChar -> Stream.junk s; loop_symb s
+        | EmptyStream -> ()
   in
   loop_symb (Stream.of_string str)
 
@@ -191,7 +191,8 @@ let check_keyword_to_add s =
   try check_keyword s
   with Error.E (UnsupportedUnicode unicode) ->
     Flags.if_verbose msg_warning
-      (strbrk (Printf.sprintf "Token '%s' contains unicode character 0x%x which will not be parsable." s unicode))
+      (strbrk (Printf.sprintf "Token '%s' contains unicode character 0x%x \
+                               which will not be parsable." s unicode))
 
 let check_ident str =
   let rec loop_id intail = parser
@@ -200,11 +201,13 @@ let check_ident str =
     | [< ' ('0'..'9' | ''') when intail; s >] ->
         loop_id true s
     | [< s >] ->
-	match unlocated lookup_utf8 s with
-	| Utf8Token (Unicode.Letter, n) -> njunk n s; loop_id true s
-	| Utf8Token (Unicode.IdentPart, n) when intail -> njunk n s; loop_id true s
-	| EmptyStream -> ()
-	| Utf8Token _ | AsciiChar -> bad_token str
+        match unlocated lookup_utf8 s with
+        | Utf8Token (Unicode.Letter, n) -> njunk n s; loop_id true s
+        | Utf8Token (Unicode.IdentPart, n) when intail ->
+          njunk n s;
+          loop_id true s
+        | EmptyStream -> ()
+        | Utf8Token _ | AsciiChar -> bad_token str
   in
   loop_id false (Stream.of_string str)
 
@@ -257,7 +260,7 @@ let rec ident_tail len = parser
   | [< s >] ->
       match lookup_utf8 s with
       | Utf8Token ((Unicode.IdentPart | Unicode.Letter), n) ->
-	  ident_tail (nstore n len s) s
+          ident_tail (nstore n len s) s
       | _ -> len
 
 let rec number len = parser
@@ -270,21 +273,28 @@ let rec string in_comments bp len = parser
   | [< ''('; s >] ->
       (parser
         | [< ''*'; s >] ->
-            string (Option.map succ in_comments) bp (store (store len '(') '*') s
+            string
+              (Option.map succ in_comments)
+              bp (store (store len '(') '*')
+              s
         | [< >] ->
-	    string in_comments bp (store len '(') s) s
+            string in_comments bp (store len '(') s) s
   | [< ''*'; s >] ->
       (parser
         | [< '')'; s >] ->
             let () = match in_comments with
             | Some 0 ->
-                msg_warning (strbrk "Not interpreting \"*)\" as the end of current non-terminated comment because it occurs in a non-terminated string of the comment.")
+                msg_warning
+                  (strbrk
+                     "Not interpreting \"*)\" as the end of current \
+                      non-terminated comment because it occurs in a \
+                      non-terminated string of the comment.")
             | _ -> ()
             in
             let in_comments = Option.map pred in_comments in
- 	    string in_comments bp (store (store len '*') ')') s
+            string in_comments bp (store (store len '*') ')') s
         | [< >] ->
-	    string in_comments bp (store len '*') s) s
+            string in_comments bp (store len '*') s) s
   | [< 'c; s >] -> string in_comments bp (store len c) s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
 
@@ -320,7 +330,7 @@ let push_char c =
     (List.mem c [' ';'\t']&&
      (Int.equal (Buffer.length current) 0 ||
       not (let s = Buffer.contents current in
-	   List.mem s.[String.length s - 1] [' ';'\t';'\n';'\r'])))
+           List.mem s.[String.length s - 1] [' ';'\t';'\n';'\r'])))
   then
     real_push_char c
 
@@ -341,7 +351,9 @@ let comment_stop ep =
     let bp = match !comment_begin with
         Some bp -> bp
       | None ->
-          msgerrnl(str"No begin location for comment '"++str current_s ++str"' ending at  "++int ep);
+          msgerrnl(str "No begin location for comment '"
+                   ++ str current_s ++str"' ending at  "
+                   ++ int ep);
           ep-1 in
     Pp.comments := ((bp,ep),current_s) :: !Pp.comments);
   Buffer.clear current;
@@ -406,11 +418,11 @@ and progress_utf8 last nj n c tt cs =
     else
       match Util.List.skipn (nj+1) (Stream.npeek (nj+n) cs) with
       | l when Int.equal (List.length l) (n - 1) ->
-	 List.iter (check_utf8_trailing_byte cs) l;
-	 let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in
-	 update_longest_valid_token last (nj+n) tt cs
+         List.iter (check_utf8_trailing_byte cs) l;
+         let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in
+         update_longest_valid_token last (nj+n) tt cs
       | _ ->
-	  error_utf8 cs
+          error_utf8 cs
   with Not_found ->
     last
 
@@ -430,9 +442,9 @@ let process_chars bp c cs =
   match t with
     | Some t -> (KEYWORD t, (bp, ep))
     | None ->
-	let ep' = bp + utf8_char_size cs c in
-	njunk (ep' - ep) cs;
-	err (bp, ep') Undefined_token
+        let ep' = bp + utf8_char_size cs c in
+        njunk (ep' - ep) cs;
+        err (bp, ep') Undefined_token
 
 let token_of_special c s = match c with
   | '$' -> METAIDENT s
@@ -448,7 +460,7 @@ let parse_after_special c bp =
   | [< s >] ->
       match lookup_utf8 s with
       | Utf8Token (Unicode.Letter, n) ->
-	  token_of_special c (get_buff (ident_tail (nstore n 0 s) s))
+          token_of_special c (get_buff (ident_tail (nstore n 0 s) s))
       | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars bp c s)
 
 (* Parse what follows a question mark *)
@@ -458,9 +470,10 @@ let parse_after_qmark bp s =
     | Some ('a'..'z' | 'A'..'Z' | '_') -> LEFTQMARK
     | None -> KEYWORD "?"
     | _ ->
-	match lookup_utf8 s with
-	  | Utf8Token (Unicode.Letter, _) -> LEFTQMARK
-	  | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars bp '?' s)
+        match lookup_utf8 s with
+          | Utf8Token (Unicode.Letter, _) -> LEFTQMARK
+          | AsciiChar | Utf8Token _ | EmptyStream ->
+            fst (process_chars bp '?' s)
 
 let blank_or_eof cs =
   match Stream.peek cs with
@@ -481,8 +494,8 @@ let rec next_token = parser bp
          for instance ".(", or followed by a blank or eof. *)
       let () = match t with
       | KEYWORD "." ->
-	if not (blank_or_eof s) then err (bp,ep+1) Undefined_token;
-	if Flags.do_beautify() then between_com := true;
+        if not (blank_or_eof s) then err (bp,ep+1) Undefined_token;
+        if Flags.do_beautify() then between_com := true;
       | _ -> ()
       in
       (t, (bp,ep))
@@ -504,23 +517,23 @@ let rec next_token = parser bp
         | [< ''*'; s >] ->
             comm_loc bp;
             push_string "(*";
-	    comment bp s;
-	    next_token s
+            comment bp s;
+            next_token s
         | [< t = process_chars bp c >] -> comment_stop bp; t >] ->
       t
   | [< s >] ->
       match lookup_utf8 s with
-	| Utf8Token (Unicode.Letter, n) ->
-	    let len = ident_tail (nstore n 0 s) s in
-	    let id = get_buff len in
-	    let ep = Stream.count s in
-	    comment_stop bp;
-	    (try find_keyword id s with Not_found -> IDENT id), (bp, ep)
-	| AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart), _) ->
-	    let t = process_chars bp (Stream.next s) s in
-	    comment_stop bp; t
-	| EmptyStream ->
-	    comment_stop bp; (EOI, (bp, bp + 1))
+        | Utf8Token (Unicode.Letter, n) ->
+            let len = ident_tail (nstore n 0 s) s in
+            let id = get_buff len in
+            let ep = Stream.count s in
+            comment_stop bp;
+            (try find_keyword id s with Not_found -> IDENT id), (bp, ep)
+        | AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart), _) ->
+            let t = process_chars bp (Stream.next s) s in
+            comment_stop bp; t
+        | EmptyStream ->
+            comment_stop bp; (EOI, (bp, bp + 1))
 
 (* (* Debug: uncomment this for tracing tokens seen by coq...*)
 let next_token s =
@@ -579,7 +592,7 @@ let func cs =
     Stream.from
       (fun i ->
          let (tok, loc) = next_token cs in
-	 loct_add loct i (make_loc loc); Some tok)
+         loct_add loct i (make_loc loc); Some tok)
   in
   current_location_table := loct;
   (ts, loct_func loct)
