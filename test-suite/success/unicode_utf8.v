@@ -16,6 +16,7 @@ Definition π₂ := snd.
 (** More unicode in identifiers *)
 Definition αβ_áà_אב := 0.
 
+Notation "C ᵒᵖ" := C (at level 30).
 
 (** UNICODE IN STRINGS *)
 
