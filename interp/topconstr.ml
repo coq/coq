@@ -251,8 +251,8 @@ let map_constr_expr_with_binders g f e = function
 (* Used in constrintern *)
 let rec replace_vars_constr_expr l = function
   | CRef (Ident (loc,id)) as x ->
-      (try CRef (Ident (loc,List.assoc id l)) with Not_found -> x)
-  | c -> map_constr_expr_with_binders List.remove_assoc
+      (try CRef (Ident (loc,Id.Map.find id l)) with Not_found -> x)
+  | c -> map_constr_expr_with_binders Id.Map.remove
            replace_vars_constr_expr l c
 
 (* Returns the ranges of locs of the notation that are not occupied by args  *)

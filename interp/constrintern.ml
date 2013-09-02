@@ -799,14 +799,16 @@ let find_remaining_scopes pl1 pl2 ref =
   in ((try List.firstn len_pl1 allscs with Failure _ -> simple_adjust_scopes len_pl1 allscs),
       simple_adjust_scopes len_pl2 (aux (impl_list,scope_list)))
 
+let merge_subst s1 s2 = Id.Map.fold Id.Map.add s1 s2
+
 let product_of_cases_patterns ids idspl =
   List.fold_right (fun (ids,pl) (ids',ptaill) ->
-    (ids@ids',
+    (ids @ ids',
      (* Cartesian prod of the or-pats for the nth arg and the tail args *)
      List.flatten (
        List.map (fun (subst,p) ->
-	 List.map (fun (subst',ptail) -> (subst@subst',p::ptail)) ptaill) pl)))
-    idspl (ids,[[],[]])
+	 List.map (fun (subst',ptail) -> (merge_subst subst subst',p::ptail)) ptaill) pl)))
+    idspl (ids,[Id.Map.empty,[]])
 
 (* @return the first variable that occurs twice in a pattern
 
@@ -896,10 +898,13 @@ let find_constructor loc add_params ref =
     |IndRef _ -> user_err_loc (loc,"find_constructor",str "There is an inductive name deep in a \"in\" clause.")
     |_ -> anomaly (Pp.str "unexpected global_reference in pattern")) ref in
   cstr, (function (ind,_ as c) -> match add_params with
-    |Some nb_args -> let nb = if Int.equal nb_args (Inductiveops.constructor_nrealhyps c)
-      then fst (Inductiveops.inductive_nargs ind)
-      else Inductiveops.inductive_nparams ind in
-		     Util.List.make nb ([],[([],PatVar(Loc.ghost,Anonymous))])
+    |Some nb_args ->
+      let nb =
+        if Int.equal nb_args (Inductiveops.constructor_nrealhyps c)
+          then fst (Inductiveops.inductive_nargs ind)
+          else Inductiveops.inductive_nparams ind
+      in
+      List.make nb ([], [(Id.Map.empty, PatVar(Loc.ghost,Anonymous))])
     |None -> []) cstr
 
 let find_pattern_variable = function
@@ -998,21 +1003,31 @@ let sort_fields mode loc l completer =
 
 (** {6 Manage multiple aliases} *)
 
+type alias = {
+  alias_ids : Id.t list;
+  alias_map : Id.t Id.Map.t;
+}
+
+let empty_alias = {
+  alias_ids = [];
+  alias_map = Id.Map.empty;
+}
+
   (* [merge_aliases] returns the sets of all aliases encountered at this
      point and a substitution mapping extra aliases to the first one *)
-let merge_aliases (ids,asubst as _aliases) id =
-  let ans = ids @ [id] in
-  let subst = match ids with
-  | [] -> asubst
-  | id' :: _ -> (id, id') :: asubst
+let merge_aliases aliases id =
+  let alias_ids = aliases.alias_ids @ [id] in
+  let alias_map = match aliases.alias_ids with
+  | [] -> aliases.alias_map
+  | id' :: _ -> Id.Map.add id id' aliases.alias_map
   in
-  (ans, subst)
+  { alias_ids; alias_map; }
 
-let alias_of = function
-  | ([],_) -> Anonymous
-  | (id::_,_) -> Name id
+let alias_of als = match als.alias_ids with
+| [] -> Anonymous
+| id :: _ -> Name id
 
-let message_redundant_alias (id1,id2) =
+let message_redundant_alias id1 id2 =
   msg_warning
     (str "Alias variable " ++ pr_id id1 ++ str " is merged with " ++ pr_id id2)
 
@@ -1169,10 +1184,10 @@ let drop_notations_pattern looked_for =
     | t -> error_invalid_pattern_notation loc
   in in_pat true
 
-let rec intern_pat genv (ids,asubst as aliases) pat =
+let rec intern_pat genv aliases pat =
   let intern_cstr_with_all_args loc c with_letin idslpl1 pl2 =
-    let idslpl2 = List.map (intern_pat genv ([],[])) pl2 in
-    let (ids',pll) = product_of_cases_patterns ids (idslpl1@idslpl2) in
+    let idslpl2 = List.map (intern_pat genv empty_alias) pl2 in
+    let (ids',pll) = product_of_cases_patterns aliases.alias_ids (idslpl1@idslpl2) in
     let pl' = List.map (fun (asubst,pl) ->
       (asubst, PatCstr (loc,c,chop_params_pattern loc (fst c) pl with_letin,alias_of aliases))) pll in
     ids',pl' in
@@ -1193,10 +1208,11 @@ let rec intern_pat genv (ids,asubst as aliases) pat =
 	  add_implicits_check_constructor_length genv loc c (List.length idslpl1 + List.length expl_pl) pl in
 	intern_cstr_with_all_args loc c with_letin idslpl1 (expl_pl@pl2)
     | RCPatAtom (loc, Some id) ->
-      let ids,asubst = merge_aliases aliases id in
-      (ids,[asubst, PatVar (loc,alias_of (ids,asubst))])
+      let aliases = merge_aliases aliases id in
+      (aliases.alias_ids,[aliases.alias_map, PatVar (loc, alias_of aliases)])
     | RCPatAtom (loc, None) ->
-      (ids,[asubst, PatVar (loc,alias_of aliases)])
+      let { alias_ids = ids; alias_map = asubst; } = aliases in
+      (ids, [asubst, PatVar (loc, alias_of aliases)])
     | RCPatOr (loc, pl) ->
       assert (not (List.is_empty pl));
       let pl' = List.map (intern_pat genv aliases) pl in
@@ -1221,8 +1237,8 @@ let intern_ind_pattern genv env pat =
 	|_ -> error_bad_inductive_type loc) head in
       let with_letin, pl2 = add_implicits_check_ind_length genv loc c
 	(List.length expl_pl) pl in
-      let idslpl1 = List.rev_map (intern_pat genv ([],[])) expl_pl in
-      let idslpl2 = List.map (intern_pat genv ([],[])) pl2 in
+      let idslpl1 = List.rev_map (intern_pat genv empty_alias) expl_pl in
+      let idslpl2 = List.map (intern_pat genv empty_alias) pl2 in
       (with_letin,
        match product_of_cases_patterns [] (List.rev_append idslpl1 idslpl2) with
 	 |_,[_,pl] ->
@@ -1519,7 +1535,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
   and intern_multiple_pattern env n (loc,pl) =
     let idsl_pll =
-      List.map (intern_cases_pattern globalenv {env with tmp_scope = None} ([],[])) pl in
+      List.map (intern_cases_pattern globalenv {env with tmp_scope = None} empty_alias) pl in
     check_number_of_pattern loc n pl;
     product_of_cases_patterns [] idsl_pll
 
@@ -1540,7 +1556,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
     let env_ids = List.fold_right Id.Set.add eqn_ids env.ids in
     List.map (fun (asubst,pl) ->
       let rhs = replace_vars_constr_expr asubst rhs in
-      List.iter message_redundant_alias asubst;
+      Id.Map.iter message_redundant_alias asubst;
       let rhs' = intern {env with ids = env_ids} rhs in
       (loc,eqn_ids,pl,rhs')) pll
 
@@ -1691,7 +1707,7 @@ let intern_pattern globalenv patt =
   try
     intern_cases_pattern globalenv {ids = extract_ids globalenv; unb = false;
 				    tmp_scope = None; scopes = [];
-				    impls = empty_internalization_env} ([],[]) patt
+				    impls = empty_internalization_env} empty_alias patt
   with
       InternalizationError (loc,e) ->
 	user_err_loc (loc,"internalize",explain_internalization_error e)

@@ -83,8 +83,7 @@ val intern_gen : typing_constraint -> evar_map -> env ->
   constr_expr -> glob_constr
 
 val intern_pattern : env -> cases_pattern_expr ->
-  Names.Id.t list *
-    ((Names.Id.t * Names.Id.t) list * cases_pattern) list
+  Id.t list * (Id.t Id.Map.t * cases_pattern) list
 
 val intern_context : bool -> evar_map -> env -> internalization_env -> local_binder list -> internalization_env * glob_binder list
 

@@ -309,7 +309,7 @@ let split_lambda = function
 let rename na na' t c =
   match (na,na') with
     | (_,Name id), (_,Name id') ->
-      (na',t,Topconstr.replace_vars_constr_expr [id,id'] c)
+      (na',t,Topconstr.replace_vars_constr_expr (Id.Map.singleton id id') c)
     | (_,Name id), (_,Anonymous) -> (na,t,c)
     | _ -> (na',t,c)
 

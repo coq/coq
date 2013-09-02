@@ -278,7 +278,7 @@ let rec bind_primary_aliases map pat =
 	  List.fold_left bind_primary_aliases map1 lpat
 
 let bind_secondary_aliases map subst =
-  List.fold_left (fun map (ids,idp) -> (ids,List.assoc idp map)::map) map subst
+  Id.Map.fold (fun ids (idp : Id.t) map -> (ids,List.assoc idp map)::map) subst map
 
 let bind_aliases patvars subst patt =
   let map = bind_primary_aliases [] patt in

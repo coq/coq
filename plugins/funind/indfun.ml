@@ -491,11 +491,12 @@ let map_option f = function
 open Constrexpr
 open Topconstr
 
-let make_assoc = List.fold_left2 (fun l a b ->
-match a, b with
-  |(_,Name na), (_, Name id) -> (na, id)::l
-  |_,_ -> l
-)
+let make_assoc assoc l1 l2 =
+  let fold assoc a b = match a, b with
+  | (_, Name na), (_, Name id) -> Id.Map.add na id assoc
+  | _, _ -> assoc
+  in
+  List.fold_left2 fold assoc l1 l2
 
 let rec rebuild_bl (aux,assoc) bl typ = 
 	match bl,typ with 
@@ -514,16 +515,20 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	    let lnal' = List.length nal' in 
 	    if lnal' >= lnal 
 	    then 
-	      let old_nal',new_nal' = List.chop lnal nal' in 
-	      rebuild_bl ((LocalRawAssum(nal,bk,replace_vars_constr_expr assoc nal't)::aux),(make_assoc assoc old_nal' nal)) bl' 
+	      let old_nal',new_nal' = List.chop lnal nal' in
+	      let nassoc = make_assoc assoc old_nal' nal in
+	      let assum = LocalRawAssum(nal,bk,replace_vars_constr_expr assoc nal't) in
+	      rebuild_bl ((assum :: aux), nassoc) bl' 
 		(if new_nal' = [] && rest = []
 		 then  typ' 
 		 else if new_nal' = [] 
 		 then CProdN(Loc.ghost,rest,typ')
 		 else CProdN(Loc.ghost,((new_nal',bk',nal't)::rest),typ'))
 	    else 
-	      let captured_nal,non_captured_nal = List.chop lnal' nal in 
-	      rebuild_nal ((LocalRawAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't)::aux), (make_assoc assoc nal' captured_nal))
+	      let captured_nal,non_captured_nal = List.chop lnal' nal in
+	      let nassoc = make_assoc assoc nal' captured_nal in
+	      let assum = LocalRawAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't) in
+	      rebuild_nal ((assum :: aux), nassoc)
 		bk bl' non_captured_nal (lnal - lnal') (CProdN(Loc.ghost,rest,typ'))
 	  | _ -> assert false
 
@@ -537,7 +542,7 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
   let fixpoint_exprl_with_new_bl = 
     List.map2 (fun ((lna,(rec_arg_opt,rec_order),bl,ret_typ,opt_body),notation_list) fix_typ -> 
      
-      let new_bl',new_ret_type,_ = rebuild_bl ([],[]) bl fix_typ in 
+      let new_bl',new_ret_type,_ = rebuild_bl ([],Id.Map.empty) bl fix_typ in 
       (((lna,(rec_arg_opt,rec_order),new_bl',new_ret_type,opt_body),notation_list):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
     )
       fixpoint_exprl constr_expr_typel 

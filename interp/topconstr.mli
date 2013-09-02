@@ -21,7 +21,7 @@ val oldfashion_patterns : bool ref
 (** Utilities on constr_expr *)
 
 val replace_vars_constr_expr :
-  (Id.t * Id.t) list -> constr_expr -> constr_expr
+  Id.t Id.Map.t -> constr_expr -> constr_expr
 
 val free_vars_of_constr_expr : constr_expr -> Id.Set.t
 val occur_var_constr_expr : Id.t -> constr_expr -> bool
