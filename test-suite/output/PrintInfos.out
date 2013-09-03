@@ -57,7 +57,6 @@ plus_n_O : forall n : nat, n = n + 0
 Argument scope is [nat_scope]
 plus_n_O is opaque
 Expands to: Constant Coq.Init.Peano.plus_n_O
-Warning: Implicit Arguments is deprecated; use Arguments instead
 Inductive le (n : nat) : nat -> Prop :=
     le_n : n <= n | le_S : forall m : nat, n <= m -> n <= S m
 
@@ -79,7 +78,6 @@ comparison : Set
 Expands to: Inductive Coq.Init.Datatypes.comparison
 Inductive comparison : Set :=
     Eq : comparison | Lt : comparison | Gt : comparison
-Warning: Implicit Arguments is deprecated; use Arguments instead
 bar : foo
 
 Expanded type for implicit arguments
@@ -109,7 +107,6 @@ Argument x is implicit and maximally inserted
 Module Coq.Init.Peano
 Notation existS2 := existT2
 Expands to: Notation Coq.Init.Specif.existS2
-Warning: Implicit Arguments is deprecated; use Arguments instead
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 For eq: Argument A is implicit and maximally inserted
