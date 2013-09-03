@@ -460,9 +460,7 @@ let searchtable_map name =
   Hintdbmap.find name !searchtable
 let searchtable_add (name,db) =
   searchtable := Hintdbmap.add name db !searchtable
-let current_db_names () =
-  let fold k _ acc = k :: acc in
-  List.rev (Hintdbmap.fold fold !searchtable [])
+let current_db_names () = Hintdbmap.domain !searchtable
 let current_db () = Hintdbmap.bindings !searchtable
 
 (**************************************************************************)
@@ -1368,9 +1366,9 @@ let trivial ?(debug=Off) lems dbnames gl =
     (trivial_fail_db d false db_list (make_local_hint_db false lems gl)) gl
 
 let full_trivial ?(debug=Off) lems gl =
-  let dbnames = current_db_names () in
-  let dbnames = List.remove "v62" dbnames in
-  let db_list = List.map (fun x -> searchtable_map x) dbnames in
+  let dbs = !searchtable in
+  let dbs = String.Map.remove "v62" dbs in
+  let db_list = List.map snd (String.Map.bindings dbs) in
   let d = mk_trivial_dbg debug in
   tclTRY_dbg d
     (trivial_fail_db d false db_list (make_local_hint_db false lems gl)) gl
@@ -1441,9 +1439,9 @@ let new_auto ?(debug=Off) n = delta_auto ~debug true n
 let default_auto = auto !default_search_depth [] []
 
 let delta_full_auto ?(debug=Off) mod_delta n lems gl =
-  let dbnames = current_db_names () in
-  let dbnames = List.remove "v62" dbnames in
-  let db_list = List.map (fun x -> searchtable_map x) dbnames in
+  let dbs = !searchtable in
+  let dbs = String.Map.remove "v62" dbs in
+  let db_list = List.map snd (String.Map.bindings dbs) in
   let d = mk_auto_dbg debug in
   tclTRY_dbg d
     (search d n mod_delta db_list (make_local_hint_db false lems gl)) gl

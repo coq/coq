@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Names
 open Term
 open Context
@@ -117,7 +118,7 @@ val create_hint_db : bool -> hint_db_name -> transparent_state -> bool -> unit
 
 val remove_hints : bool -> hint_db_name list -> global_reference list -> unit
 
-val current_db_names : unit -> hint_db_name list
+val current_db_names : unit -> String.Set.t
 
 val interp_hints : hints_expr -> hints_entry
 

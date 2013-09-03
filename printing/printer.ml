@@ -690,8 +690,6 @@ let pr_assumptionset env s =
     ] in
     prlist_with_sep fnl (fun x -> x) (Option.List.flatten assums)
 
-let cmap_to_list m = Cmap.fold (fun k v acc -> v :: acc) m []
-
 open Typeclasses
 
 let pr_instance i =

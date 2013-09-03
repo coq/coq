@@ -358,8 +358,8 @@ let eauto ?(debug=Off) np lems dbnames =
 
 let full_eauto ?(debug=Off) n lems gl =
   let dbnames = current_db_names () in
-  let dbnames =  List.remove "v62" dbnames in
-  let db_list = List.map searchtable_map dbnames in
+  let dbnames =  String.Set.remove "v62" dbnames in
+  let db_list = List.map searchtable_map (String.Set.elements dbnames) in
   tclTRY (e_search_auto debug n lems db_list) gl
 
 let gen_eauto ?(debug=Off) np lems = function
@@ -461,12 +461,18 @@ let autounfold db cls gl =
     | OnConcl occs -> tac occs None)
     cls gl
 
+let autounfold_tac db cls gl =
+  let dbs = match db with
+  | None -> String.Set.elements (Auto.current_db_names ())
+  | Some [] -> ["core"]
+  | Some l -> l
+  in
+  autounfold dbs (Extraargs.glob_in_arg_hyp_to_clause cls) gl
+
 open Extraargs
 
 TACTIC EXTEND autounfold
-| [ "autounfold" hintbases(db) in_arg_hyp(id) ] ->
-    [ autounfold (match db with None -> Auto.current_db_names () | Some [] -> ["core"] | Some x -> x) 
-	(glob_in_arg_hyp_to_clause id) ]
+| [ "autounfold" hintbases(db) in_arg_hyp(id) ] -> [ autounfold_tac db id ]
 END
 
 let unfold_head env (ids, csts) c = 
