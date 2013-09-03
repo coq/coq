@@ -236,8 +236,8 @@ let evars_to_metas sigma (emap, c) =
 (* The list of non-instantiated existential declarations (order is important) *)
 
 let non_instantiated sigma =
-  let listev = Evd.undefined_list sigma in
-  List.map (fun (ev,evi) -> (ev,nf_evar_info sigma evi)) listev
+  let listev = Evd.undefined_map sigma in
+  ExistentialMap.map (fun evi -> nf_evar_info sigma evi) listev
 
 (************************)
 (* Manipulating filters *)

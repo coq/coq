@@ -120,6 +120,10 @@ val evar_filtered_env :  evar_info -> env
 (*** Unification state ***)
 type evar_map
 
+module ExistentialSet : Set.S with type elt = existential_key
+module ExistentialMap : Map.ExtS
+  with type key = existential_key and module Set := ExistentialSet
+
 (** Unification state and existential variables *)
 
 (** Assuming that the second map extends the first one, this says if
@@ -140,10 +144,14 @@ val find : evar_map -> evar -> evar_info
 val find_undefined : evar_map -> evar -> evar_info
 val remove : evar_map -> evar -> evar_map
 val mem : evar_map -> evar -> bool
-val undefined_list : evar_map -> (evar * evar_info) list
 val to_list : evar_map -> (evar * evar_info) list
 val fold : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
+
 val fold_undefined : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
+(** [fold_undefined f m] iterates ("folds") function [f] over the undefined
+    evars (that is, whose value is [Evar_empty]) of map [m].
+    It optimizes the call of {!Evd.fold} to [f] and [undefined_evars m] *)
+
 val define : evar -> constr -> evar_map -> evar_map
 
 val is_evar : evar_map -> evar -> bool
@@ -152,6 +160,9 @@ val is_defined : evar_map -> evar -> bool
 val is_undefined : evar_map -> evar -> bool
 
 val add_constraints : evar_map -> Univ.constraints -> evar_map
+
+val undefined_map : evar_map -> evar_info ExistentialMap.t
+val defined_map : evar_map -> evar_info ExistentialMap.t
 
 (** {6 ... } *)
 (** [existential_value sigma ev] raises [NotInstantiatedEvar] if [ev] has
@@ -170,13 +181,10 @@ val subst_evar_defs_light : substitution -> evar_map -> evar_map
 (** spiwack: this function seems to somewhat break the abstraction. *)
 val evars_reset_evd  : ?with_conv_pbs:bool -> evar_map ->  evar_map -> evar_map
 
-
 val undefined_evars : evar_map -> evar_map
 val defined_evars : evar_map -> evar_map
-(* [fold_undefined f m] iterates ("folds") function [f] over the undefined
-    evars (that is, whose value is [Evar_empty]) of map [m].
-    It optimizes the call of {!Evd.fold} to [f] and [undefined_evars m] *)
-val fold_undefined : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
+(** TODO: see where we can replace those functions by their [_map] variant. *)
+
 val evar_declare :
   named_context_val -> evar -> types -> ?src:Loc.t * Evar_kinds.t ->
       ?filter:bool list -> ?candidates:constr list -> evar_map -> evar_map
@@ -186,10 +194,6 @@ val evar_source : existential_key -> evar_map -> Evar_kinds.t located
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * env * constr * constr
 val add_conv_pb :  evar_constraint -> evar_map -> evar_map
-
-module ExistentialSet : Set.S with type elt = existential_key
-module ExistentialMap : Map.ExtS
-  with type key = existential_key and module Set := ExistentialSet
 
 val extract_changed_conv_pbs : evar_map ->
       (ExistentialSet.t -> evar_constraint -> bool) ->

@@ -483,10 +483,11 @@ module V82 = struct
 
   (* Main function in the implementation of Grab Existential Variables.*)
   let grab pv =
+    let undef = Evd.undefined_map pv.solution in
     let goals =
       List.map begin fun (e,_) ->
 	Goal.build e
-      end (Evd.undefined_list pv.solution)
+      end (Evd.ExistentialMap.bindings undef)
     in
     { pv with comb = goals }
       
@@ -508,9 +509,10 @@ module V82 = struct
     List.flatten (List.map evars_of_initial initial)
 
   let instantiate_evar n com pv =
-    let (evk,_) = 
+    let (evk,_) =
       let evl = Evarutil.non_instantiated pv.solution in
-     if (n <= 0) then
+      let evl = Evd.ExistentialMap.bindings evl in
+      if (n <= 0) then
 	Errors.error "incorrect existential variable index"
       else if List.length evl < n then
 	  Errors.error "not so many uninstantiated existential variables"

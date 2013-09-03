@@ -64,7 +64,7 @@ val make_pure_subst : evar_info -> constr array -> (Id.t * constr) list
    returns the evar_map extended with dependent evars *)
 val evars_to_metas : evar_map -> open_constr -> (evar_map * constr)
 
-val non_instantiated : evar_map -> (evar * evar_info) list
+val non_instantiated : evar_map -> evar_info ExistentialMap.t
 
 (** {6 Unification utils} *)
 

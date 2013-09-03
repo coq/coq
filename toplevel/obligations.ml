@@ -35,8 +35,8 @@ let succfix (depth, fixrels) =
 let mkMetas n = List.init n (fun _ -> Evarutil.mk_new_meta ())
 
 let check_evars env evm =
-  List.iter
-  (fun (key, evi) ->
+  Evd.ExistentialMap.iter
+  (fun key evi ->
    let (loc,k) = evar_source key evm in
      match k with
      | Evar_kinds.QuestionMark _
@@ -44,7 +44,7 @@ let check_evars env evm =
      | _ ->
        Pretype_errors.error_unsolvable_implicit loc env
          evm (Evarutil.nf_evar_info evm evi) k None)
-  (Evd.undefined_list evm)
+  (Evd.undefined_map evm)
 
 type oblinfo =
   { ev_name: int * Id.t;
@@ -207,7 +207,8 @@ let eterm_obligations env name evm fs ?status t ty =
   let nc = Environ.named_context env in
   let nc_len = Context.named_context_length nc in
   let evm = Evarutil.nf_evar_map_undefined evm in
-  let evl = List.rev (Evarutil.non_instantiated evm) in
+  let evl = Evarutil.non_instantiated evm in
+  let evl = ExistentialMap.bindings evl in
   let evl = List.map (fun (id, ev) -> (id, ev, evar_dependencies evm id)) evl in
   let sevl = sort_dependencies evl in
   let evl = List.map (fun (id, ev, _) -> id, ev) sevl in

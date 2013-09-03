@@ -125,10 +125,8 @@ module EvarInfoMap = struct
     ExistentialMap.iter (fun evk x -> l := (evk,x)::!l) undef;
     !l
 
-  let undefined_list (def,undef) =
-    (* Order is important: needs ocaml >= 3.08.4 from which "fold" is a
-       "fold_left" *)
-    ExistentialMap.fold (fun evk evi l -> (evk,evi)::l) undef []
+  let undefined_map (def, undef) = undef
+  let defined_map (def, undef) = def
 
   let undefined_evars (def,undef) = (ExistentialMap.empty,undef)
   let defined_evars (def,undef) = (def,ExistentialMap.empty)
@@ -219,7 +217,8 @@ module EvarMap = struct
   let remove (sigma,sm) k = (EvarInfoMap.remove sigma k, sm)
   let mem (sigma,_) = EvarInfoMap.mem sigma
   let to_list (sigma,_) = EvarInfoMap.to_list sigma
-  let undefined_list (sigma,_) = EvarInfoMap.undefined_list sigma
+  let undefined_map (sigma,_) = EvarInfoMap.undefined_map sigma
+  let defined_map (sigma,_) = EvarInfoMap.defined_map sigma
   let undefined_evars (sigma,sm) = (EvarInfoMap.undefined_evars sigma, sm)
   let defined_evars (sigma,sm) = (EvarInfoMap.defined_evars sigma, sm)
   let fold (sigma,_) = EvarInfoMap.fold sigma
@@ -346,7 +345,8 @@ let mem d e = EvarMap.mem d.evars e
 (* spiwack: this function loses information from the original evar_map
    it might be an idea not to export it. *)
 let to_list d = EvarMap.to_list d.evars
-let undefined_list d = EvarMap.undefined_list d.evars
+let undefined_map d = EvarMap.undefined_map d.evars
+let defined_map d = EvarMap.defined_map d.evars
 let undefined_evars d = { d with evars=EvarMap.undefined_evars d.evars }
 let defined_evars d = { d with evars=EvarMap.defined_evars d.evars }
 (* spiwack: not clear what folding over an evar_map, for now we shall
@@ -778,29 +778,48 @@ let pr_evar_info evi =
     (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]" ++
        candidates ++ spc() ++ src)
 
-let compute_evar_dependency_graph (sigma:evar_map) =
+let compute_evar_dependency_graph (sigma : evar_map) =
   (* Compute the map binding ev to the evars whose body depends on ev *)
-  fold (fun evk evi acc ->
-    let deps =
-      match evar_body evi with
-      | Evar_empty -> ExistentialSet.empty
-      | Evar_defined c -> collect_evars c in
-    ExistentialSet.fold (fun evk' acc ->
-      let tab = try ExistentialMap.find evk' acc with Not_found -> [] in
-      ExistentialMap.add evk' ((evk,evi)::tab) acc) deps acc)
-    sigma ExistentialMap.empty
+  let fold evk evi acc =
+    let fold_ev evk' acc =
+      let tab =
+        try ExistentialMap.find evk' acc
+        with Not_found -> ExistentialSet.empty
+      in
+      ExistentialMap.add evk' (ExistentialSet.add evk tab) acc
+    in
+    match evar_body evi with
+    | Evar_empty -> acc
+    | Evar_defined c -> ExistentialSet.fold fold_ev (collect_evars c) acc
+  in
+  EvarMap.fold sigma.evars fold ExistentialMap.empty
 
 let evar_dependency_closure n sigma =
+  (** Create the DAG of depth [n] representing the recursive dependencies of
+      undefined evars. *)
   let graph = compute_evar_dependency_graph sigma in
-  let order a b = fst a < fst b in
-  let rec aux n l =
-    if Int.equal n 0 then l
+  let rec aux n curr accu =
+    if Int.equal n 0 then ExistentialSet.union curr accu
     else
-      let l' =
-        List.map_append (fun (evk,_) ->
-          try ExistentialMap.find evk graph with Not_found -> []) l in
-      aux (n-1) (List.uniquize (Sort.list order (l@l'))) in
-  aux n (undefined_list sigma)
+      let fold evk accu =
+        try
+          let deps = ExistentialMap.find evk graph in
+          ExistentialSet.union deps accu
+        with Not_found -> accu
+      in
+      (** Consider only the newly added evars *)
+      let ncurr = ExistentialSet.fold fold curr ExistentialSet.empty in
+      (** Merge the others *)
+      let accu = ExistentialSet.union curr accu in
+      aux (n - 1) ncurr accu
+  in
+  let undef = ExistentialMap.domain (undefined_map sigma) in
+  aux n undef ExistentialSet.empty
+
+let evar_dependency_closure n sigma =
+  let deps = evar_dependency_closure n sigma in
+  let map = ExistentialMap.bind (fun ev -> find sigma ev) deps in
+  ExistentialMap.bindings map
 
 let pr_evar_map_t depth sigma =
   let (evars,(uvs,univs)) = sigma.evars in

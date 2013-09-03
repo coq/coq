@@ -381,6 +381,8 @@ let rec pr_evars_int i = function
               str (string_of_existential ev)  ++ str " : " ++ pegl)) ++
       (match rest with [] -> mt () | _ -> fnl () ++ pr_evars_int (i+1) rest)
 
+let pr_evars_int i evs = pr_evars_int i (Evd.ExistentialMap.bindings evs)
+
 let default_pr_subgoal n sigma =
   let rec prrec p = function
     | [] -> error "No such goal."
@@ -451,7 +453,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
 	       str ".")
 	| None ->
 	    let exl = Evarutil.non_instantiated sigma in
-	    if List.is_empty exl then
+	    if ExistentialMap.is_empty exl then
 	      (str"No more subgoals."
 	       ++ emacs_print_dependent_evars sigma seeds)
 	    else
