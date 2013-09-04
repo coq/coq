@@ -746,8 +746,18 @@ let coqtop_arguments sn =
   let ok = GButton.button ~stock:`OK ~packing:box#add () in
   let ok_cb () =
     let nargs = CString.split ' ' entry#text in
-    let () = if nargs <> args then Coq.set_arguments coqtop nargs in
-    dialog#destroy ()
+    if nargs <> args then
+      let failed = Coq.filter_coq_opts nargs in
+      match failed with
+      | [] ->
+        let () = Coq.set_arguments coqtop nargs in
+        dialog#destroy ()
+      | args ->
+        let args = String.concat " " args in
+        let msg = Printf.sprintf "Invalid arguments: %s" args in
+        let () = sn.messages#clear in
+        sn.messages#push Interface.Error msg
+    else dialog#destroy ()
   in
   let _ = entry#connect#activate ok_cb in
   let _ = ok#connect#clicked ok_cb in

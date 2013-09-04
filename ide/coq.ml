@@ -107,8 +107,7 @@ let rec filter_coq_opts args =
     filtered_args := read_all_lines oc;
     errlines := read_all_lines ec;
     match Unix.close_process_full (oc,ic,ec) with
-      | Unix.WEXITED 0 ->
-	List.iter check_remaining_opt !filtered_args; !filtered_args
+      | Unix.WEXITED 0 -> !filtered_args
       | Unix.WEXITED 127 -> asks_for_coqtop args
       | _ -> display_coqtop_answer cmd (!filtered_args @ !errlines)
   with Sys_error _ -> asks_for_coqtop args
