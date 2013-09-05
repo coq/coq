@@ -197,7 +197,7 @@ let rec catchable = function
   | e -> Logic.catchable_exception e
 
 let nb_empty_evars s =
-  Evd.fold_undefined (fun ev evi acc -> succ acc) s 0
+  ExistentialMap.cardinal (undefined_map s)
 
 let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
 
@@ -629,26 +629,25 @@ let select_and_update_evars p oevd in_comp evd ev evi =
 (** Do we still have unresolved evars that should be resolved ? *)
 
 let has_undefined p oevd evd =
-  Evd.fold_undefined (fun ev evi has -> has ||
-    snd (p oevd ev evi))
-    evd false
+  let check ev evi = snd (p oevd ev evi) in
+  ExistentialMap.exists check (Evd.undefined_map evd)
 
 (** Revert the resolvability status of evars after resolution,
     potentially unprotecting some evars that were set unresolvable
     just for this call to resolution. *)
 
 let revert_resolvability oevd evd = 
-  Evd.fold_undefined
-    (fun ev evi evm ->
-     try 
-       if not (Typeclasses.is_resolvable evi) then
-	 let evi' = Evd.find_undefined oevd ev in
-	   if Typeclasses.is_resolvable evi' then
-	     Evd.add evm ev (Typeclasses.mark_resolvable evi)
-	   else evm
-       else evm
-     with Not_found -> evm)
-  evd evd
+  let map ev evi =
+    try
+      if not (Typeclasses.is_resolvable evi) then
+        let evi' = Evd.find_undefined oevd ev in
+        if Typeclasses.is_resolvable evi' then
+          Typeclasses.mark_resolvable evi
+        else evi
+      else evi
+    with Not_found -> evi
+  in
+  Evd.raw_map_undefined map evd
 
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)

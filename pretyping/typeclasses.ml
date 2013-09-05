@@ -493,20 +493,20 @@ let no_goals_or_obligations _ = function
   | _ -> true
 
 let mark_resolvability filter b sigma =
-  Evd.fold_undefined 
-    (fun ev evi evs ->
-     if filter ev (snd evi.evar_source) then
-       Evd.add evs ev (mark_resolvability_undef b evi)
-     else Evd.add evs ev evi)
-  sigma (Evd.defined_evars sigma)
+  let map ev evi =
+    if filter ev (snd evi.evar_source) then mark_resolvability_undef b evi
+    else evi
+  in
+  Evd.raw_map_undefined map sigma
 
 let mark_unresolvables ?(filter=all_evars) sigma = mark_resolvability filter false sigma
 let mark_resolvables sigma = mark_resolvability all_evars true sigma
 
 let has_typeclasses filter evd =
-  Evd.fold_undefined (fun ev evi has -> has ||
-    (filter ev (snd evi.evar_source) && is_class_evar evd evi && is_resolvable evi))
-    evd false
+  let check ev evi =
+    filter ev (snd evi.evar_source) && is_class_evar evd evi && is_resolvable evi
+  in
+  Evd.ExistentialMap.exists check (Evd.undefined_map evd)
 
 let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)
 

@@ -127,6 +127,16 @@ val fold_undefined : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 (** Same as {!fold}, but restricted to undefined evars. For efficiency
     reasons. *)
 
+val raw_map : (evar -> evar_info -> evar_info) -> evar_map -> evar_map
+(** Apply the given function to all evars in the map. Beware: this function
+    expects the argument function to preserve the kind of [evar_body], i.e. it
+    must send [Evar_empty] to [Evar_empty] and [Evar_defined c] to some
+    [Evar_defined c']. *)
+
+val raw_map_undefined : (evar -> evar_info -> evar_info) -> evar_map -> evar_map
+(** Same as {!raw_map}, but restricted to undefined evars. For efficiency
+    reasons. *)
+
 val define : evar -> constr -> evar_map -> evar_map
 (** Set the body of an evar to the given constr. It is expected that:
     {ul

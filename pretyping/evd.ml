@@ -260,6 +260,33 @@ let fold f d a =
 
 let fold_undefined f d a = ExMap.fold f d.undf_evars a
 
+let raw_map f d =
+  let f evk info =
+    let ans = f evk info in
+    let () = match info.evar_body, ans.evar_body with
+    | Evar_defined _, Evar_empty
+    | Evar_empty, Evar_defined _ ->
+      anomaly (str "Unrespectful mapping function.")
+    | _ -> ()
+    in
+    ans
+  in
+  let defn_evars = ExMap.mapi f d.defn_evars in
+  let undf_evars = ExMap.mapi f d.undf_evars in
+  { d with defn_evars; undf_evars; }
+
+let raw_map_undefined f d =
+  let f evk info =
+    let ans = f evk info in
+    let () = match ans.evar_body with
+    | Evar_defined _ ->
+      anomaly (str "Unrespectful mapping function.")
+    | _ -> ()
+    in
+    ans
+  in
+  { d with undf_evars = ExMap.mapi f d.undf_evars; }
+
 let is_evar = mem
 
 let is_defined d e = ExMap.mem e d.defn_evars
