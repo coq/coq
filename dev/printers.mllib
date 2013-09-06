@@ -23,6 +23,7 @@ CObj
 CList
 CString
 CArray
+CStack
 Util
 Bigint
 Dyn

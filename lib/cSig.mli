@@ -6,20 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type 'a t
-type ('a,'b) search = [ `Stop of 'b | `Cont of 'a ]
+(** Missing pervasive types from OCaml stdlib *)
 
-val create : unit -> 'a t
-val push : 'a -> 'a t -> unit
-val find : ('c -> 'a -> ('c, 'b) search) -> 'c -> 'a t -> 'b
-val is_empty : 'a t -> bool
-val iter : ('a -> unit) -> 'a t -> unit
-val clear : 'a t -> unit
-val length : 'a t -> int
+type ('a, 'b) union = Inl of 'a | Inr of 'b
+(** Union type *)
 
-(* may raise Stack.Empty *)
-val pop  : 'a t -> 'a
-val top  : 'a t -> 'a
-
-(* Extra *)
-val to_list : 'a t -> 'a list
+type ('a, 'b) seek = Stop of 'a | Next of 'b
+(** Type isomorphic to union used for browsable structures. *)

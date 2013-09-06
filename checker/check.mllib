@@ -21,6 +21,7 @@ CObj
 CList
 CString
 CArray
+CStack
 Util
 Future
 CUnix

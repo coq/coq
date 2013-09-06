@@ -941,7 +941,7 @@ module Backtrack : sig
 
 end = struct (* {{{ *)
 
-  module S  = Searchstack
+  module S  = Stack
 
   type hystory_elt = {
     id : Stateid.t ;
@@ -981,8 +981,7 @@ end = struct (* {{{ *)
 
   let branches_of id =
     try
-      let s = S.find (fun n s ->
-        if Stateid.equal s.id id then `Stop s else `Cont ()) () history in
+      let s = S.find (fun s -> Stateid.equal s.id id) history in
       Vcs_.branches s.vcs
     with Not_found -> assert false
  
@@ -994,19 +993,19 @@ end = struct (* {{{ *)
           (str"Reset not implemented for automatically generated constants");
         (try
           let s =
-            S.find (fun b s ->
-              if b then `Stop s else `Cont (List.mem name s.label))
+            S.seek (fun b s ->
+              if b then Stop s else Next (List.mem name s.label))
             false history in
           VtStm (VtBack s.id, true), VtNow
         with Not_found ->
           VtStm (VtBack (S.top history).id, true), VtNow)
     | VernacBack n ->
-        let s = S.find (fun n s ->
-          if Int.equal n 0 then `Stop s else `Cont (n-1)) n history in
+        let s = S.seek (fun n s ->
+          if Int.equal n 0 then Stop s else Next (n-1)) n history in
         VtStm (VtBack s.id, true), VtNow
     | VernacUndo n ->
-        let s = S.find (fun n s ->
-          if Int.equal n 0 then `Stop s else `Cont (n-1)) n history in
+        let s = S.seek (fun n s ->
+          if Int.equal n 0 then Stop s else Next (n-1)) n history in
         VtStm (VtBack s.id, true), VtLater
     | VernacUndoTo _
     | VernacRestart as e ->
@@ -1014,16 +1013,16 @@ end = struct (* {{{ *)
         let vcs = (S.top history).vcs in
         let cb, _ =
           Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs) in
-        let n = S.find (fun n { vcs } ->
-          if List.mem cb (Vcs_.branches vcs) then `Cont (n+1) else `Stop n)
+        let n = S.seek (fun n { vcs } ->
+          if List.mem cb (Vcs_.branches vcs) then Next (n+1) else Stop n)
           0 history in
-        let s = S.find (fun n s ->
-          if Int.equal n 0 then `Stop s else `Cont (n-1)) (n-m-1) history in
+        let s = S.seek (fun n s ->
+          if Int.equal n 0 then Stop s else Next (n-1)) (n-m-1) history in
         VtStm (VtBack s.id, true), VtLater
     | VernacAbortAll ->
-        let s = S.find (fun () s ->
-          match Vcs_.branches s.vcs with [_] -> `Stop s | _ -> `Cont ())
-          () history in
+        let s = S.find (fun s ->
+          match Vcs_.branches s.vcs with [_] -> true | _ -> false)
+          history in
         VtStm (VtBack s.id, true), VtLater
     | VernacBacktrack (id,_,_)
     | VernacBackTo id ->

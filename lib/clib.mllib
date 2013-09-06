@@ -19,6 +19,7 @@ CObj
 CList
 CString
 CArray
+CStack
 Util
 Loc
 Flags

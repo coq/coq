@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
 open Coq
 open Ideutils
 open Interface
@@ -100,7 +101,7 @@ object(self)
   val proof = _pv
   val messages = _mv
 
-  val cmd_stack = Searchstack.create ()
+  val cmd_stack = Stack.create ()
 
   val mutable initial_state = Stateid.initial
 
@@ -232,12 +233,12 @@ object(self)
       let msg = Queue.pop feedbacks in
       let id = msg.id in
       let sentence =
-        let finder () s =
+        let finder s =
           match s.state_id, id with
-          | Some id', State id when id = id' -> `Stop s
-          | _, Edit id when id = s.edit_id -> `Stop s
-          | _ -> `Cont () in
-        try Some (Searchstack.find finder () cmd_stack)
+          | Some id', State id when id = id' -> Some s
+          | _, Edit id when id = s.edit_id -> Some s
+          | _ -> None in
+        try Some (Stack.find_map finder cmd_stack)
         with Not_found -> None in
       let log s sentence =
         Minilib.log ("Feedback " ^ s ^ " on " ^ Stateid.to_string
@@ -268,9 +269,9 @@ object(self)
             self#position_error_tag_at_sentence sentence (Some (Loc.unloc loc))
       | _ ->
           if sentence <> None then Minilib.log "Unsupported feedback message"
-          else if Searchstack.is_empty cmd_stack then ()
+          else if Stack.is_empty cmd_stack then ()
           else
-            match id, (Searchstack.top cmd_stack).state_id with
+            match id, (Stack.top cmd_stack).state_id with
             | Edit _, _ -> ()
             | State id1, Some id2 when Stateid.newer_than id2 id1 -> ()
             | _ -> Queue.add msg feedbacks (* Put back into the queue *)
@@ -341,7 +342,7 @@ object(self)
       else
         let sentence = Queue.pop queue in
         add_flag sentence `PROCESSING;
-        Searchstack.push sentence cmd_stack;
+        Stack.push sentence cmd_stack;
         if List.mem `COMMENT sentence.flags then
           let () = remove_flag sentence `PROCESSING in
           let () = self#commit_queue_transaction sentence in
@@ -361,7 +362,7 @@ object(self)
               assign_state_id sentence id;
               commit_and_continue msg
           | Fail (id, loc, msg) ->
-              let sentence = Searchstack.pop cmd_stack in
+              let sentence = Stack.pop cmd_stack in
               self#process_interp_error queue sentence loc msg id
           in
           Coq.bind query next
@@ -398,12 +399,12 @@ object(self)
     let finder (n, found, zone) ({ start; stop; state_id } as sentence) =
       let found = found || until n state_id start stop in
       match found, state_id with
-      | true, Some id -> `Stop (n, id, Some sentence, zone)
-      | _ -> `Cont (n + 1, found, sentence :: zone) in
-    try Searchstack.find finder (0, false, []) cmd_stack
+      | true, Some id -> Stop (n, id, Some sentence, zone)
+      | _ -> Next (n + 1, found, sentence :: zone) in
+    try Stack.seek finder (0, false, []) cmd_stack
     with Not_found ->
-      Searchstack.length cmd_stack, initial_state,
-      None, List.rev (Searchstack.to_list cmd_stack)
+      Stack.length cmd_stack, initial_state,
+      None, List.rev (Stack.to_list cmd_stack)
 
   (** Wrapper around the raw undo command *)
   method private backtrack_until ?(move_insert=true) until =
@@ -414,7 +415,7 @@ object(self)
       if move_insert then buffer#place_cursor ~where:self#get_start_of_input;
       self#show_goals in
     let cleanup n l =
-      for i = 1 to n do ignore(Searchstack.pop cmd_stack) done;
+      for i = 1 to n do ignore(Stack.pop cmd_stack) done;
       if l <> [] then begin
         let start = buffer#get_iter_at_mark (CList.hd l).start in
         let stop = buffer#get_iter_at_mark (CList.last l).stop in
@@ -448,12 +449,12 @@ object(self)
     messages#push Error msg;
     ignore(self#process_feedback ());
     let safe_flags s = s.flags = [ `UNSAFE ] || s.flags = [] in
-    let find_last_safe_id () s =
+    let find_last_safe_id s =
       match s.state_id with
-      | Some id when safe_flags s -> `Stop id | _ -> `Cont () in
+      | Some id -> safe_flags s | None -> false in
     try
-      let last_safe_id = Searchstack.find find_last_safe_id () cmd_stack in
-      self#backtrack_until (fun _ id _ _ -> id = Some last_safe_id)
+      let last_safe = Stack.find find_last_safe_id cmd_stack in
+      self#backtrack_until (fun _ id _ _ -> id = last_safe.state_id)
     with Not_found -> self#backtrack_until (fun _ id _ _ -> id = Some safe_id)
 
   method backtrack_last_phrase =
@@ -494,7 +495,7 @@ object(self)
           ~start:(`MARK (buffer#create_mark start))
           ~stop:(`MARK (buffer#create_mark stop))
           [] in
-      Searchstack.push sentence cmd_stack;
+      Stack.push sentence cmd_stack;
       messages#clear;
       self#show_goals
     in
@@ -528,8 +529,8 @@ object(self)
     let action () =
       if why = Coq.Unexpected then warning "Coqtop died badly. Resetting.";
       (* clear the stack *)
-      while not (Searchstack.is_empty cmd_stack) do
-        let phrase = Searchstack.pop cmd_stack in
+      while not (Stack.is_empty cmd_stack) do
+        let phrase = Stack.pop cmd_stack in
         buffer#delete_mark phrase.start;
         buffer#delete_mark phrase.stop
       done;

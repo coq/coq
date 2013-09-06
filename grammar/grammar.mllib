@@ -18,6 +18,7 @@ Hashcons
 CList
 CString
 CArray
+CStack
 Util
 Bigint
 Predicate

@@ -69,6 +69,10 @@ module Array : CArray.ExtS = CArray
 
 module Map = CMap
 
+(* Stacks *)
+
+module Stack = CStack
+
 (* Matrices *)
 
 let matrix_transpose mat =
@@ -118,7 +122,8 @@ let delayed_force f = f ()
 
 (* Misc *)
 
-type ('a,'b) union = Inl of 'a | Inr of 'b
+type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
+type ('a, 'b) seek = ('a, 'b) CSig.seek = Stop of 'a | Next of 'b
 
 (*s interruption *)
 

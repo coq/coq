@@ -63,6 +63,10 @@ module Array : CArray.ExtS
 
 module Map : module type of CMap
 
+(** {6 Stacks.} *)
+
+module Stack : module type of CStack
+
 (** {6 Streams. } *)
 
 val stream_nth : int -> 'a Stream.t -> 'a
@@ -90,7 +94,11 @@ val delayed_force : 'a delayed -> 'a
 
 (** {6 Misc. } *)
 
-type ('a, 'b) union = Inl of 'a | Inr of 'b
+type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
+(** Union type *)
+
+type ('a, 'b) seek = ('a, 'b) CSig.seek = Stop of 'a | Next of 'b
+(** Type isomorphic to union used for browsable structures. *)
 
 (** {6 ... } *)
 (** Coq interruption: set the following boolean reference to interrupt Coq
