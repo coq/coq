@@ -54,3 +54,5 @@ let register_subst0 = Subst.register0
 let generic_substitute subs v =
   let unpack wit v = in_gen (glbwit wit) (substitute wit subs v) in
   glb_unpack { glb_unpack = unpack; } v
+
+let () = Hook.set Detyping.subst_genarg_hook generic_substitute

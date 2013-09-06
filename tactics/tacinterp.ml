@@ -2188,6 +2188,25 @@ let tacticIn t =
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
+let _ =
+  let eval ty env sigma lfun arg =
+    let ist = { lfun = lfun; extra = TacStore.empty; } in
+    if has_type arg (glbwit wit_tactic) then
+      let tac = out_gen (glbwit wit_tactic) arg in
+      let tac = interp_tactic ist tac in
+      let prf = Proof.start sigma [env, ty] in
+      let (prf, _) = Proof.run_tactic env tac prf in
+      let sigma = Proof.in_proof prf (fun sigma -> sigma) in
+      let ans = match Proof.initial_goals prf with
+      | [c, _] -> c
+      | _ -> assert false
+      in
+      ans, sigma
+    else
+      failwith "not a tactic"
+  in
+  Hook.set Pretyping.genarg_interp_hook eval
+
 let _ = Hook.set Auto.extern_interp
   (fun l ->
     let lfun = Id.Map.map (fun c -> Value.of_constr c) l in
