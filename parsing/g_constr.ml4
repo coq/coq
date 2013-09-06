@@ -40,17 +40,17 @@ let mk_cast = function
 let binders_of_names l =
   List.map (fun (loc, na) ->
     LocalRawAssum ([loc, na], Default Explicit,
-		   CHole (loc, Some (Evar_kinds.BinderType na)))) l
+		   CHole (loc, Some (Evar_kinds.BinderType na), None))) l
 
 let binders_of_lidents l =
   List.map (fun (loc, id) ->
     LocalRawAssum ([loc, Name id], Default Explicit,
-		  CHole (loc, Some (Evar_kinds.BinderType (Name id))))) l
+		  CHole (loc, Some (Evar_kinds.BinderType (Name id)), None))) l
 
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =
   let ty = match tyc with
       Some ty -> ty
-    | None -> CHole (loc, None) in
+    | None -> CHole (loc, None, None) in
   (id,ann,bl,ty,body)
 
 let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
@@ -60,7 +60,7 @@ let mk_cofixb (id,bl,ann,body,(loc,tyc)) =
        Pp.str"Annotation forbidden in cofix expression.")) (fst ann) in
   let ty = match tyc with
       Some ty -> ty
-    | None -> CHole (loc, None) in
+    | None -> CHole (loc, None, None) in
   (id,bl,ty,body)
 
 let mk_fix(loc,kw,id,dcls) =
@@ -278,7 +278,7 @@ GEXTEND Gram
       | s=sort -> CSort (!@loc,s)
       | n=INT -> CPrim (!@loc, Numeral (Bigint.of_string n))
       | s=string -> CPrim (!@loc, String s)
-      | "_" -> CHole (!@loc, None)
+      | "_" -> CHole (!@loc, None, None)
       | id=pattern_ident -> CPatVar(!@loc,(false,id)) ] ]
   ;
   fix_constr:
@@ -369,11 +369,11 @@ GEXTEND Gram
       | s = string -> CPatPrim (!@loc, String s) ] ]
   ;
   impl_ident_tail:
-    [ [ "}" -> fun id -> LocalRawAssum([id], Default Implicit, CHole(!@loc, None))
+    [ [ "}" -> fun id -> LocalRawAssum([id], Default Implicit, CHole(!@loc, None, None))
     | idl=LIST1 name; ":"; c=lconstr; "}" ->
         (fun id -> LocalRawAssum (id::idl,Default Implicit,c))
     | idl=LIST1 name; "}" ->
-        (fun id -> LocalRawAssum (id::idl,Default Implicit,CHole (!@loc, None)))
+        (fun id -> LocalRawAssum (id::idl,Default Implicit,CHole (!@loc, None, None)))
     | ":"; c=lconstr; "}" ->
 	(fun id -> LocalRawAssum ([id],Default Implicit,c))
     ] ]
@@ -404,7 +404,7 @@ GEXTEND Gram
           binders_of_names (id::idl) @ bl
       | id1 = name; ".."; id2 = name ->
           [LocalRawAssum ([id1;(!@loc,Name ldots_var);id2],
-	                  Default Explicit,CHole (!@loc,None))]
+	                  Default Explicit,CHole (!@loc, None, None))]
       | bl = closed_binder; bl' = binders ->
 	  bl@bl'
     ] ]
@@ -413,7 +413,7 @@ GEXTEND Gram
     [ [ l = LIST0 binder -> List.flatten l ] ]
   ;
   binder:
-    [ [ id = name -> [LocalRawAssum ([id],Default Explicit,CHole (!@loc, None))]
+    [ [ id = name -> [LocalRawAssum ([id],Default Explicit,CHole (!@loc, None, None))]
       | bl = closed_binder -> bl ] ]
   ;
   closed_binder:
@@ -426,13 +426,13 @@ GEXTEND Gram
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" ->
           [LocalRawDef (id,CCast (Loc.merge (constr_loc t) (!@loc),c, CastConv t))]
       | "{"; id=name; "}" ->
-          [LocalRawAssum ([id],Default Implicit,CHole (!@loc, None))]
+          [LocalRawAssum ([id],Default Implicit,CHole (!@loc, None, None))]
       | "{"; id=name; idl=LIST1 name; ":"; c=lconstr; "}" ->
           [LocalRawAssum (id::idl,Default Implicit,c)]
       | "{"; id=name; ":"; c=lconstr; "}" ->
           [LocalRawAssum ([id],Default Implicit,c)]
       | "{"; id=name; idl=LIST1 name; "}" ->
-          List.map (fun id -> LocalRawAssum ([id],Default Implicit,CHole (!@loc, None))) (id::idl)
+          List.map (fun id -> LocalRawAssum ([id],Default Implicit,CHole (!@loc, None, None))) (id::idl)
       | "`("; tc = LIST1 typeclass_constraint SEP "," ; ")" ->
 	  List.map (fun (n, b, t) -> LocalRawAssum ([n], Generalized (Implicit, Explicit, b), t)) tc
       | "`{"; tc = LIST1 typeclass_constraint SEP "," ; "}" ->

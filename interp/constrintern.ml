@@ -354,7 +354,7 @@ let locate_if_isevar loc na = function
 	| Name id -> glob_constr_of_notation_constr loc
 	               (Reserve.find_reserved_type id)
 	| Anonymous -> raise Not_found
-      with Not_found -> GHole (loc, Evar_kinds.BinderType na))
+      with Not_found -> GHole (loc, Evar_kinds.BinderType na, None))
   | x -> x
 
 let reset_hidden_inductive_implicit_test env =
@@ -401,7 +401,7 @@ let intern_generalized_binder ?(global_level=false) intern_type lvar
     env fvs in
   let bl = List.map
     (fun (id, loc) ->
-      (loc, (Name id, b, None, GHole (loc, Evar_kinds.BinderType (Name id)))))
+      (loc, (Name id, b, None, GHole (loc, Evar_kinds.BinderType (Name id), None))))
     fvs
   in
   let na = match na with
@@ -441,7 +441,7 @@ let intern_local_binder_aux ?(global_level=false) intern lvar (env,bl) = functio
   | LocalRawDef((loc,na as locna),def) ->
       let indef = intern env def in
       (push_name_env lvar (impls_term_list indef) env locna,
-      (loc,(na,Explicit,Some(indef),GHole(loc,Evar_kinds.BinderType na)))::bl)
+      (loc,(na,Explicit,Some(indef),GHole(loc,Evar_kinds.BinderType na,None)))::bl)
 
 let intern_generalization intern env lvar loc bk ak c =
   let c = intern {env with unb = true} c in
@@ -461,10 +461,10 @@ let intern_generalization intern env lvar loc bk ak c =
       in
 	if pi then
 	  (fun (id, loc') acc ->
-	    GProd (Loc.merge loc' loc, Name id, bk, GHole (loc', Evar_kinds.BinderType (Name id)), acc))
+	    GProd (Loc.merge loc' loc, Name id, bk, GHole (loc', Evar_kinds.BinderType (Name id), None), acc))
 	else
 	  (fun (id, loc') acc ->
-	    GLambda (Loc.merge loc' loc, Name id, bk, GHole (loc', Evar_kinds.BinderType (Name id)), acc))
+	    GLambda (Loc.merge loc' loc, Name id, bk, GHole (loc', Evar_kinds.BinderType (Name id), None), acc))
     in
       List.fold_right (fun (id, loc as lid) (env, acc) ->
 	let env' = push_name_env lvar (Variable,[],[],[]) env (loc, Name id) in
@@ -562,7 +562,7 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
       let na =
         try snd (coerce_to_name (fst (Id.Map.find id terms)))
         with Not_found -> na in
-      GHole (loc,Evar_kinds.BinderType na)
+      GHole (loc,Evar_kinds.BinderType na,None)
     | NBinderList (x,_,iter,terminator) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
@@ -1285,8 +1285,8 @@ let get_implicit_name n imps =
   Some (Impargs.name_of_implicit (List.nth imps (n-1)))
 
 let set_hole_implicit i b = function
-  | GRef (loc,r) | GApp (_,GRef (loc,r),_) -> (loc,Evar_kinds.ImplicitArg (r,i,b))
-  | GVar (loc,id) -> (loc,Evar_kinds.ImplicitArg (VarRef id,i,b))
+  | GRef (loc,r) | GApp (_,GRef (loc,r),_) -> (loc,Evar_kinds.ImplicitArg (r,i,b),None)
+  | GVar (loc,id) -> (loc,Evar_kinds.ImplicitArg (VarRef id,i,b),None)
   | _ -> anomaly (Pp.str "Only refs have implicits")
 
 let exists_implicit_name id =
@@ -1459,13 +1459,13 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | CRecord (loc, _, fs) ->
 	let cargs =
 	  sort_fields true loc fs
-	    (fun k l -> CHole (loc, Some (Evar_kinds.QuestionMark (Evar_kinds.Define true))) :: l)
+	    (fun k l -> CHole (loc, Some (Evar_kinds.QuestionMark (Evar_kinds.Define true)), None) :: l)
 	  in
 	begin
 	  match cargs with
 	    | None -> user_err_loc (loc, "intern", str"No constructor inference.")
 	    | Some (n, constrname, args) ->
-		let pars = List.make n (CHole (loc, None)) in
+		let pars = List.make n (CHole (loc, None, None)) in
 		let app = CAppExpl (loc, (None, constrname), List.rev_append pars args) in
 	  intern env app
 	end
@@ -1497,9 +1497,9 @@ let internalize sigma globalenv env allow_patvar lvar c =
 		   GCases(Loc.ghost,Term.RegularStyle,Some (GSort (Loc.ghost,GType None)), (* "return Type" *)
 			  List.map (fun id -> GVar (Loc.ghost,id),(Name id,None)) thevars, (* "match v1,..,vn" *)
 			  [Loc.ghost,[],thepats, (* "|p1,..,pn" *)
-			   Option.cata (intern_type env') (GHole(Loc.ghost,Evar_kinds.CasesType)) rtnpo; (* "=> P" is there were a P "=> _" else *)
+			   Option.cata (intern_type env') (GHole(Loc.ghost,Evar_kinds.CasesType,None)) rtnpo; (* "=> P" is there were a P "=> _" else *)
 			   Loc.ghost,[],List.make (List.length thepats) (PatVar(Loc.ghost,Anonymous)), (* "|_,..,_" *)
-			   GHole(Loc.ghost,Evar_kinds.ImpossibleCase) (* "=> _" *)]))
+			   GHole(Loc.ghost,Evar_kinds.ImpossibleCase,None) (* "=> _" *)]))
 	in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
 	GCases (loc, sty, rtnpo, tms, List.flatten eqns')
@@ -1521,8 +1521,26 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	    (Loc.ghost,na') in
 	  intern_type env'' p) po in
         GIf (loc, c', (na', p'), intern env b1, intern env b2)
-    | CHole (loc, k) ->
-	GHole (loc, match k with Some k -> k | None -> Evar_kinds.QuestionMark (Evar_kinds.Define true))
+    | CHole (loc, k, solve) ->
+        let k = match k with
+        | None -> Evar_kinds.QuestionMark (Evar_kinds.Define true)
+        | Some k -> k
+        in
+        let solve = match solve with
+        | None -> None
+        | Some gen ->
+          let (cvars, lvars) = fst lvar in
+          let lvars = Id.Set.union lvars cvars in
+          let ist = {
+            Genintern.ltacvars = lvars;
+            ltacrecvars = Id.Map.empty;
+            gsigma = sigma;
+            genv = globalenv;
+          } in
+          let (_, glb) = Genintern.generic_intern ist gen in
+          Some glb
+        in
+	GHole (loc, k, solve)
     | CPatVar (loc, n) when allow_patvar ->
 	GPatVar (loc, n)
     | CPatVar (loc, _) ->

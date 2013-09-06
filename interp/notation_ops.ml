@@ -104,7 +104,7 @@ let glob_constr_of_notation_constr_with_binders loc g f e = function
       GRec (loc,fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
   | NCast (c,k) -> GCast (loc,f e c,Miscops.map_cast_type (f e) k)
   | NSort x -> GSort (loc,x)
-  | NHole x  -> GHole (loc,x)
+  | NHole x  -> GHole (loc, x, None)
   | NPatVar n -> GPatVar (loc,(false,n))
   | NRef x -> GRef (loc,x)
 
@@ -287,7 +287,7 @@ let notation_constr_and_vars_of_glob_constr a =
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
   | GCast (_,c,k) -> NCast (aux c,Miscops.map_cast_type aux k)
   | GSort (_,s) -> NSort s
-  | GHole (_,w) -> NHole w
+  | GHole (_,w,_) -> NHole w
   | GRef (_,r) -> NRef r
   | GPatVar (_,(_,n)) -> NPatVar n
   | GEvar _ ->
@@ -490,7 +490,7 @@ let abstract_return_type_context pi mklam tml rtno =
 let abstract_return_type_context_glob_constr =
   abstract_return_type_context (fun (_,_,nal) -> nal)
     (fun na c ->
-      GLambda(Loc.ghost,na,Explicit,GHole(Loc.ghost,Evar_kinds.InternalHole),c))
+      GLambda(Loc.ghost,na,Explicit,GHole(Loc.ghost,Evar_kinds.InternalHole,None),c))
 
 let abstract_return_type_context_notation_constr =
   abstract_return_type_context snd
@@ -553,7 +553,7 @@ let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
   | (_,Name id2) when Id.List.mem id2 (fst metas) ->
       let rhs = match na1 with
       | Name id1 -> GVar (Loc.ghost,id1)
-      | Anonymous -> GHole (Loc.ghost,Evar_kinds.InternalHole) in
+      | Anonymous -> GHole (Loc.ghost,Evar_kinds.InternalHole,None) in
       alp, bind_env alp sigma id2 rhs
   | (Name id1,Name id2) -> (id1,id2)::alp,sigma
   | (Anonymous,Anonymous) -> alp,sigma
@@ -577,7 +577,7 @@ let rec match_iterated_binders islambda decls = function
       match_iterated_binders islambda ((na,bk,None,t)::decls) b
   | GLetIn (loc,na,c,b) when glue_letin_with_decls ->
       match_iterated_binders islambda
-	((na,Explicit (*?*), Some c,GHole(loc,Evar_kinds.BinderType na))::decls) b
+	((na,Explicit (*?*), Some c,GHole(loc,Evar_kinds.BinderType na,None))::decls) b
   | b -> (decls,b)
 
 let remove_sigma x (sigmavar,sigmalist,sigmabinders) =
@@ -731,7 +731,7 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
      to print "{x:_ & P x}" knowing that notation "{x & P x}" is not defined. *)
   | b1, NLambda (Name id,(NHole _ | NVar _ as t2),b2) when inner ->
       let id' = Namegen.next_ident_away id (free_glob_vars b1) in
-      let t1 = GHole(Loc.ghost,Evar_kinds.BinderType (Name id')) in
+      let t1 = GHole(Loc.ghost,Evar_kinds.BinderType (Name id'),None) in
       let sigma = match t2 with
       | NHole _ -> sigma
       | NVar id2 -> bind_env alp sigma id2 t1

@@ -148,6 +148,7 @@ Impargs
 Syntax_def
 Implicit_quantifiers
 Smartlocate
+Genintern
 Constrintern
 Modintern
 Constrextern

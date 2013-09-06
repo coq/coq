@@ -245,7 +245,7 @@ let loc_of_glob_constr = function
   | GIf (loc,_,_,_,_) -> loc
   | GRec (loc,_,_,_,_,_) -> loc
   | GSort (loc,_) -> loc
-  | GHole (loc,_) -> loc
+  | GHole (loc,_,_) -> loc
   | GCast (loc,_,_) -> loc
 
 (**********************************************************************)
@@ -259,7 +259,7 @@ let rec cases_pattern_of_glob_constr na = function
       raise Not_found
     | Anonymous -> PatVar (loc,Name id)
     end
-  | GHole (loc,_) -> PatVar (loc,na)
+  | GHole (loc,_,_) -> PatVar (loc,na)
   | GRef (loc,ConstructRef cstr) ->
       PatCstr (loc,cstr,[],na)
   | GApp (loc,GRef (_,ConstructRef cstr),l) ->

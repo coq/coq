@@ -127,7 +127,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	  (fun avoid (clname, (id, _, t)) ->
 	    match clname with
 	    | Some (cl, b) ->
-		let t = CHole (Loc.ghost, None) in
+		let t = CHole (Loc.ghost, None, None) in
 		  t, avoid
 	    | None -> failwith ("new instance: under-applied typeclass"))
 	  cl
@@ -228,7 +228,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 			   k.cl_projs;
 			 c :: props, rest'
 		     with Not_found ->
-		       (CHole (Loc.ghost, Some Evar_kinds.GoalEvar) :: props), rest
+		       (CHole (Loc.ghost, Some Evar_kinds.GoalEvar, None) :: props), rest
 		   else props, rest)
 		([], props) k.cl_props
 	    in

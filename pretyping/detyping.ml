@@ -591,6 +591,8 @@ let rec subst_cases_pattern subst pat =
 	if kn' == kn && cpl' == cpl then pat else
 	  PatCstr (loc,((kn',i),j),cpl',n)
 
+let (f_subst_genarg, subst_genarg_hook) = Hook.make ()
+
 let rec subst_glob_constr subst raw =
   match raw with
   | GRef (loc,ref) ->
@@ -674,14 +676,16 @@ let rec subst_glob_constr subst raw =
 
   | GSort _ -> raw
 
-  | GHole (loc,Evar_kinds.ImplicitArg (ref,i,b)) ->
-      let ref',_ = subst_global subst ref in
-	if ref' == ref then raw else
-	  GHole (loc,Evar_kinds.InternalHole)
-  | GHole (loc, (Evar_kinds.BinderType _ |Evar_kinds.QuestionMark _
-		|Evar_kinds.CasesType |Evar_kinds.InternalHole
-		|Evar_kinds.TomatchTypeParameter _ |Evar_kinds.GoalEvar
-		|Evar_kinds.ImpossibleCase |Evar_kinds.MatchingVar _)) -> raw
+  | GHole (loc, knd, solve) ->
+    let nknd = match knd with
+    | Evar_kinds.ImplicitArg (ref, i, b) ->
+      let nref, _ = subst_global subst ref in
+      if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
+    | _ -> knd
+    in
+    let nsolve = Option.smartmap (Hook.get f_subst_genarg subst) solve in
+    if nsolve == solve && nknd = knd then raw
+    else GHole (loc, nknd, nsolve)
 
   | GCast (loc,r1,k) ->
       let r1' = subst_glob_constr subst r1 in

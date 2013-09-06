@@ -235,7 +235,7 @@ let constr_loc = function
   | CCases (loc,_,_,_,_) -> loc
   | CLetTuple (loc,_,_,_,_) -> loc
   | CIf (loc,_,_,_,_) -> loc
-  | CHole (loc, _) -> loc
+  | CHole (loc, _, _) -> loc
   | CPatVar (loc,_) -> loc
   | CEvar (loc,_,_) -> loc
   | CSort (loc,_) -> loc
@@ -332,14 +332,14 @@ let coerce_to_id = function
 
 let coerce_to_name = function
   | CRef (Ident (loc,id)) -> (loc,Name id)
-  | CHole (loc,_) -> (loc,Anonymous)
+  | CHole (loc,_,_) -> (loc,Anonymous)
   | a -> Errors.user_err_loc
         (constr_loc a,"coerce_to_name",
          str "This expression should be a name.")
 
 let rec raw_cases_pattern_expr_of_glob_constr looked_for = function
   | GVar (loc,id) -> RCPatAtom (loc,Some id)
-  | GHole (loc,_) -> RCPatAtom (loc,None)
+  | GHole (loc,_,_) -> RCPatAtom (loc,None)
   | GRef (loc,g) ->
     looked_for g;
     RCPatCstr (loc, g,[],[])

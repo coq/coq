@@ -1920,7 +1920,7 @@ let mk_JMeq typ x typ' y =
   mkApp (delayed_force coq_JMeq_ind, [| typ; x ; typ'; y |])
 let mk_JMeq_refl typ x = mkApp (delayed_force coq_JMeq_refl, [| typ; x |])
 
-let hole = GHole (Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define true))
+let hole = GHole (Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define true), None)
 
 let constr_of_pat env evdref arsign pat avoid =
   let rec typ env (ty, realargs) pat avoid =

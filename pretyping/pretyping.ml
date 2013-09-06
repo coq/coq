@@ -288,6 +288,8 @@ let pretype_sort evdref = function
 let new_type_evar evdref env loc =
   evd_comb0 (fun evd -> Evarutil.new_type_evar evd env ~src:(loc,Evar_kinds.InternalHole)) evdref
 
+let (f_genarg_interp, genarg_interp_hook) = Hook.make ()
+
 (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
 (* in environment [env], with existential variables [evdref] and *)
 (* the type constraint tycon *)
@@ -321,13 +323,24 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
       let k = Evar_kinds.MatchingVar (someta,n) in
 	{ uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
 
-  | GHole (loc,k) ->
+  | GHole (loc, k, None) ->
       let ty =
         match tycon with
         | Some ty -> ty
         | None ->
-	    new_type_evar evdref env loc in
-	{ uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
+          new_type_evar evdref env loc in
+        { uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
+
+  | GHole (loc, k, Some arg) ->
+      let ty =
+        match tycon with
+        | Some ty -> ty
+        | None ->
+          new_type_evar evdref env loc in
+      let ist = snd lvar in
+      let (c, sigma) = Hook.get f_genarg_interp ty env !evdref ist arg in
+      let () = evdref := sigma in
+      { uj_val = c; uj_type = ty }
 
   | GRec (loc,fixkind,names,bl,lar,vdef) ->
       let rec type_bl env ctxt = function
@@ -717,7 +730,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 
 (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
 and pretype_type valcon env evdref lvar = function
-  | GHole loc ->
+  | GHole (loc, knd, None) ->
       (match valcon with
        | Some v ->
            let s =
@@ -733,7 +746,7 @@ and pretype_type valcon env evdref lvar = function
 	       utj_type = s }
        | None ->
 	   let s = evd_comb0 new_sort_variable evdref in
-	     { utj_val = e_new_evar evdref env ~src:loc (mkSort s);
+	     { utj_val = e_new_evar evdref env ~src:(loc, knd) (mkSort s);
 	       utj_type = s})
   | c ->
       let j = pretype empty_tycon env evdref lvar c in

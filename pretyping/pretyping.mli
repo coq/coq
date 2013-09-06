@@ -125,3 +125,7 @@ val constr_out : Dyn.t -> constr
 
 val interp_sort : glob_sort -> sorts
 val interp_elimination_sort : glob_sort -> sorts_family
+
+val genarg_interp_hook :
+  (types -> env -> evar_map -> Genarg.typed_generic_argument Id.Map.t ->
+    Genarg.glob_generic_argument -> constr * evar_map) Hook.t

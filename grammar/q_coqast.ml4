@@ -161,10 +161,10 @@ let rec mlexpr_of_constr = function
     let loc = of_coqloc loc in
     <:expr< Constrexpr.CApp $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_constr a$ $mlexpr_of_list (mlexpr_of_pair mlexpr_of_constr (mlexpr_of_option (mlexpr_of_located mlexpr_of_explicitation))) l$ >>
   | Constrexpr.CCases (loc,_,_,_,_) -> failwith "mlexpr_of_constr: TODO"
-  | Constrexpr.CHole (loc, None) ->
+  | Constrexpr.CHole (loc, None, None) ->
     let loc = of_coqloc loc in
-    <:expr< Constrexpr.CHole $dloc$ None >>
-  | Constrexpr.CHole (loc, Some _) -> failwith "mlexpr_of_constr: TODO CHole (Some _)"
+    <:expr< Constrexpr.CHole $dloc$ None None >>
+  | Constrexpr.CHole (loc, _, _) -> failwith "mlexpr_of_constr: TODO CHole (Some _)"
   | Constrexpr.CNotation(_,ntn,(subst,substl,[])) ->
       <:expr< Constrexpr.CNotation $dloc$ $mlexpr_of_string ntn$
               ($mlexpr_of_list mlexpr_of_constr subst$,

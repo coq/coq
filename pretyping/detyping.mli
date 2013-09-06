@@ -60,6 +60,9 @@ val simple_cases_matrix_of_branches :
 val return_type_of_predicate :
   inductive -> int -> glob_constr -> predicate_pattern * glob_constr option
 
+val subst_genarg_hook :
+  (substitution -> Genarg.glob_generic_argument -> Genarg.glob_generic_argument) Hook.t
+
 module PrintingInductiveMake :
   functor (Test : sig
     val encode : Libnames.reference -> Names.inductive

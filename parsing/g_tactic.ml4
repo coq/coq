@@ -424,7 +424,7 @@ GEXTEND Gram
       | -> true ]]
   ;
   simple_binder:
-    [ [ na=name -> ([na],Default Explicit,CHole (!@loc, None))
+    [ [ na=name -> ([na],Default Explicit,CHole (!@loc, None, None))
       | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> (nal,Default Explicit,c)
     ] ]
   ;

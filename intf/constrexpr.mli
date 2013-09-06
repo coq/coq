@@ -78,7 +78,7 @@ type constr_expr =
       constr_expr * constr_expr
   | CIf of Loc.t * constr_expr * (Name.t located option * constr_expr option)
       * constr_expr * constr_expr
-  | CHole of Loc.t * Evar_kinds.t option
+  | CHole of Loc.t * Evar_kinds.t option * Genarg.raw_generic_argument option
   | CPatVar of Loc.t * (bool * patvar)
   | CEvar of Loc.t * existential_key * constr_expr list option
   | CSort of Loc.t * glob_sort

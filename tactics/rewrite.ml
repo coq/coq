@@ -1511,7 +1511,7 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	     (Ident (Loc.ghost,Id.of_string "Equivalence_Symmetric"), lemma2);
 	     (Ident (Loc.ghost,Id.of_string "Equivalence_Transitive"), lemma3)])
 
-let cHole = CHole (Loc.ghost, None)
+let cHole = CHole (Loc.ghost, None, None)
 
 let proper_projection r ty =
   let ctx, inst = decompose_prod_assum ty in

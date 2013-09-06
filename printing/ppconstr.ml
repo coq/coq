@@ -258,7 +258,7 @@ let pr_binder_among_many pr_c = function
   | LocalRawDef (na,c) ->
       let c,topt = match c with
         | CCast(_,c, (CastConv t|CastVM t|CastNative t)) -> c, t
-        | _ -> c, CHole (Loc.ghost, None) in
+        | _ -> c, CHole (Loc.ghost, None, None) in
       surround (pr_lname na ++ pr_opt_type pr_c topt ++
          str":=" ++ cut() ++ pr_c c)
 

@@ -47,7 +47,7 @@ open Egramml
 (** Declare Notations grammar rules                                   *)
 
 let constr_expr_of_name (loc,na) = match na with
-  | Anonymous -> CHole (loc,None)
+  | Anonymous -> CHole (loc,None,None)
   | Name id -> CRef (Ident (loc,id))
 
 let cases_pattern_expr_of_name (loc,na) = match na with
