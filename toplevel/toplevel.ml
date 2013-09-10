@@ -343,8 +343,11 @@ let feed_emacs = function
 let rec loop () =
   Sys.catch_break true;
   if !Flags.print_emacs then begin
+    (* TODO : check with Enrico ?! *)
+    (*
     Pp.set_feeder feed_emacs;
     Vernacentries.enable_goal_printing := false;
+    *)
     Vernacentries.qed_display_script := false;
   end;
   try
