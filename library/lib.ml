@@ -513,8 +513,14 @@ let close_section () =
 type frozen = Names.DirPath.t option * library_segment
 
 let freeze ~marshallable =
-  if marshallable = `Shallow then !comp_name, []
-  else !comp_name, !lib_stk
+  if marshallable = `Shallow then
+    (* TASSI: we should do something more sensible here *)
+    let _, initial_prefix =
+      CList.split_when (function _, CompilingLibrary _ -> true | _ -> false)
+      !lib_stk in
+    !comp_name, initial_prefix
+  else
+    !comp_name, !lib_stk
 
 let unfreeze (mn,stk) =
   comp_name := mn;
