@@ -1182,7 +1182,8 @@ let process_transaction verbosely (loc, expr) =
             then begin
               let bname = VCS.mk_branch_name x in
               VCS.commit id (Fork (x,bname,[]));
-              VCS.branch bname (`Proof ("Classic", VCS.proof_nesting () + 1))
+              VCS.branch bname (`Proof ("Classic", VCS.proof_nesting () + 1));
+              Proof_global.activate_proof_mode "Classic";
             end else begin
               VCS.commit id (Cmd (x,[]));
               VCS.propagate_sideff (Some x);
