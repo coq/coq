@@ -263,6 +263,9 @@ let rec vernac_com verbosely checknav (loc,com) =
 	    raise reraise
 	end
 
+    | VernacList l ->
+        List.iter (fun (_,v) -> interp v) l
+
     | v when !just_parsing -> ()
 
     | v -> Stm.process_transaction verbosely (loc,v)
