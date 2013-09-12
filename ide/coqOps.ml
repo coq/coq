@@ -83,6 +83,7 @@ object
   method backtrack_last_phrase : unit task
   method initialize : unit task
   method join_document : unit task
+  method get_slaves_status : int * int
 
   method handle_failure : handle_exn_rty -> unit task
 
@@ -104,6 +105,10 @@ object(self)
   val cmd_stack = Stack.create ()
 
   val mutable initial_state = Stateid.initial
+
+  (* proofs being processed by the slaves *)
+  val mutable to_process = 0
+  val mutable processed = 0
 
   val feedbacks : feedback Queue.t = Queue.create ()
   val feedback_timer = Ideutils.mktimer ()
@@ -267,6 +272,10 @@ object(self)
           self#attach_tooltip sentence loc msg;
           if not (Loc.is_ghost loc) then
             self#position_error_tag_at_sentence sentence (Some (Loc.unloc loc))
+      | InProgress n, _ ->
+          if n < 0 then processed <- processed + abs n
+          else to_process <- to_process + n
+
       | _ ->
           if sentence <> None then Minilib.log "Unsupported feedback message"
           else if Stack.is_empty cmd_stack then ()
@@ -377,6 +386,8 @@ object(self)
          Coq.return ()
      | Fail x -> self#handle_failure x in
    Coq.bind (Coq.status ~logger:messages#push true) next
+
+  method get_slaves_status = processed, to_process
 
   method process_next_phrase =
     let until len start stop = 1 <= len in

@@ -125,6 +125,7 @@ type feedback_content =
   | Processed
   | GlobRef of Loc.t * string * string * string * string
   | ErrorMsg of Loc.t * string
+  | InProgress of int
 
 type feedback = {
   id : edit_or_state_id;

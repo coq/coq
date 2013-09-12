@@ -1246,11 +1246,27 @@ let build_ui () =
   let () = set_location := l#set_text in
 
   (* Progress Bar *)
-  let pbar = GRange.progress_bar ~pulse_step:0.2 () in
+  let pbar = GRange.progress_bar ~pulse_step:0.1 () in
   let () = lower_hbox#pack pbar#coerce in
-  let () = pbar#set_text "CoqIde started" in
-  let pulse sn = if Coq.is_computing sn.coqtop then pbar#pulse () in
+  let ready () = pbar#set_fraction 0.0; pbar#set_text "Coq is ready" in
+  let pulse sn =
+    if Coq.is_computing sn.coqtop then
+      (pbar#set_text "Coq is working"; pbar#pulse ())
+    else ready () in
   let callback () = on_current_term pulse; true in
+  let _ = Glib.Timeout.add ~ms:300 ~callback in
+
+  (* Pending proofs *)
+  let pbar = GRange.progress_bar ~pulse_step:0.1 () in
+  let () = lower_hbox#pack pbar#coerce in
+  let txt n = pbar#set_text ("To check: " ^ string_of_int n) in
+  let update sn =
+    let processed, to_process = sn.coqops#get_slaves_status in
+    let missing = to_process - processed in
+    if missing = 0 then
+      (pbar#set_text "All checked";pbar#set_fraction 0.0)
+    else (pbar#pulse (); txt missing) in
+  let callback () = on_current_term update; true in
   let _ = Glib.Timeout.add ~ms:300 ~callback in
 
   (* Initializing hooks *)

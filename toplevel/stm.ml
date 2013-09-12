@@ -631,7 +631,9 @@ end = struct (* {{{ *)
   let build_proof_here (id,valid) eop =
     Future.create (fun () ->
       !reach_known_state ~cache:false eop;
-      Proof_global.return_proof ~fix_exn:(State.exn_on id ~valid))
+      let p = Proof_global.return_proof ~fix_exn:(State.exn_on id ~valid) in
+      Pp.feedback (Interface.InProgress ~-1);
+      p)
 
   let slave_respond msg =
     match msg with
@@ -680,6 +682,7 @@ end = struct (* {{{ *)
       build_proof_here exn_info stop
     else 
       let f, assign = Future.create_delegate () in
+      Pp.feedback (Interface.InProgress 1);
       TQueue.push queue (TaskBuildProof(exn_info,start,stop,assign));
       f
 

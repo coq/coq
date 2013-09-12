@@ -21,6 +21,7 @@ object
   method backtrack_last_phrase : unit task
   method initialize : unit task
   method join_document : unit task
+  method get_slaves_status : int * int
 
   method handle_failure : Interface.handle_exn_rty -> unit task
   

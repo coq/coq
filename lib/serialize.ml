@@ -605,6 +605,10 @@ let to_feedback_content xml = do_match xml "feedback_content"
        (match args with
        | [loc;  s] -> ErrorMsg (to_loc loc, to_string s)
        | _ -> raise Marshal_error)
+  | "inprogress" -> 
+       (match args with
+       | [n] -> InProgress (to_int n)
+       | _ -> raise Marshal_error)
   | _ -> raise Marshal_error)
 
 let of_feedback_content = function
@@ -620,6 +624,7 @@ let of_feedback_content = function
     ]
 | ErrorMsg(loc, s) ->
     constructor "feedback_content" "errormsg" [of_loc loc; of_string s]
+| InProgress n -> constructor "feedback_content" "inprogress" [of_int n]
 
 let of_feedback msg =
   let content = of_feedback_content msg.content in
