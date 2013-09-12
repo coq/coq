@@ -269,19 +269,6 @@ let rec vernac_com verbosely checknav (loc,com) =
     | v when !just_parsing -> ()
 
     | v -> Stm.process_transaction verbosely (loc,v)
-          (* FIXME elsewhere let rollback =
-            if !Flags.batch_mode then States.without_rollback
-            else States.with_heavy_rollback
-          in
-	  let psh = default_set_timeout () in
-	  try
-            rollback interpfun Cerrors.process_vernac_interp_error v;
-	    restore_timeout psh;
-	  with reraise ->
-            let reraise = Errors.push reraise in
-            restore_timeout psh;
-            raise reraise
-          *)
   in
     try
       checknav loc com;
