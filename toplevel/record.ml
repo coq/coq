@@ -267,8 +267,6 @@ let declare_structure finite infer id idbuild paramimpls params arity fieldimpls
   let build = ConstructRef cstr in
   let () = if is_coe then Class.try_add_new_coercion build ~local:false in
   Recordops.declare_structure(rsp,cstr,List.rev kinds,List.rev sp_projs);
-  if infer then
-    Evd.fold (fun ev evi () -> Recordops.declare_method (ConstructRef cstr) ev sign) sign ();
   rsp
 
 let implicits_of_context ctx =
@@ -322,7 +320,6 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	Impargs.declare_manual_implicits false cref [paramimpls];
 	Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
 	Classes.set_typeclass_transparency (EvalConstRef cst) false false;
-	if infer then Evd.fold (fun ev evi _ -> Recordops.declare_method (ConstRef cst) ev sign) sign ();
 	let sub = match List.hd coers with Some b -> Some ((if b then Backward else Forward), List.hd priorities) | None -> None in
 	  cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
@@ -364,7 +361,6 @@ let interp_and_check_sort sort =
     else user_err_loc (constr_loc sort,"", str"Sort expected.")) sort
 
 open Vernacexpr
-open Autoinstance
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a
    list telling if the corresponding fields must me declared as coercions 
@@ -392,7 +388,6 @@ let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuil
     | Class def ->
 	let gr = declare_class finite def infer (loc,idstruc) idbuild
 	  implpars params sc implfs fields is_coe coers priorities sign in
-	if infer then search_record declare_class_instance gr sign;
 	gr
     | _ ->
 	let arity = Option.default (Termops.new_Type ()) sc in
@@ -400,5 +395,4 @@ let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuil
 	  (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs in
 	let ind = declare_structure finite infer idstruc idbuild implpars params arity implfs 
 	  fields is_coe (List.map (fun coe -> not (Option.is_empty coe)) coers) sign in
-	if infer then search_record declare_record_instance (ConstructRef (ind,1)) sign;
 	IndRef ind

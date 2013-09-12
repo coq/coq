@@ -6,6 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** ppedrot: this code has been broken for ages. It used to automagically detect
+    instances of classes based on the types of record fields. If anyone wishes
+    to fix it, she is welcome, though there is quite a lot of work to do. At
+    best, this should be moved to a proper plugin. *)
+
 (*i*)
 open Util
 open Pp
@@ -234,6 +239,9 @@ end
 
 module GREM = Map.Make(GREMOrd)
 
+let methods_matching typ = assert false
+  (** ppedrot: used to be [Recordops.methods_matching], which I unplugged. *)
+
 let grem_add key data map =
   try
     let l = GREM.find key map in
@@ -252,7 +260,7 @@ let complete_signature_with_def gr deftyp (k:instance_decl_function -> signature
 	  (fun ((cl,ev,evm),_,_) ->
 (*	     msgnl(pr_global gr++str" : "++pr_constr typ++str" matche ?"++Pp.int ev++str " dans "++pr_evar_map evm);*)
 	     smap := grem_add (cl,evm) (ctx,ev) !smap)
-	  (Recordops.methods_matching typ)
+	  (methods_matching typ)
     ) [] deftyp;
   GREM.iter
     ( fun (cl,evm) evl ->
@@ -304,7 +312,7 @@ let declare_instance (k:global_reference -> rel_context -> constr list -> unit)
   let fields = List.rev (Evd.fold ( fun ev evi l -> evar_definition evi::l ) evm []) in
   k cl ctx fields
 
-let autoinstance_opt = ref true
+let autoinstance_opt = ref false
 
 let search_declaration gr =
   if !autoinstance_opt &&
@@ -337,11 +345,11 @@ let end_autoinstance () =
     autoinstance_opt := false;
  )
 
-let _ =
+(*let _ =
   Goptions.declare_bool_option
     { Goptions.optsync=true;
       Goptions.optdepr=false;
       Goptions.optkey=["Autoinstance"];
       Goptions.optname="automatic typeclass instance recognition";
       Goptions.optread=(fun () -> !autoinstance_opt);
-      Goptions.optwrite=(fun b -> if b then begin_autoinstance() else end_autoinstance()) }
+      Goptions.optwrite=(fun b -> if b then begin_autoinstance() else end_autoinstance()) }*)
