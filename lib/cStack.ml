@@ -26,7 +26,7 @@ let find_map f l =
 let seek f accu l =
   let rec aux accu = function
     | [] -> raise Not_found
-    | x :: xs -> match f accu x with Stop x -> x | Next i -> aux accu xs in
+    | x :: xs -> match f accu x with Stop x -> x | Next i -> aux i xs in
   aux accu !l
 let is_empty l = match !l with [] -> true | _ -> false
 let iter f l = List.iter f !l
