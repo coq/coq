@@ -45,8 +45,8 @@ object(self)
   method get_nth_term i =
     List.nth term_list i
 
-  method term_num p =
-    Util.List.index0 p term_list
+  method term_num f p =
+    Util.List.index0_f f p term_list
 
   method pages = term_list
 
