@@ -578,6 +578,8 @@ object(self)
       messages#clear;
       proof#clear ();
       clear_info ();
+      processed <- 0;
+      to_process <- 0;
       push_info "Restarted";
       (* apply the initial commands to coq *)
     in
