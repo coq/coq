@@ -723,6 +723,7 @@ end = struct (* {{{ *)
             loop (); last_task := None
         with
         | VCS.Expired -> (* task cancelled: e.g. the user did backtrack *)
+            Pp.feedback (Interface.InProgress ~-1);
             prerr_endline ("Task expired: " ^ pr_task task)
         | MarshalError ->
             msg_warning(strbrk("Marshalling error. "^
@@ -787,10 +788,12 @@ end = struct (* {{{ *)
       | e when Errors.noncritical e ->
         (* This can happen if the proof is broken.  The error has also been
          * signalled as a feedback, hence we can silently recover *)
+        Pp.feedback (Interface.InProgress ~-1);
         marshal_response !slave_oc (RespError (print e));
         prerr_endline "Slave: failed with the following exception:";
         prerr_endline (string_of_ppcmds (print e))
       | e ->
+        Pp.feedback (Interface.InProgress ~-1);
         msg_error(str"Slave: failed with the following CRITICAL exception:");
         msg_error(print e);
         msg_error(str"Slave: bailing out");
