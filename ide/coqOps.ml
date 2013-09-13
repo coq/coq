@@ -11,7 +11,11 @@ open Coq
 open Ideutils
 open Interface
 
-type flag = [ `COMMENT | `UNSAFE | `PROCESSING | `ERROR ]
+type flag = [ `COMMENT | `UNSAFE | `PROCESSING | `ERROR of string ]
+type mem_flag = [ `COMMENT | `UNSAFE | `PROCESSING | `ERROR ]
+let mem_flag_of_flag : flag -> mem_flag = function
+  | `ERROR _ -> `ERROR
+  | (`COMMENT | `UNSAFE | `PROCESSING) as mem_flag -> mem_flag
 
 module SentenceId : sig
 
@@ -29,7 +33,8 @@ module SentenceId : sig
   val assign_state_id : sentence -> Stateid.t -> unit
   val set_flags : sentence -> flag list -> unit
   val add_flag : sentence -> flag -> unit
-  val remove_flag : sentence -> flag -> unit
+  val has_flag : sentence -> mem_flag -> bool
+  val remove_flag : sentence -> mem_flag -> unit
   val same_sentence : sentence -> sentence -> bool
   val hidden_edit_id : unit -> int
 
@@ -59,7 +64,10 @@ end = struct
     s.state_id <- Some id
   let set_flags s f = s.flags <- f
   let add_flag s f = s.flags <- CList.add_set f s.flags
-  let remove_flag s f = s.flags <- CList.remove f s.flags
+  let has_flag s mf =
+    List.exists (fun f -> mem_flag_of_flag f = mf) s.flags
+  let remove_flag s mf =
+    s.flags <- List.filter (fun f -> mem_flag_of_flag f = mf) s.flags
   let same_sentence s1 s2 = s1.edit_id = s2.edit_id && s1.state_id = s2.state_id
 
 end
@@ -83,6 +91,9 @@ object
   method backtrack_last_phrase : unit task
   method initialize : unit task
   method join_document : unit task
+
+  method get_n_errors : int
+  method get_errors : (int * string) list
   method get_slaves_status : int * int
 
   method handle_failure : handle_exn_rty -> unit task
@@ -116,7 +127,7 @@ object(self)
   initializer
     Coq.set_feedback_handler _ct self#enqueue_feedback;
     Wg_Tooltip.set_tooltip_callback (script :> GText.view);
-    feedback_timer.Ideutils.run ~ms:250 ~callback:self#process_feedback
+    feedback_timer.Ideutils.run ~ms:300 ~callback:self#process_feedback
 
   method destroy () =
     feedback_timer.Ideutils.kill ()
@@ -202,8 +213,8 @@ object(self)
     let error_bg = Tags.Script.error_bg in
     let all_tags = [ to_process; processed; unjustified ] in
     let tags =
-      (if List.mem `PROCESSING sentence.flags then to_process else
-       if List.mem `ERROR sentence.flags then error_bg else
+      (if has_flag sentence `PROCESSING then to_process else
+       if has_flag sentence `ERROR then error_bg else
        processed)
       ::
       (if [ `UNSAFE ] = sentence.flags then [unjustified] else [])
@@ -267,7 +278,7 @@ object(self)
       | ErrorMsg(loc, msg), Some sentence ->
           log "ErrorMsg" sentence;
           remove_flag sentence `PROCESSING;
-          add_flag sentence `ERROR;
+          add_flag sentence (`ERROR msg);
           self#mark_as_needed sentence;
           self#attach_tooltip sentence loc msg;
           if not (Loc.is_ghost loc) then
@@ -352,7 +363,7 @@ object(self)
         let sentence = Queue.pop queue in
         add_flag sentence `PROCESSING;
         Stack.push sentence cmd_stack;
-        if List.mem `COMMENT sentence.flags then
+        if has_flag sentence `COMMENT then
           let () = remove_flag sentence `PROCESSING in
           let () = self#commit_queue_transaction sentence in
           loop ()
@@ -388,6 +399,21 @@ object(self)
    Coq.bind (Coq.status ~logger:messages#push true) next
 
   method get_slaves_status = processed, to_process
+
+  method get_n_errors = 
+    List.fold_left
+      (fun n s -> if has_flag s `ERROR then n+1 else n)
+      0 (Stack.to_list cmd_stack)
+
+  method get_errors =
+    let extract_error s =
+      match List.find (function `ERROR _ -> true | _ -> false) s.flags with
+      | `ERROR msg -> (buffer#get_iter_at_mark s.start)#line + 1, msg
+      | _ -> assert false in
+    CList.map_filter (fun s ->
+      if has_flag s `ERROR then Some (extract_error s)
+      else None)
+      (Stack.to_list cmd_stack)
 
   method process_next_phrase =
     let until len start stop = 1 <= len in

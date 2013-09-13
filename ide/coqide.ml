@@ -1251,21 +1251,94 @@ let build_ui () =
   let ready () = pbar#set_fraction 0.0; pbar#set_text "Coq is ready" in
   let pulse sn =
     if Coq.is_computing sn.coqtop then
-      (pbar#set_text "Coq is working"; pbar#pulse ())
+      (pbar#set_text "Coq is computing"; pbar#pulse ())
     else ready () in
   let callback () = on_current_term pulse; true in
   let _ = Glib.Timeout.add ~ms:300 ~callback in
 
-  (* Pending proofs *)
-  let pbar = GRange.progress_bar ~pulse_step:0.1 () in
-  let () = lower_hbox#pack pbar#coerce in
-  let txt n = pbar#set_text ("To check: " ^ string_of_int n) in
+  (* Pending proofs.  It should be with a GtkSpinner... not bound *)
+  let slaveinfobut = GButton.button () in
+  let slaveinfo = GMisc.label ~xalign:0.5 ~width:50 () in
+  let () = lower_hbox#pack slaveinfobut#coerce in
+  let () = slaveinfobut#add slaveinfo#coerce in
+  let () = slaveinfobut#misc#set_has_tooltip true in
+  let () = slaveinfobut#misc#set_tooltip_markup
+    "Proofs to be checked / Errors" in
+  let errwin, fill_errwin =
+    let obj = GWindow.window ~title:"Errors" ~deletable:true
+      ~position:`CENTER_ON_PARENT ~show:false ~width:400 ~height:300 () in
+    let vb = GPack.vbox ~homogeneous:false ~packing:obj#add () in
+    let frame = GBin.scrolled_window
+      ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC () in
+    let tip = GMisc.label ~text:"Double click to jump to error line" () in
+    let () = vb#pack ~expand:true frame#coerce in
+    let () = vb#pack ~expand:false ~padding:2 tip#coerce in
+    let cols = new GTree.column_list in
+    let column1 = cols#add Gobject.Data.int in
+    let column2 = cols#add Gobject.Data.string in
+    let column3 = cols#add Gobject.Data.int in
+    let store = GTree.list_store cols in
+    let data = GTree.view
+      ~vadjustment:frame#vadjustment ~hadjustment:frame#hadjustment
+      ~rules_hint:true ~headers_visible:false
+      ~model:store ~packing:frame#add () in
+    let () = data#set_headers_visible true in
+    let renderer1 = GTree.cell_renderer_text [], ["text", column1] in
+    let col1 = GTree.view_column ~renderer:renderer1 () in
+    let () = col1#set_title "Line" in
+    let renderer2 = GTree.cell_renderer_text [], ["text", column2] in
+    let col2 = GTree.view_column ~renderer:renderer2 () in
+    let () = col2#set_title "Error message" in
+    let renderer3 = GTree.cell_renderer_text [], ["text", column3] in
+    let col3 = GTree.view_column ~renderer:renderer3 () in
+    let () = col3#set_title "Hidden tab number" in
+    let () = col3#set_visible false in
+    let _ = data#append_column col1 in
+    let _ = data#append_column col2 in
+    let _ = data#append_column col3 in
+    let () = col1#set_sizing `AUTOSIZE in
+    let () = col2#set_sizing `AUTOSIZE in
+    let _ = data#connect#row_activated ~callback:(fun tp vc -> 
+      let row = store#get_iter tp in
+      let lno = store#get ~row ~column:column1 in
+      let tabno = store#get ~row ~column:column3 in
+      let sn = notebook#get_nth_term tabno in
+      ignore(sn.script#scroll_to_iter
+        ~use_align:false ~yalign:0.75 ~within_margin:0.25
+        (sn.script#buffer#get_iter (`LINE (lno-1))))) in
+    obj, (let last_update = ref (0,[]) in
+          fun tabno l ->
+            if !last_update = (tabno,l) then ()
+            else begin
+              last_update := tabno,l;
+              store#clear ();
+              List.iter (fun (lno, msg) ->
+                let line = store#append () in
+                store#set line column1 lno;
+                store#set line column2 msg;
+                store#set line column3 tabno) l
+            end)
+  in
+  let () = errwin#set_transient_for w#as_window in
+  let _ = errwin#event#connect#delete
+    ~callback:(fun _ -> errwin#misc#hide (); true) in
+  let update_errwin () =
+    on_current_term (fun sn ->
+      fill_errwin (notebook#term_num (==) sn) sn.coqops#get_errors) in
+  let _ = slaveinfobut#connect#clicked ~callback:(fun () ->
+     update_errwin ();
+     errwin#misc#show ()) in
   let update sn =
     let processed, to_process = sn.coqops#get_slaves_status in
     let missing = to_process - processed in
-    if missing = 0 then
-      (pbar#set_text "All checked";pbar#set_fraction 0.0)
-    else (pbar#pulse (); txt missing) in
+    let n_err = sn.coqops#get_n_errors in
+    if n_err > 0 then
+      slaveinfo#set_text (Printf.sprintf
+        "%d / <span foreground=\"#FF0000\">%d</span>" missing n_err)
+    else
+      slaveinfo#set_text (Printf.sprintf "%d / %d" missing n_err);
+    slaveinfo#set_use_markup true;
+    if errwin#misc#visible then update_errwin () in
   let callback () = on_current_term update; true in
   let _ = Glib.Timeout.add ~ms:300 ~callback in
 
