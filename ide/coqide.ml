@@ -1306,6 +1306,9 @@ let build_ui () =
       ignore(sn.script#scroll_to_iter
         ~use_align:false ~yalign:0.75 ~within_margin:0.25
         (sn.script#buffer#get_iter (`LINE (lno-1))))) in
+    (* So that the text is wrapped correctly in the model even if the window
+     * has never been shown *)
+    data#misc#realize ();
     obj, (let last_update = ref (0,[]) in
           fun tabno l ->
             if !last_update = (tabno,l) then ()
@@ -1325,9 +1328,7 @@ let build_ui () =
   let update_errwin () =
     on_current_term (fun sn ->
       fill_errwin (notebook#term_num (==) sn) sn.coqops#get_errors) in
-  let _ = slaveinfobut#connect#clicked ~callback:(fun () ->
-     update_errwin ();
-     errwin#misc#show ()) in
+  let _ = slaveinfobut#connect#clicked ~callback:errwin#misc#show in
   let update sn =
     let processed, to_process = sn.coqops#get_slaves_status in
     let missing = to_process - processed in
