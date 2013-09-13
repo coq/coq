@@ -372,11 +372,13 @@ end = struct (* {{{ *)
       | Some x -> job := None; Mutex.unlock m; x
 
     let run_command () =
-      while true do get_last_job () () done
+      try while true do get_last_job () () done
+      with e -> () (* No failure *)
 
     let command job =
       set_last_job job;
-      if Option.is_empty !worker then worker := Some (Thread.create run_command ())
+      if Option.is_empty !worker then
+        worker := Some (Thread.create run_command ())
 
   end (* }}} *)
 
@@ -675,7 +677,8 @@ end = struct (* {{{ *)
   let queue : task TQueue.t = TQueue.create ()
 
   let wait_all_done () =
-    TQueue.wait_until_n_are_waiting_and_queue_empty (SlavesPool.n_slaves ()) queue
+    TQueue.wait_until_n_are_waiting_and_queue_empty
+      (SlavesPool.n_slaves ()) queue
 
   let build_proof ~exn_info ~start ~stop =
     if SlavesPool.is_empty () then
