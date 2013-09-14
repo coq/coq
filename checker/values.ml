@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 01def72abe22a5b53c7cbe4de4b9695b checker/cic.mli
+MD5 96dc15ee04e3baa6502b4d78c35d4b76 checker/cic.mli
 
 *)
 
@@ -172,9 +172,7 @@ let v_subst =
 (** kernel/lazyconstr *)
 
 let v_substituted v_a =
-  v_ref
-    (v_sum "constr_substituted" 0
-      [|[|v_a|];[|List v_subst;v_a|]|])
+  v_tuple "substituted" [|v_a; List v_subst|]
 
 let v_cstr_subst = v_substituted v_constr
 

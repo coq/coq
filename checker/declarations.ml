@@ -271,8 +271,6 @@ let rec map_kn f f' c =
 let subst_mps sub c =
   if is_empty_subst sub then c
   else map_kn (subst_ind sub) (subst_con0 sub) c
-
-let from_val a = ref (LSval a)
  
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
@@ -396,27 +394,20 @@ let join subst1 subst2 =
   let subst = Umap.fold mp_apply_subst mbi_apply_subst subst1 empty_subst in
   Umap.join subst2 subst
 
-let force fsubst r =
-  match !r with
-  | LSval a -> a
-  | LSlazy(s,a) ->
-    match List.rev s with
-      | [] -> assert false
-      | sub0::subs ->
-        let subst = List.fold_left join sub0 subs in
-        let a' = fsubst subst a in
-        r := LSval a';
-        a'
+let from_val x = { subst_value = x; subst_subst = []; }
 
-let subst_substituted s r =
-  match !r with
-    | LSval a -> ref (LSlazy([s],a))
-    | LSlazy(s',a) ->
-	  ref (LSlazy(s::s',a))
+let force fsubst r = match r.subst_subst with
+| [] -> r.subst_value
+| s ->
+  let subst = List.fold_left join empty_subst (List.rev s) in
+  let x = fsubst subst r.subst_value in
+  let () = r.subst_subst <- [] in
+  let () = r.subst_value <- x in
+  x
+
+let subst_substituted s r = { r with subst_subst = s :: r.subst_subst; }
 
 let force_constr = force subst_mps
-
-let from_val c = ref (LSval c)
 
 let subst_constr_subst = subst_substituted
 

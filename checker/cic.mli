@@ -128,11 +128,12 @@ type substitution = (module_path * delta_resolver) umap_t
 
 (** {6 Delayed constr} *)
 
-type 'a lazy_subst =
-  | LSval of 'a
-  | LSlazy of substitution list * 'a
+type 'a substituted = {
+  mutable subst_value : 'a;
+  mutable subst_subst : substitution list;
+}
 
-type constr_substituted = constr lazy_subst ref
+type constr_substituted = constr substituted
 
 (** Nota : in coqtop, the [lazy_constr] type also have a [Direct]
     constructor, but it shouldn't occur inside a .vo, so we ignore it *)

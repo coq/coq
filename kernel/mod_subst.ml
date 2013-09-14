@@ -531,31 +531,25 @@ let occur_mbid mbi sub =
     false
   with Exit -> true
 
-type 'a lazy_subst =
-  | LSval of 'a
-  | LSlazy of substitution list * 'a
+type 'a substituted = {
+  mutable subst_value : 'a;
+  mutable subst_subst : substitution list;
+}
 
-type 'a substituted = 'a lazy_subst ref
+let from_val x = { subst_value = x; subst_subst = []; }
 
-let from_val a = ref (LSval a)
+let force fsubst r = match r.subst_subst with
+| [] -> r.subst_value
+| s ->
+  let subst = List.fold_left join empty_subst (List.rev s) in
+  let x = fsubst subst r.subst_value in
+  let () = r.subst_subst <- [] in
+  let () = r.subst_value <- x in
+  x
 
-let force fsubst r =
-  match !r with
-  | LSval a -> a
-  | LSlazy(s,a) ->
-      let subst = List.fold_left join empty_subst (List.rev s) in
-      let a' = fsubst subst a in
-      r := LSval a';
-      a'
-
-let subst_substituted s r =
-  match !r with
-    | LSval a -> ref (LSlazy([s],a))
-    | LSlazy(s',a) ->
-	  ref (LSlazy(s::s',a))
+let subst_substituted s r = { r with subst_subst = s :: r.subst_subst; }
 
 (* debug *)
-let repr_substituted r =
-  match !r with
-    | LSval a -> None, a
-    | LSlazy(s,a) -> Some s, a
+let repr_substituted r = match r.subst_subst with
+| [] -> None, r.subst_value
+| s -> Some s, r.subst_value
