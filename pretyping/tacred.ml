@@ -349,37 +349,32 @@ let make_elim_fun (names,(nbfix,lv,n)) largs =
    do so that the reduction uses this extra information *)
 
 let dummy = mkProp
-let vfx = Id.of_string"_expanded_fix_"
-let vfun = Id.of_string"_eliminator_function_"
+let vfx = Id.of_string "_expanded_fix_"
+let vfun = Id.of_string "_eliminator_function_"
+let venv = val_of_named_context [(vfx, None, dummy); (vfun, None, dummy)]
 
 (* Mark every occurrence of substituted vars (associated to a function)
    as a problem variable: an evar that can be instantiated either by
    vfx (expanded fixpoint) or vfun (named function). *)
-let substl_with_function subst constr =
-  let cnt = ref 0 in
-  let evd = ref Evd.empty in
+let substl_with_function subst sigma constr =
+  let evd = ref sigma in
   let minargs = ref Int.Map.empty in
   let v = Array.of_list subst in
-  let rec subst_total k c =
-    match kind_of_term c with
-        Rel i when k<i ->
-          if i <= k + Array.length v then
-            match v.(i-k-1) with
-              | (fx,Some(min,ref)) ->
-                  decr cnt;
-                  evd := Evd.add !evd !cnt
-                    (Evd.make_evar
-                      (val_of_named_context
-                        [(vfx,None,dummy);(vfun,None,dummy)])
-                      dummy);
-                  minargs := Int.Map.add !cnt min !minargs;
-                  lift k (mkEvar(!cnt,[|fx;ref|]))
-              | (fx,None) -> lift k fx
-          else mkRel (i - Array.length v)
-      | _ ->
-          map_constr_with_binders succ subst_total k c in
+  let rec subst_total k c = match kind_of_term c with
+  | Rel i when k < i ->
+    if i <= k + Array.length v then
+      match v.(i-k-1) with
+      | (fx, Some (min, ref)) ->
+        let (sigma, evk) = Evarutil.new_pure_evar !evd venv dummy in
+        evd := sigma;
+        minargs := Int.Map.add evk min !minargs;
+        lift k (mkEvar (evk, [|fx;ref|]))
+      | (fx, None) -> lift k fx
+    else mkRel (i - Array.length v)
+  | _ ->
+    map_constr_with_binders succ subst_total k c in
   let c = subst_total 0 constr in
-  (c,!evd,!minargs)
+  (c, !evd, !minargs)
 
 exception Partial
 
@@ -411,9 +406,9 @@ let solve_arity_problem env sigma fxminargs c =
   check true c;
   !evm
 
-let substl_checking_arity env subst c =
+let substl_checking_arity env subst sigma c =
   (* we initialize the problem: *)
-  let body,sigma,minargs = substl_with_function subst c in
+  let body,sigma,minargs = substl_with_function subst sigma c in
   (* we collect arity constraints *)
   let sigma' = solve_arity_problem env sigma minargs body in
   (* we propagate the constraints: solved problems are substituted;
@@ -444,7 +439,7 @@ let contract_fix_use_function env sigma f
   let nbodies = Array.length recindices in
   let make_Fi j = (mkFix((recindices,j),typedbodies), f j) in
   let lbodies = List.init nbodies make_Fi in
-  substl_checking_arity env (List.rev lbodies) (nf_beta sigma bodies.(bodynum))
+  substl_checking_arity env (List.rev lbodies) sigma (nf_beta sigma bodies.(bodynum))
 
 let reduce_fix_use_function env sigma f whfun fix stack =
   match fix_recarg fix [Zapp stack] with
@@ -468,7 +463,7 @@ let contract_cofix_use_function env sigma f
   let make_Fi j = (mkCoFix(j,typedbodies), f j) in
   let subbodies = List.init nbodies make_Fi in
   substl_checking_arity env (List.rev subbodies)
-    (nf_beta sigma bodies.(bodynum))
+    sigma (nf_beta sigma bodies.(bodynum))
 
 let reduce_mind_case_use_function func env sigma mia =
   match kind_of_term mia.mconstr with
