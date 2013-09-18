@@ -59,10 +59,6 @@ sig
   type t
   type ident
 
-  (** results of filtering : identifier, a context (term with Evar
-     hole) and the substitution in that context*)
-  type result = ident * (constr*existential_key) * Termops.subst
-
   val empty : t
 
   (** [add c i dn] adds the binding [(c,i)] to [dn]. [c] can be a
@@ -80,21 +76,7 @@ sig
 
   (** [search_pattern dn c] returns all terms/patterns in dn
      matching/matched by c *)
-  val search_pattern : t -> constr -> result list
-
-  (** [search_concl dn c] returns all matches under products and
-     letins, i.e. it finds subterms whose conclusion matches c. The
-     complexity depends only on c ! *)
-  val search_concl : t -> constr -> result list
-
-  (** [search_head_concl dn c] matches under products and applications
-     heads. Finds terms of the form [forall H_1...H_n, C t_1...t_n]
-     where C matches c *)
-  val search_head_concl : t -> constr -> result list
-
-  (** [search_eq_concl dn eq c] searches terms of the form [forall
-     H1...Hn, eq _ X1 X2] where either X1 or X2 matches c *)
-  val search_eq_concl : t -> constr -> constr -> result list
+  val search_pattern : t -> constr -> ident list
 
   (** [find_all dn] returns all idents contained in dn *)
   val find_all : t -> ident list

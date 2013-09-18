@@ -263,10 +263,7 @@ struct
 
   let new_meta_no = Evarutil.new_untyped_evar
 
-  let neutral_meta = new_meta_no()
-
   let new_meta () = Meta (new_meta_no())
-  let new_evar () = mkEvar(new_meta_no(),[||])
 
   let rec remove_cap : term_pattern -> term_pattern = function
     | Term (DCons (t,u)) -> Term (DCons (t,remove_cap u))
@@ -279,15 +276,6 @@ struct
     | Meta m -> Term (DCtx(new_meta(), Meta m))
     | _ -> assert false
 
-  let init = let e = new_meta_no() in (mkEvar (e,[||]),e)
-
-  let rec e_subst_evar i (t:unit->constr) c =
-    match kind_of_term c with
-    | Evar (j,_) when Int.equal i j -> t()
-    | _ -> map_constr (e_subst_evar i t) c
-
-  let subst_evar i c = e_subst_evar i (fun _ -> c)
-
   (* debug *)
   let rec pr_term_pattern p =
     (fun pr_t -> function
@@ -295,50 +283,22 @@ struct
        | Meta m -> str"["++Pp.int (Obj.magic m)++str"]"
     ) (pr_dconstr pr_term_pattern) p
 
-  let search_pat cpat dpat dn (up,plug) =
-    let whole_c = subst_evar plug cpat up in
+  let search_pat cpat dpat dn =
+    let whole_c = cpat in
     (* if we are at the root, add an empty context *)
-    let dpat = if isEvar_or_Meta up then under_prod (empty_ctx dpat) else dpat in
+    let dpat = under_prod (empty_ctx dpat) in
     TDnet.Idset.fold
       (fun id acc ->
 	 let c_id = Opt.reduce (Ident.constr_of id) in
 	 let (ctx,wc) =
 	   try Termops.align_prod_letin whole_c c_id
 	   with Invalid_argument _ -> [],c_id in
-	 let up = it_mkProd_or_LetIn up ctx in
 	 let wc,whole_c = if Opt.direction then whole_c,wc else wc,whole_c in
-	 try (id,(up,plug),Termops.filtering ctx Reduction.CUMUL wc whole_c)::acc
+	 try
+          let _ = Termops.filtering ctx Reduction.CUMUL wc whole_c in
+          id :: acc
 	 with Termops.CannotFilter -> (* msgnl(str"recon "++Termops.print_constr_env (Global.env()) wc); *) acc
       ) (TDnet.find_match dpat dn) []
-
-  let fold_pattern_neutral f =
-    fold_pattern (fun acc (mset,m,dn) -> if Int.equal m neutral_meta then acc else f m dn acc)
-
-  let fold_pattern_nonlin f =
-    let defined = ref Int.Map.empty in
-    fold_pattern_neutral
-      ( fun m dn acc ->
-	 let dn = try TDnet.inter dn (Int.Map.find m !defined) with Not_found -> dn in
-	 defined := Int.Map.add m dn !defined;
-	 f m dn acc )
-
-  let fold_pattern_up f acc dpat cpat dn (up,plug) =
-    fold_pattern_nonlin
-      ( fun m dn acc ->
-	  f dn (subst_evar plug (e_subst_evar neutral_meta new_evar cpat) up, m) acc
-      ) acc dpat dn
-
-  let possibly_under pat k dn (up,plug) =
-    let rec aux fst dn (up,plug) acc =
-      let cpat = pat() in
-      let dpat = pat_of_constr cpat in
-      let dpat = if fst then under_prod (empty_ctx dpat) else dpat in
-	(k dn (up,plug)) @
-	  snd (fold_pattern_up (aux false) acc dpat cpat dn (up,plug)) in
-      aux true dn (up,plug) []
-
-  let eq_pat eq () = mkApp(eq,[|mkEvar(neutral_meta,[||]);new_evar();new_evar()|])
-  let app_pat () = mkApp(new_evar(),[|mkEvar(neutral_meta,[||])|])
 
   (*
    * High-level primitives describing specific search problems
@@ -346,24 +306,7 @@ struct
 
   let search_pattern dn pat =
     let pat = Opt.reduce pat in
-    search_pat pat (empty_ctx (pat_of_constr pat)) dn init
-
-  let search_concl dn pat =
-    let pat = Opt.reduce pat in
-    search_pat pat (under_prod (empty_ctx (pat_of_constr pat))) dn init
-
-  let search_eq_concl dn eq pat =
-    let pat = Opt.reduce pat in
-    let eq_pat = eq_pat eq () in
-    let eq_dpat = under_prod (empty_ctx (pat_of_constr eq_pat)) in
-    snd (fold_pattern_up
-      (fun dn up acc ->
-	 search_pat pat (pat_of_constr pat) dn up @ acc
-      ) [] eq_dpat eq_pat dn init)
-
-   let search_head_concl dn pat =
-    let pat = Opt.reduce pat in
-    possibly_under app_pat (search_pat pat (pat_of_constr pat)) dn init
+    search_pat pat (empty_ctx (pat_of_constr pat)) dn
 
   let find_all dn = Idset.elements (TDnet.find_all dn)
 
@@ -375,16 +318,11 @@ sig
   type t
   type ident
 
-  type result = ident * (constr*existential_key) * Termops.subst
-
   val empty : t
   val add : constr -> ident -> t -> t
   val union : t -> t -> t
   val subst : substitution -> t -> t
-  val search_pattern : t -> constr -> result list
-  val search_concl : t -> constr -> result list
-  val search_head_concl : t -> constr -> result list
-  val search_eq_concl : t -> constr -> constr -> result list
+  val search_pattern : t -> constr -> ident list
   val find_all : t -> ident list
   val map : (ident -> ident) -> t -> t
 end

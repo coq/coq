@@ -74,7 +74,7 @@ let find_rewrites bas =
 let find_matches bas pat =
   let base = find_base bas in
   let res = HintDN.search_pattern base pat in
-    List.map (fun ((_,rew), esubst, subst) -> rew) res
+  List.map snd res
 
 let print_rewrite_hintdb bas =
   (str "Database " ++ str bas ++ (Pp.cut ()) ++
