@@ -134,7 +134,7 @@ let cstrevars evars = snd evars
 
 let new_cstr_evar (evd,cstrs) env t =
   let evd', t = Evarutil.new_evar evd env t in
-    (evd', Int.Set.add (fst (destEvar t)) cstrs), t
+    (evd', Evar.Set.add (fst (destEvar t)) cstrs), t
 
 let new_goal_evar (evd,cstrs) env t =
   let evd', t = Evarutil.new_evar evd env t in
@@ -207,7 +207,7 @@ let build_signature evars env m (cstrs : (types * types option) option list)
   
 type hypinfo = {
   cl : clausenv;
-  ext : Int.Set.t; (* New evars in this clausenv *)
+  ext : Evar.Set.t; (* New evars in this clausenv *)
   prf : constr;
   car : constr;
   rel : constr;
@@ -302,7 +302,7 @@ let rewrite_unif_flags = {
   Unification.resolve_evars = false;
   Unification.use_pattern_unification = true;
   Unification.use_meta_bound_pattern_unification = true;
-  Unification.frozen_evars = ExistentialSet.empty;
+  Unification.frozen_evars = Evar.Set.empty;
   Unification.restrict_conv_on_strict_subterms = false;
   Unification.modulo_betaiota = false;
   Unification.modulo_eta = true;
@@ -319,7 +319,7 @@ let rewrite2_unif_flags =
      Unification.resolve_evars = false;
      Unification.use_pattern_unification = true;
      Unification.use_meta_bound_pattern_unification = true;
-     Unification.frozen_evars = ExistentialSet.empty;
+     Unification.frozen_evars = Evar.Set.empty;
      Unification.restrict_conv_on_strict_subterms = false;
      Unification.modulo_betaiota = true;
      Unification.modulo_eta = true;
@@ -337,7 +337,7 @@ let general_rewrite_unif_flags () =
        Unification.resolve_evars = false;
        Unification.use_pattern_unification = true;
        Unification.use_meta_bound_pattern_unification = true;
-       Unification.frozen_evars = ExistentialSet.empty;
+       Unification.frozen_evars = Evar.Set.empty;
        Unification.restrict_conv_on_strict_subterms = false;
        Unification.modulo_betaiota = true;
        Unification.modulo_eta = true;
@@ -369,15 +369,15 @@ let solve_remaining_by by env prf =
     in { env with evd = evd' }, prf
 
 let extend_evd sigma ext sigma' =
-  Int.Set.fold (fun i acc ->
+  Evar.Set.fold (fun i acc ->
     Evd.add acc i (Evarutil.nf_evar_info sigma' (Evd.find sigma' i)))
     ext sigma
 
 let shrink_evd sigma ext =
-  Int.Set.fold (fun i acc -> Evd.remove acc i) ext sigma
+  Evar.Set.fold (fun i acc -> Evd.remove acc i) ext sigma
 
 let no_constraints cstrs = 
-  fun ev _ -> not (Int.Set.mem ev cstrs)
+  fun ev _ -> not (Evar.Set.mem ev cstrs)
 
 let unify_eqn env (sigma, cstrs) hypinfo by t =
   if isEvar t then None
@@ -526,7 +526,7 @@ type rewrite_flags = { under_lambdas : bool; on_morphisms : bool }
 
 let default_flags = { under_lambdas = true; on_morphisms = true; }
 
-type evars = evar_map * Int.Set.t (* goal evars, constraint evars *)
+type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
 
 type rewrite_proof = 
   | RewPrf of constr * constr
@@ -1129,7 +1129,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
       | None -> (sort, inverse sort impl)
       | Some _ -> (sort, impl)
   in
-  let evars = (sigma, Int.Set.empty) in
+  let evars = (sigma, Evar.Set.empty) in
   let eq = apply_strategy strat env avoid concl (Some cstr) evars in
     match eq with
     | Some (Some (p, (evars, cstrs), car, oldt, newt)) ->
@@ -1141,7 +1141,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 	let evars = (* Keep only original evars (potentially instantiated) and goal evars,
 		       the rest has been defined and substituted already. *)
 	  Evd.fold (fun ev evi acc -> 
-	    if Int.Set.mem ev cstrs then Evd.remove acc ev
+	    if Evar.Set.mem ev cstrs then Evd.remove acc ev
 	    else acc) evars' evars'
 	in
 	let res =
@@ -1759,7 +1759,7 @@ let build_morphism_signature m =
   let env = Global.env () in
   let m = Constrintern.interp_constr Evd.empty env m in
   let t = Typing.type_of env Evd.empty m in
-  let evdref = ref (Evd.empty, Int.Set.empty) in
+  let evdref = ref (Evd.empty, Evar.Set.empty) in
   let cstrs =
     let rec aux t =
       match kind_of_term t with
@@ -1790,7 +1790,7 @@ let default_morphism sign m =
   let env = Global.env () in
   let t = Typing.type_of env Evd.empty m in
   let evars, _, sign, cstrs =
-    build_signature (Evd.empty, Int.Set.empty) env t (fst sign) (snd sign)
+    build_signature (Evd.empty, Evar.Set.empty) env t (fst sign) (snd sign)
   in
   let morph =
     mkApp (Lazy.force proper_type, [| t; sign; m |])
@@ -1916,7 +1916,7 @@ let unification_rewrite flags l2r c1 c2 cl car rel but gl =
   check_evar_map_of_evars_defs cl'.evd;
   let prf = nf (Clenv.clenv_value cl') and prfty = nf (Clenv.clenv_type cl') in
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
-    {cl=cl'; ext=Int.Set.empty; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; 
+    {cl=cl'; ext=Evar.Set.empty; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; 
      c1=c1; c2=c2; c=None; abs=Some (prf, prfty); flags = flags}
 
 let get_hyp gl evars (c,l) clause l2r =

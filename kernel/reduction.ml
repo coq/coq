@@ -277,7 +277,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
                else raise NotConvertible
 	   | _ -> raise NotConvertible)
     | (FEvar ((ev1,args1),env1), FEvar ((ev2,args2),env2)) ->
-        if Int.equal ev1 ev2 then
+        if Evar.equal ev1 ev2 then
           let u1 = convert_stacks l2r infos lft1 lft2 v1 v2 cuniv in
           convert_vect l2r infos el1 el2
             (Array.map (mk_clos env1) args1)

@@ -105,7 +105,7 @@ let rewrite_unif_flags = {
   Unification.resolve_evars = true;
   Unification.use_pattern_unification = true;
   Unification.use_meta_bound_pattern_unification = true;
-  Unification.frozen_evars = ExistentialSet.empty;
+  Unification.frozen_evars = Evar.Set.empty;
   Unification.restrict_conv_on_strict_subterms = false;
   Unification.modulo_betaiota = false;
   Unification.modulo_eta = true;
@@ -120,9 +120,9 @@ let freeze_initial_evars sigma flags clause =
   let newevars = Evd.collect_evars (clenv_type clause) in
   let evars =
     fold_undefined (fun evk _ evars ->
-      if ExistentialSet.mem evk newevars then evars
-      else ExistentialSet.add evk evars)
-      sigma ExistentialSet.empty in
+      if Evar.Set.mem evk newevars then evars
+      else Evar.Set.add evk evars)
+      sigma Evar.Set.empty in
   { flags with Unification.frozen_evars = evars }
 
 let make_flags frzevars sigma flags clause =
@@ -178,7 +178,7 @@ let rewrite_conv_closed_unif_flags = {
 
   Unification.use_meta_bound_pattern_unification = true;
 
-  Unification.frozen_evars = ExistentialSet.empty;
+  Unification.frozen_evars = Evar.Set.empty;
     (* This is set dynamically *)
 
   Unification.restrict_conv_on_strict_subterms = false;

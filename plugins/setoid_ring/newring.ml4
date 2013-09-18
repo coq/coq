@@ -35,10 +35,13 @@ open Misctypes
 (****************************************************************************)
 (* controlled reduction *)
 
-let mark_arg i c = mkEvar(i,[|c|])
+(** ppedrot: something dubious here, we're obviously using evars the wrong
+    way. FIXME! *)
+
+let mark_arg i c = mkEvar(Evar.unsafe_of_int i,[|c|])
 let unmark_arg f c =
   match destEvar c with
-    | (i,[|c|]) -> f i c
+    | (i,[|c|]) -> f (Evar.repr i) c
     | _ -> assert false
 
 type protect_flag = Eval|Prot|Rec

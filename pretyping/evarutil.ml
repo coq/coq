@@ -233,7 +233,7 @@ let evars_to_metas sigma (emap, c) =
 
 let non_instantiated sigma =
   let listev = Evd.undefined_map sigma in
-  ExistentialMap.map (fun evi -> nf_evar_info sigma evi) listev
+  Evar.Map.map (fun evi -> nf_evar_info sigma evi) listev
 
 (************************)
 (* Manipulating filters *)
@@ -257,7 +257,7 @@ let make_pure_subst evi args =
 (* Generator of existential names *)
 let new_untyped_evar =
   let evar_ctr = Summary.ref 0 ~name:"evar counter" in
-  fun () -> incr evar_ctr; existential_of_int !evar_ctr
+  fun () -> incr evar_ctr; Evar.unsafe_of_int !evar_ctr
 
 (*------------------------------------*
  * functional operations on evar sets *
@@ -486,14 +486,14 @@ let clear_hyps_in_evi evdref hyps concl ids =
 let evars_of_term c =
   let rec evrec acc c =
     match kind_of_term c with
-    | Evar (n, l) -> Int.Set.add n (Array.fold_left evrec acc l)
+    | Evar (n, l) -> Evar.Set.add n (Array.fold_left evrec acc l)
     | _ -> fold_constr evrec acc c
   in
-  evrec Int.Set.empty c
+  evrec Evar.Set.empty c
 
 (* spiwack: a few functions to gather evars on which goals depend. *)
 let queue_set q is_dependent set =
-  Int.Set.iter (fun a -> Queue.push (is_dependent,a) q) set
+  Evar.Set.iter (fun a -> Queue.push (is_dependent,a) q) set
 let queue_term q is_dependent c =
   queue_set q is_dependent (evars_of_term c)
 
@@ -510,7 +510,7 @@ let process_dependent_evar q acc evm is_dependent e =
   end (Environ.named_context_of_val evi.evar_hyps);
   match evi.evar_body with
   | Evar_empty ->
-      if is_dependent then Int.Map.add e None acc else acc
+      if is_dependent then Evar.Map.add e None acc else acc
   | Evar_defined b ->
       let subevars = evars_of_term b in
       (* evars appearing in the definition of an evar [e] are marked
@@ -518,14 +518,14 @@ let process_dependent_evar q acc evm is_dependent e =
          non-dependent goal, then, unless they are reach from another
          path, these evars are just other non-dependent goals. *)
       queue_set q is_dependent subevars;
-      if is_dependent then Int.Map.add e (Some subevars) acc else acc
+      if is_dependent then Evar.Map.add e (Some subevars) acc else acc
 
 let gather_dependent_evars q evm =
-  let acc = ref Int.Map.empty in
+  let acc = ref Evar.Map.empty in
   while not (Queue.is_empty q) do
     let (is_dependent,e) = Queue.pop q in
     (* checks if [e] has already been added to [!acc] *)
-    begin if not (Int.Map.mem e !acc) then
+    begin if not (Evar.Map.mem e !acc) then
         acc := process_dependent_evar q !acc evm is_dependent e  
     end
   done;
@@ -541,15 +541,15 @@ let gather_dependent_evars evm l =
 let evars_of_named_context nc =
   List.fold_right (fun (_, b, t) s ->
     Option.fold_left (fun s t ->
-      Int.Set.union s (evars_of_term t))
-      (Int.Set.union s (evars_of_term t)) b)
-    nc Int.Set.empty
+      Evar.Set.union s (evars_of_term t))
+      (Evar.Set.union s (evars_of_term t)) b)
+    nc Evar.Set.empty
 
 let evars_of_evar_info evi =
-  Int.Set.union (evars_of_term evi.evar_concl)
-    (Int.Set.union
+  Evar.Set.union (evars_of_term evi.evar_concl)
+    (Evar.Set.union
 	(match evi.evar_body with
-	| Evar_empty -> Int.Set.empty
+	| Evar_empty -> Evar.Set.empty
 	| Evar_defined b -> evars_of_term b)
 	(evars_of_named_context (named_context_of_val evi.evar_hyps)))
 
@@ -564,25 +564,25 @@ let undefined_evars_of_term evd t =
       | Evar (n, l) ->
 	let acc = Array.fold_left evrec acc l in
 	(try match (Evd.find evd n).evar_body with
-	  | Evar_empty -> Int.Set.add n acc
+	  | Evar_empty -> Evar.Set.add n acc
 	  | Evar_defined c -> evrec acc c
 	 with Not_found -> anomaly ~label:"undefined_evars_of_term" (Pp.str "evar not found"))
       | _ -> fold_constr evrec acc c
   in
-  evrec Int.Set.empty t
+  evrec Evar.Set.empty t
 
 let undefined_evars_of_named_context evd nc =
   List.fold_right (fun (_, b, t) s ->
     Option.fold_left (fun s t ->
-      Int.Set.union s (undefined_evars_of_term evd t))
-      (Int.Set.union s (undefined_evars_of_term evd t)) b)
-    nc Int.Set.empty
+      Evar.Set.union s (undefined_evars_of_term evd t))
+      (Evar.Set.union s (undefined_evars_of_term evd t)) b)
+    nc Evar.Set.empty
 
 let undefined_evars_of_evar_info evd evi =
-  Int.Set.union (undefined_evars_of_term evd evi.evar_concl)
-    (Int.Set.union
+  Evar.Set.union (undefined_evars_of_term evd evi.evar_concl)
+    (Evar.Set.union
        (match evi.evar_body with
-	 | Evar_empty -> Int.Set.empty
+	 | Evar_empty -> Evar.Set.empty
 	 | Evar_defined b -> undefined_evars_of_term evd b)
        (undefined_evars_of_named_context evd
 	  (named_context_of_val evi.evar_hyps)))

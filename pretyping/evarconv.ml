@@ -338,7 +338,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  |_, (UnifFailure _ as x) -> x
 	  |Some _, _ -> UnifFailure (i,NotSameArgSize)
 	and f2 i =
-          if Int.equal sp1 sp2 then
+          if Evar.equal sp1 sp2 then
 	    match ise_stack2 false env i (evar_conv_x ts) sk1 sk2 with
 	    |None, Success i' ->
               Success (solve_refl (fun env i pbty a1 a2 ->
@@ -805,7 +805,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       (match choose_less_dependent_instance evk2 evd term1 args2 with
       | Some evd -> Success evd
       | None -> UnifFailure (evd, ConversionFailed (env,term1,term2)))
-  | Evar (evk1,args1), Evar (evk2,args2) when Int.equal evk1 evk2 ->
+  | Evar (evk1,args1), Evar (evk2,args2) when Evar.equal evk1 evk2 ->
       let f env evd pbty x y = is_trans_fconv pbty ts env evd x y in
       Success (solve_refl ~can_drop:true f env evd evk1 args1 args2)
   | Evar ev1, Evar ev2 ->

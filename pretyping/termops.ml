@@ -60,7 +60,7 @@ let rec pr_constr c = match kind_of_term c with
       (str"(" ++ pr_constr c ++ spc() ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++ str")")
   | Evar (e,l) -> hov 1
-      (str"Evar#" ++ int e ++ str"{" ++
+      (str"Evar#" ++ int (Evar.repr e) ++ str"{" ++
        prlist_with_sep spc pr_constr (Array.to_list l) ++str"}")
   | Const c -> str"Cst(" ++ pr_con c ++ str")"
   | Ind (sp,i) -> str"Ind(" ++ pr_mind sp ++ str"," ++ int i ++ str")"
@@ -516,7 +516,7 @@ let occur_meta_or_existential c =
 
 let occur_evar n c =
   let rec occur_rec c = match kind_of_term c with
-    | Evar (sp,_) when Int.equal sp n -> raise Occur
+    | Evar (sp,_) when Evar.equal sp n -> raise Occur
     | _ -> iter_constr occur_rec c
   in
   try occur_rec c; false with Occur -> true
@@ -912,18 +912,18 @@ let split_app c = match kind_of_term c with
 	c::(Array.to_list prev), last
   | _ -> assert false
 
-type subst = (rel_context*constr) Int.Map.t
+type subst = (rel_context*constr) Evar.Map.t
 
 exception CannotFilter
 
 let filtering env cv_pb c1 c2 =
-  let evm = ref Int.Map.empty in
+  let evm = ref Evar.Map.empty in
   let define cv_pb e1 ev c1 =
-    try let (e2,c2) = Int.Map.find ev !evm in
+    try let (e2,c2) = Evar.Map.find ev !evm in
     let shift = List.length e1 - List.length e2 in
     if constr_cmp cv_pb c1 (lift shift c2) then () else raise CannotFilter
     with Not_found ->
-      evm := Int.Map.add ev (e1,c1) !evm
+      evm := Evar.Map.add ev (e1,c1) !evm
   in
   let rec aux env cv_pb c1 c2 =
     match kind_of_term c1, kind_of_term c2 with

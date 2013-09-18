@@ -31,7 +31,7 @@ open Univ
 open Esubst
 
 
-type existential_key = int
+type existential_key = Evar.t
 type metavariable = int
 
 (* This defines the strategy to use for verifiying a Cast *)
@@ -341,7 +341,7 @@ let compare_head f t1 t2 =
   | App (c1,l1), App (c2,l2) ->
     Int.equal (Array.length l1) (Array.length l2) &&
       f c1 c2 && Array.equal f l1 l2
-  | Evar (e1,l1), Evar (e2,l2) -> Int.equal e1 e2 && Array.equal f l1 l2
+  | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && Array.equal f l1 l2
   | Const c1, Const c2 -> eq_constant c1 c2
   | Ind c1, Ind c2 -> eq_ind c1 c2
   | Construct c1, Construct c2 -> eq_constructor c1 c2
@@ -391,7 +391,7 @@ let constr_ord_int f t1 t2 =
     | _, App (Cast(c2, _,_),l2) -> f t1 (mkApp (c2,l2))
     | App (c1,l1), App (c2,l2) -> (f =? (Array.compare f)) c1 c2 l1 l2
     | Evar (e1,l1), Evar (e2,l2) ->
-        ((-) =? (Array.compare f)) e1 e2 l1 l2
+        (Evar.compare =? (Array.compare f)) e1 e2 l1 l2
     | Const c1, Const c2 -> con_ord c1 c2
     | Ind ind1, Ind ind2 -> ind_ord ind1 ind2
     | Construct ct1, Construct ct2 -> constructor_ord ct1 ct2
@@ -469,7 +469,7 @@ let hasheq t1 t2 =
     | LetIn (n1,b1,t1,c1), LetIn (n2,b2,t2,c2) ->
       n1 == n2 & b1 == b2 & t1 == t2 & c1 == c2
     | App (c1,l1), App (c2,l2) -> c1 == c2 & array_eqeq l1 l2
-    | Evar (e1,l1), Evar (e2,l2) -> Int.equal e1 e2 & array_eqeq l1 l2
+    | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 & array_eqeq l1 l2
     | Const c1, Const c2 -> c1 == c2
     | Ind (sp1,i1), Ind (sp2,i2) -> sp1 == sp2 && Int.equal i1 i2
     | Construct ((sp1,i1),j1), Construct ((sp2,i2),j2) ->

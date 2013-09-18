@@ -40,9 +40,9 @@ type 'id move_location =
 type sort_info = string option
 type glob_sort = GProp | GSet | GType of sort_info
 
-(** A synonym of [int], also defined in Term *)
+(** A synonym of [Evar.t], also defined in Term *)
 
-type existential_key = int
+type existential_key = Evar.t
 
 (** Case style, shared with Term *)
 

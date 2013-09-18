@@ -27,7 +27,7 @@ type goal = {
    whether we do want some tags displayed besides the goal or not. *)
 
 
-let pr_goal {content = e} = str "GOAL:" ++ Pp.int e
+let pr_goal {content = e} = str "GOAL:" ++ Pp.int (Evar.repr e)
 
 (* access primitive *)
 (* invariant : [e] must exist in [em] *)
@@ -41,14 +41,14 @@ let build e =
   }
 
 
-let uid {content = e} = string_of_int e
+let uid {content = e} = string_of_int (Evar.repr e)
 let get_by_uid u =
   (* this necessarily forget about tags.
      when tags are to be implemented, they
      should be done another way.
      We could use the store in evar_extra,
      for instance. *)
-  build (int_of_string u)
+  build (Evar.unsafe_of_int (int_of_string u))
 
 (* Builds a new goal with content evar [e] and
    inheriting from goal [gl]*)
@@ -184,7 +184,7 @@ module Refinable = struct
     | [] , _ -> l2
     | _ , [] -> l1
     | a::l1 , b::_ when a > b -> a::(fusion l1 l2)
-    | a::l1 , b::l2 when Int.equal a b -> a::(fusion l1 l2)
+    | a::l1 , b::l2 when Evar.equal a b -> a::(fusion l1 l2)
     | _ , b::l2 -> b::(fusion l1 l2)
 
   let update_handle handle init_defs post_defs =
@@ -359,7 +359,7 @@ let plus s1 s2 env rdefs goal info =
   with UndefinedHere -> s2 env rdefs goal info
 
 (* Equality of two goals *)
-let equal { content = e1 } { content = e2 } = Int.equal e1 e2
+let equal { content = e1 } { content = e2 } = Evar.equal e1 e2
 
 let here goal value _ _ goal' _ =
   if equal goal goal' then

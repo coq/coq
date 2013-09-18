@@ -147,7 +147,7 @@ let rec constr_expr_eq e1 e2 =
   | CPatVar(_,(b1, i1)), CPatVar(_,(b2, i2)) ->
     (b1 : bool) == b2 && Id.equal i1 i2
   | CEvar (_, ev1, c1), CEvar (_, ev2, c2) ->
-    Int.equal ev1 ev2 &&
+    Evar.equal ev1 ev2 &&
     Option.equal (List.equal constr_expr_eq) c1 c2
   | CSort(_,s1), CSort(_,s2) ->
     Glob_ops.glob_sort_eq s1 s2

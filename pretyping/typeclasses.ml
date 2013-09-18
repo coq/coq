@@ -506,7 +506,7 @@ let has_typeclasses filter evd =
   let check ev evi =
     filter ev (snd evi.evar_source) && is_class_evar evd evi && is_resolvable evi
   in
-  Evd.ExistentialMap.exists check (Evd.undefined_map evd)
+  Evar.Map.exists check (Evd.undefined_map evd)
 
 let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)
 

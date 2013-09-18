@@ -71,7 +71,7 @@ let auto_unif_flags = {
   resolve_evars = false;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
-  frozen_evars = ExistentialSet.empty;
+  frozen_evars = Evar.Set.empty;
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = true;
   modulo_eta = true;
@@ -80,7 +80,7 @@ let auto_unif_flags = {
 
 let rec eq_constr_mod_evars x y =
   match kind_of_term x, kind_of_term y with
-  | Evar (e1, l1), Evar (e2, l2) when not (Int.equal e1 e2) -> true
+  | Evar (e1, l1), Evar (e2, l2) when not (Evar.equal e1 e2) -> true
   | _, _ -> compare_constr eq_constr_mod_evars x y
 
 let progress_evars t gl =
@@ -197,7 +197,7 @@ let rec catchable = function
   | e -> Logic.catchable_exception e
 
 let nb_empty_evars s =
-  ExistentialMap.cardinal (undefined_map s)
+  Evar.Map.cardinal (undefined_map s)
 
 let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
 
@@ -398,7 +398,7 @@ let isProp env sigma concl =
 
 let needs_backtrack only_classes env evd oev concl =
   if Option.is_empty oev || isProp env evd concl then
-    not (Int.Set.is_empty (Evarutil.evars_of_term concl))
+    not (Evar.Set.is_empty (Evarutil.evars_of_term concl))
   else true
 
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
@@ -525,19 +525,19 @@ let resolve_all_evars_once debug limit p evd =
     Beware of the imperative effects on the partition structure,
     it should not be shared, but only used locally. *)
 
-module Intpart = Unionfind.Make(Int.Set)(Int.Map)
+module Intpart = Unionfind.Make(Evar.Set)(Evar.Map)
 
 let deps_of_constraints cstrs evm p =
   List.iter (fun (_, _, x, y) ->
     let evx = Evarutil.undefined_evars_of_term evm x in
     let evy = Evarutil.undefined_evars_of_term evm y in
-    Intpart.union_set (Int.Set.union evx evy) p)
+    Intpart.union_set (Evar.Set.union evx evy) p)
     cstrs
 
 let evar_dependencies evm p =
   Evd.fold_undefined
     (fun ev evi _ ->
-      let evars = Int.Set.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
+      let evars = Evar.Set.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
       in Intpart.union_set evars p)
     evm ()
 
@@ -572,7 +572,7 @@ let split_evars evm =
 let evars_in_comp comp evm =
   try
     evars_reset_evd 
-      (Int.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evm ev))
+      (Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evm ev))
 	 comp Evd.empty) evm
   with Not_found -> assert false
 
@@ -590,7 +590,7 @@ let is_inference_forced p evd ev =
   with Not_found -> assert false
 
 let is_mandatory p comp evd =
-  Int.Set.exists (is_inference_forced p evd) comp
+  Evar.Set.exists (is_inference_forced p evd) comp
 
 (** In case of unsatisfiable constraints, build a nice error message *)
 
@@ -630,7 +630,7 @@ let select_and_update_evars p oevd in_comp evd ev evi =
 
 let has_undefined p oevd evd =
   let check ev evi = snd (p oevd ev evi) in
-  ExistentialMap.exists check (Evd.undefined_map evd)
+  Evar.Map.exists check (Evd.undefined_map evd)
 
 (** Revert the resolvability status of evars after resolution,
     potentially unprotecting some evars that were set unresolvable
@@ -655,8 +655,8 @@ let revert_resolvability oevd evd =
 exception Unresolved
 
 let resolve_all_evars debug m env p oevd do_split fail =
-  let split = if do_split then split_evars oevd else [Int.Set.empty] in
-  let in_comp comp ev = if do_split then Int.Set.mem ev comp else true
+  let split = if do_split then split_evars oevd else [Evar.Set.empty] in
+  let in_comp comp ev = if do_split then Evar.Set.mem ev comp else true
   in
   let rec docomp evd = function
     | [] -> revert_resolvability oevd evd

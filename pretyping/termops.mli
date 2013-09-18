@@ -216,7 +216,7 @@ exception CannotFilter
    (context,term), or raises [CannotFilter].
    Warning: Outer-kernel sort subtyping are taken into account: c1 has
    to be smaller than c2 wrt. sorts. *)
-type subst = (rel_context*constr) Int.Map.t
+type subst = (rel_context*constr) Evar.Map.t
 val filtering : rel_context -> Reduction.conv_pb -> constr -> constr -> subst
 
 val decompose_prod_letin : constr -> int * rel_context * constr

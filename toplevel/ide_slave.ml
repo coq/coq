@@ -214,7 +214,7 @@ let evars () =
     if s <> "" then msg_info (str s);
     let pfts = Proof_global.give_me_the_proof () in
     let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
-    let exl = Evd.ExistentialMap.bindings (Evarutil.non_instantiated sigma) in
+    let exl = Evar.Map.bindings (Evarutil.non_instantiated sigma) in
     let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar ev); } in
     let el = List.map map_evar exl in
     Some el

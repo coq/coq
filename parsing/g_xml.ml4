@@ -133,7 +133,7 @@ let get_xml_name al = ident_of_cdata (get_xml_attr "name" al)
 
 let get_xml_noFun al = nmtoken (get_xml_attr "noFun" al)
 
-let get_xml_no al = nmtoken (get_xml_attr "no" al)
+let get_xml_no al = Evar.unsafe_of_int (nmtoken (get_xml_attr "no" al))
 
 (* A leak in the xml dtd: arities of constructor need to know global env *)
 

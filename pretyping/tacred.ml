@@ -80,7 +80,7 @@ let evaluable_reference_eq r1 r2 = match r1, r2 with
 | EvalVar id1, EvalVar id2 -> Id.equal id1 id2
 | EvalRel i1, EvalRel i2 -> Int.equal i1 i2
 | EvalEvar (e1, ctx1), EvalEvar (e2, ctx2) ->
-  Int.equal e1 e2 && Array.equal eq_constr ctx1 ctx2
+  Evar.equal e1 e2 && Array.equal eq_constr ctx1 ctx2
 | _ -> false
 
 let mkEvalRef = function
@@ -358,7 +358,7 @@ let venv = val_of_named_context [(vfx, None, dummy); (vfun, None, dummy)]
    vfx (expanded fixpoint) or vfun (named function). *)
 let substl_with_function subst sigma constr =
   let evd = ref sigma in
-  let minargs = ref Int.Map.empty in
+  let minargs = ref Evar.Map.empty in
   let v = Array.of_list subst in
   let rec subst_total k c = match kind_of_term c with
   | Rel i when k < i ->
@@ -367,7 +367,7 @@ let substl_with_function subst sigma constr =
       | (fx, Some (min, ref)) ->
         let (sigma, evk) = Evarutil.new_pure_evar !evd venv dummy in
         evd := sigma;
-        minargs := Int.Map.add evk min !minargs;
+        minargs := Evar.Map.add evk min !minargs;
         lift k (mkEvar (evk, [|fx;ref|]))
       | (fx, None) -> lift k fx
     else mkRel (i - Array.length v)
@@ -387,8 +387,8 @@ let solve_arity_problem env sigma fxminargs c =
     let c' = whd_betaiotazeta sigma c in
     let (h,rcargs) = decompose_app c' in
     match kind_of_term h with
-        Evar(i,_) when Int.Map.mem i fxminargs && not (Evd.is_defined !evm i) ->
-          let minargs = Int.Map.find i fxminargs in
+        Evar(i,_) when Evar.Map.mem i fxminargs && not (Evd.is_defined !evm i) ->
+          let minargs = Evar.Map.find i fxminargs in
           if List.length rcargs < minargs then
             if strict then set_fix i
             else raise Partial;
@@ -415,7 +415,7 @@ let substl_checking_arity env subst sigma c =
      the other ones are replaced by the function symbol *)
   let rec nf_fix c =
     match kind_of_term c with
-        Evar(i,[|fx;f|] as ev) when Int.Map.mem i minargs ->
+        Evar(i,[|fx;f|] as ev) when Evar.Map.mem i minargs ->
           (match Evd.existential_opt_value sigma' ev with
               Some c' -> c'
             | None -> f)

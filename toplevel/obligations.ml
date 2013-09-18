@@ -35,7 +35,7 @@ let succfix (depth, fixrels) =
 let mkMetas n = List.init n (fun _ -> Evarutil.mk_new_meta ())
 
 let check_evars env evm =
-  Evd.ExistentialMap.iter
+  Evar.Map.iter
   (fun key evi ->
    let (loc,k) = evar_source key evm in
      match k with
@@ -72,7 +72,7 @@ let subst_evar_constr evs n idf t =
 	      ev_hyps = hyps ; ev_chop = chop } =
 	  try evar_info k
 	  with Not_found ->
-	    anomaly ~label:"eterm" (Pp.str "existential variable " ++ int k ++ str " not found")
+	    anomaly ~label:"eterm" (Pp.str "existential variable " ++ int (Evar.repr k) ++ str " not found")
 	in
         seen := Int.Set.add id !seen;
 	  (* Evar arguments are created in inverse order,
@@ -156,54 +156,54 @@ let rec chop_product n t =
       | _ -> None
 
 let evars_of_evar_info evi =
-  Int.Set.union (Evarutil.evars_of_term evi.evar_concl)
-    (Int.Set.union
+  Evar.Set.union (Evarutil.evars_of_term evi.evar_concl)
+    (Evar.Set.union
 	(match evi.evar_body with
-	| Evar_empty -> Int.Set.empty
+	| Evar_empty -> Evar.Set.empty
 	| Evar_defined b -> Evarutil.evars_of_term b)
 	(Evarutil.evars_of_named_context (evar_filtered_context evi)))
 
 let evar_dependencies evm oev =
   let one_step deps =
-    Int.Set.fold (fun ev s ->
+    Evar.Set.fold (fun ev s ->
       let evi = Evd.find evm ev in
       let deps' = evars_of_evar_info evi in
-      if Int.Set.mem oev deps' then
-	invalid_arg ("Ill-formed evar map: cycle detected for evar " ^ string_of_int oev)
-      else Int.Set.union deps' s)
+      if Evar.Set.mem oev deps' then
+	invalid_arg ("Ill-formed evar map: cycle detected for evar " ^ string_of_existential oev)
+      else Evar.Set.union deps' s)
       deps deps
   in
   let rec aux deps =
     let deps' = one_step deps in
-      if Int.Set.equal deps deps' then deps
+      if Evar.Set.equal deps deps' then deps
       else aux deps'
-  in aux (Int.Set.singleton oev)
+  in aux (Evar.Set.singleton oev)
       
 let move_after (id, ev, deps as obl) l = 
   let rec aux restdeps = function
     | (id', _, _) as obl' :: tl -> 
-	let restdeps' = Int.Set.remove id' restdeps in
-	  if Int.Set.is_empty restdeps' then
+	let restdeps' = Evar.Set.remove id' restdeps in
+	  if Evar.Set.is_empty restdeps' then
 	    obl' :: obl :: tl
 	  else obl' :: aux restdeps' tl
     | [] -> [obl]
-  in aux (Int.Set.remove id deps) l
+  in aux (Evar.Set.remove id deps) l
     
 let sort_dependencies evl =
   let rec aux l found list =
     match l with
     | (id, ev, deps) as obl :: tl ->
-	let found' = Int.Set.union found (Int.Set.singleton id) in
-	  if Int.Set.subset deps found' then
+	let found' = Evar.Set.union found (Evar.Set.singleton id) in
+	  if Evar.Set.subset deps found' then
 	    aux tl found' (obl :: list)
 	  else aux (move_after obl tl) found list
     | [] -> List.rev list
-  in aux evl Int.Set.empty []
+  in aux evl Evar.Set.empty []
 
 open Environ
 
 let collect_evars_of_term c ty =
-  Int.Set.union (Evarutil.evars_of_term c) (Evarutil.evars_of_term ty)
+  Evar.Set.union (Evarutil.evars_of_term c) (Evarutil.evars_of_term ty)
 
 let eterm_obligations env name evm fs ?status t ty = 
   (* 'Serialize' the evars *)
@@ -212,8 +212,8 @@ let eterm_obligations env name evm fs ?status t ty =
   let nc_len = Context.named_context_length nc in
   let evm = Evarutil.nf_evar_map_undefined evm in
   let evl = Evarutil.non_instantiated evm in
-  let evl = ExistentialMap.filter (fun ev _ -> Int.Set.mem ev evars) evl in
-  let evl = ExistentialMap.bindings evl in
+  let evl = Evar.Map.filter (fun ev _ -> Evar.Set.mem ev evars) evl in
+  let evl = Evar.Map.bindings evl in
   let evl = List.map (fun (id, ev) -> (id, ev, evar_dependencies evm id)) evl in
   let sevl = sort_dependencies evl in
   let evl = List.map (fun (id, ev, _) -> id, ev) sevl in

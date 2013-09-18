@@ -33,8 +33,8 @@ val check_evars : env -> evar_map -> unit
 
 val mkMetas : int -> constr list
 
-val evar_dependencies : evar_map -> int -> Int.Set.t
-val sort_dependencies : (int * evar_info * Int.Set.t) list -> (int * evar_info * Int.Set.t) list
+val evar_dependencies : evar_map -> Evar.t -> Evar.Set.t
+val sort_dependencies : (Evar.t * evar_info * Evar.Set.t) list -> (Evar.t * evar_info * Evar.Set.t) list
 
 (* env, id, evars, number of function prototypes to try to clear from
    evars contexts, object and type *)

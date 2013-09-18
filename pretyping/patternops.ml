@@ -32,7 +32,7 @@ let rec constr_pattern_eq p1 p2 = match p1, p2 with
 | PRef r1, PRef r2 -> eq_gr r1 r2
 | PVar v1, PVar v2 -> Id.equal v1 v2
 | PEvar (ev1, ctx1), PEvar (ev2, ctx2) ->
-  Int.equal ev1 ev2 && Array.equal constr_pattern_eq ctx1 ctx2
+  Evar.equal ev1 ev2 && Array.equal constr_pattern_eq ctx1 ctx2
 | PRel i1, PRel i2 ->
   Int.equal i1 i2
 | PApp (t1, arg1), PApp (t2, arg2) ->

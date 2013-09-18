@@ -18,9 +18,9 @@ open Evarsolve
 (******************************************)
 
 let depends_on_evar evk _ (pbty,_,t1,t2) =
-  try Int.equal (head_evar t1) evk
+  try Evar.equal (head_evar t1) evk
   with NoHeadEvar ->
-  try Int.equal (head_evar t2) evk
+  try Evar.equal (head_evar t2) evk
   with NoHeadEvar -> false
 
 let define_and_solve_constraints evk c evd =

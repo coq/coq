@@ -391,7 +391,7 @@ let rec detype (isgoal:bool) avoid env t =
 	 in GVar (dl, Id.of_string s))
     | Meta n ->
 	(* Meta in constr are not user-parsable and are mapped to Evar *)
-	GEvar (dl, n, None)
+	GEvar (dl, Evar.unsafe_of_int n, None)
     | Var id ->
 	(try let _ = Global.lookup_named id in GRef (dl, VarRef id)
 	 with Not_found -> GVar (dl, id))

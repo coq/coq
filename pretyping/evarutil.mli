@@ -66,7 +66,7 @@ val make_pure_subst : evar_info -> constr array -> (Id.t * constr) list
    returns the evar_map extended with dependent evars *)
 val evars_to_metas : evar_map -> open_constr -> (evar_map * constr)
 
-val non_instantiated : evar_map -> evar_info ExistentialMap.t
+val non_instantiated : evar_map -> evar_info Evar.Map.t
 
 (** {6 Unification utils} *)
 
@@ -98,10 +98,10 @@ val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
     contained in the object, including defined evars *)
 
 
-val evars_of_term : constr -> Int.Set.t
+val evars_of_term : constr -> Evar.Set.t
 
-val evars_of_named_context : named_context -> Int.Set.t
-val evars_of_evar_info : evar_info -> Int.Set.t
+val evars_of_named_context : named_context -> Evar.Set.t
+val evars_of_evar_info : evar_info -> Evar.Set.t
 
 (** [gather_dependent_evars evm seeds] classifies the evars in [evm]
     as dependent_evars and goals (these may overlap). A goal is an
@@ -112,16 +112,16 @@ val evars_of_evar_info : evar_info -> Int.Set.t
     associating to each dependent evar [None] if it has no (partial)
     definition or [Some s] if [s] is the list of evars appearing in
     its (partial) definition. *)
-val gather_dependent_evars : evar_map -> evar list -> (Int.Set.t option) Int.Map.t
+val gather_dependent_evars : evar_map -> evar list -> (Evar.Set.t option) Evar.Map.t
 
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
     This is roughly a combination of the previous functions and
     [nf_evar]. *)
 
-val undefined_evars_of_term : evar_map -> constr -> Int.Set.t
-val undefined_evars_of_named_context : evar_map -> named_context -> Int.Set.t
-val undefined_evars_of_evar_info : evar_map -> evar_info -> Int.Set.t
+val undefined_evars_of_term : evar_map -> constr -> Evar.Set.t
+val undefined_evars_of_named_context : evar_map -> named_context -> Evar.Set.t
+val undefined_evars_of_evar_info : evar_map -> evar_info -> Evar.Set.t
 
 (** {6 Value/Type constraints} *)
 

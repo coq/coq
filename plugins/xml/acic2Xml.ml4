@@ -26,7 +26,7 @@ let rec find_last_id =
   | _::tl -> find_last_id tl
 ;;
 
-let export_existential = string_of_int
+let export_existential ev = string_of_int (Evar.repr ev)
 
 let print_term ids_to_inner_sorts =
  let rec aux =

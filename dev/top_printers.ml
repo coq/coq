@@ -106,11 +106,12 @@ let pp_cpred s = pp (pr_cpred s)
 let pp_transparent_state s = pp (pr_transparent_state s)
 
 (* proof printers *)
+let pr_evar ev = Pp.int (Evar.repr ev)
 let ppmetas metas = pp(pr_metaset metas)
 let ppevm evd = pp(pr_evar_map (Some 2) evd)
 let ppevmall evd = pp(pr_evar_map None evd)
 let pr_existentialset evars =
-  prlist_with_sep spc pr_meta (ExistentialSet.elements evars)
+  prlist_with_sep spc pr_evar (Evar.Set.elements evars)
 let ppexistentialset evars =
   pp (pr_existentialset evars)
 let ppclenv clenv = pp(pr_clenv clenv)
@@ -172,7 +173,7 @@ let constr_display csr =
       "LetIn("^(name_display na)^","^(term_display b)^","
       ^(term_display t)^","^(term_display c)^")"
   | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
-  | Evar (e,l) -> "Evar("^(string_of_int e)^","^(array_display l)^")"
+  | Evar (e,l) -> "Evar("^(string_of_existential e)^","^(array_display l)^")"
   | Const c -> "Const("^(string_of_con c)^")"
   | Ind (sp,i) ->
       "MutInd("^(string_of_mind sp)^","^(string_of_int i)^")"
@@ -250,7 +251,7 @@ let print_pure_constr csr =
       box_display c;
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string ")"
-  | Evar (e,l) -> print_string "Evar#"; print_int e; print_string "{";
+  | Evar (e,l) -> print_string "Evar#"; print_int (Evar.repr e); print_string "{";
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string"}"
   | Const c -> print_string "Cons(";

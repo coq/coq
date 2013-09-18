@@ -114,7 +114,7 @@ let noccur_evar env evd evk c =
       (match safe_evar_value evd ev' with
        | Some c -> occur_rec k c
        | None ->
-           if Int.equal evk evk' then raise Occur
+           if Evar.equal evk evk' then raise Occur
            else Array.iter (occur_rec k) args')
   | Rel i when i > k ->
       (match pi2 (Environ.lookup_rel (i-k) env) with
@@ -956,7 +956,7 @@ let rec is_constrainable_in k (ev,(fv_rels,fv_ids) as g) t =
       Array.for_all (is_constrainable_in k g) params
   | Ind _ -> Array.for_all (is_constrainable_in k g) args
   | Prod (_,t1,t2) -> is_constrainable_in k g t1 && is_constrainable_in k g t2
-  | Evar (ev',_) -> not (Int.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
+  | Evar (ev',_) -> not (Evar.equal ev' ev) (*If ev' needed, one may also try to restrict it*)
   | Var id -> Id.Set.mem id fv_ids
   | Rel n -> n <= k || Int.Set.mem n fv_rels
   | Sort _ -> true
@@ -1068,7 +1068,7 @@ let solve_refl ?(can_drop=false) conv_algo env evd evk argsv1 argsv2 =
   let candidates = filter_candidates evd evk untypedfilter None in
   let filter = closure_of_filter evd evk untypedfilter in
   let evd,ev1 = restrict_applied_evar evd (evk,argsv1) filter candidates in
-  if Int.equal (fst ev1) evk && can_drop then (* No refinement *) evd else
+  if Evar.equal (fst ev1) evk && can_drop then (* No refinement *) evd else
     (* either progress, or not allowed to drop, e.g. to preserve possibly *)
     (* informative equations such as ?e[x:=?y]=?e[x:=?y'] where we don't know *)
     (* if e can depend on x until ?y is not resolved, or, conversely, we *)
@@ -1198,7 +1198,7 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
           try project_variable t
           with NotInvertibleUsingOurAlgorithm _ -> imitate envk b)
     | Evar (evk',args' as ev') ->
-        if Int.equal evk evk' then raise (OccurCheckIn (evd,rhs));
+        if Evar.equal evk evk' then raise (OccurCheckIn (evd,rhs));
         (* Evar/Evar problem (but left evar is virtual) *)
         let aliases = lift_aliases k aliases in
         (try
@@ -1278,7 +1278,7 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
 and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
   match kind_of_term rhs with
   | Evar (evk2,argsv2 as ev2) ->
-      if Int.equal evk evk2 then
+      if Evar.equal evk evk2 then
         solve_refl ~can_drop:choose
           (test_success conv_algo) env evd evk argsv argsv2
       else
@@ -1322,7 +1322,7 @@ and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
         (* last chance: rhs actually reduces to ev *)
         let c = whd_betadeltaiota env evd rhs in
         match kind_of_term c with
-        | Evar (evk',argsv2) when Int.equal evk evk' ->
+        | Evar (evk',argsv2) when Evar.equal evk evk' ->
 	    solve_refl (fun env sigma pb c c' -> is_fconv pb env sigma c c')
               env evd evk argsv argsv2
         | _ ->
@@ -1355,8 +1355,8 @@ and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
  *)
 
 let status_changed lev (pbty,_,t1,t2) =
-  (try ExistentialSet.mem (head_evar t1) lev with NoHeadEvar -> false) or
-  (try ExistentialSet.mem (head_evar t2) lev with NoHeadEvar -> false)
+  (try Evar.Set.mem (head_evar t1) lev with NoHeadEvar -> false) or
+  (try Evar.Set.mem (head_evar t2) lev with NoHeadEvar -> false)
 
 let reconsider_conv_pbs conv_algo evd =
   let (evd,pbs) = extract_changed_conv_pbs evd status_changed in

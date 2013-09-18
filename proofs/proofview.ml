@@ -487,7 +487,7 @@ module V82 = struct
     let goals =
       List.map begin fun (e,_) ->
 	Goal.build e
-      end (Evd.ExistentialMap.bindings undef)
+      end (Evar.Map.bindings undef)
     in
     { pv with comb = goals }
       
@@ -504,14 +504,14 @@ module V82 = struct
 
   let top_evars { initial=initial } =
     let evars_of_initial (c,_) =
-      Int.Set.elements (Evarutil.evars_of_term c)
+      Evar.Set.elements (Evarutil.evars_of_term c)
     in
     List.flatten (List.map evars_of_initial initial)
 
   let instantiate_evar n com pv =
     let (evk,_) =
       let evl = Evarutil.non_instantiated pv.solution in
-      let evl = Evd.ExistentialMap.bindings evl in
+      let evl = Evar.Map.bindings evl in
       if (n <= 0) then
 	Errors.error "incorrect existential variable index"
       else if List.length evl < n then

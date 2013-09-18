@@ -45,6 +45,7 @@ Names
 Univ
 Esubst
 Sorts
+Evar
 Constr
 Context
 Vars

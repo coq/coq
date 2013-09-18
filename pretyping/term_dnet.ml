@@ -211,7 +211,7 @@ struct
 
   let pat_of_constr c : term_pattern =
     (** To each evar we associate a unique identifier. *)
-    let metas = ref Evd.ExistentialMap.empty in
+    let metas = ref Evar.Map.empty in
     let rec pat_of_constr c = match kind_of_term c with
     | Rel _          -> Term DRel
     | Sort _         -> Term DSort
@@ -222,10 +222,10 @@ struct
     | Term.Meta _    -> assert false
     | Evar (i,_)     ->
       let meta =
-        try Evd.ExistentialMap.find i !metas
+        try Evar.Map.find i !metas
         with Not_found ->
           let meta = fresh_meta () in
-          let () = metas := Evd.ExistentialMap.add i meta !metas in
+          let () = metas := Evar.Map.add i meta !metas in
           meta
       in
       Meta meta

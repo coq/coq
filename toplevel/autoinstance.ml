@@ -43,7 +43,7 @@ let reduce x = x
 
 let rec subst_evar evar def n c =
   match kind_of_term c with
-    | Evar (e,_) when Int.equal e evar -> lift n def
+    | Evar (e,_) when Evar.equal e evar -> lift n def
     | _ -> map_constr_with_binders (fun n->n+1) (subst_evar evar def) n c
 
 let subst_evar_in_evm evar def evm =
@@ -65,9 +65,9 @@ let rec safe_define evm ev c =
 (*  msgnl(str"safe_define "++pr_evar_map evm++spc()++str" |- ?"++Pp.int ev++str" := "++pr_constr c);*)
   let evi = (Evd.find evm ev) in
   let define_subst evm sigma =
-    Int.Map.fold
+    Evar.Map.fold
       ( fun ev (e,c) evm ->
-	  match kind_of_term c with Evar (i,_) when Int.equal i ev -> evm | _ ->
+	  match kind_of_term c with Evar (i,_) when Evar.equal i ev -> evm | _ ->
 	    safe_define evm ev (lift (-List.length e) c)
       ) sigma evm in
   match evi.evar_body with
@@ -95,7 +95,7 @@ let add_gen_ctx (cl,gen,evm) ctx : signature * constr list =
    compare function for constr instead of Pervasive's one! *)
 module SubstSet : Set.S with type elt = Termops.subst
   = Set.Make (struct type t = Termops.subst
-		     let compare = Int.Map.compare (Pervasives.compare)
+		     let compare = Evar.Map.compare (Pervasives.compare) (** FIXME *)
 	      end)
 
 let search_concl typ = assert false

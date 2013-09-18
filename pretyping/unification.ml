@@ -228,7 +228,7 @@ type unify_flags = {
     (* This allows for instance to unify "forall x:A, B(x)" with "A' -> B'" *)
     (* This was on for all tactics, including auto, since Sep 2006 for 8.1 *)
 
-  frozen_evars : ExistentialSet.t;
+  frozen_evars : Evar.Set.t;
     (* Evars of this set are considered axioms and never instantiated *)
     (* Useful e.g. for autorewrite *)
 
@@ -259,7 +259,7 @@ let default_unify_flags = {
   resolve_evars = false;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
-  frozen_evars = ExistentialSet.empty;
+  frozen_evars = Evar.Set.empty;
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = true;
   modulo_eta = true;
@@ -350,7 +350,7 @@ let use_full_betaiota flags =
   flags.modulo_betaiota && Flags.version_strictly_greater Flags.V8_3
 
 let isAllowedEvar flags c = match kind_of_term c with
-  | Evar (evk,_) -> not (ExistentialSet.mem evk flags.frozen_evars)
+  | Evar (evk,_) -> not (Evar.Set.mem evk flags.frozen_evars)
   | _ -> false
 
 let check_compatibility env (sigma,metasubst,evarsubst) tyM tyN =
@@ -414,13 +414,13 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
               evarsubst)
 	    else error_cannot_unify_local curenv sigma (m,n,cM)
 	| Evar (evk,_ as ev), _
-            when not (ExistentialSet.mem evk flags.frozen_evars) ->
+            when not (Evar.Set.mem evk flags.frozen_evars) ->
 	    let cmvars = free_rels cM and cnvars = free_rels cN in
 	      if Int.Set.subset cnvars cmvars then
 		sigma,metasubst,((curenv,ev,cN)::evarsubst)
 	      else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Evar (evk,_ as ev)
-            when not (ExistentialSet.mem evk flags.frozen_evars) ->
+            when not (Evar.Set.mem evk flags.frozen_evars) ->
 	    let cmvars = free_rels cM and cnvars = free_rels cN in
 	      if Int.Set.subset cmvars cnvars then
 		sigma,metasubst,((curenv,ev,cM)::evarsubst)

@@ -34,11 +34,6 @@ type evar = existential_key
 (** Existential variables. TODO: Should be made opaque one day. *)
 
 val string_of_existential : evar -> string
-val existential_of_int : int -> evar
-
-module ExistentialSet : Set.S with type elt = existential_key
-module ExistentialMap : Map.ExtS
-  with type key = existential_key and module Set := ExistentialSet
 
 (** {6 Evar infos} *)
 
@@ -157,10 +152,10 @@ val is_undefined : evar_map -> evar -> bool
 val add_constraints : evar_map -> Univ.constraints -> evar_map
 (** Add universe constraints in an evar map. *)
 
-val undefined_map : evar_map -> evar_info ExistentialMap.t
+val undefined_map : evar_map -> evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
 
-val defined_map : evar_map -> evar_info ExistentialMap.t
+val defined_map : evar_map -> evar_info Evar.Map.t
 (** Access the defined evar mapping directly. *)
 
 (** {6 Instantiating partial terms} *)
@@ -294,13 +289,13 @@ type evar_constraint = conv_pb * env * constr * constr
 val add_conv_pb :  evar_constraint -> evar_map -> evar_map
 
 val extract_changed_conv_pbs : evar_map ->
-      (ExistentialSet.t -> evar_constraint -> bool) ->
+      (Evar.Set.t -> evar_constraint -> bool) ->
       evar_map * evar_constraint list
 val extract_all_conv_pbs : evar_map -> evar_map * evar_constraint list
 val loc_of_conv_pb : evar_map -> evar_constraint -> Loc.t
 
 val evar_list : evar_map -> constr -> existential list
-val collect_evars : constr -> ExistentialSet.t
+val collect_evars : constr -> Evar.Set.t
 
 (** Metas *)
 val meta_list : evar_map -> (metavariable * clbinding) list

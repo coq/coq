@@ -9,7 +9,7 @@
 open Names
 
 (** {6 Existential variables } *)
-type existential_key = int
+type existential_key = Evar.t
 
 (** {6 Existential variables } *)
 type metavariable = int
