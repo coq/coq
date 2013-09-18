@@ -190,51 +190,65 @@ struct
 
   module TDnet : Dnet.S with type ident=Ident.t
 			and  type 'a structure = 'a DTerm.t
-			and  type meta = metavariable
-    = Dnet.Make(DTerm)(Ident)
-    (struct
-       type t = metavariable
-       let compare = Pervasives.compare
-     end)
+			and  type meta = int
+    = Dnet.Make(DTerm)(Ident)(Int)
 
   type t = TDnet.t
 
   type ident = TDnet.ident
 
-  type result = ident * (constr*existential_key) * Termops.subst
+  (** We will freshen metas on the fly, to cope with the implementation defect
+      of Term_dnet which requires metas to be all distinct. *)
+  let fresh_meta =
+    let index = ref 0 in
+    fun () ->
+      let ans = !index in
+      let () = index := succ ans in
+      ans
 
   open DTerm
   open TDnet
 
-  let rec pat_of_constr c : term_pattern =
-    match kind_of_term c with
-      | Rel _          -> Term DRel
-      | Sort _         -> Term DSort
-      | Var i          -> Term (DRef (VarRef i))
-      | Const c        -> Term (DRef (ConstRef c))
-      | Ind i          -> Term (DRef (IndRef i))
-      | Construct c    -> Term (DRef (ConstructRef c))
-      | Term.Meta _    -> assert false
-      | Evar (i,_)     -> Meta i
-      | Case (ci,c1,c2,ca)     ->
-	  Term(DCase(ci,pat_of_constr c1,pat_of_constr c2,Array.map pat_of_constr ca))
-      | Fix ((ia,i),(_,ta,ca)) ->
-	  Term(DFix(ia,i,Array.map pat_of_constr ta, Array.map pat_of_constr ca))
-      | CoFix (i,(_,ta,ca))    ->
-	  Term(DCoFix(i,Array.map pat_of_constr ta,Array.map pat_of_constr ca))
-      | Cast (c,_,_)   -> pat_of_constr c
-      | Lambda (_,t,c) -> Term(DLambda (pat_of_constr t, pat_of_constr c))
-      | (Prod (_,_,_) | LetIn(_,_,_,_))   ->
-	  let (ctx,c) = ctx_of_constr (Term DNil) c in Term (DCtx (ctx,c))
-      | App (f,ca)     ->
-	  Array.fold_left (fun c a -> Term (DApp (c,a)))
-	    (pat_of_constr f) (Array.map pat_of_constr ca)
+  let pat_of_constr c : term_pattern =
+    (** To each evar we associate a unique identifier. *)
+    let metas = ref Evd.ExistentialMap.empty in
+    let rec pat_of_constr c = match kind_of_term c with
+    | Rel _          -> Term DRel
+    | Sort _         -> Term DSort
+    | Var i          -> Term (DRef (VarRef i))
+    | Const c        -> Term (DRef (ConstRef c))
+    | Ind i          -> Term (DRef (IndRef i))
+    | Construct c    -> Term (DRef (ConstructRef c))
+    | Term.Meta _    -> assert false
+    | Evar (i,_)     ->
+      let meta =
+        try Evd.ExistentialMap.find i !metas
+        with Not_found ->
+          let meta = fresh_meta () in
+          let () = metas := Evd.ExistentialMap.add i meta !metas in
+          meta
+      in
+      Meta meta
+    | Case (ci,c1,c2,ca)     ->
+      Term(DCase(ci,pat_of_constr c1,pat_of_constr c2,Array.map pat_of_constr ca))
+    | Fix ((ia,i),(_,ta,ca)) ->
+      Term(DFix(ia,i,Array.map pat_of_constr ta, Array.map pat_of_constr ca))
+    | CoFix (i,(_,ta,ca))    ->
+      Term(DCoFix(i,Array.map pat_of_constr ta,Array.map pat_of_constr ca))
+    | Cast (c,_,_)   -> pat_of_constr c
+    | Lambda (_,t,c) -> Term(DLambda (pat_of_constr t, pat_of_constr c))
+    | (Prod (_,_,_) | LetIn(_,_,_,_))   ->
+      let (ctx,c) = ctx_of_constr (Term DNil) c in Term (DCtx (ctx,c))
+    | App (f,ca)     ->
+      Array.fold_left (fun c a -> Term (DApp (c,a)))
+        (pat_of_constr f) (Array.map pat_of_constr ca)
 
-  and ctx_of_constr ctx c : term_pattern * term_pattern =
-    match kind_of_term c with
-      | Prod (_,t,c)   -> ctx_of_constr (Term(DCons((pat_of_constr t,None),ctx))) c
-      | LetIn(_,d,t,c) -> ctx_of_constr (Term(DCons((pat_of_constr t, Some (pat_of_constr d)),ctx))) c
-      | _ -> ctx,pat_of_constr c
+    and ctx_of_constr ctx c = match kind_of_term c with
+    | Prod (_,t,c)   -> ctx_of_constr (Term(DCons((pat_of_constr t,None),ctx))) c
+    | LetIn(_,d,t,c) -> ctx_of_constr (Term(DCons((pat_of_constr t, Some (pat_of_constr d)),ctx))) c
+    | _ -> ctx,pat_of_constr c
+    in
+    pat_of_constr c
 
   let empty_ctx : term_pattern -> term_pattern = function
     | Meta _ as c -> c
@@ -261,9 +275,8 @@ struct
     let c = empty_ctx (pat_of_constr c) in
     TDnet.add dn c id
 
-  let new_meta_no = Evarutil.new_untyped_evar
 
-  let new_meta () = Meta (new_meta_no())
+  let new_meta () = Meta (fresh_meta ())
 
   let rec remove_cap : term_pattern -> term_pattern = function
     | Term (DCons (t,u)) -> Term (DCons (t,remove_cap u))
