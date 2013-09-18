@@ -202,12 +202,17 @@ let sort_dependencies evl =
 
 open Environ
 
+let collect_evars_of_term c ty =
+  Int.Set.union (Evarutil.evars_of_term c) (Evarutil.evars_of_term ty)
+
 let eterm_obligations env name evm fs ?status t ty = 
   (* 'Serialize' the evars *)
+  let evars = collect_evars_of_term t ty in
   let nc = Environ.named_context env in
   let nc_len = Context.named_context_length nc in
   let evm = Evarutil.nf_evar_map_undefined evm in
   let evl = Evarutil.non_instantiated evm in
+  let evl = ExistentialMap.filter (fun ev _ -> Int.Set.mem ev evars) evl in
   let evl = ExistentialMap.bindings evl in
   let evl = List.map (fun (id, ev) -> (id, ev, evar_dependencies evm id)) evl in
   let sevl = sort_dependencies evl in

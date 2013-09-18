@@ -315,6 +315,11 @@ let push_rel_context_to_named_context env typ =
 
 let default_source = (Loc.ghost,Evar_kinds.InternalHole)
 
+let new_pure_evar_full evd evi =
+  let evk = new_untyped_evar () in
+  let evd = Evd.add evd evk evi in
+  (evd, evk)
+
 let new_pure_evar evd sign ?(src=default_source) ?filter ?candidates typ =
   let newevk = new_untyped_evar() in
   let evd = evar_declare sign newevk typ ~src ?filter ?candidates evd in

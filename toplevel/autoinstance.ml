@@ -47,14 +47,14 @@ let rec subst_evar evar def n c =
     | _ -> map_constr_with_binders (fun n->n+1) (subst_evar evar def) n c
 
 let subst_evar_in_evm evar def evm =
-  Evd.fold
-    (fun ev evi acc ->
-       let evar_body = match evi.evar_body with
-	 | Evd.Evar_empty -> Evd.Evar_empty
-	 | Evd.Evar_defined c -> Evd.Evar_defined (subst_evar evar def 0 c) in
-       let evar_concl = subst_evar evar def 0 evi.evar_concl in
-       Evd.add acc ev {evi with evar_body=evar_body; evar_concl=evar_concl}
-    ) evm empty
+  let map ev evi =
+    let evar_body = match evi.evar_body with
+      | Evd.Evar_empty -> Evd.Evar_empty
+      | Evd.Evar_defined c -> Evd.Evar_defined (subst_evar evar def 0 c) in
+    let evar_concl = subst_evar evar def 0 evi.evar_concl in
+    {evi with evar_body=evar_body; evar_concl=evar_concl}
+  in
+  Evd.raw_map map evm
 
 (* Tries to define ev by c in evd. Fails if ev := c1 and c1 /= c ev :
  * T1, c : T2 and T1 /= T2. Defines recursively all evars instantiated
@@ -80,21 +80,16 @@ let rec safe_define evm ev c =
 	define_subst (Evd.define ev c evm) (Termops.filtering [] Reduction.CUMUL t u)
 
 let add_gen_ctx (cl,gen,evm) ctx : signature * constr list =
-  let rec really_new_evar () =
-    let ev = Evarutil.new_untyped_evar() in
-    if Evd.is_evar evm ev then really_new_evar() else ev in
-  let add_gen_evar (cl,gen,evm) ev ty : signature =
-    let evm = Evd.add evm ev (Evd.make_evar Environ.empty_named_context_val ty) in
-    (cl,ev::gen,evm) in
+  let env = Environ.empty_named_context_val in
+  let fold_new_evar evm _ = Evarutil.new_pure_evar evm env mkProp in
   let rec mksubst b = function
     | [] -> []
     | a::tl -> b::(mksubst (a::b) tl) in
-  let evl = List.map (fun _ -> really_new_evar()) ctx in
+  let (evm, evl) = List.fold_map fold_new_evar evm ctx in
   let evcl = List.map (fun i -> mkEvar (i,[||])) evl in
-  let substl = List.rev (mksubst [] (evcl)) in
-  let ctx = List.map2 (fun s t -> substnl s 0 t) substl ctx in
-  let sign = List.fold_left2 add_gen_evar (cl,gen,evm) (List.rev evl) ctx in
-  sign,evcl
+(*   let substl = List.rev (mksubst [] (evcl)) in *)
+(*   let ctx = List.map2 (fun s t -> substnl s 0 t) substl ctx in *)
+  (cl, evl @ gen, evm), evcl
 
 (* TODO : for full proof-irrelevance in the search, provide a real
    compare function for constr instead of Pervasive's one! *)

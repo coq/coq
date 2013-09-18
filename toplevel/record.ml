@@ -221,11 +221,13 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
 let structure_signature ctx =
   let rec deps_to_evar evm l =
     match l with [] -> Evd.empty
-      | [(_,_,typ)] -> Evd.add evm (Evarutil.new_untyped_evar())
-	  (Evd.make_evar Environ.empty_named_context_val typ)
+      | [(_,_,typ)] ->
+        let env = Environ.empty_named_context_val in
+        let (evm, _) = Evarutil.new_pure_evar evm env typ in
+        evm
       | (_,_,typ)::tl ->
-	  let ev = Evarutil.new_untyped_evar() in
-	  let evm = Evd.add evm ev (Evd.make_evar Environ.empty_named_context_val typ) in
+          let env = Environ.empty_named_context_val in
+          let (evm, ev) = Evarutil.new_pure_evar evm env typ in
 	  let new_tl = Util.List.map_i
 	    (fun pos (n,c,t) -> n,c,
 	       Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) 1 tl in

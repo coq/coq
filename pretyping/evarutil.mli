@@ -36,6 +36,8 @@ val new_pure_evar :
   evar_map -> named_context_val -> ?src:Loc.t * Evar_kinds.t -> ?filter:bool list ->
   ?candidates:constr list -> types -> evar_map * evar
 
+val new_pure_evar_full : evar_map -> evar_info -> evar_map * evar
+
 (** the same with side-effects *)
 val e_new_evar :
   evar_map ref -> env -> ?src:Loc.t * Evar_kinds.t -> ?filter:bool list ->

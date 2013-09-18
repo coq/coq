@@ -308,8 +308,6 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		       [| u; p; cx; evar |])))
 	| None ->
 	    raise NoSubtacCoercion
-	      (*evdref := Evd.add_conv_pb (Reduction.CONV, x, y) !evdref;
-		None*)
   in coerce_unify env x y
 
 let coerce_itf loc env evd v t c1 =

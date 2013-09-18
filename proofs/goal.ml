@@ -496,7 +496,6 @@ module V82 = struct
 
   (* Old style mk_goal primitive *)
   let mk_goal evars hyps concl extra =
-    let evk = Evarutil.new_untyped_evar () in
     let evi = { Evd.evar_hyps = hyps;
 		Evd.evar_concl = concl;
 		Evd.evar_filter = List.map (fun _ -> true)
@@ -507,7 +506,7 @@ module V82 = struct
 		Evd.evar_extra = extra }
     in
     let evi = Typeclasses.mark_unresolvable evi in
-    let evars = Evd.add evars evk evi in
+    let (evars, evk) = Evarutil.new_pure_evar_full evars evi in
     let ids = List.map Util.pi1 (Environ.named_context_of_val hyps) in
     let inst = Array.of_list (List.map mkVar ids) in
     let ev = Term.mkEvar (evk,inst) in
@@ -525,8 +524,7 @@ module V82 = struct
        marked unresolvable for typeclasses, as non-empty Store.t-s happen
        to have functional content. *)
     let evi = Evd.make_evar Environ.empty_named_context_val Term.mkProp in
-    let evk = Evarutil.new_untyped_evar () in
-    let sigma = Evd.add Evd.empty evk evi in
+    let (sigma, evk) = Evarutil.new_pure_evar_full Evd.empty evi in
     { Evd.it = build evk ; Evd.sigma = sigma; eff = Declareops.no_seff }
 
   (* Makes a goal out of an evar *)
@@ -568,8 +566,7 @@ module V82 = struct
     let new_evi =
       { evi with Evd.evar_hyps = new_hyps; Evd.evar_filter = new_filter } in
     let new_evi = Typeclasses.mark_unresolvable new_evi in
-    let evk = Evarutil.new_untyped_evar () in
-    let new_sigma = Evd.add Evd.empty evk new_evi in
+    let (new_sigma, evk) = Evarutil.new_pure_evar_full Evd.empty new_evi in
     { Evd.it = build evk ; sigma = new_sigma; eff = Declareops.no_seff }
 
   (* Used by the compatibility layer and typeclasses *)
