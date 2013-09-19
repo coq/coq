@@ -230,14 +230,14 @@ End Burali_Forti_Paradox.
 intros.
 change
   match i0 X1 R1, i0 X2 R2 with
-  | i1 x1 r1, i1 x2 r2 => exists f : _, morphism x1 r1 x2 r2 f
+  | i1 _ _ x1 r1, i1 _ _ x2 r2 => exists f : _, morphism x1 r1 x2 r2 f
   end.
 case H; simpl.
 exists (fun x : X1 => x).
 red; trivial.
 Defined.
 
-(* The following command raises 'Error: Universe Inconsistency'.
+(* The following command should raise 'Error: Universe Inconsistency'.
    To allow large elimination of A0, i0 must not be a large constructor.
    Hence, the constraint Type_j' < Type_i' is added, which is incompatible
    with the constraint j >= i in the paradox.
