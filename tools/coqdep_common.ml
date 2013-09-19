@@ -265,10 +265,10 @@ let escape =
     Buffer.clear s';
     for i = 0 to String.length s - 1 do
       let c = s.[i] in
-      if c = ' ' or c = '#' or c = ':' (* separators and comments *)
-	or c = '%' (* pattern *)
-	or c = '?' or c = '[' or c = ']' or c = '*' (* expansion in filenames *)
-	or i=0 && c = '~' && (String.length s = 1 || s.[1] = '/' || 
+      if c = ' ' || c = '#' || c = ':' (* separators and comments *)
+        || c = '%' (* pattern *)
+	|| c = '?' || c = '[' || c = ']' || c = '*' (* expansion in filenames *)
+	|| i=0 && c = '~' && (String.length s = 1 || s.[1] = '/' || 
 	    'A' <= s.[1] && s.[1] <= 'Z' || 
 	    'a' <= s.[1] && s.[1] <= 'z') (* homedir expansion *)
       then begin

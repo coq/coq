@@ -120,7 +120,7 @@ let open_constant i ((sp,kn), obj) =
     Nametab.push (Nametab.Exactly i) sp (ConstRef con)
 
 let exists_name id =
-  variable_exists id or Global.exists_objlabel (Label.of_id id)
+  variable_exists id || Global.exists_objlabel (Label.of_id id)
 
 let check_exists sp =
   let id = basename sp in

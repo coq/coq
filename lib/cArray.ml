@@ -301,7 +301,7 @@ let map2 f v1 v2 =
   if Int.equal (Array.length v1) 0 then
     [| |]
   else begin
-    let res = Array.create (Array.length v1) (f v1.(0) v2.(0)) in
+    let res = Array.make (Array.length v1) (f v1.(0) v2.(0)) in
     for i = 1 to pred (Array.length v1) do
       res.(i) <- f v1.(i) v2.(i)
     done;
@@ -314,7 +314,7 @@ let map2_i f v1 v2 =
   if Int.equal (Array.length v1) 0 then
     [| |]
   else begin
-    let res = Array.create (Array.length v1) (f 0 v1.(0) v2.(0)) in
+    let res = Array.make (Array.length v1) (f 0 v1.(0) v2.(0)) in
     for i = 1 to pred (Array.length v1) do
       res.(i) <- f i v1.(i) v2.(i)
     done;
@@ -327,7 +327,7 @@ let map3 f v1 v2 v3 =
   if Int.equal (Array.length v1) 0 then
     [| |]
   else begin
-    let res = Array.create (Array.length v1) (f v1.(0) v2.(0) v3.(0)) in
+    let res = Array.make (Array.length v1) (f v1.(0) v2.(0) v3.(0)) in
     for i = 1 to pred (Array.length v1) do
       res.(i) <- f v1.(i) v2.(i) v3.(i)
     done;
@@ -337,7 +337,7 @@ let map3 f v1 v2 v3 =
 let map_left f a = (* Ocaml does not guarantee Array.map is LR *)
   let l = Array.length a in (* (even if so), then we rewrite it *)
   if Int.equal l 0 then [||] else begin
-    let r = Array.create l (f a.(0)) in
+    let r = Array.make l (f a.(0)) in
     for i = 1 to l - 1 do
       r.(i) <- f a.(i)
     done;

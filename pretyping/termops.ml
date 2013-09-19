@@ -582,7 +582,7 @@ let dependent_main noevar m t =
 	    Array.iter (deprec m)
 	      (Array.sub lt
 		(Array.length lm) ((Array.length lt) - (Array.length lm)))
-	| _, Cast (c,_,_) when noevar & isMeta c -> ()
+	| _, Cast (c,_,_) when noevar && isMeta c -> ()
 	| _, Evar _ when noevar -> ()
 	| _ -> iter_constr_with_binders (lift 1) deprec m t
   in
@@ -742,7 +742,7 @@ let subst_closed_term_occ_gen_modulo occs test cl occ t =
       let lastpos = Option.get test.last_found in
       error_cannot_unify_occurrences !nested (cl,!pos,t) lastpos in
   let rec substrec k t =
-    if nowhere_except_in & !pos > maxocc then t else
+    if nowhere_except_in && !pos > maxocc then t else
     try
       let subst = test.match_fun t in
       if Locusops.is_selected !pos occs then
@@ -894,7 +894,7 @@ let compare_constr_univ f cv_pb t1 t2 =
   match kind_of_term t1, kind_of_term t2 with
       Sort s1, Sort s2 -> base_sort_cmp cv_pb s1 s2
     | Prod (_,t1,c1), Prod (_,t2,c2) ->
-	f Reduction.CONV t1 t2 & f cv_pb c1 c2
+	f Reduction.CONV t1 t2 && f cv_pb c1 c2
     | _ -> compare_constr (f Reduction.CONV) t1 t2
 
 let rec constr_cmp cv_pb t1 t2 = compare_constr_univ constr_cmp cv_pb t1 t2

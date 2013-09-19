@@ -452,9 +452,9 @@ let build_intro_tac id dest tac = match dest with
 
 let rec intro_then_gen loc name_flag move_flag force_flag dep_flag tac gl =
   match kind_of_term (pf_concl gl) with
-    | Prod (name,t,u) when not dep_flag or (dependent (mkRel 1) u) ->
+    | Prod (name,t,u) when not dep_flag || (dependent (mkRel 1) u) ->
 	build_intro_tac (find_name loc (name,None,t) gl name_flag) move_flag tac gl
-    | LetIn (name,b,t,u) when not dep_flag or (dependent (mkRel 1) u) ->
+    | LetIn (name,b,t,u) when not dep_flag || (dependent (mkRel 1) u) ->
 	build_intro_tac (find_name loc (name,Some b,t) gl name_flag) move_flag tac
 	  gl
     | _ ->
@@ -736,7 +736,7 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) id c
     else clenv
   in
   let new_hyp_typ = clenv_type clenv in
-  if not with_evars & occur_meta new_hyp_typ then
+  if not with_evars && occur_meta new_hyp_typ then
     error_uninstantiated_metas new_hyp_typ clenv;
   let new_hyp_prf = clenv_value clenv in
   tclTHEN
@@ -1142,8 +1142,8 @@ let (assumption : tactic) = fun gl ->
     | [] ->
         if only_eq then arec false hyps else error "No such assumption."
     | (id,c,t)::rest ->
-	if (only_eq & eq_constr t concl)
-          or (not only_eq & pf_conv_x_leq gl t concl)
+	if (only_eq && eq_constr t concl)
+          || (not only_eq && pf_conv_x_leq gl t concl)
         then refine_no_check (mkVar id) gl
 	else arec only_eq rest
   in
@@ -1231,8 +1231,8 @@ let keep hyps gl =
   let cl,_ =
     fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
       if List.mem hyp hyps
-	or List.exists (occur_var_in_decl env hyp) keep
-	or occur_var env hyp ccl
+        || List.exists (occur_var_in_decl env hyp) keep
+	|| occur_var env hyp ccl
       then (clear,decl::keep)
       else (hyp::clear,keep))
       ~init:([],[]) (pf_env gl)
@@ -1369,9 +1369,9 @@ let rewrite_hyp l2r id gl =
   (* TODO: detect setoid equality? better detect the different equalities *)
   match match_with_equality_type t with
   | Some (hdcncl,[_;lhs;rhs]) ->
-      if l2r & isVar lhs & not (occur_var (pf_env gl) (destVar lhs) rhs) then
+      if l2r && isVar lhs && not (occur_var (pf_env gl) (destVar lhs) rhs) then
 	subst_on l2r (destVar lhs) rhs gl
-      else if not l2r & isVar rhs & not (occur_var (pf_env gl) (destVar rhs) lhs) then
+      else if not l2r && isVar rhs && not (occur_var (pf_env gl) (destVar rhs) lhs) then
 	subst_on l2r (destVar rhs) lhs gl
       else
 	tclTHEN (rew_on l2r onConcl) (tclTRY (clear [id])) gl
@@ -1602,7 +1602,7 @@ let generalize_dep ?(with_let=false) c gl =
   let init_ids = ids_of_named_context (Global.named_context()) in
   let seek d toquant =
     if List.exists (fun (id,_,_) -> occur_var_in_decl env id d) toquant
-      or dependent_in_decl c d then
+      || dependent_in_decl c d then
       d::toquant
     else
       toquant in
@@ -1612,7 +1612,7 @@ let generalize_dep ?(with_let=false) c gl =
   let tothin = List.filter (fun id -> not (List.mem id init_ids)) qhyps in
   let tothin' =
     match kind_of_term c with
-      | Var id when mem_named_context id sign & not (List.mem id init_ids)
+      | Var id when mem_named_context id sign && not (List.mem id init_ids)
 	  -> id::tothin
       | _ -> tothin
   in
@@ -2330,7 +2330,7 @@ let make_up_names n ind_opt cname =
     else add_prefix ind_prefix cname in
   let hyprecname = make_base n base_ind in
   let avoid =
-    if Int.equal n 1 (* Only one recursive argument *) or Int.equal n 0 then []
+    if Int.equal n 1 (* Only one recursive argument *) || Int.equal n 0 then []
     else
       (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
       (* in order to get names such as f1, f2, ... *)
@@ -2787,7 +2787,7 @@ let compute_elim_sig ?elimc elimt =
 	    let hi_args_enough = (* hi a le bon nbre d'arguments *)
 	      Int.equal (List.length hi_args) (List.length params + !res.nargs -1) in
 	    (* FIXME: Ces deux tests ne sont pas suffisants. *)
-	    if not (hi_is_ind & hi_args_enough) then raise Exit (* No indarg *)
+	    if not (hi_is_ind && hi_args_enough) then raise Exit (* No indarg *)
 	    else (* Last arg is the indarg *)
 	      res := {!res with
 		indarg = Some (List.hd !res.args);
@@ -2826,14 +2826,14 @@ let compute_scheme_signature scheme names_info ind_type_guess =
 	      List.equal eq_constr
 		(List.lastn scheme.nargs indargs)
 		(extended_rel_list 0 scheme.args) in
-	    if not (ccl_arg_ok & ind_is_ok) then
+	    if not (ccl_arg_ok && ind_is_ok) then
 	      error_ind_scheme "the conclusion of"
 	  in (cond, check_concl)
   in
   let is_pred n c =
     let hd = fst (decompose_app c) in
     match kind_of_term hd with
-      | Rel q when n < q & q <= n+scheme.npredicates -> IndArg
+      | Rel q when n < q && q <= n+scheme.npredicates -> IndArg
       | _ when cond hd -> RecArg
       | _ -> OtherArg
   in
@@ -3209,7 +3209,7 @@ let new_induct_gen_l isrec with_evars elim (eqname,names) lc gl =
       | c::l' ->
 	  match kind_of_term c with
 	    | Var id when not (mem_named_context id (Global.named_context()))
-		& not with_evars ->
+		&& not with_evars ->
 		let _ = newlc:= id::!newlc in
 		atomize_list l' gl
 
@@ -3567,7 +3567,7 @@ let intros_transitivity  n  = tclTHEN intros (transitivity_gen n)
 
 let interpretable_as_section_decl d1 d2 = match d1,d2 with
   | (_,Some _,_), (_,None,_) -> false
-  | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr b1 b2 & eq_constr t1 t2
+  | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr b1 b2 && eq_constr t1 t2
   | (_,None,t1), (_,_,t2) -> eq_constr t1 t2
 
 let abstract_subproof id tac gl =
@@ -3576,7 +3576,7 @@ let abstract_subproof id tac gl =
   let sign,secsign =
     List.fold_right
       (fun (id,_,_ as d) (s1,s2) ->
-	if mem_named_context id current_sign &
+	if mem_named_context id current_sign &&
           interpretable_as_section_decl (Context.lookup_named id current_sign) d
         then (s1,push_named_context_val d s2)
 	else (add_named_decl d s1,s2))

@@ -883,7 +883,7 @@ let contextually byhead (occs,c) f env sigma t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
   let rec traverse (env,c as envc) t =
-    if nowhere_except_in & (!pos > maxocc) then t
+    if nowhere_except_in && (!pos > maxocc) then t
     else
     try
       let subst = if byhead then matches_head c t else matches c t in
@@ -920,7 +920,7 @@ let substlin env evalref n (nowhere_except_in,locs) c =
   let value = value_of_evaluable_ref env evalref in
   let term = constr_of_evaluable_ref evalref in
   let rec substrec () c =
-    if nowhere_except_in & !pos > maxocc then c
+    if nowhere_except_in && !pos > maxocc then c
     else if eq_constr c term then
       let ok =
 	if nowhere_except_in then List.mem !pos locs

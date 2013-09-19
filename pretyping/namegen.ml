@@ -161,7 +161,7 @@ let restart_subscript id =
 
 let next_name_away_in_cases_pattern na avoid =
   let id = match na with Name id -> id | Anonymous -> default_x in
-  next_ident_away_from id (fun id -> List.mem id avoid or is_constructor id)
+  next_ident_away_from id (fun id -> List.mem id avoid || is_constructor id)
 
 (* 2- Looks for a fresh name for introduction in goal *)
 
@@ -174,7 +174,7 @@ let next_name_away_in_cases_pattern na avoid =
 
 let next_ident_away_in_goal id avoid =
   let id = if List.mem id avoid then restart_subscript id else id in
-  let bad id = List.mem id avoid || (is_global id & not (is_section_variable id)) in
+  let bad id = List.mem id avoid || (is_global id && not (is_section_variable id)) in
   next_ident_away_from id bad
 
 let next_name_away_in_goal na avoid =
@@ -248,7 +248,7 @@ let visibly_occur_id id (nenv,c) =
         let short = shortest_qualid_of_global Id.Set.empty (global_of_constr c) in
         qualid_eq short (qualid_of_ident id) ->
       raise Occur
-    | Rel p when p>n & occur_rel (p-n) nenv id -> raise Occur
+    | Rel p when p>n && occur_rel (p-n) nenv id -> raise Occur
     | _ -> iter_constr_with_binders succ occur n c
   in
   try occur 1 c; false
@@ -256,7 +256,7 @@ let visibly_occur_id id (nenv,c) =
     | Not_found -> false (* Happens when a global is not in the env *)
 
 let next_ident_away_for_default_printing env_t id avoid =
-  let bad id = List.mem id avoid or visibly_occur_id id env_t in
+  let bad id = List.mem id avoid || visibly_occur_id id env_t in
   next_ident_away_from id bad
 
 let next_name_away_for_default_printing env_t na avoid =

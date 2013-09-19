@@ -144,7 +144,7 @@ let open_library export explicit_libs m =
     (* Only libraries indirectly to open are not reopen *)
     (* Libraries explicitly mentionned by the user are always reopen *)
     List.exists (eq_lib_name m) explicit_libs
-    or not (library_is_opened m.library_name)
+    || not (library_is_opened m.library_name)
   then begin
     register_open_library export m;
     Declaremods.really_import_module (MPfile m.library_name)

@@ -91,7 +91,7 @@ let match_with_one_constructor style onlybinary allow_rec t =
   | Ind ind ->
       let (mib,mip) = Global.lookup_inductive ind in
       if Int.equal (Array.length mip.mind_consnames) 1
-	&& (allow_rec or not (mis_is_recursive (ind,mib,mip)))
+	&& (allow_rec || not (mis_is_recursive (ind,mib,mip)))
         && (Int.equal mip.mind_nrealargs 0)
       then
 	if is_strict_conjunction style (* strict conjunction *) then

@@ -106,7 +106,7 @@ let rels =
   [|Rel  1;Rel  2;Rel  3;Rel  4;Rel  5;Rel  6;Rel  7; Rel  8;
     Rel  9;Rel 10;Rel 11;Rel 12;Rel 13;Rel 14;Rel 15; Rel 16|]
 
-let mkRel n = if 0<n & n<=16 then rels.(n-1) else Rel n
+let mkRel n = if 0<n && n<=16 then rels.(n-1) else Rel n
 
 (* Construct a type *)
 let mkProp   = Sort Sorts.prop
@@ -346,7 +346,7 @@ let compare_head f t1 t2 =
   | Ind c1, Ind c2 -> eq_ind c1 c2
   | Construct c1, Construct c2 -> eq_constructor c1 c2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
-      f p1 p2 & f c1 c2 && Array.equal f bl1 bl2
+      f p1 p2 && f c1 c2 && Array.equal f bl1 bl2
   | Fix ((ln1, i1),(_,tl1,bl1)), Fix ((ln2, i2),(_,tl2,bl2)) ->
       Int.equal i1 i2 && Array.equal Int.equal ln1 ln2
       && Array.equal f tl1 tl2 && Array.equal f bl1 bl2
@@ -463,19 +463,19 @@ let hasheq t1 t2 =
     | Meta m1, Meta m2 -> m1 == m2
     | Var id1, Var id2 -> id1 == id2
     | Sort s1, Sort s2 -> s1 == s2
-    | Cast (c1,k1,t1), Cast (c2,k2,t2) -> c1 == c2 & k1 == k2 & t1 == t2
-    | Prod (n1,t1,c1), Prod (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
-    | Lambda (n1,t1,c1), Lambda (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
+    | Cast (c1,k1,t1), Cast (c2,k2,t2) -> c1 == c2 && k1 == k2 && t1 == t2
+    | Prod (n1,t1,c1), Prod (n2,t2,c2) -> n1 == n2 && t1 == t2 && c1 == c2
+    | Lambda (n1,t1,c1), Lambda (n2,t2,c2) -> n1 == n2 && t1 == t2 && c1 == c2
     | LetIn (n1,b1,t1,c1), LetIn (n2,b2,t2,c2) ->
-      n1 == n2 & b1 == b2 & t1 == t2 & c1 == c2
-    | App (c1,l1), App (c2,l2) -> c1 == c2 & array_eqeq l1 l2
-    | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 & array_eqeq l1 l2
+      n1 == n2 && b1 == b2 && t1 == t2 && c1 == c2
+    | App (c1,l1), App (c2,l2) -> c1 == c2 && array_eqeq l1 l2
+    | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && array_eqeq l1 l2
     | Const c1, Const c2 -> c1 == c2
     | Ind (sp1,i1), Ind (sp2,i2) -> sp1 == sp2 && Int.equal i1 i2
     | Construct ((sp1,i1),j1), Construct ((sp2,i2),j2) ->
       sp1 == sp2 && Int.equal i1 i2 && Int.equal j1 j2
     | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
-      ci1 == ci2 & p1 == p2 & c1 == c2 & array_eqeq bl1 bl2
+      ci1 == ci2 && p1 == p2 && c1 == c2 && array_eqeq bl1 bl2
     | Fix ((ln1, i1),(lna1,tl1,bl1)), Fix ((ln2, i2),(lna2,tl2,bl2)) ->
       Int.equal i1 i2
       && Array.equal Int.equal ln1 ln2
@@ -484,9 +484,9 @@ let hasheq t1 t2 =
       && array_eqeq bl1 bl2
     | CoFix(ln1,(lna1,tl1,bl1)), CoFix(ln2,(lna2,tl2,bl2)) ->
       Int.equal ln1 ln2
-      & array_eqeq lna1 lna2
-      & array_eqeq tl1 tl2
-      & array_eqeq bl1 bl2
+      && array_eqeq lna1 lna2
+      && array_eqeq tl1 tl2
+      && array_eqeq bl1 bl2
     | _ -> false
 
 (** Note that the following Make has the side effect of creating

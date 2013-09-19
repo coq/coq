@@ -151,10 +151,10 @@ exception NotEq
 
 (* From CAMLLIB/caml/mlvalues.h *)
 let no_scan_tag = 251
-let tuple_p obj = Obj.is_block obj & (Obj.tag obj < no_scan_tag)
+let tuple_p obj = Obj.is_block obj && (Obj.tag obj < no_scan_tag)
 
 let comp_obj o1 o2 =
-  if tuple_p o1 & tuple_p o2 then
+  if tuple_p o1 && tuple_p o2 then
     let n1 = Obj.size o1 and n2 = Obj.size o2 in
       if n1=n2 then
         try

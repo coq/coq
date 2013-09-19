@@ -138,7 +138,7 @@ let check_utf8_trailing_byte cs c =
 (* but don't certify full utf8 compliance (e.g. no emptyness check) *)
 let lookup_utf8_tail c cs =
   let c1 = Char.code c in
-  if Int.equal (c1 land 0x40) 0 or Int.equal (c1 land 0x38) 0x38 then error_utf8 cs
+  if Int.equal (c1 land 0x40) 0 || Int.equal (c1 land 0x38) 0x38 then error_utf8 cs
   else
     let n, unicode =
       if Int.equal (c1 land 0x20) 0 then

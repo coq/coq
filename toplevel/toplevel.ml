@@ -86,7 +86,7 @@ let reset_input_buffer ic ibuf =
 
 let get_bols_of_loc ibuf (bp,ep) =
   let add_line (b,e) lines =
-    if b < 0 or e < b then anomaly (Pp.str "Bad location");
+    if b < 0 || e < b then anomaly (Pp.str "Bad location");
     match lines with
       | ([],None) -> ([], Some (b,e))
       | (fl,oe) -> ((b,e)::fl, oe)
@@ -181,7 +181,7 @@ let print_location_in_file {outer=s;inner=fname} loc =
 
 let valid_buffer_loc ib loc =
   not (Loc.is_ghost loc) &&
-  let (b,e) = Loc.unloc loc in b-ib.start >= 0 & e-ib.start < ib.len && b<=e
+  let (b,e) = Loc.unloc loc in b-ib.start >= 0 && e-ib.start < ib.len && b<=e
 
 (*s The Coq prompt is the name of the focused proof, if any, and "Coq"
     otherwise. We trap all exceptions to prevent the error message printing

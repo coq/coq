@@ -185,7 +185,7 @@ let get_alias_chain_of aliases x = match kind_of_term x with
 let normalize_alias_opt aliases x =
   match get_alias_chain_of aliases x with
   | []  -> None
-  | a::_ when isRel a or isVar a -> Some a
+  | a::_ when isRel a || isVar a -> Some a
   | [_] -> None
   | _::a::_ -> Some a
 
@@ -280,9 +280,9 @@ let free_vars_and_rels_up_alias_expansion aliases c =
 
 let rec expand_and_check_vars aliases = function
   | [] -> []
-  | a::l when isRel a or isVar a ->
+  | a::l when isRel a || isVar a ->
       let a = expansion_of_var aliases a in
-      if isRel a or isVar a then a :: expand_and_check_vars aliases l
+      if isRel a || isVar a then a :: expand_and_check_vars aliases l
       else raise Exit
   | _ ->
       raise Exit
@@ -346,7 +346,7 @@ let is_unification_pattern_meta env nb m l t =
     None
 
 let is_unification_pattern_evar env evd (evk,args) l t =
-  if List.for_all (fun x -> isRel x || isVar x) l & noccur_evar env evd evk t
+  if List.for_all (fun x -> isRel x || isVar x) l && noccur_evar env evd evk t
   then
     let args = remove_instance_local_defs evd evk (Array.to_list args) in
     let n = List.length args in
@@ -1167,7 +1167,7 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
           let (evd,evar,(evk',argsv' as ev')) =
             materialize_evar (evar_define conv_algo) env !evdref 0 ev ty' in
           let ts = expansions_of_var aliases t in
-          let test c = isEvar c or List.mem c ts in
+          let test c = isEvar c || List.mem c ts in
           let filter =
             restrict_upon_filter evd evk test (Array.to_list argsv') in
           let filter = closure_of_filter evd evk' filter in
@@ -1355,7 +1355,7 @@ and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
  *)
 
 let status_changed lev (pbty,_,t1,t2) =
-  (try Evar.Set.mem (head_evar t1) lev with NoHeadEvar -> false) or
+  (try Evar.Set.mem (head_evar t1) lev with NoHeadEvar -> false) ||
   (try Evar.Set.mem (head_evar t2) lev with NoHeadEvar -> false)
 
 let reconsider_conv_pbs conv_algo evd =

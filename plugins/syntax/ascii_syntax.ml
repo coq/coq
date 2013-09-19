@@ -45,7 +45,7 @@ let interp_ascii_string dloc s =
   let p =
     if String.length s = 1 then int_of_char s.[0]
     else
-      if String.length s = 3 & is_digit s.[0] & is_digit s.[1] & is_digit s.[2]
+      if String.length s = 3 && is_digit s.[0] && is_digit s.[1] && is_digit s.[2]
       then int_of_string s
       else
 	user_err_loc (dloc,"interp_ascii_string",

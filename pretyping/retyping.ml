@@ -163,7 +163,7 @@ let retype ?(polyprop=true) sigma =
     | Prod (name,t,c2) ->
 	let s2 = sort_family_of (push_rel (name,None,t) env) c2 in
 	if not (is_impredicative_set env) &&
-	   s2 == InSet & sort_family_of env t == InType then InType else s2
+	   s2 == InSet && sort_family_of env t == InType then InType else s2
     | App(f,args) when isGlobalRef f ->
 	let t = type_of_global_reference_knowing_parameters env f args in
         family_of_sort (sort_of_atomic_type env sigma t args)

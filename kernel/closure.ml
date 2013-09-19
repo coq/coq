@@ -669,11 +669,11 @@ let rec to_constr constr_fun lfts v =
 let term_of_fconstr =
   let rec term_of_fconstr_lift lfts v =
     match v.term with
-      | FCLOS(t,env) when is_subs_id env & is_lift_id lfts -> t
-      | FLambda(_,tys,f,e) when is_subs_id e & is_lift_id lfts ->
+      | FCLOS(t,env) when is_subs_id env && is_lift_id lfts -> t
+      | FLambda(_,tys,f,e) when is_subs_id e && is_lift_id lfts ->
           compose_lam (List.rev tys) f
-      | FFix(fx,e) when is_subs_id e & is_lift_id lfts -> mkFix fx
-      | FCoFix(cfx,e) when is_subs_id e & is_lift_id lfts -> mkCoFix cfx
+      | FFix(fx,e) when is_subs_id e && is_lift_id lfts -> mkFix fx
+      | FCoFix(cfx,e) when is_subs_id e && is_lift_id lfts -> mkCoFix cfx
       | _ -> to_constr term_of_fconstr_lift lfts v in
   term_of_fconstr_lift el_id
 

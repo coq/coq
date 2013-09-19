@@ -26,10 +26,10 @@ let pi3 (_,_,a) = a
 
 (* Characters *)
 
-let is_letter c = (c >= 'a' && c <= 'z') or (c >= 'A' && c <= 'Z')
+let is_letter c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 let is_digit c = (c >= '0' && c <= '9')
 let is_ident_tail c =
-  is_letter c or is_digit c || c = '\'' or c = '_'
+  is_letter c || is_digit c || c = '\'' || c = '_'
 let is_blank = function
   | ' ' | '\r' | '\t' | '\n' -> true
   | _ -> false
@@ -48,7 +48,7 @@ let subst_command_placeholder s t =
   let buff = Buffer.create (String.length s + String.length t) in
   let i = ref 0 in
   while (!i < String.length s) do
-    if s.[!i] = '%' & !i+1 < String.length s & s.[!i+1] = 's'
+    if s.[!i] = '%' && !i+1 < String.length s && s.[!i+1] = 's'
     then (Buffer.add_string buff t;incr i)
     else Buffer.add_char buff s.[!i];
     incr i

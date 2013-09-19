@@ -916,9 +916,9 @@ let generalize_non_dep hyp g =
   let to_revert,_ =
     Environ.fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
       if List.mem hyp hyps
-	or List.exists (Termops.occur_var_in_decl env hyp) keep
-	or Termops.occur_var env hyp hyp_typ
-	or Termops.is_section_variable hyp (* should be dangerous *)
+        || List.exists (Termops.occur_var_in_decl env hyp) keep
+	|| Termops.occur_var env hyp hyp_typ
+	|| Termops.is_section_variable hyp (* should be dangerous *)
       then (clear,decl::keep)
       else (hyp::clear,keep))
       ~init:([],[]) (pf_env g)

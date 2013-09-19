@@ -174,8 +174,8 @@ let is_flexible_reference env bound depth f =
 let push_lift d (e,n) = (push_rel d e,n+1)
 
 let is_reversible_pattern bound depth f l =
-  isRel f & let n = destRel f in (n < bound+depth) & (n >= depth) &
-  Array.for_all (fun c -> isRel c & destRel c < depth) l &
+  isRel f && let n = destRel f in (n < bound+depth) && (n >= depth) &&
+  Array.for_all (fun c -> isRel c && destRel c < depth) l &&
   Array.distinct l
 
 (* Precondition: rels in env are for inductive types only *)
@@ -184,13 +184,13 @@ let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
     let hd = if strict then whd_betadeltaiota env c else c in
     let c = if strongly_strict then hd else c in
     match kind_of_term hd with
-    | Rel n when (n < bound+depth) & (n >= depth) ->
+    | Rel n when (n < bound+depth) && (n >= depth) ->
 	let i = bound + depth - n - 1 in
         acc.(i) <- update pos rig acc.(i)
-    | App (f,l) when revpat & is_reversible_pattern bound depth f l ->
+    | App (f,l) when revpat && is_reversible_pattern bound depth f l ->
 	let i = bound + depth - destRel f - 1 in
 	acc.(i) <- update pos rig acc.(i)
-    | App (f,_) when rig & is_flexible_reference env bound depth f ->
+    | App (f,_) when rig && is_flexible_reference env bound depth f ->
 	if strict then () else
           iter_constr_with_full_binders push_lift (frec false) ed c
     | Case _ when rig ->
@@ -246,7 +246,7 @@ let compute_implicits_gen strict strongly_strict revpat contextual all env t =
 
 let compute_implicits_flags env f all t =
   compute_implicits_gen
-    (f.strict or f.strongly_strict) f.strongly_strict
+    (f.strict || f.strongly_strict) f.strongly_strict
     f.reversible_pattern f.contextual all env t
 
 let compute_auto_implicits env flags enriching t =
@@ -289,9 +289,9 @@ let force_inference_of = function
 (* [in_ctx] means we know the expected type, [n] is the index of the argument *)
 let is_inferable_implicit in_ctx n = function
   | None -> false
-  | Some (_,DepRigid (Hyp p),_) -> in_ctx or n >= p
+  | Some (_,DepRigid (Hyp p),_) -> in_ctx || n >= p
   | Some (_,DepFlex (Hyp p),_) -> false
-  | Some (_,DepFlexAndRigid (_,Hyp q),_) -> in_ctx or n >= q
+  | Some (_,DepFlexAndRigid (_,Hyp q),_) -> in_ctx || n >= q
   | Some (_,DepRigid Conclusion,_) -> in_ctx
   | Some (_,DepFlex Conclusion,_) -> false
   | Some (_,DepFlexAndRigid (_,Conclusion),_) -> in_ctx
@@ -328,7 +328,7 @@ let check_correct_manual_implicits autoimps l =
 	if not forced then
 	  error ("Wrong or non-dependent implicit argument name: "^(Id.to_string id)^".")
     | ExplByPos (i,_id),_t ->
-	if i<1 or i>List.length autoimps then
+	if i<1 || i>List.length autoimps then
 	  error ("Bad implicit argument number: "^(string_of_int i)^".")
 	else
 	  errorlabstrm ""
@@ -663,7 +663,7 @@ let declare_manual_implicits local ref ?enriching l =
     | _ ->
 	check_rigidity isrigid;
 	let l = List.map (fun imps -> (imps,List.length imps)) l in
-	let l = Sort.list (fun (_,n1) (_,n2) -> n1 > n2) l in
+	let l = List.sort (fun (_,n1) (_,n2) -> n2 - n1) l in
 	check_inclusion l;
 	let nargs = List.length autoimpls in
 	List.map (fun (imps,n) ->

@@ -58,7 +58,7 @@ let make_ident sa = function
   | Some n ->
       let c = Char.code (String.get sa (String.length sa -1)) in
       let s =
-        if c < code_of_0 or c > code_of_9 then sa ^ (string_of_int n)
+        if c < code_of_0 || c > code_of_9 then sa ^ (string_of_int n)
         else sa ^ "_" ^ (string_of_int n) in
       Id.of_string s
   | None -> Id.of_string (String.copy sa)

@@ -518,7 +518,7 @@ let dependent_decl a = function
 
 let rec dep_in_tomatch n = function
   | (Pushed _ | Alias _ | NonDepAlias) :: l -> dep_in_tomatch n l
-  | Abstract (_,d) :: l -> dependent_decl (mkRel n) d or dep_in_tomatch (n+1) l
+  | Abstract (_,d) :: l -> dependent_decl (mkRel n) d || dep_in_tomatch (n+1) l
   | [] -> false
 
 let dependencies_in_rhs nargs current tms eqns =
@@ -1356,7 +1356,7 @@ and compile_alias pb (na,orig,(expanded,expanded_typ)) rest =
           mkLetIn (na,c,t,j.uj_val);
       uj_type = subst1 c j.uj_type } in
   let sigma = !(pb.evdref) in
-  if not (Flags.is_program_mode ()) && (isRel orig or isVar orig) then
+  if not (Flags.is_program_mode ()) && (isRel orig || isVar orig) then
     (* Try to compile first using non expanded alias *)
     try f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
     with e when precatchable_exception e ->

@@ -480,7 +480,7 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt gl =
   in
   let t1 = pf_apply get_type_of gl c1
   and t2 = pf_apply get_type_of gl c2 in
-  if unsafe or (pf_conv_x gl t1 t2) then
+  if unsafe || (pf_conv_x gl t1 t2) then
     let e = build_coq_eq () in
     let sym = build_coq_eq_sym () in
     let eq = applist (e, [t1;c1;c2]) in
@@ -1060,7 +1060,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 let make_iterated_tuple env sigma dflt (z,zty) =
   let (zty,rels) = minimal_free_rels_rec env sigma (z,zty) in
   let sort_of_zty = get_sort_of env sigma zty in
-  let sorted_rels = Sort.list (<) (Int.Set.elements rels) in
+  let sorted_rels = List.sort Pervasives.compare (Int.Set.elements rels) in
   let (tuple,tuplety) =
     List.fold_left (make_tuple env sigma) (z,zty) sorted_rels
   in
@@ -1208,7 +1208,7 @@ let postInjEqTac ipats c n =
 
 let injEq ipats =
   let l2r =
-    if use_injection_pattern_l2r_order () & ipats <> None then true else false
+    if use_injection_pattern_l2r_order () && ipats <> None then true else false
   in
   injEqThen (postInjEqTac ipats) l2r
 

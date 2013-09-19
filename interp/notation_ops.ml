@@ -151,14 +151,14 @@ let compare_glob_constr f add t1 t2 = match t1,t2 with
   | GApp (_,f1,l1), GApp (_,f2,l2) -> f f1 f2 && List.for_all2eq f l1 l2
   | GLambda (_,na1,bk1,ty1,c1), GLambda (_,na2,bk2,ty2,c2)
     when Name.equal na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
-    on_true_do (f ty1 ty2 & f c1 c2) add na1
+    on_true_do (f ty1 ty2 && f c1 c2) add na1
   | GProd (_,na1,bk1,ty1,c1), GProd (_,na2,bk2,ty2,c2)
     when Name.equal na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
-      on_true_do (f ty1 ty2 & f c1 c2) add na1
+      on_true_do (f ty1 ty2 && f c1 c2) add na1
   | GHole _, GHole _ -> true
   | GSort (_,s1), GSort (_,s2) -> glob_sort_eq s1 s2
   | GLetIn (_,na1,b1,c1), GLetIn (_,na2,b2,c2) when Name.equal na1 na2 ->
-      on_true_do (f b1 b2 & f c1 c2) add na1
+      on_true_do (f b1 b2 && f c1 c2) add na1
   | (GCases _ | GRec _
     | GPatVar _ | GEvar _ | GLetTuple _ | GIf _ | GCast _),_
   | _,(GCases _ | GRec _
@@ -315,8 +315,8 @@ let check_variables vars recvars (found,foundrec,foundrecbinding) =
   let () = List.iter check foundrecbinding in
   let check_bound x =
     if not (List.mem x found) then
-      if List.mem_assoc x foundrec or List.mem_assoc x foundrecbinding
-	or list_rev_mem_assoc x foundrec or list_rev_mem_assoc x foundrecbinding
+      if List.mem_assoc x foundrec || List.mem_assoc x foundrecbinding
+        || list_rev_mem_assoc x foundrec || list_rev_mem_assoc x foundrecbinding
       then
 	error ((Id.to_string x)^" should not be bound in a recursive pattern of the right-hand side.")
       else
@@ -424,7 +424,7 @@ let rec subst_notation_constr subst bound raw =
                                (cpl',r'))
                         branches
       in
-        if rtntypopt' == rtntypopt && rtntypopt == rtntypopt' &
+        if rtntypopt' == rtntypopt && rtntypopt == rtntypopt' &&
           rl' == rl && branches' == branches then raw else
           NCases (sty,rtntypopt',rl',branches')
 

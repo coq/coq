@@ -245,7 +245,7 @@ let compute_ivs gl f cs =
            (* Then we test if the RHS is the RHS for variables *)
                    else begin match decompose_app bodyi with
                      | vmf, [_; _; a3; a4 ]
-                         when isRel a3 & isRel a4 &
+                         when isRel a3 && isRel a4 &&
 			   pf_conv_x gl vmf
                            (Lazy.force coq_varmap_find)->
                              v_lhs := Some (compute_lhs
@@ -260,7 +260,7 @@ let compute_ivs gl f cs =
                    end)
                 lci;
 
-              if !c_lhs = None & !v_lhs = None then i_can't_do_that ();
+              if !c_lhs = None && !v_lhs = None then i_can't_do_that ();
 
 	      (* The Cases predicate is a lambda; we assume no dependency *)
 	      let p = match kind_of_term p with
@@ -295,7 +295,7 @@ binary search trees (see file \texttt{Quote.v}) *)
    and variables (open terms) *)
 
 let rec closed_under cset t =
-  (ConstrSet.mem t cset) or
+  (ConstrSet.mem t cset) ||
   (match (kind_of_term t) with
      | Cast(c,_,_) -> closed_under cset c
      | App(f,l) -> closed_under cset f && Array.for_all (closed_under cset) l
@@ -357,7 +357,7 @@ let path_of_int n =
 (* This function does not descend under binders (lambda and Cases) *)
 
 let rec subterm gl (t : constr) (t' : constr) =
-  (pf_conv_x gl t t') or
+  (pf_conv_x gl t t') ||
   (match (kind_of_term t) with
      | App (f,args) -> Array.exists (fun t -> subterm gl t t') args
      | Cast(t,_,_) -> (subterm gl t t')

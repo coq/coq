@@ -1254,7 +1254,7 @@ let replay_history tactic_normalisation =
 	  and id2 = hyp_of_tag e2.id in
 	  let eq1 = val_of(decompile e1)
 	  and eq2 = val_of(decompile e2) in
-	  if k1 =? one & e2.kind = EQUA then
+	  if k1 =? one && e2.kind = EQUA then
             let tac_thm =
               match e1.kind with
 		| EQUA -> Lazy.force coq_OMEGA5

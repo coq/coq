@@ -126,7 +126,7 @@ let same_id na id = match na with
 let occur_glob_constr id =
   let rec occur = function
     | GVar (loc,id') -> Id.equal id id'
-    | GApp (loc,f,args) -> (occur f) or (List.exists occur args)
+    | GApp (loc,f,args) -> (occur f) || (List.exists occur args)
     | GLambda (loc,na,bk,ty,c) ->
       (occur ty) || (not (same_id na id) && (occur c))
     | GProd (loc,na,bk,ty,c) ->
@@ -135,13 +135,13 @@ let occur_glob_constr id =
       (occur b) || (not (same_id na id) && (occur c))
     | GCases (loc,sty,rtntypopt,tml,pl) ->
 	(occur_option rtntypopt)
-        or (List.exists (fun (tm,_) -> occur tm) tml)
-	or (List.exists occur_pattern pl)
+        || (List.exists (fun (tm,_) -> occur tm) tml)
+	|| (List.exists occur_pattern pl)
     | GLetTuple (loc,nal,rtntyp,b,c) ->
 	occur_return_type rtntyp id
-        or (occur b) or (not (List.mem (Name id) nal) & (occur c))
+        || (occur b) || (not (List.mem (Name id) nal) && (occur c))
     | GIf (loc,c,rtntyp,b1,b2) ->
-	occur_return_type rtntyp id or (occur c) or (occur b1) or (occur b2)
+	occur_return_type rtntyp id || (occur c) || (occur b1) || (occur b2)
     | GRec (loc,fk,idl,bl,tyl,bv) ->
         not (Array.for_all4 (fun fid bl ty bd ->
           let rec occur_fix = function
@@ -154,11 +154,11 @@ let occur_glob_constr id =
                 (match na with Name id' -> Id.equal id id' | _ -> not (occur_fix bl)) in
           occur_fix bl)
           idl bl tyl bv)
-    | GCast (loc,c,k) -> (occur c) or (match k with CastConv t
+    | GCast (loc,c,k) -> (occur c) || (match k with CastConv t
       | CastVM t | CastNative t -> occur t | CastCoerce -> false)
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> false
 
-  and occur_pattern (loc,idl,p,c) = not (List.mem id idl) & (occur c)
+  and occur_pattern (loc,idl,p,c) = not (List.mem id idl) && (occur c)
 
   and occur_option = function None -> false | Some p -> occur p
 

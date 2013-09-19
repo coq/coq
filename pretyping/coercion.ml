@@ -399,7 +399,7 @@ let inh_coerce_to_prod loc env evd t =
   else (evd, t)
 
 let inh_coerce_to_fail env evd rigidonly v t c1 =
-  if rigidonly & not (Heads.is_rigid env c1 && Heads.is_rigid env t)
+  if rigidonly && not (Heads.is_rigid env c1 && Heads.is_rigid env t)
   then
     raise NoCoercion
   else

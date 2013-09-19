@@ -49,7 +49,7 @@ let rec reloc_rel n = function
 
 let rec is_lift_id = function
   | ELID -> true
-  | ELSHFT(e,n) -> Int.equal n 0 & is_lift_id e
+  | ELSHFT(e,n) -> Int.equal n 0 && is_lift_id e
   | ELLFT (_,e) -> is_lift_id e
 
 (*********************)

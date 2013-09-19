@@ -198,7 +198,7 @@ let is_small = function
   | Prop _ -> true
   | _ -> false
 
-let iskind c = isprop c or is_Type c
+let iskind c = isprop c || is_Type c
 
 (* Tests if an evar *)
 let isEvar c = match kind_of_term c with Evar _ -> true | _ -> false

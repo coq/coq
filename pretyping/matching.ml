@@ -213,7 +213,7 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 	  let ctx',b2' = decompose_lam_n_assum ci.ci_cstr_ndecls.(1) b2' in
 	  let n = rel_context_length ctx in
           let n' = rel_context_length ctx' in
-	  if noccur_between 1 n b2 & noccur_between 1 n' b2' then
+	  if noccur_between 1 n b2 && noccur_between 1 n' b2' then
 	    let s =
 	      List.fold_left (fun l (na,_,t) -> (Anonymous,na,t)::l) stk ctx in
 	    let s' =

@@ -107,7 +107,7 @@ let map f s =
 
 let drop_simple_quotes s =
   let n = String.length s in
-  if n > 2 && s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
+  if n > 2 && s.[0] = '\'' && s.[n-1] = '\'' then String.sub s 1 (n-2) else s
 
 (* substring searching... *)
 

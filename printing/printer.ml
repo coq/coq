@@ -778,7 +778,7 @@ let print_record env mind mib =
       pr_univ_cstr mib.mind_constraints)
 
 let pr_mutual_inductive_body env mind mib =
-  if mib.mind_record & not !Flags.raw_print then
+  if mib.mind_record && not !Flags.raw_print then
     print_record env mind mib
   else
     print_mutual_inductive env mind mib

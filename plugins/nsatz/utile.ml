@@ -81,7 +81,7 @@ let facteurs_liste div constant lp =
    c est un élément quelconque de E.
 *)
 let factorise_tableau div zero c f l1 =
-    let res = Array.create (Array.length f) (c,[]) in
+    let res = Array.make (Array.length f) (c,[]) in
     Array.iteri (fun i p ->
       let r = ref p in
       let li = ref [] in

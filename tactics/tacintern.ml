@@ -195,7 +195,7 @@ let intern_ltac_variable ist = function
       raise Not_found
 
 let intern_constr_reference strict ist = function
-  | Ident (_,id) as r when not strict & find_hyp id ist ->
+  | Ident (_,id) as r when not strict && find_hyp id ist ->
       GVar (dloc,id), Some (CRef r)
   | Ident (_,id) as r when find_ctxvar id ist ->
       GVar (dloc,id), if strict then None else Some (CRef r)
@@ -361,7 +361,7 @@ let intern_evaluable_reference_or_by_notation ist = function
 (* Globalize a reduction expression *)
 let intern_evaluable ist = function
   | AN (Ident (loc,id)) when find_ltacvar id ist -> ArgVar (loc,id)
-  | AN (Ident (loc,id)) when not !strict_check & find_hyp id ist ->
+  | AN (Ident (loc,id)) when not !strict_check && find_hyp id ist ->
       ArgArg (EvalVarRef id, Some (loc,id))
   | AN (Ident (loc,id)) when find_ctxvar id ist ->
       ArgArg (EvalVarRef id, if !strict_check then None else Some (loc,id))

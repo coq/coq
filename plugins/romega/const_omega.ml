@@ -352,7 +352,7 @@ let parse_rel gl t =
 
 let is_scalar t =
   let rec aux t = match destructurate t with
-    | Kapp(("Z.add"|"Z.sub"|"Z.mul"),[t1;t2]) -> aux t1 & aux t2
+    | Kapp(("Z.add"|"Z.sub"|"Z.mul"),[t1;t2]) -> aux t1 && aux t2
     | Kapp(("Z.opp"|"Z.succ"|"Z.pred"),[t]) -> aux t
     | Kapp(("Zpos"|"Zneg"|"Z0"),_) -> let _ = recognize t in true
     | _ -> false in

@@ -133,7 +133,7 @@ let deg m = m.(0)
 
 let mult_mon m m' =
   let d = nvar m in
-  let m'' = Array.create (d+1) 0 in
+  let m'' = Array.make (d+1) 0 in
   for i=0 to d do
     m''.(i)<- (m.(i)+m'.(i));
   done;
@@ -167,7 +167,7 @@ let compare_mon m m' =
 
 let div_mon m m' =
   let d = nvar m in
-  let m'' = Array.create (d+1) 0 in
+  let m'' = Array.make (d+1) 0 in
   for i=0 to d do
     m''.(i)<- (m.(i)-m'.(i));
   done;
@@ -198,7 +198,7 @@ let set_deg m =
 (* lcm *)
 let ppcm_mon m m' =
   let d = nvar m in
-  let m'' = Array.create (d+1) 0 in
+  let m'' = Array.make (d+1) 0 in
   for i=1 to d do
     m''.(i)<- (max m.(i) m'.(i));
   done;
@@ -397,7 +397,7 @@ let zeroP = []
 
 (* returns a constant polynom ial with d variables *)
 let polconst d c =
-  let m = Array.create (d+1) 0 in
+  let m = Array.make (d+1) 0 in
   let m = set_deg m in 
   [(c,m)]
 
@@ -430,7 +430,7 @@ let coef_of_int x = P.of_num (Num.Int x)
 
 (* variable i *)
 let gen d i =
-  let m = Array.create (d+1) 0 in
+  let m = Array.make (d+1) 0 in
   m.(i) <- 1;
   let m = set_deg m in 
   [((coef_of_int 1),m)]
@@ -464,7 +464,7 @@ let puisP p n=
       let d = nvar (snd (List.hd p)) in
       let rec puisP n =
 	match n with
-	  0 -> [coef1, Array.create (d+1) 0]
+	  0 -> [coef1, Array.make (d+1) 0]
 	| 1 -> p
 	|_ -> multP p (puisP (n-1))
       in puisP n
@@ -503,13 +503,13 @@ let lm p = snd (List.hd (ppol p))
 
 let nallpol = ref 0
 
-let allpol = ref (Array.create 1000 polynom0)
+let allpol = ref (Array.make 1000 polynom0)
 
 let new_allpol p s =
   nallpol := !nallpol + 1;
   if !nallpol >= Array.length !allpol
   then
-    allpol := Array.append !allpol (Array.create !nallpol polynom0);
+    allpol := Array.append !allpol (Array.make !nallpol polynom0);
   let p = {pol = ref p; num = !nallpol; sugar = s} in
   !allpol.(!nallpol)<- p;
   p
@@ -1028,7 +1028,7 @@ let in_ideal d lp p =
   Hashtbl.clear hmon;
   Hashtbl.clear coefpoldep;
   nallpol := 0;
-  allpol := Array.create 1000 polynom0;
+  allpol := Array.make 1000 polynom0;
   homogeneous := List.for_all is_homogeneous (p::lp);
   if !homogeneous then info "homogeneous polynomials\n";
   info ("p: "^(stringPcut p)^"\n");

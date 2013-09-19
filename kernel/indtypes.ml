@@ -282,7 +282,7 @@ let typecheck_inductive env mie =
         | _ -> true
         end ->
 	  (* Predicative set: check that the content is indeed predicative *)
-	  if not (is_type0m_univ lev) & not (is_type0_univ lev) then
+	  if not (is_type0m_univ lev) && not (is_type0_univ lev) then
 	    raise (InductiveError LargeNonPropInductiveNotInType);
 	  Inl (info,full_arity,s), cst
       | Prop _ ->

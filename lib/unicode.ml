@@ -19,7 +19,7 @@ exception Unsupported
    trade-off between speed and space after some benchmarks.) *)
 
 (* A 256ko table, initially filled with zeros. *)
-let table = Array.create (1 lsl 17) 0
+let table = Array.make (1 lsl 17) 0
 
 (* Associate a 2-bit pattern to each status at position [i].
    Only the 3 lowest bits of [i] are taken into account to
@@ -150,7 +150,7 @@ let next_utf8 s i =
   if l = 0 then raise End_of_input
   else let a = Char.code s.[i] in if a <= 0x7F then
     1, a
-  else if a land 0x40 = 0 or l = 1 then err ()
+  else if a land 0x40 = 0 || l = 1 then err ()
   else let b = Char.code s.[i+1] in if b land 0xC0 <> 0x80 then err ()
   else if a land 0x20 = 0 then
     2, (a land 0x1F) lsl 6 + (b land 0x3F)

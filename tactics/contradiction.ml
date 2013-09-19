@@ -65,7 +65,7 @@ let contradiction_context gl =
 
 let is_negation_of env sigma typ t =
   match kind_of_term (whd_betadeltaiota env sigma t) with
-    | Prod (na,t,u) -> is_empty_type u & is_conv_leq env sigma typ t
+    | Prod (na,t,u) -> is_empty_type u && is_conv_leq env sigma typ t
     | _ -> false
 
 let contradiction_term (c,lbind as cl) gl =

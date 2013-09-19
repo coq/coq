@@ -279,7 +279,7 @@ let format_profile (table, outside, total) =
   Printf.printf
     "%-23s  %9s %9s %10s %10s %10s\n"
     "Function name" "Own time" "Tot. time" "Own alloc" "Tot. alloc" "Calls ";
-  let l = Sort.list (fun (_,{tottime=p}) (_,{tottime=p'}) -> p > p') table in
+  let l = List.sort (fun (_,{tottime=p}) (_,{tottime=p'}) -> p' - p) table in
   List.iter (fun (name,e) ->
     Printf.printf
       "%-23s %9.2f %9.2f %10.0f %10.0f %6d %6d\n"
@@ -352,7 +352,7 @@ let close_profile print =
 let print_profile () = close_profile true
 
 let declare_profile name =
-  if name = "___outside___" or name = "___total___" then
+  if name = "___outside___" || name = "___total___" then
     failwith ("Error: "^name^" is a reserved keyword");
   let e = create_record () in
   prof_table := (name,e)::!prof_table;

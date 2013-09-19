@@ -353,7 +353,7 @@ let contract_fix ?env ((recindices,bodynum),(names,types,bodies as typedbodies))
     substl closure bodies.(bodynum)
 
 let fix_recarg ((recindices,bodynum),_) stack =
-  assert (0 <= bodynum & bodynum < Array.length recindices);
+  assert (0 <= bodynum && bodynum < Array.length recindices);
   let recargnum = Array.get recindices bodynum in
   try
     Some (recargnum, stack_nth stack recargnum)

@@ -333,7 +333,7 @@ let check_meta_variables c =
     raise (RefinerError (NonLinearProof c))
 
 let check_conv_leq_goal env sigma arg ty conclty =
-  if !check & not (is_conv_leq env sigma ty conclty) then
+  if !check && not (is_conv_leq env sigma ty conclty) then
     raise (RefinerError (BadType (arg,ty,conclty)))
 
 let goal_type_of env sigma c =
@@ -371,7 +371,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	let (acc',hdty,sigma,applicand) =
 	  match kind_of_term f with
 	    | Ind _ | Const _
-		when (isInd f or has_polymorphic_type (destConst f)) ->
+		when (isInd f || has_polymorphic_type (destConst f)) ->
 		(* Sort-polymorphism of definition and inductive types *)
 		goalacc,
                 type_of_global_reference_knowing_conclusion env sigma f conclty,
@@ -423,8 +423,8 @@ and mk_hdgoals sigma goal goalacc trm =
 
     | App (f,l) ->
 	let (acc',hdty,sigma,applicand) =
-	  if isInd f or isConst f
-	     & not (Array.exists occur_meta l) (* we could be finer *)
+	  if isInd f || isConst f
+	     && not (Array.exists occur_meta l) (* we could be finer *)
 	  then
 	   (goalacc,type_of_global_reference_knowing_parameters env sigma f l,sigma,f)
 	  else mk_hdgoals sigma goal goalacc f

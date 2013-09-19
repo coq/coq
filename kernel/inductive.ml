@@ -659,7 +659,7 @@ let check_one_fix renv recpos def =
       match kind_of_term f with
         | Rel p ->
             (* Test if [p] is a fixpoint (recursive call) *)
-	    if renv.rel_min <= p & p < renv.rel_min+nfi then
+	    if renv.rel_min <= p && p < renv.rel_min+nfi then
               begin
                 List.iter (check_rec_call renv []) l;
                 (* the position of the invoked fixpoint: *)

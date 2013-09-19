@@ -72,19 +72,19 @@ let bignat_of_r =
 let rec bignat_of_pos = function
   (* 1+1 *)
   | GApp (_,GRef (_,p), [GRef (_,o1); GRef (_,o2)])
-      when p = glob_Rplus & o1 = glob_R1 & o2 = glob_R1 -> two
+      when p = glob_Rplus && o1 = glob_R1 && o2 = glob_R1 -> two
   (* 1+(1+1) *)
   | GApp (_,GRef (_,p1), [GRef (_,o1);
       GApp(_,GRef (_,p2),[GRef(_,o2);GRef(_,o3)])])
-      when p1 = glob_Rplus & p2 = glob_Rplus &
-           o1 = glob_R1 & o2 = glob_R1 & o3 = glob_R1 -> three
+      when p1 = glob_Rplus && p2 = glob_Rplus &&
+           o1 = glob_R1 && o2 = glob_R1 && o3 = glob_R1 -> three
   (* (1+1)*b *)
   | GApp (_,GRef (_,p), [a; b]) when p = glob_Rmult ->
       if bignat_of_pos a <> two then raise Non_closed_number;
       mult_2 (bignat_of_pos b)
   (* 1+(1+1)*b *)
   | GApp (_,GRef (_,p1), [GRef (_,o); GApp (_,GRef (_,p2),[a;b])])
-      when p1 = glob_Rplus & p2 = glob_Rmult & o = glob_R1  ->
+      when p1 = glob_Rplus && p2 = glob_Rmult && o = glob_R1  ->
       if bignat_of_pos a <> two then raise Non_closed_number;
         add_1 (mult_2 (bignat_of_pos b))
   | _ -> raise Non_closed_number

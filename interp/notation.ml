@@ -832,7 +832,7 @@ let browse_notation strict ntn map =
 let global_reference_of_notation test (ntn,(sc,c,_)) =
   match c with
   | NRef ref when test ref -> Some (ntn,sc,ref)
-  | NApp (NRef ref, l) when List.for_all isNVar_or_NHole l & test ref ->
+  | NApp (NRef ref, l) when List.for_all isNVar_or_NHole l && test ref ->
       Some (ntn,sc,ref)
   | _ -> None
 

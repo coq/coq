@@ -218,7 +218,7 @@ struct
 
  let fold = P.fold
 
- let is_null p = fold (fun mn vl b -> b & sign_num vl = 0) p  true
+ let is_null p = fold (fun mn vl b -> b && sign_num vl = 0) p  true
 
  let compare = compare compare_num
 

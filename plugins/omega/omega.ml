@@ -36,9 +36,9 @@ module MakeOmegaSolver (Int:INT) = struct
 
 type bigint = Int.bigint
 let (<?) = Int.less_than
-let (<=?) x y = Int.less_than x y or x = y
+let (<=?) x y = Int.less_than x y || x = y
 let (>?) x y = Int.less_than y x
-let (>=?) x y = Int.less_than y x or x = y
+let (>=?) x y = Int.less_than y x || x = y
 let (=?) = (=)
 let (+) = Int.add
 let (-) = Int.sub
@@ -239,7 +239,7 @@ let add_event, history, clear_history =
   (fun () -> !accu),
   (fun () -> accu := [])
 
-let nf_linear = Sort.list (fun x y -> x.v > y.v)
+let nf_linear = List.sort (fun x y -> Pervasives.(-) y.v x.v)
 
 let nf ((b : bool),(e,(x : int))) = (b,(nf_linear e,x))
 
@@ -301,16 +301,16 @@ let normalize ({id=id; kind=eq_flag; body=e; constant =x} as eq) =
           end
   end else
     let gcd = pgcd_l (List.map (fun f -> abs f.c) e) in
-    if eq_flag=EQUA & x mod gcd <> zero then begin
+    if eq_flag=EQUA && x mod gcd <> zero then begin
       add_event (NOT_EXACT_DIVIDE (eq,gcd)); raise UNSOLVABLE
-    end else if eq_flag=DISE & x mod gcd <> zero then begin
+    end else if eq_flag=DISE && x mod gcd <> zero then begin
       add_event (FORGET_C eq.id); []
     end else if gcd <> one then begin
       let c = floor_div x gcd in
       let d = x - c * gcd in
       let new_eq = {id=id; kind=eq_flag; constant=c;
                     body=map_eq_linear (fun c -> c / gcd) e} in
-      add_event (if eq_flag=EQUA or eq_flag = DISE then EXACT_DIVIDE(eq,gcd)
+      add_event (if eq_flag=EQUA || eq_flag = DISE then EXACT_DIVIDE(eq,gcd)
                  else DIVIDE_AND_APPROX(eq,new_eq,gcd,d));
       [new_eq]
     end else [eq]
@@ -472,7 +472,7 @@ let select_variable system =
   Hashtbl.iter
     (fun v ({contents =  c}) ->
        incr var_cpt;
-       if c <? !cmin or !vmin = (-1) then begin vmin := v; cmin := c end)
+       if c <? !cmin || !vmin = (-1) then begin vmin := v; cmin := c end)
     table;
   if !var_cpt < 1 then raise SOLVED_SYSTEM;
   !vmin

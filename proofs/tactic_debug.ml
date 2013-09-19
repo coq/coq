@@ -71,7 +71,7 @@ let rec drop_spaces inst i =
   else i
 
 let possibly_unquote s =
-  if String.length s >= 2 & s.[0] == '"' & s.[String.length s - 1] == '"' then
+  if String.length s >= 2 && s.[0] == '"' && s.[String.length s - 1] == '"' then
     String.sub s 1 (String.length s - 2)
   else
     s

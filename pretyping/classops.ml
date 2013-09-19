@@ -82,7 +82,7 @@ module Bijint = struct
   type 'a t = { v : (cl_typ * 'a) array; s : int; inv : int ClTypMap.t }
   let empty = { v = [||]; s = 0; inv = ClTypMap.empty }
   let mem y b = ClTypMap.mem y b.inv
-  let map x b = if 0 <= x & x < b.s then b.v.(x) else raise Not_found
+  let map x b = if 0 <= x && x < b.s then b.v.(x) else raise Not_found
   let revmap y b = let n = ClTypMap.find y b.inv in (n, snd (b.v.(n)))
   let add x y b =
     let v =

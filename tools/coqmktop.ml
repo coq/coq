@@ -190,11 +190,11 @@ let parse_args () =
     | ("-no-start") :: rem -> no_start:=true; parse (op, fl) rem
     | f :: rem ->
 	if Filename.check_suffix f ".ml"
-	  or Filename.check_suffix f ".cmx"
-	  or Filename.check_suffix f ".cmo"
-	  or Filename.check_suffix f ".cmxa"
-	  or Filename.check_suffix f ".cma"
-	  or Filename.check_suffix f ".c" then
+          || Filename.check_suffix f ".cmx"
+	  || Filename.check_suffix f ".cmo"
+	  || Filename.check_suffix f ".cmxa"
+	  || Filename.check_suffix f ".cma"
+	  || Filename.check_suffix f ".c" then
 	    parse (op,f::fl) rem
 	else begin
 	  prerr_endline ("Don't know what to do with " ^ f);

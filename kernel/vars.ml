@@ -62,7 +62,7 @@ let isMeta c = match Constr.kind c with
 
 let noccur_with_meta n m term =
   let rec occur_rec n c = match Constr.kind c with
-    | Constr.Rel p -> if n<=p & p<n+m then raise LocalOccur
+    | Constr.Rel p -> if n<=p && p<n+m then raise LocalOccur
     | Constr.App(f,cl) ->
         (match Constr.kind f with
            | Constr.Cast (c,_,_) when isMeta c -> ()

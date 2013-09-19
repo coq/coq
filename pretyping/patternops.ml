@@ -80,16 +80,16 @@ and rec_declaration_eq (n1, c1, r1) (n2, c2, r2) =
 
 let rec occur_meta_pattern = function
   | PApp (f,args) ->
-      (occur_meta_pattern f) or (Array.exists occur_meta_pattern args)
-  | PLambda (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
-  | PProd (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
-  | PLetIn (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
+      (occur_meta_pattern f) || (Array.exists occur_meta_pattern args)
+  | PLambda (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
+  | PProd (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
+  | PLetIn (na,t,c)  -> (occur_meta_pattern t) || (occur_meta_pattern c)
   | PIf (c,c1,c2)  ->
-      (occur_meta_pattern c) or
-      (occur_meta_pattern c1) or (occur_meta_pattern c2)
+      (occur_meta_pattern c) ||
+      (occur_meta_pattern c1) || (occur_meta_pattern c2)
   | PCase(_,p,c,br) ->
-      (occur_meta_pattern p) or
-      (occur_meta_pattern c) or
+      (occur_meta_pattern p) ||
+      (occur_meta_pattern c) ||
       (List.exists (fun (_,_,p) -> occur_meta_pattern p) br)
   | PMeta _ | PSoApp _ -> true
   | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false

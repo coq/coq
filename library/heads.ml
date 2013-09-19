@@ -109,7 +109,7 @@ let kind_of_head env t =
           (* enough arguments to [cst] *)
           k,List.skipn n l,List.nth l (i-1) in
       let l' = List.make q (mkMeta 0) @ rest in
-      aux k' l' a (with_subcase or with_case)
+      aux k' l' a (with_subcase || with_case)
   | ConstructorHead when with_case -> NotImmediatelyComputableHead
   | x -> x
   in aux 0 [] t false

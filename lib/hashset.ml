@@ -51,8 +51,8 @@ module Make (E : EqType) =
     let sz = if sz < 7 then 7 else sz in
     let sz = if sz > Sys.max_array_length then Sys.max_array_length else sz in
     {
-      table = Array.create sz emptybucket;
-      hashes = Array.create sz [| |];
+      table = Array.make sz emptybucket;
+      hashes = Array.make sz [| |];
       limit = limit;
       oversize = 0;
       rover = 0;

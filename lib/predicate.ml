@@ -54,8 +54,8 @@ module Make(Ord: OrderedType) =
     let full = (true,EltSet.empty)
 
     (* assumes the set is infinite *)
-    let is_empty (b,s) = not b & EltSet.is_empty s
-    let is_full (b,s) = b & EltSet.is_empty s
+    let is_empty (b,s) = not b && EltSet.is_empty s
+    let is_full (b,s) = b && EltSet.is_empty s
 
     let mem x (b,s) =
       if b then not (EltSet.mem x s) else EltSet.mem x s
@@ -92,6 +92,6 @@ module Make(Ord: OrderedType) =
         | ((true,_),(false,_)) -> false
 
     let equal (b1,s1) (b2,s2) =
-      b1=b2 & EltSet.equal s1 s2
+      b1=b2 && EltSet.equal s1 s2
 
   end

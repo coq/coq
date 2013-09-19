@@ -49,7 +49,7 @@ let check_no_metas clenv ccl =
 
 let var_occurs_in_pf gl id =
   let env = pf_env gl in
-  occur_var env id (pf_concl gl) or
+  occur_var env id (pf_concl gl) ||
   List.exists (occur_var_in_decl env id) (pf_hyps gl)
 
 (* [make_inv_predicate (ity,args) C]

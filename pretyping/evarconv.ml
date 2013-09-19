@@ -442,7 +442,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	ise_try evd [f1; f2; f3]
       end
 
-    | Rigid, Rigid when isLambda term1 & isLambda term2 ->
+    | Rigid, Rigid when isLambda term1 && isLambda term2 ->
         let (na,c1,c'1) = destLambda term1 in
         let (_,c2,c'2) = destLambda term2 in
         assert app_empty;
@@ -790,7 +790,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let app_empty = match l1, l2 with [], [] -> true | _ -> false in
   match kind_of_term term1, kind_of_term term2 with
   | Evar (evk1,args1), (Rel _|Var _) when app_empty
-      & List.for_all (fun a -> eq_constr a term2 or isEvar a)
+      && List.for_all (fun a -> eq_constr a term2 || isEvar a)
         (remove_instance_local_defs evd evk1 (Array.to_list args1)) ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
@@ -798,7 +798,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       | Some evd -> Success evd
       | None -> UnifFailure (evd, ConversionFailed (env,term1,term2)))
   | (Rel _|Var _), Evar (evk2,args2) when app_empty
-      & List.for_all (fun a -> eq_constr a term1 or isEvar a)
+      && List.for_all (fun a -> eq_constr a term1 || isEvar a)
         (remove_instance_local_defs evd evk2 (Array.to_list args2)) ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)

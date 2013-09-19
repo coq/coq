@@ -243,7 +243,7 @@ let subst_canonical_structure (subst,(cst,ind as obj)) =
   (* the first component of subst_con.                                   *)
   let cst' = fst (subst_con subst cst) in
   let ind' = Inductiveops.subst_inductive subst ind in
-  if cst' == cst & ind' == ind then obj else (cst',ind')
+  if cst' == cst && ind' == ind then obj else (cst',ind')
 
 let discharge_canonical_structure (_,(cst,ind)) =
   Some (Lib.discharge_con cst,Lib.discharge_inductive ind)

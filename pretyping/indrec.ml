@@ -172,7 +172,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 		 let nP = lift (i+1+decP) p in
                  let env' = push_rel (n,None,t) env in
 		 let t_0 = process_pos env' dep' nP (lift 1 t) in
-		 make_prod_dep (dep or dep') env
+		 make_prod_dep (dep || dep') env
                    (n,t,
 		    mkArrow t_0
 		      (process_constr

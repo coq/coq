@@ -211,7 +211,7 @@ let check_key key = try
   error "Sorry, this option name is already used."
 with Not_found ->
   if List.mem_assoc (nickname key) !string_table
-    or List.mem_assoc (nickname key) !ref_table
+    || List.mem_assoc (nickname key) !ref_table
   then error "Sorry, this option name is already used."
 
 open Libobject

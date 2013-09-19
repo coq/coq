@@ -282,7 +282,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
       CPatCstr (loc, c, add_patt_for_params (fst cstrsp) args, [])
     | _ ->
   try
-    if !Flags.raw_print or !print_no_symbol then raise No_match;
+    if !Flags.raw_print || !print_no_symbol then raise No_match;
     let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
     match availability_of_prim_token p sc scopes with
       | None -> raise No_match
@@ -291,7 +291,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	insert_pat_alias loc (insert_pat_delimiters loc (CPatPrim(loc,p)) key) na
   with No_match ->
     try
-      if !Flags.raw_print or !print_no_symbol then raise No_match;
+      if !Flags.raw_print || !print_no_symbol then raise No_match;
       extern_symbol_pattern scopes vars pat
 	(uninterp_cases_pattern_notations pat)
     with No_match ->
@@ -409,7 +409,7 @@ let extern_ind_pattern_in_scope (scopes:local_scopes) vars ind args =
     CPatCstr (Loc.ghost, c, add_patt_for_params ind args, [])
   else
     try
-      if !Flags.raw_print or !print_no_symbol then raise No_match;
+      if !Flags.raw_print || !print_no_symbol then raise No_match;
       let (sc,p) = uninterp_prim_token_ind_pattern ind args in
       match availability_of_prim_token p sc scopes with
 	| None -> raise No_match
@@ -417,7 +417,7 @@ let extern_ind_pattern_in_scope (scopes:local_scopes) vars ind args =
 	  insert_pat_delimiters Loc.ghost (CPatPrim(Loc.ghost,p)) key
     with No_match ->
       try
-	if !Flags.raw_print or !print_no_symbol then raise No_match;
+	if !Flags.raw_print || !print_no_symbol then raise No_match;
 	extern_symbol_ind_pattern scopes vars ind args
 	  (uninterp_ind_pattern_notations ind)
     with No_match ->
@@ -439,7 +439,7 @@ let occur_name na aty =
     | Anonymous -> false
 
 let is_projection nargs = function
-  | Some r when not !Flags.raw_print & !print_projections ->
+  | Some r when not !Flags.raw_print && !print_projections ->
       (try
 	let n = Recordops.find_projection_nparams r + 1 in
 	if n <= nargs then Some n else None
@@ -463,11 +463,11 @@ let explicitize loc inctx impl (cf,f) args =
     | a::args, imp::impl when is_status_implicit imp ->
         let tail = exprec (q+1) (args,impl) in
         let visible =
-          !Flags.raw_print or
-          (!print_implicits & !print_implicits_explicit_args) or
-          (is_needed_for_correct_partial_application tail imp) or
-	  (!print_implicits_defensive &
-	   is_significant_implicit a &
+          !Flags.raw_print ||
+          (!print_implicits && !print_implicits_explicit_args) ||
+          (is_needed_for_correct_partial_application tail imp) ||
+	  (!print_implicits_defensive &&
+	   is_significant_implicit a &&
 	   not (is_inferable_implicit inctx n imp))
 	in
         if visible then
@@ -506,7 +506,7 @@ let extern_app loc inctx impl (cf,f) args =
     CAppExpl (loc, (None, f), [])
   else if not !Constrintern.parsing_explicit &&
     ((!Flags.raw_print ||
-      (!print_implicits & not !print_implicits_explicit_args)) &
+      (!print_implicits && not !print_implicits_explicit_args)) &&
      List.exists is_status_implicit impl)
   then
     CAppExpl (loc, (is_projection (List.length args) cf, f), args)
@@ -524,11 +524,11 @@ let rec extern_args extern scopes env args subscopes =
 
 let rec remove_coercions inctx = function
   | GApp (loc,GRef (_,r),args) as c
-      when  not (!Flags.raw_print or !print_coercions)
+      when  not (!Flags.raw_print || !print_coercions)
       ->
       let nargs = List.length args in
       (try match Classops.hide_coercion r with
-	  | Some n when n < nargs && (inctx or n+1 < nargs) ->
+	  | Some n when n < nargs && (inctx || n+1 < nargs) ->
 	      (* We skip a coercion *)
 	      let l = List.skipn n args in
 	      let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
@@ -583,12 +583,12 @@ let extern_glob_sort = function
 let rec extern inctx scopes vars r =
   let r' = remove_coercions inctx r in
   try
-    if !Flags.raw_print or !print_no_symbol then raise No_match;
+    if !Flags.raw_print || !print_no_symbol then raise No_match;
     extern_optimal_prim_token scopes r r'
   with No_match ->
   try
     let r'' = flatten_application r' in
-    if !Flags.raw_print or !print_no_symbol then raise No_match;
+    if !Flags.raw_print || !print_no_symbol then raise No_match;
     extern_symbol scopes vars r'' (uninterp_notations r'')
   with No_match -> match r' with
   | GRef (loc,ref) ->
@@ -764,7 +764,7 @@ and factorize_prod scopes vars na bk aty c =
   match na, c with
   | Name id, CProdN (loc,[nal,Default bk',ty],c)
       when binding_kind_eq bk bk' && constr_expr_eq aty ty
-      & not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
+      && not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
       nal,c
   | _ ->
       [],c
@@ -774,7 +774,7 @@ and factorize_lambda inctx scopes vars na bk aty c =
   match c with
   | CLambdaN (loc,[nal,Default bk',ty],c)
       when binding_kind_eq bk bk' && constr_expr_eq aty ty
-      & not (occur_name na ty) (* avoid na in ty escapes scope *) ->
+      && not (occur_name na ty) (* avoid na in ty escapes scope *) ->
       nal,c
   | _ ->
       [],c
@@ -791,7 +791,7 @@ and extern_local_binder scopes vars = function
       let ty = extern_typ scopes vars (anonymize_if_reserved na ty) in
       (match extern_local_binder scopes (name_fold Id.Set.add na vars) l with
           (assums,ids,LocalRawAssum(nal,k,ty')::l)
-            when constr_expr_eq ty ty' &
+            when constr_expr_eq ty ty' &&
               match na with Name id -> not (occur_var_constr_expr id ty')
                 | _ -> true ->
               (na::assums,na::ids,

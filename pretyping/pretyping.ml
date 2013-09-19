@@ -471,7 +471,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
             let f = whd_evar !evdref f in
               begin match kind_of_term f with
               | Ind _ | Const _
-		    when isInd f or has_polymorphic_type (destConst f)
+		    when isInd f || has_polymorphic_type (destConst f)
 		      ->
 	          let sigma =  !evdref in
 		  let c = mkApp (f,Array.map (whd_evar sigma) args) in

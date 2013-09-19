@@ -20,7 +20,7 @@ let make_red_flag l =
 	    "Cannot set both constants to unfold and constants not to unfold";
         add_flag { red with rConst = Util.List.union red.rConst l } lf
     | FDeltaBut l :: lf ->
-	if red.rConst <> [] & not red.rDelta then
+	if red.rConst <> [] && not red.rDelta then
 	  Errors.error
 	    "Cannot set both constants to unfold and constants not to unfold";
         add_flag

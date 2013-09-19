@@ -264,7 +264,7 @@ let locs_of_notation loc locs ntn =
   let rec aux pos = function
     | [] -> if Int.equal pos el then [] else [(pos,el-1)]
     | (ba,ea)::l ->if Int.equal pos ba then aux ea l else (pos,ba-1)::aux ea l
-  in aux bl (Sort.list (fun l1 l2 -> fst l1 < fst l2) locs)
+  in aux bl (List.sort (fun l1 l2 -> fst l1 - fst l2) locs)
 
 let ntn_loc loc (args,argslist,binderslist) =
   locs_of_notation loc

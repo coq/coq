@@ -1167,7 +1167,7 @@ let w_unify_to_subterm_list env evd flags hdmeta oplist t =
 	    List.exists (fun op -> eq_constr op cl) l
 	  then error_non_linear_unification env evd hdmeta cl
 	  else (evd',cl::l)
-      else if flags.allow_K_in_toplevel_higher_order_unification or dependent op t
+      else if flags.allow_K_in_toplevel_higher_order_unification || dependent op t
       then
 	(evd,op::l)
       else

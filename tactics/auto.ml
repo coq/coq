@@ -148,7 +148,7 @@ let rebuild_dn st ((l,l',dn) : search_entry) =
 let lookup_tacs (hdc,c) st (l,l',dn) =
   let l'  = List.map snd (Bounded_net.lookup st dn c) in
   let sl' = List.stable_sort pri_order_int l' in
-    Sort.merge pri_order l sl'
+    List.merge pri_order_int l sl'
 
 module Constr_map = Map.Make(RefOrdered)
 
@@ -334,16 +334,16 @@ module Hint_db = struct
     with Not_found -> empty_se
  
   let map_none db =
-    List.map snd (Sort.merge pri_order (List.map snd db.hintdb_nopat) [])
+    List.map snd (List.merge pri_order_int (List.map snd db.hintdb_nopat) [])
     
   let map_all k db =
     let (l,l',_) = find k db in
-      List.map snd (Sort.merge pri_order (List.map snd db.hintdb_nopat @ l) l')
+      List.map snd (List.merge pri_order_int (List.map snd db.hintdb_nopat @ l) l')
 
   let map_auto (k,c) db =
     let st = if db.use_dn then Some db.hintdb_state else None in
     let l' = lookup_tacs (k,c) st (find k db) in
-      List.map snd (Sort.merge pri_order (List.map snd db.hintdb_nopat) l')
+      List.map snd (List.merge pri_order_int (List.map snd db.hintdb_nopat) l')
 
   let is_exact = function
     | Give_exact _ -> true

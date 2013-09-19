@@ -630,7 +630,7 @@ let intern_var genv (ltacvars,ntnvars) namedctx loc id =
     GVar (loc,id), make_implicits_list impls, argsc, expl_impls
   with Not_found ->
   (* Is [id] bound in current term or is an ltac var bound to constr *)
-  if Id.Set.mem id genv.ids or Id.Set.mem id ltacvars
+  if Id.Set.mem id genv.ids || Id.Set.mem id ltacvars
   then
     GVar (loc,id), [], [], []
   (* Is [id] a notation variable *)

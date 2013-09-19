@@ -271,7 +271,7 @@ let fourier_lineq lineq1 =
                   f.hflin.fhom)
              lineq1;
    let sys= List.map (fun h->
-               let v=Array.create ((!nvar)+1) r0 in
+               let v=Array.make ((!nvar)+1) r0 in
                Constrhash.iter (fun x c -> v.(Constrhash.find hvar x)<-c)
                   h.hflin.fhom;
                ((Array.to_list v)@[rop h.hflin.fcste],h.hstrict))

@@ -219,7 +219,7 @@ let lookup_index_as_renamed env t n =
 
 let update_name na ((_,e),c) =
   match na with
-  | Name _ when force_wildcard () & noccurn (List.index na e) c ->
+  | Name _ when force_wildcard () && noccurn (List.index na e) c ->
       Anonymous
   | _ ->
       na
@@ -250,7 +250,7 @@ and align_tree nal isgoal (e,c as rhs) = match nal with
   | na::nal ->
     match kind_of_term c with
     | Case (ci,p,c,cl) when eq_constr c (mkRel (List.index na (snd e)))
-	& (* don't contract if p dependent *)
+	&& (* don't contract if p dependent *)
 	computable p (ci.ci_pp_info.ind_nargs) ->
 	let clauses = build_tree na isgoal e ci cl in
 	List.flatten
@@ -502,7 +502,7 @@ and share_names isgoal n l avoid env c t =
 
 and detype_eqns isgoal avoid env ci computable constructs consnargsl bl =
   try
-    if !Flags.raw_print or not (reverse_matching ()) then raise Exit;
+    if !Flags.raw_print || not (reverse_matching ()) then raise Exit;
     let mat = build_tree Anonymous isgoal (avoid,env) ci bl in
     List.map (fun (pat,((avoid,env),c)) -> (dl,[],[pat],detype isgoal avoid env c))
       mat
@@ -512,7 +512,7 @@ and detype_eqns isgoal avoid env ci computable constructs consnargsl bl =
 
 and detype_eqn isgoal avoid env constr construct_nargs branch =
   let make_pat x avoid env b ids =
-    if force_wildcard () & noccurn 1 b then
+    if force_wildcard () && noccurn 1 b then
       PatVar (dl,Anonymous),avoid,(add_name Anonymous env),ids
     else
       let id = next_name_away_in_cases_pattern x avoid in
@@ -656,7 +656,7 @@ let rec subst_glob_constr subst raw =
       and b1' = subst_glob_constr subst b1
       and b2' = subst_glob_constr subst b2
       and c' = subst_glob_constr subst c in
-	if c' == c & po' == po && b1' == b1 && b2' == b2 then raw else
+	if c' == c && po' == po && b1' == b1 && b2' == b2 then raw else
           GIf (loc,c',(na,po'),b1',b2')
 
   | GRec (loc,fix,ida,bl,ra1,ra2) ->
@@ -666,7 +666,7 @@ let rec subst_glob_constr subst raw =
         (List.smartmap (fun (na,k,obd,ty as dcl) ->
           let ty' = subst_glob_constr subst ty in
           let obd' = Option.smartmap (subst_glob_constr subst) obd in
-          if ty'==ty & obd'==obd then dcl else (na,k,obd',ty')))
+          if ty'==ty && obd'==obd then dcl else (na,k,obd',ty')))
         bl in
 	if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else
 	  GRec (loc,fix,ida,bl',ra1',ra2')

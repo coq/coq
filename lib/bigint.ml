@@ -92,7 +92,7 @@ let normalize_pos n =
 
 let normalize_neg n =
   let k = ref 1 in
-  while !k < Array.length n & n.(!k) = base - 1 do incr k done;
+  while !k < Array.length n && n.(!k) = base - 1 do incr k done;
   let n' = Array.sub n !k (Array.length n - !k) in
   if Int.equal (Array.length n') 0 then [|-1|] else (n'.(0) <- n'.(0) - base; n')
 
@@ -132,10 +132,10 @@ let neg m =
 
 let push_carry r j =
   let j = ref j in
-  while !j > 0 & r.(!j) < 0 do
+  while !j > 0 && r.(!j) < 0 do
     r.(!j) <- r.(!j) + base; decr j; r.(!j) <- r.(!j) - 1
   done;
-  while !j > 0 & r.(!j) >= base do
+  while !j > 0 && r.(!j) >= base do
     r.(!j) <- r.(!j) - base; decr j; r.(!j) <- r.(!j) + 1
   done;
   (* here r.(0) could be in [-2*base;2*base-1] *)
@@ -173,9 +173,9 @@ let sub n m =
   else let r = neg m in add_to r n (Array.length r - Array.length n)
 
 let mult m n =
-  if m = zero or n = zero then zero else
+  if m = zero || n = zero then zero else
   let l = Array.length m + Array.length n in
-  let r = Array.create l 0 in
+  let r = Array.make l 0 in
   for i = Array.length m - 1 downto 0 do
     for j = Array.length n - 1 downto 0 do
       let p = m.(i) * n.(j) + r.(i+j+1) in
@@ -193,22 +193,22 @@ let mult m n =
 
 let is_strictly_neg n = n<>[||] && n.(0) < 0
 let is_strictly_pos n = n<>[||] && n.(0) > 0
-let is_neg_or_zero n = n=[||] or n.(0) < 0
-let is_pos_or_zero n = n=[||] or n.(0) > 0
+let is_neg_or_zero n = n=[||] || n.(0) < 0
+let is_pos_or_zero n = n=[||] || n.(0) > 0
 
 (* Is m without its i first blocs less then n without its j first blocs ?
    Invariant : |m|-i = |n|-j *)
 
 let rec less_than_same_size m n i j =
   i < Array.length m &&
-  (m.(i) < n.(j) or (m.(i) = n.(j) && less_than_same_size m n (i+1) (j+1)))
+  (m.(i) < n.(j) || (m.(i) = n.(j) && less_than_same_size m n (i+1) (j+1)))
 
 let less_than m n =
   if is_strictly_neg m then
-    is_pos_or_zero n or Array.length m > Array.length n
-      or (Array.length m = Array.length n && less_than_same_size m n 0 0)
+    is_pos_or_zero n || Array.length m > Array.length n
+      || (Array.length m = Array.length n && less_than_same_size m n 0 0)
   else
-    is_strictly_pos n && (Array.length m < Array.length n or
+    is_strictly_pos n && (Array.length m < Array.length n ||
     (Array.length m = Array.length n && less_than_same_size m n 0 0))
 
 (* For this equality test it is critical that n and m are canonical *)
@@ -219,11 +219,11 @@ let equal m n = (m = n)
 
 let less_than_shift_pos k m n =
   (Array.length m - k < Array.length n)
-  or (Array.length m - k = Array.length n && less_than_same_size m n k 0)
+  || (Array.length m - k = Array.length n && less_than_same_size m n k 0)
 
 let rec can_divide k m d i =
-  (i = Array.length d) or
-  (m.(k+i) > d.(i)) or
+  (i = Array.length d) ||
+  (m.(k+i) > d.(i)) ||
   (m.(k+i) = d.(i) && can_divide k m d (i+1))
 
 (* For two big nums m and d and a small number q,
@@ -258,7 +258,7 @@ let euclid m d =
   let q,r =
     if less_than m d then (zero,m) else
     let ql = Array.length m - Array.length d in
-    let q = Array.create (ql+1) 0 in
+    let q = Array.make (ql+1) 0 in
     let i = ref 0 in
     while not (less_than_shift_pos !i m d) do
       if Int.equal m.(!i) 0 then incr i else
@@ -288,7 +288,7 @@ let euclid m d =
 
 let of_string s =
   let len = String.length s in
-  let isneg = len > 1 & s.[0] = '-' in
+  let isneg = len > 1 && s.[0] = '-' in
   let d = ref (if isneg then 1 else 0) in
   while !d < len && s.[!d] = '0' do incr d done;
   if !d = len then zero else
@@ -296,7 +296,7 @@ let of_string s =
   let h = String.sub s (!d) r in
   let e = if h<>"" then 1 else 0 in
   let l = (len - !d) / size in
-  let a = Array.create (l + e) 0 in
+  let a = Array.make (l + e) 0 in
   if Int.equal e 1 then a.(0) <- int_of_string h;
   for i = 1 to l do
     a.(i+e-1) <- int_of_string (String.sub s ((i-1)*size + !d + r) size)
@@ -384,28 +384,28 @@ let app_pair f (m, n) =
   (f m, f n)
 
 let add m n =
-  if Obj.is_int m & Obj.is_int n
+  if Obj.is_int m && Obj.is_int n
   then of_int (coerce_to_int m + coerce_to_int n)
   else of_ints (add (to_ints m) (to_ints n))
 
 let sub m n =
-  if Obj.is_int m & Obj.is_int n
+  if Obj.is_int m && Obj.is_int n
   then of_int (coerce_to_int m - coerce_to_int n)
   else of_ints (sub (to_ints m) (to_ints n))
 
 let mult m n =
-  if Obj.is_int m & Obj.is_int n
+  if Obj.is_int m && Obj.is_int n
   then of_int (coerce_to_int m * coerce_to_int n)
   else of_ints (mult (to_ints m) (to_ints n))
 
 let euclid m n =
-  if Obj.is_int m & Obj.is_int n
+  if Obj.is_int m && Obj.is_int n
   then app_pair of_int
     (coerce_to_int m / coerce_to_int n, coerce_to_int m mod coerce_to_int n)
   else app_pair of_ints (euclid (to_ints m) (to_ints n))
 
 let less_than m n =
-  if Obj.is_int m & Obj.is_int n
+  if Obj.is_int m && Obj.is_int n
   then coerce_to_int m < coerce_to_int n
   else less_than (to_ints m) (to_ints n)
 

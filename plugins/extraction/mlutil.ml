@@ -1248,7 +1248,7 @@ let rec non_stricts add cand = function
 	   let n = List.length i in
 	   let cand = lift n cand in
 	   let cand = pop n (non_stricts add cand t) in
-	   Sort.merge (<=) cand c) [] v
+	   List.merge Pervasives.compare cand c) [] v
 	(* [merge] may duplicates some indices, but I don't mind. *)
   | MLmagic t ->
       non_stricts add cand t

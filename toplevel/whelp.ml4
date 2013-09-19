@@ -57,8 +57,8 @@ let make_whelp_request req c =
 let b = Buffer.create 16
 
 let url_char c =
-  if 'A' <= c & c <= 'Z' or 'a' <= c & c <= 'z' or
-     '0' <= c & c <= '9' or c ='.'
+  if 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' ||
+     '0' <= c && c <= '9' || c ='.'
   then Buffer.add_char b c
   else Buffer.add_string b (Printf.sprintf "%%%2X" (Char.code c))
 
