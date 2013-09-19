@@ -23,7 +23,6 @@ open Impargs
 open Libobject
 open Libnames
 open Globnames
-open Nametab
 open Recordops
 open Misctypes
 open Printer
@@ -286,15 +285,14 @@ type logical_name =
   | Undefined of qualid
 
 let locate_any_name ref =
-  let module N = Nametab in
   let (loc,qid) = qualid_of_reference ref in
-  try Term (N.locate qid)
+  try Term (Nametab.locate qid)
   with Not_found ->
-  try Syntactic (N.locate_syndef qid)
+  try Syntactic (Nametab.locate_syndef qid)
   with Not_found ->
-  try Dir (N.locate_dir qid)
+  try Dir (Nametab.locate_dir qid)
   with Not_found ->
-  try ModuleType (qid, N.locate_modtype qid)
+  try ModuleType (qid, Nametab.locate_modtype qid)
   with Not_found -> Undefined qid
 
 let pr_located_qualid = function
@@ -323,13 +321,12 @@ let pr_located_qualid = function
 
 let print_located_qualid ref =
   let (loc,qid) = qualid_of_reference ref in
-  let module N = Nametab in
   let expand = function
     | TrueGlobal ref ->
-	Term ref, N.shortest_qualid_of_global Id.Set.empty ref
+	Term ref, Nametab.shortest_qualid_of_global Id.Set.empty ref
     | SynDef kn ->
-	Syntactic kn, N.shortest_qualid_of_syndef Id.Set.empty kn in
-  match List.map expand (N.locate_extended_all qid) with
+	Syntactic kn, Nametab.shortest_qualid_of_syndef Id.Set.empty kn in
+  match List.map expand (Nametab.locate_extended_all qid) with
     | [] ->
 	let (dir,id) = repr_qualid qid in
 	if DirPath.is_empty dir then
@@ -652,7 +649,7 @@ let print_name = function
 
 let print_opaque_name qid =
   let env = Global.env () in
-  match global qid with
+  match Nametab.global qid with
     | ConstRef cst ->
 	let cb = Global.lookup_constant cst in
         if Declareops.constant_has_body cb then
