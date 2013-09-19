@@ -120,6 +120,13 @@ let add_compile verbose s =
   set_batch_mode ();
   Flags.make_silent true;
   if not !glob_opt then Dumpglob.dump_to_dotglob ();
+  (** make the file name explicit; needed not to break up Coq loadpath stuff. *)
+  let s =
+    let open Filename in
+    if is_implicit s
+    then concat current_dir_name s
+    else s
+  in
   compile_list := (verbose,s) :: !compile_list
 
 let compile_file (v,f) =
