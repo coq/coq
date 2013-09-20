@@ -65,7 +65,7 @@ log_intro = "==========> TESTING $(1) <=========="
 COMPLEXITY := $(if $(bogomips),complexity)
 
 BUGS := bugs/opened/shouldnotfail bugs/opened/shouldnotsucceed \
-  bugs/closed bugs/closed/shouldsucceed bugs/closed/shouldfail
+  bugs/closed
 
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
   interactive micromega $(COMPLEXITY) modules
@@ -184,36 +184,6 @@ $(addsuffix .log,$(wildcard bugs/opened/shouldnotfail/*.v)): %.v.log: %.v
 
 # Closed bugs that should succeed
 $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
-	$(HIDE){ \
-	  echo $(call log_intro,$<); \
-	  $(command) "$<" 2>&1; R=$$?; times; \
-	  if [ $$R = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    $<...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    $<...Error! (bug seems to be opened, please check)"; \
-	  fi; \
-	} > "$@"
-
-# Closed bugs that should succeed
-$(addsuffix .log,$(wildcard bugs/closed/shouldsucceed/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
-	$(HIDE){ \
-	  echo $(call log_intro,$<); \
-	  $(command) "$<" 2>&1; R=$$?; times; \
-	  if [ $$R = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    $<...Ok"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    $<...Error! (bug seems to be opened, please check)"; \
-	  fi; \
-	} > "$@"
-
-# Closed bugs that should fail
-$(addsuffix .log,$(wildcard bugs/closed/shouldfail/*.v)): %.v.log: %.v
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \

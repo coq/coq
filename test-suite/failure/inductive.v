@@ -15,10 +15,10 @@ Fail Inductive u : Type := d : u | e : t u -> u.
 Require Import Logic.
 Require Hurkens.
 Definition Ti := Type.
-Inductive prod (X Y:Ti) := pair : X -> Y -> prod X Y.
-Fail Definition B : Prop := let F := prod True in F Prop. (* Aie! *)
-(*Definition p2b (P:Prop) : B := pair True Prop I P.
-Definition b2p (b:B) : Prop := match b with pair _ P => P end.
+Inductive prod2 (X Y:Ti) := pair2 : X -> Y -> prod2 X Y.
+Fail Definition B : Prop := let F := prod2 True in F Prop. (* Aie! *)
+(*Definition p2b (P:Prop) : B := pair2 True Prop I P.
+Definition b2p (b:B) : Prop := match b with pair2 _ P => P end.
 Lemma L1 : forall A : Prop, b2p (p2b A) -> A.
 Proof (fun A x => x).
 Lemma L2 : forall A : Prop, A -> b2p (p2b A).
