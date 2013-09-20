@@ -1,3 +1,15 @@
+(* A check that sort-polymorphic product is not set too low *)
+
+Inductive prod (A B:Type) : Type := pair : A -> B -> prod A B.
+Fail Check (fun (A:Type) (B:Prop) => (prod A B : Prop)).
+Fail Check (fun (A:Prop) (B:Type) => (prod A B : Prop)).
+
+(* Check that the nested inductive types positivity check avoids recursively
+   non uniform parameters (at least if these parameters break positivity) *)
+
+Inductive t (A:Type) : Type := c : t (A -> A) -> t A.
+Fail Inductive u : Type := d : u | e : t u -> u.
+
 (* This used to succeed in versions 8.1 to 8.3 *)
 
 Require Import Logic.
