@@ -4,7 +4,7 @@ Inductive IFExpr : Set :=
   | Fa : IFExpr
   | IfE : IFExpr -> IFExpr -> IFExpr -> IFExpr.
 
-Type
+Fail Type
   (fun F : IFExpr =>
    match F return Prop with
    | IfE (Var _) H I => True

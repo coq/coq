@@ -9,7 +9,7 @@ Definition length1 (n : nat) (l : listn n) :=
   | _ => 0
   end.
 
-Type
+Fail Type
   (fun (n : nat) (l : listn n) =>
    match n return nat with
    | O => 0

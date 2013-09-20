@@ -23,8 +23,8 @@ Module Mt.
   Definition t := T.
 End Mt.
 
-Module P := G Mt. (* should yield Universe inconsistency *)
+Fail Module P := G Mt. (* should yield Universe inconsistency *)
 (* ... otherwise the following command will show that T has type T! *)
-Eval cbv delta [P.elt Mt.t] in P.elt.
+(* Eval cbv delta [P.elt Mt.t] in P.elt. *)
 
 

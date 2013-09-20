@@ -11,5 +11,5 @@
 Inductive X : Set :=
     cons : X.
 
-Inductive Y : Set :=
+Fail Inductive Y : Set :=
     cons : Y.

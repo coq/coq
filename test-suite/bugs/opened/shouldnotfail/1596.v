@@ -254,7 +254,8 @@ n).
     elim (Bool_elim_bool (H.mem (MessageSpi.MNam n,n0) h));intros.
     apply SynInc;apply H.mem_2;trivial.
 
-    rewrite H in H0. (* !! impossible here !! *)
-    discriminate H0.
-  Qed.
+    Fail rewrite H in H0. (* !! impossible here !! *)
+Abort.
+(*    discriminate H0.
+  Qed.*)
 End B.

@@ -173,7 +173,7 @@ $(addsuffix .log,$(wildcard bugs/opened/shouldnotfail/*.v)): %.v.log: %.v
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(command) "$<" 2>&1; R=$$?; times; \
-	  if [ $$R != 0 ]; then \
+	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...still active"; \
 	  else \
@@ -203,7 +203,7 @@ $(addsuffix .log,$(wildcard bugs/closed/shouldfail/*.v)): %.v.log: %.v
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(command) "$<" 2>&1; R=$$?; times; \
-	  if [ $$R != 0 ]; then \
+	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
 	  else \
@@ -250,7 +250,7 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  $(command) "$<" 2>&1; R=$$?; times; \
-	  if [ $$R != 0 ]; then \
+	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
 	  else \

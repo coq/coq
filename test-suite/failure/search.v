@@ -6,4 +6,4 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-SearchPattern (_ = _) outside n_existe_pas.
+Fail SearchPattern (_ = _) outside n_existe_pas.

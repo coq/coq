@@ -7,6 +7,6 @@ Qed.
 
 Lemma foo' : forall n m : nat, n <=  n + n * m.
 Proof.
-  intros. omega.
-Qed.
+  intros. Fail omega.
+Abort.
 

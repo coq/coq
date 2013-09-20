@@ -90,6 +90,7 @@ Lemma test:
 Proof.
   intros A B m1 m2 m3 f H1 H2.
   setoid_rewrite H1. (* this works *)
-  setoid_rewrite H2.
-  trivial by equiv_refl.
-Qed.
+  Fail setoid_rewrite H2.
+Abort.
+(*  trivial by equiv_refl.
+Qed.*)

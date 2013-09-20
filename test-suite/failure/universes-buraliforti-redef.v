@@ -243,4 +243,4 @@ Defined.
    with the constraint j >= i in the paradox.
 *)
 
-  Definition Paradox : False := Burali_Forti A0 i0 inj.
+  Fail Definition Paradox : False := Burali_Forti A0 i0 inj.

@@ -3,7 +3,7 @@ Inductive List (A : Set) : Set :=
   | Cons : A -> List A -> List A.
 
 Definition NIL := Nil nat.
-Type match Nil nat return (List nat) with
+Fail Type match Nil nat return (List nat) with
      | NIL => NIL
      | _ => NIL
      end.

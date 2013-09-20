@@ -6,4 +6,5 @@ Proof. auto. Qed.
 Goal forall b1 b2, (negb b1 = b2)  ->  xorb true b1 = b2.
 Proof.
   intros b1 b2.
-  rewrite neg2xor.
+  Fail rewrite neg2xor.
+Abort.

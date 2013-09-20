@@ -1,3 +1,3 @@
 Implicit Arguments eq [A].
 
-Check (bool = true).
+Fail Check (bool = true).

@@ -4,4 +4,4 @@ Require Import make_local.
 
 (* Local coercion must not be used *)
 
-Check (0 = true).
+Fail Check (0 = true).

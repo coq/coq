@@ -17,4 +17,4 @@
 (* Fails because Tauto does not perform any Apply *)
 Goal (forall A : Prop, A \/ ~ A) -> forall x y : nat, x = y \/ x <> y.
 Proof.
-   tauto.
+   Fail tauto.

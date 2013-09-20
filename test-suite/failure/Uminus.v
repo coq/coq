@@ -7,11 +7,11 @@ Inductive prop : Prop := down : Prop -> prop.
 (* Coq should reject the following access of a Prop buried inside
    a prop. *)
 
-Definition up (p:prop) : Prop := let (A) := p in A.
+Fail Definition up (p:prop) : Prop := let (A) := p in A.
 
 (* Otherwise, we would have a proof of False via Hurkens' paradox *)
 
-Definition paradox : False :=
+Fail Definition paradox : False :=
  Hurkens.NoRetractFromSmallPropositionToProp.paradox
    prop
    down

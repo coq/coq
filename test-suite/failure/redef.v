@@ -6,4 +6,4 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 Definition toto := Set.
-Definition toto := Set.
+Fail Definition toto := Set.

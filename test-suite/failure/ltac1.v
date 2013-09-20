@@ -4,4 +4,4 @@ Ltac X := match goal with
           end.
 Goal True -> True -> True.
 intros.
-X.
+Fail X.

@@ -2,4 +2,5 @@ Require Import Setoid SetoidClass Program.
 
 Goal forall `(Setoid nat) x y, x == y -> S x == S y.
   intros.
-  clsubst H0.
+  Fail clsubst H0.
+  Abort.

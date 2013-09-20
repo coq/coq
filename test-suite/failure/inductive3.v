@@ -2,4 +2,4 @@
    non uniform parameters (at least if these parameters break positivity) *)
 
 Inductive t (A:Type) : Type := c : t (A -> A) -> t A.
-Inductive u : Type := d : u | e : t u -> u.
+Fail Inductive u : Type := d : u | e : t u -> u.

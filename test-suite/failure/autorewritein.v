@@ -9,7 +9,7 @@ Hint Rewrite Ack0 Ack1 Ack2 : base0.
 Lemma ResAck2 : forall H:(Ack 2 2 = 7 -> False), H=H  -> False.
 Proof.
   intros.
-  autorewrite with base0 in * using try (apply H1;reflexivity).
+  Fail autorewrite with base0 in * using try (apply H1;reflexivity).
 
 
 

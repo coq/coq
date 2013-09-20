@@ -5,5 +5,5 @@
 
 Section S.
 Variable n : nat.
-Inductive P : Set :=
+Fail Inductive P : Set :=
     n : P.

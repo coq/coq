@@ -5,4 +5,4 @@
 
 Goal forall b, S b = O -> (fun a => 0 = (S a)) b -> True.
   intros b H H0.
-  rewrite H in H0.
+  Fail rewrite H in H0.

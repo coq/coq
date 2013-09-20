@@ -18,4 +18,4 @@ Module TT : T.
  | L0
  | L1 :  (A -> Prop) -> L.
 
-End TT.
+Fail End TT.

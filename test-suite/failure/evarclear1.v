@@ -6,5 +6,5 @@ eexists.
 unfold z.
 clear y z.
 (* should fail because the evar should no longer be allowed to depend on z *)
-instantiate (1:=z).
+Fail instantiate (1:=z).
 

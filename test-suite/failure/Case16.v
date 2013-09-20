@@ -1,6 +1,6 @@
 (* Check for redundant clauses *)
 
-Check
+Fail Check
   (fun x =>
    match x, x with
    | O, S (S y) => true

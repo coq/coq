@@ -2,4 +2,5 @@
 
 Lemma evar_rewrite : (forall a : nat, a = 0 -> True) -> True.
 intros; eapply H.  (* goal is  ?30 = nil  *)
-rewrite plus_n_Sm.
+Fail rewrite plus_n_Sm.
+Abort.

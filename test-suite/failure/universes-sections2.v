@@ -7,4 +7,4 @@ Section A.
   Definition Type1' := Type1.
 End A.
 
-Definition Inconsistency : Type1' := Type2.
+Fail Definition Inconsistency : Type1' := Type2.

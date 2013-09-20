@@ -8,5 +8,5 @@ x <> 0
 -> x <> 18 -> x <> 19 -> x <> 20 -> False.
 Proof.
   intros.
-  omega.
-Qed.
+  Fail omega.
+Abort.

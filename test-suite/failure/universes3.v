@@ -17,7 +17,7 @@ Inductive I (B:Type (*6*)) := C : B -> impl Prop (I B).
 
 (* We cannot enforce Type1 < Type(6) while we already have
    Type(6) <= Type(7) < Type3 < Type1 *)
-Definition J := I Type1.
+Fail Definition J := I Type1.
 
 (* Open question: should the type of an inductive be the max of the
    types of the _arguments_ of its constructors (here B and Prop,

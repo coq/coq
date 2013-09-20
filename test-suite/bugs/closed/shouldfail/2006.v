@@ -1,7 +1,7 @@
 (* Take the type constraint on Record into account *)
 
 Definition Type1 := Type.
-Record R : Type1 := { p:Type1 }. (* was accepted before trunk revision 11619 *)
+Fail Record R : Type1 := { p:Type1 }. (* was accepted before trunk revision 11619 *)
 
 (*
 Remarks:

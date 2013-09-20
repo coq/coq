@@ -2,4 +2,4 @@
 
 Goal forall (A:Set) (x:A) (A':=A), True.
 intros.
-change ((fun (_:A') => Set) x) in (type of A).
+Fail change ((fun (_:A') => Set) x) in (type of A).

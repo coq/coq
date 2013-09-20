@@ -6,7 +6,7 @@ Inductive I : Prop :=
 
 Definition i0 := C (fun _ x => x).
 
-Definition Paradox : False :=
+Fail Definition Paradox : False :=
  (fix ni i : False :=
   match i with
   | C f => ni (f _ i)

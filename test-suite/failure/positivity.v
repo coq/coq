@@ -5,5 +5,5 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-Inductive t : Set :=
+Fail Inductive t : Set :=
     c : (t -> nat) -> t.

@@ -5,4 +5,4 @@ Module N:S. End N.
 
 Module F (X:S) (Y:T with Module M:=X). End F.
 
-Module G := F N N.
+Fail Module G := F N N.

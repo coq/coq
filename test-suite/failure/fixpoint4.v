@@ -8,7 +8,7 @@ Inductive IMP : Prop :=
 
 Definition i0 := (LIMP (fun _ => CIMP (fun _ x => x))).
 
-Definition Paradox : False :=
+Fail Definition Paradox : False :=
  (fix F y o {struct o} : False :=
   match y with
   | tt => fun f =>

@@ -4,4 +4,4 @@ Section S.
 Let a := 0.
 Definition b := a.
 Goal b = b.
-clear a.
+Fail clear a.
