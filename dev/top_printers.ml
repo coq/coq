@@ -46,6 +46,7 @@ let ppclindex cl = pp(Classops.pr_cl_index cl)
 
 (* term printers *)
 let rawdebug = ref false
+let ppevar evk = pp (str (Evd.string_of_existential evk))
 let ppconstr x = pp (Termops.print_constr x)
 let ppconstrdb x = pp(Flags.with_option rawdebug Termops.print_constr x)
 let ppterm = ppconstr
