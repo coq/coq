@@ -739,7 +739,7 @@ dev/printers.cma: | dev/printers.mllib.d
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(SYSCMA) $(P4CMA) $^ -o test-printer
 	@rm -f test-printer
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $^ -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(SYSCMA) $^ -linkall -a -o $@
 
 grammar/grammar.cma: | grammar/grammar.mllib.d
 	$(SHOW)'Testing $@'
