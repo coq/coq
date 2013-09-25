@@ -281,8 +281,6 @@ type clbinding =
   | Cltyp of Name.t * constr freelisted
   | Clval of Name.t * (constr freelisted * instance_status) * constr freelisted
 
-val map_clb : (constr -> constr) -> clbinding -> clbinding
-
 (** Unification constraints *)
 type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * env * constr * constr

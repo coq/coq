@@ -83,6 +83,16 @@ let clenv_push_prod cl =
 (* Instantiate the first [bound] products of [t] with metas (all products if
    [bound] is [None]; unfold local defs *)
 
+(** [clenv_environments sigma n t] returns [sigma',lmeta,ccl] where
+   [lmetas] is a list of metas to be applied to a proof of [t] so that
+   it produces the unification pattern [ccl]; [sigma'] is [sigma]
+   extended with [lmetas]; if [n] is defined, it limits the size of
+   the list even if [ccl] is still a product; otherwise, it stops when
+   [ccl] is not a product; example: if [t] is [forall x y, x=y -> y=x]
+   and [n] is [None], then [lmetas] is [Meta n1;Meta n2;Meta n3] and
+   [ccl] is [Meta n1=Meta n2]; if [n] is [Some 1], [lmetas] is [Meta n1]
+   and [ccl] is [forall y, Meta n1=y -> y=Meta n1] *)
+
 let clenv_environments evd bound t =
   let rec clrec (e,metas) n t =
     match n, kind_of_term t with
@@ -99,34 +109,6 @@ let clenv_environments evd bound t =
       | (n, _) -> (e, List.rev metas, t)
   in
   clrec (evd,[]) bound t
-
-(* Instantiate the first [bound] products of [t] with evars (all products if
-   [bound] is [None]; unfold local defs *)
-
-let clenv_environments_evars env evd bound t =
-  let rec clrec (e,ts) n t =
-    match n, kind_of_term t with
-      | (Some 0, _) -> (e, List.rev ts, t)
-      | (n, Cast (t,_,_)) -> clrec (e,ts) n t
-      | (n, Prod (na,t1,t2)) ->
-          let e',constr = Evarutil.new_evar e env t1 in
-	  let dep = dependent (mkRel 1) t2 in
-	  clrec (e', constr::ts) (Option.map ((+) (-1)) n)
-	    (if dep then (subst1 constr t2) else t2)
-      | (n, LetIn (na,b,_,t)) -> clrec (e,ts) n (subst1 b t)
-      | (n, _) -> (e, List.rev ts, t)
-  in
-  clrec (evd,[]) bound t
-
-let clenv_conv_leq env sigma t c bound =
-  let ty = Retyping.get_type_of env sigma c in
-  let evd = Evd.create_goal_evar_defs sigma in
-  let evars,args,_ = clenv_environments_evars env evd (Some bound) ty in
-  let evars = Evarconv.the_conv_x_leq env t (applist (c,args)) evars in
-  let evars = Evarconv.consider_remaining_unif_problems env evars in
-  let args = List.map (whd_evar evars) args in
-  check_evars env sigma evars (applist (c,args));
-  args
 
 let mk_clenv_from_env environ sigma n (c,cty) =
   let evd = create_goal_evar_defs sigma in
