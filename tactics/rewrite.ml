@@ -45,7 +45,6 @@ open Tacinterp
 open Termops
 open Genarg
 open Extraargs
-open Pcoq.Constr
 open Entries
 open Libnames
 
@@ -721,7 +720,13 @@ let fold_match ?(force=false) env sigma c =
       applist (mkConst sk, pars @ [pred] @ meths @ args @ [c])
   in 
     sk, (if exists then env else reset_env env), app, eff
-      
+
+let fold_match_tac c gl =
+  let _, _, c', eff = fold_match ~force:true (pf_env gl) (project gl) c in
+   tclTHEN (Tactics.emit_side_effects eff)
+    (change (Some (snd (pattern_of_constr (project gl) c))) c' onConcl) gl
+
+
 let unfold_match env sigma sk app =
   match kind_of_term app with
   | App (f', args) when eq_constr f' (mkConst sk) ->
@@ -1366,37 +1371,6 @@ let interp_glob_constr_list env sigma =
 	      let evd, c = Pretyping.understand_tcc sigma env c in
 		(evd, (c, NoBindings)), true, None)
 
-(* Syntax for rewriting with strategies *)
-
-type constr_expr_with_bindings = constr_expr with_bindings
-type glob_constr_with_bindings = Tacexpr.glob_constr_and_expr with_bindings
-type glob_constr_with_bindings_sign = interp_sign * Tacexpr.glob_constr_and_expr with_bindings
-
-let pr_glob_constr_with_bindings_sign _ _ _ (ge : glob_constr_with_bindings_sign) = Printer.pr_glob_constr (fst (fst (snd ge)))
-let pr_glob_constr_with_bindings _ _ _ (ge : glob_constr_with_bindings) = Printer.pr_glob_constr (fst (fst ge))
-let pr_constr_expr_with_bindings prc _ _ (ge : constr_expr_with_bindings) = prc (fst ge)
-let interp_glob_constr_with_bindings ist gl c = Tacmach.project gl , (ist, c)
-let glob_glob_constr_with_bindings ist l = Tacintern.intern_constr_with_bindings ist l
-let subst_glob_constr_with_bindings s c =
-  Tacsubst.subst_glob_with_bindings s c
-
-
-ARGUMENT EXTEND glob_constr_with_bindings 
-    PRINTED BY pr_glob_constr_with_bindings_sign
-
-    INTERPRETED BY interp_glob_constr_with_bindings
-    GLOBALIZED BY glob_glob_constr_with_bindings
-    SUBSTITUTED BY subst_glob_constr_with_bindings
-
-    RAW_TYPED AS constr_expr_with_bindings
-    RAW_PRINTED BY pr_constr_expr_with_bindings
-
-    GLOB_TYPED AS glob_constr_with_bindings
-    GLOB_PRINTED BY pr_glob_constr_with_bindings
-   
-   [ constr_with_bindings(bl) ] -> [ bl ]
-END
-
 type ('constr,'redexpr) strategy_ast = 
   | StratId | StratFail | StratRefl
   | StratUnary of string * ('constr,'redexpr) strategy_ast
@@ -1456,115 +1430,6 @@ let rec strategy_of_ast = function
        Strategies.reduce r_interp env avoid t ty cstr (sigma,cstrevars evars))
   | StratFold c -> Strategies.fold_glob (fst c)
 
-
-type raw_strategy = (constr_expr, Tacexpr.raw_red_expr) strategy_ast
-type glob_strategy = (Tacexpr.glob_constr_and_expr, Tacexpr.raw_red_expr) strategy_ast
-
-let interp_strategy ist gl s = 
-  let sigma = project gl in
-    sigma, strategy_of_ast s
-let glob_strategy ist s = map_strategy (Tacintern.intern_constr ist) (fun c -> c) s
-let subst_strategy s str = str
-
-let pr_strategy _ _ _ (s : strategy) = Pp.str "<strategy>"
-let pr_raw_strategy _ _ _ (s : raw_strategy) = Pp.str "<strategy>"
-let pr_glob_strategy _ _ _ (s : glob_strategy) = Pp.str "<strategy>"
-
-ARGUMENT EXTEND rewstrategy
-    PRINTED BY pr_strategy
-
-    INTERPRETED BY interp_strategy
-    GLOBALIZED BY glob_strategy
-    SUBSTITUTED BY subst_strategy
-
-    RAW_TYPED AS raw_strategy
-    RAW_PRINTED BY pr_raw_strategy
-
-    GLOB_TYPED AS glob_strategy
-    GLOB_PRINTED BY pr_glob_strategy
-
-    [ glob(c) ] -> [ StratConstr (c, true) ]
-  | [ "<-" constr(c) ] -> [ StratConstr (c, false) ]
-  | [ "subterms" rewstrategy(h) ] -> [ StratUnary ("all_subterms", h) ]
-  | [ "subterm" rewstrategy(h) ] -> [ StratUnary ("one_subterm", h) ]
-  | [ "innermost" rewstrategy(h) ] -> [ StratUnary("innermost", h) ]
-  | [ "outermost" rewstrategy(h) ] -> [ StratUnary("outermost", h) ]
-  | [ "bottomup" rewstrategy(h) ] -> [ StratUnary("bottomup", h) ]
-  | [ "topdown" rewstrategy(h) ] -> [ StratUnary("topdown", h) ]
-  | [ "id" ] -> [ StratId ]
-  | [ "fail" ] -> [ StratFail ]
-  | [ "refl" ] -> [ StratRefl ]
-  | [ "progress" rewstrategy(h) ] -> [ StratUnary ("progress", h) ]
-  | [ "try" rewstrategy(h) ] -> [ StratUnary ("try", h) ]
-  | [ "any" rewstrategy(h) ] -> [ StratUnary ("any", h) ]
-  | [ "repeat" rewstrategy(h) ] -> [ StratUnary ("repeat", h) ]
-  | [ rewstrategy(h) ";" rewstrategy(h') ] -> [ StratBinary ("compose", h, h') ]
-  | [ "(" rewstrategy(h) ")" ] -> [ h ]
-  | [ "choice" rewstrategy(h) rewstrategy(h') ] -> [ StratBinary ("choice", h, h') ]
-  | [ "old_hints" preident(h) ] -> [ StratHints (true, h) ]
-  | [ "hints" preident(h) ] -> [ StratHints (false, h) ]
-  | [ "terms" constr_list(h) ] -> [ StratTerms h ]
-  | [ "eval" red_expr(r) ] -> [ StratEval r ]
-  | [ "fold" constr(c) ] -> [ StratFold c ]
-END
-
-(* By default the strategy for "rewrite_db" is top-down *)
-
-let db_strat db = Strategies.td (Strategies.hints db)
-let cl_rewrite_clause_db db cl = cl_rewrite_clause_strat (db_strat db) cl
-
-TACTIC EXTEND rewrite_strat
-| [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> [ cl_rewrite_clause_strat s (Some id) ]
-| [ "rewrite_strat" rewstrategy(s) ] -> [ cl_rewrite_clause_strat s None ]
-| [ "rewrite_db" preident(db) "in" hyp(id) ] -> [ cl_rewrite_clause_db db (Some id) ]
-| [ "rewrite_db" preident(db) ] -> [ cl_rewrite_clause_db db None ]
-END
-
-let clsubstitute o c =
-  let is_tac id = match fst (fst (snd c)) with GVar (_, id') when Id.equal id' id -> true | _ -> false in
-    Tacticals.onAllHypsAndConcl
-      (fun cl ->
-	match cl with
-	  | Some id when is_tac id -> tclIDTAC
-	  | _ -> cl_rewrite_clause c o AllOccurrences cl)
-
-
-TACTIC EXTEND substitute
-| [ "substitute" orient(o) glob_constr_with_bindings(c) ] -> [ clsubstitute o c ]
-END
-
-
-(* Compatibility with old Setoids *)
-
-TACTIC EXTEND setoid_rewrite
-   [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) ]
-   -> [ cl_rewrite_clause c o AllOccurrences None ]
- | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] ->
-      [ cl_rewrite_clause c o AllOccurrences (Some id)]
- | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] ->
-      [ cl_rewrite_clause c o (occurrences_of occ) None]
- | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id)] ->
-      [ cl_rewrite_clause c o (occurrences_of occ) (Some id)]
- | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ)] ->
-      [ cl_rewrite_clause c o (occurrences_of occ) (Some id)]
-END
-
-let cl_rewrite_clause_newtac_tac c o occ cl gl =
-  cl_rewrite_clause_newtac' c o occ cl;
-  tclIDTAC gl
-  
-TACTIC EXTEND GenRew
-| [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ) ] ->
-    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id) ]
-| [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id) ] ->
-    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id) ]
-| [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] ->
-    [ cl_rewrite_clause_newtac_tac c o AllOccurrences (Some id) ]
-| [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] ->
-    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) None ]
-| [ "rew" orient(o) glob_constr_with_bindings(c) ] ->
-    [ cl_rewrite_clause_newtac_tac c o AllOccurrences None ]
-END
 
 let mkappc s l = CAppExpl (Loc.ghost,(None,(Libnames.Ident (Loc.ghost,Id.of_string s))),l)
 
@@ -1636,79 +1501,6 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	    [(Ident (Loc.ghost,Id.of_string "Equivalence_Reflexive"), lemma1);
 	     (Ident (Loc.ghost,Id.of_string "Equivalence_Symmetric"), lemma2);
 	     (Ident (Loc.ghost,Id.of_string "Equivalence_Transitive"), lemma3)])
-
-type binders_argtype = local_binder list
-
-let wit_binders =
- (Genarg.create_arg None "binders" : binders_argtype Genarg.uniform_genarg_type)
-
-
-VERNAC COMMAND EXTEND AddRelation CLASSIFIED AS SIDEFF
-  | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
-	"symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
-      [ declare_relation a aeq n (Some lemma1) (Some lemma2) None ]
-
-  | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
-	"as" ident(n) ] ->
-      [ declare_relation a aeq n (Some lemma1) None None ]
-  | [ "Add" "Relation" constr(a) constr(aeq)  "as" ident(n) ] ->
-      [ declare_relation a aeq n None None None ]
-END
-
-VERNAC COMMAND EXTEND AddRelation2 CLASSIFIED AS SIDEFF
-    [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
-      "as" ident(n) ] ->
-      [ declare_relation a aeq n None (Some lemma2) None ]
-  | [ "Add" "Relation" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
-      [ declare_relation a aeq n None (Some lemma2) (Some lemma3) ]
-END
-
-VERNAC COMMAND EXTEND AddRelation3 CLASSIFIED AS SIDEFF
-    [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
-      "transitivity" "proved" "by" constr(lemma3) "as" ident(n) ] ->
-      [ declare_relation a aeq n (Some lemma1) None (Some lemma3) ]
-  | [ "Add" "Relation" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
-      "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)
-      "as" ident(n) ] ->
-      [ declare_relation a aeq n (Some lemma1) (Some lemma2) (Some lemma3) ]
-  | [ "Add" "Relation" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
-	"as" ident(n) ] ->
-      [ declare_relation a aeq n None None (Some lemma3) ]
-END
-
-VERNAC COMMAND EXTEND AddParametricRelation CLASSIFIED AS SIDEFF
-  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
-	"reflexivity" "proved" "by" constr(lemma1)
-	"symmetry" "proved" "by" constr(lemma2) "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n (Some lemma1) (Some lemma2) None ]
-  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)
-	"reflexivity" "proved" "by" constr(lemma1)
-	"as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n (Some lemma1) None None ]
-  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)  "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n None None None ]
-END
-
-VERNAC COMMAND EXTEND AddParametricRelation2 CLASSIFIED AS SIDEFF
-    [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2)
-      "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n None (Some lemma2) None ]
-  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)  "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n None (Some lemma2) (Some lemma3) ]
-END
-
-VERNAC COMMAND EXTEND AddParametricRelation3 CLASSIFIED AS SIDEFF
-    [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
-      "transitivity" "proved" "by" constr(lemma3) "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n (Some lemma1) None (Some lemma3) ]
-  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "reflexivity" "proved" "by" constr(lemma1)
-      "symmetry" "proved" "by" constr(lemma2) "transitivity" "proved" "by" constr(lemma3)
-      "as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n (Some lemma1) (Some lemma2) (Some lemma3) ]
-  | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq) "transitivity" "proved" "by" constr(lemma3)
-	"as" ident(n) ] ->
-      [ declare_relation ~binders:b a aeq n None None (Some lemma3) ]
-END
 
 let cHole = CHole (Loc.ghost, None)
 
@@ -1810,6 +1602,13 @@ let add_setoid global binders a aeq t n =
        (Ident (Loc.ghost,Id.of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
        (Ident (Loc.ghost,Id.of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])])
 
+let make_tactic name =
+  let open Tacexpr in
+  let loc = Loc.ghost in
+  let tacpath = Libnames.qualid_of_string name in
+  let tacname = Qualid (loc, tacpath) in
+  TacArg (loc, TacCall (loc, tacname, []))
+
 let add_morphism_infer glob m n =
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
@@ -1822,6 +1621,7 @@ let add_morphism_infer glob m n =
 	declare_projection n instance_id (ConstRef cst)
     else
       let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
+      let tac = make_tactic "Coq.Classes.SetoidTactics.add_morphism_tactic" in
 	Flags.silently
 	  (fun () ->
 	    Lemmas.start_proof instance_id kind instance
@@ -1831,7 +1631,7 @@ let add_morphism_infer glob m n =
 				   glob (ConstRef cst));
 		  declare_projection n instance_id (ConstRef cst)
 		| _ -> assert false));
-	    Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ()
+	    Pfedit.by (Tacinterp.interp tac)) ()
 
 let add_morphism glob binders m s n =
   init_setoid ();
@@ -1842,27 +1642,9 @@ let add_morphism glob binders m s n =
 	     (None, Qualid (Loc.ghost, Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper")),
 	     [cHole; s; m]))
   in
-  let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
+  let tac = Tacinterp.interp (make_tactic "add_morphism_tactic") in
     ignore(new_instance ~global:glob binders instance (Some (CRecord (Loc.ghost,None,[])))
 	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) None)
-
-VERNAC COMMAND EXTEND AddSetoid1 CLASSIFIED AS SIDEFF
-   [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-     [ add_setoid (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) [] a aeq t n ]
-  | [ "Add" "Parametric" "Setoid" binders(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-     [	add_setoid (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) binders a aeq t n ]
-  | [ "Add" "Morphism" constr(m) ":" ident(n) ]
-    (* This command may or may not open a goal *)
-    => [ Vernacexpr.VtUnknown, Vernacexpr.VtNow ]
-    -> [ add_morphism_infer (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) m n ]
-  | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ]
-    => [ Vernacexpr.VtStartProof("Classic",[n]), Vernacexpr.VtLater ]
-    -> [ add_morphism (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) [] m s n ]
-  | [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
-	"with" "signature" lconstr(s) "as" ident(n) ]
-    => [ Vernacexpr.VtStartProof("Classic",[n]), Vernacexpr.VtLater ]
-    -> [ add_morphism (not (Locality.make_section_locality (Locality.LocalityFixme.consume ()))) binders m s n ]
-END
 
 (** Bind to "rewrite" too *)
 
@@ -1926,8 +1708,8 @@ let get_hyp gl evars (c,l) clause l2r =
     | Some id -> pf_get_hyp_typ gl id 
     | None -> Evarutil.nf_evar evars (pf_concl gl)
   in
-    { unification_rewrite flags hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl with
-	flags = rewrite_unif_flags }
+  let rew = unification_rewrite flags hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl in
+  { rew with flags = rewrite_unif_flags }
 
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 
@@ -2026,20 +1808,6 @@ let _ = Hook.set Tactics.setoid_symmetry setoid_symmetry
 let _ = Hook.set Tactics.setoid_symmetry_in setoid_symmetry_in
 let _ = Hook.set Tactics.setoid_transitivity setoid_transitivity
 
-TACTIC EXTEND setoid_symmetry
-   [ "setoid_symmetry" ] -> [ setoid_symmetry ]
- | [ "setoid_symmetry" "in" hyp(n) ] -> [ setoid_symmetry_in n ]
-END
-
-TACTIC EXTEND setoid_reflexivity
-[ "setoid_reflexivity" ] -> [ setoid_reflexivity ]
-END
-
-TACTIC EXTEND setoid_transitivity
-  [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity (Some t) ]
-| [ "setoid_etransitivity" ] -> [ setoid_transitivity None ]
-END
-
 let implify id gl =
   let (_, b, ctype) = pf_get_hyp gl id in
   let binders,concl = decompose_prod_assum ctype in
@@ -2055,10 +1823,6 @@ let implify id gl =
     | _ -> ctype
   in convert_hyp_no_check (id, b, ctype') gl
 
-TACTIC EXTEND implify
-[ "implify" hyp(n) ] -> [ implify n ]
-END
-
 let rec fold_matches eff env sigma c =
   map_constr_with_full_binders Environ.push_rel 
     (fun env c ->
@@ -2070,49 +1834,37 @@ let rec fold_matches eff env sigma c =
       | _ -> fold_matches eff env sigma c)
     env c
 
-TACTIC EXTEND fold_match
-[ "fold_match" constr(c) ] -> [ fun gl -> 
-  let _, _, c', eff = fold_match ~force:true (pf_env gl) (project gl) c in
-   tclTHEN (Tactics.emit_side_effects eff)
-    (change (Some (snd (pattern_of_constr (project gl) c))) c' onConcl) gl ]
-END
-
-TACTIC EXTEND fold_matches
-| [ "fold_matches" constr(c) ] -> [ fun gl ->
+let fold_matches_tac c gl =
   let eff = ref Declareops.no_seff in
   let c' = fold_matches eff (pf_env gl) (project gl) c in
   tclTHEN (Tactics.emit_side_effects !eff)
-    (change (Some (snd (pattern_of_constr (project gl) c))) c' onConcl) gl ]
-END
+    (change (Some (snd (pattern_of_constr (project gl) c))) c' onConcl) gl
 
-TACTIC EXTEND myapply
-| [ "myapply" global(id) constr_list(l) ] -> [ 
-    fun gl -> 
-      let gr = id in
-      let _, impls = List.hd (Impargs.implicits_of_global gr) in
-      let ty = Global.type_of_global gr in
-      let env = pf_env gl in
-      let evars = ref (project gl) in
-      let app =
-	let rec aux ty impls args args' =
-	  match impls, kind_of_term ty with
-	  | Some (_, _, (_, _)) :: impls, Prod (n, t, t') ->
-	      let arg = Evarutil.e_new_evar evars env t in
-		aux (subst1 arg t') impls args (arg :: args')
-	  | None :: impls, Prod (n, t, t') ->
-	      (match args with
-	       | [] ->
-		   if dependent (mkRel 1) t' then
-		     let arg = Evarutil.e_new_evar evars env t in
-		       aux (subst1 arg t') impls args (arg :: args')
-		   else
-		     let arg = Evarutil.mk_new_meta () in
-		       evars := meta_declare (destMeta arg) t !evars;
-		       aux (subst1 arg t') impls args (arg :: args')
-	       | arg :: args -> 
-		   aux (subst1 arg t') impls args (arg :: args'))
-	  | _, _ -> mkApp (constr_of_global gr, Array.of_list (List.rev args'))
-	in aux ty impls l []
-      in
-	tclTHEN (Refiner.tclEVARS !evars) (apply app) gl ]
-END
+let myapply id l gl =
+  let gr = id in
+  let _, impls = List.hd (Impargs.implicits_of_global gr) in
+  let ty = Global.type_of_global gr in
+  let env = pf_env gl in
+  let evars = ref (project gl) in
+  let app =
+    let rec aux ty impls args args' =
+      match impls, kind_of_term ty with
+      | Some (_, _, (_, _)) :: impls, Prod (n, t, t') ->
+          let arg = Evarutil.e_new_evar evars env t in
+            aux (subst1 arg t') impls args (arg :: args')
+      | None :: impls, Prod (n, t, t') ->
+          (match args with
+            | [] ->
+                if dependent (mkRel 1) t' then
+                  let arg = Evarutil.e_new_evar evars env t in
+                    aux (subst1 arg t') impls args (arg :: args')
+                else
+                  let arg = Evarutil.mk_new_meta () in
+                    evars := meta_declare (destMeta arg) t !evars;
+                    aux (subst1 arg t') impls args (arg :: args')
+            | arg :: args -> 
+                aux (subst1 arg t') impls args (arg :: args'))
+      | _, _ -> mkApp (constr_of_global gr, Array.of_list (List.rev args'))
+    in aux ty impls l []
+  in
+  tclTHEN (Refiner.tclEVARS !evars) (apply app) gl

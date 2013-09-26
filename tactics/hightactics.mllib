@@ -3,5 +3,6 @@ Extratactics
 Eauto
 Class_tactics
 Rewrite
+G_rewrite
 Tauto
 Eqdecide
