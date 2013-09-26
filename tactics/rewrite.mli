@@ -28,32 +28,9 @@ type ('constr,'redexpr) strategy_ast =
   | StratEval of 'redexpr 
   | StratFold of 'constr
 
-type evars = evar_map * Evar.Set.t (* goal evars, constraint evars *)
+type strategy
 
-type rewrite_proof = 
-  | RewPrf of constr * constr
-  | RewCast of cast_kind
-
-type rewrite_result_info = {
-  rew_car : constr;
-  rew_from : constr;
-  rew_to : constr;
-  rew_prf : rewrite_proof;
-  rew_evars : evars;
-}
-
-type rewrite_result = rewrite_result_info option
-
-type strategy = env -> Id.t list -> constr -> types ->
-  constr option -> evars -> rewrite_result option
-
-module Strategies :
-sig
-  val td : strategy -> strategy
-  val hints : string -> strategy
-end
-
-val strategy_of_ast : (Glob_term.glob_constr * 'a, raw_red_expr) strategy_ast -> strategy
+val strategy_of_ast : (glob_constr_and_expr, raw_red_expr) strategy_ast -> strategy
 
 val map_strategy : ('a -> 'b) -> ('c -> 'd) ->
   ('a, 'c) strategy_ast -> ('b, 'd) strategy_ast

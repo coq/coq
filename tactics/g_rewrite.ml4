@@ -108,8 +108,8 @@ END
 
 (* By default the strategy for "rewrite_db" is top-down *)
 
-let db_strat db = Strategies.td (Strategies.hints db)
-let cl_rewrite_clause_db db cl = cl_rewrite_clause_strat (db_strat db) cl
+let db_strat db = StratUnary ("topdown", StratHints (false, db))
+let cl_rewrite_clause_db db = cl_rewrite_clause_strat (strategy_of_ast (db_strat db))
 
 TACTIC EXTEND rewrite_strat
 | [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> [ cl_rewrite_clause_strat s (Some id) ]
