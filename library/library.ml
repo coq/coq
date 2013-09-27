@@ -339,7 +339,7 @@ module OpaqueTables = struct
  let store c =
   let n = !local_index in
   incr local_index;
-  if n = Array.length !local_table then begin
+  if Int.equal n (Array.length !local_table) then begin
     let t = Array.make (2*n) a_constr in
     Array.blit !local_table 0 t 0 n;
     local_table := t

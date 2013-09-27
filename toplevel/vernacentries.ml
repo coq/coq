@@ -938,7 +938,7 @@ let vernac_declare_arguments locality r l nargs flags =
   let names_decl = List.map (List.map (fun (id, _,_,_,_) -> id)) l in
   let renamed_arg = ref None in
   let set_renamed a b =
-    if !renamed_arg = None && a <> b then renamed_arg := Some(b,a) in
+    if Option.is_empty !renamed_arg && not (Id.equal a b) then renamed_arg := Some(b,a) in
   let pr_renamed_arg () = match !renamed_arg with None -> ""
     | Some (o,n) ->
        "\nArgument "^string_of_id o ^" renamed to "^string_of_id n^"." in
@@ -1811,7 +1811,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
   let rec aux ?locality isprogcmd = function
     | VernacProgram c when not isprogcmd -> aux ?locality true c
     | VernacProgram _ -> Errors.error "Program mode specified twice"
-    | VernacLocal (b, c) when locality = None -> aux ~locality:b isprogcmd c
+    | VernacLocal (b, c) when Option.is_empty locality -> aux ~locality:b isprogcmd c
     | VernacLocal _ -> Errors.error "Locality specified twice"
     | VernacStm (Command c) -> aux ?locality isprogcmd c
     | VernacStm (PGLast c) -> aux ?locality isprogcmd c

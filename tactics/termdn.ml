@@ -22,7 +22,7 @@ struct
 
   module X = struct
     type t = constr_pattern
-    let compare = Pervasives.compare
+    let compare = Pervasives.compare (** FIXME *)
   end
 
   type term_label = 

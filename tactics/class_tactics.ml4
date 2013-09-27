@@ -285,7 +285,7 @@ let make_autogoal_hints =
     let sign = pf_filtered_hyps g in
       match freeze () with
       | Some (onlyc, sign', hints) 
-	  when onlyc = only_classes && 
+	  when (onlyc : bool) == only_classes && 
 	    Environ.eq_named_context_val sign sign' -> hints
       | _ -> let hints = make_hints g st only_classes (Environ.named_context_of_val sign) in
 	  unfreeze (Some (only_classes, sign, hints)); hints

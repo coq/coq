@@ -38,6 +38,10 @@ type direction = Left of int | Right of int
 type occ_step = O_left | O_right | O_mono
 type occ_path = occ_step list
 
+let occ_step_eq s1 s2 = match s1, s2 with
+| O_left, O_left | O_right, O_right | O_mono, O_mono -> true
+| _ -> false
+
 (* chemin identifiant une proposition sous forme du nom de l'hypothèse et
    d'une liste de pas à partir de la racine de l'hypothèse *)
 type occurence = {o_hyp : Names.Id.t; o_path : occ_path}
@@ -209,7 +213,7 @@ let intern_omega_force env t v = env.om_vars <- (t,v) :: env.om_vars
 let unintern_omega env id =
   let rec loop = function
 	[] -> failwith "unintern"
-      | ((t,j)::l) -> if id = j then t else loop l in
+      | ((t,j)::l) -> if Int.equal id j then t else loop l in
   loop env.om_vars
 
 (* \subsection{Gestion des environnements de variable pour la réflexion}
@@ -484,8 +488,8 @@ let shuffle_path k1 e1 k2 e2 =
   let rec loop = function
       (({c=c1;v=v1}::l1) as l1'),
       (({c=c2;v=v2}::l2) as l2') ->
-	if v1 = v2 then
-          if k1*c1 + k2 * c2 = zero then (
+	if Int.equal v1 v2 then
+          if Bigint.equal (k1 * c1 + k2 * c2) zero then (
             Lazy.force coq_f_cancel :: loop (l1,l2))
           else (
             Lazy.force coq_f_equal :: loop (l1,l2) )
@@ -563,7 +567,7 @@ let reduce_factor = function
 
 let rec condense env = function
     Oplus(f1,(Oplus(f2,r) as t)) ->
-      if weight env f1 = weight env f2 then begin
+      if Int.equal (weight env f1) (weight env f2) then begin
 	let shrink_tac,t = shrink_pair f1 f2 in
 	let assoc_tac = Lazy.force coq_c_plus_assoc_l in
 	let tac_list,t' = condense env (Oplus(t,r)) in
@@ -577,7 +581,7 @@ let rec condense env = function
       let tac,f1' = reduce_factor f1 in
       [do_left (do_list tac)],Oplus(f1',Oint n)
   | Oplus(f1,f2) ->
-      if weight env f1 = weight env f2 then begin
+      if Int.equal (weight env f1) (weight env f2) then begin
 	let tac_shrink,t = shrink_pair f1 f2 in
 	let tac,t' = condense env t in
 	tac_shrink :: tac,t'
@@ -595,12 +599,12 @@ let rec condense env = function
 (* \subsection{Elimination des zéros} *)
 
 let rec clear_zero = function
-   Oplus(Omult(Oatom v,Oint n),r) when n=zero ->
+   Oplus(Omult(Oatom v,Oint n),r) when Bigint.equal n zero ->
      let tac',t = clear_zero r in
      Lazy.force coq_c_red5 :: tac',t
   | Oplus(f,r) ->
       let tac,t = clear_zero r in
-      (if tac = [] then [] else [do_right (do_list tac)]),Oplus(f,t)
+      (if List.is_empty tac then [] else [do_right (do_list tac)]),Oplus(f,t)
   | t -> [],t;;
 
 (* \subsection{Transformation des hypothèses} *)
@@ -1014,10 +1018,10 @@ let rec solve_with_constraints all_solutions path =
 let find_path {o_hyp=id;o_path=p} env =
   let rec loop_path = function
       ([],l) -> Some l
-    | (x1::l1,x2::l2) when x1 = x2 -> loop_path (l1,l2)
+    | (x1::l1,x2::l2) when occ_step_eq x1 x2 -> loop_path (l1,l2)
     | _ -> None in
   let rec loop_id i = function
-      CCHyp{o_hyp=id';o_path=p'} :: l when id = id' ->
+      CCHyp{o_hyp=id';o_path=p'} :: l when Names.Id.equal id id' ->
 	begin match loop_path (p',p) with
 	  Some r -> i,r
 	| None -> loop_id (succ i) l
@@ -1260,7 +1264,7 @@ let resolution env full_reified_goal systems_list =
       let i = List.index0 e.e_origin.o_hyp l_hyps in
       (* PL: it seems that additionnally introduced hyps are in the way during
              normalization, hence this index shifting... *)
-      if i=0 then 0 else Pervasives.(+) i (List.length to_introduce)
+      if Int.equal i 0 then 0 else Pervasives.(+) i (List.length to_introduce)
     in
     app coq_pair_step [| mk_nat correct_index; loop e.e_origin.o_path |] in
   let normalization_trace =

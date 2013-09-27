@@ -306,7 +306,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	(fun i (end_of_type,ctxt_size,witness_fun) ((x',b',t') as decl) ->
 	   try
 	     let witness = Int.Map.find i sub in
-	     if b' <> None then anomaly (Pp.str "can not redefine a rel!");
+	     if not (Option.is_empty b') then anomaly (Pp.str "can not redefine a rel!");
 	     (Termops.pop end_of_type,ctxt_size,mkLetIn(x',witness,t',witness_fun))
 	   with Not_found  ->
 	     (mkProd_or_LetIn decl end_of_type, ctxt_size + 1, mkLambda_or_LetIn decl witness_fun)
@@ -655,7 +655,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
 	)
       )
   in
-  if args_id = []
+  if List.is_empty args_id
   then
     tclTHENLIST [
       tclMAP (fun hyp_id -> h_reduce_with_zeta (Locusops.onHyp hyp_id)) hyps;
@@ -1196,7 +1196,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		(fun fi -> fi.name,fi.idx + 1 ,fi.types)
 		(pre_info@others_infos)
 	    in
-	    if other_fix_infos = []
+	    if List.is_empty other_fix_infos
 	    then
 	      (* observe_tac ("h_fix") *) (h_fix (Some this_fix_info.name) (this_fix_info.idx +1))
 	    else
@@ -1588,7 +1588,7 @@ let prove_principle_for_gen
 	  (fun g ->
 	     let new_hyps = pf_ids_of_hyps g in
 	     tcc_list := List.rev (List.subtract new_hyps (hid::hyps));
-	     if !tcc_list = []
+	     if List.is_empty !tcc_list
 	     then
 	       begin
 		 tcc_list := [hid];

@@ -155,7 +155,7 @@ let coq_conj = function () -> find_reference Coqlib.logic_module_name "conj"
 let f_S t = mkApp(delayed_force coq_S, [|t|]);;
 
 let rec n_x_id ids n =
-  if n = 0 then []
+  if Int.equal n 0 then []
   else let x = next_ident_away_in_goal x_id ids in
           x::n_x_id (x::ids) (n-1);;
 
@@ -1204,7 +1204,7 @@ let is_rec_res id =
   let rec_res_name = Id.to_string rec_res_id   in
   let id_name = Id.to_string id in
   try
-    String.sub id_name 0 (String.length rec_res_name) = rec_res_name
+    String.equal (String.sub id_name 0 (String.length rec_res_name)) rec_res_name
   with Invalid_argument _ -> false
  
 let clear_goals =
@@ -1277,7 +1277,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 		    (fun g ->
 		       let ids' = pf_ids_of_hyps g in
 		       lid := List.rev (List.subtract ids' ids);
-		       if !lid = [] then lid := [hid];
+		       if List.is_empty !lid then lid := [hid];
 		       tclIDTAC g
 		    )
 		    g

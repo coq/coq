@@ -137,7 +137,7 @@ let build_by_tactic env typ tac =
   let ce = build_constant_by_tactic id sign typ tac in
   let ce = Term_typing.handle_side_effects env ce in
   let cb, se = Future.force ce.const_entry_body in
-  assert(se = Declareops.no_seff);
+  assert(Declareops.side_effects_is_empty se);
   cb
 
 (**********************************************************************)

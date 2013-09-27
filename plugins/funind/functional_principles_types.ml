@@ -107,8 +107,8 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let pre_princ = substl (List.map mkVar ptes_vars) pre_princ in
   let is_dom c =
     match kind_of_term c with
-      | Ind((u,_)) -> u = rel_as_kn
-      | Construct((u,_),_) -> u = rel_as_kn
+      | Ind((u,_)) -> MutInd.equal u rel_as_kn
+      | Construct((u,_),_) -> MutInd.equal u rel_as_kn
       | _ -> false
   in
   let get_fun_num c =
@@ -330,7 +330,7 @@ let generate_functional_principle
   in
   let names = ref [new_princ_name] in
   let hook new_principle_type = Some (fun _ _ ->
-    if sorts = None
+    if Option.is_empty sorts
     then
       (*     let id_of_f = Label.to_id (con_label f) in *)
       let register_with_sort fam_sort =
@@ -375,7 +375,7 @@ let generate_functional_principle
 	  let s = Id.to_string id in
 	  let n = String.length "___________princ_________" in
 	  if String.length s >= n
-	  then if String.sub s 0 n = "___________princ_________"
+	  then if String.equal (String.sub s 0 n) "___________princ_________"
 	  then Pfedit.delete_current_proof ()
 	  else ()
 	  else ()
@@ -430,7 +430,7 @@ let get_funs_constant mp dp =
       let first_params = List.hd l_params  in
       List.iter
 	(fun params ->
-	   if not (List.equal (fun (n1, c1) (n2, c2) -> n1 = n2 && eq_constr c1 c2) first_params params)
+	   if not (List.equal (fun (n1, c1) (n2, c2) -> Name.equal n1 n2 && eq_constr c1 c2) first_params params)
 	   then error "Not a mutal recursive block"
 	)
 	l_params
@@ -442,14 +442,15 @@ let get_funs_constant mp dp =
 	  match kind_of_term body with
 	    | Fix((idxs,_),(na,ta,ca)) -> (idxs,na,ta,ca)
 	    | _ ->
-		if is_first && (List.length l_bodies = 1)
+		if is_first && Int.equal (List.length l_bodies) 1
 		then raise Not_Rec
 		else error "Not a mutal recursive block"
 	in
 	let first_infos = extract_info true (List.hd l_bodies) in
 	let check body  = (* Hope this is correct *)
 	  let eq_infos (ia1, na1, ta1, ca1) (ia2, na2, ta2, ca2) =
-	    ia1 = ia2 && na1 = na2 && Array.equal eq_constr ta1 ta2 && Array.equal eq_constr ca1 ca2
+            Array.equal Int.equal ia1 ia2 && Array.equal Name.equal na1 na2 &&
+            Array.equal eq_constr ta1 ta2 && Array.equal eq_constr ca1 ca2
 	  in
 	  if not (eq_infos first_infos (extract_info false body))
 	  then  error "Not a mutal recursive block"
@@ -527,7 +528,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
 	  let s = Id.to_string id in
 	  let n = String.length "___________princ_________" in
 	  if String.length s >= n
-	  then if String.sub s 0 n = "___________princ_________"
+	  then if String.equal (String.sub s 0 n) "___________princ_________"
 	  then Pfedit.delete_current_proof ()
 	  else ()
 	  else ()
@@ -548,7 +549,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
   in
   let const = {const with const_entry_opaque = opacity } in
   (* The others are just deduced *)
-  if other_princ_types = []
+  if List.is_empty other_princ_types
   then
     [const]
   else

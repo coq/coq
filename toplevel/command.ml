@@ -161,7 +161,7 @@ let do_definition ident k bl red_option c ctypopt hook =
     if Flags.is_program_mode () then
       let env = Global.env () in
       let c,sideff = Future.force ce.const_entry_body in
-      assert(sideff = Declareops.no_seff);
+      assert(Declareops.side_effects_is_empty sideff);
       let typ = match ce.const_entry_type with 
 	| Some t -> t
 	| None -> Retyping.get_type_of env evd c

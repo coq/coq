@@ -611,7 +611,7 @@ let declare_obligation prg obl body =
       let ce = 
         { const_entry_body = Future.from_val(body,Declareops.no_seff);
           const_entry_secctx = None;
-	  const_entry_type = if ctx = [] then Some ty else None;
+	  const_entry_type = if List.is_empty ctx then Some ty else None;
 	  const_entry_opaque = opaque;
 	  const_entry_inline_code = false} 
       in
@@ -762,7 +762,7 @@ let solve_by_tac evi t =
   let env = Global.env () in
   let entry = Term_typing.handle_side_effects env entry in
   let body, eff = Future.force entry.Entries.const_entry_body in
-  assert(eff = Declareops.no_seff);
+  assert(Declareops.side_effects_is_empty eff);
   Inductiveops.control_only_guard (Global.env ()) body;
   body
 

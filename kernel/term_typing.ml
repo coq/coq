@@ -54,7 +54,7 @@ let handle_side_effects env body side_eff =
     let cname c = 
       let name = string_of_con c in
       for i = 0 to String.length name - 1 do
-        if name.[i] = '.' || name.[i] = '#' then name.[i] <- '_' done;
+        if name.[i] == '.' || name.[i] == '#' then name.[i] <- '_' done;
       Name (id_of_string name) in
     let rec sub c i x = match kind_of_term x with
       | Const c' when eq_constant c c' -> mkRel i
@@ -83,7 +83,7 @@ let infer_declaration ?(what="UNKNOWN") env dcl =
   match dcl with
   | DefinitionEntry c ->
       let ctx, entry_body = c.const_entry_secctx, c.const_entry_body in
-      if c.const_entry_opaque && c.const_entry_type <> None then
+      if c.const_entry_opaque && not (Option.is_empty c.const_entry_type) then
         let id = "infer_declaration " ^ what in
         let body_cst =
           Future.chain ~id entry_body (fun (body, side_eff) ->
@@ -138,7 +138,7 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
   (* We try to postpone the computation of used section variables *)
   let hyps, def = 
     match ctx with
-    | None when named_context env <> [] -> 
+    | None when not (List.is_empty (named_context env)) -> 
         (* No declared section vars, and non-empty section context:
            we must look at the body NOW, if any *)
         let ids_typ = global_vars_set_constant_type env typ in

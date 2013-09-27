@@ -228,8 +228,8 @@ let declare_constant ?(internal = UserVerbose) ?(local = false) id (cd, kind) =
     | Entries.DefinitionEntry ({
       const_entry_opaque = false; const_entry_body = bo } as de) ->
         let pt, seff = Future.force bo in
-        if seff = Declareops.no_seff then cd
-        else begin 
+        if Declareops.side_effects_is_empty seff then cd
+        else begin
           Declareops.iter_side_effects declare_sideff seff;
           Entries.DefinitionEntry { de with
             const_entry_body = Future.from_val (pt, Declareops.no_seff) }

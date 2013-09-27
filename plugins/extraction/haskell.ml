@@ -51,7 +51,7 @@ let preamble mod_name comment used_modules usf =
   str "module " ++ pr_upper_id mod_name ++ str " where" ++ fnl2 () ++
   str "import qualified Prelude" ++ fnl () ++
   prlist pp_import used_modules ++ fnl () ++
-  (if used_modules = [] then mt () else fnl ()) ++
+  (if List.is_empty used_modules then mt () else fnl ()) ++
   (if not usf.magic then mt ()
    else str "\
 \nunsafeCoerce :: a -> b\
@@ -91,7 +91,7 @@ let rec pp_type par vl t =
        with Failure _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_global Type r
     | Tglob (IndRef(kn,0),l)
-	when not (keep_singleton ()) && kn = mk_ind "Coq.Init.Specif" "sig" ->
+	when not (keep_singleton ()) && MutInd.equal kn (mk_ind "Coq.Init.Specif" "sig") ->
 	  pp_type true vl (List.hd l)
     | Tglob (r,l) ->
 	  pp_par par
@@ -145,7 +145,7 @@ let rec pp_expr par env args =
     | MLglob r ->
 	apply (pp_global Term r)
     | MLcons (_,r,a) as c ->
-        assert (args=[]);
+        assert (List.is_empty args);
         begin match a with
 	  | _ when is_native_char c -> pp_native_char c
 	  | [] -> pp_global Cons r
@@ -156,13 +156,13 @@ let rec pp_expr par env args =
 			prlist_with_sep spc (pp_expr true env []) a)
 	end
     | MLtuple l ->
-        assert (args=[]);
+        assert (List.is_empty args);
         pp_boxed_tuple (pp_expr true env []) l
     | MLcase (_,t, pv) when is_custom_match pv ->
         if not (is_regular_match pv) then
 	  error "Cannot mix yet user-given match and general patterns.";
 	let mkfun (ids,_,e) =
-	  if ids <> [] then named_lams (List.rev ids) e
+	  if not (List.is_empty ids) then named_lams (List.rev ids) e
 	  else dummy_lams (ast_lift 1 e) 1
 	in
 	let pp_branch tr = pp_expr true env [] (mkfun tr) ++ fnl () in
@@ -190,7 +190,7 @@ let rec pp_expr par env args =
 
 and pp_cons_pat par r ppl =
   pp_par par
-    (pp_global Cons r ++ space_if (ppl<>[]) ++ prlist_with_sep spc identity ppl)
+    (pp_global Cons r ++ space_if (not (List.is_empty ppl)) ++ prlist_with_sep spc identity ppl)
 
 and pp_gen_pat par ids env = function
   | Pcons (r,l) -> pp_cons_pat par r (List.map (pp_gen_pat true ids env) l)
@@ -210,7 +210,7 @@ and pp_pat env pv =
   prvecti
     (fun i x ->
        pp_one_pat env pv.(i) ++
-       if i = Array.length pv - 1 then str "}" else
+       if Int.equal i (Array.length pv - 1) then str "}" else
 	 (str ";" ++ fnl ()))
     pv
 
@@ -246,7 +246,7 @@ let pp_singleton kn packet =
   let l' = List.rev l in
   hov 2 (str "type " ++ pp_global Type (IndRef (kn,0)) ++ spc () ++
 	 prlist_with_sep spc pr_id l ++
-	 (if l <> [] then str " " else mt ()) ++ str "=" ++ spc () ++
+	 (if not (List.is_empty l) then str " " else mt ()) ++ str "=" ++ spc () ++
 	 pp_type false l' (List.hd packet.ip_types.(0)) ++ fnl () ++
 	 pp_comment (str "singleton inductive, whose constructor was " ++
 		     pr_id packet.ip_consnames.(0)))
@@ -261,10 +261,10 @@ let pp_one_ind ip pl cv =
       	       	prlist_with_sep
 		  (fun () -> (str " ")) (pp_type true pl) l))
   in
-  str (if Array.length cv = 0 then "type " else "data ") ++
+  str (if Array.is_empty cv then "type " else "data ") ++
   pp_global Type (IndRef ip) ++
   prlist_strict (fun id -> str " " ++ pr_lower_id id) pl ++ str " =" ++
-  if Array.length cv = 0 then str " () -- empty inductive"
+  if Array.is_empty cv then str " () -- empty inductive"
   else
     (fnl () ++ str " " ++
      v 0 (str "  " ++
@@ -289,7 +289,7 @@ let rec pp_ind first kn i ind =
 (*s Pretty-printing of a declaration. *)
 
 let pp_decl = function
-  | Dind (kn,i) when i.ind_kind = Singleton ->
+  | Dind (kn,i) when i.ind_kind == Singleton ->
       pp_singleton kn i.ind_packets.(0) ++ fnl ()
   | Dind (kn,i) -> hov 0 (pp_ind true kn 0 i)
   | Dtype (r, l, t) ->
@@ -302,7 +302,7 @@ let pp_decl = function
 	    prlist (fun id -> str (id^" ")) ids ++ str "=" ++ spc () ++ str s
 	  with Not_found ->
 	    prlist (fun id -> pr_id id ++ str " ") l ++
-	    if t = Taxiom then str "= () -- AXIOM TO BE REALIZED\n"
+	    if t == Taxiom then str "= () -- AXIOM TO BE REALIZED\n"
 	    else str "=" ++ spc () ++ pp_type false l t
 	in
 	hov 2 (str "type " ++ pp_global Type r ++ spc () ++ st) ++ fnl2 ()
@@ -313,7 +313,7 @@ let pp_decl = function
       prvecti
 	(fun i r ->
 	  let void = is_inline_custom r ||
-	    (not (is_custom r) && defs.(i) = MLexn "UNUSED")
+	    (not (is_custom r) && match defs.(i) with MLexn "UNUSED" -> true | _ -> false)
 	  in
 	  if void then mt ()
 	  else

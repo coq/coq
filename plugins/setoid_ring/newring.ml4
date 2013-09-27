@@ -50,7 +50,7 @@ let tag_arg tag_rec map subs i c =
   match map i with
       Eval -> mk_clos subs c
     | Prot -> mk_atom c
-    | Rec -> if i = -1 then mk_clos subs c else tag_rec c
+    | Rec -> if Int.equal i (-1) then mk_clos subs c else tag_rec c
 
 let rec mk_clos_but f_map subs t =
   match f_map t with
@@ -423,7 +423,7 @@ let theory_to_obj : ring_info -> obj =
   let cache_th (name,th) = add_entry name th in
   declare_object
     {(default_object "tactic-new-ring-theory") with
-      open_function = (fun i o -> if i=1 then cache_th o);
+      open_function = (fun i o -> if Int.equal i 1 then cache_th o);
       cache_function = cache_th;
       subst_function = subst_th;
       classify_function = (fun x -> Substitute x)}
@@ -730,7 +730,7 @@ VERNAC ARGUMENT EXTEND ring_mod
 END
 
 let set_once s r v =
-  if !r = None then r := Some v else error (s^" cannot be set twice")
+  if Option.is_empty !r then r := Some v else error (s^" cannot be set twice")
 
 let process_ring_mods l =
   let kind = ref None in
@@ -982,7 +982,7 @@ let ftheory_to_obj : field_info -> obj =
   let cache_th (name,th) = add_field_entry name th in
   declare_object
     {(default_object "tactic-new-field-theory") with
-      open_function = (fun i o -> if i=1 then cache_th o);
+      open_function = (fun i o -> if Int.equal i 1 then cache_th o);
       cache_function = cache_th;
       subst_function = subst_th;
       classify_function = (fun x -> Substitute x) }

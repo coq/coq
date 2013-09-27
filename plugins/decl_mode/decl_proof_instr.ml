@@ -77,7 +77,7 @@ let special_nf gl=
 
 let is_good_inductive env ind =
   let mib,oib = Inductive.lookup_mind_specif env ind in
-    oib.mind_nrealargs = 0 && not (Inductiveops.mis_is_recursive (ind,mib,oib))
+    Int.equal oib.mind_nrealargs 0 && not (Inductiveops.mis_is_recursive (ind,mib,oib))
 
 let check_not_per pts =
   if not (Proof.is_done pts) then
@@ -93,7 +93,7 @@ let mk_evd metalist gls =
     meta_declare meta typ evd in
     List.fold_right add_one metalist evd0
 
-let is_tmp id = (Id.to_string id).[0] = '_'
+let is_tmp id = (Id.to_string id).[0] == '_'
 
 let tmp_ids gls =
   let ctx = pf_hyps gls in
@@ -289,7 +289,7 @@ type stackd_elt =
 
 let rec replace_in_list m l = function
     [] -> raise Not_found
-  | c::q -> if m=fst c then l@q else c::replace_in_list m l q
+  | c::q -> if Int.equal m (fst c) then l@q else c::replace_in_list m l q
 
 let enstack_subsubgoals env se stack gls=
   let hd,params = decompose_app (special_whd gls se.se_type) in
@@ -390,7 +390,7 @@ let concl_refiner metas body gls =
 	let nenv = Environ.push_named (_x,None,_A) env in
 	let asort = family_of_sort (Typing.sort_of nenv evd _A) in
 	let nsubst = (n,mkVar _x)::subst in
-	  if rest = [] then
+	  if List.is_empty rest then
 	    asort,_A,mkNamedLambda _x _A (subst_meta nsubst body)
 	  else
 	    let bsort,_B,nbody =
@@ -438,7 +438,7 @@ let thus_tac c ctyp submetas gls =
       find_subsubgoal c ctyp 0 submetas gls
     with Not_found ->
       error "I could not relate this statement to the thesis." in
-  if list = [] then
+  if List.is_empty list then
     exact_check proof gls
   else
     let refiner = concl_refiner list proof gls in
@@ -498,7 +498,7 @@ let decompose_eq id gls =
   let whd =  (special_whd gls typ) in
     match kind_of_term whd with
 	App (f,args)->
-	  if eq_constr f _eq && (Array.length args)=3
+	  if eq_constr f _eq && Int.equal (Array.length args) 3
 	  then (args.(0),
 		args.(1),
 		args.(2))
@@ -672,7 +672,7 @@ let conjunction_arity id gls =
 	    Inductive.lookup_mind_specif env ind in
           let gentypes=
             Inductive.arities_of_constructors ind (mib,oib) in
-	  let _ = if Array.length gentypes <> 1 then raise Not_found in
+	  let _ = if not (Int.equal (Array.length gentypes) 1) then raise Not_found in
 	  let apptype = prod_applist gentypes.(0) params in
 	  let rc,_ = Reduction.dest_prod env apptype in
 	    List.length rc
@@ -791,7 +791,7 @@ let is_rec_pos (main_ind,wft) =
       None -> false
     | Some index ->
 	match fst (Rtree.dest_node wft) with
-	    Mrec (_,i) when i = index -> true
+	    Mrec (_,i) when Int.equal i index -> true
 	  | _ -> false
 
 let rec constr_trees (main_ind,wft) ind =
@@ -876,7 +876,7 @@ let per_tac etype casee gls=
 	      {pm_stack=
 		  Per(etype,per_info,ek,[])::info.pm_stack} gls
       | Virtual cut ->
-	  assert (cut.cut_stat.st_label=Anonymous);
+	  assert (cut.cut_stat.st_label == Anonymous);
 	  let id = pf_get_new_id (Id.of_string "anonymous_matched") gls in
 	  let c = mkVar id in
 	  let modified_cut =
@@ -940,7 +940,7 @@ let rec tree_of_pats ((id,_) as cpl) pats =
 			       tree_of_pats cpl (rest_args::stack))
 		| PatCstr (_,(ind,cnum),args,nam) ->
 		    let nexti i ati =
-		      if i = pred cnum then
+		      if Int.equal i (pred cnum) then
 			let nargs =
 			  List.map_i (fun j a -> (a,ati.(j))) 0 args in
 			  Some (Id.Set.singleton id,
@@ -985,7 +985,7 @@ let rec add_branch ((id,_) as cpl) pats tree=
 		      match tree with
 			Skip_patt (ids,t) ->
 			  let nexti i ati =
-			    if i = pred cnum then
+			    if Int.equal i (pred cnum) then
 			      let nargs =
 				List.map_i (fun j a -> (a,ati.(j))) 0 args in
 				Some (Id.Set.add id ids,
@@ -996,11 +996,11 @@ let rec add_branch ((id,_) as cpl) pats tree=
 				    skip_args t ids (Array.length ati))
 			  in init_tree ids ind rp nexti
 		      | Split_patt (_,ind0,_) ->
-			  if (ind <> ind0) then error
+			  if (not (eq_ind ind ind0)) then error
 			    (* this can happen with coercions *)
 	                    "Case pattern belongs to wrong inductive type.";
 			  let mapi i ati bri =
-			    if i = pred cnum then
+			    if Int.equal i (pred cnum) then
 			      let nargs =
 				List.map_i (fun j a -> (a,ati.(j))) 0 args in
 				append_branch cpl 0
@@ -1029,14 +1029,14 @@ and append_tree ((id,_) as cpl) depth pats tree =
 
 let rec st_assoc id = function
     [] -> raise Not_found
-  | st::_ when st.st_label = id  -> st.st_it
+  | st::_ when Name.equal st.st_label id  -> st.st_it
   | _ :: rest -> st_assoc id rest
 
 let thesis_for obj typ per_info env=
   let rc,hd1=decompose_prod typ in
   let cind,all_args=decompose_app typ in
   let ind = destInd cind in
-  let _ = if ind <> per_info.per_ind then
+  let _ = if not (eq_ind ind per_info.per_ind) then
     errorlabstrm "thesis_for"
       ((Printer.pr_constr_env env obj) ++ spc () ++
 	 str"cannot give an induction hypothesis (wrong inductive type).") in
@@ -1170,7 +1170,7 @@ let hrec_for fix_id per_info gls obj_id =
   let typ=pf_get_hyp_typ gls obj_id in
   let rc,hd1=decompose_prod typ in
   let cind,all_args=decompose_app typ in
-  let ind = destInd cind in assert (ind=per_info.per_ind);
+  let ind = destInd cind in assert (eq_ind ind per_info.per_ind);
   let params,args= List.chop per_info.per_nparams all_args in
   assert begin
     try List.for_all2 eq_constr params per_info.per_params with
@@ -1209,7 +1209,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	let env=pf_env gls in
 	let ctyp=pf_type_of gls casee in
 	let hd,all_args = decompose_app (special_whd gls ctyp) in
-	let _ = assert (destInd hd = ind) in (* just in case *)
+	let _ = assert (eq_ind (destInd hd) ind) in (* just in case *)
 	let params,real_args = List.chop nparams all_args in
 	let abstract_obj c body =
 	  let typ=pf_type_of gls c in
@@ -1230,7 +1230,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	  let args_ids = constr_args_ids.(i) in
 	  let rec aux n = function
 	      [] ->
-		assert (n=Array.length recargs);
+		assert (Int.equal n (Array.length recargs));
 		next_objs,[],nhrec
 	    | id :: q ->
 		let objs,recs,nrec = aux (succ n) q in
@@ -1302,14 +1302,12 @@ let end_tac et2 gls =
       | Per(et',pi,ek,clauses)::_ -> (et',pi,ek,clauses)
       | [] ->
 	  anomaly (Pp.str "This case should already be trapped") in
-  let et =
-    if et1 <> et2 then
-      match et1 with
-	  ET_Case_analysis ->
-	    error "\"end cases\" expected."
-	| ET_Induction ->
-	    error "\"end induction\" expected."
-    else et1 in
+  let et = match et1, et2 with
+  | ET_Case_analysis, ET_Case_analysis -> et1
+  | ET_Induction, ET_Induction -> et1
+  | ET_Case_analysis, _ -> error "\"end cases\" expected."
+  | ET_Induction, _ -> error "\"end induction\" expected."
+  in
     tclTHEN
       tcl_erase_info
       begin

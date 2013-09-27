@@ -63,7 +63,7 @@ type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
 let create_delegate () =
   let c = ref Delegated in
   c, (fun v ->
-      assert (!c = Delegated);
+      assert (!c == Delegated);
       match v with
       | `Val v -> c := Val (v, None)
       | `Exn e -> c := Exn e

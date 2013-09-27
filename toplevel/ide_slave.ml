@@ -118,7 +118,7 @@ let interp (id,raw,verbosely,s) =
   let loc, ast as loc_ast = Vernac.parse_sentence (pa,None) in
   if not raw then coqide_cmd_checks loc_ast;
   Flags.make_silent (not verbosely);
-  if id = 0 then Vernac.eval_expr (loc, VernacStm (Command ast))
+  if Int.equal id 0 then Vernac.eval_expr (loc, VernacStm (Command ast))
   else Vernac.eval_expr loc_ast;
   Flags.make_silent true;
   Stm.get_current_state (), read_stdout ()
@@ -193,7 +193,7 @@ let process_goal sigma g =
 let goals () =
   Stm.finish ();
   let s = read_stdout () in
-  if s <> "" then msg_info (str s);
+  if not (String.is_empty s) then msg_info (str s);
   try
     let pfts = Proof_global.give_me_the_proof () in
     let (goals, zipper, sigma) = Proof.proof pfts in
@@ -211,7 +211,7 @@ let evars () =
   try
     Stm.finish ();
     let s = read_stdout () in
-    if s <> "" then msg_info (str s);
+    if not (String.is_empty s) then msg_info (str s);
     let pfts = Proof_global.give_me_the_proof () in
     let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
     let exl = Evar.Map.bindings (Evarutil.non_instantiated sigma) in
@@ -247,7 +247,7 @@ let status force =
   Stm.finish ();
   if force then Stm.join ();
   let s = read_stdout () in
-  if s <> "" then msg_info (str s);
+  if not (String.is_empty s) then msg_info (str s);
   let path =
     let l = Names.DirPath.repr (Lib.cwd ()) in
     List.rev_map Names.Id.to_string l
@@ -326,7 +326,7 @@ let eval_call xml_oc log c =
     let r = f x in
     catch_break := false;
     let out = read_stdout () in
-    if out <> "" then log (str out);
+    if not (String.is_empty out) then log (str out);
     r
   in
   let handler = {

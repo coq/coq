@@ -1511,7 +1511,7 @@ let assert_as first ipat c gl =
   match kind_of_term (pf_hnf_type_of gl c) with
   | Sort s ->
       let id,tac = prepare_intros s ipat gl in
-      let repl = allow_replace c ipat <> None in
+      let repl = not (Option.is_empty (allow_replace c ipat)) in
       tclTHENS
 	((if first then internal_cut_gen else internal_cut_rev_gen) repl id c)
 	(if first then [tclIDTAC; tac] else [tac; tclIDTAC]) gl

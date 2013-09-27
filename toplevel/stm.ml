@@ -544,7 +544,7 @@ end = struct (* {{{ *)
       Condition.signal c;
       Mutex.unlock m
 
-    let wait_until_n_are_waiting_and_queue_empty j (q,m,c,n,cn) =
+    let wait_until_n_are_waiting_and_queue_empty (j : int) (q,m,c,n,cn) =
       Mutex.lock m;
       while not (Queue.is_empty q) || !n < j do Condition.wait cn m done;
       Mutex.unlock m
@@ -562,7 +562,7 @@ end = struct (* {{{ *)
     let slave_manager = ref (None : Thread.t option)
     
     let is_empty () = Option.is_empty !slave_manager
-    let n_slaves () = if !slave_manager = None then 0 else 1
+    let n_slaves () = if Option.is_empty !slave_manager then 0 else 1
 
     let respawn () =
       let c2s_r, c2s_w = Unix.pipe () in

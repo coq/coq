@@ -279,7 +279,7 @@ let rec alpha_rt excluded rt =
     | GLambda(loc,Name id,k,t,b) ->
 	let new_id = Namegen.next_ident_away id excluded in
 	let t,b =
-	  if new_id = id
+	  if Id.equal new_id id
 	  then t,b
 	  else
 	    let replace = change_vars (Id.Map.add id new_id Id.Map.empty) in
@@ -293,7 +293,7 @@ let rec alpha_rt excluded rt =
 	let new_id = Namegen.next_ident_away id excluded in
 	let new_excluded = new_id::excluded in
 	let t,b =
-	  if new_id = id
+	  if Id.equal new_id id
 	  then t,b
 	  else
 	    let replace = change_vars (Id.Map.add id new_id Id.Map.empty) in
@@ -305,7 +305,7 @@ let rec alpha_rt excluded rt =
     | GLetIn(loc,Name id,t,b) ->
 	let new_id = Namegen.next_ident_away id excluded in
 	let t,b =
-	  if new_id = id
+	  if Id.equal new_id id
 	  then t,b
 	  else
 	    let replace = change_vars (Id.Map.add id new_id Id.Map.empty) in
@@ -325,7 +325,7 @@ let rec alpha_rt excluded rt =
 		 | Anonymous -> (na::nal,excluded,mapping)
 		 | Name id ->
 		     let new_id = Namegen.next_ident_away id excluded in
-		     if new_id = id
+		     if Id.equal new_id id
 		     then
 		       na::nal,id::excluded,mapping
 		     else
@@ -391,7 +391,7 @@ let is_free_in id =
     | GLambda(_,n,_,t,b) | GProd(_,n,_,t,b) | GLetIn(_,n,t,b) ->
 	let check_in_b =
 	  match n with
-	    | Name id' -> Id.compare id' id <> 0
+	    | Name id' -> not (Id.equal id' id)
 	    | _ -> true
 	in
 	is_free_in t || (check_in_b && is_free_in b)
@@ -400,7 +400,7 @@ let is_free_in id =
 	  List.exists is_free_in_br brl
     | GLetTuple(_,nal,_,b,t) ->
 	let check_in_nal =
-	  not (List.exists (function Name id' -> id'= id | _ -> false) nal)
+	  not (List.exists (function Name id' -> Id.equal id' id | _ -> false) nal)
 	in
 	is_free_in t  || (check_in_nal && is_free_in b)
 
@@ -481,7 +481,7 @@ let replace_var_by_term x_id term =
 		 replace_var_by_pattern b
 		)
       | GLetTuple(_,nal,_,_,_)
-	  when List.exists (function Name id -> id = x_id | _ -> false) nal  ->
+	  when List.exists (function Name id -> Id.equal id x_id | _ -> false) nal  ->
 	  rt
       | GLetTuple(loc,nal,(na,rto),def,b) ->
 	  GLetTuple(loc,
@@ -527,7 +527,7 @@ let rec are_unifiable_aux  = function
       match eq with
 	 | PatVar _,_ | _,PatVar _ -> are_unifiable_aux eqs
 	 | PatCstr(_,constructor1,cpl1,_),PatCstr(_,constructor2,cpl2,_) ->
-	     if constructor2 <> constructor1
+	     if not (eq_constructor constructor2 constructor1)
 	     then raise NotUnifiable
 	     else
 	       let eqs' =
@@ -549,7 +549,7 @@ let rec eq_cases_pattern_aux  = function
       match eq with
 	 | PatVar _,PatVar _ -> eq_cases_pattern_aux eqs
 	 | PatCstr(_,constructor1,cpl1,_),PatCstr(_,constructor2,cpl2,_) ->
-	     if constructor2 <> constructor1
+	     if not (eq_constructor constructor2 constructor1)
 	     then raise NotUnifiable
 	     else
 	       let eqs' =

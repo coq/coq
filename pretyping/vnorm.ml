@@ -24,8 +24,9 @@ let crazy_type =  mkSet
 
 let decompose_prod env t =
   let (name,dom,codom as res) = destProd (whd_betadeltaiota env t) in
-  if name = Anonymous then (Name (Id.of_string "x"),dom,codom)
-  else res
+  match name with
+  | Anonymous -> (Name (Id.of_string "x"), dom, codom)
+  | Name _ -> res
 
 exception Find_at of int
 
@@ -36,7 +37,8 @@ let invert_tag cst tag reloc_tbl =
   try
     for j = 0 to Array.length reloc_tbl - 1 do
       let tagj,arity = reloc_tbl.(j) in
-      if tag = tagj && (cst && arity = 0 || not(cst || arity = 0)) then
+      let no_arity = Int.equal arity 0 in
+      if Int.equal tag tagj && (cst && no_arity || not (cst || no_arity)) then
 	raise (Find_at j)
       else ()
     done;raise Not_found
@@ -57,7 +59,7 @@ let type_constructor mind mib typ params =
   let s = ind_subst mind mib in
   let ctyp = substl s typ in
   let nparams = Array.length params in
-  if nparams = 0 then ctyp
+  if Int.equal nparams 0 then ctyp
   else
     let _,ctyp = decompose_prod_n nparams ctyp in
     substl (Array.rev_to_list params) ctyp
@@ -218,7 +220,7 @@ and nf_predicate env ind mip params v pT =
       let name = Name (Id.of_string "c") in
       let n = mip.mind_nrealargs in
       let rargs = Array.init n (fun i -> mkRel (n-i)) in
-      let params = if n=0 then params else Array.map (lift n) params in
+      let params = if Int.equal n 0 then params else Array.map (lift n) params in
       let dom = mkApp(mkInd ind,Array.append params rargs) in
       let body = nf_vtype (push_rel (name,None,dom) env) vb in
       true, mkLambda(name,dom,body)

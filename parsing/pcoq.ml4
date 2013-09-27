@@ -756,7 +756,7 @@ let coincide s pat off =
   !break
 
 let tactic_level s =
-  if Int.equal (String.length s) 7 && String.sub s 0 6 = "tactic" then
+  if Int.equal (String.length s) 7 && coincide s "tactic" 0 then
     let c = s.[6] in if '5' >= c && c >= '0' then Some (Char.code c - 48)
     else None
   else None

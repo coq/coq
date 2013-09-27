@@ -79,7 +79,7 @@ let rec prefixes_mp mp = match mp with
   | _ -> MPset.singleton mp
 
 let rec get_nth_label_mp n = function
-  | MPdot (mp,l) -> if n=1 then l else get_nth_label_mp (n-1) mp
+  | MPdot (mp,l) -> if Int.equal n 1 then l else get_nth_label_mp (n-1) mp
   | _ -> failwith "get_nth_label: not enough MPdot"
 
 let common_prefix_from_list mp0 mpl =
@@ -90,7 +90,7 @@ let common_prefix_from_list mp0 mpl =
   in f mpl
 
 let rec parse_labels2 ll mp1 = function
-  | mp when mp1=mp -> mp,ll
+  | mp when ModPath.equal mp1 mp -> mp,ll
   | MPdot (mp,l) -> parse_labels2 (l::ll) mp1 mp
   | mp -> mp,ll
 
@@ -137,7 +137,7 @@ let is_coinductive r =
     | IndRef (kn,_) -> kn
     | _ -> assert false
   in
-  try Mindmap_env.find kn !inductive_kinds = Coinductive
+  try Mindmap_env.find kn !inductive_kinds == Coinductive
   with Not_found -> false
 
 let is_coinductive_type = function
@@ -278,18 +278,18 @@ let err s = errorlabstrm "Extraction" s
 
 let warning_axioms () =
   let info_axioms = Refset'.elements !info_axioms in
-  if info_axioms = [] then ()
+  if List.is_empty info_axioms then ()
   else begin
-    let s = if List.length info_axioms = 1 then "axiom" else "axioms" in
+    let s = if Int.equal (List.length info_axioms) 1 then "axiom" else "axioms" in
     msg_warning
       (str ("The following "^s^" must be realized in the extracted code:")
        ++ hov 1 (spc () ++ prlist_with_sep spc safe_pr_global info_axioms)
        ++ str "." ++ fnl ())
   end;
   let log_axioms = Refset'.elements !log_axioms in
-  if log_axioms = [] then ()
+  if List.is_empty log_axioms then ()
   else begin
-    let s = if List.length log_axioms = 1 then "axiom was" else "axioms were"
+    let s = if Int.equal (List.length log_axioms) 1 then "axiom was" else "axioms were"
     in
     msg_warning
       (str ("The following logical "^s^" encountered:") ++
@@ -300,13 +300,13 @@ let warning_axioms () =
        spc () ++ str "may lead to incorrect or non-terminating ML terms." ++
        fnl ())
   end;
-  if !Flags.load_proofs = Flags.Dont && info_axioms@log_axioms <> [] then
+  if !Flags.load_proofs == Flags.Dont && not (List.is_empty (info_axioms@log_axioms)) then
     msg_warning
       (str "Some of these axioms might be due to option -dont-load-proofs.")
 
 let warning_opaques accessed =
   let opaques = Refset'.elements !opaques in
-  if opaques = [] then ()
+  if List.is_empty opaques then ()
   else
     let lst = hov 1 (spc () ++ prlist_with_sep spc safe_pr_global opaques) in
     if accessed then
@@ -478,7 +478,7 @@ type opt_flag =
       opt_lin_let : bool;   (* 512 *)
       opt_lin_beta : bool } (* 1024 *)
 
-let kth_digit n k = (n land (1 lsl k) <> 0)
+let kth_digit n k = not (Int.equal (n land (1 lsl k)) 0)
 
 let flag_of_int n =
     { opt_kill_dum = kth_digit n 0;
@@ -515,7 +515,7 @@ let _ = declare_bool_option
            optdepr = false;
 	   optname = "Extraction Optimize";
 	   optkey = ["Extraction"; "Optimize"];
-	   optread = (fun () -> !int_flag_ref <> 0);
+	   optread = (fun () -> not (Int.equal !int_flag_ref 0));
 	   optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
 
 let _ = declare_int_option
@@ -711,7 +711,7 @@ let file_of_modfile mp =
     | _ -> assert false
   in
   let s = String.copy (string_of_modfile mp) in
-  if s.[0] <> s0.[0] then s.[0] <- s0.[0];
+  if s.[0] != s0.[0] then s.[0] <- s0.[0];
   s
 
 let add_blacklist_entries l =
@@ -773,7 +773,7 @@ let add_custom_match r s =
   custom_matchs := Refmap'.add r s !custom_matchs
 
 let indref_of_match pv =
-  if Array.length pv = 0 then raise Not_found;
+  if Array.is_empty pv then raise Not_found;
   let (_,pat,_) = pv.(0) in
   match pat with
     | Pusual (ConstructRef (ip,_)) -> IndRef ip
@@ -821,7 +821,7 @@ let extract_constant_inline inline r ids s =
 	if Reduction.is_arity env typ
 	  then begin
 	    let nargs = Hook.get use_type_scheme_nb_args env typ in
-	    if List.length ids <> nargs then error_axiom_scheme g nargs
+	    if not (Int.equal (List.length ids) nargs) then error_axiom_scheme g nargs
 	  end;
 	Lib.add_anonymous_leaf (inline_extraction (inline,[g]));
 	Lib.add_anonymous_leaf (in_customs (g,ids,s))
@@ -836,7 +836,7 @@ let extract_inductive r s l optstr =
     | IndRef ((kn,i) as ip) ->
 	let mib = Global.lookup_mind kn in
 	let n = Array.length mib.mind_packets.(i).mind_consnames in
-	if n <> List.length l then error_nb_cons ();
+	if not (Int.equal n (List.length l)) then error_nb_cons ();
 	Lib.add_anonymous_leaf (inline_extraction (true,[g]));
 	Lib.add_anonymous_leaf (in_customs (g,[],s));
 	Option.iter (fun s -> Lib.add_anonymous_leaf (in_custom_matchs (g,s)))

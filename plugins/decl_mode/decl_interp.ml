@@ -24,7 +24,7 @@ open Misctypes
 
 (* INTERN *)
 
-let glob_app (loc,hd,args) = if args =[] then hd else GApp(loc,hd,args)
+let glob_app (loc,hd,args) = if List.is_empty args then hd else GApp(loc,hd,args)
 
 let intern_justification_items globs =
   Option.map (List.map (intern_constr globs))
@@ -164,7 +164,7 @@ let decompose_eq env id =
   let whd = special_whd env typ in
     match kind_of_term whd with
 	App (f,args)->
-	  if eq_constr f _eq && (Array.length args)=3
+	  if eq_constr f _eq && Int.equal (Array.length args) 3
 	  then args.(0)
 	  else error "Previous step is not an equality."
       | _ -> error "Previous step is not an equality."
@@ -328,10 +328,10 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
   let num_params = pinfo.per_nparams in
   let _ =
     let expected = mib.Declarations.mind_nparams - num_params in
-      if List.length params <> expected then
+      if not (Int.equal (List.length params) expected) then
 	errorlabstrm "suppose it is" 
 	  (str "Wrong number of extra arguments: " ++ 
-	     (if expected = 0 then str "none" else int expected) ++ spc () ++
+	     (if Int.equal expected 0 then str "none" else int expected) ++ spc () ++
 	     str "expected.") in
   let app_ind =
     let rind = GRef (Loc.ghost,Globnames.IndRef pinfo.per_ind) in

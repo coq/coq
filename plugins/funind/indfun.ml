@@ -376,7 +376,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
     in
     match wf_arg with
       | None ->
-	if List.length names = 1 then 1
+	if Int.equal (List.length names) 1 then 1
 	else error "Recursive argument must be specified"
       | Some wf_arg ->
 	  List.index (Name wf_arg) names
@@ -437,7 +437,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 		(function
 		   | Constrexpr.LocalRawAssum(l,k,t) ->
 		       List.exists
-			 (function (_,Name id) -> id =  wf_args | _ -> false)
+			 (function (_,Name id) -> Id.equal id wf_args | _ -> false)
 			 l
 		   | _ -> false
 		)
@@ -519,9 +519,9 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	      let nassoc = make_assoc assoc old_nal' nal in
 	      let assum = LocalRawAssum(nal,bk,replace_vars_constr_expr assoc nal't) in
 	      rebuild_bl ((assum :: aux), nassoc) bl' 
-		(if new_nal' = [] && rest = []
-		 then  typ' 
-		 else if new_nal' = [] 
+		(if List.is_empty new_nal' && List.is_empty rest
+		 then typ'
+		 else if List.is_empty new_nal'
 		 then CProdN(Loc.ghost,rest,typ')
 		 else CProdN(Loc.ghost,((new_nal',bk',nal't)::rest),typ'))
 	    else 
@@ -552,7 +552,7 @@ let recompute_binder_list (fixpoint_exprl : (Vernacexpr.fixpoint_expr * Vernacex
 
 let do_generate_principle on_error register_built interactive_proof
     (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) :unit =
-  List.iter (fun (_,l) -> if l <> [] then error "Function does not support notations for now") fixpoint_exprl;
+  List.iter (fun (_,l) -> if not (List.is_empty l) then error "Function does not support notations for now") fixpoint_exprl;
   let _is_struct =
     match fixpoint_exprl with
       | [((_,(wf_x,Constrexpr.CWfRec wf_rel),_,_,_),_) as fixpoint_expr] ->
@@ -633,7 +633,7 @@ let rec add_args id new_args b =
   match b with
   | CRef r ->
       begin      match r with
-	| Libnames.Ident(loc,fname) when fname = id ->
+	| Libnames.Ident(loc,fname) when Id.equal fname id ->
 	    CAppExpl(Loc.ghost,(None,r),new_args)
 	| _ -> b
       end
@@ -651,7 +651,7 @@ let rec add_args id new_args b =
   | CAppExpl(loc,(pf,r),exprl) ->
       begin
 	match r with
-	| Libnames.Ident(loc,fname) when fname = id ->
+	| Libnames.Ident(loc,fname) when Id.equal fname id ->
 	    CAppExpl(loc,(pf,r),new_args@(List.map (add_args id new_args) exprl))
 	| _ -> CAppExpl(loc,(pf,r),List.map (add_args id new_args) exprl)
       end

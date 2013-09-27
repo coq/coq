@@ -266,3 +266,4 @@ let union_side_effects l1 l2 = l1 @ l2
 let flatten_side_effects l = List.flatten l
 let side_effects_of_list l = l
 let cons_side_effects x l = x :: l
+let side_effects_is_empty = List.is_empty

@@ -77,7 +77,7 @@ module Stack = CStack
 
 let matrix_transpose mat =
   List.fold_right (List.map2 (fun p c -> p::c)) mat
-    (if mat = [] then [] else List.map (fun _ -> []) (List.hd mat))
+    (if List.is_empty mat then [] else List.map (fun _ -> []) (List.hd mat))
 
 (* Functions *)
 

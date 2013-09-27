@@ -283,7 +283,7 @@ let constr_head_match u t=
   if isApp u
   then
     let uhd,args= destApp u in
-    uhd=t
+    Constr.equal uhd t
   else false
 
 (** [hdMatchSub inu t] returns the list of occurrences of [t] in
@@ -387,7 +387,7 @@ let finduction (oid:Id.t option) (heuristic: fapp_info list -> fapp_info list)
   let info_list = find_fapp test g in
   let ordered_info_list = heuristic info_list in
   prlistconstr (List.map (fun x -> applist (x.fname,x.largs)) ordered_info_list);
-  if List.length ordered_info_list = 0 then Errors.error "function not found in goal\n";
+  if List.is_empty ordered_info_list then Errors.error "function not found in goal\n";
   let taclist: Proof_type.tactic list =
     List.map
       (fun info ->
@@ -476,10 +476,10 @@ VERNAC COMMAND EXTEND MergeFunind CLASSIFIED AS SIDEFF
        let ar1 = List.length (fst (decompose_prod f1type)) in
        let ar2 = List.length (fst (decompose_prod f2type)) in
        let _ =
-	 if ar1 <> List.length cl1 then
+	 if not (Int.equal ar1 (List.length cl1)) then
 	   Errors.error ("not the right number of arguments for " ^ Id.to_string id1) in
        let _ =
-	 if ar2 <> List.length cl2 then
+	 if not (Int.equal ar2 (List.length cl2)) then
 	   Errors.error ("not the right number of arguments for " ^ Id.to_string id2) in
        Merge.merge id1 id2 (Array.of_list cl1) (Array.of_list cl2)  id
      ]

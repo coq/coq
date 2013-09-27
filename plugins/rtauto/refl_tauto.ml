@@ -95,7 +95,7 @@ let rec make_form atom_env gls term =
 	Prod(_,a,b) ->
 	  if not (Termops.dependent (mkRel 1) b) &&
 	    Retyping.get_sort_family_of
-	    (pf_env gls) (Tacmach.project gls) a = InProp
+	    (pf_env gls) (Tacmach.project gls) a == InProp
 	  then
 	    let fa=make_form atom_env gls a in
 	    let fb=make_form atom_env gls b in
@@ -105,19 +105,19 @@ let rec make_form atom_env gls term =
       | Cast(a,_,_) ->
 	  make_form atom_env gls a
       | Ind ind ->
-	  if ind = Lazy.force li_False then
+	  if Names.eq_ind ind (Lazy.force li_False) then
 	    Bot
 	  else
 	    make_atom atom_env (normalize term)
-      | App(hd,argv) when Array.length argv = 2 ->
+      | App(hd,argv) when Int.equal (Array.length argv) 2 ->
 	  begin
 	    try
 	      let ind = destInd hd in
-		if ind = Lazy.force li_and then
+		if Names.eq_ind ind (Lazy.force li_and) then
 		  let fa=make_form atom_env gls argv.(0) in
 		  let fb=make_form atom_env gls argv.(1) in
 		    Conjunct (fa,fb)
-		else if ind = Lazy.force li_or then
+		else if Names.eq_ind ind (Lazy.force li_or) then
 		  let fa=make_form atom_env gls argv.(0) in
 		  let fb=make_form atom_env gls argv.(1) in
 		    Disjunct (fa,fb)
@@ -135,7 +135,7 @@ let rec make_hyps atom_env gls lenv = function
 	make_hyps atom_env gls (typ::lenv) rest in
 	if List.exists (Termops.dependent (mkVar id)) lenv ||
 	  (Retyping.get_sort_family_of
-	     (pf_env gls) (Tacmach.project gls) typ <> InProp)
+	     (pf_env gls) (Tacmach.project gls) typ != InProp)
 	then
 	  hrec
 	else
@@ -143,7 +143,7 @@ let rec make_hyps atom_env gls lenv = function
 
 let rec build_pos n =
   if n<=1 then force node_count l_xH
-  else if n land 1 = 0 then
+  else if Int.equal (n land 1) 0 then
     mkApp (force node_count l_xO,[|build_pos (n asr 1)|])
   else
     mkApp (force node_count l_xI,[|build_pos (n asr 1)|])
@@ -261,17 +261,16 @@ let rtauto_tac gls=
   let gl=pf_concl gls in
   let _=
     if Retyping.get_sort_family_of
-      (pf_env gls) (Tacmach.project gls) gl <> InProp
+      (pf_env gls) (Tacmach.project gls) gl != InProp
     then errorlabstrm "rtauto" (Pp.str "goal should be in Prop") in
   let glf=make_form gamma gls gl in
   let hyps=make_hyps gamma gls [gl] (pf_hyps gls) in
   let formula=
     List.fold_left (fun gl (_,f)-> Arrow (f,gl)) glf hyps in
-  let search_fun =
-    if Tacinterp.get_debug()=Tactic_debug.DebugOn 0 then
-      Search.debug_depth_first
-    else
-      Search.depth_first in
+  let search_fun = match Tacinterp.get_debug() with
+  | Tactic_debug.DebugOn 0 -> Search.debug_depth_first
+  | _ -> Search.depth_first
+  in
   let _ =
     begin
       reset_info ();

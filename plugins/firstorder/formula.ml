@@ -22,11 +22,11 @@ let red_flags=ref Closure.betaiotazeta
 
 let (=?) f g i1 i2 j1 j2=
   let c=f i1 i2 in
-    if c=0 then g j1 j2 else c
+    if Int.equal c 0 then g j1 j2 else c
 
 let (==?) fg h i1 i2 j1 j2 k1 k2=
   let c=fg i1 i2 j1 j2 in
-    if c=0 then h k1 k2 else c
+    if Int.equal c 0 then h k1 k2 else c
 
 type ('a,'b) sum = Left of 'a | Right of 'b
 
@@ -88,20 +88,20 @@ let kind_of_formula gl term =
 		    let ind=destInd i in
 		    let (mib,mip) = Global.lookup_inductive ind in
 		    let nconstr=Array.length mip.mind_consnames in
-		      if nconstr=0 then
+		      if Int.equal nconstr 0 then
 			False(ind,l)
 		      else
 			let has_realargs=(n>0) in
 			let is_trivial=
 			  let is_constant c =
-			    nb_prod c = mib.mind_nparams in
+			    Int.equal (nb_prod c) mib.mind_nparams in
 			    Array.exists is_constant mip.mind_nf_lc in
 			  if Inductiveops.mis_is_recursive (ind,mib,mip) ||
 			    (has_realargs && not is_trivial)
 			  then
 			    Atom cciterm
 			  else
-			    if nconstr=1 then
+			    if Int.equal nconstr 1 then
 			      And(ind,l,is_trivial)
 			    else
 			      Or(ind,l,is_trivial)

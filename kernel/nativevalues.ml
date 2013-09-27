@@ -140,7 +140,7 @@ let args_of_accu (k:accumulator) =
 
 let is_accu x =
   let o = Obj.repr x in
-  Obj.is_block o && Obj.tag o = accumulate_tag
+  Obj.is_block o && Int.equal (Obj.tag o) accumulate_tag
 
 (*let accumulate_fix_code (k:accumulator) (a:t) =
   match atom_of_accu k with
@@ -236,7 +236,7 @@ let kind_of_value (v:t) =
   if Obj.is_int o then Vconst (Obj.magic v)
   else
     let tag = Obj.tag o in
-    if tag = accumulate_tag then 
+    if Int.equal tag accumulate_tag then
       Vaccu (Obj.magic v)
     else 
       if (tag < Obj.lazy_tag) then Vblock (Obj.magic v)

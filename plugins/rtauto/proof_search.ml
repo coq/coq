@@ -160,7 +160,7 @@ let rec fill stack proof =
     | slice::super ->
 	if
 	  !pruning &&
-	  slice.proofs_done=[] &&
+	  List.is_empty slice.proofs_done &&
 	  not (slice.changes_goal && proof.dep_goal) &&
 	  not (Int.Set.exists
 		 (fun i -> Int.Set.mem i proof.dep_hyps)

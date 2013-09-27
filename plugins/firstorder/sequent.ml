@@ -88,7 +88,7 @@ let cm_add typ nam cm=
 let cm_remove typ nam cm=
   try
     let l=CM.find typ cm in
-    let l0=List.filter (fun id->id<>nam) l in
+    let l0=List.filter (fun id-> not (Globnames.eq_gr id nam)) l in
       match l0 with
 	  []->CM.remove typ cm
 	| _ ->CM.add typ l0 cm
@@ -118,7 +118,7 @@ let lookup item seq=
 	let p (id2,o)=
 	  match o with
 	      None -> false
-	    | Some ((m2,t2) as c2)->id=id2 && m2>m && more_general c2 c in
+	    | Some ((m2,t2) as c2)-> Globnames.eq_gr id id2 && m2>m && more_general c2 c in
 	  History.exists p seq.history
 
 let add_formula side nam t seq gl=

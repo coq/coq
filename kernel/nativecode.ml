@@ -135,8 +135,8 @@ let dummy_symb = SymbValue (dummy_value ())
 
 let eq_symbol sy1 sy2 =
   match sy1, sy2 with
-  | SymbValue v1, SymbValue v2 -> v1 = v2
-  | SymbSort s1, SymbSort s2 -> Int.equal (sorts_ord s1 s2) 0
+  | SymbValue v1, SymbValue v2 -> Pervasives.(=) v1 v2 (** FIXME: how is this even valid? *)
+  | SymbSort s1, SymbSort s2 -> Sorts.equal s1 s2
   | SymbName n1, SymbName n2 -> Name.equal n1 n2
   | SymbConst kn1, SymbConst kn2 -> Constant.equal kn1 kn2
   | SymbMatch sw1, SymbMatch sw2 -> eq_annot_sw sw1 sw2
@@ -349,7 +349,7 @@ and eq_mllam_branches gn1 gn2 n env1 env2 br1 br2 =
 let rec hash_mllambda gn n env t =
   match t with
   | MLlocal ln -> combinesmall 1 (LNmap.find ln env)
-  | MLglobal gn' -> combinesmall 2 (if gn = gn' then 0 else Hashtbl.hash gn')
+  | MLglobal gn' -> combinesmall 2 (if eq_gname gn gn' then 0 else Hashtbl.hash gn')
   | MLprimitive prim -> combinesmall 3 (Hashtbl.hash prim)
   | MLlam (lns, ml) ->
       let env = push_lnames n env lns in
@@ -513,9 +513,10 @@ let eq_global g1 g2 =
       let t1 = MLmatch (annot1,c1,accu1,br1) in
       let t2 = MLmatch (annot2,c2,accu2,br2) in
       eq_mllambda gn1 gn2 (Array.length lns1) env1 env2 t1 t2
-  | Gopen s1, Gopen s2 -> s1 = s2
-  | Gtype (ind1, arr1), Gtype (ind2, arr2) -> ind1 = ind2 && arr1 = arr2
-  | Gcomment s1, Gcomment s2 -> s1 = s2
+  | Gopen s1, Gopen s2 -> String.equal s1 s2
+  | Gtype (ind1, arr1), Gtype (ind2, arr2) ->
+      eq_ind ind1 ind2 && Array.equal Int.equal arr1 arr2
+  | Gcomment s1, Gcomment s2 -> String.equal s1 s2
   | _, _ -> false
 
 let hash_global g =

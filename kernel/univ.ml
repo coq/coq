@@ -712,6 +712,7 @@ let check_sorted g sorted =
     - a [le] edge is initially added from [bottom] to all other
       vertices, and [bottom] is used as the source vertex
 *)
+
 let bellman_ford bottom g =
   let () = match lookup_level bottom g with
   | None -> ()
@@ -720,7 +721,7 @@ let bellman_ford bottom g =
   let ( << ) a b = match a, b with
     | _, None -> true
     | None, _ -> false
-    | Some x, Some y -> x < y
+    | Some x, Some y -> (x : int) < y
   and ( ++ ) a y = match a with
     | None -> None
     | Some x -> Some (x-y)

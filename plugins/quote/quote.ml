@@ -207,7 +207,7 @@ let compute_lhs typ i nargsi =
 let compute_rhs bodyi index_of_f =
   let rec aux c =
     match kind_of_term c with
-      | App (j, args) when isRel j && destRel j = index_of_f (* recursive call *) ->
+      | App (j, args) when isRel j && Int.equal (destRel j) index_of_f (* recursive call *) ->
           let i = destRel (Array.last args) in
 	  PMeta (Some (coerce_meta_in i))
       | App (f,args) ->
@@ -239,7 +239,7 @@ let compute_ivs gl f cs =
            (* REL nargsi+1 to REL nargsi + nargs3 are arguments of f *)
            (* REL 1 to REL nargsi are argsi (reverse order) *)
            (* First we test if the RHS is the RHS for constants *)
-                   if isRel bodyi && destRel bodyi = 1 then
+                   if isRel bodyi && Int.equal (destRel bodyi) 1 then
                      c_lhs := Some (compute_lhs (snd (List.hd args3))
                                       i nargsi)
            (* Then we test if the RHS is the RHS for variables *)
@@ -260,7 +260,7 @@ let compute_ivs gl f cs =
                    end)
                 lci;
 
-              if !c_lhs = None && !v_lhs = None then i_can't_do_that ();
+              if Option.is_empty !c_lhs && Option.is_empty !v_lhs then i_can't_do_that ();
 
 	      (* The Cases predicate is a lambda; we assume no dependency *)
 	      let p = match kind_of_term p with
@@ -338,8 +338,8 @@ let path_of_int n =
   (* returns the list of digits of n in reverse order with
      initial 1 removed *)
   let rec digits_of_int n =
-    if n=1 then []
-    else (n mod 2 = 1)::(digits_of_int (n lsr 1))
+    if Int.equal n 1 then []
+    else (Int.equal (n mod 2) 1)::(digits_of_int (n lsr 1))
   in
   List.fold_right
     (fun b c -> mkApp ((if b then Lazy.force coq_Right_idx

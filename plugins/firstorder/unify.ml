@@ -42,7 +42,7 @@ let unif t1 t2=
       and nt2=head_reduce (whd_betaiotazeta Evd.empty t2) in
 	match (kind_of_term nt1),(kind_of_term nt2) with
 	    Meta i,Meta j->
-	      if i<>j then
+	      if not (Int.equal i j) then
 		if i<j then bind j nt1
 		else bind i nt2
 	  | Meta i,_ ->
@@ -63,7 +63,7 @@ let unif t1 t2=
 	      Queue.add (pa,pb) bige;
 	      Queue.add (ca,cb) bige;
 	      let l=Array.length va in
-		if l<>(Array.length vb) then
+		if not (Int.equal l (Array.length vb)) then
 		  raise (UFAIL (nt1,nt2))
 		else
 		  for i=0 to l-1 do
@@ -72,7 +72,7 @@ let unif t1 t2=
 	  | App(ha,va),App(hb,vb)->
 	      Queue.add (ha,hb) bige;
 	      let l=Array.length va in
-		if l<>(Array.length vb) then
+		if not (Int.equal l (Array.length vb)) then
 		  raise (UFAIL (nt1,nt2))
 		else
 		  for i=0 to l-1 do

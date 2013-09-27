@@ -90,7 +90,7 @@ let atom_of_constr env sigma term =
   let kot = kind_of_term wh in
     match kot with
       App (f,args)->
-	  if eq_constr f (Lazy.force _eq) && (Array.length args)=3
+	  if eq_constr f (Lazy.force _eq) && Int.equal (Array.length args) 3
 	  then `Eq (args.(0),
 		   decompose_term env sigma args.(1),
 		   decompose_term env sigma args.(2))
@@ -125,20 +125,20 @@ let non_trivial = function
 let patterns_of_constr env sigma nrels term=
   let f,args=
     try destApp (whd_delta env term) with DestKO -> raise Not_found in
-	if eq_constr f (Lazy.force _eq) && (Array.length args)=3
+	if eq_constr f (Lazy.force _eq) && Int.equal (Array.length args) 3
 	then
 	  let patt1,rels1 = pattern_of_constr env sigma args.(1)
 	  and patt2,rels2 = pattern_of_constr env sigma args.(2) in
 	  let valid1 =
-	    if Int.Set.cardinal rels1 <> nrels then Creates_variables
+	    if not (Int.equal (Int.Set.cardinal rels1) nrels) then Creates_variables
 	    else if non_trivial patt1 then Normal
 	    else Trivial args.(0)
 	  and valid2 =
-	    if Int.Set.cardinal rels2 <> nrels then Creates_variables
+	    if not (Int.equal (Int.Set.cardinal rels2) nrels) then Creates_variables
 	    else if non_trivial patt2 then Normal
 	    else Trivial args.(0) in
-	    if valid1 <> Creates_variables
-	      || valid2 <> Creates_variables  then
+	    if valid1 != Creates_variables
+	      || valid2 != Creates_variables  then
 	      nrels,valid1,patt1,valid2,patt2
 	    else raise Not_found
 	else raise Not_found
@@ -230,7 +230,7 @@ let build_projection intype outtype (cstr:constructor) special default gls=
     let ti= prod_appvect types.(i) argv in
     let rc=fst (decompose_prod_assum ti) in
     let head=
-      if i=ci then special else default in
+      if Int.equal i ci then special else default in
       it_mkLambda_or_LetIn head rc in
   let branches=Array.init lp branch in
   let casee=mkRel 1 in
@@ -453,7 +453,7 @@ let f_equal gl =
   try match kind_of_term (pf_concl gl) with
     | App (r,[|_;t;t'|]) when eq_constr r (Lazy.force _eq) ->
 	begin match kind_of_term t, kind_of_term t' with
-	  | App (f,v), App (f',v') when Array.length v = Array.length v' ->
+	  | App (f,v), App (f',v') when Int.equal (Array.length v) (Array.length v') ->
 	      let rec cuts i =
 		if i < 0 then tclTRY (congruence_tac 1000 [])
 		else tclTHENFIRST (cut_eq v.(i) v'.(i)) (cuts (i-1))

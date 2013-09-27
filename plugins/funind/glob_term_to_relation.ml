@@ -272,7 +272,7 @@ let make_discr_match_el  =
 let make_discr_match_brl i =
   List.map_i
     (fun j (_,idl,patl,_) ->
-       if j=i
+       if Int.equal j i
        then (Loc.ghost,idl,patl, mkGRef (Lazy.force coq_True_ref))
        else (Loc.ghost,idl,patl, mkGRef (Lazy.force coq_False_ref))
     )
@@ -309,7 +309,7 @@ let build_constructors_of_type ind' argl =
 		    construct
 		in
 		let argl =
-		  if argl = []
+		  if List.is_empty argl
 		  then
  		    Array.to_list
 		      (Array.init (cst_narg - npar) (fun _ -> mkGHole ())
@@ -350,7 +350,7 @@ let add_pat_variables pat typ env : Environ.env =
 	    with Not_found -> assert false
 	  in
 	  let constructors = Inductiveops.get_constructors env indf in
-	  let constructor : Inductiveops.constructor_summary = List.find (fun cs -> cs.Inductiveops.cs_cstr = c) (Array.to_list constructors) in
+	  let constructor : Inductiveops.constructor_summary = List.find (fun cs -> eq_constructor c cs.Inductiveops.cs_cstr) (Array.to_list constructors) in
 	  let cs_args_types :types list = List.map (fun (_,_,t) -> t) constructor.Inductiveops.cs_args in
 	  List.fold_left2 add_pat_variables env patl (List.rev cs_args_types)
   in
@@ -397,7 +397,7 @@ let rec pattern_to_term_and_type env typ  = function
 	with Not_found -> assert false
       in
       let constructors = Inductiveops.get_constructors env indf in
-      let constructor  = List.find (fun cs -> cs.Inductiveops.cs_cstr = constr) (Array.to_list constructors) in
+      let constructor  = List.find (fun cs -> eq_constructor cs.Inductiveops.cs_cstr constr) (Array.to_list constructors) in
       let cs_args_types :types list = List.map (fun (_,_,t) -> t) constructor.Inductiveops.cs_args in
       let _,cstl = Inductiveops.dest_ind_family indf in
       let csta = Array.of_list cstl in
@@ -620,7 +620,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 			       Printer.pr_glob_constr rt ++ str ". try again with a cast")
 	in
 	let case_pats = build_constructors_of_type ind [] in
-	assert (Array.length case_pats = 2);
+	assert (Int.equal (Array.length case_pats) 2);
 	let brl =
 	  List.map_i
 	    (fun i x -> (Loc.ghost,[],[case_pats.(i)],x))
@@ -652,7 +652,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 				 Printer.pr_glob_constr rt ++ str ". try again with a cast")
 	  in
 	  let case_pats = build_constructors_of_type ind nal_as_glob_constr in
-	  assert (Array.length case_pats = 1);
+	  assert (Int.equal (Array.length case_pats) 1);
 	  let br =
 	    (Loc.ghost,[],[case_pats.(0)],e)
 	  in
@@ -836,14 +836,14 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 
 let is_res id =
   try
-    String.sub (Id.to_string id) 0 4 = "_res"
+    String.equal (String.sub (Id.to_string id) 0 4) "_res"
   with Invalid_argument _ -> false
 
 
 
 let same_raw_term rt1 rt2 = 
   match rt1,rt2 with 
-    | GRef(_,r1), GRef (_,r2) -> r1=r2
+    | GRef(_,r1), GRef (_,r2) -> Globnames.eq_gr r1 r2
     | GHole _, GHole _ -> true
     | _ -> false
 let decompose_raw_eq lhs rhs = 
@@ -857,7 +857,7 @@ let decompose_raw_eq lhs rhs =
     observe (str "lrhs := " ++ int (List.length lrhs));
     let sllhs = List.length llhs in 
     let slrhs = List.length lrhs in 
-    if same_raw_term lhd rhd && sllhs = slrhs 
+    if same_raw_term lhd rhd && Int.equal sllhs slrhs 
     then
       (* let _ = assert false in  *)
       List.fold_right2 decompose_raw_eq	llhs lrhs acc
@@ -907,7 +907,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			assert false
 		end
 	    | GApp(loc1,GRef(loc2,eq_as_ref),[ty;GVar(loc3,id);rt])
-		when  eq_as_ref = Lazy.force Coqlib.coq_eq_ref  && n = Anonymous
+		when Globnames.eq_gr eq_as_ref (Lazy.force Coqlib.coq_eq_ref)  && n == Anonymous
 		  ->
 		begin
 		  try
@@ -1024,7 +1024,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		     else new_b, Id.Set.add id id_to_exclude
 		  *)
 	    | GApp(loc1,GRef(loc2,eq_as_ref),[ty;rt1;rt2])
-		when  eq_as_ref = Lazy.force Coqlib.coq_eq_ref  && n = Anonymous
+		when Globnames.eq_gr eq_as_ref (Lazy.force Coqlib.coq_eq_ref) && n == Anonymous
 		  ->
 	      begin
 		try 
@@ -1116,7 +1116,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		Id.Set.filter not_free_in_t id_to_exclude
 	end
     | GLetTuple(_,nal,(na,rto),t,b) ->
-	assert (rto=None);
+	assert (Option.is_empty rto);
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let new_t,id_to_exclude' =
@@ -1207,7 +1207,7 @@ let compute_params_name relnames (args : (Name.t * Glob_term.glob_constr * bool)
 	   if Array.for_all
 	     (fun l ->
 		let (n',nt',is_defined') = List.nth l i in
-		n = n' && Notation_ops.eq_glob_constr nt nt' && is_defined = is_defined')
+		Name.equal n n' && Notation_ops.eq_glob_constr nt nt' && (is_defined : bool) == is_defined')
 	     rels_params
 	   then
 	     l := param::!l

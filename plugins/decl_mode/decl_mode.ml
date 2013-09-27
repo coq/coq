@@ -77,8 +77,9 @@ let get_current_mode () =
   with Proof_global.NoCurrentProof -> Mode_none
 
 let check_not_proof_mode str =
- if get_current_mode () = Mode_proof then
-   error str
+ match get_current_mode () with
+ | Mode_proof -> error str
+ | _ -> ()
 
 let get_info sigma gl=
   match Store.get (Goal.V82.extra sigma gl) info with

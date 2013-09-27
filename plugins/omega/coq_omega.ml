@@ -131,7 +131,7 @@ let unfold s = Tactics.unfold_in_concl [Locus.AllOccurrences, Lazy.force s]
 
 let rev_assoc k =
   let rec loop = function
-    | [] -> raise Not_found | (v,k')::_ when k = k' -> v | _ :: l -> loop l
+    | [] -> raise Not_found | (v,k')::_ when Int.equal k k' -> v | _ :: l -> loop l
   in
   loop
 
@@ -676,7 +676,7 @@ let rec shuffle p (t1,t2) =
 let shuffle_mult p_init k1 e1 k2 e2 =
   let rec loop p = function
     | (({c=c1;v=v1}::l1) as l1'),(({c=c2;v=v2}::l2) as l2') ->
-	if v1 = v2 then
+	if Int.equal v1 v2 then
           let tac =
             clever_rewrite p [[P_APP 1; P_APP 1; P_APP 1; P_APP 1];
                               [P_APP 1; P_APP 1; P_APP 1; P_APP 2];
@@ -733,7 +733,7 @@ let shuffle_mult p_init k1 e1 k2 e2 =
 let shuffle_mult_right p_init e1 k2 e2 =
   let rec loop p = function
     | (({c=c1;v=v1}::l1) as l1'),(({c=c2;v=v2}::l2) as l2') ->
-	if v1 = v2 then
+	if Int.equal v1 v2 then
           let tac =
             clever_rewrite p
               [[P_APP 1; P_APP 1; P_APP 1];
@@ -964,7 +964,7 @@ let reduce_factor p = function
 
 let rec condense p = function
   | Oplus(f1,(Oplus(f2,r) as t)) ->
-      if weight f1 = weight f2 then begin
+      if Int.equal (weight f1) (weight f2) then begin
 	let shrink_tac,t = shrink_pair (P_APP 1 :: p) f1 f2 in
 	let assoc_tac =
           clever_rewrite p
@@ -980,7 +980,7 @@ let rec condense p = function
   | Oplus(f1,Oz n) ->
       let tac,f1' = reduce_factor (P_APP 1 :: p) f1 in tac,Oplus(f1',Oz n)
   | Oplus(f1,f2) ->
-      if weight f1 = weight f2 then begin
+      if Int.equal (weight f1) (weight f2) then begin
 	let tac_shrink,t = shrink_pair p f1 f2 in
 	let tac,t' = condense p t in
 	tac_shrink :: tac,t'
@@ -1143,7 +1143,7 @@ let replay_history tactic_normalisation =
 	  and eq2 = val_of(decompile e2) in
 	  let kk = mk_integer k in
 	  let state_eq = mk_eq eq1 (mk_times eq2 kk) in
-	  if e1.kind = DISE then
+	  if e1.kind == DISE then
             let tac = scalar_norm [P_APP 3] e2.body in
             tclTHENS
 	      (cut state_eq)
@@ -1254,7 +1254,7 @@ let replay_history tactic_normalisation =
 	  and id2 = hyp_of_tag e2.id in
 	  let eq1 = val_of(decompile e1)
 	  and eq2 = val_of(decompile e2) in
-	  if k1 =? one && e2.kind = EQUA then
+	  if k1 =? one && e2.kind == EQUA then
             let tac_thm =
               match e1.kind with
 		| EQUA -> Lazy.force coq_OMEGA5
@@ -1263,7 +1263,7 @@ let replay_history tactic_normalisation =
 	    in
             let kk = mk_integer k2 in
             let p_initial =
-              if e1.kind=DISE then [P_APP 1; P_TYPE] else [P_APP 2; P_TYPE] in
+              if e1.kind == DISE then [P_APP 1; P_TYPE] else [P_APP 2; P_TYPE] in
             let tac = shuffle_mult_right p_initial e1.body k2 e2.body in
             tclTHENLIST [
 	      (generalize_tac
@@ -1331,7 +1331,7 @@ let normalize_equation id flag theorem pos t t1 t2 (tactic,defs) =
       (generalize_tac [mkApp (theorem, [| t1; t2; mkVar id |]) ])
       (tclTRY (clear [id]))
   in
-  if tac <> [] then
+  if not (List.is_empty tac) then
     let id' = new_identifier () in
     ((id',(tclTHENLIST [ (shift_left); (mk_then tac); (intros_using [id']) ]))
           :: tactic,
@@ -1340,12 +1340,12 @@ let normalize_equation id flag theorem pos t t1 t2 (tactic,defs) =
     (tactic,defs)
 
 let destructure_omega gl tac_def (id,c) =
-  if atompart_of_id id = "State" then
+  if String.equal (atompart_of_id id) "State" then
     tac_def
   else
     try match destructurate_prop c with
       | Kapp(Eq,[typ;t1;t2])
-	when destructurate_type (pf_nf gl typ) = Kapp(Z,[]) ->
+	when begin match destructurate_type (pf_nf gl typ) with Kapp(Z,[]) -> true | _ -> false end ->
 	  let t = mk_plus t1 (mk_inv t2) in
 	  normalize_equation
 	    id EQUA (Lazy.force coq_Zegal_left) 2 t t1 t2 tac_def

@@ -30,8 +30,8 @@ let compare_instance inst1 inst2=
 	      (OrderedConstr.compare d1 d2)
 	  | Real((m1,c1),n1),Real((m2,c2),n2)->
 	      ((-) =? (-) ==? OrderedConstr.compare) m2 m1 n1 n2 c1 c2
-	  | Phantom(_),Real((m,_),_)-> if m=0 then -1 else 1
-	  | Real((m,_),_),Phantom(_)-> if m=0 then 1 else -1
+	  | Phantom(_),Real((m,_),_)-> if Int.equal m 0 then -1 else 1
+	  | Real((m,_),_),Phantom(_)-> if Int.equal m 0 then 1 else -1
 
 let compare_gr id1 id2 =
   if id1==id2 then 0 else
@@ -115,13 +115,13 @@ let mk_open_instance id gl m t=
 	  | Anonymous ->  dummy_bvid in
   let revt=substl (List.init m (fun i->mkRel (m-i))) t in
   let rec aux n avoid=
-    if n=0 then [] else
+    if Int.equal n 0 then [] else
       let nid=(fresh_id avoid var_id gl) in
 	(Name nid,None,dummy_constr)::(aux (n-1) (nid::avoid)) in
   let nt=it_mkLambda_or_LetIn revt (aux m []) in
   let rawt=Detyping.detype false [] [] nt in
   let rec raux n t=
-    if n=0 then t else
+    if Int.equal n 0 then t else
       match t with
 	  GLambda(loc,name,k,_,t0)->
 	    let t1=raux (n-1) t0 in

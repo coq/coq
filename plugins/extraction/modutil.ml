@@ -108,13 +108,13 @@ let ind_iter_references do_term do_cons do_type kn ind =
   let cons_iter cp l = do_cons (ConstructRef cp); List.iter type_iter l in
   let packet_iter ip p =
     do_type (IndRef ip);
-    if lang () = Ocaml then
+    if lang () == Ocaml then
       (match ind.ind_equiv with
 	 | Miniml.Equiv kne -> do_type (IndRef (mind_of_kn kne, snd ip));
 	 | _ -> ());
     Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types
   in
-  if lang () = Ocaml then record_iter_references do_term ind.ind_kind;
+  if lang () == Ocaml then record_iter_references do_term ind.ind_kind;
     Array.iteri (fun i -> packet_iter (kn,i)) ind.ind_packets
 
 let decl_iter_references do_term do_cons do_type =
@@ -206,7 +206,7 @@ let is_modular = function
 
 let rec search_structure l m = function
   | [] -> raise Not_found
-  | (lab,d)::_ when lab=l && is_modular d = m -> d
+  | (lab,d)::_ when Label.equal lab l && (is_modular d : bool) == m -> d
   | _::fields -> search_structure l m fields
 
 let get_decl_in_structure r struc =
@@ -217,7 +217,7 @@ let get_decl_in_structure r struc =
     let rec go ll sel = match ll with
       | [] -> assert false
       | l :: ll ->
-	  match search_structure l (ll<>[]) sel with
+	  match search_structure l (not (List.is_empty ll)) sel with
 	    | SEdecl d -> d
 	    | SEmodtype m -> assert false
 	    | SEmodule m ->
@@ -349,7 +349,7 @@ let rec depcheck_se = function
     let se' = depcheck_se se in
     let refs = declared_refs d in
     let refs' = List.filter is_needed refs in
-    if refs' = [] then
+    if List.is_empty refs' then
       (List.iter remove_info_axiom refs;
        List.iter remove_opaque refs;
        se')
@@ -372,14 +372,22 @@ let rec depcheck_struct = function
   | (mp,lse)::struc ->
       let struc' = depcheck_struct struc in
       let lse' = depcheck_se lse in
-      if lse' = [] then struc' else (mp,lse')::struc'
+      if List.is_empty lse' then struc' else (mp,lse')::struc'
+
+let is_prefix pre s =
+  let len = String.length pre in
+  let rec is_prefix_aux i =
+    if Int.equal i len then true
+    else pre.[i] == s.[i] && is_prefix_aux (succ i)
+  in
+  is_prefix_aux 0
 
 let check_implicits = function
   | MLexn s ->
-      if String.length s > 8 && (s.[0] = 'U' || s.[0] = 'I') then
+      if String.length s > 8 && (s.[0] == 'U' || s.[0] == 'I') then
 	begin
-	  if String.sub s 0 7 = "UNBOUND" then assert false;
-	  if String.sub s 0 8 = "IMPLICIT" then
+	  if is_prefix "UNBOUND" s then assert false;
+	  if is_prefix "IMPLICIT" s then
 	    error_non_implicit (String.sub s 9 (String.length s - 9));
 	end;
       false
@@ -393,7 +401,7 @@ let optimize_struct to_appear struc =
   in
   ignore (struct_ast_search check_implicits opt_struc);
   if library () then
-    List.filter (fun (_,lse) -> lse<>[]) opt_struc
+    List.filter (fun (_,lse) -> not (List.is_empty lse)) opt_struc
   else begin
     reset_needed ();
     List.iter add_needed (fst to_appear);

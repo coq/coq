@@ -1186,7 +1186,7 @@ let injEqThen tac l2r (eq,_,(t,t1,t2) as u) eq_clause gl =
         errorlabstrm "Equality.inj" (str"Nothing to inject.")
     | Inr posns ->
         try inject_if_homogenous_dependent_pair env sigma u gl
-        with e when (Errors.noncritical e || e = Not_dep_pair) ->
+        with Not_dep_pair as e | e when Errors.noncritical e ->
         inject_at_positions env sigma l2r u eq_clause posns
           (tac (clenv_value eq_clause)) gl
 
@@ -1208,7 +1208,7 @@ let postInjEqTac ipats c n =
 
 let injEq ipats =
   let l2r =
-    if use_injection_pattern_l2r_order () && ipats <> None then true else false
+    if use_injection_pattern_l2r_order () && not (Option.is_empty ipats) then true else false
   in
   injEqThen (postInjEqTac ipats) l2r
 

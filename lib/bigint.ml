@@ -47,7 +47,7 @@ let format_size =
   else if Int.equal size 9 then Printf.sprintf "%09d"
   else fun n ->
     let rec aux j l n =
-      if j=size then l else aux (j+1) (string_of_int (n mod 10) :: l) (n/10)
+      if Int.equal j size then l else aux (j+1) (string_of_int (n mod 10) :: l) (n/10)
     in String.concat "" (aux 0 [] n)
 
 (* The base is 10^size *)
@@ -65,6 +65,10 @@ module ArrayInt = struct
 let zero = [||]
 let neg_one = [|-1|]
 
+let is_zero = function
+| [||] -> true
+| _ -> false
+
 (* An array is canonical when
    - it is empty
    - it is [|-1|]
@@ -74,9 +78,9 @@ let neg_one = [|-1|]
 let canonical n =
   let ok x = (0 <= x && x < base) in
   let rec ok_tail k = (Int.equal k 0) || (ok n.(k) && ok_tail (k-1)) in
-  let ok_init x = (-base <= x && x < base && x <> -1 && x <> 0)
+  let ok_init x = (-base <= x && x < base && not (Int.equal x (-1)) && not (Int.equal x 0))
   in
-  (n = [||]) || (n = [|-1|]) ||
+  (is_zero n) || (match n with [|-1|] -> true | _ -> false) ||
     (ok_init n.(0) && ok_tail (Array.length n - 1))
 
 (* [normalize_pos] : removing initial blocks of 0 *)
@@ -92,7 +96,7 @@ let normalize_pos n =
 
 let normalize_neg n =
   let k = ref 1 in
-  while !k < Array.length n && n.(!k) = base - 1 do incr k done;
+  while !k < Array.length n && Int.equal n.(!k) (base - 1) do incr k done;
   let n' = Array.sub n !k (Array.length n - !k) in
   if Int.equal (Array.length n') 0 then [|-1|] else (n'.(0) <- n'.(0) - base; n')
 
@@ -109,15 +113,15 @@ let normalize n =
 (* Opposite (expects and returns canonical arrays) *)
 
 let neg m =
-  if m = zero then zero else
+  if is_zero m then zero else
   let n = Array.copy m in
   let i = ref (Array.length m - 1) in
   while !i > 0 && Int.equal n.(!i) 0 do decr i done;
   if Int.equal !i 0 then begin
     n.(0) <- - n.(0);
     (* n.(0) cannot be 0 since m is canonical *)
-    if n.(0) = -1 then normalize_neg n
-    else if n.(0) = base then (n.(0) <- 0; Array.append [| 1 |] n)
+    if Int.equal n.(0) (-1) then normalize_neg n
+    else if Int.equal n.(0) base then (n.(0) <- 0; Array.append [| 1 |] n)
     else n
   end else begin
     (* here n.(!i) <> 0, hence 0 < base - n.(!i) < base for n canonical *)
@@ -144,7 +148,7 @@ let push_carry r j =
   else normalize r (* in case r.(0) is 0 or -1 *)
 
 let add_to r a j =
-  if a = zero then r else begin
+  if is_zero a then r else begin
   for i = Array.length r - 1 downto j+1 do
     r.(i) <- r.(i) + a.(i-j);
     if r.(i) >= base then (r.(i) <- r.(i) - base; r.(i-1) <- r.(i-1) + 1)
@@ -158,7 +162,7 @@ let add n m =
   if d > 0 then add_to (Array.copy n) m d else add_to (Array.copy m) n (-d)
 
 let sub_to r a j =
-  if a = zero then r else begin
+  if is_zero a then r else begin
   for i = Array.length r - 1 downto j+1 do
     r.(i) <- r.(i) - a.(i-j);
     if r.(i) < 0 then (r.(i) <- r.(i) + base; r.(i-1) <- r.(i-1) - 1)
@@ -173,7 +177,7 @@ let sub n m =
   else let r = neg m in add_to r n (Array.length r - Array.length n)
 
 let mult m n =
-  if m = zero || n = zero then zero else
+  if is_zero m || is_zero n then zero else
   let l = Array.length m + Array.length n in
   let r = Array.make l 0 in
   for i = Array.length m - 1 downto 0 do
@@ -184,54 +188,62 @@ let mult m n =
         then (p + 1) / base - 1, (p + 1) mod base + base - 1
         else p / base, p mod base in
       r.(i+j+1) <- s;
-      if q <> 0 then r.(i+j) <- r.(i+j) + q;
+      if not (Int.equal q 0) then r.(i+j) <- r.(i+j) + q;
     done
   done;
   normalize r
 
 (* Comparisons *)
 
-let is_strictly_neg n = n<>[||] && n.(0) < 0
-let is_strictly_pos n = n<>[||] && n.(0) > 0
-let is_neg_or_zero n = n=[||] || n.(0) < 0
-let is_pos_or_zero n = n=[||] || n.(0) > 0
+let is_strictly_neg n = not (is_zero n) && n.(0) < 0
+let is_strictly_pos n = not (is_zero n) && n.(0) > 0
+let is_neg_or_zero n = is_zero n || n.(0) < 0
+let is_pos_or_zero n = is_zero n || n.(0) > 0
 
 (* Is m without its i first blocs less then n without its j first blocs ?
    Invariant : |m|-i = |n|-j *)
 
 let rec less_than_same_size m n i j =
   i < Array.length m &&
-  (m.(i) < n.(j) || (m.(i) = n.(j) && less_than_same_size m n (i+1) (j+1)))
+  (m.(i) < n.(j) || (Int.equal m.(i) n.(j) && less_than_same_size m n (i+1) (j+1)))
 
 let less_than m n =
   if is_strictly_neg m then
     is_pos_or_zero n || Array.length m > Array.length n
-      || (Array.length m = Array.length n && less_than_same_size m n 0 0)
+      || (Int.equal (Array.length m) (Array.length n) && less_than_same_size m n 0 0)
   else
     is_strictly_pos n && (Array.length m < Array.length n ||
-    (Array.length m = Array.length n && less_than_same_size m n 0 0))
+    (Int.equal (Array.length m) (Array.length n) && less_than_same_size m n 0 0))
 
 (* For this equality test it is critical that n and m are canonical *)
 
-let equal m n = (m = n)
+let rec array_eq len v1 v2 i =
+  if Int.equal len i then true
+  else
+    Int.equal v1.(i) v2.(i) && array_eq len v1 v2 (succ i)
+
+let equal m n =
+  let lenm = Array.length m in
+  let lenn = Array.length n in
+  (Int.equal lenm lenn) && (array_eq lenm m n 0)
 
 (* Is m without its k top blocs less than n ? *)
 
 let less_than_shift_pos k m n =
   (Array.length m - k < Array.length n)
-  || (Array.length m - k = Array.length n && less_than_same_size m n k 0)
+  || (Int.equal (Array.length m - k) (Array.length n) && less_than_same_size m n k 0)
 
 let rec can_divide k m d i =
-  (i = Array.length d) ||
+  (Int.equal i (Array.length d)) ||
   (m.(k+i) > d.(i)) ||
-  (m.(k+i) = d.(i) && can_divide k m d (i+1))
+  (Int.equal m.(k+i) d.(i) && can_divide k m d (i+1))
 
 (* For two big nums m and d and a small number q,
    computes m - d * q * base^(|m|-|d|-k) in-place (in m).
    Both m d and q are positive. *)
 
 let sub_mult m d q k =
-  if q <> 0 then
+  if not (Int.equal q 0) then
   for i = Array.length d - 1 downto 0 do
     let v = d.(i) * q in
     m.(k+i) <- m.(k+i) - v mod base;
@@ -254,7 +266,7 @@ let euclid m d =
   let isnegm, m =
     if is_strictly_neg m then (-1),neg m else 1,Array.copy m in
   let isnegd, d = if is_strictly_neg d then (-1),neg d else 1,d in
-  if d = zero then raise Division_by_zero;
+  if is_zero d then raise Division_by_zero;
   let q,r =
     if less_than m d then (zero,m) else
     let ql = Array.length m - Array.length d in
@@ -264,7 +276,7 @@ let euclid m d =
       if Int.equal m.(!i) 0 then incr i else
       if can_divide !i m d 0 then begin
         let v =
-          if Array.length d > 1 && d.(0) <> m.(!i) then
+          if Array.length d > 1 && not (Int.equal d.(0) m.(!i)) then
             (m.(!i) * base + m.(!i+1)) / (d.(0) * base + d.(1) + 1)
           else
             m.(!i) / d.(0) in
@@ -281,20 +293,20 @@ let euclid m d =
       end
     done;
     (normalize q, normalize m) in
-  (if isnegd * isnegm = -1 then neg q else q),
-  (if isnegm = -1 then neg r else r)
+  (if Int.equal (isnegd * isnegm) (-1) then neg q else q),
+  (if Int.equal isnegm (-1) then neg r else r)
 
 (* Parsing/printing ordinary 10-based numbers *)
 
 let of_string s =
   let len = String.length s in
-  let isneg = len > 1 && s.[0] = '-' in
+  let isneg = len > 1 && s.[0] == '-' in
   let d = ref (if isneg then 1 else 0) in
-  while !d < len && s.[!d] = '0' do incr d done;
-  if !d = len then zero else
+  while !d < len && s.[!d] == '0' do incr d done;
+  if Int.equal !d len then zero else
   let r = (len - !d) mod size in
   let h = String.sub s (!d) r in
-  let e = if h<>"" then 1 else 0 in
+  let e = match h with "" -> 0 | _ -> 1 in
   let l = (len - !d) / size in
   let a = Array.make (l + e) 0 in
   if Int.equal e 1 then a.(0) <- int_of_string h;
@@ -351,7 +363,7 @@ let of_int n =
 
 let of_ints n =
   let n = normalize n in (* TODO: using normalize here seems redundant now *)
-  if n = zero then Obj.repr 0 else
+  if is_zero n then Obj.repr 0 else
   if Int.equal (Array.length n) 1 then Obj.repr n.(0) else
   Obj.repr n
 
@@ -425,14 +437,17 @@ let mult_2 n = add n n
 
 let div2_with_rest n =
   let (q,b) = euclid n two in
-  (q, b = one)
+  (q, b == one)
 
 let is_strictly_neg n = is_strictly_neg (to_ints n)
 let is_strictly_pos n = is_strictly_pos (to_ints n)
 let is_neg_or_zero n = is_neg_or_zero (to_ints n)
 let is_pos_or_zero n = is_pos_or_zero (to_ints n)
 
-let equal m n = (m = n)
+let equal m n =
+  if Obj.is_block m && Obj.is_block n then
+    ArrayInt.equal (Obj.obj m) (Obj.obj n)
+  else m == n
 
 (* spiwack: computes n^m *)
 (* The basic idea of the algorithm is that n^(2m) = (n^2)^m *)
@@ -446,7 +461,7 @@ let pow  =
       odd_rest
     else
       let quo = m lsr 1 (* i.e. m/2 *)
-      and odd = (m land 1) <> 0 in
+      and odd = not (Int.equal (m land 1) 0) in
       pow_aux
 	(if odd then mult n odd_rest else odd_rest)
 	(mult n n)

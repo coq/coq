@@ -640,7 +640,7 @@ let apply_on_subterm evdref f c t =
       match kind_of_term t with
       | Evar (evk,args) when Evd.is_undefined !evdref evk ->
           let ctx = evar_filtered_context (Evd.find_undefined !evdref evk) in
-          let g (_,b,_) a = if b = None then applyrec kc a else a in
+          let g (_,b,_) a = if Option.is_empty b then applyrec kc a else a in
           mkEvar (evk, Array.of_list (List.map2 g ctx (Array.to_list args)))
       | _ ->
         map_constr_with_binders_left_to_right (fun d (k,c) -> (k+1,lift 1 c))
@@ -653,7 +653,7 @@ let filter_possible_projections c ty ctxt args =
   let fv2 = collect_vars c in
   let tyvars = collect_vars ty in
   List.map2 (fun (id,b,_) a ->
-    b <> None ||
+    not (Option.is_empty b) ||
     a == c ||
     (* Here we make an approximation, for instance, we could also be *)
     (* interested in finding a term u convertible to c such that a occurs *)

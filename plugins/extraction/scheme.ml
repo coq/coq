@@ -42,7 +42,7 @@ let preamble _ comment _ usf =
 let pr_id id =
   let s = Id.to_string id in
   for i = 0 to String.length s - 1 do
-    if s.[i] = '\'' then s.[i] <- '~'
+    if s.[i] == '\'' then s.[i] <- '~'
   done;
   str s
 
@@ -92,11 +92,11 @@ let rec pp_expr env args =
     | MLglob r ->
 	apply (pp_global Term r)
     | MLcons (_,r,args') ->
-	assert (args=[]);
+	assert (List.is_empty args);
 	let st =
 	  str "`" ++
 	  paren (pp_global Cons r ++
-		 (if args' = [] then mt () else spc ()) ++
+		 (if List.is_empty args' then mt () else spc ()) ++
 		 prlist_with_sep spc (pp_cons_args env) args')
 	in
 	if is_coinductive r then paren (str "delay " ++ st) else st
@@ -105,7 +105,7 @@ let rec pp_expr env args =
 	error "Cannot handle general patterns in Scheme yet."
     | MLcase (_,t,pv) when is_custom_match pv ->
 	let mkfun (ids,_,e) =
-	  if ids <> [] then named_lams (List.rev ids) e
+	  if not (List.is_empty ids) then named_lams (List.rev ids) e
 	  else dummy_lams (ast_lift 1 e) 1
 	in
 	apply
@@ -135,7 +135,7 @@ let rec pp_expr env args =
 and pp_cons_args env = function
   | MLcons (_,r,args) when is_coinductive r ->
       paren (pp_global Cons r ++
-	     (if args = [] then mt () else spc ()) ++
+	     (if List.is_empty args then mt () else spc ()) ++
 	     prlist_with_sep spc (pp_cons_args env) args)
   | e -> str "," ++ pp_expr env [] e
 
@@ -147,7 +147,7 @@ and pp_one_pat env (ids,p,t) =
   in
   let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
   let args =
-    if ids = [] then mt ()
+    if List.is_empty ids then mt ()
     else (str " " ++ prlist_with_sep spc pr_id (List.rev ids))
   in
   (pp_global Cons r ++ args), (pp_expr env' [] t)
@@ -183,7 +183,7 @@ let pp_decl = function
       prvecti
 	(fun i r ->
 	  let void = is_inline_custom r ||
-	    (not (is_custom r) && defs.(i) = MLexn "UNUSED")
+	    (not (is_custom r) && match defs.(i) with MLexn "UNUSED" -> true | _ -> false)
 	  in
 	  if void then mt ()
 	  else

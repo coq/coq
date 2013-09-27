@@ -71,7 +71,7 @@ let unfreeze_summaries fs =
   with Not_found -> anomaly (str"Undeclared summary "++str ml_modules_summary));
   Hashtbl.iter
     (fun id decl ->
-       if id = ml_modules_summary then () (* already unfreezed *)
+       if String.equal id ml_modules_summary then () (* already unfreezed *)
        else
          try decl.unfreeze_function (String.Map.find id fs)
          with Not_found -> decl.init_function())

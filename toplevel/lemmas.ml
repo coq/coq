@@ -181,7 +181,7 @@ let save ?proof id const do_guard (locality,kind) hook =
 	Autoinstance.search_declaration (ConstRef kn);
 	(locality, ConstRef kn) in
   (* if the proof is given explicitly, nothing has to be deleted *)
-  if proof = None then Pfedit.delete_current_proof ();
+  if Option.is_empty proof then Pfedit.delete_current_proof ();
   definition_message id;
   Option.iter (fun f -> f l r) hook
 

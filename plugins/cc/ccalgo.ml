@@ -103,6 +103,12 @@ type cinfo=
      ci_arity: int;     (* # args *)
      ci_nhyps: int}     (* # projectable args *)
 
+let family_eq f1 f2 = match f1, f2 with
+| InProp, InProp
+| InSet, InSet
+| InType, InType -> true
+| _ -> false
+
 type term=
     Symb of constr
   | Product of sorts_family * sorts_family
@@ -113,13 +119,13 @@ type term=
 let rec term_equal t1 t2 =
   match t1, t2 with
     | Symb c1, Symb c2 -> eq_constr c1 c2
-    | Product (s1, t1), Product (s2, t2) -> s1 = s2 && t1 = t2
-    | Eps i1, Eps i2 -> Id.compare i1 i2 = 0
+    | Product (s1, t1), Product (s2, t2) -> family_eq s1 s2 && family_eq t1 t2
+    | Eps i1, Eps i2 -> Id.equal i1 i2
     | Appli (t1, u1), Appli (t2, u2) -> term_equal t1 t2 && term_equal u1 u2
     | Constructor {ci_constr=c1; ci_arity=i1; ci_nhyps=j1},
       Constructor {ci_constr=c2; ci_arity=i2; ci_nhyps=j2} ->
-      i1 = i2 && j1 = j2 && eq_constructor c1 c2
-    | _ -> t1 = t2
+      Int.equal i1 i2 && Int.equal j1 j2 && eq_constructor c1 c2
+    | _ -> false
 
 open Hashset.Combine
 
@@ -341,7 +347,7 @@ let signature uf i=
 let next uf=
   let size=uf.size in
   let nsize= succ size in
-    if nsize=uf.max_size then
+    if Int.equal nsize uf.max_size then
       let newmax=uf.max_size * 3 / 2 + 1 in
       let newmap=Array.make newmax dummy_node in
 	begin
@@ -512,7 +518,7 @@ let is_redundant state id args =
     let prev_args = Identhash.find_all state.q_history id in
     List.exists
       (fun old_args ->
-	 Util.Array.for_all2 (fun i j -> i = find state.uf j)
+	 Util.Array.for_all2 (fun i j -> Int.equal i (find state.uf j))
          norm_args old_args)
       prev_args
     with Not_found -> false
@@ -562,14 +568,16 @@ let rec down_path uf i l=
       Eqto(j,t)->down_path uf j (((i,j),t)::l)
     | Rep _ ->l
 
+let eq_pair (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2
+
 let rec min_path=function
     ([],l2)->([],l2)
   | (l1,[])->(l1,[])
-  | (((c1,t1)::q1),((c2,t2)::q2)) when c1=c2 -> min_path (q1,q2)
+  | (((c1,t1)::q1),((c2,t2)::q2)) when eq_pair c1 c2 -> min_path (q1,q2)
   | cpl -> cpl
 
 let join_path uf i j=
-  assert (find uf i=find uf j);
+  assert (Int.equal (find uf i) (find uf j));
   min_path (down_path uf i [],down_path uf j [])
 
 let union state i1 i2 eq=
@@ -619,7 +627,7 @@ let merge eq state = (* merge and no-merge *)
   let uf=state.uf in
   let i=find uf eq.lhs
   and j=find uf eq.rhs in
-    if i<>j then
+    if not (Int.equal i j) then
       if (size uf i)<(size uf j) then
 	union state i j eq
       else
@@ -657,7 +665,7 @@ let process_function_mark t rep paf state  =
 let process_constructor_mark t i rep pac state =
     match rep.inductive_status with
 	Total (s,opac) ->
-	  if pac.cnode <> opac.cnode then (* Conflict *)
+	  if not (Int.equal pac.cnode opac.cnode) then (* Conflict *)
 	    raise (Discriminable (s,opac,t,pac))
 	  else (* Match *)
 	    let cinfo = get_constructor_info state.uf pac.cnode in
@@ -676,7 +684,7 @@ let process_constructor_mark t i rep pac state =
 	  add_pac rep pac t;
 	  state.terms<-Int.Set.union rep.lfathers state.terms
       | Unknown ->
-	  if pac.arity = 0 then
+	  if Int.equal pac.arity 0 then
 	    rep.inductive_status <- Total (t,pac)
 	  else
 	    begin
@@ -705,7 +713,7 @@ let check_disequalities state =
   let rec check_aux = function
     | dis::q ->
         let (info, ans) =
-          if find uf dis.lhs = find uf dis.rhs then (str "Yes", Some dis)
+          if Int.equal (find uf dis.lhs) (find uf dis.rhs) then (str "Yes", Some dis)
           else (str "No", check_aux q)
         in
         let _ = debug
@@ -803,13 +811,13 @@ let do_match state res pb_stack =
 		      Stack.push {mp with mp_stack=remains} pb_stack
 		    end
 		  else
-		    if mp.mp_subst.(pred i) = cl then
+		    if Int.equal mp.mp_subst.(pred i) cl then
 		      Stack.push {mp with mp_stack=remains} pb_stack
 		    else (* mismatch for non-linear variable in pattern *) ()
 	      | PApp (f,[]) ->
 		  begin
 		    try let j=Termhash.find uf.syms f in
-		      if find uf j =cl then
+		      if Int.equal (find uf j) cl then
 			Stack.push {mp with mp_stack=remains} pb_stack
 		    with Not_found -> ()
 		  end

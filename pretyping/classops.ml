@@ -104,7 +104,7 @@ struct
   type t = cl_index * cl_index
   let compare (i1, j1) (i2, j2) =
     let c = Int.compare i1 i2 in
-    if c = 0 then Int.compare j1 j2 else c
+    if Int.equal c 0 then Int.compare j1 j2 else c
 end
 
 module ClPairMap = Map.Make(ClPairOrd)

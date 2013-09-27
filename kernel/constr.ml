@@ -365,6 +365,9 @@ let rec eq_constr m n =
 
 let equal m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
+(** We only use this function over blocks! *)
+let tag t = Obj.tag (Obj.repr t)
+
 let constr_ord_int f t1 t2 =
   let (=?) f g i1 i2 j1 j2=
     let c = f i1 i2 in
@@ -403,7 +406,7 @@ let constr_ord_int f t1 t2 =
     | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
         ((Int.compare =? (Array.compare f)) ==? (Array.compare f))
         ln1 ln2 tl1 tl2 bl1 bl2
-    | t1, t2 -> Pervasives.compare t1 t2
+    | t1, t2 -> Int.compare (tag t1) (tag t2)
 
 let rec compare m n=
   constr_ord_int compare m n

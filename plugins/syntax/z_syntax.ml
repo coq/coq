@@ -47,7 +47,7 @@ let pos_of_bignat dloc x =
   let rec pos_of x =
     match div2_with_rest x with
       | (q,false) -> GApp (dloc, ref_xO,[pos_of q])
-      | (q,true) when q <> zero -> GApp (dloc,ref_xI,[pos_of q])
+      | (q,true) when not (Bigint.equal q zero) -> GApp (dloc,ref_xI,[pos_of q])
       | (q,true) -> ref_xH
   in
   pos_of x
@@ -65,9 +65,9 @@ let interp_positive dloc n =
 (**********************************************************************)
 
 let rec bignat_of_pos = function
-  | GApp (_, GRef (_,b),[a]) when b = glob_xO -> mult_2(bignat_of_pos a)
-  | GApp (_, GRef (_,b),[a]) when b = glob_xI -> add_1(mult_2(bignat_of_pos a))
-  | GRef (_, a) when a = glob_xH -> Bigint.one
+  | GApp (_, GRef (_,b),[a]) when Globnames.eq_gr b glob_xO -> mult_2(bignat_of_pos a)
+  | GApp (_, GRef (_,b),[a]) when Globnames.eq_gr b glob_xI -> add_1(mult_2(bignat_of_pos a))
+  | GRef (_, a) when Globnames.eq_gr a glob_xH -> Bigint.one
   | _ -> raise Non_closed_number
 
 let uninterp_positive p =
@@ -103,7 +103,7 @@ let glob_Npos = ConstructRef path_of_Npos
 let n_path = make_path binnums "N"
 
 let n_of_binnat dloc pos_or_neg n =
-  if n <> zero then
+  if not (Bigint.equal n zero) then
     GApp(dloc, GRef (dloc,glob_Npos), [pos_of_bignat dloc n])
   else
     GRef (dloc, glob_N0)
@@ -120,8 +120,8 @@ let n_of_int dloc n =
 (**********************************************************************)
 
 let bignat_of_n = function
-  | GApp (_, GRef (_,b),[a]) when b = glob_Npos -> bignat_of_pos a
-  | GRef (_, a) when a = glob_N0 -> Bigint.zero
+  | GApp (_, GRef (_,b),[a]) when Globnames.eq_gr b glob_Npos -> bignat_of_pos a
+  | GRef (_, a) when Globnames.eq_gr a glob_N0 -> Bigint.zero
   | _ -> raise Non_closed_number
 
 let uninterp_n p =
@@ -154,7 +154,7 @@ let glob_POS = ConstructRef path_of_POS
 let glob_NEG = ConstructRef path_of_NEG
 
 let z_of_int dloc n =
-  if n <> zero then
+  if not (Bigint.equal n zero) then
     let sgn, n =
       if is_pos_or_zero n then glob_POS, n else glob_NEG, Bigint.neg n in
     GApp(dloc, GRef (dloc,sgn), [pos_of_bignat dloc n])
@@ -166,9 +166,9 @@ let z_of_int dloc n =
 (**********************************************************************)
 
 let bigint_of_z = function
-  | GApp (_, GRef (_,b),[a]) when b = glob_POS -> bignat_of_pos a
-  | GApp (_, GRef (_,b),[a]) when b = glob_NEG -> Bigint.neg (bignat_of_pos a)
-  | GRef (_, a) when a = glob_ZERO -> Bigint.zero
+  | GApp (_, GRef (_,b),[a]) when Globnames.eq_gr b glob_POS -> bignat_of_pos a
+  | GApp (_, GRef (_,b),[a]) when Globnames.eq_gr b glob_NEG -> Bigint.neg (bignat_of_pos a)
+  | GRef (_, a) when Globnames.eq_gr a glob_ZERO -> Bigint.zero
   | _ -> raise Non_closed_number
 
 let uninterp_z p =

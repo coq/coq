@@ -40,6 +40,7 @@ val union_side_effects : side_effects -> side_effects -> side_effects
 val flatten_side_effects : side_effects list -> side_effects
 val side_effects_of_list : side_effect list -> side_effects
 val cons_side_effects : side_effect -> side_effects -> side_effects
+val side_effects_is_empty : side_effects -> bool
 
 (** {6 Inductive types} *)
 

@@ -185,17 +185,17 @@ let check_no_pending_proof () =
   end
 
 let discard_gen id =
-  pstates := List.filter (fun { pid = id' } -> id <> id') !pstates
+  pstates := List.filter (fun { pid = id' } -> not (Id.equal id id')) !pstates
 
 let discard (loc,id) =
   let n = List.length !pstates in
   discard_gen id;
-  if List.length !pstates = n then
+  if Int.equal (List.length !pstates) n then
     Errors.user_err_loc
       (loc,"Pfedit.delete_proof",str"No such proof" ++ msg_proofs ())
 
 let discard_current () =
-  if !pstates = [] then raise NoCurrentProof else pstates := List.tl !pstates
+  if List.is_empty !pstates then raise NoCurrentProof else pstates := List.tl !pstates
 
 let discard_all () = pstates := []
 
@@ -249,7 +249,7 @@ let set_used_variables l =
   match !pstates with
   | [] -> raise NoCurrentProof
   | p :: rest ->
-      if p.section_vars <> None then
+      if not (Option.is_empty p.section_vars) then
         Errors.error "Used section variables can be declared only once";
       pstates := { p with section_vars = Some ctx} :: rest
 

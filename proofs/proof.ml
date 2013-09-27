@@ -66,17 +66,17 @@ end
 let check_cond_kind c k =
   let kind_of_cond = function
     | CondNo (_,k) | CondDone(_,k) | CondEndStack k -> k in
-  kind_of_cond c = k
+  Int.equal (kind_of_cond c) k
 
 let test_cond c k1 pw =
   match c with
-  | CondNo(_,     k) when k = k1 -> Strict
+  | CondNo(_,     k) when Int.equal k k1 -> Strict
   | CondNo(true,  _)             -> Loose
   | CondNo(false, _)             -> Cannot NotThisWay
-  | CondDone(_,     k) when k = k1 && Proofview.finished pw -> Strict
+  | CondDone(_,     k) when Int.equal k k1 && Proofview.finished pw -> Strict
   | CondDone(true,  _)                                      -> Loose
   | CondDone(false, _)                                      -> Cannot NotThisWay
-  | CondEndStack k when k = k1 -> Strict
+  | CondEndStack k when Int.equal k k1 -> Strict
   | CondEndStack _             -> Cannot AlreadyNoFocus
 
 let no_cond ?(loose_end=false) k = CondNo (loose_end, k)

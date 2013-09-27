@@ -25,7 +25,7 @@ open Common
 
 let pp_tvar id =
   let s = Id.to_string id in
-  if String.length s < 2 || s.[1]<>'\''
+  if String.length s < 2 || s.[1] != '\''
   then str ("'"^s)
   else str ("' "^s)
 
@@ -36,10 +36,10 @@ let pp_abst = function
       str " ->" ++ spc ()
 
 let pp_parameters l =
-  (pp_boxed_tuple pp_tvar l ++ space_if (l<>[]))
+  (pp_boxed_tuple pp_tvar l ++ space_if (not (List.is_empty l)))
 
 let pp_string_parameters l =
-  (pp_boxed_tuple str l ++ space_if (l<>[]))
+  (pp_boxed_tuple str l ++ space_if (not (List.is_empty l)))
 
 let pp_letin pat def body =
   let fstline = str "let " ++ pat ++ str " =" ++ spc () ++ def in
@@ -70,7 +70,7 @@ let pp_header_comment = function
 let preamble _ comment used_modules usf =
   pp_header_comment comment ++
   prlist pp_open used_modules ++
-  (if used_modules = [] then mt () else fnl ()) ++
+  (if List.is_empty used_modules then mt () else fnl ()) ++
   (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n" else mt()) ++
   (if usf.mldummy then
      str "let __ = let rec f _ = Obj.repr f in Obj.repr f\n"
@@ -80,7 +80,7 @@ let preamble _ comment used_modules usf =
 let sig_preamble _ comment used_modules usf =
   pp_header_comment comment ++ fnl () ++ fnl () ++
   prlist pp_open used_modules ++
-  (if used_modules = [] then mt () else fnl ()) ++
+  (if List.is_empty used_modules then mt () else fnl ()) ++
   (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n\n" else mt())
 
 (*s The pretty-printer for Ocaml syntax*)
@@ -101,7 +101,7 @@ let is_infix r =
   is_inline_custom r &&
   (let s = find_custom r in
    let l = String.length s in
-   l >= 2 && s.[0] = '(' && s.[l-1] = ')')
+   l >= 2 && s.[0] == '(' && s.[l-1] == ')')
 
 let get_infix r =
   let s = find_custom r in
@@ -132,7 +132,7 @@ let pp_type par vl t =
 	pp_par par (pp_rec true a1 ++ str (get_infix r) ++ pp_rec true a2)
     | Tglob (r,[]) -> pp_global Type r
     | Tglob (IndRef(kn,0),l)
-	when not (keep_singleton ()) && kn = mk_ind "Coq.Init.Specif" "sig" ->
+	when not (keep_singleton ()) && MutInd.equal kn (mk_ind "Coq.Init.Specif" "sig") ->
 	pp_tuple_light pp_rec l
     | Tglob (r,l) ->
 	pp_tuple_light pp_rec l ++ spc () ++ pp_global Type r
@@ -156,7 +156,7 @@ let is_bool_patt p s =
       | Pcons (r,[]) -> r
       | _ -> raise Not_found
     in
-    find_custom r = s
+    String.equal (find_custom r) s
   with Not_found -> false
 
 
@@ -210,35 +210,35 @@ let rec pp_expr par env args =
     | MLaxiom ->
 	pp_par par (str "failwith \"AXIOM TO BE REALIZED\"")
     | MLcons (_,r,a) as c ->
-        assert (args=[]);
+        assert (List.is_empty args);
         begin match a with
 	  | _ when is_native_char c -> pp_native_char c
 	  | [a1;a2] when is_infix r ->
 	    let pp = pp_expr true env [] in
 	    pp_par par (pp a1 ++ str (get_infix r) ++ pp a2)
 	  | _ when is_coinductive r ->
-	    let ne = (a<>[]) in
+	    let ne = not (List.is_empty a) in
 	    let tuple = space_if ne ++ pp_tuple (pp_expr true env []) a in
 	    pp_par par (str "lazy " ++ pp_par ne (pp_global Cons r ++ tuple))
 	  | [] -> pp_global Cons r
 	  | _ ->
 	    let fds = get_record_fields r in
-	    if fds <> [] then
+	    if not (List.is_empty fds) then
 	      pp_record_pat (pp_fields r fds, List.map (pp_expr true env []) a)
 	    else
 	      let tuple = pp_tuple (pp_expr true env []) a in
-	      if str_global Cons r = "" (* hack Extract Inductive prod *)
+	      if String.is_empty (str_global Cons r) (* hack Extract Inductive prod *)
 	      then tuple
 	      else pp_par par (pp_global Cons r ++ spc () ++ tuple)
 	end
     | MLtuple l ->
-        assert (args = []);
+        assert (List.is_empty args);
         pp_boxed_tuple (pp_expr true env []) l
     | MLcase (_, t, pv) when is_custom_match pv ->
         if not (is_regular_match pv) then
 	  error "Cannot mix yet user-given match and general patterns.";
 	let mkfun (ids,_,e) =
-	  if ids <> [] then named_lams (List.rev ids) e
+	  if not (List.is_empty ids) then named_lams (List.rev ids) e
 	  else dummy_lams (ast_lift 1 e) 1
 	in
 	let pp_branch tr = pp_expr true env [] (mkfun tr) ++ fnl () in
@@ -257,7 +257,7 @@ let rec pp_expr par env args =
         (try pp_record_proj par env typ t pv args
 	 with Impossible ->
 	   (* Second, can this match be printed as a let-in ? *)
-	   if Array.length pv = 1 then
+	   if Int.equal (Array.length pv) 1 then
 	     let s1,s2 = pp_one_pat env pv.(0) in
 	     hv 0 (apply2 (pp_letin s1 head s2))
 	   else
@@ -272,8 +272,8 @@ let rec pp_expr par env args =
 and pp_record_proj par env typ t pv args =
   (* Can a match be printed as a mere record projection ? *)
   let fields = record_fields_of_type typ in
-  if fields = [] then raise Impossible;
-  if Array.length pv <> 1 then raise Impossible;
+  if List.is_empty fields then raise Impossible;
+  if not (Int.equal (Array.length pv) 1) then raise Impossible;
   if has_deep_pattern pv then raise Impossible;
   let (ids,pat,body) = pv.(0) in
   let n = List.length ids in
@@ -284,7 +284,7 @@ and pp_record_proj par env typ t pv args =
     | _ -> raise Impossible
   in
   let rec lookup_rel i idx = function
-    | Prel j :: l -> if i = j then idx else lookup_rel i (idx+1) l
+    | Prel j :: l -> if Int.equal i j then idx else lookup_rel i (idx+1) l
     | Pwild :: l -> lookup_rel i (idx+1) l
     | _ -> raise Impossible
   in
@@ -308,15 +308,15 @@ and pp_record_pat (fields, args) =
    str " }"
 
 and pp_cons_pat r ppl =
-  if is_infix r && List.length ppl = 2 then
+  if is_infix r && Int.equal (List.length ppl) 2 then
     List.hd ppl ++ str (get_infix r) ++ List.hd (List.tl ppl)
   else
     let fields = get_record_fields r in
-    if fields <> [] then pp_record_pat (pp_fields r fields, ppl)
-    else if str_global Cons r = "" then
+    if not (List.is_empty fields) then pp_record_pat (pp_fields r fields, ppl)
+    else if String.is_empty (str_global Cons r) then
       pp_boxed_tuple identity ppl (* Hack Extract Inductive prod *)
     else
-      pp_global Cons r ++ space_if (ppl<>[]) ++ pp_boxed_tuple identity ppl
+      pp_global Cons r ++ space_if (not (List.is_empty ppl)) ++ pp_boxed_tuple identity ppl
 
 and pp_gen_pat ids env = function
   | Pcons (r, l) -> pp_cons_pat r (List.map (pp_gen_pat ids env) l)
@@ -346,7 +346,7 @@ and pp_pat env pv =
     (fun i x ->
        let s1,s2 = pp_one_pat env x in
        hv 2 (hov 4 (str "| " ++ s1 ++ str " ->") ++ spc () ++ hov 2 s2) ++
-       if i = Array.length pv - 1 then mt () else fnl ())
+       if Int.equal i (Array.length pv - 1) then mt () else fnl ())
     pv
 
 and pp_function env t =
@@ -354,7 +354,7 @@ and pp_function env t =
   let bl,env' = push_vars (List.map id_of_mlid bl) env in
   match t' with
     | MLcase(Tglob(r,_),MLrel 1,pv) when
-	not (is_coinductive r) && get_record_fields r = [] &&
+	not (is_coinductive r) && List.is_empty (get_record_fields r) &&
 	not (is_custom_match pv) ->
 	if not (ast_occurs 1 (MLcase(Tunknown,MLdummy,pv))) then
 	  pr_binding (List.rev (List.tl bl)) ++
@@ -397,7 +397,7 @@ let pp_Dfix (rv,c,t) =
       (if init then failwith "empty phrase" else mt ())
     else
       let void = is_inline_custom rv.(i) ||
-	(not (is_custom rv.(i)) && c.(i) = MLexn "UNUSED")
+	(not (is_custom rv.(i)) && match c.(i) with MLexn "UNUSED" -> true | _ -> false)
       in
       if void then pp init (i+1)
       else
@@ -424,15 +424,15 @@ let pp_equiv param_list name = function
 let pp_one_ind prefix ip_equiv pl name cnames ctyps =
   let pl = rename_tvars keywords pl in
   let pp_constructor i typs =
-    (if i=0 then mt () else fnl ()) ++
+    (if Int.equal i 0 then mt () else fnl ()) ++
     hov 3 (str "| " ++ cnames.(i) ++
-	   (if typs = [] then mt () else str " of ") ++
+	   (if List.is_empty typs then mt () else str " of ") ++
 	   prlist_with_sep
 	    (fun () -> spc () ++ str "* ") (pp_type true pl) typs)
   in
   pp_parameters pl ++ str prefix ++ name ++
   pp_equiv pl name ip_equiv ++ str " =" ++
-  if Array.length ctyps = 0 then str " unit (* empty inductive *)"
+  if Int.equal (Array.length ctyps) 0 then str " unit (* empty inductive *)"
   else fnl () ++ v 0 (prvecti pp_constructor ctyps)
 
 let pp_logical_ind packet =
@@ -531,7 +531,7 @@ let pp_decl = function
 	    pp_string_parameters ids, str "=" ++ spc () ++ str s
 	  with Not_found ->
 	    pp_parameters l,
-	    if t = Taxiom then str "(* AXIOM TO BE REALIZED *)"
+	    if t == Taxiom then str "(* AXIOM TO BE REALIZED *)"
 	    else str "=" ++ spc () ++ pp_type false l t
 	in
 	hov 2 (str "type " ++ ids ++ name ++ spc () ++ def)
@@ -678,7 +678,7 @@ let rec pp_structure_elem = function
   | (l,SEmodule m) ->
       let typ =
         (* virtual printing of the type, in order to have a correct mli later*)
-	if Common.get_phase () = Pre then
+	if Common.get_phase () == Pre then
 	  str ": " ++ pp_module_type [] m.ml_mod_type
 	else mt ()
       in

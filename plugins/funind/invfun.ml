@@ -714,7 +714,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 let generalize_dependent_of x hyp g =
   tclMAP
     (function
-       | (id,None,t) when not (id = hyp) &&
+       | (id,None,t) when not (Id.equal id hyp) &&
 	   (Termops.occur_var (pf_env g) x t) -> tclTHEN (h_generalize [mkVar id]) (thin [id])
        | _ -> tclIDTAC
     )
@@ -1037,7 +1037,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	 if the block contains only one function we can safely reuse [f_rect]
       *)
       try
-	if Array.length funs_constr <> 1 then raise Not_found;
+	if not (Int.equal (Array.length funs_constr) 1) then raise Not_found;
 	[| find_induction_principle funs_constr.(0) |]
       with Not_found ->
 	  Array.of_list
@@ -1137,7 +1137,7 @@ let revert_graph kn post_tac hid g =
     match kind_of_term typ with
       | App(i,args) when isInd i ->
 	  let ((kn',num) as ind') = destInd i in
-	  if kn = kn'
+	  if MutInd.equal kn kn'
 	  then (* We have generated a graph hypothesis so that we must change it if we can *)
 	    let info =
 	      try find_Function_of_graph ind'

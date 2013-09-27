@@ -52,14 +52,15 @@ let toplevel_env () =
 
 let environment_until dir_opt =
   let rec parse = function
-    | [] when dir_opt = None -> [Lib.current_mp (), toplevel_env ()]
+    | [] when Option.is_empty dir_opt -> [Lib.current_mp (), toplevel_env ()]
     | [] -> []
     | d :: l ->
       let meb =
         Modops.destr_nofunctor (Global.lookup_module (MPfile d)).mod_type
       in
-      if dir_opt = Some d then [MPfile d, meb]
-      else (MPfile d, meb) :: (parse l)
+      match dir_opt with
+      | Some d' when DirPath.equal d d' -> [MPfile d, meb]
+      | _ -> (MPfile d, meb) :: (parse l)
   in parse (Library.loaded_libraries ())
 
 
@@ -137,20 +138,20 @@ let check_fix env cb i =
   match cb.const_body with
     | Def lbody ->
 	(match kind_of_term (Lazyconstr.force lbody) with
-	  | Fix ((_,j),recd) when i=j -> check_arity env cb; (true,recd)
-	  | CoFix (j,recd) when i=j -> check_arity env cb; (false,recd)
+	  | Fix ((_,j),recd) when Int.equal i j -> check_arity env cb; (true,recd)
+	  | CoFix (j,recd) when Int.equal i j -> check_arity env cb; (false,recd)
 	  | _ -> raise Impossible)
     | Undef _ | OpaqueDef _ -> raise Impossible
 
 let prec_declaration_equal (na1, ca1, ta1) (na2, ca2, ta2) =
-  na1 = na2 &&
+  Array.equal Name.equal na1 na2 &&
   Array.equal eq_constr ca1 ca2 &&
   Array.equal eq_constr ta1 ta2
 
 let factor_fix env l cb msb =
   let _,recd as check = check_fix env cb 0 in
   let n = Array.length (let fi,_,_ = recd in fi) in
-  if n = 1 then [|l|], recd, msb
+  if Int.equal n 1 then [|l|], recd, msb
   else begin
     if List.length msb < n-1 then raise Impossible;
     let msb', msb'' = List.chop (n-1) msb in
@@ -160,7 +161,7 @@ let factor_fix env l cb msb =
 	 function
 	   | (l,SFBconst cb') ->
 	       let check' = check_fix env cb' (j+1) in
-	       if not (fst check = fst check' &&
+	       if not ((fst check : bool) == (fst check') &&
 		   prec_declaration_equal (snd check) (snd check'))
 	       then raise Impossible;
 	       labels.(j+1) <- l;
@@ -324,7 +325,7 @@ let rec extract_structure env mp all = function
 
 and extract_mexpr env mp all = function
   | MEwith _ -> assert false (* no 'with' syntax for modules *)
-  | me when lang () <> Ocaml ->
+  | me when lang () != Ocaml ->
       (* in Haskell/Scheme, we expand everything *)
       extract_msignature env mp all (expand_mexpr env mp me)
   | MEident mp ->
@@ -408,7 +409,7 @@ let mono_filename f =
 	  else f
 	in
 	let id =
-	  if lang () <> Haskell then default_id
+	  if lang () != Haskell then default_id
 	  else
             try Id.of_string (Filename.basename f)
 	    with UserError _ ->
@@ -464,7 +465,7 @@ let formatter dry file =
 
 let get_comment () =
   let s = file_comment () in
-  if s = "" then None
+  if String.is_empty s then None
   else
     let split_comment = Str.split (Str.regexp "[ \t\n]+") s in
     Some (prlist_with_sep spc str split_comment)
@@ -474,11 +475,11 @@ let print_structure_to_file (fn,si,mo) dry struc =
   let d = descr () in
   reset_renaming_tables AllButExternal;
   let unsafe_needs = {
-    mldummy = struct_ast_search ((=) MLdummy) struc;
+    mldummy = struct_ast_search ((==) MLdummy) struc;
     tdummy = struct_type_search Mlutil.isDummy struc;
-    tunknown = struct_type_search ((=) Tunknown) struc;
+    tunknown = struct_type_search ((==) Tunknown) struc;
     magic =
-      if lang () <> Haskell then false
+      if lang () != Haskell then false
       else struct_ast_search (function MLmagic _ -> true | _ -> false) struc }
   in
   (* First, a dry run, for computing objects to rename or duplicate *)
@@ -516,7 +517,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
        info_file si)
     (if dry then None else si);
   (* Print the buffer content via Coq standard formatter (ok with coqide). *)
-  if Buffer.length buf <> 0 then begin
+  if not (Int.equal (Buffer.length buf) 0) then begin
     Pp.msg_info (str (Buffer.contents buf));
     Buffer.reset buf
   end
@@ -536,7 +537,7 @@ let init modular library =
   set_modular modular;
   set_library library;
   reset ();
-  if modular && lang () = Scheme then error_scheme ()
+  if modular && lang () == Scheme then error_scheme ()
 
 let warns () =
   warning_opaques (access_opaque ());
@@ -637,7 +638,7 @@ let extraction_library is_rec m =
   warns ();
   let print = function
     | (MPfile dir as mp, sel) as e ->
-	let dry = not is_rec && dir <> dir_m in
+	let dry = not is_rec && not (DirPath.equal dir dir_m) in
 	print_structure_to_file (module_filename mp) dry [e]
     | _ -> assert false
   in

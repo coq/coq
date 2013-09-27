@@ -63,7 +63,7 @@ let string_of_name nme = Id.to_string (id_of_name nme)
 (** [isVarf f x] returns [true] if term [x] is of the form [(Var f)]. *)
 let isVarf f x =
     match x with
-      | GVar (_,x) -> Pervasives.compare x f = 0
+      | GVar (_,x) -> Id.equal x f
       | _ -> false
 
 (** [ident_global_exist id] returns true if identifier [id] is linked
@@ -361,8 +361,8 @@ let ind2name = Id.of_string "__ind2"
 let verify_inds mib1 mib2 =
   if not mib1.mind_finite then error "First argument is coinductive";
   if not mib2.mind_finite then error "Second argument is coinductive";
-  if mib1.mind_ntypes <> 1 then error "First argument is mutual";
-  if mib2.mind_ntypes <> 1 then error "Second argument is mutual";
+  if not (Int.equal mib1.mind_ntypes 1) then error "First argument is mutual";
+  if not (Int.equal mib2.mind_ntypes 1) then error "Second argument is mutual";
   ()
 
 (*
@@ -598,7 +598,7 @@ let rec merge_types shift accrec1
   let res =
     match ltyp1 with
       | [] ->
-          let isrec1 = (accrec1<>[]) in
+          let isrec1 = not (List.is_empty accrec1) in
           let isrec2 = find_app ind2name ltyp2 in
           let rechyps =
             if isrec1 && isrec2
@@ -656,7 +656,7 @@ let build_link_map_aux (allargs1:Id.t array) (allargs2:Id.t array)
     (lnk:int merged_arg array) =
   Array.fold_left_i
     (fun i acc e ->
-      if i = Array.length lnk - 1 then acc (* functional arg, not in allargs *)
+      if Int.equal i (Array.length lnk - 1) then acc (* functional arg, not in allargs *)
       else
         match e with
           | Prm_linked j | Arg_linked j -> Id.Map.add allargs2.(i) allargs1.(j) acc
@@ -922,7 +922,7 @@ let merge (id1:Id.t) (id2:Id.t) (args1:Id.t array)
                  as above: vars may be linked inside args2?? *)
     Array.mapi
       (fun i c ->
-        match Array.findi (fun i x -> x=c) args1 with
+        match Array.findi (fun i x -> Id.equal x c) args1 with
           | Some j -> Linked j
           | None -> Unlinked)
       args2 in
@@ -939,7 +939,7 @@ let remove_last_arg c =
   let xnolast = List.rev (List.tl (List.rev x)) in
   compose_prod xnolast y
 
-let rec remove_n_fst_list n l = if n=0 then l else remove_n_fst_list (n-1) (List.tl l)
+let rec remove_n_fst_list n l = if Int.equal n 0 then l else remove_n_fst_list (n-1) (List.tl l)
 let remove_n_last_list n l = List.rev (remove_n_fst_list n (List.rev l))
 
 let remove_last_n_arg n c =
@@ -961,7 +961,7 @@ let funify_branches relinfo nfuns branch =
       | _ -> assert false in
   let is_dom c =
     match kind_of_term c with
-      | Ind((u,_)) | Construct((u,_),_) -> u = mut_induct
+      | Ind((u,_)) | Construct((u,_),_) -> MutInd.equal u mut_induct
       | _ -> false in
   let _dom_i c =
     assert (is_dom c);

@@ -195,7 +195,7 @@ type 'a option_sig = {
 module OptionOrd =
 struct
   type t = option_name
-  let compare = compare
+  let compare opt1 opt2 = List.compare String.compare opt1 opt2
 end
 
 module OptionMap = Map.Make(OptionOrd)
