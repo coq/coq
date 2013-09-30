@@ -10,32 +10,38 @@ module type S = sig
 
   module Cluster :
   sig
-    type t
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val to_string : t -> string
+    type 'd t
+    val equal : 'd t -> 'd t -> bool
+    val compare : 'd t -> 'd t -> int
+    val to_string : 'd t -> string
+    val data : 'd t -> 'd
   end
 
   type node
-  type ('edge,'info) t
+  module NodeSet : Set.S with type elt = node
 
-  val empty : ('e,'i) t
+  type ('edge,'info,'cdata) t
+  
+  val empty : ('e,'i,'d) t
 
-  val add_edge : ('e,'i) t -> node -> 'e -> node -> ('e,'i) t
-  (* raise Not_found if the node is not there *)
-  val from_node : ('e,'i) t -> node -> (node * 'e) list
-  val mem : ('e,'i) t -> node -> bool
+  val add_edge : ('e,'i,'d) t -> node -> 'e -> node -> ('e,'i,'d) t
+  val from_node : ('e,'i,'d) t -> node -> (node * 'e) list
+  val mem : ('e,'i,'d) t -> node -> bool
+  val del_edge : ('e,'i,'d) t -> node -> node -> ('e,'i,'d) t
+  val del_nodes : ('e,'i,'d) t -> NodeSet.t  -> ('e,'i,'d) t
+  val all_nodes : ('e,'i,'d) t -> NodeSet.t
 
-  val iter : ('e,'i) t -> 
-    (node -> Cluster.t option -> 'i option ->
+  val iter : ('e,'i,'d) t -> 
+    (node -> 'd Cluster.t option -> 'i option ->
       (node * 'e) list -> unit) -> unit
 
-  val create_cluster : ('e,'i) t -> node list -> ('e,'i) t
-  val cluster_of : ('e,'i) t -> node -> Cluster.t option
+  val create_cluster : ('e,'i,'d) t -> node list -> 'd -> ('e,'i,'d) t
+  val cluster_of : ('e,'i,'d) t -> node -> 'd Cluster.t option
+  val del_cluster : ('e,'i,'d) t -> 'd Cluster.t -> ('e,'i,'d) t
 
-  val get_info : ('e,'i) t -> node -> 'i option
-  val set_info : ('e,'i) t -> node -> 'i -> ('e,'i) t
-  val clear_info : ('e,'i) t -> node -> ('e,'i) t
+  val get_info : ('e,'i,'d) t -> node -> 'i option
+  val set_info : ('e,'i,'d) t -> node -> 'i -> ('e,'i,'d) t
+  val clear_info : ('e,'i,'d) t -> node -> ('e,'i,'d) t
 
 end
 

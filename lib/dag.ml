@@ -10,31 +10,38 @@ module type S = sig
 
   module Cluster :
   sig
-    type t
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val to_string : t -> string
+    type 'd t
+    val equal : 'd t -> 'd t -> bool
+    val compare : 'd t -> 'd t -> int
+    val to_string : 'd t -> string
+    val data : 'd t -> 'd
   end
 
   type node
-  type ('edge,'info) t
+  module NodeSet : Set.S with type elt = node
   
-  val empty : ('e,'i) t
+  type ('edge,'info,'cdata) t
+  
+  val empty : ('e,'i,'d) t
 
-  val add_edge : ('e,'i) t -> node -> 'e -> node -> ('e,'i) t
-  val from_node : ('e,'i) t -> node -> (node * 'e) list
-  val mem : ('e,'i) t -> node -> bool
+  val add_edge : ('e,'i,'d) t -> node -> 'e -> node -> ('e,'i,'d) t
+  val from_node : ('e,'i,'d) t -> node -> (node * 'e) list
+  val mem : ('e,'i,'d) t -> node -> bool
+  val del_edge : ('e,'i,'d) t -> node -> node -> ('e,'i,'d) t
+  val del_nodes : ('e,'i,'d) t -> NodeSet.t  -> ('e,'i,'d) t
+  val all_nodes : ('e,'i,'d) t -> NodeSet.t
 
-  val iter : ('e,'i) t -> 
-    (node -> Cluster.t option -> 'i option ->
+  val iter : ('e,'i,'d) t -> 
+    (node -> 'd Cluster.t option -> 'i option ->
       (node * 'e) list -> unit) -> unit
 
-  val create_cluster : ('e,'i) t -> node list -> ('e,'i) t
-  val cluster_of : ('e,'i) t -> node -> Cluster.t option
+  val create_cluster : ('e,'i,'d) t -> node list -> 'd -> ('e,'i,'d) t
+  val cluster_of : ('e,'i,'d) t -> node -> 'd Cluster.t option
+  val del_cluster : ('e,'i,'d) t -> 'd Cluster.t -> ('e,'i,'d) t
 
-  val get_info : ('e,'i) t -> node -> 'i option
-  val set_info : ('e,'i) t -> node -> 'i -> ('e,'i) t
-  val clear_info : ('e,'i) t -> node -> ('e,'i) t
+  val get_info : ('e,'i,'d) t -> node -> 'i option
+  val set_info : ('e,'i,'d) t -> node -> 'i -> ('e,'i,'d) t
+  val clear_info : ('e,'i,'d) t -> node -> ('e,'i,'d) t
 
 end
 
@@ -42,10 +49,11 @@ module Make(OT : Map.OrderedType) = struct
 
 module Cluster =
 struct
-  type t = int
-  let equal = Int.equal
-  let compare = Int.compare
-  let to_string = string_of_int
+  type 'd t = 'd * int
+  let equal (_,i1) (_,i2) = Int.equal i1 i2
+  let compare (_,i1) (_,i2) = Int.compare i1 i2
+  let to_string (_,i) = string_of_int i
+  let data (d,_) = d
 end
 
 type node = OT.t
@@ -53,9 +61,9 @@ type node = OT.t
 module NodeMap = Map.Make(OT)
 module NodeSet = Set.Make(OT)
 
-type ('edge,'info) t = {
+type ('edge,'info,'data) t = {
   graph : (node * 'edge) list NodeMap.t;
-  clusters : Cluster.t NodeMap.t;
+  clusters : 'data Cluster.t NodeMap.t;
   infos : 'info NodeMap.t;
 }
 
@@ -75,16 +83,38 @@ let add_edge dag from trans dest = { dag with
 
 let from_node { graph } id = NodeMap.find id graph 
 
+let del_edge dag id tgt = { dag with
+  graph =
+    try
+      let edges =
+        List.filter (fun (d,_) -> OT.compare d tgt <> 0) (from_node dag id) in
+      NodeMap.add id edges dag.graph
+    with Not_found -> dag.graph }
+
+let del_nodes dag s = { 
+  infos = NodeMap.filter (fun n _ -> not(NodeSet.mem n s)) dag.infos;
+  clusters = NodeMap.filter (fun n _ -> not(NodeSet.mem n s)) dag.clusters;
+  graph = NodeMap.filter (fun n l ->
+      let drop = NodeSet.mem n s in
+      if not drop then
+        assert(List.for_all (fun (n',_) -> not(NodeSet.mem n' s)) l);
+      not drop)
+    dag.graph }
+
 let clid = ref 1
-let create_cluster dag l=
+let create_cluster dag l data =
   incr clid;
   { dag with clusters =
      List.fold_right (fun x clusters ->
-       NodeMap.add x !clid clusters) l dag.clusters }
+       NodeMap.add x (data, !clid) clusters) l dag.clusters }
 
 let cluster_of dag id =
   try Some (NodeMap.find id dag.clusters)
   with Not_found -> None
+  
+let del_cluster dag c =
+  { dag with clusters =
+     NodeMap.filter (fun _ c' -> not (Cluster.equal c' c)) dag.clusters }
 
 let get_info dag id =
   try Some (NodeMap.find id dag.infos)
@@ -96,6 +126,9 @@ let clear_info dag id = { dag with infos = NodeMap.remove id dag.infos }
 
 let iter dag f =
   NodeMap.iter (fun k v -> f k (cluster_of dag k) (get_info dag k) v) dag.graph
+
+let all_nodes dag =
+  NodeMap.fold (fun k _ s -> NodeSet.add k s) dag.graph NodeSet.empty
 
 end
 
