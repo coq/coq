@@ -16,6 +16,11 @@ type mem_flag = [ `COMMENT | `UNSAFE | `PROCESSING | `ERROR ]
 let mem_flag_of_flag : flag -> mem_flag = function
   | `ERROR _ -> `ERROR
   | (`COMMENT | `UNSAFE | `PROCESSING) as mem_flag -> mem_flag
+let str_of_flag = function
+  | `COMMENT -> "C"
+  | `UNSAFE -> "U"
+  | `PROCESSING -> "P"
+  | `ERROR _ -> "E"
 
 module SentenceId : sig
 
@@ -37,6 +42,8 @@ module SentenceId : sig
   val remove_flag : sentence -> mem_flag -> unit
   val same_sentence : sentence -> sentence -> bool
   val hidden_edit_id : unit -> int
+
+  val dbg_to_string : GText.buffer -> sentence -> string
 
 end = struct
 
@@ -67,8 +74,23 @@ end = struct
   let has_flag s mf =
     List.exists (fun f -> mem_flag_of_flag f = mf) s.flags
   let remove_flag s mf =
-    s.flags <- List.filter (fun f -> mem_flag_of_flag f = mf) s.flags
+    s.flags <- List.filter (fun f -> mem_flag_of_flag f <> mf) s.flags
   let same_sentence s1 s2 = s1.edit_id = s2.edit_id && s1.state_id = s2.state_id
+
+  let dbg_to_string (b : GText.buffer) s =
+    let ellipsize s =
+            Str.global_replace (Str.regexp "^[\n ]*") ""
+        (if String.length s > 20 then String.sub s 0 17 ^ "..."
+         else s) in
+    Printf.sprintf "[%3d,%3s](%5d,%5d) %s [%s]"
+      s.edit_id
+      (Stateid.to_string (Option.default Stateid.dummy s.state_id))
+      (b#get_iter_at_mark s.start)#offset
+      (b#get_iter_at_mark s.stop)#offset
+      (ellipsize
+        ((b#get_iter_at_mark s.start)#get_slice (b#get_iter_at_mark s.stop)))
+      (String.concat "," (List.map str_of_flag s.flags))
+
 
 end
 open SentenceId
@@ -132,8 +154,54 @@ object(self)
   method destroy () =
     feedback_timer.Ideutils.kill ()
 
+  method private print_stack =
+    Minilib.log "cmd_stack:";
+    let top, mid, bot = Stack.to_lists cmd_stack in
+    Minilib.log "--start--";
+    List.iter (fun s -> Minilib.log(dbg_to_string buffer s)) top;
+    if Stack.focused cmd_stack then Minilib.log "----";
+    List.iter (fun s -> Minilib.log(dbg_to_string buffer s)) mid;
+    if Stack.focused cmd_stack then Minilib.log "----";
+    List.iter (fun s -> Minilib.log(dbg_to_string buffer s)) bot;
+    Minilib.log "--stop--"
+
+  method private enter_focus start stop to_id tip =
+    if Stack.focused cmd_stack then begin
+      self#exit_focus tip
+    end;
+    let at id s = s.state_id = Some id in
+    self#print_stack;
+    Minilib.log("Focusing "^Stateid.to_string start^" "^Stateid.to_string stop);
+    Stack.focus cmd_stack ~cond_top:(at start) ~cond_bot:(at stop);
+    self#print_stack;
+    let qed_s = Stack.top cmd_stack in
+    buffer#apply_tag Tags.Script.read_only
+      ~start:((buffer#get_iter_at_mark qed_s.start)#forward_find_char
+        (fun c -> not(Glib.Unichar.isspace c)))
+      ~stop:(buffer#get_iter_at_mark qed_s.stop);
+    buffer#move_mark ~where:(buffer#get_iter_at_mark qed_s.stop)
+      (`NAME "stop_of_input")
+
+  method private exit_focus newtip =
+    self#print_stack;
+    Minilib.log "Unfocusing";
+    Stack.unfocus cmd_stack;
+    self#print_stack;
+    if (Some newtip <> (Stack.top cmd_stack).state_id) then begin
+      Minilib.log ("Cutting tip to " ^ Stateid.to_string newtip);
+      let until _ id _ _ = id = Some newtip in
+      let n, _, _, seg = self#segment_to_be_cleared until in
+      self#cleanup n seg
+    end;
+    let where = buffer#get_iter_at_mark (Stack.top cmd_stack).stop in
+    buffer#move_mark ~where (`NAME "start_of_input");
+    buffer#move_mark ~where:buffer#end_iter (`NAME "stop_of_input")
+
   method private get_start_of_input =
     buffer#get_iter_at_mark (`NAME "start_of_input")
+  
+  method private get_end_of_input =
+    buffer#get_iter_at_mark (`NAME "stop_of_input")
 
   method private get_insert =
     buffer#get_iter_at_mark `INSERT
@@ -162,56 +230,23 @@ object(self)
       else messages#add s;
     in
     let query =
-      Coq.interp ~logger:messages#push ~raw:true ~verbose:false 0 phrase in
+      Coq.query ~logger:messages#push (phrase,Stateid.dummy) in
     let next = function
-    | Fail (_, _, err) -> display_error err; Coq.return () (* XXX*)
-    | Good (_, msg) ->
+    | Fail (_, _, err) -> display_error err; Coq.return ()
+    | Good msg ->
       messages#add msg; Coq.return ()
     in
     Coq.bind (Coq.seq action query) next
 
-  (** [fill_command_queue until q] fills a command queue until the [until]
-      condition returns true; it is fed with the number of phrases read and the
-      iters enclosing the current sentence. *)
-  method private fill_command_queue until queue =
-    let rec loop len iter =
-      match Sentence.find buffer iter with
-      | None -> raise Exit
-      | Some (start, stop) ->
-        if until len start stop then raise Exit;
-        buffer#apply_tag Tags.Script.to_process ~start ~stop;
-        (* Check if this is a comment *)
-        let is_comment =
-          stop#backward_char#has_tag Tags.Script.comment_sentence
-        in
-        let sentence =
-          mk_sentence
-            ~start:(`MARK (buffer#create_mark start))
-            ~stop:(`MARK (buffer#create_mark stop))
-            (if is_comment then [`COMMENT] else []) in
-        Queue.push sentence queue;
-        if not stop#is_end then loop (succ len) stop
-    in
-    try loop 0 self#get_start_of_input with Exit -> ()
-
-  method private discard_command_queue queue =
-    while not (Queue.is_empty queue) do
-      let sentence = Queue.pop queue in
-      let start = buffer#get_iter_at_mark sentence.start in
-      let stop = buffer#get_iter_at_mark sentence.stop in
-      buffer#remove_tag Tags.Script.to_process ~start ~stop;
-      buffer#delete_mark sentence.start;
-      buffer#delete_mark sentence.stop;
-    done
-
   method private mark_as_needed sentence =
+    Minilib.log("Marking " ^ dbg_to_string buffer sentence);
     let start = buffer#get_iter_at_mark sentence.start in
     let stop = buffer#get_iter_at_mark sentence.stop in
     let to_process = Tags.Script.to_process in
     let processed = Tags.Script.processed in
     let unjustified = Tags.Script.unjustified in
     let error_bg = Tags.Script.error_bg in
-    let all_tags = [ to_process; processed; unjustified ] in
+    let all_tags = [ error_bg; to_process; processed; unjustified ] in
     let tags =
       (if has_flag sentence `PROCESSING then to_process else
        if has_flag sentence `ERROR then error_bg else
@@ -326,7 +361,7 @@ object(self)
     self#discard_command_queue queue;
     pop_info ();
     self#position_error_tag_at_iter start phrase loc;
-    buffer#place_cursor ~where:start;
+    buffer#place_cursor ~where:stop;
     messages#clear;
     messages#push Error msg;
     self#show_goals)
@@ -336,6 +371,48 @@ object(self)
     let stop = buffer#get_iter_at_mark sentence.stop in
     let phrase = start#get_slice ~stop in
     start, stop, phrase
+
+  (** [fill_command_queue until q] fills a command queue until the [until]
+      condition returns true; it is fed with the number of phrases read and the
+      iters enclosing the current sentence. *)
+  method private fill_command_queue until queue =
+    let rec loop len iter =
+      match Sentence.find buffer iter with
+      | None -> ()
+      | Some (start, stop) ->
+        if until len start stop then begin
+          ()
+        end else if start#has_tag Tags.Script.processed then begin
+          Queue.push (`Skip (start, stop)) queue;
+          loop len stop
+        end else begin
+          buffer#apply_tag Tags.Script.to_process ~start ~stop;
+          (* Check if this is a comment *)
+          let is_comment =
+            stop#backward_char#has_tag Tags.Script.comment_sentence
+          in
+          let sentence =
+            mk_sentence
+              ~start:(`MARK (buffer#create_mark start))
+              ~stop:(`MARK (buffer#create_mark stop))
+              (if is_comment then [`COMMENT] else []) in
+          Queue.push (`Sentence sentence) queue;
+          if not stop#is_end then loop (succ len) stop
+        end
+    in
+    loop 0 self#get_start_of_input
+
+  method private discard_command_queue queue =
+    while not (Queue.is_empty queue) do
+      match Queue.pop queue with
+      | `Skip _ -> ()
+      | `Sentence sentence ->
+          let start = buffer#get_iter_at_mark sentence.start in
+          let stop = buffer#get_iter_at_mark sentence.stop in
+          buffer#remove_tag Tags.Script.to_process ~start ~stop;
+          buffer#delete_mark sentence.start;
+          buffer#delete_mark sentence.stop;
+    done
 
   (** Compute the phrases until [until] returns [true]. *)
   method private process_until until verbose =
@@ -353,41 +430,59 @@ object(self)
       Minilib.log "Begin command processing";
       queue)
     in
+    let tip =
+      try Stack.fold_until (fun () -> function
+          | { state_id = Some id } -> Stop id
+          | _ -> Next ()) () cmd_stack
+      with Not_found -> initial_state in
     Coq.bind action (fun queue ->
-    let rec loop () =
+    let rec loop tip topstack =
       if Queue.is_empty queue then
         let () = pop_info () in
         let () = script#recenter_insert in
-        self#show_goals
+        match topstack with
+        | [] -> self#show_goals
+        | s :: _ -> self#backtrack_to_iter (buffer#get_iter_at_mark s.start)
       else
-        let sentence = Queue.pop queue in
+        match Queue.pop queue, topstack with
+        | `Skip(start,stop), [] -> assert false
+        | `Skip(start,stop), s :: topstack ->
+            assert(start#equal (buffer#get_iter_at_mark s.start));
+            assert(stop#equal (buffer#get_iter_at_mark s.stop));
+            loop tip topstack
+        | `Sentence sentence, _ :: _ -> assert false
+        | `Sentence sentence, [] ->
         add_flag sentence `PROCESSING;
         Stack.push sentence cmd_stack;
         if has_flag sentence `COMMENT then
           let () = remove_flag sentence `PROCESSING in
           let () = self#commit_queue_transaction sentence in
-          loop ()
+          loop tip topstack
         else
           (* If the line is not a comment, we interpret it. *)
           let _, _, phrase = self#get_sentence sentence in
-          let commit_and_continue msg =
-            push_msg Notice msg;
-            self#commit_queue_transaction sentence;
-            loop ()
-          in
           let query =
-            Coq.interp ~logger:push_msg ~verbose sentence.edit_id phrase in
+            Coq.add ~logger:push_msg ((phrase,sentence.edit_id),(tip,verbose))in
           let next = function
-          | Good (id, msg) ->
+          | Good (id, (Util.Inl (* NewTip *) (), msg)) ->
               assign_state_id sentence id;
-              commit_and_continue msg
+              push_msg Notice msg;
+              self#commit_queue_transaction sentence;
+              loop id []
+          | Good (id, (Util.Inr (* Unfocus *) tip, msg)) ->
+              assign_state_id sentence id;
+              let topstack, _, _ = Stack.to_lists cmd_stack in
+              self#exit_focus tip;
+              push_msg Notice msg;
+              self#mark_as_needed sentence;
+              loop tip (List.rev topstack)
           | Fail (id, loc, msg) ->
               let sentence = Stack.pop cmd_stack in
               self#process_interp_error queue sentence loc msg id
           in
           Coq.bind query next
     in
-    loop ())
+    loop tip [])
   
   method join_document =
    let next = function
@@ -430,7 +525,7 @@ object(self)
     self#process_until until false
 
   method process_until_end_or_error =
-    self#process_until_iter buffer#end_iter
+    self#process_until_iter self#get_end_of_input
 
   method private segment_to_be_cleared until =
     let finder (n, found, zone) ({ start; stop; state_id } as sentence) =
@@ -438,10 +533,28 @@ object(self)
       match found, state_id with
       | true, Some id -> Stop (n, id, Some sentence, zone)
       | _ -> Next (n + 1, found, sentence :: zone) in
-    try Stack.seek finder (0, false, []) cmd_stack
+    try Stack.fold_until finder (0, false, []) cmd_stack
     with Not_found ->
+            Minilib.log "ALL";
       Stack.length cmd_stack, initial_state,
       None, List.rev (Stack.to_list cmd_stack)
+
+  method private cleanup n seg =
+    Minilib.log("Clean "^string_of_int n^" "^string_of_int(List.length seg));
+    for i = 1 to n do ignore(Stack.pop cmd_stack) done;
+    if seg <> [] then begin
+      let start = buffer#get_iter_at_mark (CList.hd seg).start in
+      let stop = buffer#get_iter_at_mark (CList.last seg).stop in
+      Minilib.log("Clean tags in range "^string_of_int start#offset^
+        " "^string_of_int stop#offset);
+      buffer#remove_tag Tags.Script.processed ~start ~stop;
+      buffer#remove_tag Tags.Script.unjustified ~start ~stop;
+(*       buffer#remove_tag Tags.Script.tooltip ~start ~stop; *)
+      buffer#remove_tag Tags.Script.to_process ~start ~stop;
+      buffer#move_mark ~where:start (`NAME "start_of_input")
+    end;
+    List.iter (fun { start } -> buffer#delete_mark start) seg;
+    List.iter (fun { stop } -> buffer#delete_mark stop) seg
 
   (** Wrapper around the raw undo command *)
   method private backtrack_until ?(move_insert=true) until =
@@ -450,25 +563,28 @@ object(self)
     let conclusion () =
       pop_info ();
       if move_insert then buffer#place_cursor ~where:self#get_start_of_input;
+      let start = self#get_start_of_input in
+      let stop = self#get_end_of_input in
+      Minilib.log(Printf.sprintf "cleanup tags %d %d" start#offset stop#offset);
+      buffer#remove_tag Tags.Script.error ~start ~stop;
+      buffer#remove_tag Tags.Script.error_bg ~start ~stop;
+      buffer#remove_tag Tags.Script.tooltip ~start ~stop;
+      buffer#remove_tag Tags.Script.processed ~start ~stop;
+      buffer#remove_tag Tags.Script.to_process ~start ~stop;
       self#show_goals in
-    let cleanup n l =
-      for i = 1 to n do ignore(Stack.pop cmd_stack) done;
-      if l <> [] then begin
-        let start = buffer#get_iter_at_mark (CList.hd l).start in
-        let stop = buffer#get_iter_at_mark (CList.last l).stop in
-        buffer#remove_tag Tags.Script.processed ~start ~stop;
-        buffer#remove_tag Tags.Script.unjustified ~start ~stop;
-(*         buffer#remove_tag Tags.Script.tooltip ~start ~stop; *)
-        buffer#remove_tag Tags.Script.to_process ~start ~stop;
-        buffer#move_mark ~where:start (`NAME "start_of_input")
-      end;
-      List.iter (fun { start } -> buffer#delete_mark start) l;
-      List.iter (fun { stop } -> buffer#delete_mark stop) l in
     Coq.bind (Coq.lift opening) (fun () ->
     let rec undo until =
       let n, to_id, sentence, seg = self#segment_to_be_cleared until in
-      Coq.bind (Coq.backto to_id) (function
-      | Good () -> cleanup n seg; conclusion ()
+      Coq.bind (Coq.edit_at to_id) (function
+      | Good (CSig.Inl (* NewTip *) ()) ->
+          self#cleanup n seg;
+          conclusion ()
+      | Good (CSig.Inr (* Focus  *) (stop_id,(start_id,tip))) ->
+          self#enter_focus start_id stop_id to_id tip;
+          let n, to_id, sentence, seg =
+            self#segment_to_be_cleared (fun _ id _ _ -> id = Some to_id) in
+          self#cleanup n seg;
+          conclusion ()
       | Fail (safe_id, loc, msg) ->
           if loc <> None then messages#push Error "Fixme LOC";
           messages#push Error msg;
@@ -485,14 +601,7 @@ object(self)
     messages#clear;
     messages#push Error msg;
     ignore(self#process_feedback ());
-    let safe_flags s = s.flags = [ `UNSAFE ] || s.flags = [] in
-    let find_last_safe_id s =
-      match s.state_id with
-      | Some id -> safe_flags s | None -> false in
-    try
-      let last_safe = Stack.find find_last_safe_id cmd_stack in
-      self#backtrack_until (fun _ id _ _ -> id = last_safe.state_id)
-    with Not_found -> self#backtrack_until (fun _ id _ _ -> id = Some safe_id)
+    self#backtrack_until ~move_insert:false (fun _ id _ _ -> id = Some safe_id)
 
   method backtrack_last_phrase =
     let until n _ _ _ = n >= 1 in
@@ -543,14 +652,14 @@ object(self)
     in
     let try_phrase phrase stop more =
       let action = log "Sending to coq now" in
-      let query = Coq.interp ~verbose:false 0 phrase in
+      let query = Coq.query (phrase,Stateid.dummy) in
       let next = function
       | Fail (_, l, str) -> (* FIXME: check *)
         display_error (l, str);
         messages#add ("Unsuccessfully tried: "^phrase);
         more
-      | Good (_, id) ->
-(*         messages#add msg; *)
+      | Good msg ->
+        messages#add msg;
         stop Tags.Script.processed
       in
       Coq.bind (Coq.seq action query) next
@@ -566,6 +675,7 @@ object(self)
     let action () =
       if why = Coq.Unexpected then warning "Coqtop died badly. Resetting.";
       (* clear the stack *)
+      if Stack.focused cmd_stack then Stack.unfocus cmd_stack;
       while not (Stack.is_empty cmd_stack) do
         let phrase = Stack.pop cmd_stack in
         buffer#delete_mark phrase.start;
@@ -573,6 +683,7 @@ object(self)
       done;
       (* reset the buffer *)
       buffer#move_mark ~where:buffer#start_iter (`NAME "start_of_input");
+      buffer#move_mark ~where:buffer#end_iter (`NAME "stop_of_input");
       Sentence.tag_all buffer;
       (* clear the views *)
       messages#clear;
@@ -604,12 +715,13 @@ object(self)
       | Good true -> Coq.return ()
       | Good false ->
         let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
-        let cmd = Coq.interp (hidden_edit_id ()) cmd in
+        let cmd = Coq.add ((cmd,hidden_edit_id ()),(Stateid.initial,false)) in
         let next = function
         | Fail (_, l, str) ->
           messages#set ("Couln't add loadpath:\n"^str);
           Coq.return ()
-        | Good (id, _) -> initial_state <- id; Coq.return ()
+        | Good (id, _) ->
+          initial_state <- id; Coq.return ()
         in
         Coq.bind cmd next
       in

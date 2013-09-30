@@ -14,7 +14,8 @@
     an unterminated sentence. *)
 
 let split_slice_lax (buffer:GText.buffer) start stop =
-  List.iter (buffer#remove_tag ~start ~stop) Tags.Script.all;
+  buffer#remove_tag ~start ~stop Tags.Script.sentence;
+  buffer#remove_tag ~start ~stop Tags.Script.error;
   let slice = buffer#get_text ~start ~stop () in
   let apply_tag off tag =
     (* off is now a utf8-compliant char offset, cf Coq_lex.utf8_adjust *)
@@ -98,14 +99,16 @@ let tag_on_insert buffer =
            found by [grab_ending_dot] to form a non-ending "..".
          In any case, we retag up to eof, since this isn't that costly. *)
       if not stop#is_end then
-        try split_slice_lax buffer start buffer#end_iter
+        let eoi = buffer#get_iter_at_mark (`NAME "stop_of_input") in
+        try split_slice_lax buffer start eoi
         with Coq_lex.Unterminated -> ()
   with StartError ->
     buffer#apply_tag ~start:soi ~stop:soi#forward_char Tags.Script.error
 
 let tag_all buffer =
   let soi = buffer#get_iter_at_mark (`NAME "start_of_input") in
-  try split_slice_lax buffer soi buffer#end_iter
+  let eoi = buffer#get_iter_at_mark (`NAME "stop_of_input") in
+  try split_slice_lax buffer soi eoi
   with Coq_lex.Unterminated -> ()
 
 (** Search a sentence around some position *)

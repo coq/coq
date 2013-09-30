@@ -370,7 +370,7 @@ let handle_final_answer handle xml =
     | None -> raise AnswerWithoutRequest
     | Some (c, _) -> c in
   let () = handle.waiting_for <- None in
-  with_ccb ccb { bind_ccb = fun (c, f) -> f (Serialize.to_answer xml c) }
+  with_ccb ccb { bind_ccb = fun (c, f) -> f (Serialize.to_answer c xml) }
 
 type input_state = {
   mutable fragment : string;
@@ -558,9 +558,9 @@ let eval_call ?(logger=default_logger) call handle k =
   Minilib.log "End eval_call";
   Void
 
-let interp ?(logger=default_logger) ?(raw=false) ?(verbose=true) i s =
-  eval_call ~logger (Serialize.interp (i,raw,verbose,s))
-let backto i = eval_call (Serialize.backto i)
+let add ?(logger=default_logger) x = eval_call ~logger (Serialize.add x)
+let edit_at i = eval_call (Serialize.edit_at i)
+let query ?(logger=default_logger) x = eval_call ~logger (Serialize.query x)
 let inloadpath s = eval_call (Serialize.inloadpath s)
 let mkcases s = eval_call (Serialize.mkcases s)
 let status ?logger force = eval_call ?logger (Serialize.status force)

@@ -115,11 +115,11 @@ object(self)
       in
       let log level message = result#buffer#insert (message^"\n") in
       let process =
-	Coq.bind (Coq.interp ~logger:log ~raw:true 0 phrase) (function
+	Coq.bind (Coq.query ~logger:log (phrase,Stateid.dummy)) (function
           | Interface.Fail (_,l,str) ->
             result#buffer#insert str;
 	    Coq.return ()
-          | Interface.Good (_,res) ->
+          | Interface.Good res ->
             result#buffer#insert res; 
 	    Coq.return ())
       in

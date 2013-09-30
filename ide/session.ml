@@ -35,6 +35,8 @@ let create_buffer () =
     ()
   in
   let _ = buffer#create_mark ~name:"start_of_input" buffer#start_iter in
+  let _ = buffer#create_mark
+    ~left_gravity:false ~name:"stop_of_input" buffer#end_iter in
   let _ = buffer#create_mark ~name:"prev_insert" buffer#start_iter in
   let _ = buffer#place_cursor ~where:buffer#start_iter in
   let _ = buffer#add_selection_clipboard Ideutils.cb in
@@ -93,41 +95,75 @@ let set_buffer_handlers
   let call_coq_or_cancel_action f =
     Coq.try_grab coqtop f (fun () -> cancel_signal "Coq busy") in
   let get_start () = buffer#get_iter_at_mark (`NAME "start_of_input") in
+  let get_stop () = buffer#get_iter_at_mark (`NAME "stop_of_input") in
+  let ensure_marks_exist () =
+    try ignore(buffer#get_mark (`NAME "stop_of_input"))
+    with GText.No_such_mark _ -> assert false in
   let get_insert () = buffer#get_iter_at_mark `INSERT in
+  let debug_edit_zone () = if !Minilib.debug then begin
+    buffer#remove_tag Tags.Script.edit_zone
+      ~start:buffer#start_iter ~stop:buffer#end_iter;
+    buffer#apply_tag Tags.Script.edit_zone
+      ~start:(get_start()) ~stop:(get_stop())
+    end in
+  let backto_before_error it =
+    let rec aux old it =
+      if it#is_start || not(it#has_tag Tags.Script.error_bg) then old
+      else aux it it#backward_char in
+    aux it it in
   let insert_cb it s = if String.length s = 0 then () else begin
     Minilib.log ("insert_cb " ^ string_of_int it#offset);
     let text_mark = add_mark it in
     if it#has_tag Tags.Script.to_process then
-      cancel_signal "Altering to the script being processed in not implemented"
+      cancel_signal "Altering the script being processed in not implemented"
+    else if it#has_tag Tags.Script.read_only then
+      cancel_signal "Altering read_only text not allowed"
     else if it#has_tag Tags.Script.processed then
       call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
-    end in
+    else if it#has_tag Tags.Script.error_bg then begin
+      let prev_sentence_end = backto_before_error it in
+      let text_mark = add_mark prev_sentence_end in
+      call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
+    end end in
   let delete_cb ~start ~stop =
     Minilib.log (Printf.sprintf "delete_cb %d %d" start#offset stop#offset);
-    let min_iter = if start#compare stop < 0 then start else stop in
+    cur_action := new_action_id ();
+    let min_iter, max_iter =
+      if start#compare stop < 0 then start, stop else stop, start in
     let text_mark = add_mark min_iter in
-    if min_iter#has_tag Tags.Script.to_process then
-      cancel_signal "Altering to the script being processed in not implemented"
-    else if min_iter#has_tag Tags.Script.processed then
-      call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark)) in
+    let rec aux min_iter =
+      if min_iter#equal max_iter then ()
+      else if min_iter#has_tag Tags.Script.to_process then
+        cancel_signal "Altering the script being processed in not implemented"
+      else if min_iter#has_tag Tags.Script.read_only then
+        cancel_signal "Altering read_only text not allowed"
+      else if min_iter#has_tag Tags.Script.processed then
+        call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
+      else if min_iter#has_tag Tags.Script.error_bg then
+        let prev_sentence_end = backto_before_error min_iter in
+        let text_mark = add_mark prev_sentence_end in
+        call_coq_or_cancel_action (coqops#go_to_mark (`MARK text_mark))
+      else aux min_iter#forward_char in
+    aux min_iter in
   let begin_action_cb () =
+    Minilib.log "begin_action_cb";
     action_was_cancelled := false;
     let where = get_insert () in
     buffer#move_mark (`NAME "prev_insert") ~where in
   let end_action_cb () =
     Minilib.log "end_action_cb";
+    ensure_marks_exist ();
     if not !action_was_cancelled then begin
-      Minilib.log "cleanup tags";
-      let start = get_start () in
-      let stop = buffer#end_iter in
-      buffer#remove_tag Tags.Script.error ~start ~stop;
-      buffer#remove_tag Tags.Script.error_bg ~start ~stop;
-      buffer#remove_tag Tags.Script.tooltip ~start ~stop;
-      buffer#remove_tag Tags.Script.processed ~start ~stop;
-      buffer#remove_tag Tags.Script.to_process ~start ~stop;
-      Sentence.tag_on_insert buffer;
+      Sentence.tag_on_insert buffer
     end in
+  let mark_deleted_cb m =
+    match GtkText.Mark.get_name m with
+    | Some "insert" -> ()
+    | Some s -> Minilib.log (s^" deleted")
+    | None -> ()
+  in
   let mark_set_cb it m =
+    debug_edit_zone ();
     let ins = get_insert () in
     let line = ins#line + 1 in
     let off = ins#line_offset + 1 in
@@ -144,6 +180,7 @@ let set_buffer_handlers
   let _ = buffer#connect#begin_user_action ~callback:begin_action_cb in
   let _ = buffer#connect#end_user_action ~callback:end_action_cb in
   let _ = buffer#connect#after#mark_set ~callback:mark_set_cb in
+  let _ = buffer#connect#after#mark_deleted ~callback:mark_deleted_cb in
   ()
 
 let create_proof () =

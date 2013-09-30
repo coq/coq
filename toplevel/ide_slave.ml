@@ -112,20 +112,17 @@ let coqide_cmd_checks (loc,ast) =
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
-let interp (id,raw,verbosely,s) =
-  set_id_for_feedback (Interface.Edit id);
-  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
-  let loc, ast as loc_ast = Vernac.parse_sentence (pa,None) in
-  if not raw then coqide_cmd_checks loc_ast;
-  Flags.make_silent (not verbosely);
-  if Int.equal id 0 then Vernac.eval_expr (loc, VernacStm (Command ast))
-  else Vernac.eval_expr loc_ast;
-  Flags.make_silent true;
-  Stm.get_current_state (), read_stdout ()
+let add ((s,eid),(sid,verbose)) =
+  let newid, rc = Stm.add ~ontop:sid verbose ~check:coqide_cmd_checks eid s in
+  let rc = match rc with `NewTip -> CSig.Inl () | `Unfocus id -> CSig.Inr id in
+  newid, (rc, read_stdout ())
 
-let backto id =
-  Vernac.eval_expr (Loc.ghost,
-    VernacStm (Command (VernacBackTo (Stateid.to_int id))))
+let edit_at id =
+  match Stm.edit_at id with
+  | `NewTip -> CSig.Inl ()
+  | `Focus { Stm.start; stop; tip} -> CSig.Inr (start, (stop, tip))
+
+let query (s,id) = Stm.query ~at:id s; read_stdout ()
 
 (** Goal display *)
 
@@ -330,8 +327,9 @@ let eval_call xml_oc log c =
     r
   in
   let handler = {
-    Interface.interp = interruptible interp;
-    Interface.backto = interruptible backto;
+    Interface.add = interruptible add;
+    Interface.edit_at = interruptible edit_at;
+    Interface.query = interruptible query;
     Interface.goals = interruptible goals;
     Interface.evars = interruptible evars;
     Interface.hints = interruptible hints;
@@ -393,10 +391,12 @@ let loop () =
   while not !quit do
     try
       let xml_query = Xml_parser.parse xml_ic in
+(*       pr_with_pid (Xml_printer.to_string_fmt xml_query); *)
       let q = Serialize.to_call xml_query in
       let () = pr_debug_call q in
       let r = eval_call xml_oc (slave_logger xml_oc Interface.Notice) q in
       let () = pr_debug_answer q r in
+(*       pr_with_pid (Xml_printer.to_string_fmt (Serialize.of_answer q r)); *)
       print_xml xml_oc (Serialize.of_answer q r);
       flush !orig_stdout
     with

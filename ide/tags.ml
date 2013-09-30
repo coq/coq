@@ -28,9 +28,19 @@ struct
   let found = make_tag table ~name:"found" [`BACKGROUND "blue"; `FOREGROUND "white"]
   let sentence = make_tag table ~name:"sentence" []
   let tooltip = make_tag table ~name:"tooltip" [] (* debug:`BACKGROUND "blue" *)
+
   let all =
      [comment_sentence; error; error_bg; to_process; processed; unjustified;
      found; sentence; tooltip]
+
+  let edit_zone =
+    let t = make_tag table ~name:"edit_zone" [`UNDERLINE `SINGLE] in
+    t#set_priority (List.length all);
+    t
+  let all = edit_zone :: all
+  
+  let read_only = make_tag table ~name:"read_only" [`EDITABLE false ]
+
 end
 module Proof =
 struct
