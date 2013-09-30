@@ -15,8 +15,9 @@ type 'a call
 
 type unknown
 
-val interp      : interp_sty      -> interp_rty call
-val backto      : backto_sty      -> backto_rty call
+val add         : add_sty         -> add_rty call
+val edit_at     : edit_at_sty     -> edit_at_rty call
+val query       : query_sty       -> query_rty call
 val goals       : goals_sty       -> goals_rty call
 val hints       : hints_sty       -> hints_rty call
 val status      : status_sty      -> status_rty call
@@ -51,7 +52,7 @@ val to_feedback : xml -> feedback
 val is_feedback : xml -> bool
 
 val of_answer : 'a call -> 'a value -> xml
-val to_answer : xml -> 'a call -> 'a value
+val to_answer : 'a call -> xml -> 'a value
 
 (** * Debug printing *)
 

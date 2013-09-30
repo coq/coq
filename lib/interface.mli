@@ -142,23 +142,32 @@ type 'a value =
   | Good of 'a
   | Fail of (state_id * location * string)
 
+type ('a, 'b) union = ('a, 'b) Util.union
+
 (* Request/Reply message protocol between Coq and CoqIde *)
 
-(** Running a command (given as its id and its text).
-    "raw" mode (less sanity checks, no impact on the undo stack)
-    is suitable for queries, or for the Set/Unset
-    of display options that coqide performs all the time.
-    The returned string contains the messages produced
-    but not the updated goals (they are
-    to be fetch by a separated [current_goals]).
-    If edit_id=0 then the command is not part of the proof script,
-    and the resulting state_id is going to be dummy *)
-type interp_sty = edit_id * raw * verbose * string
-type interp_rty = state_id * string
+(**  [add ((s,eid),(sid,v))] adds the phrase [s] with edit id [eid]
+     on top of the current edit position (that is asserted to be [sid])
+     verbosely if [v] is true.  The response [(is,(rc,s)] is the new state
+     [id] assigned to the phrase, some output [s].  [rc] is [Inl] if the new
+     state id is the tip of the edit point, or [Inr tip] if the new phrase
+     closes a focus and [tip] is the new edit tip *)
+type add_sty = (string * edit_id) * (state_id * verbose)
+type add_rty = state_id * ((unit, state_id) union * string)
 
-(** Backtracking to a particular state *)
-type backto_sty = state_id
-type backto_rty = unit
+(** [edit_at id] declares the user wants to edit just after [id].
+    The response is [Inl] if the document has been rewound to that point,
+    [Inr (start,(stop,tip))] if [id] is in a zone that can be focused.
+    In that case the zone is delimited by [start] and [stop] while [tip]
+    is the new document [tip].  Edits made by subsequent [add] are always
+    performend on top of [id]. *)
+type edit_at_sty = state_id
+type edit_at_rty = (unit, state_id * (state_id * state_id)) union
+
+(** [query s id] executes [s] at state [id] and does not record any state
+    change but for the printings that are sent in response *)
+type query_sty = string * state_id
+type query_rty = string
 
 (** Fetching the list of current goals. Return [None] if no proof is in
     progress, [Some gl] otherwise. *)
@@ -220,8 +229,9 @@ type handle_exn_sty = exn
 type handle_exn_rty = state_id * location * string
 
 type handler = {
-  interp      : interp_sty      -> interp_rty;
-  backto      : backto_sty      -> backto_rty;
+  add         : add_sty         -> add_rty;
+  edit_at     : edit_at_sty     -> edit_at_rty;
+  query       : query_sty       -> query_rty;
   goals       : goals_sty       -> goals_rty;
   evars       : evars_sty       -> evars_rty;
   hints       : hints_sty       -> hints_rty;
