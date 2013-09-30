@@ -6,102 +6,157 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+class type detachable_signals =
+  object
+    inherit GContainer.container_signals
+    method attached : callback:(GObj.widget -> unit) -> unit
+    method detached : callback:(GObj.widget -> unit) -> unit
+  end
+
+class detachable (obj : ([> Gtk.box] as 'a) Gobject.obj) =
+
+  object(self)
+    inherit GPack.box_skel (obj :> Gtk.box Gobject.obj) as super
+
+    val but = GButton.button ()
+    val win = GWindow.window ()
+    val frame = GBin.frame ~shadow_type:`NONE ()
+    val mutable detached = false
+    val mutable detached_cb = (fun _ -> ())
+    val mutable attached_cb = (fun _ -> ())
+
+    method child = frame#child
+    method add = frame#add
+    method pack ?from ?expand ?fill ?padding w =
+      if frame#all_children = [] then self#add w
+      else raise (Invalid_argument "detachable#pack")
+
+    method title = win#title
+    method set_title = win#set_title
+
+    method connect : detachable_signals = object
+      inherit GContainer.container_signals_impl obj
+      method attached ~callback = attached_cb <- callback
+      method detached ~callback = detached_cb <- callback
+    end
+
+    method show =
+      if detached then win#present ()
+      else self#misc#show ();
+
+    method hide =
+      if detached then win#misc#hide ()
+      else self#misc#hide ()
+
+    method visible = win#misc#visible || self#misc#visible
+
+    initializer
+      self#set_homogeneous false;
+      super#pack ~expand:false but#coerce;
+      super#pack ~expand:true ~fill:true frame#coerce;
+      win#misc#hide ();
+      but#add (GMisc.label
+        ~markup:"<span size='x-small'>D\nE\nT\nA\nC\nH</span>" ())#coerce;
+      ignore(win#event#connect#delete ~callback:(fun _ ->
+        win#misc#hide ();
+        frame#misc#reparent self#coerce;
+        detached <- false;
+        attached_cb self#child;
+        true));
+      ignore(but#connect#clicked ~callback:(fun _ ->
+        frame#misc#reparent win#coerce;
+        self#misc#hide ();
+        win#present ();
+        detached <- true;
+        detached_cb self#child;
+        ))
+
+  end
+
+let detachable ?title =
+  GtkPack.Box.make_params [] ~cont:(
+    GContainer.pack_container
+      ~create:(fun p ->
+         let d = new detachable (GtkPack.Box.create `HORIZONTAL p) in
+         Option.iter d#set_title title;
+         d))
+
 open Preferences
 
-class command_window coqtop
-  ~mark_as_broken ~mark_as_processed ~cur_state
-=
-(*  let window = GWindow.window
-		 ~allow_grow:true ~allow_shrink:true
-		 ~width:500 ~height:250
-		 ~position:`CENTER
-		 ~title:"CoqIde queries" ~show:false ()
-  in *)
-  let views = ref [] in
-  let frame = GBin.frame ~label:"Command Pane" ~shadow_type:`IN () in
-  let _ = frame#misc#hide () in
+class command_window name coqtop =
+  let frame = detachable ~title:"Query pane" () in
+  let _ = frame#hide in
   let _ = GtkData.AccelGroup.create () in
-  let hbox = GPack.hbox ~homogeneous:false ~packing:frame#add () in
-  let toolbar = GButton.toolbar
-		  ~orientation:`VERTICAL
-		  ~style:`ICONS
-		  ~tooltips:true
-		  ~packing:(hbox#pack
-			       ~expand:false
-			       ~fill:false)
-		  ()
-  in
-  let notebook = GPack.notebook ~scrollable:true
-		   ~packing:(hbox#pack
-			       ~expand:true
-			       ~fill:true
-			    )
-		   ()
-  in
-  let _ =
-    toolbar#insert_button
-      ~tooltip:"Hide Commands Pane"
-      ~text:"Hide Pane"
-      ~icon:(Ideutils.stock_to_widget `CLOSE)
-      ~callback:frame#misc#hide
-      ()
-  in
-  let new_page_menu =
-    toolbar#insert_button
-      ~tooltip:"New Page"
-      ~text:"New Page"
-      ~icon:(Ideutils.stock_to_widget `NEW)
-      ()
-  in
+  let notebook =
+    GPack.notebook ~height:200 ~scrollable:true ~packing:frame#add () in
+  let _ = frame#connect#attached ~callback:(fun _ ->
+    notebook#misc#set_size_request ~height:200 ()) in
+  let _ = frame#connect#detached ~callback:(fun _ ->
+    notebook#misc#set_size_request ~width:600 ~height:500 ();
+    notebook#misc#grab_focus ()) in
 
-  let remove_cb () =
-    let index = notebook#current_page in
-    let () = notebook#remove_page index in
-    views := Util.List.filteri (fun i x -> i <> index) !views
-  in
-  let _ =
-    toolbar#insert_button
-      ~tooltip:"Delete Page"
-      ~text:"Delete Page"
-      ~icon:(Ideutils.stock_to_widget `DELETE)
-      ~callback:remove_cb
-      ()
-  in
 object(self)
   val frame = frame
 
-
-  val new_page_menu = new_page_menu
   val notebook = notebook
 
-  method frame = frame
-  method new_command ?command ?term () =
-    let frame = GBin.frame
-		  ~shadow_type:`ETCHED_OUT
-		  ()
-    in
-    let _ = notebook#append_page frame#coerce in
+  method pack_in (f : GObj.widget -> unit) = f frame#coerce
+
+  val mutable new_page : GObj.widget = (GMisc.label ())#coerce
+
+  val mutable views = []
+
+  method private new_page_maker =
+    let page = notebook#append_page
+      (GMisc.label ~text:"No query" ())#coerce in
+    let page = notebook#get_nth_page page in
+    let b = GButton.button () in
+    b#add (Ideutils.stock_to_widget ~size:`MENU `NEW);
+    ignore(b#connect#clicked ~callback:self#new_query);
+    notebook#set_page ~tab_label:b#coerce page;
+    new_page <- page
+
+  method new_query ?command ?term () =
+    let frame = GBin.frame ~shadow_type:`NONE () in
+    ignore(notebook#insert_page ~pos:(notebook#page_num new_page) frame#coerce);
+    let new_tab_lbl text =
+      let hbox = GPack.hbox ~homogeneous:false () in
+      ignore(GMisc.label ~width:100 ~ellipsize:`END ~text ~packing:hbox#pack());
+      let b = GButton.button ~packing:hbox#pack () in
+      ignore(b#connect#clicked ~callback:(fun () ->
+        views <-
+          List.filter (fun (f,_,_) -> f#get_oid <> frame#coerce#get_oid) views;
+        notebook#remove_page (notebook#page_num frame#coerce)));
+      b#add (Ideutils.stock_to_widget ~size:`MENU `CLOSE);
+      hbox#coerce in
+    notebook#set_page ~tab_label:(new_tab_lbl "New query") frame#coerce;
     notebook#goto_page (notebook#page_num frame#coerce);
     let vbox = GPack.vbox ~homogeneous:false ~packing:frame#add () in
-    let hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
-    let (combo,_) = GEdit.combo_box_entry_text ~strings:Coq_commands.state_preserving
-		  ~packing:hbox#pack
-		  ()
-    in
-    let on_activate c () =
-      if List.mem combo#entry#text Coq_commands.state_preserving then c ()
-      else Minilib.log "Not a state preserving command"
-    in
-    let entry = GEdit.entry ~packing:(hbox#pack ~expand:true) () in
-    entry#misc#set_can_default true;
+    let combo, entry, ok_b =
+      let bar =
+        GButton.toolbar ~style:`ICONS ~packing:(vbox#pack ~expand:false) () in
+      let bar_add ~expand w =
+        let item = GButton.tool_item ~expand () in
+        item#add w#coerce;
+        bar#insert item in
+      let combo, _ =
+        GEdit.combo_box_entry_text ~strings:Coq_commands.state_preserving () in
+      combo#entry#set_text "Search";
+      let entry = GEdit.entry () in
+      entry#misc#set_can_default true;
+      let ok_b = GButton.button () in
+      ok_b#add (Ideutils.stock_to_widget `OK);
+      bar_add ~expand:false combo;
+      bar_add ~expand:true entry;
+      bar_add ~expand:false ok_b;
+      combo, entry, ok_b in
     let r_bin =
       GBin.scrolled_window
 	~vpolicy:`AUTOMATIC
 	~hpolicy:`AUTOMATIC
 	~packing:(vbox#pack ~fill:true ~expand:true) () in
-    let ok_b = GButton.button ~label:"Ok" ~packing:(hbox#pack ~expand:false) () in
     let result = GText.view ~packing:r_bin#add () in
-    let () = views := !views @ [result] in
+    views <- (frame#coerce, result, combo#entry) :: views;
     result#misc#modify_font current.text_font;
     let clr = Tags.color_of_string current.background_color in
     result#misc#modify_base [`NORMAL, `COLOR clr];
@@ -109,26 +164,29 @@ object(self)
     result#set_editable false;
     let callback () =
       let com = combo#entry#text in
+      let arg = entry#text in
+      if Str.string_match (Str.regexp "^ *$") (com^arg) 0 then () else
       let phrase =
-	if String.get com (String.length com - 1) = '.'
-	then com ^ " " else com ^ " " ^ entry#text ^" . "
+        if Str.string_match (Str.regexp "\\. *$") com 0 then com
+        else com ^ " " ^ arg ^" . "
       in
       let log level message = result#buffer#insert (message^"\n") in
       let process =
 	Coq.bind (Coq.query ~logger:log (phrase,Stateid.dummy)) (function
           | Interface.Fail (_,l,str) ->
             result#buffer#insert str;
+            notebook#set_page ~tab_label:(new_tab_lbl "Error") frame#coerce;
 	    Coq.return ()
           | Interface.Good res ->
             result#buffer#insert res; 
+            notebook#set_page ~tab_label:(new_tab_lbl arg) frame#coerce;
 	    Coq.return ())
       in
       result#buffer#set_text ("Result for command " ^ phrase ^ ":\n");
       Coq.try_grab coqtop process ignore
     in
-    ignore (combo#entry#connect#activate ~callback:(on_activate callback));
-    ignore (ok_b#connect#clicked ~callback:(on_activate callback));
-
+    ignore (combo#entry#connect#activate ~callback);
+    ignore (ok_b#connect#clicked ~callback);
     begin match command with
       | None -> ()
       | Some c -> combo#entry#set_text c
@@ -137,23 +195,44 @@ object(self)
       | None -> ()
       | Some t -> entry#set_text t
     end;
-    on_activate callback ();
-    entry#misc#grab_focus ();
+    combo#entry#misc#grab_focus ();
     entry#misc#grab_default ();
     ignore (entry#connect#activate ~callback);
     ignore (combo#entry#connect#activate ~callback);
-    self#frame#misc#show ()
+    ignore (combo#entry#event#connect#key_press ~callback:(fun ev ->
+      if GdkEvent.Key.keyval ev = GdkKeysyms._Tab then
+        (entry#misc#grab_focus ();true)
+      else false))
 
+  method show =
+    frame#show;
+    let cur_page = notebook#get_nth_page notebook#current_page in
+    let _, _, e =
+      List.find (fun (p,_,_) -> p#get_oid == cur_page#get_oid) views in
+    e#misc#grab_focus ()
+
+  method hide =
+    frame#hide
+
+  method visible =
+    frame#visible
+  
   method refresh_font () =
-    let iter view = view#misc#modify_font current.text_font in
-    List.iter iter !views
+    let iter (_,view,_) = view#misc#modify_font current.text_font in
+    List.iter iter views
 
   method refresh_color () =
     let clr = Tags.color_of_string current.background_color in
-    let iter view = view#misc#modify_base [`NORMAL, `COLOR clr] in
-    List.iter iter !views
+    let iter (_,view,_) = view#misc#modify_base [`NORMAL, `COLOR clr] in
+    List.iter iter views
 
   initializer
-    ignore (new_page_menu#connect#clicked ~callback:self#new_command);
-   (* ignore (window#event#connect#delete (fun _ -> window#misc#hide(); true));*)
+    self#new_page_maker;
+    self#new_query ();
+    frame#misc#hide ();
+    ignore(notebook#event#connect#key_press ~callback:(fun ev ->
+      if GdkEvent.Key.keyval ev = GdkKeysyms._Escape then (self#hide; true)
+      else false
+    ));
+
 end

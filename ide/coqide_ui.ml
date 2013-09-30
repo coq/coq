@@ -67,7 +67,7 @@ let init () =
     <menuitem action='Zoom fit' />
     <separator/>
     <menuitem action='Show Toolbar' />
-    <menuitem action='Show Query Pane' />
+    <menuitem action='Query Pane' />
     <separator/>
     <menuitem action='Display implicit arguments' />
     <menuitem action='Display coercions' />

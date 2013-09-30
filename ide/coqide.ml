@@ -768,11 +768,9 @@ let coqtop_arguments sn =
 
 let coqtop_arguments = cb_on_current_term coqtop_arguments
 
-let show_query_pane sn =
+let show_hide_query_pane sn =
   let ccw = sn.command in
-  if ccw#frame#misc#visible
-  then ccw#frame#misc#hide ()
-  else ccw#frame#misc#show ()
+  if ccw#visible then ccw#hide else ccw#show
 
 let zoom_fit sn =
   let script = sn.script in
@@ -1058,9 +1056,9 @@ let build_ui () =
       ~callback:(fun _ ->
         prefs.show_toolbar <- not prefs.show_toolbar;
         !refresh_toolbar_hook ());
-    toggle_item "Show Query Pane" ~label:"Show _Query Pane"
-      ~accel:"<Alt>Escape"
-      ~callback:(cb_on_current_term MiscMenu.show_query_pane)
+    item "Query Pane" ~label:"_Query Pane"
+      ~accel:"F1"
+      ~callback:(cb_on_current_term MiscMenu.show_hide_query_pane)
   ];
   toggle_items view_menu Coq.PrintOpt.bool_items;
 

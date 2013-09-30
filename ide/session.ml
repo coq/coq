@@ -233,7 +233,7 @@ let create file coqtop_args =
   let script = create_script coqtop buffer in
   let proof = create_proof () in
   let messages = create_messages () in
-  let command = new Wg_Command.command_window coqtop ~mark_as_broken:(fun _ -> ()) ~mark_as_processed:(fun _ -> ()) ~cur_state:(fun () -> Obj.magic 0) in
+  let command = new Wg_Command.command_window basename coqtop in
   let finder = new Wg_Find.finder (script :> GText.view) in
   let fops = new FileOps.fileops (buffer :> GText.buffer) file reset in
   let _ = fops#update_stats in
@@ -308,7 +308,7 @@ let build_layout (sn:session) =
 	 end)
   in
   session_box#pack sn.finder#coerce;
-  session_paned#pack2 ~shrink:false ~resize:false (sn.command#frame#coerce);
+  sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
   script_scroll#add sn.script#coerce;
   proof_scroll#add sn.proof#coerce;
   message_frame#add sn.messages#coerce;
