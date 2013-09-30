@@ -1440,6 +1440,7 @@ let read_coqide_args argv =
       output_string stderr "Error: missing argument after -coqtop"; exit 1
     |"-debug"::args ->
       Minilib.debug := true;
+      Backtrace.record_backtrace true;
       filter_coqtop coqtop project_files ("-debug"::out) args
     |arg::args -> filter_coqtop coqtop project_files (arg::out) args
     |[] -> (coqtop,List.rev project_files,List.rev out)
