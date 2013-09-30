@@ -84,6 +84,12 @@ let set_buffer_handlers
   (buffer : GText.buffer) script (coqops : CoqOps.ops) coqtop
 =
   let action_was_cancelled = ref true in
+  let no_coq_action_required = ref true in
+  let cur_action = ref 0 in
+  let new_action_id =
+    let id = ref 0 in
+    fun () -> incr id; !id in
+  let running_action = ref None in
   let cancel_signal reason =
     Minilib.log ("user_action cancelled: "^reason);
     action_was_cancelled := true;
@@ -93,7 +99,15 @@ let set_buffer_handlers
     with GText.No_such_mark _ -> () in
   let add_mark it = del_mark (); buffer#create_mark ~name:"target" it in
   let call_coq_or_cancel_action f =
-    Coq.try_grab coqtop f (fun () -> cancel_signal "Coq busy") in
+    no_coq_action_required := false;
+    let action = !cur_action in
+    let action, fallback =
+      Coq.seq (Coq.lift (fun () -> running_action := Some action)) f,
+      fun () -> (* If Coq is busy due to the current action, we don't cancel *)
+        match !running_action with
+        | Some aid when aid = action -> ()
+        | _ -> cancel_signal "Coq busy" in
+    Coq.try_grab coqtop action fallback in
   let get_start () = buffer#get_iter_at_mark (`NAME "start_of_input") in
   let get_stop () = buffer#get_iter_at_mark (`NAME "stop_of_input") in
   let ensure_marks_exist () =
@@ -148,12 +162,24 @@ let set_buffer_handlers
   let begin_action_cb () =
     Minilib.log "begin_action_cb";
     action_was_cancelled := false;
+    cur_action := new_action_id ();
     let where = get_insert () in
     buffer#move_mark (`NAME "prev_insert") ~where in
   let end_action_cb () =
     Minilib.log "end_action_cb";
     ensure_marks_exist ();
     if not !action_was_cancelled then begin
+      (* If coq was asked to backtrack, the clenup must be done by the
+         backtrack_until function, since it may move the stop_of_input
+         to a point indicated by coq. *)
+      if !no_coq_action_required then begin
+        let start, stop = get_start (), get_stop () in
+        buffer#remove_tag Tags.Script.error ~start ~stop;
+        buffer#remove_tag Tags.Script.error_bg ~start ~stop;
+        buffer#remove_tag Tags.Script.tooltip ~start ~stop;
+        buffer#remove_tag Tags.Script.processed ~start ~stop;
+        buffer#remove_tag Tags.Script.to_process ~start ~stop;
+      end;
       Sentence.tag_on_insert buffer
     end in
   let mark_deleted_cb m =
