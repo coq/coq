@@ -1326,7 +1326,7 @@ let build_ui () =
   let update_errwin () =
     on_current_term (fun sn ->
       fill_errwin (notebook#term_num (==) sn) sn.coqops#get_errors) in
-  let _ = slaveinfobut#connect#clicked ~callback:errwin#misc#show in
+  let _ = slaveinfobut#connect#clicked ~callback:errwin#present in
   let update sn =
     let processed, to_process = sn.coqops#get_slaves_status in
     let missing = to_process - processed in
