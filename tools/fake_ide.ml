@@ -31,7 +31,7 @@ let base_eval_call call coqtop =
       loop ()
     else if Serialize.is_feedback xml then
       loop ()
-    else (Serialize.to_answer xml call)
+    else (Serialize.to_answer call xml)
   in
   let res = loop () in
   prerr_endline (Serialize.pr_full_value call res);
@@ -53,18 +53,19 @@ let rec erase_ids n =
     | [] -> exit 1
 let eid = ref 0
 let edit () = incr eid; !eid
+let curid () = match !ids with x :: _ -> x | _ -> Stateid.initial
 
 let commands =
-  [ "INTERPRAWSILENT", (fun s -> eval_call (Serialize.interp (0,true,false,s)));
-    "INTERPRAW", (fun s -> eval_call (Serialize.interp (0,true,true,s)));
+  [ "INTERPRAWSILENT", (fun s -> eval_call (Serialize.query (s,Stateid.dummy)));
+    "INTERPRAW", (fun s -> eval_call (Serialize.query (s,Stateid.dummy)));
     "INTERPSILENT", (fun s c ->
-      store_id (base_eval_call (Serialize.interp (edit(),false,false,s)) c));
+      store_id (base_eval_call (Serialize.add ((s,edit()),(curid(),false))) c));
     "INTERP", (fun s c ->
-      store_id (base_eval_call (Serialize.interp (edit(),false,true,s)) c));
+      store_id (base_eval_call (Serialize.add ((s,edit()),(curid(),true))) c));
     "REWIND", (fun s ->
       let i = int_of_string s in
       let id = erase_ids i in
-      eval_call (Serialize.backto id));
+      eval_call (Serialize.edit_at id));
     "GOALS", (fun _ -> eval_call (Serialize.goals ()));
     "HINTS", (fun _ -> eval_call (Serialize.hints ()));
     "GETOPTIONS", (fun _ -> eval_call (Serialize.get_options ()));
