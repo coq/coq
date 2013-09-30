@@ -268,7 +268,7 @@ let rec vernac_com verbosely checknav (loc,com) =
 
     | v when !just_parsing -> ()
 
-    | v -> Stm.process_transaction verbosely (loc,v)
+    | v -> Stm.interp verbosely (loc,v)
   in
     try
       checknav loc com;

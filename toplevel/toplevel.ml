@@ -307,8 +307,7 @@ let do_vernac () =
   if !print_emacs then msgerr (str (top_buffer.prompt()));
   resynch_buffer top_buffer;
   try
-    Vernac.eval_expr (read_sentence ());
-    Stm.finish ()
+    Vernac.eval_expr (read_sentence ())
   with
     | End_of_input | Errors.Quit ->
         msgerrnl (mt ()); pp_flush(); raise Errors.Quit
@@ -318,14 +317,7 @@ let do_vernac () =
     | any ->
         Format.set_formatter_out_channel stdout;
         ppnl (print_toplevel_error any);
-        pp_flush ();
-        match Stateid.get any with
-        | Some (valid_id,_) ->
-            let valid = Stateid.to_int valid_id in
-            Vernac.eval_expr (Loc.ghost,
-              (Vernacexpr.VernacStm (Vernacexpr.Command
-                (Vernacexpr.VernacBackTo valid))))
-        | _ -> ()
+        pp_flush ()
 
 (** Main coq loop : read vernacular expressions until Drop is entered.
     Ctrl-C is handled internally as Sys.Break instead of aborting Coq.

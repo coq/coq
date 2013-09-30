@@ -20,8 +20,8 @@ open Vernac_classifier
 let interactive () =
   !Flags.ide_slave || !Flags.print_emacs || not !Flags.batch_mode
 
-(* Wrap interp to set the feedback id *)
-let interp ?proof id (verbosely, loc, expr) =
+(* Wrapper for Vernacentries.interp to set the feedback id *)
+let vernac_interp ?proof id (verbosely, loc, expr) =
   let internal_command = function
     | VernacResetName _ | VernacResetInitial | VernacBack _
     | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
@@ -35,16 +35,36 @@ let interp ?proof id (verbosely, loc, expr) =
     with e -> raise (Errors.push (Cerrors.process_vernac_interp_error e))
   end
 
+(* Wrapper for Vernac.parse_sentence to set the feedback id *)
+let vernac_parse eid s =
+  set_id_for_feedback (Interface.Edit eid);
+  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
+  Flags.with_option Flags.we_are_parsing (fun () ->
+    match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
+    | None -> raise (Invalid_argument "vernac_parse")
+    | Some ast -> ast)
+  ()
+
 type ast = bool * Loc.t * vernac_expr
 let pr_ast (_, _, v) = pr_vernac v
 
 module Vcs_ = Vcs.Make(Stateid)
-
-type branch_type = [ `Master | `Proof of string * int ]
+type future_proof = Entries.proof_output list Future.computation
+type proof_mode = string
+type depth = int
+type branch_type =
+  [ `Master
+  | `Proof of proof_mode * depth
+  | `Edit of proof_mode * Stateid.t * Stateid.t ]
 type cmd_t = ast * Id.t list
 type fork_t = ast * Vcs_.Branch.t * Id.t list
-type qed_t =
-  ast * vernac_qed_type * (Vcs_.Branch.t * branch_type Vcs_.branch_info)
+type qed_t = {
+  qast : ast;
+  keep : vernac_qed_type;
+  mutable fproof : future_proof option;
+  brname : Vcs_.Branch.t;
+  brinfo : branch_type Vcs_.branch_info
+}
 type seff_t = ast option
 type alias_t = Stateid.t
 type transaction =
@@ -58,18 +78,25 @@ type step =
   [ `Cmd    of cmd_t
   | `Fork   of fork_t
   | `Qed    of qed_t * Stateid.t
-  (* TODO : is the state id carried by `Ast relevant? *)
   | `Sideff of [ `Ast of ast * Stateid.t | `Id of Stateid.t ]
   | `Alias  of alias_t ]
 type visit = { step : step; next : Stateid.t }
 
-type state = States.state * Proof_global.state
-type state_info = { (* Make private *)
+type state = {
+  system : States.state;
+  proof : Proof_global.state;
+  shallow : bool
+}
+type branch = Vcs_.Branch.t * branch_type Vcs_.branch_info
+type backup = { mine : branch; others : branch list }
+type 'vcs state_info = { (* Make private *)
   mutable n_reached : int;
   mutable n_goals : int;
   mutable state : state option;
+  mutable vcs_backup : 'vcs option * backup option;
 }
-let default_info () = { n_reached = 0; n_goals = 0; state = None }
+let default_info () =
+  { n_reached = 0; n_goals = 0; state = None; vcs_backup = None,None }
 
 (* Functions that work on a Vcs with a specific branch type *)
 module Vcs_aux : sig
@@ -78,26 +105,56 @@ module Vcs_aux : sig
   val find_proof_at_depth :
     (branch_type, 't, 'i) Vcs_.t -> int ->
       Vcs_.Branch.t * branch_type Vcs_.branch_info
+  exception Expired
+  val visit : (branch_type, transaction,'i) Vcs_.t -> Vcs_.Dag.node -> visit
 
 end = struct (* {{{ *)
 
   let proof_nesting vcs =
     List.fold_left max 0
       (List.map_filter
-        (function { Vcs_.kind = `Proof (_,n) } -> Some n | _ -> None)
+        (function
+         | { Vcs_.kind = `Proof (_,n) } -> Some n
+         | { Vcs_.kind = `Edit _ } -> Some 1
+         | _ -> None)
         (List.map (Vcs_.get_branch vcs) (Vcs_.branches vcs)))
 
   let find_proof_at_depth vcs pl =
     try List.find (function
           | _, { Vcs_.kind = `Proof(m, n) } -> Int.equal n pl
+          | _, { Vcs_.kind = `Edit _ } -> anomaly(str"find_proof_at_depth")
           | _ -> false)
         (List.map (fun h -> h, Vcs_.get_branch vcs h) (Vcs_.branches vcs))
     with Not_found -> failwith "find_proof_at_depth"
+
+  exception Expired
+  let visit vcs id =
+    if Stateid.equal id Stateid.initial then
+      anomaly(str"Visiting the initial state id")
+    else if Stateid.equal id Stateid.dummy then
+      anomaly(str"Visiting the dummy state id")
+    else
+    try
+      match Vcs_.Dag.from_node (Vcs_.dag vcs) id with
+      | [n, Cmd x] -> { step = `Cmd x; next = n }
+      | [n, Alias x] -> { step = `Alias x; next = n }
+      | [n, Fork x] -> { step = `Fork x; next = n }
+      | [n, Qed x; p, Noop]
+      | [p, Noop; n, Qed x] -> { step = `Qed (x,p); next = n }
+      | [n, Sideff None; p, Noop]
+      | [p, Noop; n, Sideff None]-> { step = `Sideff (`Id p); next = n }
+      | [n, Sideff (Some x); p, Noop]
+      | [p, Noop; n, Sideff (Some x)]-> { step = `Sideff(`Ast (x,p)); next = n }
+      | [n, Sideff (Some x)]-> {step = `Sideff(`Ast (x,Stateid.dummy)); next=n}
+      | _ -> anomaly (str ("Malformed VCS at node "^Stateid.to_string id))
+    with Not_found -> raise Expired
 
 end (* }}} *)
 
 (* Imperative wrap around VCS to obtain _the_ VCS *)
 module VCS : sig
+
+  exception Expired
 
   module Branch : (module type of Vcs_.Branch with type t = Vcs_.Branch.t)
   type id = Stateid.t
@@ -107,8 +164,7 @@ module VCS : sig
     pos  : id;
   }
 
-  type vcs = (branch_type, transaction, state_info) Vcs_.t
-  exception Expired
+  type vcs = (branch_type, transaction, vcs state_info) Vcs_.t
 
   val init : id -> unit
 
@@ -119,12 +175,17 @@ module VCS : sig
   val get_branch_pos : Branch.t -> id
   val new_node : unit -> id
   val merge : id -> ours:transaction -> ?into:Branch.t -> Branch.t -> unit
+  val rewrite_merge : id -> ours:transaction -> at:id -> Branch.t -> unit
   val delete_branch : Branch.t -> unit
   val commit : id -> transaction -> unit
   val mk_branch_name : ast -> Branch.t
-  val branch : Branch.t -> branch_type -> unit
-  
-  val get_info : id -> state_info
+  val edit_branch : Branch.t
+  val branch : ?root:id -> ?pos:id -> Branch.t -> branch_type -> unit
+  val reset_branch : Branch.t -> id -> unit
+  val reachable : id -> Vcs_.NodeSet.t
+  val cur_tip : unit -> id
+
+  val get_info : id -> vcs state_info
   val reached : id -> bool -> unit
   val goals : id -> int -> unit
   val set_state : id -> state -> unit
@@ -134,11 +195,15 @@ module VCS : sig
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
   val slice : start:id -> stop:id -> purify:(state -> state) -> vcs
   
-  val create_cluster : id list -> unit
+  val create_cluster : id list -> tip:id -> unit
+  val cluster_of : id -> id option
+  val delete_cluster_of : id -> unit
 
   val proof_nesting : unit -> int
   val checkout_shallowest_proof_branch : unit -> unit
   val propagate_sideff : ast option -> unit
+
+  val gc : unit -> unit
 
   val visit : id -> visit
 
@@ -150,6 +215,7 @@ module VCS : sig
 end = struct (* {{{ *)
 
   include Vcs_
+  exception Expired = Vcs_aux.Expired
 
   module StateidSet = Set.Make(Stateid)
   open Printf
@@ -157,7 +223,7 @@ end = struct (* {{{ *)
   let print_dag vcs () = (* {{{ *)
     let fname = "stm" ^ string_of_int (max 0 !Flags.coq_slave_mode) in
     let string_of_transaction = function
-      | Cmd (t, _) | Fork (t, _, _) ->
+      | Cmd (t, _) | Fork (t, _,_) ->
           (try string_of_ppcmds (pr_ast t) with _ -> "ERR")
       | Sideff (Some t) ->
           sprintf "Sideff(%s)"
@@ -165,7 +231,7 @@ end = struct (* {{{ *)
       | Sideff None -> "EnvChange"
       | Noop -> " "
       | Alias id -> sprintf "Alias(%s)" (Stateid.to_string id)
-      | Qed (a,_,_) -> string_of_ppcmds (pr_ast a) in
+      | Qed { qast } -> string_of_ppcmds (pr_ast qast) in
     let is_green id = 
       match get_info vcs id with
       | Some { state = Some _ } -> true
@@ -239,8 +305,7 @@ end = struct (* {{{ *)
       ("dot -Tpdf -Gcharset=latin1 " ^ fname_dot ^ " -o" ^ fname_ps))
   (* }}} *)
   
-  exception Expired
-  type vcs = (branch_type, transaction, state_info) t
+  type vcs = (branch_type, transaction, vcs state_info) t
   let vcs : vcs ref = ref (empty Stateid.dummy)
 
   let init id =
@@ -261,17 +326,22 @@ end = struct (* {{{ *)
   let merge id ~ours ?into branch =
     vcs := merge !vcs id ~ours ~theirs:Noop ?into branch
   let delete_branch branch = vcs := delete_branch !vcs branch
+  let reset_branch branch id = vcs := reset_branch !vcs branch id
   let commit id t = vcs := commit !vcs id t
+  let rewrite_merge id ~ours ~at branch =
+    vcs := rewrite_merge !vcs id ~ours ~theirs:Noop ~at branch
+  let reachable id = reachable !vcs id
   let mk_branch_name (_, _, x) = Branch.make
     (match x with
     | VernacDefinition (_,(_,i),_) -> string_of_id i
     | VernacStartTheoremProof (_,[Some (_,i),_],_) -> string_of_id i
     | _ -> "branch")
-  let branch name kind = vcs := branch !vcs name kind
+  let edit_branch = Branch.make "edit"
+  let branch ?root ?pos name kind = vcs := branch !vcs ?root ?pos name kind
   let get_info id =
     match get_info !vcs id with
     | Some x -> x
-    | None -> raise Expired
+    | None -> raise Vcs_aux.Expired
   let set_state id s = (get_info id).state <- Some s
   let forget_state id = (get_info id).state <- None
   let reached id b =
@@ -279,20 +349,23 @@ end = struct (* {{{ *)
     if b then info.n_reached <- info.n_reached + 1
     else info.n_reached <- -1
   let goals id n = (get_info id).n_goals <- n
-  let create_cluster l = vcs := create_cluster !vcs l
+  let cur_tip () = get_branch_pos (current_branch ())
 
   let proof_nesting () = Vcs_aux.proof_nesting !vcs
 
   let checkout_shallowest_proof_branch () =
-    let pl = proof_nesting () in
-    try
-      let branch, mode = match Vcs_aux.find_proof_at_depth !vcs pl with
-        | h, { Vcs_.kind = `Proof (m, _) } -> h, m | _ -> assert false in
-      checkout branch;
-      Proof_global.activate_proof_mode mode
-    with Failure _ ->
-      checkout Branch.master;
-      Proof_global.disactivate_proof_mode "Classic" (* XXX *)
+    if List.mem edit_branch (Vcs_.branches !vcs) then
+      checkout edit_branch
+    else
+      let pl = proof_nesting () in
+      try
+        let branch, mode = match Vcs_aux.find_proof_at_depth !vcs pl with
+          | h, { Vcs_.kind = `Proof (m, _) } -> h, m | _ -> assert false in
+        checkout branch;
+        Proof_global.activate_proof_mode mode
+      with Failure _ ->
+        checkout Branch.master;
+        Proof_global.disactivate_proof_mode "Classic" (* XXX *)
 
   (* copies the transaction on every open branch *)
   let propagate_sideff t =
@@ -302,21 +375,7 @@ end = struct (* {{{ *)
       merge id ~ours:(Sideff t) ~into:b Branch.master)
     (List.filter (fun b -> not (Branch.equal b Branch.master)) (branches ()))
   
-  let visit id =
-    try
-      match Dag.from_node (dag !vcs) id with
-      | [n, Cmd x] -> { step = `Cmd x; next = n }
-      | [n, Alias x] -> { step = `Alias x; next = n }
-      | [n, Fork x] -> { step = `Fork x; next = n }
-      | [n, Qed x; p, Noop]
-      | [p, Noop; n, Qed x] -> { step = `Qed (x,p); next = n }
-      | [n, Sideff None; p, Noop]
-      | [p, Noop; n, Sideff None]-> { step = `Sideff (`Id p); next = n }
-      | [n, Sideff (Some x); p, Noop]
-      | [p, Noop; n, Sideff (Some x)]-> { step = `Sideff(`Ast (x,p)); next = n }
-      | [n, Sideff (Some x)]-> {step = `Sideff(`Ast (x,Stateid.dummy)); next=n}
-      | _ -> anomaly (str ("Malformed VCS at node "^Stateid.to_string id))
-    with Not_found -> raise Expired
+  let visit id = Vcs_aux.visit !vcs id
 
   let slice ~start ~stop ~purify =
     let l =
@@ -335,7 +394,9 @@ end = struct (* {{{ *)
     (* Stm should have reached the beginning of proof *)
     assert (not (Option.is_empty info.state));
     (* This may be expensive *)
-    let info = { info with state = Some (purify (Option.get info.state)) } in
+    let info = { info with
+      state = Some (purify (Option.get info.state));
+      vcs_backup = None,None } in
     let v = Vcs_.set_info v stop info in
     List.fold_right (fun (id,tr) v ->
       let v = Vcs_.commit v id tr in
@@ -343,9 +404,16 @@ end = struct (* {{{ *)
       (* TODO: we could drop all of them but for the last one and purify it,
        * so that proofs partially executed in the main process are not
        * completely re-executed in the slave process *)
-      let info = { info with state = None } in
+      let info = { info with state = None; vcs_backup = None,None } in
       let v = Vcs_.set_info v id info in
       v) l v
+
+  let create_cluster l ~tip = vcs := create_cluster !vcs l tip
+  let cluster_of id = Option.map Dag.Cluster.data (cluster_of !vcs id)
+  let delete_cluster_of id =
+    Option.iter (fun x -> vcs := delete_cluster !vcs x) (Vcs_.cluster_of !vcs id)
+
+  let gc () = vcs := gc !vcs
 
   module NB : sig (* Non blocking Sys.command *)
 
@@ -396,20 +464,19 @@ module State : sig
   (** The function is from unit, so it uses the current state to define
       a new one.  I.e. one may been to install the right state before
       defining a new one.
-
-      Warning: an optimization requires that state modifying functions
-      are always executed using this wrapper. *)
-  val define : ?cache:bool -> (unit -> unit) -> Stateid.t -> unit
+      Warning: an optimization in installed_cached requires that state
+      modifying functions are always executed using this wrapper. *)
+  val define :
+    ?redefine:bool -> ?cache:bool -> (unit -> unit) -> Stateid.t -> unit
 
   val install_cached : Stateid.t -> unit
   val is_cached : Stateid.t -> bool
 
   val exn_on : Stateid.t -> ?valid:Stateid.t -> exn -> exn
 
-  (* TODO: rename *)
   (* projects a state so that it can be marshalled and its content is
    * sufficient for the execution of Coq on a proof branch *)
-  val purify : state -> state
+  val make_shallow : state -> state
 
 end = struct (* {{{ *)
 
@@ -419,9 +486,11 @@ end = struct (* {{{ *)
 
   (* helpers *)
   let freeze_global_state marshallable =
-    States.freeze ~marshallable, Proof_global.freeze ~marshallable
-  let unfreeze_global_state (s,p) =
-    States.unfreeze s; Proof_global.unfreeze p
+    { system = States.freeze ~marshallable;
+      proof = Proof_global.freeze ~marshallable;
+      shallow = (marshallable = `Shallow) }
+  let unfreeze_global_state { system; proof } =
+    States.unfreeze system; Proof_global.unfreeze proof
 
   (* hack to make futures functional *)
   let in_t, out_t = Dyn.create "state4future"
@@ -429,11 +498,12 @@ end = struct (* {{{ *)
     (fun () -> in_t (freeze_global_state `No, !cur_id))
     (fun t -> let s,i = out_t t in unfreeze_global_state s; cur_id := i)
 
-  let purify s =
-    Future.purify (fun s ->
-            unfreeze_global_state s;
-            freeze_global_state `Shallow
-      ) s
+  let make_shallow s =
+    if s.shallow then s
+    else
+      Future.purify (fun s ->
+        unfreeze_global_state s;
+        freeze_global_state `Shallow) s
 
   let is_cached id =
     Stateid.equal id !cur_id ||
@@ -457,14 +527,15 @@ end = struct (* {{{ *)
     Pp.feedback ~state_id:id (Interface.ErrorMsg (loc, msg));
     Stateid.add e ?valid id
 
-  let define ?(cache=false) f id =
-    if is_cached id then
-      anomaly (str"defining state "++str(Stateid.to_string id)++str" twice");
+  let define ?(redefine=false) ?(cache=false) f id =
+    let str_id = Stateid.to_string id in
+    if is_cached id && not redefine then
+      anomaly (str"defining state "++str str_id++str" twice");
     try
-      prerr_endline ("defining " ^
-        Stateid.to_string id ^ " (cache=" ^string_of_bool cache^")");
+      prerr_endline("defining "^str_id^" (cache=" ^string_of_bool cache^")");
       f ();
       if cache then freeze `No id;
+      prerr_endline ("setting cur id to "^str_id);
       cur_id := id;
       feedback ~state_id:id Interface.Processed;
       VCS.reached id true;
@@ -489,7 +560,7 @@ module Slaves : sig
   (* (eventually) remote calls *)
   val build_proof :
     exn_info:(Stateid.t * Stateid.t) -> start:Stateid.t -> stop:Stateid.t ->
-      Entries.proof_output list Future.computation
+      future_proof
 
   (* blocking function that waits for the task queue to be empty *)
   val wait_all_done : unit -> unit
@@ -502,7 +573,8 @@ module Slaves : sig
   val slave_init_stdout : unit -> unit
 
   (* to disentangle modules *)
-  val set_reach_known_state : (cache:bool -> Stateid.t -> unit) -> unit
+  val set_reach_known_state :
+    (?redefine_qed:bool -> cache:bool -> Stateid.t -> unit) -> unit
 
 
 end = struct (* {{{ *)
@@ -593,7 +665,7 @@ end = struct (* {{{ *)
 
   end (* }}} *)
   
-  let reach_known_state = ref (fun ~cache id -> ())
+  let reach_known_state = ref (fun ?redefine_qed ~cache id -> ())
   let set_reach_known_state f = reach_known_state := f
 
   type request = ReqBuildProof of (Stateid.t * Stateid.t) * Stateid.t * VCS.vcs
@@ -628,7 +700,7 @@ end = struct (* {{{ *)
     match task with
     | TaskBuildProof (exn_info,bop,eop,_) ->
         ReqBuildProof(exn_info,eop,
-          VCS.slice ~start:eop ~stop:bop ~purify:State.purify)
+          VCS.slice ~start:eop ~stop:bop ~purify:State.make_shallow)
 
   let build_proof_here (id,valid) eop =
     Future.create (fun () ->
@@ -808,13 +880,14 @@ end (* }}} *)
 (* Runs all transactions needed to reach a state *)
 module Reach : sig
 
-  val known_state : cache:bool -> Stateid.t -> unit
+  val known_state : ?redefine_qed:bool -> cache:bool -> Stateid.t -> unit
 
 end = struct (* {{{ *)
 
 let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
 
 let collect_proof cur hd id =
+ prerr_endline ("Collecting proof ending at "^Stateid.to_string id); 
  let is_defined = function
    | _, (_, _, VernacEndProof (Proved (false,_))) -> true
    | _ -> false in
@@ -823,23 +896,25 @@ let collect_proof cur hd id =
     match last, view.step with
     | _, `Cmd (x, _) -> collect (Some (id,x)) (id::accn) view.next
     | _, `Alias _ -> collect None (id::accn) view.next
-    | Some (parent, (_,_,VernacExactProof _)), `Fork _ ->
-        `NotOptimizable `Immediate
     | _, `Fork(_,_,_::_::_)->
         `NotOptimizable `MutualProofs (* TODO: enderstand where we need that *)
     | Some (parent, (_,_,VernacProof(_,Some _) as v)), `Fork (_, hd', _) ->
-        assert (VCS.Branch.equal hd hd');
+        assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         `Optimizable (parent, Some v, accn)
     | Some (parent, _), `Fork (_, hd', _) ->
-        assert (VCS.Branch.equal hd hd');
+        assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         `MaybeOptimizable (parent, accn)
     | _, `Sideff se -> collect None (id::accn) view.next
     | _ -> `NotOptimizable `Unknown in
- if State.is_cached id then `NotOptimizable `Unknown
- else if is_defined cur then `NotOptimizable `Transparent
- else collect (Some cur) [] id
+ match cur, (VCS.visit id).step with
+ | (parent, (_,_,VernacExactProof _)), `Fork _ ->
+     `NotOptimizable `Immediate
+ | _ ->
+     if State.is_cached id then `NotOptimizable `AlreadyEvaluated
+     else if is_defined cur then `NotOptimizable `Transparent
+     else collect (Some cur) [] id
 
-let known_state ~cache id =
+let known_state ?(redefine_qed=false) ~cache id =
 
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
    * side effects *)
@@ -854,9 +929,9 @@ let known_state ~cache id =
     cherry_pick_non_pstate ()) id
 
   (* traverses the dag backward from nodes being already calculated *)
-  and reach ?(cache=cache) id =
+  and reach ?(redefine_qed=false) ?(cache=cache) id =
     prerr_endline ("reaching: " ^ Stateid.to_string id);
-    if State.is_cached id then begin
+    if not redefine_qed && State.is_cached id then begin
       State.install_cached id;
       feedback ~state_id:id Interface.Processed;
       prerr_endline ("reached (cache)")
@@ -864,73 +939,88 @@ let known_state ~cache id =
     let step, cache_step =
       let view = VCS.visit id in
       match view.step with
-      | `Alias id ->
-           (fun () ->
-              reach view.next; reach id; Vernacentries.try_print_subgoals ()),
-           cache
-      | `Cmd (x,_) -> (fun () -> reach view.next; interp id x), cache
-      | `Fork (x,_,_) -> (fun () -> reach view.next; interp id x), true
-      | `Qed ((x,keep,(hd,_)), eop) ->
-           let rec aux = function
-           | `Optimizable (start, proof_using_ast, nodes) ->
-               (fun () ->
-                 prerr_endline ("Optimizable " ^ Stateid.to_string id);
-                 VCS.create_cluster nodes;
-                 begin match keep with
-                 | VtKeep ->
-                     reach ~cache:true start;
-                     let fp =
-                       Slaves.build_proof
-                         ~exn_info:(id,eop) ~start ~stop:eop in
-                     let proof = Proof_global.close_future_proof fp in
-                     reach view.next;
-                     interp id ~proof x;
-                 | VtDrop ->
-                     reach view.next;
-                     Option.iter (interp start) proof_using_ast;
-                     interp id x
-                 end;
-                 Proof_global.discard_all ())
-           | `NotOptimizable `Immediate -> assert (Stateid.equal view.next eop);
-               (fun () -> reach eop; interp id x; Proof_global.discard_all ())
-           | `NotOptimizable _ ->
-               (fun () ->
-                 prerr_endline ("NotOptimizable " ^ Stateid.to_string id);
-                 reach eop;
-                 begin match keep with
-                 | VtKeep ->
-                     let proof = Proof_global.close_proof () in
-                     reach view.next;
-                     interp id ~proof x
-                 | VtDrop ->
-                     reach view.next;
-                     interp id x
-                 end;
-                 Proof_global.discard_all ())
-           | `MaybeOptimizable (start, nodes) ->
-               (fun () ->
-                 prerr_endline ("MaybeOptimizable " ^ Stateid.to_string id);
-                 reach ~cache:true start;
-                 (* no sections and no modules *)
-                 if List.is_empty (Environ.named_context (Global.env ())) &&
-                    Safe_typing.is_curmod_library (Global.safe_env ()) then
-                   aux (`Optimizable (start, None, nodes)) ()
-                 else
-                   aux (`NotOptimizable `Unknown) ())
-           in
-             aux (collect_proof (view.next, x) hd eop), true
-      | `Sideff (`Ast (x,_)) ->
-           (fun () -> reach view.next; interp id x), cache
-      | `Sideff (`Id origin) ->
-           (fun () ->
-              let s = pure_cherry_pick_non_pstate origin in
-              reach view.next;
-              inject_non_pstate s),
-           cache
+      | `Alias id -> (fun () ->
+            reach view.next; reach id; Vernacentries.try_print_subgoals ()
+          ), cache
+      | `Cmd (x,_) -> (fun () ->
+            reach view.next; vernac_interp id x
+          ), cache
+      | `Fork (x,_,_) -> (fun () ->
+            reach view.next; vernac_interp id x
+          ), true
+      | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
+          let rec aux = function
+          | `Optimizable (start, proof_using_ast, nodes) -> (fun () ->
+                prerr_endline ("Optimizable " ^ Stateid.to_string id);
+                VCS.create_cluster nodes ~tip:id;
+                begin match keep, brinfo, qed.fproof with
+                | VtKeep, { VCS.kind = `Edit _ }, None -> assert false
+                | VtKeep, { VCS.kind = `Edit _ }, Some ofp ->
+                    assert(redefine_qed = true);
+                    VCS.create_cluster nodes ~tip:id;
+                    let fp =
+                      Slaves.build_proof ~exn_info:(id,eop) ~start ~stop:eop in
+                    Future.replace ofp fp;
+                    qed.fproof <- Some fp
+                | VtKeep, { VCS.kind = `Proof _ }, Some _ -> assert false
+                | VtKeep, { VCS.kind = `Proof _ }, None ->
+                    reach ~cache:true start;
+                    let fp =
+                      Slaves.build_proof ~exn_info:(id,eop) ~start ~stop:eop in
+                    qed.fproof <- Some fp;
+                    let proof = Proof_global.close_future_proof fp in
+                    reach view.next;
+                    vernac_interp id ~proof x
+                | VtDrop, _, _ ->
+                    reach view.next;
+                    Option.iter (vernac_interp start) proof_using_ast;
+                    vernac_interp id x
+                | _, { VCS.kind = `Master }, _ -> assert false
+                end;
+                Proof_global.discard_all ()
+              ), not redefine_qed
+          | `NotOptimizable `Immediate -> (fun () -> 
+                assert (Stateid.equal view.next eop);
+                reach eop; vernac_interp id x; Proof_global.discard_all ()
+              ), true
+          | `NotOptimizable _ -> (fun () ->
+                prerr_endline ("NotOptimizable " ^ Stateid.to_string id);
+                reach eop;
+                begin match keep with
+                | VtKeep ->
+                    let proof = Proof_global.close_proof () in
+                    reach view.next;
+                    vernac_interp id ~proof x
+                | VtDrop ->
+                    reach view.next;
+                    vernac_interp id x
+                end;
+                Proof_global.discard_all ()
+              ), true
+          | `MaybeOptimizable (start, nodes) -> (fun () ->
+                prerr_endline ("MaybeOptimizable " ^ Stateid.to_string id);
+                reach ~cache:true start;
+                (* no sections and no modules *)
+                if List.is_empty (Environ.named_context (Global.env ())) &&
+                   Safe_typing.is_curmod_library (Global.safe_env ()) then
+                  fst (aux (`Optimizable (start, None, nodes))) ()
+                else
+                  fst (aux (`NotOptimizable `Unknown)) ()
+              ), not redefine_qed
+          in
+          aux (collect_proof (view.next, x) brname eop)
+      | `Sideff (`Ast (x,_)) -> (fun () ->
+            reach view.next; vernac_interp id x
+          ), cache
+      | `Sideff (`Id origin) -> (fun () ->
+            let s = pure_cherry_pick_non_pstate origin in
+            reach view.next;
+            inject_non_pstate s
+          ), cache
     in
-    State.define ~cache:cache_step step id;
+    State.define ~cache:cache_step ~redefine:redefine_qed step id;
     prerr_endline ("reached: "^ Stateid.to_string id) in
-  reach id
+  reach ~redefine_qed id
 
 end (* }}} *)
 let _ = Slaves.set_reach_known_state Reach.known_state
@@ -940,59 +1030,59 @@ module Backtrack : sig
 
   val record : unit -> unit
   val backto : Stateid.t -> unit
-  val cur : unit -> Stateid.t
 
   (* we could navigate the dag, but this ways easy *)
-  val branches_of : Stateid.t -> VCS.Branch.t list
+  val branches_of : Stateid.t -> backup
 
   (* To be installed during initialization *)
   val undo_vernac_classifier : vernac_expr -> vernac_classification
 
 end = struct (* {{{ *)
 
-  module S  = Stack
-
-  type hystory_elt = {
-    id : Stateid.t ;
-    vcs : VCS.vcs;
-    label : Names.Id.t list; (* To implement a limited form of reset *)
-  }
-
-  let history : hystory_elt S.t = S.create ()
-
-  let cur () =
-    if S.is_empty history then anomaly (str "Empty history");
-    (S.top history).id
-
   let record () =
-    let id = VCS.get_branch_pos (VCS.current_branch ()) in
-    S.push {
-      id = id;
-      vcs = VCS.backup ();
-      label =
-        if Stateid.equal id Stateid.initial || Stateid.equal id Stateid.dummy then [] else 
-        match VCS.visit id with
-        | { step = `Fork (_,_,l) } -> l
-        | { step = `Cmd (_,l) } -> l
-        | _ -> [] }
-    history
+    let current_branch = VCS.current_branch () in
+    let mine = current_branch, VCS.get_branch current_branch in
+    let info = VCS.get_info (VCS.get_branch_pos current_branch) in
+    let others =
+      CList.map_filter (fun b ->
+        if Vcs_.Branch.equal b current_branch then None
+        else Some(b, VCS.get_branch b)) (VCS.branches ()) in
+    info.vcs_backup <- Some (VCS.backup ()), Some { mine; others }
 
   let backto oid =
-    assert(not (S.is_empty history));
-    let rec pop_until_oid () =
-      let id = (S.top history).id in
-      if Stateid.equal id Stateid.initial || Stateid.equal id oid then ()
-      else begin ignore (S.pop history); pop_until_oid (); end in
-    pop_until_oid ();
-    let backup = S.top history in
-    VCS.restore backup.vcs;
-    if not (Stateid.equal backup.id oid) then anomaly (str "Backto an unknown state")
+    let info = VCS.get_info oid in
+    match info.vcs_backup with
+    | None, _ -> anomaly(str"Backtrack.backto to a state with no vcs_backup")
+    | Some vcs, _ ->
+        VCS.restore vcs;
+        let id = VCS.get_branch_pos (VCS.current_branch ()) in
+        if not (Stateid.equal id oid) then
+          anomaly (str "Backtrack.backto did not jump to the right state")
 
   let branches_of id =
-    try
-      let s = S.find (fun s -> Stateid.equal s.id id) history in
-      Vcs_.branches s.vcs
-    with Not_found -> assert false
+    let info = VCS.get_info id in
+    match info.vcs_backup with
+    | _, None ->
+       anomaly(str"Backtrack.branches_of on a state with no vcs_backup")
+    | _, Some x -> x
+
+  let rec fold_until f acc id =
+    let next acc =
+      if id = Stateid.initial then raise Not_found
+      else fold_until f acc (VCS.visit id).next in
+    let info = VCS.get_info id in
+    match info.vcs_backup with
+    | None, _ -> next acc
+    | Some vcs, _ ->
+        let ids =
+          if id = Stateid.initial || id = Stateid.dummy then [] else
+          match VCS.visit id with
+          | { step = `Fork (_,_,l) } -> l
+          | { step = `Cmd (_,l) } -> l
+          | _ -> [] in
+        match f acc (id, vcs, ids) with
+        | Stop x -> x
+        | Next acc -> next acc
  
   let undo_vernac_classifier = function
     | VernacResetInitial ->
@@ -1000,39 +1090,47 @@ end = struct (* {{{ *)
     | VernacResetName (_,name) ->
         msg_warning
           (str"Reset not implemented for automatically generated constants");
+        let id = VCS.get_branch_pos (VCS.current_branch ()) in
         (try
-          let s =
-            S.seek (fun b s ->
-              if b then Stop s else Next (List.mem name s.label))
-            false history in
-          VtStm (VtBack s.id, true), VtNow
+          let oid =
+            fold_until (fun b (id,_,label) ->
+              if b then Stop id else Next (List.mem name label))
+            false id in
+          VtStm (VtBack oid, true), VtNow
         with Not_found ->
-          VtStm (VtBack (S.top history).id, true), VtNow)
+          VtStm (VtBack id, true), VtNow)
     | VernacBack n ->
-        let s = S.seek (fun n s ->
-          if Int.equal n 0 then Stop s else Next (n-1)) n history in
-        VtStm (VtBack s.id, true), VtNow
+        let id = VCS.get_branch_pos (VCS.current_branch ()) in
+        let oid = fold_until (fun n (id,_,_) ->
+          if Int.equal n 0 then Stop id else Next (n-1)) n id in
+        VtStm (VtBack oid, true), VtNow
     | VernacUndo n ->
-        let s = S.seek (fun n s ->
-          if Int.equal n 0 then Stop s else Next (n-1)) n history in
-        VtStm (VtBack s.id, true), VtLater
+        let id = VCS.get_branch_pos (VCS.current_branch ()) in
+        let oid = fold_until (fun n (id,_,_) ->
+          if Int.equal n 0 then Stop id else Next (n-1)) n id in
+        VtStm (VtBack oid, true), VtLater
     | VernacUndoTo _
     | VernacRestart as e ->
         let m = match e with VernacUndoTo m -> m | _ -> 0 in
-        let vcs = (S.top history).vcs in
+        let id = VCS.get_branch_pos (VCS.current_branch ()) in
+        let vcs =
+          match (VCS.get_info id).vcs_backup with 
+          | None, _ -> anomaly(str"Backtrack: tip with no vcs_backup")
+          | Some vcs, _ -> vcs in
         let cb, _ =
           Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs) in
-        let n = S.seek (fun n { vcs } ->
+        let n = fold_until (fun n (_,vcs,_) ->
           if List.mem cb (Vcs_.branches vcs) then Next (n+1) else Stop n)
-          0 history in
-        let s = S.seek (fun n s ->
-          if Int.equal n 0 then Stop s else Next (n-1)) (n-m-1) history in
-        VtStm (VtBack s.id, true), VtLater
+          0 id in
+        let oid = fold_until (fun n (id,_,_) ->
+          if Int.equal n 0 then Stop id else Next (n-1)) (n-m-1) id in
+        VtStm (VtBack oid, true), VtLater
     | VernacAbortAll ->
-        let s = S.find (fun s ->
-          match Vcs_.branches s.vcs with [_] -> true | _ -> false)
-          history in
-        VtStm (VtBack s.id, true), VtLater
+        let id = VCS.get_branch_pos (VCS.current_branch ()) in
+        let oid = fold_until (fun () (id,vcs,_) ->
+          match Vcs_.branches vcs with [_] -> Stop id | _ -> Next ())
+          () id in
+        VtStm (VtBack oid, true), VtLater
     | VernacBacktrack (id,_,_)
     | VernacBackTo id ->
         VtStm (VtBack (Stateid.of_int id), true), VtNow
@@ -1040,15 +1138,16 @@ end = struct (* {{{ *)
 
 end (* }}} *)
 
-let slave_main_loop () = Slaves.slave_main_loop ()
-let slave_init_stdout () = Slaves.slave_init_stdout ()
-
 let init () =
   VCS.init Stateid.initial;
   set_undo_classifier Backtrack.undo_vernac_classifier;
   State.define ~cache:true (fun () -> ()) Stateid.initial;
   Backtrack.record ();
   if Int.equal !Flags.coq_slave_mode 0 then Slaves.init ()
+
+let slave_main_loop () = Slaves.slave_main_loop ()
+
+let slave_init_stdout () = Slaves.slave_init_stdout ()
 
 let observe id =
   let vcs = VCS.backup () in
@@ -1065,18 +1164,15 @@ let finish () =
   observe (VCS.get_branch_pos (VCS.current_branch ()));
   VCS.print ()
 
-let join_aborted_proofs () =
-  let rec aux id =
-    if Stateid.equal id Stateid.initial then () else
-    let view = VCS.visit id in
-    match view.step with
-    | `Qed ((_,VtDrop,_),eop) ->
-         Future.purify observe eop; aux view.next
-    | `Sideff _ | `Alias _ | `Cmd _ | `Fork _ | `Qed _ -> aux view.next
-  in
-    aux (VCS.get_branch_pos VCS.Branch.master)
-
 let join () =
+  let rec jab id =
+    if Stateid.equal id Stateid.initial then ()
+    else
+      let view = VCS.visit id in
+      match view.step with
+      | `Qed ({ keep = VtDrop }, eop) ->
+           Future.purify observe eop; jab view.next
+      | _ -> jab view.next in
   finish ();
   VCS.print ();
   Slaves.wait_all_done ();
@@ -1084,69 +1180,88 @@ let join () =
   Global.join_safe_environment ();
   VCS.print ();
   prerr_endline "Joining the aborted proofs";
-  join_aborted_proofs ();
+  jab (VCS.get_branch_pos VCS.Branch.master);
   VCS.print ()
 
-let merge_proof_branch x keep branch =
-  if VCS.Branch.equal branch VCS.Branch.master then
-    raise(State.exn_on Stateid.dummy Proof_global.NoCurrentProof);
-  let info = VCS.get_branch branch in
-  VCS.checkout VCS.Branch.master;
-  let id = VCS.new_node () in
-  VCS.merge id ~ours:(Qed (x,keep,(branch, info))) branch;
-  VCS.delete_branch branch;
-  if keep == VtKeep then VCS.propagate_sideff None
+let merge_proof_branch qast keep brname =
+  let brinfo = VCS.get_branch brname in
+  let qed fproof = { qast; keep; brname; brinfo; fproof } in
+  match brinfo with
+  | { VCS.kind = `Proof _ } ->
+      VCS.checkout VCS.Branch.master;
+      let id = VCS.new_node () in
+      VCS.merge id ~ours:(Qed (qed None)) brname;
+      VCS.delete_branch brname;
+      if keep == VtKeep then VCS.propagate_sideff None;
+      `Ok
+  | { VCS.kind = `Edit (mode, qed_id, master_id) } ->
+      let ofp =
+        match VCS.visit qed_id with
+        | { step = `Qed ({ fproof }, _) } -> fproof
+        | _ -> assert false in
+      VCS.rewrite_merge qed_id ~ours:(Qed (qed ofp)) ~at:master_id brname;
+      VCS.delete_branch brname;
+      VCS.gc ();
+      Reach.known_state ~redefine_qed:true ~cache:false qed_id;
+      VCS.checkout VCS.Branch.master;
+      `Unfocus qed_id
+  | { VCS.kind = `Master } ->
+       raise (State.exn_on Stateid.dummy Proof_global.NoCurrentProof)
 
-let process_transaction verbosely (loc, expr) =
+let process_transaction ~tty verbose c (loc, expr) =
   let warn_if_pos a b =
     if b then msg_warning(pr_ast a ++ str" should not be part of a script") in
-  let v, x = expr, (verbosely && Flags.is_verbose(), loc, expr) in
+  let v, x = expr, (verbose && Flags.is_verbose(), loc, expr) in
   prerr_endline ("{{{ execute: "^ string_of_ppcmds (pr_ast x));
   let vcs = VCS.backup () in
   try
     let head = VCS.current_branch () in
     VCS.checkout head;
-    begin
-      let c = classify_vernac v in
+    let rc = begin
       prerr_endline ("  classified as: " ^ string_of_vernac_classification c);
       match c with
       (* Joining various parts of the document *)
-      | VtStm (VtJoinDocument, b), VtNow -> warn_if_pos x b; join ()
-      | VtStm (VtFinish, b),       VtNow -> warn_if_pos x b; finish ()
-      | VtStm (VtObserve id, b),   VtNow -> warn_if_pos x b; observe id
+      | VtStm (VtJoinDocument, b), VtNow -> warn_if_pos x b; join (); `Ok
+      | VtStm (VtFinish, b),       VtNow -> warn_if_pos x b; finish (); `Ok
+      | VtStm (VtObserve id, b),   VtNow -> warn_if_pos x b; observe id; `Ok
       | VtStm ((VtObserve _ | VtFinish | VtJoinDocument), _), VtLater ->
           anomaly(str"classifier: join actions cannot be classified as VtLater")
       
       (* Back *)
       | VtStm (VtBack oid, true), w ->
           let id = VCS.new_node () in
-          let bl = Backtrack.branches_of oid in
+          let { mine; others } = Backtrack.branches_of oid in
           List.iter (fun branch ->
-            if not (List.mem branch bl) then
-              merge_proof_branch x VtDrop branch)
+            if not (List.mem_assoc branch (mine::others)) then
+              ignore(merge_proof_branch x VtDrop branch))
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           VCS.commit id (Alias oid);
-          Backtrack.record (); if w == VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtStm (VtBack id, false), VtNow ->
           prerr_endline ("undo to state " ^ Stateid.to_string id);
           Backtrack.backto id;
           VCS.checkout_shallowest_proof_branch ();
-          Reach.known_state ~cache:(interactive ()) id;
+          Reach.known_state ~cache:(interactive ()) id; `Ok
       | VtStm (VtBack id, false), VtLater ->
           anomaly(str"classifier: VtBack + VtLater must imply part_of_script")
 
       (* Query *)
-      | VtQuery false, VtNow ->
+      | VtQuery false, VtNow when tty = true ->
           finish ();
-          (try Future.purify (interp Stateid.dummy) (true,loc,expr)
+          (try Future.purify (vernac_interp Stateid.dummy) (true,loc,expr)
            with e when Errors.noncritical e ->
              let e = Errors.push e in
-             raise(State.exn_on Stateid.dummy e))
+             raise(State.exn_on Stateid.dummy e)); `Ok
+      | VtQuery false, VtNow ->
+          (try vernac_interp Stateid.dummy x
+           with e when Errors.noncritical e ->
+             let e = Errors.push e in
+             raise(State.exn_on Stateid.dummy e)); `Ok
       | VtQuery true, w ->
           let id = VCS.new_node () in
           VCS.commit id (Cmd (x,[]));
-          Backtrack.record (); if w == VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQuery false, VtLater ->
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script")
 
@@ -1158,15 +1273,16 @@ let process_transaction verbosely (loc, expr) =
           VCS.commit id (Fork (x, bname, names));
           VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1));
           Proof_global.activate_proof_mode mode;
-          Backtrack.record (); if w == VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtProofStep, w ->
           let id = VCS.new_node () in
           VCS.commit id (Cmd (x,[]));
-          Backtrack.record (); if w == VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish (); `Ok
       | VtQed keep, w ->
-          merge_proof_branch x keep head;
+          let rc = merge_proof_branch x keep head in
           VCS.checkout_shallowest_proof_branch ();
-          Backtrack.record (); if w == VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish ();
+          rc
           
       (* Side effect on all branches *)
       | VtSideff l, w ->
@@ -1175,7 +1291,7 @@ let process_transaction verbosely (loc, expr) =
           VCS.commit id (Cmd (x,l));
           VCS.propagate_sideff (Some x);
           VCS.checkout_shallowest_proof_branch ();
-          Backtrack.record (); if w == VtNow then finish ()
+          Backtrack.record (); if w == VtNow then finish (); `Ok
 
       (* Unknown: we execute it, check for open goals and propagate sideeff *)
       | VtUnknown, VtNow ->
@@ -1184,7 +1300,7 @@ let process_transaction verbosely (loc, expr) =
             VCS.checkout VCS.Branch.master;
             let mid = VCS.get_branch_pos VCS.Branch.master in
             Reach.known_state ~cache:(interactive ()) mid;
-            interp id x;
+            vernac_interp id x;
             (* Vernac x may or may not start a proof *)
             if VCS.Branch.equal head VCS.Branch.master &&
                Proof_global.there_are_pending_proofs ()
@@ -1199,21 +1315,22 @@ let process_transaction verbosely (loc, expr) =
               VCS.checkout_shallowest_proof_branch ();
             end in
           State.define ~cache:true step id;
-          Backtrack.record ()
+          Backtrack.record (); `Ok
 
       | VtUnknown, VtLater ->
           anomaly(str"classifier: VtUnknown must imply VtNow")
-    end;
+    end in
     (* Proof General *)
     begin match v with 
       | VernacStm (PGLast _) ->
         if not (VCS.Branch.equal head VCS.Branch.master) then
-          interp Stateid.dummy
+          vernac_interp Stateid.dummy
             (true,Loc.ghost,VernacShow (ShowGoal OpenSubgoals))
       | _ -> ()
     end;
     prerr_endline "executed }}}";
-    VCS.print ()
+    VCS.print ();
+    rc
   with e ->
     let e = Errors.push e in
     match Stateid.get e with
@@ -1222,22 +1339,163 @@ let process_transaction verbosely (loc, expr) =
         VCS.print ();
         anomaly (str ("execute: "^ 
           string_of_ppcmds (Errors.print_no_report e) ^ "}}}"))
+    | Some (safe_id, id) ->
+        prerr_endline ("Failed at state " ^ Stateid.to_string id);
+        VCS.restore vcs;
+        if tty then begin (* We stay on a valid state *)
+          Backtrack.backto safe_id;
+          VCS.checkout_shallowest_proof_branch ();
+          Reach.known_state ~cache:(interactive ()) safe_id;
+        end else begin
+          VCS.print ()
+        end;
+        raise e
+
+(** STM interface {{{******************************************************* **)
+
+let query ~at s =
+  Future.purify (fun s ->
+    if Stateid.equal at Stateid.dummy then finish ()
+    else Reach.known_state ~cache:true at;
+    let loc_ast = vernac_parse 0 s in
+    ignore(process_transaction ~tty:false true (VtQuery false, VtNow) loc_ast))
+  s
+
+let add ~ontop ?(check=ignore) verb eid s =
+  let cur_tip = VCS.cur_tip () in
+  if Stateid.equal ontop cur_tip then begin
+    let _, ast as loc_ast = vernac_parse eid s in
+    check(loc_ast);
+    let clas = classify_vernac ast in
+    match process_transaction ~tty:false verb clas loc_ast with
+    | `Ok -> VCS.cur_tip (), `NewTip
+    | `Unfocus qed_id -> qed_id, `Unfocus (VCS.cur_tip ())
+  end else begin
+    (* For now, arbitrary edits should be announced with edit_at *)
+    anomaly(str"Not yet implemented, the GUI should not try this")
+  end
+
+type focus = {
+  start : Stateid.t;
+  stop : Stateid.t;
+  tip : Stateid.t
+}
+
+let edit_at id =
+  let vcs = VCS.backup () in
+  let on_cur_branch id =
+    let rec aux cur =
+      if id = cur then true
+      else match VCS.visit cur with
+      | { step = `Fork _ } -> false
+      | { next } -> aux next in
+    aux (VCS.get_branch_pos (VCS.current_branch ())) in
+  let is_ancestor_of_cur_branch id =
+    Vcs_.NodeSet.mem id
+      (VCS.reachable (VCS.get_branch_pos (VCS.current_branch ()))) in
+  let has_failed qed_id =
+    match VCS.visit qed_id with
+    | { step = `Qed ({ fproof = Some fp }, _) } -> Future.is_exn fp
+    | _ -> false in
+  let rec master_for_br root tip =
+      if Stateid.equal tip Stateid.initial then tip else
+      match VCS.visit tip with
+      | { next } when next = root -> root
+      | { step = `Fork _ } -> tip
+      | { step = `Sideff (`Ast(_,id)|`Id id) } -> id
+      | { next } -> master_for_br root next in
+  let reopen_branch at_id mode qed_id tip =
+    VCS.delete_cluster_of id;
+    let master_id =
+      match VCS.visit qed_id with
+      | { step = `Qed _; next = master_id } -> master_id
+      | _ -> anomaly (str "Cluster not ending with Qed") in
+    VCS.branch ~root:master_id ~pos:id
+      VCS.edit_branch (`Edit (mode, qed_id, master_id));
+    Reach.known_state ~cache:(interactive ()) id;
+    VCS.checkout_shallowest_proof_branch ();
+    `Focus { stop = qed_id; start = master_id; tip } in
+  let backto id =
+    List.iter VCS.delete_branch (VCS.branches ());
+    let ancestors = VCS.reachable id in
+    let { mine = brname, brinfo; others } = Backtrack.branches_of id in
+    List.iter (fun (name,{ VCS.kind = k; root; pos }) ->
+      if not(VCS.Branch.equal name VCS.Branch.master) &&
+         Vcs_.NodeSet.mem root ancestors then
+        VCS.branch ~root ~pos name k)
+      others;
+    VCS.reset_branch VCS.Branch.master (master_for_br brinfo.VCS.root id);
+    VCS.branch ~root:brinfo.VCS.root ~pos:brinfo.VCS.pos brname brinfo.VCS.kind;
+    VCS.delete_cluster_of id;
+    VCS.gc ();
+    Reach.known_state ~cache:(interactive ()) id;
+    VCS.checkout_shallowest_proof_branch ();
+    `NewTip in
+  try
+    let rc =
+      let focused = List.exists ((=) VCS.edit_branch) (VCS.branches ()) in
+      let branch_info =
+        match snd (VCS.get_info id).vcs_backup with
+        | Some{ mine = _, { VCS.kind = (`Proof(m,_)|`Edit(m,_,_)) }} -> Some m
+        | _ -> None in
+      match focused, VCS.cluster_of id, branch_info with
+      | _, Some _, None -> assert false
+      | false, Some qed_id, Some mode ->
+          let tip = VCS.cur_tip () in
+          if has_failed qed_id then reopen_branch id mode qed_id tip
+          else backto id
+      | true, Some qed_id, Some mode ->
+          if on_cur_branch id then begin
+            assert false
+          end else if is_ancestor_of_cur_branch id then begin
+            backto id
+          end else begin
+            anomaly(str"Cannot leave an `Edit branch open")
+          end
+      | true, None, _ ->
+          if on_cur_branch id then begin
+            VCS.reset_branch (VCS.current_branch ()) id;
+            Reach.known_state ~cache:(interactive ()) id;
+            VCS.checkout_shallowest_proof_branch ();
+            `NewTip
+          end else if is_ancestor_of_cur_branch id then begin
+            backto id
+          end else begin
+            anomaly(str"Cannot leave an `Edit branch open")
+          end
+      | false, None, _ -> backto id
+    in
+    VCS.print ();
+    rc
+  with e ->
+    let e = Errors.push e in
+    match Stateid.get e with
+    | None ->
+        VCS.print ();
+        anomaly (str ("edit_at: "^string_of_ppcmds (Errors.print_no_report e)))
     | Some (_, id) ->
         prerr_endline ("Failed at state " ^ Stateid.to_string id);
         VCS.restore vcs;
         VCS.print ();
         raise e
+(* }}} *)
 
-(* Query API *)
+(** Old tty interface {{{*************************************************** **)
 
-let get_current_state () = Backtrack.cur ()
+let interp verb (_,e as lexpr) =
+  let clas = classify_vernac e in
+  let rc = process_transaction ~tty:true verb clas lexpr in
+  if rc <> `Ok then anomaly(str"tty loop can't be mixed with the STM protocol");
+  if interactive () then finish ()
+
+let get_current_state () = VCS.cur_tip ()
 
 let current_proof_depth () =
   let head = VCS.current_branch () in
   match VCS.get_branch head with
   | { VCS.kind = `Master } -> 0
-  | { VCS.pos = cur; VCS.kind = `Proof (_,n); VCS.root = root } ->
-      let rec distance cur =
+  | { VCS.pos = cur; VCS.kind = (`Proof _ | `Edit _); VCS.root = root } ->
+      let rec distance root =
         if Stateid.equal cur root then 0
         else 1 + distance (VCS.visit cur).next in
       distance cur
@@ -1248,7 +1506,7 @@ let unmangle n =
   Names.id_of_string (String.sub n idx (String.length n - idx))
 
 let proofname b = match VCS.get_branch b with
-  | { VCS.kind = `Proof _ } -> Some b
+  | { VCS.kind = (`Proof _| `Edit _) } -> Some b
   | _ -> None
 
 let get_all_proof_names () =
@@ -1263,7 +1521,7 @@ let get_script prf =
     let view = VCS.visit id in
     match view.step with
     | `Fork (_,_,ns) when List.mem prf ns -> acc
-    | `Qed ((x,_,_), proof) -> find [pi3 x, (VCS.get_info id).n_goals] proof
+    | `Qed (qed, proof) -> find [pi3 qed.qast, (VCS.get_info id).n_goals] proof
     | `Sideff (`Ast (x,_)) ->
          find ((pi3 x, (VCS.get_info id).n_goals)::acc) view.next
     | `Sideff (`Id id)  -> find acc id
@@ -1333,5 +1591,7 @@ let show_script ?proof () =
   with Proof_global.NoCurrentProof -> ()
 
 let () = Vernacentries.show_script := show_script
+
+(* }}} *)
 
 (* vim:set foldmethod=marker: *)
