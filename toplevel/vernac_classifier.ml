@@ -19,6 +19,7 @@ let string_of_vernac_type = function
   | VtQed VtKeep -> "Qed(keep)"
   | VtQed VtDrop -> "Qed(drop)"
   | VtProofStep -> "ProofStep"
+  | VtProofMode s -> "ProofMode " ^ s
   | VtQuery b -> "Query" ^ string_of_in_script b
   | VtStm ((VtFinish|VtJoinDocument|VtObserve _), b) ->
       "Stm" ^ string_of_in_script b
@@ -65,7 +66,8 @@ let rec classify_vernac e =
     | VernacTime e -> classify_vernac e
     | VernacFail e -> (* Fail Qed or Fail Lemma must not join/fork the DAG *)
         (match classify_vernac e with
-        | (VtQuery _ | VtProofStep _ | VtSideff _ | VtStm _), _ as x -> x
+        | ( VtQuery _ | VtProofStep _ | VtSideff _
+          | VtStm _ | VtProofMode _ ), _ as x -> x
         | VtQed _, _ -> VtProofStep, VtNow
         | (VtStartProof _ | VtUnknown), _ -> VtUnknown, VtNow)
     (* Qed *)

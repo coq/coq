@@ -424,6 +424,7 @@ type vernac_type =
   | VtSideff of vernac_sideff_type
   | VtQed of vernac_qed_type
   | VtProofStep
+  | VtProofMode of string
   | VtQuery of vernac_part_of_script
   | VtStm of vernac_control * vernac_part_of_script
   | VtUnknown

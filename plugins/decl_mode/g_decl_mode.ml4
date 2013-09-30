@@ -165,15 +165,11 @@ let _ =
 				       end
 				   }
 
-(* Two new vernacular commands *)
-let classify_decl _ = VtProofStep, VtNow
- 
-VERNAC COMMAND EXTEND DeclProof CLASSIFIED BY classify_decl
-  [ "proof" ] -> [ vernac_decl_proof () ]
+VERNAC COMMAND EXTEND DeclProof
+[ "proof" ] => [ VtProofMode "Declarative", VtNow ] -> [ vernac_decl_proof () ]
 END
-VERNAC COMMAND EXTEND  DeclReturn CLASSIFIED BY classify_decl
-
-  [ "return" ] -> [ vernac_return () ]
+VERNAC COMMAND EXTEND  DeclReturn
+[ "return" ] => [ VtProofMode "Classic", VtNow ] -> [ vernac_return () ]
 END
 
 let none_is_empty = function

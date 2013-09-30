@@ -354,18 +354,22 @@ end = struct (* {{{ *)
   let proof_nesting () = Vcs_aux.proof_nesting !vcs
 
   let checkout_shallowest_proof_branch () =
-    if List.mem edit_branch (Vcs_.branches !vcs) then
-      checkout edit_branch
-    else
+    if List.mem edit_branch (Vcs_.branches !vcs) then begin
+      checkout edit_branch;
+      match get_branch edit_branch with
+      | { kind = `Edit (mode, _, _) } -> Proof_global.activate_proof_mode mode
+      | _ -> assert false
+    end else
       let pl = proof_nesting () in
       try
         let branch, mode = match Vcs_aux.find_proof_at_depth !vcs pl with
           | h, { Vcs_.kind = `Proof (m, _) } -> h, m | _ -> assert false in
         checkout branch;
+        prerr_endline ("mode:" ^ mode);
         Proof_global.activate_proof_mode mode
       with Failure _ ->
         checkout Branch.master;
-        Proof_global.disactivate_proof_mode "Classic" (* XXX *)
+        Proof_global.disactivate_proof_mode "Classic"
 
   (* copies the transaction on every open branch *)
   let propagate_sideff t =
@@ -443,7 +447,7 @@ end = struct (* {{{ *)
       try while true do get_last_job () () done
       with e -> () (* No failure *)
 
-    let command job =
+    let command job = (* job () *)
       set_last_job job;
       if Option.is_empty !worker then
         worker := Some (Thread.create run_command ())
@@ -1274,6 +1278,27 @@ let process_transaction ~tty verbose c (loc, expr) =
           VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1));
           Proof_global.activate_proof_mode mode;
           Backtrack.record (); if w == VtNow then finish (); `Ok
+      | VtProofMode _, VtLater ->
+          anomaly(str"VtProofMode must be executed VtNow")
+      | VtProofMode mode, VtNow ->
+          let id = VCS.new_node () in
+          VCS.checkout VCS.Branch.master;
+          VCS.commit id (Cmd (x,[]));
+          VCS.propagate_sideff (Some x);
+          List.iter
+            (fun bn -> match VCS.get_branch bn with
+            | { VCS.root; kind = `Master; pos } -> ()
+            | { VCS.root; kind = `Proof(_,d); pos } ->
+                VCS.delete_branch bn;
+                VCS.branch ~root ~pos bn (`Proof(mode,d))
+            | { VCS.root; kind = `Edit(_,f,q); pos } ->
+                VCS.delete_branch bn;
+                VCS.branch ~root ~pos bn (`Edit(mode,f,q)))
+            (VCS.branches ());
+          VCS.checkout_shallowest_proof_branch ();
+          Backtrack.record ();
+          finish ();
+          `Ok
       | VtProofStep, w ->
           let id = VCS.new_node () in
           VCS.commit id (Cmd (x,[]));
