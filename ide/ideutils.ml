@@ -216,9 +216,9 @@ let find_tag_stop (tag :GText.tag) (it:GText.iter) =
 let find_tag_limits (tag :GText.tag) (it:GText.iter) =
  (find_tag_start tag it , find_tag_stop tag it)
 
-let stock_to_widget ?(size=`DIALOG) s =
-  let img = GMisc.image ()
-  in img#set_stock s;
+let stock_to_widget ?(size=`BUTTON) s =
+  let img = GMisc.image ~icon_size:size () in
+  img#set_stock s;
   img#coerce
 
 let custom_coqtop = ref None
