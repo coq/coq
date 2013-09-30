@@ -55,22 +55,34 @@ module type S = sig
   val get_branch : ('k,'e,'i) t -> Branch.t -> 'k branch_info
   val reset_branch : ('k,'e,'i) t -> Branch.t -> id -> ('k,'e,'i) t
   val branch :
-    ('kind,'e,'i) t -> ?root:id -> Branch.t -> 'kind -> ('kind,'e,'i) t
+    ('kind,'e,'i) t -> ?root:id -> ?pos:id ->
+        Branch.t -> 'kind -> ('kind,'e,'i) t
   val delete_branch : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
-  val merge : (* a 'diff is always Nop, fix that XXX *)
+  val merge :
     ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> ?into:Branch.t ->
             Branch.t -> ('k,'diff,'i) t
   val commit : ('k,'diff,'i) t -> id -> 'diff -> ('k,'diff,'i) t
+  val rewrite_merge :
+    ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> at:id ->
+            Branch.t -> ('k,'diff,'i) t
   val checkout : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
   
   val set_info : ('k,'e,'info) t -> id -> 'info -> ('k,'e,'info) t
   val get_info : ('k,'e,'info) t -> id -> 'info option
 
-  val create_cluster : ('k,'e,'i) t -> id list -> ('k,'e,'i) t
+  val gc : ('k,'e,'info) t -> ('k,'e,'info) t
+
+  module NodeSet : Set.S with type elt = id
+
+  val reachable : ('k,'e,'info) t -> id -> NodeSet.t
 
   (* read only dag *)
   module Dag : Dag.S with type node = id
-  val dag : ('k,'diff,'info) t -> ('diff,'info) Dag.t
+  val dag : ('kind,'diff,'info) t -> ('diff,'info,id) Dag.t
+  
+  val create_cluster : ('k,'e,'i) t -> id list -> id -> ('k,'e,'i) t
+  val cluster_of : ('k,'e,'i) t -> id -> id Dag.Cluster.t option
+  val delete_cluster : ('k,'e,'i) t -> id Dag.Cluster.t -> ('k,'e,'i) t 
 
 end
 

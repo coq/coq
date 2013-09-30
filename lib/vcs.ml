@@ -40,21 +40,33 @@ module type S = sig
   val get_branch : ('k,'e,'i) t -> Branch.t -> 'k branch_info
   val reset_branch : ('k,'e,'i) t -> Branch.t -> id -> ('k,'e,'i) t
   val branch :
-    ('kind,'e,'i) t -> ?root:id -> Branch.t -> 'kind -> ('kind,'e,'i) t
+    ('kind,'e,'i) t -> ?root:id -> ?pos:id ->
+        Branch.t -> 'kind -> ('kind,'e,'i) t
   val delete_branch : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
-  val merge : (* a 'diff is always Nop, fix that XXX *)
+  val merge :
     ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> ?into:Branch.t ->
             Branch.t -> ('k,'diff,'i) t
   val commit : ('k,'diff,'i) t -> id -> 'diff -> ('k,'diff,'i) t
+  val rewrite_merge :
+    ('k,'diff,'i) t -> id -> ours:'diff -> theirs:'diff -> at:id ->
+            Branch.t -> ('k,'diff,'i) t
   val checkout : ('k,'e,'i) t -> Branch.t -> ('k,'e,'i) t
 
   val set_info : ('k,'e,'info) t -> id -> 'info -> ('k,'e,'info) t
   val get_info : ('k,'e,'info) t -> id -> 'info option
+  
+  val gc : ('k,'e,'info) t -> ('k,'e,'info) t
 
-  val create_cluster : ('k,'e,'i) t -> id list -> ('k,'e,'i) t
+  module NodeSet : Set.S with type elt = id
+
+  val reachable : ('k,'e,'info) t -> id -> NodeSet.t
 
   module Dag : Dag.S with type node = id
-  val dag : ('k,'diff,'info) t -> ('diff,'info) Dag.t
+  val dag : ('kind,'diff,'info) t -> ('diff,'info,id) Dag.t
+
+  val create_cluster : ('k,'e,'i) t -> id list -> id -> ('k,'e,'i) t
+  val cluster_of : ('k,'e,'i) t -> id -> id Dag.Cluster.t option
+  val delete_cluster : ('k,'e,'i) t -> id Dag.Cluster.t -> ('k,'e,'i) t 
 
 end
 
@@ -63,6 +75,9 @@ module Make(OT : Map.OrderedType) = struct
 module Dag = Dag.Make(OT)
 
 type id = OT.t
+
+module NodeSet = Dag.NodeSet
+
 
 module Branch =
 struct
@@ -87,7 +102,7 @@ type 'kind branch_info = {
 type ('kind,'edge,'info) t = {
   cur_branch   : Branch.t;
   heads        : 'kind branch_info BranchMap.t;
-  dag          : ('edge,'info) Dag.t;
+  dag          : ('edge,'info,id) Dag.t;
 }
 
 let empty root = {
@@ -111,12 +126,17 @@ let reset_branch vcs head id =
   in
   { vcs with heads = BranchMap.mapi map vcs.heads; }
 
-let branch vcs ?(root = (get_branch vcs vcs.cur_branch).pos) name kind =
+let current_branch vcs = vcs.cur_branch
+
+let branch
+  vcs ?(root=(get_branch vcs vcs.cur_branch).pos) ?(pos=root) name kind
+=
   { vcs with
-      heads = BranchMap.add name { root; pos = root; kind } vcs.heads;
+      heads = BranchMap.add name { kind; root; pos } vcs.heads;
       cur_branch = name }
 
 let delete_branch vcs name =
+  if Branch.equal Branch.master name then vcs else
   let filter n _ = not (Branch.equal n name) in
   { vcs with heads = BranchMap.filter filter vcs.heads }
 
@@ -126,6 +146,15 @@ let merge vcs id ~ours:tr1 ~theirs:tr2 ?(into = vcs.cur_branch) name =
   let cur_id = (get_branch vcs into).pos in
   let vcs = add_node vcs id [tr1,cur_id; tr2,br_id] in
   let vcs = reset_branch vcs into id in
+  vcs
+
+let del_edge id vcs tgt = { vcs with dag = Dag.del_edge vcs.dag id tgt }
+
+let rewrite_merge vcs id ~ours:tr1 ~theirs:tr2 ~at:cur_id name =
+  let br_id = (get_branch vcs name).pos in
+  let old_edges = List.map fst (Dag.from_node vcs.dag id) in
+  let vcs = List.fold_left (del_edge id) vcs old_edges in
+  let vcs = add_node vcs id [tr1,cur_id; tr2,br_id] in
   vcs
 
 let commit vcs id tr =
@@ -138,10 +167,27 @@ let checkout vcs name = { vcs with cur_branch = name }
 let set_info vcs id info = { vcs with dag = Dag.set_info vcs.dag id info }
 let get_info vcs id = Dag.get_info vcs.dag id
 
-let create_cluster vcs l = { vcs with dag = Dag.create_cluster vcs.dag l }
+let create_cluster vcs l i = { vcs with dag = Dag.create_cluster vcs.dag l i }
+let cluster_of vcs i = Dag.cluster_of vcs.dag i
+let delete_cluster vcs c = { vcs with dag = Dag.del_cluster vcs.dag c }
 
-let current_branch vcs = vcs.cur_branch
 let branches vcs = BranchMap.fold (fun x _ accu -> x :: accu) vcs.heads []
 let dag vcs = vcs.dag
+
+let rec closure s d n =
+  let l = try Dag.from_node d n with Not_found -> [] in
+  List.fold_left (fun s (n',_) ->
+    if Dag.NodeSet.mem n' s then s
+    else closure s d n')
+  (Dag.NodeSet.add n s) l
+
+let reachable vcs i = closure Dag.NodeSet.empty vcs.dag i
+
+let gc vcs =
+  let alive =
+    BranchMap.fold (fun b { pos } s -> closure s vcs.dag pos)
+      vcs.heads Dag.NodeSet.empty in
+  { vcs with dag =
+      Dag.del_nodes vcs.dag (Dag.NodeSet.diff (Dag.all_nodes vcs.dag) alive) }
 
 end
