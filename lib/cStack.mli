@@ -8,8 +8,6 @@
 
 (** Extended interface for OCaml stacks. *)
 
-open CSig
-
 type 'a t
 
 exception Empty
@@ -23,14 +21,6 @@ val push : 'a -> 'a t -> unit
 
 val find : ('a -> bool) -> 'a t -> 'a
 (** Find the first element satisfying the predicate.
-    @raise Not_found it there is none. *)
-
-val find_map : ('a -> 'b option) -> 'a t -> 'b
-(** Find the first element that returns [Some _].
-    @raise Not_found it there is none. *)
-
-val seek : ('c -> 'a -> ('b, 'c) seek) -> 'c -> 'a t -> 'b
-(** Find the first element that returns [Some _].
     @raise Not_found it there is none. *)
 
 val is_empty : 'a t -> bool
@@ -55,4 +45,34 @@ val top  : 'a t -> 'a
 
 val to_list : 'a t -> 'a list
 (** Convert to a list. *)
+
+val find_map : ('a -> 'b option) -> 'a t -> 'b
+(** Find the first element that returns [Some _].
+    @raise Not_found it there is none. *)
+
+type ('b, 'c) seek = ('b, 'c) CSig.seek = Stop of 'b | Next of 'c
+
+(** [seek f acc s] acts like [List.fold_left f acc s] while [f] returns
+    [Next acc']; it stops returning [b] as soon as [f] returns [Stop b].
+    The stack is traversed from the top and is not altered.
+    @raise Not_found it there is none. *)
+val fold_until : ('c -> 'a -> ('b, 'c) seek) -> 'c -> 'a t -> 'b
+
+(** After [focus s c1 c2] the top of [s] is the topmost element [x] such that
+    [c1 x] is [true] and the bottom is the first element [y] following [x]
+    such that [c2 y] is [true].  After a focus push/pop/top/fold_until
+    only use the focused part.
+    @raise Invalid_argument "CStack.focus" if there is no such [x] and [y] *)
+val focus : 'a t -> cond_top:('a -> bool) -> cond_bot:('a -> bool) -> unit
+
+(** Undoes a [focus].
+    @raise Invalid_argument "CStack.unfocus" if the stack is not focused *)
+val unfocus : 'a t -> unit
+
+(** Is the stack focused *)
+val focused : 'a t -> bool
+
+(** Returns [top, s, bot] where [top @ s @ bot] is the full stack, and [s]
+    the focused part *)
+val to_lists : 'a t -> 'a list * 'a list * 'a list
 
