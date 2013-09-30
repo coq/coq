@@ -22,6 +22,9 @@ val from_val : 'a -> 'a computation
 type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
 val create_delegate : unit -> 'a computation * ('a assignement -> unit)
 
+(* Given a computation that is_exn, replace it by another one *)
+val replace : 'a computation -> 'a computation -> unit
+
 (* Variants to stock a copy of the current environment *)
 val create_here : (unit -> 'a) -> 'a computation
 val from_here : 'a -> 'a computation
@@ -29,6 +32,7 @@ val from_here : 'a -> 'a computation
 (* Inspect a computation *)
 val is_over : 'a computation -> bool
 val is_val : 'a computation -> bool
+val is_exn : 'a computation -> bool
 val peek_val : 'a computation -> 'a option
 
 (* Chain computations.

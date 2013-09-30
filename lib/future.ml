@@ -47,6 +47,10 @@ let is_val x = match !x with
   | Val _ -> true
   | Exn _ | Closure _ | Delegated | Dropped -> false
 
+let is_exn x = match !x with
+  | Exn _ -> true
+  | Val _ | Closure _ | Delegated | Dropped -> false
+
 let peek_val x = match !x with
   | Val (v, _) -> Some v
   | Exn _ | Closure _ | Delegated | Dropped -> None
@@ -102,6 +106,11 @@ let chain ?(id="none") ?(pure=false) c f = ref (match !c with
        Closure (fun () -> !unfreeze state; f v))
 
 let create_here f = chain ~pure:false (from_here ()) f
+
+let replace x y =
+  match !x with
+  | Exn _ -> x := Closure (fun () -> force ~pure:false y)
+  | _ -> Errors.anomaly (Pp.str "Only Exn futures can be replaced")
 
 let purify f x =
   let state = !freeze () in
