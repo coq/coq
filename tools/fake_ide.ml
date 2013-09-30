@@ -17,8 +17,8 @@ type coqtop = {
 
 let logger level content = ()
 
-let base_eval_call call coqtop =
-  prerr_endline (Serialize.pr_call call);
+let base_eval_call ?(print=true) call coqtop =
+  if print then prerr_endline (Serialize.pr_call call);
   let xml_query = Serialize.of_call call in
   Xml_printer.print coqtop.xml_printer xml_query;
   let rec loop () =
@@ -34,7 +34,7 @@ let base_eval_call call coqtop =
     else (Serialize.to_answer call xml)
   in
   let res = loop () in
-  prerr_endline (Serialize.pr_full_value call res);
+  if print then prerr_endline (Serialize.pr_full_value call res);
   match res with Interface.Fail _ -> exit 1 | x -> x
 
 let eval_call c q = ignore(base_eval_call c q)
@@ -117,8 +117,14 @@ let main =
       xml_parser = ip;
     }
   in
+  (match base_eval_call ~print:false (Serialize.init ()) coqtop with
+  | Interface.Good id -> ids := [id]
+  | Interface.Fail _ -> assert false);
   while true do
-    let l = try read_line () with End_of_file -> exit 0
+    let l = try read_line () with End_of_file -> 
+      match base_eval_call ~print:false (Serialize.status true) coqtop with
+      | Interface.Good _ -> exit 0
+      | Interface.Fail _ -> exit 1
     in
     try read_eval_print l coqtop
     with
