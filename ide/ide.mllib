@@ -19,7 +19,6 @@ Coq
 Coq_lex
 Sentence
 Gtk_parsing
-Wg_Tooltip
 Wg_ProofView
 Wg_MessageView
 Wg_Find

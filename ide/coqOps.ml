@@ -28,6 +28,7 @@ module SentenceId : sig
     start : GText.mark;
     stop : GText.mark;
     mutable flags : flag list;
+    mutable tooltips : (int * int * string lazy_t) list;
     edit_id : int;
     mutable state_id : Stateid.t option;
   }
@@ -42,6 +43,8 @@ module SentenceId : sig
   val remove_flag : sentence -> mem_flag -> unit
   val same_sentence : sentence -> sentence -> bool
   val hidden_edit_id : unit -> int
+  val find_all_tooltips : sentence -> int -> string lazy_t list
+  val add_tooltip : sentence -> int -> int -> string lazy_t -> unit
 
   val dbg_to_string : GText.buffer -> sentence -> string
 
@@ -51,6 +54,7 @@ end = struct
     start : GText.mark;
     stop : GText.mark;
     mutable flags : flag list;
+    mutable tooltips : (int * int * string lazy_t) list;
     edit_id : int;
     mutable state_id : Stateid.t option;
   }
@@ -62,6 +66,7 @@ end = struct
     flags = flags;
     edit_id = !id;
     state_id = None;
+    tooltips = [];
   }
   let hidden_edit_id () = decr id; !id
 
@@ -76,13 +81,18 @@ end = struct
   let remove_flag s mf =
     s.flags <- List.filter (fun f -> mem_flag_of_flag f <> mf) s.flags
   let same_sentence s1 s2 = s1.edit_id = s2.edit_id && s1.state_id = s2.state_id
+  let find_all_tooltips s off =
+    CList.map_filter (fun (start,stop,t) ->
+      if start <= off && off <= stop then Some t else None)
+    s.tooltips
+  let add_tooltip s a b t = s.tooltips <- (a,b,t) :: s.tooltips
 
   let dbg_to_string (b : GText.buffer) s =
     let ellipsize s =
             Str.global_replace (Str.regexp "^[\n ]*") ""
         (if String.length s > 20 then String.sub s 0 17 ^ "..."
          else s) in
-    Printf.sprintf "[%3d,%3s](%5d,%5d) %s [%s]"
+    Printf.sprintf "[%3d,%3s](%5d,%5d) %s [%s] %s"
       s.edit_id
       (Stateid.to_string (Option.default Stateid.dummy s.state_id))
       (b#get_iter_at_mark s.start)#offset
@@ -90,6 +100,10 @@ end = struct
       (ellipsize
         ((b#get_iter_at_mark s.start)#get_slice (b#get_iter_at_mark s.stop)))
       (String.concat "," (List.map str_of_flag s.flags))
+      (ellipsize
+        (String.concat ","
+          (List.map (fun (a,b,t) ->
+             Printf.sprintf "<%d,%d> %s" a b (Lazy.force t)) s.tooltips)))
 
 
 end
@@ -148,9 +162,37 @@ object(self)
 
   initializer
     Coq.set_feedback_handler _ct self#enqueue_feedback;
-    Wg_Tooltip.set_tooltip_callback (script :> GText.view);
+    script#misc#set_has_tooltip true;
+    ignore(script#misc#connect#query_tooltip ~callback:self#tooltip_callback);
     feedback_timer.Ideutils.run ~ms:300 ~callback:self#process_feedback
 
+  method private tooltip_callback ~x ~y ~kbd tooltip =
+    let x, y = script#window_to_buffer_coords `WIDGET x y in
+    let iter = script#get_iter_at_location x y in
+    if iter#has_tag Tags.Script.tooltip then begin
+      let s =
+        let rec aux iter =
+          let marks = iter#marks in
+          if marks = [] then aux iter#backward_char
+          else
+            let mem_marks s =
+              List.exists (fun m ->
+                Gobject.get_oid m =
+                Gobject.get_oid (buffer#get_mark s.start)) marks in
+            try Stack.find mem_marks cmd_stack
+            with Not_found -> aux iter#backward_char in
+        aux iter in
+      let ss =
+        find_all_tooltips s
+          (iter#offset - (buffer#get_iter_at_mark s.start)#offset) in
+      let msg = String.concat "\n" (CList.uniquize (List.map Lazy.force ss)) in
+      GtkBase.Tooltip.set_icon_from_stock tooltip `INFO `BUTTON;
+      script#misc#set_tooltip_markup ("<tt>" ^ msg ^ "</tt>")
+    end else begin
+      script#misc#set_tooltip_text ""; script#misc#set_has_tooltip true
+    end;
+    false
+    
   method destroy () =
     feedback_timer.Ideutils.kill ()
 
@@ -266,7 +308,9 @@ object(self)
     let start = start_sentence#forward_chars pre in
     let stop = start_sentence#forward_chars post in
     let markup = lazy text in
-    Wg_Tooltip.apply_tooltip_tag buffer ~start ~stop ~markup
+    buffer#apply_tag Tags.Script.tooltip ~start ~stop;
+    add_tooltip sentence pre post markup;
+    self#print_stack
 
   method private is_dummy_id id =
     match id with
@@ -549,7 +593,7 @@ object(self)
         " "^string_of_int stop#offset);
       buffer#remove_tag Tags.Script.processed ~start ~stop;
       buffer#remove_tag Tags.Script.unjustified ~start ~stop;
-(*       buffer#remove_tag Tags.Script.tooltip ~start ~stop; *)
+      buffer#remove_tag Tags.Script.tooltip ~start ~stop;
       buffer#remove_tag Tags.Script.to_process ~start ~stop;
       buffer#move_mark ~where:start (`NAME "start_of_input")
     end;
