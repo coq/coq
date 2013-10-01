@@ -676,7 +676,7 @@ end = struct (* {{{ *)
 
   type response =
     | RespBuiltProof of Entries.proof_output list 
-    | RespError of std_ppcmds
+    | RespError of Stateid.t * Stateid.t * std_ppcmds (* err, safe, msg *)
     | RespFeedback of Interface.feedback
     | RespGetCounterFreshLocalUniv
     | RespGetCounterNewUnivLevel
@@ -783,9 +783,10 @@ end = struct (* {{{ *)
             let response = unmarshal_response ic in
             match task, response with
             | TaskBuildProof(_,_,_, assign), RespBuiltProof pl ->
-                assign (`Val pl)
-            | TaskBuildProof(_,_,_, assign), RespError e ->
-                assign (`Exn (RemoteException e))
+                assign (`Val pl);
+            | TaskBuildProof(_,_,_, assign), RespError (err_id,valid,e) ->
+                let e = Stateid.add ~valid (RemoteException e) err_id in
+                assign (`Exn e);
             | _, RespGetCounterFreshLocalUniv ->
                 marshal_more_data oc (MoreDataLocalUniv
                   (CList.init 10 (fun _ -> Univ.fresh_local_univ ())));
@@ -868,7 +869,10 @@ end = struct (* {{{ *)
         (* This can happen if the proof is broken.  The error has also been
          * signalled as a feedback, hence we can silently recover *)
         Pp.feedback (Interface.InProgress ~-1);
-        marshal_response !slave_oc (RespError (print e));
+        let err_id, safe_id = match Stateid.get e with
+          | Some (safe, err) -> err, safe
+          | None -> Stateid.dummy, Stateid.dummy in
+        marshal_response !slave_oc (RespError (err_id, safe_id, print e));
         prerr_endline "Slave: failed with the following exception:";
         prerr_endline (string_of_ppcmds (print e))
       | e ->
