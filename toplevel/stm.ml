@@ -717,7 +717,16 @@ end = struct (* {{{ *)
     | ReqBuildProof(exn_info,eop, vcs) ->
         VCS.restore vcs;
         VCS.print ();
-        let r = RespBuiltProof (Future.force (build_proof_here exn_info eop)) in
+        let r = RespBuiltProof (
+          let l = Future.force (build_proof_here exn_info eop) in
+          List.iter (fun (_,se) -> Declareops.iter_side_effects (function
+            | Declarations.SEsubproof(_,
+               { Declarations.const_body = Declarations.OpaqueDef f;
+                 const_constraints = cst} ) -> 
+                  ignore(Future.force f); ignore(Future.force cst)
+            | _ -> ())
+          se) l;
+          l) in
         VCS.print ();
         r
 
