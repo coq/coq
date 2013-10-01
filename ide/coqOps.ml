@@ -518,7 +518,8 @@ object(self)
               self#exit_focus tip;
               push_msg Notice msg;
               self#mark_as_needed sentence;
-              loop tip (List.rev topstack)
+              if Queue.is_empty queue then loop tip []
+              else loop tip (List.rev topstack)
           | Fail (id, loc, msg) ->
               let sentence = Stack.pop cmd_stack in
               self#process_interp_error queue sentence loc msg id
