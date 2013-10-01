@@ -710,7 +710,6 @@ end = struct (* {{{ *)
     Future.create (fun () ->
       !reach_known_state ~cache:false eop;
       let p = Proof_global.return_proof ~fix_exn:(State.exn_on id ~valid) in
-      Pp.feedback (Interface.InProgress ~-1);
       p)
 
   let slave_respond msg =
@@ -784,9 +783,11 @@ end = struct (* {{{ *)
             match task, response with
             | TaskBuildProof(_,_,_, assign), RespBuiltProof pl ->
                 assign (`Val pl);
+                Pp.feedback (Interface.InProgress ~-1)
             | TaskBuildProof(_,_,_, assign), RespError (err_id,valid,e) ->
                 let e = Stateid.add ~valid (RemoteException e) err_id in
                 assign (`Exn e);
+                Pp.feedback (Interface.InProgress ~-1)
             | _, RespGetCounterFreshLocalUniv ->
                 marshal_more_data oc (MoreDataLocalUniv
                   (CList.init 10 (fun _ -> Univ.fresh_local_univ ())));
@@ -810,17 +811,22 @@ end = struct (* {{{ *)
               "The system state could not be sent to the slave process. "^
               "Falling back to local, lazy, evaluation."));
             let TaskBuildProof (exn_info, _, stop, assign) = task in
-            assign(`Comp(build_proof_here exn_info stop))
-        | e -> (* TODO: do something sensible here *)
-            prerr_endline (string_of_ppcmds (print e))
+            assign(`Comp(build_proof_here exn_info stop));
+            Pp.feedback (Interface.InProgress ~-1)
+        | (Sys_error _ | Invalid_argument _ | End_of_file) as e -> raise e
+        | e ->
+            prerr_endline ("Uncaught exception in slave manager: "^
+              string_of_ppcmds (print e))
+            (* XXX do something sensible *)
       done
     with Sys_error _ | Invalid_argument _ | End_of_file ->
       msg_warning(strbrk "The slave process died badly.");
       (match !last_task with
       | Some task ->
-         msg_warning(strbrk "Falling back to local, lazy, evaluation.");
-         let TaskBuildProof (exn_info, _, stop, assign) = task in
-         assign(`Comp(build_proof_here exn_info stop));
+          msg_warning(strbrk "Falling back to local, lazy, evaluation.");
+          let TaskBuildProof (exn_info, _, stop, assign) = task in
+          assign(`Comp(build_proof_here exn_info stop));
+          Pp.feedback (Interface.InProgress ~-1);
       | None -> ());
       ignore(Unix.waitpid [] pid);
       close_in ic;
@@ -868,7 +874,6 @@ end = struct (* {{{ *)
       | e when Errors.noncritical e ->
         (* This can happen if the proof is broken.  The error has also been
          * signalled as a feedback, hence we can silently recover *)
-        Pp.feedback (Interface.InProgress ~-1);
         let err_id, safe_id = match Stateid.get e with
           | Some (safe, err) -> err, safe
           | None -> Stateid.dummy, Stateid.dummy in
@@ -876,7 +881,6 @@ end = struct (* {{{ *)
         prerr_endline "Slave: failed with the following exception:";
         prerr_endline (string_of_ppcmds (print e))
       | e ->
-        Pp.feedback (Interface.InProgress ~-1);
         msg_error(str"Slave: failed with the following CRITICAL exception:");
         msg_error(print e);
         msg_error(str"Slave: bailing out");
