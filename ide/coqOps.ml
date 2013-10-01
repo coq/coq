@@ -645,7 +645,11 @@ object(self)
     messages#clear;
     messages#push Error msg;
     ignore(self#process_feedback ());
-    self#backtrack_until ~move_insert:false (fun _ id _ _ -> id = Some safe_id)
+    Coq.seq
+      (self#backtrack_until ~move_insert:false
+        (fun _ id _ _ -> id = Some safe_id))
+      (Coq.lift (fun () ->
+        script#scroll_mark_onscreen (`NAME "start_of_input")))
 
   method backtrack_last_phrase =
     let until n _ _ _ = n >= 1 in
@@ -667,7 +671,6 @@ object(self)
     if point#compare self#get_start_of_input >= 0
     then self#process_until_iter point
     else self#backtrack_to_iter ~move_insert:false point)
-
 
   method tactic_wizard l =
     let insert_phrase phrase tag =
