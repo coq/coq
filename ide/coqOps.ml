@@ -725,6 +725,9 @@ object(self)
         buffer#delete_mark phrase.start;
         buffer#delete_mark phrase.stop
       done;
+      List.iter
+        (buffer#remove_tag ~start:buffer#start_iter ~stop:buffer#end_iter)
+        Tags.Script.all;
       (* reset the buffer *)
       buffer#move_mark ~where:buffer#start_iter (`NAME "start_of_input");
       buffer#move_mark ~where:buffer#end_iter (`NAME "stop_of_input");
