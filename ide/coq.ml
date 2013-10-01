@@ -344,7 +344,7 @@ let open_process_pid prog args =
   (fun () -> Unix.close top2ide_r; Unix.close ide2top_w)
 
 exception TubeError
-exception AnswerWithoutRequest
+exception AnswerWithoutRequest of string
 
 let rec check_errors = function
 | [] -> ()
@@ -356,8 +356,14 @@ let handle_intermediate_message handle xml =
   let level = message.Interface.message_level in
   let content = message.Interface.message_content in
   let logger = match handle.waiting_for with
-    | None -> raise AnswerWithoutRequest
-    | Some (_, l) -> l in
+    | Some (_, l) -> l 
+    | None -> function
+        | Interface.Error -> Minilib.log ~level:`ERROR
+        | Interface.Info -> Minilib.log ~level:`INFO
+        | Interface.Notice -> Minilib.log ~level:`NOTICE
+        | Interface.Warning -> Minilib.log ~level:`WARNING
+        | Interface.Debug _ -> Minilib.log ~level:`DEBUG
+  in
   logger level content
 
 let handle_feedback feedback_processor xml =
@@ -367,7 +373,7 @@ let handle_feedback feedback_processor xml =
 let handle_final_answer handle xml =
   let () = Minilib.log "Handling coqtop answer" in
   let ccb = match handle.waiting_for with
-    | None -> raise AnswerWithoutRequest
+    | None -> raise (AnswerWithoutRequest (Xml_printer.to_string_fmt xml))
     | Some (c, _) -> c in
   let () = handle.waiting_for <- None in
   with_ccb ccb { bind_ccb = fun (c, f) -> f (Serialize.to_answer c xml) }
