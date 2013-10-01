@@ -309,8 +309,7 @@ object(self)
     let stop = start_sentence#forward_chars post in
     let markup = lazy text in
     buffer#apply_tag Tags.Script.tooltip ~start ~stop;
-    add_tooltip sentence pre post markup;
-    self#print_stack
+    add_tooltip sentence pre post markup
 
   method private is_dummy_id id =
     match id with
