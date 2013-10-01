@@ -661,7 +661,7 @@ end = struct (* {{{ *)
       Unix.close s2c_w;
       let s =
         Unix.in_channel_of_descr s2c_r, Unix.out_channel_of_descr c2s_w, pid in
-      at_exit(fun () -> Unix.kill pid 9);
+      at_exit(fun () -> try Unix.kill pid 9 with Unix.Unix_error _ -> ());
       s
 
     let init manage_slave =
