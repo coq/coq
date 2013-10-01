@@ -723,31 +723,35 @@ end = struct (* {{{ *)
 
   open Interface
 
-  exception MarshalError
+  exception MarshalError of string
+
+  let marshal_to_channel oc data =
+    Marshal.to_channel oc data [];
+    flush oc
 
   let marshal_request oc (req : request) =
-    try Marshal.to_channel oc req []; flush oc
-    with Invalid_argument _ -> raise MarshalError
+    try marshal_to_channel oc req
+    with Invalid_argument s -> raise (MarshalError ("marshal_request: "^s))
 
   let unmarshal_request ic =
     try (Marshal.from_channel ic : request)
-    with Invalid_argument _ -> raise MarshalError
+    with Invalid_argument s -> raise (MarshalError ("unmarshal_request: "^s))
 
   let marshal_response oc (res : response) =
-    try Marshal.to_channel oc res []; flush oc
-    with Invalid_argument _ -> raise MarshalError
+    try marshal_to_channel oc res
+    with Invalid_argument s -> raise (MarshalError ("marshal_response: "^s))
   
   let unmarshal_response ic =
     try (Marshal.from_channel ic : response)
-    with Invalid_argument _ -> raise MarshalError
+    with Invalid_argument s -> raise (MarshalError ("unmarshal_response: "^s))
   
   let marshal_more_data oc (res : more_data) =
-    try Marshal.to_channel oc res []; flush oc
-    with Invalid_argument _ -> raise MarshalError
+    try marshal_to_channel oc res
+    with Invalid_argument s -> raise (MarshalError ("marshal_more_data: "^s))
   
   let unmarshal_more_data ic =
     try (Marshal.from_channel ic : more_data)
-    with Invalid_argument _ -> raise MarshalError
+    with Invalid_argument s -> raise (MarshalError ("unmarshal_more_data: "^s))
 
   let queue : task TQueue.t = TQueue.create ()
 
@@ -806,8 +810,8 @@ end = struct (* {{{ *)
         | VCS.Expired -> (* task cancelled: e.g. the user did backtrack *)
             Pp.feedback (Interface.InProgress ~-1);
             prerr_endline ("Task expired: " ^ pr_task task)
-        | MarshalError ->
-            msg_warning(strbrk("Marshalling error. "^
+        | MarshalError s ->
+            msg_warning(strbrk("Marshalling error: "^s^". "^
               "The system state could not be sent to the slave process. "^
               "Falling back to local, lazy, evaluation."));
             let TaskBuildProof (exn_info, _, stop, assign) = task in
@@ -871,6 +875,9 @@ end = struct (* {{{ *)
         let response = slave_respond request in
         marshal_response !slave_oc response;
       with
+      | MarshalError s ->
+        msg_error(str"Slave: "++str s);
+        exit 1
       | e when Errors.noncritical e ->
         (* This can happen if the proof is broken.  The error has also been
          * signalled as a feedback, hence we can silently recover *)
