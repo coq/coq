@@ -148,7 +148,7 @@ type ('a, 'b) union = ('a, 'b) Util.union
 
 (**  [add ((s,eid),(sid,v))] adds the phrase [s] with edit id [eid]
      on top of the current edit position (that is asserted to be [sid])
-     verbosely if [v] is true.  The response [(is,(rc,s)] is the new state
+     verbosely if [v] is true.  The response [(id,(rc,s)] is the new state
      [id] assigned to the phrase, some output [s].  [rc] is [Inl] if the new
      state id is the tip of the edit point, or [Inr tip] if the new phrase
      closes a focus and [tip] is the new edit tip *)
