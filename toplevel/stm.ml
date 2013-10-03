@@ -18,7 +18,8 @@ open Vernac_classifier
 
 (* During interactive use we cache more states so that Undoing is fast *)
 let interactive () =
-  !Flags.ide_slave || !Flags.print_emacs || not !Flags.batch_mode
+  if !Flags.ide_slave || !Flags.print_emacs || not !Flags.batch_mode then `Yes
+  else `No
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 let vernac_interp ?proof id (verbosely, loc, expr) =
@@ -471,7 +472,7 @@ module State : sig
       Warning: an optimization in installed_cached requires that state
       modifying functions are always executed using this wrapper. *)
   val define :
-    ?redefine:bool -> ?cache:bool -> (unit -> unit) -> Stateid.t -> unit
+    ?redefine:bool -> ?cache:Summary.marshallable -> (unit -> unit) -> Stateid.t -> unit
 
   val install_cached : Stateid.t -> unit
   val is_cached : Stateid.t -> bool
@@ -506,6 +507,8 @@ end = struct (* {{{ *)
     if s.shallow then s
     else
       Future.purify (fun s ->
+        Printf.eprintf
+          "make_shallow & define should be protected by a lock!\n";
         unfreeze_global_state s;
         freeze_global_state `Shallow) s
 
@@ -531,14 +534,16 @@ end = struct (* {{{ *)
     Pp.feedback ~state_id:id (Interface.ErrorMsg (loc, msg));
     Stateid.add e ?valid id
 
-  let define ?(redefine=false) ?(cache=false) f id =
+  let define ?(redefine=false) ?(cache=`No) f id =
     let str_id = Stateid.to_string id in
     if is_cached id && not redefine then
       anomaly (str"defining state "++str str_id++str" twice");
     try
-      prerr_endline("defining "^str_id^" (cache=" ^string_of_bool cache^")");
+      prerr_endline("defining "^str_id^" (cache="^
+        if cache = `Yes then "Y" else if cache = `Shallow then "S" else "N");
       f ();
-      if cache then freeze `No id;
+      if cache = `Yes then freeze `No id
+      else if cache = `Shallow then freeze `Shallow id;
       prerr_endline ("setting cur id to "^str_id);
       cur_id := id;
       feedback ~state_id:id Interface.Processed;
@@ -578,7 +583,7 @@ module Slaves : sig
 
   (* to disentangle modules *)
   val set_reach_known_state :
-    (?redefine_qed:bool -> cache:bool -> Stateid.t -> unit) -> unit
+    (?redefine_qed:bool -> cache:Summary.marshallable -> Stateid.t -> unit) -> unit
 
 
 end = struct (* {{{ *)
@@ -708,7 +713,7 @@ end = struct (* {{{ *)
 
   let build_proof_here (id,valid) eop =
     Future.create (fun () ->
-      !reach_known_state ~cache:false eop;
+      !reach_known_state ~cache:`No eop;
       let p = Proof_global.return_proof ~fix_exn:(State.exn_on id ~valid) in
       p)
 
@@ -908,7 +913,8 @@ end (* }}} *)
 (* Runs all transactions needed to reach a state *)
 module Reach : sig
 
-  val known_state : ?redefine_qed:bool -> cache:bool -> Stateid.t -> unit
+  val known_state :
+    ?redefine_qed:bool -> cache:Summary.marshallable -> Stateid.t -> unit
 
 end = struct (* {{{ *)
 
@@ -975,7 +981,7 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), cache
       | `Fork (x,_,_) -> (fun () ->
             reach view.next; vernac_interp id x
-          ), true
+          ), `Yes
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
           | `Optimizable (start, proof_using_ast, nodes) -> (fun () ->
@@ -992,7 +998,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                     qed.fproof <- Some fp
                 | VtKeep, { VCS.kind = `Proof _ }, Some _ -> assert false
                 | VtKeep, { VCS.kind = `Proof _ }, None ->
-                    reach ~cache:true start;
+                    reach ~cache:`Shallow start;
                     let fp =
                       Slaves.build_proof ~exn_info:(id,eop) ~start ~stop:eop in
                     qed.fproof <- Some fp;
@@ -1006,11 +1012,11 @@ let known_state ?(redefine_qed=false) ~cache id =
                 | _, { VCS.kind = `Master }, _ -> assert false
                 end;
                 Proof_global.discard_all ()
-              ), not redefine_qed
+              ), if redefine_qed then `No else `Yes
           | `NotOptimizable `Immediate -> (fun () -> 
                 assert (Stateid.equal view.next eop);
                 reach eop; vernac_interp id x; Proof_global.discard_all ()
-              ), true
+              ), `Yes
           | `NotOptimizable _ -> (fun () ->
                 prerr_endline ("NotOptimizable " ^ Stateid.to_string id);
                 reach eop;
@@ -1024,17 +1030,17 @@ let known_state ?(redefine_qed=false) ~cache id =
                     vernac_interp id x
                 end;
                 Proof_global.discard_all ()
-              ), true
+              ), `Yes
           | `MaybeOptimizable (start, nodes) -> (fun () ->
                 prerr_endline ("MaybeOptimizable " ^ Stateid.to_string id);
-                reach ~cache:true start;
+                reach ~cache:`Shallow start;
                 (* no sections and no modules *)
                 if List.is_empty (Environ.named_context (Global.env ())) &&
                    Safe_typing.is_curmod_library (Global.safe_env ()) then
                   fst (aux (`Optimizable (start, None, nodes))) ()
                 else
                   fst (aux (`NotOptimizable `Unknown)) ()
-              ), not redefine_qed
+              ), if redefine_qed then `No else `Yes
           in
           aux (collect_proof (view.next, x) brname eop)
       | `Sideff (`Ast (x,_)) -> (fun () ->
@@ -1169,7 +1175,7 @@ end (* }}} *)
 let init () =
   VCS.init Stateid.initial;
   set_undo_classifier Backtrack.undo_vernac_classifier;
-  State.define ~cache:true (fun () -> ()) Stateid.initial;
+  State.define ~cache:`Yes (fun () -> ()) Stateid.initial;
   Backtrack.record ();
   if Int.equal !Flags.coq_slave_mode 0 then Slaves.init ()
 
@@ -1230,7 +1236,7 @@ let merge_proof_branch qast keep brname =
       VCS.rewrite_merge qed_id ~ours:(Qed (qed ofp)) ~at:master_id brname;
       VCS.delete_branch brname;
       VCS.gc ();
-      Reach.known_state ~redefine_qed:true ~cache:false qed_id;
+      Reach.known_state ~redefine_qed:true ~cache:`No qed_id;
       VCS.checkout VCS.Branch.master;
       `Unfocus qed_id
   | { VCS.kind = `Master } ->
@@ -1363,7 +1369,7 @@ let process_transaction ~tty verbose c (loc, expr) =
               VCS.propagate_sideff (Some x);
               VCS.checkout_shallowest_proof_branch ();
             end in
-          State.define ~cache:true step id;
+          State.define ~cache:`Yes step id;
           Backtrack.record (); `Ok
 
       | VtUnknown, VtLater ->
@@ -1405,7 +1411,7 @@ let process_transaction ~tty verbose c (loc, expr) =
 let query ~at s =
   Future.purify (fun s ->
     if Stateid.equal at Stateid.dummy then finish ()
-    else Reach.known_state ~cache:true at;
+    else Reach.known_state ~cache:`Yes at;
     let loc_ast = vernac_parse 0 s in
     ignore(process_transaction ~tty:false true (VtQuery false, VtNow) loc_ast))
   s
@@ -1535,7 +1541,7 @@ let interp verb (_,e as lexpr) =
   let clas = classify_vernac e in
   let rc = process_transaction ~tty:true verb clas lexpr in
   if rc <> `Ok then anomaly(str"tty loop can't be mixed with the STM protocol");
-  if interactive () then finish ()
+  if interactive () = `Yes then finish ()
 
 let get_current_state () = VCS.cur_tip ()
 
