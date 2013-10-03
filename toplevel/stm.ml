@@ -666,7 +666,6 @@ end = struct (* {{{ *)
       Unix.close s2c_w;
       let s =
         Unix.in_channel_of_descr s2c_r, Unix.out_channel_of_descr c2s_w, pid in
-      at_exit(fun () -> try Unix.kill pid 9 with Unix.Unix_error _ -> ());
       s
 
     let init manage_slave =
@@ -789,6 +788,9 @@ end = struct (* {{{ *)
 
   let rec manage_slave respawn =
     let ic, oc, pid = respawn () in
+    let kill_pid =
+      ref (fun () -> try Unix.kill pid 9 with Unix.Unix_error _ -> ()) in
+    at_exit (fun () -> !kill_pid ());
     let last_task = ref None in
     try
       while true do
@@ -838,6 +840,7 @@ end = struct (* {{{ *)
             (* XXX do something sensible *)
       done
     with Sys_error _ | Invalid_argument _ | End_of_file ->
+      kill_pid := (fun () -> ());
       msg_warning(strbrk "The slave process died badly.");
       (match !last_task with
       | Some task ->
