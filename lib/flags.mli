@@ -16,6 +16,8 @@ val ide_slave_mode : bool ref
 val coq_slave_mode : int ref
 val coq_slaves_number : int ref
 
+val coq_slave_options : string option ref
+
 val debug : bool ref
 
 val print_emacs : bool ref

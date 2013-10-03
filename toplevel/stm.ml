@@ -21,6 +21,9 @@ let interactive () =
   if !Flags.ide_slave || !Flags.print_emacs || not !Flags.batch_mode then `Yes
   else `No
 
+let fallback_to_lazy_if_marshal_error = ref true
+let fallback_to_lazy_if_slave_dies = ref true
+
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 let vernac_interp ?proof id (verbosely, loc, expr) =
   let internal_command = function
@@ -829,7 +832,7 @@ end = struct (* {{{ *)
         | VCS.Expired -> (* task cancelled: e.g. the user did backtrack *)
             Pp.feedback (Interface.InProgress ~-1);
             prerr_endline ("Task expired: " ^ pr_task task)
-        | MarshalError s ->
+        | MarshalError s when !fallback_to_lazy_if_marshal_error ->
             msg_warning(strbrk("Marshalling error: "^s^". "^
               "The system state could not be sent to the slave process. "^
               "Falling back to local, lazy, evaluation."));
@@ -1199,7 +1202,16 @@ let init () =
   set_undo_classifier Backtrack.undo_vernac_classifier;
   State.define ~cache:`Yes (fun () -> ()) Stateid.initial;
   Backtrack.record ();
-  if Int.equal !Flags.coq_slave_mode 0 then Slaves.init ()
+  if Int.equal !Flags.coq_slave_mode 0 then begin
+    Slaves.init ();
+    let opts = match !Flags.coq_slave_options with
+      | None -> []
+      | Some s -> Str.split_delim (Str.regexp ",") s in
+    if List.mem "fallback-to-lazy-if-marshal-error=no" opts then
+      fallback_to_lazy_if_marshal_error := false;
+    if List.mem "fallback-to-lazy-if-slave-dies=no" opts then
+      fallback_to_lazy_if_slave_dies := false;
+  end
 
 let slave_main_loop () = Slaves.slave_main_loop ()
 

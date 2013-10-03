@@ -266,6 +266,7 @@ let parse_args arglist =
     |"-coqlib" -> Flags.coqlib_spec:=true; Flags.coqlib:=(next ())
     |"-coq-slaves" -> Flags.coq_slave_mode := (get_slave_number (next ()))
     |"-coq-slaves-j" -> Flags.coq_slaves_number := (get_int opt (next ()))
+    |"-coq-slaves-opts" -> Flags.coq_slave_options := Some (next ())
     |"-compat" -> Flags.compat_version := get_compat_version (next ())
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())

@@ -49,6 +49,8 @@ let ide_slave_mode = ref false
 let coq_slave_mode = ref (-1)
 let coq_slaves_number = ref 1
 
+let coq_slave_options = ref None
+
 let debug = ref false
 
 let print_emacs = ref false
