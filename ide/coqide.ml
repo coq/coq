@@ -1301,9 +1301,10 @@ let build_ui () =
       let lno = store#get ~row ~column:column1 in
       let tabno = store#get ~row ~column:column3 in
       let sn = notebook#get_nth_term tabno in
+      let where = sn.script#buffer#get_iter (`LINE (lno-1)) in
+      sn.buffer#place_cursor ~where;
       ignore(sn.script#scroll_to_iter
-        ~use_align:false ~yalign:0.75 ~within_margin:0.25
-        (sn.script#buffer#get_iter (`LINE (lno-1))))) in
+        ~use_align:false ~yalign:0.75 ~within_margin:0.25 where)) in
     (* So that the text is wrapped correctly in the model even if the window
      * has never been shown *)
     data#misc#realize ();
