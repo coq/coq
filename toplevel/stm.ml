@@ -23,6 +23,7 @@ let interactive () =
 
 let fallback_to_lazy_if_marshal_error = ref true
 let fallback_to_lazy_if_slave_dies = ref true
+let coq_slave_extra_env = ref [||]
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
 let vernac_interp ?proof id (verbosely, loc, expr) =
@@ -666,7 +667,8 @@ end = struct (* {{{ *)
       let args = Array.of_list (set_slave_opt (Array.to_list Sys.argv)) in
       prerr_endline ("EXEC: " ^ prog ^ " " ^
         (String.concat " " (Array.to_list args)));
-      let pid = Unix.create_process prog args c2s_r s2c_w Unix.stderr in
+      let env = Array.append !coq_slave_extra_env (Unix.environment ()) in
+      let pid = Unix.create_process_env prog args env c2s_r s2c_w Unix.stderr in
       Unix.close c2s_r;
       Unix.close s2c_w;
       let s =
@@ -1204,7 +1206,7 @@ let init () =
   set_undo_classifier Backtrack.undo_vernac_classifier;
   State.define ~cache:`Yes (fun () -> ()) Stateid.initial;
   Backtrack.record ();
-  if Int.equal !Flags.coq_slave_mode 0 then begin
+  if Int.equal !Flags.coq_slave_mode 0 then begin (* We are the master process *)
     Slaves.init ();
     let opts = match !Flags.coq_slave_options with
       | None -> []
@@ -1213,6 +1215,12 @@ let init () =
       fallback_to_lazy_if_marshal_error := false;
     if List.mem "fallback-to-lazy-if-slave-dies=no" opts then
       fallback_to_lazy_if_slave_dies := false;
+    try
+      let env_opt = Str.regexp "^extra-env=" in
+      let env = List.find (fun s -> Str.string_match env_opt s 0) opts in
+      coq_slave_extra_env := Array.of_list
+        (Str.split_delim (Str.regexp ";") (Str.replace_first env_opt "" env))
+    with Not_found -> ()
   end
 
 let slave_main_loop () = Slaves.slave_main_loop ()
