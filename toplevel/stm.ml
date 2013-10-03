@@ -941,7 +941,9 @@ end = struct (* {{{ *)
 
 let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
 
-let delegate_policy_check l = interactive () = `Yes || List.length l > 20
+let delegate_policy_check l =
+  (interactive () = `Yes || List.length l > 20) &&
+  (if interactive () = `Yes then !Flags.coq_slave_mode = 0 else true)
 
 let collect_proof cur hd id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id); 
