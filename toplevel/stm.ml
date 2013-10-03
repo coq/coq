@@ -837,25 +837,38 @@ end = struct (* {{{ *)
             assign(`Comp(build_proof_here exn_info stop));
             Pp.feedback (Interface.InProgress ~-1)
         | (Sys_error _ | Invalid_argument _ | End_of_file) as e -> raise e
+        | MarshalError s ->
+            Printf.eprintf "Fatal marshal error: %s\n" s;
+            flush_all (); exit 1
         | e ->
             prerr_endline ("Uncaught exception in slave manager: "^
               string_of_ppcmds (print e))
             (* XXX do something sensible *)
       done
-    with Sys_error _ | Invalid_argument _ | End_of_file ->
-      kill_pid := (fun () -> ());
-      msg_warning(strbrk "The slave process died badly.");
-      (match !last_task with
-      | Some task ->
-          msg_warning(strbrk "Falling back to local, lazy, evaluation.");
-          let TaskBuildProof (exn_info, _, stop, assign) = task in
-          assign(`Comp(build_proof_here exn_info stop));
-          Pp.feedback (Interface.InProgress ~-1);
-      | None -> ());
-      ignore(Unix.waitpid [] pid);
-      close_in ic;
-      close_out oc;
-      manage_slave respawn
+    with
+    | Sys_error _ | Invalid_argument _ | End_of_file
+      when !fallback_to_lazy_if_slave_dies ->
+        kill_pid := (fun () -> ());
+        msg_warning(strbrk "The slave process died badly.");
+        (match !last_task with
+        | Some task ->
+            msg_warning(strbrk "Falling back to local, lazy, evaluation.");
+            let TaskBuildProof (exn_info, _, stop, assign) = task in
+            assign(`Comp(build_proof_here exn_info stop));
+            Pp.feedback (Interface.InProgress ~-1);
+        | None -> ());
+        ignore(Unix.waitpid [] pid);
+        close_in ic;
+        close_out oc;
+        manage_slave respawn
+    | Sys_error _ | Invalid_argument _ | End_of_file ->
+        let exit_status pid = match Unix.waitpid [] pid with
+          | _, Unix.WEXITED i -> Printf.sprintf "exit(%d)" i
+          | _, Unix.WSIGNALED sno -> Printf.sprintf "signalled(%d)" sno
+          | _, Unix.WSTOPPED sno -> Printf.sprintf "stopped(%d)" sno in
+        Printf.eprintf "Fatal slave error: %s\n" (exit_status pid);
+        flush_all (); exit 1
+                    
 
   let init () = SlavesPool.init !Flags.coq_slaves_number manage_slave
 
@@ -896,8 +909,8 @@ end = struct (* {{{ *)
         marshal_response !slave_oc response;
       with
       | MarshalError s ->
-        msg_error(str"Slave: "++str s);
-        exit 1
+        Printf.eprintf "Slave: fatal marshal error: %s\n" s;
+        flush_all (); exit 2
       | e when Errors.noncritical e ->
         (* This can happen if the proof is broken.  The error has also been
          * signalled as a feedback, hence we can silently recover *)
@@ -908,10 +921,9 @@ end = struct (* {{{ *)
         prerr_endline "Slave: failed with the following exception:";
         prerr_endline (string_of_ppcmds (print e))
       | e ->
-        msg_error(str"Slave: failed with the following CRITICAL exception:");
-        msg_error(print e);
-        msg_error(str"Slave: bailing out");
-        exit 1
+        Printf.eprintf "Slave: failed with the following CRITICAL exception: %s\n"
+          (Pp.string_of_ppcmds (print e));  
+        flush_all (); exit 1
     done
 
 end (* }}} *)

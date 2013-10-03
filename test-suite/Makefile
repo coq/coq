@@ -68,7 +68,7 @@ BUGS := bugs/opened/shouldnotfail bugs/opened/shouldnotsucceed \
   bugs/closed
 
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
-  interactive micromega $(COMPLEXITY) modules
+  interactive micromega $(COMPLEXITY) modules stm
 
 # All subsystems
 SUBSYSTEMS := $(VSUBSYSTEMS) misc bugs ide
@@ -127,6 +127,7 @@ summary:
 	  $(call summary_dir, "Miscellaneous tests", misc); \
 	  $(call summary_dir, "Complexity tests", complexity); \
 	  $(call summary_dir, "Module tests", modules); \
+	  $(call summary_dir, "STM tests", stm); \
 	  $(call summary_dir, "IDE tests", ide); \
 	  nb_success=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_success) | wc -l`; \
 	  nb_failure=`find . -name '*.log' -exec tail -n2 '{}' \; | grep -e $(log_failure) | wc -l`; \
@@ -221,6 +222,23 @@ $(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.
 	  opts="$(if $(findstring modules/,$<),-I modules -impredicative-set)"; \
 	  echo $(call log_intro,$<); \
 	  $(command) "$<" $$opts 2>&1; R=$$?; times; \
+	  if [ $$R = 0 ]; then \
+	    echo $(log_success); \
+	    echo "    $<...Ok"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    $<...Error! (should be accepted)"; \
+	  fi; \
+	} > "$@"
+
+stm: $(wildcard stm/*.v:%.v=%.v.log)
+$(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
+	@echo "TEST      $<"
+	$(HIDE){ \
+	  echo $(call log_intro,$<); \
+	  $(coqc) "$*" -coq-slaves on \
+	    -coq-slaves-opts fallback-to-lazy-if-marshal-error=no,fallback-to-lazy-if-slave-dies=no \
+	    $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
