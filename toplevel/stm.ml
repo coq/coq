@@ -920,6 +920,8 @@ end = struct (* {{{ *)
 
 let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
 
+let delegate_policy_check l = interactive () = `Yes || List.length l > 20
+
 let collect_proof cur hd id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id); 
  let is_defined = function
@@ -934,10 +936,12 @@ let collect_proof cur hd id =
         `NotOptimizable `MutualProofs (* TODO: enderstand where we need that *)
     | Some (parent, (_,_,VernacProof(_,Some _) as v)), `Fork (_, hd', _) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
-        `Optimizable (parent, Some v, accn)
+        if delegate_policy_check accn then `Optimizable (parent, Some v, accn)
+        else `NotOptimizable `TooShort
     | Some (parent, _), `Fork (_, hd', _) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
-        `MaybeOptimizable (parent, accn)
+        if delegate_policy_check accn then `MaybeOptimizable (parent, accn)
+        else `NotOptimizable `TooShort
     | _, `Sideff se -> collect None (id::accn) view.next
     | _ -> `NotOptimizable `Unknown in
  match cur, (VCS.visit id).step with
