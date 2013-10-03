@@ -207,7 +207,10 @@ let prune_env env =
     { glob with env_constants = Cmap_env.map prune_ckey glob.env_constants }
   in
   let env = Environ.pre_env env in
-  Environ.env_of_pre_env {env with env_globals = prune_globals env.env_globals}
+  Environ.env_of_pre_env {env with
+    env_globals = prune_globals env.env_globals;
+    env_named_vals = [];
+    env_rel_val = []}
 let prune_safe_environment e =
   { e with
     modvariant = (match e.modvariant with LIBRARY -> LIBRARY | _ -> NONE);
