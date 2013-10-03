@@ -228,6 +228,11 @@ let get_bool opt = function
   | "no" -> false
   | _ -> prerr_endline ("Error: yes/no expected after option "^opt); exit 1
 
+let get_int opt n =
+  try int_of_string n
+  with Failure _ ->
+    prerr_endline ("Error: integer expected after option "^opt); exit 1
+
 let parse_args arglist =
   let args = ref arglist in
   let extras = ref [] in
@@ -260,6 +265,7 @@ let parse_args arglist =
     (* Options with one arg *)
     |"-coqlib" -> Flags.coqlib_spec:=true; Flags.coqlib:=(next ())
     |"-coq-slaves" -> Flags.coq_slave_mode := (get_slave_number (next ()))
+    |"-coq-slaves-j" -> Flags.coq_slaves_number := (get_int opt (next ()))
     |"-compat" -> Flags.compat_version := get_compat_version (next ())
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())

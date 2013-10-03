@@ -47,6 +47,7 @@ let batch_mode = ref false
 
 let ide_slave_mode = ref false
 let coq_slave_mode = ref (-1)
+let coq_slaves_number = ref 1
 
 let debug = ref false
 

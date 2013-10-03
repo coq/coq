@@ -634,25 +634,27 @@ end = struct (* {{{ *)
 
   module SlavesPool : sig
   
-    val init : ((unit -> in_channel * out_channel * int) -> unit) -> unit
+    val init : int -> ((unit -> in_channel * out_channel * int) -> unit) -> unit
     val is_empty : unit -> bool
     val n_slaves : unit -> int
   
   end = struct (* {{{ *)
   
-    let slave_manager = ref (None : Thread.t option)
+    let slave_managers = ref None
     
-    let is_empty () = Option.is_empty !slave_manager
-    let n_slaves () = if Option.is_empty !slave_manager then 0 else 1
+    let n_slaves () = match !slave_managers with
+      | None -> 0
+      | Some managers -> Array.length managers
+    let is_empty () = !slave_managers = None
 
-    let respawn () =
+    let respawn n () =
       let c2s_r, c2s_w = Unix.pipe () in
       let s2c_r, s2c_w = Unix.pipe () in
       Unix.set_close_on_exec c2s_w;
       Unix.set_close_on_exec s2c_r;
       let prog =  Sys.argv.(0) in
       let rec set_slave_opt = function
-        | [] -> ["-coq-slaves";"1"]
+        | [] -> ["-coq-slaves"; string_of_int n]
         | ("-ideslave"|"-emacs"|"-emacs-U")::tl -> set_slave_opt tl
         | ("-coq-slaves"
           |"-compile"
@@ -668,8 +670,9 @@ end = struct (* {{{ *)
         Unix.in_channel_of_descr s2c_r, Unix.out_channel_of_descr c2s_w, pid in
       s
 
-    let init manage_slave =
-      slave_manager := Some (Thread.create manage_slave respawn);
+    let init n manage_slave =
+      slave_managers := Some
+        (Array.init n (fun x -> Thread.create manage_slave (respawn (x+1))));
 
   end (* }}} *)
   
@@ -854,7 +857,7 @@ end = struct (* {{{ *)
       close_out oc;
       manage_slave respawn
 
-  let init () = SlavesPool.init manage_slave
+  let init () = SlavesPool.init !Flags.coq_slaves_number manage_slave
 
   let slave_ic = ref stdin
   let slave_oc = ref stdout
