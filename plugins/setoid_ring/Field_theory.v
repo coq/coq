@@ -18,9 +18,10 @@ Section MakeFieldPol.
 Variable R:Type.
 Bind Scope R_scope with R.
 Delimit Scope R_scope with ring.
+Local Open Scope R_scope.
 
 Variable (rO rI : R) (radd rmul rsub: R->R->R) (ropp : R->R).
-Variable (rdiv : R -> R ->  R) (rinv : R ->  R).
+Variable (rdiv : R->R->R) (rinv : R->R).
 Variable req : R -> R -> Prop.
 
 Notation "0" := rO : R_scope.
@@ -32,8 +33,6 @@ Infix "/" := rdiv : R_scope.
 Notation "- x" := (ropp x) : R_scope.
 Notation "/ x" := (rinv x) : R_scope.
 Infix "==" := req (at level 70, no associativity) : R_scope.
-
-Local Open Scope R_scope.
 
 (* Equality properties *)
 Variable Rsth : Equivalence req.
@@ -95,7 +94,7 @@ Variable ceqb : C->C->bool.
 Variable phi : C -> R.
 
 Variable CRmorph : ring_morph rO rI radd rmul rsub ropp req
-                               cO cI cadd cmul csub copp ceqb phi.
+                              cO cI cadd cmul csub copp ceqb phi.
 
 Notation "0" := cO : C_scope.
 Notation "1" := cI : C_scope.
@@ -103,16 +102,16 @@ Infix "+" := cadd : C_scope.
 Infix "-" := csub : C_scope.
 Infix "*" := cmul : C_scope.
 Notation "- x" := (copp x) : C_scope.
-Infix "?=" := ceqb : C_scope.
+Infix "=?" := ceqb : C_scope.
 Notation "[ x ]" := (phi x) (at level 0).
 
 Let phi_0 := CRmorph.(morph0).
 Let phi_1 := CRmorph.(morph1).
 
-Lemma ceqb_spec c c' : BoolSpec ([c] == [c']) True (c ?= c')%coef.
+Lemma ceqb_spec c c' : BoolSpec ([c] == [c']) True (c =? c')%coef.
 Proof.
 generalize (CRmorph.(morph_eq) c c').
-destruct (c ?= c')%coef; auto.
+destruct (c =? c')%coef; auto.
 Qed.
 
 (* Power coefficients : Cpow *)
@@ -138,6 +137,10 @@ Delimit Scope PE_scope with poly.
 Notation NPEeval := (PEeval rO rI radd rmul rsub ropp phi Cp_phi rpow).
 Notation "P @ l" := (NPEeval l P) (at level 10, no associativity).
 
+Arguments PEc _ _%coef.
+
+Notation "0" := (PEc 0) : PE_scope.
+Notation "1" := (PEc 1) : PE_scope.
 Infix "+" := PEadd : PE_scope.
 Infix "-" := PEsub : PE_scope.
 Infix "*" := PEmul : PE_scope.
@@ -158,10 +161,12 @@ Proof.
  intros l l' <- e e' He. now rewrite (He l).
 Qed.
 
-Notation Nnorm:= (norm_subst cO cI cadd cmul csub copp ceqb cdiv).
-
-Notation NPphi_dev := (Pphi_dev rO rI radd rmul rsub ropp cO cI ceqb phi get_sign).
-Notation NPphi_pow := (Pphi_pow rO rI radd rmul rsub ropp cO cI ceqb phi Cp_phi rpow get_sign).
+Notation Nnorm :=
+  (norm_subst cO cI cadd cmul csub copp ceqb cdiv).
+Notation NPphi_dev :=
+  (Pphi_dev rO rI radd rmul rsub ropp cO cI ceqb phi get_sign).
+Notation NPphi_pow :=
+  (Pphi_pow rO rI radd rmul rsub ropp cO cI ceqb phi Cp_phi rpow get_sign).
 
 (* add abstract semi-ring to help with some proofs *)
 Add Ring Rring : (ARth_SRth ARth).
@@ -391,7 +396,8 @@ Qed.
 
 Instance pow_ext : Proper (req ==> eq ==> req) (pow_pos rmul).
 Proof.
-intros x y H p p' <-. induction p as [p IH| p IH|];simpl; trivial; now rewrite !IH, ?H.
+intros x y H p p' <-.
+induction p as [p IH| p IH|];simpl; trivial; now rewrite !IH, ?H.
 Qed.
 
 Instance pow_N_ext : Proper (req ==> eq ==> req) (pow_N rI rmul).
@@ -468,19 +474,17 @@ Proof.
  intros ? ? E ? ? <- l. simpl. rewrite !rpow_pow. apply pow_N_ext; trivial.
 Qed.
 
-Arguments PEc _ _%coef.
-
-Lemma PE_1_l (e : PExpr C) : (PEc 1 * e === e)%poly.
+Lemma PE_1_l (e : PExpr C) : (1 * e === e)%poly.
 Proof.
  intros l. simpl. rewrite phi_1. apply rmul_1_l.
 Qed.
 
-Lemma PE_1_r (e : PExpr C) : (e * PEc 1 === e)%poly.
+Lemma PE_1_r (e : PExpr C) : (e * 1 === e)%poly.
 Proof.
  intros l. simpl. rewrite phi_1. apply rmul_1_r.
 Qed.
 
-Lemma PEpow_0_r (e : PExpr C) : (e ^ 0 === PEc 1)%poly.
+Lemma PEpow_0_r (e : PExpr C) : (e ^ 0 === 1)%poly.
 Proof.
  intros l. simpl. now rewrite !rpow_pow.
 Qed.
@@ -490,7 +494,7 @@ Proof.
  intros l. simpl. now rewrite !rpow_pow.
 Qed.
 
-Lemma PEpow_1_l n : ((PEc 1) ^ n === PEc 1)%poly.
+Lemma PEpow_1_l n : (1 ^ n === 1)%poly.
 Proof.
  intros l. simpl. rewrite rpow_pow. destruct n; simpl.
  - now rewrite phi_1.
@@ -545,7 +549,7 @@ Local Notation "a &&& b" := (if a then b else false)
 (* equality test *)
 Fixpoint PExpr_eq (e e' : PExpr C) {struct e} : bool :=
  match e, e' with
-   PEc c, PEc c' => ceqb c c'
+  | PEc c, PEc c' => ceqb c c'
   | PEX _ p, PEX _ p' => Pos.eqb p p'
   | e1 + e2, e1' + e2' => PExpr_eq e1 e1' &&& PExpr_eq e2 e2'
   | e1 - e2, e1' - e2' => PExpr_eq e1 e1' &&& PExpr_eq e2 e2'
@@ -586,8 +590,8 @@ Qed.
 Definition NPEadd e1 e2 :=
   match e1, e2 with
   | PEc c1, PEc c2 => PEc (c1 + c2)
-  | PEc c, _ => if (c ?= cO)%coef then e2 else e1 + e2
-  |  _, PEc c => if (c ?= cO)%coef then e1 else e1 + e2
+  | PEc c, _ => if (c =? 0)%coef then e2 else e1 + e2
+  |  _, PEc c => if (c =? 0)%coef then e1 else e1 + e2
     (* Peut t'on factoriser ici ??? *)
   | _, _ => e1 + e2
   end%poly.
@@ -605,8 +609,8 @@ Qed.
 Definition NPEsub e1 e2 :=
   match e1, e2 with
   | PEc c1, PEc c2 => PEc (c1 - c2)
-  | PEc c, _ => if (c ?=cO)%coef then - e2 else e1 - e2
-  |  _, PEc c => if (c ?= cO)%coef then e1 else e1 - e2
+  | PEc c, _ => if (c =? 0)%coef then - e2 else e1 - e2
+  |  _, PEc c => if (c =? 0)%coef then e1 else e1 - e2
      (* Peut-on factoriser ici *)
   | _, _ => e1 - e2
   end%poly.
@@ -632,13 +636,13 @@ Qed.
 
 Definition NPEpow x n :=
   match n with
-  | N0 => PEc cI
+  | N0 => 1
   | Npos p =>
-    if Pos.eqb p 1 then x else
+    if (p =? 1)%positive then x else
     match x with
     | PEc c =>
-      if (c ?= 1)%coef then PEc cI
-      else if (c ?= 0)%coef then PEc cO
+      if (c =? 1)%coef then 1
+      else if (c =? 0)%coef then 0
       else PEc (pow_pos cmul c p)
     | _ => x ^ n
     end
@@ -660,13 +664,10 @@ Qed.
 
 Fixpoint NPEmul (x y : PExpr C) {struct x} : PExpr C :=
   match x, y with
-    PEc c1, PEc c2 => PEc (c1 * c2)
-  | PEc c, _ =>
-      if (c ?= 1)%coef then y else if (c ?= 0)%coef then PEc cO else x * y
-  |  _, PEc c =>
-      if (c ?= 1)%coef then x else if (c ?= 0)%coef then PEc cO else x * y
-  | e1 ^ n1, e2 ^ n2 =>
-      if N.eqb n1 n2 then (NPEmul e1 e2)^^n1 else x * y
+  | PEc c1, PEc c2 => PEc (c1 * c2)
+  | PEc c, _ => if (c =? 1)%coef then y else if (c =? 0)%coef then 0 else x * y
+  | _, PEc c => if (c =? 1)%coef then x else if (c =? 0)%coef then 0 else x * y
+  | e1 ^ n1, e2 ^ n2 => if (n1 =? n2)%N then (NPEmul e1 e2)^^n1 else x * y
   | _, _ => x * y
   end%poly.
 Infix "**" := NPEmul (at level 40, left associativity).
@@ -796,7 +797,7 @@ Qed.
 
 
 (* An unsatisfiable condition: issued when a division by zero is detected *)
-Definition absurd_PCond := cons (PEc cO) nil.
+Definition absurd_PCond := cons 0%poly nil.
 
 Lemma absurd_PCond_bottom : forall l, ~ PCond l absurd_PCond.
 Proof.
@@ -815,8 +816,8 @@ Qed.
 Definition default_isIn e1 p1 e2 p2 :=
   if PExpr_eq e1 e2 then
     match Z.pos_sub p1 p2 with
-     | Zpos p => Some (Npos p, PEc cI)
-     | Z0 => Some (N0, PEc cI)
+     | Zpos p => Some (Npos p, 1%poly)
+     | Z0 => Some (N0, 1%poly)
      | Zneg p => Some (N0, e2 ^^ Npos p)
     end
   else None.
@@ -947,24 +948,24 @@ Fixpoint split_aux e1 p e2 {struct e1}: rsplit :=
   | e3 * e4 =>
       let r1 := split_aux e3 p e2 in
       let r2 := split_aux e4 p (right r1) in
-          mk_rsplit (left r1 ** left r2)
-                    (common r1 ** common r2)
-                    (right r2)
-  | e3 ^ N0 => mk_rsplit (PEc cI) (PEc cI) e2
+      mk_rsplit (left r1 ** left r2)
+                (common r1 ** common r2)
+                (right r2)
+  | e3 ^ N0 => mk_rsplit 1 1 e2
   | e3 ^ Npos p3 => split_aux e3 (Pos.mul p3 p) e2
   | _ =>
-       match isIn e1 p e2 xH with
-       | Some (N0,e3) => mk_rsplit (PEc cI) (e1 ^^ Npos p) e3
+       match isIn e1 p e2 1 with
+       | Some (N0,e3) => mk_rsplit 1 (e1 ^^ Npos p) e3
        | Some (Npos q, e3) => mk_rsplit (e1 ^^ Npos q) (e1 ^^ Npos (p - q)) e3
-       | None => mk_rsplit (e1 ^^ Npos p) (PEc cI) e2
+       | None => mk_rsplit (e1 ^^ Npos p) 1 e2
        end
   end%poly.
 
 Lemma split_aux_ok1 e1 p e2 :
-  (let res :=  match isIn e1 p e2 xH with
-       | Some (N0,e3) => mk_rsplit (PEc cI) (e1 ^^ Npos p) e3
+  (let res := match isIn e1 p e2 1 with
+       | Some (N0,e3) => mk_rsplit 1 (e1 ^^ Npos p) e3
        | Some (Npos q, e3) => mk_rsplit (e1 ^^ Npos q) (e1 ^^ Npos (p - q)) e3
-       | None => mk_rsplit (e1 ^^ Npos p) (PEc cI) e2
+       | None => mk_rsplit (e1 ^^ Npos p) 1 e2
        end
   in
   e1 ^ Npos p === left res * common res
@@ -1030,10 +1031,10 @@ Qed.
 
 Fixpoint Fnorm (e : FExpr) : linear :=
   match e with
-  | FEO => mk_linear (PEc cO) (PEc cI) nil
-  | FEI => mk_linear (PEc cI) (PEc cI) nil
-  | FEc c => mk_linear (PEc c) (PEc cI) nil
-  | FEX x => mk_linear (PEX C x) (PEc cI) nil
+  | FEO => mk_linear 0 1 nil
+  | FEI => mk_linear 1 1 nil
+  | FEc c => mk_linear (PEc c) 1 nil
+  | FEX x => mk_linear (PEX C x) 1 nil
   | FEadd e1 e2 =>
       let x := Fnorm e1 in
       let y := Fnorm e2 in
@@ -1189,8 +1190,10 @@ apply cross_product_eq; trivial;
 Qed.
 
 (* Correctness lemmas of reflexive tactics *)
-Notation Ninterp_PElist := (interp_PElist rO rI radd rmul rsub ropp req phi Cp_phi rpow).
-Notation Nmk_monpol_list := (mk_monpol_list cO cI cadd cmul csub copp ceqb cdiv).
+Notation Ninterp_PElist :=
+  (interp_PElist rO rI radd rmul rsub ropp req phi Cp_phi rpow).
+Notation Nmk_monpol_list :=
+  (mk_monpol_list cO cI cadd cmul csub copp ceqb cdiv).
 
 Theorem Fnorm_ok:
  forall n l lpe fe,
@@ -1201,9 +1204,9 @@ Proof.
 intros n l lpe fe Hlpe H H1.
 rewrite (Fnorm_FEeval_PEeval l fe H1).
 apply rdiv8. apply Pcond_Fnorm; trivial.
-transitivity ((PEc cO)@l); trivial.
+transitivity (0@l); trivial.
 rewrite (norm_subst_ok Rsth Reqe ARth CRmorph pow_th cdiv_th n l lpe); trivial.
-change ((PEc cO) @ l) with (Pphi 0 radd rmul phi l (Pc cO)).
+change (0 @ l) with (Pphi 0 radd rmul phi l (Pc cO)).
 apply (Peq_ok Rsth Reqe CRmorph); trivial.
 Qed.
 
@@ -1229,7 +1232,8 @@ Theorem Field_rw_correct n lpe l :
    forall lmp, Nmk_monpol_list lpe = lmp ->
    forall fe nfe, Fnorm fe = nfe ->
    PCond l (condition nfe) ->
-   FEeval l fe == display_linear l (Nnorm n lmp (num nfe)) (Nnorm n lmp (denum nfe)).
+   FEeval l fe ==
+     display_linear l (Nnorm n lmp (num nfe)) (Nnorm n lmp (denum nfe)).
 Proof.
   intros Hlpe lmp lmp_eq fe nfe eq_nfe H; subst nfe lmp.
   rewrite (Fnorm_FEeval_PEeval _ _ H).
@@ -1242,7 +1246,8 @@ Theorem Field_rw_pow_correct n lpe l :
    forall lmp, Nmk_monpol_list lpe = lmp ->
    forall fe nfe, Fnorm fe = nfe ->
    PCond l (condition nfe) ->
-   FEeval l fe == display_pow_linear l (Nnorm n lmp (num nfe)) (Nnorm n lmp (denum nfe)).
+   FEeval l fe ==
+     display_pow_linear l (Nnorm n lmp (num nfe)) (Nnorm n lmp (denum nfe)).
 Proof.
   intros Hlpe lmp lmp_eq fe nfe eq_nfe H; subst nfe lmp.
   rewrite (Fnorm_FEeval_PEeval _ _ H).
@@ -1369,8 +1374,8 @@ Theorem Field_simplify_eq_pow_in_correct :
 Proof.
  intros. subst nfe1 nfe2 lmp np1 np2.
  rewrite !(Pphi_pow_ok Rsth Reqe ARth CRmorph pow_th get_sign_spec).
- repeat (rewrite <- (norm_subst_ok Rsth Reqe ARth CRmorph pow_th);trivial). simpl.
- apply Field_simplify_aux_ok; trivial.
+ repeat (rewrite <- (norm_subst_ok Rsth Reqe ARth CRmorph pow_th);trivial).
+ simpl. apply Field_simplify_aux_ok; trivial.
 Qed.
 
 Theorem Field_simplify_eq_in_correct :
@@ -1506,10 +1511,10 @@ Qed.
 
 Fixpoint Fcons1 (e:PExpr C) (l:list (PExpr C)) {struct e} : list (PExpr C) :=
  match e with
-   PEmul e1 e2 => Fcons1 e1 (Fcons1 e2 l)
+ | PEmul e1 e2 => Fcons1 e1 (Fcons1 e2 l)
  | PEpow e _ => Fcons1 e l
- | PEopp e => if ceqb (copp cI) cO then absurd_PCond else Fcons1 e l
- | PEc c => if ceqb c cO then absurd_PCond else l
+ | PEopp e => if (-(1) =? 0)%coef then absurd_PCond else Fcons1 e l
+ | PEc c => if (c =? 0)%coef then absurd_PCond else l
  | _ => Fcons0 e l
  end.
 
