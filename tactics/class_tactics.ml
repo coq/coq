@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4deps: "grammar/grammar.cma" i*)
-
 open Pp
 open Errors
 open Util
@@ -55,7 +53,7 @@ let evars_to_goals p evm =
 
 open Auto
 
-let e_give_exact flags c gl = 
+let e_give_exact flags c gl =
   let t1 = (pf_type_of gl c) in
     tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl
 
@@ -85,16 +83,12 @@ let rec eq_constr_mod_evars x y =
 
 let progress_evars t gl =
   let concl = pf_concl gl in
-  let check gl' = 
+  let check gl' =
     let newconcl = pf_concl gl' in
-      if eq_constr_mod_evars concl newconcl 
+      if eq_constr_mod_evars concl newconcl
       then tclFAIL 0 (str"No progress made (modulo evars)") gl'
       else tclIDTAC gl'
   in tclTHEN t check gl
-
-TACTIC EXTEND progress_evars
-  [ "progress_evars" tactic(t) ] -> [ progress_evars (Tacinterp.eval_tactic t) ]
-END
 
 let unify_e_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
@@ -108,7 +102,7 @@ let unify_resolve flags (c,clenv) gls =
 
 let clenv_of_prods nprods (c, clenv) gls =
   if Int.equal nprods 0 then Some clenv
-  else 
+  else
     let ty = pf_type_of gls c in
     let diff = nb_prod ty - nprods in
       if diff >= 0 then
@@ -124,7 +118,7 @@ let with_prods nprods (c, clenv) f gls =
 
 let flags_of_state st =
   {auto_unif_flags with
-    modulo_conv_on_closed_terms = Some st; modulo_delta = st; 
+    modulo_conv_on_closed_terms = Some st; modulo_delta = st;
      modulo_delta_types = st;
      modulo_eta = false}
 
@@ -138,8 +132,8 @@ let rec e_trivial_fail_db db_list local_db goal =
           (e_trivial_fail_db db_list
 	      (Hint_db.add_list hintl local_db) g'))) ::
     (List.map (fun (x,_,_,_,_) -> x) (e_trivial_resolve db_list local_db (pf_concl goal)))
-  in 
-  tclFIRST (List.map tclCOMPLETE tacl) goal 
+  in
+  tclFIRST (List.map tclCOMPLETE tacl) goal
 
 and e_my_find_search db_list local_db hdc complete concl =
   let hdc = head_of_constr_reference hdc in
@@ -167,7 +161,7 @@ and e_my_find_search db_list local_db hdc complete concl =
               tclTHEN (with_prods nprods (term,cl) (unify_e_resolve flags))
 	        (if complete then tclIDTAC else e_trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c])
-	  | Extern tacast -> 
+	  | Extern tacast ->
 (* 	    tclTHEN *)
 (* 	      (fun gl -> Refiner.tclEVARS (mark_unresolvables (project gl)) gl) *)
 	      (conclPattern concl p tacast)
@@ -175,7 +169,7 @@ and e_my_find_search db_list local_db hdc complete concl =
       let tac = if complete then tclCOMPLETE tac else tac in
 	match t with
 	| Extern _ -> (tac,b,true, name, lazy (pr_autotactic t))
-	| _ -> 
+	| _ ->
 (* 	  let tac gl = with_pattern (pf_env gl) (project gl) flags p concl tac gl in *)
 	    (tac,b,false, name, lazy (pr_autotactic t))
   in List.map tac_of_hint hintl
@@ -228,12 +222,12 @@ type ('a,'b) optionk2 =
 
 let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
   let cty = Evarutil.nf_evar sigma cty in
-  let rec iscl env ty = 
+  let rec iscl env ty =
     let ctx, ar = decompose_prod_assum ty in
       match kind_of_term (fst (decompose_app ar)) with
       | Const c -> is_class (ConstRef c)
       | Ind i -> is_class (IndRef i)
-      | _ -> 
+      | _ ->
 	  let env' = Environ.push_rel_context ctx env in
 	  let ty' = whd_betadeltaiota env' ar in
 	       if not (eq_constr ty' ar) then iscl env' ty'
@@ -241,7 +235,7 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
   in
   let is_class = iscl env cty in
   let keep = not only_classes || is_class in
-    if keep then 
+    if keep then
       let c = mkVar id in
       let name = PathHints [VarRef id] in
       let hints =
@@ -254,20 +248,20 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
 	else []
       in
         (hints @ List.map_filter
-	 (fun f -> try Some (f (c, cty)) with Failure _ | UserError _ -> None) 
+	 (fun f -> try Some (f (c, cty)) with Failure _ | UserError _ -> None)
 	 [make_exact_entry ~name sigma pri; make_apply_entry ~name env sigma flags pri])
     else []
 
-let pf_filtered_hyps gls = 
+let pf_filtered_hyps gls =
   Goal.V82.hyps gls.Evd.sigma (sig_it gls)
 
 let make_hints g st only_classes sign =
-  let paths, hintlist = 
-    List.fold_left 
+  let paths, hintlist =
+    List.fold_left
     (fun (paths, hints) hyp ->
      if is_section_variable (pi1 hyp) then (paths, hints)
      else
-       let path, hint = 		    
+       let path, hint =
 	 PathEmpty, pf_apply make_resolve_hyp g st (true,false,false) only_classes None hyp
        in
 	 (PathOr (paths, path), hint @ hints))
@@ -284,15 +278,15 @@ let make_autogoal_hints =
   fun only_classes ?(st=full_transparent_state) g ->
     let sign = pf_filtered_hyps g in
       match freeze () with
-      | Some (onlyc, sign', hints) 
-	  when (onlyc : bool) == only_classes && 
+      | Some (onlyc, sign', hints)
+	  when (onlyc : bool) == only_classes &&
 	    Environ.eq_named_context_val sign sign' -> hints
       | _ -> let hints = make_hints g st only_classes (Environ.named_context_of_val sign) in
 	  unfreeze (Some (only_classes, sign, hints)); hints
-	  
+
 let lift_tactic tac (f : goal list sigma -> autoinfo -> autogoal list sigma) : 'a tac =
   { skft = fun sk fk {it = gl,hints; sigma=s;eff=eff} ->
-    let res = try Some (tac {it=gl; sigma=s;eff=eff}) 
+    let res = try Some (tac {it=gl; sigma=s;eff=eff})
               with e when catchable e -> None in
       match res with
       | Some gls -> sk (f gls hints) fk
@@ -305,13 +299,13 @@ let intro_tac : atac =
 	List.map (fun g' ->
 	  let env = Goal.V82.env s g' in
 	  let context = Environ.named_context_of_val (Goal.V82.hyps s g') in
-	  let hint = make_resolve_hyp env s (Hint_db.transparent_state info.hints) 
+	  let hint = make_resolve_hyp env s (Hint_db.transparent_state info.hints)
 	    (true,false,false) info.only_classes None (List.hd context) in
 	  let ldb = Hint_db.add_list hint info.hints in
 	    (g', { info with is_evar = None; hints = ldb; auto_last_tac = lazy (str"intro") })) gls
       in {it = gls'; sigma = s;eff=eff})
 
-let normevars_tac : atac = 
+let normevars_tac : atac =
   { skft = fun sk fk {it = (gl, info); sigma = s; eff=eff} ->
     let gl', sigma' = Goal.V82.nf_evar s gl in
     let info' = { info with auto_last_tac = lazy (str"normevars") } in
@@ -337,10 +331,10 @@ let hints_tac hints =
       let rec aux i foundone = function
 	| (tac, _, b, name, pp) :: tl ->
 	  let derivs = path_derivate info.auto_cut name in
-	  let res = 
+	  let res =
             try
 		if path_matches derivs [] then None else Some (tac tacgl)
-	    with e when catchable e -> None 
+	    with e when catchable e -> None
 	  in
 	    (match res with
 	       | None -> aux i foundone tl
@@ -390,7 +384,7 @@ let hints_tac hints =
 	  fk ()
     in aux 1 false poss }
 
-let isProp env sigma concl = 
+let isProp env sigma concl =
   let ty = Retyping.get_type_of env sigma concl in
   match kind_of_term ty with
   | Sort (Prop Null) -> true
@@ -404,12 +398,12 @@ let needs_backtrack only_classes env evd oev concl =
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
   let rec aux s (acc : autogoal list list) fk = function
     | (gl,info) :: gls ->
-	(match info.is_evar with 
+	(match info.is_evar with
 	 | Some ev when Evd.is_defined s ev -> aux s acc fk gls
-	 | _ -> 
+	 | _ ->
 	     second.skft
 	       (fun {it=gls';sigma=s'} fk' ->
-		  let needs_backtrack = 
+		  let needs_backtrack =
 		    if List.is_empty gls' then
  		      needs_backtrack info.only_classes
 		        (Goal.V82.env s gl) s' info.is_evar (Goal.V82.concl s gl)
@@ -446,37 +440,37 @@ let run_list_tac (t : 'a tac) p goals (gl : autogoal list sigma) : run_list_res 
     gl
     (fun _ -> Nonek)
 
-let fail_tac : atac = 
+let fail_tac : atac =
   { skft = fun sk fk _ -> fk () }
 
 let rec fix (t : 'a tac) : 'a tac =
   then_tac t { skft = fun sk fk -> (fix t).skft sk fk }
 
 let rec fix_limit limit (t : 'a tac) : 'a tac =
-  if Int.equal limit 0 then fail_tac 
+  if Int.equal limit 0 then fail_tac
   else then_tac t { skft = fun sk fk -> (fix_limit (pred limit) t).skft sk fk }
-    
+
 let make_autogoal ?(only_classes=true) ?(st=full_transparent_state) cut ev g =
   let hints = make_autogoal_hints only_classes ~st g in
-    (g.it, { hints = hints ; is_evar = ev; 
+    (g.it, { hints = hints ; is_evar = ev;
 	     only_classes = only_classes; auto_depth = []; auto_last_tac = lazy (str"none");
 	     auto_path = []; auto_cut = cut })
-      
+
 
 let cut_of_hints h =
   List.fold_left (fun cut db -> PathOr (Hint_db.cut db, cut)) PathEmpty h
 
 let make_autogoals ?(only_classes=true) ?(st=full_transparent_state) hints gs evm' =
   let cut = cut_of_hints hints in
-  { it = List.map_i (fun i g -> 
+  { it = List.map_i (fun i g ->
     let (gl, auto) = make_autogoal ~only_classes ~st cut (Some (fst g)) {it = snd g; sigma = evm'; eff = Declareops.no_seff } in
       (gl, { auto with auto_depth = [i]})) 1 gs; sigma = evm'; eff = Declareops.no_seff }
 
-let get_result r = 
+let get_result r =
   match r with
   | Nonek -> None
   | Somek (gls, fk) -> Some (gls.sigma,fk)
-	
+
 let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm hints tac =
   match evars_to_goals p evm with
   | None -> None (* This happens only because there's no evar having p *)
@@ -485,15 +479,15 @@ let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm hints t
 	match get_result res with
 	| None -> raise Not_found
 	| Some (evm', fk) -> Some (evars_reset_evd ~with_conv_pbs:true evm' evm, fk)
-	    
-let eauto_tac hints = 
+
+let eauto_tac hints =
   then_tac normevars_tac (or_tac (hints_tac hints) intro_tac)
 
-let eauto_tac ?limit hints = 
+let eauto_tac ?limit hints =
   match limit with
   | None -> fix (eauto_tac hints)
   | Some limit -> fix_limit limit (eauto_tac hints)
-      
+
 let eauto ?(only_classes=true) ?st ?limit hints g =
   let gl = { it = make_autogoal ~only_classes ?st (cut_of_hints hints) None g; sigma = project g; eff=g.eff } in
     match run_tac (eauto_tac ?limit hints) gl with
@@ -543,7 +537,7 @@ let evar_dependencies evm p =
 
 let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
   let nc, gl, subst, _ = Evarutil.push_rel_context_to_named_context env gl in
-  let (gl,t,sigma) = 
+  let (gl,t,sigma) =
     Goal.V82.mk_goal sigma nc gl Store.empty in
   let gls = { it = gl ; sigma = sigma; eff= Declareops.no_seff } in (* XXX eff *)
   let hints = searchtable_map typeclasses_db in
@@ -571,7 +565,7 @@ let split_evars evm =
 
 let evars_in_comp comp evm =
   try
-    evars_reset_evd 
+    evars_reset_evd
       (Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evm ev))
 	 comp Evd.empty) evm
   with Not_found -> assert false
@@ -636,7 +630,7 @@ let has_undefined p oevd evd =
     potentially unprotecting some evars that were set unresolvable
     just for this call to resolution. *)
 
-let revert_resolvability oevd evd = 
+let revert_resolvability oevd evd =
   let map ev evi =
     try
       if not (Typeclasses.is_resolvable evi) then
@@ -670,7 +664,7 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	if fail && (not do_split || is_mandatory (p evd) comp evd)
 	then (* Unable to satisfy the constraints. *)
 	  error_unresolvable env comp do_split evd
-	else (* Best effort: do nothing on this component *) 
+	else (* Best effort: do nothing on this component *)
 	  docomp evd comps
   in docomp oevd split
 
@@ -680,7 +674,7 @@ let initial_select_evars filter =
     Typeclasses.is_class_evar evd evi
 
 let resolve_typeclass_evars debug m env evd filter split fail =
-  let evd = 
+  let evd =
     try Evarconv.consider_remaining_unif_problems
       ~ts:(Typeclasses.classes_transparent_state ()) env evd
     with e when Errors.noncritical e -> evd
@@ -694,15 +688,17 @@ let _ =
   Typeclasses.solve_instanciations_problem :=
     solve_inst false !typeclasses_depth
 
-
-(** Options: depth, debug and transparency settings. *)
-
-open Goptions
-
 let set_typeclasses_debug d = (:=) typeclasses_debug d;
   Typeclasses.solve_instanciations_problem := solve_inst d !typeclasses_depth
-    
+
 let get_typeclasses_debug () = !typeclasses_debug
+
+let set_typeclasses_depth d = (:=) typeclasses_depth d;
+  Typeclasses.solve_instanciations_problem := solve_inst !typeclasses_debug !typeclasses_depth
+
+let get_typeclasses_depth () = !typeclasses_depth
+
+open Goptions
 
 let set_typeclasses_debug =
   declare_bool_option
@@ -713,12 +709,6 @@ let set_typeclasses_debug =
       optread  = get_typeclasses_debug;
       optwrite = set_typeclasses_debug; }
 
-
-let set_typeclasses_depth d = (:=) typeclasses_depth d;
-  Typeclasses.solve_instanciations_problem := solve_inst !typeclasses_debug !typeclasses_depth
-    
-let get_typeclasses_depth () = !typeclasses_depth
-
 let set_typeclasses_depth =
   declare_int_option
     { optsync  = true;
@@ -728,51 +718,8 @@ let set_typeclasses_depth =
       optread  = get_typeclasses_depth;
       optwrite = set_typeclasses_depth; }
 
-let set_transparency cl b =
-  List.iter (fun r -> 
-    let gr = Smartlocate.global_with_alias r in
-    let ev = Tacred.evaluable_of_global_reference (Global.env ()) gr in
-      Classes.set_typeclass_transparency ev false b) cl
-
-VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings CLASSIFIED AS SIDEFF
-| [ "Typeclasses" "Transparent" reference_list(cl) ] -> [
-    set_transparency cl true ]
-END
-
-VERNAC COMMAND EXTEND Typeclasses_Rigid_Settings CLASSIFIED AS SIDEFF
-| [ "Typeclasses" "Opaque" reference_list(cl) ] -> [
-    set_transparency cl false ]
-END
-
-open Genarg
-
-let pr_debug _prc _prlc _prt b =
-  if b then Pp.str "debug" else Pp.mt()
-
-ARGUMENT EXTEND debug TYPED AS bool PRINTED BY pr_debug
-| [ "debug" ] -> [ true ]
-| [ ] -> [ false ]
-END
-
-let pr_depth _prc _prlc _prt = function
-    Some i -> Pp.int i
-  | None -> Pp.mt()
-
-ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth
-| [ int_or_var_opt(v) ] -> [ match v with Some (ArgArg i) -> Some i | _ -> None ]
-END
-
-(* true = All transparent, false = Opaque if possible *)
-
-VERNAC COMMAND EXTEND Typeclasses_Settings CLASSIFIED AS SIDEFF
- | [ "Typeclasses" "eauto" ":=" debug(d) depth(depth) ] -> [
-     set_typeclasses_debug d;
-     set_typeclasses_depth depth
-   ]
-END
-
 let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl =
-  try 
+  try
     let dbs = List.map_filter
       (fun db -> try Some (Auto.searchtable_map db)
         with e when Errors.noncritical e -> None)
@@ -781,11 +728,6 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl 
     let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
       eauto ?limit:!typeclasses_depth ~only_classes ~st dbs gl
    with Not_found -> tclFAIL 0 (str" typeclasses eauto failed on: " ++ Printer.pr_goal gl) gl
- 
-TACTIC EXTEND typeclasses_eauto
-| [ "typeclasses" "eauto" "with" ne_preident_list(l) ] -> [ typeclasses_eauto l ]
-| [ "typeclasses" "eauto" ] -> [ typeclasses_eauto ~only_classes:true [typeclasses_db] ]
-END
 
 let _ = Classes.refine_ref := Refine.refine
 
@@ -800,30 +742,20 @@ let rec head_of_constr t =
     | App (f,args)  -> head_of_constr f
     | _      -> t
 
-TACTIC EXTEND head_of_constr
-  [ "head_of_constr" ident(h) constr(c) ] -> [
-    let c = head_of_constr c in
-      letin_tac None (Name h) c None Locusops.allHyps
-  ]
-END
+let head_of_constr h c =
+  let c = head_of_constr c in
+  letin_tac None (Name h) c None Locusops.allHyps
 
-TACTIC EXTEND not_evar
-  [ "not_evar" constr(ty) ] -> [
-    match kind_of_term ty with
-    | Evar _ -> tclFAIL 0 (str"Evar")
-    | _ -> tclIDTAC ]
-END
+let not_evar c = match kind_of_term c with
+| Evar _ -> tclFAIL 0 (str"Evar")
+| _ -> tclIDTAC
 
-TACTIC EXTEND is_ground
-  [ "is_ground" constr(ty) ] -> [ fun gl ->
-    if Evarutil.is_ground_term (project gl) ty then tclIDTAC gl
-    else tclFAIL 0 (str"Not ground") gl ]
-END
+let is_ground c gl =
+  if Evarutil.is_ground_term (project gl) c then tclIDTAC gl
+  else tclFAIL 0 (str"Not ground") gl
 
-TACTIC EXTEND autoapply
-  [ "autoapply" constr(c) "using" preident(i) ] -> [ fun gl ->
-    let flags = flags_of_state (Auto.Hint_db.transparent_state (Auto.searchtable_map i)) in
-    let cty = pf_type_of gl c in
-    let ce = mk_clenv_from gl (c,cty) in
-      unify_e_resolve flags (c,ce) gl ]
-END
+let autoapply c i gl =
+  let flags = flags_of_state (Auto.Hint_db.transparent_state (Auto.searchtable_map i)) in
+  let cty = pf_type_of gl c in
+  let ce = mk_clenv_from gl (c,cty) in
+  unify_e_resolve flags (c,ce) gl
