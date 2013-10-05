@@ -254,10 +254,9 @@ let rec decompose_app_rel env evd t =
   | _ -> error "The term provided is not an applied relation."
 
 let decompose_applied_relation env sigma flags orig (c,l) left2right =
-  let c' = c in
-  let ctype = Typing.type_of env sigma c' in
+  let ctype = Typing.type_of env sigma c in
   let find_rel ty =
-    let eqclause = Clenv.make_clenv_binding_env_apply env sigma None (c',ty) l in
+    let eqclause = Clenv.make_clenv_binding_env_apply env sigma None (c, ty) l in
     let (equiv, args) = decompose_app_rel env eqclause.evd (Clenv.clenv_type eqclause) in
     let c1 = args.(0) and c2 = args.(1) in 
     let ty1, ty2 =
@@ -659,7 +658,7 @@ let apply_rule by loccs : (hypinfo * int) pure_strategy =
       in
       ((hypinfo, occ), res)
 
-let apply_lemma flags (evm,c) left2right by loccs : strategy =
+let apply_lemma flags c left2right by loccs : strategy =
   fun () env avoid t ty cstr evars ->
     let hypinfo = 
       decompose_applied_relation env (goalevars evars) flags None c left2right
@@ -1033,17 +1032,15 @@ module Strategies =
 	choice tac (apply_lemma flags l l2r by AllOccurrences))
 	fail cs
 
-    let inj_open c = (Evd.empty,c)
-
     let old_hints (db : string) : 'a pure_strategy =
       let rules = Autorewrite.find_rewrites db in
 	lemmas rewrite_unif_flags
-	  (List.map (fun hint -> (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r, hint.Autorewrite.rew_tac)) rules)
+	  (List.map (fun hint -> ((hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r, hint.Autorewrite.rew_tac)) rules)
 
     let hints (db : string) : 'a pure_strategy =
       fun state env avoid t ty cstr evars ->
       let rules = Autorewrite.find_matches db t in
-      let lemma hint = (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r,
+      let lemma hint = ((hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r,
 			hint.Autorewrite.rew_tac) in
       let lems = List.map lemma rules in
 	lemmas rewrite_unif_flags lems state env avoid t ty cstr evars
@@ -1127,7 +1124,7 @@ let apply_strategy (s : strategy) env avoid concl cstr evars =
     | Some (Some res) ->
 	Some (Some (res.rew_prf, res.rew_evars, res.rew_car, res.rew_from, res.rew_to))
 
-let solve_constraints env (evars,cstrs) =
+let solve_constraints env evars =
   Typeclasses.resolve_typeclasses env ~split:false ~fail:true evars
 
 let nf_zeta =
@@ -1153,7 +1150,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
   let eq = apply_strategy strat env avoid concl (Some cstr) evars in
     match eq with
     | Some (Some (p, (evars, cstrs), car, oldt, newt)) ->
-	let evars' = solve_constraints env (evars, cstrs) in
+	let evars' = solve_constraints env evars in
 	let p = map_rewprf (fun p -> nf_zeta env evars' (Evarutil.nf_evar evars' p)) p in
 	let newt = Evarutil.nf_evar evars' newt in
 	let abs = Option.map (fun (x, y) ->
@@ -1191,11 +1188,8 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 	in Some res
     | Some None -> Some None
     | None -> None
-		   
-let rewrite_refine (evd,c) = 
-  Tacmach.refine c
 
-let cl_rewrite_clause_tac ?abs strat meta clause gl =
+let cl_rewrite_clause_tac ?abs strat clause gl =
   let evartac evd = Refiner.tclEVARS evd in
   let treat res =
     match res with
@@ -1345,9 +1339,8 @@ let cl_rewrite_clause_newtac' l left2right occs clause =
 let cl_rewrite_clause_strat strat clause =
   tclTHEN (tactic_init_setoid ())
   (fun gl -> 
-   let meta = Evarutil.new_meta() in
      (*     let gl = { gl with sigma = Typeclasses.mark_unresolvables gl.sigma } in *)
-     try cl_rewrite_clause_tac strat (mkMeta meta) clause gl
+     try cl_rewrite_clause_tac strat clause gl
      with RewriteFailure e ->
        tclFAIL 0 (str"setoid rewrite failed: " ++ e) gl
      | Refiner.FailError (n, pp) -> 
@@ -1366,25 +1359,17 @@ let occurrences_of = function
 
 open Extraargs
 
-let apply_constr_expr c l2r occs = fun env avoid t ty cstr evars ->
-  let evd, c = Constrintern.interp_open_constr (goalevars evars) env c in
-    apply_lemma (general_rewrite_unif_flags ()) (evd, (c, NoBindings)) 
-      l2r None occs () env avoid t ty cstr (evd, cstrevars evars)
-
 let apply_glob_constr c l2r occs = fun () env avoid t ty cstr evars ->
   let evd, c = (Pretyping.understand_tcc (goalevars evars) env c) in
-    apply_lemma (general_rewrite_unif_flags ()) (evd, (c, NoBindings)) 
+    apply_lemma (general_rewrite_unif_flags ()) (c, NoBindings)
       l2r None occs () env avoid t ty cstr (evd, cstrevars evars)
 
-let interp_constr_list env sigma =
-  List.map (fun c -> 
-	      let evd, c = Constrintern.interp_open_constr sigma env c in
-		(evd, (c, NoBindings)), true, None)
-
-let interp_glob_constr_list env sigma =
-  List.map (fun c -> 
-	      let evd, c = Pretyping.understand_tcc sigma env c in
-		(evd, (c, NoBindings)), true, None)
+let interp_glob_constr_list env sigma cl =
+  let understand sigma (c, _) =
+    let sigma, c = Pretyping.understand_tcc sigma env c in
+    (sigma, ((c, NoBindings), true, None))
+  in
+  List.fold_map understand sigma cl
 
 type ('constr,'redexpr) strategy_ast = 
   | StratId | StratFail | StratRefl
@@ -1436,9 +1421,9 @@ let rec strategy_of_ast = function
   | StratConstr (c, b) -> apply_glob_constr (fst c) b AllOccurrences
   | StratHints (old, id) -> if old then Strategies.old_hints id else Strategies.hints id
   | StratTerms l -> 
-    (fun () env avoid t ty cstr evars ->
-     let l' = interp_glob_constr_list env (goalevars evars) (List.map fst l) in
-       Strategies.lemmas rewrite_unif_flags l' () env avoid t ty cstr evars)
+    (fun () env avoid t ty cstr (evars, cstrs) ->
+     let evars, cl = interp_glob_constr_list env evars l in
+       Strategies.lemmas rewrite_unif_flags cl () env avoid t ty cstr (evars, cstrs))
   | StratEval r -> 
     (fun () env avoid t ty cstr evars ->
      let (sigma,r_interp) = Tacinterp.interp_redexp env (goalevars evars) r in
@@ -1589,7 +1574,7 @@ let build_morphism_signature m =
   let morph =
     mkApp (Lazy.force proper_type, [| t; sig_; m |])
   in
-  let evd = solve_constraints env !evdref in
+  let evd = solve_constraints env (goalevars !evdref) in
   let m = Evarutil.nf_evar evd morph in
     Evarutil.check_evars env Evd.empty evd m; m
 
@@ -1734,7 +1719,6 @@ let apply_lemma gl (c,l) cl l2r occs =
     (fun aux -> Strategies.choice app (subterm true general_rewrite_flags aux))
 
 let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
-  let meta = Evarutil.new_meta() in
   let sigma = project gl in
   let hypinfo = get_hyp gl sigma (c,l) cl l2r in
   let strat () env avoid t ty cstr evars =
@@ -1745,7 +1729,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
       tclWEAK_PROGRESS 
 	(tclTHEN
            (Refiner.tclEVARS hypinfo.cl.evd)
-	   (cl_rewrite_clause_tac ~abs:hypinfo.abs strat (mkMeta meta) cl)) gl
+	   (cl_rewrite_clause_tac ~abs:hypinfo.abs strat cl)) gl
     with RewriteFailure e ->
       let {l2r=l2r; c1=x; c2=y} = hypinfo in
 	raise (Pretype_errors.PretypeError
