@@ -133,8 +133,8 @@ let side_tac tac sidetac =
   | None -> tac
   | Some sidetac -> tclTHENSFIRSTn tac [|tclIDTAC|] sidetac
 
-let instantiate_lemma_all frzevars env sigma gl c ty l l2r concl =
-  let eqclause = Clenv.make_clenv_binding { gl with sigma = sigma } (c,ty) l in
+let instantiate_lemma_all frzevars env gl c ty l l2r concl =
+  let eqclause = Clenv.make_clenv_binding gl (c,ty) l in
   let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
   let rec split_last_two = function
       | [c1;c2] -> [],(c1, c2)
@@ -145,14 +145,13 @@ let instantiate_lemma_all frzevars env sigma gl c ty l l2r concl =
   let try_occ (evd', c') =
     clenv_pose_dependent_evars true {eqclause with evd = evd'}
   in
-  let flags = make_flags frzevars sigma rewrite_unif_flags eqclause in
+  let flags = make_flags frzevars gl.sigma rewrite_unif_flags eqclause in
   let occs =
     Unification.w_unify_to_subterm_all ~flags env eqclause.evd
       ((if l2r then c1 else c2),concl)
   in List.map try_occ occs
 
-let instantiate_lemma env sigma gl c ty l l2r concl =
-  let gl = { gl with sigma = sigma } in
+let instantiate_lemma env gl c ty l l2r concl =
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
   let eqclause = Clenv.make_clenv_binding gl (c,t) l in
@@ -213,7 +212,7 @@ let general_elim_clause with_evars frzevars cls rew elim =
     raise (Pretype_errors.PretypeError
 	      (env,evd,Pretype_errors.NoOccurrenceFound (c', cls)))
 
-let general_elim_clause with_evars frzevars tac cls sigma c t l l2r elim gl =
+let general_elim_clause with_evars frzevars tac cls c t l l2r elim gl =
   let all, firstonly, tac =
     match tac with
     | None -> false, false, None
@@ -223,7 +222,7 @@ let general_elim_clause with_evars frzevars tac cls sigma c t l l2r elim gl =
   in
   let cs =
     (if not all then instantiate_lemma else instantiate_lemma_all frzevars)
-      (pf_env gl) sigma gl c t l l2r
+      (pf_env gl) gl c t l l2r
       (match cls with None -> pf_concl gl | Some id -> pf_get_hyp_typ gl id)
   in
   let try_clause c =
@@ -318,12 +317,12 @@ let type_of_clause gl = function
   | None -> pf_concl gl
   | Some id -> pf_get_hyp_typ gl id
 
-let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars frzevars dep_proof_ok gl hdcncl =
+let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok gl hdcncl =
   let isatomic = isProd (whd_zeta hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let dep = dep_proof_ok && dep_fun c (type_of_clause gl cls) in
   let elim, gl = find_elim hdcncl lft2rgt dep cls (Some t) gl in
-  general_elim_clause with_evars frzevars tac cls sigma c t l
+  general_elim_clause with_evars frzevars tac cls c t l
     (match lft2rgt with None -> false | Some b -> b)
     {elimindex = None; elimbody = (elim,NoBindings)} gl
 
@@ -355,7 +354,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
       match match_with_equality_type t with
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
-          leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c (it_mkProd_or_LetIn t rels)
+          leibniz_rewrite_ebindings_clause cls lft2rgt tac c (it_mkProd_or_LetIn t rels)
 	    l with_evars frzevars dep_proof_ok gl hdcncl
       | None ->
 	  try
@@ -369,7 +368,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
 	      match match_with_equality_type t' with
 	      | Some (hdcncl,args) ->
 		  let lft2rgt = adjust_rewriting_direction args lft2rgt in
-		    leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c
+		    leibniz_rewrite_ebindings_clause cls lft2rgt tac c
 		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars frzevars dep_proof_ok gl hdcncl
 	      | None -> raise e
 		  (* error "The provided term does not end with an equality or a declared rewrite relation." *)
