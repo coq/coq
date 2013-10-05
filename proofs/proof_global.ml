@@ -280,16 +280,21 @@ let close_proof ~now fpl =
 let return_proof ~fix_exn =
   let { proof } = cur_pstate () in
   let initial_goals = Proof.initial_goals proof in
-  List.map (fun (c, _) ->
-   try Proof.return proof c with
+  let evd =
+   try Proof.return proof with
    | Proof.UnfinishedProof ->
        raise (fix_exn(Errors.UserError("last tactic before Qed",
          str"Attempt to save an incomplete proof")))
    | Proof.HasUnresolvedEvar ->
        raise (fix_exn(Errors.UserError("last tactic before Qed",
          str"Attempt to save a proof with existential " ++
-         str"variables still non-instantiated"))))
-   initial_goals
+         str"variables still non-instantiated")))
+  in
+  let eff = Evd.eval_side_effects evd in
+  (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
+      side-effects... This may explain why one need to uniquize side-effects
+      thereafter... *)
+  List.map (fun (c, _) -> (Evarutil.nf_evar evd c, eff)) initial_goals
 
 let close_future_proof proof = close_proof ~now:false proof
 let close_proof () =

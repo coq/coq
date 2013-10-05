@@ -200,7 +200,8 @@ type evar_map = {
   univ_cstrs : Univ.universes;
   conv_pbs   : evar_constraint list;
   last_mods  : Evar.Set.t;
-  metas      : clbinding Metamap.t
+  metas      : clbinding Metamap.t;
+  effects    : Declareops.side_effects;
 }
 
 (*** Lifting primitive from EvarMap. ***)
@@ -361,6 +362,7 @@ let empty = {
   conv_pbs   = [];
   last_mods  = Evar.Set.empty;
   metas      = Metamap.empty;
+  effects    = Declareops.no_seff;
 }
 
 let has_undefined evd = not (EvMap.is_empty evd.undf_evars)
@@ -461,6 +463,17 @@ let collect_evars c =
       | _       -> fold_constr collrec acc c
   in
   collrec Evar.Set.empty c
+
+(**********************************************************)
+(* Side effects *)
+
+let emit_side_effects eff evd =
+  { evd with effects = Declareops.union_side_effects eff evd.effects; }
+
+let drop_side_effects evd =
+  { evd with effects = Declareops.no_seff; }
+
+let eval_side_effects evd = evd.effects
 
 (**********************************************************)
 (* Sort variables *)
@@ -659,15 +672,11 @@ type open_constr = evar_map * constr
   type ['a] *)
 type 'a sigma = {
   it : 'a ;
-  eff : Declareops.side_effects;
   sigma : evar_map
 }
 
 let sig_it x = x.it
-let sig_eff x = x.eff
 let sig_sig x = x.sigma
-let emit_side_effects eff x =
-  { x with eff = Declareops.union_side_effects eff x.eff }
 
 (**********************************************************)
 (* Failure explanation *)

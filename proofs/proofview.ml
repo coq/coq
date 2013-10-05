@@ -27,7 +27,6 @@ type proofview = {
      initial : (Term.constr * Term.types) list;
      solution : Evd.evar_map;
      comb : Goal.goal list;
-     side_effects : Declareops.side_effects
      }
 
 let proofview p =
@@ -40,7 +39,6 @@ let init =
   | [] ->  { initial = [] ; 
 	     solution = Evd.empty ;
              comb = [];
-             side_effects = Declareops.no_seff
 	   }
   | (env,typ)::l -> let { initial = ret ; solution = sol ; comb = comb } =
                            aux l
@@ -52,8 +50,7 @@ let init =
 			 let gl = Goal.build e in
 			 { initial = (econstr,typ)::ret;
 			   solution = new_defs ;
-                           comb = gl::comb;
-                           side_effects = Declareops.no_seff }
+                           comb = gl::comb; }
   in
   fun l -> let v = aux l in
     (* Marks all the goal unresolvable for typeclasses. *)
@@ -69,13 +66,15 @@ let finished = function
   | _  -> false
 
 (* Returns the current value of the proofview partial proofs. *)
-let return { solution=defs; side_effects=eff } c = Evarutil.nf_evar defs c, eff
+let return { solution=defs } = defs
+
+let return_constr { solution = defs } c = Evarutil.nf_evar defs c
 
 let partial_proof pv =
-  List.map fst (List.map (return pv) (List.map fst (initial_goals pv)))
+  List.map (return_constr pv) (List.map fst (initial_goals pv))
 
 let emit_side_effects eff x =
-  { x with side_effects = Declareops.union_side_effects eff x.side_effects }
+  { x with solution = Evd.emit_side_effects eff x.solution }
 
 (* spiwack: this function should probably go in the Util section,
     but I'd rather have Util (or a separate module for lists)
@@ -366,8 +365,8 @@ let rec catchable_exception = function
    [s] to each goal successively and applying [k] to each result. *)
 let list_of_sensitive s k env step =
   Goal.list_map begin fun defs g ->
-    let (a,defs,effs) = Goal.eval s env defs g in
-    (k a) , defs, effs
+    let (a,defs) = Goal.eval s env defs g in
+    (k a) , defs
   end step.comb step.solution
 (* In form of a tactic *)
 let list_of_sensitive s k env =
@@ -376,10 +375,8 @@ let list_of_sensitive s k env =
   let (>>) = Inner.seq in
   Inner.get >>= fun step ->
   try 
-    let (tacs,defs,effs) = list_of_sensitive s k env step in
-    Inner.set { step with solution = defs;
-      side_effects = Declareops.union_side_effects step.side_effects 
-        (Declareops.flatten_side_effects effs) } >>
+    let (tacs,defs) = list_of_sensitive s k env step in
+    Inner.set { step with solution = defs; } >>
     Inner.return tacs
   with e when catchable_exception e ->
     tclZERO e env
@@ -400,23 +397,20 @@ let tclGOALBINDU s k =
 (* No backtracking can happen here, hence, as opposed to the dispatch tacticals,
     everything is done in one step. *)
 let sensitive_on_proofview s env step =
-  let wrap g ((defs, partial_list, partial_eff) as partial_res) = 
+  let wrap g ((defs, partial_list) as partial_res) = 
     match Goal.advance defs g with
     | None -> partial_res
     | Some g ->
-      let { Goal.subgoals = sg } , d', eff = Goal.eval s env defs g in
-      (d', sg::partial_list, eff::partial_eff)
+      let { Goal.subgoals = sg } , d' = Goal.eval s env defs g in
+      (d', sg::partial_list)
   in
-  let ( new_defs , combed_subgoals, side_effects ) = 
-    List.fold_right wrap step.comb (step.solution,[],[])
+  let ( new_defs , combed_subgoals ) = 
+    List.fold_right wrap step.comb (step.solution,[])
   in
   { step with
      solution = new_defs;
-     comb = List.flatten combed_subgoals;
-     side_effects =
-       Declareops.union_side_effects
-         (Declareops.flatten_side_effects side_effects) step.side_effects }
-let tclSENSITIVE s env =
+     comb = List.flatten combed_subgoals; }
+  let tclSENSITIVE s env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Inner.bind in
   Inner.get >>= fun step ->
@@ -456,25 +450,18 @@ module V82 = struct
     try
       let tac evd gl = 
         let glsigma  =
-          tac { Evd.it = gl ; sigma = evd; eff = Declareops.no_seff }  in
+          tac { Evd.it = gl ; sigma = evd; }  in
         let sigma = glsigma.Evd.sigma in
         let g = glsigma.Evd.it in
-        ( g, sigma, glsigma.Evd.eff )
+        ( g, sigma )
       in
     (* Old style tactics expect the goals normalized with respect to evars. *)
-      let no_side_eff f x y =
-        let a, b = f x y in a, b, Declareops.no_seff in
-      let (initgoals,initevd, eff1) = 
-        Goal.list_map (no_side_eff Goal.V82.nf_evar) ps.comb ps.solution
+      let (initgoals,initevd) =
+        Goal.list_map Goal.V82.nf_evar ps.comb ps.solution
       in
-      let (goalss,evd,eff2) = Goal.list_map tac initgoals initevd in
+      let (goalss,evd) = Goal.list_map tac initgoals initevd in
       let sgs = List.flatten goalss in
-      Inner.set { ps with solution=evd ; comb=sgs; 
-        side_effects =
-          Declareops.union_side_effects ps.side_effects 
-            (Declareops.union_side_effects 
-              (Declareops.flatten_side_effects eff1)
-              (Declareops.flatten_side_effects eff2)) }
+      Inner.set { ps with solution=evd ; comb=sgs; }
     with e when catchable_exception e ->
       tclZERO e env
 
@@ -495,12 +482,12 @@ module V82 = struct
 
   (* Returns the open goals of the proofview together with the evar_map to 
      interprete them. *)
-  let goals { comb = comb ; solution = solution; side_effects=eff } =
-   { Evd.it = comb ; sigma = solution; eff=eff}
+  let goals { comb = comb ; solution = solution; } =
+   { Evd.it = comb ; sigma = solution }
 
-  let top_goals { initial=initial ; solution=solution; side_effects=eff } =
+  let top_goals { initial=initial ; solution=solution; } =
     let goals = List.map (fun (t,_) -> Goal.V82.build (fst (Term.destEvar t))) initial in
-    { Evd.it = goals ; sigma=solution; eff=eff }
+    { Evd.it = goals ; sigma=solution; }
 
   let top_evars { initial=initial } =
     let evars_of_initial (c,_) =

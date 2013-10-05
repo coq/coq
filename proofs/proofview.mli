@@ -44,7 +44,7 @@ val init : (Environ.env * Term.types) list -> proofview
 val finished : proofview -> bool
 
 (* Returns the current value of the proofview partial proofs. *)
-val return : proofview -> constr -> constr * Declareops.side_effects
+val return : proofview -> Evd.evar_map
 
 val partial_proof : proofview -> constr list
 val initial_goals : proofview -> (constr * types) list

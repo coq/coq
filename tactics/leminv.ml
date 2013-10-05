@@ -242,8 +242,8 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
 
 let inversion_lemma_from_goal n na (loc,id) sort dep_option inv_op =
   let pts = get_pftreestate() in
-  let { it=gls ; sigma=sigma; eff=eff } = Proof.V82.subgoals pts in
-  let gl = { it = List.nth gls (n-1) ; sigma=sigma; eff=eff } in
+  let { it=gls ; sigma=sigma; } = Proof.V82.subgoals pts in
+  let gl = { it = List.nth gls (n-1) ; sigma=sigma; } in
   let t =
     try pf_get_hyp_typ gl id
     with Not_found -> Pretype_errors.error_var_not_found_loc loc id in

@@ -62,15 +62,15 @@ let _ = Errors.register_handler begin function
 end
 let get_nth_V82_goal i =
   let p = Proof_global.give_me_the_proof () in
-  let { it=goals ; sigma = sigma; eff = eff } = Proof.V82.subgoals p in
+  let { it=goals ; sigma = sigma; } = Proof.V82.subgoals p in
   try
-          { it=(List.nth goals (i-1)) ; sigma=sigma; eff = eff }
+          { it=(List.nth goals (i-1)) ; sigma=sigma; }
   with Failure _ -> raise NoSuchGoal
     
 let get_goal_context_gen i =
   try
-let { it=goal ; sigma=sigma; eff=eff } =  get_nth_V82_goal i in
-(sigma, Refiner.pf_env { it=goal ; sigma=sigma; eff=eff })
+let { it=goal ; sigma=sigma; } =  get_nth_V82_goal i in
+(sigma, Refiner.pf_env { it=goal ; sigma=sigma; })
   with Proof_global.NoCurrentProof -> Errors.error "No focused proof."
 
 let get_goal_context i =

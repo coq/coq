@@ -3594,9 +3594,10 @@ let abstract_subproof id tac gl =
   (** ppedrot: seems legit to have abstracted subproofs as local*)
   let cst = Declare.declare_constant ~internal:Declare.KernelSilent ~local:true id decl in
   let lem = mkConst cst in
-  let gl = {gl with eff =
-    Declareops.cons_side_effects
-      (Safe_typing.sideff_of_con (Global.safe_env()) cst) gl.eff} in
+  let open Declareops in
+  let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
+  let effs = cons_side_effects eff no_seff in
+  let gl = { gl with sigma = Evd.emit_side_effects effs gl.sigma; } in
   exact_no_check
     (applist (lem,List.rev (instance_from_named_context sign)))
     gl
@@ -3629,4 +3630,4 @@ let emit_side_effects eff gl =
   Declareops.iter_side_effects (fun e ->
     prerr_endline ("emitting: " ^ Declareops.string_of_side_effect e))
     eff;
-  {gl with it = [gl.it] ; eff = Declareops.union_side_effects eff gl.eff}
+  { it = [gl.it] ; sigma = Evd.emit_side_effects eff gl.sigma; }

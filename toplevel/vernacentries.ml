@@ -93,8 +93,8 @@ let try_print_subgoals () =
 
 let show_intro all =
   let pf = get_pftreestate() in
-  let {Evd.it=gls ; sigma=sigma; eff=eff} = Proof.V82.subgoals pf in
-  let gl = {Evd.it=List.hd gls ; sigma = sigma; eff=eff} in
+  let {Evd.it=gls ; sigma=sigma; } = Proof.V82.subgoals pf in
+  let gl = {Evd.it=List.hd gls ; sigma = sigma; } in
   let l,_= decompose_prod_assum (strip_outer_cast (pf_concl gl)) in
   if all
   then

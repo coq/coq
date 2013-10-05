@@ -61,8 +61,7 @@ val partial_proof : proof -> Term.constr list
     Raises [HasUnresolvedEvar] if some evars have been left undefined. *)
 exception UnfinishedProof
 exception HasUnresolvedEvar
-val return :
-  proof -> Term.constr -> Term.constr * Declareops.side_effects
+val return : proof -> Evd.evar_map
 
 (*** Focusing actions ***)
 

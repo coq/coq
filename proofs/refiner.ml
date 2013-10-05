@@ -16,7 +16,6 @@ open Logic
 
 
 let sig_it x = x.it
-let sig_eff x = x.eff
 let project x = x.sigma
 
 (* Getting env *)
@@ -26,7 +25,7 @@ let pf_hyps gls = named_context_of_val (Goal.V82.hyps (project gls) (sig_it gls)
 
 let refiner pr goal_sigma =
   let (sgl,sigma') = prim_refiner pr goal_sigma.sigma goal_sigma.it in
-  { it = sgl; sigma = sigma'; eff = goal_sigma.eff }
+  { it = sgl; sigma = sigma'; }
 
 let norm_evar_tac gl = refiner (Change_evars) gl
 
@@ -35,19 +34,18 @@ let norm_evar_tac gl = refiner (Change_evars) gl
 (*********************)
 
 
-let unpackage glsig = (ref (glsig.sigma)), glsig.it, (ref (glsig.eff))
+let unpackage glsig = (ref (glsig.sigma)), glsig.it
 
-let repackage e r v = {it = v; sigma = !r; eff = !e}
+let repackage r v = {it = v; sigma = !r; }
 
-let apply_sig_tac eff r tac g =
+let apply_sig_tac r tac g =
   check_for_interrupt (); (* Breakpoint *)
-  let glsigma = tac (repackage eff r g) in
+  let glsigma = tac (repackage r g) in
   r := glsigma.sigma;
-  eff := glsigma.eff;
   glsigma.it
 
 (* [goal_goal_list : goal sigma -> goal list sigma] *)
-let goal_goal_list gls = {it=[gls.it]; sigma=gls.sigma; eff=gls.eff}
+let goal_goal_list gls = {it=[gls.it]; sigma=gls.sigma; }
 
 (* forces propagation of evar constraints *)
 let tclNORMEVAR = norm_evar_tac
@@ -71,32 +69,32 @@ let tclFAIL lvl s g = raise (FailError (lvl,lazy s))
 let tclFAIL_lazy lvl s g = raise (FailError (lvl,s))
 
 let start_tac gls =
-  let sigr, g, eff = unpackage gls in
-  (sigr, [g], eff)
+  let sigr, g = unpackage gls in
+  (sigr, [g])
 
-let finish_tac (sigr,gl,eff) = repackage eff sigr gl
+let finish_tac (sigr,gl) = repackage sigr gl
 
 (* Apply [tacfi.(i)] on the first n subgoals, [tacli.(i)] on the last
    m subgoals, and [tac] on the others *)
-let thens3parts_tac tacfi tac tacli (sigr,gs,eff) =
+let thens3parts_tac tacfi tac tacli (sigr,gs) =
   let nf = Array.length tacfi in
   let nl = Array.length tacli in
   let ng = List.length gs in
   if ng<nf+nl then errorlabstrm "Refiner.thensn_tac" (str "Not enough subgoals.");
   let gll =
       (List.map_i (fun i ->
-        apply_sig_tac eff sigr (if i<nf then tacfi.(i) else if i>=ng-nl then tacli.(nl-ng+i) else tac))
+        apply_sig_tac sigr (if i<nf then tacfi.(i) else if i>=ng-nl then tacli.(nl-ng+i) else tac))
 	0 gs) in
-    (sigr,List.flatten gll, eff)
+    (sigr,List.flatten gll)
 
 (* Apply [taci.(i)] on the first n subgoals and [tac] on the others *)
 let thensf_tac taci tac = thens3parts_tac taci tac [||]
 
 (* Apply [tac i] on the ith subgoal (no subgoals number check) *)
-let thensi_tac tac (sigr,gs,eff) =
+let thensi_tac tac (sigr,gs) =
   let gll =
-    List.map_i (fun i -> apply_sig_tac eff sigr (tac i)) 1 gs in
-  (sigr, List.flatten gll, eff)
+    List.map_i (fun i -> apply_sig_tac sigr (tac i)) 1 gs in
+  (sigr, List.flatten gll)
 
 let then_tac tac = thensf_tac [||] tac
 
@@ -198,9 +196,9 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
     :Proof_type.goal list Evd.sigma =
   let oldhyps:Context.named_context = pf_hyps goal in
   let rslt:Proof_type.goal list Evd.sigma = tac goal in
-  let {it=gls;sigma=sigma;eff=eff} = rslt in
+  let { it = gls; sigma = sigma; } = rslt in
   let hyps:Context.named_context list =
-    List.map (fun gl -> pf_hyps { it = gl; sigma=sigma; eff=eff}) gls in
+    List.map (fun gl -> pf_hyps { it = gl; sigma=sigma; }) gls in
   let newhyps =
     List.map (fun hypl -> List.subtract hypl oldhyps) hyps in
   let emacs_str s =
@@ -250,8 +248,8 @@ let tclORELSE_THEN t1 t2then t2else gls =
   with
     | None -> t2else gls
     | Some sgl ->
-        let sigr, gl, eff = unpackage sgl in
-        finish_tac (then_tac t2then  (sigr,gl,eff))
+        let sigr, gl = unpackage sgl in
+        finish_tac (then_tac t2then  (sigr,gl))
 
 (* TRY f tries to apply f, and if it fails, leave the goal unchanged *)
 let tclTRY f = (tclORELSE0 f tclIDTAC)
@@ -356,24 +354,24 @@ let tclIDTAC_list gls = gls
 (* first_goal : goal list sigma -> goal sigma *)
 
 let first_goal gls =
-  let gl = gls.it and sig_0 = gls.sigma and eff_0 = gls.eff in
+  let gl = gls.it and sig_0 = gls.sigma in
   if List.is_empty gl then error "first_goal";
-  { it = List.hd gl; sigma = sig_0 ; eff = eff_0 }
+  { it = List.hd gl; sigma = sig_0; }
 
 (* goal_goal_list : goal sigma -> goal list sigma *)
 
 let goal_goal_list gls =
-  let gl = gls.it and sig_0 = gls.sigma and eff_0 = gls.eff in 
-  { it = [gl]; sigma = sig_0; eff = eff_0 }
+  let gl = gls.it and sig_0 = gls.sigma in 
+  { it = [gl]; sigma = sig_0; }
 
 (* tactic -> tactic_list : Apply a tactic to the first goal in the list *)
 
 let apply_tac_list tac glls =
-  let (sigr,lg,eff) = unpackage glls in
+  let (sigr,lg) = unpackage glls in
   match lg with
   | (g1::rest) ->
-      let gl = apply_sig_tac eff sigr tac g1 in
-      repackage eff sigr (gl@rest)
+      let gl = apply_sig_tac sigr tac g1 in
+      repackage sigr (gl@rest)
   | _ -> error "apply_tac_list"
 
 let then_tactic_list tacl1 tacl2 glls =

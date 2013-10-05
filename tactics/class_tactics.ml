@@ -285,8 +285,8 @@ let make_autogoal_hints =
 	  unfreeze (Some (only_classes, sign, hints)); hints
 
 let lift_tactic tac (f : goal list sigma -> autoinfo -> autogoal list sigma) : 'a tac =
-  { skft = fun sk fk {it = gl,hints; sigma=s;eff=eff} ->
-    let res = try Some (tac {it=gl; sigma=s;eff=eff})
+  { skft = fun sk fk {it = gl,hints; sigma=s;} ->
+    let res = try Some (tac {it=gl; sigma=s;})
               with e when catchable e -> None in
       match res with
       | Some gls -> sk (f gls hints) fk
@@ -294,7 +294,7 @@ let lift_tactic tac (f : goal list sigma -> autoinfo -> autogoal list sigma) : '
 
 let intro_tac : atac =
   lift_tactic Tactics.intro
-    (fun {it = gls; sigma = s;eff=eff} info ->
+    (fun {it = gls; sigma = s;} info ->
       let gls' =
 	List.map (fun g' ->
 	  let env = Goal.V82.env s g' in
@@ -303,13 +303,13 @@ let intro_tac : atac =
 	    (true,false,false) info.only_classes None (List.hd context) in
 	  let ldb = Hint_db.add_list hint info.hints in
 	    (g', { info with is_evar = None; hints = ldb; auto_last_tac = lazy (str"intro") })) gls
-      in {it = gls'; sigma = s;eff=eff})
+      in {it = gls'; sigma = s;})
 
 let normevars_tac : atac =
-  { skft = fun sk fk {it = (gl, info); sigma = s; eff=eff} ->
+  { skft = fun sk fk {it = (gl, info); sigma = s;} ->
     let gl', sigma' = Goal.V82.nf_evar s gl in
     let info' = { info with auto_last_tac = lazy (str"normevars") } in
-      sk {it = [gl', info']; sigma = sigma';eff=eff} fk }
+      sk {it = [gl', info']; sigma = sigma';} fk }
 
 (* Ordering of states is lexicographic on the number of remaining goals. *)
 let compare (pri, _, _, res) (pri', _, _, res') =
@@ -324,9 +324,9 @@ let or_tac (x : 'a tac) (y : 'a tac) : 'a tac =
   { skft = fun sk fk gls -> x.skft sk (fun () -> y.skft sk fk gls) gls }
 
 let hints_tac hints =
-  { skft = fun sk fk {it = gl,info; sigma = s;eff=eff} ->
+  { skft = fun sk fk {it = gl,info; sigma = s;} ->
       let concl = Goal.V82.concl s gl in
-      let tacgl = {it = gl; sigma = s;eff=eff} in
+      let tacgl = {it = gl; sigma = s;} in
       let poss = e_possible_resolve hints info.hints concl in
       let rec aux i foundone = function
 	| (tac, _, b, name, pp) :: tl ->
@@ -338,7 +338,7 @@ let hints_tac hints =
 	  in
 	    (match res with
 	       | None -> aux i foundone tl
-	       | Some {it = gls; sigma = s';eff=eff} ->
+	       | Some {it = gls; sigma = s';} ->
 	    	   if !typeclasses_debug then
 		     msg_debug (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp
 			    ++ str" on" ++ spc () ++ pr_ev s gl);
@@ -370,11 +370,11 @@ let hints_tac hints =
 			      hints =
 			      if b && not (Environ.eq_named_context_val (Goal.V82.hyps s' g) (Goal.V82.hyps s' gl))
 			      then make_autogoal_hints info.only_classes
-				~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s';eff=eff}
+				~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s';}
 			      else info.hints;
 			      auto_cut = derivs }
 			in g, info) 1 newgls in
-		   let glsv = {it = gls'; sigma = s';eff=eff} in
+		   let glsv = {it = gls'; sigma = s';} in
 		     sk glsv fk)
 	| [] ->
 	  if not foundone && !typeclasses_debug then
@@ -417,14 +417,14 @@ let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk
 		       fk)
 		    else fk'
 		  in aux s' (gls'::acc) fk'' gls)
-	       fk {it = (gl,info); sigma = s; eff = Declareops.no_seff })
+	       fk {it = (gl,info); sigma = s; })
     | [] -> Somek2 (List.rev acc, s, fk)
-  in fun {it = gls; sigma = s; eff = eff} fk ->
+  in fun {it = gls; sigma = s; } fk ->
     let rec aux' = function
       | Nonek2 -> fk ()
       | Somek2 (res, s', fk') ->
 	  let goals' = List.concat res in
-	    sk {it = goals'; sigma = s'; eff = eff } (fun () -> aux' (fk' ()))
+	    sk {it = goals'; sigma = s'; } (fun () -> aux' (fk' ()))
     in aux' (aux s [] (fun () -> Nonek2) gls)
 
 let then_tac (first : atac) (second : atac) : atac =
@@ -463,8 +463,8 @@ let cut_of_hints h =
 let make_autogoals ?(only_classes=true) ?(st=full_transparent_state) hints gs evm' =
   let cut = cut_of_hints hints in
   { it = List.map_i (fun i g ->
-    let (gl, auto) = make_autogoal ~only_classes ~st cut (Some (fst g)) {it = snd g; sigma = evm'; eff = Declareops.no_seff } in
-      (gl, { auto with auto_depth = [i]})) 1 gs; sigma = evm'; eff = Declareops.no_seff }
+    let (gl, auto) = make_autogoal ~only_classes ~st cut (Some (fst g)) {it = snd g; sigma = evm'; } in
+      (gl, { auto with auto_depth = [i]})) 1 gs; sigma = evm'; }
 
 let get_result r =
   match r with
@@ -489,11 +489,11 @@ let eauto_tac ?limit hints =
   | Some limit -> fix_limit limit (eauto_tac hints)
 
 let eauto ?(only_classes=true) ?st ?limit hints g =
-  let gl = { it = make_autogoal ~only_classes ?st (cut_of_hints hints) None g; sigma = project g; eff=g.eff } in
+  let gl = { it = make_autogoal ~only_classes ?st (cut_of_hints hints) None g; sigma = project g; } in
     match run_tac (eauto_tac ?limit hints) gl with
     | None -> raise Not_found
-    | Some {it = goals; sigma = s; eff=eff} ->
-	{it = List.map fst goals; sigma = s; eff=eff}
+    | Some {it = goals; sigma = s; } ->
+	{it = List.map fst goals; sigma = s;}
 
 let real_eauto st ?limit hints p evd =
   let rec aux evd fails =
@@ -539,7 +539,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
   let nc, gl, subst, _ = Evarutil.push_rel_context_to_named_context env gl in
   let (gl,t,sigma) =
     Goal.V82.mk_goal sigma nc gl Store.empty in
-  let gls = { it = gl ; sigma = sigma; eff= Declareops.no_seff } in (* XXX eff *)
+  let gls = { it = gl ; sigma = sigma; } in
   let hints = searchtable_map typeclasses_db in
   let gls' = eauto ?limit:!typeclasses_depth ~st:(Hint_db.transparent_state hints) [hints] gls in
   let evd = sig_sig gls' in

@@ -195,6 +195,17 @@ val evar_source : existential_key -> evar_map -> Evar_kinds.t located
 (** Convenience function. Wrapper around {!find} to recover the source of an
     evar in a given evar map. *)
 
+(** {5 Side-effects} *)
+
+val emit_side_effects : Declareops.side_effects -> evar_map -> evar_map
+(** Push a side-effect into the evar map. *)
+
+val eval_side_effects : evar_map -> Declareops.side_effects
+(** Return the effects contained in the evar map. *)
+
+val drop_side_effects : evar_map -> evar_map
+(** This should not be used. For hacking purposes. *)
+
 (** {5 Sort variables}
 
     Evar maps also keep track of the universe constraints defined at a given
@@ -212,8 +223,6 @@ val set_eq_sort : evar_map -> sorts -> sorts -> evar_map
 type 'a sigma = {
   it : 'a ;
   (** The base object. *)
-  eff : Declareops.side_effects;
-  (** Sideffects to be handled by the state machine. *)
   sigma : evar_map
   (** The added unification state. *)
 }
@@ -221,9 +230,7 @@ type 'a sigma = {
     ['a]. *)
 
 val sig_it  : 'a sigma -> 'a
-val sig_eff : 'a sigma -> Declareops.side_effects
 val sig_sig : 'a sigma -> evar_map
-val emit_side_effects : Declareops.side_effects -> 'a sigma -> 'a sigma
 
 (** {5 Meta machinery}
 

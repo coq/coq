@@ -43,13 +43,13 @@ type +'a sensitive
 (* evaluates a goal sensitive value in a given goal (knowing the current evar_map). *)
 val eval :
   'a sensitive -> Environ.env -> Evd.evar_map -> goal ->
-    'a * Evd.evar_map * Declareops.side_effects
+    'a * Evd.evar_map
 
 (* monadic bind on sensitive expressions *)
 val bind : 'a sensitive -> ('a -> 'b sensitive) -> 'b sensitive
 
 (* monadic return on sensitive expressions *)
-val return : 'a -> Declareops.side_effects -> 'a sensitive
+val return : 'a -> 'a sensitive
 
 
 (* interpretation of "open" constr *)
@@ -171,9 +171,9 @@ val here_list : goal list -> 'a -> 'a sensitive
    [Evd.evar_map -> 'a -> 'b * Evd.evar_map] on lists of type 'a, by propagating
    new evar_map to next definition *)
 val list_map : 
-  (Evd.evar_map -> 'a -> 'b * Evd.evar_map * Declareops.side_effects) ->
+  (Evd.evar_map -> 'a -> 'b * Evd.evar_map) ->
   'a list -> Evd.evar_map ->
-    'b list * Evd.evar_map * Declareops.side_effects list
+    'b list * Evd.evar_map
 
 (* Layer to implement v8.2 tactic engine ontop of the new architecture. 
    Types are different from what they used to be due to a change of the

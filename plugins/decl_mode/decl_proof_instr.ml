@@ -51,13 +51,13 @@ let _ =
 
 let tcl_change_info_gen info_gen =
   (fun gls ->
-     let it, eff = sig_it gls, sig_eff gls in
+     let it = sig_it gls in
      let concl = pf_concl gls in
      let hyps = Goal.V82.hyps (project gls) it in
      let extra = Goal.V82.extra (project gls) it in
      let (gl,ev,sigma) = Goal.V82.mk_goal (project gls) hyps concl (info_gen extra) in
      let sigma = Goal.V82.partial_solution sigma it ev in
-     { it = [gl] ; sigma= sigma; eff = eff } )
+     { it = [gl] ; sigma= sigma; } )
 
 let tcl_change_info info gls =
   let info_gen s = Store.set s Decl_mode.info info in
@@ -129,7 +129,7 @@ let go_to_proof_mode () =
 
 let daimon_tac gls =
   set_daimon_flag ();
-  {it=[];sigma=sig_sig gls;eff=gls.eff}
+  {it=[];sigma=sig_sig gls;}
 
 (* post-instruction focus management *)
 
@@ -1455,8 +1455,8 @@ let do_instr raw_instr pts =
   let has_tactic = preprocess pts raw_instr.instr in
   begin
     if has_tactic then
-            let { it=gls ; sigma=sigma; eff=eff } = Proof.V82.subgoals pts in
-      let gl = { it=List.hd gls ; sigma=sigma; eff=eff } in
+            let { it=gls ; sigma=sigma; } = Proof.V82.subgoals pts in
+      let gl = { it=List.hd gls ; sigma=sigma; } in
       let env=  pf_env gl in
       let ist = {ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty;
 		 gsigma = sigma; genv = env} in

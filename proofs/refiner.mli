@@ -16,17 +16,15 @@ open Logic
 (** The refiner (handles primitive rules and high-level tactics). *)
 
 val sig_it  : 'a sigma -> 'a
-val sig_eff : 'a sigma -> Declareops.side_effects
 val project : 'a sigma -> evar_map
 
 val pf_env  : goal sigma -> Environ.env
 val pf_hyps : goal sigma -> named_context
 
-val unpackage : 'a sigma -> evar_map ref * 'a * Declareops.side_effects ref
-val repackage : Declareops.side_effects ref -> evar_map ref -> 'a -> 'a sigma
+val unpackage : 'a sigma -> evar_map ref * 'a
+val repackage : evar_map ref -> 'a -> 'a sigma
 val apply_sig_tac :
-  Declareops.side_effects ref -> evar_map ref -> 
-    (goal sigma -> goal list sigma) -> goal -> goal list
+  evar_map ref -> (goal sigma -> goal list sigma) -> goal -> goal list
 
 val refiner : rule -> tactic
 

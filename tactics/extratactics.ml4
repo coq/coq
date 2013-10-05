@@ -115,8 +115,7 @@ TACTIC EXTEND ediscriminate
 END
 
 let discrHyp id gl =
-  discr_main {it = Term.mkVar id,NoBindings; sigma = Refiner.project gl;
-              eff = gl.eff} gl
+  discr_main {it = Term.mkVar id,NoBindings; sigma = Refiner.project gl;} gl
 
 let injection_main c =
  elimOnConstrWithHoles (injClause None) false c
@@ -160,8 +159,7 @@ TACTIC EXTEND einjection_as
 END
 
 let injHyp id gl =
-  injection_main { it = Term.mkVar id,NoBindings; sigma = Refiner.project gl;
-                   eff = gl.eff } gl
+  injection_main { it = Term.mkVar id,NoBindings; sigma = Refiner.project gl; } gl
 
 TACTIC EXTEND dependent_rewrite
 | [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]

@@ -1189,6 +1189,15 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
     | Some None -> Some None
     | None -> None
 
+(** ppedrot: this is a workaround. The current implementation of rewrite leaks
+    evar maps. We know that we should not produce effects in here, so we reput
+    them after computing... *)
+let tclEFFECT (tac : tactic) : tactic = fun gl ->
+  let eff = Evd.eval_side_effects gl.sigma in
+  let gls = tac gl in
+  let sigma = Evd.emit_side_effects eff (Evd.drop_side_effects gls.sigma) in
+  { gls with sigma; }
+
 let cl_rewrite_clause_tac ?abs strat clause gl =
   let evartac evd = Refiner.tclEVARS evd in
   let treat res =
@@ -1227,7 +1236,7 @@ let cl_rewrite_clause_tac ?abs strat clause gl =
 	Refiner.tclFAIL 0
 	  (str"Unable to satisfy the rewriting constraints."
 	   ++ fnl () ++ Himsg.explain_typeclass_error env e)
-  in tac gl
+  in tclEFFECT tac gl
 
 
 let bind_gl_info f =
@@ -1266,8 +1275,7 @@ let assert_replacing id newt tac =
 		      in
 		      let (e, args) = destEvar ev in
 			Goal.return 
-                         (mkEvar (e, Array.of_list inst))
-                         Declareops.no_seff)))
+                         (mkEvar (e, Array.of_list inst)))))
        in Goal.bind reft Goal.refine)
   in Proofview.tclTHEN (Proofview.tclSENSITIVE sens) 
        (Proofview.tclFOCUS 2 2 tac)
@@ -1311,12 +1319,13 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	   try 
 	     let res = 
 	       cl_rewrite_clause_aux ?abs strat env [] sigma ty is_hyp 
-	     in return (res, is_hyp) Declareops.no_seff
+	     in return (res, is_hyp)
 	   with
 	   | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
 	     raise (RewriteFailure (str"Unable to satisfy the rewriting constraints."
 			++ fnl () ++ Himsg.explain_typeclass_error env e)))
-  in Proofview.tclGOALBINDU info (fun i -> treat i)
+  in
+  Proofview.tclGOALBINDU info (fun i -> treat i)
   
 let newtactic_init_setoid () = 
   try init_setoid (); Proofview.tclUNIT ()
@@ -1726,10 +1735,10 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
     (), res
   in
     try
-      tclWEAK_PROGRESS 
+      (tclWEAK_PROGRESS 
 	(tclTHEN
            (Refiner.tclEVARS hypinfo.cl.evd)
-	   (cl_rewrite_clause_tac ~abs:hypinfo.abs strat cl)) gl
+	   (cl_rewrite_clause_tac ~abs:hypinfo.abs strat cl))) gl
     with RewriteFailure e ->
       let {l2r=l2r; c1=x; c2=y} = hypinfo in
 	raise (Pretype_errors.PretypeError

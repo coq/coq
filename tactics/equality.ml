@@ -309,7 +309,7 @@ let find_elim hdcncl lft2rgt dep cls ot gl =
   match kind_of_term hdcncl with
   | Ind ind -> 
       let c, eff = find_scheme scheme_name ind in 
-      let gl = {gl with eff = Declareops.union_side_effects eff gl.eff } in
+      let gl = {gl with sigma = Evd.emit_side_effects eff gl.sigma } in
       mkConst c, gl
   | _ -> assert false
 
@@ -809,7 +809,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn sort gl=
   let pf_ty = mkArrow eqn absurd_term in
   let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
   let pf = clenv_value_cast_meta absurd_clause in
-  let gl = {gl with eff = Declareops.union_side_effects eff gl.eff } in
+  let gl = {gl with sigma = Evd.emit_side_effects eff gl.sigma } in
   tclTHENS (cut_intro absurd_term)
     [onLastHypId gen_absurdity; refine pf] gl
 
@@ -1160,7 +1160,7 @@ let inject_if_homogenous_dependent_pair env sigma (eq,_,(t,t1,t2)) gl =
     let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
       ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
     let c, eff = find_scheme (!eq_dec_scheme_kind_name()) ind in
-    let gl = { gl with eff = Declareops.union_side_effects eff gl.eff } in
+    let gl = { gl with sigma = Evd.emit_side_effects eff gl.sigma } in
       (* cut with the good equality and prove the requested goal *)
     tclTHENS (cut (mkApp (ceq,new_eq_args)))
       [tclIDTAC; tclTHEN (apply (

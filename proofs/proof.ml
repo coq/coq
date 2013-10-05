@@ -234,7 +234,7 @@ let _ = Errors.register_handler begin function
   | _ -> raise Errors.Unhandled
 end
 
-let return p t =
+let return p =
   if not (is_done p) then
     raise UnfinishedProof
   else if has_unresolved_evar p then
@@ -242,7 +242,7 @@ let return p t =
     raise HasUnresolvedEvar
   else
     let p = unfocus end_of_stack_kind p () in
-    Proofview.return p.proofview t
+    Proofview.return p.proofview
 
 let initial_goals p = Proofview.initial_goals p.proofview
 
@@ -271,10 +271,10 @@ module V82 = struct
     Proofview.V82.goals (unroll_focus p.proofview p.focus_stack)
 
   let top_goal p =
-    let { Evd.it=gls ; sigma=sigma; eff=eff } =
+    let { Evd.it=gls ; sigma=sigma; } =
 	Proofview.V82.top_goals p.proofview
     in
-    { Evd.it=List.hd gls ; sigma=sigma; eff=eff }
+    { Evd.it=List.hd gls ; sigma=sigma; }
 
   let top_evars p =
     Proofview.V82.top_evars p.proofview

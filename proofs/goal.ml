@@ -87,8 +87,7 @@ type subgoals = { subgoals: goal list }
    optimisation, since it will generaly not change during the
    evaluation. *)
 type 'a sensitive =
-    Environ.env -> Evd.evar_map ref -> goal -> Evd.evar_info ->
-      'a * Declareops.side_effects
+    Environ.env -> Evd.evar_map ref -> goal -> Evd.evar_info -> 'a
 
 (* evaluates a goal sensitive value in a given goal (knowing the current evar_map). *)
 (* the evar_info corresponding to the goal is computed at once
@@ -97,25 +96,24 @@ let eval t env defs gl =
   let info = content defs gl in
   let env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
   let rdefs = ref defs in
-  let r, eff = t env rdefs gl info in
-  ( r , !rdefs, eff )
+  let r = t env rdefs gl info in
+  ( r , !rdefs )
 
 (* monadic bind on sensitive expressions *)
 let bind e f env rdefs goal info =
-  let a, eff1 = e env rdefs goal info in
-  let b, eff2 = f a env rdefs goal info in
-  b, Declareops.union_side_effects eff1 eff2
+  let a = e env rdefs goal info in
+  let b = f a env rdefs goal info in
+  b
 
 (* monadic return on sensitive expressions *)
-let return v e _ _ _ _ = v, e
+let return v _ _ _ _ = v
 
 (* interpretation of "open" constr *)
 (* spiwack: it is a wrapper around [Constrintern.interp_open_constr].
     In an ideal world, this could/should be the other way round.
     As of now, though, it seems at least quite useful to build tactics. *)
 let interp_constr cexpr env rdefs _ _ =
-  let c = Constrintern.interp_constr_evars rdefs env cexpr in
-  c, Declareops.no_seff
+  Constrintern.interp_constr_evars rdefs env cexpr
 
 (* Type of constr with holes used by refine. *)
 (* The list of evars doesn't necessarily contain all the evars in the constr,
@@ -135,18 +133,18 @@ module Refinable = struct
 
   let make t env rdefs gl info =
     let r = ref [] in
-    let me, eff = t r env rdefs gl info in
-    { me = me; my_evars = !r }, eff
+    let me = t r env rdefs gl info in
+    { me = me; my_evars = !r }
   let make_with t env rdefs gl info =
     let r = ref [] in
-    let (me,side), eff = t r env rdefs gl info in
-    ({ me = me ; my_evars = !r }, side), eff
+    let (me,side) = t r env rdefs gl info in
+    ({ me = me ; my_evars = !r }, side)
 
   let mkEvar handle env typ _ rdefs _ _ =
     let ev = Evarutil.e_new_evar rdefs env typ in
     let (e,_) = destEvar ev in
     handle := e::!handle;
-    ev, Declareops.no_seff
+    ev
 
   (* [with_type c typ] constrains term [c] to have type [typ].  *)
   let with_type t typ env rdefs _ _ =
@@ -160,14 +158,13 @@ module Refinable = struct
       Coercion.inh_conv_coerce_to (Loc.ghost) env !rdefs j typ
     in
     rdefs := new_defs;
-    j'.Environ.uj_val, Declareops.no_seff
+    j'.Environ.uj_val
 
   (* spiwack: it is not very fine grain since it solves all typeclasses holes,
       not only those containing the current goal, or a given term. But it
       seems to fit our needs so far. *)
   let resolve_typeclasses ?filter ?split ?(fail=false) () env rdefs _ _ =
-    rdefs:=Typeclasses.resolve_typeclasses ?filter ?split ~fail env !rdefs;
-    (), Declareops.no_seff
+    rdefs:=Typeclasses.resolve_typeclasses ?filter ?split ~fail env !rdefs
 
 
 
@@ -228,13 +225,13 @@ module Refinable = struct
       Pretyping.understand_tcc_evars ~flags rdefs env ~expected_type:tycon rawc
     in
       ignore(update_handle handle init_defs !rdefs);
-      open_constr, Declareops.no_seff
+      open_constr
 
   let constr_of_open_constr handle check_type (evars, c) env rdefs gl info =
     let delta = update_handle handle !rdefs evars in
       rdefs := Evd.fold (fun ev evi evd -> Evd.add evd ev evi) delta !rdefs;
       if check_type then with_type c (Evd.evar_concl (content !rdefs gl)) env rdefs gl info
-      else c, Declareops.no_seff
+      else c
 
 end
 
@@ -255,7 +252,7 @@ let refine step env rdefs gl info =
   let subgoals =
     Option.List.flatten (List.map (advance !rdefs) subgoals)
   in
-  { subgoals = subgoals }, Declareops.no_seff
+  { subgoals = subgoals }
 
 
 (*** Cleaning  goals ***)
@@ -269,7 +266,7 @@ let clear ids env rdefs gl info =
   let (cleared_evar,_) = destEvar cleared_concl in
   let cleared_goal = descendent gl cleared_evar in
   rdefs := Evd.define gl.content cleared_concl !rdefs;
-  { subgoals = [cleared_goal] }, Declareops.no_seff
+  { subgoals = [cleared_goal] }
 
 let wrap_apply_to_hyp_and_dependent_on sign id f g =
   try Environ.apply_to_hyp_and_dependent_on sign id f g
@@ -325,27 +322,27 @@ let clear_body idents env rdefs gl info =
   let (new_evar,_) = destEvar new_constr in
   let new_goal = descendent gl new_evar in
   rdefs := Evd.define gl.content new_constr defs';
-  { subgoals = [new_goal] }, Declareops.no_seff
+  { subgoals = [new_goal] }
 
 
 (*** Sensitive primitives ***)
 
 (* [concl] is the conclusion of the current goal *)
 let concl _ _ _ info =
-  Evd.evar_concl info, Declareops.no_seff
+  Evd.evar_concl info
 
 (* [hyps] is the [named_context_val] representing the hypotheses
    of the current goal *)
 let hyps _ _ _ info =
-  Evd.evar_hyps info, Declareops.no_seff
+  Evd.evar_hyps info
 
 (* [env] is the current [Environ.env] containing both the
    environment in which the proof is ran, and the goal hypotheses *)
-let env env _ _ _ = env, Declareops.no_seff
+let env env _ _ _ = env
 
 (* [defs] is the [Evd.evar_map] at the current evaluation point *)
 let defs _ rdefs _ _ =
-  !rdefs, Declareops.no_seff
+  !rdefs
 
 (* Cf mli for more detailed comment.
     [null], [plus], [here] and [here_list] use internal exception [UndefinedHere]
@@ -363,7 +360,7 @@ let equal { content = e1 } { content = e2 } = Evar.equal e1 e2
 
 let here goal value _ _ goal' _ =
   if equal goal goal' then
-    value, Declareops.no_seff
+    value
   else
     raise UndefinedHere
 
@@ -375,7 +372,7 @@ let rec list_mem_with eq x = function
 
 let here_list goals value _ _ goal' _ =
   if list_mem_with equal goal' goals then
-    value, Declareops.no_seff
+    value
   else
     raise UndefinedHere
 
@@ -395,23 +392,23 @@ let convert_hyp check (id,b,bt as d) env rdefs gl info =
        d)
   in
   (* Modified named context. *)
-  let new_hyps, effs1 =
-    let hyps, effs = hyps env rdefs gl info in
-    Environ.apply_to_hyp hyps id replace_function, effs
+  let new_hyps =
+    let hyps = hyps env rdefs gl info in
+    Environ.apply_to_hyp hyps id replace_function
   in
   let new_env = Environ.reset_with_named_context new_hyps env in
-  let new_constr, effs2 =
-    let concl, effs = concl env rdefs gl info in
-    Evarutil.e_new_evar rdefs new_env concl, effs
+  let new_constr =
+    let concl = concl env rdefs gl info in
+    Evarutil.e_new_evar rdefs new_env concl
   in
   let (new_evar,_) = destEvar new_constr in
   let new_goal = descendent gl new_evar in
   rdefs := Evd.define gl.content new_constr !rdefs;
-  { subgoals = [new_goal] }, Declareops.union_side_effects effs1 effs2
+  { subgoals = [new_goal] }
 
 let convert_concl check cl' env rdefs gl info =
   let sigma = !rdefs in
-  let cl, effs = concl env rdefs gl info in
+  let cl = concl env rdefs gl info in
   check_typability env sigma cl';
   if (not check) || Reductionops.is_conv_leq env sigma cl' cl then
     let new_constr =
@@ -420,7 +417,7 @@ let convert_concl check cl' env rdefs gl info =
     let (new_evar,_) = destEvar new_constr in
     let new_goal = descendent gl new_evar in
     rdefs := Evd.define gl.content new_constr !rdefs;
-    { subgoals = [new_goal] }, effs
+    { subgoals = [new_goal] }
   else
     Errors.error "convert-concl rule passed non-converting term"
 
@@ -433,20 +430,20 @@ let rename_hyp_sign id1 id2 sign =
     (fun (_,b,t) _ -> (id2,b,t))
     (fun d _ -> map_named_declaration (replace_vars [id1,mkVar id2]) d)
 let rename_hyp id1 id2 env rdefs gl info =
-  let hyps, effs1 = hyps env rdefs gl info in
+  let hyps = hyps env rdefs gl info in
   if not (Names.Id.equal id1 id2) &&
     List.mem id2 (Termops.ids_of_named_context (Environ.named_context_of_val hyps)) then
        Errors.error ((Names.Id.to_string id2)^" is already used.");
   let new_hyps = rename_hyp_sign id1 id2 hyps in
   let new_env = Environ.reset_with_named_context new_hyps env in
-  let old_concl, effs2 = concl env rdefs gl info in
+  let old_concl = concl env rdefs gl info in
   let new_concl = Vars.replace_vars [id1,mkVar id2] old_concl in
   let new_subproof = Evarutil.e_new_evar rdefs new_env new_concl in
   let new_subproof = Vars.replace_vars [id2,mkVar id1] new_subproof in
   let (new_evar,_) = destEvar new_subproof in
   let new_goal = descendent gl new_evar in
   rdefs := Evd.define gl.content new_subproof !rdefs;
-  { subgoals = [new_goal] }, Declareops.union_side_effects effs1 effs2
+  { subgoals = [new_goal] }
 
 (*** Additional functions ***)
 
@@ -458,10 +455,10 @@ let rename_hyp id1 id2 env rdefs gl info =
 *)
 let rec list_map f l s =
   match l with
-  | [] -> ([],s,[])
-  | a::l -> let (a,s,e) = f s a in
-               let (l,s,es) = list_map f l s in
-	       (a::l,s,e::es)
+  | [] -> ([],s)
+  | a::l -> let (a,s) = f s a in
+               let (l,s) = list_map f l s in
+	       (a::l,s)
 
 
 (* Layer to implement v8.2 tactic engine ontop of the new architecture.
@@ -525,7 +522,7 @@ module V82 = struct
        to have functional content. *)
     let evi = Evd.make_evar Environ.empty_named_context_val Term.mkProp in
     let (sigma, evk) = Evarutil.new_pure_evar_full Evd.empty evi in
-    { Evd.it = build evk ; Evd.sigma = sigma; eff = Declareops.no_seff }
+    { Evd.it = build evk ; Evd.sigma = sigma; }
 
   (* Makes a goal out of an evar *)
   let build = build
@@ -567,7 +564,7 @@ module V82 = struct
       { evi with Evd.evar_hyps = new_hyps; Evd.evar_filter = new_filter } in
     let new_evi = Typeclasses.mark_unresolvable new_evi in
     let (new_sigma, evk) = Evarutil.new_pure_evar_full Evd.empty new_evi in
-    { Evd.it = build evk ; sigma = new_sigma; eff = Declareops.no_seff }
+    { Evd.it = build evk ; sigma = new_sigma; }
 
   (* Used by the compatibility layer and typeclasses *)
   let nf_evar sigma gl =
