@@ -171,10 +171,7 @@ module Refinable = struct
   (* a pessimistic (i.e : there won't be many positive answers) filter
      over evar_maps, acting only on undefined evars *)
   let evar_map_filter_undefined f evm =
-    Evd.fold_undefined
-      (fun ev evi r -> if f ev evi then Evd.add r ev evi else r)
-      evm
-      Evd.empty
+    Evar.Map.filter f (Evd.undefined_map evm)
 
   (* Union, sorted in decreasing order, of two lists of evars in decreasing order. *)
   let rec fusion l1 l2 = match l1 , l2 with
@@ -193,7 +190,7 @@ module Refinable = struct
       post_defs
     in
     (* [delta_evars] in the shape of a list of [evar]-s*)
-    let delta_list = List.map fst (Evd.to_list delta_evars) in
+    let delta_list = List.map fst (Evar.Map.bindings delta_evars) in
     (* The variables in [myevars] are supposed to be stored
        in decreasing order. Breaking this invariant might cause
        many things to go wrong. *)
@@ -229,7 +226,7 @@ module Refinable = struct
 
   let constr_of_open_constr handle check_type (evars, c) env rdefs gl info =
     let delta = update_handle handle !rdefs evars in
-      rdefs := Evd.fold (fun ev evi evd -> Evd.add evd ev evi) delta !rdefs;
+      rdefs := Evar.Map.fold (fun ev evi evd -> Evd.add evd ev evi) delta !rdefs;
       if check_type then with_type c (Evd.evar_concl (content !rdefs gl)) env rdefs gl info
       else c
 

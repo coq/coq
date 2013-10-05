@@ -809,39 +809,10 @@ let evar_dependency_closure n sigma =
 let has_no_evar sigma =
   EvMap.is_empty sigma.defn_evars && EvMap.is_empty sigma.undf_evars
 
-let pr_evar_map_t depth sigma =
-  let { universes = uvs; univ_cstrs = univs; } = sigma in
-  let pr_evar_list l =
-    h 0 (prlist_with_sep fnl
-	   (fun (ev,evi) ->
-	     h 0 (str(string_of_existential ev) ++
-                    str"==" ++ pr_evar_info evi)) l) in
-  let evs =
-    if has_no_evar sigma then mt ()
-    else
-      match depth with
-      | None ->
-          (* Print all evars *)
-          str"EVARS:"++brk(0,1)++pr_evar_list (to_list sigma)++fnl()
-      | Some n ->
-          (* Print all evars *)
-          str"UNDEFINED EVARS"++
-          (if Int.equal n 0 then mt() else str" (+level "++int n++str" closure):")++
-          brk(0,1)++
-          pr_evar_list (evar_dependency_closure n sigma)++fnl()
-  and svs =
-    if Univ.UniverseLSet.is_empty uvs then mt ()
-    else str"UNIVERSE VARIABLES:"++brk(0,1)++
-      h 0 (prlist_with_sep fnl
-	     (fun u -> Univ.pr_uni_level u) (Univ.UniverseLSet.elements uvs))++fnl()
-  and cs =
-    if Univ.is_initial_universes univs then mt ()
-    else str"UNIVERSES:"++brk(0,1)++
-      h 0 (Univ.pr_universes univs)++fnl()
-  in evs ++ svs ++ cs
-
 let print_env_short env =
-  let pr_body n = function None -> pr_name n | Some b -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")" in
+  let pr_body n = function
+  | None -> pr_name n
+  | Some b -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")" in
   let pr_named_decl (n, b, _) = pr_body (Name n) b in
   let pr_rel_decl (n, b, _) = pr_body n b in
   let nc = List.rev (named_context env) in
@@ -849,35 +820,79 @@ let print_env_short env =
     str "[" ++ pr_sequence pr_named_decl nc ++ str "]" ++ spc () ++
     str "[" ++ pr_sequence pr_rel_decl rc ++ str "]"
 
-let pr_constraints pbs =
-  h 0
-    (prlist_with_sep fnl
-       (fun (pbty,env,t1,t2) ->
-	  print_env_short env ++ spc () ++ str "|-" ++ spc () ++
-	    print_constr t1 ++ spc() ++
-	    str (match pbty with
-		 | Reduction.CONV -> "=="
-		 | Reduction.CUMUL -> "<=") ++
-	    spc() ++ print_constr t2) pbs)
-
-let pr_evar_map_constraints evd =
-  match evd.conv_pbs with
-  | [] -> mt ()
-  | _ -> pr_constraints evd.conv_pbs ++ fnl ()
-
-let pr_evar_map allevars evd =
-  let pp_evm =
-    if has_no_evar evd then mt() else
-      pr_evar_map_t allevars evd++fnl() in
-  let cstrs = match evd.conv_pbs with
-  | [] -> mt ()
-  | _ ->
-    str "CONSTRAINTS:" ++ brk(0,1) ++ pr_constraints evd.conv_pbs ++ fnl ()
+let pr_evar_constraints pbs =
+  let pr_evconstr (pbty, env, t1, t2) =
+    print_env_short env ++ spc () ++ str "|-" ++ spc () ++
+      print_constr t1 ++ spc () ++
+      str (match pbty with
+            | Reduction.CONV -> "=="
+            | Reduction.CUMUL -> "<=") ++
+      spc () ++ print_constr t2
   in
-  let pp_met =
-    if Metamap.is_empty evd.metas then mt() else
-      str"METAS:"++brk(0,1)++pr_meta_map evd.metas in
-  v 0 (pp_evm ++ cstrs ++ pp_met)
+  prlist_with_sep fnl pr_evconstr pbs
+
+let pr_evar_map_gen pr_evars sigma =
+  let { universes = uvs; univ_cstrs = univs; } = sigma in
+  let evs = if has_no_evar sigma then mt () else pr_evars sigma
+  and svs =
+    if Univ.UniverseLSet.is_empty uvs then mt ()
+    else str "UNIVERSE VARIABLES:" ++ brk (0, 1) ++
+      h 0 (prlist_with_sep fnl Univ.pr_uni_level
+        (Univ.UniverseLSet.elements uvs)) ++ fnl ()
+  and cs =
+    if Univ.is_initial_universes univs then mt ()
+    else str "UNIVERSES:" ++ brk (0, 1) ++
+      h 0 (Univ.pr_universes univs) ++ fnl ()
+  and cstrs =
+    if List.is_empty sigma.conv_pbs then mt ()
+    else
+    str "CONSTRAINTS:" ++ brk (0, 1) ++
+      pr_evar_constraints sigma.conv_pbs ++ fnl ()
+  and metas =
+    if Metamap.is_empty sigma.metas then mt ()
+    else
+      str "METAS:" ++ brk (0, 1) ++ pr_meta_map sigma.metas
+  in
+  evs ++ svs ++ cs ++ cstrs ++ metas
+
+let pr_evar_list l =
+  let pr (ev, evi) =
+    h 0 (str (string_of_existential ev) ++
+      str "==" ++ pr_evar_info evi)
+  in
+  h 0 (prlist_with_sep fnl pr l)
+
+let pr_evar_by_depth depth sigma = match depth with
+| None ->
+  (* Print all evars *)
+  str"EVARS:"++brk(0,1)++pr_evar_list (to_list sigma)++fnl()
+| Some n ->
+  (* Print all evars *)
+  str"UNDEFINED EVARS:"++
+  (if Int.equal n 0 then mt() else str" (+level "++int n++str" closure):")++
+  brk(0,1)++
+  pr_evar_list (evar_dependency_closure n sigma)++fnl()
+
+let pr_evar_by_filter filter sigma =
+  let defined = Evar.Map.filter filter sigma.defn_evars in
+  let undefined = Evar.Map.filter filter sigma.undf_evars in
+  let prdef =
+    if Evar.Map.is_empty defined then mt ()
+    else str "DEFINED EVARS:" ++ brk (0, 1) ++
+      pr_evar_list (Evar.Map.bindings defined)
+  in
+  let prundef =
+    if Evar.Map.is_empty undefined then mt ()
+    else str "UNDEFINED EVARS:" ++ brk (0, 1) ++
+      pr_evar_list (Evar.Map.bindings undefined)
+  in
+  prdef ++ prundef
+
+let pr_evar_map depth sigma =
+  pr_evar_map_gen (fun sigma -> pr_evar_by_depth depth sigma) sigma
+
+let pr_evar_map_filter filter sigma =
+  pr_evar_map_gen (fun sigma -> pr_evar_by_filter filter sigma) sigma
 
 let pr_metaset metas =
   str "[" ++ pr_sequence pr_meta (Metaset.elements metas) ++ str "]"

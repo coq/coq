@@ -112,9 +112,6 @@ val remove : evar_map -> evar -> evar_map
 val mem : evar_map -> evar -> bool
 (** Whether an evar is present in an evarmap. *)
 
-val to_list : evar_map -> (evar * evar_info) list
-(** Recover the evars as a list. This should not be used. *)
-
 val fold : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 (** Apply a function to all evars and their associated info in an evarmap. *)
 
@@ -343,8 +340,10 @@ type unsolvability_explanation = SeveralInstancesFound of int
 (** {5 Debug pretty-printers} *)
 
 val pr_evar_info : evar_info -> Pp.std_ppcmds
-val pr_evar_map_constraints : evar_map -> Pp.std_ppcmds
+val pr_evar_constraints : evar_constraint list -> Pp.std_ppcmds
 val pr_evar_map : int option -> evar_map -> Pp.std_ppcmds
+val pr_evar_map_filter : (Evar.t -> evar_info -> bool) ->
+  evar_map -> Pp.std_ppcmds
 val pr_metaset : Metaset.t -> Pp.std_ppcmds
 
 (** {5 Deprecated functions} *)
