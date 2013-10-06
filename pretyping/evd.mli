@@ -152,9 +152,6 @@ val add_constraints : evar_map -> Univ.constraints -> evar_map
 val undefined_map : evar_map -> evar_info Evar.Map.t
 (** Access the undefined evar mapping directly. *)
 
-val defined_map : evar_map -> evar_info Evar.Map.t
-(** Access the defined evar mapping directly. *)
-
 (** {6 Instantiating partial terms} *)
 
 exception NotInstantiatedEvar
@@ -180,7 +177,6 @@ val evars_reset_evd : ?with_conv_pbs:bool -> evar_map ->  evar_map -> evar_map
 (** {6 Misc} *)
 
 val undefined_evars : evar_map -> evar_map
-val defined_evars : evar_map -> evar_map
 (** TODO: see where we can replace those functions by their [_map] variant. *)
 
 val evar_declare :
