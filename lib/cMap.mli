@@ -24,6 +24,10 @@ sig
   module Set : Set.S with type elt = key
   (** Sets used by the domain function *)
 
+  val modify : key -> (key -> 'a -> 'a) -> 'a t -> 'a t
+  (** Apply the given function to the binding of the given key.
+      @raise [Not_found] when the key is unbound in the map. *)
+
   val domain : 'a t -> Set.t
   (** Recover the set of keys defined in the map. *)
 
