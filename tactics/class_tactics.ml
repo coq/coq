@@ -36,18 +36,18 @@ exception Found of evar_map
 
 (** We transform the evars that are concerned by this resolution
     (according to predicate p) into goals.
-    Invariant: function p only manipulates undefined evars *)
+    Invariant: function p only manipulates and returns undefined evars *)
 
 let evars_to_goals p evm =
-  let goals, evm' =
-    Evd.fold_undefined
-      (fun ev evi (gls, evm') ->
-	let evi', goal = p evm ev evi in
-	let gls' = if goal then (ev,Goal.V82.build ev) :: gls else gls in
-	(gls', Evd.add evm' ev evi'))
-      evm ([], Evd.defined_evars evm)
+  let goals = ref Evar.Map.empty in
+  let map ev evi =
+    let evi, goal = p evm ev evi in
+    let () = if goal then goals := Evar.Map.add ev (Goal.V82.build ev) !goals in
+    evi
   in
-  if List.is_empty goals then None else Some (List.rev goals, evm')
+  let evm = Evd.raw_map_undefined map evm in
+  if Evar.Map.is_empty !goals then None
+  else Some (Evar.Map.bindings !goals, evm)
 
 (** Typeclasses instance search tactic / eauto *)
 
@@ -560,16 +560,6 @@ let split_evars evm =
   deps_of_constraints (snd (extract_all_conv_pbs evm)) evm p;
   Intpart.partition p
 
-(** [evars_in_comp] filters an [evar_map], keeping only evars
-    that belongs to a certain component *)
-
-let evars_in_comp comp evm =
-  try
-    evars_reset_evd
-      (Evar.Set.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evm ev))
-	 comp Evd.empty) evm
-  with Not_found -> assert false
-
 let is_inference_forced p evd ev =
   try
     let evi = Evd.find_undefined evd ev in
@@ -588,20 +578,23 @@ let is_mandatory p comp evd =
 
 (** In case of unsatisfiable constraints, build a nice error message *)
 
-let error_unresolvable env comp do_split evd =
+let error_unresolvable env comp evd =
   let evd = Evarutil.nf_evar_map_undefined evd in
-  let evm = if do_split then evars_in_comp comp evd else evd in
-  let _, ev = Evd.fold_undefined
-    (fun ev evi (b,acc) ->
-      (* focus on one instance if only one was searched for *)
-      if not (Option.is_empty (class_of_constr evi.evar_concl)) then
-	if not b (* || do_split *) then
-	  true, Some ev
-	else b, None
-      else b, acc) evm (false, None)
+  let is_part ev = match comp with
+  | None -> true
+  | Some s -> Evar.Set.mem ev s
   in
+  let fold ev evi (found, accu) =
+    let ev_class = class_of_constr evi.evar_concl in
+    if not (Option.is_empty ev_class) && is_part ev then
+      (* focus on one instance if only one was searched for *)
+      if not found then (true, Some ev)
+      else (found, None)
+    else (found, accu)
+   in
+  let (_, ev) = Evd.fold_undefined fold evd (true, None) in
   Typeclasses_errors.unsatisfiable_constraints
-    (Evarutil.nf_env_evar evm env) evm ev
+    (Evarutil.nf_env_evar evd env) evd ev comp
 
 (** Check if an evar is concerned by the current resolution attempt,
     (and in particular is in the current component), and also update
@@ -663,7 +656,8 @@ let resolve_all_evars debug m env p oevd do_split fail =
       with Unresolved | Not_found ->
 	if fail && (not do_split || is_mandatory (p evd) comp evd)
 	then (* Unable to satisfy the constraints. *)
-	  error_unresolvable env comp do_split evd
+          let comp = if do_split then Some comp else None in
+	  error_unresolvable env comp evd
 	else (* Best effort: do nothing on this component *)
 	  docomp evd comps
   in docomp oevd split

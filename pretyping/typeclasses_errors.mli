@@ -25,7 +25,9 @@ type typeclass_error =
   | NotAClass of constr
   | UnboundMethod of global_reference * Id.t located (** Class name, method *)
   | NoInstance of Id.t located * constr list
-  | UnsatisfiableConstraints of evar_map * (existential_key * Evar_kinds.t) option
+  | UnsatisfiableConstraints of
+    evar_map * (existential_key * Evar_kinds.t) option * Evar.Set.t option
+    (** evar map, unresolvable evar, connex component *)
   | MismatchedContextInstance of contexts * constr_expr list * rel_context (** found, expected *)
 
 exception TypeClassError of env * typeclass_error
@@ -36,7 +38,8 @@ val unbound_method : env -> global_reference -> Id.t located -> 'a
 
 val no_instance : env -> Id.t located -> constr list -> 'a
 
-val unsatisfiable_constraints : env -> evar_map -> evar option -> 'a
+val unsatisfiable_constraints : env -> evar_map -> evar option ->
+  Evar.Set.t option -> 'a
 
 val mismatched_ctx_inst : env -> contexts -> constr_expr list -> rel_context -> 'a
 

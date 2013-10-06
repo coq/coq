@@ -801,12 +801,16 @@ let pr_constraints printenv env evd evars cstrs =
       let filter evk _ = Evar.Map.mem evk evars in
       pr_evar_map_filter filter evd
 
-let explain_unsatisfiable_constraints env evd constr =
+let explain_unsatisfiable_constraints env evd constr comp =
   let (_, constraints) = Evd.extract_all_conv_pbs evd in
   let undef = Evd.undefined_map (Evarutil.nf_evar_map_undefined evd) in
-  (* Remove evars that are not subject to resolution. *)
-  let is_resolvable _ evi = Typeclasses.is_resolvable evi in
-  let undef = Evar.Map.filter is_resolvable undef in
+  (** Only keep evars that are subject to resolution and members of the given
+     component. *)
+  let is_kept evk evi = match comp with
+  | None -> Typeclasses.is_resolvable evi
+  | Some comp -> Typeclasses.is_resolvable evi && Evar.Set.mem evk comp
+  in
+  let undef = Evar.Map.filter is_kept undef in
   match constr with
   | None ->
     str "Unable to satisfy the following constraints:" ++ fnl () ++
@@ -832,8 +836,8 @@ let explain_typeclass_error env = function
   | NotAClass c -> explain_not_a_class env c
   | UnboundMethod (cid, id) -> explain_unbound_method env cid id
   | NoInstance (id, l) -> explain_no_instance env id l
-  | UnsatisfiableConstraints (evd, c) ->
-      explain_unsatisfiable_constraints env evd c
+  | UnsatisfiableConstraints (evd, c, comp) ->
+      explain_unsatisfiable_constraints env evd c comp
   | MismatchedContextInstance (c,i,j) -> explain_mismatched_contexts env c i j
 
 (* Refiner errors *)
