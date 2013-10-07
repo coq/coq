@@ -571,6 +571,20 @@ object(self)
   method process_until_end_or_error =
     self#process_until_iter self#get_end_of_input
 
+  (* finds the state_id and if it an unfocus is needed to reach it *)
+  method private find_id until =
+    try
+      Document.find_map
+        (function
+          | { start; stop; state_id = Some id } -> fun b ->
+              if until 0 (Some id) start stop then
+                Some (id, if Document.focused cmd_stack then not b else false)
+              else
+                None
+          | { start; stop; state_id = None } -> fun _ -> None)
+      cmd_stack
+    with Not_found -> initial_state, Document.focused cmd_stack
+
   method private segment_to_be_cleared until =
     let finder (n, found, zone) ({ start; stop; state_id } as sentence) =
       let found = found || until n state_id start stop in
@@ -618,16 +632,24 @@ object(self)
       self#show_goals in
     Coq.bind (Coq.lift opening) (fun () ->
     let rec undo until =
-      let n, to_id, sentence, seg = self#segment_to_be_cleared until in
+      let to_id, unfocus_needed = self#find_id until in
       Coq.bind (Coq.edit_at to_id) (function
       | Good (CSig.Inl (* NewTip *) ()) ->
-          self#cleanup n seg;
+          if unfocus_needed then self#exit_focus to_id
+          else begin
+            let n, to_id, sentence, seg =
+              self#segment_to_be_cleared (fun _ id _ _ -> id = Some to_id) in
+            self#cleanup n seg
+          end;
           conclusion ()
       | Good (CSig.Inr (* Focus  *) (stop_id,(start_id,tip))) ->
-          self#enter_focus start_id stop_id to_id tip;
-          let n, to_id, sentence, seg =
-            self#segment_to_be_cleared (fun _ id _ _ -> id = Some to_id) in
-          self#cleanup n seg;
+          if unfocus_needed then self#exit_focus tip
+          else begin
+            self#enter_focus start_id stop_id to_id tip;
+            let n, to_id, sentence, seg =
+              self#segment_to_be_cleared (fun _ id _ _ -> id = Some to_id) in
+            self#cleanup n seg
+          end;
           conclusion ()
       | Fail (safe_id, loc, msg) ->
           if loc <> None then messages#push Error "Fixme LOC";
