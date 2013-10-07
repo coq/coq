@@ -1147,57 +1147,63 @@ end = struct (* {{{ *)
         | Stop x -> x
         | Next acc -> next acc
  
-  let undo_vernac_classifier = function
-    | VernacResetInitial ->
-        VtStm (VtBack Stateid.initial, true), VtNow
-    | VernacResetName (_,name) ->
-        msg_warning
-          (str"Reset not implemented for automatically generated constants");
-        let id = VCS.get_branch_pos (VCS.current_branch ()) in
-        (try
-          let oid =
-            fold_until (fun b (id,_,label) ->
-              if b then Stop id else Next (List.mem name label))
-            false id in
+  let undo_vernac_classifier v =
+    try
+      match v with
+      | VernacResetInitial ->
+          VtStm (VtBack Stateid.initial, true), VtNow
+      | VernacResetName (_,name) ->
+          msg_warning
+            (str"Reset not implemented for automatically generated constants");
+          let id = VCS.get_branch_pos (VCS.current_branch ()) in
+          (try
+            let oid =
+              fold_until (fun b (id,_,label) ->
+                if b then Stop id else Next (List.mem name label))
+              false id in
+            VtStm (VtBack oid, true), VtNow
+          with Not_found ->
+            VtStm (VtBack id, true), VtNow)
+      | VernacBack n ->
+          let id = VCS.get_branch_pos (VCS.current_branch ()) in
+          let oid = fold_until (fun n (id,_,_) ->
+            if Int.equal n 0 then Stop id else Next (n-1)) n id in
           VtStm (VtBack oid, true), VtNow
-        with Not_found ->
-          VtStm (VtBack id, true), VtNow)
-    | VernacBack n ->
-        let id = VCS.get_branch_pos (VCS.current_branch ()) in
-        let oid = fold_until (fun n (id,_,_) ->
-          if Int.equal n 0 then Stop id else Next (n-1)) n id in
-        VtStm (VtBack oid, true), VtNow
-    | VernacUndo n ->
-        let id = VCS.get_branch_pos (VCS.current_branch ()) in
-        let oid = fold_until (fun n (id,_,_) ->
-          if Int.equal n 0 then Stop id else Next (n-1)) n id in
-        VtStm (VtBack oid, true), VtLater
-    | VernacUndoTo _
-    | VernacRestart as e ->
-        let m = match e with VernacUndoTo m -> m | _ -> 0 in
-        let id = VCS.get_branch_pos (VCS.current_branch ()) in
-        let vcs =
-          match (VCS.get_info id).vcs_backup with 
-          | None, _ -> anomaly(str"Backtrack: tip with no vcs_backup")
-          | Some vcs, _ -> vcs in
-        let cb, _ =
-          Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs) in
-        let n = fold_until (fun n (_,vcs,_) ->
-          if List.mem cb (Vcs_.branches vcs) then Next (n+1) else Stop n)
-          0 id in
-        let oid = fold_until (fun n (id,_,_) ->
-          if Int.equal n 0 then Stop id else Next (n-1)) (n-m-1) id in
-        VtStm (VtBack oid, true), VtLater
-    | VernacAbortAll ->
-        let id = VCS.get_branch_pos (VCS.current_branch ()) in
-        let oid = fold_until (fun () (id,vcs,_) ->
-          match Vcs_.branches vcs with [_] -> Stop id | _ -> Next ())
-          () id in
-        VtStm (VtBack oid, true), VtLater
-    | VernacBacktrack (id,_,_)
-    | VernacBackTo id ->
-        VtStm (VtBack (Stateid.of_int id), true), VtNow
-    | _ -> VtUnknown, VtNow
+      | VernacUndo n ->
+          let id = VCS.get_branch_pos (VCS.current_branch ()) in
+          let oid = fold_until (fun n (id,_,_) ->
+            if Int.equal n 0 then Stop id else Next (n-1)) n id in
+          VtStm (VtBack oid, true), VtLater
+      | VernacUndoTo _
+      | VernacRestart as e ->
+          let m = match e with VernacUndoTo m -> m | _ -> 0 in
+          let id = VCS.get_branch_pos (VCS.current_branch ()) in
+          let vcs =
+            match (VCS.get_info id).vcs_backup with 
+            | None, _ -> anomaly(str"Backtrack: tip with no vcs_backup")
+            | Some vcs, _ -> vcs in
+          let cb, _ =
+            Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs) in
+          let n = fold_until (fun n (_,vcs,_) ->
+            if List.mem cb (Vcs_.branches vcs) then Next (n+1) else Stop n)
+            0 id in
+          let oid = fold_until (fun n (id,_,_) ->
+            if Int.equal n 0 then Stop id else Next (n-1)) (n-m-1) id in
+          VtStm (VtBack oid, true), VtLater
+      | VernacAbortAll ->
+          let id = VCS.get_branch_pos (VCS.current_branch ()) in
+          let oid = fold_until (fun () (id,vcs,_) ->
+            match Vcs_.branches vcs with [_] -> Stop id | _ -> Next ())
+            () id in
+          VtStm (VtBack oid, true), VtLater
+      | VernacBacktrack (id,_,_)
+      | VernacBackTo id ->
+          VtStm (VtBack (Stateid.of_int id), true), VtNow
+      | _ -> VtUnknown, VtNow
+    with
+    | Not_found ->
+       msg_warning(str"undo_vernac_classifier: going back to the initial state.");
+       VtStm (VtBack Stateid.initial, true), VtNow
 
 end (* }}} *)
 
