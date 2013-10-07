@@ -58,21 +58,3 @@ type ('b, 'c) seek = ('b, 'c) CSig.seek = Stop of 'b | Next of 'c
     @raise Not_found it there is none. *)
 val fold_until : ('c -> 'a -> ('b, 'c) seek) -> 'c -> 'a t -> 'b
 
-(** After [focus s c1 c2] the top of [s] is the topmost element [x] such that
-    [c1 x] is [true] and the bottom is the first element [y] following [x]
-    such that [c2 y] is [true].  After a focus push/pop/top/fold_until
-    only use the focused part.
-    @raise Invalid_argument "CStack.focus" if there is no such [x] and [y] *)
-val focus : 'a t -> cond_top:('a -> bool) -> cond_bot:('a -> bool) -> unit
-
-(** Undoes a [focus].
-    @raise Invalid_argument "CStack.unfocus" if the stack is not focused *)
-val unfocus : 'a t -> unit
-
-(** Is the stack focused *)
-val focused : 'a t -> bool
-
-(** Returns [top, s, bot] where [top @ s @ bot] is the full stack, and [s]
-    the focused part *)
-val to_lists : 'a t -> 'a list * 'a list * 'a list
-

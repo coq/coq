@@ -10,10 +10,9 @@ exception Empty = Stack.Empty
 
 type 'a t = {
   mutable stack : 'a list;
-  mutable context : ('a list * 'a list) option
 }
 
-let create () = { stack = []; context = None }
+let create () = { stack = [] }
 
 let push x s = s.stack <- x :: s.stack
 
@@ -25,13 +24,7 @@ let top = function
   | { stack = [] } -> raise Stack.Empty
   | { stack = x::_ } -> x
 
-let to_list = function
-  | { context = None; stack = s } -> s
-  | { context = Some (a,b); stack = s } -> a @ s @ b
-
-let to_lists = function
-  | { context = None; stack = s } -> [],s,[]
-  | { context = Some (a,b); stack = s } -> a,s,b
+let to_list { stack = s } = s
 
 let find f s = List.find f (to_list s)
 
@@ -50,41 +43,11 @@ let fold_until f accu s =
     | x :: xs -> match f accu x with Stop x -> x | Next i -> aux i xs in
   aux accu s.stack
 
-let is_empty = function
-  | { stack = []; context = None } -> true
-  | _ -> false
+let is_empty { stack = s } = s = []
 
-let iter f = function
-  | { stack = s; context = None } -> List.iter f s
-  | { stack = s; context = Some(a,b) } ->
-        List.iter f a; List.iter f s; List.iter f b
+let iter f { stack = s } = List.iter f s
 
-let clear s = s.stack <- []; s.context <- None
+let clear s = s.stack <- []
 
-let length = function
-  | { stack = s; context = None } -> List.length s
-  | { stack = s; context = Some(a,b) } ->
-        List.length a + List.length s + List.length b
-
-let focus s ~cond_top:c_start ~cond_bot:c_stop =
-  if s.context <> None then raise (Invalid_argument "CStack.focus");
-  let rec aux (a,s,b) grab = function
-    | [] -> raise (Invalid_argument "CStack.focus")
-    | x::xs when not grab ->
-        if c_start x then aux (a,s,b) true (x::xs)
-        else aux (x::a,s,b) grab xs
-    | x::xs ->
-        if c_stop x then a, x::s, xs
-        else aux (a,x::s,b) grab xs in
-  let a, stack, b = aux ([],[],[]) false s.stack in
-  s.stack <- List.rev stack;
-  s.context <- Some (List.rev a, b)
-
-let unfocus = function
-  | { context = None } -> raise (Invalid_argument "CStack.unfocus")
-  | { context = Some (a,b); stack } as s ->
-       s.context <- None;
-       s.stack <- a @ stack @ b
-
-let focused { context } = context <> None
+let length { stack = s } = List.length s
 
