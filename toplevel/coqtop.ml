@@ -383,8 +383,8 @@ let init arglist =
       init_library_roots ();
       load_vernac_obj ();
       require ();
-      load_rcfile();
       Stm.init ();
+      load_rcfile();
       load_vernacular ();
       compile_files ();
       outputstate ()
