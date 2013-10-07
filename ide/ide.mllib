@@ -27,6 +27,7 @@ Wg_ScriptView
 Coq_commands
 Wg_Command
 FileOps
+Document
 CoqOps
 Session
 Coqide_ui
