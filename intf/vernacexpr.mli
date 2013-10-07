@@ -219,6 +219,7 @@ type bullet =
 type 'a stm_vernac =
   | JoinDocument
   | Finish
+  | PrintDag
   | Observe of Stateid.t
   | Command of 'a (* An out of flow command not to be recorded by Stm *)
   | PGLast of 'a (* To ease the life of PG *)
@@ -436,6 +437,7 @@ and vernac_part_of_script = bool
 and vernac_control =
   | VtFinish
   | VtJoinDocument
+  | VtPrintDag
   | VtObserve of Stateid.t
   | VtBack of Stateid.t
 type vernac_when =

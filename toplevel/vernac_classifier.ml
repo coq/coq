@@ -21,7 +21,7 @@ let string_of_vernac_type = function
   | VtProofStep -> "ProofStep"
   | VtProofMode s -> "ProofMode " ^ s
   | VtQuery b -> "Query" ^ string_of_in_script b
-  | VtStm ((VtFinish|VtJoinDocument|VtObserve _), b) ->
+  | VtStm ((VtFinish|VtJoinDocument|VtObserve _|VtPrintDag), b) ->
       "Stm" ^ string_of_in_script b
   | VtStm (VtBack _, b) -> "Stm Back" ^ string_of_in_script b
 
@@ -53,6 +53,7 @@ let rec classify_vernac e =
     (* Stm *)
     | VernacStm Finish -> VtStm (VtFinish, true), VtNow
     | VernacStm JoinDocument -> VtStm (VtJoinDocument, true), VtNow
+    | VernacStm PrintDag -> VtStm (VtPrintDag, true), VtNow
     | VernacStm (Observe id) -> VtStm (VtObserve id, true), VtNow
     | VernacStm (Command x) -> elide_part_of_script_and_now (classify_vernac x)
     | VernacStm (PGLast x) -> fst (classify_vernac x), VtNow

@@ -478,6 +478,7 @@ let rec pr_vernac = function
 
   (* Stm *)
   | VernacStm JoinDocument -> str"Stm JoinDocument"
+  | VernacStm PrintDag -> str"Stm PrintDag"
   | VernacStm Finish -> str"Stm Finish"
   | VernacStm (Observe id) ->
       str"Stm Observe " ++ str(Stateid.to_string id)

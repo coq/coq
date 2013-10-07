@@ -80,6 +80,7 @@ GEXTEND Gram
       (* Stm backdoor *)
       | IDENT "Stm"; IDENT "JoinDocument"; "." -> VernacStm JoinDocument
       | IDENT "Stm"; IDENT "Finish"; "." -> VernacStm Finish
+      | IDENT "Stm"; IDENT "PrintDag"; "." -> VernacStm PrintDag
       | IDENT "Stm"; IDENT "Observe"; id = INT; "." ->
           VernacStm (Observe (Stateid.of_int (int_of_string id)))
       | IDENT "Stm"; IDENT "Command"; v = vernac_aux -> VernacStm (Command v)

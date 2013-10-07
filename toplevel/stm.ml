@@ -212,7 +212,7 @@ module VCS : sig
 
   val visit : id -> visit
 
-  val print : unit -> unit
+  val print : ?now:bool -> unit -> unit
 
   val backup : unit -> vcs
   val restore : vcs -> unit
@@ -426,7 +426,7 @@ end = struct (* {{{ *)
 
   module NB : sig (* Non blocking Sys.command *)
 
-    val command : (unit -> unit) -> unit
+    val command : now:bool -> (unit -> unit) -> unit
 
   end = struct (* {{{ *)
     
@@ -452,15 +452,18 @@ end = struct (* {{{ *)
       try while true do get_last_job () () done
       with e -> () (* No failure *)
 
-    let command job = (* job () *)
-      set_last_job job;
-      if Option.is_empty !worker then
-        worker := Some (Thread.create run_command ())
+    let command ~now job =
+      if now then job ()
+      else begin
+        set_last_job job;
+        if Option.is_empty !worker then
+          worker := Some (Thread.create run_command ())
+      end
 
   end (* }}} *)
 
-  let print () =
-    if not !Flags.debug then () else NB.command (print_dag !vcs)
+  let print ?(now=false) () =
+    if not !Flags.debug && not now then () else NB.command ~now (print_dag !vcs)
 
   let backup () = !vcs
   let restore v = vcs := v
@@ -1307,8 +1310,10 @@ let process_transaction ~tty verbose c (loc, expr) =
       (* Joining various parts of the document *)
       | VtStm (VtJoinDocument, b), VtNow -> warn_if_pos x b; join (); `Ok
       | VtStm (VtFinish, b),       VtNow -> warn_if_pos x b; finish (); `Ok
+      | VtStm (VtPrintDag, b), VtNow ->
+          warn_if_pos x b; VCS.print ~now:true (); `Ok
       | VtStm (VtObserve id, b),   VtNow -> warn_if_pos x b; observe id; `Ok
-      | VtStm ((VtObserve _ | VtFinish | VtJoinDocument), _), VtLater ->
+      | VtStm ((VtObserve _ | VtFinish | VtJoinDocument|VtPrintDag),_), VtLater ->
           anomaly(str"classifier: join actions cannot be classified as VtLater")
       
       (* Back *)
