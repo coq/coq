@@ -3,6 +3,6 @@
 #
 # Simple backtrack by 0 should be a no-op
 #
-INTERP Definition foo := 0.
-REWIND 0
-INTERPRAW Check foo.
+ADD here { Definition foo := 0. }
+EDIT_AT here
+QUERY { Check foo. }

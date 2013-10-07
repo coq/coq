@@ -4,14 +4,18 @@
 # Undoing declarations, as first step
 # new in 8.2
 #
-INTERP Theorem d : O=O.
-INTERP Definition e := O.
-INTERP Definition f := O.
-REWIND 1
-# <replay>
-INTERP Definition f := O.
-# <\replay>
-INTERP assert True by trivial.
-INTERP trivial.
-INTERP Qed.
-INTERPRAW Check e.
+ADD { Theorem d : O=O. }
+ADD here { Definition e := O. }
+ADD { Definition f := O. }
+
+# This is a bug in Stm undo, e is lost from master
+EDIT_AT here
+ADD { Definition f := O. }
+
+ADD { assert True by trivial. }
+ADD { exact (eq_refl e). }
+ADD { Qed. }
+ADD { Stm PrintDag. }
+ADD { Stm Finish. }
+QUERY { Print d. }
+QUERY { Check e. }

@@ -543,7 +543,7 @@ $(COQDOC): $(patsubst %.cma,%$(BESTLIB),$(COQDOCCMO:.cmo=$(BESTOBJ)))
 
 $(FAKEIDE): lib/clib$(BESTLIB) lib/xml_lexer$(BESTOBJ) lib/xml_parser$(BESTOBJ) lib/xml_printer$(BESTOBJ) tools/fake_ide$(BESTOBJ)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,unix)
+	$(HIDE)$(call bestocaml,,str unix)
 
 # votour: a small vo explorer (based on the checker)
 

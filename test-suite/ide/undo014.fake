@@ -4,23 +4,23 @@
 # Test backtracking in presence of nested proofs
 # Third, undo inside an inner proof
 #
-INTERP Lemma aa : True -> True /\ True.
-INTERP intro H.
-INTERP split.
-INTERP Lemma bb : False -> False.
-INTERP intro H.
-INTERP apply H.
-INTERP Qed.
-INTERP apply H.
-INTERP Lemma cc : False -> True.
-INTERP intro H.
-INTERP destruct H.
-REWIND 1
+ADD { Lemma aa : True -> True /\ True. }
+ADD { intro H. }
+ADD { split. }
+ADD { Lemma bb : False -> False. }
+ADD { intro H. }
+ADD { apply H. }
+ADD { Qed. }
+ADD { apply H. }
+ADD { Lemma cc : False -> True. }
+ADD here { intro H. }
+ADD { destruct H. }
+EDIT_AT here
 # <replay>
-INTERP destruct H.
+ADD { destruct H. }
 # </replay>
-INTERP Qed.
-INTERP apply H.
-INTERP Qed.
-INTERPRAW Fail idtac.
-INTERPRAW Check (aa,bb,cc).
+ADD { Qed. }
+ADD { apply H. }
+ADD { Qed. }
+QUERY { Fail idtac. }
+QUERY { Check (aa,bb,cc). }

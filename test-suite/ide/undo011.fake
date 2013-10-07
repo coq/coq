@@ -4,29 +4,31 @@
 # Bug 2082
 # Broken due to proof engine rewriting
 #
-INTERP Variable A : Prop.
-INTERP Variable B : Prop.
-INTERP Axiom OR : A \/ B.
-INTERP Lemma MyLemma2 : True.
-INTERP proof.
-INTERP per cases of (A \/ B) by OR.
-INTERP suppose A.
-INTERP     then (1 = 1).
-INTERP     then H1 : thesis.
-INTERP     thus thesis by H1.
-INTERP suppose B.
-REWIND 1
+ADD { Variable A : Prop. }
+ADD { Variable B : Prop. }
+ADD { Axiom OR : A \/ B. }
+ADD { Lemma MyLemma2 : True. }
+ADD { proof. }
+ADD { per cases of (A \/ B) by OR. }
+ADD { suppose A. }
+ADD {     then (1 = 1). }
+ADD there {     then H1 : thesis. }
+ADD here {     thus thesis by H1. }
+ADD { suppose B. }
+QUERY { Show. }
+EDIT_AT here
 # <replay>
-INTERP suppose B.
+ADD { suppose B. }
 # </replay>
-REWIND 2
+EDIT_AT there
 # <replay>
-INTERP     thus thesis by H1.
-INTERP suppose B.
+ADD {    thus thesis by H1. }
+ADD { suppose B. }
 # </replay>
-INTERP    then (1 = 1).
-INTERP    then H2 : thesis.
-INTERP    thus thesis by H2.
-INTERP end cases.
-INTERP end proof.
-INTERP Qed.
+QUERY { Show. }
+ADD {    then (1 = 1). }
+ADD {    then H2 : thesis. }
+ADD {    thus thesis by H2. }
+ADD { end cases. } 
+ADD { end proof. }
+ADD { Qed. }

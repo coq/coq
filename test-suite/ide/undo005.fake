@@ -3,13 +3,13 @@
 #
 # Undoing arbitrary commands, as non-first step
 #
-INTERP Theorem b : O=O.
-INTERP assert True by trivial.
-INTERP Ltac g x := x.
+ADD { Theorem b : O=O. }
+ADD here { assert True by trivial. }
+ADD { Ltac g x := x. }
 # <replay>
-REWIND 1
+EDIT_AT here
 # <\replay>
-INTERP Ltac g x := x.
-INTERP assert True by trivial.
-INTERP trivial.
-INTERP Qed.
+ADD { Ltac g x := x. }
+ADD { assert True by trivial. }
+ADD { trivial. }
+ADD { Qed. }

@@ -2,25 +2,25 @@
 # Run it via fake_ide
 #
 # Test backtracking in presence of nested proofs
-# First, undoing the whole
 #
-INTERP Lemma aa : True -> True /\ True.
-INTERP intro H.
-INTERP split.
-INTERP Lemma bb : False -> False.
-INTERP intro H.
-INTERP apply H.
-INTERP Qed.
-INTERP apply H.
-INTERP Lemma cc : False -> True.
-INTERP intro H.
-INTERP destruct H.
-INTERP Qed.
-INTERP apply H.
-INTERP Qed.
-REWIND 1
-# We should now be just before aa, without opened proofs
-INTERPRAW Fail idtac.
-INTERPRAW Fail Check aa.
-INTERPRAW Check bb.
-INTERPRAW Check cc.
+ADD { Lemma aa : True -> True /\ True. }
+ADD { intro H. }
+ADD { split. }
+ADD { Lemma bb : False -> False. }
+ADD { intro H. }
+ADD { apply H. }
+ADD { Qed. }
+ADD { apply H. }
+ADD { Lemma cc : False -> True. }
+ADD { intro H. }
+ADD { destruct H. }
+ADD { Qed. }
+QUERY { Show. }
+ADD here { apply H. }
+ADD { Qed. }
+EDIT_AT here
+# We should now be just before the Qed.
+QUERY { Fail Check aa. }
+QUERY { Check bb. }
+QUERY { Check cc. }
+ADD { Qed. }

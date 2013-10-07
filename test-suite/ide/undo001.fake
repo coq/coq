@@ -3,8 +3,8 @@
 #
 # Simple backtrack by 1 between two global definitions
 #
-INTERP Definition foo := 0.
-INTERP Definition bar := 1.
-REWIND 1
-INTERPRAW Check foo.
-INTERPRAW Fail Check bar.
+ADD here { Definition foo := 0. }
+ADD { Definition bar := 1. }
+EDIT_AT here
+QUERY { Check foo. }
+QUERY { Fail Check bar. }

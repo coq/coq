@@ -4,25 +4,25 @@
 # Undoing declarations, interleaved with proof steps and commands *)
 # new in 8.2 *)
 #
-INTERP Theorem n : O=O.
-INTERP assert True by trivial.
-INTERP Definition o := O.
-INTERP Ltac h x := x.
-INTERP assert True by trivial.
-INTERP Focus.
-INTERP Definition p := O.
-REWIND 1
-REWIND 1
-REWIND 1
-REWIND 1
-REWIND 1
+ADD { Theorem n : O=O. }
+ADD s2 { assert True by trivial. }
+ADD s3 { Definition o := O. }
+ADD s4 { Ltac h x := x. }
+ADD s5 { assert True by trivial. }
+ADD s6 { Focus. }
+ADD { Definition p := O. }
+EDIT_AT s6
+EDIT_AT s5
+EDIT_AT s4
+EDIT_AT s3
+EDIT_AT s2
 # <replay>
-INTERP Definition o := O.
-INTERP Ltac h x := x.
-INTERP assert True by trivial.
-INTERP Focus.
-INTERP Definition p := O.
+ADD { Definition o := O. }
+ADD { Ltac h x := x. }
+ADD { assert True by trivial. } 
+ADD { Focus. }
+ADD { Definition p := O. }
 # </replay>
-INTERP assert True by trivial.
-INTERP trivial.
-INTERP Qed.
+ADD { assert True by trivial. }
+ADD { trivial. }
+ADD { Qed. }

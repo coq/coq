@@ -2,27 +2,26 @@
 # Run it via fake_ide
 #
 # Test backtracking in presence of nested proofs
-# Second, trigger the full undo of an inner proof
+# Second, trigger the undo of an inner proof
 #
-INTERP Lemma aa : True -> True /\ True.
-INTERP intro H.
-INTERP split.
-INTERP Lemma bb : False -> False.
-INTERP intro H.
-INTERP apply H.
-INTERP Qed.
-INTERP apply H.
-INTERP Lemma cc : False -> True.
-INTERP intro H.
-INTERP destruct H.
-INTERP Qed.
-INTERP apply H.
-REWIND 2
-# We should now be just before "Lemma cc"
+ADD { Lemma aa : True -> True /\ True. }
+ADD { intro H. }
+ADD { split. }
+ADD { Lemma bb : False -> False. }
+ADD { intro H. }
+ADD { apply H. }
+ADD { Qed. }
+ADD { apply H. }
+ADD { Lemma cc : False -> True. }
+ADD { intro H. }
+ADD here { destruct H. }
+ADD { Qed. }
+ADD { apply H. }
+EDIT_AT here
 # <replay>
-INTERP Qed.
-INTERP apply H.
+ADD { Qed. }
+ADD { apply H. }
 # </replay>
-INTERP Qed.
-INTERPRAW Fail idtac.
-INTERPRAW Check (aa,bb,cc).
+ADD { Qed. }
+QUERY { Fail idtac. }
+QUERY { Check (aa,bb,cc). }

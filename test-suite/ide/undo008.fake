@@ -4,15 +4,15 @@
 # Undoing declarations, as non-first step
 # new in 8.2
 #
-INTERP Theorem h : O=O.
-INTERP assert True by trivial.
-INTERP Definition i := O.
-INTERP Definition j := O.
-REWIND 1
+ADD { Theorem h : O=O. }
+ADD { assert True by trivial. }
+ADD here { Definition i := O. }
+ADD { Definition j := O. }
+EDIT_AT here
 # <replay>
-INTERP Definition j := O.
+ADD { Definition j := O. }
 # <\replay>
-INTERP assert True by trivial.
-INTERP trivial.
-INTERP Qed.
-INTERPRAW Check i.
+ADD { assert True by trivial. }
+ADD { trivial. }
+ADD { Qed. }
+QUERY { Check i. }
