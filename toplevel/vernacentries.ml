@@ -1837,7 +1837,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
 	  | HasNotFailed ->
 	      errorlabstrm "Fail" (str "The command has not failed!")
 	  | HasFailed msg ->
-	      if_verbose msgnl
+	      if_verbose msg_info
 		(str "The command has indeed failed with message:" ++
 		 fnl () ++ str "=> " ++ hov 0 (str msg))
           | _ -> assert false
@@ -1869,5 +1869,6 @@ let interp ?(verbosely=true) ?proof (loc,c) =
             Flags.program_mode := orig_program_mode;
             raise e
   in
-    aux false c
+    if verbosely then Flags.verbosely (aux false) c
+    else aux false c
 
