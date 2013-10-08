@@ -165,34 +165,36 @@ let new_meta =
 
 let mk_new_meta () = mkMeta(new_meta())
 
+(** Transfer an evar from [sigma2] to [sigma1] *)
+let transfer ev (sigma1, sigma2) =
+  let nsigma1 = Evd.add sigma1 ev (Evd.find sigma2 ev) in
+  let nsigma2 = Evd.remove sigma2 ev in
+  (nsigma1, nsigma2)
+
 let collect_evars emap c =
   let rec collrec acc c =
     match kind_of_term c with
       | Evar (evk,_) ->
-	  if Evd.is_undefined emap evk then evk::acc
+	  if Evd.is_undefined emap evk then Evar.Set.add evk acc
 	  else (* No recursion on the evar instantiation *) acc
       | _         ->
 	  fold_constr collrec acc c in
-  List.uniquize (collrec [] c)
+  collrec Evar.Set.empty c
 
 let push_dependent_evars sigma emap =
-  Evd.fold_undefined (fun ev {evar_concl = ccl} (sigma',emap') ->
-    List.fold_left
-      (fun (sigma',emap') ev ->
-	(Evd.add sigma' ev (Evd.find emap' ev),Evd.remove emap' ev))
-      (sigma',emap') (collect_evars emap' ccl))
-    emap (sigma,emap)
+  let fold ev {evar_concl = ccl} (sigma, emap) =
+    Evar.Set.fold transfer (collect_evars emap ccl) (sigma, emap)
+  in
+  Evd.fold_undefined fold emap (sigma, emap)
 
 let push_duplicated_evars sigma emap c =
-  let rec collrec (one,(sigma,emap) as acc) c =
+  let rec collrec (one, evars as acc) c =
     match kind_of_term c with
-    | Evar (evk,_) when not (Evd.mem sigma evk) ->
-	if List.mem evk one then
-	  let sigma' = Evd.add sigma evk (Evd.find emap evk) in
-	  let emap' = Evd.remove emap evk in
-	  (one,(sigma',emap'))
+    | Evar (evk,_) when not (Evd.mem (fst evars) evk) ->
+	if List.exists (fun ev -> Evar.equal evk ev) one then
+	  (one, transfer evk evars)
 	else
-	  (evk::one,(sigma,emap))
+	  (evk::one, evars)
     | _ ->
 	fold_constr collrec acc c
   in
