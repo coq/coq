@@ -44,8 +44,9 @@ let mk_ignore c pt =
   let names = CList.map_filter (function
   | GramNonTerminal(_,_,_,Some p) -> Some (Names.Id.to_string p)
   | _ -> None) pt in
-  let names = List.map (fun n -> <:expr< $lid:n$ >>) names in
-  <:expr< do { ignore($list:names$); $c$ } >>
+  let fold accu id = <:expr< let _ = $lid:id$ in $accu$ >> in
+  let names = List.fold_left fold <:expr< () >> names in
+  <:expr< do { let _ = $names$ in $c$ } >>
 
 let make_clause_classifier cg s (_,pt,c,_) =
   match c ,cg with
