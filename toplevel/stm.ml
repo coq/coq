@@ -971,7 +971,8 @@ let collect_proof cur hd id =
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         if delegate_policy_check accn then `MaybeOptimizable (parent, accn)
         else `NotOptimizable `TooShort
-    | _, `Sideff se -> collect None (id::accn) view.next
+    | _, `Sideff (`Ast (x,_)) -> collect (Some (id,x)) (id::accn) view.next
+    | _, `Sideff (`Id _) -> `NotOptimizable `NestedProof
     | _ -> `NotOptimizable `Unknown in
  match cur, (VCS.visit id).step with
  | (parent, (_,_,VernacExactProof _)), `Fork _ ->
@@ -980,6 +981,14 @@ let collect_proof cur hd id =
      if State.is_cached id then `NotOptimizable `AlreadyEvaluated
      else if is_defined cur then `NotOptimizable `Transparent
      else collect (Some cur) [] id
+
+let string_of_reason = function
+  | `Transparent -> "Transparent"
+  | `AlreadyEvaluated -> "AlreadyEvaluated"
+  | `TooShort -> "TooShort"
+  | `NestedProof -> "NestedProof"
+  | `Immediate -> "Immediate"
+  | _ -> "Unknown Reason"
 
 let known_state ?(redefine_qed=false) ~cache id =
 
@@ -1052,11 +1061,7 @@ let known_state ?(redefine_qed=false) ~cache id =
               ), `Yes
           | `NotOptimizable reason -> (fun () ->
                 prerr_endline ("NotOptimizable " ^ Stateid.to_string id ^ " " ^
-                  match reason with
-                  | `Transparent -> "Transparent"
-                  | `AlreadyEvaluated -> "AlreadyEvaluated"
-                  | `TooShort -> "TooShort"
-                  | _ -> "WTF");
+                  string_of_reason reason);
                 reach eop;
                 begin match keep with
                 | VtKeep ->
