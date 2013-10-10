@@ -1,0 +1,41 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# jumping between broken proofs + interp error while fixing.
+# the error should note make the GUI unfocus the currently focused proof.
+ 
+# first proof
+ADD { Lemma a : True /\ True. }
+ADD { Proof using. }
+ADD here { split. }
+ADD { exact Ix. } # first error
+ADD { exact Ix. } # second error
+ADD { Qed. }
+# second proof
+ADD { Lemma b : True. }
+ADD { Proof using. }
+ADD { exact I. }
+ADD last { Qed. }
+# We wait all slaves and expect both proofs to fail
+WAIT
+# Going back to the error
+EDIT_AT here
+# Fixing the proof
+ADD fix { exact I. }
+# showing the goals
+GOALS
+# re adding the wrong step
+ADD { exact Ix. }
+# showing the goals (failure) and retracting to the safe state suggested by Coq
+FAILGOALS
+# we assert we jumped back to the state immediately before the last (erroneous) 
+# one
+ASSERT TIP fix
+# finish off the proof
+ADD { exact I. }
+ADD { Qed. }
+# here we unfocus, hence we jump back to the end of the document
+ASSERT TIP last
+# we are back at the end
+QUERY { Check a. }
+QUERY { Check b. }

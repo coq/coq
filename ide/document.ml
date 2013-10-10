@@ -135,7 +135,7 @@ let find_id d f =
     | { state_id = Some id; data } when f id data -> Some id
     | _ -> None in
   try CList.find_map pred top, true with Not_found ->
-  try CList.find_map pred focus, focused d with Not_found ->
+  try CList.find_map pred focus, false with Not_found ->
       CList.find_map pred bot, true
 
 let before_tip d =

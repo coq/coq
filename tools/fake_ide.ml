@@ -212,9 +212,20 @@ module GUILogic = struct
         ignore(Document.cut_at doc id);
         print_document ()
   
-  let get_id id =
-    try Document.find_id doc (fun _ { name } -> name = id)
-    with Not_found -> error ("No state is named " ^ id)
+  let get_id_pred pred =
+    try Document.find_id doc pred
+    with Not_found -> error "No state found"
+
+  let get_id id = get_id_pred (fun _ { name } -> name = id)
+  
+  let after_fail coq = function
+    | Interface.Fail (safe_id,_,s) ->
+        prerr_endline "The command failed as expected";
+        let to_id, need_unfocus =
+          get_id_pred (fun id _ -> Stateid.equal id safe_id) in
+        after_edit_at (to_id, need_unfocus)
+          (base_eval_call (Serialize.edit_at to_id) coq)
+    | Interface.Good _ -> error "The command was expected to fail but did not"
 
 end
 
@@ -231,6 +242,10 @@ let eval_print l coq =
   | [ Tok(_,"ADD"); Top [Tok(_,name)]; Tok(_,phrase) ] ->
       let eid, tip = add_sentence ~name phrase in
       after_add (base_eval_call (add ((phrase,eid),(tip,true))) coq)
+  | [ Tok(_,"GOALS"); ] ->
+      eval_call (goals ()) coq
+  | [ Tok(_,"FAILGOALS"); ] ->
+      after_fail coq (base_eval_call ~fail:false (goals ()) coq)
   | [ Tok(_,"EDIT_AT"); Tok(_,id) ] ->
       let to_id, need_unfocus = get_id id in
       after_edit_at (to_id, need_unfocus) (base_eval_call (edit_at to_id) coq)
@@ -258,6 +273,8 @@ let grammar =
     ; Seq [Item (eat_rex "EDIT_AT"); Item eat_id]
     ; Seq [Item (eat_rex "QUERY"); Opt (Item eat_id); Item eat_phrase]
     ; Seq [Item (eat_rex "WAIT")]
+    ; Seq [Item (eat_rex "GOALS")]
+    ; Seq [Item (eat_rex "FAILGOALS")]
     ; Seq [Item (eat_rex "ASSERT"); Item (eat_rex "TIP"); Item eat_id ]
     ; Item (eat_rex "#[^\n]*")
     ]
