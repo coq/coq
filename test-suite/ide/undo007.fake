@@ -11,11 +11,10 @@ ADD { Definition f := O. }
 # This is a bug in Stm undo, e is lost from master
 EDIT_AT here
 ADD { Definition f := O. }
-
 ADD { assert True by trivial. }
 ADD { exact (eq_refl e). }
 ADD { Qed. }
-ADD { Stm PrintDag. }
-ADD { Stm Finish. }
+# QUERY { Stm PrintDag. }
+# QUERY { Stm Finish. }
 QUERY { Print d. }
 QUERY { Check e. }

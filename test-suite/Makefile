@@ -434,7 +434,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide "$(BIN)coqtop -boot" < $< 2>&1; \
+	  $(BIN)fake_ide $< "$(BIN)coqtop -boot -coq-slaves on -coq-slaves-opts min-proof-length-to-delegate=0" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \

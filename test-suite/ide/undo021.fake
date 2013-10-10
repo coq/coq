@@ -1,0 +1,29 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# jumping between broken proofs
+ 
+# first proof
+ADD { Lemma a : True. }
+ADD { Proof using. }
+ADD here { idtac. }
+ADD { exact Ix. }
+ADD { Qed. }
+# second proof
+ADD { Lemma b : True. }
+ADD here2 { Proof using. }
+ADD { exact Ix. }
+ADD { Qed. }
+# We wait all slaves and expect both proofs to fail
+WAIT
+# Going back to the error
+EDIT_AT here2
+# this is not implemented yet, all after here is erased 
+EDIT_AT here
+# Fixing the proof
+ADD { exact I. }
+ADD last { Qed. }
+ASSERT TIP last
+# we are back at the end
+QUERY { Check a. }
+QUERY { Fail Check b. }

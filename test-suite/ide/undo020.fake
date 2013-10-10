@@ -1,0 +1,27 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# focusing a broken proof and fixing it
+ 
+# first proof
+ADD { Lemma a : True. }
+ADD { Proof using. }
+ADD here { idtac. }
+ADD { exact Ix. }
+ADD { Qed. }
+# second proof
+ADD { Lemma b : False. }
+ADD { Proof using. }
+ADD { admit. }
+ADD last { Qed. }
+# We join and expect some proof to fail
+WAIT
+# Going back to the error
+EDIT_AT here
+# Fixing the proof
+ADD { exact I. }
+ADD { Qed. }
+# we are back at the end
+ASSERT TIP last
+QUERY { Check a. }
+QUERY { Check b. }
