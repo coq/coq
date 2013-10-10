@@ -23,6 +23,7 @@ let interactive () =
 
 let fallback_to_lazy_if_marshal_error = ref true
 let fallback_to_lazy_if_slave_dies = ref true
+let min_proof_length_to_delegate = ref 20
 let coq_slave_extra_env = ref [||]
 
 (* Wrapper for Vernacentries.interp to set the feedback id *)
@@ -947,7 +948,7 @@ end = struct (* {{{ *)
 let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
 
 let delegate_policy_check l =
-  (interactive () = `Yes || List.length l > 20) &&
+  (interactive () = `Yes || List.length l > !min_proof_length_to_delegate) &&
   (if interactive () = `Yes then !Flags.coq_slave_mode = 0 else true)
 
 let collect_proof cur hd id =
@@ -1049,8 +1050,13 @@ let known_state ?(redefine_qed=false) ~cache id =
                 assert (Stateid.equal view.next eop);
                 reach eop; vernac_interp id x; Proof_global.discard_all ()
               ), `Yes
-          | `NotOptimizable _ -> (fun () ->
-                prerr_endline ("NotOptimizable " ^ Stateid.to_string id);
+          | `NotOptimizable reason -> (fun () ->
+                prerr_endline ("NotOptimizable " ^ Stateid.to_string id ^ " " ^
+                  match reason with
+                  | `Transparent -> "Transparent"
+                  | `AlreadyEvaluated -> "AlreadyEvaluated"
+                  | `TooShort -> "TooShort"
+                  | _ -> "WTF");
                 reach eop;
                 begin match keep with
                 | VtKeep ->
@@ -1224,12 +1230,18 @@ let init () =
       fallback_to_lazy_if_marshal_error := false;
     if List.mem "fallback-to-lazy-if-slave-dies=no" opts then
       fallback_to_lazy_if_slave_dies := false;
-    try
+    begin try
       let env_opt = Str.regexp "^extra-env=" in
       let env = List.find (fun s -> Str.string_match env_opt s 0) opts in
       coq_slave_extra_env := Array.of_list
         (Str.split_delim (Str.regexp ";") (Str.replace_first env_opt "" env))
-    with Not_found -> ()
+    with Not_found -> () end;
+    begin try
+      let minlen_opt = Str.regexp "^min-proof-length-to-delegate=" in
+      let len = List.find (fun s -> Str.string_match minlen_opt s 0) opts in
+      min_proof_length_to_delegate :=
+        int_of_string (Str.replace_first minlen_opt "" len)
+    with Not_found -> () end;
   end
 
 let slave_main_loop () = Slaves.slave_main_loop ()
@@ -1251,6 +1263,10 @@ let finish () =
   observe (VCS.get_branch_pos (VCS.current_branch ()));
   VCS.print ()
 
+let wait () =
+  Slaves.wait_all_done ();
+  VCS.print ()
+
 let join () =
   let rec jab id =
     if Stateid.equal id Stateid.initial then ()
@@ -1261,8 +1277,7 @@ let join () =
            Future.purify observe eop; jab view.next
       | _ -> jab view.next in
   finish ();
-  VCS.print ();
-  Slaves.wait_all_done ();
+  wait ();
   prerr_endline "Joining the environment";
   Global.join_safe_environment ();
   VCS.print ();
@@ -1310,10 +1325,12 @@ let process_transaction ~tty verbose c (loc, expr) =
       (* Joining various parts of the document *)
       | VtStm (VtJoinDocument, b), VtNow -> warn_if_pos x b; join (); `Ok
       | VtStm (VtFinish, b),       VtNow -> warn_if_pos x b; finish (); `Ok
+      | VtStm (VtWait, b),       VtNow -> warn_if_pos x b; finish (); wait (); `Ok
       | VtStm (VtPrintDag, b), VtNow ->
           warn_if_pos x b; VCS.print ~now:true (); `Ok
       | VtStm (VtObserve id, b),   VtNow -> warn_if_pos x b; observe id; `Ok
-      | VtStm ((VtObserve _ | VtFinish | VtJoinDocument|VtPrintDag),_), VtLater ->
+      | VtStm ((VtObserve _ | VtFinish | VtJoinDocument
+                |VtPrintDag |VtWait),_), VtLater ->
           anomaly(str"classifier: join actions cannot be classified as VtLater")
       
       (* Back *)
@@ -1467,8 +1484,15 @@ let query ~at s =
   Future.purify (fun s ->
     if Stateid.equal at Stateid.dummy then finish ()
     else Reach.known_state ~cache:`Yes at;
-    let loc_ast = vernac_parse 0 s in
-    ignore(process_transaction ~tty:false true (VtQuery false, VtNow) loc_ast))
+    let _, ast as loc_ast = vernac_parse 0 s in
+    let clas = classify_vernac ast in
+    match clas with
+    | VtStm (w,_), _ ->
+       ignore(process_transaction
+         ~tty:false true (VtStm (w,false), VtNow) loc_ast)
+    | _ ->
+       ignore(process_transaction
+         ~tty:false true (VtQuery false, VtNow) loc_ast))
   s
 
 let add ~ontop ?(check=ignore) verb eid s =

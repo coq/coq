@@ -480,6 +480,7 @@ let rec pr_vernac = function
   | VernacStm JoinDocument -> str"Stm JoinDocument"
   | VernacStm PrintDag -> str"Stm PrintDag"
   | VernacStm Finish -> str"Stm Finish"
+  | VernacStm Wait -> str"Stm Wait"
   | VernacStm (Observe id) ->
       str"Stm Observe " ++ str(Stateid.to_string id)
   | VernacStm (Command v) -> str"Stm Command " ++ pr_vernac v
