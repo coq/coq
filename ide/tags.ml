@@ -19,7 +19,7 @@ let processing_color = ref "light blue"
 module Script =
 struct
   let table = GText.tag_table ()
-  let comment_sentence = make_tag table ~name:"comment_sentence" []
+  let comment = make_tag table ~name:"comment" []
   let error = make_tag table ~name:"error" [`UNDERLINE `DOUBLE ; `FOREGROUND "red"]
   let error_bg = make_tag table ~name:"error_bg" [`BACKGROUND "#FFCCCC"]
   let to_process = make_tag table ~name:"to_process" [`BACKGROUND !processing_color]
@@ -30,7 +30,7 @@ struct
   let tooltip = make_tag table ~name:"tooltip" [] (* debug:`BACKGROUND "blue" *)
 
   let all =
-     [comment_sentence; error; error_bg; to_process; processed; unjustified;
+     [comment; error; error_bg; to_process; processed; unjustified;
      found; sentence; tooltip]
 
   let edit_zone =

@@ -35,7 +35,7 @@ let rec backward_search cond (iter:GText.iter) =
   else backward_search cond iter#backward_char
 
 let is_sentence_end s =
-  s#has_tag Tags.Script.sentence || s#has_tag Tags.Script.comment_sentence
+  s#has_tag Tags.Script.sentence
 
 let is_char s c = s#char = Char.code c
 

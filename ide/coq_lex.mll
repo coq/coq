@@ -45,10 +45,7 @@ and sentence initial stamp = parse
       match comment lexbuf with
         | None -> raise Unterminated
         | Some comm_last ->
-          (* A comment alone is a sentence.
-	     A comment in a sentence doesn't terminate the sentence.
-             Note: comm_end is the position of the comment final ')' *)
-          if initial then stamp comm_last Tags.Script.comment_sentence;
+          stamp comm_last Tags.Script.comment;
           sentence initial stamp lexbuf
     }
   | "\"" {
