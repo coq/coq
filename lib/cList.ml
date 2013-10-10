@@ -91,6 +91,7 @@ sig
   val index0 : 'a -> 'a list -> int
   val index0_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
   val iteri :  (int -> 'a -> unit) -> 'a list -> unit
+  val fold_left_until : ('c -> 'a -> 'c CSig.until) -> 'c -> 'a list -> 'c
   val fold_right_i :  (int -> 'a -> 'b -> 'b) -> int -> 'a list -> 'b -> 'b
   val fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
   val fold_right_and_left :
@@ -423,6 +424,12 @@ let index x =
   index_x 1
 
 let index0 x l = index x l - 1
+
+let fold_left_until f accu s =
+  let rec aux accu = function
+    | [] -> accu
+    | x :: xs -> match f accu x with CSig.Stop x -> x | CSig.Cont i -> aux i xs in
+  aux accu s
 
 let fold_right_i f i l =
   let rec it_f i l a = match l with

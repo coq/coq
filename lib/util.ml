@@ -123,7 +123,7 @@ let delayed_force f = f ()
 (* Misc *)
 
 type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
-type ('a, 'b) seek = ('a, 'b) CSig.seek = Stop of 'a | Next of 'b
+type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
 
 (*s interruption *)
 

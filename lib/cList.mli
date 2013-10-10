@@ -143,6 +143,10 @@ sig
   val iteri :  (int -> 'a -> unit) -> 'a list -> unit
   (** As [iter] but with the index argument (starting from 0). *)
 
+  val fold_left_until : ('c -> 'a -> 'c CSig.until) -> 'c -> 'a list -> 'c
+  (** acts like [fold_left f acc s] while [f] returns
+      [Cont acc']; it stops returning [c] as soon as [f] returns [Stop c]. *)
+
   val fold_right_i :  (int -> 'a -> 'b -> 'b) -> int -> 'a list -> 'b -> 'b
   val fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
   val fold_right_and_left :

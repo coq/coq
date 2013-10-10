@@ -1147,8 +1147,8 @@ end = struct (* {{{ *)
           | { step = `Cmd (_,l) } -> l
           | _ -> [] in
         match f acc (id, vcs, ids) with
-        | Stop x -> x
-        | Next acc -> next acc
+        | `Stop x -> x
+        | `Cont acc -> next acc
  
   let undo_vernac_classifier v =
     try
@@ -1162,7 +1162,7 @@ end = struct (* {{{ *)
           (try
             let oid =
               fold_until (fun b (id,_,label) ->
-                if b then Stop id else Next (List.mem name label))
+                if b then `Stop id else `Cont (List.mem name label))
               false id in
             VtStm (VtBack oid, true), VtNow
           with Not_found ->
@@ -1170,12 +1170,12 @@ end = struct (* {{{ *)
       | VernacBack n ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           let oid = fold_until (fun n (id,_,_) ->
-            if Int.equal n 0 then Stop id else Next (n-1)) n id in
+            if Int.equal n 0 then `Stop id else `Cont (n-1)) n id in
           VtStm (VtBack oid, true), VtNow
       | VernacUndo n ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           let oid = fold_until (fun n (id,_,_) ->
-            if Int.equal n 0 then Stop id else Next (n-1)) n id in
+            if Int.equal n 0 then `Stop id else `Cont (n-1)) n id in
           VtStm (VtBack oid, true), VtLater
       | VernacUndoTo _
       | VernacRestart as e ->
@@ -1188,15 +1188,15 @@ end = struct (* {{{ *)
           let cb, _ =
             Vcs_aux.find_proof_at_depth vcs (Vcs_aux.proof_nesting vcs) in
           let n = fold_until (fun n (_,vcs,_) ->
-            if List.mem cb (Vcs_.branches vcs) then Next (n+1) else Stop n)
+            if List.mem cb (Vcs_.branches vcs) then `Cont (n+1) else `Stop n)
             0 id in
           let oid = fold_until (fun n (id,_,_) ->
-            if Int.equal n 0 then Stop id else Next (n-1)) (n-m-1) id in
+            if Int.equal n 0 then `Stop id else `Cont (n-1)) (n-m-1) id in
           VtStm (VtBack oid, true), VtLater
       | VernacAbortAll ->
           let id = VCS.get_branch_pos (VCS.current_branch ()) in
           let oid = fold_until (fun () (id,vcs,_) ->
-            match Vcs_.branches vcs with [_] -> Stop id | _ -> Next ())
+            match Vcs_.branches vcs with [_] -> `Stop id | _ -> `Cont ())
             () id in
           VtStm (VtBack oid, true), VtLater
       | VernacBacktrack (id,_,_)

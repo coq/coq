@@ -11,5 +11,5 @@
 type ('a, 'b) union = Inl of 'a | Inr of 'b
 (** Union type *)
 
-type ('a, 'b) seek = Stop of 'a | Next of 'b
-(** Type isomorphic to union used for browsable structures. *)
+type 'a until = Stop of 'a | Cont of 'a
+(** Used for browsable-until structures. *)

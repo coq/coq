@@ -97,8 +97,8 @@ val delayed_force : 'a delayed -> 'a
 type ('a, 'b) union = ('a, 'b) CSig.union = Inl of 'a | Inr of 'b
 (** Union type *)
 
-type ('a, 'b) seek = ('a, 'b) CSig.seek = Stop of 'a | Next of 'b
-(** Type isomorphic to union used for browsable structures. *)
+type 'a until = 'a CSig.until = Stop of 'a | Cont of 'a
+(** Used for browsable-until structures. *)
 
 (** {6 ... } *)
 (** Coq interruption: set the following boolean reference to interrupt Coq

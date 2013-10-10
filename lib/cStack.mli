@@ -50,11 +50,7 @@ val find_map : ('a -> 'b option) -> 'a t -> 'b
 (** Find the first element that returns [Some _].
     @raise Not_found it there is none. *)
 
-type ('b, 'c) seek = ('b, 'c) CSig.seek = Stop of 'b | Next of 'c
-
-(** [seek f acc s] acts like [List.fold_left f acc s] while [f] returns
-    [Next acc']; it stops returning [b] as soon as [f] returns [Stop b].
-    The stack is traversed from the top and is not altered.
-    @raise Not_found it there is none. *)
-val fold_until : ('c -> 'a -> ('b, 'c) seek) -> 'c -> 'a t -> 'b
+val fold_until : ('c -> 'a -> 'c CSig.until) -> 'c -> 'a t -> 'c
+(** Like CList.fold_left_until.
+    The stack is traversed from the top and is not altered. *)
 

@@ -28,20 +28,9 @@ let to_list { stack = s } = s
 
 let find f s = List.find f (to_list s)
 
-let find_map f s =
-  let rec aux = function
-  | [] -> raise Not_found
-  | x :: xs -> match f x with None -> aux xs | Some i -> i
-  in
-  aux (to_list s)
+let find_map f s = CList.find_map f s.stack
 
-type ('b, 'c) seek = ('b, 'c) CSig.seek = Stop of 'b | Next of 'c
-
-let fold_until f accu s =
-  let rec aux accu = function
-    | [] -> raise Not_found
-    | x :: xs -> match f accu x with Stop x -> x | Next i -> aux i xs in
-  aux accu s.stack
+let fold_until f accu s = CList.fold_left_until f accu s.stack
 
 let is_empty { stack = s } = s = []
 
