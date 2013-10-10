@@ -179,8 +179,8 @@ let set_buffer_handlers
         buffer#remove_tag Tags.Script.tooltip ~start ~stop;
         buffer#remove_tag Tags.Script.processed ~start ~stop;
         buffer#remove_tag Tags.Script.to_process ~start ~stop;
+        Sentence.tag_on_insert buffer
       end;
-      Sentence.tag_on_insert buffer
     end in
   let mark_deleted_cb m =
     match GtkText.Mark.get_name m with

@@ -234,8 +234,12 @@ object(self)
   method private get_insert =
     buffer#get_iter_at_mark `INSERT
 
-  method show_goals =
+  method private show_goals_aux ?(move_insert=false) () =
     Coq.PrintOpt.set_printing_width proof#width;
+    if move_insert then begin
+      buffer#place_cursor ~where:self#get_start_of_input;
+      script#recenter_insert;
+    end;
     Coq.bind (Coq.goals ~logger:messages#push ()) (function
     | Fail x -> self#handle_failure x
     | Good goals ->
@@ -248,6 +252,7 @@ object(self)
           Coq.return ()
         )
       )
+  method show_goals = self#show_goals_aux ()
 
   (* This method is intended to perform stateless commands *)
   method raw_coq_query phrase =
@@ -275,7 +280,8 @@ object(self)
     let processed = Tags.Script.processed in
     let unjustified = Tags.Script.unjustified in
     let error_bg = Tags.Script.error_bg in
-    let all_tags = [ error_bg; to_process; processed; unjustified ] in
+    let error = Tags.Script.error in
+    let all_tags = [ error_bg; to_process; processed; unjustified; error ] in
     let tags =
       (if has_flag sentence `PROCESSING then to_process else
        if has_flag sentence `ERROR then error_bg else
@@ -443,7 +449,7 @@ object(self)
     done
 
   (** Compute the phrases until [until] returns [true]. *)
-  method private process_until until verbose =
+  method private process_until ?move_insert until verbose =
     let logger lvl msg = if verbose then messages#push lvl msg in
     let fill_queue = Coq.lift (fun () ->
       let queue = Queue.create () in
@@ -461,7 +467,7 @@ object(self)
       pop_info ();
       script#recenter_insert;
       match topstack with
-      | [] -> self#show_goals
+      | [] -> self#show_goals_aux ?move_insert ()
       | (_,s) :: _ -> self#backtrack_to_iter (buffer#get_iter_at_mark s.start) in
     let process_queue queue =
       let rec loop tip topstack =
@@ -529,10 +535,7 @@ object(self)
 
   method process_next_phrase =
     let until n _ _ = n >= 1 in
-    let next () =
-      buffer#place_cursor ~where:self#get_start_of_input; Coq.return ()
-    in
-    Coq.bind (self#process_until until true) next
+    self#process_until ~move_insert:true until true
 
   method private process_until_iter iter =
     let until _ start stop =
@@ -566,6 +569,8 @@ object(self)
 
   (** Wrapper around the raw undo command *)
   method private backtrack_to_id ?(move_insert=true) (to_id, unfocus_needed) =
+    Minilib.log("backtrack_to_id "^Stateid.to_string to_id^
+      " (unfocus_needed="^string_of_bool unfocus_needed^")");
     let opening () =
       push_info "Coq is undoing" in
     let conclusion () =
@@ -574,8 +579,6 @@ object(self)
       let start = self#get_start_of_input in
       let stop = self#get_end_of_input in
       Minilib.log(Printf.sprintf "cleanup tags %d %d" start#offset stop#offset);
-      buffer#remove_tag Tags.Script.error ~start ~stop;
-      buffer#remove_tag Tags.Script.error_bg ~start ~stop;
       buffer#remove_tag Tags.Script.tooltip ~start ~stop;
       buffer#remove_tag Tags.Script.processed ~start ~stop;
       buffer#remove_tag Tags.Script.to_process ~start ~stop;
@@ -608,15 +611,13 @@ object(self)
     self#backtrack_until ?move_insert until
 
   method handle_failure (safe_id, (loc : (int * int) option), msg) =
-    if loc <> None then messages#push Error "Fixme LOC";
     messages#clear;
     messages#push Error msg;
     ignore(self#process_feedback ());
     Coq.seq
       (self#backtrack_until ~move_insert:false
         (fun id _ _ -> id = Some safe_id))
-      (Coq.lift (fun () ->
-        script#scroll_mark_onscreen (`NAME "start_of_input")))
+      (Coq.lift (fun () -> script#recenter_insert))
 
   method backtrack_last_phrase =
     messages#clear;
@@ -638,8 +639,10 @@ object(self)
     messages#clear;
     let point = buffer#get_iter_at_mark m in
     if point#compare self#get_start_of_input >= 0
-    then self#process_until_iter point
-    else self#backtrack_to_iter ~move_insert:false point)
+    then Coq.seq (self#process_until_iter point)
+          (Coq.lift (fun () -> Sentence.tag_on_insert buffer))
+    else Coq.seq (self#backtrack_to_iter ~move_insert:false point)
+          (Coq.lift (fun () -> Sentence.tag_on_insert buffer)))
 
   method tactic_wizard l =
     let insert_phrase phrase tag =

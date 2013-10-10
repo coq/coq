@@ -16,6 +16,7 @@
 let split_slice_lax (buffer:GText.buffer) start stop =
   buffer#remove_tag ~start ~stop Tags.Script.sentence;
   buffer#remove_tag ~start ~stop Tags.Script.error;
+  buffer#remove_tag ~start ~stop Tags.Script.error_bg;
   let slice = buffer#get_text ~start ~stop () in
   let apply_tag off tag =
     (* off is now a utf8-compliant char offset, cf Coq_lex.utf8_adjust *)
