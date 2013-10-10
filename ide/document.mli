@@ -6,77 +6,101 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Based on OCaml stacks, it is the structure used by CoqIDE to represent
-    the document *)
-
-type 'a t
+(* An 'a document is a structure to hold and manipulate list of sentences.
+   Sentences are equipped with an id = Stateid.t and can carry arbitrary
+   data ('a).
+   
+   When added (push) to the document, a sentence has no id, it has
+   be manually assigned just afterward or the sentence has to be removed
+   (pop) before any other sentence can be pushed.
+   This exception is useful since the process of assigning an id to
+   a sentence may fail (parse error) and an error handler may want to annotate
+   a script buffer with the error message.  This handler needs to find the
+   sentence in question, and it is simpler if the sentence is in the document.
+   Only the functions pop, find, fold_all and find_map can be called on a
+   document with a tip that has no id (and assign_tip_id of course).
+   
+   The document can be focused (non recursively) to a zone.  After that
+   some functions operate on the focused zone only.  When unfocused the
+   context (the part of the document out of focus) is restored.
+*)
 
 exception Empty
-(** Alias for Stack.Empty. *)
 
-val create : unit -> 'a t
-(** Create an empty stack. *)
+type 'a document
+type id = Stateid.t
 
-val push : 'a -> 'a t -> unit
-(** Add an element to a stack. *)
+val create : unit -> 'a document
 
-val find : ('a -> bool -> bool) -> 'a t -> 'a
-(** Find the first element satisfying the predicate.
-    The boolean tells If the element is inside the focused zone.
-    @raise Not_found it there is none. *)
+(* Functions that work on the focused part of the document ******************* *)
 
-val is_empty : 'a t -> bool
-(** Whether a stack is empty. *)
+(** The last sentence.  @raise Invalid_argument if tip has no id.  @raise Empty *)
+val tip       : 'a document -> id
 
-val iter : ('a -> bool -> unit) -> 'a t -> unit
-(** Iterate a function over elements, from the last added one. 
-    The boolean tells If the element is inside the focused zone. *)
+(** The last sentence.  @raise Empty *)
+val tip_data  : 'a document -> 'a
 
-val clear : 'a t -> unit
-(** Empty a stack. *)
+(** Add a sentence on the top (with no state_id) *)
+val push : 'a document -> 'a -> unit
 
-val length : 'a t -> int
-(** Length of a stack. *)
+(** Remove the tip setence.  @raise Empty *)
+val pop : 'a document -> 'a
 
-val pop  : 'a t -> 'a
-(** Remove and returns the first element of the stack.
-    @raise Empty if empty. *)
+(** Assign the state_id of the tip.  @raise Empty *)
+val assign_tip_id : 'a document -> id -> unit
 
-val tip  : 'a t -> 'a
-(** Remove the first element of the stack without modifying it.
-    @raise Empty if empty. *)
+(** [cut_at d id] cuts the document at [id] that is the new tip.
+    Returns the list of sentences that were cut.
+    @raise Not_found *)
+val cut_at : 'a document -> id -> 'a list
 
-val to_list : 'a t -> 'a list
-(** Convert to a list. *)
+(* Functions that work on the whole document ********************************* *)
 
-val find_map : ('a -> bool -> 'b option) -> 'a t -> 'b
-(** Find the first element that returns [Some _].
-    The boolean tells If the element is inside the focused zone.
-    @raise Not_found it there is none. *)
+(** returns the id of the topmost sentence validating the predicate and
+    a boolean that is true if one needs to unfocus the document to access
+    such sentence.  @raise Not_found *)
+val find_id : 'a document -> (id -> 'a -> bool) -> id * bool
 
-type ('b, 'c) seek = ('b, 'c) CSig.seek = Stop of 'b | Next of 'c
-
-(** [seek f acc s] acts like [List.fold_left f acc s] while [f] returns
-    [Next acc']; it stops returning [b] as soon as [f] returns [Stop b].
-    The stack is traversed from the top and is not altered.
-    @raise Not_found it there is none. *)
-val fold_until : ('c -> 'a -> ('b, 'c) seek) -> 'c -> 'a t -> 'b
+(** look for a sentence validating the predicate.  The boolean is true
+    if the sentence is in the zone currently focused.  @raise Not_found *)
+val find : 'a document -> (bool -> id option -> 'a -> bool) -> 'a
+val find_map : 'a document -> (bool -> id option -> 'a -> 'b option) -> 'b
 
 (** After [focus s c1 c2] the top of [s] is the topmost element [x] such that
     [c1 x] is [true] and the bottom is the first element [y] following [x]
-    such that [c2 y] is [true].  After a focus push/pop/top/fold_until
-    only use the focused part.
-    @raise Invalid_argument "CStack.focus" if there is no such [x] and [y] *)
-val focus : 'a t -> cond_top:('a -> bool) -> cond_bot:('a -> bool) -> unit
+    such that [c2 y] is [true].
+    @raise Invalid_argument if there is no such [x] and [y] or already focused *)
+val focus :
+  'a document ->
+    cond_top:(id -> 'a -> bool) -> cond_bot:(id -> 'a -> bool) -> unit
 
 (** Undoes a [focus].
     @raise Invalid_argument "CStack.unfocus" if the stack is not focused *)
-val unfocus : 'a t -> unit
+val unfocus : 'a document -> unit
 
-(** Is the stack focused *)
-val focused : 'a t -> bool
+(** Is the document focused *)
+val focused : 'a document -> bool
 
-(** Returns [top, s, bot] where [top @ s @ bot] is the full stack, and [s]
-    the focused part *)
-val to_lists : 'a t -> 'a list * 'a list * 'a list
+(** No sentences at all *)
+val is_empty : 'a document -> bool
+
+(** returns the 1 to-last sentence, and true if we need to unfocus to reach it.
+    @raise Not_found *)
+val before_tip : 'a document -> id * bool
+
+(** Is the id in the focused zone? *)
+val is_in_focus : 'a document -> id -> bool
+
+(** Folds over the whole document starting from the topmost (maybe unfocused)
+    sentence. *)
+val fold_all :
+  'a document -> 'c -> ('c -> bool -> id option -> 'a -> 'c) -> 'c
+
+(** Returns (top,bot) such that the document is morally (top @ s @ bot) where
+    s is the focused part.  @raise Invalid_argument *)
+val context : 'a document -> (id * 'a) list * (id * 'a) list
+
+(** debug print *)
+val print :
+  'a document -> (bool -> id option -> 'a ->  Pp.std_ppcmds) -> Pp.std_ppcmds
 
