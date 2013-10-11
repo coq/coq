@@ -49,3 +49,6 @@ val set_processed_color : Gdk.color -> unit
 
 val get_processing_color : unit -> Gdk.color
 val set_processing_color : Gdk.color -> unit
+
+val get_error_color : unit -> Gdk.color
+val set_error_color : Gdk.color -> unit

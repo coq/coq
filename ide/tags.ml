@@ -15,13 +15,14 @@ let make_tag (tt:GText.tag_table) ~name prop =
 
 let processed_color = ref "light green"
 let processing_color = ref "light blue"
+let error_color = ref "#FFCCCC"
 
 module Script =
 struct
   let table = GText.tag_table ()
   let comment = make_tag table ~name:"comment" []
   let error = make_tag table ~name:"error" [`UNDERLINE `SINGLE ; `FOREGROUND "red"]
-  let error_bg = make_tag table ~name:"error_bg" [`BACKGROUND "#FFCCCC"]
+  let error_bg = make_tag table ~name:"error_bg" [`BACKGROUND !error_color]
   let to_process = make_tag table ~name:"to_process" [`BACKGROUND !processing_color]
   let processed = make_tag table ~name:"processed" [`BACKGROUND !processed_color]
   let unjustified = make_tag table ~name:"unjustified" [`BACKGROUND "gold"]
@@ -81,3 +82,10 @@ let set_processing_color clr =
   let s = string_of_color clr in
   processing_color := s;
   Script.to_process#set_property (`BACKGROUND s)
+
+let get_error_color () = color_of_string !error_color
+
+let set_error_color clr =
+  let s = string_of_color clr in
+  error_color := s;
+  Script.error_bg#set_property (`BACKGROUND s)

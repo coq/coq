@@ -143,6 +143,7 @@ type pref =
       mutable background_color : string;
       mutable processing_color : string;
       mutable processed_color : string;
+      mutable error_color : string;
 
       mutable dynamic_word_wrap : bool;
       mutable show_line_number : bool;
@@ -221,6 +222,7 @@ let current = {
     background_color = "cornsilk";
     processed_color = "light green";
     processing_color = "light blue";
+    error_color = "#FFCCCC";
 
     dynamic_word_wrap = false;
     show_line_number = false;
@@ -291,6 +293,7 @@ let save_pref () =
     add "background_color" [p.background_color] ++
     add "processing_color" [p.processing_color] ++
     add "processed_color" [p.processed_color] ++
+    add "error_color" [p.error_color] ++
     add "dynamic_word_wrap" [string_of_bool p.dynamic_word_wrap] ++
     add "show_line_number" [string_of_bool p.show_line_number] ++
     add "auto_indent" [string_of_bool p.auto_indent] ++
@@ -375,6 +378,7 @@ let load_pref () =
     set_hd "background_color" (fun v -> np.background_color <- v);
     set_hd "processing_color" (fun v -> np.processing_color <- v);
     set_hd "processed_color" (fun v -> np.processed_color <- v);
+    set_hd "error_color" (fun v -> np.error_color <- v);
     set_bool "dynamic_word_wrap" (fun v -> np.dynamic_word_wrap <- v);
     set_bool "show_line_number" (fun v -> np.show_line_number <- v);
     set_bool "auto_indent" (fun v -> np.auto_indent <- v);
@@ -454,9 +458,14 @@ let configure ?(apply=(fun () -> ())) () =
       ~text:"Background color of text being processed"
       ~packing:(table#attach ~expand:`X ~left:0 ~top:2) ()
     in
+    let error_label = GMisc.label
+      ~text:"Background color of errors"
+      ~packing:(table#attach ~expand:`X ~left:0 ~top:3) ()
+    in
     let () = background_label#set_xalign 0. in
     let () = processed_label#set_xalign 0. in
     let () = processing_label#set_xalign 0. in
+    let () = error_label#set_xalign 0. in
     let background_button = GButton.color_button
       ~color:(Tags.color_of_string (current.background_color))
       ~packing:(table#attach ~left:1 ~top:0) ()
@@ -469,6 +478,10 @@ let configure ?(apply=(fun () -> ())) () =
       ~color:(Tags.get_processing_color ())
       ~packing:(table#attach ~left:1 ~top:2) ()
     in
+    let error_button = GButton.color_button
+      ~color:(Tags.get_error_color ())
+      ~packing:(table#attach ~left:1 ~top:3) ()
+    in
     let reset_button = GButton.button
       ~label:"Reset"
       ~packing:box#pack ()
@@ -477,6 +490,7 @@ let configure ?(apply=(fun () -> ())) () =
       background_button#set_color (Tags.color_of_string "cornsilk");
       processing_button#set_color (Tags.color_of_string "light blue");
       processed_button#set_color (Tags.color_of_string "light green");
+      error_button#set_color (Tags.color_of_string "#FFCCCC");
     in
     let _ = reset_button#connect#clicked ~callback:reset_cb in
     let label = "Color configuration" in
@@ -484,9 +498,11 @@ let configure ?(apply=(fun () -> ())) () =
       current.background_color <- Tags.string_of_color background_button#color;
       current.processing_color <- Tags.string_of_color processing_button#color;
       current.processed_color <- Tags.string_of_color processed_button#color;
+      current.error_color <- Tags.string_of_color error_button#color;
       !refresh_editor_hook ();
       Tags.set_processing_color processing_button#color;
-      Tags.set_processed_color processed_button#color
+      Tags.set_processed_color processed_button#color;
+      Tags.set_error_color error_button#color
     in
     custom ~label box callback true
   in
