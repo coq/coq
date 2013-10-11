@@ -8,6 +8,9 @@
 
 module type S = sig
 
+  (* A cluster is just a set of nodes.  This set holds some data.
+     Stm uses this to group nodes contribution to the same proofs and
+     that can be evaluated asynchronously *)
   module Cluster :
   sig
     type 'd t
