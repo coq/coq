@@ -6,7 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-let prerr_endline s = if !Flags.debug then prerr_endline s else ()
+let prerr_endline s =
+  if !Flags.debug then
+    prerr_endline (Printf.sprintf "%d] %s" !Flags.coq_slave_mode s)
+  else ()
 
 open Vernacexpr
 open Errors
