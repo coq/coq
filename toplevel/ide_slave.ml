@@ -346,7 +346,11 @@ let eval_call xml_oc log c =
   in
   Serialize.abstract_eval_call handler c
 
-(** Message dispatching. *)
+(** Message dispatching.
+    Since coqtop -ideslave -coq-slaves on starts 1 thread per slave, and each
+    thread forwards feedback messages from the slave to the GUI on the same
+    xml channel, we need mutual exclusion.  The mutex should be per-channel, but
+    here we only use 1 channel. *)
 let print_xml =
   let m = Mutex.create () in
   fun oc xml ->
