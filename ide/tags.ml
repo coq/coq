@@ -20,7 +20,7 @@ module Script =
 struct
   let table = GText.tag_table ()
   let comment = make_tag table ~name:"comment" []
-  let error = make_tag table ~name:"error" [`UNDERLINE `DOUBLE ; `FOREGROUND "red"]
+  let error = make_tag table ~name:"error" [`UNDERLINE `SINGLE ; `FOREGROUND "red"]
   let error_bg = make_tag table ~name:"error_bg" [`BACKGROUND "#FFCCCC"]
   let to_process = make_tag table ~name:"to_process" [`BACKGROUND !processing_color]
   let processed = make_tag table ~name:"processed" [`BACKGROUND !processed_color]
