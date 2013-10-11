@@ -529,16 +529,9 @@ let subst_body expand prg =
 let declare_definition prg =
   let body, typ = subst_body true prg in
   let ce =
-    { const_entry_body = Future.from_val (body,Declareops.no_seff);
-      const_entry_secctx = None;
-      const_entry_type = Some typ;
-      const_entry_proj = None;
-      const_entry_polymorphic = pi2 prg.prg_kind;
-      const_entry_universes = Univ.ContextSet.to_context prg.prg_ctx;
-      const_entry_opaque = false;
-      const_entry_inline_code = false;
-      const_entry_feedback = None;
-    } in
+    definition_entry ~types:typ ~poly:(pi2 prg.prg_kind) 
+      ~univs:(Univ.ContextSet.to_context prg.prg_ctx) body
+  in
     progmap_remove prg;
     !declare_definition_ref prg.prg_name 
       prg.prg_kind ce prg.prg_implicits

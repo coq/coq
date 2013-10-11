@@ -61,7 +61,6 @@ type proof_object = {
   id : Names.Id.t;
   entries : Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
-  opt_subst : Universes.universe_opt_subst;
 }
 
 type proof_ending =
@@ -95,9 +94,13 @@ val close_proof : (exn -> exn) -> closed_proof
 (* Intermediate step necessary to delegate the future.
  * Both access the current proof state. The formes is supposed to be
  * chained with a computation that completed the proof *)
-val return_proof : unit -> Entries.proof_output list
+
+type closed_proof_output = Entries.proof_output list * 
+    Universes.universe_opt_subst Univ.in_universe_context
+
+val return_proof : unit -> closed_proof_output
 val close_future_proof : feedback_id:Stateid.t ->
-  Entries.proof_output list Future.computation -> closed_proof
+  closed_proof_output Future.computation -> closed_proof
 
 (** Gets the current terminator without checking that the proof has
     been completed. Useful for the likes of [Admitted]. *)

@@ -101,7 +101,7 @@ let infer_declaration env kn dcl =
       Undef nl, t, None, poly, Future.from_val uctx, false, ctx
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true } as c) ->
-      let env = push_context c.const_entry_universes env in
+      let env = push_context (Future.join c.const_entry_universes) env in (* FIXME *)
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
       let proofterm =
@@ -113,10 +113,10 @@ let infer_declaration env kn dcl =
           feedback_completion_typecheck feedback_id;
           j.uj_val, Univ.empty_constraint) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
-      def, typ, None, c.const_entry_polymorphic, Future.from_val c.const_entry_universes,
+      def, typ, None, c.const_entry_polymorphic, c.const_entry_universes,
 	c.const_entry_inline_code, c.const_entry_secctx
   | DefinitionEntry c ->
-      let env = push_context c.const_entry_universes env in
+      let env = push_context (Future.join c.const_entry_universes) env in (* FIXME *)
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let body, side_eff = Future.join body in
@@ -127,7 +127,7 @@ let infer_declaration env kn dcl =
       feedback_completion_typecheck feedback_id;
       let def = Def (Mod_subst.from_val j.uj_val) in
       def, typ, None, c.const_entry_polymorphic,
-        Future.from_val c.const_entry_universes, c.const_entry_inline_code, c.const_entry_secctx
+        c.const_entry_universes, c.const_entry_inline_code, c.const_entry_secctx
 
 (* let global_vars_set_constant_type env = function *)
 (*   | NonPolymorphicType t -> global_vars_set env t *)

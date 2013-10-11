@@ -2130,3 +2130,16 @@ let myapply id l gl =
   in
     tclTHEN (Refiner.tclEVARS !evars) (apply app) gl
 
+let get_lemma_proof f env evm x y = 
+  let (evm, _), c = f env (evm,Evar.Set.empty) x y in
+    evm, c
+
+let get_reflexive_proof =
+  get_lemma_proof PropGlobal.get_reflexive_proof
+
+let get_symmetric_proof = 
+  get_lemma_proof PropGlobal.get_symmetric_proof
+
+let get_transitive_proof = 
+  get_lemma_proof PropGlobal.get_transitive_proof
+  

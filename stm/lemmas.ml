@@ -229,17 +229,8 @@ let save_remaining_recthms (locality,p,kind) body opaq i (id,((t_i,ctx_i),(_,imp
         | _ -> anomaly (Pp.str "Not a proof by induction") in
       match locality with
       | Discharge ->
-          let const = { const_entry_body =
-                Future.from_val (body_i,Declareops.no_seff);
-              const_entry_secctx = None;
-              const_entry_type = Some t_i;
-	      const_entry_proj = None;
-              const_entry_opaque = opaq;
-              const_entry_feedback = None;
-              const_entry_inline_code = false;
-	      const_entry_polymorphic = p;
-	      const_entry_universes = Univ.ContextSet.to_context ctx_i
-          } in
+          let const = definition_entry ~types:t_i ~opaque:opaq ~poly:p 
+	    ~univs:(Univ.ContextSet.to_context ctx_i) body_i in
 	  let c = SectionLocalDef const in
 	  let _ = declare_variable id (Lib.cwd(), c, k) in
           (Discharge,VarRef id,imps)

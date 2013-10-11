@@ -182,8 +182,8 @@ let uninterp_z p =
 let _ = Notation.declare_numeral_interpreter "Z_scope"
   (z_path,binnums)
   z_of_int
-  ([GRef (Loc.ghost, glob_ZERO, None, None);
-    GRef (Loc.ghost, glob_POS, None, None);
-    GRef (Loc.ghost, glob_NEG, None, None)],
+  ([GRef (Loc.ghost, glob_ZERO, None);
+    GRef (Loc.ghost, glob_POS, None);
+    GRef (Loc.ghost, glob_NEG, None)],
   uninterp_z,
   true)

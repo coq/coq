@@ -655,18 +655,8 @@ let interp_fix_body evdref env_rec impls (_,ctx) fix ccl =
 
 let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
 
-let declare_fix (_,poly,_ as kind) ctx f def t imps =
-  let ce = {
-    const_entry_body = Future.from_val def;
-    const_entry_secctx = None;
-    const_entry_type = Some t;
-    const_entry_polymorphic = poly;
-    const_entry_universes = ctx;
-    const_entry_proj = None;
-    const_entry_opaque = false;
-    const_entry_inline_code = false;
-    const_entry_feedback = None;
-  } in
+let declare_fix (_,poly,_ as kind) ctx f (def,eff) t imps =
+  let ce = definition_entry ~types:t ~poly ~univs:ctx ~eff def in
   declare_definition f kind ce imps (fun _ r -> r)
 
 let _ = Obligations.declare_fix_ref := declare_fix
@@ -855,18 +845,9 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
       let hook l gr = 
 	let body = it_mkLambda_or_LetIn (mkApp (Universes.constr_of_global gr, [|make|])) binders_rel in
 	let ty = it_mkProd_or_LetIn top_arity binders_rel in
-	let ce =
-          { const_entry_body = Future.from_val (Evarutil.nf_evar !evdref body,Declareops.no_seff);
-            const_entry_secctx = None;
-	    const_entry_type = Some ty;
-	    (* FIXME *)
-	    const_entry_proj = None;
-	    const_entry_polymorphic = false;
-	    const_entry_universes = Evd.universe_context !evdref;
-            const_entry_feedback = None;
-        const_entry_opaque = false;
-        const_entry_inline_code = false}
-	in 
+	let univs = Evd.universe_context !evdref in
+	  (*FIXME poly? *)
+	let ce = definition_entry ~types:ty ~univs (Evarutil.nf_evar !evdref body) in
 	(** FIXME: include locality *)
 	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
 	let gr = ConstRef c in

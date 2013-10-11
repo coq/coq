@@ -64,7 +64,7 @@ let cache_variable ((sp,_),o) =
     | SectionLocalDef (de) ->
       let () = Global.push_named_def (id,de) in
         Explicit, de.const_entry_opaque, de.const_entry_polymorphic, 
-	(Univ.ContextSet.of_context de.const_entry_universes) in
+	(Univ.ContextSet.of_context (Future.force de.const_entry_universes)) in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl poly ctx;
   Dischargedhypsmap.set_discharged_hyps sp [];
@@ -194,17 +194,17 @@ let declare_constant_common id cst =
   Notation.declare_ref_arguments_scope (ConstRef c);
   c
 
-let definition_entry ?(opaque=false) ?types 
-    ?(poly=false) ?(univs=Univ.UContext.empty) body =
-  { const_entry_body = Future.from_val (body,Declareops.no_seff);
+let definition_entry ?(opaque=false) ?(inline=false) ?types 
+    ?(poly=false) ?(univs=Univ.UContext.empty) ?(eff=Declareops.no_seff) body =
+  { const_entry_body = Future.from_val (body,eff);
     const_entry_secctx = None;
     const_entry_type = types;
     const_entry_proj = None;
     const_entry_polymorphic = poly;
-    const_entry_universes = univs;
+    const_entry_universes = Future.from_val univs;
     const_entry_opaque = opaque;
     const_entry_feedback = None;
-    const_entry_inline_code = false}
+    const_entry_inline_code = inline}
 
 let declare_scheme = ref (fun _ _ -> assert false)
 let set_declare_scheme f = declare_scheme := f
@@ -234,7 +234,7 @@ let declare_sideff se =
         const_entry_inline_code = false;
         const_entry_feedback = None;
 	const_entry_polymorphic = cb.const_polymorphic;
-	const_entry_universes = Future.join cb.const_universes;
+	const_entry_universes = cb.const_universes;
 	const_entry_proj = None;
     });
     cst_hyps = [] ;

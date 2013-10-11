@@ -152,18 +152,10 @@ let ty c = Typing.type_of (Global.env()) Evd.empty c
 let decl_constant na ctx c =
   let vars = Universes.universes_of_constr c in
   let ctx = Universes.restrict_universe_context (Univ.ContextSet.of_context ctx) vars in
-  mkConst(declare_constant (Id.of_string na) (DefinitionEntry
-    { const_entry_body = Future.from_val (c, Declareops.no_seff);
-      const_entry_secctx = None;
-      const_entry_type = None;
-      const_entry_polymorphic = false;
-      const_entry_universes = Univ.ContextSet.to_context ctx;
-      const_entry_proj = None;
-      const_entry_opaque = true;
-      const_entry_inline_code = false;
-      const_entry_feedback = None;
-    },
-    IsProof Lemma))
+  mkConst(declare_constant (Id.of_string na) 
+	    (DefinitionEntry (definition_entry ~opaque:true
+				~univs:(Univ.ContextSet.to_context ctx) c),
+	     IsProof Lemma))
 
 (* Calling a global tactic *)
 let ltac_call tac (args:glob_tactic_arg list) =
@@ -442,11 +434,11 @@ let theory_to_obj : ring_info -> obj =
 
 let setoid_of_relation env evd a r =
   try
-    let evm = !evd, Int.Set.empty in
-    let evm, refl = Rewrite.PropGlobal.get_reflexive_proof env evm a r in
-    let evm, sym = Rewrite.PropGlobal.get_symmetric_proof env evm a r in
-    let evm, trans = Rewrite.PropGlobal.get_transitive_proof env evm a r in
-      evd := fst evm;
+    let evm = !evd in
+    let evm, refl = Rewrite.get_reflexive_proof env evm a r in
+    let evm, sym = Rewrite.get_symmetric_proof env evm a r in
+    let evm, trans = Rewrite.get_transitive_proof env evm a r in
+      evd := evm;
       lapp coq_mk_Setoid [|a ; r ; refl; sym; trans |]
   with Not_found ->
     error "cannot find setoid relation"
@@ -682,9 +674,9 @@ let add_theory name (sigma,rth) eqth morphth cst_tac (pre,post) power sign div =
   let lemma2 = params.(4) in
 
   let lemma1 =
-    decl_constant (Id.to_string name^"_ring_lemma1") ctx (Future.from_val ( lemma1,Declareops.no_seff)) in
+    decl_constant (Id.to_string name^"_ring_lemma1") ctx lemma1 in
   let lemma2 =
-    decl_constant (Id.to_string name^"_ring_lemma2") ctx (Future.from_val ( lemma2,Declareops.no_seff)) in
+    decl_constant (Id.to_string name^"_ring_lemma2") ctx lemma2 in
   let cst_tac =
     interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
@@ -724,10 +716,16 @@ type 'constr ring_mod =
   | Div_spec of Constrexpr.constr_expr
 
 
+let ic_coeff_spec = function
+  | Computational t -> Computational (ic_unsafe t)
+  | Morphism t -> Morphism (ic_unsafe t)
+  | Abstract -> Abstract
+
+
 VERNAC ARGUMENT EXTEND ring_mod
-  | [ "decidable" constr(eq_test) ] -> [ Ring_kind(Computational (ic_unsafe eq_test)) ]
+  | [ "decidable" constr(eq_test) ] -> [ Ring_kind(Computational eq_test) ]
   | [ "abstract" ] -> [ Ring_kind Abstract ]
-  | [ "morphism" constr(morph) ] -> [ Ring_kind(Morphism (ic_unsafe morph)) ]
+  | [ "morphism" constr(morph) ] -> [ Ring_kind(Morphism morph) ]
   | [ "constants" "[" tactic(cst_tac) "]" ] -> [ Const_tac(CstTac cst_tac) ]
   | [ "closed" "[" ne_global_list(l) "]" ] -> [ Const_tac(Closed l) ]
   | [ "preprocess" "[" tactic(pre) "]" ] -> [ Pre_tac pre ]
@@ -754,7 +752,7 @@ let process_ring_mods l =
   let power = ref None in
   let div = ref None in
   List.iter(function
-      Ring_kind k -> set_once "ring kind" kind k
+      Ring_kind k -> set_once "ring kind" kind (ic_coeff_spec k)
     | Const_tac t -> set_once "tactic recognizing constants" cst_tac t
     | Pre_tac t -> set_once "preprocess tactic" pre t
     | Post_tac t -> set_once "postprocess tactic" post t
@@ -1026,18 +1024,18 @@ let add_field_theory name (sigma,fth) eqth morphth cst_tac inj (pre,post) power 
   let lemma4 = params.(6) in
   let cond_lemma =
     match inj with
-      | Some thm -> mkApp(constr_of params.(8),[|thm|])
-      | None -> constr_of params.(7) in
+      | Some thm -> mkApp(params.(8),[|thm|])
+      | None -> params.(7) in
   let lemma1 = decl_constant (Id.to_string name^"_field_lemma1")
-    ctx (Future.from_val (lemma1,Declareops.no_seff)) in
+    ctx lemma1 in
   let lemma2 = decl_constant (Id.to_string name^"_field_lemma2") 
-    ctx (Future.from_val (lemma2,Declareops.no_seff)) in
+    ctx lemma2 in
   let lemma3 = decl_constant (Id.to_string name^"_field_lemma3") 
-    ctx (Future.from_val (lemma3,Declareops.no_seff)) in
+    ctx lemma3 in
   let lemma4 = decl_constant (Id.to_string name^"_field_lemma4") 
-    ctx (Future.from_val (lemma4,Declareops.no_seff)) in
+    ctx lemma4 in
   let cond_lemma = decl_constant (Id.to_string name^"_lemma5") 
-    ctx (Future.from_val (cond_lemma,Declareops.no_seff)) in
+    ctx cond_lemma in
   let cst_tac =
     interp_cst_tac env sigma morphth kind (zero,one,add,mul,opp) cst_tac in
   let pretac =
@@ -1083,7 +1081,7 @@ let process_field_mods l =
   let power = ref None in
   let div = ref None in
   List.iter(function
-      Ring_mod(Ring_kind k) -> set_once "field kind" kind k
+      Ring_mod(Ring_kind k) -> set_once "field kind" kind (ic_coeff_spec k)
     | Ring_mod(Const_tac t) ->
         set_once "tactic recognizing constants" cst_tac t
     | Ring_mod(Pre_tac t) -> set_once "preprocess tactic" pre t

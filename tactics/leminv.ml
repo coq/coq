@@ -228,17 +228,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
 
 let add_inversion_lemma name env sigma t sort dep inv_op =
   let invProof = inversion_scheme env sigma t sort dep inv_op in
-  let entry = {
-    const_entry_body = Future.from_val (invProof,Declareops.no_seff);
-    const_entry_secctx = None;
-    const_entry_type = None;
-    const_entry_proj = None;
-    const_entry_polymorphic = true;
-    const_entry_universes = Univ.UContext.empty (*FIXME *);
-    const_entry_opaque = false;
-    const_entry_inline_code = false;
-    const_entry_feedback = None;
-  } in
+  let entry = definition_entry ~poly:true (*FIXME*) invProof in
   let _ = declare_constant name (DefinitionEntry entry, IsProof Lemma) in
   ()
 

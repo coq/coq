@@ -48,8 +48,8 @@ type internal_flag =
   | UserVerbose
 
 (* Defaut definition entries, transparent with no secctx or proj information *)
-val definition_entry : ?opaque:bool -> ?types:types -> 
-  ?poly:polymorphic -> ?univs:Univ.universe_context ->
+val definition_entry : ?opaque:bool -> ?inline:bool -> ?types:types -> 
+  ?poly:polymorphic -> ?univs:Univ.universe_context -> ?eff:Declareops.side_effects ->
   constr -> definition_entry
 
 val declare_constant :

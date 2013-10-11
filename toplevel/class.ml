@@ -217,17 +217,9 @@ let build_id_coercion idf_opt source poly =
   in
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     DefinitionEntry
-      { const_entry_body = Future.from_val 
-          (mkCast (val_f, DEFAULTcast, typ_f),Declareops.no_seff);
-        const_entry_secctx = None;
-	const_entry_type = Some typ_f;
-	const_entry_proj = None;
-	const_entry_polymorphic = poly;
-	const_entry_universes = Univ.ContextSet.to_context ctx;
-        const_entry_opaque = false;
-        const_entry_inline_code = true;
-        const_entry_feedback = None;
-      } in
+      (definition_entry ~types:typ_f ~poly ~univs:(Univ.ContextSet.to_context ctx)
+	 ~inline:true (mkCast (val_f, DEFAULTcast, typ_f)))
+  in
   let decl = (constr_entry, IsDefinition IdentityCoercion) in
   let kn = declare_constant idf decl in
   ConstRef kn

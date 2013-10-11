@@ -340,19 +340,7 @@ let generate_functional_principle
 	let name = Indrec.make_elimination_ident base_new_princ_name fam_sort in
 	let value = change_property_sort s new_principle_type new_princ_name in
 	(*       Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
-	let ce =
-          { const_entry_body =
-              Future.from_val (value,Declareops.no_seff);
-            const_entry_secctx = None;
-	    const_entry_type = None;	
-	    const_entry_polymorphic = false;
-	    const_entry_universes = Univ.UContext.empty (*FIXME*);
-	    const_entry_proj = None;
-	    const_entry_opaque = false;
-            const_entry_feedback = None;
-	    const_entry_inline_code = false
-	  }
-	in
+	let ce = Declare.definition_entry value in (*FIXME, no poly, nothing *)
 	ignore(
 	  Declare.declare_constant
 	    name

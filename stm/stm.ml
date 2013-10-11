@@ -70,7 +70,7 @@ let vernac_parse eid s =
   ()
 
 module Vcs_ = Vcs.Make(Stateid)
-type future_proof = Entries.proof_output list Future.computation
+type future_proof = Proof_global.closed_proof_output Future.computation
 type proof_mode = string
 type depth = int
 type cancel_switch = bool ref
@@ -683,7 +683,7 @@ end = struct
   let name_of_request (ReqBuildProof (_,_,_,_,_,s)) = s
 
   type response =
-    | RespBuiltProof of Entries.proof_output list * float
+    | RespBuiltProof of Proof_global.closed_proof_output * float
     | RespError of (* err, safe, msg, safe_states *)
         Stateid.t * Stateid.t * std_ppcmds *
           (Stateid.t * State.frozen_state) list
@@ -705,8 +705,9 @@ end = struct
  
   type task =
     | TaskBuildProof of (Stateid.t * Stateid.t) * Stateid.t * Stateid.t *
-        (Entries.proof_output list Future.assignement -> unit) * cancel_switch
+        (Proof_global.closed_proof_output Future.assignement -> unit) * cancel_switch
         * Loc.t * Future.UUID.t * string
+
   let pr_task = function
     | TaskBuildProof(_,bop,eop,_,_,_,_,s) ->
         "TaskBuilProof("^Stateid.to_string bop^","^Stateid.to_string eop^
@@ -745,7 +746,7 @@ end = struct
 		 const_universes = univs } ) ->
                 Opaqueproof.join_opaque f; ignore (Future.join univs) (* FIXME: MS: needed?*)
             | _ -> ())
-          se) l;
+          se) (fst l);
           l, Unix.gettimeofday () -. wall_clock in
         VCS.print ();
         RespBuiltProof(rc,time)
@@ -895,7 +896,7 @@ end = struct
     let cancel_switch = ref false in
     if WorkersPool.is_empty () then
       if !Flags.compilation_mode = Flags.BuildVi then begin
-        let force () : Entries.proof_output list Future.assignement =
+        let force () : Proof_global.closed_proof_output Future.assignement =
           try `Val (build_proof_here_core loc stop ())
           with e -> let e = Errors.push e in `Exn e in
         let f,assign = Future.create_delegate ~force (State.exn_on id ~valid) in
