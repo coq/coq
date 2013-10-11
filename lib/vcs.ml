@@ -55,9 +55,9 @@ module type S = sig
   val set_info : ('k,'e,'info) t -> id -> 'info -> ('k,'e,'info) t
   val get_info : ('k,'e,'info) t -> id -> 'info option
   
-  val gc : ('k,'e,'info) t -> ('k,'e,'info) t
-
   module NodeSet : Set.S with type elt = id
+
+  val gc : ('k,'e,'info) t -> ('k,'e,'info) t * NodeSet.t
 
   val reachable : ('k,'e,'info) t -> id -> NodeSet.t
 
@@ -187,7 +187,7 @@ let gc vcs =
   let alive =
     BranchMap.fold (fun b { pos } s -> closure s vcs.dag pos)
       vcs.heads Dag.NodeSet.empty in
-  { vcs with dag =
-      Dag.del_nodes vcs.dag (Dag.NodeSet.diff (Dag.all_nodes vcs.dag) alive) }
+  let dead = Dag.NodeSet.diff (Dag.all_nodes vcs.dag) alive in
+  { vcs with dag = Dag.del_nodes vcs.dag dead }, dead
 
 end

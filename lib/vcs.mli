@@ -70,16 +70,17 @@ module type S = sig
   val set_info : ('k,'e,'info) t -> id -> 'info -> ('k,'e,'info) t
   val get_info : ('k,'e,'info) t -> id -> 'info option
 
-  val gc : ('k,'e,'info) t -> ('k,'e,'info) t
-
   module NodeSet : Set.S with type elt = id
+  
+  (* Removes all unreachable nodes and returns them *)
+  val gc : ('k,'e,'info) t -> ('k,'e,'info) t * NodeSet.t
 
   val reachable : ('k,'e,'info) t -> id -> NodeSet.t
 
   (* read only dag *)
   module Dag : Dag.S with type node = id
   val dag : ('kind,'diff,'info) t -> ('diff,'info,id) Dag.t
-  
+ 
   val create_cluster : ('k,'e,'i) t -> id list -> id -> ('k,'e,'i) t
   val cluster_of : ('k,'e,'i) t -> id -> id Dag.Cluster.t option
   val delete_cluster : ('k,'e,'i) t -> id Dag.Cluster.t -> ('k,'e,'i) t 
