@@ -62,7 +62,30 @@ type form=
   | Conjunct of form * form
   | Disjunct of form * form
 
-module FOrd = struct type t = form let compare = Pervasives.compare (** FIXME *) end
+module FOrd = struct
+  type t = form
+  let rec compare x y =
+    match x, y with
+    | Bot, Bot -> 0
+    | Bot, _ -> -1
+    | Atom _, Bot -> 1
+    | Atom a1, Atom a2 -> Pervasives.compare a1 a2
+    | Atom _, _ -> -1
+    | Arrow _, (Bot | Atom _) -> 1
+    | Arrow (f1, g1), Arrow (f2, g2) ->
+        let cmp = compare f1 f2 in
+        if cmp = 0 then compare g1 g2 else cmp
+    | Arrow _, _ -> -1
+    | Conjunct _, (Bot | Atom _ | Arrow _) -> 1
+    | Conjunct (f1, g1), Conjunct (f2, g2) ->
+        let cmp = compare f1 f2 in
+        if cmp = 0 then compare g1 g2 else cmp
+    | Conjunct _, _ -> -1
+    | Disjunct _, (Bot | Atom _ | Arrow _ | Conjunct _) -> 1
+    | Disjunct (f1, g1), Disjunct (f2, g2) ->
+        let cmp = compare f1 f2 in
+        if cmp = 0 then compare g1 g2 else cmp
+end
 module Fmap = Map.Make(FOrd)
 
 type sequent =
