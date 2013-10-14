@@ -131,7 +131,7 @@ let find_external_library logicalpath =
   let rec aux = function
     | [] -> raise Not_found
     | (l,u)::rest ->
-        if String.length logicalpath > String.length l &
+        if String.length logicalpath > String.length l &&
           String.sub logicalpath 0 (String.length l + 1) = l ^"."
         then u
         else aux rest

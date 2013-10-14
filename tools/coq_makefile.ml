@@ -89,7 +89,7 @@ let string_prefix a b =
 let is_prefix dir1 dir2 =
   let l1 = String.length dir1 in
   let l2 = String.length dir2 in
-    dir1 = dir2 or (l1 < l2 & String.sub dir2 0 l1 = dir1 & dir2.[l1] = '/')
+    dir1 = dir2 || (l1 < l2 && String.sub dir2 0 l1 = dir1 && dir2.[l1] = '/')
 
 let physical_dir_of_logical_dir ldir =
   let le = String.length ldir - 1 in
@@ -687,8 +687,8 @@ let ensure_root_dir (v,(mli,ml4,ml,mllib,mlpack),_,_) ((i_inc,r_inc) as l) =
   let here = Sys.getcwd () in
   let not_tops =List.for_all (fun s -> s <> Filename.basename s) in
   if List.exists (fun (_,x) -> x = here) i_inc
-    or List.exists (fun (_,_,x) -> is_prefix x here) r_inc
-    or (not_tops v && not_tops mli && not_tops ml4 && not_tops ml
+    || List.exists (fun (_,_,x) -> is_prefix x here) r_inc
+    || (not_tops v && not_tops mli && not_tops ml4 && not_tops ml
 	&& not_tops mllib && not_tops mlpack) then
     l
   else
@@ -712,7 +712,7 @@ let check_overlapping_include (_,inc_r) =
 	if not (is_prefix pwd abspdir) then
 	  Printf.eprintf "Warning: in option -R, %s is not a subdirectory of the current directory\n" pdir;
 	List.iter (fun (pdir',_,abspdir') ->
-	  if is_prefix abspdir abspdir' or is_prefix abspdir' abspdir then
+	  if is_prefix abspdir abspdir' || is_prefix abspdir' abspdir then
 	    Printf.eprintf "Warning: in options -R, %s and %s overlap\n" pdir pdir') l;
   in aux inc_r
 

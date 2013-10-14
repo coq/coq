@@ -171,7 +171,7 @@ let insert texfile coq_output result =
       just_after ()
     end else begin
       if !verbose then Printf.printf "Coq < %s\n" s;
-      if (not first_block) & k=0 then output_string c_out "\\medskip\n";
+      if (not first_block) && k=0 then output_string c_out "\\medskip\n";
       if show_questions then encapsule false c_out ("Coq < " ^ s);
       if has_match dot_end_line s then begin
 	let bl = next_block (succ k) in

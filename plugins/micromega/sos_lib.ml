@@ -52,7 +52,7 @@ let gcd_num n1 n2 =
   num_of_big_int(Big_int.gcd_big_int (big_int_of_num n1) (big_int_of_num n2));;
 
 let lcm_num x y =
-  if x =/ num_0 & y =/ num_0 then num_0
+  if x =/ num_0 && y =/ num_0 then num_0
   else abs_num((x */ y) // gcd_num x y);;
 
 
@@ -140,7 +140,7 @@ let rec (--) = fun m n -> if m > n then [] else m::((m + 1) -- n);;
 let rec forall p l =
   match l with
     [] -> true
-  | h::t -> p(h) & forall p t;;
+  | h::t -> p(h) && forall p t;;
 
 let rec tryfind f l =
   match l with
@@ -161,7 +161,7 @@ let index x =
 let rec mem x lis =
   match lis with
     [] -> false
-  | (h::t) -> x =? h or mem x t;;
+  | (h::t) -> x =? h || mem x t;;
 
 let insert x l =
   if mem x l then l else x::l;;
