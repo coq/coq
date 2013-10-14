@@ -230,6 +230,7 @@ let string_of_op = function
  | Mc.NonEqual -> "<> 0"
 
 
+module MonSet = Set.Make(Monomial)
 
 (* If the certificate includes at least one strict inequality, 
    the obtained polynomial can also be 0 *)
@@ -237,8 +238,6 @@ let build_linear_system l =
 
  (* Gather the monomials:  HINT add up of the polynomials ==> This does not work anymore *)
  let l' = List.map fst l in
-
- let module MonSet = Set.Make(Monomial) in
 
  let monomials = 
   List.fold_left (fun acc p -> 
@@ -299,16 +298,17 @@ exception Found of Monomial.t
 
 exception Strict
 
+module MonMap = Map.Make(Monomial)
+
 let primal l = 
   let vr = ref 0 in
-  let module Mmn = Map.Make(Monomial) in
 
   let vect_of_poly map p =
     Poly.fold (fun mn vl (map,vect) -> 
       if mn = Monomial.const 
       then (map,vect)
       else 
-	let (mn,m) = try (Mmn.find mn map,map) with Not_found -> let res = (!vr, Mmn.add mn !vr map) in incr vr ; res in
+	let (mn,m) = try (MonMap.find mn map,map) with Not_found -> let res = (!vr, MonMap.add mn !vr map) in incr vr ; res in
 	  (m,if sign_num vl = 0 then vect else (mn,vl)::vect)) p (map,[]) in
     
   let op_op = function Mc.NonStrict -> Ge |Mc.Equal -> Eq | _ -> raise Strict in
@@ -319,7 +319,7 @@ let primal l =
       let (mp,vect) = vect_of_poly map p in  
       let cstr = {coeffs = List.sort cmp vect; op = op_op op ; cst = minus_num (Poly.get Monomial.const p)} in
 
-	(mp,cstr::l)) l (Mmn.empty,[]))
+	(mp,cstr::l)) l (MonMap.empty,[]))
 
 let dual_raw_certificate (l:  (Poly.t * Mc.op1) list) = 
 (*  List.iter (fun (p,op) -> Printf.fprintf stdout "%a %s 0\n" Poly.pp p (string_of_op op) ) l ; *)
@@ -1194,8 +1194,6 @@ let reduce_var_change psys =
     let sys = mapi (fun c i -> (c,Hyp i)) sys in
 
     let is_linear =  List.for_all (fun ((p,_),_) -> Poly.is_linear p) sys in
-
-    let module MonMap = Map.Make(Monomial) in
 
     let collect_square = 
       List.fold_left (fun acc ((p,_),_) -> Poly.fold 

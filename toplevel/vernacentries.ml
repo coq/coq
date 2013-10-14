@@ -1334,7 +1334,6 @@ let get_current_context_of_args = function
   | None -> get_current_context ()
 
 let vernac_check_may_eval redexp glopt rc =
-  let module P = Pretype_errors in
   let (sigma, env) = get_current_context_of_args glopt in
   let sigma', c = interp_open_constr sigma env rc in
   Evarconv.check_problems_are_solved sigma';
@@ -1342,7 +1341,7 @@ let vernac_check_may_eval redexp glopt rc =
     try
       Evarutil.check_evars env sigma sigma' c;
       Arguments_renaming.rename_typing env c
-    with P.PretypeError (_,_,P.UnsolvableImplicit _) ->
+    with Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _) ->
       Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c) in
   match redexp with
     | None ->

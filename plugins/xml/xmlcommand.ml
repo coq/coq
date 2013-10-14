@@ -53,7 +53,6 @@ let filter_params pvars hyps =
 (* better unless this function is reimplemented in the Declare   *)
 (* module.                                                       *)
 let search_variables () =
- let module N = Names in
   let cwd = Lib.cwd () in
   let cwdsp = Libnames.make_path cwd (Names.Id.of_string "dummy") in
   let modulepath = Cic2acic.get_module_path_of_full_path cwdsp in
@@ -62,8 +61,8 @@ let search_variables () =
        [] -> []
      | he::tl as modules ->
         let one_section_variables =
-         let dirpath = N.DirPath.make (modules @ N.DirPath.repr modulepath) in
-          let t = List.map N.Id.to_string (Decls.last_section_hyps dirpath) in
+         let dirpath = Names.DirPath.make (modules @ Names.DirPath.repr modulepath) in
+          let t = List.map Names.Id.to_string (Decls.last_section_hyps dirpath) in
            [he,t]
         in
          one_section_variables @ aux tl
@@ -88,7 +87,6 @@ let rec join_dirs cwd =
 ;;
 
 let filename_of_path xml_library_root tag =
- let module N = Names in
   match xml_library_root with
      None -> None  (* stdout *)
    | Some xml_library_root' ->
@@ -109,11 +107,10 @@ let types_filename_of_filename =
 ;;
 
 let theory_filename xml_library_root =
- let module N = Names in
   match xml_library_root with
     None -> None  (* stdout *)
   | Some xml_library_root' ->
-     let toks = List.map N.Id.to_string (N.DirPath.repr (Lib.library_dp ())) in
+     let toks = List.map Names.Id.to_string (Names.DirPath.repr (Lib.library_dp ())) in
      (* theory from A/B/C/F.v goes into A/B/C/F.theory *)
      let alltoks = List.rev toks in
        Some (join_dirs xml_library_root' alltoks ^ ".theory")
@@ -160,10 +157,9 @@ let string_list_of_named_context_list =
 (* Used only for variables (since for constants and mutual *)
 (* inductive types this information is already available.  *)
 let find_hyps t =
- let module T = Term in
   let rec aux l t =
-   match T.kind_of_term t with
-      T.Var id when not (List.mem id l) ->
+   match Term.kind_of_term t with
+      Term.Var id when not (List.mem id l) ->
        let (_,bo,ty) = Global.lookup_named id in
         let boids =
          match bo with
@@ -171,27 +167,27 @@ let find_hyps t =
           | None -> l
         in
          id::(aux boids ty)
-    | T.Var _
-    | T.Rel _
-    | T.Meta _
-    | T.Evar _
-    | T.Sort _ -> l
-    | T.Cast (te,_, ty) -> aux (aux l te) ty
-    | T.Prod (_,s,t) -> aux (aux l s) t
-    | T.Lambda (_,s,t) -> aux (aux l s) t
-    | T.LetIn (_,s,_,t) -> aux (aux l s) t
-    | T.App (he,tl) -> Array.fold_left (fun i x -> aux i x) (aux l he) tl
-    | T.Const con ->
+    | Term.Var _
+    | Term.Rel _
+    | Term.Meta _
+    | Term.Evar _
+    | Term.Sort _ -> l
+    | Term.Cast (te,_, ty) -> aux (aux l te) ty
+    | Term.Prod (_,s,t) -> aux (aux l s) t
+    | Term.Lambda (_,s,t) -> aux (aux l s) t
+    | Term.LetIn (_,s,_,t) -> aux (aux l s) t
+    | Term.App (he,tl) -> Array.fold_left (fun i x -> aux i x) (aux l he) tl
+    | Term.Const con ->
        let hyps = (Global.lookup_constant con).Declarations.const_hyps in
         map_and_filter l hyps @ l
-    | T.Ind ind
-    | T.Construct (ind,_) ->
+    | Term.Ind ind
+    | Term.Construct (ind,_) ->
        let hyps = (fst (Global.lookup_inductive ind)).Declarations.mind_hyps in
         map_and_filter l hyps @ l
-    | T.Case (_,t1,t2,b) ->
+    | Term.Case (_,t1,t2,b) ->
        Array.fold_left (fun i x -> aux i x) (aux (aux l t1) t2) b
-    | T.Fix (_,(_,tys,bodies))
-    | T.CoFix (_,(_,tys,bodies)) ->
+    | Term.Fix (_,(_,tys,bodies))
+    | Term.CoFix (_,(_,tys,bodies)) ->
        let r = Array.fold_left (fun i x -> aux i x) l tys in
         Array.fold_left (fun i x -> aux i x) r bodies
   and map_and_filter l =
@@ -339,15 +335,14 @@ let kind_of_constant kn =
 ;;
 
 let kind_of_global r =
-  let module Gn = Globnames in
   match r with
-  | Gn.IndRef kn | Gn.ConstructRef (kn,_) ->
+  | Globnames.IndRef kn | Globnames.ConstructRef (kn,_) ->
       let isrecord =
 	try let _ = Recordops.lookup_projections kn in Declare.KernelSilent
         with Not_found -> Declare.KernelVerbose in
       kind_of_inductive isrecord (fst kn)
-  | Gn.VarRef id -> kind_of_variable id
-  | Gn.ConstRef kn -> kind_of_constant kn
+  | Globnames.VarRef id -> kind_of_variable id
+  | Globnames.ConstRef kn -> kind_of_constant kn
 ;;
 
 let print_object_kind uri (xmltag,variation) =
@@ -366,39 +361,31 @@ let print_object_kind uri (xmltag,variation) =
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
 let print internal glob_ref kind xml_library_root =
- let module D = Declareops in
- let module De = Declare in
- let module G = Global in
- let module N = Names in
- let module Nt = Nametab in
- let module T = Term in
- let module X = Xml in
- let module Gn = Globnames in
   (* Variables are the identifiers of the variables in scope *)
   let variables = search_variables () in
   let tag,obj =
    match glob_ref with
-      Gn.VarRef id ->
+      Globnames.VarRef id ->
        (* this kn is fake since it is not provided by Coq *)
        let kn = Lib.make_kn id in
-       let (_,body,typ) = G.lookup_named id in
+       let (_,body,typ) = Global.lookup_named id in
         Cic2acic.Variable kn,mk_variable_obj id body typ
-    | Gn.ConstRef kn ->
-       let id = N.Label.to_id (N.con_label kn) in
-       let cb = G.lookup_constant kn in
-       let val0 = D.body_of_constant cb in
+    | Globnames.ConstRef kn ->
+       let id = Names.Label.to_id (Names.con_label kn) in
+       let cb = Global.lookup_constant kn in
+       let val0 = Declareops.body_of_constant cb in
        let typ = cb.Declarations.const_type in
        let hyps = cb.Declarations.const_hyps in
        let typ = Typeops.type_of_constant_type (Global.env()) typ in
         Cic2acic.Constant kn,mk_constant_obj id val0 typ variables hyps
-    | Gn.IndRef (kn,_) ->
-       let mib = G.lookup_mind kn in
+    | Globnames.IndRef (kn,_) ->
+       let mib = Global.lookup_mind kn in
        let {Declarations.mind_nparams=nparams;
 	    Declarations.mind_packets=packs ;
             Declarations.mind_hyps=hyps;
             Declarations.mind_finite=finite} = mib in
           Cic2acic.Inductive kn,mk_inductive_obj kn mib packs variables nparams hyps finite
-    | Gn.ConstructRef _ ->
+    | Globnames.ConstructRef _ ->
        Errors.error ("a single constructor cannot be printed in XML")
   in
   let fn = filename_of_path xml_library_root tag in

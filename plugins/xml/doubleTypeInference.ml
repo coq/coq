@@ -16,20 +16,17 @@
 type types = {synthesized : Term.types ; expected : Term.types option};;
 
 let cprop =
- let module N = Names in
-  N.make_con
-   (N.MPfile
+  Names.make_con
+   (Names.MPfile
      (Libnames.dirpath_of_string "CoRN.algebra.CLogic"))
-   (N.DirPath.empty)
-   (N.Label.make "CProp")
+   (Names.DirPath.empty)
+   (Names.Label.make "CProp")
 ;;
 
 let whd_betadeltaiotacprop env _evar_map ty =
- let module C = Closure in
- let module CR = C.RedFlags in
  (*** CProp is made Opaque ***)
- let flags = CR.red_sub C.betadeltaiota (CR.fCONST cprop) in
- C.whd_val (C.create_clos_infos flags env) (C.inject ty)
+ let flags = Closure.RedFlags.red_sub Closure.betadeltaiota (Closure.RedFlags.fCONST cprop) in
+ Closure.whd_val (Closure.create_clos_infos flags env) (Closure.inject ty)
 ;;
 
 
