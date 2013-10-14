@@ -86,13 +86,28 @@ type pa_mark=
 module PacOrd =
 struct
   type t = pa_constructor
-  let compare = Pervasives.compare (** FIXME *)
+  let compare { cnode = cnode0; arity = arity0; args = args0 }
+              { cnode = cnode1; arity = arity1; args = args1 } =
+    let cmp = Pervasives.compare cnode0 cnode1 in
+    if cmp = 0 then
+      let cmp' = Pervasives.compare arity0 arity1 in
+      if cmp' = 0 then
+        Pervasives.compare args0 args1
+      else
+        cmp'
+    else
+      cmp
 end
 
 module PafOrd =
 struct
   type t = pa_fun
-  let compare = Pervasives.compare (** FIXME *)
+  let compare { fsym = fsym0; fnargs = fnargs0 } { fsym = fsym1; fnargs = fnargs1 } =
+    let cmp = Pervasives.compare fsym0 fsym1 in
+    if cmp = 0 then
+      Pervasives.compare fnargs0 fnargs1
+    else
+      cmp
 end
 
 module PacMap=Map.Make(PacOrd)
@@ -218,7 +233,7 @@ module Termhash = Hashtbl.Make
 
 module Identhash = Hashtbl.Make
   (struct type t = Id.t
-	  let equal = Pervasives.(=)
+	  let equal = Id.equal
 	  let hash = Hashtbl.hash
    end)
 
