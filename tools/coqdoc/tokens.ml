@@ -15,7 +15,10 @@
     (code copied from parsing/lexer.ml4 for the use of coqdoc, Apr 2010)
 *)
 
-module CharMap = Map.Make (struct type t = char let compare = compare end)
+module CharMap = Map.Make (struct
+  type t = char
+  let compare (x : t) (y : t) = compare x y
+end)
 
 type ttree = {
   node : string option;
