@@ -20,6 +20,7 @@ module Glue : sig
   val atom : 'a -> 'a t
   val glue : 'a t -> 'a t -> 'a t
   val empty : 'a t
+  val is_empty : 'a t -> bool
   val iter : ('a -> unit) -> 'a t -> unit
 
 end = struct
@@ -29,6 +30,7 @@ end = struct
   let atom x = [x]
   let glue x y = y @ x
   let empty = []
+  let is_empty x = x = []
 
   let iter f g = List.iter f (List.rev g)
 
@@ -105,7 +107,7 @@ let (++) = Glue.glue
 
 let app = Glue.glue
 
-let is_empty g = g = Glue.empty
+let is_empty g = Glue.is_empty g
 
 
 (* Compute length of an UTF-8 encoded string
