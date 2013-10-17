@@ -75,7 +75,7 @@ let type_of_const t =
     Const sp -> Typeops.type_of_constant (Global.env()) sp
     |_ -> assert false
 
-let constr_of_global = Universes.constr_of_global
+let constr_of_global = Universes.unsafe_constr_of_global
 
 let constant sl s = constr_of_global (find_reference sl s)
 
@@ -1016,7 +1016,7 @@ let compute_terminate_type nb_args func =
 		  delayed_force nat,
 		  (mkProd (Name k_id, delayed_force nat,
 			   mkArrow cond result))))|])in
-  let value = mkApp(delayed_force coq_sig,
+  let value = mkApp(constr_of_global (delayed_force coq_sig_ref),
 		    [|b;
 		      (mkLambda (Name v_id, b, nb_iter))|]) in
   compose_prod rev_args value

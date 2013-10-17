@@ -46,6 +46,11 @@ let elide_part_of_script_and_now (a, _) =
   | VtStm (x, _) -> VtStm (x, false), VtNow
   | x -> x, VtNow
 
+let make_polymorphic (a, b as x) =
+  match a with
+  | VtStartProof (x, y, ids, _) -> (VtStartProof (x, y, ids, true), b)
+  | _ -> x
+
 let undo_classifier = ref (fun _ -> assert false)
 let set_undo_classifier f = undo_classifier := f
 
@@ -68,7 +73,7 @@ let rec classify_vernac e =
     | VernacLocal (_,e) -> classify_vernac e
     | VernacPolymorphic (b, e) -> 
       if b || Flags.is_universe_polymorphism () (* Ok or not? *) then
-	fst (classify_vernac e), VtNow
+	make_polymorphic (classify_vernac e)
       else classify_vernac e
     | VernacTimeout (_,e) -> classify_vernac e
     | VernacTime e -> classify_vernac e
@@ -88,8 +93,8 @@ let rec classify_vernac e =
     | VernacProof _ 
     | VernacBullet _ 
     | VernacFocus _ | VernacUnfocus
-    | VernacSubproof _ | VernacEndSubproof 
-    | VernacSolve _ | VernacError _
+    | VernacSubproof _ | VernacEndSubproof
+    | VernacSolve _ 
     | VernacCheckGuard
     | VernacUnfocused
     | VernacSolveExistential _ -> VtProofStep, VtLater
@@ -98,23 +103,23 @@ let rec classify_vernac e =
     | VernacSetOption (["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
     (* StartProof *)
     | VernacDefinition (_,(_,i),ProveBody _) ->
-        VtStartProof("Classic",GuaranteesOpacity,[i]), VtLater
+        VtStartProof("Classic",GuaranteesOpacity,[i], false), VtLater
     | VernacStartTheoremProof (_,l,_) ->
         let ids = 
           CList.map_filter (function (Some(_,i), _) -> Some i | _ -> None) l in
-        VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
-    | VernacGoal _ -> VtStartProof ("Classic",GuaranteesOpacity,[]), VtLater
+        VtStartProof ("Classic",GuaranteesOpacity,ids, false), VtLater
+    | VernacGoal _ -> VtStartProof ("Classic",GuaranteesOpacity,[],false), VtLater
     | VernacFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) (((_,id),_,_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
-        if open_proof then VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
+        if open_proof then VtStartProof ("Classic",GuaranteesOpacity,ids, false), VtLater
         else VtSideff ids, VtLater
     | VernacCoFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) (((_,id),_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
-        if open_proof then VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
+        if open_proof then VtStartProof ("Classic",GuaranteesOpacity,ids,false), VtLater
         else VtSideff ids, VtLater
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->
@@ -182,6 +187,7 @@ let rec classify_vernac e =
     | VernacToplevelControl _
     | VernacRestoreState _
     | VernacWriteState _ -> VtUnknown, VtNow
+    | VernacError _ -> assert false
     (* Plugins should classify their commands *)
     | VernacExtend (s,l) ->
         try List.assoc s !classifiers l ()

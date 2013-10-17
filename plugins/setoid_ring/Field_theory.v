@@ -113,6 +113,28 @@ Lemma ceqb_spec c c' : BoolSpec ([c] == [c']) True (c =? c')%coef.
 Proof.
 generalize (CRmorph.(morph_eq) c c').
 destruct (c =? c')%coef; auto.
+<<<<<<< HEAD
+=======
+||||||| merged common ancestors
+destruct (c ?= c')%coef; auto.
+=======
+destruct (c ?= c')%coef; auto.
+<<<<<<< HEAD
+=======
+intros.
+generalize (fun h => X (morph_eq CRmorph _ _ h)).
+case (ceqb c1 c2); auto.
+>>>>>>> .merge_file_U4r9lJ
+>>>>>>> This commit adds full universe polymorphism and fast projections to Coq.
+||||||| merged common ancestors
+=======
+intros.
+generalize (fun h => X (morph_eq CRmorph _ _ h)).
+case (ceqb c1 c2); auto.
+>>>>>>> .merge_file_U4r9lJ
+=======
+>>>>>>> Correct rebase on STM code. Thanks to E. Tassi for help on dealing with
+>>>>>>> Correct rebase on STM code. Thanks to E. Tassi for help on dealing with
 Qed.
 
 (* Power coefficients : Cpow *)
@@ -279,6 +301,7 @@ apply radd_ext.
   [ ring | now rewrite rdiv_simpl ].
 Qed.
 
+<<<<<<< HEAD
 Theorem rdiv3 r1 r2 r3 r4 :
  ~ r2 == 0 ->
  ~ r4 == 0 ->
@@ -294,6 +317,8 @@ f_equiv.
 transitivity (r1 * r4 + - (r3 * r2)); auto.
 Qed.
 
+=======
+>>>>>>> Correct rebase on STM code. Thanks to E. Tassi for help on dealing with
 Theorem rdiv5 a b : - (a / b) == - a / b.
 Proof.
 now rewrite !rdiv_def, ropp_mul_l.
@@ -712,7 +737,6 @@ Fixpoint PEsimp (e : PExpr C) : PExpr C :=
   | _ => e
  end%poly.
 
-<<<<<<< .merge_file_5Z3Qpn
 Theorem PEsimp_ok e : (PEsimp e === e)%poly.
 Proof.
 induction e; simpl.
@@ -725,32 +749,6 @@ induction e; simpl.
 - rewrite NPEmul_ok. now f_equiv.
 - rewrite NPEopp_ok. now f_equiv.
 - rewrite NPEpow_ok. now f_equiv.
-=======
-Theorem PExpr_simp_correct:
- forall l e,  NPEeval l (PExpr_simp e) == NPEeval l e.
-clear eq_sym.
-intros l e; elim e; simpl; auto.
-intros e1 He1 e2 He2.
-transitivity (NPEeval l (PEadd (PExpr_simp e1) (PExpr_simp e2))); auto.
-apply NPEadd_correct.
-simpl; auto.
-intros e1 He1 e2 He2.
-transitivity (NPEeval l (PEsub (PExpr_simp e1) (PExpr_simp e2))). auto.
-apply NPEsub_correct.
-simpl; auto.
-intros e1 He1 e2 He2.
-transitivity (NPEeval l (PEmul (PExpr_simp e1) (PExpr_simp e2))); auto.
-apply NPEmul_correct.
-simpl; auto.
-intros e1 He1.
-transitivity (NPEeval l (PEopp (PExpr_simp e1))); auto.
-apply NPEopp_correct.
-simpl; auto.
-intros e1 He1 n;simpl.
-rewrite NPEpow_correct;simpl.
-repeat rewrite pow_th.(rpow_pow_N).
-rewrite He1;auto.
->>>>>>> .merge_file_U4r9lJ
 Qed.
 
 
@@ -1004,7 +1002,6 @@ Fixpoint split_aux e1 p e2 {struct e1}: rsplit :=
        end
   end%poly.
 
-<<<<<<< .merge_file_5Z3Qpn
 Lemma split_aux_ok1 e1 p e2 :
   (let res := match isIn e1 p e2 1 with
        | Some (N0,e3) => mk_rsplit 1 (e1 ^^ Npos p) e3
@@ -1015,20 +1012,6 @@ Lemma split_aux_ok1 e1 p e2 :
   e1 ^ Npos p === left res * common res
   /\ e2 === right res * common res)%poly.
 Proof.
-=======
-Lemma split_aux_correct_1 : forall l e1 p e2,
-  let res :=  match isIn e1 p e2 xH with
-       | Some (N0,e3) => mk_rsplit (PEc cI) (NPEpow e1 (Npos p)) e3
-       | Some (Npos q, e3) => mk_rsplit (NPEpow e1 (Npos q)) (NPEpow e1 (Npos (p - q))) e3
-       | None => mk_rsplit (NPEpow e1  (Npos p)) (PEc cI) e2
-       end in
-       NPEeval l (PEpow e1 (Npos p)) == NPEeval l (NPEmul (left res) (common res))
-   /\
-       NPEeval l e2 == NPEeval l (NPEmul (right res) (common res)).
-Proof.
- intros. unfold res. clear res; generalize (isIn_correct l e1 p e2 xH).
- destruct (isIn e1 p e2 1). destruct p0.
->>>>>>> .merge_file_U4r9lJ
  Opaque NPEpow NPEmul.
  intros. unfold res;clear res; generalize (isIn_ok e1 p e2 xH).
  destruct (isIn e1 p e2 1) as [([|p'],e')|]; simpl.
@@ -1148,7 +1131,6 @@ Eval compute
 Theorem Pcond_Fnorm l e :
  PCond l (condition (Fnorm e)) ->  ~ (denum (Fnorm e))@l == 0.
 Proof.
-<<<<<<< .merge_file_5Z3Qpn
 induction e; simpl condition; rewrite ?PCond_cons, ?PCond_app;
  simpl denum; intros (Hc1,Hc2) || intros Hc; rewrite ?NPEmul_ok.
 - simpl. rewrite phi_1; exact rI_neq_rO.
@@ -1171,93 +1153,6 @@ induction e; simpl condition; rewrite ?PCond_cons, ?PCond_app;
   + apply split_nz_r, Hc1.
 - rewrite NPEpow_ok. apply PEpow_nz, IHe, Hc.
 Qed.
-=======
- induction p;simpl.
-  intro Hp;assert (H1 := @rmul_reg_l _ (pow_pos rmul x p * pow_pos rmul x p) 0 H).
-  apply IHp.
-  rewrite (@rmul_reg_l _ (pow_pos rmul x p)  0 IHp).
-  reflexivity.
-  rewrite H1. ring. rewrite Hp;ring.
-  intro Hp;apply IHp. rewrite (@rmul_reg_l _ (pow_pos rmul x p)  0 IHp).
-  reflexivity. rewrite Hp;ring. trivial.
-Qed.
-
-Theorem Pcond_Fnorm:
- forall l e,
- PCond l (condition (Fnorm e)) ->  ~ NPEeval l ((Fnorm e).(denum)) == 0.
-intros l e; elim e.
- simpl; intros _ _; rewrite (morph1 CRmorph); exact rI_neq_rO.
- simpl; intros _ _; rewrite (morph1 CRmorph); exact rI_neq_rO.
- intros e1 Hrec1 e2 Hrec2 Hcond.
-   simpl in Hcond.
-   simpl @denum.
-   rewrite NPEmul_correct.
-   simpl.
-   apply field_is_integral_domain.
-   intros HH; case Hrec1; auto.
-     apply PCond_app_inv_l with (1 := Hcond).
-   rewrite (split_correct_l l (denum (Fnorm e1)) (denum (Fnorm e2))).
-   rewrite NPEmul_correct; simpl; rewrite HH; ring.
-   intros HH; case Hrec2; auto.
-     apply PCond_app_inv_r with (1 := Hcond).
-   rewrite (split_correct_r l (denum (Fnorm e1)) (denum (Fnorm e2))); auto.
- intros e1 Hrec1 e2 Hrec2 Hcond.
-   simpl @condition in Hcond.
-   simpl @denum.
-   rewrite NPEmul_correct.
-   simpl.
-   apply field_is_integral_domain.
-   intros HH; case Hrec1; auto.
-     apply PCond_app_inv_l with (1 := Hcond).
-   rewrite (split_correct_l l (denum (Fnorm e1)) (denum (Fnorm e2))).
-   rewrite NPEmul_correct; simpl; rewrite HH; ring.
-   intros HH; case Hrec2; auto.
-     apply PCond_app_inv_r with (1 := Hcond).
-   rewrite (split_correct_r l (denum (Fnorm e1)) (denum (Fnorm e2))); auto.
- intros e1 Hrec1 e2 Hrec2 Hcond.
-   simpl in Hcond.
-   simpl @denum.
-   rewrite NPEmul_correct.
-   simpl.
-   apply field_is_integral_domain.
-  intros HH; apply Hrec1.
-    apply PCond_app_inv_l with (1 := Hcond).
-    rewrite (split_correct_r l (num (Fnorm e2)) (denum (Fnorm e1))).
-    rewrite NPEmul_correct; simpl; rewrite HH; ring.
-  intros HH; apply Hrec2.
-    apply PCond_app_inv_r with (1 := Hcond).
-    rewrite (split_correct_r l (num (Fnorm e1)) (denum (Fnorm e2))).
-    rewrite NPEmul_correct; simpl; rewrite HH; ring.
- intros e1 Hrec1 Hcond.
-   simpl in Hcond.
-   simpl @denum.
-   auto.
- intros e1 Hrec1 Hcond.
-   simpl in Hcond.
-   simpl @denum.
-   apply PCond_cons_inv_l with (1:=Hcond).
- intros e1 Hrec1 e2 Hrec2 Hcond.
-   simpl in Hcond.
-   simpl @denum.
-   rewrite NPEmul_correct.
-   simpl.
-   apply field_is_integral_domain.
-    intros HH; apply Hrec1.
-    specialize PCond_cons_inv_r with (1:=Hcond); intro Hcond1.
-    apply PCond_app_inv_l with (1 := Hcond1).
-    rewrite (split_correct_l l (denum (Fnorm e1)) (denum (Fnorm e2))).
-    rewrite NPEmul_correct; simpl; rewrite HH; ring.
-    intros HH; apply PCond_cons_inv_l with (1:=Hcond).
-    rewrite (split_correct_r l (num (Fnorm e1)) (num (Fnorm e2))).
-    rewrite NPEmul_correct; simpl; rewrite HH; ring.
- simpl;intros e1 Hrec1 n Hcond.
-  rewrite NPEpow_correct.
-  simpl;rewrite pow_th.(rpow_pow_N).
-  destruct n;simpl;intros.
-  apply AFth.(AF_1_neq_0). apply pow_pos_not_0;auto.
-Qed.
-Hint Resolve Pcond_Fnorm.
->>>>>>> .merge_file_U4r9lJ
 
 
 (***************************************************************************
@@ -1648,21 +1543,11 @@ Hypothesis ceqb_complete : forall c1 c2, [c1] == [c2] -> ceqb c1 c2 = true.
 
 Lemma ceqb_spec' c1 c2 : Bool.reflect ([c1] == [c2]) (ceqb c1 c2).
 Proof.
-<<<<<<< .merge_file_5Z3Qpn
 assert (H := morph_eq CRmorph c1 c2).
 assert (H' := @ceqb_complete c1 c2).
 destruct (ceqb c1 c2); constructor.
 - now apply H.
 - intro E. specialize (H' E). discriminate.
-=======
-intros.
-generalize (fun h => X (morph_eq CRmorph _ _ h)).
-generalize (@ceqb_complete c1 c2).
-case (c1 ?=! c2); auto; intros.
-apply X0.
-red; intro.
-absurd (false = true); auto;  discriminate.
->>>>>>> .merge_file_U4r9lJ
 Qed.
 
 Fixpoint Fcons1 (e:PExpr C) (l:list (PExpr C)) {struct e} : list (PExpr C) :=

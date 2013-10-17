@@ -125,7 +125,6 @@ Proof.
  intros x y z H; revert z; induction H; auto.
  inversion 1; subst; auto. invlist eqlistA; eauto with *.
 Qed.
-
 (** Moreover, [eqlistA] implies [equivlistA]. A reverse result
     will be proved later for sorted list without duplicates. *)
 

@@ -108,7 +108,8 @@ val join_safe_environment : unit -> unit
 
 val is_polymorphic : Globnames.global_reference -> bool
 
-(* val type_of_global : Globnames.global_reference -> types Univ.in_universe_context_set *)
+val type_of_global_in_context : Environ.env -> 
+  Globnames.global_reference -> Constr.types Univ.in_universe_context
 val type_of_global_unsafe : Globnames.global_reference -> Constr.types 
 
 (** {6 Retroknowledge } *)

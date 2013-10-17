@@ -36,8 +36,8 @@ let start_proof (id : Id.t) str hyps c ?init_tac terminator =
 
 let cook_this_proof p =
   match p with
-  | { Proof_global.id;entries=[constr];persistence } ->
-      (id,(constr,persistence))
+  | { Proof_global.id;entries=[constr];persistence;constraints } ->
+      (id,(constr,constraints,persistence))
   | _ -> Errors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
 
 let cook_proof () =
@@ -123,7 +123,7 @@ let build_constant_by_tactic id sign ?(goal_kind = Global, false, Proof Theorem)
   start_proof id goal_kind sign typ (fun _ -> ());
   try
     let status = by tac in
-    let _,(const,_) = cook_proof () in
+    let _,(const,_,_) = cook_proof () in
     delete_current_proof ();
     const, status, !substref
   with reraise ->

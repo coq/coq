@@ -812,7 +812,7 @@ Hint Resolve Rinv_involutive: real.
 Lemma Rinv_mult_distr :
   forall r1 r2, r1 <> 0 -> r2 <> 0 -> / (r1 * r2) = / r1 * / r2.
 Proof.
-  intros; field; auto.
+  intros; field; auto.  
 Qed.
 
 (*********)

@@ -61,6 +61,8 @@ type proof_object = {
   id : Names.Id.t;
   entries : Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
+  constraints : Univ.constraints;
+  (** guards : lemma_possible_guards; *)
 }
 
 type proof_ending =

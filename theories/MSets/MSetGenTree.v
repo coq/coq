@@ -962,7 +962,8 @@ Proof. firstorder. Qed.
 Lemma eq_Leq : forall s s', eq s s' <-> L.eq (elements s) (elements s').
 Proof.
  unfold eq, Equal, L.eq; intros.
- setoid_rewrite elements_spec1; firstorder.
+ do 2 setoid_rewrite elements_spec1. (*FIXME due to regression in rewrite *) 
+ firstorder. 
 Qed.
 
 Definition lt (s1 s2 : tree) : Prop :=

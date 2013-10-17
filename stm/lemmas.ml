@@ -296,11 +296,11 @@ let set_start_hook = (:=) start_hook
 
 
 let get_proof proof do_guard hook opacity =
-  let (id,(const,persistence)) =
+  let (id,(const,cstrs,persistence)) =
     Pfedit.cook_this_proof proof
   in
   (** FIXME *)
-  id,{const with const_entry_opaque = opacity},Univ.Constraint.empty,do_guard,persistence,hook
+  id,{const with const_entry_opaque = opacity},cstrs,do_guard,persistence,hook
 
 let standard_proof_terminator compute_guard hook =
   let open Proof_global in function

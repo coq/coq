@@ -181,6 +181,7 @@ let is_rec names =
   let rec lookup names = function
     | GVar(_,id) -> check_id id names
     | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ -> false
+    | GProj (loc, p, c) -> lookup names c
     | GCast(_,b,_) -> lookup names b
     | GProj _ -> error "GProj not handled"
     | GRec _ -> error "GRec not handled"

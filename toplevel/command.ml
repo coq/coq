@@ -202,7 +202,7 @@ let declare_assumption is_coe (local,p,kind) (c,ctx) imps impl nl (_,ident) = ma
   let r = VarRef ident in
   let () = Typeclasses.declare_instance None true r in
   let () = if is_coe then Class.try_add_new_coercion r ~local:true false in
-  (r,true)
+  (r,Univ.Instance.empty,true)
 
 | Global | Local | Discharge ->
   let local = get_locality ident local in
@@ -219,7 +219,7 @@ let declare_assumption is_coe (local,p,kind) (c,ctx) imps impl nl (_,ident) = ma
   let () = assumption_message ident in
   let () = Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr local p in
-  (gr,Lib.is_modtype_strict ())
+  (gr,Univ.UContext.instance ctx,Lib.is_modtype_strict ())
 
 let declare_assumptions_hook = ref ignore
 let set_declare_assumptions_hook = (:=) declare_assumptions_hook
@@ -234,8 +234,8 @@ let interp_assumption evdref env bl c =
 let declare_assumptions idl is_coe k c imps impl_is_on nl =
   let refs, status =
     List.fold_left (fun (refs,status) id ->
-      let ref',status' = declare_assumption is_coe k c imps impl_is_on nl id in
-      ref'::refs, status' && status) ([],true) idl in
+      let ref',u',status' = declare_assumption is_coe k c imps impl_is_on nl id in
+      (ref',u')::refs, status' && status) ([],true) idl in
   List.rev refs, status
 
 let do_assumptions kind nl l =
@@ -251,8 +251,11 @@ let do_assumptions kind nl l =
   snd (List.fold_left (fun (subst,status) ((is_coe,idl),t,(ctx,imps)) ->
     let t = replace_vars subst t in
     let (refs,status') = declare_assumptions idl is_coe kind (t,ctx) imps false nl in
-    let subst' = List.map2 (fun (_,id) c -> (id,Universes.constr_of_global c)) idl refs in
-    (subst'@subst, status' && status)) ([],true) l)
+    let subst' = List.map2 
+      (fun (_,id) (c,u) -> (id,Universes.constr_of_global_univ (c,u))) (*FIXME incorrect should also enrich the context of the current assumption with c's context *)
+      idl refs 
+    in
+      (subst'@subst, status' && status)) ([],true) l)
 
 (* 3a| Elimination schemes for mutual inductive definitions *)
 

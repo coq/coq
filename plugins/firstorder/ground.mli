@@ -7,5 +7,5 @@
 (************************************************************************)
 
 val ground_tac:     Tacmach.tactic ->
-  (Proof_type.goal Tacmach.sigma -> Sequent.t) -> Tacmach.tactic
+  (Proof_type.goal Tacmach.sigma -> Sequent.t * Proof_type.goal Tacmach.sigma) -> Tacmach.tactic
 

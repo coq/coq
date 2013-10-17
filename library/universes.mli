@@ -136,11 +136,18 @@ val normalize_universe_opt_subst : universe_opt_subst ref ->
 val normalize_universe_subst : universe_subst ref ->
   (universe -> universe)
 
-(** Create a fresh global in the global environment, shouldn't be done while
-    building polymorphic values as the constraints are added to the global
-    environment already. *)
+(** Create a fresh global in the global environment, without side effects.
+    BEWARE: this raises an ANOMALY on polymorphic constants/inductives: 
+    the constraints should be properly added to an evd. 
+    See Evd.fresh_global, Evarutil.new_global, and pf_constr_of_global for
+    the proper way to get a fresh copy of a global reference. *)
 
 val constr_of_global : Globnames.global_reference -> constr
+
+(** [unsafe_constr_of_global gr] turns [gr] into a constr, works on polymorphic
+    reference by building a "dummy" universe instance that is not recorded 
+    anywhere. The constraints are forgotten as well. DO NOT USE in new code. *)
+val unsafe_constr_of_global : Globnames.global_reference -> constr
 
 val type_of_global : Globnames.global_reference -> types in_universe_context_set
 

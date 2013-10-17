@@ -54,6 +54,8 @@ val pf_reduction_of_red_expr : goal sigma -> red_expr -> constr -> constr
 
 
 val pf_apply : (env -> evar_map -> 'a) -> goal sigma -> 'a
+val pf_eapply : (env -> evar_map -> 'a -> evar_map * 'b) -> 
+  goal sigma -> 'a -> goal sigma * 'b
 val pf_reduce :
   (env -> evar_map -> constr -> constr) ->
   goal sigma -> constr -> constr

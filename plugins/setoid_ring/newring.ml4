@@ -51,8 +51,17 @@ let tag_arg tag_rec map subs i c =
     | Prot -> mk_atom c
     | Rec -> if Int.equal i (-1) then mk_clos subs c else tag_rec c
 
+let global_head_of_constr c = 
+  let f, args = decompose_app c in
+    try global_of_constr f
+    with Not_found -> anomaly (str "global_head_of_constr")
+
+let global_of_constr_nofail c = 
+  try global_of_constr c
+  with Not_found -> VarRef (Id.of_string "dummy")
+
 let rec mk_clos_but f_map subs t =
-  match f_map t with
+  match f_map (global_of_constr_nofail t) with
     | Some map -> tag_arg (mk_clos_but f_map subs) map subs (-1) t
     | None ->
         (match kind_of_term t with
@@ -65,7 +74,7 @@ and mk_clos_app_but f_map subs f args n =
   else
     let fargs, args' = Array.chop n args in
     let f' = mkApp(f,fargs) in
-    match f_map f' with
+    match f_map (global_of_constr_nofail f') with
         Some map ->
           mk_clos_deep
             (fun s' -> unmark_arg (tag_arg (mk_clos_but f_map s') map s'))
@@ -74,7 +83,7 @@ and mk_clos_app_but f_map subs f args n =
       | None -> mk_clos_app_but f_map subs f args (n+1)
 
 let interp_map l t =
-  try Some(List.assoc_f eq_constr_nounivs t l) with Not_found -> None
+  try Some(List.assoc_f eq_gr t l) with Not_found -> None
 
 let protect_maps = ref String.Map.empty
 let add_map s m = protect_maps := String.Map.add s m !protect_maps
@@ -219,14 +228,12 @@ let coq_reference c =
   lazy (Coqlib.gen_reference_in_modules "Ring" stdlib_modules c)
 
 let coq_mk_Setoid = coq_constant "Build_Setoid_Theory"
-let coq_cons = coq_constant "cons"
-let coq_nil = coq_constant "nil"
-let coq_None = coq_constant "None"
-let coq_Some = coq_constant "Some"
+let coq_None = coq_reference "None"
+let coq_Some = coq_reference "Some"
 let coq_eq = coq_constant "eq"
 
-let coq_pcons = coq_reference "cons"
-let coq_pnil = coq_reference "nil"
+let coq_cons = coq_reference "cons"
+let coq_nil = coq_reference "nil"
 
 let lapp f args = mkApp(Lazy.force f,args)
 
@@ -274,7 +281,7 @@ let znew_ring_path =
 let zltac s =
   lazy(make_kn (MPfile znew_ring_path) DirPath.empty (Label.make s))
 
-let mk_cst l s = lazy (Coqlib.gen_constant "newring" l s);;
+let mk_cst l s = lazy (Coqlib.gen_reference "newring" l s);;
 let pol_cst s = mk_cst [plugin_dir;"Ring_polynom"] s ;;
 
 (* Ring theory *)
@@ -319,8 +326,11 @@ let coq_hypo = my_reference "hypo"
 let map_with_eq arg_map c =
   let (req,_,_) = dest_rel c in
   interp_map
-    ((req,(function -1->Prot|_->Rec))::
+    ((global_head_of_constr req,(function -1->Prot|_->Rec))::
     List.map (fun (c,map) -> (Lazy.force c,map)) arg_map)
+
+let map_without_eq arg_map _ =
+  interp_map (List.map (fun (c,map) -> (Lazy.force c,map)) arg_map)
 
 let _ = add_map "ring"
   (map_with_eq
@@ -618,8 +628,8 @@ let make_hyp_list env evd lH =
   let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
   let l = 
     List.fold_right
-      (fun c l -> plapp evd coq_pcons [|carrier; (make_hyp env evd c); l|]) lH
-      (plapp evd coq_pnil [|carrier|])
+      (fun c l -> plapp evd coq_cons [|carrier; (make_hyp env evd c); l|]) lH
+      (plapp evd coq_nil [|carrier|])
   in 
   let l' = Typing.solve_evars env evd l in
     Evarutil.nf_evars_universes !evd l'
@@ -629,7 +639,7 @@ let interp_power env evd pow =
   match pow with
   | None ->
       let t = ArgArg(Loc.ghost, Lazy.force ltac_inv_morph_nothing) in
-      (TacArg(Loc.ghost,TacCall(Loc.ghost,t,[])), lapp coq_None [|carrier|])
+      (TacArg(Loc.ghost,TacCall(Loc.ghost,t,[])), plapp evd coq_None [|carrier|])
   | Some (tac, spec) ->
       let tac =
         match tac with
@@ -637,24 +647,24 @@ let interp_power env evd pow =
         | Closed lc ->
             closed_term_ast (List.map Smartlocate.global_with_alias lc) in
       let spec = make_hyp env evd (ic_unsafe spec) in
-      (tac, lapp coq_Some [|carrier; spec|])
+      (tac, plapp evd coq_Some [|carrier; spec|])
 
 let interp_sign env evd sign =
   let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
   match sign with
-  | None -> lapp coq_None [|carrier|]
+  | None -> plapp evd coq_None [|carrier|]
   | Some spec ->
       let spec = make_hyp env evd (ic_unsafe spec) in
-      lapp coq_Some [|carrier;spec|]
+      plapp evd coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
 let interp_div env evd div =
   let carrier = Evarutil.e_new_global evd (Lazy.force coq_hypo) in
   match div with
-  | None -> lapp coq_None [|carrier|]
+  | None -> plapp evd coq_None [|carrier|]
   | Some spec ->
       let spec = make_hyp env evd (ic_unsafe spec) in
-      lapp coq_Some [|carrier;spec|]
+      plapp evd coq_Some [|carrier;spec|]
        (* Same remark on ill-typed terms ... *)
 
 let add_theory name (sigma,rth) eqth morphth cst_tac (pre,post) power sign div =
@@ -788,8 +798,8 @@ let make_args_list rl t =
 
 let make_term_list env evd carrier rl =
   let l = List.fold_right
-    (fun x l -> plapp evd coq_pcons [|carrier;x;l|]) rl
-    (plapp evd coq_pnil [|carrier|])
+    (fun x l -> plapp evd coq_cons [|carrier;x;l|]) rl
+    (plapp evd coq_nil [|carrier|])
   in Typing.solve_evars env evd l
 
 let ltac_ring_structure e =
@@ -844,9 +854,9 @@ let _ = add_map "field"
     coq_nil, (function -1->Eval|_ -> Prot);
     (* display_linear: evaluate polynomials and coef operations, protect
        field operations and make recursive call on the var map *)
-    my_constant "display_linear",
+    my_reference "display_linear",
       (function -1|9|10|11|12|13|15|16->Eval|14->Rec|_->Prot);
-    my_constant "display_pow_linear",
+    my_reference "display_pow_linear",
      (function -1|9|10|11|12|13|14|16|18|19->Eval|17->Rec|_->Prot);
    (* Pphi_dev: evaluate polynomial and coef operations, protect
        ring operations and make recursive call on the var map *)
@@ -858,15 +868,15 @@ let _ = add_map "field"
     pol_cst "PEeval", (function -1|7|9|12->Eval|11->Rec|_->Prot);
     (* FEeval: evaluate morphism, protect field
        operations and make recursive call on the var map *)
-    my_constant "FEeval", (function -1|8|9|10|11|14->Eval|13->Rec|_->Prot)]);;
+    my_reference "FEeval", (function -1|8|9|10|11|14->Eval|13->Rec|_->Prot)]);;
 
 let _ = add_map "field_cond"
-  (map_with_eq
+  (map_without_eq
     [coq_cons,(function -1->Eval|2->Rec|_->Prot);
      coq_nil, (function -1->Eval|_ -> Prot);
     (* PCond: evaluate morphism and denum list, protect ring
        operations and make recursive call on the var map *)
-     my_constant "PCond", (function -1|9|11|14->Eval|13->Rec|_->Prot)]);;
+     my_reference "PCond", (function -1|9|11|14->Eval|13->Rec|_->Prot)]);;
 (*                       (function -1|9|11->Eval|10->Rec|_->Prot)]);;*)
 
 
@@ -875,9 +885,9 @@ let _ = Redexpr.declare_reduction "simpl_field_expr"
 
 
 
-let afield_theory = my_constant "almost_field_theory"
-let field_theory = my_constant "field_theory"
-let sfield_theory = my_constant "semi_field_theory"
+let afield_theory = my_reference "almost_field_theory"
+let field_theory = my_reference "field_theory"
+let sfield_theory = my_reference "semi_field_theory"
 let af_ar = my_reference"AF_AR"
 let f_r = my_reference"F_R"
 let sf_sr = my_reference"SF_SR"
@@ -885,18 +895,18 @@ let dest_field env evd th_spec =
   let th_typ = Retyping.get_type_of env !evd th_spec in
   match kind_of_term th_typ with
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when eq_constr_nounivs f (Lazy.force afield_theory) ->
+        when is_global (Lazy.force afield_theory) f ->
         let rth = plapp evd af_ar
           [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (None,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when eq_constr_nounivs f (Lazy.force field_theory) ->
+        when is_global (Lazy.force field_theory) f ->
         let rth =
           plapp evd f_r
             [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (Some false,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;div;inv;req|])
-        when eq_constr_nounivs f (Lazy.force sfield_theory) ->
+        when is_global (Lazy.force sfield_theory) f ->
         let rth = plapp evd sf_sr
           [|r;zero;one;add;mul;div;inv;req;th_spec|] in
         (Some true,r,zero,one,add,mul,None,None,div,inv,req,rth)

@@ -28,7 +28,7 @@ let check_constant_declaration env kn cb =
 (*  let env = add_constraints cb.const_constraints env in*)
   (match cb.const_type with
       ty ->
-        let env' = add_constraints cb.const_constraints env in
+        let env' = add_constraints (Future.force cb.const_constraints) env in
 	let _ = infer_type env' ty in
           (match body_of_constant cb with
           | Some bd ->
@@ -69,13 +69,13 @@ let rec check_module env mp mb =
       {typ_mp=mp;
        typ_expr=sign;
        typ_expr_alg=None;
-       typ_constraints=Univ.empty_constraint;
+       typ_constraints=Univ.Constraint.empty;
        typ_delta = mb.mod_delta;}
     and mtb2 =
       {typ_mp=mp;
        typ_expr=mb.mod_type;
        typ_expr_alg=None;
-       typ_constraints=Univ.empty_constraint;
+       typ_constraints=Univ.Constraint.empty;
        typ_delta = mb.mod_delta;}
     in
     let env = add_module_type mp mtb1 env in

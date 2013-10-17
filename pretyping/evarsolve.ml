@@ -1082,10 +1082,16 @@ let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,ar
       let evi2 = Evd.find evd evk2 in
       let evi2env = Evd.evar_env evi2 in
       let ctx', j = Reduction.dest_arity evi2env evi2.evar_concl in
-	if i == j || Evd.check_eq evd (univ_of_sort i) (univ_of_sort j) 
+      let ui, uj = univ_of_sort i, univ_of_sort j in
+	if i == j || Evd.check_eq evd ui uj
 	then (* Shortcut, i = j *) 
 	  solve_evar_evar ~force f g env evd pbty ev1 ev2
-	else 
+	  (* Avoid looping if postponing happened on previous evar/evar problem *) 
+	else if Evd.check_leq evd ui uj then
+	  solve_evar_evar ~force f g env evd None ev1 ev2
+	else if Evd.check_leq evd uj ui then
+	  solve_evar_evar ~force f g env evd None ev2 ev1
+	else
 	  let evd, k = Evd.new_sort_variable univ_flexible_alg evd in
 	  let evd, ev3 = 
 	    Evarutil.new_pure_evar evd (Evd.evar_hyps evi) 

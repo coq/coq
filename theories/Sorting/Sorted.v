@@ -69,7 +69,7 @@ Section defs.
       (forall a l, Sorted l -> P l -> HdRel a l -> P (a :: l)) ->
       forall l:list A, Sorted l -> P l.
   Proof.
-    induction l; firstorder using Sorted_inv.
+    induction l. firstorder using Sorted_inv. firstorder using Sorted_inv.
   Qed.
 
   Lemma Sorted_LocallySorted_iff : forall l, Sorted l <-> LocallySorted l.

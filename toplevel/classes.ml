@@ -55,7 +55,7 @@ let declare_class g =
 (** TODO: add subinstances *)
 let existing_instance glob g pri =
   let c = global g in
-  let instance = Typing.type_of (Global.env ()) Evd.empty (Universes.constr_of_global c) in
+  let instance = Global.type_of_global_unsafe c in
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
       | Some (_, ((tc,u), _)) -> add_instance (new_instance tc pri glob 
@@ -356,7 +356,7 @@ let context l =
       let impl = List.exists test impls in
       let decl = (Discharge, (Flags.use_polymorphic_flag ()), Definitional) in
       let nstatus =
-        snd (Command.declare_assumption false decl (t, uctx) [] impl
+        pi3 (Command.declare_assumption false decl (t, uctx) [] impl
           Vernacexpr.NoInline (Loc.ghost, id))
       in
       status && nstatus

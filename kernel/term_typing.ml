@@ -24,7 +24,7 @@ open Entries
 open Typeops
 open Fast_typeops
 
-let debug = false
+let debug = true
 let prerr_endline =
   if debug then prerr_endline else fun _ -> ()
 

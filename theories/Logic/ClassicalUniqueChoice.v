@@ -42,8 +42,8 @@ intros A B.
 apply (dependent_unique_choice A (fun _ => B)).
 Qed.
 
-(** The following proof comes from [[ChicliPottierSimpson02]] *)
 
+(** The following proof comes from [[ChicliPottierSimpson02]] *)
 Require Import Setoid.
 
 Theorem classic_set_in_prop_context :
@@ -78,7 +78,7 @@ destruct (f P).
   right.
   destruct HfP as [[_ Hfalse]| [Hna _]].
     discriminate.
-    assumption.
+    assumption. 
 Qed.
 
 Corollary not_not_classic_set :

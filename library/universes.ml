@@ -60,7 +60,7 @@ let fresh_instance_from ctx =
 let fresh_constant_instance env c =
   let cb = lookup_constant c env in
     if cb.Declarations.const_polymorphic then
-      let (inst,_), ctx = fresh_instance_from (Future.join cb.Declarations.const_universes) in
+      let (inst,_), ctx = fresh_instance_from (Future.force cb.Declarations.const_universes) in
 	((c, inst), ctx)
     else ((c,Instance.empty), ContextSet.empty)
 
@@ -94,7 +94,20 @@ let fresh_global_instance env gr =
 
 let constr_of_global gr =
   let c, ctx = fresh_global_instance (Global.env ()) gr in
-    Global.push_context_set ctx; c
+    if not (Univ.ContextSet.is_empty ctx) then
+      if Univ.LSet.is_empty (Univ.ContextSet.levels ctx) then 
+	(* Should be an error as we might forget constraints, allow for now
+	   to make firstorder work with "using" clauses *)
+	c
+      else raise (Invalid_argument 
+		    ("constr_of_global: globalization of polymorphic reference " ^ 
+			Pp.string_of_ppcmds (Nametab.pr_global_env Id.Set.empty gr) ^
+			" would forget universes."))
+    else c
+
+let unsafe_constr_of_global gr =
+  let c, ctx = fresh_global_instance (Global.env ()) gr in
+    c
 
 let constr_of_global_univ (gr,u) =
   match gr with
@@ -132,7 +145,7 @@ let type_of_reference env r =
   | ConstRef c ->
      let cb = Environ.lookup_constant c env in
        if cb.const_polymorphic then
-	 let (inst, subst), ctx = fresh_instance_from (Future.join cb.const_universes) in
+	 let (inst, subst), ctx = fresh_instance_from (Future.force cb.const_universes) in
 	   Vars.subst_univs_constr subst cb.const_type, ctx
        else cb.const_type, ContextSet.empty
 

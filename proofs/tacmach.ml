@@ -75,6 +75,8 @@ let pf_reduction_of_red_expr gls re c =
   (fst (reduction_of_red_expr (pf_env gls) re)) (pf_env gls) (project gls) c
 
 let pf_apply f gls = f (pf_env gls) (project gls)
+let pf_eapply f gls x = 
+  on_sig gls (fun evm -> f (pf_env gls) evm x)
 let pf_reduce = pf_apply
 
 let pf_whd_betadeltaiota         = pf_reduce whd_betadeltaiota

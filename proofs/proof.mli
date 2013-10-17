@@ -53,7 +53,7 @@ val proof : proof ->
 
 val start : Evd.evar_map -> (Environ.env * Term.types Univ.in_universe_context_set) list -> proof
 val dependent_start : Evd.evar_map -> Proofview.telescope -> proof
-val initial_goals : proof -> (Term.constr * Term.types) list
+val initial_goals : proof -> (Term.constr * Term.types Univ.in_universe_context_set) list
 
 (* Returns [true] if the considered proof is completed, that is if no goal remain
     to be considered (this does not require that all evars have been solved). *)

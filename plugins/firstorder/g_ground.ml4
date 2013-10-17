@@ -78,7 +78,8 @@ let gen_ground_tac flag taco ids bases gl=
 	  | None-> snd (default_solver ()) in
       let startseq gl=
 	let seq=empty_seq !ground_depth in
-	extend_with_auto_hints bases (extend_with_ref_list ids seq gl) gl in
+        let seq,gl = extend_with_ref_list ids seq gl in
+        extend_with_auto_hints bases seq gl in
       let result=ground_tac (Proofview.V82.of_tactic solver) startseq gl in
 	qflag:=backup;result
     with reraise -> qflag:=backup;raise reraise

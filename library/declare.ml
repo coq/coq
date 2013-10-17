@@ -253,7 +253,10 @@ let declare_constant ?(internal = UserVerbose) ?(local = false) id (cd, kind) =
   let cd = (* We deal with side effects of non-opaque constants *)
     match cd with
     | Entries.DefinitionEntry ({
-      const_entry_opaque = false; const_entry_body = bo } as de) ->
+      const_entry_opaque = false; const_entry_body = bo } as de)
+    | Entries.DefinitionEntry ({
+      const_entry_polymorphic = true; const_entry_body = bo } as de)
+      ->
         let pt, seff = Future.force bo in
         if Declareops.side_effects_is_empty seff then cd
         else begin

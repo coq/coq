@@ -41,7 +41,7 @@ val init : Evd.evar_map -> (Environ.env * Term.types Univ.in_universe_context_se
 
 type telescope =
   | TNil
-  | TCons of Environ.env*Term.types*(Term.constr -> telescope)
+  | TCons of Environ.env * Term.types Univ.in_universe_context_set * (Term.constr -> telescope)
 
 (* Like [init], but goals are allowed to be depedenent on one
    another. Dependencies between goals is represented with the type
@@ -57,7 +57,7 @@ val finished : proofview -> bool
 val return : proofview -> Evd.evar_map
 
 val partial_proof : entry -> proofview -> constr list
-val initial_goals : entry -> (constr * types) list
+val initial_goals : entry -> (constr * types Univ.in_universe_context_set) list
 val emit_side_effects : Declareops.side_effects -> proofview -> proofview
 
 (*** Focusing operations ***)

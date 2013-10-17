@@ -101,14 +101,12 @@ let dummy_constr=mkMeta (-1)
 
 let dummy_bvid=Id.of_string "x"
 
-let constr_of_global = Universes.constr_of_global
-
-let mk_open_instance id gl m t=
+let mk_open_instance id idc gl m t=
   let env=pf_env gl in
   let evmap=Refiner.project gl in
   let var_id=
     if id==dummy_id then dummy_bvid else
-      let typ=pf_type_of gl (constr_of_global id) in
+      let typ=pf_type_of gl idc in
 	(* since we know we will get a product,
 	   reduction is not too expensive *)
       let (nam,_,_)=destProd (whd_betadeltaiota env evmap typ) in
@@ -146,9 +144,10 @@ let left_instance_tac (inst,id) continue seq=
 	  tclTHENS (Proofview.V82.of_tactic (cut dom))
 	    [tclTHENLIST
 	       [Proofview.V82.of_tactic introf;
+                pf_constr_of_global id (fun idc ->
 		(fun gls->generalize
-		   [mkApp(constr_of_global id,
-			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])] gls);
+		   [mkApp(idc,
+			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])] gls));
 		Proofview.V82.of_tactic introf;
 		tclSOLVE [wrap 1 false continue
 			    (deepen (record (id,None) seq))]];
@@ -159,14 +158,16 @@ let left_instance_tac (inst,id) continue seq=
 	else
 	  let special_generalize=
 	    if m>0 then
-	      fun gl->
-		let (rc,ot)= mk_open_instance id gl m t in
-		let gt=
-		  it_mkLambda_or_LetIn
-		    (mkApp(constr_of_global id,[|ot|])) rc in
-		  generalize [gt] gl
+	      pf_constr_of_global id (fun idc ->
+		fun gl->
+		  let (rc,ot) = mk_open_instance id idc gl m t in
+		  let gt=
+		    it_mkLambda_or_LetIn
+		      (mkApp(idc,[|ot|])) rc in
+		    generalize [gt] gl)
 	    else
-	      generalize [mkApp(constr_of_global id,[|t|])]
+	      pf_constr_of_global id (fun idc ->
+		generalize [mkApp(idc,[|t|])])
 	  in
 	    tclTHENLIST
 	      [special_generalize;

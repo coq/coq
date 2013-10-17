@@ -226,7 +226,8 @@ val instantiate_evar_array : evar_info -> constr -> constr array -> constr
 val subst_evar_defs_light : substitution -> evar_map -> evar_map
 (** Assume empty universe constraints in [evar_map] and [conv_pbs] *)
 
-val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool -> evar_map ->  evar_map -> evar_map
+val evars_reset_evd  : ?with_conv_pbs:bool -> ?with_univs:bool -> 
+  evar_map ->  evar_map -> evar_map
 (** spiwack: this function seems to somewhat break the abstraction. *)
 
 (** {6 Misc} *)
@@ -283,11 +284,13 @@ type 'a sigma = {
 
 val sig_it  : 'a sigma -> 'a
 val sig_sig : 'a sigma -> evar_map
+val on_sig : 'a sigma -> (evar_map -> evar_map * 'b) -> 'a sigma * 'b
 
 (** {5 The state monad with state an evar map} *)
 
 module MonadR : Monad.S with type +'a t = evar_map -> evar_map * 'a
 module Monad  : Monad.S with type +'a t = evar_map -> 'a * evar_map
+
 
 (** {5 Meta machinery}
 
@@ -478,7 +481,8 @@ val fresh_constant_instance : env -> evar_map -> constant -> evar_map * pconstan
 val fresh_inductive_instance : env -> evar_map -> inductive -> evar_map * pinductive
 val fresh_constructor_instance : env -> evar_map -> constructor -> evar_map * pconstructor
 
-val fresh_global : ?rigid:rigid -> env -> evar_map -> Globnames.global_reference -> evar_map * constr
+val fresh_global : ?rigid:rigid -> env -> evar_map -> 
+  Globnames.global_reference -> evar_map * constr
 
 (********************************************************************
   Conversion w.r.t. an evar map: might generate universe unifications 

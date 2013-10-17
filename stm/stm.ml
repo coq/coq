@@ -79,7 +79,7 @@ type branch_type =
   | `Proof of proof_mode * depth
   | `Edit of proof_mode * Stateid.t * Stateid.t ]
 type cmd_t = ast * Id.t list
-type fork_t = ast * Vcs_.Branch.t * Vernacexpr.opacity_guarantee * Id.t list
+type fork_t = ast * Vcs_.Branch.t * Vernacexpr.opacity_guarantee * Id.t list * Decl_kinds.polymorphic
 type qed_t = {
   qast : ast;
   keep : vernac_qed_type;
@@ -245,7 +245,7 @@ end = struct
   let print_dag vcs () =
     let fname = "stm_" ^ process_id () in
     let string_of_transaction = function
-      | Cmd (t, _) | Fork (t, _,_,_) ->
+      | Cmd (t, _) | Fork (t, _,_,_,_) ->
           (try string_of_ppcmds (pr_ast t) with _ -> "ERR")
       | Sideff (Some t) ->
           sprintf "Sideff(%s)"
@@ -777,7 +777,7 @@ end = struct
           | Some (_, cur) ->
               match VCS.visit cur with
               | { step = `Cmd ( { loc }, _) } 
-              | { step = `Fork ( { loc }, _, _, _) } 
+              | { step = `Fork ( { loc }, _, _, _, _) } 
               | { step = `Qed ( { qast = { loc } }, _) } 
               | { step = `Sideff (`Ast ( { loc }, _)) } ->
                   let start, stop = Loc.unloc loc in
@@ -1182,11 +1182,11 @@ let collect_proof cur hd brkind id =
     match last, view.step with
     | _, `Cmd (x, _) -> collect (Some (id,x)) (id::accn) view.next
     | _, `Alias _ -> `Sync (no_name,`Alias)
-    | _, `Fork(_,_,_,_::_::_)-> `Sync (no_name,`MutualProofs)
-    | _, `Fork(_,_,Doesn'tGuaranteeOpacity,_) ->
+    | _, `Fork(_,_,_,_::_::_,_)-> `Sync (no_name,`MutualProofs)
+    | _, `Fork(_,_,Doesn'tGuaranteeOpacity,_,_) ->
         `Sync (no_name,`Doesn'tGuaranteeOpacity)
     | Some (parent, ({ expr = VernacProof(_,Some _)} as v)),
-      `Fork (_, hd', GuaranteesOpacity, ids) ->
+      `Fork (_, hd', GuaranteesOpacity, ids,_) ->
         let name = name ids in
         let time = get_hint_bp_time name in
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
@@ -1194,7 +1194,7 @@ let collect_proof cur hd brkind id =
         then `ASync (parent,Some v,accn,name)
         else `Sync (name,`Policy)
     | Some (parent, ({ expr = VernacProof(t,None)} as v)),
-      `Fork (_, hd', GuaranteesOpacity, ids) when
+      `Fork (_, hd', GuaranteesOpacity, ids, _) when
        not (State.is_cached parent) &&
        !Flags.compilation_mode = Flags.BuildVi ->
         (try
@@ -1206,7 +1206,7 @@ let collect_proof cur hd brkind id =
           then `ASync (parent,Some v,accn,name)
           else `Sync (name,`Policy)
         with Not_found -> `Sync (no_name,`NoHint))
-    | Some (parent, _), `Fork (_, hd', GuaranteesOpacity, ids) ->
+    | Some (parent, _), `Fork (_, hd', GuaranteesOpacity, ids, _) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         let name = name ids in
         let time = get_hint_bp_time name in
@@ -1274,7 +1274,7 @@ let known_state ?(redefine_qed=false) ~cache id =
       | `Cmd (x,_) -> (fun () ->
             reach view.next; vernac_interp id x
           ), cache
-      | `Fork (x,_,_,_) -> (fun () ->
+      | `Fork (x,_,_,_,_) -> (fun () ->
             reach view.next; vernac_interp id x;
             wall_clock_last_fork := Unix.gettimeofday ()
           ), `Yes
@@ -1422,7 +1422,7 @@ end = struct
         let ids =
           if id = Stateid.initial || id = Stateid.dummy then [] else
           match VCS.visit id with
-          | { step = `Fork (_,_,_,l) } -> l
+          | { step = `Fork (_,_,_,l,_) } -> l
           | { step = `Cmd (_,l) } -> l
           | _ -> [] in
         match f acc (id, vcs, ids) with
@@ -1712,11 +1712,11 @@ let process_transaction ~tty verbose c (loc, expr) =
           anomaly(str"classifier: VtQuery + VtLater must imply part_of_script")
 
       (* Proof *)
-      | VtStartProof (mode, guarantee, names), w ->
+      | VtStartProof (mode, guarantee, names, poly), w ->
           let id = VCS.new_node () in
           let bname = VCS.mk_branch_name x in
           VCS.checkout VCS.Branch.master;
-          VCS.commit id (Fork (x, bname, guarantee, names));
+          VCS.commit id (Fork (x, bname, guarantee, names, poly));
           VCS.branch bname (`Proof (mode, VCS.proof_nesting () + 1));
           Proof_global.activate_proof_mode mode;
           Backtrack.record (); if w == VtNow then finish (); `Ok
@@ -1773,7 +1773,7 @@ let process_transaction ~tty verbose c (loc, expr) =
                Proof_global.there_are_pending_proofs ()
             then begin
               let bname = VCS.mk_branch_name x in
-              VCS.commit id (Fork (x,bname,Doesn'tGuaranteeOpacity,[]));
+              VCS.commit id (Fork (x,bname,Doesn'tGuaranteeOpacity,[],false));
               VCS.branch bname (`Proof ("Classic", VCS.proof_nesting () + 1));
               Proof_global.activate_proof_mode "Classic";
             end else begin
@@ -1995,7 +1995,7 @@ let get_script prf =
        Stateid.equal id Stateid.dummy then acc else
     let view = VCS.visit id in
     match view.step with
-    | `Fork (_,_,_,ns) when test ns -> acc
+    | `Fork (_,_,_,ns,_) when test ns -> acc
     | `Qed (qed, proof) -> find [qed.qast.expr, (VCS.get_info id).n_goals] proof
     | `Sideff (`Ast (x,_)) ->
          find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next

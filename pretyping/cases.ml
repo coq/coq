@@ -1923,11 +1923,12 @@ let eq_id avoid id =
   let hid' = next_ident_away hid avoid in
     hid'
 
-let mk_eq typ x y = mkApp (delayed_force coq_eq_ind, [| typ; x ; y |])
-let mk_eq_refl typ x = mkApp (delayed_force coq_eq_refl, [| typ; x |])
-let mk_JMeq typ x typ' y =
-  mkApp (delayed_force coq_JMeq_ind, [| typ; x ; typ'; y |])
-let mk_JMeq_refl typ x = mkApp (delayed_force coq_JMeq_refl, [| typ; x |])
+let mk_eq evdref typ x y = papp evdref coq_eq_ind [| typ; x ; y |]
+let mk_eq_refl evdref typ x = papp evdref coq_eq_refl [| typ; x |]
+let mk_JMeq evdref typ x typ' y =
+  papp evdref coq_JMeq_ind [| typ; x ; typ'; y |]
+let mk_JMeq_refl evdref typ x = 
+  papp evdref coq_JMeq_refl [| typ; x |]
 
 let hole = GHole (Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define true), None)
 
@@ -1987,7 +1988,7 @@ let constr_of_pat env evdref arsign pat avoid =
 		    let env = push_rel_context sign env in
 		    evdref := the_conv_x_leq (push_rel_context sign env)
 		      (lift (succ m) ty) (lift 1 apptype) !evdref;
-		    let eq_t = mk_eq (lift (succ m) ty)
+		    let eq_t = mk_eq evdref (lift (succ m) ty)
 		      (mkRel 1) (* alias *)
 		      (lift 1 app) (* aliased term *)
 		    in
@@ -2048,7 +2049,7 @@ let rec is_included x y =
    Hence pats is already typed in its
    full signature. However prevpatterns are in the original one signature per pattern form.
  *)
-let build_ineqs prevpatterns pats liftsign =
+let build_ineqs evdref prevpatterns pats liftsign =
   let _tomatchs = List.length pats in
   let diffs =
     List.fold_left
@@ -2070,11 +2071,11 @@ let build_ineqs prevpatterns pats liftsign =
 			  lift_rel_context len ppat_sign @ sign,
 			  len',
 			  succ n, (* nth pattern *)
-			  mkApp (delayed_force coq_eq_ind,
-				[| lift (len' + liftsign) curpat_ty;
-				   liftn (len + liftsign) (succ lens) ppat_c ;
-				   lift len' curpat_c |]) ::
-			    List.map (lift lens (* Jump over this prevpat signature *)) c)
+			 (papp evdref coq_eq_ind
+			    [| lift (len' + liftsign) curpat_ty;
+			       liftn (len + liftsign) (succ lens) ppat_c ;
+			       lift len' curpat_c |]) ::
+			   List.map (lift lens (* Jump over this prevpat signature *)) c)
 		      in Some acc
 		    else None)
 	   (Some ([], 0, 0, [])) eqnpats pats
@@ -2122,7 +2123,7 @@ let constrs_of_pats typing_fun env evdref eqns tomatchs sign neqs arity =
 		 (s, List.map (lift n) args), p) :: pats, len + n))
 	   ([], 0) pats
 	 in
-	 let ineqs = build_ineqs prevpatterns pats signlen in
+	 let ineqs = build_ineqs evdref prevpatterns pats signlen in
 	 let rhs_rels' = rels_of_patsign rhs_rels in
 	 let _signenv = push_rel_context rhs_rels' env in
 	 let arity =
@@ -2203,7 +2204,7 @@ let abstract_tomatch env tomatchs tycon =
       ([], [], [], tycon) tomatchs
   in List.rev prev, ctx, tycon
 
-let build_dependent_signature env evars avoid tomatchs arsign =
+let build_dependent_signature env evdref avoid tomatchs arsign =
   let avoid = ref avoid in
   let arsign = List.rev arsign in
   let allnames = List.rev_map (List.map pi1) arsign in
@@ -2227,19 +2228,19 @@ let build_dependent_signature env evars avoid tomatchs arsign =
 	     let env', nargeqs, argeqs, refl_args, slift, argsign' =
 	       List.fold_left2
 		 (fun (env, nargeqs, argeqs, refl_args, slift, argsign') arg (name, b, t) ->
-		    let argt = Retyping.get_type_of env evars arg in
+		    let argt = Retyping.get_type_of env !evdref arg in
 		    let eq, refl_arg =
-		      if Reductionops.is_conv env evars argt t then
-			(mk_eq (lift (nargeqs + slift) argt)
+		      if Reductionops.is_conv env !evdref argt t then
+			(mk_eq evdref (lift (nargeqs + slift) argt)
 			   (mkRel (nargeqs + slift))
 			   (lift (nargeqs + nar) arg),
-			 mk_eq_refl argt arg)
+			 mk_eq_refl evdref argt arg)
 		      else
-			(mk_JMeq (lift (nargeqs + slift) t)
+			(mk_JMeq evdref (lift (nargeqs + slift) t)
 			   (mkRel (nargeqs + slift))
 			   (lift (nargeqs + nar) argt)
 			   (lift (nargeqs + nar) arg),
-			 mk_JMeq_refl argt arg)
+			 mk_JMeq_refl evdref argt arg)
 		    in
 		    let previd, id =
 		      let name =
@@ -2256,13 +2257,13 @@ let build_dependent_signature env evars avoid tomatchs arsign =
 		       (Name id, b, t) :: argsign'))
 		 (env, neqs, [], [], slift, []) args argsign
 	     in
-	     let eq = mk_JMeq
+	     let eq = mk_JMeq evdref
 	       (lift (nargeqs + slift) appt)
 	       (mkRel (nargeqs + slift))
 	       (lift (nargeqs + nar) ty)
 	       (lift (nargeqs + nar) tm)
 	     in
-	     let refl_eq = mk_JMeq_refl ty tm in
+	     let refl_eq = mk_JMeq_refl evdref ty tm in
 	     let previd, id = make_prime avoid appn in
 	       (((Name (eq_id avoid previd), None, eq) :: argeqs) :: eqs,
 		succ nargeqs,
@@ -2276,11 +2277,11 @@ let build_dependent_signature env evars avoid tomatchs arsign =
 	     let arsign' = (Name id, b, typ) in
 	     let tomatch_ty = type_of_tomatch ty in
 	     let eq =
-	       mk_eq (lift nar tomatch_ty)
+	       mk_eq evdref (lift nar tomatch_ty)
 		 (mkRel slift) (lift nar tm)
 	     in
 	       ([(Name (eq_id avoid previd), None, eq)] :: eqs, succ neqs,
-		(mk_eq_refl tomatch_ty tm) :: refl_args,
+		(mk_eq_refl evdref tomatch_ty tm) :: refl_args,
 		pred slift, (arsign' :: []) :: arsigns))
       ([], 0, [], nar, []) tomatchs arsign
   in
@@ -2317,7 +2318,7 @@ let compile_program_cases loc style (typing_function, evdref) tycon env
       (* Build the dependent arity signature, the equalities which makes
 	 the first part of the predicate and their instantiations. *)
     let avoid = [] in
-      build_dependent_signature env ( !evdref) avoid tomatchs arsign
+      build_dependent_signature env evdref avoid tomatchs arsign
 
   in
   let tycon, arity =

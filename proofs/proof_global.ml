@@ -68,6 +68,7 @@ type proof_object = {
   id : Names.Id.t;
   entries : Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
+  constraints : Univ.constraints;
 }
 
 type proof_ending =
@@ -271,7 +272,7 @@ let close_proof ?feedback_id ~now fpl =
   let initial_goals = Proof.initial_goals proof in
   let fpl, univs = Future.split2 fpl in
   let () = if poly || now then ignore (Future.compute univs) in
-  let entries = Future.map2 (fun p (c, t) ->
+  let entries = Future.map2 (fun p (c, (t, octx)) ->
     let compute_univs (usubst, uctx) = 
       let nf = Universes.nf_evars_and_universes_opt_subst (fun _ -> None) usubst in
       let compute_c_t (c, eff) =
@@ -290,19 +291,33 @@ let close_proof ?feedback_id ~now fpl =
     let t = Future.chain ~pure:true ans (fun (_, x, _) -> x) in
     let univs = Future.chain ~pure:true ans (fun (_, _, x) -> x) in
     let t = Future.force t in
-    { Entries.
-    const_entry_body = p;
-    const_entry_secctx = section_vars;
-    const_entry_type  = Some t;
-    const_entry_feedback = feedback_id;
-    const_entry_inline_code = false;
-    const_entry_opaque = true;
-    const_entry_universes = univs;
-    const_entry_polymorphic = pi2 strength;
-    const_entry_proj = None}) fpl initial_goals in
-  if now then
-    List.iter (fun x -> ignore(Future.force x.Entries.const_entry_body)) entries;
-  { id = pid; entries = entries; persistence = strength },
+      { Entries.
+	const_entry_body = p;
+	const_entry_secctx = section_vars;
+	const_entry_type  = Some t;
+	const_entry_inline_code = false;
+	const_entry_opaque = true;
+	const_entry_universes = univs;
+        const_entry_feedback = None;
+	const_entry_polymorphic = pi2 strength;
+	const_entry_proj = None}) fpl initial_goals in
+  let globaluctx = 
+    if not poly then
+      List.fold_left (fun acc (c, (t, octx)) -> 
+	Univ.ContextSet.union octx acc)
+	Univ.ContextSet.empty initial_goals
+    else Univ.ContextSet.empty
+  in
+  let _ = 
+    if now then
+      List.iter (fun x -> ignore(Future.compute x.Entries.const_entry_body)) entries
+  in
+(*  let hook = Option.map (fun f -> 
+    if poly || now then f (Future.join univs) 
+    else f (Univ.LMap.empty,Univ.UContext.empty))
+    hook
+  in*) (* FIXME *)
+  { id = pid; entries = entries; persistence = strength; constraints = Univ.ContextSet.constraints globaluctx },
   Ephemeron.get terminator
 
 type closed_proof_output = Entries.proof_output list * 
@@ -330,8 +345,8 @@ let return_proof () =
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)
-  let goals = List.map (fun (c, _) -> (Evarutil.nf_evar evd c, eff)) initial_goals in
-    goals, (subst, ctx)
+  let proofs = List.map (fun (c, _) -> (Evarutil.nf_evar evd c, eff)) initial_goals in
+    proofs, (subst, ctx)
 
 let close_future_proof ~feedback_id proof =
   close_proof ~feedback_id ~now:false proof
@@ -493,8 +508,10 @@ let _ =
 
 module V82 = struct
   let get_current_initial_conclusions () =
-    let { pid; strength; proof } = cur_pstate () in
-    pid, (List.map snd (Proof.initial_goals proof), strength)
+  let { pid; strength; proof } = cur_pstate () in
+  let initial = Proof.initial_goals proof in
+  let goals = List.map (fun (o, (c, ctx)) -> c) initial in
+    pid, (goals, strength)
 end
 
 type state = pstate list

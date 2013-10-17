@@ -193,7 +193,8 @@ type constraints_addition =
 
 let add_constraints cst senv =
   match cst with
-  | Later fc -> {senv with future_cst = fc :: senv.future_cst}
+  | Later fc -> 
+    {senv with future_cst = fc :: senv.future_cst}
   | Now cst ->
   { senv with
     env = Environ.add_constraints cst senv.env;

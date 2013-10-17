@@ -160,6 +160,30 @@ let type_of_global_unsafe r =
      let inst = Univ.UContext.instance mib.Declarations.mind_universes in
        Inductive.type_of_constructor (cstr,inst) specif
 
+let type_of_global_in_context env r = 
+  let open Declarations in
+  match r with
+  | VarRef id -> Environ.named_type id env, Univ.UContext.empty
+  | ConstRef c -> 
+     let cb = Environ.lookup_constant c env in 
+     let univs = 
+       if cb.const_polymorphic then Future.force cb.const_universes 
+       else Univ.UContext.empty
+     in cb.Declarations.const_type, univs
+  | IndRef ind ->
+     let (mib, oib) = Inductive.lookup_mind_specif env ind in
+     let univs = 
+       if mib.mind_polymorphic then mib.mind_universes 
+       else Univ.UContext.empty
+     in oib.Declarations.mind_arity.Declarations.mind_user_arity, univs
+  | ConstructRef cstr ->
+     let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
+     let univs = 
+       if mib.mind_polymorphic then mib.mind_universes 
+       else Univ.UContext.empty
+     in
+     let inst = Univ.UContext.instance univs in
+       Inductive.type_of_constructor (cstr,inst) specif, univs
 
 let is_polymorphic r = 
   let env = env() in
