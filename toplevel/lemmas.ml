@@ -48,9 +48,8 @@ let adjust_guardness_conditions const = function
   | [] -> const (* Not a recursive statement *)
   | possible_indexes ->
   (* Try all combinations... not optimal *)
-      (* XXX bug ignore(Future.join const.const_entry_body); *)
      { const with const_entry_body =
-        Future.chain ~id:"adjust_guardness_conditions" const.const_entry_body
+        Future.chain const.const_entry_body
         (fun (body, eff) ->
           match kind_of_term body with
           | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->

@@ -26,15 +26,12 @@ let global_env = ref Safe_typing.empty_environment
 let join_safe_environment () =
   global_env := Safe_typing.join_safe_environment !global_env
 
-let prune_safe_environment env = Safe_typing.prune_safe_environment env
-(* XXX TODO pass args so that these functions can stop at the current
- * file boundaries *)
 let () =
   Summary.declare_summary "Global environment"
     { Summary.freeze_function = (function
         | `Yes -> join_safe_environment (); !global_env
         | `No -> !global_env
-        | `Shallow -> prune_safe_environment !global_env);
+        | `Shallow -> !global_env);
       unfreeze_function = (fun fr -> global_env := fr);
       init_function = (fun () -> global_env := Safe_typing.empty_environment) }
 

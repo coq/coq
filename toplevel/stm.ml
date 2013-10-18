@@ -201,9 +201,8 @@ module VCS : sig
   val set_state : id -> state -> unit
   val forget_state : id -> unit
 
-  (* TODO: move elsewhere if possible, so that purify can be just called *)
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
-  val slice : start:id -> stop:id -> purify:(state -> state) -> vcs
+  val slice : start:id -> stop:id -> vcs
   
   val create_cluster : id list -> tip:id -> unit
   val cluster_of : id -> id option
@@ -391,7 +390,7 @@ end = struct (* {{{ *)
   
   let visit id = Vcs_aux.visit !vcs id
 
-  let slice ~start ~stop ~purify =
+  let slice ~start ~stop =
     let l =
       let rec aux id =
         if Stateid.equal id stop then [] else
@@ -408,9 +407,7 @@ end = struct (* {{{ *)
     (* Stm should have reached the beginning of proof *)
     assert (not (Option.is_empty info.state));
     (* This may be expensive *)
-    let info = { info with
-      state = Some (purify (Option.get info.state));
-      vcs_backup = None,None } in
+    let info = { info with vcs_backup = None, None } in
     let v = Vcs_.set_info v stop info in
     List.fold_right (fun (id,tr) v ->
       let v = Vcs_.commit v id tr in
@@ -499,10 +496,6 @@ module State : sig
 
   val exn_on : Stateid.t -> ?valid:Stateid.t -> exn -> exn
 
-  (* projects a state so that it can be marshalled and its content is
-   * sufficient for the execution of Coq on a proof branch *)
-  val make_shallow : state -> state
-
 end = struct (* {{{ *)
 
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
@@ -522,15 +515,6 @@ end = struct (* {{{ *)
   let () = Future.set_freeze
     (fun () -> in_t (freeze_global_state `No, !cur_id))
     (fun t -> let s,i = out_t t in unfreeze_global_state s; cur_id := i)
-
-  let make_shallow s =
-    if s.shallow then s
-    else
-      Future.purify (fun s ->
-        Printf.eprintf
-          "make_shallow & define should be protected by a lock!\n";
-        unfreeze_global_state s;
-        freeze_global_state `Shallow) s
 
   let is_cached id =
     Stateid.equal id !cur_id ||
@@ -734,16 +718,15 @@ end = struct (* {{{ *)
     match task with
     | TaskBuildProof (exn_info,bop,eop,_,_) ->
         ReqBuildProof(exn_info,eop,
-          VCS.slice ~start:eop ~stop:bop ~purify:State.make_shallow)
+          VCS.slice ~start:eop ~stop:bop)
 
   let cancel_switch_of_task = function
     | TaskBuildProof (_,_,_,_,c) -> c
 
   let build_proof_here (id,valid) eop =
-    Future.create (fun () ->
+    Future.create (State.exn_on id ~valid) (fun () ->
       !reach_known_state ~cache:`No eop;
-      let p = Proof_global.return_proof ~fix_exn:(State.exn_on id ~valid) in
-      p)
+      Proof_global.return_proof ())
 
   let slave_respond msg =
     match msg with
@@ -811,12 +794,12 @@ end = struct (* {{{ *)
     TQueue.wait_until_n_are_waiting_and_queue_empty
       (SlavesPool.n_slaves ()) queue
 
-  let build_proof ~exn_info ~start ~stop =
+  let build_proof ~exn_info:(id,valid as exn_info) ~start ~stop =
     let cancel_switch = ref false in
     if SlavesPool.is_empty () then
       build_proof_here exn_info stop, cancel_switch
     else 
-      let f, assign = Future.create_delegate () in
+      let f, assign = Future.create_delegate (State.exn_on id ~valid) in
       Pp.feedback (Interface.InProgress 1);
       TQueue.push queue
         (TaskBuildProof(exn_info,start,stop,assign,cancel_switch));
@@ -1120,7 +1103,8 @@ let known_state ?(redefine_qed=false) ~cache id =
                 reach eop;
                 begin match keep with
                 | VtKeep ->
-                    let proof = Proof_global.close_proof () in
+                    let proof =
+                      Proof_global.close_proof (State.exn_on id ~valid:eop) in
                     reach view.next;
                     vernac_interp id ~proof x
                 | VtDrop ->

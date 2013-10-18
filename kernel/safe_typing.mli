@@ -43,8 +43,6 @@ val is_curmod_library : safe_environment -> bool
 (* safe_environment has functional data affected by lazy computations,
  * thus this function returns a new safe_environment *)
 val join_safe_environment : safe_environment -> safe_environment
-(* future computations are just dropped by this function *)
-val prune_safe_environment : safe_environment -> safe_environment
 
 (** {6 Enriching a safe environment } *)
 

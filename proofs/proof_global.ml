@@ -277,18 +277,18 @@ let close_proof ~now fpl =
     List.iter (fun x -> ignore(Future.compute x.Entries.const_entry_body)) entries;
   (pid, (entries, compute_guard, strength, hook))
 
-let return_proof ~fix_exn =
+let return_proof () =
   let { proof } = cur_pstate () in
   let initial_goals = Proof.initial_goals proof in
   let evd =
    try Proof.return proof with
    | Proof.UnfinishedProof ->
-       raise (fix_exn(Errors.UserError("last tactic before Qed",
-         str"Attempt to save an incomplete proof")))
+       raise (Errors.UserError("last tactic before Qed",
+         str"Attempt to save an incomplete proof"))
    | Proof.HasUnresolvedEvar ->
-       raise (fix_exn(Errors.UserError("last tactic before Qed",
+       raise (Errors.UserError("last tactic before Qed",
          str"Attempt to save a proof with existential " ++
-         str"variables still non-instantiated")))
+         str"variables still non-instantiated"))
   in
   let eff = Evd.eval_side_effects evd in
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
@@ -297,8 +297,8 @@ let return_proof ~fix_exn =
   List.map (fun (c, _) -> (Evarutil.nf_evar evd c, eff)) initial_goals
 
 let close_future_proof proof = close_proof ~now:false proof
-let close_proof () =
-  close_proof ~now:true (Future.from_here (return_proof ~fix_exn:(fun x -> x)))
+let close_proof fix_exn =
+  close_proof ~now:true (Future.from_here ~fix_exn (return_proof ()))
 
 (**********************************************************)
 (*                                                        *)

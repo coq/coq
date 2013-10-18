@@ -197,28 +197,6 @@ let join_safe_environment e =
     (fun e fc -> add_constraints (Now (Future.join fc)) e)
     {e with future_cst = []} e.future_cst
 
-(* TODO : out of place and maybe incomplete w.r.t. modules *)
-(* this is there to explore the opaque pre-env structure but is
- * not part of the trusted code base *)
-let prune_env env =
-  let open Pre_env in
-  let prune_ckey (cb,k) = Declareops.prune_constant_body cb, k in
-  let prune_globals glob =
-    { glob with env_constants = Cmap_env.map prune_ckey glob.env_constants }
-  in
-  let env = Environ.pre_env env in
-  Environ.env_of_pre_env {env with
-    env_globals = prune_globals env.env_globals;
-    env_named_vals = [];
-    env_rel_val = []}
-let prune_safe_environment e =
-  { e with
-    modvariant = (match e.modvariant with LIBRARY -> LIBRARY | _ -> NONE);
-    revstruct = Modops.prune_structure e.revstruct;
-    future_cst = [];
-    env = prune_env e.env }
-
-
 (** {6 Various checks } *)
 
 let exists_modlabel l senv = Label.Set.mem l senv.modlabels

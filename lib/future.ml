@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* to avoid side effects *)
+(* To deal with side effects we have to save/restore the system state *)
 let freeze = ref (fun () -> assert false : unit -> Dyn.t)
 let unfreeze = ref (fun _ -> () : Dyn.t -> unit)
 let set_freeze f g = freeze := f; unfreeze := g
@@ -26,59 +26,73 @@ let _ = Errors.register_handler (function
                 "asynchronous script processing.")
   | _ -> raise Errors.Unhandled)
 
+type fix_exn = exn -> exn
+let id x = prerr_endline "no fix_exn"; x
+
 (* Val is not necessarily a final state, so the
    computation restarts from the state stocked into Val *)
 type 'a comp =
   | Delegated
-  | Dropped
+      (* TODO in some cases one would like to block, sock here
+         a mutex and a condition to make this possible *)
   | Closure of (unit -> 'a)
   | Val of 'a * Dyn.t option
   | Exn of exn
+      (* Invariant: this exception is always "fixed" as in fix_exn *)
 
-type 'a computation = 'a comp ref
+type 'a comput =
+  | Ongoing of (fix_exn * 'a comp ref) Ephemeron.key
+  | Finished of 'a
+
+type 'a computation = 'a comput ref
+
+let create f x = ref (Ongoing (Ephemeron.create (f, Pervasives.ref x)))
+let get x =
+  match !x with
+  | Finished v -> (fun x -> x), ref( Val (v,None))
+  | Ongoing x ->
+      try Ephemeron.get x
+      with Ephemeron.InvalidKey -> (fun x -> x), ref (Exn NotHere)
 
 type 'a value = [ `Val of 'a | `Exn of exn ]
 
-let is_over x = match !x with
+let is_over kx = let _, x = get kx in match !x with
   | Val _ | Exn _ -> true
-  | Closure _ | Delegated | Dropped -> false
+  | Closure _ | Delegated -> false
 
-let is_val x = match !x with
+let is_val kx = let _, x = get kx in match !x with
   | Val _ -> true
-  | Exn _ | Closure _ | Delegated | Dropped -> false
+  | Exn _ | Closure _ | Delegated -> false
 
-let is_exn x = match !x with
+let is_exn kx = let _, x = get kx in match !x with
   | Exn _ -> true
-  | Val _ | Closure _ | Delegated | Dropped -> false
+  | Val _ | Closure _ | Delegated -> false
 
-let peek_val x = match !x with
+let peek_val kx = let _, x = get kx in match !x with
   | Val (v, _) -> Some v
-  | Exn _ | Closure _ | Delegated | Dropped -> None
+  | Exn _ | Closure _ | Delegated -> None
 
-let from_val v = ref (Val (v, None))
-let from_here v = ref (Val (v, Some (!freeze ())))
-let proj = function
-  | `Val (x, _ ) -> `Val x
-  | `Exn e -> `Exn e
-
-let create f = ref (Closure f)
+let from_val ?(fix_exn=id) v = create fix_exn (Val (v, None))
+let from_here ?(fix_exn=id) v = create fix_exn (Val (v, Some (!freeze ())))
 
 type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
-let create_delegate () =
-  let c = ref Delegated in
-  c, (fun v ->
-      assert (!c == Delegated);
-      match v with
-      | `Val v -> c := Val (v, None)
-      | `Exn e -> c := Exn e
-      | `Comp f -> c := !f)
+let create_delegate fix_exn =
+  let ck = create fix_exn Delegated in
+  ck, fun v ->
+        let fix_exn, c = get ck in
+        assert (!c == Delegated);
+        match v with
+        | `Val v -> c := Val (v, None)
+        | `Exn e -> c := Exn (fix_exn e)
+        | `Comp f -> let _, comp = get f in c := !comp
 
-(* TODO: get rid of try/catch *)
-let compute ~pure c : 'a value = match !c with
+(* TODO: get rid of try/catch to be stackless *)
+let compute ~pure ck : 'a value =
+  let fix_exn, c = get ck in
+  match !c with
   | Val (x, _) -> `Val x
   | Exn e -> `Exn e
   | Delegated -> `Exn NotReady
-  | Dropped -> `Exn NotHere
   | Closure f ->
       try
         let data = f () in
@@ -86,6 +100,7 @@ let compute ~pure c : 'a value = match !c with
         c := Val (data, state); `Val data
       with e ->
         let e = Errors.push e in
+        let e = fix_exn e in
         match e with
         | NotReady -> `Exn e
         | _ -> c := Exn e; `Exn e
@@ -94,20 +109,19 @@ let force ~pure x = match compute ~pure x with
   | `Val v -> v
   | `Exn e -> raise e
 
-let drop c = match !c with Closure _ | Val (_,Some _) -> ref Dropped | _ -> c
-
-let chain ?(id="none") ?(pure=false) c f = ref (match !c with
-  | Closure _ | Delegated | Dropped -> Closure (fun () -> f (force ~pure c))
+let chain ?(pure=false) ck f =
+  let fix_exn, c = get ck in
+  create fix_exn (match !c with
+  | Closure _ | Delegated -> Closure (fun () -> f (force ~pure ck))
   | Exn _ as x -> x
   | Val (v, None) -> Closure (fun () -> f v)
   | Val (v, Some _) when pure -> Closure (fun () -> f v)
-  | Val (v, Some state) ->
-(*        prerr_endline ("Future: restarting (check if optimizable): " ^ id); *)
-       Closure (fun () -> !unfreeze state; f v))
+  | Val (v, Some state) -> Closure (fun () -> !unfreeze state; f v))
 
-let create_here f = chain ~pure:false (from_here ()) f
+let create fix_exn f = create fix_exn (Closure f)
 
-let replace x y =
+let replace kx y =
+  let _, x = get kx in
   match !x with
   | Exn _ -> x := Closure (fun () -> force ~pure:false y)
   | _ -> Errors.anomaly (Pp.str "Only Exn futures can be replaced")
@@ -125,19 +139,13 @@ let transactify f x =
   try f x
   with e -> let e = Errors.push e in !unfreeze state; raise e
 
-let purify_future f x =
-  match !x with
-  | Val _ | Exn _ | Delegated | Dropped -> f x
-  | Closure _ -> purify f x
-
+let purify_future f x = if is_over x then f x else purify f x
 let compute x = purify_future (compute ~pure:false) x
 let force x = purify_future (force ~pure:false) x
 
-let join x =
-  let v = force x in
-  (x := match !x with
-       | Val (x,_) -> Val (x, None)
-       | Exn _ | Delegated | Dropped | Closure _ -> assert false);
+let join kx =
+  let v = force kx in
+  kx := Finished v;
   v
 
 let split2 x =
@@ -156,3 +164,5 @@ let map2 f x l =
         with Failure _ | Invalid_argument _ ->
           Errors.anomaly (Pp.str "Future.map2 length mismatch")) in
     f xi y) 0 l
+
+let chain f g = chain f g

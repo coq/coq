@@ -64,12 +64,14 @@ type closed_proof =
   (Entries.definition_entry list * lemma_possible_guards *
     Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
 
-val close_proof : unit -> closed_proof
+(* Takes a function to add to the exceptions data relative to the
+   state in which the proof was built *)
+val close_proof : (exn -> exn) -> closed_proof
 
 (* Intermediate step necessary to delegate the future.
  * Both access the current proof state. The formes is supposed to be
  * chained with a computation that completed the proof *)
-val return_proof : fix_exn:(exn -> exn) -> Entries.proof_output list
+val return_proof : unit -> Entries.proof_output list
 val close_future_proof :
   Entries.proof_output list Future.computation -> closed_proof
 

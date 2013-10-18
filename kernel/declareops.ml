@@ -52,8 +52,7 @@ let subst_const_type sub arity = match arity with
 let subst_const_def sub def = match def with
   | Undef _ -> def
   | Def c -> Def (subst_constr_subst sub c)
-  | OpaqueDef lc ->
-    OpaqueDef (Future.chain ~pure:true lc (subst_lazy_constr sub))
+  | OpaqueDef lc -> OpaqueDef (Future.chain lc (subst_lazy_constr sub))
 
 (* TODO : the native compiler seems to rely on a fresh (ref NotLinked)
    being created at each substitution. Quite ugly... For the moment,
@@ -100,7 +99,7 @@ let hcons_const_def = function
     Def (from_val (Term.hcons_constr constr))
   | OpaqueDef lc ->
     OpaqueDef
-      (Future.chain ~pure:true lc
+      (Future.chain lc
          (fun lc -> opaque_from_val (Term.hcons_constr (force_opaque lc))))
 
 let hcons_const_body cb =
@@ -241,17 +240,6 @@ let join_constant_body cb =
   match cb.const_body with
   | OpaqueDef d -> ignore(Future.join d)
   | _ -> ()
-
-let prune_constant_body cb =
-  let cst, cbo = cb.const_constraints, cb.const_body in
-  let cst' = Future.drop cst in
-  let cbo' = match cbo with
-    | OpaqueDef d ->
-        let d' = Future.drop d in
-        if d' == d then cbo else OpaqueDef d'
-    | _ -> cbo in
-  if cst' == cst && cbo' == cbo then cb
-  else {cb with const_constraints = cst'; const_body = cbo'}
 
 let string_of_side_effect = function
   | SEsubproof (c,_) -> Names.string_of_con c

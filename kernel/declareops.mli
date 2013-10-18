@@ -59,7 +59,6 @@ val subst_wf_paths : substitution -> wf_paths -> wf_paths
 val subst_mind : substitution -> mutual_inductive_body -> mutual_inductive_body
 
 val join_constant_body : constant_body -> unit
-val prune_constant_body : constant_body -> constant_body
 
 (** {6 Hash-consing} *)
 

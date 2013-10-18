@@ -69,10 +69,8 @@ let v_map vk vd =
 let v_computation f =
   Annot ("Future.computation",
   v_ref
-    (v_sum "computation" 2
-      [| [| Fail "Closure" |];
-         [| f ; v_sum "option" 1 [| [| Fail "Val(_,Some _)" |] |] |];
-     [| Fail "Exn" |] |]))
+    (v_sum "Future.comput" 0
+      [| [| Fail "Ongoing" |]; [| f |] |]))
 
 (** kernel/names *)
 

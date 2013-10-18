@@ -126,7 +126,7 @@ let on_body f = function
   | Undef _ as x -> x
   | Def cs -> Def (Lazyconstr.from_val (f (Lazyconstr.force cs)))
   | OpaqueDef lc ->
-    OpaqueDef (Future.chain ~id:"Cooking.on_body" ~pure:true lc (fun lc ->
+    OpaqueDef (Future.chain lc (fun lc ->
         (Lazyconstr.opaque_from_val (f (Lazyconstr.force_opaque lc)))))
 
 let constr_of_def = function

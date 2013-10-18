@@ -76,12 +76,10 @@ val subst_modtype_and_resolver : module_type_body -> module_path ->
 
 val clean_bounded_mod_expr : module_signature -> module_signature
 
-(** {6 Stm machinery : join and prune } *)
+(** {6 Stm machinery } *)
 
 val join_module : module_body -> unit
 val join_structure : structure_body -> unit
-
-val prune_structure : structure_body -> structure_body
 
 (** {6 Errors } *)
 

@@ -592,7 +592,7 @@ let rec collect_mbid l sign =  match sign with
 let clean_bounded_mod_expr sign =
   if is_functor sign then collect_mbid MBIset.empty sign else sign
 
-(** {6 Stm machinery : join and prune } *)
+(** {6 Stm machinery } *)
 
 let rec join_module mb =
   implem_iter join_signature join_expression mb.mod_expr;
@@ -610,29 +610,3 @@ and join_structure struc = List.iter join_field struc
 and join_signature sign = functor_iter join_modtype join_structure sign
 and join_expression me = functor_iter join_modtype (fun _ -> ()) me
 
-let rec prune_module mb =
-  let me, mta, mt = mb.mod_expr, mb.mod_type_alg, mb.mod_type in
-  let mt' = prune_signature mt in
-  let me' = implem_smartmap prune_signature prune_expression me in
-  let mta' = Option.smartmap prune_expression mta in
-  if me' == me && mta' == mta && mt' == mt then mb
-  else {mb with mod_expr = me'; mod_type_alg = mta'; mod_type = mt'}
-and prune_modtype mt =
-  let te, ta = mt.typ_expr, mt.typ_expr_alg in
-  let te' = prune_signature te in
-  let ta' = Option.smartmap prune_expression ta in
-  if te==te' && ta==ta' then mt else { mt with typ_expr=te'; typ_expr_alg=ta' }
-and prune_field (l,body as orig) = match body with
-  |SFBconst sb ->
-    let sb' = prune_constant_body sb in
-    if sb == sb' then orig else (l, SFBconst sb')
-  |SFBmind _ -> orig
-  |SFBmodule m ->
-    let m' = prune_module m in
-    if m == m' then orig else (l, SFBmodule m')
-  |SFBmodtype m ->
-    let m' = prune_modtype m in
-    if m == m' then orig else (l, SFBmodtype m')
-and prune_structure struc = List.smartmap prune_field struc
-and prune_signature sign = functor_smartmap prune_modtype prune_structure sign
-and prune_expression me = functor_smartmap prune_modtype (fun me -> me) me
