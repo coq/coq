@@ -107,7 +107,11 @@ let unfreeze_summary datas =
   List.iter
     (fun (id, data) ->
       let summary = Hashtbl.find summaries id in
-      summary.unfreeze_function data)
+      try summary.unfreeze_function data
+      with e ->
+        let e = Errors.push e in
+        prerr_endline ("Exception unfreezing " ^ id);
+        raise e)
   datas
 
 (** All-in-one reference declaration + registration *)
