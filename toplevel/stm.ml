@@ -1146,6 +1146,7 @@ module Backtrack : sig
 
   val record : unit -> unit
   val backto : Stateid.t -> unit
+  val back_safe : unit -> unit
 
   (* we could navigate the dag, but this ways easy *)
   val branches_of : Stateid.t -> backup
@@ -1200,6 +1201,13 @@ end = struct (* {{{ *)
         | `Stop x -> x
         | `Cont acc -> next acc
  
+  let back_safe () =
+    let id =
+      fold_until (fun n (id,_,_) ->
+        if n >= 0 && State.is_cached id then `Stop id else `Cont (succ n))
+        0 (VCS.get_branch_pos (VCS.current_branch ())) in
+    backto id
+
   let undo_vernac_classifier v =
     try
       match v with
@@ -1354,6 +1362,31 @@ let merge_proof_branch qast keep brname =
   | { VCS.kind = `Master } ->
        raise (State.exn_on Stateid.dummy Proof_global.NoCurrentProof)
 
+(* When tty is true, this code also does some of the job of the user interface:
+   jump back to a state that is valid *)
+let handle_failure e vcs tty =
+  match Stateid.get e with
+  | None ->
+      VCS.restore vcs;
+      VCS.print ();
+      if tty then begin (* Hopefully the 1 to last state is valid *)
+        Backtrack.back_safe (); 
+        VCS.checkout_shallowest_proof_branch ();
+      end;
+      VCS.print ();
+      anomaly(str"error with no safe_id attached:" ++ spc() ++
+        Errors.print_no_report e)
+  | Some (safe_id, id) ->
+      prerr_endline ("Failed at state " ^ Stateid.to_string id);
+      VCS.restore vcs;
+      if tty then begin (* We stay on a valid state *)
+        Backtrack.backto safe_id;
+        VCS.checkout_shallowest_proof_branch ();
+        Reach.known_state ~cache:(interactive ()) safe_id;
+      end;
+      VCS.print ();
+      raise e
+
 let process_transaction ~tty verbose c (loc, expr) =
   let warn_if_pos a b =
     if b then msg_warning(pr_ast a ++ str" should not be part of a script") in
@@ -1369,7 +1402,7 @@ let process_transaction ~tty verbose c (loc, expr) =
       (* Joining various parts of the document *)
       | VtStm (VtJoinDocument, b), VtNow -> warn_if_pos x b; join (); `Ok
       | VtStm (VtFinish, b),       VtNow -> warn_if_pos x b; finish (); `Ok
-      | VtStm (VtWait, b),       VtNow -> warn_if_pos x b; finish (); wait (); `Ok
+      | VtStm (VtWait, b),     VtNow -> warn_if_pos x b; finish (); wait (); `Ok
       | VtStm (VtPrintDag, b), VtNow ->
           warn_if_pos x b; VCS.print ~now:true (); `Ok
       | VtStm (VtObserve id, b),   VtNow -> warn_if_pos x b; observe id; `Ok
@@ -1504,23 +1537,7 @@ let process_transaction ~tty verbose c (loc, expr) =
     rc
   with e ->
     let e = Errors.push e in
-    match Stateid.get e with
-    | None ->
-        VCS.restore vcs;
-        VCS.print ();
-        anomaly (str ("execute: "^ 
-          string_of_ppcmds (Errors.print_no_report e) ^ "}}}"))
-    | Some (safe_id, id) ->
-        prerr_endline ("Failed at state " ^ Stateid.to_string id);
-        VCS.restore vcs;
-        if tty then begin (* We stay on a valid state *)
-          Backtrack.backto safe_id;
-          VCS.checkout_shallowest_proof_branch ();
-          Reach.known_state ~cache:(interactive ()) safe_id;
-        end else begin
-          VCS.print ()
-        end;
-        raise e
+    handle_failure e vcs tty
 
 (** STM interface {{{******************************************************* **)
 
@@ -1664,7 +1681,12 @@ let interp verb (_,e as lexpr) =
   let clas = classify_vernac e in
   let rc = process_transaction ~tty:true verb clas lexpr in
   if rc <> `Ok then anomaly(str"tty loop can't be mixed with the STM protocol");
-  if interactive () = `Yes then finish ()
+  if interactive () = `Yes then
+    let vcs = VCS.backup () in
+    try finish ()
+    with e ->
+      let e = Errors.push e in
+      handle_failure e vcs true
 
 let get_current_state () = VCS.cur_tip ()
 
