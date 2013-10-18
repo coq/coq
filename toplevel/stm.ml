@@ -1014,7 +1014,7 @@ let collect_proof cur hd id =
     let view = VCS.visit id in
     match last, view.step with
     | _, `Cmd (x, _) -> collect (Some (id,x)) (id::accn) view.next
-    | _, `Alias _ -> collect None (id::accn) view.next
+    | _, `Alias _ -> `NotOptimizable `Alias
     | _, `Fork(_,_,_::_::_)->
         `NotOptimizable `MutualProofs (* TODO: enderstand where we need that *)
     | Some (parent, (_,_,VernacProof(_,Some _) as v)), `Fork (_, hd', _) ->
@@ -1042,6 +1042,7 @@ let string_of_reason = function
   | `TooShort -> "TooShort"
   | `NestedProof -> "NestedProof"
   | `Immediate -> "Immediate"
+  | `Alias -> "Alias"
   | _ -> "Unknown Reason"
 
 let known_state ?(redefine_qed=false) ~cache id =
