@@ -17,6 +17,7 @@ Heap
 Dnet
 Unionfind
 Genarg
+Ephemeron
 Future
 RemoteCounter
 Dag

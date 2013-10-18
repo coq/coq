@@ -23,6 +23,7 @@ CString
 CArray
 CStack
 Util
+Ephemeron
 Future
 CUnix
 System
