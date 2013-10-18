@@ -161,7 +161,7 @@ let save with_clean id const (locality,kind) hook =
 	(locality, ConstRef kn)
   in
   if with_clean then  Pfedit.delete_current_proof ();
-  Option.default (fun _ _ -> ()) hook l r;
+  Ephemeron.iter_opt hook (fun f -> f l r);
   definition_message id
 
 

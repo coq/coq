@@ -517,7 +517,7 @@ let declare_definition prg =
     progmap_remove prg;
     !declare_definition_ref prg.prg_name 
       prg.prg_kind ce prg.prg_implicits
-      (Option.map (fun f l r -> f l r;r) prg.prg_hook)
+      (fun l r -> prg.prg_hook l r; r)
 
 open Pp
 
@@ -585,7 +585,7 @@ let declare_mutual_definition l =
     Declare.recursive_message (fixkind != IsCoFixpoint) indexes fixnames;
     let gr = List.hd kns in
     let kn = match gr with ConstRef kn -> kn | _ -> assert false in
-      Option.iter (fun f -> f (fst first.prg_kind) gr) first.prg_hook;
+      first.prg_hook (fst first.prg_kind) gr;
       List.iter progmap_remove l; kn
 
 let shrink_body c = 
@@ -777,7 +777,7 @@ let rec solve_obligation prg num tac =
       | [] ->
 	  let obl = subst_deps_obl obls obl in
 	    Lemmas.start_proof obl.obl_name (kind_of_opacity obl.obl_status) obl.obl_type
-	      (Some (fun strength gr ->
+	      (fun strength gr ->
 		let cst = match gr with ConstRef cst -> cst | _ -> assert false in
 		let obl =
 		  let transparent = evaluable_constant cst (Global.env ()) in
@@ -807,7 +807,7 @@ let rec solve_obligation prg num tac =
 		      let deps = dependencies obls num in
 			if not (Int.Set.is_empty deps) then
 			  ignore(auto_solve_obligations (Some prg.prg_name) None ~oblset:deps)
-		  | _ -> ()));
+		  | _ -> ());
 	    trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
 		     Printer.pr_constr_env (Global.env ()) obl.obl_type);
 	    Pfedit.by (snd (get_default_tactic ()));
@@ -929,7 +929,7 @@ let show_term n =
 	    ++ Printer.pr_constr_env (Global.env ()) prg.prg_body)
 
 let add_definition n ?term t ?(implicits=[]) ?(kind=Global,Definition) ?tactic
-    ?(reduce=reduce) ?(hook=None) obls =
+    ?(reduce=reduce) ?(hook=fun _ _ -> ()) obls =
   let info = str (Id.to_string n) ++ str " has type-checked" in
   let prg = init_prog_info n term t [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
@@ -947,7 +947,7 @@ let add_definition n ?term t ?(implicits=[]) ?(kind=Global,Definition) ?tactic
 	| _ -> res)
 
 let add_mutual_definitions l ?tactic ?(kind=Global,Definition) ?(reduce=reduce)
-    ?(hook=None) notations fixkind =
+    ?(hook=fun _ _ -> ()) notations fixkind =
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
     List.iter
     (fun  (n, b, t, imps, obls) ->

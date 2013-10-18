@@ -414,11 +414,11 @@ let start_proof_and_print k l hook =
   start_proof_com k l hook;
   print_subgoals ()
 
-let no_hook = None
+let no_hook _ _ = ()
 
 let vernac_definition_hook = function
 | Coercion -> Class.add_coercion_hook
-| CanonicalStructure -> Some (fun _ -> Recordops.declare_canonical_structure)
+| CanonicalStructure -> (fun _ -> Recordops.declare_canonical_structure)
 | SubClass -> Class.add_subclass_hook
 | _ -> no_hook
 

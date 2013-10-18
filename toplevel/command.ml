@@ -151,7 +151,7 @@ let declare_definition ident (local,k) ce imps hook =
     VarRef ident
   | Discharge | Local | Global ->
     declare_global_definition ident ce local k imps in
-  Option.default (fun _ r -> r) hook local r
+  hook local r
 
 let _ = Obligations.declare_definition_ref := declare_definition
 
@@ -172,7 +172,7 @@ let do_definition ident k bl red_option c ctypopt hook =
       ignore(Obligations.add_definition ident ~term:c cty ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
       ignore(declare_definition ident k ce imps
-        (Option.map (fun f l r -> f l r;r) hook))
+        (fun l r -> hook l r;r))
 
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
@@ -530,7 +530,7 @@ let declare_fix kind f def t imps =
     const_entry_opaque = false;
     const_entry_inline_code = false
   } in
-  declare_definition f kind ce imps None
+  declare_definition f kind ce imps (fun _ r -> r)
 
 let _ = Obligations.declare_fix_ref := declare_fix
 
@@ -743,7 +743,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
     Obligations.eterm_obligations env recname !evdref 0 fullcoqc fullctyp 
   in
     ignore(Obligations.add_definition
-      recname ~term:evars_def evars_typ evars ~hook:(Some hook))
+      recname ~term:evars_def evars_typ evars ~hook)
 
 
 let interp_recursive isfix fixl notations =
@@ -823,7 +823,7 @@ let declare_fixpoint local ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
     Lemmas.start_proof_with_initialization (Global,DefinitionBody Fixpoint)
-      (Some(false,indexes,init_tac)) thms None None
+      (Some(false,indexes,init_tac)) thms None (fun _ _ -> ())
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
@@ -850,7 +850,7 @@ let declare_cofixpoint local ((fixnames,fixdefs,fixtypes),fiximps) ntns =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
     Lemmas.start_proof_with_initialization (Global,DefinitionBody CoFixpoint)
-      (Some(true,[],init_tac)) thms None None
+      (Some(true,[],init_tac)) thms None (fun _ _ -> ())
   else begin
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in

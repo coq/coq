@@ -117,7 +117,7 @@ let declare_instance_constant k pri global imps ?hook id term termtype =
 
 let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
     ?(generalize=true)
-    ?(tac:Proof_type.tactic option) ?(hook:(global_reference -> unit) option) pri =
+    ?(tac:Proof_type.tactic option) ?hook pri =
   let env = Global.env() in
   let evars = ref Evd.empty in
   let tclass, ids =
@@ -292,13 +292,13 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 		| None -> [||], None, termtype
 	      in
 		ignore (Obligations.add_definition id ?term:constr
-			typ ~kind:(Global,Instance) ~hook:(Some hook) obls);
+			typ ~kind:(Global,Instance) ~hook obls);
 		id
 	    else
 	      (Flags.silently 
 	       (fun () ->
 		Lemmas.start_proof id kind termtype
-		(Some (fun _ -> instance_hook k pri global imps ?hook));
+		(fun _ -> instance_hook k pri global imps ?hook);
 		if not (Option.is_empty term) then 
 		  Pfedit.by (!refine_ref (evm, Option.get term))
 		else if Flags.is_auto_intros () then

@@ -283,4 +283,4 @@ type raw_tactic_arg =
 type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen
 type glob_red_expr = (g_trm, g_cst, g_pat) red_expr_gen
 
-type 'a declaration_hook = (locality -> global_reference -> 'a) option
+type 'a declaration_hook = locality -> global_reference -> 'a

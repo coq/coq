@@ -75,15 +75,15 @@ val cook_this_proof : (Proof.proof -> unit) ->
     (Entries.definition_entry list *
     lemma_possible_guards *
     Decl_kinds.goal_kind *
-    unit Tacexpr.declaration_hook) ->
+    unit Tacexpr.declaration_hook Ephemeron.key) ->
   Id.t *
     (Entries.definition_entry * lemma_possible_guards * goal_kind *
-     unit declaration_hook)
+     unit declaration_hook Ephemeron.key)
 
 val cook_proof : (Proof.proof -> unit) ->
   Id.t *
     (Entries.definition_entry * lemma_possible_guards * goal_kind *
-     unit declaration_hook)
+     unit declaration_hook Ephemeron.key)
 
 (** {6 ... } *)
 (** [get_pftreestate ()] returns the current focused pending proof.
@@ -104,7 +104,7 @@ val get_current_goal_context : unit -> Evd.evar_map * env
 (** [current_proof_statement] *)
 
 val current_proof_statement :
-  unit -> Id.t * goal_kind * types * unit declaration_hook
+  unit -> Id.t * goal_kind * types * unit declaration_hook Ephemeron.key
 
 (** {6 ... } *)
 (** [get_current_proof_name ()] return the name of the current focused

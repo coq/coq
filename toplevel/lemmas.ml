@@ -182,7 +182,7 @@ let save ?proof id const do_guard (locality,kind) hook =
   (* if the proof is given explicitly, nothing has to be deleted *)
   if Option.is_empty proof then Pfedit.delete_current_proof ();
   definition_message id;
-  Option.iter (fun f -> f l r) hook
+  Ephemeron.iter_opt hook (fun f -> f l r)
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
@@ -340,8 +340,8 @@ let start_proof_with_initialization kind recguard thms snl hook =
         let thms_data = (strength,ref,imps)::other_thms_data in
         List.iter (fun (strength,ref,imps) ->
 	  maybe_declare_manual_implicits false ref imps;
-	  Option.iter (fun f -> f strength ref) hook) thms_data in
-      start_proof id kind t ?init_tac (Some hook) ~compute_guard:guard
+	  hook strength ref) thms_data in
+      start_proof id kind t ?init_tac hook ~compute_guard:guard
 
 let start_proof_com kind thms hook =
   let evdref = ref Evd.empty in
@@ -373,7 +373,7 @@ let admit () =
       str "declared as an axiom.")
   in
   let () = assumption_message id in
-  Option.iter (fun f -> f Global (ConstRef kn)) hook
+  Ephemeron.iter_opt hook (fun f -> f Global (ConstRef kn))
 
 (* Miscellaneous *)
 

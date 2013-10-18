@@ -70,7 +70,7 @@ type pstate = {
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
   compute_guard : lemma_possible_guards;
-  hook : unit Tacexpr.declaration_hook;
+  hook : unit Tacexpr.declaration_hook Ephemeron.key;
   mode : proof_mode option;
 }
 
@@ -236,7 +236,7 @@ let start_proof id str goals ?(compute_guard=[]) hook =
     section_vars = None;
     strength = str;
     compute_guard = compute_guard;
-    hook = hook;
+    hook = Ephemeron.create hook;
     mode = None } in
   push initial_state pstates
 
@@ -262,7 +262,7 @@ let get_open_goals () =
 type closed_proof =
   Names.Id.t *
   (Entries.definition_entry list * lemma_possible_guards *
-    Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
+    Decl_kinds.goal_kind * unit Tacexpr.declaration_hook Ephemeron.key)
 
 let close_proof ~now fpl =
   let { pid;section_vars;compute_guard;strength;hook;proof } = cur_pstate () in
@@ -409,13 +409,12 @@ module V82 = struct
 end
 
 type state = pstate list
-let drop_hook_mode p = { p with hook = None; mode = None }
         
 let freeze ~marshallable =
   match marshallable with
   | `Yes ->
       Errors.anomaly (Pp.str"full marshalling of proof state not supported")
-  | `Shallow -> List.map drop_hook_mode !pstates
+  | `Shallow -> !pstates
   | `No -> !pstates
 let unfreeze s = pstates := s; update_proof_mode ()
 

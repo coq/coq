@@ -1313,7 +1313,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     (Decl_kinds.Global, Decl_kinds.Proof Decl_kinds.Lemma)
     sign
     gls_type
-    (Some hook) ;
+    hook;
   if Indfun_common.is_strict_tcc  ()
   then
     by (tclIDTAC)
@@ -1406,7 +1406,7 @@ let (com_eqn : int -> Id.t ->
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
     (start_proof eq_name (Global, Proof Lemma)
-       (Environ.named_context_val env) equation_lemma_type None;
+       (Environ.named_context_val env) equation_lemma_type (fun _ _ -> ());
      by
        (start_equation f_ref terminate_ref
 	  (fun  x ->
@@ -1523,6 +1523,6 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       term_id
       using_lemmas
       (List.length res_vars)
-      (Some hook))
+      hook)
     ()
 

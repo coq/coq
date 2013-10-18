@@ -43,7 +43,8 @@ let cook_this_proof hook p =
   | (i,([e],cg,str,h)) -> (i,(e,cg,str,h))
   | _ -> Errors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
 
-let cook_proof hook = cook_this_proof hook (Proof_global.close_proof ())
+let cook_proof hook =
+  cook_this_proof hook (Proof_global.close_proof (fun x -> x))
 let get_pftreestate () =
   Proof_global.give_me_the_proof ()
 
@@ -116,7 +117,7 @@ open Decl_kinds
 let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id sign ?(goal_kind = Global,Proof Theorem) typ tac =
-  start_proof id goal_kind sign typ None;
+  start_proof id goal_kind sign typ (fun _ _ -> ());
   try
     by tac;
     let _,(const,_,_,_) = cook_proof (fun _ -> ()) in

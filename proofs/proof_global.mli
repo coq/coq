@@ -62,7 +62,7 @@ val start_proof : Names.Id.t ->
 type closed_proof =
   Names.Id.t *
   (Entries.definition_entry list * lemma_possible_guards *
-    Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
+    Decl_kinds.goal_kind * unit Tacexpr.declaration_hook Ephemeron.key)
 
 (* Takes a function to add to the exceptions data relative to the
    state in which the proof was built *)
@@ -143,7 +143,7 @@ end
 
 module V82 : sig
   val get_current_initial_conclusions : unit -> Names.Id.t *(Term.types list *
-  Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
+  Decl_kinds.goal_kind * unit Tacexpr.declaration_hook Ephemeron.key)
 end
 
 type state
