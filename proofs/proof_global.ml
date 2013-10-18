@@ -36,13 +36,15 @@ let find_proof_mode n =
   with Not_found ->
     Errors.error (Format.sprintf "No proof mode named \"%s\"." n)
 
-let register_proof_mode ({ name = n } as m) = Hashtbl.add proof_modes n m
+let register_proof_mode ({name = n} as m) =
+  Hashtbl.add proof_modes n (Ephemeron.create m)
+
 (* initial mode: standard mode *)
 let standard = { name = "No" ; set = (fun ()->()) ; reset = (fun () -> ()) }
 let _ = register_proof_mode standard
 
 (* Default proof mode, to be set at the beginning of proofs. *)
-let default_proof_mode = ref standard
+let default_proof_mode = ref (find_proof_mode "No")
 
 let _ =
   Goptions.declare_string_option {Goptions.
@@ -51,11 +53,11 @@ let _ =
     optname = "default proof mode" ;
     optkey = ["Default";"Proof";"Mode"] ;
     optread = begin fun () ->
-                               let { name = name } = !default_proof_mode in name
-                     end;
+      (Ephemeron.default !default_proof_mode standard).name
+    end;
     optwrite = begin fun n ->
-                                default_proof_mode := find_proof_mode n
-                      end
+      default_proof_mode := find_proof_mode n
+    end
   }
 
 (*** Proof Global Environment ***)
@@ -71,7 +73,7 @@ type pstate = {
   strength : Decl_kinds.goal_kind;
   compute_guard : lemma_possible_guards;
   hook : unit Tacexpr.declaration_hook Ephemeron.key;
-  mode : proof_mode option;
+  mode : proof_mode Ephemeron.key;
 }
 
 (* The head of [!pstates] is the actual current proof, the other ones are
@@ -84,13 +86,13 @@ let current_proof_mode = ref !default_proof_mode
 (* combinators for proof modes *)
 let update_proof_mode () =
   match !pstates with
-  | { mode = Some m } :: _ ->
-      !current_proof_mode.reset ();
+  | { mode = m } :: _ ->
+      Ephemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
       current_proof_mode := m;
-      !current_proof_mode.set ()
+      Ephemeron.iter_opt !current_proof_mode (fun x -> x.set ())
   | _ ->
-      !current_proof_mode.reset ();
-      current_proof_mode := standard
+      Ephemeron.iter_opt !current_proof_mode (fun x -> x.reset ());
+      current_proof_mode := find_proof_mode "No"
 
 (* combinators for the current_proof lists *)
 let push a l = l := a::!l;
@@ -208,10 +210,12 @@ let set_proof_mode m id =
   update_proof_mode ()
 
 let set_proof_mode mn =
-  set_proof_mode (Some (find_proof_mode mn)) (get_current_proof_name ())
+  set_proof_mode (find_proof_mode mn) (get_current_proof_name ())
 
-let activate_proof_mode mode = (find_proof_mode mode).set ()
-let disactivate_proof_mode mode = (find_proof_mode mode).reset ()
+let activate_proof_mode mode =
+  Ephemeron.iter_opt (find_proof_mode mode) (fun x -> x.set ())
+let disactivate_proof_mode mode =
+  Ephemeron.iter_opt (find_proof_mode mode) (fun x -> x.reset ())
 
 exception AlreadyExists
 let _ = Errors.register_handler begin function
@@ -237,7 +241,7 @@ let start_proof id str goals ?(compute_guard=[]) hook =
     strength = str;
     compute_guard = compute_guard;
     hook = Ephemeron.create hook;
-    mode = None } in
+    mode = find_proof_mode "No" } in
   push initial_state pstates
 
 let get_used_variables () = (cur_pstate ()).section_vars
