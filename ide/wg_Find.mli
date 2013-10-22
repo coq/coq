@@ -6,13 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type mode = [ `FIND | `REPLACE ]
-
-class finder : GText.view ->
+class finder : string -> GText.view ->
   object
     method coerce : GObj.widget
     method hide : unit -> unit
-    method show : mode -> unit
+    method show : unit -> unit
     method replace : unit -> unit
     method replace_all : unit -> unit
     method find_backward : unit -> unit

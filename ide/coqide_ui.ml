@@ -51,7 +51,6 @@ let init () =
     <menuitem action='Find' />
     <menuitem action='Find Next' />
     <menuitem action='Find Previous' />
-    <menuitem action='Replace' />
     <menuitem action='Complete Word' />
     <separator />
     <menuitem action='External editor' />

@@ -1007,15 +1007,13 @@ let build_ui () =
       ~callback:(fun _ -> emit_to_focus w GtkText.View.S.copy_clipboard);
     item "Paste" ~stock:`PASTE
       ~callback:(fun _ -> emit_to_focus w GtkText.View.S.paste_clipboard);
-    item "Find" ~stock:`FIND
-      ~callback:(cb_on_current_term (fun t -> t.finder#show `FIND));
+    item "Find" ~stock:`FIND ~label:"Find / Replace"
+      ~callback:(cb_on_current_term (fun t -> t.finder#show ()));
     item "Find Next" ~label:"Find _Next" ~stock:`GO_DOWN ~accel:"F3"
       ~callback:(cb_on_current_term (fun t -> t.finder#find_forward ()));
     item "Find Previous" ~label:"Find _Previous" ~stock:`GO_UP
       ~accel:"<Shift>F3"
       ~callback:(cb_on_current_term (fun t -> t.finder#find_backward ()));
-    item "Replace" ~stock:`FIND_AND_REPLACE
-      ~callback:(cb_on_current_term (fun t -> t.finder#show `REPLACE));
     item "Complete Word" ~label:"Complete Word" ~accel:"<Ctrl>slash"
       ~callback:(fun _ -> ());
     item "External editor" ~label:"External editor" ~stock:`EDIT
