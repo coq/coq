@@ -1590,6 +1590,7 @@ type focus = {
 }
 
 let edit_at id =
+  if Stateid.equal id Stateid.dummy then anomaly(str"edit_at dummy") else
   let vcs = VCS.backup () in
   let on_cur_branch id =
     let rec aux cur =
