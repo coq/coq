@@ -6,36 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-class type detachable_signals =
-  object
-    inherit GContainer.container_signals
-    method attached : callback:(GObj.widget -> unit) -> unit
-    method detached : callback:(GObj.widget -> unit) -> unit
-  end
-
-class detachable : ([> Gtk.box] as 'a) Gobject.obj ->
-  object
-    inherit GPack.box_skel
-    val obj : Gtk.box Gobject.obj
-    method connect : detachable_signals
-    method child : GObj.widget
-    method show : unit
-    method hide : unit
-    method visible : bool
-    method title : string
-    method set_title : string -> unit
-
-  end
-
-val detachable :
-  ?title:string ->
-  ?homogeneous:bool ->
-  ?spacing:int ->
-  ?border_width:int ->
-  ?width:int ->
-  ?height:int ->
-  ?packing:(GObj.widget -> unit) -> ?show:bool -> unit -> detachable
-
 class command_window : string -> Coq.coqtop ->
   object
     method new_query : ?command:string -> ?term:string -> unit -> unit
