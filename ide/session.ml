@@ -162,6 +162,7 @@ let set_buffer_handlers
   let begin_action_cb () =
     Minilib.log "begin_action_cb";
     action_was_cancelled := false;
+    no_coq_action_required := true;
     cur_action := new_action_id ();
     let where = get_insert () in
     buffer#move_mark (`NAME "prev_insert") ~where in
