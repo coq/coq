@@ -523,7 +523,7 @@ let occur_evar n c =
 
 let occur_in_global env id constr =
   let vars = vars_of_global env constr in
-  if List.mem id vars then raise Occur
+  if Id.Set.mem id vars then raise Occur
 
 let occur_var env id c =
   let rec occur_rec c =

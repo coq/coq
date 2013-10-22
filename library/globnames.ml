@@ -82,7 +82,13 @@ let global_ord_gen ord_cst ord_ind ord_cons x y = match x, y with
   | IndRef indx, IndRef indy -> ord_ind indx indy
   | ConstructRef consx, ConstructRef consy -> ord_cons consx consy
   | VarRef v1, VarRef v2 -> Id.compare v1 v2
-  | _, _ -> Pervasives.compare x y
+
+  | VarRef _, (ConstRef _ | IndRef _ | ConstructRef _) -> -1
+  | ConstRef _, VarRef _ -> 1
+  | ConstRef _, (IndRef _ | ConstructRef _) -> -1
+  | IndRef _, (VarRef _ | ConstRef _) -> 1
+  | IndRef _, ConstructRef _ -> -1
+  | ConstructRef _, (VarRef _ | ConstRef _ | IndRef _) -> 1
 
 let global_ord_can =
   global_ord_gen con_ord ind_ord constructor_ord

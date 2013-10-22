@@ -90,7 +90,8 @@ let rec lookup_named id = function
 let named_context_length = List.length
 let named_context_equal = List.equal eq_named_declaration
 
-let vars_of_named_context = List.map (fun (id,_,_) -> id)
+let vars_of_named_context ctx =
+  List.fold_left (fun accu (id, _, _) -> Id.Set.add id accu) Id.Set.empty ctx
 
 let instance_from_named_context sign =
   let filter = function

@@ -18,6 +18,9 @@ open Names
  *)
 type level = Expand | Level of int | Opaque
 let default = Level 0
+let is_default = function
+| Level 0 -> true
+| _ -> false
 let transparent = default
 let is_transparent = function
 | Level 0 -> true
@@ -45,11 +48,11 @@ let set_strategy k l =
   match k with
   | VarKey id ->
       var_opacity :=
-      if l=default then Id.Map.remove id !var_opacity
+      if is_default l then Id.Map.remove id !var_opacity
       else Id.Map.add id l !var_opacity
   | ConstKey c ->
       cst_opacity :=
-      if l=default then Cmap.remove c !cst_opacity
+      if is_default l then Cmap.remove c !cst_opacity
       else Cmap.add c l !cst_opacity
   | RelKey _ -> Errors.error "set_strategy: RelKey"
 

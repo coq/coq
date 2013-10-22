@@ -165,7 +165,7 @@ val set_engagement : engagement -> env -> env
 val global_vars_set : env -> constr -> Id.Set.t
 
 (** the constr must be a global reference *)
-val vars_of_global : env -> constr -> Id.t list
+val vars_of_global : env -> constr -> Id.Set.t
 
 val keep_hyps : env -> Id.Set.t -> section_context
 

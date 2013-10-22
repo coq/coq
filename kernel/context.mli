@@ -56,7 +56,7 @@ type rel_context = rel_declaration list
 
 val empty_named_context : named_context
 val add_named_decl : named_declaration -> named_context -> named_context
-val vars_of_named_context : named_context -> Id.t list
+val vars_of_named_context : named_context -> Id.Set.t
 
 val lookup_named : Id.t -> named_context -> named_declaration
 

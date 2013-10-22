@@ -228,7 +228,7 @@ let lookup_constructor_variables (ind,_) env =
 
 let vars_of_global env constr =
   match kind_of_term constr with
-      Var id -> [id]
+      Var id -> Id.Set.singleton id
     | Const kn -> lookup_constant_variables kn env
     | Ind ind -> lookup_inductive_variables ind env
     | Construct cstr -> lookup_constructor_variables cstr env
@@ -239,7 +239,7 @@ let global_vars_set env constr =
     let acc =
       match kind_of_term c with
       | Var _ | Const _ | Ind _ | Construct _ ->
-	  List.fold_right Id.Set.add (vars_of_global env c) acc
+	  Id.Set.union (vars_of_global env c) acc
       | _ ->
 	  acc in
     fold_constr filtrec acc c

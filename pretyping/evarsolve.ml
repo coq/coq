@@ -273,7 +273,7 @@ let free_vars_and_rels_up_alias_expansion aliases c =
         | Rel n -> if n >= depth+1 then acc1 := Int.Set.add (n-depth) !acc1
         | _ -> frec (aliases,depth) c end
     | Const _ | Ind _ | Construct _ ->
-        acc2 := List.fold_right Id.Set.add (vars_of_global (Global.env()) c) !acc2
+        acc2 := Id.Set.union (vars_of_global (Global.env()) c) !acc2
     | _ ->
         iter_constr_with_full_binders
           (fun d (aliases,depth) -> (extend_alias d aliases,depth+1))

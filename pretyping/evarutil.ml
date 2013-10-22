@@ -390,7 +390,7 @@ let rec check_and_clear_in_constr evdref err ids c =
 
       | ( Const _ | Ind _ | Construct _ ) ->
           let vars = Environ.vars_of_global (Global.env()) c in
-            List.iter check vars; c
+            Id.Set.iter check vars; c
 
       | Evar (evk,l as ev) ->
 	  if Evd.is_defined !evdref evk then

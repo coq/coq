@@ -79,8 +79,18 @@ let we_are_parsing = ref false
    For correct comparisons, this constructor should remain the last one. *)
 
 type compat_version = V8_2 | V8_3 | V8_4 | Current
+
 let compat_version = ref Current
-let version_strictly_greater v = !compat_version > v
+
+let version_strictly_greater v = match !compat_version, v with
+| V8_2, (V8_2 | V8_3 | V8_4 | Current) -> false
+| V8_3, (V8_3 | V8_4 | Current) -> false
+| V8_4, (V8_4 | Current) -> false
+| Current, Current -> false
+| V8_3, V8_2 -> true
+| V8_4, (V8_2 | V8_3) -> true
+| Current, (V8_2 | V8_3 | V8_4) -> true
+
 let version_less_or_equal v = not (version_strictly_greater v)
 
 let pr_version = function
