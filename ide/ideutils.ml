@@ -217,8 +217,18 @@ let find_tag_limits (tag :GText.tag) (it:GText.iter) =
  (find_tag_start tag it , find_tag_stop tag it)
 
 let stock_to_widget ?(size=`BUTTON) s =
-  let img = GMisc.image ~icon_size:size () in
-  img#set_stock s;
+  let img = GMisc.image () in
+  (match size with
+    | `CUSTOM(width,height) ->
+         let opb = img#misc#render_icon ~size:`BUTTON s in
+         let pb = GdkPixbuf.create ~width ~height
+           ~bits:(GdkPixbuf.get_bits_per_sample opb)
+           ~has_alpha:(GdkPixbuf.get_has_alpha opb) () in
+         GdkPixbuf.scale ~width ~height ~dest:pb opb;
+         img#set_pixbuf pb
+    | #Gtk.Tags.icon_size as icon_size ->
+         img#set_stock s;
+         img#set_icon_size icon_size);
   img#coerce
 
 let custom_coqtop = ref None

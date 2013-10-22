@@ -36,7 +36,9 @@ val select_file_for_save :
   title:string -> ?filename:string -> unit -> string option
 val try_convert : string -> string
 val try_export : string -> string -> bool
-val stock_to_widget :  ?size:Gtk.Tags.icon_size -> GtkStock.id -> GObj.widget
+val stock_to_widget :
+  ?size:[`CUSTOM of int * int | Gtk.Tags.icon_size] ->
+    GtkStock.id -> GObj.widget
 
 open Format
 val print_list : (formatter -> 'a -> unit) -> formatter -> 'a list -> unit
