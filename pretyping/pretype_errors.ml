@@ -57,49 +57,6 @@ let precatchable_exception = function
   | Nametab.GlobalizationError _ -> true
   | _ -> false
 
-(* This simplifies the typing context of Cases clauses *)
-(* hope it does not disturb other typing contexts *)
-let contract env lc =
-  let l = ref [] in
-  let contract_context (na,c,t) env =
-    match c with
-      | Some c' when isRel c' ->
-	  l := (substl !l c') :: !l;
-	  env
-      | _ ->
-	  let t' = substl !l t in
-	  let c' = Option.map (substl !l) c in
-	  let na' = named_hd env t' na in
-	  l := (mkRel 1) :: List.map (lift 1) !l;
-	  push_rel (na',c',t') env in
-  let env = process_rel_context contract_context env in
-  (env, List.map (substl !l) lc)
-
-let contract2 env a b = match contract env [a;b] with
-  | env, [a;b] -> env,a,b | _ -> assert false
-
-let contract3 env a b c = match contract env [a;b;c] with
-  | env, [a;b;c] -> env,a,b,c | _ -> assert false
-
-let contract4 env a b c d = match contract env [a;b;c;d] with
-  | env, [a;b;c;d] -> (env,a,b,c),d | _ -> assert false
-
-let contract4_vect env a b c d v =
-  match contract env ([a;b;c;d] @ Array.to_list v) with
-  | env, a::b::c::d::l -> (env,a,b,c),d,Array.of_list l
-  | _ -> assert false
-
-let contract3' env a b c = function
-  | OccurCheck (evk,d) -> let x,d = contract4 env a b c d in x,OccurCheck(evk,d)
-  | NotClean ((evk,args),d) ->
-      let x,d,args = contract4_vect env a b c d args in x,NotClean((evk,args),d)
-  | ConversionFailed (env',t1,t2) ->
-      let (env',t1,t2) = contract2 env' t1 t2 in
-      contract3 env a b c, ConversionFailed (env',t1,t2)
-  | NotSameArgSize | NotSameHead | NoCanonicalStructure
-  | MetaOccurInBody _ | InstanceNotSameType _ 
-  | UnifUnivInconsistency as x -> contract3 env a b c, x
-
 let raise_pretype_error (loc,env,sigma,te) =
   Loc.raise loc (PretypeError(env,sigma,te))
 
@@ -108,7 +65,6 @@ let raise_located_type_error (loc,env,sigma,te) =
 
 
 let error_actual_type_loc loc env sigma {uj_val=c;uj_type=actty} expty reason =
-  let (env, c, actty, expty), reason = contract3' env c actty expty reason in
   let j = {uj_val=c;uj_type=actty} in
   raise_pretype_error
     (loc, env, sigma, ActualTypeNotCoercible (j, expty, reason))
@@ -150,11 +106,9 @@ let error_unsolvable_implicit loc env sigma evi e explain =
     (PretypeError (env, sigma, UnsolvableImplicit (evi, e, explain)))
 
 let error_cannot_unify_loc loc env sigma ?reason (m,n) =
-  let env, m, n = contract2 env m n in
   Loc.raise loc (PretypeError (env, sigma,CannotUnify (m,n,reason)))
 
 let error_cannot_unify env sigma ?reason (m,n) =
-  let env, m, n = contract2 env m n in
   raise (PretypeError (env, sigma,CannotUnify (m,n,reason)))
 
 let error_cannot_unify_local env sigma (m,n,sn) =
@@ -185,7 +139,6 @@ let error_cant_find_case_type_loc loc env sigma expr =
 (*s Pretyping errors *)
 
 let error_unexpected_type_loc loc env sigma actty expty =
-  let env, actty, expty = contract2 env actty expty in
   raise_pretype_error (loc, env, sigma, UnexpectedType (actty, expty))
 
 let error_not_product_loc loc env sigma c =

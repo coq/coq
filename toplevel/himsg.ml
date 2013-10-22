@@ -28,6 +28,51 @@ open Libnames
 open Globnames
 open Declarations
 
+(* This simplifies the typing context of Cases clauses *)
+(* hope it does not disturb other typing contexts *)
+let contract env lc =
+  let l = ref [] in
+  let contract_context (na,c,t) env =
+    match c with
+      | Some c' when isRel c' ->
+          l := (Vars.substl !l c') :: !l;
+          env
+      | _ ->
+          let t' = Vars.substl !l t in
+          let c' = Option.map (Vars.substl !l) c in
+          let na' = named_hd env t' na in
+          l := (mkRel 1) :: List.map (Vars.lift 1) !l;
+          push_rel (na',c',t') env in
+  let env = process_rel_context contract_context env in
+  (env, List.map (Vars.substl !l) lc)
+
+let contract2 env a b = match contract env [a;b] with
+  | env, [a;b] -> env,a,b | _ -> assert false
+
+let contract3 env a b c = match contract env [a;b;c] with
+  | env, [a;b;c] -> env,a,b,c | _ -> assert false
+
+let contract4 env a b c d = match contract env [a;b;c;d] with
+  | env, [a;b;c;d] -> (env,a,b,c),d | _ -> assert false
+
+let contract4_vect env a b c d v =
+  match contract env ([a;b;c;d] @ Array.to_list v) with
+  | env, a::b::c::d::l -> (env,a,b,c),d,Array.of_list l
+  | _ -> assert false
+
+let contract3' env a b c = function
+  | OccurCheck (evk,d) -> let x,d = contract4 env a b c d in x,OccurCheck(evk,d)
+  | NotClean ((evk,args),d) ->
+      let x,d,args = contract4_vect env a b c d args in x,NotClean((evk,args),d)
+  | ConversionFailed (env',t1,t2) ->
+      let (env',t1,t2) = contract2 env' t1 t2 in
+      contract3 env a b c, ConversionFailed (env',t1,t2)
+  | NotSameArgSize | NotSameHead | NoCanonicalStructure
+  | MetaOccurInBody _ | InstanceNotSameType _
+  | UnifUnivInconsistency as x -> contract3 env a b c, x
+
+(** Printers *)
+
 let pr_lconstr c = quote (pr_lconstr c)
 let pr_lconstr_env e c = quote (pr_lconstr_env e c)
 let pr_ljudge_env e c = let v,t = pr_ljudge_env e c in (quote v,quote t)
@@ -594,14 +639,21 @@ let explain_pretype_error env sigma err =
   let env = make_all_name_different env in
   match err with
   | CantFindCaseType c -> explain_cant_find_case_type env sigma c
-  | ActualTypeNotCoercible (j,t,e) -> explain_actual_type env sigma j t (Some e)
+  | ActualTypeNotCoercible (j,t,e) ->
+    let {uj_val = c; uj_type = actty} = j in
+    let (env, c, actty, expty), e = contract3' env c actty t e in
+    let j = {uj_val = c; uj_type = actty} in
+    explain_actual_type env sigma j t (Some e)
   | UnifOccurCheck (ev,rhs) -> explain_occur_check env sigma ev rhs
   | UnsolvableImplicit (evi,k,exp) -> explain_unsolvable_implicit env evi k exp
   | VarNotFound id -> explain_var_not_found env id
   | UnexpectedType (actual,expect) ->
-      explain_unexpected_type env sigma actual expect
+    let env, actual, expect = contract2 env actual expect in
+    explain_unexpected_type env sigma actual expect
   | NotProduct c -> explain_not_product env sigma c
-  | CannotUnify (m,n,e) -> explain_cannot_unify env sigma m n e
+  | CannotUnify (m,n,e) ->
+    let env, m, n = contract2 env m n in
+    explain_cannot_unify env sigma m n e
   | CannotUnifyLocal (m,n,sn) -> explain_cannot_unify_local env sigma m n sn
   | CannotGeneralize ty -> explain_refiner_cannot_generalize env ty
   | NoOccurrenceFound (c, id) -> explain_no_occurrence_found env c id
