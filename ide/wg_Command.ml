@@ -116,7 +116,9 @@ object(self)
     notebook#set_page ~tab_label:b#coerce page;
     new_page <- page
 
-  method new_query ?command ?term () =
+  method new_query ?command ?term () = self#new_query_aux ?command ?term ()
+
+  method private new_query_aux ?command ?term ?(grab_now=true) () =
     let frame = GBin.frame ~shadow_type:`NONE () in
     ignore(notebook#insert_page ~pos:(notebook#page_num new_page) frame#coerce);
     let new_tab_lbl text =
@@ -196,7 +198,7 @@ object(self)
       | Some t -> entry#set_text t
     end;
     combo#entry#misc#grab_focus ();
-    entry#misc#grab_default ();
+    if grab_now then entry#misc#grab_default ();
     ignore (entry#connect#activate ~callback);
     ignore (combo#entry#connect#activate ~callback);
     ignore (combo#entry#event#connect#key_press ~callback:(fun ev ->
@@ -228,7 +230,7 @@ object(self)
 
   initializer
     self#new_page_maker;
-    self#new_query ();
+    self#new_query_aux ~grab_now:false ();
     frame#misc#hide ();
     ignore(notebook#event#connect#key_press ~callback:(fun ev ->
       if GdkEvent.Key.keyval ev = GdkKeysyms._Escape then (self#hide; true)
