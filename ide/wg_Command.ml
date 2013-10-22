@@ -84,7 +84,7 @@ let detachable ?title =
 open Preferences
 
 class command_window name coqtop =
-  let frame = detachable ~title:"Query pane" () in
+  let frame = detachable ~title:(Printf.sprintf "Query pane (%s)" name) () in
   let _ = frame#hide in
   let _ = GtkData.AccelGroup.create () in
   let notebook =
