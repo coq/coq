@@ -600,11 +600,11 @@ let map_filter_i f =
         match f i x with None -> l' | Some y -> y::l'
   in aux 0
 
-let filter_along f filter l =
-  snd (filter2 (fun b c -> f b) filter l)
-
-let filter_with filter l =
-  filter_along (fun x -> x) filter l
+let rec filter_with filter l = match filter, l with
+| [], [] -> []
+| true :: filter, x :: l -> x :: filter_with filter l
+| false :: filter, _ :: l -> filter_with filter l
+| _ -> invalid_arg "List.filter_with"
 
 let subset l1 l2 =
   let t2 = Hashtbl.create 151 in

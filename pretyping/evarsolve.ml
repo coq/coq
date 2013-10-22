@@ -45,7 +45,7 @@ let test_success conv_algo env evd c c' rhs =
 (************************)
 
 let extract_subfilter initial_filter refined_filter =
-  snd (List.filter2 (fun b1 b2 -> b1) initial_filter refined_filter)
+  List.filter_with initial_filter refined_filter
 
 let apply_subfilter filter subfilter =
   fst (List.fold_right (fun oldb (l,filter) ->
@@ -82,7 +82,7 @@ let restrict_evar_key evd evk filter candidates =
       let sign = evar_hyps evi in
       let src = evi.evar_source in
       let evd,newevk = new_pure_evar evd sign ccl ~src ~filter ?candidates in
-      let _, ctxt = List.filter2 (fun b c -> b) filter (evar_context evi) in
+      let ctxt = List.filter_with filter (evar_context evi) in
       let id_inst = Array.of_list (List.map (fun (id,_,_) -> mkVar id) ctxt) in
       Evd.define evk (mkEvar(newevk,id_inst)) evd,newevk
     end

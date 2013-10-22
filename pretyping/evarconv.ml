@@ -720,7 +720,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
         | Some _ -> error "Selection of specific occurrences not supported"
         | None ->
         let evty = set_holes evdref cty subst in
-        let _, instance = List.filter2 (fun b c -> b) filter instance in
+        let instance = List.filter_with filter instance in
         let evd,ev = new_evar_instance sign !evdref evty ~filter instance in
         evdref := evd;
         evsref := (fst (destEvar ev),evty)::!evsref;

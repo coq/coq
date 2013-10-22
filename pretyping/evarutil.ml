@@ -239,8 +239,7 @@ let non_instantiated sigma =
 (* Manipulating filters *)
 (************************)
 
-let extract_subfilter initial_filter refined_filter =
-  snd (List.filter2 (fun b1 b2 -> b1) initial_filter refined_filter)
+let extract_subfilter = List.filter_with
 
 let make_pure_subst evi args =
   snd (List.fold_right
