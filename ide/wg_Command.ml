@@ -111,7 +111,7 @@ object(self)
       (GMisc.label ~text:"No query" ())#coerce in
     let page = notebook#get_nth_page page in
     let b = GButton.button () in
-    b#add (Ideutils.stock_to_widget ~size:`MENU `NEW);
+    b#add (Ideutils.stock_to_widget ~size:(`CUSTOM(12,12)) `NEW);
     ignore(b#connect#clicked ~callback:self#new_query);
     notebook#set_page ~tab_label:b#coerce page;
     new_page <- page
@@ -127,7 +127,7 @@ object(self)
         views <-
           List.filter (fun (f,_,_) -> f#get_oid <> frame#coerce#get_oid) views;
         notebook#remove_page (notebook#page_num frame#coerce)));
-      b#add (Ideutils.stock_to_widget ~size:`MENU `CLOSE);
+      b#add (Ideutils.stock_to_widget ~size:(`CUSTOM(12,10)) `CLOSE);
       hbox#coerce in
     notebook#set_page ~tab_label:(new_tab_lbl "New query") frame#coerce;
     notebook#goto_page (notebook#page_num frame#coerce);
