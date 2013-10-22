@@ -94,6 +94,9 @@ sig
   val map_to_list : ('a -> 'b) -> 'a array -> 'b list
   (** Composition of [map] and [to_list]. *)
 
+  val map_of_list : ('a -> 'b) -> 'a list -> 'b array
+  (** Composition of [map] and [of_list]. *)
+
   val chop : int -> 'a array -> 'a array * 'a array
   (** [chop i a] returns [(a1, a2)] s.t. [a = a1 + a2] and [length a1 = n].
       Raise [Failure "Array.chop"] if [i] is not a valid index. *)

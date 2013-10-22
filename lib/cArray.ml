@@ -69,6 +69,7 @@ sig
     (int -> 'a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
   val fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
   val map_to_list : ('a -> 'b) -> 'a array -> 'b list
+  val map_of_list : ('a -> 'b) -> 'a list -> 'b array
   val chop : int -> 'a array -> 'a array * 'a array
   val smartmap : ('a -> 'a) -> 'a array -> 'a array
   val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
@@ -88,6 +89,8 @@ end
 
 include Array
 
+let uget = Array.unsafe_get
+
 (* Arrays *)
 
 let compare cmp v1 v2 =
@@ -99,8 +102,8 @@ let compare cmp v1 v2 =
       let rec loop i =
         if i < 0 then 0
         else
-          let x = Array.unsafe_get v1 i in
-          let y = Array.unsafe_get v2 i in
+          let x = uget v1 i in
+          let y = uget v2 i in
           let c = cmp x y in
           if c <> 0 then c
           else loop (i - 1)
@@ -115,8 +118,8 @@ let equal cmp t1 t2 =
       let rec aux i =
         if i < 0 then true
         else
-          let x = Array.unsafe_get t1 i in
-          let y = Array.unsafe_get t2 i in
+          let x = uget t1 i in
+          let y = uget t2 i in
           cmp x y && aux (pred i)
       in
       aux (len - 1)
@@ -126,21 +129,25 @@ let is_empty array = Int.equal (Array.length array) 0
 let exists f v =
   let rec exrec = function
     | -1 -> false
-    | n -> f (Array.unsafe_get v n) || (exrec (n-1))
+    | n -> f (uget v n) || (exrec (n-1))
   in
   exrec ((Array.length v)-1)
 
 let for_all f v =
   let rec allrec = function
     | -1 -> true
-    | n -> (f v.(n)) && (allrec (n-1))
+    | n ->
+      let ans = f (uget v n) in
+      ans && (allrec (n-1))
   in
   allrec ((Array.length v)-1)
 
 let for_all2 f v1 v2 =
   let rec allrec = function
     | -1 -> true
-    | n -> (f v1.(n) v2.(n)) && (allrec (n-1))
+    | n ->
+      let ans = f (uget v1 n) (uget v2 n) in
+      ans && (allrec (n-1))
   in
   let lv1 = Array.length v1 in
   lv1 = Array.length v2 && allrec (pred lv1)
@@ -148,7 +155,11 @@ let for_all2 f v1 v2 =
 let for_all3 f v1 v2 v3 =
   let rec allrec = function
     | -1 -> true
-    | n -> (f v1.(n) v2.(n) v3.(n)) && (allrec (n-1))
+    | n ->
+      let ans = f (uget v1 n)
+        (uget v2 n) (uget v3 n)
+      in
+      ans && (allrec (n-1))
   in
   let lv1 = Array.length v1 in
   lv1 = Array.length v2 && lv1 = Array.length v3 && allrec (pred lv1)
@@ -156,30 +167,37 @@ let for_all3 f v1 v2 v3 =
 let for_all4 f v1 v2 v3 v4 =
   let rec allrec = function
     | -1 -> true
-    | n -> (f v1.(n) v2.(n) v3.(n) v4.(n)) && (allrec (n-1))
+    | n ->
+      let ans = f (uget v1 n)
+        (uget v2 n) (uget v3 n) (uget v4 n)
+      in
+      ans && (allrec (n-1))
   in
   let lv1 = Array.length v1 in
   lv1 = Array.length v2 &&
   lv1 = Array.length v3 &&
   lv1 = Array.length v4 &&
-    allrec (pred lv1)
+  allrec (pred lv1)
 
 let for_all_i f i v =
-  let rec allrec i n = n = Array.length v || f i v.(n) && allrec (i+1) (n+1) in
+  let len = Array.length v in
+  let rec allrec i n =
+    n = len || f i (uget v n) && allrec (i+1) (n+1) in
   allrec i 0
 
 exception Found of int
 
 let findi (pred: int -> 'a -> bool) (arr: 'a array) : int option =
   try
-    for i=0 to Array.length arr - 1 do if pred i (arr.(i)) then raise (Found i) done;
+    for i=0 to Array.length arr - 1 do
+      if pred i (uget arr i) then raise (Found i) done;
     None
   with Found i -> Some i
 
 let hd v =
   match Array.length v with
     | 0 -> failwith "Array.hd"
-    | _ -> v.(0)
+    | _ -> uget v 0
 
 let tl v =
   match Array.length v with
@@ -189,19 +207,22 @@ let tl v =
 let last v =
   match Array.length v with
     | 0 -> failwith "Array.last"
-    | n -> v.(pred n)
+    | n -> uget v (pred n)
 
-let cons e v = Array.append [|e|] v
+let cons e v =
+  let len = Array.length v in
+  let ans = Array.make (Array.length v + 1) e in
+  let () = Array.blit v 0 ans 1 len in
+  ans
 
 let rev t =
   let n=Array.length t in
     if n <=0 then ()
     else
-      let tmp=ref t.(0) in
-      for i=0 to pred (n/2) do
-        tmp:=t.((pred n)-i);
-        t.((pred n)-i)<- t.(i);
-        t.(i)<- !tmp
+      for i = 0 to pred (n/2) do
+        let tmp = uget t ((pred n)-i) in
+        Array.unsafe_set t ((pred n)-i) (uget t i);
+        Array.unsafe_set t i tmp
       done
 
 let fold_right_i f v a =
@@ -209,12 +230,12 @@ let fold_right_i f v a =
     if n=0 then a
     else
       let k = n-1 in
-      fold (f k v.(k) a) k in
+      fold (f k (uget v k) a) k in
   fold a (Array.length v)
 
 let fold_left_i f v a =
   let n = Array.length a in
-  let rec fold i v = if i = n then v else fold (succ i) (f i v a.(i)) in
+  let rec fold i v = if i = n then v else fold (succ i) (f i v (uget a i)) in
   fold 0 v
 
 let fold_right2 f v1 v2 a =
@@ -223,14 +244,14 @@ let fold_right2 f v1 v2 a =
     if n=0 then a
     else
       let k = n-1 in
-      fold (f v1.(k) v2.(k) a) k in
+      fold (f (uget v1 k) (uget v2 k) a) k in
   if Array.length v2 <> lv1 then invalid_arg "Array.fold_right2";
   fold a lv1
 
 let fold_left2 f a v1 v2 =
   let lv1 = Array.length v1 in
   let rec fold a n =
-    if n >= lv1 then a else fold (f a v1.(n) v2.(n)) (succ n)
+    if n >= lv1 then a else fold (f a (uget v1 n) (uget v2 n)) (succ n)
   in
   if Array.length v2 <> lv1 then invalid_arg "Array.fold_left2";
   fold a 0
@@ -238,7 +259,7 @@ let fold_left2 f a v1 v2 =
 let fold_left2_i f a v1 v2 =
   let lv1 = Array.length v1 in
   let rec fold a n =
-    if n >= lv1 then a else fold (f n a v1.(n) v2.(n)) (succ n)
+    if n >= lv1 then a else fold (f n a (uget v1 n) (uget v2 n)) (succ n)
   in
   if Array.length v2 <> lv1 then invalid_arg "Array.fold_left2";
   fold a 0
@@ -246,90 +267,112 @@ let fold_left2_i f a v1 v2 =
 let fold_left3 f a v1 v2 v3 =
   let lv1 = Array.length v1 in
   let rec fold a n =
-    if n >= lv1 then a else fold (f a v1.(n) v2.(n) v3.(n)) (succ n)
+    if n >= lv1 then a
+    else fold (f a (uget v1 n) (uget v2 n) (uget v3 n)) (succ n)
   in
   if Array.length v2 <> lv1 || Array.length v3 <> lv1 then
     invalid_arg "Array.fold_left2";
   fold a 0
 
 let fold_left_from n f a v =
+  let len = Array.length v in
+  let () = if n < 0 then invalid_arg "Array.fold_left_from" in
   let rec fold a n =
-    if n >= Array.length v then a else fold (f a v.(n)) (succ n)
+    if n >= len then a else fold (f a (uget v n)) (succ n)
   in
   fold a n
 
 let map_to_list f v =
   List.map f (Array.to_list v)
 
+let map_of_list f l =
+  let len = List.length l in
+  let rec fill i v = function
+  | [] -> ()
+  | x :: l ->
+    Array.unsafe_set v i (f x);
+    fill (succ i) v l
+  in
+  match l with
+  | [] -> [||]
+  | x :: l ->
+    let ans = Array.make len (f x) in
+    let () = fill 1 ans l in
+    ans
+
 let chop n v =
   let vlen = Array.length v in
   if n > vlen then failwith "Array.chop";
   (Array.sub v 0 n, Array.sub v n (vlen-n))
 
-exception Local of int
+(** We don't have local polymorphic exceptions, so we uglily use Objs.*)
+exception Local of int * Obj.t
 
 (* If none of the elements is changed by f we return ar itself.
    The for loop looks for the first such an element.
-   If found it is temporarily stored in a ref and the new array is produced,
+   If found, we return it through the exception and the new array is produced,
    but f is not re-applied to elements that are already checked *)
 let smartmap f ar =
-  let ar_size = Array.length ar in
-  let aux = ref None in
+  let len = Array.length ar in
   try
-    for i = 0 to ar_size-1 do
-      let a = ar.(i) in
+    for i = 0 to len - 1 do
+      let a = uget ar i in
       let a' = f a in
-        if a != a' then (* pointer (in)equality *) begin
-          aux := Some a';
-          raise (Local i)
-        end
+      if a != a' then (* pointer (in)equality *)
+        raise (Local (i, Obj.repr a'))
     done;
     ar
-  with
-      Local i ->
-        let copy j =
-          if j<i then ar.(j)
-          else if j=i then
-            match !aux with Some a' -> a' | None -> failwith "Error"
-          else f (ar.(j))
-        in
-          Array.init ar_size copy
+  with Local (i, v) ->
+    (** FIXME: use Array.unsafe_blit from OCAML 4.00 *)
+    let ans : 'a array = Array.make len (uget ar 0) in
+    let () = Array.blit ar 0 ans 0 i in
+    let () = Array.unsafe_set ans i (Obj.obj v) in
+    for j = succ i to pred len do
+      let w = f (uget ar j) in
+      Array.unsafe_set ans j w
+    done;
+    ans
 
 let map2 f v1 v2 =
-  if not (Int.equal (Array.length v1) (Array.length v2)) then
-    invalid_arg "Array.map2";
-  if Int.equal (Array.length v1) 0 then
+  let len1 = Array.length v1 in
+  let len2 = Array.length v2 in
+  let () = if not (Int.equal len1 len2) then invalid_arg "Array.map2" in
+  if Int.equal len1 0 then
     [| |]
   else begin
-    let res = Array.make (Array.length v1) (f v1.(0) v2.(0)) in
-    for i = 1 to pred (Array.length v1) do
-      res.(i) <- f v1.(i) v2.(i)
+    let res = Array.make len1 (f (uget v1 0) (uget v2 0)) in
+    for i = 1 to pred len1 do
+      Array.unsafe_set res i (f (uget v1 i) (uget v2 i))
     done;
     res
   end
 
 let map2_i f v1 v2 =
-  if not (Int.equal (Array.length v1) (Array.length v2)) then
-    invalid_arg "Array.map2";
-  if Int.equal (Array.length v1) 0 then
+  let len1 = Array.length v1 in
+  let len2 = Array.length v2 in
+  let () = if not (Int.equal len1 len2) then invalid_arg "Array.map2" in
+  if Int.equal len1 0 then
     [| |]
   else begin
-    let res = Array.make (Array.length v1) (f 0 v1.(0) v2.(0)) in
-    for i = 1 to pred (Array.length v1) do
-      res.(i) <- f i v1.(i) v2.(i)
+    let res = Array.make len1 (f 0 (uget v1 0) (uget v2 0)) in
+    for i = 1 to pred len1 do
+      Array.unsafe_set res i (f i (uget v1 i) (uget v2 i))
     done;
     res
   end
 
 let map3 f v1 v2 v3 =
-  if Array.length v1 <> Array.length v2 ||
-     Array.length v1 <> Array.length v3 then invalid_arg "Array.map3";
-  if Int.equal (Array.length v1) 0 then
+  let len1 = Array.length v1 in
+  let () =
+    if len1 <> Array.length v2 || len1 <> Array.length v3
+    then invalid_arg "Array.map3"
+  in
+  if Int.equal len1 0 then
     [| |]
   else begin
-    let res = Array.make (Array.length v1) (f v1.(0) v2.(0) v3.(0)) in
-    for i = 1 to pred (Array.length v1) do
-      res.(i) <- f v1.(i) v2.(i) v3.(i)
+    let res = Array.make len1 (f (uget v1 0) (uget v2 0) (uget v3 0)) in
+    for i = 1 to pred len1 do
+      Array.unsafe_set res i (f (uget v1 i) (uget v2 i) (uget v3 i))
     done;
     res
   end
@@ -337,17 +380,18 @@ let map3 f v1 v2 v3 =
 let map_left f a = (* Ocaml does not guarantee Array.map is LR *)
   let l = Array.length a in (* (even if so), then we rewrite it *)
   if Int.equal l 0 then [||] else begin
-    let r = Array.make l (f a.(0)) in
+    let r = Array.make l (f (uget a 0)) in
     for i = 1 to l - 1 do
-      r.(i) <- f a.(i)
+      Array.unsafe_set r i (f (uget a i))
     done;
     r
   end
 
 let iter2 f v1 v2 =
-  let n = Array.length v1 in
-  if not (Int.equal (Array.length v2) n) then invalid_arg "Array.iter2"
-  else for i = 0 to n - 1 do f v1.(i) v2.(i) done
+  let len1 = Array.length v1 in
+  let len2 = Array.length v2 in
+  let () = if not (Int.equal len2 len1) then invalid_arg "Array.iter2" in
+  for i = 0 to len1 - 1 do f (uget v1 i) (uget v2 i) done
 
 let pure_functional = false
 
@@ -389,7 +433,7 @@ let distinct v =
 
 let rev_to_list a =
   let rec tolist i res =
-    if i >= Array.length a then res else tolist (i+1) (a.(i) :: res) in
+    if i >= Array.length a then res else tolist (i+1) (uget a i :: res) in
   tolist 0 []
 
 let filter_with filter v =
