@@ -17,9 +17,10 @@
 
 	    ;; Setting the compilation directory to coq root. This is
 	    ;; mutually exclusive with the setting of default-directory
-	    ;; below.
+	    ;; below. Also setting the path for next error.
 	    (unless coq-project-find-file
-	      (setq compile-command (concat "make -C " coq-root-directory)))
+	      (setq compile-command (concat "make -C " coq-root-directory))
+	      (setq compilation-search-path (cons coq-root-directory nil)))
 
 	    ;; Set default directory to coq root ONLY IF variable
 	    ;; coq-project-find-file is non nil. This should remain a
