@@ -126,6 +126,7 @@ type feedback_content =
   | GlobRef of Loc.t * string * string * string * string
   | ErrorMsg of Loc.t * string
   | InProgress of int
+  | SlaveStatus of int * string
 
 type feedback = {
   id : edit_or_state_id;

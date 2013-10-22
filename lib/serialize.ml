@@ -329,6 +329,9 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
          to_string modpath, to_string ident, to_string ty)
   | "errormsg", [loc;  s] -> ErrorMsg (to_loc loc, to_string s)
   | "inprogress", [n] -> InProgress (to_int n)
+  | "slavestatus", [ns] ->
+       let n, s = to_pair to_int to_string ns in
+       SlaveStatus(n,s)
   | _ -> raise Marshal_error)
 let of_feedback_content = function
   | AddedAxiom -> constructor "feedback_content" "addedaxiom" []
@@ -343,6 +346,9 @@ let of_feedback_content = function
   | ErrorMsg(loc, s) ->
       constructor "feedback_content" "errormsg" [of_loc loc; of_string s]
   | InProgress n -> constructor "feedback_content" "inprogress" [of_int n]
+  | SlaveStatus(n,s) ->
+      constructor "feedback_content" "slavestatus"
+        [of_pair of_int of_string (n,s)]
 
 let of_feedback msg =
   let content = of_feedback_content msg.content in
