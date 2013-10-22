@@ -24,7 +24,7 @@ object
 
   method get_n_errors : int
   method get_errors : (int * string) list
-  method get_slaves_status : int * int
+  method get_slaves_status : int * int * string Int.Map.t
 
 
   method handle_failure : Interface.handle_exn_rty -> unit task

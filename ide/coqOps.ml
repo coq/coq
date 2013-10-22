@@ -123,7 +123,7 @@ object
 
   method get_n_errors : int
   method get_errors : (int * string) list
-  method get_slaves_status : int * int
+  method get_slaves_status : int * int * string Int.Map.t
 
   method handle_failure : handle_exn_rty -> unit task
 
@@ -151,6 +151,7 @@ object(self)
   (* proofs being processed by the slaves *)
   val mutable to_process = 0
   val mutable processed = 0
+  val mutable slaves_status = Int.Map.empty
 
   val feedbacks : feedback Queue.t = Queue.create ()
   val feedback_timer = Ideutils.mktimer ()
@@ -357,6 +358,9 @@ object(self)
       | InProgress n, _ ->
           if n < 0 then processed <- processed + abs n
           else to_process <- to_process + n
+      | SlaveStatus(id,status), _ ->
+          log "SlaveStatus" None;
+          slaves_status <- Int.Map.add id status slaves_status
 
       | _ ->
           if sentence <> None then Minilib.log "Unsupported feedback message"
@@ -519,7 +523,7 @@ object(self)
      | Fail x -> self#handle_failure x in
    Coq.bind (Coq.status ~logger:messages#push true) next
 
-  method get_slaves_status = processed, to_process
+  method get_slaves_status = processed, to_process, slaves_status
 
   method get_n_errors =
     Doc.fold_all document 0 (fun n _ _ s -> if has_flag s `ERROR then n+1 else n)
