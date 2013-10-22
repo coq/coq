@@ -603,7 +603,8 @@ object(self)
       | Fail (safe_id, loc, msg) ->
           if loc <> None then messages#push Error "Fixme LOC";
           messages#push Error msg;
-          undo safe_id (Doc.is_in_focus document safe_id))
+          if Stateid.equal safe_id Stateid.dummy then self#show_goals
+          else undo safe_id (Doc.is_in_focus document safe_id))
     in
       undo to_id unfocus_needed)
   
@@ -618,10 +619,12 @@ object(self)
     messages#clear;
     messages#push Error msg;
     ignore(self#process_feedback ());
-    Coq.seq
-      (self#backtrack_until ~move_insert:false
-        (fun id _ _ -> id = Some safe_id))
-      (Coq.lift (fun () -> script#recenter_insert))
+    if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
+    else
+      Coq.seq
+        (self#backtrack_until ~move_insert:false
+          (fun id _ _ -> id = Some safe_id))
+        (Coq.lift (fun () -> script#recenter_insert))
 
   method backtrack_last_phrase =
     messages#clear;
