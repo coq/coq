@@ -651,8 +651,11 @@ let apply_on_subterm evdref f c t =
 let filter_possible_projections c ty ctxt args =
   let fv1 = free_rels c in
   let fv2 = collect_vars c in
+  let len = Array.length args in
   let tyvars = collect_vars ty in
-  List.map2 (fun (id,b,_) a ->
+  List.map_i (fun i (id,b,_) ->
+    let () = assert (i < len) in
+    let a = Array.unsafe_get args i in
     not (Option.is_empty b) ||
     a == c ||
     (* Here we make an approximation, for instance, we could also be *)
@@ -661,7 +664,7 @@ let filter_possible_projections c ty ctxt args =
     isRel a && Int.Set.mem (destRel a) fv1 ||
     isVar a && Id.Set.mem (destVar a) fv2 ||
     Id.Set.mem id tyvars)
-    ctxt args
+    0 ctxt
 
 let solve_evars = ref (fun _ -> failwith "solve_evars not installed")
 let set_solve_evars f = solve_evars := f
@@ -687,7 +690,6 @@ exception TypingFailed of evar_map
 
 let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   try
-  let args = Array.to_list args in
   let evi = Evd.find_undefined evd evk in
   let env_evar = evar_filtered_env evi in
   let sign = named_context_val env_evar in
@@ -728,7 +730,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       set_holes evdref (apply_on_subterm evdref set_var c rhs) subst
   | [] -> rhs in
 
-  let subst = make_subst (ctxt,args,argoccs) in
+  let subst = make_subst (ctxt,Array.to_list args,argoccs) in
 
   let evdref = ref evd in
   let rhs = set_holes evdref rhs subst in
@@ -791,7 +793,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   match kind_of_term term1, kind_of_term term2 with
   | Evar (evk1,args1), (Rel _|Var _) when app_empty
       && List.for_all (fun a -> eq_constr a term2 || isEvar a)
-        (remove_instance_local_defs evd evk1 (Array.to_list args1)) ->
+        (remove_instance_local_defs evd evk1 args1) ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
       (match choose_less_dependent_instance evk1 evd term2 args1 with
@@ -799,7 +801,7 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       | None -> UnifFailure (evd, ConversionFailed (env,term1,term2)))
   | (Rel _|Var _), Evar (evk2,args2) when app_empty
       && List.for_all (fun a -> eq_constr a term1 || isEvar a)
-        (remove_instance_local_defs evd evk2 (Array.to_list args2)) ->
+        (remove_instance_local_defs evd evk2 args2) ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
       (match choose_less_dependent_instance evk2 evd term1 args2 with

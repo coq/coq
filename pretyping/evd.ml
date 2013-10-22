@@ -89,18 +89,43 @@ let eq_evar_info ei1 ei2 =
 (* This exception is raised by *.existential_value *)
 exception NotInstantiatedEvar
 
+let instance_mismatch () =
+  anomaly (Pp.str "Signature and its instance do not match")
+
 (* Note: let-in contributes to the instance *)
 let make_evar_instance sign args =
-  let rec instrec = function
-    | (id,_,_) :: sign, c::args when isVarId id c -> instrec (sign,args)
-    | (id,_,_) :: sign, c::args -> (id,c) :: instrec (sign,args)
-    | [],[] -> []
-    | [],_ | _,[] -> anomaly (Pp.str "Signature and its instance do not match")
+  let rec instrec sign args = match sign, args with
+  | [], [] -> []
+  | (id,_,_) :: sign, c :: args ->
+    if isVarId id c then instrec sign args
+    else (id, c) :: instrec sign args
+  | [], _ | _, [] -> instance_mismatch ()
   in
-    instrec (sign,args)
+  instrec sign args
+
+let make_evar_instance_array sign args =
+  let len = Array.length args in
+  let rec instrec sign i = match sign with
+  | [] ->
+    if Int.equal i len then []
+    else instance_mismatch ()
+  | (id, _, _) :: sign ->
+    if i < len then
+      let c = Array.unsafe_get args i in
+      if isVarId id c then instrec sign (succ i)
+      else (id, c) :: instrec sign (succ i)
+    else instance_mismatch ()
+  in
+  instrec sign 0
 
 let instantiate_evar sign c args =
   let inst = make_evar_instance sign args in
+  match inst with
+  | [] -> c
+  | _ -> replace_vars inst c
+
+let instantiate_evar_array sign c args =
+  let inst = make_evar_instance_array sign args in
   match inst with
   | [] -> c
   | _ -> replace_vars inst c
@@ -291,7 +316,7 @@ let existential_value d (n, args) =
   let hyps = evar_filtered_context info in
   match evar_body info with
   | Evar_defined c ->
-    instantiate_evar hyps c (Array.to_list args)
+    instantiate_evar_array hyps c args
   | Evar_empty ->
     raise NotInstantiatedEvar
 
@@ -305,7 +330,7 @@ let existential_type d (n, args) =
     with Not_found ->
       anomaly (str "Evar " ++ str (string_of_existential n) ++ str " was not declared") in
   let hyps = evar_filtered_context info in
-    instantiate_evar hyps info.evar_concl (Array.to_list args)
+    instantiate_evar_array hyps info.evar_concl args
 
 let add_constraints d cstrs =
   { d with univ_cstrs = Univ.merge_constraints cstrs d.univ_cstrs }

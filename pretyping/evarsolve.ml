@@ -48,9 +48,15 @@ let extract_subfilter initial_filter refined_filter =
   List.filter_with initial_filter refined_filter
 
 let apply_subfilter filter subfilter =
-  fst (List.fold_right (fun oldb (l,filter) ->
-    if oldb then List.hd filter::l,List.tl filter else (false::l,filter))
-         filter ([], List.rev subfilter))
+  let len = Array.length subfilter in
+  let fold b (i, ans) =
+    if b then
+      let () = assert (0 <= i) in
+      (pred i, Array.unsafe_get subfilter i :: ans)
+    else
+      (i, false :: ans)
+  in
+  snd (List.fold_right fold filter (pred len, []))
 
 (*------------------------------------*
  * Restricting existing evars         *
@@ -61,6 +67,8 @@ let rec eq_filter l1 l2 = match l1, l2 with
 | h1 :: l1, h2 :: l2 ->
   (if h1 then h2 else not h2) && eq_filter l1 l2
 | _ -> false
+
+let inst_of_vars sign = Array.map_of_list (fun (id,_,_) -> mkVar id) sign
 
 let restrict_evar_key evd evk filter candidates =
   match filter, candidates with
@@ -83,7 +91,7 @@ let restrict_evar_key evd evk filter candidates =
       let src = evi.evar_source in
       let evd,newevk = new_pure_evar evd sign ccl ~src ~filter ?candidates in
       let ctxt = List.filter_with filter (evar_context evi) in
-      let id_inst = Array.of_list (List.map (fun (id,_,_) -> mkVar id) ctxt) in
+      let id_inst = inst_of_vars ctxt in
       Evd.define evk (mkEvar(newevk,id_inst)) evd,newevk
     end
 
@@ -317,12 +325,17 @@ let get_actual_deps aliases l t =
 
 let remove_instance_local_defs evd evk args =
   let evi = Evd.find evd evk in
-  let rec aux = function
-  | (_,Some _,_)::sign, a::args -> aux (sign,args)
-  | (_,None,_)::sign, a::args -> a::aux (sign,args)
-  | [], [] -> []
-  | _ -> assert false in
-  aux (evar_filtered_context evi, args)
+  let len = Array.length args in
+  let rec aux sign i = match sign with
+  | [] ->
+    let () = assert (i = len) in []
+  | (_, None _, _) :: sign ->
+    let () = assert (i < len) in
+    (Array.unsafe_get args i) :: aux sign (succ i)
+  | (_, Some _, _) :: sign ->
+    aux sign (succ i)
+  in
+  aux (evar_filtered_context evi) 0
 
 (* Check if an applied evar "?X[args] l" is a Miller's pattern *)
 
@@ -348,7 +361,7 @@ let is_unification_pattern_meta env nb m l t =
 let is_unification_pattern_evar env evd (evk,args) l t =
   if List.for_all (fun x -> isRel x || isVar x) l && noccur_evar env evd evk t
   then
-    let args = remove_instance_local_defs evd evk (Array.to_list args) in
+    let args = remove_instance_local_defs evd evk args in
     let n = List.length args in
     match find_unification_pattern_args env (args @ l) t with
     | Some l -> Some (List.skipn n l)
@@ -455,9 +468,9 @@ let define_evar_from_virtual_equation define_fun env evd t_in_env sign filter in
   let evd,evar_in_env = new_evar_instance sign evd ty_t_in_env ~filter inst_in_env in
   let t_in_env = whd_evar evd t_in_env in
   let evd = define_fun env evd (destEvar evar_in_env) t_in_env in
-  let ids = List.map pi1 (named_context_of_val sign) in
-  let inst_in_sign = List.map mkVar (List.filter_with filter ids) in
-  let evar_in_sign = mkEvar (fst (destEvar evar_in_env), Array.of_list inst_in_sign) in
+  let ctxt = named_context_of_val sign in
+  let inst_in_sign = inst_of_vars (List.filter_with filter ctxt) in
+  let evar_in_sign = mkEvar (fst (destEvar evar_in_env), inst_in_sign) in
   (evd,whd_evar evd evar_in_sign)
 
 (* We have x1..xq |- ?e1 : τ and had to solve something like
@@ -512,8 +525,8 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   (evd, ev2_in_sign, ev2_in_env)
 
 let restrict_upon_filter evd evk p args =
-  let newfilter = List.map p args in
-  if List.for_all (fun id -> id) newfilter then
+  let newfilter = Array.map p args in
+  if Array.for_all (fun id -> id) newfilter then
     None
   else
     let oldfullfilter = evar_filter (Evd.find_undefined evd evk) in
@@ -728,17 +741,16 @@ let invert_arg fullenv evd aliases k evk subst_in_env_extended_with_k_binders c_
 
 exception NotEnoughInformationToInvert
 
-let extract_unique_projections projs =
-  List.map (function
-    | Invertible (UniqueProjection (c,_)) -> c
-    | _ ->
-        (* For instance, there are evars with non-invertible arguments and *)
-        (* we cannot arbitrarily restrict these evars before knowing if there *)
-        (* will really be used; it can also be due to some argument *)
-        (* (typically a rel) that is not inversible and that cannot be *)
-        (* inverted either because it is needed for typing the conclusion *)
-        (* of the evar to project *)
-      raise NotEnoughInformationToInvert) projs
+let extract_unique_projection = function
+| Invertible (UniqueProjection (c,_)) -> c
+| _ ->
+    (* For instance, there are evars with non-invertible arguments and *)
+    (* we cannot arbitrarily restrict these evars before knowing if there *)
+    (* will really be used; it can also be due to some argument *)
+    (* (typically a rel) that is not inversible and that cannot be *)
+    (* inverted either because it is needed for typing the conclusion *)
+    (* of the evar to project *)
+  raise NotEnoughInformationToInvert
 
 let extract_candidates sols =
   try
@@ -750,9 +762,11 @@ let extract_candidates sols =
 let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
   let evi = Evd.find_undefined evd evk in
   let subst,_ = make_projectable_subst aliases evd evi argsv in
-  let projs =
-    Array.map_to_list (invert_arg fullenv evd aliases k evk subst) args' in
-  Array.of_list (extract_unique_projections projs)
+  let invert arg =
+    let p = invert_arg fullenv evd aliases k evk subst arg in
+    extract_unique_projection p
+  in
+  Array.map invert args'
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
  * variables) such that c becomes closed.
@@ -837,7 +851,7 @@ let postpone_non_unique_projection env evd (evk,argsv as ev) sols rhs =
       (* arbitrary complex term *)
       (fun a -> not (isRel a || isVar a)
                 || dependent a rhs || List.exists (fun (id,_) -> isVarId id a) sols)
-      (Array.to_list argsv) in
+      argsv in
   let filter = closure_of_filter evd evk filter in
   let candidates = extract_candidates sols in
   match candidates with
@@ -899,7 +913,7 @@ let are_canonical_instances args1 args2 env =
   Int.equal n1 n2 && aux 0 (named_context env)
 
 let filter_compatible_candidates conv_algo env evd evi args rhs c =
-  let c' = instantiate_evar (evar_filtered_context evi) c args in
+  let c' = instantiate_evar_array (evar_filtered_context evi) c args in
   match conv_algo env evd Reduction.CONV rhs c' with
   | Success evd -> Some (c,evd)
   | UnifFailure _ -> None
@@ -915,12 +929,10 @@ let restrict_candidates conv_algo env evd filter1 (evk1,argsv1) (evk2,argsv2) =
   | _, None -> cand1
   | None, Some _ -> raise DoesNotPreserveCandidateRestriction
   | Some l1, Some l2 ->
-      let args1 = Array.to_list argsv1 in
-      let args2 = Array.to_list argsv2 in
       let l1' = List.filter (fun c1 ->
-        let c1' = instantiate_evar (evar_filtered_context evi1) c1 args1 in
+        let c1' = instantiate_evar_array (evar_filtered_context evi1) c1 argsv1 in
         let filter c2 =
-          let compatibility = filter_compatible_candidates conv_algo env evd evi2 args2 c1' c2 in
+          let compatibility = filter_compatible_candidates conv_algo env evd evi2 argsv2 c1' c2 in
           match compatibility with
           | None -> false
           | Some _ -> true
@@ -971,14 +983,12 @@ let has_constrainable_free_vars evd aliases k ev (fv_rels,fv_ids as fvs) t =
 
 let ensure_evar_independent g env evd (evk1,argsv1 as ev1) (evk2,argsv2 as ev2)=
   let filter1 =
-    restrict_upon_filter evd evk1 (noccur_evar env evd evk2)
-      (Array.to_list argsv1)
+    restrict_upon_filter evd evk1 (noccur_evar env evd evk2) argsv1
   in
   let candidates1 = restrict_candidates g env evd filter1 ev1 ev2 in
   let evd,(evk1,_ as ev1) = do_restrict_hyps evd ev1 filter1 candidates1 in
   let filter2 =
-    restrict_upon_filter evd evk2 (noccur_evar env evd evk1)
-      (Array.to_list argsv2)
+    restrict_upon_filter evd evk2 (noccur_evar env evd evk1) argsv2
   in
   let candidates2 = restrict_candidates g env evd filter2 ev2 ev1 in
   let evd,ev2 = do_restrict_hyps evd ev2 filter2 candidates2 in
@@ -991,7 +1001,7 @@ let project_evar_on_evar g env evd aliases k2 (evk1,argsv1 as ev1) (evk2,argsv2 
   let fvs2 = free_vars_and_rels_up_alias_expansion aliases (mkEvar ev2) in
   let filter1 = restrict_upon_filter evd evk1
     (has_constrainable_free_vars evd aliases k2 evk2 fvs2)
-    (Array.to_list argsv1) in
+    argsv1 in
   (* Only try pruning on variable substitutions, postpone otherwise. *)
   (* Rules out non-linear instances. *)
   if is_unification_pattern_pure_evar env evd ev2 (mkEvar ev1) then
@@ -1018,7 +1028,7 @@ let solve_evar_evar ?(force=false) f g env evd (evk1,args1 as ev1) (evk2,args2 a
   if are_canonical_instances args1 args2 env then
     (* If instances are canonical, we solve the problem in linear time *)
     let sign = evar_filtered_context (Evd.find evd evk2) in
-    let id_inst = Array.map (fun (id,_,_) -> mkVar id) (Array.of_list sign) in
+    let id_inst = inst_of_vars sign in
     Evd.define evk2 (mkEvar(evk1,id_inst)) evd
   else
     let evd,ev1,ev2 =
@@ -1061,10 +1071,10 @@ let check_evar_instance evd evk1 body conv_algo =
 let solve_refl ?(can_drop=false) conv_algo env evd evk argsv1 argsv2 =
   if Array.equal eq_constr argsv1 argsv2 then evd else
   (* Filter and restrict if needed *)
+  let args = Array.map2 (fun a1 a2 -> (a1, a2)) argsv1 argsv2 in
   let untypedfilter =
     restrict_upon_filter evd evk
-      (fun (a1,a2) -> conv_algo env evd Reduction.CONV a1 a2)
-      (List.combine (Array.to_list argsv1) (Array.to_list argsv2)) in
+      (fun (a1,a2) -> conv_algo env evd Reduction.CONV a1 a2) args in
   let candidates = filter_candidates evd evk untypedfilter None in
   let filter = closure_of_filter evd evk untypedfilter in
   let evd,ev1 = restrict_applied_evar evd (evk,argsv1) filter candidates in
@@ -1086,13 +1096,12 @@ exception IncompatibleCandidates
 
 let solve_candidates conv_algo env evd (evk,argsv) rhs =
   let evi = Evd.find evd evk in
-  let args = Array.to_list argsv in
   match evi.evar_candidates with
   | None -> raise NoCandidates
   | Some l ->
       let l' =
         List.map_filter
-          (filter_compatible_candidates conv_algo env evd evi args rhs) l in
+          (filter_compatible_candidates conv_algo env evd evi argsv rhs) l in
       match l' with
       | [] -> raise IncompatibleCandidates
       | [c,evd] ->
@@ -1163,13 +1172,13 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
           (* materializing is necessary, but is restricting useful? *)
           let ty = find_solution_type (evar_filtered_env evi) sols in
           let sign = evar_filtered_context evi in
-          let ty' = instantiate_evar sign ty (Array.to_list argsv) in
+          let ty' = instantiate_evar_array sign ty argsv in
           let (evd,evar,(evk',argsv' as ev')) =
             materialize_evar (evar_define conv_algo) env !evdref 0 ev ty' in
           let ts = expansions_of_var aliases t in
+          (** FIXME : [List.mem] on constr ???*)
           let test c = isEvar c || List.mem c ts in
-          let filter =
-            restrict_upon_filter evd evk test (Array.to_list argsv') in
+          let filter = restrict_upon_filter evd evk test argsv' in
           let filter = closure_of_filter evd evk' filter in
           let candidates = extract_candidates sols in
           let evd = match candidates with

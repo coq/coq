@@ -61,4 +61,4 @@ val check_evar_instance :
   evar_map -> existential_key -> constr -> conv_fun -> evar_map
 
 val remove_instance_local_defs :
-  evar_map -> existential_key -> constr list -> constr list
+  evar_map -> existential_key -> constr array -> constr list
