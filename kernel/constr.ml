@@ -231,11 +231,9 @@ let fold f acc c = match kind c with
   | Evar (_,l) -> Array.fold_left f acc l
   | Case (_,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
-      let fd = Array.map3 (fun na t b -> (na,t,b)) lna tl bl in
-      Array.fold_left (fun acc (na,t,b) -> f (f acc t) b) acc fd
+    Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
   | CoFix (_,(lna,tl,bl)) ->
-      let fd = Array.map3 (fun na t b -> (na,t,b)) lna tl bl in
-      Array.fold_left (fun acc (na,t,b) -> f (f acc t) b) acc fd
+    Array.fold_left2 (fun acc t b -> f (f acc t) b) acc tl bl
 
 (* [iter f c] iters [f] on the immediate subterms of [c]; it is
    not recursive and the order with which subterms are processed is
@@ -284,17 +282,52 @@ let iter_with_binders g f n c = match kind c with
 let map f c = match kind c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
     | Construct _) -> c
-  | Cast (c,k,t) -> mkCast (f c, k, f t)
-  | Prod (na,t,c) -> mkProd (na, f t, f c)
-  | Lambda (na,t,c) -> mkLambda (na, f t, f c)
-  | LetIn (na,b,t,c) -> mkLetIn (na, f b, f t, f c)
-  | App (c,l) -> mkApp (f c, Array.map f l)
-  | Evar (e,l) -> mkEvar (e, Array.map f l)
-  | Case (ci,p,c,bl) -> mkCase (ci, f p, f c, Array.map f bl)
+  | Cast (b,k,t) ->
+      let b' = f b in
+      let t' = f t in
+      if b'==b && t' == t then c
+      else mkCast (b', k, t')
+  | Prod (na,t,b) ->
+      let b' = f b in
+      let t' = f t in
+      if b'==b && t' == t then c
+      else mkProd (na, t', b')
+  | Lambda (na,t,b) ->
+      let b' = f b in
+      let t' = f t in
+      if b'==b && t' == t then c
+      else mkLambda (na, t', b')
+  | LetIn (na,b,t,k) ->
+      let b' = f b in
+      let t' = f t in
+      let k' = f k in
+      if b'==b && t' == t && k'==k then c
+      else mkLetIn (na, b', t', k')
+  | App (b,l) ->
+      let b' = f b in
+      let l' = Array.smartmap f l in
+      if b'==b && l'==l then c
+      else mkApp (b', l')
+  | Evar (e,l) ->
+      let l' = Array.smartmap f l in
+      if l'==l then c
+      else mkEvar (e, l')
+  | Case (ci,p,b,bl) ->
+      let b' = f b in
+      let p' = f p in
+      let bl' = Array.smartmap f bl in
+      if b'==b && p'==p && bl'==bl then c
+      else mkCase (ci, p', b', bl')
   | Fix (ln,(lna,tl,bl)) ->
-      mkFix (ln,(lna,Array.map f tl,Array.map f bl))
+      let tl' = Array.smartmap f tl in
+      let bl' = Array.smartmap f bl in
+      if tl'==tl && bl'==bl then c
+      else mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl)) ->
-      mkCoFix (ln,(lna,Array.map f tl,Array.map f bl))
+      let tl' = Array.smartmap f tl in
+      let bl' = Array.smartmap f bl in
+      if tl'==tl && bl'==bl then c
+      else mkCoFix (ln,(lna,tl',bl'))
 
 (* [map_with_binders g f n c] maps [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
@@ -309,15 +342,15 @@ let map_with_binders g f l c = match kind c with
   | Prod (na,t,c) -> mkProd (na, f l t, f (g l) c)
   | Lambda (na,t,c) -> mkLambda (na, f l t, f (g l) c)
   | LetIn (na,b,t,c) -> mkLetIn (na, f l b, f l t, f (g l) c)
-  | App (c,al) -> mkApp (f l c, Array.map (f l) al)
-  | Evar (e,al) -> mkEvar (e, Array.map (f l) al)
-  | Case (ci,p,c,bl) -> mkCase (ci, f l p, f l c, Array.map (f l) bl)
+  | App (c,al) -> mkApp (f l c, Array.smartmap (f l) al)
+  | Evar (e,al) -> mkEvar (e, Array.smartmap (f l) al)
+  | Case (ci,p,c,bl) -> mkCase (ci, f l p, f l c, Array.smartmap (f l) bl)
   | Fix (ln,(lna,tl,bl)) ->
       let l' = iterate g (Array.length tl) l in
-      mkFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
+      mkFix (ln,(lna,Array.smartmap (f l) tl,Array.smartmap (f l') bl))
   | CoFix(ln,(lna,tl,bl)) ->
       let l' = iterate g (Array.length tl) l in
-      mkCoFix (ln,(lna,Array.map (f l) tl,Array.map (f l') bl))
+      mkCoFix (ln,(lna,Array.smartmap (f l) tl,Array.smartmap (f l') bl))
 
 (* [compare f c1 c2] compare [c1] and [c2] using [f] to compare
    the immediate subterms of [c1] of [c2] if needed; Cast's,
@@ -330,7 +363,7 @@ let compare_head f t1 t2 =
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
   | Var id1, Var id2 -> Id.equal id1 id2
-  | Sort s1, Sort s2 -> Int.equal (Sorts.compare s1 s2) 0
+  | Sort s1, Sort s2 -> Sorts.equal s1 s2
   | Cast (c1,_,_), _ -> f c1 t2
   | _, Cast (c2,_,_) -> f t1 c2
   | Prod (_,t1,c1), Prod (_,t2,c2) -> f t1 t2 && f c1 c2
