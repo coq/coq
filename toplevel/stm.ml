@@ -573,7 +573,7 @@ module Slaves : sig
   (* (eventually) remote calls *)
   val build_proof :
     exn_info:(Stateid.t * Stateid.t) -> start:Stateid.t -> stop:Stateid.t ->
-      future_proof * cancel_switch
+      name:string -> future_proof * cancel_switch
 
   (* blocking function that waits for the task queue to be empty *)
   val wait_all_done : unit -> unit
@@ -638,7 +638,7 @@ end = struct (* {{{ *)
 
   module SlavesPool : sig
   
-    val init : int -> ((unit -> in_channel * out_channel * int) -> unit) -> unit
+    val init : int -> ((unit -> in_channel * out_channel * int * int) -> unit) -> unit
     val is_empty : unit -> bool
     val n_slaves : unit -> int
   
@@ -671,9 +671,7 @@ end = struct (* {{{ *)
       let pid = Unix.create_process_env prog args env c2s_r s2c_w Unix.stderr in
       Unix.close c2s_r;
       Unix.close s2c_w;
-      let s =
-        Unix.in_channel_of_descr s2c_r, Unix.out_channel_of_descr c2s_w, pid in
-      s
+      Unix.in_channel_of_descr s2c_r, Unix.out_channel_of_descr c2s_w, pid, n
 
     let init n manage_slave =
       slave_managers := Some
@@ -684,7 +682,10 @@ end = struct (* {{{ *)
   let reach_known_state = ref (fun ?redefine_qed ~cache id -> ())
   let set_reach_known_state f = reach_known_state := f
 
-  type request = ReqBuildProof of (Stateid.t * Stateid.t) * Stateid.t * VCS.vcs
+  type request =
+    ReqBuildProof of (Stateid.t * Stateid.t) * Stateid.t * VCS.vcs * string
+
+  let name_of_request (ReqBuildProof (_,_,_,s)) = s
 
   type response =
     | RespBuiltProof of Entries.proof_output list 
@@ -710,18 +711,19 @@ end = struct (* {{{ *)
   type task =
     | TaskBuildProof of (Stateid.t * Stateid.t) * Stateid.t * Stateid.t *
         (Entries.proof_output list Future.assignement -> unit) * cancel_switch
+        * string
   let pr_task = function
-    | TaskBuildProof(_,bop,eop,_,_) ->
-        "TaskBuilProof("^Stateid.to_string bop^","^Stateid.to_string eop^")"
+    | TaskBuildProof(_,bop,eop,_,_,s) ->
+        "TaskBuilProof("^Stateid.to_string bop^","^Stateid.to_string eop^
+          ","^s^")"
 
   let request_of_task task =
     match task with
-    | TaskBuildProof (exn_info,bop,eop,_,_) ->
-        ReqBuildProof(exn_info,eop,
-          VCS.slice ~start:eop ~stop:bop)
+    | TaskBuildProof (exn_info,bop,eop,_,_,s) ->
+        ReqBuildProof(exn_info,eop,VCS.slice ~start:eop ~stop:bop,s)
 
   let cancel_switch_of_task = function
-    | TaskBuildProof (_,_,_,_,c) -> c
+    | TaskBuildProof (_,_,_,_,c,_) -> c
 
   let build_proof_here (id,valid) eop =
     Future.create (State.exn_on id ~valid) (fun () ->
@@ -730,7 +732,7 @@ end = struct (* {{{ *)
 
   let slave_respond msg =
     match msg with
-    | ReqBuildProof(exn_info,eop, vcs) ->
+    | ReqBuildProof(exn_info,eop,vcs,_) ->
         VCS.restore vcs;
         VCS.print ();
         let r = RespBuiltProof (
@@ -794,7 +796,7 @@ end = struct (* {{{ *)
     TQueue.wait_until_n_are_waiting_and_queue_empty
       (SlavesPool.n_slaves ()) queue
 
-  let build_proof ~exn_info:(id,valid as exn_info) ~start ~stop =
+  let build_proof ~exn_info:(id,valid as exn_info) ~start ~stop ~name =
     let cancel_switch = ref false in
     if SlavesPool.is_empty () then
       build_proof_here exn_info stop, cancel_switch
@@ -802,7 +804,7 @@ end = struct (* {{{ *)
       let f, assign = Future.create_delegate (State.exn_on id ~valid) in
       Pp.feedback (Interface.InProgress 1);
       TQueue.push queue
-        (TaskBuildProof(exn_info,start,stop,assign,cancel_switch));
+        (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,name));
       f, cancel_switch
 
   exception RemoteException of std_ppcmds
@@ -811,9 +813,12 @@ end = struct (* {{{ *)
     | _ -> raise Unhandled)
 
   exception KillRespawn
+    
+  let report_status ?(id = !Flags.coq_slave_mode) s =
+    Pp.feedback ~state_id:Stateid.initial (Interface.SlaveStatus(id, s))
 
   let rec manage_slave respawn =
-    let ic, oc, pid = respawn () in
+    let ic, oc, pid, id_slave = respawn () in
     let kill_pid =
       ref (fun () -> try Unix.kill pid 9 with Unix.Unix_error _ -> ()) in
     at_exit (fun () -> !kill_pid ());
@@ -821,6 +826,7 @@ end = struct (* {{{ *)
     try
       while true do
         prerr_endline "waiting for a task";
+        report_status ~id:id_slave "Idle";
         let task = TQueue.pop queue in
         prerr_endline ("got task: "^pr_task task);
         last_task := Some task;
@@ -830,10 +836,10 @@ end = struct (* {{{ *)
           let rec loop () =
             let response = unmarshal_response ic in
             match task, response with
-            | TaskBuildProof(_,_,_, assign,_), RespBuiltProof pl ->
+            | TaskBuildProof(_,_,_, assign,_,_), RespBuiltProof pl ->
                 assign (`Val pl);
                 Pp.feedback (Interface.InProgress ~-1)
-            | TaskBuildProof(_,_,_, assign,_), RespError (err_id,valid,e) ->
+            | TaskBuildProof(_,_,_, assign,_,_), RespError (err_id,valid,e) ->
                 let e = Stateid.add ~valid (RemoteException e) err_id in
                 assign (`Exn e);
                 Pp.feedback (Interface.InProgress ~-1)
@@ -862,7 +868,7 @@ end = struct (* {{{ *)
             msg_warning(strbrk("Marshalling error: "^s^". "^
               "The system state could not be sent to the slave process. "^
               "Falling back to local, lazy, evaluation."));
-            let TaskBuildProof (exn_info, _, stop, assign,_) = task in
+            let TaskBuildProof (exn_info, _, stop, assign,_,_) = task in
             assign(`Comp(build_proof_here exn_info stop));
             Pp.feedback (Interface.InProgress ~-1)
         | (Sys_error _ | Invalid_argument _ | End_of_file | KillRespawn) as e ->
@@ -891,7 +897,7 @@ end = struct (* {{{ *)
         (match !last_task with
         | Some task ->
             msg_warning(strbrk "Falling back to local, lazy, evaluation.");
-            let TaskBuildProof (exn_info, _, stop, assign,_) = task in
+            let TaskBuildProof (exn_info, _, stop, assign,_,_) = task in
             assign(`Comp(build_proof_here exn_info stop));
             Pp.feedback (Interface.InProgress ~-1);
         | None -> ());
@@ -951,7 +957,9 @@ end = struct (* {{{ *)
         working := false;
         let request = unmarshal_request !slave_ic in
         working := true;
+        report_status (name_of_request request);
         let response = slave_respond request in
+        report_status "Idle";
         marshal_response !slave_oc response;
       with
       | MarshalError s ->
@@ -1000,13 +1008,13 @@ let collect_proof cur hd id =
     | _, `Alias _ -> `NotOptimizable `Alias
     | _, `Fork(_,_,_::_::_)->
         `NotOptimizable `MutualProofs (* TODO: enderstand where we need that *)
-    | Some (parent, (_,_,VernacProof(_,Some _) as v)), `Fork (_, hd', _) ->
+    | Some (parent, (_,_,VernacProof(_,Some _) as v)), `Fork (_, hd', ids) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
-        if delegate_policy_check accn then `Optimizable (parent, Some v, accn)
+        if delegate_policy_check accn then `Optimizable (parent,Some v,accn,ids)
         else `NotOptimizable `TooShort
-    | Some (parent, _), `Fork (_, hd', _) ->
+    | Some (parent, _), `Fork (_, hd', ids) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
-        if delegate_policy_check accn then `MaybeOptimizable (parent, accn)
+        if delegate_policy_check accn then `MaybeOptimizable (parent, accn,ids)
         else `NotOptimizable `TooShort
     | _, `Sideff (`Ast (x,_)) -> collect (Some (id,x)) (id::accn) view.next
     | _, `Sideff (`Id _) -> `NotOptimizable `NestedProof
@@ -1064,7 +1072,7 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), `Yes
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
-          | `Optimizable (start, proof_using_ast, nodes) -> (fun () ->
+          | `Optimizable (start, proof_using_ast, nodes,ids) -> (fun () ->
                 prerr_endline ("Optimizable " ^ Stateid.to_string id);
                 VCS.create_cluster nodes ~tip:id;
                 begin match keep, brinfo, qed.fproof with
@@ -1073,14 +1081,16 @@ let known_state ?(redefine_qed=false) ~cache id =
                     assert(redefine_qed = true);
                     VCS.create_cluster nodes ~tip:id;
                     let fp, cancel =
-                      Slaves.build_proof ~exn_info:(id,eop) ~start ~stop:eop in
+                      Slaves.build_proof ~exn_info:(id,eop) ~start ~stop:eop
+                        ~name:(String.concat " " (List.map Id.to_string ids)) in
                     Future.replace ofp fp;
                     qed.fproof <- Some (fp, cancel)
                 | VtKeep, { VCS.kind = `Proof _ }, Some _ -> assert false
                 | VtKeep, { VCS.kind = `Proof _ }, None ->
                     reach ~cache:`Shallow start;
                     let fp, cancel =
-                      Slaves.build_proof ~exn_info:(id,eop) ~start ~stop:eop in
+                      Slaves.build_proof ~exn_info:(id,eop) ~start ~stop:eop
+                        ~name:(String.concat " " (List.map Id.to_string ids)) in
                     qed.fproof <- Some (fp, cancel);
                     let proof = Proof_global.close_future_proof fp in
                     reach view.next;
@@ -1113,13 +1123,13 @@ let known_state ?(redefine_qed=false) ~cache id =
                 end;
                 Proof_global.discard_all ()
               ), `Yes
-          | `MaybeOptimizable (start, nodes) -> (fun () ->
+          | `MaybeOptimizable (start, nodes, ids) -> (fun () ->
                 prerr_endline ("MaybeOptimizable " ^ Stateid.to_string id);
                 reach ~cache:`Shallow start;
                 (* no sections and no modules *)
                 if List.is_empty (Environ.named_context (Global.env ())) &&
                    Safe_typing.is_curmod_library (Global.safe_env ()) then
-                  fst (aux (`Optimizable (start, None, nodes))) ()
+                  fst (aux (`Optimizable (start, None, nodes,ids))) ()
                 else
                   fst (aux (`NotOptimizable `Unknown)) ()
               ), if redefine_qed then `No else `Yes
