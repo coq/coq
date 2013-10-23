@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
+type 'a cmp = 'a -> 'a -> int
+type 'a eq = 'a -> 'a -> bool
+
 module type S =
 sig
   val length : 'a list -> int
@@ -54,22 +57,23 @@ end
 module type ExtS =
 sig
   include S
-  val compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
-  val equal : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
+  val compare : 'a cmp -> 'a list cmp
+  val equal : 'a eq -> 'a list eq
   val is_empty : 'a list -> bool
   val init : int -> (int -> 'a) -> 'a list
-  val add_set : 'a -> 'a list -> 'a list
-  val eq_set : 'a list -> 'a list -> bool
-  val intersect : 'a list -> 'a list -> 'a list
-  val union : 'a list -> 'a list -> 'a list
+  val mem_f : 'a eq -> 'a -> 'a list -> bool
+  val add_set : 'a eq -> 'a -> 'a list -> 'a list
+  val eq_set : 'a eq -> 'a list -> 'a list -> bool
+  val intersect : 'a eq -> 'a list -> 'a list -> 'a list
+  val union : 'a eq -> 'a list -> 'a list -> 'a list
   val unionq : 'a list -> 'a list -> 'a list
-  val subtract : 'a list -> 'a list -> 'a list
+  val subtract : 'a eq -> 'a list -> 'a list -> 'a list
   val subtractq : 'a list -> 'a list -> 'a list
   val interval : int -> int -> int list
   val make : int -> 'a -> 'a list
   val assign : 'a list -> int -> 'a -> 'a list
   val distinct : 'a list -> bool
-  val duplicates : 'a list -> 'a list
+  val duplicates : 'a eq -> 'a list -> 'a list
   val filter2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> 'a list * 'b list
   val map_filter : ('a -> 'b option) -> 'a list -> 'b list
   val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
@@ -98,11 +102,9 @@ sig
       ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
   val fold_left3 : ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'a
   val for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
-  val except : 'a -> 'a list -> 'a list
-  val remove : 'a -> 'a list -> 'a list
-  val remove_first : 'a -> 'a list -> 'a list
-  val remove_assoc_in_triple : 'a -> ('a * 'b * 'c) list -> ('a * 'b * 'c) list
-  val assoc_snd_in_triple : 'a -> ('a * 'b * 'c) list -> 'b
+  val except : 'a eq -> 'a -> 'a list -> 'a list
+  val remove : 'a eq -> 'a -> 'a list -> 'a list
+  val remove_first : ('a -> bool) -> 'a list -> 'a list
   val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val sep_last : 'a list -> 'a * 'a list
   val find_map : ('a -> 'b option) -> 'a list -> 'b
@@ -127,7 +129,8 @@ sig
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   val fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
   val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
-  val assoc_f : ('a -> 'a -> bool) -> 'a -> ('a * 'b) list -> 'b
+  val assoc_f : 'a eq -> 'a -> ('a * 'b) list -> 'b
+  val remove_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> ('a * 'b) list
   val cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
   val cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
   val combinations : 'a list list -> 'a list list
@@ -316,28 +319,24 @@ let is_empty = function
 | [] -> true
 | _ -> false
 
-let intersect l1 l2 =
-  filter (fun x -> List.mem x l2) l1
+let mem_f cmp x l = List.exists (cmp x) l
 
-let union l1 l2 =
+let intersect cmp l1 l2 =
+  filter (fun x -> mem_f cmp x l2) l1
+
+let union cmp l1 l2 =
   let rec urec = function
     | [] -> l2
-    | a::l -> if List.mem a l2 then urec l else a::urec l
+    | a::l -> if mem_f cmp a l2 then urec l else a::urec l
   in
   urec l1
 
-let unionq l1 l2 =
-  let rec urec = function
-    | [] -> l2
-    | a::l -> if List.memq a l2 then urec l else a::urec l
-  in
-  urec l1
+let subtract cmp l1 l2 =
+  if is_empty l2 then l1
+  else List.filter (fun x -> not (mem_f cmp x l2)) l1
 
-let subtract l1 l2 =
-  if l2 = [] then l1 else List.filter (fun x -> not (List.mem x l2)) l1
-
-let subtractq l1 l2 =
-  if l2 = [] then l1 else List.filter (fun x -> not (List.memq x l2)) l1
+let unionq l1 l2 = union (==) l1 l2
+let subtractq l1 l2 = subtract (==) l1 l2
 
 let tabulate = init
 
@@ -416,14 +415,9 @@ let index_f f x =
 
 let index0_f f x l = index_f f x l - 1
 
-let index x =
-  let rec index_x n = function
-    | y::l -> if x = y then n else index_x (succ n) l
-    | [] -> raise Not_found
-  in
-  index_x 1
+let index x l = index_f Pervasives.(=) x l (* FIXME : prefer [index_f]*)
 
-let index0 x l = index x l - 1
+let index0 x l = index x l - 1 (* FIXME *)
 
 let fold_left_until f accu s =
   let rec aux accu = function
@@ -478,29 +472,23 @@ let for_all_i p =
   in
   for_all_p
 
-let except x l = List.filter (fun y -> not (x = y)) l
+let except cmp x l = List.filter (fun y -> not (cmp x y)) l
 
 let remove = except (* Alias *)
 
-let rec remove_first a = function
-  | b::l when a = b -> l
-  | b::l -> b::remove_first a l
+let rec remove_first p = function
+  | b::l when p b -> l
+  | b::l -> b::remove_first p l
   | [] -> raise Not_found
 
-let rec remove_assoc_in_triple x = function
-  | [] -> []
-  | (y,_,_ as z)::l -> if x = y then l else z::remove_assoc_in_triple x l
+let add_set cmp x l = if mem_f cmp x l then l else x :: l
 
-let rec assoc_snd_in_triple x = function
-    [] -> raise Not_found
-  | (a,b,_)::l -> if Int.equal (Pervasives.compare a x) 0 then b else assoc_snd_in_triple x l
+(** List equality up to permutation (but considering multiple occurrences) *)
 
-let add_set x l = if List.mem x l then l else x :: l
-
-let eq_set l1 l2 =
+let eq_set cmp l1 l2 =
   let rec aux l1 = function
-  | [] -> l1 = []
-  | a::l2 -> aux (remove_first a l1) l2 in
+  | [] -> is_empty l1
+  | a::l2 -> aux (remove_first (cmp a) l1) l2 in
   try aux l1 l2 with Not_found -> false
 
 let for_all2eq f l1 l2 =
@@ -561,11 +549,11 @@ let rec merge_uniq cmp l1 l2 =
       then h1 :: merge_uniq cmp t1 l2
       else h2 :: merge_uniq cmp l1 t2
 
-let rec duplicates = function
+let rec duplicates cmp = function
   | [] -> []
   | x::l ->
-      let l' = duplicates l in
-      if List.mem x l then add_set x l' else l'
+      let l' = duplicates cmp l in
+      if mem_f cmp x l then add_set cmp x l' else l'
 
 let rec filter2_loop f p q l1 l2 = match l1, l2 with
 | [], [] -> ()
@@ -673,7 +661,7 @@ let skipn_at_least n l =
 
 let prefix_of prefl l =
   let rec prefrec = function
-    | (h1::t1, h2::t2) -> h1 = h2 && prefrec (t1,t2)
+    | (h1::t1, h2::t2) -> h1 = h2 && prefrec (t1,t2) (* FIXME *)
     | ([], _) -> true
     | (_, _) -> false
   in
@@ -685,7 +673,7 @@ let drop_prefix p l =
     | ([], tl) -> Some tl
     | (_, []) -> None
     | (h1::tp, h2::tl) ->
-        if h1 = h2 then drop_prefix_rec (tp,tl) else None
+        if h1 = h2 then drop_prefix_rec (tp,tl) else None (* FIXME *)
   in
     match drop_prefix_rec (p,l) with
       | Some r -> r
@@ -729,6 +717,8 @@ let rec assoc_f f a = function
   | (x, e) :: xs -> if f a x then e else assoc_f f a xs
   | [] -> raise Not_found
 
+let remove_assoc_f f a l = remove_first (fun (x,y) -> f a x) l
+
 (* A generic cartesian product: for any operator (**),
    [cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]],
    and so on if there are more elements in the lists. *)
@@ -770,7 +760,7 @@ let rec drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> h
 (* Factorize lists of pairs according to the left argument *)
 let rec factorize_left = function
   | (a,b)::l ->
-      let al,l' = partition (fun (a',b) -> a=a') l in
+      let al,l' = partition (fun (a',b) -> a=a') l in (* FIXME *)
       (a,(b::List.map snd al)) :: factorize_left l'
   | [] ->
       []

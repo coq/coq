@@ -1276,7 +1276,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 		    (Elim.h_decompose_and (mkVar hid))
 		    (fun g ->
 		       let ids' = pf_ids_of_hyps g in
-		       lid := List.rev (List.subtract ids' ids);
+		       lid := List.rev (List.subtract Id.equal ids' ids);
 		       if List.is_empty !lid then lid := [hid];
 		       tclIDTAC g
 		    )

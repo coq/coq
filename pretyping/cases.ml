@@ -543,7 +543,9 @@ let rec find_dependency_list tmblock = function
   | (used,tdeps,d)::rest ->
       let deps = find_dependency_list tmblock rest in
       if used && List.exists (fun x -> dependent_decl x d) tmblock
-      then List.add_set (List.length rest + 1) (List.union deps tdeps)
+      then
+        List.add_set Int.equal
+          (List.length rest + 1) (List.union Int.equal deps tdeps)
       else deps
 
 let find_dependencies is_dep_or_cstr_in_rhs (tm,(_,tmtypleaves),d) nextlist =
@@ -688,7 +690,7 @@ let get_names env sign eqns =
   (* Otherwise, we take names from the parameters of the constructor but
      avoiding conflicts with user ids *)
   let allvars =
-    List.fold_left (fun l (_,_,eqn) -> List.union l eqn.rhs.avoid_ids)
+    List.fold_left (fun l (_,_,eqn) -> List.union Id.equal l eqn.rhs.avoid_ids)
       [] eqns in
   let names3,_ =
     List.fold_left2

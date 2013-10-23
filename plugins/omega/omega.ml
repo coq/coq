@@ -19,6 +19,7 @@
 
 module type INT = sig
   type bigint
+  val equal : bigint -> bigint -> bool
   val less_than : bigint -> bigint -> bool
   val add : bigint -> bigint -> bigint
   val sub : bigint -> bigint -> bigint
@@ -32,26 +33,26 @@ end
 
 let debug = ref false
 
-module MakeOmegaSolver (Int:INT) = struct
+module MakeOmegaSolver (I:INT) = struct
 
-type bigint = Int.bigint
-let (<?) = Int.less_than
-let (<=?) x y = Int.less_than x y || x = y
-let (>?) x y = Int.less_than y x
-let (>=?) x y = Int.less_than y x || x = y
-let (=?) = (=)
-let (+) = Int.add
-let (-) = Int.sub
-let ( * ) = Int.mult
-let (/) x y = fst (Int.euclid x y)
-let (mod) x y = snd (Int.euclid x y)
-let zero = Int.zero
-let one = Int.one
+type bigint = I.bigint
+let (=?) = I.equal
+let (<?) = I.less_than
+let (<=?) x y = I.less_than x y || x = y
+let (>?) x y = I.less_than y x
+let (>=?) x y = I.less_than y x || x = y
+let (+) = I.add
+let (-) = I.sub
+let ( * ) = I.mult
+let (/) x y = fst (I.euclid x y)
+let (mod) x y = snd (I.euclid x y)
+let zero = I.zero
+let one = I.one
 let two = one + one
-let negone = Int.neg one
-let abs x = if Int.less_than x zero then Int.neg x else x
-let string_of_bigint = Int.to_string
-let neg = Int.neg
+let negone = I.neg one
+let abs x = if I.less_than x zero then I.neg x else x
+let string_of_bigint = I.to_string
+let neg = I.neg
 
 (* To ensure that polymorphic (<) is not used mistakenly on big integers *)
 (* Warning: do not use (=) either on big int *)
@@ -697,14 +698,16 @@ let simplify_strong ((new_eq_id,new_var_id,print_var) as new_ids) system =
           | [] -> failwith "solve" in
         let s1,s2 =
           List.partition (fun (_,_,decomp,_) -> sign decomp) systems in
-        let s1' =
-	  List.map (fun (dep,ro,dc,pa) -> (Util.List.except id dep,ro,dc,pa)) s1 in
-        let s2' =
-	  List.map (fun (dep,ro,dc,pa) -> (Util.List.except id dep,ro,dc,pa)) s2 in
+        let remove_int (dep,ro,dc,pa) =
+          (Util.List.except Int.equal id dep,ro,dc,pa)
+        in
+        let s1' = List.map remove_int s1 in
+        let s2' = List.map remove_int s2 in
         let (r1,relie1) = solve s1'
 	and (r2,relie2) = solve s2' in
 	let (eq,id1,id2) = List.assoc id explode_map in
-	[SPLIT_INEQ(eq,(id1,r1),(id2, r2))], eq.id :: Util.List.union relie1 relie2
+	[SPLIT_INEQ(eq,(id1,r1),(id2, r2))],
+        eq.id :: Util.List.union Int.equal relie1 relie2
       with FULL_SOLUTION (x0,x1) -> (x0,x1)
     in
     let act,relie_on = solve all_solutions in

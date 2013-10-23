@@ -67,7 +67,7 @@ end = struct
   let hidden_edit_id () = decr id; !id
 
   let set_flags s f = s.flags <- f
-  let add_flag s f = s.flags <- CList.add_set f s.flags
+  let add_flag s f = s.flags <- CList.add_set (=) f s.flags
   let has_flag s mf =
     List.exists (fun f -> mem_flag_of_flag f = mf) s.flags
   let remove_flag s mf =

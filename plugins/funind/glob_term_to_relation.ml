@@ -90,7 +90,7 @@ let combine_results
   in (* and then we flatten the map *)
   {
     result = List.concat pre_result;
-    to_avoid = List.union res1.to_avoid res2.to_avoid
+    to_avoid = List.union Id.equal res1.to_avoid res2.to_avoid
   }
 
 
@@ -711,7 +711,8 @@ and build_entry_lc_from_case env funname make_discr
 	{
 	  result = List.concat (List.map (fun r -> r.result) results);
 	  to_avoid =
-	    List.fold_left (fun acc r -> List.union acc r.to_avoid) [] results
+	    List.fold_left (fun acc r -> List.union Id.equal acc r.to_avoid)
+              [] results
 	}
 
 and build_entry_lc_from_case_term env types funname make_discr patterns_to_prevent brl avoid

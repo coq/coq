@@ -379,7 +379,7 @@ let clenv_independent clenv =
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
 let check_bindings bl =
-  match List.duplicates (List.map pi2 bl) with
+  match List.duplicates Pervasives.(=) (List.map pi2 bl) with (* FIXME *)
     | NamedHyp s :: _ ->
 	errorlabstrm ""
 	  (str "The variable " ++ pr_id s ++

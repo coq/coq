@@ -27,3 +27,5 @@ val is_prop : t -> bool
 val family : t -> family
 
 val hcons : t -> t
+
+val family_equal : family -> family -> bool

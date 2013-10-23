@@ -430,7 +430,7 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	  (* If the term to rewrite uses an hypothesis H, don't rewrite in H *)
 	  let ids =
 	    let ids_in_c = Environ.global_vars_set (Global.env()) (fst c) in
-	      Id.Set.fold (fun id l -> List.remove id l) ids_in_c (pf_ids_of_hyps gl)
+	      Id.Set.fold (fun id l -> List.remove Id.equal id l) ids_in_c (pf_ids_of_hyps gl)
 	  in do_hyps_atleastonce ids gl
 	in
 	if cl.concl_occs == NoOccurrences then do_hyps else
@@ -565,7 +565,9 @@ let find_positions env sigma t1 t2 =
       | Construct sp1, Construct sp2
           when Int.equal (List.length args1) (mis_constructor_nargs_env env sp1)
             ->
-	  let sorts = List.intersect sorts (allowed_sorts env (fst sp1)) in
+	  let sorts =
+            List.intersect Sorts.family_equal sorts (allowed_sorts env (fst sp1))
+          in
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
 	  if is_conv env sigma hd1 hd2 then

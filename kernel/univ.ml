@@ -154,12 +154,12 @@ let sup u v =
 	if UniverseLevel.equal u v then Atom u else Max ([u;v],[])
     | u, Max ([],[]) -> u
     | Max ([],[]), v -> v
-    | Atom u, Max (gel,gtl) -> Max (List.add_set u gel,gtl)
-    | Max (gel,gtl), Atom v -> Max (List.add_set v gel,gtl)
+    | Atom u, Max (gel,gtl) -> Max (List.add_set UniverseLevel.equal u gel,gtl)
+    | Max (gel,gtl), Atom v -> Max (List.add_set UniverseLevel.equal v gel,gtl)
     | Max (gel,gtl), Max (gel',gtl') ->
-	let gel'' = List.union gel gel' in
-	let gtl'' = List.union gtl gtl' in
-	Max (List.subtract gel'' gtl'',gtl'')
+	let gel'' = List.union UniverseLevel.equal gel gel' in
+	let gtl'' = List.union UniverseLevel.equal gtl gtl' in
+	Max (List.subtract UniverseLevel.equal gel'' gtl'',gtl'')
 
 (* Comparison on this type is pointer equality *)
 type canonical_arc =
@@ -865,11 +865,11 @@ let make_max = function
 
 let remove_large_constraint u = function
   | Atom u' as x -> if UniverseLevel.equal u u' then Max ([],[]) else x
-  | Max (le,lt) -> make_max (List.remove u le,lt)
+  | Max (le,lt) -> make_max (List.remove UniverseLevel.equal u le,lt)
 
 let is_direct_constraint u = function
   | Atom u' -> UniverseLevel.equal u u'
-  | Max (le,lt) -> List.mem u le
+  | Max (le,lt) -> List.mem_f UniverseLevel.equal u le
 
 (*
    Solve a system of universe constraint of the form

@@ -681,7 +681,9 @@ let retract_coercible_metas evd =
 
 let subst_defined_metas bl c =
   let rec substrec c = match kind_of_term c with
-    | Meta i -> substrec (List.assoc_snd_in_triple i bl)
+    | Meta i ->
+      let select (j,_,_) = Int.equal i j in
+      substrec (pi2 (List.find select bl))
     | _ -> map_constr substrec c
   in try Some (substrec c) with Not_found -> None
 

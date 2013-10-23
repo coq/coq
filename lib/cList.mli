@@ -8,6 +8,9 @@
 
 (** FIXME: From OCaml 3.12 onwards, that would only be a [module type of] *)
 
+type 'a cmp = 'a -> 'a -> int
+type 'a eq = 'a -> 'a -> bool
+
 (** Module type [S] is the one from OCaml Stdlib. *)
 module type S =
 sig
@@ -57,10 +60,11 @@ end
 module type ExtS =
 sig
   include S
-  val compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
+
+  val compare : 'a cmp -> 'a list cmp
   (** Lexicographic order on lists. *)
 
-  val equal : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
+  val equal : 'a eq -> 'a list eq
   (** Lifts equality to list type. *)
 
   val is_empty : 'a list -> bool
@@ -69,17 +73,20 @@ sig
   val init : int -> (int -> 'a) -> 'a list
   (** [init n f] constructs the list [f 0; ... ; f (n - 1)]. *)
 
-  val add_set : 'a -> 'a list -> 'a list
+  val mem_f : 'a eq -> 'a -> 'a list -> bool
+  (* Same as [List.mem], for some specific equality *)
+
+  val add_set : 'a eq -> 'a -> 'a list -> 'a list
   (** [add_set x l] adds [x] in [l] if it is not already there, or returns [l]
       otherwise. *)
 
-  val eq_set : 'a list -> 'a list -> bool
-  (** Test equality up to permutation. *)
+  val eq_set : 'a eq -> 'a list eq
+  (** Test equality up to permutation (but considering multiple occurrences) *)
 
-  val intersect : 'a list -> 'a list -> 'a list
-  val union : 'a list -> 'a list -> 'a list
+  val intersect : 'a eq -> 'a list -> 'a list -> 'a list
+  val union : 'a eq -> 'a list -> 'a list -> 'a list
   val unionq : 'a list -> 'a list -> 'a list
-  val subtract : 'a list -> 'a list -> 'a list
+  val subtract : 'a eq -> 'a list -> 'a list -> 'a list
   val subtractq : 'a list -> 'a list -> 'a list
 
   val interval : int -> int -> int list
@@ -96,7 +103,7 @@ sig
   val distinct : 'a list -> bool
   (** Return [true] if all elements of the list are distinct. *)
 
-  val duplicates : 'a list -> 'a list
+  val duplicates : 'a eq -> 'a list -> 'a list
   (** Return the list of unique elements which appear at least twice. Elements
       are kept in the order of their first appearance. *)
 
@@ -133,12 +140,12 @@ sig
   val index : 'a -> 'a list -> int
   (** [index] returns the 1st index of an element in a list (counting from 1). *)
 
-  val index_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
+  val index_f : 'a eq -> 'a -> 'a list -> int
 
   val index0 : 'a -> 'a list -> int
   (** [index0] behaves as [index] except that it starts counting at 0. *)
 
-  val index0_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
+  val index0_f : 'a eq -> 'a -> 'a list -> int
 
   val iteri :  (int -> 'a -> unit) -> 'a list -> unit
   (** As [iter] but with the index argument (starting from 0). *)
@@ -153,11 +160,9 @@ sig
       ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
   val fold_left3 : ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b list -> 'c list -> 'd list -> 'a
   val for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
-  val except : 'a -> 'a list -> 'a list
-  val remove : 'a -> 'a list -> 'a list
-  val remove_first : 'a -> 'a list -> 'a list
-  val remove_assoc_in_triple : 'a -> ('a * 'b * 'c) list -> ('a * 'b * 'c) list
-  val assoc_snd_in_triple : 'a -> ('a * 'b * 'c) list -> 'b
+  val except : 'a eq -> 'a -> 'a list -> 'a list
+  val remove : 'a eq -> 'a -> 'a list -> 'a list
+  val remove_first : ('a -> bool) -> 'a list -> 'a list
   val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val sep_last : 'a list -> 'a * 'a list
 
@@ -168,7 +173,7 @@ sig
   val uniquize : 'a list -> 'a list
   (** Return the list of elements without duplicates. *)
 
-  val merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
+  val merge_uniq : 'a cmp -> 'a list -> 'a list -> 'a list
   (** Merge two sorted lists and preserves the uniqueness property. *)
 
   val subset : 'a list -> 'a list -> bool
@@ -208,7 +213,8 @@ sig
 
   val fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
   val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
-  val assoc_f : ('a -> 'a -> bool) -> 'a -> ('a * 'b) list -> 'b
+  val assoc_f : 'a eq -> 'a -> ('a * 'b) list -> 'b
+  val remove_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> ('a * 'b) list
 
   val cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
   (** A generic cartesian product: for any operator (**),

@@ -391,7 +391,7 @@ let analyze_notation_tokens l =
   let l = raw_analyze_notation_tokens l in
   let vars = get_notation_vars l in
   let recvars,l = interp_list_parser [] l in
-  recvars, List.subtract vars (List.map snd recvars), l
+  recvars, List.subtract Id.equal vars (List.map snd recvars), l
 
 let error_not_same_scope x y =
   error ("Variables "^Id.to_string x^" and "^Id.to_string y^

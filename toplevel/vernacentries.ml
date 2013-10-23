@@ -171,8 +171,8 @@ let print_modules () =
   and loaded = Library.loaded_libraries () in
   (* we intersect over opened to preserve the order of opened since *)
   (* non-commutative operations (e.g. visibility) are done at import time *)
-  let loaded_opened = List.intersect opened loaded
-  and only_loaded = List.subtract loaded opened in
+  let loaded_opened = List.intersect DirPath.equal opened loaded
+  and only_loaded = List.subtract DirPath.equal loaded opened in
   str"Loaded and imported library files: " ++
   pr_vertical_list pr_dirpath loaded_opened ++ fnl () ++
   str"Loaded and not imported library files: " ++

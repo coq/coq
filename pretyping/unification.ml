@@ -110,7 +110,9 @@ let extract_instance_status = function
 
 let rec subst_meta_instances bl c =
   match kind_of_term c with
-    | Meta i -> (try List.assoc_snd_in_triple i bl with Not_found -> c)
+    | Meta i ->
+      let select (j,_,_) = Int.equal i j in
+      (try pi2 (List.find select bl) with Not_found -> c)
     | _ -> map_constr (subst_meta_instances bl) c
 
 let pose_all_metas_as_evars env evd t =

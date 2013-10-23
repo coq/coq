@@ -1352,7 +1352,7 @@ and trivial_resolve dbg mod_delta db_list local_db cl =
 
 let make_db_list dbnames =
   let use_core = not (List.mem "nocore" dbnames) in
-  let dbnames = List.remove "nocore" dbnames in
+  let dbnames = List.remove String.equal "nocore" dbnames in
   let dbnames = if use_core then "core"::dbnames else dbnames in
   let lookup db =
     try searchtable_map db with Not_found -> error_no_such_hint_database db

@@ -135,7 +135,8 @@ let open_scope i (_,(local,op,sc)) =
       | _ -> sc
     in
     scope_stack :=
-      if op then sc :: !scope_stack else List.except sc !scope_stack
+      if op then sc :: !scope_stack
+      else List.except Pervasives.(=) sc !scope_stack (* FIXME *)
 
 let cache_scope o =
   open_scope 1 o

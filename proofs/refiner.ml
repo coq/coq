@@ -200,7 +200,10 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
   let hyps:Context.named_context list =
     List.map (fun gl -> pf_hyps { it = gl; sigma=sigma; }) gls in
   let newhyps =
-    List.map (fun hypl -> List.subtract hypl oldhyps) hyps in
+    List.map
+      (fun hypl -> List.subtract Context.eq_named_declaration hypl oldhyps)
+      hyps
+  in
   let emacs_str s =
     if !Flags.print_emacs then s else "" in
   let s = 

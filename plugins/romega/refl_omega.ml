@@ -921,7 +921,7 @@ let add_stated_equations env tree =
 let rec get_eclatement env = function
     i :: r ->
       let l = try (get_equation env i).e_depends with Not_found -> [] in
-      List.union (List.rev l) (get_eclatement env r)
+      List.union Pervasives.(=) (List.rev l) (get_eclatement env r)
   | [] -> []
 
 let select_smaller l =
@@ -1207,12 +1207,16 @@ let resolution env full_reified_goal systems_list =
   (* recupere explicitement ces equations *)
   let equations = List.map (get_equation env) useful_equa_id in
   let l_hyps' = List.uniquize (List.map (fun e -> e.e_origin.o_hyp) equations) in
-  let l_hyps = id_concl :: List.remove id_concl l_hyps' in
+  let l_hyps = id_concl :: List.remove Names.Id.equal id_concl l_hyps' in
   let useful_hyps =
-    List.map (fun id -> List.assoc id full_reified_goal) l_hyps in
+    List.map
+      (fun id -> List.assoc_f Names.Id.equal id full_reified_goal) l_hyps
+  in
   let useful_vars =
     let really_useful_vars = vars_of_equations equations in
-    let concl_vars = vars_of_prop (List.assoc id_concl full_reified_goal) in
+    let concl_vars =
+      vars_of_prop (List.assoc_f Names.Id.equal id_concl full_reified_goal)
+    in
     really_useful_vars @@ concl_vars
   in
   (* variables a introduire *)

@@ -1587,7 +1587,7 @@ let prove_principle_for_gen
 	  Elim.h_decompose_and (mkVar hid);
 	  (fun g ->
 	     let new_hyps = pf_ids_of_hyps g in
-	     tcc_list := List.rev (List.subtract new_hyps (hid::hyps));
+	     tcc_list := List.rev (List.subtract Id.equal new_hyps (hid::hyps));
 	     if List.is_empty !tcc_list
 	     then
 	       begin

@@ -833,7 +833,7 @@ let check_number_of_pattern loc n l =
   if not (Int.equal n p) then raise (InternalizationError (loc,BadPatternsNumber (n,p)))
 
 let check_or_pat_variables loc ids idsl =
-  if List.exists (fun ids' -> not (List.eq_set ids ids')) idsl then
+  if List.exists (fun ids' -> not (List.eq_set Id.equal ids ids')) idsl then
     user_err_loc (loc, "", str
     "The components of this disjunctive pattern must bind the same variables.")
 

@@ -212,7 +212,7 @@ let instantiate_pattern sigma lvar c =
 	with Not_found (* List.index failed *) ->
 	  let vars =
 	    List.map_filter (function Name id -> Some id | _ -> None) vars in
-	  error_instantiate_pattern id (List.subtract ctx vars)
+	  error_instantiate_pattern id (List.subtract Id.equal ctx vars)
        with Not_found (* Map.find failed *) ->
 	 x)
   | (PFix _ | PCoFix _) -> error ("Non instantiable pattern.")

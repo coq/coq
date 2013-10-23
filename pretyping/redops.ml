@@ -8,6 +8,8 @@
 
 open Genredexpr
 
+let union_consts l1 l2 = Util.List.union Pervasives.(=) l1 l2 (* FIXME *)
+
 let make_red_flag l =
   let rec add_flag red = function
     | [] -> red
@@ -18,14 +20,14 @@ let make_red_flag l =
 	if red.rDelta then
 	  Errors.error
 	    "Cannot set both constants to unfold and constants not to unfold";
-        add_flag { red with rConst = Util.List.union red.rConst l } lf
+        add_flag { red with rConst = union_consts red.rConst l } lf
     | FDeltaBut l :: lf ->
 	if red.rConst <> [] && not red.rDelta then
 	  Errors.error
 	    "Cannot set both constants to unfold and constants not to unfold";
         add_flag
-	  { red with rConst = Util.List.union red.rConst l; rDelta = true }
-	  lf
+          { red with rConst = union_consts red.rConst l; rDelta = true }
+          lf
   in
   add_flag
     {rBeta = false; rIota = false; rZeta = false; rDelta = false; rConst = []}

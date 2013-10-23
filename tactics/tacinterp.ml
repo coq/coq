@@ -1393,7 +1393,8 @@ and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
           db_matched_hyp (curr_debug ist) (pf_env goal) hyp_match hypname;
 	  try
             let id_match = pi1 hyp_match in
-            let nextlhyps = List.remove_assoc_in_triple id_match lhyps_rest in
+            let select_match (id,_,_) = Id.equal id id_match in
+            let nextlhyps = List.remove_first select_match lhyps_rest in
             let lfun = lfun +++ lids in
             apply_hyps_context_rec lfun s.e_sub nextlhyps tl
           with e when is_match_catchable e ->

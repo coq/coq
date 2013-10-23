@@ -260,17 +260,17 @@ let minductive_message = function
 let check_all_names_different indl =
   let ind_names = List.map (fun ind -> ind.ind_name) indl in
   let cstr_names = List.map_append (fun ind -> List.map fst ind.ind_lc) indl in
-  let l = List.duplicates ind_names in
+  let l = List.duplicates Id.equal ind_names in
   let () = match l with
   | [] -> ()
   | t :: _ -> raise (InductiveError (SameNamesTypes t))
   in
-  let l = List.duplicates cstr_names in
+  let l = List.duplicates Id.equal cstr_names in
   let () = match l with
   | [] -> ()
   | c :: _ -> raise (InductiveError (SameNamesConstructors (List.hd l)))
   in
-  let l = List.intersect ind_names cstr_names in
+  let l = List.intersect Id.equal ind_names cstr_names in
   match l with
   | [] -> ()
   | _ -> raise (InductiveError (SameNamesOverlap l))
@@ -436,36 +436,37 @@ let do_mutual_inductive indl finite =
    partial_order : ('a * 'a list) list -> ('a * ('a,'a list) union) list
 *)
 
-let rec partial_order = function
+let rec partial_order cmp = function
   | [] -> []
   | (x,xge)::rest ->
     let rec browse res xge' = function
     | [] ->
 	let res = List.map (function
-	  | (z, Inr zge) when List.mem x zge -> (z, Inr (List.union zge xge'))
+	  | (z, Inr zge) when List.mem_f cmp x zge ->
+            (z, Inr (List.union cmp zge xge'))
 	  | r -> r) res in
 	(x,Inr xge')::res
     | y::xge ->
       let rec link y =
-	try match List.assoc y res with
+	try match List.assoc_f cmp y res with
 	| Inl z -> link z
 	| Inr yge ->
-	  if List.mem x yge then
-	    let res = List.remove_assoc y res in
+	  if List.mem_f cmp x yge then
+	    let res = List.remove_assoc_f cmp y res in
 	    let res = List.map (function
 	      | (z, Inl t) ->
-		  if Id.equal t y then (z, Inl x) else (z, Inl t)
+		  if cmp t y then (z, Inl x) else (z, Inl t)
 	      | (z, Inr zge) ->
-		  if List.mem y zge then
-		    (z, Inr (List.add_set x (List.remove y zge)))
+		  if List.mem_f cmp y zge then
+		    (z, Inr (List.add_set cmp x (List.remove cmp y zge)))
 		  else
 		    (z, Inr zge)) res in
-	    browse ((y,Inl x)::res) xge' (List.union xge (List.remove x yge))
+	    browse ((y,Inl x)::res) xge' (List.union cmp xge (List.remove cmp x yge))
 	  else
-	    browse res (List.add_set y (List.union xge' yge)) xge
-	with Not_found -> browse res (List.add_set y xge') xge
+	    browse res (List.add_set cmp y (List.union cmp xge' yge)) xge
+	with Not_found -> browse res (List.add_set cmp y xge') xge
       in link y
-    in browse (partial_order rest) [] xge
+    in browse (partial_order cmp rest) [] xge
 
 let non_full_mutual_message x xge y yge isfix rest =
   let reason =
@@ -490,7 +491,7 @@ let check_mutuality env isfix fixl =
     List.map (fun (id,def) ->
       (id, List.filter (fun id' -> not (Id.equal id id') && occur_var env id' def) names))
       fixl in
-  let po = partial_order preorder in
+  let po = partial_order Id.equal preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
     | (x,Inr xge)::(y,Inr yge)::rest ->
 	msg_warning (non_full_mutual_message x xge y yge isfix rest)

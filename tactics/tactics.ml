@@ -889,7 +889,7 @@ let clenv_fchain_in id ?(flags=elim_flags) mv elimclause hypclause =
 let elimination_in_clause_scheme with_evars ?(flags=elim_flags) id i elimclause indclause gl =
   let indmv = destMeta (nth_arg i elimclause.templval.rebus) in
   let hypmv =
-    try match List.remove indmv (clenv_independent elimclause) with
+    try match List.remove Int.equal indmv (clenv_independent elimclause) with
       | [a] -> a
       | _ -> failwith ""
     with Failure _ -> errorlabstrm "elimination_clause"

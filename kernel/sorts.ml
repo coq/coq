@@ -44,6 +44,8 @@ let family = function
   | Prop Pos -> InSet
   | Type _ -> InType
 
+let family_equal = (==)
+
 module Hsorts =
   Hashcons.Make(
     struct
