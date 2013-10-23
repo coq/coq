@@ -329,7 +329,7 @@ let make_elim_fun (names,(nbfix,lv,n)) largs =
   let la =
     List.map_i (fun q aq ->
       (* k from the comment is q+1 *)
-      try mkRel (p+1-(List.index (n-q) lyi))
+      try mkRel (p+1-(List.index Int.equal (n-q) lyi))
       with Not_found -> aq)
       0 (List.map (lift p) lu)
   in

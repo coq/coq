@@ -656,7 +656,7 @@ let add_implicits r l =
 	else err (int i ++ str " is not a valid argument number for " ++
 		  safe_pr_global r)
     | ArgId id ->
-	(try List.index (Name id) names
+	(try List.index Name.equal (Name id) names
 	 with Not_found ->
 	   err (str "No argument " ++ pr_id id ++ str " for " ++
 		safe_pr_global r))

@@ -114,7 +114,7 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
         [([_],_,_)], None -> 1
       | _, Some x ->
           let ids = List.map snd (List.flatten (List.map pi1 bl)) in
-          (try List.index (snd x) ids
+          (try List.index Names.Name.equal (snd x) ids
           with Not_found -> error "No such fix variable.")
       | _ -> error "Cannot guess decreasing argument of fix." in
   (id,n,CProdN(loc,bl,ty))

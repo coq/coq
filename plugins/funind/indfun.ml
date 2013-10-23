@@ -379,7 +379,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	if Int.equal (List.length names) 1 then 1
 	else error "Recursive argument must be specified"
       | Some wf_arg ->
-	  List.index (Name wf_arg) names
+	  List.index Name.equal (Name wf_arg) names
   in
   let unbounded_eq =
     let f_app_args =

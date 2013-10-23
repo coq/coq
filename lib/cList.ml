@@ -90,10 +90,8 @@ sig
   val filteri :
     (int -> 'a -> bool) -> 'a list -> 'a list
   val smartfilter : ('a -> bool) -> 'a list -> 'a list
-  val index : 'a -> 'a list -> int
-  val index_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
-  val index0 : 'a -> 'a list -> int
-  val index0_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
+  val index : 'a eq -> 'a -> 'a list -> int
+  val index0 : 'a eq -> 'a -> 'a list -> int
   val iteri :  (int -> 'a -> unit) -> 'a list -> unit
   val fold_left_until : ('c -> 'a -> 'c CSig.until) -> 'c -> 'a list -> 'c
   val fold_right_i :  (int -> 'a -> 'b -> 'b) -> int -> 'a list -> 'b -> 'b
@@ -406,18 +404,14 @@ let rec smartfilter f l = match l with
           else h :: tl'
         else tl'
 
-let index_f f x =
+let index f x =
   let rec index_x n = function
     | y::l -> if f x y then n else index_x (succ n) l
     | [] -> raise Not_found
   in
   index_x 1
 
-let index0_f f x l = index_f f x l - 1
-
-let index x l = index_f Pervasives.(=) x l (* FIXME : prefer [index_f]*)
-
-let index0 x l = index x l - 1 (* FIXME *)
+let index0 f x l = index f x l - 1
 
 let fold_left_until f accu s =
   let rec aux accu = function

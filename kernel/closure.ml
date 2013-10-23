@@ -483,7 +483,7 @@ let rec compact_constr (lg, subs as s) c k =
   match kind_of_term c with
       Rel i ->
         if i < k then c,s else
-          (try mkRel (k + lg - List.index (i-k+1) subs), (lg,subs)
+          (try mkRel (k + lg - List.index Int.equal (i-k+1) subs), (lg,subs)
           with Not_found -> mkRel (k+lg), (lg+1, (i-k+1)::subs))
     | (Sort _|Var _|Meta _|Ind _|Const _|Construct _) -> c,s
     | Evar(ev,v) ->

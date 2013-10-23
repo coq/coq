@@ -108,7 +108,7 @@ let subst_evar_constr evs n idf t =
 (** Substitute variable references in t using De Bruijn indices,
   where n binders were passed through. *)
 let subst_vars acc n t =
-  let var_index id = Util.List.index id acc in
+  let var_index id = Util.List.index Id.equal id acc in
   let rec substrec depth c = match kind_of_term c with
     | Var v -> (try mkRel (depth + (var_index v)) with Not_found -> c)
     | _ -> map_constr_with_binders succ substrec depth c

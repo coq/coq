@@ -219,7 +219,7 @@ let lookup_index_as_renamed env t n =
 
 let update_name na ((_,e),c) =
   match na with
-  | Name _ when force_wildcard () && noccurn (List.index na e) c ->
+  | Name _ when force_wildcard () && noccurn (List.index Name.equal na e) c ->
       Anonymous
   | _ ->
       na
@@ -249,7 +249,8 @@ and align_tree nal isgoal (e,c as rhs) = match nal with
   | [] -> [[],rhs]
   | na::nal ->
     match kind_of_term c with
-    | Case (ci,p,c,cl) when eq_constr c (mkRel (List.index na (snd e)))
+    | Case (ci,p,c,cl) when
+        eq_constr c (mkRel (List.index Name.equal na (snd e)))
 	&& (* don't contract if p dependent *)
 	computable p (ci.ci_pp_info.ind_nargs) ->
 	let clauses = build_tree na isgoal e ci cl in

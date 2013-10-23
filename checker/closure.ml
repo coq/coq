@@ -357,7 +357,7 @@ let rec compact_constr (lg, subs as s) c k =
   match c with
       Rel i ->
         if i < k then c,s else
-          (try Rel (k + lg - List.index (i-k+1) subs), (lg,subs)
+          (try Rel (k + lg - List.index Int.equal (i-k+1) subs), (lg,subs)
           with Not_found -> Rel (k+lg), (lg+1, (i-k+1)::subs))
     | (Sort _|Var _|Meta _|Ind _|Const _|Construct _) -> c,s
     | Evar(ev,v) ->

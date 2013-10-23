@@ -479,11 +479,13 @@ let check_open_binder isopen sl m =
 
 (* Heuristics for building default printing rules *)
 
+let index_id id l = List.index Id.equal id l
+
 let make_hunks etyps symbols from =
   let vars,typs = List.split etyps in
   let rec make = function
     | NonTerminal m :: prods ->
-	let i = List.index m vars in
+	let i = index_id m vars in
 	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
 	let u = UnpMetaVar (i,prec) in
 	if is_next_non_terminal prods then
@@ -516,7 +518,7 @@ let make_hunks etyps symbols from =
 	add_break n (make prods)
 
     | SProdList (m,sl) :: prods ->
-	let i = List.index m vars in
+	let i = index_id m vars in
 	let typ = List.nth typs (i-1) in
 	let _,prec = precedence_of_entry_type from typ in
         let sl' =
@@ -604,7 +606,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       when String.equal s (String.drop_simple_quotes s') ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
   | NonTerminal s :: symbs, UnpTerminal s' :: fmt when Id.equal s (Id.of_string s') ->
-      let i = List.index s vars in
+      let i = index_id s vars in
       let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
       let symbs, l = aux (symbs,fmt) in symbs, UnpMetaVar (i,prec) :: l
   | symbs, UnpBox (a,b) :: fmt ->
@@ -614,7 +616,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
   | symbs, (UnpCut _ as u) :: fmt ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
   | SProdList (m,sl) :: symbs, fmt ->
-      let i = List.index m vars in
+      let i = index_id m vars in
       let typ = List.nth typs (i-1) in
       let _,prec = precedence_of_entry_type from typ in
       let slfmt,fmt = read_recursive_format sl fmt in

@@ -223,7 +223,7 @@ let unintern_omega env id =
    calcul des variables utiles. *)
 
 let add_reified_atom t env =
-  try List.index0_f Term.eq_constr t env.terms
+  try List.index0 Term.eq_constr t env.terms
   with Not_found ->
     let i = List.length env.terms in
     env.terms <- env.terms @ [t]; i
@@ -234,7 +234,7 @@ let get_reified_atom env =
 (* \subsection{Gestion de l'environnement de proposition pour Omega} *)
 (* ajout d'une proposition *)
 let add_prop env t =
-  try List.index0_f Term.eq_constr t env.props
+  try List.index0 Term.eq_constr t env.props
   with Not_found ->
     let i = List.length env.props in  env.props <- env.props @ [t]; i
 
@@ -1039,7 +1039,7 @@ let mk_direction_list l =
 (* \section{Rejouer l'historique} *)
 
 let get_hyp env_hyp i =
-  try List.index0 (CCEqua i) env_hyp
+  try List.index0 Pervasives.(=) (CCEqua i) env_hyp
   with Not_found -> failwith (Printf.sprintf "get_hyp %d" i)
 
 let replay_history env env_hyp =
@@ -1265,7 +1265,7 @@ let resolution env full_reified_goal systems_list =
       |	((O_left | O_mono) :: l) -> app coq_p_left [| loop l |]
       |	(O_right :: l) -> app coq_p_right [| loop l |] in
     let correct_index =
-      let i = List.index0 e.e_origin.o_hyp l_hyps in
+      let i = List.index0 Names.Id.equal e.e_origin.o_hyp l_hyps in
       (* PL: it seems that additionnally introduced hyps are in the way during
              normalization, hence this index shifting... *)
       if Int.equal i 0 then 0 else Pervasives.(+) i (List.length to_introduce)

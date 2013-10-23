@@ -137,15 +137,11 @@ sig
   (** [smartfilter f [a1...an] = List.filter f [a1...an]] but if for all i
     [f ai = true], then [smartfilter f l == l] *)
 
-  val index : 'a -> 'a list -> int
+  val index : 'a eq -> 'a -> 'a list -> int
   (** [index] returns the 1st index of an element in a list (counting from 1). *)
 
-  val index_f : 'a eq -> 'a -> 'a list -> int
-
-  val index0 : 'a -> 'a list -> int
+  val index0 : 'a eq -> 'a -> 'a list -> int
   (** [index0] behaves as [index] except that it starts counting at 0. *)
-
-  val index0_f : 'a eq -> 'a -> 'a list -> int
 
   val iteri :  (int -> 'a -> unit) -> 'a list -> unit
   (** As [iter] but with the index argument (starting from 0). *)

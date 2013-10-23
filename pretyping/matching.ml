@@ -112,7 +112,7 @@ let dummy_constr = mkProp
 let make_renaming ids = function
 | (Name id, Name _, _) ->
   begin
-    try mkRel (List.index id ids)
+    try mkRel (List.index Id.equal id ids)
     with Not_found -> dummy_constr
   end
 | _ -> dummy_constr

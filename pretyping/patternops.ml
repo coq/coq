@@ -206,7 +206,10 @@ let instantiate_pattern sigma lvar c =
 	let ctx,c = Id.Map.find id lvar in
 	try
 	  let inst =
-	    List.map (fun id -> mkRel (List.index (Name id) vars)) ctx in
+	    List.map
+              (fun id -> mkRel (List.index Name.equal (Name id) vars))
+              ctx
+          in
 	  let c = substl inst c in
 	  snd (pattern_of_constr sigma c)
 	with Not_found (* List.index failed *) ->
@@ -301,7 +304,7 @@ let err loc pp = user_err_loc (loc,"pattern_of_glob_constr", pp)
 
 let rec pat_of_raw metas vars = function
   | GVar (_,id) ->
-      (try PRel (List.index (Name id) vars)
+      (try PRel (List.index Name.equal (Name id) vars)
        with Not_found -> PVar id)
   | GPatVar (_,(false,n)) ->
       metas := n::!metas; PMeta (Some n)
