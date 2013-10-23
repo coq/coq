@@ -155,13 +155,17 @@ let restart_subscript id =
      *** make_ident id (Some 0) *** mais ça brise la compatibilité... *)
     forget_subscript id
 
+let rec to_avoid id = function
+| [] -> false
+| id' :: avoid -> Id.equal id id' || to_avoid id avoid
+
 (* Now, there are different renaming strategies... *)
 
 (* 1- Looks for a fresh name for printing in cases pattern *)
 
 let next_name_away_in_cases_pattern na avoid =
   let id = match na with Name id -> id | Anonymous -> default_x in
-  next_ident_away_from id (fun id -> List.mem id avoid || is_constructor id)
+  next_ident_away_from id (fun id -> to_avoid id avoid || is_constructor id)
 
 (* 2- Looks for a fresh name for introduction in goal *)
 
@@ -173,8 +177,8 @@ let next_name_away_in_cases_pattern na avoid =
      name is taken by finding a free subscript starting from 0 *)
 
 let next_ident_away_in_goal id avoid =
-  let id = if List.mem id avoid then restart_subscript id else id in
-  let bad id = List.mem id avoid || (is_global id && not (is_section_variable id)) in
+  let id = if to_avoid id avoid then restart_subscript id else id in
+  let bad id = to_avoid id avoid || (is_global id && not (is_section_variable id)) in
   next_ident_away_from id bad
 
 let next_name_away_in_goal na avoid =
@@ -189,16 +193,16 @@ let next_name_away_in_goal na avoid =
    beyond the current subscript *)
 
 let next_global_ident_away id avoid =
-  let id = if List.mem id avoid then restart_subscript id else id in
-  let bad id = List.mem id avoid || is_global id in
+  let id = if to_avoid id avoid then restart_subscript id else id in
+  let bad id = to_avoid id avoid || is_global id in
   next_ident_away_from id bad
 
 (* 4- Looks for next fresh name outside a list; if name already used,
    looks for same name with lower available subscript *)
 
 let next_ident_away id avoid =
-  if List.mem id avoid then
-    next_ident_away_from (restart_subscript id) (fun id -> List.mem id avoid)
+  if to_avoid id avoid then
+    next_ident_away_from (restart_subscript id) (fun id -> to_avoid id avoid)
   else id
 
 let next_name_away_with_default default na avoid =
@@ -256,7 +260,7 @@ let visibly_occur_id id (nenv,c) =
     | Not_found -> false (* Happens when a global is not in the env *)
 
 let next_ident_away_for_default_printing env_t id avoid =
-  let bad id = List.mem id avoid || visibly_occur_id id env_t in
+  let bad id = to_avoid id avoid || visibly_occur_id id env_t in
   next_ident_away_from id bad
 
 let next_name_away_for_default_printing env_t na avoid =
