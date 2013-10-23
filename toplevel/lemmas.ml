@@ -135,8 +135,13 @@ let find_mutually_recursive_statements thms =
       | [], _::_ ->
           let () = match same_indccl with
           | ind :: _ ->
-            if List.distinct (List.map pi1 ind) then
-              if_verbose msg_info (strbrk "Coinductive statements do not follow the order of definition, assuming the proof to be by induction."); flush_all ()
+            if List.distinct_f ind_ord (List.map pi1 ind)
+            then
+              if_verbose msg_info
+                (strbrk
+                   ("Coinductive statements do not follow the order of "^
+                    "definition, assuming the proof to be by induction."));
+            flush_all ()
           | _ -> ()
           in
           let possible_guards = List.map (List.map pi3) inds_hyps in

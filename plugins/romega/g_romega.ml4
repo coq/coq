@@ -19,7 +19,7 @@ let romega_tactic l =
        | "N" -> Tacinterp.interp <:tactic<zify_N>>
        | "Z" -> Tacinterp.interp <:tactic<zify_op>>
        | s -> Errors.error ("No ROmega knowledge base for type "^s))
-    (Util.List.uniquize (List.sort compare l))
+    (Util.List.sort_uniquize String.compare l)
   in
   tclTHEN
     (tclREPEAT (tclPROGRESS (tclTHENLIST tacs)))

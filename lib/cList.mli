@@ -103,6 +103,8 @@ sig
   val distinct : 'a list -> bool
   (** Return [true] if all elements of the list are distinct. *)
 
+  val distinct_f : 'a cmp -> 'a list -> bool
+
   val duplicates : 'a eq -> 'a list -> 'a list
   (** Return the list of unique elements which appear at least twice. Elements
       are kept in the order of their first appearance. *)
@@ -168,6 +170,10 @@ sig
 
   val uniquize : 'a list -> 'a list
   (** Return the list of elements without duplicates. *)
+
+  val sort_uniquize : 'a cmp -> 'a list -> 'a list
+  (** Return a sorted and de-duplicated version of a list,
+      according to some comparison function. *)
 
   val merge_uniq : 'a cmp -> 'a list -> 'a list -> 'a list
   (** Merge two sorted lists and preserves the uniqueness property. *)

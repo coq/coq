@@ -73,6 +73,7 @@ sig
   val make : int -> 'a -> 'a list
   val assign : 'a list -> int -> 'a -> 'a list
   val distinct : 'a list -> bool
+  val distinct_f : 'a cmp -> 'a list -> bool
   val duplicates : 'a eq -> 'a list -> 'a list
   val filter2 : ('a -> 'b -> bool) -> 'a list -> 'b list -> 'a list * 'b list
   val map_filter : ('a -> 'b option) -> 'a list -> 'b list
@@ -107,6 +108,7 @@ sig
   val sep_last : 'a list -> 'a * 'a list
   val find_map : ('a -> 'b option) -> 'a list -> 'b
   val uniquize : 'a list -> 'a list
+  val sort_uniquize : 'a cmp -> 'a list -> 'a list
   val merge_uniq : ('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
   val subset : 'a list -> 'a list -> bool
   val chop : int -> 'a list -> 'a list * 'a list
@@ -507,6 +509,9 @@ let rec find_map f = function
   | None -> find_map f l
   | Some y -> y
 
+(* FIXME: we should avoid relying on the generic hash function,
+   just as we'd better avoid Pervasives.compare *)
+
 let uniquize l =
   let visited = Hashtbl.create 23 in
   let rec aux acc = function
@@ -517,6 +522,18 @@ let uniquize l =
           end
     | [] -> List.rev acc
   in aux [] l
+
+(** [sort_uniquize] might be an alternative to the hashtbl-based
+    [uniquize], when the order of the elements is irrelevant *)
+
+let rec uniquize_sorted cmp = function
+  | a::b::l when Int.equal (cmp a b) 0 -> uniquize_sorted cmp (a::l)
+  | a::l -> a::uniquize_sorted cmp l
+  | [] -> []
+
+let sort_uniquize cmp l = uniquize_sorted cmp (List.sort cmp l)
+
+(* FIXME: again, generic hash function *)
 
 let distinct l =
   let visited = Hashtbl.create 23 in
@@ -530,6 +547,13 @@ let distinct l =
           end
     | [] -> true
   in loop l
+
+let distinct_f cmp l =
+  let rec loop = function
+    | a::b::_ when Int.equal (cmp a b) 0 -> false
+    | a::l -> loop l
+    | [] -> true
+  in loop (List.sort cmp l)
 
 let rec merge_uniq cmp l1 l2 =
   match l1, l2 with
@@ -587,6 +611,8 @@ let rec filter_with filter l = match filter, l with
 | true :: filter, x :: l -> x :: filter_with filter l
 | false :: filter, _ :: l -> filter_with filter l
 | _ -> invalid_arg "List.filter_with"
+
+(* FIXME: again, generic hash function *)
 
 let subset l1 l2 =
   let t2 = Hashtbl.create 151 in

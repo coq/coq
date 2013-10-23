@@ -71,10 +71,16 @@ module Name =
 struct
   type t = Name of Id.t | Anonymous
 
+  let compare n1 n2 = match n1, n2 with
+    | Anonymous, Anonymous -> 0
+    | Name id1, Name id2 -> Id.compare id1 id2
+    | Anonymous, Name _ -> -1
+    | Name _, Anonymous -> 1
+
   let equal n1 n2 = match n1, n2 with
-  | Anonymous, Anonymous -> true
-  | Name id1, Name id2 -> String.equal id1 id2
-  | _ -> false
+    | Anonymous, Anonymous -> true
+    | Name id1, Name id2 -> String.equal id1 id2
+    | _ -> false
 
   module Self_Hashcons =
     struct

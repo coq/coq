@@ -329,7 +329,7 @@ let collect_meta_variables c =
   List.rev (collrec false [] c)
 
 let check_meta_variables c =
-  if not (List.distinct (collect_meta_variables c)) then
+  if not (List.distinct_f Int.compare (collect_meta_variables c)) then
     raise (RefinerError (NonLinearProof c))
 
 let check_conv_leq_goal env sigma arg ty conclty =

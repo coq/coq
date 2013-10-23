@@ -369,8 +369,8 @@ let get_common_underlying_mutual_inductive = function
       | (_,ind')::_ ->
 	  raise (RecursionSchemeError (NotMutualInScheme (ind,ind')))
       | [] ->
-	  if not (List.distinct (List.map snd (List.map snd all))) then
-	    error "A type occurs twice";
+	  if not (List.distinct_f Int.compare (List.map snd (List.map snd all)))
+          then error "A type occurs twice";
 	  mind,
 	  List.map_filter
 	    (function (Some id,(_,i)) -> Some (i,snd id) | (None,_) -> None) all

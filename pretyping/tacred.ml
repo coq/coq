@@ -180,7 +180,7 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
 	     raise Elimconst) args
   in
   let reversible_rels = List.map fst li in
-  if not (List.distinct reversible_rels) then
+  if not (List.distinct_f Int.compare reversible_rels) then
     raise Elimconst;
   List.iteri (fun i t_i ->
     if not (List.mem_assoc (i+1) li) then

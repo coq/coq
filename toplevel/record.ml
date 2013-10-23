@@ -376,7 +376,8 @@ let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuil
     | Vernacexpr.DefExpr ((_,Name id),_,_) -> id::acc
     | _ -> acc in
   let allnames =  idstruc::(List.fold_left extract_name [] fs) in
-  if not (List.distinct allnames) then error "Two objects have the same name";
+  if not (List.distinct_f Id.compare allnames)
+  then error "Two objects have the same name";
   let isnot_class = match kind with Class false -> false | _ -> true in
   if isnot_class && List.exists (fun opt -> not (Option.is_empty opt)) priorities then
     error "Priorities only allowed for type class substructures";

@@ -53,6 +53,9 @@ sig
   type t = Name of Id.t | Anonymous
   (** A name is either undefined, either an identifier. *)
 
+  val compare : t -> t -> int
+  (** Comparison over names. *)
+
   val equal : t -> t -> bool
   (** Equality over names. *)
 

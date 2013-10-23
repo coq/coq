@@ -48,7 +48,8 @@ let gen_constant_in_modules locstr dirs s =
   let dirs = List.map make_dir dirs in
   let qualid = qualid_of_string s in
   let all = Nametab.locate_extended_all qualid in
-  let all = List.uniquize (List.map_filter global_of_extended all) in
+  let all = List.map_filter global_of_extended all in
+  let all = List.sort_uniquize RefOrdered_env.compare all in
   let these = List.filter (has_suffix_in_dirs dirs) all in
   match these with
     | [x] -> constr_of_global x

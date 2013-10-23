@@ -802,7 +802,8 @@ let vernac_set_end_tac tac =
 
 let vernac_set_used_variables l =
   let l = List.map snd l in
-  if not (List.distinct l) then error "Used variables list contains duplicates";
+  if not (List.distinct_f Id.compare l)
+  then error "Used variables list contains duplicates";
   let vars = Environ.named_context (Global.env ()) in
   List.iter (fun id -> 
     if not (List.exists (fun (id',_,_) -> Id.equal id id') vars) then
@@ -898,8 +899,8 @@ let vernac_declare_arguments locality r l nargs flags =
   let scopes = List.map (List.map (fun (_,_, s, _,_) -> s)) l in
   if List.exists (fun na -> not (List.equal Name.equal na names)) rest then
     error "All arguments lists must declare the same names.";
-  if not (List.distinct (List.filter ((!=) Anonymous) names)) then
-    error "Arguments names must be distinct.";
+  if not (List.distinct_f Name.compare (List.filter ((!=) Anonymous) names))
+  then error "Arguments names must be distinct.";
   let sr = smart_global r in
   let inf_names =
     Impargs.compute_implicits_names (Global.env()) (Global.type_of_global sr) in
