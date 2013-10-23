@@ -155,20 +155,25 @@ let subst1_named_decl lam = substl_named_decl [lam]
 
 let rec thin_val = function
   | [] -> []
-  | s :: tl ->
-    let id, { sit = c } = s in
+  | (id, c) :: tl ->
     match Constr.kind c with
-    | Constr.Var v -> if Id.equal id v then thin_val tl else s::(thin_val tl)
-    | _ -> s :: (thin_val tl)
+    | Constr.Var v ->
+      if Id.equal id v then thin_val tl
+      else (id, make_substituend c) :: (thin_val tl)
+    | _ -> (id, make_substituend c) :: (thin_val tl)
+
+let rec find_var id = function
+| [] -> raise Not_found
+| (idc, c) :: subst ->
+  if Id.equal id idc then c
+  else find_var id subst
 
 (* (replace_vars sigma M) applies substitution sigma to term M *)
 let replace_vars var_alist =
-  let var_alist =
-    List.map (fun (str,c) -> (str,make_substituend c)) var_alist in
   let var_alist = thin_val var_alist in
   let rec substrec n c = match Constr.kind c with
     | Constr.Var x ->
-        (try lift_substituend n (List.assoc x var_alist)
+        (try lift_substituend n (find_var x var_alist)
          with Not_found -> c)
     | _ -> Constr.map_with_binders succ substrec n c
   in
