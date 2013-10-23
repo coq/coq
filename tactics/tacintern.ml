@@ -927,11 +927,12 @@ let add_tacdef local isrec tacl =
       let k = if b then UpdateTac qid else NewTac (Option.get id) in
       let t = Flags.with_option strict_check (intern_tactic_or_tacarg ist) def in
 	(k, t))
-      tacl rfun in
-  let id0 = fst (List.hd rfun) in
-  let _ = match id0 with
-    | Some id0 -> ignore(Lib.add_leaf id0 (inMD (local,gtacl)))
-    | _ -> Lib.add_anonymous_leaf (inMD (local,gtacl)) in
+      tacl rfun
+  in
+  let _ = match rfun with
+    | (Some id0, _) :: _ -> ignore(Lib.add_leaf id0 (inMD (local,gtacl)))
+    | _ -> Lib.add_anonymous_leaf (inMD (local,gtacl))
+  in
   List.iter
     (fun (id,b,_) ->
       Flags.if_verbose msg_info (Libnames.pr_reference id ++
