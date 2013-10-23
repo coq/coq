@@ -29,7 +29,8 @@ let pop_dirpath p = match DirPath.repr p with
 let pop_dirpath_n n dir = DirPath.make (List.skipn n (DirPath.repr dir))
 
 let is_dirpath_prefix_of d1 d2 =
-  List.prefix_of (List.rev (DirPath.repr d1)) (List.rev (DirPath.repr d2))
+  List.prefix_of Id.equal
+    (List.rev (DirPath.repr d1)) (List.rev (DirPath.repr d2))
 
 let chop_dirpath n d =
   let d1,d2 = List.chop n (List.rev (DirPath.repr d)) in
@@ -37,7 +38,8 @@ let chop_dirpath n d =
 
 let drop_dirpath_prefix d1 d2 =
   let d =
-    List.drop_prefix (List.rev (DirPath.repr d1)) (List.rev (DirPath.repr d2))
+    List.drop_prefix Id.equal
+      (List.rev (DirPath.repr d1)) (List.rev (DirPath.repr d2))
   in
   DirPath.make (List.rev d)
 

@@ -118,8 +118,8 @@ sig
   val skipn : int -> 'a list -> 'a list
   val skipn_at_least : int -> 'a list -> 'a list
   val addn : int -> 'a -> 'a list -> 'a list
-  val prefix_of : 'a list -> 'a list -> bool
-  val drop_prefix : 'a list -> 'a list -> 'a list
+  val prefix_of : 'a eq -> 'a list -> 'a list -> bool
+  val drop_prefix : 'a eq -> 'a list -> 'a list -> 'a list
   val drop_last : 'a list -> 'a list
   val map_append : ('a -> 'b list) -> 'a list -> 'b list
   val map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
@@ -653,25 +653,23 @@ let rec skipn n l = match n,l with
 let skipn_at_least n l =
   try skipn n l with Failure _ -> []
 
-let prefix_of prefl l =
+let prefix_of cmp prefl l =
   let rec prefrec = function
-    | (h1::t1, h2::t2) -> h1 = h2 && prefrec (t1,t2) (* FIXME *)
+    | (h1::t1, h2::t2) -> cmp h1 h2 && prefrec (t1,t2)
     | ([], _) -> true
-    | (_, _) -> false
+    | _ -> false
   in
-    prefrec (prefl,l)
+  prefrec (prefl,l)
 
-let drop_prefix p l =
-(* if l=p++t then return t else l *)
+(** if [l=p++t] then [drop_prefix p l] is [t] else [l] *)
+
+let drop_prefix cmp p l =
   let rec drop_prefix_rec = function
-    | ([], tl) -> Some tl
-    | (_, []) -> None
-    | (h1::tp, h2::tl) ->
-        if h1 = h2 then drop_prefix_rec (tp,tl) else None (* FIXME *)
+    | (h1::tp, h2::tl) when cmp h1 h2 -> drop_prefix_rec (tp,tl)
+    | ([], tl) -> tl
+    | _ -> l
   in
-    match drop_prefix_rec (p,l) with
-      | Some r -> r
-      | None -> l
+  drop_prefix_rec (p,l)
 
 let map_append f l = List.flatten (List.map f l)
 

@@ -185,11 +185,11 @@ sig
   val addn : int -> 'a -> 'a list -> 'a list
   (** [addn n x l] adds [n] times [x] on the left of [l]. *)
 
-  val prefix_of : 'a list -> 'a list -> bool
+  val prefix_of : 'a eq -> 'a list -> 'a list -> bool
   (** [prefix_of l1 l2] returns [true] if [l1] is a prefix of [l2], [false]
       otherwise. *)
 
-  val drop_prefix : 'a list -> 'a list -> 'a list
+  val drop_prefix : 'a eq -> 'a list -> 'a list -> 'a list
   (** [drop_prefix p l] returns [t] if [l=p++t] else return [l]. *)
 
   val drop_last : 'a list -> 'a list
