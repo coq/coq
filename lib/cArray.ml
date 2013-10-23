@@ -83,6 +83,7 @@ sig
   val fold_map2' :
     ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
   val distinct : 'a array -> bool
+  val rev_of_list : 'a list -> 'a array
   val rev_to_list : 'a array -> 'a list
   val filter_with : bool list -> 'a array -> 'a array
 end
@@ -281,6 +282,20 @@ let fold_left_from n f a v =
     if n >= len then a else fold (f a (uget v n)) (succ n)
   in
   fold a n
+
+let rev_of_list = function
+| [] -> [| |]
+| x :: l ->
+  let len = List.length l in
+  let ans = Array.make (succ len) x in
+  let rec set i = function
+  | [] -> ()
+  | x :: l ->
+    Array.unsafe_set ans i x;
+    set (pred i) l
+  in
+  let () = set (len - 1) l in
+  ans
 
 let map_to_list f v =
   List.map f (Array.to_list v)

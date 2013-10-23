@@ -643,7 +643,8 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       let substn = unilist2 (fun s u1 u -> unirec_rec curenvnb pb b false s u1 (substl ks u))
 	substn params1 params in
 	let (substn,_,_) = Reductionops.fold_stack2 (unirec_rec curenvnb pb b false) substn ts ts1 in
-	unirec_rec curenvnb pb b false substn c1 (applist (c,(List.rev ks)))
+        let app = mkApp (c, Array.rev_of_list ks) in
+	unirec_rec curenvnb pb b false substn c1 app
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       in
   let evd = sigma in

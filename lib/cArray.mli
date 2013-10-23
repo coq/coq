@@ -125,6 +125,9 @@ sig
   (** Return [true] if every element of the array is unique (for default 
       equality). *)
 
+  val rev_of_list : 'a list -> 'a array
+  (** [rev_of_list l] is equivalent to [Array.of_list (List.rev l)]. *)
+
   val rev_to_list : 'a array -> 'a list
   (** [rev_to_list a] is equivalent to [List.rev (List.of_array a)]. *)
 

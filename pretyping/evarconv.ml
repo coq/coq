@@ -594,6 +594,7 @@ and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) 
 	    (i', ev :: ks, m - 1))
 	(evd,[],List.length bs - 1) bs
     in
+    let app = mkApp (c, Array.rev_of_list ks) in
     ise_and evd'
       [(fun i ->
 	ise_list2 i
@@ -603,20 +604,20 @@ and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) 
 	 ise_list2 i
            (fun i' u1 u -> evar_conv_x trs env i' CONV u1 (substl ks u))
            us2 us);
-       (fun i -> evar_conv_x trs env i CONV c1 (applist (c,(List.rev ks))));
+       (fun i -> evar_conv_x trs env i CONV c1 app);
        (fun i -> exact_ise_stack2 env i (evar_conv_x trs) ts ts1)]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 (* We assume here |l1| <= |l2| *)
 
 let first_order_unification ts env evd (ev1,l1) (term2,l2) =
-  let (deb2,rest2) = List.chop (List.length l2-List.length l1) l2 in
+  let (deb2,rest2) = Array.chop (Array.length l2-Array.length l1) l2 in
   ise_and evd
     (* First compare extra args for better failure message *)
-    [(fun i -> ise_list2 i (fun i -> evar_conv_x ts env i CONV) rest2 l1);
+    [(fun i -> ise_array2 i (fun i -> evar_conv_x ts env i CONV) rest2 l1);
     (fun i ->
       (* Then instantiate evar unless already done by unifying args *)
-      let t2 = applist(term2,deb2) in
+      let t2 = mkApp(term2,deb2) in
       if is_defined i (fst ev1) then
 	evar_conv_x ts env i CONV t2 (mkEvar ev1)
       else
@@ -782,14 +783,14 @@ let second_order_matching_with_args ts env evd ev l t =
   let evd, b = second_order_matching ts env evd ev argoccs t in
   if b then Success evd else
 *)
-  UnifFailure (evd, ConversionFailed (env,applist(mkEvar ev,l),t))
+  UnifFailure (evd, ConversionFailed (env,mkApp(mkEvar ev,l),t))
 
 let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let t1 = apprec_nohdbeta ts env evd (whd_head_evar evd t1) in
   let t2 = apprec_nohdbeta ts env evd (whd_head_evar evd t2) in
-  let (term1,l1 as appr1) = decompose_app t1 in
-  let (term2,l2 as appr2) = decompose_app t2 in
-  let app_empty = match l1, l2 with [], [] -> true | _ -> false in
+  let (term1,l1 as appr1) = try destApp t1 with DestKO -> (t1, [||]) in
+  let (term2,l2 as appr2) = try destApp t2 with DestKO -> (t2, [||]) in
+  let app_empty = Array.is_empty l1 && Array.is_empty l2 in
   match kind_of_term term1, kind_of_term term2 with
   | Evar (evk1,args1), (Rel _|Var _) when app_empty
       && List.for_all (fun a -> eq_constr a term2 || isEvar a)
@@ -813,26 +814,26 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   | Evar ev1, Evar ev2 ->
       Success (solve_evar_evar ~force:true
         (evar_define (evar_conv_x ts)) (evar_conv_x ts) env evd ev1 ev2)
-  | Evar ev1,_ when List.length l1 <= List.length l2 ->
+  | Evar ev1,_ when Array.length l1 <= Array.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
       (* and otherwise second-order matching *)
       ise_try evd
         [(fun evd -> first_order_unification ts env evd (ev1,l1) appr2);
          (fun evd ->
-           second_order_matching_with_args ts env evd ev1 l1 (applist appr2))]
-  | _,Evar ev2 when List.length l2 <= List.length l1 ->
+           second_order_matching_with_args ts env evd ev1 l1 t2)]
+  | _,Evar ev2 when Array.length l2 <= Array.length l1 ->
       (* On "u u1 .. u(n+p) = ?n t1 .. tn", try first-order unification *)
       (* and otherwise second-order matching *)
       ise_try evd
         [(fun evd -> first_order_unification ts env evd (ev2,l2) appr1);
          (fun evd ->
-           second_order_matching_with_args ts env evd ev2 l2 (applist appr1))]
+           second_order_matching_with_args ts env evd ev2 l2 t1)]
   | Evar ev1,_ ->
       (* Try second-order pattern-matching *)
-      second_order_matching_with_args ts env evd ev1 l1 (applist appr2)
+      second_order_matching_with_args ts env evd ev1 l1 t2
   | _,Evar ev2 ->
       (* Try second-order pattern-matching *)
-      second_order_matching_with_args ts env evd ev2 l2 (applist appr1)
+      second_order_matching_with_args ts env evd ev2 l2 t1
   | _ ->
       (* Some head evar have been instantiated, or unknown kind of problem *)
       evar_conv_x ts env evd pbty t1 t2
