@@ -172,8 +172,9 @@ let rec possibly_empty_subentries loc = function
 let possibly_atomic loc prods =
   let l = List.map_filter (function
     | GramTerminal s :: l, _, _ -> Some (s,l)
-    | _ -> None) prods in
-  possibly_empty_subentries loc (List.factorize_left l)
+    | _ -> None) prods
+  in
+  possibly_empty_subentries loc (List.factorize_left String.equal l)
 
 let declare_tactic loc s c cl =
   let se = mlexpr_of_string s in

@@ -135,7 +135,7 @@ sig
   val combine3 : 'a list -> 'b list -> 'c list -> ('a * 'b * 'c) list
   val cartesians_filter :
     ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
-  val factorize_left : ('a * 'b) list -> ('a * 'b list) list
+  val factorize_left : 'a eq -> ('a * 'b) list -> ('a * 'b list) list
 
 end
 
@@ -603,7 +603,7 @@ let subset l1 l2 =
 
 let chop n l =
   let rec chop_aux i acc = function
-    | tl when i=0 -> (List.rev acc, tl)
+    | tl when Int.equal i 0 -> (List.rev acc, tl)
     | h::t -> chop_aux (pred i) (h::acc) t
     | [] -> failwith "List.chop"
   in
@@ -641,7 +641,7 @@ let rec last = function
 let lastn n l =
   let len = List.length l in
   let rec aux m l =
-    if m = n then l else aux (m - 1) (List.tl l)
+    if Int.equal m n then l else aux (m - 1) (List.tl l)
   in
   if len < n then failwith "lastn" else aux len l
 
@@ -747,12 +747,14 @@ let cartesians_filter op init ll =
 
 (* Drop the last element of a list *)
 
-let rec drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> hd :: drop_last tl
+let rec drop_last = function
+  | [] -> assert false
+  | hd :: [] -> []
+  | hd :: tl -> hd :: drop_last tl
 
 (* Factorize lists of pairs according to the left argument *)
-let rec factorize_left = function
+let rec factorize_left cmp = function
   | (a,b)::l ->
-      let al,l' = partition (fun (a',b) -> a=a') l in (* FIXME *)
-      (a,(b::List.map snd al)) :: factorize_left l'
-  | [] ->
-      []
+      let al,l' = partition (fun (a',_) -> cmp a a') l in
+      (a,(b::List.map snd al)) :: factorize_left cmp l'
+  | [] -> []

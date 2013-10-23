@@ -230,7 +230,7 @@ sig
     ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
   (** Keep only those products that do not return None *)
 
-  val factorize_left : ('a * 'b) list -> ('a * 'b list) list
+  val factorize_left : 'a eq -> ('a * 'b) list -> ('a * 'b list) list
 end
 
 include ExtS
