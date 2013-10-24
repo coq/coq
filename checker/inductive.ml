@@ -400,10 +400,10 @@ type subterm_spec =
   | Dead_code
   | Not_subterm
 
-let spec_of_tree t = lazy
-  (if eq_wf_paths (Lazy.force t) mk_norec
-   then Not_subterm
-   else Subterm(Strict,Lazy.force t))
+let spec_of_tree t =
+  if eq_wf_paths t mk_norec
+  then Not_subterm
+  else Subterm (Strict, t)
 
 let subterm_spec_glb =
   let glb2 s1 s2 =
@@ -525,9 +525,7 @@ let branches_specif renv c_spec ci =
 		Subterm (_,t) when match_inductive ci.ci_ind (dest_recarg t) ->
 		  let vra = Array.of_list (dest_subterms t).(i) in
 		  assert (nca = Array.length vra);
-		  Array.map
-		    (fun t -> Lazy.force (spec_of_tree (lazy t)))
-		    vra
+		  Array.map spec_of_tree vra
 	      | Dead_code -> Array.make nca Dead_code
 	      | _ -> Array.make nca Not_subterm) in
 	 List.init nca (fun j -> lazy (Lazy.force lvra).(j)))
