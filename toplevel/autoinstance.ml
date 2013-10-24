@@ -140,7 +140,7 @@ let rec complete_signature (k:signature -> unit) (cl,gen,evm:signature) =
   try
     evm_fold_rev
       ( fun ev evi _ ->
-	  if not (is_defined evm ev) && not (List.mem ev gen) then
+	  if not (is_defined evm ev) && not (List.mem_f Evar.equal ev gen) then
 	    raise (Continue (ev,evi))
       ) evm (); k (cl,gen,evm)
   with Continue (ev,evi) -> complete_evar (cl,gen,evm) (ev,evi) (complete_signature k)
@@ -282,7 +282,7 @@ let gen_sort_topo l evm =
     if Evd.is_defined evm ev then aux (evar_definition (Evd.find evm ev)) in
   let r = ref [] in
   let rec dfs ev = iter_evar dfs ev;
-    if not(List.mem ev !r) then r := ev::!r in
+    if not(List.mem_f Evar.equal ev !r) then r := ev::!r in
   List.iter dfs l; List.rev !r
 
 (* register real typeclass instance given a totally defined evd *)

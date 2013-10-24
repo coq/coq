@@ -234,9 +234,7 @@ let locate_qualified_library warn qid =
     let name = Id.to_string base ^ ".vo" in
     let lpath, file = System.where_in_path ~warn (List.map fst loadpath) name
     in
-    let dir =
-      add_dirpath_suffix (List.assoc_f String.equal lpath loadpath) base
-    in
+    let dir = add_dirpath_suffix (String.List.assoc lpath loadpath) base in
     (* Look if loaded *)
     if library_is_loaded dir then (LibLoaded, dir, library_full_filename dir)
     (* Otherwise, look for it in the file system *)

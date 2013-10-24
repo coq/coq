@@ -239,6 +239,14 @@ let typecheck_inductive env mie =
 
   let inds = Array.of_list inds in
   let arities = Array.of_list arity_list in
+  let has_some_univ u = function
+    | Some v when Universe.equal u v -> true
+    | _ -> false
+  in
+  let remove_some_univ u = function
+    | Some v when Universe.equal u v -> None
+    | x -> x
+  in
   let fold l (_, b, p) = match b with
   | None ->
     (* Parameter contributes to polymorphism only if explicit Type *)
@@ -247,8 +255,8 @@ let typecheck_inductive env mie =
     (* polymorphism unless there is aliasing (i.e. non distinct levels) *)
     begin match kind_of_term c with
     | Sort (Type u) ->
-      if List.mem (Some u) l then
-        None :: List.map (function Some v when Universe.equal u v -> None | x -> x) l
+      if List.exists (has_some_univ u) l then
+        None :: List.map (remove_some_univ u) l
       else
         Some u :: l
     | _ ->

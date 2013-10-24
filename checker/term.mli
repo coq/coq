@@ -2,6 +2,7 @@ open Names
 open Cic
 
 val family_of_sort : sorts -> sorts_family
+val family_equal : sorts_family -> sorts_family -> bool
 
 val strip_outer_cast : constr -> constr
 val collapse_appl : constr -> constr

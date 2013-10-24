@@ -140,6 +140,16 @@ sig
     ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
   val factorize_left : 'a eq -> ('a * 'b) list -> ('a * 'b list) list
 
+  module type MonoS = sig
+    type elt
+    val equal : elt list -> elt list -> bool
+    val mem : elt -> elt list -> bool
+    val assoc : elt -> (elt * 'a) list -> 'a
+    val mem_assoc : elt -> (elt * 'a) list -> bool
+    val remove_assoc : elt -> (elt * 'a) list -> (elt * 'a) list
+    val mem_assoc_sym : elt -> ('a * elt) list -> bool
+  end
+
 end
 
 include List
@@ -788,3 +798,13 @@ let rec factorize_left cmp = function
       let al,l' = partition (fun (a',_) -> cmp a a') l in
       (a,(b::List.map snd al)) :: factorize_left cmp l'
   | [] -> []
+
+module type MonoS = sig
+  type elt
+  val equal : elt list -> elt list -> bool
+  val mem : elt -> elt list -> bool
+  val assoc : elt -> (elt * 'a) list -> 'a
+  val mem_assoc : elt -> (elt * 'a) list -> bool
+  val remove_assoc : elt -> (elt * 'a) list -> (elt * 'a) list
+  val mem_assoc_sym : elt -> ('a * elt) list -> bool
+end

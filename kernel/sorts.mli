@@ -30,3 +30,8 @@ val family : t -> family
 val hcons : t -> t
 
 val family_equal : family -> family -> bool
+
+module List : sig
+  val mem : family -> family list -> bool
+  val intersect : family list -> family list -> family list
+end

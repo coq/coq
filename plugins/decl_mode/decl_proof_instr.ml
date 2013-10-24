@@ -1189,7 +1189,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	  execute_cases fix_name per_info tacnext args0 next_objs nhrec t gls
     | End_patt (id,(nparams,nhyps)),[] -> 
 	begin
-	  match List.assoc_f Id.equal id args with
+	  match Id.List.assoc id args with
 	      [None,br_args] -> 
 		let all_metas = 
 		  List.init (nparams + nhyps) (fun n -> mkMeta (succ n))  in

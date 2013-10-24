@@ -1213,7 +1213,7 @@ let specialize mopt (c,lbind) g =
        tclEVARS clause.evd, term
   in
   match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
-       | Var id when List.mem id (pf_ids_of_hyps g) ->
+       | Var id when Id.List.mem id (pf_ids_of_hyps g) ->
 	   tclTHEN tac
 	     (tclTHENFIRST
 	       (fun g -> internal_cut_replace id (pf_type_of g term) g)
@@ -1230,7 +1230,7 @@ let keep hyps gl =
   let ccl = pf_concl gl in
   let cl,_ =
     fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
-      if List.mem hyp hyps
+      if Id.List.mem hyp hyps
         || List.exists (occur_var_in_decl env hyp) keep
 	|| occur_var env hyp ccl
       then (clear,decl::keep)
@@ -1572,7 +1572,7 @@ let simple_apply_in id c =
 
 let generalized_name c t ids cl = function
   | Name id as na ->
-      if List.mem id ids then
+      if Id.List.mem id ids then
 	errorlabstrm "" (pr_id id ++ str " is already used");
       na
   | Anonymous ->
@@ -1609,10 +1609,10 @@ let generalize_dep ?(with_let=false) c gl =
   let to_quantify = Context.fold_named_context seek sign ~init:[] in
   let to_quantify_rev = List.rev to_quantify in
   let qhyps = List.map (fun (id,_,_) -> id) to_quantify_rev in
-  let tothin = List.filter (fun id -> not (List.mem id init_ids)) qhyps in
+  let tothin = List.filter (fun id -> not (Id.List.mem id init_ids)) qhyps in
   let tothin' =
     match kind_of_term c with
-      | Var id when mem_named_context id sign && not (List.mem id init_ids)
+      | Var id when mem_named_context id sign && not (Id.List.mem id init_ids)
 	  -> id::tothin
       | _ -> tothin
   in
@@ -2199,13 +2199,14 @@ let cook_sign hyp0_opt indvars env =
          indvars too, so add it to indhyps. *)
       (if Option.is_empty hyp0_opt then indhyps := hyp::!indhyps);
       MoveFirst (* fake value *)
-    end else if List.mem hyp indvars then begin
+    end else if Id.List.mem hyp indvars then begin
       (* warning: hyp can still occur after induction *)
       (* e.g. if the goal (t hyp hyp0) with other occs of hyp in t *)
       indhyps := hyp::!indhyps;
       rhyp
     end else
-      if not (List.is_empty inhyps) && List.mem hyp inhyps || List.is_empty inhyps &&
+      if not (List.is_empty inhyps) && Id.List.mem hyp inhyps ||
+        List.is_empty inhyps &&
 	(List.exists (fun id -> occur_var_in_decl env id decl) allindhyps ||
          List.exists (fun (id,_,_) -> occur_var_in_decl env id decl) !decldeps)
       then begin
@@ -2222,11 +2223,11 @@ let cook_sign hyp0_opt indvars env =
   (* 2nd phase from R to L: get left hyp of [hyp0] and [lhyps] *)
   let compute_lstatus lhyp (hyp,_,_) =
     if Id.equal hyp hyp0 then raise (Shunt lhyp);
-    if List.mem hyp !ldeps then begin
+    if Id.List.mem hyp !ldeps then begin
       lstatus := (hyp,lhyp)::!lstatus;
       lhyp
     end else
-      if List.mem hyp !indhyps then lhyp else MoveAfter hyp
+      if Id.List.mem hyp !indhyps then lhyp else MoveAfter hyp
   in
   try
     let _ =
@@ -3156,7 +3157,7 @@ let clear_unselected_context id inhyps cls gl =
       match cls.onhyps with
       | Some hyps ->
 	  let to_erase (id',_,_ as d) =
-	    if List.mem id' inhyps then (* if selected, do not erase *) None
+	    if Id.List.mem id' inhyps then (* if selected, do not erase *) None
 	    else
 	      (* erase if not selected and dependent on id or selected hyps *)
 	      let test id = occur_var_in_decl (pf_env gl) id d in

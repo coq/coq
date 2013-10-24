@@ -380,7 +380,7 @@ let rec get_notation_vars = function
   | NonTerminal id :: sl ->
       let vars = get_notation_vars sl in
       if Id.equal id ldots_var then vars else
-	if List.mem id vars then
+	if Id.List.mem id vars then
 	  error ("Variable "^Id.to_string id^" occurs more than once.")
 	else
           id::vars
@@ -809,14 +809,14 @@ let interp_modifiers modl =
 	(assoc,level,etyps,!onlyparsing,format)
     | SetEntryType (s,typ) :: l ->
 	let id = Id.of_string s in
-	if List.mem_assoc id etyps then
+	if Id.List.mem_assoc id etyps then
 	  error (s^" is already assigned to an entry or constr level.");
 	interp assoc level ((id,typ)::etyps) format l
     | SetItemLevel ([],n) :: l ->
 	interp assoc level etyps format l
     | SetItemLevel (s::idl,n) :: l ->
 	let id = Id.of_string s in
-	if List.mem_assoc id etyps then
+	if Id.List.mem_assoc id etyps then
 	  error (s^" is already assigned to an entry or constr level.");
 	let typ = ETConstr (n,()) in
 	interp assoc level ((id,typ)::etyps) format (SetItemLevel (idl,n)::l)
@@ -911,9 +911,9 @@ let make_interpretation_vars recvars allvars =
   let () = List.iter check recvars in
   let useless_recvars = List.map snd recvars in
   let mainvars =
-    Id.Map.filter (fun x _ -> not (List.mem x useless_recvars)) allvars in
+    Id.Map.filter (fun x _ -> not (Id.List.mem x useless_recvars)) allvars in
   Id.Map.mapi (fun x (sc, typ) ->
-    (sc, make_interpretation_type (List.mem_assoc x recvars) typ)) mainvars
+    (sc, make_interpretation_type (Id.List.mem_assoc x recvars) typ)) mainvars
 
 let check_rule_productivity l =
   if List.for_all (function NonTerminal _ -> true | _ -> false) l then

@@ -13,6 +13,8 @@
 (************************************************************************)
 
 open Pp
+open Util
+open Names
 
 (* Utility Functions *)
 
@@ -37,7 +39,7 @@ let get_module_path_of_full_path path =
 (*CSC: not exist two modules whose dir_paths are one a prefix of the other *)
 let remove_module_dirpath_from_dirpath ~basedir dir =
   if Libnames.is_dirpath_prefix_of basedir dir then
-   let ids = Names.DirPath.repr dir in
+   let ids = DirPath.repr dir in
    let rec remove_firsts n l =
     match n,l with
        (0,l) -> l
@@ -47,11 +49,11 @@ let remove_module_dirpath_from_dirpath ~basedir dir =
     let ids' =
      List.rev
       (remove_firsts
-        (List.length (Names.DirPath.repr basedir))
+        (List.length (DirPath.repr basedir))
         (List.rev ids))
     in
      ids'
-  else Names.DirPath.repr dir
+  else DirPath.repr dir
 ;;
 
 
@@ -60,21 +62,22 @@ let get_uri_of_var v pvars =
    function
       [] -> Errors.error ("Variable "^v^" not found")
     | he::tl as modules ->
-       let dirpath = Names.DirPath.make modules in
-        if List.mem (Names.Id.of_string v) (Decls.last_section_hyps dirpath) then
+       let dirpath = DirPath.make modules in
+       if Id.List.mem (Id.of_string v) (Decls.last_section_hyps dirpath)
+       then
          modules
-        else
+       else
          search_in_open_sections tl
   in
    let path =
-    if List.mem v pvars then
+    if String.List.mem v pvars then
       []
     else
-      search_in_open_sections (Names.DirPath.repr (Lib.cwd ()))
+      search_in_open_sections (DirPath.repr (Lib.cwd ()))
    in
     "cic:" ^
      List.fold_left
-      (fun i x -> "/" ^ Names.Id.to_string x ^ i) "" path
+      (fun i x -> "/" ^ Id.to_string x ^ i) "" path
 ;;
 
 type tag =
@@ -105,31 +108,31 @@ let ext_of_tag =
 exception FunctorsXMLExportationNotImplementedYet;;
 
 let subtract l1 l2 =
- let l1' = List.rev (Names.DirPath.repr l1) in
- let l2' = List.rev (Names.DirPath.repr l2) in
+ let l1' = List.rev (DirPath.repr l1) in
+ let l2' = List.rev (DirPath.repr l2) in
   let rec aux =
    function
       he::tl when tl = l2' -> [he]
     | he::tl -> he::(aux tl)
     | [] -> assert (l2' = []) ; []
   in
-   Names.DirPath.make (List.rev (aux l1'))
+   DirPath.make (List.rev (aux l1'))
 ;;
 
 let token_list_of_path dir id tag =
   let token_list_of_dirpath dirpath =
-   List.rev_map Names.Id.to_string (Names.DirPath.repr dirpath) in
-  token_list_of_dirpath dir @ [Names.Id.to_string id ^ "." ^ (ext_of_tag tag)]
+   List.rev_map Id.to_string (DirPath.repr dirpath) in
+  token_list_of_dirpath dir @ [Id.to_string id ^ "." ^ (ext_of_tag tag)]
 
 let token_list_of_kernel_name tag =
  let id,dir = match tag with
    | Variable kn ->
-       Names.Label.to_id (Names.label kn), Lib.cwd ()
+       Label.to_id (Names.label kn), Lib.cwd ()
    | Constant con ->
-       Names.Label.to_id (Names.con_label con),
+       Label.to_id (Names.con_label con),
        Lib.remove_section_part (Globnames.ConstRef con)
    | Inductive kn ->
-       Names.Label.to_id (Names.mind_label kn),
+       Label.to_id (Names.mind_label kn),
        Lib.remove_section_part (Globnames.IndRef (kn,0))
  in
  token_list_of_path dir id (etag_of_tag tag)
@@ -188,7 +191,7 @@ let typeur sigma metamap =
   let rec type_of env cstr=
     match Term.kind_of_term cstr with
     | T.Meta n ->
-          (try T.strip_outer_cast (Util.List.assoc_f Int.equal n metamap)
+          (try T.strip_outer_cast (Int.List.assoc n metamap)
            with Not_found -> Errors.anomaly ~label:"type_of" (Pp.str "this is not a well-typed term"))
     | T.Rel n ->
         let (_,_,ty) = Environ.lookup_rel n env in
@@ -198,7 +201,7 @@ let typeur sigma metamap =
           let (_,_,ty) = Environ.lookup_named id env in
           ty
         with Not_found ->
-          Errors.anomaly ~label:"type_of" (str "variable " ++ Names.Id.print id ++ str " unbound"))
+          Errors.anomaly ~label:"type_of" (str "variable " ++ Id.print id ++ str " unbound"))
     | T.Const c ->
         let cb = Environ.lookup_constant c env in
         Typeops.type_of_constant_type env (cb.Declarations.const_type)
@@ -447,8 +450,8 @@ print_endline "PASSATO" ; flush stdout ;
                 let he1' = remove_module_dirpath_from_dirpath ~basedir he1_sp in
                 let he1'' =
                  String.concat "/"
-                  (List.rev_map Names.Id.to_string he1') ^ "/"
-                 ^ (Names.Id.to_string he1_id) ^ ".var"
+                  (List.rev_map Id.to_string he1') ^ "/"
+                 ^ (Id.to_string he1_id) ^ ".var"
                 in
                  (he1'',he2)::subst, extra_args, uninst
            in
@@ -493,13 +496,13 @@ print_endline "PASSATO" ; flush stdout ;
                Acic.ARel (fresh_id'', n, List.nth idrefs (n-1), id)
            | Term.Var id ->
 	      let pvars = Termops.ids_of_named_context (Environ.named_context env) in
-	      let pvars = List.map Names.Id.to_string pvars in
-              let path = get_uri_of_var (Names.Id.to_string id) pvars in
+	      let pvars = List.map Id.to_string pvars in
+              let path = get_uri_of_var (Id.to_string id) pvars in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
                if is_a_Prop innersort  && expected_available then
                 add_inner_type fresh_id'' ;
                Acic.AVar
-                (fresh_id'', path ^ "/" ^ (Names.Id.to_string id) ^ ".var")
+                (fresh_id'', path ^ "/" ^ (Id.to_string id) ^ ".var")
            | Term.Evar (n,l) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
               if is_a_Prop innersort  && expected_available then
@@ -602,7 +605,7 @@ print_endline "PASSATO" ; flush stdout ;
            | Term.LetIn (n,s,t,d) ->
               let id =
                match n with
-                   Names.Anonymous -> Names.Id.of_string "_X"
+                   Names.Anonymous -> Id.of_string "_X"
                  | Names.Name id -> id
               in
               let n' =
@@ -877,7 +880,7 @@ let acic_object_of_cic_object sigma obj =
                          in
                          let dummy_never_used =
                           let s = "dummy_never_used" in
-                           Acic.ARel (s,99,s,Names.Id.of_string s)
+                           Acic.ARel (s,99,s,Id.of_string s)
                          in
                           final_env,final_idrefs,
                            (hid,(n,Acic.Def (at,dummy_never_used)))::atl

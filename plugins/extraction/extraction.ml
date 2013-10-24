@@ -141,7 +141,8 @@ let sign_with_implicits r s nb_params =
     | [] -> []
     | sign::s ->
 	let sign' =
-	  if sign == Keep && List.mem i implicits then Kill Kother else sign
+	  if sign == Keep && Int.List.mem i implicits
+          then Kill Kother else sign
 	in sign' :: add_impl (succ i) s
   in
   add_impl (1+nb_params) s
@@ -657,7 +658,8 @@ and extract_cst_app env mle mlt kn args =
   (* Can we instantiate types variables for this constant ? *)
   (* In Ocaml, inside the definition of this constant, the answer is no. *)
   let instantiated =
-    if lang () == Ocaml && List.mem kn !current_fixpoints then var2var' (snd schema)
+    if lang () == Ocaml && List.mem_f Constant.equal kn !current_fixpoints
+    then var2var' (snd schema)
     else instantiation schema
   in
   (* Then the expected type of this constant. *)
@@ -1048,7 +1050,7 @@ let extract_inductive env kn =
       | [] -> []
       | t::l ->
 	  let l' = filter (succ i) l in
-	  if isDummy (expand env t) || List.mem i implicits then l'
+	  if isDummy (expand env t) || Int.List.mem i implicits then l'
 	  else t::l'
     in filter (1+ind.ind_nparams) l
   in

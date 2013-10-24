@@ -625,7 +625,7 @@ type meta_value_map = (metavariable * constr) list
 
 let rec subst_meta bl c =
   match kind_of_term c with
-    | Meta i -> (try List.assoc_f Int.equal i bl with Not_found -> c)
+    | Meta i -> (try Int.List.assoc i bl with Not_found -> c)
     | _ -> map_constr (subst_meta bl) c
 
 (* First utilities for avoiding telescope computation for subst_term *)

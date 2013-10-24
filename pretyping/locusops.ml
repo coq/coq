@@ -27,8 +27,8 @@ let convert_occs = function
 
 let is_selected occ = function
   | AllOccurrences -> true
-  | AllOccurrencesBut l -> not (List.mem occ l)
-  | OnlyOccurrences l -> List.mem occ l
+  | AllOccurrencesBut l -> not (Int.List.mem occ l)
+  | OnlyOccurrences l -> Int.List.mem occ l
   | NoOccurrences -> false
 
 (** Usual clauses *)

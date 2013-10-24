@@ -289,7 +289,7 @@ let extend_values_with_bindings (ln,lm) lfun =
 (* Evaluation/interpretation *)
 
 let is_variable env id =
-  List.mem id (ids_of_named_context (Environ.named_context env))
+  Id.List.mem id (ids_of_named_context (Environ.named_context env))
 
 (* Debug reference *)
 let debug = ref DebugOff
@@ -472,7 +472,7 @@ let rec extract_ids ids lfun =
     let v = Value.normalize v in
     if has_type v (topwit wit_intro_pattern) then
       let (_, ipat) = out_gen (topwit wit_intro_pattern) v in
-      if List.mem id ids then accu
+      if Id.List.mem id ids then accu
       else accu @ intropattern_ids (dloc, ipat)
     else accu
   in
@@ -910,7 +910,7 @@ let read_pattern lfun ist env sigma = function
 
 (* Reads the hypotheses of a Match Context rule *)
 let cons_and_check_name id l =
-  if List.mem id l then
+  if Id.List.mem id l then
     user_err_loc (dloc,"read_match_goal_hyps",
       strbrk ("Hypothesis pattern-matching variable "^(Id.to_string id)^
       " used twice in the same pattern."))

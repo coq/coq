@@ -18,3 +18,10 @@ val hash : t -> int
 
 module Set : Set.S with type elt = t
 module Map : CMap.ExtS with type key = t and module Set := Set
+
+module List : sig
+  val mem : int -> int list -> bool
+  val assoc : int -> (int * 'a) list -> 'a
+  val mem_assoc : int -> (int * 'a) list -> bool
+  val remove_assoc : int -> (int * 'a) list -> (int * 'a) list
+end

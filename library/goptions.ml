@@ -60,7 +60,7 @@ module MakeTable =
     let nick = nickname A.key
 
     let _ =
-      if List.mem_assoc nick !A.table then
+      if String.List.mem_assoc nick !A.table then
 	error "Sorry, this table name is already used."
 
     module MySet = Set.Make (struct type t = A.t let compare = compare end)
@@ -121,7 +121,7 @@ module MakeTable =
 
 let string_table = ref []
 
-let get_string_table k = List.assoc_f String.equal (nickname k) !string_table
+let get_string_table k = String.List.assoc (nickname k) !string_table
 
 module type StringConvertArg =
 sig
@@ -150,7 +150,7 @@ module MakeStringTable =
 
 let ref_table = ref []
 
-let get_ref_table k = List.assoc_f String.equal (nickname k) !ref_table
+let get_ref_table k = String.List.assoc (nickname k) !ref_table
 
 module type RefConvertArg =
 sig
@@ -210,8 +210,8 @@ let check_key key = try
   let _ = get_option key in
   error "Sorry, this option name is already used."
 with Not_found ->
-  if List.mem_assoc (nickname key) !string_table
-    || List.mem_assoc (nickname key) !ref_table
+  if String.List.mem_assoc (nickname key) !string_table
+    || String.List.mem_assoc (nickname key) !ref_table
   then error "Sorry, this option name is already used."
 
 open Libobject

@@ -121,7 +121,7 @@ let scope_stack = ref []
 let current_scopes () = !scope_stack
 
 let scope_is_open_in_scopes sc l =
-  List.mem (Scope sc) l
+  List.exists (function Scope sc' -> String.equal sc sc' | _ -> false) l
 
 let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 
@@ -841,19 +841,18 @@ let browse_notation strict ntn map =
     if String.contains ntn ' ' then String.equal ntn ntn'
     else
       let toks = decompose_notation_key ntn' in
-      let trms = List.filter (function Terminal _ -> true | _ -> false) toks in
-      if strict then match trms with
-      | [Terminal ntn'] -> String.equal ntn ntn'
-      | _ -> false
-      else
-        List.mem (Terminal ntn) trms in
+      let get_terminals = function Terminal ntn -> Some ntn | _ -> None in
+      let trms = List.map_filter get_terminals toks in
+      if strict then String.List.equal [ntn] trms
+      else String.List.mem ntn trms
+  in
   let l =
     String.Map.fold
       (fun scope_name sc ->
 	String.Map.fold (fun ntn ((_,r),df) l ->
 	  if find ntn then (ntn,(scope_name,r,df))::l else l) sc.notations)
       map [] in
-  List.sort (fun x y -> Pervasives.compare (fst x) (fst y)) l
+  List.sort (fun x y -> String.compare (fst x) (fst y)) l
 
 let global_reference_of_notation test (ntn,(sc,c,_)) =
   match c with
@@ -917,20 +916,20 @@ let collect_notation_in_scope scope sc known =
   assert (not (String.equal scope default_scope));
   String.Map.fold
     (fun ntn ((_,r),(_,df)) (l,known as acc) ->
-      if List.mem ntn known then acc else ((df,r)::l,ntn::known))
+      if String.List.mem ntn known then acc else ((df,r)::l,ntn::known))
     sc.notations ([],known)
 
 let collect_notations stack =
   fst (List.fold_left
     (fun (all,knownntn as acc) -> function
       | Scope scope ->
-	  if List.mem_assoc scope all then acc
+	  if String.List.mem_assoc scope all then acc
 	  else
 	    let (l,knownntn) =
 	      collect_notation_in_scope scope (find_scope scope) knownntn in
 	    ((scope,l)::all,knownntn)
       | SingleNotation ntn ->
-	  if List.mem ntn knownntn then (all,knownntn)
+	  if String.List.mem ntn knownntn then (all,knownntn)
 	  else
 	    let ((_,r),(_,df)) =
 	      String.Map.find ntn (find_scope default_scope).notations in

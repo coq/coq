@@ -278,8 +278,7 @@ let rec bind_primary_aliases map pat =
 	  List.fold_left bind_primary_aliases map1 lpat
 
 let bind_secondary_aliases map subst =
-  Id.Map.fold
-    (fun ids idp map -> (ids,List.assoc_f Id.equal idp map)::map) subst map
+  Id.Map.fold (fun ids idp map -> (ids,Id.List.assoc idp map)::map) subst map
 
 let bind_aliases patvars subst patt =
   let map = bind_primary_aliases [] patt in
@@ -349,7 +348,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
   let inject = function
       Thesis (Plain) -> Glob_term.GSort(Loc.ghost,GProp)
     | Thesis (For rec_occ) ->
-	if not (List.mem rec_occ pat_vars) then
+	if not (Id.List.mem rec_occ pat_vars) then
 	  errorlabstrm "suppose it is"
 	    (str "Variable " ++ Nameops.pr_id rec_occ ++
 	       str " does not occur in pattern.");

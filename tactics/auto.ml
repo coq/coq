@@ -404,7 +404,8 @@ module Hint_db = struct
       else rebuild_dn st (sl1', sl2', dn)
 
   let remove_list grs db =
-    let filter (_, h) = match h.name with PathHints [gr] -> not (List.mem gr grs) | _ -> true in
+    let filter (_, h) =
+      match h.name with PathHints [gr] -> not (List.mem gr grs) | _ -> true in
     let hintmap = Constr_map.map (remove_he db.hintdb_state filter) db.hintdb_map in
     let hintnopat = List.smartfilter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
@@ -880,7 +881,7 @@ let interp_hints =
       HintsExternEntry (pri, pat, tacexp)
 
 let add_hints local dbnames0 h =
-  if List.mem "nocore" dbnames0 then
+  if String.List.mem "nocore" dbnames0 then
     error "The hint database \"nocore\" is meant to stay empty.";
   let dbnames = if List.is_empty dbnames0 then ["core"] else dbnames0 in
   let env = Global.env() and sigma = Evd.empty in

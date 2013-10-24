@@ -766,7 +766,7 @@ let build_proof
 			}
 		      in
 		      build_proof_args do_finalize new_infos  g
-		  | Const c when not (List.mem c fnames) ->
+		  | Const c when not (List.mem_f Constant.equal c fnames) ->
 		      let new_infos =
 			{ dyn_infos with
 			    info = (f,args)
@@ -915,7 +915,7 @@ let generalize_non_dep hyp g =
   let hyp_typ = pf_type_of g (mkVar hyp) in
   let to_revert,_ =
     Environ.fold_named_context_reverse (fun (clear,keep) (hyp,_,_ as decl) ->
-      if List.mem hyp hyps
+      if Id.List.mem hyp hyps
         || List.exists (Termops.occur_var_in_decl env hyp) keep
 	|| Termops.occur_var env hyp hyp_typ
 	|| Termops.is_section_variable hyp (* should be dangerous *)

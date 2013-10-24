@@ -367,7 +367,7 @@ let poseq_list_ids lcstr gl =
 let find_fapp (test:constr -> bool) g : fapp_info list =
   let pre_res = hdMatchSub (Tacmach.pf_concl g) test in
   let res =
-    List.fold_right (fun x acc -> if List.mem x acc then acc else x::acc) pre_res [] in
+    List.fold_right (List.add_set Pervasives.(=)) pre_res [] in
   (prlistconstr (List.map (fun x -> applist (x.fname,x.largs)) res);
   res)
 

@@ -1005,7 +1005,7 @@ let kill_some_lams bl (ids,c) =
 let kill_dummy_lams c =
   let ids,c = collect_lams c in
   let bl = List.map sign_of_id ids in
-  if not (List.mem Keep bl) then raise Impossible;
+  if not (List.memq Keep bl) then raise Impossible;
   let rec fst_kill n = function
     | [] -> raise Impossible
     | Kill _ :: bl -> n

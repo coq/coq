@@ -364,7 +364,7 @@ let reset_hidden_inductive_implicit_test env =
 
 let check_hidden_implicit_parameters id impls =
   if Id.Map.exists (fun _ -> function
-    | (Inductive indparams,_,_,_) -> List.mem id indparams
+    | (Inductive indparams,_,_,_) -> Id.List.mem id indparams
     | _ -> false) impls
   then
     errorlabstrm "" (strbrk "A parameter of an inductive type " ++
@@ -456,7 +456,8 @@ let intern_generalization intern env lvar loc bk ak c =
           | None -> false
           | Some sc -> String.equal sc Notation.type_scope
           in
-          is_type_scope || List.mem Notation.type_scope env.scopes
+          is_type_scope ||
+          String.List.mem Notation.type_scope env.scopes
       in
 	if pi then
 	  (fun (id, loc') acc ->
@@ -812,10 +813,10 @@ let product_of_cases_patterns ids idspl =
 
 (* @return the first variable that occurs twice in a pattern
 
-naive n2 algo *)
+naive n^2 algo *)
 let rec has_duplicate = function
   | [] -> None
-  | x::l -> if List.mem x l then (Some x) else has_duplicate l
+  | x::l -> if Id.List.mem x l then (Some x) else has_duplicate l
 
 let loc_of_lhs lhs =
  Loc.merge (fst (List.hd lhs)) (fst (List.last lhs))

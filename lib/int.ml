@@ -22,3 +22,10 @@ end
 
 module Set = Set.Make(Self)
 module Map = CMap.Make(Self)
+
+module List = struct
+  let mem = List.memq
+  let assoc = List.assq
+  let mem_assoc = List.mem_assq
+  let remove_assoc = List.remove_assq
+end

@@ -59,6 +59,11 @@ let hash = function
   let h = Universe.hash u in
   combinesmall 2 h
 
+module List = struct
+  let mem = List.memq
+  let intersect l l' = CList.intersect family_equal l l'
+end
+
 module Hsorts =
   Hashcons.Make(
     struct

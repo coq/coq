@@ -61,6 +61,7 @@ sig
   val is_sub : string -> string -> int -> bool
   module Set : Set.S with type elt = t
   module Map : CMap.ExtS with type key = t and module Set := Set
+  module List : CList.MonoS with type elt = t
   val hcons : string -> string
 end
 
@@ -190,5 +191,15 @@ end
 
 module Set = Set.Make(Self)
 module Map = CMap.Make(Self)
+
+module List = struct
+  type elt = string
+  let mem id l = List.exists (equal id) l
+  let assoc id l = CList.assoc_f equal id l
+  let remove_assoc id l = CList.remove_assoc_f equal id l
+  let mem_assoc id l = List.exists (fun (a,_) -> equal id a) l
+  let mem_assoc_sym id l = List.exists (fun (_,b) -> equal id b) l
+  let equal l l' = CList.equal equal l l'
+end
 
 let hcons = Hashcons.simple_hcons Hashcons.Hstring.generate ()

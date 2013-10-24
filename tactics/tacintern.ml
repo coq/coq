@@ -124,7 +124,7 @@ let lookup_ltacref r = KNmap.find r !mactab
 
 let find_ident id ist =
   Id.Set.mem id ist.ltacvars ||
-  List.mem id (ids_of_named_context (Environ.named_context ist.genv))
+  Id.List.mem id (ids_of_named_context (Environ.named_context ist.genv))
 
 let find_recvar qid ist = Id.Map.find qid ist.ltacrecvars
 
@@ -138,7 +138,7 @@ let find_ctxvar id ist = Id.Set.mem id ist.ltacvars
 let find_ltacvar id ist = Id.Set.mem id ist.ltacvars
 
 let find_hyp id ist =
-  List.mem id (ids_of_named_context (Environ.named_context ist.genv))
+  Id.List.mem id (ids_of_named_context (Environ.named_context ist.genv))
 
 (* Globalize a name introduced by Intro/LetTac/... ; it is allowed to *)
 (* be fresh in which case it is binding later on *)

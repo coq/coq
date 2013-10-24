@@ -94,7 +94,11 @@ let subst_evar_constr evs n idf t =
 	       | _, _ -> acc (*failwith "subst_evars: invalid argument"*)
 	  in aux hyps args []
 	in
-	  if List.exists (fun x -> match kind_of_term x with Rel n -> List.mem n fixrels | _ -> false) args then
+	  if List.exists
+            (fun x -> match kind_of_term x with
+            | Rel n -> Int.List.mem n fixrels
+            | _ -> false) args
+          then
 	    transparent := Id.Set.add idstr !transparent;
 	  mkApp (idf idstr, Array.of_list args)
     | Fix _ ->
@@ -425,7 +429,7 @@ let replace_appvars subst =
       if isVar f then
 	try
 	  let c' = List.map (map_constr aux) l in
-	  let (t, b) = List.assoc_f Id.equal (destVar f) subst in
+	  let (t, b) = Id.List.assoc (destVar f) subst in
 	    mkApp (delayed_force hide_obligation, 
 		   [| prod_applist t c'; applistc b c' |])
 	with Not_found -> map_constr aux c

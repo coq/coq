@@ -950,10 +950,12 @@ let no_upper_constraints u cst =
 
 (* Is u mentionned in v (or equals to v) ? *)
 
+let level_list_mem u l = List.mem_f UniverseLevel.equal u l
+
 let univ_depends u v =
   match u, v with
     | Atom u, Atom v -> UniverseLevel.equal u v
-    | Atom u, Max (gel,gtl) -> List.mem u gel || List.mem u gtl
+    | Atom u, Max (gel,gtl) -> level_list_mem u gel || level_list_mem u gtl
     | _ -> anomaly (Pp.str "univ_depends given a non-atomic 1st arg")
 
 (* Pretty-printing *)

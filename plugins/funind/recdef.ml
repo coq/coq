@@ -294,7 +294,9 @@ let check_not_nested forbidden e =
   let rec check_not_nested e =  
     match kind_of_term e with 
       | Rel _ -> ()
-      | Var x -> if List.mem x (forbidden) then error ("check_not_nested : failure "^Id.to_string x)
+      | Var x ->
+        if Id.List.mem x forbidden
+        then error ("check_not_nested : failure "^Id.to_string x)
       | Meta _ | Evar _ | Sort _ -> ()
       | Cast(e,_,t) -> check_not_nested e;check_not_nested t
       | Prod(_,t,b) -> check_not_nested t;check_not_nested b
@@ -652,7 +654,7 @@ let mkDestructEq :
   let to_revert =
     Util.List.map_filter
       (fun (id, _, t) ->
-        if List.mem id not_on_hyp || not (Termops.occur_term expr t)
+        if Id.List.mem id not_on_hyp || not (Termops.occur_term expr t)
         then None else Some id) hyps in
   let to_revert_constr = List.rev_map mkVar to_revert in
   let type_of_expr = pf_type_of g expr in

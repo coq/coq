@@ -23,7 +23,7 @@ let string_of_global r =
     | [] -> ""
     | m::_ ->
       let s = Names.Id.to_string m in
-      if List.mem s meaningful_submodule then s^"." else ""
+      if Util.String.List.mem s meaningful_submodule then s^"." else ""
   in
   prefix^(Names.Id.to_string (Nametab.basename_of_global r))
 

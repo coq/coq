@@ -241,6 +241,16 @@ sig
   (** Keep only those products that do not return None *)
 
   val factorize_left : 'a eq -> ('a * 'b) list -> ('a * 'b list) list
+
+  module type MonoS = sig
+    type elt
+    val equal : elt list -> elt list -> bool
+    val mem : elt -> elt list -> bool
+    val assoc : elt -> (elt * 'a) list -> 'a
+    val mem_assoc : elt -> (elt * 'a) list -> bool
+    val remove_assoc : elt -> (elt * 'a) list -> (elt * 'a) list
+    val mem_assoc_sym : elt -> ('a * elt) list -> bool
+  end
 end
 
 include ExtS

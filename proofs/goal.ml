@@ -429,8 +429,10 @@ let rename_hyp_sign id1 id2 sign =
 let rename_hyp id1 id2 env rdefs gl info =
   let hyps = hyps env rdefs gl info in
   if not (Names.Id.equal id1 id2) &&
-    List.mem id2 (Termops.ids_of_named_context (Environ.named_context_of_val hyps)) then
-       Errors.error ((Names.Id.to_string id2)^" is already used.");
+    Names.Id.List.mem id2
+      (Termops.ids_of_named_context (Environ.named_context_of_val hyps))
+  then
+    Errors.error ((Names.Id.to_string id2)^" is already used.");
   let new_hyps = rename_hyp_sign id1 id2 hyps in
   let new_env = Environ.reset_with_named_context new_hyps env in
   let old_concl = concl env rdefs gl info in

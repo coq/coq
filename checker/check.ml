@@ -339,7 +339,7 @@ let rec intern_library seen (dir, f) needed =
   try let _ = find_library dir in needed
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
-  if List.mem_assoc dir needed then needed
+  if List.mem_assoc_f DirPath.equal dir needed then needed
   else
     (* [dir] is an absolute name which matches [f] which must be in loadpath *)
     let m = intern_from_file (dir,f) in

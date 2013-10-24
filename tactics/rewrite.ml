@@ -634,7 +634,9 @@ let eq_env x y = x == y
 let apply_rule by loccs : (hypinfo * int) pure_strategy =
   let (nowhere_except_in,occs) = convert_occs loccs in
   let is_occ occ =
-    if nowhere_except_in then List.mem occ occs else not (List.mem occ occs) in
+    if nowhere_except_in
+    then Int.List.mem occ occs
+    else not (Int.List.mem occ occs) in
     fun (hypinfo, occ) env avoid t ty cstr evars ->
       let hypinfo =
         if not (eq_env hypinfo.cl.env env) then

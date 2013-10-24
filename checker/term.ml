@@ -23,6 +23,8 @@ let family_of_sort = function
   | Prop Pos -> InSet
   | Type _ -> InType
 
+let family_equal = (==)
+
 (********************************************************************)
 (*       Constructions as implemented                               *)
 (********************************************************************)

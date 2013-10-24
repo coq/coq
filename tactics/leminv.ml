@@ -156,7 +156,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       let revargs,ownsign =
 	fold_named_context
 	  (fun env (id,_,_ as d) (revargs,hyps) ->
-             if List.mem id ivars then
+             if Id.List.mem id ivars then
 	       ((mkVar id)::revargs,add_named_decl d hyps)
 	     else
 	       (revargs,hyps))

@@ -32,7 +32,7 @@ let unif t1 t2=
     match kind_of_term t with
 	Meta i->
 	  (try
-	     head_reduce (List.assoc_f Int.equal i !sigma)
+	     head_reduce (Int.List.assoc i !sigma)
 	   with Not_found->t)
       | _->t in
     Queue.add (t1,t2) bige;
@@ -105,7 +105,7 @@ let mk_rel_inst t=
     match kind_of_term t with
 	Meta n->
 	  (try
-	     mkRel (d+(List.assoc_f Int.equal n !rel_env))
+	     mkRel (d+(Int.List.assoc n !rel_env))
 	   with Not_found->
 	     let m= !new_rel in
 	       incr new_rel;
@@ -117,7 +117,7 @@ let mk_rel_inst t=
 
 let unif_atoms i dom t1 t2=
   try
-    let t=List.assoc_f Int.equal i (unif t1 t2) in
+    let t=Int.List.assoc i (unif t1 t2) in
       if isMeta t then Some (Phantom dom)
       else Some (Real(mk_rel_inst t,value i t1))
   with

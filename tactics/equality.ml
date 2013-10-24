@@ -566,7 +566,7 @@ let find_positions env sigma t1 t2 =
           when Int.equal (List.length args1) (mis_constructor_nargs_env env sp1)
             ->
 	  let sorts =
-            List.intersect Sorts.family_equal sorts (allowed_sorts env (fst sp1))
+            Sorts.List.intersect sorts (allowed_sorts env (fst sp1))
           in
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
@@ -577,7 +577,8 @@ let find_positions env sigma t1 t2 =
             List.flatten
 	      (List.map2_i (fun i -> findrec sorts ((sp1,i)::posn))
 		0 rargs1 rargs2)
-	  else if List.mem InType sorts then (* see build_discriminator *)
+	  else if Sorts.List.mem InType sorts
+          then (* see build_discriminator *)
 	    raise (DiscrFound (List.rev posn,sp1,sp2))
 	  else []
 
@@ -589,7 +590,9 @@ let find_positions env sigma t1 t2 =
           else
 	    let ty1_0 = get_type_of env sigma t1_0 in
 	    let s = get_sort_family_of env sigma ty1_0 in
-	    if List.mem s sorts then [(List.rev posn,t1_0,t2_0)] else [] in
+	    if Sorts.List.mem s sorts
+            then [(List.rev posn,t1_0,t2_0)] else []
+  in
   try
     (* Rem: to allow injection on proofs objects, just add InProp *)
     Inr (findrec [InSet;InType] [] t1 t2)

@@ -496,7 +496,7 @@ let extract_rhs pb =
 let occur_in_rhs na rhs =
   match na with
     | Anonymous -> false
-    | Name id -> List.mem id rhs.rhs_vars
+    | Name id -> Id.List.mem id rhs.rhs_vars
 
 let is_dep_patt_in eqn = function
   | PatVar (_,name) -> Flags.is_program_mode () || occur_in_rhs name eqn.rhs
@@ -1521,7 +1521,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
       let depvl = free_rels ty in
       let inst =
 	List.map_i
-	  (fun i _ -> if List.mem i vl then u else mkRel i) 1
+	  (fun i _ -> if Int.List.mem i vl then u else mkRel i) 1
 	  (rel_context extenv) in
       let rel_filter =
 	List.map (fun a -> not (isRel a) || dependent a u
@@ -1760,7 +1760,7 @@ let prepare_predicate_from_arsign_tycon loc tomatchs arsign c =
       | Rel n when n > lift ->
 	  (try
 	      (* Make the predicate dependent on the matched variable *)
-	      let idx = List.assoc_f Int.equal (n - lift) subst in
+	      let idx = Int.List.assoc (n - lift) subst in
 		mkRel (idx + lift)
 	    with Not_found ->
 	      (* A variable that is not matched, lift over the arsign. *)

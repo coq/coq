@@ -64,6 +64,8 @@ struct
 
   module Pred = Predicate.Make(Self)
 
+  module List = String.List
+
   let hcons = String.hcons
 
 end

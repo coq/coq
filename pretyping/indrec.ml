@@ -55,7 +55,7 @@ let mis_make_case_com dep env sigma ind (mib,mip as specif) kind =
     mib.mind_params_ctxt
   in
 
-  if not (List.mem kind (elim_sorts specif)) then
+  if not (Sorts.List.mem kind (elim_sorts specif)) then
     raise
       (RecursionSchemeError
 	 (NotAllowedCaseAnalysis (false, Termops.new_sort_in_family kind, ind)));
@@ -508,10 +508,10 @@ let check_arities listdepkind =
   let _ = List.fold_left
     (fun ln ((_,ni as mind),mibi,mipi,dep,kind) ->
        let kelim = elim_sorts (mibi,mipi) in
-       if not (List.exists ((==) kind) kelim) then raise
+       if not (Sorts.List.mem kind kelim) then raise
 	 (RecursionSchemeError
 	   (NotAllowedCaseAnalysis (true, Termops.new_sort_in_family kind,mind)))
-       else if List.mem ni ln then raise
+       else if Int.List.mem ni ln then raise
 	 (RecursionSchemeError (NotMutualInScheme (mind,mind)))
        else ni::ln)
 	    [] listdepkind

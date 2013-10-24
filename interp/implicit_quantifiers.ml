@@ -83,7 +83,7 @@ let ungeneralizable loc id =
 
 let free_vars_of_constr_expr c ?(bound=Id.Set.empty) l =
   let found loc id bdvars l =
-    if List.mem id l then l
+    if Id.List.mem id l then l
     else if is_freevar bdvars (Global.env ()) id
     then
       if find_generalizable_ident id then id :: l
@@ -124,7 +124,7 @@ let generalizable_vars_of_glob_constr ?(bound=Id.Set.empty) ?(allowed=Id.Set.emp
   let rec vars bound vs = function
     | GVar (loc,id) ->
 	if is_freevar bound (Global.env ()) id then
-	  if List.mem_assoc id vs then vs
+	  if Id.List.mem_assoc id vs then vs
 	  else (id, loc) :: vs
 	else vs
     | GApp (loc,f,args) -> List.fold_left (vars bound) vs (f::args)
@@ -219,9 +219,8 @@ let combine_params avoid fn applied needed =
     match app, need with
 	[], [] -> List.rev ids, avoid
 
-      | app, (_, (Name id, _, _)) :: need
-        when List.mem_assoc_f Id.equal id named ->
-	  aux (List.assoc_f Id.equal id named :: ids) avoid app need
+      | app, (_, (Name id, _, _)) :: need when Id.List.mem_assoc id named ->
+	  aux (Id.List.assoc id named :: ids) avoid app need
 
       | (x, None) :: app, (None, (Name id, _, _)) :: need ->
 	  aux (x :: ids) avoid app need

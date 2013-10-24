@@ -141,7 +141,7 @@ let fold_constr_expr_with_binders g f n acc = function
 
 let free_vars_of_constr_expr c =
   let rec aux bdvars l = function
-  | CRef (Ident (_,id)) -> if List.mem id bdvars then l else Id.Set.add id l
+  | CRef (Ident (_,id)) -> if Id.List.mem id bdvars then l else Id.Set.add id l
   | c -> fold_constr_expr_with_binders (fun a l -> a::l) aux bdvars l c
   in aux [] Id.Set.empty c
 

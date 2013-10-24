@@ -126,7 +126,7 @@ let rec replace_var_by_term_in_binder x_id term = function
   | [] -> []
   | (bt,t)::l ->
       (bt,replace_var_by_term x_id term t)::
-	if List.mem x_id (ids_of_binder bt)
+	if Id.List.mem x_id (ids_of_binder bt)
 	then l
 	else replace_var_by_term_in_binder x_id term l
 
@@ -134,14 +134,14 @@ let add_bt_names bt = List.append (ids_of_binder bt)
 
 let apply_args ctxt body args =
   let need_convert_id avoid id =
-    List.exists (is_free_in id) args || List.mem id avoid
+    List.exists (is_free_in id) args || Id.List.mem id avoid
   in
   let need_convert avoid  bt =
     List.exists (need_convert_id avoid) (ids_of_binder bt)
   in
   let next_name_away (na:Name.t) (mapping: Id.t Id.Map.t) (avoid: Id.t list) =
     match na with
-       | Name id when List.mem id avoid ->
+       | Name id when Id.List.mem id avoid ->
 	   let new_id = Namegen.next_ident_away id avoid in
 	   Name new_id,Id.Map.add id new_id mapping,new_id::avoid
        | _ -> na,mapping,avoid

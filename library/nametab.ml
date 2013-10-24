@@ -240,7 +240,7 @@ let shortest_qualid ctx uname tab =
 
 let push_node node l =
   match node with
-  | Absolute (_,o) | Relative (_,o) when not (List.mem o l) -> o::l
+  | Absolute (_,o) | Relative (_,o) when not (List.mem_f E.equal o l) -> o::l
   | _ -> l
 
 let rec flatten_idmap tab l =

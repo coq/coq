@@ -79,8 +79,8 @@ let e_check_branch_types env evdref ind cj (lfj,explft) =
   done
 
 let max_sort l =
-  if List.mem InType l then InType else
-  if List.mem InSet l then InSet else InProp
+  if Sorts.List.mem InType l then InType else
+  if Sorts.List.mem InSet l then InSet else InProp
 
 let e_is_correct_arity env evdref c pj ind specif params =
   let arsign = make_arity_signature env true (make_ind_family (ind,params)) in
@@ -93,7 +93,8 @@ let e_is_correct_arity env evdref c pj ind specif params =
         if not (Evarconv.e_cumul env evdref a1 a1') then error ();
         srec (push_rel (na1,None,a1) env) t ar'
     | Sort s, [] ->
-        if not (List.mem (family_of_sort s) allowed_sorts) then error ()
+        if not (Sorts.List.mem (Sorts.family s) allowed_sorts)
+        then error ()
     | Evar (ev,_), [] ->
         let s = Termops.new_sort_in_family (max_sort allowed_sorts) in
         evdref := Evd.define ev (mkSort s) !evdref

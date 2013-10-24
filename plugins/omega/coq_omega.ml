@@ -140,8 +140,7 @@ let rev_assoc k =
 let tag_hypothesis,tag_of_hyp, hyp_of_tag =
   let l = ref ([]:(Id.t * int) list) in
   (fun h id -> l := (h,id):: !l),
-  (fun h ->
-    try List.assoc_f Id.equal h !l with Not_found -> failwith "tag_hypothesis"),
+  (fun h -> try Id.List.assoc h !l with Not_found -> failwith "tag_hypothesis"),
   (fun h -> try rev_assoc h !l with Not_found -> failwith "tag_hypothesis")
 
 let hide_constr,find_constr,clear_tables,dump_tables =
@@ -1022,7 +1021,7 @@ let replay_history tactic_normalisation =
 	  begin
 	    try
 	      tclTHEN
-		(List.assoc_f Id.equal (hyp_of_tag e.id) tactic_normalisation)
+		(Id.List.assoc (hyp_of_tag e.id) tactic_normalisation)
 		(loop l)
 	    with Not_found -> loop l end
       | NEGATE_CONTRADICT (e2,e1,b) :: l ->

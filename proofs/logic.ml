@@ -210,7 +210,7 @@ let reorder_val_context env sign ord =
 let check_decl_position env sign (x,_,_ as d) =
   let needed = global_vars_set_of_decl env d in
   let deps = dependency_closure env (named_context_of_val sign) needed in
-  if List.mem x deps then
+  if Id.List.mem x deps then
     error ("Cannot create self-referring hypothesis "^Id.to_string x);
   x::deps
 
@@ -690,7 +690,9 @@ let prim_refiner r sigma goal =
 
     | Rename (id1,id2) ->
         if !check && not (Id.equal id1 id2) &&
-	  List.mem id2 (ids_of_named_context (named_context_of_val sign)) then
+	  Id.List.mem id2
+            (ids_of_named_context (named_context_of_val sign))
+        then
           error ((Id.to_string id2)^" is already used.");
         let sign' = rename_hyp id1 id2 sign in
         let cl' = replace_vars [id1,mkVar id2] cl in

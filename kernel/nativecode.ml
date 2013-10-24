@@ -615,14 +615,14 @@ let get_rel env id i =
     List.nth env.env_rel (i-1)
   else 
     let i = i - env.env_bound in
-    try List.assoc_f Int.equal i !(env.env_urel)
+    try Int.List.assoc i !(env.env_urel)
     with Not_found ->
       let local = MLlocal (fresh_lname id) in
       env.env_urel := (i,local) :: !(env.env_urel);
       local
 
 let get_var env id =
-  try List.assoc_f Id.equal id !(env.env_named)
+  try Id.List.assoc id !(env.env_named)
   with Not_found ->
     let local = MLlocal (fresh_lname (Name id)) in
     env.env_named := (id, local)::!(env.env_named);
@@ -1501,18 +1501,20 @@ let compile_constant env prefix ~interactive con body =
 
 let loaded_native_files = ref ([] : string list)
 
+let is_loaded_native_file s = String.List.mem s !loaded_native_files
+
 let register_native_file s =
-  if not (List.mem s !loaded_native_files) then
+  if not (is_loaded_native_file s) then
     loaded_native_files := s :: !loaded_native_files
 
 let is_code_loaded ~interactive name =
   match !name with
   | NotLinked -> false
   | LinkedInteractive (s,_) ->
-      if (interactive && List.mem s !loaded_native_files) then true
+      if (interactive && is_loaded_native_file s) then true
       else (name := NotLinked; false)
   | Linked (s,_) ->
-      if List.mem s !loaded_native_files then true
+      if is_loaded_native_file s then true
       else (name := NotLinked; false)
 
 let param_name = Name (id_of_string "params")

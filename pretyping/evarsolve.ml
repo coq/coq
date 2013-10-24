@@ -1179,8 +1179,7 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
           let (evd,evar,(evk',argsv' as ev')) =
             materialize_evar (evar_define conv_algo) env !evdref 0 ev ty' in
           let ts = expansions_of_var aliases t in
-          (** FIXME : [List.mem] on constr ???*)
-          let test c = isEvar c || List.mem c ts in
+          let test c = isEvar c || List.mem_f Constr.equal c ts in
           let filter = restrict_upon_filter evd evk test argsv' in
           let filter = closure_of_filter evd evk' filter in
           let candidates = extract_candidates sols in

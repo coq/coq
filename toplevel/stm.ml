@@ -1291,9 +1291,9 @@ let init () =
     let opts = match !Flags.coq_slave_options with
       | None -> []
       | Some s -> Str.split_delim (Str.regexp ",") s in
-    if List.mem "fallback-to-lazy-if-marshal-error=no" opts then
+    if String.List.mem "fallback-to-lazy-if-marshal-error=no" opts then
       fallback_to_lazy_if_marshal_error := false;
-    if List.mem "fallback-to-lazy-if-slave-dies=no" opts then
+    if String.List.mem "fallback-to-lazy-if-slave-dies=no" opts then
       fallback_to_lazy_if_slave_dies := false;
     begin try
       let env_opt = Str.regexp "^extra-env=" in

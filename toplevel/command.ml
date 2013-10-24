@@ -475,9 +475,9 @@ let rec partial_order cmp = function
 
 let non_full_mutual_message x xge y yge isfix rest =
   let reason =
-    if List.mem x yge then
+    if Id.List.mem x yge then
       Id.to_string y^" depends on "^Id.to_string x^" but not conversely"
-    else if List.mem y xge then
+    else if Id.List.mem y xge then
       Id.to_string x^" depends on "^Id.to_string y^" but not conversely"
     else
       Id.to_string y^" and "^Id.to_string x^" are not mutually dependent" in
@@ -805,7 +805,7 @@ let interp_recursive isfix fixl notations =
 
 let check_recursive isfix env evd (fixnames,fixdefs,_) =
   check_evars_are_solved env Evd.empty evd;
-  if not (List.mem None fixdefs) then begin
+  if List.for_all Option.has_some fixdefs then begin
     let fixdefs = List.map Option.get fixdefs in
     check_mutuality env isfix (List.combine fixnames fixdefs)
   end
@@ -821,7 +821,7 @@ let interp_cofixpoint l ntns =
   fix,info
     
 let declare_fixpoint local ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
-  if List.mem None fixdefs then
+  if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
       List.map3 (fun id t (len,imps,_) -> (id,(t,(len,imps)))) fixnames fixtypes fiximps in
@@ -848,7 +848,7 @@ let declare_fixpoint local ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
   List.iter Metasyntax.add_notation_interpretation ntns
 
 let declare_cofixpoint local ((fixnames,fixdefs,fixtypes),fiximps) ntns =
-  if List.mem None fixdefs then
+  if List.exists Option.is_empty fixdefs then
     (* Some bodies to define by proof *)
     let thms =
       List.map3 (fun id t (len,imps,_) -> (id,(t,(len,imps)))) fixnames fixtypes fiximps in

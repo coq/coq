@@ -199,7 +199,7 @@ let rec alpha_pat excluded pat =
 	let new_id = Indfun_common.fresh_id excluded "_x" in
 	PatVar(loc,Name new_id),(new_id::excluded),Id.Map.empty
     | PatVar(loc,Name id) ->
-	if List.mem id excluded
+	if Id.List.mem id excluded
 	then
 	  let new_id = Namegen.next_ident_away id excluded in
 	  PatVar(loc,Name new_id),(new_id::excluded),
@@ -208,7 +208,7 @@ let rec alpha_pat excluded pat =
     | PatCstr(loc,constr,patl,na) ->
 	let new_na,new_excluded,map =
 	  match na with
-	    | Name id when List.mem id excluded ->
+	    | Name id when Id.List.mem id excluded ->
 		let new_id = Namegen.next_ident_away id excluded in
 		Name new_id,new_id::excluded, Id.Map.add id new_id Id.Map.empty
 	    | _ -> na,excluded,Id.Map.empty
@@ -412,7 +412,7 @@ let is_free_in id =
     | GCast (_,b,(CastConv t|CastVM t|CastNative t)) -> is_free_in b || is_free_in t
     | GCast (_,b,CastCoerce) -> is_free_in b
   and is_free_in_br (_,ids,_,rt) =
-    (not (List.mem id ids)) && is_free_in rt
+    (not (Id.List.mem id ids)) && is_free_in rt
   in
   is_free_in
 

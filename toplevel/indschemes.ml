@@ -200,7 +200,7 @@ let declare_one_case_analysis_scheme ind =
     (* in case the inductive has a type elimination, generates only one
        induction scheme, the other ones share the same code with the
        apropriate type *)
-  if List.mem InType kelim then
+  if Sorts.List.mem InType kelim then
     ignore (define_individual_scheme dep KernelVerbose None ind)
 
 (* Induction/recursion schemes *)
@@ -222,7 +222,7 @@ let declare_one_induction_scheme ind =
   let kelim = elim_sorts (mib,mip) in
   let elims =
     List.map_filter (fun (sort,kind) ->
-      if List.mem sort kelim then Some kind else None)
+      if Sorts.List.mem sort kelim then Some kind else None)
       (if from_prop then kinds_from_prop else kinds_from_type) in
   List.iter (fun kind -> ignore (define_individual_scheme kind KernelVerbose None ind))
     elims

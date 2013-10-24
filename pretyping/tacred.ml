@@ -183,7 +183,7 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
   if not (List.distinct_f Int.compare reversible_rels) then
     raise Elimconst;
   List.iteri (fun i t_i ->
-    if not (List.mem_assoc (i+1) li) then
+    if not (Int.List.mem_assoc (i+1) li) then
       let fvs = List.map ((+) (i+1)) (Int.Set.elements (free_rels t_i)) in
       match List.intersect Int.equal fvs reversible_rels with
       | [] -> ()
@@ -888,8 +888,8 @@ let contextually byhead (occs,c) f env sigma t =
     try
       let subst = if byhead then matches_head c t else matches c t in
       let ok =
-	if nowhere_except_in then List.mem !pos locs
-	else not (List.mem !pos locs) in
+	if nowhere_except_in then Int.List.mem !pos locs
+	else not (Int.List.mem !pos locs) in
       incr pos;
       if ok then
         let subst' = Id.Map.map (traverse envc) subst in
@@ -923,8 +923,8 @@ let substlin env evalref n (nowhere_except_in,locs) c =
     if nowhere_except_in && !pos > maxocc then c
     else if eq_constr c term then
       let ok =
-	if nowhere_except_in then List.mem !pos locs
-	else not (List.mem !pos locs) in
+	if nowhere_except_in then Int.List.mem !pos locs
+	else not (Int.List.mem !pos locs) in
       incr pos;
       if ok then value else c
     else

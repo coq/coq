@@ -139,7 +139,7 @@ let occur_glob_constr id =
 	|| (List.exists occur_pattern pl)
     | GLetTuple (loc,nal,rtntyp,b,c) ->
 	occur_return_type rtntyp id
-        || (occur b) || (not (List.mem (Name id) nal) && (occur c))
+        || (occur b) || (not (List.mem_f Name.equal (Name id) nal) && (occur c))
     | GIf (loc,c,rtntyp,b1,b2) ->
 	occur_return_type rtntyp id || (occur c) || (occur b1) || (occur b2)
     | GRec (loc,fk,idl,bl,tyl,bv) ->
@@ -158,7 +158,7 @@ let occur_glob_constr id =
       | CastVM t | CastNative t -> occur t | CastCoerce -> false)
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> false
 
-  and occur_pattern (loc,idl,p,c) = not (List.mem id idl) && (occur c)
+  and occur_pattern (loc,idl,p,c) = not (Id.List.mem id idl) && (occur c)
 
   and occur_option = function None -> false | Some p -> occur p
 

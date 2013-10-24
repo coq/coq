@@ -64,7 +64,7 @@ let to_list v =
 end
 
 let is_variable env id =
-  List.mem id (Termops.ids_of_named_context (Environ.named_context env))
+  Id.List.mem id (Termops.ids_of_named_context (Environ.named_context env))
 
 (* Transforms an id into a constr if possible, or fails with Not_found *)
 let constr_of_id env id =
@@ -155,7 +155,7 @@ let coerce_to_evaluable_ref env v =
     | _ -> fail ()
   else if has_type v (topwit wit_var) then
     let id = out_gen (topwit wit_var) v in
-    if List.mem id (Termops.ids_of_context env) then EvalVarRef id
+    if Id.List.mem id (Termops.ids_of_context env) then EvalVarRef id
     else fail ()
   else
     let ev = match Value.to_constr v with

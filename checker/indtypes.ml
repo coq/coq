@@ -254,7 +254,8 @@ let typecheck_one_inductive env params mib mip =
   (* mind_kelim: checked by positivity criterion ? *)
   let sorts =
     compute_elim_sorts env params mib mip.mind_arity mip.mind_nf_lc in
-  if List.exists (fun s -> not (List.mem s sorts)) mip.mind_kelim then
+  let reject_sort s = not (List.mem_f family_equal s sorts) in
+  if List.exists reject_sort mip.mind_kelim then
     failwith "elimination not allowed";
   (* mind_recargs: checked by positivity criterion *)
   ()
