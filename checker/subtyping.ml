@@ -129,14 +129,16 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   in
 
   let check_packet p1 p2 =
-    let check f = if f p1 <> f p2 then error () in
-      check (fun p -> p.mind_consnames);
-      check (fun p -> p.mind_typename);
+    let check eq f = if not (eq (f p1) (f p2)) then error () in
+    check
+      (fun a1 a2 -> Array.equal Id.equal a1 a2)
+      (fun p -> p.mind_consnames);
+      check Id.equal (fun p -> p.mind_typename);
       (* nf_lc later *)
       (* nf_arity later *)
       (* user_lc ignored *)
       (* user_arity ignored *)
-      check (fun p -> p.mind_nrealargs);
+      check Int.equal (fun p -> p.mind_nrealargs);
       (* kelim ignored *)
       (* listrec ignored *)
       (* finite done *)
@@ -151,9 +153,10 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
       (arities_of_specif kn (mib1,p1))
       (arities_of_specif kn (mib2,p2))
   in
-  let check f = if f mib1 <> f mib2 then error () in
-  check (fun mib -> mib.mind_finite);
-  check (fun mib -> mib.mind_ntypes);
+  let check eq f = if not (eq (f mib1) (f mib2)) then error () in
+  let bool_equal (x : bool) (y : bool) = x = y in
+  check bool_equal (fun mib -> mib.mind_finite);
+  check Int.equal (fun mib -> mib.mind_ntypes);
   assert (Array.length mib1.mind_packets >= 1
 	    && Array.length mib2.mind_packets >= 1);
 
@@ -162,7 +165,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
   (* at the time of checking the inductive arities in check_packet. *)
   (* Notice that we don't expect the local definitions to match: only *)
   (* the inductive types and constructors types have to be convertible *)
-  check (fun mib -> mib.mind_nparams);
+  check Int.equal (fun mib -> mib.mind_nparams);
 
   (*begin
     match mib2.mind_equiv with
@@ -176,7 +179,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
 	    if kn1 <> kn2 then error ()
   end;*)
   (* we check that records and their field names are preserved. *)
-  check (fun mib -> mib.mind_record);
+  check bool_equal (fun mib -> mib.mind_record);
   if mib1.mind_record then begin
     let rec names_prod_letin t = match t with
       | Prod(n,_,t) -> n::(names_prod_letin t)
@@ -188,7 +191,9 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
     assert (Array.length mib2.mind_packets = 1);
     assert (Array.length mib1.mind_packets.(0).mind_user_lc = 1);
     assert (Array.length mib2.mind_packets.(0).mind_user_lc = 1);
-    check (fun mib -> names_prod_letin mib.mind_packets.(0).mind_user_lc.(0));
+    check
+      (fun l1 l2 -> List.equal Name.equal l1 l2)
+      (fun mib -> names_prod_letin mib.mind_packets.(0).mind_user_lc.(0));
   end;
   (* we first check simple things *)
   Array.iter2 check_packet mib1.mind_packets mib2.mind_packets;
