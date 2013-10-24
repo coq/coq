@@ -85,3 +85,5 @@ let iter_opt k f =
   with
   | None -> ()
   | Some v -> f v
+
+let clear () = run_collection ()

@@ -48,3 +48,5 @@ val get : 'a key -> 'a
 (* These never fail. *)
 val iter_opt : 'a key -> ('a -> unit) -> unit
 val default : 'a key -> 'a -> 'a
+
+val clear : unit -> unit
