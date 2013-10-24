@@ -401,7 +401,7 @@ type subterm_spec =
   | Not_subterm
 
 let spec_of_tree t = lazy
-  (if Rtree.eq_rtree (=) (Lazy.force t) mk_norec
+  (if eq_wf_paths (Lazy.force t) mk_norec
    then Not_subterm
    else Subterm(Strict,Lazy.force t))
 
@@ -413,7 +413,7 @@ let subterm_spec_glb =
       | Not_subterm, _ -> Not_subterm
       | _, Not_subterm -> Not_subterm
       | Subterm (a1,t1), Subterm (a2,t2) ->
-          if Rtree.eq_rtree (=) t1 t2 then Subterm (size_glb a1 a2, t1)
+          if eq_wf_paths t1 t2 then Subterm (size_glb a1 a2, t1)
           (* branches do not return objects with same spec *)
           else Not_subterm in
   Array.fold_left glb2 Dead_code

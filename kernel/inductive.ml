@@ -419,7 +419,7 @@ type subterm_spec =
   | Dead_code
   | Not_subterm
 
-let eq_wf_paths = Rtree.eq_rtree Declareops.eq_recarg
+let eq_wf_paths = Rtree.equal Declareops.eq_recarg
 
 let spec_of_tree t = lazy
   (if eq_wf_paths (Lazy.force t) mk_norec

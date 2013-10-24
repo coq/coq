@@ -498,13 +498,10 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp (_,i as ind) indlc
       indlc
   in mk_paths (Mrec ind) irecargs
 
-let check_subtree (t1:'a) (t2:'a) =
-  if not (Rtree.compare_rtree (fun t1 t2 ->
-    let l1 = fst(Rtree.dest_node t1) in
-    let l2 = fst(Rtree.dest_node t2) in
-    if l1 = Norec || l1 = l2 then 0 else -1)
-    t1 t2) then
-    failwith "bad recursive trees"
+let check_subtree t1 t2 =
+  let cmp_labels l1 l2 = l1 == Norec || eq_recarg l1 l2 in
+  if not (Rtree.equiv eq_recarg cmp_labels t1 t2)
+  then failwith "bad recursive trees"
 (* if t1=t2 then () else msg_warning (str"TODO: check recursive positions")*)
 
 let check_positivity env_ar mind params nrecp inds =

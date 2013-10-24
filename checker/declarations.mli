@@ -18,6 +18,8 @@ val mk_norec : wf_paths
 val mk_paths : recarg -> wf_paths list array -> wf_paths
 val dest_recarg : wf_paths -> recarg
 val dest_subterms : wf_paths -> wf_paths list array
+val eq_recarg : recarg -> recarg -> bool
+val eq_wf_paths : wf_paths -> wf_paths -> bool
 
 (* Modules *)
 

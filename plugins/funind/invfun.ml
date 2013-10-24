@@ -918,7 +918,8 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	| _ -> assert false
     in
     let ids = res::hres::graph_principle_id::ids in
-    (* we also compute fresh names for each hyptohesis of each branche of the principle *)
+    (* we also compute fresh names for each hyptohesis of each branch
+       of the principle *)
     let branches = List.rev princ_infos.branches in
     let intro_pats =
       List.map
@@ -935,8 +936,12 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     *)
     let rewrite_tac j ids : tactic =
       let graph_def = graphs.(j) in
-      let infos =  try find_Function_infos (destConst funcs.(j)) with Not_found ->  error "No graph found" in
-      if infos.is_general ||  Rtree.is_infinite graph_def.mind_recargs
+      let infos =
+        try find_Function_infos (destConst funcs.(j))
+        with Not_found ->  error "No graph found"
+      in
+      if infos.is_general
+        || Rtree.is_infinite Declareops.eq_recarg graph_def.mind_recargs
       then
 	let eq_lemma =
 	  try Option.get (infos).equation_lemma
@@ -945,7 +950,8 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	tclTHENSEQ[
 	  tclMAP h_intro ids;
 	  Equality.rewriteLR (mkConst eq_lemma);
-	  (* Don't forget to $\zeta$ normlize the term since the principles have been $\zeta$-normalized *)
+	  (* Don't forget to $\zeta$ normlize the term since the principles
+             have been $\zeta$-normalized *)
 	  h_reduce
 	    (Genredexpr.Cbv
 	       {Redops.all_flags
@@ -956,7 +962,8 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  h_generalize (List.map mkVar ids);
 	  thin ids
 	]
-      else unfold_in_concl [(Locus.AllOccurrences, Names.EvalConstRef (destConst f))]
+      else
+        unfold_in_concl [(Locus.AllOccurrences, Names.EvalConstRef (destConst f))]
     in
     (* The proof of each branche itself *)
     let ind_number = ref 0 in

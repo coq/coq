@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Type of regular tree with nodes labelled by values of type 'a 
+(** Type of regular tree with nodes labelled by values of type 'a
    The implementation uses de Bruijn indices, so binding capture
    is avoided by the lift operator (see example below) *)
 type 'a t
@@ -49,22 +49,22 @@ val dest_node  : 'a t -> 'a * 'a t array
 (** dest_param is not needed for closed trees (i.e. with no free variable) *)
 val dest_param : 'a t -> int * int
 
-(** Tells if a tree has an infinite branch *)
-val is_infinite : 'a t -> bool
+(** Tells if a tree has an infinite branch. The first arg is a comparison
+    used to detect already seen elements, hence loops *)
+val is_infinite : ('a -> 'a -> bool) -> 'a t -> bool
 
-(** [compare_rtree f t1 t2] compares t1 t2 (top-down).
-   f is called on each node: if the result is negative then the
-   traversal ends on false, it is is positive then deeper nodes are
-   not examined, and the traversal continues on respective siblings,
-   and if it is 0, then the traversal continues on sons, pairwise.
-   In this latter case, if the nodes do not have the same number of
-   sons, then the traversal ends on false.
-   In case of loop, the traversal is successful and it resumes on
-   siblings.
- *)
-val compare_rtree : ('a t -> 'b t -> int) -> 'a t -> 'b t -> bool
+(** [Rtree.equiv eq eqlab t1 t2] compares t1 t2 (top-down).
+   If t1 and t2 are both nodes, [eqlab] is called on their labels,
+   in case of success deeper nodes are examined.
+   In case of loop (detected via structural equality parametrized
+   by [eq]), then the comparison is successful. *)
+val equiv :
+  ('a -> 'a -> bool) -> ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 
-val eq_rtree : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+(** [Rtree.equal eq t1 t2] compares t1 and t2, first via physical
+    equality, then by structural equality (using [eq] on elements),
+    then by logical equivalence [Rtree.equiv eq eq] *)
+val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 
 (** Iterators *)
 
@@ -72,9 +72,9 @@ val map : ('a -> 'b) -> 'a t -> 'b t
 
 (** [(smartmap f t) == t] if [(f a) ==a ] for all nodes *)
 val smartmap : ('a -> 'a) -> 'a t -> 'a t
-val fold : (bool -> 'a t -> ('a t -> 'b) -> 'b) -> 'a t -> 'b
-val fold2 :
-  (bool -> 'a t -> 'b -> ('a t -> 'b -> 'c) -> 'c) -> 'a t -> 'b -> 'c
 
 (** A rather simple minded pretty-printer *)
 val pp_tree : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+
+val eq_rtree : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+(** @deprecated Same as [Rtree.equal] *)

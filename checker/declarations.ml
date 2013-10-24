@@ -469,6 +469,14 @@ let dest_subterms p =
 
 let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
 
+let eq_recarg r1 r2 = match r1, r2 with
+  | Norec, Norec -> true
+  | Mrec i1, Mrec i2 -> Names.eq_ind i1 i2
+  | Imbr i1, Imbr i2 -> Names.eq_ind i1 i2
+  | _ -> false
+
+let eq_wf_paths = Rtree.equal eq_recarg
+
 (**********************************************************************)
 (* Representation of mutual inductive types in the kernel             *)
 (*

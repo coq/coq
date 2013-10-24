@@ -103,75 +103,61 @@ let rec map f t = match t with
 let smartmap f t = match t with
     Param _ -> t
   | Node (a,sons) ->
-      let a'=f a and sons' = Util.Array.smartmap (map f) sons in
-	if a'==a && sons'==sons then
-	  t
-	else
-	  Node (a',sons')
+      let a'=f a and sons' = Array.smartmap (map f) sons in
+      if a'==a && sons'==sons then t
+      else Node (a',sons')
   | Rec(j,defs) ->
-      let defs' = Util.Array.smartmap (map f) defs in
-	if defs'==defs then
-	  t
-	else
-	  Rec(j,defs')
+      let defs' = Array.smartmap (map f) defs in
+      if defs'==defs then t
+      else Rec(j,defs')
 
-(* Fixpoint operator on trees:
-   f is the body of the fixpoint. Arguments passed to f are:
-   - a boolean telling if the subtree has already been seen
-   - the current subtree
-   - a function to make recursive calls on subtrees
- *)
-let fold f t =
-  let rec fold histo t =
-    let seen = List.mem t histo in
-    let nhisto = if not seen then t::histo else histo in
-    f seen (expand t) (fold nhisto) in
-  fold [] t
+(** Structural equality test, parametrized by an equality on elements *)
 
+let rec raw_eq cmp t t' = match t, t' with
+  | Param (i,j), Param (i',j') -> Int.equal i i' && Int.equal j j'
+  | Node (x, a), Node (x', a') -> cmp x x' && Array.equal (raw_eq cmp) a a'
+  | Rec (i, a), Rec (i', a') -> Int.equal i i' && Array.equal (raw_eq cmp) a a'
+  | _ -> false
 
-(* Tests if a given tree is infinite, i.e. has an branch of infinte length. *)
-let is_infinite t = fold
-  (fun seen t is_inf ->
-    seen ||
-    (match t with
-        Node(_,v) -> Array.exists is_inf v
-      | Param _ -> false
-      | _ -> assert false))
-  t
+let raw_eq2 cmp (t,u) (t',u') = raw_eq cmp t t' && raw_eq cmp u u'
 
-let fold2 f t x =
-  let rec fold histo t x =
-    let seen = List.mem (t,x) histo in
-    let nhisto = if not seen then (t,x)::histo else histo in
-    f seen (expand t) x (fold nhisto) in
-  fold [] t x
+(** Equivalence test on expanded trees. It is parametrized by two
+    equalities on elements:
+    - [cmp] is used when checking for already seen trees
+    - [cmp'] is used when comparing node labels. *)
 
-let compare_rtree f = fold2
-  (fun seen t1 t2 cmp ->
-    seen ||
-    let b = f t1 t2 in
-    if b < 0 then false
-    else if b > 0 then true
-    else match expand t1, expand t2 with
-        Node(_,v1), Node(_,v2) when Int.equal (Array.length v1) (Array.length v2) ->
-          Array.for_all2 cmp v1 v2
-      | _ -> false)
+let equiv cmp cmp' =
+  let rec compare histo t t' =
+    List.mem_f (raw_eq2 cmp) (t,t') histo ||
+    match expand t, expand t' with
+    | Node(x,v), Node(x',v') ->
+        cmp' x x' &&
+        Int.equal (Array.length v) (Array.length v') &&
+        Array.for_all2 (compare ((t,t')::histo)) v v'
+    | _ -> false
+  in compare []
 
-let rec raw_eq cmp t1 t2 = match t1, t2 with
-| Param (i1, j1), Param (i2, j2) ->
-  Int.equal i1 i2 && Int.equal j1 j2
-| Node (x1, a1), Node (x2, a2) ->
-  cmp x1 x2 && Array.equal (raw_eq cmp) a1 a2
-| Rec (i1, a1), Rec (i2, a2) ->
-  Int.equal i1 i2 && Array.equal (raw_eq cmp) a1 a2
-| _ -> false
+(** The main comparison on rtree tries first physical equality, then
+    the structural one, then the logical equivalence *)
 
-let eq_rtree cmp t1 t2 =
-  t1 == t2 || raw_eq cmp t1 t2 ||
-  compare_rtree
-    (fun t1 t2 ->
-      if cmp (fst(dest_node t1)) (fst(dest_node t2)) then 0
-      else (-1)) t1 t2
+let equal cmp t t' =
+  t == t' || raw_eq cmp t t' || equiv cmp cmp t t'
+
+(** Deprecated alias *)
+let eq_rtree = equal
+
+(** Tests if a given tree is infinite, i.e. has an branch of infinite length.
+   This correspond to a cycle when visiting the expanded tree.
+   We use a specific comparison to detect already seen trees. *)
+
+let is_infinite cmp t =
+  let rec is_inf histo t =
+    List.mem_f (raw_eq cmp) t histo ||
+    match expand t with
+    | Node (_,v) -> Array.exists (is_inf (t::histo)) v
+    | _ -> false
+  in
+  is_inf [] t
 
 (* Pretty-print a tree (not so pretty) *)
 open Pp
