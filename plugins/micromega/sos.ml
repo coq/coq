@@ -1377,7 +1377,7 @@ let allvarorders l =
   List.map (fun vlis x -> index x vlis) (allpermutations l);;
 
 let changevariables_monomial zoln (m:monomial) =
-  foldl (fun a x k -> (List.assoc_f (=) x zoln |-> k) a) monomial_1 m;;
+  foldl (fun a x k -> (List.assoc x zoln |-> k) a) monomial_1 m;;
 
 let changevariables zoln pol =
   foldl (fun a m c -> (changevariables_monomial zoln m |-> c) a)

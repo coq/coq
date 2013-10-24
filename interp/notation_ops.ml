@@ -22,14 +22,6 @@ open Decl_kinds
 (**********************************************************************)
 (* Re-interpret a notation as a glob_constr, taking care of binders     *)
 
-module IdList = struct
-  let assoc id l = List.assoc_f Id.equal id l
-  let remove_assoc id l = List.remove_assoc_f Id.equal id l
-  let mem id l = List.exists (Id.equal id) l
-  let mem_assoc id l = List.exists (fun (a,_) -> Id.equal id a) l
-  let rev_mem_assoc id l = List.exists (fun (_,b) -> Id.equal id b) l
-end
-
 let name_to_ident = function
   | Anonymous -> Errors.error "This expression should be a simple identifier."
   | Name id -> id
@@ -45,15 +37,15 @@ let rec cases_pattern_fold_map loc g e = function
       e', PatCstr (loc,cstr,patl',na')
 
 let rec subst_glob_vars l = function
-  | GVar (_,id) as r -> (try IdList.assoc id l with Not_found -> r)
+  | GVar (_,id) as r -> (try List.assoc id l with Not_found -> r)
   | GProd (loc,Name id,bk,t,c) ->
       let id =
-	try match IdList.assoc id l with GVar(_,id') -> id' | _ -> id
+	try match List.assoc id l with GVar(_,id') -> id' | _ -> id
 	with Not_found -> id in
       GProd (loc,Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
   | GLambda (loc,Name id,bk,t,c) ->
       let id =
-	try match IdList.assoc id l with GVar(_,id') -> id' | _ -> id
+	try match List.assoc id l with GVar(_,id') -> id' | _ -> id
 	with Not_found -> id in
       GLambda (loc,Name id,bk,subst_glob_vars l t,subst_glob_vars l c)
   | r -> map_glob_constr (subst_glob_vars l) r (* assume: id is not binding *)
@@ -306,34 +298,31 @@ let notation_constr_and_vars_of_glob_constr a =
   (* Side effect *)
   t, !found
 
-let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
+let rec list_rev_mem_assoc x = function
+  | [] -> false
+  | (_,x')::l -> Id.equal x x' || list_rev_mem_assoc x l
 
 let check_variables vars recvars (found,foundrec,foundrecbinding) =
   let fold _ y accu = Id.Set.add y accu in
   let useless_vars = Id.Map.fold fold recvars Id.Set.empty in
   let vars = Id.Map.filter (fun y _ -> not (Id.Set.mem y useless_vars)) vars in
   let check_recvar x =
-    if IdList.mem x found then
+    if List.mem x found then
       errorlabstrm "" (pr_id x ++
 	strbrk " should only be used in the recursive part of a pattern.") in
   let check (x, y) = check_recvar x; check_recvar y in
   let () = List.iter check foundrec in
   let () = List.iter check foundrecbinding in
   let check_bound x =
-    if not (IdList.mem x found) then
-      if IdList.mem_assoc x foundrec ||
-         IdList.mem_assoc x foundrecbinding ||
-         IdList.rev_mem_assoc x foundrec ||
-         IdList.rev_mem_assoc x foundrecbinding
+    if not (List.mem x found) then
+      if List.mem_assoc x foundrec || List.mem_assoc x foundrecbinding
+        || list_rev_mem_assoc x foundrec || list_rev_mem_assoc x foundrecbinding
       then
-	error
-          (Id.to_string x ^
-          " should not be bound in a recursive pattern of the right-hand side.")
+	error ((Id.to_string x)^" should not be bound in a recursive pattern of the right-hand side.")
       else
-	error (Id.to_string x ^ " is unbound in the right-hand side.")
-  in
+	error ((Id.to_string x)^" is unbound in the right-hand side.") in
   let check_pair s x y where =
-    if not (List.mem_f (pair_equal Id.equal Id.equal) (x,y) where) then
+    if not (List.mem (x,y) where) then
       errorlabstrm "" (strbrk "in the right-hand side, " ++ pr_id x ++
 	str " and " ++ pr_id y ++ strbrk " should appear in " ++ str s ++
 	str " position as part of a recursive pattern.") in
@@ -526,11 +515,11 @@ let add_env alp (sigma,sigmalist,sigmabinders) var v =
 
 let bind_env alp (sigma,sigmalist,sigmabinders as fullsigma) var v =
   try
-    let v' = IdList.assoc var sigma in
+    let v' = List.assoc var sigma in
     match v, v' with
     | GHole _, _ -> fullsigma
     | _, GHole _ ->
-      add_env alp (IdList.remove_assoc var sigma,sigmalist,sigmabinders) var v
+        add_env alp (List.remove_assoc var sigma,sigmalist,sigmabinders) var v
     | _, _ ->
         if Pervasives.(=) v v' then fullsigma (** FIXME *)
         else raise No_match
@@ -558,7 +547,7 @@ let match_opt f sigma t1 t2 = match (t1,t2) with
   | _ -> raise No_match
 
 let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
-  | (_,Name id2) when IdList.mem id2 (fst metas) ->
+  | (_,Name id2) when List.mem id2 (fst metas) ->
       let rhs = match na1 with
       | Name id1 -> GVar (Loc.ghost,id1)
       | Anonymous -> GHole (Loc.ghost,Evar_kinds.InternalHole) in
@@ -589,16 +578,14 @@ let rec match_iterated_binders islambda decls = function
   | b -> (decls,b)
 
 let remove_sigma x (sigmavar,sigmalist,sigmabinders) =
-  (IdList.remove_assoc x sigmavar,sigmalist,sigmabinders)
+  (List.remove_assoc x sigmavar,sigmalist,sigmabinders)
 
 let match_abinderlist_with_app match_fun metas sigma rest x iter termin =
   let rec aux sigma acc rest =
     try
       let sigma = match_fun (ldots_var::fst metas,snd metas) sigma rest iter in
-      let rest = IdList.assoc ldots_var (pi1 sigma) in
-      let b =
-        match IdList.assoc x (pi3 sigma) with [b] -> b | _ ->assert false
-      in
+      let rest = List.assoc ldots_var (pi1 sigma) in
+      let b = match List.assoc x (pi3 sigma) with [b] -> b | _ ->assert false in
       let sigma = remove_sigma x (remove_sigma ldots_var sigma) in
       aux sigma (b::acc) rest
     with No_match when not (List.is_empty acc) ->
@@ -610,8 +597,8 @@ let match_alist match_fun metas sigma rest x iter termin lassoc =
   let rec aux sigma acc rest =
     try
       let sigma = match_fun (ldots_var::fst metas,snd metas) sigma rest iter in
-      let rest = IdList.assoc ldots_var (pi1 sigma) in
-      let t = IdList.assoc x (pi1 sigma) in
+      let rest = List.assoc ldots_var (pi1 sigma) in
+      let t = List.assoc x (pi1 sigma) in
       let sigma = remove_sigma x (remove_sigma ldots_var sigma) in
       aux sigma (t::acc) rest
     with No_match when not (List.is_empty acc) ->
@@ -635,7 +622,7 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   match (a1,a2) with
 
   (* Matching notation variable *)
-  | r1, NVar id2 when IdList.mem id2 tmetas -> bind_env alp sigma id2 r1
+  | r1, NVar id2 when List.mem id2 tmetas -> bind_env alp sigma id2 r1
 
   (* Matching recursive notations for terms *)
   | r1, NList (x,_,iter,termin,lassoc) ->
@@ -656,10 +643,10 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
       match_abinderlist_with_app (match_hd u alp) metas sigma r x iter termin
 
   (* Matching individual binders as part of a recursive pattern *)
-  | GLambda (_,na,bk,t,b1), NLambda (Name id,_,b2) when IdList.mem id blmetas ->
+  | GLambda (_,na,bk,t,b1), NLambda (Name id,_,b2) when List.mem id blmetas ->
       match_in u alp metas (bind_binder sigma id [(na,bk,None,t)]) b1 b2
   | GProd (_,na,bk,t,b1), NProd (Name id,_,b2)
-      when IdList.mem id blmetas && na != Anonymous ->
+      when List.mem id blmetas && na != Anonymous ->
       match_in u alp metas (bind_binder sigma id [(na,bk,None,t)]) b1 b2
 
   (* Matching compositionally *)
@@ -773,7 +760,7 @@ let match_notation_constr u c (metas,pat) =
   let terms,termlists,binders = match_ false u [] vars ([],[],[]) c pat in
   (* Reorder canonically the substitution *)
   let find x =
-    try IdList.assoc x terms
+    try List.assoc x terms
     with Not_found ->
       (* Happens for binders bound to Anonymous *)
       (* Find a better way to propagate Anonymous... *)
@@ -783,9 +770,9 @@ let match_notation_constr u c (metas,pat) =
     | NtnTypeConstr ->
        ((find x, scl)::terms',termlists',binders')
     | NtnTypeConstrList ->
-       (terms',(IdList.assoc x termlists,scl)::termlists',binders')
+       (terms',(List.assoc x termlists,scl)::termlists',binders')
     | NtnTypeBinderList ->
-       (terms',termlists',(IdList.assoc x binders,scl)::binders'))
+       (terms',termlists',(List.assoc x binders,scl)::binders'))
     metas ([],[],[])
 
 (* Matching cases pattern *)
@@ -796,7 +783,7 @@ let add_patterns_for_params ind l =
 
 let bind_env_cases_pattern (sigma,sigmalist,x as fullsigma) var v =
   try
-    let vvar = IdList.assoc var sigma in
+    let vvar = List.assoc var sigma in
     if Pervasives.(=) v vvar then fullsigma else raise No_match (** FIXME *)
   with Not_found ->
     (* TODO: handle the case of multiple occs in different scopes *)
@@ -804,7 +791,7 @@ let bind_env_cases_pattern (sigma,sigmalist,x as fullsigma) var v =
 
 let rec match_cases_pattern metas sigma a1 a2 =
  match (a1,a2) with
-  | r1, NVar id2 when IdList.mem id2 metas -> (bind_env_cases_pattern sigma id2 r1),(0,[])
+  | r1, NVar id2 when List.mem id2 metas -> (bind_env_cases_pattern sigma id2 r1),(0,[])
   | PatVar (_,Anonymous), NHole _ -> sigma,(0,[])
   | PatCstr (loc,(ind,_ as r1),largs,_), NRef (ConstructRef r2) when eq_constructor r1 r2 ->
       sigma,(0,add_patterns_for_params (fst r1) largs)
@@ -846,8 +833,8 @@ let match_ind_pattern metas sigma ind pats a2 =
 let reorder_canonically_substitution terms termlists metas =
   List.fold_right (fun (x,(scl,typ)) (terms',termlists') ->
     match typ with
-      | NtnTypeConstr -> ((IdList.assoc x terms, scl)::terms',termlists')
-      | NtnTypeConstrList -> (terms',(IdList.assoc x termlists,scl)::termlists')
+      | NtnTypeConstr -> ((List.assoc x terms, scl)::terms',termlists')
+      | NtnTypeConstrList -> (terms',(List.assoc x termlists,scl)::termlists')
       | NtnTypeBinderList -> assert false)
     metas ([],[])
 
