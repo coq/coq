@@ -553,7 +553,8 @@ object(self)
 
   (* finds the state_id and if it an unfocus is needed to reach it *)
   method private find_id until =
-    try Doc.find_id document (fun id { start;stop } -> until (Some id) start stop)
+    try
+      Doc.find_id document (fun id { start;stop } -> until (Some id) start stop)
     with Not_found -> initial_state, Doc.focused document 
 
   method private cleanup seg =
@@ -586,6 +587,7 @@ object(self)
       buffer#remove_tag Tags.Script.tooltip ~start ~stop;
       buffer#remove_tag Tags.Script.processed ~start ~stop;
       buffer#remove_tag Tags.Script.to_process ~start ~stop;
+      buffer#remove_tag Tags.Script.unjustified ~start ~stop;
       self#show_goals in
     Coq.bind (Coq.lift opening) (fun () ->
     let rec undo to_id unfocus_needed =

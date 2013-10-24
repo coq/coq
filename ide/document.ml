@@ -123,11 +123,11 @@ let assign_tip_id d id =
 
 let cut_at d id =
   let aux (n, zone) { state_id; data } =
-    if stateid_opt_equal state_id (Some id) then CSig.Stop (n, List.rev zone)
+    if stateid_opt_equal state_id (Some id) then CSig.Stop (n, zone)
     else CSig.Cont (n + 1, data :: zone) in
   let n, zone = CList.fold_left_until aux (0, []) d.stack in
   for i = 1 to n do ignore(pop d) done;
-  zone
+  List.rev zone
 
 let find_id d f =
   let top, focus, bot = to_lists d in
