@@ -31,9 +31,11 @@ open Util
 
 module UniverseLevel = struct
 
+  open Names
+
   type t =
     | Set
-    | Level of int * Names.DirPath.t
+    | Level of int * DirPath.t
 
   (* A specialized comparison function: we compare the [int] part first.
      This way, most of the time, the [DirPath.t] part is not considered.
@@ -53,19 +55,24 @@ module UniverseLevel = struct
     | Level (i1, dp1), Level (i2, dp2) ->
       if i1 < i2 then -1
       else if i1 > i2 then 1
-      else Names.DirPath.compare dp1 dp2)
+      else DirPath.compare dp1 dp2)
 
   let equal u v = match u,v with
     | Set, Set -> true
     | Level (i1, dp1), Level (i2, dp2) ->
-      Int.equal i1 i2 && Names.DirPath.equal dp1 dp2
+      Int.equal i1 i2 && DirPath.equal dp1 dp2
     | _ -> false
+
+  let hash = function
+  | Set -> 0
+  | Level (i, dp) ->
+    Hashset.Combine.combine (Int.hash i) (DirPath.hash dp)
 
   let make m n = Level (n, m)
 
   let to_string = function
     | Set -> "Set"
-    | Level (n,d) -> Names.DirPath.to_string d^"."^string_of_int n
+    | Level (n,d) -> DirPath.to_string d^"."^string_of_int n
 end
 
 module UniverseLMap = Map.Make (UniverseLevel)
@@ -108,6 +115,21 @@ struct
   let equal u1 u2 = Int.equal (compare u1 u2) 0
 
   let make l = Atom l
+
+  open Hashset.Combine
+
+  let rec hash_list accu = function
+  | [] -> 0
+  | u :: us ->
+    let accu = combine (UniverseLevel.hash u) accu in
+    hash_list accu us
+
+  let hash = function
+  | Atom u -> combinesmall 1 (UniverseLevel.hash u)
+  | Max (lt, le) ->
+    let hlt = hash_list 0 lt in
+    let hle = hash_list 0 le in
+    combinesmall 2 (combine hlt hle)
 
 end
 
@@ -996,7 +1018,7 @@ module Hunivlevel =
 	| UniverseLevel.Level (n,d), UniverseLevel.Level (n',d') ->
 	  n == n' && d == d'
 	| _ -> false
-      let hash = Hashtbl.hash
+      let hash = UniverseLevel.hash
     end)
 
 module Huniv =
@@ -1015,7 +1037,7 @@ module Huniv =
 	      (List.for_all2eq (==) gel gel') &&
               (List.for_all2eq (==) gtl gtl')
 	  | _ -> false
-      let hash = Hashtbl.hash
+      let hash = Universe.hash
     end)
 
 let hcons_univlevel = Hashcons.simple_hcons Hunivlevel.generate Names.DirPath.hcons

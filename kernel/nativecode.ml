@@ -148,11 +148,11 @@ open Hashset.Combine
 let hash_symbol symb =
   match symb with
   | SymbValue v -> combinesmall 1 (Hashtbl.hash v)
-  | SymbSort s -> combinesmall 2 (Hashtbl.hash s)
-  | SymbName name -> combinesmall 3 (Hashtbl.hash name)
-  | SymbConst c -> combinesmall 4 (Hashtbl.hash c)
+  | SymbSort s -> combinesmall 2 (Sorts.hash s)
+  | SymbName name -> combinesmall 3 (Name.hash name)
+  | SymbConst c -> combinesmall 4 (Constant.hash c)
   | SymbMatch sw -> combinesmall 5 (hash_annot_sw sw)
-  | SymbInd ind -> combinesmall 6 (Hashtbl.hash ind)
+  | SymbInd ind -> combinesmall 6 (ind_hash ind)
 
 module HashedTypeSymbol = struct
   type t = symbol

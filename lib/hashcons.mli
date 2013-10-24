@@ -83,12 +83,12 @@ val recursive2_hcons :
 
 (** {6 Hashconsing of usual structures} *)
 
+module type HashedType = sig type t val hash : t -> int end
+
 module Hstring : (S with type t = string and type u = unit)
 (** Hashconsing of strings.  *)
 
-module type SomeData = sig type t end
-
-module Hlist (D:SomeData) :
+module Hlist (D:HashedType) :
   (S with type t = D.t list and type u = (D.t list -> D.t list)*(D.t->D.t))
 (** Hashconsing of lists.  *)
 

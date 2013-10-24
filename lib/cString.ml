@@ -46,6 +46,7 @@ module type ExtS =
 sig
   include S
   external equal : string -> string -> bool = "caml_string_equal" "noalloc"
+  val hash : string -> int
   val is_empty : string -> bool
   val explode : string -> string list
   val implode : string list -> string
@@ -66,6 +67,16 @@ end
 include String
 
 external equal : string -> string -> bool = "caml_string_equal" "noalloc"
+
+let rec hash len s i accu =
+  if i = len then accu
+  else
+    let c = Char.code (String.unsafe_get s i) in
+    hash len s (succ i) (accu * 19 + c)
+
+let hash s =
+  let len = String.length s in
+  hash len s 0 0
 
 let explode s =
   let rec explode_rec n =

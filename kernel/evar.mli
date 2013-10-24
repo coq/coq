@@ -27,5 +27,8 @@ val equal : t -> t -> bool
 val compare : t -> t -> int
 (** Comparison over existential variables. *)
 
+val hash : t -> int
+(** Hash over existential variables. *)
+
 module Set : Set.S with type elt = t
 module Map : CMap.ExtS with type key = t and module Set := Set

@@ -20,6 +20,9 @@ sig
   val equal : t -> t -> bool
   (** Equality function *)
 
+  val hash : t -> int
+  (** Hash function *)
+
   val make : Names.DirPath.t -> int -> t
   (** Create a new universe level from a unique identifier and an associated
       module path. *)
@@ -40,6 +43,9 @@ sig
 
   val equal : t -> t -> bool
   (** Equality function *)
+
+  val hash : t -> int
+  (** Hash function *)
 
   val make : UniverseLevel.t -> t
   (** Create a constraint-free universe out of a given level. *)

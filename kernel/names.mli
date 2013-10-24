@@ -21,6 +21,9 @@ sig
   val compare : t -> t -> int
   (** Comparison over identifiers *)
 
+  val hash : t -> int
+  (** Hash over identifiers *)
+
   val is_valid : string -> bool
   (** Check that a string may be converted to an identifier. *)
 
@@ -59,6 +62,9 @@ sig
   val equal : t -> t -> bool
   (** Equality over names. *)
 
+  val hash : t -> int
+  (** Hash over names. *)
+
   val hcons : t -> t
   (** Hashconsing over names. *)
 
@@ -85,6 +91,9 @@ sig
 
   val compare : t -> t -> int
   (** Comparison over directory paths. *)
+
+  val hash : t -> int
+  (** Hash over directory paths. *)
 
   val make : module_ident list -> t
   (** Create a directory path. (The list must be reversed). *)
@@ -122,6 +131,9 @@ sig
   val compare : t -> t -> int
   (** Comparison over labels. *)
 
+  val hash : t -> int
+  (** Hash over labels. *)
+
   val make : string -> t
   (** Create a label out of a string. *)
 
@@ -156,6 +168,9 @@ sig
   val compare : t -> t -> int
   (** Comparison over unique bound names. *)
 
+  val hash : t -> int
+  (** Hash over unique bound names. *)
+
   val make : DirPath.t -> Id.t -> t
   (** The first argument is a file name, to prevent conflict between different
       files. *)
@@ -188,6 +203,7 @@ sig
 
   val compare : t -> t -> int
   val equal : t -> t -> bool
+  val hash : t -> int
 
   val is_bound : t -> bool
 
@@ -278,6 +294,9 @@ sig
 
   val equal : t -> t -> bool
   (** Default comparison, alias for [CanOrd.equal] *)
+
+  val hash : t -> int
+  (** Hashing function *)
 
   val change_label : t -> Label.t -> t
   (** Builds a new constant name with a different label *)
@@ -381,10 +400,12 @@ val inductive_of_constructor : constructor -> inductive
 val index_of_constructor : constructor -> int
 val eq_ind : inductive -> inductive -> bool
 val ind_ord : inductive -> inductive -> int
+val ind_hash : inductive -> int
 val ind_user_ord : inductive -> inductive -> int
 val eq_constructor : constructor -> constructor -> bool
 val constructor_ord : constructor -> constructor -> int
 val constructor_user_ord : constructor -> constructor -> int
+val constructor_hash : constructor -> int
 
 (** Better to have it here that in Closure, since required in grammar.cma *)
 type evaluable_global_reference =

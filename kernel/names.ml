@@ -32,6 +32,8 @@ struct
 
   let compare = String.compare
 
+  let hash = String.hash
+
   let check_soft x =
     let iter (fatal, x) =
       if fatal then Errors.error x else Pp.msg_warning (str x)
@@ -82,6 +84,10 @@ struct
     | Name id1, Name id2 -> String.equal id1 id2
     | _ -> false
 
+  let hash = function
+  | Anonymous -> 0
+  | Name id -> Id.hash id
+
   module Self_Hashcons =
     struct
       type _t = t
@@ -96,7 +102,7 @@ struct
           | (Name id1, Name id2) -> id1 == id2
           | (Anonymous,Anonymous) -> true
           | _ -> false
-      let hash = Hashtbl.hash
+      let hash = hash
     end
 
   module Hname = Hashcons.Make(Self_Hashcons)
@@ -140,6 +146,14 @@ struct
     end
 
   let equal p1 p2 = Int.equal (compare p1 p2) 0
+
+  let rec hash accu = function
+  | [] -> accu
+  | id :: dp ->
+    let accu = Hashset.Combine.combine (Id.hash id) accu in
+    hash accu dp
+
+  let hash dp = hash 0 dp
 
   let make x = x
   let repr x = x
@@ -198,6 +212,11 @@ struct
 
   let to_id (_, s, _) = s
 
+  open Hashset.Combine
+
+  let hash (i, id, dp) =
+    combine3 (Int.hash i) (Id.hash id) (DirPath.hash dp)
+
   module Self_Hashcons =
     struct
       type _t = t
@@ -207,7 +226,7 @@ struct
       let equal ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
         (x == y) ||
         (Int.equal n1 n2 && s1 == s2 && dir1 == dir2)
-      let hash = Hashtbl.hash
+      let hash = hash
     end
 
   module HashMBId = Hashcons.Make(Self_Hashcons)
@@ -267,6 +286,14 @@ module ModPath = struct
 
   let equal mp1 mp2 = Int.equal (compare mp1 mp2) 0
 
+  open Hashset.Combine
+
+  let rec hash = function
+  | MPfile dp -> combinesmall 1 (DirPath.hash dp)
+  | MPbound id -> combinesmall 2 (MBId.hash id)
+  | MPdot (mp, lbl) ->
+    combinesmall 3 (combine (hash mp) (Label.hash lbl))
+
   let initial = MPfile DirPath.initial
 
   module Self_Hashcons = struct
@@ -284,7 +311,7 @@ module ModPath = struct
       | MPbound m1, MPbound m2 -> m1 == m2
       | MPdot (mod1,l1), MPdot (mod2,l2) -> l1 == l2 && equal mod1 mod2
       | _ -> false
-    let hash = Hashtbl.hash
+    let hash = hash
   end
 
   module HashMP = Hashcons.Make(Self_Hashcons)
@@ -336,6 +363,11 @@ module KerName = struct
 
   let equal kn1 kn2 = Int.equal (compare kn1 kn2) 0
 
+  open Hashset.Combine
+
+  let hash (mp, dp, lbl) =
+    combine3 (ModPath.hash mp) (DirPath.hash dp) (Label.hash lbl)
+
   module Self_Hashcons = struct
     type t = kernel_name
     type u = (ModPath.t -> ModPath.t) * (DirPath.t -> DirPath.t)
@@ -344,7 +376,7 @@ module KerName = struct
       (hmod mp,hdir dir,hstr l)
     let equal (mp1,dir1,l1) (mp2,dir2,l2) =
       mp1 == mp2 && dir1 == dir2 && l1 == l2
-    let hash = Hashtbl.hash
+    let hash = hash
   end
 
   module HashKN = Hashcons.Make(Self_Hashcons)
@@ -446,6 +478,14 @@ module KerPair = struct
       the same user part implies having the same canonical part
       (invariant of the system). *)
 
+  open Hashset.Combine
+
+  let hash = function
+  | Same kn -> combinesmall 1 (KerName.hash kn)
+  | Dual (kn1, kn2) ->
+    let hk = combine (KerName.hash kn1) (KerName.hash kn2) in
+    combinesmall 2 hk
+
   module Self_Hashcons =
     struct
       type t = kernel_pair
@@ -454,7 +494,7 @@ module KerPair = struct
         | Same kn -> Same (hkn kn)
         | Dual (knu,knc) -> make (hkn knu) (hkn knc)
       let equal x y = (user x) == (user y)
-      let hash = Hashtbl.hash
+      let hash = hash
     end
 
   module HashKP = Hashcons.Make(Self_Hashcons)
@@ -500,6 +540,8 @@ let ind_ord (m1, i1) (m2, i2) =
 let ind_user_ord (m1, i1) (m2, i2) =
   let c = Int.compare i1 i2 in
   if Int.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
+let ind_hash (m, i) =
+  Hashset.Combine.combine (MutInd.hash m) (Int.hash i)
 
 let eq_constructor (ind1, j1) (ind2, j2) = Int.equal j1 j2 && eq_ind ind1 ind2
 let constructor_ord (ind1, j1) (ind2, j2) =
@@ -508,6 +550,8 @@ let constructor_ord (ind1, j1) (ind2, j2) =
 let constructor_user_ord (ind1, j1) (ind2, j2) =
   let c = Int.compare j1 j2 in
   if Int.equal c 0 then ind_user_ord ind1 ind2 else c
+let constructor_hash (ind, i) =
+  Hashset.Combine.combine (ind_hash ind) (Int.hash i)
 
 module InductiveOrdered = struct
   type t = inductive
@@ -553,7 +597,7 @@ module Hind = Hashcons.Make(
     type u = MutInd.t -> MutInd.t
     let hashcons hmind (mind, i) = (hmind mind, i)
     let equal (mind1,i1) (mind2,i2) = mind1 == mind2 && Int.equal i1 i2
-    let hash = Hashtbl.hash
+    let hash = ind_hash
   end)
 
 module Hconstruct = Hashcons.Make(
@@ -562,7 +606,7 @@ module Hconstruct = Hashcons.Make(
     type u = inductive -> inductive
     let hashcons hind (ind, j) = (hind ind, j)
     let equal (ind1, j1) (ind2, j2) = ind1 == ind2 && Int.equal j1 j2
-    let hash = Hashtbl.hash
+    let hash = constructor_hash
   end)
 
 let hcons_con = Hashcons.simple_hcons Constant.HashKP.generate KerName.hcons

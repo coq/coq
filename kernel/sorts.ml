@@ -46,6 +46,19 @@ let family = function
 
 let family_equal = (==)
 
+open Hashset.Combine
+
+let hash = function
+| Prop p ->
+  let h = match p with
+  | Pos -> 0
+  | Null -> 1
+  in
+  combinesmall 1 h
+| Type u ->
+  let h = Universe.hash u in
+  combinesmall 2 h
+
 module Hsorts =
   Hashcons.Make(
     struct
@@ -59,7 +72,7 @@ module Hsorts =
         | (Prop c1, Prop c2) -> c1 == c2
         | (Type u1, Type u2) -> u1 == u2
         |_ -> false
-      let hash = Hashtbl.hash
+      let hash = hash
     end)
 
 let hcons = Hashcons.simple_hcons Hsorts.generate hcons_univ

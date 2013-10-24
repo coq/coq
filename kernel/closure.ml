@@ -213,7 +213,11 @@ module IdKeyHash =
 struct
   type t = id_key
   let equal = Names.eq_id_key
-  let hash = Hashtbl.hash
+  open Hashset.Combine
+  let hash = function
+  | ConstKey c -> combinesmall 1 (Constant.hash c)
+  | VarKey id -> combinesmall 2 (Id.hash id)
+  | RelKey i -> combinesmall 3 (Int.hash i)
 end
 
 module KeyTable = Hashtbl.Make(IdKeyHash)

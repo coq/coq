@@ -52,6 +52,9 @@ sig
   external equal : string -> string -> bool = "caml_string_equal" "noalloc"
   (** Equality on strings *)
 
+  val hash : string -> int
+  (** Hashing on strings. Should be compatible with generic one. *)
+
   val is_empty : string -> bool
   (** Test whether a string is empty. *)
 

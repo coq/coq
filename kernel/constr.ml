@@ -542,6 +542,12 @@ let term_array_table = HashsetTermArray.create 4999
 
 open Hashset.Combine
 
+let hash_cast_kind = function
+| VMcast -> 0
+| NATIVEcast -> 1
+| DEFAULTcast -> 2
+| REVERTcast -> 3
+
 (* [hashcons hash_consing_functions constr] computes an hash-consed
    representation for [constr] using [hash_consing_functions] on
    leaves. *)
@@ -549,39 +555,39 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
   let rec hash_term t =
     match t with
       | Var i ->
-	(Var (sh_id i), combinesmall 1 (Hashtbl.hash i))
+	(Var (sh_id i), combinesmall 1 (Id.hash i))
       | Sort s ->
-	(Sort (sh_sort s), combinesmall 2 (Hashtbl.hash s))
+	(Sort (sh_sort s), combinesmall 2 (Sorts.hash s))
       | Cast (c, k, t) ->
 	let c, hc = sh_rec c in
 	let t, ht = sh_rec t in
-	(Cast (c, k, t), combinesmall 3 (combine3 hc (Hashtbl.hash k) ht))
+	(Cast (c, k, t), combinesmall 3 (combine3 hc (hash_cast_kind k) ht))
       | Prod (na,t,c) ->
 	let t, ht = sh_rec t
 	and c, hc = sh_rec c in
-	(Prod (sh_na na, t, c), combinesmall 4 (combine3 (Hashtbl.hash na) ht hc))
+	(Prod (sh_na na, t, c), combinesmall 4 (combine3 (Name.hash na) ht hc))
       | Lambda (na,t,c) ->
 	let t, ht = sh_rec t
 	and c, hc = sh_rec c in
-	(Lambda (sh_na na, t, c), combinesmall 5 (combine3 (Hashtbl.hash na) ht hc))
+	(Lambda (sh_na na, t, c), combinesmall 5 (combine3 (Name.hash na) ht hc))
       | LetIn (na,b,t,c) ->
 	let b, hb = sh_rec b in
 	let t, ht = sh_rec t in
 	let c, hc = sh_rec c in
-	(LetIn (sh_na na, b, t, c), combinesmall 6 (combine4 (Hashtbl.hash na) hb ht hc))
+	(LetIn (sh_na na, b, t, c), combinesmall 6 (combine4 (Name.hash na) hb ht hc))
       | App (c,l) ->
 	let c, hc = sh_rec c in
 	let l, hl = hash_term_array l in
 	(App (c,l), combinesmall 7 (combine hl hc))
       | Evar (e,l) ->
 	let l, hl = hash_term_array l in
-	(Evar (e,l), combinesmall 8 (combine (Hashtbl.hash e) hl))
+	(Evar (e,l), combinesmall 8 (combine (Evar.hash e) hl))
       | Const c ->
-	(Const (sh_con c), combinesmall 9 (Hashtbl.hash c))
-      | Ind ((kn,i) as ind) ->
-	(Ind (sh_ind ind), combinesmall 10 (combine (Hashtbl.hash kn) i))
-      | Construct (((kn,i),j) as c)->
-	(Construct (sh_construct c), combinesmall 11 (combine3 (Hashtbl.hash kn) i j))
+	(Const (sh_con c), combinesmall 9 (Constant.hash c))
+      | Ind ind ->
+	(Ind (sh_ind ind), combinesmall 10 (ind_hash ind))
+      | Construct c ->
+	(Construct (sh_construct c), combinesmall 11 (constructor_hash c))
       | Case (ci,p,c,bl) ->
 	let p, hp = sh_rec p
 	and c, hc = sh_rec c in
@@ -591,14 +597,18 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Fix (ln,(lna,tl,bl)) ->
 	let bl,hbl = hash_term_array bl in
 	let tl,htl = hash_term_array tl in
-	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
-        let h = combine3 (Hashtbl.hash lna) hbl htl in
+        let () = Array.iteri (fun i x -> Array.unsafe_set lna i (sh_na x)) lna in
+        let fold accu na = combine (Name.hash na) accu in
+        let hna = Array.fold_left fold 0 lna in
+        let h = combine3 hna hbl htl in
 	(Fix (ln,(lna,tl,bl)), combinesmall 13 h)
       | CoFix(ln,(lna,tl,bl)) ->
 	let bl,hbl = hash_term_array bl in
 	let tl,htl = hash_term_array tl in
-	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
-        let h = combine3 (Hashtbl.hash lna) hbl htl in
+        let () = Array.iteri (fun i x -> Array.unsafe_set lna i (sh_na x)) lna in
+        let fold accu na = combine (Name.hash na) accu in
+        let hna = Array.fold_left fold 0 lna in
+        let h = combine3 hna hbl htl in
 	(CoFix (ln,(lna,tl,bl)), combinesmall 14 h)
       | Meta n ->
 	(t, combinesmall 15 n)
@@ -616,9 +626,9 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
   and hash_term_array t =
     let accu = ref 0 in
     for i = 0 to Array.length t - 1 do
-      let x, h = sh_rec t.(i) in
+      let x, h = sh_rec (Array.unsafe_get t i) in
       accu := combine !accu h;
-      t.(i) <- x
+      Array.unsafe_set t i x
     done;
     (* [h] must be positive. *)
     let h = !accu land 0x3FFFFFFF in
@@ -636,9 +646,12 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 
 let rec hash t =
   match kind t with
-    | Var i -> combinesmall 1 (Hashtbl.hash i)
-    | Sort s -> combinesmall 2 (Hashtbl.hash s)
-    | Cast (c, _, _) -> hash c
+    | Var i -> combinesmall 1 (Id.hash i)
+    | Sort s -> combinesmall 2 (Sorts.hash s)
+    | Cast (c, k, t) ->
+      let hc = hash c in
+      let ht = hash t in
+      combinesmall 3 (combine3 hc (hash_cast_kind k) ht)
     | Prod (_, t, c) -> combinesmall 4 (combine (hash t) (hash c))
     | Lambda (_, t, c) -> combinesmall 5 (combine (hash t) (hash c))
     | LetIn (_, b, t, c) ->
@@ -647,13 +660,13 @@ let rec hash t =
     | App (c,l) ->
       combinesmall 7 (combine (hash_term_array l) (hash c))
     | Evar (e,l) ->
-      combinesmall 8 (combine (Hashtbl.hash e) (hash_term_array l))
+      combinesmall 8 (combine (Evar.hash e) (hash_term_array l))
     | Const c ->
-      combinesmall 9 (Hashtbl.hash c)	(* TODO: proper hash function for constants *)
-    | Ind (kn,i) ->
-      combinesmall 10 (combine (Hashtbl.hash kn) i)
-    | Construct ((kn,i),j) ->
-      combinesmall 11 (combine3 (Hashtbl.hash kn) i j)
+      combinesmall 9 (Constant.hash c)
+    | Ind ind ->
+      combinesmall 10 (ind_hash ind)
+    | Construct c ->
+      combinesmall 11 (constructor_hash c)
     | Case (_ , p, c, bl) ->
       combinesmall 12 (combine3 (hash c) (hash p) (hash_term_array bl))
     | Fix (ln ,(_, tl, bl)) ->

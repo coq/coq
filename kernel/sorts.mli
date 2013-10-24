@@ -22,6 +22,7 @@ val type1  : t
 
 val equal : t -> t -> bool
 val compare : t -> t -> int
+val hash : t -> int
 
 val is_prop : t -> bool
 val family : t -> family

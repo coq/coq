@@ -117,9 +117,10 @@ let register_hcons h u =
 (* Basic hashcons modules for string and obj. Integers do not need be
    hashconsed.  *)
 
+module type HashedType = sig type t val hash : t -> int end
+
 (* list *)
-module type SomeData = sig type t end
-module Hlist (D:SomeData) =
+module Hlist (D:HashedType) =
   Make(
     struct
       type t = D.t list
@@ -133,7 +134,12 @@ module Hlist (D:SomeData) =
           | [], [] -> true
           | x1::l1, x2::l2 -> x1==x2 && l1==l2
           | _ -> false
-      let hash = Hashtbl.hash
+      let rec hash accu = function
+      | [] -> accu
+      | x :: l ->
+        let accu = Hashset.Combine.combine (D.hash x) accu in
+        hash accu l
+      let hash l = hash 0 l
     end)
 
 (* string *)
@@ -143,7 +149,16 @@ module Hstring = Make(
     type u = unit
     let hashcons () s =(* incr accesstr;*) s
     external equal : string -> string -> bool = "caml_string_equal" "noalloc"
-    let hash = Hashtbl.hash
+    (** Copy from CString *)
+    let rec hash len s i accu =
+      if i = len then accu
+      else
+        let c = Char.code (String.unsafe_get s i) in
+        hash len s (succ i) (accu * 19 + c)
+
+    let hash s =
+      let len = String.length s in
+      hash len s 0 0
   end)
 
 (* Obj.t *)

@@ -12,7 +12,7 @@ external equal : int -> int -> bool = "%eq"
 
 external compare : int -> int -> int = "caml_int_compare"
 
-let hash i = i land max_int
+let hash i = i land 0x3FFFFFFF
 
 module Self =
 struct
