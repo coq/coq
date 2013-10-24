@@ -736,7 +736,8 @@ let rec assoc_f f a = function
   | (x, e) :: xs -> if f a x then e else assoc_f f a xs
   | [] -> raise Not_found
 
-let remove_assoc_f f a l = remove_first (fun (x,_) -> f a x) l
+let remove_assoc_f f a l =
+  try remove_first (fun (x,_) -> f a x) l with Not_found -> l
 
 let mem_assoc_f f a l = List.exists (fun (x,_) -> f a x) l
 

@@ -160,7 +160,10 @@ sig
   val for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
   val except : 'a eq -> 'a -> 'a list -> 'a list
   val remove : 'a eq -> 'a -> 'a list -> 'a list
+
   val remove_first : ('a -> bool) -> 'a list -> 'a list
+  (** Remove the first element satisfying a predicate, or raise [Not_found] *)
+
   val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val sep_last : 'a list -> 'a * 'a list
 
