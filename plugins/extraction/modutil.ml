@@ -213,7 +213,7 @@ let get_decl_in_structure r struc =
   try
     let base_mp,ll = labels_of_ref r in
     if not (at_toplevel base_mp) then error_not_visible r;
-    let sel = List.assoc base_mp struc in
+    let sel = List.assoc_f ModPath.equal base_mp struc in
     let rec go ll sel = match ll with
       | [] -> assert false
       | l :: ll ->

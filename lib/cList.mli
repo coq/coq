@@ -217,6 +217,7 @@ sig
   val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
   val assoc_f : 'a eq -> 'a -> ('a * 'b) list -> 'b
   val remove_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> ('a * 'b) list
+  val mem_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> bool
 
   val cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
   (** A generic cartesian product: for any operator (**),

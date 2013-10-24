@@ -1760,7 +1760,7 @@ let prepare_predicate_from_arsign_tycon loc tomatchs arsign c =
       | Rel n when n > lift ->
 	  (try
 	      (* Make the predicate dependent on the matched variable *)
-	      let idx = List.assoc (n - lift) subst in
+	      let idx = List.assoc_f Int.equal (n - lift) subst in
 		mkRel (idx + lift)
 	    with Not_found ->
 	      (* A variable that is not matched, lift over the arsign. *)

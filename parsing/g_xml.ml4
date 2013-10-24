@@ -74,7 +74,7 @@ let nmtoken (loc,a) =
   with Failure _ -> user_err_loc (loc,"",str "nmtoken expected.")
 
 let get_xml_attr s al =
-  try List.assoc s al
+  try List.assoc_f String.equal s al
   with Not_found -> error ("No attribute "^s)
 
 (* Interpreting specific attributes *)
@@ -124,7 +124,7 @@ let get_xml_constructor al =
   (get_xml_inductive al, nmtoken (get_xml_attr "noConstr" al))
 
 let get_xml_binder al =
-  try Name (ident_of_cdata (List.assoc "binder" al))
+  try Name (ident_of_cdata (List.assoc_f String.equal "binder" al))
   with Not_found -> Anonymous
 
 let get_xml_ident al = ident_of_cdata (get_xml_attr "binder" al)

@@ -246,7 +246,7 @@ let ref_value_cache info ref =
             | None -> raise Not_found
             | Some t -> lift n t
             end
-	| VarKey id -> List.assoc id info.i_vars
+	| VarKey id -> List.assoc_f Id.equal id info.i_vars
 	| ConstKey cst -> constant_value info.i_env cst
     in
     let v = info.i_repr info body in

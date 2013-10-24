@@ -46,7 +46,7 @@ let get_new_id locals id =
     get_id (List.map snd locals) id
 
 let rec print_local_modpath locals = function
-  | MPbound mbid -> pr_id (List.assoc mbid locals)
+  | MPbound mbid -> pr_id (Util.List.assoc_f MBId.equal mbid locals)
   | MPdot(mp,l) ->
       print_local_modpath locals mp ++ str "." ++ pr_lab l
   | MPfile _ -> raise Not_found

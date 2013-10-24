@@ -254,7 +254,7 @@ let check_initial senv = assert (is_initial senv)
 let check_imports current_libs needed =
   let check (id,stamp) =
     try
-      let actual_stamp = List.assoc id current_libs in
+      let actual_stamp = List.assoc_f DirPath.equal id current_libs in
       if not (String.equal stamp actual_stamp) then
 	Errors.error
           ("Inconsistent assumptions over module "^(DirPath.to_string id)^".")

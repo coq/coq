@@ -121,7 +121,7 @@ module MakeTable =
 
 let string_table = ref []
 
-let get_string_table k = List.assoc (nickname k) !string_table
+let get_string_table k = List.assoc_f String.equal (nickname k) !string_table
 
 module type StringConvertArg =
 sig
@@ -150,7 +150,7 @@ module MakeStringTable =
 
 let ref_table = ref []
 
-let get_ref_table k = List.assoc (nickname k) !ref_table
+let get_ref_table k = List.assoc_f String.equal (nickname k) !ref_table
 
 module type RefConvertArg =
 sig

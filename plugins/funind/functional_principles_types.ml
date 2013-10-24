@@ -482,7 +482,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
     List.map
-      (function const -> List.assoc const this_block_funs_indexes)
+      (function cst -> List.assoc_f Constant.equal cst this_block_funs_indexes)
       funs
   in
   let ind_list =
@@ -665,7 +665,7 @@ let build_case_scheme fa =
   let prop_sort = InProp in
   let funs_indexes =
     let this_block_funs_indexes = Array.to_list this_block_funs_indexes in
-    List.assoc (destConst funs) this_block_funs_indexes
+    List.assoc_f Constant.equal (destConst funs) this_block_funs_indexes
   in
   let ind_fun =
 	 let ind = first_fun_kn,funs_indexes in

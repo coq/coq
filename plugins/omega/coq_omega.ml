@@ -131,20 +131,24 @@ let unfold s = Tactics.unfold_in_concl [Locus.AllOccurrences, Lazy.force s]
 
 let rev_assoc k =
   let rec loop = function
-    | [] -> raise Not_found | (v,k')::_ when Int.equal k k' -> v | _ :: l -> loop l
+    | [] -> raise Not_found
+    | (v,k')::_ when Int.equal k k' -> v
+    | _ :: l -> loop l
   in
   loop
 
 let tag_hypothesis,tag_of_hyp, hyp_of_tag =
   let l = ref ([]:(Id.t * int) list) in
   (fun h id -> l := (h,id):: !l),
-  (fun h -> try List.assoc h !l with Not_found -> failwith "tag_hypothesis"),
+  (fun h ->
+    try List.assoc_f Id.equal h !l with Not_found -> failwith "tag_hypothesis"),
   (fun h -> try rev_assoc h !l with Not_found -> failwith "tag_hypothesis")
 
 let hide_constr,find_constr,clear_tables,dump_tables =
   let l = ref ([]:(constr * (Id.t * Id.t * bool)) list) in
   (fun h id eg b -> l := (h,(id,eg,b)):: !l),
-  (fun h -> try List.assoc_f eq_constr h !l with Not_found -> failwith "find_contr"),
+  (fun h ->
+    try List.assoc_f Constr.equal h !l with Not_found -> failwith "find_contr"),
   (fun () -> l := []),
   (fun () -> !l)
 
@@ -1018,7 +1022,7 @@ let replay_history tactic_normalisation =
 	  begin
 	    try
 	      tclTHEN
-		(List.assoc (hyp_of_tag e.id) tactic_normalisation)
+		(List.assoc_f Id.equal (hyp_of_tag e.id) tactic_normalisation)
 		(loop l)
 	    with Not_found -> loop l end
       | NEGATE_CONTRADICT (e2,e1,b) :: l ->

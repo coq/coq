@@ -221,7 +221,7 @@ let open_canonical_structure i (_,o) =
     let lo = compute_canonical_projections o in
     List.iter (fun ((proj,cs_pat),s) ->
       let l = try Refmap.find proj !object_table with Not_found -> [] in
-      let ocs = try Some (List.assoc cs_pat l)
+      let ocs = try Some (List.assoc_f Pervasives.(=) cs_pat l) (* FIXME *)
       with Not_found -> None
       in match ocs with
         | None -> object_table := Refmap.add proj ((cs_pat,s)::l) !object_table;
@@ -287,7 +287,7 @@ let declare_canonical_structure ref =
   add_canonical_structure (check_and_decompose_canonical_structure ref)
 
 let lookup_canonical_conversion (proj,pat) =
-  List.assoc pat (Refmap.find proj !object_table)
+  List.assoc_f Pervasives.(=) pat (Refmap.find proj !object_table) (* FIXME *)
 
 let is_open_canonical_projection env sigma (c,args) =
   try

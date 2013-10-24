@@ -960,7 +960,7 @@ and pr_extend s cl =
     try pr_gen a
     with Failure _ -> str ("<error in "^s^">") in
   try
-    let rls = List.assoc s (Egramml.get_extend_vernac_grammars()) in
+    let rls = List.assoc_f String.equal s (Egramml.get_extend_vernac_grammars()) in
     let rl = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
     let start,rl,cl =
       match rl with

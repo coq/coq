@@ -615,14 +615,14 @@ let get_rel env id i =
     List.nth env.env_rel (i-1)
   else 
     let i = i - env.env_bound in
-    try List.assoc i !(env.env_urel)
+    try List.assoc_f Int.equal i !(env.env_urel)
     with Not_found ->
       let local = MLlocal (fresh_lname id) in
       env.env_urel := (i,local) :: !(env.env_urel);
       local
 
 let get_var env id =
-  try List.assoc id !(env.env_named)
+  try List.assoc_f Id.equal id !(env.env_named)
   with Not_found ->
     let local = MLlocal (fresh_lname (Name id)) in
     env.env_named := (id, local)::!(env.env_named);

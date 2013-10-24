@@ -131,6 +131,7 @@ sig
   val map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
   val assoc_f : 'a eq -> 'a -> ('a * 'b) list -> 'b
   val remove_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> ('a * 'b) list
+  val mem_assoc_f : 'a eq -> 'a -> ('a * 'b) list -> bool
   val cartesian : ('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
   val cartesians : ('a -> 'b -> 'b) -> 'b -> 'a list list -> 'b list
   val combinations : 'a list list -> 'a list list
@@ -735,7 +736,9 @@ let rec assoc_f f a = function
   | (x, e) :: xs -> if f a x then e else assoc_f f a xs
   | [] -> raise Not_found
 
-let remove_assoc_f f a l = remove_first (fun (x,y) -> f a x) l
+let remove_assoc_f f a l = remove_first (fun (x,_) -> f a x) l
+
+let mem_assoc_f f a l = List.exists (fun (x,_) -> f a x) l
 
 (* A generic cartesian product: for any operator (**),
    [cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]],

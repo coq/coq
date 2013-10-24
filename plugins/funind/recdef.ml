@@ -701,7 +701,7 @@ let terminate_app_rec (f,args) expr_info continuation_tac _ =
     args;
   begin
     try 
-      let v = List.assoc args expr_info.args_assoc in 
+      let v = List.assoc_f (List.equal Constr.equal) args expr_info.args_assoc in
       let new_infos = {expr_info with info = v} in 
       tclTHENLIST[
 	continuation_tac new_infos;
@@ -951,7 +951,7 @@ let equation_app f_and_args expr_info continuation_tac infos =
 let equation_app_rec (f,args) expr_info continuation_tac info = 
   begin
     try
-      let v = List.assoc args expr_info.args_assoc in
+      let v = List.assoc_f (List.equal Constr.equal) args expr_info.args_assoc in
       let new_infos = {expr_info with info = v} in
       observe_tac (str "app_rec found") (continuation_tac new_infos)
     with Not_found ->

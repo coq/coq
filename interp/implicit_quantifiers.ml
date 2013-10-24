@@ -219,8 +219,9 @@ let combine_params avoid fn applied needed =
     match app, need with
 	[], [] -> List.rev ids, avoid
 
-      | app, (_, (Name id, _, _)) :: need when List.mem_assoc id named ->
-	  aux (List.assoc id named :: ids) avoid app need
+      | app, (_, (Name id, _, _)) :: need
+        when List.mem_assoc_f Id.equal id named ->
+	  aux (List.assoc_f Id.equal id named :: ids) avoid app need
 
       | (x, None) :: app, (None, (Name id, _, _)) :: need ->
 	  aux (x :: ids) avoid app need

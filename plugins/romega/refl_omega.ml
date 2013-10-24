@@ -198,7 +198,7 @@ let display_omega_var i = Printf.sprintf "OV%d" i
    le terme d'un monome (le plus souvent un atome) *)
 
 let intern_omega env t =
-  begin try List.assoc t env.om_vars
+  begin try List.assoc_f Pervasives.(=) t env.om_vars (* FIXME *)
   with Not_found ->
     let v = new_omega_var () in
     env.om_vars <- (t,v) :: env.om_vars; v

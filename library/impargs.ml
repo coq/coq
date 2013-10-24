@@ -352,8 +352,9 @@ let set_manual_implicits env flags enriching autoimps l =
   | (Name id,imp)::imps ->
       let l',imp,m =
 	try
-	  let (b, fi, fo) = List.assoc (ExplByName id) l in
-	  List.remove_assoc (ExplByName id) l, (Some Manual), (Some (b, fi))
+          let eq = (Pervasives.(=) : explicitation -> explicitation -> bool) in (* FIXME *)
+	  let (b, fi, fo) = List.assoc_f eq (ExplByName id) l in
+	  List.remove_assoc_f eq (ExplByName id) l, (Some Manual), (Some (b, fi))
 	with Not_found ->
 	try
 	  let (id, (b, fi, fo)), l' = assoc_by_pos k l in

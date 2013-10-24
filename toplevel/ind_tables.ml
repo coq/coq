@@ -149,7 +149,7 @@ let define_mutual_scheme_base kind suff f internal names mind =
   let cl, eff = f mind in
   let mib = Global.lookup_mind mind in
   let ids = Array.init (Array.length mib.mind_packets) (fun i ->
-      try List.assoc i names
+      try List.assoc_f Int.equal i names
       with Not_found -> add_suffix mib.mind_packets.(i).mind_typename suff) in
   let consts = Array.map2 (define internal) ids cl in
   let schemes = Array.mapi (fun i cst -> ((mind,i),cst)) consts in

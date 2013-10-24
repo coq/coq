@@ -232,8 +232,11 @@ let locate_qualified_library warn qid =
     let loadpath = Loadpath.expand_path dir in
     let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
     let name = Id.to_string base ^ ".vo" in
-    let lpath, file = System.where_in_path ~warn (List.map fst loadpath) name in
-    let dir = add_dirpath_suffix (List.assoc lpath loadpath) base in
+    let lpath, file = System.where_in_path ~warn (List.map fst loadpath) name
+    in
+    let dir =
+      add_dirpath_suffix (List.assoc_f String.equal lpath loadpath) base
+    in
     (* Look if loaded *)
     if library_is_loaded dir then (LibLoaded, dir, library_full_filename dir)
     (* Otherwise, look for it in the file system *)
@@ -382,7 +385,7 @@ let rec intern_library needed (dir, f) =
   try find_library dir, needed
   with Not_found ->
   (* Look if already listed and consequently its dependencies too *)
-  try List.assoc dir needed, needed
+  try List.assoc_f DirPath.equal dir needed, needed
   with Not_found ->
   (* [dir] is an absolute name which matches [f] which must be in loadpath *)
   let m = intern_from_file f in

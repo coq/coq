@@ -188,7 +188,7 @@ let typeur sigma metamap =
   let rec type_of env cstr=
     match Term.kind_of_term cstr with
     | T.Meta n ->
-          (try T.strip_outer_cast (List.assoc n metamap)
+          (try T.strip_outer_cast (Util.List.assoc_f Int.equal n metamap)
            with Not_found -> Errors.anomaly ~label:"type_of" (Pp.str "this is not a well-typed term"))
     | T.Rel n ->
         let (_,_,ty) = Environ.lookup_rel n env in

@@ -95,11 +95,16 @@ let interp_definition bl red_option c ctypopt =
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	let typ = nf_evar !evdref (it_mkProd_or_LetIn ty ctx) in
         let beq b1 b2 = if b1 then b2 else not b2 in
-        let impl_eq (x1, y1, z1) (x2, y2, z2) = beq x1 x2 && beq y1 y2 && beq z1 z2 in
-	(* Check that all implicit arguments inferable from the term is inferable from the type *)
-	if not (try List.for_all (fun (key,va) -> impl_eq (List.assoc key impsty) va) imps2 with Not_found -> false)
-	then msg_warning (strbrk "Implicit arguments declaration relies on type." ++
-		     spc () ++ strbrk "The term declares more implicits than the type here.");
+        let impl_eq (x,y,z) (x',y',z') = beq x x' && beq y y' && beq z z' in
+	(* Check that all implicit arguments inferable from the term
+           are inferable from the type *)
+        let chk (key,va) =
+          impl_eq (List.assoc_f Pervasives.(=) key impsty) va (* FIXME *)
+        in
+	if not (try List.for_all chk imps2 with Not_found -> false)
+	then msg_warning
+          (strbrk "Implicit arguments declaration relies on type." ++ spc () ++
+	   strbrk "The term declares more implicits than the type here.");
 	imps1@(Impargs.lift_implicits nb_args impsty),
         { const_entry_body = Future.from_val(body,Declareops.no_seff);
           const_entry_secctx = None;

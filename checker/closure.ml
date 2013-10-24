@@ -180,7 +180,7 @@ let ref_value_cache info ref =
     let body =
       match ref with
 	| RelKey n ->
-	    let (s,l) = info.i_rels in lift n (List.assoc (s-n) l)
+	    let (s,l) = info.i_rels in lift n (List.assoc_f Int.equal (s-n) l)
 	| VarKey id -> raise Not_found
 	| ConstKey cst -> constant_value info.i_env cst
     in

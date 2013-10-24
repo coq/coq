@@ -123,7 +123,9 @@ let sort_as_univ = function
 | Prop Pos -> type0_univ
 
 let cons_subst u su subst =
-  try (u, sup su (List.assoc u subst)) :: List.remove_assoc u subst
+  try
+    (u, sup su (List.assoc_f Universe.equal u subst)) ::
+      List.remove_assoc_f Universe.equal u subst
   with Not_found -> (u, su) :: subst
 
 let actualize_decl_level env lev t =

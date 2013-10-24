@@ -705,7 +705,7 @@ let simplify_strong ((new_eq_id,new_var_id,print_var) as new_ids) system =
         let s2' = List.map remove_int s2 in
         let (r1,relie1) = solve s1'
 	and (r2,relie2) = solve s2' in
-	let (eq,id1,id2) = List.assoc id explode_map in
+	let (eq,id1,id2) = Util.List.assoc_f Int.equal id explode_map in
 	[SPLIT_INEQ(eq,(id1,r1),(id2, r2))],
         eq.id :: Util.List.union Int.equal relie1 relie2
       with FULL_SOLUTION (x0,x1) -> (x0,x1)

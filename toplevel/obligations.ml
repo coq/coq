@@ -65,7 +65,7 @@ let evar_tactic = Store.field ()
 let subst_evar_constr evs n idf t = 
   let seen = ref Int.Set.empty in
   let transparent = ref Id.Set.empty in
-  let evar_info id = List.assoc id evs in
+  let evar_info id = List.assoc_f Evar.equal id evs in
   let rec substrec (depth, fixrels) c = match kind_of_term c with
     | Evar (k, args) ->
 	let { ev_name = (id, idstr) ;
@@ -425,7 +425,7 @@ let replace_appvars subst =
       if isVar f then
 	try
 	  let c' = List.map (map_constr aux) l in
-	  let (t, b) = List.assoc (destVar f) subst in
+	  let (t, b) = List.assoc_f Id.equal (destVar f) subst in
 	    mkApp (delayed_force hide_obligation, 
 		   [| prod_applist t c'; applistc b c' |])
 	with Not_found -> map_constr aux c
