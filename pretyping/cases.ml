@@ -1524,12 +1524,12 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
 	  (fun i _ -> if Int.List.mem i vl then u else mkRel i) 1
 	  (rel_context extenv) in
       let rel_filter =
-	List.map (fun a -> not (isRel a) || dependent a u
+	Filter.init_list (fun a -> not (isRel a) || dependent a u
                            || Int.Set.mem (destRel a) depvl) inst in
       let named_filter =
-	List.map (fun (id,_,_) -> dependent (mkVar id) u)
+	Filter.init_list (fun (id,_,_) -> dependent (mkVar id) u)
 	  (named_context extenv) in
-      let filter = rel_filter@named_filter in
+      let filter = Filter.append rel_filter named_filter in
       let candidates = u :: List.map mkRel vl in
       let ev =
 	e_new_evar evdref extenv ~src:(loc, Evar_kinds.CasesType)

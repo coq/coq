@@ -710,7 +710,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
       let evs = ref [] in
       let ty = Retyping.get_type_of env_rhs evd c in
       let filter' = filter_possible_projections c ty ctxt args in
-      let filter = List.map2 (&&) filter filter' in
+      let filter = Filter.map_along (&&) filter filter' in
       (id,t,c,ty,evs,filter,occs) :: make_subst (ctxt',l,occsl)
   | [], [], [] -> []
   | _ -> anomaly (Pp.str "Signature, instance and occurrences list do not match") in
@@ -723,7 +723,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
         | Some _ -> error "Selection of specific occurrences not supported"
         | None ->
         let evty = set_holes evdref cty subst in
-        let instance = List.filter_with filter instance in
+        let instance = Filter.filter_list filter instance in
         let evd,ev = new_evar_instance sign !evdref evty ~filter instance in
         evdref := evd;
         evsref := (fst (destEvar ev),evty)::!evsref;

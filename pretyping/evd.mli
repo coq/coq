@@ -35,6 +35,58 @@ type evar = existential_key
 
 val string_of_existential : evar -> string
 
+(** {6 Evar filters} *)
+
+module Filter :
+sig
+  type t
+  (** Evar filters, seen as bitmasks. *)
+
+  val equal : t -> t -> bool
+  (** Equality over filters *)
+
+  val length : t -> int
+  (** Length of a filter. *)
+
+  val identity : int -> t
+  (** The identity filter of the given length. *)
+
+  val is_identity : t -> bool
+  (** Check whether the whole bitmask is set. *)
+
+  val init : int -> (int -> bool) -> t
+  (** Create a filter with the given length and constructing function. *)
+
+  val filter_list : t -> 'a list -> 'a list
+  (** Filter a list. Sizes must coincide. *)
+
+  val filter_array : t -> 'a array -> 'a array
+  (** Filter an array. Sizes must coincide. *)
+
+  val cons : bool -> t -> t
+  (** Extend a bitmask on the left. *)
+
+  val compose : t -> t -> t
+  (** Horizontal composition : [compose f1 f2] only keeps parts of [f2] where
+      [f1] is set. In particular, [f1] and [f2] must have the same length. *)
+
+  val restrict_upon : t -> int -> (int -> bool) -> t option
+  (** Ad-hoc primitive. *)
+
+  val map_along : (bool -> 'a -> bool) -> t -> 'a list -> t
+  (** Apply the function on the filter and the list. Sizes must coincide. *)
+
+  val init_list : ('a -> bool) -> 'a list -> t
+  (** Create out of a list *)
+
+  val append : t -> t -> t
+  (** Append, seen as lists *)
+
+  val repr :  t -> bool list
+  (** Observe as a bool list. *)
+
+end
+
 (** {6 Evar infos} *)
 
 type evar_body =
@@ -51,7 +103,7 @@ type evar_info = {
   (** Context of the evar. *)
   evar_body : evar_body;
   (** Optional content of the evar. *)
-  evar_filter : bool list;
+  evar_filter : Filter.t;
   (** Boolean mask over {!evar_hyps}. Should have the same length.
       TODO: document me more. *)
   evar_source : Evar_kinds.t located;
@@ -71,7 +123,7 @@ val evar_filtered_context : evar_info -> named_context
 val evar_hyps : evar_info -> named_context_val
 val evar_filtered_hyps : evar_info -> named_context_val
 val evar_body : evar_info -> evar_body
-val evar_filter : evar_info -> bool list
+val evar_filter : evar_info -> Filter.t
 val evar_env :  evar_info -> env
 val evar_filtered_env :  evar_info -> env
 
@@ -182,7 +234,7 @@ val undefined_evars : evar_map -> evar_map
 
 val evar_declare :
   named_context_val -> evar -> types -> ?src:Loc.t * Evar_kinds.t ->
-      ?filter:bool list -> ?candidates:constr list -> evar_map -> evar_map
+      ?filter:Filter.t -> ?candidates:constr list -> evar_map -> evar_map
 (** Convenience function. Just a wrapper around {!add}. *)
 
 val evar_source : existential_key -> evar_map -> Evar_kinds.t located

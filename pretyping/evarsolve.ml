@@ -40,33 +40,9 @@ let is_success = function Success _ -> true | UnifFailure _ -> false
 let test_success conv_algo env evd c c' rhs =
   is_success (conv_algo env evd c c' rhs)
 
-(************************)
-(* Manipulating filters *)
-(************************)
-
-let extract_subfilter initial_filter refined_filter =
-  List.filter_with initial_filter refined_filter
-
-let apply_subfilter filter subfilter =
-  let len = Array.length subfilter in
-  let fold b (i, ans) =
-    if b then
-      let () = assert (0 <= i) in
-      (pred i, Array.unsafe_get subfilter i :: ans)
-    else
-      (i, false :: ans)
-  in
-  snd (List.fold_right fold filter (pred len, []))
-
 (*------------------------------------*
  * Restricting existing evars         *
  *------------------------------------*)
-
-let rec eq_filter l1 l2 = match l1, l2 with
-| [], [] -> true
-| h1 :: l1, h2 :: l2 ->
-  (if h1 then h2 else not h2) && eq_filter l1 l2
-| _ -> false
 
 let inst_of_vars sign = Array.map_of_list (fun (id,_,_) -> mkVar id) sign
 
@@ -77,7 +53,7 @@ let restrict_evar_key evd evk filter candidates =
     let evi = Evd.find_undefined evd evk in
     let oldfilter = evar_filter evi in
     begin match filter, candidates with
-    | Some filter, None when eq_filter oldfilter filter ->
+    | Some filter, None when Filter.equal oldfilter filter ->
       evd, evk
     | _ ->
       let filter = match filter with
@@ -90,7 +66,7 @@ let restrict_evar_key evd evk filter candidates =
       let sign = evar_hyps evi in
       let src = evi.evar_source in
       let evd,newevk = new_pure_evar evd sign ccl ~src ~filter ?candidates in
-      let ctxt = List.filter_with filter (evar_context evi) in
+      let ctxt = Filter.filter_list filter (evar_context evi) in
       let id_inst = inst_of_vars ctxt in
       Evd.define evk (mkEvar(newevk,id_inst)) evd,newevk
     end
@@ -102,8 +78,8 @@ let restrict_applied_evar evd (evk,argsv) filter candidates =
   | None -> (* optim *) argsv
   | Some filter ->
       let evi = Evd.find evd evk in
-      let subfilter = extract_subfilter (evar_filter evi) filter in
-      Array.filter_with subfilter argsv in
+      let subfilter = Filter.compose (evar_filter evi) filter in
+      Filter.filter_array subfilter argsv in
   evd,(newevk,newargsv)
 
 (* Restrict an evar in the current evar_map *)
@@ -114,7 +90,7 @@ let restrict_evar evd evk filter candidates =
 let restrict_instance evd evk filter argsv =
   match filter with None -> argsv | Some filter ->
   let evi = Evd.find evd evk in
-  Array.filter_with (extract_subfilter (evar_filter evi) filter) argsv
+  Filter.filter_array (Filter.compose (evar_filter evi) filter) argsv
 
 let noccur_evar env evd evk c =
   let rec occur_rec k c = match kind_of_term c with
@@ -469,7 +445,7 @@ let define_evar_from_virtual_equation define_fun env evd t_in_env sign filter in
   let t_in_env = whd_evar evd t_in_env in
   let evd = define_fun env evd (destEvar evar_in_env) t_in_env in
   let ctxt = named_context_of_val sign in
-  let inst_in_sign = inst_of_vars (List.filter_with filter ctxt) in
+  let inst_in_sign = inst_of_vars (Filter.filter_list filter ctxt) in
   let evar_in_sign = mkEvar (fst (destEvar evar_in_env), inst_in_sign) in
   (evd,whd_evar evd evar_in_sign)
 
@@ -496,7 +472,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let sign1 = evar_hyps evi1 in
   let filter1 = evar_filter evi1 in
   let ids1 = List.map pi1 (named_context_of_val sign1) in
-  let inst_in_sign = List.map mkVar (List.filter_with filter1 ids1) in
+  let inst_in_sign = List.map mkVar (Filter.filter_list filter1 ids1) in
   let (sign2,filter2,inst2_in_env,inst2_in_sign,_,evd,_) =
     List.fold_right (fun (na,b,t_in_env as d) (sign,filter,inst_in_env,inst_in_sign,env,evd,avoid) ->
       let id = next_name_away na avoid in
@@ -509,7 +485,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
           let evd,b = define_evar_from_virtual_equation define_fun env evd b
             sign filter inst_in_env in
           evd,Some b in
-      (push_named_context_val (id,b_in_sign,t_in_sign) sign,true::filter,
+      (push_named_context_val (id,b_in_sign,t_in_sign) sign, Filter.cons true filter,
        (mkRel 1)::(List.map (lift 1) inst_in_env),
        (mkRel 1)::(List.map (lift 1) inst_in_sign),
        push_rel d env,evd,id::avoid))
@@ -525,12 +501,9 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   (evd, ev2_in_sign, ev2_in_env)
 
 let restrict_upon_filter evd evk p args =
-  let newfilter = Array.map p args in
-  if Array.for_all (fun id -> id) newfilter then
-    None
-  else
-    let oldfullfilter = evar_filter (Evd.find_undefined evd evk) in
-    Some (apply_subfilter oldfullfilter newfilter)
+  let oldfullfilter = evar_filter (Evd.find_undefined evd evk) in
+  let len = Array.length args in
+  Filter.restrict_upon oldfullfilter len (fun i -> p (Array.unsafe_get args i))
 
 (***************)
 (* Unification *)
@@ -793,7 +766,7 @@ let filter_candidates evd evk filter candidates =
   match candidates,filter with
   | None,_ | _, None -> candidates
   | Some l, Some filter ->
-      let ids = set_of_evctx (List.filter_with filter (evar_context evi)) in
+      let ids = set_of_evctx (Filter.filter_list filter (evar_context evi)) in
       Some (List.filter (fun a -> Id.Set.subset (collect_vars a) ids) l)
 
 let eq_filter f1 f2 =
@@ -805,9 +778,9 @@ let closure_of_filter evd evk = function
   | Some filter ->
   let evi = Evd.find_undefined evd evk in
   let vars = collect_vars (Evarutil.nf_evar evd (evar_concl evi)) in
-  let test (id,c,_) b = b || Idset.mem id vars || not (Option.is_empty c) in
-  let newfilter = List.map2 test (evar_context evi) filter in
-  if eq_filter newfilter (evar_filter evi) then None else Some newfilter
+  let test b (id,c,_) = b || Idset.mem id vars || not (Option.is_empty c) in
+  let newfilter = Filter.map_along test filter (evar_context evi) in
+  if Filter.equal newfilter (evar_filter evi) then None else Some newfilter
 
 let restrict_hyps evd evk filter candidates =
     (* What to do with dependencies?
@@ -944,7 +917,7 @@ let restrict_candidates conv_algo env evd filter1 (evk1,argsv1) (evk2,argsv2) =
         match filtered with [] -> false | _ -> true) l1 in
       if Int.equal (List.length l1) (List.length l1') then None else Some l1'
 
-exception CannotProject of bool list option
+exception CannotProject of Filter.t option
 
 (* Assume that FV(?n[x1:=t1..xn:=tn]) belongs to some set U.
    Can ?n be instantiated by a term u depending essentially on xi such that the

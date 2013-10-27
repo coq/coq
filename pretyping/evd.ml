@@ -18,6 +18,90 @@ open Environ
 open Globnames
 open Mod_subst
 
+(** Generic filters *)
+module Filter :
+sig
+  type t
+  val equal : t -> t -> bool
+  val length : t -> int
+  val identity : int -> t
+  val is_identity : t -> bool
+  val init : int -> (int -> bool) -> t
+  val filter_list : t -> 'a list -> 'a list
+  val filter_array : t -> 'a array -> 'a array
+  val cons : bool -> t -> t
+  val compose : t -> t -> t
+  val restrict_upon : t -> int -> (int -> bool) -> t option
+  val map_along : (bool -> 'a -> bool) -> t -> 'a list -> t
+  val init_list : ('a -> bool) -> 'a list -> t
+  val append : t -> t -> t
+  val repr :  t -> bool list
+end =
+struct
+  type t = bool list
+
+  let length = List.length
+
+  let rec equal l1 l2 = match l1, l2 with
+  | [], [] -> true
+  | h1 :: l1, h2 :: l2 ->
+    (if h1 then h2 else not h2) && equal l1 l2
+  | _ -> false
+
+  let rec identity n accu =
+    if n = 0 then accu
+    else identity (pred n) (true :: accu)
+
+  let identity n = identity n []
+
+  let rec is_identity = function
+  | [] -> true
+  | true :: l -> is_identity l
+  | false :: _ -> false
+
+  let rec init_aux f i accu =
+    if i = 0 then accu
+    else init_aux f (pred i) (f (pred i) :: accu)
+
+  let init len f =
+    init_aux f len []
+
+  let filter_list = CList.filter_with
+
+  let filter_array = CArray.filter_with
+
+  let cons b l = b :: l
+
+  let compose = CList.filter_with
+
+  let apply_subfilter filter subfilter =
+    let len = Array.length subfilter in
+    let fold b (i, ans) =
+      if b then
+        let () = assert (0 <= i) in
+        (pred i, Array.unsafe_get subfilter i :: ans)
+      else
+        (i, false :: ans)
+    in
+    snd (List.fold_right fold filter (pred len, []))
+
+  let restrict_upon f len p =
+    let newfilter = Array.init len p in
+    if Array.for_all (fun id -> id) newfilter then
+      None
+    else
+      Some (apply_subfilter f newfilter)
+
+  let map_along = List.map2
+
+  let init_list = List.map
+
+  let append = (@)
+
+  let repr f = f
+
+end
+
 (* The kinds of existential variables are now defined in [Evar_kinds] *)
 
 (* The type of mappings for existential variables *)
@@ -37,7 +121,7 @@ type evar_info = {
   evar_concl : constr;
   evar_hyps : named_context_val;
   evar_body : evar_body;
-  evar_filter : bool list;
+  evar_filter : Filter.t;
   evar_source : Evar_kinds.t Loc.located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_extra : Store.t }
@@ -46,7 +130,7 @@ let make_evar hyps ccl = {
   evar_concl = ccl;
   evar_hyps = hyps;
   evar_body = Evar_empty;
-  evar_filter = List.map (fun _ -> true) (named_context_of_val hyps);
+  evar_filter = Filter.identity (List.length (named_context_of_val hyps));
   evar_source = (Loc.ghost,Evar_kinds.InternalHole);
   evar_candidates = None;
   evar_extra = Store.empty
@@ -57,7 +141,7 @@ let evar_filter evi = evi.evar_filter
 let evar_body evi = evi.evar_body
 let evar_context evi = named_context_of_val evi.evar_hyps
 let evar_filtered_context evi =
-  List.filter_with (evar_filter evi) (evar_context evi)
+  Filter.filter_list (evar_filter evi) (evar_context evi)
 let evar_hyps evi = evi.evar_hyps
 let evar_filtered_hyps evi =
   List.fold_right push_named_context_val (evar_filtered_context evi)
@@ -424,9 +508,9 @@ let define evk body evd =
 let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) ?filter ?candidates evd =
   let filter = match filter with
   | None ->
-    List.map (fun _ -> true) (named_context_of_val hyps)
+    Filter.identity (List.length (named_context_of_val hyps))
   | Some filter ->
-    assert (Int.equal (List.length filter) (List.length (named_context_of_val hyps)));
+    assert (Int.equal (Filter.length filter) (List.length (named_context_of_val hyps)));
     filter
   in
   let evar_info = {
@@ -764,7 +848,7 @@ let pr_evar_source = function
 let pr_evar_info evi =
   let phyps =
     try
-      let decls = List.combine (evar_context evi) (evar_filter evi) in
+      let decls = List.combine (evar_context evi) (Filter.repr (evar_filter evi)) in
       prlist_with_sep spc pr_decl (List.rev decls)
     with Invalid_argument _ -> str "Ill-formed filtered context" in
   let pty = print_constr evi.evar_concl in
