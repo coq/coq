@@ -335,22 +335,56 @@ let map f c = match kind c with
    each binder traversal; it is not recursive and the order with which
    subterms are processed is not specified *)
 
-let map_with_binders g f l c = match kind c with
+let map_with_binders g f l c0 = match kind c0 with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
-    | Construct _) -> c
-  | Cast (c,k,t) -> mkCast (f l c, k, f l t)
-  | Prod (na,t,c) -> mkProd (na, f l t, f (g l) c)
-  | Lambda (na,t,c) -> mkLambda (na, f l t, f (g l) c)
-  | LetIn (na,b,t,c) -> mkLetIn (na, f l b, f l t, f (g l) c)
-  | App (c,al) -> mkApp (f l c, Array.smartmap (f l) al)
-  | Evar (e,al) -> mkEvar (e, Array.smartmap (f l) al)
-  | Case (ci,p,c,bl) -> mkCase (ci, f l p, f l c, Array.smartmap (f l) bl)
-  | Fix (ln,(lna,tl,bl)) ->
-      let l' = iterate g (Array.length tl) l in
-      mkFix (ln,(lna,Array.smartmap (f l) tl,Array.smartmap (f l') bl))
+    | Construct _) -> c0
+  | Cast (c, k, t) ->
+    let c' = f l c in
+    let t' = f l t in
+    if c' == c && t' == t then c0
+    else mkCast (c', k, t')
+  | Prod (na, t, c) ->
+    let t' = f l t in
+    let c' = f (g l) c in
+    if t' == t && c' == c then c0
+    else mkProd (na, t', c')
+  | Lambda (na, t, c) ->
+    let t' = f l t in
+    let c' = f (g l) c in
+    if t' == t && c' == c then c0
+    else mkLambda (na, t', c')
+  | LetIn (na, b, t, c) ->
+    let b' = f l b in
+    let t' = f l t in
+    let c' = f (g l) c in
+    if b' == b && t' == t && c' == c then c0
+    else mkLetIn (na, b', t', c')
+  | App (c, al) ->
+    let c' = f l c in
+    let al' = Array.smartmap (f l) al in
+    if c' == c && al' == al then c0
+    else mkApp (c', al')
+  | Evar (e, al) ->
+    let al' = Array.smartmap (f l) al in
+    if al' == al then c0
+    else mkEvar (e, al')
+  | Case (ci, p, c, bl) ->
+    let p' = f l p in
+    let c' = f l c in
+    let bl' = Array.smartmap (f l) bl in
+    if p' == p && c' == c && bl' == bl then c0
+    else mkCase (ci, p', c', bl')
+  | Fix (ln, (lna, tl, bl)) ->
+    let tl' = Array.smartmap (f l) tl in
+    let l' = iterate g (Array.length tl) l in
+    let bl' = Array.smartmap (f l') bl in
+    if tl' == tl && bl' == bl then c0
+    else mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl)) ->
-      let l' = iterate g (Array.length tl) l in
-      mkCoFix (ln,(lna,Array.smartmap (f l) tl,Array.smartmap (f l') bl))
+    let tl' = Array.smartmap (f l) tl in
+    let l' = iterate g (Array.length tl) l in
+    let bl' = Array.smartmap (f l') bl in
+    mkCoFix (ln,(lna,tl',bl'))
 
 (* [compare f c1 c2] compare [c1] and [c2] using [f] to compare
    the immediate subterms of [c1] of [c2] if needed; Cast's,
