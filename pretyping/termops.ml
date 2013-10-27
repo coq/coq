@@ -895,11 +895,11 @@ let compare_constr_univ f cv_pb t1 t2 =
       Sort s1, Sort s2 -> base_sort_cmp cv_pb s1 s2
     | Prod (_,t1,c1), Prod (_,t2,c2) ->
 	f Reduction.CONV t1 t2 && f cv_pb c1 c2
-    | _ -> compare_constr (f Reduction.CONV) t1 t2
+    | _ -> compare_constr (fun t1 t2 -> f Reduction.CONV t1 t2) t1 t2
 
 let rec constr_cmp cv_pb t1 t2 = compare_constr_univ constr_cmp cv_pb t1 t2
 
-let eq_constr = constr_cmp Reduction.CONV
+let eq_constr t1 t2 = constr_cmp Reduction.CONV t1 t2
 
 (* App(c,[t1,...tn]) -> ([c,t1,...,tn-1],tn)
    App(c,[||]) -> ([],c) *)

@@ -457,7 +457,7 @@ let extract_conv_pbs evd p =
   pbs
 
 let extract_changed_conv_pbs evd p =
-  extract_conv_pbs evd (p evd.last_mods)
+  extract_conv_pbs evd (fun pb -> p evd.last_mods pb)
 
 let extract_all_conv_pbs evd =
   extract_conv_pbs evd (fun _ -> true)
