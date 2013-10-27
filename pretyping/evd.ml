@@ -187,20 +187,24 @@ let make_evar_instance sign args =
   in
   instrec sign args
 
-let make_evar_instance_array sign args =
+let make_evar_instance_array info args =
   let len = Array.length args in
-  let rec instrec sign i = match sign with
-  | [] ->
+  let rec instrec filter ctxt i = match filter, ctxt with
+  | [], [] ->
     if Int.equal i len then []
     else instance_mismatch ()
-  | (id, _, _) :: sign ->
+  | false :: filter, _ :: ctxt ->
+    instrec filter ctxt i
+  | true :: filter, (id, _, _) :: ctxt ->
     if i < len then
       let c = Array.unsafe_get args i in
-      if isVarId id c then instrec sign (succ i)
-      else (id, c) :: instrec sign (succ i)
+      if isVarId id c then instrec filter ctxt (succ i)
+      else (id, c) :: instrec filter ctxt (succ i)
     else instance_mismatch ()
+  | _ -> instance_mismatch ()
   in
-  instrec sign 0
+  let filter = Filter.repr (evar_filter info) in
+  instrec filter (evar_context info) 0
 
 let instantiate_evar sign c args =
   let inst = make_evar_instance sign args in
@@ -208,8 +212,8 @@ let instantiate_evar sign c args =
   | [] -> c
   | _ -> replace_vars inst c
 
-let instantiate_evar_array sign c args =
-  let inst = make_evar_instance_array sign args in
+let instantiate_evar_array info c args =
+  let inst = make_evar_instance_array info args in
   match inst with
   | [] -> c
   | _ -> replace_vars inst c
@@ -397,10 +401,9 @@ let is_undefined d e = EvMap.mem e d.undf_evars
 
 let existential_value d (n, args) =
   let info = find d n in
-  let hyps = evar_filtered_context info in
   match evar_body info with
   | Evar_defined c ->
-    instantiate_evar_array hyps c args
+    instantiate_evar_array info c args
   | Evar_empty ->
     raise NotInstantiatedEvar
 
@@ -413,8 +416,7 @@ let existential_type d (n, args) =
     try find d n
     with Not_found ->
       anomaly (str "Evar " ++ str (string_of_existential n) ++ str " was not declared") in
-  let hyps = evar_filtered_context info in
-    instantiate_evar_array hyps info.evar_concl args
+  instantiate_evar_array info info.evar_concl args
 
 let add_constraints d cstrs =
   { d with univ_cstrs = Univ.merge_constraints cstrs d.univ_cstrs }

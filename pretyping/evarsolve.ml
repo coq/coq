@@ -889,7 +889,7 @@ let are_canonical_instances args1 args2 env =
   Int.equal n1 n2 && aux 0 (named_context env)
 
 let filter_compatible_candidates conv_algo env evd evi args rhs c =
-  let c' = instantiate_evar_array (evar_filtered_context evi) c args in
+  let c' = instantiate_evar_array evi c args in
   match conv_algo env evd Reduction.CONV rhs c' with
   | Success evd -> Some (c,evd)
   | UnifFailure _ -> None
@@ -906,7 +906,7 @@ let restrict_candidates conv_algo env evd filter1 (evk1,argsv1) (evk2,argsv2) =
   | None, Some _ -> raise DoesNotPreserveCandidateRestriction
   | Some l1, Some l2 ->
       let l1' = List.filter (fun c1 ->
-        let c1' = instantiate_evar_array (evar_filtered_context evi1) c1 argsv1 in
+        let c1' = instantiate_evar_array evi1 c1 argsv1 in
         let filter c2 =
           let compatibility = filter_compatible_candidates conv_algo env evd evi2 argsv2 c1' c2 in
           match compatibility with
@@ -1147,8 +1147,7 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
           (* No unique projection but still restrict to where it is possible *)
           (* materializing is necessary, but is restricting useful? *)
           let ty = find_solution_type (evar_filtered_env evi) sols in
-          let sign = evar_filtered_context evi in
-          let ty' = instantiate_evar_array sign ty argsv in
+          let ty' = instantiate_evar_array evi ty argsv in
           let (evd,evar,(evk',argsv' as ev')) =
             materialize_evar (evar_define conv_algo) env !evdref 0 ev ty' in
           let ts = expansions_of_var aliases t in
