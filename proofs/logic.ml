@@ -379,10 +379,9 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	    | _ ->
 		mk_hdgoals sigma goal goalacc f
 	in
-	let (acc'',conclty',sigma, args) =
-	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
+	let ((acc'',conclty',sigma), args) = mk_arggoals sigma goal acc' hdty l in
 	check_conv_leq_goal env sigma trm conclty' conclty;
-        (acc'',conclty',sigma, Term.mkApp (applicand, Array.of_list args))
+        (acc'',conclty',sigma, Term.mkApp (applicand, args))
 
     | Case (ci,p,c,lf) ->
 	let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
@@ -429,9 +428,8 @@ and mk_hdgoals sigma goal goalacc trm =
 	   (goalacc,type_of_global_reference_knowing_parameters env sigma f l,sigma,f)
 	  else mk_hdgoals sigma goal goalacc f
 	in
-	let (acc'',conclty',sigma, args) =
-	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
-	(acc'',conclty',sigma, Term.mkApp (applicand, Array.of_list args))
+	let ((acc'',conclty',sigma), args) = mk_arggoals sigma goal acc' hdty l in
+	(acc'',conclty',sigma, Term.mkApp (applicand, args))
 
     | Case (ci,p,c,lf) ->
 	let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
@@ -448,19 +446,25 @@ and mk_hdgoals sigma goal goalacc trm =
 	  anomaly (Pp.str "refine called with a dependent meta");
 	goalacc, goal_type_of env sigma trm, sigma, trm
 
-and mk_arggoals sigma goal goalacc funty = function
-  | [] -> goalacc,funty,sigma, []
-  | harg::tlargs as allargs ->
+and mk_arggoals sigma goal goalacc funty allargs =
+  let len = Array.length allargs in
+  let ans = Array.make len mkProp (** dummy *) in
+  let rec fill sigma goalacc funty i =
+    if Int.equal i len then (goalacc, funty, sigma)
+    else
+      let harg = Array.unsafe_get allargs i in
       let t = whd_betadeltaiota (Goal.V82.env sigma goal) sigma funty in
       match kind_of_term t with
-	| Prod (_,c1,b) ->
-	    let (acc',hargty,sigma,arg') = mk_refgoals sigma goal goalacc c1 harg in
-	    let (acc'',fty, sigma', args) =
-	      mk_arggoals sigma goal acc' (subst1 harg b) tlargs in
-	    (acc'',fty,sigma',arg'::args)
-	| LetIn (_,c1,_,b) ->
-	    mk_arggoals sigma goal goalacc (subst1 c1 b) allargs
-	| _ -> raise (RefinerError (CannotApply (t,harg)))
+      | Prod (_, c1, b) ->
+        let (acc',hargty,sigma,arg') = mk_refgoals sigma goal goalacc c1 harg in
+        let (acc'',fty, sigma') = fill sigma acc' (subst1 harg b) (succ i) in
+        let () = Array.unsafe_set ans i arg' in
+        (acc'',fty,sigma')
+      | LetIn (_, c1, _, b) ->
+        fill sigma goalacc (subst1 c1 b) i
+      | _ -> raise (RefinerError (CannotApply (t,harg)))
+  in
+  (fill sigma goalacc funty 0, ans)
 
 and mk_casegoals sigma goal goalacc p c =
   let env = Goal.V82.env sigma goal in
