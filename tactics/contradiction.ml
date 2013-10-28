@@ -20,20 +20,20 @@ open Misctypes
 
 let absurd c gls =
   let env = pf_env gls and sigma = project gls in
-  let _,j = Coercion.inh_coerce_to_sort Loc.ghost env
-    (Evd.create_goal_evar_defs sigma) (Retyping.get_judgment_of env sigma c) in
+  let j = Retyping.get_judgment_of env sigma c in
+  let sigma, j = Coercion.inh_coerce_to_sort Loc.ghost env sigma j in
   let c = j.Environ.utj_val in
   (tclTHENS
      (tclTHEN (elim_type (build_coq_False ())) (cut c))
      ([(tclTHENS
-          (cut (applist(build_coq_not (),[c])))
+          (cut (mkApp(build_coq_not (),[|c|])))
 	  ([(tclTHEN intros
 	       ((fun gl ->
 		   let ida = pf_nth_hyp_id gl 1
                    and idna = pf_nth_hyp_id gl 2 in
-                   exact_no_check (applist(mkVar idna,[mkVar ida])) gl)));
+                   exact_no_check (mkApp(mkVar idna,[|mkVar ida|])) gl)));
             tclIDTAC]));
-       tclIDTAC])) gls
+       tclIDTAC])) { gls with Evd.sigma; }
 
 (* Contradiction *)
 
