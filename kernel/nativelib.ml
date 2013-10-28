@@ -76,7 +76,7 @@ let compile ml_filename code =
   write_ml_code ml_filename code;
   call_compiler ml_filename (!get_load_paths())
 
-(* call_linker dynamic links code for constants in environment or a          *)
+(* call_linker links dynamically the code for constants in environment or a  *)
 (* conversion test. Silently fails if the file does not exist in bytecode    *)
 (* mode, since the standard library is not compiled to bytecode with default *)
 (* settings.                                                                 *)

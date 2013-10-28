@@ -628,16 +628,14 @@ let save_library_to dir f =
     System.digest_out ch (Digest.file f'); (* 2nd checksum *)
     close_out ch;
     (* Writing native code files *)
-    if not !Flags.no_native_compiler then begin
-    let lp = Loadpath.get_load_paths () in
-    let map_path p = CUnix.string_of_physical_path (Loadpath.physical p) in
-    let lp = List.map map_path lp in
-    let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
-    match Nativelibrary.compile_library dir ast lp fn with
-      | 0 -> ()
-      | _ -> anomaly (Pp.str "Library compilation failure")
-    end
-  with reraise ->
+    if not !Flags.no_native_compiler then
+      let lp = Loadpath.get_load_paths () in
+      let map_path p = CUnix.string_of_physical_path (Loadpath.physical p) in
+      let lp = List.map map_path lp in
+      let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
+      if not (Int.equal (Nativelibrary.compile_library dir ast lp fn) 0) then
+        msg_error (str "Could not compile the library to native code. Skipping.")
+   with reraise ->
     let reraise = Errors.push reraise in
     let () = msg_warning (str ("Removed file "^f')) in
     let () = close_out ch in
