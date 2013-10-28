@@ -190,7 +190,7 @@ let retype ?(polyprop=true) sigma =
 	 with Reduction.NotArity -> retype_error NotAnArity)
     | Const cst ->
       let t = constant_type_in env cst in
-	(try Typeops.type_of_constant_knowing_parameters env t argtyps
+	(try Typeops.type_of_constant_type_knowing_parameters env t argtyps
 	 with Reduction.NotArity -> retype_error NotAnArity)
     | Var id -> type_of_var env id
     | Construct cstr -> type_of_constructor env cstr
@@ -211,13 +211,13 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
   match kind_of_term c with
     | Ind (ind,u) ->
         let spec = Inductive.lookup_mind_specif env ind in
-        type_of_inductive_knowing_conclusion env (spec,u) conclty
+          type_of_inductive_knowing_conclusion env sigma (spec,u) conclty
     | Const cst ->
         let t = constant_type_in env cst in
         (* TODO *)
-        Typeops.type_of_constant_knowing_parameters env t [||]
-    | Var id -> type_of_var env id
-    | Construct cstr -> type_of_constructor env cstr
+          sigma, Typeops.type_of_constant_type_knowing_parameters env t [||]
+    | Var id -> sigma, type_of_var env id
+    | Construct cstr -> sigma, type_of_constructor env cstr
     | _ -> assert false
 
 (* Profiling *)

@@ -771,7 +771,7 @@ let make_graph (f_ref:global_reference) =
 	   with_full_print (fun () ->
 		(Constrextern.extern_constr false env body,
 		 Constrextern.extern_type false env
-                   ((*FIXNE*) c_body.const_type)
+                   ((*FIXNE*) Typeops.type_of_constant_type env c_body.const_type)
 		)
 	     )
 	     ()

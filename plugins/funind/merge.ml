@@ -139,7 +139,7 @@ let showind (id:Id.t) =
     print_string (string_of_name nm^":");
     prconstr tp; print_string "\n")
     ib1.mind_arity_ctxt;
-    Printf.printf "arity :"; prconstr ib1.mind_arity.mind_user_arity;
+    Printf.printf "arity :"; prconstr (Inductiveops.type_of_inductive (Global.env ()) ind1);
   Array.iteri
     (fun i x -> Printf.printf"type constr %d :" i ; prconstr x)
     ib1.mind_user_lc

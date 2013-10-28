@@ -144,17 +144,21 @@ let type_of_reference env r =
   | VarRef id -> Environ.named_type id env, ContextSet.empty
   | ConstRef c ->
      let cb = Environ.lookup_constant c env in
+     let ty = Typeops.type_of_constant_type env cb.const_type in
        if cb.const_polymorphic then
 	 let (inst, subst), ctx = fresh_instance_from (Future.force cb.const_universes) in
-	   Vars.subst_univs_constr subst cb.const_type, ctx
-       else cb.const_type, ContextSet.empty
+	   Vars.subst_univs_constr subst ty, ctx
+       else ty, ContextSet.empty
 
   | IndRef ind ->
-     let (mib, oib) = Inductive.lookup_mind_specif env ind in
+     let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
        if mib.mind_polymorphic then
 	 let (inst, subst), ctx = fresh_instance_from mib.mind_universes in
-	   Vars.subst_univs_constr subst oib.mind_arity.mind_user_arity, ctx
-       else oib.mind_arity.mind_user_arity, ContextSet.empty
+	 let ty = Inductive.type_of_inductive env (specif, inst) in
+	   ty, ctx
+       else
+	 let ty = Inductive.type_of_inductive env (specif, Univ.Instance.empty) in
+	   ty, ContextSet.empty
   | ConstructRef cstr ->
      let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
        if mib.mind_polymorphic then

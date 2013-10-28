@@ -214,12 +214,22 @@ let universes_and_subst_of cb u =
   let subst = Univ.make_universe_subst u univs in
     subst, Univ.instantiate_univ_context subst univs
 
+let get_regular_arity = function
+  | RegularArity a -> a
+  | TemplateArity _ -> assert false
+
+let map_regular_arity f = function
+  | RegularArity a as ar -> 
+    let a' = f a in 
+      if a' == a then ar else RegularArity a'
+  | TemplateArity _ -> assert false
+
 (* constant_type gives the type of a constant *)
 let constant_type env (kn,u) =
   let cb = lookup_constant kn env in
     if cb.const_polymorphic then
       let subst, csts = universes_and_subst_of cb u in
-	(subst_univs_constr subst cb.const_type, csts)
+	(map_regular_arity (subst_univs_constr subst) cb.const_type, csts)
     else cb.const_type, Univ.Constraint.empty
 
 let constant_type_in_ctx env kn =
@@ -260,7 +270,8 @@ let constant_value_and_type env (kn, u) =
 	| Def l_body -> Some (subst_univs_constr subst (Mod_subst.force_constr l_body))
 	| OpaqueDef _ -> None
 	| Undef _ -> None
-      in b', subst_univs_constr subst cb.const_type, cst
+      in
+	b', map_regular_arity (subst_univs_constr subst) cb.const_type, cst
     else 
       let b' = match cb.const_body with
 	| Def l_body -> Some (Mod_subst.force_constr l_body)
@@ -277,7 +288,7 @@ let constant_type_in env (kn,u) =
   let cb = lookup_constant kn env in
     if cb.const_polymorphic then
       let subst = Univ.make_universe_subst u (Future.force cb.const_universes) in
-	subst_univs_constr subst cb.const_type
+	map_regular_arity (subst_univs_constr subst) cb.const_type
     else cb.const_type
 
 let constant_value_in env (kn,u) =

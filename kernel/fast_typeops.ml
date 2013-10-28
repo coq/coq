@@ -109,16 +109,39 @@ let check_hyps_inclusion env f c sign =
 
 (* Type of constants *)
 
-let type_of_constant env cst = constant_type env cst
-let type_of_constant_in env cst = constant_type_in env cst
-let type_of_constant_knowing_parameters env t _ = t
 
-let judge_of_constant env (kn,u as cst) =
+let type_of_constant_knowing_parameters_arity env t paramtyps =
+  match t with
+  | RegularArity t -> t
+  | TemplateArity (sign,ar) ->
+      let ctx = List.rev sign in
+      let ctx,s = instantiate_universes env ctx ar paramtyps in
+      mkArity (List.rev ctx,s)
+
+let type_of_constant_knowing_parameters env cst paramtyps =
+  let ty, cu = constant_type env cst in
+    type_of_constant_knowing_parameters_arity env ty paramtyps, cu
+
+let type_of_constant_type env t =
+  type_of_constant_knowing_parameters_arity env t [||]
+
+let type_of_constant env cst =
+  type_of_constant_knowing_parameters env cst [||]
+
+let type_of_constant_in env cst =
+  let ar = constant_type_in env cst in
+    type_of_constant_knowing_parameters_arity env ar [||]
+
+let judge_of_constant_knowing_parameters env (kn,u as cst) jl =
   let cb = lookup_constant kn env in
   let () = check_hyps_inclusion env mkConstU cst cb.const_hyps in
-  let ty, cu = type_of_constant env cst in
+  let paramstyp = Array.map (fun j -> lazy j.uj_type) jl in
+  let ty, cu = type_of_constant_knowing_parameters env cst paramstyp in
   let () = check_constraints cu env in
     ty
+
+let judge_of_constant env cst =
+  judge_of_constant_knowing_parameters env cst [||]
 
 let type_of_projection env (cst,u) =
   let cb = lookup_constant cst env in

@@ -113,20 +113,62 @@ let check_hyps_inclusion env c sign =
 
 (* Make a type polymorphic if an arity *)
 
+let extract_level env p =
+  let _,c = dest_prod_assum env p in
+  match kind_of_term c with Sort (Type u) -> Some u | _ -> None
+
+let extract_context_levels env l =
+  let fold l (_, b, p) = match b with
+  | None -> extract_level env p :: l
+  | _ -> l
+  in
+  List.fold_left fold [] l
+
+let make_polymorphic_if_constant_for_ind env {uj_val = c; uj_type = t} =
+  let params, ccl = dest_prod_assum env t in
+  match kind_of_term ccl with
+  | Sort (Type u) when isInd (fst (decompose_app (whd_betadeltaiota env c))) ->
+      let param_ccls = extract_context_levels env params in
+      let s = { template_param_levels = param_ccls; template_level = u} in
+      TemplateArity (params,s)
+  | _ ->
+      RegularArity t
+
 (* Type of constants *)
 
-let type_of_constant env cst = constant_type env cst
-let type_of_constant_in env cst = constant_type_in env cst
-let type_of_constant_knowing_parameters env t _ = t
-let type_of_constant_type env cst = cst
+let type_of_constant_type_knowing_parameters env t paramtyps =
+  match t with
+  | RegularArity t -> t
+  | TemplateArity (sign,ar) ->
+      let ctx = List.rev sign in
+      let ctx,s = instantiate_universes env ctx ar paramtyps in
+      mkArity (List.rev ctx,s)
 
-let judge_of_constant env (kn,u as cst) =
+let type_of_constant_knowing_parameters env cst paramtyps =
+  let ty, cu = constant_type env cst in
+    type_of_constant_type_knowing_parameters env ty paramtyps, cu
+
+let type_of_constant_type env t =
+  type_of_constant_type_knowing_parameters env t [||]
+
+let type_of_constant env cst =
+  type_of_constant_knowing_parameters env cst [||]
+
+let type_of_constant_in env cst =
+  let ar = constant_type_in env cst in
+    type_of_constant_type_knowing_parameters env ar [||]
+
+let judge_of_constant_knowing_parameters env (kn,u as cst) jl =
   let c = mkConstU cst in
   let cb = lookup_constant kn env in
   let _ = check_hyps_inclusion env c cb.const_hyps in
-  let ty, cu = type_of_constant env cst in
+  let paramstyp = Array.map (fun j -> lazy j.uj_type) jl in
+  let ty, cu = type_of_constant_knowing_parameters env cst paramstyp in
   let _ = Environ.check_constraints cu env in
-    (make_judge c ty)
+    make_judge c ty
+
+let judge_of_constant env cst =
+  judge_of_constant_knowing_parameters env cst [||]
 
 let type_of_projection env (cst,u) =
   let cb = lookup_constant cst env in

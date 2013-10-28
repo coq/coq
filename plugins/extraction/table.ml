@@ -816,7 +816,7 @@ let extract_constant_inline inline r ids s =
   match g with
     | ConstRef kn ->
 	let env = Global.env () in
-	let typ = (Environ.lookup_constant kn env).const_type in
+	let typ = Global.type_of_global_unsafe (ConstRef kn) in
 	let typ = Reduction.whd_betadeltaiota env typ in
 	if Reduction.is_arity env typ
 	  then begin

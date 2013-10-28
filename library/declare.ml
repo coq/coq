@@ -222,7 +222,8 @@ let declare_sideff se =
   in
   let ty_of cb =
     match cb.Declarations.const_type with
-    | (* Declarations.NonPolymorphicType  *)t -> Some t in
+    | Declarations.RegularArity t -> Some t 
+    | Declarations.TemplateArity _ -> None in
   let cst_of cb =
     let pt, opaque = pt_opaque_of cb in
     let ty = ty_of cb in

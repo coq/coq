@@ -152,30 +152,93 @@ let sort_as_univ = function
 | Prop Null -> Universe.type0m
 | Prop Pos -> Universe.type0
 
+(* Template polymorphism *)
+
 let cons_subst u su subst =
   try
     (u, Universe.sup su (List.assoc_f Universe.eq u subst)) ::
       List.remove_assoc_f Universe.eq u subst
   with Not_found -> (u, su) :: subst
 
+let actualize_decl_level env lev t =
+  let sign,s = dest_arity env t in
+  mkArity (sign,lev)
+
+(* Bind expected levels of parameters to actual levels *)
+(* Propagate the new levels in the signature *)
+let rec make_subst env = function
+  | (_,Some _,_ as t)::sign, exp, args ->
+      let ctx,subst = make_subst env (sign, exp, args) in
+      t::ctx, subst
+  | d::sign, None::exp, args ->
+      let args = match args with _::args -> args | [] -> [] in
+      let ctx,subst = make_subst env (sign, exp, args) in
+      d::ctx, subst
+  | d::sign, Some u::exp, a::args ->
+      (* We recover the level of the argument, but we don't change the *)
+      (* level in the corresponding type in the arity; this level in the *)
+      (* arity is a global level which, at typing time, will be enforce *)
+      (* to be greater than the level of the argument; this is probably *)
+      (* a useless extra constraint *)
+      let s = sort_as_univ (snd (dest_arity env (Lazy.force a))) in
+      let ctx,subst = make_subst env (sign, exp, args) in
+      d::ctx, cons_subst u s subst
+  | (na,None,t as d)::sign, Some u::exp, [] ->
+      (* No more argument here: we instantiate the type with a fresh level *)
+      (* which is first propagated to the corresponding premise in the arity *)
+      (* (actualize_decl_level), then to the conclusion of the arity (via *)
+      (* the substitution) *)
+      let ctx,subst = make_subst env (sign, exp, []) in
+	d::ctx, subst
+  | sign, [], _ ->
+      (* Uniform parameters are exhausted *)
+      sign,[]
+  | [], _, _ ->
+      assert false
+
 exception SingletonInductiveBecomesProp of Id.t
+
+let instantiate_universes env ctx ar argsorts =
+  let args = Array.to_list argsorts in
+  let ctx,subst = make_subst env (ctx,ar.template_param_levels,args) in
+  let level = subst_large_constraints subst ar.template_level in
+  let ty =
+    (* Singleton type not containing types are interpretable in Prop *)
+    if is_type0m_univ level then prop_sort
+    (* Non singleton type not containing types are interpretable in Set *)
+    else if is_type0_univ level then set_sort
+    (* This is a Type with constraints *)
+    else Type level
+  in
+    (ctx, ty)
 
 (* Type of an inductive type *)
 
-let type_of_inductive_gen env ((mib,mip),u) =
-  let subst = make_inductive_subst mib u in
-    (subst_univs_constr subst mip.mind_arity.mind_user_arity, subst)
+let type_of_inductive_gen ?(polyprop=true) env ((mib,mip),u) paramtyps =
+  match mip.mind_arity with
+  | RegularArity a ->
+    let subst = make_inductive_subst mib u in
+      (subst_univs_constr subst a.mind_user_arity, subst)
+  | TemplateArity ar ->
+    let ctx = List.rev mip.mind_arity_ctxt in
+    let ctx,s = instantiate_universes env ctx ar paramtyps in
+      (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
+         the situation where a non-Prop singleton inductive becomes Prop
+         when applied to Prop params *)
+      if not polyprop && not (is_type0m_univ ar.template_level) && is_prop_sort s
+      then raise (SingletonInductiveBecomesProp mip.mind_typename);
+      mkArity (List.rev ctx,s), Univ.LMap.empty
 
 let type_of_inductive env pind = 
-  fst (type_of_inductive_gen env pind)
+  fst (type_of_inductive_gen env pind [||])
 
 let constrained_type_of_inductive env ((mib,mip),u as pind) =
-  let ty, subst = type_of_inductive_gen env pind in
+  let ty, subst = type_of_inductive_gen env pind [||] in
   let cst = instantiate_inductive_constraints mib subst in
     (ty, cst)
 
 let type_of_inductive_knowing_parameters env ?(polyprop=false) mip args = 
-  type_of_inductive env mip
+  fst (type_of_inductive_gen env mip args)
 
 (* The max of an array of universes *)
 
@@ -248,7 +311,9 @@ let local_rels ctxt =
 (* Get type of inductive, with parameters instantiated *)
 
 let inductive_sort_family mip =
-  family_of_sort mip.mind_arity.mind_sort
+  match mip.mind_arity with
+  | RegularArity s -> family_of_sort s.mind_sort
+  | TemplateArity _ -> InType
 
 let mind_arity mip =
   mip.mind_arity_ctxt, inductive_sort_family mip

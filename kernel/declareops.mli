@@ -12,6 +12,11 @@ open Mod_subst
 (** Operations concerning types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
+(** {6 Arities} *)
+
+val map_decl_arity : ('a -> 'c) -> ('b -> 'd) ->
+  ('a, 'b) declaration_arity -> ('c, 'd) declaration_arity
+
 (** {6 Constants} *)
 
 val subst_const_body : substitution -> constant_body -> constant_body

@@ -222,7 +222,7 @@ let assumptions ?(add_opaque=false) ?(add_transparent=false) st (* t *) =
   and add_kn kn s acc =
     let cb = lookup_constant kn in
     let do_type cst =
-      let ctype = cb.Declarations.const_type in
+      let ctype = Global.type_of_global_unsafe (Globnames.ConstRef kn) in
 	(s,ContextObjectMap.add cst ctype acc)
     in
     let (s,acc) =

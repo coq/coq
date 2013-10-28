@@ -202,17 +202,15 @@ let parse_ind_args si args relmax =
 let oib_equal o1 o2 =
   Id.equal o1.mind_typename o2.mind_typename &&
   List.equal eq_rel_declaration o1.mind_arity_ctxt o2.mind_arity_ctxt &&
-  begin match o1.mind_arity, o2.mind_arity with
-  (* | Monomorphic {mind_user_arity=c1; mind_sort=s1}, *)
-  (*   Monomorphic {mind_user_arity=c2; mind_sort=s2} -> *)
-  (*     eq_constr c1 c2 && Sorts.equal s1 s2 *)
-  (* | ma1, ma2 -> Pervasives.(=) ma1 ma2 (\** FIXME: this one is surely wrong *\) end && *)
-  (*   Array.equal Id.equal o1.mind_consnames o2.mind_consnames *)
-  | {mind_user_arity=c1; mind_sort=s1},
-    {mind_user_arity=c2; mind_sort=s2} ->
-      eq_constr c1 c2 && Sorts.equal s1 s2
-  end &&
-  Array.equal Id.equal o1.mind_consnames o2.mind_consnames
+    begin
+      match o1.mind_arity, o2.mind_arity with
+      | RegularArity {mind_user_arity=c1; mind_sort=s1}, RegularArity {mind_user_arity=c2; mind_sort=s2} ->
+	eq_constr c1 c2 && Sorts.equal s1 s2
+      | {mind_user_arity=c1; mind_sort=s1},
+	{mind_user_arity=c2; mind_sort=s2} ->
+	eq_constr c1 c2 && Sorts.equal s1 s2
+    end &&
+    Array.equal Id.equal o1.mind_consnames o2.mind_consnames
 
 let mib_equal m1 m2 =
   Array.equal oib_equal m1.mind_packets m1.mind_packets &&
@@ -525,7 +523,8 @@ and mlt_env env r = match r with
 	   | _ -> None
        with Not_found ->
 	 let cb = Environ.lookup_constant kn env in
-	 let typ = cb.const_type (* FIXME not sure if we should instantiate univs here *) in
+	 let typ = Typeops.type_of_constant_type env cb.const_type
+ (* FIXME not sure if we should instantiate univs here *) in
 	 match cb.const_body with
 	   | Undef _ | OpaqueDef _ -> None
 	   | Def l_body ->
@@ -553,7 +552,7 @@ let record_constant_type env kn opt_typ =
     lookup_type kn
   with Not_found ->
     let typ = match opt_typ with
-      | None -> (lookup_constant kn env).const_type
+      | None -> Typeops.type_of_constant_type env (lookup_constant kn env).const_type
       | Some typ -> typ
     in let mlt = extract_type env [] 1 typ []
     in let schema = (type_maxvar mlt, mlt)
@@ -976,7 +975,7 @@ let extract_fixpoint env vkn (fi,ti,ci) =
 
 let extract_constant env kn cb =
   let r = ConstRef kn in
-  let typ = cb.const_type in
+  let typ = Global.type_of_global_unsafe r in
   let warn_info () = if not (is_custom r) then add_info_axiom r in
   let warn_log () = if not (constant_has_body cb) then add_log_axiom r
   in
@@ -1023,7 +1022,7 @@ let extract_constant env kn cb =
 
 let extract_constant_spec env kn cb =
   let r = ConstRef kn in
-  let typ = cb.const_type in
+  let typ = Global.type_of_global_unsafe r in
   match flag_of_type env typ with
     | (Logic, TypeScheme) -> Stype (r, [], Some (Tdummy Ktype))
     | (Logic, Default) -> Sval (r, Tdummy Kother)

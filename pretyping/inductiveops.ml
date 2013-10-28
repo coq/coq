@@ -451,9 +451,44 @@ let arity_of_case_predicate env (ind,params) dep k =
 (* Inferring the sort of parameters of a polymorphic inductive type
    knowing the sort of the conclusion *)
 
-let type_of_inductive_knowing_conclusion env ((mib,mip),u) conclty =
-  let subst = Inductive.make_inductive_subst mib u in
-    subst_univs_constr subst mip.mind_arity.mind_user_arity
+
+(* Compute the inductive argument types: replace the sorts
+   that appear in the type of the inductive by the sort of the
+   conclusion, and the other ones by fresh universes. *)
+let rec instantiate_universes env evdref scl is = function
+  | (_,Some _,_ as d)::sign, exp ->
+      d :: instantiate_universes env evdref scl is (sign, exp)
+  | d::sign, None::exp ->
+      d :: instantiate_universes env evdref scl is (sign, exp)
+  | (na,None,ty)::sign, Some u::exp ->
+      let ctx,_ = Reduction.dest_arity env ty in
+      let s =
+	(* Does the sort of parameter [u] appear in (or equal)
+           the sort of inductive [is] ? *)
+        if univ_depends u is then
+          scl (* constrained sort: replace by scl *)
+        else
+          (* unconstriained sort: replace by fresh universe *)
+          let evm, s = Evd.new_sort_variable Evd.univ_flexible !evdref in
+	    evdref := evm; s
+      in
+      (na,None,mkArity(ctx,s)):: instantiate_universes env evdref scl is (sign, exp)
+  | sign, [] -> sign (* Uniform parameters are exhausted *)
+  | [], _ -> assert false
+
+let type_of_inductive_knowing_conclusion env sigma ((mib,mip),u) conclty =
+  match mip.mind_arity with
+  | RegularArity s ->
+    let subst = Inductive.make_inductive_subst mib u in
+      sigma, subst_univs_constr subst s.mind_user_arity
+  | TemplateArity ar ->
+    let _,scl = Reduction.dest_arity env conclty in
+    let ctx = List.rev mip.mind_arity_ctxt in
+    let evdref = ref sigma in
+    let ctx =
+      instantiate_universes
+        env evdref scl ar.template_level (ctx,ar.template_param_levels) in
+      !evdref, mkArity (List.rev ctx,scl)
 
 (***********************************************)
 (* Guard condition *)

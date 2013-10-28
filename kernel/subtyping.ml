@@ -277,8 +277,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       let cb1 = Declareops.subst_const_body subst1 cb1 in
       let cb2 = Declareops.subst_const_body subst2 cb2 in
       (* Start by checking types*)
-      let typ1 = cb1.const_type in
-      let typ2 = cb2.const_type in
+      let typ1 = Typeops.type_of_constant_type env cb1.const_type in
+      let typ2 = Typeops.type_of_constant_type env cb2.const_type in
       let cst = check_type cst env typ1 typ2 in
       (* Now we check the bodies:
 	 - A transparent constant can only be implemented by a compatible
@@ -309,7 +309,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       let arity1,cst1 = constrained_type_of_inductive env 
 	((mind1,mind1.mind_packets.(i)),u1) in
       let cst2 = UContext.constraints (Future.force cb2.const_universes) in
-      let typ2 = cb2.const_type in
+      let typ2 = Typeops.type_of_constant_type env cb2.const_type in
       let cst = Constraint.union cst (Constraint.union cst1 cst2) in
       let error = NotConvertibleTypeField (env, arity1, typ2) in
        check_conv error cst infer_conv_leq env arity1 typ2
@@ -324,7 +324,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       let u1 = inductive_instance mind1 in
       let ty1,cst1 = constrained_type_of_constructor (cstr,u1) (mind1,mind1.mind_packets.(i)) in
       let cst2 = UContext.constraints (Future.force cb2.const_universes) in
-      let ty2 = cb2.const_type in
+      let ty2 = Typeops.type_of_constant_type env cb2.const_type in
       let cst = Constraint.union cst (Constraint.union cst1 cst2) in
       let error = NotConvertibleTypeField (env, ty1, ty2) in
        check_conv error cst infer_conv env ty1 ty2

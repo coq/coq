@@ -183,21 +183,17 @@ let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
     Context.fold_named_context (fun (h,_,_) hyps ->
       List.filter (fun (id,_,_) -> not (Id.equal id h)) hyps)
       hyps ~init:cb.const_hyps in
-
-  (* let typ = match cb.const_type with *)
-  (*   | NonPolymorphicType t -> *)
-  (* 	let typ = *)
-  (*         abstract_constant_type (expmod_constr cache r.d_modlist t) hyps in *)
-  (* 	NonPolymorphicType typ *)
-  (*   | PolymorphicArity (ctx,s) -> *)
-  (* 	let t = mkArity (ctx,Type s.poly_level) in *)
-  (* 	let typ = *)
-  (*         abstract_constant_type (expmod_constr cache r.d_modlist t) hyps in *)
-  (* 	let j = make_judge (constr_of_def body) typ in *)
-  (* 	Typeops.make_polymorphic_if_constant_for_ind env j *)
-  (* in *)
-  let typ = 
-    abstract_constant_type (expmod_constr cache modlist cb.const_type) hyps 
+  let typ = match cb.const_type with
+    | RegularArity t ->
+  	let typ =
+          abstract_constant_type (expmod_constr cache modlist t) hyps in
+  	RegularArity typ
+    | TemplateArity (ctx,s) ->
+  	let t = mkArity (ctx,Type s.template_level) in
+  	let typ =
+          abstract_constant_type (expmod_constr cache modlist t) hyps in
+  	let j = make_judge (constr_of_def body) typ in
+  	Typeops.make_polymorphic_if_constant_for_ind env j
   in
   let projection pb =
     let c' = abstract_constant_body (expmod_constr cache modlist pb.proj_body) hyps in
@@ -210,6 +206,9 @@ let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
 	  | _ -> assert false 
       with Not_found -> (((pb.proj_ind,0),Univ.Instance.empty), 0)
     in 
+    let typ = (* By invariant, a regular arity *)
+      match typ with RegularArity t -> t | TemplateArity _ -> assert false 
+    in
     let ctx, ty' = decompose_prod_n (n' + pb.proj_npars + 1) typ in
       { proj_ind = mind; proj_npars = pb.proj_npars + n'; proj_arg = pb.proj_arg;
 	proj_type = ty'; proj_body = c' }

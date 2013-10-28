@@ -380,7 +380,7 @@ let print internal glob_ref kind xml_library_root =
        let val0 = Declareops.body_of_constant cb in
        let typ = cb.Declarations.const_type in
        let hyps = cb.Declarations.const_hyps in
-       let typ = (* Typeops.type_of_constant_type (Global.env()) *) typ in
+       let typ = Typeops.type_of_constant_type (Global.env()) typ in
         Cic2acic.Constant kn,mk_constant_obj id val0 typ variables hyps
     | Globnames.IndRef (kn,_) ->
        let mib = Global.lookup_mind kn in

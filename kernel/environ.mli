@@ -140,12 +140,12 @@ type const_evaluation_result = NoBody | Opaque | IsProj
 exception NotEvaluableConst of const_evaluation_result
 
 val constant_value : env -> constant puniverses -> constr constrained
-val constant_type : env -> constant puniverses -> types constrained
-val constant_type_in_ctx : env -> constant -> types Univ.in_universe_context
+val constant_type : env -> constant puniverses -> constant_type constrained
+val constant_type_in_ctx : env -> constant -> constant_type Univ.in_universe_context
 
 val constant_opt_value : env -> constant puniverses -> (constr * Univ.constraints) option
 val constant_value_and_type : env -> constant puniverses -> 
-  types option * constr * Univ.constraints
+  constr option * constant_type * Univ.constraints
 (** The universe context associated to the constant, empty if not 
     polymorphic *)
 val constant_context : env -> constant -> Univ.universe_context
@@ -154,7 +154,7 @@ val constant_context : env -> constant -> Univ.universe_context
    already contains the constraints corresponding to the constant 
    application. *)
 val constant_value_in : env -> constant puniverses -> constr
-val constant_type_in : env -> constant puniverses -> types
+val constant_type_in : env -> constant puniverses -> constant_type
 val constant_opt_value_in : env -> constant puniverses -> constr option
 
 

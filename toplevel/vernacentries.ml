@@ -252,7 +252,8 @@ let print_namespace ns =
     print_list pr_id qn
   in
   let print_constant k body =
-    let t = body.Declarations.const_type in
+    (* FIXME: universes *)
+    let t = Typeops.type_of_constant_type (Global.env ()) body.Declarations.const_type in
     print_kn k ++ str":" ++ spc() ++ Printer.pr_type t
   in
   let matches mp = match match_modulepath ns mp with

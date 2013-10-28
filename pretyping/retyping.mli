@@ -41,4 +41,4 @@ val type_of_global_reference_knowing_parameters : env -> evar_map -> constr ->
   constr array -> types
 
 val type_of_global_reference_knowing_conclusion :
-  env -> evar_map -> constr -> types -> types
+  env -> evar_map -> constr -> types -> evar_map * types

@@ -755,16 +755,16 @@ let print_constructors envpar names types =
   hv 0 (str "  " ++ pc)
 
 let build_ind_type env mip =
-  mip.mind_arity.mind_user_arity
+  Inductive.type_of_inductive env mip
 
 let print_one_inductive env mib ((_,i) as ind) =
   let mip = mib.mind_packets.(i) in
   let params = mib.mind_params_ctxt in
   let args = extended_rel_list 0 params in
-  let arity = hnf_prod_applist env (build_ind_type env mip) args in
   let u = if mib.mind_polymorphic then 
       Univ.UContext.instance mib.mind_universes 
     else Univ.Instance.empty in
+  let arity = hnf_prod_applist env (build_ind_type env ((mib,mip),u)) args in
   let cstrtypes = Inductive.type_of_constructors (ind,u) (mib,mip) in
   let cstrtypes = Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
   let envpar = push_rel_context params env in
@@ -802,7 +802,7 @@ let print_record env mind mib =
   let u = if mib.mind_polymorphic then 
       Univ.UContext.instance mib.mind_universes 
     else Univ.Instance.empty in
-  let arity = hnf_prod_applist env (build_ind_type env mip) args in
+  let arity = hnf_prod_applist env (build_ind_type env ((mib,mip),u)) args in
   let cstrtypes = Inductive.type_of_constructors ((mind,0),u) (mib,mip) in
   let cstrtype = hnf_prod_applist env cstrtypes.(0) args in
   let fields = get_fields cstrtype in

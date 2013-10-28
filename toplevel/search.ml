@@ -60,14 +60,15 @@ let iter_declarations (fn : global_reference -> env -> constr -> unit) =
     with Not_found -> (* we are in a section *) () end
   | "CONSTANT" ->
     let cst = Global.constant_of_delta_kn kn in
-    let typ, _ = Environ.constant_type_in_ctx env cst in
-    fn (ConstRef cst) env typ
+    let gr = ConstRef cst in
+    let typ = Global.type_of_global_unsafe gr in
+      fn gr env typ
   | "INDUCTIVE" ->
     let mind = Global.mind_of_delta_kn kn in
     let mib = Global.lookup_mind mind in
     let iter_packet i mip =
       let ind = (mind, i) in
-      let i = (ind, Univ.UContext.instance mib.mind_universes) in
+      let i = (ind, Inductive.inductive_instance mib) in
       let typ = Inductiveops.type_of_inductive env i in
       let () = fn (IndRef ind) env typ in
       let len = Array.length mip.mind_user_lc in

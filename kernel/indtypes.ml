@@ -300,7 +300,7 @@ let typecheck_inductive env ctx mie =
 	     Universe.pr defu ++ Pp.str " declared for inductive type, inferred level is "
 	     ++ Universe.pr infu)
       in
-	(id,cn,lc,(sign,(not is_natural,full_arity,defu))))
+	(id,cn,lc,(sign,RegularArity (not is_natural,full_arity,defu))))
     inds
   in (env_arities, params, inds)
 
@@ -615,9 +615,13 @@ let allowed_sorts is_smashed s =
 (* - all_sorts in case of small, unitary Prop (not smashed) *)
 (* - logical_sorts in case of large, unitary Prop (smashed) *)
 
+let arity_conclusion = function
+  | RegularArity (_, c, _) -> c
+  | TemplateArity s -> mkType s.template_level
+
 let fold_inductive_blocks f =
   Array.fold_left (fun acc (_,_,lc,(arsign,ar)) ->
-    f (Array.fold_left f acc lc) (it_mkProd_or_LetIn (pi2 ar) arsign))
+    f (Array.fold_left f acc lc) (it_mkProd_or_LetIn (arity_conclusion ar) arsign))
 
 let used_section_variables env inds =
   let ids = fold_inductive_blocks
@@ -675,12 +679,14 @@ let build_inductive env p ctx env_ar params kn isrecord isfinite inds nmr recarg
 	splayed_lc in
     (* Elimination sorts *)
     let arkind,kelim = 
-      let (info,ar,defs) = ar_kind in
-      let s = sort_of_univ defs in
-      let kelim = allowed_sorts info s in
-	{ mind_user_arity = ar;
-	  mind_sort = s;
-	}, kelim in
+      match ar_kind with
+      | TemplateArity ar -> TemplateArity ar, all_sorts
+      | RegularArity (info,ar,defs) ->
+	let s = sort_of_univ defs in
+	let kelim = allowed_sorts info s in
+	let ar = RegularArity 
+	  { mind_user_arity = ar; mind_sort = s; } in
+	  ar, kelim in
     (* Assigning VM tags to constructors *)
     let nconst, nblock = ref 0, ref 0 in
     let transf num =

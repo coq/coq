@@ -18,7 +18,24 @@ type engagement = ImpredicativeSet
 
 (** {6 Representation of constants (Definition/Axiom) } *)
 
-type constant_type = types
+(** Non-universe polymorphic mode polymorphism (Coq 8.2+): inductives
+    and constants hiding inductives are implicitely polymorphic when
+    applied to parameters, on the universes appearing in the whnf of
+    their parameters and their conclusion, in a template style.
+    
+    In truely universe polymorphic mode, we always use RegularArity.
+*)
+
+type template_arity = {
+  template_param_levels : Univ.universe option list;
+  template_level : Univ.universe;
+}
+
+type ('a, 'b) declaration_arity = 
+  | RegularArity of 'a
+  | TemplateArity of 'b
+
+type constant_type = (types, rel_context * template_arity) declaration_arity
 
 (** Inlining level of parameters at functor applications.
     None means no inlining *)
@@ -79,10 +96,12 @@ type wf_paths = recarg Rtree.t
 v}
 *)
 
-type inductive_arity = {
+type regular_inductive_arity = {
   mind_user_arity : types;
   mind_sort : sorts;
 }
+
+type inductive_arity = (regular_inductive_arity, template_arity) declaration_arity
 
 type one_inductive_body = {
 (** {8 Primitive datas } *)

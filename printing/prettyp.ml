@@ -371,7 +371,8 @@ let print_body = function
 let print_typed_body (val_0,typ) =
   (print_body val_0 ++ fnl () ++ str "     : " ++ pr_ltype typ)
 
-let ungeneralized_type_of_constant_type t = t
+let ungeneralized_type_of_constant_type t = 
+  Typeops.type_of_constant_type (Global.env ()) t
 
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in

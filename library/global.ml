@@ -151,10 +151,16 @@ let type_of_global_unsafe r =
   match r with
   | VarRef id -> Environ.named_type id env
   | ConstRef c -> 
-     let cb = Environ.lookup_constant c env in cb.Declarations.const_type
+     let cb = Environ.lookup_constant c env in 
+       Typeops.type_of_constant_type env cb.Declarations.const_type
   | IndRef ind ->
-     let (mib, oib) = Inductive.lookup_mind_specif env ind in
-       oib.Declarations.mind_arity.Declarations.mind_user_arity
+     let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
+     let inst = 
+       if mib.Declarations.mind_polymorphic then 
+	 Univ.UContext.instance mib.Declarations.mind_universes
+       else Univ.Instance.empty
+     in
+       Inductive.type_of_inductive env (specif, inst)
   | ConstructRef cstr ->
      let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
      let inst = Univ.UContext.instance mib.Declarations.mind_universes in
@@ -169,13 +175,13 @@ let type_of_global_in_context env r =
      let univs = 
        if cb.const_polymorphic then Future.force cb.const_universes 
        else Univ.UContext.empty
-     in cb.Declarations.const_type, univs
+     in Typeops.type_of_constant_type env cb.Declarations.const_type, univs
   | IndRef ind ->
-     let (mib, oib) = Inductive.lookup_mind_specif env ind in
+     let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
      let univs = 
        if mib.mind_polymorphic then mib.mind_universes 
        else Univ.UContext.empty
-     in oib.Declarations.mind_arity.Declarations.mind_user_arity, univs
+     in Inductive.type_of_inductive env (specif, Univ.UContext.instance univs), univs
   | ConstructRef cstr ->
      let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
      let univs = 

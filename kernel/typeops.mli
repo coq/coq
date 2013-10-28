@@ -51,10 +51,13 @@ val judge_of_relative : env -> int -> unsafe_judgment
 val judge_of_variable : env -> variable -> unsafe_judgment
 
 (** {6 type of a constant } *)
-val judge_of_constant : env -> constant puniverses -> unsafe_judgment
 
-(* val judge_of_constant_knowing_parameters : *)
-(*   env -> constant -> unsafe_judgment array -> unsafe_judgment *)
+val judge_of_constant : env -> pconstant -> unsafe_judgment
+
+val judge_of_constant_knowing_parameters :
+  env -> pconstant -> unsafe_judgment array -> unsafe_judgment
+
+(** {6 type of an applied projection } *)
 
 val judge_of_projection : env -> Names.projection -> unsafe_judgment -> unsafe_judgment
 
@@ -103,15 +106,20 @@ val judge_of_case : env -> case_info
 val type_fixpoint : env -> Name.t array -> types array
     -> unsafe_judgment array -> unit
 
-val type_of_constant : env -> constant puniverses -> types constrained
+val type_of_constant : env -> pconstant -> types constrained
 
 val type_of_constant_type : env -> constant_type -> types
 
 val type_of_projection : env -> Names.projection puniverses -> types
 
-val type_of_constant_in : env -> constant puniverses -> types
+val type_of_constant_in : env -> pconstant -> types
 
-val type_of_constant_knowing_parameters :
+val type_of_constant_type_knowing_parameters :
   env -> constant_type -> types Lazy.t array -> types
 
+val type_of_constant_knowing_parameters :
+  env -> pconstant -> types Lazy.t array -> types constrained
 
+(** Make a type polymorphic if an arity *)
+val make_polymorphic_if_constant_for_ind : env -> unsafe_judgment ->
+  constant_type

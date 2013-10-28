@@ -109,6 +109,9 @@ exception SingletonInductiveBecomesProp of Id.t
 
 val max_inductive_sort : sorts array -> universe
 
+val instantiate_universes : env -> rel_context ->
+  template_arity -> constr Lazy.t array -> rel_context * sorts
+
 (** {6 Debug} *)
 
 type size = Large | Strict

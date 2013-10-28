@@ -27,7 +27,7 @@ let meta_type evd mv =
 
 let constant_type_knowing_parameters env cst jl =
   let paramstyp = Array.map (fun j -> lazy j.uj_type) jl in
-  type_of_constant_knowing_parameters env (constant_type_in env cst) paramstyp
+  type_of_constant_type_knowing_parameters env (constant_type_in env cst) paramstyp
 
 let inductive_type_knowing_parameters env (ind,u) jl =
   let mspec = lookup_mind_specif env ind in

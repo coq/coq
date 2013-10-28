@@ -13,6 +13,28 @@ open Util
 (** Operations concernings types in [Declarations] :
     [constant_body], [mutual_inductive_body], [module_body] ... *)
 
+(** {6 Arities } *)
+
+let subst_decl_arity f g sub ar = 
+  match ar with
+  | RegularArity x -> 
+    let x' = f sub x in 
+      if x' == x then ar
+      else RegularArity x'
+  | TemplateArity x -> 
+    let x' = g sub x in 
+      if x' == x then ar
+      else TemplateArity x'
+
+let map_decl_arity f g = function
+  | RegularArity a -> RegularArity (f a)
+  | TemplateArity a -> TemplateArity (g a)
+
+let hcons_template_arity ar =
+  { template_param_levels =
+      List.smartmap (Option.smartmap Univ.hcons_univ) ar.template_param_levels;
+    template_level = Univ.hcons_univ ar.template_level }
+
 (** {6 Constants } *)
 
 let body_of_constant cb = match cb.const_body with
@@ -44,14 +66,10 @@ let subst_rel_declaration sub (id,copt,t as x) =
 
 let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
-(* let subst_const_type sub arity = match arity with *)
-(*   | NonPolymorphicType s -> *)
-(*     let s' = subst_mps sub s in *)
-(*     if s==s' then arity else NonPolymorphicType s' *)
-(*   | PolymorphicArity (ctx,s) -> *)
-(*     let ctx' = subst_rel_context sub ctx in *)
-(*     if ctx==ctx' then arity else PolymorphicArity (ctx',s) *)
-
+let subst_template_cst_arity sub (ctx,s as arity) =
+  let ctx' = subst_rel_context sub ctx in
+    if ctx==ctx' then arity else (ctx',s)
+      
 let subst_const_type sub arity =
   if is_empty_subst sub then arity
   else subst_mps sub arity
@@ -73,7 +91,7 @@ let subst_const_body sub cb =
   if is_empty_subst sub then cb
   else
     let body' = subst_const_def sub cb.const_body in
-    let type' = subst_const_type sub cb.const_type in
+    let type' = subst_decl_arity subst_const_type subst_template_cst_arity sub cb.const_type in
     let proj' = Option.smartmap (subst_const_proj sub) cb.const_proj in
     if body' == cb.const_body && type' == cb.const_type
       && proj' == cb.const_proj then cb
@@ -102,7 +120,13 @@ let hcons_rel_decl ((n,oc,t) as d) =
 
 let hcons_rel_context l = List.smartmap hcons_rel_decl l
 
-let hcons_const_type t = Term.hcons_constr t
+let hcons_regular_const_arity t = Term.hcons_constr t
+
+let hcons_template_const_arity (ctx, ar) = 
+  (hcons_rel_context ctx, hcons_template_arity ar)
+
+let hcons_const_type = 
+  map_decl_arity hcons_regular_const_arity hcons_template_const_arity
 
 let hcons_const_def = function
   | Undef inl -> Undef inl
@@ -164,72 +188,15 @@ let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
 
 (** {7 Substitution of inductive declarations } *)
 
-(* OLD POLYMORPHISM *)
-(* let subst_indarity sub ar = match ar with *)
-(*   | Monomorphic s -> *)
-(*     let uar' = subst_mps sub s.mind_user_arity in *)
-(*     if uar' == s.mind_user_arity then ar *)
-(*     else Monomorphic { mind_user_arity = uar'; mind_sort = s.mind_sort } *)
-(*   | Polymorphic _ -> ar *)
+let subst_regular_ind_arity sub s =
+  let uar' = subst_mps sub s.mind_user_arity in
+    if uar' == s.mind_user_arity then s 
+    else { mind_user_arity = uar'; mind_sort = s.mind_sort }
 
-(* let subst_mind_packet sub mip = *)
-(*   let { mind_nf_lc = nf; *)
-(*         mind_user_lc = user; *)
-(*         mind_arity_ctxt = ctxt; *)
-(*         mind_arity = ar; *)
-(*         mind_recargs = ra } = mip *)
-(*   in *)
-(*   let nf' = Array.smartmap (subst_mps sub) nf in *)
-(*   let user' = *)
-(*     (\* maintain sharing of [mind_user_lc] and [mind_nf_lc] *\) *)
-(*     if user==nf then nf' *)
-(*     else Array.smartmap (subst_mps sub) user *)
-(*   in *)
-(*   let ctxt' = subst_rel_context sub ctxt in *)
-(*   let ar' = subst_indarity sub ar in *)
-(*   let ra' = subst_wf_paths sub ra in *)
-(*   if nf==nf' && user==user' && ctxt==ctxt' && ar==ar' && ra==ra' *)
-(*   then mip *)
-(*   else *)
-(*     { mip with *)
-(*       mind_nf_lc = nf'; *)
-(*       mind_user_lc = user'; *)
-(*       mind_arity_ctxt = ctxt'; *)
-(*       mind_arity = ar'; *)
-(*       mind_recargs = ra' } *)
+let subst_template_ind_arity sub s = s
 
-(* let subst_mind sub mib = *)
-(*   assert (List.is_empty mib.mind_hyps); (\* we're outside sections *\) *)
-(*   if is_empty_subst sub then mib *)
-(*   else *)
-(*     let params = mib.mind_params_ctxt in *)
-(*     let params' = Context.map_rel_context (subst_mps sub) params in *)
-(*     let packets = mib.mind_packets in *)
-(*     let packets' = Array.smartmap (subst_mind_packet sub) packets in *)
-(*     if params==params' && packets==packets' then mib *)
-(*     else *)
-(*       { mib with *)
-(*         mind_params_ctxt = params'; *)
-(*         mind_packets = packets'; *)
-(*         mind_native_name = ref NotLinked } *)
-
-(* (\** {6 Hash-consing of inductive declarations } *\) *)
-
-(* (\** Just as for constants, this hash-consing is quite partial *\) *)
-
-(* let hcons_indarity = function *)
-(*   | Monomorphic a -> *)
-(*     Monomorphic *)
-(*       { mind_user_arity = Term.hcons_constr a.mind_user_arity; *)
-(*         mind_sort = Term.hcons_sorts a.mind_sort } *)
-(*   | Polymorphic a -> Polymorphic (hcons_polyarity a) *)
-
-(** Substitution of inductive declarations *)
-
-let subst_indarity sub s =
-  { mind_user_arity = subst_mps sub s.mind_user_arity;
-    mind_sort = s.mind_sort;
-  }
+let subst_ind_arity =
+  subst_decl_arity subst_regular_ind_arity subst_template_ind_arity
 
 let subst_mind_packet sub mbp =
   { mind_consnames = mbp.mind_consnames;
@@ -238,7 +205,7 @@ let subst_mind_packet sub mbp =
     mind_typename = mbp.mind_typename;
     mind_nf_lc = Array.smartmap (subst_mps sub) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
-    mind_arity = subst_indarity sub mbp.mind_arity;
+    mind_arity = subst_ind_arity sub mbp.mind_arity;
     mind_user_lc = Array.smartmap (subst_mps sub) mbp.mind_user_lc;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_nrealargs_ctxt = mbp.mind_nrealargs_ctxt;
@@ -261,11 +228,18 @@ let subst_mind_body sub mib =
     mind_polymorphic = mib.mind_polymorphic;
     mind_universes = mib.mind_universes }
 
-(** Hash-consing of inductive declarations *)
+(** {6 Hash-consing of inductive declarations } *)
 
-let hcons_indarity a =
+let hcons_regular_ind_arity a =
   { mind_user_arity = Term.hcons_constr a.mind_user_arity;
     mind_sort = Term.hcons_sorts a.mind_sort }
+
+(** Just as for constants, this hash-consing is quite partial *)
+
+let hcons_ind_arity =
+  map_decl_arity hcons_regular_ind_arity hcons_template_arity
+
+(** Substitution of inductive declarations *)
 
 let hcons_mind_packet oib =
   let user = Array.smartmap Term.hcons_types oib.mind_user_lc in
@@ -275,7 +249,7 @@ let hcons_mind_packet oib =
   { oib with
     mind_typename = Names.Id.hcons oib.mind_typename;
     mind_arity_ctxt = hcons_rel_context oib.mind_arity_ctxt;
-    mind_arity = hcons_indarity oib.mind_arity;
+    mind_arity = hcons_ind_arity oib.mind_arity;
     mind_consnames = Array.smartmap Names.Id.hcons oib.mind_consnames;
     mind_user_lc = user;
     mind_nf_lc = nf }
