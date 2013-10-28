@@ -357,8 +357,6 @@ let to_list d =
 
 let undefined_map d = d.undf_evars
 
-let undefined_evars d = { d with defn_evars = EvMap.empty }
-
 (* spiwack: not clear what folding over an evar_map, for now we shall
     simply fold over the inner evar_map. *)
 let fold f d a =

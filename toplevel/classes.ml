@@ -271,8 +271,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
       in
       let term = Option.map (Evarutil.nf_evar !evars) term in
       let evm = Evarutil.nf_evar_map_undefined !evars in
-      let evm = undefined_evars evm in
-	if Evd.is_empty evm && not (Option.is_empty term) then
+	if not (Evd.has_undefined evm) && not (Option.is_empty term) then
 	  declare_instance_constant k pri global imps ?hook id 
             (Option.get term,Declareops.no_seff) termtype
 	else begin

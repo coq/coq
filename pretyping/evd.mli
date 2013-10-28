@@ -229,9 +229,6 @@ val evars_reset_evd : ?with_conv_pbs:bool -> evar_map ->  evar_map -> evar_map
 
 (** {6 Misc} *)
 
-val undefined_evars : evar_map -> evar_map
-(** TODO: see where we can replace those functions by their [_map] variant. *)
-
 val evar_declare :
   named_context_val -> evar -> types -> ?src:Loc.t * Evar_kinds.t ->
       ?filter:Filter.t -> ?candidates:constr list -> evar_map -> evar_map
