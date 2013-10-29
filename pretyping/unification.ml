@@ -970,7 +970,7 @@ let w_unify_meta_types env ?(flags=default_unify_flags) evd =
    types of metavars are unifiable with the types of their instances    *)
 
 let head_app sigma m =
-  fst (decompose_appvect (whd_nored sigma m))
+  fst (whd_nored_state sigma (m, empty_stack))
 
 let check_types env flags (sigma,_,_ as subst) m n =
   if isEvar_or_Meta (head_app sigma m) then
