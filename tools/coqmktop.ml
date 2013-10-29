@@ -267,7 +267,7 @@ let main () =
       (* native code *)
       if !top then failwith "no custom toplevel in native code !";
       let ocamloptexec = Filename.quote (Filename.concat camlbin "ocamlopt") in
-        ocamloptexec^" -linkall"
+        ocamloptexec^" -linkall -allocation-tracing"
     end else
       (* bytecode (we shunt ocamlmktop script which fails on win32) *)
       let ocamlmktoplib = if is_ocaml4
