@@ -202,8 +202,6 @@ let safe_meta_value sigma ev =
   try Some (Evd.meta_value sigma ev)
   with Not_found -> None
 
-let appterm_of_stack t = decompose_app (zip t)
-
 let strong whdfun env sigma t =
   let rec strongrec env t =
     map_constr_with_full_binders push_rel strongrec env (whdfun env sigma t) in
@@ -551,7 +549,7 @@ let local_whd_state_gen flags sigma =
 let raw_whd_state_gen flags env sigma s = fst (whd_state_gen false flags env sigma s)
 
 let stack_red_of_state_red f sigma x =
-  appterm_of_stack (f sigma (x, empty_stack))
+  decompose_app (zip (f sigma (x, empty_stack)))
 
 let red_of_state_red f sigma x =
   zip (f sigma (x,empty_stack))
@@ -560,6 +558,7 @@ let red_of_state_red f sigma x =
 
 let whd_nored_state = local_whd_state_gen nored
 let whd_nored_stack = stack_red_of_state_red whd_nored_state
+let whd_nored = red_of_state_red whd_nored_state
 
 (* 1. Beta Reduction Functions *)
 

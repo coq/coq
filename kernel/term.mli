@@ -152,6 +152,9 @@ val destApplication : constr -> constr * constr array
 (** Decompose any term as an applicative term; the list of args can be empty *)
 val decompose_app : constr -> constr * constr list
 
+(** Same as [decompose_app], but returns an array. *)
+val decompose_appvect : constr -> constr * constr array
+
 (** Destructs a constant *)
 val destConst : constr -> constant
 

@@ -1109,7 +1109,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
   else
   (* lazily reduces to match the head of [t] with the expected [ref] *)
   let rec elimrec env t l =
-    let c, _ = Reductionops.whd_nored_stack sigma t in
+    let c, _ = decompose_appvect (Reductionops.whd_nored sigma t) in
     match kind_of_term c with
       | Prod (n,ty,t') ->
 	  if allow_product then

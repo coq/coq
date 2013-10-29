@@ -115,6 +115,7 @@ val nf_betaiota_preserving_vm_cast : reduction_function
 (** Lazy strategy, weak head reduction *)
 
 val whd_evar :  evar_map -> constr -> constr
+val whd_nored : local_reduction_function
 val whd_beta : local_reduction_function
 val whd_betaiota : local_reduction_function
 val whd_betaiotazeta : local_reduction_function

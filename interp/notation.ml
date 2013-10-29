@@ -558,7 +558,7 @@ let scope_class_compare sc1 sc2 = match sc1, sc2 with
 let scope_class_of_reference x = ScopeRef x
 
 let compute_scope_class t =
-  let t', _ = Reductionops.whd_betaiotazeta_stack Evd.empty t in
+  let t', _ = decompose_appvect (Reductionops.whd_betaiotazeta Evd.empty t) in
   match kind_of_term t' with
   | Var _ | Const _ | Ind _ -> ScopeRef (global_of_constr t')
   | Sort _ -> ScopeSort

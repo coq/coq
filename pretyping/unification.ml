@@ -969,13 +969,16 @@ let w_unify_meta_types env ?(flags=default_unify_flags) evd =
    [clenv_typed_unify M N clenv] expects in addition that expected
    types of metavars are unifiable with the types of their instances    *)
 
+let head_app sigma m =
+  fst (decompose_appvect (whd_nored sigma m))
+
 let check_types env flags (sigma,_,_ as subst) m n =
-  if isEvar_or_Meta (fst (whd_nored_stack sigma m)) then
+  if isEvar_or_Meta (head_app sigma m) then
     unify_0_with_initial_metas subst true env CUMUL
       flags
       (get_type_of env sigma n)
       (get_type_of env sigma m)
-  else if isEvar_or_Meta (fst (whd_nored_stack sigma n)) then
+  else if isEvar_or_Meta (head_app sigma n) then
     unify_0_with_initial_metas subst true env CUMUL
       flags
       (get_type_of env sigma m)

@@ -339,6 +339,11 @@ let decompose_app c =
     | App (f,cl) -> (f, Array.to_list cl)
     | _ -> (c,[])
 
+let decompose_appvect c =
+  match kind_of_term c with
+    | App (f,cl) -> (f, cl)
+    | _ -> (c,[||])
+
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
 (****************************************************************************)
