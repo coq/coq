@@ -363,38 +363,60 @@ type order = EQ | LT of explanation | LE of explanation | NLE
 let compare_neq strict g arcu arcv =
   (* [c] characterizes whether (and how) arcv has already been related
      to arcu among the lt_done,le_done universe *)
-  let rec cmp c lt_done le_done = function
+  let rec cmp c lt_done le_done lt_todo le_todo = match lt_todo, le_todo with
   | [],[] -> c
   | (arc,p)::lt_todo, le_todo ->
     if List.memq arc lt_done then
-      cmp c lt_done le_done (lt_todo,le_todo)
+      cmp c lt_done le_done lt_todo le_todo
     else
-      let lt_new = canp g p Lt arc.lt@ canp g p Le arc.le in
-      (try
-	 let p = List.assq arcv lt_new in
-	 if strict then LT p else LE p
-       with Not_found ->
-	 cmp c (arc::lt_done) le_done (lt_new@lt_todo,le_todo))
+      let rec find lt_todo lt le = match le with
+      | [] ->
+        begin match lt with
+        | [] -> cmp c (arc :: lt_done) le_done lt_todo le_todo
+        | u :: lt ->
+          let arc = repr g u in
+          let p = (Lt, Atom u) :: p in
+          if arc == arcv then
+            if strict then LT p else LE p
+          else find ((arc, p) :: lt_todo) lt le
+        end
+      | u :: le ->
+        let arc = repr g u in
+        let p = (Le, Atom u) :: p in
+        if arc == arcv then
+          if strict then LT p else LE p
+        else find ((arc, p) :: lt_todo) lt le
+      in
+      find lt_todo arc.lt arc.le
   | [], (arc,p)::le_todo ->
     if arc == arcv then
       (* No need to continue inspecting universes above arc:
 	 if arcv is strictly above arc, then we would have a cycle.
          But we cannot answer LE yet, a stronger constraint may
 	 come later from [le_todo]. *)
-      if strict then cmp (LE p) lt_done le_done ([],le_todo) else LE p
+      if strict then cmp (LE p) lt_done le_done [] le_todo else LE p
     else
       if (List.memq arc lt_done) || (List.memq arc le_done) then
-	cmp c lt_done le_done ([],le_todo)
+        cmp c lt_done le_done [] le_todo
       else
-	let lt_new = canp g p Lt arc.lt in
-	(try
-	  let p = List.assq arcv lt_new in
-	  if strict then LT p else LE p
-	 with Not_found ->
-	   let le_new = canp g p Le arc.le in
-	   cmp c lt_done (arc::le_done) (lt_new, le_new@le_todo))
+        let rec find lt_todo lt = match lt with
+        | [] ->
+          let fold accu u =
+            let node = (repr g u, (Le, Atom u) :: p) in
+            node :: accu
+          in
+          let le_new = List.fold_left fold le_todo arc.le in
+          cmp c lt_done (arc :: le_done) lt_todo le_new
+        | u :: lt ->
+          let arc = repr g u in
+          let p = (Lt, Atom u) :: p in
+          if arc == arcv then
+            if strict then LT p else LE p
+          else find ((arc, p) :: lt_todo) lt
+        in
+        find [] arc.lt
   in
-  cmp NLE [] [] ([],[arcu,[]])
+  cmp NLE [] [] [] [arcu, []]
 
 let compare g arcu arcv =
   if arcu == arcv then EQ else compare_neq true g arcu arcv
