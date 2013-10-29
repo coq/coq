@@ -84,7 +84,20 @@ let append_stack_app_list l s =
   | ([],s) -> s
   | (l1, Zapp l :: s) -> Zapp (l1@l) :: s
   | (l1, s) -> Zapp l1 :: s
-let append_stack_app v s = append_stack_app_list (Array.to_list v) s
+
+let append_stack_app v s =
+  if Array.is_empty v then s
+  else match s with
+  | Zapp l :: s ->
+    let rec append i accu =
+      if i < 0 then accu
+      else
+        let arg = Array.unsafe_get v i in
+        append (pred i) (arg :: accu)
+    in
+    let al = append (Array.length v - 1) l in
+    Zapp al :: s
+  | _ -> Zapp (Array.to_list v) :: s
 
 let rec stack_args_size = function
   | Zapp l::s -> List.length l + stack_args_size s
