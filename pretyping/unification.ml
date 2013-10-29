@@ -503,9 +503,9 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
     with ex when precatchable_exception ex ->
     try reduce curenvnb pb b false substn cM cN
     with ex when precatchable_exception ex ->
-    try expand curenvnb pb b false substn cM f1 l1 cN f2 l2
+    try canonical_projections curenvnb pb b cM cN substn
     with ex when precatchable_exception ex ->
-    canonical_projections curenvnb pb b cM cN substn
+    expand curenvnb pb b false substn cM f1 l1 cN f2 l2
 
   and unify_not_same_head curenvnb pb b wt substn cM cN =
     try canonical_projections curenvnb pb b cM cN substn

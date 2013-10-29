@@ -305,7 +305,7 @@ let remove_instance_local_defs evd evk args =
   let rec aux sign i = match sign with
   | [] ->
     let () = assert (i = len) in []
-  | (_, None _, _) :: sign ->
+  | (_, None, _) :: sign ->
     let () = assert (i < len) in
     (Array.unsafe_get args i) :: aux sign (succ i)
   | (_, Some _, _) :: sign ->
@@ -1248,8 +1248,25 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
               imitate envk t in
 
   let rhs = whd_beta evd rhs (* heuristic *) in
-  let body = imitate (env,0) rhs in
-  (!evdref,body)
+  let fast rhs = 
+    let filter_ctxt = evar_filtered_context evi in
+    let names = ref Idset.empty in
+    let rec is_id_subst ctxt s =
+      match ctxt, s with
+      | ((id, _, _) :: ctxt'), (c :: s') ->
+        names := Idset.add id !names;
+        isVarId id c && is_id_subst ctxt' s'
+      | [], [] -> true
+      | _ -> false 
+    in
+      is_id_subst filter_ctxt (Array.to_list argsv) &&
+      closed0 rhs &&
+      Idset.subset (collect_vars rhs) !names 
+  in
+  let body =
+    if fast rhs then nf_evar evd rhs
+    else imitate (env,0) rhs
+ in (!evdref,body)
 
 (* [define] tries to solve the problem "?ev[args] = rhs" when "?ev" is
  * an (uninstantiated) evar such that "hyps |- ?ev : typ". Otherwise said,
