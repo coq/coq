@@ -40,6 +40,27 @@ end =
 struct
   type t = bool list
 
+  (** Most of filters we use are identities, so we share their use. *)
+  let identity_pool = Array.make 128 []
+
+  let () =
+    (** Fill the filter pool *)
+    for i = 1 to 127 do
+      let pred = Array.unsafe_get identity_pool (pred i) in
+      let curr = true :: pred in
+      Array.unsafe_set identity_pool i curr
+    done
+
+  let rec identity_gen n accu =
+    if n = 0 then accu
+    else identity_gen (pred n) (true :: accu)
+
+  let identity n =
+    if n < 128 then Array.unsafe_get identity_pool n
+    else
+      let accu = Array.unsafe_get identity_pool 127 in
+      identity_gen (n - 127) accu
+
   let length = List.length
 
   let rec equal l1 l2 = match l1, l2 with
@@ -47,12 +68,6 @@ struct
   | h1 :: l1, h2 :: l2 ->
     (if h1 then h2 else not h2) && equal l1 l2
   | _ -> false
-
-  let rec identity n accu =
-    if n = 0 then accu
-    else identity (pred n) (true :: accu)
-
-  let identity n = identity n []
 
   let rec is_identity = function
   | [] -> true
