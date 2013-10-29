@@ -144,15 +144,27 @@ let head_evar =
 let whd_head_evar_stack sigma c =
   let rec whrec (c, l as s) =
     match kind_of_term c with
-      | Evar (evk,args as ev) when Evd.is_defined sigma evk
-	  -> whrec (existential_value sigma ev, l)
+      | Evar (evk,args as ev) ->
+        let v =
+          try Some (existential_value sigma ev)
+          with NotInstantiatedEvar | Not_found  -> None in
+        begin match v with
+        | None -> s
+        | Some c -> whrec (c, l)
+        end
       | Cast (c,_,_) -> whrec (c, l)
-      | App (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
+      | App (f,args) -> whrec (f, args :: l)
       | _ -> s
   in
   whrec (c, [])
 
-let whd_head_evar sigma c = applist (whd_head_evar_stack sigma c)
+let whd_head_evar sigma c =
+  let (f, args) = whd_head_evar_stack sigma c in
+  (** optim: don't reallocate if empty/singleton *)
+  match args with
+  | [] -> f
+  | [arg] -> mkApp (f, arg)
+  | _ -> mkApp (f, Array.concat args)
 
 (**********************)
 (* Creating new metas *)
