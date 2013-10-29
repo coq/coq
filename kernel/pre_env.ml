@@ -111,9 +111,14 @@ let push_named d env =
   assert (env.env_rel_context = []); *)
   let id,body,_ = d in
   let rval = ref VKnone in
-    { env with
-      env_named_context = Context.add_named_decl d env.env_named_context;
-      env_named_vals =  (id,rval):: env.env_named_vals }
+  { env_globals = env.env_globals;
+    env_named_context = Context.add_named_decl d env.env_named_context;
+    env_named_vals = (id, rval) :: env.env_named_vals;
+    env_rel_context = env.env_rel_context;
+    env_rel_val = env.env_rel_val;
+    env_nb_rel = env.env_nb_rel;
+    env_stratification = env.env_stratification;
+    retroknowledge = env.retroknowledge; }
 
 let lookup_named_val id env =
   snd(List.find (fun (id',_) -> Id.equal id id') env.env_named_vals)
