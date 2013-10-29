@@ -1005,16 +1005,15 @@ let w_unify_core_0 env evd with_types cv_pb flags m n =
 let w_unify_0 env evd = w_unify_core_0 env evd false
 let w_typed_unify env evd = w_unify_core_0 env evd true
 
-let w_typed_unify_list env evd flags f1 l1 f2 l2 =
+let w_typed_unify_array env evd flags f1 l1 f2 l2 =
   let flags' = { flags with resolve_evars = false } in
-  let f1,l1,f2,l2 = adjust_app_list_size f1 l1 f2 l2 in
+  let f1,l1,f2,l2 = adjust_app_array_size f1 l1 f2 l2 in
   let (mc1,evd') = retract_coercible_metas evd in
-  let subst =
-    List.fold_left2 (fun subst m n ->
-      unify_0_with_initial_metas subst true env CONV flags' m n) (evd',[],[])
-      (f1::l1) (f2::l2) in
+  let fold_subst subst m n = unify_0_with_initial_metas subst true env CONV flags' m n in
+  let subst = fold_subst (evd', [], []) f1 f2 in
+  let subst = Array.fold_left2 fold_subst subst l1 l2 in
   let evd = w_merge env true flags subst in
-  try_resolve_typeclasses env evd flags (applist(f1,l1)) (applist(f2,l2))
+  try_resolve_typeclasses env evd flags (mkApp(f1,l1)) (mkApp(f2,l2))
 
 (* takes a substitution s, an open term op and a closed term cl
    try to find a subterm of cl which matches op, if op is just a Meta
@@ -1234,16 +1233,16 @@ let w_unify2 env evd flags dep cv_pb ty1 ty2 =
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
 let w_unify env evd cv_pb ?(flags=default_unify_flags) ty1 ty2 =
-  let hd1,l1 = whd_nored_stack evd ty1 in
-  let hd2,l2 = whd_nored_stack evd ty2 in
-  let is_empty1 = match l1 with [] -> true | _ -> false in
-  let is_empty2 = match l2 with [] -> true | _ -> false in
+  let hd1,l1 = decompose_appvect (whd_nored evd ty1) in
+  let hd2,l2 = decompose_appvect (whd_nored evd ty2) in
+  let is_empty1 = Array.is_empty l1 in
+  let is_empty2 = Array.is_empty l2 in
     match kind_of_term hd1, not is_empty1, kind_of_term hd2, not is_empty2 with
       (* Pattern case *)
       | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
-	  when Int.equal (List.length l1) (List.length l2) ->
+	  when Int.equal (Array.length l1) (Array.length l2) ->
 	  (try
-	      w_typed_unify_list env evd flags hd1 l1 hd2 l2
+	      w_typed_unify_array env evd flags hd1 l1 hd2 l2
 	    with ex when precatchable_exception ex ->
 	      try
 		w_unify2 env evd flags false cv_pb ty1 ty2
@@ -1256,7 +1255,7 @@ let w_unify env evd cv_pb ?(flags=default_unify_flags) ty1 ty2 =
 	    with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e
 	      | ex when precatchable_exception ex ->
 		  try
-		    w_typed_unify_list env evd flags hd1 l1 hd2 l2
+		    w_typed_unify_array env evd flags hd1 l1 hd2 l2
 		  with ex' when precatchable_exception ex' ->
                     (* Last chance, use pattern-matching with typed
                        dependencies (done late for compatibility) *)
