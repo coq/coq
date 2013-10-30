@@ -768,15 +768,23 @@ let meta_merge evd1 evd2 =
 type metabinding = metavariable * constr * instance_status
 
 let retract_coercible_metas evd =
-  let mc,ml =
-    Metamap.fold (fun n v (mc,ml) ->
-      match v with
-	| Clval (na,(b,(Conv,CoerceToType as s)),typ) ->
-	    (n,b.rebus,s)::mc, Metamap.add n (Cltyp (na,typ)) ml
-	| v ->
-	    mc, Metamap.add n v ml)
-      evd.metas ([],Metamap.empty) in
-  mc, { evd with metas = ml }
+  let mc = ref [] in
+  let map n v = match v with
+  | Clval (na, (b, (Conv, CoerceToType as s)), typ) ->
+    let () = mc := (n, b.rebus, s) :: !mc in
+    Cltyp (na, typ)
+  | v -> v
+  in
+  let metas = Metamap.mapi map evd.metas in
+  !mc, {
+    defn_evars = evd.defn_evars;
+    undf_evars = evd.undf_evars;
+    universes  = evd.universes;
+    univ_cstrs = evd.univ_cstrs;
+    conv_pbs = evd.conv_pbs;
+    last_mods = evd.last_mods;
+    metas;
+    effects = evd.effects; }
 
 let subst_defined_metas bl c =
   let rec substrec c = match kind_of_term c with
