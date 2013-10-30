@@ -868,7 +868,10 @@ let isGlobalRef c =
   | Const _ | Ind _ | Construct _ | Var _ -> true
   | _ -> false
 
-let has_polymorphic_type c = (Global.lookup_constant c).Declarations.const_polymorphic
+let has_polymorphic_type c =
+  match (Global.lookup_constant c).Declarations.const_type with
+  | Declarations.TemplateArity _ -> true
+  | _ -> false
 
 let base_sort_cmp pb s0 s1 =
   match (s0,s1) with

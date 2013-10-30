@@ -734,21 +734,20 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	error_cannot_unify (fst curenvnb) sigma (cM,cN)
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       in
-  let evd = sigma in
   let res = 
-    if occur_meta_or_undefined_evar evd m || occur_meta_or_undefined_evar evd n
+    if occur_meta_or_undefined_evar sigma m || occur_meta_or_undefined_evar sigma n
       || subterm_restriction conv_at_top flags then None
     else 
       let sigma, b = match flags.modulo_conv_on_closed_terms with
-      | Some convflags -> infer_conv ~pb:cv_pb ~ts:convflags env sigma m n
-      | _ -> constr_cmp cv_pb sigma flags m n in
+	| Some convflags -> infer_conv ~pb:cv_pb ~ts:convflags env sigma m n
+	| _ -> constr_cmp cv_pb sigma flags m n in
 	if b then Some sigma
 	else if (match flags.modulo_conv_on_closed_terms, flags.modulo_delta with
-            | Some (cv_id, cv_k), (dl_id, dl_k) ->
-                Id.Pred.subset dl_id cv_id && Cpred.subset dl_k cv_k
-            | None,(dl_id, dl_k) ->
-                Id.Pred.is_empty dl_id && Cpred.is_empty dl_k)
-      then error_cannot_unify env sigma (m, n) else None
+        | Some (cv_id, cv_k), (dl_id, dl_k) ->
+          Id.Pred.subset dl_id cv_id && Cpred.subset dl_k cv_k
+        | None,(dl_id, dl_k) ->
+          Id.Pred.is_empty dl_id && Cpred.is_empty dl_k)
+	then error_cannot_unify env sigma (m, n) else None
   in 
     match res with 
     | Some sigma -> sigma, ms, es

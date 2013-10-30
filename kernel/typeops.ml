@@ -314,19 +314,21 @@ let judge_of_cast env cj k tj =
    the App case of execute; from this constraints, the expected
    dynamic constraints of the form u<=v are enforced *)
 
-(* let judge_of_inductive_knowing_parameters env ind jl = *)
-(*   let c = mkInd ind in *)
-(*   let (mib,mip) = lookup_mind_specif env ind in *)
-(*   check_args env c mib.mind_hyps; *)
-(*   let paramstyp = Array.map (fun j -> j.uj_type) jl in *)
-(*   let t =  in *)
-(*   make_judge c t *)
+let judge_of_inductive_knowing_parameters env (ind,u as indu) args =
+  let c = mkIndU indu in
+  let (mib,mip) as spec = lookup_mind_specif env ind in
+  check_hyps_inclusion env c mib.mind_hyps;
+  let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters 
+    env (spec,u) args
+  in
+    check_constraints cst env;
+    make_judge c t
 
 let judge_of_inductive env (ind,u as indu) =
   let c = mkIndU indu in
-  let (mib,mip) = lookup_mind_specif env ind in
+  let (mib,mip) as spec = lookup_mind_specif env ind in
   check_hyps_inclusion env c mib.mind_hyps;
-  let t,cst = Inductive.constrained_type_of_inductive env ((mib,mip),u) in
+  let t,cst = Inductive.constrained_type_of_inductive env (spec,u) in
     check_constraints cst env;
     (make_judge c t)
 
@@ -424,7 +426,19 @@ let rec execute env cstr =
     (* Lambda calculus operators *)
     | App (f,args) ->
         let jl = execute_array env args in
-	let j = execute env f in
+	let j =
+	  match kind_of_term f with
+	    | Ind ind ->
+		(* Sort-polymorphism of inductive types *)
+	      let args = Array.map (fun j -> lazy j.uj_type) jl in
+		judge_of_inductive_knowing_parameters env ind args
+	    | Const cst ->
+		(* Sort-polymorphism of constant *)
+	      judge_of_constant_knowing_parameters env cst jl
+	    | _ ->
+		(* No sort-polymorphism *)
+		execute env f
+	in
 	  judge_of_apply env j jl
 
     | Lambda (name,c1,c2) ->

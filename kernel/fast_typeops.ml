@@ -132,11 +132,10 @@ let type_of_constant_in env cst =
   let ar = constant_type_in env cst in
     type_of_constant_knowing_parameters_arity env ar [||]
 
-let judge_of_constant_knowing_parameters env (kn,u as cst) jl =
+let judge_of_constant_knowing_parameters env (kn,u as cst) args =
   let cb = lookup_constant kn env in
   let () = check_hyps_inclusion env mkConstU cst cb.const_hyps in
-  let paramstyp = Array.map (fun j -> lazy j.uj_type) jl in
-  let ty, cu = type_of_constant_knowing_parameters env cst paramstyp in
+  let ty, cu = type_of_constant_knowing_parameters env cst args in
   let () = check_constraints cu env in
     ty
 
@@ -278,13 +277,14 @@ let judge_of_cast env c ct k expected_type =
    the App case of execute; from this constraints, the expected
    dynamic constraints of the form u<=v are enforced *)
 
-(* let judge_of_inductive_knowing_parameters env ind jl = *)
-(*   let c = mkInd ind in *)
-(*   let (mib,mip) = lookup_mind_specif env ind in *)
-(*   check_args env c mib.mind_hyps; *)
-(*   let paramstyp = Array.map (fun j -> j.uj_type) jl in *)
-(*   let t =  in *)
-(*   make_judge c t *)
+let judge_of_inductive_knowing_parameters env (ind,u as indu) args =
+  let (mib,mip) as spec = lookup_mind_specif env ind in
+  check_hyps_inclusion env mkIndU indu mib.mind_hyps;
+  let t,cst = Inductive.constrained_type_of_inductive_knowing_parameters 
+    env (spec,u) args
+  in
+    check_constraints cst env;
+    t
 
 let judge_of_inductive env (ind,u as indu) =
   let (mib,mip) = lookup_mind_specif env ind in
@@ -382,7 +382,21 @@ let rec execute env cstr =
     (* Lambda calculus operators *)
     | App (f,args) ->
         let argst = execute_array env args in
-	let ft = execute env f in
+	let ft =
+	  match kind_of_term f with
+	    | Ind ind ->
+		(* Sort-polymorphism of inductive types *)
+	      let args = Array.map (fun t -> lazy t) argst in
+		judge_of_inductive_knowing_parameters env ind args
+	    | Const cst ->
+		(* Sort-polymorphism of constant *)
+	      let args = Array.map (fun t -> lazy t) argst in
+	      judge_of_constant_knowing_parameters env cst args
+	    | _ ->
+		(* No sort-polymorphism *)
+		execute env f
+	in
+
 	  judge_of_apply env f ft args argst
 
     | Lambda (name,c1,c2) ->

@@ -44,10 +44,13 @@ val inductive_params_ctxt : mutual_inductive_body puniverses -> rel_context
 val instantiate_inductive_constraints : mutual_inductive_body -> universe_subst -> constraints
 
 val constrained_type_of_inductive : env -> mind_specif puniverses -> types constrained
+val constrained_type_of_inductive_knowing_parameters : 
+  env -> mind_specif puniverses -> types Lazy.t array -> types constrained
 
 val type_of_inductive : env -> mind_specif puniverses -> types
 
-val type_of_inductive_knowing_parameters : env -> ?polyprop:bool -> mind_specif puniverses -> types Lazy.t array -> types
+val type_of_inductive_knowing_parameters : 
+  env -> ?polyprop:bool -> mind_specif puniverses -> types Lazy.t array -> types
 
 val elim_sorts : mind_specif -> sorts_family list
 

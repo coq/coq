@@ -154,9 +154,9 @@ let retype ?(polyprop=true) sigma =
 	  | Prop Pos, (Type u2) -> Type (Univ.sup Univ.type0_univ u2)
 	  | Prop Null, (Type _ as s) -> s
 	  | Type u1, Type u2 -> Type (Univ.sup u1 u2))
-    (* | App(f,args) when isGlobalRef f -> *)
-    (* 	let t = type_of_global_reference_knowing_parameters env f args in *)
-    (*     sort_of_atomic_type env sigma t args *)
+    | App(f,args) when isGlobalRef f ->
+      let t = type_of_global_reference_knowing_parameters env f args in
+        sort_of_atomic_type env sigma t args
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | Lambda _ | Fix _ | Construct _ -> retype_error NotAType
     | _ -> decomp_sort env sigma (type_of env t)

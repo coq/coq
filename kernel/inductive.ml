@@ -237,6 +237,11 @@ let constrained_type_of_inductive env ((mib,mip),u as pind) =
   let cst = instantiate_inductive_constraints mib subst in
     (ty, cst)
 
+let constrained_type_of_inductive_knowing_parameters env ((mib,mip),u as pind) args =
+  let ty, subst = type_of_inductive_gen env pind args in
+  let cst = instantiate_inductive_constraints mib subst in
+    (ty, cst)
+
 let type_of_inductive_knowing_parameters env ?(polyprop=false) mip args = 
   fst (type_of_inductive_gen env mip args)
 
