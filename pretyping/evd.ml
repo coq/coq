@@ -672,6 +672,18 @@ let set_eq_sort ({ universes = us; univ_cstrs = sm; } as d) s1 s2 =
 (**********************************************************)
 (* Accessing metas *)
 
+(** We use this function to overcome OCaml compiler limitations and to prevent
+    the use of costly in-place modifications. *)
+let set_metas evd metas = {
+  defn_evars = evd.defn_evars;
+  undf_evars = evd.undf_evars;
+  universes  = evd.universes;
+  univ_cstrs = evd.univ_cstrs;
+  conv_pbs = evd.conv_pbs;
+  last_mods = evd.last_mods;
+  metas;
+  effects = evd.effects; }
+
 let meta_list evd = metamap_to_list evd.metas
 
 let undefined_metas evd =
@@ -680,14 +692,14 @@ let undefined_metas evd =
     | (n,Cltyp (_,typ))  -> Some n
   in
   let m = List.map_filter filter (meta_list evd) in
-  List.sort (-) m
+  List.sort Int.compare m
 
 let map_metas_fvalue f evd =
-  { evd with metas =
-      Metamap.map
-        (function
-          | Clval(id,(c,s),typ) -> Clval(id,(mk_freelisted (f c.rebus),s),typ)
-          | x -> x) evd.metas }
+  let map = function
+  | Clval(id,(c,s),typ) -> Clval(id,(mk_freelisted (f c.rebus),s),typ)
+  | x -> x
+  in
+  set_metas evd (Metamap.map map evd.metas)
 
 let meta_opt_fvalue evd mv =
   match Metamap.find mv evd.metas with
@@ -719,21 +731,24 @@ let meta_ftype evd mv =
 let meta_type evd mv = (meta_ftype evd mv).rebus
 
 let meta_declare mv v ?(name=Anonymous) evd =
-  { evd with metas = Metamap.add mv (Cltyp(name,mk_freelisted v)) evd.metas }
+  let metas = Metamap.add mv (Cltyp(name,mk_freelisted v)) evd.metas in
+  set_metas evd metas
 
-let meta_assign mv (v,pb) evd =
-  match Metamap.find mv evd.metas with
-  | Cltyp(na,ty) ->
-      { evd with
-        metas = Metamap.add mv (Clval(na,(mk_freelisted v,pb),ty)) evd.metas }
+let meta_assign mv (v, pb) evd =
+  let modify _ = function
+  | Cltyp (na, ty) -> Clval (na, (mk_freelisted v, pb), ty)
   | _ -> anomaly ~label:"meta_assign" (Pp.str "already defined")
+  in
+  let metas = Metamap.modify mv modify evd.metas in
+  set_metas evd metas
 
-let meta_reassign mv (v,pb) evd =
-  match Metamap.find mv evd.metas with
-  | Clval(na,_,ty) ->
-      { evd with
-        metas = Metamap.add mv (Clval(na,(mk_freelisted v,pb),ty)) evd.metas }
+let meta_reassign mv (v, pb) evd =
+  let modify _ = function
+  | Clval(na, _, ty) -> Clval (na, (mk_freelisted v, pb), ty)
   | _ -> anomaly ~label:"meta_reassign" (Pp.str "not yet defined")
+  in
+  let metas = Metamap.modify mv modify evd.metas in
+  set_metas evd metas
 
 (* If the meta is defined then forget its name *)
 let meta_name evd mv =
@@ -759,11 +774,9 @@ let meta_with_name evd id =
           (str "Binder name \"" ++ pr_id id ++
            strbrk "\" occurs more than once in clause.")
 
-
 let meta_merge evd1 evd2 =
-  {evd2 with
-    metas = List.fold_left (fun m (n,v) -> Metamap.add n v m)
-      evd2.metas (metamap_to_list evd1.metas) }
+  let metas = Metamap.fold Metamap.add evd1.metas evd2.metas in
+  set_metas evd2 metas
 
 type metabinding = metavariable * constr * instance_status
 
@@ -776,15 +789,7 @@ let retract_coercible_metas evd =
   | v -> v
   in
   let metas = Metamap.mapi map evd.metas in
-  !mc, {
-    defn_evars = evd.defn_evars;
-    undf_evars = evd.undf_evars;
-    universes  = evd.universes;
-    univ_cstrs = evd.univ_cstrs;
-    conv_pbs = evd.conv_pbs;
-    last_mods = evd.last_mods;
-    metas;
-    effects = evd.effects; }
+  !mc, set_metas evd metas
 
 let subst_defined_metas bl c =
   let rec substrec c = match kind_of_term c with
