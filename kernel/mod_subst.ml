@@ -460,29 +460,26 @@ let subst_dom_codom_delta_resolver = gen_subst_delta_resolver true
 
 let update_delta_resolver resolver1 resolver2 =
   let mp_apply_rslv mkey mequ rslv =
-    if Deltamap.mem_mp mkey resolver2 then rslv
-    else Deltamap.add_mp mkey (find_prefix resolver2 mequ) rslv
+    Deltamap.add_mp mkey (find_prefix resolver2 mequ) rslv
   in
-  let kn_apply_rslv kkey hint rslv =
-    if Deltamap.mem_kn kkey resolver2 then rslv
-    else
-      let hint' = match hint with
-	| Equiv kequ ->
-	  (try Equiv (solve_delta_kn resolver2 kequ)
-	   with Change_equiv_to_inline (lev,c) -> Inline (lev, Some c))
-	| _ -> hint
-      in
-      Deltamap.add_kn kkey hint' rslv
+  let kn_apply_rslv kkey hint1 rslv =
+    let hint = match hint1 with
+      | Equiv kequ ->
+	(try Equiv (solve_delta_kn resolver2 kequ)
+	 with Change_equiv_to_inline (lev,c) -> Inline (lev, Some c))
+      | Inline (_,Some _) -> hint1
+      | Inline (_,None) ->
+        (try Deltamap.find_kn kkey resolver2 with Not_found -> hint1)
+    in
+    Deltamap.add_kn kkey hint rslv
   in
-  Deltamap.fold mp_apply_rslv kn_apply_rslv resolver1 empty_delta_resolver
+  Deltamap.fold mp_apply_rslv kn_apply_rslv resolver1 resolver2
 
 let add_delta_resolver resolver1 resolver2 =
-  if resolver1 == resolver2 then
-    resolver2
-  else if Deltamap.is_empty resolver2 then
+  if Deltamap.is_empty resolver2 then
     resolver1
   else
-    Deltamap.join (update_delta_resolver resolver1 resolver2) resolver2
+    update_delta_resolver resolver1 resolver2
 
 let substition_prefixed_by k mp subst =
   let mp_prefixmp kmp (mp_to,reso) sub =
