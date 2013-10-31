@@ -52,7 +52,8 @@ let subst_const_type sub arity = match arity with
 let subst_const_def sub def = match def with
   | Undef _ -> def
   | Def c -> Def (subst_constr_subst sub c)
-  | OpaqueDef lc -> OpaqueDef (Future.chain lc (subst_lazy_constr sub))
+  | OpaqueDef lc ->
+      OpaqueDef (Future.chain ~pure:true lc (subst_lazy_constr sub))
 
 (* TODO : the native compiler seems to rely on a fresh (ref NotLinked)
    being created at each substitution. Quite ugly... For the moment,
@@ -99,7 +100,7 @@ let hcons_const_def = function
     Def (from_val (Term.hcons_constr constr))
   | OpaqueDef lc ->
     OpaqueDef
-      (Future.chain lc
+      (Future.chain ~pure:true lc
          (fun lc -> opaque_from_val (Term.hcons_constr (force_opaque lc))))
 
 let hcons_const_body cb =

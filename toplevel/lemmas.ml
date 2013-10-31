@@ -48,8 +48,9 @@ let adjust_guardness_conditions const = function
   | [] -> const (* Not a recursive statement *)
   | possible_indexes ->
   (* Try all combinations... not optimal *)
+     let env = Global.env() in
      { const with const_entry_body =
-        Future.chain const.const_entry_body
+        Future.chain ~pure:true const.const_entry_body
         (fun (body, eff) ->
           match kind_of_term body with
           | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
@@ -59,7 +60,7 @@ let adjust_guardness_conditions const = function
 	  lemma_guard (Array.to_list fixdefs) in
 *)
               let indexes =
-	        search_guard Loc.ghost (Global.env())
+	        search_guard Loc.ghost env
                   possible_indexes fixdecls in
               mkFix ((indexes,0),fixdecls),  eff
           | _ -> body, eff) }

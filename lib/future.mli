@@ -6,7 +6,49 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* Futures: asynchronous computations with some purity enforcing *)
+(* Futures: asynchronous computations with some purity enforcing
+ *
+ * A Future.computation is like a lazy_t but with some extra bells and whistles
+ * to deal with imperative code and eventual delegation to a slave process.
+ *
+ * Example of a simple scenario taken into account:
+ *
+ *   let f = Future.from_here (number_of_constants (Global.env())) in
+ *   let g = Future.chain ~pure:false f (fun n ->
+ *             n = number_of_constants (Global.env())) in
+ *   ...
+ *   Lemmas.save_named ...;
+ *   ...
+ *   let b = Future.force g in
+ *
+ * The Future.computation f holds a (immediate, no lazy here) value.
+ * We then chain to obtain g that (will) hold false if (when it will be
+ * run) the global environment has a different number of constants, true
+ * if nothing changed.
+ * Before forcing g, we add to the global environment one more constant.
+ * When finally we force g.  Its value is going to be *true*.
+ * This because Future.from_here stores in the computation not only the initial
+ * value but the entire system state.  When g is forced the state is restored,
+ * hence Global.env() returns the environment that was actual when f was
+ * created.
+ * Last, forcing g is run protecting the system state, hence when g finishes,
+ * the actual system state is restored.
+ *
+ * If you compare this with lazy_t, you see that the value returned is *false*,
+ * that is counter intuitive and error prone.
+ *
+ * Still not all computations are impure and acess/alter the system state.
+ * This class can be optimized by using ~pure:true, but there is no way to
+ * statically check if this flag is misused, hence use it with care.
+ *
+ * Other differences with lazy_t is that a future computation that produces
+ * and exception can be substituted for another computation of the same type.
+ * Moreover a future computation can be delegated to another execution entity
+ * that will be allowed to set the result.  Finally future computations can
+ * always be marshalled: if they were joined before marshalling, they will
+ * hold the computed value (assuming it is itself marshallable), otherwise
+ * they will become invalid and accessing them raises a private exception.
+ *)
 
 exception NotReady
 
@@ -14,7 +56,9 @@ type 'a computation
 type 'a value = [ `Val of 'a | `Exn of exn ]
 type fix_exn = exn -> exn
 
-(* Build a computation.  fix_exn is used to enrich any exception raised
+(* Build a computation, no snapshot of the global state is taken.  If you need
+   to grab a copy of the state start with from_here () and then chain.
+   fix_exn is used to enrich any exception raised
    by forcing the computations or any computation that is chained after
    it. It is used by STM to attach errors to their corresponding states,
    and to communicate to the code catching the exception a valid state id. *)
@@ -43,20 +87,25 @@ val is_val : 'a computation -> bool
 val is_exn : 'a computation -> bool
 val peek_val : 'a computation -> 'a option
 
-(* Chain computations.  *)
-val chain : 'a computation -> ('a -> 'b) -> 'b computation
+(* Chain computations.  When pure:true, the computation will not keep a copy
+ * of the global state.
+ * [let c' = chain ~pure:true c f in let c'' = chain ~pure:false c' g in]
+ * is invalid.  It works if one forces [c''] since the whole computation will
+ * be executed in one go.  It will not work, and raise an anomaly, if one
+ * forces c' and then c''.
+ * [join c; chain ~pure:false c g] is invalid and fails at runtime.
+ * [force c; chain ~pure:false c g] is correct. *)
+val chain : pure:bool -> 'a computation -> ('a -> 'b) -> 'b computation
 
 (* Forcing a computation *)
 val force : 'a computation -> 'a
 val compute : 'a computation -> 'a value
 
-(* Final call, no more chain allowed since the state is lost *)
+(* Final call, no more *inpure* chain allowed since the state is lost *)
 val join : 'a computation -> 'a
 
-(* Utility *)
+(*** Utility functions ************************************************* ***)
 val split2 : ('a * 'b) computation -> 'a computation * 'b computation
-val split3 :
-  ('a * 'b * 'c) computation -> 'a computation * 'b computation * 'c computation
 val map2 :
   ('a computation -> 'b -> 'c) ->
      'a list computation -> 'b list -> 'c list

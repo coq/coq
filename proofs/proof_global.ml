@@ -278,7 +278,7 @@ let close_proof ~now fpl =
     const_entry_inline_code = false;
     const_entry_opaque = true }) fpl initial_goals in
   if now then
-    List.iter (fun x -> ignore(Future.compute x.Entries.const_entry_body)) entries;
+    List.iter (fun x -> ignore(Future.join x.Entries.const_entry_body)) entries;
   (pid, (entries, compute_guard, strength, hook))
 
 let return_proof () =
@@ -302,7 +302,7 @@ let return_proof () =
 
 let close_future_proof proof = close_proof ~now:false proof
 let close_proof fix_exn =
-  close_proof ~now:true (Future.from_here ~fix_exn (return_proof ()))
+  close_proof ~now:true (Future.from_val ~fix_exn (return_proof ()))
 
 (**********************************************************)
 (*                                                        *)

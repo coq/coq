@@ -109,14 +109,23 @@ let force ~pure x = match compute ~pure x with
   | `Val v -> v
   | `Exn e -> raise e
 
-let chain ?(pure=false) ck f =
+let chain ~pure ck f =
   let fix_exn, c = get ck in
   create fix_exn (match !c with
   | Closure _ | Delegated -> Closure (fun () -> f (force ~pure ck))
   | Exn _ as x -> x
-  | Val (v, None) -> Closure (fun () -> f v)
+  | Val (v, None) when pure -> Closure (fun () -> f v)
   | Val (v, Some _) when pure -> Closure (fun () -> f v)
-  | Val (v, Some state) -> Closure (fun () -> !unfreeze state; f v))
+  | Val (v, Some state) -> Closure (fun () -> !unfreeze state; f v)
+  | Val (v, None) ->
+      match !ck with
+      | Finished _ -> Errors.anomaly(Pp.str
+          "Future.chain ~pure:false call on an already joined computation")
+      | Ongoing _ -> Errors.anomaly(Pp.strbrk(
+          "Future.chain ~pure:false call on a pure computation. "^
+          "This can happen if the computation was initial created with "^
+          "Future.from_val or if it was Future.chain ~pure:true with a "^
+          "function and later forced.")))
 
 let create fix_exn f = create fix_exn (Closure f)
 
@@ -149,20 +158,13 @@ let join kx =
   v
 
 let split2 x =
-  chain ~pure:false x (fun x -> fst x),
-  chain ~pure:false x (fun x -> snd x)
-
-let split3 x =
-  chain ~pure:false x (fun x -> Util.pi1 x),
-  chain ~pure:false x (fun x -> Util.pi2 x),
-  chain ~pure:false x (fun x -> Util.pi3 x)
+  chain ~pure:true x (fun x -> fst x),
+  chain ~pure:true x (fun x -> snd x)
 
 let map2 f x l =
   CList.map_i (fun i y ->
-    let xi = chain ~pure:false x (fun x ->
+    let xi = chain ~pure:true x (fun x ->
         try List.nth x i
         with Failure _ | Invalid_argument _ ->
           Errors.anomaly (Pp.str "Future.map2 length mismatch")) in
     f xi y) 0 l
-
-let chain f g = chain f g

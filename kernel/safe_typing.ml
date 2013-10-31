@@ -379,7 +379,7 @@ let add_constant dir l decl senv =
       (* In coqc, opaque constants outside sections will be stored
          indirectly in a specific table *)
       { cb with const_body =
-           OpaqueDef (Future.chain lc Lazyconstr.turn_indirect) }
+           OpaqueDef (Future.chain ~pure:true lc Lazyconstr.turn_indirect) }
     | _ -> cb
   in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in

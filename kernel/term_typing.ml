@@ -68,7 +68,7 @@ let handle_side_effects env body side_eff =
           let t = sub c 1 (Vars.lift 1 t) in
           mkLetIn (cname c, b, b_ty, t)
       | OpaqueDef b -> 
-          let b = Lazyconstr.force_opaque (Future.force b) in
+          let b = Lazyconstr.force_opaque (Future.join b) in
           let b_ty = Typeops.type_of_constant_type env cb.const_type in
           let t = sub c 1 (Vars.lift 1 t) in
           mkApp (mkLambda (cname c, b_ty, t), [|b|]) in
@@ -85,7 +85,7 @@ let infer_declaration ?(what="UNKNOWN") env dcl =
       let ctx, entry_body = c.const_entry_secctx, c.const_entry_body in
       if c.const_entry_opaque && not (Option.is_empty c.const_entry_type) then
         let body_cst =
-          Future.chain entry_body (fun (body, side_eff) ->
+          Future.chain ~pure:true entry_body (fun (body, side_eff) ->
             let body = handle_side_effects env body side_eff in
             let j, cst = infer env body in
             let j =
@@ -100,7 +100,7 @@ let infer_declaration ?(what="UNKNOWN") env dcl =
         | Some typ -> NonPolymorphicType typ in
         def, typ, cst, c.const_entry_inline_code, ctx
       else
-        let body, side_eff = Future.force entry_body in
+        let body, side_eff = Future.join entry_body in
         let body = handle_side_effects env body side_eff in
         let j, cst =
           try infer env body 
@@ -147,7 +147,7 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
         | OpaqueDef lc -> 
             (* we force so that cst are added to the env immediately after *)
             ignore(Future.join cst);
-            global_vars_set env (Lazyconstr.force_opaque (Future.force lc)) in
+            global_vars_set env (Lazyconstr.force_opaque (Future.join lc)) in
         keep_hyps env (Idset.union ids_typ ids_def), def
     | None -> [], def (* Empty section context: no need to check *)
     | Some declared ->
@@ -162,7 +162,7 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
             check declared inferred;
             x
         | OpaqueDef lc -> (* In this case we can postpone the check *)
-            OpaqueDef (Future.chain lc (fun lc ->
+            OpaqueDef (Future.chain ~pure:true lc (fun lc ->
               let ids_typ = global_vars_set_constant_type env typ in
               let ids_def =
                 global_vars_set env (Lazyconstr.force_opaque lc) in
@@ -197,7 +197,7 @@ let translate_local_def env id centry =
 let translate_mind env kn mie = Indtypes.check_inductive env kn mie
 
 let handle_side_effects env ce = { ce with
-  const_entry_body = Future.chain
+  const_entry_body = Future.chain ~pure:true
     ce.const_entry_body (fun (body, side_eff) ->
        handle_side_effects env body side_eff, Declareops.no_seff);
 }
