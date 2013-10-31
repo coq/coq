@@ -527,14 +527,15 @@ let rec compact_constr (lg, subs as s) c k =
         let (a',s) = compact_constr s a k in
         let (br',s) = compact_vect s br k in
         if p==p' && a==a' && br==br' then c,s else mkCase(ci,p',a',br'),s
-and compact_vect s v k = compact_v [] s v k (Array.length v - 1)
-and compact_v acc s v k i =
-  if i < 0 then
-    let v' = Array.of_list acc in
-    if Array.for_all2 (==) v v' then v,s else v',s
-  else
-    let (a',s') = compact_constr s v.(i) k in
-    compact_v (a'::acc) s' v k (i-1)
+and compact_vect s v k =
+  let rs = ref s in
+  let map a =
+    let (a, s) = compact_constr !rs a k in
+    let () = rs := s in
+    a
+  in
+  (** Do we really rely on execution order? *)
+  (Array.smartmap map v, !rs)
 
 (* Computes the minimal environment of a closure.
    Idea: if the subs is not identity, the term will have to be
@@ -544,8 +545,7 @@ and compact_v acc s v k i =
 let optimise_closure env c =
   if is_subs_id env then (env,c) else
     let (c',(_,s)) = compact_constr (0,[]) c 1 in
-    let env' =
-      Array.map (fun i -> clos_rel env i) (Array.of_list s) in
+    let env' = Array.map_of_list (fun i -> clos_rel env i) s in
     (subs_cons (env', subs_id 0),c')
 
 let mk_lambda env t =
