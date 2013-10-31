@@ -242,10 +242,10 @@ object(self)
       script#recenter_insert;
     end;
     Coq.bind (Coq.goals ~logger:messages#push ()) (function
-    | Fail x -> self#handle_failure x
+    | Fail x -> self#handle_failure_aux ~move_insert x
     | Good goals ->
       Coq.bind (Coq.evars ()) (function
-        | Fail x -> self#handle_failure x
+        | Fail x -> self#handle_failure_aux ~move_insert x
         | Good evs ->
           proof#set_goals goals;
           proof#set_evars evs;
@@ -396,17 +396,21 @@ object(self)
     let start, _, phrase = self#get_sentence sentence in
     self#position_error_tag_at_iter start phrase loc
 
-  method private process_interp_error queue sentence loc msg id =
+  method private process_interp_error queue sentence loc msg tip id =
     Coq.bind (Coq.return ()) (function () ->
     let start, stop, phrase = self#get_sentence sentence in
     buffer#remove_tag Tags.Script.to_process ~start ~stop;
     self#discard_command_queue queue;
     pop_info ();
-    self#position_error_tag_at_iter start phrase loc;
-    buffer#place_cursor ~where:stop;
-    messages#clear;
-    messages#push Error msg;
-    self#show_goals)
+    if Stateid.equal id tip then begin
+      self#position_error_tag_at_iter start phrase loc;
+      buffer#place_cursor ~where:stop;
+      messages#clear;
+      messages#push Error msg;
+      self#show_goals
+    end else
+      self#show_goals_aux ~move_insert:true ()
+    )
 
   method private get_sentence sentence =
     let start = buffer#get_iter_at_mark sentence.start in
@@ -505,7 +509,7 @@ object(self)
                   else loop tip (List.rev topstack)
               | Fail (id, loc, msg) ->
                   let sentence = Doc.pop document in
-                  self#process_interp_error queue sentence loc msg id in
+                  self#process_interp_error queue sentence loc msg tip id in
             Coq.bind coq_query handle_answer
       in
       let tip =
@@ -617,16 +621,20 @@ object(self)
     let until _ _ stop = iter#compare (buffer#get_iter_at_mark stop) >= 0 in
     self#backtrack_until ?move_insert until
 
-  method handle_failure (safe_id, (loc : (int * int) option), msg) =
+  method private handle_failure_aux
+    ?(move_insert=false) (safe_id, (loc : (int * int) option), msg)
+  =
     messages#clear;
     messages#push Error msg;
     ignore(self#process_feedback ());
     if Stateid.equal safe_id Stateid.dummy then Coq.lift (fun () -> ())
     else
       Coq.seq
-        (self#backtrack_until ~move_insert:false
+        (self#backtrack_until ~move_insert
           (fun id _ _ -> id = Some safe_id))
         (Coq.lift (fun () -> script#recenter_insert))
+
+  method handle_failure f = self#handle_failure_aux f
 
   method backtrack_last_phrase =
     messages#clear;
