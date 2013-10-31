@@ -483,10 +483,8 @@ module KerPair = struct
   open Hashset.Combine
 
   let hash = function
-  | Same kn -> combinesmall 1 (KerName.hash kn)
-  | Dual (kn1, kn2) ->
-    let hk = combine (KerName.hash kn1) (KerName.hash kn2) in
-    combinesmall 2 hk
+  | Same kn -> KerName.hash kn
+  | Dual (kn, _) -> KerName.hash kn
 
   module Self_Hashcons =
     struct
