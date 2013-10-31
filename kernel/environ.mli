@@ -127,8 +127,11 @@ val add_constant_key : constant -> constant_body -> Pre_env.link_info ref ->
 val lookup_constant    : constant -> env -> constant_body
 val evaluable_constant : constant -> env -> bool
 
-val lookup_projection    : Names.projection -> env -> projection_body
-val is_projection : constant -> env -> bool
+(** New-style polymorphism *)
+val polymorphic_constant : pconstant -> env -> bool
+
+(** Old-style polymorphism *)
+val template_polymorphic_constant : pconstant -> env -> bool
 
 (** {6 ... } *)
 (** [constant_value env c] raises [NotEvaluableConst Opaque] if
@@ -157,6 +160,10 @@ val constant_value_in : env -> constant puniverses -> constr
 val constant_type_in : env -> constant puniverses -> constant_type
 val constant_opt_value_in : env -> constant puniverses -> constr option
 
+(** {6 Primitive projections} *)
+
+val lookup_projection    : Names.projection -> env -> projection_body
+val is_projection : constant -> env -> bool
 
 (** {5 Inductive types } *)
 val add_mind_key : mutual_inductive -> Pre_env.mind_key -> env -> env
@@ -165,6 +172,12 @@ val add_mind : mutual_inductive -> mutual_inductive_body -> env -> env
 (** Looks up in the context of global inductive names 
    raises [Not_found] if the required path is not found *)
 val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
+
+(** New-style polymorphism *)
+val polymorphic_ind : pinductive -> env -> bool
+
+(** Old-style polymorphism *)
+val template_polymorphic_ind : pinductive -> env -> bool
 
 (** {5 Modules } *)
 

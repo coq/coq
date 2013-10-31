@@ -315,6 +315,18 @@ let evaluable_constant kn env =
     | OpaqueDef _ -> false
     | Undef _ -> false
 
+let template_polymorphic_constant (cst,u) env =
+  if not (Univ.Instance.is_empty u) then false
+  else
+    match (lookup_constant cst env).const_type with 
+    | TemplateArity _ -> true
+    | RegularArity _ -> false
+
+let polymorphic_constant (cst,u) env =
+  if Univ.Instance.is_empty u then false
+  else
+    (lookup_constant cst env).const_polymorphic
+
 let lookup_projection cst env =
   match (lookup_constant cst env).const_proj with 
   | Some pb -> pb
@@ -328,6 +340,18 @@ let is_projection cst env =
 (* Mutual Inductives *)
 let lookup_mind = lookup_mind
 
+let template_polymorphic_ind ((mind,i),u) env =
+  if not (Univ.Instance.is_empty u) then false
+  else
+    match (lookup_mind mind env).mind_packets.(i).mind_arity with 
+    | TemplateArity _ -> true
+    | RegularArity _ -> false
+
+let polymorphic_ind ((mind,i),u) env =
+  if Univ.Instance.is_empty u then false
+  else
+    (lookup_mind mind env).mind_polymorphic
+  
 let add_mind_key kn mind_key env =
   let new_inds = Mindmap_env.add kn mind_key env.env_globals.env_inductives in
   let new_globals =

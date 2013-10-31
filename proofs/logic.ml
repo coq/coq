@@ -379,16 +379,14 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 
       | App (f,l) ->
 	let (acc',hdty,sigma,applicand) =
-	  match kind_of_term f with
-	    | Ind _ | Const _
-		when (isInd f || has_polymorphic_type (fst (destConst f))) ->
-	      let sigma, ty = 
-		(* Sort-polymorphism of definition and inductive types *)
-		type_of_global_reference_knowing_conclusion env sigma f conclty
-	      in
-		goalacc, ty, sigma, f
-	    | _ ->
-		mk_hdgoals sigma goal goalacc f
+	  if is_template_polymorphic env f then
+	    let sigma, ty = 
+	      (* Template sort-polymorphism of definition and inductive types *)
+	      type_of_global_reference_knowing_conclusion env sigma f conclty
+	    in
+	      goalacc, ty, sigma, f
+	  else
+	    mk_hdgoals sigma goal goalacc f
 	in
 	let ((acc'',conclty',sigma), args) = mk_arggoals sigma goal acc' hdty l in
         let sigma = check_conv_leq_goal env sigma trm conclty' conclty in

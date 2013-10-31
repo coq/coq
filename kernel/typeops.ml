@@ -158,12 +158,11 @@ let type_of_constant_in env cst =
   let ar = constant_type_in env cst in
     type_of_constant_type_knowing_parameters env ar [||]
 
-let judge_of_constant_knowing_parameters env (kn,u as cst) jl =
+let judge_of_constant_knowing_parameters env (kn,u as cst) args =
   let c = mkConstU cst in
   let cb = lookup_constant kn env in
   let _ = check_hyps_inclusion env c cb.const_hyps in
-  let paramstyp = Array.map (fun j -> lazy j.uj_type) jl in
-  let ty, cu = type_of_constant_knowing_parameters env cst paramstyp in
+  let ty, cu = type_of_constant_knowing_parameters env cst args in
   let _ = Environ.check_constraints cu env in
     make_judge c ty
 
@@ -428,13 +427,14 @@ let rec execute env cstr =
         let jl = execute_array env args in
 	let j =
 	  match kind_of_term f with
-	    | Ind ind ->
+	    | Ind ind when Environ.template_polymorphic_ind ind env ->
 		(* Sort-polymorphism of inductive types *)
 	      let args = Array.map (fun j -> lazy j.uj_type) jl in
 		judge_of_inductive_knowing_parameters env ind args
-	    | Const cst ->
+	    | Const cst when Environ.template_polymorphic_constant cst env ->
 		(* Sort-polymorphism of constant *)
-	      judge_of_constant_knowing_parameters env cst jl
+	      let args = Array.map (fun j -> lazy j.uj_type) jl in
+		judge_of_constant_knowing_parameters env cst args
 	    | _ ->
 		(* No sort-polymorphism *)
 		execute env f

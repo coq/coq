@@ -124,7 +124,7 @@ let retype ?(polyprop=true) sigma =
          subst1 b (type_of (push_rel (name,Some b,c1) env) c2)
     | Fix ((_,i),(_,tys,_)) -> tys.(i)
     | CoFix (i,(_,tys,_)) -> tys.(i)
-    | App(f,args) when isGlobalRef f ->
+    | App(f,args) when is_template_polymorphic env f ->
 	let t = type_of_global_reference_knowing_parameters env f args in
         strip_outer_cast (subst_type env sigma t (Array.to_list args))
     | App(f,args) ->
@@ -154,7 +154,7 @@ let retype ?(polyprop=true) sigma =
 	  | Prop Pos, (Type u2) -> Type (Univ.sup Univ.type0_univ u2)
 	  | Prop Null, (Type _ as s) -> s
 	  | Type u1, Type u2 -> Type (Univ.sup u1 u2))
-    | App(f,args) when isGlobalRef f ->
+    | App(f,args) when is_template_polymorphic env f ->
       let t = type_of_global_reference_knowing_parameters env f args in
         sort_of_atomic_type env sigma t args
     | App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
@@ -170,7 +170,7 @@ let retype ?(polyprop=true) sigma =
 	let s2 = sort_family_of (push_rel (name,None,t) env) c2 in
 	if not (is_impredicative_set env) &&
 	   s2 == InSet && sort_family_of env t == InType then InType else s2
-    | App(f,args) when isGlobalRef f ->
+    | App(f,args) when is_template_polymorphic env f ->
 	let t = type_of_global_reference_knowing_parameters env f args in
         family_of_sort (sort_of_atomic_type env sigma t args)
     | App(f,args) ->

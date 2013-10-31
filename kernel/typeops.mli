@@ -55,7 +55,7 @@ val judge_of_variable : env -> variable -> unsafe_judgment
 val judge_of_constant : env -> pconstant -> unsafe_judgment
 
 val judge_of_constant_knowing_parameters :
-  env -> pconstant -> unsafe_judgment array -> unsafe_judgment
+  env -> pconstant -> types Lazy.t array -> unsafe_judgment
 
 (** {6 type of an applied projection } *)
 

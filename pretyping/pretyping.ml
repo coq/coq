@@ -549,15 +549,12 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
       match evar_kind_of_term !evdref resj.uj_val with
       | App (f,args) ->
         let f = whd_evar !evdref f in
-          begin match kind_of_term f with
-          | Ind _ | Const _
-	      when isInd f || has_polymorphic_type (fst (destConst f))
-		->
+          if is_template_polymorphic env f then
 	    let sigma = !evdref in
 	    let c = mkApp (f,Array.map (whd_evar sigma) args) in
 	    let t = Retyping.get_type_of env sigma c in
 	      make_judge c (* use this for keeping evars: resj.uj_val *) t
-          | _ -> resj end
+	  else resj
       | _ -> resj 
     in
       inh_conv_coerce_to_tycon loc env evdref resj tycon

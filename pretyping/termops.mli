@@ -271,7 +271,7 @@ val is_section_variable : Id.t -> bool
 
 val isGlobalRef : constr -> bool
 
-val has_polymorphic_type : constant -> bool
+val is_template_polymorphic : env -> constr -> bool
 
 (** Combinators on judgments *)
 

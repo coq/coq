@@ -384,17 +384,17 @@ let rec execute env cstr =
         let argst = execute_array env args in
 	let ft =
 	  match kind_of_term f with
-	    | Ind ind ->
-		(* Sort-polymorphism of inductive types *)
-	      let args = Array.map (fun t -> lazy t) argst in
-		judge_of_inductive_knowing_parameters env ind args
-	    | Const cst ->
-		(* Sort-polymorphism of constant *)
-	      let args = Array.map (fun t -> lazy t) argst in
+	  | Ind ind when Environ.template_polymorphic_ind ind env ->
+	      (* Template sort-polymorphism of inductive types *)
+	    let args = Array.map (fun t -> lazy t) argst in
+	      judge_of_inductive_knowing_parameters env ind args
+	  | Const cst when Environ.template_polymorphic_constant cst env ->
+	      (* Template sort-polymorphism of constants *)
+	    let args = Array.map (fun t -> lazy t) argst in
 	      judge_of_constant_knowing_parameters env cst args
-	    | _ ->
-		(* No sort-polymorphism *)
-		execute env f
+	  | _ ->
+	    (* Full or no sort-polymorphism *)
+	    execute env f
 	in
 
 	  judge_of_apply env f ft args argst

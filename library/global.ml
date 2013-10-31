@@ -192,7 +192,7 @@ let type_of_global_in_context env r =
        Inductive.type_of_constructor (cstr,inst) specif, univs
 
 let is_polymorphic r = 
-  let env = env() in
+  let env = env() in 
   match r with
   | VarRef id -> false
   | ConstRef c -> 
