@@ -379,7 +379,8 @@ let reduce redexp cl goal =
   let cl = concrete_clause_of (fun () -> pf_ids_of_hyps goal) cl in
   let redexps = reduction_clause redexp cl in
   let tac = tclMAP (fun (where,redexp) ->
-    reduct_option (Redexpr.reduction_of_red_expr redexp) where) redexps in
+    reduct_option
+      (Redexpr.reduction_of_red_expr (pf_env goal) redexp) where) redexps in
   match redexp with
   | Fold _ | Pattern _ -> with_check tac goal
   | _ -> tac goal
@@ -552,7 +553,7 @@ let pf_lookup_hypothesis_as_renamed_gen red h gl =
     match pf_lookup_hypothesis_as_renamed env ccl h with
       | None when red ->
           aux
-	    ((fst (Redexpr.reduction_of_red_expr (Red true)))
+	    ((fst (Redexpr.reduction_of_red_expr env (Red true)))
 	       env (project gl) ccl)
       | x -> x
   in

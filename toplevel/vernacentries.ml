@@ -1350,7 +1350,7 @@ let vernac_check_may_eval redexp glopt rc =
     | Some r ->
         Tacintern.dump_glob_red_expr r;
         let (sigma',r_interp) = interp_redexp env sigma' r in
-	let redfun = fst (reduction_of_red_expr r_interp) in
+	let redfun = fst (reduction_of_red_expr env r_interp) in
 	msg_notice (print_eval redfun env sigma' rc j)
 
 let vernac_declare_reduction locality s r =
@@ -1413,7 +1413,7 @@ let vernac_print = function
   | PrintAssumptions (o,t,r) ->
       (* Prints all the axioms and section variables used by a term *)
       let cstr = constr_of_global (smart_global r) in
-      let st = Conv_oracle.get_transp_state () in
+      let st = Conv_oracle.get_transp_state (Environ.oracle (Global.env())) in
       let nassums =
 	Assumptions.assumptions st ~add_opaque:o ~add_transparent:t cstr in
       msg_notice (Printer.pr_assumptionset (Global.env ()) nassums)

@@ -777,3 +777,7 @@ environment, and store for the future (instead of just its type)
 loaded by side-effect once and for all (like it is done in OCaml).
 Would this be correct with respect to undo's and stuff ?
 *)
+
+let set_strategy e k l = { e with env =
+   (Environ.set_oracle e.env
+      (Conv_oracle.set_strategy (Environ.oracle e.env) k l)) }

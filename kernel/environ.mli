@@ -32,6 +32,8 @@ open Declarations
 type env
 val pre_env : env -> Pre_env.env
 val env_of_pre_env : Pre_env.env -> env
+val oracle : env -> Conv_oracle.oracle
+val set_oracle : env -> Conv_oracle.oracle -> env
 
 type named_context_val
 val eq_named_context_val : named_context_val -> named_context_val -> bool

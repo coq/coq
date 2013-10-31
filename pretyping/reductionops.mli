@@ -204,7 +204,7 @@ val contract_fix : ?env:Environ.env -> fixpoint ->
 val fix_recarg : fixpoint -> constr stack -> (int * constr) option
 
 (** {6 Querying the kernel conversion oracle: opaque/transparent constants } *)
-val is_transparent : 'a tableKey -> bool
+val is_transparent : Environ.env -> 'a tableKey -> bool
 
 (** {6 Conversion Functions (uses closures, lazy strategy) } *)
 

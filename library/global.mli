@@ -105,3 +105,8 @@ val register :
   Retroknowledge.field -> Term.constr -> Term.constr -> unit
 
 val register_inline : constant -> unit
+
+(** {6 Oracle } *)
+
+val set_strategy : 'a Names.tableKey -> Conv_oracle.level -> unit
+

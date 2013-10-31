@@ -43,10 +43,10 @@ let error_not_evaluable r =
      spc () ++ str "to an evaluable reference.")
 
 let is_evaluable_const env cst =
-  is_transparent (ConstKey cst) && evaluable_constant cst env
+  is_transparent env (ConstKey cst) && evaluable_constant cst env
 
 let is_evaluable_var env id =
-  is_transparent (VarKey id) && evaluable_named id env
+  is_transparent env (VarKey id) && evaluable_named id env
 
 let is_evaluable env = function
   | EvalConstRef cst -> is_evaluable_const env cst

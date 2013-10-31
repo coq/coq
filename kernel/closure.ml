@@ -1007,5 +1007,6 @@ type clos_infos = fconstr infos
 
 let create_clos_infos ?(evars=fun _ -> None) flgs env =
   create (fun _ -> inject) flgs env evars
+let oracle_of_infos { i_env } = Environ.oracle i_env
 
 let unfold_reference = ref_value_cache

@@ -1048,8 +1048,8 @@ module Strategies =
 	lemmas rewrite_unif_flags lems state env avoid t ty cstr evars
 
     let reduce (r : Redexpr.red_expr) : 'a pure_strategy =
-      let rfn, ckind = Redexpr.reduction_of_red_expr r in
-	fun state env avoid t ty cstr evars ->
+      fun state env avoid t ty cstr evars ->
+        let rfn, ckind = Redexpr.reduction_of_red_expr env r in
 	  let t' = rfn env (goalevars evars) t in
 	    if eq_constr t' t then
 	      state, Some None

@@ -17,10 +17,11 @@ open Locus
 
 type red_expr =
     (constr, evaluable_global_reference, constr_pattern) red_expr_gen
-
+ 
 val out_with_occurrences : 'a with_occurrences -> occurrences * 'a
 
-val reduction_of_red_expr : red_expr -> reduction_function * cast_kind
+val reduction_of_red_expr :
+  Environ.env -> red_expr -> reduction_function * cast_kind
 
 (** [true] if we should use the vm to verify the reduction *)
 

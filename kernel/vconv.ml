@@ -99,7 +99,7 @@ and conv_atom pb k a1 stk1 a2 stk2 cu =
 	    conv_stack k stk1 stk2 cu
 	  else raise NotConvertible
 	with NotConvertible ->
-	  if oracle_order false ik1 ik2 then
+	  if oracle_order (oracle_of_infos !infos) false ik1 ik2 then
             conv_whd pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
           else conv_whd pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu
       end
@@ -219,10 +219,10 @@ and conv_eq_vect vt1 vt2 cu =
   else raise NotConvertible
 
 let vconv pb env t1 t2 =
+  infos := create_clos_infos betaiotazeta env;
   let cu =
     try conv_eq pb t1 t2 empty_constraint
     with NotConvertible ->
-      infos := create_clos_infos betaiotazeta env;
       let v1 = val_of_constr env t1 in
       let v2 = val_of_constr env t2 in
       let cu = conv_val pb (nb_rel env) v1 v2 empty_constraint in

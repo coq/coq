@@ -155,3 +155,6 @@ val register :
   field -> Retroknowledge.entry -> Term.constr -> safe_transformer0
 
 val register_inline : constant -> safe_transformer0
+
+val set_strategy :
+  safe_environment -> 'a Names.tableKey -> Conv_oracle.level -> safe_environment

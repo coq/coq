@@ -196,14 +196,16 @@ type opacity =
 
 let opacity env = function
   | VarRef v when not (Option.is_empty (pi2 (Environ.lookup_named v env))) ->
-      Some(TransparentMaybeOpacified (Conv_oracle.get_strategy(VarKey v)))
+      Some(TransparentMaybeOpacified
+        (Conv_oracle.get_strategy (Environ.oracle env) (VarKey v)))
   | ConstRef cst ->
       let cb = Environ.lookup_constant cst env in
       (match cb.const_body with
 	| Undef _ -> None
 	| OpaqueDef _ -> Some FullyOpaque
 	| Def _ -> Some
-          (TransparentMaybeOpacified (Conv_oracle.get_strategy(ConstKey cst))))
+          (TransparentMaybeOpacified
+            (Conv_oracle.get_strategy (Environ.oracle env) (ConstKey cst))))
   | _ -> None
 
 let print_opacity ref =

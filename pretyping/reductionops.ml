@@ -748,9 +748,10 @@ let fakey = Profile.declare_profile "fhnf_apply";;
 let fhnf_apply info k h a = Profile.profile4 fakey fhnf_apply info k h a;;
 *)
 
-let is_transparent k = match Conv_oracle.get_strategy k with
-| Conv_oracle.Opaque -> false
-| _ -> true
+let is_transparent e k =
+  match Conv_oracle.get_strategy (Environ.oracle e) k with
+  | Conv_oracle.Opaque -> false
+  | _ -> true
 
 (* Conversion utility functions *)
 

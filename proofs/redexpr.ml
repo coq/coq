@@ -36,7 +36,7 @@ let set_strategy_one ref l  =
     match ref with
       | EvalConstRef sp -> ConstKey sp
       | EvalVarRef id -> VarKey id in
-  Conv_oracle.set_strategy k l;
+  Global.set_strategy k l;
   match k,l with
       ConstKey sp, Conv_oracle.Opaque ->
         Csymtable.set_opaque_const sp
@@ -105,12 +105,6 @@ let inStrategy : strategy_obj -> obj =
 let set_strategy local str =
   Lib.add_anonymous_leaf (inStrategy (local,str))
 
-let _ = Summary.declare_summary "Transparent constants and variables"
-  { Summary.freeze_function = Conv_oracle.freeze;
-    Summary.unfreeze_function = Conv_oracle.unfreeze;
-    Summary.init_function = Summary.nop }
-
-
 (* Generic reduction: reduction functions used in reduction tactics *)
 
 type red_expr =
@@ -120,7 +114,7 @@ let make_flag_constant = function
   | EvalVarRef id -> fVAR id
   | EvalConstRef sp -> fCONST sp
 
-let make_flag f =
+let make_flag env f =
   let red = no_red in
   let red = if f.rBeta then red_add red fBETA else red in
   let red = if f.rIota then red_add red fIOTA else red in
@@ -128,7 +122,8 @@ let make_flag f =
   let red =
     if f.rDelta then (* All but rConst *)
         let red = red_add red fDELTA in
-        let red = red_add_transparent red (Conv_oracle.get_transp_state()) in
+        let red = red_add_transparent red 
+                    (Conv_oracle.get_transp_state (Environ.oracle env)) in
 	List.fold_right
 	  (fun v red -> red_sub red (make_flag_constant v))
 	  f.rConst red
@@ -175,7 +170,9 @@ let out_arg = function
 let out_with_occurrences (occs,c) =
   (Locusops.occurrences_map (List.map out_arg) occs, c)
 
-let rec reduction_of_red_expr = function
+let reduction_of_red_expr env =
+  let make_flag = make_flag env in
+  let rec reduction_of_red_expr = function
   | Red internal ->
       if internal then (try_red_product,DEFAULTcast)
       else (red_product,DEFAULTcast)
@@ -218,6 +215,8 @@ let rec reduction_of_red_expr = function
     let redfun = contextually b lp nativefun in
     (redfun, NATIVEcast)
   | CbvNative None -> (cbv_native, NATIVEcast)
+  in
+    reduction_of_red_expr
 
 let subst_flags subs flags =
   { flags with rConst = List.map subs flags.rConst }

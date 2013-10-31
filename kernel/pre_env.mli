@@ -46,6 +46,7 @@ type env = {
     env_rel_val       : lazy_val list;
     env_nb_rel        : int;
     env_stratification : stratification;
+    env_conv_oracle   : Conv_oracle.oracle;
     retroknowledge : Retroknowledge.retroknowledge }
 
 type named_context_val = named_context * named_vals

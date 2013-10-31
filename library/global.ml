@@ -158,3 +158,6 @@ let register field value by_clause =
   globalize0 (Safe_typing.register field (kind_of_term value) by_clause)
 
 let register_inline c = globalize0 (Safe_typing.register_inline c)
+
+let set_strategy k l =
+  GlobalSafeEnv.set_safe_env (Safe_typing.set_strategy (safe_env ()) k l)

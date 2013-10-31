@@ -54,6 +54,7 @@ type env = {
   env_rel_val       : lazy_val list;
   env_nb_rel        : int;
   env_stratification : stratification;
+  env_conv_oracle   : Conv_oracle.oracle;
   retroknowledge : Retroknowledge.retroknowledge }
 
 type named_context_val = named_context * named_vals
@@ -74,6 +75,7 @@ let empty_env = {
   env_stratification = {
     env_universes = initial_universes;
     env_engagement = None };
+  env_conv_oracle = Conv_oracle.empty;
   retroknowledge = Retroknowledge.initial_retroknowledge }
 
 
@@ -118,6 +120,7 @@ let push_named d env =
     env_rel_val = env.env_rel_val;
     env_nb_rel = env.env_nb_rel;
     env_stratification = env.env_stratification;
+    env_conv_oracle = env.env_conv_oracle;
     retroknowledge = env.retroknowledge; }
 
 let lookup_named_val id env =

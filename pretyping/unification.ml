@@ -323,13 +323,13 @@ let expand_key env = function
 let subterm_restriction is_subterm flags =
   not is_subterm && flags.restrict_conv_on_strict_subterms
 
-let key_of b flags f =
+let key_of env b flags f =
   if subterm_restriction b flags then None else
   match kind_of_term f with
-  | Const cst when is_transparent (ConstKey cst) &&
+  | Const cst when is_transparent env (ConstKey cst) &&
         Cpred.mem cst (snd flags.modulo_delta) ->
       Some (ConstKey cst)
-  | Var id when is_transparent (VarKey id) &&
+  | Var id when is_transparent env (VarKey id) &&
         Id.Pred.mem id (fst flags.modulo_delta) ->
       Some (VarKey id)
   | _ -> None
@@ -343,7 +343,8 @@ let oracle_order env cf1 cf2 =
   | Some k1 ->
       match cf2 with
       | None -> Some true
-      | Some k2 -> Some (Conv_oracle.oracle_order false k1 k2)
+      | Some k2 ->
+          Some (Conv_oracle.oracle_order (Environ.oracle env) false k1 k2)
 
 let do_reduce ts (env, nb) sigma c =
   zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma Cst_stack.empty (c, empty_stack)))
@@ -567,7 +568,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
     then
       substn
     else
-      let cf1 = key_of b flags f1 and cf2 = key_of b flags f2 in
+      let cf1 = key_of env b flags f1 and cf2 = key_of env b flags f2 in
 	match oracle_order curenv cf1 cf2 with
 	| None -> error_cannot_unify curenv sigma (cM,cN)
 	| Some true ->

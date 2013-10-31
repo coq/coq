@@ -163,6 +163,7 @@ val destFLambda :
 type clos_infos
 val create_clos_infos :
   ?evars:(existential->constr option) -> reds -> env -> clos_infos
+val oracle_of_infos : clos_infos -> Conv_oracle.oracle
 
 (** Reduction function *)
 

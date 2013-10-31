@@ -299,7 +299,7 @@ and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
         with NotConvertible ->
           (* else the oracle tells which constant is to be expanded *)
           let (app1,app2) =
-            if Conv_oracle.oracle_order l2r fl1 fl2 then
+            if Conv_oracle.oracle_order (Closure.oracle_of_infos (snd infos)) l2r fl1 fl2 then
               match unfold_reference infos fl1 with
                 | Some def1 -> ((lft1, whd_stack (snd infos) def1 v1), appr2)
                 | None ->
