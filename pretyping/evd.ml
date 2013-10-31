@@ -151,20 +151,53 @@ let make_evar hyps ccl = {
   evar_extra = Store.empty
 }
 
+let instance_mismatch () =
+  anomaly (Pp.str "Signature and its instance do not match")
+
 let evar_concl evi = evi.evar_concl
+
 let evar_filter evi = evi.evar_filter
+
 let evar_body evi = evi.evar_body
+
 let evar_context evi = named_context_of_val evi.evar_hyps
+
 let evar_filtered_context evi =
-  Filter.filter_list (evar_filter evi) (evar_context evi)
+  let filter = evar_filter evi in
+  if Filter.is_identity filter then evar_context evi
+  else Filter.filter_list (evar_filter evi) (evar_context evi)
+
 let evar_hyps evi = evi.evar_hyps
+
 let evar_filtered_hyps evi =
-  List.fold_right push_named_context_val (evar_filtered_context evi)
-    empty_named_context_val
+  let filter = evar_filter evi in
+  if Filter.is_identity filter then evar_hyps evi
+  else
+    let rec make_hyps filter ctxt = match filter, ctxt with
+    | [], [] -> empty_named_context_val
+    | false :: filter, _ :: ctxt -> make_hyps filter ctxt
+    | true :: filter, decl :: ctxt ->
+      let hyps = make_hyps filter ctxt in
+      push_named_context_val decl hyps
+    | _ -> instance_mismatch ()
+    in
+    make_hyps (Filter.repr filter) (evar_context evi)
+
 let evar_env evi = Global.env_of_context evi.evar_hyps
+
 let evar_filtered_env evi =
-  List.fold_right push_named (evar_filtered_context evi)
-    (reset_context (Global.env()))
+  let filter = evar_filter evi in
+  if Filter.is_identity filter then evar_env evi
+  else
+    let rec make_env filter ctxt = match filter, ctxt with
+    | [], [] -> reset_context (Global.env ())
+    | false :: filter, _ :: ctxt -> make_env filter ctxt
+    | true :: filter, decl :: ctxt ->
+      let env = make_env filter ctxt in
+      push_named decl env
+    | _ -> instance_mismatch ()
+    in
+    make_env (Filter.repr filter) (evar_context evi)
 
 let eq_evar_body b1 b2 = match b1, b2 with
 | Evar_empty, Evar_empty -> true
@@ -187,9 +220,6 @@ let eq_evar_info ei1 ei2 =
 
 (* This exception is raised by *.existential_value *)
 exception NotInstantiatedEvar
-
-let instance_mismatch () =
-  anomaly (Pp.str "Signature and its instance do not match")
 
 (* Note: let-in contributes to the instance *)
 let make_evar_instance sign args =
