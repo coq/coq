@@ -1592,6 +1592,8 @@ let interp ?proof locality c =
   | VernacTimeout _ -> assert false
   | VernacStm _ -> assert false
 
+  | VernacError e -> raise e
+
   (* Syntax *)
   | VernacTacticNotation (n,r,e) ->
       Metasyntax.add_tactic_notation (make_module_locality locality,n,r,e)

@@ -263,6 +263,7 @@ type vernac_expr =
   | VernacTime of vernac_expr
   | VernacTimeout of int * vernac_expr
   | VernacFail of vernac_expr
+  | VernacError of exn (* always fails *)
 
   (* Syntax *)
   | VernacTacticNotation of

@@ -538,6 +538,7 @@ let rec pr_vernac = function
   | VernacTime v -> str"Time" ++ spc() ++ pr_vernac v
   | VernacTimeout(n,v) -> str"Timeout " ++ int n ++ spc() ++ pr_vernac v
   | VernacFail v -> str"Fail" ++ spc() ++ pr_vernac v
+  | VernacError _ -> str"No-parsing-rule for VernacError"
 
   (* Syntax *)
   | VernacTacticNotation (n,r,e) ->

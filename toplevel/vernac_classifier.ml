@@ -83,7 +83,7 @@ let rec classify_vernac e =
     | VernacBullet _ 
     | VernacFocus _ | VernacUnfocus _
     | VernacSubproof _ | VernacEndSubproof _ 
-    | VernacSolve _ 
+    | VernacSolve _ | VernacError _
     | VernacCheckGuard _
     | VernacUnfocused _
     | VernacSolveExistential _ -> VtProofStep, VtLater

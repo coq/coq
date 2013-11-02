@@ -138,11 +138,7 @@ GEXTEND Gram
                     | Some (SelectNth g) -> c (Some g)
                     | None -> c None
                     | _ ->
-                        (* arnaud: the error is raised bizarely:
-                           "all:Check 0." doesn't do anything, then
-                           inputing anything that ends with a period
-                           (including " .") raises the error. *)
-                        error "Typing and evaluation commands, cannot be used with the \"all:\" selector."
+                        VernacError (UserError ("",str"Typing and evaluation commands, cannot be used with the \"all:\" selector."))
                   end
       | tac = Tactic.tactic;
         use_dft_tac = [ "." -> false | "..." -> true ] ->
