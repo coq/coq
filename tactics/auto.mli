@@ -175,7 +175,7 @@ val make_extern :
       -> hint_entry
 
 val extern_interp :
-  (patvar_map -> Tacexpr.glob_tactic_expr -> tactic) Hook.t
+  (patvar_map -> Tacexpr.glob_tactic_expr -> unit Proofview.tactic) Hook.t
 
 val extern_intern_tac :
   (patvar list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr) Hook.t
@@ -205,7 +205,7 @@ val unify_resolve : Unification.unify_flags -> (constr * clausenv) -> tactic
    [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
    right values to build a tactic *)
 
-val conclPattern : constr -> constr_pattern option -> Tacexpr.glob_tactic_expr -> tactic
+val conclPattern : constr -> constr_pattern option -> Tacexpr.glob_tactic_expr -> unit Proofview.tactic
 
 (** The Auto tactic *)
 
@@ -215,47 +215,47 @@ val conclPattern : constr -> constr_pattern option -> Tacexpr.glob_tactic_expr -
 val make_db_list : hint_db_name list -> hint_db list
 
 val auto : ?debug:Tacexpr.debug ->
-  int -> open_constr list -> hint_db_name list -> tactic
+  int -> open_constr list -> hint_db_name list -> unit Proofview.tactic
 
 (** Auto with more delta. *)
 
 val new_auto : ?debug:Tacexpr.debug ->
-  int -> open_constr list -> hint_db_name list -> tactic
+  int -> open_constr list -> hint_db_name list -> unit Proofview.tactic
 
 (** auto with default search depth and with the hint database "core" *)
-val default_auto : tactic
+val default_auto : unit Proofview.tactic
 
 (** auto with all hint databases except the "v62" compatibility database *)
 val full_auto : ?debug:Tacexpr.debug ->
-  int -> open_constr list -> tactic
+  int -> open_constr list -> unit Proofview.tactic
 
 (** auto with all hint databases except the "v62" compatibility database
    and doing delta *)
 val new_full_auto : ?debug:Tacexpr.debug ->
-  int -> open_constr list -> tactic
+  int -> open_constr list -> unit Proofview.tactic
 
 (** auto with default search depth and with all hint databases
    except the "v62" compatibility database *)
-val default_full_auto : tactic
+val default_full_auto : unit Proofview.tactic
 
 (** The generic form of auto (second arg [None] means all bases) *)
 val gen_auto : ?debug:Tacexpr.debug ->
-  int option -> open_constr list -> hint_db_name list option -> tactic
+  int option -> open_constr list -> hint_db_name list option -> unit Proofview.tactic
 
 (** The hidden version of auto *)
 val h_auto   : ?debug:Tacexpr.debug ->
-  int option -> open_constr list -> hint_db_name list option -> tactic
+  int option -> open_constr list -> hint_db_name list option -> unit Proofview.tactic
 
 (** Trivial *)
 
 val trivial : ?debug:Tacexpr.debug ->
-  open_constr list -> hint_db_name list -> tactic
+  open_constr list -> hint_db_name list -> unit Proofview.tactic
 val gen_trivial : ?debug:Tacexpr.debug ->
-  open_constr list -> hint_db_name list option -> tactic
+  open_constr list -> hint_db_name list option -> unit Proofview.tactic
 val full_trivial : ?debug:Tacexpr.debug ->
-  open_constr list -> tactic
+  open_constr list -> unit Proofview.tactic
 val h_trivial : ?debug:Tacexpr.debug ->
-  open_constr list -> hint_db_name list option -> tactic
+  open_constr list -> hint_db_name list option -> unit Proofview.tactic
 
 val pr_autotactic : 'a auto_tactic -> Pp.std_ppcmds
 

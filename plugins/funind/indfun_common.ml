@@ -484,7 +484,7 @@ let jmeq_refl () =
   with e when Errors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
-  tclMAP h_intro l
+  tclMAP (fun x -> Proofview.V82.of_tactic (h_intro x)) l
 
 let h_id = Id.of_string "h"
 let hrec_id = Id.of_string "hrec"
@@ -503,5 +503,5 @@ let evaluable_of_global_reference r = (* Tacred.evaluable_of_global_reference (G
 let list_rewrite (rev:bool) (eqs: (constr*bool) list) =
   tclREPEAT
     (List.fold_right
-       (fun (eq,b) i -> tclORELSE ((if b then Equality.rewriteLR else Equality.rewriteRL) eq) i)
+       (fun (eq,b) i -> tclORELSE (Proofview.V82.of_tactic ((if b then Equality.rewriteLR else Equality.rewriteRL) eq)) i)
        (if rev then (List.rev eqs) else eqs) (tclFAIL 0 (mt())));;

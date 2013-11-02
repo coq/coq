@@ -71,13 +71,13 @@ val default_morphism :
   (types * constr option) option list * (types * types option) option ->
   constr -> constr * constr
 
-val setoid_symmetry : tactic
+val setoid_symmetry : unit Proofview.tactic
 
-val setoid_symmetry_in : Id.t -> tactic
+val setoid_symmetry_in : Id.t -> unit Proofview.tactic
 
-val setoid_reflexivity : tactic
+val setoid_reflexivity : unit Proofview.tactic
 
-val setoid_transitivity : constr option -> tactic
+val setoid_transitivity : constr option -> unit Proofview.tactic
 
 val implify : Id.t -> tactic
 

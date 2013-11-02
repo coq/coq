@@ -19,7 +19,7 @@ open Pfedit
 val set_start_hook : (types -> unit) -> unit
 
 val start_proof : Id.t -> goal_kind -> types ->
-  ?init_tac:tactic -> ?compute_guard:lemma_possible_guards -> 
+  ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
    unit declaration_hook -> unit
 
 val start_proof_com : goal_kind ->
@@ -27,7 +27,7 @@ val start_proof_com : goal_kind ->
   unit declaration_hook -> unit
 
 val start_proof_with_initialization : 
-  goal_kind -> (bool * lemma_possible_guards * tactic list option) option ->
+  goal_kind -> (bool * lemma_possible_guards * unit Proofview.tactic list option) option ->
   (Id.t * (types * (Name.t list * Impargs.manual_explicitation list))) list
   -> int list option -> unit declaration_hook -> unit
 

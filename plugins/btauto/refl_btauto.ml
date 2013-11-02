@@ -1,3 +1,5 @@
+open Proofview.Notations
+
 let contrib_name = "btauto"
 
 let init_constant dir s =
@@ -214,23 +216,23 @@ module Btauto = struct
     in
     Tacticals.tclFAIL 0 msg gl
 
-  let try_unification env gl =
+  let try_unification env =
+    Goal.concl >>- fun concl ->
     let eq = Lazy.force eq in
-    let concl = Tacmach.pf_concl gl in
     let t = decomp_term concl in
     match t with
     | Term.App (c, [|typ; p; _|]) when c === eq ->
       (* should be an equality [@eq poly ?p (Cst false)] *)
-      let tac = Tacticals.tclORELSE0 Tactics.reflexivity (print_counterexample p env) in
-      tac gl
+      let tac = Tacticals.New.tclORELSE0 Tactics.reflexivity (Proofview.V82.tactic (print_counterexample p env)) in
+      tac
     | _ ->
       let msg = str "Btauto: Internal error" in
-      Tacticals.tclFAIL 0 msg gl
+      Tacticals.New.tclFAIL 0 msg
 
-  let tac gl =
+  let tac =
+    Goal.concl >>- fun concl ->
     let eq = Lazy.force eq in
     let bool = Lazy.force Bool.typ in
-    let concl = Tacmach.pf_concl gl in
     let t = decomp_term concl in
     match t with
     | Term.App (c, [|typ; tl; tr|])
@@ -242,14 +244,14 @@ module Btauto = struct
       let fl = reify env fl in
       let fr = reify env fr in
       let changed_gl = Term.mkApp (c, [|typ; fl; fr|]) in
-      Tacticals.tclTHENLIST [
-        Tactics.change_in_concl None changed_gl;
-        Tactics.apply (Lazy.force soundness);
-        Tactics.normalise_vm_in_concl;
+      Tacticals.New.tclTHENLIST [
+        Proofview.V82.tactic (Tactics.change_in_concl None changed_gl);
+        Proofview.V82.tactic (Tactics.apply (Lazy.force soundness));
+        Proofview.V82.tactic (Tactics.normalise_vm_in_concl);
         try_unification env
-      ] gl
+      ]
     | _ ->
       let msg = str "Cannot recognize a boolean equality" in
-      Tacticals.tclFAIL 0 msg gl
+      Tacticals.New.tclFAIL 0 msg
 
 end

@@ -15,9 +15,9 @@ open Decl_mode
 val go_to_proof_mode: unit -> unit
 val return_from_tactic_mode: unit -> unit
 
-val register_automation_tac: tactic -> unit
+val register_automation_tac: unit Proofview.tactic -> unit
 
-val automation_tac : tactic
+val automation_tac : unit Proofview.tactic
 
 val concl_refiner:
   Termops.meta_type_map -> constr -> Proof_type.goal sigma -> constr

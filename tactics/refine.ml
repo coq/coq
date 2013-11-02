@@ -59,6 +59,7 @@ open Environ
 open Tactics
 open Tacticals
 open Printer
+open Proofview.Notations
 
 type term_with_holes = TH of constr * meta_type_map * sg_proofs
 and  sg_proofs       = (term_with_holes option) list
@@ -262,85 +263,83 @@ let rec compute_metamap env sigma c = match kind_of_term c with
 
 let ensure_products n =
   let p = ref 0 in
-  let rec aux n gl =
-    if Int.equal n 0 then tclFAIL 0 (mt()) gl
+  let rec aux n =
+    if Int.equal n 0 then Tacticals.New.tclFAIL 0 (mt())
     else
-      tclTHEN
-        (tclORELSE intro (fun gl -> incr p; introf gl))
-        (aux (n-1)) gl in
-  tclORELSE
+      Tacticals.New.tclTHEN
+        (Tacticals.New.tclORELSE intro (Proofview.tclUNIT () >= fun () -> incr p; introf))
+        (aux (n-1)) in
+  Tacticals.New.tclORELSE
     (aux n)
     (* Now we know how many red are needed *)
-    (fun gl -> tclDO !p red_in_concl gl)
+    (Proofview.V82.tactic (fun gl -> tclDO !p red_in_concl gl))
 
-let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
+let rec tcc_aux subst (TH (c,mm,sgp) as _th) : unit Proofview.tactic =
   let c = substl subst c in
   match (kind_of_term c,sgp) with
     (* mv => sous-but : on ne fait rien *)
     | Meta _ , _ ->
-	tclIDTAC gl
+	Proofview.tclUNIT ()
 
     | Cast (c,_,_), _ when isMeta c ->
-	tclIDTAC gl
+	Proofview.tclUNIT ()
 
     (* terme pur => refine *)
     | _,[] ->
-	refine c gl
+	Proofview.V82.tactic (refine c)
 
     (* abstraction => intro *)
     | Lambda (Name id,_,m), _ ->
 	assert (isMeta (strip_outer_cast m));
 	begin match sgp with
-	  | [None] -> intro_mustbe_force id gl
+	  | [None] -> intro_mustbe_force id
 	  | [Some th] ->
-              tclTHEN (introduction id)
-                (onLastHypId (fun id -> tcc_aux (mkVar id::subst) th)) gl
+              Tacticals.New.tclTHEN (Proofview.V82.tactic (introduction id))
+                (Tacticals.New.onLastHypId (fun id -> tcc_aux (mkVar id::subst) th))
 	  | _ -> assert false
 	end
 
     | Lambda (Anonymous,_,m), _ -> (* if anon vars are allowed in evars *)
         assert (isMeta (strip_outer_cast m));
 	begin match sgp with
-	  | [None] -> tclTHEN intro (onLastHypId (fun id -> clear [id])) gl
+	  | [None] -> Tacticals.New.tclTHEN intro (Proofview.V82.tactic (onLastHypId (fun id -> clear [id])))
 	  | [Some th] ->
-              tclTHEN
+              Tacticals.New.tclTHEN
                 intro
-                (onLastHypId (fun id ->
-                  tclTHEN
-                    (clear [id])
-                    (tcc_aux (mkVar (*dummy*) id::subst) th))) gl
+                (Tacticals.New.onLastHypId (fun id ->
+                  Tacticals.New.tclTHEN
+                    (Proofview.V82.tactic (clear [id]))
+                    (tcc_aux (mkVar (*dummy*) id::subst) th)))
 	  | _ -> assert false
 	end
 
     (* let in without holes in the body => possibly dependent intro *)
     | LetIn (Name id,c1,t1,c2), _ when not (isMeta (strip_outer_cast c1)) ->
-	let c = pf_concl gl in
+        Goal.concl >>- fun c ->
 	let newc = mkNamedLetIn id c1 t1 c in
-	tclTHEN
-	  (change_in_concl None newc)
+	Tacticals.New.tclTHEN
+	  (Proofview.V82.tactic (change_in_concl None newc))
 	  (match sgp with
-	     | [None] -> introduction id
+	     | [None] -> Proofview.V82.tactic (introduction id)
 	     | [Some th] ->
-                 tclTHEN (introduction id)
-                   (onLastHypId (fun id -> tcc_aux (mkVar id::subst) th))
+                 Tacticals.New.tclTHEN (Proofview.V82.tactic (introduction id))
+                   (Tacticals.New.onLastHypId (fun id -> tcc_aux (mkVar id::subst) th))
 	     | _ -> assert false)
-	  gl
 
     (* let in with holes in the body => unable to handle dependency
        because of evars limitation, use non dependent assert instead *)
     | LetIn (Name id,c1,t1,c2), _ ->
-	tclTHENS
+	Tacticals.New.tclTHENS
           (assert_tac (Name id) t1)
 	  [(match List.hd sgp with
-	     | None -> tclIDTAC
-	     | Some th -> onLastHypId (fun id -> tcc_aux (mkVar id::subst) th));
+	     | None -> Proofview.tclUNIT ()
+	     | Some th -> Tacticals.New.onLastHypId (fun id -> tcc_aux (mkVar id::subst) th));
            (match List.tl sgp with
-	     | [] -> refine (subst1 (mkVar id) c2)  (* a complete proof *)
-	     | [None] -> tclIDTAC                   (* a meta *)
+	     | [] -> Proofview.V82.tactic (refine (subst1 (mkVar id) c2))  (* a complete proof *)
+	     | [None] -> Proofview.tclUNIT ()                   (* a meta *)
 	     | [Some th] ->                         (* a partial proof *)
-                 onLastHypId (fun id -> tcc_aux (mkVar id::subst) th)
+                 Tacticals.New.onLastHypId (fun id -> tcc_aux (mkVar id::subst) th)
              | _ -> assert false)]
-          gl
 
     (* fix => tactique Fix *)
     | Fix ((ni,j),(fi,ai,_)) , _ ->
@@ -350,14 +349,13 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	in
 	let fixes = Array.map3 (fun f n c -> (out_name f,succ n,c)) fi ni ai in
 	let firsts,lasts = List.chop j (Array.to_list fixes) in
-	tclTHENS
-	  (tclTHEN
+	Tacticals.New.tclTHENS
+	  (Tacticals.New.tclTHEN
             (ensure_products (succ ni.(j)))
-            (mutual_fix (out_name fi.(j)) (succ ni.(j)) (firsts@List.tl lasts) j))
-	  (List.map (function
-		       | None -> tclIDTAC
-		       | Some th -> tcc_aux subst th) sgp)
-	  gl
+            (Proofview.V82.tactic (mutual_fix (out_name fi.(j)) (succ ni.(j)) (firsts@List.tl lasts) j)))
+	  ((List.map (function
+		       | None -> Proofview.tclUNIT ()
+		       | Some th -> tcc_aux subst th) sgp))
 
     (* cofix => tactique CoFix *)
     | CoFix (j,(fi,ai,_)) , _ ->
@@ -367,30 +365,29 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	in
 	let cofixes = Array.map2 (fun f c -> (out_name f,c)) fi ai in
 	let firsts,lasts = List.chop j (Array.to_list cofixes) in
-	tclTHENS
-	  (mutual_cofix (out_name fi.(j)) (firsts@List.tl lasts) j)
+	Tacticals.New.tclTHENS
+	  (Proofview.V82.tactic (mutual_cofix (out_name fi.(j)) (firsts@List.tl lasts) j))
 	  (List.map (function
-		       | None -> tclIDTAC
+		       | None -> Proofview.tclUNIT ()
 		       | Some th -> tcc_aux subst th) sgp)
-	  gl
 
     (* sinon on fait refine du terme puis appels rec. sur les sous-buts.
      * c'est le cas pour App et MutCase. *)
     | _ ->
-	tclTHENS
-	  (refine c)
+	Tacticals.New.tclTHENS
+	  (Proofview.V82.tactic (refine c))
 	  (List.map
-            (function None -> tclIDTAC | Some th -> tcc_aux subst th) sgp)
-	  gl
+            (function None -> Proofview.tclUNIT () | Some th -> tcc_aux subst th) sgp)
 
 (* Et finalement la tactique refine elle-même : *)
 
-let refine (evd,c) gl =
-  let sigma = project gl in
-  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals (pf_env gl) evd in
+let refine (evd,c) =
+  Goal.defs >>- fun sigma ->
+  Goal.env >>- fun env ->
+  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals env evd in
   let c = Evarutil.nf_evar evd c in
   let (evd,c) = Evarutil.evars_to_metas sigma (evd,c) in
   (* Relies on Cast's put on Meta's by evars_to_metas, because it is otherwise
      complicated to update meta types when passing through a binder *)
-  let th = compute_metamap (pf_env gl) evd c in
-  tclTHEN (Refiner.tclEVARS evd) (tcc_aux [] th) gl
+  let th = compute_metamap env evd c in
+  Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS evd)) (tcc_aux [] th)

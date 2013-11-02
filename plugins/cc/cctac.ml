@@ -23,6 +23,7 @@ open Ccproof
 open Pp
 open Errors
 open Util
+open Proofview.Notations
 
 let constant dir s = lazy (Coqlib.gen_constant "CC" dir s)
 
@@ -244,37 +245,42 @@ let build_projection intype outtype (cstr:constructor) special default gls=
 
 let _M =mkMeta
 
-let rec proof_tac p gls =
+let rec proof_tac p : unit Proofview.tactic =
+  Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
   match p.p_rule with
-      Ax c -> exact_check c gls
+      Ax c -> Proofview.V82.tactic (exact_check c)
     | SymAx c ->
-	let l=constr_of_term p.p_lhs and
-	    r=constr_of_term p.p_rhs in
-        let typ = Termops.refresh_universes (pf_type_of gls l) in
+        Proofview.V82.tactic begin fun gls ->
+	  let l=constr_of_term p.p_lhs and
+	      r=constr_of_term p.p_rhs in
+          let typ = Termops.refresh_universes (pf_type_of gls l) in
 	  exact_check
 	    (mkApp(Lazy.force _sym_eq,[|typ;r;l;c|])) gls
+        end
     | Refl t ->
-	let lr = constr_of_term t in
-	let typ = Termops.refresh_universes (pf_type_of gls lr) in
-	exact_check
-	   (mkApp(Lazy.force _refl_equal,[|typ;constr_of_term t|])) gls
+        Proofview.V82.tactic begin fun gls ->
+	  let lr = constr_of_term t in
+	  let typ = Termops.refresh_universes (pf_type_of gls lr) in
+	  exact_check
+	    (mkApp(Lazy.force _refl_equal,[|typ;constr_of_term t|])) gls
+        end
     | Trans (p1,p2)->
 	let t1 = constr_of_term p1.p_lhs and
 	    t2 = constr_of_term p1.p_rhs and
 	    t3 = constr_of_term p2.p_rhs in
-	let typ = Termops.refresh_universes (pf_type_of gls t2) in
+	let typ = Termops.refresh_universes (type_of t2) in
 	let prf =
 	  mkApp(Lazy.force _trans_eq,[|typ;t1;t2;t3;_M 1;_M 2|]) in
-	  tclTHENS (refine prf) [(proof_tac p1);(proof_tac p2)] gls
+	  Tacticals.New.tclTHENS (Proofview.V82.tactic (refine prf)) [(proof_tac p1);(proof_tac p2)]
     | Congr (p1,p2)->
 	let tf1=constr_of_term p1.p_lhs
 	and tx1=constr_of_term p2.p_lhs
 	and tf2=constr_of_term p1.p_rhs
 	and tx2=constr_of_term p2.p_rhs in
-	let typf = Termops.refresh_universes (pf_type_of gls tf1) in
-	let typx = Termops.refresh_universes (pf_type_of gls tx1) in
-	let typfx = Termops.refresh_universes (pf_type_of gls (mkApp (tf1,[|tx1|]))) in
-	let id = pf_get_new_id (Id.of_string "f") gls in
+	let typf = Termops.refresh_universes (type_of tf1) in
+	let typx = Termops.refresh_universes (type_of tx1) in
+	let typfx = Termops.refresh_universes (type_of (mkApp (tf1,[|tx1|]))) in
+        Tacmach.New.of_old (fun gls -> pf_get_new_id (Id.of_string "f") gls) >>- fun id ->
 	let appx1 = mkLambda(Name id,typf,mkApp(mkRel 1,[|tx1|])) in
 	let lemma1 =
 	  mkApp(Lazy.force _f_equal,
@@ -288,78 +294,77 @@ let rec proof_tac p gls =
 		  mkApp(tf1,[|tx1|]);
 		  mkApp(tf2,[|tx1|]);
 		  mkApp(tf2,[|tx2|]);_M 2;_M 3|]) in
-	  tclTHENS (refine prf)
-	    [tclTHEN (refine lemma1) (proof_tac p1);
-  	     tclFIRST
-	       [tclTHEN (refine lemma2) (proof_tac p2);
+	  Tacticals.New.tclTHENS (Proofview.V82.tactic (refine prf))
+	    [Tacticals.New.tclTHEN (Proofview.V82.tactic (refine lemma1)) (proof_tac p1);
+  	     Tacticals.New.tclFIRST
+	       [Tacticals.New.tclTHEN (Proofview.V82.tactic (refine lemma2)) (proof_tac p2);
 		reflexivity;
-		fun gls ->
-		  errorlabstrm  "Congruence"
+                Proofview.tclZERO (UserError ("Congruence" ,
 		    (Pp.str
-		       "I don't know how to handle dependent equality")]] gls
+		       "I don't know how to handle dependent equality")))]]
   | Inject (prf,cstr,nargs,argind) ->
 	 let ti=constr_of_term prf.p_lhs in
 	 let tj=constr_of_term prf.p_rhs in
 	 let default=constr_of_term p.p_lhs in
-	 let intype = Termops.refresh_universes (pf_type_of gls ti) in
-	 let outtype = Termops.refresh_universes (pf_type_of gls default) in
+	 let intype = Termops.refresh_universes (type_of ti) in
+	 let outtype = Termops.refresh_universes (type_of default) in
 	 let special=mkRel (1+nargs-argind) in
-	 let proj=build_projection intype outtype cstr special default gls in
+         Tacmach.New.of_old (build_projection intype outtype cstr special default) >>- fun proj ->
 	 let injt=
 	   mkApp (Lazy.force _f_equal,[|intype;outtype;proj;ti;tj;_M 1|]) in
-	   tclTHEN (refine injt) (proof_tac prf) gls
+	   Tacticals.New.tclTHEN (Proofview.V82.tactic (refine injt)) (proof_tac prf)
 
-let refute_tac c t1 t2 p gls =
+let refute_tac c t1 t2 p =
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
-  let intype = Termops.refresh_universes (pf_type_of gls tt1) in
+  Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls tt1)) >>- fun intype ->
   let neweq=
     mkApp(Lazy.force _eq,
 	  [|intype;tt1;tt2|]) in
-  let hid=pf_get_new_id (Id.of_string "Heq") gls in
+  Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) >>- fun hid ->
   let false_t=mkApp (c,[|mkVar hid|]) in
-    tclTHENS (assert_tac (Name hid) neweq)
-      [proof_tac p; simplest_elim false_t] gls
+    Tacticals.New.tclTHENS (assert_tac (Name hid) neweq)
+      [proof_tac p; simplest_elim false_t]
 
-let convert_to_goal_tac c t1 t2 p gls =
+let convert_to_goal_tac c t1 t2 p = 
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
-  let sort = Termops.refresh_universes (pf_type_of gls tt2) in
+  Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls tt2)) >>- fun sort ->
   let neweq=mkApp(Lazy.force _eq,[|sort;tt1;tt2|]) in
-  let e=pf_get_new_id (Id.of_string "e") gls in
-  let x=pf_get_new_id (Id.of_string "X") gls in
+  Tacmach.New.of_old (pf_get_new_id (Id.of_string "e")) >>- fun e ->
+  Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) >>- fun x ->
   let identity=mkLambda (Name x,sort,mkRel 1) in
   let endt=mkApp (Lazy.force _eq_rect,
 		  [|sort;tt1;identity;c;tt2;mkVar e|]) in
-    tclTHENS (assert_tac (Name e) neweq)
-      [proof_tac p;exact_check endt] gls
+    Tacticals.New.tclTHENS (assert_tac (Name e) neweq)
+      [proof_tac p; Proofview.V82.tactic (exact_check endt)]
 
-let convert_to_hyp_tac c1 t1 c2 t2 p gls =
+let convert_to_hyp_tac c1 t1 c2 t2 p =
   let tt2=constr_of_term t2 in
-  let h=pf_get_new_id (Id.of_string "H") gls in
+  Tacmach.New.of_old (pf_get_new_id (Id.of_string "H")) >>- fun h ->
   let false_t=mkApp (c2,[|mkVar h|]) in
-    tclTHENS (assert_tac (Name h) tt2)
+    Tacticals.New.tclTHENS (assert_tac (Name h) tt2)
       [convert_to_goal_tac c1 t1 t2 p;
-       simplest_elim false_t] gls
+       simplest_elim false_t]
 
-let discriminate_tac cstr p gls =
+let discriminate_tac cstr p =
   let t1=constr_of_term p.p_lhs and t2=constr_of_term p.p_rhs in
-  let intype = Termops.refresh_universes (pf_type_of gls t1) in
-  let concl=pf_concl gls in
+  Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls t1)) >>- fun intype ->
+  Goal.concl >>- fun concl ->
   let outsort = mkType (Termops.new_univ ()) in
-  let xid=pf_get_new_id (Id.of_string "X") gls in
-  let tid=pf_get_new_id (Id.of_string "t") gls in
+  Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) >>- fun xid ->
+  Tacmach.New.of_old (pf_get_new_id (Id.of_string "t")) >>- fun tid ->
   let identity=mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in
-  let trivial=pf_type_of gls identity in
+  Tacmach.New.of_old (fun gls -> pf_type_of gls identity) >>- fun trivial ->
   let outtype = mkType (Termops.new_univ ()) in
   let pred=mkLambda(Name xid,outtype,mkRel 1) in
-  let hid=pf_get_new_id (Id.of_string "Heq") gls in
-  let proj=build_projection intype outtype cstr trivial concl gls in
+  Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) >>- fun hid ->
+  Tacmach.New.of_old (build_projection intype outtype cstr trivial concl) >>- fun proj ->
   let injt=mkApp (Lazy.force _f_equal,
 		  [|intype;outtype;proj;t1;t2;mkVar hid|]) in
   let endt=mkApp (Lazy.force _eq_rect,
 		  [|outtype;trivial;pred;identity;concl;injt|]) in
   let neweq=mkApp(Lazy.force _eq,[|intype;t1;t2|]) in
-    tclTHENS (assert_tac (Name hid) neweq)
-      [proof_tac p;exact_check endt] gls
+    Tacticals.New.tclTHENS (assert_tac (Name hid) neweq)
+      [proof_tac p; Proofview.V82.tactic (exact_check endt)]
 
 (* wrap everything *)
 
@@ -370,24 +375,26 @@ let build_term_to_complete uf meta pac =
   let all_args = List.rev_append real_args dummy_args in
     applistc (mkConstruct cinfo.ci_constr) all_args
 
-let cc_tactic depth additionnal_terms gls=
+let cc_tactic depth additionnal_terms =
+  Proofview.tclUNIT () >= fun () -> (* delay for check_required_library *)
   Coqlib.check_required_library Coqlib.logic_module_name;
   let _ = debug (Pp.str "Reading subgoal ...") in
-  let state = make_prb gls depth additionnal_terms in
+  Tacmach.New.of_old (fun gls -> make_prb gls depth additionnal_terms) >>- fun state ->
   let _ = debug (Pp.str "Problem built, solving ...") in
   let sol = execute true state in
   let _ = debug (Pp.str "Computation completed.") in
   let uf=forest state in
     match sol with
-	None -> tclFAIL 0 (str "congruence failed") gls
+	None -> Tacticals.New.tclFAIL 0 (str "congruence failed")
       | Some reason ->
 	  debug (Pp.str "Goal solved, generating proof ...");
 	  match reason with
 	      Discrimination (i,ipac,j,jpac) ->
 		let p=build_proof uf (`Discr (i,ipac,j,jpac)) in
 		let cstr=(get_constructor_info uf ipac.cnode).ci_constr in
-		  discriminate_tac cstr p gls
+		discriminate_tac cstr p
 	    | Incomplete ->
+                Goal.env >>- fun env ->
 		let metacnt = ref 0 in
 		let newmeta _ = incr metacnt; _M !metacnt in
 		let terms_to_complete =
@@ -404,31 +411,31 @@ let cc_tactic depth additionnal_terms gls=
 			 str "\"congruence with (" ++
 			 prlist_with_sep
 			   (fun () -> str ")" ++ spc () ++ str "(")
-			   (Termops.print_constr_env (pf_env gls))
+			   (Termops.print_constr_env env)
 			   terms_to_complete ++
 			 str ")\","
 		       end ++
 		    Pp.str "  replacing metavariables by arbitrary terms.");
-		  tclFAIL 0 (str "Incomplete") gls
+		  Tacticals.New.tclFAIL 0 (str "Incomplete")
 	    | Contradiction dis ->
 		let p=build_proof uf (`Prove (dis.lhs,dis.rhs)) in
 		let ta=term uf dis.lhs and tb=term uf dis.rhs in
 		  match dis.rule with
-		      Goal -> proof_tac p gls
-		    | Hyp id -> refute_tac id ta tb p gls
+		      Goal -> proof_tac p
+		    | Hyp id -> refute_tac id ta tb p
 		    | HeqG id ->
-			convert_to_goal_tac id ta tb p gls
+			convert_to_goal_tac id ta tb p
 		    | HeqnH (ida,idb) ->
-			convert_to_hyp_tac ida ta idb tb p gls
+			convert_to_hyp_tac ida ta idb tb p
 
 
 let cc_fail gls =
   errorlabstrm  "Congruence" (Pp.str "congruence failed.")
 
 let congruence_tac depth l =
-  tclORELSE
-    (tclTHEN (tclREPEAT introf) (cc_tactic depth l))
-    cc_fail
+  Tacticals.New.tclORELSE
+    (Tacticals.New.tclTHEN (Tacticals.New.tclREPEAT introf) (cc_tactic depth l))
+    (Proofview.V82.tactic cc_fail)
 
 (* Beware: reflexivity = constructor 1 = apply refl_equal
    might be slow now, let's rather do something equivalent
@@ -443,22 +450,31 @@ let simple_reflexivity () = apply (Lazy.force _refl_equal)
    the fact that congruence is called internally.
 *)
 
-let f_equal gl =
+let f_equal =
+  Goal.concl >>- fun concl ->
+  Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
   let cut_eq c1 c2 =
-    let ty = Termops.refresh_universes (pf_type_of gl c1) in
-    tclTHENTRY
-      (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|])))
-      (simple_reflexivity ())
+    let ty = Termops.refresh_universes (type_of c1) in
+    Proofview.V82.tactic begin
+      tclTHENTRY
+        (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|])))
+        (simple_reflexivity ())
+    end
   in
-  try match kind_of_term (pf_concl gl) with
+  Proofview.tclORELSE
+    begin match kind_of_term concl with
     | App (r,[|_;t;t'|]) when eq_constr r (Lazy.force _eq) ->
 	begin match kind_of_term t, kind_of_term t' with
 	  | App (f,v), App (f',v') when Int.equal (Array.length v) (Array.length v') ->
 	      let rec cuts i =
-		if i < 0 then tclTRY (congruence_tac 1000 [])
-		else tclTHENFIRST (cut_eq v.(i) v'.(i)) (cuts (i-1))
-	      in cuts (Array.length v - 1) gl
-	  | _ -> tclIDTAC gl
+		if i < 0 then Tacticals.New.tclTRY (congruence_tac 1000 [])
+		else Tacticals.New.tclTHENFIRST (cut_eq v.(i) v'.(i)) (cuts (i-1))
+	      in cuts (Array.length v - 1)
+	  | _ -> Proofview.tclUNIT ()
 	end
-    | _ -> tclIDTAC gl
-  with Type_errors.TypeError _ -> tclIDTAC gl
+    | _ -> Proofview.tclUNIT ()
+    end
+    begin function
+      | Type_errors.TypeError _ -> Proofview.tclUNIT ()
+      | e -> Proofview.tclZERO e
+    end

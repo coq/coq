@@ -143,7 +143,7 @@ let cur_pstate () =
 let give_me_the_proof () = (cur_pstate ()).proof
 let get_current_proof_name () = (cur_pstate ()).pid
 
-let interp_tac = ref (fun _ _ -> assert false)
+let interp_tac = ref (fun _ -> assert false)
 let set_interp_tac f = interp_tac := f
 
 let with_current_proof f =
@@ -153,7 +153,7 @@ let with_current_proof f =
       let et =
         match p.endline_tactic with
         | None -> Proofview.tclUNIT ()
-        | Some tac -> Proofview.V82.tactic (!interp_tac tac) in
+        | Some tac -> !interp_tac tac in
       let p = { p with proof = f et p.proof } in
       pstates := p :: rest
 

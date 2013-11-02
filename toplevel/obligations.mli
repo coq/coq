@@ -41,7 +41,7 @@ val sort_dependencies : (Evar.t * evar_info * Evar.Set.t) list -> (Evar.t * evar
 val eterm_obligations : env -> Id.t -> evar_map -> int ->
   ?status:Evar_kinds.obligation_definition_status -> constr -> types ->
   (Id.t * types * Evar_kinds.t Loc.located * Evar_kinds.obligation_definition_status * Int.Set.t *
-      tactic option) array
+      unit Proofview.tactic option) array
     (* Existential key, obl. name, type as product, 
        location of the original evar, associated tactic,
        status and dependencies as indexes into the array *)
@@ -53,7 +53,7 @@ val eterm_obligations : env -> Id.t -> evar_map -> int ->
 
 type obligation_info =
   (Id.t * Term.types * Evar_kinds.t Loc.located *
-      Evar_kinds.obligation_definition_status * Int.Set.t * tactic option) array
+      Evar_kinds.obligation_definition_status * Int.Set.t * unit Proofview.tactic option) array
     (* ident, type, location, (opaque or transparent, expand or define),
        dependencies, tactic to solve it *)
 
@@ -63,7 +63,7 @@ type progress = (* Resolution status of a program *)
   | Defined of global_reference (* Defined as id *)
       
 val set_default_tactic : bool -> Tacexpr.glob_tactic_expr -> unit
-val get_default_tactic : unit -> locality_flag * Proof_type.tactic
+val get_default_tactic : unit -> locality_flag * unit Proofview.tactic
 val print_default_tactic : unit -> Pp.std_ppcmds
 
 val set_proofs_transparency : bool -> unit (* true = All transparent, false = Opaque if possible *)
@@ -72,7 +72,7 @@ val get_proofs_transparency : unit -> bool
 val add_definition : Names.Id.t -> ?term:Term.constr -> Term.types -> 
   ?implicits:(Constrexpr.explicitation * (bool * bool * bool)) list ->
   ?kind:Decl_kinds.definition_kind ->
-  ?tactic:Proof_type.tactic ->
+  ?tactic:unit Proofview.tactic ->
   ?reduce:(Term.constr -> Term.constr) ->
   ?hook:unit Tacexpr.declaration_hook -> obligation_info -> progress
 
@@ -86,7 +86,7 @@ type fixpoint_kind =
 val add_mutual_definitions :
   (Names.Id.t * Term.constr * Term.types *
       (Constrexpr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
-  ?tactic:Proof_type.tactic ->
+  ?tactic:unit Proofview.tactic ->
   ?kind:Decl_kinds.definition_kind ->
   ?reduce:(Term.constr -> Term.constr) ->
   ?hook:unit Tacexpr.declaration_hook ->
@@ -98,14 +98,14 @@ val obligation : int * Names.Id.t option * Constrexpr.constr_expr option ->
 
 val next_obligation : Names.Id.t option -> Tacexpr.raw_tactic_expr option -> unit
 
-val solve_obligations : Names.Id.t option -> Proof_type.tactic option -> progress
+val solve_obligations : Names.Id.t option -> unit Proofview.tactic option -> progress
 (* Number of remaining obligations to be solved for this program *)
 
-val solve_all_obligations : Proof_type.tactic option -> unit
+val solve_all_obligations : unit Proofview.tactic option -> unit
 
-val try_solve_obligation : int -> Names.Id.t option -> Proof_type.tactic option -> unit
+val try_solve_obligation : int -> Names.Id.t option -> unit Proofview.tactic option -> unit
 
-val try_solve_obligations : Names.Id.t option -> Proof_type.tactic option -> unit
+val try_solve_obligations : Names.Id.t option -> unit Proofview.tactic option -> unit
 
 val show_obligations : ?msg:bool -> Names.Id.t option -> unit
 

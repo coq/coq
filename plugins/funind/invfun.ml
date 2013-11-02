@@ -399,7 +399,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	    observe_tac("h_intro_patterns ")  (let l = (List.nth intro_pats (pred i)) in 
 					       match l with 
 						 | [] -> tclIDTAC 
-						 | _ -> h_intro_patterns l);
+						 | _ -> Proofview.V82.of_tactic (h_intro_patterns l));
 	    (* unfolding of all the defined variables introduced by this branch *)
 	    (* observe_tac "unfolding" pre_tac; *)
 	    (* $zeta$ normalizing of the conclusion *)
@@ -414,9 +414,9 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	    observe_tac ("toto ") tclIDTAC;
     
 	    (* introducing the the result of the graph and the equality hypothesis *)
-	    observe_tac "introducing" (tclMAP h_intro [res;hres]);
+	    observe_tac "introducing" (tclMAP (fun x -> Proofview.V82.of_tactic (h_intro x)) [res;hres]);
 	    (* replacing [res] with its value *)
-	    observe_tac "rewriting res value" (Equality.rewriteLR (mkVar hres));
+	    observe_tac "rewriting res value" (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar hres)));
 	    (* Conclusion *)
 	    observe_tac "exact" (fun g -> h_exact (app_constructor g) g)  
 	  ]
@@ -466,11 +466,11 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
     in
     tclTHENSEQ
       [ 
-	observe_tac "principle" (assert_by
+	observe_tac "principle" (Proofview.V82.of_tactic (assert_by
 	  (Name principle_id)
 	  princ_type
-	  (h_exact f_principle));
-	observe_tac "intro args_names" (tclMAP h_intro args_names);
+	  (Proofview.V82.tactic (h_exact f_principle))));
+	observe_tac "intro args_names" (tclMAP (fun id -> Proofview.V82.of_tactic (h_intro id)) args_names);
 	(* observe_tac "titi" (pose_proof (Name (Id.of_string "__")) (Reductionops.nf_beta Evd.empty  ((mkApp (mkVar principle_id,Array.of_list bindings))))); *)
 	observe_tac "idtac" tclIDTAC;
 	tclTHEN_i
@@ -741,7 +741,7 @@ and intros_with_rewrite_aux : tactic =
  		      if Reductionops.is_conv (pf_env g) (project g) args.(1) args.(2)
 		      then
 			let id = pf_get_new_id (Id.of_string "y") g  in
-			tclTHENSEQ [ h_intro id; thin [id]; intros_with_rewrite ] g
+			tclTHENSEQ [ Proofview.V82.of_tactic (h_intro id); thin [id]; intros_with_rewrite ] g
 		      else if isVar args.(1) && (Environ.evaluable_named (destVar args.(1)) (pf_env g)) 
 		      then tclTHENSEQ[
 			unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(1)))];
@@ -759,18 +759,18 @@ and intros_with_rewrite_aux : tactic =
 		      else if isVar args.(1)
 		      then
 			let id = pf_get_new_id (Id.of_string "y") g  in
-			tclTHENSEQ [ h_intro id;
+			tclTHENSEQ [ Proofview.V82.of_tactic (h_intro id);
 				     generalize_dependent_of (destVar args.(1)) id;
-				     tclTRY (Equality.rewriteLR (mkVar id));
+				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar id)));
 				     intros_with_rewrite
 				   ]
 			  g
 		      else if isVar args.(2) 
 		      then 
 			let id = pf_get_new_id (Id.of_string "y") g  in
-			tclTHENSEQ [ h_intro id;
+			tclTHENSEQ [ Proofview.V82.of_tactic (h_intro id);
 				     generalize_dependent_of (destVar args.(2)) id;
-				     tclTRY (Equality.rewriteRL (mkVar id));
+				     tclTRY (Proofview.V82.of_tactic (Equality.rewriteRL (mkVar id)));
 				     intros_with_rewrite
 				   ]
 			  g
@@ -778,16 +778,16 @@ and intros_with_rewrite_aux : tactic =
 			begin
 			  let id = pf_get_new_id (Id.of_string "y") g  in
 			  tclTHENSEQ[
-			    h_intro id;
-			    tclTRY (Equality.rewriteLR (mkVar id));
+			    Proofview.V82.of_tactic (h_intro id);
+			    tclTRY (Proofview.V82.of_tactic (Equality.rewriteLR (mkVar id)));
 			    intros_with_rewrite
 			  ] g
 			end
 		  | Ind _ when eq_constr t (Coqlib.build_coq_False ()) ->
-		      Tauto.tauto g
+		      Proofview.V82.of_tactic Tauto.tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENSEQ[
-			h_case false (v,NoBindings);
+			Proofview.V82.of_tactic (h_case false (v,NoBindings));
 			intros_with_rewrite
 		      ] g
 		  | LetIn _ ->
@@ -803,7 +803,7 @@ and intros_with_rewrite_aux : tactic =
 		      ] g
 		  | _ ->
 		      let id = pf_get_new_id (Id.of_string "y") g  in
-		      tclTHENSEQ [ h_intro id;intros_with_rewrite] g
+		      tclTHENSEQ [ Proofview.V82.of_tactic (h_intro id);intros_with_rewrite] g
 	      end
 	  | LetIn _ ->
 	      tclTHENSEQ[
@@ -824,12 +824,12 @@ let rec reflexivity_with_destruct_cases g =
       match kind_of_term (snd (destApp (pf_concl g))).(2) with
 	| Case(_,_,v,_) ->
 	    tclTHENSEQ[
-	      h_case false (v,NoBindings);
-	      intros;
+	      Proofview.V82.of_tactic (h_case false (v,NoBindings));
+	      Proofview.V82.of_tactic intros;
 	      observe_tac "reflexivity_with_destruct_cases" reflexivity_with_destruct_cases
 	    ]
-	| _ -> reflexivity
-    with e when Errors.noncritical e -> reflexivity
+        | _ -> Proofview.V82.of_tactic reflexivity
+    with e when Errors.noncritical e -> Proofview.V82.of_tactic reflexivity
   in
   let eq_ind =     Coqlib.build_coq_eq () in
   let discr_inject =
@@ -841,15 +841,15 @@ let rec reflexivity_with_destruct_cases g =
 	       match kind_of_term  (pf_type_of g (mkVar id)) with
 		 | App(eq,[|_;t1;t2|]) when eq_constr eq eq_ind ->
 		     if Equality.discriminable (pf_env g) (project g) t1 t2
-		     then Equality.discrHyp id g
+		     then Proofview.V82.of_tactic (Equality.discrHyp id) g
 		     else if Equality.injectable (pf_env g) (project g) t1 t2
-		     then tclTHENSEQ [Equality.injHyp id;thin [id];intros_with_rewrite]  g
+		     then tclTHENSEQ [Proofview.V82.of_tactic (Equality.injHyp id);thin [id];intros_with_rewrite]  g
 		     else tclIDTAC g
 		 | _ -> tclIDTAC g
     )
   in
   (tclFIRST
-    [ observe_tac "reflexivity_with_destruct_cases : reflexivity" reflexivity;
+    [ observe_tac "reflexivity_with_destruct_cases : reflexivity" (Proofview.V82.of_tactic reflexivity);
       observe_tac "reflexivity_with_destruct_cases : destruct_case" ((destruct_case ()));
       (*  We reach this point ONLY if
 	  the same value is matched (at least) two times
@@ -948,8 +948,8 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  with Option.IsNone -> anomaly (Pp.str "Cannot find equation lemma")
 	in
 	tclTHENSEQ[
-	  tclMAP h_intro ids;
-	  Equality.rewriteLR (mkConst eq_lemma);
+	  tclMAP (fun id -> Proofview.V82.of_tactic (h_intro id)) ids;
+	  Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_lemma));
 	  (* Don't forget to $\zeta$ normlize the term since the principles
              have been $\zeta$-normalized *)
 	  h_reduce
@@ -996,12 +996,12 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
     let params_names = fst (List.chop princ_infos.nparams args_names) in
     let params = List.map mkVar params_names in
     tclTHENSEQ
-      [ tclMAP h_intro (args_names@[res;hres]);
+      [ tclMAP (fun id -> Proofview.V82.of_tactic (h_intro id)) (args_names@[res;hres]);
 	observe_tac "h_generalize"
 	(h_generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]);
-	h_intro graph_principle_id;
+	Proofview.V82.of_tactic (h_intro graph_principle_id);
 	observe_tac "" (tclTHEN_i
-	  (observe_tac "elim" ((elim false (mkVar hres,NoBindings) (Some (mkVar graph_principle_id,NoBindings)))))
+	  (observe_tac "elim" (Proofview.V82.of_tactic ((elim false (mkVar hres,NoBindings) (Some (mkVar graph_principle_id,NoBindings))))))
 	  (fun i g -> observe_tac "prove_branche" (prove_branche i) g ))
       ]
       g
@@ -1070,8 +1070,8 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	   (fst lemmas_types_infos.(i))
            (fun _ _ -> ());
 	 Pfedit.by
-	   (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
-	      (proving_tac i));
+	   (Proofview.V82.tactic (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
+	      (proving_tac i)));
 	 do_save ();
 	 let finfo = find_Function_infos f_as_constant in
 	 let lem_cst = destConst (Constrintern.global_reference lem_id) in
@@ -1121,8 +1121,8 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	   (fst lemmas_types_infos.(i))
            (fun _ _ -> ());
 	 Pfedit.by
-	   (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
-	      (proving_tac i));
+	   (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
+	      (proving_tac i)));
 	 do_save ();
 	 let finfo = find_Function_infos f_as_constant in
 	 let lem_cst = destConst (Constrintern.global_reference lem_id) in
@@ -1162,7 +1162,7 @@ let revert_graph kn post_tac hid g =
 		    [
 		      h_generalize [applist(mkConst f_complete,(Array.to_list f_args)@[res.(0);mkVar hid])];
 		      thin [hid];
-		      h_intro hid;
+		      Proofview.V82.of_tactic (h_intro hid);
 		      post_tac hid
 		    ]
 		    g
@@ -1197,7 +1197,7 @@ let functional_inversion kn hid fconst f_correct : tactic =
 	  let pre_tac,f_args,res =
 	    match kind_of_term args.(1),kind_of_term args.(2) with
 	      | App(f,f_args),_ when eq_constr f fconst ->
-		  ((fun hid -> h_symmetry (Locusops.onHyp hid)),f_args,args.(2))
+		  ((fun hid -> Proofview.V82.of_tactic (h_symmetry (Locusops.onHyp hid))),f_args,args.(2))
 	      |_,App(f,f_args) when eq_constr f fconst ->
 		 ((fun hid -> tclIDTAC),f_args,args.(1))
 	      | _ -> (fun hid -> tclFAIL 1 (mt ())),[||],args.(2)
@@ -1206,8 +1206,8 @@ let functional_inversion kn hid fconst f_correct : tactic =
 	    pre_tac hid;
 	    h_generalize [applist(f_correct,(Array.to_list f_args)@[res;mkVar hid])];
 	    thin [hid];
-	    h_intro hid;
-	    Inv.inv FullInversion None (NamedHyp hid);
+	    Proofview.V82.of_tactic (h_intro hid);
+	    Proofview.V82.of_tactic (Inv.inv FullInversion None (NamedHyp hid));
 	    (fun g ->
 	       let new_ids = List.filter (fun id -> not (Id.Set.mem id old_ids)) (pf_ids_of_hyps g) in
 	       tclMAP (revert_graph kn pre_tac)  (hid::new_ids)  g
@@ -1228,7 +1228,9 @@ let invfun qhyp f  =
     let f_correct = mkConst(Option.get finfos.correctness_lemma)
     and kn = fst finfos.graph_ind
     in
-    Tactics.try_intros_until (fun hid -> functional_inversion kn hid (mkConst f)  f_correct) qhyp
+    Proofview.V82.of_tactic (
+      Tactics.try_intros_until (fun hid -> Proofview.V82.tactic (functional_inversion kn hid (mkConst f)  f_correct)) qhyp
+    )
   with
     | Not_found ->  error "No graph found"
     | Option.IsNone  -> error "Cannot use equivalence with graph!"
@@ -1238,8 +1240,9 @@ let invfun qhyp f g =
   match f with
     | Some f -> invfun qhyp f g
     | None ->
+        Proofview.V82.of_tactic begin
 	Tactics.try_intros_until
-	  (fun hid g ->
+	  (fun hid -> Proofview.V82.tactic begin fun g ->
 	     let hyp_typ = pf_type_of g (mkVar hid)  in
 	     match kind_of_term hyp_typ with
 	       | App(eq,args) when eq_constr eq (Coqlib.build_coq_eq ()) ->
@@ -1276,6 +1279,7 @@ let invfun qhyp f g =
 			     else errorlabstrm "" (str "Cannot find inversion information for hypothesis " ++ Ppconstr.pr_id hid)
 		   end
 	       | _ -> errorlabstrm "" (Ppconstr.pr_id hid ++ str " must be an equality ")
-	  )
+	  end)
 	  qhyp
+          end
 	  g

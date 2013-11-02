@@ -59,18 +59,18 @@ let choose_noteq eqonleft =
   if eqonleft then h_simplest_right else h_simplest_left
 
 let mkBranches c1 c2 =
-  tclTHENSEQ
-    [generalize [c2];
+  Tacticals.New.tclTHENLIST
+    [Proofview.V82.tactic (generalize [c2]);
      h_simplest_elim c1;
      intros;
-     onLastHyp h_simplest_case;
-     clear_last;
+     Tacticals.New.onLastHyp h_simplest_case;
+     Proofview.V82.tactic clear_last;
      intros]
 
 let solveNoteqBranch side =
-  tclTHEN (choose_noteq side)
-    (tclTHEN introf
-      (onLastHypId (fun id -> Extratactics.discrHyp id)))
+  Tacticals.New.tclTHEN (choose_noteq side)
+    (Tacticals.New.tclTHEN introf
+      (Tacticals.New.onLastHypId (fun id -> Extratactics.discrHyp id)))
 
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
@@ -93,42 +93,58 @@ let mkGenDecideEqGoal rectype g =
           rectype (mkVar xname) (mkVar yname) g)))
 
 let eqCase tac =
-  (tclTHEN intro
-  (tclTHEN (onLastHyp Equality.rewriteLR)
-  (tclTHEN clear_last
+  (Tacticals.New.tclTHEN intro
+  (Tacticals.New.tclTHEN (Tacticals.New.onLastHyp Equality.rewriteLR)
+  (Tacticals.New.tclTHEN (Proofview.V82.tactic clear_last)
   tac)))
 
 let diseqCase eqonleft =
   let diseq  = Id.of_string "diseq" in
   let absurd = Id.of_string "absurd" in
-  (tclTHEN (intro_using diseq)
-  (tclTHEN (choose_noteq eqonleft)
-  (tclTHEN  red_in_concl
-  (tclTHEN  (intro_using absurd)
-  (tclTHEN  (h_simplest_apply (mkVar diseq))
-  (tclTHEN  (Extratactics.injHyp absurd)
+  (Tacticals.New.tclTHEN (intro_using diseq)
+  (Tacticals.New.tclTHEN (choose_noteq eqonleft)
+  (Tacticals.New.tclTHEN  (Proofview.V82.tactic red_in_concl)
+  (Tacticals.New.tclTHEN  (intro_using absurd)
+  (Tacticals.New.tclTHEN  (Proofview.V82.tactic (h_simplest_apply (mkVar diseq)))
+  (Tacticals.New.tclTHEN  (Extratactics.injHyp absurd)
             (full_trivial [])))))))
 
-let solveArg eqonleft op a1 a2 tac g =
-  let rectype = pf_type_of g a1 in
-  let decide  = mkDecideEqGoal eqonleft op rectype a1 a2 g in
+open Proofview.Notations
+
+(* spiwack: a small wrapper around [Hipattern]. *)
+
+let match_eqdec c =
+  try Proofview.tclUNIT (match_eqdec c)
+  with PatternMatchingFailure -> Proofview.tclZERO PatternMatchingFailure
+
+(* /spiwack *)
+
+let solveArg eqonleft op a1 a2 tac =
+  Tacmach.New.of_old (fun g -> pf_type_of g a1) >>- fun rectype ->
+  Tacmach.New.of_old (fun g -> mkDecideEqGoal eqonleft op rectype a1 a2 g) >>- fun decide ->
   let subtacs =
     if eqonleft then [eqCase tac;diseqCase eqonleft;default_auto]
     else [diseqCase eqonleft;eqCase tac;default_auto] in
-  (tclTHENS (h_elim_type decide) subtacs) g
+  (Tacticals.New.tclTHENS (Proofview.V82.tactic (h_elim_type decide)) subtacs)
 
-let solveEqBranch rectype g =
-  try
-    let (eqonleft,op,lhs,rhs,_) = match_eqdec (pf_concl g) in
-    let (mib,mip) = Global.lookup_inductive rectype in
-    let nparams   = mib.mind_nparams in
-    let getargs l = List.skipn nparams (snd (decompose_app l)) in
-    let rargs   = getargs rhs
-    and largs   = getargs lhs in
-    List.fold_right2
-      (solveArg eqonleft op) largs rargs
-      (tclTHEN (choose_eq eqonleft) h_reflexivity) g
-  with PatternMatchingFailure -> error "Unexpected conclusion!"
+let solveEqBranch rectype =
+  Proofview.tclORELSE
+    begin
+      Goal.concl >>- fun concl ->
+      match_eqdec concl >= fun (eqonleft,op,lhs,rhs,_) ->
+      let (mib,mip) = Global.lookup_inductive rectype in
+      let nparams   = mib.mind_nparams in
+      let getargs l = List.skipn nparams (snd (decompose_app l)) in
+      let rargs   = getargs rhs
+      and largs   = getargs lhs in
+      List.fold_right2
+        (solveArg eqonleft op) largs rargs
+        (Tacticals.New.tclTHEN (choose_eq eqonleft) h_reflexivity)
+    end
+    begin function
+      | PatternMatchingFailure -> Proofview.tclZERO (UserError ("",Pp.str"Unexpected conclusion!"))
+      | e -> Proofview.tclZERO e
+    end
 
 (* The tactic Decide Equality *)
 
@@ -136,39 +152,43 @@ let hd_app c = match kind_of_term c with
   | App (h,_) -> h
   | _ -> c
 
-let decideGralEquality g =
-  try
-    let eqonleft,_,c1,c2,typ = match_eqdec (pf_concl g) in
-    let headtyp = hd_app (pf_compute g typ) in
-    let rectype =
-      match kind_of_term headtyp with
-        | Ind mi -> mi
-	| _ -> error"This decision procedure only works for inductive objects."
-    in
-    (tclTHEN
-      (mkBranches c1 c2)
-      (tclORELSE (solveNoteqBranch eqonleft) (solveEqBranch rectype)))
-    g
-  with PatternMatchingFailure ->
-    error "The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}."
+let decideGralEquality =
+  Proofview.tclORELSE
+    begin
+      Goal.concl >>- fun concl ->
+      match_eqdec concl >= fun eqonleft,_,c1,c2,typ ->
+      Tacmach.New.of_old (fun g -> hd_app (pf_compute g typ)) >>- fun headtyp ->
+      begin match kind_of_term headtyp with
+      | Ind mi -> Proofview.tclUNIT mi
+      | _ -> Proofview.tclZERO (UserError ("",Pp.str"This decision procedure only works for inductive objects."))
+      end >= fun rectype ->
+      (Tacticals.New.tclTHEN
+         (mkBranches c1 c2)
+         (Tacticals.New.tclORELSE (solveNoteqBranch eqonleft) (solveEqBranch rectype)))
+    end
+    begin function
+      | PatternMatchingFailure ->
+          Proofview.tclZERO (UserError ("", Pp.str"The goal must be of the form {x<>y}+{x=y} or {x=y}+{x<>y}."))
+      | e -> Proofview.tclZERO e
+    end
 
-let decideEqualityGoal = tclTHEN intros decideGralEquality
+let decideEqualityGoal = Tacticals.New.tclTHEN intros decideGralEquality
 
-let decideEquality rectype g =
-  let decide  = mkGenDecideEqGoal rectype g in
-  (tclTHENS (cut decide) [default_auto;decideEqualityGoal]) g
+let decideEquality rectype =
+  Tacmach.New.of_old (mkGenDecideEqGoal rectype) >>- fun decide ->
+  (Tacticals.New.tclTHENS (Proofview.V82.tactic (cut decide)) [default_auto;decideEqualityGoal])
 
 
 (* The tactic Compare *)
 
-let compare c1 c2 g =
-  let rectype = pf_type_of g c1 in
-  let decide  = mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 g in
-  (tclTHENS (cut decide)
-            [(tclTHEN  intro
-             (tclTHEN (onLastHyp simplest_case)
-                       clear_last));
-             decideEquality (pf_type_of g c1)]) g
+let compare c1 c2 =
+  Tacmach.New.of_old (fun g -> pf_type_of g c1) >>- fun rectype ->
+  Tacmach.New.of_old (fun g -> mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 g) >>- fun decide ->
+  (Tacticals.New.tclTHENS (Proofview.V82.tactic (cut decide))
+            [(Tacticals.New.tclTHEN  intro
+             (Tacticals.New.tclTHEN (Tacticals.New.onLastHyp simplest_case)
+                       (Proofview.V82.tactic clear_last)));
+             decideEquality rectype])
 
 
 (* User syntax *)

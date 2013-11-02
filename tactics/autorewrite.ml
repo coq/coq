@@ -19,6 +19,7 @@ open Util
 open Tacexpr
 open Mod_subst
 open Locus
+open Proofview.Notations
 
 (* Rewriting rules *)
 type rew_rule = { rew_lemma: constr;
@@ -92,29 +93,28 @@ type raw_rew_rule = Loc.t * constr * bool * raw_tactic_expr option
 let one_base general_rewrite_maybe_in tac_main bas =
   let lrul = find_rewrites bas in
   let lrul = List.map (fun h -> 
-  let tac = match h.rew_tac with None -> tclIDTAC | Some t -> Tacinterp.eval_tactic t in
+  let tac = match h.rew_tac with None -> Proofview.tclUNIT () | Some t -> Tacinterp.eval_tactic t in
     (h.rew_lemma,h.rew_l2r,tac)) lrul in
-    tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
-      tclTHEN tac
-        (tclREPEAT_MAIN
-	    (tclTHENFIRST (general_rewrite_maybe_in dir csr tc) tac_main)))
-      tclIDTAC lrul))
+    Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
+      Tacticals.New.tclTHEN tac
+        (Tacticals.New.tclREPEAT_MAIN
+	    (Tacticals.New.tclTHENFIRST (general_rewrite_maybe_in dir csr tc) tac_main)))
+      (Proofview.tclUNIT()) lrul))
 
 (* The AutoRewrite tactic *)
 let autorewrite ?(conds=Naive) tac_main lbas =
-  tclREPEAT_MAIN (tclPROGRESS
+  Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS
     (List.fold_left (fun tac bas ->
-       tclTHEN tac
+       Tacticals.New.tclTHEN tac
         (one_base (fun dir c tac ->
 	  let tac = (tac, conds) in
 	    general_rewrite dir AllOccurrences true false ~tac c)
 	  tac_main bas))
-      tclIDTAC lbas))
+      (Proofview.tclUNIT()) lbas))
 
-let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas : tactic =
-  fun gl ->
+let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
  (* let's check at once if id exists (to raise the appropriate error) *)
- let _ = List.map (Tacmach.pf_get_hyp gl) idl in
+ Goal.sensitive_list_map Tacmach.New.pf_get_hyp idl >>- fun _ ->
  let general_rewrite_in id =
   let id = ref id in
   let to_be_cleared = ref false in
@@ -125,7 +125,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas : tactic =
       | _ -> (* even the hypothesis id is missing *)
              error ("No such hypothesis: " ^ (Id.to_string !id) ^".")
     in
-    let gl' = general_rewrite_in dir AllOccurrences true ~tac:(tac, conds) false !id cstr false gl in
+    let gl' = Proofview.V82.of_tactic (general_rewrite_in dir AllOccurrences true ~tac:(tac, conds) false !id cstr false) gl in
     let gls = gl'.Evd.it in
     match gls with
        g::_ ->
@@ -149,11 +149,12 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas : tactic =
           | _ -> assert false) (* there must be at least an hypothesis *)
      | _ -> assert false (* rewriting cannot complete a proof *)
  in
- tclMAP (fun id ->
-  tclREPEAT_MAIN (tclPROGRESS
+ let general_rewrite_in x y z w = Proofview.V82.tactic (general_rewrite_in x y z w) in
+ Tacticals.New.tclMAP (fun id ->
+  Tacticals.New.tclREPEAT_MAIN (Proofview.tclPROGRESS
     (List.fold_left (fun tac bas ->
-       tclTHEN tac (one_base (general_rewrite_in id) tac_main bas)) tclIDTAC lbas)))
-   idl gl
+       Tacticals.New.tclTHEN tac (one_base (general_rewrite_in id) tac_main bas)) (Proofview.tclUNIT()) lbas)))
+   idl
 
 let autorewrite_in ?(conds=Naive) id = autorewrite_multi_in ~conds [id]
 
@@ -164,37 +165,35 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
   if cl.concl_occs != AllOccurrences &&
      cl.concl_occs != NoOccurrences
   then
-    error "The \"at\" syntax isn't available yet for the autorewrite tactic."
+    Proofview.tclZERO (UserError("" , str"The \"at\" syntax isn't available yet for the autorewrite tactic."))
   else
     let compose_tac t1 t2 =
       match cl.onhyps with
 	| Some [] -> t1
-	| _ ->      tclTHENFIRST t1 t2
+	| _ ->      Tacticals.New.tclTHENFIRST t1 t2
     in
     compose_tac
-	(if cl.concl_occs != NoOccurrences then autorewrite ~conds tac_main lbas else tclIDTAC)
+	(if cl.concl_occs != NoOccurrences then autorewrite ~conds tac_main lbas else Proofview.tclUNIT ())
 	(match cl.onhyps with
 	   | Some l -> try_do_hyps (fun ((_,id),_) -> id) l
 	   | None ->
-	       fun gl ->
 		 (* try to rewrite in all hypothesis
 		    (except maybe the rewritten one) *)
-		 let ids =  Tacmach.pf_ids_of_hyps gl
-		 in try_do_hyps (fun id -> id)  ids gl)
+                 Tacmach.New.pf_ids_of_hyps >>- fun ids ->
+		 try_do_hyps (fun id -> id)  ids)
 
-let auto_multi_rewrite ?(conds=Naive) = gen_auto_multi_rewrite conds Refiner.tclIDTAC
+let auto_multi_rewrite ?(conds=Naive) = gen_auto_multi_rewrite conds (Proofview.tclUNIT())
 
-let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl gl =
+let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl =
   let onconcl = match cl.Locus.concl_occs with NoOccurrences -> false | _ -> true in
   match onconcl,cl.Locus.onhyps with
     | false,Some [_] | true,Some [] | false,Some [] ->
 	(* autorewrite with .... in clause using tac n'est sur que
 	   si clause represente soit le but soit UNE hypothese
 	*)
-	gen_auto_multi_rewrite conds tac_main lbas cl gl
+	gen_auto_multi_rewrite conds tac_main lbas cl
     | _ ->
-	    Errors.errorlabstrm "autorewrite"
-	      (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
+        Proofview.tclZERO (UserError ("autorewrite",strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion."))
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =

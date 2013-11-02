@@ -52,7 +52,6 @@ val tclAT_LEAST_ONCE : tactic -> tactic
 val tclFAIL          : int -> std_ppcmds -> tactic
 val tclFAIL_lazy     : int -> std_ppcmds Lazy.t -> tactic
 val tclDO            : int -> tactic -> tactic
-val tclTIMEOUT       : int -> tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclSHOWHYPS      : tactic -> tactic
@@ -173,3 +172,85 @@ val simple_elimination_then :
 
 val elim_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
 val case_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
+
+(** Tacticals defined directly in term of Proofview *)
+module New : sig
+  open Proofview
+
+
+  val tclTHEN : unit tactic -> unit tactic -> unit tactic
+  (* [tclFAIL n msg] fails with [msg] as an error message at level [n]
+     (meaning that it will jump over [n] error catching tacticals FROM
+     THIS MODULE. *)
+  val tclFAIL : int -> Pp.std_ppcmds -> 'a tactic
+  val tclORELSE0 : 'a tactic -> 'a tactic -> 'a tactic
+  val tclORELSE  : 'a tactic -> 'a tactic -> 'a tactic
+
+  (** [tclTHENS3PARTS tac1 [|t1 ; ... ; tn|] tac2 [|t'1 ; ... ; t'm|]
+      gls] applies the tactic [tac1] to [gls] then, applies [t1], ...,
+      [tn] to the first [n] resulting subgoals, [t'1], ..., [t'm] to the
+      last [m] subgoals and [tac2] to the rest of the subgoals in the
+      middle. Raises an error if the number of resulting subgoals is
+      strictly less than [n+m] *)
+  val tclTHENS3PARTS     : unit tactic -> unit tactic array -> unit tactic -> unit tactic array -> unit tactic
+  val tclTHENSFIRSTn : unit tactic -> unit tactic array -> unit tactic -> unit tactic
+  val tclTHENFIRSTn : unit tactic -> unit tactic array -> unit tactic
+  (** [tclTHENFIRST tac1 tac2 gls] applies the tactic [tac1] to [gls]
+      and [tac2] to the first resulting subgoal *)
+  val tclTHENFIRST : unit tactic -> unit tactic -> unit tactic
+  val tclTHENLASTn : unit tactic -> unit tactic array -> unit tactic
+  val tclTHENLAST  : unit tactic -> unit tactic -> unit tactic
+  (* [tclTHENS t l = t <*> tclDISPATCH l] *)
+  val tclTHENS : unit tactic -> unit tactic list -> unit tactic
+  (* [tclTHENLIST [t1;…;tn]] is [t1<*>…<*>tn] *)
+  val tclTHENLIST : unit tactic list -> unit tactic
+
+  (** [tclMAP f [x1..xn]] builds [(f x1);(f x2);...(f xn)] *)
+  val tclMAP : ('a -> unit tactic) -> 'a list -> unit tactic
+
+  val tclTRY : unit tactic -> unit tactic
+  val tclFIRST : 'a tactic list -> 'a tactic
+  val tclFIRST_PROGRESS_ON : ('a -> unit tactic) -> 'a list -> unit tactic
+  val tclIFTHENELSE : unit tactic -> unit tactic -> unit tactic -> unit tactic
+  val tclIFTHENSVELSE : unit tactic -> unit tactic array -> unit tactic -> unit tactic
+  val tclIFTHENTRYELSEMUST : unit tactic -> unit tactic -> unit tactic
+
+  val tclDO : int -> unit tactic -> unit tactic
+  val tclREPEAT : unit tactic -> unit tactic
+  (* Repeat on the first subgoal (no failure if no more subgoal) *)
+  val tclREPEAT_MAIN : unit tactic -> unit tactic
+  val tclCOMPLETE : 'a tactic -> 'a tactic
+  val tclSOLVE : unit tactic list -> unit tactic
+  val tclWITHHOLES : bool -> ('a -> unit tactic) -> Evd.evar_map -> 'a -> unit tactic
+
+
+  val ifOnHyp     : (identifier * types -> bool) ->
+    (identifier -> unit Proofview.tactic) -> (identifier -> unit Proofview.tactic) ->
+    identifier -> unit Proofview.tactic
+
+  val onNthHypId : int -> (identifier -> unit tactic) -> unit tactic
+  val onLastHypId      : (identifier -> unit tactic) -> unit tactic
+  val onLastHyp        : (constr -> unit tactic) -> unit tactic
+  val onLastDecl       : (named_declaration -> unit tactic) -> unit tactic
+
+  val tryAllHyps          : (identifier -> unit tactic) -> unit tactic
+  val tryAllHypsAndConcl  : (identifier option -> unit tactic) -> unit tactic
+  val onClause   : (identifier option -> unit tactic) -> clause -> unit tactic
+
+  val elimination_then :
+    (branch_args -> unit Proofview.tactic) ->
+    (arg_bindings * arg_bindings) -> constr -> unit Proofview.tactic
+
+  val case_then_using :
+    intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
+    constr option -> (arg_bindings * arg_bindings) ->
+    inductive -> clausenv -> unit Proofview.tactic
+
+  val case_nodep_then_using :
+    intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
+    constr option -> (arg_bindings * arg_bindings) ->
+    inductive -> clausenv -> unit Proofview.tactic
+
+  val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
+  val case_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
+end

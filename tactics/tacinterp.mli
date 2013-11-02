@@ -51,11 +51,11 @@ val extract_ltac_constr_values : interp_sign -> Environ.env ->
 
 (** Tactic extensions *)
 val add_tactic :
-  string -> (typed_generic_argument list -> interp_sign -> tactic) -> unit
+  string -> (typed_generic_argument list -> interp_sign -> unit Proofview.tactic) -> unit
 val overwriting_add_tactic :
-  string -> (typed_generic_argument list -> interp_sign -> tactic) -> unit
+  string -> (typed_generic_argument list -> interp_sign -> unit Proofview.tactic) -> unit
 val lookup_tactic :
-  string -> (typed_generic_argument list) -> interp_sign -> tactic
+  string -> (typed_generic_argument list) -> interp_sign -> unit Proofview.tactic
 
 (** To embed several objects in Coqast.t *)
 val tactic_in : (interp_sign -> glob_tactic_expr) -> Dyn.t
@@ -71,18 +71,16 @@ val set_debug : debug_info -> unit
 (** Gives the state of debug *)
 val get_debug : unit -> debug_info
 
-
 (** Adds an interpretation function for extra generic arguments *)
 
 val interp_genarg : interp_sign -> goal sigma -> glob_generic_argument ->
   Evd.evar_map * typed_generic_argument
 
 (** Interprets any expression *)
-val val_interp : interp_sign -> goal sigma -> glob_tactic_expr -> Evd.evar_map * value
+val val_interp : interp_sign -> glob_tactic_expr -> value Goal.sensitive Proofview.tactic
 
 (** Interprets an expression that evaluates to a constr *)
-val interp_ltac_constr : interp_sign -> goal sigma -> glob_tactic_expr ->
-  Evd.evar_map * constr
+val interp_ltac_constr : interp_sign -> glob_tactic_expr -> constr Goal.sensitive Proofview.tactic
 
 (** Interprets redexp arguments *)
 val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map * red_expr
@@ -99,20 +97,20 @@ val interp_open_constr_with_bindings : interp_sign -> Environ.env -> Evd.evar_ma
 
 (** Initial call for interpretation *)
 
-val eval_tactic : glob_tactic_expr -> tactic
+val eval_tactic : glob_tactic_expr -> unit Proofview.tactic
 
 (** Globalization + interpretation *)
 
 val interp_tac_gen : value Id.Map.t -> Id.t list ->
-                 debug_info -> raw_tactic_expr -> tactic
+                 debug_info -> raw_tactic_expr -> unit Proofview.tactic
 
-val interp : raw_tactic_expr -> tactic
+val interp : raw_tactic_expr -> unit Proofview.tactic
 
-val eval_ltac_constr : goal sigma -> raw_tactic_expr -> Evd.evar_map * constr
+val eval_ltac_constr : raw_tactic_expr -> constr Goal.sensitive Proofview.tactic
 
 (** Hides interpretation for pretty-print *)
 
-val hide_interp : raw_tactic_expr -> tactic option -> tactic
+val hide_interp : raw_tactic_expr -> unit Proofview.tactic option -> unit Proofview.tactic
 
 (** Declare the xml printer *)
 val declare_xml_printer :

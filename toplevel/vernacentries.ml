@@ -475,7 +475,7 @@ let vernac_end_proof ?proof = function
 let vernac_exact_proof c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
-  by (Tactics.exact_proof c);
+  by (Tactics.New.exact_proof c);
   save_named true
 
 let vernac_assumption locality (local, kind) l nl =

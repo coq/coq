@@ -478,22 +478,22 @@ let rec fourier gl=
 	     "Rlt" ->
 	       (tclTHEN
 	         (tclTHEN (apply (get coq_Rfourier_not_ge_lt))
-			  (intro_using  fhyp))
+			  (Proofview.V82.of_tactic (intro_using  fhyp)))
 		 fourier)
 	    |"Rle" ->
 	     (tclTHEN
 	      (tclTHEN (apply (get coq_Rfourier_not_gt_le))
-		       (intro_using  fhyp))
+		       (Proofview.V82.of_tactic (intro_using  fhyp)))
 			fourier)
 	    |"Rgt" ->
 	     (tclTHEN
 	      (tclTHEN (apply (get coq_Rfourier_not_le_gt))
-		       (intro_using  fhyp))
+		       (Proofview.V82.of_tactic (intro_using  fhyp)))
 	      fourier)
 	    |"Rge" ->
 	     (tclTHEN
 	      (tclTHEN (apply (get coq_Rfourier_not_lt_ge))
-		       (intro_using  fhyp))
+		       (Proofview.V82.of_tactic (intro_using  fhyp)))
 	      fourier)
 	    |_-> raise GoalDone)
         |_-> raise GoalDone
@@ -595,16 +595,16 @@ let rec fourier gl=
 				       ))
 		      (tclTHEN (apply (if sres then get coq_Rnot_lt_lt
 					       else get coq_Rnot_le_le))
-			    (tclTHENS (Equality.replace
+			    (tclTHENS (Proofview.V82.of_tactic (Equality.replace
 				       (mkAppL [|get coq_Rminus;!t2;!t1|]
 					       )
-				       tc)
+				       tc))
 		 	       [tac2;
                                 (tclTHENS
-				  (Equality.replace
+				  (Proofview.V82.of_tactic (Equality.replace
 				    (mkApp (get coq_Rinv,
 				      [|get coq_R1|]))
-				    (get coq_R1))
+				    (get coq_R1)))
 (* en attendant Field, ça peut aider Ring de remplacer 1/1 par 1 ... *)
 
       			        [tclORELSE
@@ -617,7 +617,7 @@ let rec fourier gl=
 				]));
                        !tac1]);
 	   tac:=(tclTHENS (cut (get coq_False))
-				  [tclTHEN intro (contradiction None);
+				  [tclTHEN (Proofview.V82.of_tactic intro) (Proofview.V82.of_tactic (contradiction None));
 				   !tac])
       |_-> assert false) |_-> assert false
 	  );

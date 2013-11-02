@@ -146,8 +146,13 @@ val tclOR : 'a tactic -> 'a tactic -> 'a tactic
 val tclZERO : exn -> 'a tactic
 
 (* [tclORELSE t1 t2] behaves like [t1] if [t1] succeeds at least once
-   or [t2] if [t1] fails. *)
-val tclORELSE : 'a tactic -> 'a tactic -> 'a tactic
+   or [t2 e] if [t1] fails with [e]. *)
+val tclORELSE : 'a tactic -> (exn -> 'a tactic) -> 'a tactic
+
+(* [tclIFCATCH a s f] is a generalisation of [tclORELSE]: if [a]
+   succeeds at least once then it behaves as [tclBIND a s] otherwise, if [a]
+   fails with [e], then it behaves as [f e]. *)
+val tclIFCATCH : 'a tactic -> ('a -> 'b tactic) -> (exn -> 'b tactic) -> 'b tactic
 
 (* Focuses a tactic at a range of subgoals, found by their indices. *)
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
@@ -162,7 +167,10 @@ val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
     sense in the goals immediatly built by it, and would cause an anomaly
     is used otherwise. *)
 val tclDISPATCH : unit tactic list -> unit tactic
+(* arnaud: quick hack to fix the order of goal solving to comply with Ltac.
+   it will probably have to go. *)
 val tclDISPATCHS : 'a Goal.sensitive tactic list -> 'a Goal.sensitive tactic
+val tclDISPATCHL : 'a tactic list -> 'a list tactic
 
 (* [tclEXTEND b r e] is a variant to [tclDISPATCH], where the [r] tactic
     is "repeated" enough time such that every goal has a tactic assigned to it
@@ -179,6 +187,26 @@ val tclGOALBINDU : 'a Goal.sensitive -> ('a -> unit tactic) -> unit tactic
 (* [tclSENSITIVE] views goal-type tactics as a special kind of tactics.*)
 val tclSENSITIVE : Goal.subgoals Goal.sensitive -> unit tactic 
 
+(* [lift_sensitive s] returns the list corresponding to the evaluation
+   of [s] on each of the focused goals *)
+val lift_sensitive : 'a Goal.sensitive -> 'a list tactic
+
+(* [tclPROGRESS t] behaves has [t] as long as [t] progresses. *)
+val tclPROGRESS : 'a tactic -> 'a tactic
+
+(* [tclEVARMAP] doesn't affect the proof, it returns the current evar_map. *)
+val tclEVARMAP : Evd.evar_map tactic
+
+(* [tclENV] doesn't affect the proof, it returns the current evar_map. *)
+val tclENV : Environ.env tactic
+
+(* [tclTIMEOUT n t] runs [t] for at most [n] seconds, succeeds if [t]
+   succeeds in the meantime, fails otherwise. *)
+(* arnaud: behaves as the identity for now *)
+val tclTIMEOUT : int -> unit tactic -> unit tactic
+
+val list_map : ('a -> 'b tactic) -> 'a list -> 'b list tactic
+val sensitive_list_map : ('a -> 'b Goal.sensitive tactic) -> 'a list -> 'b list Goal.sensitive tactic
 
 (*** Commands ***)
 
@@ -233,4 +261,9 @@ module V82 : sig
     
   (* Implements the Existential command *)
   val instantiate_evar : int -> Constrexpr.constr_expr -> proofview -> proofview
+
+  (* Caution: this function loses quite a bit of information. It
+     should be avoided as much as possible.  It should work as
+     expected for a tactic obtained from {!V82.tactic} though. *)
+  val of_tactic : 'a tactic -> tac
 end

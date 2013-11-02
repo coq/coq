@@ -361,7 +361,7 @@ let solve_remaining_by by env prf =
     let evd' = 
       List.fold_right (fun mv evd ->
         let ty = Clenv.clenv_nf_meta env (meta_type evd mv) in
-	let c = Pfedit.build_by_tactic env.env ty (tclCOMPLETE tac) in
+	let c = Pfedit.build_by_tactic env.env ty (Tacticals.New.tclCOMPLETE tac) in
 	  meta_assign mv (c, (Conv,TypeNotProcessed)) evd)
       indep env.evd
     in { env with evd = evd' }, prf
@@ -1276,10 +1276,10 @@ let assert_replacing id newt tac =
 			  env ~init:[]
 		      in
 		      let (e, args) = destEvar ev in
-			Goal.return 
+			Goal.return
                          (mkEvar (e, Array.of_list inst)))))
        in Goal.bind reft Goal.refine)
-  in Proofview.tclTHEN (Proofview.tclSENSITIVE sens) 
+  in Tacticals.New.tclTHEN (Proofview.tclSENSITIVE sens) 
        (Proofview.tclFOCUS 2 2 tac)
 
 let newfail n s = 
@@ -1337,7 +1337,7 @@ let tactic_init_setoid () =
   init_setoid (); tclIDTAC
   
 let cl_rewrite_clause_new_strat ?abs strat clause =
-  Proofview.tclTHEN (newtactic_init_setoid ())
+  Tacticals.New.tclTHEN (newtactic_init_setoid ())
   (try cl_rewrite_clause_newtac ?abs strat clause
    with RewriteFailure s ->
    newfail 0 (str"setoid rewrite failed: " ++ s))
@@ -1747,73 +1747,94 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
 		  (pf_env gl,project gl,
 		  Pretype_errors.NoOccurrenceFound ((if l2r then x else y), cl)))
 
+open Proofview.Notations
+
 let general_s_rewrite_clause x =
-  init_setoid ();
   match x with
     | None -> general_s_rewrite None
     | Some id -> general_s_rewrite (Some id)
+let general_s_rewrite_clause x y z w ~new_goals =
+  newtactic_init_setoid () <*>
+  Proofview.V82.tactic (general_s_rewrite_clause x y z w ~new_goals)
 
 let _ = Hook.set Equality.general_rewrite_clause general_s_rewrite_clause
 
 (** [setoid_]{reflexivity,symmetry,transitivity} tactics *)
 
 let not_declared env ty rel =
-  tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared " ++
+  Tacticals.New.tclFAIL 0 (str" The relation " ++ Printer.pr_constr_env env rel ++ str" is not a declared " ++
 		str ty ++ str" relation. Maybe you need to require the Setoid library")
 
-let setoid_proof gl ty fn fallback =
-  let env = pf_env gl in
-    try
-      let rel, args = decompose_app_rel env (project gl) (pf_concl gl) in
-      let evm = project gl in
-      let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
-	fn env evm car rel gl
-    with e when Errors.noncritical e ->
-      try fallback gl
-      with Hipattern.NoEquationFound ->
-          let e = Errors.push e in
-	  match e with
-	  | Not_found ->
-	      let rel, args = decompose_app_rel env (project gl) (pf_concl gl) in
-		not_declared env ty rel gl
-	  | _ -> raise e
+let setoid_proof ty fn fallback =
+  Goal.env >>- fun env ->
+  Goal.defs >>- fun sigma ->
+  Goal.concl >>- fun concl ->
+  Proofview.tclORELSE
+    begin
+      try
+        let rel, args = decompose_app_rel env sigma concl in
+        let evm = sigma in
+        let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
+        fn env evm car rel
+      with e -> Proofview.tclZERO e
+    end
+    begin function
+      | e ->
+        Proofview.tclORELSE
+          fallback
+          begin function
+            | Hipattern.NoEquationFound ->
+                (* spiwack: [Errors.push] here is unlikely to do what
+                   it's intended to, or anything meaningful for that
+                   matter. *)
+                let e = Errors.push e in
+	        begin match e with
+	        | Not_found ->
+	            let rel, args = decompose_app_rel env sigma concl in
+		    not_declared env ty rel
+	        | _ -> Proofview.tclZERO e
+                end
+            | e' -> Proofview.tclZERO e'
+          end
+    end
 
-let setoid_reflexivity gl =
-  setoid_proof gl "reflexive"
-    (fun env evm car rel -> apply (get_reflexive_proof env evm car rel))
-    (reflexivity_red true)
+let setoid_reflexivity =
+  setoid_proof "reflexive"
+    (fun env evm car rel -> Proofview.V82.tactic (apply (get_reflexive_proof env evm car rel)))
+      (reflexivity_red true)
 
-let setoid_symmetry gl =
-  setoid_proof gl "symmetric"
-    (fun env evm car rel -> apply (get_symmetric_proof env evm car rel))
+let setoid_symmetry =
+  setoid_proof "symmetric"
+    (fun env evm car rel -> Proofview.V82.tactic (apply (get_symmetric_proof env evm car rel)))
     (symmetry_red true)
 
-let setoid_transitivity c gl =
-  setoid_proof gl "transitive"
+let setoid_transitivity c =
+  setoid_proof "transitive"
     (fun env evm car rel ->
-      let proof = get_transitive_proof env evm car rel in
-      match c with
-      | None -> eapply proof
-      | Some c -> apply_with_bindings (proof,ImplicitBindings [ c ]))
+      Proofview.V82.tactic begin
+        let proof = get_transitive_proof env evm car rel in
+        match c with
+        | None -> eapply proof
+        | Some c -> apply_with_bindings (proof,ImplicitBindings [ c ])
+      end)
     (transitivity_red true c)
 
-let setoid_symmetry_in id gl =
-  let ctype = pf_type_of gl (mkVar id) in
-  let binders,concl = decompose_prod_assum ctype in
-  let (equiv, args) = decompose_app concl in
-  let rec split_last_two = function
-    | [c1;c2] -> [],(c1, c2)
-    | x::y::z -> let l,res = split_last_two (y::z) in x::l, res
-    | _ -> error "The term provided is not an equivalence."
-  in
-  let others,(c1,c2) = split_last_two args in
-  let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
-  let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
-  let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
-    tclTHENS (Tactics.cut new_hyp)
-      [ intro_replacing id;
-	tclTHENLIST [ intros; setoid_symmetry; apply (mkVar id); Tactics.assumption ] ]
-      gl
+let setoid_symmetry_in id =
+  Tacmach.New.of_old (fun gl -> pf_type_of gl (mkVar id)) >>- fun ctype ->
+    let binders,concl = decompose_prod_assum ctype in
+    let (equiv, args) = decompose_app concl in
+    let rec split_last_two = function
+      | [c1;c2] -> [],(c1, c2)
+      | x::y::z -> let l,res = split_last_two (y::z) in x::l, res
+      | _ -> error "The term provided is not an equivalence."
+    in
+    let others,(c1,c2) = split_last_two args in
+    let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
+    let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
+    let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
+    Tacticals.New.tclTHENS (Proofview.V82.tactic (Tactics.cut new_hyp))
+      [ Proofview.V82.tactic (intro_replacing id);
+	Tacticals.New.tclTHENLIST [ intros; setoid_symmetry; Proofview.V82.tactic (apply (mkVar id)); Proofview.V82.tactic (Tactics.assumption) ] ]
 
 let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity
 let _ = Hook.set Tactics.setoid_symmetry setoid_symmetry
@@ -1831,7 +1852,7 @@ let implify id gl =
 	let tyhd = Typing.type_of env sigma ty
 	and tyconcl = Typing.type_of (Environ.push_rel hd env) sigma concl in
 	let app, unfold = arrow_morphism tyhd (subst1 mkProp tyconcl) ty (subst1 mkProp concl) in
-	  it_mkProd_or_LetIn app tl
+	it_mkProd_or_LetIn app tl
     | _ -> ctype
   in convert_hyp_no_check (id, b, ctype') gl
 

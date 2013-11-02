@@ -31,6 +31,10 @@ val pr_goal : goal -> Pp.std_ppcmds
 val advance : Evd.evar_map -> goal -> goal option
 
 
+(* Equality function on goals. Return [true] if all of its hypotheses
+   and conclusion are equal. *)
+val equal : Evd.evar_map -> goal -> Evd.evar_map -> goal -> bool
+
 (*** Goal tactics ***)
 
 
@@ -126,6 +130,9 @@ val rename_hyp : Names.Id.t -> Names.Id.t -> subgoals sensitive
 
 (*** Sensitive primitives ***)
 
+(* representation of the goal in form of an {!Evd.evar_info} *)
+val info : Evd.evar_info sensitive
+
 (* [concl] is the conclusion of the current goal *)
 val concl : Term.constr sensitive
 
@@ -175,6 +182,9 @@ val list_map :
   'a list -> Evd.evar_map ->
     'b list * Evd.evar_map
 
+(* emulates List.map for [sensitive] Kleisli functions. *)
+val sensitive_list_map : ('a -> 'b sensitive) -> 'a list -> 'b list sensitive
+
 (* Layer to implement v8.2 tactic engine ontop of the new architecture. 
    Types are different from what they used to be due to a change of the
    internal types. *)
@@ -203,9 +213,6 @@ module V82 : sig
                          Term.constr ->
                          Evd.Store.t ->
                          goal * Term.constr * Evd.evar_map
-
-  (* Equality function on goals *)
-  val equal : Evd.evar_map -> goal -> goal -> bool
 
   (* Creates a dummy [goal sigma] for use in auto *)
   val dummy_goal : goal Evd.sigma
@@ -238,4 +245,6 @@ module V82 : sig
   (* Goal represented as a type, doesn't take into account section variables *)
   val abstract_type : Evd.evar_map -> goal -> Term.types 
 
+  val to_sensitive : (goal Evd.sigma -> 'a) -> 'a sensitive
+  val change_evar_map : Evd.evar_map -> unit sensitive
 end

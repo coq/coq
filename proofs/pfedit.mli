@@ -61,7 +61,7 @@ type lemma_possible_guards = Proof_global.lemma_possible_guards
 
 val start_proof :
   Id.t -> goal_kind -> named_context_val -> constr ->
-  ?init_tac:tactic -> ?compute_guard:lemma_possible_guards -> 
+  ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
   unit declaration_hook -> unit
 
 (** {6 ... } *)
@@ -135,14 +135,14 @@ val get_used_variables : unit -> Context.section_context option
    current focused proof or raises a UserError if no proof is focused or
    if there is no [n]th subgoal *)
 
-val solve_nth : ?with_end_tac:unit Proofview.tactic -> int -> tactic ->
+val solve_nth : ?with_end_tac:unit Proofview.tactic -> int -> unit Proofview.tactic ->
       Proof.proof -> Proof.proof
 
 (** [by tac] applies tactic [tac] to the 1st subgoal of the current
    focused proof or raises a UserError if there is no focused proof or
    if there is no more subgoals *)
 
-val by : tactic -> unit
+val by : unit Proofview.tactic -> unit
 
 (** [instantiate_nth_evar_com n c] instantiate the [n]th undefined
    existential variable of the current focused proof by [c] or raises a
@@ -155,12 +155,12 @@ val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
 
 val build_constant_by_tactic :
   Id.t -> named_context_val -> ?goal_kind:goal_kind ->
-    types -> tactic -> Entries.definition_entry
-val build_by_tactic : env -> types -> tactic -> constr
+    types -> unit Proofview.tactic -> Entries.definition_entry
+val build_by_tactic : env -> types -> unit Proofview.tactic -> constr
 
 (** Declare the default tactic to fill implicit arguments *)
 
-val declare_implicit_tactic : tactic -> unit
+val declare_implicit_tactic : unit Proofview.tactic -> unit
 
 (* Raise Exit if cannot solve *)
 val solve_by_implicit_tactic : env -> Evd.evar_map -> Evd.evar -> constr

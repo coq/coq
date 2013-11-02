@@ -121,7 +121,6 @@ val tclAT_LEAST_ONCE : tactic -> tactic
 val tclFAIL          : int -> Pp.std_ppcmds -> tactic
 val tclFAIL_lazy     : int -> Pp.std_ppcmds Lazy.t -> tactic
 val tclDO            : int -> tactic -> tactic
-val tclTIMEOUT       : int -> tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclSHOWHYPS      : tactic -> tactic
@@ -151,6 +150,11 @@ val apply_tac_list     : tactic -> tactic_list
 val then_tactic_list   : tactic_list -> tactic_list -> tactic_list
 val tactic_list_tactic : tactic_list -> tactic
 val goal_goal_list     : 'a sigma -> 'a list sigma
+
+
+(* Check that holes in arguments have been resolved *)
+(* spiwack: used in [tclWITHHOLES] both newer and older copy. *)
+val check_evars : Environ.env -> evar_map -> evar_map -> evar_map -> unit
 
 (** [tclWITHHOLES solve_holes tac (sigma,c)] applies [tac] to [c] which
    may have unresolved holes; if [solve_holes] these holes must be

@@ -87,7 +87,7 @@ val with_current_proof :
 (** Sets the tactic to be used when a tactic line is closed with [...] *)
 val set_endline_tactic : Tacexpr.raw_tactic_expr -> unit
 val set_interp_tac :
-  (Tacexpr.raw_tactic_expr -> Goal.goal Evd.sigma -> Goal.goal list Evd.sigma)
+  (Tacexpr.raw_tactic_expr -> unit Proofview.tactic)
     -> unit
 
 (** Sets the section variables assumed by the proof *)

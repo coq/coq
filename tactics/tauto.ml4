@@ -293,27 +293,39 @@ let t_reduction_not_iff = tacticIn reduction_not_iff
 let intuition_gen flags tac =
   interp (tacticIn (tauto_intuit flags t_reduction_not_iff tac))
 
-let tauto_intuitionistic flags g =
-  try intuition_gen flags <:tactic<fail>> g
-  with
-    Refiner.FailError _ | UserError _ ->
-      errorlabstrm "tauto" (str "tauto failed.")
+let tauto_intuitionistic flags =
+  Proofview.tclORELSE
+    (intuition_gen flags <:tactic<fail>>)
+    begin function
+      | Refiner.FailError _ | UserError _ ->
+          Proofview.tclZERO (UserError ("tauto" , str "tauto failed."))
+      | e -> Proofview.tclZERO e
+    end
 
 let coq_nnpp_path =
   let dir = List.map Id.of_string ["Classical_Prop";"Logic";"Coq"] in
   Libnames.make_path (DirPath.make dir) (Id.of_string "NNPP")
 
-let tauto_classical flags nnpp g =
-  try tclTHEN (apply nnpp) (tauto_intuitionistic flags) g
-  with UserError _ -> errorlabstrm "tauto" (str "Classical tauto failed.")
+let tauto_classical flags nnpp =
+  Proofview.tclORELSE
+    (Tacticals.New.tclTHEN (Proofview.V82.tactic (apply nnpp)) (tauto_intuitionistic flags))
+    begin function
+      | UserError _ -> Proofview.tclZERO (UserError ("tauto" , str "Classical tauto failed."))
+      | e -> Proofview.tclZERO e
+    end
 
-let tauto_gen flags g =
-  try
-    let nnpp = constr_of_global (Nametab.global_of_path coq_nnpp_path) in
+let tauto_gen flags =
+  (* spiwack: I use [tclBIND (tclUNIT ())] as a way to delay the effect
+     (in [constr_of_global]) to the application of the tactic. *)
+  Proofview.tclBIND
+    (Proofview.tclUNIT ())
+    begin fun () -> try
+      let nnpp = constr_of_global (Nametab.global_of_path coq_nnpp_path) in
     (* try intuitionistic version first to avoid an axiom if possible *)
-    tclORELSE (tauto_intuitionistic flags) (tauto_classical flags nnpp) g
-  with Not_found ->
-    tauto_intuitionistic flags g
+      Tacticals.New.tclORELSE (tauto_intuitionistic flags) (tauto_classical flags nnpp)
+    with Not_found ->
+      tauto_intuitionistic flags
+    end
 
 let default_intuition_tac = <:tactic< auto with * >>
 

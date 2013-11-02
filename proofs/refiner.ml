@@ -66,6 +66,7 @@ exception FailError of int * std_ppcmds Lazy.t
 (* The Fail tactic *)
 let tclFAIL lvl s g = raise (FailError (lvl,lazy s))
 
+(* arnaud: pas utilisée supprimer ? *)
 let tclFAIL_lazy lvl s g = raise (FailError (lvl,s))
 
 let start_tac gls =
@@ -312,27 +313,6 @@ let tclDO n t =
   in
   dorec n
 
-(* Fails if a tactic hasn't finished after a certain amount of time *)
-
-exception TacTimeout
-
-let tclTIMEOUT n t g =
-  let timeout_handler _ = raise TacTimeout in
-  let psh = Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
-  ignore (Unix.alarm n);
-  let restore_timeout () =
-    ignore (Unix.alarm 0);
-    Sys.set_signal Sys.sigalrm psh
-  in
-  try
-    let res = t g in
-    restore_timeout ();
-    res
-  with
-    | TacTimeout ->
-      restore_timeout ();
-      errorlabstrm "Refiner.tclTIMEOUT" (str"Timeout!")
-    | reraise -> restore_timeout (); raise reraise
 
 (* Beware: call by need of CAML, g is needed *)
 let rec tclREPEAT t g =
@@ -398,8 +378,7 @@ let set_info_printer f = pp_info := f
 
 (* Check that holes in arguments have been resolved *)
 
-let check_evars env sigma extsigma gl =
-  let origsigma = gl.sigma in
+let check_evars env sigma extsigma origsigma =
   let rest =
     Evd.fold_undefined (fun evk evi acc ->
       if Evd.is_undefined extsigma evk && not (Evd.mem origsigma evk) then
@@ -415,10 +394,14 @@ let check_evars env sigma extsigma gl =
     let evi = Evarutil.nf_evar_info sigma evi in
     Pretype_errors.error_unsolvable_implicit loc env sigma evi k None
 
+let gl_check_evars env sigma extsigma gl =
+  let origsigma = gl.sigma in
+  check_evars env sigma extsigma origsigma
+
 let tclWITHHOLES accept_unresolved_holes tac sigma c gl =
   if sigma == project gl then tac c gl
   else
     let res = tclTHEN (tclEVARS sigma) (tac c) gl in
     if not accept_unresolved_holes then
-      check_evars (pf_env gl) (res).sigma sigma gl;
+      gl_check_evars (pf_env gl) (res).sigma sigma gl;
     res

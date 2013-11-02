@@ -313,22 +313,22 @@ let rec_tac_initializer finite guard thms snl =
 
 let start_proof_with_initialization kind recguard thms snl hook =
   let intro_tac (_, (_, (ids, _))) =
-    Refiner.tclMAP (function
+    Tacticals.New.tclMAP (function
     | Name id -> Tactics.intro_mustbe_force id
     | Anonymous -> Tactics.intro) (List.rev ids) in
   let init_tac,guard = match recguard with
   | Some (finite,guard,init_tac) ->
-      let rec_tac = rec_tac_initializer finite guard thms snl in
+      let rec_tac = Proofview.V82.tactic (rec_tac_initializer finite guard thms snl) in
       Some (match init_tac with
         | None -> 
             if Flags.is_auto_intros () then 
-              tclTHENS rec_tac (List.map intro_tac thms)
+              Tacticals.New.tclTHENS rec_tac (List.map intro_tac thms)
             else
               rec_tac
         | Some tacl ->
-            tclTHENS rec_tac
+            Tacticals.New.tclTHENS rec_tac
             (if Flags.is_auto_intros () then
-              List.map2 (fun tac thm -> tclTHEN tac (intro_tac thm)) tacl thms
+              List.map2 (fun tac thm -> Tacticals.New.tclTHEN tac (intro_tac thm)) tacl thms
             else
               tacl)),guard
   | None ->

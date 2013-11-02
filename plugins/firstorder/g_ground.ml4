@@ -79,7 +79,7 @@ let gen_ground_tac flag taco ids bases gl=
       let startseq gl=
 	let seq=empty_seq !ground_depth in
 	extend_with_auto_hints bases (extend_with_ref_list ids seq gl) gl in
-      let result=ground_tac solver startseq gl in
+      let result=ground_tac (Proofview.V82.of_tactic solver) startseq gl in
 	qflag:=backup;result
     with reraise -> qflag:=backup;raise reraise
 
@@ -125,29 +125,31 @@ END
 
 TACTIC EXTEND firstorder
     [ "firstorder" tactic_opt(t) firstorder_using(l) ] ->
-      [ gen_ground_tac true (Option.map eval_tactic t) l [] ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) l []) ]
 |   [ "firstorder" tactic_opt(t) "with" ne_preident_list(l) ] ->
-      [ gen_ground_tac true (Option.map eval_tactic t) [] l ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) [] l) ]
 |   [ "firstorder" tactic_opt(t) firstorder_using(l)
        "with" ne_preident_list(l') ] ->
-      [ gen_ground_tac true (Option.map eval_tactic t) l l' ]
+      [ Proofview.V82.tactic (gen_ground_tac true (Option.map eval_tactic t) l l') ]
 END
 
 TACTIC EXTEND gintuition
   [ "gintuition" tactic_opt(t) ] ->
-     [ gen_ground_tac false (Option.map eval_tactic t) [] [] ]
+     [ Proofview.V82.tactic (gen_ground_tac false (Option.map eval_tactic t) [] []) ]
 END
 
+open Proofview.Notations
 
-let default_declarative_automation gls =
-  tclORELSE
-    (tclORELSE (Auto.h_trivial [] None)
+let default_declarative_automation =
+  Proofview.tclUNIT () >= fun () -> (* delay for [congruence_depth] *)
+  Tacticals.New.tclORELSE
+    (Tacticals.New.tclORELSE (Auto.h_trivial [] None)
     (Cctac.congruence_tac !congruence_depth []))
-    (gen_ground_tac true
-       (Some (tclTHEN
+    (Proofview.V82.tactic (gen_ground_tac true
+       (Some (Tacticals.New.tclTHEN
 		(snd (default_solver ()))
 		(Cctac.congruence_tac !congruence_depth [])))
-       [] []) gls
+       [] []))
 
 
 

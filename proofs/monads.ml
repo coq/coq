@@ -88,7 +88,7 @@ module type Logic = sig
   (* [zero] is usually argument free, but Coq likes to explain errors,
      hence error messages should be carried around. *)
   val zero : exn -> 'a t
-  val plus : 'a t -> 'a t -> 'a t
+  val plus : 'a t -> (exn -> 'a t) -> 'a t
 (** Writing (+) for plus and (>>=) for bind, we shall require that
 
     zero+x = x
@@ -101,7 +101,7 @@ module type Logic = sig
       a result [a].  In the former case it returns [Inr e], otherwise
       it returns [Inl (a,y)] where [y] can be run to get more results
       from [x]. It is a variant of prolog's cut. *)
-  val split : 'a t -> ('a * 'a t , exn ) Util.union t
+  val split : 'a t -> ('a * (exn -> 'a t) , exn ) Util.union t
 end
 (* The [T] argument represents the "global" effect: it is not
    backtracked when backtracking occurs at a [plus]. *)
@@ -142,9 +142,9 @@ end = struct
                 }
 
   let zero e = { go = fun _ fk -> fk e }
-  (* [plus x y] ignores any error raised by [x]. *)
+
   let plus x y = { go = fun sk fk ->
-    x.go sk (fun _ -> y.go sk fk)
+    x.go sk (fun e -> (y e).go sk fk)
                  }
 
   let lift x = { go = fun sk fk ->
@@ -158,19 +158,13 @@ end = struct
 
   (* For [reflect] and [split] see the "Backtracking, Interleaving,
      and Terminating Monad Transformers" paper *)
-  let reflect : ('a*'a t , exn) Util.union -> 'a t = function
+  let reflect : ('a*(exn -> 'a t) , exn) Util.union -> 'a t = function
     | Util.Inr e -> zero e
     | Util.Inl (a,x) -> plus (return a) x
 
   let split x =
-    (* spiwack: I cannot be sure right now, but [anomaly] shouldn't be
-       reachable. If it is reachable there may be some redesign to be
-       done around success continuations. *)
-    let anomaly = Errors.make_anomaly ~label:"Monads.Logic(T).split"
-      (Pp.str "[fk] should ignore this error")
-    in
     let fk e = T.return (Util.Inr e) in
-    let sk a fk = T.return (Util.Inl (a,bind (lift (fk anomaly)) reflect)) in
+    let sk a fk = T.return (Util.Inl (a,fun e -> bind (lift (fk e)) reflect)) in
     lift (x.go sk fk)
 end
 
@@ -199,7 +193,7 @@ end = struct
     let (>>) = seq in
     get >>= fun initial ->
     lift begin
-      (T.plus (run x initial) (run y initial)) 
+      (T.plus (run x initial) (fun e -> run (y e) initial)) 
     end >>= fun { result = a ; state = final } ->
     set final >>
     return a
@@ -217,8 +211,8 @@ end = struct
     lift (T.split (run x initial)) >>= function
       | Util.Inr _ as e -> return e
       | Util.Inl (a,y) ->
-          let y' =
-            lift y >>= fun b ->
+          let y' e =
+            lift (y e) >>= fun b ->
             set b.state >>
             return b.result
           in

@@ -28,9 +28,9 @@ let omega_tactic l =
        | s -> Errors.error ("No Omega knowledge base for type "^s))
     (Util.List.sort_uniquize String.compare l)
   in
-  tclTHEN
-    (tclREPEAT (tclPROGRESS (tclTHENLIST tacs)))
-    omega_solver
+  Tacticals.New.tclTHEN
+    (Tacticals.New.tclREPEAT (Tacticals.New.tclTHENLIST tacs))
+    (omega_solver)
 
 
 TACTIC EXTEND omega

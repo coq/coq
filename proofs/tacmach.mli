@@ -62,7 +62,7 @@ val pf_reduction_of_red_expr : goal sigma -> red_expr -> constr -> constr
 val pf_apply : (env -> evar_map -> 'a) -> goal sigma -> 'a
 val pf_reduce :
   (env -> evar_map -> constr -> constr) ->
-    goal sigma -> constr -> constr
+  goal sigma -> constr -> constr
 
 val pf_whd_betadeltaiota       : goal sigma -> constr -> constr
 val pf_whd_betadeltaiota_stack : goal sigma -> constr -> constr * constr list
@@ -74,7 +74,7 @@ val pf_reduce_to_quantified_ind : goal sigma -> types -> inductive * types
 val pf_reduce_to_atomic_ind     : goal sigma -> types -> inductive * types
 val pf_compute                 : goal sigma -> constr -> constr
 val pf_unfoldn    : (occurrences * evaluable_global_reference) list
-        -> goal sigma -> constr -> constr
+  -> goal sigma -> constr -> constr
 
 val pf_const_value : goal sigma -> constant -> constr
 val pf_conv_x      : goal sigma -> constr -> constr -> bool
@@ -131,3 +131,24 @@ val tclIDTAC_list      : tactic_list
 (** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : goal sigma -> Pp.std_ppcmds
 val pr_glls   : goal list sigma -> Pp.std_ppcmds
+
+(* Variants of [Tacmach] functions built with the new proof engine *)
+module New : sig
+
+  val pf_apply : (env -> evar_map -> 'a) -> 'a Goal.sensitive
+  val pf_global : identifier -> constr Goal.sensitive
+  val of_old : (Proof_type.goal Evd.sigma -> 'a) -> 'a Goal.sensitive
+
+  val pf_get_new_id  : identifier -> identifier Goal.sensitive
+  val pf_ids_of_hyps : identifier list Goal.sensitive
+  val pf_hyps_types : (identifier * types) list Goal.sensitive
+
+  val pf_get_hyp : identifier -> named_declaration Goal.sensitive
+  val pf_get_hyp_typ        : identifier -> types Goal.sensitive
+  val pf_last_hyp           : named_declaration Goal.sensitive
+end
+
+
+
+
+

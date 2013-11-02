@@ -112,10 +112,10 @@ let db_strat db = StratUnary ("topdown", StratHints (false, db))
 let cl_rewrite_clause_db db = cl_rewrite_clause_strat (strategy_of_ast (db_strat db))
 
 TACTIC EXTEND rewrite_strat
-| [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> [ cl_rewrite_clause_strat s (Some id) ]
-| [ "rewrite_strat" rewstrategy(s) ] -> [ cl_rewrite_clause_strat s None ]
-| [ "rewrite_db" preident(db) "in" hyp(id) ] -> [ cl_rewrite_clause_db db (Some id) ]
-| [ "rewrite_db" preident(db) ] -> [ cl_rewrite_clause_db db None ]
+| [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> [ Proofview.V82.tactic (cl_rewrite_clause_strat s (Some id)) ]
+| [ "rewrite_strat" rewstrategy(s) ] -> [ Proofview.V82.tactic (cl_rewrite_clause_strat s None) ]
+| [ "rewrite_db" preident(db) "in" hyp(id) ] -> [ Proofview.V82.tactic (cl_rewrite_clause_db db (Some id)) ]
+| [ "rewrite_db" preident(db) ] -> [ Proofview.V82.tactic (cl_rewrite_clause_db db None) ]
 END
 
 let clsubstitute o c =
@@ -126,9 +126,8 @@ let clsubstitute o c =
           | Some id when is_tac id -> tclIDTAC
           | _ -> cl_rewrite_clause c o AllOccurrences cl)
 
-
 TACTIC EXTEND substitute
-| [ "substitute" orient(o) glob_constr_with_bindings(c) ] -> [ clsubstitute o c ]
+| [ "substitute" orient(o) glob_constr_with_bindings(c) ] -> [ Proofview.V82.tactic (clsubstitute o c) ]
 END
 
 
@@ -136,15 +135,15 @@ END
 
 TACTIC EXTEND setoid_rewrite
    [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) ]
-   -> [ cl_rewrite_clause c o AllOccurrences None ]
+   -> [ Proofview.V82.tactic (cl_rewrite_clause c o AllOccurrences None) ]
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] ->
-      [ cl_rewrite_clause c o AllOccurrences (Some id)]
+      [ Proofview.V82.tactic (cl_rewrite_clause c o AllOccurrences (Some id))]
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] ->
-      [ cl_rewrite_clause c o (occurrences_of occ) None]
+      [ Proofview.V82.tactic (cl_rewrite_clause c o (occurrences_of occ) None)]
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id)] ->
-      [ cl_rewrite_clause c o (occurrences_of occ) (Some id)]
+      [ Proofview.V82.tactic (cl_rewrite_clause c o (occurrences_of occ) (Some id))]
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ)] ->
-      [ cl_rewrite_clause c o (occurrences_of occ) (Some id)]
+      [ Proofview.V82.tactic (cl_rewrite_clause c o (occurrences_of occ) (Some id))]
 END
 
 let cl_rewrite_clause_newtac_tac c o occ cl gl =
@@ -153,15 +152,15 @@ let cl_rewrite_clause_newtac_tac c o occ cl gl =
 
 TACTIC EXTEND GenRew
 | [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ) ] ->
-    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id) ]
+    [ Proofview.V82.tactic (cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id)) ]
 | [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id) ] ->
-    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id) ]
+    [ Proofview.V82.tactic (cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id)) ]
 | [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] ->
-    [ cl_rewrite_clause_newtac_tac c o AllOccurrences (Some id) ]
+    [ Proofview.V82.tactic (cl_rewrite_clause_newtac_tac c o AllOccurrences (Some id)) ]
 | [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] ->
-    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) None ]
+    [ Proofview.V82.tactic (cl_rewrite_clause_newtac_tac c o (occurrences_of occ) None) ]
 | [ "rew" orient(o) glob_constr_with_bindings(c) ] ->
-    [ cl_rewrite_clause_newtac_tac c o AllOccurrences None ]
+    [ Proofview.V82.tactic (cl_rewrite_clause_newtac_tac c o AllOccurrences None) ]
 END
 
 VERNAC COMMAND EXTEND AddRelation CLASSIFIED AS SIDEFF
@@ -269,17 +268,17 @@ TACTIC EXTEND setoid_transitivity
 END
 
 TACTIC EXTEND implify
-[ "implify" hyp(n) ] -> [ implify n ]
+[ "implify" hyp(n) ] -> [ Proofview.V82.tactic (implify n) ]
 END
 
 TACTIC EXTEND fold_match
-[ "fold_match" constr(c) ] -> [ fold_match_tac c ]
+[ "fold_match" constr(c) ] -> [ Proofview.V82.tactic (fold_match_tac c) ]
 END
 
 TACTIC EXTEND fold_matches
-| [ "fold_matches" constr(c) ] -> [ fold_matches_tac c ]
+| [ "fold_matches" constr(c) ] -> [ Proofview.V82.tactic (fold_matches_tac c) ]
 END
 
 TACTIC EXTEND myapply
-| [ "myapply" global(id) constr_list(l) ] -> [ myapply id l ]
+| [ "myapply" global(id) constr_list(l) ] -> [ Proofview.V82.tactic (myapply id l) ]
 END

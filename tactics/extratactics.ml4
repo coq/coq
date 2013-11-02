@@ -31,13 +31,13 @@ TACTIC EXTEND admit
 END
 
 let replace_in_clause_maybe_by (sigma1,c1) c2 in_hyp tac =
-  Refiner.tclWITHHOLES false
+  Tacticals.New.tclWITHHOLES false
     (replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp))
     sigma1
     (Option.map Tacinterp.eval_tactic tac)
 
 let replace_multi_term dir_opt (sigma,c) in_hyp =
-  Refiner.tclWITHHOLES false
+  Tacticals.New.tclWITHHOLES false
     (replace_multi_term dir_opt c)
     sigma
     (glob_in_arg_hyp_to_clause in_hyp)
@@ -49,12 +49,12 @@ END
 
 TACTIC EXTEND replace_term_left
   [ "replace"  "->" open_constr(c) in_arg_hyp(in_hyp) ]
-  -> [ replace_multi_term (Some true) c in_hyp]
+  -> [ replace_multi_term (Some true) c in_hyp ]
 END
 
 TACTIC EXTEND replace_term_right
   [ "replace"  "<-" open_constr(c) in_arg_hyp(in_hyp) ]
-  -> [replace_multi_term (Some false) c in_hyp]
+  -> [ replace_multi_term (Some false) c in_hyp ]
 END
 
 TACTIC EXTEND replace_term
@@ -71,7 +71,7 @@ let induction_arg_of_quantified_hyp = function
    ElimOnIdent and not as "constr" *)
 
 let elimOnConstrWithHoles tac with_evars c =
-  Refiner.tclWITHHOLES with_evars (tac with_evars) 
+  Tacticals.New.tclWITHHOLES with_evars (tac with_evars) 
     c.sigma (Some (ElimOnConstr c.it))
 
 TACTIC EXTEND simplify_eq_main
@@ -114,8 +114,10 @@ TACTIC EXTEND ediscriminate
     [ discr_tac true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
-let discrHyp id gl =
-  discr_main {it = Term.mkVar id,NoBindings; sigma = Refiner.project gl;} gl
+open Proofview.Notations
+let discrHyp id =
+  Goal.defs >>- fun sigma ->
+  discr_main {it = Term.mkVar id,NoBindings; sigma = sigma;}
 
 let injection_main c =
  elimOnConstrWithHoles (injClause None) false c
@@ -158,19 +160,20 @@ TACTIC EXTEND einjection_as
     [ injClause (Some ipat) true (Some (induction_arg_of_quantified_hyp h)) ]
 END
 
-let injHyp id gl =
-  injection_main { it = Term.mkVar id,NoBindings; sigma = Refiner.project gl; } gl
+let injHyp id =
+  Goal.defs >>- fun sigma ->
+  injection_main { it = Term.mkVar id,NoBindings; sigma = sigma; }
 
 TACTIC EXTEND dependent_rewrite
-| [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
+| [ "dependent" "rewrite" orient(b) constr(c) ] -> [ Proofview.V82.tactic (rewriteInConcl b c) ]
 | [ "dependent" "rewrite" orient(b) constr(c) "in" hyp(id) ]
-    -> [ rewriteInHyp b c id ]
+    -> [ Proofview.V82.tactic (rewriteInHyp b c id) ]
 END
 
 TACTIC EXTEND cut_rewrite
-| [ "cutrewrite" orient(b) constr(eqn) ] -> [ cutRewriteInConcl b eqn ]
+| [ "cutrewrite" orient(b) constr(eqn) ] -> [ Proofview.V82.tactic (cutRewriteInConcl b eqn) ]
 | [ "cutrewrite" orient(b) constr(eqn) "in" hyp(id) ]
-    -> [ cutRewriteInHyp b eqn id ]
+    -> [ Proofview.V82.tactic (cutRewriteInHyp b eqn id) ]
 END
 
 (**********************************************************************)
@@ -184,7 +187,7 @@ END
 
 let onSomeWithHoles tac = function
   | None -> tac None
-  | Some c -> Refiner.tclWITHHOLES false tac c.sigma (Some c.it)
+  | Some c -> Tacticals.New.tclWITHHOLES false tac c.sigma (Some c.it)
 
 TACTIC EXTEND contradiction
  [ "contradiction" constr_with_bindings_opt(c) ] ->
@@ -231,7 +234,7 @@ END
 
 let rewrite_star clause orient occs (sigma,c) (tac : glob_tactic_expr option) =
   let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
-  Refiner. tclWITHHOLES false
+  Tacticals.New. tclWITHHOLES false
     (general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings)) sigma true
 
 TACTIC EXTEND rewrite_star
@@ -383,7 +386,7 @@ END
 
 TACTIC EXTEND subst
 | [ "subst" ne_var_list(l) ] -> [ subst l ]
-| [ "subst" ] -> [ fun gl -> subst_all gl ]
+| [ "subst" ] -> [ subst_all ?flags:None ]
 END
 
 let simple_subst_tactic_flags =
@@ -407,8 +410,8 @@ open Tacticals
 
 TACTIC EXTEND instantiate
   [ "instantiate" "(" integer(i) ":=" glob(c) ")" hloc(hl) ] ->
-    [instantiate i c hl  ]
-| [ "instantiate" ] -> [ tclNORMEVAR ]
+    [ Proofview.V82.tactic (instantiate i c hl)  ]
+| [ "instantiate" ] -> [ Proofview.V82.tactic (tclNORMEVAR) ]
 END
 
 
@@ -434,12 +437,12 @@ let transitivity_left_table = Summary.ref [] ~name:"transitivity-steps-l"
 let step left x tac =
   let l =
     List.map (fun lem ->
-      tclTHENLAST
-      (apply_with_bindings (lem, ImplicitBindings [x]))
+      Tacticals.New.tclTHENLAST
+      (Proofview.V82.tactic (apply_with_bindings (lem, ImplicitBindings [x])))
         tac)
       !(if left then transitivity_left_table else transitivity_right_table)
   in
-  tclFIRST l
+  Tacticals.New.tclFIRST l
 
 (* Main function to push lemmas in persistent environment *)
 
@@ -468,12 +471,12 @@ let add_transitivity_lemma left lem =
 
 TACTIC EXTEND stepl
 | ["stepl" constr(c) "by" tactic(tac) ] -> [ step true c (Tacinterp.eval_tactic tac) ]
-| ["stepl" constr(c) ] -> [ step true c tclIDTAC ]
+| ["stepl" constr(c) ] -> [ step true c (Proofview.tclUNIT ()) ]
 END
 
 TACTIC EXTEND stepr
 | ["stepr" constr(c) "by" tactic(tac) ] -> [ step false c (Tacinterp.eval_tactic tac) ]
-| ["stepr" constr(c) ] -> [ step false c tclIDTAC ]
+| ["stepr" constr(c) ] -> [ step false c (Proofview.tclUNIT ()) ]
 END
 
 VERNAC COMMAND EXTEND AddStepl CLASSIFIED AS SIDEFF
@@ -527,7 +530,7 @@ END
     during dependent induction. For internal use. *)
 
 TACTIC EXTEND specialize_eqs
-[ "specialize_eqs" hyp(id) ] -> [ specialize_eqs id ]
+[ "specialize_eqs" hyp(id) ] -> [ Proofview.V82.tactic (specialize_eqs id) ]
 END
 
 (**********************************************************************)
@@ -608,8 +611,8 @@ let hResolve_auto id c t gl =
   resolve_auto 1
 
 TACTIC EXTEND hresolve_core
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ hResolve id c (out_arg occ) t ]
-| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> [ hResolve_auto id c t ]
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "at" int_or_var(occ) "in" constr(t) ] -> [ Proofview.V82.tactic (hResolve id c (out_arg occ) t) ]
+| [ "hresolve_core" "(" ident(id) ":=" constr(c) ")" "in" constr(t) ] -> [ Proofview.V82.tactic (hResolve_auto id c t) ]
 END
 
 (**
@@ -627,7 +630,7 @@ let hget_evar n gl =
   change_in_concl None (mkLetIn (Anonymous,mkEvar ev,ev_type,pf_concl gl)) gl
 
 TACTIC EXTEND hget_evar
-| [ "hget_evar" int_or_var(n) ] -> [ hget_evar (out_arg n) ]
+| [ "hget_evar" int_or_var(n) ] -> [ Proofview.V82.tactic (hget_evar (out_arg n)) ]
 END
 
 (**********************************************************************)
@@ -640,12 +643,13 @@ END
 (* Contributed by Julien Forest and Pierre Courtieu (july 2010)       *)
 (**********************************************************************)
 
-exception Found of tactic
+exception Found of unit Proofview.tactic
 
-let rewrite_except h g =
-  tclMAP (fun id -> if Id.equal id h then tclIDTAC else 
-      tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
-    (Tacmach.pf_ids_of_hyps g) g
+let rewrite_except h =
+  Tacmach.New.pf_ids_of_hyps >>- fun hyps ->
+  Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else 
+      Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
+    hyps
 
 
 let refl_equal = 
@@ -658,31 +662,40 @@ let refl_equal =
 (* This is simply an implementation of the case_eq tactic.  this code
   should be replaced by a call to the tactic but I don't know how to
   call it before it is defined. *)
-let  mkCaseEq a  : tactic =
-     (fun g ->
-       let type_of_a = Tacmach.pf_type_of g a in
-       tclTHENLIST
-         [Hiddentac.h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])];
-          (fun g2 ->
-	    change_in_concl None
-	     (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] (Tacmach.pf_env g2) Evd.empty (Tacmach.pf_concl g2))
-		  g2);
-	  simplest_case a] g);;
+let  mkCaseEq a  : unit Proofview.tactic =
+      Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g a) >>- fun type_of_a ->
+       Tacticals.New.tclTHENLIST
+         [Proofview.V82.tactic (Hiddentac.h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])]);
+          begin
+            Goal.concl >>- fun concl ->
+            Goal.env >>- fun env ->
+            Proofview.V82.tactic begin
+	      change_in_concl None
+	        (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl)
+            end
+          end;
+	  simplest_case a]
 
 
-let case_eq_intros_rewrite x g =
-  let n = nb_prod (Tacmach.pf_concl g) in
+let case_eq_intros_rewrite x =
+  begin
+    Goal.concl >- fun concl ->
+    Goal.return (nb_prod concl)
+  end >>- fun n ->
   (* Pp.msgnl (Printer.pr_lconstr x); *)
-  tclTHENLIST [
+  Tacticals.New.tclTHENLIST [
       mkCaseEq x;
-      (fun g -> 
-	let n' = nb_prod (Tacmach.pf_concl g) in
-	let h = fresh_id (Tacmach.pf_ids_of_hyps g) (Id.of_string "heq") g in
-	tclTHENLIST [ (tclDO (n'-n-1) intro);
-		      Tacmach.introduction h;
-		      rewrite_except h] g
-      )
-    ] g
+    begin
+      Goal.concl >>- fun concl ->
+      Tacmach.New.pf_ids_of_hyps >>- fun hyps ->
+      let n' = nb_prod concl in
+      Tacmach.New.of_old (fun g -> fresh_id hyps (Id.of_string "heq") g) >>- fun h ->
+      Tacticals.New.tclTHENLIST [
+                    Tacticals.New.tclDO (n'-n-1) intro;
+		    Proofview.V82.tactic (Tacmach.introduction h);
+		    rewrite_except h]
+    end
+  ]
 
 let rec find_a_destructable_match t =
   match kind_of_term t with
@@ -698,17 +711,17 @@ let rec find_a_destructable_match t =
 
 let destauto t =
   try find_a_destructable_match t;
-    error "No destructable match found"
+    Proofview.tclZERO (UserError ("",  str"No destructable match found"))
   with Found tac -> tac
 
-let destauto_in id g = 
-  let ctype = Tacmach.pf_type_of g (mkVar id) in
+let destauto_in id = 
+  Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g (mkVar id)) >>- fun ctype ->
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
-  destauto ctype g
+  destauto ctype
 
 TACTIC EXTEND destauto
-| [ "destauto" ] -> [ (fun g -> destauto (Tacmach.pf_concl g) g) ]
+| [ "destauto" ] -> [ Goal.concl >>- fun concl -> destauto concl ]
 | [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
 END
 
@@ -717,14 +730,14 @@ END
 
 TACTIC EXTEND constr_eq
 | [ "constr_eq" constr(x) constr(y) ] -> [
-    if eq_constr x y then tclIDTAC else tclFAIL 0 (str "Not equal") ]
+    if eq_constr x y then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "Not equal") ]
 END
 
 TACTIC EXTEND is_evar
 | [ "is_evar" constr(x) ] ->
     [ match kind_of_term x with
-        | Evar _ -> tclIDTAC
-        | _ -> tclFAIL 0 (str "Not an evar")
+        | Evar _ -> Proofview.tclUNIT ()
+        | _ -> Tacticals.New.tclFAIL 0 (str "Not an evar")
     ]
 END
 
@@ -750,21 +763,21 @@ and has_evar_prec (_, ts1, ts2) =
 
 TACTIC EXTEND has_evar
 | [ "has_evar" constr(x) ] ->
-    [ if has_evar x then tclIDTAC else tclFAIL 0 (str "No evars") ]
+    [ if has_evar x then Proofview.tclUNIT () else Tacticals.New.tclFAIL 0 (str "No evars") ]
 END
 
 TACTIC EXTEND is_hyp
 | [ "is_var" constr(x) ] ->
   [ match kind_of_term x with
-    | Var _ -> tclIDTAC
-    | _ -> tclFAIL 0 (str "Not a variable or hypothesis") ]
+    | Var _ ->  Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (str "Not a variable or hypothesis") ]
 END
 
 TACTIC EXTEND is_fix
 | [ "is_fix" constr(x) ] ->
   [ match kind_of_term x with
-    | Fix _ -> Tacticals.tclIDTAC
-    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a fix definition") ]
+    | Fix _ -> Proofview.tclUNIT ()
+    | _ -> Tacticals.New.tclFAIL 0 (Pp.str "not a fix definition") ]
 END;;
 
 (* Command to grab the evars left unresolved at the end of a proof. *)

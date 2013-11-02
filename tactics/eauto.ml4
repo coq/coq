@@ -42,11 +42,11 @@ let e_assumption gl =
   tclFIRST (List.map assumption (pf_ids_of_hyps gl)) gl
 
 TACTIC EXTEND eassumption
-| [ "eassumption" ] -> [ e_assumption ]
+| [ "eassumption" ] -> [ Proofview.V82.tactic e_assumption ]
 END
 
 TACTIC EXTEND eexact
-| [ "eexact" constr(c) ] -> [ e_give_exact c ]
+| [ "eexact" constr(c) ] -> [ Proofview.V82.tactic (e_give_exact c) ]
 END
 
 let registered_e_assumption gl =
@@ -58,7 +58,7 @@ let registered_e_assumption gl =
 (************************************************************************)
 
 let one_step l gl =
-  [Tactics.intro]
+  [Proofview.V82.of_tactic Tactics.intro]
   @ (List.map h_simplest_eapply (List.map mkVar (pf_ids_of_hyps gl)))
   @ (List.map h_simplest_eapply l)
   @ (List.map assumption (pf_ids_of_hyps gl))
@@ -80,7 +80,7 @@ let prolog_tac l n gl =
     errorlabstrm "Prolog.prolog" (str "Prolog failed.")
 
 TACTIC EXTEND prolog
-| [ "prolog" "[" open_constr_list(l) "]" int_or_var(n) ] -> [ prolog_tac l n ]
+| [ "prolog" "[" open_constr_list(l) "]" int_or_var(n) ] -> [ Proofview.V82.tactic (prolog_tac l n) ]
 END
 
 open Auto
@@ -100,7 +100,7 @@ let unify_e_resolve flags (c,clenv) gls =
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl =
     registered_e_assumption ::
-    (tclTHEN Tactics.intro
+    (tclTHEN (Proofview.V82.of_tactic Tactics.intro)
        (function g'->
 	  let d = pf_last_hyp g' in
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
@@ -134,7 +134,7 @@ and e_my_find_search db_list local_db hdc concl =
                tclTHEN (unify_e_resolve st (term,cl))
 		 (e_trivial_fail_db db_list local_db)
 	   | Unfold_nth c -> h_reduce (Unfold [AllOccurrences,c]) onConcl
-	   | Extern tacast -> conclPattern concl p tacast
+	   | Extern tacast -> Proofview.V82.of_tactic (conclPattern concl p tacast)
        in
        (tac,lazy (pr_autotactic t)))
   in
@@ -241,7 +241,7 @@ module SearchProblem = struct
 	     { depth = s.depth; tacres = res;
 	       last_tactic = pp; dblist = s.dblist;
 	       localdb = ldb :: List.tl s.localdb; prev = ps })
-	  (filter_tactics s.tacres [Tactics.intro,lazy (str "intro")])
+	  (filter_tactics s.tacres [Proofview.V82.of_tactic Tactics.intro,lazy (str "intro")])
       in
       let rec_tacs =
 	let l =
@@ -412,7 +412,7 @@ END
 TACTIC EXTEND eauto
 | [ "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
     hintbases(db) ] ->
-    [ gen_eauto (make_dimension n p) lems db ]
+    [ Proofview.V82.tactic (gen_eauto (make_dimension n p) lems db) ]
 END
 
 TACTIC EXTEND new_eauto
@@ -426,19 +426,19 @@ END
 TACTIC EXTEND debug_eauto
 | [ "debug" "eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
     hintbases(db) ] ->
-    [ gen_eauto ~debug:Debug (make_dimension n p) lems db ]
+    [ Proofview.V82.tactic (gen_eauto ~debug:Debug (make_dimension n p) lems db) ]
 END
 
 TACTIC EXTEND info_eauto
 | [ "info_eauto" int_or_var_opt(n) int_or_var_opt(p) auto_using(lems)
     hintbases(db) ] ->
-    [ gen_eauto ~debug:Info (make_dimension n p) lems db ]
+    [ Proofview.V82.tactic (gen_eauto ~debug:Info (make_dimension n p) lems db) ]
 END
 
 TACTIC EXTEND dfs_eauto
 | [ "dfs" "eauto" int_or_var_opt(p) auto_using(lems)
       hintbases(db) ] ->
-    [ gen_eauto (true, make_depth p) lems db ]
+    [ Proofview.V82.tactic (gen_eauto (true, make_depth p) lems db) ]
 END
 
 let cons a l = a :: l
@@ -472,7 +472,7 @@ let autounfold_tac db cls gl =
 open Extraargs
 
 TACTIC EXTEND autounfold
-| [ "autounfold" hintbases(db) in_arg_hyp(id) ] -> [ autounfold_tac db id ]
+| [ "autounfold" hintbases(db) in_arg_hyp(id) ] -> [ Proofview.V82.tactic (autounfold_tac db id) ]
 END
 
 let unfold_head env (ids, csts) c = 
@@ -537,28 +537,30 @@ let autounfold_one db cl gl =
       
 TACTIC EXTEND autounfold_one
 | [ "autounfold_one" hintbases(db) "in" hyp(id) ] ->
-    [ autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) (Some (id, InHyp)) ]
+    [ Proofview.V82.tactic (autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) (Some (id, InHyp))) ]
 | [ "autounfold_one" hintbases(db) ] ->
-    [ autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) None ]
+    [ Proofview.V82.tactic (autounfold_one (match db with None -> ["core"] | Some x -> "core"::x) None) ]
       END
 
 TACTIC EXTEND autounfoldify
 | [ "autounfoldify" constr(x) ] -> [
+  Proofview.V82.tactic (
     let db = match kind_of_term x with
       | Const c -> Label.to_string (con_label c)
       | _ -> assert false
-    in autounfold ["core";db] onConcl ]
+    in autounfold ["core";db] onConcl 
+  )]
 END
 
 TACTIC EXTEND unify
-| ["unify" constr(x) constr(y) ] -> [ unify x y ]
+| ["unify" constr(x) constr(y) ] -> [ Proofview.V82.tactic (unify x y) ]
 | ["unify" constr(x) constr(y) "with" preident(base)  ] -> [
-    unify ~state:(Hint_db.transparent_state (searchtable_map base)) x y ]
+    Proofview.V82.tactic (unify ~state:(Hint_db.transparent_state (searchtable_map base)) x y) ]
 END
 
 
 TACTIC EXTEND convert_concl_no_check
-| ["convert_concl_no_check" constr(x) ] -> [ convert_concl_no_check x DEFAULTcast ]
+| ["convert_concl_no_check" constr(x) ] -> [ Proofview.V82.tactic (convert_concl_no_check x DEFAULTcast) ]
 END
 
 

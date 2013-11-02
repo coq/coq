@@ -36,7 +36,7 @@ let start_proof (id : Id.t) str hyps c ?init_tac ?compute_guard hook =
   Proof_global.with_current_proof (fun _ p ->
     match init_tac with
     | None -> p
-    | Some tac -> Proof.run_tactic env (Proofview.V82.tactic tac) p)
+    | Some tac -> Proof.run_tactic env tac p)
 
 let cook_this_proof hook p =
   match p with
@@ -92,7 +92,6 @@ let current_proof_statement () =
 
 let solve_nth ?with_end_tac gi tac pr =
   try 
-    let tac = Proofview.V82.tactic tac in
     let tac = match with_end_tac with
       | None -> tac
       | Some etac -> Proofview.tclTHEN tac etac in
@@ -156,6 +155,16 @@ let solve_by_implicit_tactic env sigma evk =
       when
 	Context.named_context_equal (Environ.named_context_of_val evi.evar_hyps)
 	(Environ.named_context env) ->
-      (try build_by_tactic env evi.evar_concl (tclCOMPLETE tac)
+      (try build_by_tactic env evi.evar_concl (Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (Errors.UserError ("",Pp.str"Proof is not complete."))) []))
        with e when Logic.catchable_exception e -> raise Exit)
   | _ -> raise Exit
+
+
+
+
+
+
+
+
+
+

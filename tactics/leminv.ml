@@ -28,6 +28,7 @@ open Declare
 open Tacticals
 open Tactics
 open Decl_kinds
+open Proofview.Notations
 
 let no_inductive_inconstr env constr =
   (str "Cannot recognize an inductive predicate in " ++
@@ -196,8 +197,10 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     (str"Computed inversion goal was not closed in initial signature.");
   *)
   let pf = Proof.start [invEnv,invGoal] in
-  let pf = Proof.run_tactic env 
-    (Proofview.V82.tactic (tclTHEN intro (onLastHypId inv_op))) pf in
+  let pf =
+    Proof.run_tactic env (
+      Tacticals.New.tclTHEN intro (Tacticals.New.onLastHypId inv_op)) pf
+  in
   let pfterm = List.hd (Proof.partial_proof pf) in
   let global_named_context = Global.named_context () in
   let ownSign = ref begin
@@ -278,19 +281,20 @@ let lemInv id c gls =
 	   (str "Cannot refine current goal with the lemma " ++
 	      pr_lconstr_env (Global.env()) c)
 
-let lemInv_gen id c = try_intros_until (fun id -> lemInv id c) id
+let lemInv_gen id c = try_intros_until (fun id -> Proofview.V82.tactic (lemInv id c)) id
 
-let lemInvIn id c ids gls =
-  let hyps = List.map (pf_get_hyp gls) ids in
-  let intros_replace_ids gls =
-    let nb_of_new_hyp  = nb_prod (pf_concl gls) - List.length ids in
+let lemInvIn id c ids =
+  Goal.sensitive_list_map Tacmach.New.pf_get_hyp ids >>- fun hyps ->
+  let intros_replace_ids =
+    Goal.concl >>- fun concl ->
+    let nb_of_new_hyp  = nb_prod concl - List.length ids in
     if nb_of_new_hyp < 1  then
-      intros_replacing ids gls
+      intros_replacing ids
     else
-      (tclTHEN (tclDO nb_of_new_hyp intro) (intros_replacing ids)) gls
+      (Tacticals.New.tclTHEN (Tacticals.New.tclDO nb_of_new_hyp intro) (intros_replacing ids))
   in
-  ((tclTHEN (tclTHEN (bring_hyps hyps) (lemInv id c))
-    (intros_replace_ids)) gls)
+  ((Tacticals.New.tclTHEN (Proofview.V82.tactic (tclTHEN (bring_hyps hyps) (lemInv id c)))
+    (intros_replace_ids)))
 
 let lemInvIn_gen id c l = try_intros_until (fun id -> lemInvIn id c l) id
 

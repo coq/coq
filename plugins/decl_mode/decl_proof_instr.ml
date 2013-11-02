@@ -121,7 +121,7 @@ let start_proof_tac gls=
   tcl_change_info info gls
 
 let go_to_proof_mode () =
-  Pfedit.by start_proof_tac;
+  Pfedit.by (Proofview.V82.tactic start_proof_tac);
   let p = Proof_global.give_me_the_proof () in
   Decl_mode.focus p
 
@@ -214,7 +214,8 @@ let filter_hyps f gls =
 
 let local_hyp_prefix = Id.of_string "___"
 
-let add_justification_hyps keep items gls =
+let add_justification_hyps keep items gls = assert false
+(* arnaud: todo
   let add_aux c gls=
     match kind_of_term c with
 	Var id ->
@@ -226,6 +227,7 @@ let add_justification_hyps keep items gls =
 	    tclTHEN (letin_tac None (Names.Name id) c None Locusops.nowhere)
               (thin_body [id]) gls in
     tclMAP add_aux items gls
+*)
 
 let prepare_goal items gls =
   let tokeep = ref Id.Set.empty in
@@ -235,11 +237,11 @@ let prepare_goal items gls =
        filter_hyps (let keep = !tokeep in fun id -> Id.Set.mem id keep)] gls
 
 let my_automation_tac = ref
-  (fun gls -> anomaly (Pp.str "No automation registered"))
+  (Proofview.tclZERO (Errors.make_anomaly (Pp.str"No automation registered")))
 
 let register_automation_tac tac = my_automation_tac:= tac
 
-let automation_tac gls = !my_automation_tac gls
+let automation_tac = Proofview.tclBIND (Proofview.tclUNIT ()) (fun () -> !my_automation_tac)
 
 let justification tac gls=
     tclORELSE
@@ -253,8 +255,10 @@ let justification tac gls=
 	     daimon_tac gls
 	   end) gls
 
-let default_justification elems gls=
+let default_justification elems gls= assert false
+(* arnaud: todo
   justification (tclTHEN (prepare_goal elems) automation_tac) gls
+*)
 
 (* code for conclusion refining *)
 
@@ -452,7 +456,8 @@ let mk_stat_or_thesis info gls = function
       error "\"thesis for ...\" is not applicable here."
   | Thesis Plain -> pf_concl gls
 
-let just_tac _then cut info gls0 = 
+let just_tac _then cut info gls0 = assert false
+(* arnaud: todo
   let last_item =
     if _then then
       try [mkVar (get_last (pf_env gls0))]
@@ -471,8 +476,10 @@ let just_tac _then cut info gls0 =
       | Some tac ->
 	  (Tacinterp.eval_tactic tac) gls in
     justification (tclTHEN items_tac method_tac) gls0
+*)
 
-let instr_cut mkstat _thus _then cut gls0 =
+let instr_cut mkstat _thus _then cut gls0 = assert false
+(* arnaud:
   let info = get_its_info gls0 in
   let stat = cut.cut_stat in
   let (c_id,_) = match stat.st_label with
@@ -487,7 +494,7 @@ let instr_cut mkstat _thus _then cut gls0 =
     tclTHENS (assert_postpone c_id c_stat)
       [tclTHEN tcl_erase_info (just_tac _then cut info);
        thus_tac] gls0
-
+*)
 
 
 (* iterated equality *)
@@ -505,7 +512,8 @@ let decompose_eq id gls =
 	  else error "Previous step is not an equality."
       | _ -> error "Previous step is not an equality."
 
-let instr_rew _thus rew_side cut gls0 =
+let instr_rew _thus rew_side cut gls0 = assert false
+(* arnaud:
   let last_id =
     try get_last (pf_env gls0)
     with UserError _ -> error "No previous equality."
@@ -546,12 +554,13 @@ let instr_rew _thus rew_side cut gls0 =
 		 (tclTHENS (transitivity rhs)
 		    [exact_check (mkVar last_id);just_tac]);
 	       thus_tac new_eq] gls0
-
+*)
 
 
 (* tactics for claim/focus *)
 
-let instr_claim _thus st gls0 =
+let instr_claim _thus st gls0 = assert false
+(* arnaud: todo
   let info = get_its_info gls0 in
   let (id,_) = match st.st_label with
       Anonymous -> pf_get_new_id (Id.of_string "_claim") gls0,false
@@ -565,10 +574,12 @@ let instr_claim _thus st gls0 =
     tclTHENS (assert_postpone id st.st_it)
       [thus_tac;
        tcl_change_info ninfo1] gls0
+*)
 
 (* tactics for assume *)
 
-let push_intro_tac coerce nam gls =
+let push_intro_tac coerce nam gls = assert false
+(* arnaud: todo
       let (hid,_) =
 	match nam with
 	    Anonymous -> pf_get_new_id (Id.of_string "_hyp") gls,false
@@ -577,6 +588,7 @@ let push_intro_tac coerce nam gls =
 	  [intro_mustbe_force hid;
 	   coerce hid]
 	  gls
+*)
 
 let assume_tac hyps gls =
   List.fold_right
@@ -643,7 +655,8 @@ let rec build_applist prod = function
       let ctx,head = build_applist (prod_applist prod [mkMeta n]) q in
 	(n,typ)::ctx,head
 
-let instr_suffices _then cut gls0 =
+let instr_suffices _then cut gls0 = assert false
+(* arnaud: todo
   let info = get_its_info gls0 in
   let c_id = pf_get_new_id (Id.of_string "_cofact") gls0 in
   let ctx,hd = cut.cut_stat in
@@ -659,6 +672,7 @@ let instr_suffices _then cut gls0 =
 	   tcl_erase_info;
 	   just_tac _then cut info];
       thus_tac] gls0
+*)
 
 (* tactics for consider/given *)
 
@@ -678,7 +692,8 @@ let conjunction_arity id gls =
 	    List.length rc
       | _ -> raise Not_found
 
-let rec intron_then n ids ltac gls =
+let rec intron_then n ids ltac gls = assert false
+(* arnaud:
   if n<=0 then
     ltac ids gls
   else
@@ -686,9 +701,11 @@ let rec intron_then n ids ltac gls =
       tclTHEN
 	(intro_mustbe_force id)
 	(intron_then (pred n) (id::ids) ltac) gls
+*)
 
 
-let rec consider_match may_intro introduced available expected gls =
+let rec consider_match may_intro introduced available expected gls = assert false
+(* arnaud:
   match available,expected with
       [],[] ->
 	  tclIDTAC gls
@@ -731,8 +748,10 @@ let rec consider_match may_intro introduced available expected gls =
 			 (List.rev_append l rest_ids) expected)] gls)
 	  end
 	  gls
+*)
 
-let consider_tac c hyps gls =
+let consider_tac c hyps gls = assert false
+(* arnaud: todo
   match kind_of_term (strip_outer_cast c) with
       Var id ->
 	consider_match false [] [id] hyps gls
@@ -741,6 +760,7 @@ let consider_tac c hyps gls =
 	tclTHEN
 	  (forward None (Some (Loc.ghost, IntroIdentifier id)) c)
  	  (consider_match false [] [id] hyps) gls
+*)
 
 
 let given_tac hyps gls =
@@ -768,9 +788,11 @@ let rec build_function args body =
 	  mkLambda (Name id, st.st_it, subst_term (mkVar id) pfun)
     | [] -> body
 
-let define_tac id args body gls =
+let define_tac id args body gls = assert false
+(* arnaud: todo:
   let t = build_function args body in
     letin_tac None (Name id) t None Locusops.nowhere gls
+*)
 
 (* tactics for reconsider *)
 
@@ -903,7 +925,8 @@ let register_nodep_subcase id= function
       end
   | _ -> anomaly (Pp.str "wrong stack state")
 
-let suppose_tac hyps gls0 =
+let suppose_tac hyps gls0 = assert false
+(* arnaud: todo
   let info = get_its_info gls0 in
   let thesis = pf_concl gls0 in
   let id = pf_get_new_id (Id.of_string "subcase_") gls0 in
@@ -916,6 +939,7 @@ let suppose_tac hyps gls0 =
 		    assume_tac hyps;
 		    clear old_clauses];
        tcl_change_info ninfo2] gls0
+*)
 
 (* suppose it is ... *)
 
@@ -1104,7 +1128,8 @@ let rec register_dep_subcase id env per_info pat = function
 	(EK_dep (start_tree env per_info.per_ind per_info.per_wf))
   | EK_dep tree -> EK_dep (add_branch id [[pat,per_info.per_wf]] tree)
 
-let case_tac params pat_info hyps gls0 =
+let case_tac params pat_info hyps gls0 = assert false
+(* arnaud: todo
   let info = get_its_info gls0 in
   let id = pf_get_new_id (Id.of_string "subcase_") gls0 in
   let et,per_info,ek,old_clauses,rest =
@@ -1125,6 +1150,7 @@ let case_tac params pat_info hyps gls0 =
 	  assume_hyps_or_theses hyps;
 	  clear old_clauses];
        tcl_change_info ninfo2] gls0
+*)
 
 (* end cases *)
 
@@ -1179,7 +1205,8 @@ let hrec_for fix_id per_info gls obj_id =
     compose_lam rc (whd_beta gls.sigma hd2)
 
 
-let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
+let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls = assert false
+(* arnaud: todo
   match tree, objs  with
       Close_patt t,_ ->
 	let args0 = pop_stacks args in
@@ -1272,6 +1299,7 @@ let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
 	anomaly ~label:"execute_cases " (Pp.str "Nothing to skip")
     | End_patt (_,_) , _ :: _  ->
 	anomaly ~label:"execute_cases " (Pp.str "End of branch with garbage left")
+*)
 
 let understand_my_constr c gls =
   let env = pf_env gls in
@@ -1283,13 +1311,16 @@ let understand_my_constr c gls =
   in
   Pretyping.understand_tcc (sig_sig gls) env ~expected_type:(Pretyping.OfType (pf_concl gls)) (frob rawc)
 
-let my_refine c gls =
+let my_refine c gls = assert false
+(* arnaud: todo
   let oc = understand_my_constr c gls in
   Refine.refine oc gls
+*)
 
 (* end focus/claim *)
 
-let end_tac et2 gls =
+let end_tac et2 gls = assert false
+(* arnaud: todo
   let info = get_its_info gls in
   let et1,pi,ek,clauses =
     match info.pm_stack with
@@ -1354,6 +1385,7 @@ let end_tac et2 gls =
 			     [mkVar c_id]  0 tree] gls0
 		  end
       end gls
+*)
 
 (* escape *)
 
@@ -1463,7 +1495,7 @@ let do_instr raw_instr pts =
       let glob_instr = intern_proof_instr ist raw_instr in
       let instr =
 	interp_proof_instr (get_its_info gl) sigma env glob_instr in
-      Pfedit.by (tclTHEN (eval_instr instr) clean_tmp)
+      Pfedit.by (Proofview.V82.tactic (tclTHEN (eval_instr instr) clean_tmp))
     else () end;
   postprocess pts raw_instr.instr;
   (* spiwack: this should restore a compatible semantics with

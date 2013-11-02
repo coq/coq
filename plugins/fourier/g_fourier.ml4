@@ -11,5 +11,5 @@
 open FourierR
 
 TACTIC EXTEND fourier
-  [ "fourierz" ] -> [ fourier ]
+  [ "fourierz" ] -> [ Proofview.V82.tactic fourier ]
 END

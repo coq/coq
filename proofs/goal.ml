@@ -74,6 +74,14 @@ let rec advance sigma g =
     | Evd.Evar_defined _ -> None
     | _ -> Some g
 
+
+
+(* Equality function on goals *)
+let equal evars1 gl1 evars2 gl2 =
+  let evi1 = content evars1 gl1 in
+  let evi2 = content evars2 gl2 in
+  Evd.eq_evar_info evi1 evi2
+
 (*** Goal tactics ***)
 
 
@@ -324,6 +332,9 @@ let clear_body idents env rdefs gl info =
 
 (*** Sensitive primitives ***)
 
+(* representation of the goal in form of an {!Evd.evar_info} *)
+let info _ _ _ info = info
+
 (* [concl] is the conclusion of the current goal *)
 let concl _ _ _ info =
   Evd.evar_concl info
@@ -353,10 +364,10 @@ let plus s1 s2 env rdefs goal info =
   with UndefinedHere -> s2 env rdefs goal info
 
 (* Equality of two goals *)
-let equal { content = e1 } { content = e2 } = Evar.equal e1 e2
+let equal_pointer { content = e1 } { content = e2 } = Evar.equal e1 e2
 
 let here goal value _ _ goal' _ =
-  if equal goal goal' then
+  if equal_pointer goal goal' then
     value
   else
     raise UndefinedHere
@@ -368,7 +379,7 @@ let rec list_mem_with eq x = function
   | [] -> false
 
 let here_list goals value _ _ goal' _ =
-  if list_mem_with equal goal' goals then
+  if list_mem_with equal_pointer goal' goals then
     value
   else
     raise UndefinedHere
@@ -459,6 +470,16 @@ let rec list_map f l s =
                let (l,s) = list_map f l s in
 	       (a::l,s)
 
+(* Another instance of the generic monadic map *)
+let rec sensitive_list_map f = function
+  | [] -> return []
+  | a::l ->
+      bind (f a) begin fun a' ->
+      bind (sensitive_list_map f l) begin fun l' ->
+      return (a'::l')
+      end
+      end
+
 
 (* Layer to implement v8.2 tactic engine ontop of the new architecture.
    Types are different from what they used to be due to a change of the
@@ -507,12 +528,6 @@ module V82 = struct
     let inst = Array.of_list (List.map mkVar ids) in
     let ev = Term.mkEvar (evk,inst) in
     (build evk, ev, evars)
-
-  (* Equality function on goals *)
-  let equal evars gl1 gl2 =
-    let evi1 = content evars gl1 in
-    let evi2 = content evars gl2 in
-    Evd.eq_evar_info evi1 evi2
 
   (* Creates a dummy [goal sigma] for use in auto *)
   let dummy_goal =
@@ -587,4 +602,8 @@ module V82 = struct
 					    t
 				       ) ~init:(concl sigma gl) env
 
+  let to_sensitive f _ rsigma g _ =
+    f { Evd.it = g ; sigma = !rsigma }
+  let change_evar_map sigma _ rsigma _ _ =
+    (rsigma := sigma)
 end

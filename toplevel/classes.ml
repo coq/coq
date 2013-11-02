@@ -117,7 +117,7 @@ let declare_instance_constant k pri global imps ?hook id term termtype =
 
 let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
     ?(generalize=true)
-    ?(tac:Proof_type.tactic option) ?hook pri =
+    ?(tac:unit Proofview.tactic option) ?hook pri =
   let env = Global.env() in
   let evars = ref Evd.empty in
   let tclass, ids =
@@ -301,7 +301,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 		if not (Option.is_empty term) then 
 		  Pfedit.by (!refine_ref (evm, Option.get term))
 		else if Flags.is_auto_intros () then
-		  Pfedit.by (Refiner.tclDO len Tactics.intro);
+		  Pfedit.by (Tacticals.New.tclDO len Tactics.intro);
 		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();
 	       id)
 	end)

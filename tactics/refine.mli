@@ -8,4 +8,4 @@
 
 open Tacmach
 
-val refine : Evd.open_constr -> tactic
+val refine : Evd.open_constr -> unit Proofview.tactic

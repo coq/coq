@@ -9,12 +9,12 @@
 open Term
 open Proof_type
 
-val proof_tac: Ccproof.proof -> Proof_type.tactic
+val proof_tac: Ccproof.proof -> unit Proofview.tactic
 
-val cc_tactic : int -> constr list -> tactic
+val cc_tactic : int -> constr list ->  unit Proofview.tactic
 
 val cc_fail : tactic
 
-val congruence_tac : int -> constr list -> tactic
+val congruence_tac : int -> constr list -> unit Proofview.tactic
 
-val f_equal : tactic
+val f_equal : unit Proofview.tactic

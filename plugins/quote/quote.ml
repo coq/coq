@@ -109,6 +109,7 @@ open Pattern
 open Patternops
 open Matching
 open Tacmach
+open Proofview.Notations
 (*i*)
 
 (*s First, we need to access some Coq constants
@@ -219,14 +220,16 @@ let compute_rhs bodyi index_of_f =
 
 (*s Now the function [compute_ivs] itself *)
 
-let compute_ivs gl f cs =
+let compute_ivs f cs =
   let cst = try destConst f with DestKO -> i_can't_do_that () in
   let body = Environ.constant_value (Global.env()) cst in
   match decomp_term body with
     | Fix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->
         let (args3, body3) = decompose_lam body2 in
         let nargs3 = List.length args3 in
-        begin match decomp_term body3 with
+	Tacmach.New.pf_apply Reductionops.is_conv >- fun is_conv ->
+        Goal.return
+          begin match decomp_term body3 with
           | Case(_,p,c,lci) -> (* <p> Case c of c1 ... cn end *)
               let n_lhs_rhs = ref []
               and v_lhs = ref (None : constr option)
@@ -245,8 +248,7 @@ let compute_ivs gl f cs =
            (* Then we test if the RHS is the RHS for variables *)
                    else begin match decompose_app bodyi with
                      | vmf, [_; _; a3; a4 ]
-                         when isRel a3 && isRel a4 &&
-			   pf_conv_x gl vmf
+                         when isRel a3 && isRel a4 && is_conv vmf
                            (Lazy.force coq_varmap_find)->
                              v_lhs := Some (compute_lhs
                                               (snd (List.hd args3))
@@ -389,7 +391,10 @@ module Constrhash = Hashtbl.Make
   [ivs : inversion_scheme]\\
   [lc: constr list]\\
   [gl: goal sigma]\\ *)
-let quote_terms ivs lc gl =
+let quote_terms ivs lc =
+  (* spiwack: [Goal.return () >- fun () -> … ] suspends the effects in
+     [Coqlib.check_required_library]. *)
+  Goal.return () >- fun () ->
   Coqlib.check_required_library ["Coq";"quote";"Quote"];
   let varhash  = (Constrhash.create 17 : constr Constrhash.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
@@ -436,36 +441,41 @@ let quote_terms ivs lc gl =
     auxl ivs.normal_lhs_rhs
   in
   let lp = List.map aux lc in
-  (lp, (btree_of_array (Array.of_list (List.rev !varlist))
-          ivs.return_type ))
+  Goal.return begin
+    (lp, (btree_of_array (Array.of_list (List.rev !varlist))
+            ivs.return_type ))
+  end
 
 (*s actually we could "quote" a list of terms instead of a single
   term. Ring for example needs that, but Ring doesn't use Quote
   yet. *)
 
-let quote f lid gl =
-  let f = pf_global gl f in
-  let cl = List.map (pf_global gl) lid in
-  let ivs = compute_ivs gl f cl in
-  let (p, vm) = match quote_terms ivs [(pf_concl gl)] gl with
+let quote f lid =
+  Tacmach.New.pf_global f >>- fun f ->
+  Goal.sensitive_list_map Tacmach.New.pf_global lid >>- fun cl ->
+  compute_ivs f cl >>- fun ivs ->
+  Goal.concl >>- fun concl ->
+  quote_terms ivs [concl] >>- fun quoted_terms ->
+  let (p, vm) = match quoted_terms with
     | [p], vm -> (p,vm)
     | _ -> assert false
   in
   match ivs.variable_lhs with
-    | None -> Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast gl
-    | Some _ -> Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast gl
+    | None -> Proofview.V82.tactic (Tactics.convert_concl (mkApp (f, [| p |])) DEFAULTcast)
+    | Some _ -> Proofview.V82.tactic (Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast)
 
-let gen_quote cont c f lid gl =
-  let f = pf_global gl f in
-  let cl = List.map (pf_global gl) lid in
-  let ivs = compute_ivs gl f cl in
-  let (p, vm) = match quote_terms ivs [c] gl with
+let gen_quote cont c f lid =
+  Tacmach.New.pf_global f >>- fun f ->
+  Goal.sensitive_list_map Tacmach.New.pf_global lid >>- fun cl ->
+  compute_ivs f cl >>- fun ivs ->
+  quote_terms ivs [c] >>- fun quoted_terms ->
+  let (p, vm) = match quoted_terms with
     | [p], vm -> (p,vm)
     | _ -> assert false
   in
   match ivs.variable_lhs with
-    | None -> cont (mkApp (f, [| p |])) gl
-    | Some _ -> cont (mkApp (f, [| vm; p |])) gl
+    | None -> cont (mkApp (f, [| p |]))
+    | Some _ -> cont (mkApp (f, [| vm; p |]))
 
 (*i
 

@@ -71,7 +71,7 @@ END
 TACTIC EXTEND newfuninv
    [ "functional" "inversion"  quantified_hypothesis(hyp) reference_opt(fname) ] ->
      [
-       Invfun.invfun hyp fname
+       Proofview.V82.tactic (Invfun.invfun hyp fname)
      ]
 END
 
@@ -98,7 +98,7 @@ TACTIC EXTEND newfunind
 	 | [c] -> c
 	 | c::cl -> applist(c,cl)
        in
-       Extratactics.onSomeWithHoles (fun x -> functional_induction true c x pat) princl ]
+       Extratactics.onSomeWithHoles (fun x -> Proofview.V82.tactic (functional_induction true c x pat)) princl ]
 END
 (***** debug only ***)
 TACTIC EXTEND snewfunind
@@ -109,7 +109,7 @@ TACTIC EXTEND snewfunind
 	 | [c] -> c
 	 | c::cl -> applist(c,cl)
        in
-       Extratactics.onSomeWithHoles (fun x -> functional_induction false c x pat) princl ]
+       Extratactics.onSomeWithHoles (fun x -> Proofview.V82.tactic (functional_induction false c x pat)) princl ]
 END
 
 
@@ -318,10 +318,10 @@ let mkEq typ c1 c2 =
 let poseq_unsafe idunsafe cstr gl =
   let typ = Tacmach.pf_type_of gl cstr in
   tclTHEN
-    (Tactics.letin_tac None (Name idunsafe) cstr None Locusops.allHypsAndConcl)
+    (Proofview.V82.of_tactic (Tactics.letin_tac None (Name idunsafe) cstr None Locusops.allHypsAndConcl))
     (tclTHENFIRST
-      (Tactics.assert_tac Anonymous (mkEq typ (mkVar idunsafe) cstr))
-      Tactics.reflexivity)
+      (Proofview.V82.of_tactic (Tactics.assert_tac Anonymous (mkEq typ (mkVar idunsafe) cstr)))
+      (Proofview.V82.of_tactic Tactics.reflexivity))
     gl
 
 
@@ -432,7 +432,7 @@ TACTIC EXTEND finduction
 	  | Some(n) when n<=0 -> Errors.error "numerical argument must be > 0"
 	  | _ ->
 	      let heuristic = chose_heuristic oi in
-	      finduction (Some id) heuristic tclIDTAC
+	      Proofview.V82.tactic (finduction (Some id) heuristic tclIDTAC)
       ]
 END
 
@@ -442,13 +442,13 @@ TACTIC EXTEND fauto
     [ "fauto" tactic(tac)] ->
       [
 	let heuristic = chose_heuristic None in
-	finduction None heuristic (Tacinterp.eval_tactic tac)
+	Proofview.V82.tactic (finduction None heuristic (Proofview.V82.of_tactic (Tacinterp.eval_tactic tac)))
       ]
   |
     [ "fauto" ] ->
       [
 	let heuristic = chose_heuristic None in
-	finduction None heuristic tclIDTAC
+	Proofview.V82.tactic (finduction None heuristic tclIDTAC)
       ]
 
 END
@@ -456,7 +456,7 @@ END
 
 TACTIC EXTEND poseq
   [ "poseq" ident(x) constr(c) ] ->
-      [ poseq x c ]
+      [ Proofview.V82.tactic (poseq x c) ]
 END
 
 VERNAC COMMAND EXTEND Showindinfo CLASSIFIED AS QUERY

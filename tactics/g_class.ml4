@@ -63,8 +63,8 @@ VERNAC COMMAND EXTEND Typeclasses_Settings CLASSIFIED AS SIDEFF
 END
 
 TACTIC EXTEND typeclasses_eauto
-| [ "typeclasses" "eauto" "with" ne_preident_list(l) ] -> [ typeclasses_eauto l ]
-| [ "typeclasses" "eauto" ] -> [ typeclasses_eauto ~only_classes:true [Auto.typeclasses_db] ]
+| [ "typeclasses" "eauto" "with" ne_preident_list(l) ] -> [ Proofview.V82.tactic (typeclasses_eauto l) ]
+| [ "typeclasses" "eauto" ] -> [ Proofview.V82.tactic (typeclasses_eauto ~only_classes:true [Auto.typeclasses_db]) ]
 END
 
 TACTIC EXTEND head_of_constr
@@ -76,9 +76,9 @@ TACTIC EXTEND not_evar
 END
 
 TACTIC EXTEND is_ground
-  [ "is_ground" constr(ty) ] -> [ is_ground ty ]
+  [ "is_ground" constr(ty) ] -> [ Proofview.V82.tactic (is_ground ty) ]
 END
 
 TACTIC EXTEND autoapply
-  [ "autoapply" constr(c) "using" preident(i) ] -> [ autoapply c i ]
+  [ "autoapply" constr(c) "using" preident(i) ] -> [ Proofview.V82.tactic (autoapply c i) ]
 END

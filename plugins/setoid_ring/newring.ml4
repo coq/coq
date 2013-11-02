@@ -97,9 +97,9 @@ let protect_tac_in map id =
 
 TACTIC EXTEND protect_fv
   [ "protect_fv" string(map) "in" ident(id) ] ->
-    [ protect_tac_in map id ]
+    [ Proofview.V82.tactic (protect_tac_in map id) ]
 | [ "protect_fv" string(map) ] ->
-    [ protect_tac map ]
+    [ Proofview.V82.tactic (protect_tac map) ]
 END;;
 
 (****************************************************************************)
@@ -112,7 +112,7 @@ let closed_term t l =
 
 TACTIC EXTEND closed_term
   [ "closed_term" constr(t) "[" ne_reference_list(l) "]" ] ->
-    [ closed_term t l ]
+    [ Proofview.V82.tactic (closed_term t l) ]
 END
 ;;
 
@@ -192,7 +192,7 @@ let exec_tactic env n f args =
     Tacexp(TacFun(List.map(fun id -> Some id) lid,
                   Tacintern.glob_tactic(tacticIn get_res))) in
   let _ =
-    Tacinterp.eval_tactic(ltac_call f (args@[getter])) (dummy_goal env) in
+    Proofview.V82.of_tactic (Tacinterp.eval_tactic(ltac_call f (args@[getter]))) (dummy_goal env) in
   !res
 
 let constr_of v = match Value.to_constr v with
@@ -795,15 +795,17 @@ let ltac_ring_structure e =
   [req;sth;ext;morph;th;cst_tac;pow_tac;
    lemma1;lemma2;pretac;posttac]
 
-let ring_lookup (f:glob_tactic_expr) lH rl t gl =
-  let env = pf_env gl in
-  let sigma = project gl in
+open Proofview.Notations
+
+let ring_lookup (f:glob_tactic_expr) lH rl t =
+  Goal.env >>- fun env ->
+  Goal.defs >>- fun sigma ->
   let rl = make_args_list rl t in
   let e = find_ring_structure env sigma rl in
   let rl = carg (make_term_list e.ring_carrier rl) in
   let lH = carg (make_hyp_list env lH) in
   let ring = ltac_ring_structure e in
-  ltac_apply f (ring@[lH;rl]) gl
+  ltac_apply f (ring@[lH;rl])
 
 TACTIC EXTEND ring_lookup
 | [ "ring_lookup" tactic0(f) "[" constr_list(lH) "]" ne_constr_list(lrt) ] ->
@@ -1116,15 +1118,15 @@ let ltac_field_structure e =
   [req;cst_tac;pow_tac;field_ok;field_simpl_ok;field_simpl_eq_ok;
    field_simpl_eq_in_ok;cond_ok;pretac;posttac]
 
-let field_lookup (f:glob_tactic_expr) lH rl t gl =
-  let env = pf_env gl in
-  let sigma = project gl in
+let field_lookup (f:glob_tactic_expr) lH rl t =
+  Goal.env >>- fun env ->
+  Goal.defs >>- fun sigma ->
   let rl = make_args_list rl t in
   let e = find_field_structure env sigma rl in
   let rl = carg (make_term_list e.field_carrier rl) in
   let lH = carg (make_hyp_list env lH) in
   let field = ltac_field_structure e in
-  ltac_apply f (field@[lH;rl]) gl
+  ltac_apply f (field@[lH;rl])
 
 
 TACTIC EXTEND field_lookup

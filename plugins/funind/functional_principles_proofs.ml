@@ -175,7 +175,7 @@ let change_hyp_with_using msg hyp_id t tac : tactic =
   fun g ->
     let prov_id = pf_get_new_id hyp_id g in
     tclTHENS
-      ((* observe_tac msg *) (assert_by (Name prov_id) t (tclCOMPLETE tac)))
+      ((* observe_tac msg *) Proofview.V82.of_tactic (assert_by (Name prov_id) t (Proofview.V82.tactic (tclCOMPLETE tac))))
       [tclTHENLIST
       [
 	(* observe_tac "change_hyp_with_using thin" *) (thin [hyp_id]);
@@ -189,7 +189,7 @@ let prove_trivial_eq h_id context (constructor,type_of_term,term) =
   let nb_intros = List.length context in
   tclTHENLIST
     [
-      tclDO nb_intros intro; (* introducing context *)
+      tclDO nb_intros (Proofview.V82.of_tactic intro); (* introducing context *)
       (fun g ->
 	 let context_hyps =
 	   fst (list_chop ~msg:"prove_trivial_eq : " nb_intros (pf_ids_of_hyps g))
@@ -322,7 +322,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
     in
     let prove_new_hyp : tactic =
       tclTHEN
-	(tclDO ctxt_size intro)
+	(tclDO ctxt_size (Proofview.V82.of_tactic intro))
 	(fun g ->
 	   let all_ids = pf_ids_of_hyps g in
 	   let new_ids,_  = list_chop ctxt_size all_ids in
@@ -395,7 +395,7 @@ let rewrite_until_var arg_num eq_ids : tactic =
 	| [] -> anomaly (Pp.str "Cannot find a way to prove recursive property");
 	| eq_id::eq_ids ->
 	    tclTHEN
-	      (tclTRY (Equality.rewriteRL (mkVar eq_id)))
+	      (tclTRY (Proofview.V82.of_tactic (Equality.rewriteRL (mkVar eq_id))))
 	      (do_rewrite eq_ids)
 	      g
   in
@@ -433,7 +433,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	      let context_length = List.length context in
 	      tclTHENLIST
 		[
-		  tclDO context_length intro;
+		  tclDO context_length (Proofview.V82.of_tactic intro);
 		  (fun g ->
 		     let context_hyps_ids =
 		       fst (list_chop ~msg:"rec hyp : context_hyps"
@@ -447,7 +447,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 		     in
 (* 		     observe_tac "rec hyp " *)
 		       (tclTHENS
-		       (assert_tac (Name rec_pte_id) t_x)
+		       (Proofview.V82.of_tactic (assert_tac (Name rec_pte_id) t_x))
 		       [
 			 (* observe_tac "prove rec hyp" *) (prove_rec_hyp eq_hyps);
 (* 			observe_tac "prove rec hyp" *)
@@ -484,7 +484,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	  let prove_trivial =
 	    let nb_intro = List.length context in
 	    tclTHENLIST [
-	      tclDO nb_intro intro;
+	      tclDO nb_intro (Proofview.V82.of_tactic intro);
 	      (fun g ->
 		 let context_hyps =
 		   fst (list_chop ~msg:"removing True : context_hyps "nb_intro (pf_ids_of_hyps g))
@@ -583,9 +583,9 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
     tclTHENLIST
       [
 	(* We first introduce the variables *)
-	tclDO nb_first_intro (intro_avoiding dyn_infos.rec_hyps);
+	tclDO nb_first_intro (Proofview.V82.of_tactic (intro_avoiding dyn_infos.rec_hyps));
 	(* Then the equation itself *)
-	intro_using heq_id;
+	Proofview.V82.of_tactic (intro_using heq_id);
 	onLastHypId (fun heq_id -> tclTHENLIST [
 	(* Then the new hypothesis *)
 	tclMAP introduction_no_check dyn_infos.rec_hyps;
@@ -636,7 +636,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
 	fun g ->
 	  let prov_hid = pf_get_new_id hid g in
 	  tclTHENLIST[
-	    pose_proof (Name prov_hid) (mkApp(mkVar hid,args));
+	    Proofview.V82.of_tactic (pose_proof (Name prov_hid) (mkApp(mkVar hid,args)));
 	    thin [hid];
 	    h_rename [prov_hid,hid]
 	  ] g
@@ -704,7 +704,7 @@ let build_proof
 		      thin dyn_infos.rec_hyps;
 		      pattern_option [Locus.AllOccurrencesBut [1],t] None;
 		      (fun g -> observe_tac "toto" (
-			 tclTHENSEQ [h_simplest_case t;
+			 tclTHENSEQ [Proofview.V82.of_tactic (h_simplest_case t);
 				     (fun g' ->
 					let g'_nb_prod = nb_prod (pf_concl g') in
 					let nb_instanciate_partial = g'_nb_prod - g_nb_prod in
@@ -729,7 +729,7 @@ let build_proof
 		match kind_of_term( pf_concl g) with
 		  | Prod _ ->
 		      tclTHEN
-			intro
+			(Proofview.V82.of_tactic intro)
 			(fun g' ->
 			   let (id,_,_) = pf_last_hyp g' in
 			   let new_term =
@@ -965,13 +965,13 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
   let prove_replacement =
     tclTHENSEQ
       [
-	tclDO (nb_params + rec_args_num + 1) intro;
+	tclDO (nb_params + rec_args_num + 1) (Proofview.V82.of_tactic intro);
 	(* observe_tac "" *) (fun g ->
 	   let rec_id = pf_nth_hyp_id g 1 in
 	   tclTHENSEQ
 	     [(* observe_tac "generalize_non_dep in generate_equation_lemma" *) (generalize_non_dep rec_id);
-	      (* observe_tac "h_case" *) (h_case false (mkVar rec_id,NoBindings));
-	      intros_reflexivity] g
+	      (* observe_tac "h_case" *) (Proofview.V82.of_tactic (h_case false (mkVar rec_id,NoBindings)));
+	      (Proofview.V82.of_tactic intros_reflexivity)] g
 	)
       ]
   in
@@ -983,7 +983,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
     (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
     lemma_type
     (fun _ _ -> ());
-  Pfedit.by (prove_replacement);
+  Pfedit.by (Proofview.V82.tactic prove_replacement);
   Lemmas.save_named false
 
 
@@ -1019,12 +1019,12 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
   in
   let nb_intro_to_do = nb_prod (pf_concl g) in
     tclTHEN
-      (tclDO nb_intro_to_do intro)
+      (tclDO nb_intro_to_do (Proofview.V82.of_tactic intro))
       (
 	fun g' ->
 	  let just_introduced = nLastDecls nb_intro_to_do g' in
 	  let just_introduced_id = List.map (fun (id,_,_) -> id) just_introduced in
-	  tclTHEN (Equality.rewriteLR equation_lemma) (revert just_introduced_id) g'
+	  tclTHEN (Proofview.V82.of_tactic (Equality.rewriteLR equation_lemma)) (revert just_introduced_id) g'
       )
       g
 
@@ -1206,9 +1206,9 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
     in
     let first_tac : tactic = (* every operations until fix creations *)
       tclTHENSEQ
-	[ (* observe_tac "introducing params" *) (intros_using (List.rev_map id_of_decl princ_info.params));
-	  (* observe_tac "introducing predictes" *) (intros_using (List.rev_map id_of_decl princ_info.predicates));
-	  (* observe_tac "introducing branches" *) (intros_using (List.rev_map id_of_decl princ_info.branches));
+	[ (* observe_tac "introducing params" *) Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.params));
+	  (* observe_tac "introducing predictes" *) Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.predicates));
+	  (* observe_tac "introducing branches" *) Proofview.V82.of_tactic (intros_using (List.rev_map id_of_decl princ_info.branches));
 	  (* observe_tac "building fixes" *) mk_fixes;
 	]
     in
@@ -1225,7 +1225,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	  let nb_args = fix_info.nb_realargs in
 	  tclTHENSEQ
 	    [
-	      (* observe_tac ("introducing args") *) (tclDO nb_args intro);
+	      (* observe_tac ("introducing args") *) (tclDO nb_args (Proofview.V82.of_tactic intro));
 	      (fun g -> (* replacement of the function by its body *)
 		 let args = nLastDecls nb_args g in
 		 let fix_body = fix_info.body_with_param in
@@ -1289,7 +1289,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	  let nb_args = min (princ_info.nargs) (List.length ctxt) in
 	  tclTHENSEQ
 	    [
-	      tclDO nb_args intro;
+	      tclDO nb_args (Proofview.V82.of_tactic intro);
 	      (fun g -> (* replacement of the function by its body *)
 		 let args = nLastDecls nb_args g in
 		 let args_id = List.map (fun (id,_,_) -> id) args in
@@ -1386,7 +1386,7 @@ let backtrack_eqs_until_hrec hrec eqs : tactic =
   fun gls ->
     let eqs = List.map mkVar eqs in
     let rewrite =
-      tclFIRST (List.map Equality.rewriteRL eqs )
+      tclFIRST (List.map (fun x -> Proofview.V82.of_tactic (Equality.rewriteRL x)) eqs )
     in
     let _,hrec_concl  = decompose_prod (pf_type_of gls (mkVar hrec)) in
     let f_app = Array.last (snd (destApp hrec_concl)) in
@@ -1411,8 +1411,8 @@ let rec rewrite_eqs_in_eqs eqs =
 	       (fun id gl ->
 		  observe_tac
 		    (Format.sprintf "rewrite %s in %s " (Id.to_string eq) (Id.to_string id))
-		    (tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences
-			       true (* dep proofs also: *) true id (mkVar eq) false))
+		    (tclTRY (Proofview.V82.of_tactic (Equality.general_rewrite_in true Locus.AllOccurrences
+			       true (* dep proofs also: *) true id (mkVar eq) false)))
 		    gl
 	       )
 	       eqs
@@ -1543,9 +1543,9 @@ let prove_principle_for_gen
       ((* observe_tac "prove_rec_arg_acc"  *)
 	 (tclCOMPLETE
 	    (tclTHEN
-	       (assert_by (Name wf_thm_id)
+	       (Proofview.V82.of_tactic (assert_by (Name wf_thm_id)
 		  (mkApp (delayed_force well_founded,[|input_type;relation|]))
-		  (fun g -> (* observe_tac "prove wf" *) (tclCOMPLETE (wf_tac is_mes)) g))
+		  (Proofview.V82.tactic (fun g -> (* observe_tac "prove wf" *) (tclCOMPLETE (wf_tac is_mes)) g))))
 	       (
 		 (* observe_tac  *)
 (* 		   "apply wf_thm"  *)
@@ -1583,8 +1583,8 @@ let prove_principle_for_gen
       tclTHENSEQ
 	[
 	  generalize [lemma];
-	  h_intro hid;
-	  Elim.h_decompose_and (mkVar hid);
+	  Proofview.V82.of_tactic (h_intro hid);
+	  Proofview.V82.of_tactic (Elim.h_decompose_and (mkVar hid));
 	  (fun g ->
 	     let new_hyps = pf_ids_of_hyps g in
 	     tcc_list := List.rev (List.subtract Id.equal new_hyps (hid::hyps));
@@ -1606,10 +1606,10 @@ let prove_principle_for_gen
 	(List.rev_map (fun (na,_,_) -> Nameops.out_name na)
 	   (princ_info.args@princ_info.branches@princ_info.predicates@princ_info.params)
 	);
-      (* observe_tac "" *) (assert_by
+      (* observe_tac "" *) Proofview.V82.of_tactic (assert_by
 	 (Name acc_rec_arg_id)
  	 (mkApp (delayed_force acc_rel,[|input_type;relation;mkVar rec_arg_id|]))
-	 (prove_rec_arg_acc)
+	 (Proofview.V82.tactic prove_rec_arg_acc)
       );
 (*       observe_tac "reverting" *) (revert (List.rev (acc_rec_arg_id::args_ids)));
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl () ++  *)
@@ -1617,7 +1617,7 @@ let prove_principle_for_gen
       (* observe_tac "h_fix " *) (h_fix (Some fix_id) (List.length args_ids + 1));
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_type_of g (mkVar fix_id) )); tclIDTAC g); *)
       h_intros (List.rev (acc_rec_arg_id::args_ids));
-      Equality.rewriteLR (mkConst eq_ref);
+      Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_ref));
       (* observe_tac "finish" *) (fun gl' ->
 	 let body =
 	   let _,args = destApp (pf_concl gl') in

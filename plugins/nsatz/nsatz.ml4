@@ -590,7 +590,7 @@ let nsatz_compute t =
   return_term lpol
 
 TACTIC EXTEND nsatz_compute
-| [ "nsatz_compute"  constr(lt) ] -> [ nsatz_compute lt ]
+| [ "nsatz_compute"  constr(lt) ] -> [ Proofview.V82.tactic (nsatz_compute lt) ]
 END
 
 

@@ -21,14 +21,14 @@ let romega_tactic l =
        | s -> Errors.error ("No ROmega knowledge base for type "^s))
     (Util.List.sort_uniquize String.compare l)
   in
-  tclTHEN
-    (tclREPEAT (tclPROGRESS (tclTHENLIST tacs)))
-    (tclTHEN
+  Tacticals.New.tclTHEN
+    (Tacticals.New.tclREPEAT (Proofview.tclPROGRESS (Tacticals.New.tclTHENLIST tacs)))
+    (Tacticals.New.tclTHEN
        (* because of the contradiction process in (r)omega,
           we'd better leave as little as possible in the conclusion,
           for an easier decidability argument. *)
-       Tactics.intros
-       total_reflexive_omega_tactic)
+       (Tactics.intros)
+       (Proofview.V82.tactic total_reflexive_omega_tactic))
 
 
 TACTIC EXTEND romega

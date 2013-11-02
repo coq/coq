@@ -24,6 +24,7 @@ open Tactics
 open Tacticals
 open Ind_tables
 open Misctypes
+open Proofview.Notations
 
 (**********************************************************************)
 (* Generic synthesis of boolean equality *)
@@ -326,7 +327,7 @@ let destruct_ind c =
 so from Ai we can find the the correct eq_Ai bl_ai or lb_ai
 *)
 (* used in the leib -> bool side*)
-let do_replace_lb lb_scheme_key aavoid narg gls p q =
+let do_replace_lb lb_scheme_key aavoid narg p q =
   let avoid = Array.of_list aavoid in
   let do_arg v offset =
   try
@@ -350,35 +351,39 @@ let do_replace_lb lb_scheme_key aavoid narg gls p q =
         )))
       )
   in
-  let type_of_pq = pf_type_of gls p in
+  Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
+  let type_of_pq = type_of p in
     let u,v = destruct_ind type_of_pq
-    in let lb_type_of_p, eff =
-        try 
+    in let lb_type_of_p =
+        try
           let c, eff = find_scheme lb_scheme_key u in
-          mkConst c, eff
+          Proofview.tclUNIT (mkConst c, eff)
         with Not_found ->
           (* spiwack: the format of this error message should probably
 	              be improved. *)
-          let err_msg = string_of_ppcmds
-	                              (str "Leibniz->boolean:" ++
-                                       str "You have to declare the" ++
-				       str "decidability over " ++
-				       Printer.pr_constr type_of_pq ++
-				       str " first.")
+          let err_msg =
+	    (str "Leibniz->boolean:" ++
+             str "You have to declare the" ++
+	     str "decidability over " ++
+	     Printer.pr_constr type_of_pq ++
+	     str " first.")
           in
-          error err_msg
-    in let lb_args = Array.append (Array.append
+          Proofview.tclZERO (Errors.UserError("",err_msg))
+       in
+       lb_type_of_p >= fun (lb_type_of_p,eff) ->
+       let lb_args = Array.append (Array.append
                           (Array.map (fun x -> x) v)
                           (Array.map (fun x -> do_arg x 1) v))
                           (Array.map (fun x -> do_arg x 2) v)
         in let app =  if Array.equal eq_constr lb_args [||]
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
-            in 
-            [Tactics.emit_side_effects eff;
-             Equality.replace p q ; apply app ; Auto.default_auto]
+           in
+           Tacticals.New.tclTHENLIST [
+             Proofview.V82.tactic (Tactics.emit_side_effects eff);
+             Equality.replace p q ; Proofview.V82.tactic (apply app) ; Auto.default_auto]
 
 (* used in the bool -> leib side *)
-let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
+let do_replace_bl bl_scheme_key ind aavoid narg lft rgt =
   let avoid = Array.of_list aavoid in
   let do_arg v offset =
   try
@@ -405,14 +410,16 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
 
   let rec aux l1 l2 =
     match (l1,l2) with
-    | (t1::q1,t2::q2) -> let tt1 = pf_type_of gls t1 in
+    | (t1::q1,t2::q2) ->
+        Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
+        let tt1 = type_of t1 in
         if eq_constr t1 t2 then aux q1 q2
         else (
           let u,v = try  destruct_ind tt1
           (* trick so that the good sequence is returned*)
                 with e when Errors.noncritical e -> ind,[||]
           in if eq_ind u ind
-             then (Equality.replace t1 t2)::(Auto.default_auto)::(aux q1 q2)
+             then Tacticals.New.tclTHENLIST [Equality.replace t1 t2; Auto.default_auto ; aux q1 q2 ]
              else (
                let bl_t1, eff =
                try 
@@ -438,30 +445,36 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
                 let app =  if Array.equal eq_constr bl_args [||]
                            then bl_t1 else mkApp (bl_t1,bl_args)
                 in
-                  (Tactics.emit_side_effects eff)::
-                  (Equality.replace_by t1 t2
-                    (tclTHEN (apply app) (Auto.default_auto)))::(aux q1 q2)
+                Tacticals.New.tclTHENLIST [
+                  Proofview.V82.tactic (Tactics.emit_side_effects eff) ;
+                  Equality.replace_by t1 t2
+                    (Tacticals.New.tclTHEN (Proofview.V82.tactic (apply app)) (Auto.default_auto)) ;
+                  aux q1 q2 ]
               )
         )
-    | ([],[]) -> []
-    | _ -> error "Both side of the equality must have the same arity."
+    | ([],[]) -> Proofview.tclUNIT ()
+    | _ -> Proofview.tclZERO (UserError ("" , str"Both side of the equality must have the same arity."))
   in
-  let (ind1,ca1) =
-    try destApp lft with DestKO -> error "replace failed."
-  and (ind2,ca2) =
-    try destApp rgt with DestKO -> error "replace failed."
-  in
-  let (sp1,i1) =
-    try destInd ind1 with DestKO ->
-      try fst (destConstruct ind1) with DestKO ->
-        error "The expected type is an inductive one."
-  and (sp2,i2) =
-    try destInd ind2 with DestKO ->
-      try fst (destConstruct ind2)  with DestKO ->
-        error "The expected type is an inductive one."
-  in
+  begin try Proofview.tclUNIT (destApp lft)
+    with DestKO ->  Proofview.tclZERO (UserError ("" , str"replace failed."))
+  end >= fun (ind1,ca1) ->
+  begin try Proofview.tclUNIT (destApp rgt)
+    with DestKO -> Proofview.tclZERO (UserError ("" , str"replace failed."))
+  end >= fun (ind2,ca2) ->
+  begin try Proofview.tclUNIT (destInd ind1)
+    with DestKO ->
+      begin try Proofview.tclUNIT (fst (destConstruct ind1))
+        with DestKO -> Proofview.tclZERO (UserError ("" , str"The expected type is an inductive one."))
+      end
+  end >= fun (sp1,i1) ->
+  begin try Proofview.tclUNIT (destInd ind2)
+    with DestKO ->
+      begin try Proofview.tclUNIT (fst (destConstruct ind2))
+        with DestKO -> Proofview.tclZERO (UserError ("" , str"The expected type is an inductive one."))
+      end
+  end >= fun (sp2,i2) ->
   if not (eq_mind sp1 sp2) || not (Int.equal i1 i2)
-  then error "Eq should be on the same type"
+  then Proofview.tclZERO (UserError ("" , str"Eq should be on the same type"))
   else aux (Array.to_list ca1) (Array.to_list ca2)
 
 (*
@@ -530,7 +543,7 @@ let compute_bl_goal ind lnamesparrec nparrec =
               (mkApp(eq,[|mkFullInd ind (nparrec+3);mkVar n;mkVar m|]))
         ))), eff
 
-let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec gsig =
+let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let avoid = ref [] in
       let first_intros =
@@ -538,67 +551,66 @@ let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec gsig =
         ( List.map (fun (_,seq,_,_ ) -> seq) list_id ) @
         ( List.map (fun (_,_,sbl,_ ) -> sbl) list_id )
       in
-      let fresh_first_intros = List.map ( fun s ->
-        let fresh = fresh_id (!avoid) s gsig in
-        avoid := fresh::(!avoid); fresh ) first_intros in
-      let freshn = fresh_id (!avoid) (Id.of_string "x") gsig in
-      let freshm = avoid := freshn::(!avoid);
-            fresh_id (!avoid) (Id.of_string "y") gsig in
-      let freshz = avoid := freshm::(!avoid);
-            fresh_id (!avoid) (Id.of_string "Z") gsig in
+      let fresh_id s =
+        Tacmach.New.of_old begin fun gsig ->
+          let fresh = fresh_id (!avoid) s gsig in
+          avoid := fresh::(!avoid); fresh
+        end
+      in
+      Goal.sensitive_list_map fresh_id first_intros >>- fun fresh_first_intros ->
+      fresh_id (Id.of_string "x") >>- fun freshn ->
+      fresh_id (Id.of_string "y") >>- fun freshm ->
+      fresh_id (Id.of_string "Z") >>- fun freshz ->
   (* try with *)
-      avoid := freshz::(!avoid);
-      tclTHENSEQ [ intros_using fresh_first_intros;
+      Tacticals.New.tclTHENLIST [ intros_using fresh_first_intros;
                      intro_using freshn ;
                      induct_on (mkVar freshn);
                      intro_using freshm;
                      destruct_on (mkVar freshm);
                      intro_using freshz;
                      intros;
-                     tclTRY (
-                      tclORELSE reflexivity (Equality.discr_tac false None)
+                     Tacticals.New.tclTRY (
+                      Tacticals.New.tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     simpl_in_hyp (freshz,Locus.InHyp);
+                     Proofview.V82.tactic (simpl_in_hyp (freshz,Locus.InHyp));
 (*
 repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)
-                    tclREPEAT (
-                      tclTHENSEQ [
+                    Tacticals.New.tclREPEAT (
+                      Tacticals.New.tclTHENLIST [
                          simple_apply_in freshz (andb_prop());
-                         fun gl ->
-                           let fresht = fresh_id (!avoid) (Id.of_string "Z") gsig
-                           in
-                            avoid := fresht::(!avoid);
+                           fresh_id (Id.of_string "Z") >>- fun fresht ->
                             (new_destruct false [Tacexpr.ElimOnConstr
                                       (Evd.empty,((mkVar freshz,NoBindings)))]
                                   None
                                   (None, Some (dl,IntroOrAndPattern [[
                                     dl,IntroIdentifier fresht;
-                                    dl,IntroIdentifier freshz]])) None) gl
+                                    dl,IntroIdentifier freshz]])) None)
                         ]);
 (*
   Ci a1 ... an = Ci b1 ... bn
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
 *)
-                    fun gls-> let gl = pf_concl gls in
+                      Goal.concl >>- fun gl ->
                       match (kind_of_term gl) with
                       | App (c,ca) -> (
                         match (kind_of_term c) with
                         | Ind indeq ->
                             if eq_gr (IndRef indeq) Coqlib.glob_eq
-                            then (
-                              tclTHENSEQ ((do_replace_bl bl_scheme_key ind gls
-				                      (!avoid)
-                                                      nparrec (ca.(2))
-                              (ca.(1)))@[Auto.default_auto]) gls
-                            )
+                            then
+                              Tacticals.New.tclTHEN
+                                (do_replace_bl bl_scheme_key ind
+				   (!avoid)
+                                   nparrec (ca.(2))
+                                   (ca.(1)))
+                                Auto.default_auto
                             else
-                              (error "Failure while solving Boolean->Leibniz.")
-                        | _ -> error "Failure while solving Boolean->Leibniz."
+                              Proofview.tclZERO (UserError ("",str"Failure while solving Boolean->Leibniz."))
+                        | _ -> Proofview.tclZERO (UserError ("", str"Failure while solving Boolean->Leibniz."))
                       )
-                      | _ -> error "Failure while solving Boolean->Leibniz."
+                      | _ -> Proofview.tclZERO (UserError ("", str"Failure while solving Boolean->Leibniz."))
 
-                    ] gsig
+                    ]
 
 let bl_scheme_kind_aux = ref (fun _ -> failwith "Undefined")
 
@@ -661,7 +673,7 @@ let compute_lb_goal ind lnamesparrec nparrec =
               (mkApp(eq,[|bb;mkApp(eqI,[|mkVar n;mkVar m|]);tt|]))
         ))), eff
 
-let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec gsig =
+let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
     let avoid = ref [] in
       let first_intros =
@@ -669,49 +681,50 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec gsig =
         ( List.map (fun (_,seq,_,_) -> seq) list_id ) @
         ( List.map (fun (_,_,_,slb) -> slb) list_id )
       in
-      let fresh_first_intros = List.map ( fun s ->
-        let fresh = fresh_id (!avoid) s gsig in
-        avoid := fresh::(!avoid); fresh ) first_intros in
-      let freshn = fresh_id (!avoid) (Id.of_string "x") gsig in
-      let freshm = avoid := freshn::(!avoid);
-            fresh_id (!avoid) (Id.of_string "y") gsig in
-      let freshz = avoid := freshm::(!avoid);
-            fresh_id (!avoid) (Id.of_string "Z") gsig in
+      let fresh_id s =
+        Tacmach.New.of_old begin fun gsig ->
+          let fresh = fresh_id (!avoid) s gsig in
+          avoid := fresh::(!avoid); fresh
+        end
+      in
+      Goal.sensitive_list_map fresh_id first_intros >>- fun fresh_first_intros ->
+      fresh_id (Id.of_string "x") >>- fun freshn ->
+      fresh_id (Id.of_string "y") >>- fun freshm ->
+      fresh_id (Id.of_string "Z") >>- fun freshz ->
   (* try with *)
-      avoid := freshz::(!avoid);
-      tclTHENSEQ [ intros_using fresh_first_intros;
+      Tacticals.New.tclTHENLIST [ intros_using fresh_first_intros;
                      intro_using freshn ;
                      induct_on (mkVar freshn);
                      intro_using freshm;
                      destruct_on (mkVar freshm);
                      intro_using freshz;
                      intros;
-                     tclTRY (
-                      tclORELSE reflexivity (Equality.discr_tac false None)
+                     Tacticals.New.tclTRY (
+                      Tacticals.New.tclORELSE reflexivity (Equality.discr_tac false None)
                      );
                      Equality.inj None false (mkVar freshz,NoBindings);
-		     intros; simpl_in_concl;
+		     intros; (Proofview.V82.tactic simpl_in_concl);
                      Auto.default_auto;
-                     tclREPEAT (
-                      tclTHENSEQ [apply (andb_true_intro());
+                     Tacticals.New.tclREPEAT (
+                      Tacticals.New.tclTHENLIST [Proofview.V82.tactic (apply (andb_true_intro()));
                                   simplest_split ;Auto.default_auto ]
                       );
-                      fun gls -> let gl = pf_concl gls in
+                      Goal.concl >>- fun gl ->
                   (* assume the goal to be eq (eq_type ...) = true *)
                         match (kind_of_term gl) with
                           | App(c,ca) -> (match (kind_of_term ca.(1)) with
                               | App(c',ca') ->
                                   let n = Array.length ca' in
-                                    tclTHENSEQ (do_replace_lb lb_scheme_key
-				                (!avoid)
-                                                nparrec gls
-                                                ca'.(n-2) ca'.(n-1)) gls
-                              | _ -> error
-                                "Failure while solving Leibniz->Boolean."
+                                    do_replace_lb lb_scheme_key
+				    (!avoid)
+                                    nparrec
+                                    ca'.(n-2) ca'.(n-1)
+                              | _ ->
+                                Proofview.tclZERO (UserError ("",str"Failure while solving Leibniz->Boolean."))
                             )
-                          | _ -> error
-                                  "Failure while solving Leibniz->Boolean."
-                    ] gsig
+                          | _ ->
+                              Proofview.tclZERO (UserError ("",str"Failure while solving Leibniz->Boolean."))
+                    ]
 
 let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")
 
@@ -793,7 +806,7 @@ let compute_dec_goal ind lnamesparrec nparrec =
         )
       )
 
-let compute_dec_tact ind lnamesparrec nparrec gsig =
+let compute_dec_tact ind lnamesparrec nparrec =
   let list_id = list_id lnamesparrec in
   let eqI, eff = eqI ind lnamesparrec in
   let avoid = ref [] in
@@ -805,64 +818,65 @@ let compute_dec_tact ind lnamesparrec nparrec gsig =
       ( List.map (fun (_,_,sbl,_) -> sbl) list_id ) @
       ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
-  let fresh_first_intros = List.map ( fun s ->
-    let fresh = fresh_id (!avoid) s gsig in
-    avoid := fresh::(!avoid); fresh ) first_intros in
-  let freshn = fresh_id (!avoid) (Id.of_string "x") gsig in
-  let freshm = avoid := freshn::(!avoid);
-    fresh_id (!avoid) (Id.of_string "y") gsig in
-  let freshH = avoid := freshm::(!avoid);
-    fresh_id (!avoid) (Id.of_string "H") gsig in
+  let fresh_id s =
+    Tacmach.New.of_old begin fun gsig ->
+      let fresh = fresh_id (!avoid) s gsig in
+      avoid := fresh::(!avoid); fresh
+    end
+  in
+  Goal.sensitive_list_map fresh_id first_intros >>- fun fresh_first_intros ->
+  fresh_id (Id.of_string "x") >>- fun freshn ->
+  fresh_id (Id.of_string "y") >>- fun freshm ->
+  fresh_id (Id.of_string "H") >>- fun freshH ->
   let eqbnm = mkApp(eqI,[|mkVar freshn;mkVar freshm|]) in
-  avoid := freshH::(!avoid);
   let arfresh = Array.of_list fresh_first_intros in
   let xargs = Array.sub arfresh 0 (2*nparrec) in
-  let blI, eff' = 
-    try let c, eff = find_scheme bl_scheme_kind ind in mkConst c, eff with
-            Not_found -> error (
-              "Error during the decidability part, boolean to leibniz"^
-              " equality is required.")
-  in
-  let lbI, eff'' =
-    try let c, eff = find_scheme lb_scheme_kind ind in mkConst c, eff with
-            Not_found -> error (
-              "Error during the decidability part, leibniz to boolean"^
-              " equality is required.")
-  in
-  tclTHENSEQ [
-        Tactics.emit_side_effects
+  begin try
+          let c, eff = find_scheme bl_scheme_kind ind in
+          Proofview.tclUNIT (mkConst c,eff) with
+    Not_found ->
+      Proofview.tclZERO (UserError ("",str"Error during the decidability part, boolean to leibniz"++
+        str" equality is required."))
+  end >= fun (blI,eff') ->
+  begin try
+          let c, eff = find_scheme lb_scheme_kind ind in
+          Proofview.tclUNIT (mkConst c,eff) with
+    Not_found ->
+      Proofview.tclZERO (UserError ("",str"Error during the decidability part, leibniz to boolean"++
+        str" equality is required."))
+  end >= fun (lbI,eff'') ->
+  Tacticals.New.tclTHENLIST [
+        Proofview.V82.tactic (Tactics.emit_side_effects
           (Declareops.union_side_effects eff''
-            (Declareops.union_side_effects eff' eff));
+            (Declareops.union_side_effects eff' eff)));
         intros_using fresh_first_intros;
         intros_using [freshn;freshm];
 	(*we do this so we don't have to prove the same goal twice *)
         assert_by (Name freshH) (
           mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
 	)
-	  (tclTHEN (destruct_on eqbnm) Auto.default_auto);
-        (fun gsig ->
-	  let freshH2 = fresh_id (!avoid) (Id.of_string "H") gsig in
-          avoid := freshH2::(!avoid);
-	  tclTHENS (destruct_on_using (mkVar freshH) freshH2) [
+	  (Tacticals.New.tclTHEN (destruct_on eqbnm) Auto.default_auto);
+
+          fresh_id (Id.of_string "H") >>- fun freshH2 ->
+	  Tacticals.New.tclTHENS (destruct_on_using (mkVar freshH) freshH2) [
 	    (* left *)
-	    tclTHENSEQ [
+	    Tacticals.New.tclTHENLIST [
 	      simplest_left;
-              apply (mkApp(blI,Array.map(fun x->mkVar x) xargs));
+              Proofview.V82.tactic (apply (mkApp(blI,Array.map(fun x->mkVar x) xargs)));
               Auto.default_auto
             ];
+
 	    (*right *)
-            (fun gsig ->
-	    let freshH3 = fresh_id (!avoid) (Id.of_string "H") gsig in
-            avoid := freshH3::(!avoid);
-            tclTHENSEQ [
+            fresh_id (Id.of_string "H") >>- fun freshH3 ->
+            Tacticals.New.tclTHENLIST [
 	      simplest_right ;
-              unfold_constr (Lazy.force Coqlib.coq_not_ref);
+              Proofview.V82.tactic (unfold_constr (Lazy.force Coqlib.coq_not_ref));
               intro;
-              Equality.subst_all;
+              Equality.subst_all ?flags:None;
               assert_by (Name freshH3)
 		(mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|]))
-		(tclTHENSEQ [
-		  apply (mkApp(lbI,Array.map (fun x->mkVar x) xargs));
+		(Tacticals.New.tclTHENLIST [
+		  Proofview.V82.tactic (apply (mkApp(lbI,Array.map (fun x->mkVar x) xargs)));
                   Auto.default_auto
 		]);
 	      Equality.general_rewrite_bindings_in true
@@ -873,9 +887,9 @@ let compute_dec_tact ind lnamesparrec nparrec gsig =
                               )
                               true;
               Equality.discr_tac false None
-	    ] gsig)
-	  ] gsig)
-  ] gsig
+	    ]
+	  ]
+  ]
 
 let make_eq_decidability mind =
   let mib = Global.lookup_mind mind in

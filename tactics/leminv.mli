@@ -15,15 +15,15 @@ open Proof_type
 open Constrexpr
 open Misctypes
 
-val lemInv_gen : quantified_hypothesis -> constr -> tactic
-val lemInvIn_gen : quantified_hypothesis -> constr -> Id.t list -> tactic
+val lemInv_gen : quantified_hypothesis -> constr -> unit Proofview.tactic
+val lemInvIn_gen : quantified_hypothesis -> constr -> Id.t list -> unit Proofview.tactic
 
 val lemInv_clause :
-  quantified_hypothesis -> constr -> Id.t list -> tactic
+  quantified_hypothesis -> constr -> Id.t list -> unit Proofview.tactic
 
 val inversion_lemma_from_goal :
   int -> Id.t -> Id.t located -> sorts -> bool ->
-    (Id.t -> tactic) -> unit
+    (Id.t -> unit Proofview.tactic) -> unit
 val add_inversion_lemma_exn :
-  Id.t -> constr_expr -> glob_sort -> bool -> (Id.t -> tactic) ->
+  Id.t -> constr_expr -> glob_sort -> bool -> (Id.t -> unit Proofview.tactic) ->
     unit

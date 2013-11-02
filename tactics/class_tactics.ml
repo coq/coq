@@ -24,6 +24,7 @@ open Globnames
 open Evd
 open Locus
 open Misctypes
+open Proofview.Notations
 
 (** Hint database named "typeclass_instances", now created directly in Auto *)
 
@@ -81,14 +82,14 @@ let rec eq_constr_mod_evars x y =
   | Evar (e1, l1), Evar (e2, l2) when not (Evar.equal e1 e2) -> true
   | _, _ -> compare_constr eq_constr_mod_evars x y
 
-let progress_evars t gl =
-  let concl = pf_concl gl in
-  let check gl' =
-    let newconcl = pf_concl gl' in
+let progress_evars t =
+  Goal.concl >>- fun concl ->
+  let check =
+      Goal.concl >>- fun newconcl ->
       if eq_constr_mod_evars concl newconcl
-      then tclFAIL 0 (str"No progress made (modulo evars)") gl'
-      else tclIDTAC gl'
-  in tclTHEN t check gl
+      then Tacticals.New.tclFAIL 0 (str"No progress made (modulo evars)")
+      else Proofview.tclUNIT ()
+  in t <*> check
 
 let unify_e_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
@@ -105,7 +106,7 @@ let clenv_of_prods nprods (c, clenv) gls =
   else
     let ty = pf_type_of gls c in
     let diff = nb_prod ty - nprods in
-      if diff >= 0 then
+      if Pervasives.(>=) diff 0 then
 	Some (mk_clenv_from_n gls (Some diff) (c,ty))
       else None
 
@@ -125,7 +126,7 @@ let flags_of_state st =
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl =
     Eauto.registered_e_assumption ::
-    (tclTHEN Tactics.intro
+    (tclTHEN (Proofview.V82.of_tactic Tactics.intro)
        (function g'->
 	  let d = pf_last_hyp g' in
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
@@ -164,7 +165,7 @@ and e_my_find_search db_list local_db hdc complete concl =
 	  | Extern tacast ->
 (* 	    tclTHEN *)
 (* 	      (fun gl -> Refiner.tclEVARS (mark_unresolvables (project gl)) gl) *)
-	      (conclPattern concl p tacast)
+	      Proofview.V82.of_tactic (conclPattern concl p tacast)
       in
       let tac = if complete then tclCOMPLETE tac else tac in
 	match t with
@@ -293,8 +294,8 @@ let lift_tactic tac (f : goal list sigma -> autoinfo -> autogoal list sigma) : '
       | None -> fk () }
 
 let intro_tac : atac =
-  lift_tactic Tactics.intro
-    (fun {it = gls; sigma = s;} info ->
+  lift_tactic (Proofview.V82.of_tactic Tactics.intro)
+    (fun {it = gls; sigma = s} info ->
       let gls' =
 	List.map (fun g' ->
 	  let env = Goal.V82.env s g' in
@@ -723,7 +724,9 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl 
       eauto ?limit:!typeclasses_depth ~only_classes ~st dbs gl
    with Not_found -> tclFAIL 0 (str" typeclasses eauto failed on: " ++ Printer.pr_goal gl) gl
 
-let _ = Classes.refine_ref := Refine.refine
+let _ = Classes.refine_ref := begin fun c ->
+  Refine.refine c
+end
 
 (** Take the head of the arity of a constr.
     Used in the partial application tactic. *)
@@ -741,8 +744,8 @@ let head_of_constr h c =
   letin_tac None (Name h) c None Locusops.allHyps
 
 let not_evar c = match kind_of_term c with
-| Evar _ -> tclFAIL 0 (str"Evar")
-| _ -> tclIDTAC
+| Evar _ -> Tacticals.New.tclFAIL 0 (str"Evar")
+| _ -> Proofview.tclUNIT ()
 
 let is_ground c gl =
   if Evarutil.is_ground_term (project gl) c then tclIDTAC gl

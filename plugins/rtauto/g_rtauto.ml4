@@ -9,6 +9,6 @@
 (*i camlp4deps: "grammar/grammar.cma"  i*)
 
 TACTIC EXTEND rtauto
-  [ "rtauto" ] -> [ Refl_tauto.rtauto_tac ]
+  [ "rtauto" ] -> [ Proofview.V82.tactic (Refl_tauto.rtauto_tac) ]
 END
 

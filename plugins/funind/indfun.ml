@@ -105,18 +105,18 @@ let functional_induction with_clean c princl pat =
 	    }
 	in
 	Tacticals.tclTHEN
-	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Equality.subst_gen (do_rewrite_dependent ()) [id])) idl )
+	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Proofview.V82.of_tactic (Equality.subst_gen (do_rewrite_dependent ()) [id]))) idl )
 	  (Hiddentac.h_reduce flag Locusops.allHypsAndConcl)
 	  g
       else Tacticals.tclIDTAC g
     in
     Tacticals.tclTHEN
-      (choose_dest_or_ind
+      (Proofview.V82.of_tactic (choose_dest_or_ind
 	 princ_infos
 	 args_as_induction_constr
 	 princ'
 	 (None,pat)
-         None)
+         None))
       subst_and_reduce
       g
   in

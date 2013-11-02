@@ -15,6 +15,7 @@ open Tactics
 open Coqlib
 open Reductionops
 open Misctypes
+open Proofview.Notations
 
 (* Absurd *)
 
@@ -27,63 +28,78 @@ let absurd c gls =
      (tclTHEN (elim_type (build_coq_False ())) (cut c))
      ([(tclTHENS
           (cut (mkApp(build_coq_not (),[|c|])))
-	  ([(tclTHEN intros
+	  ([(tclTHEN (Proofview.V82.of_tactic intros)
 	       ((fun gl ->
 		   let ida = pf_nth_hyp_id gl 1
                    and idna = pf_nth_hyp_id gl 2 in
                    exact_no_check (mkApp(mkVar idna,[|mkVar ida|])) gl)));
             tclIDTAC]));
        tclIDTAC])) { gls with Evd.sigma; }
+let absurd c = Proofview.V82.tactic (absurd c)
 
 (* Contradiction *)
 
-let filter_hyp f tac gl =
+let filter_hyp f tac =
   let rec seek = function
     | [] -> raise Not_found
-    | (id,_,t)::rest when f t -> tac id gl
+    | (id,_,t)::rest when f t -> tac id
     | _::rest -> seek rest in
-  seek (pf_hyps gl)
+  Goal.hyps >>- fun hyps ->
+  seek (Environ.named_context_of_val hyps)
 
-let contradiction_context gl =
-  let env = pf_env gl in
-  let sigma = project gl in
-  let rec seek_neg l gl = match l with
-    | [] ->  error "No such contradiction"
+let contradiction_context =
+  Goal.env >>- fun env ->
+  Goal.defs >>- fun sigma ->
+  let rec seek_neg l = match l with
+    | [] ->  Proofview.tclZERO (UserError ("" , Pp.str"No such contradiction"))
     | (id,_,typ)::rest ->
 	let typ = whd_betadeltaiota env sigma typ in
 	if is_empty_type typ then
-	  simplest_elim (mkVar id) gl
+	  simplest_elim (mkVar id)
 	else match kind_of_term typ with
 	  | Prod (na,t,u) when is_empty_type u ->
-	      (try
-		filter_hyp (fun typ -> pf_conv_x_leq gl typ t)
-		  (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
-		  gl
-	      with Not_found -> seek_neg rest gl)
-	  | _ -> seek_neg rest gl in
-  seek_neg (pf_hyps gl) gl
+	      (Proofview.tclORELSE
+                 begin
+                   Tacmach.New.pf_apply is_conv_leq >>- fun is_conv_leq ->
+	           filter_hyp (fun typ -> is_conv_leq typ t)
+		     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
+                 end
+                 begin function
+	           | Not_found -> seek_neg rest
+                   | e -> Proofview.tclZERO e
+                 end)
+	  | _ -> seek_neg rest in
+  Goal.hyps >>- fun hyps ->
+  let hyps = Environ.named_context_of_val hyps in
+  seek_neg hyps
 
 let is_negation_of env sigma typ t =
   match kind_of_term (whd_betadeltaiota env sigma t) with
     | Prod (na,t,u) -> is_empty_type u && is_conv_leq env sigma typ t
     | _ -> false
 
-let contradiction_term (c,lbind as cl) gl =
-  let env = pf_env gl in
-  let sigma = project gl in
-  let typ = pf_type_of gl c in
+let contradiction_term (c,lbind as cl) =
+  Goal.env >>- fun env ->
+  Goal.defs >>- fun sigma ->
+  Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
+  let typ = type_of c in
   let _, ccl = splay_prod env sigma typ in
   if is_empty_type ccl then
-    tclTHEN (elim false cl None) (tclTRY assumption) gl
+    Tacticals.New.tclTHEN (elim false cl None) (Proofview.V82.tactic (tclTRY assumption))
   else
-    try
-      if lbind = NoBindings then
-	filter_hyp (is_negation_of env sigma typ)
-	  (fun id -> simplest_elim (mkApp (mkVar id,[|c|]))) gl
-      else
-	raise Not_found
-    with Not_found -> error "Not a contradiction."
+    Proofview.tclORELSE
+      begin
+        if lbind = NoBindings then
+	  filter_hyp (is_negation_of env sigma typ)
+	    (fun id -> simplest_elim (mkApp (mkVar id,[|c|])))
+        else
+	  Proofview.tclZERO Not_found
+      end
+      begin function
+        | Not_found -> Proofview.tclZERO (Errors.UserError ("",Pp.str"Not a contradiction."))
+        | e -> Proofview.tclZERO e
+      end
 
 let contradiction = function
-  | None -> tclTHEN intros contradiction_context
+  | None -> Tacticals.New.tclTHEN intros contradiction_context
   | Some c -> contradiction_term c

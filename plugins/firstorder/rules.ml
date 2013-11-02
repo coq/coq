@@ -67,24 +67,24 @@ let ll_atom_tac a backtrack id continue seq=
 	[generalize [mkApp(constr_of_global id,
 			   [|constr_of_global (find_left a seq)|])];
 	 clear_global id;
-	 intro]
+	 Proofview.V82.of_tactic intro]
     with Not_found->tclFAIL 0 (Pp.str "No link"))
     (wrap 1 false continue seq) backtrack
 
 (* right connectives rules *)
 
 let and_tac backtrack continue seq=
-  tclIFTHENELSE simplest_split (wrap 0 true continue seq) backtrack
+  tclIFTHENELSE (Proofview.V82.of_tactic simplest_split) (wrap 0 true continue seq) backtrack
 
 let or_tac backtrack continue seq=
   tclORELSE
-    (any_constructor false (Some (tclCOMPLETE (wrap 0 true continue seq))))
+    (Proofview.V82.of_tactic (any_constructor false (Some (Proofview.V82.tactic (tclCOMPLETE (wrap 0 true continue seq))))))
     backtrack
 
 let arrow_tac backtrack continue seq=
-  tclIFTHENELSE intro (wrap 1 true continue seq)
+  tclIFTHENELSE (Proofview.V82.of_tactic intro) (wrap 1 true continue seq)
     (tclORELSE
-       (tclTHEN introf (tclCOMPLETE (wrap 1 true continue seq)))
+       (tclTHEN (Proofview.V82.of_tactic introf) (tclCOMPLETE (wrap 1 true continue seq)))
        backtrack)
 (* left connectives rules *)
 
@@ -92,9 +92,9 @@ let left_and_tac ind backtrack id continue seq gls=
  let n=(construct_nhyps ind gls).(0) in
    tclIFTHENELSE
      (tclTHENLIST
-      [simplest_elim (constr_of_global id);
+      [Proofview.V82.of_tactic (simplest_elim (constr_of_global id));
        clear_global id;
-       tclDO n intro])
+       tclDO n (Proofview.V82.of_tactic intro)])
      (wrap n false continue seq)
      backtrack gls
 
@@ -103,15 +103,15 @@ let left_or_tac ind backtrack id continue seq gls=
   let f n=
     tclTHENLIST
       [clear_global id;
-       tclDO n intro;
+       tclDO n (Proofview.V82.of_tactic intro);
        wrap n false continue seq] in
     tclIFTHENSVELSE
-      (simplest_elim (constr_of_global id))
+      (Proofview.V82.of_tactic (simplest_elim (constr_of_global id)))
       (Array.map f v)
       backtrack gls
 
 let left_false_tac id=
-  simplest_elim (constr_of_global id)
+  Proofview.V82.of_tactic (simplest_elim (constr_of_global id))
 
 (* left arrow connective rules *)
 
@@ -135,7 +135,7 @@ let ll_ind_tac ind largs backtrack id continue seq gl=
 	   (tclTHENLIST
 	      [generalize newhyps;
 	       clear_global id;
-	       tclDO lp intro])
+	       tclDO lp (Proofview.V82.of_tactic intro)])
 	   (wrap lp false continue seq) backtrack gl
 
 let ll_arrow_tac a b c backtrack id continue seq=
@@ -146,7 +146,7 @@ let ll_arrow_tac a b c backtrack id continue seq=
     tclORELSE
       (tclTHENS (cut c)
 	 [tclTHENLIST
-	    [introf;
+	    [Proofview.V82.of_tactic introf;
 	     clear_global id;
 	     wrap 1 false continue seq];
 	  tclTHENS (cut cc)
@@ -154,8 +154,8 @@ let ll_arrow_tac a b c backtrack id continue seq=
 	     tclTHENLIST
 	       [generalize [d];
 		clear_global id;
-		introf;
-		introf;
+		Proofview.V82.of_tactic introf;
+		Proofview.V82.of_tactic introf;
 		tclCOMPLETE (wrap 2 true continue seq)]]])
       backtrack
 
@@ -163,9 +163,9 @@ let ll_arrow_tac a b c backtrack id continue seq=
 
 let forall_tac backtrack continue seq=
   tclORELSE
-    (tclIFTHENELSE intro (wrap 0 true continue seq)
+    (tclIFTHENELSE (Proofview.V82.of_tactic intro) (wrap 0 true continue seq)
        (tclORELSE
-	  (tclTHEN introf (tclCOMPLETE (wrap 0 true continue seq)))
+	  (tclTHEN (Proofview.V82.of_tactic introf) (tclCOMPLETE (wrap 0 true continue seq)))
 	  backtrack))
     (if !qflag then
        tclFAIL 0 (Pp.str "reversible in 1st order mode")
@@ -175,9 +175,9 @@ let forall_tac backtrack continue seq=
 let left_exists_tac ind backtrack id continue seq gls=
   let n=(construct_nhyps ind gls).(0) in
     tclIFTHENELSE
-      (simplest_elim (constr_of_global id))
+      (Proofview.V82.of_tactic (simplest_elim (constr_of_global id)))
       (tclTHENLIST [clear_global id;
-                    tclDO n intro;
+                    tclDO n (Proofview.V82.of_tactic intro);
                     (wrap (n-1) false continue seq)])
       backtrack
       gls
@@ -186,13 +186,13 @@ let ll_forall_tac prod backtrack id continue seq=
   tclORELSE
     (tclTHENS (cut prod)
        [tclTHENLIST
-	  [intro;
+	  [Proofview.V82.of_tactic intro;
 	   (fun gls->
 	      let id0=pf_nth_hyp_id gls 1 in
 	      let term=mkApp((constr_of_global id),[|mkVar(id0)|]) in
 		tclTHEN (generalize [term]) (clear [id0]) gls);
 	   clear_global id;
-	   intro;
+	   Proofview.V82.of_tactic intro;
 	   tclCOMPLETE (wrap 1 false continue (deepen seq))];
 	tclCOMPLETE (wrap 0 true continue (deepen seq))])
     backtrack

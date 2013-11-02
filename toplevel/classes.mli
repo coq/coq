@@ -53,7 +53,7 @@ val new_instance :
   typeclass_constraint ->
   constr_expr option ->
   ?generalize:bool ->
-  ?tac:Proof_type.tactic  ->
+  ?tac:unit Proofview.tactic  ->
   ?hook:(Globnames.global_reference -> unit) ->
   int option ->
   Id.t
@@ -74,4 +74,4 @@ val context : local_binder list -> bool
 
 (** Forward ref for refine *)
 
-val refine_ref : (open_constr -> Proof_type.tactic) ref
+val refine_ref : (open_constr -> unit Proofview.tactic) ref

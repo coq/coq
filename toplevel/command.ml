@@ -830,6 +830,9 @@ let declare_fixpoint local ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
     let init_tac =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
+    let init_tac =
+      Option.map (List.map Proofview.V82.tactic) init_tac
+    in
     Lemmas.start_proof_with_initialization (Global,DefinitionBody Fixpoint)
       (Some(false,indexes,init_tac)) thms None (fun _ _ -> ())
   else begin
@@ -857,6 +860,9 @@ let declare_cofixpoint local ((fixnames,fixdefs,fixtypes),fiximps) ntns =
     let init_tac =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
+    let init_tac =
+      Option.map (List.map Proofview.V82.tactic) init_tac
+    in
     Lemmas.start_proof_with_initialization (Global,DefinitionBody CoFixpoint)
       (Some(true,[],init_tac)) thms None (fun _ _ -> ())
   else begin

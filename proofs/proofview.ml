@@ -227,7 +227,7 @@ let tclIGNORE tac env = Inner.ignore (tac env)
    of [t1] have been depleted, then it behaves as [t2].  No
    interleaving at this point. *)
 let tclOR t1 t2 env =
-  Inner.plus (t1 env) (t2 env)
+  Inner.plus (t1 env) (fun _ -> t2 env)
 
 (* [tclZERO e] always fails with error message [e]*)
 let tclZERO e _ = Inner.zero e
@@ -238,8 +238,18 @@ let tclORELSE t1 t2 env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Inner.bind in
   Inner.split (t1 env) >>= function
-    | Util.Inr _ -> t2 env
+    | Util.Inr e -> t2 e env
     | Util.Inl (a,t1') -> Inner.plus (Inner.return a) t1'
+
+(* [tclIFCATCH a s f] is a generalisation of [tclORELSE]: if [a]
+   succeeds at least once then it behaves as [tclBIND a s] otherwise, if [a]
+   fails with [e], then it behaves as [f e]. *)
+let tclIFCATCH a s f env =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Inner.bind in
+  Inner.split (a env) >>= function
+    | Util.Inr e -> f e env
+    | Util.Inl (x,a') -> Inner.plus (s x env) (fun e -> (a' e) >>= fun x' -> (s x' env))
 
 (* Focuses a tactic at a range of subgoals, found by their indices. *)
 (* arnaud: bug if 0 goals ! *)
@@ -248,22 +258,29 @@ let tclFOCUS i j t env =
   let (>>=) = Inner.bind in
   let (>>) = Inner.seq in
   Inner.get >>= fun initial ->
-  let (focused,context) = focus i j initial in
-  Inner.set focused >>
-  t (env) >>= fun result ->
-  Inner.get >>= fun next ->
-  Inner.set (unfocus context next) >>
-  Inner.return result
+  try
+    let (focused,context) = focus i j initial in
+    Inner.set focused >>
+    t (env) >>= fun result ->
+    Inner.get >>= fun next ->
+    Inner.set (unfocus context next) >>
+    Inner.return result
+  with e ->
+    (* spiwack: a priori the only possible exceptions are that of focus,
+       of course I haven't made them algebraic yet. *)
+    tclZERO e env
 
+(* arnaud: vérifier les commentaires de dispatch vis-à-vis de l'ordre
+   d'évaluation des buts. Ne pas oublier le mli *)
 (* Dispatch tacticals are used to apply a different tactic to each goal under
-    consideration. They come in two flavours:
-    [tclDISPATCH] takes a list of [unit tactic]-s and build a [unit tactic].
-    [tclDISPATCHS] takes a list of ['a sensitive tactic] and returns and returns
-    and ['a sensitive tactic] where the ['a sensitive] interpreted in a goal [g]
-    corresponds to that of the tactic which created [g].
-    It is to be noted that the return value of [tclDISPATCHS ts] makes only
-    sense in the goals immediatly built by it, and would cause an anomaly
-    is used otherwise. *)
+   consideration. They come in two flavours:
+   [tclDISPATCH] takes a list of [unit tactic]-s and build a [unit tactic].
+   [tclDISPATCHS] takes a list of ['a sensitive tactic] and returns and returns
+   and ['a sensitive tactic] where the ['a sensitive] interpreted in a goal [g]
+   corresponds to that of the tactic which created [g].
+   It is to be noted that the return value of [tclDISPATCHS ts] makes only
+   sense in the goals immediatly built by it, and would cause an anomaly
+   is used otherwise. *)
 exception SizeMismatch
 let _ = Errors.register_handler begin function
   | SizeMismatch -> Errors.error "Incorrect number of goals."
@@ -275,6 +292,7 @@ end
     the return value at two given lists of subgoals are combined when
     both lists are being concatenated.
     [join] and [null] need be some sort of comutative monoid. *)
+
 let rec tclDISPATCHGEN null join tacs env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Inner.bind in
@@ -283,18 +301,18 @@ let rec tclDISPATCHGEN null join tacs env =
   match tacs,initial.comb with
   | [], [] -> tclUNIT null env
   | t::tacs , first::goals ->
-      Inner.set {initial with comb=goals} >>
-      tclDISPATCHGEN null join tacs env >>= fun x ->
-      Inner.get >>= fun step ->
-      begin match Goal.advance step.solution first with
-      | None -> Inner.return x (* If [first] has been solved by side effect: do nothing. *)
+      begin match Goal.advance initial.solution first with
+      | None -> Inner.return null (* If [first] has been solved by side effect: do nothing. *)
       | Some first ->
-          Inner.set {step with comb=[first]} >>
-          t env >>= fun y ->
-          Inner.get >>= fun step' ->
-          Inner.set {step' with comb=step'.comb@step.comb} >>
-          Inner.return (join x y)
-      end
+          Inner.set {initial with comb=[first]} >>
+          t env
+      end >>= fun y ->
+      Inner.get >>= fun step ->
+      Inner.set {step with comb=goals} >>
+      tclDISPATCHGEN null join tacs env >>= fun x ->
+      Inner.get >>= fun step' ->
+      Inner.set {step' with comb=step.comb@step'.comb} >>
+      Inner.return (join x y)
   | _ , _ -> raise SizeMismatch
 
 let unitK () () = ()
@@ -313,11 +331,19 @@ let here_s b env =
 (* see .mli for documentation. *)
 let tclDISPATCHS tacs = 
   let tacs = 
-    List.map begin fun tac -> 
+    List.map begin fun tac ->
       tclBIND tac here_s
     end tacs 
   in
   tclDISPATCHGEN Goal.null Goal.plus tacs
+
+let tclDISPATCHL tacs =
+  let tacs =
+    List.map begin fun tac ->
+      tclBIND tac (fun a -> tclUNIT [a])
+    end tacs
+  in
+  tclDISPATCHGEN [] (@) tacs
 
 let extend_to_list =
   let rec copy n x l =
@@ -336,25 +362,6 @@ let tclEXTEND tacs1 rtac tacs2 env =
   Inner.get >>= fun step ->
   let tacs = extend_to_list tacs1 rtac tacs2 step.comb in
   tclDISPATCH tacs env
-
-(* spiwack: up to a few details, same errors are in the Logic module.
-    this should be maintained synchronized, probably. *)
-open Pretype_errors
-let rec catchable_exception = function
-  | Errors.UserError _
-  | Type_errors.TypeError _ | PretypeError (_,_,TypingError _)
-  | Indrec.RecursionSchemeError _
-  | Nametab.GlobalizationError _ | PretypeError (_,_,VarNotFound _)
-  (* unification errors *)
-  | PretypeError(_,_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
-		   |NoOccurrenceFound _|CannotUnifyBindingType _
-		   |ActualTypeNotCoercible _
-		   |CannotFindWellTypedAbstraction _
-		   |UnsolvableImplicit _)) -> true
-  | Typeclasses_errors.TypeClassError 
-      (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true
-  | _ -> false
-
 
 (* [tclGOALBIND] and [tclGOALBINDU] are sorts of bind which take a
     [Goal.sensitive] as a first argument, the tactic then acts on each goal separately.
@@ -378,7 +385,7 @@ let list_of_sensitive s k env =
     let (tacs,defs) = list_of_sensitive s k env step in
     Inner.set { step with solution = defs; } >>
     Inner.return tacs
-  with e when catchable_exception e ->
+  with e when Errors.noncritical e ->
     tclZERO e env
 
 let tclGOALBIND s k =
@@ -417,9 +424,75 @@ let sensitive_on_proofview s env step =
   try
     let next = sensitive_on_proofview s env step in
     Inner.set next
-  with e when catchable_exception e ->
+  with e when Errors.noncritical e ->
     tclZERO e env
 
+(* spiwack: [lift_sensitive] is probably a better abstraction
+   than [tclGOALBIND]. *)
+let lift_sensitive s env =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Inner.bind in
+  let (>>) = Inner.seq in
+  Inner.get >>= fun step ->
+  let (res,sigma) =
+    Goal.list_map begin fun sigma g ->
+      Goal.eval s env step.solution g
+    end step.comb step.solution
+  in
+  Inner.set { step with solution=sigma } >>
+  Inner.return res
+
+(* arnaud: on pourrait regarder la liste de buts aussi, mais je
+   ne sais pas encore comment. Pour l'instant on fait au plus
+   simple. *)
+let tclPROGRESS t env =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Inner.bind in
+  Inner.get >>= fun initial ->
+  t env >>= fun res ->
+  Inner.get >>= fun final ->
+  let test =
+    Evd.progress_evar_map initial.solution final.solution &&
+    not (Util.List.for_all2eq (fun i f -> Goal.equal initial.solution i final.solution f) initial.comb final.comb)
+  in
+  if test then
+    tclUNIT res env
+  else
+    tclZERO (Errors.UserError ("Proofview.tclPROGRESS" , Pp.str"Failed to progress.")) env
+
+let tclEVARMAP _ =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Inner.bind in
+  Inner.get >>= fun initial ->
+  Inner.return (initial.solution)
+
+let tclENV env =
+  Inner.return env
+
+let tclTIMEOUT n t = t
+(* arnaud: todo: restore
+(* Fails if a tactic hasn't finished after a certain amount of time *)
+
+exception TacTimeout
+
+let tclTIMEOUT n t g =
+  let timeout_handler _ = raise TacTimeout in
+  let psh = Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
+  ignore (Unix.alarm n);
+  let restore_timeout () =
+    ignore (Unix.alarm 0);
+    Sys.set_signal Sys.sigalrm psh
+  in
+  try
+    let res = t g in
+    restore_timeout ();
+    res
+  with
+    | TacTimeout | Loc.Exc_located(_,TacTimeout) ->
+      restore_timeout ();
+      errorlabstrm "Refiner.tclTIMEOUT" (str"Timeout!")
+    | e -> restore_timeout (); raise e
+*)
 
 (*** Commands ***)
 
@@ -436,6 +509,22 @@ module Notations = struct
   let (<*>) = tclTHEN
   let (<+>) = tclOR
 end
+
+open Notations
+let rec list_map f = function
+  | [] -> tclUNIT []
+  | a::l ->
+      f a >= fun a' ->
+      list_map f l >= fun l' ->
+      tclUNIT (a'::l')
+
+let rec sensitive_list_map f = function
+  | [] -> tclUNIT (Goal.return [])
+  | a::l ->
+      f a >>== fun a' ->
+      sensitive_list_map f l >>== fun l' ->
+      tclUNIT (Goal.return (a'::l'))
+
 
 (*** Compatibility layer with <= 8.2 tactics ***)
 module V82 = struct
@@ -462,7 +551,7 @@ module V82 = struct
       let (goalss,evd) = Goal.list_map tac initgoals initevd in
       let sgs = List.flatten goalss in
       Inner.set { ps with solution=evd ; comb=sgs; }
-    with e when catchable_exception e ->
+    with e when Errors.noncritical e ->
       tclZERO e env
 
   let has_unresolved_evar pv =
@@ -509,4 +598,19 @@ module V82 = struct
     { pv with
 	solution = Evar_refiner.instantiate_pf_com evk com pv.solution }
 
+  let of_tactic t gls =
+    let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] ; initial = [] } in
+    let final = apply (Goal.V82.env gls.Evd.sigma gls.Evd.it) t init in
+    { Evd.sigma = final.solution ; it = final.comb }
+
 end
+
+
+
+
+
+
+
+
+
+

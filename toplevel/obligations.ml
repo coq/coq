@@ -53,7 +53,7 @@ type oblinfo =
     ev_chop: int option;
     ev_src: Evar_kinds.t Loc.located;
     ev_typ: types;
-    ev_tac: tactic option;
+    ev_tac: unit Proofview.tactic option;
     ev_deps: Int.Set.t }
 
 (* spiwack: Store field for internalizing ev_tac in evar_infos' evar_extra. *)
@@ -302,7 +302,7 @@ let explain_no_obligations = function
 
 type obligation_info =
     (Names.Id.t * Term.types * Evar_kinds.t Loc.located *
-     Evar_kinds.obligation_definition_status * Int.Set.t * tactic option) array
+     Evar_kinds.obligation_definition_status * Int.Set.t * unit Proofview.tactic option) array
 
 type obligation =
   { obl_name : Id.t;
@@ -311,7 +311,7 @@ type obligation =
     obl_body : constr option;
     obl_status : Evar_kinds.obligation_definition_status;
     obl_deps : Int.Set.t;
-    obl_tac : tactic option;
+    obl_tac : unit Proofview.tactic option;
   }
 
 type obligations = (obligation array * int)
@@ -762,7 +762,7 @@ let rec string_of_list sep f = function
 let solve_by_tac evi t =
   let id = Id.of_string "H" in
   let entry = Pfedit.build_constant_by_tactic 
-    id ~goal_kind evi.evar_hyps evi.evar_concl (tclCOMPLETE t) in
+    id ~goal_kind evi.evar_hyps evi.evar_concl (Tacticals.New.tclCOMPLETE t) in
   let env = Global.env () in
   let entry = Term_typing.handle_side_effects env entry in
   let body, eff = Future.force entry.Entries.const_entry_body in

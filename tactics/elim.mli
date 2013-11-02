@@ -17,19 +17,19 @@ open Misctypes
 (** Eliminations tactics. *)
 
 val introElimAssumsThen :
-  (branch_assumptions -> tactic) -> branch_args -> tactic
+  (branch_assumptions -> unit Proofview.tactic) -> branch_args -> unit Proofview.tactic
 
 val introCaseAssumsThen :
-  (intro_pattern_expr Loc.located list -> branch_assumptions -> tactic) ->
-    branch_args -> tactic
+  (intro_pattern_expr Loc.located list -> branch_assumptions -> unit Proofview.tactic) ->
+    branch_args -> unit Proofview.tactic
 
-val general_decompose : (Id.t * constr -> bool) -> constr -> tactic
-val decompose_nonrec  : constr -> tactic
-val decompose_and     : constr -> tactic
-val decompose_or      : constr -> tactic
-val h_decompose       : inductive list -> constr -> tactic
-val h_decompose_or    : constr -> tactic
-val h_decompose_and   : constr -> tactic
+val general_decompose : (Id.t * constr -> bool) -> constr -> unit Proofview.tactic
+val decompose_nonrec  : constr -> unit Proofview.tactic
+val decompose_and     : constr -> unit Proofview.tactic
+val decompose_or      : constr -> unit Proofview.tactic
+val h_decompose       : inductive list -> constr -> unit Proofview.tactic
+val h_decompose_or    : constr -> unit Proofview.tactic
+val h_decompose_and   : constr -> unit Proofview.tactic
 
-val double_ind : quantified_hypothesis -> quantified_hypothesis -> tactic
-val h_double_induction : quantified_hypothesis -> quantified_hypothesis->tactic
+val double_ind : quantified_hypothesis -> quantified_hypothesis -> unit Proofview.tactic
+val h_double_induction : quantified_hypothesis -> quantified_hypothesis-> unit Proofview.tactic
