@@ -275,6 +275,10 @@ module V82 : sig
   type tac = Goal.goal Evd.sigma -> Goal.goal list Evd.sigma 
   val tactic : tac -> unit tactic
 
+  (* normalises the evars in the goals, and stores the result in
+     solution. *)
+  val nf_evar_goals : unit tactic
+
   val tclEVARS : Evd.evar_map -> unit tactic
 
   val has_unresolved_evar : proofview -> bool

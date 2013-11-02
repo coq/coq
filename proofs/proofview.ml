@@ -643,8 +643,8 @@ module V82 = struct
   type tac = Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
   let tactic tac =
-    (* spiwack: we ignore the dependencies between goals here, expectingly
-       preserving the semantics of <= 8.2 tactics *)
+    (* spiwack: we ignore the dependencies between goals here,
+       expectingly preserving the semantics of <= 8.2 tactics *)
     (* spiwack: convenience notations, waiting for ocaml 3.12 *)
     let (>>=) = Proof.bind in
     Proof.get >>= fun ps ->
@@ -656,7 +656,7 @@ module V82 = struct
         let g = glsigma.Evd.it in
         ( g, sigma )
       in
-    (* Old style tactics expect the goals normalized with respect to evars. *)
+        (* Old style tactics expect the goals normalized with respect to evars. *)
       let (initgoals,initevd) =
         Goal.list_map Goal.V82.nf_evar ps.comb ps.solution
       in
@@ -665,6 +665,18 @@ module V82 = struct
       Proof.set { ps with solution=evd ; comb=sgs; }
     with e when catchable_exception e ->
       tclZERO e
+
+
+  (* normalises the evars in the goals, and stores the result in
+     solution. *)
+  let nf_evar_goals =
+    (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+    let (>>=) = Proof.bind in
+    Proof.get >>= fun ps ->
+    let (goals,evd) =
+      Goal.list_map Goal.V82.nf_evar ps.comb ps.solution
+    in
+    Proof.set { ps with solution=evd ; comb=goals }
 
   (* A [Proofview.tactic] version of [Refiner.tclEVARS] *)
   let tclEVARS evd =

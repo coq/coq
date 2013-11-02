@@ -1960,6 +1960,9 @@ and interp_atomic ist tac =
   | TacSimpleInductionDestruct (isrec,h) ->
       h_simple_induction_destruct isrec (interp_quantified_hypothesis ist h)
   | TacInductionDestruct (isrec,ev,(l,el,cls)) ->
+      (* spiwack: some unknown part of destruct needs the goal to be
+         prenormalised. *)
+      Proofview.V82.nf_evar_goals <*>
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let l =
