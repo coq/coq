@@ -27,11 +27,6 @@ Extract Inductive prod => "(*)" [
   "(,)"
 ].
 
-(*** Sum ***)
-Extract Inductive sum => "Util.union" [
-  "Util.Inl"
-  "Util.Inr"
-].
 
 (*** Closure elimination **)
 
@@ -75,6 +70,13 @@ Extract Inlined Constant String => string.
 
 Parameter Ppcmds : Set.
 Extract Inlined Constant Ppcmds => "Pp.std_ppcmds".
+
+(*** A view datatype for the [split] primitive ***)
+
+Inductive list_view (A B:Set) : Set :=
+| Nil : Exception -> list_view A B
+| Cons : A -> B -> list_view A B
+.
 
 (*** Monoids ***)
 
@@ -471,20 +473,20 @@ Section Common.
 
  (* For [reflect] and [split] see the "Backtracking, Interleaving, and
     Terminating Monad Transformers" paper.  *)
- Definition reflect {A:Set} (x:(A*(Exception -> T A)) + Exception) : T A :=
+ Definition reflect {A:Set} (x:list_view A (Exception -> T A)) : T A :=
    match x with
-   | inr e => _zero e
-   | inl (a,x) => _plus (ret _ F a) x
+   | Nil _ _ e => _zero e
+   | Cons _ _ a x => _plus (ret _ F a) x
    end
  .
- Definition reify {A:Set} (x:T A) : T₀ ((A*(Exception -> T A)) + Exception) :=
-   let fk e := ret _ M (inr e) in
+ Definition reify {A:Set} (x:T A) : T₀ (list_view A (Exception -> T A)) :=
+   let fk e := ret _ M (Nil _ _ e) in
    let lift_fk fk e := do F y := lift (fk e) in reflect y in
-   let sk a fk := ret _ M (inl (a, lift_fk fk)) in
+   let sk a fk := ret _ M (Cons _ _ a (lift_fk fk)) in
    x _ sk fk
  .
 
- Definition split {A:Set} (x:T A) : T ((A*(Exception -> T A)) + Exception) :=
+ Definition split {A:Set} (x:T A) : T (list_view A (Exception -> T A)) :=
    lift (reify x)
  .
 
@@ -547,21 +549,21 @@ Definition LogicalLogic : Logic LogicalType := State.Logic _ _ LogicalMonadEnv (
 (* The function [split] will be define as the normal form of
    [split0]. It reifies the monad transformer stack until we can read
    back a more syntactic form, then reflects the result back. *)
-Definition split0 {a:Set} (x:LogicalType a) : LogicalType ((a*(Exception -> LogicalType a))+Exception) :=
+Definition split0 {a:Set} (x:LogicalType a) : LogicalType (list_view a (Exception -> LogicalType a)) :=
   State.reflect _ _ LogicalMonadEnv (fun s =>
   Environment.reflect _ _ (fun e =>
   Writer.reflect _ _ (
     do LogicalMonadBase x' :=
         Logic.split _ NonLogicalMonad (Writer.run _ _ (Environment.run _ _ (State.run _ _ LogicalMonadEnv x s) e)) in
     match x' with
-    | inr exc => ret _ LogicalMonadBase ((inr exc),s, Monoid.zero _ LogicalMessage)
-    | inl (a',s',m',y) =>
+    | Nil _ _ exc => ret _ LogicalMonadBase ((Nil _ _ exc),s, Monoid.zero _ LogicalMessage)
+    | Cons _ _ (a',s',m') y =>
       let y' exc :=
           State.reflect _ _ LogicalMonadEnv (fun _ =>
           Environment.reflect _ _ (fun _ =>
           Writer.reflect _ _ (y exc)))
       in
-      ret _ LogicalMonadBase (inl (a',y'),s',m')
+      ret _ LogicalMonadBase (Cons _ _ a' y',s',m')
     end
   )))
 .
@@ -630,7 +632,7 @@ Module Logical.
  Definition plus {a:Set} (x:t a) (y:Exception -> t a) : t a := Eval compute in freeze _ (plus _ LogicalLogic x y).
  Extraction Implicit plus [a].
 
- Definition split {a:Set} (x:t a) : t ((a*(Exception -> t a))+Exception) :=
+ Definition split {a:Set} (x:t a) : t (list_view a (Exception -> t a)) :=
    Eval compute in freeze _ (split0 x).
 (*
    Eval compute in

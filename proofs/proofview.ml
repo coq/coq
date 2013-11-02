@@ -231,8 +231,8 @@ let tclORELSE t1 t2 =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   Proof.split t1 >>= function
-    | Util.Inr e -> t2 e
-    | Util.Inl (a,t1') -> Proof.plus (Proof.ret a) t1'
+    | Nil e -> t2 e
+    | Cons (a,t1') -> Proof.plus (Proof.ret a) t1'
 
 (* [tclIFCATCH a s f] is a generalisation of [tclORELSE]: if [a]
    succeeds at least once then it behaves as [tclBIND a s] otherwise, if [a]
@@ -241,8 +241,8 @@ let tclIFCATCH a s f =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   Proof.split a >>= function
-    | Util.Inr e -> f e
-    | Util.Inl (x,a') -> Proof.plus (s x) (fun e -> (a' e) >>= fun x' -> (s x'))
+    | Nil e -> f e
+    | Cons (x,a') -> Proof.plus (s x) (fun e -> (a' e) >>= fun x' -> (s x'))
 
 (* [tclONCE t] fails if [t] fails, otherwise it has exactly one
    success. *)
@@ -250,8 +250,8 @@ let tclONCE t =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   Proof.split t >>= function
-    | Util.Inr e -> tclZERO e
-    | Util.Inl (x,_) -> tclUNIT x
+    | Nil e -> tclZERO e
+    | Cons (x,_) -> tclUNIT x
 
 (* Focuses a tactic at a range of subgoals, found by their indices. *)
 (* arnaud: bug if 0 goals ! *)

@@ -1,6 +1,9 @@
 (* This is an interface for the code extracted from bootstrap/Monad.v.
    The relevant comments are overthere. *)
 
+type ('a, 'b) list_view =
+| Nil of exn
+| Cons of 'a * 'b
 
 type proofview = { initial : (Term.constr * Term.types) list;
                    solution : Evd.evar_map; comb : Goal.goal list }
@@ -58,7 +61,7 @@ module Logical : sig
 
   val zero : exn -> 'a t
   val plus : 'a t -> (exn -> 'a t) -> 'a t
-  val split : 'a t -> (('a*(exn->'a t),exn) Util.union) t
+  val split : 'a t -> (('a,(exn->'a t)) list_view) t
 
   val lift : 'a NonLogical.t -> 'a t
 
