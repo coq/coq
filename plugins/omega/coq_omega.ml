@@ -1782,7 +1782,9 @@ let destructure_hyps =
 	end
   in
   Proofview.Goal.hyps >>= fun hyps ->
-  loop (Environ.named_context_of_val hyps)
+  try (* type_of can raise exceptions *)
+    loop (Environ.named_context_of_val hyps)
+  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 
 let destructure_goal =
   Proofview.Goal.concl >>= fun concl ->

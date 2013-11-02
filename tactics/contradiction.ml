@@ -41,7 +41,7 @@ let absurd c = Proofview.V82.tactic (absurd c)
 
 let filter_hyp f tac =
   let rec seek = function
-    | [] -> raise Not_found
+    | [] -> Proofview.tclZERO Not_found
     | (id,_,t)::rest when f t -> tac id
     | _::rest -> seek rest in
   Proofview.Goal.hyps >>= fun hyps ->
@@ -68,7 +68,8 @@ let contradiction_context =
 	           | Not_found -> seek_neg rest
                    | e -> Proofview.tclZERO e
                  end)
-	  | _ -> seek_neg rest in
+	  | _ -> seek_neg rest
+  in
   Proofview.Goal.hyps >>= fun hyps ->
   let hyps = Environ.named_context_of_val hyps in
   seek_neg hyps
@@ -82,6 +83,7 @@ let contradiction_term (c,lbind as cl) =
   Proofview.tclEVARMAP >= fun sigma ->
   Proofview.Goal.env >>= fun env ->
   Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+  try (* type_of can raise exceptions. *)
   let typ = type_of c in
   let _, ccl = splay_prod env sigma typ in
   if is_empty_type ccl then
@@ -99,6 +101,7 @@ let contradiction_term (c,lbind as cl) =
         | Not_found -> Proofview.tclZERO (Errors.UserError ("",Pp.str"Not a contradiction."))
         | e -> Proofview.tclZERO e
       end
+  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 
 let contradiction = function
   | None -> Tacticals.New.tclTHEN intros contradiction_context

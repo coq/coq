@@ -247,6 +247,7 @@ let _M =mkMeta
 
 let rec proof_tac p : unit Proofview.tactic =
   Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+  try (* type_of can raise exceptions *)
   match p.p_rule with
       Ax c -> Proofview.V82.tactic (exact_check c)
     | SymAx c ->
@@ -313,6 +314,7 @@ let rec proof_tac p : unit Proofview.tactic =
 	 let injt=
 	   mkApp (Lazy.force _f_equal,[|intype;outtype;proj;ti;tj;_M 1|]) in
 	   Tacticals.New.tclTHEN (Proofview.V82.tactic (refine injt)) (proof_tac prf)
+  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 
 let refute_tac c t1 t2 p =
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
@@ -454,12 +456,14 @@ let f_equal =
   Proofview.Goal.concl >>= fun concl ->
   Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
   let cut_eq c1 c2 =
-    let ty = Termops.refresh_universes (type_of c1) in
-    Proofview.V82.tactic begin
-      tclTHENTRY
-        (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|])))
-        (simple_reflexivity ())
-    end
+    try (* type_of can raise an exception *)
+      let ty = Termops.refresh_universes (type_of c1) in
+      Proofview.V82.tactic begin
+        tclTHENTRY
+          (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|])))
+          (simple_reflexivity ())
+      end
+    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   in
   Proofview.tclORELSE
     begin match kind_of_term concl with

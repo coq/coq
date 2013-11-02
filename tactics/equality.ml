@@ -467,9 +467,11 @@ let general_multi_multi_rewrite with_evars l cl tac =
   let do1 l2r f =
     Proofview.tclEVARMAP >= fun sigma ->
     Proofview.Goal.env >>= fun env ->
-    let sigma,c = f env sigma in
-    Tacticals.New.tclWITHHOLES with_evars
-      (general_multi_rewrite l2r with_evars ?tac c) sigma cl in
+    try (* f (an interpretation function) can raise exceptions *)
+      let sigma,c = f env sigma in
+      Tacticals.New.tclWITHHOLES with_evars
+        (general_multi_rewrite l2r with_evars ?tac c) sigma cl 
+    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e in
   let rec doN l2r c = function
     | Precisely n when n <= 0 -> Proofview.tclUNIT ()
     | Precisely 1 -> do1 l2r c
@@ -859,17 +861,20 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
 let onEquality with_evars tac (c,lbindc) =
   Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
   Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind >>= fun reduce_to_quantified_ind ->
+  try (* type_of can raise exceptions *)
   let t = type_of c in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
-  Tacmach.New.of_old make_clenv_binding >>= fun make_clenv_binding ->
-  let eq_clause = make_clenv_binding (c,t') lbindc in
+  Tacmach.New.of_old (fun gl -> make_clenv_binding gl (c,t') lbindc) >>= fun eq_clause ->
+  begin try (* clenv_pose_dependent_evars can raise exceptions *)
   let eq_clause' = clenv_pose_dependent_evars with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
-  Tacmach.New.of_old find_this_eq_data_decompose >>= fun find_this_eq_data_decompose ->
-  let eq,eq_args = find_this_eq_data_decompose eqn in
+  Tacmach.New.of_old (fun gl -> find_this_eq_data_decompose gl eqn) >>= fun (eq,eq_args) ->
   Tacticals.New.tclTHEN
     (Proofview.V82.tactic (Refiner.tclEVARS eq_clause'.evd))
     (tac (eq,eqn,eq_args) eq_clause')
+    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+  end
+  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 
 let onNegatedEquality with_evars tac =
   Proofview.tclEVARMAP >= fun sigma ->

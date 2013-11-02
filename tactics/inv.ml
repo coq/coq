@@ -449,12 +449,13 @@ let raw_inversion inv_kind id status names =
   let c = mkVar id in
   Tacmach.New.pf_apply Tacred.reduce_to_atomic_ind >>= fun reduce_to_atomic_ind ->
   Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
-  let (ind,t) =
+  begin
     try
-      reduce_to_atomic_ind (type_of c)
+      Proofview.tclUNIT (reduce_to_atomic_ind (type_of c))
     with UserError _ ->
-      errorlabstrm "raw_inversion"
-	(str ("The type of "^(Id.to_string id)^" is not inductive.")) in
+      Proofview.tclZERO (Errors.UserError ("raw_inversion" ,
+	str ("The type of "^(Id.to_string id)^" is not inductive.")))
+  end >= fun (ind,t) ->
   Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) >>= fun indclause ->
   let ccl = clenv_type indclause in
   check_no_metas indclause ccl;

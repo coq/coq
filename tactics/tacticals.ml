@@ -570,7 +570,10 @@ module New = struct
     (* applying elimination_scheme just a little modified *)
     let indclause' = clenv_match_args indbindings indclause in
     Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
-    Tacmach.New.of_old (fun gl -> mk_clenv_from gl (elim,type_of elim)) >>= fun elimclause ->
+    begin try (* type_of can raise an exception *)
+            Tacmach.New.of_old (fun gl -> mk_clenv_from gl (elim,type_of elim))
+      with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+    end >>= fun elimclause ->
     let indmv =
       match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
       | Meta mv -> mv

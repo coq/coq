@@ -421,22 +421,12 @@ module Notations = struct
   let (>-) = Goal.bind
   let (>=) = tclBIND
   let (>>=) t k =
-    (* spiwack: the application of List.map may raise errors, as this
-       combinator is mostly used in porting historical tactic code,
-       where the error flow is somewhat hard to follow, hence the
-       try/with *)
-      t >= fun l ->
-      try tclDISPATCH (List.map k l)
-      with e when Errors.noncritical e -> tclZERO e
+    t >= fun l ->
+    tclDISPATCH (List.map k l)
   let (>>==) t k =
-    (* spiwack: the application of List.map may raise errors, as this
-       combinator is mostly used in porting historical tactic code,
-       where the error flow is somewhat hard to follow, hence the
-       try/with *)
     begin
       t >= fun l ->
-      try tclDISPATCHL (List.map k l)
-      with e when Errors.noncritical e -> tclZERO e
+      tclDISPATCHL (List.map k l)
     end >= fun l' ->
     tclUNIT (List.flatten l')
   let (<*>) = tclTHEN
@@ -531,6 +521,8 @@ module V82 = struct
 
   let put_status b _env =
     Proof.lift (Message.put b)
+
+  let catchable_exception = Errors.noncritical
 end
 
 

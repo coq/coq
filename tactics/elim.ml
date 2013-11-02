@@ -87,6 +87,7 @@ let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
   Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+  try (* type_of can raise exceptions *)
   let typc = type_of c in
   Tacticals.New.tclTHENS (Proofview.V82.tactic (cut typc))
     [ Tacticals.New.tclTHEN (intro_using tmphyp_name)
@@ -94,6 +95,7 @@ let general_decompose recognizer c =
 	    (Tacticals.New.ifOnHyp recognizer (general_decompose_aux recognizer)
 	      (fun id -> Proofview.V82.tactic (clear [id]))));
        Proofview.V82.tactic (exact_no_check c) ]
+  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 
 let head_in =
   Goal.env >- fun env ->

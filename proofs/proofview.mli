@@ -268,6 +268,10 @@ module V82 : sig
 
   (* marks as unsafe if the argument is [false] *)
   val put_status : bool -> unit tactic
+
+  (* exception for which it is deemed to be safe to transmute into
+     tactic failure. *)
+  val catchable_exception : exn -> bool
 end
 
 

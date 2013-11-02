@@ -1283,6 +1283,7 @@ let check_number_of_constructors expctdnumopt i nconstr =
 let constructor_tac with_evars expctdnumopt i lbind =
   Proofview.Goal.concl >>= fun cl ->
   Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind >>= fun reduce_to_quantified_ind ->
+  try (* reduce_to_quantified_ind can raise an exception *)
   let (mind,redcl) = reduce_to_quantified_ind cl in
   let nconstr =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
@@ -1291,6 +1292,7 @@ let constructor_tac with_evars expctdnumopt i lbind =
   let apply_tac = Proofview.V82.tactic (general_apply true false with_evars (dloc,(cons,lbind))) in
   (Tacticals.New.tclTHENLIST
      [Proofview.V82.tactic (convert_concl_no_check redcl DEFAULTcast); intros; apply_tac])
+  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 
 let one_constructor i lbind = constructor_tac false None i lbind
 
@@ -1303,6 +1305,7 @@ let any_constructor with_evars tacopt =
   let t = match tacopt with None -> Proofview.tclUNIT () | Some t -> t in
   Proofview.Goal.concl >>= fun cl ->
   Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind >>= fun reduce_to_quantified_ind ->
+  try (* reduce_to_quantified_ind can raise an exception *)
   let mind = fst (reduce_to_quantified_ind cl) in
   let nconstr =
     Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
@@ -1311,6 +1314,7 @@ let any_constructor with_evars tacopt =
     (List.map
       (fun i -> Tacticals.New.tclTHEN (constructor_tac with_evars None i NoBindings) t)
       (List.interval 1 nconstr))
+  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 
 let left_with_bindings  with_evars = constructor_tac with_evars (Some 2) 1
 let right_with_bindings with_evars = constructor_tac with_evars (Some 2) 2
@@ -1399,6 +1403,7 @@ let rewrite_hyp l2r id =
   Proofview.Goal.env >>= fun env ->
   Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
   Tacmach.New.pf_apply whd_betadeltaiota >>= fun whd_betadeltaiota ->
+  try (* type_of can raise an exception *)
   let t = whd_betadeltaiota (type_of (mkVar id)) in
   (* TODO: detect setoid equality? better detect the different equalities *)
   match match_with_equality_type t with
@@ -1417,6 +1422,7 @@ let rewrite_hyp l2r id =
 	Tacticals.New.tclTHEN (rew_on l2r onConcl) (Proofview.V82.tactic (tclTRY (clear [id])))
   | _ ->
       Proofview.tclZERO (Errors.UserError ("",Pp.str"Cannot find a known equation."))
+  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 
 let rec explicit_intro_names = function
 | (_, IntroIdentifier id) :: l ->
@@ -1947,8 +1953,11 @@ let forward usetac ipat c =
   match usetac with
   | None ->
       Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
-      let t = type_of c in
-      Tacticals.New.tclTHENFIRST (assert_as true ipat t) (Proofview.V82.tactic (exact_no_check c))
+      begin try (* type_of can raise an exception *)
+              let t = type_of c in
+              Tacticals.New.tclTHENFIRST (assert_as true ipat t) (Proofview.V82.tactic (exact_no_check c))
+        with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+      end
   | Some tac ->
       Tacticals.New.tclTHENFIRST (assert_as true ipat c) tac
 
@@ -2146,6 +2155,7 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
 let atomize_param_of_ind (indref,nparams,_) hyp0 =
   Tacmach.New.pf_get_hyp_typ hyp0 >>= fun tmptyp0 ->
   Tacmach.New.pf_apply reduce_to_quantified_ref >>= fun reduce_to_quantified_ref ->
+  try (* reduce_to_quantified_ref can raise an exception *)
   let typ0 =  reduce_to_quantified_ref indref tmptyp0 in
   let prods, indtyp = decompose_prod typ0 in
   let argl = snd (decompose_app indtyp) in
@@ -2181,6 +2191,7 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
       Proofview.tclUNIT ()
   in
   atomize_one (List.length argl) params
+  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 
 let find_atomic_param_of_ind nparams indtyp =
   let argl = snd (decompose_app indtyp) in
@@ -3193,6 +3204,7 @@ let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) n
   inhyps =
   Tacmach.New.pf_get_hyp_typ hyp0 >>= fun tmptyp0 ->
   Tacmach.New.pf_apply reduce_to_quantified_ref >>= fun reduce_to_quantified_ref ->
+  try (* reduce_to_quantified_ref can raise an exception *)
   let typ0 = reduce_to_quantified_ref indref tmptyp0 in
   let indvars = find_atomic_param_of_ind nparams ((strip_prod typ0)) in
   let induct_tac elim = Proofview.V82.tactic (tclTHENLIST [
@@ -3202,6 +3214,7 @@ let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) n
   ]) in
   apply_induction_in_context
     (Some (hyp0,inhyps)) elim indvars names induct_tac
+  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 
 let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbind) inhyps =
   Tacmach.New.of_old (find_induction_type isrec elim hyp0) >>= fun elim_info ->
@@ -3307,7 +3320,8 @@ let new_induct_gen_l isrec with_evars elim (eqname,names) lc =
 
 	    | _ ->
                 Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
-		let x =
+		try (* type_of can raise an exception *)
+                let x =
 		  id_of_name_using_hdchar (Global.env()) (type_of c) Anonymous in
 
                 Tacmach.New.of_old (fresh_id [] x) >>= fun id ->
@@ -3316,7 +3330,8 @@ let new_induct_gen_l isrec with_evars elim (eqname,names) lc =
 		let _ = letids:=id::!letids in
 		Tacticals.New.tclTHEN
 		  (letin_tac None (Name id) c None allHypsAndConcl)
-		  (atomize_list newl') in
+		  (atomize_list newl')
+                with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e in
   Tacticals.New.tclTHENLIST
     [
       (atomize_list lc);
@@ -3610,6 +3625,7 @@ let (forward_setoid_symmetry_in, setoid_symmetry_in) = Hook.make ()
 
 let symmetry_in id =
   Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+  try (* type_of can raise an exception *)
   let ctype = type_of (mkVar id) in
   let sign,t = decompose_prod_assum ctype in
   Proofview.tclORELSE
@@ -3627,6 +3643,7 @@ let symmetry_in id =
       | NoEquationFound -> Hook.get forward_setoid_symmetry_in id
       | e -> Proofview.tclZERO e
     end
+  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
 
 let intros_symmetry =
   Tacticals.New.onClause
