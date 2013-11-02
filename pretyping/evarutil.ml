@@ -326,6 +326,12 @@ let push_rel_context_to_named_context env typ =
     | Name id' when id_ord id id' = 0 -> None
     | Name id' -> Some id'
   in
+  let is_section_variable =
+    let global = Global.env () in
+    fun id ->
+      try ignore (Environ.lookup_named id global);true
+      with Not_found -> false
+  in
   (* move the rel context to a named context and extend the named instance *)
   (* with vars of the rel context *)
   (* We do keep the instances corresponding to local definition (see above) *)
@@ -334,18 +340,23 @@ let push_rel_context_to_named_context env typ =
       (fun (na,c,t) (subst, vsubst, avoid, env) ->
 	let id = next_name_away na avoid in
         match extract_if_neq id na with
-        | None ->
-	    let d = (id,Option.map (subst2 subst vsubst) c,subst2 subst vsubst t) in
-	    (mkVar id :: subst, vsubst, id::avoid, push_named d env)
-        | Some id0 ->
-            (* spiwack: if [id<>id0], rather than introducing a new binding
-               named [id], we will keep [id0] (the name given by the user)
-               and rename [id0] into [id] in the named context. *)
+        | Some id0 when not (is_section_variable id0) ->
+            (* spiwack: if [id<>id0], rather than introducing a new
+               binding named [id], we will keep [id0] (the name given
+               by the user) and rename [id0] into [id] in the named
+               context. Unless [id] is a section variable. *)
             let subst = List.map (replace_vars [id0,mkVar id]) subst in
             let vsubst = (id0,mkVar id)::vsubst in
             let d = (id0, Option.map (subst2 subst vsubst) c, subst2 subst vsubst t) in
             let env = replace_var_named_context id0  id env in
             (mkVar id0 :: subst, vsubst, id::avoid, push_named d env)
+        | _ ->
+            (* spiwack: if [id0] is a section variable renaming it is
+               incorrect. We revert to a less robust behaviour where
+               the new binder has name [id]. Which amounts to the same
+               behaviour than when [id=id0]. *)
+	    let d = (id,Option.map (subst2 subst vsubst) c,subst2 subst vsubst t) in
+	    (mkVar id :: subst, vsubst, id::avoid, push_named d env)
       )
       (rel_context env) ~init:([], [], ids, env) in
   (named_context_val env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
