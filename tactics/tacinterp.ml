@@ -1227,7 +1227,9 @@ and interp_tacarg ist arg =
         interp_tacarg ist a >>== fun a_interp ->
         acc >>== fun acc -> (Proofview.Goal.return (a_interp::acc))
       end la ((Proofview.Goal.return [])) >>== fun la_interp ->
-      tac_of_old (fun gl -> interp_external loc ist { gl with sigma=project gl } com req la_interp)
+      Proofview.Goal.enterl begin fun gl ->
+        interp_external loc ist gl com req la_interp
+      end
   | TacFreshId l ->
       Proofview.Goal.enterl begin fun gl ->
       let id = Tacmach.New.of_old (fun gl -> pf_interp_fresh_id ist gl l) gl in
@@ -1497,12 +1499,10 @@ and apply_hyps_context ist env lz mt lctxt lgmatch mhyps hyps =
   apply_hyps_context_rec lctxt lgmatch hyps mhyps
   end
 
-and interp_external loc ist gl com req la = assert false
-(* arnaud: todo
-  let f ch = extern_request ch req gl la in
+and interp_external loc ist gl com req la =
+  let f ch = Tacmach.New.of_old (fun gl -> extern_request ch req gl la) gl in
   let g ch = internalise_tacarg ch in
   interp_tacarg ist (System.connect f g com)
-*)
 
 (* Interprets extended tactic generic arguments *)
 and interp_genarg ist gl x =
