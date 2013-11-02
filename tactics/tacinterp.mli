@@ -110,7 +110,7 @@ val eval_ltac_constr : raw_tactic_expr -> constr Proofview.glist Proofview.tacti
 
 (** Hides interpretation for pretty-print *)
 
-val hide_interp : raw_tactic_expr -> unit Proofview.tactic option -> unit Proofview.tactic
+val hide_interp : bool -> raw_tactic_expr -> unit Proofview.tactic option -> unit Proofview.tactic
 
 (** Declare the xml printer *)
 val declare_xml_printer :

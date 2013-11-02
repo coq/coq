@@ -2363,10 +2363,9 @@ let eval_ltac_constr t =
     (intern_tactic_or_tacarg (make_empty_glob_sign ()) t )
 
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
-let hide_interp t ot =
-  Proofview.Goal.enter begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
+(* [global] means that [t] should be internalized outside of goals. *)
+let hide_interp global t ot =
+  let hide_interp env sigma =
     let ist = { ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty;
                 gsigma = sigma; genv = env } in
     let te = intern_pure_tactic ist t in
@@ -2374,7 +2373,15 @@ let hide_interp t ot =
     match ot with
     | None -> t
     | Some t' -> Tacticals.New.tclTHEN t t'
-  end
+  in
+  if global then
+    Proofview.tclENV >= fun env ->
+    Proofview.tclEVARMAP >= fun sigma ->
+    hide_interp env sigma
+  else
+    Proofview.Goal.enter begin fun gl ->
+      hide_interp (Proofview.Goal.env gl) (Proofview.Goal.sigma gl)
+    end
 
 (***************************************************************************)
 (** Register standard arguments *)
