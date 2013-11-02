@@ -96,9 +96,7 @@ Definition sqrtrempos : forall p:positive, sqrt_data (Zpos p).
         end
     end); clear sqrtrempos; repeat compute_POS;
  try (try rewrite Heq; ring); try omega.
-(*arnaud: Admitted temporaire en attendant les modifs idoines de la compilation du pattern-matching
-Defined.*)
-Admitted.
+Defined.
 
 (** Define with integer input, but with a strong (readable) specification. *)
 Definition Zsqrt :
@@ -143,11 +141,8 @@ Definition Zsqrt :
                (fun r:Z => 0 = 0 * 0 + r /\ 0 * 0 <= 0 < (0 + 1) * (0 + 1)) 0
                _)
     end); try omega.
-(*arnaud: Admitted temporaire en attendant les modifs idoines de la compilation du pattern-matching
  split; [ omega | rewrite Heq; ring_simplify (s*s) ((s + 1) * (s + 1)); omega ].
 Defined.
-*)
-Admitted.
 
 (** Define a function of type Z->Z that computes the integer square root,
     but only for positive numbers, and 0 for others. *)
