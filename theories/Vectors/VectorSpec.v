@@ -59,7 +59,7 @@ Qed.
 Lemma shiftrepeat_nth A: forall n k (v: t A (S n)),
   nth (shiftrepeat v) (Fin.L_R 1 k) = nth v k.
 Proof.
-refine (@Fin.rectS _ _ _); intros.
+refine (@Fin.rectS _ _ _); lazy beta; [ intros n v | intros n p H v ].
   revert n v; refine (@caseS _ _ _); simpl; intros. now destruct t.
   revert p H.
   refine (match v as v' in t _ m return match m as m' return t A m' -> Type with
@@ -67,7 +67,7 @@ refine (@Fin.rectS _ _ _); intros.
       (forall v0 : t A (S n), (shiftrepeat v0) [@ Fin.L_R 1 p ] = v0 [@p]) ->
       (shiftrepeat v) [@Fin.L_R 1 (Fin.FS p)] = v [@Fin.FS p]
     |_ => fun _ => @ID end v' with
-  |[] => @id |h :: t => _ end). destruct n0. exact @id. now simpl.
+  |[] => @id |h :: t => _ end). destruct H. exact @id. now simpl.
 Qed.
 
 Lemma shiftrepeat_last A: forall n (v: t A (S n)), last (shiftrepeat v) = last v.

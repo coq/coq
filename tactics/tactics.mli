@@ -408,7 +408,9 @@ val emit_side_effects : Declareops.side_effects -> tactic
 
 (** Tacticals defined directly in term of Proofview *)
 module New : sig
-  open Proofview
 
+  val refine : Evd.open_constr -> unit Proofview.tactic
+
+  open Proofview
   val exact_proof : Constrexpr.constr_expr -> unit tactic
 end

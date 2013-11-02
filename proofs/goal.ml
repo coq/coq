@@ -198,7 +198,7 @@ module Refinable = struct
       post_defs
     in
     (* [delta_evars] in the shape of a list of [evar]-s*)
-    let delta_list = List.map fst (Evar.Map.bindings delta_evars) in
+    let delta_list = List.rev_map fst (Evar.Map.bindings delta_evars) in
     (* The variables in [myevars] are supposed to be stored
        in decreasing order. Breaking this invariant might cause
        many things to go wrong. *)
@@ -233,10 +233,10 @@ module Refinable = struct
       open_constr
 
   let constr_of_open_constr handle check_type (evars, c) env rdefs gl info =
-    let delta = update_handle handle !rdefs evars in
-      rdefs := Evar.Map.fold (fun ev evi evd -> Evd.add evd ev evi) delta !rdefs;
-      if check_type then with_type c (Evd.evar_concl (content !rdefs gl)) env rdefs gl info
-      else c
+    let _ = update_handle handle !rdefs evars in
+    rdefs := Evd.fold (fun ev evi evd -> if not (Evd.mem !rdefs ev) then Evd.add evd ev evi else evd) evars !rdefs;
+    if check_type then with_type c (Evd.evar_concl (content !rdefs gl)) env rdefs gl info
+    else c
 
 end
 

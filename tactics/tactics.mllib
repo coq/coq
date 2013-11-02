@@ -13,7 +13,6 @@ Elim
 Auto
 Equality
 Contradiction
-Refine
 Inv
 Leminv
 Tacsubst

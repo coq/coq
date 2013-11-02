@@ -3788,8 +3788,15 @@ let emit_side_effects eff gl =
 
 (** Tacticals defined directly in term of Proofview *)
 module New = struct
-  open Proofview
+  open Proofview.Notations
 
   let exact_proof c = Proofview.V82.tactic (exact_proof c)
+
+  let refine c =
+    let c = Goal.Refinable.make begin fun h ->
+      Goal.Refinable.constr_of_open_constr h false c
+    end in
+    Proofview.Goal.lift c >>= fun c ->
+    Proofview.tclSENSITIVE (Goal.refine c)
 
 end

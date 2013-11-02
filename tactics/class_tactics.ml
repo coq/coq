@@ -725,7 +725,7 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl 
    with Not_found -> tclFAIL 0 (str" typeclasses eauto failed on: " ++ Printer.pr_goal gl) gl
 
 let _ = Classes.refine_ref := begin fun c ->
-  Refine.refine c
+  Tactics.New.refine c
 end
 
 (** Take the head of the arity of a constr.

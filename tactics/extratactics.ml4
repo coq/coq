@@ -321,13 +321,11 @@ END
 (**********************************************************************)
 (* Refine                                                             *)
 
-open Refine
-
 TACTIC EXTEND refine
-  [ "refine" casted_open_constr(c) ] -> [ refine c ]
+  [ "refine" casted_open_constr(c) ] -> [ Tactics.New.refine c ]
 END
 
-let refine_tac = refine
+let refine_tac = Tactics.New.refine
 
 (**********************************************************************)
 (* Inversion lemmas (Leminv)                                          *)
