@@ -163,7 +163,7 @@ let decideGralEquality =
     begin
       Proofview.Goal.enter begin fun gl ->
         let concl = Proofview.Goal.concl gl in
-        match_eqdec concl >= fun eqonleft,_,c1,c2,typ ->
+        match_eqdec concl >= fun (eqonleft,_,c1,c2,typ) ->
         let headtyp = Tacmach.New.of_old (fun g -> hd_app (pf_compute g typ)) gl in
         begin match kind_of_term headtyp with
         | Ind mi -> Proofview.tclUNIT mi
