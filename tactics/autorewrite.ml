@@ -114,7 +114,7 @@ let autorewrite ?(conds=Naive) tac_main lbas =
 
 let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
  (* let's check at once if id exists (to raise the appropriate error) *)
- Goal.sensitive_list_map Tacmach.New.pf_get_hyp idl >>- fun _ ->
+ Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive idl) >>- fun _ ->
  let general_rewrite_in id =
   let id = ref id in
   let to_be_cleared = ref false in

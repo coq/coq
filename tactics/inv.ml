@@ -443,9 +443,9 @@ let rewrite_equations_tac (gene, othin) id neqns names ba =
 
 
 let raw_inversion inv_kind id status names =
-  Goal.env >>- fun env ->
-  Goal.defs >>- fun sigma ->
-  Goal.concl >>- fun concl ->
+  Proofview.tclEVARMAP >= fun sigma ->
+  Proofview.Goal.env >>- fun env ->
+  Proofview.Goal.concl >>- fun concl ->
   let c = mkVar id in
   Tacmach.New.pf_apply Tacred.reduce_to_atomic_ind >>- fun reduce_to_atomic_ind ->
   Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
@@ -522,11 +522,11 @@ let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
  * back to their places in the hyp-list. *)
 
 let invIn k names ids id =
-  Goal.sensitive_list_map Tacmach.New.pf_get_hyp ids >>- fun hyps ->
-  Goal.concl >>- fun concl ->
+  Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive ids) >>- fun hyps ->
+  Proofview.Goal.concl >>- fun concl ->
   let nb_prod_init = nb_prod concl in
   let intros_replace_ids =
-    Goal.concl >>- fun concl ->
+    Proofview.Goal.concl >>- fun concl ->
     let nb_of_new_hyp =
       nb_prod concl - (List.length hyps + nb_prod_init)
     in

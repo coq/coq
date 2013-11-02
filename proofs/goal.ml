@@ -352,39 +352,6 @@ let env env _ _ _ = env
 let defs _ rdefs _ _ =
   !rdefs
 
-(* Cf mli for more detailed comment.
-    [null], [plus], [here] and [here_list] use internal exception [UndefinedHere]
-    to communicate whether or not the value is defined in the particular context. *)
-exception UndefinedHere
-(* no handler: this should never be allowed to reach toplevel *)
-let null _ _ _ _ = raise UndefinedHere
-
-let plus s1 s2 env rdefs goal info =
-  try s1 env rdefs goal info
-  with UndefinedHere -> s2 env rdefs goal info
-
-(* Equality of two goals *)
-let equal_pointer { content = e1 } { content = e2 } = Evar.equal e1 e2
-
-let here goal value _ _ goal' _ =
-  if equal_pointer goal goal' then
-    value
-  else
-    raise UndefinedHere
-
-(* arnaud: voir à la passer dans Util ? *)
-let rec list_mem_with eq x = function
-  | y::_ when eq x y -> true
-  | _::l -> list_mem_with eq x l
-  | [] -> false
-
-let here_list goals value _ _ goal' _ =
-  if list_mem_with equal_pointer goal' goals then
-    value
-  else
-    raise UndefinedHere
-
-
 (*** Conversion in goals ***)
 
 let convert_hyp check (id,b,bt as d) env rdefs gl info =

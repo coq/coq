@@ -134,19 +134,29 @@ val pr_glls   : goal list sigma -> Pp.std_ppcmds
 
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New : sig
+  open Goal
+  open Proofview
 
-  val pf_apply : (env -> evar_map -> 'a) -> 'a Goal.sensitive
-  val pf_global : identifier -> constr Goal.sensitive
-  val of_old : (Proof_type.goal Evd.sigma -> 'a) -> 'a Goal.sensitive
+  val pf_apply : (env -> evar_map -> 'a) -> 'a glist tactic
+  val pf_global_sensitive : identifier -> constr sensitive
+  val pf_global : identifier -> constr glist tactic
+  val of_old : (Proof_type.goal Evd.sigma -> 'a) -> 'a glist tactic
 
-  val pf_get_new_id  : identifier -> identifier Goal.sensitive
-  val pf_ids_of_hyps : identifier list Goal.sensitive
-  val pf_hyps_types : (identifier * types) list Goal.sensitive
+  val pf_get_new_id  : identifier -> identifier glist tactic
+  val pf_ids_of_hyps_sensitive : identifier list sensitive
+  val pf_ids_of_hyps : identifier list glist tactic
+  val pf_hyps_types : (identifier * types) list glist tactic
 
-  val pf_get_hyp : identifier -> named_declaration Goal.sensitive
-  val pf_get_hyp_typ        : identifier -> types Goal.sensitive
-  val pf_last_hyp           : named_declaration Goal.sensitive
+  val pf_get_hyp_sensitive : identifier -> named_declaration sensitive
+  val pf_get_hyp : identifier -> named_declaration glist tactic
+  val pf_get_hyp_typ_sensitive : identifier -> types sensitive
+  val pf_get_hyp_typ        : identifier -> types glist tactic
+  val pf_last_hyp           : named_declaration glist tactic
 end
+
+
+
+
 
 
 

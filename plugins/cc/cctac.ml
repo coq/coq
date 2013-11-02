@@ -348,7 +348,7 @@ let convert_to_hyp_tac c1 t1 c2 t2 p =
 let discriminate_tac cstr p =
   let t1=constr_of_term p.p_lhs and t2=constr_of_term p.p_rhs in
   Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls t1)) >>- fun intype ->
-  Goal.concl >>- fun concl ->
+  Proofview.Goal.concl >>- fun concl ->
   let outsort = mkType (Termops.new_univ ()) in
   Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) >>- fun xid ->
   Tacmach.New.of_old (pf_get_new_id (Id.of_string "t")) >>- fun tid ->
@@ -394,7 +394,7 @@ let cc_tactic depth additionnal_terms =
 		let cstr=(get_constructor_info uf ipac.cnode).ci_constr in
 		discriminate_tac cstr p
 	    | Incomplete ->
-                Goal.env >>- fun env ->
+                Proofview.Goal.env >>- fun env ->
 		let metacnt = ref 0 in
 		let newmeta _ = incr metacnt; _M !metacnt in
 		let terms_to_complete =
@@ -451,7 +451,7 @@ let simple_reflexivity () = apply (Lazy.force _refl_equal)
 *)
 
 let f_equal =
-  Goal.concl >>- fun concl ->
+  Proofview.Goal.concl >>- fun concl ->
   Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
   let cut_eq c1 c2 =
     let ty = Termops.refresh_universes (type_of c1) in

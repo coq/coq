@@ -426,14 +426,18 @@ let find_name loc decl = function
       (* this case must be compatible with [find_intro_names] below. *)
       Goal.env >- fun env ->
       Goal.defs >- fun sigma ->
-      Tacmach.New.of_old (fresh_id idl (default_id env sigma decl))
-  | IntroBasedOn (id,idl) ->  Tacmach.New.of_old (fresh_id idl id)
+      Goal.V82.to_sensitive (fresh_id idl (default_id env sigma decl))
+  | IntroBasedOn (id,idl) ->  Goal.V82.to_sensitive (fresh_id idl id)
   | IntroMustBe id ->
       (* When name is given, we allow to hide a global name *)
-      Tacmach.New.pf_ids_of_hyps >- fun ids_of_hyps ->
+      Goal.hyps >- fun hyps ->
+      let hyps = Environ.named_context_of_val hyps in
+      let ids_of_hyps = ids_of_named_context hyps in
       let id' = next_ident_away id ids_of_hyps in
       if not (Id.equal id' id) then user_err_loc (loc,"",pr_id id ++ str" is already used.");
       Goal.return id'
+let find_name loc decl x =
+  Proofview.Goal.lift (find_name loc decl x)
 
 (* Returns the names that would be created by intros, without doing
    intros.  This function is supposed to be compatible with an
@@ -456,7 +460,7 @@ let build_intro_tac id dest tac = match dest with
   | dest -> Tacticals.New.tclTHENLIST [Proofview.V82.tactic (introduction id); Proofview.V82.tactic (move_hyp true id dest); tac id]
 
 let rec intro_then_gen loc name_flag move_flag force_flag dep_flag tac =
-  Goal.concl >>- fun concl ->
+  Proofview.Goal.concl >>- fun concl ->
   match kind_of_term concl with
     | Prod (name,t,u) when not dep_flag || (dependent (mkRel 1) u) ->
         find_name loc (name,None,t) name_flag >>- fun name ->
@@ -1278,7 +1282,7 @@ let check_number_of_constructors expctdnumopt i nconstr =
   if i > nconstr then error "Not enough constructors."
 
 let constructor_tac with_evars expctdnumopt i lbind =
-  Goal.concl >>- fun cl ->
+  Proofview.Goal.concl >>- fun cl ->
   Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind >>- fun reduce_to_quantified_ind ->
   let (mind,redcl) = reduce_to_quantified_ind cl in
   let nconstr =
@@ -1298,7 +1302,7 @@ let one_constructor i lbind = constructor_tac false None i lbind
 
 let any_constructor with_evars tacopt =
   let t = match tacopt with None -> Proofview.tclUNIT () | Some t -> t in
-  Goal.concl >>- fun cl ->
+  Proofview.Goal.concl >>- fun cl ->
   Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind >>- fun reduce_to_quantified_ind ->
   let mind = fst (reduce_to_quantified_ind cl) in
   let nconstr =
@@ -1393,7 +1397,7 @@ let rewrite_hyp l2r id =
     Hook.get forward_subst_one true x (id,rhs,l2r) in
   let clear_var_and_eq c =
     tclTRY (tclTHEN (clear [id]) (tclTRY (clear [destVar c]))) in
-  Goal.env >>- fun env ->
+  Proofview.Goal.env >>- fun env ->
   Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
   Tacmach.New.pf_apply whd_betadeltaiota >>- fun whd_betadeltaiota ->
   let t = whd_betadeltaiota (type_of (mkVar id)) in
@@ -1504,39 +1508,42 @@ let make_id s = fresh_id [] (default_id_of_sort s)
 let prepare_intros s ipat =
   let make_id s = Tacmach.New.of_old (make_id s) in
   let fresh_id l id = Tacmach.New.of_old (fresh_id l id) in
+  let (>>=) t k =
+    t >>== fun x ->
+    Proofview.Goal.return (k x)
+  in
   match ipat with
   | None ->
-      make_id s >- fun id ->
-      Goal.return (id , Proofview.tclUNIT ())
+      make_id s >>= fun id ->
+      id , Proofview.tclUNIT ()
   | Some (loc,ipat) -> match ipat with
   | IntroIdentifier id ->
-      Goal.return (id, Proofview.tclUNIT ())
+      Proofview.Goal.return (id, Proofview.tclUNIT ())
   | IntroAnonymous ->
-      make_id s >- fun id ->
-      Goal.return (id  , Proofview.tclUNIT ())
+      make_id s >>= fun id ->
+      id  , Proofview.tclUNIT ()
   | IntroFresh id ->
-      fresh_id [] id >- fun id ->
-      Goal.return (id , Proofview.tclUNIT ())
+      fresh_id [] id >>= fun id ->
+      id , Proofview.tclUNIT ()
   | IntroWildcard ->
-      make_id s >- fun id ->
-      Goal.return (id , Proofview.V82.tactic (clear_wildcards [dloc,id]))
+      make_id s >>= fun id ->
+      id , Proofview.V82.tactic (clear_wildcards [dloc,id])
   | IntroRewrite l2r ->
-      make_id s >- fun id ->
-      Goal.return (id, Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl)
+      make_id s >>= fun id ->
+      id, Hook.get forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | IntroOrAndPattern ll ->
-      make_id s >- fun id ->
-      Goal.return (id ,
+      make_id s >>= fun id ->
+      id ,
       Tacticals.New.onLastHypId
 	(intro_or_and_pattern loc true ll [] []
 	  (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ l -> Proofview.V82.tactic (clear_wildcards l))))
-      )
   | IntroInjection l ->
-      make_id s >- fun id ->
-      Goal.return (id ,
+      make_id s >>= fun id ->
+      id ,
       Proofview.V82.tactic (onLastHypId
 	(intro_decomp_eq loc true l [] []
 	  (fun thin -> intros_patterns true [] [] thin MoveLast (fun _ l -> Proofview.V82.tactic (clear_wildcards l))))
-      ))
+      )
   | IntroForthcoming _ -> user_err_loc
       (loc,"",str "Introduction pattern for one hypothesis expected")
 
@@ -1881,39 +1888,41 @@ let letin_abstract id c (test,out) (occs,check_occs) gl =
   (depdecls,lastlhyp,ccl,out test)
 
 let letin_tac_gen with_eq name (sigmac,c) test ty occs =
-  Goal.env >>- fun env ->
-  Goal.hyps >>- fun hyps ->
+  Proofview.Goal.env >>- fun env ->
+  Proofview.Goal.hyps >>- fun hyps ->
   let hyps = Environ.named_context_of_val hyps in
   let id =
     let t = match ty with Some t -> t | None -> typ_of env sigmac c in
     let x = id_of_name_using_hdchar (Global.env()) t name in
     if name == Anonymous then Tacmach.New.of_old (fresh_id [] x) else
-      if not (mem_named_context x hyps) then Goal.return x else
-	error ("The variable "^(Id.to_string x)^" is already declared.") in
+      Proofview.Goal.lift begin
+        if not (mem_named_context x hyps) then Goal.return x else
+	  error ("The variable "^(Id.to_string x)^" is already declared.")
+      end in
   id >>- fun id ->
   Tacmach.New.of_old (letin_abstract id c test occs) >>- fun (depdecls,lastlhyp,ccl,c) ->
-  let t = match ty with Some t -> Goal.return t | None -> Tacmach.New.pf_apply (fun e s -> typ_of e s c) in
+  let t = match ty with Some t -> (Proofview.Goal.return t) | None -> Tacmach.New.pf_apply (fun e s -> typ_of e s c) in
   t >>- fun t ->
   let newcl = match with_eq with
     | Some (lr,(loc,ido)) ->
       let heq = match ido with
         | IntroAnonymous -> Tacmach.New.of_old (fresh_id [id] (add_prefix "Heq" id))
 	| IntroFresh heq_base -> Tacmach.New.of_old (fresh_id [id] heq_base)
-        | IntroIdentifier id -> Goal.return id
-	| _ -> error"Expect an introduction pattern naming one hypothesis." in
-      heq >- fun heq ->
+        | IntroIdentifier id -> (Proofview.Goal.return id)
+	| _ -> Proofview.tclZERO (UserError ("" , Pp.str"Expect an introduction pattern naming one hypothesis.")) in
+      heq >>== fun heq ->
       let eqdata = build_coq_eq_data () in
       let args = if lr then [t;mkVar id;c] else [t;c;mkVar id]in
       let eq = applist (eqdata.eq,args) in
       let refl = applist (eqdata.refl, [t;mkVar id]) in
-      Goal.return begin
+      Proofview.Goal.return begin
         mkNamedLetIn id c t (mkLetIn (Name heq, refl, eq, ccl)),
         Tacticals.New.tclTHEN
 	  (intro_gen loc (IntroMustBe heq) lastlhyp true false)
 	  (Proofview.V82.tactic (thin_body [heq;id]))
       end
     | None ->
-	Goal.return (mkNamedLetIn id c t ccl, Proofview.tclUNIT ()) in
+	(Proofview.Goal.return (mkNamedLetIn id c t ccl, Proofview.tclUNIT ())) in
   newcl >>- fun (newcl,eq_tac) ->
   Tacticals.New.tclTHENLIST
     [ Proofview.V82.tactic (convert_concl_no_check newcl DEFAULTcast);
@@ -1924,12 +1933,12 @@ let letin_tac_gen with_eq name (sigmac,c) test ty occs =
 let make_eq_test c = (make_eq_test c,fun _ -> c)
 
 let letin_tac with_eq name c ty occs =
-  Goal.defs >>- fun sigma ->
+  Proofview.tclEVARMAP >= fun sigma ->
   letin_tac_gen with_eq name (sigma,c) (make_eq_test c) ty (occs,true)
 
 let letin_pat_tac with_eq name c ty occs =
-  Goal.env >>- fun env ->
-  Goal.defs >>- fun sigma ->
+  Proofview.tclEVARMAP >= fun sigma ->
+  Proofview.Goal.env >>- fun env ->
   letin_tac_gen with_eq name c
     (make_pattern_test env sigma c)
     ty (occs,true)
@@ -2095,7 +2104,7 @@ let induct_discharge dests avoid' tac (avoid,ra) names =
         let recpat = match names with
           | [loc,IntroIdentifier id as pat] ->
               let id' = next_ident_away (add_prefix "IH" id) avoid in
-	      Goal.return (pat, [dloc, IntroIdentifier id'])
+	      (Proofview.Goal.return (pat, [dloc, IntroIdentifier id']))
           | _ -> Tacmach.New.of_old (fun gl -> consume_pattern avoid recvarname deprec gl names) in
         recpat >>- fun (recpat,names) ->
         let dest = get_recarg_dest dests in
@@ -2152,7 +2161,7 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 =
       let indtyp = reduce_to_atomic_ref indref tmptyp0 in
       let argl = snd (decompose_app indtyp) in
       let c = List.nth argl (i-1) in
-      Goal.env >>- fun env ->
+      Proofview.Goal.env >>- fun env ->
       match kind_of_term c with
 	| Var id when not (List.exists (occur_var env id) avoid) ->
 	    atomize_one (i-1) ((mkVar id)::avoid)
@@ -2633,16 +2642,16 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id =
   Proofview.tclUNIT () >= fun () -> (* delay for [check_required_library] *)
   Coqlib.check_required_library Coqlib.jmeq_module_name;
   let args = 
-    Tacmach.New.pf_get_new_id id >>-- fun oldid ->
-    Tacmach.New.pf_get_hyp id >>-- fun (_, b, t) ->
-    Proofview.tclUNIT
-      begin match b with
+    Tacmach.New.pf_get_new_id id >>== fun oldid ->
+    Tacmach.New.pf_get_hyp id >>== fun (_, b, t) ->
+    Proofview.Goal.return begin
+      match b with
       | None -> let f, args = decompose_app t in
-		  Goal.return (f, args, false, id, oldid)
+	        (f, args, false, id, oldid)
       | Some t -> 
 	  let f, args = decompose_app t in
-	    Goal.return (f, args, true, id, oldid)
-      end
+	  (f, args, true, id, oldid)
+    end
   in
   args >>= fun (f, args, def, id, oldid) ->
   if List.is_empty args then Proofview.tclUNIT ()
@@ -3102,8 +3111,8 @@ let apply_induction_with_discharge induct_tac elim indhyps destopt avoid names t
    hypotheses from the context *)
 
 let apply_induction_in_context hyp0 elim indvars names induct_tac =
-  Goal.env >>- fun env ->
-  Goal.concl >>- fun concl ->
+  Proofview.Goal.env >>- fun env ->
+  Proofview.Goal.concl >>- fun concl ->
   let statuslists,lhyp0,indhyps,deps = cook_sign hyp0 indvars env in
   let deps = List.map (on_pi3 refresh_universes_strict) deps in
   let tmpcl = it_mkNamedProd_or_LetIn concl deps in
@@ -3259,15 +3268,15 @@ let new_induct_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
 	  (induction_with_atomization_of_ind_arg
 	    isrec with_evars elim names (id,lbind) inhyps)
     | _        ->
-        Goal.env >>- fun env ->
+        Proofview.tclEVARMAP >= fun defs ->
+        Proofview.Goal.env >>- fun env ->
 	let x = id_of_name_using_hdchar (Global.env()) (typ_of env sigma c)
 		  Anonymous in
         Tacmach.New.of_old (fresh_id [] x) >>- fun id ->
 	(* We need the equality name now *)
 	let with_eq = Option.map (fun eq -> (false,eq)) eqname in
 	(* TODO: if ind has predicate parameters, use JMeq instead of eq *)
-        Goal.env >>- fun env ->
-        Goal.defs >>- fun defs ->
+        Proofview.Goal.env >>- fun env ->
 	Tacticals.New.tclTHEN
           (* Warning: letin is buggy when c is not of inductive type *)
 	  (letin_tac_gen with_eq (Name id) (sigma,c)
@@ -3517,9 +3526,11 @@ let reflexivity_red allowred =
   let concl = if not allowred then Goal.concl
     else
       Goal.concl >- fun c ->
-      Tacmach.New.pf_apply (fun env sigma ->whd_betadeltaiota env sigma c)
+      Goal.env >- fun env ->
+      Goal.defs >- fun sigma ->
+      Goal.return (whd_betadeltaiota env sigma c)
   in
-  concl >>- fun concl ->
+  Proofview.Goal.lift concl >>- fun concl ->
     match match_with_equality_type concl with
     | None -> Proofview.tclZERO NoEquationFound
     | Some _ -> one_constructor 1 NoBindings
@@ -3572,9 +3583,11 @@ let symmetry_red allowred =
       Goal.concl
     else
       Goal.concl >- fun c ->
-      Tacmach.New.pf_apply (fun env sigma -> whd_betadeltaiota env sigma c)
+      Goal.env >- fun env ->
+      Goal.defs >- fun sigma ->
+      Goal.return (whd_betadeltaiota env sigma c)
   in
-  concl >>- fun concl ->
+  Proofview.Goal.lift concl >>- fun concl ->
   match_with_equation concl >= fun with_eqn ->
   match with_eqn with
   | Some eq_data,_,_ ->
@@ -3639,13 +3652,15 @@ let (forward_setoid_transitivity, setoid_transitivity) = Hook.make ()
 
 (* This is probably not very useful any longer *)
 let prove_transitivity hdcncl eq_kind t =
-  begin match eq_kind with
+  Proofview.Goal.lift begin match eq_kind with
   | MonomorphicLeibnizEq (c1,c2) ->
       Goal.return (mkApp (hdcncl, [| c1; t|]), mkApp (hdcncl, [| t; c2 |]))
   | PolymorphicLeibnizEq (typ,c1,c2) ->
       Goal.return (mkApp (hdcncl, [| typ; c1; t |]), mkApp (hdcncl, [| typ; t; c2 |]))
   | HeterogenousEq (typ1,c1,typ2,c2) ->
-      Tacmach.New.pf_apply Typing.type_of >- fun type_of ->
+      Goal.env >- fun env ->
+      Goal.defs >- fun sigma ->
+      let type_of = Typing.type_of env sigma in
       let typt = type_of t in
       Goal.return 
         (mkApp(hdcncl, [| typ1; c1; typt ;t |]),
@@ -3667,9 +3682,11 @@ let transitivity_red allowred t =
       Goal.concl
     else
       Goal.concl >- fun c ->
-      Tacmach.New.pf_apply (fun env sigma -> whd_betadeltaiota env sigma c)
+      Goal.env >- fun env ->
+      Goal.defs >- fun sigma ->
+      Goal.return (whd_betadeltaiota env sigma c)
   in
-  concl >>- fun concl ->
+  Proofview.Goal.lift concl >>- fun concl ->
   match_with_equation concl >= fun with_eqn ->
   match with_eqn with
   | Some eq_data,_,_ ->

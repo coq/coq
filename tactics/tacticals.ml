@@ -509,13 +509,16 @@ module New = struct
         Proofview.V82.tactic (Refiner.tclEVARS sigma) <*> tac x <*> check_evars_if
 
   let nthDecl m =
-    Goal.hyps >- fun hyps ->
-    let hyps = Environ.named_context_of_val hyps in
-    try Goal.return (List.nth hyps (m-1))
-    with Failure _ -> error "No such assumption."
+    Proofview.Goal.hyps >>== fun hyps ->
+    try
+      let hyps = Environ.named_context_of_val hyps in
+      (Proofview.Goal.return (List.nth hyps (m-1)))
+    with Failure _ -> tclZERO (UserError ("" , Pp.str"No such assumption."))
 
-  let nthHypId m = nthDecl m >- fun (id,_,_) -> Goal.return id
-  let nthHyp m = nthHypId m >- fun id -> Goal.return (mkVar id)
+  let nthHypId m = nthDecl m >>== fun (id,_,_) ->
+    Proofview.Goal.return id
+  let nthHyp m = nthHypId m >>== fun id ->
+    Proofview.Goal.return (mkVar id)
 
   let onNthHypId m tac =
     nthHypId m >>- tac
@@ -536,8 +539,8 @@ module New = struct
       tac2 id
 
   let fullGoal =
-    Tacmach.New.pf_ids_of_hyps >- fun hyps ->
-    Goal.return (None :: List.map Option.make hyps)
+    Tacmach.New.pf_ids_of_hyps >>== fun hyps ->
+    Proofview.Goal.return (None :: List.map Option.make hyps)
 
   let tryAllHyps tac =
     Tacmach.New.pf_ids_of_hyps >>- fun hyps ->

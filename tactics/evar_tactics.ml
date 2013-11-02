@@ -53,8 +53,8 @@ let instantiate n (ist,rawc) ido gl =
 open Proofview.Notations
 let let_evar name typ =
   let src = (Loc.ghost,Evar_kinds.GoalEvar) in
-  Goal.env >>- fun env ->
-  Goal.defs >>- fun sigma ->
+  Proofview.tclEVARMAP >= fun sigma ->
+  Proofview.Goal.env >>- fun env ->
   let sigma',evar = Evarutil.new_evar sigma env ~src typ in
   Tacticals.New.tclTHEN (Proofview.V82.tactic (Refiner.tclEVARS sigma'))
     (Tactics.letin_tac None name evar None Locusops.nowhere)

@@ -130,7 +130,7 @@ let solveArg eqonleft op a1 a2 tac =
 let solveEqBranch rectype =
   Proofview.tclORELSE
     begin
-      Goal.concl >>- fun concl ->
+      Proofview.Goal.concl >>- fun concl ->
       match_eqdec concl >= fun (eqonleft,op,lhs,rhs,_) ->
       let (mib,mip) = Global.lookup_inductive rectype in
       let nparams   = mib.mind_nparams in
@@ -155,7 +155,7 @@ let hd_app c = match kind_of_term c with
 let decideGralEquality =
   Proofview.tclORELSE
     begin
-      Goal.concl >>- fun concl ->
+      Proofview.Goal.concl >>- fun concl ->
       match_eqdec concl >= fun eqonleft,_,c1,c2,typ ->
       Tacmach.New.of_old (fun g -> hd_app (pf_compute g typ)) >>- fun headtyp ->
       begin match kind_of_term headtyp with

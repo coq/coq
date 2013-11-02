@@ -552,12 +552,13 @@ let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec =
         ( List.map (fun (_,_,sbl,_ ) -> sbl) list_id )
       in
       let fresh_id s =
-        Tacmach.New.of_old begin fun gsig ->
+        Goal.V82.to_sensitive begin fun gsig ->
           let fresh = fresh_id (!avoid) s gsig in
           avoid := fresh::(!avoid); fresh
         end
       in
-      Goal.sensitive_list_map fresh_id first_intros >>- fun fresh_first_intros ->
+      Proofview.Goal.lift (Goal.sensitive_list_map fresh_id first_intros) >>- fun fresh_first_intros ->
+      let fresh_id s = Proofview.Goal.lift (fresh_id s) in
       fresh_id (Id.of_string "x") >>- fun freshn ->
       fresh_id (Id.of_string "y") >>- fun freshm ->
       fresh_id (Id.of_string "Z") >>- fun freshz ->
@@ -591,7 +592,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
   Ci a1 ... an = Ci b1 ... bn
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
 *)
-                      Goal.concl >>- fun gl ->
+                      Proofview.Goal.concl >>- fun gl ->
                       match (kind_of_term gl) with
                       | App (c,ca) -> (
                         match (kind_of_term c) with
@@ -682,12 +683,13 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
         ( List.map (fun (_,_,_,slb) -> slb) list_id )
       in
       let fresh_id s =
-        Tacmach.New.of_old begin fun gsig ->
+        Goal.V82.to_sensitive begin fun gsig ->
           let fresh = fresh_id (!avoid) s gsig in
           avoid := fresh::(!avoid); fresh
         end
       in
-      Goal.sensitive_list_map fresh_id first_intros >>- fun fresh_first_intros ->
+      Proofview.Goal.lift (Goal.sensitive_list_map fresh_id first_intros) >>- fun fresh_first_intros ->
+      let fresh_id s = Proofview.Goal.lift (fresh_id s) in
       fresh_id (Id.of_string "x") >>- fun freshn ->
       fresh_id (Id.of_string "y") >>- fun freshm ->
       fresh_id (Id.of_string "Z") >>- fun freshz ->
@@ -709,7 +711,7 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
                       Tacticals.New.tclTHENLIST [Proofview.V82.tactic (apply (andb_true_intro()));
                                   simplest_split ;Auto.default_auto ]
                       );
-                      Goal.concl >>- fun gl ->
+                      Proofview.Goal.concl >>- fun gl ->
                   (* assume the goal to be eq (eq_type ...) = true *)
                         match (kind_of_term gl) with
                           | App(c,ca) -> (match (kind_of_term ca.(1)) with
@@ -819,12 +821,13 @@ let compute_dec_tact ind lnamesparrec nparrec =
       ( List.map (fun (_,_,_,slb) -> slb) list_id )
   in
   let fresh_id s =
-    Tacmach.New.of_old begin fun gsig ->
+    Goal.V82.to_sensitive begin fun gsig ->
       let fresh = fresh_id (!avoid) s gsig in
       avoid := fresh::(!avoid); fresh
     end
   in
-  Goal.sensitive_list_map fresh_id first_intros >>- fun fresh_first_intros ->
+  Proofview.Goal.lift (Goal.sensitive_list_map fresh_id first_intros) >>- fun fresh_first_intros ->
+  let fresh_id s = Proofview.Goal.lift (fresh_id s) in
   fresh_id (Id.of_string "x") >>- fun freshn ->
   fresh_id (Id.of_string "y") >>- fun freshm ->
   fresh_id (Id.of_string "H") >>- fun freshH ->

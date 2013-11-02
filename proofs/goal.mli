@@ -147,30 +147,6 @@ val env : Environ.env sensitive
 (* [defs] is the [Evd.evar_map] at the current evaluation point *)
 val defs : Evd.evar_map sensitive
 
-(* These four functions serve as foundation for the goal sensitive part
-    of the tactic monad (see Proofview).
-    [here] is a special sort of [return]: [here g a] is the value [a], but
-    does not have any value (it raises an exception) if evaluated in
-    any other goal than [g].
-    [here_list] is the same, except with a list of goals rather than a single one.
-    [plus a b] is the same as [a] if [a] is defined in the current goal, otherwise
-    it is [b]. Effectively it's defined in the goals where [a] and [b] are defined.
-    [null] is defined in no goal. (it is a neutral element for [plus]). *)
-(* spiwack: these primitives are a bit hackish, but I couldn't find another way
-    to pass information between goals, like for an intro tactic which gives to
-    each goal the name of the variable it introduce.
-    In pratice, in my experience, the primitives given in Proofview (in terms of
-    [here] and [plus]) are sufficient to define any tactics, hence these might
-    be another example of communication primitives between Goal and Proofview.
-    Still, I can't see a way to prevent using the Proofview primitive to read
-    a goal sensitive value out of its valid context. *)
-val null : 'a sensitive
-
-val plus : 'a sensitive -> 'a sensitive -> 'a sensitive 
-
-val here : goal -> 'a -> 'a sensitive 
-
-val here_list : goal list -> 'a -> 'a sensitive 
 
 (*** Additional functions ***)
 

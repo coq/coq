@@ -252,7 +252,7 @@ let initial_goals p = Proofview.initial_goals p.proofview
 
 let run_tactic env tac pr =
   let sp = pr.proofview in
-  let tacticced_proofview = Proofview.apply env tac sp in
+  let (_,tacticced_proofview) = Proofview.apply env tac sp in
   { pr with proofview = tacticced_proofview }
 
 let emit_side_effects eff pr =

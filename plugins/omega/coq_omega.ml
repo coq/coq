@@ -1781,11 +1781,11 @@ let destructure_hyps =
 	  | e when catchable_exception e -> loop lit
 	end
   in
-  Goal.hyps >>- fun hyps ->
+  Proofview.Goal.hyps >>- fun hyps ->
   loop (Environ.named_context_of_val hyps)
 
 let destructure_goal =
-  Goal.concl >>- fun concl ->
+  Proofview.Goal.concl >>- fun concl ->
   Tacmach.New.of_old decidability >>- fun decidability ->
   let rec loop t =
     match destructurate_prop t with

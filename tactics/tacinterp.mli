@@ -77,10 +77,10 @@ val interp_genarg : interp_sign -> goal sigma -> glob_generic_argument ->
   Evd.evar_map * typed_generic_argument
 
 (** Interprets any expression *)
-val val_interp : interp_sign -> glob_tactic_expr -> value Goal.sensitive Proofview.tactic
+val val_interp : interp_sign -> glob_tactic_expr -> value Proofview.glist Proofview.tactic
 
 (** Interprets an expression that evaluates to a constr *)
-val interp_ltac_constr : interp_sign -> glob_tactic_expr -> constr Goal.sensitive Proofview.tactic
+val interp_ltac_constr : interp_sign -> glob_tactic_expr -> constr Proofview.glist Proofview.tactic
 
 (** Interprets redexp arguments *)
 val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map * red_expr
@@ -106,7 +106,7 @@ val interp_tac_gen : value Id.Map.t -> Id.t list ->
 
 val interp : raw_tactic_expr -> unit Proofview.tactic
 
-val eval_ltac_constr : raw_tactic_expr -> constr Goal.sensitive Proofview.tactic
+val eval_ltac_constr : raw_tactic_expr -> constr Proofview.glist Proofview.tactic
 
 (** Hides interpretation for pretty-print *)
 

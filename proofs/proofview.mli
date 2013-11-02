@@ -118,7 +118,7 @@ val unfocus : focus_context -> proofview -> proofview
 type +'a tactic 
 
 (* Applies a tactic to the current proofview. *)
-val apply : Environ.env -> 'a tactic -> proofview -> proofview
+val apply : Environ.env -> 'a tactic -> proofview -> 'a * proofview
 
 (*** tacticals ***)
 
@@ -167,9 +167,6 @@ val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
     sense in the goals immediatly built by it, and would cause an anomaly
     is used otherwise. *)
 val tclDISPATCH : unit tactic list -> unit tactic
-(* arnaud: quick hack to fix the order of goal solving to comply with Ltac.
-   it will probably have to go. *)
-val tclDISPATCHS : 'a Goal.sensitive tactic list -> 'a Goal.sensitive tactic
 val tclDISPATCHL : 'a tactic list -> 'a list tactic
 
 (* [tclEXTEND b r e] is a variant to [tclDISPATCH], where the [r] tactic
@@ -178,18 +175,9 @@ val tclDISPATCHL : 'a tactic list -> 'a list tactic
     is applied to every goal in between. *)
 val tclEXTEND : unit tactic list -> unit tactic -> unit tactic list -> unit tactic
 
-(* A sort of bind which takes a [Goal.sensitive] as a first argument, 
-    the tactic then acts on each goal separately.
-    Allows backtracking between goals. *)
-val tclGOALBIND : 'a Goal.sensitive -> ('a -> 'b Goal.sensitive tactic) -> 'b Goal.sensitive tactic
-val tclGOALBINDU : 'a Goal.sensitive -> ('a -> unit tactic) -> unit tactic
-
 (* [tclSENSITIVE] views goal-type tactics as a special kind of tactics.*)
 val tclSENSITIVE : Goal.subgoals Goal.sensitive -> unit tactic 
 
-(* [lift_sensitive s] returns the list corresponding to the evaluation
-   of [s] on each of the focused goals *)
-val lift_sensitive : 'a Goal.sensitive -> 'a list tactic
 
 (* [tclPROGRESS t] behaves has [t] as long as [t] progresses. *)
 val tclPROGRESS : 'a tactic -> 'a tactic
@@ -197,7 +185,10 @@ val tclPROGRESS : 'a tactic -> 'a tactic
 (* [tclEVARMAP] doesn't affect the proof, it returns the current evar_map. *)
 val tclEVARMAP : Evd.evar_map tactic
 
-(* [tclENV] doesn't affect the proof, it returns the current evar_map. *)
+(* [tclENV] doesn't affect the proof, it returns the current
+   environment.  It is not the environment of a particular goal,
+   rather the "global" environment of the proof. The goal-wise
+   environment is returned by {!Proofview.Goal.env}. *)
 val tclENV : Environ.env tactic
 
 (* [tclTIMEOUT n t] runs [t] for at most [n] seconds, succeeds if [t]
@@ -206,37 +197,43 @@ val tclENV : Environ.env tactic
 val tclTIMEOUT : int -> unit tactic -> unit tactic
 
 val list_map : ('a -> 'b tactic) -> 'a list -> 'b list tactic
-val sensitive_list_map : ('a -> 'b Goal.sensitive tactic) -> 'a list -> 'b list Goal.sensitive tactic
 
 (*** Commands ***)
 
 val in_proofview : proofview -> (Evd.evar_map -> 'a) -> 'a
 
+(* spiwack: to help using `bind' like construct consistently. A glist
+   is promissed to have exactly one element per goal when it is
+   produced. *)
+type 'a glist  = private 'a list
+
 (* Notations for building tactics. *)
 module Notations : sig
   (* Goal.bind *)
   val (>-) : 'a Goal.sensitive -> ('a -> 'b Goal.sensitive) -> 'b Goal.sensitive
-  (* tclGOALBINDU *)
-  val (>>-) : 'a Goal.sensitive -> ('a -> unit tactic) -> unit tactic
-  (* tclGOALBIND *)
-  val (>>--) : 'a Goal.sensitive -> ('a -> 'b Goal.sensitive tactic) -> 'b Goal.sensitive tactic
+  (* [t >>- k] is [tclBIND t (fun l -> tclDISPATCH (List.map k l))] *)
+  val (>>-) : 'a glist tactic -> ('a -> unit tactic) -> unit tactic
+  (* arnaud: commenter *)
+  val (>>--) : 'a glist tactic -> ('a -> 'b glist tactic) -> 'b glist tactic
 
   (* tclBIND *)
   val (>=) : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
 
+  (* arnaud: commentaire à mettre à jour *)
   (* [(>>=)] (and its goal sensitive variant [(>>==)]) "binds" in one step the
       tactic monad and the goal-sensitive monad.
       It is strongly advised to use it everytieme an ['a Goal.sensitive tactic]
       needs a bind, since it usually avoids to delay the interpretation of the
       goal sensitive value to a location where it does not make sense anymore. *)
-  val (>>=) : 'a Goal.sensitive tactic -> ('a -> unit tactic) -> unit tactic
-  val (>>==) : 'a Goal.sensitive tactic -> ('a -> 'b Goal.sensitive tactic) -> 'b Goal.sensitive tactic
+  val (>>=) : 'a glist tactic -> ('a -> unit tactic) -> unit tactic
+  val (>>==) : 'a glist tactic -> ('a -> 'b glist tactic) -> 'b glist tactic
 
   (* tclTHEN *)
   val (<*>) : unit tactic -> 'a tactic -> 'a tactic
   (* tclOR *)
   val (<+>) : 'a tactic -> 'a tactic -> 'a tactic
 end
+
 
 (*** Compatibility layer with <= 8.2 tactics ***)
 module V82 : sig
@@ -266,4 +263,22 @@ module V82 : sig
      should be avoided as much as possible.  It should work as
      expected for a tactic obtained from {!V82.tactic} though. *)
   val of_tactic : 'a tactic -> tac
+end
+
+
+module Goal : sig
+
+  (* [lift_sensitive s] returns the list corresponding to the evaluation
+     of [s] on each of the focused goals *)
+  val lift : 'a Goal.sensitive -> 'a glist tactic
+  
+
+  (* [lift (Goal.return x)] *)
+  val return : 'a -> 'a glist tactic
+  (* [lift Goal.concl] *)    
+  val concl : Term.constr glist tactic
+  (* [lift Goal.hyps] *)
+  val hyps : Environ.named_context_val glist tactic
+  (* [lift Goal.env] *)
+  val env : Environ.env glist tactic
 end

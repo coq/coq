@@ -111,7 +111,7 @@ let head_in =
 
 let decompose_these c l =
   let indl = (*List.map inductive_of*) l in
-  head_in >>- fun head_in ->
+  Proofview.Goal.lift head_in >>- fun head_in ->
   general_decompose (fun (_,t) -> head_in indl t) c
 
 let decompose_nonrec c =

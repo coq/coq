@@ -116,7 +116,7 @@ END
 
 open Proofview.Notations
 let discrHyp id =
-  Goal.defs >>- fun sigma ->
+  Proofview.tclEVARMAP >= fun sigma ->
   discr_main {it = Term.mkVar id,NoBindings; sigma = sigma;}
 
 let injection_main c =
@@ -161,7 +161,7 @@ TACTIC EXTEND einjection_as
 END
 
 let injHyp id =
-  Goal.defs >>- fun sigma ->
+  Proofview.tclEVARMAP >= fun sigma ->
   injection_main { it = Term.mkVar id,NoBindings; sigma = sigma; }
 
 TACTIC EXTEND dependent_rewrite
@@ -667,8 +667,8 @@ let  mkCaseEq a  : unit Proofview.tactic =
        Tacticals.New.tclTHENLIST
          [Proofview.V82.tactic (Hiddentac.h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])]);
           begin
-            Goal.concl >>- fun concl ->
-            Goal.env >>- fun env ->
+            Proofview.Goal.concl >>- fun concl ->
+            Proofview.Goal.env >>- fun env ->
             Proofview.V82.tactic begin
 	      change_in_concl None
 	        (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl)
@@ -678,7 +678,7 @@ let  mkCaseEq a  : unit Proofview.tactic =
 
 
 let case_eq_intros_rewrite x =
-  begin
+  Proofview.Goal.lift begin
     Goal.concl >- fun concl ->
     Goal.return (nb_prod concl)
   end >>- fun n ->
@@ -686,7 +686,7 @@ let case_eq_intros_rewrite x =
   Tacticals.New.tclTHENLIST [
       mkCaseEq x;
     begin
-      Goal.concl >>- fun concl ->
+      Proofview.Goal.concl >>- fun concl ->
       Tacmach.New.pf_ids_of_hyps >>- fun hyps ->
       let n' = nb_prod concl in
       Tacmach.New.of_old (fun g -> fresh_id hyps (Id.of_string "heq") g) >>- fun h ->
@@ -721,7 +721,7 @@ let destauto_in id =
   destauto ctype
 
 TACTIC EXTEND destauto
-| [ "destauto" ] -> [ Goal.concl >>- fun concl -> destauto concl ]
+| [ "destauto" ] -> [ Proofview.Goal.concl >>- fun concl -> destauto concl ]
 | [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
 END
 

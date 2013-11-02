@@ -201,7 +201,7 @@ type +'a tactic = Environ.env -> 'a Inner.t
 (* Applies a tactic to the current proofview. *)
 let apply env t sp =
   let next = Backtrack.run (Inner.run (t env) sp) in
-  next.Inner.state
+  next.Inner.result , next.Inner.state
 
 (*** tacticals ***)
 
@@ -272,15 +272,10 @@ let tclFOCUS i j t env =
 
 (* arnaud: vérifier les commentaires de dispatch vis-à-vis de l'ordre
    d'évaluation des buts. Ne pas oublier le mli *)
+(* arnaud: commenter [tclDISPATCHL] *)
 (* Dispatch tacticals are used to apply a different tactic to each goal under
    consideration. They come in two flavours:
-   [tclDISPATCH] takes a list of [unit tactic]-s and build a [unit tactic].
-   [tclDISPATCHS] takes a list of ['a sensitive tactic] and returns and returns
-   and ['a sensitive tactic] where the ['a sensitive] interpreted in a goal [g]
-   corresponds to that of the tactic which created [g].
-   It is to be noted that the return value of [tclDISPATCHS ts] makes only
-   sense in the goals immediatly built by it, and would cause an anomaly
-   is used otherwise. *)
+   [tclDISPATCH] takes a list of [unit tactic]-s and build a [unit tactic]. *)
 exception SizeMismatch
 let _ = Errors.register_handler begin function
   | SizeMismatch -> Errors.error "Incorrect number of goals."
@@ -312,30 +307,11 @@ let rec tclDISPATCHGEN null join tacs env =
       tclDISPATCHGEN null join tacs env >>= fun x ->
       Inner.get >>= fun step' ->
       Inner.set {step' with comb=step.comb@step'.comb} >>
-      Inner.return (join x y)
+      Inner.return (join y x)
   | _ , _ -> tclZERO SizeMismatch env
 
 let unitK () () = ()
 let tclDISPATCH = tclDISPATCHGEN () unitK
-
-(* This is a helper function for the dispatching tactics (like [tclGOALBIND] and
-    [tclDISPATCHS]). It takes an ['a sensitive] value, and returns a tactic
-    whose return value is, again, ['a sensitive] but only has value in the
-    (unmodified) goals under focus. *)
-let here_s b env =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Inner.bind in
-  Inner.get >>= fun step ->
-  Inner.return (Goal.bind (Goal.here_list step.comb b) (fun b -> b))
-
-(* see .mli for documentation. *)
-let tclDISPATCHS tacs = 
-  let tacs = 
-    List.map begin fun tac ->
-      tclBIND tac here_s
-    end tacs 
-  in
-  tclDISPATCHGEN Goal.null Goal.plus tacs
 
 let tclDISPATCHL tacs =
   let tacs =
@@ -363,43 +339,6 @@ let tclEXTEND tacs1 rtac tacs2 env =
   let tacs = extend_to_list tacs1 rtac tacs2 step.comb in
   tclDISPATCH tacs env
 
-(* [tclGOALBIND] and [tclGOALBINDU] are sorts of bind which take a
-    [Goal.sensitive] as a first argument, the tactic then acts on each goal separately.
-    Allows backtracking between goals. *)
-
-(* [list_of_sensitive s k] where [s] is and ['a Goal.sensitive] [k]
-   has type ['a -> 'b] returns the list of ['b] obtained by evualating
-   [s] to each goal successively and applying [k] to each result. *)
-let list_of_sensitive s k env step =
-  Goal.list_map begin fun defs g ->
-    let (a,defs) = Goal.eval s env defs g in
-    (k a) , defs
-  end step.comb step.solution
-(* In form of a tactic *)
-let list_of_sensitive s k env =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Inner.bind in
-  let (>>) = Inner.seq in
-  Inner.get >>= fun step ->
-  try 
-    let (tacs,defs) = list_of_sensitive s k env step in
-    Inner.set { step with solution = defs; } >>
-    Inner.return tacs
-  with e when Errors.noncritical e ->
-    tclZERO e env
-
-let tclGOALBIND s k =
-  (* spiwack: the first line ensures that the value returned by the tactic [k] will
-      not "escape its scope". *)
-  let k a = tclBIND (k a) here_s in
-  tclBIND (list_of_sensitive s k) begin fun tacs ->
-    tclDISPATCHGEN Goal.null Goal.plus tacs
-  end
-
-let tclGOALBINDU s k =
-  tclBIND (list_of_sensitive s k) begin fun tacs ->
-    tclDISPATCHGEN () unitK tacs
-  end
 
 (* No backtracking can happen here, hence, as opposed to the dispatch tacticals,
     everything is done in one step. *)
@@ -426,21 +365,6 @@ let sensitive_on_proofview s env step =
     Inner.set next
   with e when Errors.noncritical e ->
     tclZERO e env
-
-(* spiwack: [lift_sensitive] is probably a better abstraction
-   than [tclGOALBIND]. *)
-let lift_sensitive s env =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Inner.bind in
-  let (>>) = Inner.seq in
-  Inner.get >>= fun step ->
-  let (res,sigma) =
-    Goal.list_map begin fun sigma g ->
-      Goal.eval s env step.solution g
-    end step.comb step.solution
-  in
-  Inner.set { step with solution=sigma } >>
-  Inner.return res
 
 (* arnaud: on pourrait regarder la liste de buts aussi, mais je
    ne sais pas encore comment. Pour l'instant on fait au plus
@@ -499,13 +423,36 @@ let tclTIMEOUT n t g =
 let in_proofview p k =
   k p.solution
 
+
+(* spiwack: to help using `bind' like construct consistently. A glist
+   is promissed to have exactly one element per goal when it is
+   produced. *)
+type 'a glist  = 'a list
+
 module Notations = struct
   let (>-) = Goal.bind
-  let (>>-) = tclGOALBINDU
-  let (>>--) = tclGOALBIND
   let (>=) = tclBIND
-  let (>>=) t k = t >= fun s -> s >>- k
-  let (>>==) t k = t >= fun s -> s >>-- k
+  let (>>-) t k =
+    (* spiwack: the application of List.map may raise errors, as this
+       combinator is mostly used in porting historical tactic code,
+       where the error flow is somewhat hard to follow, hence the
+       try/with *)
+      t >= fun l ->
+      try tclDISPATCH (List.map k l)
+      with e when Errors.noncritical e -> tclZERO e
+  let (>>--) t k =
+    (* spiwack: the application of List.map may raise errors, as this
+       combinator is mostly used in porting historical tactic code,
+       where the error flow is somewhat hard to follow, hence the
+       try/with *)
+    begin
+      t >= fun l ->
+      try tclDISPATCHL (List.map k l)
+      with e when Errors.noncritical e -> tclZERO e
+    end >= fun l' ->
+    tclUNIT (List.flatten l')
+  let (>>=) = (>>-)
+  let (>>==) = (>>--)
   let (<*>) = tclTHEN
   let (<+>) = tclOR
 end
@@ -515,15 +462,8 @@ let rec list_map f = function
   | [] -> tclUNIT []
   | a::l ->
       f a >= fun a' ->
-      list_map f l >= fun l' ->
-      tclUNIT (a'::l')
-
-let rec sensitive_list_map f = function
-  | [] -> tclUNIT (Goal.return [])
-  | a::l ->
-      f a >>== fun a' ->
-      sensitive_list_map f l >>== fun l' ->
-      tclUNIT (Goal.return (a'::l'))
+        list_map f l >= fun l' ->
+          tclUNIT (a'::l')
 
 
 (*** Compatibility layer with <= 8.2 tactics ***)
@@ -600,9 +540,36 @@ module V82 = struct
 
   let of_tactic t gls =
     let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] ; initial = [] } in
-    let final = apply (Goal.V82.env gls.Evd.sigma gls.Evd.it) t init in
+    let (_,final) = apply (Goal.V82.env gls.Evd.sigma gls.Evd.it) t init in
     { Evd.sigma = final.solution ; it = final.comb }
 
+end
+
+
+module Goal = struct
+
+  type 'a u = 'a list
+
+  let lift s env =
+    (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+    let (>>=) = Inner.bind in
+    let (>>) = Inner.seq in
+    Inner.get >>= fun step ->
+    try
+      let (res,sigma) =
+        Goal.list_map begin fun sigma g ->
+          Goal.eval s env sigma g
+        end step.comb step.solution
+      in
+      Inner.set { step with solution=sigma } >>
+        Inner.return res
+    with e when Errors.noncritical e ->
+      tclZERO e env
+
+  let return x = lift (Goal.return x)
+  let concl = lift Goal.concl
+  let hyps = lift Goal.hyps
+  let env = lift Goal.env
 end
 
 

@@ -227,7 +227,9 @@ let compute_ivs f cs =
     | Fix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->
         let (args3, body3) = decompose_lam body2 in
         let nargs3 = List.length args3 in
-	Tacmach.New.pf_apply Reductionops.is_conv >- fun is_conv ->
+        Goal.env >- fun env ->
+        Goal.defs >- fun sigma ->
+        let is_conv = Reductionops.is_conv env sigma in
         Goal.return
           begin match decomp_term body3 with
           | Case(_,p,c,lci) -> (* <p> Case c of c1 ... cn end *)
@@ -452,10 +454,10 @@ let quote_terms ivs lc =
 
 let quote f lid =
   Tacmach.New.pf_global f >>- fun f ->
-  Goal.sensitive_list_map Tacmach.New.pf_global lid >>- fun cl ->
-  compute_ivs f cl >>- fun ivs ->
-  Goal.concl >>- fun concl ->
-  quote_terms ivs [concl] >>- fun quoted_terms ->
+  Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_global_sensitive lid) >>- fun cl ->
+  Proofview.Goal.lift (compute_ivs f cl) >>- fun ivs ->
+  Proofview.Goal.concl >>- fun concl ->
+  Proofview.Goal.lift (quote_terms ivs [concl]) >>- fun quoted_terms ->
   let (p, vm) = match quoted_terms with
     | [p], vm -> (p,vm)
     | _ -> assert false
@@ -466,9 +468,9 @@ let quote f lid =
 
 let gen_quote cont c f lid =
   Tacmach.New.pf_global f >>- fun f ->
-  Goal.sensitive_list_map Tacmach.New.pf_global lid >>- fun cl ->
-  compute_ivs f cl >>- fun ivs ->
-  quote_terms ivs [c] >>- fun quoted_terms ->
+  Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_global_sensitive lid) >>- fun cl ->
+  Proofview.Goal.lift (compute_ivs f cl) >>- fun ivs ->
+  Proofview.Goal.lift (quote_terms ivs [c]) >>- fun quoted_terms ->
   let (p, vm) = match quoted_terms with
     | [p], vm -> (p,vm)
     | _ -> assert false
