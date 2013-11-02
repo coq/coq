@@ -379,52 +379,48 @@ End Common.
 End Environment.
 
 Module Writer.
-(** A "Writer" monad transformer, that is the canonical monad associated
-    to a monoid. Adaptated from Haskell's WriterT *)
+(** The impredicative encoding of the usual "writer" monad
+    transformer (WriterT in Haskell). The impredicative encoding
+    allows to avoid using the binding operations of the underlying
+    monad when it isn't explicitly needed and to avoid constructing
+    and deconstructing values of the form (val,c). *)
 
 Section Common.
 
  Variables (C:Set) (m:Monoid.T C) (T₀:Set->Set) (M:Monad T₀).
 
- Definition T (A:Set) := T₀ (A*C)%type.
+ Definition T (A:Set) := forall (R:Set), (A->C->T₀ R) -> T₀ R.
 
  Definition F : Monad T := {|
-   ret A x := ret _ M (x,Monoid.zero _ m);
-   bind A B x k :=
-      do M x := x in
-      let '(x,c) := x in
-      do M y := k x in
-      let '(y,c') := y in
-      ret _ M (y,Monoid.prod _ m c c');
-   ignore A x :=
-      do M x := x in
-      let '(_,c) := x in
-      ret _ M ((),c);
-   seq A x k :=
-      do M x := x in
-      let '((),c) := x in
-      do M y := k  in
-      let '(y,c') := y in
-      ret _ M (y,Monoid.prod _ m c c')
+   ret A x := fun R k => k x (Monoid.zero _ m);
+   bind A B x f := fun R k =>
+     x _ (fun a c => f a _ (fun b c' => k b (Monoid.prod _ m c c')));
+   ignore A x := fun R k => x _ (fun _ c => k tt c);
+   seq A x y := fun R k =>
+     x _ (fun _ c => y _ (fun b c' => k b (Monoid.prod _ m c c')))
  |}.
 
  Definition Writer : Writer C T := {|
-   put := fun (x:C) => ret _ M ((),x) : T unit
+   put c := ((fun R (k:unit->C->T₀ R) => k tt c):T unit)
  |}.
 
- Definition lift {A} (x:T₀ A) : T A :=
+ Definition lift {A} (x:T₀ A) : T A := fun R k =>
    do M x := x in
-   ret _ M (x, Monoid.zero _ m)
+   k x (Monoid.zero _ m)
  .
 
- Definition run {A} (x:T A) : T₀ (A*C)%type := x.
- Definition reflect {A:Set} (x:T₀ (A*C)) := x.
+ Definition run {A} (x:T A) : T₀ (A*C)%type := x _ (fun a c => ret _ M (a,c)).
+ Definition reflect {A:Set} (x:T₀ (A*C)) :T A := fun R k =>
+   do M x := x in
+   let '(a,c) := x in
+   k a c
+ .
 
  Variable (L:Logic T₀).
 
  Definition Logic : Logic T := {|
    zero A e := lift (zero _ L e);
-   plus A x y := plus _ L x y
+   plus A x y := fun R k => plus _ L (x _ k) (fun exc => y exc _ k)
  |}.
 
 End Common.
@@ -564,13 +560,13 @@ Definition WriterType := Writer.T LogicalMessageType LogicType.
 Definition EnvironmentType := Environment.T LogicalEnvironment WriterType.
 Definition LogicalType := State.T LogicalState EnvironmentType.
 Definition LogicalMonadBase := Logic.F NonLogicalType.
-Definition LogicalMonadWriter := Writer.F _ LogicalMessage _ LogicalMonadBase.
+Definition LogicalMonadWriter := Writer.F _ LogicalMessage LogicType.
 Definition LogicalMonadEnv := Environment.F LogicalEnvironment WriterType.
 Definition LogicalMonad : Monad LogicalType := State.F LogicalState _.
 Definition LogicalStateM : State LogicalState LogicalType := State.State LogicalState _.
 Definition LogicalReaderE : Environment LogicalEnvironment _ := Environment.Environment LogicalEnvironment WriterType.
 Definition LogicalReader : Environment LogicalEnvironment LogicalType := State.Environment _ _ LogicalMonadEnv _ LogicalReaderE.
-Definition LogicalWriterW : Writer LogicalMessageType  _ := Writer.Writer LogicalMessageType _ (Logic.F NonLogicalType).
+Definition LogicalWriterW : Writer LogicalMessageType  _ := Writer.Writer LogicalMessageType LogicType.
 Definition LogicalWriterE : Writer LogicalMessageType _ := Environment.Writer LogicalEnvironment _ LogicalMonadWriter LogicalMessageType LogicalWriterW.
 Definition LogicalWriter : Writer LogicalMessageType LogicalType := State.Writer _ _ LogicalMonadEnv _ LogicalWriterE.
 Definition LogicalLogic : Logic LogicalType := State.Logic _ _ LogicalMonadEnv (Environment.Logic _ _ LogicalMonadWriter (Writer.Logic _ LogicalMessage _ LogicalMonadBase (Logic.Logic _))).
@@ -582,16 +578,16 @@ Definition LogicalLogic : Logic LogicalType := State.Logic _ _ LogicalMonadEnv (
 Definition split0 {a:Set} (x:LogicalType a) : LogicalType (list_view a (Exception -> LogicalType a)) :=
   State.reflect _ _ LogicalMonadEnv (fun s =>
   Environment.reflect _ _ LogicalMonadWriter (fun e =>
-  Writer.reflect _ _ (
+  Writer.reflect _ _ LogicalMonadBase (
     do LogicalMonadBase x' :=
-        Logic.split _ NonLogicalMonad (Writer.run _ _ (Environment.run _ _ LogicalMonadWriter (State.run _ _ LogicalMonadEnv x s) e)) in
+        Logic.split _ NonLogicalMonad (Writer.run _ _ LogicalMonadBase (Environment.run _ _ LogicalMonadWriter (State.run _ _ LogicalMonadEnv x s) e)) in
     match x' with
     | Nil _ _ exc => ret _ LogicalMonadBase ((Nil _ _ exc),s, Monoid.zero _ LogicalMessage)
     | Cons _ _ (a',s',m') y =>
       let y' exc :=
           State.reflect _ _ LogicalMonadEnv (fun _ =>
           Environment.reflect _ _ LogicalMonadWriter (fun _ =>
-          Writer.reflect _ _ (y exc)))
+          Writer.reflect _ _ LogicalMonadBase (y exc)))
       in
       ret _ LogicalMonadBase (Cons _ _ a' y',s',m')
     end
@@ -683,7 +679,7 @@ split _ LogicalLogic x).
  Extraction Implicit lift [a].
 
  Definition run {a:Set} (x:t a) (e:LogicalEnvironment) (s:LogicalState) : NonLogical.t ((a*LogicalState)*LogicalMessageType) := Eval compute in
-  Logic.run _ NonLogicalMonad _ NonLogicalIO (Writer.run _ _ (Environment.run _ _ LogicalMonadWriter (State.run _ _ LogicalMonadEnv x s) e))
+  Logic.run _ NonLogicalMonad _ NonLogicalIO (Writer.run _ _ LogicalMonadBase (Environment.run _ _ LogicalMonadWriter (State.run _ _ LogicalMonadEnv x s) e))
  .
  Extraction Implicit run [a].
 
