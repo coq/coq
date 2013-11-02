@@ -686,7 +686,7 @@ module Goal = struct
 
   let env { env=env } = env
   let sigma { sigma=sigma } = sigma
-  let hyps { hyps=hyps } = hyps
+  let hyps { hyps=hyps } = Environ.named_context_of_val hyps
   let concl { concl=concl } = concl
 
   let lift s =

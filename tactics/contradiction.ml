@@ -46,7 +46,7 @@ let filter_hyp f tac =
     | _::rest -> seek rest in
   Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps gl in
-    seek (Environ.named_context_of_val hyps)
+    seek hyps
   end
 
 let contradiction_context =
@@ -74,7 +74,6 @@ let contradiction_context =
 	  | _ -> seek_neg rest
     in
     let hyps = Proofview.Goal.hyps gl in
-    let hyps = Environ.named_context_of_val hyps in
     seek_neg hyps
   end
 

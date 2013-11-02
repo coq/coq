@@ -288,7 +288,7 @@ module Goal : sig
   type t
 
   val concl : t -> Term.constr
-  val hyps : t -> Environ.named_context_val
+  val hyps : t -> Context.named_context
   val env : t -> Environ.env
   val sigma : t -> Evd.evar_map
 

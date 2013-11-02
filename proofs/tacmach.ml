@@ -215,7 +215,6 @@ module New = struct
 
   let pf_global id gl =
     let hyps = Proofview.Goal.hyps gl in
-    let hyps = Environ.named_context_of_val hyps in
     Constrintern.construct_reference hyps id
 
 
@@ -225,7 +224,6 @@ module New = struct
 
   let pf_ids_of_hyps gl =
     let hyps = Proofview.Goal.hyps gl in
-    let hyps = Environ.named_context_of_val hyps in
     ids_of_named_context hyps
 
   let pf_get_new_id id gl =
@@ -234,7 +232,6 @@ module New = struct
 
   let pf_get_hyp id gl =
     let hyps = Proofview.Goal.hyps gl in
-    let hyps = Environ.named_context_of_val hyps in
     let sign =
       try Context.lookup_named id hyps
       with Not_found -> Errors.error ("No such hypothesis: " ^ (string_of_id id))
@@ -252,6 +249,6 @@ module New = struct
 
   let pf_last_hyp gl =
     let hyps = Proofview.Goal.hyps gl in
-    List.hd (Environ.named_context_of_val hyps)
+    List.hd hyps
 
 end

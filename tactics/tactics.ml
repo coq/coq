@@ -431,7 +431,6 @@ let find_name loc decl x gl = match x with
   | IntroMustBe id ->
       (* When name is given, we allow to hide a global name *)
       let hyps = Proofview.Goal.hyps gl in
-      let hyps = Environ.named_context_of_val hyps in
       let ids_of_hyps = ids_of_named_context hyps in
       let id' = next_ident_away id ids_of_hyps in
       if not (Id.equal id' id) then user_err_loc (loc,"",pr_id id ++ str" is already used.");
@@ -1907,7 +1906,6 @@ let letin_tac_gen with_eq name (sigmac,c) test ty occs =
   Proofview.Goal.enter begin fun gl ->
     let env = Proofview.Goal.env gl in
     let hyps = Proofview.Goal.hyps gl in
-    let hyps = Environ.named_context_of_val hyps in
     let id =
       let t = match ty with Some t -> t | None -> typ_of env sigmac c in
       let x = id_of_name_using_hdchar (Global.env()) t name in

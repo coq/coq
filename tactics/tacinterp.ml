@@ -1355,7 +1355,6 @@ and interp_match_goal ist lz lr lmr =
   let sigma = Proofview.Goal.sigma gl in
   let env = Proofview.Goal.env gl in
   let hyps = Proofview.Goal.hyps gl in
-  let hyps = Environ.named_context_of_val hyps in
   let hyps = if lr then List.rev hyps else hyps in
   let concl = Proofview.Goal.concl gl in
   let rec apply_goal_sub app ist (id,c) csr mt mhyps hyps =

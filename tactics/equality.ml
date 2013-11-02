@@ -1545,7 +1545,6 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
   let env = Proofview.Goal.env gl in
   let hyps = Proofview.Goal.hyps gl in
   let concl = Proofview.Goal.concl gl in
-  let hyps = Environ.named_context_of_val hyps in
   (* The set of hypotheses using x *)
   let depdecls =
     let test (id,_,c as dcl) =
@@ -1587,7 +1586,6 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
 let subst_one_var dep_proof_ok x =
   Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps gl in
-    let hyps = Environ.named_context_of_val hyps in
     let (_,xval,_) = Tacmach.New.pf_get_hyp x gl in
     (* If x has a body, simply replace x with body and clear x *)
     if not (Option.is_empty xval) then Proofview.V82.tactic (tclTHEN (unfold_body x) (clear [x])) else
@@ -1686,7 +1684,6 @@ let rewrite_multi_assumption_cond cond_eq_term cl =
   in
   Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps gl in
-    let hyps = Environ.named_context_of_val hyps in
     arec hyps gl
   end
 

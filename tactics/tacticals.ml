@@ -534,7 +534,6 @@ module New = struct
   let nthDecl m gl =
     let hyps = Proofview.Goal.hyps gl in
     try
-      let hyps = Environ.named_context_of_val hyps in
       List.nth hyps (m-1)
     with Failure _ -> Errors.error "No such assumption."
 
