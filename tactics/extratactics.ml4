@@ -803,3 +803,16 @@ VERNAC COMMAND EXTEND GrabEvars
   => [ Vernacexpr.VtProofStep, Vernacexpr.VtLater ]
   -> [ Proof_global.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p) ]
 END
+
+(* Shelves all the goals under focus. *)
+TACTIC EXTEND shelve
+| [ "shelve" ] ->
+    [ Proofview.shelve ]
+END
+
+(* Command to add every unshelved variables to the focus *)
+VERNAC COMMAND EXTEND Unshelve
+[ "Unshelve" ]
+  => [ Vernacexpr.VtProofStep, Vernacexpr.VtLater ]
+  -> [ Proof_global.simple_with_current_proof (fun _ p  -> Proof.unshelve p) ]
+END

@@ -423,14 +423,40 @@ let emacs_print_dependent_evars sigma seeds =
    and printed in its entirety. *)
 (* courtieu: in emacs mode, even less cases where the first goal is printed
    in its entirety *)
-let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
+let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds shelf stack goals =
+  (** Printing functions for the extra informations. *)
   let rec print_stack a = function
     | [] -> Pp.int a
     | b::l -> Pp.int a ++ str"-" ++ print_stack b l
   in
-  let print_unfocused a l =
-    str"unfocused: " ++ print_stack a l
+  let print_unfocused l =
+    match l with
+    | [] -> None
+    | a::l -> Some (str"unfocused: " ++ print_stack a l)
   in
+  let print_shelf l =
+    match l with
+    | [] -> None
+    | _ -> Some (str"shelved: " ++ Pp.int (List.length l))
+  in
+  let rec print_comma_separated_list a l =
+    match l with
+    | [] -> a
+    | b::l -> print_comma_separated_list (a++str", "++b) l
+  in
+  let print_extra_list l =
+    match l with
+    | [] -> Pp.mt ()
+    | a::l -> Pp.spc () ++ str"(" ++ print_comma_separated_list a l ++ str")"
+  in
+  let extra = Option.List.flatten [ print_unfocused stack ; print_shelf shelf ] in
+  let print_extra = print_extra_list extra in
+  let focused_if_needed =
+    let needed = not (CList.is_empty extra) && pr_first in
+    if needed then str" focused "
+    else str" " (* non-breakable space *)
+  in
+  (** Main function *)
   let rec pr_rec n = function
     | [] -> (mt ())
     | g::rest ->
@@ -445,8 +471,8 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
     else 
       pr_rec 1 (g::l)
   in
-  match goals,stack with
-  | [],_ ->
+  match goals with
+  | [] ->
       begin
 	match close_cmd with
 	  Some cmd ->
@@ -464,31 +490,18 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
 	       ++ emacs_print_dependent_evars sigma seeds ++ fnl () ++
                  str "You can use Grab Existential Variables.")
       end
-  | [g],[] when not !Flags.print_emacs ->
+  | [g] when not !Flags.print_emacs ->
       let pg = default_pr_goal { it = g ; sigma = sigma; } in
       v 0 (
-	str "1 subgoal" ++ pr_goal_tag g ++ cut () ++ pg
+	str "1" ++ focused_if_needed ++ str"subgoal" ++ print_extra
+        ++ pr_goal_tag g ++ cut () ++ pg
 	++ emacs_print_dependent_evars sigma seeds
       )
-  | [g],a::l when not !Flags.print_emacs ->
-      let pg = default_pr_goal { it = g ; sigma = sigma; } in
-      v 0 (
-	str "1 focused subgoal (" ++ print_unfocused a l ++ str")" ++ pr_goal_tag g ++ cut () ++ pg
-	++ emacs_print_dependent_evars sigma seeds
-      )
-  | g1::rest,[] ->
+  | g1::rest ->
       let goals = print_multiple_goals g1 rest in
       v 0 (
-	int(List.length rest+1) ++ str" subgoals" ++
-          str (emacs_str ", subgoal 1") ++ pr_goal_tag g1 ++ cut ()
-	++ goals
-	++ emacs_print_dependent_evars sigma seeds
-      )
-  | g1::rest,a::l ->
-      let goals = print_multiple_goals g1 rest in
-      v 0 (
-	int(List.length rest+1) ++ str" focused subgoals (" ++
-          print_unfocused a l ++ str")" ++ cut () ++
+	int(List.length rest+1) ++ focused_if_needed ++ str"subgoals" ++
+          print_extra ++ cut () ++
           str (emacs_str ", subgoal 1") ++ pr_goal_tag g1 ++ cut ()
 	++ goals
 	++ emacs_print_dependent_evars sigma seeds
@@ -499,7 +512,7 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
 
 
 type printer_pr = {
- pr_subgoals            : ?pr_first:bool -> string option -> evar_map -> evar list -> int list -> goal list -> std_ppcmds;
+ pr_subgoals            : ?pr_first:bool -> string option -> evar_map -> evar list -> Goal.goal list -> int list -> goal list -> std_ppcmds;
  pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds;
  pr_goal                : goal sigma -> std_ppcmds;
 }
@@ -527,21 +540,29 @@ let pr_open_subgoals () =
      straightforward, but seriously, [Proof.proof] should return
      [evar_info]-s instead. *)
   let p = Proof_global.give_me_the_proof () in
-  let (goals , stack , sigma ) = Proof.proof p in
+  let (goals , stack , shelf, sigma ) = Proof.proof p in
   let stack = List.map (fun (l,r) -> List.length l + List.length r) stack in
   let seeds = Proof.V82.top_evars p in
   begin match goals with
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
-          begin match bgoals with
-	  | [] -> pr_subgoals None sigma seeds stack goals
-	  | _ ->
+          begin match bgoals,shelf with
+	  | [],[] -> pr_subgoals None sigma seeds shelf stack goals
+          | [] , _ ->
+	    (* emacs mode: xml-like flag for detecting information message *)
+	    str (emacs_str "<infomsg>") ++
+	    str "All the remaining goals are on the shelf."
+	    ++ str (emacs_str "</infomsg>")
+	    ++ fnl () ++ fnl ()
+            ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] shelf
+	  | _ , _ ->
 	    (* emacs mode: xml-like flag for detecting information message *)
 	    str (emacs_str "<infomsg>") ++
 	    str "This subproof is complete, but there are still unfocused goals."
 	    ++ str (emacs_str "</infomsg>")
-	    ++ fnl () ++ fnl () ++ pr_subgoals ~pr_first:false None bsigma seeds [] bgoals
+	    ++ fnl () ++ fnl ()
+            ++ pr_subgoals ~pr_first:false None bsigma seeds shelf [] bgoals
 	  end
-  | _ -> pr_subgoals None sigma seeds stack goals
+  | _ -> pr_subgoals None sigma seeds shelf stack goals
   end
 
 let pr_nth_open_subgoal n =

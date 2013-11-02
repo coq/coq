@@ -12,7 +12,8 @@ type logicalState = proofview
 
 type logicalEnvironment = Environ.env
 
-type logicalMessageType = bool
+(** status (safe/unsafe) * shelved goals *)
+type logicalMessageType = bool * Goal.goal list
 
 
 

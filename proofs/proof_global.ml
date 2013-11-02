@@ -262,10 +262,11 @@ let set_used_variables l =
       pstates := { p with section_vars = Some ctx} :: rest
 
 let get_open_goals () =
-  let gl, gll, _ = Proof.proof (cur_pstate ()).proof in
+  let gl, gll, shelf , _ = Proof.proof (cur_pstate ()).proof in
   List.length gl +
   List.fold_left (+) 0
-    (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll)
+    (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
+  List.length shelf
 
 type closed_proof =
   Names.Id.t *
@@ -293,6 +294,9 @@ let return_proof () =
    | Proof.UnfinishedProof ->
        raise (Errors.UserError("last tactic before Qed",
          str"Attempt to save an incomplete proof"))
+   | Proof.HasShelvedGoals ->
+       raise (Errors.UserError("last tactic before Qed",
+         str"Attempt to save a proof with shelved goals"))
    | Proof.HasUnresolvedEvar ->
        raise (Errors.UserError("last tactic before Qed",
          str"Attempt to save a proof with existential " ++

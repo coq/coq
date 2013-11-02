@@ -21,11 +21,20 @@ Extract Inductive list => list [
   "[]"
   "(::)"
 ].
+Opaque app.
+Extraction Implicit app [A].
+Extract Inlined Constant app => "List.append".
 
 (*** Prod ***)
 Extract Inductive prod => "(*)" [
   "(,)"
 ].
+Opaque fst.
+Extraction Implicit fst [A B].
+Extract Inlined Constant fst => "fst".
+Extraction Implicit snd [A B].
+Opaque snd.
+Extract Inlined Constant snd => "snd".
 
 
 (*** Closure elimination **)
@@ -86,6 +95,22 @@ Record T (M:Set) := {
   zero : M;
   prod : M -> M -> M
 }.
+
+(** Cartesian product of monoids *)
+Definition cart {M₁} (Mon₁:T M₁) {M₂} (Mon₂:T M₂) : T (M₁*M₂) := {|
+  zero := (Mon₁.(zero _),Mon₂.(zero _));
+  prod x y := (Mon₁.(prod _) (fst x) (fst y), Mon₂.(prod _) (snd x) (snd y))
+|}.
+
+Definition BoolAnd : T bool := {|
+  zero := true;
+  prod := andb
+|}.
+
+Definition List {A:Set} : T (list A) := {|
+  zero := nil ;
+  prod := @app _
+|}.
 
 End Monoid.
 
@@ -544,12 +569,10 @@ Record proofview := {
 }.
 
 Definition LogicalState := proofview.
-Definition LogicalMessageType := bool.
+(** Logical Message: status (safe/unsafe) * shelved goals *)
+Definition LogicalMessageType := (bool * list goal)%type.
 Definition LogicalEnvironment := env.
-Definition LogicalMessage : Monoid.T LogicalMessageType := {|
-  Monoid.zero := true;
-  Monoid.prod x y := andb x y
-|}.
+Definition LogicalMessage : Monoid.T LogicalMessageType := Monoid.cart Monoid.BoolAnd Monoid.List.
 
 Definition NonLogicalType := IO.T.
 Definition NonLogicalMonad : Monad NonLogicalType := IO.M.

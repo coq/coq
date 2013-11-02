@@ -40,9 +40,14 @@ type proof
    functions to ide-s. This would be better than spawning a new nearly
    identical function everytime. Hence the generic name. *)
 (* In this version: returns the focused goals, a representation of the
-   focus stack (the number of goals at each level) and the underlying
+   focus stack (the goals at each level), a representation
+   of the shelf (the list of goals on the shelf),and the underlying
    evar_map *)
-val proof : proof -> Goal.goal list * (Goal.goal list * Goal.goal list) list * Evd.evar_map
+val proof : proof ->
+  Goal.goal list
+  * (Goal.goal list * Goal.goal list) list
+  * Goal.goal list
+  * Evd.evar_map
 
 (*** General proof functions ***)
 
@@ -58,8 +63,10 @@ val partial_proof : proof -> Term.constr list
 
 (* Returns the proofs (with their type) of the initial goals.
     Raises [UnfinishedProof] is some goals remain to be considered.
+    Raises [HasShelvedGoals] if some goals are left on the shelf.
     Raises [HasUnresolvedEvar] if some evars have been left undefined. *)
 exception UnfinishedProof
+exception HasShelvedGoals
 exception HasUnresolvedEvar
 val return : proof -> Evd.evar_map
 
@@ -139,6 +146,10 @@ val maximal_unfocus : 'a focus_kind -> proof -> proof
 (*** Commands ***)
 
 val in_proof : proof -> (Evd.evar_map -> 'a) -> 'a
+
+(* Remove all the goals from the shelf and adds them at the end of the
+   focused goals. *)
+val unshelve : proof -> proof
 
 (*** Compatibility layer with <=v8.2 ***)
 module V82 : sig

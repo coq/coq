@@ -101,7 +101,7 @@ type proofview = { initial : (Term.constr*Term.types)
 
 type logicalState = proofview
 
-type logicalMessageType = bool
+type logicalMessageType = bool*Goal.goal list
 
 type logicalEnvironment = Environ.env
 
@@ -187,27 +187,29 @@ module Logical =
  struct 
   type 'a t =
     __ -> ('a -> proofview -> __ -> (__ -> __
-    -> (__ -> bool -> __ -> (__ -> (exn -> __
-    IOBase.coq_T) -> __ IOBase.coq_T) -> (exn
-    -> __ IOBase.coq_T) -> __ IOBase.coq_T)
-    -> __ -> (__ -> (exn -> __ IOBase.coq_T)
-    -> __ IOBase.coq_T) -> (exn -> __
-    IOBase.coq_T) -> __ IOBase.coq_T) ->
-    Environ.env -> __ -> (__ -> bool -> __ ->
+    -> (__ -> (bool*Goal.goal list) -> __ ->
     (__ -> (exn -> __ IOBase.coq_T) -> __
     IOBase.coq_T) -> (exn -> __ IOBase.coq_T)
     -> __ IOBase.coq_T) -> __ -> (__ -> (exn
     -> __ IOBase.coq_T) -> __ IOBase.coq_T)
     -> (exn -> __ IOBase.coq_T) -> __
-    IOBase.coq_T) -> proofview -> __ -> (__
-    -> __ -> (__ -> bool -> __ -> (__ -> (exn
+    IOBase.coq_T) -> Environ.env -> __ -> (__
+    -> (bool*Goal.goal list) -> __ -> (__ ->
+    (exn -> __ IOBase.coq_T) -> __
+    IOBase.coq_T) -> (exn -> __ IOBase.coq_T)
+    -> __ IOBase.coq_T) -> __ -> (__ -> (exn
     -> __ IOBase.coq_T) -> __ IOBase.coq_T)
     -> (exn -> __ IOBase.coq_T) -> __
-    IOBase.coq_T) -> __ -> (__ -> (exn -> __
-    IOBase.coq_T) -> __ IOBase.coq_T) -> (exn
-    -> __ IOBase.coq_T) -> __ IOBase.coq_T)
-    -> Environ.env -> __ -> (__ -> bool -> __
+    IOBase.coq_T) -> proofview -> __ -> (__
+    -> __ -> (__ -> (bool*Goal.goal list) ->
+    __ -> (__ -> (exn -> __ IOBase.coq_T) ->
+    __ IOBase.coq_T) -> (exn -> __
+    IOBase.coq_T) -> __ IOBase.coq_T) -> __
     -> (__ -> (exn -> __ IOBase.coq_T) -> __
+    IOBase.coq_T) -> (exn -> __ IOBase.coq_T)
+    -> __ IOBase.coq_T) -> Environ.env -> __
+    -> (__ -> (bool*Goal.goal list) -> __ ->
+    (__ -> (exn -> __ IOBase.coq_T) -> __
     IOBase.coq_T) -> (exn -> __ IOBase.coq_T)
     -> __ IOBase.coq_T) -> __ -> (__ -> (exn
     -> __ IOBase.coq_T) -> __ IOBase.coq_T)
@@ -216,35 +218,37 @@ module Logical =
   
   (** val ret :
       'a1 -> __ -> ('a1 -> proofview -> __ ->
-      ('a2 -> __ -> (__ -> bool -> __ -> (__
-      -> (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> (__ -> bool -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> __ -> ('a2 -> __ -> ('a3
-      -> bool -> __ -> (__ -> (exn -> __
+      ('a2 -> __ -> (__ -> (bool*Goal.goal
+      list) -> __ -> (__ -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
       (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> __ -> (__ -> (exn ->
       __ IOBase.coq_T) -> __ IOBase.coq_T) ->
       (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> Environ.env -> __ ->
-      ('a3 -> bool -> __ -> ('a4 -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
+      (__ -> (bool*Goal.goal list) -> __ ->
+      (__ -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      proofview -> __ -> ('a2 -> __ -> ('a3
+      -> (bool*Goal.goal list) -> __ -> (__
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> ('a3 ->
+      (bool*Goal.goal list) -> __ -> ('a4 ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> ('a4 -> (exn ->
-      'a5 IOBase.coq_T) -> 'a5 IOBase.coq_T)
-      -> (exn -> 'a5 IOBase.coq_T) -> 'a5
-      IOBase.coq_T **)
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> ('a4 -> (exn -> 'a5 IOBase.coq_T) ->
+      'a5 IOBase.coq_T) -> (exn -> 'a5
+      IOBase.coq_T) -> 'a5 IOBase.coq_T **)
   
   let ret x =
     (); (fun _ k s -> Obj.magic k x s)
@@ -252,30 +256,33 @@ module Logical =
   (** val bind :
       'a1 t -> ('a1 -> 'a2 t) -> __ -> ('a2
       -> proofview -> __ -> ('a3 -> __ -> (__
-      -> bool -> __ -> (__ -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> Environ.env -> __ ->
-      (__ -> bool -> __ -> (__ -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> proofview -> __ ->
-      ('a3 -> __ -> ('a4 -> bool -> __ -> (__
+      -> (bool*Goal.goal list) -> __ -> (__
       -> (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> ('a4 -> bool -> __
-      -> ('a5 -> (exn -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (__ ->
+      (bool*Goal.goal list) -> __ -> (__ ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      proofview -> __ -> ('a3 -> __ -> ('a4
+      -> (bool*Goal.goal list) -> __ -> (__
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> ('a4 ->
+      (bool*Goal.goal list) -> __ -> ('a5 ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> ('a5 -> (exn -> 'a6 IOBase.coq_T) ->
       'a6 IOBase.coq_T) -> (exn -> 'a6
@@ -288,35 +295,37 @@ module Logical =
   
   (** val ignore :
       'a1 t -> __ -> (unit -> proofview -> __
-      -> ('a2 -> __ -> (__ -> bool -> __ ->
-      (__ -> (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> (__ -> bool -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> __ -> ('a2 -> __ -> ('a3
-      -> bool -> __ -> (__ -> (exn -> __
+      -> ('a2 -> __ -> (__ -> (bool*Goal.goal
+      list) -> __ -> (__ -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
       (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> __ -> (__ -> (exn ->
       __ IOBase.coq_T) -> __ IOBase.coq_T) ->
       (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> Environ.env -> __ ->
-      ('a3 -> bool -> __ -> ('a4 -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
+      (__ -> (bool*Goal.goal list) -> __ ->
+      (__ -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      proofview -> __ -> ('a2 -> __ -> ('a3
+      -> (bool*Goal.goal list) -> __ -> (__
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> ('a3 ->
+      (bool*Goal.goal list) -> __ -> ('a4 ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> ('a4 -> (exn ->
-      'a5 IOBase.coq_T) -> 'a5 IOBase.coq_T)
-      -> (exn -> 'a5 IOBase.coq_T) -> 'a5
-      IOBase.coq_T **)
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> ('a4 -> (exn -> 'a5 IOBase.coq_T) ->
+      'a5 IOBase.coq_T) -> (exn -> 'a5
+      IOBase.coq_T) -> 'a5 IOBase.coq_T **)
   
   let ignore x =
     (); (fun _ k s ->
@@ -325,30 +334,33 @@ module Logical =
   (** val seq :
       unit t -> 'a1 t -> __ -> ('a1 ->
       proofview -> __ -> ('a2 -> __ -> (__ ->
-      bool -> __ -> (__ -> (exn -> __
+      (bool*Goal.goal list) -> __ -> (__ ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (__ ->
+      (bool*Goal.goal list) -> __ -> (__ ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> Environ.env -> __ ->
-      (__ -> bool -> __ -> (__ -> (exn -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> proofview -> __ ->
-      ('a2 -> __ -> ('a3 -> bool -> __ -> (__
+      proofview -> __ -> ('a2 -> __ -> ('a3
+      -> (bool*Goal.goal list) -> __ -> (__
       -> (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> ('a3 -> bool -> __
-      -> ('a4 -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
+      Environ.env -> __ -> ('a3 ->
+      (bool*Goal.goal list) -> __ -> ('a4 ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> ('a4 -> (exn -> 'a5 IOBase.coq_T) ->
       'a5 IOBase.coq_T) -> (exn -> 'a5
@@ -362,30 +374,33 @@ module Logical =
   (** val set :
       logicalState -> __ -> (unit ->
       proofview -> __ -> ('a1 -> __ -> (__ ->
-      bool -> __ -> (__ -> (exn -> __
+      (bool*Goal.goal list) -> __ -> (__ ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (__ ->
+      (bool*Goal.goal list) -> __ -> (__ ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> Environ.env -> __ ->
-      (__ -> bool -> __ -> (__ -> (exn -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> proofview -> __ ->
-      ('a1 -> __ -> ('a2 -> bool -> __ -> (__
+      proofview -> __ -> ('a1 -> __ -> ('a2
+      -> (bool*Goal.goal list) -> __ -> (__
       -> (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> ('a2 -> bool -> __
-      -> ('a3 -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
+      Environ.env -> __ -> ('a2 ->
+      (bool*Goal.goal list) -> __ -> ('a3 ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> ('a3 -> (exn -> 'a4 IOBase.coq_T) ->
       'a4 IOBase.coq_T) -> (exn -> 'a4
@@ -396,35 +411,37 @@ module Logical =
   
   (** val get :
       __ -> (logicalState -> proofview -> __
-      -> ('a1 -> __ -> (__ -> bool -> __ ->
-      (__ -> (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> (__ -> bool -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> __ -> ('a1 -> __ -> ('a2
-      -> bool -> __ -> (__ -> (exn -> __
+      -> ('a1 -> __ -> (__ -> (bool*Goal.goal
+      list) -> __ -> (__ -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
       (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> __ -> (__ -> (exn ->
       __ IOBase.coq_T) -> __ IOBase.coq_T) ->
       (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> Environ.env -> __ ->
-      ('a2 -> bool -> __ -> ('a3 -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
+      (__ -> (bool*Goal.goal list) -> __ ->
+      (__ -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      proofview -> __ -> ('a1 -> __ -> ('a2
+      -> (bool*Goal.goal list) -> __ -> (__
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> ('a2 ->
+      (bool*Goal.goal list) -> __ -> ('a3 ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> ('a3 -> (exn ->
-      'a4 IOBase.coq_T) -> 'a4 IOBase.coq_T)
-      -> (exn -> 'a4 IOBase.coq_T) -> 'a4
-      IOBase.coq_T **)
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> ('a3 -> (exn -> 'a4 IOBase.coq_T) ->
+      'a4 IOBase.coq_T) -> (exn -> 'a4
+      IOBase.coq_T) -> 'a4 IOBase.coq_T **)
   
   let get r k s =
     Obj.magic k s s
@@ -432,30 +449,33 @@ module Logical =
   (** val put :
       logicalMessageType -> __ -> (unit ->
       proofview -> __ -> ('a1 -> __ -> (__ ->
-      bool -> __ -> (__ -> (exn -> __
+      (bool*Goal.goal list) -> __ -> (__ ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (__ ->
+      (bool*Goal.goal list) -> __ -> (__ ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> Environ.env -> __ ->
-      (__ -> bool -> __ -> (__ -> (exn -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> proofview -> __ ->
-      ('a1 -> __ -> ('a2 -> bool -> __ -> (__
+      proofview -> __ -> ('a1 -> __ -> ('a2
+      -> (bool*Goal.goal list) -> __ -> (__
       -> (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> ('a2 -> bool -> __
-      -> ('a3 -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
+      Environ.env -> __ -> ('a2 ->
+      (bool*Goal.goal list) -> __ -> ('a3 ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> ('a3 -> (exn -> 'a4 IOBase.coq_T) ->
       'a4 IOBase.coq_T) -> (exn -> 'a4
@@ -465,74 +485,81 @@ module Logical =
     (); (fun _ k s _ k0 e _ k1 ->
       Obj.magic k () s __ k0 e __
         (fun b c' ->
-        k1 b (if m then c' else false)))
+        k1 b
+          ((if fst m then fst c' else false),
+          (List.append (snd m) (snd c')))))
   
   (** val current :
       __ -> (logicalEnvironment -> proofview
-      -> __ -> ('a1 -> __ -> (__ -> bool ->
-      __ -> (__ -> (exn -> __ IOBase.coq_T)
-      -> __ IOBase.coq_T) -> (exn -> __
+      -> __ -> ('a1 -> __ -> (__ ->
+      (bool*Goal.goal list) -> __ -> (__ ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> (__ -> bool -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
+      Environ.env -> __ -> (__ ->
+      (bool*Goal.goal list) -> __ -> (__ ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
       proofview -> __ -> ('a1 -> __ -> ('a2
-      -> bool -> __ -> (__ -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> Environ.env -> __ ->
-      ('a2 -> bool -> __ -> ('a3 -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> ('a3 -> (exn ->
-      'a4 IOBase.coq_T) -> 'a4 IOBase.coq_T)
-      -> (exn -> 'a4 IOBase.coq_T) -> 'a4
-      IOBase.coq_T **)
-  
-  let current r k s r0 k0 e =
-    Obj.magic k e s __ k0 e
-  
-  (** val zero :
-      exn -> __ -> ('a1 -> proofview -> __ ->
-      ('a2 -> __ -> (__ -> bool -> __ -> (__
+      -> (bool*Goal.goal list) -> __ -> (__
       -> (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> (__ -> bool -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
+      Environ.env -> __ -> ('a2 ->
+      (bool*Goal.goal list) -> __ -> ('a3 ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
-      -> (__ -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> __ -> ('a2 -> __ -> ('a3
-      -> bool -> __ -> (__ -> (exn -> __
+      -> ('a3 -> (exn -> 'a4 IOBase.coq_T) ->
+      'a4 IOBase.coq_T) -> (exn -> 'a4
+      IOBase.coq_T) -> 'a4 IOBase.coq_T **)
+  
+  let current r k s r0 k0 e =
+    Obj.magic k e s __ k0 e
+  
+  (** val zero :
+      exn -> __ -> ('a1 -> proofview -> __ ->
+      ('a2 -> __ -> (__ -> (bool*Goal.goal
+      list) -> __ -> (__ -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
       (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> __ -> (__ -> (exn ->
       __ IOBase.coq_T) -> __ IOBase.coq_T) ->
       (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> Environ.env -> __ ->
-      ('a3 -> bool -> __ -> ('a4 -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
+      (__ -> (bool*Goal.goal list) -> __ ->
+      (__ -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      proofview -> __ -> ('a2 -> __ -> ('a3
+      -> (bool*Goal.goal list) -> __ -> (__
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> ('a3 ->
+      (bool*Goal.goal list) -> __ -> ('a4 ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> ('a4 -> (exn ->
-      'a5 IOBase.coq_T) -> 'a5 IOBase.coq_T)
-      -> (exn -> 'a5 IOBase.coq_T) -> 'a5
-      IOBase.coq_T **)
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> ('a4 -> (exn -> 'a5 IOBase.coq_T) ->
+      'a5 IOBase.coq_T) -> (exn -> 'a5
+      IOBase.coq_T) -> 'a5 IOBase.coq_T **)
   
   let zero e =
     (); (fun _ k s _ k0 e0 _ k1 _ sk fk ->
@@ -541,30 +568,33 @@ module Logical =
   (** val plus :
       'a1 t -> (exn -> 'a1 t) -> __ -> ('a1
       -> proofview -> __ -> ('a2 -> __ -> (__
-      -> bool -> __ -> (__ -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> Environ.env -> __ ->
-      (__ -> bool -> __ -> (__ -> (exn -> __
-      IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> proofview -> __ ->
-      ('a2 -> __ -> ('a3 -> bool -> __ -> (__
+      -> (bool*Goal.goal list) -> __ -> (__
       -> (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> ('a3 -> bool -> __
-      -> ('a4 -> (exn -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (__ ->
+      (bool*Goal.goal list) -> __ -> (__ ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      proofview -> __ -> ('a2 -> __ -> ('a3
+      -> (bool*Goal.goal list) -> __ -> (__
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> ('a3 ->
+      (bool*Goal.goal list) -> __ -> ('a4 ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> ('a4 -> (exn -> 'a5 IOBase.coq_T) ->
       'a5 IOBase.coq_T) -> (exn -> 'a5
@@ -580,30 +610,33 @@ module Logical =
   (** val split :
       'a1 t -> __ -> (('a1, exn -> 'a1 t)
       list_view -> proofview -> __ -> ('a2 ->
-      __ -> (__ -> bool -> __ -> (__ -> (exn
-      -> __ IOBase.coq_T) -> __ IOBase.coq_T)
-      -> (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> Environ.env -> __ ->
-      (__ -> bool -> __ -> (__ -> (exn -> __
+      __ -> (__ -> (bool*Goal.goal list) ->
+      __ -> (__ -> (exn -> __ IOBase.coq_T)
+      -> __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (__ ->
+      (bool*Goal.goal list) -> __ -> (__ ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> proofview -> __ ->
-      ('a2 -> __ -> ('a3 -> bool -> __ -> (__
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      proofview -> __ -> ('a2 -> __ -> ('a3
+      -> (bool*Goal.goal list) -> __ -> (__
       -> (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> ('a3 -> bool -> __
-      -> ('a4 -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
+      Environ.env -> __ -> ('a3 ->
+      (bool*Goal.goal list) -> __ -> ('a4 ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> ('a4 -> (exn -> 'a5 IOBase.coq_T) ->
       'a5 IOBase.coq_T) -> (exn -> 'a5
@@ -614,7 +647,7 @@ module Logical =
       IOBase.bind
         (Obj.magic x __ (fun a s' _ k2 e0 ->
           k2 (a,s')) s __ (fun a _ k2 ->
-          k2 a true) e __
+          k2 a (true,[])) e __
           (fun a c _ sk0 fk0 ->
           sk0 (a,c) fk0) __ (fun a fk0 ->
           IOBase.ret (Cons (a,
@@ -629,8 +662,16 @@ module Logical =
         (fun x0 ->
         match x0 with
         | Nil exc ->
+          let c = true,[] in
           Obj.magic k (Nil exc) s __ k0 e __
-            (fun b c' -> k1 b c') __ sk fk
+            (fun b c' ->
+            k1 b
+              ((if fst c
+                then fst c'
+                else false),(List.append
+                              (snd c)
+                              (snd c')))) __
+            sk fk
         | Cons (p, y) ->
           let p0,m' = p in
           let a',s' = p0 in
@@ -642,39 +683,51 @@ module Logical =
               k2 a1 s'0 __ k3 e0 __
                 (fun b c' ->
                 k4 b
-                  (if c then c' else false))
+                  ((if fst c
+                    then fst c'
+                    else false),(List.append
+                                  (snd c)
+                                  (snd c'))))
                 __ sk0 fk1) fk0))) s' __ k0 e
             __ (fun b c' ->
-            k1 b (if m' then c' else false))
-            __ sk fk))
+            k1 b
+              ((if fst m'
+                then fst c'
+                else false),(List.append
+                              (snd m')
+                              (snd c')))) __
+            sk fk))
   
   (** val lift :
       'a1 NonLogical.t -> __ -> ('a1 ->
       proofview -> __ -> ('a2 -> __ -> (__ ->
-      bool -> __ -> (__ -> (exn -> __
+      (bool*Goal.goal list) -> __ -> (__ ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (__ ->
+      (bool*Goal.goal list) -> __ -> (__ ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> Environ.env -> __ ->
-      (__ -> bool -> __ -> (__ -> (exn -> __
+      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __
+      -> (__ -> (exn -> __ IOBase.coq_T) ->
+      __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> __ -> (__ -> (exn ->
-      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> proofview -> __ ->
-      ('a2 -> __ -> ('a3 -> bool -> __ -> (__
+      proofview -> __ -> ('a2 -> __ -> ('a3
+      -> (bool*Goal.goal list) -> __ -> (__
       -> (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> (__ -> (exn -> __ IOBase.coq_T) ->
       __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      Environ.env -> __ -> ('a3 -> bool -> __
-      -> ('a4 -> (exn -> __ IOBase.coq_T) ->
-      __ IOBase.coq_T) -> (exn -> __
+      Environ.env -> __ -> ('a3 ->
+      (bool*Goal.goal list) -> __ -> ('a4 ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) -> __
       -> ('a4 -> (exn -> 'a5 IOBase.coq_T) ->
       'a5 IOBase.coq_T) -> (exn -> 'a5
@@ -684,7 +737,14 @@ module Logical =
     (); (fun _ k s _ k0 e _ k1 _ sk fk ->
       IOBase.bind x (fun x0 ->
         Obj.magic k x0 s __ k0 e __
-          (fun b c' -> k1 b c') __ sk fk))
+          (fun b c' ->
+          k1 b
+            ((if fst (true,[])
+              then fst c'
+              else false),(List.append
+                            (snd (true,[]))
+                            (snd c')))) __ sk
+          fk))
   
   (** val run :
       'a1 t -> logicalEnvironment ->
@@ -694,10 +754,10 @@ module Logical =
   
   let run x e s =
     Obj.magic x __ (fun a s' _ k e0 ->
-      k (a,s')) s __ (fun a _ k -> k a true)
-      e __ (fun a c _ sk fk -> sk (a,c) fk)
-      __ (fun a x0 -> IOBase.ret a)
-      (fun e0 ->
+      k (a,s')) s __ (fun a _ k ->
+      k a (true,[])) e __ (fun a c _ sk fk ->
+      sk (a,c) fk) __ (fun a x0 ->
+      IOBase.ret a) (fun e0 ->
       IOBase.raise
         ((fun e -> Proof_errors.TacticFailure e)
           e0))

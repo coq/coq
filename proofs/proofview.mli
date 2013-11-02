@@ -120,7 +120,7 @@ type +'a tactic
 (* Applies a tactic to the current proofview. *)
 (* the return boolean signals the use of an unsafe tactic, in which
    case it is [false]. *)
-val apply : Environ.env -> 'a tactic -> proofview -> 'a * proofview * bool
+val apply : Environ.env -> 'a tactic -> proofview -> 'a * proofview * (bool*Goal.goal list)
 
 (*** tacticals ***)
 
@@ -209,6 +209,14 @@ val tclEVARMAP : Evd.evar_map tactic
    rather the "global" environment of the proof. The goal-wise
    environment is returned by {!Proofview.Goal.env}. *)
 val tclENV : Environ.env tactic
+
+(* Shelves all the goals under focus. The goals are placed on the
+   shelf for later use (or being solved by side-effects). *)
+val shelve : unit tactic
+
+(* [unshelve l p] adds all the goals in [l] at the end of the focused
+   goals of p *)
+val unshelve : Goal.goal list -> proofview -> proofview
 
 exception Timeout
 (** [tclTIMEOUT n t] can have only one success.

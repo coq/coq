@@ -91,6 +91,8 @@ type proof = {
      to unfocus the proof and the extra information stored while focusing.
      The list is empty when the proof is fully unfocused. *)
   focus_stack: (_focus_condition*focus_info*Proofview.focus_context) list;
+  (* List of goals that have been shelved. *)
+  shelf : Goal.goal list;
 }
 
 (*** General proof functions ***)
@@ -107,7 +109,8 @@ let proof p =
   let stack =
     map_minus_one (fun (_,_,c) -> Proofview.focus_context c) p.focus_stack
   in
-  (goals,stack,sigma)
+  let shelf = p.shelf in
+  (goals,stack,shelf,sigma)
 
 let rec unroll_focus pv = function
   | (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
@@ -223,13 +226,16 @@ let unfocused = is_last_focus end_of_stack_kind
 let start goals =
   let pr = {
     proofview = Proofview.init goals ;
-    focus_stack = [] } in
+    focus_stack = [] ;
+    shelf = [] } in
   _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
 
 exception UnfinishedProof
+exception HasShelvedGoals
 exception HasUnresolvedEvar
 let _ = Errors.register_handler begin function
   | UnfinishedProof -> Errors.error "Some goals have not been solved."
+  | HasShelvedGoals -> Errors.error "Some goals have been left on the shelf."
   | HasUnresolvedEvar -> Errors.error "Some existential variables are uninstantiated."
   | _ -> raise Errors.Unhandled
 end
@@ -237,6 +243,8 @@ end
 let return p =
   if not (is_done p) then
     raise UnfinishedProof
+  else if not (CList.is_empty (p.shelf)) then
+    raise HasShelvedGoals
   else if has_unresolved_evar p then
     (* spiwack: for compatibility with <= 8.3 proof engine *)
     raise HasUnresolvedEvar
@@ -252,8 +260,18 @@ let initial_goals p = Proofview.initial_goals p.proofview
 
 let run_tactic env tac pr =
   let sp = pr.proofview in
-  let (_,tacticced_proofview,status) = Proofview.apply env tac sp in
-  { pr with proofview = tacticced_proofview },status
+  let (_,tacticced_proofview,(status,to_shelve)) = Proofview.apply env tac sp in
+  let shelf =
+    let pre_shelf = pr.shelf@to_shelve in
+    (* Compacting immediately: if someone shelves a goal, he probably
+       expects to solve it soon. *)
+    Proofview.in_proofview tacticced_proofview begin fun sigma ->
+      Option.List.flatten begin
+        List.map (fun g -> Goal.advance sigma g) pre_shelf
+      end
+    end
+  in
+  { pr with proofview = tacticced_proofview ; shelf },status
 
 let emit_side_effects eff pr =
   {pr with proofview = Proofview.emit_side_effects eff pr.proofview}
@@ -261,6 +279,11 @@ let emit_side_effects eff pr =
 (*** Commands ***)
 
 let in_proof p k = Proofview.in_proofview p.proofview k
+
+(* Remove all the goals from the shelf and adds them at the end of the
+   focused goals. *)
+let unshelve p =
+  { p with proofview = Proofview.unshelve (p.shelf) (p.proofview) ; shelf = [] }
 
 (*** Compatibility layer with <=v8.2 ***)
 module V82 = struct

@@ -129,13 +129,13 @@ let display mode (view : #GText.view_skel) goals hints evars =
   match goals with
   | None -> ()
     (* No proof in progress *)
-  | Some { Interface.fg_goals = []; Interface.bg_goals = bg } ->
+  | Some { Interface.fg_goals = []; Interface.bg_goals = bg; shelved_goals = shelf } ->
     let bg = flatten (List.rev bg) in
     let evars = match evars with None -> [] | Some evs -> evs in
-    begin match (bg, evars) with
-    | [], [] ->
+    begin match (bg, shelf, evars) with
+    | [], [], [] ->
       view#buffer#insert "No more subgoals."
-    | [], _ :: _ ->
+    | [], [], _ :: _ ->
       (* A proof has been finished, but not concluded *)
       view#buffer#insert "No more subgoals but non-instantiated existential variables:\n\n";
       let iter evar =
@@ -143,7 +143,15 @@ let display mode (view : #GText.view_skel) goals hints evars =
         view#buffer#insert msg
       in
       List.iter iter evars
-    | _, _ ->
+    | [], _, _ ->
+      (* All the goals have been resolved but those on the shelf. *)
+      view#buffer#insert "All the remaining goals are on the shelf:\n\n";
+      let iter goal =
+        let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
+        view#buffer#insert msg
+      in
+      List.iter iter shelf
+    | _, _, _ ->
       (* No foreground proofs, but still unfocused ones *)
       view#buffer#insert "This subproof is complete, but there are still unfocused goals:\n\n";
       let iter goal =

@@ -193,7 +193,7 @@ let goals () =
   if not (String.is_empty s) then msg_info (str s);
   try
     let pfts = Proof_global.give_me_the_proof () in
-    let (goals, zipper, sigma) = Proof.proof pfts in
+    let (goals, zipper, shelf, sigma) = Proof.proof pfts in
     let fg = List.map (process_goal sigma) goals in
     let map_zip (lg, rg) =
       let lg = List.map (process_goal sigma) lg in
@@ -201,7 +201,8 @@ let goals () =
       (lg, rg)
     in
     let bg = List.map map_zip zipper in
-    Some { Interface.fg_goals = fg; Interface.bg_goals = bg; }
+    let shelf = List.map (process_goal sigma) shelf in
+    Some { Interface.fg_goals = fg; Interface.bg_goals = bg; shelved_goals = shelf; }
   with Proof_global.NoCurrentProof -> None
 
 let evars () =

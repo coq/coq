@@ -4614,6 +4614,18 @@ intros; fourier.
 Reset Initial.
 \end{coq_eval}
 
+\section{Non-logical tactics}
+\subsection[\tt shelve]{\tt shelve\tacindex{shelve}\label{shelve}}
+
+This tactic moves all goals under focus to a shelf. While on the shelf, goals
+will not be focused on. They can be solved by unification, or they can be called
+back into focus with the command {\tt Unshelve} (Section~\ref{unshelve}).
+
+\subsection[\tt Unshelve]{\tt Unshelve\comindex{Unshelve}\label{unshelve}}
+
+This command moves all the goals on the shelf (see Section~\ref{shelve}) from the
+shelf into focus, by appending them to the end of the current list of focused goals.
+
 
 \section{Simple tactic macros}
 \index{Tactic macros}

@@ -565,7 +565,21 @@ let tclTIMEOUT n t =
     | Util.Inr e -> tclZERO e
 
 let mark_as_unsafe =
-  Proof.put false
+  Proof.put (false,[])
+
+(* Shelves all the goals under focus. *)
+let shelve =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  let (>>) = Proof.seq in
+  Proof.get >>= fun initial ->
+  Proof.set {initial with comb=[]} >>
+  Proof.put (true,initial.comb)
+
+(* [unshelve l p] adds all the goals in [l] at the end of the focused
+   goals of p *)
+let unshelve l p =
+  { p with comb = p.comb@l }
 
 (*** Commands ***)
 
@@ -690,7 +704,7 @@ module V82 = struct
     with Proof_errors.TacticFailure e -> raise e
 
   let put_status b =
-    Proof.put b
+    Proof.put (b,[])
 
   let catchable_exception = catchable_exception
 end
