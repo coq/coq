@@ -389,7 +389,14 @@ module New = struct
      tactical, we may consider wrapping the first argument with
      [tclPROGRESS]. It strikes me as a bad idea, but consistency can be
      considered valuable. *)
-  let tclOR = Proofview.Notations.(<+>)
+  let tclOR t1 t2 =
+    tclINDEPENDENT begin
+      Proofview.tclOR
+        t1
+        begin fun e ->
+          catch_failerror e <*> t2
+        end
+    end
 
   let tclORELSE0 t1 t2 =
     tclINDEPENDENT begin
