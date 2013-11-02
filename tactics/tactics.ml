@@ -3880,7 +3880,7 @@ module New = struct
     Proofview.Goal.lift c >>= fun c ->
     Proofview.tclSENSITIVE (Goal.refine c) <*>
     Proofview.V82.tactic (reduce
-       (Lazy {rBeta=true;rIota=false;rZeta=false;rDelta=false;rConst=[]})
+       (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
        {onhyps=None; concl_occs=AllOccurrences }
     )
 
