@@ -469,9 +469,8 @@ Section Common.
    x _ sk (fun e => y e _ sk fk)
  .
 
- (* For [reflect] and [reify] see the "Backtracking, Interleaving, and
-    Terminating Monad Transformers" paper (where [reify] must be seen
-    as the body of [msplit]).  *)
+ (* For [reflect] and [split] see the "Backtracking, Interleaving, and
+    Terminating Monad Transformers" paper.  *)
  Definition reflect {A:Set} (x:(A*(Exception -> T A)) + Exception) : T A :=
    match x with
    | inr e => _zero e
@@ -483,6 +482,10 @@ Section Common.
    let lift_fk fk e := do F y := lift (fk e) in reflect y in
    let sk a fk := ret _ M (inl (a, lift_fk fk)) in
    x _ sk fk
+ .
+
+ Definition split {A:Set} (x:T A) : T ((A*(Exception -> T A)) + Exception) :=
+   lift (reify x)
  .
 
  Definition Logic : Logic T := {|
@@ -548,20 +551,19 @@ Definition split0 {a:Set} (x:LogicalType a) : LogicalType ((a*(Exception -> Logi
   State.reflect _ _ LogicalMonadEnv (fun s =>
   Environment.reflect _ _ (fun e =>
   Writer.reflect _ _ (
-  Logic.lift _ NonLogicalMonad (
-    do NonLogicalMonad x' :=
-        Logic.reify _ NonLogicalMonad (Writer.run _ _ (Environment.run _ _ (State.run _ _ LogicalMonadEnv x s) e)) in
+    do LogicalMonadBase x' :=
+        Logic.split _ NonLogicalMonad (Writer.run _ _ (Environment.run _ _ (State.run _ _ LogicalMonadEnv x s) e)) in
     match x' with
-    | inr exc => ret _ NonLogicalMonad ((inr exc),s, Monoid.zero _ LogicalMessage)
+    | inr exc => ret _ LogicalMonadBase ((inr exc),s, Monoid.zero _ LogicalMessage)
     | inl (a',s',m',y) =>
       let y' exc :=
           State.reflect _ _ LogicalMonadEnv (fun _ =>
           Environment.reflect _ _ (fun _ =>
           Writer.reflect _ _ (y exc)))
       in
-      ret _ NonLogicalMonad (inl (a',y'),s',m')
+      ret _ LogicalMonadBase (inl (a',y'),s',m')
     end
-  ))))
+  )))
 .
 
 

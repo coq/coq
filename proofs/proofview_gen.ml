@@ -369,50 +369,47 @@ module Logical =
   let split x =
     (); (fun _ k s e _ sk fk ->
       IOBase.bind
-        (IOBase.bind
-          (Obj.magic x __
-            (fun a s' e0 _ sk0 fk0 ->
-            sk0 ((a,s'),true) fk0) s e __
+        (Obj.magic x __
+          (fun a s' e0 _ sk0 fk0 ->
+          sk0 ((a,s'),true) fk0) s e __
+          (fun a fk0 ->
+          IOBase.ret (Util.Inl
+            (a,(fun e0 _ sk0 fk1 ->
+            IOBase.bind (fk0 e0) (fun x0 ->
+              match x0 with
+              | Util.Inl p ->
+                let a0,x1 = p in
+                sk0 a0 (fun e1 ->
+                  x1 e1 __ sk0 fk1)
+              | Util.Inr e1 -> fk1 e1)))))
+          (fun e0 ->
+          IOBase.ret (Util.Inr e0)))
+        (fun x0 ->
+        match x0 with
+        | Util.Inl p ->
+          let p0,y = p in
+          let p1,m' = p0 in
+          let a',s' = p1 in
+          Obj.magic k (Util.Inl
+            (a',(fun exc _ k0 s0 e0 _ sk0 fk0 ->
+            y exc __ (fun a fk1 ->
+              let x1,c = a in
+              let a0,s'0 = x1 in
+              k0 a0 s'0 e0 __ (fun a1 fk2 ->
+                let y0,c' = a1 in
+                sk0
+                  (y0,(if c
+                       then c'
+                       else false)) fk2) fk1)
+              fk0))) s' e __ (fun a fk0 ->
+            let y0,c' = a in
+            sk
+              (y0,(if m' then c' else false))
+              fk0) fk
+        | Util.Inr exc ->
+          Obj.magic k (Util.Inr exc) s e __
             (fun a fk0 ->
-            IOBase.ret (Util.Inl
-              (a,(fun e0 _ sk0 fk1 ->
-              IOBase.bind (fk0 e0) (fun x0 ->
-                match x0 with
-                | Util.Inl p ->
-                  let a0,x1 = p in
-                  sk0 a0 (fun e1 ->
-                    x1 e1 __ sk0 fk1)
-                | Util.Inr e1 -> fk1 e1)))))
-            (fun e0 ->
-            IOBase.ret (Util.Inr e0)))
-          (fun x' ->
-          match x' with
-          | Util.Inl p ->
-            let p0,y = p in
-            let p1,m' = p0 in
-            let a',s' = p1 in
-            IOBase.ret (((Util.Inl
-              (a',(fun exc _ k0 s0 e0 _ sk0 fk0 ->
-              y exc __ (fun a fk1 ->
-                let x0,c = a in
-                let a0,s'0 = x0 in
-                k0 a0 s'0 e0 __
-                  (fun a1 fk2 ->
-                  let y0,c' = a1 in
-                  sk0
-                    (y0,(if c
-                         then c'
-                         else false)) fk2)
-                  fk1) fk0))),s'),m')
-          | Util.Inr exc ->
-            IOBase.ret (((Util.Inr
-              exc),s),true))) (fun x0 ->
-        let x1,c = x0 in
-        let a,s' = x1 in
-        Obj.magic k a s' e __ (fun a0 fk0 ->
-          let y,c' = a0 in
-          sk (y,(if c then c' else false))
-            fk0) fk))
+            let y,c' = a in sk (y,c') fk0) fk))
   
   (** val lift :
       'a1 NonLogical.t -> __ -> ('a1 ->
