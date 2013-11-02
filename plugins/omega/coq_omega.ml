@@ -35,8 +35,9 @@ open OmegaSolver
 (* Added by JCF, 09/03/98 *)
 
 let elim_id id =
-  Tacmach.New.pf_global id >>= fun c ->
-  simplest_elim c
+  Proofview.Goal.enter begin fun gl ->
+    simplest_elim (Tacmach.New.pf_global id gl)
+  end
 let resolve_id id gl = apply (pf_global gl id) gl
 
 let timing timer_name f arg = f arg
@@ -1379,10 +1380,10 @@ let reintroduce id =
 open Proofview.Notations
 
 let coq_omega =
-  Proofview.tclUNIT () >= fun () -> (* delay for the effects in [clear_tables] *)
+  Proofview.Goal.enter begin fun gl ->
   clear_tables ();
-  Tacmach.New.pf_hyps_types >>= fun hyps_types ->
-  Tacmach.New.of_old destructure_omega >>= fun destructure_omega ->
+  let hyps_types = Tacmach.New.pf_hyps_types gl in
+  let destructure_omega = Tacmach.New.of_old destructure_omega gl in
   let tactic_normalisation, system =
     List.fold_left destructure_omega ([],[]) hyps_types in
   let prelude,sys =
@@ -1427,11 +1428,13 @@ let coq_omega =
       Tacticals.New.tclTHEN prelude (replay_history tactic_normalisation path)
     with NO_CONTRADICTION -> Proofview.tclZERO (UserError ("" , Pp.str"Omega can't solve this system"))
   end
+  end
 
 let coq_omega = coq_omega
 
 let nat_inject =
-  Tacmach.New.pf_apply Reductionops.is_conv >>= fun is_conv ->
+  Proofview.Goal.enter begin fun gl ->
+  let is_conv = Tacmach.New.pf_apply Reductionops.is_conv gl in
   let rec explore p t : unit Proofview.tactic =
     try match destructurate_term t with
       | Kapp(Plus,[t1;t2]) ->
@@ -1562,8 +1565,9 @@ let nat_inject =
 	    | _ -> loop lit
 	  with e when catchable_exception e -> loop lit end
   in
-  Tacmach.New.pf_hyps_types >>= fun hyps_types ->
+  let hyps_types = Tacmach.New.pf_hyps_types gl in
   loop (List.rev hyps_types)
+  end
 
 let dec_binop = function
   | Zne -> coq_dec_Zne
@@ -1633,21 +1637,25 @@ let onClearedName id tac =
   (* so renaming may be necessary *)
   Tacticals.New.tclTHEN
     (Proofview.V82.tactic (tclTRY (clear [id])))
-    (Tacmach.New.of_old (fresh_id [] id) >>= fun id ->
-     Tacticals.New.tclTHEN (Proofview.V82.tactic (introduction id)) (tac id))
+    (Proofview.Goal.enter begin fun gl ->
+     let id = Tacmach.New.of_old (fresh_id [] id) gl in
+     Tacticals.New.tclTHEN (Proofview.V82.tactic (introduction id)) (tac id)
+    end)
 
 let onClearedName2 id tac =
   Tacticals.New.tclTHEN
     (Proofview.V82.tactic (tclTRY (clear [id])))
-    (Tacmach.New.of_old (fresh_id [] (add_suffix id "_left")) >>= fun id1 ->
-     Tacmach.New.of_old (fresh_id [] (add_suffix id "_right")) >>= fun id2 ->
-      Tacticals.New.tclTHENLIST [ Proofview.V82.tactic (introduction id1); Proofview.V82.tactic (introduction id2); tac id1 id2 ])
+    (Proofview.Goal.enter begin fun gl ->
+     let id1 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_left")) gl in
+     let id2 = Tacmach.New.of_old (fresh_id [] (add_suffix id "_right")) gl in
+      Tacticals.New.tclTHENLIST [ Proofview.V82.tactic (introduction id1); Proofview.V82.tactic (introduction id2); tac id1 id2 ]
+    end)
 
 let destructure_hyps =
-  Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
-  Tacmach.New.of_old decidability >>= fun decidability ->
-  Tacmach.New.of_old pf_nf >>= fun pf_nf ->
   Proofview.Goal.enter begin fun gl ->
+  let type_of = Tacmach.New.pf_apply Typing.type_of gl in
+  let decidability = Tacmach.New.of_old decidability gl in
+  let pf_nf = Tacmach.New.of_old pf_nf gl in
     let rec loop = function
       | [] -> (Tacticals.New.tclTHEN nat_inject coq_omega)
       | (i,body,t)::lit ->
@@ -1791,7 +1799,7 @@ let destructure_hyps =
 let destructure_goal =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
-    Tacmach.New.of_old decidability >>= fun decidability ->
+    let decidability = Tacmach.New.of_old decidability gl in
     let rec loop t =
       match destructurate_prop t with
       | Kapp(Not,[t]) ->

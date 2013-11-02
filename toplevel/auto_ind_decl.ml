@@ -351,7 +351,8 @@ let do_replace_lb lb_scheme_key aavoid narg p q =
         )))
       )
   in
-  Tacmach.New.of_old (fun gl -> pf_type_of gl p) >>= fun type_of_pq ->
+  Proofview.Goal.enter begin fun gl ->
+    let type_of_pq = Tacmach.New.of_old (fun gl -> pf_type_of gl p) gl in
     let u,v = destruct_ind type_of_pq
     in let lb_type_of_p =
         try
@@ -380,6 +381,7 @@ let do_replace_lb lb_scheme_key aavoid narg p q =
            Tacticals.New.tclTHENLIST [
              Proofview.V82.tactic (Tactics.emit_side_effects eff);
              Equality.replace p q ; Proofview.V82.tactic (apply app) ; Auto.default_auto]
+  end
 
 (* used in the bool -> leib side *)
 let do_replace_bl bl_scheme_key ind aavoid narg lft rgt =
@@ -410,7 +412,8 @@ let do_replace_bl bl_scheme_key ind aavoid narg lft rgt =
   let rec aux l1 l2 =
     match (l1,l2) with
     | (t1::q1,t2::q2) ->
-        Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+        Proofview.Goal.enter begin fun gl ->
+        let type_of = Tacmach.New.pf_apply Typing.type_of gl in
         begin try (* type_of can raise an exception *)
         let tt1 = type_of t1 in
         if eq_constr t1 t2 then aux q1 q2
@@ -453,6 +456,7 @@ let do_replace_bl bl_scheme_key ind aavoid narg lft rgt =
               )
         )
           with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+        end
         end
     | ([],[]) -> Proofview.tclUNIT ()
     | _ -> Proofview.tclZERO (UserError ("" , str"Both side of the equality must have the same arity."))

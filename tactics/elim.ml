@@ -86,7 +86,8 @@ let tmphyp_name = Id.of_string "_TmpHyp"
 let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
-  Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+  Proofview.Goal.enter begin fun gl ->
+  let type_of = Tacmach.New.pf_apply Typing.type_of gl in
   try (* type_of can raise exceptions *)
   let typc = type_of c in
   Tacticals.New.tclTHENS (Proofview.V82.tactic (cut typc))
@@ -96,6 +97,7 @@ let general_decompose recognizer c =
 	      (fun id -> Proofview.V82.tactic (clear [id]))));
        Proofview.V82.tactic (exact_no_check c) ]
   with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+  end
 
 let head_in =
   Goal.env >- fun env ->
@@ -169,8 +171,9 @@ let induction_trailer abs_i abs_j bargs =
           ))
 
 let double_ind h1 h2 =
-  Tacmach.New.of_old (depth_of_quantified_hypothesis true h1) >>= fun abs_i ->
-  Tacmach.New.of_old (depth_of_quantified_hypothesis true h2) >>= fun abs_j ->
+  Proofview.Goal.enter begin fun gl ->
+  let abs_i = Tacmach.New.of_old (depth_of_quantified_hypothesis true h1) gl in
+  let abs_j = Tacmach.New.of_old (depth_of_quantified_hypothesis true h2) gl in
   let abs =
     if abs_i < abs_j then Proofview.tclUNIT (abs_i,abs_j) else
     if abs_i > abs_j then  Proofview.tclUNIT (abs_j,abs_i) else
@@ -182,6 +185,7 @@ let double_ind h1 h2 =
            Tacticals.New.elimination_then
              (introElimAssumsThen (induction_trailer abs_i abs_j))
              ([],[]) (mkVar id))))
+  end
 
 let h_double_induction = double_ind
 

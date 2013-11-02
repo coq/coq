@@ -85,10 +85,12 @@ let elim_res_pf_THEN_i clenv tac gls =
 
 open Proofview.Notations
 let new_elim_res_pf_THEN_i clenv tac =
-  Tacmach.New.of_old (clenv_unique_resolver ~flags:elim_flags clenv) >>= fun clenv' ->
-  Proofview.tclTHEN
-    (Proofview.V82.tactic (clenv_refine false clenv'))
-    (Proofview.tclEXTEND [] (Proofview.tclUNIT()) (Array.to_list (tac clenv')))
+  Proofview.Goal.enter begin fun gl ->
+    let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags:elim_flags clenv) gl in
+    Proofview.tclTHEN
+      (Proofview.V82.tactic (clenv_refine false clenv'))
+      (Proofview.tclEXTEND [] (Proofview.tclUNIT()) (Array.to_list (tac clenv')))
+  end
 
 let e_res_pf clenv = res_pf clenv ~with_evars:true ~flags:dft
 

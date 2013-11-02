@@ -246,7 +246,8 @@ let build_projection intype outtype (cstr:constructor) special default gls=
 let _M =mkMeta
 
 let rec proof_tac p : unit Proofview.tactic =
-  Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+  Proofview.Goal.enter begin fun gl ->
+  let type_of = Tacmach.New.pf_apply Typing.type_of gl in
   try (* type_of can raise exceptions *)
   match p.p_rule with
       Ax c -> Proofview.V82.tactic (exact_check c)
@@ -281,7 +282,7 @@ let rec proof_tac p : unit Proofview.tactic =
 	let typf = Termops.refresh_universes (type_of tf1) in
 	let typx = Termops.refresh_universes (type_of tx1) in
 	let typfx = Termops.refresh_universes (type_of (mkApp (tf1,[|tx1|]))) in
-        Tacmach.New.of_old (fun gls -> pf_get_new_id (Id.of_string "f") gls) >>= fun id ->
+        let id = Tacmach.New.of_old (fun gls -> pf_get_new_id (Id.of_string "f") gls) gl in
 	let appx1 = mkLambda(Name id,typf,mkApp(mkRel 1,[|tx1|])) in
 	let lemma1 =
 	  mkApp(Lazy.force _f_equal,
@@ -310,57 +311,72 @@ let rec proof_tac p : unit Proofview.tactic =
 	 let intype = Termops.refresh_universes (type_of ti) in
 	 let outtype = Termops.refresh_universes (type_of default) in
 	 let special=mkRel (1+nargs-argind) in
-         Tacmach.New.of_old (build_projection intype outtype cstr special default) >>= fun proj ->
+         let proj =
+           Tacmach.New.of_old (build_projection intype outtype cstr special default) gl
+         in
 	 let injt=
 	   mkApp (Lazy.force _f_equal,[|intype;outtype;proj;ti;tj;_M 1|]) in
 	   Tacticals.New.tclTHEN (Proofview.V82.tactic (refine injt)) (proof_tac prf)
   with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+  end
 
 let refute_tac c t1 t2 p =
+  Proofview.Goal.enter begin fun gl ->
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
-  Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls tt1)) >>= fun intype ->
+  let intype =
+    Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls tt1)) gl
+  in
   let neweq=
     mkApp(Lazy.force _eq,
 	  [|intype;tt1;tt2|]) in
-  Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) >>= fun hid ->
+  let hid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) gl in
   let false_t=mkApp (c,[|mkVar hid|]) in
     Tacticals.New.tclTHENS (assert_tac (Name hid) neweq)
       [proof_tac p; simplest_elim false_t]
+  end
 
 let convert_to_goal_tac c t1 t2 p = 
+  Proofview.Goal.enter begin fun gl ->
   let tt1=constr_of_term t1 and tt2=constr_of_term t2 in
-  Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls tt2)) >>= fun sort ->
+  let sort =
+    Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls tt2)) gl
+  in
   let neweq=mkApp(Lazy.force _eq,[|sort;tt1;tt2|]) in
-  Tacmach.New.of_old (pf_get_new_id (Id.of_string "e")) >>= fun e ->
-  Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) >>= fun x ->
+  let e = Tacmach.New.of_old (pf_get_new_id (Id.of_string "e")) gl in
+  let x = Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) gl in
   let identity=mkLambda (Name x,sort,mkRel 1) in
   let endt=mkApp (Lazy.force _eq_rect,
 		  [|sort;tt1;identity;c;tt2;mkVar e|]) in
     Tacticals.New.tclTHENS (assert_tac (Name e) neweq)
       [proof_tac p; Proofview.V82.tactic (exact_check endt)]
+  end
 
 let convert_to_hyp_tac c1 t1 c2 t2 p =
+  Proofview.Goal.enter begin fun gl ->
   let tt2=constr_of_term t2 in
-  Tacmach.New.of_old (pf_get_new_id (Id.of_string "H")) >>= fun h ->
+  let h = Tacmach.New.of_old (pf_get_new_id (Id.of_string "H")) gl in
   let false_t=mkApp (c2,[|mkVar h|]) in
     Tacticals.New.tclTHENS (assert_tac (Name h) tt2)
       [convert_to_goal_tac c1 t1 t2 p;
        simplest_elim false_t]
+  end
 
 let discriminate_tac cstr p =
   Proofview.Goal.enter begin fun gl ->
     let t1=constr_of_term p.p_lhs and t2=constr_of_term p.p_rhs in
-    Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls t1)) >>= fun intype ->
+    let intype =
+      Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls t1)) gl
+    in
     let concl = Proofview.Goal.concl gl in
     let outsort = mkType (Termops.new_univ ()) in
-    Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) >>= fun xid ->
-    Tacmach.New.of_old (pf_get_new_id (Id.of_string "t")) >>= fun tid ->
+    let xid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) gl in
+    let tid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "t")) gl in
     let identity=mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in
-    Tacmach.New.of_old (fun gls -> pf_type_of gls identity) >>= fun trivial ->
+    let trivial = Tacmach.New.of_old (fun gls -> pf_type_of gls identity) gl in
     let outtype = mkType (Termops.new_univ ()) in
     let pred=mkLambda(Name xid,outtype,mkRel 1) in
-    Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) >>= fun hid ->
-    Tacmach.New.of_old (build_projection intype outtype cstr trivial concl) >>= fun proj ->
+    let hid = Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) gl in
+    let proj = Tacmach.New.of_old (build_projection intype outtype cstr trivial concl) gl in
     let injt=mkApp (Lazy.force _f_equal,
 		    [|intype;outtype;proj;t1;t2;mkVar hid|]) in
     let endt=mkApp (Lazy.force _eq_rect,
@@ -383,7 +399,7 @@ let cc_tactic depth additionnal_terms =
   Proofview.Goal.enter begin fun gl ->
     Coqlib.check_required_library Coqlib.logic_module_name;
     let _ = debug (Pp.str "Reading subgoal ...") in
-    Tacmach.New.of_old (fun gls -> make_prb gls depth additionnal_terms) >>= fun state ->
+    let state = Tacmach.New.of_old (fun gls -> make_prb gls depth additionnal_terms) gl in
     let _ = debug (Pp.str "Problem built, solving ...") in
     let sol = execute true state in
     let _ = debug (Pp.str "Computation completed.") in
@@ -457,7 +473,7 @@ let simple_reflexivity () = apply (Lazy.force _refl_equal)
 let f_equal =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
-    Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+    let type_of = Tacmach.New.pf_apply Typing.type_of gl in
     let cut_eq c1 c2 =
       try (* type_of can raise an exception *)
         let ty = Termops.refresh_universes (type_of c1) in

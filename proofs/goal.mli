@@ -149,7 +149,7 @@ val defs : Evd.evar_map sensitive
 
 (* [enter] combines [env], [defs], [hyps] and [concl] in a single
    primitive. *)
-val enter : (Environ.env -> Evd.evar_map -> Environ.named_context_val -> Term.constr -> 'a) -> 'a sensitive
+val enter : (Environ.env -> Evd.evar_map -> Environ.named_context_val -> Term.constr -> goal -> 'a) -> 'a sensitive
 
 (*** Additional functions ***)
 

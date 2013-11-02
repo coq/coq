@@ -354,8 +354,8 @@ let env env _ _ _ = env
 let defs _ rdefs _ _ =
   !rdefs
 
-let enter f = (); fun env rdefs _ info ->
-  f env !rdefs (Evd.evar_hyps info) (Evd.evar_concl info)
+let enter f = (); fun env rdefs gl info ->
+  f env !rdefs (Evd.evar_hyps info) (Evd.evar_concl info) gl
 
 (*** Conversion in goals ***)
 

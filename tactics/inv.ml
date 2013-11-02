@@ -274,11 +274,13 @@ Nota: with Inversion_clear, only four useless hypotheses
 *)
 
 let generalizeRewriteIntros tac depids id =
-  Tacmach.New.of_old (dependent_hyps id depids) >>= fun dids ->
+  Proofview.Goal.enter begin fun gl ->
+  let dids = Tacmach.New.of_old (dependent_hyps id depids) gl in
   (Tacticals.New.tclTHENLIST
     [Proofview.V82.tactic (bring_hyps dids); tac;
      (* may actually fail to replace if dependent in a previous eq *)
      intros_replacing (ids_of_named_context dids)])
+  end
 
 let rec tclMAP_i n tacfun = function
   | [] -> Tacticals.New.tclDO n (tacfun None)
@@ -302,11 +304,15 @@ let projectAndApply thin id eqname names depids =
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
   in
   let substHypIfVariable tac id =
-    Tacmach.New.of_old (fun gls -> Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id)) >>= fun (t,t1,t2) ->
+    Proofview.Goal.enter begin fun gl ->
+    let (t,t1,t2) =
+      Tacmach.New.of_old (fun gls -> Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id)) gl
+    in
     match (kind_of_term t1, kind_of_term t2) with
     | Var id1, _ -> generalizeRewriteIntros (Proofview.V82.tactic (subst_hyp true id)) depids id1
     | _, Var id2 -> generalizeRewriteIntros (Proofview.V82.tactic (subst_hyp false id)) depids id2
     | _ -> tac id
+    end
   in
   let deq_trailer id _ neqns =
     Tacticals.New.tclTHENLIST
@@ -331,7 +337,10 @@ let projectAndApply thin id eqname names depids =
 (* Inversion qui n'introduit pas les hypotheses, afin de pouvoir les nommer
    soi-meme (proposition de Valerie). *)
 let rewrite_equations_gene othin neqns ba =
-  Tacmach.New.of_old (fun gl -> split_dep_and_nodep ba.assums gl) >>= fun (depids,nodepids) ->
+  Proofview.Goal.enter begin fun gl ->
+  let (depids,nodepids) =
+    Tacmach.New.of_old (fun gl -> split_dep_and_nodep ba.assums gl) gl
+  in
   let rewrite_eqns =
     match othin with
       | Some thin ->
@@ -361,6 +370,7 @@ let rewrite_equations_gene othin neqns ba =
                (tclORELSE (clear [id])
                  (tclTHEN (bring_hyps [d]) (clear [id]))))
        depids)])
+  end
 
 (* Introduction of the equations on arguments
    othin: discriminates Simple Inversion, Inversion and Inversion_clear
@@ -397,8 +407,11 @@ let extract_eqn_names = function
   | Some x -> x
 
 let rewrite_equations othin neqns names ba =
+  Proofview.Goal.enter begin fun gl ->
   let names = List.map (get_names true) names in
-  Tacmach.New.of_old (fun gl -> split_dep_and_nodep ba.assums gl) >>= fun (depids,nodepids) ->
+  let (depids,nodepids) =
+    Tacmach.New.of_old (fun gl -> split_dep_and_nodep ba.assums gl) gl
+  in
   let rewrite_eqns =
     let first_eq = ref MoveLast in
     match othin with
@@ -424,6 +437,7 @@ let rewrite_equations othin neqns names ba =
      Proofview.V82.tactic (bring_hyps nodepids);
      Proofview.V82.tactic (clear (ids_of_named_context nodepids));
      rewrite_eqns])
+  end
 
 let interp_inversion_kind = function
   | SimpleInversion -> None
@@ -448,8 +462,8 @@ let raw_inversion inv_kind id status names =
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     let c = mkVar id in
-    Tacmach.New.pf_apply Tacred.reduce_to_atomic_ind >>= fun reduce_to_atomic_ind ->
-    Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+    let reduce_to_atomic_ind = Tacmach.New.pf_apply Tacred.reduce_to_atomic_ind gl in
+    let type_of = Tacmach.New.pf_apply Typing.type_of gl in
     begin
       try
         Proofview.tclUNIT (reduce_to_atomic_ind (type_of c))
@@ -457,7 +471,7 @@ let raw_inversion inv_kind id status names =
         Proofview.tclZERO (Errors.UserError ("raw_inversion" ,
 	                                     str ("The type of "^(Id.to_string id)^" is not inductive.")))
     end >= fun (ind,t) ->
-      Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) >>= fun indclause ->
+      let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) gl in
       let ccl = clenv_type indclause in
       check_no_metas indclause ccl;
       let IndType (indf,realargs) = find_rectype env sigma ccl in
@@ -526,7 +540,7 @@ let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
 
 let invIn k names ids id =
   Proofview.Goal.enter begin fun gl ->
-    Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive ids) >>= fun hyps ->
+    let hyps = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) ids in
     let concl = Proofview.Goal.concl gl in
     let nb_prod_init = nb_prod concl in
     let intros_replace_ids =

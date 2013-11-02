@@ -285,7 +285,7 @@ let lemInv_gen id c = try_intros_until (fun id -> Proofview.V82.tactic (lemInv i
 
 let lemInvIn id c ids =
   Proofview.Goal.enter begin fun gl ->
-    Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive ids) >>= fun hyps ->
+    let hyps = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) ids in
     let intros_replace_ids =
       let concl = Proofview.Goal.concl gl in
       let nb_of_new_hyp  = nb_prod concl - List.length ids in

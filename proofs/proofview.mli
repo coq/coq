@@ -293,13 +293,15 @@ module Goal : sig
   (* [lift_sensitive s] returns the list corresponding to the evaluation
      of [s] on each of the focused goals *)
   val lift : 'a Goal.sensitive -> 'a glist tactic
-  
 
   (* [lift (Goal.return x)] *)
   val return : 'a -> 'a glist tactic
   val enter : (t -> unit tactic) -> unit tactic
   val enterl : (t -> 'a glist tactic) -> 'a glist tactic
 
+
+  (* compatibility: avoid if possible *)
+  val goal : t -> Goal.goal
 end
 
 

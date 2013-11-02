@@ -207,65 +207,46 @@ let pr_glls glls =
 module New = struct
   open Proofview.Notations
 
-  let pf_apply f =
-    Proofview.Goal.lift begin
-      Goal.env >- fun env ->
-      Goal.defs >- fun sigma ->
-      Goal.return (f env sigma)
-    end
+  let pf_apply f gl =
+    f (Proofview.Goal.env gl) (Proofview.Goal.sigma gl)
 
-  let of_old f =
-    Proofview.Goal.lift (Goal.V82.to_sensitive f)
+  let of_old f gl =
+    f { Evd.it = Proofview.Goal.goal gl ; sigma = Proofview.Goal.sigma gl }
 
-  let pf_global_sensitive id =
-    Goal.hyps >- fun hyps ->
+  let pf_global id gl =
+    let hyps = Proofview.Goal.hyps gl in
     let hyps = Environ.named_context_of_val hyps in
-    Goal.return (Constrintern.construct_reference hyps id)
+    Constrintern.construct_reference hyps id
 
-  let pf_global id =
-    Proofview.Goal.lift (pf_global_sensitive id)
-
-  let pf_ids_of_hyps_sensitive =
-    Goal.hyps >- fun hyps ->
+  let pf_ids_of_hyps gl =
+    let hyps = Proofview.Goal.hyps gl in
     let hyps = Environ.named_context_of_val hyps in
-    Goal.return (ids_of_named_context hyps)
-  let pf_ids_of_hyps =
-    Proofview.Goal.lift pf_ids_of_hyps_sensitive
+    ids_of_named_context hyps
 
-  let pf_get_new_id id =
-    Proofview.Goal.lift begin
-      pf_ids_of_hyps_sensitive >- fun ids ->
-      Goal.return (next_ident_away id ids)
-    end
+  let pf_get_new_id id gl =
+    let ids = pf_ids_of_hyps gl in
+    next_ident_away id ids
 
-  let pf_get_hyp_sensitive id =
-    Goal.hyps >- fun hyps ->
+  let pf_get_hyp id gl =
+    let hyps = Proofview.Goal.hyps gl in
     let hyps = Environ.named_context_of_val hyps in
     let sign =
       try Context.lookup_named id hyps
       with Not_found -> Errors.error ("No such hypothesis: " ^ (string_of_id id))
     in
-    Goal.return sign
-  let pf_get_hyp id =
-    Proofview.Goal.lift (pf_get_hyp_sensitive id)
+    sign
 
-  let pf_get_hyp_typ_sensitive id =
-    pf_get_hyp_sensitive id >- fun (_,_,ty) ->
-    Goal.return ty
-  let pf_get_hyp_typ id =
-    Proofview.Goal.lift (pf_get_hyp_typ_sensitive id)
+  let pf_get_hyp_typ id gl =
+    let (_,_,ty) = pf_get_hyp id gl in
+    ty
 
-  let pf_hyps_types =
-    Proofview.Goal.lift begin
-      Goal.env >- fun env ->
-      let sign = Environ.named_context env in
-      Goal.return (List.map (fun (id,_,x) -> (id, x)) sign)
-    end
+  let pf_hyps_types gl =
+    let env = Proofview.Goal.env gl in
+    let sign = Environ.named_context env in
+    List.map (fun (id,_,x) -> (id, x)) sign
 
-  let pf_last_hyp =
-    Proofview.Goal.lift begin
-      Goal.hyps >- fun hyps ->
-      Goal.return (List.hd (Environ.named_context_of_val hyps))
-    end
+  let pf_last_hyp gl =
+    let hyps = Proofview.Goal.hyps gl in
+    List.hd (Environ.named_context_of_val hyps)
 
 end

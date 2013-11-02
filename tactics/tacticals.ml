@@ -554,38 +554,47 @@ module New = struct
   let onLastDecl  = onNthDecl 1
 
   let ifOnHyp pred tac1 tac2 id =
-    Tacmach.New.pf_get_hyp_typ id >>= fun typ ->
+    Proofview.Goal.enter begin fun gl ->
+    let typ = Tacmach.New.pf_get_hyp_typ id gl in
     if pred (id,typ) then
       tac1 id
     else
       tac2 id
+    end
 
   let fullGoal =
-    Tacmach.New.pf_ids_of_hyps >>== fun hyps ->
+    Proofview.Goal.enterl begin fun gl ->
+    let hyps = Tacmach.New.pf_ids_of_hyps gl in
     Proofview.Goal.return (None :: List.map Option.make hyps)
+    end
 
   let tryAllHyps tac =
-    Tacmach.New.pf_ids_of_hyps >>= fun hyps ->
+    Proofview.Goal.enter begin fun gl ->
+    let hyps = Tacmach.New.pf_ids_of_hyps gl in
     tclFIRST_PROGRESS_ON tac hyps
+    end
   let tryAllHypsAndConcl tac =
     fullGoal >>= fun fullGoal ->
     tclFIRST_PROGRESS_ON tac fullGoal
 
   let onClause tac cl =
-    Tacmach.New.pf_ids_of_hyps >>= fun hyps ->
+    Proofview.Goal.enter begin fun gl ->
+    let hyps = Tacmach.New.pf_ids_of_hyps gl in
     tclMAP tac (Locusops.simple_clause_of (fun () -> hyps) cl)
+    end
 
   (* Find the right elimination suffix corresponding to the sort of the goal *)
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
       isrec allnames tac predicate (indbindings,elimbindings)
       ind indclause =
-    Tacmach.New.of_old (mk_elim ind) >>= fun elim ->
+    Proofview.Goal.enter begin fun gl ->
+    let elim = Tacmach.New.of_old (mk_elim ind) gl in
     (* applying elimination_scheme just a little modified *)
     let indclause' = clenv_match_args indbindings indclause in
-    Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+    let type_of = Tacmach.New.pf_apply Typing.type_of gl in
     begin try (* type_of can raise an exception *)
-            Tacmach.New.of_old (fun gl -> mk_clenv_from gl (elim,type_of elim))
+            Proofview.Goal.return (Tacmach.New.of_old (fun gl -> mk_clenv_from gl (elim,type_of elim)) gl)
       with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
     end >>= fun elimclause ->
     let indmv =
@@ -634,10 +643,14 @@ module New = struct
             Reduction.CONV (mkMeta pmv) p elimclause'
     in
     new_elim_res_pf_THEN_i elimclause' branchtacs
+    end
 
   let elimination_then_using tac predicate bindings c =
-    Tacmach.New.of_old (fun gl -> pf_reduce_to_quantified_ind gl (pf_type_of gl c)) >>= fun (ind,t) ->
-    Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) >>= fun indclause ->
+    Proofview.Goal.enter begin fun gl ->
+    let (ind,t) =
+      Tacmach.New.of_old (fun gl -> pf_reduce_to_quantified_ind gl (pf_type_of gl c)) gl
+    in
+    let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) gl in
     let isrec,mkelim =
       if (Global.lookup_mind (fst ind)).mind_record
       then false,gl_make_case_dep
@@ -645,6 +658,7 @@ module New = struct
     in
     general_elim_then_using mkelim isrec
       None tac predicate bindings ind indclause
+    end
 
   let case_then_using =
     general_elim_then_using gl_make_case_dep false
@@ -656,10 +670,14 @@ module New = struct
   let elimination_then tac        = elimination_then_using tac None
 
   let elim_on_ba tac ba =
-    Tacmach.New.of_old (make_elim_branch_assumptions ba) >>= fun branches ->
+    Proofview.Goal.enter begin fun gl ->
+    let branches = Tacmach.New.of_old (make_elim_branch_assumptions ba) gl in
     tac branches
+    end
 
   let case_on_ba tac ba = 
-    Tacmach.New.of_old (make_case_branch_assumptions ba) >>= fun branches ->
+    Proofview.Goal.enter begin fun gl ->
+    let branches = Tacmach.New.of_old (make_case_branch_assumptions ba) gl in
     tac branches
+    end
 end

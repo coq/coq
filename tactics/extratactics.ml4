@@ -644,10 +644,12 @@ END
 exception Found of unit Proofview.tactic
 
 let rewrite_except h =
-  Tacmach.New.pf_ids_of_hyps >>= fun hyps ->
+  Proofview.Goal.enter begin fun gl ->
+  let hyps = Tacmach.New.pf_ids_of_hyps gl in
   Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else 
       Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
     hyps
+  end
 
 
 let refl_equal = 
@@ -661,7 +663,8 @@ let refl_equal =
   should be replaced by a call to the tactic but I don't know how to
   call it before it is defined. *)
 let  mkCaseEq a  : unit Proofview.tactic =
-      Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g a) >>= fun type_of_a ->
+  Proofview.Goal.enter begin fun gl ->
+    let type_of_a = Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g a) gl in
        Tacticals.New.tclTHENLIST
          [Proofview.V82.tactic (Hiddentac.h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])]);
           Proofview.Goal.enter begin fun gl ->
@@ -673,6 +676,7 @@ let  mkCaseEq a  : unit Proofview.tactic =
             end
           end;
 	  simplest_case a]
+  end
 
 
 let case_eq_intros_rewrite x =
@@ -685,9 +689,9 @@ let case_eq_intros_rewrite x =
       mkCaseEq x;
     Proofview.Goal.enter begin fun gl ->
       let concl = Proofview.Goal.concl gl in
-      Tacmach.New.pf_ids_of_hyps >>= fun hyps ->
+      let hyps = Tacmach.New.pf_ids_of_hyps gl in
       let n' = nb_prod concl in
-      Tacmach.New.of_old (fun g -> fresh_id hyps (Id.of_string "heq") g) >>= fun h ->
+      let h = Tacmach.New.of_old (fun g -> fresh_id hyps (Id.of_string "heq") g) gl in
       Tacticals.New.tclTHENLIST [
                     Tacticals.New.tclDO (n'-n-1) intro;
 		    Proofview.V82.tactic (Tacmach.introduction h);
@@ -713,10 +717,12 @@ let destauto t =
   with Found tac -> tac
 
 let destauto_in id = 
-  Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g (mkVar id)) >>= fun ctype ->
+  Proofview.Goal.enter begin fun gl ->
+  let ctype = Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g (mkVar id)) gl in
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto ctype
+  end
 
 TACTIC EXTEND destauto
 | [ "destauto" ] -> [ Proofview.Goal.enter (fun gl -> destauto (Proofview.Goal.concl gl)) ]

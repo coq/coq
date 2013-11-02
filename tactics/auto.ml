@@ -1278,7 +1278,7 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
       ( Proofview.Goal.enter begin fun gl ->
           let sigma = Proofview.Goal.sigma gl in
           let env = Proofview.Goal.env gl in
-          Tacmach.New.pf_last_hyp >>= fun hyp ->
+          let hyp = Tacmach.New.pf_last_hyp gl in
 	  let hintl = make_resolve_hyp env sigma hyp
 	  in trivial_fail_db dbg mod_delta db_list (Hint_db.add_list hintl local_db)
       end)
@@ -1376,20 +1376,24 @@ let make_db_list dbnames =
   List.map lookup dbnames
 
 let trivial ?(debug=Off) lems dbnames =
+  Proofview.Goal.enter begin fun gl ->
   let db_list = make_db_list dbnames in
   let d = mk_trivial_dbg debug in
-  Tacmach.New.of_old (make_local_hint_db false lems) >>= fun hints ->
+  let hints = Tacmach.New.of_old (make_local_hint_db false lems) gl in
   new_tclTRY_dbg d
     (trivial_fail_db d false db_list hints)
+  end
 
 let full_trivial ?(debug=Off) lems =
+  Proofview.Goal.enter begin fun gl ->
   let dbs = !searchtable in
   let dbs = String.Map.remove "v62" dbs in
   let db_list = List.map snd (String.Map.bindings dbs) in
   let d = mk_trivial_dbg debug in
-  Tacmach.New.of_old (make_local_hint_db false lems) >>= fun hints ->
+  let hints = Tacmach.New.of_old (make_local_hint_db false lems) gl in
   new_tclTRY_dbg d
     (trivial_fail_db d false db_list hints)
+  end
 
 let gen_trivial ?(debug=Off) lems = function
   | None -> full_trivial ~debug lems
@@ -1423,8 +1427,10 @@ let extend_local_db gl decl db =
 
 let intro_register dbg kont db =
   Tacticals.New.tclTHEN (dbg_intro dbg)
-    (Tacmach.New.of_old extend_local_db >>= fun extend_local_db ->
-      Tacticals.New.onLastDecl (fun decl -> kont (extend_local_db decl db)))
+    (Proofview.Goal.enter begin fun gl ->
+      let extend_local_db = Tacmach.New.of_old extend_local_db gl in
+      Tacticals.New.onLastDecl (fun decl -> kont (extend_local_db decl db))
+    end)
 
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
@@ -1452,12 +1458,13 @@ let search d n mod_delta db_list local_db =
 let default_search_depth = ref 5
 
 let delta_auto ?(debug=Off) mod_delta n lems dbnames =
-  Proofview.tclUNIT () >= fun () -> (* delay for the side effects *)
+  Proofview.Goal.enter begin fun gl ->
   let db_list = make_db_list dbnames in
   let d = mk_auto_dbg debug in
-  Tacmach.New.of_old (make_local_hint_db false lems) >>= fun hints ->
+  let hints = Tacmach.New.of_old (make_local_hint_db false lems) gl in
   new_tclTRY_dbg d
     (search d n mod_delta db_list hints)
+  end
 
 let auto ?(debug=Off) n = delta_auto ~debug false n
 
@@ -1466,13 +1473,15 @@ let new_auto ?(debug=Off) n = delta_auto ~debug true n
 let default_auto = auto !default_search_depth [] []
 
 let delta_full_auto ?(debug=Off) mod_delta n lems =
+  Proofview.Goal.enter begin fun gl ->
   let dbs = !searchtable in
   let dbs = String.Map.remove "v62" dbs in
   let db_list = List.map snd (String.Map.bindings dbs) in
   let d = mk_auto_dbg debug in
-  Tacmach.New.of_old (make_local_hint_db false lems) >>= fun hints ->
+  let hints = Tacmach.New.of_old (make_local_hint_db false lems) gl in
   new_tclTRY_dbg d
     (search d n mod_delta db_list hints)
+  end
 
 let full_auto ?(debug=Off) n = delta_full_auto ~debug false n
 let new_full_auto ?(debug=Off) n = delta_full_auto ~debug true n

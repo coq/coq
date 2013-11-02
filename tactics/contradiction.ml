@@ -62,11 +62,11 @@ let contradiction_context =
 	  else match kind_of_term typ with
 	  | Prod (na,t,u) when is_empty_type u ->
 	      (Proofview.tclORELSE
-                 begin
-                   Tacmach.New.pf_apply is_conv_leq >>= fun is_conv_leq ->
+                 (Proofview.Goal.enter begin fun gl ->
+                   let is_conv_leq = Tacmach.New.pf_apply is_conv_leq gl in
 	           filter_hyp (fun typ -> is_conv_leq typ t)
 		     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
-                 end
+                 end)
                  begin function
 	           | Not_found -> seek_neg rest
                    | e -> Proofview.tclZERO e
@@ -87,7 +87,7 @@ let contradiction_term (c,lbind as cl) =
   Proofview.Goal.enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
-    Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+    let type_of = Tacmach.New.pf_apply Typing.type_of gl in
     try (* type_of can raise exceptions. *)
       let typ = type_of c in
       let _, ccl = splay_prod env sigma typ in

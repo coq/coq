@@ -1820,7 +1820,8 @@ let setoid_transitivity c =
     (transitivity_red true c)
 
 let setoid_symmetry_in id =
-  Tacmach.New.of_old (fun gl -> pf_type_of gl (mkVar id)) >>= fun ctype ->
+  Proofview.Goal.enter begin fun gl ->
+  let ctype = Tacmach.New.of_old (fun gl -> pf_type_of gl (mkVar id)) gl in
   let binders,concl = decompose_prod_assum ctype in
   let (equiv, args) = decompose_app concl in
   let rec split_last_two = function
@@ -1835,6 +1836,7 @@ let setoid_symmetry_in id =
     Tacticals.New.tclTHENS (Proofview.V82.tactic (Tactics.cut new_hyp))
       [ Proofview.V82.tactic (intro_replacing id);
 	Tacticals.New.tclTHENLIST [ intros; setoid_symmetry; Proofview.V82.tactic (apply (mkVar id)); Proofview.V82.tactic (Tactics.assumption) ] ]
+  end
 
 let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity
 let _ = Hook.set Tactics.setoid_symmetry setoid_symmetry

@@ -668,12 +668,18 @@ end
 
 module Goal = struct
 
-  type t = Environ.env*Evd.evar_map*Environ.named_context_val*Term.constr
+  type t = {
+    env : Environ.env;
+    sigma : Evd.evar_map;
+    hyps : Environ.named_context_val;
+    concl : Term.constr ;
+    self : Goal.goal ; (* for compatibility with old-style definitions *)
+  }
 
-  let env (env,_,_,_) = env
-  let sigma (_,sigma,_,_) = sigma
-  let hyps (_,_,hyps,_) = hyps
-  let concl (_,_,_,concl) = concl
+  let env { env=env } = env
+  let sigma { sigma=sigma } = sigma
+  let hyps { hyps=hyps } = hyps
+  let concl { concl=concl } = concl
 
   let lift s =
     (* spiwack: convenience notations, waiting for ocaml 3.12 *)
@@ -694,7 +700,9 @@ module Goal = struct
 
   let return x = lift (Goal.return x)
 
-  let enter_t f = Goal.enter (fun env sigma hyps concl -> f (env,sigma,hyps,concl))
+  let enter_t f = Goal.enter begin fun env sigma hyps concl self ->
+    f {env=env;sigma=sigma;hyps=hyps;concl=concl;self=self}
+  end
   let enter f =
     lift (enter_t f) >= fun ts ->
     tclDISPATCH ts
@@ -702,7 +710,11 @@ module Goal = struct
     lift (enter_t f) >= fun ts ->
     tclDISPATCHL ts >= fun res ->
     tclUNIT (List.flatten res)
-    
+
+
+  (* compatibility *)
+  let goal { self=self } = self
+
 end
 
 module NonLogical = Proofview_monad.NonLogical

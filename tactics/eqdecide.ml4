@@ -120,12 +120,16 @@ let match_eqdec c =
 (* /spiwack *)
 
 let solveArg eqonleft op a1 a2 tac =
-  Tacmach.New.of_old (fun g -> pf_type_of g a1) >>= fun rectype ->
-  Tacmach.New.of_old (fun g -> mkDecideEqGoal eqonleft op rectype a1 a2 g) >>= fun decide ->
+  Proofview.Goal.enter begin fun gl ->
+  let rectype = Tacmach.New.of_old (fun g -> pf_type_of g a1) gl in
+  let decide =
+    Tacmach.New.of_old (fun g -> mkDecideEqGoal eqonleft op rectype a1 a2 g) gl
+  in
   let subtacs =
     if eqonleft then [eqCase tac;diseqCase eqonleft;default_auto]
     else [diseqCase eqonleft;eqCase tac;default_auto] in
   (Tacticals.New.tclTHENS (Proofview.V82.tactic (h_elim_type decide)) subtacs)
+  end
 
 let solveEqBranch rectype =
   Proofview.tclORELSE
@@ -160,7 +164,7 @@ let decideGralEquality =
       Proofview.Goal.enter begin fun gl ->
         let concl = Proofview.Goal.concl gl in
         match_eqdec concl >= fun eqonleft,_,c1,c2,typ ->
-        Tacmach.New.of_old (fun g -> hd_app (pf_compute g typ)) >>= fun headtyp ->
+        let headtyp = Tacmach.New.of_old (fun g -> hd_app (pf_compute g typ)) gl in
         begin match kind_of_term headtyp with
         | Ind mi -> Proofview.tclUNIT mi
         | _ -> Proofview.tclZERO (UserError ("",Pp.str"This decision procedure only works for inductive objects."))
@@ -179,20 +183,24 @@ let decideGralEquality =
 let decideEqualityGoal = Tacticals.New.tclTHEN intros decideGralEquality
 
 let decideEquality rectype =
-  Tacmach.New.of_old (mkGenDecideEqGoal rectype) >>= fun decide ->
+  Proofview.Goal.enter begin fun gl ->
+  let decide = Tacmach.New.of_old (mkGenDecideEqGoal rectype) gl in
   (Tacticals.New.tclTHENS (Proofview.V82.tactic (cut decide)) [default_auto;decideEqualityGoal])
+  end
 
 
 (* The tactic Compare *)
 
 let compare c1 c2 =
-  Tacmach.New.of_old (fun g -> pf_type_of g c1) >>= fun rectype ->
-  Tacmach.New.of_old (fun g -> mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 g) >>= fun decide ->
+  Proofview.Goal.enter begin fun gl ->
+  let rectype = Tacmach.New.of_old (fun g -> pf_type_of g c1) gl in
+  let decide = Tacmach.New.of_old (fun g -> mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 g) gl in
   (Tacticals.New.tclTHENS (Proofview.V82.tactic (cut decide))
             [(Tacticals.New.tclTHEN  intro
              (Tacticals.New.tclTHEN (Tacticals.New.onLastHyp simplest_case)
                        (Proofview.V82.tactic clear_last)));
              decideEquality rectype])
+  end
 
 
 (* User syntax *)
