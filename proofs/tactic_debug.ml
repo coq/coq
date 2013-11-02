@@ -42,22 +42,20 @@ let msg_tac_debug s = Proofview.NonLogical.print (s++fnl())
 
 (* Prints the goal *)
 
-let db_pr_goal =
-  let (>>=) = Goal.bind in
-  Goal.env >>= fun env ->
-  Goal.concl >>= fun concl ->
+let db_pr_goal gl =
+  let env = Proofview.Goal.env gl in
+  let concl = Proofview.Goal.concl gl in
   let penv = print_named_context env in
   let pc = print_constr_env env concl in
-  Goal.return begin
     str"  " ++ hv 0 (penv ++ fnl () ++
                    str "============================" ++ fnl ()  ++
                    str" "  ++ pc) ++ fnl ()
-  end
 
 let db_pr_goal =
-  let (>>=) = Proofview.Notations.(>>=) in
-  Proofview.Goal.lift db_pr_goal >>= fun pg ->
+  Proofview.Goal.enter begin fun gl ->
+  let pg = db_pr_goal gl in
   Proofview.tclLIFT (msg_tac_debug (str "Goal:" ++ fnl () ++ pg))
+  end
 
 
 (* Prints the commands *)

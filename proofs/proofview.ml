@@ -548,7 +548,6 @@ let in_proofview p k =
 type 'a glist  = 'a list
 
 module Notations = struct
-  let (>-) = Goal.bind
   let (>=) = tclBIND
   let (>>=) t k =
     t >= fun l ->

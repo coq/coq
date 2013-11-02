@@ -1653,7 +1653,7 @@ let onClearedName2 id tac =
 
 let destructure_hyps =
   Proofview.Goal.enter begin fun gl ->
-  let type_of = Tacmach.New.pf_apply Typing.type_of gl in
+  let type_of = Tacmach.New.pf_type_of gl in
   let decidability = Tacmach.New.of_old decidability gl in
   let pf_nf = Tacmach.New.of_old pf_nf gl in
     let rec loop = function

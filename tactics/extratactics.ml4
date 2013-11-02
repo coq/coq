@@ -680,10 +680,8 @@ let  mkCaseEq a  : unit Proofview.tactic =
 
 
 let case_eq_intros_rewrite x =
-  Proofview.Goal.lift begin
-    Goal.concl >- fun concl ->
-    Goal.return (nb_prod concl)
-  end >>= fun n ->
+  Proofview.Goal.enter begin fun gl ->
+  let n = nb_prod (Proofview.Goal.concl gl) in
   (* Pp.msgnl (Printer.pr_lconstr x); *)
   Tacticals.New.tclTHENLIST [
       mkCaseEq x;
@@ -698,6 +696,7 @@ let case_eq_intros_rewrite x =
 		    rewrite_except h]
     end
   ]
+  end
 
 let rec find_a_destructable_match t =
   match kind_of_term t with

@@ -326,15 +326,15 @@ let find_elim hdcncl lft2rgt dep cls ot gl =
       mkConst c , eff
   | _ -> assert false
 
-let type_of_clause = function
-  | None -> Proofview.Goal.enterl (fun gl -> Proofview.Goal.return (Proofview.Goal.concl gl))
-  | Some id -> Proofview.Goal.enterl (fun gl -> Proofview.Goal.return (Tacmach.New.pf_get_hyp_typ id gl))
+let type_of_clause cls gl = match cls with
+  | None -> Proofview.Goal.concl gl
+  | Some id -> Tacmach.New.pf_get_hyp_typ id gl
 
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
   Proofview.Goal.enter begin fun gl ->
   let isatomic = isProd (whd_zeta hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
-  type_of_clause cls >>= fun type_of_cls ->
+  let type_of_cls = type_of_clause cls gl in
   let dep = dep_proof_ok && dep_fun c type_of_cls in
   let (elim,effs) =
     Tacmach.New.of_old (find_elim hdcncl lft2rgt dep cls (Some t)) gl
@@ -877,7 +877,7 @@ let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
 
 let onEquality with_evars tac (c,lbindc) =
   Proofview.Goal.enter begin fun gl ->
-  let type_of = Tacmach.New.pf_apply Typing.type_of gl in
+  let type_of = Tacmach.New.pf_type_of gl in
   let reduce_to_quantified_ind = Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind gl in
   try (* type_of can raise exceptions *)
   let t = type_of c in
@@ -1674,20 +1674,20 @@ let cond_eq_term_right c t = Tacmach.New.of_old (cond_eq_term_right c t)
 let cond_eq_term c t = Tacmach.New.of_old (cond_eq_term c t)
 
 let rewrite_multi_assumption_cond cond_eq_term cl =
-  let rec arec = function
+  let rec arec hyps gl = match hyps with
     | [] -> error "No such assumption."
     | (id,_,t) ::rest ->
 	begin
 	  try
-            cond_eq_term t >>= fun dir ->
+            let dir = cond_eq_term t gl in
 	    general_multi_rewrite dir false (mkVar id,NoBindings) cl
-	  with | Failure _ | UserError _ -> arec rest
+	  with | Failure _ | UserError _ -> arec rest gl
 	end
   in
   Proofview.Goal.enter begin fun gl ->
     let hyps = Proofview.Goal.hyps gl in
     let hyps = Environ.named_context_of_val hyps in
-    arec hyps
+    arec hyps gl
   end
 
 let replace_multi_term dir_opt c  =
@@ -1696,9 +1696,6 @@ let replace_multi_term dir_opt c  =
       | None -> cond_eq_term c
       | Some true -> cond_eq_term_left c
       | Some false -> cond_eq_term_right c
-  in
-  let cond_eq_fun t =
-    Proofview.Goal.enterl (fun gl -> Proofview.Goal.return (cond_eq_fun t gl))
   in
   rewrite_multi_assumption_cond cond_eq_fun
 

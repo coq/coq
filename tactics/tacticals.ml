@@ -562,11 +562,9 @@ module New = struct
       tac2 id
     end
 
-  let fullGoal =
-    Proofview.Goal.enterl begin fun gl ->
+  let fullGoal gl =
     let hyps = Tacmach.New.pf_ids_of_hyps gl in
-    Proofview.Goal.return (None :: List.map Option.make hyps)
-    end
+    None :: List.map Option.make hyps
 
   let tryAllHyps tac =
     Proofview.Goal.enter begin fun gl ->
@@ -574,8 +572,9 @@ module New = struct
     tclFIRST_PROGRESS_ON tac hyps
     end
   let tryAllHypsAndConcl tac =
-    fullGoal >>= fun fullGoal ->
-    tclFIRST_PROGRESS_ON tac fullGoal
+    Proofview.Goal.enter begin fun gl ->
+      tclFIRST_PROGRESS_ON tac (fullGoal gl)
+    end
 
   let onClause tac cl =
     Proofview.Goal.enter begin fun gl ->
@@ -592,11 +591,7 @@ module New = struct
     let elim = Tacmach.New.of_old (mk_elim ind) gl in
     (* applying elimination_scheme just a little modified *)
     let indclause' = clenv_match_args indbindings indclause in
-    let type_of = Tacmach.New.pf_apply Typing.type_of gl in
-    begin try (* type_of can raise an exception *)
-            Proofview.Goal.return (Tacmach.New.of_old (fun gl -> mk_clenv_from gl (elim,type_of elim)) gl)
-      with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
-    end >>= fun elimclause ->
+    let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_type_of gl elim)) gl in
     let indmv =
       match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
       | Meta mv -> mv

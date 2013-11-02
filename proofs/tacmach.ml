@@ -218,6 +218,11 @@ module New = struct
     let hyps = Environ.named_context_of_val hyps in
     Constrintern.construct_reference hyps id
 
+
+  let pf_type_of gl t =
+    pf_apply type_of gl t
+
+
   let pf_ids_of_hyps gl =
     let hyps = Proofview.Goal.hyps gl in
     let hyps = Environ.named_context_of_val hyps in

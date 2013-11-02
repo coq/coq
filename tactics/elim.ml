@@ -87,7 +87,7 @@ let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
   Proofview.Goal.enter begin fun gl ->
-  let type_of = Tacmach.New.pf_apply Typing.type_of gl in
+  let type_of = Tacmach.New.pf_type_of gl in
   try (* type_of can raise exceptions *)
   let typc = type_of c in
   Tacticals.New.tclTHENS (Proofview.V82.tactic (cut typc))
@@ -99,24 +99,22 @@ let general_decompose recognizer c =
   with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
   end
 
-let head_in =
-  Goal.env >- fun env ->
-  Goal.defs >- fun sigma ->
-  Goal.return begin
-    fun indl t ->
-      try
-        let ity,_ =
-          if !up_to_delta
-          then find_mrectype env sigma t
-          else extract_mrectype t
-        in List.mem ity indl
-      with Not_found -> false
-  end
+let head_in indl t gl =
+  let env = Proofview.Goal.env gl in
+  let sigma = Proofview.Goal.sigma gl in
+  try
+    let ity,_ =
+      if !up_to_delta
+      then find_mrectype env sigma t
+      else extract_mrectype t
+    in List.mem ity indl
+  with Not_found -> false
 
 let decompose_these c l =
+  Proofview.Goal.enter begin fun gl ->
   let indl = (*List.map inductive_of*) l in
-  Proofview.Goal.lift head_in >>= fun head_in ->
-  general_decompose (fun (_,t) -> head_in indl t) c
+  general_decompose (fun (_,t) -> head_in indl t gl) c
+  end
 
 let decompose_nonrec c =
   general_decompose

@@ -140,6 +140,8 @@ module New : sig
   val pf_global : identifier -> Proofview.Goal.t -> constr
   val of_old : (Proof_type.goal Evd.sigma -> 'a) -> Proofview.Goal.t -> 'a
 
+  val pf_type_of : Proofview.Goal.t -> Term.constr -> Term.types
+
   val pf_get_new_id  : identifier -> Proofview.Goal.t -> identifier
   val pf_ids_of_hyps : Proofview.Goal.t -> identifier list
   val pf_hyps_types : Proofview.Goal.t -> (identifier * types) list

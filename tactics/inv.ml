@@ -463,7 +463,7 @@ let raw_inversion inv_kind id status names =
     let concl = Proofview.Goal.concl gl in
     let c = mkVar id in
     let reduce_to_atomic_ind = Tacmach.New.pf_apply Tacred.reduce_to_atomic_ind gl in
-    let type_of = Tacmach.New.pf_apply Typing.type_of gl in
+    let type_of = Tacmach.New.pf_type_of gl in
     begin
       try
         Proofview.tclUNIT (reduce_to_atomic_ind (type_of c))

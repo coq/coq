@@ -247,7 +247,7 @@ let _M =mkMeta
 
 let rec proof_tac p : unit Proofview.tactic =
   Proofview.Goal.enter begin fun gl ->
-  let type_of = Tacmach.New.pf_apply Typing.type_of gl in
+  let type_of = Tacmach.New.pf_type_of gl in
   try (* type_of can raise exceptions *)
   match p.p_rule with
       Ax c -> Proofview.V82.tactic (exact_check c)
@@ -473,7 +473,7 @@ let simple_reflexivity () = apply (Lazy.force _refl_equal)
 let f_equal =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
-    let type_of = Tacmach.New.pf_apply Typing.type_of gl in
+    let type_of = Tacmach.New.pf_type_of gl in
     let cut_eq c1 c2 =
       try (* type_of can raise an exception *)
         let ty = Termops.refresh_universes (type_of c1) in

@@ -220,17 +220,16 @@ let compute_rhs bodyi index_of_f =
 
 (*s Now the function [compute_ivs] itself *)
 
-let compute_ivs f cs =
+let compute_ivs f cs gl =
   let cst = try destConst f with DestKO -> i_can't_do_that () in
   let body = Environ.constant_value (Global.env()) cst in
   match decomp_term body with
     | Fix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->
         let (args3, body3) = decompose_lam body2 in
         let nargs3 = List.length args3 in
-        Goal.env >- fun env ->
-        Goal.defs >- fun sigma ->
+        let env = Proofview.Goal.env gl in
+        let sigma = Proofview.Goal.sigma gl in
         let is_conv = Reductionops.is_conv env sigma in
-        Goal.return
           begin match decomp_term body3 with
           | Case(_,p,c,lci) -> (* <p> Case c of c1 ... cn end *)
               let n_lhs_rhs = ref []
@@ -394,9 +393,6 @@ module Constrhash = Hashtbl.Make
   [lc: constr list]\\
   [gl: goal sigma]\\ *)
 let quote_terms ivs lc =
-  (* spiwack: [Goal.return () >- fun () -> … ] suspends the effects in
-     [Coqlib.check_required_library]. *)
-  Goal.return () >- fun () ->
   Coqlib.check_required_library ["Coq";"quote";"Quote"];
   let varhash  = (Constrhash.create 17 : constr Constrhash.t) in
   let varlist = ref ([] : constr list) in (* list of variables *)
@@ -443,10 +439,8 @@ let quote_terms ivs lc =
     auxl ivs.normal_lhs_rhs
   in
   let lp = List.map aux lc in
-  Goal.return begin
     (lp, (btree_of_array (Array.of_list (List.rev !varlist))
             ivs.return_type ))
-  end
 
 (*s actually we could "quote" a list of terms instead of a single
   term. Ring for example needs that, but Ring doesn't use Quote
@@ -456,9 +450,9 @@ let quote f lid =
   Proofview.Goal.enter begin fun gl ->
     let f = Tacmach.New.pf_global f gl in
     let cl = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
-    Proofview.Goal.lift (compute_ivs f cl) >>= fun ivs ->
+    let ivs = compute_ivs f cl gl in
     let concl = Proofview.Goal.concl gl in
-    Proofview.Goal.lift (quote_terms ivs [concl]) >>= fun quoted_terms ->
+    let quoted_terms = quote_terms ivs [concl] in
     let (p, vm) = match quoted_terms with
       | [p], vm -> (p,vm)
       | _ -> assert false
@@ -472,8 +466,8 @@ let gen_quote cont c f lid =
   Proofview.Goal.enter begin fun gl ->
   let f = Tacmach.New.pf_global f gl in
   let cl = List.map (fun id -> Tacmach.New.pf_global id gl) lid in
-  Proofview.Goal.lift (compute_ivs f cl) >>= fun ivs ->
-  Proofview.Goal.lift (quote_terms ivs [c]) >>= fun quoted_terms ->
+  let ivs = compute_ivs f cl gl in
+  let quoted_terms = quote_terms ivs [c] in
   let (p, vm) = match quoted_terms with
     | [p], vm -> (p,vm)
     | _ -> assert false

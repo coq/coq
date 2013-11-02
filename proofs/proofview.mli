@@ -220,8 +220,6 @@ type 'a glist  = private 'a list
 
 (* Notations for building tactics. *)
 module Notations : sig
-  (* Goal.bind *)
-  val (>-) : 'a Goal.sensitive -> ('a -> 'b Goal.sensitive) -> 'b Goal.sensitive
 
   (* tclBIND *)
   val (>=) : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
