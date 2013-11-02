@@ -57,10 +57,21 @@ module IOBase =
   
   let catch = fun s h () -> try s () with Proof_errors.Exception e -> h e ()
   
-  type coq_Int = int
+  (** val read_line : string coq_T **)
+  
+  let read_line = fun () -> try Pervasives.read_line () with e -> raise e ()
+  
+  (** val print_char : char -> unit coq_T **)
+  
+  let print_char = fun c () -> print_char c
+  
+  (** val print :
+      Pp.std_ppcmds -> unit coq_T **)
+  
+  let print = fun s () -> try Pp.pp s; Pp.pp_flush () with e -> raise e ()
   
   (** val timeout :
-      coq_Int -> 'a1 coq_T -> 'a1 coq_T **)
+      int -> 'a1 coq_T -> 'a1 coq_T **)
   
   let timeout = fun n t () ->
     let timeout_handler _ = Pervasives.raise (Proof_errors.Exception Proof_errors.Timeout) in
@@ -143,11 +154,25 @@ module NonLogical =
   let catch s h =
     IOBase.catch s h
   
-  (** val timeout :
-      IOBase.coq_Int -> 'a1 t -> 'a1 t **)
+  (** val timeout : int -> 'a1 t -> 'a1 t **)
   
   let timeout n x =
     IOBase.timeout n x
+  
+  (** val read_line : string t **)
+  
+  let read_line =
+    IOBase.read_line
+  
+  (** val print_char : char -> unit t **)
+  
+  let print_char c =
+    IOBase.print_char c
+  
+  (** val print : Pp.std_ppcmds -> unit t **)
+  
+  let print s =
+    IOBase.print s
   
   (** val run : 'a1 t -> 'a1 **)
   

@@ -290,3 +290,34 @@ module Goal : sig
   (* [lift Goal.env] *)
   val env : Environ.env glist tactic
 end
+
+
+module NonLogical : sig
+
+  type +'a t
+  type 'a ref
+
+  val ret : 'a -> 'a t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val ignore : 'a t -> unit t
+  val seq : unit t -> 'a t -> 'a t
+
+  val new_ref : 'a -> 'a ref t
+  val set : 'a ref -> 'a -> unit t
+  val get : 'a ref -> 'a t
+
+  val read_line : string t
+  val print_char : char -> unit t
+  val print : Pp.std_ppcmds -> unit t
+
+  val raise : exn -> 'a t
+  val catch : 'a t -> (exn -> 'a t) -> 'a t
+  val timeout : int -> 'a t -> 'a t
+
+
+  (* [run] performs effects. *)
+  val run : 'a t -> 'a
+
+end
+
+val tclLIFT : 'a NonLogical.t -> 'a tactic

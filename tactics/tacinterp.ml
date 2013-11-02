@@ -46,11 +46,9 @@ open Taccoerce
 open Proofview.Notations
 
 let safe_msgnl s =
-  let _ =
-    try ppnl s with any ->
-    ppnl (str "bug in the debugger: an exception is raised while printing debug information")
-  in
-  pp_flush () 
+  Proofview.NonLogical.catch
+    (Proofview.NonLogical.print (s++fnl()))
+    (fun _ -> Proofview.NonLogical.print (str "bug in the debugger: an exception is raised while printing debug information"++fnl()))
 
 type value = tlevel generic_argument
 
@@ -309,7 +307,7 @@ let get_debug () = !debug
 let debugging_step ist pp = match curr_debug ist with
   | DebugOn lev ->
       safe_msgnl (str "Level " ++ int lev ++ str": " ++ pp () ++ fnl())
-  | _ -> ()
+  | _ -> Proofview.NonLogical.ret ()
 
 let debugging_exception_step ist signal_anomaly e pp =
   let explain_exc =
@@ -525,7 +523,10 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
   let (evd,c) =
     catch_error trace (understand_ltac flags sigma env vars kind) c
   in
-  db_constr (curr_debug ist) env c;
+  (* spiwack: to avoid unnecessary modifications of tacinterp, as this
+     function already use effect, I call [run] hoping it doesn't mess
+     up with any assumption. *)
+  Proofview.NonLogical.run (db_constr (curr_debug ist) env c);
   (evd,c)
 
 let constr_flags = {
@@ -692,8 +693,11 @@ let interp_may_eval f ist gl = function
 	f ist gl c
      with reraise ->
        let reraise = Errors.push reraise in
-       debugging_exception_step ist false reraise (fun () ->
-         str"interpretation of term " ++ pr_glob_constr_env (pf_env gl) (fst c));
+       (* spiwack: to avoid unnecessary modifications of tacinterp, as this
+          function already use effect, I call [run] hoping it doesn't mess
+          up with any assumption. *)
+       Proofview.NonLogical.run (debugging_exception_step ist false reraise (fun () ->
+         str"interpretation of term " ++ pr_glob_constr_env (pf_env gl) (fst c)));
        raise reraise
 
 (* Interprets a constr expression possibly to first evaluate *)
@@ -703,12 +707,17 @@ let interp_constr_may_eval ist gl c =
       interp_may_eval pf_interp_constr ist gl c
     with reraise ->
       let reraise = Errors.push reraise in
-      debugging_exception_step ist false reraise
-        (fun () -> str"evaluation of term");
+      (* spiwack: to avoid unnecessary modifications of tacinterp, as this
+          function already use effect, I call [run] hoping it doesn't mess
+          up with any assumption. *)
+       Proofview.NonLogical.run (debugging_exception_step ist false reraise (fun () -> str"evaluation of term"));
       raise reraise
   in
   begin
-    db_constr (curr_debug ist) (pf_env gl) csr;
+    (* spiwack: to avoid unnecessary modifications of tacinterp, as this
+       function already use effect, I call [run] hoping it doesn't mess
+       up with any assumption. *)
+    Proofview.NonLogical.run (db_constr (curr_debug ist) (pf_env gl) csr);
     sigma , csr
   end
 
@@ -1083,10 +1092,12 @@ let rec val_interp ist (tac:glob_tactic_expr) : typed_generic_argument Proofview
     (Proofview.Goal.return (of_tacvalue v))
   in check_for_interrupt ();
   match curr_debug ist with
-      (* arnaud: todo: debug
   | DebugOn lev ->
-      debug_prompt lev gl tac (fun v -> value_interp {ist with debug=v})
-      *)
+        let eval v =
+          let ist = { ist with extra = TacStore.set ist.extra f_debug v } in
+          value_interp ist
+        in
+	debug_prompt lev tac eval
   | _ -> value_interp ist
       
 
@@ -1096,10 +1107,12 @@ and eval_tactic ist = function
       catch_error_tac (push_trace(loc,call) ist) (interp_atomic ist t)
   | TacFun _ | TacLetIn _ -> assert false
   | TacMatchGoal _ | TacMatch _ -> assert false
-  | TacId s -> Proofview.V82.tactic begin fun gl ->
-    let res = tclIDTAC_MESSAGE (interp_message_nl ist gl s) gl in
-    db_breakpoint (curr_debug ist) s; res
-  end
+  | TacId s ->
+      Proofview.tclTHEN
+        (Proofview.V82.tactic begin fun gl ->
+          tclIDTAC_MESSAGE (interp_message_nl ist gl s) gl
+        end)
+        (Proofview.tclLIFT (db_breakpoint (curr_debug ist) s))
   | TacFail (n,s) ->
       Proofview.V82.tactic begin fun gl ->
         tclFAIL (interp_int_or_var ist n) (interp_message ist gl s) gl
@@ -1241,17 +1254,18 @@ and interp_app loc ist fv largs =
                  it's intended to, or anything meaningful for that
                  matter. *)
               let e = Errors.push e in
-              (* arnaud: todo: debugging: debugging_exception_step ist false e (fun () -> str "evaluation"); *)
+              Proofview.tclLIFT (debugging_exception_step ist false e (fun () -> str "evaluation")) <*>
 	      Proofview.tclZERO e
             end
         end >>== fun v ->
-        (* arnaud: todo: debugging:
-          (* No errors happened, we propagate the trace *)
-          let v = append_trace trace v in
-        debugging_step ist
-	  (fun () ->
-	    str"evaluation returns"++fnl()++pr_value (Some (pf_env gl)) v);
-        *)
+        (* No errors happened, we propagate the trace *)
+        let v = append_trace trace v in
+        Proofview.Goal.env >>== fun env ->
+        Proofview.tclLIFT begin
+          debugging_step ist
+	    (fun () ->
+	      str"evaluation returns"++fnl()++pr_value (Some env) v)
+        end <*>
         if List.is_empty lval then (Proofview.Goal.return v) else interp_app loc ist v lval
       else
         Proofview.Goal.return (of_tacvalue (VFun(trace,newlfun,lvar,body)))
@@ -1344,14 +1358,14 @@ and interp_match_goal ist lz lr lmr =
     match_next_pattern (match_subterm_gen app c csr) in
   let rec apply_match_goal ist env nrs lex lpt =
     begin
-      let () = match lex with
-      | r :: _ -> db_pattern_rule (curr_debug ist) nrs r
-      | _ -> ()
-      in
+      begin match lex with
+      | r :: _ -> Proofview.tclLIFT (db_pattern_rule (curr_debug ist) nrs r)
+      | _ -> Proofview.tclUNIT ()
+      end <*>
       match lpt with
       | (All t)::tl ->
 	  begin
-            db_mc_pattern_success (curr_debug ist);
+            Proofview.tclLIFT (db_mc_pattern_success (curr_debug ist)) <*>
             Proofview.tclORELSE (eval_with_fail ist lz t)
               begin function
                 | e when is_match_catchable e ->
@@ -1369,20 +1383,20 @@ and interp_match_goal ist lz lr lmr =
               in
                             begin match matches with
               | None ->
-                db_matching_failure (curr_debug ist);
+                Proofview.tclLIFT (db_matching_failure (curr_debug ist)) <*>
                 apply_match_goal ist env (nrs+1) (List.tl lex) tl
               | Some lmatch ->
                 Proofview.tclORELSE
                   begin
-                    db_matched_concl (curr_debug ist) env concl;
+                    Proofview.tclLIFT (db_matched_concl (curr_debug ist) env concl) <*>
                     apply_hyps_context ist env lz mt Id.Map.empty lmatch mhyps hyps
                   end
                  begin function
                    | e when is_match_catchable e ->
-                       ((match e with
+                       (Proofview.tclLIFT (match e with
                        | PatternMatchingFailure -> db_matching_failure (curr_debug ist)
                        | Eval_fail s -> db_eval_failure (curr_debug ist) s
-                       | _ -> db_logic_failure (curr_debug ist) e);
+                       | _ -> db_logic_failure (curr_debug ist) e) <*>
                         apply_match_goal ist env (nrs+1) (List.tl lex) tl)
                    | e -> Proofview.tclZERO e
                  end
@@ -1421,11 +1435,11 @@ and apply_hyps_context ist env lz mt lctxt lgmatch mhyps hyps =
 	in
         let rec match_next_pattern next = match IStream.peek next with
         | None ->
-          db_hyp_pattern_failure (curr_debug ist) env (hypname, pat);
+          Proofview.tclLIFT (db_hyp_pattern_failure (curr_debug ist) env (hypname, pat)) <*>
           Proofview.tclZERO PatternMatchingFailure
         | Some (s, next) ->
           let lids, hyp_match = s.e_ctx in
-          db_matched_hyp (curr_debug ist) env hyp_match hypname;
+          Proofview.tclLIFT (db_matched_hyp (curr_debug ist) env hyp_match hypname) <*>
           Proofview.tclORELSE
             begin
               let id_match = pi1 hyp_match in
@@ -1446,8 +1460,8 @@ and apply_hyps_context ist env lz mt lctxt lgmatch mhyps hyps =
     | [] ->
         let lfun = lfun +++ ist.lfun in
         let lfun = extend_values_with_bindings lmatch lfun in
-        db_mc_pattern_success (curr_debug ist);
-        eval_with_fail {ist with lfun } lz mt
+        Proofview.tclLIFT (db_mc_pattern_success (curr_debug ist)) <*>
+        eval_with_fail {ist with lfun=lfun} lz mt
   in
   apply_hyps_context_rec lctxt lgmatch hyps mhyps
 
@@ -1564,7 +1578,13 @@ and interp_match ist lz constr lmr =
           with PatternMatchingFailure -> None
         in
         Proofview.tclORELSE begin match matches with
-        | None -> Proofview.tclZERO PatternMatchingFailure
+        | None -> let e = PatternMatchingFailure in
+                  (Proofview.Goal.env >>= fun env ->
+                  Proofview.tclLIFT begin
+                    debugging_exception_step ist false e (fun () ->
+                      str "matching with pattern" ++ fnl () ++
+                        pr_constr_pattern_env env c)
+                  end) <*> Proofview.tclZERO e
         | Some lmatch ->
            Proofview.tclORELSE
              begin
@@ -1573,16 +1593,18 @@ and interp_match ist lz constr lmr =
              end
              begin function
                | e ->
-                   (* arnaud: todo: debugging
+                   (Proofview.Goal.env >>= fun env ->
+                    Proofview.tclLIFT begin
                       debugging_exception_step ist false e (fun () ->
-                      str "rule body for pattern" ++
-                      pr_constr_pattern_env (pf_env g) c);*)
+                        str "rule body for pattern" ++
+                          pr_constr_pattern_env env c)
+                    end) <*>
                    Proofview.tclZERO e
              end
         end
         begin function 
           | e when is_match_catchable e ->
-              debugging_step ist (fun () -> str "switching to the next rule");
+              Proofview.tclLIFT (debugging_step ist (fun () -> str "switching to the next rule")) <*>
               apply_match ist csr tl
           | e -> Proofview.tclZERO e
         end
@@ -1605,8 +1627,8 @@ and interp_match ist lz constr lmr =
              it's intended to, or anything meaningful for that
              matter. *)
           let e = Errors.push e in
-          debugging_exception_step ist true e
-            (fun () -> str "evaluation of the matched expression");
+          Proofview.tclLIFT (debugging_exception_step ist true e
+          (fun () -> str "evaluation of the matched expression")) <*>
           Proofview.tclZERO e
     end
   end >>== fun csr ->
@@ -1617,11 +1639,11 @@ and interp_match ist lz constr lmr =
     (apply_match ist csr ilr)
     begin function
       | e ->
-          debugging_exception_step ist true e (fun () -> str "match expression");
+          Proofview.tclLIFT (debugging_exception_step ist true e (fun () -> str "match expression")) <*>
           Proofview.tclZERO e
     end >>== fun res ->
-  debugging_step ist (fun () ->
-    str "match expression returns " ++ pr_value (Some env) res);
+  Proofview.tclLIFT (debugging_step ist (fun () ->
+    str "match expression returns " ++ pr_value (Some env) res)) <*>
   (Proofview.Goal.return res)
 
 (* Interprets tactic expressions : returns a "constr" *)
@@ -1630,11 +1652,12 @@ and interp_ltac_constr ist e =
       (val_interp ist e)
       begin function
         | Not_found ->
-            (* arnaud: todo: debugging
-            debugging_step ist (fun () ->
-              str "evaluation failed for" ++ fnl() ++
-                Pptactic.pr_glob_tactic (pf_env gl) e);
-            *)
+            (Proofview.Goal.env >>= fun env ->
+            Proofview.tclLIFT begin
+              debugging_step ist (fun () ->
+                str "evaluation failed for" ++ fnl() ++
+                  Pptactic.pr_glob_tactic env e)
+            end) <*>
             Proofview.tclZERO Not_found
         | e -> Proofview.tclZERO e
       end
@@ -1643,10 +1666,12 @@ and interp_ltac_constr ist e =
   let result = Value.normalize result in
   try
     let cresult = coerce_to_closed_constr env result in
-    debugging_step ist (fun () ->
-      Pptactic.pr_glob_tactic env e ++ fnl() ++
-        str " has value " ++ fnl() ++
-        pr_constr_env env cresult);
+    Proofview.tclLIFT begin
+      debugging_step ist (fun () ->
+        Pptactic.pr_glob_tactic env e ++ fnl() ++
+          str " has value " ++ fnl() ++
+          pr_constr_env env cresult)
+    end <*>
     (Proofview.Goal.return cresult)
   with CannotCoerceTo _ ->
     Proofview.Goal.env >>== fun env ->
@@ -2177,8 +2202,8 @@ let default_ist () =
   { lfun = Id.Map.empty; extra = extra }
 
 let eval_tactic t =
-  Proofview.tclUNIT () >= fun () -> (* delay for [db_initialize] and [default_ist] *)
-  db_initialize ();
+  Proofview.tclUNIT () >= fun () -> (* delay for [default_ist] *)
+  Proofview.tclLIFT db_initialize <*>
   interp_tactic (default_ist ()) t
 
 (* globalization + interpretation *)

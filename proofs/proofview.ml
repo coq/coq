@@ -575,3 +575,7 @@ module Goal = struct
   let hyps = lift Goal.hyps
   let env = lift Goal.env
 end
+
+module NonLogical = Proofview_monad.NonLogical
+
+let tclLIFT = Proofview_monad.Logical.lift

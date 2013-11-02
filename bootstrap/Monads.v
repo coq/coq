@@ -30,7 +30,6 @@ Extract Inductive prod => "(*)" [
 ].
 
 (*** Sum ***)
-Print sum.
 Extract Inductive sum => "Util.union" [
   "Util.Inl"
   "Util.Inr"
@@ -43,6 +42,26 @@ Extract Inlined Constant Exception => exn.
 
 Parameter tactic_failure : Exception -> Exception.
 Extract Inlined Constant tactic_failure => "(fun e -> Proof_errors.TacticFailure e)".
+
+(*** Basic integers ***)
+
+Parameter Int : Set.
+Extract Inlined Constant Int => int.
+
+(*** Char ***)
+
+Parameter Char : Set.
+Extract Inlined Constant Char => char.
+
+(*** Primitive strings ***)
+
+Parameter String : Set.
+Extract Inlined Constant String => string.
+
+(*** Pretty printer ***)
+
+Parameter Ppcmds : Set.
+Extract Inlined Constant Ppcmds => "Pp.std_ppcmds".
 
 (*** Monoids ***)
 
@@ -162,8 +181,13 @@ Module IOBase.
  Extract Constant catch => "fun s h () -> try s () with Proof_errors.Exception e -> h e ()".
  Extraction Implicit catch [A].
 
- Parameter Int : Set.
- Extract Constant Int => int.
+ Parameter read_line : T String.
+ Extract Constant read_line => "fun () -> try Pervasives.read_line () with e -> raise e ()".
+ Parameter print_char : Char -> T unit.
+ Extract Constant print_char => "fun c () -> print_char c".
+ Parameter print : Ppcmds -> T unit.
+ Extract Constant print => "fun s () -> try Pp.pp s; Pp.pp_flush () with e -> raise e ()".
+
  Parameter timeout: forall A, Int -> T A -> T A.
  Extract Constant timeout => "fun n t () ->
     let timeout_handler _ = Pervasives.raise (Proof_errors.Exception Proof_errors.Timeout) in
@@ -193,9 +217,13 @@ Module IO.
    set : forall {A:Set}, Ref A -> A -> T unit;
    get : forall {A:Set}, Ref A -> T A;
 
+   read_line : T String;
+   print_char : Char -> T unit;
+   print : Ppcmds -> T unit;
+
    raise : forall {A:Set}, Exception -> T A;
    catch : forall {A:Set}, T A -> (Exception -> T A) -> T A;
-   timeout : forall {A:Set}, IOBase.Int -> T A -> T A
+   timeout : forall {A:Set}, Int -> T A -> T A
  }.
 
  Definition T : Set -> Set := IOBase.T.
@@ -212,6 +240,10 @@ Module IO.
    ref := IOBase.ref;
    set := IOBase.set;
    get := IOBase.get;
+
+   read_line := IOBase.read_line;
+   print_char := IOBase.print_char;
+   print := IOBase.print;
 
    raise := IOBase.raise;
    catch := IOBase.catch;
@@ -550,6 +582,10 @@ Module NonLogical.
  Definition timeout {a:Set} n (x:t a) : t a := Eval compute in IO.timeout _ _ NonLogicalIO n x.
  Extraction Implicit timeout [a].
 
+ Definition read_line : t String := Eval compute in IO.read_line _ _ NonLogicalIO.
+ Definition print_char (c:Char) : t unit := Eval compute in IO.print_char _ _ NonLogicalIO c.
+ Definition print (s:Ppcmds) : t unit := Eval compute in IO.print _ _ NonLogicalIO s.
+
  (* /!\ The extracted code for [run] performs effects. /!\ *)
  Parameter run : forall a:Set, t a -> a.
  Extract Constant run => "fun x -> try x () with Proof_errors.Exception e -> Pervasives.raise e".
@@ -572,7 +608,6 @@ Module Logical.
 
  Definition set (s:LogicalState) : t unit := Eval compute in set _ _ LogicalStateM s.
  Definition get : t LogicalState := Eval compute in get _ _ LogicalStateM.
- Print Environment.lift.
  Definition put (m:LogicalMessageType) : t unit := Eval compute in State.lift _ _ LogicalMonadEnv (Environment.lift _ _ (put _ _ LogicalWriter m)).
  Definition current : t LogicalEnvironment := Eval compute in State.lift _ _ LogicalMonadEnv (current _ _ LogicalReader).
 
