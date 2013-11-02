@@ -664,9 +664,9 @@ let  mkCaseEq a  : unit Proofview.tactic =
       Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g a) >>= fun type_of_a ->
        Tacticals.New.tclTHENLIST
          [Proofview.V82.tactic (Hiddentac.h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])]);
-          begin
-            Proofview.Goal.concl >>= fun concl ->
-            Proofview.Goal.env >>= fun env ->
+          Proofview.Goal.enter begin fun gl ->
+            let concl = Proofview.Goal.concl gl in
+            let env = Proofview.Goal.env gl in
             Proofview.V82.tactic begin
 	      change_in_concl None
 	        (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl)
@@ -683,8 +683,8 @@ let case_eq_intros_rewrite x =
   (* Pp.msgnl (Printer.pr_lconstr x); *)
   Tacticals.New.tclTHENLIST [
       mkCaseEq x;
-    begin
-      Proofview.Goal.concl >>= fun concl ->
+    Proofview.Goal.enter begin fun gl ->
+      let concl = Proofview.Goal.concl gl in
       Tacmach.New.pf_ids_of_hyps >>= fun hyps ->
       let n' = nb_prod concl in
       Tacmach.New.of_old (fun g -> fresh_id hyps (Id.of_string "heq") g) >>= fun h ->
@@ -719,7 +719,7 @@ let destauto_in id =
   destauto ctype
 
 TACTIC EXTEND destauto
-| [ "destauto" ] -> [ Proofview.Goal.concl >>= fun concl -> destauto concl ]
+| [ "destauto" ] -> [ Proofview.Goal.enter (fun gl -> destauto (Proofview.Goal.concl gl)) ]
 | [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
 END
 

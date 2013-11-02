@@ -130,16 +130,18 @@ let solveArg eqonleft op a1 a2 tac =
 let solveEqBranch rectype =
   Proofview.tclORELSE
     begin
-      Proofview.Goal.concl >>= fun concl ->
-      match_eqdec concl >= fun (eqonleft,op,lhs,rhs,_) ->
-      let (mib,mip) = Global.lookup_inductive rectype in
-      let nparams   = mib.mind_nparams in
-      let getargs l = List.skipn nparams (snd (decompose_app l)) in
-      let rargs   = getargs rhs
-      and largs   = getargs lhs in
-      List.fold_right2
-        (solveArg eqonleft op) largs rargs
-        (Tacticals.New.tclTHEN (choose_eq eqonleft) h_reflexivity)
+      Proofview.Goal.enter begin fun gl ->
+        let concl = Proofview.Goal.concl gl in
+        match_eqdec concl >= fun (eqonleft,op,lhs,rhs,_) ->
+          let (mib,mip) = Global.lookup_inductive rectype in
+          let nparams   = mib.mind_nparams in
+          let getargs l = List.skipn nparams (snd (decompose_app l)) in
+          let rargs   = getargs rhs
+          and largs   = getargs lhs in
+          List.fold_right2
+            (solveArg eqonleft op) largs rargs
+            (Tacticals.New.tclTHEN (choose_eq eqonleft) h_reflexivity)
+      end
     end
     begin function
       | PatternMatchingFailure -> Proofview.tclZERO (UserError ("",Pp.str"Unexpected conclusion!"))
@@ -155,16 +157,18 @@ let hd_app c = match kind_of_term c with
 let decideGralEquality =
   Proofview.tclORELSE
     begin
-      Proofview.Goal.concl >>= fun concl ->
-      match_eqdec concl >= fun eqonleft,_,c1,c2,typ ->
-      Tacmach.New.of_old (fun g -> hd_app (pf_compute g typ)) >>= fun headtyp ->
-      begin match kind_of_term headtyp with
-      | Ind mi -> Proofview.tclUNIT mi
-      | _ -> Proofview.tclZERO (UserError ("",Pp.str"This decision procedure only works for inductive objects."))
-      end >= fun rectype ->
-      (Tacticals.New.tclTHEN
-         (mkBranches c1 c2)
-         (Tacticals.New.tclORELSE (solveNoteqBranch eqonleft) (solveEqBranch rectype)))
+      Proofview.Goal.enter begin fun gl ->
+        let concl = Proofview.Goal.concl gl in
+        match_eqdec concl >= fun eqonleft,_,c1,c2,typ ->
+        Tacmach.New.of_old (fun g -> hd_app (pf_compute g typ)) >>= fun headtyp ->
+        begin match kind_of_term headtyp with
+        | Ind mi -> Proofview.tclUNIT mi
+        | _ -> Proofview.tclZERO (UserError ("",Pp.str"This decision procedure only works for inductive objects."))
+        end >= fun rectype ->
+          (Tacticals.New.tclTHEN
+             (mkBranches c1 c2)
+             (Tacticals.New.tclORELSE (solveNoteqBranch eqonleft) (solveEqBranch rectype)))
+      end
     end
     begin function
       | PatternMatchingFailure ->

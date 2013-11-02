@@ -83,13 +83,17 @@ let rec eq_constr_mod_evars x y =
   | _, _ -> compare_constr eq_constr_mod_evars x y
 
 let progress_evars t =
-  Proofview.Goal.concl >>= fun concl ->
-  let check =
-      Proofview.Goal.concl >>= fun newconcl ->
-      if eq_constr_mod_evars concl newconcl
-      then Tacticals.New.tclFAIL 0 (str"No progress made (modulo evars)")
-      else Proofview.tclUNIT ()
-  in t <*> check
+  Proofview.Goal.enter begin fun gl ->
+    let concl = Proofview.Goal.concl gl in
+    let check =
+      Proofview.Goal.enter begin fun gl' ->
+        let newconcl = Proofview.Goal.concl gl' in
+        if eq_constr_mod_evars concl newconcl
+        then Tacticals.New.tclFAIL 0 (str"No progress made (modulo evars)")
+        else Proofview.tclUNIT ()
+      end
+    in t <*> check
+  end
 
 let unify_e_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in

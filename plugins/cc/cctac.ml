@@ -348,25 +348,27 @@ let convert_to_hyp_tac c1 t1 c2 t2 p =
        simplest_elim false_t]
 
 let discriminate_tac cstr p =
-  let t1=constr_of_term p.p_lhs and t2=constr_of_term p.p_rhs in
-  Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls t1)) >>= fun intype ->
-  Proofview.Goal.concl >>= fun concl ->
-  let outsort = mkType (Termops.new_univ ()) in
-  Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) >>= fun xid ->
-  Tacmach.New.of_old (pf_get_new_id (Id.of_string "t")) >>= fun tid ->
-  let identity=mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in
-  Tacmach.New.of_old (fun gls -> pf_type_of gls identity) >>= fun trivial ->
-  let outtype = mkType (Termops.new_univ ()) in
-  let pred=mkLambda(Name xid,outtype,mkRel 1) in
-  Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) >>= fun hid ->
-  Tacmach.New.of_old (build_projection intype outtype cstr trivial concl) >>= fun proj ->
-  let injt=mkApp (Lazy.force _f_equal,
-		  [|intype;outtype;proj;t1;t2;mkVar hid|]) in
-  let endt=mkApp (Lazy.force _eq_rect,
-		  [|outtype;trivial;pred;identity;concl;injt|]) in
-  let neweq=mkApp(Lazy.force _eq,[|intype;t1;t2|]) in
+  Proofview.Goal.enter begin fun gl ->
+    let t1=constr_of_term p.p_lhs and t2=constr_of_term p.p_rhs in
+    Tacmach.New.of_old (fun gls -> Termops.refresh_universes (pf_type_of gls t1)) >>= fun intype ->
+    let concl = Proofview.Goal.concl gl in
+    let outsort = mkType (Termops.new_univ ()) in
+    Tacmach.New.of_old (pf_get_new_id (Id.of_string "X")) >>= fun xid ->
+    Tacmach.New.of_old (pf_get_new_id (Id.of_string "t")) >>= fun tid ->
+    let identity=mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in
+    Tacmach.New.of_old (fun gls -> pf_type_of gls identity) >>= fun trivial ->
+    let outtype = mkType (Termops.new_univ ()) in
+    let pred=mkLambda(Name xid,outtype,mkRel 1) in
+    Tacmach.New.of_old (pf_get_new_id (Id.of_string "Heq")) >>= fun hid ->
+    Tacmach.New.of_old (build_projection intype outtype cstr trivial concl) >>= fun proj ->
+    let injt=mkApp (Lazy.force _f_equal,
+		    [|intype;outtype;proj;t1;t2;mkVar hid|]) in
+    let endt=mkApp (Lazy.force _eq_rect,
+		    [|outtype;trivial;pred;identity;concl;injt|]) in
+    let neweq=mkApp(Lazy.force _eq,[|intype;t1;t2|]) in
     Tacticals.New.tclTHENS (assert_tac (Name hid) neweq)
       [proof_tac p; Proofview.V82.tactic (exact_check endt)]
+  end
 
 (* wrap everything *)
 
@@ -378,58 +380,58 @@ let build_term_to_complete uf meta pac =
     applistc (mkConstruct cinfo.ci_constr) all_args
 
 let cc_tactic depth additionnal_terms =
-  Proofview.tclUNIT () >= fun () -> (* delay for check_required_library *)
-  Coqlib.check_required_library Coqlib.logic_module_name;
-  let _ = debug (Pp.str "Reading subgoal ...") in
-  Tacmach.New.of_old (fun gls -> make_prb gls depth additionnal_terms) >>= fun state ->
-  let _ = debug (Pp.str "Problem built, solving ...") in
-  let sol = execute true state in
-  let _ = debug (Pp.str "Computation completed.") in
-  let uf=forest state in
+  Proofview.Goal.enter begin fun gl ->
+    Coqlib.check_required_library Coqlib.logic_module_name;
+    let _ = debug (Pp.str "Reading subgoal ...") in
+    Tacmach.New.of_old (fun gls -> make_prb gls depth additionnal_terms) >>= fun state ->
+    let _ = debug (Pp.str "Problem built, solving ...") in
+    let sol = execute true state in
+    let _ = debug (Pp.str "Computation completed.") in
+    let uf=forest state in
     match sol with
-	None -> Tacticals.New.tclFAIL 0 (str "congruence failed")
-      | Some reason ->
-	  debug (Pp.str "Goal solved, generating proof ...");
-	  match reason with
-	      Discrimination (i,ipac,j,jpac) ->
-		let p=build_proof uf (`Discr (i,ipac,j,jpac)) in
-		let cstr=(get_constructor_info uf ipac.cnode).ci_constr in
-		discriminate_tac cstr p
-	    | Incomplete ->
-                Proofview.Goal.env >>= fun env ->
-		let metacnt = ref 0 in
-		let newmeta _ = incr metacnt; _M !metacnt in
-		let terms_to_complete =
-		  List.map
-		    (build_term_to_complete uf newmeta)
-		    (epsilons uf) in
-		  Pp.msg_info
-		    (Pp.str "Goal is solvable by congruence but \
+      None -> Tacticals.New.tclFAIL 0 (str "congruence failed")
+    | Some reason ->
+	debug (Pp.str "Goal solved, generating proof ...");
+	match reason with
+	  Discrimination (i,ipac,j,jpac) ->
+	    let p=build_proof uf (`Discr (i,ipac,j,jpac)) in
+	    let cstr=(get_constructor_info uf ipac.cnode).ci_constr in
+	    discriminate_tac cstr p
+	| Incomplete ->
+            let env = Proofview.Goal.env gl in
+	    let metacnt = ref 0 in
+	    let newmeta _ = incr metacnt; _M !metacnt in
+	    let terms_to_complete =
+	      List.map
+		(build_term_to_complete uf newmeta)
+		(epsilons uf) in
+	    Pp.msg_info
+	      (Pp.str "Goal is solvable by congruence but \
  some arguments are missing.");
-		  Pp.msg_info
-		    (Pp.str "  Try " ++
-		     hov 8
-		       begin
-			 str "\"congruence with (" ++
-			 prlist_with_sep
-			   (fun () -> str ")" ++ spc () ++ str "(")
-			   (Termops.print_constr_env env)
-			   terms_to_complete ++
-			 str ")\","
-		       end ++
-		    Pp.str "  replacing metavariables by arbitrary terms.");
-		  Tacticals.New.tclFAIL 0 (str "Incomplete")
-	    | Contradiction dis ->
-		let p=build_proof uf (`Prove (dis.lhs,dis.rhs)) in
-		let ta=term uf dis.lhs and tb=term uf dis.rhs in
-		  match dis.rule with
-		      Goal -> proof_tac p
-		    | Hyp id -> refute_tac id ta tb p
-		    | HeqG id ->
-			convert_to_goal_tac id ta tb p
-		    | HeqnH (ida,idb) ->
-			convert_to_hyp_tac ida ta idb tb p
-
+	    Pp.msg_info
+	      (Pp.str "  Try " ++
+		 hov 8
+		 begin
+		   str "\"congruence with (" ++
+		     prlist_with_sep
+		     (fun () -> str ")" ++ spc () ++ str "(")
+		     (Termops.print_constr_env env)
+		     terms_to_complete ++
+		     str ")\","
+		 end ++
+		 Pp.str "  replacing metavariables by arbitrary terms.");
+	    Tacticals.New.tclFAIL 0 (str "Incomplete")
+	| Contradiction dis ->
+	    let p=build_proof uf (`Prove (dis.lhs,dis.rhs)) in
+	    let ta=term uf dis.lhs and tb=term uf dis.rhs in
+	    match dis.rule with
+	      Goal -> proof_tac p
+	    | Hyp id -> refute_tac id ta tb p
+	    | HeqG id ->
+		convert_to_goal_tac id ta tb p
+	    | HeqnH (ida,idb) ->
+		convert_to_hyp_tac ida ta idb tb p
+  end
 
 let cc_fail gls =
   errorlabstrm  "Congruence" (Pp.str "congruence failed.")
@@ -453,32 +455,34 @@ let simple_reflexivity () = apply (Lazy.force _refl_equal)
 *)
 
 let f_equal =
-  Proofview.Goal.concl >>= fun concl ->
-  Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
-  let cut_eq c1 c2 =
-    try (* type_of can raise an exception *)
-      let ty = Termops.refresh_universes (type_of c1) in
-      Proofview.V82.tactic begin
-        tclTHENTRY
-          (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|])))
-          (simple_reflexivity ())
-      end
-    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
-  in
-  Proofview.tclORELSE
-    begin match kind_of_term concl with
-    | App (r,[|_;t;t'|]) when eq_constr r (Lazy.force _eq) ->
-	begin match kind_of_term t, kind_of_term t' with
+  Proofview.Goal.enter begin fun gl ->
+    let concl = Proofview.Goal.concl gl in
+    Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+    let cut_eq c1 c2 =
+      try (* type_of can raise an exception *)
+        let ty = Termops.refresh_universes (type_of c1) in
+        Proofview.V82.tactic begin
+          tclTHENTRY
+            (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|])))
+            (simple_reflexivity ())
+        end
+      with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+    in
+    Proofview.tclORELSE
+      begin match kind_of_term concl with
+      | App (r,[|_;t;t'|]) when eq_constr r (Lazy.force _eq) ->
+	  begin match kind_of_term t, kind_of_term t' with
 	  | App (f,v), App (f',v') when Int.equal (Array.length v) (Array.length v') ->
 	      let rec cuts i =
 		if i < 0 then Tacticals.New.tclTRY (congruence_tac 1000 [])
 		else Tacticals.New.tclTHENFIRST (cut_eq v.(i) v'.(i)) (cuts (i-1))
 	      in cuts (Array.length v - 1)
 	  | _ -> Proofview.tclUNIT ()
-	end
-    | _ -> Proofview.tclUNIT ()
-    end
-    begin function
-      | Type_errors.TypeError _ -> Proofview.tclUNIT ()
-      | e -> Proofview.tclZERO e
-    end
+	  end
+      | _ -> Proofview.tclUNIT ()
+      end
+      begin function
+        | Type_errors.TypeError _ -> Proofview.tclUNIT ()
+        | e -> Proofview.tclZERO e
+      end
+  end

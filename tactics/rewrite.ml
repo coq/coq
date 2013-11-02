@@ -1764,37 +1764,39 @@ let not_declared env ty rel =
 		str ty ++ str" relation. Maybe you need to require the Setoid library")
 
 let setoid_proof ty fn fallback =
-  Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>= fun env ->
-  Proofview.Goal.concl >>= fun concl ->
-  Proofview.tclORELSE
-    begin
-      try
-        let rel, args = decompose_app_rel env sigma concl in
-        let evm = sigma in
-        let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
-        fn env evm car rel
-      with e -> Proofview.tclZERO e
-    end
-    begin function
-      | e ->
-        Proofview.tclORELSE
-          fallback
-          begin function
-            | Hipattern.NoEquationFound ->
+  Proofview.Goal.enter begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
+    let env = Proofview.Goal.env gl in
+    let concl = Proofview.Goal.concl gl in
+    Proofview.tclORELSE
+      begin
+        try
+          let rel, args = decompose_app_rel env sigma concl in
+          let evm = sigma in
+          let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
+          fn env evm car rel
+        with e -> Proofview.tclZERO e
+      end
+      begin function
+        | e ->
+            Proofview.tclORELSE
+              fallback
+              begin function
+                | Hipattern.NoEquationFound ->
                 (* spiwack: [Errors.push] here is unlikely to do what
                    it's intended to, or anything meaningful for that
                    matter. *)
-                let e = Errors.push e in
-	        begin match e with
-	        | Not_found ->
-	            let rel, args = decompose_app_rel env sigma concl in
-		    not_declared env ty rel
-	        | _ -> Proofview.tclZERO e
-                end
-            | e' -> Proofview.tclZERO e'
-          end
-    end
+                    let e = Errors.push e in
+	            begin match e with
+	            | Not_found ->
+	                let rel, args = decompose_app_rel env sigma concl in
+		        not_declared env ty rel
+	            | _ -> Proofview.tclZERO e
+                    end
+                | e' -> Proofview.tclZERO e'
+              end
+      end
+  end
 
 let setoid_reflexivity =
   setoid_proof "reflexive"

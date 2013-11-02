@@ -284,17 +284,19 @@ let lemInv id c gls =
 let lemInv_gen id c = try_intros_until (fun id -> Proofview.V82.tactic (lemInv id c)) id
 
 let lemInvIn id c ids =
-  Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive ids) >>= fun hyps ->
-  let intros_replace_ids =
-    Proofview.Goal.concl >>= fun concl ->
-    let nb_of_new_hyp  = nb_prod concl - List.length ids in
-    if nb_of_new_hyp < 1  then
-      intros_replacing ids
-    else
-      (Tacticals.New.tclTHEN (Tacticals.New.tclDO nb_of_new_hyp intro) (intros_replacing ids))
-  in
-  ((Tacticals.New.tclTHEN (Proofview.V82.tactic (tclTHEN (bring_hyps hyps) (lemInv id c)))
-    (intros_replace_ids)))
+  Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive ids) >>= fun hyps ->
+    let intros_replace_ids =
+      let concl = Proofview.Goal.concl gl in
+      let nb_of_new_hyp  = nb_prod concl - List.length ids in
+      if nb_of_new_hyp < 1  then
+        intros_replacing ids
+      else
+        (Tacticals.New.tclTHEN (Tacticals.New.tclDO nb_of_new_hyp intro) (intros_replacing ids))
+    in
+    ((Tacticals.New.tclTHEN (Proofview.V82.tactic (tclTHEN (bring_hyps hyps) (lemInv id c)))
+        (intros_replace_ids)))
+  end
 
 let lemInvIn_gen id c l = try_intros_until (fun id -> lemInvIn id c l) id
 

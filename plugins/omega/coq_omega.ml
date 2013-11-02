@@ -1647,17 +1647,18 @@ let destructure_hyps =
   Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
   Tacmach.New.of_old decidability >>= fun decidability ->
   Tacmach.New.of_old pf_nf >>= fun pf_nf ->
-  let rec loop = function
-    | [] -> (Tacticals.New.tclTHEN nat_inject coq_omega)
-    | (i,body,t)::lit ->
-	begin try match destructurate_prop t with
+  Proofview.Goal.enter begin fun gl ->
+    let rec loop = function
+      | [] -> (Tacticals.New.tclTHEN nat_inject coq_omega)
+      | (i,body,t)::lit ->
+	  begin try match destructurate_prop t with
 	  | Kapp(False,[]) -> elim_id i
           | Kapp((Zle|Zge|Zgt|Zlt|Zne),[t1;t2]) -> loop lit
           | Kapp(Or,[t1;t2]) ->
               (Tacticals.New.tclTHENS
-                (elim_id i)
-                [ onClearedName i (fun i -> (loop ((i,None,t1)::lit)));
-                  onClearedName i (fun i -> (loop ((i,None,t2)::lit))) ])
+                 (elim_id i)
+                 [ onClearedName i (fun i -> (loop ((i,None,t1)::lit)));
+                   onClearedName i (fun i -> (loop ((i,None,t2)::lit))) ])
           | Kapp(And,[t1;t2]) ->
               Tacticals.New.tclTHEN
 		(elim_id i)
@@ -1676,7 +1677,7 @@ let destructure_hyps =
 		let d1 = decidability t1 in
 		Tacticals.New.tclTHENLIST [
 		  Proofview.V82.tactic (generalize_tac [mkApp (Lazy.force coq_imp_simp,
-                    [| t1; t2; d1; mkVar i|])]);
+                                                               [| t1; t2; d1; mkVar i|])]);
 		  (onClearedName i (fun i ->
 		    (loop ((i,None,mk_or (mk_not t1) t2)::lit))))
                 ]
@@ -1684,113 +1685,115 @@ let destructure_hyps =
 		loop lit
           | Kapp(Not,[t]) ->
               begin match destructurate_prop t with
-		  Kapp(Or,[t1;t2]) ->
-                    Tacticals.New.tclTHENLIST [
-		      Proofview.V82.tactic (generalize_tac
-                        [mkApp (Lazy.force coq_not_or,[| t1; t2; mkVar i |])]);
-		      (onClearedName i (fun i ->
-                        (loop ((i,None,mk_and (mk_not t1) (mk_not t2)):: lit))))
-                    ]
-		| Kapp(And,[t1;t2]) ->
-		    let d1 = decidability t1 in
-                    Tacticals.New.tclTHENLIST [
-		      Proofview.V82.tactic (generalize_tac
-		        [mkApp (Lazy.force coq_not_and,
-				[| t1; t2; d1; mkVar i |])]);
-		      (onClearedName i (fun i ->
-                        (loop ((i,None,mk_or (mk_not t1) (mk_not t2))::lit))))
-                    ]
-		| Kapp(Iff,[t1;t2]) ->
-		    let d1 = decidability t1 in
-		    let d2 = decidability t2 in
-                    Tacticals.New.tclTHENLIST [
-		      Proofview.V82.tactic (generalize_tac
-		        [mkApp (Lazy.force coq_not_iff,
-				[| t1; t2; d1; d2; mkVar i |])]);
-		      (onClearedName i (fun i ->
-                        (loop ((i,None,
-			        mk_or (mk_and t1 (mk_not t2))
-				      (mk_and (mk_not t1) t2))::lit))))
-                    ]
-		| Kimp(t1,t2) ->
+		Kapp(Or,[t1;t2]) ->
+                  Tacticals.New.tclTHENLIST [
+		    Proofview.V82.tactic (generalize_tac
+                                            [mkApp (Lazy.force coq_not_or,[| t1; t2; mkVar i |])]);
+		    (onClearedName i (fun i ->
+                      (loop ((i,None,mk_and (mk_not t1) (mk_not t2)):: lit))))
+                  ]
+	      | Kapp(And,[t1;t2]) ->
+		  let d1 = decidability t1 in
+                  Tacticals.New.tclTHENLIST [
+		    Proofview.V82.tactic (generalize_tac
+		                            [mkApp (Lazy.force coq_not_and,
+				                    [| t1; t2; d1; mkVar i |])]);
+		    (onClearedName i (fun i ->
+                      (loop ((i,None,mk_or (mk_not t1) (mk_not t2))::lit))))
+                  ]
+	      | Kapp(Iff,[t1;t2]) ->
+		  let d1 = decidability t1 in
+		  let d2 = decidability t2 in
+                  Tacticals.New.tclTHENLIST [
+		    Proofview.V82.tactic (generalize_tac
+		                            [mkApp (Lazy.force coq_not_iff,
+				                    [| t1; t2; d1; d2; mkVar i |])]);
+		    (onClearedName i (fun i ->
+                      (loop ((i,None,
+			      mk_or (mk_and t1 (mk_not t2))
+				(mk_and (mk_not t1) t2))::lit))))
+                  ]
+	      | Kimp(t1,t2) ->
 		    (* t2 must be in Prop otherwise ~(t1->t2) wouldn't be ok.
 		       For t1, being decidable implies being Prop. *)
-		    let d1 = decidability t1 in
-                    Tacticals.New.tclTHENLIST [
-		      Proofview.V82.tactic (generalize_tac
-		        [mkApp (Lazy.force coq_not_imp,
-				[| t1; t2; d1; mkVar i |])]);
-		      (onClearedName i (fun i ->
-                        (loop ((i,None,mk_and t1 (mk_not t2)) :: lit))))
-                    ]
-		| Kapp(Not,[t]) ->
-		    let d = decidability t in
-                    Tacticals.New.tclTHENLIST [
-		      Proofview.V82.tactic (generalize_tac
-			[mkApp (Lazy.force coq_not_not, [| t; d; mkVar i |])]);
-		      (onClearedName i (fun i -> (loop ((i,None,t)::lit))))
-                    ]
-		| Kapp(op,[t1;t2]) ->
-		    (try
-		      let thm = not_binop op in
-                      Tacticals.New.tclTHENLIST [
-			Proofview.V82.tactic (generalize_tac
-			   [mkApp (Lazy.force thm, [| t1;t2;mkVar i|])]);
-			(onClearedName i (fun _ -> loop lit))
-                      ]
-		     with Not_found -> loop lit)
-		| Kapp(Eq,[typ;t1;t2]) ->
-                    if !old_style_flag then begin
-		      match destructurate_type (pf_nf typ) with
-			| Kapp(Nat,_) ->
-                            Tacticals.New.tclTHENLIST [
-			      (simplest_elim
-				(mkApp
-                                  (Lazy.force coq_not_eq, [|t1;t2;mkVar i|])));
-			      (onClearedName i (fun _ -> loop lit))
-                            ]
-			| Kapp(Z,_) ->
-                            Tacticals.New.tclTHENLIST [
-			      (simplest_elim
-				(mkApp
-				  (Lazy.force coq_not_Zeq, [|t1;t2;mkVar i|])));
-			      (onClearedName i (fun _ -> loop lit))
-                            ]
-			| _ -> loop lit
-                    end else begin
-		      match destructurate_type (pf_nf typ) with
-			| Kapp(Nat,_) ->
-                               (Tacticals.New.tclTHEN
-			       (Proofview.V82.tactic (convert_hyp_no_check
-                                  (i,body,
-				  (mkApp (Lazy.force coq_neq, [| t1;t2|])))))
-			       (loop lit))
-			| Kapp(Z,_) ->
-                               (Tacticals.New.tclTHEN
-			       (Proofview.V82.tactic (convert_hyp_no_check
-                                  (i,body,
-				  (mkApp (Lazy.force coq_Zne, [| t1;t2|])))))
-			       (loop lit))
-			| _ -> loop lit
-                    end
-		| _ -> loop lit
+		  let d1 = decidability t1 in
+                  Tacticals.New.tclTHENLIST [
+		    Proofview.V82.tactic (generalize_tac
+		                            [mkApp (Lazy.force coq_not_imp,
+				                    [| t1; t2; d1; mkVar i |])]);
+		    (onClearedName i (fun i ->
+                      (loop ((i,None,mk_and t1 (mk_not t2)) :: lit))))
+                  ]
+	      | Kapp(Not,[t]) ->
+		  let d = decidability t in
+                  Tacticals.New.tclTHENLIST [
+		    Proofview.V82.tactic (generalize_tac
+			                    [mkApp (Lazy.force coq_not_not, [| t; d; mkVar i |])]);
+		    (onClearedName i (fun i -> (loop ((i,None,t)::lit))))
+                  ]
+	      | Kapp(op,[t1;t2]) ->
+		  (try
+		     let thm = not_binop op in
+                     Tacticals.New.tclTHENLIST [
+		       Proofview.V82.tactic (generalize_tac
+			                       [mkApp (Lazy.force thm, [| t1;t2;mkVar i|])]);
+		       (onClearedName i (fun _ -> loop lit))
+                     ]
+		   with Not_found -> loop lit)
+	      | Kapp(Eq,[typ;t1;t2]) ->
+                  if !old_style_flag then begin
+		    match destructurate_type (pf_nf typ) with
+		    | Kapp(Nat,_) ->
+                        Tacticals.New.tclTHENLIST [
+			  (simplest_elim
+			     (mkApp
+                                (Lazy.force coq_not_eq, [|t1;t2;mkVar i|])));
+			  (onClearedName i (fun _ -> loop lit))
+                        ]
+		    | Kapp(Z,_) ->
+                        Tacticals.New.tclTHENLIST [
+			  (simplest_elim
+			     (mkApp
+				(Lazy.force coq_not_Zeq, [|t1;t2;mkVar i|])));
+			  (onClearedName i (fun _ -> loop lit))
+                        ]
+		    | _ -> loop lit
+                  end else begin
+		    match destructurate_type (pf_nf typ) with
+		    | Kapp(Nat,_) ->
+                        (Tacticals.New.tclTHEN
+			   (Proofview.V82.tactic (convert_hyp_no_check
+                                                    (i,body,
+				                     (mkApp (Lazy.force coq_neq, [| t1;t2|])))))
+			   (loop lit))
+		    | Kapp(Z,_) ->
+                        (Tacticals.New.tclTHEN
+			   (Proofview.V82.tactic (convert_hyp_no_check
+                                                    (i,body,
+				                     (mkApp (Lazy.force coq_Zne, [| t1;t2|])))))
+			   (loop lit))
+		    | _ -> loop lit
+                  end
+	      | _ -> loop lit
               end
           | _ -> loop lit
-	with
-	  | Undecidable -> loop lit
-	  | e when catchable_exception e -> loop lit
-	end
-  in
-  Proofview.Goal.hyps >>= fun hyps ->
-  try (* type_of can raise exceptions *)
-    loop (Environ.named_context_of_val hyps)
-  with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+	    with
+	    | Undecidable -> loop lit
+	    | e when catchable_exception e -> loop lit
+	  end
+    in
+    let hyps = Proofview.Goal.hyps gl in
+    try (* type_of can raise exceptions *)
+      loop (Environ.named_context_of_val hyps)
+    with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
+  end
 
 let destructure_goal =
-  Proofview.Goal.concl >>= fun concl ->
-  Tacmach.New.of_old decidability >>= fun decidability ->
-  let rec loop t =
-    match destructurate_prop t with
+  Proofview.Goal.enter begin fun gl ->
+    let concl = Proofview.Goal.concl gl in
+    Tacmach.New.of_old decidability >>= fun decidability ->
+    let rec loop t =
+      match destructurate_prop t with
       | Kapp(Not,[t]) ->
           (Tacticals.New.tclTHEN
 	     (Tacticals.New.tclTHEN (Proofview.V82.tactic (unfold sp_not)) intro)
@@ -1798,18 +1801,19 @@ let destructure_goal =
       | Kimp(a,b) -> (Tacticals.New.tclTHEN intro (loop b))
       | Kapp(False,[]) -> destructure_hyps
       | _ ->
-	let goal_tac =
-	  try
-	    let dec = decidability t in
-	    Tacticals.New.tclTHEN
-              (Proofview.V82.tactic (Tactics.refine
-		 (mkApp (Lazy.force coq_dec_not_not, [| t; dec; mkNewMeta () |]))))
-	      intro
-	  with Undecidable -> Proofview.V82.tactic (Tactics.elim_type (build_coq_False ()))
-	in
-	Tacticals.New.tclTHEN goal_tac destructure_hyps
-  in
-  (loop concl)
+	  let goal_tac =
+	    try
+	      let dec = decidability t in
+	      Tacticals.New.tclTHEN
+                (Proofview.V82.tactic (Tactics.refine
+		                         (mkApp (Lazy.force coq_dec_not_not, [| t; dec; mkNewMeta () |]))))
+	        intro
+	    with Undecidable -> Proofview.V82.tactic (Tactics.elim_type (build_coq_False ()))
+	  in
+	  Tacticals.New.tclTHEN goal_tac destructure_hyps
+    in
+    (loop concl)
+  end
 
 let destructure_goal = destructure_goal
 

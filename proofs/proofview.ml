@@ -668,7 +668,12 @@ end
 
 module Goal = struct
 
-  type 'a u = 'a list
+  type t = Environ.env*Evd.evar_map*Environ.named_context_val*Term.constr
+
+  let env (env,_,_,_) = env
+  let sigma (_,sigma,_,_) = sigma
+  let hyps (_,_,hyps,_) = hyps
+  let concl (_,_,_,concl) = concl
 
   let lift s =
     (* spiwack: convenience notations, waiting for ocaml 3.12 *)
@@ -688,15 +693,13 @@ module Goal = struct
       tclZERO e
 
   let return x = lift (Goal.return x)
-  let concl = lift Goal.concl
-  let hyps = lift Goal.hyps
-  let env = lift Goal.env
 
+  let enter_t f = Goal.enter (fun env sigma hyps concl -> f (env,sigma,hyps,concl))
   let enter f =
-    lift (Goal.enter f) >= fun ts ->
+    lift (enter_t f) >= fun ts ->
     tclDISPATCH ts
   let enterl f =
-    lift (Goal.enter f) >= fun ts ->
+    lift (enter_t f) >= fun ts ->
     tclDISPATCHL ts >= fun res ->
     tclUNIT (List.flatten res)
     

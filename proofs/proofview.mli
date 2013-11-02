@@ -283,6 +283,13 @@ end
 
 module Goal : sig
 
+  type t
+
+  val concl : t -> Term.constr
+  val hyps : t -> Environ.named_context_val
+  val env : t -> Environ.env
+  val sigma : t -> Evd.evar_map
+
   (* [lift_sensitive s] returns the list corresponding to the evaluation
      of [s] on each of the focused goals *)
   val lift : 'a Goal.sensitive -> 'a glist tactic
@@ -290,14 +297,9 @@ module Goal : sig
 
   (* [lift (Goal.return x)] *)
   val return : 'a -> 'a glist tactic
-  val enter : (Environ.env -> Evd.evar_map -> Environ.named_context_val -> Term.constr -> unit tactic) -> unit tactic
-  val enterl : (Environ.env -> Evd.evar_map -> Environ.named_context_val -> Term.constr -> 'a glist tactic) -> 'a glist tactic
-  (* [lift Goal.concl] *)
-  val concl : Term.constr glist tactic
-  (* [lift Goal.hyps] *)
-  val hyps : Environ.named_context_val glist tactic
-  (* [lift Goal.env] *)
-  val env : Environ.env glist tactic
+  val enter : (t -> unit tactic) -> unit tactic
+  val enterl : (t -> 'a glist tactic) -> 'a glist tactic
+
 end
 
 

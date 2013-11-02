@@ -443,44 +443,46 @@ let rewrite_equations_tac (gene, othin) id neqns names ba =
 
 
 let raw_inversion inv_kind id status names =
-  Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>= fun env ->
-  Proofview.Goal.concl >>= fun concl ->
-  let c = mkVar id in
-  Tacmach.New.pf_apply Tacred.reduce_to_atomic_ind >>= fun reduce_to_atomic_ind ->
-  Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
-  begin
-    try
-      Proofview.tclUNIT (reduce_to_atomic_ind (type_of c))
-    with UserError _ ->
-      Proofview.tclZERO (Errors.UserError ("raw_inversion" ,
-	str ("The type of "^(Id.to_string id)^" is not inductive.")))
-  end >= fun (ind,t) ->
-  Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) >>= fun indclause ->
-  let ccl = clenv_type indclause in
-  check_no_metas indclause ccl;
-  let IndType (indf,realargs) = find_rectype env sigma ccl in
-  let (elim_predicate,neqns) =
-    make_inv_predicate env sigma indf realargs id status concl in
-  let (cut_concl,case_tac) =
-    if status != NoDep & (dependent c concl) then
-      Reduction.beta_appvect elim_predicate (Array.of_list (realargs@[c])),
-      Tacticals.New.case_then_using
-    else
-      Reduction.beta_appvect elim_predicate (Array.of_list realargs),
-      Tacticals.New.case_nodep_then_using
-  in
-  (Tacticals.New.tclTHENS
-     (assert_tac Anonymous cut_concl)
-     [case_tac names
-       (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
-       (Some elim_predicate) ([],[]) ind indclause;
-      Tacticals.New.onLastHypId
-        (fun id ->
-           (Tacticals.New.tclTHEN
-              (Proofview.V82.tactic (apply_term (mkVar id)
-                 (List.init neqns (fun _ -> Evarutil.mk_new_meta()))))
-              reflexivity))])
+  Proofview.Goal.enter begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
+    let env = Proofview.Goal.env gl in
+    let concl = Proofview.Goal.concl gl in
+    let c = mkVar id in
+    Tacmach.New.pf_apply Tacred.reduce_to_atomic_ind >>= fun reduce_to_atomic_ind ->
+    Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+    begin
+      try
+        Proofview.tclUNIT (reduce_to_atomic_ind (type_of c))
+      with UserError _ ->
+        Proofview.tclZERO (Errors.UserError ("raw_inversion" ,
+	                                     str ("The type of "^(Id.to_string id)^" is not inductive.")))
+    end >= fun (ind,t) ->
+      Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) >>= fun indclause ->
+      let ccl = clenv_type indclause in
+      check_no_metas indclause ccl;
+      let IndType (indf,realargs) = find_rectype env sigma ccl in
+      let (elim_predicate,neqns) =
+        make_inv_predicate env sigma indf realargs id status concl in
+      let (cut_concl,case_tac) =
+        if status != NoDep & (dependent c concl) then
+          Reduction.beta_appvect elim_predicate (Array.of_list (realargs@[c])),
+          Tacticals.New.case_then_using
+        else
+          Reduction.beta_appvect elim_predicate (Array.of_list realargs),
+          Tacticals.New.case_nodep_then_using
+      in
+      (Tacticals.New.tclTHENS
+         (assert_tac Anonymous cut_concl)
+         [case_tac names
+             (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
+             (Some elim_predicate) ([],[]) ind indclause;
+          Tacticals.New.onLastHypId
+            (fun id ->
+              (Tacticals.New.tclTHEN
+                 (Proofview.V82.tactic (apply_term (mkVar id)
+                                          (List.init neqns (fun _ -> Evarutil.mk_new_meta()))))
+                 reflexivity))])
+  end
 
 (* Error messages of the inversion tactics *)
 let wrap_inv_error id = function
@@ -523,25 +525,29 @@ let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
  * back to their places in the hyp-list. *)
 
 let invIn k names ids id =
-  Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive ids) >>= fun hyps ->
-  Proofview.Goal.concl >>= fun concl ->
-  let nb_prod_init = nb_prod concl in
-  let intros_replace_ids =
-    Proofview.Goal.concl >>= fun concl ->
-    let nb_of_new_hyp =
-      nb_prod concl - (List.length hyps + nb_prod_init)
+  Proofview.Goal.enter begin fun gl ->
+    Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive ids) >>= fun hyps ->
+    let concl = Proofview.Goal.concl gl in
+    let nb_prod_init = nb_prod concl in
+    let intros_replace_ids =
+      Proofview.Goal.enter begin fun gl ->
+        let concl = Proofview.Goal.concl gl in
+        let nb_of_new_hyp =
+          nb_prod concl - (List.length hyps + nb_prod_init)
+        in
+        if nb_of_new_hyp < 1 then
+          intros_replacing ids
+        else
+          Tacticals.New.tclTHEN (Tacticals.New.tclDO nb_of_new_hyp intro) (intros_replacing ids)
+      end
     in
-    if nb_of_new_hyp < 1 then
-      intros_replacing ids
-    else
-      Tacticals.New.tclTHEN (Tacticals.New.tclDO nb_of_new_hyp intro) (intros_replacing ids)
-  in
-  Proofview.tclORELSE
-    (Tacticals.New.tclTHENLIST
-      [Proofview.V82.tactic (bring_hyps hyps);
-       inversion (false,k) NoDep names id;
-       intros_replace_ids])
-    (wrap_inv_error id)
+    Proofview.tclORELSE
+      (Tacticals.New.tclTHENLIST
+         [Proofview.V82.tactic (bring_hyps hyps);
+          inversion (false,k) NoDep names id;
+          intros_replace_ids])
+      (wrap_inv_error id)
+  end
 
 let invIn_gen k names idl = try_intros_until (invIn k names idl)
 

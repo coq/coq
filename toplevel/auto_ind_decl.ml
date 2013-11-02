@@ -594,24 +594,26 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
   Ci a1 ... an = Ci b1 ... bn
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
 *)
-                      Proofview.Goal.concl >>= fun gl ->
-                      match (kind_of_term gl) with
-                      | App (c,ca) -> (
-                        match (kind_of_term c) with
-                        | Ind indeq ->
-                            if eq_gr (IndRef indeq) Coqlib.glob_eq
-                            then
-                              Tacticals.New.tclTHEN
-                                (do_replace_bl bl_scheme_key ind
-				   (!avoid)
-                                   nparrec (ca.(2))
-                                   (ca.(1)))
-                                Auto.default_auto
-                            else
-                              Proofview.tclZERO (UserError ("",str"Failure while solving Boolean->Leibniz."))
+                      Proofview.Goal.enter begin fun gls ->
+                        let gl = Proofview.Goal.concl gls in
+                        match (kind_of_term gl) with
+                        | App (c,ca) -> (
+                          match (kind_of_term c) with
+                          | Ind indeq ->
+                              if eq_gr (IndRef indeq) Coqlib.glob_eq
+                              then
+                                Tacticals.New.tclTHEN
+                                  (do_replace_bl bl_scheme_key ind
+				     (!avoid)
+                                     nparrec (ca.(2))
+                                     (ca.(1)))
+                                  Auto.default_auto
+                              else
+                                Proofview.tclZERO (UserError ("",str"Failure while solving Boolean->Leibniz."))
+                          | _ -> Proofview.tclZERO (UserError ("", str"Failure while solving Boolean->Leibniz."))
+                        )
                         | _ -> Proofview.tclZERO (UserError ("", str"Failure while solving Boolean->Leibniz."))
-                      )
-                      | _ -> Proofview.tclZERO (UserError ("", str"Failure while solving Boolean->Leibniz."))
+                      end
 
                     ]
 
@@ -713,21 +715,23 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
                       Tacticals.New.tclTHENLIST [Proofview.V82.tactic (apply (andb_true_intro()));
                                   simplest_split ;Auto.default_auto ]
                       );
-                      Proofview.Goal.concl >>= fun gl ->
-                  (* assume the goal to be eq (eq_type ...) = true *)
+                      Proofview.Goal.enter begin fun gls ->
+                        let gl = Proofview.Goal.concl gls in
+                        (* assume the goal to be eq (eq_type ...) = true *)
                         match (kind_of_term gl) with
-                          | App(c,ca) -> (match (kind_of_term ca.(1)) with
-                              | App(c',ca') ->
-                                  let n = Array.length ca' in
-                                    do_replace_lb lb_scheme_key
-				    (!avoid)
-                                    nparrec
-                                    ca'.(n-2) ca'.(n-1)
-                              | _ ->
-                                Proofview.tclZERO (UserError ("",str"Failure while solving Leibniz->Boolean."))
-                            )
+                        | App(c,ca) -> (match (kind_of_term ca.(1)) with
+                          | App(c',ca') ->
+                              let n = Array.length ca' in
+                              do_replace_lb lb_scheme_key
+				(!avoid)
+                                nparrec
+                                ca'.(n-2) ca'.(n-1)
                           | _ ->
                               Proofview.tclZERO (UserError ("",str"Failure while solving Leibniz->Boolean."))
+                        )
+                        | _ ->
+                            Proofview.tclZERO (UserError ("",str"Failure while solving Leibniz->Boolean."))
+                      end
                     ]
 
 let lb_scheme_kind_aux = ref (fun () -> failwith "Undefined")

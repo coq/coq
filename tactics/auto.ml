@@ -1275,17 +1275,21 @@ let dbg_assumption dbg = tclLOG dbg (fun () -> str "assumption") assumption
 let rec trivial_fail_db dbg mod_delta db_list local_db =
   let intro_tac =
     Tacticals.New.tclTHEN (dbg_intro dbg)
-      ( Proofview.tclEVARMAP >= fun sigma ->
-        Proofview.Goal.env >>= fun env ->
-        Tacmach.New.pf_last_hyp >>= fun hyp ->
-	let hintl = make_resolve_hyp env sigma hyp
-	in trivial_fail_db dbg mod_delta db_list (Hint_db.add_list hintl local_db))
+      ( Proofview.Goal.enter begin fun gl ->
+          let sigma = Proofview.Goal.sigma gl in
+          let env = Proofview.Goal.env gl in
+          Tacmach.New.pf_last_hyp >>= fun hyp ->
+	  let hintl = make_resolve_hyp env sigma hyp
+	  in trivial_fail_db dbg mod_delta db_list (Hint_db.add_list hintl local_db)
+      end)
   in
-  Proofview.Goal.concl >>= fun concl ->
-  Tacticals.New.tclFIRST
-    ((Proofview.V82.tactic (dbg_assumption dbg))::intro_tac::
-     (List.map Tacticals.New.tclCOMPLETE
-       (trivial_resolve dbg mod_delta db_list local_db concl)))
+  Proofview.Goal.enter begin fun gl ->
+    let concl = Proofview.Goal.concl gl in
+    Tacticals.New.tclFIRST
+      ((Proofview.V82.tactic (dbg_assumption dbg))::intro_tac::
+          (List.map Tacticals.New.tclCOMPLETE
+             (trivial_resolve dbg mod_delta db_list local_db concl)))
+  end
 
 and my_find_search_nodelta db_list local_db hdc concl =
   List.map (fun hint -> (None,hint))
@@ -1433,12 +1437,14 @@ let search d n mod_delta db_list local_db =
       if Int.equal n 0 then Proofview.tclZERO (Errors.UserError ("",str"BOUND 2")) else
         Tacticals.New.tclORELSE0 (Proofview.V82.tactic (dbg_assumption d))
 	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
-	     ( Proofview.Goal.concl >>= fun concl ->
+	     ( Proofview.Goal.enter begin fun gl ->
+               let concl = Proofview.Goal.concl gl in
 	       let d' = incr_dbg d in
 	       Tacticals.New.tclFIRST
 	         (List.map
 		    (fun ntac -> Tacticals.New.tclTHEN ntac (search d' (n-1) local_db))
-		    (possible_resolve d mod_delta db_list local_db concl))))
+		    (possible_resolve d mod_delta db_list local_db concl))
+             end))
     end []
   in
   search d n local_db

@@ -522,27 +522,35 @@ module New = struct
         | e -> Proofview.tclZERO e
       end
 
-  let nthDecl m =
-    Proofview.Goal.hyps >>== fun hyps ->
+  let nthDecl m gl =
+    let hyps = Proofview.Goal.hyps gl in
     try
       let hyps = Environ.named_context_of_val hyps in
-      (Proofview.Goal.return (List.nth hyps (m-1)))
-    with Failure _ -> tclZERO (UserError ("" , Pp.str"No such assumption."))
+      List.nth hyps (m-1)
+    with Failure _ -> Errors.error "No such assumption."
 
-  let nthHypId m = nthDecl m >>== fun (id,_,_) ->
-    Proofview.Goal.return id
-  let nthHyp m = nthHypId m >>== fun id ->
-    Proofview.Goal.return (mkVar id)
+  let nthHypId m gl =
+    let (id,_,_) = nthDecl m gl in
+    id
+  let nthHyp m gl = 
+    mkVar (nthHypId m gl)
 
   let onNthHypId m tac =
-    nthHypId m >>= tac
+    Goal.enter begin fun gl ->
+      Proofview.tclUNIT (nthHypId m gl) >= tac
+    end
   let onNthHyp m tac =
-    nthHyp m >>= tac
+    Goal.enter begin fun gl ->
+      Proofview.tclUNIT (nthHyp m gl) >= tac
+    end
 
   let onLastHypId = onNthHypId 1
   let onLastHyp   = onNthHyp 1
 
-  let onNthDecl m tac = nthDecl m >>= tac
+  let onNthDecl m tac =
+    Proofview.Goal.enter begin fun gl ->
+      Proofview.tclUNIT (nthDecl m gl) >= tac
+    end
   let onLastDecl  = onNthDecl 1
 
   let ifOnHyp pred tac1 tac2 id =

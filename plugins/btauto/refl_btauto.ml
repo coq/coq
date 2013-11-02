@@ -217,41 +217,45 @@ module Btauto = struct
     Tacticals.tclFAIL 0 msg gl
 
   let try_unification env =
-    Proofview.Goal.concl >>= fun concl ->
-    let eq = Lazy.force eq in
-    let t = decomp_term concl in
-    match t with
-    | Term.App (c, [|typ; p; _|]) when c === eq ->
+    Proofview.Goal.enter begin fun gl ->
+      let concl = Proofview.Goal.concl gl in
+      let eq = Lazy.force eq in
+      let t = decomp_term concl in
+      match t with
+      | Term.App (c, [|typ; p; _|]) when c === eq ->
       (* should be an equality [@eq poly ?p (Cst false)] *)
-      let tac = Tacticals.New.tclORELSE0 Tactics.reflexivity (Proofview.V82.tactic (print_counterexample p env)) in
-      tac
-    | _ ->
-      let msg = str "Btauto: Internal error" in
-      Tacticals.New.tclFAIL 0 msg
+          let tac = Tacticals.New.tclORELSE0 Tactics.reflexivity (Proofview.V82.tactic (print_counterexample p env)) in
+          tac
+      | _ ->
+          let msg = str "Btauto: Internal error" in
+          Tacticals.New.tclFAIL 0 msg
+    end
 
   let tac =
-    Proofview.Goal.concl >>= fun concl ->
-    let eq = Lazy.force eq in
-    let bool = Lazy.force Bool.typ in
-    let t = decomp_term concl in
-    match t with
-    | Term.App (c, [|typ; tl; tr|])
-        when typ === bool && c === eq ->
-      let env = Env.empty () in
-      let fl = Bool.quote env tl in
-      let fr = Bool.quote env tr in
-      let env = Env.to_list env in
-      let fl = reify env fl in
-      let fr = reify env fr in
-      let changed_gl = Term.mkApp (c, [|typ; fl; fr|]) in
-      Tacticals.New.tclTHENLIST [
-        Proofview.V82.tactic (Tactics.change_in_concl None changed_gl);
-        Proofview.V82.tactic (Tactics.apply (Lazy.force soundness));
-        Proofview.V82.tactic (Tactics.normalise_vm_in_concl);
-        try_unification env
-      ]
-    | _ ->
-      let msg = str "Cannot recognize a boolean equality" in
-      Tacticals.New.tclFAIL 0 msg
+    Proofview.Goal.enter begin fun gl ->
+      let concl = Proofview.Goal.concl gl in
+      let eq = Lazy.force eq in
+      let bool = Lazy.force Bool.typ in
+      let t = decomp_term concl in
+      match t with
+      | Term.App (c, [|typ; tl; tr|])
+          when typ === bool && c === eq ->
+          let env = Env.empty () in
+          let fl = Bool.quote env tl in
+          let fr = Bool.quote env tr in
+          let env = Env.to_list env in
+          let fl = reify env fl in
+          let fr = reify env fr in
+          let changed_gl = Term.mkApp (c, [|typ; fl; fr|]) in
+          Tacticals.New.tclTHENLIST [
+            Proofview.V82.tactic (Tactics.change_in_concl None changed_gl);
+            Proofview.V82.tactic (Tactics.apply (Lazy.force soundness));
+            Proofview.V82.tactic (Tactics.normalise_vm_in_concl);
+            try_unification env
+          ]
+      | _ ->
+          let msg = str "Cannot recognize a boolean equality" in
+          Tacticals.New.tclFAIL 0 msg
+    end
 
 end
