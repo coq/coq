@@ -86,8 +86,12 @@ type tomatch_type =
   | IsInd of types * inductive_type * Name.t list
   | NotInd of constr option * types
 
+(* spiwack: The first argument of [Pushed] is [true] for initial
+   Pushed and [false] otherwise. Used to decide whether the term being
+   matched on must be aliased in the variable case (only initial
+   Pushed need to be aliased). *)
 type tomatch_status =
-  | Pushed of ((constr * tomatch_type) * int list * Name.t)
+  | Pushed of (bool*((constr * tomatch_type) * int list * Name.t))
   | Alias of (Name.t * constr * (constr * types))
   | NonDepAlias
   | Abstract of int * rel_declaration

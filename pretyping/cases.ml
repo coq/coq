@@ -127,8 +127,12 @@ type tomatch_type =
   | IsInd of types * inductive_type * Name.t list
   | NotInd of constr option * types
 
+(* spiwack: The first argument of [Pushed] is [true] for initial
+   Pushed and [false] otherwise. Used to decide whether the term being
+   matched on must be aliased in the variable case (only initial
+   Pushed need to be aliased). *)
 type tomatch_status =
-  | Pushed of ((constr * tomatch_type) * int list * Name.t)
+  | Pushed of (bool*((constr * tomatch_type) * int list * Name.t))
   | Alias of (Name.t * constr * (constr * types))
   | NonDepAlias
   | Abstract of int * rel_declaration
@@ -428,6 +432,18 @@ let push_current_pattern (cur,ty) eqn =
 	    patterns = pats }
     | [] -> anomaly (Pp.str "Empty list of patterns")
 
+(* spiwack: like [push_current_pattern] but does not introduce an
+   alias in rhs_env. Aliasing binders are only useful for variables at
+   the root of a pattern matching problem (initial push), so we
+   distinguish the cases. *)
+let push_noalias_current_pattern eqn =
+  match eqn.patterns with
+  | _::pats ->
+      { eqn with patterns = pats }
+  | [] -> anomaly (Pp.str "push_noalias_current_pattern: Empty list of patterns")
+
+
+
 let prepend_pattern tms eqn = {eqn with patterns = tms@eqn.patterns }
 
 (**********************************************************************)
@@ -573,11 +589,11 @@ let relocate_index_tomatch n1 n2 =
   let rec genrec depth = function
   | [] ->
       []
-  | Pushed ((c,tm),l,na) :: rest ->
+  | Pushed (b,((c,tm),l,na)) :: rest ->
       let c = relocate_index n1 n2 depth c in
       let tm = map_tomatch_type (relocate_index n1 n2 depth) tm in
       let l = List.map (relocate_rel n1 n2 depth) l in
-      Pushed ((c,tm),l,na) :: genrec depth rest
+      Pushed (b,((c,tm),l,na)) :: genrec depth rest
   | Alias (na,c,d) :: rest ->
       (* [c] is out of relocation scope *)
       Alias (na,c,map_pair (relocate_index n1 n2 depth) d) :: genrec depth rest
@@ -607,11 +623,11 @@ let length_of_tomatch_type_sign na t =
 let replace_tomatch n c =
   let rec replrec depth = function
   | [] -> []
-  | Pushed ((b,tm),l,na) :: rest ->
+  | Pushed (initial,((b,tm),l,na)) :: rest ->
       let b = replace_term n c depth b in
       let tm = map_tomatch_type (replace_term n c depth) tm in
       List.iter (fun i -> if Int.equal i (n + depth) then anomaly (Pp.str "replace_tomatch")) l;
-      Pushed ((b,tm),l,na) :: replrec depth rest
+      Pushed (initial,((b,tm),l,na)) :: replrec depth rest
   | Alias (na,b,d) :: rest ->
       (* [b] is out of replacement scope *)
       Alias (na,b,map_pair (replace_term n c depth) d) :: replrec depth rest
@@ -631,11 +647,11 @@ let replace_tomatch n c =
 
 let rec liftn_tomatch_stack n depth = function
   | [] -> []
-  | Pushed ((c,tm),l,na)::rest ->
+  | Pushed (initial,((c,tm),l,na))::rest ->
       let c = liftn n depth c in
       let tm = liftn_tomatch_type n depth tm in
       let l = List.map (fun i -> if i<depth then i else i+n) l in
-      Pushed ((c,tm),l,na)::(liftn_tomatch_stack n depth rest)
+      Pushed (initial,((c,tm),l,na))::(liftn_tomatch_stack n depth rest)
   | Alias (na,c,d)::rest ->
       Alias (na,liftn n depth c,map_pair (liftn n depth) d)
       ::(liftn_tomatch_stack n depth rest)
@@ -791,7 +807,7 @@ Some hints:
 
 let rec map_predicate f k ccl = function
   | [] -> f k ccl
-  | Pushed ((_,tm),_,na) :: rest ->
+  | Pushed (_,((_,tm),_,na)) :: rest ->
       let k' = length_of_tomatch_type_sign na tm in
       map_predicate f (k+k') ccl rest
   | (Alias _ | NonDepAlias) :: rest ->
@@ -864,7 +880,7 @@ let rec extract_predicate ccl = function
       extract_predicate ccl tms
   | Abstract (i,d)::tms ->
       mkProd_wo_LetIn d (extract_predicate ccl tms)
-  | Pushed ((cur,NotInd _),_,na)::tms ->
+  | Pushed (_,((cur,NotInd _),_,na))::tms ->
       begin match na with
       | Anonymous -> extract_predicate ccl tms
       | Name _ ->
@@ -872,7 +888,7 @@ let rec extract_predicate ccl = function
         let pred = extract_predicate ccl tms in
         subst1 cur pred
       end
-  | Pushed ((cur,IsInd (_,IndType(_,realargs),_)),_,na)::tms ->
+  | Pushed (_,((cur,IsInd (_,IndType(_,realargs),_)),_,na))::tms ->
       let realargs = List.rev realargs in
       let k, nrealargs = match na with
       | Anonymous -> 0, realargs
@@ -1215,7 +1231,7 @@ let build_branch current realargs deps (realnames,curname) pb arsign eqns const_
   let pred =
     specialize_predicate typs' (realnames,curname) arsign const_info tomatch pb.pred in
 
-  let currents = List.map (fun x -> Pushed x) typs' in
+  let currents = List.map (fun x -> Pushed (false,x)) typs' in
 
   let alias = match aliasname with
   | Anonymous ->
@@ -1269,14 +1285,14 @@ let rec compile pb =
     | [] -> build_leaf pb
 
 (* Case splitting *)
-and match_current pb tomatch =
+and match_current pb (initial,tomatch) =
   let tm = adjust_tomatch_to_pattern pb tomatch in
   let pb,tomatch = adjust_predicate_from_tomatch tomatch tm pb in
   let ((current,typ),deps,dep) = tomatch in
   match typ with
     | NotInd (_,typ) ->
 	check_all_variables typ pb.mat;
-	shift_problem tomatch pb
+	compile_all_variables initial tomatch pb
     | IsInd (_,(IndType(indf,realargs) as indt),names) ->
 	let mind,_ = dest_ind_family indf in
 	let cstrs = get_constructors pb.env indf in
@@ -1284,7 +1300,7 @@ and match_current pb tomatch =
 	let eqns,onlydflt = group_equations pb mind current cstrs pb.mat in
         let no_cstr = Int.equal (Array.length cstrs) 0 in
 	if (not no_cstr || not (List.is_empty pb.mat)) && onlydflt  then
-	  shift_problem tomatch pb
+	  compile_all_variables initial tomatch pb
 	else
 	  (* We generalize over terms depending on current term to match *)
 	  let pb,deps = generalize_problem (names,dep) pb deps in
@@ -1308,7 +1324,9 @@ and match_current pb tomatch =
 	  { uj_val = applist (case, inst);
 	    uj_type = prod_applist typ inst }
 
-(* Building the sub-problem when all patterns are variables *)
+
+(* Building the sub-problem when all patterns are variables. Case
+   where [current] is an intially pushed term. *)
 and shift_problem ((current,t),_,na) pb =
   let ty = type_of_tomatch t in
   let tomatch = lift_tomatch_stack 1 pb.tomatch in
@@ -1323,6 +1341,24 @@ and shift_problem ((current,t),_,na) pb =
   let j = compile pb in
   { uj_val = subst1 current j.uj_val;
     uj_type = subst1 current j.uj_type }
+
+(* Building the sub-problem when all patterns are variables,
+   non-initial case. Variables which appear as subterms of constructor
+   are already introduced in the context, we avoid creating aliases to
+   themselves by treating this case specially. *)
+and pop_problem ((current,t),_,na) pb =
+  let pred = specialize_predicate_var (current,t,na) pb.tomatch pb.pred in
+  let pb =
+    { pb with
+       pred = pred;
+       history = pop_history pb.history;
+       mat = List.map push_noalias_current_pattern pb.mat } in
+  compile pb
+
+(* Building the sub-problem when all patterns are variables. *)
+and compile_all_variables initial cur pb =
+  if initial then shift_problem cur pb
+  else pop_problem cur pb
 
 (* Building the sub-problem when all patterns are variables *)
 and compile_branch current realargs names deps pb arsign eqns cstr =
@@ -1624,7 +1660,7 @@ let build_inversion_problem loc env sigma tms t =
   let sub_tms =
     List.map2 (fun deps (tm,(tmtyp,_),(na,b,t)) ->
       let na = if List.is_empty deps then Anonymous else force_name na in
-      Pushed ((tm,tmtyp),deps,na))
+      Pushed (false,((tm,tmtyp),deps,na)))
       dep_sign decls in
   let subst = List.map (fun (na,t) -> (na,lift n t)) subst in
   (* [eqn1] is the first clause of the auxiliary pattern-matching that
@@ -2308,7 +2344,7 @@ let compile_program_cases loc style (typing_function, evdref) tycon env
            ((tm,tmt),deps,na))
       tomatchs dep_sign nal in
     
-  let initial_pushed = List.map (fun x -> Pushed x) typs' in
+  let initial_pushed = List.map (fun x -> Pushed (true,x)) typs' in
     
   let typing_function tycon env evdref = function
     | Some t ->	typing_function tycon env evdref t
@@ -2381,7 +2417,7 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
           ((tm,tmt),deps,na))
         tomatchs dep_sign nal in
 
-    let initial_pushed = List.map (fun x -> Pushed x) typs' in
+    let initial_pushed = List.map (fun x -> Pushed (true,x)) typs' in
 
     (* A typing function that provides with a canonical term for absurd cases*)
     let typing_fun tycon env evdref = function
