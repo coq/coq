@@ -1133,9 +1133,9 @@ and eval_tactic ist = function
       end
   | TacProgress tac -> Proofview.tclPROGRESS (interp_tactic ist tac)
   | TacShowHyps tac ->
-      (* arnaud: todo:
-         tclSHOWHYPS (interp_tactic ist tac)*)
-      assert false
+         Proofview.V82.tactic begin
+           tclSHOWHYPS (Proofview.V82.of_tactic (interp_tactic ist tac))
+         end
   | TacAbstract (tac,ido) ->
       Proofview.V82.tactic begin fun gl -> Tactics.tclABSTRACT
         (Option.map (pf_interp_ident ist gl) ido) (interp_tactic ist tac) gl
