@@ -261,49 +261,49 @@ Module IO.
 End IO.
 
 Module State.
-(** State monad transformer, adapted from Haskell' StateT *)
+(** The impredicative encoding of the usual State predicate
+    transformer (StateT in Haskell). The impredicative encoding allows
+    to avoid creating blocks (val,state) at each bind. *)
 
 Section Common.
 
  Variables (S:Set) (T₀:Set->Set) (M:Monad T₀).
 
- Definition T (A:Set):= S -> T₀ (A*S)%type.
+ Definition T (A:Set):= forall R:Set, (A -> S -> T₀ R) -> S -> T₀ R.
 
  Definition F : Monad T := {|
-   ret A x s := ret _ M (x,s);
-   bind A B x k s :=
-            do M x := x s in
-            let '(x,s) := x in
-            k x s;
-   ignore A x s :=
-              do M x := x s in
-              let '(_,s) := x in
-              ret _ M ((),s);
-   seq A x k s :=
-           do M x := x s in
-           let '((),s) := x in
-           k s
+   ret A x := fun R k s => k x s ;
+   bind A B x f := fun R k s =>
+            x R (fun a s' => f a R k s') s ;
+   ignore A x := fun R k s =>
+            x R (fun _ s' => k tt s') s ;
+   seq A x y := fun R k s =>
+           x R (fun _ s' => y R k s') s
  |}.
 
  Definition State : State S T := {|
-   set := (fun (x s:S) => ret _ M ((),x)) : S -> T unit ;
-   get := fun (s:S) => ret _ M (s,s)
+   set s := (fun R k _ => k () s) : T unit  ;
+   get := fun R k s => k s s
  |}.
 
- Definition lift : forall {A}, T₀ A -> T A :=  fun _ x s =>
+ Definition lift {A} (x:T₀ A) : T A := fun R k s =>
    do M x := x in
-   ret _ M (x,s)
+   k x s
  .
 
- Definition run : forall {A}, T A -> S -> T₀ (A*S) := fun _ x => x.
- Definition reflect : forall {A:Set}, (S -> T₀ (A*S)) -> T A := fun _ x => x.
+ Definition run {A} (x:T A) (s:S) : T₀ (A*S) := x _ (fun a s' => ret _ M (a,s')) s.
+ Definition reflect {A:Set} (x:S -> T₀ (A*S)) : T A := fun R k s =>
+   do M x' := x s in
+   let '(a,s') := x' in
+   k a s'
+ .
 
  Variable (L:Logic T₀).
 
 
  Definition Logic : Logic T := {|
    zero A e := lift (zero _ L e);
-   plus A x y s := plus _ L (x s) (fun e => y e s)
+   plus A x y := fun R k s => plus _ L (x R k s) (fun e => y e R k s)
  |}.
 
 End Common.
@@ -534,8 +534,8 @@ Definition LogicalType := State.T LogicalState (Environment.T LogicalEnvironment
 Definition LogicalMonadBase := Logic.F NonLogicalType.
 Definition LogicalMonadWriter := Writer.F _ LogicalMessage _ LogicalMonadBase.
 Definition LogicalMonadEnv := Environment.F LogicalEnvironment _ LogicalMonadWriter.
-Definition LogicalMonad : Monad LogicalType := State.F LogicalState _ LogicalMonadEnv.
-Definition LogicalStateM : State LogicalState LogicalType := State.State LogicalState _ LogicalMonadEnv.
+Definition LogicalMonad : Monad LogicalType := State.F LogicalState _.
+Definition LogicalStateM : State LogicalState LogicalType := State.State LogicalState _.
 Definition LogicalReader : Environment LogicalEnvironment _ := Environment.Environment LogicalEnvironment _ LogicalMonadWriter.
 Definition LogicalWriter : Writer LogicalMessageType  _ := Writer.Writer LogicalMessageType _ (Logic.F NonLogicalType).
 Definition LogicalLogic : Logic LogicalType := State.Logic _ _ LogicalMonadEnv (Environment.Logic _ _ (Writer.Logic _ LogicalMessage _ LogicalMonadBase (Logic.Logic _))).
@@ -545,16 +545,20 @@ Definition LogicalLogic : Logic LogicalType := State.Logic _ _ LogicalMonadEnv (
    [split0]. It reifies the monad transformer stack until we can read
    back a more syntactic form, then reflects the result back. *)
 Definition split0 {a:Set} (x:LogicalType a) : LogicalType ((a*(Exception -> LogicalType a))+Exception) :=
-  State.reflect _ _ (fun s =>
+  State.reflect _ _ LogicalMonadEnv (fun s =>
   Environment.reflect _ _ (fun e =>
   Writer.reflect _ _ (
   Logic.lift _ NonLogicalMonad (
     do NonLogicalMonad x' :=
-        Logic.reify _ NonLogicalMonad (Writer.run _ _ (Environment.run _ _ (State.run _ _ x s) e)) in
+        Logic.reify _ NonLogicalMonad (Writer.run _ _ (Environment.run _ _ (State.run _ _ LogicalMonadEnv x s) e)) in
     match x' with
     | inr exc => ret _ NonLogicalMonad ((inr exc),s, Monoid.zero _ LogicalMessage)
     | inl (a',s',m',y) =>
-      let y' exc _ _ := y exc in
+      let y' exc :=
+          State.reflect _ _ LogicalMonadEnv (fun _ =>
+          Environment.reflect _ _ (fun _ =>
+          Writer.reflect _ _ (y exc)))
+      in
       ret _ NonLogicalMonad (inl (a',y'),s',m')
     end
   ))))
@@ -645,7 +649,7 @@ split _ LogicalLogic x).
  Extraction Implicit lift [a].
 
  Definition run {a:Set} (x:t a) (e:LogicalEnvironment) (s:LogicalState) : NonLogical.t ((a*LogicalState)*LogicalMessageType) := Eval compute in
-  Logic.run _ NonLogicalMonad _ NonLogicalIO (Writer.run _ _ (Environment.run _ _ (State.run _ _ x s) e))
+  Logic.run _ NonLogicalMonad _ NonLogicalIO (Writer.run _ _ (Environment.run _ _ (State.run _ _ LogicalMonadEnv x s) e))
  .
  Extraction Implicit run [a].
 
