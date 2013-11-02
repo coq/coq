@@ -482,14 +482,14 @@ module New = struct
     tclINDEPENDENT begin
       tclIFCATCH t
         (fun () -> tclREPEAT0 t)
-        (fun _ -> tclUNIT ())
+        (fun e -> catch_failerror e <*> tclUNIT ())
     end
   let tclREPEAT t =
     tclREPEAT0 (tclPROGRESS t)
   let rec tclREPEAT_MAIN0 t =
     tclIFCATCH t
       (fun () -> tclFOCUS 1 1 (tclREPEAT_MAIN0 t))
-      (fun _ -> tclUNIT ())
+      (fun e -> catch_failerror e <*> tclUNIT ())
   let tclREPEAT_MAIN t =
     tclREPEAT_MAIN0 (tclPROGRESS t)
 
