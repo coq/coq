@@ -41,14 +41,34 @@ language will be described in Chapter~\ref{TacticLanguage}.
 \label{tactic-syntax}
 \index{tactic@{\tac}}}
 
-A tactic is applied as an ordinary command. If the tactic is not meant to
-address the first subgoal, the command may be preceded by the wished
-subgoal number as shown below:
+A tactic is applied as an ordinary command. It may be preceded by a
+goal selector: {\tt all} if the tactic is to be applied to every
+focused goal simultaneously, or a natural number $n$ if it is to be
+applied to the $n$-th goal. If no selector is specified, the default
+selector (see Section \ref{default_selector}) is used.
 
+\newcommand{\selector}{\nterm{selector}}
 \begin{tabular}{lcl}
-{\commandtac} & ::= & {\num} {\tt :} {\tac} {\tt .}\\
+{\selector} & := & {\tt all} | {\num}\\
+{\commandtac} & ::= & {\selector} {\tt :} {\tac} {\tt .}\\
  & $|$ & {\tac} {\tt .}
 \end{tabular}
+\subsection[\tt Set Default Goal Selector ``\selector''.]
+           {\tt Set Default Goal Selector ``\selector''.
+            \comindex{Set Default Goal Selector}
+            \label{default_selector}}
+After using this command, the default selector -- used when no selector
+is specified when applying a tactic -- is set to the chosen value. The
+initial value is $1$, hence the tactics are, by default, applied to
+the first goal. Using {\tt Set Default Goal Selector ``all''} will
+make is so that tactics are, by default, applied to every goal
+simultaneously. Then, to apply a tactic {\tt tac} to the first goal
+only, you can write {\tt 1:tac}.
+
+\subsection[\tt Test Default Goal Selector ``\selector''.]
+           {\tt Test Default Goal Selector ``\selector''.
+            \comindex{Test Default Goal Selector}}
+This command displays the current default selector.
 
 \subsection{Bindings list
 \index{Binding list}
