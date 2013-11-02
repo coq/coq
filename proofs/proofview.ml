@@ -263,6 +263,7 @@ let tclFOCUS i j t =
        of course I haven't made them algebraic yet. *)
     tclZERO e
 
+
 (* Dispatch tacticals are used to apply a different tactic to each goal under
    consideration. They come in two flavours:
    [tclDISPATCH] takes a list of [unit tactic]-s and build a [unit tactic].
@@ -278,57 +279,155 @@ let _ = Errors.register_handler begin function
   | SizeMismatch -> Errors.error "Incorrect number of goals."
   | _ -> raise Errors.Unhandled
 end
+
+(* A monadic list iteration function *)
+(* spiwack: may be moved to a generic libray, or maybe as extracted
+   code for extra efficiency? *)
+(* val list_iter : 'a list -> 'b -> ('a -> 'b -> 'b tactic) -> 'b tactic *)
+let rec list_iter l s i =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = tclBIND in
+  match l with
+  | [] -> tclUNIT s
+  | [a] -> i a s
+  | a::l ->
+      i a s >>= fun r ->
+      list_iter l r i
+
+(* val list_iter : 'a list -> 'b list -> 'c -> ('a -> 'b -> 'c -> 'c tactic) -> 'c tactic *)
+let rec list_iter2 l1 l2 s i =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = tclBIND in
+  match l1 , l2 with
+  | [] , [] -> tclUNIT s
+  | [a] , [b] -> i a b s
+  | a::l1 , b::l2 ->
+      i a b s >>= fun r ->
+      list_iter2 l1 l2 r i
+  | _ , _ -> tclZERO SizeMismatch
+
+(* A variant of [Proof.set] specialized on the comb. Doesn't change
+   the underlying "solution" (i.e. [evar_map]) *)
+let set_comb c =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun step ->
+  Proof.set { step with comb = c }
+
+let on_advance g ~solved ~adv =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun step ->
+  match Goal.advance step.solution g with
+  | None -> solved (* If [first] has been solved by side effect: do nothing. *)
+  | Some g -> adv g
+
+(* A variant of list_iter where we iter over the focused list of
+   goals. The argument tactic is executed in a focus comprising only
+   of the current goal, a goal which has been solved by side effect is
+   skipped. The generated subgoals are concatenated in order.  *)
+(* val list_iter_goal : 'a -> (Goal.goal -> 'a -> 'a tactic) -> 'a tactic *)
+let list_iter_goal s i =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  let (>>) = Proof.seq in
+  Proof.get >>= fun initial ->
+  list_iter initial.comb (s,[]) begin fun goal ((r,subgoals) as cur) ->
+    on_advance goal
+      ~solved: ( Proof.ret cur )
+      ~adv: begin fun goal ->
+        set_comb [goal] >>
+        i goal r >>= fun r ->
+        Proof.get >>= fun step ->
+        Proof.ret ( r , step.comb::subgoals )
+      end
+  end >>= fun (r,subgoals) ->
+  set_comb (List.flatten (List.rev subgoals)) >>
+  Proof.ret r
+
+(* spiwack: essentially a copy/paste of the above… *)
+(* val list_iter_goal : 'a list -> 'b -> (Goal.goal -> 'a -> 'b -> 'b tactic) -> 'b tactic *)
+let list_iter_goal2 l s i =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  let (>>) = Proof.seq in
+  Proof.get >>= fun initial ->
+  list_iter2 initial.comb l (s,[]) begin fun goal a ((r,subgoals) as cur) ->
+    on_advance goal
+      ~solved: ( Proof.ret cur )
+      ~adv: begin fun goal ->
+        set_comb [goal] >>
+        i goal a r >>= fun r ->
+        Proof.get >>= fun step ->
+        Proof.ret ( r , step.comb::subgoals )
+      end
+  end >>= fun (r,subgoals) ->
+  set_comb (List.flatten (List.rev subgoals)) >>
+  Proof.ret r
+
 (* spiwack: we use an parametrised function to generate the dispatch tacticals.
    [tclDISPATCHGEN] takes a [null] argument to generate the return value
    if there are no goal under focus, and a [join] argument to explain how
    the return value at two given lists of subgoals are combined when
    both lists are being concatenated.
    [join] and [null] need be some sort of comutative monoid. *)
-
-let rec tclDISPATCHGEN null join tacs =
+(* arnaud: commentaire obsolète *)
+let tclDISPATCHGEN join tacs =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
-  let (>>) = Proof.seq in
-  Proof.get >>= fun initial ->
-  match tacs,initial.comb with
-  | [], [] -> tclUNIT null
-  | t::tacs , first::goals ->
-      begin match Goal.advance initial.solution first with
-      | None -> Proof.ret null (* If [first] has been solved by side effect: do nothing. *)
-      | Some first ->
-          Proof.set {initial with comb=[first]} >>
-          t
-      end >>= fun y ->
-      Proof.get >>= fun step ->
-      Proof.set {step with comb=goals} >>
-      tclDISPATCHGEN null join tacs >>= fun x ->
-      Proof.get >>= fun step' ->
-      Proof.set {step' with comb=step.comb@step'.comb} >>
-      Proof.ret (join y x)
-  | _ , _ -> tclZERO SizeMismatch
+  match tacs with
+  | [] ->
+      begin 
+        Proof.get >>= fun initial ->
+        match initial.comb with
+        | [] -> tclUNIT (join [])
+        | _ -> tclZERO SizeMismatch
+      end
+  | [tac] ->
+      begin
+        Proof.get >>= fun initial ->
+        match initial.comb with
+        | [goal] ->
+            on_advance goal
+              ~solved:( tclUNIT (join []) )
+              ~adv:begin fun _ ->
+                tac >>= fun res ->
+                Proof.ret (join [res])
+              end
+        | _ -> tclZERO SizeMismatch
+      end
+  | _ ->
+      list_iter_goal2 tacs [] begin fun _ t cur ->
+        t >>= fun y ->
+        Proof.ret ( y::cur )
+      end >>= fun res ->
+      Proof.ret (join (List.rev res))
 
-let unitK () () = ()
-let tclDISPATCH = tclDISPATCHGEN () unitK
+let tclDISPATCH tacs = tclDISPATCHGEN (fun _ -> ()) tacs
 
 let tclDISPATCHL tacs =
-  let tacs =
-    List.map begin fun tac ->
-      tclBIND tac (fun a -> tclUNIT [a])
-    end tacs
-  in
-  tclDISPATCHGEN [] (@) tacs
+  tclDISPATCHGEN Util.identity tacs
 
-let extend_to_list =
-  let rec copy n x l =
-    if n < 0 then raise SizeMismatch
-    else if Int.equal n 0 then l
-    else copy (n-1) x (x::l)
+let extend_to_list startxs rx endxs l =
+  (* spiwack: I use [l] essentially as a natural number *)
+  let rec duplicate acc = function
+    | [] -> acc
+    | _::rest -> duplicate (rx::acc) rest
   in
-  fun startxs rx endxs l ->
-    let ns = List.length startxs in
-    let ne = List.length endxs in
-    let n = List.length l in
-    startxs@(copy (n-ne-ns) rx endxs)
+  let rec tail to_match rest =
+    match rest, to_match with
+    | [] , _::_ -> raise SizeMismatch
+    | _::rest , _::to_match -> tail to_match rest
+    | _ , [] -> duplicate endxs rest
+  in
+  let rec copy pref rest =
+    match rest,pref with
+    | [] , _::_ -> raise SizeMismatch
+    | _::rest, a::pref -> a::(copy pref rest)
+    | _ , [] -> tail endxs rest
+  in
+  copy startxs l
+
 let tclEXTEND tacs1 rtac tacs2 =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
@@ -336,6 +435,16 @@ let tclEXTEND tacs1 rtac tacs2 =
   let tacs = extend_to_list tacs1 rtac tacs2 step.comb in
   tclDISPATCH tacs
 
+(* arnaud: À première vue, ça ne change franchement pas grand chose:
+   J'observe genre 2 secondes de mieux avec ça sur l'intégralité de la stdlib… *)
+let tclINDEPENDENT tac =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun initial ->
+  match initial.comb with
+  | [] -> tclUNIT ()
+  | [_] -> tac
+  | _ -> list_iter_goal () (fun _ () -> tac)
 
 (* No backtracking can happen here, hence, as opposed to the dispatch tacticals,
     everything is done in one step. *)
@@ -459,8 +568,8 @@ let rec list_map f = function
   | [] -> tclUNIT []
   | a::l ->
       f a >= fun a' ->
-        list_map f l >= fun l' ->
-          tclUNIT (a'::l')
+      list_map f l >= fun l' ->
+      tclUNIT (a'::l')
 
 
 (*** Compatibility layer with <= 8.2 tactics ***)
@@ -490,6 +599,14 @@ module V82 = struct
       Proof.set { ps with solution=evd ; comb=sgs; }
     with e when catchable_exception e ->
       tclZERO e
+
+  (* A [Proofview.tactic] version of [Refiner.tclEVARS] *)
+  let tclEVARS evd =
+    (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+    let (>>=) = Proof.bind in
+    Proof.get >>= fun ps ->
+    Proof.set { ps with solution = evd }
+    
 
   let has_unresolved_evar pv =
     Evd.has_undefined pv.solution

@@ -178,6 +178,11 @@ val tclDISPATCHL : 'a tactic list -> 'a list tactic
     is applied to every goal in between. *)
 val tclEXTEND : unit tactic list -> unit tactic -> unit tactic list -> unit tactic
 
+(* [tclINDEPENDENT tac] runs [tac] on each goal successively, from the
+   first one to the last one. Backtracking in one goal is independent of
+   backtracking in another. *)
+val tclINDEPENDENT : unit tactic -> unit tactic
+
 (* [tclSENSITIVE] views goal-type tactics as a special kind of tactics.*)
 val tclSENSITIVE : Goal.subgoals Goal.sensitive -> unit tactic 
 
@@ -240,6 +245,8 @@ end
 module V82 : sig
   type tac = Goal.goal Evd.sigma -> Goal.goal list Evd.sigma 
   val tactic : tac -> unit tactic
+
+  val tclEVARS : Evd.evar_map -> unit tactic
 
   val has_unresolved_evar : proofview -> bool
 

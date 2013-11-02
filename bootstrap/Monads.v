@@ -1,7 +1,5 @@
 (* -*- coq-prog-args: ("-emacs-U" "-impredicative-set") -*- *)
 
-(* arnaud: on ne doit pas en avoir besoin normalement. *)
-
 Reserved Notation "'do' M x ':=' e 'in' u" (at level 200, M at level 0, x ident, e at level 200, u at level 200).
 (*Reserved Notation "'do' e ; u" (at level 200, e at level 200, u at level 200).*)
 

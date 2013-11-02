@@ -1127,8 +1127,11 @@ and eval_tactic ist = function
         (Option.map (pf_interp_ident ist gl) ido) (interp_tactic ist tac) gl
       end
   | TacThen (t1,tf,t,tl) ->
-      Tacticals.New.tclTHENS3PARTS (interp_tactic ist t1)
-	(Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
+      if Array.length tf = 0 && Array.length tl = 0 then
+        Tacticals.New.tclTHEN (interp_tactic ist t1) (interp_tactic ist t)
+      else
+        Tacticals.New.tclTHENS3PARTS (interp_tactic ist t1)
+	  (Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
   | TacThens (t1,tl) -> Tacticals.New.tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
   | TacDo (n,tac) -> Tacticals.New.tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTimeout (n,tac) -> Tacticals.New.tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
@@ -1175,7 +1178,7 @@ and interp_ltac_reference loc' mustbetac ist = function
 and interp_tacarg ist arg =
   let tac_of_old f =
     Tacmach.New.of_old f >>== fun (sigma,v) ->
-    Proofview.V82.tactic (tclEVARS sigma) <*>
+    Proofview.V82.tclEVARS sigma <*>
     (Proofview.Goal.return v)
   in
   match arg with
@@ -1827,7 +1830,7 @@ and interp_atomic ist tac =
               let (sigma,c) = (if Option.is_empty t then interp_constr else interp_type) ist env sigma c in
               Tacmach.New.of_old (fun gl -> interp_intro_pattern ist gl) >>= fun patt ->
               Tacticals.New.tclTHEN
-	        (Proofview.V82.tactic (tclEVARS sigma))
+	        (Proofview.V82.tclEVARS sigma)
                 (Tactics.forward (Option.map (interp_tactic ist) t)
 	           (Option.map patt ipat) c)
         with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
@@ -1855,7 +1858,7 @@ and interp_atomic ist tac =
         (* We try to fully-typecheck the term *)
         Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>= fun (sigma,c_interp) ->
 	Tacticals.New.tclTHEN
-	  (Proofview.V82.tactic (tclEVARS sigma))
+	  (Proofview.V82.tclEVARS sigma)
           (h_let_tac b (interp_fresh_name ist env na) c_interp clp eqpat)
       else
         (* We try to keep the pattern structure as much as possible *)
@@ -1909,18 +1912,18 @@ and interp_atomic ist tac =
   | TacDecomposeAnd c ->
       Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>= fun (sigma,c_interp) ->
       Tacticals.New.tclTHEN
-	(Proofview.V82.tactic (tclEVARS sigma))
+	(Proofview.V82.tclEVARS sigma)
 	(Elim.h_decompose_and c_interp)
   | TacDecomposeOr c ->
       Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>= fun (sigma,c_interp) ->
       Tacticals.New.tclTHEN
-	(Proofview.V82.tactic (tclEVARS sigma))
+	(Proofview.V82.tclEVARS sigma)
 	(Elim.h_decompose_or c_interp)
   | TacDecompose (l,c) ->
       let l = List.map (interp_inductive ist) l in
       Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>= fun (sigma,c_interp) ->
       Tacticals.New.tclTHEN
-	(Proofview.V82.tactic (tclEVARS sigma))
+	(Proofview.V82.tclEVARS sigma)
 	(Elim.h_decompose l c_interp)
   | TacSpecialize (n,cb) ->
       Proofview.tclEVARMAP >= fun sigma ->
@@ -2049,7 +2052,7 @@ and interp_atomic ist tac =
       | Some c ->
           Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>= fun (sigma,c_interp) ->
           Tacticals.New.tclTHEN
-	    (Proofview.V82.tactic (tclEVARS sigma))
+	    (Proofview.V82.tclEVARS sigma)
 	    (h_transitivity (Some c_interp))
       end
 
@@ -2100,7 +2103,7 @@ and interp_atomic ist tac =
 	  sigma , a_interp::acc
 	end l (goal_sigma,[])
       end >>= fun (sigma,args) ->
-      Proofview.V82.tactic (tclEVARS sigma) <*>
+      Proofview.V82.tclEVARS sigma <*>
       tac args ist
   | TacAlias (loc,s,l,(_,body)) ->
       Proofview.Goal.env >>= fun env ->
@@ -2121,15 +2124,15 @@ and interp_atomic ist tac =
           | GenArgType -> f (out_gen (glbwit wit_genarg) x)
           | ConstrArgType ->
               Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) >>== fun (sigma,v) ->
-              Proofview.V82.tactic (tclEVARS sigma) <*>
+              (Proofview.V82.tclEVARS sigma) <*>
 	      (Proofview.Goal.return v)
           | OpenConstrArgType false ->
               Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) >>== fun (sigma,v) ->
-              Proofview.V82.tactic (tclEVARS sigma) <*>
+              (Proofview.V82.tclEVARS sigma) <*>
 	      (Proofview.Goal.return v)
           | ConstrMayEvalArgType ->
               Tacmach.New.of_old (fun gl -> interp_constr_may_eval ist gl (out_gen (glbwit wit_constr_may_eval) x)) >>== fun (sigma,c_interp) ->
-              Proofview.V82.tactic (tclEVARS sigma) <*>
+              Proofview.V82.tclEVARS sigma <*>
 	      Proofview.Goal.return (Value.of_constr c_interp)
           | ListArgType ConstrArgType ->
               let wit = glbwit (wit_list wit_constr) in
@@ -2139,7 +2142,7 @@ and interp_atomic ist tac =
 	          sigma , c_interp::acc
 	        end (out_gen wit x) (project gl,[])
               end >>== fun (sigma,l_interp) ->
-              Proofview.V82.tactic (tclEVARS sigma) <*>
+              (Proofview.V82.tclEVARS sigma) <*>
               (Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) l_interp))
           | ListArgType VarArgType ->
               let wit = glbwit (wit_list wit_var) in
