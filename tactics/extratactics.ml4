@@ -785,5 +785,5 @@ END;;
 VERNAC COMMAND EXTEND GrabEvars
 [ "Grab" "Existential" "Variables" ]
   => [ Vernacexpr.VtProofStep, Vernacexpr.VtLater ]
-  -> [ Proof_global.with_current_proof (fun _ p  -> Proof.V82.grab_evars p) ]
+  -> [ Proof_global.simple_with_current_proof (fun _ p  -> Proof.V82.grab_evars p) ]
 END

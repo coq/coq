@@ -475,8 +475,9 @@ let vernac_end_proof ?proof = function
 let vernac_exact_proof c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
-  by (Tactics.New.exact_proof c);
-  save_named true
+  let status = by (Tactics.New.exact_proof c) in
+  save_named true;
+  if not status then Pp.feedback Interface.AddedAxiom
 
 let vernac_assumption locality (local, kind) l nl =
   let local = enforce_locality_exp locality local in
@@ -774,15 +775,16 @@ let focus_command_cond = Proof.no_cond command_focus
 let vernac_solve n tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
-  Proof_global.with_current_proof (fun etac p ->
+  let status = Proof_global.with_current_proof (fun etac p ->
     let with_end_tac = if b then Some etac else None in
-    let p = solve_nth n (Tacinterp.hide_interp tcom None) ?with_end_tac p in
+    let (p,status) = solve_nth n (Tacinterp.hide_interp tcom None) ?with_end_tac p in
     (* in case a strict subtree was completed,
        go back to the top of the prooftree *)
     let p = Proof.maximal_unfocus command_focus p in
-    p);
-    print_subgoals()
-;;
+    p,status) in
+    print_subgoals();
+    if not status then Pp.feedback Interface.AddedAxiom
+ 
 
   (* A command which should be a tactic. It has been
      added by Christine to patch an error in the design of the proof
@@ -1486,7 +1488,7 @@ let vernac_register id r =
 (* Proof management *)
 
 let vernac_focus gln =
-  Proof_global.with_current_proof (fun _ p ->
+  Proof_global.simple_with_current_proof (fun _ p ->
     match gln with
       | None -> Proof.focus focus_command_cond () 1 p
       | Some 0 ->
@@ -1497,7 +1499,7 @@ let vernac_focus gln =
 
   (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus () =
-  Proof_global.with_current_proof (fun _ p -> Proof.unfocus command_focus p ());
+  Proof_global.simple_with_current_proof (fun _ p -> Proof.unfocus command_focus p ());
   print_subgoals ()
 
 (* Checks that a proof is fully unfocused. Raises an error if not. *)
@@ -1519,19 +1521,19 @@ let subproof_kind = Proof.new_focus_kind ()
 let subproof_cond = Proof.done_cond subproof_kind
 
 let vernac_subproof gln =
-  Proof_global.with_current_proof (fun _ p ->
+  Proof_global.simple_with_current_proof (fun _ p ->
     match gln with
     | None -> Proof.focus subproof_cond () 1 p
     | Some n -> Proof.focus subproof_cond () n p);
   print_subgoals ()
 
 let vernac_end_subproof () =
-  Proof_global.with_current_proof (fun _ p -> Proof.unfocus subproof_kind p ());
+  Proof_global.simple_with_current_proof (fun _ p -> Proof.unfocus subproof_kind p ());
   print_subgoals ()
 
 
 let vernac_bullet (bullet:Proof_global.Bullet.t) =
-  Proof_global.with_current_proof (fun _ p ->
+  Proof_global.simple_with_current_proof (fun _ p ->
     Proof_global.Bullet.put p bullet);
   (* Makes the focus visible in emacs by re-printing the goal. *)
   if !Flags.print_emacs then print_subgoals ()

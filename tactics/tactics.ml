@@ -3740,7 +3740,8 @@ let abstract_subproof id tac gl =
     try flush_and_check_evars (project gl) concl
     with Uninstantiated_evar _ ->
       error "\"abstract\" cannot handle existentials." in
-  let const = Pfedit.build_constant_by_tactic id secsign concl
+  (* spiwack: the [abstract] tacticals loses the "unsafe status" information *)
+  let (const,_) = Pfedit.build_constant_by_tactic id secsign concl
     (Tacticals.New.tclCOMPLETE (Tacticals.New.tclTHEN (Tacticals.New.tclDO (List.length sign) intro) tac)) in
   let cd = Entries.DefinitionEntry const in
   let decl = (cd, IsProof Lemma) in
@@ -3764,9 +3765,9 @@ let tclABSTRACT name_op tac gl =
 
 
 let admit_as_an_axiom =
-  (* spiwack: admit temporarily won't report an unsafe status *)
   Proofview.tclUNIT () >= fun () -> (* delay for Coqlib.build_coq_proof_admitted *)
-  simplest_case (Coqlib.build_coq_proof_admitted ())
+  simplest_case (Coqlib.build_coq_proof_admitted ()) <*>
+  Proofview.mark_as_unsafe
 
 let unify ?(state=full_transparent_state) x y gl =
   try

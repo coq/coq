@@ -190,81 +190,88 @@ let unfocus c sp =
    - backtrack on previous changes of the proofview *)
 (* spiwack: it seems lighter, for now, to deal with the environment here rather than in [Monads]. *)
 
-module LocalState = struct
+module ProofState = struct
   type t = proofview
 end
-module Backtrack = Monads.Logic(Monads.IO)
-module Inner = Monads.StateLogic(LocalState)(Backtrack)
+module MessageType = struct
+  type t = bool (* [false] if an unsafe tactic has been used. *)
 
-type +'a tactic = Environ.env -> 'a Inner.t
+  let zero = true
+  let ( * ) s1 s2 = s1 && s2
+end
+module Backtrack = Monads.Logic(Monads.IO)
+module Message = Monads.WriterLogic(MessageType)(Backtrack)
+module Proof = Monads.StateLogic(ProofState)(Message)
+
+type +'a tactic = Environ.env -> 'a Proof.t
 
 (* Applies a tactic to the current proofview. *)
 let apply env t sp =
-  let next = Monads.IO.run (Backtrack.run (Inner.run (t env) sp)) in
-  next.Inner.result , next.Inner.state
+  let (next,status) = Monads.IO.run (Backtrack.run (Message.run (Proof.run (t env) sp))) in
+  next.Proof.result , next.Proof.state , status
 
 (*** tacticals ***)
 
 
 (* Unit of the tactic monad *)
-let tclUNIT a _ = Inner.return a
+let tclUNIT a _ = Proof.return a
 
 (* Bind operation of the tactic monad *)
 let tclBIND t k env =
-  Inner.bind (t env) (fun a -> k a env)
+  Proof.bind (t env) (fun a -> k a env)
 
 (* Interpretes the ";" (semicolon) of Ltac.
    As a monadic operation, it's a specialized "bind"
    on unit-returning tactic (meaning "there is no value to bind") *)
 let tclTHEN t1 t2 env =
-  Inner.seq (t1 env) (t2 env)
+  Proof.seq (t1 env) (t2 env)
 
 (* [tclIGNORE t] has the same operational content as [t],
    but drops the value at the end. *)
-let tclIGNORE tac env = Inner.ignore (tac env)
+let tclIGNORE tac env = Proof.ignore (tac env)
 
 (* [tclOR t1 t2 = t1] as long as [t1] succeeds. Whenever the successes
    of [t1] have been depleted and it failed with [e], then it behaves
    as [t2 e].  No interleaving at this point. *)
 let tclOR t1 t2 env =
-  Inner.plus (t1 env) (fun e -> t2 e env)
+  Proof.plus (t1 env) (fun e -> t2 e env)
 
 (* [tclZERO e] always fails with error message [e]*)
-let tclZERO e _ = Inner.zero e
+let tclZERO e _ = Proof.zero e
 
 (* [tclORELSE t1 t2] behaves like [t1] if [t1] succeeds at least once
    or [t2] if [t1] fails. *)
 let tclORELSE t1 t2 env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Inner.bind in
-  Inner.split (t1 env) >>= function
+  let (>>=) = Proof.bind in
+  Proof.split (t1 env) >>= function
     | Util.Inr e -> t2 e env
-    | Util.Inl (a,t1') -> Inner.plus (Inner.return a) t1'
+    | Util.Inl (a,t1') -> Proof.plus (Proof.return a) t1'
 
 (* [tclIFCATCH a s f] is a generalisation of [tclORELSE]: if [a]
    succeeds at least once then it behaves as [tclBIND a s] otherwise, if [a]
    fails with [e], then it behaves as [f e]. *)
 let tclIFCATCH a s f env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Inner.bind in
-  Inner.split (a env) >>= function
+  let (>>=) = Proof.bind in
+  Proof.split (a env) >>= function
     | Util.Inr e -> f e env
-    | Util.Inl (x,a') -> Inner.plus (s x env) (fun e -> (a' e) >>= fun x' -> (s x' env))
+    | Util.Inl (x,a') -> Proof.plus (s x env) (fun e -> (a' e) >>= fun x' -> (s x' env))
 
 (* Focuses a tactic at a range of subgoals, found by their indices. *)
 (* arnaud: bug if 0 goals ! *)
 let tclFOCUS i j t env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Inner.bind in
-  let (>>) = Inner.seq in
-  Inner.get >>= fun initial ->
+  let (>>=) = Proof.bind in
+  let (>>) = Proof.seq in
+  Proof.get >>= fun initial ->
   try
     let (focused,context) = focus i j initial in
-    Inner.set focused >>
+    Proof.set focused >>
     t (env) >>= fun result ->
-    Inner.get >>= fun next ->
-    Inner.set (unfocus context next) >>
-    Inner.return result
+    Proof.get >>= fun next ->
+    Proof.set (unfocus context next) >>
+    Proof.return result
   with e ->
     (* spiwack: a priori the only possible exceptions are that of focus,
        of course I haven't made them algebraic yet. *)
@@ -294,24 +301,24 @@ end
 
 let rec tclDISPATCHGEN null join tacs env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Inner.bind in
-  let (>>) = Inner.seq in
-  Inner.get >>= fun initial ->
+  let (>>=) = Proof.bind in
+  let (>>) = Proof.seq in
+  Proof.get >>= fun initial ->
   match tacs,initial.comb with
   | [], [] -> tclUNIT null env
   | t::tacs , first::goals ->
       begin match Goal.advance initial.solution first with
-      | None -> Inner.return null (* If [first] has been solved by side effect: do nothing. *)
+      | None -> Proof.return null (* If [first] has been solved by side effect: do nothing. *)
       | Some first ->
-          Inner.set {initial with comb=[first]} >>
+          Proof.set {initial with comb=[first]} >>
           t env
       end >>= fun y ->
-      Inner.get >>= fun step ->
-      Inner.set {step with comb=goals} >>
+      Proof.get >>= fun step ->
+      Proof.set {step with comb=goals} >>
       tclDISPATCHGEN null join tacs env >>= fun x ->
-      Inner.get >>= fun step' ->
-      Inner.set {step' with comb=step.comb@step'.comb} >>
-      Inner.return (join y x)
+      Proof.get >>= fun step' ->
+      Proof.set {step' with comb=step.comb@step'.comb} >>
+      Proof.return (join y x)
   | _ , _ -> tclZERO SizeMismatch env
 
 let unitK () () = ()
@@ -338,8 +345,8 @@ let extend_to_list =
     startxs@(copy (n-ne-ns) rx endxs)
 let tclEXTEND tacs1 rtac tacs2 env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Inner.bind in
-  Inner.get >>= fun step ->
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun step ->
   let tacs = extend_to_list tacs1 rtac tacs2 step.comb in
   tclDISPATCH tacs env
 
@@ -362,20 +369,20 @@ let sensitive_on_proofview s env step =
      comb = List.flatten combed_subgoals; }
   let tclSENSITIVE s env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Inner.bind in
-  Inner.get >>= fun step ->
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun step ->
   try
     let next = sensitive_on_proofview s env step in
-    Inner.set next
+    Proof.set next
   with e when Errors.noncritical e ->
     tclZERO e env
 
 let tclPROGRESS t env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Inner.bind in
-  Inner.get >>= fun initial ->
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun initial ->
   t env >>= fun res ->
-  Inner.get >>= fun final ->
+  Proof.get >>= fun final ->
   let test =
     Evd.progress_evar_map initial.solution final.solution &&
     not (Util.List.for_all2eq (fun i f -> Goal.equal initial.solution i final.solution f) initial.comb final.comb)
@@ -387,14 +394,17 @@ let tclPROGRESS t env =
 
 let tclEVARMAP _ =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Inner.bind in
-  Inner.get >>= fun initial ->
-  Inner.return (initial.solution)
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun initial ->
+  Proof.return (initial.solution)
 
 let tclENV env =
-  Inner.return env
+  Proof.return env
 
-let tclTIMEOUT n t env = Inner.timeout n (t env)
+let tclTIMEOUT n t env = Proof.timeout n (t env)
+
+let mark_as_unsafe env =
+  Proof.lift (Message.put false)
 
 (*** Commands ***)
 
@@ -450,8 +460,8 @@ module V82 = struct
     (* spiwack: we ignore the dependencies between goals here, expectingly
        preserving the semantics of <= 8.2 tactics *)
     (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-    let (>>=) = Inner.bind in
-    Inner.get >>= fun ps ->
+    let (>>=) = Proof.bind in
+    Proof.get >>= fun ps ->
     try
       let tac evd gl = 
         let glsigma  =
@@ -466,7 +476,7 @@ module V82 = struct
       in
       let (goalss,evd) = Goal.list_map tac initgoals initevd in
       let sgs = List.flatten goalss in
-      Inner.set { ps with solution=evd ; comb=sgs; }
+      Proof.set { ps with solution=evd ; comb=sgs; }
     with e when Errors.noncritical e ->
       tclZERO e env
 
@@ -516,9 +526,11 @@ module V82 = struct
 
   let of_tactic t gls =
     let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] ; initial = [] } in
-    let (_,final) = apply (Goal.V82.env gls.Evd.sigma gls.Evd.it) t init in
+    let (_,final,_) = apply (Goal.V82.env gls.Evd.sigma gls.Evd.it) t init in
     { Evd.sigma = final.solution ; it = final.comb }
 
+  let put_status b _env =
+    Proof.lift (Message.put b)
 end
 
 
@@ -528,17 +540,17 @@ module Goal = struct
 
   let lift s env =
     (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-    let (>>=) = Inner.bind in
-    let (>>) = Inner.seq in
-    Inner.get >>= fun step ->
+    let (>>=) = Proof.bind in
+    let (>>) = Proof.seq in
+    Proof.get >>= fun step ->
     try
       let (res,sigma) =
         Goal.list_map begin fun sigma g ->
           Goal.eval s env sigma g
         end step.comb step.solution
       in
-      Inner.set { step with solution=sigma } >>
-        Inner.return res
+      Proof.set { step with solution=sigma } >>
+        Proof.return res
     with e when Errors.noncritical e ->
       tclZERO e env
 

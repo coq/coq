@@ -33,10 +33,10 @@ let start_proof (id : Id.t) str hyps c ?init_tac ?compute_guard hook =
   let goals = [ (Global.env_of_context hyps , c) ] in
   Proof_global.start_proof id str goals ?compute_guard hook;
   let env = Global.env () in
-  Proof_global.with_current_proof (fun _ p ->
+  ignore (Proof_global.with_current_proof (fun _ p ->
     match init_tac with
-    | None -> p
-    | Some tac -> Proof.run_tactic env tac p)
+    | None -> p,true
+    | Some tac -> Proof.run_tactic env tac p))
 
 let cook_this_proof hook p =
   match p with
@@ -105,7 +105,7 @@ let solve_nth ?with_end_tac gi tac pr =
 let by tac = Proof_global.with_current_proof (fun _ -> solve_nth 1 tac)
 
 let instantiate_nth_evar_com n com = 
-  Proof_global.with_current_proof (fun _ -> Proof.V82.instantiate_evar n com)
+  Proof_global.simple_with_current_proof (fun _ p -> Proof.V82.instantiate_evar n com p)
 
 
 (**********************************************************************)
@@ -118,10 +118,10 @@ let next = let n = ref 0 in fun () -> incr n; !n
 let build_constant_by_tactic id sign ?(goal_kind = Global,Proof Theorem) typ tac =
   start_proof id goal_kind sign typ (fun _ _ -> ());
   try
-    by tac;
+    let status = by tac in
     let _,(const,_,_,_) = cook_proof (fun _ -> ()) in
     delete_current_proof ();
-    const
+    const, status
   with reraise ->
     delete_current_proof ();
     raise reraise
@@ -134,11 +134,11 @@ let constr_of_def = function
 let build_by_tactic env typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
-  let ce = build_constant_by_tactic id sign typ tac in
+  let ce,status = build_constant_by_tactic id sign typ tac in
   let ce = Term_typing.handle_side_effects env ce in
   let cb, se = Future.force ce.const_entry_body in
-  assert(Declareops.side_effects_is_empty se);
-  cb
+  assert(Declareops.side_effects_is_empty (Declareops.no_seff));
+  cb,status
 
 (**********************************************************************)
 (* Support for resolution of evars in tactic interpretation, including
@@ -155,7 +155,7 @@ let solve_by_implicit_tactic env sigma evk =
       when
 	Context.named_context_equal (Environ.named_context_of_val evi.evar_hyps)
 	(Environ.named_context env) ->
-      (try build_by_tactic env evi.evar_concl (Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (Errors.UserError ("",Pp.str"Proof is not complete."))) []))
+      (try fst (build_by_tactic env evi.evar_concl (Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (Errors.UserError ("",Pp.str"Proof is not complete."))) [])))
        with e when Logic.catchable_exception e -> raise Exit)
   | _ -> raise Exit
 

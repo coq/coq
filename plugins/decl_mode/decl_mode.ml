@@ -100,13 +100,13 @@ let proof_cond = Proof.no_cond proof_focus
 
 let focus p =
   let inf = get_stack p in
-  Proof_global.with_current_proof (fun _ -> Proof.focus proof_cond inf 1)
+  Proof_global.simple_with_current_proof (fun _ -> Proof.focus proof_cond inf 1)
 
 let unfocus () =
-  Proof_global.with_current_proof (fun _ p -> Proof.unfocus proof_focus p ())
+  Proof_global.simple_with_current_proof (fun _ p -> Proof.unfocus proof_focus p ())
 
 let maximal_unfocus () = 
-  Proof_global.with_current_proof (fun _ -> Proof.maximal_unfocus proof_focus)
+  Proof_global.simple_with_current_proof (fun _ -> Proof.maximal_unfocus proof_focus)
 
 let get_top_stack pts =
   try

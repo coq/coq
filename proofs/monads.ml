@@ -22,6 +22,13 @@ module type State = sig
   val get : s t
 end
 
+module type Writer = sig
+  type m (* type of the messages *)
+  include S
+
+  val put : m -> unit t
+end
+
 module type IO = sig
   include S
 
@@ -131,6 +138,54 @@ end = struct
     T.return { result=() ; state=s }
   let get s =
     T.return { result=s ; state=s }
+end
+
+module type Monoid = sig
+  type t
+
+  val zero : t
+  val ( * ) : t -> t -> t
+end
+
+module Writer (M:Monoid) (T:S) : sig
+  include Writer with type +'a t = private ('a*M.t) T.t and type m = M.t
+
+  val lift : 'a T.t -> 'a t
+  (* The coercion from private ['a t] in function form. *)
+  val run : 'a t -> ('a*m) T.t
+end = struct
+
+  type 'a t = ('a*M.t) T.t
+  type m = M.t
+
+  let run x = x
+
+  (*spiwack: convenience notation, waiting for ocaml 3.12 *)
+  let (>>=) = T.bind
+
+  let bind x k = 
+    x >>= fun (a,m) ->
+    k a >>= fun (r,m') ->
+    T.return (r,M.( * ) m m')
+
+  let seq x k =
+    x >>= fun ((),m) ->
+    k >>= fun (r,m') ->
+    T.return (r,M.( * ) m m')
+
+  let return x =
+    T.return (x,M.zero)
+
+  let ignore x =
+    x >>= fun (_,m) ->
+    T.return ((),m)
+
+  let lift x =
+    x >>= fun r ->
+    T.return (r,M.zero)
+
+  let put m =
+    T.return ((),m)
 end
 
 (* Double-continuation backtracking monads are reasonable folklore for
@@ -301,6 +356,7 @@ module StateLogic(X:Type)(T:Logic) : sig
   val set : s -> unit t
   val get : s t
 
+  val lift : 'a T.t -> 'a t
   val run : 'a t -> s -> 'a result T.t
 end = struct
 
@@ -370,14 +426,71 @@ end = struct
     return a.result
 end
 
+(* [Writer(M)(T:Logic)] can be lifted to [Logic] by backtracking on state on [plus].*)
+module WriterLogic(M:Monoid)(T:Logic) : sig
+  (* spiwack: some duplication from interfaces as we need ocaml 3.12
+     to substitute inside signatures. *)
+  type m = M.t
+  include Logic with type +'a t = private ('a*m) T.t
+
+  val put : m -> unit t
+
+  val lift : 'a T.t -> 'a t
+  val run : 'a t -> ('a*m) T.t
+end = struct
+  module W = Writer(M)(T)
+  include W
+
+  let zero e = lift (T.zero e)
+  let plus x y =
+    (* spiwack: convenience notation, waiting for ocaml 3.12 *)
+    let (>>=) = bind in
+    let (>>) = seq in
+    lift begin
+      (T.plus (run x) (fun e -> run (y e))) 
+    end >>= fun (r,m) ->
+    put m >>
+    return r
+
+  let split x =
+    (* spiwack: convenience notation, waiting for ocaml 3.12 *)
+    let (>>=) = bind in
+    let (>>) = seq in
+    lift (T.split (run x)) >>= function
+      | Util.Inr _ as e -> return e
+      | Util.Inl ((a,m),y) ->
+          let y' e =
+            lift (y e) >>= fun (b,m) ->
+            put m >>
+            return b
+          in
+          put m >>
+          return (Util.Inl(a,y'))
 
 
+  (*** IO ***)
 
+  type 'a ref = 'a T.ref
+  let ref x = lift (T.ref x)
+  let (:=) r x = lift (T.(:=) r x)
+  let (!) r = lift (T.(!) r)
 
+  let raise e = lift (T.raise e)
+  let catch t h =
+    (* spiwack: convenience notation, waiting for ocaml 3.12 *)
+    let (>>=) = bind in
+    let (>>) = seq in
+    let h' e = run (h e) in
+    lift (T.catch (run t) h') >>= fun (a,m) ->
+    put m >>
+    return a
 
-
-
-
-
-
-
+  exception Timeout
+  let timeout n t =
+    (* spiwack: convenience notation, waiting for ocaml 3.12 *)
+    let (>>=) = bind in
+    let (>>) = seq in
+    lift (T.timeout n (run t)) >>= fun (a,m) ->
+    put m >>
+    return a
+end

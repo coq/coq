@@ -1069,9 +1069,9 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	   (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
 	   (fst lemmas_types_infos.(i))
            (fun _ _ -> ());
-	 Pfedit.by
+	 ignore (Pfedit.by
 	   (Proofview.V82.tactic (observe_tac ("prove correctness ("^(Id.to_string f_id)^")")
-	      (proving_tac i)));
+	      (proving_tac i))));
 	 do_save ();
 	 let finfo = find_Function_infos f_as_constant in
 	 let lem_cst = destConst (Constrintern.global_reference lem_id) in
@@ -1120,9 +1120,9 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	   (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
 	   (fst lemmas_types_infos.(i))
            (fun _ _ -> ());
-	 Pfedit.by
+	 ignore (Pfedit.by
 	   (Proofview.V82.tactic (observe_tac ("prove completeness ("^(Id.to_string f_id)^")")
-	      (proving_tac i)));
+	      (proving_tac i))));
 	 do_save ();
 	 let finfo = find_Function_infos f_as_constant in
 	 let lem_cst = destConst (Constrintern.global_reference lem_id) in

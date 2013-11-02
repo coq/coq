@@ -1319,10 +1319,10 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     hook;
   if Indfun_common.is_strict_tcc  ()
   then
-    by (Proofview.V82.tactic (tclIDTAC))
+    ignore (by (Proofview.V82.tactic (tclIDTAC)))
   else 
     begin
-      by (Proofview.V82.tactic begin
+      ignore (by (Proofview.V82.tactic begin
 	fun g ->
 	  tclTHEN
 	    (decompose_and_tac)
@@ -1338,10 +1338,10 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 	 	     )
 	 	     using_lemmas)
 	       ) tclIDTAC)
-	    g end)
+	    g end))
     end;
   try
-    by (Proofview.V82.tactic tclIDTAC); (* raises UserError _ if the proof is complete *)
+    ignore (by (Proofview.V82.tactic tclIDTAC)); (* raises UserError _ if the proof is complete *)
   with UserError _ ->
     defined ()
 
@@ -1364,9 +1364,9 @@ let com_terminate
       (Global, Proof Lemma) (Environ.named_context_val env)
       (compute_terminate_type nb_args fonctional_ref) hook;
 
-    by (Proofview.V82.tactic (observe_tac (str "starting_tac") tac_start));
-    by (Proofview.V82.tactic (observe_tac (str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
-    				   input_type relation rec_arg_num )))
+    ignore (by (Proofview.V82.tactic (observe_tac (str "starting_tac") tac_start)));
+    ignore (by (Proofview.V82.tactic (observe_tac (str "whole_start") (whole_start tac_end nb_args is_mes fonctional_ref
+    				   input_type relation rec_arg_num ))))
   in
   start_proof tclIDTAC tclIDTAC;
   try
@@ -1410,7 +1410,7 @@ let (com_eqn : int -> Id.t ->
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
     (start_proof eq_name (Global, Proof Lemma)
        (Environ.named_context_val env) equation_lemma_type (fun _ _ -> ());
-     by
+     ignore (by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref
 	  (fun  x ->
 	     prove_eq (fun _ -> tclIDTAC)
@@ -1437,7 +1437,7 @@ let (com_eqn : int -> Id.t ->
 		ih = Id.of_string "______";
 	       }
 	  )
-       )); 
+       ))); 
      (* (try Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowProof) with _ -> ()); *)
 (*      Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowScript); *)
      Flags.silently (fun () -> Lemmas.save_named opacity) () ; 

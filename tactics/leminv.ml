@@ -198,8 +198,8 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   *)
   let pf = Proof.start [invEnv,invGoal] in
   let pf =
-    Proof.run_tactic env (
-      Tacticals.New.tclTHEN intro (Tacticals.New.onLastHypId inv_op)) pf
+    fst (Proof.run_tactic env (
+      Tacticals.New.tclTHEN intro (Tacticals.New.onLastHypId inv_op)) pf)
   in
   let pfterm = List.hd (Proof.partial_proof pf) in
   let global_named_context = Global.named_context () in

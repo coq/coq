@@ -297,7 +297,7 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
       (hook new_principle_type)
     ;
     (*       let _tim1 = System.get_time ()  in *)
-    Pfedit.by  (Proofview.V82.tactic (proof_tac (Array.map mkConst funs) mutr_nparams));
+    ignore (Pfedit.by  (Proofview.V82.tactic (proof_tac (Array.map mkConst funs) mutr_nparams)));
     (*       let _tim2 =  System.get_time ()  in *)
     (* 	begin *)
     (* 	  let dur1 = System.time_difference tim1 tim2 in *)

@@ -136,13 +136,14 @@ val get_used_variables : unit -> Context.section_context option
    if there is no [n]th subgoal *)
 
 val solve_nth : ?with_end_tac:unit Proofview.tactic -> int -> unit Proofview.tactic ->
-      Proof.proof -> Proof.proof
+      Proof.proof -> Proof.proof*bool
 
 (** [by tac] applies tactic [tac] to the 1st subgoal of the current
    focused proof or raises a UserError if there is no focused proof or
-   if there is no more subgoals *)
+   if there is no more subgoals.
+   Returns [false] if an unsafe tactic has been used. *)
 
-val by : unit Proofview.tactic -> unit
+val by : unit Proofview.tactic -> bool
 
 (** [instantiate_nth_evar_com n c] instantiate the [n]th undefined
    existential variable of the current focused proof by [c] or raises a
@@ -151,12 +152,14 @@ val by : unit Proofview.tactic -> unit
 
 val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
 
-(** [build_by_tactic typ tac] returns a term of type [typ] by calling [tac] *)
+(** [build_by_tactic typ tac] returns a term of type [typ] by calling
+    [tac]. The return boolean, if [false] indicates the use of an unsafe
+    tactic. *)
 
 val build_constant_by_tactic :
   Id.t -> named_context_val -> ?goal_kind:goal_kind ->
-    types -> unit Proofview.tactic -> Entries.definition_entry
-val build_by_tactic : env -> types -> unit Proofview.tactic -> constr
+    types -> unit Proofview.tactic -> Entries.definition_entry * bool
+val build_by_tactic : env -> types -> unit Proofview.tactic -> constr * bool
 
 (** Declare the default tactic to fill implicit arguments *)
 

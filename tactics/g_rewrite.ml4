@@ -146,21 +146,20 @@ TACTIC EXTEND setoid_rewrite
       [ Proofview.V82.tactic (cl_rewrite_clause c o (occurrences_of occ) (Some id))]
 END
 
-let cl_rewrite_clause_newtac_tac c o occ cl gl =
-  cl_rewrite_clause_newtac' c o occ cl;
-  tclIDTAC gl
+let cl_rewrite_clause_newtac_tac c o occ cl =
+  cl_rewrite_clause_newtac' c o occ cl
 
 TACTIC EXTEND GenRew
 | [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ) ] ->
-    [ Proofview.V82.tactic (cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id)) ]
+    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id) ]
 | [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id) ] ->
-    [ Proofview.V82.tactic (cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id)) ]
+    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id) ]
 | [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] ->
-    [ Proofview.V82.tactic (cl_rewrite_clause_newtac_tac c o AllOccurrences (Some id)) ]
+    [ cl_rewrite_clause_newtac_tac c o AllOccurrences (Some id) ]
 | [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] ->
-    [ Proofview.V82.tactic (cl_rewrite_clause_newtac_tac c o (occurrences_of occ) None) ]
+    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) None ]
 | [ "rew" orient(o) glob_constr_with_bindings(c) ] ->
-    [ Proofview.V82.tactic (cl_rewrite_clause_newtac_tac c o AllOccurrences None) ]
+    [ cl_rewrite_clause_newtac_tac c o AllOccurrences None ]
 END
 
 VERNAC COMMAND EXTEND AddRelation CLASSIFIED AS SIDEFF

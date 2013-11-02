@@ -298,11 +298,12 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	       (fun () ->
 		Lemmas.start_proof id kind termtype
 		(fun _ -> instance_hook k pri global imps ?hook);
+                 (* spiwack: I don't know what to do with the status here. *)
 		if not (Option.is_empty term) then 
-		  Pfedit.by (!refine_ref (evm, Option.get term))
+		  ignore (Pfedit.by (!refine_ref (evm, Option.get term)))
 		else if Flags.is_auto_intros () then
-		  Pfedit.by (Tacticals.New.tclDO len Tactics.intro);
-		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();
+		  ignore (Pfedit.by (Tacticals.New.tclDO len Tactics.intro));
+		(match tac with Some tac -> ignore (Pfedit.by tac) | None -> ())) ();
 	       id)
 	end)
 	

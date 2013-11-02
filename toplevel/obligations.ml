@@ -761,7 +761,8 @@ let rec string_of_list sep f = function
 (* Solve an obligation using tactics, return the corresponding proof term *)
 let solve_by_tac evi t =
   let id = Id.of_string "H" in
-  let entry = Pfedit.build_constant_by_tactic 
+  (* spiwack: the status is dropped *)
+  let (entry,_) = Pfedit.build_constant_by_tactic 
     id ~goal_kind evi.evar_hyps evi.evar_concl (Tacticals.New.tclCOMPLETE t) in
   let env = Global.env () in
   let entry = Term_typing.handle_side_effects env entry in
@@ -814,7 +815,7 @@ let rec solve_obligation prg num tac =
 		  | _ -> ());
 	    trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
 		     Printer.pr_constr_env (Global.env ()) obl.obl_type);
-	    Pfedit.by (snd (get_default_tactic ()));
+	    ignore (Pfedit.by (snd (get_default_tactic ())));
 	    Option.iter (fun tac -> Pfedit.set_end_tac tac) tac
       | l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
 		      ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l))

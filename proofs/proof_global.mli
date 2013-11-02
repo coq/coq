@@ -79,9 +79,12 @@ exception NoSuchProof
 
 val get_open_goals : unit -> int
 
-(** Runs a tactic on the current proof. Raises [NoCurrentProof] is there is 
-   no current proof. *)
+(** Runs a tactic on the current proof. Raises [NoCurrentProof] is there is
+    no current proof.
+    The return boolean is set to [false] if an unsafe tactic has been used. *)
 val with_current_proof :
+  (unit Proofview.tactic -> Proof.proof -> Proof.proof*bool) -> bool
+val simple_with_current_proof :
   (unit Proofview.tactic -> Proof.proof -> Proof.proof) -> unit
 
 (** Sets the tactic to be used when a tactic line is closed with [...] *)

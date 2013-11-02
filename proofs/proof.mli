@@ -128,7 +128,9 @@ val no_focused_goal : proof -> bool
 
 (*** Tactics ***)
 
-val run_tactic : Environ.env -> unit Proofview.tactic -> proof -> proof
+(* the returned boolean signal whether an unsafe tactic has been
+   used. In which case it is [false]. *)
+val run_tactic : Environ.env -> unit Proofview.tactic -> proof -> proof*bool
 
 val emit_side_effects : Declareops.side_effects -> proof -> proof
 

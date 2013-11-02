@@ -626,8 +626,8 @@ let make_bl_scheme mind =
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let bl_goal, eff = compute_bl_goal ind lnamesparrec nparrec in
-  [|Pfedit.build_by_tactic (Global.env()) bl_goal
-    (compute_bl_tact (!bl_scheme_kind_aux()) ind lnamesparrec nparrec)|],
+  [|fst (Pfedit.build_by_tactic (Global.env()) bl_goal
+    (compute_bl_tact (!bl_scheme_kind_aux()) ind lnamesparrec nparrec))|],
   eff
 
 let bl_scheme_kind = declare_mutual_scheme_object "_dec_bl" make_bl_scheme
@@ -741,8 +741,8 @@ let make_lb_scheme mind =
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let lb_goal, eff = compute_lb_goal ind lnamesparrec nparrec in
-  [|Pfedit.build_by_tactic (Global.env()) lb_goal
-    (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)|],
+  [|fst (Pfedit.build_by_tactic (Global.env()) lb_goal
+    (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec))|],
   eff
 
 let lb_scheme_kind = declare_mutual_scheme_object "_dec_lb" make_lb_scheme
@@ -903,9 +903,9 @@ let make_eq_decidability mind =
   let nparrec = mib.mind_nparams_rec in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  [|Pfedit.build_by_tactic (Global.env())
+  [|fst (Pfedit.build_by_tactic (Global.env())
     (compute_dec_goal ind lnamesparrec nparrec)
-    (compute_dec_tact ind lnamesparrec nparrec)|], Declareops.no_seff
+    (compute_dec_tact ind lnamesparrec nparrec))|], Declareops.no_seff
 
 let eq_dec_scheme_kind =
   declare_mutual_scheme_object "_eq_dec" make_eq_decidability

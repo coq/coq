@@ -154,8 +154,12 @@ let with_current_proof f =
         match p.endline_tactic with
         | None -> Proofview.tclUNIT ()
         | Some tac -> !interp_tac tac in
-      let p = { p with proof = f et p.proof } in
-      pstates := p :: rest
+      let (newpr,status) = f et p.proof in
+      let p = { p with proof = newpr } in
+      pstates := p :: rest;
+      status
+let simple_with_current_proof f =
+  ignore (with_current_proof (fun t p -> f t p , true))
 
 (* Sets the tactic to be used when a tactic line is closed with [...] *)
 let set_endline_tactic tac =

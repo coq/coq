@@ -121,7 +121,7 @@ let start_proof_tac gls=
   tcl_change_info info gls
 
 let go_to_proof_mode () =
-  Pfedit.by (Proofview.V82.tactic start_proof_tac);
+  ignore (Pfedit.by (Proofview.V82.tactic start_proof_tac));
   let p = Proof_global.give_me_the_proof () in
   Decl_mode.focus p
 
@@ -1461,7 +1461,7 @@ let do_instr raw_instr pts =
       let glob_instr = intern_proof_instr ist raw_instr in
       let instr =
 	interp_proof_instr (get_its_info gl) sigma env glob_instr in
-      Pfedit.by (Proofview.V82.tactic (tclTHEN (eval_instr instr) clean_tmp))
+      ignore (Pfedit.by (Proofview.V82.tactic (tclTHEN (eval_instr instr) clean_tmp)))
     else () end;
   postprocess pts raw_instr.instr;
   (* spiwack: this should restore a compatible semantics with

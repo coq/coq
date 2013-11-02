@@ -361,7 +361,7 @@ let solve_remaining_by by env prf =
     let evd' = 
       List.fold_right (fun mv evd ->
         let ty = Clenv.clenv_nf_meta env (meta_type evd mv) in
-	let c = Pfedit.build_by_tactic env.env ty (Tacticals.New.tclCOMPLETE tac) in
+	let c,_ = Pfedit.build_by_tactic env.env ty (Tacticals.New.tclCOMPLETE tac) in
 	  meta_assign mv (c, (Conv,TypeNotProcessed)) evd)
       indep env.evd
     in { env with evd = evd' }, prf
@@ -1342,9 +1342,8 @@ let cl_rewrite_clause_new_strat ?abs strat clause =
    newfail 0 (str"setoid rewrite failed: " ++ s))
 
 let cl_rewrite_clause_newtac' l left2right occs clause =
-  Proof_global.with_current_proof (fun _ -> Proof.run_tactic (Global.env ())
-    (Proofview.tclFOCUS 1 1 
-       (cl_rewrite_clause_new_strat (rewrite_with rewrite_unif_flags l left2right occs) clause)))
+  Proofview.tclFOCUS 1 1 
+       (cl_rewrite_clause_new_strat (rewrite_with rewrite_unif_flags l left2right occs) clause)
 
 let cl_rewrite_clause_strat strat clause =
   tclTHEN (tactic_init_setoid ())
@@ -1641,7 +1640,7 @@ let add_morphism_infer glob m n =
 				   glob (ConstRef cst));
 		  declare_projection n instance_id (ConstRef cst)
 		| _ -> assert false);
-	    Pfedit.by (Tacinterp.interp tac)) ()
+	    ignore (Pfedit.by (Tacinterp.interp tac))) ()
 
 let add_morphism glob binders m s n =
   init_setoid ();

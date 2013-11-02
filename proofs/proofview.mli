@@ -118,7 +118,9 @@ val unfocus : focus_context -> proofview -> proofview
 type +'a tactic 
 
 (* Applies a tactic to the current proofview. *)
-val apply : Environ.env -> 'a tactic -> proofview -> 'a * proofview
+(* the return boolean signals the use of an unsafe tactic, in which
+   case it is [false]. *)
+val apply : Environ.env -> 'a tactic -> proofview -> 'a * proofview * bool
 
 (*** tacticals ***)
 
@@ -198,6 +200,9 @@ val tclENV : Environ.env tactic
       In case of timeout if fails with [tclZERO Timeout]. *)
 val tclTIMEOUT : int -> 'a tactic -> 'a tactic
 
+(** [mark_as_unsafe] signals that the current tactic is unsafe. *)
+val mark_as_unsafe : unit tactic
+
 val list_map : ('a -> 'b tactic) -> 'a list -> 'b list tactic
 
 (*** Commands ***)
@@ -260,6 +265,9 @@ module V82 : sig
      should be avoided as much as possible.  It should work as
      expected for a tactic obtained from {!V82.tactic} though. *)
   val of_tactic : 'a tactic -> tac
+
+  (* marks as unsafe if the argument is [false] *)
+  val put_status : bool -> unit tactic
 end
 
 
