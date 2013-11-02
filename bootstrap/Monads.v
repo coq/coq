@@ -35,6 +35,21 @@ Extract Inductive sum => "Util.union" [
   "Util.Inr"
 ].
 
+(*** Closure elimination **)
+
+(* [freeze] is used to help OCaml figure where partial applications
+   are usually made. This way, the compiler will output code optimised
+   for partial applications to happen at this point. It happens to
+   make the monadic code substantially faster.
+
+   Documentation on that particular behaviour can be found at:
+   https://ocaml.janestreet.com/?q=node/30
+*)
+
+Parameter freeze : forall (A : Set), A -> A.
+Extraction Implicit freeze [A].
+Extract Inlined Constant freeze => "();".
+
 (*** Exceptions ***)
 
 Parameter Exception : Set.
@@ -152,44 +167,44 @@ Module IOBase.
  Extract Constant Ref "'a" => "'a Pervasives.ref".
 
  Parameter ret : forall (A:Set), A -> T A.
- Extract Constant ret => "fun a () -> a".
+ Extract Constant ret => "fun a -> (); fun () -> a".
  Extraction Implicit ret [A].
  Parameter bind : forall A B, T A -> (A->T B) -> T B.
- Extract Constant bind => "fun a k () -> k (a ()) ()".
+ Extract Constant bind => "fun a k -> (); fun () -> k (a ()) ()".
  Extraction Implicit bind [A B].
  Parameter ignore : forall A, T A -> T unit.
- Extract Constant ignore => "fun a () -> ignore (a ())".
+ Extract Constant ignore => "fun a -> (); fun () -> ignore (a ())".
  Extraction Implicit ignore [A].
  Parameter seq : forall A, T unit -> T A -> T A.
- Extract Constant seq => "fun a k () -> a (); k ()".
+ Extract Constant seq => "fun a k -> (); fun () -> a (); k ()".
  Extraction Implicit seq [A].
 
  Parameter ref : forall (A:Set), A -> T (Ref A).
- Extract Constant ref => "fun a () -> Pervasives.ref a".
+ Extract Constant ref => "fun a -> (); fun () -> Pervasives.ref a".
  Extraction Implicit ref [A].
  Parameter set : forall A, Ref A -> A -> T unit.
- Extract Constant set => "fun r a () -> Pervasives.(:=) r a".
+ Extract Constant set => "fun r a -> (); fun () -> Pervasives.(:=) r a".
  Extraction Implicit set [A].
  Parameter get : forall A, Ref A -> T A.
- Extract Constant get => "fun r () -> Pervasives.(!) r".
+ Extract Constant get => "fun r -> (); fun () -> Pervasives.(!) r".
  Extraction Implicit get [A].
 
  Parameter raise : forall A, Exception -> T A.
- Extract Constant raise => "fun e () -> raise (Proof_errors.Exception e)".
+ Extract Constant raise => "fun e -> (); fun () -> raise (Proof_errors.Exception e)".
  Extraction Implicit raise [A].
  Parameter catch : forall A, T A -> (Exception -> T A) -> T A.
- Extract Constant catch => "fun s h () -> try s () with Proof_errors.Exception e -> h e ()".
+ Extract Constant catch => "fun s h -> (); fun () -> try s () with Proof_errors.Exception e -> h e ()".
  Extraction Implicit catch [A].
 
  Parameter read_line : T String.
  Extract Constant read_line => "fun () -> try Pervasives.read_line () with e -> raise e ()".
  Parameter print_char : Char -> T unit.
- Extract Constant print_char => "fun c () -> print_char c".
+ Extract Constant print_char => "fun c -> (); fun () -> print_char c".
  Parameter print : Ppcmds -> T unit.
- Extract Constant print => "fun s () -> try Pp.pp s; Pp.pp_flush () with e -> raise e ()".
+ Extract Constant print => "fun s -> (); fun () -> try Pp.pp s; Pp.pp_flush () with e -> raise e ()".
 
  Parameter timeout: forall A, Int -> T A -> T A.
- Extract Constant timeout => "fun n t () ->
+ Extract Constant timeout => "fun n t -> (); fun () ->
     let timeout_handler _ = Pervasives.raise (Proof_errors.Exception Proof_errors.Timeout) in
     let psh = Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
     Pervasives.ignore (Unix.alarm n);
@@ -597,28 +612,28 @@ Module Logical.
 
  Definition t (a:Set) := Eval compute in LogicalType a.
 
- Definition ret {a:Set} (x:a) : t a := Eval compute in ret _ LogicalMonad x.
+ Definition ret {a:Set} (x:a) : t a := Eval compute in freeze _ (ret _ LogicalMonad x).
  Extraction Implicit ret [a].
- Definition bind {a b:Set} (x:t a) (k:a-> t b) : t b := Eval compute in bind _ LogicalMonad x k.
+ Definition bind {a b:Set} (x:t a) (k:a-> t b) : t b := Eval compute in freeze _ (bind _ LogicalMonad x k).
  Extraction Implicit bind [a b].
- Definition ignore {a:Set} (x:t a) : t unit := Eval compute in ignore _ LogicalMonad x.
+ Definition ignore {a:Set} (x:t a) : t unit := Eval compute in freeze _ (ignore _ LogicalMonad x).
  Extraction Implicit ignore [a].
- Definition seq {a:Set} (x:t unit) (k:t a) : t a := Eval compute in seq _ LogicalMonad x k.
+ Definition seq {a:Set} (x:t unit) (k:t a) : t a := Eval compute in freeze _ (seq _ LogicalMonad x k).
  Extraction Implicit seq [a].
 
- Definition set (s:LogicalState) : t unit := Eval compute in set _ _ LogicalStateM s.
+ Definition set (s:LogicalState) : t unit := Eval compute in freeze _ (set _ _ LogicalStateM s).
  Definition get : t LogicalState := Eval compute in get _ _ LogicalStateM.
- Definition put (m:LogicalMessageType) : t unit := Eval compute in State.lift _ _ LogicalMonadEnv (Environment.lift _ _ (put _ _ LogicalWriter m)).
+ Definition put (m:LogicalMessageType) : t unit := Eval compute in freeze _ (State.lift _ _ LogicalMonadEnv (Environment.lift _ _ (put _ _ LogicalWriter m))).
  Definition current : t LogicalEnvironment := Eval compute in State.lift _ _ LogicalMonadEnv (current _ _ LogicalReader).
 
- Definition zero {a:Set} (e:Exception) : t a := Eval compute in zero _ LogicalLogic e.
+ Definition zero {a:Set} (e:Exception) : t a := Eval compute in freeze _ (zero _ LogicalLogic e).
  Extraction Implicit zero [a].
- Definition plus {a:Set} (x:t a) (y:Exception -> t a) : t a := Eval compute in plus _ LogicalLogic x y.
+ Definition plus {a:Set} (x:t a) (y:Exception -> t a) : t a := Eval compute in freeze _ (plus _ LogicalLogic x y).
  Extraction Implicit plus [a].
- Definition split {a:Set} (x:t a) : t ((a*(Exception -> t a))+Exception) := Eval compute in split _ LogicalLogic x.
+ Definition split {a:Set} (x:t a) : t ((a*(Exception -> t a))+Exception) := Eval compute in freeze _ (split _ LogicalLogic x).
  Extraction Implicit split [a].
  Definition lift {a:Set} (x:NonLogical.t a) : t a := Eval compute in
-  State.lift _ _ LogicalMonadEnv (Environment.lift _ _ (Writer.lift _ LogicalMessage _ LogicalMonadBase (Logic.lift _ NonLogicalMonad x))).
+  freeze _ (State.lift _ _ LogicalMonadEnv (Environment.lift _ _ (Writer.lift _ LogicalMessage _ LogicalMonadBase (Logic.lift _ NonLogicalMonad x)))).
  Extraction Implicit lift [a].
 
  Definition run {a:Set} (x:t a) (e:LogicalEnvironment) (s:LogicalState) : NonLogical.t ((a*LogicalState)*LogicalMessageType) := Eval compute in
@@ -633,7 +648,7 @@ Set Extraction Conservative Types.
 Set Extraction File Comment "
 This file has been generated by extraction of bootstrap/Monad.v.
 It shouldn't be modified directly. To regenerate it run
-coqtop -batch -impredicative-set bootstrap/Monad.v in Coq's source
+coqtop -batch -impredicative-set -l bootstrap/Monad.v in Coq's source
 directory.
 ".
 
