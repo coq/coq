@@ -219,6 +219,8 @@ and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr =
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacOnce of
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacExactlyOnce of
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacOrelse of
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr

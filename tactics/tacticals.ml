@@ -400,6 +400,8 @@ module New = struct
 
   let tclONCE = Proofview.tclONCE
 
+  let tclEXACTLY_ONCE t = Proofview.tclEXACTLY_ONCE (Refiner.FailError(0,lazy (assert false))) t
+
   let tclORELSE0 t1 t2 =
     tclINDEPENDENT begin
       tclORELSE

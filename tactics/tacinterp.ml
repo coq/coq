@@ -1141,6 +1141,8 @@ and eval_tactic ist = function
       Tacticals.New.tclOR (interp_tactic ist tac1) (interp_tactic ist tac2)
   | TacOnce tac ->
       Tacticals.New.tclONCE (interp_tactic ist tac)
+  | TacExactlyOnce tac ->
+      Tacticals.New.tclEXACTLY_ONCE (interp_tactic ist tac)
   | TacOrelse (tac1,tac2) ->
       Tacticals.New.tclORELSE (interp_tactic ist tac1) (interp_tactic ist tac2)
   | TacFirst l -> Tacticals.New.tclFIRST (List.map (interp_tactic ist) l)

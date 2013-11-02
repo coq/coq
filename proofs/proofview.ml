@@ -253,6 +253,28 @@ let tclONCE t =
     | Nil e -> tclZERO e
     | Cons (x,_) -> tclUNIT x
 
+exception MoreThanOneSuccess
+let _ = Errors.register_handler begin function
+  | MoreThanOneSuccess -> Errors.error "This tactic has more than one success."
+  | _ -> raise Errors.Unhandled
+end
+
+(* [tclONCE e t] succeeds as [t] if [t] has exactly one
+   success. Otherwise it fails.  It may behave differently than [t] as
+   there may be extra non-logical effects used to discover that [t]
+   does not have a second success. Moreover the second success may be
+   conditional on the error recieved: [e] is used. *)
+let tclEXACTLY_ONCE e t =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  Proof.split t >>= function
+    | Nil e -> tclZERO e
+    | Cons (x,k) ->
+        Proof.split (k e) >>= function
+          | Nil _ -> tclUNIT x
+          | _ -> tclZERO MoreThanOneSuccess
+
+
 (* Focuses a tactic at a range of subgoals, found by their indices. *)
 (* arnaud: bug if 0 goals ! *)
 let tclFOCUS i j t =

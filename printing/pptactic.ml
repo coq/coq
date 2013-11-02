@@ -895,6 +895,10 @@ let rec pr_tac inherited tac =
       (* arnaud: vérifier qu'il s'agit bien de la syntaxe définitive. *)
       hov 1 (str "once" ++ spc () ++ pr_tac (ltactical,E) t),
       ltactical
+  | TacExactlyOnce t ->
+      (* arnaud: vérifier qu'il s'agit bien de la syntaxe définitive. *)
+      hov 1 (str "exactly_once" ++ spc () ++ pr_tac (ltactical,E) t),
+      ltactical
   | TacOrelse (t1,t2) ->
       hov 1 (pr_tac (lorelse,L) t1 ++ str " ||" ++ brk (1,1) ++
              pr_tac (lorelse,E) t2),

@@ -67,6 +67,7 @@ GEXTEND Gram
       | IDENT "repeat"; ta = tactic_expr -> TacRepeat ta
       | IDENT "progress"; ta = tactic_expr -> TacProgress ta
       | IDENT "once"; ta = tactic_expr -> TacOnce ta
+      | IDENT "exactly_once"; ta = tactic_expr -> TacExactlyOnce ta
       | IDENT "infoH"; ta = tactic_expr -> TacShowHyps ta
 (*To do: put Abstract in Refiner*)
       | IDENT "abstract"; tc = NEXT -> TacAbstract (tc,None)
