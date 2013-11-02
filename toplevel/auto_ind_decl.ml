@@ -875,7 +875,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
 	      simplest_right ;
               Proofview.V82.tactic (unfold_constr (Lazy.force Coqlib.coq_not_ref));
               intro;
-              Equality.subst_all ?flags:None;
+              Equality.subst_all ();
               assert_by (Name freshH3)
 		(mkApp(eq,[|bb;mkApp(eqI,[|mkVar freshm;mkVar freshm|]);tt|]))
 		(Tacticals.New.tclTHENLIST [

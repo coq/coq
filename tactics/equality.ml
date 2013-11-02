@@ -1590,7 +1590,7 @@ let default_subst_tactic_flags () =
   else
     { only_leibniz = true; rewrite_dependent_proof = false }
 
-let subst_all ?(flags=default_subst_tactic_flags ()) =
+let subst_all ?(flags=default_subst_tactic_flags ()) () =
   Tacmach.New.of_old find_eq_data_decompose >>= fun find_eq_data_decompose ->
   let test (_,c) =
     try

@@ -128,7 +128,7 @@ type subst_tactic_flags = {
 }
 val subst_gen : bool -> Id.t list -> unit Proofview.tactic
 val subst : Id.t list -> unit Proofview.tactic
-val subst_all : ?flags:subst_tactic_flags -> unit Proofview.tactic
+val subst_all : ?flags:subst_tactic_flags -> unit -> unit Proofview.tactic
 
 (* Replace term *)
 (* [replace_multi_term dir_opt c cl]

@@ -384,14 +384,14 @@ END
 
 TACTIC EXTEND subst
 | [ "subst" ne_var_list(l) ] -> [ subst l ]
-| [ "subst" ] -> [ subst_all ?flags:None ]
+| [ "subst" ] -> [ subst_all () ]
 END
 
 let simple_subst_tactic_flags =
   { only_leibniz = true; rewrite_dependent_proof = false }
 
 TACTIC EXTEND simple_subst
-| [ "simple" "subst" ] -> [ subst_all ~flags:simple_subst_tactic_flags ]
+| [ "simple" "subst" ] -> [ subst_all ~flags:simple_subst_tactic_flags () ]
 END
 
 open Evar_tactics
