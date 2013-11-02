@@ -1105,7 +1105,6 @@ si après Intros la conclusion matche le pattern.
 
 let (forward_interp_tactic, extern_interp) = Hook.make ()
 
-(* arnaud: potentiel bug avec ce try/with *)
 let conclPattern concl pat tac =
   let constr_bindings =
     match pat with

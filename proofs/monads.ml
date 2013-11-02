@@ -144,9 +144,16 @@ end
    The paper also contains the rational for the [split] abstraction.
 
    An explanation of how to derive such a monad from mathematical
-   principle can be found in "Kan Extensions for Program Optimisation" by
-   Ralf Hinze. *)
-(* arnaud: ajouter commentaire sur la vision "liste" *)
+   principles can be found in "Kan Extensions for Program
+   Optimisation" by Ralf Hinze.
+
+   One way to think of the [Logic] functor is to imagine ['a
+   Logic(X).t] to represent list of ['a] with an exception at the
+   bottom (leaving the monad-transforming issues aside, as they don't
+   really work well with lists). Each of the element is a valid
+   result, sequentialising with a [f:'a -> 'b t] is done by applying
+   [f] to each element and then flatten the list, [plus] is
+   concatenation, and [split] is pattern-matching. *)
 (* spiwack: I added the primitives from [IO] directly in the [Logic]
    signature for convenience. It doesn't really make sense, strictly
    speaking, as they are somewhat deconnected from the semantics of

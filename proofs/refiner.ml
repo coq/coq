@@ -66,7 +66,6 @@ exception FailError of int * std_ppcmds Lazy.t
 (* The Fail tactic *)
 let tclFAIL lvl s g = raise (FailError (lvl,lazy s))
 
-(* arnaud: pas utilisée supprimer ? *)
 let tclFAIL_lazy lvl s g = raise (FailError (lvl,s))
 
 let start_tac gls =

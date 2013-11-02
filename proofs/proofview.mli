@@ -158,14 +158,15 @@ val tclIFCATCH : 'a tactic -> ('a -> 'b tactic) -> (exn -> 'b tactic) -> 'b tact
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
 
 (* Dispatch tacticals are used to apply a different tactic to each goal under
-    consideration. They come in two flavours:
-    [tclDISPATCH] takes a list of [unit tactic]-s and build a [unit tactic].
-    [tclDISPATCHS] takes a list of ['a sensitive tactic] and returns and returns
-    and ['a sensitive tactic] where the ['a sensitive] interpreted in a goal [g]
-    corresponds to that of the tactic which created [g].
-    It is to be noted that the return value of [tclDISPATCHS ts] makes only
-    sense in the goals immediatly built by it, and would cause an anomaly
-    is used otherwise. *)
+   consideration. They come in two flavours:
+   [tclDISPATCH] takes a list of [unit tactic]-s and build a [unit tactic].
+   [tclDISPATCHL] takes a list of ['a tactic] and returns an ['a list tactic].
+
+   They both work by applying each of the tactic to the corresponding
+   goal (starting with the first goal). In the case of [tclDISPATCHL],
+   the tactic returns a list of the same size as the argument list (of
+   tactics), each element being the result of the tactic executed in
+   the corresponding goal. *)
 val tclDISPATCH : unit tactic list -> unit tactic
 val tclDISPATCHL : 'a tactic list -> 'a list tactic
 

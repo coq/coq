@@ -1550,9 +1550,6 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
 (* Look for an hypothesis hyp of the form "x=rhs" or "rhs=x", rewrite
    it everywhere, and erase hyp and x; proceed by generalizing all dep hyps *)
 
-(* arnaud: il va y avoir un bug là-dedans. Le try ne se déclenche pas
-   au bon endroit. Il faut convertir test en une Proofview.tactic
-   pour la gestion des exceptions. *)
 let subst_one_var dep_proof_ok x =
   Proofview.Goal.hyps >>= fun hyps ->
   let hyps = Environ.named_context_of_val hyps in
@@ -1593,7 +1590,6 @@ let default_subst_tactic_flags () =
   else
     { only_leibniz = true; rewrite_dependent_proof = false }
 
-(* arnaud: encore des erreurs potentiels avec ces try/with *)
 let subst_all ?(flags=default_subst_tactic_flags ()) =
   Tacmach.New.of_old find_eq_data_decompose >>= fun find_eq_data_decompose ->
   let test (_,c) =
@@ -1639,7 +1635,6 @@ let cond_eq_term_left c t = Tacmach.New.of_old (cond_eq_term_left c t)
 let cond_eq_term_right c t = Tacmach.New.of_old (cond_eq_term_right c t)
 let cond_eq_term c t = Tacmach.New.of_old (cond_eq_term c t)
 
-(* arnaud: toujours des histoires de try/with *)
 let rewrite_multi_assumption_cond cond_eq_term cl =
   let rec arec = function
     | [] -> error "No such assumption."

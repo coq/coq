@@ -8,8 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-(* arnaud: veiller à l'aspect tutorial des commentaires *)
-
 open Compat
 open Pp
 open Tok
@@ -36,7 +34,7 @@ let pr_goal gs =
 		       str "============================" ++ fnl ()  ++
 		       thesis ++ str " " ++  pc) ++ fnl ()
 
-(* arnaud: rebrancher ça 
+(* arnaud: rebrancher ça ?
 let pr_open_subgoals () =
   let p = Proof_global.give_me_the_proof () in
   let { Evd.it = goals ; sigma = sigma } = Proof.V82.subgoals p in

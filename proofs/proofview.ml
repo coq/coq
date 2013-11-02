@@ -270,23 +270,27 @@ let tclFOCUS i j t env =
        of course I haven't made them algebraic yet. *)
     tclZERO e env
 
-(* arnaud: vérifier les commentaires de dispatch vis-à-vis de l'ordre
-   d'évaluation des buts. Ne pas oublier le mli *)
-(* arnaud: commenter [tclDISPATCHL] *)
 (* Dispatch tacticals are used to apply a different tactic to each goal under
    consideration. They come in two flavours:
-   [tclDISPATCH] takes a list of [unit tactic]-s and build a [unit tactic]. *)
+   [tclDISPATCH] takes a list of [unit tactic]-s and build a [unit tactic].
+   [tclDISPATCHL] takes a list of ['a tactic] and returns an ['a list tactic].
+
+   They both work by applying each of the tactic to the corresponding
+   goal (starting with the first goal). In the case of [tclDISPATCHL],
+   the tactic returns a list of the same size as the argument list (of
+   tactics), each element being the result of the tactic executed in
+   the corresponding goal. *)
 exception SizeMismatch
 let _ = Errors.register_handler begin function
   | SizeMismatch -> Errors.error "Incorrect number of goals."
   | _ -> raise Errors.Unhandled
 end
 (* spiwack: we use an parametrised function to generate the dispatch tacticals.
-    [tclDISPATCHGEN] takes a [null] argument to generate the return value
-    if there are no goal under focus, and a [join] argument to explain how
-    the return value at two given lists of subgoals are combined when
-    both lists are being concatenated.
-    [join] and [null] need be some sort of comutative monoid. *)
+   [tclDISPATCHGEN] takes a [null] argument to generate the return value
+   if there are no goal under focus, and a [join] argument to explain how
+   the return value at two given lists of subgoals are combined when
+   both lists are being concatenated.
+   [join] and [null] need be some sort of comutative monoid. *)
 
 let rec tclDISPATCHGEN null join tacs env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
@@ -366,9 +370,6 @@ let sensitive_on_proofview s env step =
   with e when Errors.noncritical e ->
     tclZERO e env
 
-(* arnaud: on pourrait regarder la liste de buts aussi, mais je
-   ne sais pas encore comment. Pour l'instant on fait au plus
-   simple. *)
 let tclPROGRESS t env =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Inner.bind in

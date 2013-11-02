@@ -869,7 +869,6 @@ let find_eliminator c gl =
   let c = lookup_eliminator ind (elimination_sort_of_goal gl) in
   {elimindex = None; elimbody = (c,NoBindings)}
 
-(* arnaud: probable bug avec le try *)
 let default_elim with_evars (c,_ as cx) =
   Proofview.tclORELSE
     (Tacmach.New.of_old (find_eliminator c) >>= fun elim ->
