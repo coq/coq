@@ -7,10 +7,9 @@
 (************************************************************************)
 
 (* Module defining the last essential tiles of interactive proofs.
-   The features of the Proof module are undoing and focusing.
-   A proof is a mutable object, it contains a proofview, and some information
-   to be able to undo actions, and to unfocus the current view. All three
-   of these being meant to evolve.
+   A proof deals with the focusing commands (including the braces and bullets),
+   the shelf (see the [shelve] tactic) and given up goal (see the [give_up]
+   tactic). A proof is made of the following:
    - Proofview: a proof is primarily the data of the current view.
      That which is shown to the user (as a remainder, a proofview
      is mainly the logical state of the proof, together with the
@@ -23,10 +22,11 @@
      the focus kind is actually stored inside the condition). To unfocus, one
      needs to know the focus kind, and the condition (for instance "no condition" or
      the proof under focused must be complete) must be met.
-   - Undo: since proofviews and focus stacks are immutable objects, 
-     it could suffice to hold the previous states, to allow to return to the past.
-     However, we also allow other modules to do actions that can be undone.
-     Therefore the undo stack stores action to be ran to undo.
+   - Shelf: A list of goals which have been put aside during the proof. They can be
+     retrieved with the [Unshelve] command, or solved by side effects
+   - Given up goals: as long as there is a given up goal, the proof is not completed.
+     Given up goals cannot be retrieved, the user must go back where the tactic
+     [give_up] was run and solve the goal there.
 *)
 
 open Term

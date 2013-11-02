@@ -174,6 +174,18 @@ val elim_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
 val case_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
 
 (** Tacticals defined directly in term of Proofview *)
+
+(** The tacticals in the module [New] are the tactical of Ltac. Their
+    semantics is an extension of the tacticals in this file for the
+    multi-goal backtracking tactics. They do not have the same
+    semantics as the similarly named tacticals in [Proofview]. The
+    tactical of [Proofview] are used in the definition of the
+    tacticals of [Tacticals.New], but they are more atomic. In
+    particular [Tacticals.New.tclORELSE] sees like of progress as a
+    failure, whereas [Proofview.tclORELSE] doesn't. Additionally every
+    tactic which can catch failure ([tclOR], [tclORELSE], [tclTRY],
+    [tclREPEAt], etc…) are run into each goal independently (failures
+    and backtracks are localised to a given goal). *)
 module New : sig
   open Proofview
 

@@ -11,9 +11,9 @@
    mechanisms attached).
    The general idea of the structure is that it is composed of a chemical
    solution: an unstructured bag of stuff which has some relations with 
-   one another, which represents the various subnodes of the proof, together
-   with a comb: a datastructure that gives order to some of these nodes, 
-   namely the open goals. 
+   one another, which represents the various subnodes of the proof. Together
+   with a comb: a datastructure that gives some order to some of these nodes, 
+   namely the (focused) open goals. 
    The natural candidate for the solution is an {!Evd.evar_map}, that is
    a calculus of evars. The comb is then a list of goals (evars wrapped 
    with some extra information, like possible name anotations).
@@ -146,11 +146,11 @@ let unfocus c sp =
 
 (* The tactic monad:
    - Tactics are objects which apply a transformation to all
-     the subgoals of the current view at the same time. By opposed
-     to the old vision of applying it to a single goal. It mostly 
-     allows to consider tactic like [reorder] to reorder the goals
-     in the current view (which might be useful for the tactic designer)
-     (* spiwack: the ordering of goals, though, is perhaps a bit
+     the subgoals of the current view at the same time. By opposition
+     to the old vision of applying it to a single goal. It allows 
+     tactics such as [shelve_unifiable] or tactics to reorder
+     the focused goals (not done yet).
+     (* spiwack: the ordering of goals, though, is actually rather
         brittle. It would be much more interesting to find a more
         robust way to adress goals, I have no idea at this time 
         though*) 
@@ -158,31 +158,32 @@ let unfocus c sp =
      an evar has influences on the other goals of the proof in progress,
      not being able to take that into account causes the current eauto
      tactic to fail on some instances where it could succeed).
-   - Tactics are a monad ['a tactic], in a sense a tactic can be 
+     Another benefit is that it is possible to write tactics that can
+     be executed even if there are no focused goals.
+   - Tactics form a monad ['a tactic], in a sense a tactic can be 
      seens as a function (without argument) which returns a value
      of type 'a and modifies the environement (in our case: the view).
      Tactics of course have arguments, but these are given at the 
      meta-level as OCaml functions.
-     Most tactics, in the sense we are used to, return [ () ], that is
+     Most tactics in the sense we are used to return [()], that is
      no really interesting values. But some might pass information 
-     around; the [(>>==)] and [(>>==)] bind-like construction are the
-     main ingredients of this information passing. 
-     (* spiwack: I don't know how much all this relates to F. Kirchner and 
-        C. Muñoz. I wasn't able to understand how they used the monad
-        structure in there developpement.
+     around. 
+     (* spiwack: as far as I'm aware this doesn't really relate to
+        F. Kirchner and C. Muñoz.
      *)
      The tactics seen in Coq's Ltac are (for now at least) only 
      [unit tactic], the return values are kept for the OCaml toolkit.
      The operation or the monad are [Proofview.tclUNIT] (which is the 
      "return" of the tactic monad) [Proofview.tclBIND] (which is
-     the "bind", also noted [(>=)]) and [Proofview.tclTHEN] (which is a
-     specialized bind on unit-returning tactics).
+     the "bind") and [Proofview.tclTHEN] (which is a specialized
+     bind on unit-returning tactics).
 *)
 
 (* type of tactics:
 
    tactics can
    - access the environment,
+   - report unsafe status, shelved goals and given up goals
    - access and change the current [proofview]
    - backtrack on previous changes of the proofview *)
 module Proof = Proofview_monad.Logical
@@ -396,13 +397,9 @@ let list_iter_goal2 l s i =
   set_comb (List.flatten (List.rev subgoals)) >>
   Proof.ret r
 
-(* spiwack: we use an parametrised function to generate the dispatch tacticals.
-   [tclDISPATCHGEN] takes a [null] argument to generate the return value
-   if there are no goal under focus, and a [join] argument to explain how
-   the return value at two given lists of subgoals are combined when
-   both lists are being concatenated.
-   [join] and [null] need be some sort of comutative monoid. *)
-(* arnaud: commentaire obsolète *)
+(* spiwack: we use an parametrised function to generate the dispatch
+   tacticals.  [tclDISPATCHGEN] takes an argument [join] to reify the
+   list of produced value into the final value. *)
 let tclDISPATCHGEN join tacs =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
@@ -466,8 +463,6 @@ let tclEXTEND tacs1 rtac tacs2 =
   let tacs = extend_to_list tacs1 rtac tacs2 step.comb in
   tclDISPATCH tacs
 
-(* arnaud: À première vue, ça ne change franchement pas grand chose:
-   J'observe genre 2 secondes de mieux avec ça sur l'intégralité de la stdlib… *)
 let tclINDEPENDENT tac =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in

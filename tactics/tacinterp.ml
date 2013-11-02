@@ -2295,7 +2295,8 @@ and interp_atomic ist tac =
 	      let ans = List.map mk_ident (out_gen wit x) in
               (Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) ans))
           | ListArgType t  ->
-              (* arnaud: unsafe, faire avec des combinateurs. Dans la version originale c'était juste [Genarg.app_list f x] *)
+              (* spiwack: unsafe, we should introduce relevant combinators.
+                 Before new tactical it simply read: [Genarg.app_list f x] *)
               fold_list begin fun a l ->
                 f a >>== fun a' ->
                 l >>== fun l ->

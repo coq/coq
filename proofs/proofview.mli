@@ -10,12 +10,12 @@
    of proof (namely, a proof is a proofview which can evolve and has safety
    mechanisms attached).
    The general idea of the structure is that it is composed of a chemical
-   solution: an unstructured bag of stuff which has some relations with 
-   one another, which represents the various subnodes of the proof, together
-   with a comb: a datastructure that gives order to some of these nodes, 
-   namely the open goals. 
+   solution: an unstructured bag of stuff which has some relations with
+   one another, which represents the various subnodes of the proof. Together
+   with a comb: a datastructure that gives some order to some of these nodes,
+   namely the (focused) open goals.
    The natural candidate for the solution is an {!Evd.evar_map}, that is
-   a calculus of evars. The comb is then a list of goals (evars wrapped 
+   a calculus of evars. The comb is then a list of goals (evars wrapped
    with some extra information, like possible name anotations).
    There is also need of a list of the evars which initialised the proofview
    to be able to return information about the proofview. *)
@@ -38,7 +38,7 @@ val proofview : proofview -> Goal.goal list * Evd.evar_map
    conclusion types, creating that many initial goals. *)
 val init : (Environ.env * Term.types) list -> proofview
 
-(* Returns whether this proofview is finished or not.That is,
+(* Returns whether this proofview is finished or not. That is,
    if it has empty subgoals in the comb. There could still be unsolved
    subgoaled, but they would then be out of the view, focused out. *)
 val finished : proofview -> bool
@@ -78,10 +78,10 @@ val unfocus : focus_context -> proofview -> proofview
 
 (* The tactic monad:
    - Tactics are objects which apply a transformation to all
-     the subgoals of the current view at the same time. By opposed
-     to the old vision of applying it to a single goal. It mostly 
-     allows to consider tactic like [reorder] to reorder the goals
-     in the current view (which might be useful for the tactic designer)
+     the subgoals of the current view at the same time. By opposition
+     to the old vision of applying it to a single goal. It allows 
+     tactics such as [shelve_unifiable] or tactics to reorder
+     the focused goals (not done yet).
      (* spiwack: the ordering of goals, though, is actually rather
         brittle. It would be much more interesting to find a more
         robust way to adress goals, I have no idea at this time 
@@ -90,25 +90,22 @@ val unfocus : focus_context -> proofview -> proofview
      an evar has influences on the other goals of the proof in progress,
      not being able to take that into account causes the current eauto
      tactic to fail on some instances where it could succeed).
-   - Tactics are a monad ['a tactic], in a sense a tactic can be 
+     Another benefit is that it is possible to write tactics that can
+     be executed even if there are no focused goals.
+   - Tactics form a monad ['a tactic], in a sense a tactic can be 
      seens as a function (without argument) which returns a value
      of type 'a and modifies the environement (in our case: the view).
      Tactics of course have arguments, but these are given at the 
      meta-level as OCaml functions.
-     Most tactics in the sense we are used to return [ () ], that is
-     no really interesting values. But some might, to pass information 
-     around; for instance [Proofview.freeze] allows to store a certain
-     goal sensitive value "at the present time" (which means, considering the
-     structure of the dynamics of proofs, [Proofview.freeze s] will have,
-     for every current goal [gl], and for any of its descendent [g'] in 
-     the future the same value in [g'] that in [gl]). 
-     (* spiwack: I don't know how much all this relates to F. Kirchner and 
-        C. Muñoz. I wasn't able to understand how they used the monad
-        structure in there developpement.
+     Most tactics in the sense we are used to return [()], that is
+     no really interesting values. But some might pass information 
+     around.
+     (* spiwack: as far as I'm aware this doesn't really relate to
+        F. Kirchner and C. Muñoz.
      *)
      The tactics seen in Coq's Ltac are (for now at least) only 
      [unit tactic], the return values are kept for the OCaml toolkit.
-     The operation or the monad are [Proofview.tclIDTAC] (which is the 
+     The operation or the monad are [Proofview.tclUNIT] (which is the 
      "return" of the tactic monad) [Proofview.tclBIND] (which is
      the "bind") and [Proofview.tclTHEN] (which is a specialized
      bind on unit-returning tactics).
@@ -169,7 +166,8 @@ val tclONCE : 'a tactic -> 'a tactic
    conditional on the error recieved: [e] is used. *)
 val tclEXACTLY_ONCE : exn -> 'a tactic -> 'a tactic
 
-(* Focuses a tactic at a range of subgoals, found by their indices. *)
+(* Focuses a tactic at a range of subgoals, found by their indices.
+   The other goals are restored to the focus when the tactic is done. *)
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
 
 (* Dispatch tacticals are used to apply a different tactic to each goal under
@@ -313,11 +311,18 @@ module V82 : sig
   val catchable_exception : exn -> bool
 end
 
-
+(* The module goal provides an interface for goal-dependent tactics. *)
+(* spiwack: there are still parts of the code which depend on proofs/goal.ml.
+   Eventually I'll try to remove it in favour of [Proofview.Goal] *)
 module Goal : sig
 
+  (* The type of goals *)
   type t
 
+  (* [concl], [hyps], [env] and [sigma] given a goal [gl] return
+     respectively the conclusion of [gl], the hypotheses of [gl], the
+     environment of [gl] (i.e. the global environment and the hypotheses)
+     and the current evar map. *)
   val concl : t -> Term.constr
   val hyps : t -> Context.named_context
   val env : t -> Environ.env
@@ -327,9 +332,15 @@ module Goal : sig
      of [s] on each of the focused goals *)
   val lift : 'a Goal.sensitive -> 'a glist tactic
 
-  (* [lift (Goal.return x)] *)
+  (* [return x] returns a copy of [x] per focused goal. *)
   val return : 'a -> 'a glist tactic
+
+  (* [enter t] execute the goal-dependent tactic [t] in each goal
+     independently. In particular [t] need not backtrack the same way in
+     each goal. *)
   val enter : (t -> unit tactic) -> unit tactic
+  (* [enterl t] works like [enter t] except that [t] returns a value
+     in each of the produced subgoals. *)
   val enterl : (t -> 'a glist tactic) -> 'a glist tactic
 
 
@@ -337,33 +348,58 @@ module Goal : sig
   val goal : t -> Goal.goal
 end
 
-
+(* The [NonLogical] module allows to execute side effects in tactics
+   (non-logical side-effects are not discarded at failures). *)
 module NonLogical : sig
 
+  (* ['a t] is the monadic type of side-effect issuing commands. *)
   type +'a t
+
+  (* ['a ref] is a type of references to assignables. *)
   type 'a ref
 
+  (* The unit of the non-logical monad. *)
   val ret : 'a -> 'a t
+  (* The bind of the non-logical monad. *)
   val bind : 'a t -> ('a -> 'b t) -> 'b t
+  (* [ignore c] drops the returned value, otherwise behaves like
+     [c]. *)
   val ignore : 'a t -> unit t
+  (* Specialised version of [bind] when the first argument return
+     [()]. *)
   val seq : unit t -> 'a t -> 'a t
 
+  (* [new_ref x] creates a reference containing [x]. *)
   val new_ref : 'a -> 'a ref t
+  (* [set r x] assigns [x] to [r]. *)
   val set : 'a ref -> 'a -> unit t
+  (* [get r] returns the value of [r] *)
   val get : 'a ref -> 'a t
 
+  (* [read_line] reads one line on the standard input. *)
   val read_line : string t
+  (* [print_char a] prints [a] to the standard output. *)
   val print_char : char -> unit t
+  (* [print stm] prints [stm] to the standard output. *)
   val print : Pp.std_ppcmds -> unit t
 
+  (* [raise e] raises an error [e] which cannot be caught by logical
+     operation.*)
   val raise : exn -> 'a t
+  (* [catch c h] runs the command [c] until it returns a value [v], in
+     which case [catch c h] behaves like [c], or [c] raises an exception
+     [e] in which case it continues with [h e]. *)
   val catch : 'a t -> (exn -> 'a t) -> 'a t
+  (* [timeout t c] runs [c] for [t] seconds if [c] succeeds in time
+     then [timeout t c] behaves like [c], otherwise it fails with
+     [Proof_errors.Timeout]. *)
   val timeout : int -> 'a t -> 'a t
 
 
-  (* [run] performs effects. *)
+  (* [run c] performs [c]'s side effects for real. *)
   val run : 'a t -> 'a
 
 end
 
+(* [tclLIFT c] includes the non-logical command [c] in a tactic. *)
 val tclLIFT : 'a NonLogical.t -> 'a tactic
