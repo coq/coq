@@ -178,11 +178,23 @@ module V82 : sig
   (* Old style env primitive *)
   val env : Evd.evar_map -> goal -> Environ.env
 
+  (* same as [env], but ensures that existential variables are
+     normalised *)
+  val nf_env : Evd.evar_map -> goal -> Environ.env
+
   (* Old style hyps primitive *)
   val hyps : Evd.evar_map -> goal -> Environ.named_context_val
 
+  (* same as [hyps], but ensures that existential variables are
+     normalised. *)
+  val nf_hyps : Evd.evar_map -> goal -> Environ.named_context_val
+
   (* Access to ".evar_concl" *)
   val concl : Evd.evar_map -> goal -> Term.constr
+
+  (* same as [concl] but ensures that existential variables are
+     normalised. *)
+  val nf_concl : Evd.evar_map -> goal -> Term.constr
 
   (* Access to ".evar_extra" *)
   val extra : Evd.evar_map -> goal -> Evd.Store.t

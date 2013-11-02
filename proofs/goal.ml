@@ -490,15 +490,31 @@ module V82 = struct
     let evi = content evars gl in
     Evd.evar_filtered_env evi
 
+  (* same as [env], but ensures that existential variables are
+     normalised *)
+  let nf_env evars gl =
+    Evarutil.nf_env_evar evars (env evars gl)
+
   (* Old style hyps primitive *)
   let hyps evars gl =
     let evi = content evars gl in
     Evd.evar_filtered_hyps evi
 
+  (* same as [hyps], but ensures that existential variables are
+     normalised. *)
+  let nf_hyps evars gl =
+    let hyps = Environ.named_context_of_val (hyps evars gl) in
+    Environ.val_of_named_context (Evarutil.nf_named_context_evar evars hyps)
+
   (* Access to ".evar_concl" *)
   let concl evars gl =
     let evi = content evars gl in
     evi.Evd.evar_concl
+
+  (* same as [concl] but ensures that existential variables are
+     normalised. *)
+  let nf_concl evars gl =
+    Evarutil.nf_evar evars (concl evars gl)
 
   (* Access to ".evar_extra" *)
   let extra evars gl =
