@@ -325,28 +325,32 @@ module Logical =
   let split x =
     (); (fun s e _ sk fk ->
       IOBase.bind
-        (Obj.magic x s e __ (fun a fk0 ->
-          IOBase.ret (Util.Inl
-            (a,(fun e0 _ sk0 fk1 ->
-            IOBase.bind (fk0 e0) (fun x0 ->
-              match x0 with
-              | Util.Inl p ->
-                let a0,x1 = p in
-                sk0 a0 (fun e1 ->
-                  x1 e1 __ sk0 fk1)
-              | Util.Inr e1 -> fk1 e1)))))
-          (fun e0 ->
-          IOBase.ret (Util.Inr e0)))
-        (fun x0 ->
-        match x0 with
-        | Util.Inl p ->
-          let p0,y = p in
-          let a,c = p0 in
-          let a0,s0 = a in
-          sk (((Util.Inl (a0,(fun e0 x1 x2 ->
-            y e0))),s0),c) fk
-        | Util.Inr e0 ->
-          sk (((Util.Inr e0),s),true) fk))
+        (IOBase.bind
+          (Obj.magic x s e __ (fun a fk0 ->
+            IOBase.ret (Util.Inl
+              (a,(fun e0 _ sk0 fk1 ->
+              IOBase.bind (fk0 e0) (fun x0 ->
+                match x0 with
+                | Util.Inl p ->
+                  let a0,x1 = p in
+                  sk0 a0 (fun e1 ->
+                    x1 e1 __ sk0 fk1)
+                | Util.Inr e1 -> fk1 e1)))))
+            (fun e0 ->
+            IOBase.ret (Util.Inr e0)))
+          (fun x' ->
+          match x' with
+          | Util.Inl p ->
+            let p0,y = p in
+            let p1,m' = p0 in
+            let a',s' = p1 in
+            IOBase.ret (((Util.Inl
+              (a',(fun exc x0 x1 ->
+              y exc))),s'),m')
+          | Util.Inr exc ->
+            IOBase.ret (((Util.Inr
+              exc),s),true))) (fun x0 ->
+        sk x0 fk))
   
   (** val lift :
       'a1 NonLogical.t -> proofview ->

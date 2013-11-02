@@ -123,12 +123,7 @@ Record Logic (T:Set -> Set) := {
   (* [zero] is usually argument free, but Coq likes to explain errors,
      hence error messages should be carried around. *)
   zero : forall {A}, Exception -> T A;
-  plus : forall {A}, T A -> (Exception -> T A) -> T A;
-  (** [split x] runs [x] until it either fails with [zero e] or finds
-      a result [a].  In the former case it returns [Inr e], otherwise
-      it returns [Inl (a,y)] where [y] can be run to get more results
-      from [x]. It is a variant of prolog's cut. *)
-  split : forall {A}, T A -> T ((A * (Exception -> T A)) + Exception)%type
+  plus : forall {A}, T A -> (Exception -> T A) -> T A
 }.
 (** Writing (+) for plus and (>>=) for bind, we shall require that
 
@@ -301,21 +296,14 @@ Section Common.
  .
 
  Definition run : forall {A}, T A -> S -> T₀ (A*S) := fun _ x => x.
+ Definition reflect : forall {A:Set}, (S -> T₀ (A*S)) -> T A := fun _ x => x.
 
  Variable (L:Logic T₀).
 
 
  Definition Logic : Logic T := {|
    zero A e := lift (zero _ L e);
-   plus A x y s := plus _ L (x s) (fun e => y e s);
-   split A x s :=
-     do M x := split _ L (x s) in
-     match x return T₀ (((A*(Exception->T A))+Exception)*S) with
-     | inr e => ret _ M (inr e,s)
-     | inl ((a,s),y) =>
-        let y e (_:S) := y e in
-        ret _ M (inl (a,y) , s)
-     end
+   plus A x y s := plus _ L (x s) (fun e => y e s)
  |}.
 
 End Common.
@@ -351,21 +339,14 @@ Section Common.
 
  Definition Logic : Logic T := {|
    zero A e env := zero _ L e;
-   plus A x y env := plus _ L (x env) (fun e => y e env);
-   split A x env :=
-     do M x := split _ L (x env) in
-     match x return T₀ ((A*(Exception->T A))+Exception) with
-     | inr e => ret _ M (inr e)
-     | inl (a,y) =>
-        let y e (_:E) := y e in
-        ret _ M (inl (a,y))
-     end
+   plus A x y env := plus _ L (x env) (fun e => y e env)
  |}.
 
 
  Definition lift {A:Set} (x:T₀ A) : T A := fun _ => x.
 
  Definition run {A:Set} (x:T A) (e:E) : T₀ A := x e.
+ Definition reflect {A:Set} (m:E->T₀ A) : T A := m.
 
 End Common.
 
@@ -411,19 +392,13 @@ Section Common.
  .
 
  Definition run {A} (x:T A) : T₀ (A*C)%type := x.
+ Definition reflect {A:Set} (x:T₀ (A*C)) := x.
 
  Variable (L:Logic T₀).
 
  Definition Logic : Logic T := {|
    zero A e := lift (zero _ L e);
-   plus A x y := plus _ L x y;
-   split A x :=
-     do M x := split _ L x in
-     match x return T ((A*(Exception -> T A)) + Exception) with
-     | inr e => ret _ M (inr e, Monoid.zero _ m)
-     | inl ((a,c),y) =>
-         ret _ M (inl (a,y), c)
-    end
+   plus A x y := plus _ L x y
  |}.
 
 End Common.
@@ -494,16 +469,16 @@ Section Common.
    x _ sk (fun e => y e _ sk fk)
  .
 
- (* For [reflect] and [split] see the "Backtracking, Interleaving,
-    and Terminating Monad Transformers" paper *)
+ (* For [reflect] and [reify] see the "Backtracking, Interleaving, and
+    Terminating Monad Transformers" paper (where [reify] must be seen
+    as the body of [msplit]).  *)
  Definition reflect {A:Set} (x:(A*(Exception -> T A)) + Exception) : T A :=
    match x with
    | inr e => _zero e
    | inl (a,x) => _plus (ret _ F a) x
    end
  .
-
- Definition lower {A:Set} (x:T A) : T₀ ((A*(Exception -> T A)) + Exception) :=
+ Definition reify {A:Set} (x:T A) : T₀ ((A*(Exception -> T A)) + Exception) :=
    let fk e := ret _ M (inr e) in
    let lift_fk fk e := do F y := lift (fk e) in reflect y in
    let sk a fk := ret _ M (inl (a, lift_fk fk)) in
@@ -512,8 +487,7 @@ Section Common.
 
  Definition Logic : Logic T := {|
    zero := @_zero;
-   plus := @_plus;
-   split A x := lift (lower x)
+   plus := @_plus
  |}.
 
  Variable (Ref:Set->Set) (IO:IO.S Ref T₀).
@@ -556,7 +530,7 @@ Definition NonLogicalType := IO.T.
 Definition NonLogicalMonad : Monad NonLogicalType := IO.M.
 Definition NonLogicalIO : IO.S IO.Ref NonLogicalType := IO.IO.
 
-Definition LogicalType := Eval compute in State.T LogicalState (Environment.T LogicalEnvironment (Writer.T LogicalMessageType (Logic.T NonLogicalType))).
+Definition LogicalType := State.T LogicalState (Environment.T LogicalEnvironment (Writer.T LogicalMessageType (Logic.T NonLogicalType))).
 Definition LogicalMonadBase := Logic.F NonLogicalType.
 Definition LogicalMonadWriter := Writer.F _ LogicalMessage _ LogicalMonadBase.
 Definition LogicalMonadEnv := Environment.F LogicalEnvironment _ LogicalMonadWriter.
@@ -564,7 +538,28 @@ Definition LogicalMonad : Monad LogicalType := State.F LogicalState _ LogicalMon
 Definition LogicalStateM : State LogicalState LogicalType := State.State LogicalState _ LogicalMonadEnv.
 Definition LogicalReader : Environment LogicalEnvironment _ := Environment.Environment LogicalEnvironment _ LogicalMonadWriter.
 Definition LogicalWriter : Writer LogicalMessageType  _ := Writer.Writer LogicalMessageType _ (Logic.F NonLogicalType).
-Definition LogicalLogic : Logic LogicalType := State.Logic _ _ LogicalMonadEnv (Environment.Logic _ _ LogicalMonadWriter (Writer.Logic _ LogicalMessage _ LogicalMonadBase (Logic.Logic _ NonLogicalMonad))).
+Definition LogicalLogic : Logic LogicalType := State.Logic _ _ LogicalMonadEnv (Environment.Logic _ _ (Writer.Logic _ LogicalMessage _ LogicalMonadBase (Logic.Logic _))).
+
+
+(* The function [split] will be define as the normal form of
+   [split0]. It reifies the monad transformer stack until we can read
+   back a more syntactic form, then reflects the result back. *)
+Definition split0 {a:Set} (x:LogicalType a) : LogicalType ((a*(Exception -> LogicalType a))+Exception) :=
+  State.reflect _ _ (fun s =>
+  Environment.reflect _ _ (fun e =>
+  Writer.reflect _ _ (
+  Logic.lift _ NonLogicalMonad (
+    do NonLogicalMonad x' :=
+        Logic.reify _ NonLogicalMonad (Writer.run _ _ (Environment.run _ _ (State.run _ _ x s) e)) in
+    match x' with
+    | inr exc => ret _ NonLogicalMonad ((inr exc),s, Monoid.zero _ LogicalMessage)
+    | inl (a',s',m',y) =>
+      let y' exc _ _ := y exc in
+      ret _ NonLogicalMonad (inl (a',y'),s',m')
+    end
+  ))))
+.
+
 
 Module NonLogical.
 
@@ -628,7 +623,22 @@ Module Logical.
  Extraction Implicit zero [a].
  Definition plus {a:Set} (x:t a) (y:Exception -> t a) : t a := Eval compute in freeze _ (plus _ LogicalLogic x y).
  Extraction Implicit plus [a].
- Definition split {a:Set} (x:t a) : t ((a*(Exception -> t a))+Exception) := Eval compute in freeze _ (split _ LogicalLogic x).
+
+ Definition split {a:Set} (x:t a) : t ((a*(Exception -> t a))+Exception) :=
+   Eval compute in freeze _ (split0 x).
+(*
+   Eval compute in
+   freeze _ (
+      do NonLogicalMonad r :=
+        Logic.reify (Writer.reify (Environment.reify (State.reify x)))
+      in
+      match r with
+      | inr e => _zero e
+      | inl (a,x) => _plus (ret _ F a) x
+   ).
+
+split _ LogicalLogic x).
+*)
  Extraction Implicit split [a].
  Definition lift {a:Set} (x:NonLogical.t a) : t a := Eval compute in
   freeze _ (State.lift _ _ LogicalMonadEnv (Environment.lift _ _ (Writer.lift _ LogicalMessage _ LogicalMonadBase (Logic.lift _ NonLogicalMonad x)))).
