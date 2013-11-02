@@ -355,6 +355,7 @@ let defs _ rdefs _ _ =
   !rdefs
 
 let enter f = (); fun env rdefs gl info ->
+  let info = Evarutil.nf_evar_info !rdefs info in
   f env !rdefs (Evd.evar_hyps info) (Evd.evar_concl info) gl
 
 (*** Conversion in goals ***)
