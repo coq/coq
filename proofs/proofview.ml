@@ -290,7 +290,7 @@ let tclFOCUS i j t =
     Proof.get >>= fun next ->
     Proof.set (unfocus context next) >>
     Proof.ret result
-  with e ->
+  with e when Errors.noncritical e ->
     (* spiwack: a priori the only possible exceptions are that of focus,
        of course I haven't made them algebraic yet. *)
     tclZERO e
