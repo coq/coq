@@ -114,7 +114,7 @@ let autorewrite ?(conds=Naive) tac_main lbas =
 
 let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
  (* let's check at once if id exists (to raise the appropriate error) *)
- Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive idl) >>- fun _ ->
+ Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive idl) >>= fun _ ->
  let general_rewrite_in id =
   let id = ref id in
   let to_be_cleared = ref false in
@@ -179,7 +179,7 @@ let gen_auto_multi_rewrite conds tac_main lbas cl =
 	   | None ->
 		 (* try to rewrite in all hypothesis
 		    (except maybe the rewritten one) *)
-                 Tacmach.New.pf_ids_of_hyps >>- fun ids ->
+                 Tacmach.New.pf_ids_of_hyps >>= fun ids ->
 		 try_do_hyps (fun id -> id)  ids)
 
 let auto_multi_rewrite ?(conds=Naive) = gen_auto_multi_rewrite conds (Proofview.tclUNIT())

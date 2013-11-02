@@ -217,7 +217,7 @@ module Btauto = struct
     Tacticals.tclFAIL 0 msg gl
 
   let try_unification env =
-    Proofview.Goal.concl >>- fun concl ->
+    Proofview.Goal.concl >>= fun concl ->
     let eq = Lazy.force eq in
     let t = decomp_term concl in
     match t with
@@ -230,7 +230,7 @@ module Btauto = struct
       Tacticals.New.tclFAIL 0 msg
 
   let tac =
-    Proofview.Goal.concl >>- fun concl ->
+    Proofview.Goal.concl >>= fun concl ->
     let eq = Lazy.force eq in
     let bool = Lazy.force Bool.typ in
     let t = decomp_term concl in

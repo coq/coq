@@ -44,12 +44,12 @@ let filter_hyp f tac =
     | [] -> raise Not_found
     | (id,_,t)::rest when f t -> tac id
     | _::rest -> seek rest in
-  Proofview.Goal.hyps >>- fun hyps ->
+  Proofview.Goal.hyps >>= fun hyps ->
   seek (Environ.named_context_of_val hyps)
 
 let contradiction_context =
   Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>- fun env ->
+  Proofview.Goal.env >>= fun env ->
   let rec seek_neg l = match l with
     | [] ->  Proofview.tclZERO (UserError ("" , Pp.str"No such contradiction"))
     | (id,_,typ)::rest ->
@@ -60,7 +60,7 @@ let contradiction_context =
 	  | Prod (na,t,u) when is_empty_type u ->
 	      (Proofview.tclORELSE
                  begin
-                   Tacmach.New.pf_apply is_conv_leq >>- fun is_conv_leq ->
+                   Tacmach.New.pf_apply is_conv_leq >>= fun is_conv_leq ->
 	           filter_hyp (fun typ -> is_conv_leq typ t)
 		     (fun id' -> simplest_elim (mkApp (mkVar id,[|mkVar id'|])))
                  end
@@ -69,7 +69,7 @@ let contradiction_context =
                    | e -> Proofview.tclZERO e
                  end)
 	  | _ -> seek_neg rest in
-  Proofview.Goal.hyps >>- fun hyps ->
+  Proofview.Goal.hyps >>= fun hyps ->
   let hyps = Environ.named_context_of_val hyps in
   seek_neg hyps
 
@@ -80,8 +80,8 @@ let is_negation_of env sigma typ t =
 
 let contradiction_term (c,lbind as cl) =
   Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>- fun env ->
-  Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
+  Proofview.Goal.env >>= fun env ->
+  Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
   let typ = type_of c in
   let _, ccl = splay_prod env sigma typ in
   if is_empty_type ccl then

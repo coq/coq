@@ -646,7 +646,7 @@ END
 exception Found of unit Proofview.tactic
 
 let rewrite_except h =
-  Tacmach.New.pf_ids_of_hyps >>- fun hyps ->
+  Tacmach.New.pf_ids_of_hyps >>= fun hyps ->
   Tacticals.New.tclMAP (fun id -> if Id.equal id h then Proofview.tclUNIT () else 
       Tacticals.New.tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
     hyps
@@ -663,12 +663,12 @@ let refl_equal =
   should be replaced by a call to the tactic but I don't know how to
   call it before it is defined. *)
 let  mkCaseEq a  : unit Proofview.tactic =
-      Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g a) >>- fun type_of_a ->
+      Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g a) >>= fun type_of_a ->
        Tacticals.New.tclTHENLIST
          [Proofview.V82.tactic (Hiddentac.h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])]);
           begin
-            Proofview.Goal.concl >>- fun concl ->
-            Proofview.Goal.env >>- fun env ->
+            Proofview.Goal.concl >>= fun concl ->
+            Proofview.Goal.env >>= fun env ->
             Proofview.V82.tactic begin
 	      change_in_concl None
 	        (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] env Evd.empty concl)
@@ -681,15 +681,15 @@ let case_eq_intros_rewrite x =
   Proofview.Goal.lift begin
     Goal.concl >- fun concl ->
     Goal.return (nb_prod concl)
-  end >>- fun n ->
+  end >>= fun n ->
   (* Pp.msgnl (Printer.pr_lconstr x); *)
   Tacticals.New.tclTHENLIST [
       mkCaseEq x;
     begin
-      Proofview.Goal.concl >>- fun concl ->
-      Tacmach.New.pf_ids_of_hyps >>- fun hyps ->
+      Proofview.Goal.concl >>= fun concl ->
+      Tacmach.New.pf_ids_of_hyps >>= fun hyps ->
       let n' = nb_prod concl in
-      Tacmach.New.of_old (fun g -> fresh_id hyps (Id.of_string "heq") g) >>- fun h ->
+      Tacmach.New.of_old (fun g -> fresh_id hyps (Id.of_string "heq") g) >>= fun h ->
       Tacticals.New.tclTHENLIST [
                     Tacticals.New.tclDO (n'-n-1) intro;
 		    Proofview.V82.tactic (Tacmach.introduction h);
@@ -715,13 +715,13 @@ let destauto t =
   with Found tac -> tac
 
 let destauto_in id = 
-  Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g (mkVar id)) >>- fun ctype ->
+  Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g (mkVar id)) >>= fun ctype ->
 (*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
 (*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto ctype
 
 TACTIC EXTEND destauto
-| [ "destauto" ] -> [ Proofview.Goal.concl >>- fun concl -> destauto concl ]
+| [ "destauto" ] -> [ Proofview.Goal.concl >>= fun concl -> destauto concl ]
 | [ "destauto" "in" hyp(id) ] -> [ destauto_in id ]
 END
 

@@ -799,7 +799,7 @@ open Proofview.Notations
 
 let ring_lookup (f:glob_tactic_expr) lH rl t =
   Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>- fun env ->
+  Proofview.Goal.env >>= fun env ->
   let rl = make_args_list rl t in
   let e = find_ring_structure env sigma rl in
   let rl = carg (make_term_list e.ring_carrier rl) in
@@ -1120,7 +1120,7 @@ let ltac_field_structure e =
 
 let field_lookup (f:glob_tactic_expr) lH rl t =
   Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>- fun env ->
+  Proofview.Goal.env >>= fun env ->
   let rl = make_args_list rl t in
   let e = find_field_structure env sigma rl in
   let rl = carg (make_term_list e.field_carrier rl) in

@@ -351,7 +351,7 @@ let do_replace_lb lb_scheme_key aavoid narg p q =
         )))
       )
   in
-  Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
+  Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
   let type_of_pq = type_of p in
     let u,v = destruct_ind type_of_pq
     in let lb_type_of_p =
@@ -411,7 +411,7 @@ let do_replace_bl bl_scheme_key ind aavoid narg lft rgt =
   let rec aux l1 l2 =
     match (l1,l2) with
     | (t1::q1,t2::q2) ->
-        Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
+        Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
         let tt1 = type_of t1 in
         if eq_constr t1 t2 then aux q1 q2
         else (
@@ -557,11 +557,11 @@ let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec =
           avoid := fresh::(!avoid); fresh
         end
       in
-      Proofview.Goal.lift (Goal.sensitive_list_map fresh_id first_intros) >>- fun fresh_first_intros ->
+      Proofview.Goal.lift (Goal.sensitive_list_map fresh_id first_intros) >>= fun fresh_first_intros ->
       let fresh_id s = Proofview.Goal.lift (fresh_id s) in
-      fresh_id (Id.of_string "x") >>- fun freshn ->
-      fresh_id (Id.of_string "y") >>- fun freshm ->
-      fresh_id (Id.of_string "Z") >>- fun freshz ->
+      fresh_id (Id.of_string "x") >>= fun freshn ->
+      fresh_id (Id.of_string "y") >>= fun freshm ->
+      fresh_id (Id.of_string "Z") >>= fun freshz ->
   (* try with *)
       Tacticals.New.tclTHENLIST [ intros_using fresh_first_intros;
                      intro_using freshn ;
@@ -580,7 +580,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                     Tacticals.New.tclREPEAT (
                       Tacticals.New.tclTHENLIST [
                          simple_apply_in freshz (andb_prop());
-                           fresh_id (Id.of_string "Z") >>- fun fresht ->
+                           fresh_id (Id.of_string "Z") >>= fun fresht ->
                             (new_destruct false [Tacexpr.ElimOnConstr
                                       (Evd.empty,((mkVar freshz,NoBindings)))]
                                   None
@@ -592,7 +592,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
   Ci a1 ... an = Ci b1 ... bn
  replace bi with ai; auto || replace bi with ai by  apply typeofbi_prod ; auto
 *)
-                      Proofview.Goal.concl >>- fun gl ->
+                      Proofview.Goal.concl >>= fun gl ->
                       match (kind_of_term gl) with
                       | App (c,ca) -> (
                         match (kind_of_term c) with
@@ -688,11 +688,11 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
           avoid := fresh::(!avoid); fresh
         end
       in
-      Proofview.Goal.lift (Goal.sensitive_list_map fresh_id first_intros) >>- fun fresh_first_intros ->
+      Proofview.Goal.lift (Goal.sensitive_list_map fresh_id first_intros) >>= fun fresh_first_intros ->
       let fresh_id s = Proofview.Goal.lift (fresh_id s) in
-      fresh_id (Id.of_string "x") >>- fun freshn ->
-      fresh_id (Id.of_string "y") >>- fun freshm ->
-      fresh_id (Id.of_string "Z") >>- fun freshz ->
+      fresh_id (Id.of_string "x") >>= fun freshn ->
+      fresh_id (Id.of_string "y") >>= fun freshm ->
+      fresh_id (Id.of_string "Z") >>= fun freshz ->
   (* try with *)
       Tacticals.New.tclTHENLIST [ intros_using fresh_first_intros;
                      intro_using freshn ;
@@ -711,7 +711,7 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec =
                       Tacticals.New.tclTHENLIST [Proofview.V82.tactic (apply (andb_true_intro()));
                                   simplest_split ;Auto.default_auto ]
                       );
-                      Proofview.Goal.concl >>- fun gl ->
+                      Proofview.Goal.concl >>= fun gl ->
                   (* assume the goal to be eq (eq_type ...) = true *)
                         match (kind_of_term gl) with
                           | App(c,ca) -> (match (kind_of_term ca.(1)) with
@@ -826,11 +826,11 @@ let compute_dec_tact ind lnamesparrec nparrec =
       avoid := fresh::(!avoid); fresh
     end
   in
-  Proofview.Goal.lift (Goal.sensitive_list_map fresh_id first_intros) >>- fun fresh_first_intros ->
+  Proofview.Goal.lift (Goal.sensitive_list_map fresh_id first_intros) >>= fun fresh_first_intros ->
   let fresh_id s = Proofview.Goal.lift (fresh_id s) in
-  fresh_id (Id.of_string "x") >>- fun freshn ->
-  fresh_id (Id.of_string "y") >>- fun freshm ->
-  fresh_id (Id.of_string "H") >>- fun freshH ->
+  fresh_id (Id.of_string "x") >>= fun freshn ->
+  fresh_id (Id.of_string "y") >>= fun freshm ->
+  fresh_id (Id.of_string "H") >>= fun freshH ->
   let eqbnm = mkApp(eqI,[|mkVar freshn;mkVar freshm|]) in
   let arfresh = Array.of_list fresh_first_intros in
   let xargs = Array.sub arfresh 0 (2*nparrec) in
@@ -860,7 +860,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
 	)
 	  (Tacticals.New.tclTHEN (destruct_on eqbnm) Auto.default_auto);
 
-          fresh_id (Id.of_string "H") >>- fun freshH2 ->
+          fresh_id (Id.of_string "H") >>= fun freshH2 ->
 	  Tacticals.New.tclTHENS (destruct_on_using (mkVar freshH) freshH2) [
 	    (* left *)
 	    Tacticals.New.tclTHENLIST [
@@ -870,7 +870,7 @@ let compute_dec_tact ind lnamesparrec nparrec =
             ];
 
 	    (*right *)
-            fresh_id (Id.of_string "H") >>- fun freshH3 ->
+            fresh_id (Id.of_string "H") >>= fun freshH3 ->
             Tacticals.New.tclTHENLIST [
 	      simplest_right ;
               Proofview.V82.tactic (unfold_constr (Lazy.force Coqlib.coq_not_ref));

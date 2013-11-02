@@ -86,7 +86,7 @@ let tmphyp_name = Id.of_string "_TmpHyp"
 let up_to_delta = ref false (* true *)
 
 let general_decompose recognizer c =
-  Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
+  Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
   let typc = type_of c in
   Tacticals.New.tclTHENS (Proofview.V82.tactic (cut typc))
     [ Tacticals.New.tclTHEN (intro_using tmphyp_name)
@@ -111,7 +111,7 @@ let head_in =
 
 let decompose_these c l =
   let indl = (*List.map inductive_of*) l in
-  Proofview.Goal.lift head_in >>- fun head_in ->
+  Proofview.Goal.lift head_in >>= fun head_in ->
   general_decompose (fun (_,t) -> head_in indl t) c
 
 let decompose_nonrec c =
@@ -167,8 +167,8 @@ let induction_trailer abs_i abs_j bargs =
           ))
 
 let double_ind h1 h2 =
-  Tacmach.New.of_old (depth_of_quantified_hypothesis true h1) >>- fun abs_i ->
-  Tacmach.New.of_old (depth_of_quantified_hypothesis true h2) >>- fun abs_j ->
+  Tacmach.New.of_old (depth_of_quantified_hypothesis true h1) >>= fun abs_i ->
+  Tacmach.New.of_old (depth_of_quantified_hypothesis true h2) >>= fun abs_j ->
   let abs =
     if abs_i < abs_j then Proofview.tclUNIT (abs_i,abs_j) else
     if abs_i > abs_j then  Proofview.tclUNIT (abs_j,abs_i) else

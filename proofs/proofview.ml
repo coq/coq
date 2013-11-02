@@ -168,7 +168,7 @@ let unfocus c sp =
      meta-level as OCaml functions.
      Most tactics, in the sense we are used to, return [ () ], that is
      no really interesting values. But some might pass information 
-     around; the [(>>--)] and [(>>==)] bind-like construction are the
+     around; the [(>>==)] and [(>>==)] bind-like construction are the
      main ingredients of this information passing. 
      (* spiwack: I don't know how much all this relates to F. Kirchner and 
         C. Muñoz. I wasn't able to understand how they used the monad
@@ -409,7 +409,7 @@ type 'a glist  = 'a list
 module Notations = struct
   let (>-) = Goal.bind
   let (>=) = tclBIND
-  let (>>-) t k =
+  let (>>=) t k =
     (* spiwack: the application of List.map may raise errors, as this
        combinator is mostly used in porting historical tactic code,
        where the error flow is somewhat hard to follow, hence the
@@ -417,7 +417,7 @@ module Notations = struct
       t >= fun l ->
       try tclDISPATCH (List.map k l)
       with e when Errors.noncritical e -> tclZERO e
-  let (>>--) t k =
+  let (>>==) t k =
     (* spiwack: the application of List.map may raise errors, as this
        combinator is mostly used in porting historical tactic code,
        where the error flow is somewhat hard to follow, hence the
@@ -428,8 +428,6 @@ module Notations = struct
       with e when Errors.noncritical e -> tclZERO e
     end >= fun l' ->
     tclUNIT (List.flatten l')
-  let (>>=) = (>>-)
-  let (>>==) = (>>--)
   let (<*>) = tclTHEN
   let (<+>) t1 t2 = tclOR t2 (fun _ -> t2)
 end

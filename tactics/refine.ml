@@ -315,7 +315,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) : unit Proofview.tactic =
 
     (* let in without holes in the body => possibly dependent intro *)
     | LetIn (Name id,c1,t1,c2), _ when not (isMeta (strip_outer_cast c1)) ->
-        Proofview.Goal.concl >>- fun c ->
+        Proofview.Goal.concl >>= fun c ->
 	let newc = mkNamedLetIn id c1 t1 c in
 	Tacticals.New.tclTHEN
 	  (Proofview.V82.tactic (change_in_concl None newc))
@@ -383,7 +383,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) : unit Proofview.tactic =
 
 let refine (evd,c) =
   Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>- fun env ->
+  Proofview.Goal.env >>= fun env ->
   let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals env evd in
   let c = Evarutil.nf_evar evd c in
   let (evd,c) = Evarutil.evars_to_metas sigma (evd,c) in

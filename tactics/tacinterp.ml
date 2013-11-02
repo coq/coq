@@ -1161,7 +1161,7 @@ and interp_ltac_reference loc' mustbetac ist = function
 
 and interp_tacarg ist arg =
   let tac_of_old f =
-    Tacmach.New.of_old f >>-- fun (sigma,v) ->
+    Tacmach.New.of_old f >>== fun (sigma,v) ->
     Proofview.V82.tactic (tclEVARS sigma) <*>
     (Proofview.Goal.return v)
   in
@@ -1191,7 +1191,7 @@ and interp_tacarg ist arg =
       end la ((Proofview.Goal.return [])) >>== fun la_interp ->
       tac_of_old (fun gl -> interp_external loc ist { gl with sigma=project gl } com req la_interp)
   | TacFreshId l ->
-      Tacmach.New.of_old (fun gl -> pf_interp_fresh_id ist gl l) >>-- fun id ->
+      Tacmach.New.of_old (fun gl -> pf_interp_fresh_id ist gl l) >>== fun id ->
       (Proofview.Goal.return (in_gen (topwit wit_intro_pattern) (dloc, IntroIdentifier id)))
   | Tacexp t -> val_interp ist t
   | TacDynamic(_,t) ->
@@ -1324,11 +1324,11 @@ and interp_letin ist llc u =
 
 (* Interprets the Match Context expressions *)
 and interp_match_goal ist lz lr lmr =
-  Proofview.Goal.hyps >>-- fun hyps ->
+  Proofview.Goal.hyps >>== fun hyps ->
   let hyps = Environ.named_context_of_val hyps in
   let hyps = if lr then List.rev hyps else hyps in
-  Proofview.Goal.concl >>-- fun concl ->
-  Proofview.Goal.env >>-- fun env ->
+  Proofview.Goal.concl >>== fun concl ->
+  Proofview.Goal.env >>== fun env ->
   let rec apply_goal_sub app ist (id,c) csr mt mhyps hyps =
     let rec match_next_pattern next = match IStream.peek next with
     | None -> Proofview.tclZERO PatternMatchingFailure
@@ -1411,7 +1411,7 @@ and interp_match_goal ist lz lr lmr =
 
 (* Tries to match the hypotheses in a Match Context *)
 and apply_hyps_context ist env lz mt lctxt lgmatch mhyps hyps =
-  Proofview.Goal.env >>-- fun env ->
+  Proofview.Goal.env >>== fun env ->
   let rec apply_hyps_context_rec lfun lmatch lhyps_rest = function
     | hyp_pat::tl ->
 	let (hypname, _, pat as hyp_pat) =
@@ -1442,7 +1442,7 @@ and apply_hyps_context ist env lz mt lctxt lgmatch mhyps hyps =
         in
         let init_match_pattern = Tacmach.New.of_old (fun gl ->
           apply_one_mhyp_context gl lmatch hyp_pat lhyps_rest) in
-        init_match_pattern >>-- match_next_pattern
+        init_match_pattern >>== match_next_pattern
     | [] ->
         let lfun = lfun +++ ist.lfun in
         let lfun = extend_values_with_bindings lmatch lfun in
@@ -1611,7 +1611,7 @@ and interp_match ist lz constr lmr =
     end
   end >>== fun csr ->
   Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>-- fun env ->
+  Proofview.Goal.env >>== fun env ->
   let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
   Proofview.tclORELSE
     (apply_match ist csr ilr)
@@ -1639,7 +1639,7 @@ and interp_ltac_constr ist e =
         | e -> Proofview.tclZERO e
       end
   end >>== fun result ->
-  Proofview.Goal.env >>-- fun env ->
+  Proofview.Goal.env >>== fun env ->
   let result = Value.normalize result in
   try
     let cresult = coerce_to_closed_constr env result in
@@ -1649,7 +1649,7 @@ and interp_ltac_constr ist e =
         pr_constr_env env cresult);
     (Proofview.Goal.return cresult)
   with CannotCoerceTo _ ->
-    Proofview.Goal.env >>-- fun env ->
+    Proofview.Goal.env >>== fun env ->
     Proofview.tclZERO (UserError ( "",
       errorlabstrm ""
       (str "Must evaluate to a closed term" ++ fnl() ++
@@ -1665,13 +1665,13 @@ and interp_atomic ist tac =
   match tac with
   (* Basic tactics *)
   | TacIntroPattern l ->
-      Tacmach.New.of_old (fun gl -> interp_intro_pattern_list_as_list ist gl l) >>- fun patterns ->
+      Tacmach.New.of_old (fun gl -> interp_intro_pattern_list_as_list ist gl l) >>= fun patterns ->
       h_intro_patterns patterns
   | TacIntrosUntil hyp ->
       h_intros_until (interp_quantified_hypothesis ist hyp)
   | TacIntroMove (ido,hto) ->
-      Proofview.Goal.env >>- fun env ->
-      Tacmach.New.of_old (fun gl -> interp_move_location ist gl hto) >>- fun mloc ->
+      Proofview.Goal.env >>= fun env ->
+      Tacmach.New.of_old (fun gl -> interp_move_location ist gl hto) >>= fun mloc ->
       h_intro_move (Option.map (interp_fresh_ident ist env) ido) mloc
   | TacAssumption -> Proofview.V82.tactic h_assumption
   | TacExact c ->
@@ -1700,7 +1700,7 @@ and interp_atomic ist tac =
       end
   | TacApply (a,ev,cb,cl) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       let sigma, l =
         List.fold_map (interp_open_constr_with_bindings_loc ist env) sigma cb
       in
@@ -1708,12 +1708,12 @@ and interp_atomic ist tac =
         | None -> fun l -> Proofview.V82.tactic (h_apply a ev l)
         | Some cl ->
             (fun l ->
-              Tacmach.New.of_old (fun gl -> interp_in_hyp_as ist gl cl) >>- fun cl ->
+              Tacmach.New.of_old (fun gl -> interp_in_hyp_as ist gl cl) >>= fun cl ->
               h_apply_in a ev l cl) in
       Tacticals.New.tclWITHHOLES ev tac sigma l
   | TacElim (ev,cb,cbo) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       let sigma, cb = interp_constr_with_bindings ist env sigma cb in
       let sigma, cbo = Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
       Tacticals.New.tclWITHHOLES ev (h_elim ev cb) sigma cbo
@@ -1727,7 +1727,7 @@ and interp_atomic ist tac =
       end
   | TacCase (ev,cb) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       let sigma, cb = interp_constr_with_bindings ist env sigma cb in
       Tacticals.New.tclWITHHOLES ev (h_case ev) sigma cb
   | TacCaseType c ->
@@ -1739,10 +1739,10 @@ and interp_atomic ist tac =
           gl
       end
   | TacFix (idopt,n) ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       Proofview.V82.tactic (h_fix (Option.map (interp_fresh_ident ist env) idopt) n)
   | TacMutualFix (id,n,l) ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       Proofview.V82.tactic begin fun gl -> 
         let f sigma (id,n,c) =
 	  let (sigma,c_interp) = pf_interp_type ist { gl with sigma=sigma } c in
@@ -1759,10 +1759,10 @@ and interp_atomic ist tac =
           gl
       end
   | TacCofix idopt ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       Proofview.V82.tactic (h_cofix (Option.map (interp_fresh_ident ist env) idopt))
   | TacMutualCofix (id,l) ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       Proofview.V82.tactic begin fun gl -> 
         let f sigma (id,c) =
 	  let (sigma,c_interp) = pf_interp_type ist { gl with sigma=sigma } c in
@@ -1788,16 +1788,16 @@ and interp_atomic ist tac =
       end
   | TacAssert (t,ipat,c) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       let (sigma,c) = (if Option.is_empty t then interp_constr else interp_type) ist env sigma c in
-      Tacmach.New.of_old (fun gl -> interp_intro_pattern ist gl) >>- fun patt ->
+      Tacmach.New.of_old (fun gl -> interp_intro_pattern ist gl) >>= fun patt ->
       Tacticals.New.tclTHEN
 	(Proofview.V82.tactic (tclEVARS sigma))
         (Tactics.forward (Option.map (interp_tactic ist) t)
 	   (Option.map patt ipat) c)
   | TacGeneralize cl ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       Proofview.V82.tactic begin fun gl -> 
         let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
         tclWITHHOLES false (h_generalize_gen) sigma cl gl
@@ -1812,12 +1812,11 @@ and interp_atomic ist tac =
       end
   | TacLetTac (na,c,clp,b,eqpat) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
-      Tacmach.New.of_old (fun gl -> interp_clause ist gl clp) >>- fun clp ->
-      Tacmach.New.of_old (fun gl -> Option.map (interp_intro_pattern ist gl) eqpat) >>- fun eqpat ->
+      Proofview.Goal.env >>= fun env ->
+      Tacmach.New.of_old (fun gl -> interp_clause ist gl clp) >>= fun clp ->Tacmach.New.of_old (fun gl -> Option.map (interp_intro_pattern ist gl) eqpat) >>= fun eqpat ->
       if Locusops.is_nowhere clp then
         (* We try to fully-typecheck the term *)
-        Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>- fun (sigma,c_interp) ->
+        Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>= fun (sigma,c_interp) ->
 	Tacticals.New.tclTHEN
 	  (Proofview.V82.tactic (tclEVARS sigma))
           (h_let_tac b (interp_fresh_name ist env na) c_interp clp eqpat)
@@ -1829,13 +1828,13 @@ and interp_atomic ist tac =
   (* Automation tactics *)
   | TacTrivial (debug,lems,l) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       Auto.h_trivial ~debug
 	(interp_auto_lemmas ist env sigma lems)
 	(Option.map (List.map (interp_hint_base ist)) l)
   | TacAuto (debug,n,lems,l) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       Auto.h_auto ~debug (Option.map (interp_int_or_var ist) n)
 	(interp_auto_lemmas ist env sigma lems)
 	(Option.map (List.map (interp_hint_base ist)) l)
@@ -1844,7 +1843,7 @@ and interp_atomic ist tac =
   | TacSimpleInductionDestruct (isrec,h) ->
       h_simple_induction_destruct isrec (interp_quantified_hypothesis ist h)
   | TacInductionDestruct (isrec,ev,(l,el,cls)) ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       let l =
         Goal.sensitive_list_map begin fun (c,(ipato,ipats)) ->
           Goal.V82.to_sensitive (fun gl -> interp_induction_arg ist gl c) >- fun c ->
@@ -1857,10 +1856,10 @@ and interp_atomic ist tac =
         end l
       in
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.lift l >>- fun l ->
+      Proofview.Goal.lift l >>= fun l ->
       let sigma,el =
         Option.fold_map (interp_constr_with_bindings ist env) sigma el in
-      Tacmach.New.of_old (fun gl -> interp_clause ist gl) >>- fun interp_clause ->
+      Tacmach.New.of_old (fun gl -> interp_clause ist gl) >>= fun interp_clause ->
       let cls = Option.map interp_clause cls in
       Tacticals.New.tclWITHHOLES ev (h_induction_destruct isrec ev) sigma (l,el,cls)
   | TacDoubleInduction (h1,h2) ->
@@ -1868,24 +1867,24 @@ and interp_atomic ist tac =
       let h2 = interp_quantified_hypothesis ist h2 in
       Elim.h_double_induction h1 h2
   | TacDecomposeAnd c ->
-      Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>- fun (sigma,c_interp) ->
+      Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>= fun (sigma,c_interp) ->
       Tacticals.New.tclTHEN
 	(Proofview.V82.tactic (tclEVARS sigma))
 	(Elim.h_decompose_and c_interp)
   | TacDecomposeOr c ->
-      Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>- fun (sigma,c_interp) ->
+      Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>= fun (sigma,c_interp) ->
       Tacticals.New.tclTHEN
 	(Proofview.V82.tactic (tclEVARS sigma))
 	(Elim.h_decompose_or c_interp)
   | TacDecompose (l,c) ->
       let l = List.map (interp_inductive ist) l in
-      Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>- fun (sigma,c_interp) ->
+      Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>= fun (sigma,c_interp) ->
       Tacticals.New.tclTHEN
 	(Proofview.V82.tactic (tclEVARS sigma))
 	(Elim.h_decompose l c_interp)
   | TacSpecialize (n,cb) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       Proofview.V82.tactic begin fun gl -> 
         let sigma, cb = interp_constr_with_bindings ist env sigma cb in
         tclWITHHOLES false (h_specialize n) sigma cb gl
@@ -1913,7 +1912,7 @@ and interp_atomic ist tac =
         h_move dep (interp_hyp ist gl id1) (interp_move_location ist gl id2) gl
       end
   | TacRename l ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       Proofview.V82.tactic begin fun gl -> 
         h_rename (List.map (fun (id1,id2) ->
 	  interp_hyp ist gl id1,
@@ -1928,24 +1927,24 @@ and interp_atomic ist tac =
   (* Constructors *)
   | TacLeft (ev,bl) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       let sigma, bl = interp_bindings ist env sigma bl in
       Tacticals.New.tclWITHHOLES ev (h_left ev) sigma bl
   | TacRight (ev,bl) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       let sigma, bl = interp_bindings ist env sigma bl in
       Tacticals.New.tclWITHHOLES ev (h_right ev) sigma bl
   | TacSplit (ev,_,bll) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       let sigma, bll = List.fold_map (interp_bindings ist env) sigma bll in
       Tacticals.New.tclWITHHOLES ev (h_split ev) sigma bll
   | TacAnyConstructor (ev,t) ->
       Tactics.any_constructor ev (Option.map (interp_tactic ist) t)
   | TacConstructor (ev,n,bl) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       let sigma, bl = interp_bindings ist env sigma bl in
       Tacticals.New.tclWITHHOLES ev (h_constructor ev (interp_int_or_var ist n)) sigma bl
 
@@ -1980,7 +1979,7 @@ and interp_atomic ist tac =
       end
   | TacChange (Some op,c,cl) ->
       Proofview.tclEVARMAP >= fun sigma ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       Proofview.V82.tactic begin fun gl -> 
         let sign,op = interp_typed_pattern ist env sigma op in
       (* spiwack: (2012/04/18) the evar_map output by pf_interp_constr
@@ -2002,13 +2001,13 @@ and interp_atomic ist tac =
   (* Equivalence relations *)
   | TacReflexivity -> h_reflexivity
   | TacSymmetry c ->
-      Tacmach.New.of_old (fun gl -> interp_clause ist gl c) >>- fun cl ->
+      Tacmach.New.of_old (fun gl -> interp_clause ist gl c) >>= fun cl ->
       h_symmetry cl
   | TacTransitivity c ->
       begin match c with
       | None -> h_transitivity None
       | Some c ->
-          Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>- fun (sigma,c_interp) ->
+          Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>= fun (sigma,c_interp) ->
           Tacticals.New.tclTHEN
 	    (Proofview.V82.tactic (tclEVARS sigma))
 	    (h_transitivity (Some c_interp))
@@ -2019,7 +2018,7 @@ and interp_atomic ist tac =
       let l = List.map (fun (b,m,c) ->
         let f env sigma = interp_open_constr_with_bindings ist env sigma c in
 	(b,m,f)) l in
-      Tacmach.New.of_old (fun gl -> interp_clause ist gl cl) >>- fun cl ->
+      Tacmach.New.of_old (fun gl -> interp_clause ist gl cl) >>= fun cl ->
       Equality.general_multi_multi_rewrite ev l cl
         (Option.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by), Equality.Naive) by)
   | TacInversion (DepInversion (k,c,ids),hyp) ->
@@ -2029,24 +2028,24 @@ and interp_atomic ist tac =
       | Some c ->
           Goal.V82.to_sensitive (fun gl -> pf_interp_constr ist gl c) >- fun (sigma,c_interp) ->
 	  Goal.return (sigma , Some c_interp)
-      end >>- fun (sigma,c_interp) ->
-      Tacmach.New.of_old (interp_intro_pattern ist) >>- fun interp_intro_pattern ->
-      Tacmach.New.of_old (fun gl -> interp_declared_or_quantified_hypothesis ist gl hyp) >>- fun dqhyps ->
+      end >>= fun (sigma,c_interp) ->
+      Tacmach.New.of_old (interp_intro_pattern ist) >>= fun interp_intro_pattern ->
+      Tacmach.New.of_old (fun gl -> interp_declared_or_quantified_hypothesis ist gl hyp) >>= fun dqhyps ->
       Inv.dinv k c_interp
         (Option.map interp_intro_pattern ids)
         dqhyps
   | TacInversion (NonDepInversion (k,idl,ids),hyp) ->
-      Tacmach.New.of_old (interp_intro_pattern ist) >>- fun interp_intro_pattern ->
-      Tacmach.New.of_old (fun gl -> interp_hyp_list ist gl idl) >>- fun hyps ->
-      Tacmach.New.of_old (fun gl -> interp_declared_or_quantified_hypothesis ist gl hyp) >>- fun dqhyps ->
+      Tacmach.New.of_old (interp_intro_pattern ist) >>= fun interp_intro_pattern ->
+      Tacmach.New.of_old (fun gl -> interp_hyp_list ist gl idl) >>= fun hyps ->
+      Tacmach.New.of_old (fun gl -> interp_declared_or_quantified_hypothesis ist gl hyp) >>= fun dqhyps ->
       Inv.inv_clause k
         (Option.map interp_intro_pattern ids)
         hyps
         dqhyps
   | TacInversion (InversionUsing (c,idl),hyp) ->
-      Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>- fun (sigma,c_interp) ->
-      Tacmach.New.of_old (fun gl -> interp_declared_or_quantified_hypothesis ist gl hyp) >>- fun dqhyps ->
-      Tacmach.New.of_old (fun gl -> interp_hyp_list ist gl idl) >>- fun hyps ->
+      Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) >>= fun (sigma,c_interp) ->
+      Tacmach.New.of_old (fun gl -> interp_declared_or_quantified_hypothesis ist gl hyp) >>= fun dqhyps ->
+      Tacmach.New.of_old (fun gl -> interp_hyp_list ist gl idl) >>= fun hyps ->
       Leminv.lemInv_clause dqhyps
         c_interp
         hyps
@@ -2060,11 +2059,11 @@ and interp_atomic ist tac =
 	  let (sigma,a_interp) = interp_genarg ist { gl with sigma=sigma } a in
 	  sigma , a_interp::acc
 	end l (goal_sigma,[])
-      end >>- fun (sigma,args) ->
+      end >>= fun (sigma,args) ->
       Proofview.V82.tactic (tclEVARS sigma) <*>
       tac args ist
   | TacAlias (loc,s,l,(_,body)) ->
-      Proofview.Goal.env >>- fun env ->
+      Proofview.Goal.env >>= fun env ->
       let rec f x = match genarg_tag x with
           | IntOrVarArgType ->
               (Proofview.Goal.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x)))
@@ -2081,15 +2080,15 @@ and interp_atomic ist tac =
                                    (pf_interp_reference ist gl (out_gen (glbwit wit_ref) x))))
           | GenArgType -> f (out_gen (glbwit wit_genarg) x)
           | ConstrArgType ->
-              Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) >>-- fun (sigma,v) ->
+              Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) >>== fun (sigma,v) ->
               Proofview.V82.tactic (tclEVARS sigma) <*>
 	      (Proofview.Goal.return v)
           | OpenConstrArgType false ->
-              Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) >>-- fun (sigma,v) ->
+              Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) >>== fun (sigma,v) ->
               Proofview.V82.tactic (tclEVARS sigma) <*>
 	      (Proofview.Goal.return v)
           | ConstrMayEvalArgType ->
-              Tacmach.New.of_old (fun gl -> interp_constr_may_eval ist gl (out_gen (glbwit wit_constr_may_eval) x)) >>-- fun (sigma,c_interp) ->
+              Tacmach.New.of_old (fun gl -> interp_constr_may_eval ist gl (out_gen (glbwit wit_constr_may_eval) x)) >>== fun (sigma,c_interp) ->
               Proofview.V82.tactic (tclEVARS sigma) <*>
 	      Proofview.Goal.return (Value.of_constr c_interp)
           | ListArgType ConstrArgType ->
@@ -2099,7 +2098,7 @@ and interp_atomic ist tac =
 	          let (sigma,c_interp) = mk_constr_value ist { gl with sigma=sigma } c in
 	          sigma , c_interp::acc
 	        end (out_gen wit x) (project gl,[])
-              end >>-- fun (sigma,l_interp) ->
+              end >>== fun (sigma,l_interp) ->
               Proofview.V82.tactic (tclEVARS sigma) <*>
               (Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) l_interp))
           | ListArgType VarArgType ->
@@ -2135,7 +2134,7 @@ and interp_atomic ist tac =
                 Proofview.Goal.return v
               else
                 Tacmach.New.of_old (fun gl ->
-                  Geninterp.generic_interp ist gl x) >>-- fun (newsigma,v) ->
+                  Geninterp.generic_interp ist gl x) >>== fun (newsigma,v) ->
                 Proofview.V82.tactic (tclEVARS newsigma) <*>
                 Proofview.Goal.return v
           | QuantHypArgType | RedExprArgType
@@ -2172,7 +2171,7 @@ let eval_tactic t =
 
 let interp_tac_gen lfun avoid_ids debug t =
   Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>- fun env ->
+  Proofview.Goal.env >>= fun env ->
   let extra = TacStore.set TacStore.empty f_debug debug in
   let extra = TacStore.set extra f_avoid_ids avoid_ids in
   let ist = { lfun = lfun; extra = extra } in
@@ -2193,7 +2192,7 @@ let eval_ltac_constr t =
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
 let hide_interp t ot =
   Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>- fun env ->
+  Proofview.Goal.env >>= fun env ->
   let ist = { ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty;
             gsigma = sigma; genv = env } in
   let te = intern_pure_tactic ist t in

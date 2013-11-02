@@ -274,7 +274,7 @@ Nota: with Inversion_clear, only four useless hypotheses
 *)
 
 let generalizeRewriteIntros tac depids id =
-  Tacmach.New.of_old (dependent_hyps id depids) >>- fun dids ->
+  Tacmach.New.of_old (dependent_hyps id depids) >>= fun dids ->
   (Tacticals.New.tclTHENLIST
     [Proofview.V82.tactic (bring_hyps dids); tac;
      (* may actually fail to replace if dependent in a previous eq *)
@@ -302,7 +302,7 @@ let projectAndApply thin id eqname names depids =
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
   in
   let substHypIfVariable tac id =
-    Tacmach.New.of_old (fun gls -> Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id)) >>- fun (t,t1,t2) ->
+    Tacmach.New.of_old (fun gls -> Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id)) >>= fun (t,t1,t2) ->
     match (kind_of_term t1, kind_of_term t2) with
     | Var id1, _ -> generalizeRewriteIntros (Proofview.V82.tactic (subst_hyp true id)) depids id1
     | _, Var id2 -> generalizeRewriteIntros (Proofview.V82.tactic (subst_hyp false id)) depids id2
@@ -331,7 +331,7 @@ let projectAndApply thin id eqname names depids =
 (* Inversion qui n'introduit pas les hypotheses, afin de pouvoir les nommer
    soi-meme (proposition de Valerie). *)
 let rewrite_equations_gene othin neqns ba =
-  Tacmach.New.of_old (fun gl -> split_dep_and_nodep ba.assums gl) >>- fun (depids,nodepids) ->
+  Tacmach.New.of_old (fun gl -> split_dep_and_nodep ba.assums gl) >>= fun (depids,nodepids) ->
   let rewrite_eqns =
     match othin with
       | Some thin ->
@@ -398,7 +398,7 @@ let extract_eqn_names = function
 
 let rewrite_equations othin neqns names ba =
   let names = List.map (get_names true) names in
-  Tacmach.New.of_old (fun gl -> split_dep_and_nodep ba.assums gl) >>- fun (depids,nodepids) ->
+  Tacmach.New.of_old (fun gl -> split_dep_and_nodep ba.assums gl) >>= fun (depids,nodepids) ->
   let rewrite_eqns =
     let first_eq = ref MoveLast in
     match othin with
@@ -444,18 +444,18 @@ let rewrite_equations_tac (gene, othin) id neqns names ba =
 
 let raw_inversion inv_kind id status names =
   Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>- fun env ->
-  Proofview.Goal.concl >>- fun concl ->
+  Proofview.Goal.env >>= fun env ->
+  Proofview.Goal.concl >>= fun concl ->
   let c = mkVar id in
-  Tacmach.New.pf_apply Tacred.reduce_to_atomic_ind >>- fun reduce_to_atomic_ind ->
-  Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
+  Tacmach.New.pf_apply Tacred.reduce_to_atomic_ind >>= fun reduce_to_atomic_ind ->
+  Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
   let (ind,t) =
     try
       reduce_to_atomic_ind (type_of c)
     with UserError _ ->
       errorlabstrm "raw_inversion"
 	(str ("The type of "^(Id.to_string id)^" is not inductive.")) in
-  Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) >>- fun indclause ->
+  Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) >>= fun indclause ->
   let ccl = clenv_type indclause in
   check_no_metas indclause ccl;
   let IndType (indf,realargs) = find_rectype env sigma ccl in
@@ -522,11 +522,11 @@ let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
  * back to their places in the hyp-list. *)
 
 let invIn k names ids id =
-  Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive ids) >>- fun hyps ->
-  Proofview.Goal.concl >>- fun concl ->
+  Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_get_hyp_sensitive ids) >>= fun hyps ->
+  Proofview.Goal.concl >>= fun concl ->
   let nb_prod_init = nb_prod concl in
   let intros_replace_ids =
-    Proofview.Goal.concl >>- fun concl ->
+    Proofview.Goal.concl >>= fun concl ->
     let nb_of_new_hyp =
       nb_prod concl - (List.length hyps + nb_prod_init)
     in

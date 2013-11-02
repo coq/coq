@@ -453,11 +453,11 @@ let quote_terms ivs lc =
   yet. *)
 
 let quote f lid =
-  Tacmach.New.pf_global f >>- fun f ->
-  Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_global_sensitive lid) >>- fun cl ->
-  Proofview.Goal.lift (compute_ivs f cl) >>- fun ivs ->
-  Proofview.Goal.concl >>- fun concl ->
-  Proofview.Goal.lift (quote_terms ivs [concl]) >>- fun quoted_terms ->
+  Tacmach.New.pf_global f >>= fun f ->
+  Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_global_sensitive lid) >>= fun cl ->
+  Proofview.Goal.lift (compute_ivs f cl) >>= fun ivs ->
+  Proofview.Goal.concl >>= fun concl ->
+  Proofview.Goal.lift (quote_terms ivs [concl]) >>= fun quoted_terms ->
   let (p, vm) = match quoted_terms with
     | [p], vm -> (p,vm)
     | _ -> assert false
@@ -467,10 +467,10 @@ let quote f lid =
     | Some _ -> Proofview.V82.tactic (Tactics.convert_concl (mkApp (f, [| vm; p |])) DEFAULTcast)
 
 let gen_quote cont c f lid =
-  Tacmach.New.pf_global f >>- fun f ->
-  Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_global_sensitive lid) >>- fun cl ->
-  Proofview.Goal.lift (compute_ivs f cl) >>- fun ivs ->
-  Proofview.Goal.lift (quote_terms ivs [c]) >>- fun quoted_terms ->
+  Tacmach.New.pf_global f >>= fun f ->
+  Proofview.Goal.lift (Goal.sensitive_list_map Tacmach.New.pf_global_sensitive lid) >>= fun cl ->
+  Proofview.Goal.lift (compute_ivs f cl) >>= fun ivs ->
+  Proofview.Goal.lift (quote_terms ivs [c]) >>= fun quoted_terms ->
   let (p, vm) = match quoted_terms with
     | [p], vm -> (p,vm)
     | _ -> assert false

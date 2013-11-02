@@ -240,7 +240,7 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
          (Proofview.V82.tactic (general_elim_clause with_evars frzevars cls c elim)))
       tac
   in
-    Proofview.Goal.lift cs >>- fun cs ->
+    Proofview.Goal.lift cs >>= fun cs ->
     if firstonly then
       Tacticals.New.tclFIRST (List.map try_clause cs)
     else
@@ -330,9 +330,9 @@ let type_of_clause = function
 let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars dep_proof_ok hdcncl =
   let isatomic = isProd (whd_zeta hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
-  type_of_clause cls >>- fun type_of_cls ->
+  type_of_clause cls >>= fun type_of_cls ->
   let dep = dep_proof_ok && dep_fun c type_of_cls in
-  Tacmach.New.of_old (find_elim hdcncl lft2rgt dep cls (Some t)) >>- fun (elim,effs) ->
+  Tacmach.New.of_old (find_elim hdcncl lft2rgt dep cls (Some t)) >>= fun (elim,effs) ->
   Proofview.V82.tactic (Tactics.emit_side_effects effs) <*>
   general_elim_clause with_evars frzevars tac cls c t l
     (match lft2rgt with None -> false | Some b -> b)
@@ -360,7 +360,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
     rewrite_side_tac (Hook.get forward_general_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac)
   else
     Proofview.tclEVARMAP >= fun sigma ->
-    Proofview.Goal.env >>- fun env ->
+    Proofview.Goal.env >>= fun env ->
     let ctype = get_type_of env sigma c in
     let rels, t = decompose_prod_assum (whd_betaiotazeta sigma ctype) in
       match match_with_equality_type t with
@@ -452,7 +452,7 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
               Tacmach.New.pf_ids_of_hyps_sensitive >- fun ids_of_hyps ->
 	      Goal.return (Id.Set.fold (fun id l -> List.remove Id.equal id l) ids_in_c ids_of_hyps)
 	  in
-          Proofview.Goal.lift ids >>- fun ids ->
+          Proofview.Goal.lift ids >>= fun ids ->
           do_hyps_atleastonce ids
 	in
 	if cl.concl_occs == NoOccurrences then do_hyps else
@@ -466,7 +466,7 @@ type delayed_open_constr_with_bindings =
 let general_multi_multi_rewrite with_evars l cl tac =
   let do1 l2r f =
     Proofview.tclEVARMAP >= fun sigma ->
-    Proofview.Goal.env >>- fun env ->
+    Proofview.Goal.env >>= fun env ->
     let sigma,c = f env sigma in
     Tacticals.New.tclWITHHOLES with_evars
       (general_multi_rewrite l2r with_evars ?tac c) sigma cl in
@@ -501,10 +501,10 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt =
       | None -> Proofview.tclUNIT ()
       | Some tac ->  Tacticals.New.tclCOMPLETE tac
   in
-  Tacmach.New.pf_apply get_type_of >>- fun get_type_of ->
+  Tacmach.New.pf_apply get_type_of >>= fun get_type_of ->
   let t1 = get_type_of c1
   and t2 = get_type_of c2 in
-  Tacmach.New.pf_apply is_conv >>- fun is_conv ->
+  Tacmach.New.pf_apply is_conv >>= fun is_conv ->
   if unsafe || (is_conv t1 t2) then
     let e = build_coq_eq () in
     let sym = build_coq_eq_sym () in
@@ -787,7 +787,7 @@ let rec build_discriminator sigma env dirn c sort = function
 *)
 
 let gen_absurdity id =
-  Tacmach.New.pf_get_hyp_typ id >>- fun hyp_typ ->
+  Tacmach.New.pf_get_hyp_typ id >>= fun hyp_typ ->
   if is_empty_type hyp_typ
   then
     simplest_elim (mkVar id)
@@ -846,26 +846,26 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn sort =
 
 let discrEq (lbeq,_,(t,t1,t2) as u) eq_clause =
   let sigma = eq_clause.evd in
-  Proofview.Goal.env >>- fun env ->
-  Proofview.Goal.concl >>- fun concl ->
+  Proofview.Goal.env >>= fun env ->
+  Proofview.Goal.concl >>= fun concl ->
   match find_positions env sigma t1 t2 with
     | Inr _ ->
 	Proofview.tclZERO (Errors.UserError ("discr" , str"Not a discriminable equality."))
     | Inl (cpath, (_,dirn), _) ->
-        Tacmach.New.pf_apply get_type_of >>- fun get_type_of ->
+        Tacmach.New.pf_apply get_type_of >>= fun get_type_of ->
 	let sort = get_type_of concl in
 	discr_positions env sigma u eq_clause cpath dirn sort
 
 let onEquality with_evars tac (c,lbindc) =
-  Tacmach.New.pf_apply Typing.type_of >>- fun type_of ->
-  Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind >>- fun reduce_to_quantified_ind ->
+  Tacmach.New.pf_apply Typing.type_of >>= fun type_of ->
+  Tacmach.New.pf_apply Tacred.reduce_to_quantified_ind >>= fun reduce_to_quantified_ind ->
   let t = type_of c in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
-  Tacmach.New.of_old make_clenv_binding >>- fun make_clenv_binding ->
+  Tacmach.New.of_old make_clenv_binding >>= fun make_clenv_binding ->
   let eq_clause = make_clenv_binding (c,t') lbindc in
   let eq_clause' = clenv_pose_dependent_evars with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
-  Tacmach.New.of_old find_this_eq_data_decompose >>- fun find_this_eq_data_decompose ->
+  Tacmach.New.of_old find_this_eq_data_decompose >>= fun find_this_eq_data_decompose ->
   let eq,eq_args = find_this_eq_data_decompose eqn in
   Tacticals.New.tclTHEN
     (Proofview.V82.tactic (Refiner.tclEVARS eq_clause'.evd))
@@ -873,8 +873,8 @@ let onEquality with_evars tac (c,lbindc) =
 
 let onNegatedEquality with_evars tac =
   Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.concl >>- fun ccl ->
-  Proofview.Goal.env >>- fun env ->
+  Proofview.Goal.concl >>= fun ccl ->
+  Proofview.Goal.env >>= fun env ->
   match kind_of_term (hnf_constr env sigma ccl) with
   | Prod (_,t,u) when is_empty_type u ->
       Tacticals.New.tclTHEN introf
@@ -1263,9 +1263,9 @@ let injConcl = injClause None false None
 let injHyp id = injClause None false (Some (ElimOnIdent (Loc.ghost,id)))
 
 let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause =
-  Tacmach.New.of_old (fun gls -> pf_apply get_type_of gls (pf_concl gls)) >>- fun sort ->
+  Tacmach.New.of_old (fun gls -> pf_apply get_type_of gls (pf_concl gls)) >>= fun sort ->
     let sigma =  clause.evd in
-    Proofview.Goal.env >>- fun env ->
+    Proofview.Goal.env >>= fun env ->
       match find_positions env sigma t1 t2 with
       | Inl (cpath, (_,dirn), _) ->
 	  discr_positions env sigma u clause cpath dirn sort
@@ -1509,9 +1509,9 @@ let is_eq_x gl x (id,_,c) =
    erase hyp and x; proceed by generalizing all dep hyps *)
 
 let subst_one dep_proof_ok x (hyp,rhs,dir) =
-  Proofview.Goal.env >>- fun env ->
-  Proofview.Goal.hyps >>- fun hyps ->
-  Proofview.Goal.concl >>- fun concl ->
+  Proofview.Goal.env >>= fun env ->
+  Proofview.Goal.hyps >>= fun hyps ->
+  Proofview.Goal.concl >>= fun concl ->
   let hyps = Environ.named_context_of_val hyps in
   (* The set of hypotheses using x *)
   let depdecls =
@@ -1554,9 +1554,9 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) =
    au bon endroit. Il faut convertir test en une Proofview.tactic
    pour la gestion des exceptions. *)
 let subst_one_var dep_proof_ok x =
-  Proofview.Goal.hyps >>- fun hyps ->
+  Proofview.Goal.hyps >>= fun hyps ->
   let hyps = Environ.named_context_of_val hyps in
-  Tacmach.New.pf_get_hyp x >>- fun (_,xval,_) ->
+  Tacmach.New.pf_get_hyp x >>= fun (_,xval,_) ->
   (* If x has a body, simply replace x with body and clear x *)
   if not (Option.is_empty xval) then Proofview.V82.tactic (tclTHEN (unfold_body x) (clear [x])) else
   (* x is a variable: *)
@@ -1570,7 +1570,7 @@ let subst_one_var dep_proof_ok x =
         (str "Cannot find any non-recursive equality over " ++ pr_id x ++
 	 str".")
     with FoundHyp res -> res in
-  Tacmach.New.of_old found >>- fun (hyp,rhs,dir) ->
+  Tacmach.New.of_old found >>= fun (hyp,rhs,dir) ->
   subst_one dep_proof_ok x (hyp,rhs,dir)
 
 let subst_gen dep_proof_ok ids =
@@ -1595,7 +1595,7 @@ let default_subst_tactic_flags () =
 
 (* arnaud: encore des erreurs potentiels avec ces try/with *)
 let subst_all ?(flags=default_subst_tactic_flags ()) =
-  Tacmach.New.of_old find_eq_data_decompose >>- fun find_eq_data_decompose ->
+  Tacmach.New.of_old find_eq_data_decompose >>= fun find_eq_data_decompose ->
   let test (_,c) =
     try
       let lbeq,(_,x,y) = find_eq_data_decompose c in
@@ -1607,7 +1607,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) =
     with PatternMatchingFailure -> failwith "caught"
   in
   let test p = try Some (test p) with Failure _ -> None in
-  Tacmach.New.pf_hyps_types >>- fun hyps ->
+  Tacmach.New.pf_hyps_types >>= fun hyps ->
   let ids = List.map_filter test hyps in
   let ids = List.uniquize ids in
   subst_gen flags.rewrite_dependent_proof ids
@@ -1646,12 +1646,12 @@ let rewrite_multi_assumption_cond cond_eq_term cl =
     | (id,_,t) ::rest ->
 	begin
 	  try
-            cond_eq_term t >>- fun dir ->
+            cond_eq_term t >>= fun dir ->
 	    general_multi_rewrite dir false (mkVar id,NoBindings) cl
 	  with | Failure _ | UserError _ -> arec rest
 	end
   in
-  Proofview.Goal.hyps >>- fun hyps ->
+  Proofview.Goal.hyps >>= fun hyps ->
   let hyps = Environ.named_context_of_val hyps in
   arec hyps
 

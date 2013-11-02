@@ -1326,7 +1326,7 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	   | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
 	     raise (RewriteFailure (str"Unable to satisfy the rewriting constraints."
 			++ fnl () ++ Himsg.explain_typeclass_error env e)))
-  in Proofview.Notations.(>>-) (Proofview.Goal.lift info) (fun i -> treat i)
+  in Proofview.Notations.(>>=) (Proofview.Goal.lift info) (fun i -> treat i)
   
 let newtactic_init_setoid () = 
   try init_setoid (); Proofview.tclUNIT ()
@@ -1766,8 +1766,8 @@ let not_declared env ty rel =
 
 let setoid_proof ty fn fallback =
   Proofview.tclEVARMAP >= fun sigma ->
-  Proofview.Goal.env >>- fun env ->
-  Proofview.Goal.concl >>- fun concl ->
+  Proofview.Goal.env >>= fun env ->
+  Proofview.Goal.concl >>= fun concl ->
   Proofview.tclORELSE
     begin
       try
@@ -1800,7 +1800,7 @@ let setoid_proof ty fn fallback =
 let setoid_reflexivity =
   setoid_proof "reflexive"
     (fun env evm car rel -> Proofview.V82.tactic (apply (get_reflexive_proof env evm car rel)))
-      (reflexivity_red true)
+    (reflexivity_red true)
 
 let setoid_symmetry =
   setoid_proof "symmetric"
@@ -1819,18 +1819,18 @@ let setoid_transitivity c =
     (transitivity_red true c)
 
 let setoid_symmetry_in id =
-  Tacmach.New.of_old (fun gl -> pf_type_of gl (mkVar id)) >>- fun ctype ->
-    let binders,concl = decompose_prod_assum ctype in
-    let (equiv, args) = decompose_app concl in
-    let rec split_last_two = function
-      | [c1;c2] -> [],(c1, c2)
-      | x::y::z -> let l,res = split_last_two (y::z) in x::l, res
-      | _ -> error "The term provided is not an equivalence."
-    in
-    let others,(c1,c2) = split_last_two args in
-    let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
-    let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
-    let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
+  Tacmach.New.of_old (fun gl -> pf_type_of gl (mkVar id)) >>= fun ctype ->
+  let binders,concl = decompose_prod_assum ctype in
+  let (equiv, args) = decompose_app concl in
+  let rec split_last_two = function
+    | [c1;c2] -> [],(c1, c2)
+    | x::y::z -> let l,res = split_last_two (y::z) in x::l, res
+    | _ -> error "The term provided is not an equivalence."
+  in
+  let others,(c1,c2) = split_last_two args in
+  let he,c1,c2 =  mkApp (equiv, Array.of_list others),c1,c2 in
+  let new_hyp' =  mkApp (he, [| c2 ; c1 |]) in
+  let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
     Tacticals.New.tclTHENS (Proofview.V82.tactic (Tactics.cut new_hyp))
       [ Proofview.V82.tactic (intro_replacing id);
 	Tacticals.New.tclTHENLIST [ intros; setoid_symmetry; Proofview.V82.tactic (apply (mkVar id)); Proofview.V82.tactic (Tactics.assumption) ] ]
@@ -1839,6 +1839,7 @@ let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity
 let _ = Hook.set Tactics.setoid_symmetry setoid_symmetry
 let _ = Hook.set Tactics.setoid_symmetry_in setoid_symmetry_in
 let _ = Hook.set Tactics.setoid_transitivity setoid_transitivity
+
 
 let implify id gl =
   let (_, b, ctype) = pf_get_hyp gl id in

@@ -1277,12 +1277,12 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
   let intro_tac =
     Tacticals.New.tclTHEN (dbg_intro dbg)
       ( Proofview.tclEVARMAP >= fun sigma ->
-        Proofview.Goal.env >>- fun env ->
-        Tacmach.New.pf_last_hyp >>- fun hyp ->
+        Proofview.Goal.env >>= fun env ->
+        Tacmach.New.pf_last_hyp >>= fun hyp ->
 	let hintl = make_resolve_hyp env sigma hyp
 	in trivial_fail_db dbg mod_delta db_list (Hint_db.add_list hintl local_db))
   in
-  Proofview.Goal.concl >>- fun concl ->
+  Proofview.Goal.concl >>= fun concl ->
   Tacticals.New.tclFIRST
     ((Proofview.V82.tactic (dbg_assumption dbg))::intro_tac::
      (List.map Tacticals.New.tclCOMPLETE
@@ -1375,7 +1375,7 @@ let make_db_list dbnames =
 let trivial ?(debug=Off) lems dbnames =
   let db_list = make_db_list dbnames in
   let d = mk_trivial_dbg debug in
-  Tacmach.New.of_old (make_local_hint_db false lems) >>- fun hints ->
+  Tacmach.New.of_old (make_local_hint_db false lems) >>= fun hints ->
   new_tclTRY_dbg d
     (trivial_fail_db d false db_list hints)
 
@@ -1384,7 +1384,7 @@ let full_trivial ?(debug=Off) lems =
   let dbs = String.Map.remove "v62" dbs in
   let db_list = List.map snd (String.Map.bindings dbs) in
   let d = mk_trivial_dbg debug in
-  Tacmach.New.of_old (make_local_hint_db false lems) >>- fun hints ->
+  Tacmach.New.of_old (make_local_hint_db false lems) >>= fun hints ->
   new_tclTRY_dbg d
     (trivial_fail_db d false db_list hints)
 
@@ -1420,7 +1420,7 @@ let extend_local_db gl decl db =
 
 let intro_register dbg kont db =
   Tacticals.New.tclTHEN (dbg_intro dbg)
-    (Tacmach.New.of_old extend_local_db >>- fun extend_local_db ->
+    (Tacmach.New.of_old extend_local_db >>= fun extend_local_db ->
       Tacticals.New.onLastDecl (fun decl -> kont (extend_local_db decl db)))
 
 (* n is the max depth of search *)
@@ -1434,7 +1434,7 @@ let search d n mod_delta db_list local_db =
       if Int.equal n 0 then Proofview.tclZERO (Errors.UserError ("",str"BOUND 2")) else
         Tacticals.New.tclORELSE0 (Proofview.V82.tactic (dbg_assumption d))
 	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
-	     ( Proofview.Goal.concl >>- fun concl ->
+	     ( Proofview.Goal.concl >>= fun concl ->
 	       let d' = incr_dbg d in
 	       Tacticals.New.tclFIRST
 	         (List.map
@@ -1450,7 +1450,7 @@ let delta_auto ?(debug=Off) mod_delta n lems dbnames =
   Proofview.tclUNIT () >= fun () -> (* delay for the side effects *)
   let db_list = make_db_list dbnames in
   let d = mk_auto_dbg debug in
-  Tacmach.New.of_old (make_local_hint_db false lems) >>- fun hints ->
+  Tacmach.New.of_old (make_local_hint_db false lems) >>= fun hints ->
   new_tclTRY_dbg d
     (search d n mod_delta db_list hints)
 
@@ -1465,7 +1465,7 @@ let delta_full_auto ?(debug=Off) mod_delta n lems =
   let dbs = String.Map.remove "v62" dbs in
   let db_list = List.map snd (String.Map.bindings dbs) in
   let d = mk_auto_dbg debug in
-  Tacmach.New.of_old (make_local_hint_db false lems) >>- fun hints ->
+  Tacmach.New.of_old (make_local_hint_db false lems) >>= fun hints ->
   new_tclTRY_dbg d
     (search d n mod_delta db_list hints)
 

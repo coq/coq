@@ -212,21 +212,16 @@ type 'a glist  = private 'a list
 module Notations : sig
   (* Goal.bind *)
   val (>-) : 'a Goal.sensitive -> ('a -> 'b Goal.sensitive) -> 'b Goal.sensitive
-  (* [t >>- k] is [tclBIND t (fun l -> tclDISPATCH (List.map k l))] *)
-  val (>>-) : 'a glist tactic -> ('a -> unit tactic) -> unit tactic
-  (* arnaud: commenter *)
-  val (>>--) : 'a glist tactic -> ('a -> 'b glist tactic) -> 'b glist tactic
 
   (* tclBIND *)
   val (>=) : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
-
-  (* arnaud: commentaire à mettre à jour *)
-  (* [(>>=)] (and its goal sensitive variant [(>>==)]) "binds" in one step the
-      tactic monad and the goal-sensitive monad.
-      It is strongly advised to use it everytieme an ['a Goal.sensitive tactic]
-      needs a bind, since it usually avoids to delay the interpretation of the
-      goal sensitive value to a location where it does not make sense anymore. *)
+  (* [t >>= k] is [t >= fun l -> tclDISPATCH (List.map k l)].
+     The [t] is supposed to return a list of values of the size of the
+     list of goals. [k] is then applied to each of this value in the
+     corresponding goal. *)
   val (>>=) : 'a glist tactic -> ('a -> unit tactic) -> unit tactic
+  (* [t >>== k] acts as [t] except that [k] returns a list of value
+     corresponding to its produced subgoals. *)
   val (>>==) : 'a glist tactic -> ('a -> 'b glist tactic) -> 'b glist tactic
 
   (* tclTHEN *)
