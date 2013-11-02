@@ -3870,11 +3870,18 @@ module New = struct
 
   let exact_proof c = Proofview.V82.tactic (exact_proof c)
 
+  open Genredexpr
+  open Locus
+
   let refine c =
     let c = Goal.Refinable.make begin fun h ->
       Goal.Refinable.constr_of_open_constr h true c
     end in
     Proofview.Goal.lift c >>= fun c ->
-    Proofview.tclSENSITIVE (Goal.refine c)
+    Proofview.tclSENSITIVE (Goal.refine c) <*>
+    Proofview.V82.tactic (reduce
+       (Lazy {rBeta=true;rIota=false;rZeta=false;rDelta=false;rConst=[]})
+       {onhyps=None; concl_occs=AllOccurrences }
+    )
 
 end
