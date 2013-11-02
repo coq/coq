@@ -824,3 +824,11 @@ VERNAC COMMAND EXTEND Unshelve
   => [ Vernacexpr.VtProofStep, Vernacexpr.VtLater ]
   -> [ Proof_global.simple_with_current_proof (fun _ p  -> Proof.unshelve p) ]
 END
+
+(* Gives up on the goals under focus: the goals are considered solved,
+   but the proof cannot be closed until the user goes back and solve
+   these goals. *)
+TACTIC EXTEND give_up
+| [ "give_up" ] ->
+    [ Proofview.give_up ]
+END

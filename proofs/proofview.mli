@@ -120,7 +120,9 @@ type +'a tactic
 (* Applies a tactic to the current proofview. *)
 (* the return boolean signals the use of an unsafe tactic, in which
    case it is [false]. *)
-val apply : Environ.env -> 'a tactic -> proofview -> 'a * proofview * (bool*Goal.goal list)
+val apply : Environ.env -> 'a tactic -> proofview -> 'a
+                                                   * proofview
+                                                   * (bool*(Goal.goal list*Goal.goal list))
 
 (*** tacticals ***)
 
@@ -222,6 +224,11 @@ val shelve_unifiable : unit tactic
 (* [unshelve l p] adds all the goals in [l] at the end of the focused
    goals of p *)
 val unshelve : Goal.goal list -> proofview -> proofview
+
+
+(* Gives up on the goal under focus. Reports an unsafe status. Proofs
+   with given up goals cannot be closed. *)
+val give_up : unit tactic
 
 exception Timeout
 (** [tclTIMEOUT n t] can have only one success.

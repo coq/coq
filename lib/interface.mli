@@ -46,6 +46,8 @@ type goals = {
   (** Zipper representing the unfocussed background goals *)
   shelved_goals : goal list;
   (** List of the goals on the shelf. *)
+  given_up_goals : goal list;
+  (** List of the goals that have been given up *)
 }
 
 type hint = (string * string) list

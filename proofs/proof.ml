@@ -93,6 +93,8 @@ type proof = {
   focus_stack: (_focus_condition*focus_info*Proofview.focus_context) list;
   (* List of goals that have been shelved. *)
   shelf : Goal.goal list;
+  (* List of goals that have been given up *)
+  given_up : Goal.goal list;
 }
 
 (*** General proof functions ***)
@@ -110,7 +112,8 @@ let proof p =
     map_minus_one (fun (_,_,c) -> Proofview.focus_context c) p.focus_stack
   in
   let shelf = p.shelf in
-  (goals,stack,shelf,sigma)
+  let given_up = p.given_up in
+  (goals,stack,shelf,given_up,sigma)
 
 let rec unroll_focus pv = function
   | (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
@@ -227,15 +230,18 @@ let start goals =
   let pr = {
     proofview = Proofview.init goals ;
     focus_stack = [] ;
-    shelf = [] } in
+    shelf = [] ;
+    given_up = [] } in
   _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
 
 exception UnfinishedProof
 exception HasShelvedGoals
+exception HasGivenUpGoals
 exception HasUnresolvedEvar
 let _ = Errors.register_handler begin function
   | UnfinishedProof -> Errors.error "Some goals have not been solved."
   | HasShelvedGoals -> Errors.error "Some goals have been left on the shelf."
+  | HasGivenUpGoals -> Errors.error "Some goals have been given up."
   | HasUnresolvedEvar -> Errors.error "Some existential variables are uninstantiated."
   | _ -> raise Errors.Unhandled
 end
@@ -245,6 +251,8 @@ let return p =
     raise UnfinishedProof
   else if not (CList.is_empty (p.shelf)) then
     raise HasShelvedGoals
+  else if not (CList.is_empty (p.given_up)) then
+    raise HasGivenUpGoals
   else if has_unresolved_evar p then
     (* spiwack: for compatibility with <= 8.3 proof engine *)
     raise HasUnresolvedEvar
@@ -260,7 +268,7 @@ let initial_goals p = Proofview.initial_goals p.proofview
 
 let run_tactic env tac pr =
   let sp = pr.proofview in
-  let (_,tacticced_proofview,(status,to_shelve)) = Proofview.apply env tac sp in
+  let (_,tacticced_proofview,(status,(to_shelve,give_up))) = Proofview.apply env tac sp in
   let shelf =
     let pre_shelf = pr.shelf@to_shelve in
     (* Compacting immediately: if someone shelves a goal, he probably
@@ -271,7 +279,8 @@ let run_tactic env tac pr =
       end
     end
   in
-  { pr with proofview = tacticced_proofview ; shelf },status
+  let given_up = pr.given_up@give_up in
+  { pr with proofview = tacticced_proofview ; shelf ; given_up },status
 
 let emit_side_effects eff pr =
   {pr with proofview = Proofview.emit_side_effects eff pr.proofview}

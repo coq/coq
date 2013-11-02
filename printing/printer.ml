@@ -540,21 +540,28 @@ let pr_open_subgoals () =
      straightforward, but seriously, [Proof.proof] should return
      [evar_info]-s instead. *)
   let p = Proof_global.give_me_the_proof () in
-  let (goals , stack , shelf, sigma ) = Proof.proof p in
+  let (goals , stack , shelf, given_up, sigma ) = Proof.proof p in
   let stack = List.map (fun (l,r) -> List.length l + List.length r) stack in
   let seeds = Proof.V82.top_evars p in
   begin match goals with
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
-          begin match bgoals,shelf with
-	  | [],[] -> pr_subgoals None sigma seeds shelf stack goals
-          | [] , _ ->
+          begin match bgoals,shelf,given_up with
+	  | [] , [] , [] -> pr_subgoals None sigma seeds shelf stack goals
+          | [] , [] , _ ->
+	    (* emacs mode: xml-like flag for detecting information message *)
+	    str (emacs_str "<infomsg>") ++
+	    str "No more, however there are goals you gave up. You need to go back and solve them."
+	    ++ str (emacs_str "</infomsg>")
+	    ++ fnl () ++ fnl ()
+            ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] given_up
+          | [] , _ , _ ->
 	    (* emacs mode: xml-like flag for detecting information message *)
 	    str (emacs_str "<infomsg>") ++
 	    str "All the remaining goals are on the shelf."
 	    ++ str (emacs_str "</infomsg>")
 	    ++ fnl () ++ fnl ()
             ++ pr_subgoals ~pr_first:false None bsigma seeds [] [] shelf
-	  | _ , _ ->
+	  | _ , _, _ ->
 	    (* emacs mode: xml-like flag for detecting information message *)
 	    str (emacs_str "<infomsg>") ++
 	    str "This subproof is complete, but there are still unfocused goals."

@@ -565,7 +565,7 @@ let tclTIMEOUT n t =
     | Util.Inr e -> tclZERO e
 
 let mark_as_unsafe =
-  Proof.put (false,[])
+  Proof.put (false,([],[]))
 
 (* Shelves all the goals under focus. *)
 let shelve =
@@ -574,7 +574,7 @@ let shelve =
   let (>>) = Proof.seq in
   Proof.get >>= fun initial ->
   Proof.set {initial with comb=[]} >>
-  Proof.put (true,initial.comb)
+  Proof.put (true,(initial.comb,[]))
 
 (* Shelves the unifiable goals under focus, i.e. the goals which
    appear in other goals under focus (the unfocused goals are not
@@ -586,12 +586,22 @@ let shelve_unifiable =
   Proof.get >>= fun initial ->
   let (u,n) = Goal.partition_unifiable initial.solution initial.comb in
   Proof.set {initial with comb=n} >>
-  Proof.put (true,u)
+  Proof.put (true,(u,[]))
 
 (* [unshelve l p] adds all the goals in [l] at the end of the focused
    goals of p *)
 let unshelve l p =
   { p with comb = p.comb@l }
+
+(* Gives up on the goal under focus. Reports an unsafe status. Proofs
+   with given up goals cannot be closed. *)
+let give_up =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  let (>>) = Proof.seq in
+  Proof.get >>= fun initial ->
+  Proof.set {initial with comb=[]} >>
+  Proof.put (false,([],initial.comb))
 
 (*** Commands ***)
 
@@ -716,7 +726,7 @@ module V82 = struct
     with Proof_errors.TacticFailure e -> raise e
 
   let put_status b =
-    Proof.put (b,[])
+    Proof.put (b,([],[]))
 
   let catchable_exception = catchable_exception
 end

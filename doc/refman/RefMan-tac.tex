@@ -4626,7 +4626,7 @@ back into focus with the command {\tt Unshelve} (Section~\ref{unshelve}).
 
     Shelves only these goals under focused which are mentioned in other goals.
     Goals which appear in the type of other goals can be solve by unification.
-    
+
 \Example
 \begin{coq_example}
 Goal exists n, n=0.
@@ -4646,6 +4646,13 @@ Reset Initial.
 This command moves all the goals on the shelf (see Section~\ref{shelve}) from the
 shelf into focus, by appending them to the end of the current list of focused goals.
 
+\subsection[\tt give\_up]{\tt give\_up\tacindex{give\_up}}
+
+This tactic removes the focused goals from the proof. They are not solved, and cannot
+be solved later in the proof. As the goals are not solved, the proof cannot be closed.
+
+The {\tt give\_up} tactic can be used while editing a proof, to choose to write the
+proof script in a non-sequential order.
 
 \section{Simple tactic macros}
 \index{Tactic macros}

@@ -259,14 +259,16 @@ let of_goals g =
   let fg = of_list of_goal g.fg_goals in
   let bg = of_list (of_pair of_glist of_glist) g.bg_goals in
   let shelf = of_list of_goal g.shelved_goals in
-  Element ("goals", [], [fg; bg; shelf])
+  let given_up = of_list of_goal g.given_up_goals in
+  Element ("goals", [], [fg; bg; shelf; given_up])
 let to_goals = function
-  | Element ("goals", [], [fg; bg; shelf]) ->
+  | Element ("goals", [], [fg; bg; shelf; given_up]) ->
     let to_glist = to_list to_goal in
     let fg = to_list to_goal fg in
     let bg = to_list (to_pair to_glist to_glist) bg in
     let shelf = to_list to_goal shelf in
-    { fg_goals = fg; bg_goals = bg; shelved_goals = shelf; }
+    let given_up = to_list to_goal given_up in
+    { fg_goals = fg; bg_goals = bg; shelved_goals = shelf; given_up_goals = given_up }
   | _ -> raise Marshal_error
 
 let of_coq_info info =

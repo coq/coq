@@ -40,12 +40,14 @@ type proof
    functions to ide-s. This would be better than spawning a new nearly
    identical function everytime. Hence the generic name. *)
 (* In this version: returns the focused goals, a representation of the
-   focus stack (the goals at each level), a representation
-   of the shelf (the list of goals on the shelf),and the underlying
+   focus stack (the goals at each level), a representation of the
+   shelf (the list of goals on the shelf), a representation of the
+   given up goals (the list of the given up goals) and the underlying
    evar_map *)
 val proof : proof ->
   Goal.goal list
   * (Goal.goal list * Goal.goal list) list
+  * Goal.goal list
   * Goal.goal list
   * Evd.evar_map
 
@@ -64,9 +66,11 @@ val partial_proof : proof -> Term.constr list
 (* Returns the proofs (with their type) of the initial goals.
     Raises [UnfinishedProof] is some goals remain to be considered.
     Raises [HasShelvedGoals] if some goals are left on the shelf.
+    Raises [HasGivenUpGoals] if some goals have been given up.
     Raises [HasUnresolvedEvar] if some evars have been left undefined. *)
 exception UnfinishedProof
 exception HasShelvedGoals
+exception HasGivenUpGoals
 exception HasUnresolvedEvar
 val return : proof -> Evd.evar_map
 

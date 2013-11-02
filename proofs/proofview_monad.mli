@@ -12,8 +12,8 @@ type logicalState = proofview
 
 type logicalEnvironment = Environ.env
 
-(** status (safe/unsafe) * shelved goals *)
-type logicalMessageType = bool * Goal.goal list
+(** status (safe/unsafe) * ( shelved goals * given up ) *)
+type logicalMessageType = bool * ( Goal.goal list * Goal.goal list )
 
 
 

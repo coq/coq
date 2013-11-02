@@ -569,10 +569,12 @@ Record proofview := {
 }.
 
 Definition LogicalState := proofview.
-(** Logical Message: status (safe/unsafe) * shelved goals *)
-Definition LogicalMessageType := (bool * list goal)%type.
+(** Logical Message: status (safe/unsafe) * ( shelved goals * given up ) *)
+Definition LogicalMessageType := ( bool * ( list goal * list goal ))%type.
 Definition LogicalEnvironment := env.
-Definition LogicalMessage : Monoid.T LogicalMessageType := Monoid.cart Monoid.BoolAnd Monoid.List.
+Definition LogicalMessage : Monoid.T LogicalMessageType :=
+  Monoid.cart Monoid.BoolAnd (Monoid.cart Monoid.List Monoid.List)
+.
 
 Definition NonLogicalType := IO.T.
 Definition NonLogicalMonad : Monad NonLogicalType := IO.M.
