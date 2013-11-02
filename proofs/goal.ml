@@ -58,22 +58,24 @@ let descendent gl e =
 (* [advance sigma g] returns [Some g'] if [g'] is undefined and
     is the current avatar of [g] (for instance [g] was changed by [clear]
     into [g']). It returns [None] if [g] has been (partially) solved. *)
+(* spiwack: [advance] is probably performance critical, and the good
+   behaviour of its definition may depend sensitively to the actual
+   definition of [Evd.find]. Currently, [Evd.find] starts looking for
+   a value in the heap of undefined variable, which is small. Hence in
+   the most common case, where [advance] is applied to an unsolved
+   goal ([advance] is used to figure if a side effect has modified the
+   goal) it terminates quickly. *)
 let rec advance sigma g =
   let evi = Evd.find sigma g.content in
-  if Option.default false (Evd.Store.get evi.Evd.evar_extra Evarutil.cleared) then
-    let v =
-      match evi.Evd.evar_body with
-      | Evd.Evar_defined c -> c
-      | _ -> Errors.anomaly (Pp.str "Some goal is marked as 'cleared' but is uninstantiated")
-    in
-    let (e,_) = destEvar v in
-    let g' = { g with content = e } in
-    advance sigma g'
-  else
-    match evi.Evd.evar_body with
-    | Evd.Evar_defined _ -> None
-    | _ -> Some g
-
+  match evi.Evd.evar_body with
+  | Evd.Evar_empty -> Some g
+  | Evd.Evar_defined v ->
+      if Option.default false (Evd.Store.get evi.Evd.evar_extra Evarutil.cleared) then
+        let (e,_) = Term.destEvar v in
+        let g' = { g with content = e } in
+        advance sigma g'
+      else
+        None
 
 
 (* Equality function on goals *)
