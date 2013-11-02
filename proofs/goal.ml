@@ -108,19 +108,19 @@ let eval t env defs gl =
   ( r , !rdefs )
 
 (* monadic bind on sensitive expressions *)
-let bind e f env rdefs goal info =
+let bind e f = (); fun env rdefs goal info ->
   let a = e env rdefs goal info in
   let b = f a env rdefs goal info in
   b
 
 (* monadic return on sensitive expressions *)
-let return v _ _ _ _ = v
+let return v = () ; fun _ _ _ _ -> v
 
 (* interpretation of "open" constr *)
 (* spiwack: it is a wrapper around [Constrintern.interp_open_constr].
     In an ideal world, this could/should be the other way round.
     As of now, though, it seems at least quite useful to build tactics. *)
-let interp_constr cexpr env rdefs _ _ =
+let interp_constr cexpr = (); fun env rdefs _ _ ->
   Constrintern.interp_constr_evars rdefs env cexpr
 
 (* Type of constr with holes used by refine. *)
@@ -139,23 +139,23 @@ module Refinable = struct
 
   type handle = Evd.evar list ref
 
-  let make t env rdefs gl info =
+  let make t = (); fun env rdefs gl info ->
     let r = ref [] in
     let me = t r env rdefs gl info in
     { me = me; my_evars = !r }
-  let make_with t env rdefs gl info =
+  let make_with t = (); fun env rdefs gl info ->
     let r = ref [] in
     let (me,side) = t r env rdefs gl info in
     ({ me = me ; my_evars = !r }, side)
 
-  let mkEvar handle env typ _ rdefs _ _ =
+  let mkEvar handle env typ = (); fun _ rdefs _ _ ->
     let ev = Evarutil.e_new_evar rdefs env typ in
     let (e,_) = destEvar ev in
     handle := e::!handle;
     ev
 
   (* [with_type c typ] constrains term [c] to have type [typ].  *)
-  let with_type t typ env rdefs _ _ =
+  let with_type t typ = (); fun env rdefs _ _ ->
     (* spiwack: this function assumes that no evars can be created during
         this sort of coercion.
         If it is not the case it could produce bugs. We would need to add a handle
@@ -171,7 +171,7 @@ module Refinable = struct
   (* spiwack: it is not very fine grain since it solves all typeclasses holes,
       not only those containing the current goal, or a given term. But it
       seems to fit our needs so far. *)
-  let resolve_typeclasses ?filter ?split ?(fail=false) () env rdefs _ _ =
+  let resolve_typeclasses ?filter ?split ?(fail=false) () = (); fun env rdefs _ _ ->
     rdefs:=Typeclasses.resolve_typeclasses ?filter ?split ~fail env !rdefs
 
 
@@ -215,7 +215,7 @@ module Refinable = struct
   (* spiwack: it is not entirely satisfactory to have this function here. Plus it is
       a bit hackish. However it does not seem possible to move it out until
       pretyping is defined as some proof procedure. *)
-  let constr_of_raw handle check_type resolve_classes rawc env rdefs gl info =
+  let constr_of_raw handle check_type resolve_classes rawc = (); fun env rdefs gl info ->
     (* We need to keep trace of what [rdefs] was originally*)
     let init_defs = !rdefs in
     (* if [check_type] is true, then creates a type constraint for the
@@ -232,7 +232,7 @@ module Refinable = struct
       ignore(update_handle handle init_defs !rdefs);
       open_constr
 
-  let constr_of_open_constr handle check_type (evars, c) env rdefs gl info =
+  let constr_of_open_constr handle check_type (evars, c) = (); fun env rdefs gl info ->
     let _ = update_handle handle !rdefs evars in
     rdefs := Evd.fold (fun ev evi evd -> if not (Evd.mem !rdefs ev) then Evd.add evd ev evi else evd) evars !rdefs;
     if check_type then with_type c (Evd.evar_concl (content !rdefs gl)) env rdefs gl info
@@ -242,7 +242,7 @@ end
 
 (* [refine t] takes a refinable term and use it as a partial proof for current
     goal. *)
-let refine step env rdefs gl info =
+let refine step = (); fun env rdefs gl info ->
   (* subgoals to return *)
   (* The evars in [my_evars] are stored in reverse order.
      It is expectingly better however to display the goal
@@ -262,7 +262,7 @@ let refine step env rdefs gl info =
 
 (*** Cleaning  goals ***)
 
-let clear ids env rdefs gl info =
+let clear ids = (); fun env rdefs gl info ->
   let hyps = Evd.evar_hyps info in
   let concl = Evd.evar_concl info in
   let (hyps,concl) = Evarutil.clear_hyps_in_evi rdefs hyps concl ids in
@@ -311,7 +311,7 @@ let remove_hyp_body env sigma id =
   Environ.reset_with_named_context sign env
 
 
-let clear_body idents env rdefs gl info =
+let clear_body idents = (); fun env rdefs gl info ->
   let info = content !rdefs gl in
   let full_env = Environ.reset_with_named_context (Evd.evar_hyps info) env in
   let aux env id =
@@ -357,7 +357,7 @@ let enter f = (); fun env rdefs _ info ->
 
 (*** Conversion in goals ***)
 
-let convert_hyp check (id,b,bt as d) env rdefs gl info =
+let convert_hyp check (id,b,bt as d) = (); fun env rdefs gl info ->
   let sigma = !rdefs in
   (* This function substitutes the new type and body definitions
      in the appropriate variable when used with {!Environ.apply_hyps}. *)
@@ -384,7 +384,7 @@ let convert_hyp check (id,b,bt as d) env rdefs gl info =
   rdefs := Evd.define gl.content new_constr !rdefs;
   { subgoals = [new_goal] }
 
-let convert_concl check cl' env rdefs gl info =
+let convert_concl check cl' = (); fun env rdefs gl info ->
   let sigma = !rdefs in
   let cl = concl env rdefs gl info in
   check_typability env sigma cl';
@@ -407,7 +407,7 @@ let rename_hyp_sign id1 id2 sign =
   Environ.apply_to_hyp_and_dependent_on sign id1
     (fun (_,b,t) _ -> (id2,b,t))
     (fun d _ -> map_named_declaration (replace_vars [id1,mkVar id2]) d)
-let rename_hyp id1 id2 env rdefs gl info =
+let rename_hyp id1 id2 = (); fun env rdefs gl info ->
   let hyps = hyps env rdefs gl info in
   if not (Names.Id.equal id1 id2) &&
     Names.Id.List.mem id2
@@ -572,8 +572,8 @@ module V82 = struct
 					    t
 				       ) ~init:(concl sigma gl) env
 
-  let to_sensitive f _ rsigma g _ =
+  let to_sensitive f = (); fun _ rsigma g _ ->
     f { Evd.it = g ; sigma = !rsigma }
-  let change_evar_map sigma _ rsigma _ _ =
+  let change_evar_map sigma = (); fun _ rsigma _ _ ->
     (rsigma := sigma)
 end
