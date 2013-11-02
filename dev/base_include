@@ -140,7 +140,6 @@ open Hiddentac
 open Hipattern
 open Inv
 open Leminv
-open Refine
 open Tacsubst
 open Tacintern
 open Tacinterp
