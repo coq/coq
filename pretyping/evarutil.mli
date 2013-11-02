@@ -195,6 +195,6 @@ val clear_hyps_in_evi : evar_map ref -> named_context_val -> types ->
   Id.Set.t -> named_context_val * types
 
 val push_rel_context_to_named_context : Environ.env -> types ->
-  named_context_val * types * constr list * constr list
+  named_context_val * types * constr list * constr list * (identifier*constr) list
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list

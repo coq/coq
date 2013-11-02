@@ -303,22 +303,52 @@ let new_untyped_evar =
  *   we have the property that u and phi(t) are convertible in env.
  *)
 
+let subst2 subst vsubst c =
+  substl subst (replace_vars vsubst c)
+
 let push_rel_context_to_named_context env typ =
   (* compute the instances relative to the named context and rel_context *)
   let ids = List.map pi1 (named_context env) in
   let inst_vars = List.map mkVar ids in
   let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
+  let replace_var_named_declaration id0 id (id',b,t) =
+    let id' = if id_ord id0 id' = 0 then id else id' in
+    let vsubst = [id0 , mkVar id] in
+    id', Option.map (replace_vars vsubst) b, replace_vars vsubst t
+  in
+  let replace_var_named_context id0 id  env =
+    let nc = Environ.named_context env in
+    let nc' = List.map (replace_var_named_declaration id0 id) nc in
+    Environ.reset_with_named_context (val_of_named_context nc') env
+  in
+  let extract_if_neq id = function
+    | Anonymous -> None
+    | Name id' when id_ord id id' = 0 -> None
+    | Name id' -> Some id'
+  in
   (* move the rel context to a named context and extend the named instance *)
   (* with vars of the rel context *)
   (* We do keep the instances corresponding to local definition (see above) *)
-  let (subst, _, env) =
+  let (subst, vsubst, _, env) =
     Context.fold_rel_context
-      (fun (na,c,t) (subst, avoid, env) ->
+      (fun (na,c,t) (subst, vsubst, avoid, env) ->
 	let id = next_name_away na avoid in
-	let d = (id,Option.map (substl subst) c,substl subst t) in
-	(mkVar id :: subst, id::avoid, push_named d env))
-      (rel_context env) ~init:([], ids, env) in
-  (named_context_val env, substl subst typ, inst_rels@inst_vars, subst)
+        match extract_if_neq id na with
+        | None ->
+	    let d = (id,Option.map (subst2 subst vsubst) c,subst2 subst vsubst t) in
+	    (mkVar id :: subst, vsubst, id::avoid, push_named d env)
+        | Some id0 ->
+            (* spiwack: if [id<>id0], rather than introducing a new binding
+               named [id], we will keep [id0] (the name given by the user)
+               and rename [id0] into [id] in the named context. *)
+            let subst = List.map (replace_vars [id0,mkVar id]) subst in
+            let vsubst = (id0,mkVar id)::vsubst in
+            let d = (id0, Option.map (subst2 subst vsubst) c, subst2 subst vsubst t) in
+            let env = replace_var_named_context id0  id env in
+            (mkVar id0 :: subst, vsubst, id::avoid, push_named d env)
+      )
+      (rel_context env) ~init:([], [], ids, env) in
+  (named_context_val env, subst2 subst vsubst typ, inst_rels@inst_vars, subst, vsubst)
 
 (*------------------------------------*
  * Entry points to define new evars   *
@@ -344,10 +374,9 @@ let new_evar_instance sign evd typ ?src ?filter ?candidates instance =
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
-
 let new_evar evd env ?src ?filter ?candidates typ =
-  let sign,typ',instance,subst = push_rel_context_to_named_context env typ in
-  let candidates = Option.map (List.map (substl subst)) candidates in
+  let sign,typ',instance,subst,vsubst = push_rel_context_to_named_context env typ in
+  let candidates = Option.map (List.map (subst2 subst vsubst)) candidates in
   let instance =
     match filter with
     | None -> instance
@@ -359,7 +388,7 @@ let new_type_evar ?src ?filter evd env =
   new_evar evd' env ?src ?filter (mkSort s)
 
   (* The same using side-effect *)
-let e_new_evar evdref env ?(src=(Loc.ghost,Evar_kinds.InternalHole)) ?filter ?candidates ty =
+let e_new_evar evdref env ?(src=default_source) ?filter ?candidates ty =
   let (evd',ev) = new_evar !evdref env ~src:src ?filter ?candidates ty in
   evdref := evd';
   ev
