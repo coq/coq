@@ -300,12 +300,24 @@ Section Common.
    k a s'
  .
 
- Variable (L:Logic T₀).
 
+ Variable (L:Logic T₀).
 
  Definition Logic : Logic T := {|
    zero A e := lift (zero _ L e);
    plus A x y := fun R k s => plus _ L (x R k s) (fun e => y e R k s)
+ |}.
+
+ Variable (Env:Set) (E:Environment Env T₀).
+
+ Definition Environment : Environment Env T := {|
+   current := lift (current _ _ E)
+ |}.
+
+ Variable (C:Set) (W:Writer C T₀).
+
+ Definition Writer : Writer C T := {|
+   put x := lift (put _ _ W x)
  |}.
 
 End Common.
@@ -336,19 +348,24 @@ Section Common.
  |}.
 
 
- Variable (L:Logic T₀).
+ Definition lift {A:Set} (x:T₀ A) : T A := fun _ => x.
 
+ Definition run {A:Set} (x:T A) (e:E) : T₀ A := x e.
+ Definition reflect {A:Set} (m:E->T₀ A) : T A := m.
+
+
+ Variable (L:Logic T₀).
 
  Definition Logic : Logic T := {|
    zero A e env := zero _ L e;
    plus A x y env := plus _ L (x env) (fun e => y e env)
  |}.
 
+ Variable (C:Set) (W:Writer C T₀).
 
- Definition lift {A:Set} (x:T₀ A) : T A := fun _ => x.
-
- Definition run {A:Set} (x:T A) (e:E) : T₀ A := x e.
- Definition reflect {A:Set} (m:E->T₀ A) : T A := m.
+ Definition Writer : Writer C T := {|
+   put x := lift (put _ _ W x)
+ |}.
 
 End Common.
 
@@ -541,8 +558,11 @@ Definition LogicalMonadWriter := Writer.F _ LogicalMessage _ LogicalMonadBase.
 Definition LogicalMonadEnv := Environment.F LogicalEnvironment _ LogicalMonadWriter.
 Definition LogicalMonad : Monad LogicalType := State.F LogicalState _.
 Definition LogicalStateM : State LogicalState LogicalType := State.State LogicalState _.
-Definition LogicalReader : Environment LogicalEnvironment _ := Environment.Environment LogicalEnvironment _ LogicalMonadWriter.
-Definition LogicalWriter : Writer LogicalMessageType  _ := Writer.Writer LogicalMessageType _ (Logic.F NonLogicalType).
+Definition LogicalReaderE : Environment LogicalEnvironment _ := Environment.Environment LogicalEnvironment _ LogicalMonadWriter.
+Definition LogicalReader : Environment LogicalEnvironment LogicalType := State.Environment _ _ LogicalMonadEnv _ LogicalReaderE.
+Definition LogicalWriterW : Writer LogicalMessageType  _ := Writer.Writer LogicalMessageType _ (Logic.F NonLogicalType).
+Definition LogicalWriterE : Writer LogicalMessageType _ := Environment.Writer LogicalEnvironment _ LogicalMessageType LogicalWriterW.
+Definition LogicalWriter : Writer LogicalMessageType LogicalType := State.Writer _ _ LogicalMonadEnv _ LogicalWriterE.
 Definition LogicalLogic : Logic LogicalType := State.Logic _ _ LogicalMonadEnv (Environment.Logic _ _ (Writer.Logic _ LogicalMessage _ LogicalMonadBase (Logic.Logic _))).
 
 
@@ -624,8 +644,8 @@ Module Logical.
 
  Definition set (s:LogicalState) : t unit := Eval compute in freeze _ (set _ _ LogicalStateM s).
  Definition get : t LogicalState := Eval compute in get _ _ LogicalStateM.
- Definition put (m:LogicalMessageType) : t unit := Eval compute in freeze _ (State.lift _ _ LogicalMonadEnv (Environment.lift _ _ (put _ _ LogicalWriter m))).
- Definition current : t LogicalEnvironment := Eval compute in State.lift _ _ LogicalMonadEnv (current _ _ LogicalReader).
+ Definition put (m:LogicalMessageType) : t unit := Eval compute in freeze _ (put _ _ LogicalWriter m).
+ Definition current : t LogicalEnvironment := Eval compute in current _ _ LogicalReader.
 
  Definition zero {a:Set} (e:Exception) : t a := Eval compute in freeze _ (zero _ LogicalLogic e).
  Extraction Implicit zero [a].
