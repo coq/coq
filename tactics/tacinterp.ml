@@ -2206,6 +2206,12 @@ and interp_atomic ist tac =
       end
 
   (* For extensions *)
+  | TacExtend (loc,opn,[]) ->
+      (* spiwack: a special case for tactics (from TACTIC EXTEND) without arguments to
+         be interpreted without a [Proofview.Goal.enter]. Eventually we should make
+         something more fine-grained by modifying [interp_genarg]. *)
+      let tac = lookup_tactic opn in
+      tac [] ist
   | TacExtend (loc,opn,l) ->
       Proofview.Goal.enter begin fun gl ->
       let goal_sigma = Proofview.Goal.sigma gl in

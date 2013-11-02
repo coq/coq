@@ -84,6 +84,32 @@ let equal evars1 gl1 evars2 gl2 =
   let evi2 = content evars2 gl2 in
   Evd.eq_evar_info evi1 evi2
 
+(* [contained_in_info e evi] checks whether the evar [e] appears in
+   the hypotheses, the conclusion or the body of the evar_info
+   [evi]. Note: since we want to use it on goals, the body is actually
+   supposed to be empty. *)
+let contained_in_info e evi =
+  Evar.Set.mem e (Evarutil.evars_of_evar_info evi)
+
+(* [depends_on sigma src tgt] checks whether the goal [src] appears as an
+   existential variable in the definition of the goal [tgt] in [sigma]. *)
+let depends_on sigma src tgt =
+  let evi = Evd.find sigma tgt.content in
+  contained_in_info src.content evi
+
+(* [unifiable sigma g l] checks whether [g] appears in another subgoal
+   of [l]. The list [l] may contain [g], but it does not affect the
+   result. *)
+let unifiable sigma g l =
+  List.exists (fun tgt -> g != tgt && depends_on sigma g tgt) l
+
+(* [partition_unifiable sigma l] partitions [l] into a pair [(u,n)]
+   where [u] is composed of the unifiable goals, i.e. the goals on
+   whose definition other goals of [l] depend, and [n] are the
+   non-unifiable goals. *)
+let partition_unifiable sigma l =
+  List.partition (fun g -> unifiable sigma g l) l
+
 (*** Goal tactics ***)
 
 

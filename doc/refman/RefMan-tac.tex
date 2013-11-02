@@ -4621,6 +4621,26 @@ This tactic moves all goals under focus to a shelf. While on the shelf, goals
 will not be focused on. They can be solved by unification, or they can be called
 back into focus with the command {\tt Unshelve} (Section~\ref{unshelve}).
 
+\begin{Variants}
+  \item \texttt{shelve\_unifiable}\tacindex{shelve\_unifiable}
+
+    Shelves only these goals under focused which are mentioned in other goals.
+    Goals which appear in the type of other goals can be solve by unification.
+    
+\Example
+\begin{coq_example}
+Goal exists n, n=0.
+refine (ex_intro _ _ _).
+all:shelve_unifiable.
+reflexivity.
+\end{coq_example}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\end{Variants}
+
 \subsection[\tt Unshelve]{\tt Unshelve\comindex{Unshelve}\label{unshelve}}
 
 This command moves all the goals on the shelf (see Section~\ref{shelve}) from the

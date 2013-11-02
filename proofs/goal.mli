@@ -35,6 +35,12 @@ val advance : Evd.evar_map -> goal -> goal option
    and conclusion are equal. *)
 val equal : Evd.evar_map -> goal -> Evd.evar_map -> goal -> bool
 
+(* [partition_unifiable sigma l] partitions [l] into a pair [(u,n)]
+   where [u] is composed of the unifiable goals, i.e. the goals on
+   whose definition other goals of [l] depend, and [n] are the
+   non-unifiable goals. *)
+val partition_unifiable : Evd.evar_map -> goal list -> goal list * goal list
+
 (*** Goal tactics ***)
 
 

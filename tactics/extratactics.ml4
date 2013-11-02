@@ -810,6 +810,14 @@ TACTIC EXTEND shelve
     [ Proofview.shelve ]
 END
 
+(* Shelves the unifiable goals under focus, i.e. the goals which
+   appear in other goals under focus (the unfocused goals are not
+   considered). *)
+TACTIC EXTEND shelve_unifiable
+| [ "shelve_unifiable" ] ->
+    [ Proofview.shelve_unifiable ]
+END
+
 (* Command to add every unshelved variables to the focus *)
 VERNAC COMMAND EXTEND Unshelve
 [ "Unshelve" ]

@@ -214,6 +214,11 @@ val tclENV : Environ.env tactic
    shelf for later use (or being solved by side-effects). *)
 val shelve : unit tactic
 
+(* Shelves the unifiable goals under focus, i.e. the goals which
+   appear in other goals under focus (the unfocused goals are not
+   considered). *)
+val shelve_unifiable : unit tactic
+
 (* [unshelve l p] adds all the goals in [l] at the end of the focused
    goals of p *)
 val unshelve : Goal.goal list -> proofview -> proofview

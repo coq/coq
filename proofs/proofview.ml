@@ -576,6 +576,18 @@ let shelve =
   Proof.set {initial with comb=[]} >>
   Proof.put (true,initial.comb)
 
+(* Shelves the unifiable goals under focus, i.e. the goals which
+   appear in other goals under focus (the unfocused goals are not
+   considered). *)
+let shelve_unifiable =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  let (>>) = Proof.seq in
+  Proof.get >>= fun initial ->
+  let (u,n) = Goal.partition_unifiable initial.solution initial.comb in
+  Proof.set {initial with comb=n} >>
+  Proof.put (true,u)
+
 (* [unshelve l p] adds all the goals in [l] at the end of the focused
    goals of p *)
 let unshelve l p =
