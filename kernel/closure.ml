@@ -534,8 +534,9 @@ and compact_vect s v k =
     let () = rs := s in
     a
   in
-  (** Do we really rely on execution order? *)
-  (Array.smartmap map v, !rs)
+  (** Do we really rely on execution order in the smartmap ? *)
+  let v' = Array.smartmap map v in
+  (v', !rs)
 
 (* Computes the minimal environment of a closure.
    Idea: if the subs is not identity, the term will have to be
