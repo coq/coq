@@ -22,13 +22,77 @@ module type State = sig
   val get : s t
 end
 
-module Id : S with type 'a t = 'a = struct
-  type 'a t = 'a
+module type IO = sig
+  include S
 
-  let return x = x
-  let bind x k = k x
-  let ignore x = Pervasives.ignore x
-  let seq () x = x
+  type 'a ref
+
+  val ref : 'a -> 'a ref
+  val (:=) : 'a ref -> 'a -> unit t
+  val (!) : 'a ref -> 'a t
+
+  val raise : exn -> 'a t
+  val catch : 'a t -> (exn -> 'a t) -> 'a t
+
+  (** In the basic IO monad, [timeout n x] acts as [x] unless it runs for more than [n]
+      seconds in which case it raises [IO.Timeout]. *)
+  val timeout : int -> 'a t -> 'a t
+end
+
+module IO : sig
+  include IO
+
+  (** To help distinguish between exceptions raised by the [IO] monad
+      from the one used natively by Coq, the former are wrapped in
+      [Exception]. *)
+  exception Exception of exn
+  (** This exception is used to signal abortion in [timeout] functions. *)
+  exception Timeout
+  (** runs the suspension for its effects *)
+  val run : 'a t -> 'a
+end = struct
+  type 'a t = unit -> 'a
+
+  let run x = x ()
+
+  let return x () = x
+  let bind x k () = k (x ()) ()
+  let seq x k () = x (); k ()
+  let ignore x () = ignore (x ())
+
+  type 'a ref = 'a Pervasives.ref
+
+  let ref = Pervasives.ref
+  let (:=) r x () = Pervasives.(:=) r x
+  let (!) r () = Pervasives.(!) r
+
+  exception Exception of exn
+  let raise e () = raise (Exception e)
+  let catch s h () =
+    try s ()
+    with Exception e -> h e ()
+
+  exception Timeout
+  let timeout n t () =
+    let timeout_handler _ = Pervasives.raise (Exception Timeout) in
+    let psh = Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
+    Pervasives.ignore (Unix.alarm n);
+    let restore_timeout () =
+      Pervasives.ignore (Unix.alarm 0);
+      Sys.set_signal Sys.sigalrm psh
+    in
+    try
+      let res = t () in
+      restore_timeout ();
+      res
+    with
+    | e -> restore_timeout (); Pervasives.raise e
+
+  let _ = Errors.register_handler begin function
+    | Timeout -> Errors.errorlabstrm "Monads.IO.timeout" (Pp.str"Timeout!")
+    | Exception e -> Errors.print e
+    | _ -> Pervasives.raise Errors.Unhandled
+  end
 end
 
 (* State monad transformer, adapted from Haskell's StateT *)
@@ -82,14 +146,23 @@ end
    An explanation of how to derive such a monad from mathematical
    principle can be found in "Kan Extensions for Program Optimisation" by
    Ralf Hinze. *)
+(* arnaud: ajouter commentaire sur la vision "liste" *)
+(* spiwack: I added the primitives from [IO] directly in the [Logic]
+   signature for convenience. It doesn't really make sense, strictly
+   speaking, as they are somewhat deconnected from the semantics of
+   [Logic], but without an appropriate language for composition (some
+   kind of mixins?) I would be going nowhere with a gazillion
+   functors. *)
 module type Logic = sig
-  include S
+  include IO
 
   (* [zero] is usually argument free, but Coq likes to explain errors,
      hence error messages should be carried around. *)
   val zero : exn -> 'a t
   val plus : 'a t -> (exn -> 'a t) -> 'a t
 (** Writing (+) for plus and (>>=) for bind, we shall require that
+
+    x+(y+z) = (x+y)+z
 
     zero+x = x
 
@@ -111,7 +184,7 @@ end
    no immediate use for [T]. We might, however, consider instantiating it
    with a "writer" monad around [Pp] to implement [idtac "msg"] for
    instance. *)
-module Logic (T:S) : sig
+module Logic (T:IO) : sig
   include Logic
 
   (** [run x] raises [e] if [x] is [zero e]. *)
@@ -162,10 +235,51 @@ end = struct
     | Util.Inr e -> zero e
     | Util.Inl (a,x) -> plus (return a) x
 
-  let split x =
+  let lower x =
     let fk e = T.return (Util.Inr e) in
     let sk a fk = T.return (Util.Inl (a,fun e -> bind (lift (fk e)) reflect)) in
-    lift (x.go sk fk)
+    x.go sk fk  
+
+  let split x =
+    lift (lower x)
+
+  (*** IO ***)
+
+  type 'a ref = 'a T.ref
+  let ref = T.ref
+  let (:=) r x = lift (T.(:=) r x)
+  let (!) r = lift (T.(!) r)
+
+  let raise e = lift (T.raise e)
+  let catch t h =
+    let h' e = lower (h e) in
+    bind (lift (T.catch (lower t) h')) reflect
+
+  (** [timeout n x] can have several success. It succeeds as long as,
+      individually, each of the past successes run in less than [n]
+      seconds.
+      In case of timeout if fails with [zero Timeout]. *)
+  let rec timeout n x =
+    (* spiwack: adds a [T.return] in front of [x] in order to force
+       [lower] to go into [T] before running [x]. The problem is that
+       in a continuation-passing monad transformer, the monadic
+       operations don't make use of the underlying ones. Hence, when
+       going back to a lower monad, much computation can be done
+       before returning (and running the lower monad). It is
+       undesirable for timeout, obviously. *)
+    let x = seq (lift (T.return ())) x in
+    let x' =
+      (* spiwack: this could be a [T.map] if provided *)
+      T.bind (lower x) begin function
+        | Util.Inr _ as e -> T.return e
+        | Util.Inl (a,h) -> T.return (Util.Inl (a, fun e -> timeout n (h e)))
+      end
+    in
+    (* spiwack: we report timeouts as resumable failures. *)
+    bind (catch (lift (T.timeout n x')) begin function
+      | IO.Timeout -> zero IO.Timeout
+      | e -> raise e
+    end) reflect
 end
 
 
@@ -218,6 +332,45 @@ end = struct
           in
           set a.state >>
           return (Util.Inl(a.result,y'))
+
+
+  (*** IO ***)
+
+  type 'a ref = 'a T.ref
+  let ref = T.ref
+  let (:=) r x = lift (T.(:=) r x)
+  let (!) r = lift (T.(!) r)
+
+  let raise e = lift (T.raise e)
+  let catch t h =
+    (* spiwack: convenience notation, waiting for ocaml 3.12 *)
+    let (>>=) = bind in
+    let (>>) = seq in
+    get >>= fun initial ->
+    let h' e = run (h e) initial in
+    lift (T.catch (run t initial) h') >>= fun a ->
+    set a.state >>
+    return a.result
+
+  exception Timeout
+  let timeout n t =
+    (* spiwack: convenience notation, waiting for ocaml 3.12 *)
+    let (>>=) = bind in
+    let (>>) = seq in
+    get >>= fun initial ->
+    lift (T.timeout n (run t initial)) >>= fun a ->
+    set a.state >>
+    return a.result
 end
+
+
+
+
+
+
+
+
+
+
 
 

@@ -508,6 +508,14 @@ module New = struct
         in
         Proofview.V82.tactic (Refiner.tclEVARS sigma) <*> tac x <*> check_evars_if
 
+  let tclTIMEOUT n t =
+    Proofview.tclOR
+      (Proofview.tclTIMEOUT n t)
+      begin function
+        | Monads.IO.Timeout as e -> Proofview.tclZERO (Refiner.FailError (0,lazy (Errors.print e)))
+        | e -> Proofview.tclZERO e
+      end
+
   let nthDecl m =
     Proofview.Goal.hyps >>== fun hyps ->
     try

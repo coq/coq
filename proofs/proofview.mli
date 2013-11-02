@@ -138,9 +138,9 @@ val tclTHEN : unit tactic -> 'a tactic -> 'a tactic
 val tclIGNORE : 'a tactic -> unit tactic
 
 (* [tclOR t1 t2 = t1] as long as [t1] succeeds. Whenever the successes
-   of [t1] have been depleted, then it behaves as [t2].  No
-   interleaving at this point. *)
-val tclOR : 'a tactic -> 'a tactic -> 'a tactic
+   of [t1] have been depleted and it failed with [e], then it behaves
+   as [t2 e].  No interleaving at this point. *)
+val tclOR : 'a tactic -> (exn -> 'a tactic) -> 'a tactic
 
 (* [tclZERO] always fails *)
 val tclZERO : exn -> 'a tactic
@@ -191,10 +191,11 @@ val tclEVARMAP : Evd.evar_map tactic
    environment is returned by {!Proofview.Goal.env}. *)
 val tclENV : Environ.env tactic
 
-(* [tclTIMEOUT n t] runs [t] for at most [n] seconds, succeeds if [t]
-   succeeds in the meantime, fails otherwise. *)
-(* arnaud: behaves as the identity for now *)
-val tclTIMEOUT : int -> unit tactic -> unit tactic
+(** [tclTIMEOUT n t] can have several success. It succeeds as long as,
+      individually, each of the past successes run in less than [n]
+      seconds.
+      In case of timeout if fails with [tclZERO Timeout]. *)
+val tclTIMEOUT : int -> 'a tactic -> 'a tactic
 
 val list_map : ('a -> 'b tactic) -> 'a list -> 'b list tactic
 

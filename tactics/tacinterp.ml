@@ -1118,7 +1118,7 @@ and eval_tactic ist = function
 	(Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
   | TacThens (t1,tl) -> Tacticals.New.tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
   | TacDo (n,tac) -> Tacticals.New.tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
-  | TacTimeout (n,tac) -> Proofview.tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
+  | TacTimeout (n,tac) -> Tacticals.New.tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTry tac -> Tacticals.New.tclTRY (interp_tactic ist tac)
   | TacRepeat tac -> Tacticals.New.tclREPEAT (interp_tactic ist tac)
   | TacOrelse (tac1,tac2) ->

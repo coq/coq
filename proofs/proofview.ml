@@ -193,14 +193,14 @@ let unfocus c sp =
 module LocalState = struct
   type t = proofview
 end
-module Backtrack = Monads.Logic(Monads.Id)
+module Backtrack = Monads.Logic(Monads.IO)
 module Inner = Monads.StateLogic(LocalState)(Backtrack)
 
 type +'a tactic = Environ.env -> 'a Inner.t
 
 (* Applies a tactic to the current proofview. *)
 let apply env t sp =
-  let next = Backtrack.run (Inner.run (t env) sp) in
+  let next = Monads.IO.run (Backtrack.run (Inner.run (t env) sp)) in
   next.Inner.result , next.Inner.state
 
 (*** tacticals ***)
@@ -224,10 +224,10 @@ let tclTHEN t1 t2 env =
 let tclIGNORE tac env = Inner.ignore (tac env)
 
 (* [tclOR t1 t2 = t1] as long as [t1] succeeds. Whenever the successes
-   of [t1] have been depleted, then it behaves as [t2].  No
-   interleaving at this point. *)
+   of [t1] have been depleted and it failed with [e], then it behaves
+   as [t2 e].  No interleaving at this point. *)
 let tclOR t1 t2 env =
-  Inner.plus (t1 env) (fun _ -> t2 env)
+  Inner.plus (t1 env) (fun e -> t2 e env)
 
 (* [tclZERO e] always fails with error message [e]*)
 let tclZERO e _ = Inner.zero e
@@ -393,30 +393,7 @@ let tclEVARMAP _ =
 let tclENV env =
   Inner.return env
 
-let tclTIMEOUT n t = t
-(* arnaud: todo: restore
-(* Fails if a tactic hasn't finished after a certain amount of time *)
-
-exception TacTimeout
-
-let tclTIMEOUT n t g =
-  let timeout_handler _ = raise TacTimeout in
-  let psh = Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
-  ignore (Unix.alarm n);
-  let restore_timeout () =
-    ignore (Unix.alarm 0);
-    Sys.set_signal Sys.sigalrm psh
-  in
-  try
-    let res = t g in
-    restore_timeout ();
-    res
-  with
-    | TacTimeout | Loc.Exc_located(_,TacTimeout) ->
-      restore_timeout ();
-      errorlabstrm "Refiner.tclTIMEOUT" (str"Timeout!")
-    | e -> restore_timeout (); raise e
-*)
+let tclTIMEOUT n t env = Inner.timeout n (t env)
 
 (*** Commands ***)
 
@@ -454,7 +431,7 @@ module Notations = struct
   let (>>=) = (>>-)
   let (>>==) = (>>--)
   let (<*>) = tclTHEN
-  let (<+>) = tclOR
+  let (<+>) t1 t2 = tclOR t2 (fun _ -> t2)
 end
 
 open Notations

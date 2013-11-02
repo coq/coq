@@ -223,6 +223,8 @@ module New : sig
   val tclSOLVE : unit tactic list -> unit tactic
   val tclWITHHOLES : bool -> ('a -> unit tactic) -> Evd.evar_map -> 'a -> unit tactic
 
+  val tclTIMEOUT : int -> unit tactic -> unit tactic
+
 
   val ifOnHyp     : (identifier * types -> bool) ->
     (identifier -> unit Proofview.tactic) -> (identifier -> unit Proofview.tactic) ->
