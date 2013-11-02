@@ -3818,7 +3818,7 @@ module New = struct
 
   let refine c =
     let c = Goal.Refinable.make begin fun h ->
-      Goal.Refinable.constr_of_open_constr h false c
+      Goal.Refinable.constr_of_open_constr h true c
     end in
     Proofview.Goal.lift c >>= fun c ->
     Proofview.tclSENSITIVE (Goal.refine c)
