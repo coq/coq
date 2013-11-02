@@ -144,6 +144,15 @@ module Bullet : sig
   val put : Proof.proof -> t -> Proof.proof
 end
 
+
+(**********************************************************)
+(*                                                        *)
+(*                     Default goal selector              *)
+(*                                                        *)
+(**********************************************************)
+
+val get_default_goal_selector : unit -> Vernacexpr.goal_selector
+
 module V82 : sig
   val get_current_initial_conclusions : unit -> Names.Id.t *(Term.types list *
   Decl_kinds.goal_kind * unit Tacexpr.declaration_hook Ephemeron.key)

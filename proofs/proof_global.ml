@@ -410,6 +410,46 @@ module Bullet = struct
 end
 
 
+(**********************************************************)
+(*                                                        *)
+(*                     Default goal selector              *)
+(*                                                        *)
+(**********************************************************)
+
+
+(* Default goal selector: selector chosen when a tactic is applied
+   without an explicit selector. *)
+let default_goal_selector = ref (Vernacexpr.SelectNth 1)
+let get_default_goal_selector () = !default_goal_selector
+
+let print_goal_selector = function
+  | Vernacexpr.SelectAll -> "all"
+  | Vernacexpr.SelectNth i -> string_of_int i
+
+let parse_goal_selector = function
+  | "all" -> Vernacexpr.SelectAll
+  | i ->
+      let err_msg = "A selector must be \"all\" or a natural number." in
+      begin try
+              let i = int_of_string i in
+              if i < 0 then Errors.error err_msg;
+              Vernacexpr.SelectNth i
+        with Failure _ -> Errors.error err_msg
+      end
+
+let _ =
+  Goptions.declare_string_option {Goptions.
+                                  optsync = true ;
+                                  optdepr = false;
+                                  optname = "default goal selector" ;
+                                  optkey = ["Default";"Goal";"Selector"] ;
+                                  optread = begin fun () -> print_goal_selector !default_goal_selector end;
+                                  optwrite = begin fun n ->
+                                    default_goal_selector := parse_goal_selector n
+                                  end
+                                 }
+
+
 module V82 = struct
   let get_current_initial_conclusions () =
     let { pid; strength; hook; proof } = cur_pstate () in

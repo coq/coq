@@ -777,9 +777,7 @@ let rec pr_vernac = function
         | SelectNth i -> int i ++ str":"
         | SelectAll -> str"all" ++ str":"
       in
-      (* arnaud: attention à imprimer correctement en fonction
-         de la (future) option pour le sélecteur par défaut *)
-      (if i = SelectNth 1 then mt() else pr_goal_selector i) ++
+      (if i = Proof_global.get_default_goal_selector () then mt() else pr_goal_selector i) ++
       pr_raw_tactic tac
       ++ (if deftac then str ".." else mt ())
   | VernacSolveExistential (i,c) ->

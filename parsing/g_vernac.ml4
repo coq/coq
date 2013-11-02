@@ -147,8 +147,7 @@ GEXTEND Gram
       | tac = Tactic.tactic;
         use_dft_tac = [ "." -> false | "..." -> true ] ->
         (fun g ->
-            (* arnaud: attention Å‡ choisir le bon dÅÈfaut. *)
-            let g = Option.default (SelectNth 1) g in
+            let g = Option.default (Proof_global.get_default_goal_selector ()) g in
             VernacSolve(g,tac,use_dft_tac)) ] ]
   ;
   located_vernac:
