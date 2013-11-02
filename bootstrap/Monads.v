@@ -288,9 +288,9 @@ Module IO.
 End IO.
 
 Module State.
-(** The impredicative encoding of the usual State predicate
-    transformer (StateT in Haskell). The impredicative encoding allows
-    to avoid creating blocks (val,state) at each bind. *)
+(** The impredicative encoding of the usual State monad transformer
+    (StateT in Haskell). The impredicative encoding allows to avoid
+    creating blocks (val,state) at each bind. *)
 
 Section Common.
 
@@ -476,12 +476,6 @@ Module Logic.
    result, sequentialising with a [f:'a -> 'b t] is done by applying
    [f] to each element and then flatten the list, [plus] is
    concatenation, and [split] is pattern-matching. *)
-(* spiwack: I added the primitives from [IO] directly in the [Logic]
-   signature for convenience. It doesn't really make sense, strictly
-   speaking, as they are somewhat deconnected from the semantics of
-   [Logic], but without an appropriate language for composition (some
-   kind of mixins?) I would be going nowhere with a gazillion
-   functors. *)
 
 Section Common.
 
@@ -685,19 +679,6 @@ Module Logical.
 
  Definition split {a:Set} (x:t a) : t (list_view a (Exception -> t a)) :=
    Eval compute in freeze _ (split0 x).
-(*
-   Eval compute in
-   freeze _ (
-      do NonLogicalMonad r :=
-        Logic.reify (Writer.reify (Environment.reify (State.reify x)))
-      in
-      match r with
-      | inr e => _zero e
-      | inl (a,x) => _plus (ret _ F a) x
-   ).
-
-split _ LogicalLogic x).
-*)
  Extraction Implicit split [a].
  Definition lift {a:Set} (x:NonLogical.t a) : t a := Eval compute in
   freeze _ (State.lift _ _ LogicalMonadEnv (Environment.lift _ _ LogicalMonadWriter (Writer.lift _ LogicalMessage _ LogicalMonadBase (Logic.lift _ NonLogicalMonad x)))).
