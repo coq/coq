@@ -1194,8 +1194,8 @@ let tclLOG (dbg,depth,trace) pp tac =
 	  raise reraise
       end
 
-(* arnaud: todo replug debug auto *)
-let new_tclLOG (dbg,depth,trace) pp tac = tac
+let new_tclLOG dbg pp tac =
+  Proofview.V82.tactic (tclLOG dbg pp (Proofview.V82.of_tactic tac))
 
 (** For info, from the linear trace information, we reconstitute the part
     of the proof tree we're interested in. The last executed tactic
@@ -1243,8 +1243,8 @@ let tclTRY_dbg d tac =
       if level == Info then msg_debug (pr_info_nop d);
       tclIDTAC gl)
 
-(* arnaud: todo: rebrancher debug auto *)
-let new_tclTRY_dbg tac = Tacticals.New.tclTRY
+let new_tclTRY_dbg d tac =
+  Proofview.V82.tactic (tclTRY_dbg d (Proofview.V82.of_tactic tac))
 
 (**************************************************************************)
 (*                           The Trivial tactic                           *)
