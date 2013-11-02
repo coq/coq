@@ -227,13 +227,8 @@ module Logical =
     (); (fun s e _ sk fk ->
       Obj.magic x s e __ (fun a fk0 ->
         let x0,c = a in
-        let sk0 = fun a0 fk1 ->
-          let y,c' = a0 in
-          sk (y,(if c then c' else false))
-            fk1
-        in
-        let a0,s0 = x0 in
-        sk0 (((),s0),true) fk0) fk)
+        let a0,s0 = x0 in sk (((),s0),c) fk0)
+        fk)
   
   (** val seq :
       unit t -> 'a1 t -> proofview ->
@@ -343,47 +338,15 @@ module Logical =
           (fun e0 ->
           IOBase.ret (Util.Inr e0)))
         (fun x0 ->
-        let sk0 = fun a fk0 ->
-          let sk0 = fun a0 fk1 ->
-            let x1,c = a0 in
-            let sk0 = fun a1 fk2 ->
-              let y,c' = a1 in
-              sk
-                (y,(if c then c' else false))
-                fk2
-            in
-            (match x1 with
-             | Util.Inl p ->
-               let p0,y = p in
-               let a1,s0 = p0 in
-               sk0 (((Util.Inl
-                 (a1,(fun e0 x2 ->
-                 y e0))),s0),true) fk1
-             | Util.Inr e0 ->
-               sk0 (((Util.Inr e0),s),true)
-                 fk1)
-          in
-          let x1,c = a in
-          let sk1 = fun a0 fk1 ->
-            let y,c' = a0 in
-            sk0 (y,(if c then c' else false))
-              fk1
-          in
-          (match x1 with
-           | Util.Inl p ->
-             let a0,y = p in
-             sk1 ((Util.Inl (a0,(fun e0 x2 ->
-               y e0))),true) fk0
-           | Util.Inr e0 ->
-             sk1 ((Util.Inr e0),true) fk0)
-        in
-        (match x0 with
-         | Util.Inl p ->
-           let p0,y = p in
-           let a,c = p0 in
-           sk0 ((Util.Inl (a,y)),c) fk
-         | Util.Inr e0 ->
-           sk0 ((Util.Inr e0),true) fk)))
+        match x0 with
+        | Util.Inl p ->
+          let p0,y = p in
+          let a,c = p0 in
+          let a0,s0 = a in
+          sk (((Util.Inl (a0,(fun e0 x1 x2 ->
+            y e0))),s0),c) fk
+        | Util.Inr e0 ->
+          sk (((Util.Inr e0),s),true) fk))
   
   (** val lift :
       'a1 NonLogical.t -> proofview ->
