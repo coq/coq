@@ -56,8 +56,8 @@ proof mode but it can also be used in toplevel definitions as shown in
 Figure~\ref{ltactop}.
 
 \begin{Remarks}
-\item The infix tacticals ``\dots\ {\tt ||} \dots'' and ``\dots\ {\tt
-    ;} \dots'' are associative. 
+\item The infix tacticals ``\dots\ {\tt ||} \dots'', ``\dots\ {\tt +}
+  \dots'', and ``\dots\ {\tt ;} \dots'' are associative.
 
 \item In {\tacarg}, there is an overlap between {\qualid} as a
 direct tactic argument and {\qualid} as a particular case of
@@ -100,11 +100,14 @@ is understood as
 & | & {\tt progress} {\tacexprpref}\\
 & | & {\tt repeat} {\tacexprpref}\\
 & | & {\tt try} {\tacexprpref}\\
+& | & {\tt once} {\tacexprpref}\\
+& | & {\tt exactly\_once} {\tacexprpref}\\
 & | & {\tt timeout} {\it (}{\naturalnumber} {\it |} {\ident}{\it )} {\tacexprpref}\\
 & | & {\tacexprinf} \\
 \\
 {\tacexprinf} & ::= &
            {\tacexprlow} {\tt ||} {\tacexprpref}\\
+& | &      {\tacexprlow} {\tt +} {\tacexprpref}\\
 & | & {\tacexprlow}\\
 \\
 {\tacexprlow} & ::= &
@@ -210,10 +213,10 @@ is understood as
 \index{Tacticals}
 %\label{Tacticals}
 
-Tactic expressions can only be applied in the context of a goal.  The
+Tactic expressions can only be applied in the context of a proof.  The
 evaluation yields either a term, an integer or a tactic. Intermediary
 results can be terms or integers but the final result must be a tactic
-which is then applied to the current goal.
+which is then applied to the focused goals.
 
 There is a special case for {\tt match goal} expressions of which
 the clauses evaluate to tactics. Such expressions can only be used as
@@ -342,10 +345,11 @@ We have a repeat loop with:
 {\tt repeat} {\tacexpr}
 \end{quote}
 {\tacexpr} is evaluated to $v$. If $v$ denotes a tactic, this tactic
-is applied to the goal. If the application fails, the tactic is
-applied recursively to all the generated subgoals until it eventually
-fails.  The recursion stops in a subgoal when the tactic has failed.
-The tactic {\tt repeat {\tacexpr}} itself never fails.
+is applied to each focused goal independently. If the application
+fails, the tactic is applied recursively to all the generated subgoals
+until it eventually fails.  The recursion stops in a subgoal when the
+tactic has failed \emph{to make progress}.  The tactic {\tt repeat
+  {\tacexpr}} itself never fails.
 
 \subsubsection[Error catching]{Error catching\tacindex{try}
 \index{Tacticals!try@{\tt try}}}
@@ -355,9 +359,10 @@ We can catch the tactic errors with:
 {\tt try} {\tacexpr}
 \end{quote}
 {\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
-applied. If the application of $v$ fails, it catches the error and
-leaves the goal unchanged. If the level of the exception is positive,
-then the exception is re-raised with its level decremented.
+applied to each focused goal independently. If the application of $v$
+fails in a goal, it catches the error and leaves the goal
+unchanged. If the level of the exception is positive, then the
+exception is re-raised with its level decremented.
 
 \subsubsection[Detecting progress]{Detecting progress\tacindex{progress}}
 
@@ -366,36 +371,94 @@ We can check if a tactic made progress with:
 {\tt progress} {\tacexpr}
 \end{quote}
 {\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
-applied. If the application of $v$ produced one subgoal equal to the
-initial goal (up to syntactical equality), then an error of level 0 is
-raised. 
+applied. If the application of $v$ produced subgoals equal to the
+initial goals (up to syntactical equality), then an error of level 0
+is raised.
 
 \ErrMsg \errindex{Failed to progress}
 
-\subsubsection[Branching]{Branching\tacindex{$\mid\mid$}
-\index{Tacticals!orelse@{\tt $\mid\mid$}}}
+\subsubsection[Backtracking branching]{Backtracking branching\tacindex{$+$}
+\index{Tacticals!or@{\tt $+$}}}
 
-We can easily branch with the following structure:
+We can branch with the following structure:
 \begin{quote}
-{\tacexpr}$_1$ {\tt ||} {\tacexpr}$_2$
+{\tacexpr}$_1$ {\tt +} {\tacexpr}$_2$
 \end{quote}
 {\tacexpr}$_1$ and {\tacexpr}$_2$ are evaluated to $v_1$ and
-$v_2$. $v_1$ and $v_2$ must be tactic values. $v_1$ is applied and if
-it fails to progress then $v_2$ is applied. Branching is left-associative.
+$v_2$. $v_1$ and $v_2$ must be tactic values. $v_1$ is applied to each
+focused goal independently and if it fails or a later tactic fails,
+then the proof backtracks to the current goal and $v_2$ is applied.
+
+Tactics can be seen as having several successes. When a tactic fails
+it asks for more successes of the prior tactics. {\tacexpr}$_1$ {\tt
+  +} {\tacexpr}$_2$ has all the successes of $v_1$ followed by all the
+successes of $v_2$. Algebraically, ({\tacexpr}$_1$ {\tt +}
+{\tacexpr}$_2$);{\tacexpr}$_3$ $=$ ({\tacexpr}$_1$;{\tacexpr}$_3$)
+{\tt +} ({\tacexpr}$_2$;{\tacexpr}$_3$).
+
+Branching is left-associative.
 
 \subsubsection[First tactic to work]{First tactic to work\tacindex{first}
 \index{Tacticals!first@{\tt first}}}
 
-We may consider the first tactic to work (i.e. which does not fail) among a
-panel of tactics:
+Backtracking branching may be too expansive. In this case we may
+restrict to a local, left biased, branching and consider the first
+tactic to work (i.e. which does not fail) among a panel of tactics:
 \begin{quote}
 {\tt first [} {\tacexpr}$_1$ {\tt |} $...$ {\tt |} {\tacexpr}$_n$ {\tt ]}
 \end{quote}
-{\tacexpr}$_i$ are evaluated to $v_i$ and $v_i$ must be tactic values, for 
-$i=1,...,n$. Supposing $n>1$, it applies $v_1$, if it works, it stops else it
-tries to apply $v_2$ and so on. It fails when there is no applicable tactic.
+{\tacexpr}$_i$ are evaluated to $v_i$ and $v_i$ must be tactic values,
+for $i=1,...,n$. Supposing $n>1$, it applies, in each focused goal
+independently, $v_1$, if it works, it stops otherwise it tries to
+apply $v_2$ and so on. It fails when there is no applicable tactic. In
+other words, {\tt first [} {\tacexpr}$_1$ {\tt |} $...$ {\tt |}
+  {\tacexpr}$_n$ {\tt ]} behaves, in each goal, as the the first $v_i$
+to have \emph{at least} one success.
 
 \ErrMsg \errindex{No applicable tactic}
+
+\subsubsection[Left-biased branching]{Left-biased branching\tacindex{$\mid\mid$}
+\index{Tacticals!orelse@{\tt $\mid\mid$}}}
+
+Yet another way of branching without backtracking is the following structure:
+\begin{quote}
+{\tacexpr}$_1$ {\tt ||} {\tacexpr}$_2$
+\end{quote}
+{\tacexpr}$_1$ and {\tacexpr}$_2$ are evaluated to $v_1$ and
+$v_2$. $v_1$ and $v_2$ must be tactic values. $v_1$ is applied in each
+subgoal independently and if it fails \emph{to progress} then $v_2$ is
+applied. {\tacexpr}$_1$ {\tt ||} {\tacexpr}$_2$ is equivalent to {\tt
+  first [} {\tt progress} {\tacexpr}$_1$ {\tt |} {\tt progress}
+  {\tacexpr}$_2$ {\tt ]} (except that if it fails, it fails like
+$v_2$). Branching is left-associative.
+
+\subsubsection[Soft cut]{Soft cut\tacindex{once}\index{Tacticals!once@{\tt once}}}
+
+Another way of restricting backtracking is to restrict a tactic to a
+single success \emph{a posteriori}:
+\begin{quote}
+{\tt once} {\tacexpr}
+\end{quote}
+{\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
+applied but only its first success is used. If $v$ fails, {\tt once}
+{\tacexpr} fails like $v$. If $v$ has a least one success, {\tt once}
+{\tacexpr} succeeds once, but cannot produce more successes.
+
+\subsubsection[Checking the successes]{Checking the successes\tacindex{exactly\_once}\index{Tacticals!exactly\_once@{\tt exactly\_once}}}
+
+Coq provides an experimental way to check that a tactic has \emph{exactly one} success:
+\begin{quote}
+{\tt exactly\_once} {\tacexpr}
+\end{quote}
+{\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
+applied if it has at most one success. If $v$ fails, {\tt
+  exactly\_once} {\tacexpr} fails like $v$. If $v$ has a exactly one
+success, {\tt exactly\_once} {\tacexpr} succeeds like $v$. If $v$ has
+two or more successes, {\tt exactly\_once} {\tacexpr} fails.
+
+The experimental status of this tactic pertains to the fact if $v$ performs side effects, they may occur in a unpredictable way. Indeed, normally $v$ would only be executed up to the first success until backtracking is needed, however {\tt exactly\_once} needs to look ahead to see whether a second success exists, and may run further effects immediately.
+
+\ErrMsg \errindex{This tactic has more than one success}
 
 \subsubsection[Solving]{Solving\tacindex{solve}
 \index{Tacticals!solve@{\tt solve}}}
@@ -405,9 +468,10 @@ panel of tactics:
 \begin{quote}
 {\tt solve [} {\tacexpr}$_1$ {\tt |} $...$ {\tt |} {\tacexpr}$_n$ {\tt ]}
 \end{quote}
-{\tacexpr}$_i$ are evaluated to $v_i$ and $v_i$ must be tactic values, for 
-$i=1,...,n$. Supposing $n>1$, it applies $v_1$, if it solves, it stops else it
-tries to apply $v_2$ and so on. It fails if there is no solving tactic.
+{\tacexpr}$_i$ are evaluated to $v_i$ and $v_i$ must be tactic values,
+for $i=1,...,n$. Supposing $n>1$, it applies $v_1$ to each goal
+independently, if it doesn't solve the goal then it tries to apply
+$v_2$ and so on. It fails if there is no solving tactic.
 
 \ErrMsg \errindex{Cannot solve the goal}
 
@@ -428,15 +492,19 @@ literally. If a (term) variable is given, its contents are printed.
 
 The tactic {\tt fail} is the always-failing tactic: it does not solve
 any goal. It is useful for defining other tacticals since it can be
-catched by {\tt try} or {\tt match goal}. 
+caught by {\tt try}, {\tt repeat}, {\tt match goal}, or the branching
+tacticals.
 
 \begin{Variants}
-\item {\tt fail $n$}\\
-The number $n$ is the failure level. If no level is specified, it
-defaults to $0$.  The level is used by {\tt try} and {\tt match goal}.
-If $0$, it makes {\tt match goal} considering the next clause
-(backtracking). If non zero, the current {\tt match goal} block or
-{\tt try} command is aborted and the level is decremented.
+\item {\tt fail $n$}\\ The number $n$ is the failure level. If no
+  level is specified, it defaults to $0$.  The level is used by {\tt
+    try}, {\tt repeat}, {\tt match goal} and the branching tacticals.
+  If $0$, it makes {\tt match goal} considering the next clause
+  (backtracking). If non zero, the current {\tt match goal} block,
+  {\tt try}, {\tt repeat}, or branching command is aborted and the
+  level is decremented. In the case of {\tt +}, a non-zero level skips
+  the first backtrack point, even if the call to {\tt fail $n$} is not
+  enclosed in a {\tt +} command, respecting the algebraic identity.
 
 \item {\tt fail \nelist{\messagetoken}{}}\\
 The given tokens are used for printing the failure message.
@@ -456,7 +524,7 @@ amount of time:
 {\tt timeout} {\num} {\tacexpr}
 \end{quote}
 {\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
-normally applied, except that it is interrupted after ${\num}$ seconds
+applied normally, except that it is interrupted after ${\num}$ seconds
 if it is still running. In this case the outcome is a failure.
 
 Warning: For the moment, {\tt timeout} is based on elapsed time in
