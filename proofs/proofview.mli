@@ -194,10 +194,9 @@ val tclEVARMAP : Evd.evar_map tactic
    environment is returned by {!Proofview.Goal.env}. *)
 val tclENV : Environ.env tactic
 
-(** [tclTIMEOUT n t] can have several success. It succeeds as long as,
-      individually, each of the past successes run in less than [n]
-      seconds.
-      In case of timeout if fails with [tclZERO Timeout]. *)
+exception Timeout
+(** [tclTIMEOUT n t] can have only one success.
+    In case of timeout if fails with [tclZERO Timeout]. *)
 val tclTIMEOUT : int -> 'a tactic -> 'a tactic
 
 (** [mark_as_unsafe] signals that the current tactic is unsafe. *)

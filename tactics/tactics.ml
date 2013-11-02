@@ -3758,6 +3758,7 @@ let abstract_subproof id tac gl =
     with Uninstantiated_evar _ ->
       error "\"abstract\" cannot handle existentials." in
   (* spiwack: the [abstract] tacticals loses the "unsafe status" information *)
+  try
   let (const,_) = Pfedit.build_constant_by_tactic id secsign concl
     (Tacticals.New.tclCOMPLETE (Tacticals.New.tclTHEN (Tacticals.New.tclDO (List.length sign) intro) tac)) in
   let cd = Entries.DefinitionEntry const in
@@ -3772,6 +3773,12 @@ let abstract_subproof id tac gl =
   exact_no_check
     (applist (lem,List.rev (instance_from_named_context sign)))
     gl
+  with Proof_errors.TacticFailure e ->
+    (* if the tactic [tac] fails, it reports a [TacticFailure e],
+       which is an error irrelevant to the proof system (in fact it
+       means that [e] comes from [tac] failing to yield enough
+       success). Hence it reraises [e]. *)
+    raise e
 
 let tclABSTRACT name_op tac gl =
   let s = match name_op with

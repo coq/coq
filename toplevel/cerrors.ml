@@ -57,7 +57,7 @@ let wrap_vernac_error exn strm =
   let e = EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None) in
   Exninfo.copy exn e
 
-let process_vernac_interp_error exn = match exn with
+let rec process_vernac_interp_error exn = match exn with
   | Univ.UniverseInconsistency (o,u,v,p) ->
     let pr_rel r =
       match r with
@@ -114,6 +114,7 @@ let process_vernac_interp_error exn = match exn with
          if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
   | AlreadyDeclared msg ->
       wrap_vernac_error exn (msg ++ str ".")
+  | Proof_errors.TacticFailure e -> process_vernac_interp_error e
   | exc ->
       exc
 
