@@ -1074,22 +1074,36 @@ let pack_sigma (sigma,c) = {it=c;sigma=sigma;}
 let extend_gl_hyps { it=gl ; sigma=sigma } sign =
   Goal.V82.new_goal_with sigma gl sign
 
+(* Local exception, should not escape. No need to register. *)
+exception NeedsAGoal
+(* Interprets an ltac expression into a value, does not assume a goal *)
+let val_interp_glob ist (tac:glob_tactic_expr) : typed_generic_argument =
+  match tac with
+  | TacFun (it,body) ->
+      let v = VFun (extract_trace ist,ist.lfun,it,body) in
+      of_tacvalue v
+  | TacLetIn _
+  | TacMatchGoal _
+  | TacMatch _
+  | TacArg _ -> raise NeedsAGoal
+  | t ->
+      let v = VFun (extract_trace ist,ist.lfun,[],t) in
+      of_tacvalue v
+
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist (tac:glob_tactic_expr) : typed_generic_argument Proofview.glist Proofview.tactic =
-  let value_interp ist = match tac with
-  (* Immediate evaluation *)
-  | TacFun (it,body) ->
-    let v = VFun (extract_trace ist,ist.lfun,it,body) in
-    (Proofview.Goal.return (of_tacvalue v))
-  | TacLetIn (true,l,u) -> interp_letrec ist l u
-  | TacLetIn (false,l,u) -> interp_letin ist l u
-  | TacMatchGoal (lz,lr,lmr) -> interp_match_goal ist lz lr lmr
-  | TacMatch (lz,c,lmr) -> interp_match ist lz c lmr
-  | TacArg (loc,a) -> interp_tacarg ist a
-  (* Delayed evaluation *)
-  | t ->
-    let v = VFun (extract_trace ist,ist.lfun,[],t) in
-    (Proofview.Goal.return (of_tacvalue v))
+  let value_interp ist =
+    try Proofview.Goal.return (val_interp_glob ist tac)
+    with NeedsAGoal ->
+      match tac with
+      (* Immediate evaluation *)
+      | TacLetIn (true,l,u) -> interp_letrec ist l u
+      | TacLetIn (false,l,u) -> interp_letin ist l u
+      | TacMatchGoal (lz,lr,lmr) -> interp_match_goal ist lz lr lmr
+      | TacMatch (lz,c,lmr) -> interp_match ist lz c lmr
+      | TacArg (loc,a) -> interp_tacarg ist a
+      (* Delayed evaluation, handled by val_interp_glob, above *)
+      | _ -> assert false
   in check_for_interrupt ();
   match curr_debug ist with
   | DebugOn lev ->
@@ -1711,8 +1725,14 @@ and interp_ltac_constr ist e =
 
 (* Interprets tactic expressions : returns a "tactic" *)
 and interp_tactic ist tac =
-  val_interp ist tac >>= fun v ->
-  tactic_of_value ist v
+  (* spiwack: interpretes the following tactic out of a goal if
+     possible. It allows tactics on the right of a tclTHEN to manipulate
+     the generated subgoals globally. *)
+  try
+    tactic_of_value ist (val_interp_glob ist tac)
+  with NeedsAGoal ->
+    val_interp ist tac >>= fun v ->
+    tactic_of_value ist v
 
 (* Interprets a primitive tactic *)
 and interp_atomic ist tac =
