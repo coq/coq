@@ -89,10 +89,12 @@ type tomatch_type =
 (* spiwack: The first argument of [Pushed] is [true] for initial
    Pushed and [false] otherwise. Used to decide whether the term being
    matched on must be aliased in the variable case (only initial
-   Pushed need to be aliased). *)
+   Pushed need to be aliased). The first argument of [Alias] is [true]
+   if the alias was introduced by an initial pushed and [false]
+   otherwise.*)
 type tomatch_status =
   | Pushed of (bool*((constr * tomatch_type) * int list * Name.t))
-  | Alias of (Name.t * constr * (constr * types))
+  | Alias of (bool * (Name.t * constr * (constr * types)))
   | NonDepAlias
   | Abstract of int * rel_declaration
 

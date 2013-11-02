@@ -130,10 +130,12 @@ type tomatch_type =
 (* spiwack: The first argument of [Pushed] is [true] for initial
    Pushed and [false] otherwise. Used to decide whether the term being
    matched on must be aliased in the variable case (only initial
-   Pushed need to be aliased). *)
+   Pushed need to be aliased). The first argument of [Alias] is [true]
+   if the alias was introduced by an initial pushed and [false]
+   otherwise.*)
 type tomatch_status =
   | Pushed of (bool*((constr * tomatch_type) * int list * Name.t))
-  | Alias of (Name.t * constr * (constr * types))
+  | Alias of (bool*(Name.t * constr * (constr * types)))
   | NonDepAlias
   | Abstract of int * rel_declaration
 
@@ -594,9 +596,9 @@ let relocate_index_tomatch n1 n2 =
       let tm = map_tomatch_type (relocate_index n1 n2 depth) tm in
       let l = List.map (relocate_rel n1 n2 depth) l in
       Pushed (b,((c,tm),l,na)) :: genrec depth rest
-  | Alias (na,c,d) :: rest ->
+  | Alias (initial,(na,c,d)) :: rest ->
       (* [c] is out of relocation scope *)
-      Alias (na,c,map_pair (relocate_index n1 n2 depth) d) :: genrec depth rest
+      Alias (initial,(na,c,map_pair (relocate_index n1 n2 depth) d)) :: genrec depth rest
   | NonDepAlias :: rest ->
       NonDepAlias :: genrec depth rest
   | Abstract (i,d) :: rest ->
@@ -628,9 +630,9 @@ let replace_tomatch n c =
       let tm = map_tomatch_type (replace_term n c depth) tm in
       List.iter (fun i -> if Int.equal i (n + depth) then anomaly (Pp.str "replace_tomatch")) l;
       Pushed (initial,((b,tm),l,na)) :: replrec depth rest
-  | Alias (na,b,d) :: rest ->
+  | Alias (initial,(na,b,d)) :: rest ->
       (* [b] is out of replacement scope *)
-      Alias (na,b,map_pair (replace_term n c depth) d) :: replrec depth rest
+      Alias (initial,(na,b,map_pair (replace_term n c depth) d)) :: replrec depth rest
   | NonDepAlias  :: rest ->
       NonDepAlias :: replrec depth rest
   | Abstract (i,d) :: rest ->
@@ -652,8 +654,8 @@ let rec liftn_tomatch_stack n depth = function
       let tm = liftn_tomatch_type n depth tm in
       let l = List.map (fun i -> if i<depth then i else i+n) l in
       Pushed (initial,((c,tm),l,na))::(liftn_tomatch_stack n depth rest)
-  | Alias (na,c,d)::rest ->
-      Alias (na,liftn n depth c,map_pair (liftn n depth) d)
+  | Alias (initial,(na,c,d))::rest ->
+      Alias (initial,(na,liftn n depth c,map_pair (liftn n depth) d))
       ::(liftn_tomatch_stack n depth rest)
   | NonDepAlias  :: rest ->
       NonDepAlias :: liftn_tomatch_stack n depth rest
@@ -1160,7 +1162,9 @@ let build_leaf pb =
   j_nf_evar !(pb.evdref) j
 
 (* Build the sub-pattern-matching problem for a given branch "C x1..xn as x" *)
-let build_branch current realargs deps (realnames,curname) pb arsign eqns const_info =
+(* spiwack: the [initial] argument keeps track whether the branch is a
+   toplevel branch ([true]) or a deep one ([false]). *)
+let build_branch initial current realargs deps (realnames,curname) pb arsign eqns const_info =
   (* We remember that we descend through constructor C *)
   let history =
     push_history_pattern const_info.cs_nargs const_info.cs_cstr pb.history in
@@ -1243,7 +1247,7 @@ let build_branch current realargs deps (realnames,curname) pb arsign eqns const_
           applist (mkInd (inductive_of_constructor const_info.cs_cstr),
                    List.map (lift const_info.cs_nargs) const_info.cs_params),
           const_info.cs_concl_realargs) in
-      Alias (aliasname,cur_alias,(ci,ind)) in
+      Alias (initial,(aliasname,cur_alias,(ci,ind))) in
 
   let tomatch = List.rev_append (alias :: currents) tomatch in
 
@@ -1279,7 +1283,7 @@ let build_branch current realargs deps (realnames,curname) pb arsign eqns const_
 let rec compile pb =
   match pb.tomatch with
     | Pushed cur :: rest -> match_current { pb with tomatch = rest } cur
-    | Alias x :: rest -> compile_alias pb x rest
+    | Alias (initial,x) :: rest -> compile_alias initial pb x rest
     | NonDepAlias :: rest -> compile_non_dep_alias pb rest
     | Abstract (i,d) :: rest -> compile_generalization pb i d rest
     | [] -> build_leaf pb
@@ -1306,7 +1310,7 @@ and match_current pb (initial,tomatch) =
 	  let pb,deps = generalize_problem (names,dep) pb deps in
 
 	  (* We compile branches *)
-	  let brvals = Array.map2 (compile_branch current realargs (names,dep) deps pb arsign) eqns cstrs in
+	  let brvals = Array.map2 (compile_branch initial current realargs (names,dep) deps pb arsign) eqns cstrs in
 	  (* We build the (elementary) case analysis *)
           let depstocheck = current::binding_vars_of_inductive typ in
           let brvals,tomatch,pred,inst =
@@ -1361,8 +1365,8 @@ and compile_all_variables initial cur pb =
   else pop_problem cur pb
 
 (* Building the sub-problem when all patterns are variables *)
-and compile_branch current realargs names deps pb arsign eqns cstr =
-  let sign, pb = build_branch current realargs deps names pb arsign eqns cstr in
+and compile_branch initial current realargs names deps pb arsign eqns cstr =
+  let sign, pb = build_branch initial current realargs deps names pb arsign eqns cstr in
   sign, (compile pb).uj_val
 
 (* Abstract over a declaration before continuing splitting *)
@@ -1376,7 +1380,10 @@ and compile_generalization pb i d rest =
   { uj_val = mkLambda_or_LetIn d j.uj_val;
     uj_type = mkProd_wo_LetIn d j.uj_type }
 
-and compile_alias pb (na,orig,(expanded,expanded_typ)) rest =
+(* spiwack: the [initial] argument keeps track whether the alias has
+   been introduced by a toplevel branch ([true]) or a deep one
+   ([false]). *)
+and compile_alias initial pb (na,orig,(expanded,expanded_typ)) rest =
   let f c t =
     let alias = (na,Some c,t) in
     let pb =
@@ -1393,10 +1400,23 @@ and compile_alias pb (na,orig,(expanded,expanded_typ)) rest =
         else
           mkLetIn (na,c,t,j.uj_val);
       uj_type = subst1 c j.uj_type } in
+  (* spiwack: when an alias appears on a deep branch, its non-expanded
+     form is automatically a variable of the same name. We avoid
+     introducing such superfluous aliases so that refines are elegant. *)
+  let just_pop () =
+    let pb =
+      { pb with
+        tomatch = rest;
+        history = pop_history_pattern pb.history;
+        mat = List.map drop_alias_eqn pb.mat } in
+    compile pb
+  in
   let sigma = !(pb.evdref) in
   if not (Flags.is_program_mode ()) && (isRel orig || isVar orig) then
     (* Try to compile first using non expanded alias *)
-    try f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
+    try
+      if initial then f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
+      else just_pop ()
     with e when precatchable_exception e ->
     (* Try then to compile using expanded alias *)
     pb.evdref := sigma;
@@ -1407,7 +1427,8 @@ and compile_alias pb (na,orig,(expanded,expanded_typ)) rest =
     with e when precatchable_exception e ->
     (* Try then to compile using non expanded alias *)
     pb.evdref := sigma;
-    f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
+    if initial then f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
+    else just_pop ()
 
 
 (* Remember that a non-trivial pattern has been consumed *)
