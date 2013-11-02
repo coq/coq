@@ -244,6 +244,15 @@ let tclIFCATCH a s f =
     | Util.Inr e -> f e
     | Util.Inl (x,a') -> Proof.plus (s x) (fun e -> (a' e) >>= fun x' -> (s x'))
 
+(* [tclONCE t] fails if [t] fails, otherwise it has exactly one
+   success. *)
+let tclONCE t =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  Proof.split t >>= function
+    | Util.Inr e -> tclZERO e
+    | Util.Inl (x,_) -> tclUNIT x
+
 (* Focuses a tactic at a range of subgoals, found by their indices. *)
 (* arnaud: bug if 0 goals ! *)
 let tclFOCUS i j t =

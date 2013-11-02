@@ -398,6 +398,8 @@ module New = struct
         end
     end
 
+  let tclONCE = Proofview.tclONCE
+
   let tclORELSE0 t1 t2 =
     tclINDEPENDENT begin
       tclORELSE

@@ -249,6 +249,8 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacRepeat tac -> TacRepeat (subst_tactic subst tac)
   | TacOr (tac1,tac2) ->
       TacOr (subst_tactic subst tac1,subst_tactic subst tac2)
+  | TacOnce tac ->
+      TacOnce (subst_tactic subst tac)
   | TacOrelse (tac1,tac2) ->
       TacOrelse (subst_tactic subst tac1,subst_tactic subst tac2)
   | TacFirst l -> TacFirst (List.map (subst_tactic subst) l)

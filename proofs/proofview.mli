@@ -156,6 +156,10 @@ val tclORELSE : 'a tactic -> (exn -> 'a tactic) -> 'a tactic
    fails with [e], then it behaves as [f e]. *)
 val tclIFCATCH : 'a tactic -> ('a -> 'b tactic) -> (exn -> 'b tactic) -> 'b tactic
 
+(* [tclONCE t] fails if [t] fails, otherwise it has exactly one
+   success. *)
+val tclONCE : 'a tactic -> 'a tactic
+
 (* Focuses a tactic at a range of subgoals, found by their indices. *)
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
 
