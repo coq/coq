@@ -412,9 +412,9 @@ Module Logic.
    "search" implementations (including Tac interactive prover's
    tactics). Yet it's quite hard to wrap your head around these.  I
    recommand reading a few times the "Backtracking, Interleaving, and
-   Terminating Monad Transformers" paper by O. Kiselyov, C. Chen,
-   D. Fridman.  The peculiar shape of the monadic type is reminiscent
-   of that of the continuation monad transformer.
+   Terminating Monad Transformers" paper by O. Kiselyov, C. Shan,
+   D. Friedman, and A. Sabry.  The peculiar shape of the monadic type
+   is reminiscent of that of the continuation monad transformer.
 
    The paper also contains the rational for the [split] abstraction.
 
