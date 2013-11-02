@@ -748,12 +748,29 @@ module Goal = struct
     f {env=env;sigma=sigma;hyps=hyps;concl=concl;self=self}
   end
   let enter f =
-    lift (enter_t f) >= fun ts ->
-    tclDISPATCH ts
+    list_iter_goal () begin fun goal () ->
+      Proof.current >= fun env ->
+      tclEVARMAP >= fun sigma ->
+      try
+        (* enter_t cannot modify the sigma. *)
+        let (t,_) = Goal.eval (enter_t f) env sigma goal in
+        t
+      with e when catchable_exception e ->
+        tclZERO e
+    end
   let enterl f =
-    lift (enter_t f) >= fun ts ->
-    tclDISPATCHL ts >= fun res ->
-    tclUNIT (List.flatten res)
+    list_iter_goal [] begin fun goal acc ->
+      Proof.current >= fun env ->
+      tclEVARMAP >= fun sigma ->
+      try
+        (* enter_t cannot modify the sigma. *)
+        let (t,_) = Goal.eval (enter_t f) env sigma goal in
+        t >= fun r ->
+        tclUNIT (r::acc)
+      with e when catchable_exception e ->
+        tclZERO e
+    end >= fun res ->
+    tclUNIT (List.flatten (List.rev res))
 
 
   (* compatibility *)
