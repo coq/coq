@@ -166,5 +166,15 @@ val build_by_tactic : env -> types -> unit Proofview.tactic -> constr * bool
 
 val declare_implicit_tactic : unit Proofview.tactic -> unit
 
+(** To remove the default tactic *)
+val clear_implicit_tactic : unit -> unit
+
 (* Raise Exit if cannot solve *)
 val solve_by_implicit_tactic : env -> Evd.evar_map -> Evd.evar -> constr
+
+
+
+
+
+
+

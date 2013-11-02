@@ -491,6 +491,8 @@ END
 VERNAC COMMAND EXTEND ImplicitTactic CLASSIFIED AS SIDEFF
 | [ "Declare" "Implicit" "Tactic" tactic(tac) ] ->
     [ Pfedit.declare_implicit_tactic (Tacinterp.interp tac) ]
+| [ "Clear" "Implicit" "Tactic" ] ->
+    [ Pfedit.clear_implicit_tactic () ]
 END
 
 

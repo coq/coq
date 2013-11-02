@@ -154,6 +154,8 @@ let implicit_tactic = ref None
 
 let declare_implicit_tactic tac = implicit_tactic := Some tac
 
+let clear_implicit_tactic () = implicit_tactic := None
+
 let solve_by_implicit_tactic env sigma evk =
   let evi = Evd.find_undefined sigma evk in
   match (!implicit_tactic, snd (evar_source evk sigma)) with

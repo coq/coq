@@ -3833,6 +3833,10 @@ Goal forall n m, m<>0 -> { q:nat & { r | q * m + r = n } }.
 intros.
 exists (n // m).
 \end{coq_example}
+\begin{coq_eval}
+Clear Implicit Tactic.
+Reset Initial.
+\end{coq_eval}
 
 The tactic {\tt exists (n // m)} did not fail. The hole was solved by
 {\tt assumption} so that it behaved as {\tt exists (quo n m H)}.
