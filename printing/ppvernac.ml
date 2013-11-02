@@ -773,7 +773,13 @@ let rec pr_vernac = function
 	     prlist_with_sep (fun () -> str " <+ ") pr_m mexprs)
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
-      (if Int.equal i 1 then mt() else int i ++ str ": ") ++
+      let pr_goal_selector = function
+        | SelectNth i -> int i ++ str":"
+        | SelectAll -> str"all" ++ str":"
+      in
+      (* arnaud: attention à imprimer correctement en fonction
+         de la (future) option pour le sélecteur par défaut *)
+      (if i = SelectNth 1 then mt() else pr_goal_selector i) ++
       pr_raw_tactic tac
       ++ (if deftac then str ".." else mt ())
   | VernacSolveExistential (i,c) ->

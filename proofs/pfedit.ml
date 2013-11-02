@@ -90,19 +90,25 @@ let current_proof_statement () =
     | (id,([concl],strength,hook)) -> id,strength,concl,hook
     | _ -> Errors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement")
 
-let solve_nth ?with_end_tac gi tac pr =
+let solve ?with_end_tac gi tac pr =
   try 
     let tac = match with_end_tac with
       | None -> tac
       | Some etac -> Proofview.tclTHEN tac etac in
-    Proof.run_tactic (Global.env ()) (Proofview.tclFOCUS gi gi tac) pr
+    let tac = match gi with
+      | Vernacexpr.SelectNth i -> Proofview.tclFOCUS i i tac
+      | Vernacexpr.SelectAll -> tac
+    in
+    Proof.run_tactic (Global.env ()) tac pr
   with
     | Proof_global.NoCurrentProof  -> Errors.error "No focused proof"
-    | Proofview.IndexOutOfRange ->
-	let msg = str "No such goal: " ++ int gi ++ str "." in
-	Errors.errorlabstrm "" msg
+    | Proofview.IndexOutOfRange -> 
+        match gi with
+	| Vernacexpr.SelectNth i -> let msg = str "No such goal: " ++ int i ++ str "." in
+	                            Errors.errorlabstrm "" msg
+        | _ -> assert false
 
-let by tac = Proof_global.with_current_proof (fun _ -> solve_nth 1 tac)
+let by tac = Proof_global.with_current_proof (fun _ -> solve (Vernacexpr.SelectNth 1) tac)
 
 let instantiate_nth_evar_com n com = 
   Proof_global.simple_with_current_proof (fun _ p -> Proof.V82.instantiate_evar n com p)

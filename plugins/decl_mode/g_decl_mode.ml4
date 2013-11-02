@@ -132,7 +132,7 @@ GEXTEND Gram
   GLOBAL: proof_mode ;
 
   proof_mode: LAST
-    [ [ c=G_vernac.subgoal_command -> c (Some 1) ] ]
+    [ [ c=G_vernac.subgoal_command -> c (Some (Vernacexpr.SelectNth 1)) ] ]
   ;
 END  
 

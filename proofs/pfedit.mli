@@ -120,7 +120,7 @@ val get_all_proof_names : unit -> Id.t list
 
 (** {6 ... } *)
 (** [set_end_tac tac] applies tactic [tac] to all subgoal generate
-    by [solve_nth] *)
+    by [solve] *)
 
 val set_end_tac : Tacexpr.raw_tactic_expr -> unit
 
@@ -131,17 +131,18 @@ val set_used_variables : Id.t list -> unit
 val get_used_variables : unit -> Context.section_context option
 
 (** {6 ... } *)
-(** [solve_nth n tac] applies tactic [tac] to the [n]th subgoal of the
-   current focused proof or raises a UserError if no proof is focused or
-   if there is no [n]th subgoal *)
+(** [solve (SelectNth n) tac] applies tactic [tac] to the [n]th
+    subgoal of the current focused proof or raises a [UserError] if no
+    proof is focused or if there is no [n]th subgoal. [solve SelectAll
+    tac] applies [tac] to all subgoals. *)
 
-val solve_nth : ?with_end_tac:unit Proofview.tactic -> int -> unit Proofview.tactic ->
+val solve : ?with_end_tac:unit Proofview.tactic -> Vernacexpr.goal_selector -> unit Proofview.tactic ->
       Proof.proof -> Proof.proof*bool
 
 (** [by tac] applies tactic [tac] to the 1st subgoal of the current
-   focused proof or raises a UserError if there is no focused proof or
-   if there is no more subgoals.
-   Returns [false] if an unsafe tactic has been used. *)
+    focused proof or raises a UserError if there is no focused proof or
+    if there is no more subgoals.
+    Returns [false] if an unsafe tactic has been used. *)
 
 val by : unit Proofview.tactic -> bool
 

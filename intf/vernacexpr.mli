@@ -25,6 +25,15 @@ type lreference = reference
 
 type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
 
+(* spiwack: I'm choosing, for now, to have [goal_selector] be a
+   different type than [goal_reference] mostly because if it makes sense
+   to print a goal that is out of focus (or already solved) it doesn't
+   make sense to apply a tactic to it. Hence it the types may look very
+   similar, they do not seem to mean the same thing. *)
+type goal_selector =
+  | SelectNth of int
+  | SelectAll
+
 type goal_identifier = string
 type scope_name = string
 
@@ -325,7 +334,7 @@ type vernac_expr =
 
   (* Solving *)
 
-  | VernacSolve of int * raw_tactic_expr * bool
+  | VernacSolve of goal_selector * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)

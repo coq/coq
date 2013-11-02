@@ -777,7 +777,7 @@ let vernac_solve n tcom b =
     error "Unknown command of the non proof-editing mode.";
   let status = Proof_global.with_current_proof (fun etac p ->
     let with_end_tac = if b then Some etac else None in
-    let (p,status) = solve_nth n (Tacinterp.hide_interp tcom None) ?with_end_tac p in
+    let (p,status) = solve n (Tacinterp.hide_interp tcom None) ?with_end_tac p in
     (* in case a strict subtree was completed,
        go back to the top of the prooftree *)
     let p = Proof.maximal_unfocus command_focus p in

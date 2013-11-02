@@ -109,8 +109,14 @@ GEXTEND Gram
   noedit_mode:
     [ [ c = subgoal_command -> c None] ]
   ;
+
+  selector:
+    [ [ n=natural; ":" -> SelectNth n
+      | IDENT "all" ; ":" -> SelectAll ] ]
+  ;
+
   tactic_mode:
-  [ [ gln = OPT[n=natural; ":" -> n];
+  [ [ gln = OPT selector;
       tac = subgoal_command -> tac gln ] ]
   ;
 
@@ -127,11 +133,22 @@ GEXTEND Gram
 
 
   subgoal_command: 
-    [ [ c = check_command; "." -> fun g -> c g
+    [ [ c = check_command; "." ->
+                  begin function
+                    | Some (SelectNth g) -> c (Some g)
+                    | None -> c None
+                    | _ ->
+                        (* arnaud: the error is raised bizarely:
+                           "all:Check 0." doesn't do anything, then
+                           inputing anything that ends with a period
+                           (including " .") raises the error. *)
+                        error "Typing and evaluation commands, cannot be used with the \"all:\" selector."
+                  end
       | tac = Tactic.tactic;
         use_dft_tac = [ "." -> false | "..." -> true ] ->
-          (fun g ->
-            let g = Option.default 1 g in
+        (fun g ->
+            (* arnaud: attention à choisir le bon défaut. *)
+            let g = Option.default (SelectNth 1) g in
             VernacSolve(g,tac,use_dft_tac)) ] ]
   ;
   located_vernac:
