@@ -453,6 +453,8 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
       <:expr< Tacexpr.TacSolve $mlexpr_of_list mlexpr_of_tactic tl$ >>
   | Tacexpr.TacTry t ->
       <:expr< Tacexpr.TacTry $mlexpr_of_tactic t$ >>
+  | Tacexpr.TacOr (t1,t2) ->
+      <:expr< Tacexpr.TacOr $mlexpr_of_tactic t1$ $mlexpr_of_tactic t2$ >>
   | Tacexpr.TacOrelse (t1,t2) ->
       <:expr< Tacexpr.TacOrelse $mlexpr_of_tactic t1$ $mlexpr_of_tactic t2$ >>
   | Tacexpr.TacDo (n,t) ->

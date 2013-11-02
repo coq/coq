@@ -214,6 +214,9 @@ and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr =
   | TacComplete of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacSolve of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr list
   | TacTry of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacOr of
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
   | TacOrelse of
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
       ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr

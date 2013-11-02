@@ -383,6 +383,14 @@ module New = struct
       Refiner.catch_failerror e;
       tclUNIT ()
     with e -> tclZERO e
+
+  (* spiwack: I chose to give the Ltac + the same semantics as
+     [Proofview.tclOR], however, for consistency with the or-else
+     tactical, we may consider wrapping the first argument with
+     [tclPROGRESS]. It strikes me as a bad idea, but consistency can be
+     considered valuable. *)
+  let tclOR = Proofview.Notations.(<+>)
+
   let tclORELSE0 t1 t2 =
     tclINDEPENDENT begin
       tclORELSE

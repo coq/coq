@@ -73,7 +73,9 @@ GEXTEND Gram
           TacAbstract (tc,Some s) ]
 (*End of To do*)
     | "2" RIGHTA
-      [ ta0 = tactic_expr; "||"; ta1 = binder_tactic -> TacOrelse (ta0,ta1)
+      [ ta0 = tactic_expr; "+"; ta1 = binder_tactic -> TacOr (ta0,ta1)
+      | ta0 = tactic_expr; "+"; ta1 = tactic_expr -> TacOr (ta0,ta1) 
+      | ta0 = tactic_expr; "||"; ta1 = binder_tactic -> TacOrelse (ta0,ta1)
       | ta0 = tactic_expr; "||"; ta1 = tactic_expr -> TacOrelse (ta0,ta1) ]
     | "1" RIGHTA
       [ b = match_key; IDENT "goal"; "with"; mrl = match_context_list; "end" ->

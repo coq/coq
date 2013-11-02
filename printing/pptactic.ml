@@ -886,6 +886,11 @@ let rec pr_tac inherited tac =
   | TacInfo t ->
       hov 1 (str "info" ++ spc () ++ pr_tac (ltactical,E) t),
       linfo
+  | TacOr (t1,t2) ->
+      (* arnaud: vérifier qu'il s'agit bien de la syntaxe définitive. *)
+      hov 1 (pr_tac (lorelse,L) t1 ++ str " +" ++ brk (1,1) ++
+             pr_tac (lorelse,E) t2),
+      lorelse
   | TacOrelse (t1,t2) ->
       hov 1 (pr_tac (lorelse,L) t1 ++ str " ||" ++ brk (1,1) ++
              pr_tac (lorelse,E) t2),
