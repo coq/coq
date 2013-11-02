@@ -186,40 +186,60 @@ module NonLogical =
 module Logical = 
  struct 
   type 'a t =
-    __ -> ('a -> proofview -> Environ.env ->
-    __ -> ((__*bool) -> (exn -> __
+    __ -> ('a -> proofview -> __ -> (__ -> __
+    -> ((__*bool) -> (exn -> __ IOBase.coq_T)
+    -> __ IOBase.coq_T) -> (exn -> __
+    IOBase.coq_T) -> __ IOBase.coq_T) ->
+    Environ.env -> __ -> ((__*bool) -> (exn
+    -> __ IOBase.coq_T) -> __ IOBase.coq_T)
+    -> (exn -> __ IOBase.coq_T) -> __
+    IOBase.coq_T) -> proofview -> __ -> (__
+    -> __ -> ((__*bool) -> (exn -> __
     IOBase.coq_T) -> __ IOBase.coq_T) -> (exn
     -> __ IOBase.coq_T) -> __ IOBase.coq_T)
-    -> proofview -> Environ.env -> __ ->
-    ((__*bool) -> (exn -> __ IOBase.coq_T) ->
-    __ IOBase.coq_T) -> (exn -> __
-    IOBase.coq_T) -> __ IOBase.coq_T
+    -> Environ.env -> __ -> ((__*bool) ->
+    (exn -> __ IOBase.coq_T) -> __
+    IOBase.coq_T) -> (exn -> __ IOBase.coq_T)
+    -> __ IOBase.coq_T
   
   (** val ret :
-      'a1 -> __ -> ('a1 -> proofview ->
-      Environ.env -> __ -> (('a2*bool) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> (exn -> __
+      'a1 -> __ -> ('a1 -> proofview -> __ ->
+      ('a2 -> __ -> ((__*bool) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> Environ.env -> __ ->
-      (('a2*bool) -> (exn -> 'a3
-      IOBase.coq_T) -> 'a3 IOBase.coq_T) ->
-      (exn -> 'a3 IOBase.coq_T) -> 'a3
-      IOBase.coq_T **)
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> Environ.env -> __ ->
+      ((__*bool) -> (exn -> __ IOBase.coq_T)
+      -> __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      proofview -> __ -> ('a2 -> __ ->
+      (('a3*bool) -> (exn -> __ IOBase.coq_T)
+      -> __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (('a3*bool) ->
+      (exn -> 'a4 IOBase.coq_T) -> 'a4
+      IOBase.coq_T) -> (exn -> 'a4
+      IOBase.coq_T) -> 'a4 IOBase.coq_T **)
   
   let ret x =
     (); (fun _ k s -> Obj.magic k x s)
   
   (** val bind :
       'a1 t -> ('a1 -> 'a2 t) -> __ -> ('a2
-      -> proofview -> Environ.env -> __ ->
-      (('a3*bool) -> (exn -> __ IOBase.coq_T)
+      -> proofview -> __ -> ('a3 -> __ ->
+      ((__*bool) -> (exn -> __ IOBase.coq_T)
       -> __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> Environ.env -> __ ->
-      (('a3*bool) -> (exn -> 'a4
-      IOBase.coq_T) -> 'a4 IOBase.coq_T) ->
-      (exn -> 'a4 IOBase.coq_T) -> 'a4
+      Environ.env -> __ -> ((__*bool) -> (exn
+      -> __ IOBase.coq_T) -> __ IOBase.coq_T)
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> proofview -> __ ->
+      ('a3 -> __ -> (('a4*bool) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> Environ.env -> __ ->
+      (('a4*bool) -> (exn -> 'a5
+      IOBase.coq_T) -> 'a5 IOBase.coq_T) ->
+      (exn -> 'a5 IOBase.coq_T) -> 'a5
       IOBase.coq_T **)
   
   let bind x k =
@@ -228,16 +248,22 @@ module Logical =
         Obj.magic k a __ k0 s') s)
   
   (** val ignore :
-      'a1 t -> __ -> (unit -> proofview ->
-      Environ.env -> __ -> (('a2*bool) ->
+      'a1 t -> __ -> (unit -> proofview -> __
+      -> ('a2 -> __ -> ((__*bool) -> (exn ->
+      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> Environ.env -> __ ->
+      ((__*bool) -> (exn -> __ IOBase.coq_T)
+      -> __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> Environ.env -> __ ->
-      (('a2*bool) -> (exn -> 'a3
-      IOBase.coq_T) -> 'a3 IOBase.coq_T) ->
-      (exn -> 'a3 IOBase.coq_T) -> 'a3
-      IOBase.coq_T **)
+      proofview -> __ -> ('a2 -> __ ->
+      (('a3*bool) -> (exn -> __ IOBase.coq_T)
+      -> __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (('a3*bool) ->
+      (exn -> 'a4 IOBase.coq_T) -> 'a4
+      IOBase.coq_T) -> (exn -> 'a4
+      IOBase.coq_T) -> 'a4 IOBase.coq_T **)
   
   let ignore x =
     (); (fun _ k s ->
@@ -245,14 +271,21 @@ module Logical =
   
   (** val seq :
       unit t -> 'a1 t -> __ -> ('a1 ->
-      proofview -> Environ.env -> __ ->
-      (('a2*bool) -> (exn -> __ IOBase.coq_T)
+      proofview -> __ -> ('a2 -> __ ->
+      ((__*bool) -> (exn -> __ IOBase.coq_T)
       -> __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> Environ.env -> __ ->
-      (('a2*bool) -> (exn -> 'a3
-      IOBase.coq_T) -> 'a3 IOBase.coq_T) ->
-      (exn -> 'a3 IOBase.coq_T) -> 'a3
+      Environ.env -> __ -> ((__*bool) -> (exn
+      -> __ IOBase.coq_T) -> __ IOBase.coq_T)
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> proofview -> __ ->
+      ('a2 -> __ -> (('a3*bool) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> Environ.env -> __ ->
+      (('a3*bool) -> (exn -> 'a4
+      IOBase.coq_T) -> 'a4 IOBase.coq_T) ->
+      (exn -> 'a4 IOBase.coq_T) -> 'a4
       IOBase.coq_T **)
   
   let seq x k =
@@ -262,119 +295,168 @@ module Logical =
   
   (** val set :
       logicalState -> __ -> (unit ->
-      proofview -> Environ.env -> __ ->
-      (('a1*bool) -> (exn -> __ IOBase.coq_T)
+      proofview -> __ -> ('a1 -> __ ->
+      ((__*bool) -> (exn -> __ IOBase.coq_T)
       -> __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> Environ.env -> __ ->
-      (('a1*bool) -> (exn -> 'a2
-      IOBase.coq_T) -> 'a2 IOBase.coq_T) ->
-      (exn -> 'a2 IOBase.coq_T) -> 'a2
+      Environ.env -> __ -> ((__*bool) -> (exn
+      -> __ IOBase.coq_T) -> __ IOBase.coq_T)
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> proofview -> __ ->
+      ('a1 -> __ -> (('a2*bool) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> Environ.env -> __ ->
+      (('a2*bool) -> (exn -> 'a3
+      IOBase.coq_T) -> 'a3 IOBase.coq_T) ->
+      (exn -> 'a3 IOBase.coq_T) -> 'a3
       IOBase.coq_T **)
   
   let set s =
     (); (fun _ k x -> Obj.magic k () s)
   
   (** val get :
-      __ -> (logicalState -> proofview ->
-      Environ.env -> __ -> (('a1*bool) ->
+      __ -> (logicalState -> proofview -> __
+      -> ('a1 -> __ -> ((__*bool) -> (exn ->
+      __ IOBase.coq_T) -> __ IOBase.coq_T) ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> Environ.env -> __ ->
+      ((__*bool) -> (exn -> __ IOBase.coq_T)
+      -> __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> Environ.env -> __ ->
-      (('a1*bool) -> (exn -> 'a2
-      IOBase.coq_T) -> 'a2 IOBase.coq_T) ->
-      (exn -> 'a2 IOBase.coq_T) -> 'a2
-      IOBase.coq_T **)
+      proofview -> __ -> ('a1 -> __ ->
+      (('a2*bool) -> (exn -> __ IOBase.coq_T)
+      -> __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (('a2*bool) ->
+      (exn -> 'a3 IOBase.coq_T) -> 'a3
+      IOBase.coq_T) -> (exn -> 'a3
+      IOBase.coq_T) -> 'a3 IOBase.coq_T **)
   
   let get r k s =
     Obj.magic k s s
   
   (** val put :
       logicalMessageType -> __ -> (unit ->
-      proofview -> Environ.env -> __ ->
-      (('a1*bool) -> (exn -> __ IOBase.coq_T)
+      proofview -> __ -> ('a1 -> __ ->
+      ((__*bool) -> (exn -> __ IOBase.coq_T)
       -> __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> Environ.env -> __ ->
-      (('a1*bool) -> (exn -> 'a2
-      IOBase.coq_T) -> 'a2 IOBase.coq_T) ->
-      (exn -> 'a2 IOBase.coq_T) -> 'a2
+      Environ.env -> __ -> ((__*bool) -> (exn
+      -> __ IOBase.coq_T) -> __ IOBase.coq_T)
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> proofview -> __ ->
+      ('a1 -> __ -> (('a2*bool) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> Environ.env -> __ ->
+      (('a2*bool) -> (exn -> 'a3
+      IOBase.coq_T) -> 'a3 IOBase.coq_T) ->
+      (exn -> 'a3 IOBase.coq_T) -> 'a3
       IOBase.coq_T **)
   
   let put m =
-    (); (fun _ k s e _ sk fk ->
-      Obj.magic k () s e __ (fun a fk0 ->
+    (); (fun _ k s _ k0 e _ sk fk ->
+      Obj.magic k () s __ k0 e __
+        (fun a fk0 ->
         let y,c' = a in
         sk (y,(if m then c' else false)) fk0)
         fk)
   
   (** val current :
       __ -> (logicalEnvironment -> proofview
-      -> Environ.env -> __ -> (('a1*bool) ->
+      -> __ -> ('a1 -> __ -> ((__*bool) ->
       (exn -> __ IOBase.coq_T) -> __
       IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> Environ.env -> __ ->
-      (('a1*bool) -> (exn -> 'a2
-      IOBase.coq_T) -> 'a2 IOBase.coq_T) ->
-      (exn -> 'a2 IOBase.coq_T) -> 'a2
-      IOBase.coq_T **)
-  
-  let current r k s e r0 sk fk =
-    Obj.magic k e s e __ (fun a fk0 ->
-      let y,c' = a in sk (y,c') fk0) fk
-  
-  (** val zero :
-      exn -> __ -> ('a1 -> proofview ->
-      Environ.env -> __ -> (('a2*bool) ->
-      (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> (exn -> __
+      Environ.env -> __ -> ((__*bool) -> (exn
+      -> __ IOBase.coq_T) -> __ IOBase.coq_T)
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> proofview -> __ ->
+      ('a1 -> __ -> (('a2*bool) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> Environ.env -> __ ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> Environ.env -> __ ->
       (('a2*bool) -> (exn -> 'a3
       IOBase.coq_T) -> 'a3 IOBase.coq_T) ->
       (exn -> 'a3 IOBase.coq_T) -> 'a3
       IOBase.coq_T **)
   
+  let current r k s r0 k0 e =
+    Obj.magic k e s __ k0 e
+  
+  (** val zero :
+      exn -> __ -> ('a1 -> proofview -> __ ->
+      ('a2 -> __ -> ((__*bool) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> Environ.env -> __ ->
+      ((__*bool) -> (exn -> __ IOBase.coq_T)
+      -> __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      proofview -> __ -> ('a2 -> __ ->
+      (('a3*bool) -> (exn -> __ IOBase.coq_T)
+      -> __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (('a3*bool) ->
+      (exn -> 'a4 IOBase.coq_T) -> 'a4
+      IOBase.coq_T) -> (exn -> 'a4
+      IOBase.coq_T) -> 'a4 IOBase.coq_T **)
+  
   let zero e =
-    (); (fun _ k s e0 _ sk fk -> fk e)
+    (); (fun _ k s _ k0 e0 _ sk fk -> fk e)
   
   (** val plus :
       'a1 t -> (exn -> 'a1 t) -> __ -> ('a1
-      -> proofview -> Environ.env -> __ ->
-      (('a2*bool) -> (exn -> __ IOBase.coq_T)
+      -> proofview -> __ -> ('a2 -> __ ->
+      ((__*bool) -> (exn -> __ IOBase.coq_T)
       -> __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> Environ.env -> __ ->
-      (('a2*bool) -> (exn -> 'a3
-      IOBase.coq_T) -> 'a3 IOBase.coq_T) ->
-      (exn -> 'a3 IOBase.coq_T) -> 'a3
+      Environ.env -> __ -> ((__*bool) -> (exn
+      -> __ IOBase.coq_T) -> __ IOBase.coq_T)
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> proofview -> __ ->
+      ('a2 -> __ -> (('a3*bool) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> Environ.env -> __ ->
+      (('a3*bool) -> (exn -> 'a4
+      IOBase.coq_T) -> 'a4 IOBase.coq_T) ->
+      (exn -> 'a4 IOBase.coq_T) -> 'a4
       IOBase.coq_T **)
   
   let plus x y =
-    (); (fun _ k s env _ sk fk ->
-      Obj.magic x __ k s env __ sk (fun e ->
-        Obj.magic y e __ k s env __ sk fk))
+    (); (fun _ k s _ k0 e _ sk fk ->
+      Obj.magic x __ k s __ k0 e __ sk
+        (fun e0 ->
+        Obj.magic y e0 __ k s __ k0 e __ sk
+          fk))
   
   (** val split :
       'a1 t -> __ -> (('a1, exn -> 'a1 t)
-      list_view -> proofview -> Environ.env
-      -> __ -> (('a2*bool) -> (exn -> __
+      list_view -> proofview -> __ -> ('a2 ->
+      __ -> ((__*bool) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
       (exn -> __ IOBase.coq_T) -> __
-      IOBase.coq_T) -> proofview ->
-      Environ.env -> __ -> (('a2*bool) ->
-      (exn -> 'a3 IOBase.coq_T) -> 'a3
-      IOBase.coq_T) -> (exn -> 'a3
-      IOBase.coq_T) -> 'a3 IOBase.coq_T **)
+      IOBase.coq_T) -> Environ.env -> __ ->
+      ((__*bool) -> (exn -> __ IOBase.coq_T)
+      -> __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      proofview -> __ -> ('a2 -> __ ->
+      (('a3*bool) -> (exn -> __ IOBase.coq_T)
+      -> __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> (('a3*bool) ->
+      (exn -> 'a4 IOBase.coq_T) -> 'a4
+      IOBase.coq_T) -> (exn -> 'a4
+      IOBase.coq_T) -> 'a4 IOBase.coq_T **)
   
   let split x =
-    (); (fun _ k s e _ sk fk ->
+    (); (fun _ k s _ k0 e _ sk fk ->
       IOBase.bind
-        (Obj.magic x __
-          (fun a s' e0 _ sk0 fk0 ->
-          sk0 ((a,s'),true) fk0) s e __
+        (Obj.magic x __ (fun a s' _ k1 e0 ->
+          k1 (a,s')) s __ (fun a _ sk0 fk0 ->
+          sk0 (a,true) fk0) e __
           (fun a fk0 ->
           IOBase.ret (Cons (a,
             (fun e0 _ sk0 fk1 ->
@@ -388,24 +470,26 @@ module Logical =
         (fun x0 ->
         match x0 with
         | Nil exc ->
-          Obj.magic k (Nil exc) s e __
+          Obj.magic k (Nil exc) s __ k0 e __
             (fun a fk0 ->
             let y,c' = a in sk (y,c') fk0) fk
         | Cons (p, y) ->
           let p0,m' = p in
           let a',s' = p0 in
           Obj.magic k (Cons (a',
-            (fun exc _ k0 s0 e0 _ sk0 fk0 ->
+            (fun exc _ k1 s0 _ k2 e0 _ sk0 fk0 ->
             y exc __ (fun a fk1 ->
               let x1,c = a in
               let a0,s'0 = x1 in
-              k0 a0 s'0 e0 __ (fun a1 fk2 ->
+              k1 a0 s'0 __ k2 e0 __
+                (fun a1 fk2 ->
                 let y0,c' = a1 in
                 sk0
                   (y0,(if c
                        then c'
                        else false)) fk2) fk1)
-              fk0))) s' e __ (fun a fk0 ->
+              fk0))) s' __ k0 e __
+            (fun a fk0 ->
             let y0,c' = a in
             sk
               (y0,(if m' then c' else false))
@@ -413,20 +497,28 @@ module Logical =
   
   (** val lift :
       'a1 NonLogical.t -> __ -> ('a1 ->
-      proofview -> Environ.env -> __ ->
-      (('a2*bool) -> (exn -> __ IOBase.coq_T)
+      proofview -> __ -> ('a2 -> __ ->
+      ((__*bool) -> (exn -> __ IOBase.coq_T)
       -> __ IOBase.coq_T) -> (exn -> __
       IOBase.coq_T) -> __ IOBase.coq_T) ->
-      proofview -> Environ.env -> __ ->
-      (('a2*bool) -> (exn -> 'a3
-      IOBase.coq_T) -> 'a3 IOBase.coq_T) ->
-      (exn -> 'a3 IOBase.coq_T) -> 'a3
+      Environ.env -> __ -> ((__*bool) -> (exn
+      -> __ IOBase.coq_T) -> __ IOBase.coq_T)
+      -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> proofview -> __ ->
+      ('a2 -> __ -> (('a3*bool) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) ->
+      (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> Environ.env -> __ ->
+      (('a3*bool) -> (exn -> 'a4
+      IOBase.coq_T) -> 'a4 IOBase.coq_T) ->
+      (exn -> 'a4 IOBase.coq_T) -> 'a4
       IOBase.coq_T **)
   
   let lift x =
-    (); (fun _ k s e _ sk fk ->
+    (); (fun _ k s _ k0 e _ sk fk ->
       IOBase.bind x (fun x0 ->
-        Obj.magic k x0 s e __ (fun a fk0 ->
+        Obj.magic k x0 s __ k0 e __
+          (fun a fk0 ->
           let y,c' = a in sk (y,c') fk0) fk))
   
   (** val run :
@@ -436,9 +528,10 @@ module Logical =
       NonLogical.t **)
   
   let run x e s =
-    Obj.magic x __ (fun a s' e0 _ sk fk ->
-      sk ((a,s'),true) fk) s e __
-      (fun a x0 -> IOBase.ret a) (fun e0 ->
+    Obj.magic x __ (fun a s' _ k e0 ->
+      k (a,s')) s __ (fun a _ sk fk ->
+      sk (a,true) fk) e __ (fun a x0 ->
+      IOBase.ret a) (fun e0 ->
       IOBase.raise
         ((fun e -> Proof_errors.TacticFailure e)
           e0))

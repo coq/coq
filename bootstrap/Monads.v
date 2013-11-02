@@ -326,39 +326,46 @@ End State.
 
 
 Module Environment.
-(** An environment monad transformer, like Haskell's ReaderT *)
+(** The impredicative encoding of the usual environment monad
+    transformer (ReaderT in Haskell). The impredicative encoding
+    allows to avoid using the binding operations of the underlying
+    monad when it isn't explicitly needed. *)
 
 Section Common.
 
  Variable (E:Set) (T₀:Set->Set) (M:Monad T₀).
 
- Definition T (A:Set) := E -> T₀ A.
+ Definition T (A:Set) := forall (R:Set), (A -> T₀ R)-> E-> T₀ R.
 
  Definition F : Monad T := {|
-   ret A x e := ret _ M x;
-   bind A B x k e :=
-      do M x := x e in
-      k x e;
-   ignore A x e := ignore _ M (x e);
-   seq A x k e := seq _ M (x e) (k e)
+   ret A x := fun R k e => k x;
+   bind A B x f := fun R k e => x _ (fun a => f a _ k e) e;
+   ignore A x := fun R k e => x _ (fun _ => k tt) e;
+   seq A x y := fun R k e => x _ (fun _ => y _ k e) e
  |}.
 
  Definition Environment : Environment E T := {|
-   current e := ret _ M e 
+   current := fun R k e => k e 
  |}.
 
 
- Definition lift {A:Set} (x:T₀ A) : T A := fun _ => x.
+ Definition lift {A:Set} (x:T₀ A) : T A := fun R k _ =>
+   do M x := x in
+   k x
+ .
 
- Definition run {A:Set} (x:T A) (e:E) : T₀ A := x e.
- Definition reflect {A:Set} (m:E->T₀ A) : T A := m.
+ Definition run {A:Set} (x:T A) (e:E) : T₀ A := x _ (fun a => ret _ M a) e.
+ Definition reflect {A:Set} (m:E->T₀ A) : T A := fun R k e =>
+   do M m' := m e in
+   k m'
+ .
 
 
  Variable (L:Logic T₀).
 
  Definition Logic : Logic T := {|
-   zero A e env := zero _ L e;
-   plus A x y env := plus _ L (x env) (fun e => y e env)
+   zero A e := lift (zero _ L e);
+   plus A x y := fun R k e => plus _ L (x _ k e) (fun exc => y exc _ k e)
  |}.
 
  Variable (C:Set) (W:Writer C T₀).
@@ -552,18 +559,21 @@ Definition NonLogicalType := IO.T.
 Definition NonLogicalMonad : Monad NonLogicalType := IO.M.
 Definition NonLogicalIO : IO.S IO.Ref NonLogicalType := IO.IO.
 
-Definition LogicalType := State.T LogicalState (Environment.T LogicalEnvironment (Writer.T LogicalMessageType (Logic.T NonLogicalType))).
+Definition LogicType := Logic.T NonLogicalType.
+Definition WriterType := Writer.T LogicalMessageType LogicType.
+Definition EnvironmentType := Environment.T LogicalEnvironment WriterType.
+Definition LogicalType := State.T LogicalState EnvironmentType.
 Definition LogicalMonadBase := Logic.F NonLogicalType.
 Definition LogicalMonadWriter := Writer.F _ LogicalMessage _ LogicalMonadBase.
-Definition LogicalMonadEnv := Environment.F LogicalEnvironment _ LogicalMonadWriter.
+Definition LogicalMonadEnv := Environment.F LogicalEnvironment WriterType.
 Definition LogicalMonad : Monad LogicalType := State.F LogicalState _.
 Definition LogicalStateM : State LogicalState LogicalType := State.State LogicalState _.
-Definition LogicalReaderE : Environment LogicalEnvironment _ := Environment.Environment LogicalEnvironment _ LogicalMonadWriter.
+Definition LogicalReaderE : Environment LogicalEnvironment _ := Environment.Environment LogicalEnvironment WriterType.
 Definition LogicalReader : Environment LogicalEnvironment LogicalType := State.Environment _ _ LogicalMonadEnv _ LogicalReaderE.
 Definition LogicalWriterW : Writer LogicalMessageType  _ := Writer.Writer LogicalMessageType _ (Logic.F NonLogicalType).
-Definition LogicalWriterE : Writer LogicalMessageType _ := Environment.Writer LogicalEnvironment _ LogicalMessageType LogicalWriterW.
+Definition LogicalWriterE : Writer LogicalMessageType _ := Environment.Writer LogicalEnvironment _ LogicalMonadWriter LogicalMessageType LogicalWriterW.
 Definition LogicalWriter : Writer LogicalMessageType LogicalType := State.Writer _ _ LogicalMonadEnv _ LogicalWriterE.
-Definition LogicalLogic : Logic LogicalType := State.Logic _ _ LogicalMonadEnv (Environment.Logic _ _ (Writer.Logic _ LogicalMessage _ LogicalMonadBase (Logic.Logic _))).
+Definition LogicalLogic : Logic LogicalType := State.Logic _ _ LogicalMonadEnv (Environment.Logic _ _ LogicalMonadWriter (Writer.Logic _ LogicalMessage _ LogicalMonadBase (Logic.Logic _))).
 
 
 (* The function [split] will be define as the normal form of
@@ -571,16 +581,16 @@ Definition LogicalLogic : Logic LogicalType := State.Logic _ _ LogicalMonadEnv (
    back a more syntactic form, then reflects the result back. *)
 Definition split0 {a:Set} (x:LogicalType a) : LogicalType (list_view a (Exception -> LogicalType a)) :=
   State.reflect _ _ LogicalMonadEnv (fun s =>
-  Environment.reflect _ _ (fun e =>
+  Environment.reflect _ _ LogicalMonadWriter (fun e =>
   Writer.reflect _ _ (
     do LogicalMonadBase x' :=
-        Logic.split _ NonLogicalMonad (Writer.run _ _ (Environment.run _ _ (State.run _ _ LogicalMonadEnv x s) e)) in
+        Logic.split _ NonLogicalMonad (Writer.run _ _ (Environment.run _ _ LogicalMonadWriter (State.run _ _ LogicalMonadEnv x s) e)) in
     match x' with
     | Nil _ _ exc => ret _ LogicalMonadBase ((Nil _ _ exc),s, Monoid.zero _ LogicalMessage)
     | Cons _ _ (a',s',m') y =>
       let y' exc :=
           State.reflect _ _ LogicalMonadEnv (fun _ =>
-          Environment.reflect _ _ (fun _ =>
+          Environment.reflect _ _ LogicalMonadWriter (fun _ =>
           Writer.reflect _ _ (y exc)))
       in
       ret _ LogicalMonadBase (Cons _ _ a' y',s',m')
@@ -669,11 +679,11 @@ split _ LogicalLogic x).
 *)
  Extraction Implicit split [a].
  Definition lift {a:Set} (x:NonLogical.t a) : t a := Eval compute in
-  freeze _ (State.lift _ _ LogicalMonadEnv (Environment.lift _ _ (Writer.lift _ LogicalMessage _ LogicalMonadBase (Logic.lift _ NonLogicalMonad x)))).
+  freeze _ (State.lift _ _ LogicalMonadEnv (Environment.lift _ _ LogicalMonadWriter (Writer.lift _ LogicalMessage _ LogicalMonadBase (Logic.lift _ NonLogicalMonad x)))).
  Extraction Implicit lift [a].
 
  Definition run {a:Set} (x:t a) (e:LogicalEnvironment) (s:LogicalState) : NonLogical.t ((a*LogicalState)*LogicalMessageType) := Eval compute in
-  Logic.run _ NonLogicalMonad _ NonLogicalIO (Writer.run _ _ (Environment.run _ _ (State.run _ _ LogicalMonadEnv x s) e))
+  Logic.run _ NonLogicalMonad _ NonLogicalIO (Writer.run _ _ (Environment.run _ _ LogicalMonadWriter (State.run _ _ LogicalMonadEnv x s) e))
  .
  Extraction Implicit run [a].
 
