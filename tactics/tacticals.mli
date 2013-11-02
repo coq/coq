@@ -183,8 +183,8 @@ module New : sig
      (meaning that it will jump over [n] error catching tacticals FROM
      THIS MODULE. *)
   val tclFAIL : int -> Pp.std_ppcmds -> 'a tactic
-  val tclORELSE0 : 'a tactic -> 'a tactic -> 'a tactic
-  val tclORELSE  : 'a tactic -> 'a tactic -> 'a tactic
+  val tclORELSE0 : unit tactic -> unit tactic -> unit tactic
+  val tclORELSE  : unit tactic -> unit tactic -> unit tactic
 
   (** [tclTHENS3PARTS tac1 [|t1 ; ... ; tn|] tac2 [|t'1 ; ... ; t'm|]
       gls] applies the tactic [tac1] to [gls] then, applies [t1], ...,
@@ -209,7 +209,7 @@ module New : sig
   val tclMAP : ('a -> unit tactic) -> 'a list -> unit tactic
 
   val tclTRY : unit tactic -> unit tactic
-  val tclFIRST : 'a tactic list -> 'a tactic
+  val tclFIRST : unit tactic list -> unit tactic
   val tclFIRST_PROGRESS_ON : ('a -> unit tactic) -> 'a list -> unit tactic
   val tclIFTHENELSE : unit tactic -> unit tactic -> unit tactic -> unit tactic
   val tclIFTHENSVELSE : unit tactic -> unit tactic array -> unit tactic -> unit tactic

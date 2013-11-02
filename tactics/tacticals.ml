@@ -373,7 +373,7 @@ module New = struct
   open Proofview.Notations
 
   let tclTHEN t1 t2 =
-    t1 <*> tclEXTEND [] t2 []
+    t1 <*> t2
 
   let tclFAIL lvl msg =
     tclZERO (Refiner.FailError (lvl,lazy msg))
@@ -384,27 +384,37 @@ module New = struct
       tclUNIT ()
     with e -> tclZERO e
   let tclORELSE0 t1 t2 =
-    tclORELSE
-      t1
-      begin fun e ->
-        catch_failerror e <*> t2
-      end
+    tclEXTEND [] begin
+      tclORELSE
+        t1
+        begin fun e ->
+          catch_failerror e <*> t2
+        end
+    end []
   let tclORELSE t1 t2 =
     tclORELSE0 (tclPROGRESS t1) t2
 
   let tclTHENS3PARTS t1 l1 repeat l2 =
-    t1 <*> tclEXTEND (Array.to_list l1) repeat (Array.to_list l2)
+    tclEXTEND [] begin
+      t1 <*> tclEXTEND (Array.to_list l1) repeat (Array.to_list l2)
+    end []
   let tclTHENSFIRSTn t1 l repeat =
     tclTHENS3PARTS t1 l repeat [||]
   let tclTHENFIRSTn t1 l =
     tclTHENSFIRSTn t1 l (tclUNIT())
   let tclTHENFIRST t1 t2 =
-    t1 <*> tclFOCUS 1 1 t2
+    tclEXTEND [] begin
+      t1 <*> tclFOCUS 1 1 t2
+    end []
   let tclTHENLASTn t1 l =
-    t1 <*> tclEXTEND [] (tclUNIT()) (Array.to_list l)
+    tclEXTEND [] begin
+      t1 <*> tclEXTEND [] (tclUNIT()) (Array.to_list l)
+    end []
   let tclTHENLAST t1 t2 = tclTHENLASTn t1 [|t2|]
   let tclTHENS t l =
-    t <*> tclDISPATCH l
+    tclEXTEND [] begin
+      t <*> tclDISPATCH l
+    end []
   let tclTHENLIST l =
     List.fold_left tclTHEN (tclUNIT()) l
 
@@ -417,9 +427,11 @@ module New = struct
     tclORELSE0 t (tclUNIT ())
 
   let tclIFTHENELSE t1 t2 t3 =
-    tclIFCATCH t1
-      (fun () -> tclEXTEND [] t2 [])
-      (fun _ -> t3)
+    tclEXTEND [] begin
+      tclIFCATCH t1
+        (fun () -> t2)
+        (fun _ -> t3)
+    end []
   let tclIFTHENSVELSE t1 a t3 =
     tclIFCATCH t1
       (fun () -> tclDISPATCH (Array.to_list a))
@@ -448,9 +460,11 @@ module New = struct
     else tclTHEN t (tclDO (n-1) t)
 
   let rec tclREPEAT0 t =
-    tclIFCATCH t
-      (fun () -> tclEXTEND [] (tclREPEAT0 t) [])
-      (fun _ -> tclUNIT ())
+    tclEXTEND [] begin
+      tclIFCATCH t
+        (fun () -> tclREPEAT0 t)
+        (fun _ -> tclUNIT ())
+    end []
   let tclREPEAT t =
     tclREPEAT0 (tclPROGRESS t)
   let rec tclREPEAT_MAIN0 t =

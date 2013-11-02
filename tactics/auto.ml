@@ -1428,15 +1428,19 @@ let intro_register dbg kont db =
 
 let search d n mod_delta db_list local_db =
   let rec search d n local_db =
-    if Int.equal n 0 then Proofview.tclZERO (Errors.UserError ("",str"BOUND 2")) else
-      Tacticals.New.tclORELSE0 (Proofview.V82.tactic (dbg_assumption d))
-	(Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
-	   ( Goal.concl >>- fun concl ->
-	     let d' = incr_dbg d in
-	     Tacticals.New.tclFIRST
-	       (List.map
-		  (fun ntac -> Tacticals.New.tclTHEN ntac (search d' (n-1) local_db))
-		  (possible_resolve d mod_delta db_list local_db concl))))
+    (* spiwack: the test of [n] to 0 must be done independently in
+       each goal. Hence the [tclEXTEND] *)
+    Proofview.tclEXTEND [] begin
+      if Int.equal n 0 then Proofview.tclZERO (Errors.UserError ("",str"BOUND 2")) else
+        Tacticals.New.tclORELSE0 (Proofview.V82.tactic (dbg_assumption d))
+	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
+	     ( Goal.concl >>- fun concl ->
+	       let d' = incr_dbg d in
+	       Tacticals.New.tclFIRST
+	         (List.map
+		    (fun ntac -> Tacticals.New.tclTHEN ntac (search d' (n-1) local_db))
+		    (possible_resolve d mod_delta db_list local_db concl))))
+    end []
   in
   search d n local_db
 

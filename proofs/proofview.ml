@@ -313,7 +313,7 @@ let rec tclDISPATCHGEN null join tacs env =
       Inner.get >>= fun step' ->
       Inner.set {step' with comb=step.comb@step'.comb} >>
       Inner.return (join x y)
-  | _ , _ -> raise SizeMismatch
+  | _ , _ -> tclZERO SizeMismatch env
 
 let unitK () () = ()
 let tclDISPATCH = tclDISPATCHGEN () unitK
