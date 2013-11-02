@@ -691,8 +691,19 @@ module Goal = struct
   let concl = lift Goal.concl
   let hyps = lift Goal.hyps
   let env = lift Goal.env
+
+  let enter f =
+    lift (Goal.enter f) >= fun ts ->
+    tclDISPATCH ts
+  let enterl f =
+    lift (Goal.enter f) >= fun ts ->
+    tclDISPATCHL ts >= fun res ->
+    tclUNIT (List.flatten res)
+    
 end
 
 module NonLogical = Proofview_monad.NonLogical
 
 let tclLIFT = Proofview_monad.Logical.lift
+
+

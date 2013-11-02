@@ -290,7 +290,9 @@ module Goal : sig
 
   (* [lift (Goal.return x)] *)
   val return : 'a -> 'a glist tactic
-  (* [lift Goal.concl] *)    
+  val enter : (Environ.env -> Evd.evar_map -> Environ.named_context_val -> Term.constr -> unit tactic) -> unit tactic
+  val enterl : (Environ.env -> Evd.evar_map -> Environ.named_context_val -> Term.constr -> 'a glist tactic) -> 'a glist tactic
+  (* [lift Goal.concl] *)
   val concl : Term.constr glist tactic
   (* [lift Goal.hyps] *)
   val hyps : Environ.named_context_val glist tactic
