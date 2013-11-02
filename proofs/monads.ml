@@ -27,7 +27,7 @@ module type IO = sig
 
   type 'a ref
 
-  val ref : 'a -> 'a ref
+  val ref : 'a -> 'a ref t
   val (:=) : 'a ref -> 'a -> unit t
   val (!) : 'a ref -> 'a t
 
@@ -62,7 +62,7 @@ end = struct
 
   type 'a ref = 'a Pervasives.ref
 
-  let ref = Pervasives.ref
+  let ref x () = Pervasives.ref x
   let (:=) r x () = Pervasives.(:=) r x
   let (!) r () = Pervasives.(!) r
 
@@ -246,7 +246,7 @@ end = struct
   (*** IO ***)
 
   type 'a ref = 'a T.ref
-  let ref = T.ref
+  let ref x = lift (T.ref x)
   let (:=) r x = lift (T.(:=) r x)
   let (!) r = lift (T.(!) r)
 
@@ -337,7 +337,7 @@ end = struct
   (*** IO ***)
 
   type 'a ref = 'a T.ref
-  let ref = T.ref
+  let ref x = lift (T.ref x)
   let (:=) r x = lift (T.(:=) r x)
   let (!) r = lift (T.(!) r)
 
