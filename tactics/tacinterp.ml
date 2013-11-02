@@ -1914,6 +1914,7 @@ and interp_atomic ist tac =
           gl
       end
   | TacLetTac (na,c,clp,b,eqpat) ->
+      Proofview.V82.nf_evar_goals <*>
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
