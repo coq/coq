@@ -512,7 +512,7 @@ module New = struct
           try
             Refiner.check_evars env new_sigma sigma initial_sigma;
             tclUNIT ()
-          with e ->
+          with e when Errors.noncritical e ->
             tclZERO e
         in
         let check_evars_if =
@@ -523,7 +523,7 @@ module New = struct
           else
             tclUNIT ()
         in
-        Proofview.V82.tactic (Refiner.tclEVARS sigma) <*> tac x <*> check_evars_if
+        Proofview.V82.tclEVARS sigma <*> tac x <*> check_evars_if
 
   let tclTIMEOUT n t =
     Proofview.tclOR
