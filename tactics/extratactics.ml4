@@ -321,8 +321,19 @@ END
 (**********************************************************************)
 (* Refine                                                             *)
 
+open Genredexpr
+open Locus
+
+let refine c =
+  Proofview.tclTHEN
+    (Tactics.New.refine c)
+    (Proofview.V82.tactic (Tactics.reduce
+       (Lazy {rBeta=true;rIota=false;rZeta=false;rDelta=false;rConst=[]})
+       {onhyps=None; concl_occs=AllOccurrences }
+    ))
+
 TACTIC EXTEND refine
-  [ "refine" casted_open_constr(c) ] -> [ Tactics.New.refine c ]
+  [ "refine" casted_open_constr(c) ] -> [  refine c ]
 END
 
 let refine_tac = Tactics.New.refine
