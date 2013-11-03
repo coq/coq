@@ -484,23 +484,29 @@ case $usecamlp5 in
     CAMLP4=camlp5
     CAMLP4MOD=gramlib
     if [ "$camlp5dir" != "" ]; then
-        if [ -f "$camlp5dir/${CAMLP4MOD}.cma" ]; then
-            CAMLP4LIB=$camlp5dir
-            FULLCAMLP4LIB=$camlp5dir
-        else
-            echo "Cannot find camlp5 libraries in $camlp5dir (camlp5.cma not found)."
-            echo "Configuration script failed!"
-            exit 1
-        fi
-    elif [ -f "${CAMLLIB}/camlp5/${CAMLP4MOD}.cma" ]; then
-        CAMLP4LIB=+camlp5
-        FULLCAMLP4LIB=${CAMLLIB}/camlp5
-    elif [ -f "${CAMLLIB}/site-lib/${CAMLP4MOD}.cma" ]; then
-        CAMLP4LIB=+site-lib/camlp5
-        FULLCAMLP4LIB=${CAMLLIB}/site-lib/camlp5
+	if [ -f "$camlp5dir/${CAMLP4MOD}.cma" ]; then
+	    CAMLP4LIB=$camlp5dir
+	    FULLCAMLP4LIB=$camlp5dir
+	else
+	    echo "Cannot find camlp5 libraries in $camlp5dir (camlp5.cma not found)."
+	    echo "Configuration script failed!"
+	    exit 1
+	fi
     else
-        echo "No Camlp5 installation found. Looking for Camlp4 instead..."
-        usecamlp5=no
+	camlp5dir="$(camlp5 -where)"
+	if [ "$camlp5dir" != "" ]; then
+	    CAMLP4LIB=$camlp5dir
+	    FULLCAMLP4LIB=$camlp5dir
+	elif [ -f "${CAMLLIB}/camlp5/${CAMLP4MOD}.cma" ]; then
+            CAMLP4LIB=+camlp5
+	    FULLCAMLP4LIB=${CAMLLIB}/camlp5
+	elif [ -f "${CAMLLIB}/site-lib/${CAMLP4MOD}.cma" ]; then
+            CAMLP4LIB=+site-lib/camlp5
+	    FULLCAMLP4LIB=${CAMLLIB}/site-lib/camlp5
+	else
+	    echo "No Camlp5 installation found. Looking for Camlp4 instead..."
+	    usecamlp5=no
+	fi
     fi
 esac
 
