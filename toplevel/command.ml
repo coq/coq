@@ -926,7 +926,7 @@ let do_program_recursive local fixkind fixl ntns =
   in
   let (fixnames,fixdefs,fixtypes) = fix in
   let fiximps = List.map pi2 info in
-  let fixdefs = List.map Option.get fixdefs in
+  let fixdefs = List.map out_def fixdefs in
   let defs = List.map4 collect_evars fixnames fixdefs fixtypes fiximps in
   let () = if isfix then begin
       let possible_indexes = List.map compute_possible_guardness_evidences info in
