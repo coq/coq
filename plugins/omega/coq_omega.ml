@@ -420,7 +420,7 @@ type result =
 let destructurate_prop t =
   let c, args = decompose_app t in
   match kind_of_term c, args with
-    | _, [_;_;_] when eq_constr c (Universes.constr_of_global (build_coq_eq ())) -> Kapp (Eq,args)
+    | _, [_;_;_] when is_global (build_coq_eq ()) c -> Kapp (Eq,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_neq) -> Kapp (Neq,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zne) -> Kapp (Zne,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zle) -> Kapp (Zle,args)

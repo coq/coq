@@ -156,8 +156,8 @@ let sort_as_univ = function
 
 let cons_subst u su subst =
   try
-    (u, Universe.sup su (List.assoc_f Universe.eq u subst)) ::
-      List.remove_assoc_f Universe.eq u subst
+    (u, sup su (List.assoc_f Universe.equal u subst)) ::
+      List.remove_assoc_f Universe.equal u subst
   with Not_found -> (u, su) :: subst
 
 let actualize_decl_level env lev t =

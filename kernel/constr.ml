@@ -496,7 +496,7 @@ let compare_head_gen eq_universes eq_sorts f t1 t2 =
       Int.equal ln1 ln2 && Array.equal f tl1 tl2 && Array.equal f bl1 bl2
   | _ -> false
 
-let compare_head = compare_head_gen (fun _ -> Univ.Instance.eq) Sorts.equal
+let compare_head = compare_head_gen (fun _ -> Univ.Instance.equal) Sorts.equal
 
 (* [compare_head_gen_leq u s sl eq leq c1 c2] compare [c1] and [c2] using [eq] to compare
    the immediate subterms of [c1] of [c2] for conversion if needed, [leq] for cumulativity,
@@ -541,10 +541,10 @@ let compare_head_gen_leq eq_universes eq_sorts leq_sorts eq leq t1 t2 =
 (* alpha conversion : ignore print names and casts *)
 
 let rec eq_constr m n =
-  (m == n) || compare_head_gen (fun _ -> Univ.Instance.eq) Sorts.equal eq_constr m n
+  (m == n) || compare_head_gen (fun _ -> Instance.equal) Sorts.equal eq_constr m n
 
 (** Strict equality of universe instances. *)
-let compare_constr = compare_head_gen (fun _ -> Univ.Instance.eq) Sorts.equal
+let compare_constr = compare_head_gen (fun _ -> Instance.equal) Sorts.equal
 
 let equal m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
@@ -726,7 +726,7 @@ let hasheq t1 t2 =
     | Proj (c1,t1), Proj (c2,t2) -> c1 == c2 && t1 == t2
     | App (c1,l1), App (c2,l2) -> c1 == c2 && array_eqeq l1 l2
     | Evar (e1,l1), Evar (e2,l2) -> Evar.equal e1 e2 && array_eqeq l1 l2
-    | Const (c1,u1), Const (c2,u2) -> c1 == c2 && Univ.Instance.eqeq u1 u2
+    | Const (c1,u1), Const (c2,u2) -> c1 == c2 && u1 == u2
     | Ind ((sp1,i1),u1), Ind ((sp2,i2),u2) -> 
       sp1 == sp2 && Int.equal i1 i2 && Univ.Instance.eqeq u1 u2
     | Construct (((sp1,i1),j1),u1), Construct (((sp2,i2),j2),u2) ->
@@ -769,7 +769,7 @@ let hash_cast_kind = function
 | DEFAULTcast -> 2
 | REVERTcast -> 3
 
-let hash_instance = Univ.Instance.hcons
+let sh_instance = Univ.Instance.share
 
 (* [hashcons hash_consing_functions constr] computes an hash-consed
    representation for [constr] using [hash_consing_functions] on
@@ -808,13 +808,19 @@ let hashcons (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Proj (p,c) ->
         let c, hc = sh_rec c in
         let p' = sh_con p in
-          (Proj (p', c), combinesmall 17 (Hashtbl.hash p')) (** FIXME *)
+          (Proj (p', c), combinesmall 17 (Hashtbl.hash p'))
       | Const (c,u) ->
-	(Const (sh_con c, hash_instance u), combinesmall 9 (Constant.hash c))
-      | Ind (ind, u) ->
-	(Ind (sh_ind ind, hash_instance u), combinesmall 10 (ind_hash ind))
-      | Construct (c, u) ->
-	(Construct (sh_construct c, hash_instance u), combinesmall 11 (constructor_hash c))
+	let c' = sh_con c in
+	let u', hu = sh_instance u in
+	(Const (c', u'), combinesmall 9 (combine (Constant.hash c) hu))
+      | Ind ((kn,i) as ind,u) ->
+	let u', hu = sh_instance u in
+	(Ind (sh_ind ind, u'), 
+	 combinesmall 10 (combine (ind_hash ind) hu))
+      | Construct ((((kn,i),j) as c,u))->
+	let u', hu = sh_instance u in
+	(Construct (sh_construct c, u'),
+	 combinesmall 11 (combine (constructor_hash c) hu))
       | Case (ci,p,c,bl) ->
 	let p, hp = sh_rec p
 	and c, hc = sh_rec c in
@@ -887,15 +893,15 @@ let rec hash t =
     | App (c,l) ->
       combinesmall 7 (combine (hash_term_array l) (hash c))
     | Proj (p,c) ->
-      combinesmall 17 (combine (Hashtbl.hash p) (hash c))
+      combinesmall 17 (combine (Constant.hash p) (hash c))
     | Evar (e,l) ->
       combinesmall 8 (combine (Evar.hash e) (hash_term_array l))
-    | Const (c, _) ->
-      combinesmall 9 (Constant.hash c)
-    | Ind (ind, _) ->
-      combinesmall 10 (ind_hash ind)
-    | Construct (c, _) ->
-      combinesmall 11 (constructor_hash c)
+    | Const (c,u) ->
+      combinesmall 9 (combine (Constant.hash c) (Instance.hash u))
+    | Ind (ind,u) ->
+      combinesmall 10 (combine (ind_hash ind) (Instance.hash u))
+    | Construct (c,u) ->
+      combinesmall 11 (combine (constructor_hash c) (Instance.hash u))
     | Case (_ , p, c, bl) ->
       combinesmall 12 (combine3 (hash c) (hash p) (hash_term_array bl))
     | Fix (ln ,(_, tl, bl)) ->

@@ -206,9 +206,7 @@ let oib_equal o1 o2 =
       match o1.mind_arity, o2.mind_arity with
       | RegularArity {mind_user_arity=c1; mind_sort=s1}, RegularArity {mind_user_arity=c2; mind_sort=s2} ->
 	eq_constr c1 c2 && Sorts.equal s1 s2
-      | {mind_user_arity=c1; mind_sort=s1},
-	{mind_user_arity=c2; mind_sort=s2} ->
-	eq_constr c1 c2 && Sorts.equal s1 s2
+      | _ -> false
     end &&
     Array.equal Id.equal o1.mind_consnames o2.mind_consnames
 

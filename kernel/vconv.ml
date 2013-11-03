@@ -176,7 +176,7 @@ let rec eq_puniverses f (x,l1) (y,l2) cu =
   else raise NotConvertible
 
 and conv_universes l1 l2 cu =
-  if Univ.Instance.eq l1 l2 then cu else raise NotConvertible
+  if Univ.Instance.equal l1 l2 then cu else raise NotConvertible
 
 let rec conv_eq pb t1 t2 cu =
   if t1 == t2 then cu

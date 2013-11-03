@@ -347,7 +347,7 @@ let compare_sorts s1 s2 = match s1, s2 with
   | Pos, Null -> false
   | Null, Pos -> false
   end
-| Type u1, Type u2 -> Universe.eq u1 u2
+| Type u1, Type u2 -> Universe.equal u1 u2
 | Prop _, Type _ -> false
 | Type _, Prop _ -> false
 

@@ -177,10 +177,12 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
         (match s, s' with
 	| Prop x, Prop y when x == y -> None
 	| Prop _, Type _ -> None
-	| Type x, Type y when Univ.Universe.eq x y -> None (* false *)
+	| Type x, Type y when Univ.Universe.equal x y -> None (* false *)
 	| _ -> subco ())
       | Prod (name, a, b), Prod (name', a', b') ->
-	  let name' = Name (Namegen.next_ident_away (Id.of_string "x") (Termops.ids_of_context env)) in
+	  let name' = 
+	    Name (Namegen.next_ident_away (Id.of_string "x") (Termops.ids_of_context env))
+	  in
 	  let env' = push_rel (name', None, a') env in
 	  let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
 	    (* env, x : a' |- c1 : lift 1 a' > lift 1 a *)

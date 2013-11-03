@@ -195,6 +195,7 @@ let subst_regular_ind_arity sub s =
 
 let subst_template_ind_arity sub s = s
 
+(* FIXME records *)
 let subst_ind_arity =
   subst_decl_arity subst_regular_ind_arity subst_template_ind_arity
 

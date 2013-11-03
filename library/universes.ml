@@ -191,7 +191,7 @@ module LevelUnionFind = Unionfind.Make (Univ.LSet) (Univ.LMap)
 
 let remove_trivial_constraints cst =
   Constraint.fold (fun (l,d,r as cstr) nontriv ->
-    if d != Lt && eq_levels l r then nontriv
+    if d != Lt && Univ.Level.equal l r then nontriv
     else if d == Le && is_type0m_univ (Univ.Universe.make l) then nontriv
     else Constraint.add cstr nontriv)
     cst Constraint.empty
@@ -318,7 +318,7 @@ let normalize_univ_variable ~find ~update =
   let rec aux cur =
     let b = find cur in
     let b' = subst_univs_universe aux b in
-      if Universe.eq b' b then b
+      if Universe.equal b' b then b
       else update cur b'
   in fun b -> try aux b with Not_found -> Universe.make b
 
@@ -329,14 +329,14 @@ let normalize_univ_variable_opt_subst ectx =
     | None -> raise Not_found
   in
   let update l b =
-    assert (match Universe.level b with Some l' -> not (Level.eq l l') | None -> true);
+    assert (match Universe.level b with Some l' -> not (Level.equal l l') | None -> true);
     ectx := Univ.LMap.add l (Some b) !ectx; b
   in normalize_univ_variable ~find ~update
 
 let normalize_univ_variable_subst subst =
   let find l = Univ.LMap.find l !subst in
   let update l b =
-    assert (match Universe.level b with Some l' -> not (Level.eq l l') | None -> true);
+    assert (match Universe.level b with Some l' -> not (Level.equal l l') | None -> true);
     subst := Univ.LMap.add l b !subst; b in
     normalize_univ_variable ~find ~update
 
@@ -391,7 +391,7 @@ let subst_univs_subst u l s =
 exception Found of Level.t
 let find_inst insts v =
   try LMap.iter (fun k (enf,alg,v') ->
-    if not alg && enf && Universe.eq v' v then raise (Found k))
+    if not alg && enf && Universe.equal v' v then raise (Found k))
 	insts; raise Not_found
   with Found l -> l
 
@@ -481,7 +481,7 @@ let minimize_univ_variables ctx us algs left right cstrs =
 	  (* u is not algebraic but has no upper bounds,
 	     we instantiate it with its lower bound if it is a 
 	     different level, otherwise we keep it. *)
-	  if not (Level.eq l u) && not (LSet.mem l algs) then
+	  if not (Level.equal l u) && not (LSet.mem l algs) then
 	    (* if right = None then. Should check that u does not 
 	       have upper constraints that are not already in right *)
 	      instantiate_with_lbound u lbound false false acc
@@ -639,11 +639,11 @@ let restrict_universe_context (univs,csts) s =
   in (univs', csts')
 
 let is_prop_leq (l,d,r) =
-  Level.eq Level.prop l && d == Univ.Le
+  Level.equal Level.prop l && d == Univ.Le
 
 (* Prop < i <-> Set+1 <= i <-> Set < i *)
 let translate_cstr (l,d,r as cstr) =
-  if Level.eq Level.prop l && d == Univ.Lt then
+  if Level.equal Level.prop l && d == Univ.Lt then
     (Level.set, d, r)
   else cstr
 

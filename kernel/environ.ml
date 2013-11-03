@@ -232,10 +232,6 @@ let constant_type env (kn,u) =
 	(map_regular_arity (subst_univs_constr subst) cb.const_type, csts)
     else cb.const_type, Univ.Constraint.empty
 
-let constant_type_in_ctx env kn =
-  let cb = lookup_constant kn env in
-    cb.const_type, Future.force cb.const_universes
-
 let constant_context env kn =
   let cb = lookup_constant kn env in
     if cb.const_polymorphic then Future.force cb.const_universes

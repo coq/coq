@@ -393,7 +393,7 @@ let get_body subst obl =
   match obl.obl_body with
   | None -> assert false
   | Some (DefinedObl c) -> 
-    let _, ctx = Environ.constant_type_in_ctx (Global.env ()) c in
+    let ctx = Environ.constant_context (Global.env ()) c in
     let pc = subst_univs_fn_puniverses (Univ.level_subst_of subst) (c, Univ.UContext.instance ctx) in
       DefinedObl pc
   | Some (TermObl c) -> 

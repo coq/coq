@@ -16,12 +16,15 @@ sig
 
   val set : t
   val prop : t
+  (** The set and prop universe levels. *)
+
   val is_small : t -> bool
+  (** Is the universe set or prop? *)
 
   val compare : t -> t -> int
   (** Comparison function *)
 
-  val eq : t -> t -> bool
+  val equal : t -> t -> bool
   (** Equality function *)
 
   (* val hash : t -> int *)
@@ -32,39 +35,58 @@ sig
       module path. *)
 
   val pr : t -> Pp.std_ppcmds
+  (** Pretty-printing *)
 end
 
 type universe_level = Level.t
 (** Alias name. *)
 
+(** Sets of universe levels *)
 module LSet : 
 sig 
   include Set.S with type elt = universe_level
 	      
   val pr : t -> Pp.std_ppcmds
+  (** Pretty-printing *)
 end
 
 type universe_set = LSet.t
 
+(** Polymorphic maps from universe levels to 'a *)
 module LMap : 
 sig
   include Map.S with type key = universe_level
 
-  (** Favorizes the bindings in the first map. *)
   val union : 'a t -> 'a t -> 'a t
+  (** [union x y] favors the bindings in the first map. *)
+
   val diff : 'a t -> 'a t -> 'a t
+  (** [diff x y] removes bindings from x that appear in y (whatever the value). *)
 
   val subst_union : 'a option t -> 'a option t -> 'a option t
+  (** [subst_union x y] favors the bindings of the first map that are [Some],
+      otherwise takes y's bindings. *)
 
   val elements : 'a t -> (universe_level * 'a) list
+  (** As an association list *)
+
   val of_list : (universe_level * 'a) list -> 'a t
+  (** From an association list *)
+
   val of_set : universe_set -> 'a -> 'a t
+  (** Associates the same value to all levels in the set *)
+
   val mem : universe_level -> 'a t -> bool
-  val universes : 'a t -> universe_set
+  (** Is there a binding for the level? *)
 
   val find_opt : universe_level -> 'a t -> 'a option
+  (** Find the value associated to the level, if any *)
+
+  val universes : 'a t -> universe_set
+  (** The domain of the map *)
 
   val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+  (** Pretty-printing *)
 end
 
 type 'a universe_map = 'a LMap.t
@@ -72,38 +94,51 @@ type 'a universe_map = 'a LMap.t
 module Universe :
 sig
   type t
-  (** Type of universes. A universe is defined as a set of constraints w.r.t.
-      other universes. *)
+  (** Type of universes. A universe is defined as a set of level expressions.
+      A level expression is built from levels and successors of level expressions, i.e.:
+      le ::= l + n, n \in N.
+
+      A universe is said atomic if it consists of a single level expression with
+      no increment, and algebraic otherwise (think the least upper bound of a set of
+      level expressions).
+  *)
 
   val compare : t -> t -> int
   (** Comparison function *)
 
-  val eq : t -> t -> bool
-  (** Equality function *)
+  val equal : t -> t -> bool
+  (** Equality function on formal universes *)
 
   (* val hash : t -> int *)
   (** Hash function *)
 
   val make : Level.t -> t
-  (** Create a constraint-free universe out of a given level. *)
+  (** Create a universe representing the given level. *)
 
   val pr : t -> Pp.std_ppcmds
+  (** Pretty-printing *)
 
   val level : t -> Level.t option
+  (** Try to get a level out of a universe, returns [None] if it
+      is an algebraic universe. *)
 
   val levels : t -> LSet.t
+  (** Get the levels inside the universe, forgetting about increments *)
 
-  val normalize : t -> t
-
-  (** The type of a universe *)
   val super : t -> t
+  (** The universe strictly above *)
     
-  (** The max of 2 universes *)
   val sup   : t -> t -> t
+  (** The l.u.b. of 2 universes *)
 
-  val type0m : t  (** image of Prop in the universes hierarchy *)
-  val type0 : t  (** image of Set in the universes hierarchy *)
-  val type1 : t  (** the universe of the type of Prop/Set *)
+  val type0m : t  
+  (** image of Prop in the universes hierarchy *)
+  
+  val type0 : t  
+  (** image of Set in the universes hierarchy *)
+  
+  val type1 : t 
+  (** the universe of the type of Prop/Set *)
 end
 
 type universe = Universe.t
@@ -127,11 +162,6 @@ val sup : universe -> universe -> universe
 val super : universe -> universe
 
 val universe_level : universe -> universe_level option
-val compare_levels : universe_level -> universe_level -> int
-val eq_levels : universe_level -> universe_level -> bool
-
-(** Equality of formal universe expressions. *)
-val equal_universes : universe -> universe -> bool
 
 (** {6 Graphs of universes. } *)
 
@@ -147,7 +177,73 @@ val empty_universes : universes
 
 (** The initial graph of universes: Prop < Set *)
 val initial_universes : universes
+
 val is_initial_universes : universes -> bool
+
+(** {6 Substitution} *)
+
+type universe_subst_fn = universe_level -> universe
+type universe_level_subst_fn = universe_level -> universe_level
+
+(** A full substitution, might involve algebraic universes *)
+type universe_subst = universe universe_map
+type universe_level_subst = universe_level universe_map
+
+val level_subst_of : universe_subst_fn -> universe_level_subst_fn
+
+(** {6 Universe instances} *)
+
+module Instance : 
+sig
+  type t
+  (** A universe instance represents a vector of argument universes
+      to a polymorphic definition (constant, inductive or constructor). *)
+
+  val empty : t
+  val is_empty : t -> bool
+
+  val of_array : Level.t array -> t
+  val to_array : t -> Level.t array
+
+  val append : t -> t -> t
+  (** To concatenate two instances, used for discharge *)
+
+  val equal : t -> t -> bool
+  (** Equality (note: instances are hash-consed, this is O(1)) *)
+
+  val hcons : t -> t
+  (** Hash-consing. *)
+
+  val hash : t -> int
+  (** Hash value *)
+
+  val share : t -> t * int
+  (** Simultaneous hash-consing and hash-value computation *)
+
+  val eqeq : t -> t -> bool
+  (** Rely on physical equality of subterms only *)
+
+  val subst_fn : universe_level_subst_fn -> t -> t
+  (** Substitution by a level-to-level function. *)
+
+  val subst : universe_level_subst -> t -> t
+  (** Substitution by a level-to-level function. *)
+
+  val pr : t -> Pp.std_ppcmds
+  (** Pretty-printing, no comments *)
+
+  val levels : t -> LSet.t
+  (** The set of levels in the instance *)
+
+  val check_eq : t check_function 
+  (** Check equality of instances w.r.t. a universe graph *)
+end
+
+type universe_instance = Instance.t
+
+type 'a puniverses = 'a * universe_instance
+val out_punivs : 'a puniverses -> 'a
+val in_punivs : 'a -> 'a puniverses
 
 (** {6 Constraints. } *)
 
@@ -164,66 +260,9 @@ val empty_constraint : constraints
 val union_constraint : constraints -> constraints -> constraints
 val eq_constraint : constraints -> constraints -> bool
 
-type universe_constraint_type = ULe | UEq | ULub
-
-type universe_constraint = universe * universe_constraint_type * universe
-module UniverseConstraints : sig
-  include Set.S with type elt = universe_constraint
-			     
-  val pr : t -> Pp.std_ppcmds
-end
-
-type universe_constraints = UniverseConstraints.t
-type 'a universe_constrained = 'a * universe_constraints
-
 (** A value with universe constraints. *)
 type 'a constrained = 'a * constraints
 
-type universe_subst_fn = universe_level -> universe
-type universe_level_subst_fn = universe_level -> universe_level
-
-(** A full substitution, might involve algebraic universes *)
-type universe_subst = universe universe_map
-type universe_level_subst = universe_level universe_map
-
-val level_subst_of : universe_subst_fn -> universe_level_subst_fn
-
-module Instance : 
-sig
-  type t
-
-  val hcons : t -> t
-  val empty : t
-  val is_empty : t -> bool
-
-  val eq : t -> t -> bool
-
-  val of_array : Level.t array -> t
-  val to_array : t -> Level.t array
-
-  (** Rely on physical equality of subterms only *)
-  val eqeq : t -> t -> bool
-
-  val subst_fn : universe_level_subst_fn -> t -> t
-  val subst : universe_level_subst -> t -> t
-
-  val pr : t -> Pp.std_ppcmds
-
-  val append : t -> t -> t
-
-  val levels : t -> LSet.t
-
-  val max_level : t -> int
-
-  val check_eq : t check_function 
-
-end
-
-type universe_instance = Instance.t
-
-type 'a puniverses = 'a * universe_instance
-val out_punivs : 'a puniverses -> 'a
-val in_punivs : 'a -> 'a puniverses
 
 (** A list of universes with universe constraints,
     representiong local universe variables and constraints *)
@@ -282,6 +321,26 @@ type universe_context_set = ContextSet.t
 (** A value in a universe context (resp. context set). *)
 type 'a in_universe_context = 'a * universe_context
 type 'a in_universe_context_set = 'a * universe_context_set
+
+(** {6 Constraints for type inference}
+    
+    When doing conversion of universes, not only do we have =/<= constraints but
+    also Lub constraints which correspond to unification of two levels that might
+    not be necessary if unfolding is performed.
+ *)
+
+type universe_constraint_type = ULe | UEq | ULub
+
+type universe_constraint = universe * universe_constraint_type * universe
+module UniverseConstraints : sig
+  include Set.S with type elt = universe_constraint
+			     
+  val pr : t -> Pp.std_ppcmds
+end
+
+type universe_constraints = UniverseConstraints.t
+type 'a universe_constrained = 'a * universe_constraints
+
 
 (** Constrained *)
 val constraints_of : 'a constrained -> constraints
@@ -405,7 +464,6 @@ val dump_universes :
 
 (** {6 Hash-consing } *)
 
-val hcons_univlevel : universe_level -> universe_level
 val hcons_univ : universe -> universe
 val hcons_constraints : constraints -> constraints
 val hcons_universe_set : universe_set -> universe_set
@@ -413,3 +471,10 @@ val hcons_universe_context : universe_context -> universe_context
 val hcons_universe_context_set : universe_context_set -> universe_context_set 
 
 (******)
+
+(* deprecated: use qualified names instead *)
+val compare_levels : universe_level -> universe_level -> int
+val eq_levels : universe_level -> universe_level -> bool
+
+(** deprecated: Equality of formal universe expressions. *)
+val equal_universes : universe -> universe -> bool

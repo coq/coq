@@ -351,7 +351,7 @@ let process_universe_constraints univs postponed vars alg local cstrs =
   let normalize = Universes.normalize_universe_opt_subst vars in
   let rec unify_universes fo l d r local postponed =
     let l = normalize l and r = normalize r in
-      if Univ.Universe.eq l r then local, postponed 
+      if Univ.Universe.equal l r then local, postponed 
       else 
 	let varinfo x = 
 	  match Univ.Universe.level x with
@@ -974,7 +974,7 @@ let make_flexible_variable evd b u =
     if b then
       let uu = Univ.Universe.make u in
       let substu_not_alg u' v =
-	Option.cata (fun vu -> Univ.Universe.eq uu vu && not (Univ.LSet.mem u' avars)) false v
+	Option.cata (fun vu -> Univ.Universe.equal uu vu && not (Univ.LSet.mem u' avars)) false v
       in
 	if not (Univ.LMap.exists substu_not_alg uvars)
 	then Univ.LSet.add u avars else avars 
@@ -1027,7 +1027,7 @@ let is_eq_sort s1 s2 =
   else
     let u1 = univ_of_sort s1
     and u2 = univ_of_sort s2 in
-      if Univ.Universe.eq u1 u2 then None
+      if Univ.Universe.equal u1 u2 then None
       else Some (u1, u2)
 
 let is_univ_var_or_set u = 
@@ -1083,7 +1083,7 @@ let has_lub evd u1 u2 =
   (* let normalize = Universes.normalize_universe_opt_subst (ref univs.uctx_univ_variables) in *)
   (* (\* let dref, norm = memo_normalize_universe d in *\) *)
   (* let u1 = normalize u1 and u2 = normalize u2 in *)
-    if Univ.Universe.eq u1 u2 then evd
+    if Univ.Universe.equal u1 u2 then evd
     else add_universe_constraints evd
       (Univ.UniverseConstraints.singleton (u1,Univ.ULub,u2))
 

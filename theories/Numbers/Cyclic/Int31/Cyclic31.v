@@ -617,7 +617,7 @@ Section Basics.
  rewrite <- app_comm_cons; f_equal.
  rewrite IHn; [ | omega].
  rewrite removelast_app.
- f_equal.
+ apply f_equal.
  replace (size-n)%nat with (S (size - S n))%nat by omega.
  rewrite removelast_firstn; auto.
  rewrite i2l_length; omega.
