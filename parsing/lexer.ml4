@@ -656,7 +656,7 @@ let strip s =
 
 let terminal s =
   let s = strip s in
-  if s = "" then failwith "empty token";
+  if s = "" then Util.error "empty token.";
   if is_ident_not_keyword s then IDENT s
   else if is_number s then INT s
   else KEYWORD s
