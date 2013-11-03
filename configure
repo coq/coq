@@ -325,7 +325,7 @@ if [ "$MAKE" != "" ]; then
   MAKEVERSION=`$MAKE -v | head -1 | cut -d" " -f3`
   MAKEVERSIONMAJOR=`echo $MAKEVERSION | cut -d. -f1`
   MAKEVERSIONMINOR=`echo $MAKEVERSION | cut -d. -f2`
-  if [ "$MAKEVERSIONMAJOR" -eq 3 -a "$MAKEVERSIONMINOR" -ge 81 ]; then
+  if [ "$MAKEVERSIONMAJOR" -gt 3 -o "$MAKEVERSIONMAJOR" -eq 3 -a "$MAKEVERSIONMINOR" -ge 81 ]; then
       echo "You have GNU Make $MAKEVERSION. Good!"
   else
       OK="no"
