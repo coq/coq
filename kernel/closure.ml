@@ -451,7 +451,7 @@ let rec lft_fconstr n ft =
 let lift_fconstr k f =
   if Int.equal k 0 then f else lft_fconstr k f
 let lift_fconstr_vect k v =
-  if Int.equal k 0 then v else Array.map (fun f -> lft_fconstr k f) v
+  if Int.equal k 0 then v else CArray.Fun1.map lft_fconstr k v
 
 let clos_rel e i =
   match expand_rel i e with
@@ -575,7 +575,7 @@ let mk_clos e t =
     | (CoFix _|Lambda _|Fix _|Prod _|Evar _|App _|Case _|Cast _|LetIn _) ->
         {norm = Red; term = FCLOS(t,e)}
 
-let mk_clos_vect env v = Array.map (mk_clos env) v
+let mk_clos_vect env v = CArray.Fun1.map mk_clos env v
 
 (* Translate the head constructor of t from constr to fconstr. This
    function is parameterized by the function to apply on the direct
@@ -590,11 +590,11 @@ let mk_clos_deep clos_fun env t =
           term = FCast (clos_fun env a, k, clos_fun env b)}
     | App (f,v) ->
         { norm = Red;
-	  term = FApp (clos_fun env f, Array.map (clos_fun env) v) }
+	  term = FApp (clos_fun env f, CArray.Fun1.map clos_fun env v) }
     | Case (ci,p,c,v) ->
         { norm = Red;
 	  term = FCases (ci, clos_fun env p, clos_fun env c,
-			 Array.map (clos_fun env) v) }
+			 CArray.Fun1.map clos_fun env v) }
     | Fix fx ->
         { norm = Cstr; term = FFix (fx, env) }
     | CoFix cfx ->
@@ -628,24 +628,24 @@ let rec to_constr constr_fun lfts v =
     | FCases (ci,p,c,ve) ->
 	mkCase (ci, constr_fun lfts p,
                 constr_fun lfts c,
-		Array.map (constr_fun lfts) ve)
+		CArray.Fun1.map constr_fun lfts ve)
     | FFix ((op,(lna,tys,bds)),e) ->
         let n = Array.length bds in
-        let ftys = Array.map (mk_clos e) tys in
-        let fbds = Array.map (mk_clos (subs_liftn n e)) bds in
+        let ftys = CArray.Fun1.map mk_clos e tys in
+        let fbds = CArray.Fun1.map mk_clos (subs_liftn n e) bds in
 	let lfts' = el_liftn n lfts in
-	mkFix (op, (lna, Array.map (constr_fun lfts) ftys,
-		         Array.map (constr_fun lfts') fbds))
+	mkFix (op, (lna, CArray.Fun1.map constr_fun lfts ftys,
+		         CArray.Fun1.map constr_fun lfts' fbds))
     | FCoFix ((op,(lna,tys,bds)),e) ->
         let n = Array.length bds in
-        let ftys = Array.map (mk_clos e) tys in
-        let fbds = Array.map (mk_clos (subs_liftn n e)) bds in
+        let ftys = CArray.Fun1.map mk_clos e tys in
+        let fbds = CArray.Fun1.map mk_clos (subs_liftn n e) bds in
 	let lfts' = el_liftn (Array.length bds) lfts in
-	mkCoFix (op, (lna, Array.map (constr_fun lfts) ftys,
-		           Array.map (constr_fun lfts') fbds))
+	mkCoFix (op, (lna, CArray.Fun1.map constr_fun lfts ftys,
+		           CArray.Fun1.map constr_fun lfts' fbds))
     | FApp (f,ve) ->
 	mkApp (constr_fun lfts f,
-	       Array.map (constr_fun lfts) ve)
+	       CArray.Fun1.map constr_fun lfts ve)
     | FLambda _ ->
         let (na,ty,bd) = destFLambda mk_clos2 v in
 	mkLambda (na, constr_fun lfts ty,
@@ -973,15 +973,15 @@ and norm_head info m =
       | FProd(na,dom,rng) ->
           mkProd(na, kl info dom, kl info rng)
       | FCoFix((n,(na,tys,bds)),e) ->
-          let ftys = Array.map (mk_clos e) tys in
+          let ftys = CArray.Fun1.map mk_clos e tys in
           let fbds =
-            Array.map (mk_clos (subs_liftn (Array.length na) e)) bds in
-          mkCoFix(n,(na, Array.map (kl info) ftys, Array.map (kl info) fbds))
+            CArray.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
+          mkCoFix(n,(na, CArray.Fun1.map kl info ftys, CArray.Fun1.map kl info fbds))
       | FFix((n,(na,tys,bds)),e) ->
-          let ftys = Array.map (mk_clos e) tys in
+          let ftys = CArray.Fun1.map mk_clos e tys in
           let fbds =
-            Array.map (mk_clos (subs_liftn (Array.length na) e)) bds in
-          mkFix(n,(na, Array.map (kl info) ftys, Array.map (kl info) fbds))
+            CArray.Fun1.map mk_clos (subs_liftn (Array.length na) e) bds in
+          mkFix(n,(na, CArray.Fun1.map kl info ftys, CArray.Fun1.map kl info fbds))
       | FEvar((i,args),env) ->
           mkEvar(i, Array.map (fun a -> kl info (mk_clos env a)) args)
       | t -> term_of_fconstr m
@@ -996,7 +996,7 @@ let whd_val info v =
 let norm_val info v =
   with_stats (lazy (kl info v))
 
-let inject = mk_clos (subs_id 0)
+let inject c = mk_clos (subs_id 0) c
 
 let whd_stack infos m stk =
   let k = kni infos m stk in
