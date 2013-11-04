@@ -21,7 +21,25 @@ struct
 end
 
 module Set = Set.Make(Self)
-module Map = CMap.Make(Self)
+module Map =
+struct
+  include CMap.Make(Self)
+
+  type 'a map = 'a CMap.Make(Self).t
+
+  type 'a _map =
+  | MEmpty
+  | MNode of 'a map * int * 'a * 'a map * int
+
+  let map_prj : 'a map -> 'a _map = Obj.magic
+
+  let rec find i s = match map_prj s with
+  | MEmpty -> raise Not_found
+  | MNode (l, k, v, r, h) ->
+    if i < k then find i l
+    else if i = k then v
+    else find i r
+end
 
 module List = struct
   let mem = List.memq
