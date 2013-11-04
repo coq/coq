@@ -167,8 +167,19 @@ val tclONCE : 'a tactic -> 'a tactic
 val tclEXACTLY_ONCE : exn -> 'a tactic -> 'a tactic
 
 (* Focuses a tactic at a range of subgoals, found by their indices.
-   The other goals are restored to the focus when the tactic is done. *)
+   The other goals are restored to the focus when the tactic is done.
+
+   If the specified range doesn't correspond to existing goals, fails
+   with [NoSuchGoals]. *)
+exception NoSuchGoals
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
+
+(* Focuses a tactic at a range of subgoals, found by their indices.
+   The other goals are restored to the focus when the tactic is done.
+
+   If the specified range doesn't correspond to existing goals, behaves
+   like [tclUNIT ()]. *)
+val tclTRYFOCUS : int -> int -> unit tactic -> unit tactic
 
 (* Dispatch tacticals are used to apply a different tactic to each goal under
    consideration. They come in two flavours:

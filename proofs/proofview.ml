@@ -277,8 +277,12 @@ let tclEXACTLY_ONCE e t =
 
 
 (* Focuses a tactic at a range of subgoals, found by their indices. *)
-(* arnaud: bug if 0 goals ! *)
-let tclFOCUS i j t =
+exception NoSuchGoals
+let _ = Errors.register_handler begin function
+  | NoSuchGoals -> Errors.error "No such goals."
+  | _ -> raise Errors.Unhandled
+end
+let tclFOCUS_gen nosuchgoal i j t =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   let (>>) = Proof.seq in
@@ -290,10 +294,10 @@ let tclFOCUS i j t =
     Proof.get >>= fun next ->
     Proof.set (unfocus context next) >>
     Proof.ret result
-  with e when Errors.noncritical e ->
-    (* spiwack: a priori the only possible exceptions are that of focus,
-       of course I haven't made them algebraic yet. *)
-    tclZERO e
+  with IndexOutOfRange -> nosuchgoal
+
+let tclFOCUS i j t = tclFOCUS_gen (tclZERO NoSuchGoals) i j t
+let tclTRYFOCUS i j t = tclFOCUS_gen (tclUNIT ()) i j t
 
 
 (* Dispatch tacticals are used to apply a different tactic to each goal under
