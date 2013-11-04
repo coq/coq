@@ -338,7 +338,7 @@ let push_rel_context_to_named_context env typ =
   let (subst, vsubst, _, env) =
     Context.fold_rel_context
       (fun (na,c,t) (subst, vsubst, avoid, env) ->
-	let id = next_name_away na avoid in
+	let id = next_ident_away (id_of_name_using_hdchar env t na) avoid in
         match extract_if_neq id na with
         | Some id0 when not (is_section_variable id0) ->
             (* spiwack: if [id<>id0], rather than introducing a new
