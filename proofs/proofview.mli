@@ -179,7 +179,11 @@ val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
    goal (starting with the first goal). In the case of [tclDISPATCHL],
    the tactic returns a list of the same size as the argument list (of
    tactics), each element being the result of the tactic executed in
-   the corresponding goal. *)
+   the corresponding goal.
+
+   When the length of the tactic list is not the number of goal,
+   raises [SizeMismatch] *)
+exception SizeMismatch
 val tclDISPATCH : unit tactic list -> unit tactic
 val tclDISPATCHL : 'a tactic list -> 'a list tactic
 

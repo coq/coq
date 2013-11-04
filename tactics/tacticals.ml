@@ -415,24 +415,31 @@ module New = struct
 
   let tclTHENS3PARTS t1 l1 repeat l2 =
     tclINDEPENDENT begin
-      t1 <*> tclEXTEND (Array.to_list l1) repeat (Array.to_list l2)
+      t1 <*>
+        Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
+          begin tclEXTEND (Array.to_list l1) repeat (Array.to_list l2) end
+          begin function
+            | SizeMismatch -> tclFAIL 0 (str"Incorrect number of goals")
+            | reraise -> tclZERO reraise
+          end
     end
   let tclTHENSFIRSTn t1 l repeat =
     tclTHENS3PARTS t1 l repeat [||]
   let tclTHENFIRSTn t1 l =
     tclTHENSFIRSTn t1 l (tclUNIT())
   let tclTHENFIRST t1 t2 =
-    tclEXTEND [] begin
-      t1 <*> tclFOCUS 1 1 t2
-    end []
+    tclTHENFIRSTn t1 [|t2|]
   let tclTHENLASTn t1 l =
-    tclINDEPENDENT begin
-      t1 <*> tclEXTEND [] (tclUNIT()) (Array.to_list l)
-    end
+    tclTHENS3PARTS t1 [||] (tclUNIT()) l
   let tclTHENLAST t1 t2 = tclTHENLASTn t1 [|t2|]
   let tclTHENS t l =
     tclINDEPENDENT begin
-      t <*> tclDISPATCH l
+      t <*>Proofview.tclORELSE (* converts the [SizeMismatch] error into an ltac error *)
+          begin tclDISPATCH l end
+          begin function
+            | SizeMismatch -> tclFAIL 0 (str"Incorrect number of goals")
+            | reraise -> tclZERO reraise
+          end
     end
   let tclTHENLIST l =
     List.fold_left tclTHEN (tclUNIT()) l

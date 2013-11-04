@@ -460,8 +460,10 @@ let tclEXTEND tacs1 rtac tacs2 =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   Proof.get >>= fun step ->
-  let tacs = extend_to_list tacs1 rtac tacs2 step.comb in
-  tclDISPATCH tacs
+  try
+    let tacs = extend_to_list tacs1 rtac tacs2 step.comb in
+    tclDISPATCH tacs
+  with SizeMismatch -> tclZERO SizeMismatch
 
 let tclINDEPENDENT tac =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
