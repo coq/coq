@@ -126,6 +126,10 @@ let nf_evar_map_undefined evm =
 (* Auxiliary functions for the conversion algorithms modulo evars
  *)
 
+let has_flexible_level evd l =
+  let a = Univ.Instance.to_array l in
+    Array.exists (fun l -> Evd.is_flexible_level evd l) a
+    
 let has_undefined_evars or_sorts evd t =
   let rec has_ev t =
     match kind_of_term t with
@@ -138,7 +142,7 @@ let has_undefined_evars or_sorts evd t =
     | Sort (Type _) (*FIXME could be finer, excluding Prop and Set universes *) when or_sorts ->
       raise Not_found
     | Ind (_,l) | Const (_,l) | Construct (_,l) 
-	when l <> Univ.Instance.empty && or_sorts -> raise Not_found
+	when or_sorts && not (Univ.Instance.is_empty l) (* has_flexible_level evd l *) -> raise Not_found
     | _ -> iter_constr has_ev t in
   try let _ = has_ev t in false
   with (Not_found | NotInstantiatedEvar) -> true

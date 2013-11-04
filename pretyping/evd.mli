@@ -439,6 +439,9 @@ val make_flexible_variable : evar_map -> bool -> Univ.universe_level -> evar_map
 val is_sort_variable : evar_map -> sorts -> (Univ.universe_level * bool) option 
 (** [is_sort_variable evm s] returns [Some (u, is_rigid)] or [None] if [s] is 
     not a sort variable declared in [evm] *)
+val is_flexible_level : evar_map -> Univ.Level.t -> bool
+
+
 val whd_sort_variable : evar_map -> constr -> constr
 (* val normalize_universe_level : evar_map -> Univ.universe_level -> Univ.universe_level *)
 val normalize_universe : evar_map -> Univ.universe -> Univ.universe

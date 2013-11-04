@@ -1021,6 +1021,9 @@ let is_sort_variable evd s =
     | None -> None)
   | _ -> None
 
+let is_flexible_level evd l = 
+  let uctx = evd.universes in
+    Univ.LMap.mem l uctx.uctx_univ_variables
 
 let is_eq_sort s1 s2 =
   if Sorts.equal s1 s2 then None

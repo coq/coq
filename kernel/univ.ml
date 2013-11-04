@@ -1011,19 +1011,78 @@ let compare_neq strict g arcu arcv =
   in
   cmp NLE [] [] [] [arcu, Lazy.lazy_from_val []]
 
+type fast_order = FastEQ | FastLT | FastLE | FastNLE
+
+let fast_compare_neq strict g arcu arcv =
+  (* [c] characterizes whether arcv has already been related
+     to arcu among the lt_done,le_done universe *)
+  let rec cmp c lt_done le_done lt_todo le_todo = match lt_todo, le_todo with
+  | [],[] -> c
+  | arc::lt_todo, le_todo ->
+    if List.memq arc lt_done then
+      cmp c lt_done le_done lt_todo le_todo
+    else
+      let rec find lt_todo lt le = match le with
+      | [] ->
+        begin match lt with
+        | [] -> cmp c (arc :: lt_done) le_done lt_todo le_todo
+        | u :: lt ->
+          let arc = repr g u in
+          if arc == arcv then
+            if strict then FastLT else FastLE
+          else find (arc :: lt_todo) lt le
+        end
+      | u :: le ->
+        let arc = repr g u in
+        if arc == arcv then
+          if strict then FastLT else FastLE
+        else find (arc :: lt_todo) lt le
+      in
+      find lt_todo arc.lt arc.le
+  | [], arc::le_todo ->
+    if arc == arcv then
+      (* No need to continue inspecting universes above arc:
+	 if arcv is strictly above arc, then we would have a cycle.
+         But we cannot answer LE yet, a stronger constraint may
+	 come later from [le_todo]. *)
+      if strict then cmp FastLE lt_done le_done [] le_todo else FastLE
+    else
+      if (List.memq arc lt_done) || (List.memq arc le_done) then
+        cmp c lt_done le_done [] le_todo
+      else
+        let rec find lt_todo lt = match lt with
+        | [] ->
+          let fold accu u =
+            let node = repr g u in
+            node :: accu
+          in
+          let le_new = List.fold_left fold le_todo arc.le in
+          cmp c lt_done (arc :: le_done) lt_todo le_new
+        | u :: lt ->
+          let arc = repr g u in
+          if arc == arcv then
+            if strict then FastLT else FastLE
+          else find (arc :: lt_todo) lt
+        in
+        find [] arc.lt
+  in
+  cmp FastNLE [] [] [] [arcu]
+
 let compare g arcu arcv =
   if arcu == arcv then EQ else compare_neq true g arcu arcv
 
 let is_leq g arcu arcv =
   arcu == arcv ||
- (match compare_neq false g arcu arcv with
-     NLE -> false
-   | (EQ|LE _|LT _) -> true)
+ (match fast_compare_neq false g arcu arcv with
+     FastNLE -> false
+   | (FastEQ|FastLE|FastLT) -> true)
 
 let is_lt g arcu arcv =
-  match compare g arcu arcv with
-      LT _ -> true
-    | (EQ|LE _|NLE) -> false
+  if arcu == arcv then false
+  else
+    match fast_compare_neq true g arcu arcv with
+      FastLT -> true
+    | (FastEQ|FastLE|FastNLE) -> false
 
 (* Invariants : compare(u,v) = EQ <=> compare(v,u) = EQ
                 compare(u,v) = LT or LE => compare(v,u) = NLE

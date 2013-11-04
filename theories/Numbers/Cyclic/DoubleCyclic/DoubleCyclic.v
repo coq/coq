@@ -594,7 +594,7 @@ Section Z_2nZ.
       0 <= [|r|] < [|b|].
  Proof.
   refine (spec_ww_div21 w_0 w_0W div32 ww_1 compare sub w_digits w_to_Z
-   _ _ _ _ _ _ _);wwauto.
+   _ _ _ _ _ _ _);wwauto. 
  Qed.
 
  Let spec_add2: forall x y,

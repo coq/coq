@@ -133,7 +133,7 @@ let beta_appvect c v =
         Lambda(_,_,c), arg::stacktl -> stacklam (arg::env) c stacktl
       | _ -> applist (substl env t, stack) in
   stacklam [] c (Array.to_list v)
-
+    
 let betazeta_appvect n c v =
   let rec stacklam n env t stack =
     if Int.equal n 0 then applist (substl env t, stack) else
@@ -165,7 +165,14 @@ let convert_universes (univs,cstrs as cuniv) u u' =
   else
     (match cstrs with 
     | None -> raise NotConvertible
-    | Some cstrs -> (univs, Some (Univ.enforce_eq_instances u u' cstrs)))
+    | Some cstrs -> 
+      (univs, Some (Univ.enforce_eq_instances u u' cstrs)))
+
+      (* try  *)
+      (* 	let cstr = Univ.enforce_eq_instances u u' Univ.Constraint.empty in *)
+      (* 	let univs' = Univ.enforce_constraint cstr univs in *)
+      (* 	  (univs', Some (Univ.enforce_eq_instances u u' cstrs)) *)
+      (* with UniverseInconsistency _ -> raise NotConvertible) *)
       
 let conv_table_key k1 k2 cuniv =
   match k1, k2 with
@@ -239,12 +246,22 @@ let is_pos = function Pos -> true | Null -> false
 let check_eq (univs, cstrs as cuniv) u u' = 
   match cstrs with
   | None -> if check_eq univs u u' then cuniv else raise NotConvertible
-  | Some cstrs -> univs, Some (Univ.enforce_eq u u' cstrs)
+  | Some cstrs -> 
+    univs, Some (Univ.enforce_eq u u' cstrs)
+    (* let cstr = Univ.enforce_eq u u' Univ.Constraint.empty in *)
+    (* try let univs' = Univ.enforce_constraint cstr univs in *)
+    (* 	  univs', Some (Univ.enforce_eq u u' cstrs) *)
+    (* with UniverseInconsistency _ -> raise NotConvertible *)
 
 let check_leq (univs, cstrs as cuniv) u u' = 
   match cstrs with
   | None -> if check_leq univs u u' then cuniv else raise NotConvertible
-  | Some cstrs -> univs, Some (Univ.enforce_leq u u' cstrs)
+  | Some cstrs -> 
+    univs, Some (Univ.enforce_leq u u' cstrs)
+    (* let cstr = Univ.enforce_leq u u' Univ.Constraint.empty in *)
+    (*   try let univs' = Univ.enforce_constraint cstr univs in *)
+    (* 	    univs', Some (Univ.enforce_leq u u' cstrs) *)
+    (*   with UniverseInconsistency _ -> raise NotConvertible *)
 
 let sort_cmp_universes pb s0 s1 univs =
   let dir = if is_cumul pb then check_leq univs else check_eq univs in
