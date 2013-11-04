@@ -138,3 +138,20 @@ sig
 end
 
 include ExtS
+
+module Fun1 :
+sig
+  val map : ('r -> 'a -> 'b) -> 'r -> 'a array -> 'b array
+  (** [Fun1.map f x v = map (f x) v] *)
+
+  val smartmap : ('r -> 'a -> 'a) -> 'r -> 'a array -> 'a array
+  (** [Fun1.smartmap f x v = smartmap (f x) v] *)
+
+  val iter : ('r -> 'a -> unit) -> 'r -> 'a array -> unit
+  (** [Fun1.iter f x v = iter (f x) v] *)
+
+end
+(** The functions defined in this module are the same as the main ones, except
+    that they are all higher-order, and their function arguments have an
+    additional parameter. This allows to prevent closure creation in critical
+    cases. *)

@@ -454,3 +454,49 @@ let rev_to_list a =
 let filter_with filter v =
   Array.of_list (CList.filter_with filter (Array.to_list v))
 
+module Fun1 =
+struct
+
+  let map f arg v = match v with
+  | [| |] -> [| |]
+  | _ ->
+    let len = Array.length v in
+    let x0 = Array.unsafe_get v 0 in
+    let ans = Array.make len (f arg x0) in
+    for i = 1 to pred len do
+      let x = Array.unsafe_get v i in
+      Array.unsafe_set ans i (f arg x)
+    done;
+    ans
+
+  exception Local of int * Obj.t
+
+  let smartmap f arg v =
+    let len = Array.length v in
+    try
+      for i = 0 to len - 1 do
+        let x = uget v i in
+        let y = f arg x in
+        if x != y then (* pointer (in)equality *)
+          raise (Local (i, Obj.repr y))
+      done;
+      v
+    with Local (i, x) ->
+      (** FIXME: use Array.unsafe_blit from OCAML 4.00 *)
+      let ans : 'a array = Array.make len (uget v 0) in
+      let () = Array.blit v 0 ans 0 i in
+      let () = Array.unsafe_set ans i (Obj.obj x) in
+      for j = succ i to pred len do
+        let y = f arg (uget v j) in
+        Array.unsafe_set ans j y
+      done;
+      ans
+
+  let iter f arg v =
+    let len = Array.length v in
+    for i = 0 to pred len do
+      let x = uget v i in
+      f arg x
+    done
+
+end
