@@ -371,7 +371,8 @@ We can check if a tactic made progress with:
 {\tt progress} {\tacexpr}
 \end{quote}
 {\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
-applied. If the application of $v$ produced subgoals equal to the
+applied to each focued subgoal independently. If the application of
+$v$ to one of the focused subgoal produced subgoals equal to the
 initial goals (up to syntactical equality), then an error of level 0
 is raised.
 

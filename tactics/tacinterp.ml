@@ -1131,7 +1131,7 @@ and eval_tactic ist = function
       Proofview.V82.tactic begin fun gl ->
         tclFAIL (interp_int_or_var ist n) (interp_message ist gl s) gl
       end
-  | TacProgress tac -> Proofview.tclPROGRESS (interp_tactic ist tac)
+  | TacProgress tac -> Tacticals.New.tclPROGRESS (interp_tactic ist tac)
   | TacShowHyps tac ->
          Proofview.V82.tactic begin
            tclSHOWHYPS (Proofview.V82.of_tactic (interp_tactic ist tac))

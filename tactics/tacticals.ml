@@ -510,6 +510,8 @@ module New = struct
   (* Try the first thats solves the current goal *)
   let tclSOLVE tacl = tclFIRST (List.map tclCOMPLETE tacl)
 
+  let tclPROGRESS t =
+    Proofview.tclINDEPENDENT (Proofview.tclPROGRESS t)
 
   let tclWITHHOLES accept_unresolved_holes tac sigma x =
     tclEVARMAP >= fun sigma_initial ->

@@ -236,6 +236,7 @@ module New : sig
   val tclREPEAT_MAIN : unit tactic -> unit tactic
   val tclCOMPLETE : 'a tactic -> 'a tactic
   val tclSOLVE : unit tactic list -> unit tactic
+  val tclPROGRESS : unit tactic -> unit tactic
   val tclWITHHOLES : bool -> ('a -> unit tactic) -> Evd.evar_map -> 'a -> unit tactic
 
   val tclTIMEOUT : int -> unit tactic -> unit tactic
