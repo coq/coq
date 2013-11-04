@@ -87,9 +87,9 @@ let compose f g x = f (g x)
 
 let const x _ = x
 
-let iterate f =
-  let rec iterate_f n x =
-    if n <= 0 then x else iterate_f (pred n) (f x)
+let iterate =
+  let rec iterate_f f n x =
+    if n <= 0 then x else iterate_f f (pred n) (f x)
   in
   iterate_f
 
