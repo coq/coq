@@ -31,10 +31,10 @@ let proofview p =
 
 (* Initialises a proofview, the argument is a list of environement, 
    conclusion types, and optional names, creating that many initial goals. *)
-let init = 
+let init sigma =
   let rec aux = function
   | [] ->  { initial = [] ; 
-	     solution = Evd.empty ;
+	     solution = sigma ;
              comb = [];
 	   }
   | (env,typ)::l -> let { initial = ret ; solution = sol ; comb = comb } =

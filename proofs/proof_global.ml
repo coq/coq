@@ -239,7 +239,7 @@ end
 let start_proof id str goals ?(compute_guard=[]) hook =
   let initial_state = {
     pid = id;
-    proof = Proof.start goals;
+    proof = Proof.start Evd.empty goals;
     endline_tactic = None;
     section_vars = None;
     strength = str;

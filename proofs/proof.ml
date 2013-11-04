@@ -226,9 +226,9 @@ let end_of_stack = CondEndStack end_of_stack_kind
 
 let unfocused = is_last_focus end_of_stack_kind
 
-let start goals =
+let start sigma goals =
   let pr = {
-    proofview = Proofview.init goals ;
+    proofview = Proofview.init sigma goals ;
     focus_stack = [] ;
     shelf = [] ;
     given_up = [] } in
