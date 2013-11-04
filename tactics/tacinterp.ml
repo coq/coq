@@ -2096,6 +2096,7 @@ and interp_atomic ist tac =
           gl
       end
   | TacChange (None,c,cl) ->
+      Proofview.V82.nf_evar_goals <*>
       Proofview.V82.tactic begin fun gl ->
         let is_onhyps = match cl.onhyps with
           | None | Some [] -> true
@@ -2116,6 +2117,7 @@ and interp_atomic ist tac =
           gl
       end
   | TacChange (Some op,c,cl) ->
+      Proofview.V82.nf_evar_goals <*>
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
