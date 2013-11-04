@@ -14,12 +14,5 @@ let compare = Int.compare
 let equal = Int.equal
 let hash = Int.hash
 
-module Self =
-struct
-  type _t = t
-  type t = _t
-  let compare = compare
-end
-
-module Set = Set.Make(Self)
-module Map = CMap.Make(Self)
+module Set = Int.Set
+module Map = Int.Map
