@@ -23,6 +23,7 @@ let string_of_vernac_type = function
   | VtQuery b -> "Query" ^ string_of_in_script b
   | VtStm ((VtFinish|VtJoinDocument|VtObserve _|VtPrintDag|VtWait), b) ->
       "Stm" ^ string_of_in_script b
+  | VtStm (VtPG, b) -> "Stm PG" ^ string_of_in_script b
   | VtStm (VtBack _, b) -> "Stm Back" ^ string_of_in_script b
 
 let string_of_vernac_when = function
@@ -50,6 +51,10 @@ let set_undo_classifier f = undo_classifier := f
 
 let rec classify_vernac e =
   let static_classifier e = match e with
+    (* PG compatibility *)
+    | VernacUnsetOption (["Silent"]|["Undo"]|["Printing";"Depth"])
+    | VernacSetOption   ((["Silent"]|["Undo"]|["Printing";"Depth"]),_)
+      when !Flags.print_emacs -> VtStm(VtPG,false), VtNow
     (* Stm *)
     | VernacStm Finish -> VtStm (VtFinish, true), VtNow
     | VernacStm Wait -> VtStm (VtWait, true), VtNow

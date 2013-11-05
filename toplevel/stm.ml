@@ -1412,6 +1412,9 @@ let process_transaction ~tty verbose c (loc, expr) =
     let rc = begin
       prerr_endline ("  classified as: " ^ string_of_vernac_classification c);
       match c with
+      (* PG stuff *)    
+      | VtStm(VtPG,false), VtNow -> vernac_interp Stateid.dummy x; `Ok
+      | VtStm(VtPG,_), _ -> anomaly(str "PG command in script or VtLater")
       (* Joining various parts of the document *)
       | VtStm (VtJoinDocument, b), VtNow -> warn_if_pos x b; join (); `Ok
       | VtStm (VtFinish, b),       VtNow -> warn_if_pos x b; finish (); `Ok

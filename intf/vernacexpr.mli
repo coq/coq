@@ -452,6 +452,7 @@ and vernac_control =
   | VtPrintDag
   | VtObserve of Stateid.t
   | VtBack of Stateid.t
+  | VtPG
 type vernac_when =
   | VtNow
   | VtLater
