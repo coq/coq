@@ -797,6 +797,8 @@ let whd_meta sigma c = match kind_of_term c with
   | Meta p -> (try meta_value sigma p with Not_found -> c)
   | _ -> c
 
+let hid = Id.of_string "H"
+
 (* Try to replace all metas. Does not replace metas in the metas' values
  * Differs from (strong whd_meta). *)
 let plain_instance s c =
@@ -804,7 +806,7 @@ let plain_instance s c =
     | Meta p -> (try lift n (Metamap.find p s) with Not_found -> u)
     | App (f,l) when isCast f ->
         let (f,_,t) = destCast f in
-        let l' = Array.map (irec n) l in
+        let l' = CArray.Fun1.smartmap irec n l in
         (match kind_of_term f with
         | Meta p ->
 	    (* Don't flatten application nodes: this is used to extract a
@@ -813,8 +815,8 @@ let plain_instance s c =
 	    (try let g = Metamap.find p s in
 	    match kind_of_term g with
             | App _ ->
-                let h = Id.of_string "H" in
-                mkLetIn (Name h,g,t,mkApp(mkRel 1,Array.map (lift 1) l'))
+                let l' = CArray.Fun1.smartmap lift 1 l' in
+                mkLetIn (Name hid,g,t,mkApp(mkRel 1, l'))
             | _ -> mkApp (g,l')
 	    with Not_found -> mkApp (f,l'))
         | _ -> mkApp (irec n f,l'))
