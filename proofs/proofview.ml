@@ -404,7 +404,7 @@ let list_iter_goal2 l s i =
 (* spiwack: we use an parametrised function to generate the dispatch
    tacticals.  [tclDISPATCHGEN] takes an argument [join] to reify the
    list of produced value into the final value. *)
-let tclDISPATCHGEN join tacs =
+let tclDISPATCHGEN f join tacs =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
   match tacs with
@@ -423,22 +423,22 @@ let tclDISPATCHGEN join tacs =
             on_advance goal
               ~solved:( tclUNIT (join []) )
               ~adv:begin fun _ ->
-                tac >>= fun res ->
+                f tac >>= fun res ->
                 Proof.ret (join [res])
               end
         | _ -> tclZERO SizeMismatch
       end
   | _ ->
       list_iter_goal2 tacs [] begin fun _ t cur ->
-        t >>= fun y ->
-        Proof.ret ( y::cur )
+        f t >>= fun y ->
+        Proof.ret ( y :: cur )
       end >>= fun res ->
-      Proof.ret (join (List.rev res))
+      Proof.ret (join res)
 
-let tclDISPATCH tacs = tclDISPATCHGEN (fun _ -> ()) tacs
+let tclDISPATCH tacs = tclDISPATCHGEN Util.identity ignore tacs
 
 let tclDISPATCHL tacs =
-  tclDISPATCHGEN Util.identity tacs
+  tclDISPATCHGEN Util.identity List.rev tacs
 
 let extend_to_list startxs rx endxs l =
   (* spiwack: I use [l] essentially as a natural number *)
@@ -619,11 +619,11 @@ module Notations = struct
   let (>=) = tclBIND
   let (>>=) t k =
     t >= fun l ->
-    tclDISPATCH (List.map k l)
+    tclDISPATCHGEN k ignore l
   let (>>==) t k =
     begin
       t >= fun l ->
-      tclDISPATCHL (List.map k l)
+      tclDISPATCHGEN k List.rev l
     end >= fun l' ->
     tclUNIT (List.flatten l')
   let (<*>) = tclTHEN
