@@ -77,7 +77,7 @@ let constr_of_global = function
 let constr_of_reference = constr_of_global
 let reference_of_constr = global_of_constr
 
-let global_ord_gen ord_cst ord_ind ord_cons x y = match x, y with
+let global_ord_gen ord_cst ord_ind ord_cons = (); fun x y -> match x, y with
   | ConstRef cx, ConstRef cy -> ord_cst cx cy
   | IndRef indx, IndRef indy -> ord_ind indx indy
   | ConstructRef consx, ConstructRef consy -> ord_cons consx consy
@@ -91,9 +91,9 @@ let global_ord_gen ord_cst ord_ind ord_cons x y = match x, y with
   | ConstructRef _, (VarRef _ | ConstRef _ | IndRef _) -> 1
 
 let global_ord_can =
-  global_ord_gen con_ord ind_ord constructor_ord
+  global_ord_gen Constant.CanOrd.compare ind_ord constructor_ord
 let global_ord_user =
-  global_ord_gen con_user_ord ind_user_ord constructor_user_ord
+  global_ord_gen Constant.UserOrd.compare ind_user_ord constructor_user_ord
 
 (* By default, [global_reference] are ordered on their canonical part *)
 
