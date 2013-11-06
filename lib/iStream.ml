@@ -75,8 +75,8 @@ let rec map_filter_node f = function
 and map_filter f s = lazy (map_filter_node f (Lazy.force s))
 
 let rec concat_node = function
-| Nil -> empty
-| Cons (s, sl) -> app s (concat sl)
+| Nil -> Nil
+| Cons (s, sl) -> app_node (Lazy.force s) (concat sl)
 
 and concat (s : 'a t t) =
-  thunk (lazy (concat_node (Lazy.force s)))
+  lazy (concat_node (Lazy.force s))
