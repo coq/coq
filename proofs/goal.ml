@@ -433,9 +433,12 @@ let convert_concl check cl' = (); fun env rdefs gl info ->
 
 (* Renames a hypothesis. *)
 let rename_hyp_sign id1 id2 sign =
+  let subst = [id1,mkVar id2] in
+  let replace_vars c = replace_vars subst c in
   Environ.apply_to_hyp_and_dependent_on sign id1
     (fun (_,b,t) _ -> (id2,b,t))
-    (fun d _ -> map_named_declaration (replace_vars [id1,mkVar id2]) d)
+    (fun d _ -> map_named_declaration replace_vars d)
+
 let rename_hyp id1 id2 = (); fun env rdefs gl info ->
   let hyps = hyps env rdefs gl info in
   if not (Names.Id.equal id1 id2) &&

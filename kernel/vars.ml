@@ -28,7 +28,7 @@ let closedn n c =
 
 (* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
 
-let closed0 = closedn 0
+let closed0 c = closedn 0 c
 
 (* (noccurn n M) returns true iff (Rel n) does NOT occur in term M  *)
 
@@ -84,10 +84,10 @@ let rec exliftn el c = match Constr.kind c with
 
 (* Lifting the binding depth across k bindings *)
 
-let liftn n k =
+let liftn n k c =
   match el_liftn (pred k) (el_shft n el_id) with
-    | ELID -> (fun c -> c)
-    | el -> exliftn el
+    | ELID -> c
+    | el -> exliftn el c
 
 let lift n = liftn n 1
 
@@ -109,8 +109,13 @@ let rec lift_substituend depth s =
     | Closed -> s.sit
     | Open -> lift depth s.sit
     | Unknown ->
-        s.sinfo <- if closed0 s.sit then Closed else Open;
-        lift_substituend depth s
+      let sit = s.sit in
+      if closed0 sit then
+        let () = s.sinfo <- Closed in
+        sit
+      else
+        let () = s.sinfo <- Open in
+        lift depth sit
 
 let make_substituend c = { sinfo=Unknown; sit=c }
 
@@ -121,7 +126,7 @@ let substn_many lamv n c =
     let rec substrec depth c = match Constr.kind c with
       | Constr.Rel k     ->
           if k<=depth then c
-          else if k-depth <= lv then lift_substituend depth lamv.(k-depth-1)
+          else if k-depth <= lv then lift_substituend depth (Array.unsafe_get lamv (k-depth-1))
           else Constr.mkRel (k-lv)
       | _ -> Constr.map_with_binders succ substrec depth c in
     substrec n c
@@ -134,22 +139,29 @@ let substn_many lamv n c = Profile.profile3 substkey substn_many lamv n c;;
 let make_subst = function
 | [] -> [||]
 | hd :: tl ->
-  let subst = Array.make (1 + List.length tl) (make_substituend hd) in
-  let iteri i x = Array.unsafe_set subst (succ i) (make_substituend x) in
-  let () = CList.iteri iteri tl in
+  let len = List.length tl in
+  let subst = Array.make (1 + len) (make_substituend hd) in
+  let s = ref tl in
+  for i = 1 to len do
+    match !s with
+    | [] -> assert false
+    | x :: tl ->
+      Array.unsafe_set subst i (make_substituend x);
+      s := tl
+  done;
   subst
 
-let substnl laml n = substn_many (make_subst laml) n
-let substl laml = substnl laml 0
-let subst1 lam = substl [lam]
+let substnl laml n c = substn_many (make_subst laml) n c
+let substl laml c = substnl laml 0 c
+let subst1 lam c = substl [lam] c
 
-let substnl_decl laml k = map_rel_declaration (substnl laml k)
-let substl_decl laml = substnl_decl laml 0
-let subst1_decl lam = substl_decl [lam]
+let substnl_decl laml k r = map_rel_declaration (substnl laml k) r
+let substl_decl laml r = substnl_decl laml 0 r
+let subst1_decl lam r = substl_decl [lam] r
 
-let substnl_named_decl laml k = map_named_declaration (substnl laml k)
-let substl_named_decl laml = substnl_named_decl laml 0
-let subst1_named_decl lam = substl_named_decl [lam]
+let substnl_named_decl laml k d = map_named_declaration (substnl laml k) d
+let substl_named_decl laml d = substnl_named_decl laml 0 d
+let subst1_named_decl lam d = substl_named_decl [lam] d
 
 (* (thin_val sigma) removes identity substitutions from sigma *)
 
@@ -169,17 +181,18 @@ let rec find_var id = function
   else find_var id subst
 
 (* (replace_vars sigma M) applies substitution sigma to term M *)
-let replace_vars var_alist =
+let replace_vars var_alist x =
   let var_alist = thin_val var_alist in
-  let rec substrec n c = match Constr.kind c with
-    | Constr.Var x ->
-        (try lift_substituend n (find_var x var_alist)
-         with Not_found -> c)
-    | _ -> Constr.map_with_binders succ substrec n c
-  in
   match var_alist with
-  | [] -> (function x -> x)
-  | _ -> substrec 0
+  | [] -> x
+  | _ ->
+    let rec substrec n c = match Constr.kind c with
+    | Constr.Var x ->
+      (try lift_substituend n (find_var x var_alist)
+      with Not_found -> c)
+    | _ -> Constr.map_with_binders succ substrec n c
+    in
+    substrec 0 x
 
 (*
 let repvarkey = Profile.declare_profile "replace_vars";;
@@ -187,12 +200,12 @@ let replace_vars vl c = Profile.profile2 repvarkey replace_vars vl c ;;
 *)
 
 (* (subst_var str t) substitute (VAR str) by (Rel 1) in t *)
-let subst_var str = replace_vars [(str, Constr.mkRel 1)]
+let subst_var str t = replace_vars [(str, Constr.mkRel 1)] t
 
 (* (subst_vars [id1;...;idn] t) substitute (VAR idj) by (Rel j) in t *)
-let substn_vars p vars =
+let substn_vars p vars c =
   let _,subst =
     List.fold_left (fun (n,l) var -> ((n+1),(var,Constr.mkRel n)::l)) (p,[]) vars
-  in replace_vars (List.rev subst)
+  in replace_vars (List.rev subst) c
 
-let subst_vars = substn_vars 1
+let subst_vars subst c = substn_vars 1 subst c

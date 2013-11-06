@@ -312,9 +312,13 @@ let push_rel_context_to_named_context env typ =
   let inst_vars = List.map mkVar ids in
   let inst_rels = List.rev (rel_list 0 (nb_rel env)) in
   let replace_var_named_declaration id0 id (id',b,t) =
-    let id' = if id_ord id0 id' = 0 then id else id' in
+    let id' = if Id.equal id0 id' then id else id' in
     let vsubst = [id0 , mkVar id] in
-    id', Option.map (replace_vars vsubst) b, replace_vars vsubst t
+    let b = match b with
+    | None -> None
+    | Some c -> Some (replace_vars vsubst c)
+    in
+    id', b, replace_vars vsubst t
   in
   let replace_var_named_context id0 id  env =
     let nc = Environ.named_context env in
