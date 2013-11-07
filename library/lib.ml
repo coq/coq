@@ -38,8 +38,8 @@ let module_kind is_type =
 let iter_objects f i prefix =
   List.iter (fun (id,obj) -> f i (make_oname prefix id, obj))
 
-let load_objects = iter_objects load_object
-let open_objects = iter_objects open_object
+let load_objects i pr = iter_objects load_object i pr
+let open_objects i pr = iter_objects open_object i pr
 
 let subst_objects subst seg = 
   let subst_one = fun (id,obj as node) ->

@@ -579,12 +579,12 @@ let dependent_main noevar m t =
       match kind_of_term m, kind_of_term t with
 	| App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
 	    deprec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
-	    Array.iter (deprec m)
+	    CArray.Fun1.iter deprec m
 	      (Array.sub lt
 		(Array.length lm) ((Array.length lt) - (Array.length lm)))
 	| _, Cast (c,_,_) when noevar && isMeta c -> ()
 	| _, Evar _ when noevar -> ()
-	| _ -> iter_constr_with_binders (lift 1) deprec m t
+	| _ -> iter_constr_with_binders (fun c -> lift 1 c) deprec m t
   in
   try deprec m t; false with Occur -> true
 

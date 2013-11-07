@@ -194,7 +194,7 @@ module Map = CMap.Make(Self)
 
 module List = struct
   type elt = string
-  let mem id l = List.exists (equal id) l
+  let mem id l = List.exists (fun s -> equal id s) l
   let assoc id l = CList.assoc_f equal id l
   let remove_assoc id l = CList.remove_assoc_f equal id l
   let mem_assoc id l = List.exists (fun (a,_) -> equal id a) l

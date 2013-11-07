@@ -24,7 +24,7 @@ let exclude_search_in_dirname f = skipped_dirnames := f :: !skipped_dirnames
 
 let ok_dirname f =
   not (String.is_empty f) && f.[0] != '.' &&
-  not (List.exists (String.equal f) !skipped_dirnames) &&
+  not (String.List.mem f !skipped_dirnames) &&
   (match Unicode.ident_refutation f with None -> true | _ -> false)
 
 let all_subdirs ~unix_path:root =
