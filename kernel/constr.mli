@@ -203,6 +203,10 @@ val fold : ('a -> constr -> 'a) -> 'a -> constr -> 'a
 
 val map : (constr -> constr) -> constr -> constr
 
+(** Like {!map}, but also has an additional accumulator. *)
+
+val fold_map : ('a -> constr -> 'a * constr) -> 'a -> constr -> 'a * constr
+
 (** [map_with_binders g f n c] maps [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
    index) which is processed by [g] (which typically add 1 to [n]) at

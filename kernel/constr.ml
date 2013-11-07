@@ -325,6 +325,58 @@ let map f c = match kind c with
       if tl'==tl && bl'==bl then c
       else mkCoFix (ln,(lna,tl',bl'))
 
+(* Like {!map} but with an accumulator. *)
+
+let fold_map f accu c = match kind c with
+  | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
+    | Construct _) -> accu, c
+  | Cast (b,k,t) ->
+      let accu, b' = f accu b in
+      let accu, t' = f accu t in
+      if b'==b && t' == t then accu, c
+      else accu, mkCast (b', k, t')
+  | Prod (na,t,b) ->
+      let accu, b' = f accu b in
+      let accu, t' = f accu t in
+      if b'==b && t' == t then accu, c
+      else accu, mkProd (na, t', b')
+  | Lambda (na,t,b) ->
+      let accu, b' = f accu b in
+      let accu, t' = f accu t in
+      if b'==b && t' == t then accu, c
+      else accu, mkLambda (na, t', b')
+  | LetIn (na,b,t,k) ->
+      let accu, b' = f accu b in
+      let accu, t' = f accu t in
+      let accu, k' = f accu k in
+      if b'==b && t' == t && k'==k then accu, c
+      else accu, mkLetIn (na, b', t', k')
+  | App (b,l) ->
+      let accu, b' = f accu b in
+      let accu, l' = Array.smartfoldmap f accu l in
+      if b'==b && l'==l then accu, c
+      else accu, mkApp (b', l')
+  | Evar (e,l) ->
+      let accu, l' = Array.smartfoldmap f accu l in
+      if l'==l then accu, c
+      else accu, mkEvar (e, l')
+  | Case (ci,p,b,bl) ->
+      let accu, b' = f accu b in
+      let accu, p' = f accu p in
+      let accu, bl' = Array.smartfoldmap f accu bl in
+      if b'==b && p'==p && bl'==bl then accu, c
+      else accu, mkCase (ci, p', b', bl')
+  | Fix (ln,(lna,tl,bl)) ->
+      let accu, tl' = Array.smartfoldmap f accu tl in
+      let accu, bl' = Array.smartfoldmap f accu bl in
+      if tl'==tl && bl'==bl then accu, c
+      else accu, mkFix (ln,(lna,tl',bl'))
+  | CoFix(ln,(lna,tl,bl)) ->
+      let accu, tl' = Array.smartfoldmap f accu tl in
+      let accu, bl' = Array.smartfoldmap f accu bl in
+      if tl'==tl && bl'==bl then accu, c
+      else accu, mkCoFix (ln,(lna,tl',bl'))
+
 (* [map_with_binders g f n c] maps [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
    index) which is processed by [g] (which typically add 1 to [n]) at
