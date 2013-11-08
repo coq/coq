@@ -78,6 +78,10 @@ type block_type =
   | Pp_hovbox of int
   | Pp_tbox
 
+type str_token =
+| Str_def of string
+| Str_len of string * int (** provided length *)
+
 type 'a ppcmd_token =
   | Ppcmd_print of 'a
   | Ppcmd_box of block_type * ('a ppcmd_token Glue.t)
@@ -97,7 +101,7 @@ type 'a ppdir_token =
   | Ppdir_print_newline
   | Ppdir_print_flush
 
-type ppcmd = (int*string) ppcmd_token
+type ppcmd = str_token ppcmd_token
 
 type std_ppcmds = ppcmd Glue.t
 
@@ -147,8 +151,8 @@ let utf8_length s =
   !cnt
 
 (* formatting commands *)
-let str s = Glue.atom(Ppcmd_print (utf8_length s,s))
-let stras (i,s) = Glue.atom(Ppcmd_print (i,s))
+let str s = Glue.atom(Ppcmd_print (Str_def s))
+let stras (i, s) = Glue.atom(Ppcmd_print (Str_len (s, i)))
 let brk (a,b) = Glue.atom(Ppcmd_print_break (a,b))
 let tbrk (a,b) = Glue.atom(Ppcmd_print_tbreak (a,b))
 let tab () = Glue.atom(Ppcmd_set_tab)
@@ -247,8 +251,14 @@ let pp_dirs ft =
     | Pp_tbox     -> Format.pp_open_tbox ft ()
   in
   let rec pp_cmd = function
-    | Ppcmd_print(n,s)        ->
-        com_if ft (Lazy.lazy_from_val()); Format.pp_print_as ft n s
+    | Ppcmd_print tok         ->
+        begin match tok with
+        | Str_def s ->
+          let n = utf8_length s in
+          com_if ft (Lazy.lazy_from_val()); Format.pp_print_as ft n s
+        | Str_len (s, n) ->
+          com_if ft (Lazy.lazy_from_val()); Format.pp_print_as ft n s
+        end
     | Ppcmd_box(bty,ss)       -> (* Prevent evaluation of the stream! *)
         com_if ft (Lazy.lazy_from_val());
         pp_open_box bty ;
