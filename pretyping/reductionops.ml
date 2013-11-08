@@ -546,10 +546,13 @@ let local_whd_state_gen flags sigma =
   in
   whrec
 
-let raw_whd_state_gen flags env sigma s = fst (whd_state_gen false flags env sigma s)
+let raw_whd_state_gen flags env =
+  let f sigma s = fst (whd_state_gen false flags env sigma s) in
+  f
 
-let stack_red_of_state_red f sigma x =
-  decompose_app (zip (f sigma (x, empty_stack)))
+let stack_red_of_state_red f =
+  let f sigma x = decompose_app (zip (f sigma (x, empty_stack))) in
+  f
 
 let red_of_state_red f sigma x =
   zip (f sigma (x,empty_stack))
