@@ -535,8 +535,8 @@ module V82 = struct
     in
     let evi = Typeclasses.mark_unresolvable evi in
     let (evars, evk) = Evarutil.new_pure_evar_full evars evi in
-    let ids = List.map Util.pi1 (Environ.named_context_of_val hyps) in
-    let inst = Array.of_list (List.map mkVar ids) in
+    let ctxt = Environ.named_context_of_val hyps in
+    let inst = Array.map_of_list (fun (id, _, _) -> mkVar id) ctxt in
     let ev = Term.mkEvar (evk,inst) in
     (build evk, ev, evars)
 
