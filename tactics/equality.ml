@@ -531,8 +531,8 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt =
 	  (Tacticals.New.tclTRY (general_multi_rewrite false false (mkVar id,NoBindings) clause))
 	  (Proofview.V82.tactic (clear [id])));
        Tacticals.New.tclFIRST
-	 [Proofview.V82.tactic assumption;
-	  Tacticals.New.tclTHEN (Proofview.V82.tactic (apply sym)) (Proofview.V82.tactic assumption);
+	 [assumption;
+	  Tacticals.New.tclTHEN (Proofview.V82.tactic (apply sym)) assumption;
 	  try_prove_eq
 	 ]
       ]

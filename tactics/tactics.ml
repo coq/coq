@@ -1166,19 +1166,36 @@ let exact_proof c gl =
   let c = Constrintern.interp_casted_constr (project gl) (pf_env gl) c (pf_concl gl)
   in refine_no_check c gl
 
-let (assumption : tactic) = fun gl ->
-  let concl =  pf_concl gl in
-  let hyps = pf_hyps gl in
-  let rec arec only_eq = function
-    | [] ->
-        if only_eq then arec false hyps else error "No such assumption."
-    | (id,c,t)::rest ->
-	if (only_eq && eq_constr t concl)
-          || (not only_eq && pf_conv_x_leq gl t concl)
-        then refine_no_check (mkVar id) gl
-	else arec only_eq rest
+let tclZEROMSG msg =
+  Proofview.tclZERO (UserError ("", msg))
+
+let assumption =
+  let rec arec gl only_eq = function
+  | [] ->
+    if only_eq then
+      let hyps = Proofview.Goal.hyps gl in
+      arec gl false hyps
+    else tclZEROMSG (str "No such assumption.")
+  | (id, c, t)::rest ->
+    let concl = Proofview.Goal.concl gl in
+    let is_same_type =
+      if only_eq then eq_constr t concl
+      else
+        let sigma = Proofview.Goal.sigma gl in
+        let env = Proofview.Goal.env gl in
+        is_conv_leq env sigma t concl
+    in
+    if is_same_type then
+      let c = Goal.Refinable.make (fun _ -> Goal.return (mkVar id)) in
+      let r = Goal.bind c Goal.refine in
+      Proofview.tclSENSITIVE r
+    else arec gl only_eq rest
   in
-  arec true hyps
+  let assumption_tac gl =
+    let hyps = Proofview.Goal.hyps gl in
+    arec gl true hyps
+  in
+  Proofview.Goal.enter assumption_tac
 
 (*****************************************************************)
 (*          Modification of a local context                      *)
@@ -3688,7 +3705,7 @@ let symmetry_in id =
           | HeterogenousEq (t1,c1,t2,c2) -> mkApp (hdcncl, [| t2; c2; t1; c1 |]) in
         Tacticals.New.tclTHENS (Proofview.V82.tactic (cut (it_mkProd_or_LetIn symccl sign)))
           [ Proofview.V82.tactic (intro_replacing id);
-            Tacticals.New.tclTHENLIST [ intros; symmetry; Proofview.V82.tactic (apply (mkVar id)); Proofview.V82.tactic assumption ] ]
+            Tacticals.New.tclTHENLIST [ intros; symmetry; Proofview.V82.tactic (apply (mkVar id)); assumption ] ]
     end
     begin function
       | NoEquationFound -> Hook.get forward_setoid_symmetry_in id
@@ -3739,7 +3756,7 @@ let prove_transitivity hdcncl eq_kind t =
        (Tacticals.New.tclTHENLIST
 	  [ Tacticals.New.tclDO 2 intro;
 	    Tacticals.New.onLastHyp simplest_case;
-	    Proofview.V82.tactic assumption ]))
+	    assumption ]))
   end
 
 let transitivity_red allowred t =

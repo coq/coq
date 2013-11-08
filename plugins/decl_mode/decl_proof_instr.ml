@@ -243,7 +243,7 @@ let automation_tac = Proofview.tclBIND (Proofview.tclUNIT ()) (fun () -> !my_aut
 
 let justification tac gls=
     tclORELSE
-      (tclSOLVE [tclTHEN tac assumption])
+      (tclSOLVE [tclTHEN tac (Proofview.V82.of_tactic assumption)])
       (fun gls ->
 	 if get_strictness () then
 	   error "Insufficient justification."
@@ -1326,7 +1326,7 @@ let end_tac et2 gls =
 		   (fun c -> tclTHENLIST 
 		      [my_refine c;
 		       clear clauses;
-		       justification assumption])
+		       justification (Proofview.V82.of_tactic assumption)])
 		   (initial_instance_stack clauses) [pi.per_casee] 0 tree
 	  | ET_Induction,EK_dep tree ->
 	      let nargs = (List.length pi.per_args) in
@@ -1347,7 +1347,7 @@ let end_tac et2 gls =
 				  [clear [fix_id];
 				   my_refine c;
 				   clear clauses;
-				   justification assumption])
+				   justification (Proofview.V82.of_tactic assumption)])
 			     (initial_instance_stack clauses)
 			     [mkVar c_id]  0 tree] gls0
 		  end

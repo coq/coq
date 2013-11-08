@@ -150,7 +150,7 @@ let left_instance_tac (inst,id) continue seq=
 		Proofview.V82.of_tactic introf;
 		tclSOLVE [wrap 1 false continue
 			    (deepen (record (id,None) seq))]];
-	    tclTRY assumption]
+	    tclTRY (Proofview.V82.of_tactic assumption)]
     | Real((m,t) as c,_)->
 	if lookup (id,Some c) seq then
 	  tclFAIL 0 (Pp.str "already done")
@@ -182,7 +182,7 @@ let right_instance_tac inst continue seq=
 	       Proofview.V82.of_tactic (split (ImplicitBindings
 			[mkVar (Tacmach.pf_nth_hyp_id gls 1)])) gls);
 	    tclSOLVE [wrap 0 true continue (deepen seq)]];
-	 tclTRY assumption]
+	 tclTRY (Proofview.V82.of_tactic assumption)]
     | Real ((0,t),_) ->
 	(tclTHEN (Proofview.V82.of_tactic (split (ImplicitBindings [t])))
 	   (tclSOLVE [wrap 0 true continue (deepen seq)]))

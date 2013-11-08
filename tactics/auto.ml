@@ -1270,7 +1270,7 @@ let exists_evaluable_reference env = function
   | EvalVarRef v -> try ignore(lookup_named v env); true with Not_found -> false
 
 let dbg_intro dbg = new_tclLOG dbg (fun () -> str "intro") intro
-let dbg_assumption dbg = tclLOG dbg (fun () -> str "assumption") assumption
+let dbg_assumption dbg = new_tclLOG dbg (fun () -> str "assumption") assumption
 
 let rec trivial_fail_db dbg mod_delta db_list local_db =
   let intro_tac =
@@ -1286,7 +1286,7 @@ let rec trivial_fail_db dbg mod_delta db_list local_db =
   Proofview.Goal.enter begin fun gl ->
     let concl = Proofview.Goal.concl gl in
     Tacticals.New.tclFIRST
-      ((Proofview.V82.tactic (dbg_assumption dbg))::intro_tac::
+      ((dbg_assumption dbg)::intro_tac::
           (List.map Tacticals.New.tclCOMPLETE
              (trivial_resolve dbg mod_delta db_list local_db concl)))
   end
@@ -1441,7 +1441,7 @@ let search d n mod_delta db_list local_db =
        each goal. Hence the [tclEXTEND] *)
     Proofview.tclEXTEND [] begin
       if Int.equal n 0 then Proofview.tclZERO (Errors.UserError ("",str"BOUND 2")) else
-        Tacticals.New.tclORELSE0 (Proofview.V82.tactic (dbg_assumption d))
+        Tacticals.New.tclORELSE0 (dbg_assumption d)
 	  (Tacticals.New.tclORELSE0 (intro_register d (search d n) local_db)
 	     ( Proofview.Goal.enter begin fun gl ->
                let concl = Proofview.Goal.concl gl in

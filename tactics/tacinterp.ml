@@ -1756,7 +1756,7 @@ and interp_atomic ist tac =
         let mloc = Tacmach.New.of_old (fun gl -> interp_move_location ist gl hto) gl in
         h_intro_move (Option.map (interp_fresh_ident ist env) ido) mloc
       end
-  | TacAssumption -> Proofview.V82.tactic h_assumption
+  | TacAssumption -> h_assumption
   | TacExact c ->
       Proofview.V82.tactic begin fun gl -> 
         let (sigma,c_interp) = pf_interp_casted_constr ist gl c in

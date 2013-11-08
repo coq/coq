@@ -91,7 +91,7 @@ let contradiction_term (c,lbind as cl) =
       let typ = type_of c in
       let _, ccl = splay_prod env sigma typ in
       if is_empty_type ccl then
-        Tacticals.New.tclTHEN (elim false cl None) (Proofview.V82.tactic (tclTRY assumption))
+        Tacticals.New.tclTHEN (elim false cl None) (Tacticals.New.tclTRY assumption)
       else
         Proofview.tclORELSE
           begin

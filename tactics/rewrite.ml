@@ -1835,7 +1835,7 @@ let setoid_symmetry_in id =
   let new_hyp = it_mkProd_or_LetIn new_hyp'  binders in
     Tacticals.New.tclTHENS (Proofview.V82.tactic (Tactics.cut new_hyp))
       [ Proofview.V82.tactic (intro_replacing id);
-	Tacticals.New.tclTHENLIST [ intros; setoid_symmetry; Proofview.V82.tactic (apply (mkVar id)); Proofview.V82.tactic (Tactics.assumption) ] ]
+	Tacticals.New.tclTHENLIST [ intros; setoid_symmetry; Proofview.V82.tactic (apply (mkVar id)); Tactics.assumption ] ]
   end
 
 let _ = Hook.set Tactics.setoid_reflexivity setoid_reflexivity

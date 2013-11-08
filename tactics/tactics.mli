@@ -120,7 +120,7 @@ val intros_pattern :
 
 (** {6 Exact tactics. } *)
 
-val assumption       : tactic
+val assumption       : unit Proofview.tactic
 val exact_no_check   : constr -> tactic
 val vm_cast_no_check : constr -> tactic
 val exact_check      : constr -> tactic

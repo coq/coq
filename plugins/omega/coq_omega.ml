@@ -1058,7 +1058,7 @@ let replay_history tactic_normalisation =
 		Proofview.V82.tactic (simpl_in_concl);
 		intro;
 		(absurd not_sup_sup) ])
-	      [ Proofview.V82.tactic assumption ; reflexivity ]
+	      [ assumption ; reflexivity ]
 	  in
 	  let theorem =
             mkApp (Lazy.force coq_OMEGA2, [|
@@ -1127,7 +1127,7 @@ let replay_history tactic_normalisation =
 		  (intros_using [aux]);
 		  Proofview.V82.tactic (resolve_id aux);
 		  Proofview.V82.tactic (mk_then tac);
-		  Proofview.V82.tactic assumption ] ;
+		  assumption ] ;
 		 Tacticals.New.tclTHENLIST [
 		   Proofview.V82.tactic (unfold sp_Zgt);
 		   Proofview.V82.tactic simpl_in_concl;

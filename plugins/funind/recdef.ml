@@ -517,7 +517,7 @@ let rec prove_lt hyple g =
 	(
 	  tclTHENLIST[
 	    apply (delayed_force lt_S_n);
-	    (observe_tac (str "assumption: " ++ Printer.pr_goal g) (h_assumption))
+	    (observe_tac (str "assumption: " ++ Printer.pr_goal g) (Proofview.V82.of_tactic h_assumption))
 	  ])
       )
   end
@@ -757,7 +757,7 @@ let terminate_app_rec (f,args) expr_info continuation_tac _ =
 	    tclTHENS (* proof of args < formal args *)
 	      (apply (Lazy.force expr_info.acc_inv))
 	      [ 
-		observe_tac (str "h_assumption") h_assumption;
+		observe_tac (str "h_assumption") (Proofview.V82.of_tactic h_assumption);
 		tclTHENLIST
 		  [
 		    tclTRY(list_rewrite true 
@@ -802,7 +802,7 @@ let rec prove_le g =
     (List.hd args,List.hd (List.tl args))
   in 
   tclFIRST[
-    h_assumption;
+    Proofview.V82.of_tactic h_assumption;
     apply (delayed_force le_n);
     begin
       try

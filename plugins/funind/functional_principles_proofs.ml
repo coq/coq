@@ -120,7 +120,7 @@ type body_info = constr dynamic_info
 
 let finish_proof dynamic_infos g =
   observe_tac "finish"
-    ( h_assumption)
+    (Proofview.V82.of_tactic h_assumption)
     g
 
 

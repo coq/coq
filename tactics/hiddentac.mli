@@ -29,7 +29,7 @@ val h_intro_move      : Id.t option -> Id.t move_location -> unit Proofview.tact
 val h_intro           : Id.t -> unit Proofview.tactic
 val h_intros_until    : quantified_hypothesis -> unit Proofview.tactic
 
-val h_assumption      : tactic
+val h_assumption      : unit Proofview.tactic
 val h_exact           : constr -> tactic
 val h_exact_no_check  : constr -> tactic
 val h_vm_cast_no_check  : constr -> tactic
