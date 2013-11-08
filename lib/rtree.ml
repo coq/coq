@@ -41,21 +41,20 @@ let lift n t = if Int.equal n 0 then t else lift_rtree_rec 0 n t
 let rec subst_rtree_rec depth sub = function
     Param (i,j) as t ->
       if i < depth then t
-      else if i-depth < Array.length sub then
-        lift depth sub.(i-depth).(j)
-      else Param (i-Array.length sub,j)
+      else if i = depth then
+        lift depth (Rec (j, sub))
+      else Param (i - 1, j)
   | Node (l,sons) -> Node (l,Array.map (subst_rtree_rec depth sub) sons)
   | Rec(j,defs) ->
       Rec(j, Array.map (subst_rtree_rec (depth+1) sub) defs)
 
-let subst_rtree sub t = subst_rtree_rec 0 [|sub|] t
+let subst_rtree sub t = subst_rtree_rec 0 sub t
 
 (* To avoid looping, we must check that every body introduces a node
    or a parameter *)
 let rec expand = function
   | Rec(j,defs) ->
-      let sub = Array.init (Array.length defs) (fun i -> Rec(i,defs)) in
-      expand (subst_rtree sub defs.(j))
+      expand (subst_rtree defs defs.(j))
   | t -> t
 
 (* Given a vector of n bodies, builds the n mutual recursive trees.
