@@ -118,13 +118,12 @@ val declare_uninterpretation : interp_rule -> interpretation -> unit
 val interp_notation : Loc.t -> notation -> local_scopes ->
       interpretation * (notation_location * scope_name option)
 
+type notation_rule = interp_rule * interpretation * int option
+
 (** Return the possible notations for a given term *)
-val uninterp_notations : glob_constr ->
-      (interp_rule * interpretation * int option) list
-val uninterp_cases_pattern_notations : cases_pattern ->
-      (interp_rule * interpretation * int option) list
-val uninterp_ind_pattern_notations : inductive ->
-      (interp_rule * interpretation * int option) list
+val uninterp_notations : glob_constr -> notation_rule list
+val uninterp_cases_pattern_notations : cases_pattern -> notation_rule list
+val uninterp_ind_pattern_notations : inductive -> notation_rule list
 
 (** Test if a notation is available in the scopes 
    context [scopes]; if available, the result is not None; the first 

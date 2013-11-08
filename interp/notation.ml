@@ -236,41 +236,18 @@ let key_compare k1 k2 = match k1, k2 with
 module KeyOrd = struct type t = key let compare = key_compare end
 module KeyMap = Map.Make(KeyOrd)
 
-module InterpretationOrd =
-struct
-  type t = interp_rule * interpretation * int option
-  let compare (ir1, i1, io1) (ir2, i2, io2) =
-    let cmp = compare_interp_rule ir1 ir2 in
-    if cmp = 0 then
-      let cmp' = Pervasives.compare i1 i2 in (* FIXME: to be explicitely written *)
-      if cmp' = 0 then
-        match io1, io2 with
-        | None, None -> 0
-        | None, Some _ -> -1
-        | Some x, Some y -> Pervasives.compare x y
-        | Some _, None -> 1
-      else
-        cmp'
-    else
-      cmp
-end
-
-module InterpretationSet = Set.Make (InterpretationOrd)
-(** ppedrot: We changed the semantics here. Before it was a FIFO stack, now it
-    is an ordered set with an badly defined comparison... *)
+type notation_rule = interp_rule * interpretation * int option
 
 let keymap_add key interp map =
-  let old = try KeyMap.find key map with Not_found -> InterpretationSet.empty in
-  KeyMap.add key (InterpretationSet.add interp old) map
+  let old = try KeyMap.find key map with Not_found -> [] in
+  KeyMap.add key (interp :: old) map
 
 let keymap_find key map =
-  try
-    let set = KeyMap.find key map in
-    InterpretationSet.elements set
+  try KeyMap.find key map
   with Not_found -> []
 
 (* Scopes table : interpretation -> scope_name *)
-let notations_key_table = ref (KeyMap.empty : InterpretationSet.t KeyMap.t)
+let notations_key_table = ref (KeyMap.empty : notation_rule list KeyMap.t)
 let prim_token_key_table = Hashtbl.create 7
 
 let glob_prim_constr_key = function
