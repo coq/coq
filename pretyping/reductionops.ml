@@ -815,6 +815,9 @@ let local_whd_state_gen flags sigma =
 	  whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
 	|args, (Stack.Proj (n,m,p) :: s') ->
 	  whrec (Stack.nth args (n+m), s')
+	|args, (Stack.Fix (f,s',cst)::s'') ->
+          let x' = Stack.zip(x,args) in
+            whrec (contract_fix f cst, s' @ (Stack.append_app [|x'|] s''))
 	|_ -> s
       else s
 

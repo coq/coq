@@ -922,7 +922,7 @@ let prepare_hint check env init (sigma,c) =
   let c' = iter c in
     if check then Evarutil.check_evars (Global.env()) Evd.empty sigma c';
     let diff = Evd.diff sigma init in
-      IsConstr (c', Evd.get_universe_context_set diff)
+      IsConstr (c', Evd.universe_context_set diff)
 
 let interp_hints poly =
   fun h ->
@@ -1164,12 +1164,18 @@ let unify_resolve_gen poly = function
   | Some flags -> unify_resolve poly flags
 
 let exact poly (c,clenv) =
-  let c' = 
+  let ctx, c' = 
     if poly then
       let evd', subst = Evd.refresh_undefined_universes clenv.evd in
-	subst_univs_level_constr subst c 
-    else c
-  in exact_check c'
+      let ctx = Evd.evar_universe_context evd' in
+	ctx, subst_univs_level_constr subst c 
+    else 
+      let ctx = Evd.evar_universe_context clenv.evd in
+	ctx, c
+  in 
+    fun gl ->
+      tclTHEN (Refiner.tclEVARS (Evd.merge_universe_context (project gl) ctx)) 
+	(exact_check c') gl
     
 (* Util *)
 

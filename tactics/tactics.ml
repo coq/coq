@@ -1224,7 +1224,7 @@ let vm_cast_no_check c gl =
 
 let exact_proof c gl =
   let c,ctx = Constrintern.interp_casted_constr (project gl) (pf_env gl) c (pf_concl gl)
-  in tclPUSHCONTEXT Evd.univ_flexible ctx (refine_no_check c) gl
+  in tclTHEN (tclPUSHEVARUNIVCONTEXT ctx) (refine_no_check c) gl
 
 let assumption =
   let rec arec gl only_eq = function
@@ -1237,12 +1237,14 @@ let assumption =
     let concl = Proofview.Goal.concl gl in
     let sigma = Proofview.Goal.sigma gl in
     let (sigma, is_same_type) =
-      if only_eq then (sigma, eq_constr t concl)
+      if only_eq then (sigma, Constr.equal t concl)
       else
         let env = Proofview.Goal.env gl in
         infer_conv env sigma t concl
     in
-    if is_same_type then Proofview.Refine.refine (fun h -> (h, mkVar id))
+    if is_same_type then 
+	(Proofview.V82.tclEVARS sigma) <*> 
+	  Proofview.Refine.refine (fun h -> (h, mkVar id))
     else arec gl only_eq rest
   in
   let assumption_tac gl =
@@ -3743,7 +3745,7 @@ let abstract_subproof id tac =
   let evd, ctx, concl = 
     (* FIXME: should be done only if the tactic succeeds *)
     let evd, nf = nf_evars_and_universes (Proofview.Goal.sigma gl) in
-    let ctx = Evd.get_universe_context_set evd in
+    let ctx = Evd.universe_context_set evd in
       evd, ctx, nf concl
   in
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac) in

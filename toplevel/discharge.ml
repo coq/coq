@@ -70,20 +70,17 @@ let abstract_inductive hyps nparams inds =
 
 let refresh_polymorphic_type_of_inductive (_,mip) =
   match mip.mind_arity with
-  | RegularArity s -> s.mind_user_arity, Univ.ContextSet.empty
+  | RegularArity s -> s.mind_user_arity
   | TemplateArity ar ->
     let ctx = List.rev mip.mind_arity_ctxt in
-    let univ, uctx = Universes.new_global_univ () in
-      mkArity (List.rev ctx, Type univ), uctx
+      mkArity (List.rev ctx, Type ar.template_level)
 
 let process_inductive (sechyps,abs_ctx) modlist mib =
   let nparams = mib.mind_nparams in
-  let univctx = ref Univ.ContextSet.empty in
   let inds =
     Array.map_to_list
       (fun mip ->
-	let ty, uctx = refresh_polymorphic_type_of_inductive (mib,mip) in
-	let () = univctx := Univ.ContextSet.union uctx !univctx in
+	let ty = refresh_polymorphic_type_of_inductive (mib,mip) in
 	let arity = expmod_constr modlist ty in
 	let lc = Array.map (expmod_constr modlist) mip.mind_user_lc in
 	  (mip.mind_typename,
@@ -93,10 +90,7 @@ let process_inductive (sechyps,abs_ctx) modlist mib =
       mib.mind_packets in
   let sechyps' = map_named_context (expmod_constr modlist) sechyps in
   let (params',inds') = abstract_inductive sechyps' nparams inds in
-  let univs = Univ.UContext.union abs_ctx 
-    (Univ.UContext.union (Univ.ContextSet.to_context !univctx) 
-       mib.mind_universes)
-  in
+  let univs = Univ.UContext.union abs_ctx mib.mind_universes in
   { mind_entry_record = mib.mind_record <> None;
     mind_entry_finite = mib.mind_finite;
     mind_entry_params = params';

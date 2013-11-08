@@ -1411,11 +1411,12 @@ let vernac_declare_reduction locality s r =
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =
-  let evmap = Evd.empty in
   let env = Global.env() in
+  let evmap = Evd.from_env env in
   let c,ctx = interp_constr evmap env c in
   let senv = Global.safe_env() in
-  let senv = Safe_typing.add_constraints (snd ctx) senv in
+  let cstrs = snd (Evd.evar_universe_context_set ctx) in
+  let senv = Safe_typing.add_constraints cstrs senv in
   let j = Safe_typing.typing senv c in
   let env = Safe_typing.env_of_safe_env senv in
     msg_notice (print_safe_judgment env j)

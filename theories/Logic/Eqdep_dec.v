@@ -35,7 +35,7 @@ Table of contents:
 (** * Streicher's K and injectivity of dependent pair hold on decidable types *)
 
 Set Implicit Arguments.
-Set Universe Polymorphism.
+(* Set Universe Polymorphism. *)
 
 Section EqdepDec.
 

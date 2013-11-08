@@ -207,12 +207,12 @@ let rec execute env evdref cstr =
         let jl = execute_array env evdref args in
 	let j =
 	  match kind_of_term f with
-	    | Ind ind when Environ.template_polymorphic_ind ind env ->
+	    | Ind ind when Environ.template_polymorphic_pind ind env ->
 		(* Sort-polymorphism of inductive types *)
 		make_judge f
 		  (inductive_type_knowing_parameters env ind
 		    (Evarutil.jv_nf_evar !evdref jl))
-	    | Const cst when Environ.template_polymorphic_constant cst env ->
+	    | Const cst when Environ.template_polymorphic_pconstant cst env ->
 		(* Sort-polymorphism of inductive types *)
 		make_judge f
 		  (constant_type_knowing_parameters env cst

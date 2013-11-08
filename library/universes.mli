@@ -149,6 +149,9 @@ val constr_of_global : Globnames.global_reference -> constr
     anywhere. The constraints are forgotten as well. DO NOT USE in new code. *)
 val unsafe_constr_of_global : Globnames.global_reference -> constr in_universe_context
 
+(** Returns the type of the global reference, by creating a fresh instance of polymorphic 
+    references and computing their instantiated universe context. (side-effect on the
+    universe counter, use with care). *)
 val type_of_global : Globnames.global_reference -> types in_universe_context_set
 
 (** Full universes substitutions into terms *)

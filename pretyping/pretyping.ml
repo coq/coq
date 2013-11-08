@@ -875,7 +875,7 @@ let understand_judgment_tcc evdref env c =
 let ise_pretype_gen_ctx flags sigma env lvar kind c =
   let evd, c = ise_pretype_gen flags sigma env lvar kind c in
   let evd, f = Evarutil.nf_evars_and_universes evd in
-    f c, Evd.get_universe_context_set evd
+    f c, Evd.evar_universe_context evd
 
 (** Entry points of the high-level type synthesis algorithm *)
 

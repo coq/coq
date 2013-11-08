@@ -179,7 +179,7 @@ let pppftreestate p = pp(print_pftreestate p)
 
 let ppuni u = pp(pr_uni u)
 let ppuni_level u = pp (Level.pr u)
-let ppuniverses u = pp (str"[" ++ Universe.pr u ++ str"]")
+let ppuniverse u = pp (str"[" ++ Universe.pr u ++ str"]")
 
 let ppuniverse_set l = pp (LSet.pr l)
 let ppuniverse_instance l = pp (Instance.pr l)
@@ -195,6 +195,7 @@ let ppuniverseconstraints c = pp (UniverseConstraints.pr c)
 let ppuniverse_context_future c = 
   let ctx = Future.force c in
     ppuniverse_context ctx
+let ppuniverses u = pp (Univ.pr_universes u)
 
 let ppenv e = pp
   (str "[" ++ pr_named_context_of e ++ str "]" ++ spc() ++

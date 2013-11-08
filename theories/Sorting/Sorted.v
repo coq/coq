@@ -20,7 +20,7 @@
 
 Require Import List Relations Relations_1.
 
-Set Universe Polymorphism.
+(* Set Universe Polymorphism. *)
 
 (** Preambule *)
 

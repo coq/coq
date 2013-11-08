@@ -52,7 +52,7 @@ Table of contents:
 
 Import EqNotations.
 
-Set Universe Polymorphism.
+(* Set Universe Polymorphism. *)
 
 Section Dependent_Equality.
 

@@ -140,7 +140,7 @@ val export :
     module_path * compiled_library * native_library
 
 (* Constraints are non empty iff the file is a vi2vo *)
-val import : compiled_library -> Univ.universe_context -> vodigest ->
+val import : compiled_library -> Univ.universe_context_set -> vodigest ->
   (module_path * Nativecode.symbol array) safe_transformer
 
 (** {6 Safe typing judgments } *)

@@ -62,7 +62,7 @@ Instance snd_measure : @Measure (A * B) B Snd.
 (** We define a product relation over [A*B]: each components should
     satisfy the corresponding initial relation. *)
 
-Polymorphic Definition RelProd {A : Type} {B : Type} (RA:relation A)(RB:relation B) : relation (A*B) :=
+Definition RelProd {A : Type} {B : Type} (RA:relation A)(RB:relation B) : relation (A*B) :=
  relation_conjunction (@RelCompFun (A * B) A RA fst) (RB @@2).
 
 Infix "*" := RelProd : signature_scope.

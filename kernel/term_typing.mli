@@ -18,6 +18,8 @@ val translate_local_def : env -> Id.t -> definition_entry ->
 
 val translate_local_assum : env -> types -> types
 
+val mk_pure_proof : constr -> proof_output
+
 (* returns the same definition_entry but with side effects turned into
  * let-ins or beta redexes. it is meant to get a term out of a not yet
  * type checked proof *)

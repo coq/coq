@@ -152,7 +152,7 @@ val build_constant_by_tactic :
     types Univ.in_universe_context_set -> unit Proofview.tactic -> Entries.definition_entry * bool * Universes.universe_opt_subst
 val build_by_tactic : env -> ?poly:polymorphic -> 
   types Univ.in_universe_context_set -> unit Proofview.tactic -> 
-  constr * bool * Universes.universe_opt_subst
+  constr Univ.in_universe_context_set * bool * Universes.universe_opt_subst
 
 (** Declare the default tactic to fill implicit arguments *)
 
@@ -162,4 +162,5 @@ val declare_implicit_tactic : unit Proofview.tactic -> unit
 val clear_implicit_tactic : unit -> unit
 
 (* Raise Exit if cannot solve *)
+(* FIXME: interface: it may incur some new universes etc... *)
 val solve_by_implicit_tactic : env -> Evd.evar_map -> Evd.evar -> constr

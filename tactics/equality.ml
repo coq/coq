@@ -1371,7 +1371,10 @@ let swapEquandsInConcl =
   let (lbeq,u,eq_args) = find_eq_data (pf_nf_concl gl) in
   let args = swap_equality_args eq_args @ [Evarutil.mk_new_meta ()] in
     pf_constr_of_global lbeq.sym (fun sym_equal ->
-      Proofview.V82.tactic (refine (applist (sym_equal, args))))
+      Proofview.V82.tactic (fun gls ->
+	let c = applist (sym_equal, args) in
+	let sigma, cty = pf_apply Typing.e_type_of gl c in
+	  refine (applist (c,[Evarutil.mk_new_meta()])) {gls with sigma}))
   end
 
 (* Refine from [|- P e2] to [|- P e1] and [|- e1=e2:>t] (body is P (Rel 1)) *)
@@ -1383,10 +1386,12 @@ let bareRevSubstInConcl (lbeq,u) body (t,e1,e2) =
   let eq_elim, effs = find_elim eq (Some false) false None None gl in
   (* build substitution predicate *)
   let p = lambda_create (Proofview.Goal.env gl) (t,body) in
+  let sigma, pty = pf_apply Typing.e_type_of gl p in
   (* apply substitution scheme *)
   let args = [t; e1; p; Evarutil.mk_new_meta (); e2; Evarutil.mk_new_meta ()] in
-    pf_constr_of_global (ConstRef eq_elim) (fun c ->
-      Proofview.V82.tactic (refine (applist (c, args))))
+    Proofview.V82.tclEVARS sigma <*>
+      (pf_constr_of_global (ConstRef eq_elim) (fun c ->
+	Proofview.V82.tactic (refine (applist (c, args)))))
   end
 
 (* [subst_tuple_term dep_pair B]
@@ -1456,7 +1461,9 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   let expected_goal = beta_applist (abst_B,List.map fst e2_list) in
   (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
   let expected_goal = nf_betaiota sigma expected_goal in
-    pred_body,expected_goal
+  (* Retype to get universes right *)
+  let sigma, expected_goal_ty = Typing.e_type_of env sigma expected_goal in
+    sigma,pred_body,expected_goal
 
 (* Like "replace" but decompose dependent equalities *)
 
@@ -1466,11 +1473,12 @@ let cutSubstInConcl_RL eqn =
   Proofview.Goal.raw_enter begin fun gl ->
   let (lbeq,u,(t,e1,e2 as eq)) = find_eq_data_decompose gl eqn in
   let concl = pf_nf_concl gl in
-  let body,expected_goal = pf_apply subst_tuple_term gl e2 e1 concl in
+  let sigma,body,expected_goal = pf_apply subst_tuple_term gl e2 e1 concl in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
-  tclTHENFIRST
-    (bareRevSubstInConcl (lbeq,u) body eq)
-    (Proofview.V82.tactic (fun gl -> convert_concl expected_goal DEFAULTcast gl))
+    Proofview.V82.tclEVARS sigma <*>
+      tclTHENFIRST
+      (bareRevSubstInConcl (lbeq,u) body eq)
+      (Proofview.V82.tactic (fun gl -> convert_concl expected_goal DEFAULTcast gl))
   end
 
 (* |- (P e1)
@@ -1488,11 +1496,12 @@ let cutSubstInHyp_LR eqn id =
   Proofview.Goal.enter begin fun gl ->
   let (lbeq,u,(t,e1,e2 as eq)) = find_eq_data_decompose gl eqn in
   let idtyp = pf_get_hyp_typ id gl in
-  let body,expected_goal = pf_apply subst_tuple_term gl e1 e2 idtyp in
+  let sigma,body,expected_goal = pf_apply subst_tuple_term gl e1 e2 idtyp in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
   let refine = Proofview.V82.tactic (fun gl -> Tacmach.refine_no_check (mkVar id) gl) in
   let subst = Proofview.V82.of_tactic (tclTHENFIRST (bareRevSubstInConcl (lbeq,u) body eq) refine) in
-  Proofview.V82.tactic (fun gl -> cut_replacing id expected_goal subst gl)
+    Proofview.V82.tclEVARS sigma <*>
+      Proofview.V82.tactic (fun gl -> cut_replacing id expected_goal subst gl)
   end
 
 let cutSubstInHyp_RL eqn id =

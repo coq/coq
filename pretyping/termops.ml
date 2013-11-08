@@ -870,8 +870,8 @@ let isGlobalRef c =
 
 let is_template_polymorphic env f =
   match kind_of_term f with
-  | Ind ind -> Environ.template_polymorphic_ind ind env
-  | Const c -> Environ.template_polymorphic_constant c env
+  | Ind ind -> Environ.template_polymorphic_pind ind env
+  | Const c -> Environ.template_polymorphic_pconstant c env
   | _ -> false
 
 let base_sort_cmp pb s0 s1 =

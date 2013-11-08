@@ -554,7 +554,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
       List.map (compute_new_princ_type_from_rel funs sorts) other_princ_types
     in
     let first_princ_body,first_princ_type = const.Entries.const_entry_body, const.Entries.const_entry_type in
-    let ctxt,fix = decompose_lam_assum (fst(Future.force first_princ_body)) in (* the principle has for forall ...., fix .*)
+    let ctxt,fix = decompose_lam_assum (fst(fst(Future.force first_princ_body))) in (* the principle has for forall ...., fix .*)
     let (idxs,_),(_,ta,_ as decl) = destFix fix in
     let other_result =
       List.map (* we can now compute the other principles *)
@@ -597,7 +597,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
 	   in
 	   {const with
 	      Entries.const_entry_body = 
-                (Future.from_val (princ_body,Declareops.no_seff));
+                (Future.from_val (Term_typing.mk_pure_proof princ_body));
 	      Entries.const_entry_type = Some scheme_type
 	   }
       )

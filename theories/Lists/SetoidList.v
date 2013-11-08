@@ -11,7 +11,7 @@ Require Export Sorted.
 Require Export Setoid Basics Morphisms.
 Set Implicit Arguments.
 Unset Strict Implicit.
-Set Universe Polymorphism.
+(* Set Universe Polymorphism. *)
 (** * Logical relations over lists with respect to a setoid equality
       or ordering. *)
 

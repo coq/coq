@@ -645,7 +645,7 @@ let make_bl_scheme mind =
   let (ans, _, _) = Pfedit.build_by_tactic (Global.env()) (bl_goal, ctx)
     (compute_bl_tact (!bl_scheme_kind_aux()) (ind, Univ.Instance.empty) lnamesparrec nparrec)
   in
-  ([|ans|], Evd.empty_evar_universe_context), eff
+  ([|fst ans (*FIXME univs*)|], Evd.empty_evar_universe_context), eff
 
 let bl_scheme_kind = declare_mutual_scheme_object "_dec_bl" make_bl_scheme
 
@@ -766,7 +766,7 @@ let make_lb_scheme mind =
   let (ans, _, _) = Pfedit.build_by_tactic (Global.env()) (lb_goal,Univ.ContextSet.empty)
     (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)
   in
-  ([|ans|], Evd.empty_evar_universe_context (* FIXME *)), eff
+  ([|fst ans|], Evd.empty_evar_universe_context (* FIXME *)), eff
 
 let lb_scheme_kind = declare_mutual_scheme_object "_dec_lb" make_lb_scheme
 
@@ -939,7 +939,7 @@ let make_eq_decidability mind =
     (compute_dec_goal (ind,u) lnamesparrec nparrec, Univ.ContextSet.empty)
     (compute_dec_tact ind lnamesparrec nparrec)
   in
-  ([|ans|], Evd.empty_evar_universe_context (* FIXME *)), Declareops.no_seff
+  ([|fst ans (*FIXME*)|], Evd.empty_evar_universe_context (* FIXME *)), Declareops.no_seff
 
 let eq_dec_scheme_kind =
   declare_mutual_scheme_object "_eq_dec" make_eq_decidability

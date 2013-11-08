@@ -265,7 +265,7 @@ let get_open_goals () =
     List.length shelf
 
 let nf_body nf b =
-  let aux (c, t) = (nf c, t) in
+  let aux ((c, ctx), t) = ((nf c, ctx), t) in
     Future.chain ~pure:true b aux
 
 let close_proof ?feedback_id ~now fpl =
@@ -333,12 +333,13 @@ let return_proof () =
   let eff = Evd.eval_side_effects evd in
   let evd = Evd.nf_constraints evd in
   let subst = Evd.universe_subst evd in
-  let ctx = Evd.universe_context evd in
+  let ctx = Evd.universe_context_set evd in
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)
-  let proofs = List.map (fun (c, _) -> (Evarutil.nf_evars_universes evd c, eff)) initial_goals in
-    proofs, (subst, ctx)
+  let proofs = 
+    List.map (fun (c, _) -> ((Evarutil.nf_evars_universes evd c, ctx), eff)) initial_goals in
+    proofs, (subst, Univ.ContextSet.to_context ctx)
 
 let close_future_proof ~feedback_id proof =
   close_proof ~feedback_id ~now:false proof

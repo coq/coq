@@ -594,13 +594,12 @@ let normalize_context_set ctx us algs =
     let canon, (global, rigid, flexible) = choose_canonical ctx flex algs s in
     (* Add equalities for globals which can't be merged anymore. *)
     let cstrs = LSet.fold (fun g cst -> 
-      Constraint.add (canon, Univ.Eq, g) cst) global cstrs 
+      Constraint.add (canon, Univ.Eq, g) cst) (LSet.union global rigid)
+      cstrs 
     in
-    (** Should this really happen? *)
-    let subst' = LSet.fold (fun f -> LMap.add f canon)
-      (LSet.union rigid flexible) LMap.empty
+    let subst = LSet.fold (fun f -> LMap.add f canon)
+      flexible subst
     in 
-    let subst = LMap.union subst' subst in
       (subst, cstrs))
     (LMap.empty, Constraint.empty) partition
   in

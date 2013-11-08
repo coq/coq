@@ -273,6 +273,7 @@ type evar_universe_context =
 	can be instantiated with algebraic universes as they appear in types 
 	and universe instances only. *)
     uctx_universes : Univ.universes; (** The current graph extended with the local constraints *)
+    uctx_initial_universes : Univ.universes; (** The graph at the creation of the evar_map *)
   }
   
 let empty_evar_universe_context = 
@@ -280,11 +281,13 @@ let empty_evar_universe_context =
     uctx_postponed = Univ.UniverseConstraints.empty;
     uctx_univ_variables = Univ.LMap.empty;
     uctx_univ_algebraic = Univ.LSet.empty;
-    uctx_universes = Univ.initial_universes }
+    uctx_universes = Univ.initial_universes;
+    uctx_initial_universes = Univ.initial_universes }
 
 let evar_universe_context_from e c = 
-  {empty_evar_universe_context with 
-    uctx_local = c; uctx_universes = universes e}
+  let u = universes e in
+    {empty_evar_universe_context with 
+      uctx_local = c; uctx_universes = u; uctx_initial_universes = u}
 
 let is_empty_evar_universe_context ctx =
   Univ.ContextSet.is_empty ctx.uctx_local && 
@@ -305,11 +308,12 @@ let union_evar_universe_context ctx ctx' =
 	  Univ.LMap.subst_union ctx.uctx_univ_variables ctx'.uctx_univ_variables;
 	uctx_univ_algebraic = 
 	  Univ.LSet.union ctx.uctx_univ_algebraic ctx'.uctx_univ_algebraic;
+	uctx_initial_universes = ctx.uctx_initial_universes;
 	uctx_universes = 
 	  if local == ctx.uctx_local then ctx.uctx_universes
 	  else
 	    let cstrsr = Univ.ContextSet.constraints ctx'.uctx_local in
-	      Univ.merge_constraints cstrsr ctx.uctx_universes}
+	      Univ.merge_constraints cstrsr ctx.uctx_universes }
 
 (* let union_evar_universe_context_key = Profile.declare_profile "union_evar_universe_context";; *)
 (* let union_evar_universe_context =  *)
@@ -325,7 +329,8 @@ let diff_evar_universe_context ctx' ctx  =
 	  Univ.LMap.diff ctx'.uctx_univ_variables ctx.uctx_univ_variables;
 	uctx_univ_algebraic = 
 	  Univ.LSet.diff ctx'.uctx_univ_algebraic ctx.uctx_univ_algebraic;
-	uctx_universes = Univ.empty_universes }
+	uctx_universes = Univ.empty_universes;
+	uctx_initial_universes = ctx.uctx_initial_universes }
 
 (* let diff_evar_universe_context_key = Profile.declare_profile "diff_evar_universe_context";; *)
 (* let diff_evar_universe_context = *)
@@ -334,6 +339,7 @@ let diff_evar_universe_context ctx' ctx  =
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
 let evar_universe_context_set ctx = ctx.uctx_local
+let evar_universe_context_constraints ctx = snd ctx.uctx_local
 let evar_context_universe_context ctx = Univ.ContextSet.to_context ctx.uctx_local
 let evar_universe_context_of ctx = { empty_evar_universe_context with uctx_local = ctx }
 let evar_universe_context_subst ctx = ctx.uctx_univ_variables
@@ -916,7 +922,7 @@ let univ_flexible_alg = UnivFlexible true
 
 let evar_universe_context d = d.universes
 
-let get_universe_context_set d = d.universes.uctx_local
+let universe_context_set d = d.universes.uctx_local
 
 let universes evd = evd.universes.uctx_universes
 
@@ -1148,7 +1154,7 @@ let normalize_evar_universe_context_variables uctx =
   in
   let ctx_local = subst_univs_context_with_def def (Univ.make_subst subst) uctx.uctx_local in
   (* let univs = subst_univs_universes subst uctx.uctx_universes in *)
-  let ctx_local', univs = Universes.refresh_constraints (Global.universes ()) ctx_local in
+  let ctx_local', univs = Universes.refresh_constraints uctx.uctx_initial_universes ctx_local in
     subst, { uctx with uctx_local = ctx_local';
       uctx_univ_variables = normalized_variables;
       uctx_universes = univs }
@@ -1191,7 +1197,8 @@ let refresh_undefined_univ_variables uctx =
   let uctx' = {uctx_local = ctx'; 
 	       uctx_postponed = Univ.UniverseConstraints.empty;(*FIXME*)
 	       uctx_univ_variables = vars; uctx_univ_algebraic = alg;
-	       uctx_universes = Univ.initial_universes} in
+	       uctx_universes = Univ.initial_universes;
+	       uctx_initial_universes = uctx.uctx_initial_universes } in
     uctx', subst
 
 let refresh_undefined_universes evd =
@@ -1218,7 +1225,7 @@ let normalize_evar_universe_context uctx =
       if Univ.LSet.equal (fst us') (fst uctx.uctx_local) then 
         uctx
       else
-	let us', universes = Universes.refresh_constraints (Global.universes ()) us' in
+	let us', universes = Universes.refresh_constraints uctx.uctx_initial_universes us' in
 	(* let universes = subst_univs_opt_universes vars' uctx.uctx_universes in *)
 	let postponed = 
 	  Univ.subst_univs_universe_constraints (Universes.make_opt_subst vars') 
@@ -1229,7 +1236,8 @@ let normalize_evar_universe_context uctx =
 	    uctx_univ_variables = vars'; 
 	    uctx_univ_algebraic = algs';
 	    uctx_postponed = postponed;
-	    uctx_universes = universes} 
+	    uctx_universes = universes;
+	    uctx_initial_universes = uctx.uctx_initial_universes }
 	in fixpoint uctx'
   in fixpoint uctx
 
@@ -1254,6 +1262,7 @@ let nf_constraints =
   else nf_constraints
 
 let universes evd = evd.universes.uctx_universes
+let constraints evd = evd.universes.uctx_universes
 
 (* Conversion w.r.t. an evar map and its local universes. *)
 

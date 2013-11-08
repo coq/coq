@@ -160,7 +160,8 @@ let solve_by_implicit_tactic env sigma evk =
 	(Environ.named_context env) ->
       let tac = Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (Errors.UserError ("",Pp.str"Proof is not complete."))) []) in
       (try
-        let (ans, _, _) = build_by_tactic env (evi.evar_concl, Evd.get_universe_context_set sigma) tac in
-        ans
+        let (ans, _, _) = 
+	  build_by_tactic env (evi.evar_concl, Evd.universe_context_set sigma) tac in
+        fst ans
        with e when Logic.catchable_exception e -> raise Exit)
   | _ -> raise Exit

@@ -128,10 +128,12 @@ val lookup_constant    : constant -> env -> constant_body
 val evaluable_constant : constant -> env -> bool
 
 (** New-style polymorphism *)
-val polymorphic_constant : pconstant -> env -> bool
+val polymorphic_constant  : constant -> env -> bool
+val polymorphic_pconstant : pconstant -> env -> bool
 
 (** Old-style polymorphism *)
-val template_polymorphic_constant : pconstant -> env -> bool
+val template_polymorphic_constant  : constant -> env -> bool
+val template_polymorphic_pconstant : pconstant -> env -> bool
 
 (** {6 ... } *)
 (** [constant_value env c] raises [NotEvaluableConst Opaque] if
@@ -173,10 +175,12 @@ val add_mind : mutual_inductive -> mutual_inductive_body -> env -> env
 val lookup_mind : mutual_inductive -> env -> mutual_inductive_body
 
 (** New-style polymorphism *)
-val polymorphic_ind : pinductive -> env -> bool
+val polymorphic_ind  : inductive -> env -> bool
+val polymorphic_pind : pinductive -> env -> bool
 
 (** Old-style polymorphism *)
-val template_polymorphic_ind : pinductive -> env -> bool
+val template_polymorphic_ind : inductive -> env -> bool
+val template_polymorphic_pind : pinductive -> env -> bool
 
 (** {5 Modules } *)
 

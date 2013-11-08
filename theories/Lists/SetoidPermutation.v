@@ -7,7 +7,7 @@
 (***********************************************************************)
 
 Require Import SetoidList.
-Set Universe Polymorphism.
+(* Set Universe Polymorphism. *)
 
 Set Implicit Arguments.
 Unset Strict Implicit.

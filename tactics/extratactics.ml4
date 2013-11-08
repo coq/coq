@@ -256,8 +256,11 @@ let add_rewrite_hint bases ort t lcsr =
   let f ce = 
     let c, ctx = Constrintern.interp_constr sigma env ce in
     let ctx =
-      if poly then ctx
-      else (Global.add_constraints (snd ctx); Univ.ContextSet.empty)
+      if poly then 
+	Evd.evar_universe_context_set ctx
+      else 
+	let cstrs = Evd.evar_universe_context_constraints ctx in
+	  (Global.add_constraints cstrs; Univ.ContextSet.empty)
     in
       Constrexpr_ops.constr_loc ce, (c, ctx), ort, t in
   let eqs = List.map f lcsr in
@@ -619,7 +622,7 @@ let hResolve id c occ t gl =
           resolve_hole (subst_hole_with_term (fst (Loc.unloc loc)) c_raw t_hole)
   in
   let t_constr,ctx = resolve_hole (subst_var_with_hole occ id t_raw) in
-  let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
+  let sigma = Evd.merge_universe_context sigma ctx in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in
     tclTHEN (Refiner.tclEVARS sigma)
      (change_in_concl None (mkLetIn (Anonymous,t_constr,t_constr_type,pf_concl gl))) gl

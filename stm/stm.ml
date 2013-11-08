@@ -808,7 +808,7 @@ end = struct
         | Declarations.OpaqueDef lc ->
             let uc = Option.get (Opaqueproof.get_constraints lc) in
             let uc =
-              Future.chain ~greedy:true ~pure:true uc Univ.hcons_universe_context in
+              Future.chain ~greedy:true ~pure:true uc Univ.hcons_universe_context_set in
             let pr = Opaqueproof.get_proof lc in
             let pr = Future.chain ~greedy:true ~pure:true pr discharge in
             let pr = Future.chain ~greedy:true ~pure:true pr Constr.hcons in
@@ -816,7 +816,7 @@ end = struct
             let extra = Future.join uc in
             u.(bucket) <- uc;
             p.(bucket) <- pr;
-            u, Univ.UContext.union cst extra, false
+            u, Univ.ContextSet.union cst extra, false
         | _ -> assert false
   
   let check_task name l i =

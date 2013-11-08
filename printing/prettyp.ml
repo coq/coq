@@ -72,7 +72,9 @@ let print_ref reduce ref =
       let ctx,ccl = Reductionops.splay_prod_assum (Global.env()) Evd.empty typ
       in it_mkProd_or_LetIn ccl ctx
     else typ in
-  hov 0 (pr_global ref ++ str " :" ++ spc () ++ pr_ltype typ)
+  let univs = Global.universes_of_global ref in
+  hov 0 (pr_global ref ++ str " :" ++ spc () ++ pr_ltype typ ++ 
+  	   Printer.pr_universe_ctx univs)
 
 (********************************)
 (** Printing implicit arguments *)
@@ -193,7 +195,17 @@ let print_opacity ref =
 (*******************)
 (* *)
 
+let print_polymorphism ref =
+  let poly = Global.is_polymorphic ref in
+  let template_poly = Global.is_template_polymorphic ref in
+    pr_global ref ++ str " is " ++ str 
+      (if poly then "universe polymorphic"
+       else if template_poly then
+	 "template universe polymorphic"
+       else "monomorphic")
+	 
 let print_name_infos ref =
+  let poly = print_polymorphism ref in
   let impls = implicits_of_global ref in
   let scopes = Notation.find_arguments_scope ref in
   let renames =
@@ -205,6 +217,7 @@ let print_name_infos ref =
        print_ref true ref; blankline]
     else
       [] in
+  poly ::
   type_info_for_implicit @
   print_renames_list (mt()) renames @
   print_impargs_list (mt()) impls @

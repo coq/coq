@@ -587,7 +587,7 @@ let solve_remaining_by by env prf =
       List.fold_right (fun mv evd ->
         let ty = Clenv.clenv_nf_meta env (meta_type evd mv) in
 	let c,_,_ = Pfedit.build_by_tactic env.env (ty,Univ.ContextSet.empty) (Tacticals.New.tclCOMPLETE tac) in
-	  meta_assign mv (c, (Conv,TypeNotProcessed)) evd)
+	  meta_assign mv (fst c (*FIXME*), (Conv,TypeNotProcessed)) evd)
       indep env.evd
     in { env with evd = evd' }, prf
 
@@ -1526,7 +1526,8 @@ let newtactic_init_setoid () =
   with e when Errors.noncritical e -> Proofview.tclZERO e
 
 let tactic_init_setoid () = 
-  init_setoid (); tclIDTAC
+  try init_setoid (); tclIDTAC
+  with e when Errors.noncritical e -> tclFAIL 0 (str"Setoid library not loaded")
   
 let cl_rewrite_clause_new_strat ?abs strat clause =
   Proofview.tclTHEN (newtactic_init_setoid ())
@@ -1534,10 +1535,9 @@ let cl_rewrite_clause_new_strat ?abs strat clause =
    with RewriteFailure s ->
    newfail 0 (str"setoid rewrite failed: " ++ s))
 
-(* let cl_rewrite_clause_newtac' l left2right occs clause = *)
-(*   Proof_global.run_tactic  *)
-(*     (Proofview.tclFOCUS 1 1  *)
-(*        (cl_rewrite_clause_new_strat (rewrite_with rewrite_unif_flags l left2right occs) clause)) *)
+let cl_rewrite_clause_newtac' l left2right occs clause =
+  Proofview.tclFOCUS 1 1
+    (cl_rewrite_clause_new_strat (rewrite_with rewrite_unif_flags l left2right occs) clause)
 
 let cl_rewrite_clause_strat strat clause =
   tclTHEN (tactic_init_setoid ())
@@ -1765,7 +1765,7 @@ let declare_projection n instance_id r =
 let build_morphism_signature m =
   let env = Global.env () in
   let m,ctx = Constrintern.interp_constr Evd.empty env m in
-  let sigma = Evd.from_env ~ctx env in
+  let sigma = Evd.from_env ~ctx:(Evd.evar_universe_context_set ctx) env in
   let t = Typing.type_of env sigma m in
   let cstrs =
     let rec aux t =
@@ -1969,12 +1969,15 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
 		  (pf_env gl,project gl,
 		  Pretype_errors.NoOccurrenceFound ((if l2r then x else y), cl)))
 
+open Proofview.Notations
+
 let general_s_rewrite_clause x =
-  init_setoid ();
-  fun b occs cl ~new_goals ->
   match x with
-    | None -> Proofview.V82.tactic (general_s_rewrite None b occs cl ~new_goals)
-    | Some id -> Proofview.V82.tactic (general_s_rewrite (Some id) b occs cl ~new_goals)
+    | None -> general_s_rewrite None
+    | Some id -> general_s_rewrite (Some id)
+let general_s_rewrite_clause x y z w ~new_goals =
+  newtactic_init_setoid () <*>
+  Proofview.V82.tactic (general_s_rewrite_clause x y z w ~new_goals)
 
 let _ = Hook.set Equality.general_rewrite_clause general_s_rewrite_clause
 
@@ -1989,25 +1992,39 @@ let setoid_proof ty fn fallback =
     let env = Proofview.Goal.env gl in
     let sigma = Proofview.Goal.sigma gl in
     let concl = Proofview.Goal.concl gl in
-    try
-      let rel, args = decompose_app_rel env sigma concl in
-      let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env sigma rel)))) in
-      Proofview.V82.tactic (fn env sigma car rel)
-    with e when Errors.noncritical e ->
-      Proofview.tclORELSE fallback (function
-      | Hipattern.NoEquationFound ->
-          let e = Errors.push e in
-	  begin match e with
-	  | Not_found ->
-	      let rel, args = decompose_app_rel env sigma concl in
-		not_declared env ty rel
-	  | _ -> raise e
-          end
-      | e -> Proofview.tclZERO e)
+    Proofview.tclORELSE
+      begin
+        try
+          let rel, args = decompose_app_rel env sigma concl in
+          let evm = sigma in
+          let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
+          fn env sigma car rel
+        with e -> Proofview.tclZERO e
+      end
+      begin function
+        | e ->
+            Proofview.tclORELSE
+              fallback
+              begin function
+                | Hipattern.NoEquationFound ->
+                (* spiwack: [Errors.push] here is unlikely to do what
+                   it's intended to, or anything meaningful for that
+                   matter. *)
+                    let e = Errors.push e in
+	            begin match e with
+	            | Not_found ->
+	                let rel, args = decompose_app_rel env sigma concl in
+		        not_declared env ty rel
+	            | _ -> Proofview.tclZERO e
+                    end
+                | e' -> Proofview.tclZERO e'
+              end
+      end
   end
 
 let tac_open ((evm,_), c) tac = 
-  tclTHEN (Refiner.tclEVARS evm) (tac c)
+  Proofview.V82.tactic 
+    (tclTHEN (Refiner.tclEVARS evm) (tac c))
 
 let poly_proof getp gett env evm car rel =
   if Sorts.is_prop (sort_of_rel env evm rel) then
@@ -2024,18 +2041,20 @@ let setoid_reflexivity =
 let setoid_symmetry =
   setoid_proof "symmetric"
     (fun env evm car rel -> 
-      tac_open (poly_proof PropGlobal.get_symmetric_proof TypeGlobal.get_symmetric_proof
-		  env evm car rel) apply)
+      tac_open
+	(poly_proof PropGlobal.get_symmetric_proof TypeGlobal.get_symmetric_proof
+	   env evm car rel)
+	apply)
     (symmetry_red true)
-
+    
 let setoid_transitivity c =
   setoid_proof "transitive"
     (fun env evm car rel ->
-      let proof = poly_proof PropGlobal.get_transitive_proof TypeGlobal.get_transitive_proof
-	env evm car rel in
-	match c with
-	| None -> tac_open proof eapply
-	| Some c -> tac_open proof (fun t -> apply_with_bindings (t,ImplicitBindings [ c ])))
+      tac_open (poly_proof PropGlobal.get_transitive_proof TypeGlobal.get_transitive_proof
+	   env evm car rel)
+	(fun proof -> match c with
+	| None -> eapply proof
+	| Some c -> apply_with_bindings (proof,ImplicitBindings [ c ])))
     (transitivity_red true c)
     
 let setoid_symmetry_in id =

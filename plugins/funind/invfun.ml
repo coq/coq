@@ -1059,7 +1059,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	  Array.of_list
 	    (List.map
 	       (fun entry ->
-		  (fst(Future.force entry.Entries.const_entry_body), Option.get entry.Entries.const_entry_type )
+		  (fst (fst(Future.force entry.Entries.const_entry_body)), Option.get entry.Entries.const_entry_type )
 	       )
 	       (make_scheme (Array.map_to_list (fun const -> const,GType None) funs))
 	    )

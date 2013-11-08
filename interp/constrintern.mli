@@ -91,13 +91,13 @@ val intern_context : bool -> env -> internalization_env -> local_binder list -> 
 (** Main interpretation functions expecting evars to be all resolved *)
 
 val interp_constr : evar_map -> env -> ?impls:internalization_env ->
-  constr_expr -> constr Univ.in_universe_context_set
+  constr_expr -> constr Evd.in_evar_universe_context
 
 val interp_casted_constr : evar_map -> env -> ?impls:internalization_env ->
-  constr_expr -> types -> constr Univ.in_universe_context_set
+  constr_expr -> types -> constr Evd.in_evar_universe_context
 
 val interp_type : evar_map -> env -> ?impls:internalization_env ->
-  constr_expr -> types Univ.in_universe_context_set
+  constr_expr -> types Evd.in_evar_universe_context
 
 (** Main interpretation function expecting evars to be all resolved *)
 
@@ -142,7 +142,8 @@ val interp_reference : ltac_sign -> reference -> glob_constr
 
 (** Interpret binders *)
 
-val interp_binder  : evar_map -> env -> Name.t -> constr_expr -> types Univ.in_universe_context_set
+val interp_binder  : evar_map -> env -> Name.t -> constr_expr -> 
+  types Evd.in_evar_universe_context
 
 val interp_binder_evars : evar_map ref -> env -> Name.t -> constr_expr -> types
 

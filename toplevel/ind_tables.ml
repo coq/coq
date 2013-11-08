@@ -123,7 +123,7 @@ let define internal id c p univs =
   let c = Vars.subst_univs_fn_constr 
     (Universes.make_opt_subst (Evd.evar_universe_context_subst ctx)) c in
   let entry = {
-    const_entry_body = Future.from_val (c,Declareops.no_seff);
+    const_entry_body = Future.from_val ((c,Univ.ContextSet.empty), Declareops.no_seff);
     const_entry_secctx = None;
     const_entry_type = None;
     const_entry_proj = None;

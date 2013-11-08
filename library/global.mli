@@ -94,7 +94,7 @@ val start_library : DirPath.t -> module_path
 val export : DirPath.t ->
   module_path * Safe_typing.compiled_library * Safe_typing.native_library
 val import :
-  Safe_typing.compiled_library -> Univ.universe_context -> Safe_typing.vodigest ->
+  Safe_typing.compiled_library -> Univ.universe_context_set -> Safe_typing.vodigest ->
   module_path * Nativecode.symbol array
 
 (** {6 Misc } *)
@@ -107,10 +107,14 @@ val env_of_context : Environ.named_context_val -> Environ.env
 val join_safe_environment : unit -> unit
 
 val is_polymorphic : Globnames.global_reference -> bool
+val is_template_polymorphic : Globnames.global_reference -> bool
 
 val type_of_global_in_context : Environ.env -> 
   Globnames.global_reference -> Constr.types Univ.in_universe_context
 val type_of_global_unsafe : Globnames.global_reference -> Constr.types 
+
+(** Returns the universe context of the global reference (whatever it's polymorphic status is). *)
+val universes_of_global : Globnames.global_reference -> Univ.universe_context
 
 (** {6 Retroknowledge } *)
 

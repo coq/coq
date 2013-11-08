@@ -113,28 +113,6 @@ Lemma ceqb_spec c c' : BoolSpec ([c] == [c']) True (c =? c')%coef.
 Proof.
 generalize (CRmorph.(morph_eq) c c').
 destruct (c =? c')%coef; auto.
-<<<<<<< HEAD
-=======
-||||||| merged common ancestors
-destruct (c ?= c')%coef; auto.
-=======
-destruct (c ?= c')%coef; auto.
-<<<<<<< HEAD
-=======
-intros.
-generalize (fun h => X (morph_eq CRmorph _ _ h)).
-case (ceqb c1 c2); auto.
->>>>>>> .merge_file_U4r9lJ
->>>>>>> This commit adds full universe polymorphism and fast projections to Coq.
-||||||| merged common ancestors
-=======
-intros.
-generalize (fun h => X (morph_eq CRmorph _ _ h)).
-case (ceqb c1 c2); auto.
->>>>>>> .merge_file_U4r9lJ
-=======
->>>>>>> Correct rebase on STM code. Thanks to E. Tassi for help on dealing with
->>>>>>> Correct rebase on STM code. Thanks to E. Tassi for help on dealing with
 Qed.
 
 (* Power coefficients : Cpow *)
@@ -301,24 +279,6 @@ apply radd_ext.
   [ ring | now rewrite rdiv_simpl ].
 Qed.
 
-<<<<<<< HEAD
-Theorem rdiv3 r1 r2 r3 r4 :
- ~ r2 == 0 ->
- ~ r4 == 0 ->
- r1 / r2 - r3 / r4 == (r1 * r4 -  r3 * r2) / (r2 * r4).
-Proof.
-intros H2 H4.
-assert (~ r2 * r4 == 0) by (apply field_is_integral_domain; trivial).
-transitivity (r1 / r2 + - (r3 / r4)); auto.
-transitivity (r1 / r2 + - r3 / r4); auto.
-transitivity ((r1 * r4 + - r3 * r2) / (r2 * r4)).
-apply rdiv2; auto.
-f_equiv.
-transitivity (r1 * r4 + - (r3 * r2)); auto.
-Qed.
-
-=======
->>>>>>> Correct rebase on STM code. Thanks to E. Tassi for help on dealing with
 Theorem rdiv5 a b : - (a / b) == - a / b.
 Proof.
 now rewrite !rdiv_def, ropp_mul_l.

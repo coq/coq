@@ -10,7 +10,7 @@ Require Import Le Gt Minus Bool.
 Require Setoid.
 
 Set Implicit Arguments.
-Set Universe Polymorphism.
+(* Set Universe Polymorphism. *)
 
 (******************************************************************)
 (** * Basics: definition of polymorphic lists and some operations *)
@@ -2036,4 +2036,4 @@ Notation AllS := Forall (only parsing). (* was formerly in TheoryList *)
 Hint Resolve app_nil_end : datatypes v62.
 (* end hide *)
 
-Unset Universe Polymorphism.
+(* Unset Universe Polymorphism. *)

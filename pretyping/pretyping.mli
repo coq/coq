@@ -81,7 +81,7 @@ val understand_ltac : inference_flags ->
 (** Standard call to get a constr from a glob_constr, resolving implicit args *)
 
 val understand : ?flags:inference_flags -> ?expected_type:typing_constraint ->
-  evar_map -> env -> glob_constr -> constr Univ.in_universe_context_set
+  evar_map -> env -> glob_constr -> constr Evd.in_evar_universe_context
 
 (** Idem but returns the judgment of the understood term *)
 

@@ -340,6 +340,15 @@ let check_conv_leq_goal env sigma arg ty conclty =
       else raise (RefinerError (BadType (arg,ty,conclty)))
   else sigma
 
+exception Stop of constr list
+let meta_free_prefix a =
+  try
+    let _ = Array.fold_left (fun acc a -> 
+      if occur_meta a then raise (Stop acc)
+      else a :: acc) [] a
+    in a
+  with Stop acc -> Array.rev_of_list acc
+
 let goal_type_of env sigma c =
   if !check then type_of env sigma c
   else Retyping.get_type_of env sigma c
@@ -442,10 +451,10 @@ and mk_hdgoals sigma goal goalacc trm =
 
     | App (f,l) ->
 	let (acc',hdty,sigma,applicand) =
-	  if isInd f || isConst f
-	     && not (Array.exists occur_meta l) (* we could be finer *)
+	  if is_template_polymorphic env f
 	  then
-	   (goalacc,type_of_global_reference_knowing_parameters env sigma f l,sigma,f)
+	    let l' = meta_free_prefix l in	      
+	   (goalacc,type_of_global_reference_knowing_parameters env sigma f l',sigma,f)
 	  else mk_hdgoals sigma goal goalacc f
 	in
 	let ((acc'',conclty',sigma), args) = mk_arggoals sigma goal acc' hdty l in

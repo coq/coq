@@ -70,9 +70,9 @@ let red_constant_entry n ce = function
       let proof_out = ce.const_entry_body in
       let env = Global.env () in
       { ce with const_entry_body = Future.chain ~greedy:true ~pure:true proof_out
-        (fun (body,eff) ->
-           under_binders env
-             (fst (reduction_of_red_expr env red)) n body,eff) }
+        (fun ((body,ctx),eff) ->
+          (under_binders env
+             (fst (reduction_of_red_expr env red)) n body,ctx),eff) }
 
 let interp_definition bl p red_option c ctypopt =
   let env = Global.env() in
@@ -90,7 +90,7 @@ let interp_definition bl p red_option c ctypopt =
         let body = nf (it_mkLambda_or_LetIn c ctx) in
 	let vars = Universes.universes_of_constr body in
 	let ctx = Universes.restrict_universe_context
-	  (Evd.get_universe_context_set !evdref) vars in
+	  (Evd.universe_context_set !evdref) vars in
  	imps1@(Impargs.lift_implicits nb_args imps2),
 	  definition_entry ~univs:(Univ.ContextSet.to_context ctx) ~poly:p body
     | Some ctyp ->
@@ -116,7 +116,7 @@ let interp_definition bl p red_option c ctypopt =
         let vars = Univ.LSet.union (Universes.universes_of_constr body) 
           (Universes.universes_of_constr typ) in
         let ctx = Universes.restrict_universe_context
-          (Evd.get_universe_context_set !evdref) vars in
+          (Evd.universe_context_set !evdref) vars in
 	imps1@(Impargs.lift_implicits nb_args impsty),
 	  definition_entry ~types:typ ~poly:p 
 	    ~univs:(Univ.ContextSet.to_context ctx) body
@@ -171,8 +171,9 @@ let do_definition ident k bl red_option c ctypopt hook =
   let (ce, evd, imps as def) = interp_definition bl (pi2 k) red_option c ctypopt in
     if Flags.is_program_mode () then
       let env = Global.env () in
-      let c,sideff = Future.force ce.const_entry_body in
+      let (c,ctx), sideff = Future.force ce.const_entry_body in
       assert(Declareops.side_effects_is_empty sideff);
+      assert(Univ.ContextSet.is_empty ctx);
       let typ = match ce.const_entry_type with 
 	| Some t -> t
 	| None -> Retyping.get_type_of env evd c
@@ -181,7 +182,7 @@ let do_definition ident k bl red_option c ctypopt hook =
       let obls, _, c, cty = 
 	Obligations.eterm_obligations env ident evd 0 c typ
       in
-      let ctx = Evd.get_universe_context_set evd in
+      let ctx = Evd.universe_context_set evd in
 	ignore(Obligations.add_definition ident ~term:c cty ctx ~implicits:imps ~kind:k ~hook obls)
     else let ce = check_definition def in
       ignore(declare_definition ident k ce imps
@@ -228,7 +229,7 @@ let interp_assumption evdref env bl c =
   let c = prod_constr_expr c bl in
   let ty, impls = interp_type_evars_impls evdref env c in
   let evd, nf = nf_evars_and_universes !evdref in
-  let ctx = Evd.get_universe_context_set evd in
+  let ctx = Evd.universe_context_set evd in
     ((nf ty, ctx), impls)
 
 let declare_assumptions idl is_coe k c imps impl_is_on nl =
@@ -659,7 +660,7 @@ let interp_fix_body evdref env_rec impls (_,ctx) fix ccl =
 
 let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
 
-let declare_fix (_,poly,_ as kind) ctx f (def,eff) t imps =
+let declare_fix (_,poly,_ as kind) ctx f ((def,_),eff) t imps =
   let ce = definition_entry ~types:t ~poly ~univs:ctx ~eff def in
   declare_definition f kind ce imps (fun _ r -> r)
 
@@ -873,7 +874,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   let evars, _, evars_def, evars_typ = 
     Obligations.eterm_obligations env recname !evdref 0 fullcoqc fullctyp 
   in
-  let ctx = Evd.get_universe_context_set !evdref in
+  let ctx = Evd.universe_context_set !evdref in
     ignore(Obligations.add_definition recname ~term:evars_def 
 	     evars_typ ctx evars ~hook)
 
@@ -939,12 +940,12 @@ let check_recursive isfix env evd (fixnames,fixdefs,_) =
 let interp_fixpoint l ntns =
   let (env,_,evd),fix,info = interp_recursive true l ntns in
   check_recursive true env evd fix;
-  (fix,Evd.get_universe_context_set evd,info)
+  (fix,Evd.universe_context_set evd,info)
 
 let interp_cofixpoint l ntns =
   let (env,_,evd),fix,info = interp_recursive false l ntns in
   check_recursive false  env evd fix;
-  fix,Evd.get_universe_context_set evd,info
+  fix,Evd.universe_context_set evd,info
     
 let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexes ntns =
   if List.exists Option.is_empty fixdefs then
@@ -968,7 +969,7 @@ let declare_fixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) indexe
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     let fixdecls =
       List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
-    let fixdecls = List.map (fun c -> c, Declareops.no_seff) fixdecls in
+    let fixdecls = List.map Term_typing.mk_pure_proof fixdecls in
     let ctx = Univ.ContextSet.to_context ctx in
     ignore (List.map4 (declare_fix (local, poly, Fixpoint) ctx)
 	      fixnames fixdecls fixtypes fiximps);
@@ -996,7 +997,7 @@ let declare_cofixpoint local poly ((fixnames,fixdefs,fixtypes),ctx,fiximps) ntns
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
     let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
-    let fixdecls = List.map (fun c-> c,Declareops.no_seff) fixdecls in
+    let fixdecls = List.map Term_typing.mk_pure_proof fixdecls in
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
     let ctx = Univ.ContextSet.to_context ctx in
     ignore (List.map4 (declare_fix (local, poly, CoFixpoint) ctx) 
@@ -1071,7 +1072,7 @@ let do_program_recursive local p fixkind fixl ntns =
 	Pretyping.search_guard Loc.ghost (Global.env ()) possible_indexes fixdecls in
 	List.iteri (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) fixl
   end in
-  let ctx = Evd.get_universe_context_set evd in
+  let ctx = Evd.universe_context_set evd in
   let kind = match fixkind with
   | Obligations.IsFixpoint _ -> (local, p, Fixpoint)
   | Obligations.IsCoFixpoint -> (local, p, CoFixpoint)

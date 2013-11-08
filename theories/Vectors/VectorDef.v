@@ -21,7 +21,7 @@ Require Vectors.Fin.
 Import EqNotations.
 Local Open Scope nat_scope.
 
-Set Universe Polymorphism.
+(* Set Universe Polymorphism. *)
 
 (**
 A vector is a list of size n whose elements belong to a set A. *)

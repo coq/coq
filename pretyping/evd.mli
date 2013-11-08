@@ -415,6 +415,7 @@ type evar_universe_context
 type 'a in_evar_universe_context = 'a * evar_universe_context
 
 val evar_universe_context_set : evar_universe_context -> Univ.universe_context_set
+val evar_universe_context_constraints : evar_universe_context -> Univ.constraints
 val evar_context_universe_context : evar_universe_context -> Univ.universe_context
 val evar_universe_context_of : Univ.universe_context_set -> evar_universe_context
 val empty_evar_universe_context : evar_universe_context
@@ -426,6 +427,7 @@ val universes : evar_map -> Univ.universes
 
 val add_constraints_context : evar_universe_context -> 
   Univ.constraints -> evar_universe_context
+
 
 val normalize_evar_universe_context_variables : evar_universe_context -> 
   Univ.universe_subst in_evar_universe_context
@@ -458,7 +460,7 @@ val check_eq : evar_map -> Univ.universe -> Univ.universe -> bool
 val check_leq : evar_map -> Univ.universe -> Univ.universe -> bool
 
 val evar_universe_context : evar_map -> evar_universe_context
-val get_universe_context_set : evar_map -> Univ.universe_context_set
+val universe_context_set : evar_map -> Univ.universe_context_set
 val universe_context : evar_map -> Univ.universe_context
 val universe_subst : evar_map -> Universes.universe_opt_subst
 val universes : evar_map -> Univ.universes

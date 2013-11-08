@@ -560,6 +560,8 @@ let compute_possible_guardness_evidences (n,_) fixbody fixtype =
       let ctx = fst (decompose_prod_n_assum m fixtype) in
 	List.map_i (fun i _ -> i) 0 ctx
 
+let mk_proof c = ((c, Univ.ContextSet.empty), Declareops.no_seff)
+
 let declare_mutual_definition l =
   let len = List.length l in
   let first = List.hd l in
@@ -589,11 +591,11 @@ let declare_mutual_definition l =
               possible_indexes fixdecls in
           Some indexes, 
           List.map_i (fun i _ ->
-            mkFix ((indexes,i),fixdecls),Declareops.no_seff) 0 l
+            mk_proof (mkFix ((indexes,i),fixdecls))) 0 l
       | IsCoFixpoint ->
           None,
           List.map_i (fun i _ ->
-            mkCoFix (i,fixdecls),Declareops.no_seff) 0 l
+            mk_proof (mkCoFix (i,fixdecls))) 0 l
   in
   (* Declare the recursive definitions *)
   let ctx = Univ.ContextSet.to_context first.prg_ctx in
@@ -630,7 +632,7 @@ let declare_obligation prg obl body uctx =
 	  shrink_body body else [], body, [||] 
       in
       let ce = 
-        { const_entry_body = Future.from_val(body,Declareops.no_seff);
+        { const_entry_body = Future.from_val((body,Univ.ContextSet.empty),Declareops.no_seff);
           const_entry_secctx = None;
 	  const_entry_type = if List.is_empty ctx then Some ty else None;
 	  const_entry_proj = None;
@@ -796,8 +798,8 @@ let solve_by_tac name evi t poly subst ctx =
   let entry = Term_typing.handle_side_effects env entry in
   let body, eff = Future.force entry.Entries.const_entry_body in
   assert(Declareops.side_effects_is_empty eff);
-  Inductiveops.control_only_guard (Global.env ()) body;
-  body, subst, entry.Entries.const_entry_universes
+  Inductiveops.control_only_guard (Global.env ()) (fst body) (*FIXME ignoring the context...*);
+  (fst body), subst, entry.Entries.const_entry_universes
 
   (* try *)
   (*   let substref = ref (Univ.LMap.empty, Univ.UContext.empty) in *)

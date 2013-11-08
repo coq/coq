@@ -193,6 +193,34 @@ let cumulate_arity_large_levels env sign =
 let is_impredicative env u =
   is_type0m_univ u || (is_type0_univ u && engagement env = Some ImpredicativeSet)
 
+let param_ccls params =
+  let has_some_univ u = function
+    | Some v when Universe.equal u v -> true
+    | _ -> false
+  in
+  let remove_some_univ u = function
+    | Some v when Universe.equal u v -> None
+    | x -> x
+  in
+  let fold l (_, b, p) = match b with
+  | None ->
+    (* Parameter contributes to polymorphism only if explicit Type *)
+    let c = strip_prod_assum p in
+    (* Add Type levels to the ordered list of parameters contributing to *)
+    (* polymorphism unless there is aliasing (i.e. non distinct levels) *)
+    begin match kind_of_term c with
+    | Sort (Type u) ->
+      if List.exists (has_some_univ u) l then
+        None :: List.map (remove_some_univ u) l
+      else
+        Some u :: l
+    | _ ->
+      None :: l
+    end
+  | _ -> l
+  in
+    List.fold_left fold [] params
+
 (* Type-check an inductive definition. Does not check positivity
    conditions. *)
 (* TODO check that we don't overgeneralize construcors/inductive arities with
@@ -215,7 +243,7 @@ let typecheck_inductive env ctx mie =
     List.fold_left
       (fun (env_ar,l) ind ->
          (* Arities (without params) are typed-checked here *)
-         let arity = 
+         let arity, expltype = 
 	   if isArity ind.mind_entry_arity then
 	     let (ctx,s) = destArity ind.mind_entry_arity in
 	       match s with
@@ -226,11 +254,12 @@ let typecheck_inductive env ctx mie =
 	         let proparity = infer_type env_params (mkArity (ctx, prop_sort)) in
 		 let (cctx, _) = destArity proparity.utj_val in
 		   (* Any universe is well-formed, we don't need to check [s] here *)
-		   mkArity (cctx, s)
-	       | _ -> let arity = infer_type env_params ind.mind_entry_arity in
-			arity.utj_val
+		   mkArity (cctx, s), not (Sorts.is_small s)
+	       | _ -> 
+		 let arity = infer_type env_params ind.mind_entry_arity in
+		   arity.utj_val, not (Sorts.is_small s)
 	   else let arity = infer_type env_params ind.mind_entry_arity in
-		  arity.utj_val
+		  arity.utj_val, false
 	 in
 	 let (sign, deflev) = dest_arity env_params arity in
 	 let inflev = 
@@ -249,7 +278,7 @@ let typecheck_inductive env ctx mie =
 	 let env_ar' =
            push_rel (Name id, None, full_arity) env_ar in
              (* (add_constraints cst2 env_ar) in *)
-	   (env_ar', (id,full_arity,sign @ params,deflev,inflev)::l))
+	   (env_ar', (id,full_arity,sign @ params,expltype,deflev,inflev)::l))
       (env',[])
       mie.mind_entry_inds in
 
@@ -277,30 +306,60 @@ let typecheck_inductive env ctx mie =
   (* Compute/check the sorts of the inductive types *)
 
   let inds =
-    Array.map (fun ((id,full_arity,sign,def_level,inf_level),cn,lc,(is_unit,clev))  ->
-      let defu = Term.univ_of_sort def_level in
-      let infu = 
-	(** Inferred level, with parameters and constructors. *)
-	match inf_level with
-	| Some alev -> Universe.sup clev alev
-	| None -> clev
+    Array.map (fun ((id,full_arity,sign,expltype,def_level,inf_level),cn,lc,(is_unit,clev))  ->
+      let full_polymorphic () = 
+	let defu = Term.univ_of_sort def_level in
+	let infu = 
+	  (** Inferred level, with parameters and constructors. *)
+	  match inf_level with
+	  | Some alev -> Universe.sup clev alev
+	  | None -> clev
+	in
+	let is_natural =
+	  check_leq (universes env') infu defu && 
+	    not (is_type0m_univ defu && not is_unit)
+	in
+	let _ =
+	  (** Impredicative sort, always allow *)
+	  if is_impredicative env defu then ()
+	  else (** Predicative case: the inferred level must be lower or equal to the
+		   declared level. *)
+	    if not is_natural then
+	      anomaly ~label:"check_inductive" 
+		(Pp.str"Incorrect universe " ++
+		   Universe.pr defu ++ Pp.str " declared for inductive type, inferred level is "
+		 ++ Universe.pr infu)
+	in
+	  RegularArity (not is_natural,full_arity,defu)
       in
-      let is_natural =
-	check_leq (universes env') infu defu && 
-	not (is_type0m_univ defu && not is_unit)
+      let template_polymorphic () =
+	let sign, s =
+          try dest_arity env full_arity
+          with NotArity -> raise (InductiveError (NotAnArity (env, full_arity)))
+	in
+	  match s with
+	  | Type u when expltype (* Explicitly polymorphic *) ->
+	      (* && no_upper_constraints u (Univ.UContext.constraints mie.mind_entry_universes) -> *)
+	    (* The polymorphic level is a function of the level of the *)
+	    (* conclusions of the parameters *)
+            (* We enforce [u >= lev] in case [lev] has a strict upper *)
+            (* constraints over [u] *)
+	    let b = check_leq (universes env') clev u in
+	      if not b then
+		anomaly ~label:"check_inductive" 
+		  (Pp.str"Incorrect universe " ++
+		     Universe.pr u ++ Pp.str " declared for inductive type, inferred level is "
+		   ++ Universe.pr clev)
+	      else
+		TemplateArity (param_ccls params, clev)
+	  | _ (* Not an explicit occurrence of Type *) ->
+	    full_polymorphic ()
       in
-      let _ =
-	(** Impredicative sort, always allow *)
-	if is_impredicative env defu then ()
-	else (** Predicative case: the inferred level must be lower or equal to the
-		 declared level. *)
-	  if not is_natural then
-	    anomaly ~label:"check_inductive" 
-	    (Pp.str"Incorrect universe " ++
-	     Universe.pr defu ++ Pp.str " declared for inductive type, inferred level is "
-	     ++ Universe.pr infu)
+      let arity = 
+	if mie.mind_entry_polymorphic then full_polymorphic ()
+	else template_polymorphic ()
       in
-	(id,cn,lc,(sign,RegularArity (not is_natural,full_arity,defu))))
+	(id,cn,lc,(sign,arity)))
     inds
   in (env_arities, params, inds)
 
@@ -617,7 +676,7 @@ let allowed_sorts is_smashed s =
 
 let arity_conclusion = function
   | RegularArity (_, c, _) -> c
-  | TemplateArity s -> mkType s.template_level
+  | TemplateArity (_, s) -> mkType s
 
 let fold_inductive_blocks f =
   Array.fold_left (fun acc (_,_,lc,(arsign,ar)) ->
@@ -681,7 +740,9 @@ let build_inductive env p prv ctx env_ar params kn isrecord isfinite inds nmr re
     (* Elimination sorts *)
     let arkind,kelim = 
       match ar_kind with
-      | TemplateArity ar -> TemplateArity ar, all_sorts
+      | TemplateArity (paramlevs, lev) -> 
+	let ar = {template_param_levels = paramlevs; template_level = lev} in
+	  TemplateArity ar, all_sorts
       | RegularArity (info,ar,defs) ->
 	let s = sort_of_univ defs in
 	let kelim = allowed_sorts info s in

@@ -1376,7 +1376,7 @@ let com_terminate
   start_proof ctx tclIDTAC tclIDTAC;
   try
     let sigma, new_goal_type = build_new_goal_type () in
-    open_new_goal start_proof (Evd.get_universe_context_set sigma)
+    open_new_goal start_proof (Evd.universe_context_set sigma)
       using_lemmas tcc_lemma_ref
       (Some tcc_lemma_name)
       (new_goal_type);

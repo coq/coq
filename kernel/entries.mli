@@ -50,7 +50,7 @@ type mutual_inductive_entry = {
   mind_entry_private : bool option }
 
 (** {6 Constants (Definition/Axiom) } *)
-type proof_output = constr * Declareops.side_effects
+type proof_output = constr Univ.in_universe_context_set * Declareops.side_effects
 type const_entry_body = proof_output Future.computation
 
 type projection = mutual_inductive * int * int * types

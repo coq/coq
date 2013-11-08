@@ -126,7 +126,7 @@ let open_constant i ((sp,kn), obj) =
     | (Def _ | Undef _) -> ()
     | OpaqueDef lc ->
         match Opaqueproof.get_constraints lc with
-        | Some f when Future.is_val f -> Global.push_context (Future.force f)
+        | Some f when Future.is_val f -> Global.push_context_set (Future.force f)
         | _ -> ()
 
 let exists_name id =
@@ -196,7 +196,7 @@ let declare_constant_common id cst =
 
 let definition_entry ?(opaque=false) ?(inline=false) ?types 
     ?(poly=false) ?(univs=Univ.UContext.empty) ?(eff=Declareops.no_seff) body =
-  { const_entry_body = Future.from_val (body,eff);
+  { const_entry_body = Future.from_val ((body,Univ.ContextSet.empty), eff);
     const_entry_secctx = None;
     const_entry_type = types;
     const_entry_proj = None;
@@ -216,8 +216,9 @@ let declare_sideff se =
   let id_of c = Names.Label.to_id (Names.Constant.label c) in
   let pt_opaque_of cb =
     match cb with
-    | { const_body = Def sc } -> Mod_subst.force_constr sc, false
-    | { const_body = OpaqueDef fc } -> Opaqueproof.force_proof fc, true
+    | { const_body = Def sc } -> (Mod_subst.force_constr sc, Univ.ContextSet.empty), false
+    | { const_body = OpaqueDef fc } -> 
+      (Opaqueproof.force_proof fc, Opaqueproof.force_constraints fc), true
     | { const_body = Undef _ } -> anomaly(str"Undefined side effect")
   in
   let ty_of cb =

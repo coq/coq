@@ -143,7 +143,7 @@ Arguments S _%nat.
 (********************************************************************)
 (** * Container datatypes *)
 
-Set Universe Polymorphism.
+(* Set Universe Polymorphism. *)
 
 (** [option A] is the extension of [A] with an extra element [None] *)
 
@@ -250,7 +250,7 @@ Definition app (A : Type) : list A -> list A -> list A :=
 
 Infix "++" := app (right associativity, at level 60) : list_scope.
 
-Unset Universe Polymorphism.
+(* Unset Universe Polymorphism. *)
 
 (********************************************************************)
 (** * The comparison datatype *)

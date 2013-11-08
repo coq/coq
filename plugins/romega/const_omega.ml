@@ -210,10 +210,15 @@ let rec mk_nat = function
 
 (* Lists *)
 
-let mkListConst c u = 
-  Term.mkConstructU (Globnames.destConstructRef 
-		     (Coqlib.gen_reference "" ["Init";"Datatypes"] c),
-		     Univ.Instance.of_array [|u|])
+let mkListConst c = 
+  let r = 
+    Coqlib.gen_reference "" ["Init";"Datatypes"] c
+  in 
+  let inst = 
+    if Global.is_polymorphic r then fun u -> Univ.Instance.of_array [|u|]
+    else fun _ -> Univ.Instance.empty
+  in
+    fun u -> Term.mkConstructU (Globnames.destConstructRef r, inst u)
 
 let coq_cons univ typ = Term.mkApp (mkListConst "cons" univ, [|typ|])
 let coq_nil univ typ =  Term.mkApp (mkListConst "nil" univ, [|typ|])

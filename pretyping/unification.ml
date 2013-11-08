@@ -603,7 +603,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	  expand curenvnb pb b wt substn cM f1 l1 cN f2 l2
 
   and reduce curenvnb pb b wt (sigma, metas, evars as substn) cM cN =
-    if not (subterm_restriction b flags) && use_full_betaiota flags then
+    if use_full_betaiota flags && not (subterm_restriction b flags) then
       let cM' = do_reduce flags.modulo_delta curenvnb sigma cM in
 	if not (eq_constr cM cM') then
 	  unirec_rec curenvnb pb b wt substn cM' cN

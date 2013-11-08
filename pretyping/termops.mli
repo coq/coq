@@ -194,7 +194,7 @@ val base_sort_cmp : Reduction.conv_pb -> sorts -> sorts -> bool
 val compare_constr_univ : (Reduction.conv_pb -> constr -> constr -> bool) ->
   Reduction.conv_pb -> constr -> constr -> bool
 val constr_cmp : Reduction.conv_pb -> constr -> constr -> bool
-val eq_constr : constr -> constr -> bool
+val eq_constr : constr -> constr -> bool (* FIXME rename: erases universes*)
 
 val eta_reduce_head : constr -> constr
 

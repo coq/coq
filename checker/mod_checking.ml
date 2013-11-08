@@ -28,7 +28,7 @@ let check_constant_declaration env kn cb =
 (*  let env = add_constraints cb.const_constraints env in*)
   (match cb.const_type with
       ty ->
-        let env' = add_constraints (Future.force cb.const_constraints) env in
+        let env' = add_constraints cb.const_constraints env in (*MS: FIXME*)
 	let _ = infer_type env' ty in
           (match body_of_constant cb with
           | Some bd ->

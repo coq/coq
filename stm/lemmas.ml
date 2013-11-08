@@ -49,7 +49,7 @@ let adjust_guardness_conditions const = function
      let env = Global.env() in
      { const with const_entry_body =
         Future.chain ~greedy:true ~pure:true const.const_entry_body
-        (fun (body, eff) ->
+        (fun ((body, ctx), eff) ->
           match kind_of_term body with
           | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
 (*      let possible_indexes =
@@ -60,8 +60,8 @@ let adjust_guardness_conditions const = function
               let indexes =
 	        search_guard Loc.ghost env
                   possible_indexes fixdecls in
-              mkFix ((indexes,0),fixdecls),  eff
-          | _ -> body, eff) }
+		(mkFix ((indexes,0),fixdecls), ctx), eff
+          | _ -> (body, ctx), eff) }
 
 let find_mutually_recursive_statements thms =
     let n = List.length thms in
@@ -409,7 +409,7 @@ let start_proof_com kind thms hook =
     thms in
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
   let evd, nf = Evarutil.nf_evars_and_universes !evdref in
-  let ctxset = Evd.get_universe_context_set evd in
+  let ctxset = Evd.universe_context_set evd in
   let thms = List.map (fun (n, (t, info)) -> (n, ((nf t, ctxset), info)))
     thms
   in

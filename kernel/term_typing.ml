@@ -57,6 +57,8 @@ let local_constrain_type env j = function
 
 (* Insertion of constants and parameters in environment. *)
 
+let mk_pure_proof c = (c, Univ.ContextSet.empty), Declareops.no_seff
+
 let handle_side_effects env body side_eff =
   let handle_sideff t se =
     let cbl = match se with
@@ -127,13 +129,14 @@ let infer_declaration env kn dcl =
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
       let proofterm =
-        Future.chain ~greedy:true ~pure:true body (fun (body, side_eff) ->
+        Future.chain ~greedy:true ~pure:true body (fun ((body, ctx), side_eff) ->
           let body = handle_side_effects env body side_eff in
-          let j = infer env body in
+	  let env' = push_context_set ctx env in
+          let j = infer env' body in
           let j = hcons_j j in
-          let _typ = constrain_type env j c.const_entry_polymorphic (`SomeWJ (typ,tyj)) in
+          let _typ = constrain_type env' j c.const_entry_polymorphic (`SomeWJ (typ,tyj)) in
           feedback_completion_typecheck feedback_id;
-          j.uj_val, Univ.UContext.empty) in
+          j.uj_val, ctx) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
       def, RegularArity typ, None, c.const_entry_polymorphic, 
 	c.const_entry_universes,
@@ -142,7 +145,8 @@ let infer_declaration env kn dcl =
       let env = push_context c.const_entry_universes env in
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
-      let body, side_eff = Future.join body in
+      let (body, ctx), side_eff = Future.join body in
+      let env = push_context_set ctx env in
       let body = handle_side_effects env body side_eff in
       let def, typ, proj = 
 	match c.const_entry_proj with
@@ -168,9 +172,12 @@ let infer_declaration env kn dcl =
 	  let def = Def (Mod_subst.from_val j.uj_val) in
 	    def, typ, None
       in
+      let univs = Univ.UContext.union c.const_entry_universes 
+	(Univ.ContextSet.to_context ctx)
+      in
 	feedback_completion_typecheck feedback_id;
 	def, typ, proj, c.const_entry_polymorphic,
-        c.const_entry_universes, c.const_entry_inline_code, c.const_entry_secctx
+        univs, c.const_entry_inline_code, c.const_entry_secctx
 
 let global_vars_set_constant_type env = function
   | RegularArity t -> global_vars_set env t
@@ -281,6 +288,6 @@ let translate_mind env kn mie = Indtypes.check_inductive env kn mie
 
 let handle_side_effects env ce = { ce with
   const_entry_body = Future.chain ~greedy:true ~pure:true
-    ce.const_entry_body (fun (body, side_eff) ->
-       handle_side_effects env body side_eff, Declareops.no_seff);
+    ce.const_entry_body (fun ((body, ctx), side_eff) ->
+      (handle_side_effects env body side_eff, ctx), Declareops.no_seff);
 }

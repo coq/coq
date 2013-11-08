@@ -17,7 +17,7 @@ type work_list = (Instance.t * Id.t array) Cmap.t *
 type cooking_info = { 
   modlist : work_list; 
   abstract : Context.named_context in_universe_context } 
-type proofterm = (constr * Univ.universe_context) Future.computation
+type proofterm = (constr * Univ.universe_context_set) Future.computation
 type opaque =
   | Indirect of substitution list * DirPath.t * int (* subst, lib, index *)
   | Direct of cooking_info list * proofterm
@@ -99,7 +99,7 @@ let force_constraints = function
   | NoIndirect(_,cu) -> snd(Future.force cu)
   | Indirect (_,dp,i) ->
       match !get_univ dp i with
-      | None -> Univ.UContext.empty
+      | None -> Univ.ContextSet.empty
       | Some u -> Future.force u
 
 let get_constraints = function

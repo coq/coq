@@ -294,14 +294,14 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 		  in obls, Some constr, typ
 		| None -> [||], None, termtype
 	      in
-	      let ctx = Evd.get_universe_context_set evm in
+	      let ctx = Evd.universe_context_set evm in
 		ignore (Obligations.add_definition id ?term:constr
 			typ ctx ~kind:(Global,poly,Instance) ~hook obls);
 		id
 	    else
 	      (Flags.silently 
 	       (fun () ->
-		Lemmas.start_proof id kind (termtype, Evd.get_universe_context_set evm)
+		Lemmas.start_proof id kind (termtype, Evd.universe_context_set evm)
 		(fun _ -> instance_hook k pri global imps ?hook);
                  (* spiwack: I don't know what to do with the status here. *)
 		if not (Option.is_empty term) then 
@@ -335,7 +335,7 @@ let context l =
     with e when Errors.noncritical e ->
       error "Anonymous variables not allowed in contexts."
   in
-  let uctx = Evd.get_universe_context_set !evars in
+  let uctx = Evd.universe_context_set !evars in
   let fn status (id, b, t) =
     (* let uctx = Universes.shrink_universe_context uctx (Universes.universes_of_constr t) in *)
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then

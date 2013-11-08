@@ -47,12 +47,14 @@ let constraints_of_constant cb = Univ.Constraint.union
   (match cb.const_body with
   | Undef _ -> Univ.empty_constraint
   | Def c -> Univ.empty_constraint
-  | OpaqueDef o -> Univ.UContext.constraints (Opaqueproof.force_constraints o))
+  | OpaqueDef o -> Univ.ContextSet.constraints (Opaqueproof.force_constraints o))
 
 let universes_of_constant cb = 
   match cb.const_body with
   | Undef _ | Def _ -> cb.const_universes
-  | OpaqueDef o -> Opaqueproof.force_constraints o
+  | OpaqueDef o -> 
+    Univ.UContext.union cb.const_universes 
+      (Univ.ContextSet.to_context (Opaqueproof.force_constraints o))
 
 let universes_of_polymorphic_constant cb = 
   if cb.const_polymorphic then universes_of_constant cb

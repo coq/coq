@@ -16,7 +16,7 @@
 Require Import List Setoid Compare_dec Morphisms FinFun.
 Import ListNotations. (* For notations [] and [a;b;c] *)
 Set Implicit Arguments.
-Set Universe Polymorphism.
+(* Set Universe Polymorphism. *)
 
 Section Permutation.
 

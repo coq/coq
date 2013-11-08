@@ -200,6 +200,9 @@ let add_constraints cst senv =
     env = Environ.add_constraints cst senv.env;
     univ = Univ.Constraint.union cst senv.univ }
 
+let add_constraints_list cst senv =
+  List.fold_right add_constraints cst senv
+
 let push_context_set ctx = add_constraints (Now (Univ.ContextSet.constraints ctx))
 let push_context ctx = add_constraints (Now (Univ.UContext.constraints ctx))
 
@@ -298,11 +301,12 @@ let safe_push_named (id,_,_ as d) env =
 
 let push_named_def (id,de) senv =
   let c,typ,univs = Term_typing.translate_local_def senv.env id de in
-  let c, univs = match c with
-    | Def c -> Mod_subst.force_constr c, univs
-    | OpaqueDef o -> Opaqueproof.force_proof o, Opaqueproof.force_constraints o
-    | _ -> assert false in
   let senv' = push_context univs senv in
+  let c, senv' = match c with
+    | Def c -> Mod_subst.force_constr c, senv' 
+    | OpaqueDef o -> Opaqueproof.force_proof o, 
+      push_context_set (Opaqueproof.force_constraints o) senv'
+    | _ -> assert false in
   let env'' = safe_push_named (id,Some c,typ) senv'.env in
     {senv' with env=env''}
 
@@ -330,30 +334,32 @@ let labels_of_mib mib =
 
 let globalize_constant_universes cb =
   if cb.const_polymorphic then
-    Now Univ.Constraint.empty
+    [Now Univ.Constraint.empty]
   else
-    match cb.const_body with
-    | (Undef _ | Def _) -> Now (Univ.UContext.constraints cb.const_universes)
-    | OpaqueDef lc ->
-      match Opaqueproof.get_constraints lc with
-      | None -> Now (Univ.UContext.constraints cb.const_universes)
-      | Some fc ->
-        match Future.peek_val fc with
-        | None -> Later (Future.chain ~pure:true fc Univ.UContext.constraints)
-        | Some c -> Now (Univ.UContext.constraints c)
+    let cstrs = Univ.UContext.constraints cb.const_universes in
+      Now cstrs ::  
+	(match cb.const_body with
+	| (Undef _ | Def _) -> []
+	| OpaqueDef lc ->
+	  match Opaqueproof.get_constraints lc with
+	  | None -> []
+	  | Some fc ->
+            match Future.peek_val fc with
+            | None -> [Later (Future.chain ~pure:true fc Univ.ContextSet.constraints)]
+            | Some c -> [Now (Univ.ContextSet.constraints c)])
       
 let globalize_mind_universes mb =
   if mb.mind_polymorphic then
-    Now Univ.Constraint.empty
+    [Now Univ.Constraint.empty]
   else
-    Now (Univ.UContext.constraints mb.mind_universes)
+    [Now (Univ.UContext.constraints mb.mind_universes)]
 
 let constraints_of_sfb sfb = 
   match sfb with
   | SFBconst cb -> globalize_constant_universes cb
   | SFBmind mib -> globalize_mind_universes mib
-  | SFBmodtype mtb -> Now mtb.typ_constraints
-  | SFBmodule mb -> Now mb.mod_constraints
+  | SFBmodtype mtb -> [Now mtb.typ_constraints]
+  | SFBmodule mb -> [Now mb.mod_constraints]
 
 (* let add_constraints cst senv = *)
 (*   { senv with *)
@@ -384,7 +390,7 @@ let add_field ((l,sfb) as field) gn senv =
       check_modlabel l senv; (Label.Set.singleton l, Label.Set.empty)
   in
   let cst = constraints_of_sfb sfb in
-  let senv = add_constraints cst senv in
+  let senv = add_constraints_list cst senv in
   let env' = match sfb, gn with
     | SFBconst cb, C con -> Environ.add_constant con cb senv.env
     | SFBmind mib, I mind -> Environ.add_mind mind mib senv.env
@@ -757,7 +763,7 @@ let import lib cst vodigest senv =
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
   let env = Environ.add_constraints mb.mod_constraints senv.env in
-  let env = Environ.push_context cst env in
+  let env = Environ.push_context_set cst env in
   (mp, lib.comp_natsymbs),
   { senv with
     env =

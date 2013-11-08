@@ -100,7 +100,7 @@ Local Unset Intuition Negation Unfolding.
     so they require polymorphism otherwise their first application (e.g. to an
     existential in [Set]) will fix the level of [A].
 *)
-Set Universe Polymorphism.
+(* Set Universe Polymorphism. *)
 
 Section ChoiceSchemes.
 

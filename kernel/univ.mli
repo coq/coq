@@ -433,6 +433,8 @@ val check_constraints : constraints -> universes -> bool
 val solve_constraints_system : universe option array -> universe array -> universe array ->
   universe array
 
+val remove_large_constraint : universe_level -> universe -> universe -> universe
+
 val subst_large_constraint : universe -> universe -> universe -> universe
 
 val subst_large_constraints :

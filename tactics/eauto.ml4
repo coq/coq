@@ -125,7 +125,7 @@ let e_exact poly flags (c,clenv) =
   let clenv', subst = 
     if poly then Clenv.refresh_undefined_univs clenv 
     else clenv, Univ.empty_level_subst
-  in e_give_exact ~flags (Vars.subst_univs_level_constr subst c)
+  in e_give_exact (* ~flags *) (Vars.subst_univs_level_constr subst c)
     
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl =

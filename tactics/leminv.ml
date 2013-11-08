@@ -194,7 +194,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     errorlabstrm "lemma_inversion"
     (str"Computed inversion goal was not closed in initial signature.");
   *)
-  let pf = Proof.start Evd.empty [invEnv,(invGoal,get_universe_context_set sigma)] in
+  let pf = Proof.start Evd.empty [invEnv,(invGoal,universe_context_set sigma)] in
   let pf =
     fst (Proof.run_tactic env (
       tclTHEN intro (onLastHypId inv_op)) pf)
@@ -236,10 +236,9 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
  * inv_op = InvNoThining (derives de semi inversion lemma) *)
 
 let add_inversion_lemma_exn na com comsort bool tac =
-  let env = Global.env () and sigma = Evd.empty in
-  let c,ctx = Constrintern.interp_type sigma env com in
-  let sigma = Evd.merge_context_set Evd.univ_rigid sigma ctx in
-  let sigma, sort = Pretyping.interp_sort sigma comsort in
+  let env = Global.env () and evd = ref Evd.empty in
+  let c = Constrintern.interp_type_evars evd env com in
+  let sigma, sort = Pretyping.interp_sort !evd comsort in
   try
     add_inversion_lemma na env sigma c sort bool tac
   with

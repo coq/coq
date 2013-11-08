@@ -680,7 +680,10 @@ struct
       external node : node -> data = "%identity"
       let hash = ExprHash.hash
       let uid = hash
-      let equal x y = x == y
+      let equal x y = x == y ||
+	(let (u,n) = x and (v,n') = y in
+	   Int.equal n n' && Level.equal u v)
+
       let stats _ = ()
       let init _ = ()
     end
@@ -716,9 +719,9 @@ struct
       | (l, 0) -> Level.is_small l
       | _ -> false
 
-    (* let equal (u,n) (v,n') = *)
-    (*   Int.equal n n' && Level.equal u v *)
-    let equal x y = x == y
+    let equal x y = x == y ||
+      (let (u,n) = x and (v,n') = y in
+	 Int.equal n n' && Level.equal u v)
 
     let leq (u,n) (v,n') =
       let cmp = Level.compare u v in
@@ -1244,18 +1247,6 @@ let check_eq_univs g l1 l2 =
     Huniv.for_all (fun x1 -> exists x1 l2) l1
     && Huniv.for_all (fun x2 -> exists x2 l1) l2
 
-  (* let exists x1 l = Huniv.exists_remove (fun x2 -> f x1 x2) l in *)
-  (*   try *)
-  (*     let l2' =  *)
-  (* 	Huniv.fold (fun x1 acc -> *)
-  (* 	  let l2' = exists x1 l2 in *)
-  (* 	    if l2 == l2' then raise Neq *)
-  (* 	    else l2') l1 l2 *)
-  (*     in  *)
-  (* 	if Huniv.is_nil l2' then true *)
-  (* 	else false (\* l2' has universes that are not equal to any in l1 *\) *)
-  (*   with Neq -> false *)
-
 (** [check_eq] is also used in [Evd.set_eq_sort],
     hence [Evarconv] and [Unification]. In this case,
     it seems that the Atom/Max case may occur,
@@ -1561,6 +1552,8 @@ module UniverseConstraints = struct
   include S
   
   let add (l,d,r as cst) s = 
+    if (Option.is_empty (Universe.level r)) then 
+      prerr_endline "Algebraic universe on the right";
     if Universe.equal l r then s
     else add cst s
 
@@ -2345,7 +2338,9 @@ let remove_large_constraint u v min =
 let is_direct_constraint u v =
   match Universe.level v with
   | Some u' -> Level.equal u u'
-  | None -> Huniv.mem (Universe.Expr.make u) v
+  | None -> 
+    let expr = Universe.Expr.make u in
+      Universe.exists (Universe.Expr.equal expr) v
 
 (*
    Solve a system of universe constraint of the form
@@ -2388,9 +2383,9 @@ let solve_constraints_system levels level_bounds level_min =
 let subst_large_constraint u u' v =
   match level u with
   | Some u ->
-      if is_direct_constraint u v then 
+      (* if is_direct_constraint u v then  *)
 	Universe.sup u' (remove_large_constraint u v type0m_univ)
-      else v
+      (* else v *)
   | _ ->
       anomaly (Pp.str "expect a universe level")
 
@@ -2477,7 +2472,7 @@ let hcons_universe_set =
 let hcons_universe_context_set (v, c) = 
   (hcons_universe_set v, hcons_constraints c)
 
-let hcons_univ x = x (* Universe.hcons (Huniv.node x) *)
+let hcons_univ x = Universe.hcons (Huniv.node x)
 
 let explain_universe_inconsistency (o,u,v,p) =
     let pr_rel = function

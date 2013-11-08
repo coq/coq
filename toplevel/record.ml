@@ -258,7 +258,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
 		  in
 		  let cie = {
                     const_entry_body =
-                      Future.from_val (proj,Declareops.no_seff);
+                      Future.from_val (Term_typing.mk_pure_proof proj);
                     const_entry_secctx = None;
                     const_entry_type = Some projtyp;
 		    const_entry_polymorphic = poly;
