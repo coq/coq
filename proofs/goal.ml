@@ -138,8 +138,8 @@ let eval t env defs gl =
 (* monadic bind on sensitive expressions *)
 let bind e f = (); fun env rdefs goal info ->
   let a = e env rdefs goal info in
-  let b = f a env rdefs goal info in
-  b
+  let r = f a in
+  r env rdefs goal info
 
 (* monadic return on sensitive expressions *)
 let return v = () ; fun _ _ _ _ -> v
@@ -169,11 +169,13 @@ module Refinable = struct
 
   let make t = (); fun env rdefs gl info ->
     let r = ref [] in
-    let me = t r env rdefs gl info in
+    let me = t r in
+    let me = me env rdefs gl info in
     { me = me; my_evars = !r }
   let make_with t = (); fun env rdefs gl info ->
     let r = ref [] in
-    let (me,side) = t r env rdefs gl info in
+    let t = t r in
+    let (me,side) = t env rdefs gl info in
     ({ me = me ; my_evars = !r }, side)
 
   let mkEvar handle env typ = (); fun _ rdefs _ _ ->
