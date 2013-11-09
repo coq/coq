@@ -68,7 +68,7 @@ type tactic_grammar_obj = {
 }
 
 let cache_tactic_notation (_, tobj) =
-  Egramcoq.extend_grammar (Egramcoq.TacticGrammar tobj.tacobj_tacgram);
+  Egramcoq.extend_tactic_grammar tobj.tacobj_tacgram;
   Pptactic.declare_extra_tactic_pprule tobj.tacobj_tacpp
 
 let subst_tactic_parule subst tg =
@@ -769,7 +769,7 @@ let cache_one_syntax_extension se =
     (* Reserve the notation level *)
     Notation.declare_notation_level ntn prec;
     (* Declare the parsing rule *)
-    Egramcoq.extend_grammar (Egramcoq.Notation (prec, se.synext_intern, se.synext_notgram));
+    Egramcoq.extend_constr_grammar prec se.synext_intern se.synext_notgram;
     (* Declare the printing rule *)
     Notation.declare_notation_printing_rule ntn (se.synext_unparsing, fst prec)
 
@@ -1111,7 +1111,7 @@ let recover_syntax ntn =
   try
     let prec = Notation.level_of_notation ntn in
     let pp_rule,_ = Notation.find_notation_printing_rule ntn in
-    let typs, pa_rule = Egramcoq.recover_notation_grammar ntn prec in
+    let typs, pa_rule = Egramcoq.recover_constr_grammar ntn prec in
     { synext_intern = typs;
       synext_level = prec;
       synext_notation = ntn;

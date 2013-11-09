@@ -46,28 +46,24 @@ type tactic_grammar = {
   tacgram_tactic : DirPath.t * Tacexpr.glob_tactic_expr;
 }
 
-(** Adding notations *)
+(** {5 Adding notations} *)
 
-type all_grammar_command =
-  | Notation of
-	 (precedence * tolerability list)
-	  * notation_var_internalization_type list
-	   (** not needed for defining grammar, hosted by egrammar for
-	       transmission to interp_aconstr (via recover_notation_grammar) *)
-	  * notation_grammar
-  | TacticGrammar of tactic_grammar
+val extend_constr_grammar :
+  Notation.level -> notation_var_internalization_type list ->
+  notation_grammar -> unit
+(** Add a term notation rule to the parsing system. *)
 
-val extend_grammar : all_grammar_command -> unit
+val extend_tactic_grammar : tactic_grammar -> unit
+(** Add a tactic notation rule to the parsing system. *)
 
+val recover_constr_grammar : notation -> Notation.level ->
+  notation_var_internalization_type list * notation_grammar
 (** For a declared grammar, returns the rule + the ordered entry types
     of variables in the rule (for use in the interpretation) *)
-val recover_notation_grammar :
-  notation -> (precedence * tolerability list) ->
-  notation_var_internalization_type list * notation_grammar
 
 val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b
 
-(** Adding tactic quotations *)
+(** {5 Adding tactic quotations} *)
 
 val create_ltac_quotation : string -> ('grm Loc.located -> 'raw) ->
   ('raw, 'glb, 'top) genarg_type -> 'grm Gram.entry -> unit

@@ -290,7 +290,13 @@ let extend_grammar gram =
   | TacticGrammar g -> add_tactic_entry g in
   grammar_state := (nb,gram) :: !grammar_state
 
-let recover_notation_grammar ntn prec =
+let extend_constr_grammar pr typs ntn =
+  extend_grammar (Notation (pr, typs, ntn))
+
+let extend_tactic_grammar ntn =
+  extend_grammar (TacticGrammar ntn)
+
+let recover_constr_grammar ntn prec =
   let filter = function
   | _, Notation (prec', vars, ng) when
       Notation.level_eq prec prec' &&
