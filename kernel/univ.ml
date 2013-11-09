@@ -1899,15 +1899,22 @@ let enforce_leq_level u v c =
   if Level.equal u v then c else Constraint.add (u,Le,v) c
 
 let enforce_eq_instances x y = 
-  CArray.fold_right2 enforce_eq_level (Instance.to_array x) (Instance.to_array y)
+  let ax = Instance.to_array x and ay = Instance.to_array y in
+    if Array.length ax != Array.length ay then
+      anomaly (Pp.str "Invalid argument: enforce_eq_instances called with instances of different lengths");
+    CArray.fold_right2 enforce_eq_level ax ay
 
 type 'a universe_constraint_function = 'a -> 'a -> universe_constraints -> universe_constraints
 
-let enforce_eq_instances_univs strict t1 t2 c = 
+let enforce_eq_instances_univs strict x y c = 
   let d = if strict then ULub else UEq in
-    CArray.fold_right2 (fun x y -> UniverseConstraints.add (Universe.make x, d, Universe.make y))
-      (Instance.to_array t1) (Instance.to_array t2) c
-
+  let ax = Instance.to_array x and ay = Instance.to_array y in
+    if Array.length ax != Array.length ay then
+      anomaly (Pp.str "Invalid argument: enforce_eq_instances_univs called with instances of different lengths");    
+    CArray.fold_right2
+      (fun x y -> UniverseConstraints.add (Universe.make x, d, Universe.make y))
+      ax ay c
+      
 let merge_constraints c g =
   Constraint.fold enforce_constraint c g
 
