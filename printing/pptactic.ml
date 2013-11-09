@@ -623,7 +623,7 @@ let rec pr_atom0 = function
 and pr_atom1 = function
   | TacExtend (loc,s,l) ->
       pr_with_comments loc (pr_extend 1 s l)
-  | TacAlias (loc,s,l) ->
+  | TacAlias (loc,s,l,_) ->
       pr_with_comments loc (pr_extend 1 s (List.map snd l))
 
   (* Basic tactics *)
@@ -912,7 +912,7 @@ let rec pr_tac inherited tac =
       pr_tac (lcomplete,E) t, lcomplete
   | TacId l ->
       str "idtac" ++ prlist (pr_arg (pr_message_token pr_ident)) l, latom
-  | TacAtom (loc,TacAlias (_,s,l)) ->
+  | TacAtom (loc,TacAlias (_,s,l,_)) ->
       pr_with_comments loc
         (pr_extend (level_of inherited) s (List.map snd l)),
       latom

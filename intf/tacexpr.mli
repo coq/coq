@@ -178,7 +178,8 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacExtend of Loc.t * string * 'lev generic_argument list
 
   (* For syntax extensions *)
-  | TacAlias of Loc.t * string * (Id.t * 'lev generic_argument) list
+  | TacAlias of Loc.t * string *
+      (Id.t * 'lev generic_argument) list * (DirPath.t * glob_tactic_expr)
 
 (** Possible arguments of a tactic definition *)
 
@@ -249,14 +250,14 @@ and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_fun_ast =
 
 (** Globalized tactics *)
 
-type g_trm = glob_constr_and_expr
-type g_pat = glob_constr_and_expr * constr_pattern
-type g_cst = evaluable_global_reference and_short_name or_var
-type g_ind = inductive or_var
-type g_ref = ltac_constant located or_var
-type g_nam  = Id.t located
+and g_trm = glob_constr_and_expr
+and g_pat = glob_constr_and_expr * constr_pattern
+and g_cst = evaluable_global_reference and_short_name or_var
+and g_ind = inductive or_var
+and g_ref = ltac_constant located or_var
+and g_nam  = Id.t located
 
-type glob_tactic_expr =
+and glob_tactic_expr =
     (g_trm, g_pat, g_cst, g_ind, g_ref, g_nam, glevel) gen_tactic_expr
 
 type glob_atomic_tactic_expr =

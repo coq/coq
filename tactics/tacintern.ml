@@ -634,9 +634,9 @@ let rec intern_atomic lf ist x =
   | TacExtend (loc,opn,l) ->
       !assert_tactic_installed opn;
       TacExtend (adjust_loc loc,opn,List.map (intern_genarg ist) l)
-  | TacAlias (loc,s,l) ->
+  | TacAlias (loc,s,l,(dir,body)) ->
       let l = List.map (fun (id,a) -> (id,intern_genarg ist a)) l in
-      TacAlias (loc,s,l)
+      TacAlias (loc,s,l,(dir,body))
 
 and intern_tactic onlytac ist tac = snd (intern_tactic_seq onlytac ist tac)
 
