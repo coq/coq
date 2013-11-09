@@ -36,7 +36,8 @@ type notation_grammar = {
   notgram_level : int;
   notgram_assoc : gram_assoc option;
   notgram_notation : notation;
-  notgram_prods : grammar_constr_prod_item list list
+  notgram_prods : grammar_constr_prod_item list list;
+  notgram_typs : notation_var_internalization_type list;
 }
 
 type tactic_grammar = {
@@ -48,16 +49,13 @@ type tactic_grammar = {
 
 (** {5 Adding notations} *)
 
-val extend_constr_grammar :
-  Notation.level -> notation_var_internalization_type list ->
-  notation_grammar -> unit
+val extend_constr_grammar : Notation.level -> notation_grammar -> unit
 (** Add a term notation rule to the parsing system. *)
 
 val extend_tactic_grammar : tactic_grammar -> unit
 (** Add a tactic notation rule to the parsing system. *)
 
-val recover_constr_grammar : notation -> Notation.level ->
-  notation_var_internalization_type list * notation_grammar
+val recover_constr_grammar : notation -> Notation.level -> notation_grammar
 (** For a declared grammar, returns the rule + the ordered entry types
     of variables in the rule (for use in the interpretation) *)
 

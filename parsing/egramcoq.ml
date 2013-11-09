@@ -204,7 +204,8 @@ type notation_grammar = {
   notgram_level : int;
   notgram_assoc : gram_assoc option;
   notgram_notation : notation;
-  notgram_prods : grammar_constr_prod_item list list
+  notgram_prods : grammar_constr_prod_item list list;
+  notgram_typs : notation_var_internalization_type list;
 }
 
 let extend_constr_constr_notation ng =
@@ -252,10 +253,7 @@ type tactic_grammar = {
 }
 
 type all_grammar_command =
-  | Notation of
-	 (precedence * tolerability list) *
-	  notation_var_internalization_type list *
-	  notation_grammar
+  | Notation of Notation.level * notation_grammar
   | TacticGrammar of tactic_grammar
 
 (* Declaration of the tactic grammar rule *)
@@ -286,21 +284,21 @@ let (grammar_state : (int * all_grammar_command) list ref) = ref []
 
 let extend_grammar gram =
   let nb = match gram with
-  | Notation (_,_,a) -> extend_constr_notation a
+  | Notation (_,a) -> extend_constr_notation a
   | TacticGrammar g -> add_tactic_entry g in
   grammar_state := (nb,gram) :: !grammar_state
 
-let extend_constr_grammar pr typs ntn =
-  extend_grammar (Notation (pr, typs, ntn))
+let extend_constr_grammar pr ntn =
+  extend_grammar (Notation (pr, ntn))
 
 let extend_tactic_grammar ntn =
   extend_grammar (TacticGrammar ntn)
 
 let recover_constr_grammar ntn prec =
   let filter = function
-  | _, Notation (prec', vars, ng) when
+  | _, Notation (prec', ng) when
       Notation.level_eq prec prec' &&
-      String.equal ntn ng.notgram_notation -> Some (vars, ng)
+      String.equal ntn ng.notgram_notation -> Some ng
   | _ -> None
   in
   match List.map_filter filter !grammar_state with

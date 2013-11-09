@@ -750,7 +750,6 @@ let error_incompatible_level ntn oldprec prec =
     pr_level ntn prec ++ str ".")
 
 type syntax_extension = {
-  synext_intern : notation_var_internalization_type list;
   synext_level : Notation.level;
   synext_notation : notation;
   synext_notgram : notation_grammar;
@@ -769,7 +768,7 @@ let cache_one_syntax_extension se =
     (* Reserve the notation level *)
     Notation.declare_notation_level ntn prec;
     (* Declare the parsing rule *)
-    Egramcoq.extend_constr_grammar prec se.synext_intern se.synext_notgram;
+    Egramcoq.extend_constr_grammar prec se.synext_notgram;
     (* Declare the printing rule *)
     Notation.declare_notation_printing_rule ntn (se.synext_unparsing, fst prec)
 
@@ -1111,9 +1110,8 @@ let recover_syntax ntn =
   try
     let prec = Notation.level_of_notation ntn in
     let pp_rule,_ = Notation.find_notation_printing_rule ntn in
-    let typs, pa_rule = Egramcoq.recover_constr_grammar ntn prec in
-    { synext_intern = typs;
-      synext_level = prec;
+    let pa_rule = Egramcoq.recover_constr_grammar ntn prec in
+    { synext_level = prec;
       synext_notation = ntn;
       synext_notgram = pa_rule;
       synext_unparsing = pp_rule; }
@@ -1129,18 +1127,19 @@ let recover_notation_syntax rawntn =
   let sy = recover_syntax ntn in
   let need_squash = not (String.equal ntn rawntn) in
   let rules = if need_squash then recover_squash_syntax sy else [sy] in
-  sy.synext_intern, rules
+  sy.synext_notgram.notgram_typs, rules
 
 (**********************************************************************)
 (* Main entry point for building parsing and printing rules           *)
 
-let make_pa_rule (n,typs,symbols,_) ntn =
+let make_pa_rule i_typs (n,typs,symbols,_) ntn =
   let assoc = recompute_assoc typs in
   let prod = make_production typs symbols in
   { notgram_level = n;
     notgram_assoc = assoc;
     notgram_notation = ntn;
-    notgram_prods = prod; }
+    notgram_prods = prod;
+    notgram_typs = i_typs; }
 
 let make_pp_rule (n,typs,symbols,fmt) =
   match fmt with
@@ -1148,10 +1147,9 @@ let make_pp_rule (n,typs,symbols,fmt) =
   | Some fmt -> hunks_of_format (n, List.split typs) (symbols, parse_format fmt)
 
 let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) =
-  let pa_rule = make_pa_rule sy_data ntn in
+  let pa_rule = make_pa_rule i_typs sy_data ntn in
   let pp_rule = make_pp_rule sy_data in
   let sy = {
-    synext_intern = i_typs;
     synext_level = prec;
     synext_notation = ntn;
     synext_notgram = pa_rule;
