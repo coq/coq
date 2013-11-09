@@ -332,7 +332,8 @@ fi
 
 MAKE=`which ${makecmd:-make}`
 if [ "$MAKE" != "" ]; then
-  MAKEVERSION=`$MAKE -v | head -1 | cut -d" " -f3`
+  # Beware of the final \r in Win32
+  MAKEVERSION=`"$MAKE" -v | head -1 | tr -d "\r" | cut -d" " -f3`
   MAKEVERSIONMAJOR=`echo $MAKEVERSION | cut -d. -f1`
   MAKEVERSIONMINOR=`echo $MAKEVERSION | cut -d. -f2`
   if [ "$MAKEVERSIONMAJOR" -gt 3 -o "$MAKEVERSIONMAJOR" -eq 3 -a "$MAKEVERSIONMINOR" -ge 81 ]; then
@@ -522,7 +523,8 @@ case $usecamlp5 in
 	    exit 1
 	fi
     else
-	camlp5dir="$(camlp5 -where)"
+	# Beware of the final \r in Win32
+	camlp5dir="$(camlp5 -where | tr -d "\r")"
 	if [ "$camlp5dir" != "" ]; then
 	    CAMLP4LIB=$camlp5dir
 	    FULLCAMLP4LIB=$camlp5dir
@@ -629,7 +631,8 @@ if [ "$coqide_spec" = "yes" -a "$COQIDE" = "no" ]; then
 else
     case $lablgtkdir_spec in
 	no)
-            if lablgtkdirtmp=$(ocamlfind query lablgtk2 2> /dev/null); then
+            # Beware of the final \r in Win32
+            if lablgtkdirtmp="$(ocamlfind query lablgtk2 2> /dev/null | tr -d "\r")"; then
                 if [ -f "$lablgtkdirtmp/glib.cmi" -a -f "$lablgtkdirtmp/glib.mli" ]; then
                     lablgtkdirfoundmsg="LabelGtk2 found by ocamlfind"
                     lablgtkdir=$lablgtkdirtmp
