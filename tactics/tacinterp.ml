@@ -2231,7 +2231,8 @@ and interp_atomic ist tac =
       Proofview.V82.tclEVARS sigma <*>
       tac args ist
       end
-  | TacAlias (loc,s,l,(_,body)) ->
+  | TacAlias (loc,s,l) ->
+      let (_, body) = Tacenv.interp_alias s in
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
       let rec f x =

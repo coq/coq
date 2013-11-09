@@ -44,7 +44,6 @@ type tactic_grammar = {
   tacgram_key : string;
   tacgram_level : int;
   tacgram_prods : grammar_prod_item list;
-  tacgram_tactic : DirPath.t * Tacexpr.glob_tactic_expr;
 }
 
 (** {5 Adding notations} *)

@@ -249,7 +249,6 @@ type tactic_grammar = {
   tacgram_key : string;
   tacgram_level : int;
   tacgram_prods : grammar_prod_item list;
-  tacgram_tactic : DirPath.t * Tacexpr.glob_tactic_expr;
 }
 
 type all_grammar_command =
@@ -269,12 +268,12 @@ let add_tactic_entry tg =
       if not (head_is_ident tg) then
         error "Notation for simple tactic must start with an identifier.";
       let mkact loc l =
-        (TacAlias (loc,tg.tacgram_key,l,tg.tacgram_tactic):raw_atomic_tactic_expr) in
+        (TacAlias (loc,tg.tacgram_key,l):raw_atomic_tactic_expr) in
       make_rule mkact tg.tacgram_prods
     end
     else
       let mkact loc l =
-        (TacAtom(loc,TacAlias(loc,tg.tacgram_key,l,tg.tacgram_tactic)):raw_tactic_expr) in
+        (TacAtom(loc,TacAlias(loc,tg.tacgram_key,l)):raw_tactic_expr) in
       make_rule mkact tg.tacgram_prods in
   synchronize_level_positions ();
   grammar_extend entry None (Option.map of_coq_position pos,[(None, None, List.rev [rules])]);

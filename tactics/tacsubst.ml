@@ -219,9 +219,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* For extensions *)
   | TacExtend (_loc,opn,l) ->
       TacExtend (dloc,opn,List.map (subst_genarg subst) l)
-  | TacAlias (_,s,l,(dir,body)) ->
-      TacAlias (dloc,s,List.map (fun (id,a) -> (id,subst_genarg subst a)) l,
-        (dir,subst_tactic subst body))
+  | TacAlias (_,s,l) ->
+      TacAlias (dloc,s,List.map (fun (id,a) -> (id,subst_genarg subst a)) l)
 
 and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacAtom (_loc,t) -> TacAtom (dloc, subst_atomic subst t)
