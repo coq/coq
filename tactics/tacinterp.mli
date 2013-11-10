@@ -49,14 +49,6 @@ val extract_ltac_constr_values : interp_sign -> Environ.env ->
 (** Given an interpretation signature, extract all values which are coercible to
     a [constr]. *)
 
-(** Tactic extensions *)
-val add_tactic :
-  string -> (typed_generic_argument list -> interp_sign -> unit Proofview.tactic) -> unit
-val overwriting_add_tactic :
-  string -> (typed_generic_argument list -> interp_sign -> unit Proofview.tactic) -> unit
-val lookup_tactic :
-  string -> (typed_generic_argument list) -> interp_sign -> unit Proofview.tactic
-
 (** To embed several objects in Coqast.t *)
 val tactic_in : (interp_sign -> glob_tactic_expr) -> Dyn.t
 val tactic_out : Dyn.t -> (interp_sign -> glob_tactic_expr)

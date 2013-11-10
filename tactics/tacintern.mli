@@ -61,14 +61,6 @@ val intern_hyp : glob_sign -> Id.t Loc.located -> Id.t Loc.located
 
 val intern_genarg : glob_sign -> raw_generic_argument -> glob_generic_argument
 
-(** Adds a definition of tactics in the table *)
-val add_tacdef :
-  Vernacexpr.locality_flag -> bool ->
-  (Libnames.reference * bool * raw_tactic_expr) list -> unit
-val add_primitive_tactic : string -> glob_tactic_expr -> unit
-
-val lookup_ltacref : ltac_constant -> glob_tactic_expr
-
 (** printing *)
 val print_ltac : Libnames.qualid -> std_ppcmds
 
@@ -77,5 +69,8 @@ val print_ltac : Libnames.qualid -> std_ppcmds
 val intern_red_expr : glob_sign -> raw_red_expr -> glob_red_expr
 val dump_glob_red_expr : raw_red_expr -> unit
 
-(* Implemented in tacinterp *)
-val set_assert_tactic_installed : (string -> unit) -> unit
+(* Hooks *)
+val assert_tactic_installed_hook : (string -> unit) Hook.t
+val interp_atomic_ltac_hook : (Id.t -> glob_tactic_expr) Hook.t
+val interp_ltac_hook : (KerName.t -> glob_tactic_expr) Hook.t
+val strict_check : bool ref

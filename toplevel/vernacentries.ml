@@ -869,7 +869,7 @@ let vernac_restore_state file =
 
 let vernac_declare_tactic_definition locality (x,def) =
   let local = make_module_locality locality in
-  Tacintern.add_tacdef local x def
+  Tacenv.register_ltac local x def
 
 let vernac_create_hintdb locality id b =
   let local = make_module_locality locality in

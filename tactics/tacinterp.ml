@@ -181,34 +181,6 @@ let ((value_in : value -> Dyn.t),
 
 let valueIn t = TacDynamic (Loc.ghost, value_in t)
 
-(* Tactics table (TacExtend). *)
-
-let tac_tab = Hashtbl.create 17
-
-let add_tactic s t =
-  if Hashtbl.mem tac_tab s then
-    errorlabstrm ("Refiner.add_tactic: ")
-      (str ("Cannot redeclare tactic "^s^"."));
-  Hashtbl.add tac_tab s t
-
-let overwriting_add_tactic s t =
-  if Hashtbl.mem tac_tab s then begin
-    Hashtbl.remove tac_tab s;
-    msg_warning (strbrk ("Overwriting definition of tactic "^s))
-  end;
-  Hashtbl.add tac_tab s t
-
-let lookup_tactic s =
-  try
-    Hashtbl.find tac_tab s
-  with Not_found ->
-    errorlabstrm "Refiner.lookup_tactic"
-      (str"The tactic " ++ str s ++ str" is not installed.")
-
-let () =
-  Tacintern.set_assert_tactic_installed (fun opn ->
-     let _ignored = lookup_tactic opn in ())
-
 (** Generic arguments : table of interpretation functions *)
 
 let push_trace (loc, ck) ist = match TacStore.get ist.extra f_trace with
@@ -1193,7 +1165,7 @@ and interp_ltac_reference loc' mustbetac ist = function
       let extra = TacStore.set ist.extra f_avoid_ids ids in 
       let extra = TacStore.set extra f_trace (push_trace loc_info ist) in
       let ist = { lfun = Id.Map.empty; extra = extra; } in
-      val_interp ist (lookup_ltacref r)
+      val_interp ist (Tacenv.interp_ltac r)
 
 and interp_tacarg ist arg =
   let tac_of_old f =
@@ -2216,12 +2188,12 @@ and interp_atomic ist tac =
       (* spiwack: a special case for tactics (from TACTIC EXTEND) without arguments to
          be interpreted without a [Proofview.Goal.enter]. Eventually we should make
          something more fine-grained by modifying [interp_genarg]. *)
-      let tac = lookup_tactic opn in
+      let tac = Tacenv.interp_ml_tactic opn in
       tac [] ist
   | TacExtend (loc,opn,l) ->
       Proofview.Goal.enter begin fun gl ->
       let goal_sigma = Proofview.Goal.sigma gl in
-      let tac = lookup_tactic opn in
+      let tac = Tacenv.interp_ml_tactic opn in
       let (sigma,args) = Tacmach.New.of_old begin fun gl ->
 	List.fold_right begin fun a (sigma,acc) ->
 	  let (sigma,a_interp) = interp_genarg ist { gl with sigma=sigma } a in

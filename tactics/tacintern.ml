@@ -67,59 +67,6 @@ let fully_empty_glob_sign =
 let make_empty_glob_sign () =
   { fully_empty_glob_sign with genv = Global.env () }
 
-(* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
-
-let atomic_mactab = ref Id.Map.empty
-let add_primitive_tactic s tac =
-  let id = Id.of_string s in
-  atomic_mactab := Id.Map.add id tac !atomic_mactab
-
-let _ =
-  let nocl = {onhyps=Some[];concl_occs=AllOccurrences} in
-  List.iter
-      (fun (s,t) -> add_primitive_tactic s (TacAtom(dloc,t)))
-      [ "red", TacReduce(Red false,nocl);
-        "hnf", TacReduce(Hnf,nocl);
-        "simpl", TacReduce(Simpl None,nocl);
-        "compute", TacReduce(Cbv Redops.all_flags,nocl);
-        "intro", TacIntroMove(None,MoveLast);
-        "intros", TacIntroPattern [];
-        "assumption", TacAssumption;
-        "cofix", TacCofix None;
-        "trivial", TacTrivial (Off,[],None);
-        "auto", TacAuto(Off,None,[],None);
-        "left", TacLeft(false,NoBindings);
-        "eleft", TacLeft(true,NoBindings);
-        "right", TacRight(false,NoBindings);
-        "eright", TacRight(true,NoBindings);
-        "split", TacSplit(false,false,[NoBindings]);
-        "esplit", TacSplit(true,false,[NoBindings]);
-        "constructor", TacAnyConstructor (false,None);
-        "econstructor", TacAnyConstructor (true,None);
-        "reflexivity", TacReflexivity;
-        "symmetry", TacSymmetry nocl
-      ];
-  List.iter
-      (fun (s,t) -> add_primitive_tactic s t)
-      [ "idtac",TacId [];
-        "fail", TacFail(ArgArg 0,[]);
-        "fresh", TacArg(dloc,TacFreshId [])
-      ]
-
-let lookup_atomic id = Id.Map.find id !atomic_mactab
-let is_atomic_kn kn =
-  let (_,_,l) = repr_kn kn in
-  Id.Map.mem (Label.to_id l) !atomic_mactab
-
-(* Summary and Object declaration *)
-
-let mactab =
-  Summary.ref (KNmap.empty : glob_tactic_expr KNmap.t)
-    ~name:"tactic-definition"
-
-let lookup_ltacref r = KNmap.find r !mactab
-
-
 (* We have identifier <| global_reference <| constr *)
 
 let find_ident id ist =
@@ -209,6 +156,9 @@ let intern_move_location ist = function
   | MoveFirst -> MoveFirst
   | MoveLast -> MoveLast
 
+let (f_interp_atomic_ltac, interp_atomic_ltac_hook) = Hook.make ()
+let (f_interp_ltac, interp_ltac_hook) = Hook.make ()
+
 (* Internalize an isolated reference in position of tactic *)
 
 let intern_isolated_global_tactic_reference r =
@@ -216,7 +166,7 @@ let intern_isolated_global_tactic_reference r =
   try TacCall (loc,ArgArg (loc,locate_tactic qid),[])
   with Not_found ->
   match r with
-  | Ident (_,id) -> Tacexp (lookup_atomic id)
+  | Ident (_, id) -> Tacexp (Hook.get f_interp_atomic_ltac id)
   | _ -> raise Not_found
 
 let intern_isolated_tactic_reference strict ist r =
@@ -497,8 +447,7 @@ let clause_app f = function
   | { onhyps=Some l; concl_occs=nl } ->
       { onhyps=Some(List.map f l); concl_occs=nl}
 
-let assert_tactic_installed = ref (fun _ -> ())
-let set_assert_tactic_installed f = assert_tactic_installed := f
+let (f_assert_tactic_installed, assert_tactic_installed_hook) = Hook.make ()
 
 (* Globalizes tactics : raw_tactic_expr -> glob_tactic_expr *)
 let rec intern_atomic lf ist x =
@@ -632,7 +581,7 @@ let rec intern_atomic lf ist x =
 
   (* For extensions *)
   | TacExtend (loc,opn,l) ->
-      !assert_tactic_installed opn;
+      Hook.get f_assert_tactic_installed opn;
       TacExtend (adjust_loc loc,opn,List.map (intern_genarg ist) l)
   | TacAlias (loc,s,l) ->
       let l = List.map (fun (id,a) -> (id,intern_genarg ist a)) l in
@@ -815,63 +764,6 @@ let glob_tactic_env l env x =
     { ltacvars; ltacrecvars = Id.Map.empty; gsigma = Evd.empty; genv = env })
     x
 
-(***************************************************************************)
-(* Tactic registration *)
-
-(* Declaration of the TAC-DEFINITION object *)
-let add (kn,td) = mactab := KNmap.add kn td !mactab
-let replace (kn,td) = mactab := KNmap.add kn td (KNmap.remove kn !mactab)
-
-type tacdef_kind =
-  | NewTac of Id.t
-  | UpdateTac of ltac_constant
-
-let load_md i ((sp,kn),(local,defs)) =
-  let dp,_ = repr_path sp in
-  let mp,dir,_ = repr_kn kn in
-  List.iter (fun (id,t) ->
-    match id with
-      | NewTac id ->
-	  let sp = Libnames.make_path dp id in
-	  let kn = Names.make_kn mp dir (Label.of_id id) in
-	    Nametab.push_tactic (Until i) sp kn;
-	    add (kn,t)
-      | UpdateTac kn -> replace (kn,t)) defs
-
-let open_md i ((sp,kn),(local,defs)) =
-  let dp,_ = repr_path sp in
-  let mp,dir,_ = repr_kn kn in
-  List.iter (fun (id,t) ->
-    match id with
-	NewTac id ->
-	  let sp = Libnames.make_path dp id in
-	  let kn = Names.make_kn mp dir (Label.of_id id) in
-	    Nametab.push_tactic (Exactly i) sp kn
-      | UpdateTac kn -> ()) defs
-
-let cache_md x = load_md 1 x
-
-let subst_kind subst id =
-  match id with
-    | NewTac _ -> id
-    | UpdateTac kn -> UpdateTac (subst_kn subst kn)
-
-let subst_md (subst,(local,defs)) =
-  (local,
-   List.map (fun (id,t) ->
-     (subst_kind subst id,Tacsubst.subst_tactic subst t)) defs)
-
-let classify_md (local,defs as o) =
-  if local then Dispose else Substitute o
-
-let inMD : bool * (tacdef_kind * glob_tactic_expr) list -> obj =
-  declare_object {(default_object "TAC-DEFINITION") with
-     cache_function  = cache_md;
-     load_function   = load_md;
-     open_function   = open_md;
-     subst_function = subst_md;
-     classify_function = classify_md}
-
 let split_ltac_fun = function
   | TacFun (l,t) -> (l,t)
   | t -> ([],t)
@@ -883,7 +775,7 @@ let pr_ltac_fun_arg = function
 let print_ltac id =
  try
   let kn = Nametab.locate_tactic id in
-  let l,t = split_ltac_fun (lookup_ltacref kn) in
+  let l,t = split_ltac_fun (Hook.get f_interp_ltac kn) in
   hv 2 (
     hov 2 (str "Ltac" ++ spc() ++ pr_qualid id ++
            prlist pr_ltac_fun_arg l ++ spc () ++ str ":=")
@@ -892,59 +784,6 @@ let print_ltac id =
   Not_found ->
    errorlabstrm "print_ltac"
     (pr_qualid id ++ spc() ++ str "is not a user defined tactic.")
-
-open Libnames
-
-(* Adds a definition for tactics in the table *)
-let make_absolute_name ident repl =
-  let loc = loc_of_reference ident in
-  try
-    let id, kn =
-      if repl then None, Nametab.locate_tactic (snd (qualid_of_reference ident))
-      else let id = coerce_reference_to_id ident in
-	     Some id, Lib.make_kn id
-    in
-      if KNmap.mem kn !mactab then
-	if repl then id, kn
-	else
-	  user_err_loc (loc,"Tacinterp.add_tacdef",
-		       str "There is already an Ltac named " ++ pr_reference ident ++ str".")
-      else if is_atomic_kn kn then
-	user_err_loc (loc,"Tacinterp.add_tacdef",
-		     str "Reserved Ltac name " ++ pr_reference ident ++ str".")
-      else id, kn
-  with Not_found ->
-    user_err_loc (loc,"Tacinterp.add_tacdef",
-		 str "There is no Ltac named " ++ pr_reference ident ++ str".")
-
-let add_tacdef local isrec tacl =
-  let rfun = List.map (fun (ident, b, _) -> make_absolute_name ident b) tacl in
-  let ltacrecvars =
-    let fold accu (idopt, v) = match idopt with
-    | None -> accu
-    | Some id -> Id.Map.add id v accu
-    in
-    if isrec then List.fold_left fold Id.Map.empty rfun
-    else Id.Map.empty
-  in
-  let ist = { (make_empty_glob_sign ()) with ltacrecvars; } in
-  let gtacl =
-    List.map2 (fun (_,b,def) (id, qid) ->
-      let k = if b then UpdateTac qid else NewTac (Option.get id) in
-      let t = Flags.with_option strict_check (intern_tactic_or_tacarg ist) def in
-	(k, t))
-      tacl rfun
-  in
-  let _ = match rfun with
-    | (Some id0, _) :: _ -> ignore(Lib.add_leaf id0 (inMD (local,gtacl)))
-    | _ -> Lib.add_anonymous_leaf (inMD (local,gtacl))
-  in
-  List.iter
-    (fun (id,b,_) ->
-      Flags.if_verbose msg_info (Libnames.pr_reference id ++
-				 (if b then str " is redefined"
-				   else str " is defined")))
-    tacl
 
 (** Registering *)
 

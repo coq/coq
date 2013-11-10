@@ -185,13 +185,13 @@ let declare_tactic loc s c cl =
   declare_str_items loc
     [ <:str_item< do {
       try do {
-        Tacinterp.add_tactic $se$ $make_fun_clauses loc s cl$;
+        Tacenv.register_ml_tactic $se$ $make_fun_clauses loc s cl$;
         Vernac_classifier.declare_vernac_classifier
           $se$ $make_fun_classifiers loc s c cl$;
         List.iter
           (fun (s,l) -> match l with
            [ Some l ->
-              Tacintern.add_primitive_tactic s
+              Tacenv.register_atomic_ltac (Names.Id.of_string s)
               (Tacexpr.TacAtom($default_loc$,
                  Tacexpr.TacExtend($default_loc$,$se$,l)))
            | None -> () ])
