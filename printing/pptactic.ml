@@ -30,18 +30,21 @@ let pr_global x = Nametab.pr_global_env Id.Set.empty x
 type grammar_terminals = string option list
 
 type pp_tactic = {
-  pptac_key : string;
   pptac_args : argument_type list;
   pptac_prods : int * grammar_terminals;
 }
 
-  (* Extensions *)
+(* ML Extensions *)
 let prtac_tab = Hashtbl.create 17
 
-let declare_extra_tactic_pprule pt =
-  Hashtbl.add prtac_tab (pt.pptac_key, pt.pptac_args) (pt.pptac_prods)
+(* Tactic notations *)
+let prnotation_tab = Hashtbl.create 17
 
-let exists_extra_tactic_pprule s tags = Hashtbl.mem prtac_tab (s,tags)
+let declare_ml_tactic_pprule key pt =
+  Hashtbl.add prtac_tab (key, pt.pptac_args) pt.pptac_prods
+
+let declare_notation_tactic_pprule kn pt =
+  Hashtbl.add prnotation_tab (kn, pt.pptac_args) pt.pptac_prods
 
 type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) ->
@@ -268,11 +271,27 @@ let pr_extend_gen pr_gen lev s l =
   with Not_found ->
     str s ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
 
+let pr_alias_gen pr_gen lev s l =
+  try
+    let tags = List.map genarg_tag l in
+    let (lev',pl) = Hashtbl.find prnotation_tab (s,tags) in
+    let p = pr_tacarg_using_rule pr_gen (pl,l) in
+    if lev' > lev then surround p else p
+  with Not_found ->
+    KerName.print s ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
+
 let pr_raw_extend prc prlc prtac prpat =
   pr_extend_gen (pr_raw_generic prc prlc prtac prpat pr_reference)
 let pr_glob_extend prc prlc prtac prpat =
   pr_extend_gen (pr_glb_generic prc prlc prtac prpat)
 let pr_extend prc prlc prtac prpat =
+  pr_extend_gen (pr_top_generic prc prlc prtac prpat)
+
+let pr_raw_alias prc prlc prtac prpat =
+  pr_alias_gen (pr_raw_generic prc prlc prtac prpat pr_reference)
+let pr_glob_alias prc prlc prtac prpat =
+  pr_alias_gen (pr_glb_generic prc prlc prtac prpat)
+let pr_alias prc prlc prtac prpat =
   pr_extend_gen (pr_top_generic prc prlc prtac prpat)
 
 (**********************************************************************)
@@ -543,13 +562,14 @@ let level_of (n,p) = match p with E -> n | L -> n-1 | Prec n -> n | Any -> lseq
 
 let make_pr_tac pr_tac_level
   (pr_constr,pr_lconstr,pr_pat,pr_lpat,
-   pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders, pr_gen) =
+   pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,pr_alias,strip_prod_binders, pr_gen) =
 
 (* some shortcuts *)
 let pr_bindings = pr_bindings pr_lconstr pr_constr in
 let pr_ex_bindings = pr_bindings_gen true pr_lconstr pr_constr in
 let pr_with_bindings = pr_with_bindings pr_lconstr pr_constr in
 let pr_extend = pr_extend pr_constr pr_lconstr pr_tac_level pr_pat in
+let pr_alias = pr_alias pr_constr pr_lconstr pr_tac_level pr_pat in
 let pr_red_expr = pr_red_expr (pr_constr,pr_lconstr,pr_cst,pr_pat) in
 
 let pr_constrarg c = spc () ++ pr_constr c in
@@ -623,8 +643,8 @@ let rec pr_atom0 = function
 and pr_atom1 = function
   | TacExtend (loc,s,l) ->
       pr_with_comments loc (pr_extend 1 s l)
-  | TacAlias (loc,s,l,_) ->
-      pr_with_comments loc (pr_extend 1 s (List.map snd l))
+  | TacAlias (loc,kn,l) ->
+      pr_with_comments loc (pr_alias 1 kn (List.map snd l))
 
   (* Basic tactics *)
   | TacIntroPattern [] as t -> pr_atom0 t
@@ -912,9 +932,9 @@ let rec pr_tac inherited tac =
       pr_tac (lcomplete,E) t, lcomplete
   | TacId l ->
       str "idtac" ++ prlist (pr_arg (pr_message_token pr_ident)) l, latom
-  | TacAtom (loc,TacAlias (_,s,l,_)) ->
+  | TacAtom (loc,TacAlias (_,kn,l)) ->
       pr_with_comments loc
-        (pr_extend (level_of inherited) s (List.map snd l)),
+        (pr_alias (level_of inherited) kn (List.map snd l)),
       latom
   | TacAtom (loc,t) ->
       pr_with_comments loc (hov 1 (pr_atom1 t)), ltatom
@@ -971,6 +991,7 @@ let raw_printers =
      pr_reference,
      pr_or_metaid pr_lident,
      pr_raw_extend,
+     pr_raw_alias,
      strip_prod_binders_expr,
      Genprint.generic_raw_print)
 
@@ -994,6 +1015,7 @@ let pr_glob_tactic_level env =
      pr_ltac_or_var (pr_located pr_ltac_constant),
      pr_lident,
      pr_glob_extend,
+     pr_glob_alias,
      strip_prod_binders_glob_constr,
      Genprint.generic_glb_print)
   in

@@ -41,10 +41,8 @@ type notation_grammar = {
 }
 
 type tactic_grammar = {
-  tacgram_key : string;
   tacgram_level : int;
   tacgram_prods : grammar_prod_item list;
-  tacgram_tactic : DirPath.t * Tacexpr.glob_tactic_expr;
 }
 
 (** {5 Adding notations} *)
@@ -52,7 +50,7 @@ type tactic_grammar = {
 val extend_constr_grammar : Notation.level -> notation_grammar -> unit
 (** Add a term notation rule to the parsing system. *)
 
-val extend_tactic_grammar : tactic_grammar -> unit
+val extend_tactic_grammar : KerName.t -> tactic_grammar -> unit
 (** Add a tactic notation rule to the parsing system. *)
 
 val recover_constr_grammar : notation -> Notation.level -> notation_grammar

@@ -2231,7 +2231,8 @@ and interp_atomic ist tac =
       Proofview.V82.tclEVARS sigma <*>
       tac args ist
       end
-  | TacAlias (loc,s,l,(_,body)) ->
+  | TacAlias (loc,s,l) ->
+      let (_, body) = Tacenv.interp_alias s in
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
       let rec f x =
@@ -2332,7 +2333,7 @@ and interp_atomic ist tac =
         Proofview.Goal.return (Id.Map.add x v accu)
       in
       List.fold_right addvar l (Proofview.Goal.return ist.lfun) >>= fun lfun ->
-      let trace = push_trace (loc,LtacNotationCall s) ist in
+      let trace = push_trace (loc,LtacNotationCall (KerName.to_string s)) ist in
       let ist = {
         lfun = lfun;
         extra = TacStore.set ist.extra f_trace trace; } in

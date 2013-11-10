@@ -125,9 +125,8 @@ let make_one_printing_rule se (pt,_,e) =
   let level = mlexpr_of_int 0 in (* only level 0 supported here *)
   let loc = MLast.loc_of_expr e in
   let prods = mlexpr_of_list mlexpr_terminals_of_grammar_tactic_prod_item_expr pt in
-  <:expr< { Pptactic.pptac_key = $se$;
-            pptac_args = $make_tags loc pt$;
-            pptac_prods = ($level$, $prods$) } >>
+  <:expr< ($se$, { Pptactic.pptac_args = $make_tags loc pt$;
+            pptac_prods = ($level$, $prods$) }) >>
 
 let make_printing_rule se = mlexpr_of_list (make_one_printing_rule se)
 
@@ -203,7 +202,7 @@ let declare_tactic loc s c cl =
 	     (Pp.str ("Exception in tactic extend " ^ $se$ ^": "))
 	     (Errors.print e)) ];
       Egramml.extend_tactic_grammar $se$ $gl$;
-      List.iter Pptactic.declare_extra_tactic_pprule $pp$; } >>
+      List.iter (fun (s, r) -> Pptactic.declare_ml_tactic_pprule s r) $pp$; } >>
     ]
 
 open Pcaml

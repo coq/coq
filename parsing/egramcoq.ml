@@ -246,15 +246,13 @@ let get_tactic_entry n =
 (** State of the grammar extensions                                   *)
 
 type tactic_grammar = {
-  tacgram_key : string;
   tacgram_level : int;
   tacgram_prods : grammar_prod_item list;
-  tacgram_tactic : DirPath.t * Tacexpr.glob_tactic_expr;
 }
 
 type all_grammar_command =
   | Notation of Notation.level * notation_grammar
-  | TacticGrammar of tactic_grammar
+  | TacticGrammar of KerName.t * tactic_grammar
 
 (* Declaration of the tactic grammar rule *)
 
@@ -262,19 +260,19 @@ let head_is_ident tg = match tg.tacgram_prods with
 | GramTerminal _::_ -> true
 | _ -> false
 
-let add_tactic_entry tg =
+let add_tactic_entry kn tg =
   let entry, pos = get_tactic_entry tg.tacgram_level in
   let rules =
     if Int.equal tg.tacgram_level 0 then begin
       if not (head_is_ident tg) then
         error "Notation for simple tactic must start with an identifier.";
       let mkact loc l =
-        (TacAlias (loc,tg.tacgram_key,l,tg.tacgram_tactic):raw_atomic_tactic_expr) in
+        (TacAlias (loc,kn,l):raw_atomic_tactic_expr) in
       make_rule mkact tg.tacgram_prods
     end
     else
       let mkact loc l =
-        (TacAtom(loc,TacAlias(loc,tg.tacgram_key,l,tg.tacgram_tactic)):raw_tactic_expr) in
+        (TacAtom(loc,TacAlias(loc,kn,l)):raw_tactic_expr) in
       make_rule mkact tg.tacgram_prods in
   synchronize_level_positions ();
   grammar_extend entry None (Option.map of_coq_position pos,[(None, None, List.rev [rules])]);
@@ -285,14 +283,14 @@ let (grammar_state : (int * all_grammar_command) list ref) = ref []
 let extend_grammar gram =
   let nb = match gram with
   | Notation (_,a) -> extend_constr_notation a
-  | TacticGrammar g -> add_tactic_entry g in
+  | TacticGrammar (kn, g) -> add_tactic_entry kn g in
   grammar_state := (nb,gram) :: !grammar_state
 
 let extend_constr_grammar pr ntn =
   extend_grammar (Notation (pr, ntn))
 
-let extend_tactic_grammar ntn =
-  extend_grammar (TacticGrammar ntn)
+let extend_tactic_grammar kn ntn =
+  extend_grammar (TacticGrammar (kn, ntn))
 
 let recover_constr_grammar ntn prec =
   let filter = function

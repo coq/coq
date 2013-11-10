@@ -65,26 +65,37 @@ type tactic_grammar_obj = {
   tacobj_local : locality_flag;
   tacobj_tacgram : tactic_grammar;
   tacobj_tacpp : Pptactic.pp_tactic;
+  tacobj_body : DirPath.t * Tacexpr.glob_tactic_expr
 }
 
-let cache_tactic_notation (_, tobj) =
-  Egramcoq.extend_tactic_grammar tobj.tacobj_tacgram;
-  Pptactic.declare_extra_tactic_pprule tobj.tacobj_tacpp
+let cache_tactic_notation ((_, key), tobj) =
+  let (dp, body) = tobj.tacobj_body in
+  Tacenv.register_alias key dp body;
+  Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram;
+  Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp
 
-let subst_tactic_parule subst tg =
-  let dir, tac = tg.tacgram_tactic in
-  { tg with tacgram_tactic = (dir, Tacsubst.subst_tactic subst tac); }
+let open_tactic_notation i ((_, key), tobj) =
+  if Int.equal i 1 && not tobj.tacobj_local then
+    Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
+
+let load_tactic_notation i ((_, key), tobj) =
+  let (dp, body) = tobj.tacobj_body in
+  (** Only add the printing and interpretation rules. *)
+  Tacenv.register_alias key dp body;
+  Pptactic.declare_notation_tactic_pprule key tobj.tacobj_tacpp;
+  if Int.equal i 1 && not tobj.tacobj_local then
+    Egramcoq.extend_tactic_grammar key tobj.tacobj_tacgram
 
 let subst_tactic_notation (subst, tobj) =
-  { tobj with
-    tacobj_tacgram = subst_tactic_parule subst tobj.tacobj_tacgram; }
+  let dir, tac = tobj.tacobj_body in
+  { tobj with tacobj_body = (dir, Tacsubst.subst_tactic subst tac); }
 
-let classify_tactic_notation tacobj =
-  if tacobj.tacobj_local then Dispose else Substitute tacobj
+let classify_tactic_notation tacobj = Substitute tacobj
 
 let inTacticGrammar : tactic_grammar_obj -> obj =
   declare_object {(default_object "TacticGrammar") with
-       open_function = (fun i o -> if Int.equal i 1 then cache_tactic_notation o);
+       open_function = open_tactic_notation;
+       load_function = load_tactic_notation;
        cache_function = cache_tactic_notation;
        subst_function = subst_tactic_notation;
        classify_function = classify_tactic_notation}
@@ -98,31 +109,24 @@ let rec tactic_notation_key = function
   | _ :: l -> tactic_notation_key l
   | [] -> "terminal_free_notation"
 
-let rec next_key_away key t =
-  if Pptactic.exists_extra_tactic_pprule key t then next_key_away (key^"'") t
-  else key
-
 let add_tactic_notation (local,n,prods,e) =
   let prods = List.map (interp_prod_item n) prods in
   let tags = make_tags prods in
-  let key = next_key_away (tactic_notation_key prods) tags in
   let pprule = {
-    Pptactic.pptac_key = key;
-    pptac_args = tags;
+    Pptactic.pptac_args = tags;
     pptac_prods = (n, List.map make_terminal_status prods);
   } in
   let ids = List.fold_left cons_production_parameter [] prods in
   let tac = Tacintern.glob_tactic_env ids (Global.env()) e in
   let parule = {
-    tacgram_key = key;
     tacgram_level = n;
     tacgram_prods = prods;
-    tacgram_tactic = (Lib.cwd (), tac);
   } in
   let tacobj = {
     tacobj_local = local;
     tacobj_tacgram = parule;
     tacobj_tacpp = pprule;
+    tacobj_body = (Lib.cwd (), tac);
   } in
   Lib.add_anonymous_leaf (inTacticGrammar tacobj)
 

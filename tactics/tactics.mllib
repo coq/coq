@@ -15,6 +15,7 @@ Equality
 Contradiction
 Inv
 Leminv
+Tacenv
 Tacsubst
 Taccoerce
 Tacintern

@@ -8,6 +8,7 @@
 
 open Pp
 open Genarg
+open Names
 open Constrexpr
 open Tacexpr
 open Proof_type
@@ -48,15 +49,12 @@ val declare_extra_genarg_pprule :
 type grammar_terminals = string option list
 
 type pp_tactic = {
-  pptac_key : string;
   pptac_args : argument_type list;
   pptac_prods : int * grammar_terminals;
 }
 
-  (** if the boolean is false then the extension applies only to old syntax *)
-val declare_extra_tactic_pprule : pp_tactic -> unit
-
-val exists_extra_tactic_pprule : string -> argument_type list -> bool
+val declare_ml_tactic_pprule : string -> pp_tactic -> unit
+val declare_notation_tactic_pprule : KerName.t -> pp_tactic -> unit
 
 val pr_raw_generic :
   (constr_expr -> std_ppcmds) ->
