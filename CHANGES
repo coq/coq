@@ -1,6 +1,12 @@
 Changes from V8.4pl2 to V8.4pl3
 ===============================
 
+Ide_slave XML interface
+
+- new variant of value : val="unsafe". It is exactly like val="good" but it
+  informs the user that its sentence is logically unafe (like 'Admitted.' or
+  'Axiom bar ...')
+
 Bug fixes
 
 - Solved bugs:

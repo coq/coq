@@ -10,7 +10,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20120710"
+let protocol_version = "20120712"
 
 (** * Interface of calls to Coq by CoqIde *)
 
@@ -258,6 +258,7 @@ let to_coq_object f = function
 
 let of_value f = function
 | Good x -> Element ("value", ["val", "good"], [f x])
+| Unsafe x -> Element ("value", ["val", "unsafe"], [f x])
 | Fail (loc, msg) ->
   let loc = match loc with
   | None -> []
@@ -269,6 +270,7 @@ let to_value f = function
 | Element ("value", attrs, l) ->
   let ans = massoc "val" attrs in
   if ans = "good" then Good (f (singleton l))
+  else if ans = "unsafe" then Unsafe (f (singleton l))
   else if ans = "fail" then
     let loc =
       try
@@ -531,6 +533,7 @@ let pr_call = function
 
 let pr_value_gen pr = function
   | Good v -> "GOOD " ^ pr v
+  | Unsafe v -> "UNSAFE" ^ pr v
   | Fail (_,str) -> "FAIL ["^str^"]"
 
 let pr_value v = pr_value_gen (fun _ -> "") v

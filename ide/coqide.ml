@@ -817,14 +817,14 @@ object(self)
         begin match Coq.goals !mycoqtop with
           | Interface.Fail (l, str) ->
             self#set_message ("Error in coqtop :\n"^str)
-          | Interface.Good goals ->
+          | Interface.Good goals | Interface.Unsafe goals ->
             begin match Coq.evars !mycoqtop with
             | Interface.Fail (l, str) ->
               self#set_message ("Error in coqtop :\n"^str)
-            | Interface.Good evs ->
+            | Interface.Good evs | Interface.Unsafe evs ->
               let hints = match Coq.hints !mycoqtop with
               | Interface.Fail (_, _) -> None
-              | Interface.Good hints -> hints
+              | Interface.Good hints | Interface.Unsafe hints -> hints
               in
               Ideproof.display
                 (Ideproof.mode_tactic menu_callback)
@@ -871,8 +871,7 @@ object(self)
       match Coq.interp ct ~verbose phrase with
         | Interface.Fail (l,str) -> sync display_error (l,str); None
         | Interface.Good msg -> sync display_output msg; Some Safe
-          (* TODO: Restore someday the access to Decl_mode.get_damon_flag,
-	     and also detect the use of admit, and then return Unsafe *)
+	| Interface.Unsafe msg -> sync self#insert_message msg; Some Unsafe
     with
       | End_of_file -> (* Coqtop has died, let's trigger a reset_initial. *)
         raise RestartCoqtop
@@ -892,7 +891,8 @@ object(self)
     try
       match Coq.interp !mycoqtop ~raw:true ~verbose:false phrase with
       | Interface.Fail (_, err) -> sync display_error err
-      | Interface.Good msg -> sync self#insert_message msg
+      | Interface.Good msg | Interface.Unsafe msg ->
+	sync self#insert_message msg
     with
     | End_of_file -> raise RestartCoqtop
     | e -> sync display_error (Printexc.to_string e)
@@ -1130,7 +1130,7 @@ object(self)
 	  else n_pop (pred n)
     in
     match Coq.rewind !mycoqtop n with
-      | Interface.Good n ->
+      | Interface.Good n | Interface.Unsafe n ->
 	n_pop n;
         sync (fun _ ->
           let start =
@@ -1253,13 +1253,13 @@ object(self)
 	  | Interface.Fail (_,str) ->
 	    self#set_message
 	      ("Could not determine lodpath, this might lead to problems:\n"^str)
-	  | Interface.Good true -> ()
-	  | Interface.Good false ->
+	  | Interface.Good true | Interface.Unsafe true -> ()
+	  | Interface.Good false | Interface.Unsafe false ->
 	    let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
 	    match Coq.interp ct cmd with
 	      | Interface.Fail (l,str) ->
 		self#set_message ("Couln't add loadpath:\n"^str)
-	      | Interface.Good _ -> ()
+	      | Interface.Good _ | Interface.Unsafe _ -> ()
   end
 
   method private electric_paren tag =
@@ -2168,7 +2168,7 @@ let main files =
         let msg = match Coq.status !(current.toplvl) with
         | Interface.Fail (l, str) ->
           "Oops, problem while fetching coq status."
-        | Interface.Good status ->
+        | Interface.Good status | Interface.Unsafe status ->
           let path = match status.Interface.status_path with
           | [] | _ :: [] -> "" (* Drop the topmost level, usually "Top" *)
           | _ :: l -> " in " ^ String.concat "." l
@@ -2193,7 +2193,7 @@ let main files =
     try
       match Coq.mkcases cur_ct w with
         | Interface.Fail _ -> raise Not_found
-        | Interface.Good cases ->
+        | Interface.Good cases | Interface.Unsafe cases ->
           let print_branch c l =
 	    Format.fprintf c " | @[<hov 1>%a@]=> _@\n"
 	      (print_list (fun c s -> Format.fprintf c "%s@ " s)) l

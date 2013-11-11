@@ -109,4 +109,5 @@ type location = (int * int) option (* start and end of the error *)
 
 type 'a value =
   | Good of 'a
+  |Unsafe of 'a
   | Fail of (location * string)

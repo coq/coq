@@ -114,7 +114,7 @@ object(self)
           (match Coq.interp !coqtop ~raw:true phrase with
              | Interface.Fail (l,str) ->
                  ("Error while interpreting "^phrase^":\n"^str)
-             | Interface.Good results ->
+             | Interface.Good results | Interface.Unsafe results ->
                  ("Result for command " ^ phrase ^ ":\n" ^ results))
       with e ->
 	let s = Printexc.to_string e in
