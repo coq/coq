@@ -105,6 +105,18 @@ type coq_info = {
 
 (** Coq messages *)
 
+type message_level =
+  | Debug of string
+  | Info
+  | Notice
+  | Warning
+  | Error
+
+type message = {
+  message_level : message_level;
+  message_content : string;
+}
+
 type location = (int * int) option (* start and end of the error *)
 
 type 'a value =

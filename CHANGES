@@ -15,6 +15,9 @@ Ide_slave XML interface
     Inl means good and is the only answer of coqtop v8.4
     Inr means unsafe
 
+- 20130419~1 : new toplevel entry : message, not send by coptop v8.4 and not
+  handle by coqide v8.4
+
 Bug fixes
 
 - Solved bugs:

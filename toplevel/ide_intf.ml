@@ -10,7 +10,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20130419"
+let protocol_version = "20130419~1"
 
 (** * Interface of calls to Coq by CoqIde *)
 
@@ -35,6 +35,8 @@ type 'a call =
   | MkCases    of mkcases_sty
   | Quit       of quit_sty
   | About      of about_sty
+
+type unknown
 
 (** The actual calls *)
 
@@ -176,10 +178,6 @@ let do_match constr t mf = match constr with
     let c = massoc "val" attrs in
     mf c args
   else raise Marshal_error
-| _ -> raise Marshal_error
-
-let pcdata = function
-| PCData s -> s
 | _ -> raise Marshal_error
 
 let singleton = function
@@ -497,6 +495,36 @@ let to_coq_info = function
     compile_date = to_string compile;
   }
 | _ -> raise Marshal_error
+
+let of_message_level = function
+| Debug s -> constructor "message_level" "debug" [PCData s]
+| Info -> constructor "message_level" "info" []
+| Notice -> constructor "message_level" "notice" []
+| Warning -> constructor "message_level" "warning" []
+| Error -> constructor "message_level" "error" []
+
+let to_message_level xml = do_match xml "message_level"
+  (fun s args -> match s with
+  | "debug" -> Debug (raw_string args)
+  | "info" -> Info
+  | "notice" -> Notice
+  | "warning" -> Warning
+  | "error" -> Error
+  | _ -> raise Marshal_error)
+
+let of_message msg =
+  let lvl = of_message_level msg.message_level in
+  let content = of_string msg.message_content in
+  Element ("message", [], [lvl; content])
+
+let to_message xml = match xml with
+| Element ("message", [], [lvl; content]) ->
+  { message_level = to_message_level lvl; message_content = to_string content }
+| _ -> raise Marshal_error
+
+let is_message = function
+| Element ("message", _, _) -> true
+| _ -> false
 
 (** Conversions between ['a value] and xml answers
 
