@@ -39,7 +39,8 @@ type 'a call =
 (** The structure that coqtop should implement *)
 
 type handler = {
-  interp : raw * verbose * string -> string;
+  (* spiwack: [Inl] for safe and [Inr] for unsafe. *)
+  interp : raw * verbose * string -> (string,string) Util.union;
   rewind : int -> int;
   goals : unit -> goals option;
   evars : unit -> evar list option;
@@ -74,21 +75,29 @@ let quit : unit call = Quit
 
 let abstract_eval_call handler c =
   try
-    let res = match c with
-      | Interp (r,b,s) -> Obj.magic (handler.interp (r,b,s) : string)
-      | Rewind i -> Obj.magic (handler.rewind i : int)
-      | Goal -> Obj.magic (handler.goals () : goals option)
-      | Evars -> Obj.magic (handler.evars () : evar list option)
-      | Hints -> Obj.magic (handler.hints () : (hint list * hint) option)
-      | Status -> Obj.magic (handler.status () : status)
-      | Search flags -> Obj.magic (handler.search flags : string coq_object list)
-      | GetOptions -> Obj.magic (handler.get_options () : (option_name * option_state) list)
-      | SetOptions opts -> Obj.magic (handler.set_options opts : unit)
-      | InLoadPath s -> Obj.magic (handler.inloadpath s : bool)
-      | MkCases s -> Obj.magic (handler.mkcases s : string list list)
-      | Quit -> Obj.magic (handler.quit () : unit)
-      | About -> Obj.magic (handler.about () : coq_info)
-    in Good res
+    match c with
+    | Interp (r,b,s) ->
+      begin match handler.interp (r,b,s) with
+      | Util.Inl v -> Good (Obj.magic (v:string))
+      | Util.Inr v -> Unsafe (Obj.magic (v:string))
+      end
+    | c ->
+      let res = match c with
+        | Interp (r,b,s) -> assert false
+        | Rewind i -> Obj.magic (handler.rewind i : int)
+        | Goal -> Obj.magic (handler.goals () : goals option)
+        | Evars -> Obj.magic (handler.evars () : evar list option)
+        | Hints -> Obj.magic (handler.hints () : (hint list * hint) option)
+        | Status -> Obj.magic (handler.status () : status)
+        | Search flags -> Obj.magic (handler.search flags : string coq_object list)
+        | GetOptions ->
+          Obj.magic (handler.get_options () : (option_name * option_state) list)
+        | SetOptions opts -> Obj.magic (handler.set_options opts : unit)
+        | InLoadPath s -> Obj.magic (handler.inloadpath s : bool)
+        | MkCases s -> Obj.magic (handler.mkcases s : string list list)
+        | Quit -> Obj.magic (handler.quit () : unit)
+        | About -> Obj.magic (handler.about () : coq_info)
+      in Good res
   with any ->
     let (l, str) = handler.handle_exn any in
     Fail (l,str)

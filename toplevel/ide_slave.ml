@@ -119,7 +119,8 @@ let interp (raw,verbosely,s) =
   Flags.make_silent (not verbosely);
   Vernac.eval_expr ~preserving:raw loc_ast;
   Flags.make_silent true;
-  read_stdout ()
+  let ret = read_stdout () in
+  Util.Inl ret
 
 (** Goal display *)
 
