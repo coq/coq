@@ -209,7 +209,9 @@ module Refinable = struct
   (* a pessimistic (i.e : there won't be many positive answers) filter
      over evar_maps, acting only on undefined evars *)
   let evar_map_filter_undefined f evm =
-    Evar.Map.filter f (Evd.undefined_map evm)
+    let fold ev evi accu = if f ev evi then ev :: accu else accu in
+    (** We rely on the LTR order of fold here... *)
+    Evar.Map.fold fold (Evd.undefined_map evm) []
 
   (* Union, sorted in decreasing order, of two lists of evars in decreasing order. *)
   let rec fusion l1 l2 = match l1 , l2 with
@@ -220,20 +222,15 @@ module Refinable = struct
     | _ , b::l2 -> b::(fusion l1 l2)
 
   let update_handle handle init_defs post_defs =
-    (* [delta_evars] holds the evars that have been introduced by this
+    (* [delta_list] holds the evars that have been introduced by this
        refinement (but not immediatly solved) *)
+    let filter ev _ = not (Evd.mem init_defs ev) in
     (* spiwack: this is the hackish part, don't know how to do any better though. *)
-    let delta_evars = evar_map_filter_undefined
-      (fun ev _ -> not (Evd.mem init_defs ev))
-      post_defs
-    in
-    (* [delta_evars] in the shape of a list of [evar]-s*)
-    let delta_list = List.rev_map fst (Evar.Map.bindings delta_evars) in
+    let delta_list = evar_map_filter_undefined filter post_defs in
     (* The variables in [myevars] are supposed to be stored
        in decreasing order. Breaking this invariant might cause
        many things to go wrong. *)
-    handle := fusion delta_list !handle;
-    delta_evars
+    handle := fusion delta_list !handle
 
   (* [constr_of_raw] is a pretyping function. The [check_type] argument
       asks whether the term should have the same type as the conclusion.
@@ -259,11 +256,11 @@ module Refinable = struct
     let open_constr =
       Pretyping.understand_tcc_evars ~flags rdefs env ~expected_type:tycon rawc
     in
-      ignore(update_handle handle init_defs !rdefs);
-      open_constr
+    let () = update_handle handle init_defs !rdefs in
+    open_constr
 
   let constr_of_open_constr handle check_type (evars, c) = (); fun env rdefs gl info ->
-    let _ = update_handle handle !rdefs evars in
+    let () = update_handle handle !rdefs evars in
     rdefs := Evd.fold (fun ev evi evd -> if not (Evd.mem !rdefs ev) then Evd.add evd ev evi else evd) evars !rdefs;
     if check_type then with_type c (Evd.evar_concl (content !rdefs gl)) env rdefs gl info
     else c
