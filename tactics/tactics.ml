@@ -3710,6 +3710,7 @@ let intros_transitivity  n  = Tacticals.New.tclTHEN intros (transitivity_gen n)
    the current goal, abstracted with respect to the local signature,
    is solved by tac *)
 
+(** d1 is the section variable in the global context, d2 in the goal context *)
 let interpretable_as_section_decl d1 d2 = match d2,d1 with
   | (_,Some _,_), (_,None,_) -> false
   | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr b1 b2 && eq_constr t1 t2
