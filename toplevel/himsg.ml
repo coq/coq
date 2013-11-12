@@ -1157,7 +1157,7 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
   in
   let pr_call (n,ck) =
     (match ck with
-       | Proof_type.LtacNotationCall s -> quote (str s)
+       | Proof_type.LtacNotationCall kn -> quote (KerName.print kn)
        | Proof_type.LtacNameCall cst -> quote (Pptactic.pr_ltac_constant cst)
        | Proof_type.LtacVarCall (id,t) ->
 	   quote (Nameops.pr_id id) ++ strbrk " (bound to " ++

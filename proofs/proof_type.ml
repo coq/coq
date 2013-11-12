@@ -49,7 +49,7 @@ type rule = prim_rule
 (** Ltac traces *)
 
 type ltac_call_kind =
-  | LtacNotationCall of string
+  | LtacNotationCall of KerName.t
   | LtacNameCall of ltac_constant
   | LtacAtomCall of glob_atomic_tactic_expr
   | LtacVarCall of Id.t * glob_tactic_expr
