@@ -1507,13 +1507,15 @@ Fixpoint Fapp (l m:list (PExpr C)) {struct l} : list (PExpr C) :=
   | cons a l1 => Fcons a (Fapp l1 m)
   end.
 
-Lemma fcons_correct : forall l l1,
-  PCond l (Fapp l1 nil) -> PCond l l1.
-induction l1; simpl; intros.
- trivial.
- elim PCond_fcons_inv with (1 := H); intros.
-   destruct l1; auto.
-Qed.
+ Lemma fcons_correct : forall l l1,
+  (forall lock, lock = PCond l -> lock (Fapp l1 nil)) -> PCond l l1.
+ Proof.
+ intros l l1 h1; assert (H := h1 (PCond l) (refl_equal _));clear h1.
+ induction l1; simpl; intros.
+  trivial.
+  elim PCond_fcons_inv with (1 := H); intros.
+  destruct l1; trivial. split; trivial. apply IHl1; trivial.
+ Qed.
 
 End Fcons_impl.
 
