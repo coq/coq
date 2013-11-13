@@ -111,7 +111,7 @@ object(self)
       in
       try
         result#buffer#set_text
-          (match Coq.interp !coqtop ~raw:true phrase with
+          (match Coq.interp !coqtop ~raw:true 0 phrase with
              | Interface.Fail (l,str) ->
                  ("Error while interpreting "^phrase^":\n"^str)
              | Interface.Good results | Interface.Unsafe results ->

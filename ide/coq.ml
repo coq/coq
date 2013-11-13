@@ -270,13 +270,13 @@ let eval_call coqtop (c:'a Ide_intf.call) =
   let xml = Xml_parser.parse p (Xml_parser.SChannel coqtop.cout) in
   (Ide_intf.to_answer xml c : 'a Interface.value)
 
-let interp coqtop ?(raw=false) ?(verbose=true) s =
+let interp coqtop ?(raw=false) ?(verbose=true) i s =
   (function
   | Interface.Good (Util.Inl v) -> Interface.Good v
   | Interface.Good (Util.Inr v) -> Interface.Unsafe v
   | Interface.Fail v -> Interface.Fail v
   | Interface.Unsafe _ -> assert false)
-    (eval_call coqtop (Ide_intf.interp (raw,verbose,s)))
+    (eval_call coqtop (Ide_intf.interp (i,raw,verbose,s)))
 let rewind coqtop i = eval_call coqtop (Ide_intf.rewind i)
 let inloadpath coqtop s = eval_call coqtop (Ide_intf.inloadpath s)
 let mkcases coqtop s = eval_call coqtop (Ide_intf.mkcases s)

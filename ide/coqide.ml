@@ -868,7 +868,7 @@ object(self)
       prerr_endline "Send_to_coq starting now";
       (* It's important here to work with [ct] and not [!mycoqtop], otherwise
          we could miss a restart of coqtop and continue sending it orders. *)
-      match Coq.interp ct ~verbose phrase with
+      match Coq.interp ct ~verbose 0 phrase with
         | Interface.Fail (l,str) -> sync display_error (l,str); None
         | Interface.Good msg -> sync display_output msg; Some Safe
 	| Interface.Unsafe msg -> sync self#insert_message msg; Some Unsafe
@@ -889,7 +889,7 @@ object(self)
       end
     in
     try
-      match Coq.interp !mycoqtop ~raw:true ~verbose:false phrase with
+      match Coq.interp !mycoqtop ~raw:true ~verbose:false 0 phrase with
       | Interface.Fail (_, err) -> sync display_error err
       | Interface.Good msg | Interface.Unsafe msg ->
 	sync self#insert_message msg
@@ -1256,7 +1256,7 @@ object(self)
 	  | Interface.Good true | Interface.Unsafe true -> ()
 	  | Interface.Good false | Interface.Unsafe false ->
 	    let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
-	    match Coq.interp ct cmd with
+	    match Coq.interp ct 0 cmd with
 	      | Interface.Fail (l,str) ->
 		self#set_message ("Couln't add loadpath:\n"^str)
 	      | Interface.Good _ | Interface.Unsafe _ -> ()

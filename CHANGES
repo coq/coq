@@ -18,6 +18,12 @@ Ide_slave XML interface
 - 20130419~1 : new toplevel entry : message, not send by coptop v8.4 and not
   handle by coqide v8.4
 
+- 20130425 :
+  * new toplevel entry : feedback, once again not send by coqtop v8.4 and not
+  handle by coqide v8.4
+  * <call val="interp"> must provide an attribute id of type int. It is OK in
+  coqtop v8.4 to alwais send <call val="interp" id="0">
+
 Bug fixes
 
 - Solved bugs:

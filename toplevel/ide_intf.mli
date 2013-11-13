@@ -48,6 +48,10 @@ val is_message : xml -> bool
 
 val of_value : ('a -> xml) -> 'a value -> xml
 
+val of_feedback : feedback -> xml
+val to_feedback : xml -> feedback
+val is_feedback : xml -> bool
+
 val of_answer : 'a call -> 'a value -> xml
 val to_answer : xml -> 'a call -> 'a value
 

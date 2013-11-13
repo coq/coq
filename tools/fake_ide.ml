@@ -26,10 +26,10 @@ let eval_call (call:'a Ide_intf.call) =
   match res with Interface.Fail _ -> exit 1 | _ -> ()
 
 let commands =
-  [ "INTERPRAWSILENT", (fun s -> eval_call (Ide_intf.interp (true,false,s)));
-    "INTERPRAW", (fun s -> eval_call (Ide_intf.interp (true,true,s)));
-    "INTERPSILENT", (fun s -> eval_call (Ide_intf.interp (false,false,s)));
-    "INTERP", (fun s -> eval_call (Ide_intf.interp (false,true,s)));
+  [ "INTERPRAWSILENT", (fun s -> eval_call (Ide_intf.interp (0,true,false,s)));
+    "INTERPRAW", (fun s -> eval_call (Ide_intf.interp (0,true,true,s)));
+    "INTERPSILENT", (fun s -> eval_call (Ide_intf.interp (0,false,false,s)));
+    "INTERP", (fun s -> eval_call (Ide_intf.interp (0,false,true,s)));
     "REWIND", (fun s -> eval_call (Ide_intf.rewind (int_of_string s)));
     "GOALS", (fun _ -> eval_call (Ide_intf.goals ()));
     "HINTS", (fun _ -> eval_call (Ide_intf.hints ()));

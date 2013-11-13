@@ -112,7 +112,7 @@ let coqide_cmd_checks (loc,ast) =
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
 
-let interp (raw,verbosely,s) =
+let interp (id,raw,verbosely,s) =
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   let loc_ast = Vernac.parse_sentence (pa,None) in
   if not raw then coqide_cmd_checks loc_ast;

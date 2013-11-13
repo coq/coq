@@ -47,7 +47,7 @@ val interrupter : (int -> unit) ref
 (** * Calls to Coqtop, cf [Ide_intf] for more details *)
 
 val interp :
-  coqtop -> ?raw:bool -> ?verbose:bool -> string -> string Interface.value
+  coqtop -> ?raw:bool -> ?verbose:bool -> int -> string -> string Interface.value
 val rewind : coqtop -> int -> int Interface.value
 val status : coqtop -> Interface.status Interface.value
 val goals : coqtop -> Interface.goals option Interface.value
