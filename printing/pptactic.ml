@@ -38,13 +38,13 @@ type pp_tactic = {
 let prtac_tab = Hashtbl.create 17
 
 (* Tactic notations *)
-let prnotation_tab = Hashtbl.create 17
+let prnotation_tab = Summary.ref ~name:"pptactic-notation" KNmap.empty
 
 let declare_ml_tactic_pprule key pt =
   Hashtbl.add prtac_tab (key, pt.pptac_args) pt.pptac_prods
 
 let declare_notation_tactic_pprule kn pt =
-  Hashtbl.add prnotation_tab (kn, pt.pptac_args) pt.pptac_prods
+  prnotation_tab := KNmap.add kn pt !prnotation_tab
 
 type 'a raw_extra_genarg_printer =
     (constr_expr -> std_ppcmds) ->
@@ -271,14 +271,14 @@ let pr_extend_gen pr_gen lev s l =
   with Not_found ->
     str s ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
 
-let pr_alias_gen pr_gen lev s l =
+let pr_alias_gen pr_gen lev key l =
   try
-    let tags = List.map genarg_tag l in
-    let (lev',pl) = Hashtbl.find prnotation_tab (s,tags) in
-    let p = pr_tacarg_using_rule pr_gen (pl,l) in
+    let pp = KNmap.find key !prnotation_tab in
+    let (lev', pl) = pp.pptac_prods in
+    let p = pr_tacarg_using_rule pr_gen (pl, l) in
     if lev' > lev then surround p else p
   with Not_found ->
-    KerName.print s ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
+    KerName.print key ++ spc() ++ pr_sequence pr_gen l ++ str" (* Generic printer *)"
 
 let pr_raw_extend prc prlc prtac prpat =
   pr_extend_gen (pr_raw_generic prc prlc prtac prpat pr_reference)
