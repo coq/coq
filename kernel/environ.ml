@@ -48,7 +48,7 @@ let empty_env = empty_env
 let engagement env = env.env_stratification.env_engagement
 let universes env = env.env_stratification.env_universes
 let named_context env = env.env_named_context
-let named_context_val env = env.env_named_context,env.env_named_vals
+let named_context_val env = env.env_named_context,env.env_named_context_map,env.env_named_vals
 let rel_context env = env.env_rel_context
 
 let empty_context env =
@@ -90,16 +90,17 @@ let fold_rel_context f env ~init =
 
 (* Named context *)
 
-let named_context_of_val = fst
-let named_vals_of_val = snd
+let named_context_of_val (ctxt, _, _) = ctxt
+let named_vals_of_val (_, _, vals) = vals
 
 (* [map_named_val f ctxt] apply [f] to the body and the type of
    each declarations.
    *** /!\ ***   [f t] should be convertible with t *)
-let map_named_val f (ctxt,ctxtv) =
-  let ctxt =
-    List.map (fun (id,body,typ) -> (id, Option.map f body, f typ)) ctxt in
-  (ctxt,ctxtv)
+let map_named_val f (ctxt,map,ctxtv) =
+  let map_decl (id,body,typ) = (id, Option.map f body, f typ) in
+  let ctxt = List.map map_decl ctxt in
+  let map = Id.Map.map map_decl map in
+  (ctxt,map,ctxtv)
 
 let empty_named_context = empty_named_context
 
@@ -111,8 +112,8 @@ let val_of_named_context ctxt =
   List.fold_right push_named_context_val ctxt empty_named_context_val
 
 
-let lookup_named id env = Context.lookup_named id env.env_named_context
-let lookup_named_val id (ctxt,_) = Context.lookup_named id ctxt
+let lookup_named id env = Id.Map.find id env.env_named_context_map
+let lookup_named_val id (_,map,_) = Id.Map.find id map
 
 let eq_named_context_val c1 c2 =
    c1 == c2 || named_context_equal (named_context_of_val c1) (named_context_of_val c2)
@@ -130,9 +131,10 @@ let evaluable_named id env =
   | Some _      -> true
   | _          -> false
 
-let reset_with_named_context (ctxt,ctxtv) env =
+let reset_with_named_context (ctxt,map,ctxtv) env =
   { env with
     env_named_context = ctxt;
+    env_named_context_map = map;
     env_named_vals = ctxtv;
     env_rel_context = empty_rel_context;
     env_rel_val = [];
@@ -144,9 +146,11 @@ let fold_named_context f env ~init =
   let rec fold_right env =
     match env.env_named_context with
     | [] -> init
-    | d::ctxt ->
+    | (id, _, _ as d)::ctxt ->
+        let vals = List.tl env.env_named_vals in
+        let map = Id.Map.remove id env.env_named_context_map in
 	let env =
-	  reset_with_named_context (ctxt,List.tl env.env_named_vals) env in
+	  reset_with_named_context (ctxt,map,vals) env in
 	f env d (fold_right env)
   in fold_right env
 
@@ -319,58 +323,63 @@ let compile_constant_body = Cbytegen.compile_constant_body
 
 exception Hyp_not_found
 
-let apply_to_hyp (ctxt,vals) id f =
-  let rec aux rtail ctxt vals =
+let apply_to_hyp (ctxt,map,vals) id f =
+  let rec aux rtail ctxt map vals =
     match ctxt, vals with
     | (idc,c,ct as d)::ctxt, v::vals ->
+        let map = Id.Map.remove idc map in
 	if Id.equal idc id then
-	  (f ctxt d rtail)::ctxt, v::vals
+          let (nid, _, _ as d) = f ctxt d rtail in
+	  d::ctxt, Id.Map.add nid d map, v::vals
 	else
-	  let ctxt',vals' = aux (d::rtail) ctxt vals in
-	  d::ctxt', v::vals'
+	  let ctxt',map',vals' = aux (d::rtail) ctxt map vals in
+	  d::ctxt', Id.Map.add idc d map', v::vals'
     | [],[] -> raise Hyp_not_found
     | _, _ -> assert false
-  in aux [] ctxt vals
+  in aux [] ctxt map vals
 
-let apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
-  let rec aux ctxt vals =
+let apply_to_hyp_and_dependent_on (ctxt,map,vals) id f g =
+  let rec aux ctxt map vals =
     match ctxt,vals with
     | (idc,c,ct as d)::ctxt, v::vals ->
+        let map = Id.Map.remove idc map in
 	if Id.equal idc id then
-	  let sign = ctxt,vals in
+	  let sign = ctxt,map,vals in
 	  push_named_context_val (f d sign) sign
 	else
-	  let (ctxt,vals as sign) = aux ctxt vals in
+	  let (ctxt,map,vals as sign) = aux ctxt map vals in
 	  push_named_context_val (g d sign) sign
     | [],[] -> raise Hyp_not_found
     | _,_ -> assert false
-  in aux ctxt vals
+  in aux ctxt map vals
 
-let insert_after_hyp (ctxt,vals) id d check =
-  let rec aux ctxt vals =
+let insert_after_hyp (ctxt,map,vals) id d check =
+  let rec aux ctxt map vals =
     match  ctxt, vals with
-    | (idc,c,ct)::ctxt', v::vals' ->
+    | (idc, c, ct) :: _, v :: _ ->
 	if Id.equal idc id then begin
 	  check ctxt;
-	  push_named_context_val d (ctxt,vals)
+	  push_named_context_val d (ctxt,map,vals)
 	end else
-	  let ctxt,vals = aux ctxt vals in
-	  d::ctxt, v::vals
+	  let ctxt,map,vals = aux ctxt map vals in
+          let (id, _, _) = d in
+	  d::ctxt, Id.Map.add id d map, v::vals
     | [],[] -> raise Hyp_not_found
     | _, _ -> assert false
-  in aux ctxt vals
+  in aux ctxt map vals
 
 
 (* To be used in Logic.clear_hyps *)
-let remove_hyps ids check_context check_value (ctxt, vals) =
-  List.fold_right2 (fun (id,_,_ as d) (id',v) (ctxt,vals) ->
+let remove_hyps ids check_context check_value (ctxt, map, vals) =
+  List.fold_right2 (fun (id,_,_ as d) (id',v) (ctxt,map,vals) ->
       if Id.Set.mem id ids then
-	(ctxt,vals)
+	(ctxt,map,vals)
       else
 	let nd = check_context d in
+        let (nid, _, _) = nd in
 	let nv = check_value v in
-	  (nd::ctxt,(id',nv)::vals))
-		     ctxt vals ([],[])
+	  (nd::ctxt,Id.Map.add nid nd map,(id',nv)::vals))
+		     ctxt vals ([],Id.Map.empty,[])
 
 
 

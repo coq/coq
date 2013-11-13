@@ -41,6 +41,7 @@ type named_vals = (Id.t * lazy_val) list
 type env = {
     env_globals       : globals;
     env_named_context : named_context;
+    env_named_context_map : named_declaration Id.Map.t;
     env_named_vals    : named_vals;
     env_rel_context   : rel_context;
     env_rel_val       : lazy_val list;
@@ -49,7 +50,7 @@ type env = {
     env_conv_oracle   : Conv_oracle.oracle;
     retroknowledge : Retroknowledge.retroknowledge }
 
-type named_context_val = named_context * named_vals
+type named_context_val = named_context * named_declaration Id.Map.t * named_vals
 
 val empty_named_context_val : named_context_val
 
