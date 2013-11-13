@@ -10,7 +10,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20130425"
+let protocol_version = "20130425~1"
 
 (** * Interface of calls to Coq by CoqIde *)
 
@@ -146,7 +146,7 @@ let expected_answer_type call : value_type =
   let options = pair_t (list_t string_t) option_state_t in
   let objs = coq_object_t string_t in
   match call with
-  | Interp _     -> check (union_t string_t string_t    : interp_rty      val_t)
+  | Interp _     -> check (string_t                     : interp_rty      val_t)
   | Rewind _     -> check (int_t                        : rewind_rty      val_t)
   | Goal _       -> check (option_t goals_t             : goals_rty       val_t)
   | Evars _      -> check (option_t (list_t evar_t)     : evars_rty       val_t)
@@ -333,7 +333,6 @@ let to_coq_object f = function
 
 let of_value f = function
 | Good x -> Element ("value", ["val", "good"], [f x])
-| Unsafe x -> Element ("value", ["val", "unsafe"], [f x])
 | Fail (loc, msg) ->
   let loc = match loc with
   | None -> []
@@ -345,7 +344,6 @@ let to_value f = function
 | Element ("value", attrs, l) ->
   let ans = massoc "val" attrs in
   if ans = "good" then Good (f (singleton l))
-  else if ans = "unsafe" then Unsafe (f (singleton l))
   else if ans = "fail" then
     let loc =
       try
@@ -666,7 +664,6 @@ let pr_call = function
   | About _ -> "ABOUT"
 let pr_value_gen pr = function
   | Good v -> "GOOD " ^ pr v
-  | Unsafe v -> "UNSAFE" ^ pr v
   | Fail (_,str) -> "FAIL ["^str^"]"
 let pr_value v = pr_value_gen (fun _ -> "FIXME") v
 let pr_full_value call value =

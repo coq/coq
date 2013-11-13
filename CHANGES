@@ -3,17 +3,11 @@ Changes from V8.4pl2 to V8.4pl3
 
 Ide_slave XML interface
 
-- 20120712 : new variant of value : val="unsafe". It is exactly like val="good"
-  but it informs the user that its sentence is logically unafe (like 'Admitted.'
-  or 'Axiom bar ...')
+- 20120712, 20130419 : Invalidated protocol version
 
-- 20130419 :
-  * extra datastructure : union
+-From 20130419 extra datastructure : union
    (Inl "" = <union val="in_l"><string></string></union>,
     Inr _ = <union val="in_r">...)
-  * <call val="interp"> answers a (string * string) union
-    Inl means good and is the only answer of coqtop v8.4
-    Inr means unsafe
 
 - 20130419~1 : new toplevel entry : message, not send by coptop v8.4 and not
   handle by coqide v8.4
@@ -23,6 +17,8 @@ Ide_slave XML interface
   handle by coqide v8.4
   * <call val="interp"> must provide an attribute id of type int. It is OK in
   coqtop v8.4 to alwais send <call val="interp" id="0">
+
+- 20130425~1 : feedback is enriched of AddedAxiom
 
 Bug fixes
 
