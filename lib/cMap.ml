@@ -22,6 +22,10 @@ sig
   val modify : key -> (key -> 'a -> 'a) -> 'a t -> 'a t
   val domain : 'a t -> Set.t
   val bind : (key -> 'a) -> Set.t -> 'a t
+  module Unsafe :
+  sig
+    val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t
+  end
 end
 
 module MapExt (M : Map.OrderedType) :
@@ -31,6 +35,10 @@ sig
   val modify : M.t -> (M.t -> 'a -> 'a) -> 'a map -> 'a map
   val domain : 'a map -> Set.Make(M).t
   val bind : (M.t -> 'a) -> Set.Make(M).t -> 'a map
+  module Unsafe :
+  sig
+    val map : (M.t -> 'a -> M.t * 'b) -> 'a map -> 'b map
+  end
 end =
 struct
   (** This unsafe module is a way to access to the actual implementations of
@@ -90,6 +98,17 @@ struct
   | SNode (l, k, r, h) ->
     map_inj (MNode (bind f l, k, f k, bind f r, h))
   (** Dual operation of [domain]. *)
+
+  module Unsafe =
+  struct
+
+    let rec map f (s : 'a map) : 'b map = match map_prj s with
+    | MEmpty -> map_inj MEmpty
+    | MNode (l, k, v, r, h) ->
+      let (k, v) = f k v in
+      map_inj (MNode (map f l, k, v, map f r, h))
+
+  end
 
 end
 

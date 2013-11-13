@@ -39,6 +39,14 @@ sig
   (** [bind f s] transform the set [x1; ...; xn] into [x1 := f x1; ...;
       xn := f xn]. *)
 
+  module Unsafe :
+  sig
+    val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t
+    (** As the usual [map], but also allows to modify the key of a binding.
+        It is required that the mapping function [f] preserves key equality,
+        i.e.: for all (k : key) (x : 'a), compare (fst (f k x)) k = 0. *)
+  end
+
 end
 
 module Make(M : Map.OrderedType) : ExtS with
