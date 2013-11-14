@@ -58,19 +58,17 @@ val is_matching_head : constr_pattern -> constr -> bool
 val matches_conv :env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
 
 (** The type of subterm matching results: a substitution + a context
-   (whose hole is denoted here with [special_meta]) + a continuation that
-   either returns the next matching subterm or raise PatternMatchingFailure *)
+   (whose hole is denoted here with [special_meta]) *)
 type matching_result =
     { m_sub : bound_ident_map * patvar_map;
       m_ctx : constr }
 
 (** [match_subterm n pat c] returns the substitution and the context
-   corresponding to the first **closed** subterm of [c] matching [pat], and
-   a continuation that looks for the next matching subterm. *)
+   corresponding to each **closed** subterm of [c] matching [pat]. *)
 val match_subterm : constr_pattern -> constr -> matching_result IStream.t
 
 (** [match_appsubterm pat c] returns the substitution and the context
-   corresponding to the first **closed** subterm of [c] matching [pat],
+   corresponding to each **closed** subterm of [c] matching [pat],
    considering application contexts as well. *)
 val match_appsubterm : constr_pattern -> constr -> matching_result IStream.t
 
