@@ -10,15 +10,17 @@ Ide_slave XML interface
     Inr _ = <union val="in_r">...)
 
 - 20130419~1 : new toplevel entry : message, not send by coptop v8.4 and not
-  handle by coqide v8.4
+  handle by coqide v8.4. A message has a level and a content (of string).
+  Message levels are Debug of string, Info, Notice, Warning and Error.
 
 - 20130425 :
   * new toplevel entry : feedback, once again not send by coqtop v8.4 and not
-  handle by coqide v8.4
+  handle by coqide v8.4. A feedback give the id of the sentence it provides info
+  to and a content. Feedback contents are Processed, AddedAxiom and
+  GlobRef of Util.loc * string * string * string * string
   * <call val="interp"> must provide an attribute id of type int. It is OK in
   coqtop v8.4 to alwais send <call val="interp" id="0">
 
-- 20130425~1 : feedback is enriched of AddedAxiom
 
 Bug fixes
 

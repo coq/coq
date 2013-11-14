@@ -10,7 +10,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20130425~1"
+let protocol_version = "20130425~2"
 
 (** * Interface of calls to Coq by CoqIde *)
 
@@ -528,15 +528,42 @@ let is_message = function
 | Element ("message", _, _) -> true
 | _ -> false
 
+let of_loc loc =
+  let start, stop = loc in
+  Element ("loc",[("start",string_of_int start);("stop",string_of_int stop)],[])
+
+let to_loc xml = match xml with
+| Element ("loc", l,[]) ->
+    (try
+      let start = List.assoc "start" l in
+      let stop = List.assoc "stop" l in
+      (int_of_string start, int_of_string stop)
+    with Not_found | Invalid_argument _ -> raise Marshal_error)
+| _ -> raise Marshal_error
+
 let to_feedback_content xml = do_match xml "feedback_content"
   (fun s args -> match s with
   | "addedaxiom" -> AddedAxiom
   | "processed" -> Processed
+  | "globref" ->
+       (match args with
+       | [loc; filepath; modpath; ident; ty] ->
+            GlobRef(to_loc loc, to_string filepath, to_string modpath,
+                    to_string ident, to_string ty)
+       | _ -> raise Marshal_error)
   | _ -> raise Marshal_error)
 
 let of_feedback_content = function
 | AddedAxiom -> constructor "feedback_content" "addedaxiom" []
 | Processed -> constructor "feedback_content" "processed" []
+| GlobRef(loc, filepath, modpath, ident, ty) ->
+    constructor "feedback_content" "globref" [
+      of_loc loc;
+      of_string filepath;
+      of_string modpath;
+      of_string ident;
+      of_string ty
+    ]
 
 let of_feedback msg =
   let content = of_feedback_content msg.content in
