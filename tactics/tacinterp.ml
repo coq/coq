@@ -877,10 +877,9 @@ let head_with_value (lvar,lval) =
   in
   head_with_value_rec [] (lvar,lval)
 
-(* Gives a context couple if there is a context identifier *)
-let give_context ctxt = function
-  | None -> Id.Map.empty
-  | Some id -> Id.Map.singleton id (in_gen (topwit wit_constr_context) ctxt)
+(** [interp_context ctxt] interprets a context (as in
+    {!Matching.matching_result}) into a context value of Ltac.  *)
+let interp_context ctxt = in_gen (topwit wit_constr_context) ctxt
 
 (* Reads a pattern by substituting vars of lfun *)
 let use_types = false
@@ -922,104 +921,6 @@ let rec read_match_rule lfun ist env sigma = function
       :: read_match_rule lfun ist env sigma tl
   | [] -> []
 
-(* For Match Context and Match *)
-exception Not_coherent_metas
-exception Eval_fail of std_ppcmds
-
-let is_match_catchable = function
-  | PatternMatchingFailure | Eval_fail _ -> true
-  | e -> Logic.catchable_exception e
-
-let equal_instances gl (ctx',c') (ctx,c) =
-  (* How to compare instances? Do we want the terms to be convertible?
-     unifiable? Do we want the universe levels to be relevant? 
-     (historically, conv_x is used) *)
-  List.equal Id.equal ctx ctx' && pf_conv_x gl c' c
-
-(* Verifies if the matched list is coherent with respect to lcm *)
-(* While non-linear matching is modulo eq_constr in matches, merge of *)
-(* different instances of the same metavars is here modulo conversion... *)
-let verify_metas_coherence gl (ln1,lcm) (ln,lm) =
-  let merge id oc1 oc2 = match oc1, oc2 with
-  | None, None -> None
-  | None, Some c | Some c, None -> Some c
-  | Some c1, Some c2 ->
-    if equal_instances gl c1 c2 then Some c1
-    else raise Not_coherent_metas
-  in
-  (** ppedrot: Is that even correct? *)
-  let merged = ln +++ ln1 in
-  (merged, Id.Map.merge merge lcm lm)
-
-let adjust (l, lc) = (l, Id.Map.map (fun c -> [], c) lc)
-
-type 'a _extended_matching_result =
-    { e_ctx : 'a;
-      e_sub : bound_ident_map * extended_patvar_map; }
-
-let push_id_couple id name env = match name with
-| Name idpat ->
-  Id.Map.add idpat (Value.of_constr (mkVar id)) env
-| Anonymous -> env
-
-let match_pat refresh lmatch hyp gl = function
-| Term t ->
-  let hyp = if refresh then refresh_universes_strict hyp else hyp in
-  begin
-    try
-      let lmeta = extended_matches t hyp in
-      let lmeta = verify_metas_coherence gl lmatch lmeta in
-      let ans = { e_ctx = Id.Map.empty; e_sub = lmeta; } in
-      IStream.cons ans IStream.empty
-    with PatternMatchingFailure | Not_coherent_metas -> IStream.empty
-  end
-| Subterm (b,ic,t) ->
-  let hyp = if refresh then refresh_universes_strict hyp else hyp in
-  let matches = match_subterm_gen b t hyp in
-  let filter s =
-    try
-      let lmeta = verify_metas_coherence gl lmatch (adjust s.m_sub) in
-      let context = give_context s.m_ctx ic in
-      Some { e_ctx = context; e_sub = lmeta; }
-    with Not_coherent_metas -> None
-  in
-  IStream.map_filter filter matches
-
-(* Tries to match one hypothesis pattern with a list of hypotheses *)
-let apply_one_mhyp_context gl lmatch (hypname,patv,pat) lhyps =
-  let rec apply_one_mhyp_context_rec = function
-    | [] ->
-      IStream.empty
-    | (id, b, hyp as hd) :: tl ->
-      (match patv with
-      | None ->
-        let refresh = not (Option.is_empty b) in
-        let ans = IStream.thunk (lazy (match_pat refresh lmatch hyp gl pat)) in
-        let map s =
-          let context = (push_id_couple id hypname s.e_ctx), hd in
-          { e_ctx = context; e_sub = s.e_sub; }
-        in
-        let next = lazy (apply_one_mhyp_context_rec tl) in
-        IStream.app (IStream.map map ans) (IStream.thunk next)
-      | Some patv ->
-        match b with
-        | Some body ->
-          let body = match_pat false lmatch body gl patv in
-          let map_body s1 =
-            let types = lazy (match_pat true s1.e_sub hyp gl pat) in
-            let map_types s2 =
-              let env = push_id_couple id hypname s1.e_ctx in
-              let context = (env +++ s2.e_ctx), hd in
-              { e_ctx = context; e_sub = s2.e_sub; }
-            in
-            IStream.map map_types (IStream.thunk types)
-          in
-          let next = IStream.thunk (lazy (apply_one_mhyp_context_rec tl)) in
-          let body = IStream.map map_body body in
-          IStream.app (IStream.concat body) next
-        | None -> apply_one_mhyp_context_rec tl)
-  in
-  apply_one_mhyp_context_rec lhyps
 
 (* misc *)
 
@@ -1281,29 +1182,17 @@ and tactic_of_value ist vle =
   | (VFun _|VRec _) -> Proofview.tclZERO (UserError ("" , str "A fully applied tactic is expected."))
   else Proofview.tclZERO (UserError ("" , str"Expression does not evaluate to a tactic."))
 
-(* Evaluation with FailError catching *)
-and eval_with_fail ist is_lazy tac =
-  Proofview.tclORELSE
-    begin
-      val_interp ist tac >>== fun v ->
-      (if has_type v (topwit wit_tacvalue) then match to_tacvalue v with
-      | VFun (trace,lfun,[],t) when not is_lazy ->
-          let ist = {
-            lfun = lfun;
-            extra = TacStore.set ist.extra f_trace trace; } in
-	  let tac = eval_tactic ist t in
-	  catch_error_tac trace (tac <*> Proofview.Goal.return (of_tacvalue VRTactic))
-      | _ -> Proofview.Goal.return v
-       else Proofview.Goal.return v)
-    end
-    begin function
-      (** FIXME: Should we add [Errors.push]? *)
-      | FailError (0,s)  ->
-          Proofview.tclZERO (Eval_fail (Lazy.force s))
-      | FailError (lvl,s) as e ->
-          Proofview.tclZERO (Exninfo.copy e (FailError (lvl - 1, s)))
-      | e -> Proofview.tclZERO e
-    end
+and eval_value ist tac =
+  val_interp ist tac >>== fun v ->
+  if has_type v (topwit wit_tacvalue) then match to_tacvalue v with
+  | VFun (trace,lfun,[],t) ->
+      let ist = {
+        lfun = lfun;
+        extra = TacStore.set ist.extra f_trace trace; } in
+      let tac = eval_tactic ist t in
+      catch_error_tac trace (tac <*> Proofview.Goal.return (of_tacvalue VRTactic))
+  | _ -> Proofview.Goal.return v
+  else Proofview.Goal.return v
 
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist llc u =
@@ -1330,136 +1219,85 @@ and interp_letin ist llc u =
   let ist = { ist with lfun } in
   val_interp ist u
 
+
+(** [interp_match_success lz ist succ] interprets a single matching success
+    (of type {!TacticMatching.t}). *)
+and interp_match_success ist { TacticMatching.subst ; context ; terms ; lhs } =
+  let lctxt = Id.Map.map interp_context context in
+  let hyp_subst = Id.Map.map Value.of_constr terms in
+  let lfun = extend_values_with_bindings subst (lctxt +++ hyp_subst +++ ist.lfun) in
+  eval_value {ist with lfun=lfun} lhs
+
+(** [interp_match_successes lz ist s] interprets the stream of
+    matching of successes [s]. If [lz] is set to true, then only the
+    first success is considered, otherwise further successes are tried
+    if the left-hand side fails. *)
+and interp_match_successes lz ist s =
+    (** iterates [tclORELSE] lazily on the stream [t], if [t] is
+        exhausted, raises [e]. Beware: there is no [tclINDEPENDENT],
+        relying on the fact that it will always be applied to a single
+        goal, by virtue of an earlier [Proofview.Goal.enter]. *)
+    let rec tclORELSE_stream t e =
+      match IStream.peek t with
+      | Some (t1,t') ->
+          Proofview.tclORELSE
+            t1
+            begin fun e ->
+              (* Honors Ltac's failure level. *)
+              Tacticals.New.catch_failerror e <*> tclORELSE_stream t' e
+            end
+      | None ->
+          Proofview.tclZERO e
+    in
+    let matching_failure =
+      UserError ("Tacinterp.apply_match" , str "No matching clauses for match.")
+    in
+    let successes =
+      IStream.map (fun s -> interp_match_success ist s) s
+    in
+    if lz then
+      (** lazymatch *)
+      begin match IStream.peek successes with
+      | Some (s,_) -> s
+      | None -> Proofview.tclZERO matching_failure
+      end
+    else
+      (** match *)
+      tclORELSE_stream successes matching_failure
+
+
+(* Interprets the Match expressions *)
+and interp_match ist lz constr lmr =
+  begin Proofview.tclORELSE
+    (interp_ltac_constr ist constr)
+    begin function
+      | e ->
+          (* spiwack: [Errors.push] here is unlikely to do what
+             it's intended to, or anything meaningful for that
+             matter. *)
+          let e = Errors.push e in
+          Proofview.tclLIFT (debugging_exception_step ist true e
+          (fun () -> str "evaluation of the matched expression")) <*>
+          Proofview.tclZERO e
+    end
+  end >>== fun constr ->
+  Proofview.Goal.enterl begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
+    interp_match_successes lz ist (TacticMatching.match_term env sigma constr ilr)
+  end
+
 (* Interprets the Match Context expressions *)
 and interp_match_goal ist lz lr lmr =
   Proofview.Goal.enterl begin fun gl ->
-  let sigma = Proofview.Goal.sigma gl in
-  let env = Proofview.Goal.env gl in
-  let hyps = Proofview.Goal.hyps gl in
-  let hyps = if lr then List.rev hyps else hyps in
-  let concl = Proofview.Goal.concl gl in
-  let rec apply_goal_sub app ist (id,c) csr mt mhyps hyps =
-    let rec match_next_pattern next = match IStream.peek next with
-    | None -> Proofview.tclZERO PatternMatchingFailure
-    | Some ({ m_sub=lgoal; m_ctx=ctxt }, next) ->
-      let lctxt = give_context ctxt id in
-      Proofview.tclORELSE
-        (apply_hyps_context ist env lz mt lctxt (adjust lgoal) mhyps hyps)
-        begin function
-          | e when is_match_catchable e -> match_next_pattern next
-          | e -> Proofview.tclZERO e
-        end
-    in
-    match_next_pattern (match_subterm_gen app c csr) in
-  let rec apply_match_goal ist env nrs lex lpt =
-    begin
-      begin match lex with
-      | r :: _ -> Proofview.tclLIFT (db_pattern_rule (curr_debug ist) nrs r)
-      | _ -> Proofview.tclUNIT ()
-      end <*>
-      match lpt with
-      | (All t)::tl ->
-	  begin
-            Proofview.tclLIFT (db_mc_pattern_success (curr_debug ist)) <*>
-            Proofview.tclORELSE (eval_with_fail ist lz t)
-              begin function
-                | e when is_match_catchable e ->
-	      apply_match_goal ist env (nrs+1) (List.tl lex) tl
-                | e -> Proofview.tclZERO e
-              end
-	  end
-      | (Pat (mhyps,mgoal,mt))::tl ->
-          let mhyps = List.rev mhyps (* Sens naturel *) in
-	  begin match mgoal with
-          | Term mg ->
-              let matches =
-                try Some (extended_matches mg concl)
-                with PatternMatchingFailure -> None
-              in
-                            begin match matches with
-              | None ->
-                Proofview.tclLIFT (db_matching_failure (curr_debug ist)) <*>
-                apply_match_goal ist env (nrs+1) (List.tl lex) tl
-              | Some lmatch ->
-                Proofview.tclORELSE
-                  begin
-                    Proofview.tclLIFT (db_matched_concl (curr_debug ist) env concl) <*>
-                    apply_hyps_context ist env lz mt Id.Map.empty lmatch mhyps hyps
-                  end
-                 begin function
-                   | e when is_match_catchable e ->
-                       (Proofview.tclLIFT (match e with
-                       | PatternMatchingFailure -> db_matching_failure (curr_debug ist)
-                       | Eval_fail s -> db_eval_failure (curr_debug ist) s
-                       | _ -> db_logic_failure (curr_debug ist) e) <*>
-                        apply_match_goal ist env (nrs+1) (List.tl lex) tl)
-                   | e -> Proofview.tclZERO e
-                 end
-                end
-	  | Subterm (b,id,mg) ->
-	      Proofview.tclORELSE (apply_goal_sub b ist (id,mg) concl mt mhyps hyps)
-                begin function
-	       | PatternMatchingFailure ->
-		   apply_match_goal ist env (nrs+1) (List.tl lex) tl
-               | e -> Proofview.tclZERO e
-                end
-          end
-      | _ ->
-          Proofview.tclZERO (UserError (
-	    "Tacinterp.apply_match_goal" ,
-            (v 0 (str "No matching clauses for match goal" ++
-		    (if curr_debug ist==DebugOff then
-			fnl() ++ str "(use \"Set Ltac Debug\" for more info)"
-		     else mt()) ++ str"."))
-          ))
-    end in
-  apply_match_goal ist env 0 lmr
-    (read_match_rule (extract_ltac_constr_values ist env)
-       ist env sigma lmr)
-  end
-
-(* Tries to match the hypotheses in a Match Context *)
-and apply_hyps_context ist env lz mt lctxt lgmatch mhyps hyps =
-  Proofview.Goal.enterl begin fun gl ->
+    let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
-  let rec apply_hyps_context_rec lfun lmatch lhyps_rest = function
-    | hyp_pat::tl ->
-	let (hypname, _, pat as hyp_pat) =
-	  match hyp_pat with
-	  | Hyp ((_,hypname),mhyp) -> hypname,  None, mhyp
-	  | Def ((_,hypname),mbod,mhyp) -> hypname, Some mbod, mhyp
-	in
-        let rec match_next_pattern next = match IStream.peek next with
-        | None ->
-          Proofview.tclLIFT (db_hyp_pattern_failure (curr_debug ist) env (hypname, pat)) <*>
-          Proofview.tclZERO PatternMatchingFailure
-        | Some (s, next) ->
-          let lids, hyp_match = s.e_ctx in
-          Proofview.tclLIFT (db_matched_hyp (curr_debug ist) env hyp_match hypname) <*>
-          Proofview.tclORELSE
-            begin
-              let id_match = pi1 hyp_match in
-              let select_match (id,_,_) = Id.equal id id_match in
-              let nextlhyps = List.remove_first select_match lhyps_rest in
-              let lfun = lfun +++ lids in
-              apply_hyps_context_rec lfun s.e_sub nextlhyps tl
-            end
-            begin function
-              | e when is_match_catchable e ->
-                  match_next_pattern next
-              | e -> Proofview.tclZERO e
-            end
-        in
-        let init_match_pattern = Tacmach.New.of_old (fun gl ->
-          apply_one_mhyp_context gl lmatch hyp_pat lhyps_rest) gl in
-        match_next_pattern init_match_pattern
-    | [] ->
-        let lfun = lfun +++ ist.lfun in
-        let lfun = extend_values_with_bindings lmatch lfun in
-        Proofview.tclLIFT (db_mc_pattern_success (curr_debug ist)) <*>
-        eval_with_fail {ist with lfun=lfun} lz mt
-  in
-  apply_hyps_context_rec lctxt lgmatch hyps mhyps
+    let hyps = Proofview.Goal.hyps gl in
+    let hyps = if lr then List.rev hyps else hyps in
+    let concl = Proofview.Goal.concl gl in
+    let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
+    interp_match_successes lz ist (TacticMatching.match_goal env sigma hyps concl ilr)
   end
 
 and interp_external loc ist gl com req la =
@@ -1540,112 +1378,6 @@ and interp_genarg_var_list ist gl x =
   let lc = out_gen (glbwit (wit_list wit_var)) x in
   let lc = interp_hyp_list ist gl lc in
   in_gen (topwit (wit_list wit_var)) lc
-
-(* Interprets the Match expressions *)
-and interp_match ist lz constr lmr =
-  let apply_match_subterm app ist (id,c) csr mt =
-    let rec match_next_pattern next = match IStream.peek next with
-    | None -> Proofview.tclZERO PatternMatchingFailure
-    | Some ({ m_sub=lmatch; m_ctx=ctxt; }, next) ->
-      let lctxt = give_context ctxt id in
-      let lfun = extend_values_with_bindings (adjust lmatch) (lctxt +++ ist.lfun) in
-      Proofview.tclORELSE
-        (eval_with_fail {ist with lfun=lfun} lz mt)
-        begin function
-          | e when is_match_catchable e ->
-              match_next_pattern next
-          | e -> Proofview.tclZERO e
-        end
-    in
-    match_next_pattern (match_subterm_gen app c csr) in
-
-  let rec apply_match ist csr = function
-    | (All t)::tl ->
-        Proofview.tclORELSE
-        (eval_with_fail ist lz t)
-          begin function
-            | e when is_match_catchable e -> apply_match ist csr tl
-            | e -> Proofview.tclZERO e
-          end
-    | (Pat ([],Term c,mt))::tl ->
-        let matches =
-          try Some (extended_matches c csr)
-          with PatternMatchingFailure -> None
-        in
-        Proofview.tclORELSE begin match matches with
-        | None -> let e = PatternMatchingFailure in
-                  (Proofview.Goal.enter begin fun gl ->
-                   let env = Proofview.Goal.env gl in
-                   Proofview.tclLIFT begin
-                     debugging_exception_step ist false e (fun () ->
-                       str "matching with pattern" ++ fnl () ++
-                         pr_constr_pattern_env env c)
-                   end
-                  end) <*> Proofview.tclZERO e
-        | Some lmatch ->
-           Proofview.tclORELSE
-             begin
-               let lfun = extend_values_with_bindings lmatch ist.lfun in
-               eval_with_fail { ist with lfun=lfun } lz mt
-             end
-             begin function
-               | e ->
-                   (Proofview.Goal.enter begin fun gl ->
-                     let env = Proofview.Goal.env gl in
-                     Proofview.tclLIFT begin
-                       debugging_exception_step ist false e (fun () ->
-                         str "rule body for pattern" ++
-                           pr_constr_pattern_env env c)
-                     end
-                   end) <*>
-                   Proofview.tclZERO e
-             end
-        end
-        begin function 
-          | e when is_match_catchable e ->
-              Proofview.tclLIFT (debugging_step ist (fun () -> str "switching to the next rule")) <*>
-              apply_match ist csr tl
-          | e -> Proofview.tclZERO e
-        end
-
-    | (Pat ([],Subterm (b,id,c),mt))::tl ->
-        Proofview.tclORELSE
-          (apply_match_subterm b ist (id,c) csr mt)
-          begin function
-            | PatternMatchingFailure -> apply_match ist csr tl
-            | e -> Proofview.tclZERO e
-          end
-    | _ ->
-        Proofview.tclZERO (UserError ("Tacinterp.apply_match" , str
-                                                "No matching clauses for match.")) in
-  begin Proofview.tclORELSE
-    (interp_ltac_constr ist constr)
-    begin function
-      | e ->
-          (* spiwack: [Errors.push] here is unlikely to do what
-             it's intended to, or anything meaningful for that
-             matter. *)
-          let e = Errors.push e in
-          Proofview.tclLIFT (debugging_exception_step ist true e
-          (fun () -> str "evaluation of the matched expression")) <*>
-          Proofview.tclZERO e
-    end
-  end >>== fun csr ->
-  Proofview.Goal.enterl begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
-    let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
-    Proofview.tclORELSE
-      (apply_match ist csr ilr)
-      begin function
-        | e ->
-            Proofview.tclLIFT (debugging_exception_step ist true e (fun () -> str "match expression")) <*>
-            Proofview.tclZERO e
-      end >>== fun res ->
-      Proofview.tclLIFT (debugging_step ist (fun () ->
-        str "match expression returns " ++ pr_value (Some env) res)) <*>
-      (Proofview.Goal.return res)
-  end
 
 (* Interprets tactic expressions : returns a "constr" *)
 and interp_ltac_constr ist e =

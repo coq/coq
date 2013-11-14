@@ -19,6 +19,7 @@ Tacsubst
 Taccoerce
 Tacintern
 Tacenv
+TacticMatching
 Tacinterp
 Evar_tactics
 Autorewrite

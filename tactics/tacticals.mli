@@ -189,6 +189,9 @@ val case_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
 module New : sig
   open Proofview
 
+  (** [catch_failerror e] fails and decreases the level if [e] is an
+      Ltac error with level more than 0. Otherwise succeeds. *)
+  val catch_failerror : exn -> unit tactic
 
   val tclTHEN : unit tactic -> unit tactic -> unit tactic
   (* [tclFAIL n msg] fails with [msg] as an error message at level [n]
