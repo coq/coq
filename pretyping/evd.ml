@@ -328,7 +328,7 @@ let diff_evar_universe_context ctx' ctx  =
 	uctx_universes = Univ.empty_universes }
 
 (* let diff_evar_universe_context_key = Profile.declare_profile "diff_evar_universe_context";; *)
-(* let diff_evar_universe_context =  *)
+(* let diff_evar_universe_context = *)
 (*   Profile.profile2 diff_evar_universe_context_key diff_evar_universe_context;; *)
 
 type 'a in_evar_universe_context = 'a * evar_universe_context
@@ -360,8 +360,9 @@ let process_universe_constraints univs postponed vars alg local cstrs =
 	in
 	  if d == Univ.ULe then
 	    if Univ.check_leq univs l r then
-	      (** Keep Prop <= var around if var might be instantiated by prop later. *)
-	      if Univ.is_type0m_univ l && not (Univ.is_small_univ r) then
+	      (** Keep Prop/Set <= var around if var might be instantiated by prop or set
+		  later. *)
+	      if Univ.is_small_univ l && not (Univ.is_small_univ r) then
 		match Univ.Universe.level l, Univ.Universe.level r with
 		| Some l, Some r -> Univ.Constraint.add (l,Univ.Le,r) local, postponed
 		| _, _ -> local, postponed
@@ -899,6 +900,9 @@ let merge orig ext =
       universes;
       metas = merge_metas orig.metas ext.metas }
 
+(* let merge_key = Profile.declare_profile "merge" *)
+(* let merge = Profile.profile2 merge_key merge *)
+
 (**********************************************************)
 (* Sort variables *)
 
@@ -1243,8 +1247,11 @@ let nf_constraints evd =
   let uctx' = normalize_evar_universe_context uctx' in
     {evd with universes = uctx'}
 
-(* let nfconstrkey = Profile.declare_profile "nf_constraints";; *)
-(* let nf_constraints = Profile.profile1 nfconstrkey nf_constraints;; *)
+let nf_constraints = 
+  if Flags.profile then
+    let nfconstrkey = Profile.declare_profile "nf_constraints" in
+      Profile.profile1 nfconstrkey nf_constraints
+  else nf_constraints
 
 let universes evd = evd.universes.uctx_universes
 

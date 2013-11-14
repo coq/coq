@@ -695,8 +695,11 @@ and eta_constructor ts env evd ((ind, i), u) l1 csts1 (c, csts2) =
     | _ -> UnifFailure (evd,NotSameHead)
 
 (* Profiling *)
-(* let evar_conv_xkey = Profile.declare_profile "evar_conv_x";; *)
-(* let evar_conv_x = Profile.profile6 evar_conv_xkey evar_conv_x *)
+let evar_conv_x =
+  if Flags.profile then
+    let evar_conv_xkey = Profile.declare_profile "evar_conv_x" in
+      Profile.profile6 evar_conv_xkey evar_conv_x
+  else evar_conv_x
 
 (* We assume here |l1| <= |l2| *)
 

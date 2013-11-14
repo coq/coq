@@ -264,7 +264,6 @@ let check_leq (univs, cstrs as cuniv) u u' =
     (*   with UniverseInconsistency _ -> raise NotConvertible *)
 
 let sort_cmp_universes pb s0 s1 univs =
-  let dir = if is_cumul pb then check_leq univs else check_eq univs in
   match (s0,s1) with
     | (Prop c1, Prop c2) when is_cumul pb ->
       begin match c1, c2 with
@@ -272,9 +271,20 @@ let sort_cmp_universes pb s0 s1 univs =
       | _ -> raise NotConvertible
       end
     | (Prop c1, Prop c2) -> if c1 == c2 then univs else raise NotConvertible
-    | (Prop c1, Type u) -> dir (univ_of_sort s0) u
-    | (Type u, Prop c) -> dir u (univ_of_sort s1)
-    | (Type u1, Type u2) -> dir u1 u2
+    | (Prop c1, Type u) ->
+      let u0 = univ_of_sort s0 in
+	(match pb with
+	| CUMUL -> check_leq univs u0 u
+	| CONV -> check_eq univs u0 u)
+    | (Type u, Prop c) -> 
+      let u1 = univ_of_sort s1 in
+	(match pb with
+	| CUMUL -> check_leq univs u u1
+	| CONV -> check_eq univs u u1)
+    | (Type u1, Type u2) -> 
+	(match pb with
+	| CUMUL -> check_leq univs u1 u2
+	| CONV -> check_eq univs u1 u2)
 
 (* let sort_cmp _ _ _ cuniv = cuniv *)
 
@@ -617,8 +627,11 @@ let trans_fconv_universes reds cv_pb l2r evars env univs t1 t2 =
 	()
 
 (* Profiling *)
-(* let trans_fconv_universes_key = Profile.declare_profile "trans_fconv_universes" *)
-(* let trans_fconv_universes = Profile.profile8 trans_fconv_universes_key trans_fconv_universes *)
+let trans_fconv_universes = 
+  if Flags.profile then
+    let trans_fconv_universes_key = Profile.declare_profile "trans_fconv_universes" in
+      Profile.profile8 trans_fconv_universes_key trans_fconv_universes
+  else trans_fconv_universes
 
 let trans_fconv reds cv_pb l2r evars env = 
   trans_fconv_universes reds cv_pb l2r evars env (universes env)
@@ -659,8 +672,11 @@ let infer_conv_universes cv_pb l2r evars reds env univs t1 t2 =
       in Option.get cstrs
 
 (* Profiling *)
-(* let infer_conv_universes_key = Profile.declare_profile "infer_conv_universes" *)
-(* let infer_conv_universes = Profile.profile8 infer_conv_universes_key infer_conv_universes *)
+let infer_conv_universes = 
+  if Flags.profile then 
+    let infer_conv_universes_key = Profile.declare_profile "infer_conv_universes" in
+      Profile.profile8 infer_conv_universes_key infer_conv_universes
+  else infer_conv_universes
 
 let infer_conv ?(l2r=false) ?(evars=fun _ -> None) ?(ts=full_transparent_state)
     env univs t1 t2 = 

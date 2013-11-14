@@ -28,8 +28,11 @@ let refiner pr goal_sigma =
   { it = sgl; sigma = sigma'; }
 
 (* Profiling refiner *)
-(* let refiner_key = Profile.declare_profile "refiner" *)
-(* let refiner = Profile.profile2 refiner_key refiner *)
+let refiner = 
+  if Flags.profile then
+    let refiner_key = Profile.declare_profile "refiner" in
+      Profile.profile2 refiner_key refiner
+  else refiner
 
 (*********************)
 (*   Tacticals       *)

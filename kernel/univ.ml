@@ -814,20 +814,9 @@ struct
      hence the definition of [type1_univ], the type of [Prop] *)    
   let type1 = tip (Expr.successor Expr.set)
 
-  let is_type0m u =
-    match level u with
-    | Some l -> Level.is_prop l
-    | _ -> false
-
-  let is_type0 u =
-    match level u with
-    | Some l -> Level.is_set l
-    | _ -> false
-
-  let is_type1 u =
-    match node u with
-    | Cons (l, n) when is_nil n -> Expr.is_type1 (Hunivelt.node l)
-    | _ -> false
+  let is_type0m x = equal type0m x
+  let is_type0 x = equal type0 x
+  let is_type1 x = equal type1 x
 
   (* Returns the formal universe that lies juste above the universe variable u.
      Used to type the sort u. *)
@@ -960,7 +949,7 @@ let repr g u =
   in
   repr_rec u
 
-let can g = List.map (repr g)
+let can g l = List.map (repr g) l
 
 (* [safe_repr] also search for the canonical representative, but
    if the graph doesn't contain the searched universe, we add it. *)
@@ -1225,76 +1214,71 @@ let check_smaller g strict u v =
   if strict then
     is_lt g arcu arcv
   else
-    arcu == snd (safe_repr g Level.prop) || is_leq g arcu arcv
+    let proparc = snd (safe_repr g Level.prop) in
+      arcu == proparc ||
+	(let setarc = snd (safe_repr g Level.set) in
+	   (arcu == setarc && arcv != proparc) ||
+	     is_leq g arcu arcv)
 
 (** Then, checks on universes *)
 
 type 'a check_function = universes -> 'a -> 'a -> bool
 
-(* let equiv_list cmp l1 l2 = *)
-(*   let rec aux l1 l2 = *)
-(*     match l1 with *)
-(*     | [] -> l2 = [] *)
-(*     | hd :: tl1 -> *)
-(*       let rec aux' acc = function *)
-(* 	| hd' :: tl2 ->  *)
-(* 	  if cmp hd hd' then aux tl1 (acc @ tl2) *)
-(* 	  else aux' (hd' :: acc) tl2 *)
-(* 	| [] -> false *)
-(*       in aux' [] l2 *)
-(*   in aux l1 l2 *)
-
-let incl_list cmp l1 l2 =
-  Huniv.for_all (fun x1 -> Huniv.exists (fun x2 -> cmp x1 x2) l2) l1
-
-let compare_list cmp l1 l2 =
-  (l1 == l2) || (* (equiv_list cmp l1 l2) *)
-  (incl_list cmp l1 l2 && incl_list cmp l2 l1)
-
 let check_equal_expr g x y =
   x == y || (let (u, n) = Hunivelt.node x and (v, m) = Hunivelt.node y in 
 	       n = m && check_equal g u v)
+
+let check_eq_univs g l1 l2 =
+  let f x1 x2 = check_equal_expr g x1 x2 in
+  let exists x1 l = Huniv.exists (fun x2 -> f x1 x2) l in
+    Huniv.for_all (fun x1 -> exists x1 l2) l1
+    && Huniv.for_all (fun x2 -> exists x2 l1) l2
 
 (** [check_eq] is also used in [Evd.set_eq_sort],
     hence [Evarconv] and [Unification]. In this case,
     it seems that the Atom/Max case may occur,
     hence a relaxed version. *)
 
-(* let gen_check_eq strict g u v = *)
-(*   match u,v with *)
-(*     | Atom ul, Atom vl -> check_equal g ul vl *)
-(*     | Max(ule,ult), Max(vle,vlt) -> *)
-(*         (\* TODO: remove elements of lt in le! *\) *)
-(*         compare_list (check_equal g) ule vle && *)
-(*         compare_list (check_equal g) ult vlt *)
-(*     | _ -> *)
-(*       (\* not complete! (Atom(u) = Max([u],[]) *\) *)
-(*       if strict then anomaly (str "check_eq") *)
-(*       else false (\* in non-strict mode, under-approximation *\) *)
-
-(* let check_eq = gen_check_eq true *)
-(* let lax_check_eq = gen_check_eq false *)
 let check_eq g u v =
-  compare_list (check_equal_expr g) u v
+  Universe.equal u v || check_eq_univs g u v
+
 let check_eq_level g u v = u == v || check_equal g u v
+
+let check_eq = 
+  if Flags.profile then
+    let check_eq_key = Profile.declare_profile "check_eq" in
+      Profile.profile3 check_eq_key check_eq
+  else check_eq
+
 let lax_check_eq = check_eq
 
 let check_smaller_expr g (u,n) (v,m) =
-  if n <= m then
-    check_smaller g false u v
-  else if n - m = 1 then
-    check_smaller g true u v
-  else false
+  let diff = n - m in
+    match diff with
+    | 0 -> check_smaller g false u v
+    | 1 -> check_smaller g true u v
+    | x when x < 0 -> check_smaller g false u v
+    | _ -> false
 
 let exists_bigger g ul l =
   Huniv.exists (fun ul' -> 
     check_smaller_expr g (Hunivelt.node ul) (Hunivelt.node ul')) l
 
+let real_check_leq g u v =
+  (* prerr_endline ("Real check leq" ^ (string_of_ppcmds  *)
+  (* 				       (Universe.pr u ++ str" " ++ Universe.pr v))); *)
+  Huniv.for_all (fun ul -> exists_bigger g ul v) u
+    
 let check_leq g u v =
-  u == v ||
-  match Universe.level u with
-  | Some l when Level.is_prop l -> true
-  | _ -> Huniv.for_all (fun ul -> exists_bigger g ul v) u
+  Universe.equal u v ||
+    Universe.is_type0m u ||
+    check_eq g u v || real_check_leq g u v
+
+let check_leq = 
+  if Flags.profile then 
+    let check_leq_key = Profile.declare_profile "check_leq" in
+      Profile.profile3 check_leq_key check_leq
+  else check_leq
 
 (** Enforcing new constraints : [setlt], [setleq], [merge], [merge_disc] *)
 
@@ -2050,8 +2034,11 @@ let enforce_eq_instances_univs strict x y c =
 let merge_constraints c g =
   Constraint.fold enforce_constraint c g
 
-let merge_constraints_key = Profile.declare_profile "merge_constraints";;
-let merge_constraints = Profile.profile2 merge_constraints_key merge_constraints
+let merge_constraints = 
+  if Flags.profile then 
+    let key = Profile.declare_profile "merge_constraints" in
+      Profile.profile2 key merge_constraints
+  else merge_constraints
 
 let check_constraint g (l,d,r) =
   match d with
@@ -2062,9 +2049,11 @@ let check_constraint g (l,d,r) =
 let check_constraints c g =
   Constraint.for_all (check_constraint g) c
 
-let check_constraints_key = Profile.declare_profile "check_constraints";;
 let check_constraints =
-  Profile.profile2 check_constraints_key check_constraints
+  if Flags.profile then
+    let key = Profile.declare_profile "check_constraints" in
+      Profile.profile2 key check_constraints
+  else check_constraints
 
 let enforce_univ_constraint (u,d,v) =
   match d with

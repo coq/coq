@@ -478,8 +478,11 @@ let infer env constr =
   let t = execute env constr in
     make_judge constr t
 
-(* let infer_key = Profile.declare_profile "Fast_infer" *)
-(* let infer = Profile.profile2 infer_key infer *)
+let infer = 
+  if Flags.profile then
+    let infer_key = Profile.declare_profile "Fast_infer" in
+      Profile.profile2 infer_key infer
+  else infer
 
 let infer_type env constr =
   execute_type env constr

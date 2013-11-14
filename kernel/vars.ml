@@ -259,8 +259,11 @@ let subst_univs_constr subst c =
     let f = Univ.make_subst subst in
       subst_univs_fn_constr f c
 
-(* let subst_univs_constr_key = Profile.declare_profile "subst_univs_constr" *)
-(* let subst_univs_constr = Profile.profile2 subst_univs_constr_key subst_univs_constr *)
+let subst_univs_constr = 
+  if Flags.profile then
+    let subst_univs_constr_key = Profile.declare_profile "subst_univs_constr" in
+      Profile.profile2 subst_univs_constr_key subst_univs_constr
+  else subst_univs_constr
 
 let subst_univs_level_constr subst c =
   if Univ.is_empty_level_subst subst then c

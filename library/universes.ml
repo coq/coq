@@ -638,6 +638,9 @@ let restrict_universe_context (univs,csts) s =
       csts Constraint.empty
   in (univs', csts')
 
+let is_small_leq (l,d,r) =
+  Level.is_small l && d == Univ.Le
+
 let is_prop_leq (l,d,r) =
   Level.equal Level.prop l && d == Univ.Le
 
@@ -651,7 +654,7 @@ let refresh_constraints univs (ctx, cstrs) =
   let cstrs', univs' = 
     Univ.Constraint.fold (fun c (cstrs', univs as acc) -> 
       let c = translate_cstr c in
-      if Univ.check_constraint univs c && not (is_prop_leq c) then acc
+      if Univ.check_constraint univs c && not (is_small_leq c) then acc
       else (Univ.Constraint.add c cstrs', Univ.enforce_constraint c univs))
       cstrs (Univ.Constraint.empty, univs)
   in ((ctx, cstrs'), univs')
