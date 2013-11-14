@@ -149,8 +149,10 @@ module Hashconsing = struct
       val tl : t -> t
       val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
       val map : (elt -> elt) -> t -> t
+      val smartmap : (elt -> elt) -> t -> t
       val iter : (elt -> 'a) -> t -> unit
       val exists : (elt -> bool) -> t -> bool
+      val exists_remove : (elt -> bool) -> t -> t
       val for_all : (elt -> bool) -> t -> bool
       val for_all2 : (elt -> elt -> bool) -> t -> t -> bool
       val rev : t -> t
@@ -226,10 +228,22 @@ module Hashconsing = struct
 
     let map f l  =
       let rec loop l = match l.Node.node with
-	| Nil -> nil
+	| Nil -> l
 	| Cons(a, aa) -> cons (f a) (loop aa)
       in
 	loop l
+
+    let smartmap f l =
+      let rec loop l = match l.Node.node with
+	| Nil -> l
+	| Cons (a, aa) -> 
+	  let a' = f a in 
+	    if a' == f a then
+	      let aa' = loop aa in
+		if aa' == aa then l
+		else cons a aa'
+	    else cons a' (loop aa)
+      in loop l
 
     let iter f l =
       let rec loop l = match l.Node.node with
@@ -244,6 +258,17 @@ module Hashconsing = struct
 	| Cons(a,aa) -> f a || loop aa
       in
 	loop l
+
+    let exists_remove f i =
+      let rec loop l = match l.Node.node with
+	| Nil -> l
+	| Cons(a,aa) -> 
+	  if f a then loop aa
+	  else let aa' = loop aa in
+		 if aa == aa' then l
+		 else cons a aa'
+      in
+	loop i
 	
     let for_all f l =
       let rec loop l = match l.Node.node with
@@ -362,6 +387,8 @@ struct
     let equal a b = a == b || H.equal a b
   end)
 
+  include H
+
   let pool = WH.create 491
 
   let make x =
@@ -374,8 +401,6 @@ struct
 
   let equal x y = x == y || H.equal x y
 
-  let hash = H.hash
-  let data = H.data
 end
 
 
@@ -432,8 +457,6 @@ module Level = struct
   (** Hashcons on levels + their hash *)
   module Hunivlevelhash = MakeHashedHashcons(Hunivlevel)
   include Hunivlevelhash
-
-  type t = Hunivlevel.t
 
   let hcons = make
 
@@ -733,24 +756,9 @@ struct
 	else hcons (v', n)
 
   end
-
-  module Hunivelt = struct
-    let node x = x
-    let make x = x
-  end
-
-  (* module Hunivelt = Hashconsing.Hcons.Make( *)
-  (* struct *)
-  (*   type t = Expr.t *)
-  (*   let equal l1 l2 = *)
-  (*     l1 == l2 ||  *)
-  (*     match l1,l2 with *)
-  (*     | (b,n), (b',n') -> b == b' && n == n' *)
-  (*   let hash = Hashtbl.hash *)
-  (* end) *)
     
-  let compare_expr n m = Expr.compare (Hunivelt.node n) (Hunivelt.node m)
-  let pr_expr n = Expr.pr (Hunivelt.node n)
+  let compare_expr n m = Expr.compare n m
+  let pr_expr n = Expr.pr n
 
   module Huniv = Hashconsing.HList.Make(Expr.HExpr)
   type t = Huniv.t
@@ -769,8 +777,8 @@ struct
   let hcons_unique = Huniv.make
   let hcons x = hcons_unique x
 
-  let make l = Huniv.tip (Hunivelt.make (Expr.make l))
-  let tip x = Huniv.tip (Hunivelt.make x)
+  let make l = Huniv.tip (Expr.make l)
+  let tip x = Huniv.tip x
     
   let equal_universes x y = 
     x == y
@@ -781,10 +789,10 @@ struct
 (*         CList.eq_set x' y' *)
 
   let pr l = match node l with
-    | Cons (u, n) when is_nil n -> Expr.pr (Hunivelt.node u)
+    | Cons (u, n) when is_nil n -> Expr.pr u
     | _ -> 
       str "max(" ++ hov 0
-	(prlist_with_sep pr_comma Expr.pr (List.map Hunivelt.node (to_list l))) ++
+	(prlist_with_sep pr_comma Expr.pr (to_list l)) ++
         str ")"
       
   let atom l = match node l with
@@ -792,11 +800,11 @@ struct
     | _ -> None
 
   let level l = match node l with
-    | Cons (l, n) when is_nil n -> Expr.level (Hunivelt.node l)
+    | Cons (l, n) when is_nil n -> Expr.level l
     | _ -> None
 
   let levels l = 
-    fold (fun x acc -> LSet.add (Expr.get_level (Hunivelt.node x)) acc) l LSet.empty
+    fold (fun x acc -> LSet.add (Expr.get_level x) acc) l LSet.empty
 
   let is_small u = 
     match level u with
@@ -821,17 +829,17 @@ struct
   (* Returns the formal universe that lies juste above the universe variable u.
      Used to type the sort u. *)
   let super l = 
-    Huniv.map (fun x -> Hunivelt.make (Expr.successor (Hunivelt.node x))) l
+    Huniv.map (fun x -> Expr.successor x) l
 
   let addn n l =
-    Huniv.map (fun x -> Hunivelt.make (Expr.addn n (Hunivelt.node x))) l
+    Huniv.map (fun x -> Expr.addn n x) l
 
   let rec merge_univs l1 l2 =
     match node l1, node l2 with
     | Nil, _ -> l2
     | _, Nil -> l1
     | Cons (h1, t1), Cons (h2, t2) ->
-      (match Expr.super (Hunivelt.node h1) (Hunivelt.node h2) with
+      (match Expr.super h1 h2 with
       | Inl true (* h1 < h2 *) -> merge_univs t1 l2
       | Inl false -> merge_univs l1 t2
       | Inr c -> 
@@ -843,7 +851,7 @@ struct
     let rec aux a l = 
       match node l with
       | Cons (b, l') -> 
-        (match Expr.super (Hunivelt.node a) (Hunivelt.node b) with
+        (match Expr.super a b with
 	| Inl false -> aux a l'
 	| Inl true -> l
 	| Inr c ->
@@ -859,24 +867,17 @@ struct
 
   let of_list l = 
     List.fold_right
-      (fun x acc -> cons (Hunivelt.make x) acc)
+      (fun x acc -> cons x acc)
       l nil
     
   let empty = nil
   let is_empty n = is_nil n
 
-  let exists f l = 
-    Huniv.exists (fun x -> f (Hunivelt.node x)) l
+  let exists = Huniv.exists
 
-  let for_all f l = 
-    Huniv.for_all (fun x -> f (Hunivelt.node x)) l
+  let for_all = Huniv.for_all
 
-  let smartmap f l =
-    Huniv.map (fun x -> 
-      let n = Hunivelt.node x in
-      let x' = f n in
-	if x' == n then x else Hunivelt.make x')
-      l
+  let smartmap = Huniv.smartmap
 
 end
 
@@ -1225,14 +1226,28 @@ let check_smaller g strict u v =
 type 'a check_function = universes -> 'a -> 'a -> bool
 
 let check_equal_expr g x y =
-  x == y || (let (u, n) = Hunivelt.node x and (v, m) = Hunivelt.node y in 
-	       n = m && check_equal g u v)
+  x == y || (let (u, n) = x and (v, m) = y in 
+	       Int.equal n m && check_equal g u v)
+
+exception Neq 
 
 let check_eq_univs g l1 l2 =
   let f x1 x2 = check_equal_expr g x1 x2 in
   let exists x1 l = Huniv.exists (fun x2 -> f x1 x2) l in
     Huniv.for_all (fun x1 -> exists x1 l2) l1
     && Huniv.for_all (fun x2 -> exists x2 l1) l2
+
+  (* let exists x1 l = Huniv.exists_remove (fun x2 -> f x1 x2) l in *)
+  (*   try *)
+  (*     let l2' =  *)
+  (* 	Huniv.fold (fun x1 acc -> *)
+  (* 	  let l2' = exists x1 l2 in *)
+  (* 	    if l2 == l2' then raise Neq *)
+  (* 	    else l2') l1 l2 *)
+  (*     in  *)
+  (* 	if Huniv.is_nil l2' then true *)
+  (* 	else false (\* l2' has universes that are not equal to any in l1 *\) *)
+  (*   with Neq -> false *)
 
 (** [check_eq] is also used in [Evd.set_eq_sort],
     hence [Evarconv] and [Unification]. In this case,
@@ -1262,7 +1277,7 @@ let check_smaller_expr g (u,n) (v,m) =
 
 let exists_bigger g ul l =
   Huniv.exists (fun ul' -> 
-    check_smaller_expr g (Hunivelt.node ul) (Hunivelt.node ul')) l
+    check_smaller_expr g ul ul') l
 
 let real_check_leq g u v =
   (* prerr_endline ("Real check leq" ^ (string_of_ppcmds  *)
@@ -1272,7 +1287,7 @@ let real_check_leq g u v =
 let check_leq g u v =
   Universe.equal u v ||
     Universe.is_type0m u ||
-    check_eq g u v || real_check_leq g u v
+    check_eq_univs g u v || real_check_leq g u v
 
 let check_leq = 
   if Flags.profile then 
@@ -1896,7 +1911,8 @@ let subst_univs_level_fail subst l =
   with Not_found -> l
 
 let rec subst_univs_level_universe subst u =
-  let u' = Universe.smartmap (Universe.Expr.map (subst_univs_level_level subst)) u in
+  let f x = Universe.Expr.map (fun u -> subst_univs_level_level subst u) x in
+  let u' = Universe.smartmap f u in
     if u == u' then u
     else Universe.sort u'
 	
@@ -1931,7 +1947,7 @@ let subst_univs_expr_opt fn (l,n) =
 let subst_univs_universe fn ul =
   let subst, nosubst = 
     Universe.Huniv.fold (fun u (subst,nosubst) -> 
-      match subst_univs_expr_opt fn (Hunivelt.node u) with
+      match subst_univs_expr_opt fn u with
       | Some a' -> (a' :: subst, nosubst)
       | None -> (subst, u :: nosubst))
     ul ([], [])
@@ -1988,7 +2004,7 @@ let check_univ_leq u v =
 let enforce_leq u v c =
   match Huniv.node v with
   | Universe.Huniv.Cons (v, n) when Universe.is_empty n -> 
-    Universe.Huniv.fold (fun u -> constraint_add_leq (Hunivelt.node u) (Hunivelt.node v)) u c
+    Universe.Huniv.fold (fun u -> constraint_add_leq u v) u c
   | _ -> anomaly (Pp.str"A universe bound can only be a variable")
 
 let enforce_leq u v c =
@@ -2315,13 +2331,13 @@ let sort_universes orig =
 let remove_large_constraint u v min = 
   match Universe.level v with
   | Some u' -> if Level.equal u u' then min else v
-  | None -> Huniv.remove (Hunivelt.make (Universe.Expr.make u)) v
+  | None -> Huniv.remove (Universe.Expr.make u) v
 
 (* [is_direct_constraint u v] if level [u] is a member of universe [v] *)
 let is_direct_constraint u v =
   match Universe.level v with
   | Some u' -> Level.equal u u'
-  | None -> Huniv.mem (Hunivelt.make (Universe.Expr.make u)) v
+  | None -> Huniv.mem (Universe.Expr.make u) v
 
 (*
    Solve a system of universe constraint of the form
