@@ -1233,18 +1233,18 @@ and interp_match_success ist { TacticMatching.subst ; context ; terms ; lhs } =
     first success is considered, otherwise further successes are tried
     if the left-hand side fails. *)
 and interp_match_successes lz ist s =
-    (** iterates [tclORELSE] lazily on the stream [t], if [t] is
+    (** iterates [tclOR] lazily on the stream [t], if [t] is
         exhausted, raises [e]. Beware: there is no [tclINDEPENDENT],
         relying on the fact that it will always be applied to a single
         goal, by virtue of an earlier [Proofview.Goal.enter]. *)
-    let rec tclORELSE_stream t e =
-      match IStream.peek t with
-      | Some (t1,t') ->
-          Proofview.tclORELSE
-            t1
-            begin fun e ->
+  let rec tclOR_stream t e =
+    match IStream.peek t with
+    | Some (t1,t') ->
+        Proofview.tclORELSE
+          t1
+          begin fun e ->
               (* Honors Ltac's failure level. *)
-              Tacticals.New.catch_failerror e <*> tclORELSE_stream t' e
+              Tacticals.New.catch_failerror e <*> tclOR_stream t' e
             end
       | None ->
           Proofview.tclZERO e
@@ -1263,7 +1263,7 @@ and interp_match_successes lz ist s =
       end
     else
       (** match *)
-      tclORELSE_stream successes matching_failure
+      Proofview.tclONCE (tclOR_stream successes matching_failure)
 
 
 (* Interprets the Match expressions *)
