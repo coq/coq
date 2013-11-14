@@ -953,15 +953,6 @@ let verify_metas_coherence gl (ln1,lcm) (ln,lm) =
 
 let adjust (l, lc) = (l, Id.Map.map (fun c -> [], c) lc)
 
-
-(* spiwack: a small wrapper around the [Matching] module *)
-
-type 'a _matching_result =
-    { s_sub : bound_ident_map * patvar_map ;
-      s_ctx : 'a ;
-      s_nxt : 'a matching_result }
-and 'a matching_result = 'a _matching_result Proofview.glist Proofview.tactic
-
 type 'a _extended_matching_result =
     { e_ctx : 'a;
       e_sub : bound_ident_map * extended_patvar_map; }
