@@ -49,7 +49,6 @@ type named_vals = (Id.t * lazy_val) list
 type env = {
   env_globals       : globals;
   env_named_context : named_context;
-  env_named_context_map : named_declaration Id.Map.t;
   env_named_vals    : named_vals;
   env_rel_context   : rel_context;
   env_rel_val       : lazy_val list;
@@ -58,9 +57,9 @@ type env = {
   env_conv_oracle   : Conv_oracle.oracle;
   retroknowledge : Retroknowledge.retroknowledge }
 
-type named_context_val = named_context * named_declaration Id.Map.t * named_vals
+type named_context_val = named_context * named_vals
 
-let empty_named_context_val = [], Id.Map.empty, []
+let empty_named_context_val = [],[]
 
 let empty_env = {
   env_globals = {
@@ -69,7 +68,6 @@ let empty_env = {
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
   env_named_context = empty_named_context;
-  env_named_context_map = Id.Map.empty;
   env_named_vals = [];
   env_rel_context = empty_rel_context;
   env_rel_val = [];
@@ -105,10 +103,10 @@ let env_of_rel n env =
 
 (* Named context *)
 
-let push_named_context_val d (ctxt,map,vals) =
+let push_named_context_val d (ctxt,vals) =
   let id,_,_ = d in
   let rval = ref VKnone in
-  Context.add_named_decl d ctxt, Id.Map.add id d map, (id,rval)::vals
+    Context.add_named_decl d ctxt, (id,rval)::vals
 
 let push_named d env =
 (*  if not (env.env_rel_context = []) then raise (ASSERT env.env_rel_context);
@@ -117,7 +115,6 @@ let push_named d env =
   let rval = ref VKnone in
   { env_globals = env.env_globals;
     env_named_context = Context.add_named_decl d env.env_named_context;
-    env_named_context_map = Id.Map.add id d env.env_named_context_map;
     env_named_vals = (id, rval) :: env.env_named_vals;
     env_rel_context = env.env_rel_context;
     env_rel_val = env.env_rel_val;
