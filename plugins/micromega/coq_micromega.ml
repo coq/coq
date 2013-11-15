@@ -275,10 +275,10 @@ struct
     *)
 
   let logic_dir = ["Coq";"Logic";"Decidable"]
-  let coq_modules =
-   init_modules @
-    [logic_dir] @ arith_modules @ zarith_base_modules @
-    [ ["Coq";"Lists";"List"];
+
+  let mic_modules = 
+    [ 
+      ["Coq";"Lists";"List"];
       ["ZMicromega"];
       ["Tauto"];
       ["RingMicromega"];
@@ -292,6 +292,10 @@ struct
       ["Coq";"Reals" ; "Rdefinitions"];
       ["Coq";"Reals" ; "Rpow_def"];
       ["LRing_normalise"]]
+
+  let coq_modules =
+   init_modules @
+    [logic_dir] @ arith_modules @ zarith_base_modules @ mic_modules
 
   let bin_module = [["Coq";"Numbers";"BinNums"]]
 
@@ -312,7 +316,7 @@ struct
   let bin_constant = gen_constant_in_modules "ZMicromega" bin_module
   let r_constant = gen_constant_in_modules "ZMicromega" r_modules
   let z_constant = gen_constant_in_modules "ZMicromega" z_modules
-  (* let constant = gen_constant_in_modules "Omicron" coq_modules *)
+  let m_constant = gen_constant_in_modules "ZMicromega" mic_modules
 
   let coq_and = lazy (init_constant "and")
   let coq_or = lazy (init_constant "or")
@@ -354,15 +358,15 @@ struct
   let coq_Qmake = lazy (constant "Qmake")
 
   let coq_Rcst = lazy (constant "Rcst")
-  let coq_C0   = lazy (constant "C0")
-  let coq_C1   = lazy (constant "C1")
-  let coq_CQ   = lazy (constant "CQ")
-  let coq_CZ   = lazy (constant "CZ")
-  let coq_CPlus = lazy (constant "CPlus")
-  let coq_CMinus = lazy (constant "CMinus")
-  let coq_CMult  = lazy (constant "CMult")
-  let coq_CInv   = lazy (constant "CInv")
-  let coq_COpp   = lazy (constant "COpp")
+  let coq_C0   = lazy (m_constant "C0")
+  let coq_C1   = lazy (m_constant "C1")
+  let coq_CQ   = lazy (m_constant "CQ")
+  let coq_CZ   = lazy (m_constant "CZ")
+  let coq_CPlus = lazy (m_constant "CPlus")
+  let coq_CMinus = lazy (m_constant "CMinus")
+  let coq_CMult  = lazy (m_constant "CMult")
+  let coq_CInv   = lazy (m_constant "CInv")
+  let coq_COpp   = lazy (m_constant "COpp")
 
 
   let coq_R0    = lazy (constant "R0")
