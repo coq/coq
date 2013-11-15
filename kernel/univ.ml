@@ -310,16 +310,24 @@ module Hashconsing = struct
       | Cons (x, ll) -> x == e || mem e ll
 
     let rec compare cmp l1 l2 =
-      if l1 == l2 then 0 else
-	match node l1, node l2 with
-	| Nil, Nil -> 0
-	| _, Nil -> 1
-	| Nil, _ -> -1
-	| Cons (x1,l1), Cons(x2,l2) ->
-          (match cmp x1 x2 with
-          | 0 -> compare cmp l1 l2
-          | c -> c)
-      
+      if l1 == l2 then 0 
+      else
+	let hl1 = hash l1 and hl2 = hash l2 in
+	let c = Int.compare hl1 hl2 in
+	  if c == 0 then 
+	    let nl1 = node l1 in
+	    let nl2 = node l2 in
+	      if nl1 == nl2 then 0
+	      else 
+		match nl1, nl2 with
+		| Nil, Nil -> assert false
+		| _, Nil -> 1
+		| Nil, _ -> -1
+		| Cons (x1,l1), Cons(x2,l2) ->
+		  (match cmp x1 x2 with
+		  | 0 -> compare cmp l1 l2
+		  | c -> c)
+	  else c
     end
   end
 end
@@ -488,10 +496,8 @@ module Level = struct
 
      Note: this property is used by the [check_sorted] function below. *)
 
-  let compare u v =
-    if u == v then 0
-    else
-    (match data u, data v with
+  let deep_compare u v =
+    match u, v with
     | Prop,Prop -> 0
     | Prop, _ -> -1
     | _, Prop -> 1
@@ -501,10 +507,15 @@ module Level = struct
     | Level (i1, dp1), Level (i2, dp2) ->
       if i1 < i2 then -1
       else if i1 > i2 then 1
-      else DirPath.compare dp1 dp2)
+      else DirPath.compare dp1 dp2
 
-  let leq u v = compare u v <= 0
-
+  let compare u v =
+    if u == v then 0
+    else
+      let c = Int.compare (hash u) (hash v) in
+	if c == 0 then deep_compare (data u) (data v)
+	else c
+	    
   let to_string x = 
     match data x with
     | Prop -> "Prop"
@@ -757,7 +768,7 @@ struct
 
   end
     
-  let compare_expr n m = Expr.compare n m
+  let compare_expr = Expr.compare
   let pr_expr n = Expr.pr n
 
   module Huniv = Hashconsing.HList.Make(Expr.HExpr)
@@ -770,9 +781,14 @@ struct
 
   let hash = Huniv.hash
 
-  let compare u1 u2 =
-    if equal u1 u2 then 0 else 
-      Huniv.compare compare_expr u1 u2
+  let compare x y =
+    if x == y then 0
+    else 
+      let hx = Huniv.hash x and hy = Huniv.hash y in
+      let c = Int.compare hx hy in 
+	if c == 0 then
+	  Huniv.compare (fun e1 e2 -> compare_expr e1 e2) x y
+	else c
 
   let hcons_unique = Huniv.make
   let hcons x = hcons_unique x
@@ -780,14 +796,6 @@ struct
   let make l = Huniv.tip (Expr.make l)
   let tip x = Huniv.tip x
     
-  let equal_universes x y = 
-    x == y
-(* then true *)
-(*     else *)
-(* 	(\* Consider lists as sets, i.e. up to reordering, *)
-(* 	   they are already without duplicates thanks to normalization. *\) *)
-(*         CList.eq_set x' y' *)
-
   let pr l = match node l with
     | Cons (u, n) when is_nil n -> Expr.pr u
     | _ -> 
@@ -2489,4 +2497,4 @@ let explain_universe_inconsistency (o,u,v,p) =
 
 let compare_levels = Level.compare
 let eq_levels = Level.equal
-let equal_universes = Universe.equal_universes
+let equal_universes = Universe.equal
