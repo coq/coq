@@ -54,11 +54,7 @@ let id_map_try_add_name id x m =
     the binding of the right-hand argument shadows that of the left-hand
     argument. *)
 let id_map_right_biased_union m1 m2 =
-    Names.Id.Map.merge begin fun _ x1 x2 ->
-      match x1 , x2 with
-      | _ , Some x | Some x , None -> Some x
-      | _ , _ -> None
-    end m1 m2
+  Names.Id.Map.fold Names.Id.Map.add m2 m1
 
 (** Tests whether the substitution [s] is empty. *)
 let is_empty_subst (ln,lm) =
