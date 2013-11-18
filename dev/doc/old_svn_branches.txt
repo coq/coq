@@ -1,0 +1,33 @@
+## During the migration to git, some old branches and tags have not been
+## converted to directly visible git branches or tags. They are still there
+## in the archive, their names on the gforge repository are in the 3rd
+## column below (e.g. remotes/V8-0-bugfix). After a git clone, they
+## could always be accessed by their git hashref (2nd column below).
+
+# SVN   # GIT   # Symbolic name on gforge repository
+
+r5      d2f789d remotes/tags/start
+r1714   0605b7c remotes/V7
+r2583   372f3f0 remotes/tags/modules-2-branching
+r2603   6e15d9a remotes/modules
+r2866   76a93fa remotes/tags/modules-2-before-grammar
+r2951   356f749 remotes/tags/before-modules
+r2952   8ee67df remotes/tags/modules-2-update
+r2956   fb11bd9 remotes/modules-2
+r3193   4d23172 remotes/mowgli
+r3194   c91e99b remotes/tags/mowgli-before-merge
+r3500   5078d29 remotes/mowgli2
+r3672   63b0886 remotes/V7-3-bugfix
+r5086   bdceb72 remotes/V7-4-bugfix
+r5731   a274456 remotes/recriture
+r9046   e19553c remotes/tags/trunk
+r9146   b38ce05 remotes/coq-diff-tool
+r9786   a05abf8 remotes/ProofIrrelevance
+r10294  fdf8871 remotes/InternalExtraction
+r10408  df97909 remotes/TypeClasses
+r10673  4e19bca remotes/bertot
+r11130  bfd1cb3 remotes/proofs
+r12282  a726b30 remotes/revised-theories
+r13855  bae3a8e remotes/native
+r14062  b77191b remotes/recdef
+r16421  9f4bfa8 remotes/V8-0-bugfix
