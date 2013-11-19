@@ -9,6 +9,7 @@
 (** This file extends Matching with the main logic for Ltac's
     (lazy)match and (lazy)match goal. *)
 
+open Names
 open Tacexpr
 
 (** [t] is the type of matching successes. It ultimately contains a
@@ -19,8 +20,8 @@ open Tacexpr
     substitution mapping corresponding to matched hypotheses. *)
 type 'a t = {
   subst : Matching.bound_ident_map * Pattern.extended_patvar_map ;
-  context : Term.constr Names.Id.Map.t;
-  terms : Term.constr Names.Id.Map.t;
+  context : Term.constr Id.Map.t;
+  terms : Term.constr Id.Map.t;
   lhs : 'a;
 }
 
@@ -34,31 +35,31 @@ type 'a t = {
     substitution of the former type to the latter. *)
 let adjust : Matching.bound_ident_map * Pattern.patvar_map ->
              Matching.bound_ident_map * Pattern.extended_patvar_map = fun (l, lc) ->
-  (l, Names.Id.Map.map (fun c -> [], c) lc)
+  (l, Id.Map.map (fun c -> [], c) lc)
 
 
-(** Adds a binding to a {!Names.Id.Map.t} if the identifier is [Some id] *)
+(** Adds a binding to a {!Id.Map.t} if the identifier is [Some id] *)
 let id_map_try_add id x m =
   match id with
-  | Some id -> Names.Id.Map.add id x m
+  | Some id -> Id.Map.add id x m
   | None -> m
 
-(** Adds a binding to a {!Names.Id.Map.t} if the name is [Name id] *)
+(** Adds a binding to a {!Id.Map.t} if the name is [Name id] *)
 let id_map_try_add_name id x m =
-  let open Names.Name in
   match id with
-  | Name id -> Names.Id.Map.add id x m
+  | Name id -> Id.Map.add id x m
   | Anonymous -> m
 
-(** Takes the union of two {!Names.Id.Map.t}. If there is conflict,
+(** Takes the union of two {!Id.Map.t}. If there is conflict,
     the binding of the right-hand argument shadows that of the left-hand
     argument. *)
 let id_map_right_biased_union m1 m2 =
-  Names.Id.Map.fold Names.Id.Map.add m2 m1
+  if Id.Map.is_empty m1 then m2 (** Don't reconstruct the whole map *)
+  else Id.Map.fold Id.Map.add m2 m1
 
 (** Tests whether the substitution [s] is empty. *)
 let is_empty_subst (ln,lm) =
-  Names.Id.Map.(is_empty ln && is_empty lm)
+  Id.Map.(is_empty ln && is_empty lm)
 
 (** {6 Non-linear patterns} *)
 
@@ -80,7 +81,7 @@ let equal_instances env sigma (ctx',c') (ctx,c) =
   (* How to compare instances? Do we want the terms to be convertible?
      unifiable? Do we want the universe levels to be relevant? 
      (historically, conv_x is used) *)
-  CList.equal Names.Id.equal ctx ctx' && Reductionops.is_conv env sigma c' c
+  CList.equal Id.equal ctx ctx' && Reductionops.is_conv env sigma c' c
 
 
 (** Merges two substitutions. Raises [Not_coherent_metas] when
@@ -95,10 +96,10 @@ let verify_metas_coherence env sigma (ln1,lcm) (ln,lm) =
         if equal_instances env sigma c1 c2 then Some c1
         else raise Not_coherent_metas
   in
-  let (+++) lfun1 lfun2 = Names.Id.Map.fold Names.Id.Map.add lfun1 lfun2 in
+  let (+++) lfun1 lfun2 = Id.Map.fold Id.Map.add lfun1 lfun2 in
   (** ppedrot: Is that even correct? *)
   let merged = ln +++ ln1 in
-  (merged, Names.Id.Map.merge merge lcm lm)
+  (merged, Id.Map.merge merge lcm lm)
 
 
 (** A functor is introduced to share the environment and the
@@ -125,7 +126,7 @@ module PatternMatching (E:StaticEnvironment) = struct
 
 
   (** The empty substitution. *)
-  let empty_subst = Names.Id.Map.empty , Names.Id.Map.empty
+  let empty_subst = Id.Map.empty , Id.Map.empty
 
   (** Composes two substitutions using {!verify_metas_coherence}. It
       must be a monoid with neutral element {!empty_subst}. Raises
@@ -136,14 +137,14 @@ module PatternMatching (E:StaticEnvironment) = struct
     else verify_metas_coherence E.env E.sigma s1 s2
 
   (** The empty context substitution. *)
-  let empty_context_subst = Names.Id.Map.empty
+  let empty_context_subst = Id.Map.empty
 
   (** Compose two context substitutions, in case of conflict the
       right hand substitution shadows the left hand one. *)
   let context_subst_prod = id_map_right_biased_union
 
   (** The empty term substitution. *)
-  let empty_term_subst = Names.Id.Map.empty
+  let empty_term_subst = Id.Map.empty
 
   (** Compose two terms substitutions, in case of conflict the
       right hand substitution shadows the left hand one. *)
@@ -236,7 +237,7 @@ module PatternMatching (E:StaticEnvironment) = struct
            changed if the implementation of the monad changes. *)
         IStream.map begin fun { Matching.m_sub ; m_ctx } ->
           let subst = adjust m_sub in
-          let context = id_map_try_add id_ctxt m_ctx Names.Id.Map.empty in
+          let context = id_map_try_add id_ctxt m_ctx Id.Map.empty in
           let terms = empty_term_subst in
           { subst ; context ; terms ; lhs }
         end (Matching.match_subterm_gen with_app_context p term)
@@ -303,7 +304,7 @@ module PatternMatching (E:StaticEnvironment) = struct
         (* spiwack: alternatively it is possible to return the list
            with the matched hypothesis removed directly in
            [hyp_match]. *)
-        let select_matched_hyp (id,_,_) = Names.Id.equal id matched_hyp in
+        let select_matched_hyp (id,_,_) = Id.equal id matched_hyp in
         let hyps = CList.remove_first select_matched_hyp hyps in
         hyp_pattern_list_match pats hyps lhs
     | [] -> return lhs
