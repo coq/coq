@@ -251,7 +251,7 @@ let eterm_obligations env name evm fs ?status t ty =
 	 in
 	 let tac = match Store.get ev.evar_extra evar_tactic with
 	   | Some t ->
-	       if String.equal (Dyn.tag t) "tactic" then
+	       if Dyn.has_tag t "tactic" then
 		 Some (Tacinterp.interp 
 			  (Tacinterp.globTacticIn (Tacinterp.tactic_out t)))
 	       else None
