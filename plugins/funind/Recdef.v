@@ -46,3 +46,5 @@ intros m n; case (Compare_dec.le_gt_dec m n).
 intros h; exists n; [exact h | apply le_n].
 intros h; exists m; [apply le_n | apply Lt.lt_le_weak; exact h].
 Defined.
+
+Definition Acc_intro_generator_function := fun A R => @Acc_intro_generator A R 100.
