@@ -524,7 +524,7 @@ case $usecamlp5 in
 	fi
     else
 	# Beware of the final \r in Win32
-	camlp5dir="$(camlp5 -where | tr -d "\r")"
+	camlp5dir="$(camlp5 -where | tr -d '\r')"
 	if [ "$camlp5dir" != "" ]; then
 	    CAMLP4LIB=$camlp5dir
 	    FULLCAMLP4LIB=$camlp5dir
@@ -631,8 +631,10 @@ if [ "$coqide_spec" = "yes" -a "$COQIDE" = "no" ]; then
 else
     case $lablgtkdir_spec in
 	no)
-            # Beware of the final \r in Win32
-            if lablgtkdirtmp="$(ocamlfind query lablgtk2 2> /dev/null | tr -d "\r")"; then
+            if lablgtkdirtmp="$(ocamlfind query lablgtk2 2> /dev/null)"; then
+                # Beware of the final \r in Win32
+                # Do not pipe this tr -d above, otherwise the exit code is lost
+                lablgtkdirtmp="$(echo $lablgtkdirtmp | tr -d '\r')"
                 if [ -f "$lablgtkdirtmp/glib.cmi" -a -f "$lablgtkdirtmp/glib.mli" ]; then
                     lablgtkdirfoundmsg="LabelGtk2 found by ocamlfind"
                     lablgtkdir=$lablgtkdirtmp
