@@ -124,12 +124,32 @@ let infer_declaration env kn dcl =
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let body, side_eff = Future.join body in
       let body = handle_side_effects env body side_eff in
-      let j = infer env body in
-      let j = hcons_j j in
-      let typ = constrain_type env j c.const_entry_polymorphic (map_option_typ typ) in
-      feedback_completion_typecheck feedback_id;
-      let def = Def (Mod_subst.from_val j.uj_val) in
-      def, typ, None, c.const_entry_polymorphic,
+      let def, typ, proj = 
+	match c.const_entry_proj with
+	| Some (ind, n, m, ty) ->
+            (* FIXME: check projection *)
+	  let pb = { proj_ind = ind;
+		     proj_npars = n;
+		     proj_arg = m;
+		     proj_type = ty;
+		     proj_body = body }
+	  in 
+	  let body' = mkProj (Option.get kn, mkRel 1) in
+	    (* TODO: recognize projection *)
+	  let context, m = decompose_lam_n_assum (n + 1) body in 
+	  let body = it_mkLambda_or_LetIn body' context in
+	      (* let tj = infer_type env' (Option.get c.const_entry_type) in *)
+	    Def (Mod_subst.from_val (hcons_constr body)),
+	    RegularArity (hcons_constr (Option.get typ)), Some pb
+	| None ->
+	  let j = infer env body in
+	  let j = hcons_j j in
+	  let typ = constrain_type env j c.const_entry_polymorphic (map_option_typ typ) in
+	  let def = Def (Mod_subst.from_val j.uj_val) in
+	    def, typ, None
+      in
+	feedback_completion_typecheck feedback_id;
+	def, typ, proj, c.const_entry_polymorphic,
         c.const_entry_universes, c.const_entry_inline_code, c.const_entry_secctx
 
 let global_vars_set_constant_type env = function
