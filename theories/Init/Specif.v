@@ -83,6 +83,40 @@ Section Subset_projections.
 End Subset_projections.
 
 
+(** [sig2] of a predicate can be projected to a [sig].
+
+    This allows [proj1_sig] and [proj2_sig] to work with [sig2].
+
+    The [let] statements occur in the body of the [exist] so that
+    [proj1_sig] of a coerced [X : sig2 P Q] will unify with [let (a,
+    _, _) := X in a] *)
+
+Definition sig_of_sig2 (A : Type) (P Q : A -> Prop) (X : sig2 P Q) : sig P
+  := exist P
+           (let (a, _, _) := X in a)
+           (let (x, p, _) as s return (P (let (a, _, _) := s in a)) := X in p).
+
+Coercion sig_of_sig2 : sig2 >-> sig.
+
+(** Projections of [sig2]
+
+    An element [y] of a subset [{x:A | (P x) & (Q x)}] is the triple
+    of an [a] of type [A], a of a proof [h] that [a] satisfies [P],
+    and a proof [h'] that [a] satisfies [Q].  Then [(proj1_sig y)] is
+    the witness [a], [(proj2_sig y)] is the proof of [(P a)], and
+    [(proj3_sig y)] is the proof of [(Q a)]. *)
+
+Section Subset_projections2.
+
+  Variable A : Type.
+  Variables P Q : A -> Prop.
+
+  Definition proj3_sig (e : sig2 P Q) :=
+    let (a, b, c) return Q (proj1_sig e) := e in c.
+
+End Subset_projections2.
+
+
 (** Projections of [sigT]
 
     An element [x] of a sigma-type [{y:A & P y}] is a dependent pair
@@ -105,6 +139,39 @@ Section Projections.
 
 End Projections.
 
+(** [sigT2] of a predicate can be projected to a [sigT].
+
+    This allows [projT1] and [projT2] to work with [sigT2].
+
+    The [let] statements occur in the body of the [existT] so that
+    [projT1] of a coerced [X : sigT2 P Q] will unify with [let (a,
+    _, _) := X in a] *)
+
+Definition sigT_of_sigT2 (A : Type) (P Q : A -> Type) (X : sigT2 P Q) : sigT P
+  := existT P
+            (let (a, _, _) := X in a)
+            (let (x, p, _) as s return (P (let (a, _, _) := s in a)) := X in p).
+
+Coercion sigT_of_sigT2 : sigT2 >-> sigT.
+
+(** Projections of [sigT2]
+
+    An element [x] of a sigma-type [{y:A & P y & Q y}] is a dependent
+    pair made of an [a] of type [A], an [h] of type [P a], and an [h']
+    of type [Q a].  Then, [(projT1 x)] is the first projection,
+    [(projT2 x)] is the second projection, and [(projT3 x)] is the
+    third projection, the types of which depends on the [projT1]. *)
+
+Section Projections2.
+
+  Variable A : Type.
+  Variables P Q : A -> Type.
+
+  Definition projT3 (e : sigT2 P Q) :=
+    let (a, b, c) return Q (projT1 e) := e in c.
+
+End Projections2.
+
 (** [sigT] of a predicate is equivalent to [sig] *)
 
 Definition sig_of_sigT (A : Type) (P : A -> Prop) (X : sigT P) : sig P
@@ -115,6 +182,17 @@ Definition sigT_of_sig (A : Type) (P : A -> Prop) (X : sig P) : sigT P
 
 Coercion sigT_of_sig : sig >-> sigT.
 Coercion sig_of_sigT : sigT >-> sig.
+
+(** [sigT2] of a predicate is equivalent to [sig2] *)
+
+Definition sig2_of_sigT2 (A : Type) (P Q : A -> Prop) (X : sigT2 P Q) : sig2 P Q
+  := exist2 P Q (projT1 X) (projT2 X) (projT3 X).
+
+Definition sigT2_of_sig2 (A : Type) (P Q : A -> Prop) (X : sig2 P Q) : sigT2 P Q
+  := existT2 P Q (proj1_sig X) (proj2_sig X) (proj3_sig X).
+
+Coercion sigT2_of_sig2 : sig2 >-> sigT2.
+Coercion sig2_of_sigT2 : sigT2 >-> sig2.
 
 (** [sumbool] is a boolean type equipped with the justification of
     their value *)
