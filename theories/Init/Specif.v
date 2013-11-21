@@ -107,11 +107,11 @@ End Projections.
 
 (** [sigT] of a predicate is equivalent to [sig] *)
 
-Lemma sig_of_sigT : forall (A:Type) (P:A->Prop), sigT P -> sig P.
-Proof. destruct 1 as (x,H); exists x; trivial. Defined.
+Definition sig_of_sigT (A : Type) (P : A -> Prop) (X : sigT P) : sig P
+  := exist P (projT1 X) (projT2 X).
 
-Lemma sigT_of_sig : forall (A:Type) (P:A->Prop), sig P -> sigT P.
-Proof. destruct 1 as (x,H); exists x; trivial. Defined.
+Definition sigT_of_sig (A : Type) (P : A -> Prop) (X : sig P) : sigT P
+  := existT P (proj1_sig X) (proj2_sig X).
 
 Coercion sigT_of_sig : sig >-> sigT.
 Coercion sig_of_sigT : sigT >-> sig.
