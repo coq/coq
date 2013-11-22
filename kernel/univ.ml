@@ -238,7 +238,7 @@ module Hashconsing = struct
 	| Nil -> l
 	| Cons (a, aa) -> 
 	  let a' = f a in 
-	    if a' == f a then
+	    if a' == a then
 	      let aa' = loop aa in
 		if aa' == aa then l
 		else cons a aa'

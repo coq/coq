@@ -138,7 +138,7 @@ let infer_declaration env kn dcl =
 	    (* TODO: recognize projection *)
 	  let context, m = decompose_lam_n_assum (n + 1) body in 
 	  let body = it_mkLambda_or_LetIn body' context in
-	      (* let tj = infer_type env' (Option.get c.const_entry_type) in *)
+
 	    Def (Mod_subst.from_val (hcons_constr body)),
 	    RegularArity (hcons_constr (Option.get typ)), Some pb
 	| None ->

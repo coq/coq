@@ -172,9 +172,10 @@ let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) pro
 	  [] subst (snd k.cl_context)
 	in
 	let (_, ty_constr) = instance_constructor (k,u) subst in
+	let nf, subst = Evarutil.e_nf_evars_and_universes evars in
 	let termtype =
 	  let t = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-	    fst (Evarutil.e_nf_evars_and_universes evars) t
+	    nf t
 	in
 	Evarutil.check_evars env Evd.empty !evars termtype;
 	let ctx = Evd.universe_context !evars in

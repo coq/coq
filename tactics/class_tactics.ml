@@ -50,10 +50,6 @@ let evars_to_goals p evm =
 
 open Auto
 
-let e_give_exact flags (c,cl) gl =
-  let t1 = (pf_type_of gl c) in
-    tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl
-
 open Unification
 
 let auto_unif_flags = {
@@ -91,6 +87,19 @@ let progress_evars t =
     in t <*> check
   end
 
+
+let e_give_exact flags poly (c,clenv) gl =
+  let c, gl =
+    if poly then
+      let clenv', subst = Clenv.refresh_undefined_univs clenv in
+      let clenv' = connect_clenv gl clenv' in
+      let c = Vars.subst_univs_level_constr subst c in
+	c, {gl with sigma = clenv'.evd}
+    else c, gl
+  in
+  let t1 = pf_type_of gl c in
+    tclTHEN (Clenvtac.unify ~flags t1) (exact_no_check c) gl
+
 let unify_e_resolve poly flags (c,clenv) gls =
   let clenv' = if poly then fst (Clenv.refresh_undefined_univs clenv) else clenv in
   let clenv' = connect_clenv gls clenv' in
@@ -103,8 +112,8 @@ let unify_resolve poly flags (c,clenv) gls =
   let clenv' = clenv_unique_resolver ~flags clenv' gls in
     Clenvtac.clenv_refine false(*uhoh, was true*) ~with_classes:false clenv' gls
 
-let clenv_of_prods nprods (c, clenv) gls =
-  if Int.equal nprods 0 then Some clenv
+let clenv_of_prods poly nprods (c, clenv) gls =
+  if poly || Int.equal nprods 0 then Some clenv
   else
     let ty = pf_type_of gls c in
     let diff = nb_prod ty - nprods in
@@ -113,8 +122,8 @@ let clenv_of_prods nprods (c, clenv) gls =
 	Some (mk_clenv_from_n gls (Some diff) (c,ty))
       else None
 
-let with_prods nprods (c, clenv) f gls =
-  match clenv_of_prods nprods (c, clenv) gls with
+let with_prods nprods poly (c, clenv) f gls =
+  match clenv_of_prods poly nprods (c, clenv) gls with
   | None -> tclFAIL 0 (str"Not enough premisses") gls
   | Some clenv' -> f (c, clenv') gls
 
@@ -158,11 +167,11 @@ and e_my_find_search db_list local_db hdc complete concl =
     fun (flags, {pri = b; pat = p; poly = poly; code = t; name = name}) ->
       let tac =
 	match t with
-	  | Res_pf (term,cl) -> with_prods nprods (term,cl) (unify_resolve poly flags)
-	  | ERes_pf (term,cl) -> with_prods nprods (term,cl) (unify_e_resolve poly flags)
-	  | Give_exact c -> e_give_exact flags c
+	  | Res_pf (term,cl) -> with_prods nprods poly (term,cl) (unify_resolve poly flags)
+	  | ERes_pf (term,cl) -> with_prods nprods poly (term,cl) (unify_e_resolve poly flags)
+	  | Give_exact c -> e_give_exact flags poly c
 	  | Res_pf_THEN_trivial_fail (term,cl) ->
-              tclTHEN (with_prods nprods (term,cl) (unify_e_resolve poly flags))
+              tclTHEN (with_prods nprods poly (term,cl) (unify_e_resolve poly flags))
 	        (if complete then tclIDTAC else e_trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c])
 	  | Extern tacast ->

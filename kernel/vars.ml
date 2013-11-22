@@ -295,7 +295,7 @@ let subst_univs_level_constr subst c =
 	   if u' == u then t else 
 	     (changed := true; mkSort (Sorts.sort_of_univ u'))
       | _ -> Constr.map aux t
-    in 
+    in
     let c' = aux c in
       if !changed then c' else c
 
