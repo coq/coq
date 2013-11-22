@@ -3324,8 +3324,8 @@ let new_induct_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
   | _ -> [] in
   match kind_of_term c with
     | Var id when not (mem_named_context id (Global.named_context()))
-	        & lbind == NoBindings & not with_evars & Option.is_empty eqname
-                & not (has_selected_occurrences cls) ->
+	        && lbind == NoBindings && not with_evars && Option.is_empty eqname
+                && not (has_selected_occurrences cls) ->
 	Tacticals.New.tclTHEN
           (Proofview.V82.tactic (clear_unselected_context id inhyps cls))
 	  (induction_with_atomization_of_ind_arg

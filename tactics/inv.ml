@@ -478,7 +478,7 @@ let raw_inversion inv_kind id status names =
       let (elim_predicate,neqns) =
         make_inv_predicate env sigma indf realargs id status concl in
       let (cut_concl,case_tac) =
-        if status != NoDep & (dependent c concl) then
+        if status != NoDep && (dependent c concl) then
           Reduction.beta_appvect elim_predicate (Array.of_list (realargs@[c])),
           Tacticals.New.case_then_using
         else

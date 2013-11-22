@@ -75,7 +75,7 @@ let catching_error call_trace fail e =
   | Some inner_trace -> inner_trace, e
   | None -> [], e
   in
-  if List.is_empty call_trace & List.is_empty inner_trace then fail e
+  if List.is_empty call_trace && List.is_empty inner_trace then fail e
   else begin
     assert (Errors.noncritical e); (* preserved invariant *)
     let new_trace = inner_trace @ call_trace in
