@@ -356,7 +356,7 @@ let mk_atom c = {norm=Norm;term=FAtom c}
 
 (* Could issue a warning if no is still Red, pointing out that we loose
    sharing. *)
-let update v1 (no,t) =
+let update v1 no t =
   if !share then
     (v1.norm <- no;
      v1.term <- t;
@@ -468,7 +468,7 @@ let compact_stack head stk =
         (* Be sure to create a new cell otherwise sharing would be
            lost by the update operation *)
         let h' = lft_fconstr depth head in
-        let _ = update m (h'.norm,h'.term) in
+        let _ = update m h'.norm h'.term in
         strip_rec depth s
     | stk -> zshift depth stk in
   strip_rec 0 stk
@@ -663,7 +663,7 @@ let rec to_constr constr_fun lfts v =
     | FLIFT (k,a) -> to_constr constr_fun (el_shft k lfts) a
     | FCLOS (t,env) ->
         let fr = mk_clos2 env t in
-        let unfv = update v (fr.norm,fr.term) in
+        let unfv = update v fr.norm fr.term in
         to_constr constr_fun lfts unfv
     | FLOCKED -> assert false (*mkVar(Id.of_string"_LOCK_")*)
 
@@ -703,7 +703,7 @@ let rec zip m stk =
     | Zshift(n)::s ->
         zip (lift_fconstr n m) s
     | Zupdate(rf)::s ->
-        zip (update rf (m.norm,m.term)) s
+        zip (update rf m.norm m.term) s
 
 let fapp_stack (m,stk) = zip m stk
 
@@ -724,7 +724,7 @@ let strip_update_shift_app head stk =
         strip_rec (Zapp args :: rstk)
           {norm=h.norm;term=FApp(h,args)} depth s
     | Zupdate(m)::s ->
-        strip_rec rstk (update m (h.norm,h.term)) depth s
+        strip_rec rstk (update m h.norm h.term) depth s
     | stk -> (depth,List.rev rstk, stk) in
   strip_rec [] head 0 stk
 
@@ -746,7 +746,7 @@ let get_nth_arg head n stk =
             List.rev (if Int.equal n 0 then rstk else (Zapp bef :: rstk)) in
           (Some (stk', args.(n)), append_stack aft s')
     | Zupdate(m)::s ->
-        strip_rec rstk (update m (h.norm,h.term)) n s
+        strip_rec rstk (update m h.norm h.term) n s
     | s -> (None, List.rev rstk @ s) in
   strip_rec [] head n stk
 
@@ -755,7 +755,7 @@ let get_nth_arg head n stk =
 let rec get_args n tys f e stk =
   match stk with
       Zupdate r :: s ->
-        let _hd = update r (Cstr,FLambda(n,tys,f,e)) in
+        let _hd = update r Cstr (FLambda(n,tys,f,e)) in
         get_args n tys f e s
     | Zshift k :: s ->
         get_args n tys f (subs_shft (k,e)) s
