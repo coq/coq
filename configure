@@ -334,7 +334,7 @@ fi
 
 # make command
 
-MAKE=`which ${makecmd:-make}`
+MAKE=`which ${makecmd:-make}`  # NB: ${a:-b} is $a, or b when $a is undefined
 if [ "$MAKE" != "" ]; then
   # Beware of the final \r in Win32
   MAKEVERSION=`"$MAKE" -v | head -1 | tr -d "\r" | cut -d" " -f3`
@@ -641,7 +641,7 @@ else
         no)
             # Beware of the final \r in Win32
             lablgtkdirtmp="$(ocamlfind query lablgtk2.sourceview2 2> /dev/null | tr -d '\r')"
-            if [ "$labgtkdirtmp" != "" ]; then
+            if [ "$lablgtkdirtmp" != "" ]; then
                 if [ ! -f "$lablgtkdirtmp/gSourceView2.cmi" ]; then
                     echo "Incomplete Lablgtk2 found by ocamlfind (gSourceView2.cmi not found)."
                 elif [ ! -f "$lablgtkdirtmp/glib.mli" ]; then
