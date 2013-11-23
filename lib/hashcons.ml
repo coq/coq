@@ -79,7 +79,9 @@ module Make (X : HashconsedType) =
  * sub-hcons functions. *)
 
 (* For non-recursive types it is quite easy. *)
-let simple_hcons h u = h () u
+let simple_hcons h u =
+  let h = h () in
+  fun x -> h u x
 
 (* For a recursive type T, we write the module of sig Comp with u equals
  * to (T -> T) * u0

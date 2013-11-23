@@ -417,14 +417,13 @@ let rec smartfilter f l = match l with
           else h :: tl'
         else tl'
 
-let index f x =
-  let rec index_x n = function
-    | y::l -> if f x y then n else index_x (succ n) l
-    | [] -> raise Not_found
-  in
-  index_x 1
+let rec index_f f x l n = match l with
+| [] -> raise Not_found
+| y :: l -> if f x y then n else index_f f x l (succ n)
 
-let index0 f x l = index f x l - 1
+let index f x l = index_f f x l 1
+
+let index0 f x l = index_f f x l 0
 
 let fold_left_until f accu s =
   let rec aux accu = function

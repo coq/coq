@@ -73,7 +73,9 @@ module Make (E : EqType) =
       | true -> f b t.hashes.(j) i; iter_bucket (i+1) j b
       | false -> iter_bucket (i+1) j b
     in
-    Array.iteri (iter_bucket 0) t.table
+    for i = 0 to pred (Array.length t.table) do
+      iter_bucket 0 i (Array.unsafe_get t.table i)
+    done
 
   let rec count_bucket i b accu =
     if i >= Weak.length b then accu else
