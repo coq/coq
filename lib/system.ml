@@ -134,10 +134,13 @@ let raw_extern_intern magic =
     output_binary_int channel magic;
     filename, channel
   and intern_state filename =
-    let channel = open_in_bin filename in
-    if not (Int.equal (input_binary_int channel) magic) then
-      raise (Bad_magic_number filename);
-    channel
+    try
+      let channel = open_in_bin filename in
+      if not (Int.equal (input_binary_int channel) magic) then
+        raise (Bad_magic_number filename);
+      channel
+    with End_of_file | Failure _ | Sys_error _ ->
+      error_corrupted filename
   in
   (extern_state,intern_state)
 
