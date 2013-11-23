@@ -895,9 +895,15 @@ let chop_params_pattern loc ind args with_letin =
   args
 
 let find_constructor loc add_params ref =
-  let cstr = (function ConstructRef cstr -> cstr
-    |IndRef _ -> user_err_loc (loc,"find_constructor",str "There is an inductive name deep in a \"in\" clause.")
-    |_ -> anomaly (Pp.str "unexpected global_reference in pattern")) ref in
+  let cstr = match ref with
+  | ConstructRef cstr -> cstr
+  | IndRef _ ->
+    let error = str "There is an inductive name deep in a \"in\" clause." in
+    user_err_loc (loc, "find_constructor", error)
+  | ConstRef _ | VarRef _ ->
+    let error = str "This reference is not a constructor." in
+    user_err_loc (loc, "find_constructor", error)
+  in
   cstr, (function (ind,_ as c) -> match add_params with
     |Some nb_args ->
       let nb =
