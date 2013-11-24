@@ -44,11 +44,20 @@ let declare_summary sumname decl =
   all_declared_summaries := Int.Set.add hash !all_declared_summaries;
   internal_declare_summary hash sumname decl
 
-type frozen = Dyn.t Int.Map.t
+type frozen = {
+  summaries : (int * Dyn.t) list;
+  (** Ordered list w.r.t. the first component. *)
+  ml_module : Dyn.t option;
+  (** Special handling of the ml_module summary. *)
+}
+
+let empty_frozen = { summaries = []; ml_module = None; }
+
+let ml_modules = "ML-MODULES"
+let ml_modules_summary = String.hash ml_modules
 
 let freeze_summaries ~marshallable : frozen =
-  let m = ref Int.Map.empty in
-  let iter id (_, decl) =
+  let fold id (_, decl) accu =
     (* to debug missing Lazy.force
     if marshallable <> `No then begin
       prerr_endline ("begin marshalling " ^ id);
@@ -56,31 +65,37 @@ let freeze_summaries ~marshallable : frozen =
       prerr_endline ("end marshalling " ^ id);
     end;
     /debug *)
-    m := Int.Map.add id (decl.freeze_function marshallable) !m
+    let state = decl.freeze_function marshallable in
+    if Int.equal id ml_modules_summary then { accu with ml_module = Some state }
+    else { accu with summaries = (id, state) :: accu.summaries }
   in
-  let () = Int.Map.iter iter !summaries in
-  !m
-
-let ml_modules = "ML-MODULES"
-let ml_modules_summary = String.hash ml_modules
+  Int.Map.fold_right fold !summaries empty_frozen
 
 let unfreeze_summaries fs =
   (* The unfreezing of [ml_modules_summary] has to be anticipated since it
    * may modify the content of [summaries] ny loading new ML modules *)
-  let () =
-    try
-      let (_, decl) = Int.Map.find ml_modules_summary !summaries in
-      let state = Int.Map.find ml_modules_summary fs in
-      decl.unfreeze_function state
-    with Not_found -> anomaly (str"Undeclared summary "++str ml_modules)
+  let (_, decl) =
+    try Int.Map.find ml_modules_summary !summaries
+    with Not_found -> anomaly (str "Undeclared summary " ++ str ml_modules)
   in
-  Int.Map.iter
-    (fun id (_, decl) ->
-       if Int.equal id ml_modules_summary then () (* already unfreezed *)
-       else
-         try decl.unfreeze_function (Int.Map.find id fs)
-         with Not_found -> decl.init_function())
-    !summaries
+  let () = match fs.ml_module with
+  | None -> anomaly (str "Undeclared summary " ++ str ml_modules)
+  | Some state -> decl.unfreeze_function state
+  in
+  let fold id (_, decl) states =
+    if Int.equal id ml_modules_summary then states
+    else match states with
+    | [] ->
+      let () = decl.init_function () in
+      []
+    | (nid, state) :: rstates ->
+      if Int.equal id nid then
+        let () = decl.unfreeze_function state in rstates
+      else
+        let () = decl.init_function () in states
+  in
+  (** We rely on the order of the frozen list, and the order of folding *)
+  ignore (Int.Map.fold_left fold !summaries fs.summaries)
 
 let init_summaries () =
   Int.Map.iter (fun _ (_, decl) -> decl.init_function ()) !summaries
