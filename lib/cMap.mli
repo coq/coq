@@ -39,6 +39,12 @@ sig
   (** [bind f s] transform the set [x1; ...; xn] into [x1 := f x1; ...;
       xn := f xn]. *)
 
+  val fold_left : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  (** Alias for {!fold}, to easily track where we depend on fold order. *)
+
+  val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  (** Folding keys in decreasing order. *)
+
   module Unsafe :
   sig
     val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t

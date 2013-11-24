@@ -22,6 +22,8 @@ sig
   val modify : key -> (key -> 'a -> 'a) -> 'a t -> 'a t
   val domain : 'a t -> Set.t
   val bind : (key -> 'a) -> Set.t -> 'a t
+  val fold_left : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   module Unsafe :
   sig
     val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t
@@ -35,6 +37,8 @@ sig
   val modify : M.t -> (M.t -> 'a -> 'a) -> 'a map -> 'a map
   val domain : 'a map -> Set.Make(M).t
   val bind : (M.t -> 'a) -> Set.Make(M).t -> 'a map
+  val fold_left : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
+  val fold_right : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   module Unsafe :
   sig
     val map : (M.t -> 'a -> M.t * 'b) -> 'a map -> 'b map
@@ -98,6 +102,18 @@ struct
   | SNode (l, k, r, h) ->
     map_inj (MNode (bind f l, k, f k, bind f r, h))
   (** Dual operation of [domain]. *)
+
+  let rec fold_left f (s : 'a map) accu = match map_prj s with
+  | MEmpty -> accu
+  | MNode (l, k, v, r, h) ->
+    let accu = f k v (fold_left f l accu) in
+    fold_left f r accu
+
+  let rec fold_right f (s : 'a map) accu = match map_prj s with
+  | MEmpty -> accu
+  | MNode (l, k, v, r, h) ->
+    let accu = f k v (fold_right f r accu) in
+    fold_right f l accu
 
   module Unsafe =
   struct
