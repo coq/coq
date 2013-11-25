@@ -19,3 +19,4 @@ syntax/r_syntax_plugin.cma
 syntax/string_syntax_plugin.cma
 syntax/z_syntax_plugin.cma
 quote/quote_plugin.cma
+Derive/derive_plugin.cma
