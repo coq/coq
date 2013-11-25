@@ -20,7 +20,7 @@ type argument_type =
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
-  | OpenConstrArgType of bool
+  | OpenConstrArgType
   | ConstrWithBindingsArgType
   | BindingsArgType
   | RedExprArgType
@@ -38,7 +38,7 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | ConstrArgType, ConstrArgType -> true
 | ConstrMayEvalArgType, ConstrMayEvalArgType -> true
 | QuantHypArgType, QuantHypArgType -> true
-| OpenConstrArgType b1, OpenConstrArgType b2 -> (b1 : bool) == b2
+| OpenConstrArgType, OpenConstrArgType -> true
 | ConstrWithBindingsArgType, ConstrWithBindingsArgType -> true
 | BindingsArgType, BindingsArgType -> true
 | RedExprArgType, RedExprArgType -> true
@@ -59,7 +59,7 @@ let rec pr_argument_type = function
 | ConstrArgType -> str "constr"
 | ConstrMayEvalArgType -> str "constr_may_eval"
 | QuantHypArgType -> str "qhyp"
-| OpenConstrArgType _ -> str "open_constr"
+| OpenConstrArgType -> str "open_constr"
 | ConstrWithBindingsArgType -> str "constr_with_bindings"
 | BindingsArgType -> str "bindings"
 | RedExprArgType -> str "redexp"

@@ -116,7 +116,7 @@ ARGUMENT EXTEND glob
 
      GLOB_TYPED AS glob_constr_and_expr
      GLOB_PRINTED BY pr_gen
-  [ lconstr(c) ] -> [ c ]
+  [ constr(c) ] -> [ c ]
 END
 
 

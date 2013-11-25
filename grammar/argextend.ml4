@@ -39,7 +39,7 @@ let rec make_wit loc = function
   | ConstrArgType -> <:expr< Constrarg.wit_constr >>
   | ConstrMayEvalArgType -> <:expr< Constrarg.wit_constr_may_eval >>
   | RedExprArgType -> <:expr< Constrarg.wit_red_expr >>
-  | OpenConstrArgType b -> <:expr< Constrarg.wit_open_constr_gen $mlexpr_of_bool b$ >>
+  | OpenConstrArgType -> <:expr< Constrarg.wit_open_constr >>
   | ConstrWithBindingsArgType -> <:expr< Constrarg.wit_constr_with_bindings >>
   | BindingsArgType -> <:expr< Constrarg.wit_bindings >>
   | ListArgType t -> <:expr< Genarg.wit_list $make_wit loc t$ >>

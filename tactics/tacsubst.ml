@@ -312,9 +312,9 @@ and subst_genarg subst (x:glob_generic_argument) =
           (out_gen (glbwit wit_quant_hyp) x))
   | RedExprArgType ->
       in_gen (glbwit wit_red_expr) (subst_redexp subst (out_gen (glbwit wit_red_expr) x))
-  | OpenConstrArgType b ->
-      in_gen (glbwit (wit_open_constr_gen b))
-        ((),subst_glob_constr subst (snd (out_gen (glbwit (wit_open_constr_gen b)) x)))
+  | OpenConstrArgType ->
+      in_gen (glbwit wit_open_constr)
+        ((),subst_glob_constr subst (snd (out_gen (glbwit wit_open_constr) x)))
   | ConstrWithBindingsArgType ->
       in_gen (glbwit wit_constr_with_bindings)
         (subst_glob_with_bindings subst (out_gen (glbwit wit_constr_with_bindings) x))

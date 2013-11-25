@@ -60,11 +60,7 @@ let wit_constr = unsafe_of_type ConstrArgType
 
 let wit_constr_may_eval = unsafe_of_type ConstrMayEvalArgType
 
-let wit_open_constr_gen b = unsafe_of_type (OpenConstrArgType b)
-
-let wit_open_constr = wit_open_constr_gen false
-
-let wit_casted_open_constr = wit_open_constr_gen true
+let wit_open_constr = unsafe_of_type OpenConstrArgType
 
 let wit_constr_with_bindings = unsafe_of_type ConstrWithBindingsArgType
 

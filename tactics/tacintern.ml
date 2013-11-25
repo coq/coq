@@ -736,9 +736,9 @@ and intern_genarg ist x =
         (intern_quantified_hypothesis ist (out_gen (rawwit wit_quant_hyp) x))
   | RedExprArgType ->
       in_gen (glbwit wit_red_expr) (intern_red_expr ist (out_gen (rawwit wit_red_expr) x))
-  | OpenConstrArgType b ->
-      in_gen (glbwit (wit_open_constr_gen b))
-        ((),intern_constr ist (snd (out_gen (rawwit (wit_open_constr_gen b)) x)))
+  | OpenConstrArgType ->
+      in_gen (glbwit wit_open_constr)
+        ((),intern_constr ist (snd (out_gen (rawwit wit_open_constr) x)))
   | ConstrWithBindingsArgType ->
       in_gen (glbwit wit_constr_with_bindings)
         (intern_constr_with_bindings ist (out_gen (rawwit wit_constr_with_bindings) x))

@@ -144,7 +144,7 @@ let pr_inspect env expr result =
   let pp_result =
     if has_type result (topwit wit_tacvalue) then
     match to_tacvalue result with
-    | VRTactic _ -> str "a VRTactic"
+    | VRTactic -> str "a VRTactic"
     | VFun (_, il, ul, b) ->
       let pp_body = Pptactic.pr_glob_tactic env b in
       let pr_sep () = str ", " in
@@ -1346,13 +1346,12 @@ and interp_genarg ist env sigma concl gl x =
       in
       evdref := sigma;
       in_gen (topwit wit_red_expr) r_interp
-    | OpenConstrArgType casted ->
-      let expected_type =
-        if casted then OfType concl else WithoutTypeConstraint in
-      in_gen (topwit (wit_open_constr_gen casted))
+    | OpenConstrArgType ->
+      let expected_type = WithoutTypeConstraint in
+      in_gen (topwit wit_open_constr)
         (interp_open_constr ~expected_type
            ist env !evdref
-           (snd (out_gen (glbwit (wit_open_constr_gen casted)) x)))
+           (snd (out_gen (glbwit wit_open_constr) x)))
     | ConstrWithBindingsArgType ->
       in_gen (topwit wit_constr_with_bindings)
         (pack_sigma (interp_constr_with_bindings ist env !evdref
@@ -1983,7 +1982,7 @@ and interp_atomic ist tac =
               Proofview.Goal.return (Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl) >>== fun (sigma,v) ->
               (Proofview.V82.tclEVARS sigma) <*>
 	      (Proofview.Goal.return v)
-          | OpenConstrArgType false ->
+          | OpenConstrArgType ->
               Proofview.Goal.return (
                 Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl) >>== fun (sigma,v) ->
               (Proofview.V82.tclEVARS sigma) <*>
@@ -2043,7 +2042,7 @@ and interp_atomic ist tac =
                 Proofview.V82.tactic (tclEVARS newsigma) <*>
                 Proofview.Goal.return v
           | QuantHypArgType | RedExprArgType
-          | OpenConstrArgType _ | ConstrWithBindingsArgType
+          | ConstrWithBindingsArgType
           | BindingsArgType
           | OptArgType _ | PairArgType _
 	    -> Proofview.tclZERO (UserError("" , str"This argument type is not supported in tactic notations."))

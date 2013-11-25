@@ -199,7 +199,7 @@ type argument_type =
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
-  | OpenConstrArgType of bool
+  | OpenConstrArgType
   | ConstrWithBindingsArgType
   | BindingsArgType
   | RedExprArgType

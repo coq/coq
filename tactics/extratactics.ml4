@@ -324,8 +324,27 @@ END
 
 let refine_tac = Tactics.New.refine
 
+let refine_red_flags =
+  Genredexpr.Lazy {
+    Genredexpr.rBeta=true;
+    rIota=true;
+    rZeta=false;
+    rDelta=false;
+    rConst=[];
+  }
+
+let refine_locs = { Locus.onhyps=None; concl_occs=Locus.AllOccurrences }
+
+let refine_tac (ist, c) =
+  let c = Goal.Refinable.make begin fun h ->
+    Goal.Refinable.constr_of_raw h true true c
+  end in
+  Proofview.Goal.lift c >>= fun c ->
+  Proofview.tclSENSITIVE (Goal.refine c) <*>
+  Proofview.V82.tactic (reduce refine_red_flags refine_locs)
+
 TACTIC EXTEND refine
-  [ "refine" casted_open_constr(c) ] -> [  refine_tac c ]
+  [ "refine" glob(c) ] -> [  refine_tac c ]
 END
 
 (**********************************************************************)
