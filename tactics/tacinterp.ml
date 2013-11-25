@@ -309,7 +309,6 @@ let interp_ident_gen fresh ist env id =
 let interp_ident = interp_ident_gen false
 let interp_fresh_ident = interp_ident_gen true
 let pf_interp_ident id gl = interp_ident_gen false id (pf_env gl)
-let pf_interp_fresh_ident id gl = interp_ident_gen true id (pf_env gl)
 
 (* Interprets an optional identifier which must be fresh *)
 let interp_fresh_name ist env = function
@@ -344,8 +343,7 @@ let interp_int_or_var_list ist l =
   List.flatten (List.map (interp_int_or_var_as_list ist) l)
 
 (* Interprets a bound variable (especially an existing hypothesis) *)
-let interp_hyp ist gl (loc,id as locid) =
-  let env = pf_env gl in
+let interp_hyp ist env (loc,id as locid) =
   (* Look first in lfun for a value coercible to a variable *)
   try try_interp_ltac_var (coerce_to_hyp env) ist (Some env) locid
   with Not_found ->
@@ -354,9 +352,9 @@ let interp_hyp ist gl (loc,id as locid) =
   else user_err_loc (loc,"eval_variable",
     str "No such hypothesis: " ++ pr_id id ++ str ".")
 
-let interp_hyp_list_as_list ist gl (loc,id as x) =
-  try coerce_to_hyp_list (pf_env gl) (Id.Map.find id ist.lfun)
-  with Not_found | CannotCoerceTo _ -> [interp_hyp ist gl x]
+let interp_hyp_list_as_list ist env (loc,id as x) =
+  try coerce_to_hyp_list env (Id.Map.find id ist.lfun)
+  with Not_found | CannotCoerceTo _ -> [interp_hyp ist env x]
 
 let interp_hyp_list ist gl l =
   List.flatten (List.map (interp_hyp_list_as_list ist gl) l)
@@ -376,8 +374,6 @@ let interp_reference ist env = function
         let (v, _, _) = Environ.lookup_named id env in
         VarRef v
       with Not_found -> error_global_not_found_loc loc (qualid_of_ident id)
-
-let pf_interp_reference ist gl = interp_reference ist (pf_env gl)
 
 let interp_inductive ist = function
   | ArgArg r -> r
@@ -641,16 +637,14 @@ let interp_red_expr ist sigma env = function
     sigma , CbvNative (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
   | (Red _ |  Hnf | ExtraRedExpr _ as r) -> sigma , r
 
-let pf_interp_red_expr ist gl = interp_red_expr ist (project gl) (pf_env gl)
-
-let interp_may_eval f ist gl = function
+let interp_may_eval f ist env sigma = function
   | ConstrEval (r,c) ->
-      let (sigma,redexp) = pf_interp_red_expr ist gl r in
-      let (sigma,c_interp) = f ist { gl with sigma=sigma } c in
-      sigma , pf_reduction_of_red_expr gl redexp c_interp
+      let (sigma,redexp) = interp_red_expr ist  sigma env r in
+      let (sigma,c_interp) = f ist env sigma c in
+      sigma , (fst (Redexpr.reduction_of_red_expr env redexp) env sigma c_interp)
   | ConstrContext ((loc,s),c) ->
       (try
-	let (sigma,ic) = f ist gl c
+	let (sigma,ic) = f ist env sigma c
 	and ctxt = coerce_to_constr_context (Id.Map.find s ist.lfun) in
 	sigma , subst_meta [special_meta,ic] ctxt
       with
@@ -658,25 +652,25 @@ let interp_may_eval f ist gl = function
 	    user_err_loc (loc, "interp_may_eval",
 	    str "Unbound context identifier" ++ pr_id s ++ str"."))
   | ConstrTypeOf c ->
-      let (sigma,c_interp) = f ist gl c in
-      sigma , pf_type_of gl c_interp
+      let (sigma,c_interp) = f ist env sigma c in
+      sigma , Typing.type_of env sigma c_interp
   | ConstrTerm c ->
      try
-	f ist gl c
+	f ist env sigma c
      with reraise ->
        let reraise = Errors.push reraise in
        (* spiwack: to avoid unnecessary modifications of tacinterp, as this
           function already use effect, I call [run] hoping it doesn't mess
           up with any assumption. *)
        Proofview.NonLogical.run (debugging_exception_step ist false reraise (fun () ->
-         str"interpretation of term " ++ pr_glob_constr_env (pf_env gl) (fst c)));
+         str"interpretation of term " ++ pr_glob_constr_env env (fst c)));
        raise reraise
 
 (* Interprets a constr expression possibly to first evaluate *)
-let interp_constr_may_eval ist gl c =
+let interp_constr_may_eval ist env sigma c =
   let (sigma,csr) =
     try
-      interp_may_eval pf_interp_constr ist gl c
+      interp_may_eval interp_constr ist env sigma c
     with reraise ->
       let reraise = Errors.push reraise in
       (* spiwack: to avoid unnecessary modifications of tacinterp, as this
@@ -689,7 +683,7 @@ let interp_constr_may_eval ist gl c =
     (* spiwack: to avoid unnecessary modifications of tacinterp, as this
        function already use effect, I call [run] hoping it doesn't mess
        up with any assumption. *)
-    Proofview.NonLogical.run (db_constr (curr_debug ist) (pf_env gl) csr);
+    Proofview.NonLogical.run (db_constr (curr_debug ist) env csr);
     sigma , csr
   end
 
@@ -733,30 +727,30 @@ let interp_message ist gl l =
      are raised now and not at printing time *)
   prlist (fun x -> spc () ++ x) (List.map (interp_message_token ist gl) l)
 
-let rec interp_intro_pattern ist gl = function
+let rec interp_intro_pattern ist env = function
   | loc, IntroOrAndPattern l ->
-      loc, IntroOrAndPattern (interp_or_and_intro_pattern ist gl l)
+      loc, IntroOrAndPattern (interp_or_and_intro_pattern ist env l)
   | loc, IntroInjection l ->
-      loc, IntroInjection (interp_intro_pattern_list_as_list ist gl l)
+      loc, IntroInjection (interp_intro_pattern_list_as_list ist env l)
   | loc, IntroIdentifier id ->
-      loc, interp_intro_pattern_var loc ist (pf_env gl) id
+      loc, interp_intro_pattern_var loc ist env id
   | loc, IntroFresh id ->
-      loc, IntroFresh (interp_fresh_ident ist (pf_env gl) id)
+      loc, IntroFresh (interp_fresh_ident ist env id)
   | loc, (IntroWildcard | IntroAnonymous | IntroRewrite _ | IntroForthcoming _)
       as x -> x
 
-and interp_or_and_intro_pattern ist gl =
-  List.map (interp_intro_pattern_list_as_list ist gl)
+and interp_or_and_intro_pattern ist env =
+  List.map (interp_intro_pattern_list_as_list ist env)
 
-and interp_intro_pattern_list_as_list ist gl = function
+and interp_intro_pattern_list_as_list ist env = function
   | [loc,IntroIdentifier id] as l ->
-      (try coerce_to_intro_pattern_list loc (pf_env gl) (Id.Map.find id ist.lfun)
+      (try coerce_to_intro_pattern_list loc env (Id.Map.find id ist.lfun)
        with Not_found | CannotCoerceTo _ ->
-	List.map (interp_intro_pattern ist gl) l)
-  | l -> List.map (interp_intro_pattern ist gl) l
+	List.map (interp_intro_pattern ist env) l)
+  | l -> List.map (interp_intro_pattern ist env) l
 
-let interp_in_hyp_as ist gl (id,ipat) =
-  (interp_hyp ist gl id,Option.map (interp_intro_pattern ist gl) ipat)
+let interp_in_hyp_as ist env (id,ipat) =
+  (interp_hyp ist env id,Option.map (interp_intro_pattern ist env) ipat)
 
 let interp_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
@@ -773,10 +767,9 @@ let interp_binding_name ist = function
       try try_interp_ltac_var coerce_to_quantified_hypothesis ist None(dloc,id)
       with Not_found -> NamedHyp id
 
-let interp_declared_or_quantified_hypothesis ist gl = function
+let interp_declared_or_quantified_hypothesis ist env = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
-      let env = pf_env gl in
       try try_interp_ltac_var
 	    (coerce_to_decl_or_quant_hyp env) ist (Some env) (dloc,id)
       with Not_found -> NamedHyp id
@@ -1060,21 +1053,24 @@ and interp_ltac_reference loc' mustbetac ist = function
       val_interp ist (Tacenv.interp_ltac r)
 
 and interp_tacarg ist arg =
-  let tac_of_old f =
-    Proofview.Goal.enterl begin fun gl ->
-      let (sigma,v) = Tacmach.New.of_old f gl in
-      Proofview.V82.tclEVARS sigma <*>
-      (Proofview.Goal.return v)
-    end
-  in
   match arg with
   | TacGeneric arg ->
-      tac_of_old (fun gl ->
-        Geninterp.generic_interp ist gl arg)
+      Proofview.Goal.enterl begin fun gl ->
+        let sigma = Proofview.Goal.sigma gl in
+        let goal = Proofview.Goal.goal gl in
+        let (sigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} arg in
+        Proofview.V82.tclEVARS sigma <*>
+        Proofview.Goal.return v
+      end
   | Reference r -> interp_ltac_reference dloc false ist r
   | ConstrMayEval c ->
-      tac_of_old (fun gl -> interp_constr_may_eval ist gl c) >>== fun c_interp ->
-      (Proofview.Goal.return (Value.of_constr c_interp))
+      Proofview.Goal.enterl begin fun gl ->
+        let env = Proofview.Goal.env gl in
+        let sigma = Proofview.Goal.sigma gl in
+        let (sigma,c_interp) = interp_constr_may_eval ist env sigma c in
+        Proofview.V82.tclEVARS sigma <*>
+        Proofview.Goal.return (Value.of_constr c_interp)
+      end
   | MetaIdArg (loc,_,id) -> assert false
   | TacCall (loc,r,[]) ->
       interp_ltac_reference loc true ist r
@@ -1306,77 +1302,89 @@ and interp_external loc ist gl com req la =
   interp_tacarg ist (System.connect f g com)
 
 (* Interprets extended tactic generic arguments *)
-and interp_genarg ist gl x =
-  let evdref = ref (project gl) in
-  let rec interp_genarg ist gl x =
-    let gl = { gl with sigma = !evdref } in
+(* spiwack: interp_genarg has an argument [concl] for the case of
+   "casted open constr". And [gl] for [Geninterp]. I haven't changed
+   the interface for geninterp yet as it is used by ARGUMENT EXTEND
+   (in turn used by plugins). At the time I'm writing this comment
+   though, the only concerned plugins are the declarative mode (which
+   needs the [extra] field of goals to interprete rules) and ssreflect
+   (a handful of time). I believe we'd need to address "casted open
+   constr" and the declarative mode rules to provide a reasonable
+   interface. *)
+and interp_genarg ist env sigma concl gl x =
+  let evdref = ref sigma in
+  let rec interp_genarg x =
     match genarg_tag x with
     | IntOrVarArgType ->
       in_gen (topwit wit_int_or_var)
         (ArgArg (interp_int_or_var ist (out_gen (glbwit wit_int_or_var) x)))
     | IdentArgType b ->
       in_gen (topwit (wit_ident_gen b))
-        (pf_interp_fresh_ident ist gl (out_gen (glbwit (wit_ident_gen b)) x))
+        (interp_fresh_ident ist env (out_gen (glbwit (wit_ident_gen b)) x))
     | VarArgType ->
-      in_gen (topwit wit_var) (interp_hyp ist gl (out_gen (glbwit wit_var) x))
+      in_gen (topwit wit_var) (interp_hyp ist env (out_gen (glbwit wit_var) x))
     | RefArgType ->
-      in_gen (topwit wit_ref) (pf_interp_reference ist gl (out_gen (glbwit wit_ref) x))
+      in_gen (topwit wit_ref) (interp_reference ist env (out_gen (glbwit wit_ref) x))
     | GenArgType ->
-      in_gen (topwit wit_genarg) (interp_genarg ist gl (out_gen (glbwit wit_genarg) x))
+      in_gen (topwit wit_genarg) (interp_genarg (out_gen (glbwit wit_genarg) x))
     | ConstrArgType ->
-      let (sigma,c_interp) = pf_interp_constr ist gl (out_gen (glbwit wit_constr) x) in
+      let (sigma,c_interp) =
+        interp_constr ist env !evdref (out_gen (glbwit wit_constr) x)
+      in
       evdref := sigma;
       in_gen (topwit wit_constr) c_interp
     | ConstrMayEvalArgType ->
-      let (sigma,c_interp) = interp_constr_may_eval ist gl (out_gen (glbwit wit_constr_may_eval) x) in
+      let (sigma,c_interp) = interp_constr_may_eval ist env !evdref (out_gen (glbwit wit_constr_may_eval) x) in
       evdref := sigma;
       in_gen (topwit wit_constr_may_eval) c_interp
     | QuantHypArgType ->
       in_gen (topwit wit_quant_hyp)
-        (interp_declared_or_quantified_hypothesis ist gl
+        (interp_declared_or_quantified_hypothesis ist env
            (out_gen (glbwit wit_quant_hyp) x))
     | RedExprArgType ->
-      let (sigma,r_interp) = pf_interp_red_expr ist gl (out_gen (glbwit wit_red_expr) x) in
+      let (sigma,r_interp) =
+        interp_red_expr ist !evdref env (out_gen (glbwit wit_red_expr) x)
+      in
       evdref := sigma;
       in_gen (topwit wit_red_expr) r_interp
     | OpenConstrArgType casted ->
       let expected_type =
-        if casted then OfType (pf_concl gl) else WithoutTypeConstraint in
+        if casted then OfType concl else WithoutTypeConstraint in
       in_gen (topwit (wit_open_constr_gen casted))
         (interp_open_constr ~expected_type
-           ist (pf_env gl) (project gl)
+           ist env !evdref
            (snd (out_gen (glbwit (wit_open_constr_gen casted)) x)))
     | ConstrWithBindingsArgType ->
       in_gen (topwit wit_constr_with_bindings)
-        (pack_sigma (interp_constr_with_bindings ist (pf_env gl) (project gl)
+        (pack_sigma (interp_constr_with_bindings ist env !evdref
 		       (out_gen (glbwit wit_constr_with_bindings) x)))
     | BindingsArgType ->
       in_gen (topwit wit_bindings)
-        (pack_sigma (interp_bindings ist (pf_env gl) (project gl) (out_gen (glbwit wit_bindings) x)))
+        (pack_sigma (interp_bindings ist env !evdref (out_gen (glbwit wit_bindings) x)))
     | ListArgType ConstrArgType ->
-        let (sigma,v) = interp_genarg_constr_list ist gl x in
+        let (sigma,v) = interp_genarg_constr_list ist env !evdref x in
 	evdref := sigma;
 	v
-    | ListArgType VarArgType -> interp_genarg_var_list ist gl x
-    | ListArgType _ -> app_list (interp_genarg ist gl) x
-    | OptArgType _ -> app_opt (interp_genarg ist gl) x
-    | PairArgType _ -> app_pair (interp_genarg ist gl) (interp_genarg ist gl) x
+    | ListArgType VarArgType -> interp_genarg_var_list ist env x
+    | ListArgType _ -> app_list interp_genarg x
+    | OptArgType _ -> app_opt interp_genarg x
+    | PairArgType _ -> app_pair interp_genarg interp_genarg x
     | ExtraArgType s ->
-        let (sigma,v) = Geninterp.generic_interp ist gl x in
+        let (sigma,v) = Geninterp.generic_interp ist { Evd.it=gl;sigma=(!evdref) } x in
 	evdref:=sigma;
 	v
   in
-  let v = interp_genarg ist gl x in
+  let v = interp_genarg x in
   !evdref , v
 
-and interp_genarg_constr_list ist gl x =
+and interp_genarg_constr_list ist env sigma x =
   let lc = out_gen (glbwit (wit_list wit_constr)) x in
-  let (sigma,lc) = pf_apply (interp_constr_list ist) gl lc in
+  let (sigma,lc) = interp_constr_list ist env sigma lc in
   sigma , in_gen (topwit (wit_list wit_constr)) lc
 
-and interp_genarg_var_list ist gl x =
+and interp_genarg_var_list ist env x =
   let lc = out_gen (glbwit (wit_list wit_var)) x in
-  let lc = interp_hyp_list ist gl lc in
+  let lc = interp_hyp_list ist env lc in
   in_gen (topwit (wit_list wit_var)) lc
 
 (* Interprets tactic expressions : returns a "constr" *)
@@ -1435,10 +1443,9 @@ and interp_atomic ist tac =
   (* Basic tactics *)
   | TacIntroPattern l ->
       Proofview.Goal.enter begin fun gl ->
-      let patterns =
-        Tacmach.New.of_old (fun gl -> interp_intro_pattern_list_as_list ist gl l) gl
-      in
-      h_intro_patterns patterns
+        let env = Proofview.Goal.env gl in
+        let patterns = interp_intro_pattern_list_as_list ist env l in
+        h_intro_patterns patterns
       end
   | TacIntrosUntil hyp ->
       begin try (* interp_quantified_hypothesis can raise an exception *)
@@ -1448,7 +1455,7 @@ and interp_atomic ist tac =
   | TacIntroMove (ido,hto) ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
-        let mloc = Tacmach.New.of_old (fun gl -> interp_move_location ist gl hto) gl in
+        let mloc = interp_move_location ist env hto in
         h_intro_move (Option.map (interp_fresh_ident ist env) ido) mloc
       end
   | TacAssumption -> h_assumption
@@ -1489,8 +1496,9 @@ and interp_atomic ist tac =
             | Some cl ->
                 (fun l ->
                   Proofview.Goal.enter begin fun gl ->
-                  let cl = Tacmach.New.of_old (fun gl -> interp_in_hyp_as ist gl cl) gl in
-                  h_apply_in a ev l cl
+                    let env = Proofview.Goal.env gl in
+                    let cl = interp_in_hyp_as ist env cl in
+                    h_apply_in a ev l cl
                   end) in
           Tacticals.New.tclWITHHOLES ev tac sigma l
         with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
@@ -1585,8 +1593,10 @@ and interp_atomic ist tac =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         try (* intrerpreation function may raise exceptions *)
-          let (sigma,c) = (if Option.is_empty t then interp_constr else interp_type) ist env sigma c in
-          let patt = Tacmach.New.of_old (fun gl -> interp_intro_pattern ist gl) gl in
+          let (sigma,c) = 
+            (if Option.is_empty t then interp_constr else interp_type) ist env sigma c
+          in
+          let patt = interp_intro_pattern ist env in
           Tacticals.New.tclTHEN
 	    (Proofview.V82.tclEVARS sigma)
             (Tactics.forward (Option.map (interp_tactic ist) t)
@@ -1613,10 +1623,8 @@ and interp_atomic ist tac =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
-        let clp = Tacmach.New.of_old (fun gl -> interp_clause ist gl clp) gl in
-        let eqpat =
-          Tacmach.New.of_old (fun gl -> Option.map (interp_intro_pattern ist gl) eqpat) gl
-        in
+        let clp = interp_clause ist env clp in
+        let eqpat = Option.map (interp_intro_pattern ist env) eqpat in
         if Locusops.is_nowhere clp then
         (* We try to fully-typecheck the term *)
           let (sigma,c_interp) =
@@ -1664,9 +1672,7 @@ and interp_atomic ist tac =
         let l =
           List.map begin fun (c,(ipato,ipats)) ->
             let c = Tacmach.New.of_old (fun gl -> interp_induction_arg ist gl c) gl in
-            let interp_intro_pattern =
-              Tacmach.New.of_old (fun gl -> interp_intro_pattern ist gl) gl
-            in
+            let interp_intro_pattern = interp_intro_pattern ist env in
             c,
             (Option.map interp_intro_pattern ipato,
              Option.map interp_intro_pattern ipats)
@@ -1675,7 +1681,7 @@ and interp_atomic ist tac =
         let sigma = Proofview.Goal.sigma gl in
         let sigma,el =
           Option.fold_map (interp_constr_with_bindings ist env) sigma el in
-        let interp_clause = Tacmach.New.of_old (fun gl -> interp_clause ist gl) gl in
+        let interp_clause = interp_clause ist env in
         let cls = Option.map interp_clause cls in
         Tacticals.New.tclWITHHOLES ev (h_induction_destruct isrec ev) sigma (l,el,cls)
       end
@@ -1726,27 +1732,29 @@ and interp_atomic ist tac =
   (* Context management *)
   | TacClear (b,l) ->
       Proofview.V82.tactic begin fun gl ->
-        h_clear b (interp_hyp_list ist gl l) gl
+        h_clear b (interp_hyp_list ist (pf_env gl) l) gl
       end
   | TacClearBody l ->
       Proofview.V82.tactic begin fun gl ->
-        h_clear_body (interp_hyp_list ist gl l) gl
+        h_clear_body (interp_hyp_list ist (pf_env gl) l) gl
       end
   | TacMove (dep,id1,id2) ->
       Proofview.V82.tactic begin fun gl -> 
-        h_move dep (interp_hyp ist gl id1) (interp_move_location ist gl id2) gl
+        h_move dep (interp_hyp ist (pf_env gl) id1)
+                   (interp_move_location ist (pf_env gl) id2)
+                   gl
       end
   | TacRename l ->
       Proofview.V82.tactic begin fun gl ->
         let env = pf_env gl in
         h_rename (List.map (fun (id1,id2) ->
-	  interp_hyp ist gl id1,
+	  interp_hyp ist env id1,
 	  interp_fresh_ident ist env (snd id2)) l)
           gl
       end
   | TacRevert l ->
       Proofview.V82.tactic begin fun gl -> 
-        h_revert (interp_hyp_list ist gl l) gl
+        h_revert (interp_hyp_list ist (pf_env gl) l) gl
       end
 
   (* Constructors *)
@@ -1784,10 +1792,10 @@ and interp_atomic ist tac =
   (* Conversion *)
   | TacReduce (r,cl) ->
       Proofview.V82.tactic begin fun gl -> 
-        let (sigma,r_interp) = pf_interp_red_expr ist gl r in
+        let (sigma,r_interp) = interp_red_expr ist (project gl) (pf_env gl) r in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_reduce r_interp (interp_clause ist gl cl))
+	  (h_reduce r_interp (interp_clause ist (pf_env gl) cl))
           gl
       end
   | TacChange (None,c,cl) ->
@@ -1808,7 +1816,7 @@ and interp_atomic ist tac =
         in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_change None c_interp (interp_clause ist gl cl))
+	  (h_change None c_interp (interp_clause ist (pf_env gl) cl))
           gl
       end
   | TacChange (Some op,c,cl) ->
@@ -1830,7 +1838,7 @@ and interp_atomic ist tac =
           in
           tclTHEN
 	    (tclEVARS sigma)
-	    (h_change (Some op) c_interp (interp_clause ist { gl with sigma=sigma } cl))
+	    (h_change (Some op) c_interp (interp_clause ist env cl))
             gl
         end
       end
@@ -1839,8 +1847,9 @@ and interp_atomic ist tac =
   | TacReflexivity -> h_reflexivity
   | TacSymmetry c ->
       Proofview.Goal.enter begin fun gl ->
-      let cl = Tacmach.New.of_old (fun gl -> interp_clause ist gl c) gl in
-      h_symmetry cl
+        let env = Proofview.Goal.env gl in
+        let cl = interp_clause ist env c in
+        h_symmetry cl
       end
   | TacTransitivity c ->
       begin match c with
@@ -1859,51 +1868,57 @@ and interp_atomic ist tac =
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
       Proofview.Goal.enter begin fun gl ->
-      let l = List.map (fun (b,m,c) ->
-        let f env sigma = interp_open_constr_with_bindings ist env sigma c in
-	(b,m,f)) l in
-      let cl = Tacmach.New.of_old (fun gl -> interp_clause ist gl cl) gl in
-      Equality.general_multi_multi_rewrite ev l cl
-        (Option.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by), Equality.Naive) by)
+        let l = List.map (fun (b,m,c) ->
+          let f env sigma = interp_open_constr_with_bindings ist env sigma c in
+	  (b,m,f)) l in
+        let env = Proofview.Goal.env gl in
+        let cl = interp_clause ist env cl in
+        Equality.general_multi_multi_rewrite ev l cl
+          (Option.map (fun by -> Tacticals.New.tclCOMPLETE (interp_tactic ist by),
+                                 Equality.Naive)
+                      by)
       end
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       Proofview.Goal.enter begin fun gl ->
-      let sigma = Proofview.Goal.sigma gl in
-      let (sigma,c_interp) =
-        match c with
-        | None -> sigma , None
-        | Some c ->
-            let (sigma,c_interp) =
-              Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) gl
-            in
-            sigma , Some c_interp
-      in
-      let interp_intro_pattern = Tacmach.New.of_old (interp_intro_pattern ist) gl in
-      let dqhyps =
-        Tacmach.New.of_old (fun gl -> interp_declared_or_quantified_hypothesis ist gl hyp) gl
-      in
-      Inv.dinv k c_interp
-        (Option.map interp_intro_pattern ids)
-        dqhyps
+        let env = Proofview.Goal.env gl in
+        let sigma = Proofview.Goal.sigma gl in
+        let (sigma,c_interp) =
+          match c with
+          | None -> sigma , None
+          | Some c ->
+              let (sigma,c_interp) =
+                Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) gl
+              in
+              sigma , Some c_interp
+        in
+        let interp_intro_pattern = interp_intro_pattern ist env in
+        let dqhyps = interp_declared_or_quantified_hypothesis ist env hyp in
+        Inv.dinv k c_interp
+          (Option.map interp_intro_pattern ids)
+          dqhyps
       end
   | TacInversion (NonDepInversion (k,idl,ids),hyp) ->
       Proofview.Goal.enter begin fun gl ->
-      let interp_intro_pattern = Tacmach.New.of_old (interp_intro_pattern ist) gl in
-      let hyps = Tacmach.New.of_old (fun gl -> interp_hyp_list ist gl idl) gl in
-      let dqhyps = Tacmach.New.of_old (fun gl -> interp_declared_or_quantified_hypothesis ist gl hyp) gl in
-      Inv.inv_clause k
-        (Option.map interp_intro_pattern ids)
-        hyps
-        dqhyps
+        let env = Proofview.Goal.env gl in
+        let interp_intro_pattern = interp_intro_pattern ist env in
+        let hyps = interp_hyp_list ist env idl in
+        let dqhyps = interp_declared_or_quantified_hypothesis ist env hyp in
+        Inv.inv_clause k
+          (Option.map interp_intro_pattern ids)
+          hyps
+          dqhyps
       end
   | TacInversion (InversionUsing (c,idl),hyp) ->
       Proofview.Goal.enter begin fun gl ->
-      let (sigma,c_interp) = Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) gl in
-      let dqhyps = Tacmach.New.of_old (fun gl -> interp_declared_or_quantified_hypothesis ist gl hyp) gl in
-      let hyps = Tacmach.New.of_old (fun gl -> interp_hyp_list ist gl idl) gl in
-      Leminv.lemInv_clause dqhyps
-        c_interp
-        hyps
+        let env = Proofview.Goal.env gl in
+        let sigma = Proofview.Goal.sigma gl in
+        let (sigma,c_interp) = interp_constr ist env sigma c in
+        let dqhyps = interp_declared_or_quantified_hypothesis ist env hyp in
+        let hyps = interp_hyp_list ist env idl in
+        Proofview.V82.tclEVARS sigma <*>
+        Leminv.lemInv_clause dqhyps
+          c_interp
+          hyps
       end
 
   (* For extensions *)
@@ -1915,23 +1930,27 @@ and interp_atomic ist tac =
       tac [] ist
   | TacExtend (loc,opn,l) ->
       Proofview.Goal.enter begin fun gl ->
-      let goal_sigma = Proofview.Goal.sigma gl in
-      let tac = Tacenv.interp_ml_tactic opn in
-      let (sigma,args) = Tacmach.New.of_old begin fun gl ->
-	List.fold_right begin fun a (sigma,acc) ->
-	  let (sigma,a_interp) = interp_genarg ist { gl with sigma=sigma } a in
-	  sigma , a_interp::acc
-	end l (goal_sigma,[])
-      end gl in
-      Proofview.V82.tclEVARS sigma <*>
-      tac args ist
+        let env = Proofview.Goal.env gl in
+        let goal_sigma = Proofview.Goal.sigma gl in
+        let concl = Proofview.Goal.concl gl in
+        let goal = Proofview.Goal.goal gl in
+        let tac = Tacenv.interp_ml_tactic opn in
+        let (sigma,args) =
+          (* spiwack: monadic List.map *)
+          List.fold_right begin fun a (sigma,acc) ->
+            let (sigma,a_interp) = interp_genarg ist env sigma concl goal a in
+	    sigma , a_interp::acc
+          end l (goal_sigma,[])
+        in
+        Proofview.V82.tclEVARS sigma <*>
+        tac args ist
       end
   | TacAlias (loc,s,l) ->
       let (_, body) = Tacenv.interp_alias s in
-      Proofview.Goal.enter begin fun gl ->
-        let env = Proofview.Goal.env gl in
       let rec f x =
         Proofview.Goal.enterl begin fun gl ->
+          let env = Proofview.Goal.env gl in
+          let sigma = Proofview.Goal.sigma gl in
         match genarg_tag x with
           | IntOrVarArgType ->
               (Proofview.Goal.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x)))
@@ -1941,17 +1960,12 @@ and interp_atomic ist tac =
 	                                       (out_gen (glbwit (wit_ident_gen b)) x)))
               end
           | VarArgType ->
-              Proofview.Goal.return (
-                Tacmach.New.of_old (fun gl -> mk_hyp_value ist gl (out_gen (glbwit wit_var) x))
-                  gl
-              )
+              Proofview.Goal.return (mk_hyp_value ist env (out_gen (glbwit wit_var) x))
           | RefArgType ->
               Proofview.Goal.return (
-              Tacmach.New.of_old (fun gl -> 
-                Value.of_constr (constr_of_global
-                                   (pf_interp_reference ist gl (out_gen (glbwit wit_ref) x))))
-                gl
-              )
+                Value.of_constr (
+                  constr_of_global
+                    (interp_reference ist env (out_gen (glbwit wit_ref) x))))
           | GenArgType -> f (out_gen (glbwit wit_genarg) x)
           | ConstrArgType ->
               Proofview.Goal.return (Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl) >>== fun (sigma,v) ->
@@ -1963,9 +1977,10 @@ and interp_atomic ist tac =
               (Proofview.V82.tclEVARS sigma) <*>
 	      (Proofview.Goal.return v)
           | ConstrMayEvalArgType ->
-              Proofview.Goal.return (
-                Tacmach.New.of_old (fun gl -> interp_constr_may_eval ist gl (out_gen (glbwit wit_constr_may_eval) x))
-                   gl) >>== fun (sigma,c_interp) ->
+              let (sigma,c_interp) =
+                interp_constr_may_eval ist env sigma
+                  (out_gen (glbwit wit_constr_may_eval) x)
+              in
               Proofview.V82.tclEVARS sigma <*>
 	      Proofview.Goal.return (Value.of_constr c_interp)
           | ListArgType ConstrArgType ->
@@ -1980,10 +1995,10 @@ and interp_atomic ist tac =
               (Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) l_interp))
           | ListArgType VarArgType ->
               let wit = glbwit (wit_list wit_var) in
-              Proofview.Goal.return (Tacmach.New.of_old (fun gl ->
-                let ans = List.map (mk_hyp_value ist gl) (out_gen wit x) in
+              Proofview.Goal.return (
+                let ans = List.map (mk_hyp_value ist env) (out_gen wit x) in
                 in_gen (topwit (wit_list wit_genarg)) ans
-              ) gl)
+              )
           | ListArgType IntOrVarArgType ->
               let wit = glbwit (wit_list wit_int_or_var) in
               let ans = List.map (mk_int_or_var_value ist) (out_gen wit x) in
@@ -2011,8 +2026,8 @@ and interp_atomic ist tac =
                 val_interp ist tac >>== fun v ->
                 Proofview.Goal.return v
               else
-                let (newsigma,v) = Tacmach.New.of_old (fun gl ->
-                  Geninterp.generic_interp ist gl x) gl in
+                let goal = Proofview.Goal.goal gl in
+                let (newsigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} x in
                 Proofview.V82.tactic (tclEVARS newsigma) <*>
                 Proofview.Goal.return v
           | QuantHypArgType | RedExprArgType
@@ -2033,7 +2048,6 @@ and interp_atomic ist tac =
         lfun = lfun;
         extra = TacStore.set ist.extra f_trace trace; } in
       interp_tactic ist body
-      end
 
 (* Initial call for interpretation *)
 
@@ -2097,7 +2111,7 @@ let hide_interp global t ot =
 
 let def_intern ist x = (ist, x)
 let def_subst _ x = x
-let def_interp ist gl x = (gl.Evd.sigma, x)
+let def_interp ist gl x = (project gl, x)
 
 let declare_uniform t pr =
   Genintern.register_intern0 t def_intern;
@@ -2124,15 +2138,15 @@ let () =
   declare_uniform wit_pre_ident str
 
 let () =
-  let interp ist gl pat = (gl.sigma, interp_intro_pattern ist gl pat) in
+  let interp ist gl pat = (project gl, interp_intro_pattern ist (pf_env gl) pat) in
   Geninterp.register_interp0 wit_intro_pattern interp;
-  let interp ist gl s = (gl.sigma, interp_sort s) in
+  let interp ist gl s = (project gl, interp_sort s) in
   Geninterp.register_interp0 wit_sort interp
 
 let () =
   let interp ist gl tac =
     let f = VFun (extract_trace ist, ist.lfun, [], tac) in
-    (gl.sigma, TacArg (dloc, valueIn (of_tacvalue f)))
+    (project gl, TacArg (dloc, valueIn (of_tacvalue f)))
   in
   Geninterp.register_interp0 wit_tactic interp
 

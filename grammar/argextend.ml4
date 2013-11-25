@@ -170,7 +170,8 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
       | _ ->
 	<:expr< fun ist gl x ->
 	  let (sigma,a_interp) =
-	    Tacinterp.interp_genarg ist gl
+	    Tacinterp.interp_genarg ist
+              (Tacmach.pf_env gl) (Tacmach.project gl) (Tacmach.pf_concl gl) gl.Evd.it
                (Genarg.in_gen $make_globwit loc globtyp$ x)
 	  in
           (sigma , out_gen $make_topwit loc globtyp$ a_interp)>>

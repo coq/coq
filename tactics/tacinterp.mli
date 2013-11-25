@@ -65,8 +65,10 @@ val get_debug : unit -> debug_info
 
 (** Adds an interpretation function for extra generic arguments *)
 
-val interp_genarg : interp_sign -> goal sigma -> glob_generic_argument ->
-  Evd.evar_map * typed_generic_argument
+(* spiwack: the [Term.constr] argument is the conclusion of the goal,
+   for "casted open constr" *)
+val interp_genarg : interp_sign -> Environ.env -> Evd.evar_map -> Term.constr -> Goal.goal ->
+  glob_generic_argument -> Evd.evar_map * typed_generic_argument
 
 (** Interprets any expression *)
 val val_interp : interp_sign -> glob_tactic_expr -> value Proofview.glist Proofview.tactic
@@ -79,7 +81,7 @@ val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map 
 
 (** Interprets tactic expressions *)
 
-val interp_hyp :  interp_sign -> goal sigma -> Id.t Loc.located -> Id.t
+val interp_hyp :  interp_sign -> Environ.env -> Id.t Loc.located -> Id.t
 
 val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map ->
  glob_constr_and_expr bindings -> Evd.evar_map * constr bindings
