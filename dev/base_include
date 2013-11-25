@@ -136,7 +136,6 @@ open Equality
 open Evar_tactics
 open Extraargs
 open Extratactics
-open Hiddentac
 open Hipattern
 open Inv
 open Leminv

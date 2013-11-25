@@ -22,7 +22,6 @@ open Term
 open Declarations
 open Tactics
 open Tacticals
-open Hiddentac
 open Auto
 open Matching
 open Hipattern
@@ -54,16 +53,22 @@ open Coqlib
 let clear_last = (onLastHyp (fun c -> (clear [destVar c])))
 
 let choose_eq eqonleft =
-  if eqonleft then h_simplest_left else h_simplest_right
+  if eqonleft then
+    left_with_bindings false Misctypes.NoBindings
+  else
+    right_with_bindings false Misctypes.NoBindings
 let choose_noteq eqonleft =
-  if eqonleft then h_simplest_right else h_simplest_left
+  if eqonleft then
+    right_with_bindings false Misctypes.NoBindings
+  else
+    left_with_bindings false Misctypes.NoBindings
 
 let mkBranches c1 c2 =
   Tacticals.New.tclTHENLIST
     [Proofview.V82.tactic (generalize [c2]);
-     h_simplest_elim c1;
+     Simple.elim c1;
      intros;
-     Tacticals.New.onLastHyp h_simplest_case;
+     Tacticals.New.onLastHyp Simple.case;
      Proofview.V82.tactic clear_last;
      intros]
 
@@ -105,7 +110,7 @@ let diseqCase eqonleft =
   (Tacticals.New.tclTHEN (choose_noteq eqonleft)
   (Tacticals.New.tclTHEN  (Proofview.V82.tactic red_in_concl)
   (Tacticals.New.tclTHEN  (intro_using absurd)
-  (Tacticals.New.tclTHEN  (Proofview.V82.tactic (h_simplest_apply (mkVar diseq)))
+  (Tacticals.New.tclTHEN  (Proofview.V82.tactic (Simple.apply (mkVar diseq)))
   (Tacticals.New.tclTHEN  (Extratactics.injHyp absurd)
             (full_trivial [])))))))
 
@@ -128,7 +133,7 @@ let solveArg eqonleft op a1 a2 tac =
   let subtacs =
     if eqonleft then [eqCase tac;diseqCase eqonleft;default_auto]
     else [diseqCase eqonleft;eqCase tac;default_auto] in
-  (Tacticals.New.tclTHENS (Proofview.V82.tactic (h_elim_type decide)) subtacs)
+  (Tacticals.New.tclTHENS (Proofview.V82.tactic (elim_type decide)) subtacs)
   end
 
 let solveEqBranch rectype =
@@ -144,7 +149,7 @@ let solveEqBranch rectype =
           and largs   = getargs lhs in
           List.fold_right2
             (solveArg eqonleft op) largs rargs
-            (Tacticals.New.tclTHEN (choose_eq eqonleft) h_reflexivity)
+            (Tacticals.New.tclTHEN (choose_eq eqonleft) intros_reflexivity)
       end
     end
     begin function

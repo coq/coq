@@ -33,7 +33,6 @@ open Pfedit
 open Glob_term
 open Pretyping
 open Constrintern
-open Hiddentac
 open Misctypes
 open Genredexpr
 
@@ -257,8 +256,8 @@ let observe_tac s tac g =
 let tclUSER tac is_mes l g =
   let clear_tac =
     match l with
-      | None -> h_clear false []
-      | Some l -> tclMAP (fun id -> tclTRY (h_clear false [id])) (List.rev l)
+      | None -> clear []
+      | Some l -> tclMAP (fun id -> tclTRY (clear [id])) (List.rev l)
   in
   tclTHENSEQ
     [
@@ -276,8 +275,8 @@ let tclUSER tac is_mes l g =
 
 let tclUSER_if_not_mes concl_tac is_mes names_to_suppress =
   if is_mes
-  then tclCOMPLETE (h_simplest_apply (delayed_force well_founded_ltof))
-  else tclTHEN (h_simplest_apply (delayed_force acc_intro_generator_function) ) (tclUSER concl_tac is_mes names_to_suppress)
+  then tclCOMPLETE (Simple.apply (delayed_force well_founded_ltof))
+  else tclTHEN (Simple.apply (delayed_force acc_intro_generator_function) ) (tclUSER concl_tac is_mes names_to_suppress)
 
 
 
@@ -518,7 +517,7 @@ let rec prove_lt hyple g =
 	(
 	  tclTHENLIST[
 	    apply (delayed_force lt_S_n);
-	    (observe_tac (str "assumption: " ++ Printer.pr_goal g) (Proofview.V82.of_tactic h_assumption))
+	    (observe_tac (str "assumption: " ++ Printer.pr_goal g) (Proofview.V82.of_tactic assumption))
 	  ])
       )
   end
@@ -566,7 +565,7 @@ let rec destruct_bounds_aux infos (bound,hyple,rechyps) lbounds g =
 			 
 			 (observe_tac (str "finishing") 
 			    (tclORELSE
-			       (Proofview.V82.of_tactic h_reflexivity)
+			       (Proofview.V82.of_tactic intros_reflexivity)
 			       (observe_tac (str "calling prove_lt") (prove_lt hyple))))])
 		   ]
 	      ]
@@ -575,7 +574,7 @@ let rec destruct_bounds_aux infos (bound,hyple,rechyps) lbounds g =
       | (_,v_bound)::l -> 
       tclTHENLIST[
 	Proofview.V82.of_tactic (simplest_elim (mkVar v_bound));
-	h_clear false [v_bound];
+	clear [v_bound];
 	tclDO 2 (Proofview.V82.of_tactic intro);
 	onNthHypId 1 
 	  (fun p_hyp -> 
@@ -663,7 +662,7 @@ let mkDestructEq :
   let new_hyps = mkApp(Lazy.force refl_equal, [|type_of_expr; expr|])::
            to_revert_constr in
     tclTHENLIST
-     [h_generalize new_hyps;
+     [Simple.generalize new_hyps;
       (fun g2 ->
 	change_in_concl None
 	  (pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) Evd.empty (pf_concl g2)) g2);
@@ -758,7 +757,7 @@ let terminate_app_rec (f,args) expr_info continuation_tac _ =
 	    tclTHENS (* proof of args < formal args *)
 	      (apply (Lazy.force expr_info.acc_inv))
 	      [ 
-		observe_tac (str "h_assumption") (Proofview.V82.of_tactic h_assumption);
+		observe_tac (str "assumption") (Proofview.V82.of_tactic assumption);
 		tclTHENLIST
 		  [
 		    tclTRY(list_rewrite true 
@@ -803,7 +802,7 @@ let rec prove_le g =
     (List.hd args,List.hd (List.tl args))
   in 
   tclFIRST[
-    Proofview.V82.of_tactic h_assumption;
+    Proofview.V82.of_tactic assumption;
     apply (delayed_force le_n);
     begin
       try
@@ -881,7 +880,7 @@ let make_rewrite expr_info l hp max =
 	   
 	   (list_rewrite true 
 	      (List.map (fun e -> mkVar e,true) expr_info.eqs));
-	   (observe_tac (str "h_reflexivity") (Proofview.V82.of_tactic h_reflexivity))]))
+	   (observe_tac (str "h_reflexivity") (Proofview.V82.of_tactic intros_reflexivity))]))
        ;
 	 tclTHENLIST[ (* x < S (S max) proof *)
 	 apply (delayed_force le_lt_SS);
@@ -1074,7 +1073,7 @@ let termination_proof_header is_mes input_type ids args_id relation
 		 (* this gives the accessibility argument *)
 		 observe_tac
 		   (str "apply wf_thm")
-		   (h_simplest_apply (mkApp(mkVar wf_thm,[|mkVar rec_arg_id|]))
+		   (Simple.apply (mkApp(mkVar wf_thm,[|mkVar rec_arg_id|]))
 		   )
 	       ]
 	     ;
@@ -1083,12 +1082,12 @@ let termination_proof_header is_mes input_type ids args_id relation
 	       [observe_tac (str "generalize")
 		  (onNLastHypsId (nargs+1)
 		     (tclMAP (fun id ->
-			tclTHEN (h_generalize [mkVar id]) (h_clear false [id]))
+			tclTHEN (Tactics.Simple.generalize [mkVar id]) (clear [id]))
 		     ))
 	       ;
-		observe_tac (str "h_fix") (h_fix (Some hrec) (nargs+1));
+		observe_tac (str "fix") (fix (Some hrec) (nargs+1));
 		h_intros args_id;
-		Proofview.V82.of_tactic (h_intro wf_rec_arg);
+		Proofview.V82.of_tactic (Simple.intro wf_rec_arg);
 		observe_tac (str "tac") (tac wf_rec_arg hrec wf_rec_arg acc_inv)
 	       ]
 	   ]
@@ -1272,8 +1271,8 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in
 	   tclTHENSEQ
 	     [
-	       h_generalize [lemma];
-	       Proofview.V82.of_tactic (h_intro hid);
+	       Simple.generalize [lemma];
+	       Proofview.V82.of_tactic (Simple.intro hid);
 	       (fun g ->
 		  let ids = pf_ids_of_hyps g in
 		  tclTHEN
@@ -1333,7 +1332,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 	 	     (fun c ->
 	 		tclTHENSEQ
 	 		  [Proofview.V82.of_tactic intros;
-	 		   h_simplest_apply (interp_constr Evd.empty (Global.env()) c);
+	 		   Simple.apply (interp_constr Evd.empty (Global.env()) c);
 	 		   tclCOMPLETE (Proofview.V82.of_tactic Auto.default_auto)
 	 		  ]
 	 	     )

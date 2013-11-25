@@ -3881,6 +3881,24 @@ let emit_side_effects eff gl =
     eff;
   { it = [gl.it] ; sigma = Evd.emit_side_effects eff gl.sigma; }
 
+module Simple = struct
+  (** Simplified version of some of the above tactics *)
+
+  let intro x = intro_move (Some x) MoveLast
+
+  let generalize_gen cl =
+    generalize_gen (List.map (on_fst Redexpr.out_with_occurrences) cl)
+  let generalize cl =
+    generalize_gen (List.map (fun c -> ((AllOccurrences,c),Names.Anonymous))
+                        cl)
+
+  let apply c = apply_with_bindings_gen false false [Loc.ghost,(c,NoBindings)]
+  let eapply c = apply_with_bindings_gen false true [Loc.ghost,(c,NoBindings)]
+  let elim c   = elim false (c,NoBindings) None
+  let case   c = general_case_analysis false (c,NoBindings)
+
+end
+
 (** Tacticals defined directly in term of Proofview *)
 module New = struct
   open Proofview.Notations

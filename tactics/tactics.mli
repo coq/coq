@@ -406,6 +406,20 @@ val declare_intro_decomp_eq :
 
 val emit_side_effects : Declareops.side_effects -> tactic
 
+module Simple : sig
+  (** Simplified version of some of the above tactics *)
+
+  val intro           : Id.t -> unit Proofview.tactic
+  val generalize      : constr list -> tactic
+  val generalize_gen  : (constr Locus.with_occurrences * Name.t) list -> tactic
+
+  val apply  : constr -> tactic
+  val eapply : constr -> tactic
+  val elim   : constr -> unit Proofview.tactic
+  val case   : constr -> unit Proofview.tactic
+
+end
+
 (** Tacticals defined directly in term of Proofview *)
 module New : sig
 

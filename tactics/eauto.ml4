@@ -23,7 +23,6 @@ open Patternops
 open Clenv
 open Auto
 open Genredexpr
-open Hiddentac
 open Tacexpr
 open Misctypes
 open Locus
@@ -59,8 +58,8 @@ let registered_e_assumption gl =
 
 let one_step l gl =
   [Proofview.V82.of_tactic Tactics.intro]
-  @ (List.map h_simplest_eapply (List.map mkVar (pf_ids_of_hyps gl)))
-  @ (List.map h_simplest_eapply l)
+  @ (List.map Tactics.Simple.eapply (List.map mkVar (pf_ids_of_hyps gl)))
+  @ (List.map Tactics.Simple.eapply l)
   @ (List.map assumption (pf_ids_of_hyps gl))
 
 let rec prolog l n gl =
@@ -95,7 +94,7 @@ let priority l = List.map snd (List.filter (fun (pr,_) -> Int.equal pr 0) l)
 let unify_e_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
   let _ = clenv_unique_resolver ~flags clenv' gls in
-  h_simplest_eapply c gls
+  Tactics.Simple.eapply c gls
 
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl =
@@ -133,7 +132,7 @@ and e_my_find_search db_list local_db hdc concl =
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
                tclTHEN (unify_e_resolve st (term,cl))
 		 (e_trivial_fail_db db_list local_db)
-	   | Unfold_nth c -> h_reduce (Unfold [AllOccurrences,c]) onConcl
+	   | Unfold_nth c -> reduce (Unfold [AllOccurrences,c]) onConcl
 	   | Extern tacast -> Proofview.V82.of_tactic (conclPattern concl p tacast)
        in
        (tac,lazy (pr_autotactic t)))

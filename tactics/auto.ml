@@ -29,7 +29,6 @@ open Tacred
 open Tactics
 open Tacticals
 open Clenv
-open Hiddentac
 open Libnames
 open Globnames
 open Nametab
@@ -1345,7 +1344,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t})) =
     | Unfold_nth c ->
       Proofview.V82.tactic (fun gl ->
        if exists_evaluable_reference (pf_env gl) c then
-	 tclPROGRESS (h_reduce (Unfold [AllOccurrences,c]) Locusops.onConcl) gl
+	 tclPROGRESS (reduce (Unfold [AllOccurrences,c]) Locusops.onConcl) gl
        else tclFAIL 0 (str"Unbound reference") gl)
     | Extern tacast -> conclPattern concl p tacast
   in

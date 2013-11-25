@@ -669,7 +669,7 @@ let  mkCaseEq a  : unit Proofview.tactic =
   Proofview.Goal.enter begin fun gl ->
     let type_of_a = Tacmach.New.of_old (fun g -> Tacmach.pf_type_of g a) gl in
        Tacticals.New.tclTHENLIST
-         [Proofview.V82.tactic (Hiddentac.h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])]);
+         [Proofview.V82.tactic (Tactics.Simple.generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])]);
           Proofview.Goal.enter begin fun gl ->
             let concl = Proofview.Goal.concl gl in
             let env = Proofview.Goal.env gl in

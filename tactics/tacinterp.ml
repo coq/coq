@@ -31,7 +31,6 @@ open Constrexpr
 open Term
 open Termops
 open Tacexpr
-open Hiddentac
 open Genarg
 open Stdarg
 open Constrarg
@@ -1445,26 +1444,26 @@ and interp_atomic ist tac =
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let patterns = interp_intro_pattern_list_as_list ist env l in
-        h_intro_patterns patterns
+        Tactics.intro_patterns patterns
       end
   | TacIntrosUntil hyp ->
       begin try (* interp_quantified_hypothesis can raise an exception *)
-        h_intros_until (interp_quantified_hypothesis ist hyp)
+        Tactics.intros_until (interp_quantified_hypothesis ist hyp)
       with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
       end
   | TacIntroMove (ido,hto) ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let mloc = interp_move_location ist env hto in
-        h_intro_move (Option.map (interp_fresh_ident ist env) ido) mloc
+        Tactics.intro_move (Option.map (interp_fresh_ident ist env) ido) mloc
       end
-  | TacAssumption -> h_assumption
+  | TacAssumption -> Tactics.assumption
   | TacExact c ->
       Proofview.V82.tactic begin fun gl -> 
         let (sigma,c_interp) = pf_interp_casted_constr ist gl c in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_exact c_interp)
+	  (Tactics.exact_check c_interp)
           gl
       end
   | TacExactNoCheck c ->
@@ -1472,7 +1471,7 @@ and interp_atomic ist tac =
         let (sigma,c_interp) = pf_interp_constr ist gl c in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_exact_no_check c_interp)
+	  (Tactics.exact_no_check c_interp)
           gl
       end
   | TacVmCastNoCheck c ->
@@ -1480,7 +1479,7 @@ and interp_atomic ist tac =
         let (sigma,c_interp) = pf_interp_constr ist gl c in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_vm_cast_no_check c_interp)
+	  (Tactics.vm_cast_no_check c_interp)
           gl
       end
   | TacApply (a,ev,cb,cl) ->
@@ -1492,13 +1491,13 @@ and interp_atomic ist tac =
             List.fold_map (interp_open_constr_with_bindings_loc ist env) sigma cb
           in
           let tac = match cl with
-            | None -> fun l -> Proofview.V82.tactic (h_apply a ev l)
+            | None -> fun l -> Proofview.V82.tactic (Tactics.apply_with_bindings_gen a ev l)
             | Some cl ->
                 (fun l ->
                   Proofview.Goal.enter begin fun gl ->
                     let env = Proofview.Goal.env gl in
-                    let cl = interp_in_hyp_as ist env cl in
-                    h_apply_in a ev l cl
+                    let (id,cl) = interp_in_hyp_as ist env cl in
+                    Tactics.apply_in a ev id l cl
                   end) in
           Tacticals.New.tclWITHHOLES ev tac sigma l
         with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
@@ -1510,7 +1509,7 @@ and interp_atomic ist tac =
         try (* interpretation functions may raise exceptions *)
           let sigma, cb = interp_constr_with_bindings ist env sigma cb in
           let sigma, cbo = Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
-          Tacticals.New.tclWITHHOLES ev (h_elim ev cb) sigma cbo
+          Tacticals.New.tclWITHHOLES ev (Tactics.elim ev cb) sigma cbo
         with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
       end
   | TacElimType c ->
@@ -1518,7 +1517,7 @@ and interp_atomic ist tac =
         let (sigma,c_interp) = pf_interp_type ist gl c in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_elim_type c_interp)
+	  (Tactics.elim_type c_interp)
           gl
       end
   | TacCase (ev,cb) ->
@@ -1526,20 +1525,20 @@ and interp_atomic ist tac =
         let sigma = Proofview.Goal.sigma gl in
         let env = Proofview.Goal.env gl in
         let sigma, cb = interp_constr_with_bindings ist env sigma cb in
-        Tacticals.New.tclWITHHOLES ev (h_case ev) sigma cb
+        Tacticals.New.tclWITHHOLES ev (Tactics.general_case_analysis ev) sigma cb
       end
   | TacCaseType c ->
       Proofview.V82.tactic begin fun gl -> 
         let (sigma,c_interp) = pf_interp_type ist gl c in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_case_type c_interp)
+	  (Tactics.case_type c_interp)
           gl
       end
   | TacFix (idopt,n) ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
-        Proofview.V82.tactic (h_fix (Option.map (interp_fresh_ident ist env) idopt) n)
+        Proofview.V82.tactic (Tactics.fix (Option.map (interp_fresh_ident ist env) idopt) n)
       end
   | TacMutualFix (id,n,l) ->
       Proofview.V82.tactic begin fun gl ->
@@ -1555,13 +1554,13 @@ and interp_atomic ist tac =
         in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_mutual_fix (interp_fresh_ident ist env id) n l_interp)
+	  (Tactics.mutual_fix (interp_fresh_ident ist env id) n l_interp 0)
           gl
       end
   | TacCofix idopt ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
-        Proofview.V82.tactic (h_cofix (Option.map (interp_fresh_ident ist env) idopt))
+        Proofview.V82.tactic (Tactics.cofix (Option.map (interp_fresh_ident ist env) idopt))
       end
   | TacMutualCofix (id,l) ->
       Proofview.V82.tactic begin fun gl ->
@@ -1577,7 +1576,7 @@ and interp_atomic ist tac =
         in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_mutual_cofix (interp_fresh_ident ist env id) l_interp)
+	  (Tactics.mutual_cofix (interp_fresh_ident ist env id) l_interp 0)
           gl
       end
   | TacCut c ->
@@ -1585,7 +1584,7 @@ and interp_atomic ist tac =
         let (sigma,c_interp) = pf_interp_type ist gl c in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_cut c_interp)
+	  (Tactics.cut c_interp)
           gl
       end
   | TacAssert (t,ipat,c) ->
@@ -1608,14 +1607,14 @@ and interp_atomic ist tac =
         let sigma = project gl in
         let env = pf_env gl in
         let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
-        tclWITHHOLES false (h_generalize_gen) sigma cl gl
+        tclWITHHOLES false (Tactics.Simple.generalize_gen) sigma cl gl
       end
   | TacGeneralizeDep c ->
       Proofview.V82.tactic begin fun gl -> 
         let (sigma,c_interp) = pf_interp_constr ist gl c in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_generalize_dep c_interp)
+	  (Tactics.generalize_dep c_interp)
           gl
       end
   | TacLetTac (na,c,clp,b,eqpat) ->
@@ -1630,13 +1629,23 @@ and interp_atomic ist tac =
           let (sigma,c_interp) =
             Tacmach.New.of_old (fun gl -> pf_interp_constr ist gl c) gl
           in
-	Tacticals.New.tclTHEN
-	  (Proofview.V82.tclEVARS sigma)
-          (h_let_tac b (interp_fresh_name ist env na) c_interp clp eqpat)
+          let let_tac b na c cl eqpat =
+            let id = Option.default (Loc.ghost,IntroAnonymous) eqpat in
+            let with_eq = if b then None else Some (true,id) in
+            Tactics.letin_tac with_eq na c None cl
+          in
+	  Tacticals.New.tclTHEN
+	    (Proofview.V82.tclEVARS sigma)
+            (let_tac b (interp_fresh_name ist env na) c_interp clp eqpat)
         else
         (* We try to keep the pattern structure as much as possible *)
           begin try
-                  h_let_pat_tac b (interp_fresh_name ist env na)
+                  let let_pat_tac b na c cl eqpat =
+                    let id = Option.default (Loc.ghost,IntroAnonymous) eqpat in
+                    let with_eq = if b then None else Some (true,id) in
+                    Tactics.letin_pat_tac with_eq na c None cl
+                  in
+                  let_pat_tac b (interp_fresh_name ist env na)
                     (interp_pure_open_constr ist env sigma c) clp eqpat
             with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
           end
@@ -1662,7 +1671,8 @@ and interp_atomic ist tac =
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct (isrec,h) ->
-      h_simple_induction_destruct isrec (interp_quantified_hypothesis ist h)
+      let h = interp_quantified_hypothesis ist h in
+      if isrec then Tactics.simple_induct h else Tactics.simple_destruct h
   | TacInductionDestruct (isrec,ev,(l,el,cls)) ->
       (* spiwack: some unknown part of destruct needs the goal to be
          prenormalised. *)
@@ -1683,7 +1693,7 @@ and interp_atomic ist tac =
           Option.fold_map (interp_constr_with_bindings ist env) sigma el in
         let interp_clause = interp_clause ist env in
         let cls = Option.map interp_clause cls in
-        Tacticals.New.tclWITHHOLES ev (h_induction_destruct isrec ev) sigma (l,el,cls)
+        Tacticals.New.tclWITHHOLES ev (Tactics.induction_destruct isrec ev) sigma (l,el,cls)
       end
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist h1 in
@@ -1717,7 +1727,7 @@ and interp_atomic ist tac =
         let sigma = Proofview.Goal.sigma gl in
         Proofview.V82.tactic begin fun gl -> 
           let sigma, cb = interp_constr_with_bindings ist env sigma cb in
-          tclWITHHOLES false (h_specialize n) sigma cb gl
+          tclWITHHOLES false (Tactics.specialize n) sigma cb gl
         end
       end
   | TacLApply c ->
@@ -1725,36 +1735,37 @@ and interp_atomic ist tac =
         let (sigma,c_interp) = pf_interp_constr ist gl c in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_lapply c_interp)
+	  (Tactics.cut_and_apply c_interp)
           gl
       end
 
   (* Context management *)
   | TacClear (b,l) ->
       Proofview.V82.tactic begin fun gl ->
-        h_clear b (interp_hyp_list ist (pf_env gl) l) gl
+        let l = interp_hyp_list ist (pf_env gl) l in
+        if b then Tactics.keep l gl else Tactics.clear l gl
       end
   | TacClearBody l ->
       Proofview.V82.tactic begin fun gl ->
-        h_clear_body (interp_hyp_list ist (pf_env gl) l) gl
+        Tactics.clear_body (interp_hyp_list ist (pf_env gl) l) gl
       end
   | TacMove (dep,id1,id2) ->
       Proofview.V82.tactic begin fun gl -> 
-        h_move dep (interp_hyp ist (pf_env gl) id1)
+        Tactics.move_hyp dep (interp_hyp ist (pf_env gl) id1)
                    (interp_move_location ist (pf_env gl) id2)
                    gl
       end
   | TacRename l ->
       Proofview.V82.tactic begin fun gl ->
         let env = pf_env gl in
-        h_rename (List.map (fun (id1,id2) ->
+        Tactics.rename_hyp (List.map (fun (id1,id2) ->
 	  interp_hyp ist env id1,
 	  interp_fresh_ident ist env (snd id2)) l)
           gl
       end
   | TacRevert l ->
       Proofview.V82.tactic begin fun gl -> 
-        h_revert (interp_hyp_list ist (pf_env gl) l) gl
+        Tactics.revert (interp_hyp_list ist (pf_env gl) l) gl
       end
 
   (* Constructors *)
@@ -1763,21 +1774,21 @@ and interp_atomic ist tac =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma, bl = interp_bindings ist env sigma bl in
-        Tacticals.New.tclWITHHOLES ev (h_left ev) sigma bl
+        Tacticals.New.tclWITHHOLES ev (Tactics.left_with_bindings ev) sigma bl
       end
   | TacRight (ev,bl) ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma, bl = interp_bindings ist env sigma bl in
-        Tacticals.New.tclWITHHOLES ev (h_right ev) sigma bl
+        Tacticals.New.tclWITHHOLES ev (Tactics.right_with_bindings ev) sigma bl
       end
   | TacSplit (ev,_,bll) ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma, bll = List.fold_map (interp_bindings ist env) sigma bll in
-        Tacticals.New.tclWITHHOLES ev (h_split ev) sigma bll
+        Tacticals.New.tclWITHHOLES ev (Tactics.split_with_bindings ev) sigma bll
       end
   | TacAnyConstructor (ev,t) ->
       Tactics.any_constructor ev (Option.map (interp_tactic ist) t)
@@ -1786,7 +1797,8 @@ and interp_atomic ist tac =
         let env = Proofview.Goal.env gl in
         let sigma = Proofview.Goal.sigma gl in
         let sigma, bl = interp_bindings ist env sigma bl in
-        Tacticals.New.tclWITHHOLES ev (h_constructor ev (interp_int_or_var ist n)) sigma bl
+        Tacticals.New.tclWITHHOLES ev
+          (Tactics.constructor_tac ev None (interp_int_or_var ist n)) sigma bl
       end
 
   (* Conversion *)
@@ -1795,7 +1807,7 @@ and interp_atomic ist tac =
         let (sigma,r_interp) = interp_red_expr ist (project gl) (pf_env gl) r in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_reduce r_interp (interp_clause ist (pf_env gl) cl))
+	  (Tactics.reduce r_interp (interp_clause ist (pf_env gl) cl))
           gl
       end
   | TacChange (None,c,cl) ->
@@ -1816,7 +1828,7 @@ and interp_atomic ist tac =
         in
         tclTHEN
 	  (tclEVARS sigma)
-	  (h_change None c_interp (interp_clause ist (pf_env gl) cl))
+	  (Tactics.change None c_interp (interp_clause ist (pf_env gl) cl))
           gl
       end
   | TacChange (Some op,c,cl) ->
@@ -1838,22 +1850,22 @@ and interp_atomic ist tac =
           in
           tclTHEN
 	    (tclEVARS sigma)
-	    (h_change (Some op) c_interp (interp_clause ist env cl))
+	    (Tactics.change (Some op) c_interp (interp_clause ist env cl))
             gl
         end
       end
 
   (* Equivalence relations *)
-  | TacReflexivity -> h_reflexivity
+  | TacReflexivity -> Tactics.intros_reflexivity
   | TacSymmetry c ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
         let cl = interp_clause ist env c in
-        h_symmetry cl
+        Tactics.intros_symmetry cl
       end
   | TacTransitivity c ->
       begin match c with
-      | None -> h_transitivity None
+      | None -> Tactics.intros_transitivity None
       | Some c ->
           Proofview.Goal.enter begin fun gl ->
           let (sigma,c_interp) =
@@ -1861,7 +1873,7 @@ and interp_atomic ist tac =
           in
           Tacticals.New.tclTHEN
 	    (Proofview.V82.tclEVARS sigma)
-	    (h_transitivity (Some c_interp))
+	    (Tactics.intros_transitivity (Some c_interp))
           end
       end
 

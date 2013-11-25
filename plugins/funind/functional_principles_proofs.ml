@@ -9,7 +9,6 @@ open Names
 open Declarations
 open Declareops
 open Pp
-open Hiddentac
 open Tacmach
 open Proof_type
 open Tacticals
@@ -120,7 +119,7 @@ type body_info = constr dynamic_info
 
 let finish_proof dynamic_infos g =
   observe_tac "finish"
-    (Proofview.V82.of_tactic h_assumption)
+    (Proofview.V82.of_tactic assumption)
     g
 
 
@@ -179,7 +178,7 @@ let change_hyp_with_using msg hyp_id t tac : tactic =
       [tclTHENLIST
       [
 	(* observe_tac "change_hyp_with_using thin" *) (thin [hyp_id]);
-	(* observe_tac "change_hyp_with_using rename " *) (h_rename [prov_id,hyp_id])
+	(* observe_tac "change_hyp_with_using rename " *) (rename_hyp [prov_id,hyp_id])
       ]] g
 
 exception TOREMOVE
@@ -370,7 +369,7 @@ let isLetIn t =
 
 
 let h_reduce_with_zeta =
-  h_reduce
+  reduce
     (Genredexpr.Cbv
        {Redops.all_flags
 	with Genredexpr.rDelta = false;
@@ -638,7 +637,7 @@ let instanciate_hyps_with_args (do_prove:Id.t list -> tactic) hyps args_id =
 	  tclTHENLIST[
 	    Proofview.V82.of_tactic (pose_proof (Name prov_hid) (mkApp(mkVar hid,args)));
 	    thin [hid];
-	    h_rename [prov_hid,hid]
+	    rename_hyp [prov_hid,hid]
 	  ] g
       )
       ( (*
@@ -700,11 +699,11 @@ let build_proof
 		  in
 		  tclTHENSEQ
 		    [
-		      h_generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps));
+		      Simple.generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps));
 		      thin dyn_infos.rec_hyps;
 		      pattern_option [Locus.AllOccurrencesBut [1],t] None;
 		      (fun g -> observe_tac "toto" (
-			 tclTHENSEQ [Proofview.V82.of_tactic (h_simplest_case t);
+			 tclTHENSEQ [Proofview.V82.of_tactic (Simple.case t);
 				     (fun g' ->
 					let g'_nb_prod = nb_prod (pf_concl g') in
 					let nb_instanciate_partial = g'_nb_prod - g_nb_prod in
@@ -925,7 +924,7 @@ let generalize_non_dep hyp g =
   in
 (*   observe (str "to_revert := " ++ prlist_with_sep spc Ppconstr.pr_id to_revert); *)
   tclTHEN
-    ((* observe_tac "h_generalize" *) (h_generalize  (List.map mkVar to_revert) ))
+    ((* observe_tac "h_generalize" *) (Simple.generalize  (List.map mkVar to_revert) ))
     ((* observe_tac "thin" *) (thin to_revert))
     g
 
@@ -970,7 +969,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
 	   let rec_id = pf_nth_hyp_id g 1 in
 	   tclTHENSEQ
 	     [(* observe_tac "generalize_non_dep in generate_equation_lemma" *) (generalize_non_dep rec_id);
-	      (* observe_tac "h_case" *) (Proofview.V82.of_tactic (h_case false (mkVar rec_id,NoBindings)));
+	      (* observe_tac "h_case" *) (Proofview.V82.of_tactic (general_case_analysis false (mkVar rec_id,NoBindings)));
 	      (Proofview.V82.of_tactic intros_reflexivity)] g
 	)
       ]
@@ -1198,10 +1197,10 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 	    in
 	    if List.is_empty other_fix_infos
 	    then
-	      (* observe_tac ("h_fix") *) (h_fix (Some this_fix_info.name) (this_fix_info.idx +1))
+	      (* observe_tac ("h_fix") *) (fix (Some this_fix_info.name) (this_fix_info.idx +1))
 	    else
-	      h_mutual_fix this_fix_info.name (this_fix_info.idx + 1)
-		other_fix_infos
+	      Tactics.mutual_fix this_fix_info.name (this_fix_info.idx + 1)
+		other_fix_infos 0
 	| _ -> anomaly (Pp.str "Not a valid information")
     in
     let first_tac : tactic = (* every operations until fix creations *)
@@ -1536,7 +1535,7 @@ let prove_principle_for_gen
     Nameops.out_name (fresh_id (Name (Id.of_string ("Acc_"^(Id.to_string rec_arg_id)))))
   in
   let revert l =
-    tclTHEN (h_generalize (List.map mkVar l)) (clear l)
+    tclTHEN (Tactics.Simple.generalize (List.map mkVar l)) (clear l)
   in
   let fix_id = Nameops.out_name (fresh_id (Name hrec_id)) in
   let prove_rec_arg_acc g =
@@ -1549,7 +1548,7 @@ let prove_principle_for_gen
 	       (
 		 (* observe_tac  *)
 (* 		   "apply wf_thm"  *)
-		 h_simplest_apply (mkApp(mkVar wf_thm_id,[|mkVar rec_arg_id|]))
+		 Tactics.Simple.apply (mkApp(mkVar wf_thm_id,[|mkVar rec_arg_id|]))
 	       )
 	    )
 	 )
@@ -1583,7 +1582,7 @@ let prove_principle_for_gen
       tclTHENSEQ
 	[
 	  generalize [lemma];
-	  Proofview.V82.of_tactic (h_intro hid);
+	  Proofview.V82.of_tactic (Simple.intro hid);
 	  Proofview.V82.of_tactic (Elim.h_decompose_and (mkVar hid));
 	  (fun g ->
 	     let new_hyps = pf_ids_of_hyps g in
@@ -1614,7 +1613,7 @@ let prove_principle_for_gen
 (*       observe_tac "reverting" *) (revert (List.rev (acc_rec_arg_id::args_ids)));
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl () ++  *)
 (* 			   str "fix arg num" ++ int (List.length args_ids + 1) ); tclIDTAC g); *)
-      (* observe_tac "h_fix " *) (h_fix (Some fix_id) (List.length args_ids + 1));
+      (* observe_tac "h_fix " *) (fix (Some fix_id) (List.length args_ids + 1));
 (*       (fun g -> observe (Printer.pr_goal (sig_it g) ++ fnl() ++ pr_lconstr_env (pf_env g ) (pf_type_of g (mkVar fix_id) )); tclIDTAC g); *)
       h_intros (List.rev (acc_rec_arg_id::args_ids));
       Proofview.V82.of_tactic (Equality.rewriteLR (mkConst eq_ref));

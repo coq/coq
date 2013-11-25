@@ -8,7 +8,6 @@ Ind_tables
 Eqschemes
 Elimschemes
 Tactics
-Hiddentac
 Elim
 Auto
 Equality

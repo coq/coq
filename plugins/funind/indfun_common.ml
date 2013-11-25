@@ -3,7 +3,6 @@ open Pp
 open Libnames
 open Globnames
 open Refiner
-open Hiddentac 
 let mk_prefix pre id = Id.of_string (pre^(Id.to_string id))
 let mk_rel_id = mk_prefix "R_"
 let mk_correct_id id = Nameops.add_suffix (mk_rel_id id) "_correct"
@@ -484,7 +483,7 @@ let jmeq_refl () =
   with e when Errors.noncritical e -> raise (ToShow e)
 
 let h_intros l =
-  tclMAP (fun x -> Proofview.V82.of_tactic (h_intro x)) l
+  tclMAP (fun x -> Proofview.V82.of_tactic (Tactics.Simple.intro x)) l
 
 let h_id = Id.of_string "h"
 let hrec_id = Id.of_string "hrec"
