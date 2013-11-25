@@ -330,12 +330,6 @@ let push_rel_context_to_named_context env typ =
     | Name id' when id_ord id id' = 0 -> None
     | Name id' -> Some id'
   in
-  let is_section_variable =
-    let global = Global.env () in
-    fun id ->
-      try ignore (Environ.lookup_named id global);true
-      with Not_found -> false
-  in
   (* move the rel context to a named context and extend the named instance *)
   (* with vars of the rel context *)
   (* We do keep the instances corresponding to local definition (see above) *)
