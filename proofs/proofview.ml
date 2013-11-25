@@ -53,6 +53,32 @@ let init sigma =
     (* Marks all the goal unresolvable for typeclasses. *)
     { v with solution = Typeclasses.mark_unresolvables v.solution }
 
+type telescope =
+  | TNil
+  | TCons of Environ.env*Term.types*(Term.constr -> telescope)
+
+let dependent_init =
+  let rec aux sigma = function
+  | TNil -> { initial = [] ;
+	     solution = sigma ;
+             comb = [];
+	   }
+  | TCons (env,typ,t) -> let ( sigma , econstr ) =
+			  Evarutil.new_evar sigma env typ
+			in
+                        let { initial = ret ; solution = sol ; comb = comb } =
+                          aux sigma (t econstr)
+                        in
+			let (e,_) = Term.destEvar econstr in
+			let gl = Goal.build e in
+			{ initial = (econstr,typ)::ret;
+			   solution = sol ;
+                           comb = gl::comb; }
+  in
+  fun sigma t -> let v = aux sigma t in
+    (* Marks all the goal unresolvable for typeclasses. *)
+    { v with solution = Typeclasses.mark_unresolvables v.solution }
+
 let initial_goals { initial } = initial
 
 (* Returns whether this proofview is finished or not. That is,

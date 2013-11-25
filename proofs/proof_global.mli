@@ -52,11 +52,19 @@ val give_me_the_proof : unit -> Proof.proof
     proof end (e.g. to declare the built constructions as a coercion
     or a setoid morphism). *)
 type lemma_possible_guards = int list list
-val start_proof : Names.Id.t -> 
+val start_proof : Names.Id.t ->
                           Decl_kinds.goal_kind ->
                           (Environ.env * Term.types) list  ->
                           ?compute_guard:lemma_possible_guards -> 
                           unit Tacexpr.declaration_hook -> 
+                          unit
+(** Like [start_proof] except that there may be dependencies between
+    initial goals. *)
+val start_dependent_proof : Names.Id.t ->
+                          Decl_kinds.goal_kind ->
+                          Proofview.telescope  ->
+                          ?compute_guard:lemma_possible_guards ->
+                          unit Tacexpr.declaration_hook ->
                           unit
 
 type closed_proof =

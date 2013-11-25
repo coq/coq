@@ -233,6 +233,14 @@ let start sigma goals =
     shelf = [] ;
     given_up = [] } in
   _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
+let dependent_start sigma goals =
+  let pr = {
+    proofview = Proofview.dependent_init sigma goals ;
+    focus_stack = [] ;
+    shelf = [] ;
+    given_up = [] } in
+  let number_of_goals = List.length (Proofview.initial_goals pr.proofview) in
+  _focus end_of_stack (Obj.repr ()) 1 number_of_goals pr
 
 exception UnfinishedProof
 exception HasShelvedGoals

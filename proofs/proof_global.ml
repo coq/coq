@@ -248,6 +248,18 @@ let start_proof id str goals ?(compute_guard=[]) hook =
     mode = find_proof_mode "No" } in
   push initial_state pstates
 
+let start_dependent_proof id str goals ?(compute_guard=[]) hook =
+  let initial_state = {
+    pid = id;
+    proof = Proof.dependent_start Evd.empty goals;
+    endline_tactic = None;
+    section_vars = None;
+    strength = str;
+    compute_guard = compute_guard;
+    hook = Ephemeron.create hook;
+    mode = find_proof_mode "No" } in
+  push initial_state pstates
+
 let get_used_variables () = (cur_pstate ()).section_vars
 
 let set_used_variables l =
