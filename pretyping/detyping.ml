@@ -294,7 +294,7 @@ let it_destRLambda_or_LetIn_names n c =
 	  let a = RVar (dl,x) in
 	  aux (n-1) (Name x :: nal) 
             (match c with
-              | RApp (loc,p,l) -> RApp (loc,c,l@[a])
+              | RApp (loc,p,l) -> RApp (loc,p,l@[a])
               | _ -> (RApp (dl,c,[a])))
   in aux n [] c
 
