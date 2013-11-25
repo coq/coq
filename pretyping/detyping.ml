@@ -305,7 +305,7 @@ let it_destRLambda_or_LetIn_names n c =
 	  let a = GVar (dl,x) in
 	  aux (n-1) (Name x :: nal)
             (match c with
-              | GApp (loc,p,l) -> GApp (loc,c,l@[a])
+              | GApp (loc,p,l) -> GApp (loc,p,l@[a])
               | _ -> (GApp (dl,c,[a])))
   in aux n [] c
 
