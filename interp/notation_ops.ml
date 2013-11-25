@@ -669,6 +669,8 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   | GVar (_,id1), NVar id2 when alpha_var id1 id2 alp -> sigma
   | GRef (_,r1,_), NRef r2 when (eq_gr r1 r2) -> sigma
   | GPatVar (_,(_,n1)), NPatVar n2 when Id.equal n1 n2 -> sigma
+  | GProj (loc,f1,c1), NProj (f2,c2) when Constant.equal f1 f2 -> 
+     match_in u alp metas sigma c1 c2
   | GApp (loc,f1,l1), NApp (f2,l2) ->
       let n1 = List.length l1 and n2 = List.length l2 in
       let f1,l1,f2,l2 =
