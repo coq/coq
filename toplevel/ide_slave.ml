@@ -313,6 +313,18 @@ let init =
    if !initialized then anomaly (str "Already initialized")
    else (initialized := true; Stm.get_current_state ())
 
+(* Retrocompatibility stuff *)
+let interp ((_raw, verbose), s) =
+  let vernac_parse s =
+    let pa = Pcoq.Gram.parsable (Stream.of_string s) in
+    Flags.with_option Flags.we_are_parsing (fun () ->
+      match Pcoq.Gram.entry_parse Pcoq.main_entry pa with
+      | None -> raise (Invalid_argument "vernac_parse")
+      | Some ast -> ast)
+    () in
+  Stm.interp verbose (vernac_parse s);
+  CSig.Inl (read_stdout ())
+
 (** When receiving the Quit call, we don't directly do an [exit 0],
     but rather set this reference, in order to send a final answer
     before exiting. *)
@@ -347,6 +359,7 @@ let eval_call xml_oc log c =
     Interface.quit = (fun () -> quit := true);
     Interface.init = interruptible init;
     Interface.about = interruptible about;
+    Interface.interp = interruptible interp;
     Interface.handle_exn = handle_exn; }
   in
   Serialize.abstract_eval_call handler c

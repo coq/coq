@@ -233,6 +233,12 @@ type about_rty = coq_info
 type handle_exn_sty = exn
 type handle_exn_rty = state_id * location * string
 
+(* Retrocompatibility stuff *)
+type interp_sty = (raw * verbose) * string
+(* spiwack: [Inl] for safe and [Inr] for unsafe. *)
+type interp_rty = (string,string) Util.union
+
+
 type handler = {
   add         : add_sty         -> add_rty;
   edit_at     : edit_at_sty     -> edit_at_rty;
@@ -250,5 +256,7 @@ type handler = {
   handle_exn  : handle_exn_sty  -> handle_exn_rty;
   init        : init_sty        -> init_rty;
   quit        : quit_sty        -> quit_rty;
+  (* Retrocompatibility stuff *)
+  interp      : interp_sty      -> interp_rty;
 }
 
