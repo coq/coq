@@ -691,13 +691,18 @@ let is_projection_ref = function
   | ConstRef r -> if Environ.is_projection r (Global.env ()) then Some r else None
   | _ -> None
 
+let proj_impls r impls =
+  let env = Global.env () in
+  let f (x, l) = x, projection_implicits env r l in
+    List.map f impls
+
 let find_appl_head_data c =
   match c with
   | GRef (loc,ref,_) as x -> 
     let impls = implicits_of_global ref in
     let isproj, impls = 
       match is_projection_ref ref with
-      | Some r -> true, List.map (projection_implicits (Global.env ()) r) impls
+      | Some r -> true, proj_impls r impls
       | None -> false, impls
     in
     let scopes = find_arguments_scope ref in
@@ -708,7 +713,7 @@ let find_appl_head_data c =
       let impls = implicits_of_global ref in 
       let isproj, impls = 
 	match is_projection_ref ref with
-	| Some r -> true, List.map (projection_implicits (Global.env ()) r) impls
+	| Some r -> true, proj_impls r impls
 	| None -> false, impls
       in
 	x, isproj, List.map (drop_first_implicits n) impls,

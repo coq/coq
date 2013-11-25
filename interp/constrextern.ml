@@ -672,7 +672,10 @@ let rec extern inctx scopes vars r =
 	   let args =
 	     extern_args (extern true) (snd scopes) vars (c :: args) subscopes 
 	   in
-	     extern_app loc inctx [] (Some ref, extern_reference loc vars ref)
+	     extern_app loc inctx 
+	     (projection_implicits (Global.env ()) p
+	      (select_stronger_impargs (implicits_of_global ref)))
+	       (Some ref, extern_reference loc vars ref)
 	       None args
 	       
 	 | _       ->

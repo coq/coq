@@ -129,7 +129,8 @@ val make_implicits_list : implicit_status list -> implicits_list list
 
 val drop_first_implicits : int -> implicits_list -> implicits_list
 
-val projection_implicits : env -> projection -> implicits_list -> implicits_list
+val projection_implicits : env -> projection -> implicit_status list -> 
+  implicit_status list
 
 val select_impargs_size : int -> implicits_list list -> implicit_status list
 
