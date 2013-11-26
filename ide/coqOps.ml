@@ -402,7 +402,7 @@ object(self)
     buffer#remove_tag Tags.Script.to_process ~start ~stop;
     self#discard_command_queue queue;
     pop_info ();
-    if Stateid.equal id tip then begin
+    if Stateid.equal id tip || Stateid.equal id Stateid.dummy then begin
       self#position_error_tag_at_iter start phrase loc;
       buffer#place_cursor ~where:stop;
       messages#clear;
