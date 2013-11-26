@@ -2072,6 +2072,10 @@ let eval_tactic t =
   Proofview.tclLIFT db_initialize <*>
   interp_tactic (default_ist ()) t
 
+let eval_tactic_ist ist t =
+  Proofview.tclLIFT db_initialize <*>
+  interp_tactic ist t
+
 (* globalization + interpretation *)
 
 

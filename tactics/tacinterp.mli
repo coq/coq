@@ -93,6 +93,9 @@ val interp_open_constr_with_bindings : interp_sign -> Environ.env -> Evd.evar_ma
 
 val eval_tactic : glob_tactic_expr -> unit Proofview.tactic
 
+val eval_tactic_ist : interp_sign -> glob_tactic_expr -> unit Proofview.tactic
+(** Same as [eval_tactic], but with the provided [interp_sign]. *)
+
 (** Globalization + interpretation *)
 
 val interp_tac_gen : value Id.Map.t -> Id.t list ->
