@@ -441,7 +441,7 @@ type vernac_type =
   | VtStm of vernac_control * vernac_part_of_script
   | VtUnknown
 and vernac_qed_type = VtKeep | VtDrop (* Qed/Admitted, Abort *)
-and vernac_start = string * Id.t list
+and vernac_start = string * opacity_guarantee * Id.t list
 and vernac_sideff_type = Id.t list
 and vernac_is_alias = bool
 and vernac_part_of_script = bool
@@ -453,6 +453,9 @@ and vernac_control =
   | VtObserve of Stateid.t
   | VtBack of Stateid.t
   | VtPG
+and opacity_guarantee =
+  | GuaranteesOpacity (** Only generates opaque terms at [Qed] *)
+  | Doesn'tGuaranteeOpacity (** May generate transparent terms even with [Qed].*)
 type vernac_when =
   | VtNow
   | VtLater

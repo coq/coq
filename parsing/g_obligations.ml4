@@ -60,7 +60,7 @@ let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
 
 open Obligations
 
-let classify_obbl _ = Vernacexpr.VtStartProof ("Classic",[]), Vernacexpr.VtLater
+let classify_obbl _ = Vernacexpr.(VtStartProof ("Classic",GuaranteesOpacity,[]), VtLater)
 
 VERNAC COMMAND EXTEND Obligations CLASSIFIED BY classify_obbl
 | [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) withtac(tac) ] ->

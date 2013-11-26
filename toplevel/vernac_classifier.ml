@@ -94,23 +94,23 @@ let rec classify_vernac e =
     | VernacSolveExistential _ -> VtProofStep, VtLater
     (* StartProof *)
     | VernacDefinition (_,(_,i),ProveBody _) ->
-        VtStartProof("Classic",[i]), VtLater
+        VtStartProof("Classic",GuaranteesOpacity,[i]), VtLater
     | VernacStartTheoremProof (_,l,_) ->
         let ids = 
           CList.map_filter (function (Some(_,i), _) -> Some i | _ -> None) l in
-        VtStartProof ("Classic", ids), VtLater
-    | VernacGoal _ -> VtStartProof ("Classic",[]), VtLater
+        VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
+    | VernacGoal _ -> VtStartProof ("Classic",GuaranteesOpacity,[]), VtLater
     | VernacFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) (((_,id),_,_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
-        if open_proof then VtStartProof ("Classic",ids), VtLater
+        if open_proof then VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
         else VtSideff ids, VtLater
     | VernacCoFixpoint (_,l) ->
         let ids, open_proof =
           List.fold_left (fun (l,b) (((_,id),_,_,p),_) ->
             id::l, b || p = None) ([],false) l in
-        if open_proof then VtStartProof ("Classic",ids), VtLater
+        if open_proof then VtStartProof ("Classic",GuaranteesOpacity,ids), VtLater
         else VtSideff ids, VtLater
     (* Sideff: apply to all open branches. usually run on master only *)
     | VernacAssumption (_,_,l) ->
