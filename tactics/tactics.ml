@@ -3851,10 +3851,15 @@ let abstract_subproof id tac gl =
        success). Hence it reraises [e]. *)
     raise e
 
+let anon_id = Id.of_string "anonymous"
+
 let tclABSTRACT name_op tac gl =
+  let open Proof_global in
   let s = match name_op with
     | Some s -> s
-    | None   -> add_suffix (get_current_proof_name ()) "_subproof"
+    | None   ->
+      let name = try get_current_proof_name () with NoCurrentProof -> anon_id in
+      add_suffix name "_subproof"
   in
   abstract_subproof s tac gl
 
