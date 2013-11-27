@@ -29,9 +29,9 @@ let delete_all_proofs = Proof_global.discard_all
 let set_undo _ = ()
 let get_undo _ = None
 
-let start_proof (id : Id.t) str hyps c ?init_tac ?compute_guard hook terminator =
+let start_proof (id : Id.t) str hyps c ?init_tac hook terminator =
   let goals = [ (Global.env_of_context hyps , c) ] in
-  Proof_global.start_proof id str goals ?compute_guard hook terminator;
+  Proof_global.start_proof id str goals hook terminator;
   let env = Global.env () in
   ignore (Proof_global.with_current_proof (fun _ p ->
     match init_tac with
@@ -40,8 +40,8 @@ let start_proof (id : Id.t) str hyps c ?init_tac ?compute_guard hook terminator 
 
 let cook_this_proof hook p =
   match p with
-  | { Proof_global.id;entries=[constr];do_guard;persistence;hook } ->
-      (id,(constr,do_guard,persistence,hook))
+  | { Proof_global.id;entries=[constr];persistence;hook } ->
+      (id,(constr,persistence,hook))
   | _ -> Errors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
 
 let cook_proof hook =
@@ -126,7 +126,7 @@ let build_constant_by_tactic id sign ?(goal_kind = Global,Proof Theorem) typ tac
   start_proof id goal_kind sign typ (fun _ _ -> ()) (fun _ -> ());
   try
     let status = by tac in
-    let _,(const,_,_,_) = cook_proof (fun _ -> ()) in
+    let _,(const,_,_) = cook_proof (fun _ -> ()) in
     delete_current_proof ();
     const, status
   with reraise ->

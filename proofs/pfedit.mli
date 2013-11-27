@@ -61,7 +61,7 @@ type lemma_possible_guards = Proof_global.lemma_possible_guards
 
 val start_proof :
   Id.t -> goal_kind -> named_context_val -> constr ->
-  ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
+  ?init_tac:unit Proofview.tactic ->
   unit declaration_hook -> Proof_global.proof_terminator -> unit
 
 (** {6 ... } *)
@@ -73,12 +73,12 @@ val start_proof :
 val cook_this_proof : (Proof.proof -> unit) ->
     Proof_global.proof_object ->
   (Id.t *
-    (Entries.definition_entry * lemma_possible_guards * goal_kind *
+    (Entries.definition_entry * goal_kind *
      unit declaration_hook Ephemeron.key))
 
 val cook_proof : (Proof.proof -> unit) ->
   (Id.t *
-    (Entries.definition_entry * lemma_possible_guards * goal_kind *
+    (Entries.definition_entry * goal_kind *
      unit declaration_hook Ephemeron.key))
 
 (** {6 ... } *)

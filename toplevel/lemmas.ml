@@ -299,8 +299,8 @@ let start_hook = ref ignore
 let set_start_hook = (:=) start_hook
 
 
-let get_proof proof opacity =
-  let (id,(const,do_guard,persistence,hook)) =
+let get_proof proof do_guard opacity =
+  let (id,(const,persistence,hook)) =
     Pfedit.cook_this_proof !save_hook proof
   in
   id,{const with const_entry_opaque = opacity},do_guard,persistence,hook
@@ -311,7 +311,7 @@ let start_proof id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
         admit ();
         Pp.feedback Interface.AddedAxiom
     | Proved (is_opaque,idopt),proof ->
-        let proof = get_proof proof is_opaque in
+        let proof = get_proof proof compute_guard is_opaque in
         begin match idopt with
         | None -> save_named proof
         | Some ((_,id),None) -> save_anonymous proof id
@@ -325,7 +325,7 @@ let start_proof id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
     | None -> initialize_named_context_for_proof ()
   in
   !start_hook c;
-  Pfedit.start_proof id kind sign c ?init_tac ~compute_guard hook terminator
+  Pfedit.start_proof id kind sign c ?init_tac hook terminator
 
 
 let rec_tac_initializer finite guard thms snl =

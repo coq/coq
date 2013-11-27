@@ -56,7 +56,6 @@ type lemma_possible_guards = int list list
 type proof_object = {
   id : Names.Id.t;
   entries : Entries.definition_entry list;
-  do_guard : lemma_possible_guards;
   persistence : Decl_kinds.goal_kind;
   hook : unit Tacexpr.declaration_hook Ephemeron.key
 }
@@ -74,7 +73,6 @@ type closed_proof = proof_object*proof_terminator Ephemeron.key
 val start_proof : Names.Id.t ->
                           Decl_kinds.goal_kind ->
                           (Environ.env * Term.types) list  ->
-                          ?compute_guard:lemma_possible_guards ->
                           unit Tacexpr.declaration_hook ->
                           proof_terminator ->
                           unit
@@ -83,7 +81,6 @@ val start_proof : Names.Id.t ->
 val start_dependent_proof : Names.Id.t ->
                           Decl_kinds.goal_kind ->
                           Proofview.telescope  ->
-                          ?compute_guard:lemma_possible_guards ->
                           unit Tacexpr.declaration_hook ->
                           proof_terminator ->
                           unit

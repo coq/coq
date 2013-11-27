@@ -68,7 +68,6 @@ type lemma_possible_guards = int list list
 type proof_object = {
   id : Names.Id.t;
   entries : Entries.definition_entry list;
-  do_guard : lemma_possible_guards;
   persistence : Decl_kinds.goal_kind;
   hook : unit Tacexpr.declaration_hook Ephemeron.key
 }
@@ -85,7 +84,6 @@ type pstate = {
   section_vars : Context.section_context option;
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
-  compute_guard : lemma_possible_guards;
   pr_hook : unit Tacexpr.declaration_hook Ephemeron.key;
   mode : proof_mode Ephemeron.key;
 }
@@ -250,7 +248,7 @@ end
     It raises exception [ProofInProgress] if there is a proof being
     currently edited. *)
 
-let start_proof id str goals ?(compute_guard=[]) hook terminator =
+let start_proof id str goals hook terminator =
   let initial_state = {
     pid = id;
     terminator = Ephemeron.create terminator;
@@ -258,12 +256,11 @@ let start_proof id str goals ?(compute_guard=[]) hook terminator =
     endline_tactic = None;
     section_vars = None;
     strength = str;
-    compute_guard = compute_guard;
     pr_hook = Ephemeron.create hook;
     mode = find_proof_mode "No" } in
   push initial_state pstates
 
-let start_dependent_proof id str goals ?(compute_guard=[]) hook terminator =
+let start_dependent_proof id str goals hook terminator =
   let initial_state = {
     pid = id;
     terminator = Ephemeron.create terminator;
@@ -271,7 +268,6 @@ let start_dependent_proof id str goals ?(compute_guard=[]) hook terminator =
     endline_tactic = None;
     section_vars = None;
     strength = str;
-    compute_guard = compute_guard;
     pr_hook = Ephemeron.create hook;
     mode = find_proof_mode "No" } in
   push initial_state pstates
@@ -297,7 +293,7 @@ let get_open_goals () =
   List.length shelf
 
 let close_proof ~now fpl =
-  let { pid;section_vars;compute_guard;strength;pr_hook;proof;terminator } =
+  let { pid;section_vars;strength;pr_hook;proof;terminator } =
     cur_pstate ()
   in
   let initial_goals = Proof.initial_goals proof in
@@ -311,7 +307,6 @@ let close_proof ~now fpl =
     List.iter (fun x -> ignore(Future.join x.Entries.const_entry_body)) entries;
   { id = pid ;
     entries = entries ;
-    do_guard = compute_guard ;
     persistence = strength ;
     hook = pr_hook } , terminator
 
