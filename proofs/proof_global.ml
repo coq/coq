@@ -237,12 +237,12 @@ let _ = Errors.register_handler begin function
   | _ -> raise Errors.Unhandled
 end
 
-(* [start_proof id str goals terminator] starts a proof of name [id]
-   with goals [goals] (a list of pairs of environment and
-   conclusion); at the end of the proof [terminator] is called to
-   close the proof. It raises exception [ProofInProgress] if there
-   is a proof being currently edited. *)
-
+(** [start_proof id str goals terminator] starts a proof of name [id]
+    with goals [goals] (a list of pairs of environment and
+    conclusion); [str] describes what kind of theorem/definition this
+    is (spiwack: for potential printing, I believe is used only by
+    closing commands and the xml plugin); [terminator] is used at the
+    end of the proof to close the proof. *)
 let start_proof id str goals terminator =
   let initial_state = {
     pid = id;

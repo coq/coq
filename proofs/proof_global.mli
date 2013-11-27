@@ -64,11 +64,12 @@ type proof_terminator =
     proof_ending -> unit
 type closed_proof = proof_object*proof_terminator Ephemeron.key
 
-(** [start_proof s str goals ~init_tac ~compute_guard hook] starts 
-    a proof of name [s] and
-    conclusion [t]; [hook] is optionally a function to be applied at
-    proof end (e.g. to declare the built constructions as a coercion
-    or a setoid morphism). *)
+(** [start_proof id str goals terminator] starts a proof of name [id]
+    with goals [goals] (a list of pairs of environment and
+    conclusion); [str] describes what kind of theorem/definition this
+    is (spiwack: for potential printing, I believe is used only by
+    closing commands and the xml plugin); [terminator] is used at the
+    end of the proof to close the proof. *)
 val start_proof : Names.Id.t ->
                           Decl_kinds.goal_kind ->
                           (Environ.env * Term.types) list  ->
