@@ -166,8 +166,8 @@ let save with_clean id const (locality,kind) hook =
 
 
 let cook_proof _ =
-  let (id,(entry,strength,hook)) = Pfedit.cook_proof (fun _ -> ()) in
-  (id,(entry,strength,hook))
+  let (id,(entry,strength)) = Pfedit.cook_proof () in
+  (id,(entry,strength))
 
 let get_proof_clean do_reduce =
   let result = cook_proof do_reduce in

@@ -57,7 +57,6 @@ type proof_object = {
   id : Names.Id.t;
   entries : Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
-  hook : unit Tacexpr.declaration_hook Ephemeron.key
 }
 
 type proof_ending = Vernacexpr.proof_end * proof_object
@@ -73,7 +72,6 @@ type closed_proof = proof_object*proof_terminator Ephemeron.key
 val start_proof : Names.Id.t ->
                           Decl_kinds.goal_kind ->
                           (Environ.env * Term.types) list  ->
-                          unit Tacexpr.declaration_hook ->
                           proof_terminator ->
                           unit
 (** Like [start_proof] except that there may be dependencies between
@@ -81,7 +79,6 @@ val start_proof : Names.Id.t ->
 val start_dependent_proof : Names.Id.t ->
                           Decl_kinds.goal_kind ->
                           Proofview.telescope  ->
-                          unit Tacexpr.declaration_hook ->
                           proof_terminator ->
                           unit
 
@@ -177,7 +174,7 @@ val get_default_goal_selector : unit -> Vernacexpr.goal_selector
 
 module V82 : sig
   val get_current_initial_conclusions : unit -> Names.Id.t *(Term.types list *
-  Decl_kinds.goal_kind * unit Tacexpr.declaration_hook Ephemeron.key)
+  Decl_kinds.goal_kind)
 end
 
 type state

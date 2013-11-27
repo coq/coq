@@ -289,12 +289,13 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
   let new_princ_name =
     next_ident_away_in_goal (Id.of_string "___________princ_________") []
   in
+  let hook = hook new_principle_type in
   begin
     Lemmas.start_proof
       new_princ_name
       (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
       new_principle_type
-      (hook new_principle_type)
+      hook
     ;
     (*       let _tim1 = System.get_time ()  in *)
     ignore (Pfedit.by  (Proofview.V82.tactic (proof_tac (Array.map mkConst funs) mutr_nparams)));
@@ -303,7 +304,7 @@ let build_functional_principle interactive_proof old_princ_type sorts funs i pro
     (* 	  let dur1 = System.time_difference tim1 tim2 in *)
     (* 	  Pp.msgnl (str ("Time to compute proof: ") ++ str (string_of_float dur1)); *)
     (* 	end; *)
-    get_proof_clean true
+    get_proof_clean true,Ephemeron.create hook
   end
 
 
@@ -359,7 +360,7 @@ let generate_functional_principle
       register_with_sort InProp;
       register_with_sort InSet
   in
-  let (id,(entry,g_kind,hook)) =
+  let ((id,(entry,g_kind)),hook) =
     build_functional_principle interactive_proof old_princ_type new_sorts funs i
     proof_tac hook
   in
@@ -511,7 +512,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
 	s::l_schemes -> s,l_schemes
       | _ -> anomaly (Pp.str "")
   in
-  let (_,(const,_,_)) =
+  let ((_,(const,_)),_) =
     try
       build_functional_principle false
 	first_type
@@ -585,7 +586,7 @@ let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry lis
 	   (* If we reach this point, the two principle are not mutually recursive
 	      We fall back to the previous method
 	   *)
-	     let (_,(const,_,_)) =
+	     let ((_,(const,_)),_) =
 	       build_functional_principle
 		 false
 		 (List.nth other_princ_types (!i - 1))

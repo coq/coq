@@ -412,7 +412,7 @@ let show_pftreestate internal fn (kind,pftst) id =
 
 let show fn =
  let pftst = Pfedit.get_pftreestate () in
- let (id,kind,_,_) = Pfedit.current_proof_statement () in
+ let (id,kind,_) = Pfedit.current_proof_statement () in
   show_pftreestate false fn (kind,pftst) id
 ;;
 

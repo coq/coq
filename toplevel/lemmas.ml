@@ -280,8 +280,8 @@ let save_anonymous_with_strength proof kind save_ident =
 
 (* Admitted *)
 
-let admit () =
-  let (id,k,typ,hook) = Pfedit.current_proof_statement () in
+let admit hook () =
+  let (id,k,typ) = Pfedit.current_proof_statement () in
   let e = Pfedit.get_used_variables(), typ, None in
   let kn = declare_constant id (ParameterEntry e,IsAssumption Conjectural) in
   let () = match fst k with
@@ -299,19 +299,20 @@ let start_hook = ref ignore
 let set_start_hook = (:=) start_hook
 
 
-let get_proof proof do_guard opacity =
-  let (id,(const,persistence,hook)) =
-    Pfedit.cook_this_proof !save_hook proof
+let get_proof proof do_guard hook opacity =
+  let (id,(const,persistence)) =
+    Pfedit.cook_this_proof proof
   in
   id,{const with const_entry_opaque = opacity},do_guard,persistence,hook
 
 let start_proof id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
+  let hook = Ephemeron.create hook in
   let terminator = let open Vernacexpr in function
     | Admitted,_ ->
-        admit ();
+        admit hook ();
         Pp.feedback Interface.AddedAxiom
     | Proved (is_opaque,idopt),proof ->
-        let proof = get_proof proof compute_guard is_opaque in
+        let proof = get_proof proof compute_guard hook is_opaque in
         begin match idopt with
         | None -> save_named proof
         | Some ((_,id),None) -> save_anonymous proof id
@@ -325,7 +326,7 @@ let start_proof id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
     | None -> initialize_named_context_for_proof ()
   in
   !start_hook c;
-  Pfedit.start_proof id kind sign c ?init_tac hook terminator
+  Pfedit.start_proof id kind sign c ?init_tac terminator
 
 
 let rec_tac_initializer finite guard thms snl =

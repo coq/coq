@@ -54,8 +54,7 @@ val save : bool -> Id.t ->  Entries.definition_entry  -> Decl_kinds.goal_kind ->
 *)
 val get_proof_clean : bool ->
   Names.Id.t *
-    (Entries.definition_entry * Decl_kinds.goal_kind *
-      unit Tacexpr.declaration_hook Ephemeron.key)
+    (Entries.definition_entry * Decl_kinds.goal_kind)
 
 
 

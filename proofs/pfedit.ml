@@ -29,23 +29,23 @@ let delete_all_proofs = Proof_global.discard_all
 let set_undo _ = ()
 let get_undo _ = None
 
-let start_proof (id : Id.t) str hyps c ?init_tac hook terminator =
+let start_proof (id : Id.t) str hyps c ?init_tac terminator =
   let goals = [ (Global.env_of_context hyps , c) ] in
-  Proof_global.start_proof id str goals hook terminator;
+  Proof_global.start_proof id str goals terminator;
   let env = Global.env () in
   ignore (Proof_global.with_current_proof (fun _ p ->
     match init_tac with
     | None -> p,true
     | Some tac -> Proof.run_tactic env tac p))
 
-let cook_this_proof hook p =
+let cook_this_proof p =
   match p with
-  | { Proof_global.id;entries=[constr];persistence;hook } ->
-      (id,(constr,persistence,hook))
+  | { Proof_global.id;entries=[constr];persistence } ->
+      (id,(constr,persistence))
   | _ -> Errors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
 
-let cook_proof hook =
-  cook_this_proof hook (fst (Proof_global.close_proof (fun x -> x)))
+let cook_proof () =
+  cook_this_proof (fst (Proof_global.close_proof (fun x -> x)))
 let get_pftreestate () =
   Proof_global.give_me_the_proof ()
 
@@ -88,7 +88,7 @@ let get_current_goal_context () =
 
 let current_proof_statement () =
   match Proof_global.V82.get_current_initial_conclusions () with
-    | (id,([concl],strength,hook)) -> id,strength,concl,hook
+    | (id,([concl],strength)) -> id,strength,concl
     | _ -> Errors.anomaly ~label:"Pfedit.current_proof_statement" (Pp.str "more than one statement")
 
 let solve ?with_end_tac gi tac pr =
@@ -123,10 +123,10 @@ open Decl_kinds
 let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id sign ?(goal_kind = Global,Proof Theorem) typ tac =
-  start_proof id goal_kind sign typ (fun _ _ -> ()) (fun _ -> ());
+  start_proof id goal_kind sign typ (fun _ -> ());
   try
     let status = by tac in
-    let _,(const,_,_) = cook_proof (fun _ -> ()) in
+    let _,(const,_) = cook_proof () in
     delete_current_proof ();
     const, status
   with reraise ->
