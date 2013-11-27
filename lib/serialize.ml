@@ -651,7 +651,7 @@ let mkcases_rty_t : mkcases_rty val_t = list_t (list_t string_t)
 let quit_rty_t : quit_rty val_t = unit_t
 let about_rty_t : about_rty val_t = coq_info_t
 let init_rty_t : init_rty val_t = state_id_t
-let interp_rty_t : interp_rty val_t = union_t string_t string_t
+let interp_rty_t : interp_rty val_t = pair_t state_id_t (union_t string_t string_t)
 
 let ($) x = erase x
 let calls = [|  

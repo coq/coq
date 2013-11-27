@@ -236,7 +236,7 @@ type handle_exn_rty = state_id * location * string
 (* Retrocompatibility stuff *)
 type interp_sty = (raw * verbose) * string
 (* spiwack: [Inl] for safe and [Inr] for unsafe. *)
-type interp_rty = (string,string) Util.union
+type interp_rty = state_id * (string,string) Util.union
 
 
 type handler = {

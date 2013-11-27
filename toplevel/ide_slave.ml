@@ -323,7 +323,7 @@ let interp ((_raw, verbose), s) =
       | Some ast -> ast)
     () in
   Stm.interp verbose (vernac_parse s);
-  CSig.Inl (read_stdout ())
+  Stm.get_current_state (), CSig.Inl (read_stdout ())
 
 (** When receiving the Quit call, we don't directly do an [exit 0],
     but rather set this reference, in order to send a final answer
