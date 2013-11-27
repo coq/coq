@@ -8,6 +8,7 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+open Util
 open Compat
 open Pp
 open Tok
@@ -42,16 +43,14 @@ let pr_open_subgoals () =
   pr_subgoals close_cmd sigma goals
 *)
 
-let pr_proof_instr instr = 
+let pr_raw_proof_instr _ _ _ instr =
   Errors.anomaly (Pp.str "Cannot print a proof_instr")
     (* arnaud: Il nous faut quelque chose de type extr_genarg_printer si on veut aller
                      dans cette direction
        Ppdecl_proof.pr_proof_instr (Global.env()) instr
     *)
-let pr_raw_proof_instr instr =
-  Errors.anomaly (Pp.str "Cannot print a raw proof_instr")
-let pr_glob_proof_instr instr =
-  Errors.anomaly (Pp.str "Cannot print a non-interpreted proof_instr")
+let pr_proof_instr _ _ _ instr = Empty.abort instr
+let pr_glob_proof_instr _ _ _ instr = Empty.abort instr
 
 let interp_proof_instr _ { Evd.it = gl ; sigma = sigma }=
   Decl_interp.interp_proof_instr 
@@ -86,9 +85,11 @@ let vernac_proof_instr instr =
 
 (* We create a new parser entry [proof_mode]. The Declarative proof mode
     will replace the normal parser entry for tactics with this one. *)
-let proof_mode = Gram.entry_create "vernac:proof_command"
+let proof_mode : vernac_expr Gram.entry =
+  Gram.entry_create "vernac:proof_command"
 (* Auxiliary grammar entry. *)
-let proof_instr = Gram.entry_create "proofmode:instr"
+let proof_instr : raw_proof_instr Gram.entry =
+  Gram.entry_create "proofmode:instr"
 
 (* Before we can write an new toplevel command (see below) 
     which takes a [proof_instr] as argument, we need to declare
@@ -98,17 +99,9 @@ let proof_instr = Gram.entry_create "proofmode:instr"
     indirect through the [proof_instr] grammar entry. *)
 (* spiwack: proposal: doing that directly from argextend.ml4, maybe ? *)
 
-(* declares the substitution function, irrelevant in our case : *)
-let wit_proof_instr =
-  let name = "proof_instr" in
-  let subst _ x = x in
-  let glob ist v = (ist, Decl_interp.intern_proof_instr ist v) in
-  let interp ist gl x = (Tacmach.project gl, interp_proof_instr ist gl x) in
-  let arg = Genarg.make0 None name in
-  let () = Genintern.register_intern0 arg glob in
-  let () = Genintern.register_subst0 arg subst in
-  let () = Geninterp.register_interp0 arg interp in
-  arg
+(* Only declared at raw level, because only used in vernac commands. *)
+let wit_proof_instr : (raw_proof_instr, Empty.t, Empty.t) Genarg.genarg_type =
+  Genarg.make0 None "proof_instr"
 
 let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
   pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr
@@ -264,7 +257,7 @@ GLOBAL: proof_instr;
   ;
   (* examiner s'il est possible de faire R _ et _ R pour R une relation qcq*)
   loc_id: 
-    [[ id=ident -> fun x -> (loc,(id,x)) ]];
+    [[ id=ident -> fun x -> (!@loc,(id,x)) ]];
   hyp:
     [[ id=loc_id -> id None ;
      | id=loc_id ; ":" ; c=constr -> id (Some c)]]
