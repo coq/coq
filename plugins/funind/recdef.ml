@@ -64,7 +64,7 @@ let (declare_fun : Id.t -> logical_kind -> constr -> global_reference) =
           const_entry_inline_code = false} in
       ConstRef(declare_constant f_id (DefinitionEntry ce, kind));;
 
-let defined () = Lemmas.save_named false
+let defined () = Lemmas.save_proof (Vernacexpr.Proved (false,None))
 
 let def_of_const t =
    match (kind_of_term t) with
@@ -1249,7 +1249,6 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 	with e when Errors.noncritical e ->
           anomaly (Pp.str "open_new_goal with an unamed theorem")
   in
-  let sign = initialize_named_context_for_proof () in
   let na = next_global_ident_away name [] in
   if Termops.occur_existential gls_type then
     Errors.error "\"abstract\" cannot handle existentials";
@@ -1309,12 +1308,11 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 	       )
       		 g)
 ;
-    Lemmas.save_named opacity;
+    Lemmas.save_proof (Vernacexpr.Proved(opacity,None));
   in
-  start_proof
+  Lemmas.start_proof
     na
     (Decl_kinds.Global, Decl_kinds.Proof Decl_kinds.Lemma)
-    sign
     gls_type
     hook;
   if Indfun_common.is_strict_tcc  ()
@@ -1360,8 +1358,8 @@ let com_terminate
     hook =
   let start_proof (tac_start:tactic) (tac_end:tactic) =
     let (evmap, env) = Lemmas.get_current_context() in
-    start_proof thm_name
-      (Global, Proof Lemma) (Environ.named_context_val env)
+    Lemmas.start_proof thm_name
+      (Global, Proof Lemma) ~sign:(Environ.named_context_val env)
       (compute_terminate_type nb_args fonctional_ref) hook;
 
     ignore (by (Proofview.V82.tactic (observe_tac (str "starting_tac") tac_start)));
@@ -1408,8 +1406,8 @@ let (com_eqn : int -> Id.t ->
     let (evmap, env) = Lemmas.get_current_context() in
     let f_constr = constr_of_global f_ref in
     let equation_lemma_type = subst1 f_constr equation_lemma_type in
-    (start_proof eq_name (Global, Proof Lemma)
-       (Environ.named_context_val env) equation_lemma_type (fun _ _ -> ());
+    (Lemmas.start_proof eq_name (Global, Proof Lemma)
+       ~sign:(Environ.named_context_val env) equation_lemma_type (fun _ _ -> ());
      ignore (by
        (Proofview.V82.tactic (start_equation f_ref terminate_ref
 	  (fun  x ->
@@ -1440,7 +1438,7 @@ let (com_eqn : int -> Id.t ->
        ))); 
      (* (try Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowProof) with _ -> ()); *)
 (*      Vernacentries.interp (Vernacexpr.VernacShow Vernacexpr.ShowScript); *)
-     Flags.silently (fun () -> Lemmas.save_named opacity) () ; 
+     Flags.silently (fun () -> Lemmas.save_proof (Vernacexpr.Proved(opacity,None))) () ; 
 (*      Pp.msgnl (str "eqn finished"); *)
     );;
 

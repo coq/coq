@@ -29,9 +29,9 @@ let delete_all_proofs = Proof_global.discard_all
 let set_undo _ = ()
 let get_undo _ = None
 
-let start_proof (id : Id.t) str hyps c ?init_tac ?compute_guard hook =
+let start_proof (id : Id.t) str hyps c ?init_tac ?compute_guard hook terminator =
   let goals = [ (Global.env_of_context hyps , c) ] in
-  Proof_global.start_proof id str goals ?compute_guard hook;
+  Proof_global.start_proof id str goals ?compute_guard hook terminator;
   let env = Global.env () in
   ignore (Proof_global.with_current_proof (fun _ p ->
     match init_tac with
@@ -40,11 +40,12 @@ let start_proof (id : Id.t) str hyps c ?init_tac ?compute_guard hook =
 
 let cook_this_proof hook p =
   match p with
-  | (i,([e],cg,str,h)) -> (i,(e,cg,str,h))
+  | { Proof_global.id;entries=[constr];do_guard;persistence;hook } ->
+      (id,(constr,do_guard,persistence,hook))
   | _ -> Errors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
 
 let cook_proof hook =
-  cook_this_proof hook (Proof_global.close_proof (fun x -> x))
+  cook_this_proof hook (fst (Proof_global.close_proof (fun x -> x)))
 let get_pftreestate () =
   Proof_global.give_me_the_proof ()
 
@@ -122,7 +123,7 @@ open Decl_kinds
 let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id sign ?(goal_kind = Global,Proof Theorem) typ tac =
-  start_proof id goal_kind sign typ (fun _ _ -> ());
+  start_proof id goal_kind sign typ (fun _ _ -> ()) (fun _ -> ());
   try
     let status = by tac in
     let _,(const,_,_,_) = cook_proof (fun _ -> ()) in
@@ -166,13 +167,3 @@ let solve_by_implicit_tactic env sigma evk =
       (try fst (build_by_tactic env evi.evar_concl (Proofview.tclTHEN tac (Proofview.tclEXTEND [] (Proofview.tclZERO (Errors.UserError ("",Pp.str"Proof is not complete."))) [])))
        with e when Logic.catchable_exception e -> raise Exit)
   | _ -> raise Exit
-
-
-
-
-
-
-
-
-
-

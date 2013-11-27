@@ -983,7 +983,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
     lemma_type
     (fun _ _ -> ());
   ignore (Pfedit.by (Proofview.V82.tactic prove_replacement));
-  Lemmas.save_named false
+  Lemmas.save_proof (Vernacexpr.Proved(false,None))
 
 
 

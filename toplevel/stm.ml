@@ -1805,7 +1805,7 @@ let show_script ?proof () =
     let prf =
       match proof with
       | None -> Pfedit.get_current_proof_name ()
-      | Some (id,_) -> id in
+      | Some (p,_) -> p.Proof_global.id in
     let cmds = get_script prf in
     let _,_,_,indented_cmds =
       List.fold_left indent_script_item ((1,[]),false,[],[]) cmds

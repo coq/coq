@@ -18,7 +18,7 @@ open Pfedit
 (** A hook start_proof calls on the type of the definition being started *)
 val set_start_hook : (types -> unit) -> unit
 
-val start_proof : Id.t -> goal_kind -> types ->
+val start_proof : Id.t -> goal_kind -> ?sign:Environ.named_context_val -> types ->
   ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
    unit declaration_hook -> unit
 
@@ -31,35 +31,17 @@ val start_proof_with_initialization :
   (Id.t * (types * (Name.t list * Impargs.manual_explicitation list))) list
   -> int list option -> unit declaration_hook -> unit
 
+(** {6 ... } *)
+
 (** A hook the next three functions pass to cook_proof *)
 val set_save_hook : (Proof.proof -> unit) -> unit
 
-(** {6 ... } *)
-(** [save_named b] saves the current completed (or the provided) proof
-    under the name it was started; boolean [b] tells if the theorem is 
-    declared opaque; it fails if the proof is not completed *)
+val save_proof : ?proof:Proof_global.closed_proof -> Vernacexpr.proof_end -> unit
 
-val save_named : ?proof:Proof_global.closed_proof -> bool -> unit
-
-(** [save_anonymous b name] behaves as [save_named] but declares the theorem
-under the name [name] and respects the strength of the declaration *)
-
-val save_anonymous :
-  ?proof:Proof_global.closed_proof -> bool -> Id.t -> unit
-
-(** [save_anonymous_with_strength s b name] behaves as [save_anonymous] but
-   declares the theorem under the name [name] and gives it the
-   strength [strength] *)
-
-val save_anonymous_with_strength :
-  ?proof:Proof_global.closed_proof -> theorem_kind -> bool -> Id.t -> unit
-
-(** [admit ()] aborts the current goal and save it as an assmumption *)
-
-val admit : unit -> unit
 
 (** [get_current_context ()] returns the evar context and env of the
    current open proof if any, otherwise returns the empty evar context
    and the current global env *)
 
 val get_current_context : unit -> Evd.evar_map * Environ.env
+

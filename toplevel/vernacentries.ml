@@ -457,17 +457,10 @@ let qed_display_script = ref true
 let show_script = ref (fun ?proof () -> ())
 
 let vernac_end_proof ?proof = function
-  | Admitted ->
-    admit ();
-    Pp.feedback Interface.AddedAxiom
-  | Proved (is_opaque,idopt) ->
+  | Admitted -> save_proof ?proof Admitted
+  | Proved (_,_) as e ->
     if is_verbose () && !qed_display_script then !show_script ?proof ();
-    begin match idopt with
-    | None -> save_named ?proof is_opaque
-    | Some ((_,id),None) -> save_anonymous ?proof is_opaque id
-    | Some ((_,id),Some kind) -> 
-        save_anonymous_with_strength ?proof kind is_opaque id
-    end
+    save_proof ?proof e
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
      the theories [??] *)
@@ -476,7 +469,7 @@ let vernac_exact_proof c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
   let status = by (Tactics.New.exact_proof c) in
-  save_named true;
+  save_proof (Vernacexpr.Proved(true,None));
   if not status then Pp.feedback Interface.AddedAxiom
 
 let vernac_assumption locality (local, kind) l nl =

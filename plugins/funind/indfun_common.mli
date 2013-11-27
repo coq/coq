@@ -46,12 +46,6 @@ val const_of_id: Id.t -> constant
 val jmeq : unit -> Term.constr
 val jmeq_refl : unit -> Term.constr
 
-(* [save_named] is a copy of [Command.save_named] but uses
-   [nf_betaiotazeta] instead of [nf_betaiotaevar_preserving_vm_cast]
-*)
-
-val new_save_named : bool -> unit
-
 val save : bool -> Id.t ->  Entries.definition_entry  -> Decl_kinds.goal_kind ->
   unit Tacexpr.declaration_hook Ephemeron.key -> unit
 

@@ -1008,7 +1008,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 
 
 
-let do_save () = Lemmas.save_named false
+let do_save () = Lemmas.save_proof (Vernacexpr.Proved(false,None))
 
 
 (* [derive_correctness make_scheme functional_induction funs graphs] create correctness and completeness

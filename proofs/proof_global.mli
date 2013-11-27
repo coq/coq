@@ -46,17 +46,37 @@ exception NoCurrentProof
 val give_me_the_proof : unit -> Proof.proof
 (** @raise NoCurrentProof when outside proof mode. *)
 
+(** When a proof is closed, it is reified into a [proof_object], where
+    [id] is the name of the proof, [entries] the list of the proof terms
+    (in a form suitable for definitions). Together with the [terminator]
+    function which takes a [proof_object] together with a [proof_end]
+    (i.e. an proof ending command) and registers the appropriate
+    values. *)
+type lemma_possible_guards = int list list
+type proof_object = {
+  id : Names.Id.t;
+  entries : Entries.definition_entry list;
+  do_guard : lemma_possible_guards;
+  persistence : Decl_kinds.goal_kind;
+  hook : unit Tacexpr.declaration_hook Ephemeron.key
+}
+
+type proof_ending = Vernacexpr.proof_end * proof_object
+type proof_terminator =
+    proof_ending -> unit
+type closed_proof = proof_object*proof_terminator Ephemeron.key
+
 (** [start_proof s str goals ~init_tac ~compute_guard hook] starts 
     a proof of name [s] and
     conclusion [t]; [hook] is optionally a function to be applied at
     proof end (e.g. to declare the built constructions as a coercion
     or a setoid morphism). *)
-type lemma_possible_guards = int list list
 val start_proof : Names.Id.t ->
                           Decl_kinds.goal_kind ->
                           (Environ.env * Term.types) list  ->
-                          ?compute_guard:lemma_possible_guards -> 
-                          unit Tacexpr.declaration_hook -> 
+                          ?compute_guard:lemma_possible_guards ->
+                          unit Tacexpr.declaration_hook ->
+                          proof_terminator ->
                           unit
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
@@ -65,12 +85,9 @@ val start_dependent_proof : Names.Id.t ->
                           Proofview.telescope  ->
                           ?compute_guard:lemma_possible_guards ->
                           unit Tacexpr.declaration_hook ->
+                          proof_terminator ->
                           unit
 
-type closed_proof =
-  Names.Id.t *
-  (Entries.definition_entry list * lemma_possible_guards *
-    Decl_kinds.goal_kind * unit Tacexpr.declaration_hook Ephemeron.key)
 
 (* Takes a function to add to the exceptions data relative to the
    state in which the proof was built *)

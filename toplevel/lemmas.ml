@@ -169,7 +169,7 @@ let look_for_possibly_mutual_statements = function
 
 (* Saving a goal *)
 
-let save ?proof id const do_guard (locality,kind) hook =
+let save id const do_guard (locality,kind) hook =
   let const = adjust_guardness_conditions const do_guard in
   let k = Kindops.logical_kind_of_goal_kind kind in
   let l,r = match locality with
@@ -185,8 +185,6 @@ let save ?proof id const do_guard (locality,kind) hook =
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
 	Autoinstance.search_declaration (ConstRef kn);
 	(locality, ConstRef kn) in
-  (* if the proof is given explicitly, nothing has to be deleted *)
-  if Option.is_empty proof then Pfedit.delete_current_proof ();
   definition_message id;
   Ephemeron.iter_opt hook (fun f -> f l r)
 
@@ -260,42 +258,75 @@ let save_remaining_recthms (locality,kind) body opaq i (id,(t_i,(_,imps))) =
 let save_hook = ref ignore
 let set_save_hook f = save_hook := f
 
-let get_proof ?proof opacity =
-  let id,(const,do_guard,persistence,hook) = 
-    match proof with
-    | None -> Pfedit.cook_proof !save_hook 
-    | Some p -> Pfedit.cook_this_proof !save_hook p in
-  id,{const with const_entry_opaque = opacity},do_guard,persistence,hook
-
-let save_named ?proof opacity =
-  let id,const,do_guard,persistence,hook = get_proof ?proof opacity in
-  save ?proof id const do_guard persistence hook
+let save_named proof =
+  let id,const,do_guard,persistence,hook = proof in
+  save id const do_guard persistence hook
 
 let check_anonymity id save_ident =
   if not (String.equal (atompart_of_id id) (Id.to_string (default_thm_id))) then
     error "This command can only be used for unnamed theorem."
 
 
-let save_anonymous ?proof opacity save_ident =
-  let id,const,do_guard,persistence,hook = get_proof ?proof opacity in
+let save_anonymous proof save_ident =
+  let id,const,do_guard,persistence,hook = proof in
   check_anonymity id save_ident;
-  save ?proof save_ident const do_guard persistence hook
+  save save_ident const do_guard persistence hook
 
-let save_anonymous_with_strength ?proof kind opacity save_ident =
-  let id,const,do_guard,_,hook = get_proof ?proof opacity in
+let save_anonymous_with_strength proof kind save_ident =
+  let id,const,do_guard,_,hook = proof in
   check_anonymity id save_ident;
   (* we consider that non opaque behaves as local for discharge *)
-  save ?proof save_ident const do_guard (Global, Proof kind) hook
+  save save_ident const do_guard (Global, Proof kind) hook
+
+(* Admitted *)
+
+let admit () =
+  let (id,k,typ,hook) = Pfedit.current_proof_statement () in
+  let e = Pfedit.get_used_variables(), typ, None in
+  let kn = declare_constant id (ParameterEntry e,IsAssumption Conjectural) in
+  let () = match fst k with
+  | Global -> ()
+  | Local | Discharge ->
+    msg_warning (str "Let definition" ++ spc () ++ pr_id id ++ spc () ++
+      str "declared as an axiom.")
+  in
+  let () = assumption_message id in
+  Ephemeron.iter_opt hook (fun f -> f Global (ConstRef kn))
 
 (* Starting a goal *)
 
 let start_hook = ref ignore
 let set_start_hook = (:=) start_hook
 
-let start_proof id kind c ?init_tac ?(compute_guard=[]) hook =
-  let sign = initialize_named_context_for_proof () in
+
+let get_proof proof opacity =
+  let (id,(const,do_guard,persistence,hook)) =
+    Pfedit.cook_this_proof !save_hook proof
+  in
+  id,{const with const_entry_opaque = opacity},do_guard,persistence,hook
+
+let start_proof id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
+  let terminator = let open Vernacexpr in function
+    | Admitted,_ ->
+        admit ();
+        Pp.feedback Interface.AddedAxiom
+    | Proved (is_opaque,idopt),proof ->
+        let proof = get_proof proof is_opaque in
+        begin match idopt with
+        | None -> save_named proof
+        | Some ((_,id),None) -> save_anonymous proof id
+        | Some ((_,id),Some kind) -> 
+            save_anonymous_with_strength proof kind id
+        end
+  in
+  let sign = 
+    match sign with
+    | Some sign -> sign
+    | None -> initialize_named_context_for_proof ()
+  in
   !start_hook c;
-  Pfedit.start_proof id kind sign c ?init_tac ~compute_guard hook
+  Pfedit.start_proof id kind sign c ?init_tac ~compute_guard hook terminator
+
 
 let rec_tac_initializer finite guard thms snl =
   if finite then
@@ -365,21 +396,18 @@ let start_proof_com kind thms hook =
   let recguard,thms,snl = look_for_possibly_mutual_statements thms in
   start_proof_with_initialization kind recguard thms snl hook
 
-(* Admitted *)
 
-let admit () =
-  let (id,k,typ,hook) = Pfedit.current_proof_statement () in
-  let e = Pfedit.get_used_variables(), typ, None in
-  let kn = declare_constant id (ParameterEntry e,IsAssumption Conjectural) in
-  let () = Pfedit.delete_current_proof () in
-  let () = match fst k with
-  | Global -> ()
-  | Local | Discharge ->
-    msg_warning (str "Let definition" ++ spc () ++ pr_id id ++ spc () ++
-      str "declared as an axiom.")
+(* Saving a proof *)
+
+let save_proof ?proof ending =
+  let (proof_obj,terminator) =
+    match proof with
+    | None -> Proof_global.close_proof (fun x -> x)
+    | Some proof -> proof
   in
-  let () = assumption_message id in
-  Ephemeron.iter_opt hook (fun f -> f Global (ConstRef kn))
+  (* if the proof is given explicitly, nothing has to be deleted *)
+  if Option.is_empty proof then Pfedit.delete_current_proof ();
+  Ephemeron.get terminator (ending,proof_obj)
 
 (* Miscellaneous *)
 
@@ -387,3 +415,13 @@ let get_current_context () =
   try Pfedit.get_current_goal_context ()
   with e when Logic.catchable_exception e ->
     (Evd.empty, Global.env())
+
+
+
+
+
+
+
+
+
+

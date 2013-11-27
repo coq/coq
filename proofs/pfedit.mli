@@ -62,7 +62,7 @@ type lemma_possible_guards = Proof_global.lemma_possible_guards
 val start_proof :
   Id.t -> goal_kind -> named_context_val -> constr ->
   ?init_tac:unit Proofview.tactic -> ?compute_guard:lemma_possible_guards -> 
-  unit declaration_hook -> unit
+  unit declaration_hook -> Proof_global.proof_terminator -> unit
 
 (** {6 ... } *)
 (** [cook_proof opacity] turns the current proof (assumed completed) into
@@ -71,19 +71,15 @@ val start_proof :
     it also tells if the guardness condition has to be inferred. *)
 
 val cook_this_proof : (Proof.proof -> unit) ->
-    Id.t *
-    (Entries.definition_entry list *
-    lemma_possible_guards *
-    Decl_kinds.goal_kind *
-    unit Tacexpr.declaration_hook Ephemeron.key) ->
-  Id.t *
+    Proof_global.proof_object ->
+  (Id.t *
     (Entries.definition_entry * lemma_possible_guards * goal_kind *
-     unit declaration_hook Ephemeron.key)
+     unit declaration_hook Ephemeron.key))
 
 val cook_proof : (Proof.proof -> unit) ->
-  Id.t *
+  (Id.t *
     (Entries.definition_entry * lemma_possible_guards * goal_kind *
-     unit declaration_hook Ephemeron.key)
+     unit declaration_hook Ephemeron.key))
 
 (** {6 ... } *)
 (** [get_pftreestate ()] returns the current focused pending proof.

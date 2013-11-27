@@ -169,11 +169,6 @@ let cook_proof _ =
   let (id,(entry,_,strength,hook)) = Pfedit.cook_proof (fun _ -> ()) in
   (id,(entry,strength,hook))
 
-let new_save_named opacity =
-  let id,(const,persistence,hook) = cook_proof true  in
-  let const = { const with const_entry_opaque = opacity } in
-  save true id const persistence hook
-
 let get_proof_clean do_reduce =
   let result = cook_proof do_reduce in
   Pfedit.delete_current_proof ();

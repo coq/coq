@@ -65,14 +65,28 @@ let _ =
 (* Extra info on proofs. *)
 type lemma_possible_guards = int list list
 
+type proof_object = {
+  id : Names.Id.t;
+  entries : Entries.definition_entry list;
+  do_guard : lemma_possible_guards;
+  persistence : Decl_kinds.goal_kind;
+  hook : unit Tacexpr.declaration_hook Ephemeron.key
+}
+
+type proof_ending = Vernacexpr.proof_end * proof_object
+type proof_terminator =
+    proof_ending -> unit
+type closed_proof = proof_object*proof_terminator Ephemeron.key
+
 type pstate = {
   pid : Id.t;
+  terminator : proof_terminator Ephemeron.key;
   endline_tactic : Tacexpr.raw_tactic_expr option;
   section_vars : Context.section_context option;
   proof : Proof.proof;
   strength : Decl_kinds.goal_kind;
   compute_guard : lemma_possible_guards;
-  hook : unit Tacexpr.declaration_hook Ephemeron.key;
+  pr_hook : unit Tacexpr.declaration_hook Ephemeron.key;
   mode : proof_mode Ephemeron.key;
 }
 
@@ -236,27 +250,29 @@ end
     It raises exception [ProofInProgress] if there is a proof being
     currently edited. *)
 
-let start_proof id str goals ?(compute_guard=[]) hook =
+let start_proof id str goals ?(compute_guard=[]) hook terminator =
   let initial_state = {
     pid = id;
+    terminator = Ephemeron.create terminator;
     proof = Proof.start Evd.empty goals;
     endline_tactic = None;
     section_vars = None;
     strength = str;
     compute_guard = compute_guard;
-    hook = Ephemeron.create hook;
+    pr_hook = Ephemeron.create hook;
     mode = find_proof_mode "No" } in
   push initial_state pstates
 
-let start_dependent_proof id str goals ?(compute_guard=[]) hook =
+let start_dependent_proof id str goals ?(compute_guard=[]) hook terminator =
   let initial_state = {
     pid = id;
+    terminator = Ephemeron.create terminator;
     proof = Proof.dependent_start Evd.empty goals;
     endline_tactic = None;
     section_vars = None;
     strength = str;
     compute_guard = compute_guard;
-    hook = Ephemeron.create hook;
+    pr_hook = Ephemeron.create hook;
     mode = find_proof_mode "No" } in
   push initial_state pstates
 
@@ -280,13 +296,10 @@ let get_open_goals () =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
   List.length shelf
 
-type closed_proof =
-  Names.Id.t *
-  (Entries.definition_entry list * lemma_possible_guards *
-    Decl_kinds.goal_kind * unit Tacexpr.declaration_hook Ephemeron.key)
-
 let close_proof ~now fpl =
-  let { pid;section_vars;compute_guard;strength;hook;proof } = cur_pstate () in
+  let { pid;section_vars;compute_guard;strength;pr_hook;proof;terminator } =
+    cur_pstate ()
+  in
   let initial_goals = Proof.initial_goals proof in
   let entries = Future.map2 (fun p (c, t) -> { Entries.
     const_entry_body = p;
@@ -296,7 +309,11 @@ let close_proof ~now fpl =
     const_entry_opaque = true }) fpl initial_goals in
   if now then
     List.iter (fun x -> ignore(Future.join x.Entries.const_entry_body)) entries;
-  (pid, (entries, compute_guard, strength, hook))
+  { id = pid ;
+    entries = entries ;
+    do_guard = compute_guard ;
+    persistence = strength ;
+    hook = pr_hook } , terminator
 
 let return_proof () =
   let { proof } = cur_pstate () in
@@ -471,8 +488,8 @@ let _ =
 
 module V82 = struct
   let get_current_initial_conclusions () =
-    let { pid; strength; hook; proof } = cur_pstate () in
-    pid, (List.map snd (Proof.initial_goals proof), strength, hook)
+    let { pid; strength; pr_hook; proof } = cur_pstate () in
+    pid, (List.map snd (Proof.initial_goals proof), strength, pr_hook)
 end
 
 type state = pstate list
