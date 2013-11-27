@@ -244,6 +244,9 @@ let in_whnf (t,stk) =
     | (FFlex _ | FProd _ | FEvar _ | FInd _ | FAtom _ | FRel _) -> true
     | FLOCKED -> assert false
 
+let steps = ref 0
+
+
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
   eqappr cv_pb l2r infos (lft1, (term1,[])) (lft2, (term2,[])) cuniv
@@ -251,6 +254,11 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
 (* Conversion between [lft1](hd1 v1) and [lft2](hd2 v2) *)
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
   Util.check_for_interrupt ();
+  incr steps;
+  if !steps = 10000 && !Flags.coq_slave_mode > 0 then begin
+    Thread.yield ();
+    steps := 0;
+  end;
   (* First head reduce both terms *)
   let rec whd_both (t1,stk1) (t2,stk2) =
     let st1' = whd_stack (snd infos) t1 stk1 in
