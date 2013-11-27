@@ -298,6 +298,7 @@ let parse_args arglist =
     |"-filteropts" -> filter_opts := true
     |"-force-load-proofs" -> Flags.load_proofs := Flags.Force
     |"-h"|"-H"|"-?"|"-help"|"--help" -> usage ()
+    |"--help-XML-protocol" -> Serialize.document Xml_printer.to_string_fmt; exit 0
     |"-ideslave" -> Flags.ide_slave := true
     |"-impredicative-set" -> set_engagement Declarations.ImpredicativeSet
     |"-just-parsing" -> Vernac.just_parsing := true

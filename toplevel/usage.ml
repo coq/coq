@@ -74,6 +74,7 @@ let print_usage_channel co command =
 \n                         some tactics\
 \n  -time                  display the time taken by each command\
 \n  -h, --help             print this list of options\
+\n  --help-XML-protocol    print the documentation of the XML protocol used by CoqIDE\
 \n"
 
 (* print the usage on standard error *)

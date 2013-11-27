@@ -401,6 +401,13 @@ module ReifType : sig (* {{{ *)
 
   val print         : 'a val_t -> 'a -> string
 
+  type value_type
+  val erase         : 'a val_t -> value_type
+  val print_type    : value_type -> string
+  val same_type     : 'a val_t -> value_type -> bool
+
+  val document_type_encoding : (xml -> string) -> unit
+
 end = struct
 
   type value_type =
@@ -417,6 +424,9 @@ end = struct
     | Search_cst
 
   type 'a val_t = value_type
+  
+  let erase (x : 'a val_t) : value_type = x
+  let same_type (x : 'a val_t) (y : value_type) = Pervasives.compare (erase x) y = 0
 
   let unit_t         = Unit
   let string_t       = String
@@ -553,87 +563,53 @@ end = struct
   | Union (t1,t2) -> Obj.magic (pr_union (print t1) (print t2))
   | State_id      -> Obj.magic pr_int
 
+  (* This is to break if a rename/refactoring makes the strings below outdated *)
+  type 'a exists = bool
+
+  let rec print_type = function
+  | Unit          -> "unit"
+  | Bool          -> "bool"
+  | String        -> "string"
+  | Int           -> "int"
+  | State         -> assert(true : status exists); "Interface.status"
+  | Option_state  -> assert(true : option_state exists); "Interface.option_state"
+  | Option_value  -> assert(true : option_value exists); "Interface.option_value"
+  | Search_cst    -> assert(true : search_constraint exists); "Interface.search_constraint"
+  | Coq_info      -> assert(true : coq_info exists); "Interface.coq_info"
+  | Goals         -> assert(true : goals exists); "Interface.goals"
+  | Evar          -> assert(true : evar exists); "Interface.evar"
+  | List t        -> Printf.sprintf "(%s list)" (print_type t)
+  | Option t      -> Printf.sprintf "(%s option)" (print_type t)
+  | Coq_object t  -> assert(true : 'a coq_object exists);
+                     Printf.sprintf "(%s Interface.coq_object)" (print_type t)
+  | Pair (t1,t2)  -> Printf.sprintf "(%s * %s)" (print_type t1) (print_type t2)
+  | Union (t1,t2) -> assert(true : ('a,'b) CSig.union exists);
+                     Printf.sprintf "((%s, %s) CSig.union)" (print_type t1) (print_type t2)
+  | State_id      -> assert(true : Stateid.t exists); "Stateid.t"
+
+  let document_type_encoding pr_xml =
+    Printf.printf "\n=== Data encoding by examples ===\n\n";
+    Printf.printf "%s:\n\n%s\n\n" (print_type Unit) (pr_xml (of_unit ()));
+    Printf.printf "%s:\n\n%s\n%s\n\n" (print_type Bool)
+      (pr_xml (of_bool true)) (pr_xml (of_bool false));
+    Printf.printf "%s:\n\n%s\n\n" (print_type String) (pr_xml (of_string "hello"));
+    Printf.printf "%s:\n\n%s\n\n" (print_type Int) (pr_xml (of_int 256));
+    Printf.printf "%s:\n\n%s\n\n" (print_type State_id) (pr_xml (of_state_id Stateid.initial));
+    Printf.printf "%s:\n\n%s\n\n" (print_type (List Int)) (pr_xml (of_list of_int [3;4;5]));
+    Printf.printf "%s:\n\n%s\n%s\n\n" (print_type (Option Int))
+      (pr_xml (of_option of_int (Some 3))) (pr_xml (of_option of_int None));
+    Printf.printf "%s:\n\n%s\n\n" (print_type (Pair (Bool,Int)))
+      (pr_xml (of_pair of_bool of_int (false,3)));
+    Printf.printf "%s:\n\n%s\n\n" (print_type (Union (Bool,Int)))
+      (pr_xml (of_union of_bool of_int (Inl false)));
+    print_endline ("All other types are records represented by a node named like the OCaml\n"^
+                   "type which contains a flattened n-tuple.  We provide one example.\n");
+    Printf.printf "%s:\n\n%s\n\n" (print_type Option_state)
+      (pr_xml (of_option_state { opt_sync = true; opt_depr = false;
+        opt_name = "name1"; opt_value = IntValue (Some 37) }));
+
 end  (* }}} *)
 open ReifType
-
-type 'a call =
-  | Add        of add_sty
-  | Edit_at    of edit_at_sty
-  | Query      of query_sty
-  | Goal       of goals_sty
-  | Evars      of evars_sty
-  | Hints      of hints_sty
-  | Status     of status_sty
-  | Search     of search_sty
-  | GetOptions of get_options_sty
-  | SetOptions of set_options_sty
-  | InLoadPath of inloadpath_sty
-  | MkCases    of mkcases_sty
-  | Quit       of quit_sty
-  | About      of about_sty
-  | Init       of init_sty
-  (* retrocompatibility *)
-  | Interp     of interp_sty
-
-let str_of_call = function
-  | Add _        -> "Add"
-  | Edit_at _    -> "Edit_at"
-  | Query _      -> "Query"
-  | Goal _       -> "Goal"
-  | Evars _      -> "Evars"
-  | Hints _      -> "Hints"
-  | Status _     -> "Status"
-  | Search _     -> "Search"
-  | GetOptions _ -> "GetOptions"
-  | SetOptions _ -> "SetOptions"
-  | InLoadPath _ -> "InLoadPath"
-  | MkCases _    -> "MkCases"
-  | Quit _       -> "Quit"
-  | About _      -> "About"
-  | Init _       -> "Init"
-  | Interp _     -> "Interp"
-
-type unknown
-
-(** We use phantom types and GADT to protect ourselves against wild casts *)
-let add x         : add_rty call         = Add x
-let edit_at x     : edit_at_rty call     = Edit_at x
-let query x       : query_rty call       = Query x
-let goals x       : goals_rty call       = Goal x
-let evars x       : evars_rty call       = Evars x
-let hints x       : hints_rty call       = Hints x
-let status x      : status_rty call      = Status x
-let get_options x : get_options_rty call = GetOptions x
-let set_options x : set_options_rty call = SetOptions x
-let inloadpath x  : inloadpath_rty call  = InLoadPath x
-let mkcases x     : mkcases_rty call     = MkCases x
-let search x      : search_rty call      = Search x
-let quit x        : quit_rty call        = Quit x
-let init x        : init_rty call        = Init x
-let interp x      : interp_rty call      = Interp x
-
-let abstract_eval_call handler (c : 'a call) : 'a value =
-  let mkGood x : 'a value = Good (Obj.magic x) in
-  try
-    match c with
-    | Add x        -> mkGood (handler.add x)
-    | Edit_at x    -> mkGood (handler.edit_at x)
-    | Query x      -> mkGood (handler.query x)
-    | Goal x       -> mkGood (handler.goals x)
-    | Evars x      -> mkGood (handler.evars x)
-    | Hints x      -> mkGood (handler.hints x)
-    | Status x     -> mkGood (handler.status x)
-    | Search x     -> mkGood (handler.search x)
-    | GetOptions x -> mkGood (handler.get_options x)
-    | SetOptions x -> mkGood (handler.set_options x)
-    | InLoadPath x -> mkGood (handler.inloadpath x)
-    | MkCases x    -> mkGood (handler.mkcases x)
-    | Quit x       -> mkGood (handler.quit x)
-    | About x      -> mkGood (handler.about x)
-    | Init x       -> mkGood (handler.init x)
-    | Interp x     -> mkGood (handler.interp x)
-  with any ->
-    Fail (handler.handle_exn any)
 
 (** Types reification, checked with explicit casts *)
 let add_sty_t : add_sty val_t = 
@@ -676,6 +652,107 @@ let quit_rty_t : quit_rty val_t = unit_t
 let about_rty_t : about_rty val_t = coq_info_t
 let init_rty_t : init_rty val_t = state_id_t
 let interp_rty_t : interp_rty val_t = union_t string_t string_t
+
+let ($) x = erase x
+let calls = [|  
+  "Add",        ($)add_sty_t,         ($)add_rty_t;
+  "Edit_at",    ($)edit_at_sty_t,     ($)edit_at_rty_t;
+  "Query",      ($)query_sty_t,       ($)query_rty_t;
+  "Goal",       ($)goals_sty_t,       ($)goals_rty_t;
+  "Evars",      ($)evars_sty_t,       ($)evars_rty_t;
+  "Hints",      ($)hints_sty_t,       ($)hints_rty_t;
+  "Status",     ($)status_sty_t,      ($)status_rty_t;
+  "Search",     ($)search_sty_t,      ($)search_rty_t;
+  "GetOptions", ($)get_options_sty_t, ($)get_options_rty_t;
+  "SetOptions", ($)set_options_sty_t, ($)set_options_rty_t;
+  "InLoadPath", ($)inloadpath_sty_t,  ($)inloadpath_rty_t;
+  "MkCases",    ($)mkcases_sty_t,     ($)mkcases_rty_t;
+  "Quit",       ($)quit_sty_t,        ($)quit_rty_t;
+  "About",      ($)about_sty_t,       ($)about_rty_t;
+  "Init",       ($)init_sty_t,        ($)init_rty_t;
+  "Interp",     ($)interp_sty_t,      ($)interp_rty_t;
+|]
+
+type 'a call =
+  | Add        of add_sty
+  | Edit_at    of edit_at_sty
+  | Query      of query_sty
+  | Goal       of goals_sty
+  | Evars      of evars_sty
+  | Hints      of hints_sty
+  | Status     of status_sty
+  | Search     of search_sty
+  | GetOptions of get_options_sty
+  | SetOptions of set_options_sty
+  | InLoadPath of inloadpath_sty
+  | MkCases    of mkcases_sty
+  | Quit       of quit_sty
+  | About      of about_sty
+  | Init       of init_sty
+  (* retrocompatibility *)
+  | Interp     of interp_sty
+
+let id_of_call = function
+  | Add _        -> 0
+  | Edit_at _    -> 1
+  | Query _      -> 2
+  | Goal _       -> 3
+  | Evars _      -> 4
+  | Hints _      -> 5
+  | Status _     -> 6
+  | Search _     -> 7
+  | GetOptions _ -> 8
+  | SetOptions _ -> 9
+  | InLoadPath _ -> 10
+  | MkCases _    -> 11
+  | Quit _       -> 12
+  | About _      -> 13
+  | Init _       -> 14
+  | Interp _     -> 15
+
+let str_of_call c = pi1 calls.(id_of_call c)
+
+type unknown
+
+(** We use phantom types and GADT to protect ourselves against wild casts *)
+let add x         : add_rty call         = Add x
+let edit_at x     : edit_at_rty call     = Edit_at x
+let query x       : query_rty call       = Query x
+let goals x       : goals_rty call       = Goal x
+let evars x       : evars_rty call       = Evars x
+let hints x       : hints_rty call       = Hints x
+let status x      : status_rty call      = Status x
+let get_options x : get_options_rty call = GetOptions x
+let set_options x : set_options_rty call = SetOptions x
+let inloadpath x  : inloadpath_rty call  = InLoadPath x
+let mkcases x     : mkcases_rty call     = MkCases x
+let search x      : search_rty call      = Search x
+let quit x        : quit_rty call        = Quit x
+let init x        : init_rty call        = Init x
+let interp x      : interp_rty call      = Interp x
+
+let abstract_eval_call handler (c : 'a call) : 'a value =
+  let mkGood x : 'a value = Good (Obj.magic x) in
+  try
+    match c with
+    | Add x        -> mkGood (handler.add x)
+    | Edit_at x    -> mkGood (handler.edit_at x)
+    | Query x      -> mkGood (handler.query x)
+    | Goal x       -> mkGood (handler.goals x)
+    | Evars x      -> mkGood (handler.evars x)
+    | Hints x      -> mkGood (handler.hints x)
+    | Status x     -> mkGood (handler.status x)
+    | Search x     -> mkGood (handler.search x)
+    | GetOptions x -> mkGood (handler.get_options x)
+    | SetOptions x -> mkGood (handler.set_options x)
+    | InLoadPath x -> mkGood (handler.inloadpath x)
+    | MkCases x    -> mkGood (handler.mkcases x)
+    | Quit x       -> mkGood (handler.quit x)
+    | About x      -> mkGood (handler.about x)
+    | Init x       -> mkGood (handler.init x)
+    | Interp x     -> mkGood (handler.interp x)
+  with any ->
+    Fail (handler.handle_exn any)
 
 (** brain dead code, edit if protocol messages are added/removed {{{ *)
 let of_answer (q : 'a call) (v : 'a value) : xml = match q with
@@ -808,5 +885,21 @@ let pr_call call = match call with
   | Interp x     -> str_of_call call ^ " " ^ print interp_sty_t      x
 
 (* }}} *)
+
+let document to_string_fmt =
+  Printf.printf "=== Available calls ===\n\n";
+  Array.iter (fun (cname, csty, crty) ->
+      Printf.printf "%12s :  %s\n %14s %s\n"
+        ("\""^cname^"\"") (print_type csty) "->" (print_type crty))
+    calls;
+  Printf.printf "\n=== Calls XML encoding ===\n\n";
+  Printf.printf "A call \"C\" carrying input a is encoded as:\n\n%s\n\n"
+    (to_string_fmt (constructor "call" "C" [PCData "a"]));
+  Printf.printf "A response carrying output b can either be:\n\n%s\n\n"
+    (to_string_fmt (of_value (fun _ -> PCData "b") (Good ())));
+  Printf.printf "or:\n\n%s\n\nwhere the attributes loc_s and loc_c are optional.\n"
+    (to_string_fmt (of_value (fun _ -> PCData "b")
+      (Fail (Stateid.initial,Some (15,34),"error message"))));
+  document_type_encoding to_string_fmt
 
 (* vim: set foldmethod=marker: *)

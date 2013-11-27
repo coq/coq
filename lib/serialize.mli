@@ -56,6 +56,9 @@ val is_feedback : xml -> bool
 val of_answer : 'a call -> 'a value -> xml
 val to_answer : 'a call -> xml -> 'a value
 
+(* Prints the documentation of this module *)
+val document : (xml -> string) -> unit
+
 (** * Debug printing *)
 
 val pr_call : 'a call -> string
