@@ -585,7 +585,7 @@ module Slaves : sig
   val init : unit -> unit
 
   (* slave process main loop *)
-  val slave_main_loop : unit -> unit
+  val slave_main_loop : (unit -> unit) -> unit
   val slave_init_stdout : unit -> unit
 
   (* to disentangle modules *)
@@ -841,11 +841,15 @@ end = struct (* {{{ *)
             match task, response with
             | TaskBuildProof(_,_,_, assign,_,_), RespBuiltProof pl ->
                 assign (`Val pl);
-                Pp.feedback (Interface.InProgress ~-1)
+                (* We restart the slave, to avoid memory leaks.  We could just
+                   Pp.feedback (Interface.InProgress ~-1) *)
+                raise KillRespawn
             | TaskBuildProof(_,_,_, assign,_,_), RespError (err_id,valid,e) ->
                 let e = Stateid.add ~valid (RemoteException e) err_id in
                 assign (`Exn e);
-                Pp.feedback (Interface.InProgress ~-1)
+                (* We restart the slave, to avoid memory leaks.  We could just
+                   Pp.feedback (Interface.InProgress ~-1) *)
+                raise KillRespawn
             | _, RespGetCounterFreshLocalUniv ->
                 marshal_more_data oc (MoreDataLocalUniv
                   (CList.init 10 (fun _ -> Univ.fresh_local_univ ())));
@@ -889,9 +893,9 @@ end = struct (* {{{ *)
         Pp.feedback (Interface.InProgress ~-1);
         !kill_pid (); (* FIXME: This does not work on Windows *)
         kill_pid := (fun () -> ());
-        ignore(Unix.waitpid [] pid);
         close_in ic;
         close_out oc;
+        ignore(Unix.waitpid [] pid);
         manage_slave respawn
     | Sys_error _ | Invalid_argument _ | End_of_file
       when !fallback_to_lazy_if_slave_dies ->
@@ -904,9 +908,9 @@ end = struct (* {{{ *)
             assign(`Comp(build_proof_here exn_info stop));
             Pp.feedback (Interface.InProgress ~-1);
         | None -> ());
-        ignore(Unix.waitpid [] pid);
         close_in ic;
         close_out oc;
+        ignore(Unix.waitpid [] pid);
         manage_slave respawn
     | Sys_error _ | Invalid_argument _ | End_of_file ->
         let exit_status pid = match Unix.waitpid [] pid with
@@ -936,7 +940,7 @@ end = struct (* {{{ *)
       | [] -> let data = f () in l := List.tl data; List.hd data
       | x::tl -> l := tl; x
 
-  let slave_main_loop () =
+  let slave_main_loop reset =
     let slave_feeder oc fb =
       Marshal.to_channel oc (RespFeedback fb) [];
       flush oc in
@@ -964,6 +968,7 @@ end = struct (* {{{ *)
         let response = slave_respond request in
         report_status "Idle";
         marshal_response !slave_oc response;
+        reset ()
       with
       | MarshalError s ->
         Printf.eprintf "Slave: fatal marshal error: %s\n" s;
@@ -1309,7 +1314,7 @@ let init () =
     with Not_found -> () end;
   end
 
-let slave_main_loop () = Slaves.slave_main_loop ()
+let slave_main_loop () = Slaves.slave_main_loop Ephemeron.clear
 
 let slave_init_stdout () = Slaves.slave_init_stdout ()
 
