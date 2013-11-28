@@ -151,23 +151,6 @@ summary.log:
 
 # All files are assumed to have <# of the bug>.v as a name
 
-# Opened bugs that should not succeed (FIXME: there were no such tests
-# at the time of writing this Makefile, but the possibility was in the
-# original shellscript... so left it here, but untested)
-$(addsuffix .log,$(wildcard bugs/opened/shouldnotsucceed/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
-	$(HIDE){ \
-	  $(call test_intro,$<); \
-	  $(command) "$<" 2>&1; R=$$?; times; \
-	  if [ $$R = 0 ]; then \
-	    echo $(log_success); \
-	    echo "    $<...still active"; \
-	  else \
-	    echo $(log_failure); \
-	    echo "    $<...Error! (bug seems to be closed, please check)";
-	  fi;
-	} > "$@"
-
 # Opened bugs that should not fail
 $(addsuffix .log,$(wildcard bugs/opened/shouldnotfail/*.v)): %.v.log: %.v
 	@echo "TEST      $<"
