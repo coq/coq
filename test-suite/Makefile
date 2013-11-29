@@ -64,8 +64,7 @@ log_intro = "==========> TESTING $(1) <=========="
 # Apart so that it can be easily skipped with overriding
 COMPLEXITY := $(if $(bogomips),complexity)
 
-BUGS := bugs/opened/shouldnotfail bugs/opened/shouldnotsucceed \
-  bugs/closed
+BUGS := bugs/opened bugs/closed
 
 VSUBSYSTEMS := prerequisite success failure $(BUGS) output \
   interactive micromega $(COMPLEXITY) modules stm
@@ -152,7 +151,7 @@ summary.log:
 # All files are assumed to have <# of the bug>.v as a name
 
 # Opened bugs that should not fail
-$(addsuffix .log,$(wildcard bugs/opened/shouldnotfail/*.v)): %.v.log: %.v
+$(addsuffix .log,$(wildcard bugs/opened/*.v)): %.v.log: %.v
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
