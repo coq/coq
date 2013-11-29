@@ -1598,8 +1598,13 @@ arguments, use:
 \comindex{Canonical Structure}}
 
 A canonical structure is an instance of a record/structure type that
-can be used to solve equations involving implicit arguments. Assume
-that {\qualid} denotes an object $(Build\_struc~ c_1~ \ldots~ c_n)$ in the
+can be used to solve unification problems involving a projection
+applied to an unknown structure instance (an implicit argument) and
+a value.  The complete documentation of canonical structures can be found
+in Chapter~\ref{CS-full}, here only a simple example is given.
+
+Assume that {\qualid} denotes an object $(Build\_struc~ c_1~ \ldots~ c_n)$ in
+the
 structure {\em struct} of which the fields are $x_1$, ...,
 $x_n$. Assume that {\qualid} is declared as a canonical structure
 using the command
