@@ -1,11 +1,16 @@
 #!/bin/sh
 
-# wrap around ocamldebug for Coq
+# Wrapper around ocamldebug for Coq
 
-export COQTOP=COQTOPDIRECTORY
-CAMLBIN=CAMLBINDIRECTORY
-CAMLP4LIB=CAMLP4LIBDIRECTORY
-OCAMLDEBUG=$CAMLBIN/ocamldebug
+# This file is to be launched via the generated script ocamldebug-coq,
+# which will set the env variables $OCAMLDEBUG, $CAMLP4LIB, $COQTOP
+# Anyway, just in case someone tries to use this script directly,
+# here are some reasonable default values
+
+[ -z "$OCAMLDEBUG" ] && OCAMLDEBUG=ocamldebug
+[ -z "$CAMLP4LIB" ] && CAMLP4LIB=+camlp5
+[ -z "$COQTOP" -a -d "$PWD/kernel" ] && COQTOP=$PWD
+[ -z "$COQTOP" -a -d "$PWD/../kernel" ] && COQTOP=`dirname $PWD`
 
 exec $OCAMLDEBUG \
 	-I $CAMLP4LIB \
@@ -26,4 +31,4 @@ exec $OCAMLDEBUG \
         -I $COQTOP/plugins/subtac     -I $COQTOP/plugins/syntax \
         -I $COQTOP/plugins/xml \
         -I $COQTOP/ide \
-	$*
+	"$@"
