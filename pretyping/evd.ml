@@ -222,15 +222,6 @@ let eq_evar_info ei1 ei2 =
 exception NotInstantiatedEvar
 
 (* Note: let-in contributes to the instance *)
-let make_evar_instance sign args =
-  let rec instrec sign args = match sign, args with
-  | [], [] -> []
-  | (id,_,_) :: sign, c :: args ->
-    if isVarId id c then instrec sign args
-    else (id, c) :: instrec sign args
-  | [], _ | _, [] -> instance_mismatch ()
-  in
-  instrec sign args
 
 let make_evar_instance_array info args =
   let len = Array.length args in
@@ -250,12 +241,6 @@ let make_evar_instance_array info args =
   in
   let filter = Filter.repr (evar_filter info) in
   instrec filter (evar_context info) 0
-
-let instantiate_evar sign c args =
-  let inst = make_evar_instance sign args in
-  match inst with
-  | [] -> c
-  | _ -> replace_vars inst c
 
 let instantiate_evar_array info c args =
   let inst = make_evar_instance_array info args in

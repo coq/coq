@@ -218,7 +218,6 @@ val existential_opt_value : evar_map -> existential -> constr option
 (** Same as {!existential_value} but returns an option instead of raising an
     exception. *)
 
-val instantiate_evar : named_context -> constr -> constr list -> constr
 val instantiate_evar_array : evar_info -> constr -> constr array -> constr
 
 val subst_evar_defs_light : substitution -> evar_map -> evar_map
