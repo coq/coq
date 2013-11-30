@@ -336,12 +336,16 @@ let refine_red_flags =
 let refine_locs = { Locus.onhyps=None; concl_occs=Locus.AllOccurrences }
 
 let refine_tac (ist, c) =
-  let c = Goal.Refinable.make begin fun h ->
-    Goal.Refinable.constr_of_raw h true true c
-  end in
-  Proofview.Goal.lift c >>= fun c ->
-  Proofview.tclSENSITIVE (Goal.refine c) <*>
-  Proofview.V82.tactic (reduce refine_red_flags refine_locs)
+  Proofview.Goal.enter (fun gl ->
+    let env = Proofview.Goal.env gl in
+    let constrvars = Tacinterp.extract_ltac_constr_values ist env in
+    let vars = (constrvars, ist.Geninterp.lfun) in
+    let c = Goal.Refinable.make begin fun h ->
+      Goal.Refinable.constr_of_raw h true true vars c
+    end in
+    Proofview.Goal.lift c >>= fun c ->
+    Proofview.tclSENSITIVE (Goal.refine c) <*>
+    Proofview.V82.tactic (reduce refine_red_flags refine_locs))
 
 TACTIC EXTEND refine
   [ "refine" glob(c) ] -> [  refine_tac c ]
