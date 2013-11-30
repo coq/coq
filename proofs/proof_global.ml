@@ -276,12 +276,16 @@ let close_proof ?feedback_id ~now fpl =
     let compute_univs (usubst, uctx) = 
       let nf = Universes.nf_evars_and_universes_opt_subst (fun _ -> None) usubst in
       let compute_c_t (c, eff) =
-        let univs =
-          Univ.LSet.union (Universes.universes_of_constr c)
-            (Universes.universes_of_constr t)
-        in 
-        let ctx = Universes.restrict_universe_context (Univ.ContextSet.of_context uctx) univs in
-          (nf c, eff), nf t, Univ.ContextSet.to_context ctx
+	let c, t = 
+	  if not now then nf c, nf t
+	  else (* Already normalized below *) c, nf t 
+	in
+	let univs =
+	  Univ.LSet.union (Universes.universes_of_constr c)
+	    (Universes.universes_of_constr t)
+	in 
+	let ctx = Universes.restrict_universe_context (Univ.ContextSet.of_context uctx) univs in
+	  (c, eff), t, Univ.ContextSet.to_context ctx
       in
         Future.chain ~pure:true p compute_c_t
     in
@@ -309,7 +313,7 @@ let close_proof ?feedback_id ~now fpl =
     else Univ.ContextSet.empty
   in
   let _ = 
-    if now then
+    if poly || now then
       List.iter (fun x -> ignore(Future.compute x.Entries.const_entry_body)) entries
   in
 (*  let hook = Option.map (fun f -> 
@@ -345,7 +349,7 @@ let return_proof () =
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)
-  let proofs = List.map (fun (c, _) -> (Evarutil.nf_evar evd c, eff)) initial_goals in
+  let proofs = List.map (fun (c, _) -> (Evarutil.nf_evars_universes evd c, eff)) initial_goals in
     proofs, (subst, ctx)
 
 let close_future_proof ~feedback_id proof =

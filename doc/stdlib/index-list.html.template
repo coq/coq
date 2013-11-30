@@ -393,6 +393,9 @@ through the <tt>Require Import</tt> command.</p>
     theories/Classes/Morphisms_Prop.v
     theories/Classes/Morphisms_Relations.v
     theories/Classes/Equivalence.v
+    theories/Classes/CRelationClasses.v
+    theories/Classes/CMorphisms.v
+    theories/Classes/CEquivalence.v
     theories/Classes/EquivDec.v
     theories/Classes/SetoidTactics.v
     theories/Classes/SetoidClass.v
