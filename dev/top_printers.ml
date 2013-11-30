@@ -65,9 +65,12 @@ let ppintset l = pp (prset int (Int.Set.elements l))
 let ppidset l = pp (prset pr_id (Id.Set.elements l))
 
 let prset' pr l = str "[" ++ hov 0 (prlist_with_sep pr_comma pr l) ++ str "]"
-let ppidmap pr l =
+
+let pridmap pr l =
   let pr (id,b) = pr_id id ++ str "=>" ++ pr id b in
-  pp (prset' pr (Id.Map.fold (fun a b l -> (a,b)::l) l []))
+  prset' pr (Id.Map.fold (fun a b l -> (a,b)::l) l [])
+
+let ppidmap pr l = pp (pridmap pr l)
 
 let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
   hov 0
@@ -355,14 +358,20 @@ let pp_argument_type t = pp (pr_argument_type t)
 let pp_generic_argument arg =
   pp(str"<genarg:"++pr_argument_type(genarg_tag arg)++str">")
 
-let ppgenarginfo arg =
+let prgenarginfo arg =
   let tpe = pr_argument_type (genarg_tag arg) in
   let pr_gtac _ x = Pptactic.pr_glob_tactic (Global.env()) x in
   try
     let data = Pptactic.pr_top_generic pr_constr pr_lconstr pr_gtac pr_constr_pattern arg in
-    pp (str "<genarg:" ++ tpe ++ str " := [ " ++ data ++ str " ] >")
+    str "<genarg:" ++ tpe ++ str " := [ " ++ data ++ str " ] >"
   with _any ->
-    pp (str "<genarg:" ++ tpe ++ str ">")
+    str "<genarg:" ++ tpe ++ str ">"
+
+let ppgenarginfo arg = pp (prgenarginfo arg)
+
+let ppist ist =
+  let pr id arg = prgenarginfo arg in
+  pp (pridmap pr ist.Geninterp.lfun)
 
 (**********************************************************************)
 (* Vernac-level debugging commands                                    *)
