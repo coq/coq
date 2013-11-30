@@ -336,7 +336,15 @@ let push_rel_context_to_named_context env typ =
   let (subst, vsubst, _, env) =
     Context.fold_rel_context
       (fun (na,c,t) (subst, vsubst, avoid, env) ->
-        let id = next_name_away na avoid in
+        let id =
+          (* ppedrot: we want to infer nicer names for the refine tactic, but
+             keeping at the same time backward compatibility in other code
+             using this function. For now, we only attempt to preserve the
+             old behaviour of Program, but ultimately, one should do something
+             about this whole name generation problem. *)
+          if Flags.is_program_mode () then next_name_away na avoid
+          else next_ident_away (id_of_name_using_hdchar env t na) avoid
+        in
         match extract_if_neq id na with
         | Some id0 when not (is_section_variable id0) ->
             (* spiwack: if [id<>id0], rather than introducing a new
