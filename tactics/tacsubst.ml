@@ -298,9 +298,6 @@ and subst_genarg subst (x:glob_generic_argument) =
   | IdentArgType b ->
       in_gen (glbwit (wit_ident_gen b)) (out_gen (glbwit (wit_ident_gen b)) x)
   | VarArgType -> in_gen (glbwit wit_var) (out_gen (glbwit wit_var) x)
-  | RefArgType ->
-      in_gen (glbwit wit_ref) (subst_global_reference subst
-	(out_gen (glbwit wit_ref) x))
   | GenArgType -> in_gen (glbwit wit_genarg) (subst_genarg subst (out_gen (glbwit wit_genarg) x))
   | ConstrArgType ->
       in_gen (glbwit wit_constr) (subst_glob_constr subst (out_gen (glbwit wit_constr) x))
@@ -330,6 +327,7 @@ and subst_genarg subst (x:glob_generic_argument) =
 (** Registering *)
 
 let () =
+  Genintern.register_subst0 wit_ref subst_global_reference;
   Genintern.register_subst0 wit_intro_pattern (fun _ v -> v);
   Genintern.register_subst0 wit_tactic subst_tactic;
   Genintern.register_subst0 wit_sort (fun _ v -> v)

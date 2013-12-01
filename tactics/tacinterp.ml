@@ -1322,8 +1322,6 @@ and interp_genarg ist env sigma concl gl x =
         (interp_fresh_ident ist env (out_gen (glbwit (wit_ident_gen b)) x))
     | VarArgType ->
       in_gen (topwit wit_var) (interp_hyp ist env (out_gen (glbwit wit_var) x))
-    | RefArgType ->
-      in_gen (topwit wit_ref) (interp_reference ist env (out_gen (glbwit wit_ref) x))
     | GenArgType ->
       in_gen (topwit wit_genarg) (interp_genarg (out_gen (glbwit wit_genarg) x))
     | ConstrArgType ->
@@ -1972,11 +1970,6 @@ and interp_atomic ist tac =
               end
           | VarArgType ->
               Proofview.Goal.return (mk_hyp_value ist env (out_gen (glbwit wit_var) x))
-          | RefArgType ->
-              Proofview.Goal.return (
-                Value.of_constr (
-                  constr_of_global
-                    (interp_reference ist env (out_gen (glbwit wit_ref) x))))
           | GenArgType -> f (out_gen (glbwit wit_genarg) x)
           | ConstrArgType ->
               Proofview.Goal.return (Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl) >>== fun (sigma,v) ->
@@ -2153,6 +2146,8 @@ let () =
   declare_uniform wit_pre_ident str
 
 let () =
+  let interp ist gl ref = (project gl, interp_reference ist (pf_env gl) ref) in
+  Geninterp.register_interp0 wit_ref interp;
   let interp ist gl pat = (project gl, interp_intro_pattern ist (pf_env gl) pat) in
   Geninterp.register_interp0 wit_intro_pattern interp;
   let interp ist gl s = (project gl, interp_sort s) in

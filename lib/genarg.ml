@@ -14,7 +14,6 @@ type argument_type =
   | IntOrVarArgType
   | IdentArgType of bool
   | VarArgType
-  | RefArgType
   (* Specific types *)
   | GenArgType
   | ConstrArgType
@@ -33,7 +32,6 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | IntOrVarArgType, IntOrVarArgType -> true
 | IdentArgType b1, IdentArgType b2 -> (b1 : bool) == b2
 | VarArgType, VarArgType -> true
-| RefArgType, RefArgType -> true
 | GenArgType, GenArgType -> true
 | ConstrArgType, ConstrArgType -> true
 | ConstrMayEvalArgType, ConstrMayEvalArgType -> true
@@ -54,7 +52,6 @@ let rec pr_argument_type = function
 | IdentArgType true -> str "ident"
 | IdentArgType false -> str "pattern_ident"
 | VarArgType -> str "var"
-| RefArgType -> str "ref"
 | GenArgType -> str "genarg"
 | ConstrArgType -> str "constr"
 | ConstrMayEvalArgType -> str "constr_may_eval"

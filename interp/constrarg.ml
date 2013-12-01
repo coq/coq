@@ -47,7 +47,7 @@ let wit_pattern_ident = wit_ident_gen false
 
 let wit_var = unsafe_of_type VarArgType
 
-let wit_ref = unsafe_of_type RefArgType
+let wit_ref = Genarg.make0 None "ref"
 
 let wit_quant_hyp = unsafe_of_type QuantHypArgType
 
@@ -71,6 +71,7 @@ let wit_red_expr = unsafe_of_type RedExprArgType
 (** Register location *)
 
 let () =
+  register_name0 wit_ref "Constrarg.wit_ref";
   register_name0 wit_intro_pattern "Constrarg.wit_intro_pattern";
   register_name0 wit_tactic "Constrarg.wit_tactic";
   register_name0 wit_sort "Constrarg.wit_sort";

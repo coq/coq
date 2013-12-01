@@ -193,7 +193,6 @@ type argument_type =
   | IntOrVarArgType
   | IdentArgType of bool
   | VarArgType
-  | RefArgType
   (** Specific types *)
   | GenArgType
   | ConstrArgType
