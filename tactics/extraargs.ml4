@@ -119,6 +119,20 @@ ARGUMENT EXTEND glob
   [ constr(c) ] -> [ c ]
 END
 
+ARGUMENT EXTEND lglob
+    PRINTED BY pr_globc
+
+     INTERPRETED BY interp_glob
+     GLOBALIZED BY glob_glob
+     SUBSTITUTED BY subst_glob
+
+     RAW_TYPED AS constr_expr
+     RAW_PRINTED BY pr_gen
+
+     GLOB_TYPED AS glob_constr_and_expr
+     GLOB_PRINTED BY pr_gen
+  [ lconstr(c) ] -> [ c ]
+END
 
 type 'id gen_place= ('id * hyp_location_flag,unit) location
 

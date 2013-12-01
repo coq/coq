@@ -28,7 +28,14 @@ val wit_glob :
   (constr_expr,
   Tacexpr.glob_constr_and_expr,
   Tacinterp.interp_sign * glob_constr) Genarg.genarg_type
+
+val wit_lglob :
+  (constr_expr,
+  Tacexpr.glob_constr_and_expr,
+  Tacinterp.interp_sign * glob_constr) Genarg.genarg_type
+
 val glob : constr_expr Pcoq.Gram.entry
+val lglob : constr_expr Pcoq.Gram.entry
 
 type 'id gen_place= ('id * Locus.hyp_location_flag,unit) location
 

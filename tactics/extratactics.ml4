@@ -431,7 +431,7 @@ END
 open Tacticals
 
 TACTIC EXTEND instantiate
-  [ "instantiate" "(" integer(i) ":=" glob(c) ")" hloc(hl) ] ->
+  [ "instantiate" "(" integer(i) ":=" lglob(c) ")" hloc(hl) ] ->
     [ Proofview.V82.tactic (instantiate i c hl)  ]
 | [ "instantiate" ] -> [ Proofview.V82.tactic (tclNORMEVAR) ]
 END
