@@ -584,6 +584,18 @@ let interp_auto_lemmas ist env sigma lems =
 let pf_interp_type ist gl =
   interp_type ist (pf_env gl) (project gl)
 
+let new_interp_type ist c =
+  let open Proofview.Goal in
+  let open Proofview.Notations in
+  let interp gl =
+    try
+      let (sigma, c) = interp_type ist (env gl) (sigma gl) c in
+      Proofview.V82.tclEVARS sigma <*> return c
+    with e when Proofview.V82.catchable_exception e ->
+      Proofview.tclZERO e
+  in
+  enterl interp
+
 (* Interprets a reduction expression *)
 let interp_unfold ist env (occs,qid) =
   (interp_occurrences ist occs,interp_evaluable ist env qid)
@@ -1577,14 +1589,8 @@ and interp_atomic ist tac =
           gl
       end
   | TacCut c ->
-      Proofview.Goal.enter begin fun gl ->
-        let env = Proofview.Goal.env gl in
-        let sigma = Proofview.Goal.sigma gl in
-        let (sigma, c_interp) = interp_type ist env sigma c in
-        Tacticals.New.tclTHEN
-	  (Proofview.V82.tclEVARS sigma)
-	  (Tactics.cut c_interp)
-      end
+      let open Proofview.Notations in
+      (new_interp_type ist c) >>= Tactics.cut
   | TacAssert (t,ipat,c) ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
