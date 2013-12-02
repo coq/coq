@@ -190,7 +190,7 @@ let decideEqualityGoal = Tacticals.New.tclTHEN intros decideGralEquality
 let decideEquality rectype =
   Proofview.Goal.enter begin fun gl ->
   let decide = Tacmach.New.of_old (mkGenDecideEqGoal rectype) gl in
-  (Tacticals.New.tclTHENS (Proofview.V82.tactic (cut decide)) [default_auto;decideEqualityGoal])
+  (Tacticals.New.tclTHENS (cut decide) [default_auto;decideEqualityGoal])
   end
 
 
@@ -200,7 +200,7 @@ let compare c1 c2 =
   Proofview.Goal.enter begin fun gl ->
   let rectype = Tacmach.New.of_old (fun g -> pf_type_of g c1) gl in
   let decide = Tacmach.New.of_old (fun g -> mkDecideEqGoal true (build_coq_sumbool ()) rectype c1 c2 g) gl in
-  (Tacticals.New.tclTHENS (Proofview.V82.tactic (cut decide))
+  (Tacticals.New.tclTHENS (cut decide)
             [(Tacticals.New.tclTHEN  intro
              (Tacticals.New.tclTHEN (Tacticals.New.onLastHyp simplest_case)
                        (Proofview.V82.tactic clear_last)));

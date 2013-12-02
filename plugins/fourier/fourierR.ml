@@ -616,7 +616,7 @@ let rec fourier gl=
 					 )
 				]));
                        !tac1]);
-	   tac:=(tclTHENS (cut (get coq_False))
+	   tac:=(tclTHENS (Proofview.V82.of_tactic (cut (get coq_False)))
 				  [tclTHEN (Proofview.V82.of_tactic intro) (Proofview.V82.of_tactic (contradiction None));
 				   !tac])
       |_-> assert false) |_-> assert false

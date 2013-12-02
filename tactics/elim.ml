@@ -90,7 +90,7 @@ let general_decompose recognizer c =
   let type_of = Tacmach.New.pf_type_of gl in
   try (* type_of can raise exceptions *)
   let typc = type_of c in
-  Tacticals.New.tclTHENS (Proofview.V82.tactic (cut typc))
+  Tacticals.New.tclTHENS (cut typc)
     [ Tacticals.New.tclTHEN (intro_using tmphyp_name)
          (Tacticals.New.onLastHypId
 	    (Tacticals.New.ifOnHyp recognizer (general_decompose_aux recognizer)

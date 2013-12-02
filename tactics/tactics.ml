@@ -48,6 +48,9 @@ open Proofview.Notations
 
 exception Bound
 
+let tclZEROMSG msg =
+  Proofview.tclZERO (UserError ("", msg))
+
 let nb_prod x =
   let rec count n c =
     match kind_of_term c with
@@ -695,18 +698,40 @@ let resolve_classes gl =
 (*     Cut tactics        *)
 (**************************)
 
-let cut c gl =
-  match kind_of_term (pf_hnf_type_of gl c) with
-    | Sort _ ->
-        let id=next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
-        let t = mkProd (Anonymous, c, pf_concl gl) in
-          tclTHENFIRST
-            (internal_cut_rev id c)
-            (tclTHEN (apply_type t [mkVar id]) (thin [id]))
-            gl
-    | _  -> error "Not a proposition or a type."
+let cut c =
+  Proofview.Goal.enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let sigma = Proofview.Goal.sigma gl in
+    let concl = Proofview.Goal.concl gl in
+    let is_sort =
+      try
+        (** Backward compat: ensure that [c] is well-typed. *)
+        let typ = Typing.type_of env sigma c in
+        let typ = whd_betadeltaiota env sigma typ in
+        match kind_of_term typ with
+        | Sort _ -> true
+        | _ -> false
+      with e when Pretype_errors.precatchable_exception e -> false
+    in
+    if is_sort then
+      let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_of_hyps gl) in
+      (** Backward compat: normalize [c]. *)
+      let c = local_strong whd_betaiota sigma c in
+      let c = Goal.Refinable.make begin fun h ->
+        let f = Goal.Refinable.mkEvar h env (mkArrow c (Vars.lift 1 concl)) in
+        let x = Goal.Refinable.mkEvar h env c in
+        Goal.bind f (fun f -> Goal.bind x (fun x ->
+          let f = mkLambda (Name id, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
+          Goal.return (mkApp (f, [|x|]))
+        ))
+      end in
+      let r = Goal.bind c Goal.refine in
+      Proofview.tclSENSITIVE r
+    else
+      tclZEROMSG (str "Not a proposition or a type.")
+  end
 
-let cut_intro t = Tacticals.New.tclTHENFIRST (Proofview.V82.tactic (cut t)) intro
+let cut_intro t = Tacticals.New.tclTHENFIRST (cut t) intro
 
 (* [assert_replacing id T tac] adds the subgoals of the proof of [T]
    before the current goal
@@ -733,13 +758,6 @@ let assert_replacing id t tac = tclTHENFIRST (internal_cut_replace id t) tac
 *)
 
 let cut_replacing id t tac = tclTHENLAST (internal_cut_rev_replace id t) tac
-
-let cut_in_parallel l =
-  let rec prec = function
-    | [] -> tclIDTAC
-    | h::t -> tclTHENFIRST (cut h) (prec t)
-  in
-    prec (List.rev l)
 
 let error_uninstantiated_metas t clenv =
   let na = meta_name clenv.evd (List.hd (Metaset.elements (metavars_of t))) in
@@ -1166,9 +1184,6 @@ let exact_proof c gl =
   let c = Constrintern.interp_casted_constr (project gl) (pf_env gl) c (pf_concl gl)
   in refine_no_check c gl
 
-let tclZEROMSG msg =
-  Proofview.tclZERO (UserError ("", msg))
-
 let assumption =
   let rec arec gl only_eq = function
   | [] ->
@@ -1268,7 +1283,7 @@ let specialize mopt (c,lbind) g =
 	       (exact_no_check term)) g
        | _ -> tclTHEN tac
 	   (tclTHENLAST
-              (fun g -> cut (pf_type_of g term) g)
+              (fun g -> Proofview.V82.of_tactic (cut (pf_type_of g term)) g)
               (exact_no_check term)) g
 
 (* Keeping only a few hypotheses *)
@@ -3641,7 +3656,7 @@ let prove_symmetry hdcncl eq_kind =
     | MonomorphicLeibnizEq (c1,c2) -> mkApp(hdcncl,[|c2;c1|])
     | PolymorphicLeibnizEq (typ,c1,c2) -> mkApp(hdcncl,[|typ;c2;c1|])
     | HeterogenousEq (t1,c1,t2,c2) -> mkApp(hdcncl,[|t2;c2;t1;c1|]) in
-  Tacticals.New.tclTHENFIRST (Proofview.V82.tactic (cut symc))
+  Tacticals.New.tclTHENFIRST (cut symc)
     (Tacticals.New.tclTHENLIST
       [ intro;
         Tacticals.New.onLastHyp simplest_case;
@@ -3703,7 +3718,7 @@ let symmetry_in id =
           | MonomorphicLeibnizEq (c1,c2) -> mkApp (hdcncl, [| c2; c1 |])
           | PolymorphicLeibnizEq (typ,c1,c2) -> mkApp (hdcncl, [| typ; c2; c1 |])
           | HeterogenousEq (t1,c1,t2,c2) -> mkApp (hdcncl, [| t2; c2; t1; c1 |]) in
-        Tacticals.New.tclTHENS (Proofview.V82.tactic (cut (it_mkProd_or_LetIn symccl sign)))
+        Tacticals.New.tclTHENS (cut (it_mkProd_or_LetIn symccl sign))
           [ Proofview.V82.tactic (intro_replacing id);
             Tacticals.New.tclTHENLIST [ intros; symmetry; Proofview.V82.tactic (apply (mkVar id)); assumption ] ]
     end
@@ -3751,8 +3766,8 @@ let prove_transitivity hdcncl eq_kind t =
         (mkApp(hdcncl, [| typ1; c1; typt ;t |]),
          mkApp(hdcncl, [| typt; t; typ2; c2 |]))
   in
-  Tacticals.New.tclTHENFIRST (Proofview.V82.tactic (cut eq2))
-    (Tacticals.New.tclTHENFIRST (Proofview.V82.tactic (cut eq1))
+  Tacticals.New.tclTHENFIRST (cut eq2)
+    (Tacticals.New.tclTHENFIRST (cut eq1)
        (Tacticals.New.tclTHENLIST
 	  [ Tacticals.New.tclDO 2 intro;
 	    Tacticals.New.onLastHyp simplest_case;

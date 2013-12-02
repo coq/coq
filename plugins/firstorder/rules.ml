@@ -144,12 +144,12 @@ let ll_arrow_tac a b c backtrack id continue seq=
 		  mkApp ((constr_of_global id),
 			 [|mkLambda (Anonymous,(lift 1 a),(mkRel 2))|])) in
     tclORELSE
-      (tclTHENS (cut c)
+      (tclTHENS (Proofview.V82.of_tactic (cut c))
 	 [tclTHENLIST
 	    [Proofview.V82.of_tactic introf;
 	     clear_global id;
 	     wrap 1 false continue seq];
-	  tclTHENS (cut cc)
+	  tclTHENS (Proofview.V82.of_tactic (cut cc))
             [exact_no_check (constr_of_global id);
 	     tclTHENLIST
 	       [generalize [d];
@@ -184,7 +184,7 @@ let left_exists_tac ind backtrack id continue seq gls=
 
 let ll_forall_tac prod backtrack id continue seq=
   tclORELSE
-    (tclTHENS (cut prod)
+    (tclTHENS (Proofview.V82.of_tactic (cut prod))
        [tclTHENLIST
 	  [Proofview.V82.of_tactic intro;
 	   (fun gls->

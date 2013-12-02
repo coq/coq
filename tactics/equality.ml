@@ -1195,11 +1195,11 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
   if List.is_empty injectors then
     Proofview.tclZERO (Errors.UserError ("Equality.inj" , str "Failed to decompose the equality."))
   else
-    Tacticals.New.tclTHEN
-      (Proofview.V82.tactic (tclMAP
-         (fun (pf,ty) -> tclTHENS (cut ty) [tclIDTAC; refine pf])
-         (if l2r then List.rev injectors else injectors)))
-      (tac (List.length injectors))
+    Proofview.tclBIND
+      (Proofview.list_map
+         (fun (pf,ty) -> Tacticals.New.tclTHENS (cut ty) [Proofview.tclUNIT (); Proofview.V82.tactic (refine pf)])
+         (if l2r then List.rev injectors else injectors))
+      (fun _ -> tac (List.length injectors))
 
 exception Not_dep_pair
 
@@ -1230,7 +1230,7 @@ let inject_if_homogenous_dependent_pair env sigma (eq,_,(t,t1,t2)) gl =
     let c, eff = find_scheme (!eq_dec_scheme_kind_name()) ind in
     let gl = { gl with sigma = Evd.emit_side_effects eff gl.sigma } in
       (* cut with the good equality and prove the requested goal *)
-    tclTHENS (cut (mkApp (ceq,new_eq_args)))
+    tclTHENS (Proofview.V82.of_tactic (cut (mkApp (ceq,new_eq_args))))
       [tclIDTAC; tclTHEN (apply (
         mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3)|])
        )) (Proofview.V82.of_tactic (Auto.trivial [] []))

@@ -1077,7 +1077,7 @@ let replay_history tactic_normalisation =
 	  let state_eg = mk_eq eq1 rhs in
 	  let tac = scalar_norm_add [P_APP 3] e2.body in
 	  Tacticals.New.tclTHENS
-	    (Proofview.V82.tactic (cut state_eg))
+	    (cut state_eg)
 	    [ Tacticals.New.tclTHENS
 	        (Tacticals.New.tclTHENLIST [
 		  (intros_using [aux]);
@@ -1086,9 +1086,9 @@ let replay_history tactic_normalisation =
 		      [| eq1; rhs; mkVar aux; mkVar id |])]);
 		  Proofview.V82.tactic (clear [aux;id]);
 		  (intros_using [id]);
-		  Proofview.V82.tactic (cut (mk_gt kk dd)) ])
+		  (cut (mk_gt kk dd)) ])
 	        [ Tacticals.New.tclTHENS
-		    (Proofview.V82.tactic (cut (mk_gt kk izero)))
+		    (cut (mk_gt kk izero))
 		    [ Tacticals.New.tclTHENLIST [
 		        (intros_using [aux1; aux2]);
 		        (Proofview.V82.tactic (generalize_tac
@@ -1115,8 +1115,8 @@ let replay_history tactic_normalisation =
 	  and dd = mk_integer d in
 	  let tac = scalar_norm_add [P_APP 2] e2.body in
 	  Tacticals.New.tclTHENS
-	    (Proofview.V82.tactic (cut (mk_gt dd izero)))
-	    [ Tacticals.New.tclTHENS (Proofview.V82.tactic (cut (mk_gt kk dd)))
+	    (cut (mk_gt dd izero))
+	    [ Tacticals.New.tclTHENS (cut (mk_gt kk dd))
 		[Tacticals.New.tclTHENLIST [
 		  (intros_using [aux2;aux1]);
 		  Proofview.V82.tactic (generalize_tac
@@ -1146,7 +1146,7 @@ let replay_history tactic_normalisation =
 	  if e1.kind == DISE then
             let tac = scalar_norm [P_APP 3] e2.body in
             Tacticals.New.tclTHENS
-	      (Proofview.V82.tactic (cut state_eq))
+	      (cut state_eq)
 	      [Tacticals.New.tclTHENLIST [
 		(intros_using [aux1]);
 		Proofview.V82.tactic (generalize_tac
@@ -1158,10 +1158,10 @@ let replay_history tactic_normalisation =
 	       Tacticals.New.tclTHEN (Proofview.V82.tactic (mk_then tac)) reflexivity ]
 	  else
             let tac = scalar_norm [P_APP 3] e2.body in
-            Tacticals.New.tclTHENS (Proofview.V82.tactic (cut state_eq))
+            Tacticals.New.tclTHENS (cut state_eq)
 	      [
 		Tacticals.New.tclTHENS
-		 (Proofview.V82.tactic (cut (mk_gt kk izero)))
+		 (cut (mk_gt kk izero))
 		 [Tacticals.New.tclTHENLIST [
 		   (intros_using [aux2;aux1]);
 		   Proofview.V82.tactic (generalize_tac
@@ -1188,7 +1188,7 @@ let replay_history tactic_normalisation =
             scalar_norm [P_APP 3] e1.body
 	  in
 	  Tacticals.New.tclTHENS
-	    (Proofview.V82.tactic (cut (mk_eq eq1 (mk_inv eq2))))
+	    (cut (mk_eq eq1 (mk_inv eq2)))
 	    [Tacticals.New.tclTHENLIST [
 	      (intros_using [aux]);
 	      Proofview.V82.tactic (generalize_tac [mkApp (Lazy.force coq_OMEGA8,
@@ -1221,7 +1221,7 @@ let replay_history tactic_normalisation =
             shuffle_mult_right p_initial
               orig.body m ({c= negone;v= v}::def.body) in
 	  Tacticals.New.tclTHENS
-	    (Proofview.V82.tactic (cut theorem))
+	    (cut theorem)
 	    [Tacticals.New.tclTHENLIST [
 	      (intros_using [aux]);
 	      (elim_id aux);
@@ -1277,9 +1277,9 @@ let replay_history tactic_normalisation =
 	    and kk2 = mk_integer k2 in
 	    let p_initial = [P_APP 2;P_TYPE] in
 	    let tac= shuffle_mult p_initial k1 e1.body k2 e2.body in
-            Tacticals.New.tclTHENS (Proofview.V82.tactic (cut (mk_gt kk1 izero)))
+            Tacticals.New.tclTHENS (cut (mk_gt kk1 izero))
 	      [Tacticals.New.tclTHENS
-		 (Proofview.V82.tactic (cut (mk_gt kk2 izero)))
+		 (cut (mk_gt kk2 izero))
 		 [Tacticals.New.tclTHENLIST [
 		   (intros_using [aux2;aux1]);
 		   Proofview.V82.tactic (generalize_tac

@@ -362,11 +362,10 @@ val transitivity                : constr -> unit Proofview.tactic
 val etransitivity               : unit Proofview.tactic
 val intros_transitivity         : constr option -> unit Proofview.tactic
 
-val cut                         : constr -> tactic
+val cut                         : constr -> unit Proofview.tactic
 val cut_intro                   : constr -> unit Proofview.tactic
 val assert_replacing            : Id.t -> types -> tactic -> tactic
 val cut_replacing               : Id.t -> types -> tactic -> tactic
-val cut_in_parallel             : constr list -> tactic
 
 val assert_as : bool -> intro_pattern_expr located option -> constr -> unit Proofview.tactic
 val forward   : unit Proofview.tactic option -> intro_pattern_expr located option -> constr -> unit Proofview.tactic

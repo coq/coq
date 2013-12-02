@@ -25,9 +25,9 @@ let absurd c gls =
   let sigma, j = Coercion.inh_coerce_to_sort Loc.ghost env sigma j in
   let c = j.Environ.utj_val in
   (tclTHENS
-     (tclTHEN (elim_type (build_coq_False ())) (cut c))
+     (tclTHEN (elim_type (build_coq_False ())) (Proofview.V82.of_tactic (cut c)))
      ([(tclTHENS
-          (cut (mkApp(build_coq_not (),[|c|])))
+          (Proofview.V82.of_tactic (cut (mkApp(build_coq_not (),[|c|]))))
 	  ([(tclTHEN (Proofview.V82.of_tactic intros)
 	       ((fun gl ->
 		   let ida = pf_nth_hyp_id gl 1

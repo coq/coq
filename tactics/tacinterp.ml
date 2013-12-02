@@ -1577,12 +1577,13 @@ and interp_atomic ist tac =
           gl
       end
   | TacCut c ->
-      Proofview.V82.tactic begin fun gl -> 
-        let (sigma,c_interp) = pf_interp_type ist gl c in
-        tclTHEN
-	  (tclEVARS sigma)
+      Proofview.Goal.enter begin fun gl ->
+        let env = Proofview.Goal.env gl in
+        let sigma = Proofview.Goal.sigma gl in
+        let (sigma, c_interp) = interp_type ist env sigma c in
+        Tacticals.New.tclTHEN
+	  (Proofview.V82.tclEVARS sigma)
 	  (Tactics.cut c_interp)
-          gl
       end
   | TacAssert (t,ipat,c) ->
       Proofview.Goal.enter begin fun gl ->

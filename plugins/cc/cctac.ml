@@ -477,11 +477,9 @@ let f_equal =
     let cut_eq c1 c2 =
       try (* type_of can raise an exception *)
         let ty = Termops.refresh_universes (type_of c1) in
-        Proofview.V82.tactic begin
-          tclTHENTRY
-            (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|])))
-            (simple_reflexivity ())
-        end
+        Tacticals.New.tclTRY (Tacticals.New.tclTHEN
+          (Tactics.cut (mkApp (Lazy.force _eq, [|ty; c1; c2|])))
+          (Tacticals.New.tclTRY (Proofview.V82.tactic (simple_reflexivity ()))))
       with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
     in
     Proofview.tclORELSE
