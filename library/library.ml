@@ -280,11 +280,12 @@ exception Faulty
 (** Fetching a table of opaque terms at position [pos] in file [f],
     expecting to find first a copy of [digest]. *)
 
-let fetch_opaque_table (f,pos,digest) =
+let fetch_opaque_table dp (f,pos,digest) =
   if !Flags.load_proofs == Flags.Dont then
     error "Not accessing an opaque term due to option -dont-load-proofs.";
+  let dir_path = Names.DirPath.to_string dp in
   try
-    Pp.msg_info (Pp.str "Fetching opaque terms in " ++ str f);
+    Pp.msg_info (Pp.str "Fetching opaque terms from disk for " ++ str dir_path);
     let ch = System.with_magic_number_check raw_intern_library f in
     let () = seek_in ch pos in
     if not (String.equal (System.digest_in f ch) digest) then raise Faulty;
@@ -299,7 +300,7 @@ let fetch_opaque_table (f,pos,digest) =
     table
   with e when Errors.noncritical e ->
     error
-      ("The file "^f^" is inaccessible or corrupted,\n"
+      ("The file "^f^" (bound to " ^ dir_path ^ ") is inaccessible or corrupted,\n"
        ^ "cannot load some opaque constant bodies in it.\n")
 
 (** Delayed / available tables of opaque terms *)
@@ -317,7 +318,7 @@ let access_opaque_table dp i =
   let t = match LibraryMap.find dp !opaque_tables with
     | Fetched t -> t
     | ToFetch (f,pos,digest) ->
-      let t = fetch_opaque_table (f,pos,digest) in
+      let t = fetch_opaque_table dp (f,pos,digest) in
       add_opaque_table dp (Fetched t);
       t
   in

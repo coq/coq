@@ -2,8 +2,8 @@ Axioms:
 foo : nat
 Axioms:
 foo : nat
-Fetching opaque terms in /home/pm/Desktop/sources/coq/theories/Arith/Plus.vo
-Fetching opaque terms in /home/pm/Desktop/sources/coq/theories/Init/Peano.vo
+Fetching opaque terms from disk for Coq.Arith.Plus
+Fetching opaque terms from disk for Coq.Init.Peano
 Axioms:
 extensionality : forall (P Q : Type) (f g : P -> Q),
                  (forall x : P, f x = g x) -> f = g
