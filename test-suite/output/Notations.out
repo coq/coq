@@ -50,14 +50,14 @@ The command has indeed failed with message:
 => Error: x should not be bound in a recursive pattern of the right-hand side.
 The command has indeed failed with message:
 => Error: in the right-hand side, y and z should appear in
-   term position as part of a recursive pattern.
+term position as part of a recursive pattern.
 The command has indeed failed with message:
 => Error: The reference w was not found in the current environment.
 The command has indeed failed with message:
 => Error: x is unbound in the right-hand side.
 The command has indeed failed with message:
 => Error: in the right-hand side, y and z should appear in
-   term position as part of a recursive pattern.
+term position as part of a recursive pattern.
 The command has indeed failed with message:
 => Error: z is expected to occur in binding position in the right-hand side.
 The command has indeed failed with message:
@@ -120,11 +120,11 @@ fun x : option Z => match x with
                     | NONE2 => 0
                     end
      : option Z -> Z
-fun x : list ?103 => match x with
-                     | NIL => NONE2
-                     | (_ :') t => SOME2 t
-                     end
-     : list ?103 -> option (list ?103)
+fun x : list ?90 => match x with
+                    | NIL => NONE2
+                    | (_ :') t => SOME2 t
+                    end
+     : list ?90 -> option (list ?90)
 s
      : s
 Identifier 'foo' now a keyword
