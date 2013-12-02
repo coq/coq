@@ -193,7 +193,10 @@ let rec classify_vernac e =
         try List.assoc s !classifiers l ()
         with Not_found -> anomaly(str"No classifier for"++spc()++str s)
   in
-    static_classifier e
+  let res = static_classifier e in
+    if Flags.is_universe_polymorphism () then
+      make_polymorphic res
+    else res
 
 let classify_as_query = VtQuery true, VtLater
 let classify_as_sideeff = VtSideff [], VtLater

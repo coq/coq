@@ -967,30 +967,13 @@ module Hsorts =
             (Prop c1, Prop c2) -> c1 == c2
           | (Type u1, Type u2) -> u1 == u2
           |_ -> false
-      let hash = Hashtbl.hash
+      let hash = function
+	| Prop Null -> 0 | Prop Pos -> 1
+	| Type u -> 2 + Universe.hash u
     end)
 
 let hcons_sorts = Hashcons.simple_hcons Hsorts.generate hcons_univ
 let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.generate hcons_ind
-
-let hcons_pconstruct (c,u as x) = 
-  let c' = hcons_construct c in 
-    if c' == c then x
-    else (c', u)
-
-let hcons_pind (i,u as x) = 
-  let i' = hcons_ind i in 
-    if i' == i then x 
-    else i', u
-
-let hcons_pcon (c,u as x) =
-  let c' = hcons_con c in
-    if c' == c then x
-    else c', u
-
-(* let hcons_pconstruct (c,u) = (hcons_construct c, Univ.Instance.hcons u) *)
-(* let hcons_pind (i,u) = (hcons_ind i, Univ.Instance.hcons u) *)
-(* let hcons_pcon (c,u) = (hcons_con c, Univ.Instance.hcons u) *)
 
 let hcons =
   hashcons

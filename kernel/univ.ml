@@ -397,7 +397,7 @@ struct
 
   include H
 
-  let pool = WH.create 491
+  let pool = WH.create 4910
 
   let make x =
     try
@@ -466,12 +466,8 @@ module Level = struct
   module Hunivlevelhash = MakeHashedHashcons(Hunivlevel)
   include Hunivlevelhash
 
-  let hcons = make
-
-  let make m n = hcons (Hunivlevel.make (Level (n, Names.DirPath.hcons m)))
-
-  let set = hcons (Hunivlevel.make Set)
-  let prop = hcons (Hunivlevel.make Prop)
+  let set = make (Hunivlevel.make Set)
+  let prop = make (Hunivlevel.make Prop)
 
   let is_small x = 
     match data x with
@@ -528,6 +524,9 @@ module Level = struct
     match data u, data v with
     | Prop, Set | Set, Prop -> true
     | _ -> false
+
+
+  let make m n = make (Hunivlevel.make (Level (n, Names.DirPath.hcons m)))
 
 end
 
