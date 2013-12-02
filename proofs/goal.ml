@@ -242,7 +242,7 @@ module Refinable = struct
   (* spiwack: it is not entirely satisfactory to have this function here. Plus it is
       a bit hackish. However it does not seem possible to move it out until
       pretyping is defined as some proof procedure. *)
-  let constr_of_raw handle check_type resolve_classes rawc = (); fun env rdefs gl info ->
+  let constr_of_raw handle check_type resolve_classes lvar rawc = (); fun env rdefs gl info ->
     (* We need to keep trace of what [rdefs] was originally*)
     let init_defs = !rdefs in
     (* if [check_type] is true, then creates a type constraint for the
@@ -253,9 +253,10 @@ module Refinable = struct
     let flags =
       if resolve_classes then Pretyping.all_no_fail_flags
       else Pretyping.no_classes_no_fail_inference_flags in
-    let open_constr =
-      Pretyping.understand_tcc_evars ~flags rdefs env ~expected_type:tycon rawc
+    let (sigma, open_constr) =
+      Pretyping.understand_ltac flags !rdefs env lvar tycon rawc
     in
+    let () = rdefs := sigma in
     let () = update_handle handle init_defs !rdefs in
     open_constr
 

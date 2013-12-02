@@ -215,7 +215,7 @@ let merge_occurrences loc cl = function
 
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
-  bindings red_expr int_or_var open_constr casted_open_constr
+  bindings red_expr int_or_var open_constr
   simple_intropattern;
 
   int_or_var:
@@ -234,9 +234,6 @@ GEXTEND Gram
       | id = METAIDENT -> MetaId (!@loc, id) ] ]
   ;
   open_constr:
-    [ [ c = constr -> ((),c) ] ]
-  ;
-  casted_open_constr:
     [ [ c = constr -> ((),c) ] ]
   ;
   induction_arg:

@@ -193,13 +193,12 @@ type argument_type =
   | IntOrVarArgType
   | IdentArgType of bool
   | VarArgType
-  | RefArgType
   (** Specific types *)
   | GenArgType
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
-  | OpenConstrArgType of bool
+  | OpenConstrArgType
   | ConstrWithBindingsArgType
   | BindingsArgType
   | RedExprArgType

@@ -39,3 +39,4 @@ install_printer Top_printers.prsubst
 install_printer Top_printers.prdelta
 install_printer Top_printers.ppfconstr
 install_printer Top_printers.ppgenarginfo
+install_printer Top_printers.ppist

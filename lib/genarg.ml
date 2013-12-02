@@ -14,13 +14,12 @@ type argument_type =
   | IntOrVarArgType
   | IdentArgType of bool
   | VarArgType
-  | RefArgType
   (* Specific types *)
   | GenArgType
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
-  | OpenConstrArgType of bool
+  | OpenConstrArgType
   | ConstrWithBindingsArgType
   | BindingsArgType
   | RedExprArgType
@@ -33,12 +32,11 @@ let rec argument_type_eq arg1 arg2 = match arg1, arg2 with
 | IntOrVarArgType, IntOrVarArgType -> true
 | IdentArgType b1, IdentArgType b2 -> (b1 : bool) == b2
 | VarArgType, VarArgType -> true
-| RefArgType, RefArgType -> true
 | GenArgType, GenArgType -> true
 | ConstrArgType, ConstrArgType -> true
 | ConstrMayEvalArgType, ConstrMayEvalArgType -> true
 | QuantHypArgType, QuantHypArgType -> true
-| OpenConstrArgType b1, OpenConstrArgType b2 -> (b1 : bool) == b2
+| OpenConstrArgType, OpenConstrArgType -> true
 | ConstrWithBindingsArgType, ConstrWithBindingsArgType -> true
 | BindingsArgType, BindingsArgType -> true
 | RedExprArgType, RedExprArgType -> true
@@ -54,12 +52,11 @@ let rec pr_argument_type = function
 | IdentArgType true -> str "ident"
 | IdentArgType false -> str "pattern_ident"
 | VarArgType -> str "var"
-| RefArgType -> str "ref"
 | GenArgType -> str "genarg"
 | ConstrArgType -> str "constr"
 | ConstrMayEvalArgType -> str "constr_may_eval"
 | QuantHypArgType -> str "qhyp"
-| OpenConstrArgType _ -> str "open_constr"
+| OpenConstrArgType -> str "open_constr"
 | ConstrWithBindingsArgType -> str "constr_with_bindings"
 | BindingsArgType -> str "bindings"
 | RedExprArgType -> str "redexp"

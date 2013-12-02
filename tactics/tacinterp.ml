@@ -144,7 +144,7 @@ let pr_inspect env expr result =
   let pp_result =
     if has_type result (topwit wit_tacvalue) then
     match to_tacvalue result with
-    | VRTactic _ -> str "a VRTactic"
+    | VRTactic -> str "a VRTactic"
     | VFun (_, il, ul, b) ->
       let pp_body = Pptactic.pr_glob_tactic env b in
       let pr_sep () = str ", " in
@@ -1322,8 +1322,6 @@ and interp_genarg ist env sigma concl gl x =
         (interp_fresh_ident ist env (out_gen (glbwit (wit_ident_gen b)) x))
     | VarArgType ->
       in_gen (topwit wit_var) (interp_hyp ist env (out_gen (glbwit wit_var) x))
-    | RefArgType ->
-      in_gen (topwit wit_ref) (interp_reference ist env (out_gen (glbwit wit_ref) x))
     | GenArgType ->
       in_gen (topwit wit_genarg) (interp_genarg (out_gen (glbwit wit_genarg) x))
     | ConstrArgType ->
@@ -1346,13 +1344,12 @@ and interp_genarg ist env sigma concl gl x =
       in
       evdref := sigma;
       in_gen (topwit wit_red_expr) r_interp
-    | OpenConstrArgType casted ->
-      let expected_type =
-        if casted then OfType concl else WithoutTypeConstraint in
-      in_gen (topwit (wit_open_constr_gen casted))
+    | OpenConstrArgType ->
+      let expected_type = WithoutTypeConstraint in
+      in_gen (topwit wit_open_constr)
         (interp_open_constr ~expected_type
            ist env !evdref
-           (snd (out_gen (glbwit (wit_open_constr_gen casted)) x)))
+           (snd (out_gen (glbwit wit_open_constr) x)))
     | ConstrWithBindingsArgType ->
       in_gen (topwit wit_constr_with_bindings)
         (pack_sigma (interp_constr_with_bindings ist env !evdref
@@ -1973,17 +1970,12 @@ and interp_atomic ist tac =
               end
           | VarArgType ->
               Proofview.Goal.return (mk_hyp_value ist env (out_gen (glbwit wit_var) x))
-          | RefArgType ->
-              Proofview.Goal.return (
-                Value.of_constr (
-                  constr_of_global
-                    (interp_reference ist env (out_gen (glbwit wit_ref) x))))
           | GenArgType -> f (out_gen (glbwit wit_genarg) x)
           | ConstrArgType ->
               Proofview.Goal.return (Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl) >>== fun (sigma,v) ->
               (Proofview.V82.tclEVARS sigma) <*>
 	      (Proofview.Goal.return v)
-          | OpenConstrArgType false ->
+          | OpenConstrArgType ->
               Proofview.Goal.return (
                 Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl) >>== fun (sigma,v) ->
               (Proofview.V82.tclEVARS sigma) <*>
@@ -2043,7 +2035,7 @@ and interp_atomic ist tac =
                 Proofview.V82.tactic (tclEVARS newsigma) <*>
                 Proofview.Goal.return v
           | QuantHypArgType | RedExprArgType
-          | OpenConstrArgType _ | ConstrWithBindingsArgType
+          | ConstrWithBindingsArgType
           | BindingsArgType
           | OptArgType _ | PairArgType _
 	    -> Proofview.tclZERO (UserError("" , str"This argument type is not supported in tactic notations."))
@@ -2154,6 +2146,8 @@ let () =
   declare_uniform wit_pre_ident str
 
 let () =
+  let interp ist gl ref = (project gl, interp_reference ist (pf_env gl) ref) in
+  Geninterp.register_interp0 wit_ref interp;
   let interp ist gl pat = (project gl, interp_intro_pattern ist (pf_env gl) pat) in
   Geninterp.register_interp0 wit_intro_pattern interp;
   let interp ist gl s = (project gl, interp_sort s) in

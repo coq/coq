@@ -148,7 +148,6 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
   | IntOrVarArgType -> pr_or_var int (out_gen (rawwit wit_int_or_var) x)
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen (rawwit wit_ident) x)
   | VarArgType -> pr_located pr_id (out_gen (rawwit wit_var) x)
-  | RefArgType -> prref (out_gen (rawwit wit_ref) x)
   | GenArgType -> pr_raw_generic prc prlc prtac prpat prref (out_gen (rawwit wit_genarg) x)
   | ConstrArgType -> prc (out_gen (rawwit wit_constr) x)
   | ConstrMayEvalArgType ->
@@ -158,7 +157,7 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
   | RedExprArgType ->
       pr_red_expr (prc,prlc,pr_or_by_notation prref,prpat)
         (out_gen (rawwit wit_red_expr) x)
-  | OpenConstrArgType b -> prc (snd (out_gen (rawwit (wit_open_constr_gen b)) x))
+  | OpenConstrArgType -> prc (snd (out_gen (rawwit wit_open_constr) x))
   | ConstrWithBindingsArgType ->
       pr_with_bindings prc prlc (out_gen (rawwit wit_constr_with_bindings) x)
   | BindingsArgType ->
@@ -183,7 +182,6 @@ let rec pr_glb_generic prc prlc prtac prpat x =
   | IntOrVarArgType -> pr_or_var int (out_gen (glbwit wit_int_or_var) x)
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen (glbwit wit_ident) x)
   | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
-  | RefArgType -> pr_or_var (pr_located pr_global) (out_gen (glbwit wit_ref) x)
   | GenArgType -> pr_glb_generic prc prlc prtac prpat (out_gen (glbwit wit_genarg) x)
   | ConstrArgType -> prc (out_gen (glbwit wit_constr) x)
   | ConstrMayEvalArgType ->
@@ -196,7 +194,7 @@ let rec pr_glb_generic prc prlc prtac prpat x =
       pr_red_expr
         (prc,prlc,pr_or_var (pr_and_short_name pr_evaluable_reference),prpat)
         (out_gen (glbwit wit_red_expr) x)
-  | OpenConstrArgType b -> prc (snd (out_gen (glbwit (wit_open_constr_gen b)) x))
+  | OpenConstrArgType -> prc (snd (out_gen (glbwit wit_open_constr) x))
   | ConstrWithBindingsArgType ->
       pr_with_bindings prc prlc (out_gen (glbwit wit_constr_with_bindings) x)
   | BindingsArgType ->
@@ -219,7 +217,6 @@ let rec pr_top_generic prc prlc prtac prpat x =
   | IntOrVarArgType -> pr_or_var int (out_gen (topwit wit_int_or_var) x)
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen (topwit wit_ident) x)
   | VarArgType -> pr_id (out_gen (topwit wit_var) x)
-  | RefArgType -> pr_global (out_gen (topwit wit_ref) x)
   | GenArgType -> pr_top_generic prc prlc prtac prpat (out_gen (topwit wit_genarg) x)
   | ConstrArgType -> prc (out_gen (topwit wit_constr) x)
   | ConstrMayEvalArgType -> prc (out_gen (topwit wit_constr_may_eval) x)
@@ -227,7 +224,7 @@ let rec pr_top_generic prc prlc prtac prpat x =
   | RedExprArgType ->
       pr_red_expr (prc,prlc,pr_evaluable_reference,prpat)
         (out_gen (topwit wit_red_expr) x)
-  | OpenConstrArgType b -> prc (snd (out_gen (topwit (wit_open_constr_gen b)) x))
+  | OpenConstrArgType -> prc (snd (out_gen (topwit wit_open_constr) x))
   | ConstrWithBindingsArgType ->
       let (c,b) = (out_gen (topwit wit_constr_with_bindings) x).Evd.it in
       pr_with_bindings prc prlc (c,b)
@@ -1032,6 +1029,8 @@ let register_uniform_printer wit pr =
   Genprint.register_print0 wit pr pr pr
 
 let () =
+  Genprint.register_print0 Constrarg.wit_ref
+    pr_reference (pr_or_var (pr_located pr_global)) pr_global;
   Genprint.register_print0 Constrarg.wit_intro_pattern
     pr_intro_pattern pr_intro_pattern pr_intro_pattern;
   Genprint.register_print0 Constrarg.wit_sort

@@ -324,8 +324,31 @@ END
 
 let refine_tac = Tactics.New.refine
 
+let refine_red_flags =
+  Genredexpr.Lazy {
+    Genredexpr.rBeta=true;
+    rIota=true;
+    rZeta=false;
+    rDelta=false;
+    rConst=[];
+  }
+
+let refine_locs = { Locus.onhyps=None; concl_occs=Locus.AllOccurrences }
+
+let refine_tac (ist, c) =
+  Proofview.Goal.enter (fun gl ->
+    let env = Proofview.Goal.env gl in
+    let constrvars = Tacinterp.extract_ltac_constr_values ist env in
+    let vars = (constrvars, ist.Geninterp.lfun) in
+    let c = Goal.Refinable.make begin fun h ->
+      Goal.Refinable.constr_of_raw h true true vars c
+    end in
+    Proofview.Goal.lift c >>= fun c ->
+    Proofview.tclSENSITIVE (Goal.refine c) <*>
+    Proofview.V82.tactic (reduce refine_red_flags refine_locs))
+
 TACTIC EXTEND refine
-  [ "refine" casted_open_constr(c) ] -> [  refine_tac c ]
+  [ "refine" glob(c) ] -> [  refine_tac c ]
 END
 
 (**********************************************************************)
@@ -408,7 +431,7 @@ END
 open Tacticals
 
 TACTIC EXTEND instantiate
-  [ "instantiate" "(" integer(i) ":=" glob(c) ")" hloc(hl) ] ->
+  [ "instantiate" "(" integer(i) ":=" lglob(c) ")" hloc(hl) ] ->
     [ Proofview.V82.tactic (instantiate i c hl)  ]
 | [ "instantiate" ] -> [ Proofview.V82.tactic (tclNORMEVAR) ]
 END
