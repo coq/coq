@@ -59,7 +59,11 @@ type proof_object = {
   persistence : Decl_kinds.goal_kind;
 }
 
-type proof_ending = Vernacexpr.proof_end * proof_object
+type proof_ending =
+  | Admitted
+  | Proved of Vernacexpr.opacity_flag *
+             (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
+              proof_object
 type proof_terminator =
     proof_ending -> unit
 type closed_proof = proof_object*proof_terminator Ephemeron.key
@@ -94,6 +98,10 @@ val close_proof : (exn -> exn) -> closed_proof
 val return_proof : unit -> Entries.proof_output list
 val close_future_proof :
   Entries.proof_output list Future.computation -> closed_proof
+
+(** Gets the current terminator without checking that the proof has
+    been completed. Useful for the likes of [Admitted]. *)
+val get_terminator : unit -> proof_terminator Ephemeron.key
 
 exception NoSuchProof
 

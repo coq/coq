@@ -71,7 +71,11 @@ type proof_object = {
   persistence : Decl_kinds.goal_kind;
 }
 
-type proof_ending = Vernacexpr.proof_end * proof_object
+type proof_ending =
+  | Admitted
+  | Proved of Vernacexpr.opacity_flag *
+             (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
+              proof_object
 type proof_terminator =
     proof_ending -> unit
 type closed_proof = proof_object*proof_terminator Ephemeron.key
@@ -330,6 +334,10 @@ let return_proof () =
 let close_future_proof proof = close_proof ~now:false proof
 let close_proof fix_exn =
   close_proof ~now:true (Future.from_val ~fix_exn (return_proof ()))
+
+(** Gets the current terminator without checking that the proof has
+    been completed. Useful for the likes of [Admitted]. *)
+let get_terminator () = ( cur_pstate() ).terminator
 
 (**********************************************************)
 (*                                                        *)

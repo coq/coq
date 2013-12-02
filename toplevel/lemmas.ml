@@ -307,11 +307,11 @@ let get_proof proof do_guard hook opacity =
 
 let start_proof id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
   let hook = Ephemeron.create hook in
-  let terminator = let open Vernacexpr in function
-    | Admitted,_ ->
+  let terminator = let open Proof_global in function
+    | Admitted ->
         admit hook ();
         Pp.feedback Interface.AddedAxiom
-    | Proved (is_opaque,idopt),proof ->
+    | Proved (is_opaque,idopt,proof) ->
         let proof = get_proof proof compute_guard hook is_opaque in
         begin match idopt with
         | None -> save_named proof
@@ -400,15 +400,18 @@ let start_proof_com kind thms hook =
 
 (* Saving a proof *)
 
-let save_proof ?proof ending =
-  let (proof_obj,terminator) =
-    match proof with
-    | None -> Proof_global.close_proof (fun x -> x)
-    | Some proof -> proof
-  in
-  (* if the proof is given explicitly, nothing has to be deleted *)
-  if Option.is_empty proof then Pfedit.delete_current_proof ();
-  Ephemeron.get terminator (ending,proof_obj)
+let save_proof ?proof = function
+  | Vernacexpr.Admitted ->
+      Ephemeron.get (Proof_global.get_terminator()) Proof_global.Admitted
+  | Vernacexpr.Proved (is_opaque,idopt) ->
+      let (proof_obj,terminator) =
+        match proof with
+        | None -> Proof_global.close_proof (fun x -> x)
+        | Some proof -> proof
+      in
+      (* if the proof is given explicitly, nothing has to be deleted *)
+      if Option.is_empty proof then Pfedit.delete_current_proof ();
+      Ephemeron.get terminator (Proof_global.Proved (is_opaque,idopt,proof_obj))
 
 (* Miscellaneous *)
 
