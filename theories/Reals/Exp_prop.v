@@ -173,8 +173,7 @@ Proof.
   apply pow_le; apply Rabs_pos.
   rewrite (Rmult_comm (/ INR (fact (S n0)))); apply Rmult_le_compat_l.
   apply pow_le; apply Rabs_pos.
-  apply Rle_Rinv.
-  apply INR_fact_lt_0.
+  apply Rinv_le_contravar.
   apply INR_fact_lt_0.
   apply le_INR; apply fact_le; apply le_n_S.
   apply le_plus_l.
@@ -254,8 +253,7 @@ Proof.
   do 2 rewrite <- (Rmult_comm (/ INR (fact (N - n0)))).
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
-  apply Rle_Rinv.
-  apply INR_fact_lt_0.
+  apply Rinv_le_contravar.
   apply INR_fact_lt_0.
   apply le_INR.
   apply fact_le.

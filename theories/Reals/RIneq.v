@@ -1935,18 +1935,22 @@ Proof.
     apply (Rmult_le_compat_l x 0 y H H0).
 Qed.
 
+Lemma Rinv_le_contravar :
+  forall x y, 0 < x -> x <= y -> / y <= / x.
+Proof.
+  intros x y H1 [H2|H2].
+  apply Rlt_le.
+  apply Rinv_lt_contravar with (2 := H2).
+  apply Rmult_lt_0_compat with (1 := H1).
+  now apply Rlt_trans with x.
+  rewrite H2.
+  apply Rle_refl.
+Qed.
+
 Lemma Rle_Rinv : forall x y:R, 0 < x -> 0 < y -> x <= y -> / y <= / x.
 Proof.
-  intros; apply Rmult_le_reg_l with x.
-  apply H.
-  rewrite <- Rinv_r_sym.
-  apply Rmult_le_reg_l with y.
-  apply H0.
-  rewrite Rmult_1_r; rewrite Rmult_comm; rewrite Rmult_assoc;
-    rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; apply H1.
-  red; intro; rewrite H2 in H0; elim (Rlt_irrefl _ H0).
-  red; intro; rewrite H2 in H; elim (Rlt_irrefl _ H).
+  intros x y H _.
+  apply Rinv_le_contravar with (1 := H).
 Qed.
 
 Lemma double : forall r1, 2 * r1 = r1 + r1.

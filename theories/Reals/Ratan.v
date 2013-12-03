@@ -810,13 +810,11 @@ intros x Hx eps Heps.
    apply Rle_lt_trans with (/ INR (2 * N + 1))%R.
    unfold Rdiv.
    rewrite Rmult_1_l.
-   apply Rle_Rinv.
+   apply Rinv_le_contravar.
    apply lt_INR_0.
    omega.
-   replace 0 with (INR 0) by intuition.
-   apply lt_INR.
+   apply le_INR.
    omega.
-   intuition.
    rewrite <- (Rinv_involutive eps).
    apply Rinv_lt_contravar.
    apply Rmult_lt_0_compat.

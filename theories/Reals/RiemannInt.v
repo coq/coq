@@ -388,11 +388,9 @@ Proof.
     [ idtac
       | left; change (0 < / (INR n + 1)); apply Rinv_0_lt_compat;
         assumption ]; apply Rle_lt_trans with (/ (INR x + 1)).
-  apply Rle_Rinv.
+  apply Rinv_le_contravar.
   apply Rplus_le_lt_0_compat; [ apply pos_INR | apply Rlt_0_1 ].
-  assumption.
-  do 2 rewrite <- (Rplus_comm 1); apply Rplus_le_compat_l; apply le_INR;
-    apply H4.
+  apply Rplus_le_compat_r; apply le_INR; apply H4.
   rewrite <- (Rinv_involutive eps).
   apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat.
