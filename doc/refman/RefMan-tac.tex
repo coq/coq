@@ -45,7 +45,7 @@ A tactic is applied as an ordinary command. It may be preceded by a
 goal selector: {\tt all} if the tactic is to be applied to every
 focused goal simultaneously, or a natural number $n$ if it is to be
 applied to the $n$-th goal. If no selector is specified, the default
-selector (see Section \ref{default_selector}) is used.
+selector (see Section \ref{default-selector}) is used.
 
 \newcommand{\selector}{\nterm{selector}}
 \begin{tabular}{lcl}
@@ -56,7 +56,7 @@ selector (see Section \ref{default_selector}) is used.
 \subsection[\tt Set Default Goal Selector ``\selector''.]
            {\tt Set Default Goal Selector ``\selector''.
             \comindex{Set Default Goal Selector}
-            \label{default_selector}}
+            \label{default-selector}}
 After using this command, the default selector -- used when no selector
 is specified when applying a tactic -- is set to the chosen value. The
 initial value is $1$, hence the tactics are, by default, applied to
@@ -2734,7 +2734,7 @@ Lemmas are added to the database using the command
 
 The tactic is especially useful for parametric setoids which are not
 accepted as regular setoids for {\tt rewrite} and {\tt
-  setoid\_replace} (see Chapter~\ref{setoid_replace}).
+  setoid\_replace} (see Chapter~\ref{setoids}).
 
 \begin{Variants}
 \item{\tt stepl {\term} by {\tac}}
@@ -3699,7 +3699,6 @@ development.
 
 \subsection{\tt Remove Hints \term$_1$ \mbox{\dots} \term$_n$ :~ \ident$_1$
   \mbox{\dots} \ident$_m$}
-\label{PrintHint}
 \comindex{Remove Hints}
 
 This command removes the hints associated to terms \term$_1$ \mbox{\dots}

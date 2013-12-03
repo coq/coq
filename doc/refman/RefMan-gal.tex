@@ -856,6 +856,7 @@ A formal presentation of constants and environments is given in
 Section~\ref{Typed-terms}.
 
 \subsubsection{\tt Definition {\ident} := {\term}.
+\label{Definition}
 \comindex{Definition}}
 
 This command binds {\term} to the name {\ident} in the
@@ -925,8 +926,8 @@ section and depending on {\ident} are prefixed by the let-in definition
 %% Inductive Types
 %%
 \subsection{Inductive definitions
-\index{Inductive definitions} 
-\label{gal_Inductive_Definitions}
+\index{Inductive definitions}
+\label{gal-Inductive-Definitions}
 \comindex{Inductive}
 \label{Inductive}}
 
@@ -1283,7 +1284,7 @@ CoInductive Stream : Set :=
 \end{coq_example}
 
 The syntax of this command is the same as the command \texttt{Inductive}
-(see Section~\ref{gal_Inductive_Definitions}). Notice that no
+(see Section~\ref{gal-Inductive-Definitions}). Notice that no
 principle of induction is derived from the definition of a
 co-inductive type, since such principles only make sense for inductive
 ones. For co-inductive ones, the only elimination principle is case
