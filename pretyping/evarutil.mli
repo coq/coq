@@ -58,11 +58,6 @@ val make_pure_subst : evar_info -> constr array -> (Id.t * constr) list
 
 (** {6 Evars/Metas switching...} *)
 
-(** [evars_to_metas] generates new metavariables for each non dependent
-   existential and performs the replacement in the given constr; it also
-   returns the evar_map extended with dependent evars *)
-val evars_to_metas : evar_map -> open_constr -> (evar_map * constr)
-
 val non_instantiated : evar_map -> evar_info Evar.Map.t
 
 (** {6 Unification utils} *)

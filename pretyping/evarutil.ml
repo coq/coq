@@ -212,35 +212,6 @@ let push_duplicated_evars sigma emap c =
   in
   snd (collrec ([],(sigma,emap)) c)
 
-(* replaces a mapping of existentials into a mapping of metas.
-   Problem if an evar appears in the type of another one (pops anomaly) *)
-let evars_to_metas sigma (emap, c) =
-  let emap = nf_evar_map_undefined emap in
-  let sigma',emap' = push_dependent_evars sigma emap in
-  let sigma',emap' = push_duplicated_evars sigma' emap' c in
-  (* if an evar has been instantiated in [emap] (as part of typing [c])
-     then it is instantiated in [sigma]. *)
-  let repair_evars sigma emap =
-    fold_undefined begin fun ev _ sigma' ->
-      try
-	let info = find emap ev in
-	match evar_body info with
-	| Evar_empty -> sigma'
-	| Evar_defined body -> define ev body sigma'
-      with Not_found -> sigma'
-    end sigma sigma
-  in
-  let sigma' = repair_evars sigma' emap in
-  let change_exist evar =
-    let ty = nf_betaiota emap (existential_type emap evar) in
-    let n = new_meta() in
-    mkCast (mkMeta n, DEFAULTcast, ty) in
-  let rec replace c =
-    match kind_of_term c with
-      | Evar (evk,_ as ev) when Evd.mem emap' evk -> change_exist ev
-      | _ -> map_constr replace c in
-  (sigma', replace c)
-
 (* The list of non-instantiated existential declarations (order is important) *)
 
 let non_instantiated sigma =

@@ -31,8 +31,6 @@ val declare_definition_ref :
 
 val check_evars : env -> evar_map -> unit
 
-val mkMetas : int -> constr list
-
 val evar_dependencies : evar_map -> Evar.t -> Evar.Set.t
 val sort_dependencies : (Evar.t * evar_info * Evar.Set.t) list -> (Evar.t * evar_info * Evar.Set.t) list
 
