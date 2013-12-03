@@ -60,7 +60,7 @@ let is_substring s1 s2 =
   let i = ref 0 in
   let len1 = Array.length s1 in
   let len2 = Array.length s2 in
-  while !break && !i < len1 & !i < len2 do
+  while !break && !i < len1 && !i < len2 do
     break := s1.(!i) = s2.(!i);
     incr i;
   done;

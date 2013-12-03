@@ -1235,7 +1235,7 @@ let REAL_NONLINEAR_SUBST_PROVER =
     match tm with
       Var(_,Tyapp("real",[])) when not (mem tm fvs) -> Int 1,tm
     | Comb(Comb(Const("real_mul",_),c),(Var(_,_) as t))
-         when is_ratconst c & not (mem t fvs)
+         when is_ratconst c && not (mem t fvs)
           -> rat_of_term c,t
     | Comb(Comb(Const("real_add",_),s),t) ->
          (try substitutable_monomial (union (frees t) fvs) s
@@ -1291,10 +1291,10 @@ let REAL_SOSFIELD =
     with Failure _ -> REAL_SOS t
   and is_inv =
     let is_div = is_binop `(/):real->real->real` in
-    fun tm -> (is_div tm or (is_comb tm & rator tm = inv_tm)) &
+    fun tm -> (is_div tm or (is_comb tm && rator tm = inv_tm)) &&
               not(is_ratconst(rand tm)) in
   let BASIC_REAL_FIELD tm =
-    let is_freeinv t = is_inv t & free_in t tm in
+    let is_freeinv t = is_inv t && free_in t tm in
     let itms = setify(map rand (find_terms is_freeinv tm)) in
     let hyps = map (fun t -> SPEC t REAL_MUL_RINV) itms in
     let tm' = itlist (fun th t -> mk_imp(concl th,t)) hyps tm in

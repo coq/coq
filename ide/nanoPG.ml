@@ -64,7 +64,7 @@ let make_emacs_mode gui name enter_sym bindings =
 let compile_emacs_modes gui l =
   List.fold_left (fun (r,s,u,m,d) mode ->
     let run, set, unset, mask,doc = mode gui in
-    (fun k -> r k || run k), (fun k -> s k or set k),
+    (fun k -> r k || run k), (fun k -> s k || set k),
     (fun () -> u (); unset ()), (fun k -> m k || mask k), d^"\n"^doc)
   ((fun _ -> false),(fun _ -> false),(fun () -> ()),(fun _ -> false),"") l
 
