@@ -34,7 +34,7 @@
     <define-regex id="locality">(((Local)|(Global))\%{space}+)?</define-regex>
     <define-regex id="begin_proof">(Theorem)|(Lemma)|(Fact)|(Remark)|(Corollary)|(Proposition)|(Property)</define-regex>
     <define-regex id="end_proof">(Qed)|(Defined)|(Admitted)|(Abort)</define-regex>
-    <define-regex id="decl_head">((?'gal'(Program\%{space}+)?(\%{single_decl}|\%{begin_proof}))\%{space}+(?'id'\%{ident}))|((?'gal4list'\%{mult_decl})(?'id_list'(\%{space}+\%{ident})*))</define-regex>
+    <define-regex id="decl_head">((?'gal'\%{locality}(Program\%{space}+)?(\%{single_decl}|\%{begin_proof}))\%{space}+(?'id'\%{ident}))|((?'gal4list'\%{mult_decl})(?'id_list'(\%{space}+\%{ident})*))</define-regex>
 
     <context id="escape-seq" style-ref="escape">
       <match>""</match>
