@@ -49,12 +49,12 @@ Section EqdepDec.
     case u; trivial.
   Qed.
 
-  Variable eq_dec : forall x y:A, x = y \/ x <> y.
-
   Variable x : A.
 
+  Variable eq_dec : forall y:A, x = y \/ x <> y.
+
   Let nu (y:A) (u:x = y) : x = y :=
-    match eq_dec x y with
+    match eq_dec y with
       | or_introl eqxy => eqxy
       | or_intror neqxy => False_ind _ (neqxy u)
     end.
@@ -62,7 +62,7 @@ Section EqdepDec.
   Let nu_constant : forall (y:A) (u v:x = y), nu u = nu v.
     intros.
     unfold nu.
-    case (eq_dec x y); intros.
+    case (eq_dec y); intros.
     reflexivity.
 
     case n; trivial.
@@ -72,7 +72,7 @@ Section EqdepDec.
   Let nu_inv (y:A) (v:x = y) : x = y := comp (nu (eq_refl x)) v.
 
 
-  Remark nu_left_inv : forall (y:A) (u:x = y), nu_inv (nu u) = u.
+  Remark nu_left_inv_one_var : forall (y:A) (u:x = y), nu_inv (nu u) = u.
   Proof.
     intros.
     case u; unfold nu_inv.
@@ -80,20 +80,20 @@ Section EqdepDec.
   Qed.
 
 
-  Theorem eq_proofs_unicity : forall (y:A) (p1 p2:x = y), p1 = p2.
+  Theorem eq_proofs_unicity_one_var : forall (y:A) (p1 p2:x = y), p1 = p2.
   Proof.
     intros.
-    elim nu_left_inv with (u := p1).
-    elim nu_left_inv with (u := p2).
+    elim nu_left_inv_one_var with (u := p1).
+    elim nu_left_inv_one_var with (u := p2).
     elim nu_constant with y p1 p2.
     reflexivity.
   Qed.
 
-  Theorem K_dec :
+  Theorem K_dec_one_var :
     forall P:x = x -> Prop, P (eq_refl x) -> forall p:x = x, P p.
   Proof.
     intros.
-    elim eq_proofs_unicity with x (eq_refl x) p.
+    elim eq_proofs_unicity_one_var with x (eq_refl x) p.
     trivial.
   Qed.
 
@@ -102,23 +102,23 @@ Section EqdepDec.
   Let proj (P:A -> Prop) (exP:ex P) (def:P x) : P x :=
     match exP with
       | ex_intro _ x' prf =>
-        match eq_dec x' x with
-          | or_introl eqprf => eq_ind x' P prf x eqprf
+        match eq_dec x' with
+          | or_introl eqprf => eq_ind x' P prf x (eq_sym eqprf)
           | _ => def
         end
     end.
 
 
-  Theorem inj_right_pair :
+  Theorem inj_right_pair_one_var :
     forall (P:A -> Prop) (y y':P x),
       ex_intro P x y = ex_intro P x y' -> y = y'.
   Proof.
     intros.
     cut (proj (ex_intro P x y) y = proj (ex_intro P x y') y).
     simpl.
-    case (eq_dec x x).
+    case (eq_dec x).
     intro e.
-    elim e using K_dec; trivial.
+    elim e using K_dec_one_var; trivial.
 
     intros.
     case n; trivial.
@@ -128,6 +128,28 @@ Section EqdepDec.
   Qed.
 
 End EqdepDec.
+
+(** Now we prove the versions that require decidable equality for the entire type
+    rather than just on the given element.  The rest of the file uses this total
+    decidable equality.  We could do everything using decidable equality at a point
+    (because the induction rule for [eq] is really an induction rule for
+    [{ y : A | x = y }]), but we don't currently, because changing everything
+    would break backward compatibility and no-one has yet taken the time to define
+    the pointed versions, and then re-define the non-pointed versions in terms of
+    those. *)
+
+Theorem eq_proofs_unicity A (eq_dec : forall x y : A, x = y \/ x <> y) (x : A)
+: forall (y:A) (p1 p2:x = y), p1 = p2.
+Proof (@eq_proofs_unicity_one_var A x (eq_dec x)).
+
+Theorem K_dec A (eq_dec : forall x y : A, x = y \/ x <> y) (x : A)
+: forall P:x = x -> Prop, P (eq_refl x) -> forall p:x = x, P p.
+Proof (@K_dec_one_var A x (eq_dec x)).
+
+Theorem inj_right_pair A (eq_dec : forall x y : A, x = y \/ x <> y) (x : A)
+: forall (P:A -> Prop) (y y':P x),
+    ex_intro P x y = ex_intro P x y' -> y = y'.
+Proof (@inj_right_pair_one_var A x (eq_dec x)).
 
 Require Import EqdepFacts.
 
