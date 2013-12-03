@@ -412,7 +412,7 @@ Proof.
   intros.
   unfold strict_increasing.
   intros.
-  apply Rplus_lt_reg_r with (- f x).
+  apply Rplus_lt_reg_l with (- f x).
   rewrite Rplus_opp_l; rewrite Rplus_comm.
   assert (H1 := MVT_cor1 f _ _ pr H0).
   elim H1; intros.
@@ -421,7 +421,7 @@ Proof.
   rewrite H3.
   apply Rmult_lt_0_compat.
   apply H.
-  apply Rplus_lt_reg_r with x.
+  apply Rplus_lt_reg_l with x.
   rewrite Rplus_0_r; replace (x + (y + - x)) with y; [ assumption | ring ].
 Qed.
 
@@ -517,7 +517,7 @@ Lemma derive_increasing_interv_ax :
 Proof.
   intros.
   split; intros.
-  apply Rplus_lt_reg_r with (- f x).
+  apply Rplus_lt_reg_l with (- f x).
   rewrite Rplus_opp_l; rewrite Rplus_comm.
   assert (H4 := MVT_cor1 f _ _ pr H3).
   elim H4; intros.
@@ -532,7 +532,7 @@ Proof.
   apply Rle_lt_trans with x; assumption.
   elim H2; intros.
   apply Rlt_le_trans with y; assumption.
-  apply Rplus_lt_reg_r with x.
+  apply Rplus_lt_reg_l with x.
   rewrite Rplus_0_r; replace (x + (y + - x)) with y; [ assumption | ring ].
   apply Rplus_le_reg_l with (- f x).
   rewrite Rplus_opp_l; rewrite Rplus_comm.

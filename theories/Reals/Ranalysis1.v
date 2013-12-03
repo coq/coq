@@ -1555,7 +1555,7 @@ Proof.
       [ apply (cond_pos delta) | apply Rinv_0_lt_compat; prove_sup0 ].
   unfold Rdiv; rewrite <- Ropp_mult_distr_l_reverse;
     apply Rmult_lt_0_compat.
-  apply Rplus_lt_reg_r with l.
+  apply Rplus_lt_reg_l with l.
   unfold Rminus; rewrite Rplus_opp_r; rewrite Rplus_0_r; assumption.
   apply Rinv_0_lt_compat; prove_sup0.
 Qed.

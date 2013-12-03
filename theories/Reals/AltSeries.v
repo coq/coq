@@ -442,7 +442,7 @@ Proof.
   unfold Rdiv in H;
     apply Rlt_le_trans with (sum_f_R0 (tg_alt PI_tg) (S (2 * 0))).
   simpl; unfold tg_alt; simpl; rewrite Rmult_1_l;
-    rewrite Rmult_1_r; apply Rplus_lt_reg_r with (PI_tg 1).
+    rewrite Rmult_1_r; apply Rplus_lt_reg_l with (PI_tg 1).
   rewrite Rplus_0_r;
     replace (PI_tg 1 + (PI_tg 0 + -1 * PI_tg 1)) with (PI_tg 0);
       [ unfold PI_tg | ring ].

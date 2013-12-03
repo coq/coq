@@ -470,7 +470,7 @@ Proof.
   rewrite Rabs_right in H1.
   elim (Rlt_irrefl _ H1).
   left; assumption.
-  apply Rplus_lt_reg_r with x.
+  apply Rplus_lt_reg_l with x.
   rewrite Rplus_0_r; replace (x + (y - x)) with y; [ assumption | ring ].
   assumption.
   cut (0 < x - y).
@@ -479,7 +479,7 @@ Proof.
   rewrite Rabs_right in H1.
   elim (Rlt_irrefl _ H1).
   left; assumption.
-  apply Rplus_lt_reg_r with y.
+  apply Rplus_lt_reg_l with y.
   rewrite Rplus_0_r; replace (y + (x - y)) with x; [ assumption | ring ].
 Qed.
 
@@ -860,7 +860,7 @@ Proof.
   split.
   pattern k at 1; rewrite <- Rplus_0_r; apply Rplus_lt_compat_l.
   unfold Rdiv; apply Rmult_lt_0_compat.
-  apply Rplus_lt_reg_r with k; rewrite Rplus_0_r; replace (k + (1 - k)) with 1;
+  apply Rplus_lt_reg_l with k; rewrite Rplus_0_r; replace (k + (1 - k)) with 1;
     [ elim H; intros; assumption | ring ].
   apply Rinv_0_lt_compat; prove_sup0.
   apply Rmult_lt_reg_l with 2.
@@ -881,12 +881,12 @@ Proof.
     apply Rle_lt_trans with (Rabs (Rabs (An (S n) / An n) - k) + Rabs k).
   apply Rabs_triang.
   rewrite (Rabs_right k).
-  apply Rplus_lt_reg_r with (- k); rewrite <- (Rplus_comm k);
+  apply Rplus_lt_reg_l with (- k); rewrite <- (Rplus_comm k);
     repeat rewrite <- Rplus_assoc; rewrite Rplus_opp_l;
       repeat rewrite Rplus_0_l; apply H4.
   apply Rle_ge; elim H; intros; assumption.
   unfold Rdiv; apply Rmult_lt_0_compat.
-  apply Rplus_lt_reg_r with k; rewrite Rplus_0_r; elim H; intros;
+  apply Rplus_lt_reg_l with k; rewrite Rplus_0_r; elim H; intros;
     replace (k + (1 - k)) with 1; [ assumption | ring ].
   apply Rinv_0_lt_compat; prove_sup0.
 Qed.
@@ -916,7 +916,7 @@ Proof.
   apply tech9.
   assumption.
   unfold N; apply le_max_l.
-  apply Rplus_lt_reg_r with l.
+  apply Rplus_lt_reg_l with l.
   rewrite Rplus_0_r.
   replace (l + (Un n - l)) with (Un n); [ assumption | ring ].
 Qed.

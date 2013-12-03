@@ -153,7 +153,7 @@ Proof.
   unfold Boule; replace (y + h - x) with (h + (y - x));
     [ idtac | ring ]; apply Rle_lt_trans with (Rabs h + Rabs (y - x)).
   apply Rabs_triang.
-  apply Rplus_lt_reg_r with (- Rabs (x - y)).
+  apply Rplus_lt_reg_l with (- Rabs (x - y)).
   rewrite <- (Rabs_Ropp (y - x)); rewrite Ropp_minus_distr'.
   replace (- Rabs (x - y) + r) with (r - Rabs (x - y)).
   replace (- Rabs (x - y) + (Rabs h + Rabs (x - y))) with (Rabs h).
@@ -161,7 +161,7 @@ Proof.
   ring.
   ring.
   unfold Boule in H1; rewrite <- (Rabs_Ropp (x - y)); rewrite Ropp_minus_distr';
-    apply Rplus_lt_reg_r with (Rabs (y - x)).
+    apply Rplus_lt_reg_l with (Rabs (y - x)).
   rewrite Rplus_0_r; replace (Rabs (y - x) + (r - Rabs (y - x))) with (pos r);
     [ apply H1 | ring ].
 Qed.

@@ -522,7 +522,7 @@ Proof.
   intro; unfold R_dist in H5; rewrite Rabs_right in H5.
   cut (sum_f_R0 An N0 < l1).
   intro; elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ H7 H6)).
-  apply Rplus_lt_reg_r with (- l).
+  apply Rplus_lt_reg_l with (- l).
   do 2 rewrite (Rplus_comm (- l)).
   apply H5.
   apply Rle_ge; apply Rplus_le_reg_l with l.
@@ -535,7 +535,7 @@ Proof.
   apply H1.
   unfold ge, N0; apply le_max_r.
   unfold ge, N0; apply le_max_l.
-  apply Rplus_lt_reg_r with l; rewrite Rplus_0_r;
+  apply Rplus_lt_reg_l with l; rewrite Rplus_0_r;
     replace (l + (l1 - l)) with l1; [ apply r | ring ].
   unfold Un_growing; intro; simpl;
     pattern (sum_f_R0 An n) at 1; rewrite <- Rplus_0_r;
@@ -578,7 +578,7 @@ Proof.
   discrR.
   apply (Rminus_lt _ _ r0).
   rewrite (Rabs_right _ r0) in H7.
-  apply Rplus_lt_reg_r with ((Rabs l1 - l2) / 2 - Rabs (SP fn N x)).
+  apply Rplus_lt_reg_l with ((Rabs l1 - l2) / 2 - Rabs (SP fn N x)).
   replace ((Rabs l1 - l2) / 2 - Rabs (SP fn N x) + (Rabs l1 + l2) / 2) with
   (Rabs l1 - Rabs (SP fn N x)).
   unfold Rminus; rewrite Rplus_assoc; rewrite Rplus_opp_l;
@@ -597,7 +597,7 @@ Proof.
   rewrite Rmult_1_r; rewrite (Rplus_comm (Rabs l1)); apply Rplus_lt_compat_l;
     apply r.
   discrR.
-  rewrite (Rabs_right _ r0) in H6; apply Rplus_lt_reg_r with (- l2).
+  rewrite (Rabs_right _ r0) in H6; apply Rplus_lt_reg_l with (- l2).
   replace (- l2 + (Rabs l1 + l2) / 2) with ((Rabs l1 - l2) / 2).
   rewrite Rplus_comm; apply H6.
   unfold Rdiv; rewrite <- (Rmult_comm (/ 2));
@@ -610,7 +610,7 @@ Proof.
   apply H4; unfold ge, N; apply le_max_l.
   apply H5; unfold ge, N; apply le_max_r.
   unfold Rdiv; apply Rmult_lt_0_compat.
-  apply Rplus_lt_reg_r with l2.
+  apply Rplus_lt_reg_l with l2.
   rewrite Rplus_0_r; replace (l2 + (Rabs l1 - l2)) with (Rabs l1);
     [ apply r | ring ].
   apply Rinv_0_lt_compat; prove_sup0.

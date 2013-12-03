@@ -32,7 +32,7 @@ Proof.
   apply H0.
   pattern 1 at 2; rewrite <- Rplus_0_r; apply Rplus_le_compat_l; left;
     assumption.
-  apply Rplus_lt_reg_r with 1; rewrite Rplus_0_r; rewrite Rplus_comm;
+  apply Rplus_lt_reg_l with 1; rewrite Rplus_0_r; rewrite Rplus_comm;
     unfold Rminus; rewrite Rplus_assoc; rewrite Rplus_opp_l;
       rewrite Rplus_0_r.
   pattern 1 at 2; rewrite <- sqrt_1; apply sqrt_lt_1.
@@ -43,7 +43,7 @@ Proof.
     assumption.
   apply H0.
   left; apply Rlt_0_1.
-  apply Rplus_lt_reg_r with 1; rewrite Rplus_0_r; rewrite Rplus_comm;
+  apply Rplus_lt_reg_l with 1; rewrite Rplus_0_r; rewrite Rplus_comm;
     unfold Rminus; rewrite Rplus_assoc; rewrite Rplus_opp_l;
       rewrite Rplus_0_r.
   pattern 1 at 2; rewrite <- sqrt_1; apply sqrt_lt_1.
@@ -75,7 +75,7 @@ Proof.
     assumption.
   left; apply Rlt_0_1.
   apply H0.
-  apply Rle_ge; left; apply Rplus_lt_reg_r with 1.
+  apply Rle_ge; left; apply Rplus_lt_reg_l with 1.
   rewrite Rplus_0_r; rewrite Rplus_comm; unfold Rminus;
     rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r.
   pattern 1 at 1; rewrite <- sqrt_1; apply sqrt_lt_1.

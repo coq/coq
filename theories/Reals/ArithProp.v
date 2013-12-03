@@ -132,7 +132,7 @@ Proof.
     rewrite <- Ropp_inv_permute; [ idtac | assumption ].
   rewrite Rmult_assoc; repeat rewrite Ropp_mult_distr_r_reverse;
     rewrite <- Rinv_r_sym; [ rewrite Rmult_1_r | assumption ];
-      apply Rplus_lt_reg_r with (IZR (up (x / - y)) - 1).
+      apply Rplus_lt_reg_l with (IZR (up (x / - y)) - 1).
   replace (IZR (up (x / - y)) - 1 + 1) with (IZR (up (x / - y)));
     [ idtac | ring ].
   replace (IZR (up (x / - y)) - 1 + (- (x * / y) + - (IZR (up (x / - y)) - 1)))
@@ -162,7 +162,7 @@ Proof.
   rewrite <- (Rinv_l_sym _ H); rewrite (Rmult_comm (/ y));
     rewrite Rmult_plus_distr_r; rewrite Rmult_assoc; rewrite <- Rinv_r_sym;
       [ rewrite Rmult_1_r | assumption ];
-      apply Rplus_lt_reg_r with (IZR (up (x / y)) - 1);
+      apply Rplus_lt_reg_l with (IZR (up (x / y)) - 1);
 	replace (IZR (up (x / y)) - 1 + 1) with (IZR (up (x / y)));
 	  [ idtac | ring ];
 	  replace (IZR (up (x / y)) - 1 + (x * / y + (1 - IZR (up (x / y))))) with

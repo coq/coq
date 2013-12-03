@@ -68,7 +68,7 @@ Proof.
   pattern 2 at 3; rewrite <- Rmult_1_r; rewrite <- (Rmult_comm 2);
     apply Rmult_le_compat_l.
   left; prove_sup0.
-  left; apply Rplus_lt_reg_r with ((/ 2) ^ S (x1 - S x)).
+  left; apply Rplus_lt_reg_l with ((/ 2) ^ S (x1 - S x)).
   replace ((/ 2) ^ S (x1 - S x) + (1 - (/ 2) ^ S (x1 - S x))) with 1;
     [ idtac | ring ].
   rewrite <- (Rplus_comm 1); pattern 1 at 1; rewrite <- Rplus_0_r;
@@ -315,7 +315,7 @@ Proof.
   intro; unfold Wn; unfold Rdiv; rewrite <- (Rmult_0_r (/ 2));
     rewrite <- (Rmult_comm (/ 2)); apply Rmult_lt_compat_l.
   apply Rinv_0_lt_compat; prove_sup0.
-  apply Rplus_lt_reg_r with (An n); rewrite Rplus_0_r; unfold Rminus;
+  apply Rplus_lt_reg_l with (An n); rewrite Rplus_0_r; unfold Rminus;
     rewrite (Rplus_comm (An n)); rewrite Rplus_assoc;
       rewrite Rplus_opp_l; rewrite Rplus_0_r;
 	apply Rle_lt_trans with (Rabs (An n)).
@@ -325,7 +325,7 @@ Proof.
   intro; unfold Vn; unfold Rdiv; rewrite <- (Rmult_0_r (/ 2));
     rewrite <- (Rmult_comm (/ 2)); apply Rmult_lt_compat_l.
   apply Rinv_0_lt_compat; prove_sup0.
-  apply Rplus_lt_reg_r with (- An n); rewrite Rplus_0_r; unfold Rminus;
+  apply Rplus_lt_reg_l with (- An n); rewrite Rplus_0_r; unfold Rminus;
     rewrite (Rplus_comm (- An n)); rewrite Rplus_assoc;
       rewrite Rplus_opp_r; rewrite Rplus_0_r;
 	apply Rle_lt_trans with (Rabs (An n)).
@@ -443,14 +443,14 @@ Proof.
   apply tech1.
   intros; apply H.
   apply Rmult_lt_0_compat.
-  apply Rinv_0_lt_compat; apply Rplus_lt_reg_r with x; rewrite Rplus_0_r;
+  apply Rinv_0_lt_compat; apply Rplus_lt_reg_l with x; rewrite Rplus_0_r;
     replace (x + (1 - x)) with 1; [ elim H3; intros; assumption | ring ].
   apply H.
   symmetry ; apply tech2; assumption.
   rewrite b; pattern (sum_f_R0 An x0) at 1; rewrite <- Rplus_0_r;
     apply Rplus_le_compat_l.
   left; apply Rmult_lt_0_compat.
-  apply Rinv_0_lt_compat; apply Rplus_lt_reg_r with x; rewrite Rplus_0_r;
+  apply Rinv_0_lt_compat; apply Rplus_lt_reg_l with x; rewrite Rplus_0_r;
     replace (x + (1 - x)) with 1; [ elim H3; intros; assumption | ring ].
   apply H.
   replace (sum_f_R0 An x2) with
@@ -466,7 +466,7 @@ Proof.
   left; apply H.
   rewrite tech3.
   unfold Rdiv; apply Rmult_le_reg_l with (1 - x).
-  apply Rplus_lt_reg_r with x; rewrite Rplus_0_r.
+  apply Rplus_lt_reg_l with x; rewrite Rplus_0_r.
   replace (x + (1 - x)) with 1; [ elim H3; intros; assumption | ring ].
   do 2 rewrite (Rmult_comm (1 - x)).
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym.

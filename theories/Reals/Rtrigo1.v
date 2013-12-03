@@ -670,11 +670,11 @@ Proof.
     replace (Un 0%nat + - Un 1%nat + Un 2%nat + - Un 3%nat) with
     (Un 0%nat - Un 1%nat + (Un 2%nat - Un 3%nat)); [ idtac | ring ].
   apply Rplus_lt_0_compat.
-  unfold Rminus in |- *; apply Rplus_lt_reg_r with (Un 1%nat);
+  unfold Rminus in |- *; apply Rplus_lt_reg_l with (Un 1%nat);
     rewrite Rplus_0_r; rewrite (Rplus_comm (Un 1%nat));
       rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r;
         apply H1.
-  unfold Rminus in |- *; apply Rplus_lt_reg_r with (Un 3%nat);
+  unfold Rminus in |- *; apply Rplus_lt_reg_l with (Un 3%nat);
     rewrite Rplus_0_r; rewrite (Rplus_comm (Un 3%nat));
       rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r;
         apply H1.
@@ -722,7 +722,7 @@ Proof.
     unfold INR in |- *.
   replace ((2 * x + 1 + 1 + 1) * (2 * x + 1 + 1)) with (4 * x * x + 10 * x + 6);
   [ idtac | ring ].
-  apply Rplus_lt_reg_r with (-4); rewrite Rplus_opp_l;
+  apply Rplus_lt_reg_l with (-4); rewrite Rplus_opp_l;
     replace (-4 + (4 * x * x + 10 * x + 6)) with (4 * x * x + 10 * x + 2);
     [ idtac | ring ].
   apply Rplus_le_lt_0_compat.
@@ -1201,7 +1201,7 @@ Proof.
   replace (- (PI - x)) with (x - PI).
   replace (- (PI - y)) with (y - PI).
   intros; change (sin (y - PI) < sin (x - PI)) in H8;
-    apply Rplus_lt_reg_r with (- PI); rewrite Rplus_comm;
+    apply Rplus_lt_reg_l with (- PI); rewrite Rplus_comm;
       replace (y + - PI) with (y - PI).
   rewrite Rplus_comm; replace (x + - PI) with (x - PI).
   apply (sin_increasing_0 (y - PI) (x - PI) H4 H5 H6 H7 H8).
@@ -1273,7 +1273,7 @@ Proof.
   replace (-3 * (PI / 2) + 2 * PI) with (PI / 2).
   replace (-3 * (PI / 2) + PI) with (- (PI / 2)).
   clear H1 H2 H3 H4; intros H1 H2 H3 H4;
-    apply Rplus_lt_reg_r with (-3 * (PI / 2));
+    apply Rplus_lt_reg_l with (-3 * (PI / 2));
       replace (-3 * (PI / 2) + x) with (x - 3 * (PI / 2)).
   replace (-3 * (PI / 2) + y) with (y - 3 * (PI / 2)).
   apply (sin_increasing_0 (x - 3 * (PI / 2)) (y - 3 * (PI / 2)) H4 H3 H2 H1 H5).
@@ -1352,7 +1352,7 @@ Proof.
             generalize (Rplus_le_compat_l PI 0 y H1);
               generalize (Rplus_le_compat_l PI y PI H2); rewrite Rplus_0_r.
   rewrite <- double.
-  clear H H0 H1 H2 H3; intros; apply Rplus_lt_reg_r with PI;
+  clear H H0 H1 H2 H3; intros; apply Rplus_lt_reg_l with PI;
     apply (cos_increasing_0 (PI + y) (PI + x) H0 H H2 H1 H4).
 Qed.
 
@@ -1919,7 +1919,7 @@ Proof.
       apply (Rmult_lt_reg_r PI); [apply PI_RGT_0|rewrite Rmult_1_l].
       replace (3*(PI/2)) with (PI/2 + PI) in GT by field.
       rewrite Rplus_comm in GT.
-      now apply Rplus_lt_reg_r in GT. }
+      now apply Rplus_lt_reg_l in GT. }
     omega.
 Qed.
 

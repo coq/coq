@@ -393,7 +393,7 @@ Proof.
   case (Rle_dec (x + h) b); intro.
   cut (b < x + h).
   intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ r0 H14)).
-  apply Rplus_lt_reg_r with (- h - b); replace (- h - b + b) with (- h);
+  apply Rplus_lt_reg_l with (- h - b); replace (- h - b + b) with (- h);
     [ idtac | ring ]; replace (- h - b + (x + h)) with (x - b);
     [ idtac | ring ]; apply Rle_lt_trans with (Rabs h).
   rewrite <- Rabs_Ropp; apply RRle_abs.

@@ -973,7 +973,7 @@ Qed.
 
 (** *** Cancellation *)
 
-Lemma Rplus_lt_reg_r : forall r r1 r2, r + r1 < r + r2 -> r1 < r2.
+Lemma Rplus_lt_reg_l : forall r r1 r2, r + r1 < r + r2 -> r1 < r2.
 Proof.
   intros; cut (- r + r + r1 < - r + r + r2).
   rewrite Rplus_opp_l.
@@ -983,10 +983,17 @@ Proof.
     apply (Rplus_lt_compat_l (- r) (r + r1) (r + r2) H).
 Qed.
 
+Lemma Rplus_lt_reg_r : forall r r1 r2, r1 + r < r2 + r -> r1 < r2.
+Proof.
+  intros.
+  apply (Rplus_lt_reg_l r).
+  now rewrite 2!(Rplus_comm r).
+Qed.
+
 Lemma Rplus_le_reg_l : forall r r1 r2, r + r1 <= r + r2 -> r1 <= r2.
 Proof.
   unfold Rle; intros; elim H; intro.
-  left; apply (Rplus_lt_reg_r r r1 r2 H0).
+  left; apply (Rplus_lt_reg_l r r1 r2 H0).
   right; apply (Rplus_eq_reg_l r r1 r2 H0).
 Qed.
 
@@ -999,7 +1006,7 @@ Qed.
 
 Lemma Rplus_gt_reg_l : forall r r1 r2, r + r1 > r + r2 -> r1 > r2.
 Proof.
-  unfold Rgt; intros; apply (Rplus_lt_reg_r r r2 r1 H).
+  unfold Rgt; intros; apply (Rplus_lt_reg_l r r2 r1 H).
 Qed.
 
 Lemma Rplus_ge_reg_l : forall r r1 r2, r + r1 >= r + r2 -> r1 >= r2.
@@ -1051,12 +1058,10 @@ Qed.
 Lemma Ropp_gt_lt_contravar : forall r1 r2, r1 > r2 -> - r1 < - r2.
 Proof.
   unfold Rgt; intros.
-  apply (Rplus_lt_reg_r (r2 + r1)).
-  replace (r2 + r1 + - r1) with r2.
-  replace (r2 + r1 + - r2) with r1.
-  trivial.
-  ring.
-  ring.
+  apply (Rplus_lt_reg_l (r2 + r1)).
+  replace (r2 + r1 + - r1) with r2 by ring.
+  replace (r2 + r1 + - r2) with r1 by ring.
+  exact H.
 Qed.
 Hint Resolve Ropp_gt_lt_contravar.
 
@@ -1328,19 +1333,17 @@ Qed.
 
 Lemma Rlt_minus : forall r1 r2, r1 < r2 -> r1 - r2 < 0.
 Proof.
-  intros; apply (Rplus_lt_reg_r r2).
-  replace (r2 + (r1 - r2)) with r1.
-  replace (r2 + 0) with r2; auto with real.
-  ring.
+  intros; apply (Rplus_lt_reg_l r2).
+  replace (r2 + (r1 - r2)) with r1 by ring.
+  now rewrite Rplus_0_r.
 Qed.
 Hint Resolve Rlt_minus: real.
 
 Lemma Rgt_minus : forall r1 r2, r1 > r2 -> r1 - r2 > 0.
 Proof.
-  intros; apply (Rplus_lt_reg_r r2).
-  replace (r2 + (r1 - r2)) with r1.
-  replace (r2 + 0) with r2; auto with real.
-  ring.
+  intros; apply (Rplus_lt_reg_l r2).
+  replace (r2 + (r1 - r2)) with r1 by ring.
+  now rewrite Rplus_0_r.
 Qed.
 
 (**********)
@@ -1629,7 +1632,7 @@ Proof.
     apply (Rlt_irrefl 0); auto.
   do 2 rewrite S_INR in H1; cut (INR n1 < INR n0).
   intro H2; generalize (H0 n0 H2); intro; auto with arith.
-  apply (Rplus_lt_reg_r 1 (INR n1) (INR n0)).
+  apply (Rplus_lt_reg_l 1 (INR n1) (INR n0)).
   rewrite Rplus_comm; rewrite (Rplus_comm 1 (INR n0)); trivial.
 Qed.
 Hint Resolve INR_lt: real.

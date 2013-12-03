@@ -164,7 +164,7 @@ Qed.
 Lemma Rnot_lt_lt : forall x y:R, ~ 0 < y - x -> ~ x < y.
 unfold not; intros.
 apply H.
-apply Rplus_lt_reg_r with x.
+apply Rplus_lt_reg_l with x.
 replace (x + 0) with x.
 replace (x + (y - x)) with y.
 try exact H0.
@@ -177,7 +177,7 @@ unfold not; intros.
 apply H.
 case H0; intros.
 left.
-apply Rplus_lt_reg_r with x.
+apply Rplus_lt_reg_l with x.
 replace (x + 0) with x.
 replace (x + (y - x)) with y.
 try exact H1.

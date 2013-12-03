@@ -725,7 +725,7 @@ Proof.
     elim (lt_n_O _ H9).
   unfold co_interval in H10; elim H10; clear H10; intros; rewrite Rabs_right.
   rewrite SubEqui_P5 in H9; simpl in H9; inversion H9.
-  apply Rplus_lt_reg_r with (pos_Rl (SubEqui del H) (max_N del H)).
+  apply Rplus_lt_reg_l with (pos_Rl (SubEqui del H) (max_N del H)).
   replace
   (pos_Rl (SubEqui del H) (max_N del H) +
     (t - pos_Rl (SubEqui del H) (max_N del H))) with t;
@@ -739,7 +739,7 @@ Proof.
   unfold max_N; case (maxN del H); intros; elim a0; clear a0;
     intros _ H13; replace (a + INR x * del + del) with (a + INR (S x) * del);
       [ assumption | rewrite S_INR; ring ].
-  apply Rplus_lt_reg_r with (pos_Rl (SubEqui del H) I);
+  apply Rplus_lt_reg_l with (pos_Rl (SubEqui del H) I);
     replace (pos_Rl (SubEqui del H) I + (t - pos_Rl (SubEqui del H) I)) with t;
     [ idtac | ring ];
     replace (pos_Rl (SubEqui del H) I + del) with (pos_Rl (SubEqui del H) (S I)).
@@ -768,7 +768,7 @@ Proof.
   unfold max_N; case (maxN del H); intros; apply INR_lt;
     apply Rmult_lt_reg_l with (pos del).
   apply (cond_pos del).
-  apply Rplus_lt_reg_r with a; do 2 rewrite (Rmult_comm del);
+  apply Rplus_lt_reg_l with a; do 2 rewrite (Rmult_comm del);
     apply Rle_lt_trans with t0; unfold I in H5; try assumption;
       elim a0; intros; apply Rlt_le_trans with b; try assumption;
         elim H8; intros.
@@ -1583,7 +1583,7 @@ Proof.
     set (N := max x x0); cut (Vn N < Un N).
   intro; elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ (H N) H4)).
   apply Rlt_trans with ((l1 + l2) / 2).
-  apply Rplus_lt_reg_r with (- l2);
+  apply Rplus_lt_reg_l with (- l2);
     replace (- l2 + (l1 + l2) / 2) with ((l1 - l2) / 2).
   rewrite Rplus_comm; apply Rle_lt_trans with (Rabs (Vn N - l2)).
   apply RRle_abs.
@@ -1594,7 +1594,7 @@ Proof.
         repeat rewrite Rmult_assoc; rewrite <- Rinv_l_sym;
           [ ring | discrR ]
       | discrR ].
-  apply Ropp_lt_cancel; apply Rplus_lt_reg_r with l1;
+  apply Ropp_lt_cancel; apply Rplus_lt_reg_l with l1;
     replace (l1 + - ((l1 + l2) / 2)) with ((l1 - l2) / 2).
   apply Rle_lt_trans with (Rabs (Un N - l1)).
   rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply RRle_abs.
@@ -2683,7 +2683,7 @@ Proof.
   repeat split.
   assumption.
   rewrite Rabs_right.
-  apply Rplus_lt_reg_r with x; replace (x + (x1 - x)) with x1; [ idtac | ring ].
+  apply Rplus_lt_reg_l with x; replace (x + (x1 - x)) with x1; [ idtac | ring ].
   apply Rlt_le_trans with (x + h0).
   elim H8; intros; assumption.
   apply Rplus_le_compat_l; apply Rle_trans with del.
@@ -2706,7 +2706,7 @@ Proof.
   assumption.
   apply Rle_ge; left; apply Rinv_0_lt_compat.
   elim r; intro.
-  apply Rplus_lt_reg_r with x; rewrite Rplus_0_r; assumption.
+  apply Rplus_lt_reg_l with x; rewrite Rplus_0_r; assumption.
   elim H5; symmetry ; apply Rplus_eq_reg_l with x; rewrite Rplus_0_r;
     assumption.
   apply Rle_lt_trans with
@@ -2746,7 +2746,7 @@ Proof.
   repeat split.
   assumption.
   rewrite Rabs_left.
-  apply Rplus_lt_reg_r with (x1 - x0); replace (x1 - x0 + x0) with x1;
+  apply Rplus_lt_reg_l with (x1 - x0); replace (x1 - x0 + x0) with x1;
     [ idtac | ring ].
   replace (x1 - x0 + - (x1 - x)) with (x - x0); [ idtac | ring ].
   apply Rle_lt_trans with (x + h0).
@@ -2756,7 +2756,7 @@ Proof.
   apply Rle_trans with del;
     [ left; assumption | unfold del; apply Rmin_l ].
   elim H8; intros; assumption.
-  apply Rplus_lt_reg_r with x; rewrite Rplus_0_r;
+  apply Rplus_lt_reg_l with x; rewrite Rplus_0_r;
     replace (x + (x1 - x)) with x1; [ elim H8; intros; assumption | ring ].
   unfold fct_cte; ring.
   rewrite RiemannInt_P15.
@@ -2776,7 +2776,7 @@ Proof.
   apply Rinv_lt_0_compat.
   assert (H8 : x + h0 < x).
   auto with real.
-  apply Rplus_lt_reg_r with x; rewrite Rplus_0_r; assumption.
+  apply Rplus_lt_reg_l with x; rewrite Rplus_0_r; assumption.
   rewrite
     (RiemannInt_P13 H7 (RiemannInt_P14 x (x + h0) (f x))
       (RiemannInt_P10 (-1) H7 (RiemannInt_P14 x (x + h0) (f x))))
@@ -2912,7 +2912,7 @@ Proof.
   repeat split.
   assumption.
   rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; rewrite Rabs_right.
-  apply Rplus_lt_reg_r with (x2 - x1);
+  apply Rplus_lt_reg_l with (x2 - x1);
     replace (x2 - x1 + (b - x2)) with (b - x1); [ idtac | ring ].
   replace (x2 - x1 + x1) with x2; [ idtac | ring ].
   apply Rlt_le_trans with (b + h0).
@@ -3095,7 +3095,7 @@ Proof.
   elim H8; intros; left; apply H17; repeat split.
   assumption.
   rewrite Rabs_right.
-  apply Rplus_lt_reg_r with a; replace (a + (x2 - a)) with x2; [ idtac | ring ].
+  apply Rplus_lt_reg_l with a; replace (a + (x2 - a)) with x2; [ idtac | ring ].
   apply Rlt_le_trans with (a + h0).
   elim H14; intros; assumption.
   apply Rplus_le_compat_l; left; apply Rle_lt_trans with (Rabs h0).

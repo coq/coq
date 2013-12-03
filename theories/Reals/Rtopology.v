@@ -84,7 +84,7 @@ Proof.
     apply H4.
   unfold del; rewrite <- (Rabs_Ropp (x - x1)); rewrite Ropp_minus_distr;
     ring.
-  unfold del; apply Rplus_lt_reg_r with (Rabs (x - x1));
+  unfold del; apply Rplus_lt_reg_l with (Rabs (x - x1));
     rewrite Rplus_0_r;
       replace (Rabs (x - x1) + (x0 - Rabs (x - x1))) with (pos x0);
       [ idtac | ring ].
@@ -139,7 +139,7 @@ Proof.
     apply H10.
   unfold del; simpl; rewrite <- (Rabs_Ropp (x - x1));
     rewrite Ropp_minus_distr; ring.
-  apply Rplus_lt_reg_r with (Rabs (x - x1)); rewrite Rplus_0_r;
+  apply Rplus_lt_reg_l with (Rabs (x - x1)); rewrite Rplus_0_r;
     replace (Rabs (x - x1) + (x0 - Rabs (x - x1))) with (pos x0);
     [ rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply H6 | ring ].
 Qed.
@@ -254,7 +254,7 @@ Proof.
   apply H4.
   unfold del2; simpl; rewrite <- (Rabs_Ropp (x - x0));
     rewrite Ropp_minus_distr; ring.
-  apply Rplus_lt_reg_r with (Rabs (x - x0)); rewrite Rplus_0_r;
+  apply Rplus_lt_reg_l with (Rabs (x - x0)); rewrite Rplus_0_r;
     replace (Rabs (x - x0) + (del - Rabs (x - x0))) with (pos del);
     [ rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply H2 | ring ].
   apply interior_P1.
@@ -664,7 +664,7 @@ Proof.
   apply Rlt_trans with (b - x).
   unfold Rminus; apply Rplus_lt_compat_l; apply Ropp_lt_gt_contravar;
     auto with real.
-  elim H10; intros H15 _; apply Rplus_lt_reg_r with (x - eps);
+  elim H10; intros H15 _; apply Rplus_lt_reg_l with (x - eps);
     replace (x - eps + (b - x)) with (b - eps);
     [ replace (x - eps + eps) with x; [ apply H15 | ring ] | ring ].
   apply Rge_minus; apply Rle_ge; elim H14; intros _ H15; apply H15.
@@ -734,7 +734,7 @@ Proof.
   rewrite Ropp_minus_distr; apply Rlt_trans with (m - x).
   unfold Rminus; apply Rplus_lt_compat_l; apply Ropp_lt_gt_contravar;
     auto with real.
-  apply Rplus_lt_reg_r with (x - eps);
+  apply Rplus_lt_reg_l with (x - eps);
     replace (x - eps + (m - x)) with (m - eps).
   replace (x - eps + eps) with x.
   elim H10; intros; assumption.
@@ -743,7 +743,7 @@ Proof.
   apply Rle_lt_trans with (m' - m).
   unfold Rminus; do 2 rewrite <- (Rplus_comm (- m));
     apply Rplus_le_compat_l; elim H14; intros; assumption.
-  apply Rplus_lt_reg_r with m; replace (m + (m' - m)) with m'.
+  apply Rplus_lt_reg_l with m; replace (m + (m' - m)) with m'.
   apply Rle_lt_trans with (m + eps / 2).
   unfold m'; apply Rmin_l.
   apply Rplus_lt_compat_l; apply Rmult_lt_reg_l with 2.
@@ -984,7 +984,7 @@ Qed.
 
 Lemma Rlt_Rminus : forall a b:R, a < b -> 0 < b - a.
 Proof.
-  intros; apply Rplus_lt_reg_r with a; rewrite Rplus_0_r;
+  intros; apply Rplus_lt_reg_l with a; rewrite Rplus_0_r;
     replace (a + (b - a)) with b; [ assumption | ring ].
 Qed.
 
@@ -1020,7 +1020,7 @@ Proof.
   case (Rle_dec x a); intro.
   case (Rle_dec x0 a); intro.
   unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0; assumption.
-  elim n; left; apply Rplus_lt_reg_r with (- x);
+  elim n; left; apply Rplus_lt_reg_l with (- x);
     do 2 rewrite (Rplus_comm (- x)); apply Rle_lt_trans with (Rabs (x0 - x)).
   apply RRle_abs.
   assumption.
@@ -1052,7 +1052,7 @@ Proof.
   apply Rmin_l.
   elim n0; left; assumption.
   elim n; right; assumption.
-  apply Rplus_lt_reg_r with (- a); do 2 rewrite (Rplus_comm (- a));
+  apply Rplus_lt_reg_l with (- a); do 2 rewrite (Rplus_comm (- a));
     rewrite H4 in H9; apply Rle_lt_trans with (Rabs (x1 - a)).
   apply RRle_abs.
   apply Rlt_le_trans with (Rmin x0 (b - a)).
@@ -1096,7 +1096,7 @@ Proof.
   elim n1; left; assumption.
   elim n0; left; assumption.
   split.
-  apply Ropp_lt_cancel; apply Rplus_lt_reg_r with x;
+  apply Ropp_lt_cancel; apply Rplus_lt_reg_l with x;
     apply Rle_lt_trans with (Rabs (x1 - x)).
   rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply RRle_abs.
   apply Rlt_le_trans with (Rmin x0 (Rmin (x - a) (b - x))).
@@ -1104,7 +1104,7 @@ Proof.
   apply Rle_trans with (Rmin (x - a) (b - x)).
   apply Rmin_r.
   apply Rmin_l.
-  apply Rplus_lt_reg_r with (- x); do 2 rewrite (Rplus_comm (- x));
+  apply Rplus_lt_reg_l with (- x); do 2 rewrite (Rplus_comm (- x));
     apply Rle_lt_trans with (Rabs (x1 - x)).
   apply RRle_abs.
   apply Rlt_le_trans with (Rmin x0 (Rmin (x - a) (b - x))).
@@ -1143,7 +1143,7 @@ Proof.
   rewrite H6; unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0;
     assumption.
   elim n1; right; assumption.
-  rewrite H6 in H11; apply Ropp_lt_cancel; apply Rplus_lt_reg_r with b;
+  rewrite H6 in H11; apply Ropp_lt_cancel; apply Rplus_lt_reg_l with b;
     apply Rle_lt_trans with (Rabs (x1 - b)).
   rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply RRle_abs.
   apply Rlt_le_trans with (Rmin x0 (b - a)).
@@ -1156,7 +1156,7 @@ Proof.
   change (0 < x - b); apply Rlt_Rminus; assumption.
   intros; elim H8; clear H8; intros.
   assert (H10 : b < x0).
-  apply Ropp_lt_cancel; apply Rplus_lt_reg_r with x;
+  apply Ropp_lt_cancel; apply Rplus_lt_reg_l with x;
     apply Rle_lt_trans with (Rabs (x0 - x)).
   rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; apply RRle_abs.
   assumption.
@@ -1233,7 +1233,7 @@ Proof.
   apply r.
   elim (H9 x); unfold intersection_domain, disc, image_dir; split.
   rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr; rewrite Rabs_right.
-  apply Rplus_lt_reg_r with (x - eps);
+  apply Rplus_lt_reg_l with (x - eps);
     replace (x - eps + (M - x)) with (M - eps).
   replace (x - eps + eps) with x.
   auto with real.

@@ -137,7 +137,7 @@ Qed.
 
 Lemma exp_ineq1 : forall x:R, 0 < x -> 1 + x < exp x.
 Proof.
-  intros; apply Rplus_lt_reg_r with (- exp 0); rewrite <- (Rplus_comm (exp x));
+  intros; apply Rplus_lt_reg_l with (- exp 0); rewrite <- (Rplus_comm (exp x));
     assert (H0 := MVT_cor1 exp 0 x derivable_exp H); elim H0;
       intros; elim H1; intros; unfold Rminus in H2; rewrite H2;
         rewrite Ropp_0; rewrite Rplus_0_r;
@@ -313,12 +313,12 @@ Proof.
   red; apply P_Rmin.
   apply Rmult_lt_0_compat.
   assumption.
-  apply Rplus_lt_reg_r with 1.
+  apply Rplus_lt_reg_l with 1.
   rewrite Rplus_0_r; replace (1 + (exp eps - 1)) with (exp eps);
     [ apply H1 | ring ].
   apply Rmult_lt_0_compat.
   assumption.
-  apply Rplus_lt_reg_r with (exp (- eps)).
+  apply Rplus_lt_reg_l with (exp (- eps)).
   rewrite Rplus_0_r; replace (exp (- eps) + (1 - exp (- eps))) with 1;
     [ apply H2 | ring ].
   unfold dist, R_met, R_dist; simpl.
@@ -335,7 +335,7 @@ Proof.
   apply H.
   rewrite Hxyy.
   apply Ropp_lt_cancel.
-  apply Rplus_lt_reg_r with (r := y).
+  apply Rplus_lt_reg_l with (r := y).
   replace (y + - (y * exp (- eps))) with (y * (1 - exp (- eps)));
   [ idtac | ring ].
   replace (y + - x) with (Rabs (x - y)).
@@ -358,7 +358,7 @@ Proof.
   apply Rmult_lt_reg_l with (r := y).
   apply H.
   rewrite Hxyy.
-  apply Rplus_lt_reg_r with (r := - y).
+  apply Rplus_lt_reg_l with (r := - y).
   replace (- y + y * exp eps) with (y * (exp eps - 1)); [ idtac | ring ].
   replace (- y + x) with (Rabs (x - y)).
   apply Rlt_le_trans with (1 := H5); apply Rmin_l.
@@ -619,7 +619,7 @@ Proof.
   unfold Rdiv; apply Rmult_lt_0_compat;
     [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
   rewrite Rabs_left in H7.
-  apply Rplus_lt_reg_r with (- h - x / 2).
+  apply Rplus_lt_reg_l with (- h - x / 2).
   replace (- h - x / 2 + x / 2) with (- h); [ idtac | ring ].
   pattern x at 2; rewrite double_var.
   replace (- h - x / 2 + (x / 2 + x / 2 + h)) with (x / 2); [ apply H7 | ring ].

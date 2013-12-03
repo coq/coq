@@ -119,7 +119,7 @@ Proof.
   apply Rle_ge.
   case (Rcase_abs h); intro.
   rewrite (Rabs_left h r) in H2.
-  left; rewrite Rplus_comm; apply Rplus_lt_reg_r with (- h); rewrite Rplus_0_r;
+  left; rewrite Rplus_comm; apply Rplus_lt_reg_l with (- h); rewrite Rplus_0_r;
     rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l;
       apply H2.
   apply Rplus_le_le_0_compat.
@@ -151,7 +151,7 @@ Proof.
   apply H1.
   apply Ropp_0_gt_lt_contravar; apply r.
   rewrite (Rabs_right h r) in H3.
-  apply Rplus_lt_reg_r with (- x); rewrite Rplus_0_r; rewrite <- Rplus_assoc;
+  apply Rplus_lt_reg_l with (- x); rewrite Rplus_0_r; rewrite <- Rplus_assoc;
     rewrite Rplus_opp_l; rewrite Rplus_0_l; apply H3.
   apply H.
   apply Ropp_0_gt_lt_contravar; apply H.

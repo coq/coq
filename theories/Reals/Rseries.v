@@ -108,7 +108,7 @@ Section sequence.
     intros n H4.
     unfold R_dist.
     rewrite Rabs_left1, Ropp_minus_distr.
-    apply Rplus_lt_reg_r with (Un n - eps).
+    apply Rplus_lt_reg_l with (Un n - eps).
     apply Rlt_le_trans with (Un N).
     now replace (Un n - eps + (l - Un n)) with (l - eps) by ring.
     replace (Un n - eps + eps) with (Un n) by ring.
@@ -171,7 +171,7 @@ Section sequence.
     rewrite H1.
     apply Rle_trans with (1 := proj2 (Hsum n)).
     apply Rlt_le.
-    apply Rplus_lt_reg_r with ((/2)^n - 1).
+    apply Rplus_lt_reg_l with ((/2)^n - 1).
     now ring_simplify.
     exists 0. now exists O.
 
@@ -202,7 +202,7 @@ Section sequence.
     refine (False_ind _ (Rle_not_lt _ _ (H (l - eps) _) _)).
     intros x (n, H1).
     now rewrite H1.
-    apply Rplus_lt_reg_r with (eps - l).
+    apply Rplus_lt_reg_l with (eps - l).
     now ring_simplify.
 
     assert (Rabs (/2) < 1).
@@ -247,7 +247,7 @@ Section sequence.
     rewrite Hs, Rplus_0_l.
     set (k := (N + (n - N))%nat).
     apply Rlt_le.
-    apply Rplus_lt_reg_r with ((/2)^k - (/2)^N).
+    apply Rplus_lt_reg_l with ((/2)^k - (/2)^N).
     now ring_simplify.
     apply Rle_trans with (sum N).
     rewrite le_plus_minus with (1 := Hn).

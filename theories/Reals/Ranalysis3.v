@@ -731,7 +731,7 @@ Proof.
   rewrite <- (Rabs_Ropp (f2 a - f2 x)) in H6.
   rewrite Ropp_minus_distr in H6.
   assert (H7 := Rle_lt_trans _ _ _ (Rabs_triang_inv _ _) H6).
-  apply Rplus_lt_reg_r with (- Rabs (f2 a) + Rabs (f2 x) / 2).
+  apply Rplus_lt_reg_l with (- Rabs (f2 a) + Rabs (f2 x) / 2).
   rewrite Rplus_assoc.
   rewrite <- double_var.
   do 2 rewrite (Rplus_comm (- Rabs (f2 a))).

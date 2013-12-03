@@ -312,7 +312,7 @@ Proof.
   rewrite (Rplus_comm 1 (Rabs l)); unfold Rgt; apply Rle_lt_0_plus_1;
     exact (Rabs_pos l).
   unfold R_dist in H9;
-    apply (Rplus_lt_reg_r (- Rabs l) (Rabs (f x2)) (1 + Rabs l)).
+    apply (Rplus_lt_reg_l (- Rabs l) (Rabs (f x2)) (1 + Rabs l)).
   rewrite <- (Rplus_assoc (- Rabs l) 1 (Rabs l));
     rewrite (Rplus_comm (- Rabs l) 1);
       rewrite (Rplus_assoc 1 (- Rabs l) (Rabs l)); rewrite (Rplus_opp_l (Rabs l));

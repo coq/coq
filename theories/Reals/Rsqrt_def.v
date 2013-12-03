@@ -373,7 +373,7 @@ Proof.
   assumption.
   unfold Rdiv; apply Rmult_lt_0_compat;
     [ assumption | apply Rinv_0_lt_compat; assumption ].
-  apply Rplus_lt_reg_r with x; rewrite Rplus_0_r.
+  apply Rplus_lt_reg_l with x; rewrite Rplus_0_r.
   replace (x + (y - x)) with y; [ assumption | ring ].
   exists 0%nat; intros.
   replace (dicho_lb x y P n - dicho_up x y P n - 0) with
@@ -559,7 +559,7 @@ Proof.
   rewrite Rabs_right in H11.
   pattern (- f x0) at 1 in H11; rewrite <- Rplus_0_r in H11.
   unfold Rminus in H11; rewrite (Rplus_comm (f (Wn x2))) in H11.
-  assert (H12 := Rplus_lt_reg_r _ _ _ H11).
+  assert (H12 := Rplus_lt_reg_l _ _ _ H11).
   assert (H13 := H6 x2).
   elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H13 H12)).
   apply Rle_ge; left; unfold Rminus; apply Rplus_le_lt_0_compat.
@@ -580,14 +580,14 @@ Proof.
   pattern (f x0) at 2 in H10; rewrite <- Rplus_0_r in H10.
   rewrite Ropp_minus_distr' in H10.
   unfold Rminus in H10.
-  assert (H11 := Rplus_lt_reg_r _ _ _ H10).
+  assert (H11 := Rplus_lt_reg_l _ _ _ H10).
   assert (H12 := H6 x2).
   cut (0 < f (Vn x2)).
   intro.
   elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ H13 H12)).
   rewrite <- (Ropp_involutive (f (Vn x2))).
   apply Ropp_0_gt_lt_contravar; assumption.
-  apply Rplus_lt_reg_r with (f x0 - f (Vn x2)).
+  apply Rplus_lt_reg_l with (f x0 - f (Vn x2)).
   rewrite Rplus_0_r; replace (f x0 - f (Vn x2) + (f (Vn x2) - f x0)) with 0;
     [ unfold Rminus; apply Rplus_lt_le_0_compat | ring ].
   assumption.
@@ -635,7 +635,7 @@ Proof.
   apply Ropp_eq_0_compat; assumption.
   unfold opp_fct; apply Ropp_0_gt_lt_contravar; assumption.
   unfold opp_fct.
-  apply Rplus_lt_reg_r with (f x); rewrite Rplus_opp_r; rewrite Rplus_0_r;
+  apply Rplus_lt_reg_l with (f x); rewrite Rplus_opp_r; rewrite Rplus_0_r;
     assumption.
   inversion H0.
   assumption.
