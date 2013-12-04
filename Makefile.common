@@ -122,7 +122,7 @@ REFMANCOQTEXFILES:=$(addprefix doc/refman/, \
   RefMan-decl.v.tex RefMan-pro.v.tex RefMan-sch.v.tex \
   Cases.v.tex Coercion.v.tex CanonicalStructures.v.tex Extraction.v.tex \
   Program.v.tex Omega.v.tex Micromega.v.tex Polynom.v.tex Nsatz.v.tex \
-  Setoid.v.tex Helm.tex Classes.v.tex )
+  Setoid.v.tex Helm.tex Classes.v.tex Misc.v.tex)
 
 REFMANTEXFILES:=$(addprefix doc/refman/, \
   headers.sty Reference-Manual.tex \
