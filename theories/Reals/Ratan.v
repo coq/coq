@@ -727,6 +727,16 @@ replace (Rsqr x) with (x ^ 2) by (unfold Rsqr; ring).
 reflexivity.
 Qed.
 
+Lemma derivable_pt_lim_atan :
+  forall x, derivable_pt_lim atan x (/(1 + x^2)).
+Proof.
+intros x.
+apply derive_pt_eq_1 with (derivable_pt_atan x).
+replace (x ^ 2) with (x * x) by ring.
+rewrite <- (Rmult_1_l (Rinv _)).
+apply derive_pt_atan.
+Qed.
+
 (** * Definition of the arctangent function as the sum of the arctan power series *)
 (* Proof taken from Guillaume Melquiond's interval package for Coq *)
 
