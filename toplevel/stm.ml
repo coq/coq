@@ -1771,7 +1771,6 @@ let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
     else if ng < ngprev then
       (* A subgoal have been solved. Let's compute the new current level
 	 by discarding all levels with 0 remaining goals. *)
-      let _ = assert (Int.equal ng (ngprev - 1)) in
       let rec loop = function
 	| (0, ng2::ngl2) -> loop (ng2,ngl2)
 	| p -> p
