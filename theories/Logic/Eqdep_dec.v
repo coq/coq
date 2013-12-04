@@ -358,17 +358,12 @@ Proof.
             end x).
     destruct x; reflexivity.
   - specialize IHn with (f_equal pred x).
-    change eq_refl with
-           (match (@eq_refl _ n) in _ = n' return S n = S n' with
-            | eq_refl => eq_refl
-            end).
+    change eq_refl with (f_equal S (@eq_refl _ n)).
     rewrite <- IHn; clear IHn.
     change (match S n as n' return S n = n' -> Prop with
             | 0 => fun _ => True
             | S n' => fun x =>
-                x = match f_equal pred x in _ = n' return S n = S n' with
-                    | eq_refl => eq_refl
-                    end
+                x = f_equal S (f_equal pred x)
             end x).
   pattern (S n) at 2 3, x.
   destruct x; reflexivity.
