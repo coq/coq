@@ -62,7 +62,7 @@ Abort.
 Goal (forall n : nat, n = 0 -> Prop) -> Prop.
 intro P.
  refine (P _ _).
-reflexivity.
+2:reflexivity.
 Abort.
 
 (* Submitted by Jacek Chrzaszcz (bug #1102) *)

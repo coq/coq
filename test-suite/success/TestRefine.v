@@ -176,7 +176,7 @@ Restart.
     end).
 
 exists 1. trivial.
-elim (f0 p).
+elim (f p).
  refine
  (fun (x : nat) (h : x = S p) => exist (fun x : nat => x = S (S p)) (S x) _).
  rewrite h. auto.
