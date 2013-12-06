@@ -327,7 +327,7 @@ let lift (f : unit -> 'a) : 'a task =
     closed in coqide.
 *)
 
-let open_process_pid prog args =
+let open_coqtop_pipe prog args =
   let (ide2top_r,ide2top_w) = Unix.pipe () in
   let (top2ide_r,top2ide_w) = Unix.pipe () in
   Unix.set_close_on_exec ide2top_w;
@@ -342,6 +342,34 @@ let open_process_pid prog args =
   Glib.Io.channel_of_descr top2ide_r,
   Unix.out_channel_of_descr ide2top_w,
   (fun () -> Unix.close top2ide_r; Unix.close ide2top_w)
+
+let open_coqtop_socket prog args =
+  let s = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
+  Unix.bind s (Unix.ADDR_INET (Unix.inet_addr_loopback,0));
+  Unix.listen s 1;
+  let host, port =
+    match Unix.getsockname s with
+    | Unix.ADDR_INET(host, port) ->
+        Unix.string_of_inet_addr host, string_of_int port
+    | _ -> assert false in
+  let pid =
+    Unix.create_process prog
+      (Array.append args [|"-ideslave-socket";host^":"^port|])
+      (Unix.openfile "slave.in"  [Unix.O_CREAT;Unix.O_RDONLY] 0o660)
+      (Unix.openfile "slave.out" [Unix.O_CREAT;Unix.O_WRONLY] 0o660)
+      (Unix.openfile "slave.err" [Unix.O_CREAT;Unix.O_WRONLY] 0o660) in
+  assert (pid <> 0);
+  let cs, _ = Unix.accept s in
+  Unix.set_nonblock cs;
+  pid, 
+  Unix.in_channel_of_descr cs, 
+  Glib.Io.channel_of_descr_socket cs,
+  Unix.out_channel_of_descr cs,
+  (fun () -> Unix.close cs; Unix.close s)
+
+let open_process_pid prog args =
+  if Sys.os_type = "Unix" then open_coqtop_pipe prog args
+  else open_coqtop_socket prog args
 
 exception TubeError
 exception AnswerWithoutRequest of string

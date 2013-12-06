@@ -11,14 +11,14 @@ open Preferences
 
 exception Forbidden
 
-let warn_image =
+let warn_image () =
   let img = GMisc.image () in
   img#set_stock `DIALOG_WARNING;
   img#set_icon_size `DIALOG;
   img
 
-let warning msg =
-  GToolbox.message_box ~title:"Warning" ~icon:warn_image#coerce msg
+let warning msg = 
+   GToolbox.message_box ~title:"Warning" ~icon:(warn_image ())#coerce msg 
 
 let cb = GData.clipboard Gdk.Atom.primary
 
@@ -328,7 +328,10 @@ let io_read_all chan =
     let len = Glib.Io.read_chars ~buf:read_string ~pos:0 ~len:maxread chan in
     Buffer.add_substring read_buffer read_string 0 len
   in
-  begin try while true do read_once () done with _ -> () end;
+  begin
+    try while true do read_once () done
+    with Glib.GError _ -> ()
+  end;
   Buffer.contents read_buffer
 
 (** Run an external command asynchronously *)

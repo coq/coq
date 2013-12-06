@@ -12,7 +12,6 @@ val boot : bool ref
 
 val batch_mode : bool ref
 
-val ide_slave_mode : bool ref
 val coq_slave_mode : int ref
 val coq_slaves_number : int ref
 
@@ -27,6 +26,7 @@ val term_quality : bool ref
 val xml_export : bool ref
 
 val ide_slave : bool ref
+val ide_slave_socket : (string * int) option ref
 
 val time : bool ref
 

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-val warn_image : GMisc.image
+val warn_image : unit -> GMisc.image
 val warning : string -> unit
 
 val cb : GData.clipboard

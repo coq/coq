@@ -108,7 +108,7 @@ object(self)
     let answ = GToolbox.question_box ~title:"File exists on disk"
       ~buttons:["Overwrite"; "Cancel";]
       ~default:1
-      ~icon:warn_image#coerce
+      ~icon:(warn_image ())#coerce
       ("File "^f^" already exists")
     in
     match answ with

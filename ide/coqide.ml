@@ -171,7 +171,7 @@ let check_quit saveall =
                 "Quit without Saving";
                 "Don't Quit"]
       ~default:0
-      ~icon:warn_image#coerce
+      ~icon:(warn_image ())#coerce
       "There are unsaved buffers"
     in
     match answ with
@@ -259,7 +259,7 @@ let close_buffer sn =
                 "Close without Saving";
                 "Don't Close"]
       ~default:0
-      ~icon:warn_image#coerce
+      ~icon:(warn_image ())#coerce
       "This buffer has unsaved modifications"
     in
     match answ with

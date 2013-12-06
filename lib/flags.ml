@@ -45,7 +45,6 @@ let boot = ref false
 
 let batch_mode = ref false
 
-let ide_slave_mode = ref false
 let coq_slave_mode = ref (-1)
 let coq_slaves_number = ref 1
 
@@ -60,6 +59,7 @@ let term_quality = ref false
 let xml_export = ref false
 
 let ide_slave = ref false
+let ide_slave_socket = ref None
 
 let time = ref false
 

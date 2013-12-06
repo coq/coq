@@ -233,6 +233,11 @@ let get_int opt n =
   with Failure _ ->
     prerr_endline ("Error: integer expected after option "^opt); exit 1
 
+let get_host_port opt s =
+  match CString.split ':' s with
+  | [host; port] -> Some (host, int_of_string port)
+  | _ -> prerr_endline ("Error: host:port expected after option "^opt); exit 1
+
 let parse_args arglist =
   let args = ref arglist in
   let extras = ref [] in
@@ -272,6 +277,7 @@ let parse_args arglist =
     |"-compile-verbose" -> add_compile true (next ())
     |"-dump-glob" -> Dumpglob.dump_into_file (next ()); glob_opt := true
     |"-exclude-dir" -> exclude_search_in_dirname (next ())
+    |"-ideslave-socket" -> Flags.ide_slave_socket := get_host_port opt (next())
     |"-init-file" -> set_rcfile (next ())
     |"-inputstate"|"-is" -> set_inputstate (next ())
     |"-load-ml-object" -> Mltop.dir_ml_load (next ())

@@ -401,8 +401,13 @@ let slave_feeder xml_oc msg =
 let loop () =
   init_signal_handler ();
   catch_break := false;
-  let xml_oc = Xml_printer.make (Xml_printer.TChannel !orig_stdout) in
-  let xml_ic = Xml_parser.make (Xml_parser.SChannel stdin) in
+  let in_ch, out_ch =
+    match !Flags.ide_slave_socket with
+    | None -> stdin, !orig_stdout
+    | Some(h,p) ->
+        Unix.open_connection (Unix.ADDR_INET(Unix.inet_addr_of_string h,p)) in
+  let xml_oc = Xml_printer.make (Xml_printer.TChannel out_ch) in
+  let xml_ic = Xml_parser.make (Xml_parser.SChannel in_ch) in
   let () = Xml_parser.check_eof xml_ic false in
   set_logger (slave_logger xml_oc);
   set_feeder (slave_feeder xml_oc);

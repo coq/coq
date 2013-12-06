@@ -7,9 +7,10 @@
 (************************************************************************)
 
 let prerr_endline s =
-  if !Flags.debug then
-    prerr_endline (Printf.sprintf "%d] %s" !Flags.coq_slave_mode s)
-  else ()
+  if !Flags.debug then begin
+    prerr_endline (Printf.sprintf "%d] %s" !Flags.coq_slave_mode s);
+    flush stderr
+  end else ()
 
 open Vernacexpr
 open Errors
@@ -654,6 +655,16 @@ end = struct (* {{{ *)
       | Some managers -> Array.length managers
     let is_empty () = !slave_managers = None
 
+    let master_handshake ic oc =
+      try
+        Marshal.to_channel oc 17 [];  flush oc;
+        let n = (Marshal.from_channel ic : int) in
+        assert(n = 17);
+        prerr_endline "Handshake OK"
+      with e ->
+        prerr_endline ("Handshake failed: "^Printexc.to_string e);
+        exit 1
+
     let respawn n () =
       let c2s_r, c2s_w = Unix.pipe () in
       let s2c_r, s2c_w = Unix.pipe () in
@@ -674,7 +685,12 @@ end = struct (* {{{ *)
       let pid = Unix.create_process_env prog args env c2s_r s2c_w Unix.stderr in
       Unix.close c2s_r;
       Unix.close s2c_w;
-      Unix.in_channel_of_descr s2c_r, Unix.out_channel_of_descr c2s_w, pid, n
+      let s2c_r = Unix.in_channel_of_descr s2c_r in
+      let c2s_w = Unix.out_channel_of_descr c2s_w in
+      set_binary_mode_out c2s_w true;
+      set_binary_mode_in s2c_r true;
+      master_handshake s2c_r c2s_w;
+      s2c_r, c2s_w, pid, n
 
     let init n manage_slave =
       slave_managers := Some
@@ -763,11 +779,13 @@ end = struct (* {{{ *)
 
   let marshal_request oc (req : request) =
     try marshal_to_channel oc req
-    with Failure s | Invalid_argument s -> marshal_err ("marshal_request: "^s)
+    with Failure s | Invalid_argument s | Sys_error s ->
+      marshal_err ("marshal_request: "^s)
 
   let unmarshal_request ic =
     try (Marshal.from_channel ic : request)
-    with Failure s | Invalid_argument s -> marshal_err ("unmarshal_request: "^s)
+    with Failure s | Invalid_argument s | Sys_error s ->
+      marshal_err ("unmarshal_request: "^s)
 
   (* Since cancelling is still cooperative, the slave runs a thread that
      periodically sends a RespTick message on the same channel used by the
@@ -778,20 +796,23 @@ end = struct (* {{{ *)
     fun oc (res : response) ->
       Mutex.lock m;
       try marshal_to_channel oc res; Mutex.unlock m
-      with Failure s | Invalid_argument s ->
+      with Failure s | Invalid_argument s | Sys_error s ->
         Mutex.unlock m; marshal_err ("marshal_response: "^s)
   
   let unmarshal_response ic =
     try (Marshal.from_channel ic : response)
-    with Failure s | Invalid_argument s -> marshal_err ("unmarshal_response: "^s)
+    with Failure s | Invalid_argument s | Sys_error s ->
+      marshal_err ("unmarshal_response: "^s)
   
   let marshal_more_data oc (res : more_data) =
     try marshal_to_channel oc res
-    with Failure s | Invalid_argument s -> marshal_err ("marshal_more_data: "^s)
+    with Failure s | Invalid_argument s | Sys_error s ->
+      marshal_err ("marshal_more_data: "^s)
   
   let unmarshal_more_data ic =
     try (Marshal.from_channel ic : more_data)
-    with Failure s | Invalid_argument s -> marshal_err ("unmarshal_more_data: "^s)
+    with Failure s | Invalid_argument s | Sys_error s ->
+      marshal_err ("unmarshal_more_data: "^s)
 
   let queue : task TQueue.t = TQueue.create ()
 
@@ -823,7 +844,8 @@ end = struct (* {{{ *)
   let rec manage_slave respawn =
     let ic, oc, pid, id_slave = respawn () in
     let kill_pid =
-      ref (fun () -> try Unix.kill pid 9 with Unix.Unix_error _ -> ()) in
+      ref (fun () -> try Unix.kill pid 9
+                     with Unix.Unix_error _ | Invalid_argument _ -> ()) in
     at_exit (fun () -> !kill_pid ());
     let last_task = ref None in
     try
@@ -940,6 +962,16 @@ end = struct (* {{{ *)
       | [] -> let data = f () in l := List.tl data; List.hd data
       | x::tl -> l := tl; x
 
+  let slave_handshake () =
+    try
+      let v = (Marshal.from_channel !slave_ic : int) in
+      assert(v = 17);
+      Marshal.to_channel !slave_oc v [];  flush !slave_oc;
+      prerr_endline "Handshake OK"
+    with e ->
+      prerr_endline ("Handshake failed: " ^ Printexc.to_string e);
+      exit 1
+
   let slave_main_loop reset =
     let slave_feeder oc fb =
       Marshal.to_channel oc (RespFeedback fb) [];
@@ -959,6 +991,7 @@ end = struct (* {{{ *)
         Unix.sleep n;
         if !working then marshal_response !slave_oc RespTick
       done) 1 in
+    slave_handshake ();
     while true do
       try
         working := false;
