@@ -1681,7 +1681,7 @@ let build_inversion_problem loc env sigma tms t =
   let sub_tms =
     List.map2 (fun deps (tm,(tmtyp,_),(na,b,t)) ->
       let na = if List.is_empty deps then Anonymous else force_name na in
-      Pushed (false,((tm,tmtyp),deps,na)))
+      Pushed (true,((tm,tmtyp),deps,na)))
       dep_sign decls in
   let subst = List.map (fun (na,t) -> (na,lift n t)) subst in
   (* [eqn1] is the first clause of the auxiliary pattern-matching that
