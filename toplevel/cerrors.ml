@@ -114,11 +114,15 @@ let rec process_vernac_interp_error exn = match exn with
          if Int.equal i 0 then str "." else str " (level " ++ int i ++ str").")
   | AlreadyDeclared msg ->
       wrap_vernac_error exn (msg ++ str ".")
-  | Proof_errors.TacticFailure e -> process_vernac_interp_error e
   | exc ->
       exc
 
+let rec strip_wrapping_exceptions = function
+  | Proof_errors.TacticFailure e -> strip_wrapping_exceptions e
+  | exc -> exc
+
 let process_vernac_interp_error exc =
+  let exc = strip_wrapping_exceptions exc in
   let e = process_vernac_interp_error exc in
   let ltac_trace = Exninfo.get exc Proof_type.ltac_trace_info in
   let loc = Option.default Loc.ghost (Loc.get_loc e) in
