@@ -250,17 +250,6 @@ tags:
 	etags --append --language=none\
 	      "--regex=/[ \t]*\([^: \t]+\)[ \t]*:/\1/"
 
-
-%.elc: %.el
-ifdef COQ_CONFIGURED
-	echo "(setq load-path (cons \".\" load-path))" > $*.compile
-	echo "(byte-compile-file \"$<\")" >> $*.compile
-	- $(EMACS) -batch -l $*.compile
-	rm -f $*.compile
-else
-	@echo "Please run ./configure first" >&2; exit 1
-endif
-
 # Useful to check that the exported variables are within the win32 limits
 
 printenv:
