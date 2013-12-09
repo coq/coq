@@ -70,9 +70,8 @@ let dloc = Loc.ghost
 
 let catching_error call_trace fail e =
   let e = Errors.push e in
-  let inner_trace, e = match Exninfo.get e ltac_trace_info with
-  | Some inner_trace -> inner_trace, e
-  | None -> [], e
+  let inner_trace =
+    Option.default [] (Exninfo.get e ltac_trace_info)
   in
   if List.is_empty call_trace && List.is_empty inner_trace then fail e
   else begin
