@@ -1096,7 +1096,7 @@ let apply_list = function
 let find_matching_clause unifier clause =
   let rec find clause =
     try unifier clause
-    with exn when catchable_exception exn ->
+    with e when catchable_exception e ->
     try find (clenv_push_prod clause)
     with NotExtensibleClause -> failwith "Cannot apply"
   in find clause
@@ -1116,6 +1116,7 @@ let apply_in_once_main flags innerclause (d,lbind) gl =
   let rec aux clause =
     try progress_with_clause flags innerclause clause
     with e when Errors.noncritical e ->
+    let e = Errors.push e in
     try aux (clenv_push_prod clause)
     with NotExtensibleClause -> raise e
   in
@@ -1130,8 +1131,9 @@ let apply_in_once sidecond_first with_delta with_destruct with_evars id
     try
       let clause = apply_in_once_main flags innerclause (c,lbind) gl in
       clenv_refine_in ~sidecond_first with_evars id clause gl
-    with exn when with_destruct ->
-      descend_in_conjunctions aux (fun _ -> raise exn) c gl
+    with e when with_destruct ->
+      let e = Errors.push e in
+      descend_in_conjunctions aux (fun _ -> raise e) c gl
   in
   aux with_destruct d gl0
 

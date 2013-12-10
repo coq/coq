@@ -69,7 +69,6 @@ module Value = Taccoerce.Value
 let dloc = Loc.ghost
 
 let catching_error call_trace fail e =
-  let e = Errors.push e in
   let inner_trace =
     Option.default [] (Exninfo.get e ltac_trace_info)
   in
@@ -89,7 +88,11 @@ let f_debug : debug_info TacStore.field = TacStore.field ()
 let f_trace : ltac_trace TacStore.field = TacStore.field ()
 
 let catch_error call_trace f x =
-  try f x with e when Errors.noncritical e -> catching_error call_trace raise e
+  try f x
+  with e when Errors.noncritical e ->
+    let e = Errors.push e in
+    catching_error call_trace raise e
+
 let catch_error_tac call_trace tac =
   Proofview.tclORELSE
     tac
@@ -1149,10 +1152,6 @@ and interp_app loc ist fv largs =
               catch_error_tac trace (val_interp ist body)
             end
 	    begin fun e ->
-              (* spiwack: [Errors.push] here is unlikely to do what
-                 it's intended to, or anything meaningful for that
-                 matter. *)
-              let e = Errors.push e in
               Proofview.tclLIFT (debugging_exception_step ist false e (fun () -> str "evaluation")) <*>
 	      Proofview.tclZERO e
             end

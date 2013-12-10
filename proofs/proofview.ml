@@ -529,6 +529,7 @@ let tclSENSITIVE s =
     let next = sensitive_on_proofview s env step in
     Proof.set next
   with e when catchable_exception e ->
+    let e = Errors.push e in
     tclZERO e
 
 let tclPROGRESS t =
@@ -691,6 +692,7 @@ module V82 = struct
       let sgs = List.flatten goalss in
       Proof.set { ps with solution=evd ; comb=sgs; }
     with e when catchable_exception e ->
+      let e = Errors.push e in
       tclZERO e
 
 
@@ -762,7 +764,9 @@ module V82 = struct
       let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] ; initial = [] } in
       let (_,final,_) = apply (Goal.V82.env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = final.comb }
-    with Proof_errors.TacticFailure e -> raise e
+    with Proof_errors.TacticFailure e ->
+      let e = Errors.push e in
+      raise e
 
   let put_status b =
     Proof.put (b,([],[]))
@@ -801,6 +805,7 @@ module Goal = struct
       Proof.set { step with solution=sigma } >>
         Proof.ret res
     with e when catchable_exception e ->
+      let e = Errors.push e in
       tclZERO e
 
   let return x = lift (Goal.return x)
@@ -817,6 +822,7 @@ module Goal = struct
         let (t,_) = Goal.eval (enter_t f) env sigma goal in
         t
       with e when catchable_exception e ->
+        let e = Errors.push e in
         tclZERO e
     end
   let enterl f =
@@ -829,6 +835,7 @@ module Goal = struct
         t >= fun r ->
         tclUNIT (r::acc)
       with e when catchable_exception e ->
+        let e = Errors.push e in
         tclZERO e
     end >= fun res ->
     tclUNIT (List.flatten (List.rev res))

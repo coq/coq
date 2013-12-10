@@ -326,11 +326,9 @@ module V82 = struct
       { p with proofview = Proofview.V82.grab p.proofview }
 
 
-    let instantiate_evar n com pr =
-      let sp = pr.proofview in
-      try
-	let new_proofview = Proofview.V82.instantiate_evar n com sp in
-        { pr with proofview = new_proofview }
-      with e ->
-	raise e
+  let instantiate_evar n com pr =
+    let sp = pr.proofview in
+    let new_proofview = Proofview.V82.instantiate_evar n com sp in
+    { pr with proofview = new_proofview }
+
 end

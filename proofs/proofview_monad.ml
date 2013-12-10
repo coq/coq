@@ -20,13 +20,25 @@ let get = fun r -> (); fun () -> Pervasives.(!) r
 
 let raise = fun e -> (); fun () -> raise (Proof_errors.Exception e)
 
-let catch = fun s h -> (); fun () -> try s () with Proof_errors.Exception e -> h e ()
+let catch = fun s h -> (); fun () ->
+  try s ()
+  with Proof_errors.Exception e ->
+    let e = Errors.push e in
+    h e ()
 
-let read_line = fun () -> try Pervasives.read_line () with e -> raise e ()
+let read_line = fun () ->
+  try Pervasives.read_line ()
+  with e ->
+    let e = Errors.push e in
+    raise e ()
 
 let print_char = fun c -> (); fun () -> print_char c
 
-let print = fun s -> (); fun () -> try Pp.pp s; Pp.pp_flush () with e -> raise e ()
+let print = fun s -> (); fun () ->
+  try Pp.pp s; Pp.pp_flush ()
+  with e ->
+    let e = Errors.push e in
+    raise e ()
 
 let timeout = fun n t -> (); fun () ->
   let timeout_handler _ = Pervasives.raise (Proof_errors.Exception Proof_errors.Timeout) in
@@ -43,7 +55,11 @@ let timeout = fun n t -> (); fun () ->
   with
   | e -> restore_timeout (); Pervasives.raise e
 
-let run = fun x -> try x () with Proof_errors.Exception e -> Pervasives.raise e
+let run x =
+  try x ()
+  with Proof_errors.Exception e ->
+    let e = Errors.push e in
+    Pervasives.raise e
 
 end
 
