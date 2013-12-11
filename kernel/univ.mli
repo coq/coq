@@ -109,7 +109,7 @@ sig
   val equal : t -> t -> bool
   (** Equality function on formal universes *)
 
-  (* val hash : t -> int *)
+  val hash : t -> int
   (** Hash function *)
 
   val make : Level.t -> t

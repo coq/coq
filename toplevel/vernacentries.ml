@@ -1838,7 +1838,8 @@ let check_vernac_supports_locality c l =
     | VernacSetOpacity _ | VernacSetStrategy _
     | VernacSetOption _ | VernacUnsetOption _
     | VernacDeclareReduction _
-    | VernacExtend _ ) -> ()
+    | VernacExtend _ 
+    | VernacInductive _) -> ()
   | Some _, _ -> Errors.error "This command does not support Locality"
 
 (* Vernaculars that take a polymorphism flag *)

@@ -3007,7 +3007,7 @@ let compute_scheme_signature scheme names_info ind_type_guess =
    different. *)
 let compute_elim_signature (evd,(elimc,elimt),ind_type_guess) names_info =
   let scheme = compute_elim_sig ~elimc:elimc elimt in
-  compute_scheme_signature scheme names_info ind_type_guess, scheme
+    evd, (compute_scheme_signature scheme names_info ind_type_guess, scheme)
 
 let guess_elim isrec hyp0 gl =
   let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
@@ -3049,7 +3049,7 @@ let find_induction_type isrec elim hyp0 gl =
 	let evd, (elimc,elimt),_ = guess_elim isrec hyp0 gl in
 	let scheme = compute_elim_sig ~elimc elimt in
 	(* We drop the scheme waiting to know if it is dependent *)
-	project gl, scheme, ElimOver (isrec,hyp0)
+	evd, scheme, ElimOver (isrec,hyp0)
     | Some e ->
 	let evd, (elimc,elimt),ind_guess = given_elim hyp0 e gl in
 	let scheme = compute_elim_sig ~elimc elimt in
@@ -3080,8 +3080,8 @@ let get_eliminator elim gl = match elim with
       Proofview.Goal.sigma gl, (* bugged, should be computed *) true, elim, indsign
   | ElimOver (isrec,id) ->
       let evd, (elimc,elimt),_ as elims = Tacmach.New.of_old (guess_elim isrec id) gl in
-      evd, isrec, ({elimindex = None; elimbody = elimc}, elimt),
-      fst (compute_elim_signature elims id)
+      let _, (l, _) = compute_elim_signature elims id in
+      evd, isrec, ({elimindex = None; elimbody = elimc}, elimt), l
 
 (* Instantiate all meta variables of elimclause using lid, some elts
    of lid are parameters (first ones), the other are
@@ -3269,7 +3269,7 @@ let induction_with_atomization_of_ind_arg isrec with_evars elim names (hyp0,lbin
    parameters and arguments are given (mandatory too). *)
 let induction_without_atomization isrec with_evars elim names lid =
   Proofview.Goal.enter begin fun gl ->
-  let (indsign,scheme as elim_info) = Tacmach.New.of_old (find_elim_signature isrec elim (List.hd lid)) gl in
+  let sigma, (indsign,scheme as elim_info) = Tacmach.New.of_old (find_elim_signature isrec elim (List.hd lid)) gl in
   let awaited_nargs =
     scheme.nparams + scheme.nargs
     + (if scheme.farg_in_concl then 1 else 0)
@@ -3278,7 +3278,9 @@ let induction_without_atomization isrec with_evars elim names lid =
   let nlid = List.length lid in
   if not (Int.equal nlid awaited_nargs)
   then Proofview.tclZERO (Errors.UserError ("", str"Not the right number of induction arguments."))
-  else induction_from_context_l with_evars elim_info lid names
+  else 
+    Proofview.tclTHEN (Proofview.V82.tclEVARS sigma)
+      (induction_from_context_l with_evars elim_info lid names)
   end
 
 let has_selected_occurrences = function
@@ -3760,7 +3762,9 @@ let abstract_subproof id tac =
   let decl = (cd, IsProof Lemma) in
   (** ppedrot: seems legit to have abstracted subproofs as local*)
   let cst = Declare.declare_constant ~internal:Declare.KernelSilent ~local:true id decl in
-  let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in
+  (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
+  (* FIXME: lem might have generated new constraints... not taken into account *)
+  let lem = Universes.unsafe_constr_of_global (ConstRef cst) in
   let open Declareops in
   let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
   let effs = cons_side_effects eff no_seff in

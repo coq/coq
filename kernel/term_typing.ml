@@ -70,20 +70,39 @@ let handle_side_effects env body side_eff =
     let rec sub c i x = match kind_of_term x with
       | Const (c', _) when eq_constant c c' -> mkRel i
       | _ -> map_constr_with_binders ((+) 1) (fun i x -> sub c i x) i x in
+    let rec sub_body c u b i x = match kind_of_term x with
+      | Const (c',u') when eq_constant c c' -> 
+	let subst = 
+	  Array.fold_left2 (fun subst l l' -> Univ.LMap.add l l' subst)
+	    Univ.LMap.empty (Instance.to_array u) (Instance.to_array u')
+	in 
+	  Vars.subst_univs_level_constr subst b
+      | _ -> map_constr_with_binders ((+) 1) (fun i x -> sub_body c u b i x) i x in
     let fix_body (c,cb) t =
       match cb.const_body with
       | Undef _ -> assert false
       | Def b ->
           let b = Mod_subst.force_constr b in
-          let b_ty = Typeops.type_of_constant_type env cb.const_type in
-          let t = sub c 1 (Vars.lift 1 t) in
-          mkLetIn (cname c, b, b_ty, t)
+	  let poly = cb.const_polymorphic in
+	    if not poly then
+              let b_ty = Typeops.type_of_constant_type env cb.const_type in
+              let t = sub c 1 (Vars.lift 1 t) in
+		mkLetIn (cname c, b, b_ty, t)
+	    else 
+	      let univs = Future.force cb.const_universes in
+		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t)
       | OpaqueDef b -> 
           let b = Opaqueproof.force_proof b in
-          let b_ty = Typeops.type_of_constant_type env cb.const_type in
-          let t = sub c 1 (Vars.lift 1 t) in
-          mkApp (mkLambda (cname c, b_ty, t), [|b|]) in
-    List.fold_right fix_body cbl t
+	  let poly = cb.const_polymorphic in
+	    if not poly then
+              let b_ty = Typeops.type_of_constant_type env cb.const_type in
+              let t = sub c 1 (Vars.lift 1 t) in
+		mkApp (mkLambda (cname c, b_ty, t), [|b|]) 
+	    else
+	      let univs = Future.force cb.const_universes in
+		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t)
+    in
+      List.fold_right fix_body cbl t
   in
   (* CAVEAT: we assure a proper order *)
   Declareops.fold_side_effects handle_sideff body

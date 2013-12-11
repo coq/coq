@@ -55,6 +55,9 @@ let fresh_instance_from ctx =
   let constraints = instantiate_univ_context subst ctx in
     (inst, subst), (ctx', constraints)
 
+let unsafe_instance_from ctx =
+  (Univ.UContext.instance ctx, ctx)
+
 (** Fresh universe polymorphic construction *)
 
 let fresh_constant_instance env c =
@@ -78,7 +81,29 @@ let fresh_constructor_instance env (ind,i) =
 	(((ind,i),inst), ctx)
     else (((ind,i),Instance.empty), ContextSet.empty)
 
+let unsafe_constant_instance env c =
+  let cb = lookup_constant c env in
+    if cb.Declarations.const_polymorphic then
+      let inst, ctx = unsafe_instance_from (Future.force cb.Declarations.const_universes) in
+	((c, inst), ctx)
+    else ((c,Instance.empty), UContext.empty)
+
+let unsafe_inductive_instance env ind = 
+  let mib, mip = Inductive.lookup_mind_specif env ind in
+    if mib.Declarations.mind_polymorphic then
+      let inst, ctx = unsafe_instance_from mib.Declarations.mind_universes in
+	((ind,inst), ctx)
+    else ((ind,Instance.empty), UContext.empty)
+
+let unsafe_constructor_instance env (ind,i) = 
+  let mib, mip = Inductive.lookup_mind_specif env ind in
+    if mib.Declarations.mind_polymorphic then
+      let inst, ctx = unsafe_instance_from mib.Declarations.mind_universes in
+	(((ind,i),inst), ctx)
+    else (((ind,i),Instance.empty), UContext.empty)
+
 open Globnames
+
 let fresh_global_instance env gr =
   match gr with
   | VarRef id -> mkVar id, ContextSet.empty
@@ -90,6 +115,19 @@ let fresh_global_instance env gr =
        mkConstructU c, ctx
   | IndRef sp -> 
      let c, ctx = fresh_inductive_instance env sp in
+       mkIndU c, ctx
+
+let unsafe_global_instance env gr =
+  match gr with
+  | VarRef id -> mkVar id, UContext.empty
+  | ConstRef sp -> 
+     let c, ctx = unsafe_constant_instance env sp in
+       mkConstU c, ctx
+  | ConstructRef sp ->
+     let c, ctx = unsafe_constructor_instance env sp in
+       mkConstructU c, ctx
+  | IndRef sp -> 
+     let c, ctx = unsafe_inductive_instance env sp in
        mkIndU c, ctx
 
 let constr_of_global gr =
@@ -106,7 +144,7 @@ let constr_of_global gr =
     else c
 
 let unsafe_constr_of_global gr =
-  let c, ctx = fresh_global_instance (Global.env ()) gr in
+  let c, ctx = unsafe_global_instance (Global.env ()) gr in
     c
 
 let constr_of_global_univ (gr,u) =
