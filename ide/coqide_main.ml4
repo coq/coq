@@ -91,6 +91,7 @@ let () =
   Coq.killer := win32_kill;
   Coq.soft_killer := win32_kill;
   Coq.interrupter := win32_interrupt;
+  Coq.gio_channel_of_descr_socket := Glib.Io.channel_of_descr_socket;
   set_win32_path ();
   reroute_stdout_stderr ()
 END

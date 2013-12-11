@@ -92,6 +92,9 @@ val killer : (int -> unit) ref
 val soft_killer : (int -> unit) ref
 val interrupter : (int -> unit) ref
 
+(** In win32, sockets are not like regular files *)
+val gio_channel_of_descr_socket : (Unix.file_descr -> Glib.Io.channel) ref
+
 val final_countdown : unit -> unit
 (** [final_countdown] triggers an exit of coqide after
     some last cycles for closing remaining coqtop zombies *)

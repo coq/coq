@@ -343,6 +343,8 @@ let open_coqtop_pipe prog args =
   Unix.out_channel_of_descr ide2top_w,
   (fun () -> Unix.close top2ide_r; Unix.close ide2top_w)
 
+let gio_channel_of_descr_socket = ref Glib.Io.channel_of_descr
+
 let open_coqtop_socket prog args =
   let s = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
   Unix.bind s (Unix.ADDR_INET (Unix.inet_addr_loopback,0));
@@ -363,7 +365,7 @@ let open_coqtop_socket prog args =
   Unix.set_nonblock cs;
   pid, 
   Unix.in_channel_of_descr cs, 
-  Glib.Io.channel_of_descr_socket cs,
+  !gio_channel_of_descr_socket cs,
   Unix.out_channel_of_descr cs,
   (fun () -> Unix.close cs; Unix.close s)
 
