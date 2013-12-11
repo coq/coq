@@ -3,29 +3,31 @@ Changes from V8.4pl2 to V8.4pl3
 
 Ide_slave XML interface
 
-- 20120712, 20130419 : Invalidated protocol version
-
--From 20130419 extra datastructure : union
+- 20120712, 20130419 : Invalidated protocol versions
+- From 20130419 extra datastructure : union
    (Inl "" = <union val="in_l"><string></string></union>,
     Inr _ = <union val="in_r">...)
-
 - 20130419~1 : new toplevel entry : message, not send by coptop v8.4 and not
   handle by coqide v8.4. A message has a level and a content (of string).
   Message levels are Debug of string, Info, Notice, Warning and Error.
-
 - 20130425 :
   * new toplevel entry : feedback, once again not send by coqtop v8.4 and not
-  handle by coqide v8.4. A feedback give the id of the sentence it provides info
-  to and a content. Feedback contents are Processed, AddedAxiom and
+  handle by coqide v8.4. A feedback gives the id of the sentence it provides info
+  about and a content. Feedback contents are Processed, AddedAxiom and
   GlobRef of Util.loc * string * string * string * string
   * <call val="interp"> must provide an attribute id of type int. It is OK in
   coqtop v8.4 to alwais send <call val="interp" id="0">
 
-
 Bug fixes
 
 - Solved bugs:
-  #3023
+  #2230 #2837 #2987 #3003 #3001 #3013 #3023 #3025 #3036 #3118 #3169
+  #(3150, 3151, 3152, 3153)
+- Fixing a significant efficiency leak in the code of the field tactic.
+- Fix caching of local hint database in typeclasses eauto which could
+  miss some hypotheses.
+- Fix automatic solving of obligation in program, which was not trying
+  to solve obligations that had no undefined dependencies left.
 
 Changes from V8.4pl1 to V8.4pl2
 ===============================
