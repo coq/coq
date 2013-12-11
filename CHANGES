@@ -20,6 +20,7 @@ Specification Language
   now a lower priority than "<->": "A -> B <-> C" is now "A -> (B <-> C)"
   (possible source of incompatibilities)
 - Slight changes in unification error messages.
+- Added a syntax $(...)$ allowing to put tactics in terms.
 
 Tactics
 
