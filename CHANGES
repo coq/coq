@@ -21,7 +21,7 @@ Ide_slave XML interface
 Bug fixes
 
 - Solved bugs:
-  #2230 #2837 #2987 #3003 #3001 #3013 #3023 #3025 #3036 #3118 #3169
+  #2230 #2837 #2846 #2987 #3003 #3001 #3013 #3023 #3025 #3036 #3118 #3169
   #(3150, 3151, 3152, 3153)
 - Fixing a significant efficiency leak in the code of the field tactic.
 - Fix caching of local hint database in typeclasses eauto which could
