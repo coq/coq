@@ -340,8 +340,8 @@ Proof.
   intros A eq_dec.
   apply eq_dep_eq__inj_pair2.
   apply eq_rect_eq__eq_dep_eq.
-  unfold Eq_rect_eq.
-  apply eq_rect_eq_dec.
+  unfold Eq_rect_eq, Eq_rect_eq_one_var.
+  intros; apply eq_rect_eq_dec.
   apply eq_dec.
 Qed.
 
