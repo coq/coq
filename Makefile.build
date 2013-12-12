@@ -106,8 +106,8 @@ MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 OCAMLC := $(TYPEREX) $(OCAMLC) $(CAMLFLAGS)
 OCAMLOPT := $(TYPEREX) $(OCAMLOPT) $(CAMLFLAGS)
 
-BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS) -thread
-OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS) -thread
+BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
+OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 DEPFLAGS= -slash $(LOCALINCLUDES)
 
 define bestocaml
@@ -125,9 +125,9 @@ endif
 
 PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo) # works also with new camlp4
 
-SYSMOD:=str unix dynlink threads
-SYSCMA:=$(addsuffix .cma,$(SYSMOD))
-SYSCMXA:=$(addsuffix .cmxa,$(SYSMOD))
+SYSMOD:=str unix dynlink
+SYSCMA:=$(addsuffix .cma,$(SYSMOD) threads)
+SYSCMXA:=$(addsuffix .cmxa,$(SYSMOD) threads)
 
 ifeq ($(CAMLP4),camlp5)
 P4CMA:=gramlib.cma
@@ -221,7 +221,7 @@ minibyte: $(COQTOPBYTE) pluginsbyte
 ifeq ($(BEST),opt)
 $(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -o $@
+	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -thread -o $@
 	$(STRIP) $@
 else
 $(COQTOPEXE): $(COQTOPBYTE)
@@ -230,7 +230,7 @@ endif
 
 $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -o $@
+	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -thread -o $@
 
 LOCALCHKLIBS:=$(addprefix -I , $(CHKSRCDIRS) )
 CHKLIBS:=$(LOCALCHKLIBS) -I $(MYCAMLP4LIB)
@@ -238,7 +238,7 @@ CHKLIBS:=$(LOCALCHKLIBS) -I $(MYCAMLP4LIB)
 ifeq ($(BEST),opt)
 $(CHICKEN): checker/check.cmxa checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -o $@ $(SYSCMXA) $^
+	$(HIDE)$(OCAMLOPT) $(CHKLIBS) $(OPTFLAGS) -thread -o $@ $(SYSCMXA) $^
 	$(STRIP) $@
 else
 $(CHICKEN): $(CHICKENBYTE)
@@ -247,7 +247,7 @@ endif
 
 $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(SYSCMA) $^
+	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -thread $(COQTOOLSBYTEFLAGS) -o $@ $(SYSCMA) $^
 
 # coqmktop
 $(COQMKTOP): $(patsubst %.cma,%$(BESTLIB),$(COQMKTOPCMO:.cmo=$(BESTOBJ)))
@@ -541,10 +541,6 @@ $(COQDOC): $(patsubst %.cma,%$(BESTLIB),$(COQDOCCMO:.cmo=$(BESTOBJ)))
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
 
-tools/fake_ide.cmo: COND_BYTEFLAGS+=-I ide
-
-tools/fake_ide.cmx: COND_OPTFLAGS+=-I ide
-
 $(FAKEIDE): lib/clib$(BESTLIB) lib/xml_lexer$(BESTOBJ) lib/xml_parser$(BESTOBJ) lib/xml_printer$(BESTOBJ) ide/document$(BESTOBJ) tools/fake_ide$(BESTOBJ)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,-I ide,str unix)
@@ -740,10 +736,10 @@ $(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
 
 dev/printers.cma: | dev/printers.mllib.d
 	$(SHOW)'Testing $@'
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(SYSCMA) $(P4CMA) $^ -o test-printer
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $(P4CMA) $^ -o test-printer
 	@rm -f test-printer
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(SYSCMA) $^ -linkall -a -o $@
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -thread $(SYSCMA) $^ -linkall -a -o $@
 
 grammar/grammar.cma: | grammar/grammar.mllib.d
 	$(SHOW)'Testing $@'
@@ -815,14 +811,14 @@ endif
 ## Three flavor of flags: checker/* ide/* and normal files
 
 COND_BYTEFLAGS= \
- $(if $(filter checker/%,$<), $(CHKLIBS), \
+ $(if $(filter checker/%,$<), $(CHKLIBS) -thread, \
    $(if $(filter ide/%,$<), $(COQIDEFLAGS), \
-     $(if $(filter tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES))) $(BYTEFLAGS)
+     $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) -thread)) $(BYTEFLAGS)
 
 COND_OPTFLAGS= \
- $(if $(filter checker/%,$<), $(CHKLIBS), \
+ $(if $(filter checker/%,$<), $(CHKLIBS) -thread, \
    $(if $(filter ide/%,$<), $(COQIDEFLAGS), \
-     $(if $(filter tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES))) $(OPTFLAGS)
+     $(if $(filter tools/fake_ide% tools/coq_makefile%,$<), -I ide,) $(MLINCLUDES) -thread)) $(OPTFLAGS)
 
 %.o: %.c
 	$(SHOW)'OCAMLC    $<'
