@@ -203,6 +203,30 @@ let eq_reference r1 r2 = match r1, r2 with
 | Ident (_, id1), Ident (_, id2) -> Id.equal id1 id2
 | _ -> false
 
+let join_reference ns r =
+  match ns , r with
+    Qualid (_, q1), Qualid (loc, q2) ->
+      let (dp1,id1) = repr_qualid q1 in
+      let (dp2,id2) = repr_qualid q2 in
+      Qualid (loc,
+	      make_qualid
+		(append_dirpath (append_dirpath dp1 (dirpath_of_string (Names.Id.to_string id1))) dp2)
+		id2)
+  | Qualid (_, q1), Ident (loc, id2) ->
+    let (dp1,id1) = repr_qualid q1 in
+    Qualid (loc,
+	    make_qualid
+	      (append_dirpath dp1 (dirpath_of_string (Names.Id.to_string id1)))
+	      id2)
+  | Ident (_, id1), Qualid (loc, q2) ->
+    let (dp2,id2) = repr_qualid q2 in
+    Qualid (loc, make_qualid
+      (append_dirpath (dirpath_of_string (Names.Id.to_string id1)) dp2)
+      id2)
+  | Ident (_, id1), Ident (loc, id2) ->
+    Qualid (loc, make_qualid
+      (dirpath_of_string (Names.Id.to_string id1)) id2)
+
 (* Deprecated synonyms *)
 
 let make_short_qualid = qualid_of_ident

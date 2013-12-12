@@ -439,6 +439,10 @@ GEXTEND Gram
           VernacRequire (export, qidl)
       | IDENT "Require"; export = export_token; filename = ne_string ->
 	  VernacRequireFrom (export, filename)
+      | IDENT "From" ; ns = global ; IDENT "Require"; export = export_token
+	; qidl = LIST1 global ->
+	let qidl = List.map (Libnames.join_reference ns) qidl in
+	VernacRequire (export, qidl)
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
       | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl)
       | IDENT "Include"; e = module_expr_inl; l = LIST0 ext_module_expr ->

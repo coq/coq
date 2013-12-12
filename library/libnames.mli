@@ -124,6 +124,7 @@ val qualid_of_reference : reference -> qualid located
 val string_of_reference : reference -> string
 val pr_reference : reference -> std_ppcmds
 val loc_of_reference : reference -> Loc.t
+val join_reference : reference -> reference -> reference
 
 (** Deprecated synonyms *)
 
