@@ -75,7 +75,8 @@ let type_of_const t =
     Const sp -> Typeops.type_of_constant (Global.env()) sp
     |_ -> assert false
 
-let constr_of_global = Universes.unsafe_constr_of_global
+let constr_of_global x = 
+  fst (Universes.unsafe_constr_of_global x)
 
 let constant sl s = constr_of_global (find_reference sl s)
 

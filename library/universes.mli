@@ -145,9 +145,9 @@ val normalize_universe_subst : universe_subst ref ->
 val constr_of_global : Globnames.global_reference -> constr
 
 (** [unsafe_constr_of_global gr] turns [gr] into a constr, works on polymorphic
-    reference by building a "dummy" universe instance that is not recorded 
+    references by taking the original universe instance that is not recorded 
     anywhere. The constraints are forgotten as well. DO NOT USE in new code. *)
-val unsafe_constr_of_global : Globnames.global_reference -> constr
+val unsafe_constr_of_global : Globnames.global_reference -> constr in_universe_context
 
 val type_of_global : Globnames.global_reference -> types in_universe_context_set
 

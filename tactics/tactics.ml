@@ -3763,8 +3763,8 @@ let abstract_subproof id tac =
   (** ppedrot: seems legit to have abstracted subproofs as local*)
   let cst = Declare.declare_constant ~internal:Declare.KernelSilent ~local:true id decl in
   (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
-  (* FIXME: lem might have generated new constraints... not taken into account *)
-  let lem = Universes.unsafe_constr_of_global (ConstRef cst) in
+  let lem, ctx = Universes.unsafe_constr_of_global (ConstRef cst) in
+  let evd = Evd.merge_context_set Evd.univ_flexible evd (Univ.ContextSet.of_context ctx) in
   let open Declareops in
   let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
   let effs = cons_side_effects eff no_seff in

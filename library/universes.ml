@@ -144,8 +144,7 @@ let constr_of_global gr =
     else c
 
 let unsafe_constr_of_global gr =
-  let c, ctx = unsafe_global_instance (Global.env ()) gr in
-    c
+  unsafe_global_instance (Global.env ()) gr
 
 let constr_of_global_univ (gr,u) =
   match gr with
