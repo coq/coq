@@ -3897,10 +3897,10 @@ let unify ?(state=full_transparent_state) x y gl =
     in tclEVARS evd gl
   with e when Errors.noncritical e -> tclFAIL 0 (str"Not unifiable") gl
 
-let emit_side_effects eff gl = 
-  Declareops.iter_side_effects (fun e ->
+let emit_side_effects eff gl =
+(* Declareops.iter_side_effects (fun e ->
     prerr_endline ("emitting: " ^ Declareops.string_of_side_effect e))
-    eff;
+    eff; *)
   { it = [gl.it] ; sigma = Evd.emit_side_effects eff gl.sigma; }
 
 module Simple = struct
