@@ -9,7 +9,7 @@
 (** The Coq main module. The following function [start] will parse the
    command line, print the banner, initialize the load path, load the input
    state, load the files given on the command line, load the ressource file,
-   produce the output state if any, and finally will launch [Toplevel.loop]. *)
+   produce the output state if any, and finally will launch [Coqloop.loop]. *)
 
 val init_toplevel : string list -> unit
 

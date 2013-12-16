@@ -6,22 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-open Genarg
-open Vernacexpr
-open Names
-open Nameops
-open Nametab
-open Ppconstr
-open Pptactic
-open Glob_term
-open Pcoq
-open Libnames
-open Ppextend
-open Topconstr
-
 (** Prints a vernac expression *)
-val pr_vernac_body : vernac_expr -> std_ppcmds
+val pr_vernac_body : Vernacexpr.vernac_expr -> Pp.std_ppcmds
 
 (** Prints a vernac expression and closes it with a dot. *)
-val pr_vernac : vernac_expr -> std_ppcmds
+val pr_vernac : Vernacexpr.vernac_expr -> Pp.std_ppcmds

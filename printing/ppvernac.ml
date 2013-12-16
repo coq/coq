@@ -9,7 +9,6 @@
 open Pp
 open Names
 
-(* open Compat *)
 open Errors
 open Util
 open Extend

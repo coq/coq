@@ -401,7 +401,7 @@ let init arglist =
         if !batch_mode then mt ()
         else str "Error during initialization:" ++ fnl ()
       in
-      fatal_error (msg ++ Toplevel.print_toplevel_error any)
+      fatal_error (msg ++ Coqloop.print_toplevel_error any)
   end;
   if !batch_mode then begin
     flush_all();
@@ -425,7 +425,7 @@ let start () =
   else if !Flags.coq_slave_mode > 0 then
     Stm.slave_main_loop ()
   else
-    Toplevel.loop();
+    Coqloop.loop();
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
   Mltop.ocaml_toploop();

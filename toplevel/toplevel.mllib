@@ -2,9 +2,6 @@ Himsg
 Cerrors
 Class
 Locality
-Vernacexpr
-Ppextra
-Ppvernac
 Metasyntax
 Auto_ind_decl
 Search
@@ -15,7 +12,6 @@ Obligations
 Command
 Classes
 Record
-Ppvernac
 Vernacinterp
 Mltop
 Vernacentries
@@ -24,7 +20,7 @@ Stm
 Whelp
 Vernac
 Ide_slave
-Toplevel
 Usage
+Coqloop
 Coqinit
 Coqtop

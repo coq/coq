@@ -9,10 +9,10 @@
 <tools/coq_makefile.{native,byte}> : use_str, use_unix
 <tools/coqdoc/main.{native,byte}> : use_str
 <ide/coqide_main.{native,byte}> : use_str, use_unix, ide
-<checker/main.{native,byte}> : use_str, use_unix
+<checker/main.{native,byte}> : use_str, use_unix, thread
 <plugins/micromega/csdpcert.{native,byte}> : use_nums, use_unix
 <tools/mkwinapp.{native,byte}> : use_unix
-<tools/fake_ide.{native,byte}> : use_unix
+<tools/fake_ide.{native,byte}> : use_unix, use_str
 
 ## tags for ide
 
