@@ -26,7 +26,6 @@ open Nametab
 type glob_sign = Genintern.glob_sign = {
   ltacvars : Id.Set.t;
   ltacrecvars : ltac_constant Id.Map.t;
-  gsigma : Evd.evar_map;
   genv : Environ.env }
 
 val fully_empty_glob_sign : glob_sign

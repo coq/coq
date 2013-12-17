@@ -859,7 +859,7 @@ let interp_hints =
     let path, gr = fi c in
       (o, b, path, gr)
   in
-  let fp = Constrintern.intern_constr_pattern Evd.empty (Global.env()) in
+  let fp = Constrintern.intern_constr_pattern (Global.env()) in
   match h with
   | HintsResolve lhints -> HintsResolveEntry (List.map fres lhints)
   | HintsImmediate lhints -> HintsImmediateEntry (List.map fi lhints)
