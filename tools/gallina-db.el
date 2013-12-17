@@ -1,4 +1,4 @@
-;;; coq-db.el --- coq keywords database utility functions
+;;; gallina-db.el --- coq keywords database utility functions
 ;;
 ;; Author: Pierre Courtieu <courtieu@lri.fr>
 ;; License:     GPL (GNU GENERAL PUBLIC LICENSE)
@@ -231,9 +231,9 @@ Required so that 'proof-solve-tactics-face is a proper facename")
 
 
 
-(provide 'coq-db)
+(provide 'gallina-db)
 
-;;; coq-db.el ends here
+;;; gallina-db.el ends here
 
 ;** Local Variables: ***
 ;** fill-column: 80 ***

@@ -1,9 +1,9 @@
-;; coq.el --- Coq mode editing commands for Emacs
+;; gallina.el --- Coq mode editing commands for Emacs
 ;;
 ;; Jean-Christophe Filliatre, march 1995
 ;; Honteusement pompé de caml.el, Xavier Leroy, july 1993.
 ;;
-;; modified by Marco Maggesi <maggesi@math.unifi.it> for coq-inferior
+;; modified by Marco Maggesi <maggesi@math.unifi.it> for gallina-inferior
 
 ; compatibility code for proofgeneral files
 (require 'coq-font-lock)
@@ -137,6 +137,6 @@ Does nothing otherwise."
              (coq-in-indentation))
         (backward-delete-char-untabify coq-mode-indentation))))
 
-;;; coq.el ends here
+;;; gallina.el ends here
 
-(provide 'coq)
+(provide 'gallina)

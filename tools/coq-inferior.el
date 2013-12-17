@@ -46,7 +46,7 @@
 
 ;;; Installation:
 
-;; You need to have coq.el already installed (it comes with the
+;; You need to have gallina.el already installed (it comes with the
 ;; standard Coq distribution) in order to use this code.  Put this
 ;; file somewhere in you load-path and add the following lines in your
 ;; "~/.emacs":

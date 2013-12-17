@@ -1,14 +1,14 @@
-;; coq-syntax.el Font lock expressions for Coq
+;; gallina-syntax.el Font lock expressions for Coq
 ;; Copyright (C) 1997-2007 LFCS Edinburgh. 
 ;; Authors: Thomas Kleymann, Healfdene Goguen, Pierre Courtieu
 ;; License:     GPL (GNU GENERAL PUBLIC LICENSE)
 ;; Maintainer: Pierre Courtieu <courtieu@lri.fr>
 
-;; coq-syntax.el,v 9.9 2008/07/21 15:14:58 pier Exp
+;; gallina-syntax.el,v 9.9 2008/07/21 15:14:58 pier Exp
 
 ;(require 'proof-syntax)
 ;(require 'proof-utils)                  ; proof-locate-executable
-(require 'coq-db)
+(require 'gallina-db)
 
 
 
@@ -618,7 +618,7 @@
 ;; proof-done-advancing-save in generic/proof-script.el) for coq <
 ;; 8.0. It is the test when looking backward the start of the proof.
 ;; It is NOT used for coq > v8.1
-;; (coq-find-and-forget in coq.el uses state numbers, proof numbers and
+;; (coq-find-and-forget in gallina.el uses state numbers, proof numbers and
 ;; lemma names given in the prompt)
 
 ;; compatibility with v8.0, will delete it some day
@@ -950,7 +950,7 @@ Used by `coq-goal-command-p'"
   (modify-syntax-entry ?\' "_")
   (modify-syntax-entry ?\| ".")
 
-;; should maybe be "_" but it makes coq-find-and-forget (in coq.el) bug
+;; should maybe be "_" but it makes coq-find-and-forget (in gallina.el) bug
   (modify-syntax-entry ?\. ".") 
 
   (condition-case nil
@@ -969,8 +969,8 @@ Used by `coq-goal-command-p'"
  		  1))
  	  (append coq-keywords-decl coq-keywords-defn coq-keywords-goal)))
 
-(provide 'coq-syntax)
- ;;; coq-syntax.el ends here
+(provide 'gallina-syntax)
+ ;;; gallina-syntax.el ends here
 
 ; Local Variables: ***
 ; indent-tabs-mode: nil ***
