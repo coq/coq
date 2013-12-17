@@ -71,7 +71,7 @@ let isVarf f x =
 let ident_global_exist id =
   try
     let ans = CRef (Libnames.Ident (Loc.ghost,id)) in
-    let _ = ignore (Constrintern.intern_constr Evd.empty (Global.env()) ans) in
+    let _ = ignore (Constrintern.intern_constr (Global.env()) ans) in
     true
   with e when Errors.noncritical e -> false
 

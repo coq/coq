@@ -57,12 +57,10 @@ type glob_sign = Genintern.glob_sign = {
      (* ltac variables and the subset of vars introduced by Intro/Let/... *)
   ltacrecvars : ltac_constant Id.Map.t;
      (* ltac recursive names *)
-  gsigma : Evd.evar_map;
   genv : Environ.env }
 
 let fully_empty_glob_sign =
-  { ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty;
-    gsigma = Evd.empty; genv = Environ.empty_env }
+  { ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty; genv = Environ.empty_env }
 
 let make_empty_glob_sign () =
   { fully_empty_glob_sign with genv = Global.env () }
@@ -252,12 +250,12 @@ let intern_binding_name ist x =
      and if a term w/o ltac vars, check the name is indeed quantified *)
   x
 
-let intern_constr_gen allow_patvar isarity {ltacvars=lfun; gsigma=sigma; genv=env} c =
+let intern_constr_gen allow_patvar isarity {ltacvars=lfun; genv=env} c =
   let warn = if !strict_check then fun x -> x else Constrintern.for_grammar in
   let scope = if isarity then Pretyping.IsType else Pretyping.WithoutTypeConstraint in
   let ltacvars = (lfun, Id.Set.empty) in
   let c' =
-    warn (Constrintern.intern_gen scope ~allow_patvar ~ltacvars sigma env) c
+    warn (Constrintern.intern_gen scope ~allow_patvar ~ltacvars env) c
   in
   (c',if !strict_check then None else Some c)
 
@@ -330,7 +328,7 @@ let intern_constr_with_occurrences ist (l,c) = (l,intern_constr ist c)
 let intern_constr_pattern ist ~as_type ~ltacvars pc =
   let ltacvars = ltacvars, Id.Set.empty in
   let metas,pat = Constrintern.intern_constr_pattern
-    ist.gsigma ist.genv ~as_type ~ltacvars pc
+    ist.genv ~as_type ~ltacvars pc
   in
   let c = intern_constr_gen true false ist pc in
   metas,(c,pat)
@@ -701,7 +699,7 @@ and intern_match_rule onlytac ist = function
   | (All tc)::tl ->
       All (intern_tactic onlytac ist tc) :: (intern_match_rule onlytac ist tl)
   | (Pat (rl,mp,tc))::tl ->
-      let {ltacvars=lfun; gsigma=sigma; genv=env} = ist in
+      let {ltacvars=lfun; genv=env} = ist in
       let lfun',metas1,hyps = intern_match_goal_hyps ist lfun rl in
       let ido,metas2,pat = intern_pattern ist lfun mp in
       let fold accu x = Id.Set.add x accu in
@@ -760,7 +758,7 @@ let glob_tactic_env l env x =
     List.fold_left (fun accu x -> Id.Set.add x accu) Id.Set.empty l in
   Flags.with_option strict_check
   (intern_pure_tactic
-    { ltacvars; ltacrecvars = Id.Map.empty; gsigma = Evd.empty; genv = env })
+    { ltacvars; ltacrecvars = Id.Map.empty; genv = env })
     x
 
 let split_ltac_fun = function

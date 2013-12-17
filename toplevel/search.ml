@@ -247,11 +247,11 @@ let interface_search flags =
     extract_flags ((regexp, b) :: name) tpe subtpe mods blacklist l
   | (Interface.Type_Pattern s, b) :: l ->
     let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
-    let (_, pat) = Constrintern.intern_constr_pattern Evd.empty env constr in
+    let (_, pat) = Constrintern.intern_constr_pattern env constr in
     extract_flags name ((pat, b) :: tpe) subtpe mods blacklist l
   | (Interface.SubType_Pattern s, b) :: l ->
     let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
-    let (_, pat) = Constrintern.intern_constr_pattern Evd.empty env constr in
+    let (_, pat) = Constrintern.intern_constr_pattern env constr in
     extract_flags name tpe ((pat, b) :: subtpe) mods blacklist l
   | (Interface.In_Module m, b) :: l ->
     let path = String.concat "." m in

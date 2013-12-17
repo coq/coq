@@ -63,7 +63,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
 let instantiate_pf_com evk com sigma =
   let evi = Evd.find sigma evk in
   let env = Evd.evar_filtered_env evi in
-  let rawc = Constrintern.intern_constr sigma env com in
+  let rawc = Constrintern.intern_constr env com in
   let ltac_vars = (Id.Map.empty, Id.Map.empty) in
   let sigma' = w_refine (evk, evi) (ltac_vars, rawc) sigma in
   sigma'

@@ -1431,7 +1431,7 @@ open Search
 
 let interp_search_about_item = function
   | SearchSubPattern pat ->
-      let _,pat = intern_constr_pattern Evd.empty (Global.env()) pat in
+      let _,pat = intern_constr_pattern (Global.env()) pat in
       GlobSearchSubPattern pat
   | SearchString (s,None) when Id.is_valid s ->
       GlobSearchString s
@@ -1448,7 +1448,7 @@ let interp_search_about_item = function
 let vernac_search s r =
   let r = interp_search_restriction r in
   let env = Global.env () in
-  let get_pattern c = snd (Constrintern.intern_constr_pattern Evd.empty env c) in
+  let get_pattern c = snd (Constrintern.intern_constr_pattern env c) in
   match s with
   | SearchPattern c ->
       msg_notice (Search.search_pattern (get_pattern c) r)

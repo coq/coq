@@ -485,7 +485,7 @@ let interp_gen kind ist allow_patvar flags env sigma (c,ce) =
       let ltacvars = Id.Map.domain constrvars in
       let bndvars = Id.Map.domain ist.lfun in
       let ltacdata = (ltacvars, bndvars) in
-      intern_gen kind ~allow_patvar ~ltacvars:ltacdata sigma env c
+      intern_gen kind ~allow_patvar ~ltacvars:ltacdata env c
   in
   let trace =
     push_trace (loc_of_glob_constr c,LtacConstrInterp (c,vars)) ist in
@@ -2078,8 +2078,7 @@ let eval_tactic_ist ist t =
 
 let interp_tac_gen lfun avoid_ids debug t =
   Proofview.Goal.enter begin fun gl ->
-    let env = Proofview.Goal.env gl in
-    let sigma = Proofview.Goal.sigma gl in
+  let env = Proofview.Goal.env gl in
   let extra = TacStore.set TacStore.empty f_debug debug in
   let extra = TacStore.set extra f_avoid_ids avoid_ids in
   let ist = { lfun = lfun; extra = extra } in
@@ -2087,7 +2086,7 @@ let interp_tac_gen lfun avoid_ids debug t =
   interp_tactic ist
     (intern_pure_tactic {
       ltacvars; ltacrecvars = Id.Map.empty;
-      gsigma = sigma; genv = env } t)
+      genv = env } t)
   end
 
 let interp t = interp_tac_gen Id.Map.empty [] (get_debug()) t
@@ -2101,9 +2100,9 @@ let eval_ltac_constr t =
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
 (* [global] means that [t] should be internalized outside of goals. *)
 let hide_interp global t ot =
-  let hide_interp env sigma =
+  let hide_interp env =
     let ist = { ltacvars = Id.Set.empty; ltacrecvars = Id.Map.empty;
-                gsigma = sigma; genv = env } in
+                genv = env } in
     let te = intern_pure_tactic ist t in
     let t = eval_tactic te in
     match ot with
@@ -2112,11 +2111,10 @@ let hide_interp global t ot =
   in
   if global then
     Proofview.tclENV >= fun env ->
-    Proofview.tclEVARMAP >= fun sigma ->
-    hide_interp env sigma
+    hide_interp env
   else
     Proofview.Goal.enter begin fun gl ->
-      hide_interp (Proofview.Goal.env gl) (Proofview.Goal.sigma gl)
+      hide_interp (Proofview.Goal.env gl)
     end
 
 (***************************************************************************)
@@ -2170,7 +2168,7 @@ let () =
 
 let interp_redexp env sigma r =
   let ist = default_ist () in
-  let gist = { fully_empty_glob_sign with genv = env; gsigma = sigma } in
+  let gist = { fully_empty_glob_sign with genv = env; } in
   interp_red_expr ist sigma env (intern_red_expr gist r)
 
 (***************************************************************************)

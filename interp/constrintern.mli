@@ -74,18 +74,18 @@ type glob_binder = (Name.t * binding_kind * glob_constr option * glob_constr)
 
 (** {6 Internalization performs interpretation of global names and notations } *)
 
-val intern_constr : evar_map -> env -> constr_expr -> glob_constr
+val intern_constr : env -> constr_expr -> glob_constr
 
-val intern_type : evar_map -> env -> constr_expr -> glob_constr
+val intern_type : env -> constr_expr -> glob_constr
 
-val intern_gen : typing_constraint -> evar_map -> env ->
+val intern_gen : typing_constraint -> env ->
   ?impls:internalization_env -> ?allow_patvar:bool -> ?ltacvars:ltac_sign ->
   constr_expr -> glob_constr
 
 val intern_pattern : env -> cases_pattern_expr ->
   Id.t list * (Id.t Id.Map.t * cases_pattern) list
 
-val intern_context : bool -> evar_map -> env -> internalization_env -> local_binder list -> internalization_env * glob_binder list
+val intern_context : bool -> env -> internalization_env -> local_binder list -> internalization_env * glob_binder list
 
 (** {6 Composing internalization with type inference (pretyping) } *)
 
@@ -132,7 +132,7 @@ val interp_type_evars_impls : evar_map ref -> env ->
 (** Interprets constr patterns *)
 
 val intern_constr_pattern :
-  evar_map -> env -> ?as_type:bool -> ?ltacvars:ltac_sign ->
+  env -> ?as_type:bool -> ?ltacvars:ltac_sign ->
     constr_pattern_expr -> patvar list * constr_pattern
 
 (** Raise Not_found if syndef not bound to a name and error if unexisting ref *)
