@@ -79,6 +79,7 @@ val hnf_prod_applist : env -> types -> constr list -> types
 
 val dest_prod       : env -> types -> rel_context * types
 val dest_prod_assum : env -> types -> rel_context * types
+val dest_lam_assum  : env -> types -> rel_context * types
 
 exception NotArity
 

@@ -58,7 +58,7 @@ let handle_side_effects env body side_eff =
       Name (id_of_string name) in
     let rec sub c i x = match kind_of_term x with
       | Const c' when eq_constant c c' -> mkRel i
-      | _ -> map_constr_with_binders ((+) 1) (sub c) i x in
+      | _ -> map_constr_with_binders ((+) 1) (fun i x -> sub c i x) i x in
     let fix_body (c,cb) t =
       match cb.const_body with
       | Undef _ -> assert false

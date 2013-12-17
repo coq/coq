@@ -564,6 +564,21 @@ let dest_prod_assum env =
   in
   prodec_rec env empty_rel_context
 
+let dest_lam_assum env =
+  let rec lamec_rec env l ty =
+    let rty = whd_betadeltaiota_nolet env ty in
+    match kind_of_term rty with
+    | Lambda (x,t,c)  ->
+        let d = (x,None,t) in
+	lamec_rec (push_rel d env) (add_rel_decl d l) c
+    | LetIn (x,b,t,c) ->
+        let d = (x,Some b,t) in
+	lamec_rec (push_rel d env) (add_rel_decl d l) c
+    | Cast (c,_,_)    -> lamec_rec env l c
+    | _               -> l,rty
+  in
+  lamec_rec env empty_rel_context
+
 exception NotArity
 
 let dest_arity env c =

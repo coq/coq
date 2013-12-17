@@ -532,6 +532,12 @@ let branches_specif renv c_spec ci =
 	 List.init nca (fun j -> lazy (Lazy.force lvra).(j)))
       car 
 
+let check_inductive_codomain env p =
+  let absctx, ar = dest_lam_assum env p in
+  let arctx, s = dest_prod_assum env ar in
+  let i,l' = decompose_app (whd_betadeltaiota env s) in
+    isInd i
+
 (* [subterm_specif renv t] computes the recursive structure of [t] and
    compare its size with the size of the initial recursive argument of
    the fixpoint we are checking. [renv] collects such information
@@ -542,67 +548,71 @@ let rec subterm_specif renv stack t =
   (* maybe reduction is not always necessary! *)
   let f,l = decompose_app (whd_betadeltaiota renv.env t) in
     match kind_of_term f with
-      | Rel k -> subterm_var k renv
+    | Rel k -> subterm_var k renv
 
-      | Case (ci,_,c,lbr) ->
-	  let stack' = push_stack_closures renv l stack in
-          let cases_spec = branches_specif renv 
-	    (lazy_subterm_specif renv [] c) ci in
-          let stl  =
-            Array.mapi (fun i br' ->
-			  let stack_br = push_stack_args (cases_spec.(i)) stack' in
-			    subterm_specif renv stack_br br')
-              lbr in
-            subterm_spec_glb stl
+    | Case (ci,p,c,lbr) ->
+    let stack' = push_stack_closures renv l stack in
+      if not (check_inductive_codomain renv.env p) then Not_subterm
+      else
+        let cases_spec = branches_specif renv 
+	  (lazy_subterm_specif renv [] c) ci in
+        let stl  =
+	  Array.mapi (fun i br' ->
+	  let stack_br = push_stack_args (cases_spec.(i)) stack' in
+	    subterm_specif renv stack_br br')
+	  lbr in
+	  subterm_spec_glb stl
 
-      | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
-	  (* when proving that the fixpoint f(x)=e is less than n, it is enough
-	     to prove that e is less than n assuming f is less than n
-	     furthermore when f is applied to a term which is strictly less than
-	     n, one may assume that x itself is strictly less than n
-	  *)
-          let (ctxt,clfix) = dest_prod renv.env typarray.(i) in
-          let oind =
-            let env' = push_rel_context ctxt renv.env in
-              try Some(fst(find_inductive env' clfix))
-              with Not_found -> None in
-            (match oind with
-		 None -> Not_subterm (* happens if fix is polymorphic *)
-               | Some ind ->
-		   let nbfix = Array.length typarray in
-		   let recargs = lookup_subterms renv.env ind in
-		     (* pushing the fixpoints *)
-		   let renv' = push_fix_renv renv recdef in
-		   let renv' =
+    | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
+      (* when proving that the fixpoint f(x)=e is less than n, it is enough
+	 to prove that e is less than n assuming f is less than n
+	 furthermore when f is applied to a term which is strictly less than
+	 n, one may assume that x itself is strictly less than n
+      *)
+    if not (check_inductive_codomain renv.env typarray.(i)) then Not_subterm
+    else 
+      let (ctxt,clfix) = dest_prod renv.env typarray.(i) in	    
+      let oind =
+        let env' = push_rel_context ctxt renv.env in
+          try Some(fst(find_inductive env' clfix))
+          with Not_found -> None in
+        (match oind with
+      None -> Not_subterm (* happens if fix is polymorphic *)
+        | Some ind ->
+	let nbfix = Array.length typarray in
+	let recargs = lookup_subterms renv.env ind in
+		   (* pushing the fixpoints *)
+	let renv' = push_fix_renv renv recdef in
+	let renv' =
                      (* Why Strict here ? To be general, it could also be
 			Large... *)
-                     assign_var_spec renv'
-		       (nbfix-i, lazy (Subterm(Strict,recargs))) in
-		   let decrArg = recindxs.(i) in
-		   let theBody = bodies.(i)   in
-		   let nbOfAbst = decrArg+1 in
-		   let sign,strippedBody = decompose_lam_n_assum nbOfAbst theBody in
-		     (* pushing the fix parameters *)
-		   let stack' = push_stack_closures renv l stack in
-		   let renv'' = push_ctxt_renv renv' sign in
-		   let renv'' =
-                     if List.length stack' < nbOfAbst then renv''
-                     else
-		       let decrArg = List.nth stack' decrArg in
-                       let arg_spec = stack_element_specif decrArg in
-			 assign_var_spec renv'' (1, arg_spec) in
-		     subterm_specif renv'' [] strippedBody)
+          assign_var_spec renv'
+	  (nbfix-i, lazy (Subterm(Strict,recargs))) in
+	let decrArg = recindxs.(i) in
+	let theBody = bodies.(i)   in
+	let nbOfAbst = decrArg+1 in
+	let sign,strippedBody = decompose_lam_n_assum nbOfAbst theBody in
+		   (* pushing the fix parameters *)
+	let stack' = push_stack_closures renv l stack in
+	let renv'' = push_ctxt_renv renv' sign in
+	let renv'' =
+          if List.length stack' < nbOfAbst then renv''
+          else
+	    let decrArg = List.nth stack' decrArg in
+            let arg_spec = stack_element_specif decrArg in
+	      assign_var_spec renv'' (1, arg_spec) in
+	  subterm_specif renv'' [] strippedBody)
 
-      | Lambda (x,a,b) ->
-          let () = assert (List.is_empty l) in
-	  let spec,stack' = extract_stack renv a stack in
-	    subterm_specif (push_var renv (x,a,spec)) stack' b
+    | Lambda (x,a,b) ->
+      let () = assert (List.is_empty l) in
+      let spec,stack' = extract_stack renv a stack in
+	subterm_specif (push_var renv (x,a,spec)) stack' b
 
       (* Metas and evars are considered OK *)
-      | (Meta _|Evar _) -> Dead_code
+    | (Meta _|Evar _) -> Dead_code
 
       (* Other terms are not subterms *)
-      | _ -> Not_subterm
+    | _ -> Not_subterm
 
 and lazy_subterm_specif renv stack t =
   lazy (subterm_specif renv stack t)
