@@ -76,13 +76,15 @@ end
 
 let use_camlp5 = (Coq_config.camlp4 = "camlp5")
 
+let camlp4lib = if w32 then w32lib^"ocaml/camlp5" else Coq_config.camlp4lib
+
 let camlp4args =
   if use_camlp5 then [A "pa_extend.cmo";A "q_MLast.cmo";A "pa_macro.cmo"]
   else []
 
 let ocaml = A Coq_config.ocaml
 let camlp4o = S ((A Coq_config.camlp4o) :: camlp4args)
-let camlp4incl = S[A"-I"; A Coq_config.camlp4lib]
+let camlp4incl = S[A"-I"; A camlp4lib]
 let camlp4compat = Sh Coq_config.camlp4compat
 let opt = (Coq_config.best = "opt")
 let ide = Coq_config.has_coqide
@@ -301,7 +303,7 @@ let extra_rules () = begin
   mlp_cmo "tools/compat5b";
   end;
 
-  ocaml_lib ~extern:true ~dir:Coq_config.camlp4lib ~tag_name:"use_camlpX"
+  ocaml_lib ~extern:true ~dir:camlp4lib ~tag_name:"use_camlpX"
     ~byte:true ~native:true (if use_camlp5 then "gramlib" else "camlp4lib");
 
 (** Special case of toplevel/mltop.ml4:
@@ -322,7 +324,7 @@ let extra_rules () = begin
        Cmd (S [!Options.ocamlc; A"-c"; A"-pp";
 	       Quote (S [camlp4o; T(tags_of_pathname ml4 ++ "p4mod");
 			 A"-DByte";A"-DHasDynlink";camlp4compat;A"-impl"]);
-	       A"-rectypes"; camlp4incl; incl ml4; A"-impl"; P ml4]));
+	       A"-rectypes"; A"-impl"; P ml4]));
 
 (** All caml files are compiled with -rectypes and +camlp4/5
     and ide files need +lablgtk2 *)
