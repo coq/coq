@@ -714,10 +714,10 @@ and intern_genarg ist x =
   | IntOrVarArgType ->
       in_gen (glbwit wit_int_or_var)
         (intern_or_var ist (out_gen (rawwit wit_int_or_var) x))
-  | IdentArgType b ->
+  | IdentArgType ->
       let lf = ref Id.Set.empty in
-      in_gen (glbwit (wit_ident_gen b))
-	(intern_ident lf ist (out_gen (rawwit (wit_ident_gen b)) x))
+      in_gen (glbwit wit_ident)
+	(intern_ident lf ist (out_gen (rawwit wit_ident) x))
   | VarArgType ->
       in_gen (glbwit wit_var) (intern_hyp ist (out_gen (rawwit wit_var) x))
   | GenArgType ->

@@ -36,10 +36,6 @@ val wit_intro_pattern : intro_pattern_expr located uniform_genarg_type
 
 val wit_ident : Id.t uniform_genarg_type
 
-val wit_pattern_ident : Id.t uniform_genarg_type
-
-val wit_ident_gen : bool -> Id.t uniform_genarg_type
-
 val wit_var : (Id.t located, Id.t located, Id.t) genarg_type
 
 val wit_ref : (reference, global_reference located or_var, global_reference) genarg_type

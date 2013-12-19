@@ -1327,9 +1327,9 @@ and interp_genarg ist env sigma concl gl x =
     | IntOrVarArgType ->
       in_gen (topwit wit_int_or_var)
         (ArgArg (interp_int_or_var ist (out_gen (glbwit wit_int_or_var) x)))
-    | IdentArgType b ->
-      in_gen (topwit (wit_ident_gen b))
-        (interp_fresh_ident ist env (out_gen (glbwit (wit_ident_gen b)) x))
+    | IdentArgType ->
+      in_gen (topwit wit_ident)
+        (interp_fresh_ident ist env (out_gen (glbwit wit_ident) x))
     | VarArgType ->
       in_gen (topwit wit_var) (interp_hyp ist env (out_gen (glbwit wit_var) x))
     | GenArgType ->
@@ -1981,10 +1981,10 @@ and interp_atomic ist tac =
         match tag with
           | IntOrVarArgType ->
               (Proofview.Goal.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x)))
-          | IdentArgType b ->
+          | IdentArgType ->
               Proofview.Goal.lift begin
 	        Goal.return (value_of_ident (interp_fresh_ident ist env
-	                                       (out_gen (glbwit (wit_ident_gen b)) x)))
+	                                       (out_gen (glbwit wit_ident) x)))
               end
           | VarArgType ->
               Proofview.Goal.return (mk_hyp_value ist env (out_gen (glbwit wit_var) x))
@@ -2025,8 +2025,8 @@ and interp_atomic ist tac =
               let wit = glbwit (wit_list wit_int_or_var) in
               let ans = List.map (mk_int_or_var_value ist) (out_gen wit x) in
               (Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) ans))
-          | ListArgType (IdentArgType b) ->
-              let wit = glbwit (wit_list (wit_ident_gen b)) in
+          | ListArgType IdentArgType ->
+              let wit = glbwit (wit_list wit_ident) in
 	      let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
 	      let ans = List.map mk_ident (out_gen wit x) in
               (Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) ans))

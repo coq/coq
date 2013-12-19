@@ -31,7 +31,7 @@ let mk_extraarg loc s =
 
 let rec make_wit loc = function
   | IntOrVarArgType -> <:expr< Constrarg.wit_int_or_var >>
-  | IdentArgType b -> <:expr< Constrarg.wit_ident_gen $mlexpr_of_bool b$ >>
+  | IdentArgType -> <:expr< Constrarg.wit_ident >>
   | VarArgType -> <:expr< Constrarg.wit_var >>
   | QuantHypArgType -> <:expr< Constrarg.wit_quant_hyp >>
   | GenArgType -> <:expr< Constrarg.wit_genarg >>

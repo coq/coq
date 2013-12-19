@@ -295,8 +295,8 @@ and subst_match_rule subst = function
 and subst_genarg subst (x:glob_generic_argument) =
   match genarg_tag x with
   | IntOrVarArgType -> in_gen (glbwit wit_int_or_var) (out_gen (glbwit wit_int_or_var) x)
-  | IdentArgType b ->
-      in_gen (glbwit (wit_ident_gen b)) (out_gen (glbwit (wit_ident_gen b)) x)
+  | IdentArgType ->
+      in_gen (glbwit wit_ident) (out_gen (glbwit wit_ident) x)
   | VarArgType -> in_gen (glbwit wit_var) (out_gen (glbwit wit_var) x)
   | GenArgType -> in_gen (glbwit wit_genarg) (subst_genarg subst (out_gen (glbwit wit_genarg) x))
   | ConstrArgType ->

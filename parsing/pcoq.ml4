@@ -322,7 +322,7 @@ module Prim =
 
     let name = Gram.entry_create "Prim.name"
     let identref = Gram.entry_create "Prim.identref"
-    let pattern_ident = gec_gen (rawwit wit_pattern_ident) "pattern_ident"
+    let pattern_ident = Gram.entry_create "pattern_ident"
     let pattern_identref = Gram.entry_create "pattern_identref"
 
     (* A synonym of ident - maybe ident will be located one day *)

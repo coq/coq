@@ -141,12 +141,11 @@ let pr_fresh_ids = prlist (fun s -> spc() ++ pr_or_var qs s)
 
 let with_evars ev s = if ev then "e" ^ s else s
 
-let if_pattern_ident b pr c = (if b then str "?" else mt()) ++ pr c
 
 let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generic_argument) =
   match Genarg.genarg_tag x with
   | IntOrVarArgType -> pr_or_var int (out_gen (rawwit wit_int_or_var) x)
-  | IdentArgType b -> if_pattern_ident b pr_id (out_gen (rawwit wit_ident) x)
+  | IdentArgType -> pr_id (out_gen (rawwit wit_ident) x)
   | VarArgType -> pr_located pr_id (out_gen (rawwit wit_var) x)
   | GenArgType -> pr_raw_generic prc prlc prtac prpat prref (out_gen (rawwit wit_genarg) x)
   | ConstrArgType -> prc (out_gen (rawwit wit_constr) x)
@@ -180,7 +179,7 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
 let rec pr_glb_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
   | IntOrVarArgType -> pr_or_var int (out_gen (glbwit wit_int_or_var) x)
-  | IdentArgType b -> if_pattern_ident b pr_id (out_gen (glbwit wit_ident) x)
+  | IdentArgType -> pr_id (out_gen (glbwit wit_ident) x)
   | VarArgType -> pr_located pr_id (out_gen (glbwit wit_var) x)
   | GenArgType -> pr_glb_generic prc prlc prtac prpat (out_gen (glbwit wit_genarg) x)
   | ConstrArgType -> prc (out_gen (glbwit wit_constr) x)
@@ -215,7 +214,7 @@ let rec pr_glb_generic prc prlc prtac prpat x =
 let rec pr_top_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
   | IntOrVarArgType -> pr_or_var int (out_gen (topwit wit_int_or_var) x)
-  | IdentArgType b -> if_pattern_ident b pr_id (out_gen (topwit wit_ident) x)
+  | IdentArgType -> pr_id (out_gen (topwit wit_ident) x)
   | VarArgType -> pr_id (out_gen (topwit wit_var) x)
   | GenArgType -> pr_top_generic prc prlc prtac prpat (out_gen (topwit wit_genarg) x)
   | ConstrArgType -> prc (out_gen (topwit wit_constr) x)

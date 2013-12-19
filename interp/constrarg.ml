@@ -39,11 +39,7 @@ let wit_intro_pattern : intro_pattern_expr located uniform_genarg_type =
 let wit_tactic : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_type =
   Genarg.make0 None "tactic"
 
-let wit_ident_gen b = unsafe_of_type (IdentArgType b)
-
-let wit_ident = wit_ident_gen true
-
-let wit_pattern_ident = wit_ident_gen false
+let wit_ident = unsafe_of_type IdentArgType
 
 let wit_var = unsafe_of_type VarArgType
 

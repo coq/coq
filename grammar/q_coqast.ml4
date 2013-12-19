@@ -203,7 +203,7 @@ let mlexpr_of_red_expr = function
 
 let rec mlexpr_of_argtype loc = function
   | Genarg.IntOrVarArgType -> <:expr< Genarg.IntOrVarArgType >>
-  | Genarg.IdentArgType b -> <:expr< Genarg.IdentArgType $mlexpr_of_bool b$ >>
+  | Genarg.IdentArgType -> <:expr< Genarg.IdentArgType >>
   | Genarg.VarArgType -> <:expr< Genarg.VarArgType >>
   | Genarg.QuantHypArgType -> <:expr< Genarg.QuantHypArgType >>
   | Genarg.OpenConstrArgType -> <:expr< Genarg.OpenConstrArgType >>
