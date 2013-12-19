@@ -282,7 +282,6 @@ let safe_push_named (id,_,_ as d) env =
 
 let push_named_def (id,de) senv =
   let (c,typ,cst) = Term_typing.translate_local_def senv.env id de in
-  (* XXX for now we force *)
   let c = match c with
     | Def c -> Lazyconstr.force c
     | OpaqueDef c -> Lazyconstr.force_opaque (Future.join c)
