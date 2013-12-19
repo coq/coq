@@ -120,11 +120,11 @@ fun x : option Z => match x with
                     | NONE2 => 0
                     end
      : option Z -> Z
-fun x : list ?90 => match x with
+fun x : list ?95 => match x with
                     | NIL => NONE2
                     | (_ :') t => SOME2 t
                     end
-     : list ?90 -> option (list ?90)
+     : list ?95 -> option (list ?95)
 s
      : s
 Identifier 'foo' now a keyword
