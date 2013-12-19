@@ -30,6 +30,7 @@ Dyn
 CUnix
 System
 Envars
+Aux_file
 Profile
 Explore
 Predicate
