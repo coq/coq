@@ -2025,9 +2025,11 @@ and interp_atomic ist tac =
                 l >>== fun l ->
                  Proofview.Goal.return (a'::l)
               end x (Proofview.Goal.return []) >>== fun l ->
+		let wit_t = Obj.magic t in
+		let l = List.map (fun arg -> out_gen wit_t arg) l in
               Proofview.Goal.return (in_gen
-                                       (topwit (wit_list (Obj.magic t)))
-                                       l)
+                                       (topwit (wit_list wit_t))
+				       l)
           | ExtraArgType _ ->
               (** Special treatment of tactics *)
               if has_type x (glbwit wit_tactic) then
