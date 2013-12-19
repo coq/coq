@@ -1029,12 +1029,20 @@ let register_uniform_printer wit pr =
   Genprint.register_print0 wit pr pr pr
 
 let () =
+  let pr_bool b = if b then str "true" else str "false" in
+  let pr_unit _ = str "()" in
+  let pr_string s = str "\"" ++ str s ++ str "\"" in
   Genprint.register_print0 Constrarg.wit_ref
     pr_reference (pr_or_var (pr_located pr_global)) pr_global;
   Genprint.register_print0 Constrarg.wit_intro_pattern
     pr_intro_pattern pr_intro_pattern pr_intro_pattern;
   Genprint.register_print0 Constrarg.wit_sort
-    pr_glob_sort pr_glob_sort pr_sort
+    pr_glob_sort pr_glob_sort pr_sort;
+  Genprint.register_print0 Stdarg.wit_int int int int;
+  Genprint.register_print0 Stdarg.wit_bool pr_bool pr_bool pr_bool;
+  Genprint.register_print0 Stdarg.wit_unit pr_unit pr_unit pr_unit;
+  Genprint.register_print0 Stdarg.wit_pre_ident str str str;
+  Genprint.register_print0 Stdarg.wit_string pr_string pr_string pr_string
 
 let () =
   let printer _ _ prtac = prtac (0, E) in

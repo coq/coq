@@ -2124,29 +2124,25 @@ let def_intern ist x = (ist, x)
 let def_subst _ x = x
 let def_interp ist gl x = (project gl, x)
 
-let declare_uniform t pr =
+let declare_uniform t =
   Genintern.register_intern0 t def_intern;
   Genintern.register_subst0 t def_subst;
-  Geninterp.register_interp0 t def_interp;
-  Genprint.register_print0 t pr pr pr
+  Geninterp.register_interp0 t def_interp
 
 let () =
-  let pr_unit _ = str "()" in
-  declare_uniform wit_unit pr_unit
+  declare_uniform wit_unit
 
 let () =
-  declare_uniform wit_int int
+  declare_uniform wit_int
 
 let () =
-  let pr_bool b = if b then str "true" else str "false" in
-  declare_uniform wit_bool pr_bool
+  declare_uniform wit_bool
 
 let () =
-  let pr_string s = str "\"" ++ str s ++ str "\"" in
-  declare_uniform wit_string pr_string
+  declare_uniform wit_string
 
 let () =
-  declare_uniform wit_pre_ident str
+  declare_uniform wit_pre_ident
 
 let () =
   let interp ist gl ref = (project gl, interp_reference ist (pf_env gl) ref) in
