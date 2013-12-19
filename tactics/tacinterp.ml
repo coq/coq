@@ -1961,11 +1961,24 @@ and interp_atomic ist tac =
       end
   | TacAlias (loc,s,l) ->
       let (_, body) = Tacenv.interp_alias s in
-      let rec f x =
+      let rec f x = match genarg_tag x with
+      | QuantHypArgType | RedExprArgType
+      | ConstrWithBindingsArgType
+      | BindingsArgType
+      | OptArgType _ | PairArgType _ -> (** generic handler *)
         Proofview.Goal.enterl begin fun gl ->
           let env = Proofview.Goal.env gl in
           let sigma = Proofview.Goal.sigma gl in
-        match genarg_tag x with
+          let concl = Proofview.Goal.concl gl in
+          let goal = Proofview.Goal.goal gl in
+          let (sigma, arg) = interp_genarg ist env sigma concl goal x in
+          Proofview.V82.tclEVARS sigma <*> Proofview.Goal.return arg
+        end
+      | _ as tag -> (** Special treatment. TODO: use generic handler  *)
+        Proofview.Goal.enterl begin fun gl ->
+          let env = Proofview.Goal.env gl in
+          let sigma = Proofview.Goal.sigma gl in
+        match tag with
           | IntOrVarArgType ->
               (Proofview.Goal.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x)))
           | IdentArgType b ->
@@ -2041,11 +2054,7 @@ and interp_atomic ist tac =
                 let (newsigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} x in
                 Proofview.V82.tactic (tclEVARS newsigma) <*>
                 Proofview.Goal.return v
-          | QuantHypArgType | RedExprArgType
-          | ConstrWithBindingsArgType
-          | BindingsArgType
-          | OptArgType _ | PairArgType _
-	    -> Proofview.tclZERO (UserError("" , str"This argument type is not supported in tactic notations."))
+          | _ -> assert false
         end
       in
       let addvar (x, v) accu =
