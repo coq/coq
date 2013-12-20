@@ -84,10 +84,6 @@ object(self)
 		  ~packing:hbox#pack
 		  ()
     in
-    let on_activate c () =
-      if List.mem combo#entry#text Coq_commands.state_preserving then c ()
-      else prerr_endline "Not a state preserving command"
-    in
     let entry = GEdit.entry ~packing:(hbox#pack ~expand:true) () in
     entry#misc#set_can_default true;
     let r_bin =
@@ -103,6 +99,10 @@ object(self)
     result#misc#modify_base [`NORMAL, `COLOR clr];
     result#misc#set_can_focus true; (* false causes problems for selection *)
     result#set_editable false;
+    let on_activate c () =
+      if List.mem combo#entry#text Coq_commands.state_preserving then c ()
+      else result#buffer#set_text "Error: Not a state preserving command"
+    in
     let callback () =
       let com = combo#entry#text in
       let phrase =
