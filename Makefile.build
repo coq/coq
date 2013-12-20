@@ -744,7 +744,8 @@ dev/printers.cma: | dev/printers.mllib.d
 grammar/grammar.cma: | grammar/grammar.mllib.d
 	$(SHOW)'Testing $@'
 	@touch test.ml4
-	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) -pp '$(CAMLP4O) -I $(CAMLLIB) $^ -impl' -impl test.ml4 -o test-grammar
+	$(HIDE)$(CAMLP4O) -I $(CAMLLIB) $^ -impl test.ml4 -o test.ml
+	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) test.ml -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $^ -linkall -a -o $@
