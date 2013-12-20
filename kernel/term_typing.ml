@@ -127,6 +127,14 @@ let global_vars_set_constant_type env = function
 	  (fun t c -> Id.Set.union (global_vars_set env t) c))
       ctx ~init:Id.Set.empty
 
+
+let record_aux env s1 s2 =
+  let v =
+    String.concat " "
+      (List.map (fun (id, _,_) -> Id.to_string id)
+        (keep_hyps env (Id.Set.union s1 s2))) in
+  Aux_file.record_in_aux "context_used" v
+
 let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
   let check declared inferred =
     let mk_set l = List.fold_right Id.Set.add (List.map pi1 l) Id.Set.empty in
@@ -136,9 +144,10 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
         (String.concat ", " (List.map Id.to_string
           (Id.Set.elements (Idset.diff inferred_set declared_set))))) in
   (* We try to postpone the computation of used section variables *)
-  let hyps, def = 
+  let hyps, def =
+    let context_ids = List.map pi1 (named_context env) in
     match ctx with
-    | None when not (List.is_empty (named_context env)) -> 
+    | None when not (List.is_empty context_ids) -> 
         (* No declared section vars, and non-empty section context:
            we must look at the body NOW, if any *)
         let ids_typ = global_vars_set_constant_type env typ in
@@ -148,9 +157,17 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
         | OpaqueDef lc -> 
             (* we force so that cst are added to the env immediately after *)
             ignore(Future.join cst);
-            global_vars_set env (Lazyconstr.force_opaque (Future.join lc)) in
+            let vars =
+              global_vars_set env (Lazyconstr.force_opaque (Future.join lc)) in
+            if !Flags.compilation_mode = Flags.BuildVo then
+              record_aux env ids_typ vars;
+            vars
+            in
         keep_hyps env (Idset.union ids_typ ids_def), def
-    | None -> [], def (* Empty section context: no need to check *)
+    | None ->
+        if !Flags.compilation_mode = Flags.BuildVo then
+          record_aux env Id.Set.empty Id.Set.empty;
+        [], def (* Empty section context: no need to check *)
     | Some declared ->
         (* We use the declared set and chain a check of correctness *)
         declared,
