@@ -1054,28 +1054,16 @@ End Fold_Right_Recursor.
   Qed.
 
   Theorem fold_symmetric :
-    forall (A:Type) (f:A -> A -> A),
-      (forall x y z:A, f x (f y z) = f (f x y) z) ->
-      (forall x y:A, f x y = f y x) ->
-      forall (a0:A) (l:list A), fold_left f l a0 = fold_right f a0 l.
+    forall (A : Type) (f : A -> A -> A),
+    (forall x y z : A, f x (f y z) = f (f x y) z) ->
+    forall (a0 : A), (forall y : A, f a0 y = f y a0) ->
+    forall (l : list A), fold_left f l a0 = fold_right f a0 l.
   Proof.
-    destruct l as [| a l].
-    reflexivity.
-    simpl.
-    rewrite <- H0.
-    generalize a0 a.
-    induction l as [| a3 l IHl]; simpl.
-    trivial.
-    intros.
-    rewrite H.
-    rewrite (H0 a2).
-    rewrite <- (H a1).
-    rewrite (H0 a1).
-    rewrite IHl.
-    reflexivity.
+    intros A f assoc a0 comma0 l.
+    induction l as [ | a1 l ]; [ simpl; reflexivity | ].
+    simpl. rewrite <- IHl. clear IHl. revert a1. induction l; [ auto | ].
+    simpl. intro. rewrite <- assoc. rewrite IHl. rewrite IHl. auto.
   Qed.
-
-
 
   (** [(list_power x y)] is [y^x], or the set of sequences of elts of [y]
       indexed by elts of [x], sorted in lexicographic order. *)
