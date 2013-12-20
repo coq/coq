@@ -74,9 +74,12 @@ val from_val : ?fix_exn:fix_exn -> 'a -> 'a computation
    the value is not just the 'a but also the global system state *)
 val from_here : ?fix_exn:fix_exn -> 'a -> 'a computation
 
-(* Run remotely, returns the function to assign *)
+(* Run remotely, returns the function to assign.  Optionally tekes a function
+   that is called when forced.  The default one is to raise NotReady *)
 type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
-val create_delegate : fix_exn -> 'a computation * ('a assignement -> unit)
+val create_delegate :
+  ?force:(unit -> 'a assignement) ->
+  fix_exn -> 'a computation * ('a assignement -> unit)
 
 (* Given a computation that is_exn, replace it by another one *)
 val replace : 'a computation -> 'a computation -> unit
