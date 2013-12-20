@@ -108,7 +108,7 @@ OCAMLOPT := $(TYPEREX) $(OCAMLOPT) $(CAMLFLAGS)
 
 BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
-DEPFLAGS= -slash $(LOCALINCLUDES)
+DEPFLAGS= $(LOCALINCLUDES)
 
 define bestocaml
 $(if $(OPT),\
@@ -923,11 +923,11 @@ OCAMLDEP_NG = $(COQDEPBOOT) -mldep $(OCAMLDEP)
 
 checker/%.ml.d: $(D_DEPEND_BEFORE_SRC) checker/%.ml $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
 	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP_NG) -slash $(LOCALCHKLIBS) "$<" $(TOTARGET)
+	$(HIDE)$(OCAMLDEP_NG) $(LOCALCHKLIBS) "$<" $(TOTARGET)
 
 checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
 	$(SHOW)'OCAMLDEP  $<'
-	$(HIDE)$(OCAMLDEP_NG) -slash $(LOCALCHKLIBS) "$<" $(TOTARGET)
+	$(HIDE)$(OCAMLDEP_NG) $(LOCALCHKLIBS) "$<" $(TOTARGET)
 
 %.ml.d: $(D_DEPEND_BEFORE_SRC) %.ml $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
 	$(SHOW)'OCAMLDEP  $<'
@@ -939,15 +939,15 @@ checker/%.mli.d: $(D_DEPEND_BEFORE_SRC) checker/%.mli $(D_DEPEND_AFTER_SRC) $(CO
 
 checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
 	$(SHOW)'COQDEP  $<'
-	$(HIDE)$(COQDEPBOOT) -slash -I checker -c "$<" $(TOTARGET)
+	$(HIDE)$(COQDEPBOOT) -I checker -c "$<" $(TOTARGET)
 
 %.mllib.d: $(D_DEPEND_BEFORE_SRC) %.mllib $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
 	$(SHOW)'COQDEP  $<'
-	$(HIDE)$(COQDEPBOOT) -slash -I kernel -I tools/coqdoc -c "$<" $(TOTARGET)
+	$(HIDE)$(COQDEPBOOT) -I kernel -I tools/coqdoc -c "$<" $(TOTARGET)
 
 %.v.d: $(D_DEPEND_BEFORE_SRC) %.v $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENVFILES)
 	$(SHOW)'COQDEP    $<'
-	$(HIDE)$(COQDEPBOOT) $(DEPNATDYN) -slash "$<" $(TOTARGET)
+	$(HIDE)$(COQDEPBOOT) $(DEPNATDYN) "$<" $(TOTARGET)
 
 %_stubs.c.d: $(D_DEPEND_BEFORE_SRC) %_stubs.c $(D_DEPEND_AFTER_SRC)
 	$(SHOW)'CCDEP	$<'

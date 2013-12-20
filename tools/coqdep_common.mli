@@ -8,7 +8,6 @@
 
 val option_c : bool ref
 val option_noglob : bool ref
-val option_slash : bool ref
 val option_natdynlk : bool ref
 val option_mldep : string option ref
 val norec_dirs : string list ref

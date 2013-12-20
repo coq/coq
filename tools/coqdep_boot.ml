@@ -16,7 +16,6 @@ open Coqdep_common
 *)
 
 let rec parse = function
-  | "-slash" :: ll -> option_slash := true; parse ll
   | "-natdynlink" :: "no" :: ll -> option_natdynlk := false; parse ll
   | "-c" :: ll -> option_c := true; parse ll
   | "-boot" :: ll -> parse ll (* We're already in boot mode by default *)

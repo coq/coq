@@ -184,7 +184,9 @@ let rec parse = function
   | "-coqlib" :: [] -> usage ()
   | "-suffix" :: s :: ll -> suffixe := s ; parse ll
   | "-suffix" :: [] -> usage ()
-  | "-slash" :: ll -> option_slash := true; parse ll
+  | "-slash" :: ll ->
+    Printf.eprintf "warning: option -slash has no effect and is deprecated.";
+    parse ll
   | ("-h"|"--help"|"-help") :: _ -> usage ()
   | f :: ll -> treat_file None f; parse ll
   | [] -> ()

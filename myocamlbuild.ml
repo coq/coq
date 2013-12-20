@@ -402,7 +402,7 @@ let extra_rules () = begin
     (fun env _ ->
        let v = env "%.v" and vd = env "%.v.depends" in
        (** NB: this relies on all .v files being already in _build. *)
-       Cmd (S [P coqdep_boot;dep_dynlink;A"-slash";P v;Sh">";Px vd]));
+       Cmd (S [P coqdep_boot;dep_dynlink;P v;Sh">";Px vd]));
 
 (** Coq files compilation *)
 

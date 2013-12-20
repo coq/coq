@@ -22,7 +22,6 @@ let stdout = Pervasives.stdout
 
 let option_c = ref false
 let option_noglob = ref false
-let option_slash = ref false
 let option_natdynlk = ref true
 let option_mldep = ref None
 
@@ -33,9 +32,18 @@ let suffixe = ref ".vo"
 
 type dir = string option
 
-(* filename for printing *)
-let (//) s1 s2 =
-  if !option_slash then s1^"/"^s2 else Filename.concat s1 s2
+(* Filename.concat but always with a '/' *)
+let is_dir_sep s i =
+  match Sys.os_type with
+  | "Unix" -> s.[i] = '/'
+  | "Cygwin" | "Win32" ->
+    let c = s.[i] in c = '/' || c = '\\' || c = ':'
+
+let (//) dirname filename =
+  let l = String.length dirname in
+  if l = 0 || is_dir_sep dirname (l-1)
+  then dirname ^ filename
+  else dirname ^ "/" ^ filename
 
 (** [get_extension f l] checks whether [f] has one of the extensions
     listed in [l]. It returns [f] without its extension, alongside with
