@@ -261,21 +261,23 @@ let global_vars_set env constr =
    contains the variables of the set [ids], and recursively the variables
    contained in the types of the needed variables. *)
 
+let really_needed env needed =
+  Context.fold_named_context_reverse
+    (fun need (id,copt,t) ->
+      if Id.Set.mem id need then
+        let globc =
+          match copt with
+            | None -> Id.Set.empty
+            | Some c -> global_vars_set env c in
+        Id.Set.union
+          (global_vars_set env t)
+          (Id.Set.union globc need)
+      else need)
+    ~init:needed
+    (named_context env)
+
 let keep_hyps env needed =
-  let really_needed =
-    Context.fold_named_context_reverse
-      (fun need (id,copt,t) ->
-        if Id.Set.mem id need then
-          let globc =
-	    match copt with
-	      | None -> Id.Set.empty
-	      | Some c -> global_vars_set env c in
-	  Id.Set.union
-            (global_vars_set env t)
-	    (Id.Set.union globc need)
-        else need)
-      ~init:needed
-      (named_context env) in
+  let really_needed = really_needed env needed in
   Context.fold_named_context
     (fun (id,_,_ as d) nsign ->
       if Id.Set.mem id really_needed then add_named_decl d nsign

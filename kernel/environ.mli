@@ -171,6 +171,10 @@ val global_vars_set : env -> constr -> Id.Set.t
 (** the constr must be a global reference *)
 val vars_of_global : env -> constr -> Id.Set.t
 
+(** closure of the input id set w.r.t. dependency *)
+val really_needed : env -> Id.Set.t -> Id.Set.t
+
+(** like [really_needed] but computes a well ordered named context *)
 val keep_hyps : env -> Id.Set.t -> section_context
 
 (** {5 Unsafe judgments. }
