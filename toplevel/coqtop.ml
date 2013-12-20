@@ -218,10 +218,14 @@ let no_compat_ntn = ref false
 let print_where = ref false
 let print_config = ref false
 
-let get_slave_number = function
-  | "off" -> -1
-  | "on" -> 0
-  | s -> let n = int_of_string s in assert (n > 0); n
+let get_async_proofs_mode opt next = function
+  | "off" -> Flags.APoff
+  | "on" -> Flags.APonParallel 0
+  | "worker" ->
+      let n = int_of_string (next()) in assert (n > 0);
+      Flags.APonParallel n
+  | "lazy" -> Flags.APonLazy
+  | _ -> prerr_endline ("Error: on/off/lazy/worker expected after "^opt); exit 1
 
 let get_bool opt = function
   | "yes" -> true
@@ -310,9 +314,12 @@ let parse_args arglist =
 
     (* Options with one arg *)
     |"-coqlib" -> Flags.coqlib_spec:=true; Flags.coqlib:=(next ())
-    |"-coq-slaves" -> Flags.coq_slave_mode := (get_slave_number (next ()))
-    |"-coq-slaves-j" -> Flags.coq_slaves_number := (get_int opt (next ()))
-    |"-coq-slaves-opts" -> Flags.coq_slave_options := Some (next ())
+    |"-async-proofs" ->
+        Flags.async_proofs_mode := get_async_proofs_mode opt next (next())
+    |"-async-proofs-j" ->
+        Flags.async_proofs_n_workers := (get_int opt (next ()))
+    |"-async-proofs-worker-flags" ->
+        Flags.async_proofs_worker_flags := Some (next ())
     |"-compat" -> Flags.compat_version := get_compat_version (next ())
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())
@@ -414,7 +421,7 @@ let init arglist =
       if !Flags.ide_slave then begin
         Flags.make_silent true;
         Ide_slave.init_stdout ()
-      end else if !Flags.coq_slave_mode > 0 then begin
+      end else if Flags.async_proofs_is_worker () then begin
         Flags.make_silent true;
         Stm.slave_init_stdout ()
       end;
@@ -467,7 +474,7 @@ let start () =
     Dumpglob.noglob () in
   if !Flags.ide_slave then
     Ide_slave.loop ()
-  else if !Flags.coq_slave_mode > 0 then
+  else if Flags.async_proofs_is_worker () then
     Stm.slave_main_loop ()
   else
     Coqloop.loop();

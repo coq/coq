@@ -6,9 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+let process_id () =
+  match !Flags.async_proofs_mode with
+  | Flags.APoff | Flags.APonLazy | Flags.APonParallel 0 -> "master"
+  | Flags.APonParallel n -> "worker" ^ string_of_int n 
+
 let prerr_endline s =
   if !Flags.debug then begin
-    prerr_endline (Printf.sprintf "%d] %s" !Flags.coq_slave_mode s);
+    prerr_endline (Printf.sprintf "%s] %s" (process_id ()) s);
     flush stderr
   end else ()
 
@@ -27,8 +32,7 @@ let interactive () =
 
 let fallback_to_lazy_if_marshal_error = ref true
 let fallback_to_lazy_if_slave_dies = ref true
-let min_proof_length_to_delegate = ref 20
-let coq_slave_extra_env = ref [||]
+let async_proofs_workers_extra_env = ref [||]
 
 type ast = { verbose : bool; loc : Loc.t; mutable expr : vernac_expr }
 let pr_ast { expr } = pr_vernac expr
@@ -232,7 +236,7 @@ end = struct (* {{{ *)
   open Printf
 
   let print_dag vcs () = (* {{{ *)
-    let fname = "stm" ^ string_of_int (max 0 !Flags.coq_slave_mode) in
+    let fname = "stm_" ^ process_id () in
     let string_of_transaction = function
       | Cmd (t, _) | Fork (t, _,_,_) ->
           (try string_of_ppcmds (pr_ast t) with _ -> "ERR")
@@ -692,16 +696,16 @@ end = struct (* {{{ *)
       Unix.set_close_on_exec s2c_r;
       let prog =  Sys.argv.(0) in
       let rec set_slave_opt = function
-        | [] -> ["-coq-slaves"; string_of_int n]
+        | [] -> ["-async-proofs"; "worker"; string_of_int n]
         | ("-ideslave"|"-emacs"|"-emacs-U")::tl -> set_slave_opt tl
-        | ("-coq-slaves"
+        | ("-async-proofs"
           |"-compile"
           |"-compile-verbose")::_::tl -> set_slave_opt tl
         | x::tl -> x :: set_slave_opt tl in
       let args = Array.of_list (set_slave_opt (Array.to_list Sys.argv)) in
       prerr_endline ("EXEC: " ^ prog ^ " " ^
         (String.concat " " (Array.to_list args)));
-      let env = Array.append !coq_slave_extra_env (Unix.environment ()) in
+      let env = Array.append !async_proofs_workers_extra_env (Unix.environment ()) in
       let pid = Unix.create_process_env prog args env c2s_r s2c_w Unix.stderr in
       Unix.close c2s_r;
       Unix.close s2c_w;
@@ -897,7 +901,14 @@ end = struct (* {{{ *)
 
   exception KillRespawn
     
-  let report_status ?(id = !Flags.coq_slave_mode) s =
+  let report_status ?id s =
+    let id =
+      match id with
+      | Some n -> n
+      | None ->
+          match !Flags.async_proofs_mode with
+          | Flags.APonParallel n -> n
+          | _ -> assert false in
     Pp.feedback ~state_id:Stateid.initial (Interface.SlaveStatus(id, s))
 
   let rec manage_slave respawn =
@@ -1004,7 +1015,7 @@ end = struct (* {{{ *)
         flush_all (); exit 1
                     
 
-  let init () = SlavesPool.init !Flags.coq_slaves_number manage_slave
+  let init () = SlavesPool.init !Flags.async_proofs_n_workers manage_slave
 
   let slave_ic = ref stdin
   let slave_oc = ref stdout
@@ -1077,7 +1088,7 @@ end = struct (* {{{ *)
         prerr_endline "Slave: failed with the following exception:";
         prerr_endline (string_of_ppcmds (print e))
       | e ->
-        Printf.eprintf "Slave: failed with the following CRITICAL exception: %s\n"
+        Printf.eprintf "Slave: critical exception: %s\n"
           (Pp.string_of_ppcmds (print e));  
         flush_all (); exit 1
     done
@@ -1103,9 +1114,10 @@ end = struct (* {{{ *)
 
 let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
 
-let delegate_policy_check l =
-  (interactive () = `Yes || List.length l > !min_proof_length_to_delegate) &&
-  (if interactive () = `Yes then !Flags.coq_slave_mode = 0 else true)
+let delegate_policy_check () =
+  if interactive () = `Yes then !Flags.async_proofs_mode = Flags.APonParallel 0
+  else if !Flags.compilation_mode = Flags.BuildVi then true
+  else !Flags.async_proofs_mode <> Flags.APoff
 
 let collect_proof cur hd id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id);
@@ -1118,15 +1130,14 @@ let collect_proof cur hd id =
     match last, view.step with
     | _, `Cmd (x, _) -> collect (Some (id,x)) (id::accn) view.next
     | _, `Alias _ -> `Sync `Alias
-    | _, `Fork(_,_,_,_::_::_)->
-        `Sync `MutualProofs (* TODO: enderstand where we need that *)
+    | _, `Fork(_,_,_,_::_::_)-> `Sync `MutualProofs
     | _, `Fork(_,_,Doesn'tGuaranteeOpacity,_) ->
         `Sync `Doesn'tGuaranteeOpacity
     | Some (parent, ({ expr = VernacProof(_,Some _)} as v)),
       `Fork (_, hd', GuaranteesOpacity, ids) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
-        if delegate_policy_check accn then `ASync (parent,Some v,accn,ids)
-        else `Sync `TooShort
+        if delegate_policy_check () then `ASync (parent,Some v,accn,ids)
+        else `Sync `Policy
     | Some (parent, ({ expr = VernacProof(t,None)} as v)),
       `Fork (_, hd', GuaranteesOpacity, ids) when
        not (State.is_cached parent) &&
@@ -1135,13 +1146,13 @@ let collect_proof cur hd id =
           let hint = get_hint_ctx loc in
           assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
           v.expr <- VernacProof(t, Some hint);
-          if delegate_policy_check accn then `ASync (parent,Some v,accn,ids)
-          else `Sync `TooShort
+          if delegate_policy_check () then `ASync (parent,Some v,accn,ids)
+          else `Sync `Policy
         with Not_found -> `Sync `NoHint)
     | Some (parent, _), `Fork (_, hd', GuaranteesOpacity, ids) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
-        if delegate_policy_check accn then `MaybeASync (parent, accn, ids)
-        else `Sync `TooShort
+        if delegate_policy_check () then `MaybeASync (parent, accn, ids)
+        else `Sync `Policy
     | _, `Sideff (`Ast (x,_)) -> collect (Some (id,x)) (id::accn) view.next
     | _, `Sideff (`Id _) -> `Sync `NestedProof
     | _ -> `Sync `Unknown in
@@ -1156,7 +1167,7 @@ let collect_proof cur hd id =
 let string_of_reason = function
   | `Transparent -> "Transparent"
   | `AlreadyEvaluated -> "AlreadyEvaluated"
-  | `TooShort -> "TooShort"
+  | `Policy -> "Policy"
   | `NestedProof -> "NestedProof"
   | `Immediate -> "Immediate"
   | `Alias -> "Alias"
@@ -1423,9 +1434,9 @@ let init () =
   set_undo_classifier Backtrack.undo_vernac_classifier;
   State.define ~cache:`Yes (fun () -> ()) Stateid.initial;
   Backtrack.record ();
-  if Int.equal !Flags.coq_slave_mode 0 then begin (* We are the master process *)
+  if !Flags.async_proofs_mode = Flags.APonParallel 0 then begin
     Slaves.init ();
-    let opts = match !Flags.coq_slave_options with
+    let opts = match !Flags.async_proofs_worker_flags with
       | None -> []
       | Some s -> Str.split_delim (Str.regexp ",") s in
     if String.List.mem "fallback-to-lazy-if-marshal-error=no" opts then
@@ -1435,14 +1446,8 @@ let init () =
     begin try
       let env_opt = Str.regexp "^extra-env=" in
       let env = List.find (fun s -> Str.string_match env_opt s 0) opts in
-      coq_slave_extra_env := Array.of_list
+      async_proofs_workers_extra_env := Array.of_list
         (Str.split_delim (Str.regexp ";") (Str.replace_first env_opt "" env))
-    with Not_found -> () end;
-    begin try
-      let minlen_opt = Str.regexp "^min-proof-length-to-delegate=" in
-      let len = List.find (fun s -> Str.string_match minlen_opt s 0) opts in
-      min_proof_length_to_delegate :=
-        int_of_string (Str.replace_first minlen_opt "" len)
     with Not_found -> () end;
   end
 

@@ -246,6 +246,12 @@ let in_whnf (t,stk) =
 
 let steps = ref 0
 
+let slave_process =
+  let rec f = ref (fun () ->
+    match !Flags.async_proofs_mode with
+    | Flags.APonParallel n -> let b = n > 0 in f := (fun () -> b); !f ()
+    | _ -> f := (fun () -> false); !f ()) in
+  fun () -> !f ()
 
 (* Conversion between  [lft1]term1 and [lft2]term2 *)
 let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
@@ -255,7 +261,7 @@ let rec ccnv cv_pb l2r infos lft1 lft2 term1 term2 cuniv =
 and eqappr cv_pb l2r infos (lft1,st1) (lft2,st2) cuniv =
   Util.check_for_interrupt ();
   incr steps;
-  if !steps = 10000 && !Flags.coq_slave_mode > 0 then begin
+  if !steps = 10000 && slave_process () then begin
     Thread.yield ();
     steps := 0;
   end;

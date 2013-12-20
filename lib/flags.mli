@@ -14,10 +14,12 @@ val batch_mode : bool ref
 type compilation_mode = BuildVo | BuildVi
 val compilation_mode : compilation_mode ref
 
-val coq_slave_mode : int ref
-val coq_slaves_number : int ref
+type async_proofs = APoff | APonLazy | APonParallel of int
+val async_proofs_mode : async_proofs ref
+val async_proofs_n_workers : int ref
+val async_proofs_worker_flags : string option ref
 
-val coq_slave_options : string option ref
+val async_proofs_is_worker : unit -> bool
 
 val debug : bool ref
 

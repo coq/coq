@@ -47,10 +47,16 @@ let batch_mode = ref false
 
 type compilation_mode = BuildVo | BuildVi
 let compilation_mode = ref BuildVo
-let coq_slave_mode = ref (-1)
-let coq_slaves_number = ref 1
 
-let coq_slave_options = ref None
+type async_proofs = APoff | APonLazy | APonParallel of int
+let async_proofs_mode = ref APoff
+let async_proofs_n_workers = ref 1
+let async_proofs_worker_flags = ref None
+
+let async_proofs_is_worker () =
+  match !async_proofs_mode with
+  | APonParallel n -> n > 0
+  | _ -> false
 
 let debug = ref false
 

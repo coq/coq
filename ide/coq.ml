@@ -480,7 +480,7 @@ let install_input_watch handle respawner feedback_processor =
 let spawn_handle args =
   let prog = coqtop_path () in
   let args = Array.of_list (
-    prog :: "-coq-slaves" :: "on" :: "-ideslave" :: args) in
+    prog :: "-async-proofs" :: "on" :: "-ideslave" :: args) in
   let pid, ic, gic, oc, close_channels = open_process_pid prog args in
   let xml_ic = Xml_parser.make (Xml_parser.SChannel ic) in
   let xml_oc = Xml_printer.make (Xml_printer.TChannel oc) in
