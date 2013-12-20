@@ -30,8 +30,11 @@ let fallback_to_lazy_if_slave_dies = ref true
 let min_proof_length_to_delegate = ref 20
 let coq_slave_extra_env = ref [||]
 
+type ast = { verbose : bool; loc : Loc.t; mutable expr : vernac_expr }
+let pr_ast { expr } = pr_vernac expr
+
 (* Wrapper for Vernacentries.interp to set the feedback id *)
-let vernac_interp ?proof id (verbosely, loc, expr) =
+let vernac_interp ?proof id { verbose; loc; expr } =
   let internal_command = function
     | VernacResetName _ | VernacResetInitial | VernacBack _
     | VernacBackTo _ | VernacRestart | VernacUndo _ | VernacUndoTo _
@@ -42,7 +45,7 @@ let vernac_interp ?proof id (verbosely, loc, expr) =
     Pp.set_id_for_feedback (Interface.State id);
     Aux_file.record_in_aux_set_at loc;
     prerr_endline ("interpreting " ^ string_of_ppcmds(pr_vernac expr));
-    try Vernacentries.interp ~verbosely ?proof (loc, expr)
+    try Vernacentries.interp ~verbosely:verbose ?proof (loc, expr)
     with e -> raise (Errors.push (Cerrors.process_vernac_interp_error e))
   end
 
@@ -55,9 +58,6 @@ let vernac_parse eid s =
     | None -> raise (Invalid_argument "vernac_parse")
     | Some ast -> ast)
   ()
-
-type ast = bool * Loc.t * vernac_expr
-let pr_ast (_, _, v) = pr_vernac v
 
 module Vcs_ = Vcs.Make(Stateid)
 type future_proof = Entries.proof_output list Future.computation
@@ -342,7 +342,7 @@ end = struct (* {{{ *)
   let rewrite_merge id ~ours ~at branch =
     vcs := rewrite_merge !vcs id ~ours ~theirs:Noop ~at branch
   let reachable id = reachable !vcs id
-  let mk_branch_name (_, _, x) = Branch.make
+  let mk_branch_name { expr = x } = Branch.make
     (match x with
     | VernacDefinition (_,(_,i),_) -> string_of_id i
     | VernacStartTheoremProof (_,[Some (_,i),_],_) -> string_of_id i
@@ -1041,35 +1041,38 @@ let delegate_policy_check l =
   (if interactive () = `Yes then !Flags.coq_slave_mode = 0 else true)
 
 let collect_proof cur hd id =
- prerr_endline ("Collecting proof ending at "^Stateid.to_string id); 
+ prerr_endline ("Collecting proof ending at "^Stateid.to_string id);
+ let loc = (snd cur).loc in
  let is_defined = function
-   | _, (_, _, VernacEndProof (Proved (false,_))) -> true
+   | _, { expr = VernacEndProof (Proved (false,_)) } -> true
    | _ -> false in
  let rec collect last accn id =
     let view = VCS.visit id in
     match last, view.step with
     | _, `Cmd (x, _) -> collect (Some (id,x)) (id::accn) view.next
-    | _, `Alias _ -> `NotOptimizable `Alias
+    | _, `Alias _ -> `Sync `Alias
     | _, `Fork(_,_,_,_::_::_)->
-        `NotOptimizable `MutualProofs (* TODO: enderstand where we need that *)
-    | _, `Fork(_,_,Doesn'tGuaranteeOpacity,_) -> `NotOptimizable `Doesn'tGuaranteeOpacity
-    | Some (parent, (_,_,VernacProof(_,Some _) as v)), `Fork (_, hd', GuaranteesOpacity, ids) ->
+        `Sync `MutualProofs (* TODO: enderstand where we need that *)
+    | _, `Fork(_,_,Doesn'tGuaranteeOpacity,_) ->
+        `Sync `Doesn'tGuaranteeOpacity
+    | Some (parent, ({ expr = VernacProof(_,Some _)} as v)),
+      `Fork (_, hd', GuaranteesOpacity, ids) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
-        if delegate_policy_check accn then `Optimizable (parent,Some v,accn,ids)
-        else `NotOptimizable `TooShort
+        if delegate_policy_check accn then `ASync (parent,Some v,accn,ids)
+        else `Sync `TooShort
     | Some (parent, _), `Fork (_, hd', GuaranteesOpacity, ids) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
-        if delegate_policy_check accn then `MaybeOptimizable (parent, accn,ids)
-        else `NotOptimizable `TooShort
+        if delegate_policy_check accn then `MaybeASync (parent, accn, ids)
+        else `Sync `TooShort
     | _, `Sideff (`Ast (x,_)) -> collect (Some (id,x)) (id::accn) view.next
-    | _, `Sideff (`Id _) -> `NotOptimizable `NestedProof
-    | _ -> `NotOptimizable `Unknown in
+    | _, `Sideff (`Id _) -> `Sync `NestedProof
+    | _ -> `Sync `Unknown in
  match cur, (VCS.visit id).step with
- | (parent, (_,_,VernacExactProof _)), `Fork _ ->
-     `NotOptimizable `Immediate
+ | (parent, { expr = VernacExactProof _ }), `Fork _ ->
+     `Sync `Immediate
  | _ ->
-     if State.is_cached id then `NotOptimizable `AlreadyEvaluated
-     else if is_defined cur then `NotOptimizable `Transparent
+     if State.is_cached id then `Sync `AlreadyEvaluated
+     else if is_defined cur then `Sync `Transparent
      else collect (Some cur) [] id
 
 let string_of_reason = function
@@ -1121,8 +1124,8 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), `Yes
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
-          | `Optimizable (start, proof_using_ast, nodes,ids) -> (fun () ->
-                prerr_endline ("Optimizable " ^ Stateid.to_string id);
+          | `ASync (start, proof_using_ast, nodes,ids) -> (fun () ->
+                prerr_endline ("Asynchronous " ^ Stateid.to_string id);
                 VCS.create_cluster nodes ~tip:id;
                 begin match keep, brinfo, qed.fproof with
                 | VtKeep, { VCS.kind = `Edit _ }, None -> assert false
@@ -1154,12 +1157,12 @@ let known_state ?(redefine_qed=false) ~cache id =
                 end;
                 Proof_global.discard_all ()
               ), if redefine_qed then `No else `Yes
-          | `NotOptimizable `Immediate -> (fun () -> 
+          | `Sync `Immediate -> (fun () -> 
                 assert (Stateid.equal view.next eop);
                 reach eop; vernac_interp id x; Proof_global.discard_all ()
               ), `Yes
-          | `NotOptimizable reason -> (fun () ->
-                prerr_endline ("NotOptimizable " ^ Stateid.to_string id ^ " " ^
+          | `Sync reason -> (fun () ->
+                prerr_endline ("Synchronous " ^ Stateid.to_string id ^ " " ^
                   string_of_reason reason);
                 reach eop;
                 let wall_clock = Unix.gettimeofday () in
@@ -1181,15 +1184,15 @@ let known_state ?(redefine_qed=false) ~cache id =
                 end;
                 Proof_global.discard_all ()
               ), `Yes
-          | `MaybeOptimizable (start, nodes, ids) -> (fun () ->
-                prerr_endline ("MaybeOptimizable " ^ Stateid.to_string id);
+          | `MaybeASync (start, nodes, ids) -> (fun () ->
+                prerr_endline ("MaybeAsynchronous " ^ Stateid.to_string id);
                 reach ~cache:`Shallow start;
                 (* no sections and no modules *)
                 if List.is_empty (Environ.named_context (Global.env ())) &&
                    Safe_typing.is_curmod_library (Global.safe_env ()) then
-                  fst (aux (`Optimizable (start, None, nodes,ids))) ()
+                  fst (aux (`ASync (start, None, nodes,ids))) ()
                 else
-                  fst (aux (`NotOptimizable `Unknown)) ()
+                  fst (aux (`Sync `Unknown)) ()
               ), if redefine_qed then `No else `Yes
           in
           aux (collect_proof (view.next, x) brname eop)
@@ -1458,7 +1461,7 @@ let handle_failure e vcs tty =
 let process_transaction ~tty verbose c (loc, expr) =
   let warn_if_pos a b =
     if b then msg_warning(pr_ast a ++ str" should not be part of a script") in
-  let v, x = expr, (verbose && Flags.is_verbose(), loc, expr) in
+  let v, x = expr, { verbose = verbose && Flags.is_verbose(); loc; expr } in
   prerr_endline ("{{{ execute: "^ string_of_ppcmds (pr_ast x));
   let vcs = VCS.backup () in
   try
@@ -1503,7 +1506,8 @@ let process_transaction ~tty verbose c (loc, expr) =
       (* Query *)
       | VtQuery false, VtNow when tty = true ->
           finish ();
-          (try Future.purify (vernac_interp Stateid.dummy) (true,loc,expr)
+          (try Future.purify (vernac_interp Stateid.dummy)
+                  { verbose = true; loc; expr }
            with e when Errors.noncritical e ->
              let e = Errors.push e in
              raise(State.exn_on Stateid.dummy e)); `Ok
@@ -1600,7 +1604,8 @@ let process_transaction ~tty verbose c (loc, expr) =
       | VernacStm (PGLast _) ->
         if not (VCS.Branch.equal head VCS.Branch.master) then
           vernac_interp Stateid.dummy
-            (true,Loc.ghost,VernacShow (ShowGoal OpenSubgoals))
+            { verbose = true; loc = Loc.ghost;
+              expr = VernacShow (ShowGoal OpenSubgoals) }
       | _ -> ()
     end;
     prerr_endline "executed }}}";
@@ -1793,11 +1798,11 @@ let get_script prf =
     let view = VCS.visit id in
     match view.step with
     | `Fork (_,_,_,ns) when List.mem prf ns -> acc
-    | `Qed (qed, proof) -> find [pi3 qed.qast, (VCS.get_info id).n_goals] proof
+    | `Qed (qed, proof) -> find [qed.qast.expr, (VCS.get_info id).n_goals] proof
     | `Sideff (`Ast (x,_)) ->
-         find ((pi3 x, (VCS.get_info id).n_goals)::acc) view.next
+         find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
     | `Sideff (`Id id)  -> find acc id
-    | `Cmd (x,_) -> find ((pi3 x, (VCS.get_info id).n_goals)::acc) view.next 
+    | `Cmd (x,_) -> find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next 
     | `Alias id -> find acc id
     | `Fork _ -> find acc view.next
     in
