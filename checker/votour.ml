@@ -126,6 +126,7 @@ let rec visit v o pos =
   let l = read_line () in
   try
     if l = "u" then let info = pop () in visit info.typ info.obj info.pos
+    else if l = "x" then (Printf.printf "\nGoodbye!\n\n";exit 0)
     else
       let v',o',pos' = children.(int_of_string l) in
       push (get_name v) v o pos;
@@ -134,28 +135,48 @@ let rec visit v o pos =
 
 (** Loading the vo *)
 
-let opaque = ref false
+type segment = {
+  name : string;
+  mutable pos : int;
+  typ : Values.value;
+}
 
 let visit_vo f =
-  Printf.printf "Welcome to votour !\n";
-  Printf.printf "Enjoy your guided tour of a Coq .vo\n";
-  Printf.printf "Object sizes are in words\n";
-  Printf.printf "At prompt, <n> enters the <n>-th child and u goes up\n%!";
+  Printf.printf "\nWelcome to votour !\n";
+  Printf.printf "Enjoy your guided tour of a Coq .vo or .vi file\n";
+  Printf.printf "Object sizes are in words (%d bits)\n" Sys.word_size;
+  Printf.printf
+    "At prompt, <n> enters the <n>-th child, u goes up 1 level, x exits\n\n%!";
+  let segments = [|
+    {name="library"; pos=0; typ=Values.v_lib};
+    {name="STM tasks"; pos=0; typ=Opt Any};
+    {name="opaque proof terms"; pos=0; typ=Values.v_opaques}; 
+  |] in
   let ch = open_in_bin f in
-  let _magic = input_binary_int ch in
-  let lib = (input_value ch : Obj.t) in (* actually Cic.library_disk *)
-  let _   = Digest.input ch in
-  let tbl = (input_value ch : Obj.t) in (* actually Cic.opaque_table *)
-  let () = close_in ch in
-  let o = if !opaque then tbl else lib in
-  let ty = if !opaque then Values.v_opaques else Values.v_lib in
+  let magic = input_binary_int ch in
+  Printf.printf "File format: %d\n%!" magic;
+  for i=0 to Array.length segments - 1 do
+    let pos = input_binary_int ch in
+    segments.(i).pos <- pos_in ch;
+    seek_in ch pos;
+    ignore(Digest.input ch);
+  done;
+  Printf.printf "The file has %d segments, choose the one to visit:\n"
+    (Array.length segments);
+  Array.iteri (fun i { name; pos } ->
+    Printf.printf "  %d: %s, starting at byte %d\n" i name pos)
+    segments;
+  Printf.printf "# %!";
+  let l = read_line () in
+  let seg = int_of_string l in
+  seek_in ch segments.(seg).pos;
+  let o = (input_value ch : Obj.t) in
   let () = CObj.register_shared_size o in
   let () = init () in
-  visit ty o []
+  visit segments.(seg).typ o []
 
 let main =
   if not !Sys.interactive then
-    Arg.parse ["-opaques",Arg.Set opaque,"visit the table of opaque terms"]
-      visit_vo
-      ("votour: guided tour of a Coq .vo file\n"^
-       "Usage: votour [opts] foo.vo")
+    Arg.parse [] visit_vo
+      ("votour: guided tour of a Coq .vo or .vi file\n"^
+       "Usage: votour file.v[oi]")

@@ -305,7 +305,6 @@ and read_vernac_file verbosely s =
     close_input in_chan input;    (* we must close the file first *)
     match e with
       | End_of_input ->
-          Stm.join ();
           if do_beautify () then
             pr_new_syntax (Loc.make_loc (max_int,max_int)) None
       | _ -> raise_with_file fname (disable_drop e)
@@ -341,15 +340,33 @@ let load_vernac verb file =
 
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =
-  let ldir,long_f_dot_v = Flags.verbosely Library.start_library f in
-  Dumpglob.start_dump_glob long_f_dot_v;
-  Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
-  if !Flags.xml_export then Hook.get f_xml_start_library ();
-  let _ = load_vernac verbosely long_f_dot_v in
-  let pfs = Pfedit.get_all_proof_names () in
-  if not (List.is_empty pfs) then
-    (pperrnl (str "Error: There are pending proofs"); flush_all (); exit 1);
-  if !Flags.xml_export then Hook.get f_xml_end_library ();
-  Library.save_library_to ldir (long_f_dot_v ^ "o");
-  Dumpglob.end_dump_glob ()
-
+  let check_pending_proofs () =
+    let pfs = Pfedit.get_all_proof_names () in
+    if not (List.is_empty pfs) then
+      (pperrnl (str "Error: There are pending proofs"); flush_all (); exit 1) in
+  match !Flags.compilation_mode with
+  | BuildVo ->
+      let ldir,long_f_dot_v = Flags.verbosely Library.start_library f in
+      Aux_file.start_aux_file_for long_f_dot_v;
+      Dumpglob.start_dump_glob long_f_dot_v;
+      Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
+      if !Flags.xml_export then Hook.get f_xml_start_library ();
+      let wall_clock1 = Unix.gettimeofday () in
+      let _ = load_vernac verbosely long_f_dot_v in
+      Stm.join ();
+      let wall_clock2 = Unix.gettimeofday () in
+      check_pending_proofs ();
+      Library.save_library_to ldir long_f_dot_v;
+      Aux_file.record_in_aux_at Loc.ghost "vo_compile_time"
+        (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
+      Aux_file.stop_aux_file ();
+      if !Flags.xml_export then Hook.get f_xml_end_library ();
+      Dumpglob.end_dump_glob ()
+  | BuildVi ->
+      let ldir, long_f_dot_v = Flags.verbosely Library.start_library f in
+      Dumpglob.noglob ();
+      let _ = load_vernac verbosely long_f_dot_v in
+      Stm.finish ();
+      check_pending_proofs ();
+      let todo = Stm.dump () in
+      Library.save_library_to ~todo ldir long_f_dot_v

@@ -114,17 +114,49 @@ let try_remove filename =
     msg_warning
       (str"Could not remove file " ++ str filename ++ str" which is corrupted!")
 
-let error_corrupted file = error (file ^ " is corrupted, try to rebuild it.")
+let error_corrupted file s = error (file ^": " ^ s ^ ". Try to rebuild it.")
+
+let input_binary_int f ch =
+  try input_binary_int ch
+  with
+  | End_of_file -> error_corrupted f "premature end of file"
+  | Failure s -> error_corrupted f s
+let output_binary_int ch x = output_binary_int ch x; flush ch
 
 let marshal_out ch v = Marshal.to_channel ch v []; flush ch
 let marshal_in filename ch =
   try Marshal.from_channel ch
-  with End_of_file | Failure _ -> error_corrupted filename
+  with
+  | End_of_file -> error_corrupted filename "premature end of file"
+  | Failure s -> error_corrupted filename s
 
 let digest_out = Digest.output
 let digest_in filename ch =
   try Digest.input ch
-  with End_of_file | Failure _ -> error_corrupted filename
+  with
+  | End_of_file -> error_corrupted filename "premature end of file"
+  | Failure s -> error_corrupted filename s
+
+let marshal_out_segment f ch v =
+  let start = pos_out ch in
+  output_binary_int ch 0;  (* dummy value for stop *)
+  marshal_out ch v;
+  let stop = pos_out ch in
+  seek_out ch start;
+  output_binary_int ch stop;
+  seek_out ch stop;
+  digest_out ch (Digest.file f)
+
+let marshal_in_segment f ch =
+  let stop = (input_binary_int f ch : int) in
+  let v = marshal_in f ch in
+  let digest = digest_in f ch in
+  v, stop, digest
+
+let skip_in_segment f ch =
+  let stop = (input_binary_int f ch : int) in
+  seek_in ch stop;
+  stop, digest_in f ch
 
 exception Bad_magic_number of string
 
@@ -136,11 +168,12 @@ let raw_extern_intern magic =
   and intern_state filename =
     try
       let channel = open_in_bin filename in
-      if not (Int.equal (input_binary_int channel) magic) then
+      if not (Int.equal (input_binary_int filename channel) magic) then
         raise (Bad_magic_number filename);
       channel
-    with End_of_file | Failure _ | Sys_error _ ->
-      error_corrupted filename
+    with
+    | End_of_file -> error_corrupted filename "premature end of file"
+    | Failure s | Sys_error s -> error_corrupted filename s
   in
   (extern_state,intern_state)
 

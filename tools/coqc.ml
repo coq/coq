@@ -117,7 +117,7 @@ let parse_args () =
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
       |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-beautify"|"-strict-implicit"
       |"-dont-load-proofs"|"-load-proofs"|"-force-load-proofs"
-      |"-impredicative-set"|"-vm"|"-no-native-compiler"
+      |"-impredicative-set"|"-vm"|"-no-native-compiler"|"-quick"
       |"-verbose-compat-notations"|"-no-compat-notations" as o) :: rem ->
 	parse (cfiles,o::args) rem
 

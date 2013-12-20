@@ -214,32 +214,51 @@ let locate_absolute_library dir =
   let pref, base = split_dirpath dir in
   let loadpath = Loadpath.expand_root_path pref in
   let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
-  try
-    let name = (Id.to_string base)^".vo" in
-    let _, file = System.where_in_path ~warn:false loadpath name in
-    (dir, file)
-  with Not_found ->
-  (* Last chance, removed from the file system but still in memory *)
-  if library_is_loaded dir then
-    (dir, library_full_filename dir)
-  else
-    raise LibNotFound
+  let find ext =
+    try
+      let name = Id.to_string base ^ ext in
+      let _, file = System.where_in_path ~warn:false loadpath name in
+      [file]
+    with Not_found -> [] in
+  match find ".vo" @ find ".vi" with
+  | [] -> raise LibNotFound
+  | [file] -> dir, file
+  | [vo;vi] when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
+       msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
+         str vo ++ str " because it is more recent");
+       dir, vi
+  | [vo;vi] -> dir, vo
+  | _ -> assert false
 
 let locate_qualified_library warn qid =
-  try
-    (* Search library in loadpath *)
-    let dir, base = repr_qualid qid in
-    let loadpath = Loadpath.expand_path dir in
-    let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
-    let name = Id.to_string base ^ ".vo" in
-    let lpath, file = System.where_in_path ~warn (List.map fst loadpath) name
-    in
-    let dir = add_dirpath_suffix (String.List.assoc lpath loadpath) base in
-    (* Look if loaded *)
-    if library_is_loaded dir then (LibLoaded, dir, library_full_filename dir)
-    (* Otherwise, look for it in the file system *)
-    else (LibInPath, dir, file)
-  with Not_found -> raise LibNotFound
+  (* Search library in loadpath *)
+  let dir, base = repr_qualid qid in
+  let loadpath = Loadpath.expand_path dir in
+  let () = match loadpath with [] -> raise LibUnmappedDir | _ -> () in
+  let find ext =
+    try
+      let name = Id.to_string base ^ ext in
+      let lpath, file =
+        System.where_in_path ~warn (List.map fst loadpath) name in
+      [lpath, file]
+    with Not_found -> [] in
+  let lpath, file =
+    match find ".vo" @ find ".vi" with
+    | [] -> raise LibNotFound
+    | [lpath, file] -> lpath, file
+    | [lpath_vo, vo; lpath_vi, vi]
+      when Unix.((stat vo).st_mtime < (stat vi).st_mtime) ->
+       msg_warning (str"Loading " ++ str vi ++ str " instead of " ++
+         str vo ++ str " because it is more recent");
+       lpath_vi, vi
+    | [lpath_vo, vo; _ ] -> lpath_vo, vo
+    | _ -> assert false
+  in
+  let dir = add_dirpath_suffix (String.List.assoc lpath loadpath) base in
+  (* Look if loaded *)
+  if library_is_loaded dir then (LibLoaded, dir,library_full_filename dir)
+  (* Otherwise, look for it in the file system *)
+  else (LibInPath, dir, file)
 
 let error_unmapped_dir qid =
   let prefix, _ = repr_qualid qid in
@@ -289,10 +308,7 @@ let fetch_opaque_table dp (f,pos,digest) =
     let ch = System.with_magic_number_check raw_intern_library f in
     let () = seek_in ch pos in
     if not (String.equal (System.digest_in f ch) digest) then raise Faulty;
-    let table = (System.marshal_in f ch : Term.constr array) in
-    (* Check of the final digest (the one also covering the opaques) *)
-    let pos' = pos_in ch in
-    let digest' = System.digest_in f ch in
+    let table, pos', digest' = System.marshal_in_segment f ch in
     let () = close_in ch in
     let ch' = open_in f in
     if not (String.equal (Digest.channel ch' pos') digest') then raise Faulty;
@@ -370,12 +386,11 @@ let mk_library md digest =
 
 let intern_from_file f =
   let ch = System.with_magic_number_check raw_intern_library f in
-  let lmd = (System.marshal_in f ch : library_disk) in
-  let pos = pos_in ch in
-  let digest = System.digest_in f ch in
+  let lmd, _, digest_lmd = System.marshal_in_segment f ch in
+  let pos, digest = System.skip_in_segment f ch in
   register_library_filename lmd.md_name f;
   add_opaque_table lmd.md_name (ToFetch (f,pos,digest));
-  let library = mk_library lmd digest in
+  let library = mk_library lmd digest_lmd in
   close_in ch;
   library
 
@@ -607,7 +622,8 @@ let error_recursively_dependent_library dir =
 (* Security weakness: file might have been changed on disk between
    writing the content and computing the checksum... *)
 
-let save_library_to dir f =
+let save_library_to ?todo dir f =
+  let f = if todo = None then f ^ "o" else f ^ "i" in
   Lazyconstr.reset_indirect_opaque_creator ();
   let cenv, seg, ast = Declaremods.end_library dir in
   let table = OpaqueTables.dump () in
@@ -623,10 +639,9 @@ let save_library_to dir f =
   let (f',ch) = raw_extern_library f in
   try
     (* Writing vo payload *)
-    System.marshal_out ch md; (* env + objs *)
-    System.digest_out ch (Digest.file f'); (* 1st checksum *)
-    System.marshal_out ch table; (* opaques *)
-    System.digest_out ch (Digest.file f'); (* 2nd checksum *)
+    System.marshal_out_segment f' ch md;    (* env + objs *)
+    System.marshal_out_segment f' ch todo;  (* STM tasks  *)
+    System.marshal_out_segment f' ch table; (* opaques    *)
     close_out ch;
     (* Writing native code files *)
     if not !Flags.no_native_compiler then

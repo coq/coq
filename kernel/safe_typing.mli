@@ -115,8 +115,10 @@ type native_library = Nativecode.global list
 
 val start_library : DirPath.t -> module_path safe_transformer
 
-val export : safe_environment -> DirPath.t ->
-  module_path * compiled_library * native_library
+val export :
+  Flags.compilation_mode ->
+  safe_environment -> DirPath.t ->
+    module_path * compiled_library * native_library
 
 val import : compiled_library -> Digest.t ->
   (module_path * Nativecode.symbol array) safe_transformer

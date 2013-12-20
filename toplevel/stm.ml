@@ -594,6 +594,8 @@ module Slaves : sig
   val set_reach_known_state :
     (?redefine_qed:bool -> cache:Summary.marshallable -> Stateid.t -> unit) -> unit
 
+  type tasks
+  val dump : unit -> tasks
 
 end = struct (* {{{ *)
 
@@ -604,6 +606,7 @@ end = struct (* {{{ *)
     val pop : 'a t -> 'a
     val push : 'a t -> 'a -> unit
     val wait_until_n_are_waiting_and_queue_empty : int -> 'a t -> unit
+    val dump : 'a t -> 'a list
 
   end = struct (* {{{ *)
 
@@ -638,6 +641,13 @@ end = struct (* {{{ *)
       Mutex.lock m;
       while not (Queue.is_empty q) || !n < j do Condition.wait cn m done;
       Mutex.unlock m
+
+    let dump (q,m,_,_,_) =
+      let l = ref [] in
+      Mutex.lock m;
+      while not (Queue.is_empty q) do l := Queue.pop q :: !l done;
+      Mutex.unlock m;
+      List.rev !l
 
   end (* }}} *)
 
@@ -745,10 +755,11 @@ end = struct (* {{{ *)
   let cancel_switch_of_task = function
     | TaskBuildProof (_,_,_,_,c,_) -> c
 
+  let build_proof_here_core eop () =
+    !reach_known_state ~cache:`No eop;
+    Proof_global.return_proof ()
   let build_proof_here (id,valid) eop =
-    Future.create (State.exn_on id ~valid) (fun () ->
-      !reach_known_state ~cache:`No eop;
-      Proof_global.return_proof ())
+    Future.create (State.exn_on id ~valid) (build_proof_here_core eop)
 
   let slave_respond msg =
     match msg with
@@ -818,13 +829,22 @@ end = struct (* {{{ *)
   let queue : task TQueue.t = TQueue.create ()
 
   let wait_all_done () =
-    TQueue.wait_until_n_are_waiting_and_queue_empty
-      (SlavesPool.n_slaves ()) queue
+    if not (SlavesPool.is_empty ()) then
+      TQueue.wait_until_n_are_waiting_and_queue_empty
+        (SlavesPool.n_slaves ()) queue
 
   let build_proof ~exn_info:(id,valid as exn_info) ~start ~stop ~name =
     let cancel_switch = ref false in
     if SlavesPool.is_empty () then
-      build_proof_here exn_info stop, cancel_switch
+      if !Flags.compilation_mode = Flags.BuildVi then begin
+        let force () : Entries.proof_output list Future.assignement =
+          try `Val (build_proof_here_core stop ()) with e -> `Exn e in
+        let f,assign = Future.create_delegate ~force (State.exn_on id ~valid) in
+        TQueue.push queue
+          (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,name));
+        f, cancel_switch
+      end else
+        build_proof_here exn_info stop, cancel_switch
     else 
       let f, assign = Future.create_delegate (State.exn_on id ~valid) in
       Pp.feedback (Interface.InProgress 1);
@@ -1023,6 +1043,15 @@ end = struct (* {{{ *)
           (Pp.string_of_ppcmds (print e));  
         flush_all (); exit 1
     done
+
+  (* For external users this name is nicer than request *)
+  type tasks = request list
+  let dump () =
+    assert(SlavesPool.is_empty ()); (* ATM, we allow that only if no slaves *)
+    let tasks = TQueue.dump queue in
+    prerr_endline (Printf.sprintf "dumping %d\n" (List.length tasks));
+    let tasks = List.map request_of_task tasks in
+    tasks
 
 end (* }}} *)
 
@@ -1407,6 +1436,9 @@ let join () =
   prerr_endline "Joining the aborted proofs";
   jab (VCS.get_branch_pos VCS.Branch.master);
   VCS.print ()
+
+type tasks = Slaves.tasks
+let dump () = Slaves.dump ()
 
 let merge_proof_branch qast keep brname =
   let brinfo = VCS.get_branch brname in

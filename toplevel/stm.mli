@@ -40,6 +40,9 @@ val finish : unit -> unit
 
 (* Joins the entire document.  Implies finish, but also checks proofs *)
 val join : unit -> unit
+(* To save to disk an incomplete document *)
+type tasks
+val dump : unit -> tasks
 
 (* Id of the tip of the current branch *)
 val get_current_state : unit -> Stateid.t

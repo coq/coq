@@ -657,9 +657,11 @@ let start_library dir senv =
     modvariant = LIBRARY;
     imports = senv.imports }
 
-let export senv dir =
+let export compilation_mode senv dir =
   let senv =
-    try join_safe_environment senv
+    try
+      if compilation_mode = Flags.BuildVi then senv (* FIXME: cleanup future*)
+      else join_safe_environment senv
     with e -> Errors.errorlabstrm "future" (Errors.print e)
   in
   let () = check_current_library dir senv in

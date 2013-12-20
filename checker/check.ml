@@ -301,12 +301,11 @@ let intern_from_file (dir, f) =
   let (md,table,digest) =
     try
       let ch = with_magic_number_check raw_intern_library f in
-      let (md:Cic.library_disk) = System.marshal_in f ch in
-      let digest = System.digest_in f ch in
-      let (table:Cic.opaque_table) = System.marshal_in f ch in
+      let (md:Cic.library_disk), _, digest = System.marshal_in_segment f ch in
+      let (tasks:'a option), _, _ = System.marshal_in_segment f ch in
+      let (table:Cic.opaque_table), pos, checksum =
+        System.marshal_in_segment f ch in
       (* Verification of the final checksum *)
-      let pos = pos_in ch in
-      let checksum = System.digest_in f ch in
       let () = close_in ch in
       let ch = open_in f in
       if not (String.equal (Digest.channel ch pos) checksum) then
@@ -315,6 +314,9 @@ let intern_from_file (dir, f) =
       if dir <> md.md_name then
         errorlabstrm "intern_from_file"
           (name_clash_message dir md.md_name f);
+      if tasks <> None then
+        errorlabstrm "intern_from_file"
+          (str "The file "++str f++str " contains unfinished tasks");
       (* Verification of the unmarshalled values *)
       Validate.validate !Flags.debug Values.v_lib md;
       Validate.validate !Flags.debug Values.v_opaques table;

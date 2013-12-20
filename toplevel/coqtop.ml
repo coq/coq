@@ -320,6 +320,7 @@ let parse_args arglist =
     |"-q" -> no_load_rc ()
     |"-quality" -> term_quality := true; no_load_rc ()
     |"-quiet"|"-silent" -> Flags.make_silent true
+    |"-quick" -> Flags.compilation_mode := BuildVi
     |"-time" -> Flags.time := true
     |"-unicode" -> add_require "Utf8_core"
     |"-v"|"--version" -> Usage.version (exitcode ())

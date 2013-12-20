@@ -37,7 +37,7 @@ val import_module : bool -> qualid located -> unit
 val start_library : string -> DirPath.t * string
 
 (** {6 End the compilation of a library and save it to a ".vo" file } *)
-val save_library_to : DirPath.t -> string -> unit
+val save_library_to : ?todo:'a -> DirPath.t -> string -> unit
 
 (** {6 Interrogate the status of libraries } *)
 

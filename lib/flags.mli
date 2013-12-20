@@ -11,6 +11,8 @@
 val boot : bool ref
 
 val batch_mode : bool ref
+type compilation_mode = BuildVo | BuildVi
+val compilation_mode : compilation_mode ref
 
 val coq_slave_mode : int ref
 val coq_slaves_number : int ref

@@ -297,7 +297,7 @@ let clean sds sps =
     print "\trm -f $(addsuffix .d,$(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(MLPACKFILES))\n";
   end;
   if !some_vfile then
-    print "\trm -f $(VOFILES) $(VIFILES) $(GFILES) $(VFILES:.v=.v.d) $(VFILES:=.beautified) $(VFILES:=.old)\n";
+    print "\trm -f $(VOFILES) $(VOFILES:.vo=.vi) $(GFILES) $(VFILES:.v=.v.d) $(VFILES:=.beautified) $(VFILES:=.old)\n";
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) all-mli.tex\n";
   print "\t- rm -rf html mlihtml uninstall_me.sh\n";
   List.iter
@@ -353,7 +353,7 @@ let implicit () =
 in
   let v_rules () =
     print "%.vo %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
-    print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
+    print "%.vi: %.v\n\t$(COQC) -quick $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.g: %.v\n\t$(GALLINA) $<\n\n";
     print "%.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex $< -o $@\n\n";
     print "%.html: %.v %.glob\n\t$(COQDOC) $(COQDOCFLAGS) -html $< -o $@\n\n";
@@ -520,10 +520,10 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
   begin match vfiles with
     |[] -> ()
     |l ->
-      print "VOFILES:=$(VFILES:.v=.vo)\n";
+      print "VO=vo\n";
+      print "VOFILES:=$(VFILES:.v=.$(VO))\n";
       classify_files_by_root "VOFILES" l inc;
       print "GLOBFILES:=$(VFILES:.v=.glob)\n";
-      print "VIFILES:=$(VFILES:.v=.vi)\n";
       print "GFILES:=$(VFILES:.v=.g)\n";
       print "HTMLFILES:=$(VFILES:.v=.html)\n";
       print "GHTMLFILES:=$(VFILES:.v=.g.html)\n"
@@ -616,7 +616,7 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
     end;
   if !some_vfile then
     begin
-      print "spec: $(VIFILES)\n\n";
+      print "quick:\n\t$(MAKE) all VO=vi\n";
       print "gallina: $(GFILES)\n\n";
       print "html: $(GLOBFILES) $(VFILES)\n";
       print "\t- mkdir -p html\n";

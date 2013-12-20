@@ -52,6 +52,10 @@ val marshal_in : string -> in_channel -> 'a
 val digest_out : out_channel -> Digest.t -> unit
 val digest_in : string -> in_channel -> Digest.t
 
+val marshal_out_segment : string -> out_channel -> 'a -> unit
+val marshal_in_segment : string -> in_channel -> 'a * int * Digest.t
+val skip_in_segment : string -> in_channel -> int * Digest.t
+
 (** {6 Sending/receiving once with external executable } *)
 
 val connect : (out_channel -> unit) -> (in_channel -> 'a) -> string -> 'a

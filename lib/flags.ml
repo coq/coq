@@ -45,6 +45,8 @@ let boot = ref false
 
 let batch_mode = ref false
 
+type compilation_mode = BuildVo | BuildVi
+let compilation_mode = ref BuildVo
 let coq_slave_mode = ref (-1)
 let coq_slaves_number = ref 1
 

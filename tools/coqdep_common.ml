@@ -298,7 +298,7 @@ let canonize f =
     | (f,_) :: _ -> escape f
     | _ -> escape f
 
-let rec traite_fichier_Coq verbose f =
+let rec traite_fichier_Coq suffixe verbose f =
   try
     let chan = open_in f in
     let buf = Lexing.from_channel chan in
@@ -314,7 +314,7 @@ let rec traite_fichier_Coq verbose f =
 	          addQueue deja_vu_v str;
                   try
                     let file_str = safe_assoc verbose f str in
-                    printf " %s%s" (canonize file_str) !suffixe
+                    printf " %s%s" (canonize file_str) suffixe
                   with Not_found ->
 		    if verbose && not (Hashtbl.mem coqlibKnown str) then
                       warning_module_notfound f str
@@ -325,7 +325,7 @@ let rec traite_fichier_Coq verbose f =
 	        addQueue deja_vu_v [str];
                 try
                   let file_str = Hashtbl.find vKnown [str] in
-                  printf " %s%s" (canonize file_str) !suffixe
+                  printf " %s%s" (canonize file_str) suffixe
                 with Not_found ->
 		  if not (Hashtbl.mem coqlibKnown [str]) then
 		    warning_notfound f s
@@ -359,7 +359,7 @@ let rec traite_fichier_Coq verbose f =
                   let file_str = Hashtbl.find vKnown [str] in
                   let canon = canonize file_str in
                   printf " %s.v" canon;
-                  traite_fichier_Coq true (canon ^ ".v")
+                  traite_fichier_Coq suffixe true (canon ^ ".v")
                 with Not_found -> ()
        	      end
           | AddLoadPath _ | AddRecLoadPath _ -> (* TODO *) ()
@@ -417,7 +417,10 @@ let coq_dependencies () =
        let ename = escape name in
        let glob = if !option_noglob then "" else " "^ename^".glob" in
        printf "%s%s%s %s.v.beautified: %s.v" ename !suffixe glob ename ename;
-       traite_fichier_Coq true (name ^ ".v");
+       traite_fichier_Coq !suffixe true (name ^ ".v");
+       printf "\n";
+       printf "%s.vi: %s.v" ename ename;
+       traite_fichier_Coq ".vi" true (name ^ ".v");
        printf "\n";
        flush stdout)
     (List.rev !vAccu)

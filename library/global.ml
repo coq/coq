@@ -24,7 +24,8 @@ end = struct
 let global_env = ref Safe_typing.empty_environment
 
 let join_safe_environment () =
-  global_env := Safe_typing.join_safe_environment !global_env
+  if !Flags.compilation_mode <> Flags.BuildVi then
+    global_env := Safe_typing.join_safe_environment !global_env
 
 let () =
   Summary.declare_summary "Global environment"
@@ -127,7 +128,7 @@ let mind_of_delta_kn kn =
 (** Operations on libraries *)
 
 let start_library dir = globalize (Safe_typing.start_library dir)
-let export s = Safe_typing.export (safe_env ()) s
+let export s = Safe_typing.export !Flags.compilation_mode (safe_env ()) s
 let import cenv digest = globalize (Safe_typing.import cenv digest)
 
 
