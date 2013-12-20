@@ -365,6 +365,7 @@ let compile verbosely f =
   | BuildVi ->
       let ldir, long_f_dot_v = Flags.verbosely Library.start_library f in
       Dumpglob.noglob ();
+      Stm.set_compilation_hints (Aux_file.load_aux_file_for long_f_dot_v);
       let _ = load_vernac verbosely long_f_dot_v in
       Stm.finish ();
       check_pending_proofs ();

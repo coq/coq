@@ -52,6 +52,8 @@ val init : unit -> unit
 val slave_main_loop : unit -> unit
 val slave_init_stdout : unit -> unit
 
+val set_compilation_hints : Aux_file.aux_file -> unit
+
 (** read-eval-print loop compatible interface ****************************** **)
 
 (* Adds a new line to the document.  It replaces the core of Vernac.interp.

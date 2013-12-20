@@ -1055,6 +1055,14 @@ end = struct (* {{{ *)
 
 end (* }}} *)
 
+let hints = ref Aux_file.empty_aux_file
+let set_compilation_hints h = hints := h
+let get_hint_ctx loc =
+  let s = Aux_file.get !hints loc "context_used" in
+  let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") s) in
+  let ids = List.map (fun id -> Loc.ghost, id) ids in
+  ids
+
 (* Runs all transactions needed to reach a state *)
 module Reach : sig
 
@@ -1089,6 +1097,17 @@ let collect_proof cur hd id =
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         if delegate_policy_check accn then `ASync (parent,Some v,accn,ids)
         else `Sync `TooShort
+    | Some (parent, ({ expr = VernacProof(t,None)} as v)),
+      `Fork (_, hd', GuaranteesOpacity, ids) when
+       not (State.is_cached parent) &&
+       !Flags.compilation_mode = Flags.BuildVi ->
+        (try
+          let hint = get_hint_ctx loc in
+          assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
+          v.expr <- VernacProof(t, Some hint);
+          if delegate_policy_check accn then `ASync (parent,Some v,accn,ids)
+          else `Sync `TooShort
+        with Not_found -> `Sync `NoHint)
     | Some (parent, _), `Fork (_, hd', GuaranteesOpacity, ids) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         if delegate_policy_check accn then `MaybeASync (parent, accn, ids)
@@ -1111,6 +1130,7 @@ let string_of_reason = function
   | `NestedProof -> "NestedProof"
   | `Immediate -> "Immediate"
   | `Alias -> "Alias"
+  | `NoHint -> "NoHint"
   | `Doesn'tGuaranteeOpacity -> "Doesn'tGuaranteeOpacity"
   | _ -> "Unknown Reason"
 
