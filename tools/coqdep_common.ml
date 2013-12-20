@@ -38,6 +38,7 @@ let is_dir_sep s i =
   | "Unix" -> s.[i] = '/'
   | "Cygwin" | "Win32" ->
     let c = s.[i] in c = '/' || c = '\\' || c = ':'
+  | _ -> assert false
 
 let (//) dirname filename =
   let l = String.length dirname in
