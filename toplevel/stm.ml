@@ -40,6 +40,7 @@ let vernac_interp ?proof id (verbosely, loc, expr) =
     prerr_endline ("ignoring " ^ string_of_ppcmds(pr_vernac expr))
   end else begin
     Pp.set_id_for_feedback (Interface.State id);
+    Aux_file.record_in_aux_set_at loc;
     prerr_endline ("interpreting " ^ string_of_ppcmds(pr_vernac expr));
     try Vernacentries.interp ~verbosely ?proof (loc, expr)
     with e -> raise (Errors.push (Cerrors.process_vernac_interp_error e))
