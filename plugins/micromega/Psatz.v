@@ -18,7 +18,7 @@ Require Import RMicromega.
 Require Import QArith.
 Require Import ZArith.
 Require Import Rdefinitions.
-Require Export RingMicromega.
+Require Import RingMicromega.
 Require Import VarMap.
 Require Tauto.
 Declare ML Module "micromega_plugin".

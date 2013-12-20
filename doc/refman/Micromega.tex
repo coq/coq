@@ -132,7 +132,7 @@ Theorem~\ref{thm:psatz}, the goal is valid.
 \tacindex{lia}
 \label{sec:lia}
 
-The tactic {\tt lia} offers an alternative to the {\tt omega} and {\tt romega} tactic (see
+The tactic {\tt lia} ({\tt Require Lia.}) offers an alternative to the {\tt omega} and {\tt romega} tactic (see
 Chapter~\ref{OmegaChapter}). 
 %
 Rougthly speaking, the deductive power of {\tt lia} is the combined deductive power of {\tt ring\_simplify} and {\tt omega}.
@@ -145,7 +145,7 @@ following so-called \emph{omega nightmare}~\cite{TheOmegaPaper}.
        -10 <= 7 * x - 9 * y <= 4 ->   False.
 \end{coq_example*}
 \begin{coq_eval}
-intro x; lia;
+intro x; lia.
 \end{coq_eval}
 The estimation of the relative efficiency of lia \emph{vs} {\tt omega}
 and {\tt romega} is under evaluation.

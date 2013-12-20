@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Import ZArith.
-Require Import Psatz.
+Require Import Lia.
 
 Open Scope Z_scope.
 

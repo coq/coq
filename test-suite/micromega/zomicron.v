@@ -1,5 +1,5 @@
 Require Import ZArith.
-Require Import Psatz.
+Require Import Lia.
 Open Scope Z_scope.
 
 Lemma two_x_eq_1 : forall x, 2 * x = 1 -> False.
