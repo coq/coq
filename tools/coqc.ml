@@ -18,10 +18,6 @@
     line to a process running "coqtop -batch -compile <file>".
 *)
 
-(* Environment *)
-
-let environment = Unix.environment ()
-
 let binary = ref "coqtop"
 let image = ref ""
 
@@ -67,19 +63,7 @@ let rec make_compilation_args = function
 
 let compile command args files =
   let args' = command :: args @ (make_compilation_args files) in
-  match Sys.os_type with
-  | "Win32" ->
-     let pid =
-        Unix.create_process_env command (Array.of_list args') environment
-        Unix.stdin Unix.stdout Unix.stderr
-     in
-     let status = snd (Unix.waitpid [] pid) in
-     let errcode =
-       match status with Unix.WEXITED c|Unix.WSTOPPED c|Unix.WSIGNALED c -> c
-     in
-     exit errcode
-  | _ ->
-     Unix.execvpe command (Array.of_list args') environment
+  Unix.execvp command (Array.of_list args')
 
 let usage () =
   Usage.print_usage_coqc () ;
