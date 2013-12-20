@@ -10,11 +10,7 @@
    The command line contains options specific to coqmktop, options for the
    Ocaml linker and files to link (in addition to the default Coq files). *)
 
-open Unix
-
-(* In Win32 outside cygwin, Sys.command calls cmd.exe. When it executes
-   a command that may contains many double-quote, we should double-quote
-   the whole ! *)
+let (/) = Filename.concat
 
 let safe_sys_command =
   if Sys.os_type = "Win32" then
@@ -76,7 +72,7 @@ let src_dirs =
 
 let includes () =
   let coqlib = if !Flags.boot then "." else Envars.coqlib () in
-  let mkdir d = "\"" ^ List.fold_left Filename.concat coqlib d ^ "\"" in
+  let mkdir d = "\"" ^ List.fold_left (/) coqlib d ^ "\"" in
   (List.fold_right (fun d l -> "-I" :: mkdir d :: l) src_dirs [])
   @ ["-I"; "\"" ^ Envars.camlp4lib () ^ "\""]
   @ (if is_ocaml4 then ["-I"; "+compiler-libs"] else [])
@@ -112,27 +108,15 @@ let files_to_link userfiles =
   in
   (modules, libstolink)
 
-(* Gives the list of all the directories under [dir].
-   Uses [Unix] (it is hard to do without it). *)
+(* Gives the list of all the directories under [dir]. *)
 let all_subdirs dir =
-  let l = ref [dir] in
+  let l = ref [] in
   let add f = l := f :: !l in
   let rec traverse dir =
-    let dirh =
-      try opendir dir with Unix_error _ -> invalid_arg "all_subdirs"
-    in
-    try
-      while true do
-	let f = readdir dirh in
-	if f <> "." && f <> ".." then
-	  let file = Filename.concat dir f in
-	  if (stat file).st_kind = S_DIR then begin
-	    add file;
-	    traverse file
-	  end
-      done
-    with End_of_file ->
-      closedir dirh
+    if Sys.file_exists dir && Sys.is_directory dir then
+      let () = add dir in
+      let subdirs = try Sys.readdir dir with _ -> [||] in
+      Array.iter (fun f -> traverse (dir/f)) subdirs
   in
   traverse dir; List.rev !l
 
@@ -266,14 +250,14 @@ let main () =
     if !opt then begin
       (* native code *)
       if !top then failwith "no custom toplevel in native code !";
-      let ocamloptexec = Filename.quote (Filename.concat camlbin "ocamlopt") in
+      let ocamloptexec = Filename.quote (camlbin/"ocamlopt") in
         ocamloptexec^" -linkall"
     end else
       (* bytecode (we shunt ocamlmktop script which fails on win32) *)
       let ocamlmktoplib = if is_ocaml4
 	then " ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma"
 	else " toplevellib.cma" in
-      let ocamlcexec = Filename.quote (Filename.concat camlbin "ocamlc") in
+      let ocamlcexec = Filename.quote (camlbin/"ocamlc") in
       let ocamlccustom = Printf.sprintf "%s %s -linkall "
         ocamlcexec Coq_config.coqrunbyteflags in
       (if !top then ocamlccustom^ocamlmktoplib else ocamlccustom)
