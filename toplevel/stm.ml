@@ -1090,6 +1090,8 @@ let known_state ?(redefine_qed=false) ~cache id =
     Lib.freeze ~marshallable:`No in
   let inject_non_pstate (s,l) = Summary.unfreeze_summary s; Lib.unfreeze l in
 
+  let wall_clock_last_fork = ref 0.0 in
+
   let rec pure_cherry_pick_non_pstate id = Future.purify (fun id ->
     prerr_endline ("cherry-pick non pstate " ^ Stateid.to_string id);
     reach id;
@@ -1113,7 +1115,8 @@ let known_state ?(redefine_qed=false) ~cache id =
             reach view.next; vernac_interp id x
           ), cache
       | `Fork (x,_,_,_) -> (fun () ->
-            reach view.next; vernac_interp id x
+            reach view.next; vernac_interp id x;
+            wall_clock_last_fork := Unix.gettimeofday ()
           ), `Yes
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
@@ -1158,12 +1161,19 @@ let known_state ?(redefine_qed=false) ~cache id =
                 prerr_endline ("NotOptimizable " ^ Stateid.to_string id ^ " " ^
                   string_of_reason reason);
                 reach eop;
+                let wall_clock = Unix.gettimeofday () in
+                Aux_file.record_in_aux_at x.loc "proof_build_time"
+                  (Printf.sprintf "%.3f" (wall_clock -. !wall_clock_last_fork));
                 begin match keep with
                 | VtKeep ->
                     let proof =
                       Proof_global.close_proof (State.exn_on id ~valid:eop) in
                     reach view.next;
-                    vernac_interp id ~proof x
+                    let wall_clock2 = Unix.gettimeofday () in
+                    vernac_interp id ~proof x;
+                    let wall_clock3 = Unix.gettimeofday () in
+                    Aux_file.record_in_aux_at x.loc "proof_check_time"
+                      (Printf.sprintf "%.3f" (wall_clock3 -. wall_clock2))
                 | VtDrop ->
                     reach view.next;
                     vernac_interp id x
