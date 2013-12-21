@@ -498,7 +498,7 @@ let spec_of_tree t =
   then Not_subterm
   else Subterm (Strict, t)
 
-let subterm_spec_glb =
+let subterm_spec_glb init =
   let glb2 s1 s2 = 
     match s1, s2 with
         s1, Dead_code -> s1
@@ -509,7 +509,7 @@ let subterm_spec_glb =
           if eq_wf_paths t1 t2 then Subterm (size_glb a1 a2, t1)
           (* branches do not return objects with same spec *)
           else Not_subterm in
-  Array.fold_left glb2 Dead_code
+  Array.fold_left glb2 init
 
 type guard_env =
   { env     : env;
@@ -608,7 +608,18 @@ let check_inductive_codomain env p =
   let absctx, ar = dest_lam_assum env p in
   let arctx, s = dest_prod_assum env ar in
   let i,l' = decompose_app (whd_betadeltaiota env s) in
-    isInd i
+  isInd i
+
+let get_codomain_tree env p =
+  let absctx, ar = dest_lam_assum env p in
+  let arctx, s = dest_prod_assum env ar in
+  let i,l' = decompose_app (whd_betadeltaiota env s) in
+  match kind_of_term i with
+  | Ind i ->
+    let (_,mip) = lookup_mind_specif env i in Subterm(Strict,mip.mind_recargs)
+  | _ -> Not_subterm
+
+
 
 (* [subterm_specif renv t] computes the recursive structure of [t] and
    compare its size with the size of the initial recursive argument of
@@ -623,8 +634,7 @@ let rec subterm_specif renv stack t =
     | Rel k -> subterm_var k renv
     | Case (ci,p,c,lbr) ->
     let stack' = push_stack_closures renv l stack in
-      if not (check_inductive_codomain renv.env p) then Not_subterm
-      else
+    let pred_spec = get_codomain_tree renv.env p in
         let cases_spec = branches_specif renv 
 	  (lazy_subterm_specif renv [] c) ci in
         let stl  =
@@ -632,7 +642,7 @@ let rec subterm_specif renv stack t =
 	  let stack_br = push_stack_args (cases_spec.(i)) stack' in
 	    subterm_specif renv stack_br br')
 	  lbr in
-	  subterm_spec_glb stl
+	  subterm_spec_glb pred_spec stl
 
     | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
       (* when proving that the fixpoint f(x)=e is less than n, it is enough
