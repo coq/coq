@@ -1185,6 +1185,9 @@ and tactic_of_value ist vle =
       let tac = eval_tactic ist t in
       catch_error_tac trace tac
   | (VFun _|VRec _) -> Proofview.tclZERO (UserError ("" , str "A fully applied tactic is expected."))
+  else if has_type vle (topwit wit_tactic) then
+    let tac = out_gen (topwit wit_tactic) vle in
+    eval_tactic ist tac
   else Proofview.tclZERO (UserError ("" , str"Expression does not evaluate to a tactic."))
 
 and eval_value ist tac =

@@ -24,7 +24,7 @@ type notation_constr =
   | NRef of global_reference
   | NVar of Id.t
   | NApp of notation_constr * notation_constr list
-  | NHole of Evar_kinds.t
+  | NHole of Evar_kinds.t * Genarg.glob_generic_argument option
   | NList of Id.t * Id.t * notation_constr * notation_constr * bool
   (** Part only in [glob_constr] *)
   | NLambda of Name.t * notation_constr * notation_constr

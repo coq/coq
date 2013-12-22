@@ -139,6 +139,7 @@ Pputils
 Stdarg
 Constrarg
 Constrexpr_ops
+Genintern
 Notation_ops
 Topconstr
 Notation
@@ -148,7 +149,6 @@ Impargs
 Syntax_def
 Implicit_quantifiers
 Smartlocate
-Genintern
 Constrintern
 Modintern
 Constrextern

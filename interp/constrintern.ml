@@ -531,21 +531,7 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
   let rec aux (terms,binderopt as subst') (renaming,env) c =
     let subinfos = renaming,{env with tmp_scope = None} in
     match c with
-    | NVar id ->
-      begin
-	(* subst remembers the delimiters stack in the interpretation *)
-	(* of the notations *)
-	try
-	  let (a,(scopt,subscopes)) = Id.Map.find id terms in
-	  intern {env with tmp_scope = scopt;
-		    scopes = subscopes @ env.scopes} a
-	with Not_found ->
-	try
-	  GVar (loc, Id.Map.find id renaming)
-	with Not_found ->
-	  (* Happens for local notation joint with inductive/fixpoint defs *)
-	  GVar (loc,id)
-      end
+    | NVar id -> subst_var subst' (renaming, env) id
     | NList (x,_,iter,terminator,lassoc) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
@@ -558,11 +544,34 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
 	List.fold_right fold (if lassoc then List.rev l else l) termin
       with Not_found ->
           anomaly (Pp.str "Inconsistent substitution of recursive notation"))
-    | NHole (Evar_kinds.BinderType (Name id as na)) ->
-      let na =
-        try snd (coerce_to_name (fst (Id.Map.find id terms)))
-        with Not_found -> na in
-      GHole (loc,Evar_kinds.BinderType na,None)
+    | NHole (knd, arg) ->
+      let knd = match knd with
+      | Evar_kinds.BinderType (Name id as na) ->
+        let na =
+          try snd (coerce_to_name (fst (Id.Map.find id terms)))
+          with Not_found -> na
+        in
+        Evar_kinds.BinderType na
+      | _ -> knd
+      in
+      let arg = match arg with
+      | None -> None
+      | Some arg ->
+        let open Tacexpr in
+        let open Genarg in
+        let mk_env id (c, (tmp_scope, subscopes)) accu =
+          let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
+          let gc = intern nenv c in
+          let c = ConstrMayEval (Genredexpr.ConstrTerm (gc, Some c)) in
+          ((loc, id), c) :: accu
+        in
+        let bindings = Id.Map.fold mk_env terms [] in
+        let body = TacArg (loc, TacGeneric arg) in
+        let tac = TacLetIn (false, bindings, body) in
+        let arg = in_gen (glbwit Constrarg.wit_tactic) tac in
+        Some arg
+      in
+      GHole (loc, knd, arg)
     | NBinderList (x,_,iter,terminator) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
@@ -586,6 +595,19 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
     | t ->
       glob_constr_of_notation_constr_with_binders loc
         (traverse_binder subst) (aux subst') subinfos t
+  and subst_var (terms, binderopt) (renaming, env) id =
+    (* subst remembers the delimiters stack in the interpretation *)
+    (* of the notations *)
+    try
+      let (a,(scopt,subscopes)) = Id.Map.find id terms in
+      intern {env with tmp_scope = scopt;
+                scopes = subscopes @ env.scopes} a
+    with Not_found ->
+    try
+      GVar (loc, Id.Map.find id renaming)
+    with Not_found ->
+      (* Happens for local notation joint with inductive/fixpoint defs *)
+      GVar (loc,id)
   in aux (terms,None) infos c
 
 let split_by_type ids =

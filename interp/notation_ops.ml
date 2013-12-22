@@ -104,7 +104,7 @@ let glob_constr_of_notation_constr_with_binders loc g f e = function
       GRec (loc,fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
   | NCast (c,k) -> GCast (loc,f e c,Miscops.map_cast_type (f e) k)
   | NSort x -> GSort (loc,x)
-  | NHole x  -> GHole (loc, x, None)
+  | NHole (x, arg)  -> GHole (loc, x, arg)
   | NPatVar n -> GPatVar (loc,(false,n))
   | NRef x -> GRef (loc,x)
 
@@ -287,7 +287,7 @@ let notation_constr_and_vars_of_glob_constr a =
       NRec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
   | GCast (_,c,k) -> NCast (aux c,Miscops.map_cast_type aux k)
   | GSort (_,s) -> NSort s
-  | GHole (_,w,_) -> NHole w
+  | GHole (_,w,arg) -> NHole (w, arg)
   | GRef (_,r) -> NRef r
   | GPatVar (_,(_,n)) -> NPatVar n
   | GEvar _ ->
@@ -465,14 +465,16 @@ let rec subst_notation_constr subst bound raw =
 
   | NPatVar _ | NSort _ -> raw
 
-  | NHole (Evar_kinds.ImplicitArg (ref,i,b)) ->
-      let ref',t = subst_global subst ref in
-	if ref' == ref then raw else
-	  NHole (Evar_kinds.InternalHole)
-  | NHole (Evar_kinds.BinderType _ |Evar_kinds.QuestionMark _
-	  |Evar_kinds.CasesType |Evar_kinds.InternalHole
-	  |Evar_kinds.TomatchTypeParameter _ |Evar_kinds.GoalEvar
-	  |Evar_kinds.ImpossibleCase |Evar_kinds.MatchingVar _) -> raw
+  | NHole (knd, solve) ->
+    let nknd = match knd with
+    | Evar_kinds.ImplicitArg (ref, i, b) ->
+      let nref, _ = subst_global subst ref in
+      if nref == ref then knd else Evar_kinds.ImplicitArg (nref, i, b)
+    | _ -> knd
+    in
+    let nsolve = Option.smartmap (Genintern.generic_substitute subst) solve in
+    if nsolve == solve && nknd = knd then raw
+    else NHole (nknd, nsolve)
 
   | NCast (r1,k) ->
       let r1' = subst_notation_constr subst bound r1 in
@@ -500,7 +502,7 @@ let abstract_return_type_context_glob_constr =
 
 let abstract_return_type_context_notation_constr =
   abstract_return_type_context snd
-    (fun na c -> NLambda(na,NHole Evar_kinds.InternalHole,c))
+    (fun na c -> NLambda(na,NHole (Evar_kinds.InternalHole, None),c))
 
 exception No_match
 
