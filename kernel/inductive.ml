@@ -611,15 +611,13 @@ let check_inductive_codomain env p =
   isInd i
 
 let get_codomain_tree env p =
-  let absctx, ar = dest_lam_assum env p in
-  let arctx, s = dest_prod_assum env ar in
+  let absctx, ar = dest_lam_assum env p in (* TODO: reduce or preserve lets? *)
+  let arctx, s = dest_prod_assum env ar in (* TODO: check number of prods *)
   let i,l' = decompose_app (whd_betadeltaiota env s) in
   match kind_of_term i with
   | Ind i ->
     let (_,mip) = lookup_mind_specif env i in Subterm(Strict,mip.mind_recargs)
   | _ -> Not_subterm
-
-
 
 (* [subterm_specif renv t] computes the recursive structure of [t] and
    compare its size with the size of the initial recursive argument of
@@ -650,6 +648,7 @@ let rec subterm_specif renv stack t =
 	 furthermore when f is applied to a term which is strictly less than
 	 n, one may assume that x itself is strictly less than n
       *)
+           (* TODO: is this necessary? *)
     if not (check_inductive_codomain renv.env typarray.(i)) then Not_subterm
     else 
       let (ctxt,clfix) = dest_prod renv.env typarray.(i) in	    
@@ -686,7 +685,7 @@ let rec subterm_specif renv stack t =
 
     | Lambda (x,a,b) ->
       let () = assert (List.is_empty l) in
-      let spec,stack' = extract_stack renv a stack in
+      let spec,stack' = extract_stack stack in
 	subterm_specif (push_var renv (x,a,spec)) stack' b
 
       (* Metas and evars are considered OK *)
@@ -702,7 +701,7 @@ and stack_element_specif = function
   |SClosure (h_renv,h) -> lazy_subterm_specif h_renv [] h
   |SArg x -> x
 
-and extract_stack renv a = function
+and extract_stack = function
   | [] -> Lazy.lazy_from_val Not_subterm , []
   | h::t -> stack_element_specif h, t
 
@@ -731,6 +730,34 @@ let error_illegal_rec_call renv fx (arg_renv,arg) =
 
 let error_partial_apply renv fx =
   raise (FixGuardError (renv.env,NotEnoughArgumentsForFixCall fx))
+
+let filter_stack_domain env ci p stack =
+  let absctx, ar = dest_lam_assum env p in
+  let env = push_rel_context absctx env in
+  let rec filter_stack env ar stack =
+    let t = whd_betadeltaiota env ar in
+    match stack, kind_of_term t with
+    | elt :: stack', Prod (n,a,c0) ->
+      let d = (n,None,a) in
+      let ty, _ = decompose_app a in (* TODO: reduce a? *)
+      let elt = match kind_of_term ty with
+      | Ind i -> 
+        let (_,mip) = lookup_mind_specif env i in
+        let spec' = stack_element_specif elt in (* TODO: this is recomputed
+        each time*)
+        (match (Lazy.force spec') with (* TODO: are we forcing too much? *)
+        | Not_subterm -> elt
+        | Subterm(_,path) ->
+            if eq_wf_paths path mip.mind_recargs then elt
+            else (SArg (lazy Not_subterm))) (* TODO: intersection *)
+            (* TODO: not really an SArg *)
+      | _ -> (SArg (lazy Not_subterm))
+      in
+      elt :: filter_stack (push_rel d env) c0 stack'
+    | _,_ -> List.fold_right (fun _ l -> SArg (lazy Not_subterm) :: l) stack []
+             (* TODO: is it correct to empty the stack instead? *)
+  in
+  filter_stack env ar stack
 
 (* Check if [def] is a guarded fixpoint body with decreasing arg.
    given [recpos], the decreasing arguments of each mutually defined
@@ -786,6 +813,7 @@ let check_one_fix renv recpos def =
             let case_spec = branches_specif renv 
 	      (lazy_subterm_specif renv [] c_0) ci in
 	    let stack' = push_stack_closures renv l stack in
+        let stack' = filter_stack_domain renv.env ci p stack' in
               Array.iteri (fun k br' -> 
 			     let stack_br = push_stack_args case_spec.(k) stack' in
 			     check_rec_call renv stack_br br') lrest
@@ -828,7 +856,7 @@ let check_one_fix renv recpos def =
         | Lambda (x,a,b) ->
             let () = assert (List.is_empty l) in
 	    check_rec_call renv [] a ;
-	    let spec, stack' = extract_stack renv a stack in
+	    let spec, stack' = extract_stack stack in
 	    check_rec_call (push_var renv (x,a,spec)) stack' b
 
         | Prod (x,a,b) ->
