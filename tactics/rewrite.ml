@@ -378,7 +378,7 @@ let no_constraints cstrs =
   fun ev _ -> not (Evar.Set.mem ev cstrs)
 
 let unify_eqn env (sigma, cstrs) hypinfo by t =
-  if isEvar t then hypinfo, None
+  if isEvar t then None
   else try
     let {cl=cl; ext=ext; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} =
       hypinfo in
@@ -423,8 +423,8 @@ let unify_eqn env (sigma, cstrs) hypinfo by t =
 	    (car, rel, c2, c1))
 	with Not_found ->
 	  (prf, (car, inverse car rel, c2, c1))
-    in hypinfo, Some (evd', res)
-  with e when Class_tactics.catchable e -> hypinfo, None
+    in Some (hypinfo, evd', res)
+  with e when Class_tactics.catchable e -> None
 
 let unfold_impl t =
   match kind_of_term t with
@@ -639,27 +639,27 @@ let apply_rule by loccs : (hypinfo * int) pure_strategy =
   let is_occ occ =
     if nowhere_except_in
     then Int.List.mem occ occs
-    else not (Int.List.mem occ occs) in
-    fun (hypinfo, occ) env avoid t ty cstr evars ->
-      let hypinfo =
-        if not (eq_env hypinfo.cl.env env) then
-          refresh_hypinfo env (goalevars evars) hypinfo
-        else hypinfo
-      in
-      let hypinfo, unif = unify_eqn env evars hypinfo by t in
-      let occ = if not (Option.is_empty unif) then succ occ else occ in
+    else not (Int.List.mem occ occs)
+  in
+  fun (hypinfo, occ) env avoid t ty cstr evars ->
+    let hypinfo =
+      if not (eq_env hypinfo.cl.env env) then
+        refresh_hypinfo env (goalevars evars) hypinfo
+      else hypinfo
+    in
+    let unif = unify_eqn env evars hypinfo by t in
+    match unif with
+    | None -> ((hypinfo, occ), Fail)
+    | Some (hypinfo, evd', (prf, (car, rel, c1, c2))) ->
+      let occ = succ occ in
       let res =
-	match unif with
-	| Some (evd', (prf, (car, rel, c1, c2))) when is_occ occ ->
-	    begin
-	      if eq_constr t c2 then Same
-	      else
-		let res = { rew_car = ty; rew_from = c1;
-			    rew_to = c2; rew_prf = RewPrf (rel, prf);
-			    rew_evars = evd', cstrevars evars }
-		in Info (apply_constraint env avoid car rel prf cstr res)
-	    end
-	| _ -> Fail
+        if not (is_occ occ) then Fail
+        else if eq_constr t c2 then Same
+        else
+          let res = { rew_car = ty; rew_from = c1;
+                      rew_to = c2; rew_prf = RewPrf (rel, prf);
+                      rew_evars = evd', cstrevars evars }
+          in Info (apply_constraint env avoid car rel prf cstr res)
       in
       ((hypinfo, occ), res)
 
