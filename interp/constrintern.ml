@@ -1551,8 +1551,10 @@ let internalize globalenv env allow_patvar lvar c =
         let solve = match solve with
         | None -> None
         | Some gen ->
-          let (cvars, lvars) = fst lvar in
+          let ((cvars, lvars), ntnvars) = lvar in
+          let ntnvars = Id.Map.domain ntnvars in
           let lvars = Id.Set.union lvars cvars in
+          let lvars = Id.Set.union lvars ntnvars in
           let ist = {
             Genintern.ltacvars = lvars;
             ltacrecvars = Id.Map.empty;
