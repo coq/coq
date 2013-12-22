@@ -165,8 +165,7 @@ val global_reference_in_absolute_module : DirPath.t -> Id.t -> constr
 (** Interprets a term as the left-hand side of a notation. The returned map is
     guaranteed to have the same domain as the input one. *)
 val interp_notation_constr : ?impls:internalization_env ->
-  notation_var_internalization_type Id.Map.t ->
-  Id.t Id.Map.t -> constr_expr ->
+  notation_interp_env -> constr_expr ->
   (subscopes * notation_var_internalization_type) Id.Map.t *
   notation_constr
 

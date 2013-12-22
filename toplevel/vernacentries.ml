@@ -1006,11 +1006,17 @@ let vernac_declare_arguments locality r l nargs flags =
          (make_section_locality locality) c (rargs, nargs, flags)
     | _ -> errorlabstrm "" (strbrk "Modifiers of the behavior of the simpl tactic are relevant for constants only.")
 
+let default_env () = {
+  Notation_term.ninterp_var_type = Id.Map.empty;
+  ninterp_rec_vars = Id.Map.empty;
+  ninterp_only_parse = false;
+}
+
 let vernac_reserve bl =
   let sb_decl = (fun (idl,c) ->
     let t = Constrintern.interp_type Evd.empty (Global.env()) c in
     let t = Detyping.detype false [] [] t in
-    let t = Notation_ops.notation_constr_of_glob_constr Id.Map.empty Id.Map.empty t in
+    let t = Notation_ops.notation_constr_of_glob_constr (default_env ()) t in
     Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl
 

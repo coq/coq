@@ -300,10 +300,12 @@ let notation_constr_and_vars_of_glob_constr a =
 
 let pair_equal eq1 eq2 (a,b) (a',b') = eq1 a a' && eq2 b b'
 
-let check_variables vars recvars (found,foundrec,foundrecbinding) =
+let check_variables nenv (found,foundrec,foundrecbinding) =
+  let recvars = nenv.ninterp_rec_vars in
   let fold _ y accu = Id.Set.add y accu in
   let useless_vars = Id.Map.fold fold recvars Id.Set.empty in
-  let vars = Id.Map.filter (fun y _ -> not (Id.Set.mem y useless_vars)) vars in
+  let filter y _ = not (Id.Set.mem y useless_vars) in
+  let vars = Id.Map.filter filter nenv.ninterp_var_type in
   let check_recvar x =
     if Id.List.mem x found then
       errorlabstrm "" (pr_id x ++
@@ -321,8 +323,7 @@ let check_variables vars recvars (found,foundrec,foundrecbinding) =
 	error
           (Id.to_string x ^
           " should not be bound in a recursive pattern of the right-hand side.")
-      else
-	error (Id.to_string x ^ " is unbound in the right-hand side.")
+      else nenv.ninterp_only_parse <- true
   in
   let check_pair s x y where =
     if not (List.mem_f (pair_equal Id.equal Id.equal) (x,y) where) then
@@ -344,16 +345,21 @@ let check_variables vars recvars (found,foundrec,foundrecbinding) =
     | NtnInternTypeIdent -> check_bound x in
   Id.Map.iter check_type vars
 
-let notation_constr_of_glob_constr vars recvars a =
-  let a,found = notation_constr_and_vars_of_glob_constr a in
-  check_variables vars recvars found;
+let notation_constr_of_glob_constr nenv a =
+  let a, found = notation_constr_and_vars_of_glob_constr a in
+  let () = check_variables nenv found in
   a
 
 (* Substitution of kernel names, avoiding a list of bound identifiers *)
 
 let notation_constr_of_constr avoiding t =
   let t = Detyping.detype false avoiding [] t in
-  notation_constr_of_glob_constr Id.Map.empty Id.Map.empty t
+  let nenv = {
+    ninterp_var_type = Id.Map.empty;
+    ninterp_rec_vars = Id.Map.empty;
+    ninterp_only_parse = false;
+  } in
+  notation_constr_of_glob_constr nenv t
 
 let rec subst_pat subst pat =
   match pat with

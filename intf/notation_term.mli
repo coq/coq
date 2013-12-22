@@ -73,3 +73,9 @@ type notation_var_internalization_type =
 type interpretation =
     (Id.t * (subscopes * notation_var_instance_type)) list *
     notation_constr
+
+type notation_interp_env = {
+  ninterp_var_type : notation_var_internalization_type Id.Map.t;
+  ninterp_rec_vars : Id.t Id.Map.t;
+  mutable ninterp_only_parse : bool;
+}

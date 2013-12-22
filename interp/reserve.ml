@@ -107,12 +107,18 @@ let _ = Namegen.set_reserved_typed_name revert_reserved_type
 
 open Glob_term
 
+let default_env () = {
+  ninterp_var_type = Id.Map.empty;
+  ninterp_rec_vars = Id.Map.empty;
+  ninterp_only_parse = false;
+}
+
 let anonymize_if_reserved na t = match na with
   | Name id as na ->
       (try
 	if not !Flags.raw_print &&
 	   (try
-            let ntn = notation_constr_of_glob_constr Id.Map.empty Id.Map.empty t in
+            let ntn = notation_constr_of_glob_constr (default_env ()) t in
             Pervasives.(=) ntn (find_reserved_type id) (** FIXME *)
             with UserError _ -> false)
 	then GHole (Loc.ghost,Evar_kinds.BinderType na,None)

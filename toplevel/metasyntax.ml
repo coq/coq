@@ -924,9 +924,17 @@ let check_rule_productivity l =
   if (match l with SProdList _ :: _ -> true | _ -> false) then
     error "A recursive notation must start with at least one symbol."
 
-let is_not_printable = function
-  | NVar _ -> msg_warning (strbrk "This notation will not be used for printing as it is bound to a single variable."); true
-  | _ -> false
+let is_not_printable onlyparse noninjective = function
+| NVar _ ->
+  let () = if not onlyparse then
+    msg_warning (strbrk "This notation will not be used for printing as it is bound to a single variable.")
+  in
+  true
+| _ ->
+  if not onlyparse && noninjective then
+    let () = msg_warning (strbrk "This notation will not be used for printing as it is not reversible.") in
+    true
+  else false
 
 let find_precedence lev etyps symbols =
   match symbols with
@@ -1178,10 +1186,15 @@ let add_notation_in_scope local df c mods scope =
   (* Prepare the interpretation *)
   let (onlyparse, recvars,mainvars, df') = i_data in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
-  let (acvars, ac) = interp_notation_constr (to_map i_vars) (to_map recvars) c in
+  let nenv = {
+    ninterp_var_type = to_map i_vars;
+    ninterp_rec_vars = to_map recvars;
+    ninterp_only_parse = false;
+  } in
+  let (acvars, ac) = interp_notation_constr nenv c in
   let interp = make_interpretation_vars recvars acvars in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
-  let onlyparse = onlyparse || is_not_printable ac in
+  let onlyparse = is_not_printable onlyparse nenv.ninterp_only_parse ac in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
@@ -1208,10 +1221,15 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
   let path = (Lib.library_dp(),Lib.current_dirpath true) in
   let df' = (make_notation_key symbs,(path,df)) in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
-  let (acvars, ac) = interp_notation_constr ~impls (to_map i_vars) (to_map recvars) c in
+  let nenv = {
+    ninterp_var_type = to_map i_vars;
+    ninterp_rec_vars = to_map recvars;
+    ninterp_only_parse = false;
+  } in
+  let (acvars, ac) = interp_notation_constr ~impls nenv c in
   let interp = make_interpretation_vars recvars acvars in
   let map (x, _) = try Some (x, Id.Map.find x interp) with Not_found -> None in
-  let onlyparse = onlyparse || is_not_printable ac in
+  let onlyparse = is_not_printable onlyparse nenv.ninterp_only_parse ac in
   let notation = {
     notobj_local = local;
     notobj_scope = scope;
@@ -1321,17 +1339,24 @@ let try_interp_name_alias = function
   | _ -> raise Not_found
 
 let add_syntactic_definition ident (vars,c) local onlyparse =
+  let nonprintable = ref false in
   let vars,pat =
     try [], NRef (try_interp_name_alias (vars,c))
     with Not_found ->
       let fold accu id = Id.Map.add id NtnInternTypeConstr accu in
       let i_vars = List.fold_left fold Id.Map.empty vars in
-      let nvars, pat = interp_notation_constr i_vars Id.Map.empty c in
+      let nenv = {
+        ninterp_var_type = i_vars;
+        ninterp_rec_vars = Id.Map.empty;
+        ninterp_only_parse = false;
+      } in
+      let nvars, pat = interp_notation_constr nenv c in
+      let () = nonprintable := nenv.ninterp_only_parse in
       let map id = let (sc, _) = Id.Map.find id nvars in (id, sc) in
       List.map map vars, pat
   in
   let onlyparse = match onlyparse with
-    | None when (is_not_printable pat) -> Some Flags.Current
+    | None when (is_not_printable false !nonprintable pat) -> Some Flags.Current
     | p -> p
   in
   Syntax_def.declare_syntactic_definition local ident onlyparse (vars,pat)

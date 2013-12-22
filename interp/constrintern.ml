@@ -1799,15 +1799,15 @@ let intern_constr_pattern env ?(as_type=false) ?(ltacvars=empty_ltac_sign) c =
             ~allow_patvar:true ~ltacvars env c in
   pattern_of_glob_constr c
 
-let interp_notation_constr ?(impls=empty_internalization_env) vars recvars a =
+let interp_notation_constr ?(impls=empty_internalization_env) nenv a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
-  let vl = Id.Map.map (fun typ -> (ref None, typ)) vars in
+  let vl = Id.Map.map (fun typ -> (ref None, typ)) nenv.ninterp_var_type in
   let c = internalize (Global.env()) {ids = extract_ids env; unb = false;
 						tmp_scope = None; scopes = []; impls = impls}
     false (empty_ltac_sign, vl) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
-  let a = notation_constr_of_glob_constr vars recvars c in
+  let a = notation_constr_of_glob_constr nenv c in
   (* Splits variables into those that are binding, bound, or both *)
   (* binding and bound *)
   let out_scope = function None -> None,[] | Some (a,l) -> a,l in

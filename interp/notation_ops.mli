@@ -16,9 +16,8 @@ open Glob_term
 (** Translate a [glob_constr] into a notation given the list of variables
     bound by the notation; also interpret recursive patterns           *)
 
-val notation_constr_of_glob_constr :
-  notation_var_internalization_type Id.Map.t ->
-  Id.t Id.Map.t -> glob_constr -> notation_constr
+val notation_constr_of_glob_constr : notation_interp_env ->
+  glob_constr -> notation_constr
 
 (** Name of the special identifier used to encode recursive notations  *)
 val ldots_var : Id.t
