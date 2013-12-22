@@ -296,6 +296,7 @@ let parse_args arglist =
     |"-batch" -> set_batch_mode ()
     |"-beautify" -> make_beautify true
     |"-boot" -> boot := true; no_load_rc ()
+    |"-bt" -> Backtrace.record_backtrace true
     |"-color" -> Flags.make_term_color true
     |"-config"|"--config" -> print_config := true
     |"-debug" -> set_debug ()

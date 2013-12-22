@@ -58,13 +58,15 @@ let print_usage_channel co command =
 \n  -init-file f           set the rcfile to f\
 \n  -batch                 batch mode (exits just after arguments parsing)\
 \n  -boot                  boot mode (implies -q and -batch)\
+\n  -bt                    print backtraces (requires configure debug flag)\
+\n  -debug                 debug mode (implies -bt)\
 \n  -emacs                 tells Coq it is executed under Emacs\
 \n  -noglob                do not dump globalizations\
 \n  -dump-glob f           dump globalizations in file f (to be used by coqdoc)\
 \n  -with-geoproof (yes|no) to (de)activate special functions for Geoproof within Coqide (default is yes)\
 \n  -impredicative-set     set sort Set impredicative\
-\n  -force-load-proofs     load opaque proofs in memory initially\
 
+\n  -force-load-proofs     load opaque proofs in memory initially\
 \n  -lazy-load-proofs      load opaque proofs in memory by necessity (default)\
 \n  -dont-load-proofs      see opaque proofs as axioms instead of loading them\
 \n  -xml                   export XML files either to the hierarchy rooted in\
