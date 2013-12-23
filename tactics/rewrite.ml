@@ -213,7 +213,7 @@ type hypinfo = {
   c1 : constr;
   c2 : constr;
   c  : (Tacinterp.interp_sign * Tacexpr.glob_constr_and_expr with_bindings) option;
-  abs : (constr * types) option;
+  abs : bool;
 }
 
 (** Looking up declared rewrite relations (instances of [RewriteRelation]) *)
@@ -265,7 +265,7 @@ let decompose_applied_relation env sigma orig (c,l) =
 	let value = Clenv.clenv_value eqclause in
 	let ext = Evarutil.evars_of_term value in
 	  Some { cl=eqclause; ext=ext; prf=value;
-		 car=ty1; rel = equiv; c1=c1; c2=c2; c=orig; abs=None; }
+		 car=ty1; rel = equiv; c1=c1; c2=c2; c=orig; abs=false; }
   in
     match find_rel ctype with
     | Some c -> c
@@ -338,14 +338,12 @@ let general_rewrite_unif_flags () =
        Unification.allow_K_in_toplevel_higher_order_unification = true }
 
 let refresh_hypinfo env sigma hypinfo =
-  if Option.is_empty hypinfo.abs then
-    let {c=c; cl=cl} = hypinfo in
+    let {c=c} = hypinfo in
       match c with
 	| Some c ->
 	    (* Refresh the clausenv to not get the same meta twice in the goal. *)
 	    decompose_applied_relation_expr env sigma c
 	| _ -> hypinfo
-  else hypinfo
 
 
 let solve_remaining_by by env prf =
@@ -373,21 +371,26 @@ let shrink_evd sigma ext =
 let no_constraints cstrs =
   fun ev _ -> not (Evar.Set.mem ev cstrs)
 
+let eq_env x y = x == y
+
 let unify_eqn l2r flags env (sigma, cstrs) hypinfo by t =
   if isEvar t then None
   else try
-    let {cl=cl; ext=ext; prf=prf; car=car; rel=rel; c1=c1; c2=c2; c=c; abs=abs} =
+    let hypinfo =
+      if hypinfo.abs || eq_env hypinfo.cl.env env then hypinfo
+      else refresh_hypinfo env sigma hypinfo
+    in
+    let {cl=cl; ext=ext; prf=prf; car=car; rel=rel; c1=c1; c2=c2; abs=abs} =
       hypinfo in
     let left = if l2r then c1 else c2 in
     let evd' = Evd.evars_reset_evd ~with_conv_pbs:true sigma cl.evd in
     let evd'' = extend_evd evd' ext cl.evd in
     let cl = { cl with evd = evd'' } in
     let hypinfo, evd', prf, c1, c2, car, rel =
-      match abs with
-      | Some (absprf, absprfty) ->
+      if abs then
 	  let env' = clenv_unify ~flags:rewrite_unif_flags CONV left t cl in
 	    hypinfo, env'.evd, prf, c1, c2, car, rel
-      | None ->
+      else
 	  let env' = clenv_unify ~flags CONV left t cl in
 	  let env' = Clenvtac.clenv_pose_dependent_evars true env' in
 	  let evd' = Typeclasses.resolve_typeclasses ~filter:(no_constraints cstrs)
@@ -628,8 +631,6 @@ let apply_constraint env avoid car rel prf cstr res =
   | None -> res
   | Some r -> resolve_subrelation env avoid car rel prf r res
 
-let eq_env x y = x == y
-
 let apply_rule l2r flags by loccs : (hypinfo * int) pure_strategy =
   let (nowhere_except_in,occs) = convert_occs loccs in
   let is_occ occ =
@@ -638,11 +639,6 @@ let apply_rule l2r flags by loccs : (hypinfo * int) pure_strategy =
     else not (Int.List.mem occ occs)
   in
   fun (hypinfo, occ) env avoid t ty cstr evars ->
-    let hypinfo =
-      if not (eq_env hypinfo.cl.env env) then
-        refresh_hypinfo env (goalevars evars) hypinfo
-      else hypinfo
-    in
     let unif = unify_eqn l2r flags env evars hypinfo by t in
     match unif with
     | None -> ((hypinfo, occ), Fail)
@@ -1673,8 +1669,7 @@ let check_evar_map_of_evars_defs evd =
          check_freemetas_is_empty rebus2 freemetas2
    ) metas
 
-let unification_rewrite l2r c1 c2 cl car rel but gl =
-  let env = pf_env gl in
+let unification_rewrite l2r c1 c2 cl car rel but env =
   let (evd',c') =
     try
       (* ~flags:(false,true) to allow to mark occurrences that must not be
@@ -1700,16 +1695,18 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
   check_evar_map_of_evars_defs cl'.evd;
   let prf = nf (Clenv.clenv_value cl') and prfty = nf (Clenv.clenv_type cl') in
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
-    {cl=cl'; ext=Evar.Set.empty; prf=(mkRel 1); car=car; rel=rel;
-     c1=c1; c2=c2; c=None; abs=Some (prf, prfty); }
+  let abs = (prf, prfty) in
+  abs, {cl=cl'; ext=Evar.Set.empty; prf=(mkRel 1); car=car; rel=rel;
+     c1=c1; c2=c2; c=None; abs=true; }
 
 let get_hyp gl evars (c,l) clause l2r =
-  let hi = decompose_applied_relation (pf_env gl) evars None (c,l) in
+  let env = pf_env gl in
+  let hi = decompose_applied_relation env evars None (c,l) in
   let but = match clause with
     | Some id -> pf_get_hyp_typ gl id
     | None -> Evarutil.nf_evar evars (pf_concl gl)
   in
-  unification_rewrite l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
+  unification_rewrite l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but env
 
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 
@@ -1717,7 +1714,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
   let app = apply_rule l2r rewrite_unif_flags None occs in
   let recstrat aux = Strategies.choice app (subterm true general_rewrite_flags aux) in
   let substrat = Strategies.fix recstrat in
-  let hypinfo = get_hyp gl (project gl) (c,l) cl l2r in
+  let abs, hypinfo = get_hyp gl (project gl) (c,l) cl l2r in
   let strat () env avoid t ty cstr evars =
     let _, res = substrat (hypinfo, 0) env avoid t ty cstr evars in
     (), res
@@ -1726,7 +1723,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
       (tclWEAK_PROGRESS
 	(tclTHEN
            (Refiner.tclEVARS hypinfo.cl.evd)
-	   (cl_rewrite_clause_tac ~abs:hypinfo.abs strat cl))) gl
+	   (cl_rewrite_clause_tac ~abs:(Some abs) strat cl))) gl
     with RewriteFailure e ->
       let {c1=x; c2=y} = hypinfo in
 	raise (Pretype_errors.PretypeError
