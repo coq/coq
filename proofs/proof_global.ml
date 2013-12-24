@@ -289,49 +289,45 @@ let get_open_goals () =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
     List.length shelf
 
-let close_proof ~now fpl =
-  let { pid;section_vars;strength;proof;terminator } =
-    cur_pstate ()
-  in
+let close_proof ?feedback_id ~now fpl =
+  let { pid; section_vars; strength; proof; terminator } = cur_pstate () in
   let initial_goals = Proof.initial_goals proof in
-  let entries = Future.map2 (fun p (c, t) -> { Entries.
-                                               const_entry_body = p;
-                                               const_entry_secctx = section_vars;
-                                               const_entry_type  = Some t;
-                                               const_entry_inline_code = false;
-                                               const_entry_opaque = true }) fpl initial_goals in
+  let entries =
+    Future.map2 (fun p (c, t) -> { Entries.
+      const_entry_body = p;
+      const_entry_secctx = section_vars;
+      const_entry_feedback = feedback_id;
+      const_entry_type  = Some t;
+      const_entry_inline_code = false;
+      const_entry_opaque = true })
+    fpl initial_goals in
   if now then
     List.iter (fun x -> ignore(Future.join x.Entries.const_entry_body)) entries;
-  { id = pid ;
-    entries = entries ;
-    persistence = strength } , terminator
+  { id = pid; entries = entries; persistence = strength }, terminator
 
 let return_proof () =
   let { proof } = cur_pstate () in
   let initial_goals = Proof.initial_goals proof in
   let evd =
+    let error s = raise (Errors.UserError("last tactic before Qed",s)) in
     try Proof.return proof with
     | Proof.UnfinishedProof ->
-        raise (Errors.UserError("last tactic before Qed",
-                                str"Attempt to save an incomplete proof"))
+        error(str"Attempt to save an incomplete proof")
     | Proof.HasShelvedGoals ->
-        raise (Errors.UserError("last tactic before Qed",
-                                str"Attempt to save a proof with shelved goals"))
+        error(str"Attempt to save a proof with shelved goals")
     | Proof.HasGivenUpGoals ->
-        raise (Errors.UserError("last tactic before Qed",
-                                str"Attempt to save a proof with given up goals"))
-    | Proof.HasUnresolvedEvar ->
-        raise (Errors.UserError("last tactic before Qed",
-                                str"Attempt to save a proof with existential " ++
-                                  str"variables still non-instantiated"))
-  in
+        error(str"Attempt to save a proof with given up goals")
+    | Proof.HasUnresolvedEvar->
+        error(str"Attempt to save a proof with existential " ++
+              str"variables still non-instantiated") in
   let eff = Evd.eval_side_effects evd in
   (** ppedrot: FIXME, this is surely wrong. There is no reason to duplicate
       side-effects... This may explain why one need to uniquize side-effects
       thereafter... *)
   List.map (fun (c, _) -> (Evarutil.nf_evar evd c, eff)) initial_goals
 
-let close_future_proof proof = close_proof ~now:false proof
+let close_future_proof ~feedback_id proof =
+  close_proof ~feedback_id ~now:false proof
 let close_proof fix_exn =
   close_proof ~now:true (Future.from_val ~fix_exn (return_proof ()))
 

@@ -1137,7 +1137,8 @@ let known_state ?(redefine_qed=false) ~cache id =
                       Slaves.build_proof ~exn_info:(id,eop) ~start ~stop:eop
                         ~name:(String.concat " " (List.map Id.to_string ids)) in
                     qed.fproof <- Some (fp, cancel);
-                    let proof = Proof_global.close_future_proof fp in
+                    let proof =
+                      Proof_global.close_future_proof ~feedback_id:id fp in
                     reach view.next;
                     vernac_interp id ~proof x;
                     feedback ~state_id:id Interface.Incomplete

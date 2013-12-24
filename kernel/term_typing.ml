@@ -78,45 +78,46 @@ let handle_side_effects env body side_eff =
   Declareops.fold_side_effects handle_sideff body
     (Declareops.uniquize_side_effects side_eff)
 
+let hcons_j j =
+  { uj_val = hcons_constr j.uj_val; uj_type = hcons_constr j.uj_type} 
+
+let feedback_completion_typecheck =
+  Option.iter (fun state_id -> Pp.feedback ~state_id Interface.Complete)
+  
 (* what is used for debugging only *)
 let infer_declaration ?(what="UNKNOWN") env dcl =
   match dcl with
-  | DefinitionEntry c ->
-      let ctx, entry_body = c.const_entry_secctx, c.const_entry_body in
-      if c.const_entry_opaque && not (Option.is_empty c.const_entry_type) then
-        let body_cst =
-          Future.chain ~pure:true entry_body (fun (body, side_eff) ->
-            let body = handle_side_effects env body side_eff in
-            let j, cst = infer env body in
-            let j =
-              {uj_val = hcons_constr j.uj_val;
-               uj_type = hcons_constr j.uj_type} in
-            let _typ, cst = constrain_type env j cst c.const_entry_type in
-            Lazyconstr.opaque_from_val j.uj_val, cst) in
-        let body, cst = Future.split2 body_cst in
-        let def = OpaqueDef body in
-        let typ = match c.const_entry_type with
-        | None -> assert false
-        | Some typ -> NonPolymorphicType typ in
-        def, typ, cst, c.const_entry_inline_code, ctx
-      else
-        let body, side_eff = Future.join entry_body in
-        let body = handle_side_effects env body side_eff in
-        let j, cst =
-          try infer env body 
-          with Not_found as e -> 
-            prerr_endline ("infer not found " ^ what);
-            raise e in
-        let j =
-          {uj_val = hcons_constr j.uj_val;
-           uj_type = hcons_constr j.uj_type} in
-        let typ, cst = constrain_type env j cst c.const_entry_type in
-        let def = Def (Lazyconstr.from_val j.uj_val) in
-        def, typ, Future.from_val cst, c.const_entry_inline_code, ctx
   | ParameterEntry (ctx,t,nl) ->
       let j, cst = infer env t in
       let t = hcons_constr (Typeops.assumption_of_judgment env j) in
       Undef nl, NonPolymorphicType t, Future.from_val cst, false, ctx
+  | DefinitionEntry ({ const_entry_type = Some typ;
+                       const_entry_opaque = true } as c) ->
+      let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
+      let body_cst =
+        Future.chain ~greedy:true ~pure:true body (fun (body, side_eff) ->
+          let body = handle_side_effects env body side_eff in
+          let j, cst = infer env body in
+          let j = hcons_j j in
+          let _typ, cst = constrain_type env j cst (Some typ) in
+          feedback_completion_typecheck feedback_id;
+          Lazyconstr.opaque_from_val j.uj_val, cst) in
+      let body, cst = Future.split2 ~greedy:true body_cst in
+      let def = OpaqueDef body in
+      let typ = NonPolymorphicType typ in
+      def, typ, cst, c.const_entry_inline_code, c.const_entry_secctx
+  | DefinitionEntry c ->
+      let { const_entry_type = typ; const_entry_opaque = opaque } = c in
+      let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
+      let body, side_eff = Future.join body in
+      let body = handle_side_effects env body side_eff in
+      let j, cst = infer env body in
+      let j = hcons_j j in
+      let typ, cst = constrain_type env j cst typ in
+      feedback_completion_typecheck feedback_id;
+      let def = Def (Lazyconstr.from_val j.uj_val) in
+      let cst = Future.from_val cst in
+      def, typ, cst, c.const_entry_inline_code, c.const_entry_secctx
 
 let global_vars_set_constant_type env = function
   | NonPolymorphicType t -> global_vars_set env t

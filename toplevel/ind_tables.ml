@@ -119,7 +119,8 @@ let define internal id c =
     const_entry_secctx = None;
     const_entry_type = None;
     const_entry_opaque = false;
-    const_entry_inline_code = false
+    const_entry_inline_code = false;
+    const_entry_feedback = None;
   } in
   let kn = fd id (DefinitionEntry entry, Decl_kinds.IsDefinition Scheme) in
   let () = match internal with

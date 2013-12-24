@@ -96,7 +96,7 @@ val close_proof : (exn -> exn) -> closed_proof
  * Both access the current proof state. The formes is supposed to be
  * chained with a computation that completed the proof *)
 val return_proof : unit -> Entries.proof_output list
-val close_future_proof :
+val close_future_proof : feedback_id:Stateid.t ->
   Entries.proof_output list Future.computation -> closed_proof
 
 (** Gets the current terminator without checking that the proof has

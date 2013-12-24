@@ -236,6 +236,7 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
     const_entry_type = None;
     const_entry_opaque = false;
     const_entry_inline_code = false;
+    const_entry_feedback = None;
   } in
   let _ = declare_constant name (DefinitionEntry entry, IsProof Lemma) in
   ()

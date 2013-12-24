@@ -209,6 +209,7 @@ let declare_sideff se =
         const_entry_type = ty;
         const_entry_opaque = opaque;
         const_entry_inline_code = false;
+        const_entry_feedback = None;
     });
     cst_hyps = [] ;
     cst_kind =  Decl_kinds.IsDefinition Decl_kinds.Definition;
@@ -254,7 +255,8 @@ let declare_definition ?(internal=UserVerbose)
       const_entry_type = types;
       const_entry_opaque = opaque;
       const_entry_inline_code = false;
-      const_entry_secctx = None }
+      const_entry_secctx = None;
+      const_entry_feedback = None }
   in
     declare_constant ~internal ~local id
       (Entries.DefinitionEntry cb, Decl_kinds.IsDefinition kind)

@@ -514,8 +514,9 @@ let declare_definition prg =
       const_entry_secctx = None;
       const_entry_type = Some typ;
       const_entry_opaque = false;
-      const_entry_inline_code = false}
-  in
+      const_entry_inline_code = false;
+      const_entry_feedback = None;
+    } in
     progmap_remove prg;
     !declare_definition_ref prg.prg_name 
       prg.prg_kind ce prg.prg_implicits
@@ -615,8 +616,9 @@ let declare_obligation prg obl body =
           const_entry_secctx = None;
 	  const_entry_type = if List.is_empty ctx then Some ty else None;
 	  const_entry_opaque = opaque;
-	  const_entry_inline_code = false} 
-      in
+          const_entry_inline_code = false;
+          const_entry_feedback = None;
+      } in
     (** ppedrot: seems legit to have obligations as local *)
       let constant = Declare.declare_constant obl.obl_name ~local:true
 	(DefinitionEntry ce,IsProof Property)

@@ -121,7 +121,8 @@ let define id internal c t =
         const_entry_secctx = None;
         const_entry_type = t;
         const_entry_opaque = false;
-	const_entry_inline_code = false
+        const_entry_inline_code = false;
+        const_entry_feedback = None;
       },
       Decl_kinds.IsDefinition Scheme) in
   definition_message id;

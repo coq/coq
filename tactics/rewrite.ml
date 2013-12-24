@@ -1541,8 +1541,9 @@ let declare_projection n instance_id r =
       const_entry_secctx = None;
       const_entry_type = Some typ;
       const_entry_opaque = false;
-      const_entry_inline_code = false }
-  in
+      const_entry_inline_code = false;
+      const_entry_feedback = None;
+  } in
     ignore(Declare.declare_constant n (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
 
 let build_morphism_signature m =

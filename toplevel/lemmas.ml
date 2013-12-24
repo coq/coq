@@ -234,7 +234,8 @@ let save_remaining_recthms (locality,kind) body opaq i (id,(t_i,(_,imps))) =
               const_entry_secctx = None;
               const_entry_type = Some t_i;
               const_entry_opaque = opaq;
-              const_entry_inline_code = false
+              const_entry_inline_code = false;
+              const_entry_feedback = None;
           } in
 	  let c = SectionLocalDef const in
 	  let _ = declare_variable id (Lib.cwd(), c, k) in
@@ -250,7 +251,8 @@ let save_remaining_recthms (locality,kind) body opaq i (id,(t_i,(_,imps))) =
             const_entry_secctx = None;
             const_entry_type = Some t_i;
             const_entry_opaque = opaq;
-            const_entry_inline_code = false
+            const_entry_inline_code = false;
+            const_entry_feedback = None;
         } in
         let kn = declare_constant id ~local (DefinitionEntry const, k) in
         (locality,ConstRef kn,imps)

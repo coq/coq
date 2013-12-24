@@ -194,7 +194,9 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
                     const_entry_secctx = None;
                     const_entry_type = Some projtyp;
                     const_entry_opaque = false;
-		    const_entry_inline_code = false } in
+                    const_entry_inline_code = false;
+                    const_entry_feedback = None;
+                  } in
 		  let k = (DefinitionEntry cie,IsDefinition kind) in
 		  let kn = declare_constant ~internal:KernelSilent fid k in
 		  Declare.definition_message fid;
@@ -299,8 +301,9 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
             const_entry_secctx = None;
 	    const_entry_type = class_type;
 	    const_entry_opaque = false;
-	    const_entry_inline_code = false }
-	in
+            const_entry_inline_code = false;
+	    const_entry_feedback = None;
+        } in
 	let cst = Declare.declare_constant (snd id)
 	  (DefinitionEntry class_entry, IsDefinition Definition)
 	in
@@ -313,8 +316,9 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
             const_entry_secctx = None;
 	    const_entry_type = Some proj_type;
 	    const_entry_opaque = false;
-	    const_entry_inline_code = false }
-	in
+            const_entry_inline_code = false;
+            const_entry_feedback = None;
+        } in
 	let proj_cst = Declare.declare_constant proj_name
 	  (DefinitionEntry proj_entry, IsDefinition Definition)
 	in

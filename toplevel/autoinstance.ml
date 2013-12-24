@@ -191,7 +191,8 @@ let declare_record_instance gr ctx params =
              const_entry_secctx = None;
 	     const_entry_type=None;
          const_entry_opaque=false;
-         const_entry_inline_code = false } in
+         const_entry_inline_code = false;
+         const_entry_feedback = None } in
   let decl = (DefinitionEntry ce,Decl_kinds.IsDefinition Decl_kinds.StructureComponent) in
   let cst = Declare.declare_constant ident decl in
   new_instance_message ident (Typeops.type_of_constant (Global.env()) cst) def
@@ -208,7 +209,8 @@ let declare_class_instance gr ctx params =
        const_entry_body= Future.from_val (def,Declareops.no_seff);
        const_entry_secctx = None;
        const_entry_opaque = false;
-       const_entry_inline_code = false } in
+       const_entry_inline_code = false;
+       const_entry_feedback = None } in
   try
   let cst = Declare.declare_constant ident
     (ce,Decl_kinds.IsDefinition Decl_kinds.Instance) in

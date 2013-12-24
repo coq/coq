@@ -89,7 +89,8 @@ let interp_definition bl red_option c ctypopt =
           const_entry_secctx = None;
 	  const_entry_type = None;
           const_entry_opaque = false;
-	  const_entry_inline_code = false
+          const_entry_inline_code = false;
+          const_entry_feedback = None;
 	}
     | Some ctyp ->
 	let ty, impsty = interp_type_evars_impls ~impls evdref env_bl ctyp in
@@ -112,7 +113,8 @@ let interp_definition bl red_option c ctypopt =
           const_entry_secctx = None;
 	  const_entry_type = Some typ;
           const_entry_opaque = false;
-	  const_entry_inline_code = false
+          const_entry_inline_code = false;
+          const_entry_feedback = None;
 	}
   in
   red_constant_entry (rel_context_length ctx) ce red_option, !evdref, imps
@@ -536,7 +538,8 @@ let declare_fix kind f def t imps =
     const_entry_secctx = None;
     const_entry_type = Some t;
     const_entry_opaque = false;
-    const_entry_inline_code = false
+    const_entry_inline_code = false;
+    const_entry_feedback = None;
   } in
   declare_definition f kind ce imps (fun _ r -> r)
 
@@ -726,9 +729,10 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
           { const_entry_body = Future.from_val (Evarutil.nf_evar !evdref body,Declareops.no_seff);
             const_entry_secctx = None;
 	    const_entry_type = Some ty;
-        const_entry_opaque = false;
-        const_entry_inline_code = false}
-	in 
+            const_entry_opaque = false;
+            const_entry_inline_code = false;
+            const_entry_feedback = None;
+        } in 
 	(** FIXME: include locality *)
 	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
 	let gr = ConstRef c in

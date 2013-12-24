@@ -52,7 +52,10 @@ type const_entry_body = proof_output Future.computation
 
 type definition_entry = {
   const_entry_body   : const_entry_body;
+  (* List of sectoin variables *)
   const_entry_secctx : Context.section_context option;
+  (* State id on which the completion of type checking is reported *)
+  const_entry_feedback : Stateid.t option;
   const_entry_type        : types option;
   const_entry_opaque      : bool;
   const_entry_inline_code : bool }
