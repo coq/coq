@@ -25,13 +25,17 @@ struct
   let error_bg = make_tag table ~name:"error_bg" [`BACKGROUND !error_color]
   let to_process = make_tag table ~name:"to_process" [`BACKGROUND !processing_color]
   let processed = make_tag table ~name:"processed" [`BACKGROUND !processed_color]
+  let incomplete = make_tag table ~name:"incomplete" [
+          `BACKGROUND !processing_color;
+          `BACKGROUND_STIPPLE_SET true;
+  ]
   let unjustified = make_tag table ~name:"unjustified" [`BACKGROUND "gold"]
   let found = make_tag table ~name:"found" [`BACKGROUND "blue"; `FOREGROUND "white"]
   let sentence = make_tag table ~name:"sentence" []
   let tooltip = make_tag table ~name:"tooltip" [] (* debug:`BACKGROUND "blue" *)
 
   let all =
-     [comment; error; error_bg; to_process; processed; unjustified;
+    [comment; error; error_bg; to_process; processed; incomplete; unjustified;
      found; sentence; tooltip]
 
   let edit_zone =
@@ -81,6 +85,7 @@ let get_processing_color () = color_of_string !processing_color
 let set_processing_color clr =
   let s = string_of_color clr in
   processing_color := s;
+  Script.incomplete#set_property (`BACKGROUND s);
   Script.to_process#set_property (`BACKGROUND s)
 
 let get_error_color () = color_of_string !error_color

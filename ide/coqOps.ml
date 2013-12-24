@@ -11,15 +11,16 @@ open Coq
 open Ideutils
 open Interface
 
-type flag = [ `UNSAFE | `PROCESSING | `ERROR of string ]
-type mem_flag = [ `UNSAFE | `PROCESSING | `ERROR ]
+type flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR of string ]
+type mem_flag = [ `INCOMPLETE | `UNSAFE | `PROCESSING | `ERROR ]
 let mem_flag_of_flag : flag -> mem_flag = function
   | `ERROR _ -> `ERROR
-  | (`UNSAFE | `PROCESSING) as mem_flag -> mem_flag
+  | (`INCOMPLETE | `UNSAFE | `PROCESSING) as mem_flag -> mem_flag
 let str_of_flag = function
   | `UNSAFE -> "U"
   | `PROCESSING -> "P"
   | `ERROR _ -> "E"
+  | `INCOMPLETE -> "I"
 
 module SentenceId : sig
 
@@ -282,7 +283,9 @@ object(self)
     let unjustified = Tags.Script.unjustified in
     let error_bg = Tags.Script.error_bg in
     let error = Tags.Script.error in
-    let all_tags = [ error_bg; to_process; processed; unjustified; error ] in
+    let incomplete = Tags.Script.incomplete in
+    let all_tags = [
+      error_bg; to_process; incomplete; processed; unjustified; error ] in
     let tags =
       (if has_flag sentence `PROCESSING then to_process else
        if has_flag sentence `ERROR then error_bg else
@@ -291,7 +294,9 @@ object(self)
       (if [ `UNSAFE ] = sentence.flags then [unjustified] else [])
     in
     List.iter (fun t -> buffer#remove_tag t ~start ~stop) all_tags;
-    List.iter (fun t -> buffer#apply_tag t ~start ~stop) tags
+    List.iter (fun t -> buffer#apply_tag t ~start ~stop) tags;
+    if has_flag sentence `INCOMPLETE then
+      buffer#apply_tag incomplete ~start ~stop
 
   method private attach_tooltip sentence loc text =
     let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
@@ -342,6 +347,14 @@ object(self)
           log "Processed" id;
           remove_flag sentence `PROCESSING;
           remove_flag sentence `ERROR;
+          self#mark_as_needed sentence
+      | Incomplete, Some (id, sentence) ->
+          log "Incomplete" id;
+          add_flag sentence `INCOMPLETE;
+          self#mark_as_needed sentence
+      | Complete, Some (id, sentence) ->
+          log "Complete" id;
+          remove_flag sentence `INCOMPLETE;
           self#mark_as_needed sentence
       | GlobRef(loc, filepath, modpath, ident, ty), Some (id,sentence) ->
           log "GlobRef" id;
@@ -566,8 +579,9 @@ object(self)
       let start = buffer#get_iter_at_mark (CList.last seg).start in
       let stop = buffer#get_iter_at_mark (CList.hd seg).stop in
       Minilib.log
-        (Printf.sprintf "Clean tags in range %d -> %d" start#offset stop#offset);
+        (Printf.sprintf "Cleanup in range %d -> %d" start#offset stop#offset);
       buffer#remove_tag Tags.Script.processed ~start ~stop;
+      buffer#remove_tag Tags.Script.incomplete ~start ~stop;
       buffer#remove_tag Tags.Script.unjustified ~start ~stop;
       buffer#remove_tag Tags.Script.tooltip ~start ~stop;
       buffer#remove_tag Tags.Script.to_process ~start ~stop;
@@ -590,6 +604,7 @@ object(self)
       Minilib.log(Printf.sprintf "cleanup tags %d %d" start#offset stop#offset);
       buffer#remove_tag Tags.Script.tooltip ~start ~stop;
       buffer#remove_tag Tags.Script.processed ~start ~stop;
+      buffer#remove_tag Tags.Script.incomplete ~start ~stop;
       buffer#remove_tag Tags.Script.to_process ~start ~stop;
       buffer#remove_tag Tags.Script.unjustified ~start ~stop;
       self#show_goals in

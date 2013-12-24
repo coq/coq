@@ -14,6 +14,7 @@ sig
   val error_bg : GText.tag
   val to_process : GText.tag
   val processed : GText.tag
+  val incomplete : GText.tag
   val unjustified : GText.tag
   val found : GText.tag
   val sentence : GText.tag

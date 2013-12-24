@@ -127,6 +127,8 @@ type edit_or_state_id = Edit of edit_id | State of state_id
 type feedback_content =
   | AddedAxiom
   | Processed
+  | Incomplete
+  | Complete
   | GlobRef of Loc.t * string * string * string * string
   | ErrorMsg of Loc.t * string
   | InProgress of int

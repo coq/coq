@@ -328,6 +328,8 @@ let to_loc xml = match xml with
 let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
   | "addedaxiom", _ -> AddedAxiom
   | "processed", _ -> Processed
+  | "incomplete", _ -> Incomplete
+  | "complete", _ -> Complete
   | "globref", [loc; filepath; modpath; ident; ty] ->
        GlobRef(to_loc loc, to_string filepath,
          to_string modpath, to_string ident, to_string ty)
@@ -340,6 +342,8 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
 let of_feedback_content = function
   | AddedAxiom -> constructor "feedback_content" "addedaxiom" []
   | Processed -> constructor "feedback_content" "processed" []
+  | Incomplete -> constructor "feedback_content" "incomplete" []
+  | Complete -> constructor "feedback_content" "complete" []
   | GlobRef(loc, filepath, modpath, ident, ty) ->
       constructor "feedback_content" "globref" [
         of_loc loc;

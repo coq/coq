@@ -1139,7 +1139,8 @@ let known_state ?(redefine_qed=false) ~cache id =
                     qed.fproof <- Some (fp, cancel);
                     let proof = Proof_global.close_future_proof fp in
                     reach view.next;
-                    vernac_interp id ~proof x
+                    vernac_interp id ~proof x;
+                    feedback ~state_id:id Interface.Incomplete
                 | VtDrop, _, _ ->
                     reach view.next;
                     Option.iter (vernac_interp start) proof_using_ast;
