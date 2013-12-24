@@ -37,8 +37,7 @@ type 'a comp =
          a mutex and a condition to make this possible *)
   | Closure of (unit -> 'a)
   | Val of 'a * Dyn.t option
-  | Exn of exn
-      (* Invariant: this exception is always "fixed" as in fix_exn *)
+  | Exn of exn (* Invariant: this exception is always "fixed" as in fix_exn *)
 
 type 'a comput =
   | Ongoing of (fix_exn * 'a comp ref) Ephemeron.key
@@ -151,19 +150,23 @@ let transactify f x =
 let purify_future f x = if is_over x then f x else purify f x
 let compute x = purify_future (compute ~pure:false) x
 let force x = purify_future (force ~pure:false) x
+let chain ?(greedy=false) ~pure x f =
+  let y = chain ~pure x f in
+  if is_over x && greedy then ignore(force y);
+  y
 
 let join kx =
   let v = force kx in
   kx := Finished v;
   v
 
-let split2 x =
-  chain ~pure:true x (fun x -> fst x),
-  chain ~pure:true x (fun x -> snd x)
+let split2 ?greedy x =
+  chain ?greedy ~pure:true x (fun x -> fst x),
+  chain ?greedy ~pure:true x (fun x -> snd x)
 
-let map2 f x l =
+let map2 ?greedy f x l =
   CList.map_i (fun i y ->
-    let xi = chain ~pure:true x (fun x ->
+    let xi = chain ?greedy ~pure:true x (fun x ->
         try List.nth x i
         with Failure _ | Invalid_argument _ ->
           Errors.anomaly (Pp.str "Future.map2 length mismatch")) in

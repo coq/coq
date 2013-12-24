@@ -87,15 +87,22 @@ val is_val : 'a computation -> bool
 val is_exn : 'a computation -> bool
 val peek_val : 'a computation -> 'a option
 
-(* Chain computations.  When pure:true, the computation will not keep a copy
- * of the global state.
- * [let c' = chain ~pure:true c f in let c'' = chain ~pure:false c' g in]
- * is invalid.  It works if one forces [c''] since the whole computation will
- * be executed in one go.  It will not work, and raise an anomaly, if one
- * forces c' and then c''.
- * [join c; chain ~pure:false c g] is invalid and fails at runtime.
- * [force c; chain ~pure:false c g] is correct. *)
-val chain : pure:bool -> 'a computation -> ('a -> 'b) -> 'b computation
+(* [chain greedy pure c f] chains computation [c] with [f].
+ * The [greedy] and [pure] parameters are tricky:
+ * [pure]:
+ *   When pure is true, the returned computation will not keep a copy
+ *   of the global state.
+ *   [let c' = chain ~pure:true c f in let c'' = chain ~pure:false c' g in]
+ *   is invalid.  It works if one forces [c''] since the whole computation
+ *   will be executed in one go.  It will not work, and raise an anomaly, if
+ *   one forces c' and then c''.
+ *   [join c; chain ~pure:false c g] is invalid and fails at runtime.
+ *   [force c; chain ~pure:false c g] is correct.
+ * [greedy]:
+ *   The [greedy] parameter forces immediately the new computation if
+ *   the old one is_over (Exn or Val). Defaults to false. *)
+val chain : ?greedy:bool -> pure:bool ->
+  'a computation -> ('a -> 'b) -> 'b computation
 
 (* Forcing a computation *)
 val force : 'a computation -> 'a
@@ -105,8 +112,9 @@ val compute : 'a computation -> 'a value
 val join : 'a computation -> 'a
 
 (*** Utility functions ************************************************* ***)
-val split2 : ('a * 'b) computation -> 'a computation * 'b computation
-val map2 :
+val split2 : ?greedy:bool ->
+  ('a * 'b) computation -> 'a computation * 'b computation
+val map2 : ?greedy:bool ->
   ('a computation -> 'b -> 'c) ->
      'a list computation -> 'b list -> 'c list
 
