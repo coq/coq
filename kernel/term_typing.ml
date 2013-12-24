@@ -163,7 +163,7 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
             check declared inferred;
             x
         | OpaqueDef lc -> (* In this case we can postpone the check *)
-            OpaqueDef (Future.chain ~pure:true lc (fun lc ->
+            OpaqueDef (Future.chain ~greedy:true ~pure:true lc (fun lc ->
               let ids_typ = global_vars_set_constant_type env typ in
               let ids_def =
                 global_vars_set env (Lazyconstr.force_opaque lc) in
@@ -198,7 +198,7 @@ let translate_local_def env id centry =
 let translate_mind env kn mie = Indtypes.check_inductive env kn mie
 
 let handle_side_effects env ce = { ce with
-  const_entry_body = Future.chain ~pure:true
+  const_entry_body = Future.chain ~greedy:true ~pure:true
     ce.const_entry_body (fun (body, side_eff) ->
        handle_side_effects env body side_eff, Declareops.no_seff);
 }

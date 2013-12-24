@@ -100,7 +100,7 @@ let hcons_const_def = function
     Def (from_val (Term.hcons_constr constr))
   | OpaqueDef lc ->
     OpaqueDef
-      (Future.chain ~pure:true lc
+      (Future.chain ~greedy:true ~pure:true lc
          (fun lc -> opaque_from_val (Term.hcons_constr (force_opaque lc))))
 
 let hcons_const_body cb =

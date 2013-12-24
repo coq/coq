@@ -540,7 +540,7 @@ end = struct (* {{{ *)
         let loc = Option.default Loc.ghost (Loc.get_loc e) in
         let msg = string_of_ppcmds (print e) in
         Pp.feedback ~state_id:id (Interface.ErrorMsg (loc, msg));
-        Stateid.add e ?valid id
+        Stateid.add (Cerrors.process_vernac_interp_error e) ?valid id
 
   let define ?(redefine=false) ?(cache=`No) f id =
     let str_id = Stateid.to_string id in
