@@ -865,12 +865,14 @@ end = struct (* {{{ *)
                 assign (`Val pl);
                 (* We restart the slave, to avoid memory leaks.  We could just
                    Pp.feedback (Interface.InProgress ~-1) *)
+                last_task := None;
                 raise KillRespawn
             | TaskBuildProof(_,_,_, assign,_,_), RespError (err_id,valid,e) ->
                 let e = Stateid.add ~valid (RemoteException e) err_id in
                 assign (`Exn e);
                 (* We restart the slave, to avoid memory leaks.  We could just
                    Pp.feedback (Interface.InProgress ~-1) *)
+                last_task := None;
                 raise KillRespawn
             | _, RespGetCounterFreshLocalUniv ->
                 marshal_more_data oc (MoreDataLocalUniv
@@ -888,7 +890,7 @@ end = struct (* {{{ *)
                 if !cancel_switch then raise KillRespawn else loop ()
             | _, RespFeedback _ -> assert false (* Parsing in master process *)
           in
-            loop (); last_task := None
+            loop ()
         with
         | VCS.Expired -> (* task cancelled: e.g. the user did backtrack *)
             Pp.feedback (Interface.InProgress ~-1);
