@@ -404,7 +404,7 @@ let start_proof_com kind thms hook =
 
 let save_proof ?proof = function
   | Vernacexpr.Admitted ->
-      Ephemeron.get (Proof_global.get_terminator()) Proof_global.Admitted
+      Proof_global.get_terminator() Proof_global.Admitted
   | Vernacexpr.Proved (is_opaque,idopt) ->
       let (proof_obj,terminator) =
         match proof with
@@ -413,7 +413,7 @@ let save_proof ?proof = function
       in
       (* if the proof is given explicitly, nothing has to be deleted *)
       if Option.is_empty proof then Pfedit.delete_current_proof ();
-      Ephemeron.get terminator (Proof_global.Proved (is_opaque,idopt,proof_obj))
+      terminator (Proof_global.Proved (is_opaque,idopt,proof_obj))
 
 (* Miscellaneous *)
 

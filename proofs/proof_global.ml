@@ -76,9 +76,8 @@ type proof_ending =
   | Proved of Vernacexpr.opacity_flag *
              (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
               proof_object
-type proof_terminator =
-    proof_ending -> unit
-type closed_proof = proof_object*proof_terminator Ephemeron.key
+type proof_terminator = proof_ending -> unit
+type closed_proof = proof_object * proof_terminator
 
 type pstate = {
   pid : Id.t;
@@ -303,7 +302,8 @@ let close_proof ?feedback_id ~now fpl =
     fpl initial_goals in
   if now then
     List.iter (fun x -> ignore(Future.join x.Entries.const_entry_body)) entries;
-  { id = pid; entries = entries; persistence = strength }, terminator
+  { id = pid; entries = entries; persistence = strength },
+  Ephemeron.get terminator
 
 let return_proof () =
   let { proof } = cur_pstate () in
@@ -333,7 +333,11 @@ let close_proof fix_exn =
 
 (** Gets the current terminator without checking that the proof has
     been completed. Useful for the likes of [Admitted]. *)
-let get_terminator () = ( cur_pstate() ).terminator
+let get_terminator () = Ephemeron.get ( cur_pstate() ).terminator
+let set_terminator hook =
+  match !pstates with
+  | [] -> raise NoCurrentProof
+  | p :: ps -> pstates := { p with terminator = Ephemeron.create hook } :: ps
 
 (**********************************************************)
 (*                                                        *)

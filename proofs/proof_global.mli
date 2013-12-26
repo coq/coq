@@ -64,9 +64,8 @@ type proof_ending =
   | Proved of Vernacexpr.opacity_flag *
              (Vernacexpr.lident * Decl_kinds.theorem_kind option) option *
               proof_object
-type proof_terminator =
-    proof_ending -> unit
-type closed_proof = proof_object*proof_terminator Ephemeron.key
+type proof_terminator = proof_ending -> unit
+type closed_proof = proof_object * proof_terminator
 
 (** [start_proof id str goals terminator] starts a proof of name [id]
     with goals [goals] (a list of pairs of environment and
@@ -74,19 +73,15 @@ type closed_proof = proof_object*proof_terminator Ephemeron.key
     is (spiwack: for potential printing, I believe is used only by
     closing commands and the xml plugin); [terminator] is used at the
     end of the proof to close the proof. *)
-val start_proof : Names.Id.t ->
-                          Decl_kinds.goal_kind ->
-                          (Environ.env * Term.types) list  ->
-                          proof_terminator ->
-                          unit
+val start_proof :
+  Names.Id.t -> Decl_kinds.goal_kind -> (Environ.env * Term.types) list  ->
+    proof_terminator -> unit
+
 (** Like [start_proof] except that there may be dependencies between
     initial goals. *)
-val start_dependent_proof : Names.Id.t ->
-                          Decl_kinds.goal_kind ->
-                          Proofview.telescope  ->
-                          proof_terminator ->
-                          unit
-
+val start_dependent_proof :
+  Names.Id.t -> Decl_kinds.goal_kind -> Proofview.telescope  ->
+    proof_terminator -> unit
 
 (* Takes a function to add to the exceptions data relative to the
    state in which the proof was built *)
@@ -101,7 +96,8 @@ val close_future_proof : feedback_id:Stateid.t ->
 
 (** Gets the current terminator without checking that the proof has
     been completed. Useful for the likes of [Admitted]. *)
-val get_terminator : unit -> proof_terminator Ephemeron.key
+val get_terminator : unit -> proof_terminator
+val set_terminator : proof_terminator -> unit
 
 exception NoSuchProof
 
