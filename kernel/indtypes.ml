@@ -431,24 +431,6 @@ if Int.equal nmr 0 then 0 else
           | _ -> k)
   in find 0 (n-1) (lpar,List.rev hyps)
 
-let lambda_implicit_lift n a =
-  let level = Level.make (DirPath.make [Id.of_string "implicit"]) 0 in
-  let implicit_sort = mkType (Universe.make level) in
-  let lambda_implicit a = mkLambda (Anonymous, implicit_sort, a) in
-  iterate lambda_implicit n (lift n a)
-
-(* This removes global parameters of the inductive types in lc (for
-   nested inductive types only ) *)
-let abstract_mind_lc env ntyps npars lc =
-  if Int.equal npars 0 then
-    lc
-  else
-    let make_abs =
-      List.init ntyps
-	(function i -> lambda_implicit_lift npars (mkRel (i+1)))
-    in
-    Array.map (substl make_abs) lc
-
 (* [env] is the typing environment
    [n] is the dB of the last inductive type
    [ntypes] is the number of inductive types in the definition
@@ -538,7 +520,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
       let auxntyp = mib.mind_ntypes in
 	if not (Int.equal auxntyp 1) then raise (IllFormedInd (LocalNonPos n));
 	(* The nested inductive type with parameters removed *)
-	let auxlcvect = abstract_mind_lc env auxntyp auxnpar mip.mind_nf_lc in
+	let auxlcvect = abstract_mind_lc auxntyp auxnpar mip.mind_nf_lc in
 	  (* Extends the environment with a variable corresponding to
 	     the inductive def *)
 	let (env',_,_,_ as ienv') = ienv_push_inductive ienv ((mi,u),lpar) in

@@ -135,3 +135,6 @@ type stack_element = |SClosure of guard_env*constr |SArg of subterm_spec Lazy.t
 
 val subterm_specif : guard_env -> stack_element list -> constr -> subterm_spec
 
+val lambda_implicit_lift : int -> Constr.constr -> Term.constr
+
+val abstract_mind_lc : int -> Int.t -> Constr.constr array -> Constr.constr array

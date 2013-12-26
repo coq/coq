@@ -493,6 +493,23 @@ type subterm_spec =
 
 let eq_wf_paths = Rtree.equal Declareops.eq_recarg
 
+let pp_recarg = function
+  | Norec -> Pp.str "Norec"
+  | Mrec i -> Pp.str ("Mrec "^MutInd.to_string (fst i))
+  | Imbr i -> Pp.str ("Imbr "^MutInd.to_string (fst i))
+
+let pp_wf_paths = Rtree.pp_tree pp_recarg
+
+let inter_recarg r1 r2 = match r1, r2 with
+| Norec, Norec -> Some r1
+| Mrec i1, Mrec i2
+| Imbr i1, Imbr i2
+| Mrec i1, Imbr i2 -> if Names.eq_ind i1 i2 then Some r1 else None
+| Imbr i1, Mrec i2 -> if Names.eq_ind i1 i2 then Some r2 else None
+| _ -> None
+
+let inter_wf_paths = Rtree.inter inter_recarg Norec
+
 let spec_of_tree t =
   if eq_wf_paths t mk_norec
   then Not_subterm
@@ -506,9 +523,15 @@ let subterm_spec_glb init =
       | Not_subterm, _ -> Not_subterm
       | _, Not_subterm -> Not_subterm
       | Subterm (a1,t1), Subterm (a2,t2) ->
-          if eq_wf_paths t1 t2 then Subterm (size_glb a1 a2, t1)
-          (* branches do not return objects with same spec *)
-          else Not_subterm in
+          Pp.msg_info (Pp.str "t1 = ");
+          Pp.msg_info (pp_wf_paths t1);
+          Pp.msg_info (Pp.str "t2 = ");
+          Pp.msg_info (pp_wf_paths t2);
+          let r = inter_wf_paths t1 t2 in
+          Pp.msg_info (Pp.str "r = ");
+          Pp.msg_info (pp_wf_paths r);
+          Subterm (size_glb a1 a2, r)
+  in
   Array.fold_left glb2 init
 
 type guard_env =
@@ -572,7 +595,6 @@ let lookup_subterms env ind =
   let (_,mip) = lookup_mind_specif env ind in
   mip.mind_recargs
 
-
 let match_inductive ind ra =
   match ra with
     | (Mrec i | Imbr i) -> eq_ind ind i
@@ -594,7 +616,7 @@ let branches_specif renv c_spec ci =
     Array.mapi
       (fun i nca -> (* i+1-th cstructor has arity nca *)
 	 let lvra = lazy 
-	   (match Lazy.force c_spec with
+	   (match Lazy.force c_spec with (* TODO: is this check necessary? *)
 		Subterm (_,t) when match_inductive ci.ci_ind (dest_recarg t) ->
 		  let vra = Array.of_list (dest_subterms t).(i) in
 		  assert (Int.equal nca (Array.length vra));
@@ -610,13 +632,122 @@ let check_inductive_codomain env p =
   let i,l' = decompose_app (whd_betadeltaiota env s) in
   isInd i
 
+(* The following functions are almost duplicated from indtypes.ml, except
+that they carry here a poorer environment (containing less information). *)
+let ienv_push_var (env, lra) (x,a,ra) =
+(push_rel (x,None,a) env, (Norec,ra)::lra)
+
+let ienv_push_inductive (env, ra_env) ((mi,u),lpar) =
+ let specif = (lookup_mind_specif env mi, u) in
+ let env' =
+   push_rel (Anonymous,None,
+             hnf_prod_applist env (type_of_inductive env specif) lpar) env in
+ let ra_env' =
+   (Imbr mi,(Rtree.mk_rec_calls 1).(0)) ::
+   List.map (fun (r,t) -> (r,Rtree.lift 1 t)) ra_env in
+ (* New index of the inductive types *)
+ (env', ra_env')
+
+let rec ienv_decompose_prod (env,_ as ienv) n c =
+ if Int.equal n 0 then (ienv,c) else
+   let c' = whd_betadeltaiota env c in
+   match kind_of_term c' with
+   Prod(na,a,b) ->
+     let ienv' = ienv_push_var ienv (na,a,mk_norec) in
+     ienv_decompose_prod ienv' (n-1) b
+     | _ -> assert false
+
+let lambda_implicit_lift n a =
+  let level = Level.make (DirPath.make [Id.of_string "implicit"]) 0 in
+  let implicit_sort = mkType (Universe.make level) in
+  let lambda_implicit a = mkLambda (Anonymous, implicit_sort, a) in
+  iterate lambda_implicit n (lift n a)
+
+(* This removes global parameters of the inductive types in lc (for
+   nested inductive types only ) *)
+let abstract_mind_lc ntyps npars lc =
+  if Int.equal npars 0 then
+    lc
+  else
+    let make_abs =
+      List.init ntyps
+	(function i -> lambda_implicit_lift npars (mkRel (i+1)))
+    in
+    Array.map (substl make_abs) lc
+
+(* [get_recargs_approx ind args] builds an approximation of the recargs tree for ind,
+knowing args. All inductive types appearing in the type of constructors are
+considered as nested. This code is very close to check_positive in indtypes.ml,
+but does no positivy check and does not compute the number of recursive
+arguments. *)
+let get_recargs_approx env ind args =
+  let rec build_recargs (env, ra_env as ienv) c =
+    let x,largs = decompose_app (whd_betadeltaiota env c) in
+      match kind_of_term x with
+	| Prod (na,b,d) ->
+        assert (List.is_empty largs);
+	    build_recargs (ienv_push_var ienv (na, b, mk_norec)) d
+	| Rel k ->
+        (* Free variable are allowed and assigned Norec *)
+        (try snd (List.nth ra_env (k-1))
+          with Failure _ | Invalid_argument _ -> mk_norec)
+	| Ind ind_kn ->
+        (* We always consider that we have a potential nested inductive type *)
+        build_recargs_nested ienv (ind_kn, largs)
+	| err ->
+	    mk_norec
+
+  and build_recargs_nested (env,ra_env as ienv) ((mi,u), largs) =
+    let (mib,mip) = lookup_mind_specif env mi in
+    let auxnpar = mib.mind_nparams_rec in
+    let nonrecpar = mib.mind_nparams - auxnpar in
+    let (lpar,auxlargs) = List.chop auxnpar largs in
+      let auxntyp = mib.mind_ntypes in
+	(* The nested inductive type with parameters removed *)
+	let auxlcvect = abstract_mind_lc auxntyp auxnpar mip.mind_nf_lc in
+	  (* Extends the environment with a variable corresponding to
+	     the inductive def *)
+	let (env',_ as ienv') = ienv_push_inductive ienv ((mi,u),lpar) in
+	  (* Parameters expressed in env' *)
+	let lpar' = List.map (lift auxntyp) lpar in
+	let irecargs =
+	  Array.map
+	    (function c ->
+	      let c' = hnf_prod_applist env' c lpar' in
+	      (* skip non-recursive parameters *)
+	      let (ienv',c') = ienv_decompose_prod ienv' nonrecpar c' in
+		build_recargs_constructors ienv' c')
+	    auxlcvect
+	in
+(*	let irecargs = Array.map snd irecargs_nmr in *)
+	  (Rtree.mk_rec [|mk_paths (Imbr mi) irecargs|]).(0)
+
+  and build_recargs_constructors ienv c =
+    let rec recargs_constr_rec (env,ra_env as ienv) lrec c =
+      let x,largs = decompose_app (whd_betadeltaiota env c) in
+	match kind_of_term x with
+
+          | Prod (na,b,d) ->
+	      let () = assert (List.is_empty largs) in
+              let recarg = build_recargs ienv b in
+              let ienv' = ienv_push_var ienv (na,b,mk_norec) in
+                recargs_constr_rec ienv' (recarg::lrec) d
+          | hd ->
+             List.rev lrec
+    in recargs_constr_rec ienv [] c
+  in
+  (* starting with ra_env = [] seems safe because any unbounded Rel will be
+  assigned Norec *)
+  build_recargs_nested (env,[]) (ind, args)
+
+
 let get_codomain_tree env p =
   let absctx, ar = dest_lam_assum env p in (* TODO: reduce or preserve lets? *)
   let arctx, s = dest_prod_assum env ar in (* TODO: check number of prods *)
-  let i,l' = decompose_app (whd_betadeltaiota env s) in
+  let i,args = decompose_app (whd_betadeltaiota env s) in
   match kind_of_term i with
   | Ind i ->
-    let (_,mip) = lookup_mind_specif env i in Subterm(Strict,mip.mind_recargs)
+      let recargs = get_recargs_approx env i args in Subterm(Strict,recargs)
   | _ -> Not_subterm
 
 (* [subterm_specif renv t] computes the recursive structure of [t] and
@@ -685,7 +816,7 @@ let rec subterm_specif renv stack t =
 
     | Lambda (x,a,b) ->
       let () = assert (List.is_empty l) in
-      let spec,stack' = extract_stack stack in
+      let spec,stack' = extract_stack renv a stack in
 	subterm_specif (push_var renv (x,a,spec)) stack' b
 
       (* Metas and evars are considered OK *)
@@ -701,9 +832,9 @@ and stack_element_specif = function
   |SClosure (h_renv,h) -> lazy_subterm_specif h_renv [] h
   |SArg x -> x
 
-and extract_stack = function
-  | [] -> Lazy.lazy_from_val Not_subterm , []
-  | h::t -> stack_element_specif h, t
+and extract_stack renv a = function
+   | [] -> Lazy.lazy_from_val Not_subterm , []
+   | h::t -> stack_element_specif h, t
 
 (* Check term c can be applied to one of the mutual fixpoints. *)
 let check_is_subterm x =
@@ -739,21 +870,23 @@ let filter_stack_domain env ci p stack =
     match stack, kind_of_term t with
     | elt :: stack', Prod (n,a,c0) ->
       let d = (n,None,a) in
-      let ty, _ = decompose_app a in (* TODO: reduce a? *)
+      let ty, args = decompose_app a in (* TODO: reduce a? *)
       let elt = match kind_of_term ty with
-      | Ind i -> 
-        let (_,mip) = lookup_mind_specif env i in
+      | Ind ind -> 
         let spec' = stack_element_specif elt in (* TODO: this is recomputed
         each time*)
         (match (Lazy.force spec') with (* TODO: are we forcing too much? *)
         | Not_subterm -> elt
-        | Subterm(_,path) ->
-            if eq_wf_paths path mip.mind_recargs then elt
-            else (SArg (lazy Not_subterm))) (* TODO: intersection *)
+        | Subterm(s,path) ->
+            let recargs = get_recargs_approx env ind args in
+            let path = inter_wf_paths path recargs in
+            SArg (lazy (Subterm(s,path))))
             (* TODO: not really an SArg *)
+            (* TODO: what if Dead_code above? *)
       | _ -> (SArg (lazy Not_subterm))
       in
       elt :: filter_stack (push_rel d env) c0 stack'
+    | [], _ -> [] (* TODO: remove after debugging *)
     | _,_ -> List.fold_right (fun _ l -> SArg (lazy Not_subterm) :: l) stack []
              (* TODO: is it correct to empty the stack instead? *)
   in
@@ -856,7 +989,7 @@ let check_one_fix renv recpos def =
         | Lambda (x,a,b) ->
             let () = assert (List.is_empty l) in
 	    check_rec_call renv [] a ;
-	    let spec, stack' = extract_stack stack in
+	    let spec, stack' = extract_stack renv a stack in
 	    check_rec_call (push_var renv (x,a,spec)) stack' b
 
         | Prod (x,a,b) ->

@@ -145,8 +145,24 @@ let equal cmp t t' =
 (** Deprecated alias *)
 let eq_rtree = equal
 
-(** Tests if a given tree is infinite, i.e. has an branch of infinite length.
-   This correspond to a cycle when visiting the expanded tree.
+(* Intersection of rtrees of same arity *)
+let rec inter interlbl def t t' =
+  match t, t' with
+  | Param (i,j), Param (i',j') ->
+      assert (Int.equal i i' && Int.equal j j'); t
+  | Node (x, a), Node (x', a') ->
+      (match interlbl x x' with
+      | None -> mk_node def [||]
+      | Some x'' -> Node (x'', Array.map2 (inter interlbl def) a a'))
+  | Rec (i, a), Rec (i', a') ->
+      if Int.equal i i' then Rec(i, Array.map2 (inter interlbl def) a a')
+      else mk_node def [||]
+  | Rec _, _ -> inter interlbl def (expand t) t'
+  | _ , Rec _ -> inter interlbl def t (expand t')
+  | _ -> assert false
+
+(** Tests if a given tree is infinite, i.e. has a branch of infinite length.
+   This corresponds to a cycle when visiting the expanded tree.
    We use a specific comparison to detect already seen trees. *)
 
 let is_infinite cmp t =

@@ -66,6 +66,8 @@ val equiv :
     then by logical equivalence [Rtree.equiv eq eq] *)
 val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 
+val inter : ('a -> 'a -> 'a option) -> 'a -> 'a t -> 'a t -> 'a t
+
 (** Iterators *)
 
 val map : ('a -> 'b) -> 'a t -> 'b t
