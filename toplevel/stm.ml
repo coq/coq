@@ -571,12 +571,19 @@ end = struct (* {{{ *)
 end
 (* }}} *)
 
+let hints = ref Aux_file.empty_aux_file
+let set_compilation_hints h = hints := h
+let get_hint_ctx loc =
+  let s = Aux_file.get !hints loc "context_used" in
+  let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") s) in
+  let ids = List.map (fun id -> Loc.ghost, id) ids in
+  ids
 
 (* Slave processes (if initialized, otherwise local lazy evaluation) *)
 module Slaves : sig
 
   (* (eventually) remote calls *)
-  val build_proof :
+  val build_proof : loc:Loc.t ->
     exn_info:(Stateid.t * Stateid.t) -> start:Stateid.t -> stop:Stateid.t ->
       name:string -> future_proof * cancel_switch
 
@@ -596,6 +603,8 @@ module Slaves : sig
 
   type tasks
   val dump : unit -> tasks
+  val check_task : tasks -> int -> unit
+  val info_tasks : tasks -> (string * float * int) list
 
 end = struct (* {{{ *)
 
@@ -713,9 +722,10 @@ end = struct (* {{{ *)
   let set_reach_known_state f = reach_known_state := f
 
   type request =
-    ReqBuildProof of (Stateid.t * Stateid.t) * Stateid.t * VCS.vcs * string
+    ReqBuildProof of
+      (Stateid.t * Stateid.t) * Stateid.t * VCS.vcs * Loc.t * string
 
-  let name_of_request (ReqBuildProof (_,_,_,s)) = s
+  let name_of_request (ReqBuildProof (_,_,_,_,s)) = s
 
   type response =
     | RespBuiltProof of Entries.proof_output list 
@@ -741,33 +751,37 @@ end = struct (* {{{ *)
   type task =
     | TaskBuildProof of (Stateid.t * Stateid.t) * Stateid.t * Stateid.t *
         (Entries.proof_output list Future.assignement -> unit) * cancel_switch
-        * string
+        * Loc.t * string
   let pr_task = function
-    | TaskBuildProof(_,bop,eop,_,_,s) ->
+    | TaskBuildProof(_,bop,eop,_,_,_,s) ->
         "TaskBuilProof("^Stateid.to_string bop^","^Stateid.to_string eop^
           ","^s^")"
 
   let request_of_task task =
     match task with
-    | TaskBuildProof (exn_info,bop,eop,_,_,s) ->
-        ReqBuildProof(exn_info,eop,VCS.slice ~start:eop ~stop:bop,s)
+    | TaskBuildProof (exn_info,bop,eop,_,_,loc,s) ->
+        ReqBuildProof(exn_info,eop,VCS.slice ~start:eop ~stop:bop,loc,s)
 
   let cancel_switch_of_task = function
-    | TaskBuildProof (_,_,_,_,c,_) -> c
+    | TaskBuildProof (_,_,_,_,c,_,_) -> c
 
-  let build_proof_here_core eop () =
+  let build_proof_here_core loc eop () =
+    let wall_clock1 = Unix.gettimeofday () in
     !reach_known_state ~cache:`No eop;
+    let wall_clock2 = Unix.gettimeofday () in
+    Aux_file.record_in_aux_at loc "proof_build_time"
+      (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
     Proof_global.return_proof ()
-  let build_proof_here (id,valid) eop =
-    Future.create (State.exn_on id ~valid) (build_proof_here_core eop)
+  let build_proof_here (id,valid) loc eop =
+    Future.create (State.exn_on id ~valid) (build_proof_here_core loc eop)
 
   let slave_respond msg =
     match msg with
-    | ReqBuildProof(exn_info,eop,vcs,_) ->
+    | ReqBuildProof(exn_info,eop,vcs,loc,_) ->
         VCS.restore vcs;
         VCS.print ();
         let r = RespBuiltProof (
-          let l = Future.force (build_proof_here exn_info eop) in
+          let l = Future.force (build_proof_here exn_info loc eop) in
           List.iter (fun (_,se) -> Declareops.iter_side_effects (function
             | Declarations.SEsubproof(_,
                { Declarations.const_body = Declarations.OpaqueDef f;
@@ -778,6 +792,30 @@ end = struct (* {{{ *)
           l) in
         VCS.print ();
         r
+
+  let check_task l i =
+    match List.nth l i with
+    | ReqBuildProof ((id,valid),eop,vcs,loc,s) ->
+        Pp.msg_info (str"Checking "++str s);
+        VCS.restore vcs;
+        !reach_known_state ~cache:`No eop;
+        (* The original terminator, a hook, has not been saved in the .vi*)
+        Proof_global.set_terminator
+          (Lemmas.standard_proof_terminator [] (fun _ _ -> ()));
+        let proof = Proof_global.close_proof (fun x -> x) in
+        vernac_interp eop ~proof
+          { verbose = false; loc;
+            expr = (VernacEndProof (Proved (true,None))) }
+
+  let info_tasks l =
+    CList.map_i (fun i (ReqBuildProof(_,_,_,loc,s)) ->
+      let time1 =
+        try float_of_string (Aux_file.get !hints loc "proof_build_time")
+        with Not_found -> 0.0 in
+      let time2 =
+        try float_of_string (Aux_file.get !hints loc "proof_check_time")
+        with Not_found -> 0.0 in
+      s,max (time1 +. time2) 0.0001,i) 0 l
 
   open Interface
 
@@ -833,23 +871,23 @@ end = struct (* {{{ *)
       TQueue.wait_until_n_are_waiting_and_queue_empty
         (SlavesPool.n_slaves ()) queue
 
-  let build_proof ~exn_info:(id,valid as exn_info) ~start ~stop ~name =
+  let build_proof ~loc ~exn_info:(id,valid as exn_info) ~start ~stop ~name =
     let cancel_switch = ref false in
     if SlavesPool.is_empty () then
       if !Flags.compilation_mode = Flags.BuildVi then begin
         let force () : Entries.proof_output list Future.assignement =
-          try `Val (build_proof_here_core stop ()) with e -> `Exn e in
+          try `Val (build_proof_here_core loc stop ()) with e -> `Exn e in
         let f,assign = Future.create_delegate ~force (State.exn_on id ~valid) in
         TQueue.push queue
-          (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,name));
+          (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,loc,name));
         f, cancel_switch
       end else
-        build_proof_here exn_info stop, cancel_switch
+        build_proof_here exn_info loc stop, cancel_switch
     else 
       let f, assign = Future.create_delegate (State.exn_on id ~valid) in
       Pp.feedback (Interface.InProgress 1);
       TQueue.push queue
-        (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,name));
+        (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,loc,name));
       f, cancel_switch
 
   exception RemoteException of std_ppcmds
@@ -882,13 +920,13 @@ end = struct (* {{{ *)
           let rec loop () =
             let response = unmarshal_response ic in
             match task, response with
-            | TaskBuildProof(_,_,_, assign,_,_), RespBuiltProof pl ->
+            | TaskBuildProof(_,_,_, assign,_,_,_), RespBuiltProof pl ->
                 assign (`Val pl);
                 (* We restart the slave, to avoid memory leaks.  We could just
                    Pp.feedback (Interface.InProgress ~-1) *)
                 last_task := None;
                 raise KillRespawn
-            | TaskBuildProof(_,_,_, assign,_,_), RespError (err_id,valid,e) ->
+            | TaskBuildProof(_,_,_, assign,_,_,_), RespError (err_id,valid,e) ->
                 let e = Stateid.add ~valid (RemoteException e) err_id in
                 assign (`Exn e);
                 (* We restart the slave, to avoid memory leaks.  We could just
@@ -920,8 +958,8 @@ end = struct (* {{{ *)
             msg_warning(strbrk("Marshalling error: "^s^". "^
               "The system state could not be sent to the slave process. "^
               "Falling back to local, lazy, evaluation."));
-            let TaskBuildProof (exn_info, _, stop, assign,_,_) = task in
-            assign(`Comp(build_proof_here exn_info stop));
+            let TaskBuildProof (exn_info, _, stop, assign,_,loc,_) = task in
+            assign(`Comp(build_proof_here exn_info loc stop));
             Pp.feedback (Interface.InProgress ~-1)
         | (Sys_error _ | Invalid_argument _ | End_of_file | KillRespawn) as e ->
             raise e (* we pass the exception to the external handler *)
@@ -949,8 +987,8 @@ end = struct (* {{{ *)
         (match !last_task with
         | Some task ->
             msg_warning(strbrk "Falling back to local, lazy, evaluation.");
-            let TaskBuildProof (exn_info, _, stop, assign,_,_) = task in
-            assign(`Comp(build_proof_here exn_info stop));
+            let TaskBuildProof (exn_info, _, stop, assign,_,loc,_) = task in
+            assign(`Comp(build_proof_here exn_info loc stop));
             Pp.feedback (Interface.InProgress ~-1);
         | None -> ());
         close_in ic;
@@ -1054,14 +1092,6 @@ end = struct (* {{{ *)
     tasks
 
 end (* }}} *)
-
-let hints = ref Aux_file.empty_aux_file
-let set_compilation_hints h = hints := h
-let get_hint_ctx loc =
-  let s = Aux_file.get !hints loc "context_used" in
-  let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") s) in
-  let ids = List.map (fun id -> Loc.ghost, id) ids in
-  ids
 
 (* Runs all transactions needed to reach a state *)
 module Reach : sig
@@ -1181,17 +1211,17 @@ let known_state ?(redefine_qed=false) ~cache id =
                 | VtKeep, { VCS.kind = `Edit _ }, Some (ofp, cancel) ->
                     assert(redefine_qed = true);
                     VCS.create_cluster nodes ~tip:id;
-                    let fp, cancel =
-                      Slaves.build_proof ~exn_info:(id,eop) ~start ~stop:eop
+                    let fp, cancel = Slaves.build_proof
+                        ~loc:x.loc ~exn_info:(id,eop) ~start ~stop:eop
                         ~name:(String.concat " " (List.map Id.to_string ids)) in
                     Future.replace ofp fp;
                     qed.fproof <- Some (fp, cancel)
                 | VtKeep, { VCS.kind = `Proof _ }, Some _ -> assert false
                 | VtKeep, { VCS.kind = `Proof _ }, None ->
                     reach ~cache:`Shallow start;
-                    let fp, cancel =
-                      Slaves.build_proof ~exn_info:(id,eop) ~start ~stop:eop
-                        ~name:(String.concat " " (List.map Id.to_string ids)) in
+                    let fp, cancel = Slaves.build_proof
+                      ~loc:x.loc ~exn_info:(id,eop) ~start ~stop:eop
+                      ~name:(String.concat " " (List.map Id.to_string ids)) in
                     qed.fproof <- Some (fp, cancel);
                     let proof =
                       Proof_global.close_future_proof ~feedback_id:id fp in
@@ -1459,6 +1489,8 @@ let join () =
 
 type tasks = Slaves.tasks
 let dump () = Slaves.dump ()
+let check_task tasks i = Slaves.check_task tasks i
+let info_tasks tasks = Slaves.info_tasks tasks
 
 let merge_proof_branch qast keep brname =
   let brinfo = VCS.get_branch brname in
@@ -1917,6 +1949,7 @@ let show_script ?proof () =
     let indented_cmds = List.rev (indented_cmds) in
     msg_notice (v 0 (Pp.prlist_with_sep Pp.fnl (fun x -> x) indented_cmds))
   with Proof_global.NoCurrentProof -> ()
+  | Vcs_aux.Expired -> ()
 
 let () = Vernacentries.show_script := show_script
 

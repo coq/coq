@@ -238,6 +238,33 @@ let get_host_port opt s =
   | [host; port] -> Some (host, int_of_string port)
   | _ -> prerr_endline ("Error: host:port expected after option "^opt); exit 1
 
+let get_task_list s = List.map int_of_string (Str.split (Str.regexp ",") s)
+
+let vi_tasks = ref []
+
+let add_vi_task f =
+  set_batch_mode ();
+  Flags.make_silent true;
+  vi_tasks := f :: !vi_tasks
+
+let check_vi_tasks () = List.iter Vi_checking.check_vi (List.rev !vi_tasks)
+
+let vi_files = ref []
+let vi_files_j = ref 0
+
+let add_vi_file f =
+  set_batch_mode ();
+  Flags.make_silent true;
+  vi_files := f :: !vi_files
+let set_vi_checking_j j = vi_files_j := int_of_string j
+
+let is_not_dash_option = function
+  | Some f when String.length f > 0 && f.[0] <> '-' -> true
+  | _ -> false
+
+let schedule_vi_checking () =
+  Vi_checking.schedule_vi_checking !vi_files_j !vi_files
+
 let parse_args arglist =
   let args = ref arglist in
   let extras = ref [] in
@@ -245,9 +272,13 @@ let parse_args arglist =
   | [] -> List.rev !extras
   | opt :: rem ->
     args := rem;
-    let next () = match rem with
+    let next () = match !args with
       | x::rem -> args := rem; x
       | [] -> error_missing_arg opt
+    in
+    let peek_next () = match !args with
+      | x::_ -> Some x
+      | [] -> None
     in
     begin match opt with
 
@@ -266,6 +297,16 @@ let parse_args arglist =
       | d :: p :: rem -> set_rec_include d p; args := rem
       | _ -> error_missing_arg opt
       end
+    
+    (* Options with two arg *)
+    |"-check-vi-tasks" ->
+        let tno = get_task_list (next ()) in
+        let tfile = next () in
+        add_vi_task (tno,tfile)
+    |"-schedule-vi-checking" ->
+        set_vi_checking_j (next ());
+        add_vi_file (next ());
+        while is_not_dash_option (peek_next ()) do add_vi_file (next ()); done
 
     (* Options with one arg *)
     |"-coqlib" -> Flags.coqlib_spec:=true; Flags.coqlib:=(next ())
@@ -396,6 +437,8 @@ let init arglist =
       load_rcfile();
       load_vernacular ();
       compile_files ();
+      schedule_vi_checking ();
+      check_vi_tasks ();
       outputstate ()
     with any ->
       flush_all();

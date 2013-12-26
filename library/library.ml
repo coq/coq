@@ -394,6 +394,18 @@ let intern_from_file f =
   close_in ch;
   library
 
+let load_library_todo f =
+  let paths = Loadpath.get_paths () in
+  let _, longf =
+    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
+  let f = longf^"i" in
+  let ch = System.with_magic_number_check raw_intern_library f in
+  let _ = System.skip_in_segment f ch in
+  let tasks, _, _ = System.marshal_in_segment f ch in
+  match tasks with
+  | Some a -> a, longf
+  | None -> errorlabstrm "load_library_todo" (str"not a .vi file")
+
 let rec intern_library needed (dir, f) =
   (* Look if in the current logical environment *)
   try find_library dir, needed

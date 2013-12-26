@@ -44,6 +44,9 @@ val join : unit -> unit
 type tasks
 val dump : unit -> tasks
 
+val check_task : tasks -> int -> unit
+val info_tasks : tasks -> (string * float * int) list
+
 (* Id of the tip of the current branch *)
 val get_current_state : unit -> Stateid.t
 
