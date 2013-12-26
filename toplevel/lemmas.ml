@@ -186,7 +186,7 @@ let save id const do_guard (locality,kind) hook =
 	Autoinstance.search_declaration (ConstRef kn);
 	(locality, ConstRef kn) in
   definition_message id;
-  Ephemeron.iter_opt hook (fun f -> f l r)
+  hook l r
 
 let default_thm_id = Id.of_string "Unnamed_thm"
 
@@ -293,7 +293,7 @@ let admit hook () =
       str "declared as an axiom.")
   in
   let () = assumption_message id in
-  Ephemeron.iter_opt hook (fun f -> f Global (ConstRef kn))
+  hook Global (ConstRef kn)
 
 (* Starting a goal *)
 
@@ -307,21 +307,22 @@ let get_proof proof do_guard hook opacity =
   in
   id,{const with const_entry_opaque = opacity},do_guard,persistence,hook
 
+let standard_proof_terminator compute_guard hook =
+  let open Proof_global in function
+  | Admitted ->
+      admit hook ();
+      Pp.feedback Interface.AddedAxiom
+  | Proved (is_opaque,idopt,proof) ->
+      let proof = get_proof proof compute_guard hook is_opaque in
+      begin match idopt with
+      | None -> save_named proof
+      | Some ((_,id),None) -> save_anonymous proof id
+      | Some ((_,id),Some kind) -> 
+          save_anonymous_with_strength proof kind id
+      end
+
 let start_proof id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
-  let hook = Ephemeron.create hook in
-  let terminator = let open Proof_global in function
-    | Admitted ->
-        admit hook ();
-        Pp.feedback Interface.AddedAxiom
-    | Proved (is_opaque,idopt,proof) ->
-        let proof = get_proof proof compute_guard hook is_opaque in
-        begin match idopt with
-        | None -> save_named proof
-        | Some ((_,id),None) -> save_anonymous proof id
-        | Some ((_,id),Some kind) -> 
-            save_anonymous_with_strength proof kind id
-        end
-  in
+  let terminator = standard_proof_terminator compute_guard hook in
   let sign = 
     match sign with
     | Some sign -> sign

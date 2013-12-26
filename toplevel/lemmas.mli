@@ -31,6 +31,10 @@ val start_proof_with_initialization :
   (Id.t * (types * (Name.t list * Impargs.manual_explicitation list))) list
   -> int list option -> unit declaration_hook -> unit
 
+val standard_proof_terminator :
+  Proof_global.lemma_possible_guards -> unit declaration_hook ->
+    Proof_global.proof_terminator
+
 (** {6 ... } *)
 
 (** A hook the next three functions pass to cook_proof *)
