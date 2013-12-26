@@ -316,6 +316,20 @@ let standard_proof_terminator compute_guard hook =
           save_anonymous_with_strength proof kind id
       end
 
+let standard_proof_terminator compute_guard hook =
+  let open Proof_global in function
+  | Admitted ->
+      admit hook ();
+      Pp.feedback Interface.AddedAxiom
+  | Proved (is_opaque,idopt,proof) ->
+      let proof = get_proof proof compute_guard hook is_opaque in
+      begin match idopt with
+      | None -> save_named proof
+      | Some ((_,id),None) -> save_anonymous proof id
+      | Some ((_,id),Some kind) -> 
+          save_anonymous_with_strength proof kind id
+      end
+
 let start_proof id kind ?sign c ?init_tac ?(compute_guard=[]) hook =
   let terminator = standard_proof_terminator compute_guard hook in
   let sign = 
