@@ -1529,7 +1529,8 @@ let handle_failure e vcs tty =
   | None ->
       VCS.restore vcs;
       VCS.print ();
-      if tty then begin (* Hopefully the 1 to last state is valid *)
+      if tty && interactive () = `Yes then begin
+        (* Hopefully the 1 to last state is valid *)
         Backtrack.back_safe (); 
         VCS.checkout_shallowest_proof_branch ();
       end;
@@ -1539,7 +1540,8 @@ let handle_failure e vcs tty =
   | Some (safe_id, id) ->
       prerr_endline ("Failed at state " ^ Stateid.to_string id);
       VCS.restore vcs;
-      if tty then begin (* We stay on a valid state *)
+      if tty && interactive () = `Yes then begin
+        (* We stay on a valid state *)
         Backtrack.backto safe_id;
         VCS.checkout_shallowest_proof_branch ();
         Reach.known_state ~cache:(interactive ()) safe_id;
@@ -1847,7 +1849,9 @@ let interp verb (_,e as lexpr) =
   let clas = classify_vernac e in
   let rc = process_transaction ~tty:true verb clas lexpr in
   if rc <> `Ok then anomaly(str"tty loop can't be mixed with the STM protocol");
-  if interactive () = `Yes then
+  if interactive () = `Yes ||
+     (!Flags.async_proofs_mode = Flags.APoff &&
+      !Flags.compilation_mode = Flags.BuildVo) then
     let vcs = VCS.backup () in
     try finish ()
     with e ->
