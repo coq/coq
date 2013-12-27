@@ -725,7 +725,7 @@ let feedback_global loc ref =
     Pp.feedback (Interface.GlobRef (loc, filepath, modpath, ident, ty))
 
 let dump_extended_global loc = function
-  | TrueGlobal ref -> feedback_global loc ref; Dumpglob.add_glob loc ref
+  | TrueGlobal ref -> (*feedback_global loc ref;*) Dumpglob.add_glob loc ref
   | SynDef sp -> Dumpglob.add_glob_kn loc sp
 
 let intern_extended_global_of_qualid (loc,qid) =
