@@ -55,17 +55,21 @@ let subst_const_def sub def = match def with
   | OpaqueDef lc ->
       OpaqueDef (Future.chain ~pure:true lc (subst_lazy_constr sub))
 
-(* TODO : the native compiler seems to rely on a fresh (ref NotLinked)
-   being created at each substitution. Quite ugly... For the moment,
-   do not try to be clever here with memory sharing :-( *)
-
-let subst_const_body sub cb = {
-  const_hyps = (match cb.const_hyps with [] -> [] | _ -> assert false);
-  const_body = subst_const_def sub cb.const_body;
-  const_type = subst_const_type sub cb.const_type;
-  const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
-  const_constraints = cb.const_constraints;
-  const_inline_code = cb.const_inline_code }
+let subst_const_body sub cb =
+  assert (List.is_empty cb.const_hyps); (* we're outside sections *)
+  if is_empty_subst sub then cb
+  else
+    let body' = subst_const_def sub cb.const_body in
+    let type' = subst_const_type sub cb.const_type in
+    if body' == cb.const_body && type' == cb.const_type then cb
+    else
+      { const_hyps = [];
+        const_body = body';
+        const_type = type';
+        const_body_code =
+          Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
+        const_constraints = cb.const_constraints;
+        const_inline_code = cb.const_inline_code }
 
 (** {7 Hash-consing of constants } *)
 
