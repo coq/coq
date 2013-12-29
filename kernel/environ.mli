@@ -117,6 +117,8 @@ val reset_with_named_context : named_context_val -> env -> env
   {6 Add entries to global environment } *)
 
 val add_constant : constant -> constant_body -> env -> env
+val add_constant_key : constant -> constant_body -> Pre_env.link_info ref ->
+  env -> env
 
 (** Looks up in the context of global constant names 
    raises [Not_found] if the required path is not found *)
@@ -136,7 +138,7 @@ val constant_type      : env -> constant -> constant_type
 val constant_opt_value : env -> constant -> constr option
 
 (** {5 Inductive types } *)
-
+val add_mind_key : mutual_inductive -> Pre_env.mind_key -> env -> env
 val add_mind : mutual_inductive -> mutual_inductive_body -> env -> env
 
 (** Looks up in the context of global inductive names 
@@ -229,4 +231,5 @@ val unregister : env -> field -> env
 
 val register : env -> field -> Retroknowledge.entry -> env
 
-
+(** Native compiler *)
+val no_link_info : unit -> Pre_env.link_info ref

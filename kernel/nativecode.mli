@@ -51,14 +51,10 @@ val empty_updates : code_location_updates
 val register_native_file : string -> unit
 
 val compile_constant_field : env -> string -> constant ->
-  global list * code_location_updates ->
-  constant_body ->
-    global list * code_location_updates
+  global list -> constant_body -> global list
 
 val compile_mind_field : string -> module_path -> label ->
-  global list * code_location_updates ->
-  mutual_inductive_body ->
-    global list * code_location_updates
+  global list -> mutual_inductive_body -> global list
 
 val mk_conv_code : env -> string -> constr -> constr -> linkable_code
 val mk_norm_code : env -> string -> constr -> linkable_code
@@ -66,6 +62,8 @@ val mk_norm_code : env -> string -> constr -> linkable_code
 val mk_library_header : dir_path -> global list
 
 val mod_uid_of_dirpath : dir_path -> string
+
+val link_info_of_dirpath : dir_path -> link_info ref
 
 val update_locations : code_location_updates -> unit
 

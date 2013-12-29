@@ -157,13 +157,18 @@ let fold_named_context_reverse f ~init env =
 
 let lookup_constant = lookup_constant
 
-let add_constant kn cs env =
+let no_link_info () = ref NotLinked
+
+let add_constant_key kn cb linkinfo env =
   let new_constants =
-    Cmap_env.add kn (cs,ref None) env.env_globals.env_constants in
+    Cmap_env.add kn (cb,(linkinfo, ref None)) env.env_globals.env_constants in
   let new_globals =
     { env.env_globals with
 	env_constants = new_constants } in
   { env with env_globals = new_globals }
+
+let add_constant kn cb env =
+  add_constant_key kn cb (no_link_info ()) env
 
 (* constant_type gives the type of a constant *)
 let constant_type env kn =
@@ -192,13 +197,16 @@ let evaluable_constant cst env =
 
 (* Mutual Inductives *)
 let lookup_mind = lookup_mind
-  
-let add_mind kn mib env =
-  let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
+
+let add_mind_key kn mind_key env =
+  let new_inds = Mindmap_env.add kn mind_key env.env_globals.env_inductives in
   let new_globals =
     { env.env_globals with
 	env_inductives = new_inds } in
   { env with env_globals = new_globals }
+
+let add_mind kn mib env =
+  let li = no_link_info () in add_mind_key kn (mib, li) env
 
 (* Universe constraints *)
 

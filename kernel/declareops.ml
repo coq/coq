@@ -65,7 +65,6 @@ let subst_const_body sub cb = {
   const_type = subst_const_type sub cb.const_type;
   const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
   const_constraints = cb.const_constraints;
-  const_native_name = ref NotLinked;
   const_inline_code = cb.const_inline_code }
 
 (** {7 Hash-consing of constants } *)
@@ -201,8 +200,7 @@ let subst_mind sub mib =
     else
       { mib with
         mind_params_ctxt = params';
-        mind_packets = packets';
-        mind_native_name = ref NotLinked }
+        mind_packets = packets' }
 
 (** {6 Hash-consing of inductive declarations } *)
 

@@ -686,8 +686,7 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
       mind_nparams_rec = nmr;
       mind_params_ctxt = params;
       mind_packets = packets;
-      mind_constraints = cst;
-      mind_native_name = ref NotLinked
+      mind_constraints = cst
     }
 
 (************************************************************************)

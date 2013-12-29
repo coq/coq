@@ -679,9 +679,7 @@ let export senv dir =
   let ast, values =
     if !Flags.no_native_compiler then [], [||]
     else
-      let ast, values, upds = Nativelibrary.dump_library mp dir senv.env str in
-      Nativecode.update_locations upds;
-      ast, values
+      Nativelibrary.dump_library mp dir senv.env str
   in
   let lib = {
     comp_name = dir;
@@ -700,7 +698,11 @@ let import lib digest senv =
   let env = Environ.add_constraints mb.mod_constraints senv.env in
   (mp, lib.comp_natsymbs),
   { senv with
-    env = Modops.add_module mb env;
+    env =
+      (let linkinfo =
+	 Nativecode.link_info_of_dirpath lib.comp_name
+       in
+       Modops.add_linked_module mb linkinfo env);
     modresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.modresolver;
     imports = (lib.comp_name,digest)::senv.imports;
     loads = (mp,mb)::senv.loads }

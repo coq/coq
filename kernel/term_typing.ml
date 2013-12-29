@@ -174,7 +174,6 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
     const_type = typ;
     const_body_code = Cemitcodes.from_val (compile_constant_body env def);
     const_constraints = cst;
-    const_native_name = ref NotLinked;
     const_inline_code = inline_code }
 
 (*s Global and local constant declaration. *)

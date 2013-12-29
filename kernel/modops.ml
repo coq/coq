@@ -302,27 +302,36 @@ let add_retroknowledge mp =
 
 (** {6 Adding a module in the environment } *)
 
-let rec add_structure mp sign resolver env =
+let rec add_structure mp sign resolver linkinfo env =
   let add_one env (l,elem) = match elem with
     |SFBconst cb ->
       let c = constant_of_delta_kn resolver (KerName.make2 mp l) in
-      Environ.add_constant c cb env
+      Environ.add_constant_key c cb linkinfo env
     |SFBmind mib ->
       let mind = mind_of_delta_kn resolver (KerName.make2 mp l) in
-      Environ.add_mind mind mib env
-    |SFBmodule mb -> add_module mb env (* adds components as well *)
+      Environ.add_mind_key mind (mib,linkinfo) env
+    |SFBmodule mb -> add_module mb linkinfo env (* adds components as well *)
     |SFBmodtype mtb -> Environ.add_modtype mtb env
   in
   List.fold_left add_one env sign
 
-and add_module mb env =
+and add_module mb linkinfo env =
   let mp = mb.mod_mp in
   let env = Environ.shallow_add_module mb env in
   match mb.mod_type with
   |NoFunctor struc ->
     add_retroknowledge mp mb.mod_retroknowledge
-      (add_structure mp struc mb.mod_delta env)
+      (add_structure mp struc mb.mod_delta linkinfo env)
   |MoreFunctor _ -> env
+
+let add_linked_module mb linkinfo env =
+  add_module mb linkinfo env
+
+let add_structure mp sign resolver env =
+  add_structure mp sign resolver (no_link_info ()) env
+
+let add_module mb env =
+  add_module mb (no_link_info ()) env
 
 let add_module_type mp mtb env =
   add_module (module_body_of_type mp mtb) env

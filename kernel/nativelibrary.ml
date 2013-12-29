@@ -24,7 +24,7 @@ let rec translate_mod prefix mp env mod_expr acc =
       List.fold_left (translate_field prefix mp env') acc struc
   | MoreFunctor _ -> acc
 
-and translate_field prefix mp env (code, upds as acc) (l,x) =
+and translate_field prefix mp env acc (l,x) =
   match x with
   | SFBconst cb ->
       let con = make_con mp empty_dirpath l in
@@ -45,13 +45,13 @@ let dump_library mp dp env mod_expr =
       let t0 = Sys.time () in
       clear_global_tbl ();
       clear_symb_tbl ();
-      let mlcode, upds =
-        List.fold_left (translate_field prefix mp env) ([],empty_updates) struc
+      let mlcode =
+        List.fold_left (translate_field prefix mp env) [] struc
       in
       let t1 = Sys.time () in
       let time_info = Format.sprintf "Time spent generating this code: %.5fs" (t1-.t0) in
       let mlcode = add_header_comment (List.rev mlcode) time_info in
-      mlcode, get_symbols_tbl (), upds
+      mlcode, get_symbols_tbl ()
   | _ -> assert false
 
 

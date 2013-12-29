@@ -1169,6 +1169,9 @@ let string_of_dirpath s = "N"^string_of_dirpath s
 
 let mod_uid_of_dirpath dir = string_of_dirpath (repr_dirpath dir)
 
+let link_info_of_dirpath dir =
+  ref (Linked (mod_uid_of_dirpath dir ^ ".", false))
+
 let string_of_name x =
   match x with
     | Anonymous -> "anonymous" (* assert false *)
@@ -1540,15 +1543,10 @@ let compile_mind prefix ~interactive mb mind stack =
     in
     Array.fold_left_i add_construct (gtype::accu::stack) ob.mind_reloc_tbl
   in
-  let name =
-    if interactive then LinkedInteractive (prefix, false)
-    else Linked (prefix, false)
-  in
-  let upd = (mb.mind_native_name, name) in
-  Array.fold_left_i f stack mb.mind_packets, upd
+  Array.fold_left_i f stack mb.mind_packets
 
 type code_location_update =
-    Declarations.native_name ref * Declarations.native_name
+    link_info ref * link_info
 type code_location_updates =
   code_location_update Mindmap_env.t * code_location_update Cmap_env.t
 
@@ -1558,12 +1556,19 @@ let empty_updates = Mindmap_env.empty, Cmap_env.empty
 
 let compile_mind_deps env prefix ~interactive
     (comp_stack, (mind_updates, const_updates) as init) mind =
-  let mib = lookup_mind mind env in
-  if is_code_loaded ~interactive mib.mind_native_name
+  let mib,nameref = lookup_mind_key mind env in
+  if is_code_loaded ~interactive nameref
     || Mindmap_env.mem mind mind_updates
   then init
   else
-    let comp_stack, upd = compile_mind prefix ~interactive mib mind comp_stack in
+    let comp_stack =
+      compile_mind prefix ~interactive mib mind comp_stack
+    in
+    let name =
+      if interactive then LinkedInteractive (prefix, false)
+      else Linked (prefix, false)
+    in
+    let upd = (nameref, name) in
     let mind_updates = Mindmap_env.add mind upd mind_updates in
     (comp_stack, (mind_updates, const_updates))
 
@@ -1576,9 +1581,9 @@ let rec compile_deps env prefix ~interactive init t =
   | Ind (mind,_) -> compile_mind_deps env prefix ~interactive init mind
   | Const c ->
       let c = get_allias env c in
-      let cb = lookup_constant c env in
+      let cb,(nameref,_) = lookup_constant_key c env in
       let (_, (_, const_updates)) = init in
-      if is_code_loaded ~interactive cb.const_native_name
+      if is_code_loaded ~interactive nameref
         || (Cmap_env.mem c const_updates)
       then init
       else
@@ -1588,7 +1593,7 @@ let rec compile_deps env prefix ~interactive init t =
       in
       let code, name = compile_constant env prefix ~interactive c cb.const_body in
       let comp_stack = code@comp_stack in
-      let const_updates = Cmap_env.add c (cb.const_native_name, name) const_updates in
+      let const_updates = Cmap_env.add c (nameref, name) const_updates in
       comp_stack, (mind_updates, const_updates)
   | Construct ((mind,_),_) -> compile_mind_deps env prefix ~interactive init mind
   | Case (ci, p, c, ac) ->
@@ -1597,31 +1602,15 @@ let rec compile_deps env prefix ~interactive init t =
       fold_constr (compile_deps env prefix ~interactive) init t
   | _ -> fold_constr (compile_deps env prefix ~interactive) init t
 
-let compile_constant_field env prefix con (code, (mupds, cupds)) cb =
-  let acc = (code, (mupds, cupds)) in
-  match cb.const_body with
-  | Def t ->
-    let t = Lazyconstr.force t in
-    let (code, (mupds, cupds)) =
-      compile_deps env prefix ~interactive:false acc t
-    in
-    let (gl, name) =
+let compile_constant_field env prefix con acc cb =
+    let (gl, _) =
       compile_constant ~interactive:false env prefix con cb.const_body
     in
-    let cupds = Cmap_env.add con (cb.const_native_name, name) cupds in
-    gl@code, (mupds, cupds)
-  | _ ->
-    let (gl, name) =
-      compile_constant env prefix ~interactive:false con cb.const_body
-    in
-    let cupds = Cmap_env.add con (cb.const_native_name, name) cupds in
-    gl@code, (mupds, cupds)
+    gl@acc
 
-let compile_mind_field prefix mp l (code, (mupds, cupds)) mb =
+let compile_mind_field prefix mp l acc mb =
   let mind = MutInd.make2 mp l in
-  let code, upd = compile_mind prefix ~interactive:false mb mind code in
-  let mupds = Mindmap_env.add mind upd mupds in
-  code, (mupds, cupds)
+  compile_mind prefix ~interactive:false mb mind acc
 
 let mk_open s = Gopen s
 

@@ -40,14 +40,6 @@ type constant_def =
   | Def of Lazyconstr.constr_substituted
   | OpaqueDef of Lazyconstr.lazy_constr Future.computation
 
-(** Linking information for the native compiler. The boolean flag indicates if
-  the term is protected by a lazy tag *)
-
-type native_name =
-  | Linked of string * bool
-  | LinkedInteractive of string * bool
-  | NotLinked
-
 type constant_constraints = Univ.constraints Future.computation
 
 type constant_body = {
@@ -56,7 +48,6 @@ type constant_body = {
     const_type : constant_type;
     const_body_code : Cemitcodes.to_patch_substituted;
     const_constraints : constant_constraints;
-    const_native_name : native_name ref;
     const_inline_code : bool }
 
 type side_effect =
@@ -149,11 +140,6 @@ type mutual_inductive_body = {
     mind_params_ctxt : rel_context;  (** The context of parameters (includes let-in declaration) *)
 
     mind_constraints : Univ.constraints;  (** Universes constraints enforced by the inductive declaration *)
-
-(** {8 Data for native compilation } *)
-
-    mind_native_name : native_name ref; (** status of the code (linked or not, and where) *)
-
 
   }
 
