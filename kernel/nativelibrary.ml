@@ -57,6 +57,6 @@ let dump_library mp dp env mod_expr =
 
 let compile_library dir code load_path f =
   let header = mk_library_header dir in
-  let ml_filename = f^".ml" in
+  let ml_filename = f^".native" in
   write_ml_code ml_filename ~header code;
   fst (call_compiler ml_filename load_path)

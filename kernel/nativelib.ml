@@ -46,7 +46,7 @@ let rt1 = ref (dummy_value ())
 let rt2 = ref (dummy_value ())
 
 let get_ml_filename () =
-  let filename = Filename.temp_file "Coq_native" ".ml" in
+  let filename = Filename.temp_file "Coq_native" ".native" in
   let prefix = Filename.chop_extension (Filename.basename filename) ^ "." in
   filename, prefix
 
@@ -64,13 +64,11 @@ let call_compiler ml_filename load_path =
   let link_filename = f ^ ".cmo" in
   let link_filename = Dynlink.adapt_filename link_filename in
   let comp_cmd =
-    Format.sprintf "%s -%s -o %s -rectypes -w a -I %s %s"
+    Format.sprintf "%s -%s -o %s -rectypes -w a -I %s -impl %s"
       compiler_name (if Dynlink.is_native then "shared" else "c")
       (Filename.quote link_filename) include_dirs (Filename.quote ml_filename)
   in
-  let res = Sys.command comp_cmd in
-  Sys.rename (f^".ml") (f^".native");
-  res, link_filename
+  Sys.command comp_cmd, link_filename
 
 let compile ml_filename code =
   write_ml_code ml_filename code;
