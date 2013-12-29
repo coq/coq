@@ -15,8 +15,8 @@ open Declarations
 (** The type of environments. *)
 
 type link_info =
-  | Linked of string * bool
-  | LinkedInteractive of string * bool
+  | Linked of string
+  | LinkedInteractive of string
   | NotLinked
 
 type key = int option ref

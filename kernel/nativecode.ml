@@ -1170,7 +1170,7 @@ let string_of_dirpath s = "N"^string_of_dirpath s
 let mod_uid_of_dirpath dir = string_of_dirpath (repr_dirpath dir)
 
 let link_info_of_dirpath dir =
-  ref (Linked (mod_uid_of_dirpath dir ^ ".", false))
+  ref (Linked (mod_uid_of_dirpath dir ^ "."))
 
 let string_of_name x =
   match x with
@@ -1487,8 +1487,8 @@ let compile_constant env prefix ~interactive con body =
       let is_lazy = is_lazy t in
       let code = if is_lazy then mk_lazy code else code in
       let name =
-        if interactive then LinkedInteractive (prefix, is_lazy)
-        else Linked (prefix, is_lazy)
+        if interactive then LinkedInteractive prefix
+        else Linked prefix
       in
       let l = con_label con in
       let auxdefs,code = compile_with_fv env [] (Some l) code in
@@ -1499,8 +1499,8 @@ let compile_constant env prefix ~interactive con body =
   | _ -> 
       let i = push_symbol (SymbConst con) in
       [Glet(Gconstant ("",con), MLapp (MLprimitive Mk_const, [|get_const_code i|]))],
-      if interactive then LinkedInteractive (prefix, false)
-      else Linked (prefix, false)
+      if interactive then LinkedInteractive prefix
+      else Linked prefix
 
 let loaded_native_files = ref ([] : string list)
 
@@ -1513,10 +1513,10 @@ let register_native_file s =
 let is_code_loaded ~interactive name =
   match !name with
   | NotLinked -> false
-  | LinkedInteractive (s,_) ->
+  | LinkedInteractive s ->
       if (interactive && is_loaded_native_file s) then true
       else (name := NotLinked; false)
-  | Linked (s,_) ->
+  | Linked s ->
       if is_loaded_native_file s then true
       else (name := NotLinked; false)
 
@@ -1565,8 +1565,8 @@ let compile_mind_deps env prefix ~interactive
       compile_mind prefix ~interactive mib mind comp_stack
     in
     let name =
-      if interactive then LinkedInteractive (prefix, false)
-      else Linked (prefix, false)
+      if interactive then LinkedInteractive prefix
+      else Linked prefix
     in
     let upd = (nameref, name) in
     let mind_updates = Mindmap_env.add mind upd mind_updates in

@@ -27,12 +27,11 @@ open Declarations
 (* used by the VM. *)
 type key = int option ref
 
-(** Linking information for the native compiler. The boolean flag indicates if
-  the term is protected by a lazy tag. *)
+(** Linking information for the native compiler. *)
 
 type link_info =
-  | Linked of string * bool
-  | LinkedInteractive of string * bool
+  | Linked of string
+  | LinkedInteractive of string
   | NotLinked
 
 type constant_key = constant_body * (link_info ref * key)

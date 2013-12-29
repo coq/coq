@@ -14,7 +14,6 @@ open Pre_env
 open Nativevalues
 
 (** This file defines the lambda code generation phase of the native compiler *)
-      
 type lambda =
   | Lrel          of name * int 
   | Lvar          of identifier
@@ -90,15 +89,15 @@ let get_mind_prefix env mind =
    let _,name = lookup_mind_key mind env in
    match !name with
    | NotLinked -> ""
-   | Linked (s,_) -> s
-   | LinkedInteractive (s,_) -> s
+   | Linked s -> s
+   | LinkedInteractive s -> s
 
 let get_const_prefix env c =
    let _,(nameref,_) = lookup_constant_key c env in
    match !nameref with
    | NotLinked -> ""
-   | Linked (s,_) -> s
-   | LinkedInteractive (s,_) -> s
+   | Linked s -> s
+   | LinkedInteractive s -> s
     
 (* A generic map function *)
 
