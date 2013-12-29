@@ -47,8 +47,6 @@ let is_reset = function
 (* For coqtop -time, we display the position in the file,
    and a glimpse of the executed command *)
 
-let time = ref false
-
 let display_cmd_header loc com =
   let shorten s =
     try (String.sub s 0 30)^"..." with Invalid_argument _ -> s in
@@ -274,7 +272,7 @@ let rec vernac_com verbosely checknav (loc,com) =
       checknav loc com;
       if do_beautify () then pr_new_syntax loc (Some com);
       if !Flags.time then display_cmd_header loc com;
-      let com = if !time then VernacTime com else com in
+      let com = if !Flags.time then VernacTime com else com in
       interp com
     with reraise ->
       let reraise = Errors.push reraise in
