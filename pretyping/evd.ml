@@ -504,10 +504,8 @@ let has_undefined evd = not (EvMap.is_empty evd.undf_evars)
 
 let evars_reset_evd ?(with_conv_pbs=false) evd d =
   let conv_pbs = if with_conv_pbs then evd.conv_pbs else d.conv_pbs in
-  { evd with
-    metas = d.metas;
-    last_mods = d.last_mods;
-    conv_pbs; }
+  let last_mods = if with_conv_pbs then evd.last_mods else d.last_mods in
+  { evd with metas = d.metas; last_mods; conv_pbs; }
 
 let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
 
