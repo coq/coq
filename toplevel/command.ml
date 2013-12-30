@@ -620,8 +620,7 @@ let nf_evar_context sigma ctx =
 
 let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
-  let sigma = Evd.empty in
-  let evdref = ref (Evd.create_evar_defs sigma) in
+  let evdref = ref Evd.empty in
   let env = Global.env() in
   let _, ((env', binders_rel), impls) = interp_context_evars evdref env bl in
   let len = List.length binders_rel in
