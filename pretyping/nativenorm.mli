@@ -9,7 +9,11 @@ open Names
 open Term
 open Environ
 open Reduction
+open Evd
+open Nativelambda
 
 (** This module implements normalization by evaluation to OCaml code *)
 
-val native_norm : env -> constr -> types -> constr
+val evars_of_evar_map : evar_map -> evars
+
+val native_norm : env -> evars -> constr -> types -> constr

@@ -29,9 +29,10 @@ let cbv_vm env sigma c =
     error "vm_compute does not support existential variables.";
   Vnorm.cbv_vm env c ctyp
 
-let cbv_native env _ c =
-  let ctyp = (fst (Typeops.infer env c)).Environ.uj_type in
-  Nativenorm.native_norm env c ctyp
+let cbv_native env sigma c =
+  let ctyp = Retyping.get_type_of env sigma c in
+  let evars = Nativenorm.evars_of_evar_map sigma in
+  Nativenorm.native_norm env evars c ctyp
 
 let set_strategy_one ref l  =
   let k =
@@ -212,7 +213,8 @@ let reduction_of_red_expr env =
     let lp = out_with_occurrences lp in
     let nativefun _ env map c =
       let tpe = Retyping.get_type_of env map c in
-      Nativenorm.native_norm env c tpe
+      let evars = Nativenorm.evars_of_evar_map map in
+      Nativenorm.native_norm env evars c tpe
     in
     let redfun = contextually b lp nativefun in
     (redfun, NATIVEcast)

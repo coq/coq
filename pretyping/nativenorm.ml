@@ -21,8 +21,14 @@ open Nativecode
 open Inductiveops
 open Closure
 open Nativevalues
+open Nativelambda
 
 (** This module implements normalization by evaluation to OCaml code *)
+
+let evars_of_evar_map evd =
+  { evars_val = Evd.existential_opt_value evd;
+    evars_typ = Evd.existential_type evd;
+    evars_metas = Evd.meta_type evd }
 
 exception Find_at of int
 
@@ -215,9 +221,14 @@ and nf_accu_type env accu =
 
 and nf_args env accu t =
   let aux arg (t,l) = 
-	let _,dom,codom = try decompose_prod env t with DestKO -> exit 123 in
-	let c = nf_val env arg dom in
-	(subst1 c codom, c::l)
+    let _,dom,codom =
+      try decompose_prod env t with
+	DestKO ->
+	Errors.anomaly
+	  (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
+    in
+    let c = nf_val env arg dom in
+    (subst1 c codom, c::l)
   in
   let t,l = List.fold_right aux (args_of_accu accu) (t,[]) in
   t, List.rev l
@@ -227,7 +238,12 @@ and nf_bargs env b t =
   let len = block_size b in
   Array.init len
     (fun i ->
-      let _,dom,codom = try decompose_prod env !t with DestKO -> exit 124 in
+      let _,dom,codom =
+	try decompose_prod env !t with
+	  DestKO ->
+	  Errors.anomaly
+	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
+      in
       let c = nf_val env (block_field b i) dom in
       t := subst1 c codom; c)
 
@@ -244,9 +260,11 @@ and nf_atom env atom =
       let env = push_rel (n,None,dom) env in
       let codom = nf_type env (codom vn) in
       mkProd(n,dom,codom)
+  | Ameta (mv,_) -> mkMeta mv
+  | Aevar (ev,_) -> mkEvar ev
   | _ -> fst (nf_atom_type env atom)
 
-and nf_atom_type env atom = 
+and nf_atom_type env atom =
   match atom with
   | Arel i ->
       let n = (nb_rel env - i) in
@@ -308,13 +326,24 @@ and nf_atom_type env atom =
       let env = push_rel (n,None,dom) env in
       let codom,s2 = nf_type_sort env (codom vn) in
       mkProd(n,dom,codom), mkSort (sort_of_product env s1 s2)
+  | Aevar(ev,ty) ->
+     let ty = nf_type env ty in
+     mkEvar ev, ty
+  | Ameta(mv,ty) ->
+     let ty = nf_type env ty in
+     mkMeta mv, ty
 
 and  nf_predicate env ind mip params v pT =
   match kind_of_value v, kind_of_term pT with
   | Vfun f, Prod _ ->
       let k = nb_rel env in
       let vb = f (mk_rel_accu k) in
-      let name,dom,codom = try decompose_prod env pT with DestKO -> exit 121 in
+      let name,dom,codom =
+	try decompose_prod env pT with
+	  DestKO ->
+	  Errors.anomaly
+	    (Pp.strbrk "Returned a functional value in a type not recognized as a product type.")
+      in
       let dep,body = 
 	nf_predicate (push_rel (name,None,dom) env) ind mip params vb codom in
       dep, mkLambda(name,dom,body)
@@ -330,7 +359,7 @@ and  nf_predicate env ind mip params v pT =
       true, mkLambda(name,dom,body)
   | _, _ -> false, nf_type env v
 
-let native_norm env c ty =  
+let native_norm env sigma c ty =  
   if !Flags.no_native_compiler then
     error "Native_compute reduction has been disabled"
   else
@@ -340,7 +369,7 @@ let native_norm env c ty =
   Format.eprintf "Numbers of free variables (rel): %i\n" (List.length vl2);
   *)
   let ml_filename, prefix = Nativelib.get_ml_filename () in
-  let code, upd = mk_norm_code penv prefix c in
+  let code, upd = mk_norm_code penv sigma prefix c in
   match Nativelib.compile ml_filename code with
     | 0,fn ->
         if !Flags.debug then Pp.msg_debug (Pp.str "Running norm ...");

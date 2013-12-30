@@ -709,17 +709,18 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 				   str "unresolved arguments remain.")
 	    | NATIVEcast ->
  	      let cj = pretype empty_tycon env evdref lvar c in
-	      let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tj.utj_val in
-		if not (occur_existential cty || occur_existential tval) then
-		  begin 
-		    try 
-		      ignore (Nativeconv.native_conv Reduction.CUMUL env cty tval); cj
-		    with Reduction.NotConvertible -> 
-		      error_actual_type_loc loc env !evdref cj tval 
-                        (ConversionFailed (env,cty,tval))
-		  end
-		else user_err_loc (loc,"",str "Cannot check cast with native compiler: " ++
-				   str "unresolved arguments remain.")
+	      let cty = nf_evar !evdref cj.uj_type and
+		  tval = nf_evar !evdref tj.utj_val in
+	      let evars = Nativenorm.evars_of_evar_map !evdref in
+	      begin
+	      try
+		ignore
+		  (Nativeconv.native_conv Reduction.CUMUL evars env cty tval);
+		cj
+	      with Reduction.NotConvertible -> 
+		error_actual_type_loc loc env !evdref cj tval 
+                  (ConversionFailed (env,cty,tval))
+	      end
 
 	    | _ -> 
  	      pretype (mk_tycon tval) env evdref lvar c

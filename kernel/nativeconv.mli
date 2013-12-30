@@ -9,7 +9,8 @@ open Term
 open Univ
 open Environ
 open Reduction
+open Nativelambda
 
 (** This module implements the conversion test by compiling to OCaml code *)
 
-val native_conv : conv_pb -> types conversion_function
+val native_conv : conv_pb -> evars -> types conversion_function

@@ -104,6 +104,7 @@ Glob_ops
 Redops
 Reductionops
 Inductiveops
+Nativenorm
 Retyping
 Cbv
 Pretype_errors

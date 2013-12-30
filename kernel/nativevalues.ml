@@ -58,6 +58,8 @@ type atom =
   | Acofix of t array * t array * int * t
   | Acofixe of t array * t array * int * t
   | Aprod of name * t * (t -> t)
+  | Ameta of metavariable * t
+  | Aevar of existential * t
 
 let accumulate_tag = 0
 
@@ -119,6 +121,12 @@ let mk_sw_accu annot c p ac =
 
 let mk_prod_accu s dom codom =
   mk_accu (Aprod (s,dom,codom))
+
+let mk_meta_accu mv ty =
+  mk_accu (Ameta (mv,ty))
+
+let mk_evar_accu ev ty =
+  mk_accu (Aevar (ev,ty))
 
 let atom_of_accu (k:accumulator) =
   (Obj.magic (Obj.field (Obj.magic k) 2) : atom)

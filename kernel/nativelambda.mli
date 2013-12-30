@@ -18,6 +18,8 @@ open Nativevalues
 type lambda =
   | Lrel          of name * int 
   | Lvar          of identifier
+  | Lmeta         of metavariable * lambda (* type *)
+  | Levar         of existential * lambda (* type *)
   | Lprod         of lambda * lambda 
   | Llam          of name array * lambda  
   | Llet          of name * lambda * lambda
@@ -40,8 +42,15 @@ type lambda =
   | Lforce
 
 and lam_branches = (constructor * name array * lambda) array 
-      
+
 and fix_decl =  name array * lambda array * lambda array
+
+type evars =
+    { evars_val : existential -> constr option;
+      evars_typ : existential -> types;
+      evars_metas : metavariable -> types }
+
+val empty_evars : evars
 
 val decompose_Llam : lambda -> Names.name array * lambda
 val decompose_Llam_Llet : lambda -> (Names.name * lambda option) array * lambda
@@ -51,4 +60,4 @@ val mk_lazy : lambda -> lambda
 
 val get_allias : env -> constant -> constant
 
-val lambda_of_constr : env -> types -> lambda
+val lambda_of_constr : env -> evars -> Constr.constr -> lambda

@@ -127,7 +127,7 @@ and conv_fix lvl t1 f1 t2 f2 cu =
     else aux (i+1) (conv_val CONV flvl fi1 fi2 cu) in
   aux 0 cu
 
-let native_conv pb env t1 t2 =
+let native_conv pb sigma env t1 t2 =
   if !Flags.no_native_compiler then begin
     let msg = "Native compiler is disabled, "^
     "falling back to VM conversion test." in
@@ -137,7 +137,7 @@ let native_conv pb env t1 t2 =
   else
   let env = Environ.pre_env env in 
   let ml_filename, prefix = get_ml_filename () in
-  let code, upds = mk_conv_code env prefix t1 t2 in
+  let code, upds = mk_conv_code env sigma prefix t1 t2 in
   match compile ml_filename code with
   | (0,fn) ->
       begin

@@ -17,6 +17,8 @@ open Nativevalues
 type lambda =
   | Lrel          of name * int 
   | Lvar          of identifier
+  | Lmeta         of metavariable * lambda (* type *)
+  | Levar         of existential * lambda (* type *)
   | Lprod         of lambda * lambda 
   | Llam          of name array * lambda  
   | Llet          of name * lambda * lambda
@@ -41,23 +43,28 @@ type lambda =
 and lam_branches = (constructor * name array * lambda) array 
       
 and fix_decl =  name array * lambda array * lambda array
-      
+
+type evars =
+    { evars_val : existential -> constr option;
+      evars_typ : existential -> types;
+      evars_metas : metavariable -> types }
+
 (*s Constructors *)
-  
+
 let mkLapp f args =
   if Array.is_empty args then f
   else
     match f with
     | Lapp(f', args') -> Lapp (f', Array.append args' args)
     | _ -> Lapp(f, args)
-	  
+
 let mkLlam ids body =
   if Array.is_empty ids then body
   else 
     match body with
     | Llam(ids', body) -> Llam(Array.append ids ids', body)
     | _ -> Llam(ids, body)
-  
+
 let decompose_Llam lam =
   match lam with
   | Llam(ids,body) -> ids, body
@@ -103,8 +110,8 @@ let get_const_prefix env c =
 
 let map_lam_with_binders g f n lam =
   match lam with
-  | Lrel _ | Lvar _  | Lconst _ | Lval _
-  | Lsort _ | Lind _ | Lconstruct _ | Llazy | Lforce -> lam
+  | Lrel _ | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ | Lconstruct _
+  | Llazy | Lforce | Lmeta _ | Levar _ -> lam
   | Lprod(dom,codom) -> 
       let dom' = f n dom in
       let codom' = f n codom in
@@ -199,8 +206,8 @@ let lam_subst_args subst args =
   
 let can_subst lam = 
   match lam with
-  | Lrel _ | Lvar _ | Lconst _
-  | Lval _ | Lsort _ | Lind _ | Llam _ | Lconstruct _ -> true
+  | Lrel _ | Lvar _ | Lconst _ | Lval _ | Lsort _ | Lind _ | Llam _
+  | Lconstruct _ | Lmeta _ | Levar _ -> true
   | _ -> false
 
 let can_merge_if bt bf =
@@ -307,7 +314,7 @@ let rec occurence k kind lam =
 	if kind then false else raise Not_found
       else kind
   | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _
-  | Lconstruct _ | Llazy | Lforce -> kind
+  | Lconstruct _ | Llazy | Lforce | Lmeta _ | Levar _ -> kind
   | Lprod(dom, codom) ->
       occurence k (occurence k kind dom) codom
   | Llam(ids,body) ->
@@ -509,29 +516,48 @@ module Renv =
 let is_lazy t = (* APPROXIMATION *)
   isApp t || isLetIn t
 
+let evar_value sigma ev = sigma.evars_val ev
+
+let evar_type sigma ev = sigma.evars_typ ev
+
+let meta_type sigma mv = sigma.evars_metas mv
+
+let empty_evars =
+  { evars_val = (fun _ -> None);
+    evars_typ = (fun _ -> assert false);
+    evars_metas = (fun _ -> assert false) }
+
 let empty_ids = [||]
 
-let rec lambda_of_constr env c =
-(*  try *)
+let rec lambda_of_constr env sigma c =
   match kind_of_term c with
-  | Meta _ -> invalid_arg "Nativelambda.lambda_of_constr: Meta"
-  | Evar _ -> invalid_arg "Nativelambda.lambda_of_constr : Evar"
+  | Meta mv ->
+     let ty = meta_type sigma mv in
+     Lmeta (mv, lambda_of_constr env sigma ty)
 
-  | Cast (c, _, _) -> lambda_of_constr env c
+  | Evar ev ->
+     (match evar_value sigma ev with
+     | None ->
+	let ty = evar_type sigma ev in
+	Levar(ev, lambda_of_constr env sigma ty)
+     | Some t -> lambda_of_constr env sigma t)
+
+  | Cast (c, _, _) -> lambda_of_constr env sigma c
 
   | Rel i -> Renv.get env i
 
   | Var id -> Lvar id
 
   | Sort s -> Lsort s
+
   | Ind ind ->
       let prefix = get_mind_prefix !global_env (fst ind) in
       Lind (prefix, ind)
-	
+
   | Prod(id, dom, codom) ->
-      let ld = lambda_of_constr env dom in
+      let ld = lambda_of_constr env sigma dom in
       Renv.push_rel env id;
-      let lc = lambda_of_constr env codom in
+      let lc = lambda_of_constr env sigma codom in
       Renv.pop env;
       Lprod(ld,  Llam([|id|], lc))
 
@@ -539,22 +565,22 @@ let rec lambda_of_constr env c =
       let params, body = decompose_lam c in
       let ids = get_names (List.rev params) in
       Renv.push_rels env ids;
-      let lb = lambda_of_constr env body in
+      let lb = lambda_of_constr env sigma body in
       Renv.popn env (Array.length ids);
       mkLlam ids lb
 
   | LetIn(id, def, _, body) ->
-      let ld = lambda_of_constr env def in
+      let ld = lambda_of_constr env sigma def in
       Renv.push_rel env id;
-      let lb = lambda_of_constr env body in
+      let lb = lambda_of_constr env sigma body in
       Renv.pop env;
       Llet(id, ld, lb)
 
-  | App(f, args) -> lambda_of_app env f args
+  | App(f, args) -> lambda_of_app env sigma f args
 
-  | Const _ -> lambda_of_app env c empty_args
+  | Const _ -> lambda_of_app env sigma c empty_args
 
-  | Construct _ ->  lambda_of_app env c empty_args
+  | Construct _ ->  lambda_of_app env sigma c empty_args
 
   | Case(ci,t,a,branches) ->  
       let (mind,i as ind) = ci.ci_ind in
@@ -571,14 +597,14 @@ let rec lambda_of_constr env c =
           asw_prefix = prefix}
       in
       (* translation of the argument *)
-      let la = lambda_of_constr env a in
+      let la = lambda_of_constr env sigma a in
       (* translation of the type *)
-      let lt = lambda_of_constr env t in
+      let lt = lambda_of_constr env sigma t in
       (* translation of branches *)
       let mk_branch i b =
 	let cn = (ind,i+1) in
 	let _, arity = tbl.(i) in
-	let b = lambda_of_constr env b in
+	let b = lambda_of_constr env sigma b in
 	if Int.equal arity 0 then (cn, empty_ids, b)
 	else 
 	  match b with
@@ -592,20 +618,20 @@ let rec lambda_of_constr env c =
       Lcase(annot_sw, lt, la, bs)
 	
   | Fix(rec_init,(names,type_bodies,rec_bodies)) ->
-      let ltypes = lambda_of_args env 0 type_bodies in
+      let ltypes = lambda_of_args env sigma 0 type_bodies in
       Renv.push_rels env names;
-      let lbodies = lambda_of_args env 0 rec_bodies in
+      let lbodies = lambda_of_args env sigma 0 rec_bodies in
       Renv.popn env (Array.length names);
       Lfix(rec_init, (names, ltypes, lbodies))
 	
   | CoFix(init,(names,type_bodies,rec_bodies)) ->
-      let ltypes = lambda_of_args env 0 type_bodies in 
+      let ltypes = lambda_of_args env sigma 0 type_bodies in 
       Renv.push_rels env names;
-      let lbodies = lambda_of_args env 0 rec_bodies in
+      let lbodies = lambda_of_args env sigma 0 rec_bodies in
       Renv.popn env (Array.length names);
       Lcofix(init, (names, ltypes, lbodies))
 
-and lambda_of_app env f args =
+and lambda_of_app env sigma f args =
   match kind_of_term f with
   | Const kn ->
       let kn = get_allias !global_env kn in
@@ -613,7 +639,7 @@ and lambda_of_app env f args =
       begin match cb.const_body with
       | Def csubst ->
           if cb.const_inline_code then
-            lambda_of_app env (Lazyconstr.force csubst) args
+            lambda_of_app env sigma (Lazyconstr.force csubst) args
           else
           let prefix = get_const_prefix !global_env kn in
           let t =
@@ -621,31 +647,31 @@ and lambda_of_app env f args =
               mkLapp Lforce [|Lconst (prefix, kn)|]
             else Lconst (prefix, kn)
           in
-        mkLapp t (lambda_of_args env 0 args)
+        mkLapp t (lambda_of_args env sigma 0 args)
       | OpaqueDef _ | Undef _ ->
           let prefix = get_const_prefix !global_env kn in
-          mkLapp (Lconst (prefix, kn)) (lambda_of_args env 0 args)
+          mkLapp (Lconst (prefix, kn)) (lambda_of_args env sigma 0 args)
       end
   | Construct c ->
       let tag, nparams, arity = Renv.get_construct_info env c in
       let expected = nparams + arity in
       let nargs = Array.length args in
       if Int.equal nargs expected then 
-	let args = lambda_of_args env nparams args in
+	let args = lambda_of_args env sigma nparams args in
 	makeblock !global_env c tag args
       else
         let prefix = get_mind_prefix !global_env (fst (fst c)) in
-        mkLapp (Lconstruct (prefix, c)) (lambda_of_args env 0 args)
+        mkLapp (Lconstruct (prefix, c)) (lambda_of_args env sigma 0 args)
   | _ -> 
-      let f = lambda_of_constr env f in
-      let args = lambda_of_args env 0 args in
+      let f = lambda_of_constr env sigma f in
+      let args = lambda_of_args env sigma 0 args in
       mkLapp f args
 	
-and lambda_of_args env start args =
+and lambda_of_args env sigma start args =
   let nargs = Array.length args in
   if start < nargs then
     Array.init (nargs - start) 
-      (fun i -> lambda_of_constr env args.(start + i))
+      (fun i -> lambda_of_constr env sigma args.(start + i))
   else empty_args
 
 let optimize lam =
@@ -657,12 +683,12 @@ let optimize lam =
     (msgerrnl (str "Remove let = \n" ++ pp_lam lam);flush_all()); *)
   lam
 
-let lambda_of_constr env c =
+let lambda_of_constr env sigma c =
   set_global_env env;
   let env = Renv.make () in
   let ids = List.rev_map (fun (id, _, _) -> id) !global_env.env_rel_context in
   Renv.push_rels env (Array.of_list ids);
-  let lam = lambda_of_constr env c in
+  let lam = lambda_of_constr env sigma c in
 (*  if Flags.vm_draw_opt () then begin
     (msgerrnl (str "Constr = \n" ++ pr_constr c);flush_all()); 
     (msgerrnl (str "Lambda = \n" ++ pp_lam lam);flush_all()); 

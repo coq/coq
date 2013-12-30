@@ -38,6 +38,10 @@ val get_match : symbol array -> int -> Nativevalues.annot_sw
 
 val get_ind : symbol array -> int -> inductive
 
+val get_meta : symbol array -> int -> metavariable
+
+val get_evar : symbol array -> int -> existential
+
 val get_symbols_tbl : unit -> symbol array
 
 type code_location_update
@@ -56,8 +60,8 @@ val compile_constant_field : env -> string -> constant ->
 val compile_mind_field : string -> module_path -> label ->
   global list -> mutual_inductive_body -> global list
 
-val mk_conv_code : env -> string -> constr -> constr -> linkable_code
-val mk_norm_code : env -> string -> constr -> linkable_code
+val mk_conv_code : env -> evars -> string -> constr -> constr -> linkable_code
+val mk_norm_code : env -> evars -> string -> constr -> linkable_code
 
 val mk_library_header : dir_path -> global list
 
