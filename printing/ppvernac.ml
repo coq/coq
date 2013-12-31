@@ -471,6 +471,8 @@ let pr_printable = function
 | PrintNamespace dp -> str "Print Namespace" ++ pr_dirpath dp
 in
 
+let pr_using e = str (Proof_using.to_string e) in
+
 let rec pr_vernac = function
   | VernacProgram v -> str"Program" ++ spc() ++ pr_vernac v
   | VernacLocal (local, v) -> pr_locality local ++ spc() ++ pr_vernac v
@@ -944,10 +946,10 @@ let rec pr_vernac = function
   (* For extension *)
   | VernacExtend (s,c) -> pr_extend s c
   | VernacProof (None, None) -> str "Proof"
-  | VernacProof (None, Some l) -> str "Proof using" ++spc()++ prlist pr_lident l
+  | VernacProof (None, Some e) -> str "Proof " ++ pr_using e
   | VernacProof (Some te, None) -> str "Proof with" ++ spc() ++ pr_raw_tactic te
-  | VernacProof (Some te, Some l) ->
-      str "Proof using" ++spc()++ prlist pr_lident l ++ spc() ++
+  | VernacProof (Some te, Some e) ->
+      str "Proof " ++ pr_using e ++ spc() ++
       str "with" ++ spc() ++pr_raw_tactic te
   | VernacProofMode s -> str ("Proof Mode "^s)
   | VernacBullet b -> begin match b with

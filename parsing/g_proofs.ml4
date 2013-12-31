@@ -21,6 +21,23 @@ open Pcoq.Vernac_
 
 let thm_token = G_vernac.thm_token
 
+let only_identrefs =
+  Gram.Entry.of_parser "test_only_identrefs"
+    (fun strm ->
+      let rec aux n =
+      match get_tok (Util.stream_nth n strm) with
+        | KEYWORD "." -> ()
+        | KEYWORD ")" -> ()
+        | IDENT _ -> aux (n+1)
+        | _ -> raise Stream.Failure in
+      aux 0)
+
+let hint_proof_using e = function
+  | Some _ as x -> x
+  | None -> match Proof_using.get_default_proof_using () with
+     | None -> None
+     | Some s -> Some (Gram.entry_parse e (Gram.parsable (Stream.of_string s)))
+
 (* Proof commands *)
 GEXTEND Gram
   GLOBAL: command;
@@ -31,12 +48,13 @@ GEXTEND Gram
   ;
   command:
     [ [ IDENT "Goal"; c = lconstr -> VernacGoal c
-      | IDENT "Proof" -> VernacProof (None,None)
+      | IDENT "Proof" ->
+          VernacProof (None,hint_proof_using section_subset_descr None)
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> VernacProofMode mn
       | IDENT "Proof"; "with"; ta = tactic; 
-        l = OPT [ "using"; l = LIST0 identref  -> l ] ->
-          VernacProof (Some ta, l)
-      | IDENT "Proof"; "using"; l = LIST0 identref; 
+        l = OPT [ "using"; l = section_subset_descr -> l ] ->
+          VernacProof (Some ta, hint_proof_using section_subset_descr l)
+      | IDENT "Proof"; "using"; l = section_subset_descr;
         ta = OPT [ "with"; ta = tactic -> ta ] ->
           VernacProof (ta,Some l)
       | IDENT "Proof"; c = lconstr -> VernacExactProof c
@@ -97,7 +115,23 @@ GEXTEND Gram
 	  VernacHints (false,dbnames,
 	    HintsResolve (List.map (fun x -> (pri, true, x)) lc))
       ] ];
-
+  section_subset_descr:
+    [ [ IDENT "All" -> SsAll
+      | "Type" -> SsType
+      | only_identrefs; l = LIST0 identref -> SsExpr (SsSet l)
+      | e = section_subset_expr -> SsExpr e ] ]
+  ;
+  section_subset_expr:
+    [ "35" 
+      [ "-"; e = section_subset_expr -> SsCompl e ]
+    | "50"
+      [ e1 = section_subset_expr; "-"; e2 = section_subset_expr->SsSubstr(e1,e2)
+      | e1 = section_subset_expr; "+"; e2 = section_subset_expr->SsUnion(e1,e2)]
+    | "0"
+      [ i = identref -> SsSet [i]
+      | "("; only_identrefs; l = LIST0 identref; ")"-> SsSet l
+      | "("; e = section_subset_expr; ")"-> e ] ]
+  ;
   obsolete_locality:
     [ [ IDENT "Local" -> true | -> false ] ]
   ;

@@ -214,6 +214,14 @@ type scheme =
   | CaseScheme of bool * reference or_by_notation * sort_expr
   | EqualityScheme of reference or_by_notation
 
+type section_subset_expr =
+  | SsSet of lident list
+  | SsCompl of section_subset_expr
+  | SsUnion of section_subset_expr * section_subset_expr
+  | SsSubstr of section_subset_expr * section_subset_expr
+
+type section_subset_descr = SsAll | SsType | SsExpr of section_subset_expr
+
 (* This type allows to register inline of constants in native compiler.
    It will be extended with primitive inductive types and operators *)
 type register_kind = 
@@ -412,7 +420,7 @@ type vernac_expr =
   | VernacEndSubproof
   | VernacShow of showable
   | VernacCheckGuard
-  | VernacProof of raw_tactic_expr option * lident list option
+  | VernacProof of raw_tactic_expr option * section_subset_descr option
   | VernacProofMode of string
   (* Toplevel control *)
   | VernacToplevelControl of exn

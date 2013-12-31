@@ -135,6 +135,9 @@ let record_aux env s1 s2 =
         (keep_hyps env (Id.Set.union s1 s2))) in
   Aux_file.record_in_aux "context_used" v
 
+let suggest_proof_using = ref (fun _ _ _ _ _ -> ())
+let set_suggest_proof_using f = suggest_proof_using := f
+
 let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
   let check declared inferred =
     let mk_set l = List.fold_right Id.Set.add (List.map pi1 l) Id.Set.empty in
@@ -159,6 +162,7 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
             ignore(Future.join cst);
             let vars =
               global_vars_set env (Lazyconstr.force_opaque (Future.join lc)) in
+            !suggest_proof_using kn env vars ids_typ context_ids;
             if !Flags.compilation_mode = Flags.BuildVo then
               record_aux env ids_typ vars;
             vars

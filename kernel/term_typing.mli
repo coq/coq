@@ -35,3 +35,6 @@ val translate_recipe : env -> constant -> Cooking.recipe -> constant_body
 val infer_declaration : ?what:string -> env -> constant_entry -> Cooking.result
 val build_constant_declaration :
   constant -> env -> Cooking.result -> constant_body
+
+val set_suggest_proof_using :
+  (constant -> env -> Id.Set.t -> Id.Set.t -> Id.t list -> unit) -> unit

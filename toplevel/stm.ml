@@ -581,7 +581,7 @@ let get_hint_ctx loc =
   let s = Aux_file.get !hints loc "context_used" in
   let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") s) in
   let ids = List.map (fun id -> Loc.ghost, id) ids in
-  ids
+  SsExpr (SsSet ids)
 
 (* Slave processes (if initialized, otherwise local lazy evaluation) *)
 module Slaves : sig

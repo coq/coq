@@ -798,10 +798,10 @@ let vernac_set_end_tac tac =
   | _ -> set_end_tac tac
     (* TO DO verifier s'il faut pas mettre exist s | TacId s ici*)
 
-let vernac_set_used_variables l =
-  let l = List.map snd l in
-  if not (List.distinct_f Id.compare l)
-  then error "Used variables list contains duplicates";
+let vernac_set_used_variables e =
+  let tys =
+    List.map snd (Proof.initial_goals (Proof_global.give_me_the_proof ())) in
+  let l = Proof_using.process_expr (Global.env ()) e tys in
   let vars = Environ.named_context (Global.env ()) in
   List.iter (fun id -> 
     if not (List.exists (fun (id',_,_) -> Id.equal id id') vars) then

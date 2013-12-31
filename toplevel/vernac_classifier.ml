@@ -92,6 +92,9 @@ let rec classify_vernac e =
     | VernacCheckGuard
     | VernacUnfocused
     | VernacSolveExistential _ -> VtProofStep, VtLater
+    (* Options changing parser *)
+    | VernacUnsetOption (["Default";"Proof";"Using"])
+    | VernacSetOption (["Default";"Proof";"Using"],_) -> VtSideff [], VtNow
     (* StartProof *)
     | VernacDefinition (_,(_,i),ProveBody _) ->
         VtStartProof("Classic",GuaranteesOpacity,[i]), VtLater
