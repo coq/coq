@@ -1146,39 +1146,29 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
     | Same -> Same
     | Info (p, (evars, cstrs), car, oldt, newt) ->
 	let evars' = solve_constraints env evars in
-	let p = map_rewprf (fun p -> nf_zeta env evars' (Evarutil.nf_evar evars' p)) p in
 	let newt = Evarutil.nf_evar evars' newt in
-	let abs = Option.map (fun (x, y) ->
-				Evarutil.nf_evar evars' x, Evarutil.nf_evar evars' y) abs in
 	let evars = (* Keep only original evars (potentially instantiated) and goal evars,
 		       the rest has been defined and substituted already. *)
 	  Evd.fold (fun ev evi acc ->
 	    if Evar.Set.mem ev cstrs then Evd.remove acc ev
 	    else acc) evars' evars'
 	in
-	  match is_hyp with
-	  | Some id ->
-	      (match p with
-	       | RewPrf (rel, p) ->
-		   let term =
-		     match abs with
-		     | None -> p
-		     | Some (t, ty) ->
-			 mkApp (mkLambda (Name (Id.of_string "lemma"), ty, p), [| t |])
-		   in
-		     Info (evars, Some (mkApp (term, [| mkVar id |])), newt)
-	       | RewCast c ->
-		   Info (evars, None, newt))
-
-	  | None ->
-	      (match p with
-	       | RewPrf (rel, p) ->
-		   (match abs with
-		    | None -> Info (evars, Some p, newt)
-		    | Some (t, ty) ->
-			let proof = mkApp (mkLambda (Name (Id.of_string "lemma"), ty, p), [| t |]) in
-			  Info (evars, Some proof, newt))
-	       | RewCast c -> Info (evars, None, newt))
+        match p with
+        | RewCast c -> Info (evars, None, newt)
+        | RewPrf (_, p) ->
+          let p = nf_zeta env evars' (Evarutil.nf_evar evars' p) in
+          let term = match abs with
+          | None -> p
+          | Some (t, ty) ->
+            let t = Evarutil.nf_evar evars' t in
+            let ty = Evarutil.nf_evar evars' ty in
+            mkApp (mkLambda (Name (Id.of_string "lemma"), ty, p), [| t |])
+          in
+          let proof = match is_hyp with
+          | None -> term
+          | Some id -> mkApp (term, [| mkVar id |])
+          in
+          Info (evars, Some proof, newt)
 
 (** ppedrot: this is a workaround. The current implementation of rewrite leaks
     evar maps. We know that we should not produce effects in here, so we reput
