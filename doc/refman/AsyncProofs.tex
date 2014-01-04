@@ -1,0 +1,144 @@
+\achapter{Asynchronous Proof Processing}
+\aauthor{Enrico Tassi}
+
+\label{pralitp}
+\index{Asynchronous Proof Processing!presentation}
+
+This chapter explains how proofs can be asynchronously processed by Coq.
+This feature improves the reactiveness of the system when used in interactive
+mode via CoqIDE.  In addition to that it allows Coq to take advantage of
+parallel hardware when used as a batch compiler by decoupling the checking
+of statements and definitions from the contruction and checking of proofs
+objects.
+
+This feature is desingned to help dealing with huge libraries of theorems
+characterized by long proofs.  At the current state it may not be beneficial
+on small set of short files.
+
+This feature has some technical limitations that may make it unsuitable for
+some use cases.
+
+For example in interactive mode errors coming from the kernel of Coq are
+signalled late.  The most notable type of errors belonging to this category are
+universes inconsistency or unsatisfied guardedness conditions for fixpoints
+built using tactics.
+
+Last, at the time of writing, only opaque proofs (ending with $Qed$) can be
+processed asynchronously.
+
+\subsection{Proof annotations}
+
+To process a proof asynchronously Coq needs to know the precise statement
+of the theorem without looking at the proof.  This requires some annotations
+if the theorem is proved inside a $Section$ (see Section~\ref{Section}).
+
+When a section is ended Coq looks at the proof object to decide which
+section variables are actually used and hence have to be quantified in the
+statement of the theorem.  To make the construction of the proofs not
+mandatory for ending a section one can start each proof with the
+$Proof using$ command~\ref{ProofUsing} that declares the subset of section
+variables the theorem uses.
+
+The presence of $Proof using$ is mandatory to process proofs asynchronously
+in interactive mode.
+
+It is not strictly mandatory in batch mode if it is not the first time the
+file is compiled and if the file itself did not change.  In case the
+proof does not begin with $Proof using$ the system records in an auxiliary
+file, produced along with the $.vo$ file, the list of section variable used.
+
+\subsubsection{Automatic suggestion of proof annotations}
+
+The command $Set Suggest Proof Using$ makes Coq suggest, when a $Qed$
+command is processed, a correct proof annotation.  It is up to the user
+to modify the proof script adding the proof annotation.
+
+\subsection{Interactive mode}
+
+At the time of writing the only user interface supporting asynchronous proof
+processing is CoqIDE.  
+
+When CoqIDE is started two Coq processes are created.  The master one follows
+the user, giving feedback as soon as possible by skipping proofs, that are
+delegated to the worker process.  The worker process, whose state can be seen
+by clicking on the button in the lower right corner of the main CoqIDE window,
+asynchronously processes the proofs.  If a proof contains an error, it is
+reported in red in the label of the very same button, that can also be used to
+see the list of errors and jump to the corresponding line.
+
+If a proof is processed asynchronously the corresponding $Qed$ command is
+is coloured using a color that is lighter than usual.  This signals that
+the proof has been delegated to a worker process (or will be processed
+lazily if the $-async-proofs lazy$ option is used).  Once finished the
+worker process will provide the proof object, but this will not be
+automatically checked by the kernel of the main process.  To force
+the kernel to check all proof objects one has to click the button
+with the gears.
+
+% THIS PARAGRAPH MAY CHANGE.
+% IF QED IS FULLY PURELY FUNCTIONAL (not yet because of vm compute) THE CHECKING
+% COULD BE MADE BY THE THREAD THAT MANAGES THE WORKER.
+
+Only when the gears button is pressed all universe constraints are checked.
+
+\subsubsection{Caveats}
+The number of worker processes can be increased by passing CoqIDE the
+$-async-proofs-j 2$ flag.  Note that the memory consumption increases
+too, since each worker has to be an exact copy of the master process
+and requires the same amount of memory.  Also note that the master process
+has to both respond to the user and manage the workers, hence increasing
+their number may slow down the master process.
+
+To disable this feature it is enough to pass the $-async-proofs off$ flag to
+CoqIDE.
+
+\subsection{Batch mode}
+
+When Coq is used as a batch compiler by running $coqc$ or $coqtop -compile$
+it produces a $.vo$ file for each $.v$ file.  A $.vo$ file contains, among
+other things, theorems statements and proofs.  Hence to produce a $.vo$
+Coq need to process all the proofs of the $.v$ file.
+
+The asynchronous processing of proofs can decouple the generation of a
+compiled file (like the $.vo$ one) that can be $Required$ from the generation
+and checking of the proof objects.  The $-quick$ flag can be passed to
+$coqc$ or $coqtop$ to produce, quickly, $.vi$ files.  Alternatively, if
+the $Makefile$ one uses was produced by $coq\_makefile$ the $quick$
+target can be used to compile all files using the $-quick$ flag.
+
+A $.vi$ file can be $Required$ exactly as a $.vo$ file but: 1) proofs are
+not available (the $Print$ command produces an error); 2) some universe
+constraints are missing, hence universes inconsistencies may not be
+discovered.  A $.vi$ file does not contain proof objects, but proof tasks,
+i.e. what a worker process can transform into a proof object.
+
+Compiling a set of files with the $-quick$ flag allows one to work,
+interactively, on any file without waiting for all proofs to be checked.
+
+While one works interactively, he can fully check all $.v$ files by
+running $coqc$ as usual.
+
+Alternatively one can check the proof tasks store in $.vi$ files.  This may be
+faster, since all proof tasks are independent and can be checked in parallel.
+The $coqtop -schedule-vi-checking 3 a b c$ command can be used to obtain
+a good scheduling for 3 workers to check all proof tasks of $a.vi$, $b.vi$ and
+$c.vi$.  Auxiliary files are used to predict how long a proof task will take,
+assuming it will take the same amount of time it took last time.
+The output of $coqtop -schedule-vi-checking$ is a list of commands one has
+to execute in order to check all proof tasks.
+
+\subsubsection{Caveats}
+
+At the time of writing producing a $.vo$ file from a $.vi$ file is not
+possible.  When a proof task is run, he proof object is generated, checked but
+then discarded.  This may change in the future, since generating $.vo$ files
+from $.vi$ is, in theory, possible.  
+
+Checking all proof tasks does not guarantee the same degree of safety
+that producing a $.vo$ file gives.  In particular universe constraints
+are checked to be consistent for every single proof, but not globally.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 
