@@ -516,10 +516,19 @@ let freeze ~marshallable =
   match marshallable with
   | `Shallow ->
     (* TASSI: we should do something more sensible here *)
-    let _, initial_prefix =
-      CList.split_when (function _, CompilingLibrary _ -> true | _ -> false)
+    let lib_stk =
+      CList.map_filter (function
+        | _, Leaf _ -> None
+        | n, (CompilingLibrary _ as x) -> Some (n,x)
+        | n, OpenedModule (it,e,op,_) ->
+               Some(n,OpenedModule(it,e,op,Summary.empty_frozen))
+        | n, ClosedModule _ -> Some (n,ClosedModule [])
+        | n, OpenedSection (op, _) ->
+               Some(n,OpenedSection(op,Summary.empty_frozen))
+        | n, ClosedSection _ -> Some (n,ClosedSection [])
+        | _, FrozenState _ -> None)
       !lib_stk in
-    !comp_name, initial_prefix
+    !comp_name, lib_stk
   | _ ->
     !comp_name, !lib_stk
 

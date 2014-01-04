@@ -57,6 +57,7 @@ val nop : unit -> unit
 
 type frozen
 
+val empty_frozen : frozen
 val freeze_summaries : marshallable:marshallable -> frozen
 val unfreeze_summaries : frozen -> unit
 val init_summaries : unit -> unit

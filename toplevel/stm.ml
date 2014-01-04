@@ -1277,9 +1277,10 @@ let known_state ?(redefine_qed=false) ~cache id =
           | `MaybeASync (start, nodes, ids) -> (fun () ->
                 prerr_endline ("MaybeAsynchronous " ^ Stateid.to_string id);
                 reach ~cache:`Shallow start;
-                (* no sections and no modules *)
-                if List.is_empty (Environ.named_context (Global.env ())) &&
-                   Safe_typing.is_curmod_library (Global.safe_env ()) then
+                (* no sections *)
+                if List.is_empty (Environ.named_context (Global.env ()))
+                   (* && Safe_typing.is_curmod_library (Global.safe_env ()) *)
+                then
                   fst (aux (`ASync (start, None, nodes,ids))) ()
                 else
                   fst (aux (`Sync `Unknown)) ()
