@@ -790,7 +790,7 @@ end = struct (* {{{ *)
             | Declarations.SEsubproof(_,
                { Declarations.const_body = Declarations.OpaqueDef f;
                  const_constraints = cst} ) -> 
-                  ignore(Future.force f); ignore(Future.force cst)
+                  ignore(Future.join f); ignore(Future.join cst)
             | _ -> ())
           se) l;
           l) in
