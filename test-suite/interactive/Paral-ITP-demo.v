@@ -53,7 +53,7 @@ Lemma pair_1 : forall (A B : Set) (H : A * B), H = pair (fst H) (snd H).
 Proof.
  intros.
  case H.
- introsc. 
+ intros. 
  simpl in |- *.
  reflexivity.
 Qed.
@@ -66,7 +66,7 @@ Proof.
  case H1.
  case H2.
  simpl in |- *.
- introsx.
+ intros.
  rewrite H.
  rewrite H0.
  reflexivity.
@@ -242,7 +242,7 @@ Proof.
  intro.
  left.
  assumption.
- introx.
+ intro.
  right.
  apply Zplus_lt_reg_l with (p := x).
  rewrite Zplus_0_r.
