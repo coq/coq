@@ -625,7 +625,8 @@ object(self)
           if loc <> None then messages#push Error "Fixme LOC";
           messages#push Error msg;
           if Stateid.equal safe_id Stateid.dummy then self#show_goals
-          else undo safe_id (Doc.is_in_focus document safe_id))
+          else undo safe_id
+                 (Doc.focused document && Doc.is_in_focus document safe_id))
     in
       undo to_id unfocus_needed)
   
