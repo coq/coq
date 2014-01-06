@@ -928,6 +928,9 @@ let explain_meta_in_type c =
   str "In refiner, a meta appears in the type " ++ brk(1,1) ++ pr_lconstr c ++
   str " of another meta"
 
+let explain_no_such_hyp id =
+  str "No such hypothesis: " ++ pr_id id
+
 let explain_refiner_error = function
   | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
   | UnresolvedBindings t -> explain_refiner_unresolved_bindings t
@@ -937,6 +940,7 @@ let explain_refiner_error = function
   | DoesNotOccurIn (c,hyp) -> explain_does_not_occur_in c hyp
   | NonLinearProof c -> explain_non_linear_proof c
   | MetaInType c -> explain_meta_in_type c
+  | NoSuchHyp id -> explain_no_such_hyp id
 
 (* Inductive errors *)
 

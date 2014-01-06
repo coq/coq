@@ -48,6 +48,7 @@ type refiner_error =
   (*i Errors raised by the tactics i*)
   | IntroNeedsProduct
   | DoesNotOccurIn of constr * Id.t
+  | NoSuchHyp of Id.t
 
 exception RefinerError of refiner_error
 

@@ -37,6 +37,7 @@ type refiner_error =
   (* Errors raised by the tactics *)
   | IntroNeedsProduct
   | DoesNotOccurIn of constr * Id.t
+  | NoSuchHyp of Id.t
 
 exception RefinerError of refiner_error
 
@@ -68,8 +69,7 @@ let rec catchable_exception = function
       (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true
   | _ -> false
 
-let error_no_such_hypothesis id =
-  error ("No such hypothesis: " ^ Id.to_string id ^ ".")
+let error_no_such_hypothesis id = raise (RefinerError (NoSuchHyp id))
 
 (* Tells if the refiner should check that the submitted rules do not
    produce invalid subgoals *)
@@ -81,13 +81,13 @@ let with_check = Flags.with_option check
 let apply_to_hyp sign id f =
   try apply_to_hyp sign id f
   with Hyp_not_found ->
-    if !check then error "No such assumption."
+    if !check then error_no_such_hypothesis id
     else sign
 
 let apply_to_hyp_and_dependent_on sign id f g =
   try apply_to_hyp_and_dependent_on sign id f g
   with Hyp_not_found ->
-    if !check then error "No such assumption."
+    if !check then error_no_such_hypothesis id
     else sign
 
 let check_typability env sigma c =

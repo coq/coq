@@ -350,8 +350,7 @@ let interp_hyp ist env (loc,id as locid) =
   with Not_found ->
   (* Then look if bound in the proof context at calling time *)
   if is_variable env id then id
-  else user_err_loc (loc,"eval_variable",
-    str "No such hypothesis: " ++ pr_id id ++ str ".")
+  else Loc.raise loc (Logic.RefinerError (Logic.NoSuchHyp id))
 
 let interp_hyp_list_as_list ist env (loc,id as x) =
   try coerce_to_hyp_list env (Id.Map.find id ist.lfun)

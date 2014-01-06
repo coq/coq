@@ -53,7 +53,7 @@ let pf_get_hyp gls id =
   try
     Context.lookup_named id (pf_hyps gls)
   with Not_found ->
-    error ("No such hypothesis: " ^ (Id.to_string id))
+    raise (RefinerError (NoSuchHyp id))
 
 let pf_get_hyp_typ gls id =
   let (_,_,ty)= (pf_get_hyp gls id) in
@@ -234,7 +234,7 @@ module New = struct
     let hyps = Proofview.Goal.hyps gl in
     let sign =
       try Context.lookup_named id hyps
-      with Not_found -> Errors.error ("No such hypothesis: " ^ (string_of_id id))
+      with Not_found -> raise (RefinerError (NoSuchHyp id))
     in
     sign
 

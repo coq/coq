@@ -124,7 +124,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas =
      match Tacmach.pf_hyps gl with
         (last_hyp_id,_,_)::_ -> last_hyp_id
       | _ -> (* even the hypothesis id is missing *)
-             error ("No such hypothesis: " ^ (Id.to_string !id) ^".")
+        raise (Logic.RefinerError (Logic.NoSuchHyp !id))
     in
     let gl' = Proofview.V82.of_tactic (general_rewrite_in dir AllOccurrences true ~tac:(tac, conds) false !id cstr false) gl in
     let gls = gl'.Evd.it in

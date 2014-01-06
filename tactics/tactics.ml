@@ -523,7 +523,7 @@ let intro_forthcoming_then_gen loc name_flag move_flag dep_flag tac =
   aux []
 
 let rec get_next_hyp_position id = function
-  | [] -> error ("No such hypothesis: " ^ Id.to_string id)
+  | [] -> raise (RefinerError (NoSuchHyp id))
   | (hyp,_,_) :: right ->
       if Id.equal hyp id then
 	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveLast
