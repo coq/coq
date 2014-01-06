@@ -19,6 +19,7 @@ open Coqdep_common
 let option_D = ref false
 let option_w = ref false
 let option_sort = ref false
+let option_dump = ref None
 
 let warning_mult suf iter =
   let tab = Hashtbl.create 151 in
@@ -156,11 +157,150 @@ let declare_dependencies () =
        flush stdout)
     (List.rev !vAccu)
 
+module Graph =
+struct
+(** Dumping a dependency graph **)
+
+(** TODO: we should share this code with Coqdep_common *)
+let treat_coq_file chan =
+  let buf = Lexing.from_channel chan in
+  let deja_vu_v = ref ([]: string list list)
+  and deja_vu_ml = ref ([] : string list) in
+  let mark_v_done acc str =
+    let seen = List.mem str !deja_vu_v in
+    if not seen then
+      let () = addQueue deja_vu_v str in
+      try
+        let file_str = Hashtbl.find vKnown str in
+        (canonize file_str, !suffixe) :: acc
+      with Not_found -> acc
+    else acc
+  in
+  let rec loop acc =
+    let token = try Some (coq_action buf) with Fin_fichier -> None in
+    match token with
+    | None -> acc
+    | Some action ->
+      let acc = match action with
+      | Require strl ->
+        List.fold_left mark_v_done acc strl
+      | RequireString s ->
+        let str = Filename.basename s in
+        mark_v_done acc [str]
+      | Declare sl ->
+        let declare suff dir s =
+          let base = file_name s dir in
+          let opt = if !option_natdynlk then " " ^ base ^ ".cmxs" else "" in
+          (escape base, suff ^ opt)
+        in
+        let decl acc str =
+          let s = basename_noext str in
+          if not (List.mem s !deja_vu_ml) then
+            let () = addQueue deja_vu_ml s in
+            match search_mllib_known s with
+            | Some mldir -> (declare ".cma" mldir s) :: acc
+            | None ->
+              match search_ml_known s with
+              | Some mldir -> (declare ".cmo" mldir s) :: acc
+              | None -> acc
+          else acc
+        in
+        List.fold_left decl acc sl
+      | Load str ->
+        let str = Filename.basename str in
+        let seen = List.mem [str] !deja_vu_v in
+        if not seen then
+          let () = addQueue deja_vu_v [str] in
+          try
+            let file_str = Hashtbl.find vKnown [str] in
+            (canonize file_str, ".v") :: acc
+          with Not_found -> acc
+        else acc
+      | AddLoadPath _ | AddRecLoadPath _ -> acc (** TODO *)
+      in
+      loop acc
+  in
+  loop []
+
+let treat_coq_file f =
+  let chan = try Some (open_in f) with Sys_error _ -> None in
+  match chan with
+  | None -> []
+  | Some chan ->
+    try
+      let ans = treat_coq_file chan in
+      let () = close_in chan in
+      ans
+    with Syntax_error (i, j) -> close_in chan; error_cannot_parse f (i, j)
+
+type graph =
+  | Element of string
+  | Subgraph of string * graph list
+
+let rec insert_graph name path graphs = match path, graphs with
+  | [] , graphs -> (Element name) :: graphs
+  | (box :: boxes), (Subgraph (hd, names)) :: tl when hd = box ->
+    Subgraph (hd, insert_graph name boxes names) :: tl
+  | _, hd :: tl -> hd :: (insert_graph name path tl)
+  | (box :: boxes), [] -> [ Subgraph (box, insert_graph name boxes []) ]
+
+let print_graphs chan graph =
+  let rec print_aux name = function
+  | [] -> name
+  | (Element str) :: tl -> fprintf chan "%s\n" str; print_aux name tl
+  | Subgraph (box, names) :: tl ->
+    fprintf chan "subgraph cluster%n {\n label=\"%s\"" name box;
+    let name = print_aux (name + 1) names in
+    fprintf chan "}\n"; print_aux name tl
+  in
+  ignore (print_aux 0 graph)
+
+let rec pop_common_prefix = function
+  | [Subgraph (_, graphs)] -> pop_common_prefix graphs
+  | graphs -> graphs
+
+let split_path = Str.split (Str.regexp "/")
+
+let rec pop_last = function
+  | [] -> []
+  | [ x ] -> []
+  | x :: xs -> x :: pop_last xs
+
+let get_boxes path = pop_last (split_path path)
+
+let insert_raw_graph file =
+  insert_graph (basename_noext file) (get_boxes file)
+
+let rec get_dependencies name args =
+  let ename = basename_noext name in
+  let vdep  = treat_coq_file (name ^ ".v") in
+  List.fold_left
+    (fun (deps, graphs, alseen) (dep, _) ->
+    if not (List.mem dep alseen)
+    then get_dependencies dep ((ename, dep) :: deps, insert_raw_graph dep graphs, dep :: alseen)
+    else ((ename, dep) :: deps, graphs, alseen))
+  args vdep
+
+let coq_dependencies_dump chan dumpboxes =
+  let (deps, graphs, _) =
+    List.fold_left (fun ih (name, _) -> get_dependencies name ih)
+    ([], List.fold_left (fun ih (file, _) -> insert_raw_graph file ih) [] !vAccu,
+    List.map fst !vAccu) !vAccu
+  in
+  fprintf chan "digraph dependencies {\n"; flush chan;
+  if dumpboxes then print_graphs chan (pop_common_prefix graphs)
+  else List.iter (fun (name, _) -> fprintf chan "%s\n" (basename_noext name)) !vAccu;
+  List.iter (fun (name, dep) -> fprintf chan "%s -> %s\n" (basename_noext dep) name) deps;
+  fprintf chan "}\n"
+
+end
+
 let usage () =
   eprintf " usage: coqdep [-w] [-c] [-D] [-I dir] [-R dir coqdir] <filename>+\n";
   eprintf " extra options:\n";
   eprintf "  -coqlib dir : set the coq standard library directory\n";
-  eprintf "  -exclude-dir f : skip subdirectories named f during -R search\n";
+  eprintf "  -exclude-dir f : skip subdirectories named 'f' during -R search\n";
+  eprintf "  -dumpgraph f : print a dot dependency graph in file 'f'\n";
   exit 1
 
 let rec parse = function
@@ -178,6 +318,8 @@ let rec parse = function
   | "-R" :: r :: "-as" :: [] -> usage ()
   | "-R" :: r :: ln :: ll -> add_rec_dir add_known r [ln]; parse ll
   | "-R" :: ([] | [_]) -> usage ()
+  | "-dumpgraph" :: f :: ll -> option_dump := Some (false, f); parse ll
+  | "-dumpgraphbox" :: f :: ll -> option_dump := Some (true, f); parse ll
   | "-exclude-dir" :: r :: ll -> norec_dirnames := r::!norec_dirnames; parse ll
   | "-exclude-dir" :: [] -> usage ()
   | "-coqlib" :: r :: ll -> Flags.coqlib_spec := true; Flags.coqlib := r; parse ll
@@ -218,6 +360,13 @@ let coqdep () =
   if !option_sort then begin sort (); exit 0 end;
   if !option_c && not !option_D then mL_dependencies ();
   if not !option_D then coq_dependencies ();
-  if !option_w || !option_D then declare_dependencies ()
+  if !option_w || !option_D then declare_dependencies ();
+  begin match !option_dump with
+  | None -> ()
+  | Some (box, file) ->
+    let chan = open_out file in
+    try Graph.coq_dependencies_dump chan box; close_out chan
+    with e -> close_out chan; raise e
+  end
 
 let _ = Printexc.catch coqdep ()

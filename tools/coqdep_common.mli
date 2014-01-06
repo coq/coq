@@ -47,3 +47,4 @@ val add_dir :
 val add_rec_dir :
   (string -> string list -> string -> unit) -> string -> string list -> unit
 val treat_file : dir -> string -> unit
+val error_cannot_parse : string -> int * int -> 'a
