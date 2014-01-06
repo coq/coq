@@ -68,8 +68,10 @@ exception NotEvaluated
 
 let key rk =
   match !rk with
-  | Some k -> (*Pp.msgnl (str"found at: "++int k);*)  k
-  | _ -> raise NotEvaluated
+  | None -> raise NotEvaluated
+  | Some k -> (*Pp.msgnl (str"found at: "++int k);*)
+      try Ephemeron.get k
+      with Ephemeron.InvalidKey -> raise NotEvaluated
 
 (************************)
 (* traduction des patch *)
@@ -104,7 +106,7 @@ let rec slot_for_getglobal env kn =
     | BCallias kn' -> slot_for_getglobal env kn'
     | BCconstant -> set_global (val_of_constant kn) in
 (*Pp.msgnl(str"value stored at: "++int pos);*)
-    rk := Some pos;
+    rk := Some (Ephemeron.create pos);
     pos
 
 and slot_for_fv env fv =

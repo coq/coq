@@ -25,7 +25,7 @@ open Declarations
 (* The key attached to each constant is used by the VM to retrieve previous *)
 (* evaluations of the constant. It is essentially an index in the symbols table *)
 (* used by the VM. *)
-type key = int option ref
+type key = int Ephemeron.key option ref 
 
 (** Linking information for the native compiler. *)
 
