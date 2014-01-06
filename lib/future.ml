@@ -22,7 +22,7 @@ let _ = Errors.register_handler (function
   | NotHere ->
       Pp.strbrk("The value you are asking for is not available "^
                 "in this process. If you really need this, pass "^
-                "the \"-async-proofs off\" option to CoqIDE to disable"^
+                "the \"-async-proofs off\" option to CoqIDE to disable "^
                 "asynchronous script processing.")
   | _ -> raise Errors.Unhandled)
 
