@@ -495,13 +495,17 @@ let clear_hyps_in_evi evdref hyps concl ids =
     let check_value vk =
       match !vk with
 	| VKnone -> vk
-	| VKvalue (v,d) ->
-	    if (Id.Set.for_all (fun e -> not (Id.Set.mem e d)) ids) then
-	      (* v does depend on any of ids, it's ok *)
-	      vk
-	    else
-	      (* v depends on one of the cleared hyps: we forget the computed value *)
-	      ref VKnone
+	| VKvalue key ->
+            try
+              let _, d = Ephemeron.get key in
+	      if (Id.Set.for_all (fun e -> not (Id.Set.mem e d)) ids) then
+	        (* v does depend on any of ids, it's ok *)
+	        vk
+	      else
+	        (* v depends on one of the cleared hyps:
+                   we forget the computed value *)
+	        ref VKnone
+            with Ephemeron.InvalidKey -> ref VKnone
     in
       remove_hyps ids check_context check_value hyps
   in

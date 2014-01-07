@@ -37,7 +37,7 @@ type stratification = {
 }
 
 type val_kind =
-    | VKvalue of values * Id.Set.t
+    | VKvalue of (values * Id.Set.t) Ephemeron.key
     | VKnone
 
 type lazy_val = val_kind ref
