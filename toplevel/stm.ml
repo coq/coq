@@ -967,7 +967,7 @@ end = struct (* {{{ *)
             prerr_endline ("Task expired: " ^ pr_task task)
         | MarshalError s when !fallback_to_lazy_if_marshal_error ->
             msg_warning(strbrk("Marshalling error: "^s^". "^
-              "The system state could not be sent to the slave process. "^
+              "The system state could not be sent to the worker process. "^
               "Falling back to local, lazy, evaluation."));
             let TaskBuildProof (exn_info, _, stop, assign,_,loc,_) = task in
             assign(`Comp(build_proof_here exn_info loc stop));
@@ -978,7 +978,7 @@ end = struct (* {{{ *)
             Printf.eprintf "Fatal marshal error: %s\n" s;
             flush_all (); exit 1
         | e ->
-            prerr_endline ("Uncaught exception in slave manager: "^
+            prerr_endline ("Uncaught exception in worker manager: "^
               string_of_ppcmds (print e))
             (* XXX do something sensible *)
       done
@@ -994,7 +994,7 @@ end = struct (* {{{ *)
     | Sys_error _ | Invalid_argument _ | End_of_file
       when !fallback_to_lazy_if_slave_dies ->
         kill_pid := (fun () -> ());
-        msg_warning(strbrk "The slave process died badly.");
+        msg_warning(strbrk "The worker process died badly.");
         (match !last_task with
         | Some task ->
             msg_warning(strbrk "Falling back to local, lazy, evaluation.");
@@ -1011,7 +1011,7 @@ end = struct (* {{{ *)
           | _, Unix.WEXITED i -> Printf.sprintf "exit(%d)" i
           | _, Unix.WSIGNALED sno -> Printf.sprintf "signalled(%d)" sno
           | _, Unix.WSTOPPED sno -> Printf.sprintf "stopped(%d)" sno in
-        Printf.eprintf "Fatal slave error: %s\n" (exit_status pid);
+        Printf.eprintf "Fatal worker error: %s\n" (exit_status pid);
         flush_all (); exit 1
                     
 
