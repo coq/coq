@@ -322,8 +322,6 @@ END
 (* Refine                                                             *)
 
 
-let refine_tac = Tactics.New.refine
-
 let refine_red_flags =
   Genredexpr.Lazy {
     Genredexpr.rBeta=true;
@@ -341,7 +339,10 @@ let refine_tac (ist, c) =
     let constrvars = Tacinterp.extract_ltac_constr_values ist env in
     let vars = (constrvars, ist.Geninterp.lfun) in
     let c = Goal.Refinable.make begin fun h ->
-      Goal.Refinable.constr_of_raw h true true vars c
+      Goal.bind Goal.concl (fun concl ->
+        let flags = Pretyping.all_no_fail_flags in
+        let tycon = Pretyping.OfType concl in
+        Goal.Refinable.constr_of_raw h tycon flags vars c)
     end in
     Proofview.Goal.lift c >>= fun c ->
     Proofview.tclSENSITIVE (Goal.refine c) <*>
