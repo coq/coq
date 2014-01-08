@@ -160,7 +160,7 @@ open Himsg
 open Metasyntax
 open Mltop
 open Record
-open Toplevel
+open Coqloop
 open Vernacentries
 open Vernacinterp
 open Vernac
@@ -178,8 +178,7 @@ let parse_vernac = Pcoq.parse_string Pcoq.Vernac_.vernac;;
 (* build a term of type glob_constr without type-checking or resolution of 
    implicit syntax *)
 
-let e s =
-  Constrintern.intern_constr Evd.empty (Global.env()) (parse_constr s);;
+let e s = Constrintern.intern_constr (Global.env()) (parse_constr s);;
 
 (* build a term of type constr with type-checking and resolution of 
    implicit syntax *)
@@ -211,7 +210,7 @@ let _ = Constrextern.in_debugger := false
 let _ = Constrextern.set_extern_reference
   (fun loc _ r -> Libnames.Qualid (loc,Nametab.shortest_qualid_of_global Idset.empty r));;
 
-open Toplevel
+open Coqloop
 let go = loop
 
 let _ =
