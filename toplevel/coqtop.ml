@@ -267,7 +267,8 @@ let is_not_dash_option = function
   | _ -> false
 
 let schedule_vi_checking () =
-  Vi_checking.schedule_vi_checking !vi_files_j !vi_files
+  if !vi_files <> [] then
+    Vi_checking.schedule_vi_checking !vi_files_j !vi_files
 
 let parse_args arglist =
   let args = ref arglist in

@@ -10,11 +10,15 @@ let check_vi (ts,f) =
   Dumpglob.noglob ();
   let tasks, long_f_dot_v = Library.load_library_todo f in
   Stm.set_compilation_hints (Aux_file.load_aux_file_for long_f_dot_v);
-  List.iter (Stm.check_task tasks) ts
+  List.iter (Stm.check_task f tasks) ts
 
 let schedule_vi_checking j fs =
+  if j < 1 then Errors.error "The number of workers must be bigger than 0";
   let jobs = ref [] in
   List.iter (fun f ->
+    let f =
+      if Filename.check_suffix f ".vi" then Filename.chop_extension f
+      else f in
     let tasks, long_f_dot_v = Library.load_library_todo f in
     Stm.set_compilation_hints (Aux_file.load_aux_file_for long_f_dot_v);
     let infos = Stm.info_tasks tasks in
@@ -24,7 +28,9 @@ let schedule_vi_checking j fs =
   jobs := List.sort cmp_job !jobs;
   let workers = Array.make j (0.0,[]) in
   let cmp_worker (t1,_) (t2,_) = compare t1 t2 in
-  while !jobs <> [] do
+  if j = 1 then
+     workers.(0) <- List.fold_left (fun acc (_,_,t) -> acc +. t) 0.0 !jobs, !jobs
+  else while !jobs <> [] do
     Array.sort cmp_worker workers;
     for i=0 to j-2 do
       while !jobs <> [] && fst workers.(i) <= fst workers.(i+1) do
@@ -49,13 +55,23 @@ let schedule_vi_checking j fs =
           | ((f',id),_,_) :: tl when last = f' -> aux last (id::acc) tl
           | ((f',id),_,_) :: _ as l -> (last,acc) :: aux f' [] l in
         aux f [] l in
-  Array.iter
-    (fun (tot, joblist) -> if joblist <> [] then
-       let joblist = pack joblist in
-       Printf.printf "%s -check-vi-tasks %s & # eta %.2f\n"
-         Sys.argv.(0)
-         (String.concat " -check-vi-tasks "
-           (List.map (fun (f,tl) ->
-              let tl = List.map string_of_int tl in
-              String.concat "," tl ^ " " ^ f) joblist)) tot)
-    workers
+  let prog =
+    let rec filter_argv b = function
+      | [] -> []
+      | "-schedule-vi-checking" :: rest -> filter_argv true rest
+      | s :: rest when s.[0] = '-' && b -> filter_argv false (s :: rest)
+      | _ :: rest when b -> filter_argv b rest
+      | s :: rest -> s :: filter_argv b rest in
+    String.concat " " (filter_argv false (Array.to_list Sys.argv)) in
+  Printf.printf "#!/bin/sh\n";
+  Array.iter (fun (tot, joblist) -> if joblist <> [] then
+    let joblist = pack joblist in
+    Printf.printf "( %s ) &\n"
+      (String.concat "; "
+        (List.map (fun tasks -> Printf.sprintf "%s -check-vi-tasks %s " prog tasks)
+          (List.map (fun (f,tl) ->
+             let tl = List.map string_of_int tl in
+             String.concat "," tl ^ " " ^ f) joblist))))
+    workers;
+  Printf.printf "wait\n"
+

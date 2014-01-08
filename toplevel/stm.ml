@@ -607,7 +607,7 @@ module Slaves : sig
 
   type tasks
   val dump : unit -> tasks
-  val check_task : tasks -> int -> unit
+  val check_task : string -> tasks -> int -> unit
   val info_tasks : tasks -> (string * float * int) list
 
 end = struct (* {{{ *)
@@ -797,10 +797,10 @@ end = struct (* {{{ *)
         VCS.print ();
         r
 
-  let check_task l i =
+  let check_task name l i =
     match List.nth l i with
     | ReqBuildProof ((id,valid),eop,vcs,loc,s) ->
-        Pp.msg_info (str"Checking "++str s);
+        Pp.msg_info (str(Printf.sprintf "Checking task %d (%s) of %s" i s name));
         VCS.restore vcs;
         !reach_known_state ~cache:`No eop;
         (* The original terminator, a hook, has not been saved in the .vi*)
@@ -1498,7 +1498,10 @@ let join () =
 
 type tasks = Slaves.tasks
 let dump () = Slaves.dump ()
-let check_task tasks i = Slaves.check_task tasks i
+let check_task name tasks i =
+  let vcs = VCS.backup () in
+  try Future.purify (Slaves.check_task name tasks) i; VCS.restore vcs
+  with e when Errors.noncritical e -> VCS.restore vcs
 let info_tasks tasks = Slaves.info_tasks tasks
 
 let merge_proof_branch qast keep brname =
