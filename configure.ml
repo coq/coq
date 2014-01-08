@@ -758,6 +758,12 @@ let strip =
     if !Prefs.profile || !Prefs.debug then "true" else "strip"
 
 
+(** * md5sum command *)
+
+let md5sum =
+  if arch = "Darwin" then "md5 -q" else "md5sum"
+
+
 (** * Documentation : do we have latex, hevea, ... *)
 
 let check_doc () =
@@ -1097,6 +1103,8 @@ let write_makefile f =
   pr "# Unix systems and profiling: true\n";
   pr "# Unix systems and no profiling: strip\n";
   pr "STRIP=%s\n\n" strip;
+  pr "#the command md5sum\n";
+  pr "MD5SUM=%s\n\n" md5sum;
   pr "# LablGTK\n";
   pr "COQIDEINCLUDES=%s\n\n" !lablgtkincludes;
   pr "# CoqIde (no/byte/opt)\n";

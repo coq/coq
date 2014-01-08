@@ -372,7 +372,7 @@ install-ide-info:
 
 md5chk:
 	$(SHOW)'MD5SUM cic.mli'
-	$(HIDE)if grep -q `md5sum checker/cic.mli` checker/values.ml; \
+	$(HIDE)if grep -q `$(MD5SUM) checker/cic.mli` checker/values.ml; \
 	       then true; else echo "Error: outdated checker/values.ml"; false; fi
 
 VALIDOPTS=$(if $(VERBOSE),,-silent) -o -m
