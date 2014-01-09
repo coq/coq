@@ -1,0 +1,40 @@
+FLG -rectypes
+
+S lib
+B lib
+S intf
+B intf
+S kernel
+B kernel
+S kernel/byterun
+B kernel/byterun
+S library
+B library
+S pretyping
+B pretyping
+S interp
+B interp
+S proofs
+B proofs
+S tactics
+B tactics
+S parsing
+B parsing
+S toplevel
+B toplevel
+S plugins
+B plugins
+
+S ide
+B ide
+S ide/utils
+B ide/utils
+S tools
+B tools
+S tools/coqdoc
+B tools/coqdoc
+S dev
+B dev
+
+S checker
+B checker

@@ -229,7 +229,6 @@ module Prefs = struct
   let debug = ref false
   let profile = ref false
   let annotate = ref false
-  let typerex = ref false
   let makecmd = ref "make"
   let nativecompiler = ref true
   let coqwebsite = ref "http://coq.inria.fr/"
@@ -307,9 +306,7 @@ let args_options = Arg.align [
   "-profile", Arg.Set Prefs.profile,
     " Add profiling information in the Coq executables";
   "-annotate", Arg.Set Prefs.annotate,
-    " Compiles Coq with -dtypes option";
-  "-typerex", Arg.Set Prefs.typerex,
-    " Compiles Coq using typerex wrapper";
+    " Dumps ml annotation files while compiling Coq";
   "-makecmd", Arg.Set_string Prefs.makecmd,
     "<command> Name of GNU Make command";
   "-no-native-compiler", Arg.Clear Prefs.nativecompiler,
@@ -369,9 +366,10 @@ let rebase_camlexec dir c =
 
 let coq_debug_flag = if !Prefs.debug then "-g" else ""
 let coq_profile_flag = if !Prefs.profile then "-p" else ""
-let coq_annotate_flag = if !Prefs.annotate then "-dtypes" else ""
-let coq_typerex_wrapper =
-  if !Prefs.typerex then "ocb-wrapper -save-types" else ""
+let coq_annotate_flag =
+  if !Prefs.annotate
+  then if program_in_path "ocamlmerlin" then "-bin-annot" else "-dtypes"
+  else ""
 
 let cflags = "-fno-defer-pop -Wall -Wno-unused"
 
@@ -1068,7 +1066,6 @@ let write_makefile f =
   pr "CAMLOPTLINK=%S\n\n" camlexec.opt;
   pr "# Caml flags\n";
   pr "CAMLFLAGS=-rectypes %s\n" coq_annotate_flag;
-  pr "TYPEREX=%s\n\n" coq_typerex_wrapper;
   pr "# User compilation flag\n";
   pr "USERFLAGS=\n\n";
   pr "# Flags for GCC\n";
