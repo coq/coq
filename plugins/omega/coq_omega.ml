@@ -49,6 +49,23 @@ let display_system_flag = ref false
 let display_action_flag = ref false
 let old_style_flag = ref false
 
+(* Should we reset all variable labels between two runs of omega ? *)
+
+let reset_flag = ref false
+
+(* Historical version of Coq do not perform such resets, and this
+   implies that omega is slightly non-deterministic: successive runs of
+   omega on the same problem may lead to distinct proof-terms.
+   At the very least, these terms will differ on the inner
+   variable names, but they could even be non-convertible :
+   the OmegaSolver relies on Hashtbl.iter, it can hence find a different
+   solution when variable indices differ.
+
+   Starting from Coq 8.4pl4, omega may be made stable via the option
+   [Set Stable Omega]. In the 8.4 branch, this option is unset by default
+   for compatibility. In Coq >= 8.5, this option is set by default.
+*)
+
 let read f () = !f
 let write f x = f:=x
 
@@ -81,6 +98,14 @@ let _ =
       optread  = read old_style_flag;
       optwrite = write old_style_flag }
 
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "Omega automatic reset of generated names";
+      optkey   = ["Stable";"Omega"];
+      optread  = read reset_flag;
+      optwrite = write reset_flag }
 
 let all_time        = timing "Omega     "
 let solver_time     = timing "Solver    "
@@ -89,30 +114,35 @@ let elim_time       = timing "Elim      "
 let simpl_time      = timing "Simpl     "
 let generalize_time = timing "Generalize"
 
+let intref, reset_all_references =
+  let refs = ref [] in
+  (fun n -> let r = ref n in refs := (r,n) :: !refs; r),
+  (fun () -> List.iter (fun (r,n) -> r:=n) !refs)
+
 let new_identifier =
-  let cpt = ref 0 in
+  let cpt = intref 0 in
   (fun () -> let s = "Omega" ^ string_of_int !cpt in incr cpt; id_of_string s)
 
 let new_identifier_state =
-  let cpt = ref 0 in
+  let cpt = intref 0 in
   (fun () -> let s = make_ident "State" (Some !cpt) in incr cpt; s)
 
 let new_identifier_var =
-  let cpt = ref 0 in
+  let cpt = intref 0 in
   (fun () -> let s = "Zvar" ^ string_of_int !cpt in incr cpt; id_of_string s)
 
 let new_id =
-  let cpt = ref 0 in fun () -> incr cpt; !cpt
+  let cpt = intref 0 in fun () -> incr cpt; !cpt
 
 let new_var_num =
-  let cpt = ref 1000 in (fun () -> incr cpt; !cpt)
+  let cpt = intref 1000 in (fun () -> incr cpt; !cpt)
 
 let new_var =
-  let cpt = ref 0 in fun () -> incr cpt; Nameops.make_ident "WW" (Some !cpt)
+  let cpt = intref 0 in fun () -> incr cpt; Nameops.make_ident "WW" (Some !cpt)
 
 let display_var i = Printf.sprintf "X%d" i
 
-let intern_id,unintern_id =
+let intern_id,unintern_id,reset_intern_tables =
   let cpt = ref 0 in
   let table = Hashtbl.create 7 and co_table = Hashtbl.create 7 in
   (fun (name : identifier) ->
@@ -124,7 +154,8 @@ let intern_id,unintern_id =
   (fun idx ->
      try Hashtbl.find co_table idx with Not_found ->
        let v = new_var () in
-       Hashtbl.add table v idx; Hashtbl.add co_table idx v; v)
+       Hashtbl.add table v idx; Hashtbl.add co_table idx v; v),
+  (fun () -> cpt := 0; Hashtbl.clear table)
 
 let mk_then = tclTHENLIST
 
@@ -141,18 +172,27 @@ let rev_assoc k =
   in
   loop
 
-let tag_hypothesis,tag_of_hyp, hyp_of_tag =
+let tag_hypothesis,tag_of_hyp, hyp_of_tag, clear_tags =
   let l = ref ([]:(identifier * int) list) in
   (fun h id -> l := (h,id):: !l),
   (fun h -> try List.assoc h !l with Not_found -> failwith "tag_hypothesis"),
-  (fun h -> try rev_assoc h !l with Not_found -> failwith "tag_hypothesis")
+  (fun h -> try rev_assoc h !l with Not_found -> failwith "tag_hypothesis"),
+  (fun () -> l := [])
 
-let hide_constr,find_constr,clear_tables,dump_tables =
+let hide_constr,find_constr,clear_constr_tables,dump_tables =
   let l = ref ([]:(constr * (identifier * identifier * bool)) list) in
   (fun h id eg b -> l := (h,(id,eg,b)):: !l),
   (fun h -> try list_assoc_f eq_constr h !l with Not_found -> failwith "find_contr"),
   (fun () -> l := []),
   (fun () -> !l)
+
+let reset_all () =
+  if !reset_flag then begin
+    reset_all_references ();
+    reset_intern_tables ();
+    clear_tags ();
+    clear_constr_tables ()
+  end
 
 (* Lazy evaluation is used for Coq constants, because this code
  is evaluated before the compiled modules are loaded.
@@ -1388,7 +1428,7 @@ let reintroduce id =
   tclTHEN (tclTRY (clear [id])) (intro_using id)
 
 let coq_omega gl =
-  clear_tables ();
+  clear_constr_tables ();
   let tactic_normalisation, system =
     List.fold_left (destructure_omega gl) ([],[]) (pf_hyps_types gl) in
   let prelude,sys =
@@ -1814,6 +1854,7 @@ let destructure_goal = all_time (destructure_goal)
 
 let omega_solver gl =
   Coqlib.check_required_library ["Coq";"omega";"Omega"];
+  reset_all ();
   let result = destructure_goal gl in
   (* if !display_time_flag then begin text_time ();
      flush Pervasives.stdout end; *)

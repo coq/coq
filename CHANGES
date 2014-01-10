@@ -1,3 +1,12 @@
+Changes from V8.4pl3 to V8.4pl4
+===============================
+
+Tactics
+
+- A new option "Set Stable Omega" ensures that repeated identical calls
+  to omega will produce identical proof terms. This option is off by default
+  for maximal compatibility, but should be pretty safe to activate.
+
 Changes from V8.4pl2 to V8.4pl3
 ===============================
 
