@@ -24,6 +24,7 @@ Specification Language
 
 Tactics
 
+- Repeated identical calls to omega should now produce identical proof terms.
 - Tactics btauto, a reflexive boolean tautology solver.
 - Tactic "tauto" was exceptionally able to destruct other connectives
   than the binary connectives "and", "or", "prod", "sum", "iff". This
