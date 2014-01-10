@@ -445,7 +445,7 @@ GEXTEND Gram
 	VernacRequire (export, qidl)
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
       | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl)
-      | IDENT "Include"; e = module_expr_inl; l = LIST0 ext_module_expr ->
+      | IDENT "Include"; e = module_type_inl; l = LIST0 ext_module_expr ->
 	  VernacInclude(e::l)
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
 	  Flags.if_verbose
