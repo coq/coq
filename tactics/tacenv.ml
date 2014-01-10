@@ -102,9 +102,17 @@ let _ =
 
 let interp_atomic_ltac id = Id.Map.find id !atomic_mactab
 
+let is_primitive_ltac_ident id =
+  try
+    match Pcoq.parse_string Pcoq.Tactic.tactic id with
+     | Tacexpr.TacArg _ -> false
+     | _ -> true (* most probably TacAtom, i.e. a primitive tactic ident *)
+  with e when Errors.noncritical e -> true (* prim tactics with args, e.g. "apply" *)
+
 let is_atomic_kn kn =
   let (_,_,l) = repr_kn kn in
-  Id.Map.mem (Label.to_id l) !atomic_mactab
+  (Id.Map.mem (Label.to_id l) !atomic_mactab)
+  || (is_primitive_ltac_ident (Label.to_string l))
 
 (***************************************************************************)
 (* Tactic registration *)
