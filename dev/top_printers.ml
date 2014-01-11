@@ -59,6 +59,14 @@ let pprecarg = function
      str "Imbr[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
 let ppwf_paths x = pp (Rtree.pp_tree pprecarg x)
 
+let pprecarg = function
+  | Declarations.Norec -> str "Norec"
+  | Declarations.Mrec (mind,i) ->
+     str "Mrec[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
+  | Declarations.Imbr (mind,i) ->
+     str "Imbr[" ++ MutInd.print mind ++ pr_comma () ++ int i ++ str "]"
+let ppwf_paths x = pp (Rtree.pp_tree pprecarg x)
+
 (* term printers *)
 let rawdebug = ref false
 let ppevar evk = pp (str (Evd.string_of_existential evk))
