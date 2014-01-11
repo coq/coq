@@ -11,6 +11,7 @@ install_printer Top_printers.ppdir
 install_printer Top_printers.ppmp
 install_printer Top_printers.ppkn
 install_printer Top_printers.ppcon
+install_printer Top_printers.ppwf_paths
 install_printer Top_printers.ppmind
 install_printer Top_printers.ppsp
 install_printer Top_printers.ppqualid

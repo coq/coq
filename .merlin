@@ -18,6 +18,8 @@ S proofs
 B proofs
 S tactics
 B tactics
+S printing
+B printing
 S parsing
 B parsing
 S toplevel
