@@ -1119,7 +1119,7 @@ let delegate_policy_check () =
   else if !Flags.compilation_mode = Flags.BuildVi then true
   else !Flags.async_proofs_mode <> Flags.APoff
 
-let collect_proof cur hd id =
+let collect_proof cur hd brkind id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id);
  let loc = (snd cur).loc in
  let is_defined = function
@@ -1156,9 +1156,10 @@ let collect_proof cur hd id =
     | _, `Sideff (`Ast (x,_)) -> collect (Some (id,x)) (id::accn) view.next
     | _, `Sideff (`Id _) -> `Sync `NestedProof
     | _ -> `Sync `Unknown in
- match cur, (VCS.visit id).step with
- | (parent, { expr = VernacExactProof _ }), `Fork _ ->
+ match cur, (VCS.visit id).step, brkind with
+ |( parent, { expr = VernacExactProof _ }), `Fork _, _ ->
      `Sync `Immediate
+ | _, _, { VCS.kind = `Edit _ }  -> collect (Some cur) [] id
  | _ ->
      if State.is_cached id then `Sync `AlreadyEvaluated
      else if is_defined cur then `Sync `Transparent
@@ -1286,7 +1287,7 @@ let known_state ?(redefine_qed=false) ~cache id =
                   fst (aux (`Sync `Unknown)) ()
               ), if redefine_qed then `No else `Yes
           in
-          aux (collect_proof (view.next, x) brname eop)
+          aux (collect_proof (view.next, x) brname brinfo eop)
       | `Sideff (`Ast (x,_)) -> (fun () ->
             reach view.next; vernac_interp id x
           ), cache
