@@ -716,7 +716,7 @@ let vernac_end_segment (_,id as lid) =
 
 let vernac_require import qidl =
   let qidl = List.map qualid_of_reference qidl in
-  let modrefl = Flags.silently (List.map Library.try_locate_qualified_library) qidl in
+  let modrefl = List.map Library.try_locate_qualified_library qidl in
   if Dumpglob.dump () then
     List.iter2 (fun (loc, _) dp -> Dumpglob.dump_libref loc dp "lib") qidl (List.map fst modrefl);
   Library.require_library_from_dirpath modrefl import
