@@ -867,6 +867,7 @@ GEXTEND Gram
          -> PrintCoercionPaths (s,t)
       | IDENT "Canonical"; IDENT "Projections" -> PrintCanonicalConversions
       | IDENT "Tables" -> PrintTables
+      | IDENT "Options" -> PrintTables (* A Synonymous to Tables *)
       | IDENT "Hint" -> PrintHintGoal
       | IDENT "Hint"; qid = smart_global -> PrintHint qid
       | IDENT "Hint"; "*" -> PrintHintDb
