@@ -14,17 +14,21 @@ Let time := 18.
 
 (* Beginning of demo *)
 
+Section Demo.
+
+Variable i : True.
+
 Lemma a : True.
-Proof.
+Proof using i.
   sleep time.
   idtac.
   sleep time.
   (* Error, jump back to fix it, then Qed again *)
-  exact (I I).
+  exact (i i).
 Qed.
 
 Lemma b : True.
-Proof. 
+Proof using i. 
   sleep time.
   idtac.
   sleep time.
@@ -33,9 +37,11 @@ Proof.
 Qed.
 
 Lemma work_here : True /\ True.
-Proof.
+Proof using i.
 (* Jump directly here, Coq reacts immediately *)
 split.
   exact b.  (* We can use the lemmas above *)
 exact a.
+Qed.
 
+End Demo.
