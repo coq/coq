@@ -121,7 +121,7 @@ let traite_Declare f =
 	let s' = basename_noext s in
 	(match search_ml_known s with
 	   | Some mldir when not (List.mem s' !decl_list) ->
-	       let fullname = file_name (String.uncapitalize s') mldir in
+	       let fullname = file_name s' mldir in
 	       let depl = mL_dep_list s (fullname ^ ".ml") in
 	       treat depl;
 	       decl_list := s :: !decl_list

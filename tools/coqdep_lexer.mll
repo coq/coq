@@ -18,7 +18,7 @@
   type coq_token =
     | Require of qualid list
     | RequireString of string
-    | Declare of string list (* Names are assumed to be uncapitalized *)
+    | Declare of string list
     | Load of string
     | AddLoadPath of string
     | AddRecLoadPath of string * qualid

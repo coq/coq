@@ -100,8 +100,6 @@ let safe_hash_add clq q (k,v) =
 
 (** Files found in the loadpaths.
     For the ML files, the string is the basename without extension.
-    To allow ML source filename to be potentially capitalized,
-    we perform a double search.
 *)
 
 let mkknown () =
@@ -109,10 +107,8 @@ let mkknown () =
   let add x s = if Hashtbl.mem h x then () else Hashtbl.add h x s
   and iter f = Hashtbl.iter f h
   and search x =
-    try Some (Hashtbl.find h (String.uncapitalize x))
-    with Not_found ->
-      try Some (Hashtbl.find h (String.capitalize x))
-      with Not_found -> None
+    try Some (Hashtbl.find h x)
+    with Not_found -> None
   in add, iter, search
 
 let add_ml_known, iter_ml_known, search_ml_known = mkknown ()

@@ -188,13 +188,10 @@ let add_rec_path ~unix_path ~coq_root =
 
 (* convertit un nom quelconque en nom de fichier ou de module *)
 let mod_of_name name =
-  let base =
     if Filename.check_suffix name ".cmo" then
       Filename.chop_suffix name ".cmo"
     else
       name
-  in
-  String.capitalize base
 
 let get_ml_object_suffix name =
   if Filename.check_suffix name ".cmo" then
@@ -207,7 +204,6 @@ let get_ml_object_suffix name =
     None
 
 let file_of_name name =
-  let name = String.uncapitalize name in
   let suffix = get_ml_object_suffix name in
   let fail s =
     errorlabstrm "Mltop.load_object"
@@ -248,18 +244,16 @@ let file_of_name name =
 let known_loaded_modules = ref String.Set.empty
 
 let add_known_module mname =
-  let mname = String.capitalize mname in
   known_loaded_modules := String.Set.add mname !known_loaded_modules
 
 let module_is_known mname =
-  String.Set.mem (String.capitalize mname) !known_loaded_modules
+  String.Set.mem mname !known_loaded_modules
 
 (** A plugin is just an ML module with an initialization function. *)
 
 let known_loaded_plugins = ref String.Map.empty
 
 let add_known_plugin init name =
-  let name = String.capitalize name in
   add_known_module name;
   known_loaded_plugins := String.Map.add name init !known_loaded_plugins
 
