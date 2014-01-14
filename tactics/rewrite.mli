@@ -78,11 +78,3 @@ val setoid_symmetry_in : Id.t -> unit Proofview.tactic
 val setoid_reflexivity : unit Proofview.tactic
 
 val setoid_transitivity : constr option -> unit Proofview.tactic
-
-val implify : Id.t -> tactic
-
-val fold_match_tac : constr -> tactic
-
-val fold_matches_tac : constr -> tactic
-
-val myapply : Globnames.global_reference -> constr list -> tactic

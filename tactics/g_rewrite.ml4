@@ -265,19 +265,3 @@ TACTIC EXTEND setoid_transitivity
   [ "setoid_transitivity" constr(t) ] -> [ setoid_transitivity (Some t) ]
 | [ "setoid_etransitivity" ] -> [ setoid_transitivity None ]
 END
-
-TACTIC EXTEND implify
-[ "implify" hyp(n) ] -> [ Proofview.V82.tactic (implify n) ]
-END
-
-TACTIC EXTEND fold_match
-[ "fold_match" constr(c) ] -> [ Proofview.V82.tactic (fold_match_tac c) ]
-END
-
-TACTIC EXTEND fold_matches
-| [ "fold_matches" constr(c) ] -> [ Proofview.V82.tactic (fold_matches_tac c) ]
-END
-
-TACTIC EXTEND myapply
-| [ "myapply" global(id) constr_list(l) ] -> [ Proofview.V82.tactic (myapply id l) ]
-END
