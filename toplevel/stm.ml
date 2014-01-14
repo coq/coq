@@ -1115,7 +1115,9 @@ end = struct (* {{{ *)
 let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
 
 let delegate_policy_check () =
-  if interactive () = `Yes then !Flags.async_proofs_mode = Flags.APonParallel 0
+  if interactive () = `Yes then
+    !Flags.async_proofs_mode = Flags.APonParallel 0 ||
+    !Flags.async_proofs_mode = Flags.APonLazy
   else if !Flags.compilation_mode = Flags.BuildVi then true
   else !Flags.async_proofs_mode <> Flags.APoff
 
