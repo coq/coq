@@ -188,7 +188,7 @@ let prove_trivial_eq h_id context (constructor,type_of_term,term) =
 
 
 let find_rectype env c =
-  let (t, l) = decompose_app (Reduction.whd_betadeltaiota env c) in
+  let (t, l) = decompose_app (Reduction.whd_betaiotazeta c) in
   match kind_of_term t with
   | Ind ind -> (t, l)
   | Construct _ -> (t,l)
@@ -576,7 +576,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	onLastHypId (fun heq_id -> tclTHENLIST [
 	(* Then the new hypothesis *)
 	tclMAP introduction_no_check dyn_infos.rec_hyps;
-	(* observe_tac "after_introduction"  *)(fun g' ->
+	observe_tac "after_introduction" (fun g' ->
 	   (* We get infos on the equations introduced*)
 	   let new_term_value_eq = pf_type_of g' (mkVar heq_id) in
 	   (* compute the new value of the body *)
@@ -603,7 +603,7 @@ let treat_new_case ptes_infos nb_prod continue_tac term dyn_infos =
 	   }
 	 in
 	 clean_goal_with_heq ptes_infos continue_tac new_infos  g'
-      )])
+      )]) 
     ]
       g
 
