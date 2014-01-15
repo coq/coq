@@ -72,10 +72,14 @@ let do_observe_tac s tac g =
     raise reraise;;
 
 
-let observe_tac s tac g =
-  if do_observe ()
-  then do_observe_tac (str s) tac g
+
+let observe_tac_msg s tac g =
+   if do_observe ()
+  then do_observe_tac s tac g
   else tac g
+    
+let observe_tac s tac g = 
+  observe_tac_msg (str s) tac g
 
 (* [nf_zeta] $\zeta$-normalization of a term *)
 let nf_zeta =
@@ -287,33 +291,33 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	branches
     in
     (* before building the full intro pattern for the principle *)
-    let pat = Some (dummy_loc,Genarg.IntroOrAndPattern intro_pats) in
     let eq_ind = Coqlib.build_coq_eq () in
     let eq_construct = mkConstruct((destInd eq_ind),1) in
     (* The next to referencies will be used to find out which constructor to apply in each branch *)
     let ind_number = ref 0
     and min_constr_number = ref 0 in
     (* The tactic to prove the ith branch of the principle *)
+    let this_branche_ids empty add  i =
+      List.fold_right
+	(fun (_,pat) acc ->
+	  match pat with
+	  | Genarg.IntroIdentifier id -> add id acc
+	  | _ -> anomaly "Not an identifier"
+	)
+	(List.nth intro_pats (pred i))
+	empty
+    in
     let prove_branche i g =
       (* We get the identifiers of this branch *)
-      let this_branche_ids =
-	List.fold_right
-	  (fun (_,pat) acc ->
-	     match pat with
-	       | Genarg.IntroIdentifier id -> Idset.add id acc
-	       | _ -> anomaly "Not an identifier"
-	  )
-	  (List.nth intro_pats (pred i))
-	  Idset.empty
-      in
       (* and get the real args of the branch by unfolding the defined constant *)
       let pre_args,pre_tac =
 	List.fold_right
 	  (fun (id,b,t) (pre_args,pre_tac) ->
-	     if Idset.mem id this_branche_ids
+	     if Idset.mem id (this_branche_ids Idset.empty Idset.add i)
 	     then
 	       match b with
-		 | None -> (id::pre_args,pre_tac)
+		 | None -> 
+		   (id::pre_args,pre_tac)
 		 | Some b ->
 		     (pre_args,
 		      tclTHEN (h_reduce (Glob_term.Unfold([Glob_term.all_occurrences_expr,EvalVarRef id])) allHyps) pre_tac
@@ -347,8 +351,8 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 				   when
 				     (eq_constr eq eq_ind) &&
 				       array_exists  (eq_constr graph') graphs_constr ->
-				   ((mkApp(mkVar hid,[|args.(2);(mkApp(eq_construct,[|args.(0);args.(2)|]))|]))
-				    ::args.(2)::acc)
+				 ((mkApp(mkVar hid,[|args.(2);(mkApp(eq_construct,[|args.(0);args.(2)|]))|]))
+				  ::args.(2)::acc)
 			       | _ -> mkVar hid ::  acc
 			   end
 		       | _ -> mkVar hid :: acc
@@ -390,7 +394,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	  | [res;hres] -> res,hres
 	  | _ -> assert false
       in
-      observe (str "constructor := " ++ Printer.pr_lconstr_env (pf_env g) app_constructor);
+      observe_tac_msg (str "constructor := " ++ Printer.pr_lconstr_env (pf_env g) app_constructor)
       (
 	tclTHENSEQ
 	  [
@@ -455,11 +459,10 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	     fun g ->
 	       observe
 		 (pr_constr_with_binding (Printer.pr_lconstr_env (pf_env g))  (mkVar principle_id,bindings));
-	       functional_induction  false (applist(funs_constr.(i),List.map mkVar args_names))
-		 (Some (mkVar principle_id,bindings))
-		 pat g
+	       h_apply false false [dummy_loc,(mkVar principle_id,bindings)] g
 	   ))
-	  (fun i g -> observe_tac ("proving branche "^string_of_int i) (prove_branche i) g )
+	  (fun i g -> observe_tac ("proving branche "^string_of_int i) 
+	    (tclTHEN (tclMAP h_intro (this_branche_ids [] (fun a b -> a::b) i)) (prove_branche i)) g )
       ]
       g
 
