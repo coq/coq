@@ -908,7 +908,13 @@ let pr_autotactic =
       (str"apply " ++ pr_constr c ++ str" ; trivial")
   | Unfold_nth c -> (str"unfold " ++  pr_evaluable_reference c)
   | Extern tac ->
-      (str "(*external*) " ++ Pptactic.pr_glob_tactic (Global.env()) tac)
+      let env =
+        try
+          let (_, env) = Pfedit.get_current_goal_context () in
+          env
+        with e when Errors.noncritical e -> Global.env ()
+      in
+      (str "(*external*) " ++ Pptactic.pr_glob_tactic env tac)
 
 let pr_hint (id, v) =
   (pr_autotactic v.code ++ str"(level " ++ int v.pri ++ str", id " ++ int id ++ str ")" ++ spc ())
