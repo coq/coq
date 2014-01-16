@@ -214,7 +214,7 @@ let pr_var_decl env (id,c,typ) =
 	let pb = pr_lconstr_env env c in
 	let pb = if isCast c then surround pb else pb in
 	(str" := " ++ pb ++ cut () ) in
-  let pt = pr_ltype_env env typ in
+  let pt = pr_ltype_core true env typ in
   let ptyp = (str" : " ++ pt) in
   (pr_id id ++ hov 0 (pbody ++ ptyp))
 
@@ -226,7 +226,7 @@ let pr_rel_decl env (na,c,typ) =
 	let pb = pr_lconstr_env env c in
 	let pb = if isCast c then surround pb else pb in
 	(str":=" ++ spc () ++ pb ++ spc ()) in
-  let ptyp = pr_ltype_env env typ in
+  let ptyp = pr_ltype_core true env typ in
   match na with
   | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
   | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
