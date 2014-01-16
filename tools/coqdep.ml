@@ -157,9 +157,144 @@ let declare_dependencies () =
        flush stdout)
     (List.rev !vAccu)
 
+(** DAGs guaranteed to be transitive reductions *)
+module DAG (Node : Set.OrderedType) :
+sig
+  type node = Node.t
+  type t
+  val empty : t
+  val add_transitive_edge : node -> node -> t -> t
+  val iter : (node -> node -> unit) -> t -> unit
+end =
+struct
+  type node = Node.t
+  module NSet = Set.Make(Node)
+  module NMap = Map.Make(Node)
+
+  (** Associate to a node the set of its neighbours *)
+  type _t = NSet.t NMap.t
+
+  (** Optimisation: construct the reverse graph at the same time *)
+  type t = { dir : _t; rev : _t; }
+
+
+  let node_equal x y = Node.compare x y = 0
+
+  let add_edge x y graph =
+    let set = try NMap.find x graph with Not_found -> NSet.empty in
+    NMap.add x (NSet.add y set) graph
+
+  let remove_edge x y graph =
+    let set = try NMap.find x graph with Not_found -> NSet.empty in
+    let set = NSet.remove y set in
+    if NSet.is_empty set then NMap.remove x graph
+    else NMap.add x set graph
+
+  let has_edge x y graph =
+    let set = try NMap.find x graph with Not_found -> NSet.empty in
+    NSet.mem y set
+
+  let connected x y graph =
+    let rec aux rem seen =
+      if NSet.is_empty rem then false
+      else
+        let x = NSet.choose rem in
+        if node_equal x y then true
+        else
+          let rem = NSet.remove x rem in
+          if NSet.mem x seen then
+            aux rem seen
+          else
+            let seen = NSet.add x seen in
+            let next = try NMap.find x graph with Not_found -> NSet.empty in
+            let rem = NSet.union next rem in
+            aux rem seen
+    in
+    aux (NSet.singleton x) NSet.empty
+
+  (** Check whether there is a path from a to b going through the edge
+      x -> y. *)
+  let connected_through a b x y graph =
+    let rec aux rem seen =
+      if NMap.is_empty rem then false
+      else
+        let (n, through) = NMap.choose rem in
+        if node_equal n b && through then true
+        else
+          let rem = NMap.remove n rem in
+          let is_seen = try Some (NMap.find n seen) with Not_found -> None in
+          match is_seen with
+          | None ->
+            let seen = NMap.add n through seen in
+            let next = try NMap.find n graph with Not_found -> NSet.empty in
+            let is_x = node_equal n x in
+            let push m accu =
+              let through = through || (is_x && node_equal m y) in
+              NMap.add m through accu
+            in
+            let rem = NSet.fold push next rem in
+            aux rem seen
+          | Some false ->
+            (** The path we took encountered x -> y but not the one in seen *)
+            if through then aux (NMap.add n true rem) (NMap.add n true seen)
+            else aux rem seen
+          | Some true -> aux rem seen
+    in
+    aux (NMap.singleton a false) NMap.empty
+
+  let closure x graph =
+    let rec aux rem seen =
+      if NSet.is_empty rem then seen
+      else
+        let x = NSet.choose rem in
+        let rem = NSet.remove x rem in
+        if NSet.mem x seen then 
+          aux rem seen
+        else
+          let seen = NSet.add x seen in
+          let next = try NMap.find x graph with Not_found -> NSet.empty in
+          let rem = NSet.union next rem in
+          aux rem seen
+    in
+    aux (NSet.singleton x) NSet.empty
+
+    let empty = { dir = NMap.empty; rev = NMap.empty; }
+
+    (** Online transitive reduction algorithm *)
+    let add_transitive_edge x y graph =
+      if connected x y graph.dir then graph
+      else
+        let dir = add_edge x y graph.dir in
+        let rev = add_edge y x graph.rev in
+        let graph = { dir; rev; } in
+        let ancestors = closure x rev in
+        let descendents = closure y dir in
+        let fold_ancestor a graph =
+          let fold_descendent b graph =
+            let to_remove = has_edge a b graph.dir in
+            let to_remove = to_remove && not (node_equal x a && node_equal y b) in
+            let to_remove = to_remove && connected_through a b x y graph.dir in
+            if to_remove then
+              let dir = remove_edge x y graph.dir in
+              let rev = remove_edge y x graph.rev in
+              { dir; rev; }
+            else graph
+          in
+          NSet.fold fold_descendent descendents graph
+        in
+        NSet.fold fold_ancestor ancestors graph
+
+  let iter f graph =
+    let iter x set = NSet.iter (fun y -> f x y) set in
+    NMap.iter iter graph.dir
+
+end
+
 module Graph =
 struct
 (** Dumping a dependency graph **)
+
+module DAG = DAG(struct type t = string let compare = compare end)
 
 (** TODO: we should share this code with Coqdep_common *)
 let treat_coq_file chan =
@@ -272,25 +407,26 @@ let insert_raw_graph file =
   insert_graph (basename_noext file) (get_boxes file)
 
 let rec get_dependencies name args =
-  let ename = basename_noext name in
   let vdep  = treat_coq_file (name ^ ".v") in
-  List.fold_left
-    (fun (deps, graphs, alseen) (dep, _) ->
-    if not (List.mem dep alseen)
-    then get_dependencies dep ((ename, dep) :: deps, insert_raw_graph dep graphs, dep :: alseen)
-    else ((ename, dep) :: deps, graphs, alseen))
-  args vdep
+  let fold (deps, graphs, alseen) (dep, _) =
+    let dag = DAG.add_transitive_edge name dep deps in
+    if not (List.mem dep alseen) then
+      get_dependencies dep (dag, insert_raw_graph dep graphs, dep :: alseen)
+    else
+      (dag, graphs, alseen)
+  in
+  List.fold_left fold args vdep
 
 let coq_dependencies_dump chan dumpboxes =
   let (deps, graphs, _) =
     List.fold_left (fun ih (name, _) -> get_dependencies name ih)
-    ([], List.fold_left (fun ih (file, _) -> insert_raw_graph file ih) [] !vAccu,
+    (DAG.empty, List.fold_left (fun ih (file, _) -> insert_raw_graph file ih) [] !vAccu,
     List.map fst !vAccu) !vAccu
   in
   fprintf chan "digraph dependencies {\n"; flush chan;
   if dumpboxes then print_graphs chan (pop_common_prefix graphs)
   else List.iter (fun (name, _) -> fprintf chan "%s\n" (basename_noext name)) !vAccu;
-  List.iter (fun (name, dep) -> fprintf chan "%s -> %s\n" (basename_noext dep) name) deps;
+  DAG.iter (fun name dep -> fprintf chan "%s -> %s\n" (basename_noext dep) (basename_noext name)) deps;
   fprintf chan "}\n"
 
 end
