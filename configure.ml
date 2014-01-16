@@ -861,7 +861,7 @@ let config_runtime () =
     sprintf "-dllib -lcoqrun -dllpath '%s/kernel/byterun'" coqtop
   | _ ->
     let ld="CAML_LD_LIBRARY_PATH" in
-    build_loadpath := sprintf "export %s='%s/kernel/byterun':$%s" ld coqtop ld;
+    build_loadpath := sprintf "export %s:='%s/kernel/byterun':$(%s)" ld coqtop ld;
     sprintf "-dllib -lcoqrun -dllpath '%s'" libdir
 
 let coqrunbyteflags = config_runtime ()
