@@ -205,7 +205,7 @@ let pr_var_decl env (id,c,typ) =
     | None ->  (mt ())
     | Some c ->
 	(* Force evaluation *)
-	let pb = pr_lconstr_env env c in
+	let pb = pr_lconstr_core true env c in
 	let pb = if isCast c then surround pb else pb in
 	(str" := " ++ pb ++ cut () ) in
   let pt = pr_ltype_core true env typ in
@@ -217,7 +217,7 @@ let pr_rel_decl env (na,c,typ) =
     | None -> mt ()
     | Some c ->
 	(* Force evaluation *)
-	let pb = pr_lconstr_env env c in
+	let pb = pr_lconstr_core true env c in
 	let pb = if isCast c then surround pb else pb in
 	(str":=" ++ spc () ++ pb ++ spc ()) in
   let ptyp = pr_ltype_core true env typ in
