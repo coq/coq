@@ -316,6 +316,8 @@ let is_correct_arity env c pj ind specif params =
            with NotConvertible -> raise (LocalArity None) in
 	 check_allowed_sort ksort specif;
 	 union_constraints u univ
+      | _, (_,Some _,_ as d)::ar' ->
+	 srec (push_rel d env) (lift 1 pt') ar' u
       | _ ->
 	  raise (LocalArity None)
   in
