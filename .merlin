@@ -1,5 +1,7 @@
 FLG -rectypes
 
+S config
+B config
 S lib
 B lib
 S intf
@@ -27,6 +29,7 @@ B toplevel
 S plugins
 B plugins
 
+PKG lablgtk2.sourceview2
 S ide
 B ide
 S ide/utils

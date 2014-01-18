@@ -166,7 +166,7 @@ cruftclean: ml4clean
 indepclean:
 	rm -f $(GENFILES)
 	rm -f $(COQTOPBYTE) $(CHICKENBYTE) bin/fake_ide
-	find . -name '*~' -o -name '*.cm[ioa]' | xargs rm -f
+	find . \( -name '*~' -o -name '*.cm[ioat]' -o -name '*.cmti' \) -delete
 	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
@@ -222,7 +222,7 @@ cleanconfig:
 distclean: clean cleanconfig
 
 voclean:
-	find theories plugins test-suite -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" -o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" | xargs rm -f
+	find theories plugins test-suite \( -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" -o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" -o -name '.*.aux' \) -delete
 
 devdocclean:
 	find . -name '*.dep.ps' -o -name '*.dot' | xargs rm -f
