@@ -295,7 +295,7 @@ let is_correct_arity env c (p,pj) ind specif params =
 	  check_allowed_sort (family_of_sort s') specif;
 	  false
       | _, (_,Some _,_ as d)::ar' ->
-	 srec (push_rel d env) (lift 1 pt') ar' u
+	 srec (push_rel d env) (lift 1 pt') ar'
       | _ ->
 	  raise (LocalArity None)
   in
