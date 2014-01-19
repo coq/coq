@@ -275,8 +275,8 @@ struct
             let to_remove = to_remove && not (node_equal x a && node_equal y b) in
             let to_remove = to_remove && connected_through a b x y graph.dir in
             if to_remove then
-              let dir = remove_edge x y graph.dir in
-              let rev = remove_edge y x graph.rev in
+              let dir = remove_edge a b graph.dir in
+              let rev = remove_edge b a graph.rev in
               { dir; rev; }
             else graph
           in
