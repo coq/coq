@@ -559,6 +559,11 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
       | Some arg ->
         let open Tacexpr in
         let open Genarg in
+        let wit = glbwit Constrarg.wit_tactic in
+        let body =
+          if has_type arg wit then out_gen wit arg
+          else assert false (** FIXME *)
+        in
         let mk_env id (c, (tmp_scope, subscopes)) accu =
           let nenv = {env with tmp_scope; scopes = subscopes @ env.scopes} in
           let gc = intern nenv c in
@@ -566,9 +571,8 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
           ((loc, id), c) :: accu
         in
         let bindings = Id.Map.fold mk_env terms [] in
-        let body = TacArg (loc, TacGeneric arg) in
         let tac = TacLetIn (false, bindings, body) in
-        let arg = in_gen (glbwit Constrarg.wit_tactic) tac in
+        let arg = in_gen wit tac in
         Some arg
       in
       GHole (loc, knd, arg)
