@@ -24,6 +24,7 @@ module InterpObj =
 struct
   type ('raw, 'glb, 'top) obj = ('glb, 'top) interp_fun
   let name = "interp"
+  let default _ = None
 end
 
 module Interp = Register(InterpObj)

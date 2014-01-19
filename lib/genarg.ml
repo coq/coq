@@ -194,6 +194,7 @@ module type GenObj =
 sig
   type ('raw, 'glb, 'top) obj
   val name : string
+  val default : ('raw, 'glb, 'top) genarg_type -> ('raw, 'glb, 'top) obj option
 end
 
 module Register (M : GenObj) =
@@ -213,7 +214,10 @@ struct
   let get_obj0 name =
     try String.Map.find name !arg0_map
     with Not_found ->
-      Errors.anomaly (str M.name ++ str " function not found: " ++ str name)
+      match M.default (ExtraArgType name) with
+      | None ->
+        Errors.anomaly (str M.name ++ str " function not found: " ++ str name)
+      | Some obj -> obj
 
   (** For now, the following function is quite dummy and should only be applied
       to an extra argument type, otherwise, it will badly fail. *)

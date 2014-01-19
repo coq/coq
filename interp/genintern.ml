@@ -24,12 +24,14 @@ module InternObj =
 struct
   type ('raw, 'glb, 'top) obj = ('raw, 'glb) intern_fun
   let name = "intern"
+  let default _ = None
 end
 
 module SubstObj =
 struct
   type ('raw, 'glb, 'top) obj = 'glb subst_fun
   let name = "subst"
+  let default _ = None
 end
 
 module Intern = Register (InternObj)

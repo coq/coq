@@ -10,44 +10,37 @@ open Pp
 open Util
 open Genarg
 
-type printer = {
-  raw : Obj.t -> std_ppcmds;
-  glb : Obj.t -> std_ppcmds;
-  top : Obj.t -> std_ppcmds;
+type ('raw, 'glb, 'top) printer = {
+  raw : 'raw -> std_ppcmds;
+  glb : 'glb -> std_ppcmds;
+  top : 'top -> std_ppcmds;
 }
 
-let default_printer name = (); fun _ -> str "<genarg:" ++ str name ++ str ">"
+module PrintObj =
+struct
+  type ('raw, 'glb, 'top) obj = ('raw, 'glb, 'top) printer
+  let name = "printer"
+  let default wit = match unquote (rawwit wit) with
+  | ExtraArgType name ->
+    let printer = {
+      raw = (fun _ -> str "<genarg:" ++ str name ++ str ">");
+      glb = (fun _ -> str "<genarg:" ++ str name ++ str ">");
+      top = (fun _ -> str "<genarg:" ++ str name ++ str ">");
+    } in
+    Some printer
+  | _ -> assert false
+end
 
-let default_printer name =
-  let pr = default_printer name in
-  { raw = pr; glb = pr; top = pr; }
+module Print = Register (PrintObj)
 
-let (arg0_printer_map : printer String.Map.t ref) = ref String.Map.empty
+let register_print0 wit raw glb top =
+  let printer = { raw; glb; top; } in
+  Print.register0 wit printer
 
-let get_printer0 name =
-  try String.Map.find name !arg0_printer_map
-  with Not_found -> default_printer name
+let raw_print wit v = (Print.obj wit).raw v
+let glb_print wit v = (Print.obj wit).glb v
+let top_print wit v = (Print.obj wit).top v
 
-let obj_printer t = match t with
-| ExtraArgType s -> get_printer0 s
-| _ -> assert false
-
-let raw_print arg = Obj.magic (obj_printer (unquote (rawwit arg))).raw
-let glb_print arg = Obj.magic (obj_printer (unquote (rawwit arg))).glb
-let top_print arg = Obj.magic (obj_printer (unquote (rawwit arg))).top
-
-let generic_raw_print v =
-  (obj_printer (genarg_tag v)).raw (Unsafe.prj v)
-let generic_glb_print v =
-  (obj_printer (genarg_tag v)).glb (Unsafe.prj v)
-let generic_top_print v =
-  (obj_printer (genarg_tag v)).top (Unsafe.prj v)
-
-let register_print0 arg rpr gpr tpr = match unquote (rawwit arg) with
-| ExtraArgType s ->
-  if String.Map.mem s !arg0_printer_map then
-    Errors.anomaly (str "interp0 function already registered: " ++ str s)
-  else
-    let pr = { raw = Obj.magic rpr; glb = Obj.magic gpr; top = Obj.magic tpr; } in
-    arg0_printer_map := String.Map.add s pr !arg0_printer_map
-| _ -> assert false
+let generic_raw_print v = raw_unpack { raw_unpack = raw_print; } v
+let generic_glb_print v = glb_unpack { glb_unpack = glb_print; } v
+let generic_top_print v = top_unpack { top_unpack = top_print; } v
