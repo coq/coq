@@ -425,8 +425,8 @@ let coq_dependencies_dump chan dumpboxes =
   in
   fprintf chan "digraph dependencies {\n"; flush chan;
   if dumpboxes then print_graphs chan (pop_common_prefix graphs)
-  else List.iter (fun (name, _) -> fprintf chan "%s\n" (basename_noext name)) !vAccu;
-  DAG.iter (fun name dep -> fprintf chan "%s -> %s\n" (basename_noext dep) (basename_noext name)) deps;
+  else List.iter (fun (name, _) -> fprintf chan "\"%s\"[label=\"%s\"]\n" name (basename_noext name)) !vAccu;
+  DAG.iter (fun name dep -> fprintf chan "\"%s\" -> \"%s\"\n" dep name) deps;
   fprintf chan "}\n"
 
 end
