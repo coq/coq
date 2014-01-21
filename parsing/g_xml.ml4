@@ -82,25 +82,37 @@ let get_xml_attr s al =
 let ident_of_cdata (loc,a) = Id.of_string a
 
 let uri_of_data s =
-  let n = String.index s ':' in
-  let p = String.index s '.' in
-  let s = String.sub s (n+2) (p-n-2) in
-  for i = 0 to String.length s - 1 do
-    match s.[i] with
-    | '/' -> s.[i] <- '.'
-    | _ -> ()
-  done;
-  qualid_of_string s
+  try
+    let n = String.index s ':' in
+    let p = String.index s '.' in
+    let s = String.sub s (n+2) (p-n-2) in
+    for i = 0 to String.length s - 1 do
+      match s.[i] with
+      | '/' -> s.[i] <- '.'
+      | _ -> ()
+    done;
+    qualid_of_string s
+  with Not_found | Invalid_argument _ ->
+    error ("Malformed URI \""^s^"\"")
 
-let constant_of_cdata (loc,a) = Nametab.locate_constant (uri_of_data a)
+let constant_of_cdata (loc,a) =
+  let q = uri_of_data a in
+  try Nametab.locate_constant q
+  with Not_found -> error ("No such constant "^string_of_qualid q)
 
-let global_of_cdata (loc,a) = Nametab.locate (uri_of_data a)
+let global_of_cdata (loc,a) =
+  let q = uri_of_data a in
+  try Nametab.locate q
+  with Not_found -> error ("No such global "^string_of_qualid q)
 
 let inductive_of_cdata a = match global_of_cdata a with
-    | IndRef (kn,_) -> kn
-    | _ -> anomaly ~label:"XML parser" (str "not an inductive")
+  | IndRef (kn,_) -> kn
+  | _ -> error (string_of_qualid (uri_of_data (snd a)) ^" is not an inductive")
 
-let ltacref_of_cdata (loc,a) = (loc,locate_tactic (uri_of_data a))
+let ltacref_of_cdata (loc,a) =
+  let q = uri_of_data a in
+  try (loc,Nametab.locate_tactic q)
+  with Not_found -> error ("No such ltac "^string_of_qualid q)
 
 let sort_of_cdata (loc,a) = match a with
   | "Prop" -> GProp
