@@ -212,37 +212,51 @@ let with_magic_number_check f a =
 (* Communication through files with another executable *)
 
 let connect writefun readfun com =
+  (* step 0 : prepare temporary files and I/O channels *)
   let name = Filename.basename com in
-  let tmp_to = Filename.temp_file ("coq-"^name^"-in") ".xml" in
-  let tmp_from = Filename.temp_file ("coq-"^name^"-out") ".xml" in
-  let ch_to_in,ch_to_out =
-    try open_in tmp_to, open_out tmp_to
+  let req,req_wr =
+    try Filename.open_temp_file ("coq-"^name^"-in") ".xml"
     with Sys_error s -> error ("Cannot set connection to "^com^"("^s^")") in
-  let ch_from_in,ch_from_out =
-    try open_in tmp_from, open_out tmp_from
+  let ans,ans_wr =
+    try Filename.open_temp_file ("coq-"^name^"-out") ".xml"
     with Sys_error s ->
-      close_out ch_to_out; close_in ch_to_in;
+      close_out req_wr;
       error ("Cannot set connection from "^com^"("^s^")") in
-  writefun ch_to_out;
-  close_out ch_to_out;
-  let pid =
-    let ch_to' = Unix.descr_of_in_channel ch_to_in in
-    let ch_from' = Unix.descr_of_out_channel ch_from_out in
-    try Unix.create_process com [|com|] ch_to' ch_from' Unix.stdout
+  let ans_wr' = Unix.descr_of_out_channel ans_wr in
+  (* step 1 : fill the request file *)
+  writefun req_wr;
+  close_out req_wr;
+  (* step 2a : prepare the request-reading descriptor for the sub-process *)
+  let req_rd' =
+    try Unix.openfile req [Unix.O_RDONLY] 0o644
     with Unix.Unix_error (err,_,_) ->
-      close_in ch_to_in; close_in ch_from_in; close_out ch_from_out;
-      unlink tmp_from; unlink tmp_to;
-      error ("Cannot execute "^com^"("^(Unix.error_message err)^")") in
-  close_in ch_to_in;
-  close_out ch_from_out;
-  (match snd (Unix.waitpid [] pid) with
+      close_out ans_wr;
+      let msg = Unix.error_message err in
+      error ("Cannot set connection to "^com^"("^msg^")")
+  in
+  (* step 2b : launch the sub-process *)
+  let pid =
+    try Unix.create_process com [|com|] req_rd' ans_wr' Unix.stdout
+    with Unix.Unix_error (err,_,_) ->
+      Unix.close req_rd'; close_out ans_wr; Unix.unlink req; Unix.unlink ans;
+      let msg = Unix.error_message err in
+      error ("Cannot execute "^com^"("^msg^")") in
+  Unix.close req_rd';
+  close_out ans_wr;
+  (* step 2c : wait for termination of the sub-process *)
+  (match CUnix.waitpid_non_intr pid with
     | Unix.WEXITED 127 -> error (com^": cannot execute")
     | Unix.WEXITED 0 -> ()
     | _ -> error (com^" exited abnormally"));
-  let a = readfun ch_from_in in
-  close_in ch_from_in;
-  unlink tmp_from;
-  unlink tmp_to;
+  (* step 3 : read the answer and handle it *)
+  let ans_rd =
+    try open_in ans
+    with Sys_error s -> error ("Cannot read output of "^com^"("^s^")") in
+  let a = readfun ans_rd in
+  close_in ans_rd;
+  (* step 4 : cleanup the temporary files *)
+  unlink req;
+  unlink ans;
   a
 
 (* Time stamps. *)

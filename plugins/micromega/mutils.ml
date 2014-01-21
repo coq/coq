@@ -403,6 +403,12 @@ end
 
 module TagSet = Set.Make(Tag)
 
+(** As for Unix.close_process, our Unix.waipid will ignore all EINTR *)
+
+let rec waitpid_non_intr pid =
+  try snd (Unix.waitpid [] pid)
+  with Unix.Unix_error (Unix.EINTR, _, _) -> waitpid_non_intr pid
+
 (**
   * Forking routine, plumbing the appropriate pipes where needed.
   *)
@@ -422,7 +428,7 @@ let command exe_path args vl =
     flush outch ;
 
   (* Wait for its completion *)
-    let _pid,status = Unix.waitpid [] pid in
+    let status = waitpid_non_intr pid in
 
       finally
         (* Recover the result *)

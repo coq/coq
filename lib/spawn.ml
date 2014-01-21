@@ -221,9 +221,11 @@ let kill_if p ~sec test =
       false
     end else true)
 
-let wait { pid = (unixpid, _) } =
-  try snd (Unix.waitpid [] unixpid)
-  with Unix.Unix_error _ -> Unix.WEXITED 0o400
+let rec wait p =
+  try snd (Unix.waitpid [] (fst p.pid))
+  with
+  | Unix.Unix_error (Unix.EINTR, _, _) -> wait p
+  | Unix.Unix_error _ -> Unix.WEXITED 0o400
 
 end
 

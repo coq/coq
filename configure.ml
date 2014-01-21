@@ -38,6 +38,12 @@ let check_exit_code (_,code) = match code with
   | Unix.WSIGNALED n -> failwith ("killed by signal " ^ i2s n)
   | Unix.WSTOPPED n -> failwith ("stopped by signal " ^ i2s n)
 
+(** As for Unix.close_process, our Unix.waipid will ignore all EINTR *)
+
+let rec waitpid_non_intr pid =
+  try Unix.waitpid [] pid
+  with Unix.Unix_error (Unix.EINTR, _, _) -> waitpid_non_intr pid
+
 (** Below, we'd better read all lines on a channel before closing it,
     otherwise a SIGPIPE could be encountered by the sub-process *)
 
@@ -76,7 +82,7 @@ let run ?(fatal=true) ?(err=StdErr) prog args =
     let () = Unix.close nul_w in
     let line = read_first_line_and_close out_r in
     let _ = read_first_line_and_close nul_r in
-    let () = check_exit_code (Unix.waitpid [] pid) in
+    let () = check_exit_code (waitpid_non_intr pid) in
     line
   with
   | _ when not fatal && not !verbose -> ""
