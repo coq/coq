@@ -88,9 +88,6 @@ IFDEF WIN32 THEN
 external win32_kill : int -> unit = "win32_kill"
 external win32_interrupt : int -> unit = "win32_interrupt"
 let () =
-  Coq.killer := win32_kill;
-  Coq.soft_killer := win32_kill;
-  Coq.interrupter := win32_interrupt;
   Coq.gio_channel_of_descr_socket := Glib.Io.channel_of_descr_socket;
   set_win32_path ();
   reroute_stdout_stderr ()

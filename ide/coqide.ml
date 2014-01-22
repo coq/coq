@@ -184,7 +184,7 @@ let check_quit saveall =
 (* For MacOS, just to be sure, we close all coqtops (again?) *)
 let close_and_quit () =
   List.iter (fun sn -> Coq.close_coqtop sn.coqtop) notebook#pages;
-  Coq.final_countdown ()
+  exit 0
 
 let crash_save exitcode =
   Minilib.log "Starting emergency save of buffers in .crashcoqide files";
@@ -247,7 +247,7 @@ let revert_all _ =
     notebook#pages
 
 let quit _ =
-  try FileAux.check_quit saveall; Coq.final_countdown ()
+  try FileAux.check_quit saveall; exit 0
   with FileAux.DontQuit -> ()
 
 let close_buffer sn =
@@ -1469,6 +1469,7 @@ let read_coqide_args argv =
       output_string stderr "Error: missing argument after -coqtop"; exit 1
     |"-debug"::args ->
       Minilib.debug := true;
+      Flags.debug := true;
       Backtrace.record_backtrace true;
       filter_coqtop coqtop project_files ("-debug"::out) args
     |arg::args -> filter_coqtop coqtop project_files (arg::out) args

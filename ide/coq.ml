@@ -179,81 +179,32 @@ let mk_ccb poly = { open_ccb = fun scope -> scope.bind_ccb poly }
 let with_ccb ccb e = ccb.open_ccb e
 
 let interrupter = ref (fun pid -> Unix.kill pid Sys.sigint)
-let soft_killer = ref (fun pid -> Unix.kill pid Sys.sigterm)
-let killer = ref (fun pid -> Unix.kill pid Sys.sigkill)
-
-(** Handling old processes *)
-
-type unix_process_id = int
-type retry = int
-
-let zombies = ref ([] : (unix_process_id * retry) list)
-
-let pr_zombies ?(full=false) l =
-  let pr (pid,retries) =
-    string_of_int pid ^
-    if full then "["^string_of_int retries^"]" else ""
-  in
-  String.concat ", " (List.map pr l)
-
-let is_buried pid =
-  try fst (Unix.waitpid [Unix.WNOHANG] pid) <> 0
-  with Unix.Unix_error _ -> false
-
-let max_retry = 3 (* one soft then two hard kill attempts *)
-
-let countdown = ref None
-let final_countdown () = (countdown := Some max_retry)
-
-let check_zombies () =
-  (* First, do [waitpid] on our zombies and try to kill the survivors *)
-  let handle_zombie others (pid,retries) =
-    if is_buried pid then others
-    else
-      let () = match retries with
-	| 0 -> () (* freshly closed coqtop, leave it some time *)
-	| 1 -> ignore_error !soft_killer pid
-	| _ -> ignore_error !killer pid
-      in (pid,retries+1) :: others
-  in
-  let zs = List.fold_left handle_zombie [] !zombies
-  in
-  if zs <> [] then
-    Minilib.log ("Remaining zombies: "^ pr_zombies ~full:true zs);
-  (* Second, we warn the user about old zombies that refuses to die
-     (except in the middle of the final countdown) *)
-  let chk_old = !countdown = None || !countdown = Some 0 in
-  let old_zombies, new_zombies =
-    List.partition (fun (_,n) -> chk_old && n >= max_retry) zs
-  in
-  if old_zombies <> [] then begin
-    let msg1 = "Some coqtop processes are still running.\n" in
-    let msg2 = "You may have to kill them manually.\nPids: " in
-    let msg3 = pr_zombies old_zombies in
-    let popup = GWindow.message_dialog ~buttons:GWindow.Buttons.close
-      ~message_type:`ERROR ~message:(msg1 ^ msg2 ^ msg3) ()
-    in
-    ignore (popup#run ());
-    ignore (popup#destroy ())
-  end;
-  zombies := new_zombies;
-  (* Finally, we might end coqide if the final countdown has started *)
-  if !countdown = Some 0 || (!countdown <> None && zs = []) then exit 0;
-  countdown := Option.map pred !countdown;
-  true
-
-let _ = Glib.Timeout.add ~ms:300 ~callback:check_zombies
 
 (** * The structure describing a coqtop sub-process *)
 
+let gio_channel_of_descr_socket = ref Glib.Io.channel_of_descr
+
+module GlibMainLoop = struct
+  type async_chan = Glib.Io.channel
+  type watch_id = Glib.Io.id
+  type condition = Glib.Io.condition
+  let add_watch ~callback chan =
+    Glib.Io.add_watch ~cond:[`ERR; `HUP; `IN; `NVAL; `PRI] ~callback chan
+  let remove_watch = Glib.Io.remove
+  let read_all = Ideutils.io_read_all
+  let async_chan_of_file fd = Glib.Io.channel_of_descr fd
+  let async_chan_of_socket s = !gio_channel_of_descr_socket s
+  let add_timeout ~sec callback =
+    ignore(Glib.Timeout.add ~ms:(sec * 1000) ~callback)
+end
+
+module CoqTop = Spawn.Async(GlibMainLoop)
+
 type handle = {
-  pid : unix_process_id;
+  proc : CoqTop.process;
+  xml_oc : Xml_printer.t;
   mutable alive : bool;
   mutable waiting_for : (ccb * logger) option; (* last call + callback + log *)
-  xml_oc : Xml_printer.t;
-  xml_ic : Xml_parser.t;
-  glib_ic : Glib.Io.channel;
-  close_xml_channels : unit -> unit
 }
 
 (** Coqtop process status :
@@ -327,59 +278,16 @@ let lift (f : unit -> 'a) : 'a task =
     closed in coqide.
 *)
 
-let open_coqtop_pipe prog args =
-  let (ide2top_r,ide2top_w) = Unix.pipe () in
-  let (top2ide_r,top2ide_w) = Unix.pipe () in
-  Unix.set_close_on_exec ide2top_w;
-  Unix.set_close_on_exec top2ide_r;
-  let pid = Unix.create_process prog args ide2top_r top2ide_w Unix.stderr in
-  assert (pid <> 0);
-  Unix.close ide2top_r;
-  Unix.close top2ide_w;
-  Unix.set_nonblock top2ide_r;
-  pid, 
-  Unix.in_channel_of_descr top2ide_r, 
-  Glib.Io.channel_of_descr top2ide_r,
-  Unix.out_channel_of_descr ide2top_w,
-  (fun () -> Unix.close top2ide_r; Unix.close ide2top_w)
-
-let gio_channel_of_descr_socket = ref Glib.Io.channel_of_descr
-
-let open_coqtop_socket prog args =
-  let s = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
-  Unix.bind s (Unix.ADDR_INET (Unix.inet_addr_loopback,0));
-  Unix.listen s 1;
-  let host, port =
-    match Unix.getsockname s with
-    | Unix.ADDR_INET(host, port) ->
-        Unix.string_of_inet_addr host, string_of_int port
-    | _ -> assert false in
-  let pid =
-    Unix.create_process prog
-      (Array.append args [|"-ideslave-socket";host^":"^port|])
-      (Unix.openfile "slave.in"  [Unix.O_CREAT;Unix.O_RDONLY] 0o660)
-      (Unix.openfile "slave.out" [Unix.O_CREAT;Unix.O_WRONLY] 0o660)
-      (Unix.openfile "slave.err" [Unix.O_CREAT;Unix.O_WRONLY] 0o660) in
-  assert (pid <> 0);
-  let cs, _ = Unix.accept s in
-  Unix.set_nonblock cs;
-  pid, 
-  Unix.in_channel_of_descr cs, 
-  !gio_channel_of_descr_socket cs,
-  Unix.out_channel_of_descr cs,
-  (fun () -> Unix.close cs; Unix.close s)
-
-let open_process_pid prog args =
-  if Sys.os_type = "Unix" then open_coqtop_pipe prog args
-  else open_coqtop_socket prog args
-
-exception TubeError
+exception TubeError of string
 exception AnswerWithoutRequest of string
 
 let rec check_errors = function
 | [] -> ()
 | (`IN | `PRI) :: conds -> check_errors conds
-| e :: _ -> raise TubeError
+| `ERR :: _ -> raise (TubeError "ERR")
+| `HUP :: _ -> raise (TubeError "HUP")
+| `NVAL :: _ -> raise (TubeError "NVAL")
+| `OUT :: _ -> raise (TubeError "OUT")
 
 let handle_intermediate_message handle xml =
   let message = Serialize.to_message xml in
@@ -413,13 +321,12 @@ type input_state = {
   mutable lexerror : int option;
 }
 
-let unsafe_handle_input handle feedback_processor state conds =
-  let chan = handle.glib_ic in
-  let () = check_errors conds in
-  let s = io_read_all chan in
-  let () = if String.length s = 0 then raise TubeError in
+let unsafe_handle_input handle feedback_processor state conds ~read_all =
+  check_errors conds;
+  let s = read_all () in
+  if String.length s = 0 then raise (TubeError "EMPTY");
   let s = state.fragment ^ s in
-  let () = state.fragment <- s in
+  state.fragment <- s;
   let lex = Lexing.from_string s in
   let p = Xml_parser.make (Xml_parser.SLexbuf lex) in
   let rec loop () =
@@ -444,65 +351,51 @@ let unsafe_handle_input handle feedback_processor state conds =
     let l_end = Lexing.lexeme_end lex in
     (** Heuristic hack not to reimplement the lexer:  if ever the lexer dies
         twice at the same place, then this is a non-recoverable error *)
-    let () = match state.lexerror with
-    | None -> ()
-    | Some loc -> if loc = l_end then raise e
-    in
-    let () = state.lexerror <- Some l_end in
-    ()
+    if state.lexerror = Some l_end then raise e;
+    state.lexerror <- Some l_end
 
-let install_input_watch handle respawner feedback_processor =
-  let io_chan = handle.glib_ic in
-  let all_conds = [`ERR; `HUP; `IN; `NVAL; `PRI] in (* all except `OUT *)
-  let state = {
-    fragment = "";
-    lexerror = None;
-  } in
-  let print_exception = function
+let print_exception = function
   | Xml_parser.Error e -> Xml_parser.error e
   | Serialize.Marshal_error -> "Protocol violation"
   | e -> Printexc.to_string e
-  in
-  let handle_input conds =
-    if not handle.alive then false (* coqtop already terminated *)
+
+let input_watch handle respawner feedback_processor =
+  let state = { fragment = ""; lexerror = None; } in
+  (fun conds ~read_all ->
+    let h = handle () in
+    if not h.alive then false
     else
-      try
-        let () = unsafe_handle_input handle feedback_processor state conds in
-        true
+      try unsafe_handle_input h feedback_processor state conds ~read_all; true
       with e ->
-	let () = Minilib.log ("Coqtop reader failed, resetting: "^print_exception e) in
-	let () = respawner () in
-	false
-  in
-  ignore (Glib.Io.add_watch ~cond:all_conds ~callback:handle_input io_chan)
+        Minilib.log ("Coqtop reader failed, resetting: "^print_exception e);
+        respawner ();
+        false)
+
+let bind_self_as f =
+  let me = ref None in
+  let get_me () = Option.get !me in
+  me := Some(f get_me);
+  Option.get !me
 
 (** This launches a fresh handle from its command line arguments. *)
-let spawn_handle args =
+let spawn_handle args respawner feedback_processor =
   let prog = coqtop_path () in
-  let args = Array.of_list (
-    prog :: "-async-proofs" :: "on" :: "-ideslave" :: args) in
-  let pid, ic, gic, oc, close_channels = open_process_pid prog args in
-  let xml_ic = Xml_parser.make (Xml_parser.SChannel ic) in
-  let xml_oc = Xml_printer.make (Xml_printer.TChannel oc) in
-  Xml_parser.check_eof xml_ic false;
+  let args = Array.of_list ("-async-proofs" :: "on" :: "-ideslave" :: args) in
+  bind_self_as (fun handle ->
+  let proc, oc =
+    CoqTop.spawn ?env prog args (input_watch handle respawner feedback_processor) in
   {
-    pid = pid;
+    proc;
+    xml_oc = Xml_printer.make (Xml_printer.TChannel oc);
     alive = true;
     waiting_for = None;
-    xml_oc = xml_oc;
-    xml_ic = xml_ic;
-    glib_ic = gic;
-    close_xml_channels = close_channels
-  }
+  })
 
 (** This clears any potentially remaining open garbage. *)
 let clear_handle h =
   if h.alive then begin
     (* invalidate the old handle *)
     h.alive <- false;
-    h.close_xml_channels ();
-    (* we monitor the death of the old process *)
-    zombies := (h.pid,0) :: !zombies
   end
 
 let mkready coqtop =
@@ -510,29 +403,28 @@ let mkready coqtop =
 
 let rec respawn_coqtop ?(why=Unexpected) coqtop =
   clear_handle coqtop.handle;
-  ignore_error (fun () -> coqtop.handle <- spawn_handle coqtop.sup_args) ();
+  ignore_error (fun () ->
+     coqtop.handle <-
+       spawn_handle
+         coqtop.sup_args
+         (fun () -> respawn_coqtop coqtop)
+         coqtop.feedback_handler) ();
   (* Normally, the handle is now a fresh one.
      If not, there isn't much we can do ... *)
   assert (coqtop.handle.alive = true);
   coqtop.status <- New;
-  install_input_watch coqtop.handle
-    (fun () -> respawn_coqtop coqtop)
-    (fun msg -> coqtop.feedback_handler msg);
   ignore (coqtop.reset_handler why coqtop.handle (mkready coqtop))
 
 let spawn_coqtop sup_args =
-  let ct =
-  {
-    handle = spawn_handle sup_args;
+  bind_self_as (fun this -> {
+    handle = spawn_handle sup_args
+               (fun () -> respawn_coqtop (this ()))
+               (fun msg -> (this ()).feedback_handler msg);
     sup_args = sup_args;
     reset_handler = (fun _ _ k -> k ());
     feedback_handler = (fun _ -> ());
     status = New;
-  }
-  in
-  install_input_watch ct.handle
-    (fun () -> respawn_coqtop ct) (fun msg -> ct.feedback_handler msg);
-  ct
+  })
 
 let set_reset_handler coqtop hook = coqtop.reset_handler <- hook
 
@@ -552,7 +444,7 @@ let close_coqtop coqtop =
 let reset_coqtop coqtop = respawn_coqtop ~why:Planned coqtop
 
 let break_coqtop coqtop =
-  try !interrupter coqtop.handle.pid
+  try !interrupter (CoqTop.unixpid coqtop.handle.proc)
   with _ -> Minilib.log "Error while sending Ctrl-C"
 
 let get_arguments coqtop = coqtop.sup_args

@@ -30,22 +30,16 @@ let init_signal_handler () =
 
 (** Redirection of standard output to a printable buffer *)
 
-let orig_stdout = ref stdout
-
-let init_stdout,read_stdout =
+let init_stdout, read_stdout =
   let out_buff = Buffer.create 100 in
   let out_ft = Format.formatter_of_buffer out_buff in
   let deep_out_ft = Format.formatter_of_buffer out_buff in
   let _ = Pp_control.set_gp deep_out_ft Pp_control.deep_gp in
   (fun () ->
      flush_all ();
-     orig_stdout := Unix.out_channel_of_descr (Unix.dup Unix.stdout);
-     Unix.dup2 Unix.stderr Unix.stdout;
      Pp_control.std_ft := out_ft;
      Pp_control.err_ft := out_ft;
      Pp_control.deep_ft := deep_out_ft;
-     set_binary_mode_out !orig_stdout true;
-     set_binary_mode_in stdin true;
   ),
   (fun () -> Format.pp_print_flush out_ft ();
              let r = Buffer.contents out_buff in
@@ -365,7 +359,7 @@ let eval_call xml_oc log c =
   Serialize.abstract_eval_call handler c
 
 (** Message dispatching.
-    Since coqtop -ideslave -coq-slaves on starts 1 thread per slave, and each
+    Since coqtop -ideslave starts 1 thread per slave, and each
     thread forwards feedback messages from the slave to the GUI on the same
     xml channel, we need mutual exclusion.  The mutex should be per-channel, but
     here we only use 1 channel. *)
@@ -401,13 +395,12 @@ let slave_feeder xml_oc msg =
 let loop () =
   init_signal_handler ();
   catch_break := false;
-  let in_ch, out_ch =
-    match !Flags.ide_slave_socket with
-    | None -> stdin, !orig_stdout
-    | Some(h,p) ->
-        Unix.open_connection (Unix.ADDR_INET(Unix.inet_addr_of_string h,p)) in
+  let in_ch, out_ch = Spawned.get_channels () in
   let xml_oc = Xml_printer.make (Xml_printer.TChannel out_ch) in
-  let xml_ic = Xml_parser.make (Xml_parser.SChannel in_ch) in
+  Spawned.prepare_in_channel_for_thread_friendly_blocking_input in_ch;
+  let in_lb =
+    Lexing.from_function (Spawned.thread_friendly_blocking_input in_ch) in
+  let xml_ic = Xml_parser.make (Xml_parser.SLexbuf in_lb) in
   let () = Xml_parser.check_eof xml_ic false in
   set_logger (slave_logger xml_oc);
   set_feeder (slave_feeder xml_oc);
@@ -425,7 +418,7 @@ let loop () =
       let () = pr_debug_answer q r in
 (*       pr_with_pid (Xml_printer.to_string_fmt (Serialize.of_answer q r)); *)
       print_xml xml_oc (Serialize.of_answer q r);
-      flush !orig_stdout
+      flush out_ch
     with
       | Xml_parser.Error (Xml_parser.Empty, _) ->
 	pr_debug "End of input, exiting gracefully.";

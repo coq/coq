@@ -239,8 +239,11 @@ let get_int opt n =
 
 let get_host_port opt s =
   match CString.split ':' s with
-  | [host; port] -> Some (host, int_of_string port)
-  | _ -> prerr_endline ("Error: host:port expected after option "^opt); exit 1
+  | [host; port] -> Some (Spawned.Socket(host, int_of_string port))
+  | ["stdfds"] -> Some Spawned.AnonPipe
+  | _ ->
+     prerr_endline ("Error: host:port or stdfds expected after option "^opt);
+     exit 1
 
 let get_task_list s = List.map int_of_string (Str.split (Str.regexp ",") s)
 
@@ -326,7 +329,6 @@ let parse_args arglist =
     |"-compile-verbose" -> add_compile true (next ())
     |"-dump-glob" -> Dumpglob.dump_into_file (next ()); glob_opt := true
     |"-exclude-dir" -> exclude_search_in_dirname (next ())
-    |"-ideslave-socket" -> Flags.ide_slave_socket := get_host_port opt (next())
     |"-init-file" -> set_rcfile (next ())
     |"-inputstate"|"-is" -> set_inputstate (next ())
     |"-load-ml-object" -> Mltop.dir_ml_load (next ())
@@ -340,6 +342,8 @@ let parse_args arglist =
     |"-top" -> set_toplevel_name (dirpath_of_string (next ()))
     |"-unsafe" -> add_unsafe (next ())
     |"-with-geoproof" -> Coq_config.with_geoproof := get_bool opt (next ())
+    |"-main-channel" -> Spawned.main_channel := get_host_port opt (next())
+    |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
 
     (* Options with zero arg *)
     |"-batch" -> set_batch_mode ()
@@ -415,6 +419,9 @@ let init arglist =
         prerr_endline "See --help for the list of supported options";
         exit 1
       end;
+      (* If we have been spawned by the Spawn module, this has to be done
+       * early since the master waits us to connect back *)
+      Spawned.init_channels ();
       Envars.set_coqlib Errors.error;
       if !print_where then (print_endline (Envars.coqlib ()); exit (exitcode ()));
       if !print_config then (Usage.print_config (); exit (exitcode ()));
