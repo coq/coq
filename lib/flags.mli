@@ -30,7 +30,7 @@ val term_quality : bool ref
 val xml_export : bool ref
 
 val ide_slave : bool ref
-val ide_slave_socket : (string * int) option ref
+val ideslave_coqtop_flags : string option ref
 
 val time : bool ref
 

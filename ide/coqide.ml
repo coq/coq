@@ -1472,6 +1472,9 @@ let read_coqide_args argv =
       Flags.debug := true;
       Backtrace.record_backtrace true;
       filter_coqtop coqtop project_files ("-debug"::out) args
+    |"-coqtop-flags" :: flags :: args->
+      Flags.ideslave_coqtop_flags := Some flags;
+      filter_coqtop coqtop project_files out args
     |arg::args -> filter_coqtop coqtop project_files (arg::out) args
     |[] -> (coqtop,List.rev project_files,List.rev out)
   in

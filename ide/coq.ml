@@ -381,6 +381,20 @@ let bind_self_as f =
 let spawn_handle args respawner feedback_processor =
   let prog = coqtop_path () in
   let args = Array.of_list ("-async-proofs" :: "on" :: "-ideslave" :: args) in
+  let env =
+    match !Flags.ideslave_coqtop_flags with
+    | None -> None
+    | Some s ->
+      let open Str in
+      let open Array in
+      let opts = split_delim (regexp ",") s in
+      begin try
+        let erex = regexp "^extra-env=" in
+        let echunk = List.find (fun s -> string_match erex s 0) opts in
+        Some (append
+          (of_list (split_delim (regexp ";") (replace_first erex "" echunk)))
+          (Unix.environment ()))
+      with Not_found -> None end in
   bind_self_as (fun handle ->
   let proc, oc =
     CoqTop.spawn ?env prog args (input_watch handle respawner feedback_processor) in

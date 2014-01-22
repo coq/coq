@@ -67,7 +67,7 @@ let term_quality = ref false
 let xml_export = ref false
 
 let ide_slave = ref false
-let ide_slave_socket = ref None
+let ideslave_coqtop_flags = ref None
 
 let time = ref false
 
