@@ -208,9 +208,8 @@ let arg_string_option r = Arg.String (fun s -> r := Some s)
 module Prefs = struct
   let prefix = ref (None : string option)
   let local = ref false
-  let coqrunbyteflags = ref (None : string option)
-  let coqtoolsbyteflags = ref (None : string option)
-  let custom = ref false
+  let vmbyteflags = ref (None : string option)
+  let custom = ref (None : bool option)
   let bindir = ref (None : string option)
   let libdir = ref (None : string option)
   let configdir = ref (None : string option)
@@ -248,12 +247,12 @@ let args_options = Arg.align [
     "<dir> Set installation directory to <dir>";
   "-local", Arg.Set Prefs.local,
     " Set installation directory to the current source tree";
-  "-coqrunbyteflags", arg_string_option Prefs.coqrunbyteflags,
-    "<flags> Set link flags for VM-dependent bytecode (coqtop)";
-  "-coqtoolsbyteflags", arg_string_option Prefs.coqtoolsbyteflags,
-    "<flags> Set link flags for VM-independant bytecode (coqdep,coqdoc,...)";
-  "-custom", Arg.Set Prefs.custom,
-    " Generate all bytecode executables with -custom (not recommended)";
+  "-vmbyteflags", arg_string_option Prefs.vmbyteflags,
+    "<flags> Comma-separated link flags for the VM of coqtop.byte";
+  "-custom", Arg.Unit (fun () -> Prefs.custom := Some true),
+    " Build bytecode executables with -custom (not recommended)";
+  "-no-custom", Arg.Unit (fun () -> Prefs.custom := Some false),
+    " Do not build with -custom on Windows and MacOS";
   "-bindir", arg_string_option Prefs.bindir,
     "<dir> Where to install bin files";
   "-libdir", arg_string_option Prefs.libdir,
@@ -284,7 +283,7 @@ let args_options = Arg.align [
     " Specifies to use camlp4 instead of camlp5";
   "-camlp5dir",
     Arg.String (fun s -> Prefs.usecamlp5:=true; Prefs.camlp5dir:=Some s),
-    "<dir> Specifies where to look for the Camlp5 library and tells to use it";
+    "<dir> Specifies where is the Camlp5 library and tells to use it";
   "-arch", arg_string_option Prefs.arch,
     "<arch> Specifies the architecture";
   "-opt", Arg.Set Prefs.opt,
@@ -316,7 +315,7 @@ let args_options = Arg.align [
   "-makecmd", Arg.Set_string Prefs.makecmd,
     "<command> Name of GNU Make command";
   "-no-native-compiler", Arg.Clear Prefs.nativecompiler,
-    " Disables compilation to native code for conversion and normalization";
+    " No compilation to native code for conversion and normalization";
   "-coqwebsite", Arg.Set_string Prefs.coqwebsite,
     " URL of the coq website";
   "-force-caml-version", arg_bool Prefs.force_caml_version,
@@ -855,32 +854,31 @@ let datadir =
 
 (** * OCaml runtime flags *)
 
-(** Determine if we enable -custom by default (Windows and MacOS) *)
+(** Do we use -custom (yes by default on Windows and MacOS) *)
+
 let custom_os = arch_win32 || arch = "Darwin"
+
+let use_custom = match !Prefs.custom with
+  | Some b -> b
+  | None -> custom_os
+
+let custom_flag = if use_custom then "-custom" else ""
 
 let build_loadpath =
   ref "# you might want to set CAML_LD_LIBRARY_PATH by hand!"
 
 let config_runtime () =
-  match !Prefs.coqrunbyteflags with
-  | Some flags -> flags
-  | _ when !Prefs.custom || custom_os -> "-custom"
+  match !Prefs.vmbyteflags with
+  | Some flags -> string_split ',' flags
+  | _ when use_custom -> [custom_flag]
   | _ when !Prefs.local ->
-    sprintf "-dllib -lcoqrun -dllpath '%s/kernel/byterun'" coqtop
+    ["-dllib";"-lcoqrun";"-dllpath";coqtop/"kernel/byterun"]
   | _ ->
     let ld="CAML_LD_LIBRARY_PATH" in
     build_loadpath := sprintf "export %s:='%s/kernel/byterun':$(%s)" ld coqtop ld;
-    sprintf "-dllib -lcoqrun -dllpath '%s'" libdir
+    ["-dllib";"-lcoqrun";"-dllpath";libdir]
 
-let coqrunbyteflags = config_runtime ()
-
-let config_tools_runtime () =
-  match !Prefs.coqtoolsbyteflags with
-  | Some flags -> flags
-  | _ when !Prefs.custom || custom_os -> "-custom"
-  | _ -> ""
-
-let coqtoolsbyteflags = config_tools_runtime ()
+let vmbyteflags = config_runtime ()
 
 
 (** * Summary of the configuration *)
@@ -888,27 +886,27 @@ let coqtoolsbyteflags = config_tools_runtime ()
 let print_summary () =
   let pr s = printf s in
   pr "\n";
-  pr "  Architecture                      : %s\n" arch;
+  pr "  Architecture                : %s\n" arch;
   if operating_system <> "" then
-    pr "  Operating system                  : %s\n" operating_system;
-  pr "  Coq VM bytecode link flags        : %s\n" coqrunbyteflags;
-  pr "  Coq tools bytecode link flags     : %s\n" coqtoolsbyteflags;
-  pr "  OS dependent libraries            : %s\n" osdeplibs;
-  pr "  Objective-Caml/Camlp4 version     : %s\n" caml_version;
-  pr "  Objective-Caml/Camlp4 binaries in : %s\n" camlbin;
-  pr "  Objective-Caml library in         : %s\n" camllib;
-  pr "  Camlp4 library in                 : %s\n" camlp4lib;
+    pr "  Operating system          : %s\n" operating_system;
+  pr "  Coq VM bytecode link flags  : %s\n" (String.concat " " vmbyteflags);
+  pr "  Other bytecode link flags   : %s\n" custom_flag;
+  pr "  OS dependent libraries      : %s\n" osdeplibs;
+  pr "  OCaml/Camlp4 version        : %s\n" caml_version;
+  pr "  OCaml/Camlp4 binaries in    : %s\n" camlbin;
+  pr "  OCaml library in            : %s\n" camllib;
+  pr "  Camlp4 library in           : %s\n" camlp4lib;
   if best_compiler = "opt" then
-    pr "  Native dynamic link support       : %B\n" hasnatdynlink;
+    pr "  Native dynamic link support : %B\n" hasnatdynlink;
   if coqide <> "no" then
-    pr "  Lablgtk2 library in               : %s\n" !lablgtkdir;
+    pr "  Lablgtk2 library in         : %s\n" !lablgtkdir;
   if !idearchdef = "QUARTZ" then
     pr "  Mac OS integration is on\n";
-  pr "  CoqIde                            : %s\n" coqide;
-  pr "  Documentation                     : %s\n"
+  pr "  CoqIde                      : %s\n" coqide;
+  pr "  Documentation               : %s\n"
     (if withdoc then "All" else "None");
-  pr "  Web browser                       : %s\n" browser;
-  pr "  Coq web site                      : %s\n\n" !Prefs.coqwebsite;
+  pr "  Web browser                 : %s\n" browser;
+  pr "  Coq web site                : %s\n\n" !Prefs.coqwebsite;
   if not !Prefs.nativecompiler then
     pr "  Native compiler for conversion and normalization disabled\n\n";
   if !Prefs.local then
@@ -961,7 +959,7 @@ let write_configml f =
   pr "(* Exact command that generated this file: *)\n";
   pr "(* %s *)\n\n" (String.concat " " (Array.to_list Sys.argv));
   pr_b "local" !Prefs.local;
-  pr_s "coqrunbyteflags" coqrunbyteflags;
+  pr "let vmbyteflags = ["; List.iter (pr "%S;") vmbyteflags; pr "]\n";
   pr_o "coqlib" (if !Prefs.local then None else Some libdir);
   pr_o "configdir" configdir;
   pr_o "datadir" datadir;
@@ -1045,9 +1043,8 @@ let write_makefile f =
   pr "COQ_CONFIGURED=yes\n\n";
   pr "# Local use (no installation)\n";
   pr "LOCAL=%B\n\n" !Prefs.local;
-  pr "# Bytecode link flags for VM (\"-custom\" or \"-dllib -lcoqrun\")\n";
-  pr "COQRUNBYTEFLAGS=%s\n" coqrunbyteflags;
-  pr "COQTOOLSBYTEFLAGS=%s\n" coqtoolsbyteflags;
+  pr "# Bytecode link flags : should we use -custom or not ?\n";
+  pr "CUSTOM=%s\n" custom_flag;
   pr "%s\n\n" !build_loadpath;
   pr "# Paths for true installation\n";
   List.iter (fun (v,msg,_,_) -> pr "# %s: path for %s\n" v msg) install_dirs;

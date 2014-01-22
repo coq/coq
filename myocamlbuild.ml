@@ -259,9 +259,9 @@ let extra_rules () = begin
        let lines = List.map (fun s -> s^"\n") lines in
        let line0 = "\n(* Adapted variables for ocamlbuild *)\n" in
        (* TODO : line2 isn't completely accurate with respect to ./configure:
-	  the case of -local -coqrunbyteflags foo isn't supported *)
+	  the case of -local -vmbyteflags foo isn't supported *)
        let line1 =
-	 "let coqrunbyteflags = \"-dllib -lcoqrun\"\n"
+	 "let vmbyteflags = [\"-dllib\";\"-lcoqrun\"]\n"
        in
        Echo (lines @ (if local then [line0;line1] else []),
 	     "coq_config.ml"));
@@ -316,7 +316,7 @@ let extra_rules () = begin
   flag ["compile"; "c"] cflags;
   dep ["ocaml"; "use_libcoqrun"; "compile"] [libcoqrun];
   dep ["ocaml"; "use_libcoqrun"; "link"; "native"] [libcoqrun];
-  flag ["ocaml"; "use_libcoqrun"; "link"; "byte"] (Sh Coq_config.coqrunbyteflags);
+  flag ["ocaml"; "use_libcoqrun"; "link"; "byte"] (Sh Coq_config.vmbyteflags);
 
   (* we need to use a different ocamlc. For now we copy the rule *)
   if w32 then

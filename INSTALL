@@ -315,7 +315,7 @@ DYNAMICALLY LOADED LIBRARIES FOR BYTECODE EXECUTABLES.
        the directory of the standard library of OCaml;
      - recompile your bytecode executables after reconfiguring the location of
        of the shared library:
-         ./configure -coqrunbyteflags "-dllib -lcoqrun -dllpath <path>" ...
+         ./configure -vmbyteflags "-dllib,-lcoqrun,-dllpath,<path>" ...
        where <path> is the directory where the dllcoqrun.so is installed;
      - (not recommended) compile bytecode executables with a custom OCaml
        runtime by using:

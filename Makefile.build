@@ -113,7 +113,7 @@ DEPFLAGS= $(LOCALINCLUDES)
 define bestocaml
 $(if $(OPT),\
 $(OCAMLOPT) $(MLINCLUDES) $(OPTFLAGS) -o $@ $(1) $(addsuffix .cmxa,$(2)) $^ && $(STRIP) $@,\
-$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
+$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $(CUSTOM) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
 endef
 
 CAMLP4DEPS=$(shell LC_ALL=C sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*@\1@p' $(1) \#))
@@ -247,7 +247,7 @@ endif
 
 $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) -thread $(COQTOOLSBYTEFLAGS) -o $@ $(SYSCMA) $^
+	$(HIDE)$(OCAMLC) $(CHKLIBS) $(BYTEFLAGS) $(CUSTOM) -thread -o $@ $(SYSCMA) $^
 
 # coqmktop
 $(COQMKTOP): $(patsubst %.cma,%$(BESTLIB),$(COQMKTOPCMO:.cmo=$(BESTOBJ)))
@@ -636,7 +636,7 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES) $(PLUGINS)
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
-ifneq ($(COQRUNBYTEFLAGS),"-custom")
+ifndef CUSTOM
 	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
 endif
 ifeq ($(BEST),opt)

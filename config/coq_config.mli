@@ -38,7 +38,7 @@ val best : string       (* byte/opt *)
 val arch : string       (* architecture *)
 val arch_is_win32 : bool
 val osdeplibs : string  (* OS dependant link options for ocamlc *)
-val coqrunbyteflags : string (* -custom/-dllib -lcoqrun *)
+val vmbyteflags : string list (* -custom/-dllib -lcoqrun *)
 
 
 (* val defined : string list  (* options for lib/ocamlpp *) *)

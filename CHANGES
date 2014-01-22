@@ -105,6 +105,10 @@ Internal Infrastructure
   an executable compiled with the best OCaml compiler available.
   The bytecode program coqtop.byte is still produced. Same for other
   utilities.
+- Some options of the ./configure script slightly changed:
+  * The -coqrunbyteflags and its blank-separated argument is replaced
+    by option -vmbyteflags which expects a comma-separated argument.
+  * The -coqtoolsbyteflags option is discontinued, see -no-custom instead.
  
 Changes from V8.4beta2 to V8.4
 ==============================
