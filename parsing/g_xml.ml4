@@ -58,14 +58,9 @@ END
 
 (* Errors *)
 
-let error_expect_two_arguments loc =
-  user_err_loc (loc,"",str "wrong number of arguments (expect two).")
-
-let error_expect_one_argument loc =
-  user_err_loc (loc,"",str "wrong number of arguments (expect one).")
-
-let error_expect_no_argument loc =
-  user_err_loc (loc,"",str "wrong number of arguments (expect none).")
+let error_bad_arity loc n =
+  let s = match n with 0 -> "none" | 1 -> "one" | 2 -> "two" | _ -> "many" in
+  user_err_loc (loc,"",str ("wrong number of arguments (expect "^s^")."))
 
 (* Interpreting attributes *)
 
@@ -225,7 +220,7 @@ and interp_xml_tag s = function
 and interp_xml_constr_alias s x =
   match interp_xml_tag s x with
     | (_,_,[x]) -> interp_xml_constr x
-    | (loc,_,_) -> error_expect_one_argument loc
+    | (loc,_,_) -> error_bad_arity loc 1
 
 and interp_xml_term x = interp_xml_constr_alias "term" x
 and interp_xml_type x = interp_xml_constr_alias "type" x
@@ -241,7 +236,7 @@ and interp_xml_substitution x = interp_xml_constr_alias "substitution" x
 and interp_xml_decl_alias s x =
   match interp_xml_tag s x with
     | (_,al,[x]) -> (get_xml_binder al, interp_xml_constr x)
-    | (loc,_,_) -> error_expect_one_argument loc
+    | (loc,_,_) -> error_bad_arity loc 1
 
 and interp_xml_def x = interp_xml_decl_alias "def" x
 and interp_xml_decl x = interp_xml_decl_alias "decl" x
@@ -249,20 +244,14 @@ and interp_xml_decl x = interp_xml_decl_alias "decl" x
 and interp_xml_recursionOrder x =
   let (loc, al, l) = interp_xml_tag "RecursionOrder" x in
   let (locs, s) = get_xml_attr "type" al in
-    match s with
-	"Structural" ->
-	  (match l with [] -> GStructRec
-	     | _ -> error_expect_no_argument loc)
-      | "WellFounded" ->
-	  (match l with
-	       [c] -> GWfRec (interp_xml_type c)
-	     | _ -> error_expect_one_argument loc)
-      | "Measure" ->
-	  (match l with
-	       [m;r] -> GMeasureRec (interp_xml_type m, Some (interp_xml_type r))
-	     | _ -> error_expect_two_arguments loc)
-      | _ ->
-          user_err_loc (locs,"",str "Invalid recursion order.")
+  match s, l with
+  | "Structural", [] -> GStructRec
+  | "Structural", _ -> error_bad_arity loc 0
+  | "WellFounded", [c] -> GWfRec (interp_xml_type c)
+  | "WellFounded", _ -> error_bad_arity loc 1
+  | "Measure", [m;r] -> GMeasureRec (interp_xml_type m, Some (interp_xml_type r))
+  | "Measure", _ -> error_bad_arity loc 2
+  | _ -> user_err_loc (locs,"",str "Invalid recursion order.")
 
 and interp_xml_FixFunction x =
   match interp_xml_tag "FixFunction" x with
@@ -274,14 +263,14 @@ and interp_xml_FixFunction x =
       ((Some (nmtoken (get_xml_attr "recIndex" al)), GStructRec),
        (get_xml_name al, interp_xml_type x1, interp_xml_body x2))
   | (loc,_,_) ->
-      error_expect_one_argument loc
+      error_bad_arity loc 1
 
 and interp_xml_CoFixFunction x =
   match interp_xml_tag "CoFixFunction" x with
   | (loc,al,[x1;x2]) ->
       (get_xml_name al, interp_xml_type x1, interp_xml_body x2)
     | (loc,_,_) ->
-	error_expect_one_argument loc
+	error_bad_arity loc 1
 
 (* Interpreting tactic argument *)
 
