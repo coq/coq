@@ -752,7 +752,7 @@ grammar/grammar.cma: | grammar/grammar.mllib.d
 
 ide/coqide_main.ml: ide/coqide_main.ml4
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) -impl $< -o $@
+	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) -D$(IDEINT) -impl $< -o $@
 
 ide/coqide_main_opt.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'

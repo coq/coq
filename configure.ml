@@ -742,6 +742,8 @@ let coqide_flags () =
     | "opt", "win32" ->
       idearchfile := "ide/ide_win32_stubs.o";
       idearchdef := "WIN32"
+    | _, "win32" ->
+      idearchdef := "WIN32"
     | _ -> ()
 
 let _ = coqide_flags ()
@@ -1111,6 +1113,7 @@ let write_makefile f =
   pr "IDEOPTFLAGS=%s\n" !idearchflags;
   pr "IDEOPTDEPS=%s\n" !idearchfile;
   pr "IDEOPTINT=%s\n\n" !idearchdef;
+  pr "IDEINT=%s\n\n" !idearchdef;
   pr "# Defining REVISION\n";
   pr "CHECKEDOUT=%s\n\n" vcs;
   pr "# Option to control compilation and installation of the documentation\n";
