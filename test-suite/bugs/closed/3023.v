@@ -1,5 +1,3 @@
-(* Checking use of eta on Flexible/Rigid and SemiFlexible/Rigid unif problems *)
-
 Set Implicit Arguments.
 Generalizable All Variables.
 
@@ -14,6 +12,7 @@ Record Category {obj : Type} :=
 
 
 Section DiscreteAdjoints.
+
   Let C := {|
             Morphism := (fun X Y : Type => X -> Y);
             Identity := (fun X : Type => (fun x : X => x));
@@ -28,4 +27,7 @@ Section DiscreteAdjoints.
     revert ObjectFunctor.
     intro ObjectFunctor.
     simpl in ObjectFunctor.
-    revert ObjectFunctor. (* Used to failed in 8.4 up to 16 April 2013 *)
+    revert ObjectFunctor.
+  Abort.
+
+End DiscreteAdjoints.
