@@ -124,8 +124,9 @@ The $coqtop -schedule-vi-checking 3 a b c$ command can be used to obtain
 a good scheduling for 3 workers to check all proof tasks of $a.vi$, $b.vi$ and
 $c.vi$.  Auxiliary files are used to predict how long a proof task will take,
 assuming it will take the same amount of time it took last time.
-The output of $coqtop -schedule-vi-checking$ is a list of commands one has
-to execute in order to check all proof tasks.
+If the $Makefile$ one uses was produced by $coq\_makefile$ the $checkproofs$
+target can be used to check all $.vi$ files.  The variable $J$ should be
+set to the number of workers, like in $make checkproofs J=3$.
 
 \subsubsection{Caveats}
 

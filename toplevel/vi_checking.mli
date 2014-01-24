@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (* [check_vi tasks file] checks the [tasks] stored in [file] *)
-val check_vi : int list * string -> unit
+val check_vi : int list * string -> bool
 
 (* [schedule_vi_checking j files] prints [j] command lines to
  * be executed in parallel to check all tasks in [files] *)

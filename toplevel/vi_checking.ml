@@ -6,11 +6,30 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Util
+
 let check_vi (ts,f) =
   Dumpglob.noglob ();
   let tasks, long_f_dot_v = Library.load_library_todo f in
   Stm.set_compilation_hints (Aux_file.load_aux_file_for long_f_dot_v);
-  List.iter (Stm.check_task f tasks) ts
+  List.fold_left (fun acc ids -> Stm.check_task f tasks ids && acc) true ts
+
+module Worker = Spawn.Sync(struct 
+  let add_timeout ~sec f =
+    ignore(Thread.create (fun () ->
+      while true do
+        Unix.sleep sec;
+        if not (f ()) then Thread.exit ()
+      done)
+    ())
+end)
+
+module IntOT = struct
+  type t = int
+  let compare = compare
+end
+
+module Pool = Map.Make(IntOT)
 
 let schedule_vi_checking j fs =
   if j < 1 then Errors.error "The number of workers must be bigger than 0";
@@ -22,31 +41,19 @@ let schedule_vi_checking j fs =
     let tasks, long_f_dot_v = Library.load_library_todo f in
     Stm.set_compilation_hints (Aux_file.load_aux_file_for long_f_dot_v);
     let infos = Stm.info_tasks tasks in
-    jobs := List.map (fun (name,time,id) -> (f,id),name,time) infos @ !jobs)
-    fs;
-  let cmp_job (_,_,t1) (_,_,t2) = compare t2 t1 in
+    let eta = List.fold_left (fun a (_,t,_) -> a +. t) 0.0 infos in
+    if infos <> [] then jobs := (f, eta, infos) :: !jobs)
+  fs;
+  let cmp_job (_,t1,_) (_,t2,_) = compare t2 t1 in
   jobs := List.sort cmp_job !jobs;
-  let workers = Array.make j (0.0,[]) in
-  let cmp_worker (t1,_) (t2,_) = compare t1 t2 in
-  if j = 1 then
-     workers.(0) <- List.fold_left (fun acc (_,_,t) -> acc +. t) 0.0 !jobs, !jobs
-  else while !jobs <> [] do
-    Array.sort cmp_worker workers;
-    for i=0 to j-2 do
-      while !jobs <> [] && fst workers.(i) <= fst workers.(i+1) do
-        let ((f,id),_,t as job) = List.hd !jobs in
-        let rest = List.tl !jobs in
-        let tot, joblist = workers.(i) in
-        workers.(i) <- tot +. t, job::joblist;
-        jobs := rest
-      done
-    done;
-  done;
-  for i=0 to j-1 do
-    let tot, joblist = workers.(i) in
-    let cmp_job (f1,_,_) (f2,_,_) = compare f1 f2 in
-    workers.(i) <- tot, List.sort cmp_job joblist
-  done;
+  let eta = ref (List.fold_left (fun a j -> a +. pi2 j) 0.0 !jobs) in
+  let pool : Worker.process Pool.t ref = ref Pool.empty in
+  let rec filter_argv b = function
+    | [] -> []
+    | "-schedule-vi-checking" :: rest -> filter_argv true rest
+    | s :: rest when s.[0] = '-' && b -> filter_argv false (s :: rest)
+    | _ :: rest when b -> filter_argv b rest
+    | s :: rest -> s :: filter_argv b rest in
   let pack = function
     | [] -> []
     | ((f,_),_,_) :: _ as l ->
@@ -55,23 +62,46 @@ let schedule_vi_checking j fs =
           | ((f',id),_,_) :: tl when last = f' -> aux last (id::acc) tl
           | ((f',id),_,_) :: _ as l -> (last,acc) :: aux f' [] l in
         aux f [] l in
-  let prog =
-    let rec filter_argv b = function
-      | [] -> []
-      | "-schedule-vi-checking" :: rest -> filter_argv true rest
-      | s :: rest when s.[0] = '-' && b -> filter_argv false (s :: rest)
-      | _ :: rest when b -> filter_argv b rest
-      | s :: rest -> s :: filter_argv b rest in
-    String.concat " " (filter_argv false (Array.to_list Sys.argv)) in
-  Printf.printf "#!/bin/sh\n";
-  Array.iter (fun (tot, joblist) -> if joblist <> [] then
-    let joblist = pack joblist in
-    Printf.printf "( %s ) &\n"
-      (String.concat "; "
-        (List.map (fun tasks -> Printf.sprintf "%s -check-vi-tasks %s " prog tasks)
-          (List.map (fun (f,tl) ->
-             let tl = List.map string_of_int tl in
-             String.concat "," tl ^ " " ^ f) joblist))))
-    workers;
-  Printf.printf "wait\n"
+  let prog = Sys.argv.(0) in  
+  let stdargs = filter_argv false (List.tl (Array.to_list Sys.argv)) in
+  let make_job () =
+    let cur = ref 0.0 in
+    let what = ref [] in
+    let j_left = j - Pool.cardinal !pool in
+    let take_next_file () =
+      let f, t, tasks = List.hd !jobs in
+      jobs := List.tl !jobs;
+      cur := !cur +. t;
+      what := (List.map (fun (n,t,id) -> (f,id),n,t) tasks) @ !what in
+    if List.length !jobs >= j_left then take_next_file ()
+    else while !jobs <> [] &&
+         !cur < max 0.0 (min 60.0 (!eta /. float_of_int j_left)) do
+      let f, t, tasks = List.hd !jobs in
+      jobs := List.tl !jobs;
+      let n, tt, id = List.hd tasks in
+      if List.length tasks > 1 then
+        jobs := (f, t -. tt, List.tl tasks) :: !jobs;
+      cur := !cur +. tt;
+      what := ((f,id),n,tt) :: !what;
+    done;
+    if !what = [] then take_next_file ();
+    eta := !eta -. !cur;
+    let cmp_job (f1,_,_) (f2,_,_) = compare f1 f2 in
+    List.flatten
+      (List.map (fun (f, tl) ->
+        "-check-vi-tasks" :: 
+        String.concat "," (List.map string_of_int tl) :: [f])
+      (pack (List.sort cmp_job !what))) in
+  let rc = ref 0 in
+  while !jobs <> [] || Pool.cardinal !pool > 0 do
+    while Pool.cardinal !pool < j && !jobs <> [] do
+      let args = Array.of_list (stdargs @ make_job ()) in
+      let proc, _, _ = Worker.spawn prog args in
+      pool := Pool.add (Worker.unixpid proc) proc !pool;
+    done;
+    let pid, ret = Unix.wait () in
+    if ret <> Unix.WEXITED 0 then rc := 1;
+    pool := Pool.remove pid !pool;
+  done;
+  exit !rc
 

@@ -71,6 +71,7 @@ let usage () =
   exit 1
 
 (* parsing of the command line *)
+let extra_arg_needed = ref true
 
 let parse_args () =
   let rec parse (cfiles,args) = function
@@ -150,6 +151,11 @@ let parse_args () =
     | "-R" :: s :: "-as" :: t :: rem ->	parse (cfiles,t::"-as"::s::"-R"::args) rem
     | "-R" :: s :: "-as" :: [] -> usage ()
     | "-R" :: s :: t :: rem -> parse (cfiles,t::s::"-R"::args) rem
+    | ("-schedule-vi-checking" |"-check-vi-tasks" as o) :: s :: rem ->
+        let nodash, rem =
+          CList.split_when (fun x -> String.length x > 1 && x.[0] = '-') rem in
+        extra_arg_needed := false;
+        parse (cfiles, List.rev nodash @ s :: o :: args) rem
 
 (* Anything else is interpreted as a file *)
 
@@ -172,7 +178,7 @@ let parse_args () =
 
 let main () =
   let cfiles, args = parse_args () in
-    if cfiles = [] then begin
+    if cfiles = [] && !extra_arg_needed then begin
       prerr_endline "coqc: too few arguments" ;
       usage ()
     end;

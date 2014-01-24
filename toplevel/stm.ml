@@ -583,15 +583,15 @@ let get_hint_ctx loc =
   let ids = List.map (fun id -> Loc.ghost, id) ids in
   SsExpr (SsSet ids)
 
-    module Worker = Spawn.Sync(struct 
-      let add_timeout ~sec f =
-        ignore(Thread.create (fun () ->
-          while true do
-            Unix.sleep sec;
-            if not (f ()) then Thread.exit ()
-          done)
-        ())
-    end)
+module Worker = Spawn.Sync(struct 
+  let add_timeout ~sec f =
+    ignore(Thread.create (fun () ->
+      while true do
+        Unix.sleep sec;
+        if not (f ()) then Thread.exit ()
+      done)
+    ())
+end)
 
 (* Slave processes (if initialized, otherwise local lazy evaluation) *)
 module Slaves : sig
@@ -617,7 +617,7 @@ module Slaves : sig
 
   type tasks
   val dump : unit -> tasks
-  val check_task : string -> tasks -> int -> unit
+  val check_task : string -> tasks -> int -> bool
   val info_tasks : tasks -> (string * float * int) list
 
 end = struct (* {{{ *)
@@ -800,16 +800,42 @@ end = struct (* {{{ *)
   let check_task name l i =
     match List.nth l i with
     | ReqBuildProof ((id,valid),eop,vcs,loc,s) ->
-        Pp.msg_info (str(Printf.sprintf "Checking task %d (%s) of %s" i s name));
+        Pp.msg_info(str(Printf.sprintf "Checking task %d (%s) of %s" i s name));
         VCS.restore vcs;
-        !reach_known_state ~cache:`No eop;
-        (* The original terminator, a hook, has not been saved in the .vi*)
-        Proof_global.set_terminator
-          (Lemmas.standard_proof_terminator [] (fun _ _ -> ()));
-        let proof = Proof_global.close_proof (fun x -> x) in
-        vernac_interp eop ~proof
-          { verbose = false; loc;
-            expr = (VernacEndProof (Proved (true,None))) }
+        try
+          !reach_known_state ~cache:`No eop;
+          (* The original terminator, a hook, has not been saved in the .vi*)
+          Proof_global.set_terminator
+            (Lemmas.standard_proof_terminator [] (fun _ _ -> ()));
+          let proof = Proof_global.close_proof (fun x -> x) in
+          vernac_interp eop ~proof
+            { verbose = false; loc;
+              expr = (VernacEndProof (Proved (true,None))) };
+          true
+        with e -> (try
+          match Stateid.get e with
+          | None ->
+              Pp.pperrnl Pp.(
+                str"File " ++ str name ++ str ": proof of " ++ str s ++
+                spc () ++ print e)
+          | Some (_, cur) ->
+              match VCS.visit cur with
+              | { step = `Cmd ( { loc }, _) } 
+              | { step = `Fork ( { loc }, _, _, _) } 
+              | { step = `Qed ( { qast = { loc } }, _) } 
+              | { step = `Sideff (`Ast ( { loc }, _)) } ->
+                  let start, stop = Loc.unloc loc in
+                  Pp.pperrnl Pp.(
+                    str"File " ++ str name ++ str ": proof of " ++ str s ++
+                    str ": chars " ++ int start ++ str "-" ++ int stop ++
+                    spc () ++ print e)
+              | _ ->
+                  Pp.pperrnl Pp.(
+                    str"File " ++ str name ++ str ": proof of " ++ str s ++
+                    spc () ++ print e)
+        with e ->
+          Pp.msg_error (str"unable to print error message: " ++
+                        str (Printexc.to_string e))); false
 
   let info_tasks l =
     CList.map_i (fun i (ReqBuildProof(_,_,_,loc,s)) ->
@@ -1159,6 +1185,8 @@ let string_of_reason = function
   | `Doesn'tGuaranteeOpacity -> "Doesn'tGuaranteeOpacity"
   | _ -> "Unknown Reason"
 
+let wall_clock_last_fork = ref 0.0
+
 let known_state ?(redefine_qed=false) ~cache id =
 
   (* ugly functions to process nested lemmas, i.e. hard to reproduce
@@ -1167,8 +1195,6 @@ let known_state ?(redefine_qed=false) ~cache id =
     Summary.freeze_summary ~marshallable:`No ~complement:true pstate,
     Lib.freeze ~marshallable:`No in
   let inject_non_pstate (s,l) = Summary.unfreeze_summary s; Lib.unfreeze l in
-
-  let wall_clock_last_fork = ref 0.0 in
 
   let rec pure_cherry_pick_non_pstate id = Future.purify (fun id ->
     prerr_endline ("cherry-pick non pstate " ^ Stateid.to_string id);
@@ -1481,8 +1507,12 @@ type tasks = Slaves.tasks
 let dump () = Slaves.dump ()
 let check_task name tasks i =
   let vcs = VCS.backup () in
-  try Future.purify (Slaves.check_task name tasks) i; VCS.restore vcs
-  with e when Errors.noncritical e -> VCS.restore vcs
+  try
+    let rc = Future.purify (Slaves.check_task name tasks) i in
+    Pp.pperr_flush ();
+    VCS.restore vcs;
+    rc
+  with e when Errors.noncritical e -> VCS.restore vcs; false
 let info_tasks tasks = Slaves.info_tasks tasks
 
 let merge_proof_branch qast keep brname =
