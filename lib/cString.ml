@@ -125,17 +125,17 @@ let drop_simple_quotes s =
 
 (* gdzie = where, co = what *)
 (* gdzie=gdzie(string) gl=gdzie(length) gi=gdzie(index) *)
-let rec is_sub gdzie gl gi co cl ci =
+let rec raw_is_sub gdzie gl gi co cl ci =
   (ci>=cl) ||
   ((String.unsafe_get gdzie gi = String.unsafe_get co ci) &&
-   (is_sub gdzie gl (gi+1) co cl (ci+1)))
+   (raw_is_sub gdzie gl (gi+1) co cl (ci+1)))
 
 let rec raw_str_index i gdzie l c co cl =
   (* First adapt to ocaml 3.11 new semantics of index_from *)
   if (i+cl > l) then raise Not_found;
   (* Then proceed as in ocaml < 3.11 *)
   let i' = String.index_from gdzie i c in
-    if (i'+cl <= l) && (is_sub gdzie l i' co cl 0) then i' else
+    if (i'+cl <= l) && (raw_is_sub gdzie l i' co cl 0) then i' else
       raw_str_index (i'+1) gdzie l c co cl
 
 let string_index_from gdzie i co =
