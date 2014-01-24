@@ -10,7 +10,6 @@ open Errors
 open Util
 open Pp
 open Flags
-open CUnix
 open Libobject
 open System
 
@@ -48,8 +47,9 @@ open System
 (* This path is where we look for .cmo *)
 let coq_mlpath_copy = ref ["."]
 let keep_copy_mlpath path =
-  let cpath = canonical_path_name path in
-  let filter path' = not (String.equal cpath (canonical_path_name path')) in
+  let cpath = CUnix.canonical_path_name path in
+  let filter path' = not (String.equal cpath (CUnix.canonical_path_name path'))
+  in
   coq_mlpath_copy := path :: List.filter filter !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)
