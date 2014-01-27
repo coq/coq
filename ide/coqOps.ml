@@ -348,6 +348,10 @@ object(self)
           remove_flag sentence `PROCESSING;
           remove_flag sentence `ERROR;
           self#mark_as_needed sentence
+      | ProcessingInMaster,  Some (id,sentence) ->
+          log "ProcessingInMaster" id;
+          add_flag sentence `PROCESSING;
+          self#mark_as_needed sentence
       | Incomplete, Some (id, sentence) ->
           log "Incomplete" id;
           add_flag sentence `INCOMPLETE;

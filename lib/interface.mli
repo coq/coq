@@ -133,6 +133,7 @@ type feedback_content =
   | ErrorMsg of Loc.t * string
   | InProgress of int
   | SlaveStatus of int * string
+  | ProcessingInMaster
 
 type feedback = {
   id : edit_or_state_id;

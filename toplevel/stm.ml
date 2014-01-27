@@ -1308,6 +1308,8 @@ let known_state ?(redefine_qed=false) ~cache id =
             inject_non_pstate s
           ), cache
     in
+    if !Flags.async_proofs_mode = Flags.APonParallel 0 then
+      Pp.feedback ~state_id:id Interface.ProcessingInMaster;
     State.define ~cache:cache_step ~redefine:redefine_qed step id;
     prerr_endline ("reached: "^ Stateid.to_string id) in
   reach ~redefine_qed id
