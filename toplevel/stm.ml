@@ -504,6 +504,11 @@ module State : sig
 
   val exn_on : Stateid.t -> ?valid:Stateid.t -> exn -> exn
 
+  (* to send states across worker/master *)
+  type frozen_state
+  val get_cached : Stateid.t -> frozen_state
+  val assign : Stateid.t -> frozen_state -> unit
+
 end = struct (* {{{ *)
 
   (* cur_id holds Stateid.dummy in case the last attempt to define a state
@@ -537,6 +542,18 @@ end = struct (* {{{ *)
       | { state = Some s } -> s
       | _ -> anomaly (str "unfreezing a non existing state") in
     unfreeze_global_state s; cur_id := id
+
+  type frozen_state = state
+
+  let get_cached id =
+    try match VCS.get_info id with
+    | { state = Some s } -> s
+    | _ -> anomaly (str "not a cached state")
+    with VCS.Expired -> anomaly (str "not a cached state (expired)")
+
+  let assign id s =
+    try VCS.set_state id s
+    with VCS.Expired -> ()
 
   let freeze marhallable id = VCS.set_state id (freeze_global_state marhallable)
 
@@ -737,7 +754,8 @@ end = struct (* {{{ *)
 
   type response =
     | RespBuiltProof of Entries.proof_output list 
-    | RespError of Stateid.t * Stateid.t * std_ppcmds (* err, safe, msg *)
+    | RespError of (* err, safe, msg, safe_state *)
+        Stateid.t * Stateid.t * std_ppcmds * State.frozen_state option
     | RespFeedback of Interface.feedback
     | RespGetCounterFreshLocalUniv
     | RespGetCounterNewUnivLevel
@@ -773,7 +791,8 @@ end = struct (* {{{ *)
 
   let build_proof_here_core loc eop () =
     let wall_clock1 = Unix.gettimeofday () in
-    !reach_known_state ~cache:`No eop;
+    if !Flags.batch_mode then !reach_known_state ~cache:`No eop
+    else !reach_known_state ~cache:`Shallow eop;
     let wall_clock2 = Unix.gettimeofday () in
     Aux_file.record_in_aux_at loc "proof_build_time"
       (Printf.sprintf "%.3f" (wall_clock2 -. wall_clock1));
@@ -957,9 +976,10 @@ end = struct (* {{{ *)
                    Pp.feedback (Interface.InProgress ~-1) *)
                 last_task := None;
                 raise KillRespawn
-            | TaskBuildProof(_,_,_, assign,_,_,_), RespError (err_id,valid,e) ->
+            | TaskBuildProof(_,_,_, assign,_,_,_),RespError(err_id,valid,e,s) ->
                 let e = Stateid.add ~valid (RemoteException e) err_id in
                 assign (`Exn e);
+                Option.iter (State.assign valid) s;
                 (* We restart the slave, to avoid memory leaks.  We could just
                    Pp.feedback (Interface.InProgress ~-1) *)
                 last_task := None;
@@ -1096,7 +1116,12 @@ end = struct (* {{{ *)
           | None -> Stateid.dummy, Stateid.dummy in
         prerr_endline "failed with the following exception:";
         prerr_endline (string_of_ppcmds (print e));
-        marshal_response !slave_oc (RespError (err_id, safe_id, print e))
+        prerr_endline ("last safe id is: " ^ Stateid.to_string safe_id);
+        prerr_endline ("cached? " ^ string_of_bool (State.is_cached safe_id));
+        let state =
+          if State.is_cached safe_id then Some (State.get_cached safe_id)
+          else None in
+        marshal_response !slave_oc (RespError (err_id, safe_id, print e, state))
       | e ->
         pr_err ("Slave: critical exception: " ^ Pp.string_of_ppcmds (print e));
         flush_all (); exit 1
