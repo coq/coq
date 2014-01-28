@@ -471,6 +471,7 @@ let raw_inversion inv_kind id status names =
         Proofview.tclZERO (Errors.UserError ("raw_inversion" ,
 	                                     str ("The type of "^(Id.to_string id)^" is not inductive.")))
     end >= fun (ind,t) ->
+    try
       let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) gl in
       let ccl = clenv_type indclause in
       check_no_metas indclause ccl;
@@ -496,6 +497,9 @@ let raw_inversion inv_kind id status names =
                  (Proofview.V82.tactic (apply_term (mkVar id)
                                           (List.init neqns (fun _ -> Evarutil.mk_new_meta()))))
                  reflexivity))])
+    with e when Errors.noncritical e ->
+      let e = Errors.push e in
+      Proofview.tclZERO e
   end
 
 (* Error messages of the inversion tactics *)
