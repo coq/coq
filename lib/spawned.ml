@@ -83,25 +83,3 @@ let get_channels () =
   | None -> Errors.anomaly(Pp.str "init_channels not called")
   | Some(ic, oc) -> ic, oc
 
-let prepare_in_channel_for_thread_friendly_blocking_input ic =
-  if Sys.os_type = "Win32" then Unix.set_nonblock (Unix.descr_of_in_channel ic)
-  else ()
-
-let thread_friendly_blocking_input ic =
-  if Sys.os_type = "Win32" then
-    let open Unix in
-    let open Thread in
-    let fd = descr_of_in_channel ic in
-    let rec loop buf n =
-      try read fd buf 0 n
-      with
-      | Unix.Unix_error((Unix.EWOULDBLOCK|Unix.EAGAIN),_,_) ->
-          (* We wait for some data explicitly yielding each second *)
-          while not (wait_timed_read fd 1.0) do yield () done;
-          loop buf n
-      | Unix.Unix_error _ -> 0
-    in 
-      loop
-  else
-    (fun buf n -> Pervasives.input ic buf 0 n)
-

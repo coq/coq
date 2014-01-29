@@ -20,7 +20,3 @@ val init_channels : unit -> unit
 (* Once initialized, these are the channels to talk with our master *)
 val get_channels : unit -> in_channel * out_channel
 
-(* In multi threaded environments on windows blocking calls do
-   prevent context switch.  This seems a huge BUG, here a work around *)
-val prepare_in_channel_for_thread_friendly_blocking_input : in_channel -> unit
-val thread_friendly_blocking_input : in_channel -> string -> int -> int
