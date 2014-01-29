@@ -337,7 +337,7 @@ let context l =
   in
   let uctx = Evd.get_universe_context_set !evars in
   let fn status (id, b, t) =
-    let uctx = Universes.shrink_universe_context uctx (Universes.universes_of_constr t) in
+    (* let uctx = Universes.shrink_universe_context uctx (Universes.universes_of_constr t) in *)
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
       let uctx = Univ.ContextSet.to_context uctx in	
       let decl = (ParameterEntry (None,false,(t,uctx),None), IsAssumption Logical) in
