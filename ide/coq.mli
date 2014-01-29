@@ -131,6 +131,8 @@ val mkcases    : Interface.mkcases_sty    -> Interface.mkcases_rty query
 val search     : Interface.search_sty     -> Interface.search_rty query
 val init       : Interface.init_sty       -> Interface.init_rty query
 
+val stop_worker: Interface.stop_worker_sty-> Interface.stop_worker_rty query
+
 (** A specialized version of [raw_interp] dedicated to set/unset options. *)
 
 module PrintOpt :

@@ -29,6 +29,7 @@ val get_options : get_options_sty -> get_options_rty call
 val set_options : set_options_sty -> set_options_rty call
 val quit        : quit_sty        -> quit_rty call
 val init        : init_sty        -> init_rty call
+val stop_worker : stop_worker_sty -> stop_worker_rty call
 (* retrocompatibility *)
 val interp      : interp_sty      -> interp_rty call
 

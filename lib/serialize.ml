@@ -636,6 +636,7 @@ let quit_sty_t : quit_sty val_t = unit_t
 let about_sty_t : about_sty val_t = unit_t
 let init_sty_t : init_sty val_t = unit_t
 let interp_sty_t : interp_sty val_t = pair_t (pair_t bool_t bool_t) string_t
+let stop_worker_sty_t : stop_worker_sty val_t = int_t
 
 let add_rty_t : add_rty val_t =
   pair_t state_id_t (pair_t (union_t unit_t state_id_t) string_t)
@@ -658,6 +659,7 @@ let quit_rty_t : quit_rty val_t = unit_t
 let about_rty_t : about_rty val_t = coq_info_t
 let init_rty_t : init_rty val_t = state_id_t
 let interp_rty_t : interp_rty val_t = pair_t state_id_t (union_t string_t string_t)
+let stop_worker_rty_t : stop_worker_rty val_t = unit_t
 
 let ($) x = erase x
 let calls = [|  
@@ -677,6 +679,7 @@ let calls = [|
   "About",      ($)about_sty_t,       ($)about_rty_t;
   "Init",       ($)init_sty_t,        ($)init_rty_t;
   "Interp",     ($)interp_sty_t,      ($)interp_rty_t;
+  "StopWorker", ($)stop_worker_sty_t, ($)stop_worker_rty_t;
 |]
 
 type 'a call =
@@ -695,6 +698,7 @@ type 'a call =
   | Quit       of quit_sty
   | About      of about_sty
   | Init       of init_sty
+  | StopWorker of stop_worker_sty
   (* retrocompatibility *)
   | Interp     of interp_sty
 
@@ -715,6 +719,7 @@ let id_of_call = function
   | About _      -> 13
   | Init _       -> 14
   | Interp _     -> 15
+  | StopWorker _ -> 16
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -736,6 +741,7 @@ let search x      : search_rty call      = Search x
 let quit x        : quit_rty call        = Quit x
 let init x        : init_rty call        = Init x
 let interp x      : interp_rty call      = Interp x
+let stop_worker x : stop_worker_rty call = StopWorker x
 
 let abstract_eval_call handler (c : 'a call) : 'a value =
   let mkGood x : 'a value = Good (Obj.magic x) in
@@ -757,6 +763,7 @@ let abstract_eval_call handler (c : 'a call) : 'a value =
     | About x      -> mkGood (handler.about x)
     | Init x       -> mkGood (handler.init x)
     | Interp x     -> mkGood (handler.interp x)
+    | StopWorker x -> mkGood (handler.stop_worker x)
   with any ->
     Fail (handler.handle_exn any)
 
@@ -778,6 +785,7 @@ let of_answer (q : 'a call) (v : 'a value) : xml = match q with
   | About _      -> of_value (of_value_type about_rty_t      ) (Obj.magic v)
   | Init _       -> of_value (of_value_type init_rty_t       ) (Obj.magic v)
   | Interp _     -> of_value (of_value_type interp_rty_t     ) (Obj.magic v)
+  | StopWorker _ -> of_value (of_value_type stop_worker_rty_t) (Obj.magic v)
 
 let to_answer (q : 'a call) (x : xml) : 'a value = match q with
   | Add _        -> Obj.magic (to_value (to_value_type add_rty_t        ) x)
@@ -796,6 +804,7 @@ let to_answer (q : 'a call) (x : xml) : 'a value = match q with
   | About _      -> Obj.magic (to_value (to_value_type about_rty_t      ) x)
   | Init _       -> Obj.magic (to_value (to_value_type init_rty_t       ) x)
   | Interp _     -> Obj.magic (to_value (to_value_type interp_rty_t     ) x)
+  | StopWorker _ -> Obj.magic (to_value (to_value_type stop_worker_rty_t) x)
 
 let of_call (q : 'a call) : xml =
   let mkCall x = constructor "call" (str_of_call q) [x] in
@@ -816,6 +825,7 @@ let of_call (q : 'a call) : xml =
   | About x      -> mkCall (of_value_type about_sty_t       x) 
   | Init x       -> mkCall (of_value_type init_sty_t        x)
   | Interp x     -> mkCall (of_value_type interp_sty_t      x)
+  | StopWorker x -> mkCall (of_value_type stop_worker_sty_t x)
 
 let to_call : xml -> unknown call =
   do_match "call" (fun s a ->
@@ -837,6 +847,7 @@ let to_call : xml -> unknown call =
     | "About"      -> About      (mkCallArg about_sty_t       a)
     | "Init"       -> Init       (mkCallArg init_sty_t        a)
     | "Interp"     -> Interp     (mkCallArg interp_sty_t      a)
+    | "StopWorker" -> StopWorker (mkCallArg stop_worker_sty_t a)
     | _ -> raise Marshal_error)
 (* }}} *)
 
@@ -872,6 +883,7 @@ let pr_full_value call value = match call with
   | About _      -> pr_value_gen (print about_rty_t      ) (Obj.magic value) 
   | Init _       -> pr_value_gen (print init_rty_t       ) (Obj.magic value)
   | Interp _     -> pr_value_gen (print interp_rty_t     ) (Obj.magic value)
+  | StopWorker _ -> pr_value_gen (print stop_worker_rty_t) (Obj.magic value)
 let pr_call call = match call with
   | Add x        -> str_of_call call ^ " " ^ print add_sty_t         x
   | Edit_at x    -> str_of_call call ^ " " ^ print edit_at_sty_t     x
@@ -889,6 +901,7 @@ let pr_call call = match call with
   | About x      -> str_of_call call ^ " " ^ print about_sty_t       x
   | Init x       -> str_of_call call ^ " " ^ print init_sty_t        x
   | Interp x     -> str_of_call call ^ " " ^ print interp_sty_t      x
+  | StopWorker x -> str_of_call call ^ " " ^ print stop_worker_sty_t x
 
 (* }}} *)
 

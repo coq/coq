@@ -241,6 +241,9 @@ type interp_sty = (raw * verbose) * string
 (* spiwack: [Inl] for safe and [Inr] for unsafe. *)
 type interp_rty = state_id * (string,string) Util.union
 
+type stop_worker_sty = int
+type stop_worker_rty = unit
+
 
 type handler = {
   add         : add_sty         -> add_rty;
@@ -256,6 +259,7 @@ type handler = {
   inloadpath  : inloadpath_sty  -> inloadpath_rty;
   mkcases     : mkcases_sty     -> mkcases_rty;
   about       : about_sty       -> about_rty;
+  stop_worker : stop_worker_sty -> stop_worker_rty;
   handle_exn  : handle_exn_sty  -> handle_exn_rty;
   init        : init_sty        -> init_rty;
   quit        : quit_sty        -> quit_rty;

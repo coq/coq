@@ -21,6 +21,7 @@ object
   method backtrack_last_phrase : unit task
   method initialize : unit task
   method join_document : unit task
+  method stop_worker : int -> unit task
 
   method get_n_errors : int
   method get_errors : (int * string) list

@@ -354,8 +354,9 @@ let eval_call xml_oc log c =
     Interface.init = interruptible init;
     Interface.about = interruptible about;
     Interface.interp = interruptible interp;
-    Interface.handle_exn = handle_exn; }
-  in
+    Interface.handle_exn = handle_exn;
+    Interface.stop_worker = Stm.stop_worker;
+  } in
   Serialize.abstract_eval_call handler c
 
 (** Message dispatching.

@@ -517,12 +517,12 @@ let find_next_occurrence ~backward sn =
     |None -> ()
     |Some(where, _) -> b#place_cursor ~where; sn.script#recenter_insert
 
-let send_to_coq f sn =
+let send_to_coq_aux f sn =
   let info () = Minilib.log ("Coq busy, discarding query") in
   let f = Coq.seq (f sn) (update_status sn) in
   Coq.try_grab sn.coqtop f info
 
-let send_to_coq f = on_current_term (send_to_coq f)
+let send_to_coq f = on_current_term (send_to_coq_aux f)
 
 module Nav = struct
   let forward_one _ = send_to_coq (fun sn -> sn.coqops#process_next_phrase)
@@ -1312,7 +1312,13 @@ let build_ui () =
     let table_jobs, access_jobs =
       make_table_widget
         [`Int,"Worker",true; `String,"Job name",true; `Int,"Tab no",false]
-        (fun columns store tp vc -> ()) in
+        (fun columns store tp vc -> 
+          let row = store#get_iter tp in
+          let w = store#get ~row ~column:(int_assoc "Worker" columns) in
+          let tabno = store#get ~row ~column:(int_assoc "Tab no" columns) in
+          let sn = notebook#get_nth_term tabno in
+          send_to_coq_aux (fun sn -> sn.coqops#stop_worker w) sn
+        ) in
     let tip = GMisc.label ~text:"Double click to jump to error line" () in
     let nb = GPack.notebook ~packing:obj#add () in
     let vb = GPack.vbox ~homogeneous:false () in
@@ -1321,7 +1327,11 @@ let build_ui () =
     let add_page text w =
       nb#append_page ~tab_label:(GMisc.label ~text ())#coerce w#coerce in
     let _ = add_page "Errors" vb in
-    let _ = add_page "Workers" table_jobs in
+    let vb = GPack.vbox ~homogeneous:false () in
+    let tip = GMisc.label ~text:"Double click to interrupt worker" () in
+    let () = vb#pack ~expand:true table_jobs#coerce in
+    let () = vb#pack ~expand:false ~padding:2 tip#coerce in
+    let _ = add_page "Workers" vb in
     obj, (let last_update = ref (0,[],Int.Map.empty) in
           fun tabno errs jobs ->
             if !last_update = (tabno,errs,jobs) then ()

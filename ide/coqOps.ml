@@ -121,6 +121,7 @@ object
   method backtrack_last_phrase : unit task
   method initialize : unit task
   method join_document : unit task
+  method stop_worker : int -> unit task
 
   method get_n_errors : int
   method get_errors : (int * string) list
@@ -543,6 +544,9 @@ object(self)
          Coq.return ()
      | Fail x -> self#handle_failure x in
    Coq.bind (Coq.status ~logger:messages#push true) next
+
+  method stop_worker n =
+    Coq.bind (Coq.stop_worker n) (fun _ -> Coq.return ())
 
   method get_slaves_status = processed, to_process, slaves_status
 

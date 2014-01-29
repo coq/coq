@@ -509,6 +509,7 @@ let status ?logger force = eval_call ?logger (Serialize.status force)
 let hints x = eval_call (Serialize.hints x)
 let search flags = eval_call (Serialize.search flags)
 let init x = eval_call (Serialize.init x)
+let stop_worker x = eval_call (Serialize.stop_worker x)
 
 module PrintOpt =
 struct

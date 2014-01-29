@@ -639,6 +639,8 @@ module Slaves : sig
   val check_task : string -> tasks -> int -> bool
   val info_tasks : tasks -> (string * float * int) list
 
+  val cancel_worker : int -> unit
+
 end = struct (* {{{ *)
 
   module TQueue : sig
@@ -695,9 +697,11 @@ end = struct (* {{{ *)
 
   module SlavesPool : sig
   
-    val init : int -> ((unit -> in_channel * out_channel * Worker.process * int) -> unit) -> unit
+    val init : int -> (bool ref -> (unit -> in_channel * out_channel * Worker.process * int) -> unit) -> unit
     val is_empty : unit -> bool
     val n_slaves : unit -> int
+
+    val cancel : int -> unit
   
   end = struct (* {{{ *)
   
@@ -739,10 +743,22 @@ end = struct (* {{{ *)
 
     let init n manage_slave =
       slave_managers := Some
-        (Array.init n (fun x -> Thread.create manage_slave (respawn (x+1))));
+        (Array.init n (fun x ->
+           let calcel_req = ref false in
+           calcel_req,
+           Thread.create (manage_slave calcel_req) (respawn (x+1))))
+
+    let cancel n =
+      match !slave_managers with
+      | None -> ()
+      | Some a ->
+          let switch, _ = a.(n) in
+          switch := true
 
   end (* }}} *)
-  
+ 
+  let cancel_worker n = SlavesPool.cancel (n-1)
+
   let reach_known_state = ref (fun ?redefine_qed ~cache id -> ())
   let set_reach_known_state f = reach_known_state := f
 
@@ -894,10 +910,10 @@ end = struct (* {{{ *)
       marshal_err ("marshal_response: "^s)
   
   let unmarshal_response ic =
-    try (Marshal.from_channel ic : response)
+    try (CThread.thread_friendly_input_value ic : response)
     with Failure s | Invalid_argument s | Sys_error s ->
       marshal_err ("unmarshal_response: "^s)
-  
+
   let marshal_more_data oc (res : more_data) =
     try marshal_to_channel oc res
     with Failure s | Invalid_argument s | Sys_error s ->
@@ -951,10 +967,12 @@ end = struct (* {{{ *)
           | _ -> assert false in
     Pp.feedback ~state_id:Stateid.initial (Interface.SlaveStatus(id, s))
 
-  let rec manage_slave respawn =
+  let rec manage_slave cancel_user_req respawn =
     let ic, oc, proc, id_slave = respawn () in
     let last_task = ref None in
-    let cancelled = ref false in
+    let task_expired = ref false in
+    let task_cancelled = ref false in
+    CThread.prepare_in_channel_for_thread_friendly_io ic;
     try
       while true do
         prerr_endline "waiting for a task";
@@ -966,7 +984,10 @@ end = struct (* {{{ *)
           marshal_request oc (request_of_task task);
           let cancel_switch = cancel_switch_of_task task in
           Worker.kill_if proc ~sec:1 (fun () ->
-            cancelled := !cancel_switch; !cancelled);
+            task_expired := !cancel_switch;
+            task_cancelled := !cancel_user_req;
+            if !cancel_user_req then cancel_user_req := false;
+            !task_expired || !task_cancelled);
           let rec loop () =
             let response = unmarshal_response ic in
             match task, response with
@@ -1015,23 +1036,25 @@ end = struct (* {{{ *)
             pr_err ("Fatal marshal error: " ^ s);
             flush_all (); exit 1
         | e ->
-            prerr_endline ("Uncaught exception in worker manager: "^
-              string_of_ppcmds (print e))
-            (* XXX do something sensible *)
+            pr_err ("Uncaught exception in worker manager: "^
+              string_of_ppcmds (print e));
+            flush_all ()
       done
     with
     | KillRespawn ->
         Pp.feedback (Interface.InProgress ~-1);
         Worker.kill proc;
         ignore(Worker.wait proc);
-        manage_slave respawn
-    | Sys_error _ | Invalid_argument _ | End_of_file when !cancelled ->
+        manage_slave cancel_user_req respawn
+    | Sys_error _ | Invalid_argument _ | End_of_file
+      when !task_expired ->
         Pp.feedback (Interface.InProgress ~-1);
         ignore(Worker.wait proc);
-        manage_slave respawn
+        manage_slave cancel_user_req respawn
     | Sys_error _ | Invalid_argument _ | End_of_file
-      when !fallback_to_lazy_if_slave_dies ->
-        msg_warning(strbrk "The worker process died badly.");
+      when !fallback_to_lazy_if_slave_dies || !task_cancelled ->
+        if not !task_cancelled then
+          msg_warning(strbrk "The worker process died badly.");
         (match !last_task with
         | Some task ->
             msg_warning(strbrk "Falling back to local, lazy, evaluation.");
@@ -1041,7 +1064,7 @@ end = struct (* {{{ *)
         | None -> ());
         Worker.kill proc;
         ignore(Worker.wait proc);
-        manage_slave respawn
+        manage_slave cancel_user_req respawn
     | Sys_error _ | Invalid_argument _ | End_of_file ->
         Worker.kill proc;
         let exit_status proc = match Worker.wait proc with
@@ -1754,6 +1777,8 @@ let process_transaction ~tty verbose c (loc, expr) =
     handle_failure e vcs tty
 
 (** STM interface {{{******************************************************* **)
+
+let stop_worker n = Slaves.cancel_worker n
 
 let query ~at s =
   Future.purify (fun s ->
