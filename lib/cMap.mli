@@ -45,6 +45,12 @@ sig
   val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   (** Folding keys in decreasing order. *)
 
+  val smartmap : ('a -> 'a) -> 'a t -> 'a t
+  (** As [map] but tries to preserve sharing. *)
+
+  val smartmapi : (key -> 'a -> 'a) -> 'a t -> 'a t
+  (** As [mapi] but tries to preserve sharing. *)
+
   module Unsafe :
   sig
     val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t

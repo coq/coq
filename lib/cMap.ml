@@ -24,6 +24,8 @@ sig
   val bind : (key -> 'a) -> Set.t -> 'a t
   val fold_left : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   val fold_right : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  val smartmap : ('a -> 'a) -> 'a t -> 'a t
+  val smartmapi : (key -> 'a -> 'a) -> 'a t -> 'a t
   module Unsafe :
   sig
     val map : (key -> 'a -> key * 'b) -> 'a t -> 'b t
@@ -39,6 +41,8 @@ sig
   val bind : (M.t -> 'a) -> Set.Make(M).t -> 'a map
   val fold_left : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
   val fold_right : (M.t -> 'a -> 'b -> 'b) -> 'a map -> 'b -> 'b
+  val smartmap : ('a -> 'a) -> 'a map -> 'a map
+  val smartmapi : (M.t -> 'a -> 'a) -> 'a map -> 'a map
   module Unsafe :
   sig
     val map : (M.t -> 'a -> M.t * 'b) -> 'a map -> 'b map
@@ -114,6 +118,24 @@ struct
   | MNode (l, k, v, r, h) ->
     let accu = f k v (fold_right f r accu) in
     fold_right f l accu
+
+  let rec smartmap f (s : 'a map) = match map_prj s with
+  | MEmpty -> map_inj MEmpty
+  | MNode (l, k, v, r, h) ->
+    let l' = smartmap f l in
+    let r' = smartmap f r in
+    let v' = f v in
+    if l == l' && r == r' && v == v' then s
+    else map_inj (MNode (l', k, v', r', h))
+
+  let rec smartmapi f (s : 'a map) = match map_prj s with
+  | MEmpty -> map_inj MEmpty
+  | MNode (l, k, v, r, h) ->
+    let l' = smartmapi f l in
+    let r' = smartmapi f r in
+    let v' = f k v in
+    if l == l' && r == r' && v == v' then s
+    else map_inj (MNode (l', k, v', r', h))
 
   module Unsafe =
   struct
