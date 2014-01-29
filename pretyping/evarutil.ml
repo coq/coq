@@ -216,7 +216,7 @@ let push_duplicated_evars sigma emap c =
 
 let non_instantiated sigma =
   let listev = Evd.undefined_map sigma in
-  Evar.Map.map (fun evi -> nf_evar_info sigma evi) listev
+  Evar.Map.smartmap (fun evi -> nf_evar_info sigma evi) listev
 
 (************************)
 (* Manipulating filters *)

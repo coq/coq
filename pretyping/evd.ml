@@ -405,8 +405,8 @@ let raw_map f d =
     in
     ans
   in
-  let defn_evars = EvMap.mapi f d.defn_evars in
-  let undf_evars = EvMap.mapi f d.undf_evars in
+  let defn_evars = EvMap.smartmapi f d.defn_evars in
+  let undf_evars = EvMap.smartmapi f d.undf_evars in
   { d with defn_evars; undf_evars; }
 
 let raw_map_undefined f d =
@@ -419,7 +419,7 @@ let raw_map_undefined f d =
     in
     ans
   in
-  { d with undf_evars = EvMap.mapi f d.undf_evars; }
+  { d with undf_evars = EvMap.smartmapi f d.undf_evars; }
 
 let is_evar = mem
 
@@ -475,9 +475,9 @@ let subst_evar_defs_light sub evd =
   assert (match evd.conv_pbs with [] -> true | _ -> false);
   let map_info i = subst_evar_info sub i in
   { evd with
-    undf_evars = EvMap.map map_info evd.undf_evars;
-    defn_evars = EvMap.map map_info evd.defn_evars;
-    metas = Metamap.map (map_clb (subst_mps sub)) evd.metas; }
+    undf_evars = EvMap.smartmap map_info evd.undf_evars;
+    defn_evars = EvMap.smartmap map_info evd.defn_evars;
+    metas = Metamap.smartmap (map_clb (subst_mps sub)) evd.metas; }
 
 let subst_evar_map = subst_evar_defs_light
 
@@ -712,7 +712,7 @@ let map_metas_fvalue f evd =
   | Clval(id,(c,s),typ) -> Clval(id,(mk_freelisted (f c.rebus),s),typ)
   | x -> x
   in
-  set_metas evd (Metamap.map map evd.metas)
+  set_metas evd (Metamap.smartmap map evd.metas)
 
 let meta_opt_fvalue evd mv =
   match Metamap.find mv evd.metas with
@@ -801,7 +801,7 @@ let retract_coercible_metas evd =
     Cltyp (na, typ)
   | v -> v
   in
-  let metas = Metamap.mapi map evd.metas in
+  let metas = Metamap.smartmapi map evd.metas in
   !mc, set_metas evd metas
 
 let subst_defined_metas bl c =
