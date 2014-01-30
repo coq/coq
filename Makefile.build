@@ -317,9 +317,8 @@ coqide-files: $(IDEFILES)
 ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT) | $(COQTOPEXE)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa \
-		lablgtk.cmxa lablgtksourceview2.cmxa $(IDEOPTFLAGS) \
-		str.cmxa $(LINKIDEOPT)
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa lablgtk.cmxa \
+		lablgtksourceview2.cmxa str.cmxa $(IDEFLAGS:.cma=.cmxa) $(LINKIDEOPT)
 	$(STRIP) $@
 else
 $(COQIDE): $(COQIDEBYTE)
@@ -329,12 +328,11 @@ endif
 $(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma lablgtk.cma \
-	        lablgtksourceview2.cma str.cma $(LINKIDE)
+	        lablgtksourceview2.cma str.cma $(IDEFLAGS) $(LINKIDE)
 
 # install targets
 
-.PHONY: install-coqide install-ide-no install-ide-byte install-ide-opt
-.PHONY: install-ide-files install-ide-info install-im install-ide-devfiles
+.PHONY: install-coqide install-ide-bin install-ide-files install-ide-info install-ide-devfiles
 
 ifeq ($(HASCOQIDE),no)
 install-coqide:
@@ -358,7 +356,7 @@ install-ide-files:
 	$(MKDIR) $(FULLDATADIR)
 	$(INSTALLLIB) ide/coq.png ide/coq.lang ide/coq_style.xml $(FULLDATADIR)
 	$(MKDIR) $(FULLCONFIGDIR)
-	if [ $(IDEOPTINT) = QUARTZ ] ; then $(INSTALLLIB) ide/mac_default_accel_map $(FULLCONFIGDIR)/coqide.keys ; fi
+	if [ $(IDEINT) = QUARTZ ] ; then $(INSTALLLIB) ide/mac_default_accel_map $(FULLCONFIGDIR)/coqide.keys ; fi
 
 install-ide-info:
 	$(MKDIR) $(FULLDOCDIR)
@@ -750,13 +748,9 @@ grammar/grammar.cma: | grammar/grammar.mllib.d
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(MLINCLUDES) $(BYTEFLAGS) $^ -linkall -a -o $@
 
-ide/coqide_main.ml: ide/coqide_main.ml4
+ide/coqide_main.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
 	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) -D$(IDEINT) -impl $< -o $@
-
-ide/coqide_main_opt.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
-	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) -D$(IDEOPTINT) -impl $< -o $@
 
 # pretty printing of the revision number when compiling a checked out
 # source tree

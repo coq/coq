@@ -139,7 +139,6 @@ tactics/extratactics.ml
 tactics/extraargs.ml
 toplevel/whelp.ml
 ide/coqide_main.ml
-ide/coqide_main_opt.ml
 
 # other auto-generated files
 

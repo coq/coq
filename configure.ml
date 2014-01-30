@@ -741,7 +741,7 @@ let coqide_flags () =
       let osxdir = tryrun "ocamlfind" ["query";"lablgtkosx"] in
       if osxdir <> "" then begin
         lablgtkincludes := sprintf "%s -I %S" !lablgtkincludes osxdir;
-        idearchflags := "lablgtkosx.cmxa";
+        idearchflags := "lablgtkosx.cma";
         idearchdef := "QUARTZ"
       end
     | "opt", "win32" ->
@@ -1113,9 +1113,8 @@ let write_makefile f =
   pr "COQIDEINCLUDES=%s\n\n" !lablgtkincludes;
   pr "# CoqIde (no/byte/opt)\n";
   pr "HASCOQIDE=%s\n" coqide;
-  pr "IDEOPTFLAGS=%s\n" !idearchflags;
+  pr "IDEFLAGS=%s\n" !idearchflags;
   pr "IDEOPTDEPS=%s\n" !idearchfile;
-  pr "IDEOPTINT=%s\n\n" !idearchdef;
   pr "IDEINT=%s\n\n" !idearchdef;
   pr "# Defining REVISION\n";
   pr "CHECKEDOUT=%s\n\n" vcs;
