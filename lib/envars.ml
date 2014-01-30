@@ -155,11 +155,10 @@ let ocamlc () = camlbin () / Coq_config.ocamlc
 let ocamlopt () = camlbin () / Coq_config.ocamlopt
 
 let camllib () =
-  if !Flags.boot then 
+  if !Flags.boot then
     Coq_config.camllib
   else
-    let com = ocamlc () ^ " -where" in
-    let _, res = CUnix.run_command (fun x -> x) (fun _ -> ()) com in
+    let _, res = CUnix.run_command (ocamlc () ^ " -where") in
     String.strip res
 
 (** {2 Camlp4 paths} *)
@@ -181,8 +180,7 @@ let camlp4lib () =
   if !Flags.boot then 
     Coq_config.camlp4lib
   else
-    let com = camlp4 () ^ " -where" in
-    let ex, res = CUnix.run_command (fun x -> x) (fun _ -> ()) com in
+    let ex, res = CUnix.run_command (camlp4 () ^ " -where") in
     match ex with
       | Unix.WEXITED 0 -> String.strip res
       | _ -> "/dev/null"
