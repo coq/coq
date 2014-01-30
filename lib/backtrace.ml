@@ -96,3 +96,16 @@ let add_backtrace e =
       Exninfo.add e backtrace bt
     end
   else e
+
+let app_backtrace ~src ~dst =
+  if !is_recording then
+    match get_backtrace src with
+    | None -> dst
+    | Some bt ->
+      match get_backtrace dst with
+      | None ->
+        Exninfo.add dst backtrace bt
+      | Some nbt ->
+        let bt = bt @ nbt in
+        Exninfo.add dst backtrace bt
+  else dst

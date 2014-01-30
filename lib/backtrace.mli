@@ -87,3 +87,10 @@ val add_backtrace : exn -> exn
     I admit that's a bit heavy, but there is not much to do...
 
 *)
+
+val app_backtrace : src:exn -> dst:exn -> exn
+(** Append the backtrace from [src] to [dst]. The returned exception is [dst]
+    except for its backtrace information. This is targeted at container
+    exceptions, that is, exceptions that contain exceptions. This way, one can
+    transfer the backtrace from the container to the underlying exception, as if
+    the latter was the one originally raised. *)

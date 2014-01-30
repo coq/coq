@@ -582,7 +582,9 @@ let tclTIMEOUT n t =
       end
       begin function
         | Proof_errors.Timeout -> Proofview_monad.NonLogical.ret (Util.Inr Timeout)
-        | Proof_errors.TacticFailure e -> Proofview_monad.NonLogical.ret (Util.Inr e)
+        | Proof_errors.TacticFailure e as src ->
+          let e = Backtrace.app_backtrace ~src ~dst:e in
+          Proofview_monad.NonLogical.ret (Util.Inr e)
         | e -> Proofview_monad.NonLogical.raise e
       end
   end >>= function

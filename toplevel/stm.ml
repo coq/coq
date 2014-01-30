@@ -49,7 +49,9 @@ let vernac_interp ?proof id { verbose; loc; expr } =
     Aux_file.record_in_aux_set_at loc;
     prerr_endline ("interpreting " ^ string_of_ppcmds(pr_vernac expr));
     try Vernacentries.interp ~verbosely:verbose ?proof (loc, expr)
-    with e -> raise (Errors.push (Cerrors.process_vernac_interp_error e))
+    with e ->
+      let e = Errors.push e in
+      raise (Cerrors.process_vernac_interp_error e)
   end
 
 (* Wrapper for Vernac.parse_sentence to set the feedback id *)
