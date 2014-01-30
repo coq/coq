@@ -31,16 +31,13 @@ type flex_kind_of_term =
 let flex_kind_of_term c sk =
   match kind_of_term c with
     | Rel _ | Const _ | Var _ -> MaybeFlexible
-    | Lambda _ when not (Option.is_empty (decomp_stack sk)) -> MaybeFlexible
+    | Lambda _ when not (Option.is_empty (Stack.decomp sk)) -> MaybeFlexible
     | LetIn _  -> MaybeFlexible
     | Evar ev -> Flexible ev
     | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ -> Rigid
     | Meta _ -> Rigid
     | Fix _ -> Rigid (* happens when the fixpoint is partially applied *)
     | Cast _ | App _ | Case _ -> assert false
-
-let not_purely_applicative_stack args =
-  List.exists (function (Zfix _ | Zcase _) -> true | _ -> false) args
 
 let eval_flexible_term ts env c =
   match kind_of_term c with
@@ -63,8 +60,8 @@ let eval_flexible_term ts env c =
 
 let apprec_nohdbeta ts env evd c =
   let (t,sk as appr) = Reductionops.whd_nored_state evd (c, []) in
-  if not_purely_applicative_stack (snd (Reductionops.strip_app sk))
-  then zip (fst (whd_betaiota_deltazeta_for_iota_state
+  if Stack.not_purely_applicative sk
+  then Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state
 		   ts env evd Cst_stack.empty appr))
   else c
 
@@ -100,7 +97,7 @@ let check_conv_record (t1,sk1) (t2,sk2) =
 	match kind_of_term t2 with
 	    Prod (_,a,b) -> (* assert (l2=[]); *)
       	      if dependent (mkRel 1) b then raise Not_found
-	      else lookup_canonical_conversion (proji, Prod_cs),[Zapp [a;pop b]]
+	      else lookup_canonical_conversion (proji, Prod_cs),[Stack.App [a;pop b]]
 	  | Sort s ->
 	      lookup_canonical_conversion
 		(proji, Sort_cs (family_of_sort s)),[]
@@ -113,15 +110,15 @@ let check_conv_record (t1,sk1) (t2,sk2) =
     let { o_DEF = c; o_INJ=n; o_TABS = bs;
           o_TPARAMS = params; o_NPARAMS = nparams; o_TCOMPS = us } = canon_s in
     let params1, c1, extra_args1 =
-      match strip_n_app nparams sk1 with
+      match Stack.strip_n_app nparams sk1 with
 	| Some (params1, c1,extra_args1) -> params1, c1, extra_args1
 	| _ -> raise Not_found in
     let us2,extra_args2 =
-      let l',s' = strip_app sk2_effective in
+      let l',s' = Stack.strip_app sk2_effective in
       let bef,aft = List.chop (List.length us) l' in
-      (bef, append_stack_app_list aft s') in
+      (bef, Stack.append_app_list aft s') in
     c,bs,(params,params1),(us,us2),(extra_args1,extra_args2),c1,
-    (n,zip(t2,sk2))
+    (n,Stack.zip(t2,sk2))
   with Failure _ | Not_found ->
     raise Not_found
 
@@ -196,14 +193,15 @@ let ise_stack2 no_app env evd f sk1 sk2 =
       else None, x in
     match sk1, sk2 with
     | [], [] -> None, Success i
-    | Zcase (_,t1,c1,_)::q1, Zcase (_,t2,c2,_)::q2 ->
+    | Stack.Case (_,t1,c1,_)::q1, Stack.Case (_,t2,c2,_)::q2 ->
       (match f env i CONV t1 t2 with
       | Success i' ->
 	(match ise_array2 i' (fun ii -> f env ii CONV) c1 c2 with
 	| Success i'' -> ise_stack2 true i'' q1 q2
         | UnifFailure _ as x -> fail x)
       | UnifFailure _ as x -> fail x)
-    | Zfix (((li1, i1),(_,tys1,bds1 as recdef1)),a1,_)::q1, Zfix (((li2, i2),(_,tys2,bds2)),a2,_)::q2 ->
+    | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1,_)::q1,
+      Stack.Fix (((li2, i2),(_,tys2,bds2)),a2,_)::q2 ->
       if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
         match ise_and i [
 	  (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
@@ -212,9 +210,9 @@ let ise_stack2 no_app env evd f sk1 sk2 =
         | Success i' -> ise_stack2 true i' q1 q2
         | UnifFailure _ as x -> fail x
       else fail (UnifFailure (i,NotSameHead))
-    | Zupdate _ :: _, _ | Zshift _ :: _, _
-    | _, Zupdate _ :: _ | _, Zshift _ :: _ -> assert false
-    | Zapp l1 :: q1, Zapp l2 :: q2 ->
+    | Stack.Update _ :: _, _ | Stack.Shift _ :: _, _
+    | _, Stack.Update _ :: _ | _, Stack.Shift _ :: _ -> assert false
+    | Stack.App l1 :: q1, Stack.App l2 :: q2 ->
       if no_app&&deep then fail ((*dummy*)UnifFailure(i,NotSameHead)) else begin
       (* Is requiring to match on all the shorter list a restriction
 	 here ? we could imagine a generalization of
@@ -224,15 +222,15 @@ let ise_stack2 no_app env evd f sk1 sk2 =
       match generic_ise_list2 i (fun ii -> f env ii CONV) l1 l2 with
       |_,(UnifFailure _ as x) -> fail x
       |None,Success i' -> ise_stack2 true i' q1 q2
-      |Some (Inl r),Success i' -> ise_stack2 true i' (Zapp r :: q1) q2
-      |Some (Inr r),Success i' -> ise_stack2 true i' q1 (Zapp r :: q2)
+      |Some (Inl r),Success i' -> ise_stack2 true i' (Stack.App r :: q1) q2
+      |Some (Inr r),Success i' -> ise_stack2 true i' q1 (Stack.App r :: q2)
     end
     |_, _ -> fail (UnifFailure (i,(* Maybe improve: *) NotSameHead))
   in ise_stack2 false evd (List.rev sk1) (List.rev sk2)
 
 (* Make sure that the matching suffix is the all stack *)
 let exact_ise_stack2 env evd f sk1 sk2 =
-  if Reductionops.compare_stack_shape sk1 sk2 then
+  if Reductionops.Stack.compare_shape sk1 sk2 then
     ise_exact (ise_stack2 false env evd f) sk1 sk2
   else UnifFailure (evd, (* Dummy *) NotSameHead)
 
@@ -266,17 +264,17 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
             (position_problem false pbty,ev,term1)
         | _ ->
           evar_eqappr_x ts env evd pbty
-            (whd_nored_state evd (term1,empty_stack), Cst_stack.empty)
-            (whd_nored_state evd (term2,empty_stack), Cst_stack.empty)
+            (whd_nored_state evd (term1,Stack.empty), Cst_stack.empty)
+            (whd_nored_state evd (term2,Stack.empty), Cst_stack.empty)
         end
 
 and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     ((term1,sk1 as appr1),csts1) ((term2,sk2 as appr2),csts2) =
   let default_fail i = (* costly *)
-    UnifFailure (i,ConversionFailed (env, zip appr1, zip appr2)) in
+    UnifFailure (i,ConversionFailed (env, Stack.zip appr1, Stack.zip appr2)) in
   let miller_pfenning on_left fallback ev (_,skF) apprM evd =
-    let tM = zip apprM in
-    match list_of_app_stack skF with
+    let tM = Stack.zip apprM in
+    match Stack.list_of_app_stack skF with
     | None -> default_fail evd
     | Some lF -> match is_unification_pattern_evar env evd ev lF tM with
       | None -> fallback ()
@@ -287,18 +285,18 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  (position_problem on_left pbty,ev,t2) in
   let flex_maybeflex on_left ev ((termF,skF as apprF),cstsF) ((termM, skM as apprM),cstsM) =
     let switch f a b = if on_left then f a b else f b a in
-    let not_only_app = not_purely_applicative_stack skM in
+    let not_only_app = Stack.not_purely_applicative skM in
     let f1 i = miller_pfenning on_left
       (fun () -> if not_only_app then (* Postpone the use of an heuristic *)
-	switch (fun x y -> Success (add_conv_pb (pbty,env,zip x,zip y) i)) apprF apprM
+	switch (fun x y -> Success (add_conv_pb (pbty,env,Stack.zip x,Stack.zip y) i)) apprF apprM
        else default_fail i)
       ev apprF apprM i
     and f2 i =
       match switch (ise_stack2 not_only_app env i (evar_conv_x ts)) skF skM with
       |Some (l,r), Success i' when on_left && (not_only_app || List.is_empty l) ->
-	switch (evar_conv_x ts env i' pbty) (zip(termF,l)) (zip(termM,r))
+	switch (evar_conv_x ts env i' pbty) (Stack.zip(termF,l)) (Stack.zip(termM,r))
       |Some (r,l), Success i' when not on_left && (not_only_app || List.is_empty l) ->
-	switch (evar_conv_x ts env i' pbty) (zip(termF,l)) (zip(termM,r))
+	switch (evar_conv_x ts env i' pbty) (Stack.zip(termF,l)) (Stack.zip(termM,r))
       |None, Success i' -> switch (evar_conv_x ts env i' pbty) termF termM
       |_, (UnifFailure _ as x) -> x
       |Some _, _ -> UnifFailure (i,NotSameArgSize)
@@ -316,9 +314,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let c = nf_evar evd c1 in
     let env' = push_rel (na,None,c) env in
     let out1 = whd_betaiota_deltazeta_for_iota_state
-      ts env' evd Cst_stack.empty (c'1, empty_stack) in
+      ts env' evd Cst_stack.empty (c'1, Stack.empty) in
     let out2 = whd_nored_state evd
-      (zip (term', sk' @ [Zshift 1]), [Zapp [mkRel 1]]), Cst_stack.empty in
+      (Stack.zip (term', sk' @ [Stack.Shift 1]), [Stack.App [mkRel 1]]), Cst_stack.empty in
     if onleft then evar_eqappr_x ts env' evd CONV out1 out2
     else evar_eqappr_x ts env' evd CONV out2 out1
   in
@@ -332,9 +330,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  |None, Success i' -> solve_simple_eqn (evar_conv_x ts) env i'
 	    (position_problem true pbty,ev1,term2)
 	  |Some (r,[]), Success i' -> solve_simple_eqn (evar_conv_x ts) env i'
-	    (position_problem false pbty,ev2,zip(term1,r))
+	    (position_problem false pbty,ev2,Stack.zip(term1,r))
 	  |Some ([],r), Success i' -> solve_simple_eqn (evar_conv_x ts) env i'
-	          (position_problem true pbty,ev1,zip(term2,r))
+	          (position_problem true pbty,ev1,Stack.zip(term2,r))
 	  |_, (UnifFailure _ as x) -> x
 	  |Some _, _ -> UnifFailure (i,NotSameArgSize)
 	and f2 i =
@@ -390,9 +388,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
              usable as a canonical projection or canonical value *)
           let rec is_unnamed (hd, args) = match kind_of_term hd with
             | (Var _|Construct _|Ind _|Const _|Prod _|Sort _) ->
-	      not_purely_applicative_stack args
+	      Stack.not_purely_applicative args
             | (CoFix _|Meta _|Rel _)-> true
-            | Evar _ -> not_purely_applicative_stack args
+            | Evar _ -> Stack.not_purely_applicative args
 	    (* false (* immediate solution without Canon Struct *)*)
             | Lambda _ -> assert (match args with [] -> true | _ -> false); true
             | LetIn (_,b,_,c) -> is_unnamed
@@ -403,14 +401,14 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
             match eval_flexible_term ts env term2 with
             | None -> false
             | Some v2 ->
-	      let applicative_stack = append_stack_app_list (fst (strip_app sk2)) empty_stack in
+	      let applicative_stack = Stack.append_app_list (fst (Stack.strip_app sk2)) Stack.empty in
 	      is_unnamed
 		(fst (whd_betaiota_deltazeta_for_iota_state
 			ts env i Cst_stack.empty (v2, applicative_stack))) in
           let rhs_is_already_stuck =
             rhs_is_already_stuck || rhs_is_stuck_and_unnamed () in
 	  if (isLambda term1 || rhs_is_already_stuck)
-	    && (not (not_purely_applicative_stack sk1)) then
+	    && (not (Stack.not_purely_applicative sk1)) then
 	    match eval_flexible_term ts env term1 with
 	    | Some v1 ->
 	      evar_eqappr_x ~rhs_is_already_stuck ts env i pbty
@@ -456,7 +454,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       let f1 evd =
 	miller_pfenning true
 	(fun () -> Success ((* Postpone the use of an heuristic *)
-	  add_conv_pb (pbty,env,zip appr1,zip appr2) evd))
+	  add_conv_pb (pbty,env,Stack.zip appr1,Stack.zip appr2) evd))
 	ev1 appr1 appr2 evd
       and f2 evd =
 	if isLambda term2 then
@@ -468,7 +466,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       let f1 evd =
 	miller_pfenning false
 	  (fun () -> Success ((* Postpone the use of an heuristic *)
-	     add_conv_pb (pbty,env,zip appr1,zip appr2) evd))
+	     add_conv_pb (pbty,env,Stack.zip appr1,Stack.zip appr2) evd))
 	ev2 appr2 appr1 evd
       and f2 evd =
 	if isLambda term1 then
@@ -571,7 +569,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	  begin match ise_stack2 true env evd (evar_conv_x ts) sk1 sk2 with
 	  |_, (UnifFailure _ as x) -> x
 	  |None, Success i' -> evar_conv_x ts env i' CONV term1 term2
-	  |Some (sk1',sk2'), Success i' -> evar_conv_x ts env i' CONV (zip (term1,sk1')) (zip (term2,sk2'))
+	  |Some (sk1',sk2'), Success i' -> evar_conv_x ts env i' CONV (Stack.zip (term1,sk1')) (Stack.zip (term2,sk2'))
 	  end
 
 	| (Ind _ | Construct _ | Sort _ | Prod _ | CoFix _ | Fix _), _ -> UnifFailure (evd,NotSameHead)
@@ -584,7 +582,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
       end
 
 and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
-  if Reductionops.compare_stack_shape ts ts1 then
+  if Reductionops.Stack.compare_shape ts ts1 then
     let (evd',ks,_) =
       List.fold_left
 	(fun (i,ks,m) b ->

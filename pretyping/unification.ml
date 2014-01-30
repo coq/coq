@@ -347,7 +347,7 @@ let oracle_order env cf1 cf2 =
           Some (Conv_oracle.oracle_order (Environ.oracle env) false k1 k2)
 
 let do_reduce ts (env, nb) sigma c =
-  zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma Cst_stack.empty (c, empty_stack)))
+  Stack.zip (fst (whd_betaiota_deltazeta_for_iota_state ts env sigma Cst_stack.empty (c, Stack.empty)))
 
 let use_full_betaiota flags =
   flags.modulo_betaiota && Flags.version_strictly_greater Flags.V8_3
@@ -599,9 +599,9 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
   and canonical_projections curenvnb pb b cM cN (sigma,_,_ as substn) =
     let f1 () =
       if isApp cM then
-	let f1l1 = whd_nored_state sigma (cM,empty_stack) in
+	let f1l1 = whd_nored_state sigma (cM,Stack.empty) in
 	  if is_open_canonical_projection env sigma f1l1 then
-	    let f2l2 = whd_nored_state sigma (cN,empty_stack) in
+	    let f2l2 = whd_nored_state sigma (cN,Stack.empty) in
 	      solve_canonical_projection curenvnb pb b cM f1l1 cN f2l2 substn
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -615,9 +615,9 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       else
 	try f1 () with e when precatchable_exception e ->
 	  if isApp cN then
-	    let f2l2 = whd_nored_state sigma (cN, empty_stack) in
+	    let f2l2 = whd_nored_state sigma (cN, Stack.empty) in
 	      if is_open_canonical_projection env sigma f2l2 then
-		let f1l1 = whd_nored_state sigma (cM, empty_stack) in
+		let f1l1 = whd_nored_state sigma (cM, Stack.empty) in
 		  solve_canonical_projection curenvnb pb b cN f2l2 cM f1l1 substn
 	      else error_cannot_unify (fst curenvnb) sigma (cM,cN)
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -627,7 +627,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       try Evarconv.check_conv_record f1l1 f2l2
       with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
-    if Reductionops.compare_stack_shape ts ts1 then
+    if Reductionops.Stack.compare_shape ts ts1 then
       let (evd,ks,_) =
 	List.fold_left
 	  (fun (evd,ks,m) b ->
@@ -645,7 +645,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	(evd,ms,es) us2 us in
       let substn = unilist2 (fun s u1 u -> unirec_rec curenvnb pb b false s u1 (substl ks u))
 	substn params1 params in
-	let (substn,_,_) = Reductionops.fold_stack2 (unirec_rec curenvnb pb b false) substn ts ts1 in
+	let (substn,_,_) = Reductionops.Stack.fold2 (unirec_rec curenvnb pb b false) substn ts ts1 in
         let app = mkApp (c, Array.rev_of_list ks) in
 	unirec_rec curenvnb pb b false substn c1 app
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -971,7 +971,7 @@ let w_unify_meta_types env ?(flags=default_unify_flags) evd =
    types of metavars are unifiable with the types of their instances    *)
 
 let head_app sigma m =
-  fst (whd_nored_state sigma (m, empty_stack))
+  fst (whd_nored_state sigma (m, Stack.empty))
 
 let check_types env flags (sigma,_,_ as subst) m n =
   if isEvar_or_Meta (head_app sigma m) then

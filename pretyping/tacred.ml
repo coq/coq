@@ -425,7 +425,7 @@ let substl_checking_arity env subst sigma c =
 type fix_reduction_result = NotReducible | Reduced of (constr*constr list)
 
 let reduce_fix whdfun sigma fix stack =
-  match fix_recarg fix [Zapp stack] with
+  match fix_recarg fix [Stack.App stack] with
     | None -> NotReducible
     | Some (recargnum,recarg) ->
         let (recarg'hd,_ as recarg') = whdfun sigma recarg in
@@ -442,7 +442,7 @@ let contract_fix_use_function env sigma f
   substl_checking_arity env (List.rev lbodies) sigma (nf_beta sigma bodies.(bodynum))
 
 let reduce_fix_use_function env sigma f whfun fix stack =
-  match fix_recarg fix [Zapp stack] with
+  match fix_recarg fix [Stack.App stack] with
     | None -> NotReducible
     | Some (recargnum,recarg) ->
         let (recarg'hd,_ as recarg') =
@@ -626,15 +626,15 @@ let whd_nothing_for_iota env sigma s =
 	     | None -> s)
       | LetIn (_,b,_,c) -> stacklam whrec [b] c stack
       | Cast (c,_,_) -> whrec (c, stack)
-      | App (f,cl)  -> whrec (f, append_stack_app cl stack)
+      | App (f,cl)  -> whrec (f, Stack.append_app cl stack)
       | Lambda (na,t,c) ->
-          (match decomp_stack stack with
+          (match Stack.decomp stack with
              | Some (a,m) -> stacklam whrec [a] c m
 	     | _ -> s)
 
       | x -> s
   in
-  decompose_app (zip (whrec (s,empty_stack)))
+  decompose_app (Stack.zip (whrec (s,Stack.empty)))
 
 (* [red_elim_const] contracts iota/fix/cofix redexes hidden behind
    constants by keeping the name of the constants in the recursive calls;
@@ -764,13 +764,13 @@ let try_red_product env sigma c =
       | App (f,l) ->
           (match kind_of_term f with
              | Fix fix ->
-                 let stack = append_stack_app l empty_stack in
+                 let stack = Stack.append_app l Stack.empty in
                  (match fix_recarg fix stack with
                     | None -> raise Redelimination
                     | Some (recargnum,recarg) ->
                         let recarg' = redrec env recarg in
-                        let stack' = stack_assign stack recargnum recarg' in
-                        simpfun (zip (f,stack')))
+                        let stack' = Stack.assign stack recargnum recarg' in
+                        simpfun (Stack.zip (f,stack')))
              | _ -> simpfun (appvect (redrec env f, l)))
       | Cast (c,_,_) -> redrec env c
       | Prod (x,a,b) -> mkProd (x, a, redrec (push_rel (x,None,a) env) b)

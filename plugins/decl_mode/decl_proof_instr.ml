@@ -28,7 +28,6 @@ open Term
 open Vars
 open Termops
 open Namegen
-open Reductionops
 open Goptions
 open Misctypes
 
@@ -339,7 +338,7 @@ let rec nf_list evd =
 	if meta_defined evd m then
 	    nf_list evd others
 	else
-	  (m,nf_meta evd typ)::nf_list evd others
+	  (m,Reductionops.nf_meta evd typ)::nf_list evd others
 
 let find_subsubgoal c ctyp skip submetas gls =
   let env= pf_env gls in
@@ -374,7 +373,7 @@ let find_subsubgoal c ctyp skip submetas gls =
 	  dfs n
 	end in
   let nse= try dfs skip with Stack.Empty -> raise Not_found in
-    nf_list nse.se_evd nse.se_meta_list,nf_meta nse.se_evd (mkMeta 0)
+    nf_list nse.se_evd nse.se_meta_list,Reductionops.nf_meta nse.se_evd (mkMeta 0)
 
 let concl_refiner metas body gls =
   let concl = pf_concl gls in
@@ -1044,7 +1043,7 @@ let thesis_for obj typ per_info env=
       ((Printer.pr_constr_env env obj) ++ spc () ++
 	 str "cannot give an induction hypothesis (wrong parameters).") in
   let hd2 = (applist ((lift (List.length rc) per_info.per_pred),args@[obj])) in
-    compose_prod rc (whd_beta Evd.empty hd2)
+    compose_prod rc (Reductionops.whd_beta Evd.empty hd2)
 
 let rec build_product_dep pat_info per_info args body gls =
   match args with
@@ -1174,7 +1173,7 @@ let hrec_for fix_id per_info gls obj_id =
     try List.for_all2 eq_constr params per_info.per_params with
         Invalid_argument _ -> false end;
   let hd2 = applist (mkVar fix_id,args@[obj]) in
-    compose_lam rc (whd_beta gls.sigma hd2)
+    compose_lam rc (Reductionops.whd_beta gls.sigma hd2)
 
 
 let rec execute_cases fix_name per_info tacnext args objs nhrec tree gls =
