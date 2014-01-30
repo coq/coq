@@ -19,9 +19,9 @@ module type S = sig
 
   type node
   module NodeSet : Set.S with type elt = node
-  
+
   type ('edge,'info,'cdata) t
-  
+
   val empty : ('e,'i,'d) t
 
   val add_edge : ('e,'i,'d) t -> node -> 'e -> node -> ('e,'i,'d) t
@@ -31,7 +31,7 @@ module type S = sig
   val del_nodes : ('e,'i,'d) t -> NodeSet.t  -> ('e,'i,'d) t
   val all_nodes : ('e,'i,'d) t -> NodeSet.t
 
-  val iter : ('e,'i,'d) t -> 
+  val iter : ('e,'i,'d) t ->
     (node -> 'd Cluster.t option -> 'i option ->
       (node * 'e) list -> unit) -> unit
 
@@ -58,7 +58,7 @@ end
 
 type node = OT.t
 
-module NodeMap = Map.Make(OT)
+module NodeMap = CMap.Make(OT)
 module NodeSet = Set.Make(OT)
 
 type ('edge,'info,'data) t = {
@@ -77,21 +77,22 @@ let mem { graph } id = NodeMap.mem id graph
 
 let add_edge dag from trans dest = { dag with
   graph =
-    let extra = [dest, trans] in
-    try NodeMap.add from (extra @ NodeMap.find from dag.graph) dag.graph
-    with Not_found -> NodeMap.add from extra dag.graph }
+    try NodeMap.modify from (fun _ arcs -> (dest, trans) :: arcs) dag.graph
+    with Not_found -> NodeMap.add from [dest, trans] dag.graph }
 
-let from_node { graph } id = NodeMap.find id graph 
+let from_node { graph } id = NodeMap.find id graph
 
 let del_edge dag id tgt = { dag with
   graph =
     try
-      let edges =
-        List.filter (fun (d,_) -> OT.compare d tgt <> 0) (from_node dag id) in
-      NodeMap.add id edges dag.graph
+      let modify _ arcs =
+        let filter (d, _) = OT.compare d tgt <> 0 in
+        List.filter filter arcs
+      in
+      NodeMap.modify id modify dag.graph
     with Not_found -> dag.graph }
 
-let del_nodes dag s = { 
+let del_nodes dag s = {
   infos = NodeMap.filter (fun n _ -> not(NodeSet.mem n s)) dag.infos;
   clusters = NodeMap.filter (fun n _ -> not(NodeSet.mem n s)) dag.clusters;
   graph = NodeMap.filter (fun n l ->
@@ -111,7 +112,7 @@ let create_cluster dag l data =
 let cluster_of dag id =
   try Some (NodeMap.find id dag.clusters)
   with Not_found -> None
-  
+
 let del_cluster dag c =
   { dag with clusters =
      NodeMap.filter (fun _ c' -> not (Cluster.equal c' c)) dag.clusters }
@@ -127,8 +128,7 @@ let clear_info dag id = { dag with infos = NodeMap.remove id dag.infos }
 let iter dag f =
   NodeMap.iter (fun k v -> f k (cluster_of dag k) (get_info dag k) v) dag.graph
 
-let all_nodes dag =
-  NodeMap.fold (fun k _ s -> NodeSet.add k s) dag.graph NodeSet.empty
+let all_nodes dag = NodeMap.domain dag.graph
 
 end
 
