@@ -63,9 +63,6 @@ let rec classify_vernac e =
     | VernacStm (Observe id) -> VtStm (VtObserve id, true), VtNow
     | VernacStm (Command x) -> elide_part_of_script_and_now (classify_vernac x)
     | VernacStm (PGLast x) -> fst (classify_vernac x), VtNow
-    (* Impossible, Vernac handles these *)
-    | VernacList _ -> anomaly (str "VernacList not handled by Vernac")
-    | VernacLoad _ -> anomaly (str "VernacLoad not handled by Vernac")
     (* Nested vernac exprs *)
     | VernacProgram e -> classify_vernac e
     | VernacLocal (_,e) -> classify_vernac e
@@ -149,6 +146,9 @@ let rec classify_vernac e =
     | VernacDeclareClass _ | VernacDeclareInstances _
     | VernacRegister _
     | VernacComments _ -> VtSideff [], VtLater
+    (* Who knows *)
+    | VernacList _
+    | VernacLoad _ -> VtSideff [], VtNow
     (* (Local) Notations have to disappear *)
     | VernacEndSegment _ -> VtSideff [], VtNow
     (* Modules with parameters have to be executed: can import notations *)

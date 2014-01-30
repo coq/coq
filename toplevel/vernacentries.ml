@@ -1579,16 +1579,46 @@ let vernac_check_guard () =
   in
   msg_notice message
 
+exception End_of_input
+
+let vernac_load interp fname =
+  let parse_sentence = Flags.with_option Flags.we_are_parsing
+    (fun po ->
+    match Pcoq.Gram.entry_parse Pcoq.main_entry po with
+      | Some x -> x
+      | None -> raise End_of_input) in
+  let open_utf8_file_in fname =
+    let is_bom s =
+      Int.equal (Char.code s.[0]) 0xEF &&
+      Int.equal (Char.code s.[1]) 0xBB &&
+      Int.equal (Char.code s.[2]) 0xBF
+    in
+    let in_chan = open_in fname in
+    let s = "   " in
+    if input in_chan s 0 3 < 3 || not (is_bom s) then seek_in in_chan 0;
+    in_chan in
+  let fname =
+    Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) fname in
+  let fname = CUnix.make_suffix fname ".v" in
+  let input =
+    let paths = Loadpath.get_paths () in
+    let _,longfname =
+      System.find_file_in_path ~warn:(Flags.is_verbose()) paths fname in
+    let in_chan = open_utf8_file_in longfname in
+    Pcoq.Gram.parsable (Stream.of_channel in_chan) in
+  try while true do interp (snd (parse_sentence input)) done
+  with End_of_input -> ()
+
+
 (* "locality" is the prefix "Local" attribute, while the "local" component
  * is the outdated/deprecated "Local" attribute of some vernacular commands
  * still parsed as the obsolete_locality grammar entry for retrocompatibility *)
 let interp ?proof locality c =
   prerr_endline ("interpreting: " ^ Pp.string_of_ppcmds (Ppvernac.pr_vernac c));
   match c with
-  (* Done in vernac *)
-  | (VernacList _|VernacLoad _) -> assert false
-
   (* Done later in this file *)
+  | VernacList _ -> assert false
+  | VernacLoad _ -> assert false
   | VernacFail _ -> assert false
   | VernacTime _ -> assert false
   | VernacTimeout _ -> assert false
@@ -1857,6 +1887,8 @@ let interp ?(verbosely=true) ?proof (loc,c) =
 	let tend = System.get_time() in
 	let msg = if !Flags.time then "" else "Finished transaction in " in
         msg_info (str msg ++ System.fmt_time_difference tstart tend)
+    | VernacList l -> List.iter (aux false) (List.map snd l)
+    | VernacLoad (_,fname) -> vernac_load (aux false) fname
     | c -> 
         check_vernac_supports_locality c locality;
         Obligations.set_program_mode isprogcmd;
