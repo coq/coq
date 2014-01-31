@@ -1472,7 +1472,7 @@ and interp_atomic ist tac =
         let (sigma,c_interp) = pf_interp_casted_constr ist gl c in
         tclTHEN
 	  (tclEVARS sigma)
-	  (Tactics.exact_check c_interp)
+	  (Tactics.exact_no_check c_interp)
           gl
       end
   | TacExactNoCheck c ->
