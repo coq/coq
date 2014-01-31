@@ -168,11 +168,11 @@ val tclIFCATCH : 'a tactic -> ('a -> 'b tactic) -> (exn -> 'b tactic) -> 'b tact
    success. *)
 val tclONCE : 'a tactic -> 'a tactic
 
-(* [tclONCE e t] succeeds as [t] if [t] has exactly one
+(* [tclEXACTLY_ONCE e t] succeeds as [t] if [t] has exactly one
    success. Otherwise it fails.  It may behave differently than [t] as
    there may be extra non-logical effects used to discover that [t]
    does not have a second success. Moreover the second success may be
-   conditional on the error recieved: [e] is used. *)
+   conditional on the error received: [e] is used. *)
 val tclEXACTLY_ONCE : exn -> 'a tactic -> 'a tactic
 
 (* Focuses a tactic at a range of subgoals, found by their indices.
