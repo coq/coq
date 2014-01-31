@@ -786,8 +786,6 @@ let rec pr_vernac = function
       str"Existential " ++ int i ++ pr_lconstrarg c
 
   (* Auxiliary file and library management *)
-  | VernacRequireFrom (exp, f) -> hov 2
-      (str "Require" ++ spc() ++ pr_require_token exp ++ qs f)
   | VernacAddLoadPath (fl,s,d) -> hov 2
       (str"Add" ++
        (if fl then str" Rec " else spc()) ++

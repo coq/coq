@@ -166,7 +166,6 @@ let rec classify_vernac e =
     | VernacDeclareMLModule _
     | VernacContext _ (* TASSI: unsure *)
     | VernacProofMode _ 
-    | VernacRequireFrom _ -> VtSideff [], VtNow
     (* These are ambiguous *)
     | VernacInstance _ -> VtUnknown, VtNow
     (* Stm will install a new classifier to handle these *)

@@ -347,7 +347,6 @@ type vernac_expr =
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
-  | VernacRequireFrom of export_flag option * string
   | VernacAddLoadPath of rec_flag * string * DirPath.t option
   | VernacRemoveLoadPath of string
   | VernacAddMLPath of rec_flag * string

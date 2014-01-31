@@ -815,9 +815,6 @@ let vernac_set_used_variables e =
 let expand filename =
   Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) filename
 
-let vernac_require_from export filename =
-  Library.require_library_from_file None (expand filename) export
-
 let vernac_add_loadpath isrec pdir ldiropt =
   let pdir = expand pdir in
   let alias = Option.default Nameops.default_root_prefix ldiropt in
@@ -1684,7 +1681,6 @@ let interp ?proof locality c =
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
 
   (* Auxiliary file and library management *)
-  | VernacRequireFrom (exp, f) -> vernac_require_from exp f
   | VernacAddLoadPath (isrec,s,alias) -> vernac_add_loadpath isrec s alias
   | VernacRemoveLoadPath s -> vernac_remove_loadpath s
   | VernacAddMLPath (isrec,s) -> vernac_add_ml_path isrec s
