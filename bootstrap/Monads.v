@@ -213,7 +213,12 @@ Module IOBase.
  Extract Constant raise => "fun e -> (); fun () -> raise (Proof_errors.Exception e)".
  Extraction Implicit raise [A].
  Parameter catch : forall A, T A -> (Exception -> T A) -> T A.
- Extract Constant catch => "fun s h -> (); fun () -> try s () with Proof_errors.Exception e -> let e = Errors.push e in h e ()".
+ Extract Constant catch => "fun s h -> ();
+  fun () -> try s ()
+  with Proof_errors.Exception e as src ->
+    let src = Errors.push src in
+    let e = Backtrace.app_backtrace ~src ~dst:e in
+    h e ()".
  Extraction Implicit catch [A].
 
  Parameter read_line : T String.
@@ -652,7 +657,11 @@ Module NonLogical.
 
  (* /!\ The extracted code for [run] performs effects. /!\ *)
  Parameter run : forall a:Set, t a -> a.
- Extract Constant run => "fun x -> try x () with Proof_errors.Exception e -> let e = Errors.push e in Pervasives.raise e".
+ Extract Constant run => "fun x ->
+  try x () with Proof_errors.Exception e as src ->
+    let src = Errors.push src in
+    let e = Backtrace.app_backtrace ~src ~dst:e in
+    Pervasives.raise e".
  Extraction Implicit run [a].
 
 End NonLogical.

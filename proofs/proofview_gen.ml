@@ -49,7 +49,12 @@ module IOBase =
   
   (** val catch : 'a1 coq_T -> (exn -> 'a1 coq_T) -> 'a1 coq_T **)
   
-  let catch = fun s h -> (); fun () -> try s () with Proof_errors.Exception e -> let e = Errors.push e in h e ()
+  let catch = fun s h -> ();
+  fun () -> try s ()
+  with Proof_errors.Exception e as src ->
+    let src = Errors.push src in
+    let e = Backtrace.app_backtrace ~src ~dst:e in
+    h e ()
   
   (** val read_line : string coq_T **)
   
@@ -167,7 +172,11 @@ module NonLogical =
   
   (** val run : 'a1 t -> 'a1 **)
   
-  let run = fun x -> try x () with Proof_errors.Exception e -> let e = Errors.push e in Pervasives.raise e
+  let run = fun x ->
+  try x () with Proof_errors.Exception e as src ->
+    let src = Errors.push src in
+    let e = Backtrace.app_backtrace ~src ~dst:e in
+    Pervasives.raise e
  end
 
 module Logical = 
