@@ -234,13 +234,16 @@ ml4depclean:
 depclean:
 	find . $(FIND_VCS_CLAUSE) '(' -name '*.d' ')' -print | xargs rm -f
 
+cacheclean:
+	find theories plugins test-suite -name '.*.aux' -delete
+
 cleanconfig:
 	rm -f config/Makefile config/coq_config.ml myocamlbuild_config.ml dev/ocamldebug-v7
 
-distclean: clean cleanconfig
+distclean: clean cleanconfig cacheclean
 
 voclean:
-	find theories plugins test-suite \( -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" -o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" -o -name '.*.aux' \) -delete
+	find theories plugins test-suite \( -name '*.vo' -o -name '*.glob' -o -name "*.cmxs" -o -name "*.native" -o -name "*.cmx" -o -name "*.cmi" -o -name "*.o" \) -delete
 
 devdocclean:
 	find . -name '*.dep.ps' -o -name '*.dot' | xargs rm -f
