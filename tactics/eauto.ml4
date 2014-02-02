@@ -554,7 +554,15 @@ END
 TACTIC EXTEND unify
 | ["unify" constr(x) constr(y) ] -> [ Proofview.V82.tactic (unify x y) ]
 | ["unify" constr(x) constr(y) "with" preident(base)  ] -> [
-    Proofview.V82.tactic (unify ~state:(Hint_db.transparent_state (searchtable_map base)) x y) ]
+    let table = try Some (searchtable_map base) with Not_found -> None in
+    match table with
+    | None ->
+      let msg = str "Hint table " ++ str base ++ str " not found" in
+      Proofview.tclZERO (UserError ("", msg))
+    | Some t ->
+      let state = Hint_db.transparent_state t in
+      Proofview.V82.tactic (unify ~state x y)
+  ]
 END
 
 
