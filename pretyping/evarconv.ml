@@ -97,7 +97,7 @@ let check_conv_record (t1,sk1) (t2,sk2) =
 	match kind_of_term t2 with
 	    Prod (_,a,b) -> (* assert (l2=[]); *)
       	      if dependent (mkRel 1) b then raise Not_found
-	      else lookup_canonical_conversion (proji, Prod_cs),[Stack.App [a;pop b]]
+	      else lookup_canonical_conversion (proji, Prod_cs),(Stack.append_app_list [a;pop b] Stack.empty)
 	  | Sort s ->
 	      lookup_canonical_conversion
 		(proji, Sort_cs (family_of_sort s)),[]
@@ -156,21 +156,17 @@ let ise_exact ise x1 x2 =
   | _, (UnifFailure _ as out) -> out
   | Some _, Success i -> UnifFailure (i,NotSameArgSize)
 
-let generic_ise_list2 i f l1 l2 =
+let ise_list2 i f l1 l2 =
   let rec aux i l1 l2 =
     match l1,l2 with
-    | [], [] -> (None, Success i)
-    | l, [] -> (Some (Inl (List.rev l)), Success i)
-    | [], l -> (Some (Inr (List.rev l)), Success i)
+    | [], [] -> Success i
+    | l, [] -> UnifFailure (i,NotSameArgSize)
+    | [], l -> UnifFailure (i,NotSameArgSize)
     | x::l1, y::l2 ->
         (match aux i l1 l2 with
-        | aa, Success i' -> (aa, f i' x y)
-        | _, (UnifFailure _ as x) -> None, x)
+        | Success i' -> f i' x y
+        | (UnifFailure _ as x) -> x)
   in aux i (List.rev l1) (List.rev l2)
-
-(* Same but the 2 lists must have the same length *)
-let ise_list2 evd f l1 l2 =
-  ise_exact (generic_ise_list2 evd f) l1 l2
 
 let ise_array2 evd f v1 v2 =
   let rec allrec i = function
@@ -182,6 +178,19 @@ let ise_array2 evd f v1 v2 =
   let lv1 = Array.length v1 in
   if Int.equal lv1 (Array.length v2) then allrec evd (pred lv1)
   else UnifFailure (evd,NotSameArgSize)
+
+(* Applicative node of stack are read from the outermost to the innermost
+   but are unified the other way. *)
+let rec ise_app_stack2 env f evd sk1 sk2 =
+  match sk1,sk2 with
+  | Stack.App node1 :: q1, Stack.App node2 :: q2 ->
+     let (t1,l1) = Stack.decomp_node_last node1 q1 in
+     let (t2,l2) = Stack.decomp_node_last node2 q2 in
+     begin match ise_app_stack2 env f evd l1 l2 with
+	   |(_,UnifFailure _) as x -> x
+	   |x,Success i' -> x,f env i' CONV t1 t2
+     end
+  | _, _ -> (sk1,sk2), Success evd
 
 (* This function tries to unify 2 stacks element by element. It works
    from the end to the beginning. If it unifies a non empty suffix of
@@ -212,19 +221,12 @@ let ise_stack2 no_app env evd f sk1 sk2 =
       else fail (UnifFailure (i,NotSameHead))
     | Stack.Update _ :: _, _ | Stack.Shift _ :: _, _
     | _, Stack.Update _ :: _ | _, Stack.Shift _ :: _ -> assert false
-    | Stack.App l1 :: q1, Stack.App l2 :: q2 ->
-      if no_app&&deep then fail ((*dummy*)UnifFailure(i,NotSameHead)) else begin
-      (* Is requiring to match on all the shorter list a restriction
-	 here ? we could imagine a generalization of
-	 generic_ise_list2 that succeed when it matches only a strict
-	 non empty suffix of both lists and returns in this case the 2
-	 prefixes *)
-      match generic_ise_list2 i (fun ii -> f env ii CONV) l1 l2 with
-      |_,(UnifFailure _ as x) -> fail x
-      |None,Success i' -> ise_stack2 true i' q1 q2
-      |Some (Inl r),Success i' -> ise_stack2 true i' (Stack.App r :: q1) q2
-      |Some (Inr r),Success i' -> ise_stack2 true i' q1 (Stack.App r :: q2)
-    end
+    | Stack.App _ :: _, Stack.App _ :: _ ->
+       if no_app && deep then fail ((*dummy*)UnifFailure(i,NotSameHead)) else
+	 begin match ise_app_stack2 env f i sk1 sk2 with
+	       |_,(UnifFailure _ as x) -> fail x
+	       |(l1, l2), Success i' -> ise_stack2 true i' l1 l2
+	 end
     |_, _ -> fail (UnifFailure (i,(* Maybe improve: *) NotSameHead))
   in ise_stack2 false evd (List.rev sk1) (List.rev sk2)
 
@@ -316,7 +318,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let out1 = whd_betaiota_deltazeta_for_iota_state
       ts env' evd Cst_stack.empty (c'1, Stack.empty) in
     let out2 = whd_nored_state evd
-      (Stack.zip (term', sk' @ [Stack.Shift 1]), [Stack.App [mkRel 1]]), Cst_stack.empty in
+      (Stack.zip (term', sk' @ [Stack.Shift 1]), Stack.append_app_list [mkRel 1] Stack.empty), Cst_stack.empty in
     if onleft then evar_eqappr_x ts env' evd CONV out1 out2
     else evar_eqappr_x ts env' evd CONV out2 out1
   in

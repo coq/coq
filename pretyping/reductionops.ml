@@ -29,12 +29,18 @@ exception Elimconst
 
 (** The type of (machine) stacks (= lambda-bar-calculus' contexts) *)
 module Stack = struct
+  type 'a app_node = 'a list
+  (*
+     Invariant that this module must ensure :
+     (behare of direct access to app_node by the rest of Reductionops)
+     - app_node list is never empty
+   *)
   let pr_app_node pr node =
     let open Pp in surround (prlist_with_sep pr_comma pr node)
 
   type 'a member =
-  | App of 'a list
-  | Case of case_info * 'a * 'a array * ('a * 'a list) option
+  | App of 'a app_node
+  | Case of Term.case_info * 'a * 'a array * ('a * 'a list) option
   | Fix of fixpoint * 'a t * ('a * 'a list) option
   | Shift of int
   | Update of 'a
@@ -130,6 +136,12 @@ module Stack = struct
     | App(v::l)::s -> Some (v, (App l :: s))
     | App [] :: s -> decomp s
     | _ -> None
+
+  let decomp_node_last node sk =
+    match List.sep_last node with
+    | v, [] -> (v, sk)
+    | v, l -> (v, App l :: sk)
+
   let rec strip_app = function
     | App args :: s -> let (args',s') = strip_app s in args @ args', s'
     | s -> [],s
@@ -478,7 +490,7 @@ let rec whd_state_gen ?csts refold flags env sigma =
       (match Stack.strip_n_app ri.(n) stack with
       |None -> fold ()
       |Some (bef,arg,s') ->
-	whrec noth (arg, Stack.Fix(f,[Stack.App bef],Cst_stack.best_cst cst_l)::s'))
+	whrec noth (arg, Stack.Fix(f,Stack.append_app_list bef Stack.empty,Cst_stack.best_cst cst_l)::s'))
 
     | Construct (ind,c) ->
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
@@ -541,7 +553,7 @@ let local_whd_state_gen flags sigma =
     | Fix ((ri,n),_ as f) ->
       (match Stack.strip_n_app ri.(n) stack with
       |None -> s
-      |Some (bef,arg,s') -> whrec (arg, Stack.Fix(f,[Stack.App bef],None)::s'))
+      |Some (bef,arg,s') -> whrec (arg, Stack.Fix(f,Stack.append_app_list bef Stack.empty,None)::s'))
 
     | Evar ev ->
       (match safe_evar_value sigma ev with
@@ -1049,7 +1061,7 @@ let whd_programs_stack env sigma =
       | Fix ((ri,n),_ as f) ->
 	(match Stack.strip_n_app ri.(n) stack with
 	  |None -> s
-	  |Some (bef,arg,s') -> whrec (arg, Stack.Fix(f,[Stack.App bef],None)::s'))
+	  |Some (bef,arg,s') -> whrec (arg, Stack.Fix(f,Stack.append_app_list bef Stack.empty,None)::s'))
       | Construct (ind,c) -> begin
 	match Stack.strip_app stack with
 	  |args, (Stack.Case(ci, _, lf,_)::s') ->

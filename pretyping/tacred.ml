@@ -425,7 +425,7 @@ let substl_checking_arity env subst sigma c =
 type fix_reduction_result = NotReducible | Reduced of (constr*constr list)
 
 let reduce_fix whdfun sigma fix stack =
-  match fix_recarg fix [Stack.App stack] with
+  match fix_recarg fix (Stack.append_app_list stack Stack.empty) with
     | None -> NotReducible
     | Some (recargnum,recarg) ->
         let (recarg'hd,_ as recarg') = whdfun sigma recarg in
@@ -442,7 +442,7 @@ let contract_fix_use_function env sigma f
   substl_checking_arity env (List.rev lbodies) sigma (nf_beta sigma bodies.(bodynum))
 
 let reduce_fix_use_function env sigma f whfun fix stack =
-  match fix_recarg fix [Stack.App stack] with
+  match fix_recarg fix (Stack.append_app_list stack Stack.empty) with
     | None -> NotReducible
     | Some (recargnum,recarg) ->
         let (recarg'hd,_ as recarg') =

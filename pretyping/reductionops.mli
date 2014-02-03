@@ -19,10 +19,12 @@ open Closure
 exception Elimconst
 
 module Stack : sig
-  (** 90% copy-paste of kernel/closure.ml but polymorphic and with extra
-      arguments for storing refold *)
+  type 'a app_node
+
+  val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
+
   type 'a member =
-  | App of 'a list
+  | App of 'a app_node
   | Case of case_info * 'a * 'a array * ('a * 'a list) option
   | Fix of fixpoint * 'a t * ('a * 'a list) option
   | Shift of int
@@ -32,15 +34,18 @@ module Stack : sig
   val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
 
   val empty : 'a t
+  val append_app : 'a array -> 'a t -> 'a t
+  val decomp : 'a t -> ('a * 'a t) option
+
+  val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
+
   val compare_shape : 'a t -> 'a t -> bool
   (** [fold2 f x sk1 sk2] folds [f] on any pair of term in [(sk1,sk2)].
       @return the result and the lifts to apply on the terms *)
   val fold2 : ('a -> Term.constr -> Term.constr -> 'a) -> 'a ->
     Term.constr t -> Term.constr t -> 'a * int * int
-  val append_app : 'a array -> 'a t -> 'a t
   val append_app_list : 'a list -> 'a t -> 'a t
 
-  val decomp : 'a t -> ('a * 'a t) option
   val strip_app : 'a t -> 'a list * 'a t
   (** Takes the n first arguments of application put on the stack. Fails is the
       stack does not start by n arguments of application. *)
