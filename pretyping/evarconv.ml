@@ -96,7 +96,7 @@ let check_conv_record (t1,sk1) (t2,sk2) =
 	match kind_of_term t2 with
 	  Prod (_,a,b) -> (* assert (l2=[]); *)
       	  if dependent (mkRel 1) b then raise Not_found
-	  else lookup_canonical_conversion (proji, Prod_cs),(Stack.append_app_list [a;pop b] Stack.empty)
+	  else lookup_canonical_conversion (proji, Prod_cs),(Stack.append_app [|a;pop b|] Stack.empty)
 	| Sort s ->
 	   lookup_canonical_conversion
 	     (proji, Sort_cs (family_of_sort s)),[]
@@ -117,7 +117,7 @@ let check_conv_record (t1,sk1) (t2,sk2) =
       if Int.equal l_us 0 then Stack.empty,sk2_effective
       else match (Stack.strip_n_app (l_us-1) sk2_effective) with
 	   | None -> raise Not_found
-	   | Some (l',el,s') -> (l'@Stack.append_app_list [el] Stack.empty,s') in
+	   | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
     (c,bs,(Stack.append_app_list params Stack.empty,params1),(Stack.append_app_list us Stack.empty,us2),(extra_args1,extra_args2),c1,
     (n,Stack.zip(t2,sk2)))
 
@@ -305,7 +305,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     let out1 = whd_betaiota_deltazeta_for_iota_state
       ts env' evd Cst_stack.empty (c'1, Stack.empty) in
     let out2 = whd_nored_state evd
-      (Stack.zip (term', sk' @ [Stack.Shift 1]), Stack.append_app_list [mkRel 1] Stack.empty), Cst_stack.empty in
+      (Stack.zip (term', sk' @ [Stack.Shift 1]), Stack.append_app [|mkRel 1|] Stack.empty), Cst_stack.empty in
     if onleft then evar_eqappr_x ts env' evd CONV out1 out2
     else evar_eqappr_x ts env' evd CONV out2 out1
   in

@@ -29,14 +29,20 @@ exception Elimconst
 
 (** The type of (machine) stacks (= lambda-bar-calculus' contexts) *)
 module Stack = struct
-  type 'a app_node = 'a list
+  type 'a app_node = int * 'a array * int
+  (* first releavnt position, arguments, last relevant position *)
+
   (*
      Invariant that this module must ensure :
      (behare of direct access to app_node by the rest of Reductionops)
-     - app_node list is never empty
+     - in app_node (i,_,j) i <= j
+     - There is no array realocation (outside of debug printing)
    *)
-  let pr_app_node pr node =
-    let open Pp in surround (prlist_with_sep pr_comma pr node)
+
+  let pr_app_node pr (i,a,j) =
+    let open Pp in surround (
+		     prvect_with_sep pr_comma pr (Array.sub a i (j - i + 1))
+		     )
 
   type 'a member =
   | App of 'a app_node
@@ -64,14 +70,32 @@ module Stack = struct
     let open Pp in
     prlist_with_sep pr_semicolon (fun x -> hov 1 (pr_member pr_c x)) l
 
+  let empty = []
+
+  let append_app v s =
+    let le = Array.length v in
+    if Int.equal le 0 then s else App (0,v,pred le) :: s
+
+  let decomp_node (i,l,j) sk =
+    if i < j then (l.(i), App (succ i,l,j) :: sk)
+    else (l.(i), sk)
+
+  let decomp = function
+    | App node::s -> Some (decomp_node node s)
+    | _ -> None
+
+  let decomp_node_last (i,l,j) sk =
+    if i < j then (l.(j), App (i,l,pred j) :: sk)
+    else (l.(j), sk)
+
   let compare_shape stk1 stk2 =
     let rec compare_rec bal stk1 stk2 =
       match (stk1,stk2) with
 	([],[]) -> Int.equal bal 0
       | ((Update _|Shift _)::s1, _) -> compare_rec bal s1 stk2
       | (_, (Update _|Shift _)::s2) -> compare_rec bal stk1 s2
-      | (App l1::s1, _) -> compare_rec (bal+List.length l1) s1 stk2
-      | (_, App l2::s2) -> compare_rec (bal-List.length l2) stk1 s2
+      | (App (i,_,j)::s1, _) -> compare_rec (bal + j + 1 - i) s1 stk2
+      | (_, App (i,_,j)::s2) -> compare_rec (bal - j - 1 + i) stk1 s2
       | (Case(c1,_,_,_)::s1, Case(c2,_,_,_)::s2) ->
         Int.equal bal 0 (* && c1.ci_ind  = c2.ci_ind *) && compare_rec 0 s1 s2
       | (Fix(_,a1,_)::s1, Fix(_,a2,_)::s2) ->
@@ -88,11 +112,11 @@ module Stack = struct
       | [], [] -> o,lft1,lft2
       | Shift n :: q1, _ -> aux o (lft1+n) q1 lft2 sk2
       | _, Shift n :: q2 -> aux o lft1 sk1 (lft2+n) q2
-      | App [] :: q1, _ -> aux o lft1 q1 lft2 sk2
-      | _, App [] :: q2 -> aux o lft1 sk1 lft2 q2
-      | App (t1::l1) :: q1, App (t2::l2) :: q2 ->
-	aux (f o (Vars.lift lft1 t1) (Vars.lift lft2 t2))
-	  lft1 (App l1 :: q1) lft2 (App l2 :: q2)
+      | App n1 :: q1, App n2 :: q2 ->
+	 let t1,l1 = decomp_node_last n1 q1 in
+	 let t2,l2 = decomp_node_last n2 q2 in
+	 aux (f o (Vars.lift lft1 t1) (Vars.lift lft2 t2))
+	     lft1 l1 lft2 l2
       | Case (_,t1,a1,_) :: q1, Case (_,t2,a2,_) :: q2 ->
 	aux (fold_array
 	       (f o (Vars.lift lft1 t1) (Vars.lift lft2 t2))
@@ -104,43 +128,15 @@ module Stack = struct
       | _, _ -> raise (Invalid_argument "Reductionops.Stack.fold2")
     in aux o 0 (List.rev sk1) 0 (List.rev sk2)
 
-  let empty = []
   let append_app_list l s =
-    match (l,s) with
-    | ([],s) -> s
-    | (l1, App l :: s) -> App (l1@l) :: s
-    | (l1, s) -> App l1 :: s
-
-  let append_app v s =
-    if Array.is_empty v then s
-    else match s with
-    | App l :: s ->
-      let rec append i accu =
-	if i < 0 then accu
-	else
-          let arg = Array.unsafe_get v i in
-          append (pred i) (arg :: accu)
-      in
-      let al = append (Array.length v - 1) l in
-      App al :: s
-    | _ -> App (Array.to_list v) :: s
+    let a = Array.of_list l in
+    append_app a s
 
   let rec args_size = function
-    | App l::s -> List.length l + args_size s
+    | App (i,_,j)::s -> j + 1 - i + args_size s
     | Shift(_)::s -> args_size s
     | Update(_)::s -> args_size s
     | _ -> 0
-
-  let rec decomp = function
-    | App[v]::s -> Some (v, s)
-    | App(v::l)::s -> Some (v, (App l :: s))
-    | App [] :: s -> decomp s
-    | _ -> None
-
-  let decomp_node_last node sk =
-    match List.sep_last node with
-    | v, [] -> (v, sk)
-    | v, l -> (v, App l :: sk)
 
   let strip_app s =
     let rec aux out = function
@@ -150,18 +146,16 @@ module Stack = struct
   let strip_n_app n s =
     let rec aux n out = function
       | Shift k as e :: s -> aux n (e :: out) s
-      | App args as e :: s ->
-	 let k = List.length args in
-	 if k < n then aux (n - k) (e::out) s else
-	   let bef,aft = List.chop n args in
-	   let pre = CList.rev
-		       (if CList.is_empty bef then out else App bef :: out) in
-	   begin
-             match aft with
-             |h::[] -> Some (pre,h,s)
-             |h::t -> Some (pre,h,append_app_list t s)
-             |[] -> None
-	   end
+      | App (i,a,j) as e :: s ->
+	 let nb = j  - i + 1 in
+	 if n >= nb then
+	   aux (n - nb) (e::out) s
+	 else
+	   let p = i+n in
+	   Some (CList.rev
+	      (if Int.equal n 0 then out else App (i,a,p-1) :: out),
+	    a.(p),
+	    if j > p then App(succ p,a,j)::s else s)
       | s -> None
     in aux n [] s
 
@@ -169,10 +163,10 @@ module Stack = struct
     List.exists (function (Fix _ | Case _) -> true | _ -> false) args
   let list_of_app_stack s =
     let rec aux = function
-      | App args :: s ->
+      | App (i,a,j) :: s ->
 	 let (k,(args',s')) = aux s in
-	 let largs = CList.rev_map (Vars.lift k) args in
-	 k,(CList.rev_append largs args', s')
+	 let a' = Array.map (Vars.lift k) (Array.sub a i (j - i + 1)) in
+	 k,(Array.fold_right (fun x y -> x::y) a' args', s')
       | Shift n :: s ->
 	 let (k,(args',s')) = aux s in (k+n,(args', s'))
       | s -> (0,([],s)) in
@@ -180,48 +174,47 @@ module Stack = struct
     let init = match s' with [] when Int.equal lft 0 -> true | _ -> false in
     Option.init init out
 
-  let rec assign s p c = match s with
-    | App args :: s ->
-      let q = List.length args in
-      if p >= q then
-	App args :: assign s (p-q) c
-      else
-        (match List.chop p args with
-          (bef, _::aft) -> App (bef@c::aft) :: s
-        | _ -> assert false)
-    | _ -> s
-  let tail p s0 =
-    let rec aux lft p s =
+  let assign s p c =
+    match strip_n_app p s with
+    | Some (pre,_,sk) -> pre @ (App (0,[|c|],0)::sk)
+    | None -> assert false
+
+  let tail n0 s0 =
+    let rec aux lft n s =
       let out s = if Int.equal lft 0 then s else Shift lft :: s in
-      if Int.equal p 0 then out s else
+      if Int.equal n 0 then out s else
 	match s with
-	| App args :: s' ->
-	   let q = List.length args in
-	   if p >= q then aux lft (p-q) s'
-	   else App (List.skipn p args) :: out s'
-	| Shift k :: s' -> aux (lft+k) p s'
+      | App (i,a,j) :: s ->
+	 let nb = j  - i + 1 in
+	 if n >= nb then
+	   aux lft (n - nb) s
+	 else
+	   let p = i+n in
+	   if j >= p then App(p,a,j)::s else s
+	| Shift k :: s' -> aux (lft+k) n s'
 	| _ -> raise (Invalid_argument "Reductionops.Stack.tail")
-    in aux 0 p s0
-  let rec nth s p = match s with
-    | App args :: s ->
-      let q = List.length args in
-      if p >= q then nth s (p-q)
-      else List.nth args p
-    | _ -> raise Not_found
+    in aux 0 n0 s0
+
+  let nth s p =
+    match strip_n_app p s with
+    | Some (_,el,_) -> el
+    | None -> raise Not_found
 
   let rec zip ?(refold=false) = function
     | f, [] -> f
-    | f, (App [] :: s) -> zip ~refold (f, s)
-    | f, (App args :: s) ->
-       zip ~refold (applist (f, args), s)
+    | f, (App (i,a,j) :: s) ->
+       let a' = if Int.equal i 0 && Int.equal j (Array.length a - 1)
+		then a
+		else Array.sub a i (j - i + 1) in
+       zip ~refold (mkApp (f, a'), s)
     | f, (Case (ci,rt,br,Some(cst, params))::s) when refold ->
        zip ~refold (cst, append_app_list (List.rev params) s)
     | f, (Case (ci,rt,br,_)::s) -> zip ~refold (mkCase (ci,rt,f,br), s)
     | f, (Fix (fix,st,Some(cst, params))::s) when refold ->
        zip ~refold (cst, append_app_list (List.rev params)
-      (st @ (append_app_list [f] s)))
+      (st @ (append_app [|f|] s)))
   | f, (Fix (fix,st,_)::s) -> zip ~refold
-    (mkFix fix, st @ (append_app_list [f] s))
+    (mkFix fix, st @ (append_app [|f|] s))
   | f, (Shift n::s) -> zip ~refold (lift n f, s)
   | _ -> assert false
 end
@@ -516,7 +509,7 @@ let rec whd_state_gen ?csts refold flags env sigma =
 	|args, (Stack.Fix (f,s',cst)::s'') ->
 	  let x' = Stack.zip(x,args) in
 	  whrec noth ((if refold then contract_fix ~env f else contract_fix f) cst,
-		      s' @ (Stack.append_app_list [x'] s''))
+		      s' @ (Stack.append_app [|x'|] s''))
 	|_ -> fold ()
       else fold ()
 
@@ -588,7 +581,7 @@ let local_whd_state_gen flags sigma =
 	  whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
 	|args, (Stack.Fix (f,s',cst)::s'') ->
 	  let x' = Stack.zip(x,args) in
-	  whrec (contract_fix f cst, s' @ (Stack.append_app_list [x'] s''))
+	  whrec (contract_fix f cst, s' @ (Stack.append_app [|x'|] s''))
 	|_ -> s
       else s
 
@@ -780,7 +773,7 @@ let whd_betaiota_preserving_vm_cast env sigma t =
 	     whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
 	   |args, (Stack.Fix (f,s',cst)::s'') ->
 	     let x' = Stack.zip(x,args) in
-	     whrec (contract_fix f cst,s' @ (Stack.append_app_list [x'] s''))
+	     whrec (contract_fix f cst,s' @ (Stack.append_app [|x'|] s''))
 	   |_ -> s
        end
 
@@ -1082,7 +1075,7 @@ let whd_programs_stack env sigma =
 	    whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
 	  |args, (Stack.Fix (f,s',cst)::s'') ->
 	    let x' = Stack.zip(x,args) in
-	    whrec (contract_fix f cst,s' @ (Stack.append_app_list [x'] s''))
+	    whrec (contract_fix f cst,s' @ (Stack.append_app [|x'|] s''))
 	  |_ -> s
       end
       | CoFix cofix -> begin
