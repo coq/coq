@@ -29,6 +29,9 @@ exception Elimconst
 
 (** The type of (machine) stacks (= lambda-bar-calculus' contexts) *)
 module Stack = struct
+  let pr_app_node pr node =
+    let open Pp in surround (prlist_with_sep pr_comma pr node)
+
   type 'a member =
   | App of 'a list
   | Case of case_info * 'a * 'a array * ('a * 'a list) option
@@ -36,6 +39,24 @@ module Stack = struct
   | Shift of int
   | Update of 'a
   and 'a t = 'a member list
+
+  let rec pr_member pr_c member =
+    let open Pp in
+    let pr_c x = hov 1 (pr_c x) in
+    match member with
+    | App app -> str "ZApp" ++ pr_app_node pr_c app
+    | Case (_,_,br,cst) ->
+       str "ZCase(" ++
+	 prvect_with_sep (pr_bar) pr_c br
+       ++ str ")"
+    | Fix (f,args,cst) ->
+       str "ZFix(" ++ Termops.pr_fix Termops.print_constr f
+       ++ pr_comma () ++ pr pr_c args ++ str ")"
+    | Shift i -> str "ZShift(" ++ int i ++ str ")"
+    | Update t -> str "ZUpdate(" ++ pr_c t ++ str ")"
+  and pr pr_c l =
+    let open Pp in
+    prlist_with_sep pr_semicolon (fun x -> hov 1 (pr_member pr_c x)) l
 
   let compare_shape stk1 stk2 =
     let rec compare_rec bal stk1 stk2 =
@@ -193,6 +214,10 @@ type  contextual_state_reduction_function =
     env ->  evar_map -> state -> state
 type  state_reduction_function =  contextual_state_reduction_function
 type local_state_reduction_function = evar_map -> state -> state
+
+let pr_state (tm,sk) =
+  let open Pp in
+  h 0 (Termops.print_constr tm ++ str "|" ++ cut () ++ Stack.pr Termops.print_constr sk)
 
 (*************************************)
 (*** Reduction Functions Operators ***)

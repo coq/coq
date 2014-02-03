@@ -29,6 +29,8 @@ module Stack : sig
   | Update of 'a
   and 'a t = 'a member list
 
+  val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+
   val empty : 'a t
   val compare_shape : 'a t -> 'a t -> bool
   (** [fold2 f x sk1 sk2] folds [f] on any pair of term in [(sk1,sk2)].
@@ -76,6 +78,8 @@ type contextual_state_reduction_function =
     env -> evar_map -> state -> state
 type state_reduction_function = contextual_state_reduction_function
 type local_state_reduction_function = evar_map -> state -> state
+
+val pr_state : state -> Pp.std_ppcmds
 
 (** {6 Machinery about a stack of unfolded constant }
 

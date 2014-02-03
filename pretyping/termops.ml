@@ -35,6 +35,15 @@ let pr_name = function
 
 let pr_con sp = str(string_of_con sp)
 
+let pr_fix pr_constr ((t,i),(lna,tl,bl)) =
+  let fixl = Array.mapi (fun i na -> (na,t.(i),tl.(i),bl.(i))) lna in
+  hov 1
+      (str"fix " ++ int i ++ spc() ++  str"{" ++
+         v 0 (prlist_with_sep spc (fun (na,i,ty,bd) ->
+           pr_name na ++ str"/" ++ int i ++ str":" ++ pr_constr ty ++
+	   cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
+         str"}")
+
 let rec pr_constr c = match kind_of_term c with
   | Rel n -> str "#"++int n
   | Meta n -> str "Meta(" ++ int n ++ str ")"
@@ -71,14 +80,7 @@ let rec pr_constr c = match kind_of_term c with
              pr_constr c ++ str"of") ++ cut() ++
        prlist_with_sep (fun _ -> brk(1,2)) pr_constr (Array.to_list bl) ++
       cut() ++ str"end")
-  | Fix ((t,i),(lna,tl,bl)) ->
-      let fixl = Array.mapi (fun i na -> (na,t.(i),tl.(i),bl.(i))) lna in
-      hov 1
-        (str"fix " ++ int i ++ spc() ++  str"{" ++
-         v 0 (prlist_with_sep spc (fun (na,i,ty,bd) ->
-           pr_name na ++ str"/" ++ int i ++ str":" ++ pr_constr ty ++
-           cut() ++ str":=" ++ pr_constr bd) (Array.to_list fixl)) ++
-         str"}")
+  | Fix f -> pr_fix pr_constr f
   | CoFix(i,(lna,tl,bl)) ->
       let fixl = Array.mapi (fun i na -> (na,tl.(i),bl.(i))) lna in
       hov 1

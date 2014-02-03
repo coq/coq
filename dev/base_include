@@ -42,6 +42,7 @@
 #install_printer  (* Cpred.t *) pp_cpred;;
 #install_printer ppzipper;;
 #install_printer ppstack;;
+#install_printer (* Reductionops.Stack.t *) pp_stack_t;;
 #install_printer ppatom;;
 #install_printer ppwhd;;
 #install_printer ppvblock;;
