@@ -487,10 +487,11 @@ let clear_hyps_in_evi evdref hyps concl ids =
   let nconcl =
     check_and_clear_in_constr evdref (OccurHypInSimpleClause None) ids concl in
   let nhyps =
-    let check_context (id,ob,c) =
+    let check_context ((id,ob,c) as decl) =
       let err = OccurHypInSimpleClause (Some id) in
-      (id, Option.map (check_and_clear_in_constr evdref err ids) ob,
-	check_and_clear_in_constr evdref err ids c)
+      let ob' = Option.smartmap (fun c -> check_and_clear_in_constr evdref err ids c) ob in
+      let c' = check_and_clear_in_constr evdref err ids c in
+      if ob == ob' && c == c' then decl else (id, ob', c')
     in
     let check_value vk =
       match !vk with

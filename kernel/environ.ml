@@ -97,9 +97,16 @@ let named_vals_of_val = snd
    each declarations.
    *** /!\ ***   [f t] should be convertible with t *)
 let map_named_val f (ctxt,ctxtv) =
-  let ctxt =
-    List.map (fun (id,body,typ) -> (id, Option.map f body, f typ)) ctxt in
-  (ctxt,ctxtv)
+  let rec map ctx = match ctx with
+  | [] -> []
+  | (id, body, typ) :: rem ->
+    let body' = Option.smartmap f body in
+    let typ' = f typ in
+    let rem' = map rem in
+    if body' == body && typ' == typ && rem' == rem then ctx
+    else (id, body', typ') :: rem'
+  in
+  (map ctxt, ctxtv)
 
 let empty_named_context = empty_named_context
 
@@ -373,18 +380,22 @@ let insert_after_hyp (ctxt,vals) id d check =
 
 (* To be used in Logic.clear_hyps *)
 let remove_hyps ids check_context check_value (ctxt, vals) =
-  List.fold_right2 (fun (id,_,_ as d) (id',v) (ctxt,vals) ->
-      if Id.Set.mem id ids then
-	(ctxt,vals)
-      else
-	let nd = check_context d in
-	let nv = check_value v in
-	  (nd::ctxt,(id',nv)::vals))
-		     ctxt vals ([],[])
-
-
-
-
+  let rec remove_hyps ctxt vals = match ctxt, vals with
+  | [], [] -> [], []
+  | d :: rctxt, (nid, v) :: rvals ->
+    let (id, _, _) = d in
+    let ans = remove_hyps rctxt rvals in
+    if Id.Set.mem id ids then ans
+    else
+      let (rctxt', rvals') = ans in
+      let d' = check_context d in
+      let v' = check_value v in
+      if d == d' && v == v' && rctxt == rctxt' && rvals == rvals' then
+        ctxt, vals
+      else (d' :: rctxt', (nid, v') :: rvals')
+  | _ -> assert false
+  in
+  remove_hyps ctxt vals
 
 (*spiwack: the following functions assemble the pieces of the retroknowledge
    note that the "consistent" register function is available in the module

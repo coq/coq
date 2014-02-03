@@ -381,7 +381,8 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	in
 	let ((acc'',conclty',sigma), args) = mk_arggoals sigma goal acc' hdty l in
 	check_conv_leq_goal env sigma trm conclty' conclty;
-        (acc'',conclty',sigma, Term.mkApp (applicand, args))
+        let ans = if applicand == f && args == l then trm else Term.mkApp (applicand, args) in
+        (acc'',conclty',sigma, ans)
 
     | Case (ci,p,c,lf) ->
 	let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
@@ -429,7 +430,8 @@ and mk_hdgoals sigma goal goalacc trm =
 	  else mk_hdgoals sigma goal goalacc f
 	in
 	let ((acc'',conclty',sigma), args) = mk_arggoals sigma goal acc' hdty l in
-	(acc'',conclty',sigma, Term.mkApp (applicand, args))
+        let ans = if applicand == f && args == l then trm else Term.mkApp (applicand, args) in
+	(acc'',conclty',sigma, ans)
 
     | Case (ci,p,c,lf) ->
 	let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
@@ -464,6 +466,7 @@ and mk_arggoals sigma goal goalacc funty allargs =
         fill sigma goalacc (subst1 c1 b) i
       | _ -> raise (RefinerError (CannotApply (t,harg)))
   in
+  let ans = if Array.equal (==) ans allargs then allargs else ans in
   (fill sigma goalacc funty 0, ans)
 
 and mk_casegoals sigma goal goalacc p c =
