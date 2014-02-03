@@ -23,6 +23,17 @@ open Globnames
 open Evd
 open Pretype_errors
 
+let debug_unification = ref (false)
+let _ = Goptions.declare_bool_option {
+  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optname =
+    "Print states sended to Evarconv unification";
+  Goptions.optkey = ["Debug";"Unification"];
+  Goptions.optread = (fun () -> !debug_unification);
+  Goptions.optwrite = (fun a -> debug_unification:=a);
+}
+
+
 type flex_kind_of_term =
   | Rigid
   | MaybeFlexible (* approx'ed as reducible but not necessarily so *)
@@ -312,6 +323,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 
   let app_empty = match sk1, sk2 with [], [] -> true | _ -> false in
   (* Evar must be undefined since we have flushed evars *)
+  let () = if !debug_unification then
+	     let open Pp in
+	     pp (v 0 (pr_state appr1 ++ cut () ++ pr_state appr2 ++ cut ()) ++ fnl ()) in
   match (flex_kind_of_term term1 sk1, flex_kind_of_term term2 sk2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
 	let f1 i =
