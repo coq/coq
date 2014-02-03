@@ -122,6 +122,7 @@ type variable = Id.t
 
 type module_ident = Id.t
 
+module ModIdset = Id.Set
 module ModIdmap = Id.Map
 
 (** {6 Directory paths = section names paths } *)

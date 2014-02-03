@@ -79,7 +79,8 @@ type name = Name.t = Name of Id.t | Anonymous
 type variable = Id.t
 type module_ident = Id.t
 
-module ModIdmap : Map.S with type key = module_ident
+module ModIdset : Set.S with type elt = module_ident
+module ModIdmap : Map.ExtS with type key = module_ident and module Set := ModIdset
 
 (** {6 Directory paths = section names paths } *)
 

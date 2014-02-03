@@ -110,10 +110,13 @@ struct
 
   let rec push_until uname o level tree = function
     | modid :: path ->
-	let mc =
-	  try ModIdmap.find modid tree.map
-	  with Not_found -> empty_tree
-	in
+        let modify _ mc = push_until uname o (level-1) mc path in
+        let map =
+          try ModIdmap.modify modid modify tree.map
+          with Not_found ->
+            let ptab = modify () empty_tree in
+            ModIdmap.add modid ptab tree.map
+        in
 	let this =
           if level <= 0 then
 	    match tree.path with
@@ -127,8 +130,7 @@ struct
 	      | Relative _ -> Relative (uname,o)
           else tree.path
 	in
-	let ptab' = push_until uname o (level-1) mc path in
-	mktree this (ModIdmap.add modid ptab' tree.map)
+	mktree this map
     | [] ->
 	match tree.path with
 	  | Absolute (uname',o') ->
@@ -148,42 +150,43 @@ struct
 
 
 let rec push_exactly uname o level tree = function
-  | modid :: path ->
-      let mc =
-	try ModIdmap.find modid tree.map
-	with Not_found -> empty_tree
-      in
-        if Int.equal level 0 then
-	  let this =
-	    match tree.path with
-	      | Absolute (n,_) ->
-		  (* This is an absolute name, we must keep it
-		     otherwise it may become unaccessible forever *)
-		    msg_warning (str ("Trying to mask the absolute name \""
-			     ^ U.to_string n ^ "\"!"));
-		  tree.path
-	      | Nothing
-	      | Relative _ -> Relative (uname,o)
-	  in
-	  mktree this tree.map
-	else (* not right level *)
-	  let ptab' = push_exactly uname o (level-1) mc path in
-	  mktree tree.path (ModIdmap.add modid ptab' tree.map)
-  | [] ->
-      anomaly (Pp.str "Prefix longer than path! Impossible!")
+| [] ->
+  anomaly (Pp.str "Prefix longer than path! Impossible!")
+| modid :: path ->
+  if Int.equal level 0 then
+    let this =
+      match tree.path with
+        | Absolute (n,_) ->
+            (* This is an absolute name, we must keep it
+                otherwise it may become unaccessible forever *)
+              msg_warning (str ("Trying to mask the absolute name \""
+                        ^ U.to_string n ^ "\"!"));
+            tree.path
+        | Nothing
+        | Relative _ -> Relative (uname,o)
+    in
+    mktree this tree.map
+  else (* not right level *)
+    let modify _ mc = push_exactly uname o (level-1) mc path in
+    let map =
+      try ModIdmap.modify modid modify tree.map
+      with Not_found ->
+        let ptab = modify () empty_tree in
+        ModIdmap.add modid ptab tree.map
+    in
+    mktree tree.path map
 
 
 let push visibility uname o tab =
   let id,dir = U.repr uname in
-  let ptab =
-    try Id.Map.find id tab
-    with Not_found -> empty_tree
-  in
-  let ptab' = match visibility with
+  let modify _ ptab = match visibility with
     | Until i -> push_until uname o (i-1) ptab dir
     | Exactly i -> push_exactly uname o (i-1) ptab dir
   in
-    Id.Map.add id ptab' tab
+  try Id.Map.modify id modify tab
+  with Not_found ->
+    let ptab = modify () empty_tree in
+    Id.Map.add id ptab tab
 
 
 let rec search tree = function
