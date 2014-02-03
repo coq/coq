@@ -637,17 +637,18 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	      (evd', mkMeta mv :: ks, m - 1))
 	  (sigma,[],List.length bs - 1) bs
       in
-      let unilist2 f substn l l' =
-	try List.fold_left2 f substn l l'
-	with Invalid_argument "List.fold_left2" -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
-      in
-      let substn = unilist2 (fun s u1 u -> unirec_rec curenvnb pb b false s u1 (substl ks u))
-	(evd,ms,es) us2 us in
-      let substn = unilist2 (fun s u1 u -> unirec_rec curenvnb pb b false s u1 (substl ks u))
-	substn params1 params in
-	let (substn,_,_) = Reductionops.Stack.fold2 (unirec_rec curenvnb pb b false) substn ts ts1 in
-        let app = mkApp (c, Array.rev_of_list ks) in
+      try
+      let (substn,_,_) = Reductionops.Stack.fold2
+			   (fun s u1 u -> unirec_rec curenvnb pb b false s u1 (substl ks u))
+			   (evd,ms,es) us2 us in
+      let (substn,_,_) = Reductionops.Stack.fold2
+			   (fun s u1 u -> unirec_rec curenvnb pb b false s u1 (substl ks u))
+			   substn params1 params in
+      let (substn,_,_) = Reductionops.Stack.fold2 (unirec_rec curenvnb pb b false) substn ts ts1 in
+      let app = mkApp (c, Array.rev_of_list ks) in
 	unirec_rec curenvnb pb b false substn c1 app
+      with Invalid_argument "Reductionops.Stack.fold2" ->
+	error_cannot_unify (fst curenvnb) sigma (cM,cN)
     else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       in
   let evd = sigma in

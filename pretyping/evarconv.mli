@@ -45,8 +45,8 @@ val check_problems_are_solved : evar_map -> unit
 (** Check if a canonical structure is applicable *)
 
 val check_conv_record : constr * types Stack.t -> constr * types Stack.t ->
-  constr * constr list * (constr list * constr list) *
-    (constr list * types list) *
+  constr * constr list * (constr Stack.t * constr Stack.t) *
+    (constr Stack.t * types Stack.t) *
     (constr Stack.t * types Stack.t) * constr *
     (int * constr)
 

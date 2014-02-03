@@ -90,20 +90,19 @@ let position_problem l2r = function
    projection would have been reduced) *)
 
 let check_conv_record (t1,sk1) (t2,sk2) =
-  try
     let proji = global_of_constr t1 in
     let canon_s,sk2_effective =
       try
 	match kind_of_term t2 with
-	    Prod (_,a,b) -> (* assert (l2=[]); *)
-      	      if dependent (mkRel 1) b then raise Not_found
-	      else lookup_canonical_conversion (proji, Prod_cs),(Stack.append_app_list [a;pop b] Stack.empty)
-	  | Sort s ->
-	      lookup_canonical_conversion
-		(proji, Sort_cs (family_of_sort s)),[]
-	  | _ ->
-	      let c2 = global_of_constr t2 in
-		lookup_canonical_conversion (proji, Const_cs c2),sk2
+	  Prod (_,a,b) -> (* assert (l2=[]); *)
+      	  if dependent (mkRel 1) b then raise Not_found
+	  else lookup_canonical_conversion (proji, Prod_cs),(Stack.append_app_list [a;pop b] Stack.empty)
+	| Sort s ->
+	   lookup_canonical_conversion
+	     (proji, Sort_cs (family_of_sort s)),[]
+	| _ ->
+	   let c2 = global_of_constr t2 in
+	   lookup_canonical_conversion (proji, Const_cs c2),sk2
       with Not_found ->
 	lookup_canonical_conversion (proji,Default_cs),[]
     in
@@ -111,16 +110,16 @@ let check_conv_record (t1,sk1) (t2,sk2) =
           o_TPARAMS = params; o_NPARAMS = nparams; o_TCOMPS = us } = canon_s in
     let params1, c1, extra_args1 =
       match Stack.strip_n_app nparams sk1 with
-	| Some (params1, c1,extra_args1) -> params1, c1, extra_args1
-	| _ -> raise Not_found in
+      | Some (params1, c1,extra_args1) -> params1, c1, extra_args1
+      | _ -> raise Not_found in
     let us2,extra_args2 =
-      let l',s' = Stack.strip_app sk2_effective in
-      let bef,aft = List.chop (List.length us) l' in
-      (bef, Stack.append_app_list aft s') in
-    c,bs,(params,params1),(us,us2),(extra_args1,extra_args2),c1,
-    (n,Stack.zip(t2,sk2))
-  with Failure _ | Not_found ->
-    raise Not_found
+      let l_us = List.length us in
+      if Int.equal l_us 0 then Stack.empty,sk2_effective
+      else match (Stack.strip_n_app (l_us-1) sk2_effective) with
+	   | None -> raise Not_found
+	   | Some (l',el,s') -> (l'@Stack.append_app_list [el] Stack.empty,s') in
+    (c,bs,(Stack.append_app_list params Stack.empty,params1),(Stack.append_app_list us Stack.empty,us2),(extra_args1,extra_args2),c1,
+    (n,Stack.zip(t2,sk2)))
 
 (* Precondition: one of the terms of the pb is an uninstantiated evar,
  * possibly applied to arguments. *)
@@ -155,18 +154,6 @@ let ise_exact ise x1 x2 =
   | None, out -> out
   | _, (UnifFailure _ as out) -> out
   | Some _, Success i -> UnifFailure (i,NotSameArgSize)
-
-let ise_list2 i f l1 l2 =
-  let rec aux i l1 l2 =
-    match l1,l2 with
-    | [], [] -> Success i
-    | l, [] -> UnifFailure (i,NotSameArgSize)
-    | [], l -> UnifFailure (i,NotSameArgSize)
-    | x::l1, y::l2 ->
-        (match aux i l1 l2 with
-        | Success i' -> f i' x y
-        | (UnifFailure _ as x) -> x)
-  in aux i (List.rev l1) (List.rev l2)
 
 let ise_array2 evd f v1 v2 =
   let rec allrec i = function
@@ -403,7 +390,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
             match eval_flexible_term ts env term2 with
             | None -> false
             | Some v2 ->
-	      let applicative_stack = Stack.append_app_list (fst (Stack.strip_app sk2)) Stack.empty in
+	      let applicative_stack = fst (Stack.strip_app sk2) in
 	      is_unnamed
 		(fst (whd_betaiota_deltazeta_for_iota_state
 			ts env i Cst_stack.empty (v2, applicative_stack))) in
@@ -597,12 +584,12 @@ and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) 
     let app = mkApp (c, Array.rev_of_list ks) in
     ise_and evd'
       [(fun i ->
-	ise_list2 i
-          (fun i' x1 x -> evar_conv_x trs env i' CONV x1 (substl ks x))
+	exact_ise_stack2 env i
+          (fun env' i' cpb x1 x -> evar_conv_x trs env' i' cpb x1 (substl ks x))
           params1 params);
        (fun i ->
-	 ise_list2 i
-           (fun i' u1 u -> evar_conv_x trs env i' CONV u1 (substl ks u))
+	 exact_ise_stack2 env i
+           (fun env' i' cpb u1 u -> evar_conv_x trs env' i' cpb u1 (substl ks u))
            us2 us);
        (fun i -> evar_conv_x trs env i CONV c1 app);
        (fun i -> exact_ise_stack2 env i (evar_conv_x trs) ts ts1)]

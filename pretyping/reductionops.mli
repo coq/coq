@@ -46,16 +46,14 @@ module Stack : sig
     Term.constr t -> Term.constr t -> 'a * int * int
   val append_app_list : 'a list -> 'a t -> 'a t
 
-  val strip_app : 'a t -> 'a list * 'a t
-  (** Takes the n first arguments of application put on the stack. Fails is the
-      stack does not start by n arguments of application. *)
-  val nfirsts_app : int -> 'a t -> 'a list
+  (** if [strip_app s] = [(a,b)], then [s = a @ b] and [b] does not
+      start by App or Shift *)
+  val strip_app : 'a t -> 'a t * 'a t
   (** @return (the nth first elements, the (n+1)th element, the remaining stack)  *)
-  val strip_n_app : int -> 'a t -> ('a list * 'a * 'a t) option
+  val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
 
   val not_purely_applicative : 'a t -> bool
-  val list_of_app_stack : 'a t -> 'a list option
-  val array_of_app_stack : 'a t -> 'a array option
+  val list_of_app_stack : constr t -> constr list option
 
   val assign : 'a t -> int -> 'a -> 'a t
   val args_size : 'a t -> int
