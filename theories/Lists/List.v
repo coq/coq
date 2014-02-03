@@ -522,7 +522,6 @@ Section Elts.
     simpl in *. apply IHn. auto with arith.
   Qed.
 
-
   (*****************)
   (** ** Remove    *)
   (*****************)
@@ -1178,6 +1177,21 @@ End Fold_Right_Recursor.
 	| x :: tl => if f x then Some x else find tl
       end.
 
+    Lemma find_some l x : find l = Some x -> In x l /\ f x = true.
+    Proof.
+     induction l as [|a l IH]; simpl; [easy| ].
+     case_eq (f a); intros Ha Eq.
+     * injection Eq as ->; auto.
+     * destruct (IH Eq); auto.
+    Qed.
+
+    Lemma find_none l : find l = None -> forall x, In x l -> f x = false.
+    Proof.
+     induction l as [|a l IH]; simpl; [easy|].
+     case_eq (f a); intros Ha Eq x IN; [easy|].
+     destruct IN as [<-|IN]; auto.
+    Qed.
+
   (** [partition] *)
 
     Fixpoint partition (l:list A) : list A * list A :=
@@ -1582,6 +1596,61 @@ Section Cutting.
 
 End Cutting.
 
+(**********************************************************************)
+(** ** Predicate for List addition/removal (no need for decidability) *)
+(**********************************************************************)
+
+Section Add.
+
+  Variable A : Type.
+
+  (* [Add a l l'] means that [l'] is exactly [l], with [a] added
+     once somewhere *)
+  Inductive Add (a:A) : list A -> list A -> Prop :=
+    | Add_head l : Add a l (a::l)
+    | Add_cons x l l' : Add a l l' -> Add a (x::l) (x::l').
+
+  Lemma Add_app a l1 l2 : Add a (l1++l2) (l1++a::l2).
+  Proof.
+   induction l1; simpl; now constructor.
+  Qed.
+
+  Lemma Add_split a l l' :
+    Add a l l' -> exists l1 l2, l = l1++l2 /\ l' = l1++a::l2.
+  Proof.
+   induction 1.
+   - exists nil; exists l; split; trivial.
+   - destruct IHAdd as (l1 & l2 & Hl & Hl').
+     exists (x::l1); exists l2; split; simpl; f_equal; trivial.
+  Qed.
+
+  Lemma Add_in a l l' : Add a l l' ->
+   forall x, In x l' <-> In x (a::l).
+  Proof.
+   induction 1; intros; simpl in *; rewrite ?IHAdd; tauto.
+  Qed.
+
+  Lemma Add_length a l l' : Add a l l' -> length l' = S (length l).
+  Proof.
+   induction 1; simpl; auto with arith.
+  Qed.
+
+  Lemma Add_inv a l : In a l -> exists l', Add a l' l.
+  Proof.
+   intro Ha. destruct (in_split _ _ Ha) as (l1 & l2 & ->).
+   exists (l1 ++ l2). apply Add_app.
+  Qed.
+
+  Lemma incl_Add_inv a l u v :
+    ~In a l -> incl (a::l) v -> Add a u v -> incl l u.
+  Proof.
+   intros Ha H AD y Hy.
+   assert (Hy' : In y (a::u)).
+   { rewrite <- (Add_in AD). apply H; simpl; auto. }
+   destruct Hy'; [ subst; now elim Ha | trivial ].
+  Qed.
+
+End Add.
 
 (********************************)
 (** ** Lists without redundancy *)
@@ -1595,27 +1664,32 @@ Section ReDun.
     | NoDup_nil : NoDup nil
     | NoDup_cons : forall x l, ~ In x l -> NoDup l -> NoDup (x::l).
 
-  Lemma NoDup_remove_1 : forall l l' a, NoDup (l++a::l') -> NoDup (l++l').
+  Lemma NoDup_Add a l l' : Add a l l' -> (NoDup l' <-> NoDup l /\ ~In a l).
   Proof.
-  induction l; simpl.
-  inversion_clear 1; auto.
-  inversion_clear 1.
-  constructor.
-  contradict H0.
-  apply in_or_app; destruct (in_app_or _ _ _ H0); simpl; tauto.
-  apply IHl with a0; auto.
+   induction 1 as [l|x l l' AD IH].
+   - split; [ inversion_clear 1; now split | now constructor ].
+   - split.
+     + inversion_clear 1. rewrite IH in *. rewrite (Add_in AD) in *.
+       simpl in *; split; try constructor; intuition.
+     + intros (N,IN). inversion_clear N. constructor.
+       * rewrite (Add_in AD); simpl in *; intuition.
+       * apply IH. split; trivial. simpl in *; intuition.
   Qed.
 
-  Lemma NoDup_remove_2 : forall l l' a, NoDup (l++a::l') -> ~In a (l++l').
+  Lemma NoDup_remove l l' a :
+    NoDup (l++a::l') -> NoDup (l++l') /\ ~In a (l++l').
   Proof.
-  induction l; simpl.
-  inversion_clear 1; auto.
-  inversion_clear 1.
-  contradict H0.
-  destruct H0.
-  subst a0.
-  apply in_or_app; right; red; auto.
-  destruct (IHl _ _ H1); auto.
+  apply NoDup_Add. apply Add_app.
+  Qed.
+
+  Lemma NoDup_remove_1 l l' a : NoDup (l++a::l') -> NoDup (l++l').
+  Proof.
+  intros. now apply NoDup_remove with a.
+  Qed.
+
+  Lemma NoDup_remove_2 l l' a : NoDup (l++a::l') -> ~In a (l++l').
+  Proof.
+  intros. now apply NoDup_remove.
   Qed.
 
   (** Alternative characterisations of being without duplicates,
@@ -1659,8 +1733,45 @@ Section ReDun.
         intros i j Hi Hj E. apply eq_add_S, H; simpl; auto with arith. }
   Qed.
 
+  (** Having [NoDup] hypotheses bring more precise facts about [incl]. *)
+
+  Lemma NoDup_incl_length l l' :
+    NoDup l -> incl l l' -> length l <= length l'.
+  Proof.
+   intros N. revert l'. induction N as [|a l Hal N IH]; simpl.
+   - auto with arith.
+   - intros l' H.
+     destruct (Add_inv a l') as (l'', AD). { apply H; simpl; auto. }
+     rewrite (Add_length AD). apply le_n_S. apply IH.
+     now apply incl_Add_inv with a l'.
+  Qed.
+
+  Lemma NoDup_length_incl l l' :
+    NoDup l -> length l' <= length l -> incl l l' -> incl l' l.
+  Proof.
+   intros N. revert l'. induction N as [|a l Hal N IH].
+   - destruct l'; easy.
+   - intros l' E H x Hx.
+     destruct (Add_inv a l') as (l'', AD). { apply H; simpl; auto. }
+     rewrite (Add_in AD) in Hx. simpl in Hx.
+     destruct Hx as [Hx|Hx]; [left; trivial|right].
+     revert x Hx. apply (IH l''); trivial.
+     * apply le_S_n. now rewrite <- (Add_length AD).
+     * now apply incl_Add_inv with a l'.
+  Qed.
+
 End ReDun.
 
+(** NoDup and map *)
+
+(** NB: the reciprocal result holds only for injective functions,
+    see FinFun.v *)
+
+Lemma NoDup_map_inv A B (f:A->B) l : NoDup (map f l) -> NoDup l.
+Proof.
+ induction l; simpl; inversion_clear 1; subst; constructor; auto.
+ intro H. now apply (in_map f) in H.
+Qed.
 
 (***********************************)
 (** ** Sequence of natural numbers *)

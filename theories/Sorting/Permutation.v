@@ -13,7 +13,7 @@
 (* Adapted in May 2006 by Jean-Marc Notin from initial contents by
    Laurent Théry (Huffmann contribution, October 2003) *)
 
-Require Import List Setoid Compare_dec Morphisms.
+Require Import List Setoid Compare_dec Morphisms FinFun.
 Import ListNotations. (* For notations [] and [a;b;c] *)
 Set Implicit Arguments.
 
@@ -174,6 +174,12 @@ Proof.
 Qed.
 Local Hint Resolve Permutation_cons_app.
 
+Lemma Permutation_Add a l l' : Add a l l' -> Permutation (a::l) l'.
+Proof.
+ induction 1; simpl; trivial.
+ rewrite perm_swap. now apply perm_skip.
+Qed.
+
 Theorem Permutation_middle : forall (l1 l2:list A) a,
   Permutation (a :: l1 ++ l2) (l1 ++ a :: l2).
 Proof.
@@ -223,10 +229,6 @@ Proof.
   eauto.
 Qed.
 
-Ltac break_list l x l' H :=
-  destruct l as [|x l']; simpl in *;
-  injection H; intros; subst; clear H.
-
 Theorem Permutation_nil_app_cons : forall (l l' : list A) (x : A),
  ~ Permutation nil (l++x::l').
 Proof.
@@ -234,61 +236,51 @@ Proof.
   apply Permutation_nil in HF. destruct l; discriminate.
 Qed.
 
-Theorem Permutation_app_inv : forall (l1 l2 l3 l4:list A) a,
+Ltac InvAdd := repeat (match goal with
+ | H: Add ?x _ (_ :: _) |- _ => inversion H; clear H; subst
+ end).
+
+Ltac finish_basic_perms H :=
+  try constructor; try rewrite perm_swap; try constructor; trivial;
+  (rewrite <- H; now apply Permutation_Add) ||
+  (rewrite H; symmetry; now apply Permutation_Add).
+
+Theorem Permutation_Add_inv a l1 l2 :
+  Permutation l1 l2 -> forall l1' l2', Add a l1' l1 -> Add a l2' l2 ->
+   Permutation l1' l2'.
+Proof.
+ revert l1 l2. refine (Permutation_ind_bis _ _ _ _ _).
+ - (* nil *)
+   inversion_clear 1.
+ - (* skip *)
+   intros x l1 l2 PE IH. intros. InvAdd; try finish_basic_perms PE.
+   constructor. now apply IH.
+ - (* swap *)
+   intros x y l1 l2 PE IH. intros. InvAdd; try finish_basic_perms PE.
+   rewrite perm_swap; do 2 constructor. now apply IH.
+ - (* trans *)
+   intros l1 l l2 PE IH PE' IH' l1' l2' AD1 AD2.
+   assert (Ha : In a l). { rewrite <- PE. rewrite (Add_in AD1). simpl; auto. }
+   destruct (Add_inv _ _ Ha) as (l',AD).
+   transitivity l'; auto.
+Qed.
+
+Theorem Permutation_app_inv (l1 l2 l3 l4:list A) a :
   Permutation (l1++a::l2) (l3++a::l4) -> Permutation (l1++l2) (l3 ++ l4).
 Proof.
-  intros l1 l2 l3 l4 a; revert l1 l2 l3 l4.
-  set (P l l' :=
-       forall l1 l2 l3 l4, l=l1++a::l2 -> l'=l3++a::l4 ->
-       Permutation (l1++l2) (l3++l4)).
-  cut (forall l l', Permutation l l' -> P l l').
-  intros H; intros; eapply H; eauto.
-  apply (Permutation_ind_bis P); unfold P; clear P.
-  - (* nil *)
-    intros; now destruct l1.
-  - (* skip *)
-    intros x l l' H IH; intros.
-    break_list l1 b l1' H0; break_list l3 c l3' H1.
-    auto.
-    now rewrite H.
-    now rewrite <- H.
-    now rewrite (IH _ _ _ _ eq_refl eq_refl).
-  - (* swap *)
-    intros x y l l' Hp IH; intros.
-    break_list l1 b l1' H; break_list l3 c l3' H0.
-    auto.
-    break_list l3' b l3'' H.
-    auto.
-    constructor. now rewrite Permutation_middle.
-    break_list l1' c l1'' H1.
-    auto.
-    constructor. now rewrite Permutation_middle.
-    break_list l3' d l3'' H; break_list l1' e l1'' H1.
-    auto.
-    rewrite perm_swap. constructor. now rewrite Permutation_middle.
-    rewrite perm_swap. constructor. now rewrite Permutation_middle.
-    now rewrite perm_swap, (IH _ _ _ _ eq_refl eq_refl).
-  - (*trans*)
-    intros.
-    destruct (In_split a l') as (l'1,(l'2,H6)).
-    rewrite <- H.
-    subst l.
-    apply in_or_app; right; red; auto.
-    apply perm_trans with (l'1++l'2).
-    apply (H0 _ _ _ _ H3 H6).
-    apply (H2 _ _ _ _ H6 H4).
+ intros. eapply Permutation_Add_inv; eauto using Add_app.
 Qed.
 
 Theorem Permutation_cons_inv l l' a :
  Permutation (a::l) (a::l') -> Permutation l l'.
 Proof.
-  intro H; exact (Permutation_app_inv [] l [] l' a H).
+  intro. eapply Permutation_Add_inv; eauto using Add_head.
 Qed.
 
 Theorem Permutation_cons_app_inv l l1 l2 a :
  Permutation (a :: l) (l1 ++ a :: l2) -> Permutation l (l1 ++ l2).
 Proof.
-  intro H; exact (Permutation_app_inv [] l l1 l2 a H).
+  intro. eapply Permutation_Add_inv; eauto using Add_head, Add_app.
 Qed.
 
 Theorem Permutation_app_inv_l : forall l l1 l2,
@@ -300,14 +292,10 @@ Proof.
   apply Permutation_cons_inv with a; auto.
 Qed.
 
-Theorem Permutation_app_inv_r : forall l l1 l2,
+Theorem Permutation_app_inv_r l l1 l2 :
  Permutation (l1 ++ l) (l2 ++ l) -> Permutation l1 l2.
 Proof.
-  induction l.
-  intros l1 l2; do 2 rewrite app_nil_r; auto.
-  intros.
-  apply IHl.
-  apply Permutation_app_inv with a; auto.
+ rewrite 2 (Permutation_app_comm _ l). apply Permutation_app_inv_l.
 Qed.
 
 Lemma Permutation_length_1_inv: forall a l, Permutation [a] l -> l = [a].
@@ -344,31 +332,6 @@ Proof.
   apply Permutation_length_2_inv in H as [H|H]; injection H as -> ->; auto.
 Qed.
 
-Let in_middle l l1 l2 (a:A) : l = l1 ++ a :: l2 ->
- forall x, In x l <-> a = x \/ In x (l1++l2).
-Proof.
- intros; subst; rewrite !in_app_iff; simpl. tauto.
-Qed.
-
-Lemma NoDup_cardinal_incl (l l' : list A) : NoDup l -> NoDup l' ->
-  length l = length l' -> incl l l' -> incl l' l.
-Proof.
- intros N. revert l'. induction N as [|a l Hal Hl IH].
- - destruct l'; now auto.
- - intros l' Hl' E H x Hx.
-   assert (Ha : In a l') by (apply H; simpl; auto).
-   destruct (in_split _ _ Ha) as (l1 & l2 & H12). clear Ha.
-   rewrite in_middle in Hx; eauto.
-   destruct Hx as [Hx|Hx]; [left|right]; auto.
-   apply (IH (l1++l2)); auto.
-   * apply NoDup_remove_1 with a; rewrite <- H12; auto.
-   * apply eq_add_S.
-     simpl in E; rewrite E, H12, !app_length; simpl; auto with arith.
-   * intros y Hy. assert (Hy' : In y l') by (apply H; simpl; auto).
-     rewrite in_middle in Hy'; eauto.
-     destruct Hy'; auto. subst y; intuition.
-Qed.
-
 Lemma NoDup_Permutation l l' : NoDup l -> NoDup l' ->
   (forall x:A, In x l <-> In x l') -> Permutation l l'.
 Proof.
@@ -377,25 +340,25 @@ Proof.
    intros Hl' H. exfalso. rewrite (H a); auto.
  - intros l' Hl' H.
    assert (Ha : In a l') by (apply H; simpl; auto).
-   destruct (In_split _ _ Ha) as (l1 & l2 & H12).
-   rewrite H12.
-   apply Permutation_cons_app.
-   apply IH; auto.
-   * apply NoDup_remove_1 with a; rewrite <- H12; auto.
-   * intro x. split; intros Hx.
-     + assert (Hx' : In x l') by (apply H; simpl; auto).
-       rewrite in_middle in Hx'; eauto.
-       destruct Hx'; auto. subst; intuition.
-     + assert (Hx' : In x l') by (rewrite (in_middle l1 l2 a); eauto).
-       rewrite <- H in Hx'. destruct Hx'; auto.
-       subst. destruct (NoDup_remove_2 _ _ _ Hl' Hx).
+   destruct (Add_inv _ _ Ha) as (l'' & AD).
+   rewrite <- (Permutation_Add AD).
+   apply perm_skip.
+   apply IH; clear IH.
+   * now apply (NoDup_Add AD).
+   * split.
+     + apply incl_Add_inv with a l'; trivial. intro. apply H.
+     + intro Hx.
+       assert (Hx' : In x (a::l)).
+       { apply H. rewrite (Add_in AD). now right. }
+       destruct Hx'; simpl; trivial. subst.
+       rewrite (NoDup_Add AD) in Hl'. tauto.
 Qed.
 
 Lemma NoDup_Permutation_bis l l' : NoDup l -> NoDup l' ->
-  length l = length l' -> incl l l' -> Permutation l l'.
+  length l' <= length l -> incl l l' -> Permutation l l'.
 Proof.
  intros. apply NoDup_Permutation; auto.
- split; auto. apply NoDup_cardinal_incl; auto.
+ split; auto. apply NoDup_length_incl; trivial.
 Qed.
 
 Lemma Permutation_NoDup l l' : Permutation l l' -> NoDup l -> NoDup l'.
@@ -433,54 +396,18 @@ Qed.
 
 End Permutation_map.
 
-Section Injection.
-
-Definition injective {A B} (f : A->B) :=
- forall x y, f x = f y -> x = y.
-
-Lemma injective_map_NoDup {A B} (f:A->B) (l:list A) :
- injective f -> NoDup l -> NoDup (map f l).
-Proof.
- intros Hf. induction 1 as [|x l Hx Hl IH]; simpl; constructor; trivial.
- rewrite in_map_iff. intros (y & Hy & Hy'). apply Hf in Hy. now subst.
-Qed.
-
-Lemma injective_bounded_surjective n f :
- injective f ->
- (forall x, x < n -> f x < n) ->
- (forall y, y < n -> exists x, x < n /\ f x = y).
-Proof.
- intros Hf H.
- set (l := seq 0 n).
- assert (P : incl (map f l) l).
- { intros x. rewrite in_map_iff. intros (y & <- & Hy').
-   unfold l in *. rewrite in_seq in *. simpl in *.
-   destruct Hy' as (_,Hy'). auto with arith. }
- assert (P' : incl l (map f l)).
- { unfold l.
-   apply NoDup_cardinal_incl; auto using injective_map_NoDup, seq_NoDup.
-   now rewrite map_length. }
- intros x Hx.
- assert (Hx' : In x l) by (unfold l; rewrite in_seq; auto with arith).
- apply P' in Hx'.
- rewrite in_map_iff in Hx'. destruct Hx' as (y & Hy & Hy').
- exists y; split; auto. unfold l in *; rewrite in_seq in Hy'.
- destruct Hy'; auto with arith.
-Qed.
-
 Lemma nat_bijection_Permutation n f :
- injective f -> (forall x, x < n -> f x < n) ->
+ bFun n f ->
+ Injective f ->
  let l := seq 0 n in Permutation (map f l) l.
 Proof.
  intros Hf BD.
- apply NoDup_Permutation_bis; auto using injective_map_NoDup, seq_NoDup.
+ apply NoDup_Permutation_bis; auto using Injective_map_NoDup, seq_NoDup.
  * now rewrite map_length.
  * intros x. rewrite in_map_iff. intros (y & <- & Hy').
    rewrite in_seq in *. simpl in *.
    destruct Hy' as (_,Hy'). auto with arith.
 Qed.
-
-End Injection.
 
 Section Permutation_alt.
 Variable A:Type.
@@ -493,7 +420,7 @@ Implicit Type l : list A.
 Let adapt f n :=
  let m := f (S n) in if le_lt_dec m (f 0) then m else pred m.
 
-Let adapt_injective f : injective f -> injective (adapt f).
+Let adapt_injective f : Injective f -> Injective (adapt f).
 Proof.
  unfold adapt. intros Hf x y EQ.
  destruct le_lt_dec as [LE|LT]; destruct le_lt_dec as [LE'|LT'].
@@ -512,7 +439,7 @@ Proof.
    now rewrite (Lt.S_pred _ _ LT), (Lt.S_pred _ _ LT'), EQ.
 Qed.
 
-Let adapt_ok a l1 l2 f : injective f -> length l1 = f 0 ->
+Let adapt_ok a l1 l2 f : Injective f -> length l1 = f 0 ->
  forall n, nth_error (l1++a::l2) (f (S n)) = nth_error (l1++l2) (adapt f n).
 Proof.
  unfold adapt. intros Hf E n.
@@ -531,7 +458,7 @@ Lemma Permutation_nth_error l l' :
  Permutation l l' <->
   (length l = length l' /\
    exists f:nat->nat,
-    injective f /\ forall n, nth_error l' n = nth_error l (f n)).
+    Injective f /\ forall n, nth_error l' n = nth_error l (f n)).
 Proof.
  split.
  { intros P.
@@ -573,8 +500,8 @@ Qed.
 Lemma Permutation_nth_error_bis l l' :
  Permutation l l' <->
   exists f:nat->nat,
-    injective f /\
-    (forall n, n < length l -> f n < length l) /\
+    Injective f /\
+    bFun (length l) f /\
     (forall n, nth_error l' n = nth_error l (f n)).
 Proof.
  rewrite Permutation_nth_error; split.
@@ -591,7 +518,10 @@ Proof.
     [|apply Hf2 in LT; elim (Lt.lt_not_le _ _ LT H)].
    apply Lt.le_lt_or_eq in LE. destruct LE as [LT|EQ]; trivial.
    rewrite <- nth_error_Some, Hf3, nth_error_Some in LT.
-   destruct (injective_bounded_surjective Hf Hf2 LT) as (y & Hy & Hy').
+   assert (Hf' : bInjective (length l) f).
+   { intros x y _ _ E. now apply Hf. }
+   rewrite (bInjective_bSurjective Hf2) in Hf'.
+   destruct (Hf' _ LT) as (y & Hy & Hy').
    apply Hf in Hy'. subst y. elim (Lt.lt_irrefl _ Hy).
 Qed.
 
@@ -600,8 +530,8 @@ Lemma Permutation_nth l l' d :
   (let n := length l in
    length l' = n /\
    exists f:nat->nat,
-    (forall x, x < n -> f x < n) /\
-    (forall x y, x < n -> y < n -> f x = f y -> x = y) /\
+    bFun n f /\
+    bInjective n f /\
     (forall x, x < n -> nth x l' d = nth (f x) l d)).
 Proof.
  split.
@@ -611,6 +541,7 @@ Proof.
    apply Permutation_nth_error_bis in H.
    destruct H as (f & Hf & Hf2 & Hf3).
    exists f. split; [|split]; auto.
+   intros x y _ _ Hxy. now apply Hf.
    intros n Hn. rewrite <- 2 nth_default_eq. unfold nth_default.
     now rewrite Hf3.
  - intros (E & f & Hf1 & Hf2 & Hf3).

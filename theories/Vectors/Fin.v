@@ -8,10 +8,10 @@
 
 Require Arith_base.
 
-(** [fin n] is a convinient way to represent \[1 .. n\]
+(** [fin n] is a convenient way to represent \[1 .. n\]
 
 [fin n] can be seen as a n-uplet of unit where [F1] is the first element of
-the n-uplet and [FS] set (n-1)-uplet of all the element but the first.
+the n-uplet and [FS] set (n-1)-uplet of all the elements but the first.
 
    Author: Pierre Boutillier
    Institution: PPS, INRIA 12/2010-01/2012-07/2012
@@ -103,12 +103,38 @@ Fixpoint of_nat_lt {p n : nat} : p < n -> t n :=
     end
   end.
 
+Lemma of_nat_ext {p}{n} (h h' : p < n) : of_nat_lt h = of_nat_lt h'.
+Proof.
+ now rewrite (Peano_dec.le_unique _ _ h h').
+Qed.
+
 Lemma of_nat_to_nat_inv {m} (p : t m) : of_nat_lt (proj2_sig (to_nat p)) = p.
 Proof.
-induction p.
- reflexivity.
- simpl; destruct (to_nat p). simpl. subst p; repeat f_equal. apply Peano_dec.le_unique.
+induction p; simpl.
+- reflexivity.
+- destruct (to_nat p); simpl in *. f_equal. subst p. apply of_nat_ext.
 Qed.
+
+Lemma to_nat_of_nat {p}{n} (h : p < n) : proj1_sig (to_nat (of_nat_lt h)) = p.
+Proof.
+ revert n h.
+ induction p; intros; destruct n; simpl; trivial.
+ - inversion h.
+ - inversion h.
+ - set (h' := Lt.lt_S_n p n h). clearbody h'.
+   specialize (IHp n h').
+   destruct (to_nat (of_nat_lt h')); simpl in *. now f_equal.
+Qed.
+
+Lemma to_nat_inj {n} (p q : t n) :
+ proj1_sig (to_nat p) = proj1_sig (to_nat q) -> p = q.
+Proof.
+ intro H.
+ rewrite <- (of_nat_to_nat_inv p), <- (of_nat_to_nat_inv q).
+ destruct (to_nat p) as (np,hp), (to_nat q) as (nq,hq); simpl in *.
+ revert hp hq. rewrite H. apply of_nat_ext.
+Qed.
+
 
 (** [weak p f] answers a function witch is the identity for the p{^  th} first
 element of [fin (p + m)] and [FS (FS .. (FS (f k)))] for [FS (FS .. (FS k))]
