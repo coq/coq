@@ -1342,8 +1342,14 @@ let one_constructor i lbind = constructor_tac false None i lbind
    Should be generalize in Constructor (Fun c : I -> tactic)
  *)
 
+let rec tclANY tac = function
+| [] -> Proofview.tclZERO (Errors.UserError ("", str "No applicable tactic."))
+| arg :: l ->
+  Proofview.tclOR (tac arg) (fun _ -> tclANY tac l)
+
 let any_constructor with_evars tacopt =
   let t = match tacopt with None -> Proofview.tclUNIT () | Some t -> t in
+  let tac i = Tacticals.New.tclTHEN (constructor_tac with_evars None i NoBindings) t in
   Proofview.Goal.enter begin fun gl ->
     let cl = Proofview.Goal.concl gl in
     let reduce_to_quantified_ind =
@@ -1354,10 +1360,7 @@ let any_constructor with_evars tacopt =
     let nconstr =
       Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
     if Int.equal nconstr 0 then error "The type has no constructors.";
-    Tacticals.New.tclFIRST
-      (List.map
-         (fun i -> Tacticals.New.tclTHEN (constructor_tac with_evars None i NoBindings) t)
-         (List.interval 1 nconstr))
+    tclANY tac (List.interval 1 nconstr)
   with e when Proofview.V82.catchable_exception e -> Proofview.tclZERO e
  end
 
