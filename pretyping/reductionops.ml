@@ -26,6 +26,113 @@ exception Elimconst
     their parameters in its stack.
 *)
 
+(** Machinery to custom the behavior of the reduction *)
+module ReductionBehaviour = struct
+  open Globnames
+  open Libobject
+
+  type t = {
+    b_nargs: int;
+    b_recargs: int list;
+    b_dont_expose_case: bool;
+  }
+
+  let table =
+    Summary.ref (Refmap.empty : t Refmap.t) ~name:"reductionbehaviour"
+
+  type flag = [ `ReductionDontExposeCase | `ReductionNeverUnfold ]
+  type req =
+    | ReqLocal
+    | ReqGlobal of global_reference * (int list * int * flag list)
+
+  let load _ (_,(_,(r, b))) =
+    table := Refmap.add r b !table
+
+  let cache o = load 1 o
+
+  let classify = function
+    | ReqLocal, _ -> Dispose
+    | ReqGlobal _, _ as o -> Substitute o
+
+  let subst (subst, (_, (r,o as orig))) =
+    ReqLocal,
+    let r' = fst (subst_global subst r) in if r==r' then orig else (r',o)
+
+  let discharge = function
+    | _,(ReqGlobal (ConstRef c, req), (_, b)) ->
+       let c' = pop_con c in
+       let vars = Lib.section_segment_of_constant c in
+       let extra = List.length vars in
+       let nargs' = if b.b_nargs < 0 then b.b_nargs else b.b_nargs + extra in
+       let recargs' = List.map ((+) extra) b.b_recargs in
+       let b' = { b with b_nargs = nargs'; b_recargs = recargs' } in
+       Some (ReqGlobal (ConstRef c', req), (ConstRef c', b'))
+    | _ -> None
+
+  let rebuild = function
+    | req, (ConstRef c, _ as x) -> req, x
+    | _ -> assert false
+
+  let inRedBehaviour = declare_object {
+			(default_object "REDUCTIONBEHAVIOUR") with
+			load_function = load;
+			cache_function = cache;
+			classify_function = classify;
+			subst_function = subst;
+			discharge_function = discharge;
+			rebuild_function = rebuild;
+		      }
+
+  let set local r (recargs, nargs, flags as req) =
+    let nargs = if List.mem `ReductionNeverUnfold flags then max_int else nargs in
+    let behaviour = {
+      b_nargs = nargs; b_recargs = recargs;
+      b_dont_expose_case = List.mem `ReductionDontExposeCase flags } in
+    let req = if local then ReqLocal else ReqGlobal (r, req) in
+    Lib.add_anonymous_leaf (inRedBehaviour (req, (r, behaviour)))
+  ;;
+
+  let get r =
+    try
+      let b = Refmap.find r !table in
+      let flags =
+	if Int.equal b.b_nargs max_int then [`ReductionNeverUnfold]
+	else if b.b_dont_expose_case then [`ReductionDontExposeCase] else [] in
+      Some (b.b_recargs, (if Int.equal b.b_nargs max_int then -1 else b.b_nargs), flags)
+    with Not_found -> None
+
+  let print ref =
+    let open Pp in
+    let pr_global = Nametab.pr_global_env Id.Set.empty in
+    match get ref with
+    | None -> mt ()
+    | Some (recargs, nargs, flags) ->
+       let never = List.mem `ReductionNeverUnfold flags in
+       let nomatch = List.mem `ReductionDontExposeCase flags in
+       let pp_nomatch = spc() ++ if nomatch then
+				   str "avoiding to expose match constructs" else str"" in
+       let pp_recargs = spc() ++ str "when the " ++
+			  pr_enum (fun x -> pr_nth (x+1)) recargs ++ str (String.plural (List.length recargs) " argument") ++
+			  str (String.plural (if List.length recargs >= 2 then 1 else 2) " evaluate") ++
+			  str " to a constructor" in
+       let pp_nargs =
+	 spc() ++ str "when applied to " ++ int nargs ++
+	   str (String.plural nargs " argument") in
+       hov 2 (str "The reduction tactics " ++
+		 match recargs, nargs, never with
+		 | _,_, true -> str "never unfold " ++ pr_global ref
+		 | [], 0, _ -> str "always unfold " ++ pr_global ref
+		 | _::_, n, _ when n < 0 ->
+		    str "unfold " ++ pr_global ref ++ pp_recargs ++ pp_nomatch
+		 | _::_, n, _ when n > List.fold_left max 0 recargs ->
+		    str "unfold " ++ pr_global ref ++ pp_recargs ++
+		      str " and" ++ pp_nargs ++ pp_nomatch
+		 | _::_, _, _ ->
+		    str "unfold " ++ pr_global ref ++ pp_recargs ++ pp_nomatch
+		 | [], n, _ when n > 0 ->
+		    str "unfold " ++ pr_global ref ++ pp_nargs ++ pp_nomatch
+		 | _ -> str "unfold " ++ pr_global ref ++ pp_nomatch )
+end
 
 (** The type of (machine) stacks (= lambda-bar-calculus' contexts) *)
 module Stack = struct

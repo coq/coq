@@ -993,13 +993,13 @@ let vernac_declare_arguments locality r l nargs flags =
   if nargs >= 0 && nargs < List.fold_left max 0 rargs then
     error "The \"/\" option must be placed after the last \"!\".";
   let rec narrow = function
-    | #Tacred.simpl_flag as x :: tl -> x :: narrow tl
+    | #Reductionops.ReductionBehaviour.flag as x :: tl -> x :: narrow tl
     | [] -> [] | _ :: tl -> narrow tl in
   let flags = narrow flags in
   if not (List.is_empty rargs) || nargs >= 0 || not (List.is_empty flags) then
     match sr with
     | ConstRef _ as c ->
-       Tacred.set_simpl_behaviour
+       Reductionops.ReductionBehaviour.set
          (make_section_locality locality) c (rargs, nargs, flags)
     | _ -> errorlabstrm "" (strbrk "Modifiers of the behavior of the simpl tactic are relevant for constants only.")
 

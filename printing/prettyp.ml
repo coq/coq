@@ -153,40 +153,6 @@ let print_argument_scopes prefix = function
       str "]")]
   | _  -> []
 
-(*****************************)
-(** Printing simpl behaviour *)
-
-let print_simpl_behaviour ref =
-  match Tacred.get_simpl_behaviour ref with
-  | None -> []
-  | Some (recargs, nargs, flags) ->
-     let never = List.mem `SimplNeverUnfold flags in
-     let nomatch = List.mem `SimplDontExposeCase flags in
-     let pp_nomatch = spc() ++ if nomatch then
-       str "avoiding to expose match constructs" else str"" in
-     let pp_recargs = spc() ++ str "when the " ++
-       pr_enum (fun x -> pr_nth (x+1)) recargs ++ str (String.plural (List.length recargs) " argument") ++
-       str (String.plural (if List.length recargs >= 2 then 1 else 2) " evaluate") ++
-       str " to a constructor" in
-     let pp_nargs =
-       spc() ++ str "when applied to " ++ int nargs ++
-       str (String.plural nargs " argument") in
-     [hov 2 (str "The simpl tactic " ++
-     match recargs, nargs, never with
-     | _,_, true -> str "never unfolds " ++ pr_global ref
-     | [], 0, _ -> str "always unfolds " ++ pr_global ref
-     | _::_, n, _ when n < 0 ->
-        str "unfolds " ++ pr_global ref ++ pp_recargs ++ pp_nomatch
-     | _::_, n, _ when n > List.fold_left max 0 recargs ->
-        str "unfolds " ++ pr_global ref ++ pp_recargs ++
-        str " and" ++ pp_nargs ++ pp_nomatch
-     | _::_, _, _ ->
-        str "unfolds " ++ pr_global ref ++ pp_recargs ++ pp_nomatch
-     | [], n, _ when n > 0 ->
-        str "unfolds " ++ pr_global ref ++ pp_nargs ++ pp_nomatch
-     | _ -> str "unfolds " ++ pr_global ref ++ pp_nomatch )]
-;;
-
 (*********************)
 (** Printing Opacity *)
 
@@ -674,7 +640,7 @@ let print_about_any loc k =
       pr_infos_list
        (print_ref false ref :: blankline ::
 	print_name_infos ref @
-	print_simpl_behaviour ref @
+	Reductionops.ReductionBehaviour.print ref ::
 	print_opacity ref @
 	[hov 0 (str "Expands to: " ++ pr_located_qualid k)])
   | Syntactic kn ->

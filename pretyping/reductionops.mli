@@ -18,6 +18,18 @@ open Closure
 
 exception Elimconst
 
+(** Machinery to custom the behavior of the reduction *)
+module ReductionBehaviour : sig
+  type flag = [ `ReductionDontExposeCase | `ReductionNeverUnfold ]
+
+(** [set is_local ref (recargs, nargs, flags)] *)
+  val set :
+    bool -> Globnames.global_reference -> (int list * int * flag list) -> unit
+  val get :
+    Globnames.global_reference -> (int list * int * flag list) option
+  val print : Globnames.global_reference -> Pp.std_ppcmds
+end
+
 module Stack : sig
   type 'a app_node
 

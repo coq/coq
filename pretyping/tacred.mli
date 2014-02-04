@@ -45,14 +45,6 @@ val red_product : reduction_function
 (** Red (raise Redelimination if nothing reducible) *)
 val try_red_product : reduction_function
 
-(** Tune the behaviour of simpl for the given constant name *)
-type simpl_flag = [ `SimplDontExposeCase | `SimplNeverUnfold ]
-
-val set_simpl_behaviour :
-  bool -> global_reference -> (int list * int * simpl_flag list) -> unit
-val get_simpl_behaviour :
-  global_reference -> (int list * int * simpl_flag list) option
-
 (** Simpl *)
 val simpl : reduction_function
 

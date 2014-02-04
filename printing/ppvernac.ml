@@ -858,8 +858,8 @@ let rec pr_vernac = function
       prlist_with_sep (fun () -> str", ") (aux nargs) impl ++
       if not (List.is_empty mods) then str" : " else str"" ++
       prlist_with_sep (fun () -> str", " ++ spc()) (function
-        | `SimplDontExposeCase -> str "simpl nomatch"
-        | `SimplNeverUnfold -> str "simpl never"
+        | `ReductionDontExposeCase -> str "simpl nomatch"
+        | `ReductionNeverUnfold -> str "simpl never"
         | `DefaultImplicits -> str "default implicits"
         | `Rename -> str "rename"
         | `ExtraScopes -> str "extra scopes"
