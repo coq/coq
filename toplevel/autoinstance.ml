@@ -82,9 +82,6 @@ let rec safe_define evm ev c =
 let add_gen_ctx (cl,gen,evm) ctx : signature * constr list =
   let env = Environ.empty_named_context_val in
   let fold_new_evar evm _ = Evarutil.new_pure_evar evm env mkProp in
-  let rec mksubst b = function
-    | [] -> []
-    | a::tl -> b::(mksubst (a::b) tl) in
   let (evm, evl) = List.fold_map fold_new_evar evm ctx in
   let evcl = List.map (fun i -> mkEvar (i,[||])) evl in
 (*   let substl = List.rev (mksubst [] (evcl)) in *)
