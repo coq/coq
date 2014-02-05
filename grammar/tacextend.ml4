@@ -70,24 +70,6 @@ let make_fun_clauses loc s l =
   check_unicity s l;
   Compat.make_fun loc (List.map make_clause l)
 
-let make_clause_classifier cg s (pt,c,_) =
-  match c ,cg with
-  | Some c, _ ->
-     (make_patt pt,
-      vala (Some (make_when (MLast.loc_of_expr c) pt)),
-      make_let true c pt)
-  | None, Some cg ->
-     (make_patt pt,
-      vala (Some (make_when (MLast.loc_of_expr cg) pt)),
-      <:expr< fun () -> $cg$ $str:s$ >>)
-  | None, None ->
-    (make_patt pt,
-      vala (Some (make_when loc pt)),
-      <:expr< fun () -> (Vernacexpr.VtProofStep, Vernacexpr.VtLater) >>)
-  
-let make_fun_classifiers loc s c l =
-  Compat.make_fun loc (List.map (make_clause_classifier c s) l)
-
 let rec make_args = function
   | [] -> <:expr< [] >>
   | GramNonTerminal(loc,t,_,Some p)::l ->
@@ -186,8 +168,6 @@ let declare_tactic loc s c cl =
     [ <:str_item< do {
       try do {
         Tacenv.register_ml_tactic $se$ $make_fun_clauses loc s cl$;
-        Vernac_classifier.declare_vernac_classifier
-          $se$ $make_fun_classifiers loc s c cl$;
         List.iter
           (fun (s,l) -> match l with
            [ Some l ->
