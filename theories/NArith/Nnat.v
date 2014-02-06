@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Arith_base Compare_dec Sumbool Div2 Min Max.
+Require Import Minus Compare_dec Sumbool Div2 Min Max.
 Require Import BinPos BinNat Pnat.
 
 (** * Conversions from [N] to [nat] *)

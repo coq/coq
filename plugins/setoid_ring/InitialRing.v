@@ -6,8 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import ZArith_base.
-Require Import Zpow_def.
+Require Import Zbool.
 Require Import BinInt.
 Require Import BinNat.
 Require Import Setoid.
