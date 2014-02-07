@@ -493,20 +493,16 @@ let clear_hyps_in_evi evdref hyps concl ids =
       let c' = check_and_clear_in_constr evdref err ids c in
       if ob == ob' && c == c' then decl else (id, ob', c')
     in
-    let check_value vk =
-      match !vk with
-	| VKnone -> vk
-	| VKvalue key ->
-            try
-              let _, d = Ephemeron.get key in
-	      if (Id.Set.for_all (fun e -> not (Id.Set.mem e d)) ids) then
-	        (* v does depend on any of ids, it's ok *)
-	        vk
-	      else
-	        (* v depends on one of the cleared hyps:
-                   we forget the computed value *)
-	        ref VKnone
-            with Ephemeron.InvalidKey -> ref VKnone
+    let check_value vk = match force_lazy_val vk with
+    | None -> vk
+    | Some (_, d) ->
+      if (Id.Set.for_all (fun e -> not (Id.Set.mem e d)) ids) then
+        (* v does depend on any of ids, it's ok *)
+        vk
+      else
+        (* v depends on one of the cleared hyps:
+            we forget the computed value *)
+        dummy_lazy_val ()
     in
       remove_hyps ids check_context check_value hyps
   in

@@ -117,32 +117,26 @@ and slot_for_fv env fv =
       | Some c ->
           val_of_constr (env_of_id id env) c,
           Environ.global_vars_set (Environ.env_of_pre_env env) c in
-    cache := VKvalue (Ephemeron.create (v,d)); v in
+    build_lazy_val cache (v, d); v in
   let val_of_rel i = val_of_rel (nb_rel env - i) in
   let idfun _ x = x in
   match fv with
   | FVnamed id ->
       let nv = Pre_env.lookup_named_val id env in
-      begin match !nv with
-      | VKnone ->
+      begin match force_lazy_val nv with
+      | None ->
           let _, b, _ = Context.lookup_named id env.env_named_context in
           fill_fv_cache nv id val_of_named idfun b
-      | VKvalue key ->
-          try fst (Ephemeron.get key)
-          with Ephemeron.InvalidKey ->
-            let _, b, _ = Context.lookup_named id env.env_named_context in
-            fill_fv_cache nv id val_of_named idfun b end
+      | Some (v, _) -> v
+      end
   | FVrel i ->
       let rv = Pre_env.lookup_rel_val i env in
-      begin match !rv with
-      | VKnone ->
+      begin match force_lazy_val rv with
+      | None ->
           let _, b, _ = lookup_rel i env.env_rel_context in
           fill_fv_cache rv i val_of_rel env_of_rel b
-      | VKvalue key ->
-          try fst (Ephemeron.get key)
-          with Ephemeron.InvalidKey ->
-            let _, b, _ = lookup_rel i env.env_rel_context in
-            fill_fv_cache rv i val_of_rel env_of_rel b end
+      | Some (v, _) -> v
+      end
 
 and eval_to_patch env (buff,pl,fv) =
   (* copy code *before* patching because of nested evaluations:

@@ -55,6 +55,13 @@ type val_kind =
 
 type lazy_val = val_kind ref
 
+let force_lazy_val vk = match !vk with
+| VKnone -> None
+| VKvalue v -> try Some (Ephemeron.get v) with Ephemeron.InvalidKey -> None
+
+let dummy_lazy_val () = ref VKnone
+let build_lazy_val vk key = vk := VKvalue (Ephemeron.create key)
+
 type named_vals = (Id.t * lazy_val) list
 
 type env = {

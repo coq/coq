@@ -36,11 +36,11 @@ type stratification = {
   env_engagement : engagement option
 }
 
-type val_kind =
-    | VKvalue of (values * Id.Set.t) Ephemeron.key
-    | VKnone
+type lazy_val
 
-type lazy_val = val_kind ref
+val force_lazy_val : lazy_val -> (values * Id.Set.t) option
+val dummy_lazy_val : unit -> lazy_val
+val build_lazy_val : lazy_val -> (values * Id.Set.t) -> unit
 
 type named_vals = (Id.t * lazy_val) list
 
