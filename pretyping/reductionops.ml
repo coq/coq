@@ -534,11 +534,14 @@ let fix_recarg ((recindices,bodynum),_) stack =
     Here is where unfolded constant are stored in order to be
     eventualy refolded.
 
-    It uses the flag refold when it reaches a value and because it
-    substitutes fix and cofix by the constant they come from in
-    contract_*.
+    If tactic_mode is true, it uses ReductionBehaviour, prefers
+    refold constant instead of value and tries to infer constants
+    fix and cofix came from.
+
+    It substitutes fix and cofix by the constant they come from in
+    contract_* in any case .
 *)
-let rec whd_state_gen ?csts refold flags env sigma =
+let rec whd_state_gen ?csts tactic_mode flags env sigma =
   let noth = [] in
   let rec whrec cst_l (x, stack as s) =
     let best_state def (cst,params,nb_skip) =
@@ -547,7 +550,7 @@ let rec whd_state_gen ?csts refold flags env sigma =
 	(cst, Stack.append_app_list (List.rev params) s')
       with Failure _ -> def in
     let fold () =
-      if refold then (List.fold_left best_state s cst_l,noth) else (s,cst_l)
+      if tactic_mode then (List.fold_left best_state s cst_l,noth) else (s,cst_l)
     in
     match kind_of_term x with
     | Rel n when Closure.RedFlags.red_set flags Closure.RedFlags.fDELTA ->
@@ -567,9 +570,33 @@ let rec whd_state_gen ?csts refold flags env sigma =
       | Some body -> whrec cst_l (body, stack)
       | None -> fold ())
     | Const const when Closure.RedFlags.red_set flags (Closure.RedFlags.fCONST const) ->
-      (match constant_opt_value env const with
-      | Some  body -> whrec (Cst_stack.add_cst (mkConst const) cst_l) (body, stack)
-      | None -> fold ())
+       (match constant_opt_value env const with
+	| None -> fold ()
+	| Some  body ->
+	   if not tactic_mode
+	   then whrec (Cst_stack.add_cst (mkConst const) cst_l) (body, stack)
+	   else (* Looks for ReductionBehaviour *)
+	     match ReductionBehaviour.get (Globnames.ConstRef const) with
+	     | None -> whrec (Cst_stack.add_cst (mkConst const) cst_l) (body, stack)
+	     | Some (recargs, nargs, flags) ->
+		if (List.mem `ReductionNeverUnfold flags
+		    || (nargs > 0 && Stack.args_size stack < nargs))
+		then fold ()
+		else (* maybe unfolds *)
+		  if List.mem `ReductionDontExposeCase flags then
+		    let app_sk,sk = Stack.strip_app stack in
+		    let (tm',sk'),cst_l' =
+		      whrec (Cst_stack.add_cst (mkConst const) cst_l) (body, app_sk) in
+		    if Stack.not_purely_applicative sk'
+		    then fold ()
+		    else whrec cst_l' (tm', sk' @ sk)
+		  else match recargs with
+		       |[] -> (* if nargs has been specified *)
+			 (* CAUTION : the constant is NEVER refold
+                            (even when it hides a (co)fix) *)
+			 whrec cst_l (body, stack)
+		       |l -> failwith "TODO recargs in cbn"
+       )
     | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
       apply_subst whrec [b] cst_l c stack
     | Cast (c,_,_) -> whrec cst_l (c, stack)
@@ -583,8 +610,8 @@ let rec whd_state_gen ?csts refold flags env sigma =
 	apply_subst whrec [] cst_l x stack
       | None when Closure.RedFlags.red_set flags Closure.RedFlags.fETA ->
 	let env' = push_rel (na,None,t) env in
-	let whrec' = whd_state_gen refold flags env' sigma in
-        (match kind_of_term (Stack.zip ~refold (fst (whrec' (c, Stack.empty)))) with
+	let whrec' = whd_state_gen tactic_mode flags env' sigma in
+        (match kind_of_term (Stack.zip ~refold:true (fst (whrec' (c, Stack.empty)))) with
         | App (f,cl) ->
 	  let napp = Array.length cl in
 	  if napp > 0 then
@@ -615,7 +642,7 @@ let rec whd_state_gen ?csts refold flags env sigma =
 	  whrec noth (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
 	|args, (Stack.Fix (f,s',cst)::s'') ->
 	  let x' = Stack.zip(x,args) in
-	  whrec noth ((if refold then contract_fix ~env f else contract_fix f) cst,
+	  whrec noth ((if tactic_mode then contract_fix ~env f else contract_fix f) cst,
 		      s' @ (Stack.append_app [|x'|] s''))
 	|_ -> fold ()
       else fold ()
@@ -624,7 +651,7 @@ let rec whd_state_gen ?csts refold flags env sigma =
       if Closure.RedFlags.red_set flags Closure.RedFlags.fIOTA then
 	match Stack.strip_app stack with
 	|args, (Stack.Case(ci, _, lf,_)::s') ->
-	  whrec noth ((if refold
+	  whrec noth ((if tactic_mode
 	    then contract_cofix ~env cofix
 	    else contract_cofix cofix) (Cst_stack.best_cst cst_l), stack)
 	|_ -> fold ()
