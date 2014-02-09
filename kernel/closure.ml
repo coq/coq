@@ -479,57 +479,51 @@ let zupdate m s =
 let rec compact_constr (lg, subs as s) c k =
   match kind_of_term c with
       Rel i ->
-        if i < k then c,s else
-          (try mkRel (k + lg - List.index Int.equal (i-k+1) subs), (lg,subs)
-          with Not_found -> mkRel (k+lg), (lg+1, (i-k+1)::subs))
-    | (Sort _|Var _|Meta _|Ind _|Const _|Construct _) -> c,s
+        if i < k then s, c else
+          (try (lg,subs), mkRel (k + lg - List.index Int.equal (i-k+1) subs)
+          with Not_found -> (lg+1, (i-k+1)::subs), mkRel (k+lg))
+    | (Sort _|Var _|Meta _|Ind _|Const _|Construct _) -> s, c
     | Evar(ev,v) ->
-        let (v',s) = compact_vect s v k in
-        if v==v' then c,s else mkEvar(ev,v'),s
+        let (s, v') = compact_vect s v k in
+        if v==v' then s, c else s, mkEvar(ev, v')
     | Cast(a,ck,b) ->
-        let (a',s) = compact_constr s a k in
-        let (b',s) = compact_constr s b k in
-        if a==a' && b==b' then c,s else mkCast(a', ck, b'), s
+        let (s, a') = compact_constr s a k in
+        let (s, b') = compact_constr s b k in
+        if a==a' && b==b' then s, c else s, mkCast(a', ck, b')
     | App(f,v) ->
-        let (f',s) = compact_constr s f k in
-        let (v',s) = compact_vect s v k in
-        if f==f' && v==v' then c,s else mkApp(f',v'), s
+        let (s, f') = compact_constr s f k in
+        let (s, v') = compact_vect s v k in
+        if f==f' && v==v' then s, c else s, mkApp(f',v')
     | Lambda(n,a,b) ->
-        let (a',s) = compact_constr s a k in
-        let (b',s) = compact_constr s b (k+1) in
-        if a==a' && b==b' then c,s else mkLambda(n,a',b'), s
+        let (s, a') = compact_constr s a k in
+        let (s, b') = compact_constr s b (k+1) in
+        if a==a' && b==b' then s, c else s, mkLambda(n,a',b')
     | Prod(n,a,b) ->
-        let (a',s) = compact_constr s a k in
-        let (b',s) = compact_constr s b (k+1) in
-        if a==a' && b==b' then c,s else mkProd(n,a',b'), s
+        let (s, a') = compact_constr s a k in
+        let (s, b') = compact_constr s b (k+1) in
+        if a==a' && b==b' then s, c else s, mkProd(n,a',b')
     | LetIn(n,a,ty,b) ->
-        let (a',s) = compact_constr s a k in
-        let (ty',s) = compact_constr s ty k in
-        let (b',s) = compact_constr s b (k+1) in
-        if a==a' && ty==ty' && b==b' then c,s else mkLetIn(n,a',ty',b'), s
+        let (s, a') = compact_constr s a k in
+        let (s, ty') = compact_constr s ty k in
+        let (s, b') = compact_constr s b (k+1) in
+        if a==a' && ty==ty' && b==b' then s, c else s, mkLetIn(n,a',ty',b')
     | Fix(fi,(na,ty,bd)) ->
-        let (ty',s) = compact_vect s ty k in
-        let (bd',s) = compact_vect s bd (k+Array.length ty) in
-        if ty==ty' && bd==bd' then c,s else mkFix(fi,(na,ty',bd')), s
+        let (s, ty') = compact_vect s ty k in
+        let (s, bd') = compact_vect s bd (k+Array.length ty) in
+        if ty==ty' && bd==bd' then s, c else s, mkFix(fi,(na,ty',bd'))
     | CoFix(i,(na,ty,bd)) ->
-        let (ty',s) = compact_vect s ty k in
-        let (bd',s) = compact_vect s bd (k+Array.length ty) in
-        if ty==ty' && bd==bd' then c,s else mkCoFix(i,(na,ty',bd')), s
+        let (s, ty') = compact_vect s ty k in
+        let (s, bd') = compact_vect s bd (k+Array.length ty) in
+        if ty==ty' && bd==bd' then s, c else s, mkCoFix(i,(na,ty',bd'))
     | Case(ci,p,a,br) ->
-        let (p',s) = compact_constr s p k in
-        let (a',s) = compact_constr s a k in
-        let (br',s) = compact_vect s br k in
-        if p==p' && a==a' && br==br' then c,s else mkCase(ci,p',a',br'),s
+        let (s, p') = compact_constr s p k in
+        let (s, a') = compact_constr s a k in
+        let (s, br') = compact_vect s br k in
+        if p==p' && a==a' && br==br' then s, c else s, mkCase(ci,p',a',br')
+
 and compact_vect s v k =
-  let rs = ref s in
-  let map a =
-    let (a, s) = compact_constr !rs a k in
-    let () = rs := s in
-    a
-  in
-  (** Do we really rely on execution order in the smartmap ? *)
-  let v' = Array.smartmap map v in
-  (v', !rs)
+  let fold s c = compact_constr s c k in
+  Array.smartfoldmap fold s v
 
 (* Computes the minimal environment of a closure.
    Idea: if the subs is not identity, the term will have to be
@@ -538,7 +532,7 @@ and compact_vect s v k =
    complexity. *)
 let optimise_closure env c =
   if is_subs_id env then (env,c) else
-    let (c',(_,s)) = compact_constr (0,[]) c 1 in
+    let ((_,s), c') = compact_constr (0,[]) c 1 in
     let env' = Array.map_of_list (fun i -> clos_rel env i) s in
     (subs_cons (env', subs_id 0),c')
 
@@ -699,7 +693,16 @@ let rec zip m stk rem = match stk with
 | Zshift(n)::s ->
   zip (lift_fconstr n m) s rem
 | Zupdate(rf)::s ->
-  zip (update rf m.norm m.term) s rem
+  zip_update m s rem rf
+
+and zip_update m stk rem rf = match stk with
+| [] ->
+  begin match rem with
+  | [] -> update rf m.norm m.term
+  | stk :: rem -> zip_update m stk rem rf
+  end
+| Zupdate rf :: s -> zip_update m s rem rf
+| s -> zip (update rf m.norm m.term) s rem
 
 let zip m stk = zip m stk []
 

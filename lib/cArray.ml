@@ -72,6 +72,7 @@ sig
   val map_of_list : ('a -> 'b) -> 'a list -> 'b array
   val chop : int -> 'a array -> 'a array * 'a array
   val smartmap : ('a -> 'a) -> 'a array -> 'a array
+  val smartfoldmap : ('r -> 'a -> 'r * 'a) -> 'r -> 'a array -> 'r * 'a array
   val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
@@ -320,33 +321,73 @@ let chop n v =
   if n > vlen then failwith "Array.chop";
   (Array.sub v 0 n, Array.sub v n (vlen-n))
 
-(** We don't have local polymorphic exceptions, so we uglily use Objs.*)
-exception Local of int * Obj.t
-
 (* If none of the elements is changed by f we return ar itself.
-   The for loop looks for the first such an element.
-   If found, we return it through the exception and the new array is produced,
+   The while loop looks for the first such an element.
+   If found, we break here and the new array is produced,
    but f is not re-applied to elements that are already checked *)
-let smartmap f ar =
+let smartmap f (ar : 'a array) =
   let len = Array.length ar in
-  try
-    for i = 0 to len - 1 do
-      let a = uget ar i in
-      let a' = f a in
-      if a != a' then (* pointer (in)equality *)
-        raise (Local (i, Obj.repr a'))
-    done;
-    ar
-  with Local (i, v) ->
-    (** FIXME: use Array.unsafe_blit from OCAML 4.00 *)
-    let ans : 'a array = Array.make len (uget ar 0) in
-    let () = Array.blit ar 0 ans 0 i in
-    let () = Array.unsafe_set ans i (Obj.obj v) in
-    for j = succ i to pred len do
-      let w = f (uget ar j) in
-      Array.unsafe_set ans j w
+  let i = ref 0 in
+  let break = ref true in
+  (** The [temp] variable is never accessed unset, this saves an allocation *)
+  let temp = ref (Obj.magic 0 : 'a) in
+  while !break && (!i < len) do
+    let v = Array.unsafe_get ar !i in
+    let v' = f v in
+    if v == v' then incr i
+    else begin
+      break := false;
+      temp := v';
+    end
+  done;
+  if !i < len then begin
+    (** The array is not the same as the original one *)
+    let ans : 'a array = Array.make len (Array.unsafe_get ar 0) in
+    (** TODO: use unsafe_blit in 4.01 *)
+    Array.blit ar 0 ans 0 !i;
+    Array.unsafe_set ans !i !temp;
+    incr i;
+    while !i < len do
+      let v = Array.unsafe_get ar !i in
+      Array.unsafe_set ans !i (f v);
+      incr i
     done;
     ans
+  end else ar
+
+(** Same as [smartmap] but threads a state meanwhile *)
+let smartfoldmap f accu (ar : 'a array) =
+  let len = Array.length ar in
+  let i = ref 0 in
+  let break = ref true in
+  let r = ref accu in
+  (** This variable is never accessed unset *)
+  let temp = ref (Obj.magic 0 : 'a) in
+  while !break && (!i < len) do
+    let v = Array.unsafe_get ar !i in
+    let (accu, v') = f !r v in
+    r := accu;
+    if v == v' then incr i
+    else begin
+      break := false;
+      temp := v';
+    end
+  done;
+  if !i < len then begin
+    let ans : 'a array = Array.make len (Array.unsafe_get ar 0) in
+    (** TODO: use unsafe_blit in 4.01 *)
+    Array.blit ar 0 ans 0 !i;
+    Array.unsafe_set ans !i !temp;
+    incr i;
+    while !i < len do
+      let v = Array.unsafe_get ar !i in
+      let (accu, v') = f !r v in
+      r := accu;
+      Array.unsafe_set ans !i v';
+      incr i
+    done;
+    !r, ans
+  end else !r, ar
 
 let map2 f v1 v2 =
   let len1 = Array.length v1 in

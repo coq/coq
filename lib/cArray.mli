@@ -105,6 +105,9 @@ sig
   (** [smartmap f a] behaves as [map f a] but returns [a] instead of a copy when
       [f x == x] for all [x] in [a]. *)
 
+  val smartfoldmap : ('r -> 'a -> 'r * 'a) -> 'r -> 'a array -> 'r * 'a array
+  (** Same as [smartmap] but threads an additional state left-to-right. *)
+
   val map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
   val map3 :
