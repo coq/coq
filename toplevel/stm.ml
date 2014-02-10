@@ -1212,8 +1212,7 @@ let collect_proof cur hd brkind id =
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
         if delegate_policy_check () then `MaybeASync (parent, accn, ids)
         else `Sync `Policy
-    | _, `Sideff (`Ast (x,_)) -> collect (Some (id,x)) (id::accn) view.next
-    | _, `Sideff (`Id _) -> `Sync `NestedProof
+    | _, `Sideff _ -> `Sync `NestedProof
     | _ -> `Sync `Unknown in
  match cur, (VCS.visit id).step, brkind with
  |( parent, { expr = VernacExactProof _ }), `Fork _, _ ->
