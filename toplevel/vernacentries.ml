@@ -1818,9 +1818,10 @@ let set_timeout n =
   Some psh
 
 let default_set_timeout () =
-  match !current_timeout with
-    | Some n -> set_timeout n
-    | None -> None
+  match !current_timeout, !default_timeout with
+    | Some n, _ -> set_timeout n
+    | None, Some n -> set_timeout n
+    | None, None -> None
 
 let restore_timeout = function
   | None -> ()
@@ -1828,7 +1829,8 @@ let restore_timeout = function
     (* stop alarm *)
     ignore(Unix.alarm 0);
     (* restore handler *)
-    Sys.set_signal Sys.sigalrm psh
+    Sys.set_signal Sys.sigalrm psh;
+    current_timeout := None
 
 let locate_if_not_already loc exn =
   match Loc.get_loc exn with
@@ -1897,6 +1899,12 @@ let interp ?(verbosely=true) ?proof (loc,c) =
             Flags.program_mode := orig_program_mode
         with
           | reraise when Errors.noncritical reraise ->
+            let e = Errors.push reraise in
+            let e = locate_if_not_already loc e in
+            restore_timeout psh;
+            Flags.program_mode := orig_program_mode;
+            raise e
+          | Timeout as reraise ->
             let e = Errors.push reraise in
             let e = locate_if_not_already loc e in
             restore_timeout psh;
