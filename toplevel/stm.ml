@@ -1043,27 +1043,34 @@ end = struct (* {{{ *)
     with
     | KillRespawn ->
         Pp.feedback (Interface.InProgress ~-1);
-        Worker.kill proc;
-        ignore(Worker.wait proc);
+        Worker.kill proc; ignore(Worker.wait proc);
         manage_slave cancel_user_req respawn
-    | Sys_error _ | Invalid_argument _ | End_of_file
-      when !task_expired ->
+    | Sys_error _ | Invalid_argument _ | End_of_file when !task_expired ->
         Pp.feedback (Interface.InProgress ~-1);
         ignore(Worker.wait proc);
         manage_slave cancel_user_req respawn
+    | Sys_error _ | Invalid_argument _ | End_of_file when !task_cancelled ->
+        msg_warning(strbrk "The worker was cancelled.");
+        Option.iter (fun task ->
+          let TaskBuildProof (_, start, _, assign, _,_,_) = task in
+          let s = "Worker cancelled by the user" in
+          let e = Stateid.add ~valid:start (RemoteException (strbrk s)) start in
+          assign (`Exn e);
+          Pp.feedback ~state_id:start (Interface.ErrorMsg (Loc.ghost, s));
+          Pp.feedback (Interface.InProgress ~-1);
+        ) !last_task;
+        Worker.kill proc; ignore(Worker.wait proc);
+        manage_slave cancel_user_req respawn
     | Sys_error _ | Invalid_argument _ | End_of_file
-      when !fallback_to_lazy_if_slave_dies || !task_cancelled ->
-        if not !task_cancelled then
-          msg_warning(strbrk "The worker process died badly.");
-        (match !last_task with
-        | Some task ->
-            msg_warning(strbrk "Falling back to local, lazy, evaluation.");
-            let TaskBuildProof (exn_info, _, stop, assign,_,loc,_) = task in
-            assign(`Comp(build_proof_here exn_info loc stop));
-            Pp.feedback (Interface.InProgress ~-1);
-        | None -> ());
-        Worker.kill proc;
-        ignore(Worker.wait proc);
+      when !fallback_to_lazy_if_slave_dies ->
+        msg_warning(strbrk "The worker process died badly.");
+        Option.iter (fun task ->
+          msg_warning(strbrk "Falling back to local, lazy, evaluation.");
+          let TaskBuildProof (exn_info, _, stop, assign,_,loc,_) = task in
+          assign(`Comp(build_proof_here exn_info loc stop));
+          Pp.feedback (Interface.InProgress ~-1);
+        ) !last_task;
+        Worker.kill proc; ignore(Worker.wait proc);
         manage_slave cancel_user_req respawn
     | Sys_error _ | Invalid_argument _ | End_of_file ->
         Worker.kill proc;
