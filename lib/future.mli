@@ -111,7 +111,9 @@ val chain : ?greedy:bool -> pure:bool ->
 val force : 'a computation -> 'a
 val compute : 'a computation -> 'a value
 
-(* Final call, no more *inpure* chain allowed since the state is lost *)
+(* Final call, no more *inpure* chain allowed since the state is lost.
+ * Also the fix_exn function is lost, hence error reporting can be incomplete
+ * in a computation obtained by chaining on a joined future. *)
 val join : 'a computation -> 'a
 
 (*** Utility functions ************************************************* ***)

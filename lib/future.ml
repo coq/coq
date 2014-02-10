@@ -50,7 +50,7 @@ and 'a computation = 'a comput ref
 let create f x = ref (Ongoing (Ephemeron.create (f, Pervasives.ref x)))
 let get x =
   match !x with
-  | Finished v -> (fun x -> x), ref( Val (v,None))
+  | Finished v -> id, ref( Val (v,None))
   | Ongoing x ->
       try Ephemeron.get x
       with Ephemeron.InvalidKey -> (fun x -> x), ref (Exn NotHere)

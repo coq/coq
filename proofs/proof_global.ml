@@ -301,7 +301,7 @@ let close_proof ?feedback_id ~now fpl =
       const_entry_opaque = true })
     fpl initial_goals in
   if now then
-    List.iter (fun x -> ignore(Future.join x.Entries.const_entry_body)) entries;
+    List.iter (fun x ->ignore(Future.force x.Entries.const_entry_body)) entries;
   { id = pid; entries = entries; persistence = strength },
   Ephemeron.get terminator
 
