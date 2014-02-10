@@ -329,15 +329,14 @@ let smartmap f (ar : 'a array) =
   let len = Array.length ar in
   let i = ref 0 in
   let break = ref true in
-  (** The [temp] variable is never accessed unset, this saves an allocation *)
-  let temp = ref (Obj.magic 0 : 'a) in
+  let temp = ref None in
   while !break && (!i < len) do
     let v = Array.unsafe_get ar !i in
     let v' = f v in
     if v == v' then incr i
     else begin
       break := false;
-      temp := v';
+      temp := Some v';
     end
   done;
   if !i < len then begin
@@ -345,7 +344,8 @@ let smartmap f (ar : 'a array) =
     let ans : 'a array = Array.make len (Array.unsafe_get ar 0) in
     (** TODO: use unsafe_blit in 4.01 *)
     Array.blit ar 0 ans 0 !i;
-    Array.unsafe_set ans !i !temp;
+    let v = match !temp with None -> assert false | Some x -> x in
+    Array.unsafe_set ans !i v;
     incr i;
     while !i < len do
       let v = Array.unsafe_get ar !i in
@@ -362,7 +362,7 @@ let smartfoldmap f accu (ar : 'a array) =
   let break = ref true in
   let r = ref accu in
   (** This variable is never accessed unset *)
-  let temp = ref (Obj.magic 0 : 'a) in
+  let temp = ref None in
   while !break && (!i < len) do
     let v = Array.unsafe_get ar !i in
     let (accu, v') = f !r v in
@@ -370,14 +370,15 @@ let smartfoldmap f accu (ar : 'a array) =
     if v == v' then incr i
     else begin
       break := false;
-      temp := v';
+      temp := Some v';
     end
   done;
   if !i < len then begin
     let ans : 'a array = Array.make len (Array.unsafe_get ar 0) in
     (** TODO: use unsafe_blit in 4.01 *)
     Array.blit ar 0 ans 0 !i;
-    Array.unsafe_set ans !i !temp;
+    let v = match !temp with None -> assert false | Some x -> x in
+    Array.unsafe_set ans !i v;
     incr i;
     while !i < len do
       let v = Array.unsafe_get ar !i in
