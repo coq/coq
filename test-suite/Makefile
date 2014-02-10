@@ -218,8 +218,8 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) "$*" -coq-slaves on \
-	    -coq-slaves-opts fallback-to-lazy-if-marshal-error=no,fallback-to-lazy-if-slave-dies=no \
+	  $(coqc) "$*" -async-proofs on \
+	    -async-proofs-worker-flags fallback-to-lazy-if-marshal-error=no,fallback-to-lazy-if-slave-dies=no \
 	    $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
@@ -416,7 +416,7 @@ ide : $(patsubst %.fake,%.fake.log,$(wildcard ide/*.fake))
 	@echo "TEST      $<"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(BIN)fake_ide $< "$(BIN)coqtop -boot -coq-slaves on -coq-slaves-opts min-proof-length-to-delegate=0" 2>&1; \
+	  $(BIN)fake_ide $< "$(BIN)coqtop -boot -async-proofs on -async-proofs-worker-flags min-proof-length-to-delegate=0" 2>&1; \
 	  if [ $$? = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
