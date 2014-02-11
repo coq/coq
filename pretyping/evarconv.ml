@@ -361,6 +361,17 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
     if onleft then evar_eqappr_x ts env' evd CONV out1 out2
     else evar_eqappr_x ts env' evd CONV out2 out1
   in
+  let rigids env evd sk term sk' term' =
+    let b,univs = eq_constr_universes term term' in
+      if b then
+	ise_and evd [(fun i -> 
+	  let cstrs = Univ.to_constraints (Evd.universes i) univs in
+	    try let i = Evd.add_constraints i cstrs in
+		  Success i
+	    with Univ.UniverseInconsistency p -> UnifFailure (i, UnifUnivInconsistency p));
+		   (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk sk')]
+      else UnifFailure (evd,NotSameHead)
+  in
   let flex_maybeflex on_left ev ((termF,skF as apprF),cstsF) ((termM, skM as apprM),cstsM) vM =
     let switch f a b = if on_left then f a b else f b a in
     let not_only_app = Stack.not_purely_applicative skM in
@@ -509,6 +520,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 		      ts env i Cst_stack.empty (v2, applicative_stack))) in
           let rhs_is_already_stuck =
             rhs_is_already_stuck || rhs_is_stuck_and_unnamed () in
+
 	  if (isLambda term1 || rhs_is_already_stuck)
 	    && (not (Stack.not_purely_applicative sk1)) then
 	    evar_eqappr_x ~rhs_is_already_stuck ts env i pbty
@@ -597,20 +609,24 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
               exact_ise_stack2 env evd (evar_conv_x ts) sk1 sk2
             else UnifFailure (evd,NotSameHead)
 
-	| Const c1, Const c2 ->
-	  ise_and evd
-	    [(fun i -> eq_puniverses i pbty eq_constant c1 c2);
-	     (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
+	| Const _, Const _
+	| Ind _, Ind _ 
+	| Construct _, Construct _ ->
+	  rigids env evd sk1 term1 sk2 term2
 
-	| Ind sp1, Ind sp2 ->
-	     ise_and evd
-	       [(fun i -> eq_puniverses i pbty eq_ind sp1 sp2);
-		(fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
+	(*   ise_and evd *)
+	(*     [(fun i -> eq_puniverses i pbty eq_constant c1 c2); *)
+	(*      (fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)] *)
 
-	| Construct sp1, Construct sp2 ->
-	     ise_and evd
-	       [(fun i -> eq_puniverses i pbty eq_constructor sp1 sp2);
-		(fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)]
+	(* | Ind sp1, Ind sp2 -> *)
+	(*      ise_and evd *)
+	(*        [(fun i -> eq_puniverses i pbty eq_ind sp1 sp2); *)
+	(* 	(fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)] *)
+
+	(* | Construct sp1, Construct sp2 -> *)
+	(*      ise_and evd *)
+	(*        [(fun i -> eq_puniverses i pbty eq_constructor sp1 sp2); *)
+	(* 	(fun i -> exact_ise_stack2 env i (evar_conv_x ts) sk1 sk2)] *)
 
 	| Fix ((li1, i1),(_,tys1,bds1 as recdef1)), Fix ((li2, i2),(_,tys2,bds2)) -> (* Partially applied fixs *)
 	  if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
