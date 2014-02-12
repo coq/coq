@@ -18,11 +18,13 @@ open Glob_term
 module type S = sig
   (** {6 Coercions. } *)
 
-  (** [inh_app_fun env isevars j] coerces [j] to a function; i.e. it
+  (** [inh_app_fun resolve_tc env isevars j] coerces [j] to a function; i.e. it
      inserts a coercion into [j], if needed, in such a way it gets as
-     type a product; it returns [j] if no coercion is applicable *)
+     type a product; it returns [j] if no coercion is applicable.
+     resolve_tc=false disables resolving type classes (as the last
+     resort before failing) *)
   val inh_app_fun :
-    env -> evar_map -> unsafe_judgment -> evar_map * unsafe_judgment
+    bool -> env -> evar_map -> unsafe_judgment -> evar_map * unsafe_judgment
 
   (** [inh_coerce_to_sort env isevars j] coerces [j] to a type; i.e. it
      inserts a coercion into [j], if needed, in such a way it gets as
@@ -40,13 +42,15 @@ module type S = sig
   val inh_coerce_to_prod : loc ->
     env -> evar_map -> type_constraint_type -> evar_map * type_constraint_type
 
-  (** [inh_conv_coerce_to loc env isevars j t] coerces [j] to an object of type
+  (** [inh_conv_coerce_to resolve_tc loc env isevars j t] coerces [j] to an object of type
      [t]; i.e. it inserts a coercion into [j], if needed, in such a way [t] and
-     [j.uj_type] are convertible; it fails if no coercion is applicable *)
-  val inh_conv_coerce_to : loc ->
+     [j.uj_type] are convertible; it fails if no coercion is applicable.
+     resolve_tc=false disables resolving type classes (as the last
+     resort before failing) *)
+  val inh_conv_coerce_to : bool -> loc ->
     env -> evar_map -> unsafe_judgment -> type_constraint_type -> evar_map * unsafe_judgment
 
-  val inh_conv_coerce_rigid_to : loc ->
+  val inh_conv_coerce_rigid_to : bool -> loc ->
     env -> evar_map -> unsafe_judgment -> type_constraint_type -> evar_map * unsafe_judgment
 
   (** [inh_conv_coerces_to loc env isevars t t'] checks if an object of type [t]

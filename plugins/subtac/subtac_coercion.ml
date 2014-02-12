@@ -358,7 +358,7 @@ module Coercion = struct
              (hj,typ_cl) p)
     with e when Errors.noncritical e -> anomaly "apply_coercion"
 
-  let inh_app_fun env isevars j =
+  let inh_app_fun _ env isevars j =
     let isevars = ref isevars in
     let t = hnf env !isevars j.uj_type in
       match kind_of_term t with
@@ -481,8 +481,8 @@ module Coercion = struct
     | Some (init, cur) ->
       (evd, cj)
 
-  let inh_conv_coerce_to = inh_conv_coerce_to_gen false
-  let inh_conv_coerce_rigid_to = inh_conv_coerce_to_gen true
+  let inh_conv_coerce_to _ = inh_conv_coerce_to_gen false
+  let inh_conv_coerce_rigid_to _ = inh_conv_coerce_to_gen true
 
   let inh_conv_coerces_to loc env isevars t ((abs, t') as _tycon) =
     let nabsinit, nabs =

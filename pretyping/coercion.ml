@@ -36,7 +36,7 @@ module type S = sig
      inserts a coercion into [j], if needed, in such a way it gets as
      type a product; it returns [j] if no coercion is applicable *)
   val inh_app_fun :
-    env -> evar_map -> unsafe_judgment -> evar_map * unsafe_judgment
+    bool -> env -> evar_map -> unsafe_judgment -> evar_map * unsafe_judgment
 
   (* [inh_coerce_to_sort env evd j] coerces [j] to a type; i.e. it
      inserts a coercion into [j], if needed, in such a way it gets as
@@ -57,10 +57,10 @@ module type S = sig
   (* [inh_conv_coerce_to loc env evd j t] coerces [j] to an object of type
      [t]; i.e. it inserts a coercion into [j], if needed, in such a way [t] and
      [j.uj_type] are convertible; it fails if no coercion is applicable *)
-  val inh_conv_coerce_to : loc ->
+  val inh_conv_coerce_to : bool -> loc ->
     env -> evar_map -> unsafe_judgment -> type_constraint_type -> evar_map * unsafe_judgment
 
-  val inh_conv_coerce_rigid_to : loc ->
+  val inh_conv_coerce_rigid_to : bool -> loc ->
     env -> evar_map -> unsafe_judgment -> type_constraint_type -> evar_map * unsafe_judgment
 
   (* [inh_conv_coerces_to loc env evd t t'] checks if an object of type [t]
@@ -140,9 +140,11 @@ module Default = struct
 	      lookup_path_to_fun_from env evd j.uj_type in
 	      (evd,apply_coercion env evd p j t)
 
-  let inh_app_fun env evd j =
+  let inh_app_fun resolve_tc env evd j =
     try inh_app_fun env evd j
-    with Not_found ->
+    with
+    | Not_found when not resolve_tc -> (evd, j)
+    | Not_found ->
       try inh_app_fun env (saturate_evd env evd) j
       with Not_found -> (evd, j)
 
@@ -221,13 +223,15 @@ module Default = struct
     | _ -> raise NoCoercion
 
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-  let inh_conv_coerce_to_gen rigidonly loc env evd cj (n, t) =
+  let inh_conv_coerce_to_gen resolve_tc rigidonly loc env evd cj (n, t) =
     match n with
 	None ->
 	  let (evd', val') =
 	    try
 	      inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
-	    with NoCoercion ->
+	    with
+            | NoCoercion when not resolve_tc -> error_actual_type_loc loc env evd cj t
+            | NoCoercion ->
 	      let evd = saturate_evd env evd in
 		try
 		  inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
@@ -238,8 +242,8 @@ module Default = struct
 	    (evd',{ uj_val = val'; uj_type = t })
       | Some (init, cur) -> (evd, cj)
 
-  let inh_conv_coerce_to = inh_conv_coerce_to_gen false
-  let inh_conv_coerce_rigid_to = inh_conv_coerce_to_gen true
+  let inh_conv_coerce_to resolve_tc = inh_conv_coerce_to_gen resolve_tc false
+  let inh_conv_coerce_rigid_to resolve_tc = inh_conv_coerce_to_gen resolve_tc true
 
 
     let inh_conv_coerces_to loc env (evd : evar_map) t (abs, t') =

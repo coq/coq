@@ -63,7 +63,7 @@ let my_print_rec_info env t =
 (* 	   str " in environment: " ++ my_print_env env); *)
 
 let interp env isevars c tycon =
-  let j = pretype tycon env isevars ([],[]) c in
+  let j = pretype true tycon env isevars ([],[]) c in
   let _ = isevars := Evarutil.nf_evar_map !isevars in
   let evd = consider_remaining_unif_problems env !isevars in
 (*   let unevd = undefined_evars evd in *)

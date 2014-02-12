@@ -155,7 +155,7 @@ module Refinable = struct
     let j = Environ.make_judge t my_type in
     let tycon = Evarutil.mk_tycon_type typ in
     let (new_defs,j') = 
-      Coercion.Default.inh_conv_coerce_to (Util.dummy_loc) env !rdefs j tycon 
+      Coercion.Default.inh_conv_coerce_to true (Util.dummy_loc) env !rdefs j tycon 
     in
     rdefs := new_defs;
     j'.Environ.uj_val 

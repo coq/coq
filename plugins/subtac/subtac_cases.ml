@@ -411,7 +411,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps) =
 		let _ = e_cumul pb.env pb.isevars indt typ in
 		current
 	      else
-		(evd_comb2 (Coercion.inh_conv_coerce_to dummy_loc pb.env)
+		(evd_comb2 (Coercion.inh_conv_coerce_to true dummy_loc pb.env)
 		  pb.isevars (make_judge current typ) (mk_tycon_type indt)).uj_val in
 	    let sigma =  !(pb.isevars) in
 	    let typ = IsInd (indt,find_rectype pb.env sigma indt) in
@@ -1478,7 +1478,7 @@ let extract_arity_signatures env0 tomatchl tmsign =
 let inh_conv_coerce_to_tycon loc env isevars j tycon =
   match tycon with
     | Some p ->
-	let (evd',j) = Coercion.inh_conv_coerce_to loc env !isevars j p in
+	let (evd',j) = Coercion.inh_conv_coerce_to true loc env !isevars j p in
           isevars := evd';
           j
     | None -> j
