@@ -356,9 +356,11 @@ let inh_app_fun env evd j =
 	  with NoSubtacCoercion | NoCoercion ->
 	    (evd,j)
 
-let inh_app_fun env evd j =
+let inh_app_fun resolve_tc env evd j =
   try inh_app_fun env evd j
-  with Not_found ->
+  with
+  | Not_found when not resolve_tc -> (evd, j)
+  | Not_found ->
     try inh_app_fun env (saturate_evd env evd) j
     with Not_found -> (evd, j)
 
@@ -451,16 +453,19 @@ let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
       | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))
 
 (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-let inh_conv_coerce_to_gen rigidonly loc env evd cj t =
+let inh_conv_coerce_to_gen resolve_tc rigidonly loc env evd cj t =
   let (evd', val') =
     try
       inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
-    with NoCoercionNoUnifier _ ->
+    with NoCoercionNoUnifier (best_failed_evd,e) ->
       try
 	if Flags.is_program_mode () then
 	  coerce_itf loc env evd (Some cj.uj_val) cj.uj_type t
 	else raise NoSubtacCoercion
-      with NoSubtacCoercion ->
+      with
+      | NoSubtacCoercion when not resolve_tc ->
+	  error_actual_type_loc loc env best_failed_evd cj t e
+      | NoSubtacCoercion ->
 	let evd = saturate_evd env evd in
       	  try
       	    inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
@@ -470,8 +475,8 @@ let inh_conv_coerce_to_gen rigidonly loc env evd cj t =
   let val' = match val' with Some v -> v | None -> assert(false) in
     (evd',{ uj_val = val'; uj_type = t })
 
-let inh_conv_coerce_to = inh_conv_coerce_to_gen false
-let inh_conv_coerce_rigid_to = inh_conv_coerce_to_gen true
+let inh_conv_coerce_to resolve_tc = inh_conv_coerce_to_gen resolve_tc false
+let inh_conv_coerce_rigid_to resolve_tc = inh_conv_coerce_to_gen resolve_tc true
 
 let inh_conv_coerces_to loc env evd t t' =
   try

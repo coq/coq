@@ -105,11 +105,11 @@ val check_evars_are_solved :
 (**/**)
 (** Internal of Pretyping... *)
 val pretype :
-  type_constraint -> env -> evar_map ref ->
+  bool -> type_constraint -> env -> evar_map ref ->
   ltac_var_map -> glob_constr -> unsafe_judgment
 
 val pretype_type :
-  val_constraint -> env -> evar_map ref ->
+  bool -> val_constraint -> env -> evar_map ref ->
   ltac_var_map -> glob_constr -> unsafe_type_judgment
 
 val ise_pretype_gen :

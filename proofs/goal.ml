@@ -193,7 +193,7 @@ module Refinable = struct
     let my_type = Retyping.get_type_of env !rdefs t in
     let j = Environ.make_judge t my_type in
     let (new_defs,j') =
-      Coercion.inh_conv_coerce_to (Loc.ghost) env !rdefs j typ
+      Coercion.inh_conv_coerce_to true (Loc.ghost) env !rdefs j typ
     in
     rdefs := new_defs;
     j'.Environ.uj_val

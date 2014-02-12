@@ -210,9 +210,10 @@ let evar_type_fixpoint loc env evdref lna lar vdefj =
       done
 
 (* coerce to tycon if any *)
-let inh_conv_coerce_to_tycon loc env evdref j = function
+let inh_conv_coerce_to_tycon resolve_tc loc env evdref j = function
   | None -> j
-  | Some t -> evd_comb2 (Coercion.inh_conv_coerce_to loc env) evdref j t
+  | Some t ->
+      evd_comb2 (Coercion.inh_conv_coerce_to resolve_tc loc env) evdref j t
 
 (* used to enforce a name in Lambda when the type constraints itself
    is named, hence possibly dependent *)
@@ -293,7 +294,11 @@ let (f_genarg_interp, genarg_interp_hook) = Hook.make ()
 (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
 (* in environment [env], with existential variables [evdref] and *)
 (* the type constraint tycon *)
-let rec pretype (tycon : type_constraint) env evdref lvar = function
+let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
+  let inh_conv_coerce_to_tycon = inh_conv_coerce_to_tycon resolve_tc in
+  let pretype_type = pretype_type resolve_tc in
+  let pretype = pretype resolve_tc in
+  match t with
   | GRef (loc,ref) ->
       inh_conv_coerce_to_tycon loc env evdref
 	(pretype_ref loc evdref env ref)
@@ -452,7 +457,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	| [] -> resj
 	| c::rest ->
 	    let argloc = loc_of_glob_constr c in
-	    let resj = evd_comb1 (Coercion.inh_app_fun env) evdref resj in
+	    let resj = evd_comb1 (Coercion.inh_app_fun resolve_tc env) evdref resj in
             let resty = whd_betadeltaiota env !evdref resj.uj_type in
       	      match kind_of_term resty with
 	      | Prod (na,c1,c2) ->
@@ -730,7 +735,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
       in inh_conv_coerce_to_tycon loc env evdref cj tycon
 
 (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
-and pretype_type valcon env evdref lvar = function
+and pretype_type resolve_tc valcon env evdref lvar = function
   | GHole (loc, knd, None) ->
       (match valcon with
        | Some v ->
@@ -750,7 +755,7 @@ and pretype_type valcon env evdref lvar = function
 	     { utj_val = e_new_evar evdref env ~src:(loc, knd) (mkSort s);
 	       utj_type = s})
   | c ->
-      let j = pretype empty_tycon env evdref lvar c in
+      let j = pretype resolve_tc empty_tycon env evdref lvar c in
       let loc = loc_of_glob_constr c in
       let tj = evd_comb1 (Coercion.inh_coerce_to_sort loc env) evdref j in
 	match valcon with
@@ -765,11 +770,11 @@ let ise_pretype_gen flags sigma env lvar kind c =
   let evdref = ref sigma in
   let c' = match kind with
     | WithoutTypeConstraint ->
-        (pretype empty_tycon env evdref lvar c).uj_val
+        (pretype flags.use_typeclasses empty_tycon env evdref lvar c).uj_val
     | OfType exptyp ->
-	(pretype (mk_tycon exptyp) env evdref lvar c).uj_val
+	(pretype flags.use_typeclasses (mk_tycon exptyp) env evdref lvar c).uj_val
     | IsType ->
-	(pretype_type empty_valcon env evdref lvar c).utj_val 
+	(pretype_type flags.use_typeclasses empty_valcon env evdref lvar c).utj_val 
   in
   process_inference_flags flags env sigma (!evdref,c')
 
@@ -804,12 +809,12 @@ let on_judgment f j =
 
 let understand_judgment sigma env c =
   let evdref = ref sigma in
-  let j = pretype empty_tycon env evdref empty_lvar c in
+  let j = pretype true empty_tycon env evdref empty_lvar c in
   on_judgment (fun c ->
     snd (process_inference_flags all_and_fail_flags env sigma (!evdref,c))) j
 
 let understand_judgment_tcc evdref env c =
-  let j = pretype empty_tycon env evdref empty_lvar c in
+  let j = pretype true empty_tycon env evdref empty_lvar c in
   on_judgment (fun c ->
     let (evd,c) = process_inference_flags all_no_fail_flags env Evd.empty (!evdref,c) in
     evdref := evd; c) j
