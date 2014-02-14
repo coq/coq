@@ -278,7 +278,7 @@ let tclUSER tac is_mes l g =
 let tclUSER_if_not_mes concl_tac is_mes names_to_suppress =
   if is_mes
   then tclCOMPLETE (Simple.apply (delayed_force well_founded_ltof))
-  else tclTHEN (Simple.apply (delayed_force acc_intro_generator_function) ) (tclUSER concl_tac is_mes names_to_suppress)
+  else (* tclTHEN (Simple.apply (delayed_force acc_intro_generator_function) ) *) (tclUSER concl_tac is_mes names_to_suppress)
 
 
 
