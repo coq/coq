@@ -125,7 +125,13 @@ EXTEND
       | "VERNAC"; nt = LIDENT ; "EXTEND"; s = UIDENT; c = OPT classification;
         OPT "|"; l = LIST1 rule SEP "|";
         "END" ->
-          declare_command loc s c <:expr<Some $lid:nt$>> l ] ]
+          declare_command loc s c <:expr<Some $lid:nt$>> l
+      | "DECLARE"; "PLUGIN"; name = STRING ->
+        declare_str_items loc [
+          <:str_item< value __coq_plugin_name = $str:name$ >>;
+          <:str_item< value _ = Mltop.add_known_module $str:name$ >>;
+        ]
+      ] ]
   ;
   classification:
     [ [ "CLASSIFIED"; "BY"; c = LIDENT -> <:expr< $lid:c$ >>
