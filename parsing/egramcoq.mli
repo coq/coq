@@ -47,7 +47,12 @@ val extend_constr_grammar : Notation.level -> notation_grammar -> unit
 (** Add a term notation rule to the parsing system. *)
 
 val extend_tactic_grammar : KerName.t -> tactic_grammar -> unit
-(** Add a tactic notation rule to the parsing system. *)
+(** Add a tactic notation rule to the parsing system. This produces a TacAlias
+    tactic with the provided kernel name. *)
+
+val extend_ml_tactic_grammar : string -> grammar_prod_item list list -> unit
+(** Add a ML tactic notation rule to the parsing system. This produces a
+    TacExtend tactic with the provided string as name. *)
 
 val recover_constr_grammar : notation -> Notation.level -> notation_grammar
 (** For a declared grammar, returns the rule + the ordered entry types

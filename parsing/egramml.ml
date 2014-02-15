@@ -42,14 +42,6 @@ let make_rule mkact pt =
   let act = make_generic_action mkact ntl in
   (symbs, act)
 
-(** Tactic grammar extensions *)
-
-let extend_tactic_grammar s gl =
-  let mkact loc l = Tacexpr.TacExtend (loc,s,List.map snd l) in
-  let rules = List.map (make_rule mkact) gl in
-  maybe_uncurry (Gram.extend Tactic.simple_tactic)
-    (None,[(None, None, List.rev rules)])
-
 (** Vernac grammar extensions *)
 
 let vernac_exts = ref []

@@ -181,7 +181,7 @@ let declare_tactic loc s c cl =
 	  (Pp.app
 	     (Pp.str ("Exception in tactic extend " ^ $se$ ^": "))
 	     (Errors.print e)) ];
-      Egramml.extend_tactic_grammar $se$ $gl$;
+      Egramcoq.extend_ml_tactic_grammar $se$ $gl$;
       List.iter (fun (s, r) -> Pptactic.declare_ml_tactic_pprule s r) $pp$; } >>
     ]
 

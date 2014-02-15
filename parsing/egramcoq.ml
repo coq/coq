@@ -252,12 +252,25 @@ type tactic_grammar = {
 type all_grammar_command =
   | Notation of Notation.level * notation_grammar
   | TacticGrammar of KerName.t * tactic_grammar
+  | MLTacticGrammar of string * grammar_prod_item list list
+
+(** ML Tactic grammar extensions *)
+
+let add_ml_tactic_entry name prods =
+  let entry = weaken_entry Tactic.simple_tactic in
+  let mkact loc l = Tacexpr.TacExtend (loc, name, List.map snd l) in
+  let rules = List.map (make_rule mkact) prods in
+  synchronize_level_positions ();
+  grammar_extend entry None (None ,[(None, None, List.rev rules)]);
+  1
 
 (* Declaration of the tactic grammar rule *)
 
 let head_is_ident tg = match tg.tacgram_prods with
 | GramTerminal _::_ -> true
 | _ -> false
+
+(** Tactic grammar extensions *)
 
 let add_tactic_entry kn tg =
   let entry, pos = get_tactic_entry tg.tacgram_level in
@@ -282,7 +295,9 @@ let (grammar_state : (int * all_grammar_command) list ref) = ref []
 let extend_grammar gram =
   let nb = match gram with
   | Notation (_,a) -> extend_constr_notation a
-  | TacticGrammar (kn, g) -> add_tactic_entry kn g in
+  | TacticGrammar (kn, g) -> add_tactic_entry kn g
+  | MLTacticGrammar (name, pr) -> add_ml_tactic_entry name pr
+  in
   grammar_state := (nb,gram) :: !grammar_state
 
 let extend_constr_grammar pr ntn =
@@ -290,6 +305,9 @@ let extend_constr_grammar pr ntn =
 
 let extend_tactic_grammar kn ntn =
   extend_grammar (TacticGrammar (kn, ntn))
+
+let extend_ml_tactic_grammar name ntn =
+  extend_grammar (MLTacticGrammar (name, ntn))
 
 let recover_constr_grammar ntn prec =
   let filter = function
