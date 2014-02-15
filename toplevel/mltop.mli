@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** {5 Toplevel management} *)
+
 (** If there is a toplevel under Coq, it is described by the following
    record. *)
 type toplevel = {
@@ -26,11 +28,13 @@ val remove : unit -> unit
 (** Tests if an Ocaml toplevel runs under Coq *)
 val is_ocaml_top : unit -> bool
 
-(** Tests if we can load ML files *)
-val has_dynlink : bool
-
 (** Starts the Ocaml toplevel loop *)
 val ocaml_toploop : unit -> unit
+
+(** {5 ML Dynlink} *)
+
+(** Tests if we can load ML files *)
+val has_dynlink : bool
 
 (** Dynamic loading of .cmo *)
 val dir_ml_load : string -> unit
@@ -51,6 +55,8 @@ val add_known_module : string -> unit
 val module_is_known : string -> bool
 val load_ml_object : string -> string -> unit
 
+(** {5 Initialization functions} *)
+
 (** Declare a plugin and its initialization function.
     A plugin is just an ML module with an initialization function.
     Adding a known plugin implies adding it as a known ML module.
@@ -61,7 +67,18 @@ val add_known_plugin : (unit -> unit) -> string -> unit
 (** Calls all initialization functions in a non-specified order *)
 val init_known_plugins : unit -> unit
 
+(** Register a callback that will be called when the module is declared with
+    the Declare ML Module command. This is useful to define Coq objects at that
+    time only. Several functions can be defined for one module; they will be
+    called in the order of declaration, and after the ML module has been
+    properly initialized. *)
+val declare_cache_obj : (unit -> unit) -> string -> unit
+
+(** {5 Declaring modules} *)
+
 val declare_ml_modules : Vernacexpr.locality_flag -> string list -> unit
+
+(** {5 Utilities} *)
 
 val print_ml_path : unit -> Pp.std_ppcmds
 val print_ml_modules : unit -> Pp.std_ppcmds

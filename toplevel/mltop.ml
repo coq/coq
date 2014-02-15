@@ -264,6 +264,21 @@ let add_known_plugin init name =
 let init_known_plugins () =
   String.Map.iter (fun _ f -> f()) !known_loaded_plugins
 
+(** Registering functions to be used at caching time, that is when the Declare
+    ML module command is issued. *)
+
+let cache_objs = ref String.Map.empty
+
+let declare_cache_obj f name =
+  let objs = try String.Map.find name !cache_objs with Not_found -> [] in
+  let objs = f :: objs in
+  cache_objs := String.Map.add name objs !cache_objs
+
+let perform_cache_obj name =
+  let objs = try String.Map.find name !cache_objs with Not_found -> [] in
+  let objs = List.rev objs in
+  List.iter (fun f -> f ()) objs
+
 (** ml object = ml module or plugin *)
 
 let init_ml_object mname =
@@ -299,21 +314,23 @@ let if_verbose_load verb f name fname =
     or simulate its reload (i.e. doing nothing except maybe
     an initialization function). *)
 
-let cache_ml_object verb reinit name =
-  begin
-    if module_is_known name then
-      (if reinit then init_ml_object name)
-    else if not has_dynlink then
-      error ("Dynamic link not supported (module "^name^")")
-    else
-      if_verbose_load (verb && is_verbose ())
-	load_ml_object name (file_of_name name)
-  end;
-  add_loaded_module name
+let trigger_ml_object verb cache reinit name =
+  if module_is_known name then begin
+    if reinit then init_ml_object name;
+    add_loaded_module name;
+    if cache then perform_cache_obj name
+  end else if not has_dynlink then
+    error ("Dynamic link not supported (module "^name^")")
+  else begin
+    let file = file_of_name name in
+    if_verbose_load (verb && is_verbose ()) load_ml_object name file;
+    add_loaded_module name;
+    if cache then perform_cache_obj name
+  end
 
 let unfreeze_ml_modules x =
   reset_loaded_modules ();
-  List.iter (cache_ml_object false false) x
+  List.iter (trigger_ml_object false false false) x
 
 let _ =
   Summary.declare_summary Summary.ml_modules
@@ -329,7 +346,12 @@ type ml_module_object = {
 }
 
 let cache_ml_objects (_,{mnames=mnames}) =
-  List.iter (cache_ml_object true true) mnames
+  let iter obj = trigger_ml_object true true true obj in
+  List.iter iter mnames
+
+let load_ml_objects _ (_,{mnames=mnames}) =
+  let iter obj = trigger_ml_object true false true obj in
+  List.iter iter mnames
 
 let classify_ml_objects ({mlocal=mlocal} as o) =
   if mlocal then Dispose else Substitute o
@@ -337,8 +359,8 @@ let classify_ml_objects ({mlocal=mlocal} as o) =
 let inMLModule : ml_module_object -> obj =
   declare_object
     {(default_object "ML-MODULE") with
-      load_function = (fun _ -> cache_ml_objects);
       cache_function = cache_ml_objects;
+      load_function = load_ml_objects;
       subst_function = (fun (_,o) -> o);
       classify_function = classify_ml_objects }
 
