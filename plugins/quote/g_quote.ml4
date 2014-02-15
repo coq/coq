@@ -14,6 +14,8 @@ open Tacexpr
 open Geninterp
 open Quote
 
+DECLARE PLUGIN "quote_plugin"
+
 let loc = Loc.ghost
 let cont = (loc, Id.of_string "cont")
 let x = (loc, Id.of_string "x")

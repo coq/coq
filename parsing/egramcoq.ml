@@ -258,7 +258,7 @@ type all_grammar_command =
 
 let add_ml_tactic_entry name prods =
   let entry = weaken_entry Tactic.simple_tactic in
-  let mkact loc l = Tacexpr.TacExtend (loc, name, List.map snd l) in
+  let mkact loc l : raw_atomic_tactic_expr = Tacexpr.TacExtend (loc, name, List.map snd l) in
   let rules = List.map (make_rule mkact) prods in
   synchronize_level_positions ();
   grammar_extend entry None (None ,[(None, None, List.rev rules)]);

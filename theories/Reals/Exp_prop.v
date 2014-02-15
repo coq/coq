@@ -15,6 +15,7 @@ Require Import PSeries_reg.
 Require Import Div2.
 Require Import Even.
 Require Import Max.
+Require Import Omega.
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
 

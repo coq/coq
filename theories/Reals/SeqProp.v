@@ -10,6 +10,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rseries.
 Require Import Max.
+Require Import Omega.
 Local Open Scope R_scope.
 
 (*****************************************************************)

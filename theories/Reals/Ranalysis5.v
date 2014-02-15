@@ -14,6 +14,7 @@ Require Import Fourier.
 Require Import RiemannInt.
 Require Import SeqProp.
 Require Import Max.
+Require Import Omega.
 Local Open Scope R_scope.
 
 (** * Preliminaries lemmas *)

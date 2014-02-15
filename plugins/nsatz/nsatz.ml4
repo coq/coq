@@ -17,6 +17,8 @@ open Coqlib
 open Num
 open Utile
 
+DECLARE PLUGIN "nsatz_plugin"
+
 (***********************************************************************
  Operations on coefficients
 *)

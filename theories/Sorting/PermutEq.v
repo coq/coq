@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Relations Setoid SetoidList List Multiset PermutSetoid Permutation.
+Require Import Relations Setoid SetoidList List Multiset PermutSetoid Permutation Omega.
 
 Set Implicit Arguments.
 

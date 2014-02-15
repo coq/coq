@@ -8,6 +8,8 @@
 
 (*i camlp4deps: "grammar/grammar.cma"  i*)
 
+DECLARE PLUGIN "rtauto_plugin"
+
 TACTIC EXTEND rtauto
   [ "rtauto" ] -> [ Proofview.V82.tactic (Refl_tauto.rtauto_tac) ]
 END

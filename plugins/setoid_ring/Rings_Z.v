@@ -1,6 +1,7 @@
 Require Export Cring.
 Require Export Integral_domain.
 Require Export Ncring_initial.
+Require Export Omega.
 
 Instance Zcri: (Cring (Rr:=Zr)).
 red. exact Z.mul_comm. Defined.

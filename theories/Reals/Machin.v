@@ -16,6 +16,7 @@ Require Import Rseries.
 Require Import SeqProp.
 Require Import PartSum.
 Require Import Ratan.
+Require Import Omega.
 
 Local Open Scope R_scope.
 

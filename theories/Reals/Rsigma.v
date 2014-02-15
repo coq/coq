@@ -10,6 +10,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rseries.
 Require Import PartSum.
+Require Import Omega.
 Local Open Scope R_scope.
 
 Set Implicit Arguments.

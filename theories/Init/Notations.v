@@ -80,3 +80,12 @@ Delimit Scope core_scope with core.
 
 Open Scope core_scope.
 Open Scope type_scope.
+
+(** ML Tactic Notations *)
+
+Declare ML Module "extratactics".
+Declare ML Module "eauto".
+Declare ML Module "g_class".
+Declare ML Module "g_eqdecide".
+Declare ML Module "g_rewrite".
+Declare ML Module "tauto".

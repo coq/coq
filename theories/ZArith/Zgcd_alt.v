@@ -23,6 +23,7 @@ Require Import ZArith_base.
 Require Import ZArithRing.
 Require Import Zdiv.
 Require Import Znumtheory.
+Require Import Omega.
 
 Open Scope Z_scope.
 

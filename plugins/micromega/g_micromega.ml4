@@ -19,6 +19,8 @@
 open Errors
 open Misctypes
 
+DECLARE PLUGIN "micromega_plugin"
+
 let out_arg = function
   | ArgVar _ -> anomaly (Pp.str "Unevaluated or_var variable")
   | ArgArg x -> x

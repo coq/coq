@@ -18,6 +18,7 @@ Require Import SeqProp.
 Require Import Ranalysis5.
 Require Import SeqSeries.
 Require Import PartSum.
+Require Import Omega.
 
 Local Open Scope R_scope.
 

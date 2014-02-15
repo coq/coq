@@ -22,6 +22,8 @@ open Evd
 open Equality
 open Misctypes
 
+DECLARE PLUGIN "extratactics"
+
 (**********************************************************************)
 (* admit, replace, discriminate, injection, simplify_eq               *)
 (* cutrewrite, dependent rewrite                                      *)

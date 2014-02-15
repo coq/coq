@@ -21,6 +21,8 @@ open Tacmach
 open Tacticals
 open Rewrite
 
+DECLARE PLUGIN "g_rewrite"
+
 type constr_expr_with_bindings = constr_expr with_bindings
 type glob_constr_with_bindings = Tacexpr.glob_constr_and_expr with_bindings
 type glob_constr_with_bindings_sign = interp_sign * Tacexpr.glob_constr_and_expr with_bindings

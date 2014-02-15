@@ -20,6 +20,8 @@ open Tactics
 open Errors
 open Util
 
+DECLARE PLUGIN "tauto"
+
 let assoc_var s ist =
   let v = Id.Map.find (Names.Id.of_string s) ist.lfun in
   match Value.to_constr v with

@@ -161,28 +161,20 @@ let declare_tactic loc s c cl =
   let se = mlexpr_of_string s in
   let pp = make_printing_rule se cl in
   let gl = mlexpr_of_clause cl in
-  let atomic_tactics =
+  let atom =
     mlexpr_of_list (mlexpr_of_pair mlexpr_of_string (fun x -> x))
       (possibly_atomic loc cl) in
   declare_str_items loc
     [ <:str_item< do {
       try do {
         Tacenv.register_ml_tactic $se$ $make_fun_clauses loc s cl$;
-        List.iter
-          (fun (s,l) -> match l with
-           [ Some l ->
-              Tacenv.register_atomic_ltac (Names.Id.of_string s)
-              (Tacexpr.TacAtom($default_loc$,
-                 Tacexpr.TacExtend($default_loc$,$se$,l)))
-           | None -> () ])
-          $atomic_tactics$ }
+        Mltop.declare_cache_obj (fun () -> Metasyntax.add_ml_tactic_notation $se$ $gl$ $atom$) __coq_plugin_name;
+        List.iter (fun (s, r) -> Pptactic.declare_ml_tactic_pprule s r) $pp$; }
       with [ e when Errors.noncritical e ->
 	Pp.msg_warning
 	  (Pp.app
 	     (Pp.str ("Exception in tactic extend " ^ $se$ ^": "))
-	     (Errors.print e)) ];
-      Egramcoq.extend_ml_tactic_grammar $se$ $gl$;
-      List.iter (fun (s, r) -> Pptactic.declare_ml_tactic_pprule s r) $pp$; } >>
+	     (Errors.print e)) ]; } >>
     ]
 
 open Pcaml

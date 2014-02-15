@@ -10,6 +10,8 @@
 
 open Cctac
 
+DECLARE PLUGIN "cc_plugin"
+
 (* Tactic registration *)
 
 TACTIC EXTEND cc

@@ -31,6 +31,8 @@ open Decl_kinds
 open Entries
 open Misctypes
 
+DECLARE PLUGIN "newring_plugin"
+
 (****************************************************************************)
 (* controlled reduction *)
 

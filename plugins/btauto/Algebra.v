@@ -1,4 +1,4 @@
-Require Import Bool PArith DecidableClass ROmega.
+Require Import Bool PArith DecidableClass Omega ROmega.
 
 Ltac bool :=
 repeat match goal with

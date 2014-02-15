@@ -19,6 +19,8 @@ open Genarg
 open Tacticals
 open Misctypes
 
+DECLARE PLUGIN "recdef_plugin"
+
 let pr_binding prc = function
   | loc, NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)
   | loc, AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)

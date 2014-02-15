@@ -16,6 +16,8 @@
 
 open Eqdecide
 
+DECLARE PLUGIN "g_eqdecide"
+
 TACTIC EXTEND decide_equality
 | [ "decide" "equality" ] -> [ decideEqualityGoal ]
 END

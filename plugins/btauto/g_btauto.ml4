@@ -8,6 +8,8 @@
 
 (*i camlp4deps: "grammar/grammar.cma"  i*)
 
+DECLARE PLUGIN "btauto_plugin"
+
 TACTIC EXTEND btauto
 | [ "btauto" ] -> [ Refl_btauto.Btauto.tac ]
 END

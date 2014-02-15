@@ -8,6 +8,8 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+DECLARE PLUGIN "romega_plugin"
+
 open Refl_omega
 
 let romega_tactic l =

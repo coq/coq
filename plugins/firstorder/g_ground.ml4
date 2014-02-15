@@ -16,6 +16,8 @@ open Tacticals
 open Tacinterp
 open Libnames
 
+DECLARE PLUGIN "ground_plugin"
+
 (* declaring search depth as a global option *)
 
 let ground_depth=ref 3

@@ -59,19 +59,18 @@ let () =
 
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 
-let atomic_mactab = ref Id.Map.empty
 
-let register_atomic_ltac id tac =
-  atomic_mactab := Id.Map.add id tac !atomic_mactab
-
-let _ =
+let initial_atomic =
   let open Locus in
   let open Misctypes in
   let open Genredexpr in
   let dloc = Loc.ghost in
   let nocl = {onhyps=Some[];concl_occs=AllOccurrences} in
-  List.iter
-      (fun (s,t) -> register_atomic_ltac (Id.of_string s) (TacAtom(dloc,t)))
+  let fold accu (s, t) =
+    let body = TacAtom (dloc, t) in
+    Id.Map.add (Id.of_string s) body accu
+  in
+  let ans = List.fold_left fold Id.Map.empty
       [ "red", TacReduce(Red false,nocl);
         "hnf", TacReduce(Hnf,nocl);
         "simpl", TacReduce(Simpl None,nocl);
@@ -92,13 +91,19 @@ let _ =
         "econstructor", TacAnyConstructor (true,None);
         "reflexivity", TacReflexivity;
         "symmetry", TacSymmetry nocl
-      ];
-  List.iter
-      (fun (s,t) -> register_atomic_ltac (Id.of_string s) t)
+      ]
+  in
+  let fold accu (s, t) = Id.Map.add (Id.of_string s) t accu in
+  List.fold_left fold ans
       [ "idtac",TacId [];
         "fail", TacFail(ArgArg 0,[]);
         "fresh", TacArg(dloc,TacFreshId [])
       ]
+
+let atomic_mactab = Summary.ref ~name:"atomic_tactics" initial_atomic
+
+let register_atomic_ltac id tac =
+  atomic_mactab := Id.Map.add id tac !atomic_mactab
 
 let interp_atomic_ltac id = Id.Map.find id !atomic_mactab
 

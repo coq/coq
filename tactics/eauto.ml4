@@ -28,6 +28,8 @@ open Misctypes
 open Locus
 open Locusops
 
+DECLARE PLUGIN "eauto"
+
 let eauto_unif_flags = { auto_unif_flags with Unification.modulo_delta = full_transparent_state }
 
 let e_give_exact ?(flags=eauto_unif_flags) c gl = let t1 = (pf_type_of gl c) and t2 = pf_concl gl in

@@ -15,6 +15,8 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
+DECLARE PLUGIN "omega_plugin"
+
 open Coq_omega
 
 let omega_tactic l =

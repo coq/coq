@@ -11,6 +11,8 @@
 open Misctypes
 open Class_tactics
 
+DECLARE PLUGIN "g_class"
+
 TACTIC EXTEND progress_evars
   [ "progress_evars" tactic(t) ] -> [ progress_evars (Tacinterp.eval_tactic t) ]
 END
