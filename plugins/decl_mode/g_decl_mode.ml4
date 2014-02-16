@@ -83,14 +83,6 @@ let vernac_proof_instr instr =
     Vernacentries.print_subgoals ()
   end
 
-(* We create a new parser entry [proof_mode]. The Declarative proof mode
-    will replace the normal parser entry for tactics with this one. *)
-let proof_mode : vernac_expr Gram.entry =
-  Gram.entry_create "vernac:proof_command"
-(* Auxiliary grammar entry. *)
-let proof_instr : raw_proof_instr Gram.entry =
-  Gram.entry_create "proofmode:instr"
-
 (* Before we can write an new toplevel command (see below) 
     which takes a [proof_instr] as argument, we need to declare
     how to parse it, print it, globalise it and interprete it.
@@ -102,6 +94,14 @@ let proof_instr : raw_proof_instr Gram.entry =
 (* Only declared at raw level, because only used in vernac commands. *)
 let wit_proof_instr : (raw_proof_instr, Empty.t, Empty.t) Genarg.genarg_type =
   Genarg.make0 None "proof_instr"
+
+(* We create a new parser entry [proof_mode]. The Declarative proof mode
+    will replace the normal parser entry for tactics with this one. *)
+let proof_mode : vernac_expr Gram.entry =
+  Gram.entry_create "vernac:proof_command"
+(* Auxiliary grammar entry. *)
+let proof_instr : raw_proof_instr Gram.entry =
+  Pcoq.create_generic_entry "proof_instr" (Genarg.rawwit wit_proof_instr)
 
 let _ = Pptactic.declare_extra_genarg_pprule wit_proof_instr
   pr_raw_proof_instr pr_glob_proof_instr pr_proof_instr

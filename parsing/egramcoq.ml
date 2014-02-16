@@ -363,7 +363,7 @@ let create_ltac_quotation name cast wit e =
   let rule = [
     gram_token_of_string name;
     gram_token_of_string ":";
-    symbol_of_prod_entry_key (Agram (Gram.Entry.obj e));
+    symbol_of_prod_entry_key (Agram (Gram.Entry.name e));
   ] in
   let action v _ _ loc =
     let loc = !@loc in

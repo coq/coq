@@ -25,7 +25,6 @@ open Tacmach
 open Tacticals
 open Tactics
 open Rewrite
-open Pcoq.Constr
 
 type constr_expr_with_bindings = constr_expr with_bindings
 type glob_constr_with_bindings = Tacexpr.glob_constr_and_expr with_bindings
@@ -199,6 +198,16 @@ type binders_argtype = local_binder list
 
 let wit_binders =
  (Genarg.create_arg None "binders" : binders_argtype Genarg.uniform_genarg_type)
+
+let binders = Pcoq.create_generic_entry "binders" (Genarg.rawwit wit_binders)
+
+open Pcoq
+
+GEXTEND Gram
+  GLOBAL: binders;
+    binders:
+    [ [ b = Pcoq.Constr.binders -> b ] ];
+END
 
 VERNAC COMMAND EXTEND AddParametricRelation CLASSIFIED AS SIDEFF
   | [ "Add" "Parametric" "Relation" binders(b) ":" constr(a) constr(aeq)

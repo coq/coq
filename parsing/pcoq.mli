@@ -272,7 +272,7 @@ type prod_entry_key =
   | Aself
   | Anext
   | Atactic of int
-  | Agram of Gram.internal_entry
+  | Agram of string
   | Aentry of string * string
 
 (** Binding general entry keys to symbols *)

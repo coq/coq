@@ -80,7 +80,7 @@ type prod_entry_key =
   | Aself
   | Anext
   | Atactic of int
-  | Agram of G.internal_entry
+  | Agram of string
   | Aentry of string * string
 
 (** [grammar_object] is the superclass of all grammar entries *)
@@ -729,10 +729,23 @@ let rec symbol_of_prod_entry_key = function
   | Atactic 5 -> Snterm (Gram.Entry.obj Tactic.binder_tactic)
   | Atactic n ->
       Snterml (Gram.Entry.obj Tactic.tactic_expr, string_of_int n)
-  | Agram s -> Snterm s
+  | Agram s ->
+    let e =
+      try
+      (** ppedrot: we should always generate Agram entries which have already
+          been registered, so this should not fail. *)
+        let (u, s) = match String.split ':' s with
+        | u :: s :: [] -> (u, s)
+        | _ -> raise Not_found
+        in
+        get_entry (get_univ u) s
+      with Not_found ->
+        Errors.anomaly (str "Unregistered grammar entry: " ++ str s)
+    in
+    Snterm (Gram.Entry.obj (object_of_typed_entry e))
   | Aentry (u,s) ->
-      Snterm (Gram.Entry.obj
-	(object_of_typed_entry (get_entry (get_univ u) s)))
+    let e = get_entry (get_univ u) s in
+    Snterm (Gram.Entry.obj (object_of_typed_entry e))
 
 let level_of_snterml = function
   | Snterml (_,l) -> int_of_string l

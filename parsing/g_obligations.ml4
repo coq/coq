@@ -25,17 +25,16 @@ module Gram = Pcoq.Gram
 module Vernac = Pcoq.Vernac_
 module Tactic = Pcoq.Tactic
 
-module ObligationsGram =
-struct
-  let gec s = Gram.entry_create s
-
-  let withtac : Tacexpr.raw_tactic_expr option Gram.entry = gec "withtac"
-end
-
-open ObligationsGram
 open Pcoq
 
 let sigref = mkRefC (Qualid (Loc.ghost, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
+
+type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_argument_type
+
+let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
+  Genarg.create_arg None "withtac"
+
+let withtac = Pcoq.create_generic_entry "withtac" (Genarg.rawwit wit_withtac)
 
 GEXTEND Gram
   GLOBAL: withtac;
@@ -52,11 +51,6 @@ GEXTEND Gram
     ] ];
 
   END
-
-type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_argument_type
-
-let wit_withtac : Tacexpr.raw_tactic_expr option Genarg.uniform_genarg_type =
-  Genarg.create_arg None "withtac"
 
 open Obligations
 

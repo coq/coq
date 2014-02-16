@@ -135,13 +135,13 @@ module Gram = Pcoq.Gram
 module Vernac = Pcoq.Vernac_
 module Tactic = Pcoq.Tactic
 
-module FunctionGram =
-struct
-  let gec s = Gram.entry_create ("Function."^s)
-		(* types *)
-  let function_rec_definition_loc : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) Loc.located Gram.entry = gec "function_rec_definition_loc"
-end
-open FunctionGram
+type function_rec_definition_loc_argtype = (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) Loc.located
+
+let (wit_function_rec_definition_loc : function_rec_definition_loc_argtype Genarg.uniform_genarg_type) =
+  Genarg.create_arg None "function_rec_definition_loc"
+
+let function_rec_definition_loc =
+  Pcoq.create_generic_entry "function_rec_definition_loc" (Genarg.rawwit wit_function_rec_definition_loc)
 
 GEXTEND Gram
   GLOBAL: function_rec_definition_loc ;
@@ -150,11 +150,7 @@ GEXTEND Gram
     [ [ g = Vernac.rec_definition -> !@loc, g ]]
     ;
 
-  END
-type function_rec_definition_loc_argtype = (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) Loc.located
-
-let (wit_function_rec_definition_loc : function_rec_definition_loc_argtype Genarg.uniform_genarg_type) =
-  Genarg.create_arg None "function_rec_definition_loc"
+END
 
 (* TASSI: n'importe quoi ! *)
 VERNAC COMMAND EXTEND Function

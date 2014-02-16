@@ -60,5 +60,5 @@ let rec mlexpr_of_prod_entry_key = function
   | Pcoq.Anext -> <:expr< Pcoq.Anext >>
   | Pcoq.Atactic n -> <:expr< Pcoq.Atactic $mlexpr_of_int n$ >>
   | Pcoq.Agram s -> Errors.anomaly (Pp.str "Agram not supported")
-  | Pcoq.Aentry ("",s) -> <:expr< Pcoq.Agram (Pcoq.Gram.Entry.obj $lid:s$) >>
+  | Pcoq.Aentry ("",s) -> <:expr< Pcoq.Agram (Pcoq.Gram.Entry.name $lid:s$) >>
   | Pcoq.Aentry (u,s) -> <:expr< Pcoq.Aentry $str:u$ $str:s$ >>
