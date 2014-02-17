@@ -79,4 +79,5 @@ val mk_ind : string -> string -> mutual_inductive
     the constants are directly turned into chars *)
 
 val is_native_char : ml_ast -> bool
+val get_native_char : ml_ast -> char
 val pp_native_char : ml_ast -> std_ppcmds

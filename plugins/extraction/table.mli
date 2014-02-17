@@ -85,9 +85,10 @@ val record_fields_of_type : ml_type -> global_reference option list
 val add_recursors : Environ.env -> mutual_inductive -> unit
 val is_recursor : global_reference -> bool
 
-val add_projection : int -> constant -> unit
+val add_projection : int -> constant -> inductive -> unit
 val is_projection : global_reference -> bool
 val projection_arity : global_reference -> int
+val projection_info : global_reference -> inductive * int (* arity *)
 
 val add_info_axiom : global_reference -> unit
 val remove_info_axiom : global_reference -> unit

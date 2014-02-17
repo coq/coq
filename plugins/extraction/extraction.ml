@@ -484,7 +484,8 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  let n = nb_default_params env
             (Inductive.type_of_inductive env ((mib,mip0),u))
 	  in
-	  let check_proj kn = if Cset.mem kn !projs then add_projection n kn in
+	  let check_proj kn = if Cset.mem kn !projs then add_projection n kn ip
+          in
 	  List.iter (Option.iter check_proj) (lookup_projections ip)
 	with Not_found -> ()
 	end;

@@ -189,11 +189,12 @@ let is_recursor = function
 
 (* NB: here, working modulo name equivalence is ok *)
 
-let projs = ref (Refmap.empty : int Refmap.t)
+let projs = ref (Refmap.empty : (inductive*int) Refmap.t)
 let init_projs () = projs := Refmap.empty
-let add_projection n kn = projs := Refmap.add (ConstRef kn) n !projs
+let add_projection n kn ip = projs := Refmap.add (ConstRef kn) (ip,n) !projs
 let is_projection r = Refmap.mem r !projs
-let projection_arity r = Refmap.find r !projs
+let projection_arity r = snd (Refmap.find r !projs)
+let projection_info r = Refmap.find r !projs
 
 (*s Table of used axioms *)
 
