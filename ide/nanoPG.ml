@@ -10,6 +10,7 @@ open Ideutils
 open Session
 open Preferences
 open GdkKeysyms
+open Printf
 
 let eprintf x =
   if !Flags.debug then Printf.eprintf x else Printf.ifprintf stderr x
@@ -22,17 +23,23 @@ type gui = {
 let actiong gui name = List.find (fun ag -> ag#name = name) gui.action_groups
 let ct gui = gui.notebook#current_term
 
-type status = [ `Empty | `CnCu of int | `Kill of string * bool ]
+let get_sel b = b#selection_bounds
+let sel_nonempty b = let i, j = get_sel b in not (i#equal j)
+let get_sel_txt b = let i, j = get_sel b in i#get_text ~stop:j
 
-let pr_status = function
-  | `Empty -> "empty"
-  | `CnCu n -> Printf.sprintf "^n^u %d" n
-  | `Kill (s,b) -> Printf.sprintf "kill(%b) %S" b s
+type status = { move : int option; kill : (string * bool) option; sel: bool }
+
+let pr_status { move; kill; sel } =
+  let move = Option.cata (fun i -> string_of_int i) "" move in
+  let kill = Option.cata (fun (s,b) -> sprintf "kill(%b) %S" b s) "" kill in
+  let sel = string_of_bool sel in
+  Printf.sprintf "{ move: %s; kill: %s; sel: %s }" move kill sel
 
 type action =
   | Action of string * string
   | Callback of (gui -> unit)
-  | Edit of (status -> GSourceView2.source_buffer -> GText.iter -> status)
+  | Edit of (status -> GSourceView2.source_buffer -> GText.iter ->
+              (string -> string -> unit) -> status)
   | Motion of (status -> GText.iter -> GText.iter * status)
 
 type 'c entry = {
@@ -53,8 +60,9 @@ let pr_keymod l =
   else if l = mM then "M-"
   else ""
 
-let mkE ?(mods=mC) key keyname doc contents =
-  { mods; key; keyname; doc; contents }
+let mkE ?(mods=mC) key keyname doc ?(alias=[]) contents =
+  List.map (fun (mods, key, keyname) -> { mods; key; keyname; doc; contents })
+    ((mods, key, keyname)::alias)
 
 type keypaths = Step of action entry list * keypaths entry list
 
@@ -76,7 +84,7 @@ let frontier (Step(l1,l2)) =
 let insert kps name enter_syms bindings =
   let rec aux kps enter_syms =
     match enter_syms, kps with
-    | [], Step (el, konts) -> Step (bindings @ el, konts)
+    | [], Step (el, konts) -> Step (List.flatten bindings @ el, konts)
     | (mods, key, keyname)::gs, Step (el, konts) ->
          if List.exists (fun { key = k; mods = m } -> key = k && mods = m) konts
          then
@@ -92,35 +100,31 @@ let insert kps name enter_syms bindings =
            Step(el, kont::konts) in
   aux kps enter_syms
 
+let run_action gui group name =
+  ((actiong gui group)#get_action name)#activate ()
+
 let run gui action status =
   match action with
   | Callback f -> f gui; status
-  | Action(group, name) ->
-      ((actiong gui group)#get_action name)#activate (); status
+  | Action(group, name) -> run_action gui group name; status
   | Edit f ->
       let b = (ct gui).script#source_buffer in
       let i = b#get_iter_at_mark `INSERT in
-      f status b i
+      f status b i (run_action gui)
   | Motion f ->
       let b = (ct gui).script#source_buffer in
-      let i = b#get_iter_at_mark `INSERT in
+      let i =
+        if status.sel then b#get_iter_at_mark `SEL_BOUND
+        else b#get_iter_at_mark `INSERT in
       let where, status = f status i in
-      b#place_cursor ~where;
+      if status.sel then b#move_mark `SEL_BOUND ~where
+      else b#place_cursor ~where;
       status
 
 let emacs = empty 
 
 let emacs = insert emacs "Emacs" [] [
-  mkE _underscore "_" "Undo" (Action("Edit", "Undo"));
-  mkE _g "g" "Esc" (Callback(fun gui -> (ct gui).finder#hide ()));
-  mkE _s "s" "Search" (Callback(fun gui ->
-    if (ct gui).finder#coerce#misc#visible then
-      ((actiong gui "Edit")#get_action "Find Next")#activate ()
-    else ((actiong gui "Edit")#get_action "Find")#activate ()));
-  mkE _s "r" "Search backward" (Callback(fun gui ->
-    if (ct gui).finder#coerce#misc#visible then
-      ((actiong gui "Edit")#get_action "Find Previous")#activate ()
-    else ((actiong gui "Edit")#get_action "Find")#activate ()));
+  (* motion *)
   mkE _e "e" "Move to end of line" (Motion(fun s i ->
     (if not i#ends_line then i#forward_to_line_end else i), s));
   mkE _a "a" "Move to beginning of line" (Motion(fun s i ->
@@ -129,23 +133,44 @@ let emacs = insert emacs "Emacs" [] [
     i#forward_sentence_end, s));
   mkE ~mods:mM _a "a" "Move to beginning of sentence" (Motion(fun s i ->
     i#backward_sentence_start, s));
-  mkE _n "n" "Move to next line" (Motion(fun s i ->
-    let orig_off = match s with `CnCu n -> n | _ -> i#line_offset in
+  mkE _n "n" "Move to next line" ~alias:[[],_Down,"DOWN"] (Motion(fun s i ->
+    let orig_off = Option.default i#line_offset s.move in
     let i = i#forward_line in
     let new_off = min (i#chars_in_line - 1) orig_off in
-    (if new_off > 0 then i#set_line_offset new_off else i), `CnCu orig_off));
-  mkE _p "p" "Move to previous line" (Motion(fun s i ->
-    let orig_off = match s with `CnCu n -> n | _ -> i#line_offset in
+    (if new_off > 0 then i#set_line_offset new_off else i),
+    { s with move = Some orig_off }));
+  mkE _p "p" "Move to previous line" ~alias:[[],_Up,"UP"] (Motion(fun s i ->
+    let orig_off = Option.default i#line_offset s.move in
     let i = i#backward_line in
     let new_off = min (i#chars_in_line - 1) orig_off in
-    (if new_off > 0 then i#set_line_offset new_off else i), `CnCu orig_off));
-  mkE _f "f" "Forward char" (Motion(fun s i -> i#forward_char, s));
-  mkE _b "b" "Backward char" (Motion(fun s i -> i#backward_char, s));
-  mkE ~mods:mM _f "f" "Forward word" (Motion(fun s i -> i#forward_word_end, s));
-  mkE ~mods:mM _b "b" "Backward word" (Motion(fun s i ->
-    i#backward_word_start, s));
-  mkE _k "k" "Kill untill the end of line" (Edit(fun s b i ->
-    let already_killed = match s with `Kill (k,true) -> k | _ -> "" in
+    (if new_off > 0 then i#set_line_offset new_off else i),
+    { s with move = Some orig_off }));
+  mkE _f "f" "Forward char" ~alias:[[],_Right,"RIGHT"]
+    (Motion(fun s i -> i#forward_char, s));
+  mkE _b "b" "Backward char" ~alias:[[],_Left,"LEFT"]
+    (Motion(fun s i -> i#backward_char, s));
+  mkE ~mods:mM _f "f" "Forward word" ~alias:[mC,_Right,"RIGHT"]
+    (Motion(fun s i -> i#forward_word_end, s));
+  mkE ~mods:mM _b "b" "Backward word" ~alias:[mC,_Left,"LEFT"]
+    (Motion(fun s i -> i#backward_word_start, s));
+  mkE _space "SPC" "Set mark" ~alias:[mC,_at,"@"] (Motion(fun s i ->
+    if s.sel = false then i, { s with sel = true }
+    else i, { s with sel = false } ));
+  (* edits *)
+  mkE ~mods:mM _w "w" "Copy selected region" (Edit(fun s b i run ->
+    if sel_nonempty b then
+      let txt = get_sel_txt b in
+      run "Edit" "Copy";
+      { s with kill = Some(txt,false); sel = false }
+    else s));
+  mkE _w "w" "Kill selected region" (Edit(fun s b i run ->
+    if sel_nonempty b then
+      let txt = get_sel_txt b in
+      run "Edit" "Cut";
+      { s with kill = Some(txt,false); sel = false }
+    else s));
+  mkE _k "k" "Kill untill the end of line" (Edit(fun s b i _ ->
+    let already_killed = match s.kill with Some (k,true) -> k | _ -> "" in
     let k =
       if i#ends_line then begin
         b#delete ~start:i ~stop:i#forward_char; "\n"
@@ -153,37 +178,52 @@ let emacs = insert emacs "Emacs" [] [
         let k = b#get_text ~start:i ~stop:i#forward_to_line_end () in
         b#delete ~start:i ~stop:i#forward_to_line_end; k
       end in
-    `Kill (already_killed ^ k,true)));
-  mkE ~mods:mM _d "d" "Kill next word" (Edit(fun s b i ->
-    let already_killed = match s with `Kill (k,true) -> k | _ -> "" in
+    { s with kill = Some (already_killed ^ k,true) }));
+  mkE ~mods:mM _d "d" "Kill next word" (Edit(fun s b i _ ->
+    let already_killed = match s.kill with Some (k,true) -> k | _ -> "" in
     let k =
       let k = b#get_text ~start:i ~stop:i#forward_word_end () in
       b#delete ~start:i ~stop:i#forward_word_end; k in
-    `Kill (already_killed ^ k,true)));
-  mkE ~mods:mM _k "k" "Kill until sentence end" (Edit(fun s b i ->
-    let already_killed = match s with `Kill (k,true) -> k | _ -> "" in
+    { s with kill = Some (already_killed ^ k,true) }));
+  mkE ~mods:mM _k "k" "Kill until sentence end" (Edit(fun s b i _ ->
+    let already_killed = match s.kill with Some (k,true) -> k | _ -> "" in
     let k =
       let k = b#get_text ~start:i ~stop:i#forward_sentence_end () in
       b#delete ~start:i ~stop:i#forward_sentence_end; k in
-    `Kill (already_killed ^ k,true)));
-  mkE ~mods:mM _BackSpace "DELBACK" "Kill word before cursor" (Edit(fun s b i ->
-    let already_killed = match s with `Kill (k,true) -> k | _ -> "" in
+    { s with kill = Some (already_killed ^ k,true) }));
+  mkE ~mods:mM _BackSpace "DELBACK" "Kill word before cursor"
+    (Edit(fun s b i _ ->
+    let already_killed = match s.kill with Some (k,true) -> k | _ -> "" in
     let k =
       let k = b#get_text ~start:i ~stop:i#backward_word_start () in
       b#delete ~start:i ~stop:i#backward_word_start; k in
-    `Kill (already_killed ^ k,true)));
-  mkE _d "d" "Delete next character" (Edit(fun s b i ->
+    { s with kill = Some (already_killed ^ k,true) }));
+  mkE _d "d" "Delete next character" (Edit(fun s b i _ ->
     b#delete ~start:i ~stop:i#forward_char; s));
-  mkE _y "y" "Yank killed text back " (Edit(fun s b i ->
-    let k, s = match s with `Kill (k,_) -> k, `Kill(k,false) | _ -> "", s in
+  mkE _y "y" "Yank killed text back " (Edit(fun s b i _ ->
+    let k, s = match s.kill with
+    | Some (k,_) -> k, { s with kill = Some (k,false) }
+    | _ -> "", s in
     b#insert ~iter:i k;
     s));
+  (* misc *)
+  mkE _underscore "_" "Undo" (Action("Edit", "Undo"));
+  mkE _g "g" "Esc" (Callback(fun gui -> (ct gui).finder#hide ()));
+  mkE _s "s" "Search" (Callback(fun gui ->
+    if (ct gui).finder#coerce#misc#visible
+    then run_action gui "Edit" "Find Next"
+    else run_action gui "Edit" "Find"));
+  mkE _s "r" "Search backward" (Callback(fun gui ->
+    if (ct gui).finder#coerce#misc#visible
+    then run_action gui "Edit" "Find Previous"
+    else run_action gui "Edit" "Find"));
   ]
 
 let emacs = insert emacs "Emacs" [mC,_x,"x"] [
   mkE _s "s" "Save" (Action("File", "Save"));
   mkE _c "c" "Quit" (Action("File", "Quit"));
   mkE _f "f" "Open" (Action("File", "Open"));
+  mkE ~mods:[] _u "u" "Undo" (Action("Edit", "Undo"));
   ]
   
 let pg = insert emacs "Proof General" [mC,_c,"c"] [
@@ -215,23 +255,26 @@ let pg = insert pg "Proof General" [mC,_c,"c"; mC,_a,"a"] [
   mkE _Return "RET" "match template" (Action("Templates","match"));
   ]
 
+let empty = { sel = false; kill = None; move = None }
+
 let find gui (Step(here,konts)) t =
   (* hack: ^c does copy in clipboard *)
-  let sel_nonempty () =
-    let i, j = (ct gui).script#source_buffer#selection_bounds in
-    not (i#equal j) in
+  let sel_nonempty () = sel_nonempty (ct gui).script#source_buffer in
   let k = GdkEvent.Key.keyval t in
-  if k = _c && mod_of t mC && sel_nonempty () then
-    ignore(run gui (Action("Edit","Copy")) `Empty);
-  let cmp { key; mods } = key = k && mod_of t mods in
-  try `Do (List.find cmp here) with Not_found ->
-  try `Cont (List.find cmp konts).contents with Not_found -> `NotFound
+  if k = _x && mod_of t mC && sel_nonempty () then
+    ignore(run gui (Action("Edit","Cut")) empty)
+  else
+    if k = _c && mod_of t mC && sel_nonempty () then
+      ignore(run gui (Action("Edit","Copy")) empty);
+    let cmp { key; mods } = key = k && mod_of t mods in
+    try `Do (List.find cmp here) with Not_found ->
+    try `Cont (List.find cmp konts).contents with Not_found -> `NotFound
 
 let init w nb ags =
   let gui = { notebook = nb; action_groups = ags } in
   let cur = ref pg in
-  let status = ref `Empty in
-  let reset () = cur := pg in
+  let status = ref empty in
+  let reset () = eprintf "reset\n%!"; cur := pg in
   ignore(w#event#connect#key_press ~callback:(fun t ->
     if current.nanoPG then begin
       match find gui !cur t with
