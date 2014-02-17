@@ -409,6 +409,8 @@ let spawn_handle args respawner feedback_processor =
 let clear_handle h =
   if h.alive then begin
     (* invalidate the old handle *)
+    CoqTop.kill h.proc;
+    ignore(CoqTop.wait h.proc);
     h.alive <- false;
   end
 
