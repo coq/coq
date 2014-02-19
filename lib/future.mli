@@ -50,6 +50,16 @@
  * they will become invalid and accessing them raises a private exception.
  *)
 
+(* Each computation has a unique id that is inherited by each offspring
+ * computation (chain, split, map...).  Joined computations lose it.  *)
+module UUID : sig
+  type t
+  val invalid : t
+
+  val compare : t -> t -> int
+  val equal : t -> t -> bool
+end
+
 exception NotReady
 
 type 'a computation
@@ -75,7 +85,8 @@ val from_val : ?fix_exn:fix_exn -> 'a -> 'a computation
 val from_here : ?fix_exn:fix_exn -> 'a -> 'a computation
 
 (* Run remotely, returns the function to assign.  Optionally tekes a function
-   that is called when forced.  The default one is to raise NotReady *)
+   that is called when forced.  The default one is to raise NotReady.
+   The assignement function does not change the uuid. *)
 type 'a assignement = [ `Val of 'a | `Exn of exn | `Comp of 'a computation]
 val create_delegate :
   ?force:(unit -> 'a assignement) ->
@@ -89,6 +100,7 @@ val is_over : 'a computation -> bool
 val is_val : 'a computation -> bool
 val is_exn : 'a computation -> bool
 val peek_val : 'a computation -> 'a option
+val uuid : 'a computation -> UUID.t
 
 (* [chain greedy pure c f] chains computation [c] with [f].
  * The [greedy] and [pure] parameters are tricky:
