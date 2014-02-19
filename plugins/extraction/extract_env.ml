@@ -341,7 +341,7 @@ let rec extract_structure env mp reso ~all = function
 
 and extract_mexpr env mp = function
   | MEwith _ -> assert false (* no 'with' syntax for modules *)
-  | me when lang () != Ocaml ->
+  | me when lang () != Ocaml || Table.is_extrcompute () ->
       (* In Haskell/Scheme, we expand everything.
          For now, we also extract everything, dead code will be removed later
          (see [Modutil.optimize_struct]. *)
@@ -569,11 +569,12 @@ let print_structure_to_file (fn,si,mo) dry struc =
 let reset () =
   Visit.reset (); reset_tables (); reset_renaming_tables Everything
 
-let init modular library =
+let init ?(compute=false) modular library =
   check_inside_section (); check_inside_module ();
   set_keywords (descr ()).keywords;
   set_modular modular;
   set_library library;
+  set_extrcompute compute;
   reset ();
   if modular && lang () == Scheme then error_scheme ()
 
@@ -683,8 +684,22 @@ let extraction_library is_rec m =
   List.iter print struc;
   reset ()
 
+(** For extraction compute, we flatten all the module structure,
+    getting rid of module types or unapplied functors *)
+
+let flatten_structure struc =
+  let rec flatten_elem (lab,elem) = match elem with
+    |SEdecl d -> [d]
+    |SEmodtype _ -> []
+    |SEmodule m -> match m.ml_mod_expr with
+      |MEfunctor _ -> []
+      |MEident _ | MEapply _ -> assert false (* should be expanded *)
+      |MEstruct (_,elems) -> flatten_elems elems
+  and flatten_elems l = List.flatten (List.map flatten_elem l)
+  in flatten_elems (List.flatten (List.map snd struc))
+
 let structure_for_compute c =
-  init false false;
+  init false false ~compute:true;
   let env = Global.env () in
   let ast, mlt = Extraction.extract_constr env c in
   let ast = Mlutil.normalize ast in
@@ -693,8 +708,7 @@ let structure_for_compute c =
   let () = ast_iter_references add_ref add_ref add_ref ast in
   let refs = Refset.elements !refs in
   let struc = optimize_struct (refs,[]) (mono_environment refs []) in
-  let flatstruc = List.map snd (List.flatten (List.map snd struc)) in
-  flatstruc, ast, mlt
+  (flatten_structure struc), ast, mlt
 
 (* For the test-suite :
    extraction to a temporary file + run ocamlc on it *)
