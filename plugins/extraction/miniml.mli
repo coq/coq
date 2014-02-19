@@ -187,8 +187,6 @@ type ml_structure = (ModPath.t * ml_module_structure) list
 
 type ml_signature = (ModPath.t * ml_module_sig) list
 
-type ml_flat_structure = ml_structure_elem list
-
 type unsafe_needs = {
   mldummy : bool;
   tdummy : bool;
