@@ -10,8 +10,9 @@ Require Arith_base.
 
 (** [fin n] is a convenient way to represent \[1 .. n\]
 
-[fin n] can be seen as a n-uplet of unit where [F1] is the first element of
-the n-uplet and [FS] set (n-1)-uplet of all the elements but the first.
+[fin n] can be seen as a n-uplet of unit. [F1] is the first element of
+the n-uplet. If [f] is the k-th element of the (n-1)-uplet, [FS f] is the
+(k+1)-th element of  the n-uplet.
 
    Author: Pierre Boutillier
    Institution: PPS, INRIA 12/2010-01/2012-07/2012
@@ -115,15 +116,11 @@ induction p; simpl.
 - destruct (to_nat p); simpl in *. f_equal. subst p. apply of_nat_ext.
 Qed.
 
-Lemma to_nat_of_nat {p}{n} (h : p < n) : proj1_sig (to_nat (of_nat_lt h)) = p.
+Lemma to_nat_of_nat {p}{n} (h : p < n) : to_nat (of_nat_lt h) = exist _ p h.
 Proof.
  revert n h.
- induction p; intros; destruct n; simpl; trivial.
- - inversion h.
- - inversion h.
- - set (h' := Lt.lt_S_n p n h). clearbody h'.
-   specialize (IHp n h').
-   destruct (to_nat (of_nat_lt h')); simpl in *. now f_equal.
+ induction p; (destruct n ; intros h; [ destruct (Lt.lt_n_O _ h) | cbn]);
+ [ | rewrite (IHp _ (Lt.lt_S_n p n h))];  f_equal; apply Peano_dec.le_unique.
 Qed.
 
 Lemma to_nat_inj {n} (p q : t n) :

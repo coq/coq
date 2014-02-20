@@ -245,7 +245,7 @@ Notation n2f := Fin.of_nat_lt.
 Definition f2n {n} (x:Fin.t n) := proj1_sig (Fin.to_nat x).
 Definition f2n_ok n (x:Fin.t n) : f2n x < n := proj2_sig (Fin.to_nat x).
 Definition n2f_f2n : forall n x, n2f (f2n_ok x) = x := @Fin.of_nat_to_nat_inv.
-Definition f2n_n2f : forall x n h, f2n (n2f h) = x := @Fin.to_nat_of_nat.
+Definition f2n_n2f x n h : f2n (n2f h) = x := f_equal (@proj1_sig _ _) (@Fin.to_nat_of_nat x n h).
 Definition n2f_ext : forall x n h h', n2f h = n2f h' := @Fin.of_nat_ext.
 Definition f2n_inj : forall n x y, f2n x = f2n y -> x = y := @Fin.to_nat_inj.
 

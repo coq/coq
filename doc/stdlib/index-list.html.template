@@ -70,6 +70,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/FunctionalExtensionality.v
     theories/Logic/ExtensionalityFacts.v
     theories/Logic/Fan.v
+    theories/Logic/FinFun.v
   </dd>
     
   <dt> <b>Structures</b>:
@@ -410,6 +411,7 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
   <dd> 
     theories/Lists/List.v
+    theories/Lists/ListDec.v
     theories/Lists/ListSet.v
     theories/Lists/SetoidList.v
     theories/Lists/SetoidPermutation.v
