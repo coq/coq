@@ -152,16 +152,19 @@ let make_subst = function
   subst
 
 let substnl laml n c = substn_many (make_subst laml) n c
-let substl laml c = substnl laml 0 c
-let subst1 lam c = substl [lam] c
+let substl laml c = substn_many (make_subst laml) 0 c
+let subst1 lam c = substn_many [|make_substituend lam|] 0 c
 
-let substnl_decl laml k r = map_rel_declaration (substnl laml k) r
-let substl_decl laml r = substnl_decl laml 0 r
-let subst1_decl lam r = substl_decl [lam] r
+let substnl_decl laml k r = map_rel_declaration (fun c -> substnl laml k c) r
+let substl_decl laml r = map_rel_declaration (fun c -> substnl laml 0 c) r
+let subst1_decl lam r = map_rel_declaration (fun c -> subst1 lam c) r
 
-let substnl_named_decl laml k d = map_named_declaration (substnl laml k) d
-let substl_named_decl laml d = substnl_named_decl laml 0 d
-let subst1_named_decl lam d = substl_named_decl [lam] d
+let substnl_named_decl laml k d =
+  map_named_declaration (fun c -> substnl laml k c) d
+let substl_named_decl laml d =
+  map_named_declaration (fun c -> substnl laml 0 c) d
+let subst1_named_decl lam d =
+  map_named_declaration (fun c -> subst1 lam c) d
 
 (* (thin_val sigma) removes identity substitutions from sigma *)
 
