@@ -27,6 +27,9 @@ let refresh_arity ar =
 let check_constant_declaration env kn cb =
   Flags.if_verbose ppnl (str "  checking cst: " ++ prcon kn);
 (*  let env = add_constraints cb.const_constraints env in*)
+  (* Constraints of an opauqe proof are not in the module *)
+  let env =
+    add_constraints (Declarations.force_lazy_constr_univs cb.const_body) env in
   (match cb.const_type with
       NonPolymorphicType ty ->
         let ty, cu = refresh_arity ty in

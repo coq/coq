@@ -191,14 +191,14 @@ let v_cst_type =
 
 let v_cst_def =
   v_sum "constant_def" 0
-    [|[|Opt Int|]; [|v_cstr_subst|]; [|v_computation v_lazy_constr|]|]
+    [|[|Opt Int|]; [|v_cstr_subst|]; [|v_lazy_constr|]|]
 
 let v_cb = v_tuple "constant_body"
   [|v_section_ctxt;
     v_cst_def;
     v_cst_type;
     Any;
-    v_computation v_cstrs;
+    v_cstrs;
     v_bool|]
 
 let v_recarg = v_sum "recarg" 1 (* Norec *)
@@ -300,7 +300,8 @@ let v_libraryobjs = Tuple ("library_objects",[|v_libobjs;v_libobjs|])
 let v_lib =
   Tuple ("library",[|v_dp;v_compiled_lib;v_libraryobjs;v_deps;Array v_dp|])
 
-let v_opaques = Array v_constr
+let v_opaques = Array (v_computation v_constr)
+let v_univopaques = Opt (Array (v_computation v_cstrs))
 
 (** Registering dynamic values *)
 

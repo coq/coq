@@ -2,9 +2,11 @@ open Names
 open Cic
 
 val force_constr : constr_substituted -> constr
+val force_lazy_constr_univs : Cic.constant_def -> Univ.constraints
 val from_val : constr -> constr_substituted
 
 val indirect_opaque_access : (DirPath.t -> int -> constr) ref
+val indirect_opaque_univ_access : (DirPath.t -> int -> Univ.constraints) ref
 
 (** Constant_body *)
 

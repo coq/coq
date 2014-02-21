@@ -416,24 +416,27 @@ let subst_lazy_constr sub = function
 
 let indirect_opaque_access =
   ref ((fun dp i -> assert false) : DirPath.t -> int -> constr)
+let indirect_opaque_univ_access =
+  ref ((fun dp i -> assert false) : DirPath.t -> int -> Univ.constraints)
 
 let force_lazy_constr = function
   | Indirect (l,dp,i) ->
     let c = !indirect_opaque_access dp i in
     force_constr (List.fold_right subst_constr_subst l (from_val c))
 
+let force_lazy_constr_univs = function
+  | OpaqueDef (Indirect (l,dp,i)) -> !indirect_opaque_univ_access dp i
+  | _ -> Univ.empty_constraint
+
 let subst_constant_def sub = function
   | Undef inl -> Undef inl
   | Def c -> Def (subst_constr_subst sub c)
-  | OpaqueDef lc ->
-      OpaqueDef (Future.from_val (subst_lazy_constr sub (Future.join lc)))
-
-type constant_constraints = Univ.constraints Future.computation
+  | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
 
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
   | Def c -> Some (force_constr c)
-  | OpaqueDef c -> Some (force_lazy_constr (Future.join c))
+  | OpaqueDef c -> Some (force_lazy_constr c)
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false

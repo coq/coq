@@ -152,31 +152,35 @@ let visit_vo f =
     "At prompt, <n> enters the <n>-th child, u goes up 1 level, x exits\n\n%!";
   let segments = [|
     {name="library"; pos=0; typ=Values.v_lib};
+    {name="univ constraints of opaque proofs"; pos=0;typ=Values.v_univopaques}; 
+    {name="discharging info"; pos=0; typ=Opt Any};
     {name="STM tasks"; pos=0; typ=Opt Any};
-    {name="opaque proof terms"; pos=0; typ=Values.v_opaques}; 
+    {name="opaque proofs"; pos=0; typ=Values.v_opaques}; 
   |] in
-  let ch = open_in_bin f in
-  let magic = input_binary_int ch in
-  Printf.printf "File format: %d\n%!" magic;
-  for i=0 to Array.length segments - 1 do
-    let pos = input_binary_int ch in
-    segments.(i).pos <- pos_in ch;
-    seek_in ch pos;
-    ignore(Digest.input ch);
-  done;
-  Printf.printf "The file has %d segments, choose the one to visit:\n"
-    (Array.length segments);
-  Array.iteri (fun i { name; pos } ->
-    Printf.printf "  %d: %s, starting at byte %d\n" i name pos)
-    segments;
-  Printf.printf "# %!";
-  let l = read_line () in
-  let seg = int_of_string l in
-  seek_in ch segments.(seg).pos;
-  let o = (input_value ch : Obj.t) in
-  let () = CObj.register_shared_size o in
-  let () = init () in
-  visit segments.(seg).typ o []
+  while true do
+    let ch = open_in_bin f in
+    let magic = input_binary_int ch in
+    Printf.printf "File format: %d\n%!" magic;
+    for i=0 to Array.length segments - 1 do
+      let pos = input_binary_int ch in
+      segments.(i).pos <- pos_in ch;
+      seek_in ch pos;
+      ignore(Digest.input ch);
+    done;
+    Printf.printf "The file has %d segments, choose the one to visit:\n"
+      (Array.length segments);
+    Array.iteri (fun i { name; pos } ->
+      Printf.printf "  %d: %s, starting at byte %d\n" i name pos)
+      segments;
+    Printf.printf "# %!";
+    let l = read_line () in
+    let seg = int_of_string l in
+    seek_in ch segments.(seg).pos;
+    let o = (input_value ch : Obj.t) in
+    let () = CObj.register_shared_size o in
+    let () = init () in
+    visit segments.(seg).typ o []
+  done
 
 let main =
   if not !Sys.interactive then

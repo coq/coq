@@ -81,6 +81,7 @@ let register_loaded_library m =
 
 (* Map from library names to table of opaque terms *)
 let opaque_tables = ref LibraryMap.empty
+let opaque_univ_tables = ref LibraryMap.empty
 
 let access_opaque_table dp i =
   let t =
@@ -88,9 +89,18 @@ let access_opaque_table dp i =
     with Not_found -> assert false
   in
   assert (i < Array.length t);
-  t.(i)
+  Future.force t.(i)
+
+let access_opaque_univ_table dp i =
+  try
+    let t = LibraryMap.find dp !opaque_univ_tables in
+    assert (i < Array.length t);
+    Future.force t.(i)
+  with Not_found -> Univ.empty_constraint
+
 
 let _ = Declarations.indirect_opaque_access := access_opaque_table
+let _ = Declarations.indirect_opaque_univ_access := access_opaque_univ_table
 
 let check_one_lib admit (dir,m) =
   let file = m.library_filename in
@@ -298,10 +308,12 @@ let depgraph = ref LibraryMap.empty
 
 let intern_from_file (dir, f) =
   Flags.if_verbose pp (str"[intern "++str f++str" ..."); pp_flush ();
-  let (md,table,digest) =
+  let (md,table,opaque_csts,digest) =
     try
       let ch = with_magic_number_check raw_intern_library f in
       let (md:Cic.library_disk), _, digest = System.marshal_in_segment f ch in
+      let (opaque_csts:'a option), _, _ = System.marshal_in_segment f ch in
+      let (discharging:'a option), _, _ = System.marshal_in_segment f ch in
       let (tasks:'a option), _, _ = System.marshal_in_segment f ch in
       let (table:Cic.opaque_table), pos, checksum =
         System.marshal_in_segment f ch in
@@ -314,17 +326,25 @@ let intern_from_file (dir, f) =
       if dir <> md.md_name then
         errorlabstrm "intern_from_file"
           (name_clash_message dir md.md_name f);
-      if tasks <> None then
+      if tasks <> None || discharging <> None then
         errorlabstrm "intern_from_file"
           (str "The file "++str f++str " contains unfinished tasks");
+      if opaque_csts <> None then begin
+        pp (str " (was a vi file) ");
+        Validate.validate !Flags.debug Values.v_univopaques opaque_csts
+      end;
       (* Verification of the unmarshalled values *)
       Validate.validate !Flags.debug Values.v_lib md;
       Validate.validate !Flags.debug Values.v_opaques table;
       Flags.if_verbose ppnl (str" done]"); pp_flush ();
-      md,table,digest
+      md,table,opaque_csts,digest
     with e -> Flags.if_verbose ppnl (str" failed!]"); raise e in
   depgraph := LibraryMap.add md.md_name md.md_deps !depgraph;
   opaque_tables := LibraryMap.add md.md_name table !opaque_tables;
+  Option.iter (fun opaque_csts ->
+    opaque_univ_tables :=
+      LibraryMap.add md.md_name opaque_csts !opaque_univ_tables)
+    opaque_csts;
   mk_library md f table digest
 
 let get_deps (dir, f) =

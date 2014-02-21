@@ -182,14 +182,14 @@ type inline = int option
 type constant_def =
   | Undef of inline
   | Def of constr_substituted
-  | OpaqueDef of lazy_constr Future.computation
+  | OpaqueDef of lazy_constr
 
 type constant_body = {
     const_hyps : section_context; (** New: younger hyp at top *)
     const_body : constant_def;
     const_type : constant_type;
     const_body_code : to_patch_substituted;
-    const_constraints : Univ.constraints Future.computation;
+    const_constraints : Univ.constraints;
     const_native_name : native_name ref;
     const_inline_code : bool }
 
@@ -387,13 +387,20 @@ type library_disk = {
   md_deps : library_deps;
   md_imports : compilation_unit_name array }
 
-type opaque_table = constr array
+type opaque_table = constr Future.computation array
+type univ_table = Univ.constraints Future.computation array option
 
 (** A .vo file is currently made of :
 
     1) a magic number (4 bytes, cf output_binary_int)
     2) a marshalled [library_disk] structure
     3) a [Digest.t] string (16 bytes)
-    4) a marshalled [opaque_table]
+    4) a marshalled [univ_table] (* Some if vo was obtained from vi *)
     5) a [Digest.t] string (16 bytes)
+    6) a marshalled [None] discharge_table (* Some in vi files *)
+    7) a [Digest.t] string (16 bytes)
+    8) a marshalled [None] todo_table (* Some in vi files *)
+    9) a [Digest.t] string (16 bytes)
+   10) a marshalled [opaque_table]
+   11) a [Digest.t] string (16 bytes)
 *)
