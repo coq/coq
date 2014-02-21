@@ -60,7 +60,7 @@ let val_dyn ctx o =
   let fail () = fail ctx o "expected a Dyn.t" in
   if not (Obj.is_block o) then fail ()
   else if not (Obj.size o = 2) then fail ()
-  else if not (Obj.tag (Obj.field o 0) = Obj.string_tag) then fail ()
+  else if not (Obj.tag (Obj.field o 0) = Obj.int_tag) then fail ()
   else ()
 
 open Values
