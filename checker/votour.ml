@@ -18,7 +18,7 @@ let to_dyn obj = (Obj.magic obj : dyn)
 
 let rec get_name ?(extra=false) = function
   |Any -> "?"
-  |Fail _ -> assert false
+  |Fail s -> "Invalid node: "^s
   |Tuple (name,_) -> name
   |Sum (name,_,_) -> name
   |Array v -> "array"^(if extra then "/"^get_name ~extra v else "")
@@ -89,7 +89,7 @@ let rec get_children v o pos = match v with
     let t = to_dyn o in
     let tpe = find_dyn t.dyn_tag in
     [|(String, Obj.repr t.dyn_tag, 0 :: pos); (tpe, t.dyn_obj, 1 :: pos)|]
-  |Fail _ -> assert false
+  |Fail s -> failwith "forbidden"
 
 type info = {
   nam : string;
@@ -131,7 +131,10 @@ let rec visit v o pos =
       let v',o',pos' = children.(int_of_string l) in
       push (get_name v) v o pos;
       visit v' o' pos'
-  with Failure _ | Invalid_argument _ -> visit v o pos
+  with
+  | Failure "empty stack" -> ()
+  | Failure "forbidden" -> let info = pop () in visit info.typ info.obj info.pos
+  | Failure _ | Invalid_argument _ -> visit v o pos
 
 (** Loading the vo *)
 

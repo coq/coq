@@ -70,7 +70,7 @@ let v_computation f =
   Annot ("Future.computation",
   v_ref
     (v_sum "Future.comput" 0
-      [| [| Fail "Ongoing" |]; [| f |] |]))
+      [| [| Fail "Future.ongoing" |]; [| f |] |]))
 
 (** kernel/names *)
 
