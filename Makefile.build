@@ -315,20 +315,20 @@ coqide-opt:  $(COQIDEBYTE) $(COQIDE)
 coqide-files: $(IDEFILES)
 
 ifeq ($(HASCOQIDE),opt)
-$(COQIDE): $(LINKIDEOPT) | $(COQTOPEXE)
+$(COQIDE): $(LINKIDEOPT)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa lablgtk.cmxa \
-		lablgtksourceview2.cmxa str.cmxa $(IDEFLAGS:.cma=.cmxa) $(LINKIDEOPT)
+		lablgtksourceview2.cmxa str.cmxa $(IDEFLAGS:.cma=.cmxa) $^
 	$(STRIP) $@
 else
 $(COQIDE): $(COQIDEBYTE)
 	cp $< $@
 endif
 
-$(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
+$(COQIDEBYTE): $(LINKIDE)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma lablgtk.cma \
-	        lablgtksourceview2.cma str.cma $(IDEFLAGS) $(LINKIDE)
+	        lablgtksourceview2.cma str.cma $(IDEFLAGS) $^
 
 # install targets
 
