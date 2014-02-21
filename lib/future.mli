@@ -115,7 +115,7 @@ val uuid : 'a computation -> UUID.t
  *   [force c; chain ~pure:false c g] is correct.
  * [greedy]:
  *   The [greedy] parameter forces immediately the new computation if
- *   the old one is_over (Exn or Val). Defaults to false. *)
+ *   the old one is_over (Exn or Val). Defaults to true. *)
 val chain : ?greedy:bool -> pure:bool ->
   'a computation -> ('a -> 'b) -> 'b computation
 
@@ -127,6 +127,9 @@ val compute : 'a computation -> 'a value
  * Also the fix_exn function is lost, hence error reporting can be incomplete
  * in a computation obtained by chaining on a joined future. *)
 val join : 'a computation -> 'a
+
+(* Call this before stocking the future.  If it is_val then it is joined *)
+val sink : 'a computation -> unit
 
 (*** Utility functions ************************************************* ***)
 val split2 : ?greedy:bool ->
