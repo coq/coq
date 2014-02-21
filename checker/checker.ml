@@ -261,9 +261,24 @@ let rec explain_exn = function
 	  mt() in
       hov 0 (str "Error: Universe inconsistency" ++ msg ++ str ".")
   | TypeError(ctx,te) ->
-(*      hov 0 (str "Error:" ++ spc () ++ Himsg.explain_type_error ctx *)
-      (*      te)*)
-      hov 0 (str "Type error")
+      hov 0 (str "Type error: " ++
+      (match te with
+      | UnboundRel i -> str"UnboundRel " ++ int i
+      | UnboundVar v -> str"UnboundVar" ++ str(Names.Id.to_string v)
+      | NotAType _ -> str"NotAType"
+      | BadAssumption _ -> str"BadAssumption"
+      | ReferenceVariables _ -> str"ReferenceVariables"
+      | ElimArity _ -> str"ElimArity"
+      | CaseNotInductive _ -> str"CaseNotInductive"
+      | WrongCaseInfo _ -> str"WrongCaseInfo"
+      | NumberBranches _ -> str"NumberBranches"
+      | IllFormedBranch _ -> str"IllFormedBranch"
+      | Generalization _ -> str"Generalization"
+      | ActualType _ -> str"ActualType"
+      | CantApplyBadType _ -> str"CantApplyBadType"
+      | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"
+      | IllFormedRecBody _ -> str"IllFormedRecBody"
+      | IllTypedRecBody _ -> str"IllTypedRecBody"))
 
   | Indtypes.InductiveError e ->
       hov 0 (str "Error related to inductive types")
