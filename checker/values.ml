@@ -199,7 +199,6 @@ let v_cb = v_tuple "constant_body"
     v_cst_type;
     Any;
     v_computation v_cstrs;
-    Any;
     v_bool|]
 
 let v_recarg = v_sum "recarg" 1 (* Norec *)
@@ -242,8 +241,7 @@ let v_ind_pack = v_tuple "mutual_inductive_body"
     Int;
     Int;
     v_rctxt;
-    v_cstrs;
-    Any|]
+    v_cstrs|]
 
 let v_with =
   Sum ("with_declaration_body",0,
