@@ -14,22 +14,18 @@ open Univ
 
 (** {6 Cooking the constants. } *)
 
-type work_list = Id.t array Cmap.t * Id.t array Mindmap.t
-
-type recipe = {
-  d_from : constant_body;
-  d_abstract : Context.named_context;
-  d_modlist : work_list }
+type recipe = { from : constant_body; info : Lazyconstr.cooking_info }
 
 type inline = bool
 
 type result =
-  constant_def * constant_type * constant_constraints * inline
+  constant_def * constant_type * Univ.constraints * inline
     * Context.section_context option
 
 val cook_constant : env -> recipe -> result
+val cook_constr : Lazyconstr.cooking_info -> Term.constr -> Term.constr
 
 (** {6 Utility functions used in module [Discharge]. } *)
 
-val expmod_constr : work_list -> constr -> constr
+val expmod_constr : Lazyconstr.work_list -> constr -> constr
 

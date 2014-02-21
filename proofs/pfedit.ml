@@ -136,7 +136,7 @@ let build_constant_by_tactic id sign ?(goal_kind = Global,Proof Theorem) typ tac
 let constr_of_def = function
   | Declarations.Undef _ -> assert false
   | Declarations.Def cs -> Lazyconstr.force cs
-  | Declarations.OpaqueDef lc -> Lazyconstr.force_opaque (Future.force lc)
+  | Declarations.OpaqueDef lc -> Lazyconstr.force_opaque lc
 
 let build_by_tactic env typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in

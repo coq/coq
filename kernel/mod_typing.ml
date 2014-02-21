@@ -77,11 +77,11 @@ let rec check_with_def env struc (idl,c) mp equiv =
 	  let j,cst1 = Typeops.infer env' c in
 	  let typ = Typeops.type_of_constant_type env' cb.const_type in
 	  let cst2 = Reduction.conv_leq env' j.uj_type typ in
-	  let cst = Future.force cb.const_constraints +++ cst1 +++ cst2 in
-	  j.uj_val,cst
+	  let cst = cb.const_constraints +++ cst1 +++ cst2 in
+	  j.uj_val, cst
 	| Def cs ->
 	  let cst1 = Reduction.conv env' c (Lazyconstr.force cs) in
-	  let cst = Future.force cb.const_constraints +++ cst1 in
+	  let cst = cb.const_constraints +++ cst1 in
           c, cst
       in
       let def = Def (Lazyconstr.from_val c') in
@@ -89,7 +89,7 @@ let rec check_with_def env struc (idl,c) mp equiv =
 	{ cb with
 	  const_body = def;
 	  const_body_code = Cemitcodes.from_val (compile_constant_body env' def);
-	  const_constraints = Future.from_val cst }
+	  const_constraints = cst }
       in
       before@(lab,SFBconst(cb'))::after, c', cst
     else

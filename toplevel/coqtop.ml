@@ -355,6 +355,7 @@ let parse_args arglist =
     |"-with-geoproof" -> Coq_config.with_geoproof := get_bool opt (next ())
     |"-main-channel" -> Spawned.main_channel := get_host_port opt (next())
     |"-control-channel" -> Spawned.control_channel := get_host_port opt (next())
+    |"-vi2vo" -> add_compile false (next ()); Flags.compilation_mode := Vi2Vo
 
     (* Options with zero arg *)
     |"-batch" -> set_batch_mode ()

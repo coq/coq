@@ -38,16 +38,16 @@ type inline = int option
 type constant_def =
   | Undef of inline
   | Def of Lazyconstr.constr_substituted
-  | OpaqueDef of Lazyconstr.lazy_constr Future.computation
+  | OpaqueDef of Lazyconstr.lazy_constr
 
-type constant_constraints = Univ.constraints Future.computation
-
+(* some contraints are in constant_constraints, some other may be in
+ * the OpaueDef *)
 type constant_body = {
     const_hyps : Context.section_context; (** New: younger hyp at top *)
     const_body : constant_def;
     const_type : constant_type;
     const_body_code : Cemitcodes.to_patch_substituted;
-    const_constraints : constant_constraints;
+    const_constraints : Univ.constraints;
     const_inline_code : bool }
 
 type side_effect =

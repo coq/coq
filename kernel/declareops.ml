@@ -19,7 +19,13 @@ open Util
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
   | Def c -> Some (Lazyconstr.force c)
-  | OpaqueDef lc -> Some (Lazyconstr.force_opaque (Future.force lc))
+  | OpaqueDef lc -> Some (Lazyconstr.force_opaque lc)
+
+let constraints_of_constant cb = Univ.union_constraints cb.const_constraints
+ (match cb.const_body with
+  | Undef _ -> Univ.empty_constraint
+  | Def c -> Univ.empty_constraint
+  | OpaqueDef lc -> snd (Lazyconstr.force_opaque_w_constraints lc))
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false
@@ -52,8 +58,7 @@ let subst_const_type sub arity = match arity with
 let subst_const_def sub def = match def with
   | Undef _ -> def
   | Def c -> Def (subst_constr_subst sub c)
-  | OpaqueDef lc ->
-      OpaqueDef (Future.chain ~pure:true lc (subst_lazy_constr sub))
+  | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
 
 let subst_const_body sub cb =
   assert (List.is_empty cb.const_hyps); (* we're outside sections *)
@@ -101,20 +106,13 @@ let hcons_const_def = function
   | Def l_constr ->
     let constr = force l_constr in
     Def (from_val (Term.hcons_constr constr))
-  | OpaqueDef lc ->
-    OpaqueDef
-      (Future.chain ~greedy:true ~pure:true lc
-         (fun lc -> opaque_from_val (Term.hcons_constr (force_opaque lc))))
+  | OpaqueDef _ as x -> x (* hashconsed when turned indirect *)
 
 let hcons_const_body cb =
   { cb with
     const_body = hcons_const_def cb.const_body;
     const_type = hcons_const_type cb.const_type;
-    const_constraints =
-      if Future.is_val cb.const_constraints then
-        Future.from_val
-          (Univ.hcons_constraints (Future.force cb.const_constraints))
-      else cb.const_constraints }
+    const_constraints = Univ.hcons_constraints cb.const_constraints; }
 
 (** {6 Inductive types } *)
 
@@ -239,9 +237,8 @@ let hcons_mind mib =
 (** {6 Stm machinery } *)
 
 let join_constant_body cb =
-  ignore(Future.join cb.const_constraints);
   match cb.const_body with
-  | OpaqueDef d -> ignore(Future.join d)
+  | OpaqueDef d -> Lazyconstr.join_lazy_constr d
   | _ -> ()
 
 let string_of_side_effect = function

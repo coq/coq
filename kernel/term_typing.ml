@@ -28,15 +28,21 @@ let prerr_endline =
   if debug then prerr_endline else fun _ -> ()
 
 let constrain_type env j cst1 = function
-  | None ->
+  | `None ->
       make_polymorphic_if_constant_for_ind env j, cst1
-  | Some t ->
+  | `Some t ->
       let (tj,cst2) = infer_type env t in
       let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
       assert (eq_constr t tj.utj_val);
       let cstrs = union_constraints (union_constraints cst1 cst2) cst3 in
       NonPolymorphicType t, cstrs
+  | `SomeWJ (t, tj, cst2) ->
+      let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
+      assert (eq_constr t tj.utj_val);
+      let cstrs = union_constraints (union_constraints cst1 cst2) cst3 in
+      NonPolymorphicType t, cstrs
 
+let map_option_typ = function None -> `None | Some x -> `Some x
 
 let translate_local_assum env t =
   let (j,cst) = infer env t in
@@ -68,7 +74,7 @@ let handle_side_effects env body side_eff =
           let t = sub c 1 (Vars.lift 1 t) in
           mkLetIn (cname c, b, b_ty, t)
       | OpaqueDef b -> 
-          let b = Lazyconstr.force_opaque (Future.join b) in
+          let b = Lazyconstr.force_opaque b in
           let b_ty = Typeops.type_of_constant_type env cb.const_type in
           let t = sub c 1 (Vars.lift 1 t) in
           mkApp (mkLambda (cname c, b_ty, t), [|b|]) in
@@ -84,28 +90,27 @@ let hcons_j j =
 let feedback_completion_typecheck =
   Option.iter (fun state_id -> Pp.feedback ~state_id Interface.Complete)
   
-(* what is used for debugging only *)
-let infer_declaration ?(what="UNKNOWN") env dcl =
+let infer_declaration env dcl =
   match dcl with
   | ParameterEntry (ctx,t,nl) ->
       let j, cst = infer env t in
       let t = hcons_constr (Typeops.assumption_of_judgment env j) in
-      Undef nl, NonPolymorphicType t, Future.from_val cst, false, ctx
+      Undef nl, NonPolymorphicType t, cst, false, ctx
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true } as c) ->
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
-      let body_cst =
+      let tyj, tycst = infer_type env typ in
+      let proofterm =
         Future.chain ~greedy:true ~pure:true body (fun (body, side_eff) ->
           let body = handle_side_effects env body side_eff in
           let j, cst = infer env body in
           let j = hcons_j j in
-          let _typ, cst = constrain_type env j cst (Some typ) in
+          let _typ, cst = constrain_type env j cst (`SomeWJ (typ,tyj,tycst)) in
           feedback_completion_typecheck feedback_id;
-          Lazyconstr.opaque_from_val j.uj_val, cst) in
-      let body, cst = Future.split2 ~greedy:true body_cst in
-      let def = OpaqueDef body in
+          j.uj_val, cst) in
+      let def = OpaqueDef (Lazyconstr.opaque_from_val proofterm) in
       let typ = NonPolymorphicType typ in
-      def, typ, cst, c.const_entry_inline_code, c.const_entry_secctx
+      def, typ, tycst, c.const_entry_inline_code, c.const_entry_secctx
   | DefinitionEntry c ->
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
@@ -113,10 +118,9 @@ let infer_declaration ?(what="UNKNOWN") env dcl =
       let body = handle_side_effects env body side_eff in
       let j, cst = infer env body in
       let j = hcons_j j in
-      let typ, cst = constrain_type env j cst typ in
+      let typ, cst = constrain_type env j cst (map_option_typ typ) in
       feedback_completion_typecheck feedback_id;
       let def = Def (Lazyconstr.from_val j.uj_val) in
-      let cst = Future.from_val cst in
       def, typ, cst, c.const_entry_inline_code, c.const_entry_secctx
 
 let global_vars_set_constant_type env = function
@@ -126,7 +130,6 @@ let global_vars_set_constant_type env = function
         (fold_rel_declaration
 	  (fun t c -> Id.Set.union (global_vars_set env t) c))
       ctx ~init:Id.Set.empty
-
 
 let record_aux env s1 s2 =
   let v =
@@ -157,16 +160,13 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
         let ids_def = match def with
         | Undef _ -> Idset.empty
         | Def cs -> global_vars_set env (Lazyconstr.force cs)
-        | OpaqueDef lc -> 
-            (* we force so that cst are added to the env immediately after *)
-            ignore(Future.join cst);
-            let vars =
-              global_vars_set env (Lazyconstr.force_opaque (Future.join lc)) in
+        | OpaqueDef lc ->
+            let vars = global_vars_set env (Lazyconstr.force_opaque lc) in
             !suggest_proof_using kn env vars ids_typ context_ids;
             if !Flags.compilation_mode = Flags.BuildVo then
               record_aux env ids_typ vars;
             vars
-            in
+        in
         keep_hyps env (Idset.union ids_typ ids_def), def
     | None ->
         if !Flags.compilation_mode = Flags.BuildVo then
@@ -184,12 +184,11 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
             check declared inferred;
             x
         | OpaqueDef lc -> (* In this case we can postpone the check *)
-            OpaqueDef (Future.chain ~greedy:true ~pure:true lc (fun lc ->
+            OpaqueDef (Lazyconstr.iter_direct_lazy_constr (fun c ->
               let ids_typ = global_vars_set_constant_type env typ in
-              let ids_def =
-                global_vars_set env (Lazyconstr.force_opaque lc) in
+              let ids_def = global_vars_set env c in
               let inferred = keep_hyps env (Idset.union ids_typ ids_def) in
-              check declared inferred; lc)) in
+              check declared inferred) lc) in
   { const_hyps = hyps;
     const_body = def;
     const_type = typ;
@@ -200,8 +199,7 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
 (*s Global and local constant declaration. *)
 
 let translate_constant env kn ce =
-  build_constant_declaration kn env 
-    (infer_declaration ~what:(string_of_con kn) env ce)
+  build_constant_declaration kn env (infer_declaration env ce)
 
 let translate_recipe env kn r =
   let def,typ,cst,inline_code,hyps = Cooking.cook_constant env r in
@@ -209,7 +207,7 @@ let translate_recipe env kn r =
 
 let translate_local_def env id centry =
   let def,typ,cst,inline_code,ctx =
-    infer_declaration ~what:(string_of_id id) env (DefinitionEntry centry) in
+    infer_declaration env (DefinitionEntry centry) in
   let typ = type_of_constant_type env typ in
   def, typ, cst
 

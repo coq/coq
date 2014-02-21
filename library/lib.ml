@@ -385,7 +385,7 @@ type abstr_list = variable_context Names.Cmap.t * variable_context Names.Mindmap
 
 let sectab =
   Summary.ref ([] : ((Names.Id.t * Decl_kinds.binding_kind) list *
-		        Cooking.work_list * abstr_list) list)
+		        Lazyconstr.work_list * abstr_list) list)
     ~name:"section-context"
 
 let add_section () =
@@ -454,6 +454,13 @@ let section_instance = function
 
 let is_in_section ref =
   try ignore (section_instance ref); true with Not_found -> false
+
+let full_replacement_context () = List.map pi2 !sectab
+let full_section_segment_of_constant con =
+  List.map (fun (vars,_,(x,_)) -> fun hyps ->
+    named_of_variable_context
+      (try Names.Cmap.find con x
+      with Not_found -> extract_hyps (vars, hyps))) !sectab
 
 (*************)
 (* Sections. *)

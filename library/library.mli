@@ -29,6 +29,13 @@ val require_library_from_file :
   Id.t option -> CUnix.physical_path -> bool option -> unit
 
 (** {6 ... } *)
+
+(** Segments of a library *)
+type seg_lib
+type seg_univ = Univ.constraints Future.computation array
+type seg_discharge = Lazyconstr.cooking_info list array
+type seg_proofs = Term.constr Future.computation array
+
 (** Open a module (or a library); if the boolean is true then it's also
    an export otherwise just a simple import *)
 val import_module : bool -> qualid located -> unit
@@ -37,8 +44,12 @@ val import_module : bool -> qualid located -> unit
 val start_library : string -> DirPath.t * string
 
 (** {6 End the compilation of a library and save it to a ".vo" file } *)
-val save_library_to : ?todo:'a -> DirPath.t -> string -> unit
-val load_library_todo : string -> 'a * string
+val save_library_to : ?todo:((Future.UUID.t * int) list -> 'tasks) ->
+  DirPath.t -> string -> unit
+
+val load_library_todo :
+  string -> string * seg_lib * seg_univ * seg_discharge * 'tasks * seg_proofs
+val save_library_raw : string -> seg_lib -> seg_univ -> seg_proofs -> unit
 
 (** {6 Interrogate the status of libraries } *)
 

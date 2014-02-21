@@ -45,7 +45,7 @@ let boot = ref false
 
 let batch_mode = ref false
 
-type compilation_mode = BuildVo | BuildVi
+type compilation_mode = BuildVo | BuildVi | Vi2Vo
 let compilation_mode = ref BuildVo
 
 type async_proofs = APoff | APonLazy | APonParallel of int

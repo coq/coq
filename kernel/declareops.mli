@@ -24,6 +24,7 @@ val constant_has_body : constant_body -> bool
     Only use this function if you know what you're doing. *)
 
 val body_of_constant : constant_body -> Term.constr option
+val constraints_of_constant : constant_body -> Univ.constraints
 
 val is_opaque : constant_body -> bool
 

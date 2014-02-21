@@ -44,10 +44,13 @@ val stop_worker : int -> unit
 val join : unit -> unit
 (* To save to disk an incomplete document *)
 type tasks
-val dump : unit -> tasks
+val dump : (Future.UUID.t * int) list -> tasks
 
 val check_task : string -> tasks -> int -> bool
 val info_tasks : tasks -> (string * float * int) list
+val finish_tasks : string ->
+  Library.seg_univ -> Library.seg_discharge -> Library.seg_proofs ->
+  tasks -> unit
 
 (* Id of the tip of the current branch *)
 val get_current_state : unit -> Stateid.t

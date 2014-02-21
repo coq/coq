@@ -635,9 +635,13 @@ module Slaves : sig
     (?redefine_qed:bool -> cache:Summary.marshallable -> Stateid.t -> unit) -> unit
 
   type tasks
-  val dump : unit -> tasks
+  val dump : (Future.UUID.t * int) list -> tasks
   val check_task : string -> tasks -> int -> bool
   val info_tasks : tasks -> (string * float * int) list
+  val finish_task :
+    string ->
+    Library.seg_univ -> Library.seg_discharge -> Library.seg_proofs ->
+    tasks -> int -> unit
 
   val cancel_worker : int -> unit
 
@@ -762,11 +766,11 @@ end = struct (* {{{ *)
   let reach_known_state = ref (fun ?redefine_qed ~cache id -> ())
   let set_reach_known_state f = reach_known_state := f
 
-  type request =
+  type 'a request =
     ReqBuildProof of
-      (Stateid.t * Stateid.t) * Stateid.t * VCS.vcs * Loc.t * string
+      (Stateid.t * Stateid.t) * Stateid.t * VCS.vcs * Loc.t * 'a * string
 
-  let name_of_request (ReqBuildProof (_,_,_,_,s)) = s
+  let name_of_request (ReqBuildProof (_,_,_,_,_,s)) = s
 
   type response =
     | RespBuiltProof of Entries.proof_output list 
@@ -791,19 +795,19 @@ end = struct (* {{{ *)
   type task =
     | TaskBuildProof of (Stateid.t * Stateid.t) * Stateid.t * Stateid.t *
         (Entries.proof_output list Future.assignement -> unit) * cancel_switch
-        * Loc.t * string
+        * Loc.t * Future.UUID.t * string
   let pr_task = function
-    | TaskBuildProof(_,bop,eop,_,_,_,s) ->
+    | TaskBuildProof(_,bop,eop,_,_,_,_,s) ->
         "TaskBuilProof("^Stateid.to_string bop^","^Stateid.to_string eop^
           ","^s^")"
 
-  let request_of_task task =
+  let request_of_task task : Future.UUID.t request =
     match task with
-    | TaskBuildProof (exn_info,bop,eop,_,_,loc,s) ->
-        ReqBuildProof(exn_info,eop,VCS.slice ~start:eop ~stop:bop,loc,s)
+    | TaskBuildProof (exn_info,bop,eop,_,_,loc,uuid,s) ->
+        ReqBuildProof(exn_info,eop,VCS.slice ~start:eop ~stop:bop,loc,uuid,s)
 
   let cancel_switch_of_task = function
-    | TaskBuildProof (_,_,_,_,c,_,_) -> c
+    | TaskBuildProof (_,_,_,_,c,_,_,_) -> c
 
   let build_proof_here_core loc eop () =
     let wall_clock1 = Unix.gettimeofday () in
@@ -818,25 +822,24 @@ end = struct (* {{{ *)
 
   let slave_respond msg =
     match msg with
-    | ReqBuildProof(exn_info,eop,vcs,loc,_) ->
+    | ReqBuildProof(exn_info,eop,vcs,loc,_,_) ->
         VCS.restore vcs;
         VCS.print ();
         let r = RespBuiltProof (
           let l = Future.force (build_proof_here exn_info loc eop) in
           List.iter (fun (_,se) -> Declareops.iter_side_effects (function
             | Declarations.SEsubproof(_,
-               { Declarations.const_body = Declarations.OpaqueDef f;
-                 const_constraints = cst} ) -> 
-                  ignore(Future.join f); ignore(Future.join cst)
+               { Declarations.const_body = Declarations.OpaqueDef f } ) ->
+               Lazyconstr.join_lazy_constr f
             | _ -> ())
           se) l;
           l) in
         VCS.print ();
         r
 
-  let check_task name l i =
+  let check_task_aux name l i =
     match List.nth l i with
-    | ReqBuildProof ((id,valid),eop,vcs,loc,s) ->
+    | ReqBuildProof ((id,valid),eop,vcs,loc,_,s) as req ->
         Pp.msg_info(str(Printf.sprintf "Checking task %d (%s) of %s" i s name));
         VCS.restore vcs;
         try
@@ -848,7 +851,7 @@ end = struct (* {{{ *)
           vernac_interp eop ~proof
             { verbose = false; loc;
               expr = (VernacEndProof (Proved (true,None))) };
-          true
+          Some (req,proof)
         with e -> (try
           match Stateid.get e with
           | None ->
@@ -872,10 +875,38 @@ end = struct (* {{{ *)
                     spc () ++ print e)
         with e ->
           Pp.msg_error (str"unable to print error message: " ++
-                        str (Printexc.to_string e))); false
+                        str (Printexc.to_string e))); None
+
+  let finish_task name u d p l i =
+    match check_task_aux name l i with
+    | None -> exit 1
+    | Some (ReqBuildProof ((id,valid),eop,vcs,loc,bucket,s), (po,pt)) ->
+        let discharge c = List.fold_right Cooking.cook_constr d.(bucket) c in
+        let con =
+          Nametab.locate_constant
+            (Libnames.qualid_of_ident po.Proof_global.id) in
+        let c = Global.lookup_constant con in
+        match c.Declarations.const_body with
+        | Declarations.OpaqueDef lc ->
+            let pr, uc = Lazyconstr.get_opaque_futures lc in
+            let pr = Future.chain ~greedy:true ~pure:true pr discharge in
+            let pr = Future.chain ~greedy:true ~pure:true pr Constr.hcons in
+            ignore(Future.join pr);
+            ignore(Future.join uc);
+            Pp.msg_info(str(Printf.sprintf
+              "Assigning output of task %d (%s) of %s to bucket %d"
+              i s name bucket));
+            u.(bucket) <- uc;
+            p.(bucket) <- pr
+        | _ -> assert false
+  
+  let check_task name l i =
+    match check_task_aux name l i with
+    | Some _ -> true
+    | None -> false
 
   let info_tasks l =
-    CList.map_i (fun i (ReqBuildProof(_,_,_,loc,s)) ->
+    CList.map_i (fun i (ReqBuildProof(_,_,_,loc,_,s)) ->
       let time1 =
         try float_of_string (Aux_file.get !hints loc "proof_build_time")
         with Not_found -> 0.0 in
@@ -894,13 +925,13 @@ end = struct (* {{{ *)
 
   let marshal_err s = raise (MarshalError s)
 
-  let marshal_request oc (req : request) =
+  let marshal_request oc (req : Future.UUID.t request) =
     try marshal_to_channel oc req
     with Failure s | Invalid_argument s | Sys_error s ->
       marshal_err ("marshal_request: "^s)
 
   let unmarshal_request ic =
-    try (Marshal.from_channel ic : request)
+    try (Marshal.from_channel ic : Future.UUID.t request)
     with Failure s | Invalid_argument s | Sys_error s ->
       marshal_err ("unmarshal_request: "^s)
 
@@ -938,16 +969,18 @@ end = struct (* {{{ *)
         let force () : Entries.proof_output list Future.assignement =
           try `Val (build_proof_here_core loc stop ()) with e -> `Exn e in
         let f,assign = Future.create_delegate ~force (State.exn_on id ~valid) in
+        let uuid = Future.uuid f in
         TQueue.push queue
-          (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,loc,name));
+          (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,loc,uuid,name));
         f, cancel_switch
       end else
         build_proof_here exn_info loc stop, cancel_switch
     else 
       let f, assign = Future.create_delegate (State.exn_on id ~valid) in
+      let uuid = Future.uuid f in
       Pp.feedback (Interface.InProgress 1);
       TQueue.push queue
-        (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,loc,name));
+        (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,loc,uuid,name));
       f, cancel_switch
 
   exception RemoteException of std_ppcmds
@@ -991,13 +1024,13 @@ end = struct (* {{{ *)
           let rec loop () =
             let response = unmarshal_response ic in
             match task, response with
-            | TaskBuildProof(_,_,_, assign,_,_,_), RespBuiltProof pl ->
+            | TaskBuildProof(_,_,_, assign,_,_,_,_), RespBuiltProof pl ->
                 assign (`Val pl);
                 (* We restart the slave, to avoid memory leaks.  We could just
                    Pp.feedback (Interface.InProgress ~-1) *)
                 last_task := None;
                 raise KillRespawn
-            | TaskBuildProof(_,_,_, assign,_,_,_),RespError(err_id,valid,e,s) ->
+            | TaskBuildProof(_,_,_, assign,_,_,_,_),RespError(err_id,valid,e,s) ->
                 let e = Stateid.add ~valid (RemoteException e) err_id in
                 assign (`Exn e);
                 Option.iter (State.assign valid) s;
@@ -1029,7 +1062,7 @@ end = struct (* {{{ *)
             msg_warning(strbrk("Marshalling error: "^s^". "^
               "The system state could not be sent to the worker process. "^
               "Falling back to local, lazy, evaluation."));
-            let TaskBuildProof (exn_info, _, stop, assign,_,loc,_) = task in
+            let TaskBuildProof (exn_info, _, stop, assign,_,loc,_,_) = task in
             assign(`Comp(build_proof_here exn_info loc stop));
             Pp.feedback (Interface.InProgress ~-1)
         | MarshalError s ->
@@ -1052,7 +1085,7 @@ end = struct (* {{{ *)
     | Sys_error _ | Invalid_argument _ | End_of_file when !task_cancelled ->
         msg_warning(strbrk "The worker was cancelled.");
         Option.iter (fun task ->
-          let TaskBuildProof (_, start, _, assign, _,_,_) = task in
+          let TaskBuildProof (_, start, _, assign, _,_,_,_) = task in
           let s = "Worker cancelled by the user" in
           let e = Stateid.add ~valid:start (RemoteException (strbrk s)) start in
           assign (`Exn e);
@@ -1066,7 +1099,7 @@ end = struct (* {{{ *)
         msg_warning(strbrk "The worker process died badly.");
         Option.iter (fun task ->
           msg_warning(strbrk "Falling back to local, lazy, evaluation.");
-          let TaskBuildProof (exn_info, _, stop, assign,_,loc,_) = task in
+          let TaskBuildProof (exn_info, _, stop, assign,_,loc,_,_) = task in
           assign(`Comp(build_proof_here exn_info loc stop));
           Pp.feedback (Interface.InProgress ~-1);
         ) !last_task;
@@ -1158,13 +1191,14 @@ end = struct (* {{{ *)
     done
 
   (* For external users this name is nicer than request *)
-  type tasks = request list
-  let dump () =
+  type tasks = int request list
+  let dump f2t_map =
     assert(SlavesPool.is_empty ()); (* ATM, we allow that only if no slaves *)
     let tasks = TQueue.dump queue in
     prerr_endline (Printf.sprintf "dumping %d\n" (List.length tasks));
     let tasks = List.map request_of_task tasks in
-    tasks
+    List.map (function ReqBuildProof(a,b,c,d,x,e) ->
+      ReqBuildProof(a,b,c,d,List.assoc x f2t_map,e)) tasks
 
 end (* }}} *)
 
@@ -1562,7 +1596,7 @@ let join () =
   VCS.print ()
 
 type tasks = Slaves.tasks
-let dump () = Slaves.dump ()
+let dump x = Slaves.dump x
 let check_task name tasks i =
   let vcs = VCS.backup () in
   try
@@ -1572,6 +1606,16 @@ let check_task name tasks i =
     rc
   with e when Errors.noncritical e -> VCS.restore vcs; false
 let info_tasks tasks = Slaves.info_tasks tasks
+let finish_tasks name u d p tasks =
+  let finish_task (_,_,i) =
+    let vcs = VCS.backup () in
+    Future.purify (Slaves.finish_task name u d p tasks) i;
+    Pp.pperr_flush ();
+    VCS.restore vcs in
+  try List.iter finish_task (info_tasks tasks)
+  with e ->
+    Pp.pperrnl Pp.(str"File " ++ str name ++ str ":" ++ spc () ++ print e);
+    exit 1
 
 let merge_proof_branch qast keep brname =
   let brinfo = VCS.get_branch brname in

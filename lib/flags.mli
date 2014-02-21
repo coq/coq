@@ -11,7 +11,7 @@
 val boot : bool ref
 
 val batch_mode : bool ref
-type compilation_mode = BuildVo | BuildVi
+type compilation_mode = BuildVo | BuildVi | Vi2Vo
 val compilation_mode : compilation_mode ref
 
 type async_proofs = APoff | APonLazy | APonParallel of int

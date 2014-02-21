@@ -299,12 +299,10 @@ exception Faulty
 (** Fetching a table of opaque terms at position [pos] in file [f],
     expecting to find first a copy of [digest]. *)
 
-let fetch_opaque_table dp (f,pos,digest) =
-  if !Flags.load_proofs == Flags.Dont then
-    error "Not accessing an opaque term due to option -dont-load-proofs.";
+let fetch_table what dp (f,pos,digest) =
   let dir_path = Names.DirPath.to_string dp in
   try
-    Pp.msg_info (Pp.str "Fetching opaque terms from disk for " ++ str dir_path);
+    msg_info (str"Fetching " ++ str what++str" from disk for " ++ str dir_path);
     let ch = System.with_magic_number_check raw_intern_library f in
     let () = seek_in ch pos in
     if not (String.equal (System.digest_in f ch) digest) then raise Faulty;
@@ -316,63 +314,128 @@ let fetch_opaque_table dp (f,pos,digest) =
     table
   with e when Errors.noncritical e ->
     error
-      ("The file "^f^" (bound to " ^ dir_path ^ ") is inaccessible or corrupted,\n"
-       ^ "cannot load some opaque constant bodies in it.\n")
+      ("The file "^f^" (bound to " ^ dir_path ^
+      ") is inaccessible or corrupted,\n" ^
+      "cannot load some "^what^" in it.\n")
 
 (** Delayed / available tables of opaque terms *)
 
-type opaque_table_status =
+type 'a table_status =
   | ToFetch of string * int * Digest.t
-  | Fetched of Term.constr array
+  | Fetched of 'a Future.computation array
 
-let opaque_tables = ref (LibraryMap.empty : opaque_table_status LibraryMap.t)
+let opaque_tables =
+  ref (LibraryMap.empty : (Term.constr table_status) LibraryMap.t)
+let univ_tables =
+  ref (LibraryMap.empty : (Univ.constraints table_status) LibraryMap.t)
 
 let add_opaque_table dp st =
   opaque_tables := LibraryMap.add dp st !opaque_tables
+let add_univ_table dp st =
+  univ_tables := LibraryMap.add dp st !univ_tables
 
-let access_opaque_table dp i =
-  let t = match LibraryMap.find dp !opaque_tables with
+let access_table fetch_table add_table tables dp i =
+  let t = match LibraryMap.find dp tables with
     | Fetched t -> t
     | ToFetch (f,pos,digest) ->
-      let t = fetch_opaque_table dp (f,pos,digest) in
-      add_opaque_table dp (Fetched t);
+      let t = fetch_table dp (f,pos,digest) in
+      add_table dp (Fetched t);
       t
   in
   assert (i < Array.length t); t.(i)
+
+let access_opaque_table dp i =
+  if !Flags.load_proofs == Flags.Dont then
+    error "Not accessing an opaque term due to option -dont-load-proofs.";
+  access_table
+    (fetch_table "opaque proofs")
+    add_opaque_table !opaque_tables dp i
+let access_univ_table dp i =
+  access_table
+    (fetch_table "universe constraints of opaque proofs")
+    add_univ_table !univ_tables dp i
 
 (** Table of opaque terms from the library currently being compiled *)
 
 module OpaqueTables = struct
 
- let a_constr = Term.mkRel 1
+ let a_constr = Future.from_val (Term.mkRel 1)
+ let a_univ = Future.from_val Univ.empty_constraint
+ let a_discharge : Lazyconstr.cooking_info list = []
 
- let local_table = ref (Array.make 100 a_constr)
+ let local_opaque_table = ref (Array.make 100 a_constr)
+ let local_univ_table = ref (Array.make 100 a_univ)
+ let local_discharge_table = ref (Array.make 100 a_discharge)
  let local_index = ref 0
 
- let get dp i =
-   if DirPath.equal dp (Lib.library_dp ())
-   then (!local_table).(i)
-   else access_opaque_table dp i
+ module FMap = Map.Make(Future.UUID)
+ let f2t = ref FMap.empty
 
- let store c =
+ let get_opaque_nolib _ i = (!local_opaque_table).(i)
+
+ let get_opaque dp i =
+   if DirPath.equal dp (Lib.library_dp ())
+   then (!local_opaque_table).(i)
+   else access_opaque_table dp i
+ 
+ let join_local_opaque dp i =
+   if DirPath.equal dp (Lib.library_dp ()) then
+    Future.sink (!local_opaque_table).(i)
+
+ let join_local_univ dp i =
+   if DirPath.equal dp (Lib.library_dp ()) then
+    Future.sink (!local_univ_table).(i)
+
+ let get_univ_nolib _ i = Some (!local_univ_table).(i)
+
+ let get_univ dp i =
+   if DirPath.equal dp (Lib.library_dp ())
+   then Some (!local_univ_table).(i)
+   else try Some (access_univ_table dp i) with Not_found -> None
+
+ let store (d,cu) =
   let n = !local_index in
   incr local_index;
-  if Int.equal n (Array.length !local_table) then begin
+  if Int.equal n (Array.length !local_opaque_table) then begin
     let t = Array.make (2*n) a_constr in
-    Array.blit !local_table 0 t 0 n;
-    local_table := t
+    Array.blit !local_opaque_table 0 t 0 n;
+    local_opaque_table := t;
+    let t = Array.make (2*n) a_univ in
+    Array.blit !local_univ_table 0 t 0 n;
+    local_univ_table := t;
+    let t = Array.make (2*n) a_discharge in
+    Array.blit !local_discharge_table 0 t 0 n;
+    local_discharge_table := t
   end;
-  (!local_table).(n) <- c;
+  let c, u = Future.split2 ~greedy:true cu in
+  if Future.is_val u then ignore(Future.join u);
+  if Future.is_val c then ignore(Future.join c);
+  (!local_opaque_table).(n) <- c;
+  (!local_univ_table).(n) <- u;
+  (!local_discharge_table).(n) <- d;
+  f2t := FMap.add (Future.uuid cu) n !f2t;
   Some (Lib.library_dp (), n)
 
- let dump () = Array.sub !local_table 0 !local_index
+ let dump () =
+   Array.sub !local_opaque_table 0 !local_index,
+   Array.sub !local_univ_table 0 !local_index,
+   Array.sub !local_discharge_table 0 !local_index,
+   FMap.bindings !f2t
 
 end
 
-let _ = Lazyconstr.set_indirect_opaque_accessor OpaqueTables.get
+let _ = Lazyconstr.set_indirect_opaque_accessor OpaqueTables.get_opaque
+let _ = Lazyconstr.set_indirect_univ_accessor OpaqueTables.get_univ
+let _ = Lazyconstr.set_join_indirect_local_opaque OpaqueTables.join_local_opaque
+let _ = Lazyconstr.set_join_indirect_local_univ OpaqueTables.join_local_univ
 
 (************************************************************************)
 (* Internalise libraries *)
+
+type seg_lib = library_disk
+type seg_univ = Univ.constraints Future.computation array
+type seg_discharge = Lazyconstr.cooking_info list array
+type seg_proofs = Term.constr Future.computation array
 
 let mk_library md digest =
   {
@@ -386,25 +449,16 @@ let mk_library md digest =
 
 let intern_from_file f =
   let ch = System.with_magic_number_check raw_intern_library f in
-  let lmd, _, digest_lmd = System.marshal_in_segment f ch in
+  let (lmd : seg_lib), pos, digest_lmd = System.marshal_in_segment f ch in
+  let (univs : seg_univ option), _, _ = System.marshal_in_segment f ch in
+  Option.iter (fun univs -> add_univ_table lmd.md_name (Fetched univs)) univs;
+  let _ = System.skip_in_segment f ch in
   let pos, digest = System.skip_in_segment f ch in
   register_library_filename lmd.md_name f;
   add_opaque_table lmd.md_name (ToFetch (f,pos,digest));
   let library = mk_library lmd digest_lmd in
   close_in ch;
   library
-
-let load_library_todo f =
-  let paths = Loadpath.get_paths () in
-  let _, longf =
-    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
-  let f = longf^"i" in
-  let ch = System.with_magic_number_check raw_intern_library f in
-  let _ = System.skip_in_segment f ch in
-  let tasks, _, _ = System.marshal_in_segment f ch in
-  match tasks with
-  | Some a -> a, longf
-  | None -> errorlabstrm "load_library_todo" (str"not a .vi file")
 
 let rec intern_library needed (dir, f) =
   (* Look if in the current logical environment *)
@@ -604,9 +658,26 @@ let start_library f =
   let id = Id.of_string (Filename.basename f) in
   check_coq_overwriting ldir0 id;
   let ldir = add_dirpath_suffix ldir0 id in
-  Lazyconstr.set_indirect_opaque_creator OpaqueTables.store;
+  Lazyconstr.set_indirect_creator OpaqueTables.store;
   Declaremods.start_library ldir;
   ldir,longf
+
+let load_library_todo f =
+  let paths = Loadpath.get_paths () in
+  let _, longf =
+    System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
+  let f = longf^"i" in
+  let ch = System.with_magic_number_check raw_intern_library f in
+  let (s1 : seg_lib), _, _ = System.marshal_in_segment f ch in
+  let (s2 : seg_univ option), _, _ = System.marshal_in_segment f ch in
+  let (s3 : seg_discharge option), _, _ = System.marshal_in_segment f ch in
+  let tasks, _, _ = System.marshal_in_segment f ch in
+  let (s5 : seg_proofs), _, _ = System.marshal_in_segment f ch in
+  close_in ch;
+  if tasks = None then errorlabstrm "restart" (str"not a .vi file");
+  if s2 = None then errorlabstrm "restart" (str"not a .vi file");
+  if s3 = None then errorlabstrm "restart" (str"not a .vi file");
+  longf, s1, Option.get s2, Option.get s3, Option.get tasks, s5
 
 (************************************************************************)
 (*s [save_library dir] ends library [dir] and save it to the disk. *)
@@ -635,10 +706,25 @@ let error_recursively_dependent_library dir =
    writing the content and computing the checksum... *)
 
 let save_library_to ?todo dir f =
-  let f = if todo = None then f ^ "o" else f ^ "i" in
-  Lazyconstr.reset_indirect_opaque_creator ();
+  let f, todo, utab, dtab =
+    match todo with
+    | None ->
+        assert(!Flags.compilation_mode = Flags.BuildVo);
+        f ^ "o", (fun _ -> None), (fun _ -> None), (fun _ -> None)
+    | Some d ->
+        assert(!Flags.compilation_mode = Flags.BuildVi);
+        f ^ "i", (fun x -> Some (d x)), (fun x -> Some x), (fun x -> Some x) in
+  Lazyconstr.reset_indirect_creator ();
+  (* HACK: end_library resets Lib and then joins the safe env.  To join the
+   * env one needs to access the futures stored in the tables.  Standard
+   * accessors use Lib.  Hence *)
+  Lazyconstr.set_indirect_opaque_accessor OpaqueTables.get_opaque_nolib;
+  Lazyconstr.set_indirect_univ_accessor OpaqueTables.get_univ_nolib;
   let cenv, seg, ast = Declaremods.end_library dir in
-  let table = OpaqueTables.dump () in
+  let opaque_table, univ_table, disch_table, f2t_map =
+    OpaqueTables.dump () in
+  assert(!Flags.compilation_mode = Flags.BuildVi ||
+         Array.for_all Future.is_val opaque_table);
   let md = {
     md_name = dir;
     md_compiled = cenv;
@@ -651,9 +737,11 @@ let save_library_to ?todo dir f =
   let (f',ch) = raw_extern_library f in
   try
     (* Writing vo payload *)
-    System.marshal_out_segment f' ch md;    (* env + objs *)
-    System.marshal_out_segment f' ch todo;  (* STM tasks  *)
-    System.marshal_out_segment f' ch table; (* opaques    *)
+    System.marshal_out_segment f' ch (md               : seg_lib);
+    System.marshal_out_segment f' ch (utab univ_table  : seg_univ option);
+    System.marshal_out_segment f' ch (dtab disch_table : seg_discharge option);
+    System.marshal_out_segment f' ch (todo f2t_map     : 'tasks option);
+    System.marshal_out_segment f' ch (opaque_table     : seg_proofs);
     close_out ch;
     (* Writing native code files *)
     if not !Flags.no_native_compiler then
@@ -662,13 +750,22 @@ let save_library_to ?todo dir f =
       let lp = List.map map_path lp in
       let fn = Filename.dirname f'^"/"^Nativecode.mod_uid_of_dirpath dir in
       if not (Int.equal (Nativelibrary.compile_library dir ast lp fn) 0) then
-        msg_error (str "Could not compile the library to native code. Skipping.")
+        msg_error (str"Could not compile the library to native code. Skipping.")
    with reraise ->
     let reraise = Errors.push reraise in
     let () = msg_warning (str ("Removed file "^f')) in
     let () = close_out ch in
     let () = Sys.remove f' in
     raise reraise
+
+let save_library_raw f lib univs proofs =
+  let (f',ch) = raw_extern_library (f^"o") in
+  System.marshal_out_segment f' ch (lib        : seg_lib);
+  System.marshal_out_segment f' ch (Some univs : seg_univ option);
+  System.marshal_out_segment f' ch (None       : seg_discharge option);
+  System.marshal_out_segment f' ch (None       : 'tasks option);
+  System.marshal_out_segment f' ch (proofs     : seg_proofs);
+  close_out ch
 
 (************************************************************************)
 (*s Display the memory use of a library. *)

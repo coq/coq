@@ -23,8 +23,6 @@ open Environ
 
 (*s Cooking the constants. *)
 
-type work_list = Id.t array Cmap.t * Id.t array Mindmap.t
-
 let pop_dirpath p = match DirPath.repr p with
   | [] -> anomaly ~label:"dirpath_prefix" (Pp.str "empty dirpath")
   | _::l -> DirPath.make l
@@ -111,35 +109,34 @@ let abstract_constant_type =
 let abstract_constant_body =
   List.fold_left (fun c d -> mkNamedLambda_or_LetIn d c)
 
-type recipe = {
-  d_from : constant_body;
-  d_abstract : named_context;
-  d_modlist : work_list }
-
+type recipe = { from : constant_body; info : Lazyconstr.cooking_info }
 type inline = bool
 
 type result =
-  constant_def * constant_type * constant_constraints * inline
+  constant_def * constant_type * Univ.constraints * inline
     * Context.section_context option
 
-let on_body f = function
+let on_body ml hy f = function
   | Undef _ as x -> x
   | Def cs -> Def (Lazyconstr.from_val (f (Lazyconstr.force cs)))
   | OpaqueDef lc ->
-    OpaqueDef (Future.chain ~pure:true lc (fun lc ->
-        (Lazyconstr.opaque_from_val (f (Lazyconstr.force_opaque lc)))))
+    OpaqueDef (Lazyconstr.discharge_direct_lazy_constr ml hy f lc)
 
 let constr_of_def = function
   | Undef _ -> assert false
   | Def cs -> Lazyconstr.force cs
-  | OpaqueDef lc -> Lazyconstr.force_opaque (Future.force lc)
+  | OpaqueDef lc -> Lazyconstr.force_opaque lc
 
-let cook_constant env r =
+let cook_constr { Lazyconstr.modlist ; abstract } c =
   let cache = Hashtbl.create 13 in
-  let cb = r.d_from in
-  let hyps = Context.map_named_context (expmod_constr cache r.d_modlist) r.d_abstract in
-  let body = on_body
-    (fun c -> abstract_constant_body (expmod_constr cache r.d_modlist c) hyps)
+  let hyps = Context.map_named_context (expmod_constr cache modlist) abstract in
+  abstract_constant_body (expmod_constr cache modlist c) hyps
+
+let cook_constant env { from = cb; info = { Lazyconstr.modlist; abstract } } =
+  let cache = Hashtbl.create 13 in
+  let hyps = Context.map_named_context (expmod_constr cache modlist) abstract in
+  let body = on_body modlist hyps
+    (fun c -> abstract_constant_body (expmod_constr cache modlist c) hyps)
     cb.const_body
   in
   let const_hyps =
@@ -149,12 +146,12 @@ let cook_constant env r =
   let typ = match cb.const_type with
     | NonPolymorphicType t ->
 	let typ =
-          abstract_constant_type (expmod_constr cache r.d_modlist t) hyps in
+          abstract_constant_type (expmod_constr cache modlist t) hyps in
 	NonPolymorphicType typ
     | PolymorphicArity (ctx,s) ->
 	let t = mkArity (ctx,Type s.poly_level) in
 	let typ =
-          abstract_constant_type (expmod_constr cache r.d_modlist t) hyps in
+          abstract_constant_type (expmod_constr cache modlist t) hyps in
 	let j = make_judge (constr_of_def body) typ in
 	Typeops.make_polymorphic_if_constant_for_ind env j
   in

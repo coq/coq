@@ -282,11 +282,11 @@ let safe_push_named (id,_,_ as d) env =
 
 let push_named_def (id,de) senv =
   let (c,typ,cst) = Term_typing.translate_local_def senv.env id de in
-  let c = match c with
-    | Def c -> Lazyconstr.force c
-    | OpaqueDef c -> Lazyconstr.force_opaque (Future.join c)
+  let c,cst' = match c with
+    | Def c -> Lazyconstr.force c, Univ.empty_constraint
+    | OpaqueDef c -> Lazyconstr.force_opaque_w_constraints c
     | _ -> assert false in
-  let cst = Future.join cst in
+  let senv = add_constraints (Now cst') senv in
   let senv' = add_constraints (Now cst) senv in
   let env'' = safe_push_named (id,Some c,typ) senv'.env in
   (cst, {senv' with env=env''})
@@ -314,13 +314,19 @@ let labels_of_mib mib =
   get ()
 
 let constraints_of_sfb = function
-  | SFBmind mib -> Now mib.mind_constraints
-  | SFBmodtype mtb -> Now mtb.typ_constraints
-  | SFBmodule mb -> Now mb.mod_constraints
-  | SFBconst cb ->
-      match Future.peek_val cb.const_constraints with
-      | Some c -> Now c
-      | None -> Later cb.const_constraints
+  | SFBmind mib -> [Now mib.mind_constraints]
+  | SFBmodtype mtb -> [Now mtb.typ_constraints]
+  | SFBmodule mb -> [Now mb.mod_constraints]
+  | SFBconst cb -> [Now cb.const_constraints] @
+      match cb.const_body with
+      | (Undef _ | Def _) -> []
+      | OpaqueDef lc ->
+          match Lazyconstr.get_opaque_future_constraints lc with
+          | None -> []
+          | Some fc ->
+              match Future.peek_val fc with
+              | None -> [Later fc]
+              | Some c -> [Now c]
 
 (** A generic function for adding a new field in a same environment.
     It also performs the corresponding [add_constraints]. *)
@@ -341,7 +347,7 @@ let add_field ((l,sfb) as field) gn senv =
     | SFBmodule _ | SFBmodtype _ ->
       check_modlabel l senv; (Label.Set.singleton l, Label.Set.empty)
   in
-  let senv = add_constraints (constraints_of_sfb sfb) senv in
+  let senv = List.fold_right add_constraints (constraints_of_sfb sfb) senv in
   let env' = match sfb, gn with
     | SFBconst cb, C con -> Environ.add_constant con cb senv.env
     | SFBmind mib, I mind -> Environ.add_mind mind mib senv.env
@@ -377,8 +383,7 @@ let add_constant dir l decl senv =
     | OpaqueDef lc when DirPath.is_empty dir ->
       (* In coqc, opaque constants outside sections will be stored
          indirectly in a specific table *)
-      { cb with const_body =
-           OpaqueDef (Future.chain ~greedy:true ~pure:true lc Lazyconstr.turn_indirect) }
+      { cb with const_body = OpaqueDef (Lazyconstr.turn_indirect lc) }
     | _ -> cb
   in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
@@ -660,10 +665,11 @@ let start_library dir senv =
 let export compilation_mode senv dir =
   let senv =
     try
-      if compilation_mode = Flags.BuildVi then senv (* FIXME: cleanup future*)
+      if compilation_mode = Flags.BuildVi then { senv with future_cst = [] }
       else join_safe_environment senv
-    with e -> Errors.errorlabstrm "future" (Errors.print e)
+    with e -> Errors.errorlabstrm "export" (Errors.print e)
   in
+  assert(senv.future_cst = []);
   let () = check_current_library dir senv in
   let mp = senv.modpath in
   let str = NoFunctor (List.rev senv.revstruct) in

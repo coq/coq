@@ -117,7 +117,13 @@ let open_constant i ((sp,kn), obj) =
   if obj.cst_locl then ()
   else
     let con = Global.constant_of_delta_kn kn in
-    Nametab.push (Nametab.Exactly i) sp (ConstRef con)
+    Nametab.push (Nametab.Exactly i) sp (ConstRef con);
+    match (Global.lookup_constant con).const_body with
+    | (Def _ | Undef _) -> ()
+    | OpaqueDef lc ->
+        match Lazyconstr.get_opaque_future_constraints lc with
+        | Some f when Future.is_val f -> Global.add_constraints (Future.force f)
+        | _ -> ()
 
 let exists_name id =
   variable_exists id || Global.exists_objlabel (Label.of_id id)
@@ -144,12 +150,12 @@ let discharged_hyps kn sechyps =
 
 let discharge_constant ((sp, kn), obj) =
   let con = constant_of_kn kn in
-  let cb = Global.lookup_constant con in
-  let repl = replacement_context () in
-  let sechyps = section_segment_of_constant con in
-  let recipe = { d_from=cb; d_modlist=repl; d_abstract=named_of_variable_context sechyps } in
-  let new_hyps = (discharged_hyps kn sechyps) @ obj.cst_hyps in
-  let new_decl = GlobalRecipe recipe in
+  let from = Global.lookup_constant con in
+  let modlist = replacement_context () in
+  let hyps = section_segment_of_constant con in
+  let new_hyps = (discharged_hyps kn hyps) @ obj.cst_hyps in
+  let abstract = named_of_variable_context hyps in
+  let new_decl = GlobalRecipe{ from; info = { Lazyconstr.modlist; abstract }} in
   Some { obj with cst_hyps = new_hyps; cst_decl = new_decl; }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
@@ -192,8 +198,7 @@ let declare_sideff se =
   let pt_opaque_of cb =
     match cb with
     | { const_body = Def sc } -> Lazyconstr.force sc, false
-    | { const_body = OpaqueDef fc } ->
-          Lazyconstr.force_opaque (Future.force fc), true
+    | { const_body = OpaqueDef fc } -> Lazyconstr.force_opaque fc, true
     | { const_body = Undef _ } -> anomaly(str"Undefined side effect")
   in
   let ty_of cb =

@@ -14,7 +14,7 @@ open Declarations
 open Entries
 
 val translate_local_def : env -> Id.t -> definition_entry ->
-  constant_def * types * constant_constraints
+  constant_def * types * Univ.constraints
 
 val translate_local_assum : env -> types -> types * constraints
 
@@ -32,7 +32,7 @@ val translate_recipe : env -> constant -> Cooking.recipe -> constant_body
 
 (** Internal functions, mentioned here for debug purpose only *)
 
-val infer_declaration : ?what:string -> env -> constant_entry -> Cooking.result
+val infer_declaration : env -> constant_entry -> Cooking.result
 val build_constant_declaration :
   constant -> env -> Cooking.result -> constant_body
 

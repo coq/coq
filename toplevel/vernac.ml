@@ -367,6 +367,14 @@ let compile verbosely f =
       let _ = load_vernac verbosely long_f_dot_v in
       Stm.finish ();
       check_pending_proofs ();
-      let todo = Stm.dump () in
-      Library.save_library_to ~todo ldir long_f_dot_v
+      Library.save_library_to ~todo:Stm.dump ldir long_f_dot_v
+  | Vi2Vo ->
+      let open Filename in
+      let open Library in
+      Dumpglob.noglob ();
+      let f = if check_suffix f ".vi" then chop_extension f else f in
+      let lfdv, lib, univs, disch, tasks, proofs = load_library_todo f in
+      Stm.set_compilation_hints (Aux_file.load_aux_file_for lfdv);
+      Stm.finish_tasks lfdv univs disch proofs tasks;
+      Library.save_library_raw lfdv lib univs proofs
 

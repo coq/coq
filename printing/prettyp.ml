@@ -385,11 +385,11 @@ let print_constant with_values sep sp =
 	str"*** [ " ++
 	print_basename sp ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
-	Printer.pr_univ_cstr (Future.force cb.const_constraints)
+	Printer.pr_univ_cstr (Declareops.constraints_of_constant cb)
     | _ ->
 	print_basename sp ++ str sep ++ cut () ++
 	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ)++
-        Printer.pr_univ_cstr (Future.force cb.const_constraints))
+        Printer.pr_univ_cstr (Declareops.constraints_of_constant cb))
 
 let gallina_print_constant_with_infos sp =
   print_constant true " = " sp ++
@@ -531,8 +531,7 @@ let print_full_pure_context () =
 	      | OpaqueDef lc ->
 		str "Theorem " ++ print_basename con ++ cut () ++
 		str " : " ++ pr_ltype typ ++ str "." ++ fnl () ++
-		str "Proof " ++ pr_lconstr
-                  (Lazyconstr.force_opaque (Future.force lc))
+		str "Proof " ++ pr_lconstr (Lazyconstr.force_opaque lc)
 	      | Def c ->
 		str "Definition " ++ print_basename con ++ cut () ++
 		str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
