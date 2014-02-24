@@ -410,24 +410,24 @@ Notation P_of_succ_nat_o_nat_of_P_eq_succ := Pos2SuccNat.id_succ (compat "8.3").
 Notation pred_o_P_of_succ_nat_o_nat_of_P_eq_id := Pos2SuccNat.pred_id (compat "8.3").
 
 Lemma nat_of_P_minus_morphism p q :
- Pos.compare_cont p q Eq = Gt ->
+ Pos.compare_cont Eq p q = Gt ->
   Pos.to_nat (p - q) = Pos.to_nat p - Pos.to_nat q.
 Proof (fun H => Pos2Nat.inj_sub p q (Pos.gt_lt _ _ H)).
 
 Lemma nat_of_P_lt_Lt_compare_morphism p q :
- Pos.compare_cont p q Eq = Lt -> Pos.to_nat p < Pos.to_nat q.
+ Pos.compare_cont Eq p q = Lt -> Pos.to_nat p < Pos.to_nat q.
 Proof (proj1 (Pos2Nat.inj_lt p q)).
 
 Lemma nat_of_P_gt_Gt_compare_morphism p q :
- Pos.compare_cont p q Eq = Gt -> Pos.to_nat p > Pos.to_nat q.
+ Pos.compare_cont Eq p q = Gt -> Pos.to_nat p > Pos.to_nat q.
 Proof (proj1 (Pos2Nat.inj_gt p q)).
 
 Lemma nat_of_P_lt_Lt_compare_complement_morphism p q :
- Pos.to_nat p < Pos.to_nat q -> Pos.compare_cont p q Eq = Lt.
+ Pos.to_nat p < Pos.to_nat q -> Pos.compare_cont Eq p q = Lt.
 Proof (proj2 (Pos2Nat.inj_lt p q)).
 
 Definition nat_of_P_gt_Gt_compare_complement_morphism p q :
- Pos.to_nat p > Pos.to_nat q -> Pos.compare_cont p q Eq = Gt.
+ Pos.to_nat p > Pos.to_nat q -> Pos.compare_cont Eq p q = Gt.
 Proof (proj2 (Pos2Nat.inj_gt p q)).
 
 (** Old intermediate results about [Pmult_nat] *)

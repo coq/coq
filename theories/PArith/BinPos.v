@@ -766,15 +766,15 @@ Definition switch_Eq c c' :=
  end.
 
 Lemma compare_cont_spec p q c :
-  compare_cont p q c = switch_Eq c (p ?= q).
+  compare_cont c p q = switch_Eq c (p ?= q).
 Proof.
   unfold compare.
   revert q c.
   induction p; destruct q; simpl; trivial.
   intros c.
-  rewrite 2 IHp. now destruct (compare_cont p q Eq).
+  rewrite 2 IHp. now destruct (compare_cont Eq p q).
   intros c.
-  rewrite 2 IHp. now destruct (compare_cont p q Eq).
+  rewrite 2 IHp. now destruct (compare_cont Eq p q).
 Qed.
 
 (** From this general result, we now describe particular cases
@@ -785,31 +785,31 @@ Qed.
 *)
 
 Theorem compare_cont_Eq p q c :
- compare_cont p q c = Eq -> c = Eq.
+ compare_cont c p q = Eq -> c = Eq.
 Proof.
   rewrite compare_cont_spec. now destruct (p ?= q).
 Qed.
 
 Lemma compare_cont_Lt_Gt p q :
-  compare_cont p q Lt = Gt <-> p > q.
+  compare_cont Lt p q = Gt <-> p > q.
 Proof.
   rewrite compare_cont_spec. unfold gt. destruct (p ?= q); now split.
 Qed.
 
 Lemma compare_cont_Lt_Lt p q :
-  compare_cont p q Lt = Lt <-> p <= q.
+  compare_cont Lt p q = Lt <-> p <= q.
 Proof.
   rewrite compare_cont_spec. unfold le. destruct (p ?= q); easy'.
 Qed.
 
 Lemma compare_cont_Gt_Lt p q :
-  compare_cont p q Gt = Lt <-> p < q.
+  compare_cont Gt p q = Lt <-> p < q.
 Proof.
   rewrite compare_cont_spec. unfold lt. destruct (p ?= q); now split.
 Qed.
 
 Lemma compare_cont_Gt_Gt p q :
-  compare_cont p q Gt = Gt <-> p >= q.
+  compare_cont Gt p q = Gt <-> p >= q.
 Proof.
   rewrite compare_cont_spec. unfold ge. destruct (p ?= q); easy'.
 Qed.
@@ -874,13 +874,13 @@ Qed.
 (** Basic facts about [compare_cont] *)
 
 Theorem compare_cont_refl p c :
-  compare_cont p p c = c.
+  compare_cont c p p = c.
 Proof.
   now induction p.
 Qed.
 
 Lemma compare_cont_antisym p q c :
-  CompOpp (compare_cont p q c) = compare_cont q p (CompOpp c).
+  CompOpp (compare_cont c p q) = compare_cont (CompOpp c) q p.
 Proof.
   revert q c.
   induction p as [p IHp|p IHp| ]; intros [q|q| ] c; simpl;
@@ -1903,7 +1903,7 @@ Notation Pdiv2 := Pos.div2 (compat "8.3").
 Notation Pdiv2_up := Pos.div2_up (compat "8.3").
 Notation Psize := Pos.size_nat (compat "8.3").
 Notation Psize_pos := Pos.size (compat "8.3").
-Notation Pcompare := Pos.compare_cont (compat "8.3").
+Notation Pcompare x y m := (Pos.compare_cont m x y) (compat "8.3").
 Notation Plt := Pos.lt (compat "8.3").
 Notation Pgt := Pos.gt (compat "8.3").
 Notation Ple := Pos.le (compat "8.3").
@@ -2062,11 +2062,11 @@ Lemma Pplus_one_succ_r p : Pos.succ p = p + 1.
 Proof (eq_sym (Pos.add_1_r p)).
 Lemma Pplus_one_succ_l p : Pos.succ p = 1 + p.
 Proof (eq_sym (Pos.add_1_l p)).
-Lemma Pcompare_refl p : Pos.compare_cont p p Eq = Eq.
+Lemma Pcompare_refl p : Pos.compare_cont Eq p p = Eq.
 Proof (Pos.compare_cont_refl p Eq).
-Lemma Pcompare_Eq_eq : forall p q, Pos.compare_cont p q Eq = Eq -> p = q.
+Lemma Pcompare_Eq_eq : forall p q, Pos.compare_cont Eq p q = Eq -> p = q.
 Proof Pos.compare_eq.
-Lemma ZC4 p q : Pos.compare_cont p q Eq = CompOpp (Pos.compare_cont q p Eq).
+Lemma ZC4 p q : Pos.compare_cont Eq p q = CompOpp (Pos.compare_cont Eq q p).
 Proof (Pos.compare_antisym q p).
 Lemma Ppred_minus p : Pos.pred p = p - 1.
 Proof (eq_sym (Pos.sub_1_r p)).

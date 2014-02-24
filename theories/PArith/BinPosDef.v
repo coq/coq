@@ -255,20 +255,20 @@ Fixpoint size p :=
 
 (** ** Comparison on binary positive numbers *)
 
-Fixpoint compare_cont (x y:positive) (r:comparison) {struct y} : comparison :=
+Fixpoint compare_cont (r:comparison) (x y:positive) {struct y} : comparison :=
   match x, y with
-    | p~1, q~1 => compare_cont p q r
-    | p~1, q~0 => compare_cont p q Gt
+    | p~1, q~1 => compare_cont r p q
+    | p~1, q~0 => compare_cont Gt p q
     | p~1, 1 => Gt
-    | p~0, q~1 => compare_cont p q Lt
-    | p~0, q~0 => compare_cont p q r
+    | p~0, q~1 => compare_cont Lt p q
+    | p~0, q~0 => compare_cont r p q
     | p~0, 1 => Gt
     | 1, q~1 => Lt
     | 1, q~0 => Lt
     | 1, 1 => r
   end.
 
-Definition compare x y := compare_cont x y Eq.
+Definition compare x y := compare_cont Eq x y.
 
 Infix "?=" := compare (at level 70, no associativity) : positive_scope.
 
