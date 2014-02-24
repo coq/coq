@@ -150,7 +150,7 @@ let print_env env =
 let set_module m = current_module := m*)
 
 let new_univ_level, set_remote_new_univ_level =
-  RemoteCounter.new_counter 0 ~incr:((+) 1)
+  RemoteCounter.new_counter ~name:"univ_level" 0 ~incr:((+) 1)
     ~build:(fun n -> Univ.UniverseLevel.make (Lib.library_dp()) n)
 
 let new_univ () = Univ.Universe.make (new_univ_level ())

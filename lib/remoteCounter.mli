@@ -6,9 +6,18 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(* Remote counters are *global* counters for fresh ids.  In the master/slave
+ * scenario, the slave installs a getter that asks the master for a fresh
+ * value.  In the scenario of a slave that runs after the death of the master
+ * on some marshalled data, a backup of all counters status should be taken and
+ * restored to avoid reusing ids. *)
+
 type 'a getter = unit -> 'a
 type 'a installer = ('a getter) -> unit
 
-val new_counter :
+val new_counter : name:string ->
   'a -> incr:('a -> 'a) -> build:('a -> 'b) -> 'b getter * 'b installer
 
+type remote_counters_status
+val backup : unit -> remote_counters_status
+val restore : remote_counters_status -> unit
