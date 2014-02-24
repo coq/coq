@@ -1116,7 +1116,7 @@ let check_projection isproj nargs r =
       (try
 	let n = Recordops.find_projection_nparams ref + 1 in
 	if nargs <> n then
-	  user_err_loc (loc,"",str "Projection has not the right number of explicit parameters.");
+	  user_err_loc (loc,"",str "Projection does not have the right number of explicit parameters.");
       with Not_found ->
 	user_err_loc
 	(loc,"",pr_global_env Idset.empty ref ++ str " is not a registered projection."))
