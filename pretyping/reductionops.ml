@@ -135,7 +135,37 @@ module ReductionBehaviour = struct
 end
 
 (** The type of (machine) stacks (= lambda-bar-calculus' contexts) *)
-module Stack = struct
+module Stack :
+sig
+  type 'a app_node
+  val pr_app_node : ('a -> Pp.std_ppcmds) -> 'a app_node -> Pp.std_ppcmds
+  type 'a member =
+  | App of 'a app_node
+  | Case of case_info * 'a * 'a array * ('a * 'a list) option
+  | Fix of fixpoint * 'a t * ('a * 'a list) option
+  | Shift of int
+  | Update of 'a
+  and 'a t = 'a member list
+  val pr : ('a -> Pp.std_ppcmds) -> 'a t -> Pp.std_ppcmds
+  val empty : 'a t
+  val append_app : 'a array -> 'a t -> 'a t
+  val decomp : 'a t -> ('a * 'a t) option
+  val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
+  val compare_shape : 'a t -> 'a t -> bool
+  val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
+    constr t -> constr t -> 'a * int * int
+  val append_app_list : 'a list -> 'a t -> 'a t
+  val strip_app : 'a t -> 'a t * 'a t
+  val strip_n_app : int -> 'a t -> ('a t * 'a * 'a t) option
+  val not_purely_applicative : 'a t -> bool
+  val list_of_app_stack : constr t -> constr list option
+  val assign : 'a t -> int -> 'a -> 'a t
+  val args_size : 'a t -> int
+  val tail : int -> 'a t -> 'a t
+  val nth : 'a t -> int -> 'a
+  val zip : ?refold:bool -> constr * constr t -> constr
+end =
+struct
   type 'a app_node = int * 'a array * int
   (* first releavnt position, arguments, last relevant position *)
 
