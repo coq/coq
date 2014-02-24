@@ -6,9 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type 'a node =
+type ('a,'r) peek =
 | Nil
-| Cons of 'a * 'a t
+| Cons of 'a * 'r
+
+type 'a node = ('a,'a t) peek
 
 and 'a t = 'a node Lazy.t
 
@@ -32,9 +34,7 @@ let rec is_empty s = match Lazy.force s with
 | Nil -> true
 | Cons (_, _) -> false
 
-let peek s = match Lazy.force s with
-| Nil -> None
-| Cons (x, s) -> Some (x, s)
+let peek = Lazy.force
 
 let rec of_list = function
 | [] -> empty

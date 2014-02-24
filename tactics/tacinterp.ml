@@ -1245,16 +1245,17 @@ and interp_match_successes lz ist s =
         relying on the fact that it will always be applied to a single
         goal, by virtue of an earlier [Proofview.Goal.enter]. *)
   let rec tclOR_stream t e =
-    match IStream.peek t with
-    | Some (t1,t') ->
+    let open IStream in
+    match peek t with
+    | Cons (t1,t') ->
         Proofview.tclORELSE
           t1
           begin fun e ->
               (* Honors Ltac's failure level. *)
               Tacticals.New.catch_failerror e <*> tclOR_stream t' e
             end
-      | None ->
-          Proofview.tclZERO e
+    | Nil ->
+        Proofview.tclZERO e
     in
     let matching_failure =
       UserError ("Tacinterp.apply_match" , str "No matching clauses for match.")
@@ -1264,9 +1265,10 @@ and interp_match_successes lz ist s =
     in
     if lz then
       (** lazymatch *)
-      begin match IStream.peek successes with
-      | Some (s,_) -> s
-      | None -> Proofview.tclZERO matching_failure
+      let open IStream in
+      begin match peek successes with
+      | Cons (s,_) -> s
+      | Nil -> Proofview.tclZERO matching_failure
       end
     else
       (** match *)

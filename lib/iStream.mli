@@ -31,7 +31,12 @@ val thunk : 'a t Lazy.t -> 'a t
 val is_empty : 'a t -> bool
 (** Whethere a stream is empty. *)
 
-val peek : 'a t -> ('a * 'a t) option
+type ('a,'r) peek =
+| Nil
+| Cons of 'a * 'r
+(** View type for {!peek} *)
+
+val peek : 'a t -> ('a , 'a t) peek
 (** Return the head and the tail of a stream, if any. *)
 
 (** {6 Standard operations}
