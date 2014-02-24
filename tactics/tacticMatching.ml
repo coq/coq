@@ -182,7 +182,19 @@ module PatternMatching (E:StaticEnvironment) = struct
 
   (** A variant of [(>>=)] when the first argument returns [unit]. *)
   let (<*>) (type a) (x:unit m) (y:a m) : a m =
-    x >>= fun () -> y
+    let open IStream in
+    concat_map begin fun { subst=substx; context=contextx; terms=termsx; lhs=() } ->
+      map_filter begin fun { subst=substy; context=contexty; terms=termsy; lhs=lhsy } ->
+        try
+          Some {
+            subst = subst_prod substx substy ;
+            context = context_subst_prod contextx contexty ;
+            terms = term_subst_prod termsx termsy ;
+            lhs = lhsy
+          }
+        with Not_coherent_metas -> None
+      end y
+    end x
 
   (** Failure of the pattern-matching monad: no success. *)
   let fail (type a) : a m = IStream.empty
