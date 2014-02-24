@@ -169,8 +169,8 @@ module PatternMatching (E:StaticEnvironment) = struct
     let open IStream in
     concat_map begin fun { subst=substx; context=contextx; terms=termsx; lhs=lhsx } ->
       map_filter begin fun { subst=substf; context=contextf; terms=termsf; lhs=lhsf } ->
-        try 
-          Some { 
+        try
+          Some {
             subst = subst_prod substx substf ;
             context = context_subst_prod contextx contextf ;
             terms = term_subst_prod termsx termsf ;
