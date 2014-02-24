@@ -80,11 +80,11 @@ let rec check_with_def env struc (idl,c) mp equiv =
 	  let cst = cb.const_constraints +++ cst1 +++ cst2 in
 	  j.uj_val, cst
 	| Def cs ->
-	  let cst1 = Reduction.conv env' c (Lazyconstr.force cs) in
+	  let cst1 = Reduction.conv env' c (Mod_subst.force_constr cs) in
 	  let cst = cb.const_constraints +++ cst1 in
           c, cst
       in
-      let def = Def (Lazyconstr.from_val c') in
+      let def = Def (Mod_subst.from_val c') in
       let cb' =
 	{ cb with
 	  const_body = def;

@@ -189,7 +189,7 @@ exception NotEvaluableConst of const_evaluation_result
 let constant_value env kn =
   let cb = lookup_constant kn env in
   match cb.const_body with
-    | Def l_body -> Lazyconstr.force l_body
+    | Def l_body -> Mod_subst.force_constr l_body
     | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
     | Undef _ -> raise (NotEvaluableConst NoBody)
 

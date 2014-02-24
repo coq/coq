@@ -153,7 +153,7 @@ let print_body is_impl env mp (l,body) =
 	      | Def l when is_impl ->
 		spc () ++
 		hov 2 (str ":= " ++
-		       Printer.pr_lconstr_env env (Lazyconstr.force l))
+		       Printer.pr_lconstr_env env (Mod_subst.force_constr l))
 	      | _ -> mt ()) ++
             str ".")
     | SFBmind mib ->

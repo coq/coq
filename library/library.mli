@@ -33,7 +33,7 @@ val require_library_from_file :
 (** Segments of a library *)
 type seg_lib
 type seg_univ = Univ.constraints Future.computation array
-type seg_discharge = Lazyconstr.cooking_info list array
+type seg_discharge = Opaqueproof.cooking_info list array
 type seg_proofs = Term.constr Future.computation array
 
 (** Open a module (or a library); if the boolean is true then it's also

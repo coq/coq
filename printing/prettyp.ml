@@ -531,11 +531,11 @@ let print_full_pure_context () =
 	      | OpaqueDef lc ->
 		str "Theorem " ++ print_basename con ++ cut () ++
 		str " : " ++ pr_ltype typ ++ str "." ++ fnl () ++
-		str "Proof " ++ pr_lconstr (Lazyconstr.force_opaque lc)
+		str "Proof " ++ pr_lconstr (Opaqueproof.force_proof lc)
 	      | Def c ->
 		str "Definition " ++ print_basename con ++ cut () ++
 		str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
-		pr_lconstr (Lazyconstr.force c))
+		pr_lconstr (Mod_subst.force_constr c))
           ++ str "." ++ fnl () ++ fnl ()
       | "INDUCTIVE" ->
 	  let mind = Global.mind_of_delta_kn kn in

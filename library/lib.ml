@@ -385,7 +385,7 @@ type abstr_list = variable_context Names.Cmap.t * variable_context Names.Mindmap
 
 let sectab =
   Summary.ref ([] : ((Names.Id.t * Decl_kinds.binding_kind) list *
-		        Lazyconstr.work_list * abstr_list) list)
+		        Opaqueproof.work_list * abstr_list) list)
     ~name:"section-context"
 
 let add_section () =

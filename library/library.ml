@@ -361,7 +361,7 @@ module OpaqueTables = struct
 
  let a_constr = Future.from_val (Term.mkRel 1)
  let a_univ = Future.from_val Univ.empty_constraint
- let a_discharge : Lazyconstr.cooking_info list = []
+ let a_discharge : Opaqueproof.cooking_info list = []
 
  let local_opaque_table = ref (Array.make 100 a_constr)
  let local_univ_table = ref (Array.make 100 a_univ)
@@ -424,17 +424,18 @@ module OpaqueTables = struct
 
 end
 
-let _ = Lazyconstr.set_indirect_opaque_accessor OpaqueTables.get_opaque
-let _ = Lazyconstr.set_indirect_univ_accessor OpaqueTables.get_univ
-let _ = Lazyconstr.set_join_indirect_local_opaque OpaqueTables.join_local_opaque
-let _ = Lazyconstr.set_join_indirect_local_univ OpaqueTables.join_local_univ
+let () =
+  Opaqueproof.set_indirect_opaque_accessor OpaqueTables.get_opaque;
+  Opaqueproof.set_indirect_univ_accessor OpaqueTables.get_univ;
+  Opaqueproof.set_join_indirect_local_opaque OpaqueTables.join_local_opaque;
+  Opaqueproof.set_join_indirect_local_univ OpaqueTables.join_local_univ
 
 (************************************************************************)
 (* Internalise libraries *)
 
 type seg_lib = library_disk
 type seg_univ = Univ.constraints Future.computation array
-type seg_discharge = Lazyconstr.cooking_info list array
+type seg_discharge = Opaqueproof.cooking_info list array
 type seg_proofs = Term.constr Future.computation array
 
 let mk_library md digest =
@@ -658,7 +659,7 @@ let start_library f =
   let id = Id.of_string (Filename.basename f) in
   check_coq_overwriting ldir0 id;
   let ldir = add_dirpath_suffix ldir0 id in
-  Lazyconstr.set_indirect_creator OpaqueTables.store;
+  Opaqueproof.set_indirect_creator OpaqueTables.store;
   Declaremods.start_library ldir;
   ldir,longf
 
@@ -714,12 +715,12 @@ let save_library_to ?todo dir f =
     | Some d ->
         assert(!Flags.compilation_mode = Flags.BuildVi);
         f ^ "i", (fun x -> Some (d x)), (fun x -> Some x), (fun x -> Some x) in
-  Lazyconstr.reset_indirect_creator ();
+  Opaqueproof.reset_indirect_creator ();
   (* HACK: end_library resets Lib and then joins the safe env.  To join the
    * env one needs to access the futures stored in the tables.  Standard
    * accessors use Lib.  Hence *)
-  Lazyconstr.set_indirect_opaque_accessor OpaqueTables.get_opaque_nolib;
-  Lazyconstr.set_indirect_univ_accessor OpaqueTables.get_univ_nolib;
+  Opaqueproof.set_indirect_opaque_accessor OpaqueTables.get_opaque_nolib;
+  Opaqueproof.set_indirect_univ_accessor OpaqueTables.get_univ_nolib;
   let cenv, seg, ast = Declaremods.end_library dir in
   let opaque_table, univ_table, disch_table, f2t_map =
     OpaqueTables.dump () in

@@ -546,6 +546,9 @@ let force fsubst r = match r.subst_subst with
 
 let subst_substituted s r = { r with subst_subst = s :: r.subst_subst; }
 
+let force_constr = force subst_mps
+let subst_constr = subst_substituted
+
 (* debug *)
 let repr_substituted r = match r.subst_subst with
 | [] -> None, r.subst_value

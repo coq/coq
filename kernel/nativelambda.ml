@@ -639,11 +639,11 @@ and lambda_of_app env sigma f args =
       begin match cb.const_body with
       | Def csubst ->
           if cb.const_inline_code then
-            lambda_of_app env sigma (Lazyconstr.force csubst) args
+            lambda_of_app env sigma (Mod_subst.force_constr csubst) args
           else
           let prefix = get_const_prefix !global_env kn in
           let t =
-            if is_lazy (Lazyconstr.force csubst) then
+            if is_lazy (Mod_subst.force_constr csubst) then
               mkLapp Lforce [|Lconst (prefix, kn)|]
             else Lconst (prefix, kn)
           in

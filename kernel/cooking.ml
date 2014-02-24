@@ -109,7 +109,7 @@ let abstract_constant_type =
 let abstract_constant_body =
   List.fold_left (fun c d -> mkNamedLambda_or_LetIn d c)
 
-type recipe = { from : constant_body; info : Lazyconstr.cooking_info }
+type recipe = { from : constant_body; info : Opaqueproof.cooking_info }
 type inline = bool
 
 type result =
@@ -118,21 +118,22 @@ type result =
 
 let on_body ml hy f = function
   | Undef _ as x -> x
-  | Def cs -> Def (Lazyconstr.from_val (f (Lazyconstr.force cs)))
-  | OpaqueDef lc ->
-    OpaqueDef (Lazyconstr.discharge_direct_lazy_constr ml hy f lc)
+  | Def cs -> Def (Mod_subst.from_val (f (Mod_subst.force_constr cs)))
+  | OpaqueDef o ->
+    OpaqueDef (Opaqueproof.discharge_direct_opaque ~cook_constr:f
+                 { Opaqueproof.modlist = ml; abstract = hy } o)
 
 let constr_of_def = function
   | Undef _ -> assert false
-  | Def cs -> Lazyconstr.force cs
-  | OpaqueDef lc -> Lazyconstr.force_opaque lc
+  | Def cs -> Mod_subst.force_constr cs
+  | OpaqueDef lc -> Opaqueproof.force_proof lc
 
-let cook_constr { Lazyconstr.modlist ; abstract } c =
+let cook_constr { Opaqueproof.modlist ; abstract } c =
   let cache = Hashtbl.create 13 in
   let hyps = Context.map_named_context (expmod_constr cache modlist) abstract in
   abstract_constant_body (expmod_constr cache modlist c) hyps
 
-let cook_constant env { from = cb; info = { Lazyconstr.modlist; abstract } } =
+let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
   let cache = Hashtbl.create 13 in
   let hyps = Context.map_named_context (expmod_constr cache modlist) abstract in
   let body = on_body modlist hyps

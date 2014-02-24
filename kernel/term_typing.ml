@@ -69,12 +69,12 @@ let handle_side_effects env body side_eff =
       match cb.const_body with
       | Undef _ -> assert false
       | Def b ->
-          let b = Lazyconstr.force b in
+          let b = Mod_subst.force_constr b in
           let b_ty = Typeops.type_of_constant_type env cb.const_type in
           let t = sub c 1 (Vars.lift 1 t) in
           mkLetIn (cname c, b, b_ty, t)
       | OpaqueDef b -> 
-          let b = Lazyconstr.force_opaque b in
+          let b = Opaqueproof.force_proof b in
           let b_ty = Typeops.type_of_constant_type env cb.const_type in
           let t = sub c 1 (Vars.lift 1 t) in
           mkApp (mkLambda (cname c, b_ty, t), [|b|]) in
@@ -108,7 +108,7 @@ let infer_declaration env dcl =
           let _typ, cst = constrain_type env j cst (`SomeWJ (typ,tyj,tycst)) in
           feedback_completion_typecheck feedback_id;
           j.uj_val, cst) in
-      let def = OpaqueDef (Lazyconstr.opaque_from_val proofterm) in
+      let def = OpaqueDef (Opaqueproof.create proofterm) in
       let typ = NonPolymorphicType typ in
       def, typ, tycst, c.const_entry_inline_code, c.const_entry_secctx
   | DefinitionEntry c ->
@@ -120,7 +120,7 @@ let infer_declaration env dcl =
       let j = hcons_j j in
       let typ, cst = constrain_type env j cst (map_option_typ typ) in
       feedback_completion_typecheck feedback_id;
-      let def = Def (Lazyconstr.from_val j.uj_val) in
+      let def = Def (Mod_subst.from_val j.uj_val) in
       def, typ, cst, c.const_entry_inline_code, c.const_entry_secctx
 
 let global_vars_set_constant_type env = function
@@ -159,9 +159,9 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
         let ids_typ = global_vars_set_constant_type env typ in
         let ids_def = match def with
         | Undef _ -> Idset.empty
-        | Def cs -> global_vars_set env (Lazyconstr.force cs)
+        | Def cs -> global_vars_set env (Mod_subst.force_constr cs)
         | OpaqueDef lc ->
-            let vars = global_vars_set env (Lazyconstr.force_opaque lc) in
+            let vars = global_vars_set env (Opaqueproof.force_proof lc) in
             !suggest_proof_using kn env vars ids_typ context_ids;
             if !Flags.compilation_mode = Flags.BuildVo then
               record_aux env ids_typ vars;
@@ -179,12 +179,12 @@ let build_constant_declaration kn env (def,typ,cst,inline_code,ctx) =
         | Undef _ as x -> x (* nothing to check *)
         | Def cs as x ->
             let ids_typ = global_vars_set_constant_type env typ in
-            let ids_def = global_vars_set env (Lazyconstr.force cs) in
+            let ids_def = global_vars_set env (Mod_subst.force_constr cs) in
             let inferred = keep_hyps env (Idset.union ids_typ ids_def) in
             check declared inferred;
             x
         | OpaqueDef lc -> (* In this case we can postpone the check *)
-            OpaqueDef (Lazyconstr.iter_direct_lazy_constr (fun c ->
+            OpaqueDef (Opaqueproof.iter_direct_opaque (fun c ->
               let ids_typ = global_vars_set_constant_type env typ in
               let ids_def = global_vars_set env c in
               let inferred = keep_hyps env (Idset.union ids_typ ids_def) in

@@ -58,7 +58,7 @@ Copcodes
 Cemitcodes
 Nativevalues
 Future
-Lazyconstr
+Opaqueproof
 Declareops
 Retroknowledge
 Conv_oracle

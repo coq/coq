@@ -283,8 +283,8 @@ let safe_push_named (id,_,_ as d) env =
 let push_named_def (id,de) senv =
   let (c,typ,cst) = Term_typing.translate_local_def senv.env id de in
   let c,cst' = match c with
-    | Def c -> Lazyconstr.force c, Univ.empty_constraint
-    | OpaqueDef c -> Lazyconstr.force_opaque_w_constraints c
+    | Def c -> Mod_subst.force_constr c, Univ.empty_constraint
+    | OpaqueDef o -> Opaqueproof.force_proof o, Opaqueproof.force_constraints o
     | _ -> assert false in
   let senv = add_constraints (Now cst') senv in
   let senv' = add_constraints (Now cst) senv in
@@ -321,7 +321,7 @@ let constraints_of_sfb = function
       match cb.const_body with
       | (Undef _ | Def _) -> []
       | OpaqueDef lc ->
-          match Lazyconstr.get_opaque_future_constraints lc with
+          match Opaqueproof.get_constraints lc with
           | None -> []
           | Some fc ->
               match Future.peek_val fc with
@@ -383,7 +383,7 @@ let add_constant dir l decl senv =
     | OpaqueDef lc when DirPath.is_empty dir ->
       (* In coqc, opaque constants outside sections will be stored
          indirectly in a specific table *)
-      { cb with const_body = OpaqueDef (Lazyconstr.turn_indirect lc) }
+      { cb with const_body = OpaqueDef (Opaqueproof.turn_indirect lc) }
     | _ -> cb
   in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in

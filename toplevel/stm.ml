@@ -830,7 +830,7 @@ end = struct (* {{{ *)
           List.iter (fun (_,se) -> Declareops.iter_side_effects (function
             | Declarations.SEsubproof(_,
                { Declarations.const_body = Declarations.OpaqueDef f } ) ->
-               Lazyconstr.join_lazy_constr f
+               Opaqueproof.join_opaque f
             | _ -> ())
           se) l;
           l) in
@@ -888,7 +888,8 @@ end = struct (* {{{ *)
         let c = Global.lookup_constant con in
         match c.Declarations.const_body with
         | Declarations.OpaqueDef lc ->
-            let pr, uc = Lazyconstr.get_opaque_futures lc in
+            let uc = Option.get (Opaqueproof.get_constraints lc) in
+            let pr = Opaqueproof.get_proof lc in
             let pr = Future.chain ~greedy:true ~pure:true pr discharge in
             let pr = Future.chain ~greedy:true ~pure:true pr Constr.hcons in
             ignore(Future.join pr);

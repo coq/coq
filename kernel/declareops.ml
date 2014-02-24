@@ -8,7 +8,6 @@
 
 open Declarations
 open Mod_subst
-open Lazyconstr
 open Util
 
 (** Operations concernings types in [Declarations] :
@@ -18,14 +17,14 @@ open Util
 
 let body_of_constant cb = match cb.const_body with
   | Undef _ -> None
-  | Def c -> Some (Lazyconstr.force c)
-  | OpaqueDef lc -> Some (Lazyconstr.force_opaque lc)
+  | Def c -> Some (force_constr c)
+  | OpaqueDef o -> Some (Opaqueproof.force_proof o)
 
 let constraints_of_constant cb = Univ.union_constraints cb.const_constraints
  (match cb.const_body with
   | Undef _ -> Univ.empty_constraint
   | Def c -> Univ.empty_constraint
-  | OpaqueDef lc -> snd (Lazyconstr.force_opaque_w_constraints lc))
+  | OpaqueDef o -> Opaqueproof.force_constraints o)
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false
@@ -57,8 +56,8 @@ let subst_const_type sub arity = match arity with
 
 let subst_const_def sub def = match def with
   | Undef _ -> def
-  | Def c -> Def (subst_constr_subst sub c)
-  | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
+  | Def c -> Def (subst_constr sub c)
+  | OpaqueDef o -> OpaqueDef (Opaqueproof.subst_opaque sub o)
 
 let subst_const_body sub cb =
   assert (List.is_empty cb.const_hyps); (* we're outside sections *)
@@ -104,7 +103,7 @@ let hcons_const_type = function
 let hcons_const_def = function
   | Undef inl -> Undef inl
   | Def l_constr ->
-    let constr = force l_constr in
+    let constr = force_constr l_constr in
     Def (from_val (Term.hcons_constr constr))
   | OpaqueDef _ as x -> x (* hashconsed when turned indirect *)
 
@@ -238,7 +237,7 @@ let hcons_mind mib =
 
 let join_constant_body cb =
   match cb.const_body with
-  | OpaqueDef d -> Lazyconstr.join_lazy_constr d
+  | OpaqueDef o -> Opaqueproof.join_opaque o
   | _ -> ()
 
 let string_of_side_effect = function

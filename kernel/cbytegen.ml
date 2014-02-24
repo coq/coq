@@ -719,7 +719,7 @@ let compile env c =
 let compile_constant_body env = function
   | Undef _ | OpaqueDef _ -> BCconstant
   | Def sb ->
-      let body = Lazyconstr.force sb in
+      let body = Mod_subst.force_constr sb in
       match kind_of_term body with
 	| Const kn' ->
 	    (* we use the canonical name of the constant*)

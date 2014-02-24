@@ -37,8 +37,8 @@ type inline = int option
 
 type constant_def =
   | Undef of inline
-  | Def of Lazyconstr.constr_substituted
-  | OpaqueDef of Lazyconstr.lazy_constr
+  | Def of constr Mod_subst.substituted
+  | OpaqueDef of Opaqueproof.opaque
 
 (* some contraints are in constant_constraints, some other may be in
  * the OpaueDef *)

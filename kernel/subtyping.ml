@@ -290,8 +290,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 	    | Def lc1 ->
 	      (* NB: cb1 might have been strengthened and appear as transparent.
 		 Anyway [check_conv] will handle that afterwards. *)
-	      let c1 = Lazyconstr.force lc1 in
-	      let c2 = Lazyconstr.force lc2 in
+	      let c1 = Mod_subst.force_constr lc1 in
+	      let c2 = Mod_subst.force_constr lc2 in
 	      check_conv NotConvertibleBodyField cst conv env c1 c2))
    | IndType ((kn,i),mind1) ->
        ignore (Errors.error (

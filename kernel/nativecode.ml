@@ -1523,7 +1523,7 @@ and compile_named env sigma auxdefs id =
 let compile_constant env sigma prefix ~interactive con body =
   match body with
   | Def t ->
-      let t = Lazyconstr.force t in
+      let t = Mod_subst.force_constr t in
       let code = lambda_of_constr env sigma t in
       let is_lazy = is_lazy t in
       let code = if is_lazy then mk_lazy code else code in
@@ -1628,7 +1628,7 @@ let rec compile_deps env sigma prefix ~interactive init t =
       else
       let comp_stack, (mind_updates, const_updates) = match cb.const_body with
         | Def t ->
-	   compile_deps env sigma prefix ~interactive init (Lazyconstr.force t)
+	   compile_deps env sigma prefix ~interactive init (Mod_subst.force_constr t)
         | _ -> init
       in
       let code, name =

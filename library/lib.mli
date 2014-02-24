@@ -187,7 +187,7 @@ val discharge_global : Globnames.global_reference -> Globnames.global_reference
 val discharge_inductive : Names.inductive -> Names.inductive
 
 (* discharging a constant in one go *)
-val full_replacement_context : unit -> Lazyconstr.work_list list
+val full_replacement_context : unit -> Opaqueproof.work_list list
 val full_section_segment_of_constant :
   Names.constant -> (Context.named_context -> Context.named_context) list
 

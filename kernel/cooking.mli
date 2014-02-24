@@ -14,7 +14,7 @@ open Univ
 
 (** {6 Cooking the constants. } *)
 
-type recipe = { from : constant_body; info : Lazyconstr.cooking_info }
+type recipe = { from : constant_body; info : Opaqueproof.cooking_info }
 
 type inline = bool
 
@@ -23,9 +23,9 @@ type result =
     * Context.section_context option
 
 val cook_constant : env -> recipe -> result
-val cook_constr : Lazyconstr.cooking_info -> Term.constr -> Term.constr
+val cook_constr : Opaqueproof.cooking_info -> Term.constr -> Term.constr
 
 (** {6 Utility functions used in module [Discharge]. } *)
 
-val expmod_constr : Lazyconstr.work_list -> constr -> constr
+val expmod_constr : Opaqueproof.work_list -> constr -> constr
 

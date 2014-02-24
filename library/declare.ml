@@ -121,7 +121,7 @@ let open_constant i ((sp,kn), obj) =
     match (Global.lookup_constant con).const_body with
     | (Def _ | Undef _) -> ()
     | OpaqueDef lc ->
-        match Lazyconstr.get_opaque_future_constraints lc with
+        match Opaqueproof.get_constraints lc with
         | Some f when Future.is_val f -> Global.add_constraints (Future.force f)
         | _ -> ()
 
@@ -155,7 +155,7 @@ let discharge_constant ((sp, kn), obj) =
   let hyps = section_segment_of_constant con in
   let new_hyps = (discharged_hyps kn hyps) @ obj.cst_hyps in
   let abstract = named_of_variable_context hyps in
-  let new_decl = GlobalRecipe{ from; info = { Lazyconstr.modlist; abstract }} in
+  let new_decl = GlobalRecipe{ from; info = { Opaqueproof.modlist; abstract}} in
   Some { obj with cst_hyps = new_hyps; cst_decl = new_decl; }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
@@ -197,8 +197,8 @@ let declare_sideff se =
   let id_of c = Names.Label.to_id (Names.Constant.label c) in
   let pt_opaque_of cb =
     match cb with
-    | { const_body = Def sc } -> Lazyconstr.force sc, false
-    | { const_body = OpaqueDef fc } -> Lazyconstr.force_opaque fc, true
+    | { const_body = Def sc } -> Mod_subst.force_constr sc, false
+    | { const_body = OpaqueDef fc } -> Opaqueproof.force_proof fc, true
     | { const_body = Undef _ } -> anomaly(str"Undefined side effect")
   in
   let ty_of cb =

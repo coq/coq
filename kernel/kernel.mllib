@@ -12,7 +12,7 @@ Cbytecodes
 Copcodes
 Cemitcodes
 Nativevalues
-Lazyconstr
+Opaqueproof
 Declareops
 Retroknowledge
 Conv_oracle

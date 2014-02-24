@@ -152,3 +152,7 @@ val occur_mbid : MBId.t -> substitution -> bool
     - [Some s, a] when r is a delayed substitution [s] applied to [a] *)
 
 val repr_substituted : 'a substituted -> substitution list option * 'a
+
+val force_constr : Term.constr substituted -> Term.constr
+val subst_constr :
+  substitution -> Term.constr substituted -> Term.constr substituted
