@@ -1595,9 +1595,9 @@ let join () =
   jab (VCS.get_branch_pos VCS.Branch.master);
   VCS.print ()
 
-type tasks = Slaves.tasks
-let dump x = Slaves.dump x
-let check_task name tasks i =
+type tasks = Slaves.tasks * RemoteCounter.remote_counters_status
+let dump x = Slaves.dump x, RemoteCounter.backup ()
+let check_task name (tasks,_) i =
   let vcs = VCS.backup () in
   try
     let rc = Future.purify (Slaves.check_task name tasks) i in
@@ -1605,11 +1605,12 @@ let check_task name tasks i =
     VCS.restore vcs;
     rc
   with e when Errors.noncritical e -> VCS.restore vcs; false
-let info_tasks tasks = Slaves.info_tasks tasks
-let finish_tasks name u d p tasks =
+let info_tasks (tasks,_) = Slaves.info_tasks tasks
+let finish_tasks name u d p (t,rcbackup as tasks) =
+  RemoteCounter.restore rcbackup;
   let finish_task (_,_,i) =
     let vcs = VCS.backup () in
-    Future.purify (Slaves.finish_task name u d p tasks) i;
+    Future.purify (Slaves.finish_task name u d p t) i;
     Pp.pperr_flush ();
     VCS.restore vcs in
   try List.iter finish_task (info_tasks tasks)
