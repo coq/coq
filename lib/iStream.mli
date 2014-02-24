@@ -15,6 +15,11 @@
 type +'a t
 (** Type of pure streams. *)
 
+type ('a,'r) u =
+| Nil
+| Cons of 'a * 'r
+(** View type to decompose and build streams. *)
+
 (** {6 Constructors} *)
 
 val empty : 'a t
@@ -23,7 +28,7 @@ val empty : 'a t
 val cons : 'a -> 'a t -> 'a t
 (** Append an element in front of a stream. *)
 
-val thunk : 'a t Lazy.t -> 'a t
+val thunk : (unit -> ('a,'a t) u) -> 'a t
 (** Internalize the lazyness of a stream. *)
 
 (** {6 Destructors} *)
@@ -31,12 +36,7 @@ val thunk : 'a t Lazy.t -> 'a t
 val is_empty : 'a t -> bool
 (** Whethere a stream is empty. *)
 
-type ('a,'r) peek =
-| Nil
-| Cons of 'a * 'r
-(** View type for {!peek} *)
-
-val peek : 'a t -> ('a , 'a t) peek
+val peek : 'a t -> ('a , 'a t) u
 (** Return the head and the tail of a stream, if any. *)
 
 (** {6 Standard operations}

@@ -6,11 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type ('a,'r) peek =
+type ('a,'r) u =
 | Nil
 | Cons of 'a * 'r
 
-type 'a node = ('a,'a t) peek
+type 'a node = ('a,'a t) u
 
 and 'a t = 'a node Lazy.t
 
@@ -18,7 +18,7 @@ let empty = Lazy.lazy_from_val Nil
 
 let cons x s = Lazy.lazy_from_val (Cons (x, s))
 
-let thunk s = lazy (Lazy.force (Lazy.force s))
+let thunk = Lazy.lazy_from_fun
 
 let rec force s = match Lazy.force s with
 | Nil -> ()

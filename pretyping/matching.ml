@@ -266,7 +266,7 @@ type matching_result =
     { m_sub : bound_ident_map * patvar_map;
       m_ctx : constr; }
 
-let mkresult s c n = IStream.cons { m_sub=s; m_ctx=c; } (IStream.thunk n)
+let mkresult s c n = IStream.Cons ( { m_sub=s; m_ctx=c; } , (IStream.thunk n) )
 
 let isPMeta = function PMeta _ -> true | _ -> false
 
@@ -286,9 +286,9 @@ let authorized_occ partial_app closed pat c mk_ctx next =
   try
     let sigma = matches_core_closed None partial_app pat c in
     if closed && Id.Map.exists (fun _ c -> not (closed0 c)) (snd sigma)
-    then Lazy.force next
+    then next ()
     else mkresult sigma (mk_ctx (mkMeta special_meta)) next
-  with PatternMatchingFailure -> Lazy.force next
+  with PatternMatchingFailure -> next ()
 
 (* Tries to match a subterm of [c] with [pat] *)
 let sub_match ?(partial_app=false) ?(closed=true) pat c =
@@ -296,25 +296,25 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
   match kind_of_term c with
   | Cast (c1,k,c2) ->
       let next_mk_ctx lc = mk_ctx (mkCast (List.hd lc, k,c2)) in
-      let next = lazy (try_aux [c1] next_mk_ctx next) in
+      let next () = try_aux [c1] next_mk_ctx next in
       authorized_occ partial_app closed pat c mk_ctx next
   | Lambda (x,c1,c2) ->
       let next_mk_ctx lc = mk_ctx (mkLambda (x,List.hd lc,List.nth lc 1)) in
-      let next = lazy (try_aux [c1;c2] next_mk_ctx next) in
+      let next () = try_aux [c1;c2] next_mk_ctx next in
       authorized_occ partial_app closed pat c mk_ctx next
   | Prod (x,c1,c2) ->
       let next_mk_ctx lc = mk_ctx (mkProd (x,List.hd lc,List.nth lc 1)) in
-      let next = lazy (try_aux [c1;c2] next_mk_ctx next) in
+      let next () = try_aux [c1;c2] next_mk_ctx next in
       authorized_occ partial_app closed pat c mk_ctx next
   | LetIn (x,c1,t,c2) ->
       let next_mk_ctx = function
       | [c1;c2] -> mkLetIn (x,c1,t,c2)
       | _ -> assert false
       in
-      let next = lazy (try_aux [c1;c2] next_mk_ctx next) in
+      let next () = try_aux [c1;c2] next_mk_ctx next in
       authorized_occ partial_app closed pat c mk_ctx next
   | App (c1,lc) ->
-      let next = lazy (
+      let next () =
         let topdown = true in
         if partial_app then
           if topdown then
@@ -333,14 +333,14 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
                   try_aux (c1::Array.to_list lc) mk_ctx next
               | arg :: args ->
                   let app = mkApp (app,[|arg|]) in
-                  let next = lazy (aux2 app args next) in
+                  let next () = aux2 app args next in
                   let mk_ctx ce = mk_ctx (mkApp (ce, Array.of_list args)) in
                   aux app mk_ctx next in
             aux2 c1 (Array.to_list lc) next
         else
           let mk_ctx le =
             mk_ctx (mkApp (List.hd le, Array.of_list (List.tl le))) in
-          try_aux (c1::Array.to_list lc) mk_ctx next)
+          try_aux (c1::Array.to_list lc) mk_ctx next
       in
       authorized_occ partial_app closed pat c mk_ctx next
   | Case (ci,hd,c1,lc) ->
@@ -348,24 +348,24 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
       | [] -> assert false
       | c1 :: lc -> mk_ctx (mkCase (ci,hd,c1,Array.of_list lc))
       in
-      let next = lazy (try_aux (c1 :: Array.to_list lc) next_mk_ctx next) in
+      let next () = try_aux (c1 :: Array.to_list lc) next_mk_ctx next in
       authorized_occ partial_app closed pat c mk_ctx next
   | Fix (indx,(names,types,bodies)) ->
     let nb_fix = Array.length types in
     let next_mk_ctx le =
       let (ntypes,nbodies) = CList.chop nb_fix le in
       mk_ctx (mkFix (indx,(names, Array.of_list ntypes, Array.of_list nbodies))) in
-    let next = lazy
-      (try_aux
-	 ((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next) in
+    let next () =
+      try_aux
+	((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next in
     authorized_occ partial_app closed pat c mk_ctx next
   | CoFix (i,(names,types,bodies)) ->
     let nb_fix = Array.length types in
     let next_mk_ctx le =
       let (ntypes,nbodies) = CList.chop nb_fix le in
       mk_ctx (mkCoFix (i,(names, Array.of_list ntypes, Array.of_list nbodies))) in
-    let next = lazy
-      (try_aux ((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next) in
+    let next () =
+      try_aux ((Array.to_list types)@(Array.to_list bodies)) next_mk_ctx next in
     authorized_occ partial_app closed pat c mk_ctx next
   | Construct _| Ind _|Evar _|Const _ | Rel _|Meta _|Var _|Sort _ ->
       authorized_occ partial_app closed pat c mk_ctx next
@@ -373,14 +373,14 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
   (* Tries [sub_match] for all terms in the list *)
   and try_aux lc mk_ctx next =
     let rec try_sub_match_rec lacc = function
-      | [] -> Lazy.force next
+      | [] -> next ()
       | c::tl ->
           let mk_ctx ce = mk_ctx (List.rev_append lacc (ce::tl)) in
-          let next = lazy (try_sub_match_rec (c::lacc) tl) in
+          let next () = try_sub_match_rec (c::lacc) tl in
           aux c mk_ctx next in
     try_sub_match_rec [] lc in
-  let lempty = lazy IStream.empty in
-  let result = lazy (aux c (fun x -> x) lempty) in
+  let lempty () = IStream.Nil in
+  let result () = aux c (fun x -> x) lempty in
   IStream.thunk result
 
 let match_subterm pat c = sub_match pat c
