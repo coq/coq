@@ -14,13 +14,9 @@ type 'a node = ('a,'a t) peek
 
 and 'a t = 'a node Lazy.t
 
-let lift (n : 'a node) : 'a t = Obj.magic n
-(** Small hack to overcome a missing optimization in OCaml compilation of lazy
-    values. *)
+let empty = Lazy.lazy_from_val Nil
 
-let empty = lift Nil
-
-let cons x s = lift (Cons (x, s))
+let cons x s = Lazy.lazy_from_val (Cons (x, s))
 
 let thunk s = lazy (Lazy.force (Lazy.force s))
 
