@@ -167,7 +167,7 @@ module PatternMatching (E:StaticEnvironment) = struct
       coherent. *)
   let (>>=) (type a) (type b) (x:a m) (f:a -> b m) : b m =
     let open IStream in
-    concat (map begin fun { subst=substx; context=contextx; terms=termsx; lhs=lhsx } ->
+    concat_map begin fun { subst=substx; context=contextx; terms=termsx; lhs=lhsx } ->
       map_filter begin fun { subst=substf; context=contextf; terms=termsf; lhs=lhsf } ->
         try 
           Some { 
@@ -178,7 +178,7 @@ module PatternMatching (E:StaticEnvironment) = struct
           }
         with Not_coherent_metas -> None
       end (f lhsx)
-    end x)
+    end x
 
   (** A variant of [(>>=)] when the first argument returns [unit]. *)
   let (<*>) (type a) (x:unit m) (y:a m) : a m =

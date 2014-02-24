@@ -76,3 +76,5 @@ let rec concat_node = function
 
 and concat (s : 'a t t) =
   lazy (concat_node (Lazy.force s))
+
+let concat_map f l = concat (map f l)

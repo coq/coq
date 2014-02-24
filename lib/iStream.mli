@@ -61,6 +61,9 @@ val concat : 'a t t -> 'a t
 val map_filter : ('a -> 'b option) -> 'a t -> 'b t
 (** Mixing [map] and [filter]. Not tail-rec. *)
 
+val concat_map : ('a -> 'b t) -> 'a t -> 'b t
+(** [concat_map f l] is the same as [concat (map f l)]. *)
+
 (** {6 Conversions} *)
 
 val of_list : 'a list -> 'a t
