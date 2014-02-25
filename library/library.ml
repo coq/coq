@@ -422,6 +422,13 @@ module OpaqueTables = struct
    Array.sub !local_discharge_table 0 !local_index,
    FMap.bindings !f2t
 
+ let reset () =
+   local_discharge_table := Array.make 100 a_discharge;
+   local_univ_table := Array.make 100 a_univ;
+   local_opaque_table := Array.make 100 a_constr;
+   f2t := FMap.empty;
+   local_index := 0
+
 end
 
 let () =
@@ -659,6 +666,7 @@ let start_library f =
   let id = Id.of_string (Filename.basename f) in
   check_coq_overwriting ldir0 id;
   let ldir = add_dirpath_suffix ldir0 id in
+  OpaqueTables.reset ();
   Opaqueproof.set_indirect_creator OpaqueTables.store;
   Declaremods.start_library ldir;
   ldir,longf
