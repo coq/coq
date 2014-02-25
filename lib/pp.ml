@@ -430,13 +430,13 @@ let prlist_sep_lastsep no_empty sep lastsep elem =
     |[] -> mt ()
     |[e] -> elem e
     |h::t -> let e = elem h in
-	if no_empty && e = mt () then start t else
+	if no_empty && ismt e then start t else
 	  let rec aux = function
 	    |[] -> mt ()
 	    |h::t ->
 	       let e = elem h and r = aux t in
-		 if no_empty && e = mt () then r else
-		   if r = mt ()
+		 if no_empty && ismt e then r else
+		   if ismt r
 		   then let s = lastsep () in s ++ e
 		   else let s = sep () in s ++ e ++ r
 	  in let r = aux t in e ++ r

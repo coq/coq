@@ -635,11 +635,12 @@ let print_opaque_name qid =
 let print_about_any loc k =
   match k with
   | Term ref ->
+    let rb = Reductionops.ReductionBehaviour.print ref in
     Dumpglob.add_glob loc ref;
       pr_infos_list
        (print_ref false ref :: blankline ::
 	print_name_infos ref @
-	Reductionops.ReductionBehaviour.print ref ::
+	(if Pp.ismt rb then [] else [rb]) @
 	print_opacity ref @
 	[hov 0 (str "Expands to: " ++ pr_located_qualid k)])
   | Syntactic kn ->
