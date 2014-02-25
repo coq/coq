@@ -1994,12 +1994,14 @@ and interp_atomic ist tac =
               Proofview.Goal.return (mk_hyp_value ist env (out_gen (glbwit wit_var) x))
           | GenArgType -> f (out_gen (glbwit wit_genarg) x)
           | ConstrArgType ->
-              Proofview.Goal.return (Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl) >>== fun (sigma,v) ->
+              let (sigma,v) =
+                Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl
+              in
               (Proofview.V82.tclEVARS sigma) <*>
 	      (Proofview.Goal.return v)
           | OpenConstrArgType ->
-              Proofview.Goal.return (
-                Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl) >>== fun (sigma,v) ->
+              let (sigma,v) =
+                Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl in
               (Proofview.V82.tclEVARS sigma) <*>
 	      (Proofview.Goal.return v)
           | ConstrMayEvalArgType ->
