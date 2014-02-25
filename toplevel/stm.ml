@@ -837,10 +837,11 @@ end = struct (* {{{ *)
         VCS.print ();
         r
 
-  let check_task_aux name l i =
+  let check_task_aux extra name l i =
     match List.nth l i with
-    | ReqBuildProof ((id,valid),eop,vcs,loc,_,s) as req ->
-        Pp.msg_info(str(Printf.sprintf "Checking task %d (%s) of %s" i s name));
+    | ReqBuildProof ((id,valid),eop,vcs,loc,_,s) ->
+        Pp.msg_info(
+          str(Printf.sprintf "Checking task %d (%s%s) of %s" i s extra name));
         VCS.restore vcs;
         try
           !reach_known_state ~cache:`No eop;
@@ -851,7 +852,7 @@ end = struct (* {{{ *)
           vernac_interp eop ~proof
             { verbose = false; loc;
               expr = (VernacEndProof (Proved (true,None))) };
-          Some (req,proof)
+          Some proof
         with e -> (try
           match Stateid.get e with
           | None ->
@@ -878,9 +879,11 @@ end = struct (* {{{ *)
                         str (Printexc.to_string e))); None
 
   let finish_task name u d p l i =
-    match check_task_aux name l i with
+    let bucket =
+      match List.nth l i with ReqBuildProof (_,_,_,_,bucket,_) -> bucket in
+    match check_task_aux (Printf.sprintf ", bucket %d" bucket) name l i with
     | None -> exit 1
-    | Some (ReqBuildProof ((id,valid),eop,vcs,loc,bucket,s), (po,pt)) ->
+    | Some (po,pt) ->
         let discharge c = List.fold_right Cooking.cook_constr d.(bucket) c in
         let con =
           Nametab.locate_constant
@@ -894,15 +897,12 @@ end = struct (* {{{ *)
             let pr = Future.chain ~greedy:true ~pure:true pr Constr.hcons in
             ignore(Future.join pr);
             ignore(Future.join uc);
-            Pp.msg_info(str(Printf.sprintf
-              "Assigning output of task %d (%s) of %s to bucket %d"
-              i s name bucket));
             u.(bucket) <- uc;
             p.(bucket) <- pr
         | _ -> assert false
   
   let check_task name l i =
-    match check_task_aux name l i with
+    match check_task_aux "" name l i with
     | Some _ -> true
     | None -> false
 
