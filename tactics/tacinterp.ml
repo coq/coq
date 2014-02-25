@@ -1984,7 +1984,7 @@ and interp_atomic ist tac =
           let sigma = Proofview.Goal.sigma gl in
         match tag with
           | IntOrVarArgType ->
-              (Proofview.Goal.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x)))
+              Proofview.Goal.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x))
           | IdentArgType ->
               Proofview.Goal.lift begin
 	        Goal.return (value_of_ident (interp_fresh_ident ist env
@@ -1997,13 +1997,13 @@ and interp_atomic ist tac =
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl
               in
-              (Proofview.V82.tclEVARS sigma) <*>
-	      (Proofview.Goal.return v)
+              Proofview.V82.tclEVARS sigma <*>
+	      Proofview.Goal.return v
           | OpenConstrArgType ->
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl in
-              (Proofview.V82.tclEVARS sigma) <*>
-	      (Proofview.Goal.return v)
+              Proofview.V82.tclEVARS sigma <*>
+	      Proofview.Goal.return v
           | ConstrMayEvalArgType ->
               let (sigma,c_interp) =
                 interp_constr_may_eval ist env sigma
@@ -2019,8 +2019,8 @@ and interp_atomic ist tac =
 	          sigma , c_interp::acc
 	        end (out_gen wit x) (project gl,[])
               end gl in
-              (Proofview.V82.tclEVARS sigma) <*>
-              (Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) l_interp))
+              Proofview.V82.tclEVARS sigma <*>
+              Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) l_interp)
           | ListArgType VarArgType ->
               let wit = glbwit (wit_list wit_var) in
               Proofview.Goal.return (
@@ -2030,12 +2030,12 @@ and interp_atomic ist tac =
           | ListArgType IntOrVarArgType ->
               let wit = glbwit (wit_list wit_int_or_var) in
               let ans = List.map (mk_int_or_var_value ist) (out_gen wit x) in
-              (Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) ans))
+              Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) ans)
           | ListArgType IdentArgType ->
               let wit = glbwit (wit_list wit_ident) in
 	      let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
 	      let ans = List.map mk_ident (out_gen wit x) in
-              (Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) ans))
+              Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) ans)
           | ListArgType t  ->
               (* spiwack: unsafe, we should introduce relevant combinators.
                  Before new tactical it simply read: [Genarg.app_list f x] *)
@@ -2058,7 +2058,7 @@ and interp_atomic ist tac =
               else
                 let goal = Proofview.Goal.goal gl in
                 let (newsigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} x in
-                Proofview.V82.tactic (tclEVARS newsigma) <*>
+                Proofview.V82.tclEVARS newsigma <*>
                 Proofview.Goal.return v
           | _ -> assert false
         end
