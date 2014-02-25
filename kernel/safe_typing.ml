@@ -525,13 +525,22 @@ let build_module_body params restype senv =
     (constraints, imports, etc) *)
 
 let propagate_senv newdef newenv newresolver senv oldsenv =
+  let now_cst, later_cst = List.partition Future.is_val senv.future_cst in
+  (* This asserts that after Paral-ITP, standard vo compilation is behaving
+   * exctly as before: the same universe constraints are added to modules *)
+  if !Flags.compilation_mode = Flags.BuildVo &&
+     !Flags.async_proofs_mode = Flags.APoff then assert(later_cst = []);
   { oldsenv with
     env = newenv;
     modresolver = newresolver;
     revstruct = newdef::oldsenv.revstruct;
     modlabels = Label.Set.add (fst newdef) oldsenv.modlabels;
-    univ = Univ.union_constraints senv.univ oldsenv.univ;
-    future_cst = senv.future_cst @ oldsenv.future_cst;
+    univ =
+      List.fold_left (fun acc cst ->
+        Univ.union_constraints acc (Future.force cst))
+      (Univ.union_constraints senv.univ oldsenv.univ)
+      now_cst;
+    future_cst = later_cst @ oldsenv.future_cst;
     (* engagement is propagated to the upper level *)
     engagement = senv.engagement;
     imports = senv.imports;
