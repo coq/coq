@@ -934,7 +934,7 @@ let is_not_printable onlyparse noninjective = function
   if not onlyparse && noninjective then
     let () = msg_warning (strbrk "This notation will not be used for printing as it is not reversible.") in
     true
-  else false
+  else onlyparse
 
 let find_precedence lev etyps symbols =
   match symbols with
