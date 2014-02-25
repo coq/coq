@@ -617,6 +617,7 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
   if !some_vfile then
     begin
       print "quick:\n\t$(MAKE) -f $(firstword $(MAKEFILE_LIST)) all VO=vi\n";
+      print "vi2vo:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) -schedule-vi2vo $(J) $(VOFILES:%.vo=%.vi)\n";
       print "checkproofs:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) -schedule-vi-checking $(J) $(VOFILES:%.vo=%.vi)\n";
       print "gallina: $(GFILES)\n\n";
       print "html: $(GLOBFILES) $(VFILES)\n";
