@@ -134,8 +134,6 @@ val nf_betaiotazeta : local_reduction_function
 val nf_betadeltaiota : reduction_function
 val nf_evar : evar_map -> constr -> constr
 
-val nf_betaiota_preserving_vm_cast : reduction_function
-
 (** Lazy strategy, weak head reduction *)
 
 val whd_evar :  evar_map -> constr -> constr
@@ -220,8 +218,6 @@ val reduce_mind_case : constr miota_args -> constr
 val find_conclusion : env -> evar_map -> constr -> (constr,constr) kind_of_term
 val is_arity : env ->  evar_map -> constr -> bool
 val is_sort : env -> evar_map -> types -> bool
-
-val whd_programs :  reduction_function
 
 val contract_fix : ?env:Environ.env -> fixpoint ->
   (constr * constr list) option -> constr

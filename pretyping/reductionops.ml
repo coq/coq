@@ -889,72 +889,6 @@ let nf_betaiotazeta = clos_norm_flags Closure.betaiotazeta empty_env
 let nf_betadeltaiota env sigma =
   clos_norm_flags Closure.betadeltaiota env sigma
 
-
-(* Attention reduire un beta-redexe avec un argument qui n'est pas
-   une variable, peut changer enormement le temps de conversion lors
-   du type checking :
-     (fun x => x + x) M
-*)
-let whd_betaiota_preserving_vm_cast env sigma t =
-   let rec stacklam_var subst t stack =
-     match (Stack.decomp stack,kind_of_term t) with
-     | Some (h,stacktl), Lambda (_,_,c) ->
-         begin match kind_of_term h with
-         | Rel i when not (evaluable_rel i env) ->
-             stacklam_var (h::subst) c stacktl
-         | Var id when  not (evaluable_named id env)->
-             stacklam_var (h::subst) c stacktl
-         | _ -> whrec (substl subst t, stack)
-         end
-     | _ -> whrec (substl subst t, stack)
-   and whrec (x, stack as s) =
-     match kind_of_term x with
-       | Evar ev ->
-           (match safe_evar_value sigma ev with
-              | Some body -> whrec (body, stack)
-              | None -> s)
-       | Cast (c,VMcast,t) ->
-           let c = Stack.zip (whrec (c,Stack.empty)) in
-           let t = Stack.zip (whrec (t,Stack.empty)) in
-           (mkCast(c,VMcast,t),stack)
-       | Cast (c,NATIVEcast,t) ->
-           let c = Stack.zip (whrec (c,Stack.empty)) in
-           let t = Stack.zip (whrec (t,Stack.empty)) in
-           (mkCast(c,NATIVEcast,t),stack)
-       | Cast (c,DEFAULTcast,_) ->
-           whrec (c, stack)
-       | App (f,cl)  -> whrec (f, Stack.append_app cl stack)
-       | Lambda (na,t,c) ->
-           (match Stack.decomp stack with
-            | Some (a,m) -> stacklam_var [a] c m
-            | _ -> s)
-       | Case (ci,p,d,lf) ->
-	 whrec (d, Stack.Case (ci,p,lf,None) :: stack)
-
-       | Construct (ind,c) -> begin
-	 match Stack.strip_app stack with
-	   |args, (Stack.Case(ci, _, lf,_)::s') ->
-	     whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
-	   |args, (Stack.Fix (f,s',cst)::s'') ->
-	     let x' = Stack.zip(x,args) in
-	     whrec (contract_fix f cst,s' @ (Stack.append_app [|x'|] s''))
-	   |_ -> s
-       end
-
-       | CoFix cofix -> begin
-	 match Stack.strip_app stack with
-	   |args, (Stack.Case(ci, _, lf,_)::s') ->
-	     whrec (contract_cofix cofix None, stack)
-	   |_ -> s
-       end
-
-       | x -> s
-   in
-   Stack.zip (whrec (t,Stack.empty))
-
-let nf_betaiota_preserving_vm_cast =
-  strong whd_betaiota_preserving_vm_cast
-
 (********************************************************************)
 (*                         Conversion                               *)
 (********************************************************************)
@@ -1199,61 +1133,6 @@ let whd_betaiota_deltazeta_for_iota_state ts env sigma csts s =
 	if isConstruct t_o then whrec csts_o (t_o, stack_o@stack') else s,csts'
       |_ -> s,csts'
   in whrec csts s
-
-(* A reduction function like whd_betaiota but which keeps casts
- * and does not reduce redexes containing existential variables.
- * Used in Correctness.
- * Added by JCF, 29/1/98. *)
-
-let whd_programs_stack env sigma =
-  let rec whrec (x, stack as s) =
-    match kind_of_term x with
-      | App (f,cl) ->
-	  let n = Array.length cl - 1 in
-	  let c = cl.(n) in
-	  if occur_existential c then
-	    s
-	  else
-	    whrec (mkApp (f, Array.sub cl 0 n), Stack.append_app [|c|] stack)
-      | LetIn (_,b,_,c) ->
-	  if occur_existential b then
-	    s
-	  else
-	    stacklam whrec [b] c stack
-      | Lambda (_,_,c) ->
-          (match Stack.decomp stack with
-             | None -> s
-             | Some (a,m) -> stacklam whrec [a] c m)
-      | Case (ci,p,d,lf) ->
-	  if occur_existential d then
-	    s
-	  else
-	    whrec (d, Stack.Case (ci,p,lf,None) :: stack)
-      | Fix ((ri,n),_ as f) ->
-	(match Stack.strip_n_app ri.(n) stack with
-	  |None -> s
-	  |Some (bef,arg,s') -> whrec (arg, Stack.Fix(f,bef,None)::s'))
-      | Construct (ind,c) -> begin
-	match Stack.strip_app stack with
-	  |args, (Stack.Case(ci, _, lf,_)::s') ->
-	    whrec (lf.(c-1), (Stack.tail ci.ci_npar args) @ s')
-	  |args, (Stack.Fix (f,s',cst)::s'') ->
-	    let x' = Stack.zip(x,args) in
-	    whrec (contract_fix f cst,s' @ (Stack.append_app [|x'|] s''))
-	  |_ -> s
-      end
-      | CoFix cofix -> begin
-	match Stack.strip_app stack with
-	  |args, (Stack.Case(ci, _, lf,_)::s') ->
-	     whrec (contract_cofix cofix None, stack)
-	  |_ -> s
-      end
-      | _ -> s
-  in
-  whrec
-
-let whd_programs env sigma x =
-  Stack.zip (whd_programs_stack env sigma (x, Stack.empty))
 
 let find_conclusion env sigma =
   let rec decrec env c =
