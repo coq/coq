@@ -1971,52 +1971,51 @@ and interp_atomic ist tac =
       end
   | TacAlias (loc,s,l) ->
       let (_, body) = Tacenv.interp_alias s in
-      let rec f x = match genarg_tag x with
+      let rec f x gl = match genarg_tag x with
       | QuantHypArgType | RedExprArgType
       | ConstrWithBindingsArgType
       | BindingsArgType
       | OptArgType _ | PairArgType _ -> (** generic handler *)
-        Proofview.Goal.enterl begin fun gl ->
+        Proofview.tclEVARMAP >= fun sigma ->
+        Proofview.V82.wrap_exceptions begin fun () ->
           let env = Proofview.Goal.env gl in
-          let sigma = Proofview.Goal.sigma gl in
           let concl = Proofview.Goal.concl gl in
           let goal = Proofview.Goal.goal gl in
           let (sigma, arg) = interp_genarg ist env sigma concl goal x in
-          Proofview.V82.tclEVARS sigma <*> Proofview.Goal.return arg
+          Proofview.V82.tclEVARS sigma <*> Proofview.tclUNIT arg
         end
       | _ as tag -> (** Special treatment. TODO: use generic handler  *)
-        Proofview.Goal.enterl begin fun gl ->
+        Proofview.tclEVARMAP >= fun sigma ->
+        Proofview.Goal.refresh_sigma gl >= fun gl ->
+        Proofview.V82.wrap_exceptions begin fun () ->
           let env = Proofview.Goal.env gl in
-          let sigma = Proofview.Goal.sigma gl in
         match tag with
           | IntOrVarArgType ->
-              Proofview.Goal.return (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x))
+              Proofview.tclUNIT (mk_int_or_var_value ist (out_gen (glbwit wit_int_or_var) x))
           | IdentArgType ->
-              Proofview.Goal.lift begin
-	        Goal.return (value_of_ident (interp_fresh_ident ist env
+              Proofview.tclUNIT (value_of_ident (interp_fresh_ident ist env
 	                                       (out_gen (glbwit wit_ident) x)))
-              end
           | VarArgType ->
-              Proofview.Goal.return (mk_hyp_value ist env (out_gen (glbwit wit_var) x))
-          | GenArgType -> f (out_gen (glbwit wit_genarg) x)
+              Proofview.tclUNIT (mk_hyp_value ist env (out_gen (glbwit wit_var) x))
+          | GenArgType -> f (out_gen (glbwit wit_genarg) x) gl
           | ConstrArgType ->
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_constr_value ist gl (out_gen (glbwit wit_constr) x)) gl
               in
               Proofview.V82.tclEVARS sigma <*>
-	      Proofview.Goal.return v
+	      Proofview.tclUNIT v
           | OpenConstrArgType ->
               let (sigma,v) =
                 Tacmach.New.of_old (fun gl -> mk_open_constr_value ist gl (snd (out_gen (glbwit wit_open_constr) x))) gl in
               Proofview.V82.tclEVARS sigma <*>
-	      Proofview.Goal.return v
+	      Proofview.tclUNIT v
           | ConstrMayEvalArgType ->
               let (sigma,c_interp) =
                 interp_constr_may_eval ist env sigma
                   (out_gen (glbwit wit_constr_may_eval) x)
               in
               Proofview.V82.tclEVARS sigma <*>
-	      Proofview.Goal.return (Value.of_constr c_interp)
+	      Proofview.tclUNIT (Value.of_constr c_interp)
           | ListArgType ConstrArgType ->
               let wit = glbwit (wit_list wit_constr) in
               let (sigma,l_interp) = Tacmach.New.of_old begin fun gl ->
@@ -2026,33 +2025,33 @@ and interp_atomic ist tac =
 	        end (out_gen wit x) (project gl,[])
               end gl in
               Proofview.V82.tclEVARS sigma <*>
-              Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) l_interp)
+              Proofview.tclUNIT (in_gen (topwit (wit_list wit_genarg)) l_interp)
           | ListArgType VarArgType ->
               let wit = glbwit (wit_list wit_var) in
-              Proofview.Goal.return (
+              Proofview.tclUNIT (
                 let ans = List.map (mk_hyp_value ist env) (out_gen wit x) in
                 in_gen (topwit (wit_list wit_genarg)) ans
               )
           | ListArgType IntOrVarArgType ->
               let wit = glbwit (wit_list wit_int_or_var) in
               let ans = List.map (mk_int_or_var_value ist) (out_gen wit x) in
-              Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) ans)
+              Proofview.tclUNIT (in_gen (topwit (wit_list wit_genarg)) ans)
           | ListArgType IdentArgType ->
               let wit = glbwit (wit_list wit_ident) in
 	      let mk_ident x = value_of_ident (interp_fresh_ident ist env x) in
 	      let ans = List.map mk_ident (out_gen wit x) in
-              Proofview.Goal.return (in_gen (topwit (wit_list wit_genarg)) ans)
+              Proofview.tclUNIT (in_gen (topwit (wit_list wit_genarg)) ans)
           | ListArgType t  ->
               (* spiwack: unsafe, we should introduce relevant combinators.
                  Before new tactical it simply read: [Genarg.app_list f x] *)
               fold_list begin fun a l ->
-                f a >>== fun a' ->
-                l >>== fun l ->
-                 Proofview.Goal.return (a'::l)
-              end x (Proofview.Goal.return []) >>== fun l ->
+                f a gl >= fun a' ->
+                l >= fun l ->
+                Proofview.tclUNIT (a'::l)
+              end x (Proofview.tclUNIT []) >= fun l ->
 		let wit_t = Obj.magic t in
 		let l = List.map (fun arg -> out_gen wit_t arg) l in
-              Proofview.Goal.return (in_gen
+              Proofview.tclUNIT (in_gen
                                        (topwit (wit_list wit_t))
 				       l)
           | ExtraArgType _ ->
@@ -2060,26 +2059,28 @@ and interp_atomic ist tac =
               if has_type x (glbwit wit_tactic) then
                 let tac = out_gen (glbwit wit_tactic) x in
                 val_interp ist tac gl >= fun v ->
-                Proofview.Goal.return v
+                Proofview.tclUNIT v
               else
                 let goal = Proofview.Goal.goal gl in
                 let (newsigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} x in
                 Proofview.V82.tclEVARS newsigma <*>
-                Proofview.Goal.return v
+                Proofview.tclUNIT v
           | _ -> assert false
         end
       in
-      let addvar (x, v) accu =
-        accu >>== fun accu ->
-        f v >>== fun v ->
-        Proofview.Goal.return (Id.Map.add x v accu)
-      in
-      List.fold_right addvar l (Proofview.Goal.return ist.lfun) >>= fun lfun ->
-      let trace = push_trace (loc,LtacNotationCall s) ist in
-      let ist = {
-        lfun = lfun;
-        extra = TacStore.set ist.extra f_trace trace; } in
-      interp_tactic ist body
+      Proofview.Goal.enter begin fun gl ->
+        let addvar (x, v) accu =
+          accu >= fun accu ->
+          f v gl >= fun v ->
+          Proofview.tclUNIT (Id.Map.add x v accu)
+        in
+        List.fold_right addvar l (Proofview.tclUNIT ist.lfun) >= fun lfun ->
+          let trace = push_trace (loc,LtacNotationCall s) ist in
+          let ist = {
+            lfun = lfun;
+            extra = TacStore.set ist.extra f_trace trace; } in
+          interp_tactic ist body
+      end
 
 (* Initial call for interpretation *)
 
