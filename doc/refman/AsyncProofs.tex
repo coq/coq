@@ -75,10 +75,6 @@ automatically checked by the kernel of the main process.  To force
 the kernel to check all proof objects one has to click the button
 with the gears.
 
-% THIS PARAGRAPH MAY CHANGE.
-% IF QED IS FULLY PURELY FUNCTIONAL (not yet because of vm compute) THE CHECKING
-% COULD BE MADE BY THE THREAD THAT MANAGES THE WORKER.
-
 Only when the gears button is pressed all universe constraints are checked.
 
 \subsubsection{Caveats}
@@ -118,26 +114,36 @@ interactively, on any file without waiting for all proofs to be checked.
 While one works interactively, he can fully check all $.v$ files by
 running $coqc$ as usual.
 
-Alternatively one can check the proof tasks store in $.vi$ files.  This may be
-faster, since all proof tasks are independent and can be checked in parallel.
-The $coqtop -schedule-vi-checking 3 a b c$ command can be used to obtain
-a good scheduling for 3 workers to check all proof tasks of $a.vi$, $b.vi$ and
+Alternatively one can turn each $.vi$ into the corresponding $.vo$.
+All $.vi$ files can be processed in parallel, hence this alternative
+may be faster.  The command $coqtop -schedule-vi2vo 2 a b c$
+can be used to obtain a good scheduling for 2 workers to produce
+$a.vo$, $b.vo$ and $c.vo$.  If the $Makefile$ one uses was produced
+by $coq\_makefile$ the $vi2vo$ target can be used for that.
+The variable $J$ should be set to the number of workers, like
+in $make vi2vo J=2$.  The only caveat is that, while the $.vo$ file
+obtained from $.vi$ files are complete (they contain all proof terms
+and universe constraints) the satisfiability of all universe constraints
+has not been checked globally (they are checked to be consistent for
+every single proof).  Constraints will be checked when these $.vo$ files
+are (recursively) loaded with $Require$.
+
+There is an extra, possibly even faster, alternative: just check
+the proof tasks store in $.vi$ files without producing the $.vo$ files.
+This is possibly faster because all proof tasks are independent, hence
+one can further partition the job to be done between workers.
+The $coqtop -schedule-vi-checking 6 a b c$ command can be used to obtain
+a good scheduling for 6 workers to check all proof tasks of $a.vi$, $b.vi$ and
 $c.vi$.  Auxiliary files are used to predict how long a proof task will take,
 assuming it will take the same amount of time it took last time.
 If the $Makefile$ one uses was produced by $coq\_makefile$ the $checkproofs$
 target can be used to check all $.vi$ files.  The variable $J$ should be
-set to the number of workers, like in $make checkproofs J=3$.
-
-\subsubsection{Caveats}
-
-At the time of writing producing a $.vo$ file from a $.vi$ file is not
-possible.  When a proof task is run, he proof object is generated, checked but
-then discarded.  This may change in the future, since generating $.vo$ files
-from $.vi$ is, in theory, possible.  
-
+set to the number of workers, like in $make checkproofs J=6$.
 Checking all proof tasks does not guarantee the same degree of safety
 that producing a $.vo$ file gives.  In particular universe constraints
 are checked to be consistent for every single proof, but not globally.
+Hence this compilation mode is only useful for quick regression testing
+and on developments not making heavy use of the $Type$ hierarchy.
 
 %%% Local Variables: 
 %%% mode: latex
