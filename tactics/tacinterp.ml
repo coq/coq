@@ -107,16 +107,6 @@ let curr_debug ist = match TacStore.get ist.extra f_debug with
 | None -> DebugOff
 | Some level -> level
 
-let check_is_value v =
-  let v = Value.normalize v in
-  if has_type v (topwit wit_tacvalue) then
-    let v = to_tacvalue v in
-    match v with
-    | VRTactic -> (* These are goals produced by Match *)
-      error "Immediate match producing tactics not allowed in local definitions."
-    | _ -> ()
-  else ()
-
 (** TODO: unify printing of generic Ltac values in case of coercion failure. *)
 
 (* Displays a value *)
@@ -1222,7 +1212,6 @@ and interp_letin ist llc u gl =
   let fold ((_, id), body) acc =
     interp_tacarg ist body gl >= fun v ->
     acc >= fun acc ->
-    let () = check_is_value v in
     Proofview.tclUNIT (Id.Map.add id v acc)
   in
   List.fold_right fold llc (Proofview.tclUNIT ist.lfun) >= fun lfun ->
