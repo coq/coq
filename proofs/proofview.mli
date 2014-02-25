@@ -333,6 +333,10 @@ module V82 : sig
   (* exception for which it is deemed to be safe to transmute into
      tactic failure. *)
   val catchable_exception : exn -> bool
+
+  (* transforms every Ocaml (catchable) exception into a failure in
+     the monad. *)
+  val wrap_exceptions : (unit -> 'a tactic) -> 'a tactic
 end
 
 (* The module goal provides an interface for goal-dependent tactics. *)
@@ -370,6 +374,10 @@ module Goal : sig
 
   (* compatibility: avoid if possible *)
   val goal : t -> Goal.goal
+
+  (** [refresh g] updates the [sigma g] to the current value, may be
+      useful with compatibility functions like [Tacmach.New.of_old] *)
+  val refresh_sigma : t -> t tactic
 end
 
 (* The [NonLogical] module allows to execute side effects in tactics

@@ -774,6 +774,11 @@ module V82 = struct
     Proof.put (b,([],[]))
 
   let catchable_exception = catchable_exception
+
+  let wrap_exceptions f =
+    try f ()
+    with e when catchable_exception e -> let e = Errors.push e in tclZERO e
+
 end
 
 
@@ -845,6 +850,9 @@ module Goal = struct
 
   (* compatibility *)
   let goal { self=self } = self
+  let refresh_sigma g =
+    tclEVARMAP >= fun sigma ->
+    tclUNIT { g with sigma }
 
 end
 
