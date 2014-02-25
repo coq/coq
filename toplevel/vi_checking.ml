@@ -105,3 +105,48 @@ let schedule_vi_checking j fs =
   done;
   exit !rc
 
+let schedule_vi_compilation j fs =
+  if j < 1 then Errors.error "The number of workers must be bigger than 0";
+  let jobs = ref [] in
+  List.iter (fun f ->
+    let f =
+      if Filename.check_suffix f ".vi" then Filename.chop_extension f
+      else f in
+    let paths = Loadpath.get_paths () in
+    let _, long_f_dot_v =
+      System.find_file_in_path ~warn:(Flags.is_verbose()) paths (f^".v") in
+    let aux = Aux_file.load_aux_file_for long_f_dot_v in
+    let eta =
+      try float_of_string (Aux_file.get aux Loc.ghost "vo_compile_time")
+      with Not_found -> 0.0 in
+    jobs := (f, eta) :: !jobs)
+  fs;
+  let cmp_job (_,t1) (_,t2) = compare t2 t1 in
+  jobs := List.sort cmp_job !jobs;
+  let pool : Worker.process Pool.t ref = ref Pool.empty in
+  let rec filter_argv b = function
+    | [] -> []
+    | "-schedule-vi2vo" :: rest -> filter_argv true rest
+    | s :: rest when s.[0] = '-' && b -> filter_argv false (s :: rest)
+    | _ :: rest when b -> filter_argv b rest
+    | s :: rest -> s :: filter_argv b rest in
+  let prog = Sys.argv.(0) in  
+  let stdargs = filter_argv false (List.tl (Array.to_list Sys.argv)) in
+  let make_job () =
+    let f, t = List.hd !jobs in
+    jobs := List.tl !jobs;
+    [ "-vi2vo"; f ] in
+  let rc = ref 0 in
+  while !jobs <> [] || Pool.cardinal !pool > 0 do
+    while Pool.cardinal !pool < j && !jobs <> [] do
+      let args = Array.of_list (stdargs @ make_job ()) in
+      let proc, _, _ = Worker.spawn prog args in
+      pool := Pool.add (Worker.unixpid proc) proc !pool;
+    done;
+    let pid, ret = Unix.wait () in
+    if ret <> Unix.WEXITED 0 then rc := 1;
+    pool := Pool.remove pid !pool;
+  done;
+  exit !rc
+
+  
