@@ -1871,7 +1871,7 @@ let interp ?(verbosely=true) ?proof (loc,c) =
 	  | HasNotFailed ->
 	      errorlabstrm "Fail" (str "The command has not failed!")
 	  | HasFailed msg ->
-	      if_verbose msg_info
+	      if is_verbose () || !Flags.ide_slave then msg_info
 		(str "The command has indeed failed with message:" ++
 		 fnl () ++ str "=> " ++ hov 0 (str msg))
           | _ -> assert false
