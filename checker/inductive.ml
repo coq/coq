@@ -285,8 +285,9 @@ let is_correct_arity env c (p,pj) ind specif params =
           (try conv env a1 a1'
           with NotConvertible -> raise (LocalArity None));
           srec (push_rel (na1,None,a1) env) t ar'
-      | Prod (_,a1,a2), [] -> (* whnf of t was not needed here! *)
-          let ksort = match (whd_betadeltaiota env a2) with
+      | Prod (na1,a1,a2), [] -> (* whnf of t was not needed here! *)
+	 let env' = push_rel (na1,None,a1) env in
+          let ksort = match (whd_betadeltaiota env' a2) with
             | Sort s -> family_of_sort s
 	    | _ -> raise (LocalArity None) in
 	  let dep_ind = build_dependent_inductive ind specif params in
