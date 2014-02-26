@@ -176,8 +176,9 @@ let is_correct_arity env c pj ind mip params =
             try conv env a1 a1'
             with NotConvertible -> raise (LocalArity None) in
           srec (push_rel (na1,None,a1) env) a2 a2' (Constraint.union u univ)
-      | Prod (_,a1,a2), _ -> (* whnf of t was not needed here! *)
-          let k = whd_betadeltaiota env a2 in 
+      | Prod (na1,a1,a2), _ -> (* whnf of t was not needed here! *)
+	  let env' = push_rel (na1,None,a1) env in
+          let k = whd_betadeltaiota env' a2 in
           let ksort = match kind_of_term k with
             | Sort s -> family_of_sort s 
 	    | _ -> raise (LocalArity None) in
