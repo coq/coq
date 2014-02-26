@@ -572,7 +572,7 @@ end = struct (* {{{ *)
       anomaly (str"defining state "++str str_id++str" twice");
     try
       prerr_endline("defining "^str_id^" (cache="^
-        if cache = `Yes then "Y" else if cache = `Shallow then "S" else "N");
+        if cache = `Yes then "Y)" else if cache = `Shallow then "S)" else "N)");
       f ();
       if cache = `Yes then freeze `No id
       else if cache = `Shallow then freeze `Shallow id;
@@ -1675,7 +1675,7 @@ let process_transaction ~tty verbose c (loc, expr) =
   let warn_if_pos a b =
     if b then msg_warning(pr_ast a ++ str" should not be part of a script") in
   let v, x = expr, { verbose = verbose && Flags.is_verbose(); loc; expr } in
-  prerr_endline ("{{{ execute: "^ string_of_ppcmds (pr_ast x));
+  prerr_endline ("{{{ processing: "^ string_of_ppcmds (pr_ast x));
   let vcs = VCS.backup () in
   try
     let head = VCS.current_branch () in
@@ -1821,7 +1821,7 @@ let process_transaction ~tty verbose c (loc, expr) =
               expr = VernacShow (ShowGoal OpenSubgoals) }
       | _ -> ()
     end;
-    prerr_endline "executed }}}";
+    prerr_endline "processed }}}";
     VCS.print ();
     rc
   with e ->
