@@ -1304,7 +1304,7 @@ let known_state ?(redefine_qed=false) ~cache id =
       let view = VCS.visit id in
       match view.step with
       | `Alias id -> (fun () ->
-            reach view.next; reach id; Vernacentries.try_print_subgoals ()
+            reach view.next; reach id
           ), cache
       | `Cmd (x,_) -> (fun () ->
             reach view.next; vernac_interp id x
