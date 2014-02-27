@@ -344,9 +344,10 @@ let refine_tac (ist, c) =
         let tycon = Pretyping.OfType concl in
         Goal.Refinable.constr_of_raw h tycon flags vars c)
     end in
-    Proofview.Goal.lift c >>= fun c ->
-    Proofview.tclSENSITIVE (Goal.refine c) <*>
-    Proofview.V82.tactic (reduce refine_red_flags refine_locs))
+    Proofview.Goal.lift c begin fun c ->
+      Proofview.tclSENSITIVE (Goal.refine c) <*>
+      Proofview.V82.tactic (reduce refine_red_flags refine_locs)
+    end)
 
 TACTIC EXTEND refine
   [ "refine" glob(c) ] -> [  refine_tac c ]

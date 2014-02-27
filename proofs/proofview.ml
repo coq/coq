@@ -639,22 +639,9 @@ let in_proofview p k =
   k p.solution
 
 
-(* spiwack: to help using `bind' like construct consistently. A glist
-   is promissed to have exactly one element per goal when it is
-   produced. *)
-type 'a glist  = 'a list
 
 module Notations = struct
   let (>=) = tclBIND
-  let (>>=) t k =
-    t >= fun l ->
-    tclDISPATCHGEN k ignore l
-  let (>>==) t k =
-    begin
-      t >= fun l ->
-      tclDISPATCHGEN k List.rev l
-    end >= fun l' ->
-    tclUNIT (List.flatten l')
   let (<*>) = tclTHEN
   let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
 end
@@ -797,25 +784,23 @@ module Goal = struct
   let hyps { hyps=hyps } = Environ.named_context_of_val hyps
   let concl { concl=concl } = concl
 
-  let lift s =
+  let lift s k =
     (* spiwack: convenience notations, waiting for ocaml 3.12 *)
     let (>>=) = Proof.bind in
     let (>>) = Proof.seq in
     Proof.current >>= fun env ->
     Proof.get >>= fun step ->
     try
-      let (res,sigma) =
+      let (ks,sigma) =
         Goal.list_map begin fun sigma g ->
-          Goal.eval s env sigma g
+          Util.on_fst k (Goal.eval s env sigma g)
         end step.comb step.solution
       in
       Proof.set { step with solution=sigma } >>
-        Proof.ret res
+      tclDISPATCH ks
     with e when catchable_exception e ->
       let e = Errors.push e in
       tclZERO e
-
-  let return x = lift (Goal.return x)
 
   let enter_t f = Goal.enter begin fun env sigma hyps concl self ->
     f {env=env;sigma=sigma;hyps=hyps;concl=concl;self=self}
@@ -832,20 +817,6 @@ module Goal = struct
         let e = Errors.push e in
         tclZERO e
     end
-  let enterl f =
-    list_iter_goal [] begin fun goal acc ->
-      Proof.current >= fun env ->
-      tclEVARMAP >= fun sigma ->
-      try
-        (* enter_t cannot modify the sigma. *)
-        let (t,_) = Goal.eval (enter_t f) env sigma goal in
-        t >= fun r ->
-        tclUNIT (r::acc)
-      with e when catchable_exception e ->
-        let e = Errors.push e in
-        tclZERO e
-    end >= fun res ->
-    tclUNIT (List.flatten (List.rev res))
 
 
   (* compatibility *)

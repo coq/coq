@@ -266,11 +266,6 @@ val list_map : ('a -> 'b tactic) -> 'a list -> 'b list tactic
 
 val in_proofview : proofview -> (Evd.evar_map -> 'a) -> 'a
 
-(* spiwack: to help using `bind' like construct consistently. A glist
-   is promissed to have exactly one element per goal when it is
-   produced. *)
-type 'a glist  = private 'a list
-
 (* Notations for building tactics. *)
 module Notations : sig
 
@@ -280,10 +275,6 @@ module Notations : sig
      The [t] is supposed to return a list of values of the size of the
      list of goals. [k] is then applied to each of this value in the
      corresponding goal. *)
-  val (>>=) : 'a glist tactic -> ('a -> unit tactic) -> unit tactic
-  (* [t >>== k] acts as [t] except that [k] returns a list of value
-     corresponding to its produced subgoals. *)
-  val (>>==) : 'a glist tactic -> ('a -> 'b glist tactic) -> 'b glist tactic
 
   (* tclTHEN *)
   val (<*>) : unit tactic -> 'a tactic -> 'a tactic
@@ -356,20 +347,14 @@ module Goal : sig
   val env : t -> Environ.env
   val sigma : t -> Evd.evar_map
 
-  (* [lift_sensitive s] returns the list corresponding to the evaluation
-     of [s] on each of the focused goals *)
-  val lift : 'a Goal.sensitive -> 'a glist tactic
-
-  (* [return x] returns a copy of [x] per focused goal. *)
-  val return : 'a -> 'a glist tactic
+  (* [lift_sensitive s k] applies [s] in each goal independently
+     raising result [a] then continues with [k a]. *)
+  val lift : 'a Goal.sensitive -> ('a->unit tactic) -> unit tactic
 
   (* [enter t] execute the goal-dependent tactic [t] in each goal
      independently. In particular [t] need not backtrack the same way in
      each goal. *)
   val enter : (t -> unit tactic) -> unit tactic
-  (* [enterl t] works like [enter t] except that [t] returns a value
-     in each of the produced subgoals. *)
-  val enterl : (t -> 'a glist tactic) -> 'a glist tactic
 
 
   (* compatibility: avoid if possible *)

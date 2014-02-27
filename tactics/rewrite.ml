@@ -1305,7 +1305,7 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	   | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
 	     raise (RewriteFailure (str"Unable to satisfy the rewriting constraints."
 			++ fnl () ++ Himsg.explain_typeclass_error env e)))
-  in Proofview.Notations.(>>=) (Proofview.Goal.lift info) (fun i -> treat i)
+  in Proofview.Goal.lift info (fun i -> treat i)
 
 let newtactic_init_setoid () =
   try init_setoid (); Proofview.tclUNIT ()

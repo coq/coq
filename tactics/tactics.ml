@@ -3937,11 +3937,12 @@ module New = struct
     let c = Goal.Refinable.make begin fun h ->
       Goal.Refinable.constr_of_open_constr h true c
     end in
-    Proofview.Goal.lift c >>= fun c ->
-    Proofview.tclSENSITIVE (Goal.refine c) <*>
-    Proofview.V82.tactic (reduce
-       (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
-       {onhyps=None; concl_occs=AllOccurrences }
-    )
+    Proofview.Goal.lift c begin fun c ->
+      Proofview.tclSENSITIVE (Goal.refine c) <*>
+      Proofview.V82.tactic (reduce
+         (Lazy {rBeta=true;rIota=true;rZeta=false;rDelta=false;rConst=[]})
+         {onhyps=None; concl_occs=AllOccurrences }
+      )
+    end
 
 end
