@@ -2105,14 +2105,6 @@ let interp_tac_gen lfun avoid_ids debug t =
 let interp t = interp_tac_gen Id.Map.empty [] (get_debug()) t
 let _ = Proof_global.set_interp_tac interp
 
-let eval_ltac_constr t =
-  Proofview.tclUNIT () >= fun () -> (* delay for [make_empty_glob_sign] and [default_ist] *)
-  Proofview.Goal.enterl begin fun gl ->
-    interp_ltac_constr  (default_ist ())
-      (intern_tactic_or_tacarg (make_empty_glob_sign ()) t ) gl >= fun r ->
-    Proofview.Goal.return r
-  end
-
 (* Used to hide interpretation for pretty-print, now just launch tactics *)
 (* [global] means that [t] should be internalized outside of goals. *)
 let hide_interp global t ot =

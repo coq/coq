@@ -103,8 +103,6 @@ val interp_tac_gen : value Id.Map.t -> Id.t list ->
 
 val interp : raw_tactic_expr -> unit Proofview.tactic
 
-val eval_ltac_constr : raw_tactic_expr -> constr Proofview.glist Proofview.tactic
-
 (** Hides interpretation for pretty-print *)
 
 val hide_interp : bool -> raw_tactic_expr -> unit Proofview.tactic option -> unit Proofview.tactic
