@@ -1,21 +1,38 @@
 
-Since July 2007, Coq features a build system overhauled by Pierre
-Corbineau and Lionel Elie Mamane.
 
----------------------------------------------------------------------
-WARNING:
-In March 2010 this build system has been heavily adapted by Pierre
-Letouzey. In particular there no more explicit stage1,2. Stage3
-was removed some time ago when coqdep was splitted into coqdep_boot
-and full coqdep. Ideas are still similar to what is describe below,
-but:
-1) .ml4 are explicitely turned into .ml files, which stay after build
-2) we let "make" handle the inclusion of .d without trying to guess
-   what could be done at what time. Some initial inclusions hence
-  _fail_, but "make" tries again later and succeed.
+HISTORY:
+-------
 
-TODO: remove obsolete sections below and better describe the new approach
------------------------------------------------------------------------
+* July 2007 (Pierre Corbineau & Lionel Elie Mamane).
+  Inclusion of a build system with 3 explicit phases:
+  - Makefile.stage1: ocamldep, sed, camlp4 without Coq grammar extension
+  - Makefile.stage2: camlp4 with grammar.cma or q_constr.cmo
+  - Makefile.stage3: coqdep (.vo)
+
+* March 2010 (Pierre Letouzey).
+  Revised build system. In particular, no more stage1,2,3 :
+  - Stage3 was removed some time ago when coqdep was splitted into
+    coqdep_boot and full coqdep.
+  - Stage1,2 were replaced by brutal inclusion of all .d at the start
+    of Makefile.build, without trying to guess what could be done at
+    what time. Some initial inclusions hence _fail_, but "make" tries
+    again later and succeed.
+  - Btw, .ml4 are explicitely turned into .ml files, which stay after build.
+    By default, they are in binary ast format, see READABLE_ML4 option.
+
+* February 2014 (Pierre Letouzey).
+  Another revision of the build system. We avoid relying on the awkward
+  include-which-fails-but-works-finally-after-a-retry feature of gnu make.
+  This was working, but was quite hard to understand. Instead, we reuse
+  the idea of two explicit phases, but in a lighter way than in 2007.
+  The main Makefile calls Makefile.build twice :
+  - first for building grammar.cma (and q_constr.cmo), with a
+    restricted set of .ml4 (see variable BUILDGRAMMAR).
+  - then on the true target asked by the user.
+
+    
+---------------------------------------------------------------------------
+
 
 This file documents internals of the implementation of the build
 system. For what a Coq developer needs to know about the build system,
@@ -24,68 +41,47 @@ see build-system.txt .
 .ml4 files
 ----------
 
-.ml files corresponding to .ml4 files are created to keep ocamldep
-happy only. To ensure they are not used for compilation, they contain
-invalid OCaml.
+.ml4 are converted to .ml by camlp4. By default, they are produced
+in the binary ast format understood by ocamlc/ocamlopt/ocamldep.
+Pros:
+ - faster than parsing clear-text source file.
+ - no risk of editing them by mistake instead of the .ml4
+ - the location in the binary .ml are those of the initial .ml4,
+   hence errors are properly reported in the .ml4.
+Cons:
+ - This format may depend on your ocaml version, they should be
+   cleaned if you change your build environment.
+ - Unreadable in case you want to inspect this generated code.
+   For that, use make with the READABLE_ML4=1 option to switch to
+   clear-text generated .ml.
 
 
-multi-stage build
------------------
-
-Le processus de construction est séparé en trois étapes qui correspondent
-aux outils nécessaires pour calculer les dépendances de cette étape:
-
-stage1: ocamldep, sed , camlp4 sans fichiers de Coq
-stage2: camlp4 avec grammar.cma et/ou q_constr.cmo
-stage3: coqdep (.vo)
+Makefiles hierachy
+------------------
 
 Le Makefile a été séparé en plusieurs fichiers :
 
-- Makefile: coquille vide qui délègue les cibles à la bonne étape sauf
-  clean et les fichiers pour emacs (car ils sont en quelque sorte en
-  "stage0": aucun calcul de dépendance nécessaire).
+- Makefile: coquille vide qui lançant Makefile.build sauf pour
+  clean et quelques petites choses ne nécessitant par de calculs
+  de dépendances.
 - Makefile.common : définitions des variables (essentiellement des
   listes de fichiers)
-- Makefile.build : les règles de compilation sans inclure de
-  dépendances
-- Makefile.stage* : fichiers qui incluent les dépendances calculables
-  à cette étape ainsi que Makefile.build.
-
-The build needs to be cut in stages because make will not take into
-account one include when making another include.
+- Makefile.build : contient les regles de compilation, ainsi que
+  le "include" des dépendances (restreintes ou non selon la variable
+  BUILDGRAMMAR).
+- Makefile.doc : regles specifiques à la compilation de la documentation.
 
 
 Parallélisation
 ---------------
 
-Le découpage en étapes veut dire que le makefile est un petit peu
-moins parallélisable que strictement possible en théorie: par exemple,
-certaines choses faites en stage2 pourraient être faites en parallèle
-avec des choses de stage1. Nous essayons de minimiser cet effet, mais
-nous ne l'avons pas complètement éliminé parce que cela mènerait à un
-makefile très complexe. La minimisation est principalement que si on
-demande un objet spécifique (par exemple "make parsing/g_constr.cmx"),
-il est fait dans l'étape la plus basse possible (simplement), mais si
-un objet est fait comme dépendance de la cible demandée (par exemple
-dans un "make world"), il est fait le plus tard possible (par exemple,
-tout code OCaml non nécessaire pour coqdep ni grammar.cma ni
-q_constr.cmo est compilé en stage3 lors d'un "make world"; cela permet
-le parallélisme de compilation de code OCaml et de fichiers Coq (.v)).
-
-Le "(simplement)" ci-dessus veut dire que savoir si un fichier non
-nécessaire pour grammar.cma/q_constr.cmo peut en fait être fait en
-stage1 est compliqué avec make, alors nous retombons en général sur le
-stage2. La séparation entre le stage2 et stage3 est plus facile, donc
-l'optimisation ci-dessus s'y applique pleinement.
-
-En d'autres mots, nous avons au niveau conceptuel deux assignations
-d'étape pour chaque fichier:
-
- - l'étape la plus petite où nous savons qu'il peut être fait.
- - l'étape la plus grande où il peut être fait.
-
-Mais seule la première est gérée explicitement, la seconde est
-implicite.
+Il y a actuellement un double appel interne à "make -f Makefile.build",
+d'abord pour construire grammar.cma/q_constr.cmo, puis le reste.
+Cela signifie que ce makefile est un petit peu moins parallélisable
+que strictement possible en théorie: par exemple, certaines choses
+faites lors du second make pourraient être faites en parallèle avec
+le premier. En pratique, ce premier make va suffisemment vite pour
+que cette limitation soit peu gênante.
 
 
 FIND_VCS_CLAUSE

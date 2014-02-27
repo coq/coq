@@ -59,11 +59,20 @@ define find
  $(shell find . $(FIND_VCS_CLAUSE) '(' -name $(1) ')' -print | sed 's|^\./||')
 endef
 
+define findx
+ $(shell find . $(FIND_VCS_CLAUSE) '(' -name $(1) ')' -exec $(2) {} \; | sed 's|^\./||')
+endef
+
+# We now discriminate .ml4 files according to their need of grammar.cma
+# or q_constr.cmo
+USEGRAMMAR := '(\*.*camlp4deps.*grammar'
+
 ## Files in the source tree
 
 YACCFILES:=$(call find, '*.mly')
 LEXFILES := $(call find, '*.mll')
 export MLLIBFILES := $(call find, '*.mllib')
+export ML4BASEFILES := $(call findx, '*.ml4', grep -L -e $(USEGRAMMAR))
 export ML4FILES := $(call find, '*.ml4')
 export CFILES := $(call find, '*.c')
 
@@ -77,13 +86,13 @@ EXISTINGMLI := $(call find, '*.mli')
 ## Files that will be generated
 
 GENML4FILES:= $(ML4FILES:.ml4=.ml)
-GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
-  tools/tolink.ml kernel/copcodes.ml
 GENMLIFILES:=$(YACCFILES:.mly=.mli)
 GENPLUGINSMOD:=$(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml))
+export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
+  tools/tolink.ml kernel/copcodes.ml $(GENPLUGINSMOD)
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
 export GENVFILES:=theories/Numbers/Natural/BigN/NMake_gen.v
-export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES) $(GENPLUGINSMOD)
+export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES)
 
 # NB: all files in $(GENFILES) can be created initially, while
 # .ml files in $(GENML4FILES) might need some intermediate building.
@@ -95,8 +104,7 @@ define diff
  $(strip $(foreach f, $(1), $(if $(filter $(f),$(2)),,$f)))
 endef
 
-export MLEXTRAFILES := $(GENMLFILES) $(GENML4FILES) $(GENPLUGINSMOD)
-export MLSTATICFILES := $(call diff, $(EXISTINGML), $(MLEXTRAFILES))
+export MLSTATICFILES := $(call diff, $(EXISTINGML), $(GENMLFILES) $(GENML4FILES))
 export MLIFILES := $(sort $(GENMLIFILES) $(EXISTINGMLI))
 
 include Makefile.common
@@ -107,7 +115,7 @@ include Makefile.common
 
 NOARG: world
 
-.PHONY: NOARG help always
+.PHONY: NOARG help noconfig submake
 
 help:
 	@echo "Please use either"
@@ -131,17 +139,27 @@ endif
 
 # Apart from clean and tags, everything will be done in a sub-call to make
 # on Makefile.build. This way, we avoid doing here the -include of .d :
-# since they trigger some compilations, we do not want them for a mere clean
+# since they trigger some compilations, we do not want them for a mere clean.
+# Moreover, we regroup this sub-call in a common target named 'submake'.
+# This way, multiple user-given goals (cf the MAKECMDGOALS variable) won't
+# trigger multiple (possibly parallel) make sub-calls
 
 ifdef COQ_CONFIGURED
-%:: always
-	$(MAKE) --warn-undefined-variable --no-builtin-rules -f Makefile.build "$@"
+%:: submake ;
 else
-%:: always
-	@echo "Please run ./configure first" >&2; exit 1
+%:: noconfig ;
 endif
 
-always : ;
+MAKE_OPTS := --warn-undefined-variable --no-builtin-rules
+
+GRAM_TARGETS := grammar/grammar.cma grammar/q_constr.cmo
+
+submake:
+	$(MAKE) $(MAKE_OPTS) -f Makefile.build BUILDGRAMMAR=1 $(GRAM_TARGETS)
+	$(MAKE) $(MAKE_OPTS) -f Makefile.build $(MAKECMDGOALS)
+
+noconfig:
+	@echo "Please run ./configure first" >&2; exit 1
 
 # To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
 
@@ -165,7 +183,7 @@ cruftclean: ml4clean
 
 indepclean:
 	rm -f $(GENFILES)
-	rm -f $(COQTOPBYTE) $(CHICKENBYTE) bin/fake_ide
+	rm -f $(COQTOPBYTE) $(CHICKENBYTE) $(FAKEIDE)
 	find . \( -name '*~' -o -name '*.cm[ioat]' -o -name '*.cmti' \) -delete
 	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)
@@ -234,7 +252,7 @@ devdocclean:
 # Emacs tags
 ###########################################################################
 
-.PHONY: tags
+.PHONY: tags printenv
 
 tags:
 	echo $(MLIFILES) $(MLSTATICFILES) $(ML4FILES) | sort -r | xargs \

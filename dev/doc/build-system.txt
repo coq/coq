@@ -1,26 +1,8 @@
-Since July 2007, Coq features a build system overhauled by Pierre
-Corbineau and Lionel Elie Mamane.
-
----------------------------------------------------------------------
-WARNING:
-In March 2010 this build system has been heavily adapted by Pierre
-Letouzey. In particular there no more explicit stage1,2. Stage3
-was removed some time ago when coqdep was splitted into coqdep_boot
-and full coqdep. Ideas are still similar to what is describe below,
-but:
-1) .ml4 are explicitely turned into .ml files, which stay after build
-2) we let "make" handle the inclusion of .d without trying to guess
-   what could be done at what time. Some initial inclusions hence
-  _fail_, but "make" tries again later and succeed.
-
-TODO: remove obsolete sections below and better describe the new approach
------------------------------------------------------------------------
 
 This file documents what a Coq developer needs to know about the build
 system. If you want to enhance the build system itself (or are curious
-about its implementation details), see build-system.dev.txt .
-
-The build system is not at its optimal state, see TODO section.
+about its implementation details), see build-system.dev.txt, and in
+particular its initial HISTORY section.
 
 
 FAQ: special features used in this Makefile
@@ -51,22 +33,10 @@ $(subst ...), $(patsubst ...), $(shell ...), $(foreach ...), $(if ...)
 * Behavior of -include
 
 If the file given to -include doesn't exist, make tries to build it,
-but doesn't care if this build fails. This can be quite surprising,
-see in particular the -include in Makefile.stage*
-
-
-Stages in build system
-----------------------
-
-The build system is separated into three stages, corresponding to the
-tool(s) necessary to compute the dependencies necessary at this stage:
-
-stage1: ocamldep, sed, camlp4 without Coq extensions
-stage2: camlp4 with grammar.cma and/or q_constr.cmo
-stage3: coqdep (.vo)
-
-The file "Makefile" itself serves as minimum stage for targets that
-should not need any dependency (such as *clean*).
+and even retries again if necessary, but doesn't care if this build
+finally fails. We used to rely on this "feature", but this should not
+be the case anymore. We kept "-include" instead of "include" for
+avoiding warnings about initially non-existant files.
 
 Changes (for old-timers)
 ------------------------
@@ -97,37 +67,11 @@ save precious time:
 
  - Always ask for what you want directly (e.g. bin/coqtop,
    foo/bar.cmo, ...), don't do "make world" and interrupt
-   it when it has done what you want. This will try to minimise the
-   stage at which what you ask for is done (instead of maximising it
-   in order to maximise parallelism of the build process).
-
+   it when it has done what you want.
    For example, if you only want to test whether bin/coqtop still
    builds (and eventually start it to test your bugfix or new
-   feature), don't do "make world" and interrupt it when bin/coqtop is
-   built. Use "make bin/coqtop" or "make coqbinaries" or something
-   like that. This will avoid entering the stage 3, and cut build
-   system overhead by 50% (1.2s instead of 2.4 on writer's machine).
-
- - If you want to avoid all .ml4 files being recompiled only because
-   grammar.cma was rebuilt, do "make ml4depclean" once and then use
-   NO_RECOMPILE_ML4=1.
-
- - The CM_STAGE1=1 option to make will build all .cm* files mentioned
-   as targets on the command line in stage1. Whether this will work is
-   your responsibility. It should work for .ml files that don't depend
-   (nor directly nor indirectly through transitive closure of the
-   dependencies) on any .ml4 file, or where those dependencies can be
-   safely ignored in the current situation (e.g. all these .ml4 files
-   don't need to be recompiled).
-
-   This will avoid entering the stage2 (a reduction of 33% in
-   overhead, 0.4s on the writer's machine).
-
- - To jump directly into a stage (e.g. because you know nothing is to
-   be done in stage 1 or (1 and 2) or because you know that the target
-   you give can be, in this situation, done in a lower stage than the
-   build system dares to), use GOTO_STAGE=n. This will jump into stage
-   n and try to do the targets you gave in that stage.
+   feature), use "make bin/coqtop" or "make coqbinaries" or something
+   like that.
 
  - To disable all dependency recalculation, use the NO_RECALC_DEPS=1
    option. It disables REcalculation of dependencies, not calculation
@@ -135,12 +79,6 @@ save precious time:
    still created, but it is not updated every time the source file
    (e.g. .ml) is changed.
 
-General speed improvements:
-
- - When building both the native and bytecode versions, the
-   KEEP_ML4_PREPROCESSED=1 option may reduce global compilation time
-   by running camlp4o only once on every .ml4 file, at the expense of
-   readability of compilation error messages for .ml4 files.
 
 Dependencies
 ------------
@@ -178,166 +116,30 @@ Targets for cleaning various parts:
 .ml4 files
 ----------
 
-The camlp4-preprocessed version of FOO.ml4 is FOO.ml4-preprocessed and
-can be obtained with:
- make FOO.ml4-preprocessed
-
 If a .ml4 file uses a grammar extension from Coq (such as grammar.cma
 or q_constr.cmo), it must contain a line like:
  (*i camlp4deps: "grammar.cma q_constr.cmo" i*)
 
-If it uses a standard grammar extension, it must contain a line like:
- (*i camlp4use: "pa_ifdef.cmo" i*)
+The use of (*i camlp4use: ... i*) to mention uses of standard
+extension such as IFDEF has been discontinued, the Makefile now
+always calls camlp4 with pa_macros.cmo and a few others by default.
 
-It can naturally contain both a camlp4deps and a camlp4use line. Both
-are used for preprocessing. It is thus _not_ necessary to add a
-specific rule for a .ml4 file in the Makefile.build just because it
-uses grammar extensions.
+For debugging a Coq grammar extension, it could be interesting
+to use the READABLE_ML4=1 option, otherwise the generated .ml are
+in an internal binary format (see build-system.dev.txt).
 
-By default, the build system is geared towards development that may
-use the Coq grammar extensions, but not development of Coq's grammar
-extensions themselves. This means that .ml4 files are compiled
-directly (using ocamlc/opt's -pp option), without use of an
-intermediary .ml (or .ml4-preprocessed) file. This is so that if a
-compilation error occurs, the location in the error message is a
-location in the .ml4 file. If you are modifying the grammar
-extensions, you may be more interested in the location of the error in
-the .ml4-preprocessed file, so that you can see what your new grammar
-extension made wrong. In that case, use the KEEP_ML4_PREPROCESSED=1
-option. This will make compilation of a .ml4 file a two-stage process:
-
-1) create the .ml4-preprocessed file with camlp4o
-2) compile it with straight ocamlc/opt without preprocessor
-
-and will instruct make not to delete .ml4-preprocessed files
-automatically just because they are intermediary files, so that you
-can inspect them.
-
-If you add a _new_ grammar extension to Coq:
-
- - if it can be built at stage1, that is the .ml4 file does not use a
-   Coq grammar extension itself, then add it, and all .cmo files it
-   needs to STAGE1_TARGETS and STAGE_ML4 in Makefile.common. See the
-   handling of grammar.cma and q_constr.cmo for an example.
-
- - if it cannot be built at stage1, that is the .ml4 file itself needs
-   to be preprocessed with a Coq camlp4 grammar extension, then,
-   congratulations, you need to add a new stage between stage1 and
-   stage2.
 
 New files
 ---------
 
 For a new file, in most cases, you just have to add it to the proper
-file list(s) in Makefile.common, such as ARITHVO or TACTICS.
+file list(s):
+ - For .ml, in the corresponding .mllib (e.g. kernel/kernel.mllib)
+   These files are also used by the experimental ocamlbuild plugin,
+   which is quite touchy about them : be careful with order,
+   duplicated entries, whitespace errors, and do not mention .mli there.
+ - For .v, in the corresponding vo.itarget (e.g theories/Init/vo.itarget)
+ - The definitions in Makefile.common might have to be adapted too.
+ - If your file needs a specific rule, add it to Makefile.build
 
 The list of all ml4 files is not handled manually anymore.
-
-Exceptions are:
-
- - The file is necessary at stage1, that it is necessary to build the
-   Coq camlp4 grammar extensions. In this case, make sure it ends up
-   in STAGE1_CMO and (for .ml4 files) STAGE1_ML4. See the handling of
-   grammar.cma and/or q_constr.cmo for an example.
-
- - if the file needs to be compiled with -rectypes, add it to
-   RECTYPESML in Makefile.common. If it is a .ml4 file, implement
-   RECTYPESML4 or '(*i ocamlflags i*)'; see TODO.
-
- - the file needs a specific Makefile entry; add it to Makefile.build
-
- - the files produced from the added file do not match an existing
-   pattern or entry in "Makefile". (All the common cases of
-   .ml{,i,l,y,4}, .v, .c, ... files that produces (respectively)
-   .cm[iox], .vo, .glob, .o, ... files with the same basename are
-   already covered.) In this case, see section "New targets".
-
-New targets
------------
-
-If you want to add:
-
- - a new PHONY target to the build system, that is a target that is
-   not the name of the file it creates,
-
- - a normal target is not already mapped to a stage by "Makefile"
-
- then:
-
- - add the necessary rule to Makefile.build, if any
- - add the target to STAGEn_TARGETS, with n being the smallest stage
-   it can be built at, that is:
-   * 1 for OCaml code that doesn't use any Coq camlp4 grammar extension
-   * 2 for OCaml code that uses (directly or indirectly) a Coq
-       camlp4 grammar extension. Indirectly means a dependency of it
-       does.
-   * 3 for Coq (.v) code.
-
-   *or*
-
-   add a pattern matching the target to the pattern lists for the
-   smallest stage it can be built at in "Makefile".
-
-TODO
-----
-
-delegate pa_extend.cmo to camlp4use statements and remove it from
-standard camlp4 options.
-
-maybe manage compilation flags (such as -rectypes or the CoqIDE ones)
-from a
- (*i ocamlflags: "-rectypes" i*)
-statement in the .ml(4) files themselves, like camlp4use. The CoqIDE
-files could have
- (*i ocamlflags: "${COQIDEFLAGS}" i*)
-and COQIDEFLAGS is still defined (and exported by) the Makefile.build.
-
-Clean up doc/Makefile
-
-config/Makefile looks like it contains a lot of unused variables,
-clean that up (are any maybe used by nightly scripts on
-pauillac?). Also, the COQTOP variable from config/Makefile (and used
-in contribs) has a very poorly chosen name, because "coqtop" is the
-name of a Coq executable! In the coq Makefiles, $(COQTOPEXE) is used
-to refer to that executable.
-
-Promote the granular .glob handling to official way of doing things
-for Coq developments, that is implement it in coq_makefile and the
-contribs. Here are a few hints:
-
->> Les fichiers de constantes produits par -dump-glob sont maintenant
->> produits par fichier et sont ensuite concaténés dans
->> glob.dump. Ilsont produits par défaut (avec les bonnes
->> dépendances).
-
-> C'est une chose que l'on voulait faire aussi.
-
-(J'ai testé et débogué ce concept sur CoRN dans les derniers mois.)
-
-> Est-ce que vous sauriez modifier coq_makefile pour qu'il procède de
-> la même façon
-
-Dans cette optique, il serait alors plus propre de changer coqdep pour
-qu'il produise directement l'output que nous mettons maintenant dans
-les .v.d (qui est celui de coqdoc post-processé avec sed).
-
-Si cette manière de gérer les glob devient le standard béni
-officiellement par "the Coq development team", ne voudrions nous pas
-changer coqc pour qu'il produise FOO.glob lors de la compilation de
-FOO.v par défaut (sans argument "-dump-glob")?
-
-> et que la production de a.html par coqdoc n'ait une dépendance qu'en
-> les a.v et a.glob correspondant ?
-
-Je crois que coqdoc exige un glob-dump unique, il convient donc de
-concaténer les .glob correspondants. Soit un glob-dump global par
-projet (par Makefile), soit un glob-dump global par .v(o), qui
-contient son .glob et ceux de tous les .v(o) atteignables par le
-graphe des dépendances. CoRN contient déjà un outil de calcul de
-partie atteignable du graphe des dépendances (il y est pour un autre
-usage, pour calculer les .v à mettre dans les différents tarballs sur
-http://corn.cs.ru.nl/download.html; les parties partielles sont
-définies par liste de fichiers .v + toutes leurs dépendances
-(in)directes), il serait alors adéquat de le mettre dans les tools de
-Coq.
-

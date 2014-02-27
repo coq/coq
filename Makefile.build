@@ -14,7 +14,9 @@
 ###########################################################################
 
 # build the different subsystems: coq, coqide
-world: revision coq coqide
+world: revision coq coqide documentation
+
+.PHONY: world
 
 ###########################################################################
 # Includes
@@ -23,40 +25,29 @@ world: revision coq coqide
 include Makefile.common
 include Makefile.doc
 
-ifeq ($(LOCAL),true)
-install:
-	@echo "Nothing to install in a local build!"
+# In a first phase, we restrict to the basic .ml4 (the ones without grammar.cma)
+
+ifdef BUILDGRAMMAR
+ MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4BASEFILES:.ml4=.ml)
+ CURFILES := $(MLFILES) $(MLIFILES) $(ML4BASEFILES) grammar/grammar.mllib
 else
-install: install-coq install-coqide install-doc-$(WITHDOC)
+ MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4FILES:.ml4=.ml)
+ CURFILES := $(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(CFILES) $(VFILES)
 endif
 
-install-doc-all: install-doc
-install-doc-no:
-
-world: doc-$(WITHDOC)
-doc-all: doc
-doc-no:
-
-.PHONY: world install install-doc-all install-doc-no doc-all doc-no
+CURDEPS:=$(addsuffix .d, $(CURFILES))
 
 # All dependency includes must be declared secondary, otherwise make will
 # delete them if it decided to build them by dependency instead of because
 # of include, and they will then be automatically deleted, leading to an
 # infinite loop.
 
-MLFILES:=$(MLSTATICFILES) $(MLEXTRAFILES)
+.SECONDARY: $(CURDEPS) $(GENFILES) $(ML4FILES:.ml4=.ml)
 
-ALLDEPS:=$(addsuffix .d, \
-  $(ML4FILES) $(MLFILES) $(MLIFILES) $(CFILES) $(MLLIBFILES) $(VFILES))
+# This include below will lauch the build of all concerned .d.
+# The - at front is for disabling warnings about currently missing ones.
 
-.SECONDARY: $(ALLDEPS) $(GENFILES) $(ML4FILES:.ml4=.ml)
-
-# NOTA: the -include below will lauch the build of all .d. Some of them
-# will _fail_ at first, this is to be expected (no grammar.cma initially).
-# These errors (see below "not ready yet") do not discourage make to
-# try again and finally succeed.
-
--include $(ALLDEPS)
+-include $(CURDEPS)
 
 
 ###########################################################################
@@ -205,11 +196,11 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 
 .PHONY: coqbinaries coq coqlib coqlight states
 
-coqbinaries:: ${COQBINARIES} ${CSDPCERT} ${FAKEIDE}
+coqbinaries: ${COQBINARIES} ${CSDPCERT} ${FAKEIDE}
 
 coq: coqlib tools coqbinaries
 
-coqlib:: theories plugins
+coqlib: theories plugins
 
 coqlight: theories-light tools coqbinaries
 
@@ -300,7 +291,7 @@ plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO:.cmo=$(BESTOBJ))
 .PHONY: coqide coqide-binaries coqide-no coqide-byte coqide-opt coqide-files
 
 # target to build CoqIde
-coqide:: coqide-files coqide-binaries theories/Init/Prelude.vo
+coqide: coqide-files coqide-binaries theories/Init/Prelude.vo
 
 COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES)
 
@@ -385,7 +376,7 @@ $(ALLSTDLIB).v:
 
 MAKE_TSOPTS=-C test-suite -s VERBOSE=$(VERBOSE)
 
-check:: validate test-suite
+check: validate test-suite
 
 test-suite: world $(ALLSTDLIB).v
 	$(MAKE) $(MAKE_TSOPTS) clean
@@ -493,7 +484,7 @@ theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_g
 
 printers: $(DEBUGPRINTERS)
 
-tools:: $(TOOLS) $(DEBUGPRINTERS) $(COQDEPBOOT)
+tools: $(TOOLS) $(DEBUGPRINTERS) $(COQDEPBOOT)
 
 # coqdep_boot : a basic version of coqdep, with almost no dependencies.
 
@@ -564,8 +555,30 @@ tools/compat5b.cmo: tools/compat5b.ml
 endif
 
 ###########################################################################
+# Documentation : cf Makefile.doc
+###########################################################################
+
+documentation: doc-$(WITHDOC)
+doc-all: doc
+doc-no:
+
+.PHONY: documentation doc-all doc-no
+
+###########################################################################
 # Installation
 ###########################################################################
+
+ifeq ($(LOCAL),true)
+install:
+	@echo "Nothing to install in a local build!"
+else
+install: install-coq install-coqide install-doc-$(WITHDOC)
+endif
+
+install-doc-all: install-doc
+install-doc-no:
+
+.PHONY: install install-doc-all install-doc-no
 
 #These variables are intended to be set by the caller to make
 #COQINSTALLPREFIX=
@@ -605,7 +618,7 @@ install-binaries: install-tools
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQC) $(COQTOPBYTE) $(COQTOPEXE) $(CHICKEN) $(FULLBINDIR)
 
-install-tools::
+install-tools:
 	$(MKDIR) $(FULLBINDIR)
 	# recopie des fichiers de style pour coqide
 	$(MKDIR) $(FULLCOQLIB)/tools/coqdoc
@@ -683,18 +696,18 @@ install-latex:
 
 source-doc: mli-doc $(OCAMLDOCDIR)/coq.pdf
 
-$(OCAMLDOCDIR)/coq.tex:: $(DOCMLIS:.mli=.cmi)
+$(OCAMLDOCDIR)/coq.tex: $(DOCMLIS:.mli=.cmi)
 	$(OCAMLDOC) -latex -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
 	$(DOCMLIS) -t "Coq mlis documentation" \
 	-intro $(OCAMLDOCDIR)/docintro -o $@
 
-mli-doc:: $(DOCMLIS:.mli=.cmi)
+mli-doc: $(DOCMLIS:.mli=.cmi)
 	$(OCAMLDOC) -html -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
 	$(DOCMLIS) -d $(OCAMLDOCDIR)/html -colorize-code \
 	-t "Coq mlis documentation" -intro $(OCAMLDOCDIR)/docintro \
 	-css-style style.css
 
-ml-dot:: $(MLEXTRAFILES)
+ml-dot: $(MLFILES)
 	$(OCAMLDOC) -dot -dot-reduce -rectypes -I $(CAMLLIB) -I $(MYCAMLP4LIB) $(MLINCLUDES)\
 	$(filter $(addsuffix /%.ml,$(CORESRCDIRS)),$(MLFILES)) -o $(OCAMLDOCDIR)/coq.dot
 
@@ -884,11 +897,8 @@ plugins/%_mod.ml: plugins/%.mllib
 
 %.ml: %.ml4 | %.ml4.d tools/compat5.cmo tools/compat5b.cmo
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)\
-	DEPS="$(call CAMLP4DEPS,$<)"; \
-	if ls $${DEPS} > /dev/null 2>&1; then \
-	$(CAMLP4O) $(PR_O) -I $(CAMLLIB) tools/compat5.cmo $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@; \
-	else echo $< : Dependency $${DEPS} not ready yet; false; fi
+	$(HIDE)$(CAMLP4O) $(PR_O) -I $(CAMLLIB) tools/compat5.cmo \
+	  $(call CAMLP4DEPS,$<) $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@
 
 %.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP) | %.v.d
 	$(SHOW)'COQC      $<'
@@ -965,6 +975,10 @@ otags:
 
 
 ###########################################################################
+
+# To speed-up things a bit, let's dissuade make to attempt rebuilding makefiles
+
+Makefile Makefile.build Makefile.common config/Makefile : ;
 
 
 # For emacs: 
