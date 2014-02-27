@@ -581,11 +581,11 @@ let new_interp_type ist c =
   let interp gl =
     try
       let (sigma, c) = interp_type ist (env gl) (sigma gl) c in
-      Proofview.V82.tclEVARS sigma <*> return c
+      Proofview.V82.tclEVARS sigma <*> Proofview.tclUNIT c
     with e when Proofview.V82.catchable_exception e ->
       Proofview.tclZERO e
   in
-  enterl interp
+  interp
 
 (* Interprets a reduction expression *)
 let interp_unfold ist env (occs,qid) =
@@ -1587,7 +1587,9 @@ and interp_atomic ist tac =
       end
   | TacCut c ->
       let open Proofview.Notations in
-      (new_interp_type ist c) >>= Tactics.cut
+      Proofview.Goal.enter begin fun gl ->
+        new_interp_type ist c gl >= Tactics.cut
+      end
   | TacAssert (t,ipat,c) ->
       Proofview.Goal.enter begin fun gl ->
         let env = Proofview.Goal.env gl in
