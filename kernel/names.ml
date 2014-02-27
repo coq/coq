@@ -332,53 +332,57 @@ module MPmap = CMap.Make(ModPath)
 
 module KerName = struct
 
-  type t = ModPath.t * DirPath.t * Label.t
+  type t = {
+    modpath : ModPath.t;
+    dirpath : DirPath.t;
+    knlabel : Label.t;
+  }
 
   type kernel_name = t
 
-  let make mp dir l = (mp,dir,l)
-  let repr kn = kn
+  let make modpath dirpath knlabel = { modpath; dirpath; knlabel; }
+  let repr kn = (kn.modpath, kn.dirpath, kn.knlabel)
 
-  let make2 mp l = (mp,DirPath.empty,l)
+  let make2 modpath knlabel = { modpath; dirpath = DirPath.empty; knlabel; }
 
-  let modpath (mp,_,_) = mp
-  let label (_,_,l) = l
+  let modpath kn = kn.modpath
+  let label kn = kn.knlabel
 
-  let to_string (mp,dir,l) =
+  let to_string kn =
     let dp =
-      if DirPath.is_empty dir then "."
-      else "#" ^ DirPath.to_string dir ^ "#"
+      if DirPath.is_empty kn.dirpath then "."
+      else "#" ^ DirPath.to_string kn.dirpath ^ "#"
     in
-    ModPath.to_string mp ^ dp ^ Label.to_string l
+    ModPath.to_string kn.modpath ^ dp ^ Label.to_string kn.knlabel
 
   let print kn = str (to_string kn)
 
   let compare (kn1 : kernel_name) (kn2 : kernel_name) =
     if kn1 == kn2 then 0
     else
-      let mp1,dir1,l1 = kn1 and mp2,dir2,l2 = kn2 in
-      let c = String.compare l1 l2 in
+      let c = String.compare kn1.knlabel kn2.knlabel in
       if not (Int.equal c 0) then c
       else
-        let c = DirPath.compare dir1 dir2 in
+        let c = DirPath.compare kn1.dirpath kn2.dirpath in
         if not (Int.equal c 0) then c
-        else ModPath.compare mp1 mp2
+        else ModPath.compare kn1.modpath kn2.modpath
 
   let equal kn1 kn2 = Int.equal (compare kn1 kn2) 0
 
   open Hashset.Combine
 
-  let hash (mp, dp, lbl) =
+  let hash { modpath = mp; dirpath = dp; knlabel = lbl; } =
     combine3 (ModPath.hash mp) (DirPath.hash dp) (Label.hash lbl)
 
   module Self_Hashcons = struct
     type t = kernel_name
     type u = (ModPath.t -> ModPath.t) * (DirPath.t -> DirPath.t)
         * (string -> string)
-    let hashcons (hmod,hdir,hstr) (mp,dir,l) =
-      (hmod mp,hdir dir,hstr l)
-    let equal (mp1,dir1,l1) (mp2,dir2,l2) =
-      mp1 == mp2 && dir1 == dir2 && l1 == l2
+    let hashcons (hmod,hdir,hstr) { modpath = mp; dirpath = dp; knlabel = l; } =
+      { modpath = hmod mp; dirpath = hdir dp; knlabel = hstr l; }
+    let equal kn1 kn2 =
+      kn1.modpath == kn2.modpath && kn1.dirpath == kn2.dirpath &&
+        kn1.knlabel == kn2.knlabel
     let hash = hash
   end
 
