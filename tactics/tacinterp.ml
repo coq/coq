@@ -1044,7 +1044,7 @@ and interp_ltac_reference loc' mustbetac ist r gl =
         try Id.Map.find id ist.lfun
         with Not_found -> in_gen (topwit wit_var) id
       in
-      force_vrec ist v gl >= fun v ->
+      force_vrec ist v gl >>= fun v ->
       let v = propagate_trace ist loc id v in
       if mustbetac then Proofview.tclUNIT (coerce_to_tactic loc id v) else Proofview.tclUNIT v
   | ArgArg (loc,r) ->
@@ -1058,7 +1058,7 @@ and interp_ltac_reference loc' mustbetac ist r gl =
 and interp_tacarg ist arg gl =
   match arg with
   | TacGeneric arg ->
-      Proofview.tclEVARMAP >= fun sigma ->
+      Proofview.tclEVARMAP >>= fun sigma ->
       Proofview.V82.wrap_exceptions begin fun () ->
         let goal = Proofview.Goal.goal gl in
         let (sigma,v) = Geninterp.generic_interp ist {Evd.it=goal;sigma} arg in
@@ -1067,7 +1067,7 @@ and interp_tacarg ist arg gl =
       end
   | Reference r -> interp_ltac_reference dloc false ist r gl
   | ConstrMayEval c ->
-      Proofview.tclEVARMAP >= fun sigma ->
+      Proofview.tclEVARMAP >>= fun sigma ->
       Proofview.V82.wrap_exceptions begin fun () ->
         let env = Proofview.Goal.env gl in
         let (sigma,c_interp) = interp_constr_may_eval ist env sigma c in
@@ -1078,24 +1078,24 @@ and interp_tacarg ist arg gl =
   | TacCall (loc,r,[]) ->
       interp_ltac_reference loc true ist r gl
   | TacCall (loc,f,l) ->
-      interp_ltac_reference loc true ist f gl >= fun fv ->
+      interp_ltac_reference loc true ist f gl >>= fun fv ->
       List.fold_right begin fun a acc ->
-        interp_tacarg ist a gl >= fun a_interp ->
-        acc >= fun acc ->
+        interp_tacarg ist a gl >>= fun a_interp ->
+        acc >>= fun acc ->
         Proofview.tclUNIT (a_interp::acc)
-      end l (Proofview.tclUNIT []) >= fun largs ->
+      end l (Proofview.tclUNIT []) >>= fun largs ->
       interp_app loc ist fv largs gl
   | TacExternal (loc,com,req,la) ->
       List.fold_right begin fun a acc ->
-        interp_tacarg ist a gl >= fun a_interp ->
-        acc >= fun acc ->
+        interp_tacarg ist a gl >>= fun a_interp ->
+        acc >>= fun acc ->
         Proofview.tclUNIT (a_interp::acc)
-      end la (Proofview.tclUNIT []) >= fun la_interp ->
+      end la (Proofview.tclUNIT []) >>= fun la_interp ->
       Proofview.V82.wrap_exceptions begin fun () ->
         interp_external loc ist gl com req la_interp
       end
   | TacFreshId l ->
-      Proofview.Goal.refresh_sigma gl >= fun gl ->
+      Proofview.Goal.refresh_sigma gl >>= fun gl ->
       (* spiwack: I'm probably being over-conservative here,
          pf_interp_fresh_id shouldn't raise exceptions *)
       Proofview.V82.wrap_exceptions begin fun () ->
@@ -1149,7 +1149,7 @@ and interp_app loc ist fv largs gl =
               Proofview.tclLIFT (debugging_exception_step ist false e (fun () -> str "evaluation")) <*>
 	      Proofview.tclZERO e
             end
-        end >= fun v ->
+        end >>= fun v ->
         (* No errors happened, we propagate the trace *)
         let v = append_trace trace v in
         let env = Proofview.Goal.env gl in
@@ -1183,7 +1183,7 @@ and tactic_of_value ist vle =
   else Proofview.tclZERO (UserError ("" , str"Expression does not evaluate to a tactic."))
 
 and eval_value ist tac gl =
-  val_interp ist tac gl >= fun v ->
+  val_interp ist tac gl >>= fun v ->
   if has_type v (topwit wit_tacvalue) then match to_tacvalue v with
   | VFun (trace,lfun,[],t) ->
       let ist = {
@@ -1196,7 +1196,7 @@ and eval_value ist tac gl =
 
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist llc u gl =
-  Proofview.tclUNIT () >= fun () -> (* delay for the effects of [lref], just in case. *)
+  Proofview.tclUNIT () >>= fun () -> (* delay for the effects of [lref], just in case. *)
   let lref = ref ist.lfun in
   let fold accu ((_, id), b) =
     let v = of_tacvalue (VRec (lref, TacArg (dloc, b))) in
@@ -1210,11 +1210,11 @@ and interp_letrec ist llc u gl =
 (* Interprets the clauses of a LetIn *)
 and interp_letin ist llc u gl =
   let fold ((_, id), body) acc =
-    interp_tacarg ist body gl >= fun v ->
-    acc >= fun acc ->
+    interp_tacarg ist body gl >>= fun v ->
+    acc >>= fun acc ->
     Proofview.tclUNIT (Id.Map.add id v acc)
   in
-  List.fold_right fold llc (Proofview.tclUNIT ist.lfun) >= fun lfun ->
+  List.fold_right fold llc (Proofview.tclUNIT ist.lfun) >>= fun lfun ->
   let ist = { ist with lfun } in
   val_interp ist u gl
 
@@ -1281,8 +1281,8 @@ and interp_match ist lz constr lmr gl =
           (fun () -> str "evaluation of the matched expression")) <*>
           Proofview.tclZERO e
     end
-  end >= fun constr ->
-  Proofview.tclEVARMAP >= fun sigma ->
+  end >>= fun constr ->
+  Proofview.tclEVARMAP >>= fun sigma ->
   Proofview.V82.wrap_exceptions begin fun () ->
     let env = Proofview.Goal.env gl in
     let ilr = read_match_rule (extract_ltac_constr_values ist env) ist env sigma lmr in
@@ -1291,7 +1291,7 @@ and interp_match ist lz constr lmr gl =
 
 (* Interprets the Match Context expressions *)
 and interp_match_goal ist lz lr lmr gl =
-    Proofview.tclEVARMAP >= fun sigma ->
+    Proofview.tclEVARMAP >>= fun sigma ->
     Proofview.V82.wrap_exceptions begin fun () ->
       let env = Proofview.Goal.env gl in
       let hyps = Proofview.Goal.hyps gl in
@@ -1302,7 +1302,7 @@ and interp_match_goal ist lz lr lmr gl =
     end
 
 and interp_external loc ist gl com req la =
-  Proofview.Goal.refresh_sigma gl >= fun gl ->
+  Proofview.Goal.refresh_sigma gl >>= fun gl ->
   let f ch = Tacmach.New.of_old (fun gl -> extern_request ch req gl la) gl in
   let g ch = internalise_tacarg ch in
   interp_tacarg ist (System.connect f g com) gl
@@ -1407,7 +1407,7 @@ and interp_ltac_constr ist e gl =
             Proofview.tclZERO Not_found
         | e -> Proofview.tclZERO e
       end
-  end >= fun result ->
+  end >>= fun result ->
   Proofview.V82.wrap_exceptions begin fun () ->
   let env = Proofview.Goal.env gl in
   let result = Value.normalize result in
@@ -1438,7 +1438,7 @@ and interp_tactic ist tac =
     tactic_of_value ist (val_interp_glob ist tac)
   with NeedsAGoal ->
     Proofview.Goal.enter begin fun gl ->
-      val_interp ist tac gl >= fun v ->
+      val_interp ist tac gl >>= fun v ->
       tactic_of_value ist v
     end
 
@@ -1588,7 +1588,7 @@ and interp_atomic ist tac =
   | TacCut c ->
       let open Proofview.Notations in
       Proofview.Goal.enter begin fun gl ->
-        new_interp_type ist c gl >= Tactics.cut
+        new_interp_type ist c gl >>= Tactics.cut
       end
   | TacAssert (t,ipat,c) ->
       Proofview.Goal.enter begin fun gl ->
@@ -1967,7 +1967,7 @@ and interp_atomic ist tac =
       | ConstrWithBindingsArgType
       | BindingsArgType
       | OptArgType _ | PairArgType _ -> (** generic handler *)
-        Proofview.tclEVARMAP >= fun sigma ->
+        Proofview.tclEVARMAP >>= fun sigma ->
         Proofview.V82.wrap_exceptions begin fun () ->
           let env = Proofview.Goal.env gl in
           let concl = Proofview.Goal.concl gl in
@@ -1976,8 +1976,8 @@ and interp_atomic ist tac =
           Proofview.V82.tclEVARS sigma <*> Proofview.tclUNIT arg
         end
       | _ as tag -> (** Special treatment. TODO: use generic handler  *)
-        Proofview.tclEVARMAP >= fun sigma ->
-        Proofview.Goal.refresh_sigma gl >= fun gl ->
+        Proofview.tclEVARMAP >>= fun sigma ->
+        Proofview.Goal.refresh_sigma gl >>= fun gl ->
         Proofview.V82.wrap_exceptions begin fun () ->
           let env = Proofview.Goal.env gl in
         match tag with
@@ -2036,10 +2036,10 @@ and interp_atomic ist tac =
               (* spiwack: unsafe, we should introduce relevant combinators.
                  Before new tactical it simply read: [Genarg.app_list f x] *)
               fold_list begin fun a l ->
-                f a gl >= fun a' ->
-                l >= fun l ->
+                f a gl >>= fun a' ->
+                l >>= fun l ->
                 Proofview.tclUNIT (a'::l)
-              end x (Proofview.tclUNIT []) >= fun l ->
+              end x (Proofview.tclUNIT []) >>= fun l ->
 		let wit_t = Obj.magic t in
 		let l = List.map (fun arg -> out_gen wit_t arg) l in
               Proofview.tclUNIT (in_gen
@@ -2049,7 +2049,7 @@ and interp_atomic ist tac =
               (** Special treatment of tactics *)
               if has_type x (glbwit wit_tactic) then
                 let tac = out_gen (glbwit wit_tactic) x in
-                val_interp ist tac gl >= fun v ->
+                val_interp ist tac gl >>= fun v ->
                 Proofview.tclUNIT v
               else
                 let goal = Proofview.Goal.goal gl in
@@ -2061,11 +2061,11 @@ and interp_atomic ist tac =
       in
       Proofview.Goal.enter begin fun gl ->
         let addvar (x, v) accu =
-          accu >= fun accu ->
-          f v gl >= fun v ->
+          accu >>= fun accu ->
+          f v gl >>= fun v ->
           Proofview.tclUNIT (Id.Map.add x v accu)
         in
-        List.fold_right addvar l (Proofview.tclUNIT ist.lfun) >= fun lfun ->
+        List.fold_right addvar l (Proofview.tclUNIT ist.lfun) >>= fun lfun ->
           let trace = push_trace (loc,LtacNotationCall s) ist in
           let ist = {
             lfun = lfun;
@@ -2080,7 +2080,7 @@ let default_ist () =
   { lfun = Id.Map.empty; extra = extra }
 
 let eval_tactic t =
-  Proofview.tclUNIT () >= fun () -> (* delay for [default_ist] *)
+  Proofview.tclUNIT () >>= fun () -> (* delay for [default_ist] *)
   Proofview.tclLIFT db_initialize <*>
   interp_tactic (default_ist ()) t
 
@@ -2120,7 +2120,7 @@ let hide_interp global t ot =
     | Some t' -> Tacticals.New.tclTHEN t t'
   in
   if global then
-    Proofview.tclENV >= fun env ->
+    Proofview.tclENV >>= fun env ->
     hide_interp env
   else
     Proofview.Goal.enter begin fun gl ->

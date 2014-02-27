@@ -1117,7 +1117,7 @@ let conclPattern concl pat tac =
     | Some pat ->
 	try Proofview.tclUNIT (matches pat concl)
 	with PatternMatchingFailure -> Proofview.tclZERO (UserError ("conclPattern",str"conclPattern")) in
-    constr_bindings >= fun constr_bindings ->
+    constr_bindings >>= fun constr_bindings ->
     Hook.get forward_interp_tactic constr_bindings tac
 
 (***********************************************************)

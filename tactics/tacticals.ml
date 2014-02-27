@@ -501,7 +501,7 @@ module New = struct
     tclREPEAT_MAIN0 (tclPROGRESS t)
 
   let tclCOMPLETE t =
-    t >= fun res ->
+    t >>= fun res ->
       (tclINDEPENDENT
          (tclZERO (Errors.UserError ("",str"Proof is not complete.")))
       ) <*>
@@ -514,7 +514,7 @@ module New = struct
     Proofview.tclINDEPENDENT (Proofview.tclPROGRESS t)
 
   let tclWITHHOLES accept_unresolved_holes tac sigma x =
-    tclEVARMAP >= fun sigma_initial ->
+    tclEVARMAP >>= fun sigma_initial ->
       if sigma == sigma_initial then tac x
       else
         let check_evars env new_sigma sigma initial_sigma =
@@ -526,8 +526,8 @@ module New = struct
         in
         let check_evars_if =
           if not accept_unresolved_holes then
-            tclEVARMAP >= fun sigma_final ->
-              tclENV >= fun env ->
+            tclEVARMAP >>= fun sigma_final ->
+              tclENV >>= fun env ->
                 check_evars env sigma_final sigma sigma_initial
           else
             tclUNIT ()
@@ -556,11 +556,11 @@ module New = struct
 
   let onNthHypId m tac =
     Goal.enter begin fun gl ->
-      Proofview.tclUNIT (nthHypId m gl) >= tac
+      Proofview.tclUNIT (nthHypId m gl) >>= tac
     end
   let onNthHyp m tac =
     Goal.enter begin fun gl ->
-      Proofview.tclUNIT (nthHyp m gl) >= tac
+      Proofview.tclUNIT (nthHyp m gl) >>= tac
     end
 
   let onLastHypId = onNthHypId 1
@@ -568,7 +568,7 @@ module New = struct
 
   let onNthDecl m tac =
     Proofview.Goal.enter begin fun gl ->
-      Proofview.tclUNIT (nthDecl m gl) >= tac
+      Proofview.tclUNIT (nthDecl m gl) >>= tac
     end
   let onLastDecl  = onNthDecl 1
 

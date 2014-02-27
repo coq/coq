@@ -1861,7 +1861,7 @@ let destructure_goal =
 let destructure_goal = destructure_goal
 
 let omega_solver =
-  Proofview.tclUNIT () >= fun () -> (* delay for [check_required_library] *)
+  Proofview.tclUNIT () >>= fun () -> (* delay for [check_required_library] *)
   Coqlib.check_required_library ["Coq";"omega";"Omega"];
   reset_all ();
   destructure_goal

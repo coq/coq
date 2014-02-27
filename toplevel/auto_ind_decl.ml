@@ -370,7 +370,7 @@ let do_replace_lb lb_scheme_key aavoid narg p q =
           in
           Proofview.tclZERO (Errors.UserError("",err_msg))
        in
-       lb_type_of_p >= fun (lb_type_of_p,eff) ->
+       lb_type_of_p >>= fun (lb_type_of_p,eff) ->
        let lb_args = Array.append (Array.append
                           (Array.map (fun x -> x) v)
                           (Array.map (fun x -> do_arg x 1) v))
@@ -463,22 +463,22 @@ let do_replace_bl bl_scheme_key ind aavoid narg lft rgt =
   in
   begin try Proofview.tclUNIT (destApp lft)
     with DestKO ->  Proofview.tclZERO (UserError ("" , str"replace failed."))
-  end >= fun (ind1,ca1) ->
+  end >>= fun (ind1,ca1) ->
   begin try Proofview.tclUNIT (destApp rgt)
     with DestKO -> Proofview.tclZERO (UserError ("" , str"replace failed."))
-  end >= fun (ind2,ca2) ->
+  end >>= fun (ind2,ca2) ->
   begin try Proofview.tclUNIT (destInd ind1)
     with DestKO ->
       begin try Proofview.tclUNIT (fst (destConstruct ind1))
         with DestKO -> Proofview.tclZERO (UserError ("" , str"The expected type is an inductive one."))
       end
-  end >= fun (sp1,i1) ->
+  end >>= fun (sp1,i1) ->
   begin try Proofview.tclUNIT (destInd ind2)
     with DestKO ->
       begin try Proofview.tclUNIT (fst (destConstruct ind2))
         with DestKO -> Proofview.tclZERO (UserError ("" , str"The expected type is an inductive one."))
       end
-  end >= fun (sp2,i2) ->
+  end >>= fun (sp2,i2) ->
   if not (eq_mind sp1 sp2) || not (Int.equal i1 i2)
   then Proofview.tclZERO (UserError ("" , str"Eq should be on the same type"))
   else aux (Array.to_list ca1) (Array.to_list ca2)
@@ -854,14 +854,14 @@ let compute_dec_tact ind lnamesparrec nparrec =
     Not_found ->
       Proofview.tclZERO (UserError ("",str"Error during the decidability part, boolean to leibniz"++
         str" equality is required."))
-  end >= fun (blI,eff') ->
+  end >>= fun (blI,eff') ->
   begin try
           let c, eff = find_scheme lb_scheme_kind ind in
           Proofview.tclUNIT (mkConst c,eff) with
     Not_found ->
       Proofview.tclZERO (UserError ("",str"Error during the decidability part, leibniz to boolean"++
         str" equality is required."))
-  end >= fun (lbI,eff'') ->
+  end >>= fun (lbI,eff'') ->
   Tacticals.New.tclTHENLIST [
         Proofview.V82.tactic (Tactics.emit_side_effects
           (Declareops.union_side_effects eff''

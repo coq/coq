@@ -116,7 +116,7 @@ END
 
 open Proofview.Notations
 let discrHyp id =
-  Proofview.tclEVARMAP >= fun sigma ->
+  Proofview.tclEVARMAP >>= fun sigma ->
   discr_main {it = Term.mkVar id,NoBindings; sigma = sigma;}
 
 let injection_main c =
@@ -161,7 +161,7 @@ TACTIC EXTEND einjection_as
 END
 
 let injHyp id =
-  Proofview.tclEVARMAP >= fun sigma ->
+  Proofview.tclEVARMAP >>= fun sigma ->
   injection_main { it = Term.mkVar id,NoBindings; sigma = sigma; }
 
 TACTIC EXTEND dependent_rewrite

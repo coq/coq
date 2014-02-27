@@ -141,7 +141,7 @@ END
 open Proofview.Notations
 
 let default_declarative_automation =
-  Proofview.tclUNIT () >= fun () -> (* delay for [congruence_depth] *)
+  Proofview.tclUNIT () >>= fun () -> (* delay for [congruence_depth] *)
   Tacticals.New.tclORELSE
     (Tacticals.New.tclORELSE (Auto.h_trivial [] None)
     (Cctac.congruence_tac !congruence_depth []))

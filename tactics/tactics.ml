@@ -1983,7 +1983,7 @@ let letin_tac_gen with_eq name (sigmac,c) test ty occs =
 let make_eq_test c = (make_eq_test c,fun _ -> c)
 
 let letin_tac with_eq name c ty occs =
-  Proofview.tclEVARMAP >= fun sigma ->
+  Proofview.tclEVARMAP >>= fun sigma ->
   letin_tac_gen with_eq name (sigma,c) (make_eq_test c) ty (occs,true)
 
 let letin_pat_tac with_eq name c ty occs =
@@ -3412,7 +3412,7 @@ let new_induct_gen_l isrec with_evars elim (eqname,names) lc =
   Tacticals.New.tclTHENLIST
     [
       (atomize_list lc);
-      (Proofview.tclUNIT () >= fun () -> (* recompute each time to have the new value of newlc *)
+      (Proofview.tclUNIT () >>= fun () -> (* recompute each time to have the new value of newlc *)
 	induction_without_atomization isrec with_evars elim names !newlc) ;
       (* after induction, try to unfold all letins created by atomize_list
          FIXME: unfold_all does not exist anywhere else? *)
@@ -3688,7 +3688,7 @@ let symmetry_red allowred =
       let sigma = Proofview.Goal.sigma gl in
       whd_betadeltaiota env sigma c
   in
-  match_with_equation concl >= fun with_eqn ->
+  match_with_equation concl >>= fun with_eqn ->
   match with_eqn with
   | Some eq_data,_,_ ->
       Proofview.V82.tactic begin
@@ -3718,7 +3718,7 @@ let symmetry_in id =
   let sign,t = decompose_prod_assum ctype in
   Proofview.tclORELSE
     begin
-      match_with_equation t >= fun (_,hdcncl,eq) ->
+      match_with_equation t >>= fun (_,hdcncl,eq) ->
         let symccl = match eq with
           | MonomorphicLeibnizEq (c1,c2) -> mkApp (hdcncl, [| c2; c1 |])
           | PolymorphicLeibnizEq (typ,c1,c2) -> mkApp (hdcncl, [| typ; c2; c1 |])
@@ -3793,7 +3793,7 @@ let transitivity_red allowred t =
       let sigma = Proofview.Goal.sigma gl in
       whd_betadeltaiota env sigma c
   in
-  match_with_equation concl >= fun with_eqn ->
+  match_with_equation concl >>= fun with_eqn ->
   match with_eqn with
   | Some eq_data,_,_ ->
       Proofview.V82.tactic begin
@@ -3885,7 +3885,7 @@ let tclABSTRACT name_op tac gl =
 
 
 let admit_as_an_axiom =
-  Proofview.tclUNIT () >= fun () -> (* delay for Coqlib.build_coq_proof_admitted *)
+  Proofview.tclUNIT () >>= fun () -> (* delay for Coqlib.build_coq_proof_admitted *)
   simplest_case (Coqlib.build_coq_proof_admitted ()) <*>
   Proofview.mark_as_unsafe
 

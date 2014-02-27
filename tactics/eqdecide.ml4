@@ -141,7 +141,7 @@ let solveEqBranch rectype =
     begin
       Proofview.Goal.enter begin fun gl ->
         let concl = Proofview.Goal.concl gl in
-        match_eqdec concl >= fun (eqonleft,op,lhs,rhs,_) ->
+        match_eqdec concl >>= fun (eqonleft,op,lhs,rhs,_) ->
           let (mib,mip) = Global.lookup_inductive rectype in
           let nparams   = mib.mind_nparams in
           let getargs l = List.skipn nparams (snd (decompose_app l)) in
@@ -168,12 +168,12 @@ let decideGralEquality =
     begin
       Proofview.Goal.enter begin fun gl ->
         let concl = Proofview.Goal.concl gl in
-        match_eqdec concl >= fun (eqonleft,_,c1,c2,typ) ->
+        match_eqdec concl >>= fun (eqonleft,_,c1,c2,typ) ->
         let headtyp = Tacmach.New.of_old (fun g -> hd_app (pf_compute g typ)) gl in
         begin match kind_of_term headtyp with
         | Ind mi -> Proofview.tclUNIT mi
         | _ -> Proofview.tclZERO (UserError ("",Pp.str"This decision procedure only works for inductive objects."))
-        end >= fun rectype ->
+        end >>= fun rectype ->
           (Tacticals.New.tclTHEN
              (mkBranches c1 c2)
              (Tacticals.New.tclORELSE (solveNoteqBranch eqonleft) (solveEqBranch rectype)))

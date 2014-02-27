@@ -426,7 +426,7 @@ let rewrite_equations othin neqns names ba =
 		 (Tacticals.New.onLastHypId (fun id ->
 		   Tacticals.New.tclTRY (projectAndApply thin id first_eq names depids)))))
 	       names;
-	     Tacticals.New.tclMAP (fun (id,_,_) -> Proofview.tclUNIT () >= fun () -> (* delay for [first_eq]. *)
+	     Tacticals.New.tclMAP (fun (id,_,_) -> Proofview.tclUNIT () >>= fun () -> (* delay for [first_eq]. *)
 	       intro_move None (if thin then MoveLast else !first_eq))
 	       nodepids;
 	     Proofview.V82.tactic (tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids)]
@@ -470,7 +470,7 @@ let raw_inversion inv_kind id status names =
       with UserError _ ->
         Proofview.tclZERO (Errors.UserError ("raw_inversion" ,
 	                                     str ("The type of "^(Id.to_string id)^" is not inductive.")))
-    end >= fun (ind,t) ->
+    end >>= fun (ind,t) ->
     try
       let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) gl in
       let ccl = clenv_type indclause in

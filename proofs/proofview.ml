@@ -641,7 +641,7 @@ let in_proofview p k =
 
 
 module Notations = struct
-  let (>=) = tclBIND
+  let (>>=) = tclBIND
   let (<*>) = tclTHEN
   let (<+>) t1 t2 = tclOR t1 (fun _ -> t2)
 end
@@ -650,8 +650,8 @@ open Notations
 let rec list_map f = function
   | [] -> tclUNIT []
   | a::l ->
-      f a >= fun a' ->
-      list_map f l >= fun l' ->
+      f a >>= fun a' ->
+      list_map f l >>= fun l' ->
       tclUNIT (a'::l')
 
 
@@ -807,8 +807,8 @@ module Goal = struct
   end
   let enter f =
     list_iter_goal () begin fun goal () ->
-      Proof.current >= fun env ->
-      tclEVARMAP >= fun sigma ->
+      Proof.current >>= fun env ->
+      tclEVARMAP >>= fun sigma ->
       try
         (* enter_t cannot modify the sigma. *)
         let (t,_) = Goal.eval (enter_t f) env sigma goal in
@@ -822,7 +822,7 @@ module Goal = struct
   (* compatibility *)
   let goal { self=self } = self
   let refresh_sigma g =
-    tclEVARMAP >= fun sigma ->
+    tclEVARMAP >>= fun sigma ->
     tclUNIT { g with sigma }
 
 end
