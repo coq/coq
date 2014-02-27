@@ -79,6 +79,6 @@ let load_aux_file_for vfile =
   | Outdated -> empty_aux_file
   | Sys_error s | Scanf.Scan_failure s
   | Failure s | Invalid_argument s ->
-     Flage.if_verbose
-       Pp.(msg_warning (str"Loading file "++str aux_fname++str": "++str s));
+     Flags.if_verbose
+       Pp.msg_warning Pp.(str"Loading file "++str aux_fname++str": "++str s);
      empty_aux_file
