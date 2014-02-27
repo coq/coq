@@ -2175,12 +2175,6 @@ let interp_redexp env sigma r =
   let gist = { fully_empty_glob_sign with genv = env; } in
   interp_red_expr ist sigma env (intern_red_expr gist r)
 
-let val_interp ist (tac:glob_tactic_expr) : typed_generic_argument Proofview.glist Proofview.tactic =
-  Proofview.Goal.enterl (fun gl -> val_interp ist tac gl >= Proofview.Goal.return)
-
-let interp_ltac_constr ist e =
-  Proofview.Goal.enterl (fun gl -> interp_ltac_constr ist e gl >= Proofview.Goal.return)
-
 (***************************************************************************)
 (* Embed tactics in raw or glob tactic expr *)
 
