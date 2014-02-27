@@ -1201,12 +1201,11 @@ and interp_letrec ist llc u gl =
 
 (* Interprets the clauses of a LetIn *)
 and interp_letin ist llc u gl =
-  let fold ((_, id), body) acc =
+  let fold acc ((_, id), body) =
     interp_tacarg ist body gl >>= fun v ->
-    acc >>= fun acc ->
     Proofview.tclUNIT (Id.Map.add id v acc)
   in
-  List.fold_right fold llc (Proofview.tclUNIT ist.lfun) >>= fun lfun ->
+  Proofview.Monad.List.fold_left fold ist.lfun llc >>= fun lfun ->
   let ist = { ist with lfun } in
   val_interp ist u gl
 
@@ -2033,11 +2032,10 @@ and interp_atomic ist tac =
       in
       Proofview.Goal.enter begin fun gl ->
         let addvar (x, v) accu =
-          accu >>= fun accu ->
           f v gl >>= fun v ->
           Proofview.tclUNIT (Id.Map.add x v accu)
         in
-        List.fold_right addvar l (Proofview.tclUNIT ist.lfun) >>= fun lfun ->
+        Proofview.Monad.List.fold_right addvar l ist.lfun >>= fun lfun ->
           let trace = push_trace (loc,LtacNotationCall s) ist in
           let ist = {
             lfun = lfun;
