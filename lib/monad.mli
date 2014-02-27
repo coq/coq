@@ -32,7 +32,13 @@ module type S = sig
   (** List combinators *)
   module List : sig
 
+    (** [map f l] maps [f] on the elements of [l] in left to right
+        order. *)
     val map : ('a -> 'b t) -> 'a list -> 'b list t
+
+    (** [map f l] maps [f] on the elements of [l] in right to left
+        order. *)
+    val map_right : ('a -> 'b t) -> 'a list -> 'b list t
 
   end
 

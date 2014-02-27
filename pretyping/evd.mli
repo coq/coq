@@ -276,7 +276,8 @@ val sig_sig : 'a sigma -> evar_map
 
 (** {5 The state monad with state an evar map} *)
 
-module Monad : Monad.S with type +'a t = evar_map -> 'a * evar_map
+module MonadR : Monad.S with type +'a t = evar_map -> evar_map * 'a
+module Monad  : Monad.S with type +'a t = evar_map -> 'a * evar_map
 
 (** {5 Meta machinery}
 

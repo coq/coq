@@ -624,13 +624,11 @@ let interp_red_expr ist sigma env = function
   | Cbn f -> sigma , Cbn (interp_flag ist env f)
   | Lazy f -> sigma , Lazy (interp_flag ist env f)
   | Pattern l ->
-    let (sigma,l_interp) =
-      List.fold_right begin fun c (sigma,acc) ->
-	let (sigma,c_interp) = interp_constr_with_occurrences ist env sigma c in
-	sigma , c_interp :: acc
-      end l (sigma,[])
-    in
-    sigma , Pattern l_interp
+      let (sigma,l_interp) =
+        Evd.MonadR.List.map_right
+          (fun c sigma -> interp_constr_with_occurrences ist env sigma c) l sigma
+      in
+      sigma , Pattern l_interp
   | Simpl o ->
     sigma , Simpl (Option.map (interp_closed_typed_pattern_with_occurrences ist env sigma) o)
   | CbvVm o ->
@@ -1081,18 +1079,10 @@ and interp_tacarg ist arg gl =
       interp_ltac_reference loc true ist r gl
   | TacCall (loc,f,l) ->
       interp_ltac_reference loc true ist f gl >>= fun fv ->
-      List.fold_right begin fun a acc ->
-        interp_tacarg ist a gl >>= fun a_interp ->
-        acc >>= fun acc ->
-        Proofview.tclUNIT (a_interp::acc)
-      end l (Proofview.tclUNIT []) >>= fun largs ->
+      Proofview.Monad.List.map (fun a -> interp_tacarg ist a gl) l >>= fun largs ->
       interp_app loc ist fv largs gl
   | TacExternal (loc,com,req,la) ->
-      List.fold_right begin fun a acc ->
-        interp_tacarg ist a gl >>= fun a_interp ->
-        acc >>= fun acc ->
-        Proofview.tclUNIT (a_interp::acc)
-      end la (Proofview.tclUNIT []) >>= fun la_interp ->
+      Proofview.Monad.List.map (fun a -> interp_tacarg ist a gl) la >>= fun la_interp ->
       Proofview.V82.wrap_exceptions begin fun () ->
         interp_external loc ist gl com req la_interp
       end
@@ -1555,10 +1545,7 @@ and interp_atomic ist tac =
 	  let (sigma,c_interp) = pf_interp_type ist { gl with sigma=sigma } c in
 	  sigma , (interp_fresh_ident ist env id,n,c_interp) in
         let (sigma,l_interp) =
-	  List.fold_right begin fun c (sigma,acc) ->
-	    let (sigma,c_interp) = f sigma c in
-	    sigma , c_interp::acc
-	  end l (project gl,[])
+          Evd.MonadR.List.map_right (fun c sigma -> f sigma c) l (project gl)
         in
         tclTHEN
 	  (tclEVARS sigma)
@@ -1577,10 +1564,7 @@ and interp_atomic ist tac =
 	  let (sigma,c_interp) = pf_interp_type ist { gl with sigma=sigma } c in
 	  sigma , (interp_fresh_ident ist env id,c_interp) in
         let (sigma,l_interp) =
-	  List.fold_right begin fun c (sigma,acc) ->
-	    let (sigma,c_interp) = f sigma c in
-	    sigma , c_interp::acc
-	  end l (project gl,[])
+          Evd.MonadR.List.map_right (fun c sigma -> f sigma c) l (project gl)
         in
         tclTHEN
 	  (tclEVARS sigma)
@@ -1953,11 +1937,8 @@ and interp_atomic ist tac =
         let goal = Proofview.Goal.goal gl in
         let tac = Tacenv.interp_ml_tactic opn in
         let (sigma,args) =
-          (* spiwack: monadic List.map *)
-          List.fold_right begin fun a (sigma,acc) ->
-            let (sigma,a_interp) = interp_genarg ist env sigma concl goal a in
-	    sigma , a_interp::acc
-          end l (goal_sigma,[])
+          Evd.MonadR.List.map_right
+            (fun a sigma -> interp_genarg ist env sigma concl goal a) l goal_sigma
         in
         Proofview.V82.tclEVARS sigma <*>
         tac args ist
@@ -2012,10 +1993,10 @@ and interp_atomic ist tac =
           | ListArgType ConstrArgType ->
               let wit = glbwit (wit_list wit_constr) in
               let (sigma,l_interp) = Tacmach.New.of_old begin fun gl ->
-	        List.fold_right begin fun c (sigma,acc) ->
-	          let (sigma,c_interp) = mk_constr_value ist { gl with sigma=sigma } c in
-	          sigma , c_interp::acc
-	        end (out_gen wit x) (project gl,[])
+                Evd.MonadR.List.map_right
+                  (fun c sigma -> mk_constr_value ist { gl with sigma=sigma } c)
+                  (out_gen wit x)
+                  (project gl)
               end gl in
               Proofview.V82.tclEVARS sigma <*>
               Proofview.tclUNIT (in_gen (topwit (wit_list wit_genarg)) l_interp)

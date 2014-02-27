@@ -32,8 +32,13 @@ module type S = sig
   (** List combinators *)
   module List : sig
 
-    (** [map f l] applies the monadic effect left to right. *)
+    (** [map f l] maps [f] on the elements of [l] in left to right
+        order. *)
     val map : ('a -> 'b t) -> 'a list -> 'b list t
+
+    (** [map f l] maps [f] on the elements of [l] in right to left
+        order. *)
+    val map_right : ('a -> 'b t) -> 'a list -> 'b list t
 
   end
 
@@ -53,6 +58,23 @@ module Make (M:Def) : S with type +'a t = 'a M.t = struct
           map f l >>= fun l' ->
           return (a'::l')
 
+    let rec map_right f = function
+      | [] -> return []
+      | a::l ->
+          map f l >>= fun l' ->
+          f a >>= fun a' ->
+          return (a'::l')
+
   end
 
 end
+
+
+
+
+
+
+
+
+
+
