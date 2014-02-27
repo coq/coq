@@ -1196,7 +1196,7 @@ let inject_at_positions env sigma l2r (eq,_,(t,t1,t2)) eq_clause posns tac =
     Proofview.tclZERO (Errors.UserError ("Equality.inj" , str "Failed to decompose the equality."))
   else
     Proofview.tclBIND
-      (Proofview.list_map
+      (Proofview.Monad.List.map
          (fun (pf,ty) -> Tacticals.New.tclTHENS (cut ty) [Proofview.tclUNIT (); Proofview.V82.tactic (refine pf)])
          (if l2r then List.rev injectors else injectors))
       (fun _ -> tac (List.length injectors))

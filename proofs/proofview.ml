@@ -651,13 +651,6 @@ open Notations
 module Monad =
   Monad.Make(struct type +'a t = 'a tactic let return=tclUNIT let (>>=)=(>>=) end)
 
-let rec list_map f = function
-  | [] -> tclUNIT []
-  | a::l ->
-      f a >>= fun a' ->
-      list_map f l >>= fun l' ->
-      tclUNIT (a'::l')
-
 
 (*** Compatibility layer with <= 8.2 tactics ***)
 module V82 = struct
@@ -670,7 +663,7 @@ module V82 = struct
     let (>>=) = Proof.bind in
     Proof.get >>= fun ps ->
     try
-      let tac evd gl = 
+      let tac gl evd = 
         let glsigma  =
           tac { Evd.it = gl ; sigma = evd; }  in
         let sigma = glsigma.Evd.sigma in
@@ -679,9 +672,9 @@ module V82 = struct
       in
         (* Old style tactics expect the goals normalized with respect to evars. *)
       let (initgoals,initevd) =
-        Goal.list_map Goal.V82.nf_evar ps.comb ps.solution
+        Evd.Monad.List.map (fun g s -> Goal.V82.nf_evar s g) ps.comb ps.solution
       in
-      let (goalss,evd) = Goal.list_map tac initgoals initevd in
+      let (goalss,evd) = Evd.Monad.List.map tac initgoals initevd in
       let sgs = List.flatten goalss in
       Proof.set { ps with solution=evd ; comb=sgs; }
     with e when catchable_exception e ->
@@ -696,7 +689,7 @@ module V82 = struct
     let (>>=) = Proof.bind in
     Proof.get >>= fun ps ->
     let (goals,evd) =
-      Goal.list_map Goal.V82.nf_evar ps.comb ps.solution
+      Evd.Monad.List.map (fun g s -> Goal.V82.nf_evar s g) ps.comb ps.solution
     in
     Proof.set { ps with solution=evd ; comb=goals }
 
@@ -796,7 +789,7 @@ module Goal = struct
     Proof.get >>= fun step ->
     try
       let (ks,sigma) =
-        Goal.list_map begin fun sigma g ->
+        Evd.Monad.List.map begin fun g sigma ->
           Util.on_fst k (Goal.eval s env sigma g)
         end step.comb step.solution
       in

@@ -262,8 +262,6 @@ val mark_as_unsafe : unit tactic
 
 module Monad : Monad.S with type +'a t = 'a tactic
 
-val list_map : ('a -> 'b tactic) -> 'a list -> 'b list tactic
-
 (*** Commands ***)
 
 val in_proofview : proofview -> (Evd.evar_map -> 'a) -> 'a

@@ -274,6 +274,10 @@ type 'a sigma = {
 val sig_it  : 'a sigma -> 'a
 val sig_sig : 'a sigma -> evar_map
 
+(** {5 The state monad with state an evar map} *)
+
+module Monad : Monad.S with type +'a t = evar_map -> 'a * evar_map
+
 (** {5 Meta machinery}
 
     These functions are almost deprecated. They were used before the

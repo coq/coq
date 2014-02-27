@@ -450,31 +450,6 @@ let rename_hyp id1 id2 = (); fun env rdefs gl info ->
   rdefs := Evd.define gl.content new_subproof !rdefs;
   { subgoals = [new_goal] }
 
-(*** Additional functions ***)
-
-(* emulates List.map for functions of type
-   [Evd.evar_map -> 'a -> 'b * Evd.evar_map] on lists of type 'a, by propagating
-   new evar_map to next definition. *)
-(*This sort of construction actually works with any monad (here the State monade
-   in Haskell). There is a generic construction in Haskell called mapM.
-*)
-let rec list_map f l s =
-  match l with
-  | [] -> ([],s)
-  | a::l -> let (a,s) = f s a in
-               let (l,s) = list_map f l s in
-	       (a::l,s)
-
-(* Another instance of the generic monadic map *)
-let rec sensitive_list_map f = function
-  | [] -> return []
-  | a::l ->
-      bind (f a) begin fun a' ->
-      bind (sensitive_list_map f l) begin fun l' ->
-      return (a'::l')
-      end
-      end
-
 
 (* Layer to implement v8.2 tactic engine ontop of the new architecture.
    Types are different from what they used to be due to a change of the

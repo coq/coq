@@ -42,6 +42,7 @@ Stateid
 Ephemeron
 Future
 RemoteCounter
+Monad
 
 Names
 Univ
@@ -154,7 +155,6 @@ Smartlocate
 Constrintern
 Modintern
 Constrextern
-Monad
 Proof_type
 Goal
 Logic

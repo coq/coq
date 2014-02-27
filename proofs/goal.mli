@@ -157,19 +157,6 @@ val defs : Evd.evar_map sensitive
    primitive. *)
 val enter : (Environ.env -> Evd.evar_map -> Environ.named_context_val -> Term.constr -> goal -> 'a) -> 'a sensitive
 
-(*** Additional functions ***)
-
-(* emulates List.map for functions of type 
-   [Evd.evar_map -> 'a -> 'b * Evd.evar_map] on lists of type 'a, by propagating
-   new evar_map to next definition *)
-val list_map : 
-  (Evd.evar_map -> 'a -> 'b * Evd.evar_map) ->
-  'a list -> Evd.evar_map ->
-    'b list * Evd.evar_map
-
-(* emulates List.map for [sensitive] Kleisli functions. *)
-val sensitive_list_map : ('a -> 'b sensitive) -> 'a list -> 'b list sensitive
-
 (* Layer to implement v8.2 tactic engine ontop of the new architecture. 
    Types are different from what they used to be due to a change of the
    internal types. *)
