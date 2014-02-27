@@ -186,6 +186,16 @@ val app_pair :
       ('a generic_argument -> 'b generic_argument)
    -> 'a generic_argument -> 'b generic_argument
 
+module Monadic (M:Monad.S) : sig
+
+  (** [Monadic.app_list f x] maps the monadic computation [f] on
+      elements of [x], provided [x] has the tag [List0 t] for some [t]. It
+      fails otherwise. *)
+  val app_list : ('a generic_argument -> 'b generic_argument M.t) ->
+    'a generic_argument -> 'b generic_argument M.t
+
+end
+
 (** {6 Type reification} *)
 
 type argument_type =

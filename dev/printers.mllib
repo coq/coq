@@ -154,6 +154,7 @@ Smartlocate
 Constrintern
 Modintern
 Constrextern
+Monad
 Proof_type
 Goal
 Logic

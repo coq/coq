@@ -134,6 +134,22 @@ let app_pair f1 f2 = function
       (u, Obj.repr (o1,o2))
   | _ -> failwith "Genarg: not a pair"
 
+module Monadic (M:Monad.S) = struct
+
+  let app_list f = function
+  | (ListArgType t as u, l) ->
+      let o = Obj.magic l in
+      let open M in
+      let apply x =
+        f (in_gen t x) >>= fun y ->
+        return (out_gen t y)
+      in
+      M.List.map apply o >>= fun r ->
+      return (u, Obj.repr r)
+  | _ -> failwith "Genarg: not a list0"
+
+end
+
 let has_type (t, v) u = argument_type_eq t u
 
 let unquote x = x

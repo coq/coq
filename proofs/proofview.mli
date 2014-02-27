@@ -260,6 +260,8 @@ val tclTIMEOUT : int -> 'a tactic -> 'a tactic
 (** [mark_as_unsafe] signals that the current tactic is unsafe. *)
 val mark_as_unsafe : unit tactic
 
+module Monad : Monad.S with type +'a t = 'a tactic
+
 val list_map : ('a -> 'b tactic) -> 'a list -> 'b list tactic
 
 (*** Commands ***)

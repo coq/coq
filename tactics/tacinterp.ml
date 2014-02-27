@@ -949,6 +949,8 @@ let val_interp_glob ist (tac:glob_tactic_expr) : typed_generic_argument =
       let v = VFun (extract_trace ist,ist.lfun,[],t) in
       of_tacvalue v
 
+module GenargTac = Genarg.Monadic(Proofview.Monad)
+
 (* Interprets an l-tac expression into a value *)
 let rec val_interp ist (tac:glob_tactic_expr) (gl:Proofview.Goal.t) : typed_generic_argument Proofview.tactic =
   let value_interp ist =
@@ -2033,18 +2035,7 @@ and interp_atomic ist tac =
 	      let ans = List.map mk_ident (out_gen wit x) in
               Proofview.tclUNIT (in_gen (topwit (wit_list wit_genarg)) ans)
           | ListArgType t  ->
-              (* spiwack: unsafe, we should introduce relevant combinators.
-                 Before new tactical it simply read: [Genarg.app_list f x] *)
-              fold_list begin fun a l ->
-                f a gl >>= fun a' ->
-                l >>= fun l ->
-                Proofview.tclUNIT (a'::l)
-              end x (Proofview.tclUNIT []) >>= fun l ->
-		let wit_t = Obj.magic t in
-		let l = List.map (fun arg -> out_gen wit_t arg) l in
-              Proofview.tclUNIT (in_gen
-                                       (topwit (wit_list wit_t))
-				       l)
+              GenargTac.app_list (fun y -> f y gl) x
           | ExtraArgType _ ->
               (** Special treatment of tactics *)
               if has_type x (glbwit wit_tactic) then

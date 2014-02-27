@@ -647,6 +647,10 @@ module Notations = struct
 end
 
 open Notations
+
+module Monad =
+  Monad.Make(struct type +'a t = 'a tactic let return=tclUNIT let (>>=)=(>>=) end)
+
 let rec list_map f = function
   | [] -> tclUNIT []
   | a::l ->
