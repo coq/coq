@@ -26,23 +26,14 @@ struct
 
   module X = struct
     type t = constr_pattern*int
-    let compare = Pervasives.compare 
+    let compare = Pervasives.compare (** FIXME *)
   end
 
  module Y = struct 
-     type t = Term_dn.term_label
-     let compare x y = 
-       let make_name n =
-	 match n with
-	 | Term_dn.GRLabel(ConstRef con) -> 
-	     Term_dn.GRLabel(ConstRef(constant_of_kn(canonical_con con)))
-	 | Term_dn.GRLabel(IndRef (kn,i)) ->
-	     Term_dn.GRLabel(IndRef(mind_of_kn(canonical_mind kn),i))
-	 | Term_dn.GRLabel(ConstructRef ((kn,i),j ))->
-	     Term_dn.GRLabel(ConstructRef((mind_of_kn(canonical_mind kn),i),j))
-	 | k -> k
-       in
-	 Pervasives.compare (make_name x) (make_name y)
+    type t = Term_dn.term_label
+    let compare t1 t2 = match t1, t2 with
+    | Term_dn.GRLabel gr1, Term_dn.GRLabel gr2 -> RefOrdered.compare gr1 gr2
+    | _ -> Pervasives.compare t1 t2 (** OK *)
  end
  
  module Dn = Dn.Make(X)(Y)(Z)

@@ -93,13 +93,7 @@ struct
   let compare cmp t1 t2 = match t1, t2 with
   | DRel, DRel -> 0
   | DSort, DSort -> 0
-  | DRef gr1, DRef gr2 ->
-    begin match gr1, gr2 with
-    | ConstRef c1, ConstRef c2 -> Constant.CanOrd.compare c1 c2
-    | IndRef i1, IndRef i2 -> ind_ord i1 i2
-    | ConstructRef c1, ConstructRef c2 -> constructor_ord c1 c2
-    | _ -> Pervasives.compare gr1 gr2 (** OK **)
-    end
+  | DRef gr1, DRef gr2 -> RefOrdered.compare gr1 gr2
   | DCtx (tl1, tr1), DCtx (tl2, tr2)
   | DLambda (tl1, tr1), DCtx (tl2, tr2)
   | DApp (tl1, tr1), DCtx (tl2, tr2) ->
