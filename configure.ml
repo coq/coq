@@ -8,6 +8,7 @@
     You could also use our wrapper ./configure <opts> *)
 
 #load "unix.cma"
+#load "str.cma"
 open Printf
 
 let coq_version = "trunk"
@@ -47,12 +48,19 @@ let rec waitpid_non_intr pid =
 (** Below, we'd better read all lines on a channel before closing it,
     otherwise a SIGPIPE could be encountered by the sub-process *)
 
-let read_first_line_and_close fd =
+let read_lines_and_close fd =
   let cin = Unix.in_channel_of_descr fd in
-  let line = try remove_final_cr (input_line cin) with End_of_file -> "" in
-  (try while true do ignore (input_line cin) done with End_of_file -> ());
+  let lines = ref [] in
+  begin
+    try
+      while true do
+        lines := remove_final_cr (input_line cin) :: !lines
+      done
+    with End_of_file -> ()
+  end;
   close_in cin;
-  line
+  let lines = List.rev !lines in
+  try List.hd lines, lines with Failure _ -> "", []
 
 (** Run some unix command and read the first line of its output.
     We avoid Unix.open_process and its non-fully-portable /bin/sh,
@@ -80,17 +88,17 @@ let run ?(fatal=true) ?(err=StdErr) prog args =
     let pid = Unix.create_process prog argv Unix.stdin out_w fd_err in
     let () = Unix.close out_w in
     let () = Unix.close nul_w in
-    let line = read_first_line_and_close out_r in
-    let _ = read_first_line_and_close nul_r in
+    let line, all = read_lines_and_close out_r in
+    let _ = read_lines_and_close nul_r in
     let () = check_exit_code (waitpid_non_intr pid) in
-    line
+    line, all
   with
-  | _ when not fatal && not !verbose -> ""
+  | _ when not fatal && not !verbose -> "", []
   | e ->
       let cmd = String.concat " " (prog::args) in
       let exn = match e with Failure s -> s | _ -> Printexc.to_string e in
       let msg = sprintf "Error while running '%s' (%s)" cmd exn in
-      if fatal then die msg else (printf "W: %s\n" msg; "")
+      if fatal then die msg else (printf "W: %s\n" msg; "", [])
 
 let tryrun prog args = run ~fatal:false ~err:DevNull prog args
 
@@ -395,7 +403,7 @@ let query_arch () =
 
 let rec try_archs = function
   | (prog,args)::rest when is_executable prog ->
-    let arch = tryrun prog args in
+    let arch, _ = tryrun prog args in
     if arch <> "" then arch else try_archs rest
   | _ :: rest -> try_archs rest
   | [] -> query_arch ()
@@ -405,7 +413,7 @@ let os_type_cygwin = (Sys.os_type = "Cygwin")
 let arch = match !Prefs.arch with
   | Some a -> a
   | None ->
-    let arch = tryrun "uname" ["-s"] in
+    let arch,_ = tryrun "uname" ["-s"] in
     if starts_with arch "CYGWIN" then "win32"
     else if starts_with arch "MINGW32" then "win32"
     else if arch <> "" then arch
@@ -433,7 +441,7 @@ let vcs =
 
 let make =
   try
-    let version_line = run !Prefs.makecmd ["-v"] in
+    let version_line, _ = run !Prefs.makecmd ["-v"] in
     let version = List.nth (string_split ' ' version_line) 2 in
     match string_split '.' version with
     | major::minor::_ when (s2i major, s2i minor) >= (3,81) ->
@@ -466,8 +474,8 @@ let _ =
   if not (is_executable camlc) then
     die ("Error: cannot find the executable '"^camlc^"'.")
 
-let caml_version = run camlc ["-version"]
-let camllib = run camlc ["-where"]
+let caml_version, _ = run camlc ["-version"]
+let camllib, _ = run camlc ["-where"]
 let camlp4compat = "-loc loc"
 
 (** Caml version as a list of string, e.g. ["4";"00";"1"] *)
@@ -525,7 +533,7 @@ let check_camlp5 testcma = match !Prefs.camlp5dir with
           dir testcma
       in die msg
   | None ->
-    let dir = tryrun "camlp5" ["-where"] in
+    let dir,_ = tryrun "camlp5" ["-where"] in
     if dir <> "" then dir
     else if Sys.file_exists (camllib/"camlp5"/testcma) then
       camllib/"camlp5"
@@ -543,7 +551,7 @@ let check_camlp5_version () =
     if s.[i] = '4' then s.[i] <- '5'
   done;
   try
-    let version_line = run ~err:StdOut camlexec.p4 ["-v"] in
+    let version_line, _ = run ~err:StdOut camlexec.p4 ["-v"] in
     let version = List.nth (string_split ' ' version_line) 2 in
     match string_split '.' version with
     | major::minor::_ when (s2i major, s2i minor) >= (5,1) ->
@@ -605,7 +613,7 @@ let check_native () =
     (msg_no_camlp4_cmxa (); raise Not_found);
   if not (Sys.file_exists (camllib/"dynlink.cmxa")) then
     (msg_no_dynlink_cmxa (); raise Not_found);
-  let version = run camlexec.opt ["-version"] in
+  let version, _ = run camlexec.opt ["-version"] in
   if version <> caml_version then
     printf
       "Warning: Native and bytecode compilers do not have the same version!\n";
@@ -625,7 +633,7 @@ let hasnatdynlink = !Prefs.natdynlink && best_compiler = "opt"
 let needs_MacOS_fix () =
   match hasnatdynlink, arch, caml_version_nums with
   | true, "Darwin", 3::11::_ ->
-    (match string_split '.' (run "uname" ["-r"]) with
+    (match string_split '.' (fst(run "uname" ["-r"])) with
     | "9"::_ -> true
     | "10"::("0"|"1"|"2")::_ -> true
     | "10"::_ when Sys.word_size = 32 -> true
@@ -643,7 +651,7 @@ let osdeplibs = "-cclib -lunix"
 
 let operating_system, osdeplibs =
   if starts_with arch "sun4" then
-    let os = run "uname" ["-r"] in
+    let os, _ = run "uname" ["-r"] in
     if starts_with os "5" then
       "Sun Solaris "^os, osdeplibs^" -cclib -lnsl -cclib -lsocket"
     else
@@ -676,11 +684,11 @@ let get_lablgtkdir () =
     else "", ""
   | None ->
     let msg = "via ocamlfind" in
-    let d1 = tryrun "ocamlfind" ["query";"lablgtk2.sourceview2"] in
+    let d1,_ = tryrun "ocamlfind" ["query";"lablgtk2.sourceview2"] in
     if d1 <> "" && check_lablgtkdir msg d1 then d1, msg
     else
       (* In debian wheezy, ocamlfind knows only of lablgtk2 *)
-      let d2 = tryrun "ocamlfind" ["query";"lablgtk2"] in
+      let d2,_ = tryrun "ocamlfind" ["query";"lablgtk2"] in
       if d2 <> "" && d2 <> d1 && check_lablgtkdir msg d2 then d2, msg
       else
         let msg = "in OCaml library" in
@@ -738,7 +746,7 @@ let coqide_flags () =
   if !lablgtkdir <> "" then lablgtkincludes := sprintf "-I %S" !lablgtkdir;
   match coqide, arch with
     | "opt", "Darwin" when !Prefs.macintegration ->
-      let osxdir = tryrun "ocamlfind" ["query";"lablgtkosx"] in
+      let osxdir,_ = tryrun "ocamlfind" ["query";"lablgtkosx"] in
       if osxdir <> "" then begin
         lablgtkincludes := sprintf "%s -I %S" !lablgtkincludes osxdir;
         idearchflags := "lablgtkosx.cma";
@@ -760,8 +768,16 @@ let strip =
   if arch = "Darwin" then
     if hasnatdynlink then "true" else "strip"
   else
-    if !Prefs.profile || !Prefs.debug then "true" else "strip"
-
+    if !Prefs.profile || !Prefs.debug then "true" else begin
+    let _, all = run camlexec.byte ["-config"] in
+    let strip = String.concat "" (List.map (fun l ->
+        match string_split ' ' l with
+        | "ranlib:" :: cc :: _ -> (* on windows, we greb the right strip *)
+             Str.replace_first (Str.regexp "ranlib") "strip" cc
+        | _ -> ""
+      ) all) in
+    if strip = "" then "stip" else strip
+    end
 
 (** * md5sum command *)
 

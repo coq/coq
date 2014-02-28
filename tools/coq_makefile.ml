@@ -409,7 +409,7 @@ let variables is_install opt (args,defs) =
   -I \"$(COQLIB)proofs\" -I \"$(COQLIB)tactics\" -I \"$(COQLIB)tools\" \\
   -I \"$(COQLIB)toplevel\" -I \"$(COQLIB)grammar\"";
     List.iter (fun c -> print " \\
-  -I $(COQLIB)/"; print c) Coq_config.plugins_dirs; print "\n";
+    -I \"$(COQLIB)/"; print c; print "\"") Coq_config.plugins_dirs; print "\n";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
     print "CAMLC?=$(OCAMLC) -c -rectypes\n";
     print "CAMLOPTC?=$(OCAMLOPT) -c -rectypes\n";
@@ -421,7 +421,7 @@ CAMLP4EXTEND=pa_extend.cmo q_MLast.cmo pa_macro.cmo
 else
 CAMLP4EXTEND=
 endif\n";
-    print "PP?=-pp '\"$(CAMLP4O)\" -I \"$(CAMLLIB)\" -I . $(COQSRCLIBS) compat5.cmo \\
+    print "PP?=-pp '$(CAMLP4O) -I $(CAMLLIB) -I . $(COQSRCLIBS) compat5.cmo \\
   $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl'\n\n";
     end;
     match is_install with
