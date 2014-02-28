@@ -151,6 +151,8 @@ sig
   val append_app : 'a array -> 'a t -> 'a t
   val decomp : 'a t -> ('a * 'a t) option
   val decomp_node_last : 'a app_node -> 'a t -> ('a * 'a t)
+  val equal : ('a * int -> 'a * int -> bool) -> (fixpoint * int -> fixpoint * int -> bool)
+    -> 'a t -> 'a t -> (int * int) option
   val compare_shape : 'a t -> 'a t -> bool
   val fold2 : ('a -> constr -> constr -> 'a) -> 'a ->
     constr t -> constr t -> 'a * int * int
@@ -224,6 +226,30 @@ struct
   let decomp_node_last (i,l,j) sk =
     if i < j then (l.(j), App (i,l,pred j) :: sk)
     else (l.(j), sk)
+
+  let equal f f_fix sk1 sk2 =
+    let rec equal_rec sk1 lft1 sk2 lft2  =
+      match sk1,sk2 with
+      | [],[] -> Some (lft1,lft2)
+      | (Update _ :: _, _ | _, Update _ :: _) -> assert false
+      | Shift k :: s1, _ -> equal_rec  s1  (lft1+k)  sk2 lft2
+      | _, Shift k :: s2 -> equal_rec sk1 lft1 s2 (lft2+k)
+      | App a1 :: s1, App a2 :: s2 ->
+	let t1,s1' = decomp_node_last a1 s1 in
+	let t2,s2' = decomp_node_last a2 s2 in
+	if f (t1,lft1) (t2,lft2) then equal_rec s1' lft1 s2' lft2 else None
+      | Case (_,t1,a1,_) :: s1, Case (_,t2,a2,_) :: s2 ->
+	if f (t1,lft1) (t2,lft2) && CArray.equal (fun x y -> f (x,lft1) (y,lft2)) a1 a2
+	then equal_rec s1 lft1 s2 lft2
+	else None
+      | Fix (f1,s1,_) :: s1', Fix (f2,s2,_) :: s2' ->
+	if f_fix (f1,lft1) (f2,lft2) then
+	  match equal_rec (List.rev s1) lft1 (List.rev s2) lft2 with
+	  | None -> None
+	  | Some _ -> equal_rec s1' lft1 s2' lft2
+	else None
+      | _, _ -> None
+    in equal_rec (List.rev sk1) 0 (List.rev sk2) 0
 
   let compare_shape stk1 stk2 =
     let rec compare_rec bal stk1 stk2 =
@@ -617,15 +643,22 @@ let rec whd_state_gen ?csts tactic_mode flags env sigma =
 		    let app_sk,sk = Stack.strip_app stack in
 		    let (tm',sk'),cst_l' =
 		      whrec (Cst_stack.add_cst (mkConst const) cst_l) (body, app_sk) in
-		    if Stack.not_purely_applicative sk'
+		    let f_equal (x,lft1) (y,lft2) = Constr.equal (Vars.lift lft1 x) (Vars.lift lft2 y) in
+		    if
+		      (match Stack.equal f_equal
+			  (fun (a,b) (c,d) -> f_equal (Constr.mkFix a, b) (Constr.mkFix c, d))
+			  app_sk sk' with
+			  | None -> false
+			  | Some (lft1,lft2) -> f_equal (x, lft1) (tm', lft2)
+		      ) || Stack.not_purely_applicative sk'
 		    then fold ()
 		    else whrec cst_l' (tm', sk' @ sk)
 		  else match recargs with
-		       |[] -> (* if nargs has been specified *)
+		  |[] -> (* if nargs has been specified *)
 			 (* CAUTION : the constant is NEVER refold
                             (even when it hides a (co)fix) *)
-			 whrec cst_l (body, stack)
-		       |l -> failwith "TODO recargs in cbn"
+		    whrec cst_l (body, stack)
+		  |l -> failwith "TODO recargs in cbn"
        )
     | LetIn (_,b,_,c) when Closure.RedFlags.red_set flags Closure.RedFlags.fZETA ->
       apply_subst whrec [b] cst_l c stack
