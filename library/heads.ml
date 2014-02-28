@@ -40,13 +40,12 @@ type head_approximation =
 
 module Evalreford = struct
   type t = evaluable_global_reference
-  let compare x y = 
-     let make_name = function
-      | EvalConstRef con -> 
-	  EvalConstRef(constant_of_kn(canonical_con con))
-      | k -> k
-     in 
-       Pervasives.compare (make_name x) (make_name y)
+  let compare gr1 gr2 = match gr1, gr2 with
+  | EvalVarRef id1, EvalVarRef id2 -> Id.compare id1 id2
+  | EvalVarRef _, EvalConstRef _ -> -1
+  | EvalConstRef c1, EvalConstRef c2 ->
+    Constant.CanOrd.compare c1 c2
+  | EvalConstRef _, EvalVarRef _ -> 1
 end
 
 module Evalrefmap =
