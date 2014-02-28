@@ -81,17 +81,60 @@ struct
 	DCoFix (i,Array.map f ta,Array.map f ca)
     | DCons ((t,topt),u) -> DCons ((f t,Option.map f topt), f u)
 
-  let compare x y =
-    let make_name n =
-      match n with
-	| DRef(ConstRef con) ->
-	    DRef(ConstRef(constant_of_kn(canonical_con con)))
-	| DRef(IndRef (kn,i)) ->
-	    DRef(IndRef(mind_of_kn(canonical_mind kn),i))
-	| DRef(ConstructRef ((kn,i),j ))->
-	    DRef(ConstructRef((mind_of_kn(canonical_mind kn),i),j))
-	| k -> k in
-    Pervasives.compare (make_name x) (make_name y)
+  let compare_ci ci1 ci2 =
+    let c = ind_ord ci1.ci_ind ci2.ci_ind in
+    if c = 0 then
+      let c = Int.compare ci1.ci_npar ci2.ci_npar in
+      if c = 0 then
+        Array.compare Int.compare ci1.ci_cstr_ndecls ci2.ci_cstr_ndecls
+      else c
+    else c
+
+  let compare cmp t1 t2 = match t1, t2 with
+  | DRel, DRel -> 0
+  | DSort, DSort -> 0
+  | DRef gr1, DRef gr2 ->
+    begin match gr1, gr2 with
+    | ConstRef c1, ConstRef c2 -> Constant.CanOrd.compare c1 c2
+    | IndRef i1, IndRef i2 -> ind_ord i1 i2
+    | ConstructRef c1, ConstructRef c2 -> constructor_ord c1 c2
+    | _ -> Pervasives.compare gr1 gr2 (** OK **)
+    end
+  | DCtx (tl1, tr1), DCtx (tl2, tr2)
+  | DLambda (tl1, tr1), DCtx (tl2, tr2)
+  | DApp (tl1, tr1), DCtx (tl2, tr2) ->
+    let c = cmp tl1 tl2 in
+    if c = 0 then cmp tr1 tr2 else c
+
+  | DCase (ci1, c1, t1, p1), DCase (ci2, c2, t2, p2) ->
+    let c = cmp c1 c2 in
+    if c = 0 then
+      let c = cmp t1 t2 in
+      if c = 0 then
+        let c = Array.compare cmp p1 p2 in
+        if c = 0 then compare_ci ci1 ci2
+        else c
+      else c
+    else c
+
+  | DFix (i1, j1, tl1, pl1), DFix (i2, j2, tl2, pl2) ->
+    let c = Int.compare j1 j2 in
+    if c = 0 then
+      let c = Array.compare Int.compare i1 i2 in
+      if c = 0 then
+        let c = Array.compare cmp tl1 tl2 in
+        if c = 0 then Array.compare cmp pl1 pl2
+        else c
+      else c
+    else c
+  | DCoFix (i1, tl1, pl1), DCoFix (i2, tl2, pl2) ->
+    let c = Int.compare i1 i2 in
+    if c = 0 then
+      let c = Array.compare cmp tl1 tl2 in
+      if c = 0 then Array.compare cmp pl1 pl2
+      else c
+    else c
+  | _ -> Pervasives.compare t1 t2 (** OK **)
 
   let fold f acc = function
     | (DRel | DNil | DSort | DRef _) -> acc
@@ -115,9 +158,11 @@ struct
     | DCoFix (i,ta,ca) -> f ta.(0)
     | DCons ((t,topt),u) -> f u
 
+  let dummy_cmp () () = 0
+
   let fold2 (f:'a -> 'b -> 'c -> 'a) (acc:'a) (c1:'b t) (c2:'c t) : 'a =
     let head w = map (fun _ -> ()) w in
-    if not (Int.equal (compare (head c1) (head c2)) 0)
+    if not (Int.equal (compare dummy_cmp (head c1) (head c2)) 0)
     then invalid_arg "fold2:compare" else
       match c1,c2 with
 	| (DRel, DRel | DNil, DNil | DSort, DSort | DRef _, DRef _) -> acc
@@ -136,7 +181,7 @@ struct
 
   let map2 (f:'a -> 'b -> 'c) (c1:'a t) (c2:'b t) : 'c t =
     let head w = map (fun _ -> ()) w in
-    if not (Int.equal (compare (head c1) (head c2)) 0)
+    if not (Int.equal (compare dummy_cmp (head c1) (head c2)) 0)
     then invalid_arg "map2_t:compare" else
       match c1,c2 with
 	| (DRel, DRel | DSort, DSort | DNil, DNil | DRef _, DRef _) as cc ->
@@ -157,6 +202,9 @@ struct
   let terminal = function
     | (DRel | DSort | DNil | DRef _) -> true
     | _ -> false
+
+  let compare t1 t2 = compare dummy_cmp t1 t2
+
 end
 
 (*
