@@ -289,11 +289,13 @@ sig
   module CanOrd : sig
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    val hash : t -> int
   end
 
   module UserOrd : sig
     val compare : t -> t -> int
     val equal : t -> t -> bool
+    val hash : t -> int
   end
 
   val equal : t -> t -> bool

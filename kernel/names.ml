@@ -335,14 +335,18 @@ module KerName = struct
     modpath : ModPath.t;
     dirpath : DirPath.t;
     knlabel : Label.t;
+    mutable refhash : int;
+    (** Lazily computed hash. If unset, it is set to negative values. *)
   }
 
   type kernel_name = t
 
-  let make modpath dirpath knlabel = { modpath; dirpath; knlabel; }
+  let make modpath dirpath knlabel =
+    { modpath; dirpath; knlabel; refhash = -1; }
   let repr kn = (kn.modpath, kn.dirpath, kn.knlabel)
 
-  let make2 modpath knlabel = { modpath; dirpath = DirPath.empty; knlabel; }
+  let make2 modpath knlabel =
+    { modpath; dirpath = DirPath.empty; knlabel; refhash = -1; }
 
   let modpath kn = kn.modpath
   let label kn = kn.knlabel
@@ -370,15 +374,24 @@ module KerName = struct
 
   open Hashset.Combine
 
-  let hash { modpath = mp; dirpath = dp; knlabel = lbl; } =
-    combine3 (ModPath.hash mp) (DirPath.hash dp) (Label.hash lbl)
+  let hash kn =
+    let h = kn.refhash in
+    if h < 0 then
+      let { modpath = mp; dirpath = dp; knlabel = lbl; } = kn in
+      let h = combine3 (ModPath.hash mp) (DirPath.hash dp) (Label.hash lbl) in
+      (* Ensure positivity on all platforms. *)
+      let h = h land 0x3FFFFFFF in
+      let () = kn.refhash <- h in
+      h
+    else h
 
   module Self_Hashcons = struct
     type t = kernel_name
     type u = (ModPath.t -> ModPath.t) * (DirPath.t -> DirPath.t)
         * (string -> string)
-    let hashcons (hmod,hdir,hstr) { modpath = mp; dirpath = dp; knlabel = l; } =
-      { modpath = hmod mp; dirpath = hdir dp; knlabel = hstr l; }
+    let hashcons (hmod,hdir,hstr) kn =
+      let { modpath = mp; dirpath = dp; knlabel = l; refhash; } = kn in
+      { modpath = hmod mp; dirpath = hdir dp; knlabel = hstr l; refhash; }
     let equal kn1 kn2 =
       kn1.modpath == kn2.modpath && kn1.dirpath == kn2.dirpath &&
         kn1.knlabel == kn2.knlabel
@@ -468,12 +481,14 @@ module KerPair = struct
     type t = kernel_pair
     let compare x y = KerName.compare (user x) (user y)
     let equal x y = x == y || KerName.equal (user x) (user y)
+    let hash x = KerName.hash (user x)
   end
 
   module CanOrd = struct
     type t = kernel_pair
     let compare x y = KerName.compare (canonical x) (canonical y)
     let equal x y = x == y || KerName.equal (canonical x) (canonical y)
+    let hash x = KerName.hash (canonical x)
   end
 
   (** Default comparison is on the canonical part *)
