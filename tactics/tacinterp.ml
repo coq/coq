@@ -174,12 +174,9 @@ let valueIn t = TacDynamic (Loc.ghost, value_in t)
 
 (** Generic arguments : table of interpretation functions *)
 
-let push_trace (loc, ck) ist = match TacStore.get ist.extra f_trace with
-| None -> [1, loc, ck]
-| Some trace ->
-  match trace with
-  | (n,loc',ck')::trl when Pervasives.(=) ck ck' -> (n+1,loc,ck)::trl (** FIXME *)
-  | trl -> (1,loc,ck)::trl
+let push_trace call ist = match TacStore.get ist.extra f_trace with
+| None -> [call]
+| Some trace -> call :: trace
 
 let extract_trace ist = match TacStore.get ist.extra f_trace with
 | None -> []
