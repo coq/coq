@@ -664,12 +664,12 @@ let rec extern inctx scopes vars r =
               extern inctx scopes (add_vname vars na) c)
 
   | GProd (loc,na,bk,t,c) ->
-      let t = extern_typ scopes vars (anonymize_if_reserved na t) in
+      let t = extern_typ scopes vars t in
       let (idl,c) = factorize_prod scopes (add_vname vars na) na bk t c in
       CProdN (loc,[(Loc.ghost,na)::idl,Default bk,t],c)
 
   | GLambda (loc,na,bk,t,c) ->
-      let t = extern_typ scopes vars (anonymize_if_reserved na t) in
+      let t = extern_typ scopes vars t in
       let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) na bk t c in
       CLambdaN (loc,[(Loc.ghost,na)::idl,Default bk,t],c)
 
@@ -788,7 +788,7 @@ and extern_local_binder scopes vars = function
        LocalRawDef((Loc.ghost,na), extern false scopes vars bd) :: l)
 
   | (na,bk,None,ty)::l ->
-      let ty = extern_typ scopes vars (anonymize_if_reserved na ty) in
+      let ty = extern_typ scopes vars ty in
       (match extern_local_binder scopes (name_fold Id.Set.add na vars) l with
           (assums,ids,LocalRawAssum(nal,k,ty')::l)
             when constr_expr_eq ty ty' &&

@@ -112,16 +112,3 @@ let default_env () = {
   ninterp_rec_vars = Id.Map.empty;
   ninterp_only_parse = false;
 }
-
-let anonymize_if_reserved na t = match na with
-  | Name id as na ->
-      (try
-	if not !Flags.raw_print &&
-	   (try
-            let ntn = notation_constr_of_glob_constr (default_env ()) t in
-            Pervasives.(=) ntn (find_reserved_type id) (** FIXME *)
-            with UserError _ -> false)
-	then GHole (Loc.ghost,Evar_kinds.BinderType na,None)
-	else t
-      with Not_found -> t)
-  | Anonymous -> t
