@@ -25,13 +25,20 @@ world: revision coq coqide documentation
 include Makefile.common
 include Makefile.doc
 
-# In a first phase, we restrict to the basic .ml4 (the ones without grammar.cma)
+MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4FILES:.ml4=.ml)
+
+# In a first phase (when BUILDGRAMMAR=1), we restrict the considered
+# files to some specific directories (up to grammar/), not considering
+# the grammar-dependent .ml4 (which are in tactics/ toplevel/ plugins/)
+
+GRAMONLY := $(addsuffix /%,$(GRAMSRCDIRS))
 
 ifdef BUILDGRAMMAR
- MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4BASEFILES:.ml4=.ml)
- CURFILES := $(MLFILES) $(MLIFILES) $(ML4BASEFILES) grammar/grammar.mllib
+ CURSRCDIRS := $(GRAMSRCDIRS)
+ CURFILES := \
+  $(filter $(GRAMONLY), $(MLFILES) $(MLIFILES) $(ML4FILES)) grammar/grammar.mllib
 else
- MLFILES := $(MLSTATICFILES) $(GENMLFILES) $(ML4FILES:.ml4=.ml)
+ CURSRCDIRS := $(SRCDIRS)
  CURFILES := $(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(CFILES) $(VFILES)
 endif
 
@@ -91,7 +98,7 @@ BOOTCOQC=$(TIMER) $(COQTOPEXE) -boot $(COQOPTS) -compile
 SHOW := $(if $(VERBOSE),@true "",@echo "")
 HIDE := $(if $(VERBOSE),,@)
 
-LOCALINCLUDES=$(addprefix -I , $(SRCDIRS) )
+LOCALINCLUDES := $(addprefix -I , $(CURSRCDIRS) )
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 OCAMLC := $(OCAMLC) $(CAMLFLAGS)
