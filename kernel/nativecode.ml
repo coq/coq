@@ -755,7 +755,9 @@ let rec insert cargs body rl =
      let params = rm_params fv params in
      rl:= Rcons(ref [(c,params)], fv, body, ref Rnil)
  | Rcons(l,fv,body',rl) ->
-     if Pervasives.(=) body body' then (** FIXME *)
+    (** ppedrot: It seems we only want to factorize common branches. It should
+        not matter to do so with a subapproximation by (==). *)
+     if body == body' then
        let (c,params) = cargs in
        let params = rm_params fv params in
        l := (c,params)::!l
@@ -1159,7 +1161,7 @@ let optimize gdef l =
 	let b2 = optimize s b2 in
 	begin match t, b2 with
 	| MLapp(MLprimitive Is_accu,[| l1 |]), MLmatch(annot, l2, _, bs)
-	    when Pervasives.(=) l1 l2 -> MLmatch(annot, l1, b1, bs) (** FIXME *)
+	    when l1 == l2 -> MLmatch(annot, l1, b1, bs) (** approximation *)
         | _, _ -> MLif(t, b1, b2)
 	end
     | MLmatch(annot,a,accu,bs) ->
