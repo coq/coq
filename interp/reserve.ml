@@ -34,13 +34,32 @@ let key_compare k1 k2 = match k1, k2 with
 module KeyOrd = struct type t = key let compare = key_compare end
 module KeyMap = Map.Make(KeyOrd)
 
-module ReservedOrd =
+module ReservedSet :
+sig
+  type t
+  val empty : t
+  val add : (Id.t * notation_constr) -> t -> t
+  val find : (Id.t -> notation_constr -> bool) -> t -> Id.t * notation_constr
+end =
 struct
-  type t = notation_constr * Id.t
-  let compare = Pervasives.compare (* FIXME *)
+  type t = (Id.t * notation_constr) list
+
+  let empty = []
+
+  let rec mem id c = function
+  | [] -> false
+  | (id', c') :: l ->
+    if c == c' && Id.equal id id' then true else mem id c l
+
+  let add p l =
+    let (id, c) = p in
+    if mem id c l then l else p :: l
+
+  let rec find f = function
+  | [] -> raise Not_found
+  | (id, c) as p :: l -> if f id c then p else find f l
 end
 
-module ReservedSet = Set.Make(ReservedOrd)
 
 let keymap_add key data map =
   let old = try KeyMap.find key map with Not_found -> ReservedSet.empty in
@@ -59,7 +78,7 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
 let cache_reserved_type (_,(id,t)) =
   let key = fst (notation_constr_key t) in
   reserve_table := Id.Map.add id t !reserve_table;
-  reserve_revtable := keymap_add key (t,id) !reserve_revtable
+  reserve_revtable := keymap_add key (id, t) !reserve_revtable
 
 let in_reserved : Id.t * notation_constr -> obj =
   declare_object {(default_object "RESERVED-TYPE") with
@@ -92,14 +111,13 @@ let revert_reserved_type t =
     let t = Detyping.detype false [] [] t in
     (* pedrot: if [Notation_ops.match_notation_constr] may raise [Failure _]
         then I've introduced a bug... *)
-    let filter (pat, id) =
+    let filter _ pat =
       try
         let _ = match_notation_constr false t ([], pat) in
         true
       with No_match -> false
     in
-    let reserved = ReservedSet.filter filter reserved in
-    let (_, id) = ReservedSet.choose reserved in
+    let (id, _) = ReservedSet.find filter reserved in
     Name id
   with Not_found | Failure _ -> Anonymous
 
