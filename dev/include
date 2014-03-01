@@ -10,8 +10,9 @@
    Alternatively, you can avoid typing #use "include" after each Drop
    by adding the following lines in your $HOME/.ocamlinit :
 
+   #directory "+compiler-libs";;
    if Filename.basename Sys.argv.(0) = "coqtop.byte"
-   then ignore (Toploop.use_silently Format.std_formatter "include")
+   then ignore (Toploop.use_silently Format.std_formatter "dev/include")
 *)
 
 (* For OCaml 3.10.x:

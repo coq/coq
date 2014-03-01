@@ -493,14 +493,14 @@ let caml_version_nums =
          "Is it installed properly?")
 
 let check_caml_version () =
-  if caml_version_nums >= [3;11;2] then
+  if caml_version_nums >= [3;12;1] then
     printf "You have OCaml %s. Good!\n" caml_version
   else
     let () = printf "Your version of OCaml is %s.\n" caml_version in
     if !Prefs.force_caml_version then
       printf "*Warning* Your version of OCaml is outdated.\n"
     else
-      die "You need OCaml 3.11.2 or later."
+      die "You need OCaml 3.12.1 or later."
 
 let _ = check_caml_version ()
 

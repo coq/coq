@@ -106,7 +106,7 @@ OCAMLOPT := $(OCAMLOPT) $(CAMLFLAGS)
 
 BYTEFLAGS=$(CAMLDEBUG) $(USERFLAGS)
 OPTFLAGS=$(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
-DEPFLAGS= $(LOCALINCLUDES)
+DEPFLAGS= $(LOCALINCLUDES) -I ide -I ide/utils
 
 define bestocaml
 $(if $(OPT),\
@@ -928,10 +928,10 @@ endif
 	$(SHOW)'CAMLP4DEPS $<'
 	$(HIDE)echo "$*.ml: $(if $(NO_RECOMPILE_ML4),$(ORDER_ONLY_SEP)) $(call CAMLP4DEPS,$<)" $(TOTARGET)
 
-# We now use coqdep_boot to wrap around ocamldep -modules, since it is aware
-# of .ml4 files
+# Since OCaml 3.12.1, we could use again ocamldep directly, thanks to
+# the option -ml-synonym
 
-OCAMLDEP_NG = $(COQDEPBOOT) -mldep $(OCAMLDEP)
+OCAMLDEP_NG = $(OCAMLDEP) -slash -ml-synonym .ml4
 
 checker/%.ml.d: $(D_DEPEND_BEFORE_SRC) checker/%.ml $(D_DEPEND_AFTER_SRC) $(COQDEPBOOT) $(GENFILES)
 	$(SHOW)'OCAMLDEP  $<'
