@@ -114,4 +114,5 @@ let noncritical = function
   | Sys.Break | Out_of_memory | Stack_overflow
   | Assert_failure _ | Match_failure _ | Anomaly _
   | Timeout | Drop | Quit -> false
+  | Invalid_argument "equal: functional value" -> false
   | _ -> true

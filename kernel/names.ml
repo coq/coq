@@ -332,6 +332,7 @@ module MPmap = CMap.Make(ModPath)
 module KerName = struct
 
   type t = {
+    canary : Canary.t;
     modpath : ModPath.t;
     dirpath : DirPath.t;
     knlabel : Label.t;
@@ -339,14 +340,16 @@ module KerName = struct
     (** Lazily computed hash. If unset, it is set to negative values. *)
   }
 
+  let canary = Canary.obj
+
   type kernel_name = t
 
   let make modpath dirpath knlabel =
-    { modpath; dirpath; knlabel; refhash = -1; }
+    { modpath; dirpath; knlabel; refhash = -1; canary; }
   let repr kn = (kn.modpath, kn.dirpath, kn.knlabel)
 
   let make2 modpath knlabel =
-    { modpath; dirpath = DirPath.empty; knlabel; refhash = -1; }
+    { modpath; dirpath = DirPath.empty; knlabel; refhash = -1; canary; }
 
   let modpath kn = kn.modpath
   let label kn = kn.knlabel
@@ -391,7 +394,7 @@ module KerName = struct
         * (string -> string)
     let hashcons (hmod,hdir,hstr) kn =
       let { modpath = mp; dirpath = dp; knlabel = l; refhash; } = kn in
-      { modpath = hmod mp; dirpath = hdir dp; knlabel = hstr l; refhash; }
+      { modpath = hmod mp; dirpath = hdir dp; knlabel = hstr l; refhash; canary; }
     let equal kn1 kn2 =
       kn1.modpath == kn2.modpath && kn1.dirpath == kn2.dirpath &&
         kn1.knlabel == kn2.knlabel
