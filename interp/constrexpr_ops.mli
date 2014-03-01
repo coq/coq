@@ -82,6 +82,3 @@ val names_of_local_binders : local_binder list -> Name.t located list
 val names_of_local_assums : local_binder list -> Name.t located list
 (** Same as [names_of_local_binders], but does not take the [let] bindings into
     account. *)
-
-val raw_cases_pattern_expr_of_glob_constr : (Globnames.global_reference -> unit)
-  -> Glob_term.glob_constr -> raw_cases_pattern_expr

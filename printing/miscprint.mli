@@ -8,11 +8,11 @@
 
 open Misctypes
 
-(** Mapping [cast_type] *)
+(** Printing of [intro_pattern] *)
 
-val map_cast_type : ('a -> 'b) -> 'a cast_type -> 'b cast_type
-val smartmap_cast_type : ('a -> 'a) -> 'a cast_type -> 'a cast_type
+val pr_intro_pattern : intro_pattern_expr Loc.located -> Pp.std_ppcmds
 
-(** Equalities on [glob_sort] *)
+(** Printing of [move_location] *)
 
-val glob_sort_eq : glob_sort -> glob_sort -> bool
+val pr_move_location :
+  ('a -> Pp.std_ppcmds) -> 'a move_location -> Pp.std_ppcmds

@@ -647,7 +647,7 @@ let pr_prim_rule = function
 
   | Move (withdep,id1,id2) ->
       (str (if withdep then "dependent " else "") ++
-	 str"move "  ++ pr_id id1 ++ Miscops.pr_move_location pr_id id2)
+	 str"move "  ++ pr_id id1 ++ Miscprint.pr_move_location pr_id id2)
 
   | Order ord ->
       (str"order "  ++ pr_sequence pr_id ord)

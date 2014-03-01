@@ -2085,7 +2085,7 @@ let check_unused_names names =
   if not (List.is_empty names) && Flags.is_verbose () then
     msg_warning
       (str"Unused introduction " ++ str (String.plural (List.length names) "pattern")
-       ++ str": " ++ prlist_with_sep spc pr_intro_pattern names)
+       ++ str": " ++ prlist_with_sep spc Miscprint.pr_intro_pattern names)
 
 let rec consume_pattern avoid id isdep gl = function
   | [] -> ((dloc, IntroIdentifier (fresh_id avoid id gl)), [])
@@ -3380,7 +3380,7 @@ let new_induct_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls =
 let new_induct_gen_l isrec with_evars elim (eqname,names) lc =
   if not (Option.is_empty eqname) then
     errorlabstrm "" (str "Do not know what to do with " ++
-      pr_intro_pattern (Option.get eqname));
+      Miscprint.pr_intro_pattern (Option.get eqname));
   let newlc = ref [] in
   let letids = ref [] in
   let rec atomize_list l =

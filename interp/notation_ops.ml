@@ -156,7 +156,7 @@ let compare_glob_constr f add t1 t2 = match t1,t2 with
     when Name.equal na1 na2 && Constrexpr_ops.binding_kind_eq bk1 bk2 ->
       on_true_do (f ty1 ty2 && f c1 c2) add na1
   | GHole _, GHole _ -> true
-  | GSort (_,s1), GSort (_,s2) -> glob_sort_eq s1 s2
+  | GSort (_,s1), GSort (_,s2) -> Miscops.glob_sort_eq s1 s2
   | GLetIn (_,na1,b1,c1), GLetIn (_,na2,b2,c2) when Name.equal na1 na2 ->
       on_true_do (f b1 b2 && f c1 c2) add na1
   | (GCases _ | GRec _
@@ -721,7 +721,7 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   | GCast(_,c1, CastCoerce), NCast(c2, CastCoerce) ->
       match_in u alp metas sigma c1 c2
   | GSort (_,GType _), NSort (GType None) when not u -> sigma
-  | GSort (_,s1), NSort s2 when glob_sort_eq s1 s2 -> sigma
+  | GSort (_,s1), NSort s2 when Miscops.glob_sort_eq s1 s2 -> sigma
   | GPatVar _, NHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, NHole _ -> sigma
 

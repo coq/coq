@@ -7,8 +7,6 @@
 (************************************************************************)
 
 open Misctypes
-open Pp
-open Nameops
 
 (** Mapping [cast_type] *)
 
@@ -25,33 +23,11 @@ let smartmap_cast_type f c =
     | CastCoerce -> CastCoerce
     | CastNative a -> let a' = f a in if a' == a then c else CastNative a'
 
-(** Printing of [intro_pattern] *)
+(** Equalities on [glob_sort] *)
 
-let rec pr_intro_pattern (_,pat) = match pat with
-  | IntroOrAndPattern pll -> pr_or_and_intro_pattern pll
-  | IntroInjection pl ->
-      str "[=" ++ hv 0 (prlist_with_sep spc pr_intro_pattern pl) ++ str "]"
-  | IntroWildcard -> str "_"
-  | IntroRewrite true -> str "->"
-  | IntroRewrite false -> str "<-"
-  | IntroIdentifier id -> pr_id id
-  | IntroFresh id -> str "?" ++ pr_id id
-  | IntroForthcoming true -> str "*"
-  | IntroForthcoming false -> str "**"
-  | IntroAnonymous -> str "?"
-
-and pr_or_and_intro_pattern = function
-  | [pl] ->
-      str "(" ++ hv 0 (prlist_with_sep pr_comma pr_intro_pattern pl) ++ str ")"
-  | pll ->
-      str "[" ++
-      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
-      ++ str "]"
-
-(** Printing of [move_location] *)
-
-let pr_move_location pr_id = function
-  | MoveAfter id -> brk(1,1) ++ str "after " ++ pr_id id
-  | MoveBefore id -> brk(1,1) ++ str "before " ++ pr_id id
-  | MoveFirst -> str " at top"
-  | MoveLast -> str " at bottom"
+let glob_sort_eq g1 g2 = match g1, g2 with
+| GProp, GProp -> true
+| GSet, GSet -> true
+| GType None, GType None -> true
+| GType (Some s1), GType (Some s2) -> CString.equal s1 s2
+| _ -> false

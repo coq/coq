@@ -18,7 +18,6 @@ open Locus
 open Glob_term
 
 (** Equalities *)
-val glob_sort_eq : glob_sort -> glob_sort -> bool
 
 val cases_pattern_eq : cases_pattern -> cases_pattern -> bool
 

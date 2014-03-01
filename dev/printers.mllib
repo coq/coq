@@ -157,6 +157,7 @@ Modintern
 Constrextern
 Proof_type
 Goal
+Miscprint
 Logic
 Refiner
 Clenv

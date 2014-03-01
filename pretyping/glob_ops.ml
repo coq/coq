@@ -46,13 +46,6 @@ let case_style_eq s1 s2 = match s1, s2 with
 | RegularStyle, RegularStyle -> true
 | _ -> false
 
-let glob_sort_eq g1 g2 = match g1, g2 with
-| GProp, GProp -> true
-| GSet, GSet -> true
-| GType None, GType None -> true
-| GType (Some s1), GType (Some s2) -> String.equal s1 s2
-| _ -> false
-
 let rec cases_pattern_eq p1 p2 = match p1, p2 with
 | PatVar (_, na1), PatVar (_, na2) -> Name.equal na1 na2
 | PatCstr (_, c1, pl1, na1), PatCstr (_, c2, pl2, na2) ->
@@ -65,13 +58,6 @@ let cast_type_eq eq t1 t2 = match t1, t2 with
 | CastVM t1, CastVM t2 -> eq t1 t2
 | CastCoerce, CastCoerce -> true
 | CastNative t1, CastNative t2 -> eq t1 t2
-| _ -> false
-
-let eq_gr gr1 gr2 = match gr1, gr2 with
-| ConstRef con1, ConstRef con2 -> eq_constant con1 con2
-| IndRef kn1, IndRef kn2 -> eq_ind kn1 kn2
-| ConstructRef kn1, ConstructRef kn2 -> eq_constructor kn1 kn2
-| VarRef v1, VarRef v2 -> Id.equal v1 v2
 | _ -> false
 
 let rec glob_constr_eq c1 c2 = match c1, c2 with
@@ -109,7 +95,7 @@ let rec glob_constr_eq c1 c2 = match c1, c2 with
   Array.equal (fun l1 l2 -> List.equal glob_decl_eq l1 l2) decl1 decl2 &&
   Array.equal glob_constr_eq c1 c2 &&
   Array.equal glob_constr_eq t1 t2
-| GSort (_, s1), GSort (_, s2) -> glob_sort_eq s1 s2
+| GSort (_, s1), GSort (_, s2) -> Miscops.glob_sort_eq s1 s2
 | GHole (_, kn1, gn1), GHole (_, kn2, gn2) ->
   Option.equal (==) gn1 gn2 (** Only thing sensible *)
 | GCast (_, c1, t1), GCast (_, c2, t2) ->

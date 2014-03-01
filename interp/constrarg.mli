@@ -10,7 +10,6 @@
     of Genarg in [constr]-related interfaces. *)
 
 open Loc
-open Pp
 open Names
 open Term
 open Libnames
@@ -20,9 +19,7 @@ open Genredexpr
 open Pattern
 open Constrexpr
 open Tacexpr
-open Term
 open Misctypes
-open Evd
 open Genarg
 
 (** FIXME: nothing to do there. *)
@@ -53,17 +50,18 @@ val wit_constr_may_eval :
   (glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) may_eval,
   constr) genarg_type
 
-val wit_open_constr : (open_constr_expr, open_glob_constr, open_constr) genarg_type
+val wit_open_constr :
+  (open_constr_expr, open_glob_constr, Evd.open_constr) genarg_type
 
 val wit_constr_with_bindings :
   (constr_expr with_bindings,
   glob_constr_and_expr with_bindings,
-  constr with_bindings sigma) genarg_type
+  constr with_bindings Evd.sigma) genarg_type
 
 val wit_bindings :
   (constr_expr bindings,
   glob_constr_and_expr bindings,
-  constr bindings sigma) genarg_type
+  constr bindings Evd.sigma) genarg_type
 
 val wit_red_expr :
   ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,

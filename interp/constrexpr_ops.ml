@@ -10,7 +10,6 @@ open Pp
 open Util
 open Names
 open Libnames
-open Glob_term
 open Constrexpr
 open Misctypes
 open Decl_kinds
@@ -150,7 +149,7 @@ let rec constr_expr_eq e1 e2 =
     Evar.equal ev1 ev2 &&
     Option.equal (List.equal constr_expr_eq) c1 c2
   | CSort(_,s1), CSort(_,s2) ->
-    Glob_ops.glob_sort_eq s1 s2
+    Miscops.glob_sort_eq s1 s2
   | CCast(_,a1,(CastConv b1|CastVM b1)), CCast(_,a2,(CastConv b2|CastVM b2)) ->
       constr_expr_eq a1 a2 &&
       constr_expr_eq b1 b2
@@ -336,14 +335,3 @@ let coerce_to_name = function
   | a -> Errors.user_err_loc
         (constr_loc a,"coerce_to_name",
          str "This expression should be a name.")
-
-let rec raw_cases_pattern_expr_of_glob_constr looked_for = function
-  | GVar (loc,id) -> RCPatAtom (loc,Some id)
-  | GHole (loc,_,_) -> RCPatAtom (loc,None)
-  | GRef (loc,g) ->
-    looked_for g;
-    RCPatCstr (loc, g,[],[])
-  | GApp (loc,GRef (_,g),l) ->
-    looked_for g;
-    RCPatCstr (loc, g,List.map (raw_cases_pattern_expr_of_glob_constr looked_for) l,[])
-  | _ -> raise Not_found

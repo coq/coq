@@ -696,7 +696,7 @@ let rec message_of_value gl v =
   else if has_type v (topwit wit_unit) then str "()"
   else if has_type v (topwit wit_int) then int (out_gen (topwit wit_int) v)
   else if has_type v (topwit wit_intro_pattern) then
-    pr_intro_pattern (out_gen (topwit wit_intro_pattern) v)
+    Miscprint.pr_intro_pattern (out_gen (topwit wit_intro_pattern) v)
   else if has_type v (topwit wit_constr_context) then
     pr_constr_env (pf_env gl) (out_gen (topwit wit_constr_context) v)
   else match Value.to_list v with

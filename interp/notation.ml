@@ -449,8 +449,18 @@ let interp_prim_token_gen g loc p local_scopes =
 let interp_prim_token =
   interp_prim_token_gen (fun x -> x)
 
+(** [rcp_of_glob] : from [glob_constr] to [raw_cases_pattern_expr] *)
+
+let rec rcp_of_glob looked_for = function
+  | GVar (loc,id) -> RCPatAtom (loc,Some id)
+  | GHole (loc,_,_) -> RCPatAtom (loc,None)
+  | GRef (loc,g) -> looked_for g; RCPatCstr (loc, g,[],[])
+  | GApp (loc,GRef (_,g),l) ->
+    looked_for g; RCPatCstr (loc, g, List.map (rcp_of_glob looked_for) l,[])
+  | _ -> raise Not_found
+
 let interp_prim_token_cases_pattern_expr loc looked_for p =
-  interp_prim_token_gen (Constrexpr_ops.raw_cases_pattern_expr_of_glob_constr looked_for) loc p
+  interp_prim_token_gen (rcp_of_glob looked_for) loc p
 
 let interp_notation loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
