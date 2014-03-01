@@ -313,7 +313,7 @@ let primal l =
     
   let op_op = function Mc.NonStrict -> Ge |Mc.Equal -> Eq | _ -> raise Strict in
 
-  let cmp x y = Pervasives.compare (fst x) (fst y) in
+  let cmp x y = Int.compare (fst x) (fst y) in
 
    snd (List.fold_right (fun  (p,op) (map,l) ->
       let (mp,vect) = vect_of_poly map p in  

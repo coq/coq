@@ -119,6 +119,13 @@ let argument_position_eq p1 p2 = match p1, p2 with
 | Hyp h1, Hyp h2 -> Int.equal h1 h2
 | _ -> false
 
+let explicitation_eq ex1 ex2 = match ex1, ex2 with
+| ExplByPos (i1, id1), ExplByPos (i2, id2) ->
+  Int.equal i1 i2 && Option.equal Id.equal id1 id2
+| ExplByName id1, ExplByName id2 ->
+  Id.equal id1 id2
+| _ -> false
+
 type implicit_explanation =
   | DepRigid of argument_position
   | DepFlex of argument_position
@@ -352,7 +359,7 @@ let set_manual_implicits env flags enriching autoimps l =
   | (Name id,imp)::imps ->
       let l',imp,m =
 	try
-          let eq = (Pervasives.(=) : explicitation -> explicitation -> bool) in (* FIXME *)
+          let eq = explicitation_eq in
 	  let (b, fi, fo) = List.assoc_f eq (ExplByName id) l in
 	  List.remove_assoc_f eq (ExplByName id) l, (Some Manual), (Some (b, fi))
 	with Not_found ->

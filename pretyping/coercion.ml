@@ -274,7 +274,7 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		       (* 			     else subco () *)
 		 else
 		   subco ()
-	   | x, y when Pervasives.(=) x y -> (** FIXME *)
+	   | x, y when Constr.equal c c' ->
 	       if Int.equal (Array.length l) (Array.length l') then
 		 let evm =  !evdref in
 		 let lam_type = Typing.type_of env evm c in

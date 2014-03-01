@@ -69,7 +69,7 @@ module FOrd = struct
     | Bot, Bot -> 0
     | Bot, _ -> -1
     | Atom _, Bot -> 1
-    | Atom a1, Atom a2 -> Pervasives.compare a1 a2
+    | Atom a1, Atom a2 -> Int.compare a1 a2
     | Atom _, _ -> -1
     | Arrow _, (Bot | Atom _) -> 1
     | Arrow (f1, g1), Arrow (f2, g2) ->

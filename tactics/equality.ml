@@ -1126,7 +1126,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
 let make_iterated_tuple env sigma dflt (z,zty) =
   let (zty,rels) = minimal_free_rels_rec env sigma (z,zty) in
   let sort_of_zty = get_sort_of env sigma zty in
-  let sorted_rels = List.sort Pervasives.compare (Int.Set.elements rels) in
+  let sorted_rels = Int.Set.elements rels in
   let (tuple,tuplety) =
     List.fold_left (make_tuple env sigma) (z,zty) sorted_rels
   in

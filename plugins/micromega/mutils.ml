@@ -393,7 +393,7 @@ struct
   let from i = i
   let next i = i + 1
   let pp o i = output_string o (string_of_int i)
-  let compare : int -> int -> int = Pervasives.compare
+  let compare : int -> int -> int = Int.compare
 
 end
 

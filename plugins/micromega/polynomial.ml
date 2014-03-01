@@ -44,7 +44,7 @@ end
  =
 struct
  (* A monomial is represented by a multiset of variables  *)
- module Map = Map.Make(struct type t = var let compare = Pervasives.compare end)
+ module Map = Map.Make(Int)
  open Map
  
  type t = int Map.t
@@ -65,8 +65,8 @@ struct
    fun m1 m2 -> 
      let s1 = sum_degree m1 
      and s2 = sum_degree m2 in
-       if s1 = s2 then Map.compare Pervasives.compare m1 m2
-       else Pervasives.compare s1 s2
+       if Int.equal s1 s2 then Map.compare Int.compare m1 m2
+       else Int.compare s1 s2
 
  let is_const m = (m = Map.empty)
   
@@ -241,8 +241,7 @@ module Vect =
     type var = int
     type t = (var * num) list
 
-(** [equal v1 v2 = true] if the vectors are syntactically equal.
-    ([num] is not handled by  [Pervasives.equal] *)
+(** [equal v1 v2 = true] if the vectors are syntactically equal. *)
 
     let rec equal v1 v2 =
       match v1 , v2 with
@@ -250,7 +249,7 @@ module Vect =
 	| [] , _    -> false
 	| _::_ , [] -> false
 	| (i1,n1)::v1 , (i2,n2)::v2 ->
-	    (i1 = i2) && n1 =/ n2 && equal v1 v2
+	    (Int.equal i1 i2) && n1 =/ n2 && equal v1 v2
 
     let hash v =
       let rec hash i = function
@@ -294,7 +293,7 @@ module Vect =
       match t with
 	| [] -> cons i (f zero_num) []
 	| (k,v)::l ->
-	    match Pervasives.compare i k with
+	    match Int.compare i k with
 	  | 0 -> cons k (f v) l
 	  | -1 -> cons i (f zero_num) t
 	  |  1 -> (k,v) ::(update i f l)
@@ -304,7 +303,7 @@ module Vect =
       match t with
 	| [] -> cons i n []
 	| (k,v)::l ->
-	    match Pervasives.compare i k with
+	    match Int.compare i k with
 	      | 0 -> cons k n l
 	      | -1 -> cons i n t
 	      |  1 -> (k,v) :: (set i n l)
@@ -346,7 +345,7 @@ module Vect =
 
     let compare : t -> t -> int = Utils.Cmp.compare_list (fun x y -> Utils.Cmp.compare_lexical
       [
-	(fun () -> Pervasives.compare (fst x) (fst y));
+	(fun () -> Int.compare (fst x) (fst y));
 	(fun () -> compare_num (snd x) (snd y))])
 
     (** [tail v vect] returns
@@ -359,7 +358,7 @@ module Vect =
       match vect with
 	| [] -> None
 	| (v',vl)::vect' ->
-	    match Pervasives.compare v' v with
+	    match Int.compare v' v with
 	      | 0 -> Some (vl,vect) (* Ok, found *)
 	      | -1 -> tail v vect' (* Might be in the tail *)
 	      | _  -> None (* Hopeless *)
@@ -615,7 +614,7 @@ struct
   end 
 
   let normalise (v,c) = 
-    (List.sort  (fun x y -> Pervasives.compare (fst x) (fst y)) v , c)
+    (List.sort  (fun x y -> Int.compare (fst x) (fst y)) v , c)
 
 
   let output_mon o (x,v) = 

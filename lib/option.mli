@@ -28,6 +28,9 @@ val is_empty : 'a option -> bool
     [f] is called. Otherwise it returns [false]. *)
 val equal : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
 
+(** Same as [equal], but with comparison. *)
+val compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
+
 (** [get x] returns [y] where [x] is [Some y]. It raises IsNone
     if [x] equals [None]. *)
 val get : 'a option -> 'a

@@ -10,6 +10,8 @@ let from_option = Utils.from_option
 let debug = false
 type ('a,'b) lr = Inl of 'a | Inr of 'b
 
+let compare_float (p : float) q = Pervasives.compare p q
+
 (** Implementation of intervals *)
 module Itv =
 struct
@@ -590,7 +592,7 @@ struct
       (ISet.fold (fun v (eval,s) -> let ts,vl = abstract_partition v s  in
                                       ((v,vl)::eval, ts)) v ([],sl)) in
 
-      List.sort (fun x y -> Pervasives.compare (snd x) (snd y) ) evals
+      List.sort (fun x y -> compare_float (snd x) (snd y) ) evals
 
 
 end
@@ -704,7 +706,7 @@ struct
 
 	      (*      pp_list (fun o ((v,eq,_,_),cst) -> Printf.fprintf o "((%i,%a),%i)\n" v pp_vect eq cst) stdout all_costs ; *)
 
-	      List.sort (fun x y -> Pervasives.compare (snd x) (snd y) ) all_costs
+	      List.sort (fun x y -> Int.compare (snd x) (snd y) ) all_costs
 	| Some (v,vect, const,prf,_) -> [(v,vect,const,prf),0]
 
 

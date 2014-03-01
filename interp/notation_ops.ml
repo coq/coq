@@ -512,12 +512,6 @@ let rec alpha_var id1 id2 = function
   | _::idl -> alpha_var id1 id2 idl
   | [] -> Id.equal id1 id2
 
-let compare_var v1 v2 =
-  match v1, v2 with
-  | GHole _, _ -> (true,true)
-  | _, GHole _ -> (false,false)
-  | _, _ -> (true,Pervasives.(=) v1 v2 (** FIXME *))
-
 let add_env alp (sigma,sigmalist,sigmabinders) var v =
   (* Check that no capture of binding variables occur *)
   if List.exists (fun (id,_) ->occur_glob_constr id v) alp then raise No_match;

@@ -144,6 +144,21 @@ type cs_pattern =
   | Sort_cs of sorts_family
   | Default_cs
 
+let eq_obj_typ o1 o2 =
+  Constr.equal o1.o_DEF o2.o_DEF &&
+  Int.equal o1.o_INJ o2.o_INJ &&
+  List.equal Constr.equal o1.o_TABS o2.o_TABS &&
+  List.equal Constr.equal o1.o_TPARAMS o2.o_TPARAMS &&
+  Int.equal o1.o_NPARAMS o2.o_NPARAMS &&
+  List.equal Constr.equal o1.o_TCOMPS o2.o_TCOMPS
+
+let eq_cs_pattern p1 p2 = match p1, p2 with
+| Const_cs gr1, Const_cs gr2 -> eq_gr gr1 gr2
+| Prod_cs, Prod_cs -> true
+| Sort_cs s1, Sort_cs s2 -> Sorts.family_equal s1 s2
+| Default_cs, Default_cs -> true
+| _ -> false
+
 let object_table =
   Summary.ref (Refmap.empty : (cs_pattern * obj_typ) list Refmap.t)
     ~name:"record-canonical-structs"
@@ -221,7 +236,7 @@ let open_canonical_structure i (_,o) =
     let lo = compute_canonical_projections o in
     List.iter (fun ((proj,cs_pat),s) ->
       let l = try Refmap.find proj !object_table with Not_found -> [] in
-      let ocs = try Some (List.assoc_f Pervasives.(=) cs_pat l) (* FIXME *)
+      let ocs = try Some (List.assoc_f eq_cs_pattern cs_pat l)
       with Not_found -> None
       in match ocs with
         | None -> object_table := Refmap.add proj ((cs_pat,s)::l) !object_table;
@@ -287,7 +302,7 @@ let declare_canonical_structure ref =
   add_canonical_structure (check_and_decompose_canonical_structure ref)
 
 let lookup_canonical_conversion (proj,pat) =
-  List.assoc_f Pervasives.(=) pat (Refmap.find proj !object_table) (* FIXME *)
+  List.assoc_f eq_cs_pattern pat (Refmap.find proj !object_table)
 
 let is_open_canonical_projection env sigma (c,args) =
   try

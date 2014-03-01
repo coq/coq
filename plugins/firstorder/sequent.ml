@@ -67,12 +67,14 @@ module Hitem=
 struct
   type t = h_item
   let compare (id1,co1) (id2,co2)=
-    (Globnames.RefOrdered.compare
-     =? (fun oc1 oc2 ->
-	   match oc1,oc2 with
-	       Some (m1,c1),Some (m2,c2) ->
-		 ((-) =? OrderedConstr.compare) m1 m2 c1 c2
-	     | _,_->Pervasives.compare oc1 oc2)) id1 id2 co1 co2
+    let c = Globnames.RefOrdered.compare id1 id2 in
+    if c = 0 then
+      let cmp (i1, c1) (i2, c2) =
+        let c = Int.compare i1 i2 in
+        if c = 0 then OrderedConstr.compare c1 c2 else c
+      in
+      Option.compare cmp co1 co2
+    else c
 end
 
 module CM=Map.Make(OrderedConstr)

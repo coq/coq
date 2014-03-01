@@ -132,7 +132,8 @@ module ExtRefOrdered = struct
     match x, y with
       | TrueGlobal rx, TrueGlobal ry -> global_ord_user rx ry
       | SynDef knx, SynDef kny -> kn_ord knx kny
-      | _, _ -> Pervasives.compare x y
+      | TrueGlobal _, SynDef _ -> -1
+      | SynDef _, TrueGlobal _ -> 1
 end
 
 type global_reference_or_constr = 

@@ -15,11 +15,13 @@ let debugging = ref false;;
 (* Comparisons that are reflexive on NaN and also short-circuiting.          *)
 (* ------------------------------------------------------------------------- *)
 
-let (=?) = fun x y -> Pervasives.compare x y = 0;;
-let (<?) = fun x y -> Pervasives.compare x y < 0;;
-let (<=?) = fun x y -> Pervasives.compare x y <= 0;;
-let (>?) = fun x y -> Pervasives.compare x y > 0;;
-let (>=?) = fun x y -> Pervasives.compare x y >= 0;;
+let cmp = Pervasives.compare (** FIXME *)
+
+let (=?) = fun x y -> cmp x y = 0;;
+let (<?) = fun x y -> cmp x y < 0;;
+let (<=?) = fun x y -> cmp x y <= 0;;
+let (>?) = fun x y -> cmp x y > 0;;
+let (>=?) = fun x y -> cmp x y >= 0;;
 
 (* ------------------------------------------------------------------------- *)
 (* Combinators.                                                              *)

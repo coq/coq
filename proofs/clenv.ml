@@ -378,8 +378,13 @@ let clenv_independent clenv =
   let deps = Metaset.union (dependent_in_type_of_metas clenv mvs) ctyp_mvs in
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
+let qhyp_eq h1 h2 = match h1, h2 with
+| NamedHyp n1, NamedHyp n2 -> Id.equal n1 n2
+| AnonHyp i1, AnonHyp i2 -> Int.equal i1 i2
+| _ -> false
+
 let check_bindings bl =
-  match List.duplicates Pervasives.(=) (List.map pi2 bl) with (* FIXME *)
+  match List.duplicates qhyp_eq (List.map pi2 bl) with
     | NamedHyp s :: _ ->
 	errorlabstrm ""
 	  (str "The variable " ++ pr_id s ++

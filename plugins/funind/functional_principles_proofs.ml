@@ -288,11 +288,10 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
       (* Ugly hack to prevent Map.fold order change between ocaml-3.08.3 and ocaml-3.08.4
 	 Can be safely replaced by the next comment for Ocaml >= 3.08.4
       *)
-      let sub' = Int.Map.fold (fun i t acc -> (i,t)::acc) sub [] in
-      let sub'' = List.sort (fun (x,_) (y,_) -> Pervasives.compare x y) sub' in
+      let sub = Int.Map.bindings sub in
       List.fold_left (fun end_of_type (i,t)  -> lift 1 (substnl  [t] (i-1) end_of_type))
 	end_of_type_with_pop
-	sub''
+	sub
     in
     let old_context_length = List.length context + 1 in
     let witness_fun =

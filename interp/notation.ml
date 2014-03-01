@@ -116,6 +116,12 @@ let normalize_scope sc =
 type scope_elem = Scope of scope_name | SingleNotation of string
 type scopes = scope_elem list
 
+let scope_eq s1 s2 = match s1, s2 with
+| Scope s1, Scope s2
+| SingleNotation s1, SingleNotation s2 -> String.equal s1 s2
+| Scope _, SingleNotation _
+| SingleNotation _, Scope _ -> false
+
 let scope_stack = ref []
 
 let current_scopes () = !scope_stack
@@ -136,7 +142,7 @@ let open_scope i (_,(local,op,sc)) =
     in
     scope_stack :=
       if op then sc :: !scope_stack
-      else List.except Pervasives.(=) sc !scope_stack (* FIXME *)
+      else List.except scope_eq sc !scope_stack
 
 let cache_scope o =
   open_scope 1 o
