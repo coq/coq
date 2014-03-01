@@ -50,8 +50,8 @@ let nat_of_int dloc n =
 exception Non_closed_number
 
 let rec int_of_nat = function
-  | GApp (_,GRef (_,s),[a]) when s = glob_S -> add_1 (int_of_nat a)
-  | GRef (_,z) when z = glob_O -> zero
+  | GApp (_,GRef (_,s),[a]) when Globnames.eq_gr s glob_S -> add_1 (int_of_nat a)
+  | GRef (_,z) when Globnames.eq_gr z glob_O -> zero
   | _ -> raise Non_closed_number
 
 let uninterp_nat p =

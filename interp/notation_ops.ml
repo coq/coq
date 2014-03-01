@@ -473,7 +473,7 @@ let rec subst_notation_constr subst bound raw =
     | _ -> knd
     in
     let nsolve = Option.smartmap (Genintern.generic_substitute subst) solve in
-    if nsolve == solve && nknd = knd then raw
+    if nsolve == solve && nknd == knd then raw
     else NHole (nknd, nsolve)
 
   | NCast (r1,k) ->

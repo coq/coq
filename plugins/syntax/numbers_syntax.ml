@@ -110,12 +110,12 @@ let bigint_of_int31 =
   let rec args_parsing args cur =
     match args with
       | [] -> cur
-      | (GRef (_,b))::l when b = int31_0 -> args_parsing l (mult_2 cur)
-      | (GRef (_,b))::l when b = int31_1 -> args_parsing l (add_1 (mult_2 cur))
+      | (GRef (_,b))::l when eq_gr b int31_0 -> args_parsing l (mult_2 cur)
+      | (GRef (_,b))::l when eq_gr b int31_1 -> args_parsing l (add_1 (mult_2 cur))
       | _ -> raise Non_closed
   in
   function
-  | GApp (_, GRef (_, c), args) when c=int31_construct -> args_parsing args zero
+  | GApp (_, GRef (_, c), args) when eq_gr c int31_construct -> args_parsing args zero
   | _ -> raise Non_closed
 
 let uninterp_int31 i =
@@ -199,14 +199,14 @@ let interp_bigN dloc n =
 let bigint_of_word =
   let rec get_height rc =
     match rc with
-    | GApp (_,GRef(_,c), [_;lft;rght]) when c = zn2z_WW ->
+    | GApp (_,GRef(_,c), [_;lft;rght]) when eq_gr c zn2z_WW ->
       1+max (get_height lft) (get_height rght)
     | _ -> 0
   in
   let rec transform hght rc =
     match rc with
-    | GApp (_,GRef(_,c),_) when c = zn2z_W0-> zero
-    | GApp (_,GRef(_,c), [_;lft;rght]) when c=zn2z_WW->
+    | GApp (_,GRef(_,c),_) when eq_gr c zn2z_W0-> zero
+    | GApp (_,GRef(_,c), [_;lft;rght]) when eq_gr c zn2z_WW->
       let new_hght = hght-1 in
       add (mult (rank new_hght)
              (transform new_hght lft))
@@ -262,8 +262,8 @@ let interp_bigZ dloc n =
 
 (* pretty printing functions for bigZ *)
 let bigint_of_bigZ = function
-  | GApp (_, GRef(_,c), [one_arg]) when c = bigZ_pos -> bigint_of_bigN one_arg
-  | GApp (_, GRef(_,c), [one_arg]) when c = bigZ_neg ->
+  | GApp (_, GRef(_,c), [one_arg]) when eq_gr c bigZ_pos -> bigint_of_bigN one_arg
+  | GApp (_, GRef(_,c), [one_arg]) when eq_gr c bigZ_neg ->
       let opp_val = bigint_of_bigN one_arg in
       if equal opp_val zero then
 	raise Non_closed
@@ -294,7 +294,7 @@ let interp_bigQ dloc n =
 
 let uninterp_bigQ rc =
   try match rc with
-    | GApp (_, GRef(_,c), [one_arg]) when c = bigQ_z ->
+    | GApp (_, GRef(_,c), [one_arg]) when eq_gr c bigQ_z ->
 	Some (bigint_of_bigZ one_arg)
     | _ -> None (* we don't pretty-print yet fractions *)
   with Non_closed -> None

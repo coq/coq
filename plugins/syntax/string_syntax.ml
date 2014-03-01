@@ -41,11 +41,11 @@ let uninterp_string r =
   try
     let b = Buffer.create 16 in
     let rec aux = function
-    | GApp (_,GRef (_,k),[a;s]) when k = force glob_String ->
+    | GApp (_,GRef (_,k),[a;s]) when eq_gr k (force glob_String) ->
 	(match uninterp_ascii a with
 	  | Some c -> Buffer.add_char b (Char.chr c); aux s
 	  | _ -> raise Non_closed_string)
-    | GRef (_,z) when z = force glob_EmptyString ->
+    | GRef (_,z) when eq_gr z (force glob_EmptyString) ->
 	Some (Buffer.contents b)
     | _ ->
 	raise Non_closed_string
