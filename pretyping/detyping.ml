@@ -684,7 +684,7 @@ let rec subst_glob_constr subst raw =
     | _ -> knd
     in
     let nsolve = Option.smartmap (Hook.get f_subst_genarg subst) solve in
-    if nsolve == solve && nknd = knd then raw
+    if nsolve == solve && nknd == knd then raw
     else GHole (loc, nknd, nsolve)
 
   | GCast (loc,r1,k) ->
