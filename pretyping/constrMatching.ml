@@ -219,7 +219,7 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 	    let s' =
 	      List.fold_left (fun l (na,_,t) -> (Anonymous,na,t)::l) stk ctx' in
 	    let b1 = lift_pattern n b1 and b1' = lift_pattern n' b1' in
-  	    sorec s' (sorec s (sorec stk subst a1 a2) b1 b2) b1' b2'
+	    sorec s' (sorec s (sorec stk subst a1 a2) b1 b2) b1' b2'
           else
             raise PatternMatchingFailure
 
@@ -407,4 +407,3 @@ let matches_conv env sigma c p =
 let is_matching_conv env sigma pat n =
   try let _ = matches_conv env sigma pat n in true
   with PatternMatchingFailure -> false
-

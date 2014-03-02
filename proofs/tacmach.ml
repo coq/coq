@@ -102,8 +102,8 @@ let pf_hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_get_type_of gls)
 let pf_check_type gls c1 c2 =
   ignore (pf_type_of gls (mkCast (c1, DEFAULTcast, c2)))
 
-let pf_is_matching              = pf_apply Matching.is_matching_conv
-let pf_matches                  = pf_apply Matching.matches_conv
+let pf_is_matching              = pf_apply ConstrMatching.is_matching_conv
+let pf_matches                  = pf_apply ConstrMatching.matches_conv
 
 (************************************)
 (* Tactics handling a list of goals *)

@@ -25,7 +25,6 @@ open Typing
 open Retyping
 open Tacmach
 open Logic
-open Matching
 open Hipattern
 open Tacexpr
 open Tacticals
@@ -1383,7 +1382,7 @@ let decomp_tuple_term env c t =
       and cdr_code = applist (p2,[a;p;inner_code]) in
       let cdrtyp = beta_applist (p,[car]) in
       List.map (fun l -> ((car,a),car_code)::l) (decomprec cdr_code cdr cdrtyp)
-    with PatternMatchingFailure ->
+    with ConstrMatching.PatternMatchingFailure ->
       []
     in
     [((ex,exty),inner_code)]::iterated_decomp
@@ -1458,7 +1457,7 @@ let try_rewrite tac gls =
   try
     tac gls
   with
-    | PatternMatchingFailure ->
+    | ConstrMatching.PatternMatchingFailure ->
 	errorlabstrm "try_rewrite" (str "Not a primitive equality here.")
     | e when catchable_exception e ->
 	errorlabstrm "try_rewrite"
@@ -1523,8 +1522,8 @@ let unfold_body x gl =
 
 let restrict_to_eq_and_identity eq = (* compatibility *)
   if not (eq_constr eq (constr_of_global glob_eq)) &&
-    not (eq_constr eq (constr_of_global glob_identity)) then
-    raise PatternMatchingFailure
+    not (eq_constr eq (constr_of_global glob_identity))
+  then raise ConstrMatching.PatternMatchingFailure
 
 exception FoundHyp of (Id.t * constr * bool)
 
@@ -1534,7 +1533,7 @@ let is_eq_x gl x (id,_,c) =
     let (_,lhs,rhs) = snd (find_eq_data_decompose gl c) in
     if (eq_constr x lhs) && not (occur_term x rhs) then raise (FoundHyp (id,rhs,true));
     if (eq_constr x rhs) && not (occur_term x lhs) then raise (FoundHyp (id,lhs,false))
-  with PatternMatchingFailure ->
+  with ConstrMatching.PatternMatchingFailure ->
     ()
 
 (* Rewrite "hyp:x=rhs" or "hyp:rhs=x" (if dir=false) everywhere and
@@ -1635,7 +1634,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
       if eq_constr x y then failwith "caught";
       match kind_of_term x with Var x -> x | _ ->
       match kind_of_term y with Var y -> y | _ -> failwith "caught"
-    with PatternMatchingFailure -> failwith "caught"
+    with ConstrMatching.PatternMatchingFailure -> failwith "caught"
   in
   let test p = try Some (test p) with Failure _ -> None in
   let hyps = Tacmach.New.pf_hyps_types gl in
@@ -1651,13 +1650,13 @@ let cond_eq_term_left c t gl =
   try
     let (_,x,_) = snd (find_eq_data_decompose gl t) in
     if pf_conv_x gl c x then true else failwith "not convertible"
-  with PatternMatchingFailure -> failwith "not an equality"
+  with ConstrMatching.PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term_right c t gl =
   try
     let (_,_,x) = snd (find_eq_data_decompose gl t) in
     if pf_conv_x gl c x then false else failwith "not convertible"
-  with PatternMatchingFailure -> failwith "not an equality"
+  with ConstrMatching.PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term c t gl =
   try
@@ -1665,7 +1664,7 @@ let cond_eq_term c t gl =
     if pf_conv_x gl c x then true
     else if pf_conv_x gl c y then false
     else failwith "not convertible"
-  with PatternMatchingFailure -> failwith "not an equality"
+  with ConstrMatching.PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term_left c t = Tacmach.New.of_old (cond_eq_term_left c t)
 let cond_eq_term_right c t = Tacmach.New.of_old (cond_eq_term_right c t)

@@ -15,7 +15,7 @@ open Names
 open Term
 open Termops
 open Inductiveops
-open Matching
+open ConstrMatching
 open Coqlib
 open Declarations
 

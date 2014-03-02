@@ -9,7 +9,6 @@
 open Constrintern
 open Pattern
 open Patternops
-open Matching
 open Pp
 open Genredexpr
 open Glob_term
@@ -643,7 +642,7 @@ let interp_may_eval f ist env sigma = function
       (try
 	let (sigma,ic) = f ist env sigma c
 	and ctxt = coerce_to_constr_context (Id.Map.find s ist.lfun) in
-	sigma , subst_meta [special_meta,ic] ctxt
+	sigma , subst_meta [ConstrMatching.special_meta,ic] ctxt
       with
 	| Not_found ->
 	    user_err_loc (loc, "interp_may_eval",

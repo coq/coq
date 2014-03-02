@@ -118,7 +118,7 @@ Evarconv
 Arguments_renaming
 Typing
 Patternops
-Matching
+ConstrMatching
 Tacred
 Classops
 Typeclasses_errors

@@ -23,7 +23,7 @@ open Declarations
 open Tactics
 open Tacticals
 open Auto
-open Matching
+open ConstrMatching
 open Hipattern
 open Tacmach
 open Coqlib

@@ -22,7 +22,6 @@ open Closure
 open Reductionops
 open Cbv
 open Patternops
-open Matching
 open Locus
 
 (* Errors *)
@@ -804,8 +803,8 @@ let simpl env sigma c = strong whd_simpl env sigma c
 
 let matches_head c t =
   match kind_of_term t with
-    | App (f,_) -> matches c f
-    | _ -> raise PatternMatchingFailure
+    | App (f,_) -> ConstrMatching.matches c f
+    | _ -> raise ConstrMatching.PatternMatchingFailure
 
 let contextually byhead (occs,c) f env sigma t =
   let (nowhere_except_in,locs) = Locusops.convert_occs occs in
@@ -815,7 +814,8 @@ let contextually byhead (occs,c) f env sigma t =
     if nowhere_except_in && (!pos > maxocc) then t
     else
     try
-      let subst = if byhead then matches_head c t else matches c t in
+      let subst =
+        if byhead then matches_head c t else ConstrMatching.matches c t in
       let ok =
 	if nowhere_except_in then Int.List.mem !pos locs
 	else not (Int.List.mem !pos locs) in
@@ -829,7 +829,7 @@ let contextually byhead (occs,c) f env sigma t =
 	mkApp (f, Array.map_left (traverse envc) l)
       else
 	t
-    with PatternMatchingFailure ->
+    with ConstrMatching.PatternMatchingFailure ->
       map_constr_with_binders_left_to_right
 	(fun d (env,c) -> (push_rel d env,lift_pattern 1 c))
         traverse envc t

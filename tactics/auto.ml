@@ -21,7 +21,6 @@ open Evd
 open Typing
 open Pattern
 open Patternops
-open Matching
 open Tacmach
 open Pfedit
 open Genredexpr
@@ -1115,10 +1114,12 @@ let conclPattern concl pat tac =
     match pat with
     | None -> Proofview.tclUNIT Id.Map.empty
     | Some pat ->
-	try Proofview.tclUNIT (matches pat concl)
-	with PatternMatchingFailure -> Proofview.tclZERO (UserError ("conclPattern",str"conclPattern")) in
-    constr_bindings >>= fun constr_bindings ->
-    Hook.get forward_interp_tactic constr_bindings tac
+	try Proofview.tclUNIT (ConstrMatching.matches pat concl)
+	with ConstrMatching.PatternMatchingFailure ->
+          Proofview.tclZERO (UserError ("conclPattern",str"conclPattern"))
+  in
+  constr_bindings >>= fun constr_bindings ->
+  Hook.get forward_interp_tactic constr_bindings tac
 
 (***********************************************************)
 (** A debugging / verbosity framework for trivial and auto *)
