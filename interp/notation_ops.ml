@@ -526,7 +526,7 @@ let bind_env alp (sigma,sigmalist,sigmabinders as fullsigma) var v =
     | _, GHole _ ->
       add_env alp (Id.List.remove_assoc var sigma,sigmalist,sigmabinders) var v
     | _, _ ->
-        if Pervasives.(=) v v' then fullsigma (** FIXME *)
+        if glob_constr_eq v v' then fullsigma
         else raise No_match
   with Not_found -> add_env alp fullsigma var v
 
@@ -791,7 +791,7 @@ let add_patterns_for_params ind l =
 let bind_env_cases_pattern (sigma,sigmalist,x as fullsigma) var v =
   try
     let vvar = Id.List.assoc var sigma in
-    if Pervasives.(=) v vvar then fullsigma else raise No_match (** FIXME *)
+    if cases_pattern_eq v vvar then fullsigma else raise No_match
   with Not_found ->
     (* TODO: handle the case of multiple occs in different scopes *)
     (var,v)::sigma,sigmalist,x

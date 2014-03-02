@@ -20,6 +20,10 @@ open Glob_term
 (** Equalities *)
 val glob_sort_eq : glob_sort -> glob_sort -> bool
 
+val cases_pattern_eq : cases_pattern -> cases_pattern -> bool
+
+val glob_constr_eq : glob_constr -> glob_constr -> bool
+
 (** Operations on [glob_constr] *)
 
 val cases_pattern_loc : cases_pattern -> Loc.t
