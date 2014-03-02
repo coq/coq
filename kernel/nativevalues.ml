@@ -39,7 +39,7 @@ let eq_annot_sw asw1 asw2 =
 open Hashset.Combine
 
 let hash_annot_sw asw =
-  combine (Hashtbl.hash asw.asw_ind) (Hashtbl.hash asw.asw_prefix)
+  combine (ind_hash asw.asw_ind) (String.hash asw.asw_prefix)
 
 type sort_annot = string * int
 

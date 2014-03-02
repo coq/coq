@@ -304,13 +304,26 @@ let val_of_str_const str = val_of_obj (obj_of_str_const str)
 
 let val_of_atom a = val_of_obj (obj_of_atom a)
 
-let idkey_tbl = Hashtbl.create 31
+module IdKeyHash =
+struct
+  type t = id_key
+  let equal = Names.eq_id_key
+  open Hashset.Combine
+  let hash = function
+  | ConstKey c -> combinesmall 1 (Constant.hash c)
+  | VarKey id -> combinesmall 2 (Id.hash id)
+  | RelKey i -> combinesmall 3 (Int.hash i)
+end
+
+module KeyTable = Hashtbl.Make(IdKeyHash)
+
+let idkey_tbl = KeyTable.create 31
 
 let val_of_idkey key =
-  try Hashtbl.find idkey_tbl key
+  try KeyTable.find idkey_tbl key
   with Not_found ->
     let v = val_of_atom (Aid key) in
-    Hashtbl.add idkey_tbl key v;
+    KeyTable.add idkey_tbl key v;
     v
 
 let val_of_rel k = val_of_idkey (RelKey k)

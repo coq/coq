@@ -371,6 +371,8 @@ sig
   val equal : t -> t -> bool
   (** Default comparison, alias for [CanOrd.equal] *)
 
+  val hash : t -> int
+
   (** Displaying *)
 
   val to_string : t -> string

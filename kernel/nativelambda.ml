@@ -473,18 +473,27 @@ let empty_args = [||]
 module Renv = 
   struct
 
+    module ConstrHash =
+    struct
+      type t = constructor
+      let equal = eq_constructor
+      let hash = constructor_hash
+    end
+
+    module ConstrTable = Hashtbl.Make(ConstrHash)
+
     type constructor_info = tag * int * int (* nparam nrealargs *)
 
     type t = {
 	name_rel : name Vect.t;
-	construct_tbl : (constructor, constructor_info) Hashtbl.t;
+	construct_tbl : constructor_info ConstrTable.t;
 
        }
 
 
     let make () = {
       name_rel = Vect.make 16 Anonymous;
-      construct_tbl = Hashtbl.create 111
+      construct_tbl = ConstrTable.create 111
     }
 
     let push_rel env id = Vect.push env.name_rel id
@@ -501,7 +510,7 @@ module Renv =
       Lrel (Vect.get_last env.name_rel (n-1), n)
 
     let get_construct_info env c =
-      try Hashtbl.find env.construct_tbl c 
+      try ConstrTable.find env.construct_tbl c
       with Not_found -> 
 	let ((mind,j), i) = c in
 	let oib = lookup_mind mind !global_env in
@@ -509,7 +518,7 @@ module Renv =
 	let tag,arity = oip.mind_reloc_tbl.(i-1) in
 	let nparams = oib.mind_nparams in
 	let r = (tag, nparams, arity) in
-	Hashtbl.add env.construct_tbl c r;
+	ConstrTable.add env.construct_tbl c r;
 	r
   end
 

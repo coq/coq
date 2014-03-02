@@ -254,7 +254,8 @@ let keymap_find key map =
 
 (* Scopes table : interpretation -> scope_name *)
 let notations_key_table = ref (KeyMap.empty : notation_rule list KeyMap.t)
-let prim_token_key_table = Hashtbl.create 7
+
+let prim_token_key_table = ref KeyMap.empty
 
 let glob_prim_constr_key = function
   | GApp (_,GRef (_,ref),_) | GRef (_,ref) -> RefKey (canonical_gr ref)
@@ -309,8 +310,8 @@ let declare_prim_token_interpreter sc interp (patl,uninterp,b) =
   declare_scope sc;
   add_prim_token_interpreter sc interp;
   List.iter (fun pat ->
-      Hashtbl.add prim_token_key_table
-        (glob_prim_constr_key pat) (sc,uninterp,b))
+      prim_token_key_table := KeyMap.add
+        (glob_prim_constr_key pat) (sc,uninterp,b) !prim_token_key_table)
     patl
 
 let mkNumeral n = Numeral n
@@ -487,7 +488,7 @@ let availability_of_notation (ntn_scope,ntn) scopes =
 let uninterp_prim_token c =
   try
     let (sc,numpr,_) =
-      Hashtbl.find prim_token_key_table (glob_prim_constr_key c) in
+      KeyMap.find (glob_prim_constr_key c) !prim_token_key_table in
     match numpr c with
       | None -> raise Notation_ops.No_match
       | Some n -> (sc,n)
@@ -496,8 +497,8 @@ let uninterp_prim_token c =
 let uninterp_prim_token_ind_pattern ind args =
   let ref = IndRef ind in
   try
-    let (sc,numpr,b) = Hashtbl.find prim_token_key_table
-      (RefKey (canonical_gr ref)) in
+    let k = RefKey (canonical_gr ref) in
+    let (sc,numpr,b) = KeyMap.find k !prim_token_key_table in
     if not b then raise Notation_ops.No_match;
     let args' = List.map
       (fun x -> snd (glob_constr_of_closed_cases_pattern x)) args in
@@ -510,7 +511,7 @@ let uninterp_prim_token_ind_pattern ind args =
 let uninterp_prim_token_cases_pattern c =
   try
     let k = cases_pattern_key c in
-    let (sc,numpr,b) = Hashtbl.find prim_token_key_table k in
+    let (sc,numpr,b) = KeyMap.find k !prim_token_key_table in
     if not b then raise Notation_ops.No_match;
     let na,c = glob_constr_of_closed_cases_pattern c in
     match numpr c with

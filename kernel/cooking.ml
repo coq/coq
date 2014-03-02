@@ -40,8 +40,25 @@ type my_global_reference =
   | IndRef of inductive
   | ConstructRef of constructor
 
+module RefHash =
+struct
+  type t = my_global_reference
+  let equal gr1 gr2 = match gr1, gr2 with
+  | ConstRef c1, ConstRef c2 -> Constant.CanOrd.equal c1 c2
+  | IndRef i1, IndRef i2 -> eq_ind i1 i2
+  | ConstructRef c1, ConstructRef c2 -> eq_constructor c1 c2
+  | _ -> false
+  open Hashset.Combine
+  let hash = function
+  | ConstRef c -> combinesmall 1 (Constant.hash c)
+  | IndRef i -> combinesmall 2 (ind_hash i)
+  | ConstructRef c -> combinesmall 3 (constructor_hash c)
+end
+
+module RefTable = Hashtbl.Make(RefHash)
+
 let share cache r (cstl,knl) =
-  try Hashtbl.find cache r
+  try RefTable.find cache r
   with Not_found ->
   let f,l =
     match r with
@@ -52,7 +69,7 @@ let share cache r (cstl,knl) =
     | ConstRef cst ->
 	mkConst (pop_con cst), Cmap.find cst cstl in
   let c = mkApp (f, Array.map mkVar l) in
-  Hashtbl.add cache r c;
+  RefTable.add cache r c;
   c
 
 let update_case_info cache ci modlist =
@@ -129,12 +146,12 @@ let constr_of_def = function
   | OpaqueDef lc -> Opaqueproof.force_proof lc
 
 let cook_constr { Opaqueproof.modlist ; abstract } c =
-  let cache = Hashtbl.create 13 in
+  let cache = RefTable.create 13 in
   let hyps = Context.map_named_context (expmod_constr cache modlist) abstract in
   abstract_constant_body (expmod_constr cache modlist c) hyps
 
 let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
-  let cache = Hashtbl.create 13 in
+  let cache = RefTable.create 13 in
   let hyps = Context.map_named_context (expmod_constr cache modlist) abstract in
   let body = on_body modlist hyps
     (fun c -> abstract_constant_body (expmod_constr cache modlist c) hyps)
@@ -158,4 +175,4 @@ let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
   in
   (body, typ, cb.const_constraints, cb.const_inline_code, Some const_hyps)
 
-let expmod_constr modlist c = expmod_constr (Hashtbl.create 13) modlist c
+let expmod_constr modlist c = expmod_constr (RefTable.create 13) modlist c

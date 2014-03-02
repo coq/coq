@@ -31,6 +31,9 @@ val equal : ('a -> 'a -> bool) -> 'a option -> 'a option -> bool
 (** Same as [equal], but with comparison. *)
 val compare : ('a -> 'a -> int) -> 'a option -> 'a option -> int
 
+(** Lift a hash to option types. *)
+val hash : ('a -> int) -> 'a option -> int
+
 (** [get x] returns [y] where [x] is [Some y]. It raises IsNone
     if [x] equals [None]. *)
 val get : 'a option -> 'a

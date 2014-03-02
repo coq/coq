@@ -35,6 +35,10 @@ let compare f x y = match x, y with
 | None, Some _ -> -1
 | Some _, None -> 1
 
+let hash f = function
+| None -> 0
+| Some x -> f x
+
 exception IsNone
 
 (** [get x] returns [y] where [x] is [Some y]. It raises IsNone
