@@ -729,7 +729,22 @@ module Hcaseinfo =
 	Int.equal ci.ci_npar ci'.ci_npar &&
 	Array.equal Int.equal ci.ci_cstr_ndecls ci'.ci_cstr_ndecls && (* we use [Array.equal] on purpose *)
 	pp_info_equal ci.ci_pp_info ci'.ci_pp_info  (* we use (=) on purpose *)
-      let hash = Hashtbl.hash
+      open Hashset.Combine
+      let hash_pp_info info =
+        let h = match info.style with
+        | LetStyle -> 0
+        | IfStyle -> 1
+        | LetPatternStyle -> 2
+        | MatchStyle -> 3
+        | RegularStyle -> 4
+        in
+        combine info.ind_nargs h
+      let hash ci =
+        let h1 = ind_hash ci.ci_ind in
+        let h2 = Int.hash ci.ci_npar in
+        let h3 = Array.fold_left combine 0 ci.ci_cstr_ndecls in
+        let h4 = hash_pp_info ci.ci_pp_info in
+        combine4 h1 h2 h3 h4
     end)
 
 let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.generate hcons_ind
