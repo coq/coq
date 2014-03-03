@@ -510,6 +510,7 @@ let coercion_of_reference r =
 module CoercionPrinting =
   struct
     type t = coe_typ
+    let compare = RefOrdered.compare
     let encode = coercion_of_reference
     let subst = subst_coe_typ
     let printer x = pr_global_env Id.Set.empty x

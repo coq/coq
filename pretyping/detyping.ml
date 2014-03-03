@@ -71,6 +71,7 @@ module PrintingInductiveMake =
   end) ->
   struct
     type t = inductive
+    let compare = ind_ord
     let encode = Test.encode
     let subst subst (kn, ints as obj) =
       let kn' = subst_ind subst kn in

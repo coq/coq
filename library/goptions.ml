@@ -43,6 +43,7 @@ module MakeTable =
    (A : sig
 	  type t
 	  type key
+	  val compare : t -> t -> int
 	  val table : (string * key table_of_A) list ref
 	  val encode : key -> t
 	  val subst : substitution -> t -> t
@@ -63,7 +64,7 @@ module MakeTable =
       if String.List.mem_assoc nick !A.table then
 	error "Sorry, this table name is already used."
 
-    module MySet = Set.Make (struct type t = A.t let compare = compare end)
+    module MySet = Set.Make (struct type t = A.t let compare = A.compare end)
 
     let t =
       if A.synchronous
@@ -135,6 +136,7 @@ module StringConvert = functor (A : StringConvertArg) ->
 struct
   type t = string
   type key = string
+  let compare = String.compare
   let table = string_table
   let encode x = x
   let subst _ x = x
@@ -155,6 +157,7 @@ let get_ref_table k = String.List.assoc (nickname k) !ref_table
 module type RefConvertArg =
 sig
   type t
+  val compare : t -> t -> int
   val encode : reference -> t
   val subst : substitution -> t -> t
   val printer : t -> std_ppcmds
@@ -168,6 +171,7 @@ module RefConvert = functor (A : RefConvertArg) ->
 struct
   type t = A.t
   type key = reference
+  let compare = A.compare
   let table = ref_table
   let encode = A.encode
   let subst = A.subst

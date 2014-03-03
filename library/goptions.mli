@@ -89,6 +89,7 @@ module MakeRefTable :
   functor
     (A : sig
            type t
+           val compare : t -> t -> int
            val encode : reference -> t
 	   val subst : substitution -> t -> t
            val printer : t -> std_ppcmds

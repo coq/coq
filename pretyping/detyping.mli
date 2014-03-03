@@ -72,6 +72,7 @@ module PrintingInductiveMake :
   end) ->
     sig
       type t = Names.inductive
+      val compare : t -> t -> int
       val encode : Libnames.reference -> Names.inductive
       val subst : substitution -> t -> t
       val printer : t -> Pp.std_ppcmds
