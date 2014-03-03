@@ -43,26 +43,35 @@ module ST=struct
 
   (* l: sign -> term r: term -> sign *)
 
-  type t = {toterm:(int*int,int) Hashtbl.t;
-	    tosign:(int,int*int) Hashtbl.t}
+  module IntTable = Hashtbl.Make(Int)
+  module IntPair =
+  struct
+    type t = int * int
+    let equal (i1, j1) (i2, j2) = Int.equal i1 i2 && Int.equal j1 j2
+    let hash (i, j) = Hashset.Combine.combine (Int.hash i) (Int.hash j)
+  end
+  module IntPairTable = Hashtbl.Make(IntPair)
+
+  type t = {toterm: int IntPairTable.t;
+	    tosign: (int * int) IntTable.t}
 
   let empty ()=
-    {toterm=Hashtbl.create init_size;
-     tosign=Hashtbl.create init_size}
+    {toterm=IntPairTable.create init_size;
+     tosign=IntTable.create init_size}
 
   let enter t sign st=
-    if Hashtbl.mem st.toterm sign then
+    if IntPairTable.mem st.toterm sign then
 	anomaly ~label:"enter" (Pp.str "signature already entered")
     else
-	Hashtbl.replace st.toterm sign t;
-	Hashtbl.replace st.tosign t sign
+	IntPairTable.replace st.toterm sign t;
+	IntTable.replace st.tosign t sign
 
-  let query sign st=Hashtbl.find st.toterm sign
+  let query sign st=IntPairTable.find st.toterm sign
 
   let delete st t=
-    try let sign=Hashtbl.find st.tosign t in
-	Hashtbl.remove st.toterm sign;
-	Hashtbl.remove st.tosign t
+    try let sign=IntTable.find st.tosign t in
+	IntPairTable.remove st.toterm sign;
+	IntTable.remove st.tosign t
     with
 	Not_found -> ()
 
@@ -144,12 +153,17 @@ let rec term_equal t1 t2 =
 
 open Hashset.Combine
 
+let hash_sorts_family = function
+| InProp -> 0
+| InSet -> 1
+| InType -> 2
+
 let rec hash_term = function
   | Symb c -> combine 1 (hash_constr c)
-  | Product (s1, s2) -> combine3 2 (Hashtbl.hash s1) (Hashtbl.hash s2)
-  | Eps i -> combine 3 (Hashtbl.hash i)
+  | Product (s1, s2) -> combine3 2 (hash_sorts_family s1) (hash_sorts_family s2)
+  | Eps i -> combine 3 (Id.hash i)
   | Appli (t1, t2) -> combine3 4 (hash_term t1) (hash_term t2)
-  | Constructor {ci_constr=c; ci_arity=i; ci_nhyps=j} -> combine4 5 (Hashtbl.hash c) i j
+  | Constructor {ci_constr=c; ci_arity=i; ci_nhyps=j} -> combine4 5 (constructor_hash c) i j
 
 type ccpattern =
     PApp of term * ccpattern list (* arguments are reversed *)
@@ -234,7 +248,7 @@ module Termhash = Hashtbl.Make
 module Identhash = Hashtbl.Make
   (struct type t = Id.t
 	  let equal = Id.equal
-	  let hash = Hashtbl.hash
+	  let hash = Id.hash
    end)
 
 type forest=
