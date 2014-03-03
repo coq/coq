@@ -100,8 +100,14 @@ type proactive = entry Proactive.t
    a finite type describing the fields to the field of proactive retroknowledge
    (and then to make as many functions as needed in environ.ml) *)
 
-module Reactive =
-  Map.Make (struct type t = entry let compare = compare end)
+module EntryOrd =
+struct
+  type t = entry
+  let make (e : entry) : constr = Obj.magic e (** WARNING: maybe to be updated. *)
+  let compare c1 c2 = Constr.compare (make c1) (make c2)
+end
+
+module Reactive = Map.Make (EntryOrd)
 
 type reactive_end = {(*information required by the compiler of the VM *)
   vm_compiling :
