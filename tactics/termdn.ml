@@ -13,37 +13,17 @@ open Pattern
 open Patternops
 open Globnames
 
-(* Discrimination nets of terms.
-   See the module dn.ml for further explanations.
-   Eduardo (5/8/97) *)
-module Make =
-  functor (Z : Map.OrderedType) ->
-struct
+type term_label =
+| GRLabel of global_reference
+| ProdLabel
+| LambdaLabel
+| SortLabel
 
-  module X = struct
-    type t = constr_pattern
-    let compare = Pervasives.compare (** FIXME *)
-  end
+let compare_term_label t1 t2 = match t1, t2 with
+| GRLabel gr1, GRLabel gr2 -> RefOrdered.compare gr1 gr2
+| _ -> Pervasives.compare t1 t2 (** OK *)
 
-  type term_label =
-    | GRLabel of global_reference
-    | ProdLabel
-    | LambdaLabel
-    | SortLabel
-
-  module Y =  struct
-    type t = term_label
-    let compare t1 t2 = match t1, t2 with
-    | GRLabel gr1, GRLabel gr2 -> RefOrdered.compare gr1 gr2
-    | _ -> Pervasives.compare t1 t2 (** OK *)
-  end
-
-
-  module Dn = Dn.Make(X)(Y)(Z)
-
-  type t = Dn.t
-
-  type 'a lookup_res = 'a Dn.lookup_res
+type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
 
 (*If we have: f a b c ..., decomp gives: (f,[a;b;c;...])*)
 
@@ -110,15 +90,3 @@ let constr_val_discr_st (idpred,cpred) t =
     | Sort _ -> Label (SortLabel, [])
     | Evar _ -> Everything
     | _ -> Nothing
-
-let create = Dn.create
-
-let add dn st = Dn.add dn (constr_pat_discr_st st)
-
-let rmv dn st = Dn.rmv dn (constr_pat_discr_st st)
-
-let lookup dn st t = Dn.lookup dn (constr_val_discr_st st) t
-
-let app f dn = Dn.app f dn
-
-end

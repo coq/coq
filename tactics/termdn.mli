@@ -11,6 +11,14 @@ open Pattern
 open Globnames
 open Names
 
+type term_label =
+| GRLabel of global_reference
+| ProdLabel
+| LambdaLabel
+| SortLabel
+
+val compare_term_label : term_label -> term_label -> int
+
 (** Discrimination nets of terms. *)
 
 (** This module registers actions (typically tactics) mapped to patterns *)
@@ -24,45 +32,13 @@ indicates which constants and variables can be considered as rigid.
 These dnets are able to cope with existential variables as well, which match
 [Everything]. *)
 
-module Make :
-  functor (Z : Map.OrderedType) ->
-sig
-  
-  type t
-    
-  type 'a lookup_res
-    
-  val create : unit -> t
-    
-  (** [add t (c,a)] adds to table [t] pattern [c] associated to action [act] *)
-    
-  val add : t -> transparent_state -> (constr_pattern * Z.t) -> t
-    
-  val rmv : t -> transparent_state -> (constr_pattern * Z.t) -> t
-    
-  (** [lookup t c] looks for patterns (with their action) matching term [c] *)
-    
-  val lookup : t -> transparent_state -> constr -> (constr_pattern * Z.t) list
-    
-  val app : ((constr_pattern * Z.t) -> unit) -> t -> unit
+(**/**)
+(** These are for Nbtermdn *)
 
-    
-  (**/**)
-  (** These are for Nbtermdn *)
- 
-  type term_label = 
-    | GRLabel of global_reference
-    | ProdLabel 
-    | LambdaLabel
-    | SortLabel
-	
-  val constr_pat_discr_st : transparent_state ->
-    constr_pattern -> (term_label * constr_pattern list) option
-  val constr_val_discr_st : transparent_state ->
-    constr -> (term_label * constr list) lookup_res
-    
-  val constr_pat_discr : constr_pattern -> (term_label * constr_pattern list) option
-  val constr_val_discr : constr -> (term_label * constr list) lookup_res
-    
-  (**/**)
-end
+val constr_pat_discr_st : transparent_state ->
+  constr_pattern -> (term_label * constr_pattern list) option
+val constr_val_discr_st : transparent_state ->
+  constr -> (term_label * constr list) Dn.lookup_res
+
+val constr_pat_discr : constr_pattern -> (term_label * constr_pattern list) option
+val constr_val_discr : constr -> (term_label * constr list) Dn.lookup_res

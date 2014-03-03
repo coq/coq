@@ -22,120 +22,120 @@ let dnet_depth = ref 8
 module Make =
   functor (Z : Map.OrderedType) ->
 struct
-  module Term_dn = Termdn.Make(Z)
+  open Termdn
 
   module X = struct
     type t = constr_pattern*int
     let compare = Pervasives.compare (** FIXME *)
   end
 
- module Y = struct 
-    type t = Term_dn.term_label
-    let compare t1 t2 = match t1, t2 with
-    | Term_dn.GRLabel gr1, Term_dn.GRLabel gr2 -> RefOrdered.compare gr1 gr2
-    | _ -> Pervasives.compare t1 t2 (** OK *)
+ module Y = struct
+    type t = term_label
+    let compare = compare_term_label
  end
- 
+
+ type 'res lookup_res = 'res Dn.lookup_res = Label of 'res | Nothing | Everything
+
  module Dn = Dn.Make(X)(Y)(Z)
-  
+
  type t = Dn.t
 
   let create = Dn.create
 
-  let decomp = 
+  let decomp =
     let rec decrec acc c = match kind_of_term c with
       | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
       | Cast (c1,_,_) -> decrec acc c1
       | _ -> (c,acc)
-    in 
+    in
       decrec []
 
   let constr_val_discr t =
     let c, l = decomp t in
       match kind_of_term c with
-      | Ind ind_sp -> Dn.Label(Term_dn.GRLabel (IndRef ind_sp),l)
-      | Construct cstr_sp -> Dn.Label(Term_dn.GRLabel (ConstructRef cstr_sp),l)
-      | Var id -> Dn.Label(Term_dn.GRLabel (VarRef id),l)
-      | Const _ -> Dn.Everything
-      | _ -> Dn.Nothing
-	
+      | Ind ind_sp -> Label(GRLabel (IndRef ind_sp),l)
+      | Construct cstr_sp -> Label(GRLabel (ConstructRef cstr_sp),l)
+      | Var id -> Label(GRLabel (VarRef id),l)
+      | Const _ -> Everything
+      | _ -> Nothing
+
   let constr_val_discr_st (idpred,cpred) t =
     let c, l = decomp t in
       match kind_of_term c with
-      | Const c -> if Cpred.mem c cpred then Dn.Everything else Dn.Label(Term_dn.GRLabel (ConstRef c),l)
-      | Ind ind_sp -> Dn.Label(Term_dn.GRLabel (IndRef ind_sp),l)
-      | Construct cstr_sp -> Dn.Label(Term_dn.GRLabel (ConstructRef cstr_sp),l)
-      | Var id when not (Id.Pred.mem id idpred) -> Dn.Label(Term_dn.GRLabel (VarRef id),l)
-      | Prod (n, d, c) -> Dn.Label(Term_dn.ProdLabel, [d; c])
-      | Lambda (n, d, c) -> Dn.Label(Term_dn.LambdaLabel, [d; c] @ l)
-      | Sort _ -> Dn.Label(Term_dn.SortLabel, [])
-      | Evar _ -> Dn.Everything
-      | _ -> Dn.Nothing
+      | Const c -> if Cpred.mem c cpred then Everything else Label(GRLabel (ConstRef c),l)
+      | Ind ind_sp -> Label(GRLabel (IndRef ind_sp),l)
+      | Construct cstr_sp -> Label(GRLabel (ConstructRef cstr_sp),l)
+      | Var id when not (Id.Pred.mem id idpred) -> Label(GRLabel (VarRef id),l)
+      | Prod (n, d, c) -> Label(ProdLabel, [d; c])
+      | Lambda (n, d, c) -> Label(LambdaLabel, [d; c] @ l)
+      | Sort _ -> Label(SortLabel, [])
+      | Evar _ -> Everything
+      | _ -> Nothing
 
   let bounded_constr_pat_discr_st st (t,depth) =
-    if Int.equal depth 0 then 
-      None 
+    if Int.equal depth 0 then
+      None
     else
-      match Term_dn.constr_pat_discr_st st t with
+      match constr_pat_discr_st st t with
 	| None -> None
 	| Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
-	    
+
   let bounded_constr_val_discr_st st (t,depth) =
-    if Int.equal depth 0 then 
-      Dn.Nothing 
+    if Int.equal depth 0 then
+      Nothing
     else
       match constr_val_discr_st st t with
-	| Dn.Label (c,l) -> Dn.Label(c,List.map (fun c -> (c,depth-1)) l)
-	| Dn.Nothing -> Dn.Nothing
-	| Dn.Everything -> Dn.Everything
+	| Label (c,l) -> Label(c,List.map (fun c -> (c,depth-1)) l)
+	| Nothing -> Nothing
+	| Everything -> Everything
 
   let bounded_constr_pat_discr (t,depth) =
-    if Int.equal depth 0 then 
-      None 
+    if Int.equal depth 0 then
+      None
     else
-      match Term_dn.constr_pat_discr t with
+      match constr_pat_discr t with
 	| None -> None
 	| Some (c,l) -> Some(c,List.map (fun c -> (c,depth-1)) l)
-	    
+
   let bounded_constr_val_discr (t,depth) =
-    if Int.equal depth 0 then 
-      Dn.Nothing 
+    if Int.equal depth 0 then
+      Nothing
     else
       match constr_val_discr t with
-	| Dn.Label (c,l) -> Dn.Label(c,List.map (fun c -> (c,depth-1)) l)
-	| Dn.Nothing -> Dn.Nothing
-	| Dn.Everything -> Dn.Everything
-	    
-	    
+	| Label (c,l) -> Label(c,List.map (fun c -> (c,depth-1)) l)
+	| Nothing -> Nothing
+	| Everything -> Everything
+
+
   let add = function
-    | None -> 
-	(fun dn (c,v) -> 
+    | None ->
+	(fun dn (c,v) ->
 	   Dn.add dn bounded_constr_pat_discr ((c,!dnet_depth),v))
-    | Some st -> 
-	(fun dn (c,v) -> 
+    | Some st ->
+	(fun dn (c,v) ->
 	   Dn.add dn (bounded_constr_pat_discr_st st) ((c,!dnet_depth),v))
-	  
+
   let rmv = function
-    | None -> 
-	(fun dn (c,v) -> 
+    | None ->
+	(fun dn (c,v) ->
 	   Dn.rmv dn bounded_constr_pat_discr ((c,!dnet_depth),v))
-    | Some st -> 
-	(fun dn (c,v) -> 
+    | Some st ->
+	(fun dn (c,v) ->
 	 Dn.rmv dn (bounded_constr_pat_discr_st st) ((c,!dnet_depth),v))
-	  
+
   let lookup = function
-    | None -> 
+    | None ->
 	(fun dn t ->
-	   List.map 
-	     (fun ((c,_),v) -> (c,v)) 
+	   List.map
+	     (fun ((c,_),v) -> (c,v))
 	     (Dn.lookup dn bounded_constr_val_discr (t,!dnet_depth)))
-    | Some st -> 
+    | Some st ->
 	(fun dn t ->
-	   List.map 
-	     (fun ((c,_),v) -> (c,v)) 
+	   List.map
+	     (fun ((c,_),v) -> (c,v))
 	     (Dn.lookup dn (bounded_constr_val_discr_st st) (t,!dnet_depth)))
-	  
+
   let app f dn = Dn.app (fun ((c,_),v) -> f(c,v)) dn
-    
+
 end
-    
+

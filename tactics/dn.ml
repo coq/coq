@@ -1,6 +1,6 @@
 open Util
 
-
+type 'res lookup_res = Label of 'res | Nothing | Everything
 
 module Make =
   functor (X : Set.OrderedType) ->
@@ -41,8 +41,6 @@ struct
   module Trie = Trie.Make(Y_tries)(X_tries)
 
   type  decompose_fun = X.t -> (Y.t * X.t list) option
-
-  type 'res lookup_res = Label of 'res | Nothing | Everything
 
   type 'tree lookup_fun = 'tree -> (Y.t * 'tree list) lookup_res
 
