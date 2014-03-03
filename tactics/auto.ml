@@ -145,7 +145,7 @@ let rebuild_dn st ((l,l',dn) : search_entry) =
 
 
 let lookup_tacs (hdc,c) st (l,l',dn) =
-  let l'  = List.map snd (Bounded_net.lookup st dn c) in
+  let l'  = Bounded_net.lookup st dn c in
   let sl' = List.stable_sort pri_order_int l' in
     List.merge pri_order_int l sl'
 

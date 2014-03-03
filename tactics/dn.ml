@@ -3,7 +3,6 @@ open Util
 type 'res lookup_res = Label of 'res | Nothing | Everything
 
 module Make =
-  functor (X : Set.OrderedType) ->
     functor (Y : Map.OrderedType) ->
       functor (Z : Map.OrderedType) ->
 struct
@@ -21,26 +20,19 @@ struct
 	| Some(l,n),None -> 1
 	| None, Some(l,n) -> -1
   end
-  module XZOrd = struct
-    type t = X.t * Z.t
-    let compare (x1,x2) (y1,y2) =
-      let m = (X.compare x1 y1) in
-      if Int.equal m 0 then (Z.compare x2 y2) else
-	m
-  end
-  module XZ = Set.Make(XZOrd)
+  module ZSet = Set.Make(Z)
   module X_tries =
   struct
-    type t = XZ.t
-    let nil = XZ.empty
-    let is_nil = XZ.is_empty
-    let add = XZ.union
-    let sub = XZ.diff
+    type t = ZSet.t
+    let nil = ZSet.empty
+    let is_nil = ZSet.is_empty
+    let add = ZSet.union
+    let sub = ZSet.diff
   end
 
   module Trie = Trie.Make(Y_tries)(X_tries)
 
-  type  decompose_fun = X.t -> (Y.t * X.t list) option
+  type 'a decompose_fun = 'a -> (Y.t * 'a list) option
 
   type 'tree lookup_fun = 'tree -> (Y.t * 'tree list) lookup_res
 
@@ -95,15 +87,15 @@ prefix ordering, [dna] is the function returning the main node of a pattern *)
 		 (tm_of tm (Some(lbl,List.length v))) v)
 	| Everything -> skip_arg 1 tm
     in
-    List.flatten (List.map (fun (tm,b) -> XZ.elements (Trie.get tm)) (lookrec t tm))
+    List.flatten (List.map (fun (tm,b) -> ZSet.elements (Trie.get tm)) (lookrec t tm))
 
   let add tm dna (pat,inf) =
-    let p = path_of dna pat in Trie.add p (XZ.singleton (pat, inf)) tm
+    let p = path_of dna pat in Trie.add p (ZSet.singleton inf) tm
 
   let rmv tm dna (pat,inf) =
-    let p = path_of dna pat in Trie.remove p (XZ.singleton (pat, inf)) tm
+    let p = path_of dna pat in Trie.remove p (ZSet.singleton inf) tm
 
-  let app f tm = Trie.iter (fun _ p -> XZ.iter f p) tm
+  let app f tm = Trie.iter (fun _ p -> ZSet.iter f p) tm
 
 end
 

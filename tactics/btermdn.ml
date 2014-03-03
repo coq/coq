@@ -130,17 +130,12 @@ module Make =
   functor (Z : Map.OrderedType) ->
 struct
 
-  module X = struct
-    type t = constr_pattern*int
-    let compare = Pervasives.compare (** FIXME *)
-  end
-
  module Y = struct
     type t = term_label
     let compare = compare_term_label
  end
 
- module Dn = Dn.Make(X)(Y)(Z)
+ module Dn = Dn.Make(Y)(Z)
 
  type t = Dn.t
 
@@ -165,16 +160,12 @@ struct
   let lookup = function
     | None ->
 	(fun dn t ->
-	   List.map
-	     (fun ((c,_),v) -> (c,v))
-	     (Dn.lookup dn bounded_constr_val_discr (t,!dnet_depth)))
+	     Dn.lookup dn bounded_constr_val_discr (t,!dnet_depth))
     | Some st ->
 	(fun dn t ->
-	   List.map
-	     (fun ((c,_),v) -> (c,v))
-	     (Dn.lookup dn (bounded_constr_val_discr_st st) (t,!dnet_depth)))
+	     Dn.lookup dn (bounded_constr_val_discr_st st) (t,!dnet_depth))
 
-  let app f dn = Dn.app (fun ((c,_),v) -> f(c,v)) dn
+  let app f dn = Dn.app f dn
 
 end
 

@@ -33,9 +33,8 @@ sig
   val add : transparent_state option -> t -> (constr_pattern * Z.t) -> t
   val rmv : transparent_state option -> t -> (constr_pattern * Z.t) -> t
 
-  val lookup : transparent_state option -> t -> constr -> (constr_pattern * Z.t) list
-  val app : ((constr_pattern * Z.t) -> unit) -> t -> unit
+  val lookup : transparent_state option -> t -> constr -> Z.t list
+  val app : (Z.t -> unit) -> t -> unit
 end
-    
-val dnet_depth : int ref
 
+val dnet_depth : int ref
