@@ -236,6 +236,7 @@ val compare_head : (constr -> constr -> bool) -> constr -> constr -> bool
 (** {6 Hashconsing} *)
 
 val hash : constr -> int
+val case_info_hash : case_info -> int
 
 (*********************************************************************)
 
