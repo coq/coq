@@ -892,11 +892,13 @@ end = struct (* {{{ *)
         match c.Declarations.const_body with
         | Declarations.OpaqueDef lc ->
             let uc = Option.get (Opaqueproof.get_constraints lc) in
+            let uc =
+              Future.chain ~greedy:true ~pure:true uc Univ.hcons_constraints in
             let pr = Opaqueproof.get_proof lc in
             let pr = Future.chain ~greedy:true ~pure:true pr discharge in
             let pr = Future.chain ~greedy:true ~pure:true pr Constr.hcons in
-            ignore(Future.join pr);
-            ignore(Future.join uc);
+            Future.sink pr;
+            Future.sink uc;
             u.(bucket) <- uc;
             p.(bucket) <- pr
         | _ -> assert false
