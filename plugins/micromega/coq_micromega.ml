@@ -623,7 +623,7 @@ struct
 
   let parse_q term =
      match Term.kind_of_term term with
-       | Term.App(c, args) -> if c = Lazy.force coq_Qmake then
+       | Term.App(c, args) -> if Constr.equal c (Lazy.force coq_Qmake) then
              {Mc.qnum = parse_z args.(0) ; Mc.qden = parse_positive args.(1) }
        else raise ParseError
    |  _ -> raise ParseError
@@ -809,7 +809,7 @@ struct
 
   let assoc_const x l =
    try
-   snd (List.find (fun (x',y) -> x = Lazy.force x') l)
+   snd (List.find (fun (x',y) -> Constr.equal x (Lazy.force x')) l)
    with
      Not_found -> raise ParseError
 
@@ -835,7 +835,7 @@ struct
    match kind_of_term op with
     | Const x -> (assoc_const op zop_table, args.(0) , args.(1))
     |  Ind(n,0) ->
-        if op = Lazy.force coq_Eq &&   args.(0) = Lazy.force coq_Z
+        if Constr.equal op (Lazy.force coq_Eq) && Constr.equal args.(0) (Lazy.force coq_Z)
         then (Mc.OpEq, args.(1), args.(2))
         else raise ParseError
     |   _ -> failwith "parse_zop"
@@ -844,7 +844,7 @@ struct
     match kind_of_term op with
      | Const x -> (assoc_const op rop_table, args.(0) , args.(1))
      |  Ind(n,0) ->
-        if op = Lazy.force coq_Eq &&   args.(0) = Lazy.force coq_R
+        if Constr.equal op (Lazy.force coq_Eq) && Constr.equal args.(0) (Lazy.force coq_R)
         then (Mc.OpEq, args.(1), args.(2))
         else raise ParseError
     |   _ -> failwith "parse_zop"
@@ -865,7 +865,7 @@ struct
 
   let assoc_ops x l =
    try
-     snd (List.find (fun (x',y) -> x = Lazy.force x') l)
+     snd (List.find (fun (x',y) -> Constr.equal x (Lazy.force x')) l)
    with
      Not_found -> Ukn "Oups"
 
@@ -992,9 +992,9 @@ struct
   let rec rconstant term =
    match Term.kind_of_term term with
     | Const x ->
-        if term = Lazy.force coq_R0
+        if Constr.equal term (Lazy.force coq_R0)
         then Mc.C0
-        else if term = Lazy.force coq_R1
+        else if Constr.equal term (Lazy.force coq_R1)
         then Mc.C1
         else raise ParseError
     | App(op,args) -> 
@@ -1008,8 +1008,8 @@ struct
 	  with
 	      ParseError -> 
 		match op with
-		  | op when op = Lazy.force coq_Rinv -> Mc.CInv(rconstant args.(0))
-		  | op when op = Lazy.force coq_IQR  -> Mc.CQ (parse_q args.(0))
+		  | op when Constr.equal op (Lazy.force coq_Rinv) -> Mc.CInv(rconstant args.(0))
+		  | op when Constr.equal op (Lazy.force coq_IQR)  -> Mc.CQ (parse_q args.(0))
 (*		  | op when op = Lazy.force coq_IZR  -> Mc.CZ (parse_z args.(0))*)
 		  | _ ->  raise ParseError
 	end
@@ -1188,7 +1188,7 @@ let same_proof sg cl1 cl2 =
   match sg with
    | [] -> true
    | n::sg ->
-     (try List.nth cl1 n = List.nth cl2 n with Invalid_argument _ -> false)
+     (try Int.equal (List.nth cl1 n) (List.nth cl2 n) with Invalid_argument _ -> false)
       && (xsame_proof sg ) in
   xsame_proof sg
 
@@ -1483,7 +1483,7 @@ let compact_proofs (cnf_ff: 'cst cnf) res (cnf_ff': 'cst cnf) =
   let is_proof_compatible (old_cl:'cst clause) (prf,prover) (new_cl:'cst clause) =
     let hyps_idx = prover.hyps prf in
     let hyps = selecti hyps_idx old_cl in
-      is_sublist hyps new_cl in
+      is_sublist Pervasives.(=) hyps new_cl in
 
   let cnf_res = List.combine cnf_ff res in (* we get pairs clause * proof *)
 
@@ -1745,7 +1745,7 @@ open Persistent_cache
 
 module Cache = PHashtable(struct
   type t = (provername * micromega_polys)
-  let equal = (=)
+  let equal = Pervasives.(=)
   let hash  = Hashtbl.hash
 end)
 
@@ -1939,7 +1939,7 @@ let non_linear_prover_Z str o  = {
 
 module CacheZ = PHashtable(struct
   type t = (Mc.z Mc.pol * Mc.op1) list
-  let equal = (=)
+  let equal = Pervasives.(=)
   let hash  = Hashtbl.hash
 end)
 

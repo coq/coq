@@ -12,7 +12,6 @@
 (*                                                                      *)
 (************************************************************************)
 
-
 module type PHashtable =
   sig
     type 'a t
@@ -172,7 +171,7 @@ let close t =
 
 let add t k e =
   let {outch = outch ; status = status ; htbl = tbl} = t in
-    if status = Closed
+    if status == Closed
     then raise UnboundTable
     else
       let fd = descr_of_out_channel outch in
@@ -187,7 +186,7 @@ let add t k e =
 
 let find t k =
   let {outch = outch ; status = status ; htbl = tbl} = t in
-    if status = Closed
+    if status == Closed
     then raise UnboundTable
     else
       let res = Table.find tbl k in

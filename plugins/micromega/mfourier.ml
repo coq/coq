@@ -3,7 +3,6 @@ module Utils = Mutils
 open Polynomial
 open Vect
 
-
 let map_option = Utils.map_option
 let from_option = Utils.from_option
 
@@ -197,7 +196,7 @@ let pp_split_cstr o (vl,v,c,_) =
 let merge_cstr_info i1 i2 =
   let { pos = p1 ; neg = n1 ; bound = i1 ; prf = prf1 } = i1
   and { pos = p2 ; neg = n2 ; bound = i2 ; prf = prf2 } = i2 in
-    assert (p1 = p2 && n1 = n2) ;
+    assert (Int.equal p1 p2 && Int.equal n1 n2) ;
     match inter i1 i2 with
       | None -> None (* Could directly raise a system contradiction exception *)
       | Some bnd ->
@@ -209,7 +208,7 @@ let merge_cstr_info i1 i2 =
 *)
 
 let xadd_cstr vect cstr_info sys =
-  if debug && System.length sys mod 1000 = 0 then (print_string "*" ; flush stdout) ;
+  if debug && Int.equal (System.length sys mod 1000) 0 then (print_string "*" ; flush stdout) ;
   try
     let info = System.find sys vect in
       match merge_cstr_info cstr_info !info with
@@ -237,7 +236,7 @@ let normalise_cstr vect cinfo =
 	  | (_,n)::_ ->  Cstr(
 	      (if n <>/ Int 1 then List.map (fun (x,nx) -> (x,nx // n)) vect else vect),
 			     let divn x = x // n in
-			       if sign_num n = 1
+			       if Int.equal (sign_num n) 1
 			       then{cinfo with bound = (map_option divn l , map_option  divn r) }
 			       else {cinfo with pos = cinfo.neg ; neg = cinfo.pos ; bound = (map_option divn r , map_option divn l)})
 
@@ -254,7 +253,7 @@ let count v =
       | [] -> (n,p)
       | (_,vl)::v -> let sg = sign_num vl in
 		       assert (sg <> 0) ;
-	  if sg = 1 then count n (p+1) v else count (n+1) p v in
+	  if Int.equal sg 1 then count n (p+1) v else count (n+1) p v in
     count 0 0 v
 
 
@@ -306,7 +305,7 @@ let add (v1,c1)  (v2,c2)  =
   let rec xadd v1 v2  =
     match v1 , v2 with
       | (x1,n1)::v1' , (x2,n2)::v2' ->
-	  if x1 = x2
+	  if Int.equal x1 x2
 	  then
 	    let n' = (n1 // c1) +/ (n2 // c2) in
 	      if n' =/ Int 0 then xadd v1' v2'
@@ -354,7 +353,7 @@ let split x (vect: vector) info (l,m,r) =
               | Some bnd -> (vl,vect,{info with bound = Some bnd,None})::lst in
 
           let lb,rb = info.bound in
-            if sign_num vl = 1
+            if Int.equal (sign_num vl) 1
             then  (cons_bound l lb,m,cons_bound r rb)
             else (* sign_num vl = -1 *)
               (cons_bound l rb,m,cons_bound r lb)
@@ -558,7 +557,7 @@ struct
             match  l1 with
             | [] -> xpart rl (([],info)::ltl) n (info.neg+info.pos+z) p
             | (vr,vl)::rl1 ->
-		if v = vr
+		if Int.equal v vr
 		then
 		  let cons_bound lst bd =
 		    match  bd with
@@ -566,7 +565,7 @@ struct
 		      | Some bnd -> info.neg+info.pos::lst in
 
 		  let lb,rb = info.bound in
-		    if sign_num vl = 1
+		    if Int.equal (sign_num vl) 1
 		    then  xpart rl ((rl1,info)::ltl) (cons_bound n lb) z (cons_bound p rb)
 		    else  xpart rl ((rl1,info)::ltl) (cons_bound n rb) z (cons_bound p lb)
 		else
@@ -617,7 +616,7 @@ struct
   let rec unroll_until v l =
     match l with
       | [] -> (false,[])
-      | (i,_)::rl -> if i = v
+      | (i,_)::rl -> if Int.equal i v
 	then (true,rl)
 	else if i < v then unroll_until v rl else (false,l)
 
@@ -648,7 +647,7 @@ struct
 	| [] -> None
 	| (i,_)::vect ->
 	    let nb_eq = is_primal_equation_var i in
-	      if nb_eq = 2 
+	      if Int.equal nb_eq 2 
 	      then Some i else find_var vect in
 
     let rec find_eq_var eqs =
@@ -795,18 +794,18 @@ struct
       match Vect.get v v1 , Vect.get v v2 with
         | None , _ | _ , None -> None
         | Some a   , Some b   ->
-            if (sign_num a) * (sign_num b) = -1
+            if Int.equal ((sign_num a) * (sign_num b)) (-1)
             then 
 	      Some (add (p1,abs_num a) (p2,abs_num b) ,
                       {coeffs = add (v1,abs_num a) (v2,abs_num b) ;
                        op = add_op op1 op2 ;
                        cst = n1 // (abs_num a) +/ n2 // (abs_num b) })
-            else if op1 = Eq
+            else if op1 == Eq
             then Some (add (p1,minus_num (a // b)) (p2,Int 1),
                       {coeffs = add (v1,minus_num (a// b)) (v2 ,Int 1) ;
                        op     = add_op op1 op2;
                        cst    = n1 // (minus_num (a// b)) +/ n2 // (Int 1)})
-            else if op2 = Eq
+            else if op2 == Eq
 	    then
 	      Some (add (p2,minus_num (b // a)) (p1,Int 1),
                    {coeffs = add (v2,minus_num (b// a)) (v1 ,Int 1) ;

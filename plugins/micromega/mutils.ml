@@ -74,13 +74,13 @@ let rec map3 f l1 l2 l3 =
     | e1::l1 , e2::l2 , e3::l3 -> (f e1 e2 e3)::(map3 f l1 l2 l3)
     |      _   -> invalid_arg "map3"
 
-let rec is_sublist l1 l2 =
+let rec is_sublist f l1 l2 =
   match l1 ,l2 with
     | [] ,_ -> true
     | e::l1', [] -> false
     | e::l1' , e'::l2' ->
-	if e = e' then is_sublist l1' l2'
-	else is_sublist l1 l2'
+	if f e e' then is_sublist f l1' l2'
+	else is_sublist f l1 l2'
 
 let list_try_find f =
   let rec try_find_f = function
@@ -144,7 +144,7 @@ let rec rec_gcd_list c l  =
 
 let gcd_list l =
  let res = rec_gcd_list zero_big_int l in
-  if compare_big_int res zero_big_int = 0
+  if Int.equal (compare_big_int res zero_big_int) 0
   then unit_big_int else res
 
 let rats_to_ints l =
@@ -192,7 +192,7 @@ let  select_pos lpos l =
       match l with
        | []   -> failwith "select_pos"
        | e::l ->
-	  if i = j
+	  if Int.equal i j
 	  then e:: (xselect (i+1) rpos l)
 	  else xselect (i+1) lpos l in
   xselect 0 lpos l
@@ -269,19 +269,19 @@ struct
 
 
  let rec positive n =
-  if n=1 then XH
-  else if n land 1 = 1 then XI (positive (n lsr 1))
+  if Int.equal n 1 then XH
+  else if Int.equal (n land 1) 1 then XI (positive (n lsr 1))
   else  XO (positive (n lsr 1))
 
  let n nt =
   if nt < 0
   then assert false
-  else if nt = 0 then N0
+  else if Int.equal nt 0 then N0
   else Npos (positive nt)
 
  let rec index  n =
-  if n=1 then XH
-  else if n land 1 = 1 then XI (index (n lsr 1))
+  if Int.equal n 1 then XH
+  else if Int.equal (n land 1) 1 then XI (index (n lsr 1))
   else  XO (index (n lsr 1))
 
 
@@ -289,8 +289,8 @@ struct
   (*a.k.a path_of_int *)
   (* returns the list of digits of n in reverse order with initial 1 removed *)
   let rec digits_of_int n =
-   if n=1 then []
-   else (n mod 2 = 1)::(digits_of_int (n lsr 1))
+   if Int.equal n 1 then []
+   else (Int.equal (n mod 2) 1)::(digits_of_int (n lsr 1))
   in
    List.fold_right
     (fun b c -> (if b then XI c else XO c))
@@ -342,7 +342,7 @@ struct
    | [] -> 0 (* Equal *)
    | f::l ->
       let cmp = f () in
-       if cmp = 0 then compare_lexical l else cmp
+       if Int.equal cmp 0 then compare_lexical l else cmp
 
  let rec compare_list cmp l1 l2 =
   match l1 , l2 with
@@ -351,7 +351,7 @@ struct
    | _   , [] -> 1
    | e1::l1 , e2::l2 ->
       let c = cmp e1 e2 in
-       if c = 0 then compare_list cmp l1 l2 else c
+       if Int.equal c 0 then compare_list cmp l1 l2 else c
 
 (**
   * hash_list takes a hash function and a list, and computes an integer which

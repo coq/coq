@@ -76,7 +76,7 @@ let dev_form n_spec  p =
       let p = dev_form p in
       let n = C2Ml.n n in
       let rec pow n = 
-       if n = 0 
+       if Int.equal n 0 
        then Poly.constant (n_spec.number_to_num n_spec.unit)
        else Poly.product p (pow (n-1)) in
        pow n in
@@ -87,8 +87,8 @@ let monomial_to_polynomial mn =
  Monomial.fold 
   (fun v i acc -> 
      let v = Ml2C.positive v in
-     let mn = if i = 1 then Mc.PEX v else Mc.PEpow (Mc.PEX v ,Ml2C.n i) in
-       if acc = Mc.PEc (Mc.Zpos Mc.XH)
+     let mn = if Int.equal i 1 then Mc.PEX v else Mc.PEpow (Mc.PEX v ,Ml2C.n i) in
+       if Pervasives.(=) acc (Mc.PEc (Mc.Zpos Mc.XH)) (** FIXME *)
        then mn 
        else Mc.PEmul(mn,acc))
    mn 
@@ -105,10 +105,10 @@ let list_to_polynomial vars l =
   | c::l -> if c =/  (Int 0) then xtopoly p (i+1) l 
     else let c = Mc.PEc (Ml2C.bigint (numerator c)) in
     let mn = 
-     if c =  Mc.PEc (Mc.Zpos Mc.XH)
+     if Pervasives.(=) c (Mc.PEc (Mc.Zpos Mc.XH))
      then var i
      else Mc.PEmul (c,var i) in
-    let p' = if p = Mc.PEc Mc.Z0 then mn else
+    let p' = if Pervasives.(=) p (Mc.PEc Mc.Z0) then mn else
       Mc.PEadd (mn, p) in
      xtopoly p' (i+1) l in
   
@@ -116,7 +116,7 @@ let list_to_polynomial vars l =
 
 let rec fixpoint f x =
  let y' = f x in
-  if y' = x then y'
+  if Pervasives.(=) y' x then y'
   else fixpoint f y'
 
 let  rec_simpl_cone n_spec e = 
@@ -153,9 +153,9 @@ let factorise_linear_cone c =
  let factorise c1 c2 =
   match c1 , c2 with
    | Mc.PsatzMulC(x,y) , Mc.PsatzMulC(x',y') -> 
-      if x = x' then Some (Mc.PsatzMulC(x, Mc.PsatzAdd(y,y'))) else None
+      if Pervasives.(=) x x' then Some (Mc.PsatzMulC(x, Mc.PsatzAdd(y,y'))) else None
    | Mc.PsatzMulE(x,y) , Mc.PsatzMulE(x',y') -> 
-      if x = x' then Some (Mc.PsatzMulE(x, Mc.PsatzAdd(y,y'))) else None
+      if Pervasives.(=) x x' then Some (Mc.PsatzMulE(x, Mc.PsatzAdd(y,y'))) else None
    |  _     -> None in
   
  let rec rebuild_cone l pending  =
@@ -199,7 +199,7 @@ open Mfourier
 
 let constrain_monomial mn l  = 
  let coeffs = List.fold_left (fun acc p -> (Poly.get mn p)::acc) [] l in
-  if mn = Monomial.const
+  if Pervasives.(=) mn Monomial.const
   then  
    { coeffs = Vect.from_list ((Big_int unit_big_int):: (List.rev coeffs)) ; 
      op = Eq ; 
@@ -305,11 +305,11 @@ let primal l =
 
   let vect_of_poly map p =
     Poly.fold (fun mn vl (map,vect) -> 
-      if mn = Monomial.const 
+      if Pervasives.(=) mn Monomial.const 
       then (map,vect)
       else 
 	let (mn,m) = try (MonMap.find mn map,map) with Not_found -> let res = (!vr, MonMap.add mn !vr map) in incr vr ; res in
-	  (m,if sign_num vl = 0 then vect else (mn,vl)::vect)) p (map,[]) in
+	  (m,if Int.equal (sign_num vl) 0 then vect else (mn,vl)::vect)) p (map,[]) in
     
   let op_op = function Mc.NonStrict -> Ge |Mc.Equal -> Eq | _ -> raise Strict in
 
@@ -367,7 +367,7 @@ let linear_prover n_spec l  =
   let build_system n_spec l = 
     let li = List.combine l (interval 0 (List.length l -1)) in
     let (l1,l') = List.partition 
-      (fun (x,_) -> if snd x = Mc.NonEqual then true else false) li in
+      (fun (x,_) -> if Pervasives.(=) (snd x) Mc.NonEqual then true else false) li in
       List.map 
 	(fun ((x,y),i) -> match y with
              Mc.NonEqual -> failwith "cannot happen"
@@ -394,7 +394,7 @@ let make_linear_system l =
  let monomials = List.fold_left (fun acc p -> Poly.addition p acc) 
   (Poly.constant (Int 0)) l' in
  let monomials = Poly.fold 
-  (fun mn _ l -> if mn = Monomial.const then l else mn::l) monomials [] in
+  (fun mn _ l -> if Pervasives.(=) mn Monomial.const then l else mn::l) monomials [] in
   (List.map (fun (c,op) -> 
    {coeffs = Vect.from_list (List.map (fun mn ->  (Poly.get mn c)) monomials) ; 
     op = op ; 
@@ -415,7 +415,7 @@ let rec remove_assoc p x l =
  match l with [] -> [] | e::l -> if p x (fst e) then
   remove_assoc p x l else e::(remove_assoc p x l) 
 
-let eq x y = Vect.compare x y = 0
+let eq x y = Int.equal (Vect.compare x y) 0
 
 let  remove e  l  = List.fold_left (fun l x -> if eq x e then l else x::l) [] l
 
@@ -475,7 +475,7 @@ let rec scale_term t =
     let s1' = div_big_int s1 g in
     let s2' = div_big_int s2 g in
     let e = mult_big_int g (mult_big_int s1' s2') in
-     if (compare_big_int e unit_big_int) = 0
+     if Int.equal (compare_big_int e unit_big_int) 0
      then (unit_big_int, Add (y1,y2))
      else 	e, Add (Mul(Const (Big_int s2'), y1),
 		       Mul (Const (Big_int s1'), y2))
@@ -497,7 +497,7 @@ let get_index_of_ith_match f i l  =
    | [] -> failwith "bad index"
    | e::l -> if f e
      then 
-       (if j = i then res else get (j+1) (res+1) l )
+       (if Int.equal j i then res else get (j+1) (res+1) l )
      else get j (res+1) l in
   get 0 0 l
 
@@ -557,7 +557,7 @@ let  q_cert_of_pos  pos =
   | Axiom_lt i ->  Mc.PsatzIn (Ml2C.nat i)
   | Monoid l  -> product l
   | Rational_eq n | Rational_le n | Rational_lt n -> 
-     if compare_num n (Int 0) = 0 then Mc.PsatzZ else
+     if Int.equal (compare_num n (Int 0)) 0 then Mc.PsatzZ else
       Mc.PsatzC (Ml2C.q   n)
   | Square t -> Mc.PsatzSquare (term_to_q_pol  t)
   | Eqmul (t, y) -> Mc.PsatzMulC(term_to_q_pol t, _cert_of_pos y)
@@ -588,7 +588,7 @@ let  z_cert_of_pos  pos =
   | Axiom_lt i ->  Mc.PsatzIn (Ml2C.nat i)
   | Monoid l  -> product l
   | Rational_eq n | Rational_le n | Rational_lt n -> 
-     if compare_num n (Int 0) = 0 then Mc.PsatzZ else
+     if Int.equal (compare_num n (Int 0)) 0 then Mc.PsatzZ else
       Mc.PsatzC (Ml2C.bigint (big_int_of_num  n))
   | Square t -> Mc.PsatzSquare (term_to_z_pol  t)
   | Eqmul (t, y) -> 
@@ -629,7 +629,7 @@ struct
     let rec xid_of_hyp i l = 
       match l with
       | [] -> failwith "id_of_hyp"
-      | hyp'::l -> if hyp = hyp' then i else xid_of_hyp (i+1) l in
+      | hyp'::l -> if Pervasives.(=) hyp hyp' then i else xid_of_hyp (i+1) l in
       xid_of_hyp 0 l
 
 end
@@ -755,7 +755,7 @@ let check_sat (cstr,prf) =
 	  if eq_num gcd (Int 1)
 	  then Normalise(cstr,prf) 
 	  else
-	    if sign_num (mod_num cst gcd) = 0
+	    if Int.equal (sign_num (mod_num cst gcd)) 0
 	    then (* We can really normalise *)
 	      begin
 		assert (sign_num gcd >=1 ) ;
@@ -795,18 +795,18 @@ let pivot v (c1,p1) (c2,p2) =
     match Vect.get v v1 , Vect.get v v2 with
     | None , _ | _ , None -> None
     | Some a   , Some b   ->
-	if (sign_num a) * (sign_num b) = -1
+	if Int.equal ((sign_num a) * (sign_num b)) (-1)
 	then 
 	  let cv1 = abs_num b 
 	  and cv2 = abs_num a  in
 	    Some (xpivot cv1 cv2)
 	else 
-	  if op1 = Eq
+	  if op1 == Eq
           then 
 	    let cv1 = minus_num (b */ (Int (sign_num a)))
 	    and cv2 = abs_num a in
 	      Some (xpivot cv1 cv2)
-          else if op2 = Eq
+          else if op2 == Eq
 	  then
 	    let cv1 = abs_num b 
 	    and cv2 = minus_num (a */ (Int  (sign_num b))) in
@@ -829,7 +829,7 @@ let simpl_sys sys =
     Source: http://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
 *)
 let rec ext_gcd a b = 
-  if sign_big_int b = 0 
+  if Int.equal (sign_big_int b) 0 
   then (unit_big_int,zero_big_int)
   else
     let (q,r) = quomod_big_int a b in
@@ -850,7 +850,7 @@ let pp_ext_gcd a b =
 exception Result of (int * (proof * cstr_compat))
 
 let split_equations psys = 
-  List.partition (fun (c,p) -> c.op = Eq)
+  List.partition (fun (c,p) -> c.op == Eq)
 
 
 let extract_coprime (c1,p1) (c2,p2) = 
@@ -858,9 +858,9 @@ let extract_coprime (c1,p1) (c2,p2) =
     match vect1 , vect2 with
     | _ , [] | [], _ -> None
     | (v1,n1)::vect1' , (v2, n2) :: vect2' -> 
-	if v1 = v2
+	if Pervasives.(=) v1 v2
 	then 
-	  if compare_big_int (gcd_big_int (numerator n1) (numerator n2)) unit_big_int  = 0
+	  if Int.equal (compare_big_int (gcd_big_int (numerator n1) (numerator n2)) unit_big_int) 0
 	  then Some (v1,n1,n2)
 	  else 
 	    exist2 vect1' vect2'
@@ -869,7 +869,7 @@ let extract_coprime (c1,p1) (c2,p2) =
 	  then exist2 vect1' vect2
 	  else exist2 vect1 vect2' in
     
-    if c1.op = Eq && c2.op = Eq 
+    if c1.op == Eq && c2.op == Eq 
     then exist2 c1.coeffs c2.coeffs
     else None
 
@@ -926,7 +926,7 @@ let reduce_coprime psys =
 (** If there is an equation [eq] of the form 1.x + e = c, do a pivot over x with equation [eq] *)
 let reduce_unary psys = 
   let is_unary_equation (cstr,prf) = 
-    if cstr.op = Eq 
+    if cstr.op == Eq 
     then 
       try 
 	Some (fst (List.find (fun (_,n) -> n =/ (Int 1) || n=/ (Int (-1))) cstr.coeffs))
@@ -942,12 +942,12 @@ let reduce_unary psys =
 let reduce_non_lin_unary psys = 
 
   let is_unary_equation (cstr,prf) = 
-    if cstr.op = Eq 
+    if cstr.op == Eq 
     then 
       try 
 	let x = fst (List.find (fun (x,n) ->  (n =/ (Int 1) || n=/ (Int (-1))) && Monomial.is_var (LinPoly.MonT.retrieve x) ) cstr.coeffs) in
 	let x' = LinPoly.MonT.retrieve x in
-	  if List.for_all (fun (y,_) -> y = x  || snd (Monomial.div (LinPoly.MonT.retrieve y) x') = 0) cstr.coeffs 
+	  if List.for_all (fun (y,_) -> Pervasives.(=) y x  || Int.equal (snd (Monomial.div (LinPoly.MonT.retrieve y) x')) 0) cstr.coeffs 
 	  then Some x
 	  else None
       with Not_found -> None
@@ -974,7 +974,7 @@ let reduce_var_change psys =
 	       Some ((x,v),(x',numerator v'))
 	   with Not_found -> rel_prime vect in
 
-  let rel_prime (cstr,prf) =  if cstr.op = Eq then rel_prime cstr.coeffs else None in
+  let rel_prime (cstr,prf) =  if cstr.op == Eq then rel_prime cstr.coeffs else None in
 
   let (oeq,sys) = extract rel_prime psys in
     
@@ -1005,7 +1005,7 @@ let reduce_var_change psys =
 
   let reduce_pivot psys = 
     let is_equation (cstr,prf) = 
-      if cstr.op = Eq
+      if cstr.op == Eq
       then
 	try 
 	  Some (fst (List.hd cstr.coeffs))
@@ -1065,7 +1065,7 @@ let reduce_var_change psys =
     (* For lia, there are no equations => these precautions are not needed *)
     (* For nlia, there are equations => do not enumerate over equations! *)
     let all_planes sys = 
-      let (eq,ineq) = List.partition (fun c -> c.op = Eq) sys in
+      let (eq,ineq) = List.partition (fun c -> c.op == Eq) sys in
 	match eq with
 	  | [] -> List.rev_map (fun c -> c.coeffs) ineq
 	  | _  -> 
