@@ -118,6 +118,17 @@ let uppercase_id id =
 
 type kind = Term | Type | Cons | Mod
 
+module KOrd =
+struct
+  type t = kind * string
+  let compare (k1, s1) (k2, s2) =
+    let c = Pervasives.compare k1 k2 (** OK *) in
+    if c = 0 then String.compare s1 s2
+    else c
+end
+
+module KMap = Map.Make(KOrd)
+
 let upperkind = function
   | Type -> lang () == Haskell
   | Term -> false
@@ -191,14 +202,15 @@ let add_global_ids, get_global_ids =
 
 let empty_env () = [], get_global_ids ()
 
-let mktable autoclean =
-  let h = Hashtbl.create 97 in
-  if autoclean then register_cleanup (fun () -> Hashtbl.clear h);
-  (Hashtbl.replace h, Hashtbl.find h, fun () -> Hashtbl.clear h)
-
 (* We might have built [global_reference] whose canonical part is
    inaccurate. We must hence compare only the user part,
    hence using a Hashtbl might be incorrect *)
+
+let mktable_id autoclean =
+  let m = ref Id.Map.empty in
+  let clear () = m := Id.Map.empty in
+  if autoclean then register_cleanup clear;
+  (fun r v -> m := Id.Map.add r v !m), (fun r -> Id.Map.find r !m), clear
 
 let mktable_ref autoclean =
   let m = ref Refmap'.empty in
@@ -206,10 +218,16 @@ let mktable_ref autoclean =
   if autoclean then register_cleanup clear;
   (fun r v -> m := Refmap'.add r v !m), (fun r -> Refmap'.find r !m), clear
 
+let mktable_modpath autoclean =
+  let m = ref MPmap.empty in
+  let clear () = m := MPmap.empty in
+  if autoclean then register_cleanup clear;
+  (fun r v -> m := MPmap.add r v !m), (fun r -> MPmap.find r !m), clear
+
 (* A table recording objects in the first level of all MPfile *)
 
 let add_mpfiles_content,get_mpfiles_content,clear_mpfiles_content =
-  mktable false
+  mktable_modpath false
 
 let get_mpfiles_content mp =
   try get_mpfiles_content mp
@@ -255,7 +273,7 @@ let params_ren_add, params_ren_mem =
 
 type visible_layer = { mp : module_path;
 		       params : module_path list;
-		       content : ((kind*string),Label.t) Hashtbl.t }
+		       mutable content : Label.t KMap.t; }
 
 let pop_visible, push_visible, get_visible =
   let vis = ref [] in
@@ -269,14 +287,16 @@ let pop_visible, push_visible, get_visible =
 	  if get_phase () == Impl && modular () && is_modfile v.mp
 	  then add_mpfiles_content v.mp v.content
   and push mp mps =
-    vis := { mp = mp; params = mps; content = Hashtbl.create 97 } :: !vis
+    vis := { mp = mp; params = mps; content = KMap.empty } :: !vis
   and get () = !vis
   in (pop,push,get)
 
 let get_visible_mps () = List.map (function v -> v.mp) (get_visible ())
 let top_visible () = match get_visible () with [] -> assert false | v::_ -> v
 let top_visible_mp () = (top_visible ()).mp
-let add_visible ks l = Hashtbl.add (top_visible ()).content ks l
+let add_visible ks l =
+  let visible = top_visible () in
+  visible.content <- KMap.add ks l visible.content
 
 (* table of local module wrappers used to provide non-ambiguous names *)
 
@@ -328,7 +348,7 @@ let modular_rename k id =
     with unique numbers *)
 
 let modfstlev_rename =
-  let add_prefixes,get_prefixes,_ = mktable true in
+  let add_prefixes,get_prefixes,_ = mktable_id true in
   fun l ->
     let coqid = Id.of_string "Coq" in
     let id = Label.to_id l in
@@ -369,7 +389,7 @@ let rec mp_renaming_fun mp = match mp with
 (* ... and its version using a cache *)
 
 and mp_renaming =
-  let add,get,_ = mktable true in
+  let add,get,_ = mktable_modpath true in
   fun x ->
     try if is_mp_bound (base_mp x) then raise Not_found; get x
     with Not_found -> let y = mp_renaming_fun x in add x y; y
@@ -414,7 +434,7 @@ let rec clash mem mp0 ks = function
   | _ :: mpl -> clash mem mp0 ks mpl
 
 let mpfiles_clash mp0 ks =
-  clash (fun mp -> Hashtbl.mem (get_mpfiles_content mp)) mp0 ks
+  clash (fun mp k -> KMap.mem k (get_mpfiles_content mp)) mp0 ks
     (List.rev (mpfiles_list ()))
 
 let rec params_lookup mp0 ks = function
@@ -432,7 +452,7 @@ let visible_clash mp0 ks =
     | [] -> false
     | v :: _ when ModPath.equal v.mp mp0 -> false
     | v :: vis ->
-	let b = Hashtbl.mem v.content ks in
+	let b = KMap.mem ks v.content in
 	if b && not (is_mp_bound mp0) then true
 	else begin
 	  if b then params_ren_add mp0;
@@ -448,7 +468,7 @@ let visible_clash_dbg mp0 ks =
     | [] -> None
     | v :: _ when ModPath.equal v.mp mp0 -> None
     | v :: vis ->
-	try Some (v.mp,Hashtbl.find v.content ks)
+	try Some (v.mp,KMap.find ks v.content)
 	with Not_found ->
 	  if params_lookup mp0 ks v.params then None
 	  else clash vis
@@ -468,7 +488,7 @@ let opened_libraries () =
     let to_open =
       List.filter
 	(fun mp ->
-	   not (List.exists (Hashtbl.mem (get_mpfiles_content mp)) used_ks))
+	   not (List.exists (fun k -> KMap.mem k (get_mpfiles_content mp)) used_ks))
 	used_files
     in
     mpfiles_clear ();

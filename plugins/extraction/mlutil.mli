@@ -67,6 +67,7 @@ val type_to_signature : abbrev_map -> ml_type -> signature
 val type_expunge : abbrev_map -> ml_type -> ml_type
 val type_expunge_from_sign : abbrev_map -> signature -> ml_type -> ml_type
 
+val eq_ml_type : ml_type -> ml_type -> bool
 val isDummy : ml_type -> bool
 val isKill : sign -> bool
 

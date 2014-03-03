@@ -53,6 +53,22 @@ let new_meta _ =
   incr meta_count;
   Tmeta {id = !meta_count; contents = None}
 
+let rec eq_ml_type t1 t2 = match t1, t2 with
+| Tarr (tl1, tr1), Tarr (tl2, tr2) ->
+  eq_ml_type tl1 tl2 && eq_ml_type tr1 tr2
+| Tglob (gr1, t1), Tglob (gr2, t2) ->
+  eq_gr gr1 gr2 && List.equal eq_ml_type t1 t2
+| Tvar i1, Tvar i2 -> Int.equal i1 i2
+| Tvar' i1, Tvar' i2 -> Int.equal i1 i2
+| Tmeta m1, Tmeta m2 -> eq_ml_meta m1 m2
+| Tdummy k1, Tdummy k2 -> k1 == k2
+| Tunknown, Tunknown -> true
+| Taxiom, Taxiom -> true
+| _ -> false
+
+and eq_ml_meta m1 m2 =
+ Int.equal m1.id m2.id && Option.equal eq_ml_type m1.contents m2.contents
+
 (* Simultaneous substitution of [[Tvar 1; ... ; Tvar n]] by [l] in a ML type. *)
 
 let type_subst_list l t =
@@ -341,6 +357,54 @@ let type_expunge env t =
 (*S Generic functions over ML ast terms. *)
 
 let mlapp f a = if List.is_empty a then f else MLapp (f,a)
+
+(** Equality *)
+
+let eq_ml_ident i1 i2 = match i1, i2 with
+| Dummy, Dummy -> true
+| Id id1, Id id2 -> Id.equal id1 id2
+| Tmp id1, Tmp id2 -> Id.equal id1 id2
+| _ -> false
+
+let rec eq_ml_ast t1 t2 = match t1, t2 with
+| MLrel i1, MLrel i2 ->
+  Int.equal i1 i2
+| MLapp (f1, t1), MLapp (f2, t2) ->
+  eq_ml_ast f1 f2 && List.equal eq_ml_ast t1 t2
+| MLlam (na1, t1), MLlam (na2, t2) ->
+  eq_ml_ident na1 na2 && eq_ml_ast t1 t2
+| MLletin (na1, c1, t1), MLletin (na2, c2, t2) ->
+  eq_ml_ident na1 na2 && eq_ml_ast c1 c2 && eq_ml_ast t1 t2
+| MLglob gr1, MLglob gr2 -> eq_gr gr1 gr2
+| MLcons (t1, gr1, c1), MLcons (t2, gr2, c2) ->
+  eq_ml_type t1 t2 && eq_gr gr1 gr2 && List.equal eq_ml_ast c1 c2
+| MLtuple t1, MLtuple t2 ->
+  List.equal eq_ml_ast t1 t2
+| MLcase (t1, c1, p1), MLcase (t2, c2, p2) ->
+  eq_ml_type t1 t2 && eq_ml_ast c1 c2 && Array.equal eq_ml_branch p1 p2
+| MLfix (i1, id1, t1), MLfix (i2, id2, t2) ->
+  Int.equal i1 i2 && Array.equal Id.equal id1 id2 && Array.equal eq_ml_ast t1 t2
+| MLexn e1, MLexn e2 -> String.equal e1 e2
+| MLdummy, MLdummy -> true
+| MLaxiom, MLaxiom -> true
+| MLmagic t1, MLmagic t2 -> eq_ml_ast t1 t2
+| _ -> false
+
+and eq_ml_pattern p1 p2 = match p1, p2 with
+| Pcons (gr1, p1), Pcons (gr2, p2) ->
+  eq_gr gr1 gr2 && List.equal eq_ml_pattern p1 p2
+| Ptuple p1, Ptuple p2 ->
+  List.equal eq_ml_pattern p1 p2
+| Prel i1, Prel i2 ->
+  Int.equal i1 i2
+| Pwild, Pwild -> true
+| Pusual gr1, Pusual gr2 -> eq_gr gr1 gr2
+| _ -> false
+
+and eq_ml_branch (id1, p1, t1) (id2, p2, t2) =
+  List.equal eq_ml_ident id1 id2 &&
+  eq_ml_pattern p1 p2 &&
+  eq_ml_ast t1 t2
 
 (*s [ast_iter_rel f t] applies [f] on every [MLrel] in t. It takes care
    of the number of bingings crossed before reaching the [MLrel]. *)
@@ -708,7 +772,7 @@ let branch_as_fun typ (l,p,c) =
 	if i'<1 then c
 	else if i'>nargs then MLrel (i-nargs+1)
 	else raise Impossible
-    | MLcons _ as cons' when Pervasives.(=) cons' (ast_lift n cons) -> MLrel (n+1) (*FIXME*)
+    | MLcons _ as cons' when eq_ml_ast cons' (ast_lift n cons) -> MLrel (n+1)
     | a -> ast_map_lift genrec n a
   in genrec 0 c
 
@@ -737,22 +801,28 @@ let branch_as_cst (l,_,c) =
    element and its positions. *)
 
 let census_add, census_max, census_clean =
-  let h = Hashtbl.create 13 in
-  let clear () = Hashtbl.clear h in
-  let add e i =
-    let s = try Hashtbl.find h e with Not_found -> Int.Set.empty in
-    Hashtbl.replace h e (Int.Set.add i s)
+  let h = ref [] in
+  let clearf () = h := [] in
+  let rec add k v = function
+  | [] -> raise Not_found
+  | (k', s) as p :: l ->
+    if eq_ml_ast k k' then (k', Int.Set.add v s) :: l
+    else p :: add k v l
   in
-  let max e0 =
-    let len = ref 0 and lst = ref Int.Set.empty and elm = ref e0 in
-    Hashtbl.iter
-      (fun e s ->
+  let addf k i =
+    try h := add k i !h
+    with Not_found -> h := (k, Int.Set.singleton i) :: !h
+  in
+  let maxf k =
+    let len = ref 0 and lst = ref Int.Set.empty and elm = ref k in
+    List.iter
+      (fun (e, s) ->
 	 let n = Int.Set.cardinal s in
 	 if n > !len then begin len := n; lst := s; elm := e end)
-      h;
+      !h;
     (!elm,!lst)
   in
-  (add,max,clear)
+  (addf,maxf,clearf)
 
 (* [factor_branches] return the longest possible list of branches
    that have the same factorization, either as a function or as a
@@ -1142,7 +1212,7 @@ let normalize a =
   let o = optims () in
   let rec norm a =
     let a' = if o.opt_kill_dum then kill_dummy (simpl o a) else simpl o a in
-    if Pervasives.(=) a a' then a else norm a' (** FIXME *)
+    if eq_ml_ast a a' then a else norm a'
   in norm a
 
 (*S Special treatment of fixpoint for pretty-printing purpose. *)
@@ -1257,7 +1327,7 @@ let rec non_stricts add cand = function
 	   let n = List.length i in
 	   let cand = lift n cand in
 	   let cand = pop n (non_stricts add cand t) in
-	   List.merge Pervasives.compare cand c) [] v
+	   List.merge Int.compare cand c) [] v
 	(* [merge] may duplicates some indices, but I don't mind. *)
   | MLmagic t ->
       non_stricts add cand t

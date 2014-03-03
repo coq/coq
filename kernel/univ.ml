@@ -653,6 +653,7 @@ type constraints = Constraint.t
 
 let empty_constraint = Constraint.empty
 let is_empty_constraint = Constraint.is_empty
+let eq_constraint = Constraint.equal
 
 let union_constraints = Constraint.union
 

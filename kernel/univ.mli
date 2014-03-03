@@ -97,6 +97,7 @@ val empty_constraint : constraints
 val union_constraints : constraints -> constraints -> constraints
 
 val is_empty_constraint : constraints -> bool
+val eq_constraint : constraints -> constraints -> bool
 
 type constraint_function = universe -> universe -> constraints -> constraints
 

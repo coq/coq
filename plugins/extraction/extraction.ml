@@ -206,8 +206,13 @@ let oib_equal o1 o2 =
   | Monomorphic {mind_user_arity=c1; mind_sort=s1},
     Monomorphic {mind_user_arity=c2; mind_sort=s2} ->
       eq_constr c1 c2 && Sorts.equal s1 s2
-  | ma1, ma2 -> Pervasives.(=) ma1 ma2 (** FIXME: this one is surely wrong *) end &&
-    Array.equal Id.equal o1.mind_consnames o2.mind_consnames
+  | Polymorphic p1, Polymorphic p2 ->
+    let eq o1 o2 = Option.equal Univ.Universe.equal o1 o2 in
+    List.equal eq p1.poly_param_levels p2.poly_param_levels &&
+    Univ.Universe.equal p1.poly_level p2.poly_level
+  | Monomorphic _, Polymorphic _ | Polymorphic _, Monomorphic _ -> false
+  end &&
+  Array.equal Id.equal o1.mind_consnames o2.mind_consnames
 
 let mib_equal m1 m2 =
   Array.equal oib_equal m1.mind_packets m1.mind_packets &&
@@ -218,7 +223,7 @@ let mib_equal m1 m2 =
   Int.equal m1.mind_nparams m2.mind_nparams &&
   Int.equal m1.mind_nparams_rec m2.mind_nparams_rec &&
   List.equal eq_rel_declaration m1.mind_params_ctxt m2.mind_params_ctxt &&
-  Pervasives.(=) m1.mind_constraints m2.mind_constraints (** FIXME *)
+  Univ.eq_constraint m1.mind_constraints m2.mind_constraints
 
 (*S Extraction of a type. *)
 
@@ -292,7 +297,7 @@ let rec extract_type env db j c args =
 		      (* The more precise is [mlt'], extracted after reduction *)
 		      (* The shortest is [mlt], which use abbreviations *)
 		      (* If possible, we take [mlt], otherwise [mlt']. *)
-		      if Pervasives.(=) (expand env mlt) (expand env mlt') then mlt else mlt') (** FIXME *)
+		      if eq_ml_type (expand env mlt) (expand env mlt') then mlt else mlt')
 	   | (Info, Default) ->
                (* Not an ML type, for example [(c:forall X, X->X) Type nat] *)
 	       (match cb.const_body with
