@@ -21,12 +21,21 @@ struct
 	| Some(l,n),None -> 1
 	| None, Some(l,n) -> -1
   end
-  module X_tries = struct
+  module XZOrd = struct
     type t = X.t * Z.t
     let compare (x1,x2) (y1,y2) =
       let m = (X.compare x1 y1) in
       if Int.equal m 0 then (Z.compare x2 y2) else
 	m
+  end
+  module XZ = Set.Make(XZOrd)
+  module X_tries =
+  struct
+    type t = XZ.t
+    let nil = XZ.empty
+    let is_nil = XZ.is_empty
+    let add = XZ.union
+    let sub = XZ.diff
   end
 
   module Trie = Trie.Make(Y_tries)(X_tries)
@@ -88,15 +97,15 @@ prefix ordering, [dna] is the function returning the main node of a pattern *)
 		 (tm_of tm (Some(lbl,List.length v))) v)
 	| Everything -> skip_arg 1 tm
     in
-    List.flatten (List.map (fun (tm,b) -> Trie.get tm) (lookrec t tm))
+    List.flatten (List.map (fun (tm,b) -> XZ.elements (Trie.get tm)) (lookrec t tm))
 
   let add tm dna (pat,inf) =
-    let p = path_of dna pat in Trie.add p (pat, inf) tm
+    let p = path_of dna pat in Trie.add p (XZ.singleton (pat, inf)) tm
 
   let rmv tm dna (pat,inf) =
-    let p = path_of dna pat in Trie.remove p (pat, inf) tm
+    let p = path_of dna pat in Trie.remove p (XZ.singleton (pat, inf)) tm
 
-  let app f tm = Trie.iter (fun _ p -> f p) tm
+  let app f tm = Trie.iter (fun _ p -> XZ.iter f p) tm
 
 end
 

@@ -26,7 +26,7 @@ sig
   val empty : t
   (** The empty trie. *)
 
-  val get : t -> data list
+  val get : t -> data
   (** Get the data at the current node. *)
 
   val next : t -> label -> t
@@ -47,6 +47,15 @@ sig
 
 end
 
-module Make (Label : Set.OrderedType) (Data : Set.OrderedType) : S
+module type Grp =
+sig
+  type t
+  val nil : t
+  val is_nil : t -> bool
+  val add : t -> t -> t
+  val sub : t -> t -> t
+end
+
+module Make (Label : Set.OrderedType) (Data : Grp) : S
   with type label = Label.t and type data = Data.t
 (** Generating functor, for a given type of labels and data. *)
