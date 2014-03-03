@@ -2012,11 +2012,16 @@ let get_current_proof_name () =
   Option.map unmangle (proofname (VCS.current_branch ()))
 
 let get_script prf =
+  let branch, test =
+    match prf with
+    | None -> VCS.Branch.master, fun _ -> true
+    | Some name -> VCS.current_branch (),  List.mem name in
   let rec find acc id =
-    if Stateid.equal id Stateid.initial || Stateid.equal id Stateid.dummy then acc else
+    if Stateid.equal id Stateid.initial ||
+       Stateid.equal id Stateid.dummy then acc else
     let view = VCS.visit id in
     match view.step with
-    | `Fork (_,_,_,ns) when List.mem prf ns -> acc
+    | `Fork (_,_,_,ns) when test ns -> acc
     | `Qed (qed, proof) -> find [qed.qast.expr, (VCS.get_info id).n_goals] proof
     | `Sideff (`Ast (x,_)) ->
          find ((x.expr, (VCS.get_info id).n_goals)::acc) view.next
@@ -2025,7 +2030,7 @@ let get_script prf =
     | `Alias id -> find acc id
     | `Fork _ -> find acc view.next
     in
-  find [] (VCS.get_branch_pos VCS.Branch.master)
+  find [] (VCS.get_branch_pos branch)
 
 (* indentation code for Show Script, initially contributed
    by D. de Rauglaudre *)
@@ -2074,17 +2079,18 @@ let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
 let show_script ?proof () =
   try
     let prf =
-      match proof with
-      | None -> Pfedit.get_current_proof_name ()
-      | Some (p,_) -> p.Proof_global.id in
+      try match proof with
+      | None -> Some (Pfedit.get_current_proof_name ())
+      | Some (p,_) -> Some (p.Proof_global.id)
+      with Proof_global.NoCurrentProof -> None
+    in
     let cmds = get_script prf in
     let _,_,_,indented_cmds =
       List.fold_left indent_script_item ((1,[]),false,[],[]) cmds
     in
     let indented_cmds = List.rev (indented_cmds) in
     msg_notice (v 0 (Pp.prlist_with_sep Pp.fnl (fun x -> x) indented_cmds))
-  with Proof_global.NoCurrentProof -> ()
-  | Vcs_aux.Expired -> ()
+  with Vcs_aux.Expired -> ()
 
 let () = Vernacentries.show_script := show_script
 
