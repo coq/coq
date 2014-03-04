@@ -1253,114 +1253,11 @@ let build_ui () =
   let _ = Glib.Timeout.add ~ms:300 ~callback in
 
   (* Pending proofs.  It should be with a GtkSpinner... not bound *)
-  let slaveinfobut = GButton.button () in
   let slaveinfo = GMisc.label ~xalign:0.5 ~width:50 () in
-  let () = lower_hbox#pack slaveinfobut#coerce in
-  let () = slaveinfobut#add slaveinfo#coerce in
-  let () = slaveinfobut#misc#set_has_tooltip true in
-  let () = slaveinfobut#misc#set_tooltip_markup
+  let () = lower_hbox#pack slaveinfo#coerce in
+  let () = slaveinfo#misc#set_has_tooltip true in
+  let () = slaveinfo#misc#set_tooltip_markup
     "Proofs to be checked / Errors" in
-  let int_assoc s l =
-    match List.assoc s l with `IntC c -> c | _ -> assert false in
-  let string_assoc s l =
-    match List.assoc s l with `StringC c -> c | _ -> assert false in
-  let make_table_widget cd cb =
-    let frame = GBin.scrolled_window ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC () in
-    let columns, store =
-      let cols = new GTree.column_list in
-      let columns = List.map (function
-        | (`Int,n,_)    -> n, `IntC (cols#add Gobject.Data.int)
-        | (`String,n,_) -> n, `StringC (cols#add Gobject.Data.string))
-      cd in
-      columns, GTree.list_store cols in
-    let data = GTree.view
-        ~vadjustment:frame#vadjustment ~hadjustment:frame#hadjustment
-        ~rules_hint:true ~headers_visible:false
-        ~model:store ~packing:frame#add () in
-    let () = data#set_headers_visible true in
-    let mk_rend c = GTree.cell_renderer_text [], ["text",c] in
-    let cols =
-      List.map2 (fun (_,c) (_,n,v) ->
-        let c = match c with
-          | `IntC c -> GTree.view_column ~renderer:(mk_rend c) ()
-          | `StringC c -> GTree.view_column ~renderer:(mk_rend c) () in
-        c#set_title n;
-        c#set_visible v;
-        c#set_sizing `AUTOSIZE;
-        c)
-      columns cd in
-    List.iter (fun c -> ignore(data#append_column c)) cols;
-    ignore(
-      data#connect#row_activated ~callback:(fun tp vc -> cb columns store tp vc)
-    );
-    frame, (fun f -> f columns store) in
-  let errwin, fill_errwin =
-    let obj = GWindow.window ~title:"Errors & Workers status" ~deletable:true
-      ~position:`CENTER_ON_PARENT ~show:false ~width:500 ~height:400 () in
-    let table_errs, access_errs =
-      make_table_widget
-        [`Int,"Line",true; `String,"Error message",true; `Int,"Tab no",false]
-        (fun columns store tp vc ->
-          let row = store#get_iter tp in
-          let lno = store#get ~row ~column:(int_assoc "Line" columns) in
-          let tabno = store#get ~row ~column:(int_assoc "Tab no" columns) in
-          let sn = notebook#get_nth_term tabno in
-          let where = sn.script#buffer#get_iter (`LINE (lno-1)) in
-          sn.buffer#place_cursor ~where;
-          ignore(sn.script#scroll_to_iter
-            ~use_align:false ~yalign:0.75 ~within_margin:0.25 where)) in
-    let table_jobs, access_jobs =
-      make_table_widget
-        [`Int,"Worker",true; `String,"Job name",true; `Int,"Tab no",false]
-        (fun columns store tp vc -> 
-          let row = store#get_iter tp in
-          let w = store#get ~row ~column:(int_assoc "Worker" columns) in
-          let tabno = store#get ~row ~column:(int_assoc "Tab no" columns) in
-          let sn = notebook#get_nth_term tabno in
-          send_to_coq_aux (fun sn -> sn.coqops#stop_worker w) sn
-        ) in
-    let tip = GMisc.label ~text:"Double click to jump to error line" () in
-    let nb = GPack.notebook ~packing:obj#add () in
-    let vb = GPack.vbox ~homogeneous:false () in
-    let () = vb#pack ~expand:true table_errs#coerce in
-    let () = vb#pack ~expand:false ~padding:2 tip#coerce in
-    let add_page text w =
-      nb#append_page ~tab_label:(GMisc.label ~text ())#coerce w#coerce in
-    let _ = add_page "Errors" vb in
-    let vb = GPack.vbox ~homogeneous:false () in
-    let tip = GMisc.label ~text:"Double click to interrupt worker" () in
-    let () = vb#pack ~expand:true table_jobs#coerce in
-    let () = vb#pack ~expand:false ~padding:2 tip#coerce in
-    let _ = add_page "Workers" vb in
-    obj, (let last_update = ref (0,[],Int.Map.empty) in
-          fun tabno errs jobs ->
-            if !last_update = (tabno,errs,jobs) then ()
-            else begin
-              last_update := tabno,errs,jobs;
-              access_errs (fun _ store -> store#clear ());
-              List.iter (fun (lno, msg) -> access_errs (fun columns store ->
-                let line = store#append () in
-                store#set line (int_assoc "Line" columns) lno;
-                store#set line (string_assoc "Error message" columns) msg;
-                store#set line (int_assoc "Tab no" columns) tabno))
-              errs;
-              access_jobs (fun _ store -> store#clear ());
-              Int.Map.iter (fun id job -> access_jobs (fun columns store ->
-                let line = store#append () in
-                store#set line (int_assoc "Worker" columns) id;
-                store#set line (string_assoc "Job name" columns) job))
-              jobs;
-            end)
-  in
-  let () = errwin#set_transient_for w#as_window in
-  let _ = errwin#event#connect#delete
-    ~callback:(fun _ -> errwin#misc#hide (); true) in
-  let update_errwin () =
-    on_current_term (fun sn ->
-      fill_errwin (notebook#term_num (==) sn)
-        sn.coqops#get_errors
-        (Util.pi3 sn.coqops#get_slaves_status)) in
-  let _ = slaveinfobut#connect#clicked ~callback:errwin#present in
   let update sn =
     let processed, to_process, jobs = sn.coqops#get_slaves_status in
     let missing = to_process - processed in
@@ -1371,7 +1268,8 @@ let build_ui () =
     else
       slaveinfo#set_text (Printf.sprintf "%d / %d" missing n_err);
     slaveinfo#set_use_markup true;
-    if errwin#misc#visible then update_errwin () in
+    sn.errpage#update sn.coqops#get_errors;
+    sn.jobpage#update (Util.pi3 sn.coqops#get_slaves_status) in
   let callback () = on_current_term update; true in
   let _ = Glib.Timeout.add ~ms:300 ~callback in
 
