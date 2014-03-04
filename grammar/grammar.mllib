@@ -1,6 +1,9 @@
 Coq_config
 
 Hook
+Hashset
+Hashcons
+CSet
 CMap
 Int
 Option
@@ -12,8 +15,6 @@ Flags
 Pp
 Loc
 Errors
-Hashset
-Hashcons
 CList
 CString
 CArray

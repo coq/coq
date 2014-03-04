@@ -59,6 +59,10 @@ val (@) : 'a list -> 'a list -> 'a list
 
 module Array : CArray.ExtS
 
+(** {6 Sets. } *)
+
+module Set : module type of CSet
+
 (** {6 Maps. } *)
 
 module Map : module type of CMap

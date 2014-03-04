@@ -1,6 +1,9 @@
 Coq_config
 
 Hook
+Hashset
+Hashcons
+CSet
 CMap
 Int
 Option
@@ -15,8 +18,6 @@ Segmenttree
 Unicodetable
 Unicode
 Errors
-Hashset
-Hashcons
 CObj
 CList
 CString

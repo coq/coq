@@ -65,6 +65,10 @@ let (@) = CList.append
 
 module Array : CArray.ExtS = CArray
 
+(* Sets *)
+
+module Set = CSet
+
 (* Maps *)
 
 module Map = CMap
