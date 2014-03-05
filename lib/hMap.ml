@@ -258,6 +258,10 @@ struct
 
   let max_binding _ = assert false (** Cannot be implemented efficiently *)
 
+  let fold_left _ _ _ = assert false (** Cannot be implemented efficiently *)
+
+  let fold_right _ _ _ = assert false (** Cannot be implemented efficiently *)
+
   let choose s =
     let (_, m) = Int.Map.choose s in
     Map.choose m
@@ -294,5 +298,20 @@ struct
     let m = Int.Map.find h s in
     let m = Map.update k x m in
     Int.Map.update h m s
+
+  let smartmap f s =
+    let fs m = Map.smartmap f m in
+    Int.Map.smartmap fs s
+
+  let smartmapi f s =
+    let fs m = Map.smartmapi f m in
+    Int.Map.smartmap fs s
+
+  module Unsafe =
+  struct
+    let map f s =
+      let fs m = Map.Unsafe.map f m in
+      Int.Map.map fs s
+  end
 
 end
