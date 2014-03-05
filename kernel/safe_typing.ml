@@ -406,7 +406,7 @@ let end_module l restype senv =
   in
   let newenv = oldsenv.env in
   let newenv = set_engagement_opt senv.engagement newenv in
-  let senv'= {senv with env=newenv} in
+  let senv'= {senv with env = newenv; univ = cst} in
   let senv' =
     List.fold_left
       (fun env (_,mb) -> full_add_module mb env) 
