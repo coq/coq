@@ -115,32 +115,12 @@ let _ = Errors.register_handler begin function
   | NoSuchProof -> Errors.error "No such proof."
   | _ -> raise Errors.Unhandled
 end
-let extract id l =
-  let rec aux = function
-    | ({pid = id' } as np)::l when Id.equal id id' -> (np,l)
-    | np::l -> let (np', l) = aux l in (np' , np::l)
-    | [] -> raise NoSuchProof
-  in
-  let (np,l') = aux !l in
-  l := l';
-  update_proof_mode ();
-  np
 
 exception NoCurrentProof
 let _ = Errors.register_handler begin function
   | NoCurrentProof -> Errors.error "No focused proof (No proof-editing in progress)."
   | _ -> raise Errors.Unhandled
 end
-let extract_top l =
-  match !l with
-  | np::l' -> l := l' ; update_proof_mode (); np
-  | [] -> raise NoCurrentProof
-
-(* combinators for the proof_info map *)
-let add id info m =
-  m := Id.Map.add id info !m
-let remove id m =
-  m := Id.Map.remove id !m
 
 (*** Proof Global manipulation ***)
 
@@ -232,12 +212,6 @@ let activate_proof_mode mode =
   Ephemeron.iter_opt (find_proof_mode mode) (fun x -> x.set ())
 let disactivate_proof_mode mode =
   Ephemeron.iter_opt (find_proof_mode mode) (fun x -> x.reset ())
-
-exception AlreadyExists
-let _ = Errors.register_handler begin function
-  | AlreadyExists -> Errors.error "Already editing something of that name."
-  | _ -> raise Errors.Unhandled
-end
 
 (** [start_proof id str goals terminator] starts a proof of name [id]
     with goals [goals] (a list of pairs of environment and

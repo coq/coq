@@ -18,7 +18,6 @@ open Reduction
 open Tacticals
 open Tacmach
 open Tactics
-open Patternops
 open Clenv
 open Typeclasses
 open Typeclasses_errors
@@ -127,10 +126,6 @@ let new_cstr_evar (evd,cstrs) env t =
   let evd', t = Evarutil.new_evar evd env t in
     (evd', Evar.Set.add (fst (destEvar t)) cstrs), t
 
-let new_goal_evar (evd,cstrs) env t =
-  let evd', t = Evarutil.new_evar evd env t in
-    (evd', cstrs), t
-
 (** Building or looking up instances. *)
 
 let proper_proof env evars carrier relation x =
@@ -224,9 +219,6 @@ let is_applied_rewrite_relation env sigma rels t =
 		Some (it_mkProd_or_LetIn t rels)
 	  with e when Errors.noncritical e -> None)
   | _ -> None
-
-let _ =
-  Hook.set Equality.is_applied_rewrite_relation is_applied_rewrite_relation
 
 let rec decompose_app_rel env evd t =
   match kind_of_term t with
@@ -541,10 +533,6 @@ type 'a pure_strategy = 'a -> Environ.env -> Id.t list -> constr -> types ->
 
 type strategy = unit pure_strategy
 
-let get_rew_rel r = match r.rew_prf with
-  | RewPrf (rel, prf) -> rel
-  | RewCast c -> mkApp (Coqlib.build_coq_eq (), [| r.rew_car; r.rew_from; r.rew_to |])
-
 let get_rew_prf r = match r.rew_prf with
   | RewPrf (rel, prf) -> rel, prf
   | RewCast c ->
@@ -716,12 +704,6 @@ let fold_match ?(force=false) env sigma c =
       applist (mkConst sk, pars @ [pred] @ meths @ args @ [c])
   in
     sk, (if exists then env else reset_env env), app, eff
-
-let fold_match_tac c gl =
-  let _, _, c', eff = fold_match ~force:true (pf_env gl) (project gl) c in
-   tclTHEN (Tactics.emit_side_effects eff)
-    (change (Some (snd (pattern_of_constr (project gl) c))) c' onConcl) gl
-
 
 let unfold_match env sigma sk app =
   match kind_of_term app with
@@ -1044,23 +1026,6 @@ module Strategies =
 	      state, Info { rew_car = ty; rew_from = t; rew_to = t';
 			   rew_prf = RewCast ckind; rew_evars = evars }
 
-    let fold c : 'a pure_strategy =
-      fun state env avoid t ty cstr evars ->
-(* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
-	let sigma, c = Constrintern.interp_open_constr (goalevars evars) env c in
-	let unfolded =
-	  try Tacred.try_red_product env sigma c
-	  with e when Errors.noncritical e ->
-            error "fold: the term is not unfoldable !"
-	in
-	  try
-	    let sigma = Unification.w_unify env sigma CONV ~flags:Unification.elim_flags unfolded t in
-	    let c' = Evarutil.nf_evar sigma c in
-	      state, Info { rew_car = ty; rew_from = t; rew_to = c';
-			   rew_prf = RewCast DEFAULTcast;
-			   rew_evars = sigma, cstrevars evars }
-	  with e when Errors.noncritical e -> state, Fail
-
     let fold_glob c : 'a pure_strategy =
       fun state env avoid t ty cstr evars ->
 (* 	let sigma, (c,_) = Tacinterp.interp_open_constr_with_bindings is env (goalevars evars) c in *)
@@ -1114,10 +1079,6 @@ let solve_constraints env evars =
 
 let nf_zeta =
   Reductionops.clos_norm_flags (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
-
-let map_rewprf f = function
-  | RewPrf (rel, prf) -> RewPrf (f rel, f prf)
-  | RewCast c -> RewCast c
 
 exception RewriteFailure of std_ppcmds
 
@@ -1214,8 +1175,6 @@ let cl_rewrite_clause_tac ?abs strat clause gl =
 
 let bind_gl_info f =
   bind concl (fun c -> bind env (fun v -> bind defs (fun ev -> f c v ev)))
-
-let fail l s = Refiner.tclFAIL l s
 
 let new_refine c : Goal.subgoals Goal.sensitive =
   let refable = Goal.Refinable.make
@@ -1328,14 +1287,6 @@ let cl_rewrite_clause_strat strat clause =
 
 let cl_rewrite_clause l left2right occs clause gl =
   cl_rewrite_clause_strat (rewrite_with left2right (general_rewrite_unif_flags ()) l occs) clause gl
-
-
-let occurrences_of = function
-  | n::_ as nl when n < 0 -> (false,List.map abs nl)
-  | nl ->
-      if List.exists (fun n -> n < 0) nl then
-	error "Illegal negative occurrence number.";
-      (true,nl)
 
 let apply_glob_constr c l2r occs = fun () env avoid t ty cstr evars ->
   let evd, c = (Pretyping.understand_tcc (goalevars evars) env c) in

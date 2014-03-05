@@ -25,10 +25,6 @@ exception Marshal_error
 
 (** Utility functions *)
 
-let rec has_flag (f : string) = function
-  | [] -> false
-  | (k, _) :: l -> CString.equal k f || has_flag f l
-
 let rec get_attr attr = function
   | [] -> raise Not_found
   | (k, v) :: l when CString.equal k attr -> v
@@ -186,13 +182,6 @@ let to_state_id xml =
 let of_edit_or_state_id = function
   | Interface.Edit id -> ["object","edit"], of_edit_id id
   | Interface.State id -> ["object","state"], of_state_id id
-let to_edit_or_state_id attrs xml =
-  try
-    let obj = get_attr "object" attrs in
-    if obj = "edit"then Interface.Edit (to_edit_id xml)
-    else if obj = "state" then Interface.State (to_state_id xml)
-    else raise Marshal_error
-  with Not_found -> raise Marshal_error
 
 let of_value f = function
 | Good x -> Element ("value", ["val", "good"], [f x])
@@ -410,7 +399,6 @@ module ReifType : sig (* {{{ *)
   type value_type
   val erase         : 'a val_t -> value_type
   val print_type    : value_type -> string
-  val same_type     : 'a val_t -> value_type -> bool
 
   val document_type_encoding : (xml -> string) -> unit
 
@@ -432,7 +420,6 @@ end = struct
   type 'a val_t = value_type
   
   let erase (x : 'a val_t) : value_type = x
-  let same_type (x : 'a val_t) (y : value_type) = Pervasives.compare (erase x) y = 0
 
   let unit_t         = Unit
   let string_t       = String

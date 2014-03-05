@@ -416,9 +416,6 @@ type one_inductive_impls =
   Impargs.manual_explicitation list (* for inds *)*
   Impargs.manual_explicitation list list (* for constrs *)
 
-type one_inductive_expr =
-  lident * local_binder list * constr_expr option * constructor_expr list
-
 let do_mutual_inductive indl finite =
   let indl,coes,ntns = extract_mutual_inductive_declaration_components indl in
   (* Interpret the types *)

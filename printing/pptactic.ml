@@ -286,8 +286,6 @@ let pr_raw_alias prc prlc prtac prpat =
   pr_alias_gen (pr_raw_generic prc prlc prtac prpat pr_reference)
 let pr_glob_alias prc prlc prtac prpat =
   pr_alias_gen (pr_glb_generic prc prlc prtac prpat)
-let pr_alias prc prlc prtac prpat =
-  pr_extend_gen (pr_top_generic prc prlc prtac prpat)
 
 (**********************************************************************)
 (* The tactic printer                                                 *)
@@ -1024,9 +1022,6 @@ let pr_glob_tactic_level env =
 let pr_glob_tactic env = pr_glob_tactic_level env ltop
 
 (** Registering *)
-
-let register_uniform_printer wit pr =
-  Genprint.register_print0 wit pr pr pr
 
 let () =
   let pr_bool b = if b then str "true" else str "false" in

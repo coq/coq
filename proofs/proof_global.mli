@@ -121,10 +121,6 @@ val set_interp_tac :
 val set_used_variables : Names.Id.t list -> unit
 val get_used_variables : unit -> Context.section_context option
 
-val discard : Names.identifier Loc.located -> unit
-val discard_current : unit -> unit
-val discard_all : unit -> unit
-
 (**********************************************************)
 (*                                                        *)
 (*                            Proof modes                 *)

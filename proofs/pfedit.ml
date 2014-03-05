@@ -25,9 +25,6 @@ let delete_proof = Proof_global.discard
 let delete_current_proof = Proof_global.discard_current
 let delete_all_proofs = Proof_global.discard_all
 
-let set_undo _ = ()
-let get_undo _ = None
-
 let start_proof (id : Id.t) str hyps c ?init_tac terminator =
   let goals = [ (Global.env_of_context hyps , c) ] in
   Proof_global.start_proof id str goals terminator;
@@ -131,11 +128,6 @@ let build_constant_by_tactic id sign ?(goal_kind = Global,Proof Theorem) typ tac
   with reraise ->
     delete_current_proof ();
     raise reraise
-
-let constr_of_def = function
-  | Declarations.Undef _ -> assert false
-  | Declarations.Def cs -> Mod_subst.force_constr cs
-  | Declarations.OpaqueDef lc -> Opaqueproof.force_proof lc
 
 let build_by_tactic env typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in

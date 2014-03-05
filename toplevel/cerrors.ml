@@ -57,7 +57,7 @@ let wrap_vernac_error exn strm =
   let e = EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None) in
   Exninfo.copy exn e
 
-let rec process_vernac_interp_error exn = match exn with
+let process_vernac_interp_error exn = match exn with
   | Univ.UniverseInconsistency (o,u,v,p) ->
     let pr_rel r =
       match r with

@@ -98,10 +98,6 @@ let thensi_tac tac (sigr,gs) =
 
 let then_tac tac = thensf_tac [||] tac
 
-let non_existent_goal n =
-  errorlabstrm ("No such goal: "^(string_of_int n))
-    (str"Trying to apply a tactic to a non existent goal")
-
 (* [tclTHENS3PARTS tac1 [|t1 ; ... ; tn|] tac2 [|t'1 ; ... ; t'm|] gls]
    applies the tactic [tac1] to [gls] then, applies [t1], ..., [tn] to
    the first [n] resulting subgoals, [t'1], ..., [t'm] to the last [m]
@@ -369,11 +365,6 @@ let tactic_list_tactic tac gls =
 
 (* Change evars *)
 let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}
-
-(* Pretty-printers. *)
-
-let pp_info = ref (fun _ _ _ -> assert false)
-let set_info_printer f = pp_info := f
 
 (* Check that holes in arguments have been resolved *)
 

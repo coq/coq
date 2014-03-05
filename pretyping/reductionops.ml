@@ -492,7 +492,7 @@ let apply_subst recfun env cst_l t stack =
     | _ -> recfun cst_l (substl env t, stack)
   in aux env cst_l t stack
 
-let rec stacklam recfun env t stack =
+let stacklam recfun env t stack =
 apply_subst (fun _ -> recfun) env [] t stack
 
 let beta_applist (c,l) =

@@ -306,8 +306,6 @@ let subtract cmp l1 l2 =
 let unionq l1 l2 = union (==) l1 l2
 let subtractq l1 l2 = subtract (==) l1 l2
 
-let tabulate = init
-
 let interval n m =
   let rec interval_n (l,m) =
     if n > m then l else interval_n (m::l, pred m)

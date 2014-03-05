@@ -10,7 +10,6 @@ open Pp
 open Errors
 open Util
 open Names
-open Nameops
 open Namegen
 open Term
 open Vars
@@ -1419,9 +1418,6 @@ let possible_resolve dbg mod_delta db_list local_db cl =
       List.map (tac_of_hint dbg db_list local_db cl)
 	(my_find_search mod_delta db_list local_db head cl)
   with Not_found -> []
-
-let dbg_case dbg id =
-  new_tclLOG dbg (fun () -> str "case " ++ pr_id id) (simplest_case (mkVar id))
 
 let extend_local_db gl decl db =
   Hint_db.add_list (make_resolve_hyp (pf_env gl) (project gl) decl) db

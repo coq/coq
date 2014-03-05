@@ -154,10 +154,6 @@ let has_type (t, v) u = argument_type_eq t u
 
 let unquote x = x
 
-type an_arg_of_this_type = Obj.t
-
-let in_generic t x = (t, Obj.repr x)
-
 type ('a,'b) abstract_argument_type = argument_type
 type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
 type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
@@ -237,7 +233,7 @@ struct
 
   (** For now, the following function is quite dummy and should only be applied
       to an extra argument type, otherwise, it will badly fail. *)
-  let rec obj t = match t with
+  let obj t = match t with
   | ExtraArgType s -> Obj.magic (get_obj0 s)
   | _ -> assert false
 

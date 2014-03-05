@@ -26,7 +26,7 @@ let rec force s = match Lazy.force s with
 
 let force s = force s; s
 
-let rec is_empty s = match Lazy.force s with
+let is_empty s = match Lazy.force s with
 | Nil -> true
 | Cons (_, _) -> false
 

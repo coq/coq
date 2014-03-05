@@ -250,7 +250,7 @@ let set_prompt prompt =
 
 (* The following exceptions need not be located. *)
 
-let rec locate_exn = function
+let locate_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> false
   | _ -> true
 
@@ -325,12 +325,14 @@ let do_vernac () =
     exit the loop are Drop and Quit. Any other exception there indicates
     an issue with [print_toplevel_error] above. *)
 
+(*
 let feed_emacs = function
   | { Interface.id = Interface.State id;
       Interface.content = Interface.GlobRef (_,a,_,c,_) }  -> 
     prerr_endline ("<info>" ^"<id>"^Stateid.to_string id ^"</id>"
 		   ^a^" "^c^ "</info>")
   | _  -> ()
+*)
 
 let rec loop () =
   Sys.catch_break true;

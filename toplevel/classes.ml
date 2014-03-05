@@ -62,8 +62,6 @@ let existing_instance glob g pri =
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 let mismatched_props env n m = mismatched_ctx_inst env Properties n m
 
-type binder_list = (Id.t Loc.located * bool * constr_expr) list
-
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
 let type_ctx_instance evars env ctx inst subst =

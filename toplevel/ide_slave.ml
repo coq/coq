@@ -278,8 +278,6 @@ let set_options options =
   in
   List.iter iter options
 
-let mkcases s = Vernacentries.make_cases s
-
 let about () = {
   Interface.coqtop_version = Coq_config.version;
   Interface.protocol_version = Serialize.protocol_version;

@@ -423,7 +423,7 @@ let rec intropattern_ids (loc,pat) = match pat with
   | IntroWildcard | IntroAnonymous | IntroFresh _ | IntroRewrite _
   | IntroForthcoming _ -> []
 
-let rec extract_ids ids lfun =
+let extract_ids ids lfun =
   let fold id v accu =
     let v = Value.normalize v in
     if has_type v (topwit wit_intro_pattern) then

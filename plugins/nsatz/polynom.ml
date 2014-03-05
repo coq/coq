@@ -163,8 +163,6 @@ let max_var l = Array.fold_right (fun p m -> max (max_var_pol2 p) m) l 0
 
 (* equality between polynomials *)
 
-exception Failed
-
 let rec equal p q =
   match (p,q) with
       (Pint a,Pint b) -> C.equal a b

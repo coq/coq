@@ -48,7 +48,7 @@ let unsatisfiable_constraints env evd ev comp =
 
 let mismatched_ctx_inst env c n m = typeclass_error env (MismatchedContextInstance (c, n, m))
 
-let rec unsatisfiable_exception exn =
+let unsatisfiable_exception exn =
   match exn with
   | TypeClassError (_, UnsatisfiableConstraints _) -> true
   | _ -> false

@@ -57,7 +57,7 @@ let is_unification_error = function
 | UnsolvableImplicit _| AbstractionOverMeta _ -> true
 | _ -> false
 
-let rec catchable_exception = function
+let catchable_exception = function
   | Errors.UserError _ | TypeError _
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _

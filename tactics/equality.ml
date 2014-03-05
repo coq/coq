@@ -256,7 +256,6 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
 *)
 
 let (forward_general_rewrite_clause, general_rewrite_clause) = Hook.make ()
-let (forward_is_applied_rewrite_relation, is_applied_rewrite_relation) = Hook.make ()
 
 (* Do we have a JMeq instance on twice the same domains ? *)
 

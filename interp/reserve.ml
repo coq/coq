@@ -122,9 +122,3 @@ let revert_reserved_type t =
   with Not_found | Failure _ -> Anonymous
 
 let _ = Namegen.set_reserved_typed_name revert_reserved_type
-
-let default_env () = {
-  ninterp_var_type = Id.Map.empty;
-  ninterp_rec_vars = Id.Map.empty;
-  ninterp_only_parse = false;
-}

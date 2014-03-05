@@ -67,13 +67,10 @@ let typ_of = Retyping.get_type_of
 (* Option for 8.2 compatibility *)
 open Goptions
 let dependent_propositions_elimination = ref true
-let tactic_compat_context = ref false
 
 let use_dependent_propositions_elimination () =
   !dependent_propositions_elimination
   && Flags.version_strictly_greater Flags.V8_2
-
-let use_tactic_context_compat () = !tactic_compat_context
 
 let _ =
   declare_bool_option
@@ -172,7 +169,6 @@ let internal_cut_rev_gen b d t gl =
   with Evarutil.ClearDependencyError (id,err) ->
     error_clear_dependency (pf_env gl) id err
 
-let internal_cut_rev = internal_cut_rev_gen false
 let internal_cut_rev_replace = internal_cut_rev_gen true
 
 (* Moving hypotheses *)
@@ -348,7 +344,6 @@ let change chg c cls gl =
     cls gl
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
-let try_red_in_concl    = reduct_in_concl (try_red_product,REVERTcast)
 let red_in_concl        = reduct_in_concl (red_product,REVERTcast)
 let red_in_hyp          = reduct_in_hyp   red_product
 let red_option          = reduct_option   (red_product,REVERTcast)

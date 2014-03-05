@@ -452,8 +452,6 @@ struct
 
 let get = M.get
 
-let set = M.set
-
 let of_array (t : 'a array) : 'a M.t =
   let tag = Obj.tag (Obj.repr t) in
   let () = if tag = Obj.double_array_tag then

@@ -325,8 +325,6 @@ let map f c = match kind c with
       if tl'==tl && bl'==bl then c
       else mkCoFix (ln,(lna,tl',bl'))
 
-exception Exit of int * constr
-
 (* [map_with_binders g f n c] maps [f n] on the immediate
    subterms of [c]; it carries an extra data [n] (typically a lift
    index) which is processed by [g] (which typically add 1 to [n]) at

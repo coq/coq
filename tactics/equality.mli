@@ -9,7 +9,6 @@
 (*i*)
 open Names
 open Term
-open Context
 open Evd
 open Environ
 open Tacmach
@@ -43,9 +42,8 @@ val rewriteRL : ?tac:(unit Proofview.tactic * conditions) -> constr  -> unit Pro
 (* Warning: old [general_rewrite_in] is now [general_rewrite_bindings_in] *)
 
 val general_rewrite_clause :
-  (Id.t option -> orientation ->
-    occurrences -> constr with_bindings -> new_goals:constr list -> unit Proofview.tactic) Hook.t
-val is_applied_rewrite_relation : (env -> evar_map -> rel_context -> constr -> constr option) Hook.t
+  (Id.t option -> orientation -> occurrences -> constr with_bindings ->
+   new_goals:constr list -> unit Proofview.tactic) Hook.t
 
 val general_rewrite_ebindings_clause : Id.t option ->
   orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->

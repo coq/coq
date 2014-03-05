@@ -52,8 +52,6 @@ let labels (Node (_,m)) =
   (** FIXME: this is order-dependent. Try to find a more robust presentation? *)
   List.rev (T_codom.fold (fun x _ acc -> x::acc) m [])
 
-let in_dom (Node (_,m)) lbl = T_codom.mem lbl m
-
 let is_empty_node (Node(a,b)) = (X.is_nil a) && (T_codom.is_empty b)
 
 let assure_arc m lbl =

@@ -176,41 +176,6 @@ let new_meta =
 
 let mk_new_meta () = mkMeta(new_meta())
 
-(** Transfer an evar from [sigma2] to [sigma1] *)
-let transfer ev (sigma1, sigma2) =
-  let nsigma1 = Evd.add sigma1 ev (Evd.find sigma2 ev) in
-  let nsigma2 = Evd.remove sigma2 ev in
-  (nsigma1, nsigma2)
-
-let collect_evars emap c =
-  let rec collrec acc c =
-    match kind_of_term c with
-      | Evar (evk,_) ->
-	  if Evd.is_undefined emap evk then Evar.Set.add evk acc
-	  else (* No recursion on the evar instantiation *) acc
-      | _         ->
-	  fold_constr collrec acc c in
-  collrec Evar.Set.empty c
-
-let push_dependent_evars sigma emap =
-  let fold ev {evar_concl = ccl} (sigma, emap) =
-    Evar.Set.fold transfer (collect_evars emap ccl) (sigma, emap)
-  in
-  Evd.fold_undefined fold emap (sigma, emap)
-
-let push_duplicated_evars sigma emap c =
-  let rec collrec (one, evars as acc) c =
-    match kind_of_term c with
-    | Evar (evk,_) when not (Evd.mem (fst evars) evk) ->
-	if List.exists (fun ev -> Evar.equal evk ev) one then
-	  (one, transfer evk evars)
-	else
-	  (evk::one, evars)
-    | _ ->
-	fold_constr collrec acc c
-  in
-  snd (collrec ([],(sigma,emap)) c)
-
 (* The list of non-instantiated existential declarations (order is important) *)
 
 let non_instantiated sigma =
@@ -220,8 +185,6 @@ let non_instantiated sigma =
 (************************)
 (* Manipulating filters *)
 (************************)
-
-let extract_subfilter = List.filter_with
 
 let make_pure_subst evi args =
   snd (List.fold_right

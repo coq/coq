@@ -489,16 +489,6 @@ let explain_evar_kind env evi = function
   | Evar_kinds.MatchingVar _ ->
       assert false
 
-let explain_not_clean env sigma ev t k =
-  let t = Evarutil.nf_evar sigma t in
-  let env = make_all_name_different env in
-  let id = Evd.string_of_existential ev in
-  let var = pr_lconstr_env env t in
-  str "Tried to instantiate " ++ explain_evar_kind env None k ++
-  str " (" ++ str id ++ str ")" ++ spc () ++
-  str "with a term using variable " ++ var ++ spc () ++
-  str "which is not in its scope."
-
 let explain_unsolvability = function
   | None -> mt()
   | Some (SeveralInstancesFound n) ->
@@ -823,9 +813,6 @@ let explain_no_instance env (_,id) l =
   str "No instance found for class " ++ Nameops.pr_id id ++ spc () ++
   str "applied to arguments" ++ spc () ++
     pr_sequence (pr_lconstr_env env) l
-
-let is_goal_evar evi =
-  match evi.evar_source with (_, Evar_kinds.GoalEvar) -> true | _ -> false
 
 let pr_constraints printenv env evd evars cstrs =
   let (ev, evi) = Evar.Map.choose evars in

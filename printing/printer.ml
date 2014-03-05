@@ -720,11 +720,6 @@ let pr_assumptionset env s =
     ] in
     prlist_with_sep fnl (fun x -> x) (Option.List.flatten assums)
 
-open Typeclasses
-
-let pr_instance i =
-  pr_global (instance_impl i)
-
 (** Inductive declarations *)
 
 open Termops

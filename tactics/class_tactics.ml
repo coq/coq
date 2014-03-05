@@ -28,12 +28,8 @@ open Proofview.Notations
 
 (** Hint database named "typeclass_instances", now created directly in Auto *)
 
-let typeclasses_db = Auto.typeclasses_db
-
 let typeclasses_debug = ref false
 let typeclasses_depth = ref None
-
-exception Found of evar_map
 
 (** We transform the evars that are concerned by this resolution
     (according to predicate p) into goals.
@@ -191,12 +187,9 @@ let e_possible_resolve db_list local_db gl =
       (fst (head_constr_bound gl)) false gl
   with Bound | Not_found -> []
 
-let rec catchable = function
+let catchable = function
   | Refiner.FailError _ -> true
   | e -> Logic.catchable_exception e
-
-let nb_empty_evars s =
-  Evar.Map.cardinal (undefined_map s)
 
 let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
 
@@ -315,15 +308,6 @@ let normevars_tac : atac =
     let gl', sigma' = Goal.V82.nf_evar s gl in
     let info' = { info with auto_last_tac = lazy (str"normevars") } in
       sk {it = [gl', info']; sigma = sigma';} fk }
-
-(* Ordering of states is lexicographic on the number of remaining goals. *)
-let compare (pri, _, _, res) (pri', _, _, res') =
-  let nbgoals s =
-    List.length (sig_it s) + nb_empty_evars (sig_sig s)
-  in
-  let pri = pri - pri' in
-    if not (Int.equal pri 0) then pri
-    else nbgoals res - nbgoals res'
 
 let or_tac (x : 'a tac) (y : 'a tac) : 'a tac =
   { skft = fun sk fk gls -> x.skft sk (fun () -> y.skft sk fk gls) gls }

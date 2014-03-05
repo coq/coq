@@ -104,11 +104,6 @@ let cons_production_parameter l = function
   | GramTerminal _ -> l
   | GramNonTerminal (_,_,_,ido) -> Option.List.cons ido l
 
-let rec tactic_notation_key = function
-  | GramTerminal id :: _ -> id
-  | _ :: l -> tactic_notation_key l
-  | [] -> "terminal_free_notation"
-
 let add_tactic_notation (local,n,prods,e) =
   let prods = List.map (interp_prod_item n) prods in
   let tags = make_tags prods in
@@ -404,9 +399,6 @@ let error_not_same_scope x y =
 (**********************************************************************)
 (* Build pretty-printing rules                                        *)
 
-type printing_precedence = int * parenRelation
-type parsing_precedence = int option
-
 let prec_assoc = function
   | RightA -> (L,E)
   | LeftA -> (E,L)
@@ -451,10 +443,6 @@ let is_operator s =
   (s.[0] == '+' || s.[0] == '*' || s.[0] == '=' ||
    s.[0] == '-' || s.[0] == '/' || s.[0] == '<' || s.[0] == '>' ||
    s.[0] == '@' || s.[0] == '\\' || s.[0] == '&' || s.[0] == '~' || s.[0] == '$')
-
-let is_prod_ident = function
-  | Terminal s when is_letter s.[0] || s.[0] == '_' -> true
-  | _ -> false
 
 let is_non_terminal = function
   | NonTerminal _ | SProdList _ -> true

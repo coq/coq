@@ -104,7 +104,7 @@ let lift n = liftn n 1
 type info = Closed | Open | Unknown
 type 'a substituend = { mutable sinfo: info; sit: 'a }
 
-let rec lift_substituend depth s =
+let lift_substituend depth s =
   match s.sinfo with
     | Closed -> s.sit
     | Open -> lift depth s.sit

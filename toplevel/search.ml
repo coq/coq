@@ -49,13 +49,6 @@ let iter_constructors indsp fn env nconstr =
     fn (ConstructRef (indsp, i)) env typ
   done
 
-let rec head_const c = match kind_of_term c with
-  | Prod (_,_,d) -> head_const d
-  | LetIn (_,_,_,d) -> head_const d
-  | App (f,_)   -> head_const f
-  | Cast (d,_,_)   -> head_const d
-  | _            -> c
-
 (* General search over declarations *)
 let iter_declarations (fn : global_reference -> env -> constr -> unit) =
   let env = Global.env () in
@@ -86,17 +79,6 @@ let iter_declarations (fn : global_reference -> env -> constr -> unit) =
   with Not_found -> ()
 
 let generic_search = iter_declarations
-
-(* Fine Search. By Yves Bertot. *)
-
-let rec head c =
-  let c = strip_outer_cast c in
-  match kind_of_term c with
-  | Prod (_,_,c) -> head c
-  | LetIn (_,_,_,c) -> head c
-  | _              -> c
-
-let xor a b = (a || b) && (not (a && b))
 
 (** Standard display *)
 

@@ -215,9 +215,6 @@ module PatternMatching (E:StaticEnvironment) = struct
   (** Declares a substitution. *)
   let put_subst subst : unit m = put subst empty_context_subst empty_term_subst
 
-  (** Declares a context substitution. *)
-  let put_context context : unit m = put empty_subst context empty_term_subst
-
   (** Declares a term substitution. *)
   let put_terms terms : unit m = put empty_subst empty_context_subst terms
 

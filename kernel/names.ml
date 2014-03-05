@@ -431,7 +431,6 @@ module KerPair = struct
     | Dual (kn,_) -> kn
 
   let same kn = Same kn
-  let dual knu knc = Dual (knu,knc)
   let make knu knc = if knu == knc then Same knc else Dual (knu,knc)
 
   let make1 = same
@@ -726,7 +725,6 @@ let label = KerName.label
 let string_of_kn = KerName.to_string
 let pr_kn = KerName.print
 let kn_ord = KerName.compare
-let kn_equal = KerName.equal
 
 (** Compatibility layer for [Constant] *)
 

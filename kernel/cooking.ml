@@ -82,8 +82,6 @@ let update_case_info cache ci modlist =
   with Not_found ->
     ci
 
-let empty_modlist = (Cmap.empty, Mindmap.empty)
-
 let is_empty_modlist (cm, mm) =
   Cmap.is_empty cm && Mindmap.is_empty mm
 

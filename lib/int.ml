@@ -49,7 +49,6 @@ module List = struct
 end
 
 let min (i : int) j = if i < j then i else j
-let max (i : int) j = if i > j then i else j
 
 (** Utility function *)
 let rec next from upto =
@@ -83,7 +82,7 @@ struct
 
   let reroot t = rerootk t (fun () -> ())
 
-  let rec get t i =
+  let get t i =
   let () = assert (0 <= i) in
   match !t with
   | Root a ->

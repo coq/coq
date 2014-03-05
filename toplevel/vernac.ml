@@ -19,8 +19,6 @@ open Vernacexpr
    Use the module Coqtoplevel, which catches these exceptions
    (the exceptions are explained only at the toplevel). *)
 
-exception HasNotFailed
-
 (* The navigation vernac commands will be handled separately *)
 
 let rec is_navigation_vernac = function
@@ -42,30 +40,6 @@ and is_deep_navigation_vernac = function
 let is_reset = function
   | VernacResetInitial | VernacResetName _ -> true
   | _ -> false
-
-(* For coqtop -time, we display the position in the file,
-   and a glimpse of the executed command *)
-
-let display_cmd_header loc com =
-  let shorten s =
-    try (String.sub s 0 30)^"..." with Invalid_argument _ -> s in
-  let noblank s =
-    for i = 0 to String.length s - 1 do
-      match s.[i] with
-	| ' ' | '\n' | '\t' | '\r' -> s.[i] <- '~'
-	| _ -> ()
-    done;
-    s
-  in
-  let (start,stop) = Loc.unloc loc in
-  let safe_pr_vernac x =
-    try Ppvernac.pr_vernac x
-    with e when Errors.noncritical e -> str (Printexc.to_string e) in
-  let cmd = noblank (shorten (string_of_ppcmds (safe_pr_vernac com)))
-  in
-  Pp.pp (str "Chars " ++ int start ++ str " - " ++ int stop ++
-	 str (" ["^cmd^"] "));
-  Pp.flush_all ()
 
 (* When doing Load on a file, two behaviors are possible:
 

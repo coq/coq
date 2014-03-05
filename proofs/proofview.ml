@@ -223,7 +223,7 @@ let apply env t sp =
 (*** tacticals ***)
 
 
-let rec catchable_exception = function
+let catchable_exception = function
   | Proof_errors.Exception _ -> false
   | e -> Errors.noncritical e
 

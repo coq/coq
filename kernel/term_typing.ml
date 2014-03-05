@@ -23,10 +23,6 @@ open Environ
 open Entries
 open Typeops
 
-let debug = false
-let prerr_endline =
-  if debug then prerr_endline else fun _ -> ()
-
 let constrain_type env j cst1 = function
   | `None ->
       make_polymorphic_if_constant_for_ind env j, cst1
