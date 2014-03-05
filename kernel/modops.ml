@@ -282,7 +282,7 @@ let subst_structure subst = subst_structure subst do_delta_codom
 (* lclrk : retroknowledge_action list, rkaction : retroknowledge action *)
 let add_retroknowledge mp =
   let perform rkaction env = match rkaction with
-    |Retroknowledge.RKRegister (f, (Const _ | Ind _ as e)) ->
+    |Retroknowledge.RKRegister (f, e) when (isConst e || isInd e) ->
       Environ.register env f e
     |_ ->
       Errors.anomaly ~label:"Modops.add_retroknowledge"

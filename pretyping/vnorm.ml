@@ -71,7 +71,7 @@ let construct_of_constr const env tag typ =
   (* spiwack : here be a branch for specific decompilation handled by retroknowledge *)
   try
     if const then
-      ((retroknowledge Retroknowledge.get_vm_decompile_constant_info env (Ind ind) tag),
+      ((retroknowledge Retroknowledge.get_vm_decompile_constant_info env (mkInd ind) tag),
        typ) (*spiwack: this may need to be changed in case there are parameters in the
 	               type which may cause a constant value to have an arity.
 	               (type_constructor seems to be all about parameters actually)

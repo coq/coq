@@ -422,8 +422,8 @@ let unregister env field =
 	(*there is only one matching kind due to the fact that Environ.env
           is abstract, and that the only function which add elements to the
           retroknowledge is Environ.register which enforces this shape *)
-	(match retroknowledge find env field with
-	   | Ind i31t -> let i31c = Construct (i31t, 1) in
+	(match kind_of_term (retroknowledge find env field) with
+	   | Ind i31t -> let i31c = mkConstruct (i31t, 1) in
 	     {env with retroknowledge =
 		 remove (retroknowledge clear_info env i31c) field}
 	   | _ -> assert false)
@@ -479,13 +479,13 @@ fun env field value ->
   (* subfunction which shortens the (very often use) registration of binary
      operators to the reactive retroknowledge. *)
   let add_int31_binop_from_const op =
-    match value with
+    match kind_of_term value with
       | Const kn ->  retroknowledge add_int31_op env value 2
 	                               op kn
       | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant")
   in
   let add_int31_unop_from_const op =
-    match value with
+    match kind_of_term value with
       | Const kn ->  retroknowledge add_int31_op env value 1
 	                               op kn
       | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant")
@@ -497,9 +497,9 @@ fun env field value ->
        would raise Not_found. The invariant is enforced in safe_typing.ml *)
     match field with
       | KInt31 (grp, Int31Type) ->
-	  (match Retroknowledge.find rk (KInt31 (grp,Int31Bits)) with
+	  (match kind_of_term (Retroknowledge.find rk (KInt31 (grp,Int31Bits))) with
 	    | Ind i31bit_type ->
-		(match value with
+		(match kind_of_term value with
 		  | Ind i31t ->
 		      Retroknowledge.add_vm_decompile_constant_info rk
 		               value (constr_of_int31 i31t i31bit_type)
@@ -511,8 +511,8 @@ fun env field value ->
   let retroknowledge_with_reactive_info =
   match field with
     | KInt31 (_, Int31Type) ->
-        let i31c = match value with
-                     | Ind i31t -> (Construct (i31t, 1))
+        let i31c = match kind_of_term value with
+                     | Ind i31t -> mkConstruct (i31t, 1)
 		     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type")
 	in
 	add_int31_decompilation_from_type
@@ -529,14 +529,14 @@ fun env field value ->
     | KInt31 (_, Int31Times) -> add_int31_binop_from_const Cbytecodes.Kmulint31
     | KInt31 (_, Int31TimesC) -> add_int31_binop_from_const Cbytecodes.Kmulcint31
     | KInt31 (_, Int31Div21) -> (* this is a ternary operation *)
-                                (match value with
+                                (match kind_of_term value with
 				 | Const kn ->
 				     retroknowledge add_int31_op env value 3
 	                               Cbytecodes.Kdiv21int31 kn
 				 | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant"))
     | KInt31 (_, Int31Div) -> add_int31_binop_from_const Cbytecodes.Kdivint31
     | KInt31 (_, Int31AddMulDiv) -> (* this is a ternary operation *)
-                                (match value with
+                                (match kind_of_term value with
 				 | Const kn ->
 				     retroknowledge add_int31_op env value 3
 	                               Cbytecodes.Kaddmuldivint31 kn

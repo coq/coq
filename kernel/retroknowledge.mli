@@ -11,7 +11,7 @@ open Term
 type retroknowledge
 
 (** aliased type for clarity purpose*)
-type entry =  (constr, types) kind_of_term
+type entry = Constr.t
 
 (** the following types correspond to the different "things"
    the kernel can learn about.*)

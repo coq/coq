@@ -373,7 +373,7 @@ let rec str_const c =
 		try
 		  Bstrconst (Retroknowledge.get_vm_constant_static_info
                                               (!global_env).retroknowledge
-                                              (kind_of_term f) args)
+                                              f args)
                 with NotClosed ->
 		  (* 2/ if the arguments are not all closed (this is
                         expectingly (and it is currently the case) the only
@@ -394,7 +394,7 @@ let rec str_const c =
 		  let b_args = Array.map str_const rargs in
 		  Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
                                            (!global_env).retroknowledge
-                                           (kind_of_term f)),
+                                           f),
                            b_args)
               with Not_found ->
 		(* 3/ if no special behavior is available, then the compiler
@@ -415,7 +415,7 @@ let rec str_const c =
 	      try
 		Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
                                            (!global_env).retroknowledge
-                                           (kind_of_term f)),
+                                           f),
                          b_args)
 	      with Not_found ->
 	        Bconstruct_app(num, nparams, arity, b_args)
@@ -430,7 +430,7 @@ let rec str_const c =
       try
 	Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
                                            (!global_env).retroknowledge
-                                           (kind_of_term c)),
+                                           c),
                          [| |])
       with Not_found ->
 	let oib = lookup_mind kn !global_env in
@@ -657,7 +657,7 @@ let rec compile_constr reloc c sz cont =
       in
       compile_constr reloc a sz
       (try
-	let entry = Term.Ind ind in
+	let entry = mkInd ind in
 	Retroknowledge.get_vm_before_match_info (!global_env).retroknowledge
 	                                       entry code_sw
       with Not_found ->
@@ -689,7 +689,7 @@ and compile_const =
               falls back on its normal behavior *)
   try
     Retroknowledge.get_vm_compiling_info (!global_env).retroknowledge
-                  (kind_of_term (mkConst kn)) reloc args sz cont
+                  (mkConst kn) reloc args sz cont
   with Not_found ->
     if Int.equal nargs 0 then
       Kgetglobal (get_allias !global_env kn) :: cont

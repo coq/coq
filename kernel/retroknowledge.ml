@@ -24,7 +24,7 @@ open Term
    about a specific name.*)
 
 (* aliased type for clarity purpose*)
-type entry =  (constr, types) kind_of_term
+type entry = Constr.t
 
 (* the following types correspond to the different "things"
    the kernel can learn about. These are the fields of the proactive knowledge*)
@@ -103,8 +103,7 @@ type proactive = entry Proactive.t
 module EntryOrd =
 struct
   type t = entry
-  let make (e : entry) : constr = Obj.magic e (** WARNING: maybe to be updated. *)
-  let compare c1 c2 = Constr.compare (make c1) (make c2)
+  let compare = Constr.compare
 end
 
 module Reactive = Map.Make (EntryOrd)

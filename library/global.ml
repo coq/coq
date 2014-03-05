@@ -156,7 +156,7 @@ let type_of_global t = type_of_reference (env ()) t
 
 (* spiwack: register/unregister functions for retroknowledge *)
 let register field value by_clause =
-  globalize0 (Safe_typing.register field (kind_of_term value) by_clause)
+  globalize0 (Safe_typing.register field value by_clause)
 
 let register_inline c = globalize0 (Safe_typing.register_inline c)
 
