@@ -21,7 +21,7 @@ sig
   include Map.S
   (** The underlying Map library *)
 
-  module Set : Set.S with type elt = key
+  module Set : CSig.SetS with type elt = key
   (** Sets used by the domain function *)
 
   val update : key -> 'a -> 'a t -> 'a t
