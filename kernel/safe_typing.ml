@@ -413,8 +413,8 @@ let end_module l restype senv =
   let mp = MPdot (oldsenv.modinfo.modpath, l) in
   let newenv = oldsenv.env in
   let newenv = set_engagement_opt senv.engagement newenv in
-  let senv'= {senv with env=newenv} in
-  let senv' = 
+  let senv'= {senv with env = newenv; univ = cst} in
+  let senv' =
     List.fold_left
       (fun env (mp,mb) -> full_add_module mp mb env) 
       senv'
