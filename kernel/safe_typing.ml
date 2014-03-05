@@ -557,7 +557,10 @@ let end_module l restype senv =
   let mb = build_module_body params restype senv in
   let newenv = oldsenv.env in
   let newenv = set_engagement_opt newenv senv.engagement in
-  let senv'= propagate_loads {senv with env=newenv} in
+  let senv'=
+    propagate_loads { senv with
+      env = newenv;
+      univ = Univ.union_constraints senv.univ mb.mod_constraints} in
   let newenv = Environ.add_constraints mb.mod_constraints senv'.env in
   let newenv = Modops.add_module mb newenv in
   let newresolver =
