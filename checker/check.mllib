@@ -1,6 +1,7 @@
 Coq_config
 
 Hook
+Canary
 Hashset
 Hashcons
 CSet
