@@ -7,12 +7,8 @@
 (************************************************************************)
 
 open Names
-open Term
 open Classops
-open Declare
 open Globnames
-open Decl_kinds
-open Nametab
 
 (** Classes and coercions. *)
 

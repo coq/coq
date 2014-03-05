@@ -8,13 +8,11 @@
 
 open Pp
 open Names
-open Context
 open Term
 open Environ
 open Reductionops
 open Libnames
 open Globnames
-open Nametab
 open Misctypes
 
 (** A Pretty-Printer for the Calculus of Inductive Constructions. *)

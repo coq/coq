@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Proof_type
 open Tacexpr
 open Vernacexpr
 

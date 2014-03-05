@@ -18,7 +18,6 @@ open Indfun
 open Genarg
 open Tacticals
 open Misctypes
-open Miscops
 
 let pr_binding prc = function
   | loc, NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)

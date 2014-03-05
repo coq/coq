@@ -30,7 +30,6 @@ open Decl_kinds
 open Constrexpr
 open Redexpr
 open Lemmas
-open Declaremods
 open Misctypes
 open Locality
 

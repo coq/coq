@@ -11,19 +11,14 @@
 (* Syntax for rewriting with strategies *)
 
 open Names
-open Term
-open Vars
 open Misctypes
 open Locus
-open Locusops
 open Constrexpr
 open Glob_term
-open Patternops
 open Geninterp
 open Extraargs
 open Tacmach
 open Tacticals
-open Tactics
 open Rewrite
 
 type constr_expr_with_bindings = constr_expr with_bindings

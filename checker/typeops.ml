@@ -14,7 +14,6 @@ open Cic
 open Term
 open Reduction
 open Type_errors
-open Declarations
 open Inductive
 open Environ
 

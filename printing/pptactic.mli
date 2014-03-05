@@ -11,7 +11,6 @@ open Genarg
 open Names
 open Constrexpr
 open Tacexpr
-open Proof_type
 open Ppextend
 open Environ
 open Pattern

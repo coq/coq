@@ -7,8 +7,6 @@
 (************************************************************************)
 
 open Term
-open Context
-open Libnames
 open Mod_subst
 
 (** Dnets on constr terms.

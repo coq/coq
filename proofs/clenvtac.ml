@@ -83,7 +83,6 @@ let elim_res_pf_THEN_i clenv tac gls =
   let clenv' = (clenv_unique_resolver ~flags:elim_flags clenv gls) in
   tclTHENLASTn (clenv_refine false clenv') (tac clenv') gls
 
-open Proofview.Notations
 let new_elim_res_pf_THEN_i clenv tac =
   Proofview.Goal.enter begin fun gl ->
     let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags:elim_flags clenv) gl in

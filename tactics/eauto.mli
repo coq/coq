@@ -8,12 +8,8 @@
 
 open Term
 open Proof_type
-open Tacexpr
 open Auto
-open Topconstr
 open Evd
-open Environ
-open Explore
 
 val hintbases : hint_db_name list option Pcoq.Gram.entry
 

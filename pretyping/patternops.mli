@@ -6,13 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-open Names
 open Context
 open Term
-open Environ
 open Globnames
-open Nametab
 open Glob_term
 open Mod_subst
 open Misctypes

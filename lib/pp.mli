@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp_control
-
 (** Modify pretty printing functions behavior for emacs ouput (special
    chars inserted at some places). This function should called once in
    module [Options], that's all. *)

@@ -11,12 +11,8 @@ open Term
 open Context
 open Environ
 open Evd
-open Reduction
 open Proof_type
-open Refiner
 open Redexpr
-open Tacexpr
-open Glob_term
 open Pattern
 open Locus
 open Misctypes
@@ -134,8 +130,6 @@ val pr_glls   : goal list sigma -> Pp.std_ppcmds
 
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New : sig
-  open Proofview
-
   val pf_apply : (env -> evar_map -> 'a) -> Proofview.Goal.t -> 'a
   val pf_global : identifier -> Proofview.Goal.t -> constr
   val of_old : (Proof_type.goal Evd.sigma -> 'a) -> Proofview.Goal.t -> 'a

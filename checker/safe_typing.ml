@@ -11,7 +11,6 @@ open Errors
 open Util
 open Cic
 open Names
-open Declarations
 open Environ
 
 (************************************************************************)

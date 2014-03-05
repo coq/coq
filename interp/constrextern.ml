@@ -26,7 +26,6 @@ open Glob_ops
 open Pattern
 open Nametab
 open Notation
-open Reserve
 open Detyping
 open Misctypes
 open Decl_kinds

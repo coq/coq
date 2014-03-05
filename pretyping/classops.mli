@@ -7,11 +7,9 @@
 (************************************************************************)
 
 open Names
-open Decl_kinds
 open Term
 open Evd
 open Environ
-open Nametab
 open Mod_subst
 
 (** {6 This is the type of class kinds } *)

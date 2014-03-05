@@ -18,7 +18,6 @@ open Pattern
 open Decl_kinds
 open Misctypes
 open Locus
-open Pp
 
 type 'a or_metaid = AI of 'a | MetaId of Loc.t * string
 

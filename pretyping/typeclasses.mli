@@ -8,14 +8,10 @@
 
 open Names
 open Globnames
-open Decl_kinds
 open Term
 open Context
 open Evd
 open Environ
-open Nametab
-open Mod_subst
-open Topconstr
 
 type direction = Forward | Backward
 

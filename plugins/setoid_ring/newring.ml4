@@ -22,7 +22,6 @@ open Glob_term
 open Tacticals
 open Tacexpr
 open Coqlib
-open Tacmach
 open Mod_subst
 open Tacinterp
 open Libobject
@@ -796,8 +795,6 @@ let ltac_ring_structure e =
   let posttac = Tacexp(TacFun([None],e.ring_post_tac)) in
   [req;sth;ext;morph;th;cst_tac;pow_tac;
    lemma1;lemma2;pretac;posttac]
-
-open Proofview.Notations
 
 let ring_lookup (f:glob_tactic_expr) lH rl t =
   Proofview.Goal.enter begin fun gl ->

@@ -9,7 +9,6 @@
 open Pp
 open Bigint
 open Names
-open Nametab
 open Libnames
 open Globnames
 open Constrexpr

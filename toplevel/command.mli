@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Names
 open Term
 open Entries
@@ -17,7 +16,6 @@ open Vernacexpr
 open Constrexpr
 open Decl_kinds
 open Redexpr
-open Constrintern
 open Pfedit
 
 (** This file is about the interpretation of raw commands into typed

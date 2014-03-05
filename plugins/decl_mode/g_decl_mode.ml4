@@ -11,11 +11,11 @@
 open Util
 open Compat
 open Pp
-open Tok
 open Decl_expr
 open Names
 open Pcoq
 open Vernacexpr
+open Tok (* necessary for camlp4 *)
 
 open Pcoq.Constr
 open Pcoq.Tactic

@@ -8,9 +8,6 @@
 
 open Names
 open Notation_term
-open Glob_term
-open Nametab
-open Libnames
 
 (** Syntactic definitions. *)
 

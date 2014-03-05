@@ -123,8 +123,6 @@ let revert_reserved_type t =
 
 let _ = Namegen.set_reserved_typed_name revert_reserved_type
 
-open Glob_term
-
 let default_env () = {
   ninterp_var_type = Id.Map.empty;
   ninterp_rec_vars = Id.Map.empty;

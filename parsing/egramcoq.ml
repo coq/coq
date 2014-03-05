@@ -11,7 +11,6 @@ open Errors
 open Util
 open Pcoq
 open Extend
-open Ppextend
 open Constrexpr
 open Notation_term
 open Libnames

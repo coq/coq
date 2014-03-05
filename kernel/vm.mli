@@ -1,7 +1,6 @@
 open Names
 open Term
 open Cbytecodes
-open Cemitcodes
 
 (** Efficient Virtual Machine *)
 

@@ -10,7 +10,6 @@ open Names
 open Globnames
 open Term
 open Environ
-open Nametab
 
 (** {6 Implicit Arguments } *)
 (** Here we store the implicit arguments. Notice that we

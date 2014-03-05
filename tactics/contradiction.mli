@@ -6,9 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
 open Term
-open Proof_type
 open Misctypes
 
 val absurd                      : constr -> unit Proofview.tactic

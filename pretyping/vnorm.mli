@@ -6,10 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
 open Term
 open Environ
-open Reduction
 
 (** {6 Reduction functions } *)
 val cbv_vm : env -> constr -> types -> constr

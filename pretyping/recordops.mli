@@ -7,10 +7,8 @@
 (************************************************************************)
 
 open Names
-open Nametab
 open Term
 open Globnames
-open Libobject
 
 (** Operations concerning records and canonical structures *)
 

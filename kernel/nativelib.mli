@@ -5,11 +5,7 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-open Names
-open Term
-open Nativevalues
 open Nativecode
-open Pre_env
 
 (** This file provides facilities to access OCaml compiler and dynamic linker,
 used by the native compiler. *)

@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Univ
 open Term
 open Environ
 open Declarations

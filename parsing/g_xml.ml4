@@ -16,13 +16,11 @@ open Glob_term
 open Tacexpr
 open Libnames
 open Globnames
-
-open Nametab
 open Detyping
-open Tok
 open Misctypes
 open Decl_kinds
 open Genredexpr
+open Tok (* necessary for camlp4 *)
 
 (* Generic xml parser without raw data *)
 

@@ -44,10 +44,7 @@
    (synchronous = consistent with the resetting commands)                   *)
 
 open Pp
-open Names
 open Libnames
-open Term
-open Nametab
 open Mod_subst
 
 type option_name = Interface.option_name

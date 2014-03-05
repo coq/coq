@@ -20,7 +20,6 @@ open Evd
 open Pp
 open Errors
 open Util
-open Proof_type
 
 let declare_fix_ref = ref (fun _ _ _ _ _ -> assert false)
 let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
@@ -142,9 +141,6 @@ let etype_of_evar evs hyps concl =
 	let t', s, trans = subst_evar_constr evs n mkVar concl in
 	  subst_vars acc 0 t', s, trans
   in aux [] 0 (List.rev hyps)
-
-
-open Tacticals
 
 let trunc_named_context n ctx =
   let len = List.length ctx in

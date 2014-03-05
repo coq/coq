@@ -12,7 +12,6 @@ open Term
 open Environ
 open Pattern
 open Globnames
-open Nametab
 
 (** {6 Search facilities. } *)
 

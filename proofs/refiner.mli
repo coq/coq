@@ -6,12 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
 open Context
 open Evd
 open Proof_type
-open Tacexpr
-open Logic
 
 (** The refiner (handles primitive rules and high-level tactics). *)
 

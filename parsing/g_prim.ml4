@@ -9,7 +9,7 @@
 open Compat
 open Names
 open Libnames
-open Tok
+open Tok (* necessary for camlp4 *)
 
 open Pcoq
 open Pcoq.Prim

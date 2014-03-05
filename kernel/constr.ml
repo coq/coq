@@ -23,12 +23,8 @@
    Inductive Constructions (CIC) terms together with constructors,
    destructors, iterators and basic functions *)
 
-open Errors
 open Util
-open Pp
 open Names
-open Univ
-open Esubst
 
 
 type existential_key = Evar.t

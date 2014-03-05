@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Term
 open Globnames
 open Miniml
 open Table

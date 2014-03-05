@@ -11,9 +11,6 @@ open Term
 open Environ
 open Evd
 open Reductionops
-open Closure
-open Glob_term
-open Termops
 open Pattern
 open Globnames
 open Locus

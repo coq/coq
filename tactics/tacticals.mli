@@ -14,12 +14,7 @@ open Context
 open Tacmach
 open Proof_type
 open Clenv
-open Reduction
-open Pattern
-open Genarg
 open Tacexpr
-open Termops
-open Glob_term
 open Locus
 open Misctypes
 

@@ -14,7 +14,6 @@ open Names
 open Term
 open Libnames
 open Globnames
-open Glob_term
 open Genredexpr
 open Pattern
 open Constrexpr

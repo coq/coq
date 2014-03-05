@@ -29,8 +29,6 @@
      [give_up] was run and solve the goal there.
 *)
 
-open Term
-
 (* Type of a proof. *)
 type proof
 

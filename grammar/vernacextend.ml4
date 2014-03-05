@@ -113,7 +113,7 @@ let declare_command loc s c nt cl =
       } >> ]
 
 open Pcaml
-open PcamlSig
+open PcamlSig (* necessary for camlp4 *)
 
 EXTEND
   GLOBAL: str_item;

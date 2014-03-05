@@ -9,7 +9,6 @@
 open Names
 open Term
 open Evd
-open Tacmach
 
 val set_daimon_flag : unit -> unit
 val clear_daimon_flag : unit -> unit

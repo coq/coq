@@ -30,13 +30,11 @@ open Tacticals
 open Clenv
 open Libnames
 open Globnames
-open Nametab
 open Smartlocate
 open Libobject
 open Printer
 open Tacexpr
 open Mod_subst
-open Misctypes
 open Locus
 open Proofview.Notations
 

@@ -9,7 +9,6 @@
 open Compat
 open Constrexpr
 open Vernacexpr
-open Locality
 open Misctypes
 open Tok
 

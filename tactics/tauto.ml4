@@ -15,7 +15,6 @@ open Globnames
 open Pp
 open Genarg
 open Stdarg
-open Tacticals
 open Tacinterp
 open Tactics
 open Errors

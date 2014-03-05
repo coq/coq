@@ -6,10 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Ideutils
-open GText
-open Gtk_parsing
-
 type insert_action = {
   ins_val : string;
   ins_off : int;

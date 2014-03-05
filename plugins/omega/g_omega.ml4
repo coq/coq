@@ -16,7 +16,6 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Coq_omega
-open Refiner
 
 let omega_tactic l =
   let tacs = List.map

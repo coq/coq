@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Genarg
 
 let wit_unit : unit uniform_genarg_type =

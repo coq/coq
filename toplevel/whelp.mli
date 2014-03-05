@@ -11,8 +11,6 @@
 
 open Names
 open Term
-open Topconstr
-open Environ
 
 type whelp_request =
   | Locate of string

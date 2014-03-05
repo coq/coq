@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Constrintern
-open Pattern
 open Patternops
 open Pp
 open Genredexpr
@@ -37,7 +36,6 @@ open Printer
 open Pretyping
 open Evd
 open Misctypes
-open Miscops
 open Locus
 open Tacintern
 open Taccoerce

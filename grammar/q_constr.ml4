@@ -11,7 +11,7 @@
 open Q_util
 open Compat
 open Pcaml
-open PcamlSig
+open PcamlSig (* necessary for camlp4 *)
 
 let loc = CompatLoc.ghost
 let dloc = <:expr< Loc.ghost >>

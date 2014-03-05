@@ -9,7 +9,6 @@
 open Util
 open Names
 open Term
-open Environ
 
 (** A few declarations for the "Print Assumption" command
     @author spiwack *)

@@ -8,10 +8,6 @@
 
 open Term
 open Names
-open Libnames
-open Mod_subst
-open Context
-open Declarations
 
 (** This module provides support for registering inductive scheme builders,
    declaring schemes and generating schemes on demand *)

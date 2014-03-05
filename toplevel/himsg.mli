@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp
-open Names
 open Indtypes
 open Environ
 open Type_errors

@@ -8,19 +8,14 @@
 
 open Pp
 open Names
-open Libnames
 open Globnames
 open Term
 open Context
 open Environ
-open Glob_term
 open Pattern
-open Nametab
-open Termops
 open Evd
 open Proof_type
 open Glob_term
-open Tacexpr
 
 (** These are the entry points for printing terms, context, tac, ... *)
 

@@ -1,10 +1,3 @@
-open Names
-open Term
-open Pp
-open Indfun_common
-open Libnames
-open Glob_term
-open Declarations
 open Misctypes
 
 val do_generate_principle :  

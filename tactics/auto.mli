@@ -32,8 +32,6 @@ type 'a auto_tactic =
   | Unfold_nth of evaluable_global_reference          (** Hint Unfold *)
   | Extern     of Tacexpr.glob_tactic_expr   (** Hint Extern *)
 
-open Glob_term
-
 type hints_path_atom = 
   | PathHints of global_reference list
   | PathAny

@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Libnames
 open Tacexpr
 open Vernacexpr
 open Notation

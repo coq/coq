@@ -19,7 +19,6 @@
    Élie Soubiran, ... *)
 
 open Pp
-open Errors
 open Util
 
 (** {6 Identifiers } *)
@@ -484,8 +483,6 @@ module KerPair = struct
   (** Hash-consing : we discriminate only on the user part, since having
       the same user part implies having the same canonical part
       (invariant of the system). *)
-
-  open Hashset.Combine
 
   let hash = function
   | Same kn -> KerName.hash kn

@@ -8,7 +8,6 @@
 
 (*i*)
 open Names
-open Univ
 open Cic
 open Environ
 (*i*)

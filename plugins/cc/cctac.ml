@@ -16,14 +16,12 @@ open Term
 open Vars
 open Tacmach
 open Tactics
-open Tacticals
 open Typing
 open Ccalgo
 open Ccproof
 open Pp
 open Errors
 open Util
-open Proofview.Notations
 
 let constant dir s = lazy (Coqlib.gen_constant "CC" dir s)
 

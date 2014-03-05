@@ -8,7 +8,6 @@
 
 open Names
 open Notation_term
-open Misctypes
 open Glob_term
 
 (** Utilities about [notation_constr] *)

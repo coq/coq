@@ -6,10 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
 open Term
-open Context
-open Evd
 open Clenv
 open Proof_type
 open Tacexpr

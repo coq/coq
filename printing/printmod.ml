@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp
-open Errors
 open Names
 open Declarations
 open Nameops

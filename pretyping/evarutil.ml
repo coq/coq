@@ -20,7 +20,6 @@ open Environ
 open Evd
 open Reductionops
 open Pretype_errors
-open Retyping
 
 (****************************************************)
 (* Expanding/testing/exposing existential variables *)

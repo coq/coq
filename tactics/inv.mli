@@ -7,13 +7,10 @@
 (************************************************************************)
 
 open Loc
-open Pp
 open Names
 open Term
-open Tacmach
 open Misctypes
 open Tacexpr
-open Glob_term
 
 type inversion_status = Dep of constr option | NoDep
 

@@ -9,9 +9,6 @@
 open Util
 open Names
 open Term
-open Vars
-open Termops
-open Namegen
 open Environ
 open Type_errors
 

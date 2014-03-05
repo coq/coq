@@ -12,7 +12,6 @@ open Names
 open Entries
 open Environ
 open Evd
-open Refiner
 
 let refining = Proof_global.there_are_pending_proofs
 let check_no_pending_proofs = Proof_global.check_no_pending_proof

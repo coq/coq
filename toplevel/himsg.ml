@@ -14,7 +14,6 @@ open Namegen
 open Term
 open Termops
 open Indtypes
-open Context
 open Environ
 open Pretype_errors
 open Type_errors
@@ -24,9 +23,6 @@ open Cases
 open Logic
 open Printer
 open Evd
-open Libnames
-open Globnames
-open Declarations
 
 (* This simplifies the typing context of Cases clauses *)
 (* hope it does not disturb other typing contexts *)

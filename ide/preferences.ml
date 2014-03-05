@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Configwin
-open Printf
 
 let pref_file = Filename.concat (Minilib.coqide_config_home ()) "coqiderc"
 let accel_file = Filename.concat (Minilib.coqide_config_home ()) "coqide.keys"

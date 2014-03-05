@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Tacexpr
-
 (** Interpretation of extended vernac phrases. *)
 
 val vinterp_add : string -> (Genarg.raw_generic_argument list -> unit -> unit) -> unit

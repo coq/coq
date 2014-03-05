@@ -8,7 +8,6 @@
 
 open Tacintern
 open Decl_expr
-open Mod_subst
 
 
 val intern_proof_instr : glob_sign -> raw_proof_instr -> glob_proof_instr

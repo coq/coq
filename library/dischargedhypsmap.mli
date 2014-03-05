@@ -7,9 +7,6 @@
 (************************************************************************)
 
 open Libnames
-open Term
-open Environ
-open Nametab
 
 type discharged_hyps = full_path list
 

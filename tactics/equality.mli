@@ -7,22 +7,13 @@
 (************************************************************************)
 
 (*i*)
-open Pp
 open Names
 open Term
 open Context
 open Evd
 open Environ
-open Proof_type
 open Tacmach
-open Hipattern
-open Pattern
-open Tacticals
-open Tactics
 open Tacexpr
-open Termops
-open Glob_term
-open Genarg
 open Ind_tables
 open Locus
 open Misctypes

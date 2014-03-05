@@ -7,14 +7,10 @@
 (************************************************************************)
 
 open Loc
-open Pp
 open Names
 open Term
-open Context
 open Environ
 open Decl_kinds
-open Tacmach
-open Tacexpr
 
 (** Several proofs can be opened simultaneously but at most one is
    focused at some time. The following functions work by side-effect

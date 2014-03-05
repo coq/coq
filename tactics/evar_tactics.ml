@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Util
-open Names
 open Errors
 open Evar_refiner
 open Tacmach
@@ -50,7 +49,6 @@ let instantiate n (ist,rawc) ido gl =
         tclNORMEVAR
         gl
 
-open Proofview.Notations
 let let_evar name typ =
   let src = (Loc.ghost,Evar_kinds.GoalEvar) in
   Proofview.Goal.enter begin fun gl ->

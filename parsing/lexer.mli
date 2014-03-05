@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-
 val add_keyword : string -> unit
 val remove_keyword : string -> unit
 val is_keyword : string -> bool

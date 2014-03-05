@@ -8,9 +8,7 @@
 
 open Names
 open Term
-open Context
 open Evd
-open Environ
 open Proof_type
 
 (** This suppresses check done in [prim_refiner] for the tactic given in

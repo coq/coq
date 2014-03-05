@@ -17,7 +17,6 @@ open Glob_term
 open Pattern
 open Constrexpr
 open Notation_term
-open Termops
 open Pretyping
 open Misctypes
 open Decl_kinds

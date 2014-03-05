@@ -18,7 +18,6 @@ open Environ
 open Libobject
 open Term
 open Termops
-open Decl_kinds
 open Mod_subst
 
 (* usage qque peu general: utilise aussi dans record *)

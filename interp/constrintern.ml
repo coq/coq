@@ -9,7 +9,6 @@
 open Pp
 open Errors
 open Util
-open Flags
 open Names
 open Nameops
 open Namegen

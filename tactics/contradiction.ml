@@ -15,7 +15,6 @@ open Tactics
 open Coqlib
 open Reductionops
 open Misctypes
-open Proofview.Notations
 
 (* Absurd *)
 

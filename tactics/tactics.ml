@@ -26,7 +26,6 @@ open Pfedit
 open Tacred
 open Genredexpr
 open Tacmach
-open Proof_type
 open Logic
 open Clenv
 open Clenvtac
@@ -43,7 +42,6 @@ open Unification
 open Locus
 open Locusops
 open Misctypes
-open Miscops
 open Proofview.Notations
 
 exception Bound

@@ -8,8 +8,6 @@
 
 open Term
 open Globnames
-open Typeclasses
-open Names
 open Evd
 open Context
 

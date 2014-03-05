@@ -17,7 +17,6 @@
 open Util
 open Pp
 open Names
-open Util
 
 (*** Proof Modes ***)
 

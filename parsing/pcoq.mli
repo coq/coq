@@ -7,9 +7,7 @@
 (************************************************************************)
 
 open Loc
-open Pp
 open Names
-open Glob_term
 open Extend
 open Vernacexpr
 open Genarg
@@ -211,7 +209,6 @@ module Module :
 
 module Tactic :
   sig
-    open Glob_term
     val open_constr : open_constr_expr Gram.entry
     val constr_with_bindings : constr_expr with_bindings Gram.entry
     val bindings : constr_expr bindings Gram.entry
@@ -231,7 +228,6 @@ module Tactic :
 
 module Vernac_ :
   sig
-    open Decl_kinds
     val gallina : vernac_expr Gram.entry
     val gallina_ext : vernac_expr Gram.entry
     val command : vernac_expr Gram.entry

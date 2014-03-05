@@ -7,11 +7,8 @@
 (************************************************************************)
 
 open Loc
-open Pp
 open Names
 open Term
-open Glob_term
-open Proof_type
 open Constrexpr
 open Misctypes
 

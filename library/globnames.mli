@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Util
-open Pp
 open Names
 open Term
 open Mod_subst

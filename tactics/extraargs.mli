@@ -7,11 +7,8 @@
 (************************************************************************)
 
 open Tacexpr
-open Term
 open Names
-open Proof_type
 open Constrexpr
-open Termops
 open Glob_term
 open Misctypes
 

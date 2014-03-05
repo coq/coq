@@ -6,11 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
 open Term
 open Declarations
 open Environ
-open Univ
 
 (** {6 Cooking the constants. } *)
 

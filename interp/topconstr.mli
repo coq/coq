@@ -8,11 +8,7 @@
 
 open Loc
 open Names
-open Libnames
-open Misctypes
-open Decl_kinds
 open Constrexpr
-open Notation_term
 
 (** Topconstr *)
 

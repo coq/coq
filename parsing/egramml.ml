@@ -10,7 +10,6 @@ open Compat
 open Names
 open Pcoq
 open Genarg
-open Tacexpr
 open Vernacexpr
 
 (** Making generic actions in type generic_argument *)

@@ -7,18 +7,12 @@
 (************************************************************************)
 
 open Names
-open Decl_kinds
-open Term
 open Context
 open Evd
 open Environ
-open Nametab
-open Mod_subst
 open Constrexpr
 open Typeclasses
-open Implicit_quantifiers
 open Libnames
-open Globnames
 
 (** Errors *)
 

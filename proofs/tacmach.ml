@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
 open Util
 open Names
 open Namegen
@@ -205,7 +204,6 @@ let pr_glls glls =
 
 (* Variants of [Tacmach] functions built with the new proof engine *)
 module New = struct
-  open Proofview.Notations
 
   let pf_apply f gl =
     f (Proofview.Goal.env gl) (Proofview.Goal.sigma gl)

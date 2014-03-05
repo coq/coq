@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Proof_type
-
 val discrHyp : Names.Id.t -> unit Proofview.tactic
 val injHyp : Names.Id.t -> unit Proofview.tactic
 

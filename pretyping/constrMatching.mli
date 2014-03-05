@@ -12,7 +12,6 @@ open Names
 open Term
 open Environ
 open Pattern
-open Termops
 
 (** [PatternMatchingFailure] is the exception raised when pattern
   matching fails *)

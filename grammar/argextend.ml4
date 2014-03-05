@@ -232,7 +232,7 @@ let declare_vernac_argument loc s pr cl =
 
 open Pcoq
 open Pcaml
-open PcamlSig
+open PcamlSig (* necessary for camlp4 *)
 
 EXTEND
   GLOBAL: str_item;

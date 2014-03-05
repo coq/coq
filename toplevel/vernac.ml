@@ -14,7 +14,6 @@ open Util
 open Flags
 open System
 open Vernacexpr
-open Vernacinterp
 
 (* The functions in this module may raise (unexplainable!) exceptions.
    Use the module Coqtoplevel, which catches these exceptions

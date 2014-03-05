@@ -7,9 +7,7 @@
 (************************************************************************)
 
 open Loc
-open Pp
 open Names
-open Glob_term
 open Notation_term
 
 val declare_reserved_type : Id.t located list -> notation_constr -> unit

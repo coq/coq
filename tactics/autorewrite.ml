@@ -9,7 +9,6 @@
 open Equality
 open Names
 open Pp
-open Proof_type
 open Tacticals
 open Tactics
 open Term
@@ -19,7 +18,6 @@ open Util
 open Tacexpr
 open Mod_subst
 open Locus
-open Proofview.Notations
 
 (* Rewriting rules *)
 type rew_rule = { rew_lemma: constr;

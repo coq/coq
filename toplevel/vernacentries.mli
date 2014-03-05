@@ -6,11 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
-open Term
-open Vernacinterp
-open Vernacexpr
-open Constrexpr
 open Misctypes
 
 val dump_global : Libnames.reference or_by_notation -> unit

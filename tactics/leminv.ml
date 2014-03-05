@@ -28,7 +28,6 @@ open Declare
 open Tacticals
 open Tactics
 open Decl_kinds
-open Proofview.Notations
 
 let no_inductive_inconstr env constr =
   (str "Cannot recognize an inductive predicate in " ++

@@ -16,7 +16,6 @@ open Libnames
 open Globnames
 open Termops
 open Namegen
-open Libobject
 open Environ
 open Closure
 open Reductionops

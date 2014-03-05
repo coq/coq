@@ -12,7 +12,6 @@ open Util
 open Names
 open Term
 open Vars
-open Context
 open Environ
 open Globnames
 open Nametab

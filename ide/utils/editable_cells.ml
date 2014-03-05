@@ -1,4 +1,3 @@
-open GTree
 open Gobject
 
 let create l =

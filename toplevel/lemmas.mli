@@ -12,7 +12,6 @@ open Decl_kinds
 open Constrexpr
 open Tacexpr
 open Vernacexpr
-open Proof_type
 open Pfedit
 
 (** A hook start_proof calls on the type of the definition being started *)

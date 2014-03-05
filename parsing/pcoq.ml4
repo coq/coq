@@ -8,14 +8,13 @@
 
 open Pp
 open Compat
-open Tok
 open Errors
 open Util
 open Extend
 open Genarg
 open Stdarg
 open Constrarg
-open Tacexpr
+open Tok (* necessary for camlp4 *)
 
 (** The parser of Coq *)
 

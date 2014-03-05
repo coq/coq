@@ -6,15 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Names
-open Context
-open Term
-open Libnames
-open Nametab
-open Decl_kinds
-open Misctypes
-open Locus
 open Glob_term
 
 (** Equalities *)

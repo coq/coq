@@ -8,19 +8,10 @@
 
 open Loc
 open Names
-open Decl_kinds
-open Term
-open Context
-open Evd
-open Environ
-open Nametab
-open Mod_subst
 open Glob_term
 open Constrexpr
-open Pp
 open Libnames
 open Globnames
-open Typeclasses
 
 val declare_generalizable : Vernacexpr.locality_flag -> (Id.t located) list option -> unit
 

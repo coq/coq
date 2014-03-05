@@ -7,12 +7,10 @@
 (************************************************************************)
 
 open Names
-open Univ
 open Term
 open Declarations
 open Environ
 open Entries
-open Typeops
 
 (** Inductive type checking and errors *)
 

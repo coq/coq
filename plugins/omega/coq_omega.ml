@@ -27,7 +27,6 @@ open Globnames
 open Nametab
 open Contradiction
 open Misctypes
-open Proofview.Notations
 
 module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
 open OmegaSolver

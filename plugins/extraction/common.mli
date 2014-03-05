@@ -9,7 +9,6 @@
 open Names
 open Globnames
 open Miniml
-open Mlutil
 open Pp
 
 (** By default, in module Format, you can do horizontal placing of blocks

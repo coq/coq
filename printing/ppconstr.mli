@@ -8,8 +8,6 @@
 
 open Loc
 open Pp
-open Environ
-open Term
 open Libnames
 open Constrexpr
 open Names

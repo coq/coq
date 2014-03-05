@@ -8,15 +8,11 @@
 
 open Loc
 open Names
-open Decl_kinds
 open Term
 open Context
 open Evd
 open Environ
-open Nametab
-open Mod_subst
 open Constrexpr
-open Pp
 open Globnames
 
 type contexts = Parameters | Properties

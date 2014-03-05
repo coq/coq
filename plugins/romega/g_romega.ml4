@@ -9,7 +9,6 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Refl_omega
-open Refiner
 
 let romega_tactic l =
   let tacs = List.map

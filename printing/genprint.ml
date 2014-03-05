@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp
-open Util
 open Genarg
 
 type ('raw, 'glb, 'top) printer = {

@@ -6,15 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Compat
-open Pp
 open Names
 open Constrexpr
 open Notation_term
 open Pcoq
 open Extend
-open Vernacexpr
-open Ppextend
 open Genarg
 open Egramml
 

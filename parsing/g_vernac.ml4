@@ -8,7 +8,6 @@
 
 open Pp
 open Compat
-open Tok
 open Errors
 open Util
 open Names
@@ -16,10 +15,9 @@ open Constrexpr
 open Constrexpr_ops
 open Extend
 open Vernacexpr
-open Locality
 open Decl_kinds
-open Declaremods
 open Misctypes
+open Tok (* necessary for camlp4 *)
 
 open Pcoq
 open Pcoq.Tactic

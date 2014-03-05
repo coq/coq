@@ -6,14 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
 open Term
-open Context
 open Environ
 open Evd
-open Evarutil
 open Mod_subst
-open Glob_term
 open Unification
 open Misctypes
 

@@ -14,7 +14,6 @@ open Context
 open Tacexpr
 open Glob_term
 open Nametab
-open Pattern
 open Misctypes
 (*i*)
 

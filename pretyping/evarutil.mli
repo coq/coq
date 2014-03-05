@@ -6,15 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-open Util
 open Names
-open Glob_term
 open Term
 open Context
 open Evd
 open Environ
-open Reductionops
 
 (** {5 This modules provides useful functions for unification modulo evars } *)
 

@@ -16,10 +16,7 @@ open Declarations
 open Names
 open Inductive
 open Util
-open Unix
 open Nativecode
-open Inductiveops
-open Closure
 open Nativevalues
 open Nativelambda
 

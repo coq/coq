@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 open Term
-open Univ
-open Environ
 open Reduction
 open Nativelambda
 

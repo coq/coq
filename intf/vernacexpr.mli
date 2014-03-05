@@ -7,8 +7,6 @@
 (************************************************************************)
 
 open Loc
-open Pp
-open Util
 open Names
 open Tacexpr
 open Misctypes

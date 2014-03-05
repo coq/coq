@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Misctypes
 open Locus
 
 (** Utilities on occurrences *)

@@ -7,26 +7,17 @@
 (************************************************************************)
 
 open Loc
-open Pp
 open Names
 open Term
 open Context
 open Environ
-open Tacmach
 open Proof_type
-open Reduction
 open Evd
-open Evar_refiner
 open Clenv
 open Redexpr
-open Tacticals
 open Globnames
-open Genarg
 open Tacexpr
-open Nametab
-open Glob_term
 open Pattern
-open Termops
 open Unification
 open Misctypes
 open Locus

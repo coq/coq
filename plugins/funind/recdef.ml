@@ -10,7 +10,6 @@ open Term
 open Vars
 open Namegen
 open Environ
-open Declarations
 open Declareops
 open Entries
 open Pp
@@ -24,7 +23,6 @@ open Tacticals
 open Tacmach
 open Tactics
 open Nametab
-open Decls
 open Declare
 open Decl_kinds
 open Tacred

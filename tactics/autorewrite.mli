@@ -8,7 +8,6 @@
 
 open Term
 open Tacexpr
-open Tacmach
 open Equality
 
 (** Rewriting rules before tactic interpretation *)

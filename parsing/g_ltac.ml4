@@ -13,7 +13,7 @@ open Tacexpr
 open Misctypes
 open Genarg
 open Genredexpr
-open Tok
+open Tok (* necessary for camlp4 *)
 
 open Pcoq
 open Pcoq.Prim

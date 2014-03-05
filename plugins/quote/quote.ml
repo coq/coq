@@ -109,7 +109,6 @@ open Pattern
 open Patternops
 open ConstrMatching
 open Tacmach
-open Proofview.Notations
 (*i*)
 
 (*s First, we need to access some Coq constants

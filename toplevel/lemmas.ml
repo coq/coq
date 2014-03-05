@@ -27,12 +27,10 @@ open Declare
 open Pretyping
 open Termops
 open Namegen
-open Evarutil
 open Reductionops
 open Constrexpr
 open Constrintern
 open Impargs
-open Tacticals
 
 (* Support for mutually proved theorems *)
 

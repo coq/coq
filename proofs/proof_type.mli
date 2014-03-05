@@ -6,18 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Environ
 open Evd
 open Names
-open Libnames
 open Term
 open Context
-open Pp
 open Tacexpr
 open Glob_term
-open Genarg
 open Nametab
-open Pattern
 open Misctypes
 
 (** This module defines the structure of proof tree and the tactic type. So, it

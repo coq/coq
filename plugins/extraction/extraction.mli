@@ -12,7 +12,6 @@ open Names
 open Term
 open Declarations
 open Environ
-open Libnames
 open Miniml
 
 val extract_constant : env -> constant -> constant_body -> ml_decl

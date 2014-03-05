@@ -6,10 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Util
-open Errors
 open Libnames
-open Mod_subst
 
 (* The relax flag is used to make it possible to load files while ignoring
    failures to incorporate some objects.  This can be useful when one
@@ -32,11 +29,11 @@ type 'a object_declaration = {
   load_function : int -> object_name * 'a -> unit;
   open_function : int -> object_name * 'a -> unit;
   classify_function : 'a -> 'a substitutivity;
-  subst_function :  substitution * 'a -> 'a;
+  subst_function : Mod_subst.substitution * 'a -> 'a;
   discharge_function : object_name * 'a -> 'a option;
   rebuild_function : 'a -> 'a }
 
-let yell s = anomaly (Pp.str s)
+let yell s = Errors.anomaly (Pp.str s)
 
 let default_object s = {
   object_name = s;
@@ -69,7 +66,7 @@ type dynamic_object_declaration = {
   dyn_cache_function : object_name * obj -> unit;
   dyn_load_function : int -> object_name * obj -> unit;
   dyn_open_function : int -> object_name * obj -> unit;
-  dyn_subst_function : substitution * obj -> obj;
+  dyn_subst_function : Mod_subst.substitution * obj -> obj;
   dyn_classify_function : obj -> obj substitutivity;
   dyn_discharge_function : object_name * obj -> obj option;
   dyn_rebuild_function : obj -> obj }

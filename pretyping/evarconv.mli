@@ -8,9 +8,7 @@
 
 open Names
 open Term
-open Context
 open Environ
-open Termops
 open Reductionops
 open Evd
 open Locus

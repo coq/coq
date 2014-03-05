@@ -10,8 +10,6 @@
 open Names
 open Term
 open Vars
-open Context
-open Evd
 open Environ
 open Nametab
 open Errors
@@ -26,7 +24,6 @@ open Constrexpr
 
 open Decl_kinds
 open Entries
-open Misctypes
 
 let typeclasses_db = "typeclass_instances"
 

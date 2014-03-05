@@ -8,9 +8,6 @@
 
 open Names
 open Term
-open Proof_type
-open Tacmach
-open Genarg
 open Tacticals
 open Misctypes
 

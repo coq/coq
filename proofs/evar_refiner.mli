@@ -6,13 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
-open Term
-open Environ
 open Evd
-open Refiner
 open Pretyping
-open Glob_term
 
 (** Refinement of existential variables. *)
 

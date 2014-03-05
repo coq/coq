@@ -21,7 +21,6 @@ open Names
 open Globnames
 open Inductiveops
 open Tactics
-open Tacticals
 open Ind_tables
 open Misctypes
 open Proofview.Notations

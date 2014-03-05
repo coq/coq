@@ -9,7 +9,6 @@
 open Term
 open Formula
 open Tacmach
-open Names
 open Globnames
 
 module OrderedConstr: Set.OrderedType with type t=constr

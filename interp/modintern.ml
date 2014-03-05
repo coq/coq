@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Declarations
-open Entries
 open Libnames
 open Constrexpr
 open Constrintern

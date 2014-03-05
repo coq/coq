@@ -13,7 +13,6 @@
    implicit arguments. *)
 
 open Names
-open Context
 open Term
 open Environ
 open Evd

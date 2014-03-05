@@ -1363,7 +1363,6 @@ let is_not_strict t =
    restriction for the moment.
 *)
 
-open Declarations
 open Declareops
 
 let inline_test r t =

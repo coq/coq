@@ -7,15 +7,11 @@
 (************************************************************************)
 
 open Environ
-open Tacmach
 open Term
 open Evd
 open Names
 open Pp
-open Util
-open Tacinterp
 open Globnames
-open Proof_type
 open Vernacexpr
 open Decl_kinds
 open Tacexpr

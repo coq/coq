@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Libobject
 open Pattern
 open Pp
 open Genredexpr
@@ -21,12 +20,10 @@ open Globnames
 open Nametab
 open Smartlocate
 open Constrexpr
-open Constrexpr_ops
 open Termops
 open Tacexpr
 open Genarg
 open Constrarg
-open Mod_subst
 open Misctypes
 open Locus
 

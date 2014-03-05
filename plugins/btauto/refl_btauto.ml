@@ -1,4 +1,3 @@
-open Proofview.Notations
 
 let contrib_name = "btauto"
 

@@ -9,12 +9,7 @@
 open Names
 open Libnames
 open Term
-open Context
-open Declarations
 open Entries
-open Indtypes
-open Safe_typing
-open Nametab
 open Decl_kinds
 
 (** This module provides the official functions to declare new variables,
@@ -23,8 +18,6 @@ open Decl_kinds
    register the declarations in the library (module [Lib]) --- so that the
    reset works properly --- and will fill some global tables such as
    [Nametab] and [Impargs]. *)
-
-open Nametab
 
 (** Declaration of local constructions (Variable/Hypothesis/Local) *)
 

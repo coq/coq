@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Context
-open Cooking
 open Declarations
 open Entries
 open Opaqueproof

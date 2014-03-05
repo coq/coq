@@ -6,13 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Evd
 open Names
 open Term
-open Context
 open Environ
-open Evarutil
 open Glob_term
 
 (** {6 Coercions. } *)

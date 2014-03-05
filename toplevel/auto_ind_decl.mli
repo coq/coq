@@ -8,10 +8,6 @@
 
 open Term
 open Names
-open Libnames
-open Mod_subst
-open Context
-open Proof_type
 open Ind_tables
 
 (** This file is about the automatic generation of schemes about

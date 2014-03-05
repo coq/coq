@@ -6,13 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Names
 open Term
-open Context
 open Environ
-open Glob_term
-open Inductiveops
 open Type_errors
 
 (** {6 The type of errors raised by the pretyper } *)

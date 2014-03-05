@@ -8,34 +8,28 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open Pp
 open Errors
 open Util
-open Names
 open Nameops
 open Namegen
 open Term
 open Vars
-open Termops
 open Reduction
 open Tacticals
 open Tacmach
 open Tactics
 open Patternops
 open Clenv
-open Glob_term
 open Typeclasses
 open Typeclasses_errors
 open Classes
 open Constrexpr
-open Libnames
 open Globnames
 open Evd
 open Misctypes
 open Locus
 open Locusops
 open Decl_kinds
-open Tacinterp
 open Elimschemes
 open Goal
 open Environ
@@ -43,8 +37,6 @@ open Pp
 open Names
 open Tacinterp
 open Termops
-open Genarg
-open Extraargs
 open Entries
 open Libnames
 
@@ -1344,8 +1336,6 @@ let occurrences_of = function
       if List.exists (fun n -> n < 0) nl then
 	error "Illegal negative occurrence number.";
       (true,nl)
-
-open Extraargs
 
 let apply_glob_constr c l2r occs = fun () env avoid t ty cstr evars ->
   let evd, c = (Pretyping.understand_tcc (goalevars evars) env c) in

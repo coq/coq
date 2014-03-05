@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Names
 open Term
 open Context
@@ -14,7 +13,6 @@ open Termops
 open Environ
 open Libnames
 open Globnames
-open Nametab
 open Glob_term
 open Pattern
 open Constrexpr

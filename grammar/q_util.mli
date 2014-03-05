@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Compat
+open Compat (* necessary for camlp4 *)
 
 val mlexpr_of_list :  ('a -> MLast.expr) -> 'a list -> MLast.expr
 

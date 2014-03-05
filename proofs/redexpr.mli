@@ -8,11 +8,9 @@
 
 open Names
 open Term
-open Closure
 open Pattern
 open Genredexpr
 open Reductionops
-open Termops
 open Locus
 
 type red_expr =

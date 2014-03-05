@@ -17,8 +17,6 @@ END
 
 (** Options: depth, debug and transparency settings. *)
 
-open Goptions
-
 let set_transparency cl b =
   List.iter (fun r ->
     let gr = Smartlocate.global_with_alias r in

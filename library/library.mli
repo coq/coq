@@ -7,10 +7,8 @@
 (************************************************************************)
 
 open Loc
-open Pp
 open Names
 open Libnames
-open Libobject
 
 (** This module provides functions to load, open and save
   libraries. Libraries correspond to the subclass of modules that

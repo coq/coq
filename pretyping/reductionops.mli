@@ -12,7 +12,6 @@ open Context
 open Univ
 open Evd
 open Environ
-open Closure
 
 (** Reduction Functions. *)
 

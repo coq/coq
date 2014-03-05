@@ -6,16 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Names
-open Proof_type
-open Tacmach
 open Tactic_debug
 open Term
 open Tacexpr
 open Genarg
-open Constrexpr
-open Mod_subst
 open Redexpr
 open Misctypes
 

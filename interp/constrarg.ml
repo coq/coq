@@ -7,16 +7,7 @@
 (************************************************************************)
 
 open Loc
-open Pp
-open Names
-open Term
-open Libnames
-open Globnames
-open Glob_term
-open Genredexpr
 open Tacexpr
-open Pattern
-open Constrexpr
 open Term
 open Misctypes
 open Genarg

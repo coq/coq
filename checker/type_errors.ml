@@ -8,7 +8,6 @@
 
 open Names
 open Cic
-open Term
 open Environ
 
 type unsafe_judgment = constr * constr

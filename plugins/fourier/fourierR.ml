@@ -15,7 +15,6 @@ des inéquations et équations sont entiers. En attendant la tactique Field.
 open Term
 open Tactics
 open Names
-open Libnames
 open Globnames
 open Tacticals
 open Tacmach

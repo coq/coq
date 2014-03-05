@@ -8,8 +8,6 @@
 
 open Names
 open Term
-open Declarations
-open Inductiveops
 open Environ
 open Evd
 

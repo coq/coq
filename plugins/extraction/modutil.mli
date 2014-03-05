@@ -7,11 +7,8 @@
 (************************************************************************)
 
 open Names
-open Declarations
-open Environ
 open Globnames
 open Miniml
-open Mod_subst
 
 (*s Functions upon ML modules. *)
 

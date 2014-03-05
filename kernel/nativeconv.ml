@@ -7,15 +7,11 @@
 (************************************************************************)
 open Errors
 open Names
-open Term
 open Univ
-open Pre_env
 open Nativelib
 open Reduction
-open Declarations
 open Util
 open Nativevalues
-open Nativelambda
 open Nativecode 
 
 (** This module implements the conversion test by compiling to OCaml code *)

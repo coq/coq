@@ -7,12 +7,9 @@
 (************************************************************************)
 
 open Loc
-open Pp
 open Names
 open Libnames
 open Misctypes
-open Term
-open Mod_subst
 open Constrexpr
 
 (** Constrexpr_ops: utilities on [constr_expr] *)
