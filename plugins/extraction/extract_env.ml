@@ -644,3 +644,16 @@ let extraction_library is_rec m =
   in
   List.iter print struc;
   reset ()
+
+let structure_for_compute c =
+  init false false;
+  let env = Global.env () in
+  let ast, mlt = Extraction.extract_constr env c in
+  let ast = Mlutil.normalize ast in
+  let refs = ref Refset.empty in
+  let add_ref r = refs := Refset.add r !refs in
+  let () = ast_iter_references add_ref add_ref add_ref ast in
+  let refs = Refset.elements !refs in
+  let struc = optimize_struct (refs,[]) (mono_environment refs []) in
+  let flatstruc = List.map snd (List.flatten (List.map snd struc)) in
+  flatstruc, ast, mlt

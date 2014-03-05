@@ -1055,6 +1055,15 @@ let extract_with_type env c =
 	Some (vl, t)
     | _ -> None
 
+let extract_constr env c =
+  reset_meta_count ();
+  let typ = type_of env c in
+  match flag_of_type env typ with
+    | (_,TypeScheme) -> MLdummy, Tdummy Ktype
+    | (Logic,_) -> MLdummy, Tdummy Kother
+    | (Info,Default) ->
+      let mlt = extract_type env [] 1 typ [] in
+      extract_term env Mlenv.empty mlt c [], mlt
 
 let extract_inductive env kn =
   let ind = extract_ind env kn in

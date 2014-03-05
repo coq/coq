@@ -183,6 +183,8 @@ type ml_structure = (module_path * ml_module_structure) list
 
 type ml_signature = (module_path * ml_module_sig) list
 
+type ml_flat_structure = ml_structure_elem list
+
 type unsafe_needs = {
   mldummy : bool;
   tdummy : bool;
