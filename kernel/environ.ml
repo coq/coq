@@ -168,7 +168,7 @@ let no_link_info () = ref NotLinked
 
 let add_constant_key kn cb linkinfo env =
   let new_constants =
-    Cmap_env.add kn (cb,(linkinfo, ref None)) env.env_globals.env_constants in
+    Constants.add kn (cb,(linkinfo, ref None)) env.env_globals.env_constants in
   let new_globals =
     { env.env_globals with
 	env_constants = new_constants } in

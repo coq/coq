@@ -25,8 +25,17 @@ type constant_key = constant_body * (link_info ref * key)
 
 type mind_key = mutual_inductive_body * link_info ref
 
+module Constants :
+sig
+  type t
+  val empty : t
+  val add : Constant.t -> constant_key -> t -> t
+  val find : Constant.t -> t -> constant_key
+  val fold : (Constant.t -> constant_key -> 'a -> 'a) -> t -> 'a  -> 'a
+end
+
 type globals = {
-  env_constants : constant_key Cmap_env.t;
+  env_constants : Constants.t;
   env_inductives : mind_key Mindmap_env.t;
   env_modules : module_body MPmap.t;
   env_modtypes : module_type_body MPmap.t}

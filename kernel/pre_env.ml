@@ -38,8 +38,23 @@ type constant_key = constant_body * (link_info ref * key)
 
 type mind_key = mutual_inductive_body * link_info ref
 
+module Constants =
+struct
+  module M =
+  struct
+    type t = Constant.t
+    include Constant.UserOrd
+  end
+  module CMap = HMap.Make(M)
+  type t = constant_key CMap.t
+  let empty = CMap.empty
+  let add = CMap.add
+  let find = CMap.find
+  let fold = CMap.fold
+end
+
 type globals = {
-  env_constants : constant_key Cmap_env.t;
+  env_constants : Constants.t;
   env_inductives : mind_key Mindmap_env.t;
   env_modules : module_body MPmap.t;
   env_modtypes : module_type_body MPmap.t}
@@ -81,7 +96,7 @@ let empty_named_context_val = [],[]
 
 let empty_env = {
   env_globals = {
-    env_constants = Cmap_env.empty;
+    env_constants = Constants.empty;
     env_inductives = Mindmap_env.empty;
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
@@ -150,10 +165,10 @@ let env_of_named id env = env
 (* Global constants *)
 
 let lookup_constant_key kn env =
-  Cmap_env.find kn env.env_globals.env_constants
+  Constants.find kn env.env_globals.env_constants
 
 let lookup_constant kn env =
-  fst (Cmap_env.find kn env.env_globals.env_constants)
+  fst (Constants.find kn env.env_globals.env_constants)
 
 (* Mutual Inductives *)
 let lookup_mind kn env =
