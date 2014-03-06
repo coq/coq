@@ -405,7 +405,7 @@ val mkCoFix : cofixpoint -> constr
 (** {6 Aliases} *)
 
 val eq_constr : constr -> constr -> bool
-(** Alias for [Constr.eq] *)
+(** Alias for [Constr.equal] *)
 
 val kind_of_term : constr -> (constr, types) kind_of_term
 (** Alias for [Constr.kind] *)
