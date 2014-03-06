@@ -8,6 +8,12 @@
 
 open Names
 
+type vodigest =
+  | Dvo_or_vi of Digest.t        (* The digest of the seg_lib part *)
+  | Dvivo of Digest.t * Digest.t (* The digest of the seg_lib + seg_univ part *)
+
+val digest_match : actual:vodigest -> required:vodigest -> bool
+
 (** {6 Safe environments } *)
 
 (** Since we are now able to type terms, we can define an abstract type
@@ -120,10 +126,9 @@ val export :
   safe_environment -> DirPath.t ->
     module_path * compiled_library * native_library
 
-val import : compiled_library -> Digest.t ->
+(* Constraints are non empty iff the file is a vi2vo *)
+val import : compiled_library -> Univ.constraints -> vodigest ->
   (module_path * Nativecode.symbol array) safe_transformer
-
-val join_compiled_library : compiled_library -> unit
 
 (** {6 Safe typing judgments } *)
 

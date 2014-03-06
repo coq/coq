@@ -85,7 +85,8 @@ val mind_of_delta_kn : kernel_name -> mutual_inductive
 val start_library : DirPath.t -> module_path
 val export : DirPath.t ->
   module_path * Safe_typing.compiled_library * Safe_typing.native_library
-val import : Safe_typing.compiled_library -> Digest.t ->
+val import :
+  Safe_typing.compiled_library -> Univ.constraints -> Safe_typing.vodigest ->
   module_path * Nativecode.symbol array
 
 (** {6 Misc } *)

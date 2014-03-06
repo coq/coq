@@ -91,7 +91,18 @@ open Declarations
 
 *)
 
-type library_info = DirPath.t * Digest.t
+type vodigest =
+  | Dvo_or_vi of Digest.t        (* The digest of the seg_lib part *)
+  | Dvivo of Digest.t * Digest.t (* The digest of the seg_lib + seg_univ part *)
+
+let digest_match ~actual ~required =
+  match actual, required with
+  | Dvo_or_vi d1, Dvo_or_vi d2
+  | Dvivo (d1,_), Dvo_or_vi d2 -> String.equal d1 d2
+  | Dvivo (d1,e1), Dvivo (d2,e2) -> String.equal d1 d2 && String.equal e1 e2
+  | Dvo_or_vi _, Dvivo _ -> false
+
+type library_info = DirPath.t * vodigest
 
 (** Functor and funsig parameters, most recent first *)
 type module_parameters = (MBId.t * module_type_body) list
@@ -252,11 +263,11 @@ let check_initial senv = assert (is_initial senv)
     with the correct digests. *)
 
 let check_imports current_libs needed =
-  let check (id,stamp) =
+  let check (id,required) =
     try
-      let actual_stamp = List.assoc_f DirPath.equal id current_libs in
-      if not (String.equal stamp actual_stamp) then
-	Errors.error
+      let actual = List.assoc_f DirPath.equal id current_libs in
+      if not(digest_match ~actual ~required) then
+        Errors.error
           ("Inconsistent assumptions over module "^(DirPath.to_string id)^".")
     with Not_found ->
       Errors.error ("Reference to unknown module "^(DirPath.to_string id)^".")
@@ -661,8 +672,6 @@ type compiled_library = {
 
 type native_library = Nativecode.global list
 
-let join_compiled_library l = Modops.join_module l.comp_mod
-
 let start_library dir senv =
   check_initial senv;
   assert (not (DirPath.is_empty dir));
@@ -709,12 +718,15 @@ let export compilation_mode senv dir =
   in
   mp, lib, ast
 
-let import lib digest senv =
+(* cst are the constraints that were computed by the vi2vo step and hence are
+ * not part of the mb.mod_constraints field (but morally should be) *)
+let import lib cst vodigest senv =
   check_imports senv.imports lib.comp_deps;
   check_engagement senv.env lib.comp_enga;
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
   let env = Environ.add_constraints mb.mod_constraints senv.env in
+  let env = Environ.add_constraints cst env in
   (mp, lib.comp_natsymbs),
   { senv with
     env =
@@ -723,9 +735,8 @@ let import lib digest senv =
        in
        Modops.add_linked_module mb linkinfo env);
     modresolver = Mod_subst.add_delta_resolver mb.mod_delta senv.modresolver;
-    imports = (lib.comp_name,digest)::senv.imports;
+    imports = (lib.comp_name,vodigest)::senv.imports;
     loads = (mp,mb)::senv.loads }
-
 
 (** {6 Safe typing } *)
 

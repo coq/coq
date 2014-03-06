@@ -362,7 +362,11 @@ type nativecode_symb_array
 
 type compilation_unit_name = DirPath.t
 
-type library_info = compilation_unit_name * Digest.t
+type vodigest =
+  | Dvo of Digest.t              (* The digest of the seg_lib part *)
+  | Dvivo of Digest.t * Digest.t (* The digest of the seg_lib + seg_univ part *)
+
+type library_info = compilation_unit_name * vodigest
 
 type library_deps = library_info array
 
@@ -388,7 +392,8 @@ type library_disk = {
   md_imports : compilation_unit_name array }
 
 type opaque_table = constr Future.computation array
-type univ_table = Univ.constraints Future.computation array option
+type univ_table =
+  (Univ.constraints Future.computation array * Univ.constraints * bool) option
 
 (** A .vo file is currently made of :
 

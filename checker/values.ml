@@ -284,7 +284,8 @@ and v_modtype =
 
 (** kernel/safe_typing *)
 
-let v_deps = Array (v_tuple "dep" [|v_dp;String|])
+let v_vodigest = Sum ("module_impl",0, [| [|String|]; [|String;String|] |])
+let v_deps = Array (v_tuple "dep" [|v_dp;v_vodigest|])
 let v_compiled_lib =
   v_tuple "compiled" [|v_dp;v_module;v_deps;Opt v_engagement;Any|]
 
@@ -301,7 +302,8 @@ let v_lib =
   Tuple ("library",[|v_dp;v_compiled_lib;v_libraryobjs;v_deps;Array v_dp|])
 
 let v_opaques = Array (v_computation v_constr)
-let v_univopaques = Opt (Array (v_computation v_cstrs))
+let v_univopaques =
+  Opt (Tuple ("univopaques",[|Array (v_computation v_cstrs);v_cstrs;v_bool|]))
 
 (** Registering dynamic values *)
 

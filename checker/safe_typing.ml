@@ -25,9 +25,10 @@ let set_engagement c =
   genv := set_engagement c !genv
 
 (* full_add_module adds module with universes and constraints *)
-let full_add_module dp mb digest =
+let full_add_module dp mb univs digest =
   let env = !genv in
   let env = add_constraints mb.mod_constraints env in
+  let env = add_constraints univs env in
   let env = Modops.add_module mb env in
   genv := add_digest env dp digest
 
@@ -68,19 +69,20 @@ let stamp_library file digest = ()
 
 (* When the module is checked, digests do not need to match, but a
    warning is issued in case of mismatch *)
-let import file clib digest =
+let import file clib univs digest =
   let env = !genv in
   check_imports msg_warning clib.comp_name env clib.comp_deps;
   check_engagement env clib.comp_enga;
   let mb = clib.comp_mod in
   Mod_checking.check_module
-    (add_constraints mb.mod_constraints env) mb.mod_mp mb;
+    (add_constraints univs
+      (add_constraints mb.mod_constraints env)) mb.mod_mp mb;
   stamp_library file digest;
-  full_add_module clib.comp_name mb digest
+  full_add_module clib.comp_name mb univs digest
 
 (* When the module is admitted, digests *must* match *)
-let unsafe_import file clib digest =
+let unsafe_import file clib univs digest =
   let env = !genv in
   check_imports (errorlabstrm"unsafe_import") clib.comp_name env clib.comp_deps;
   check_engagement env clib.comp_enga;
-  full_add_module clib.comp_name clib.comp_mod digest
+  full_add_module clib.comp_name clib.comp_mod univs digest

@@ -17,7 +17,7 @@ type env = {
   env_globals : globals;
   env_rel_context : rel_context;
   env_stratification : stratification;
-  env_imports : Digest.t MPmap.t;
+  env_imports : Cic.vodigest MPmap.t;
 }
 val empty_env : env
 
@@ -26,8 +26,8 @@ val engagement : env -> Cic.engagement option
 val set_engagement : Cic.engagement -> env -> env
 
 (* Digests *)
-val add_digest : env -> DirPath.t -> Digest.t -> env
-val lookup_digest : env -> DirPath.t -> Digest.t
+val add_digest : env -> DirPath.t -> Cic.vodigest -> env
+val lookup_digest : env -> DirPath.t -> Cic.vodigest
 
 (* de Bruijn variables *)
 val rel_context : env -> rel_context

@@ -641,7 +641,7 @@ module Slaves : sig
   val finish_task :
     string ->
     Library.seg_univ -> Library.seg_discharge -> Library.seg_proofs ->
-    tasks -> int -> unit
+    tasks -> int -> Library.seg_univ
 
   val cancel_worker : int -> unit
 
@@ -878,7 +878,7 @@ end = struct (* {{{ *)
           Pp.msg_error (str"unable to print error message: " ++
                         str (Printexc.to_string e))); None
 
-  let finish_task name u d p l i =
+  let finish_task name (u,cst,_) d p l i =
     let bucket =
       match List.nth l i with ReqBuildProof (_,_,_,_,bucket,_) -> bucket in
     match check_task_aux (Printf.sprintf ", bucket %d" bucket) name l i with
@@ -898,9 +898,10 @@ end = struct (* {{{ *)
             let pr = Future.chain ~greedy:true ~pure:true pr discharge in
             let pr = Future.chain ~greedy:true ~pure:true pr Constr.hcons in
             Future.sink pr;
-            Future.sink uc;
+            let extra = Future.join uc in
             u.(bucket) <- uc;
-            p.(bucket) <- pr
+            p.(bucket) <- pr;
+            u, Univ.union_constraints cst extra, false
         | _ -> assert false
   
   let check_task name l i =
@@ -1611,12 +1612,15 @@ let check_task name (tasks,_) i =
 let info_tasks (tasks,_) = Slaves.info_tasks tasks
 let finish_tasks name u d p (t,rcbackup as tasks) =
   RemoteCounter.restore rcbackup;
-  let finish_task (_,_,i) =
+  let finish_task u (_,_,i) =
     let vcs = VCS.backup () in
-    Future.purify (Slaves.finish_task name u d p t) i;
+    let u = Future.purify (Slaves.finish_task name u d p t) i in
     Pp.pperr_flush ();
-    VCS.restore vcs in
-  try List.iter finish_task (info_tasks tasks)
+    VCS.restore vcs;
+    u in
+  try
+    let u, a, _ = List.fold_left finish_task u (info_tasks tasks) in
+    (u,a,true), p
   with e ->
     Pp.pperrnl Pp.(str"File " ++ str name ++ str ":" ++ spc () ++ print e);
     exit 1

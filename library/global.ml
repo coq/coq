@@ -129,7 +129,7 @@ let mind_of_delta_kn kn =
 
 let start_library dir = globalize (Safe_typing.start_library dir)
 let export s = Safe_typing.export !Flags.compilation_mode (safe_env ()) s
-let import cenv digest = globalize (Safe_typing.import cenv digest)
+let import c u d = globalize (Safe_typing.import c u d)
 
 
 (** Function to get an environment from the constants part of the global

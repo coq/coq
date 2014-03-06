@@ -45,7 +45,8 @@ type library_t = {
   library_compiled : Cic.compiled_library;
   library_opaques : Cic.opaque_table;
   library_deps : Cic.library_deps;
-  library_digest : Digest.t }
+  library_digest : Cic.vodigest;
+  library_extra_univs : Univ.constraints }
 
 module LibraryOrdered =
   struct
@@ -112,11 +113,11 @@ let check_one_lib admit (dir,m) =
   if LibrarySet.mem dir admit then
     (Flags.if_verbose ppnl
       (str "Admitting library: " ++ pr_dirpath dir);
-      Safe_typing.unsafe_import file md dig)
+      Safe_typing.unsafe_import file md m.library_extra_univs dig)
   else
     (Flags.if_verbose ppnl
       (str "Checking library: " ++ pr_dirpath dir);
-      Safe_typing.import file md dig);
+      Safe_typing.import file md m.library_extra_univs dig);
   Flags.if_verbose pp (fnl());
   pp_flush ();
   register_loaded_library m
@@ -290,13 +291,14 @@ let with_magic_number_check f a =
 
 open Cic
 
-let mk_library md f table digest = {
+let mk_library md f table digest cst = {
   library_name = md.md_name;
   library_filename = f;
   library_compiled = md.md_compiled;
   library_opaques = table;
   library_deps = md.md_deps;
-  library_digest = digest }
+  library_digest = digest;
+  library_extra_univs = cst }
 
 let name_clash_message dir mdir f =
   str ("The file " ^ f ^ " contains library") ++ spc () ++
@@ -312,7 +314,7 @@ let intern_from_file (dir, f) =
     try
       let ch = with_magic_number_check raw_intern_library f in
       let (md:Cic.library_disk), _, digest = System.marshal_in_segment f ch in
-      let (opaque_csts:'a option), _, _ = System.marshal_in_segment f ch in
+      let (opaque_csts:'a option), _, udg = System.marshal_in_segment f ch in
       let (discharging:'a option), _, _ = System.marshal_in_segment f ch in
       let (tasks:'a option), _, _ = System.marshal_in_segment f ch in
       let (table:Cic.opaque_table), pos, checksum =
@@ -331,21 +333,30 @@ let intern_from_file (dir, f) =
           (str "The file "++str f++str " contains unfinished tasks");
       if opaque_csts <> None then begin
         pp (str " (was a vi file) ");
-        Validate.validate !Flags.debug Values.v_univopaques opaque_csts
+      Option.iter (fun (_,_,b) -> if not b then
+        errorlabstrm "intern_from_file"
+          (str "The file "++str f++str " is still a .vi"))
+        opaque_csts;
+      Validate.validate !Flags.debug Values.v_univopaques opaque_csts;
       end;
       (* Verification of the unmarshalled values *)
       Validate.validate !Flags.debug Values.v_lib md;
       Validate.validate !Flags.debug Values.v_opaques table;
       Flags.if_verbose ppnl (str" done]"); pp_flush ();
+      let digest =
+        if opaque_csts <> None then Cic.Dvivo (digest,udg)
+        else (Cic.Dvo digest) in
       md,table,opaque_csts,digest
     with e -> Flags.if_verbose ppnl (str" failed!]"); raise e in
   depgraph := LibraryMap.add md.md_name md.md_deps !depgraph;
   opaque_tables := LibraryMap.add md.md_name table !opaque_tables;
-  Option.iter (fun opaque_csts ->
+  Option.iter (fun (opaque_csts,_,_) ->
     opaque_univ_tables :=
       LibraryMap.add md.md_name opaque_csts !opaque_univ_tables)
     opaque_csts;
-  mk_library md f table digest
+  let extra_cst =
+    Option.default Univ.empty_constraint (Option.map pi2 opaque_csts) in
+  mk_library md f table digest extra_cst
 
 let get_deps (dir, f) =
   try LibraryMap.find dir !depgraph

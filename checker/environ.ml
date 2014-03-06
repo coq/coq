@@ -22,7 +22,7 @@ type env = {
     env_globals       : globals;
     env_rel_context   : rel_context;
     env_stratification : stratification;
-    env_imports : Digest.t MPmap.t }
+    env_imports : Cic.vodigest MPmap.t }
 
 let empty_env = {
   env_globals =

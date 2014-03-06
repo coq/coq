@@ -50,7 +50,7 @@ val check_task : string -> tasks -> int -> bool
 val info_tasks : tasks -> (string * float * int) list
 val finish_tasks : string ->
   Library.seg_univ -> Library.seg_discharge -> Library.seg_proofs ->
-  tasks -> unit
+  tasks -> Library.seg_univ * Library.seg_proofs
 
 (* Id of the tip of the current branch *)
 val get_current_state : unit -> Stateid.t

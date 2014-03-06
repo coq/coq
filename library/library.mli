@@ -30,7 +30,8 @@ val require_library_from_file :
 
 (** Segments of a library *)
 type seg_lib
-type seg_univ = Univ.constraints Future.computation array
+type seg_univ = (* cst, all_cst, finished? *)
+  Univ.constraints Future.computation array * Univ.constraints * bool
 type seg_discharge = Opaqueproof.cooking_info list array
 type seg_proofs = Term.constr Future.computation array
 

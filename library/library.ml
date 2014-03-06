@@ -26,7 +26,7 @@ type library_disk = {
   md_name : compilation_unit_name;
   md_compiled : Safe_typing.compiled_library;
   md_objects : Declaremods.library_objects;
-  md_deps : (compilation_unit_name * Digest.t) array;
+  md_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   md_imports : compilation_unit_name array }
 
 (*s Modules loaded in memory contain the following informations. They are
@@ -36,9 +36,11 @@ type library_t = {
   library_name : compilation_unit_name;
   library_compiled : Safe_typing.compiled_library;
   library_objects : Declaremods.library_objects;
-  library_deps : (compilation_unit_name * Digest.t) array;
+  library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_imports : compilation_unit_name array;
-  library_digest : Digest.t }
+  library_digests : Safe_typing.vodigest;
+  library_extra_univs : Univ.constraints;
+}
 
 module LibraryOrdered = DirPath
 module LibraryMap = Map.Make(LibraryOrdered)
@@ -441,32 +443,40 @@ let () =
 (* Internalise libraries *)
 
 type seg_lib = library_disk
-type seg_univ = Univ.constraints Future.computation array
+type seg_univ = (* true = vivo, false = vi *)
+  Univ.constraints Future.computation array * Univ.constraints * bool
 type seg_discharge = Opaqueproof.cooking_info list array
 type seg_proofs = Term.constr Future.computation array
 
-let mk_library md digest =
+let mk_library md digests univs =
   {
     library_name     = md.md_name;
     library_compiled = md.md_compiled;
     library_objects  = md.md_objects;
     library_deps     = md.md_deps;
     library_imports  = md.md_imports;
-    library_digest    = digest
+    library_digests  = digests;
+    library_extra_univs = univs;
   }
 
 let intern_from_file f =
   let ch = System.with_magic_number_check raw_intern_library f in
   let (lmd : seg_lib), pos, digest_lmd = System.marshal_in_segment f ch in
-  let (univs : seg_univ option), _, _ = System.marshal_in_segment f ch in
-  Option.iter (fun univs -> add_univ_table lmd.md_name (Fetched univs)) univs;
+  let (univs : seg_univ option), _, digest_u = System.marshal_in_segment f ch in
   let _ = System.skip_in_segment f ch in
   let pos, digest = System.skip_in_segment f ch in
+  close_in ch;
   register_library_filename lmd.md_name f;
   add_opaque_table lmd.md_name (ToFetch (f,pos,digest));
-  let library = mk_library lmd digest_lmd in
-  close_in ch;
-  library
+  let open Safe_typing in
+  match univs with
+  | None -> mk_library lmd (Dvo_or_vi digest_lmd) Univ.empty_constraint
+  | Some (utab,uall,true) ->
+      add_univ_table lmd.md_name (Fetched utab);
+      mk_library lmd (Dvivo (digest_lmd,digest_u)) uall
+  | Some (utab,_,false) ->
+      add_univ_table lmd.md_name (Fetched utab);
+      mk_library lmd (Dvo_or_vi digest_lmd) Univ.empty_constraint
 
 let rec intern_library needed (dir, f) =
   (* Look if in the current logical environment *)
@@ -489,10 +499,10 @@ and intern_library_deps needed dir m =
 
 and intern_mandatory_library caller needed (dir,d) =
   let m,needed = intern_library needed (try_locate_absolute_library dir) in
-  if not (String.equal d m.library_digest) then
-    errorlabstrm "" (strbrk ("Compiled library "^(DirPath.to_string caller)^
-	   ".vo makes inconsistent assumptions over library "
-	   ^(DirPath.to_string dir)));
+  if not (Safe_typing.digest_match ~actual:m.library_digests ~required:d) then
+    errorlabstrm "" (strbrk ("Compiled library "^ DirPath.to_string caller ^
+      ".vo makes inconsistent assumptions over library " ^
+      DirPath.to_string dir));
   needed
 
 let rec_intern_library needed mref =
@@ -553,7 +563,8 @@ let register_library m =
     m.library_name
     m.library_compiled
     m.library_objects
-    m.library_digest;
+    m.library_digests
+    m.library_extra_univs;
   register_loaded_library m
 
 (* Follow the semantics of Anticipate object:
@@ -686,13 +697,14 @@ let load_library_todo f =
   if tasks = None then errorlabstrm "restart" (str"not a .vi file");
   if s2 = None then errorlabstrm "restart" (str"not a .vi file");
   if s3 = None then errorlabstrm "restart" (str"not a .vi file");
+  if pi3 (Option.get s2) then errorlabstrm "restart" (str"not a .vi file");
   longf, s1, Option.get s2, Option.get s3, Option.get tasks, s5
 
 (************************************************************************)
 (*s [save_library dir] ends library [dir] and save it to the disk. *)
 
 let current_deps () =
-  List.map (fun m -> (m.library_name, m.library_digest)) !libraries_loaded_list
+  List.map (fun m -> m.library_name, m.library_digests) !libraries_loaded_list
 
 let current_reexports () =
   List.map (fun m -> m.library_name) !libraries_exports_list
@@ -722,7 +734,8 @@ let save_library_to ?todo dir f =
         f ^ "o", (fun _ -> None), (fun _ -> None), (fun _ -> None)
     | Some d ->
         assert(!Flags.compilation_mode = Flags.BuildVi);
-        f ^ "i", (fun x -> Some (d x)), (fun x -> Some x), (fun x -> Some x) in
+        f ^ "i", (fun x -> Some (d x)),
+          (fun x -> Some (x,Univ.empty_constraint,false)), (fun x -> Some x) in
   Opaqueproof.reset_indirect_creator ();
   (* HACK: end_library resets Lib and then joins the safe env.  To join the
    * env one needs to access the futures stored in the tables.  Standard
