@@ -9,6 +9,8 @@
 (* This file gathers environment variables needed by Coq to run (such
    as coqlib) *)
 
+let (//) s1 s2 = s1 ^ "/" ^ s2
+
 let coqbin =
   System.canonical_path_name (Filename.dirname Sys.executable_name)
 
@@ -27,8 +29,8 @@ let exe s = s ^ Coq_config.exec_extension
 
 let reldir instdir testfile oth =
   let rpath = if Coq_config.local then [] else instdir in
-  let out = List.fold_left Filename.concat coqroot rpath in
-  if Sys.file_exists (Filename.concat out testfile) then out else oth ()
+  let out = List.fold_left (//) coqroot rpath in
+  if Sys.file_exists (out//testfile) then out else oth ()
 
 let guess_coqlib () =
   let file = "states/initial.coq" in
@@ -38,7 +40,7 @@ let guess_coqlib () =
           | Some coqlib -> coqlib
           | None -> coqroot
         in
-        if Sys.file_exists (Filename.concat coqlib file)
+        if Sys.file_exists (coqlib//file)
         then coqlib
         else Util.error "cannot guess a path for Coq libraries; please use -coqlib option")
 
@@ -54,18 +56,14 @@ let path_to_list p =
     Util.split_string_at sep p
 
 let xdg_data_home =
-  Filename.concat
-    (System.getenv_else "XDG_DATA_HOME" (Filename.concat System.home ".local/share"))
-    "coq"
+    (System.getenv_else "XDG_DATA_HOME" (System.home//".local/share"))//"coq"
 
 let xdg_config_home =
-  Filename.concat
-    (System.getenv_else "XDG_CONFIG_HOME" (Filename.concat System.home ".config"))
-    "coq"
+  (System.getenv_else "XDG_CONFIG_HOME" (System.home//".config"))//"coq"
 
 let xdg_data_dirs =
   (try
-    List.map (fun dir -> Filename.concat dir "coq") (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
+    List.map (fun dir -> dir//"coq") (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
   with Not_found -> ["/usr/local/share/coq";"/usr/share/coq"])
     @ (match Coq_config.datadir with |None -> [] |Some datadir -> [datadir])
 
@@ -84,7 +82,7 @@ let rec which l f =
   match l with
     | [] -> raise Not_found
     | p :: tl ->
-	if Sys.file_exists (Filename.concat p f)
+	if Sys.file_exists (p//f)
 	then p
 	else which tl f
 
@@ -108,7 +106,7 @@ let camllib () =
   then Coq_config.camllib
   else
     let camlbin = camlbin () in
-    let com = (Filename.concat camlbin "ocamlc") ^ " -where" in
+    let com = (camlbin//"ocamlc") ^ " -where" in
     let _,res = System.run_command (fun x -> x) (fun _ -> ()) com in
     Util.strip res
 
@@ -117,7 +115,7 @@ let camlp4bin () =
     if !Flags.boot then Coq_config.camlp4bin else
       try guess_camlp4bin () with e when e <> Sys.Break ->
         let cb = camlbin () in
-	if Sys.file_exists (Filename.concat cb (exe Coq_config.camlp4)) then cb
+	if Sys.file_exists (cb//(exe Coq_config.camlp4)) then cb
 	else Coq_config.camlp4bin
 
 let camlp4lib () =
@@ -125,7 +123,7 @@ let camlp4lib () =
   then Coq_config.camlp4lib
   else
     let camlp4bin = camlp4bin () in
-    let com = (Filename.concat camlp4bin Coq_config.camlp4) ^ " -where" in
+    let com = (camlp4bin//Coq_config.camlp4) ^ " -where" in
     let ex,res = System.run_command (fun x -> x) (fun _ -> ()) com in
     match ex with
       |Unix.WEXITED 0 -> Util.strip res
