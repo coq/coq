@@ -9,7 +9,7 @@
 open Util
 open Pp
 
-let ( / ) = Filename.concat
+let ( / ) s1 s2 = s1 ^ "/" ^ s2
 
 let set_debug () =
   let () = Backtrace.record_backtrace true in
