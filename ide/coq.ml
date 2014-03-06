@@ -52,6 +52,12 @@ let version () =
 let rec read_all_lines in_chan =
   try
     let arg = input_line in_chan in
+    let len = String.length arg  in
+    let arg =
+      if arg.[len - 1] = '\r' then
+	String.sub arg 0 (len - 1)
+      else arg
+    in
     arg::(read_all_lines in_chan)
   with End_of_file -> []
 
