@@ -1558,6 +1558,7 @@ let internalize globalenv env allow_patvar lvar c =
           let ntnvars = Id.Map.domain ntnvars in
           let lvars = Id.Set.union lvars cvars in
           let lvars = Id.Set.union lvars ntnvars in
+          let lvars = Id.Set.union lvars env.ids in
           let ist = {
             Genintern.ltacvars = lvars;
             ltacrecvars = Id.Map.empty;
