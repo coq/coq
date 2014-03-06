@@ -38,24 +38,43 @@ type constant_key = constant_body * (link_info ref * key)
 
 type mind_key = mutual_inductive_body * link_info ref
 
-module Constants =
-struct
-  module M =
-  struct
-    type t = Constant.t
-    include Constant.UserOrd
-  end
-  module CMap = HMap.Make(M)
-  type t = constant_key CMap.t
-  let empty = CMap.empty
-  let add = CMap.add
-  let find = CMap.find
-  let fold = CMap.fold
+module type Map =
+sig
+  type t
+  type key
+  type value
+  val empty : t
+  val add : key -> value -> t -> t
+  val find : key -> t -> value
+  val fold : (key -> value -> 'a -> 'a) -> t -> 'a -> 'a
 end
+
+module Make(M : sig include HMap.HashedType type value end) =
+struct
+  module Map = HMap.Make(M)
+  type t = M.value Map.t
+  let empty = Map.empty
+  let add = Map.add
+  let find = Map.find
+  let fold = Map.fold
+end
+
+module Constants = Make(struct
+  type t = Constant.t
+  type value = constant_key
+  include Constant.UserOrd
+end)
+
+module Inductives = Make(struct
+  type t = MutInd.t
+  type value = mind_key
+  include MutInd.UserOrd
+end)
+
 
 type globals = {
   env_constants : Constants.t;
-  env_inductives : mind_key Mindmap_env.t;
+  env_inductives : Inductives.t;
   env_modules : module_body MPmap.t;
   env_modtypes : module_type_body MPmap.t}
 
@@ -97,7 +116,7 @@ let empty_named_context_val = [],[]
 let empty_env = {
   env_globals = {
     env_constants = Constants.empty;
-    env_inductives = Mindmap_env.empty;
+    env_inductives = Inductives.empty;
     env_modules = MPmap.empty;
     env_modtypes = MPmap.empty};
   env_named_context = empty_named_context;
@@ -172,7 +191,7 @@ let lookup_constant kn env =
 
 (* Mutual Inductives *)
 let lookup_mind kn env =
-  fst (Mindmap_env.find kn env.env_globals.env_inductives)
+  fst (Inductives.find kn env.env_globals.env_inductives)
 
 let lookup_mind_key kn env =
-  Mindmap_env.find kn env.env_globals.env_inductives
+  Inductives.find kn env.env_globals.env_inductives
