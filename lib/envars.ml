@@ -12,14 +12,14 @@ open Util
 
 let getenv_else s dft = try Sys.getenv s with Not_found -> dft ()
 
-let safe_getenv warning n = 
+let safe_getenv warning n =
   getenv_else n (fun () ->
     warning ("Environment variable "^n^" not found: using '$"^n^"' .");
     ("$"^n)
   )
 
 let ( / ) a b =
-  if Filename.is_relative b then Filename.concat a b else b
+  if Filename.is_relative b then a ^ "/" ^ b else b
 
 let coqify d = d / "coq"
 
@@ -41,12 +41,12 @@ let user_path () =
 
 let rec which l f =
   match l with
-    | [] -> 
+    | [] ->
       raise Not_found
     | p :: tl ->
-      if Sys.file_exists (p / f) then 
+      if Sys.file_exists (p / f) then
 	p
-      else 
+      else
 	which tl f
 
 let expand_path_macros ~warn s =
@@ -79,7 +79,7 @@ let expand_path_macros ~warn s =
 
 (** {2 Coq paths} *)
 
-let relative_base = 
+let relative_base =
   Filename.dirname (Filename.dirname Sys.executable_name)
 
 let coqbin =
@@ -132,7 +132,7 @@ let docdir () =
 
 let coqpath =
   let coqpath = getenv_else "COQPATH" (fun () -> "") in
-  let make_search_path path = 
+  let make_search_path path =
     let paths = path_to_list path in
     let valid_paths = List.filter Sys.file_exists paths in
     List.rev valid_paths
@@ -177,7 +177,7 @@ let camlp4bin () =
 let camlp4 () = camlp4bin () / exe Coq_config.camlp4
 
 let camlp4lib () =
-  if !Flags.boot then 
+  if !Flags.boot then
     Coq_config.camlp4lib
   else
     let ex, res = CUnix.run_command (camlp4 () ^ " -where") in
@@ -207,7 +207,7 @@ let xdg_data_dirs warn =
 
 let xdg_config_dirs warn =
   let sys_dirs =
-    try 
+    try
       List.map coqify (path_to_list (Sys.getenv "XDG_CONFIG_DIRS"))
     with
       | Not_found when String.equal Sys.os_type "Win32" -> [relative_base / "config"]
