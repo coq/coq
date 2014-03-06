@@ -10,7 +10,7 @@ open Pp
 open System
 open Toplevel
 
-let (/) = Filename.concat
+let (/) s1 s2 = s1 ^ "/" ^ s2
 
 let set_debug () = Flags.debug := true
 
