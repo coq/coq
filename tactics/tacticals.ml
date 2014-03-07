@@ -555,13 +555,9 @@ module New = struct
     mkVar (nthHypId m gl)
 
   let onNthHypId m tac =
-    Goal.enter begin fun gl ->
-      Proofview.tclUNIT (nthHypId m gl) >>= tac
-    end
+    Proofview.Goal.enter begin fun gl -> tac (nthHypId m gl) end
   let onNthHyp m tac =
-    Goal.enter begin fun gl ->
-      Proofview.tclUNIT (nthHyp m gl) >>= tac
-    end
+    Proofview.Goal.enter begin fun gl -> tac (nthHyp m gl) end
 
   let onLastHypId = onNthHypId 1
   let onLastHyp   = onNthHyp 1
