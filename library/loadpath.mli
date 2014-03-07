@@ -30,6 +30,9 @@ val get_load_paths : unit -> t list
 val get_paths : unit -> CUnix.physical_path list
 (** Same as [get_load_paths] but only get the physical part. *)
 
+val get_accessible_paths : unit -> CUnix.physical_path list
+(** Same as [get_paths] but also get paths that can be relatively accessed. *)
+
 val add_load_path : CUnix.physical_path -> bool -> DirPath.t -> unit
 (** [add_load_path root phys log] adds the binding [phys := log] to the current
     loadpaths. The [root] flag indicates whether this loadpath has to be treated
