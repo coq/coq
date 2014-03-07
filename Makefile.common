@@ -53,7 +53,7 @@ endif
 BESTOBJ:=$(if $(OPT),.cmx,.cmo)
 BESTLIB:=$(if $(OPT),.cmxa,.cma)
 
-COQBINARIES:= $(COQMKTOP) $(COQC) \
+COQBINARIES:= $(COQMKTOP) \
   $(COQTOPBYTE) $(COQTOPEXE) \
   $(CHICKENBYTE) $(CHICKEN)
 
@@ -99,7 +99,7 @@ COQTEX:=bin/coq-tex$(EXE)
 COQWC:=bin/coqwc$(EXE)
 COQDOC:=bin/coqdoc$(EXE)
 
-TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC)
+TOOLS:=$(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQWC) $(COQDOC) $(COQC)
 
 ###########################################################################
 # Documentation
