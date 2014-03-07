@@ -401,7 +401,7 @@ module Hint_db = struct
 
   let remove_list grs db =
     let filter (_, h) =
-      match h.name with PathHints [gr] -> not (List.mem gr grs) | _ -> true in
+      match h.name with PathHints [gr] -> not (List.mem_f eq_gr gr grs) | _ -> true in
     let hintmap = Constr_map.map (remove_he db.hintdb_state filter) db.hintdb_map in
     let hintnopat = List.smartfilter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
