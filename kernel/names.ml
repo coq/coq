@@ -524,19 +524,19 @@ end
 
 module Constant = KerPair
 
-module Cmap = CMap.Make(Constant.CanOrd)
-module Cmap_env = CMap.Make(Constant.UserOrd)
+module Cmap = HMap.Make(Constant.CanOrd)
+module Cmap_env = HMap.Make(Constant.UserOrd)
 module Cpred = Predicate.Make(Constant.CanOrd)
-module Cset = Set.Make(Constant.CanOrd)
-module Cset_env = Set.Make(Constant.UserOrd)
+module Cset = Cmap.Set
+module Cset_env = Cmap_env.Set
 
 (** {6 Names of mutual inductive types } *)
 
 module MutInd = KerPair
 
-module Mindmap = CMap.Make(MutInd.CanOrd)
-module Mindset = Set.Make(MutInd.CanOrd)
-module Mindmap_env = Map.Make(MutInd.UserOrd)
+module Mindmap = HMap.Make(MutInd.CanOrd)
+module Mindset = Mindmap.Set
+module Mindmap_env = HMap.Make(MutInd.UserOrd)
 
 (** Beware: first inductive has index 0 *)
 (** Beware: first constructor has index 1 *)

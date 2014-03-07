@@ -264,7 +264,7 @@ let print_namespace ns =
   | _ -> false in
   let constants = (Environ.pre_env (Global.env ())).Pre_env.env_globals.Pre_env.env_constants in
   let constants_in_namespace =
-    Pre_env.Constants.fold (fun c (body,_) acc ->
+    Cmap_env.fold (fun c (body,_) acc ->
       let kn = user_con c in
       if matches (modpath kn) then
         acc++fnl()++hov 2 (print_constant kn body)

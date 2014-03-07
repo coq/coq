@@ -319,8 +319,8 @@ end
 (** The [*_env] modules consider an order on user part of names
    the others consider an order on canonical part of names*)
 module Cpred : Predicate.S with type elt = Constant.t
-module Cset : Set.S with type elt = Constant.t
-module Cset_env  : Set.S with type elt = Constant.t
+module Cset : CSig.SetS with type elt = Constant.t
+module Cset_env  : CSig.SetS with type elt = Constant.t
 module Cmap : Map.ExtS with type key = Constant.t and module Set := Cset
 module Cmap_env : Map.ExtS with type key = Constant.t  and module Set := Cset_env
 
@@ -386,7 +386,7 @@ sig
 
 end
 
-module Mindset : Set.S with type elt = MutInd.t
+module Mindset : CSig.SetS with type elt = MutInd.t
 module Mindmap : Map.ExtS with type key = MutInd.t and module Set := Mindset
 module Mindmap_env : Map.S with type key = MutInd.t
 

@@ -168,7 +168,7 @@ let no_link_info () = ref NotLinked
 
 let add_constant_key kn cb linkinfo env =
   let new_constants =
-    Constants.add kn (cb,(linkinfo, ref None)) env.env_globals.env_constants in
+    Cmap_env.add kn (cb,(linkinfo, ref None)) env.env_globals.env_constants in
   let new_globals =
     { env.env_globals with
 	env_constants = new_constants } in
@@ -206,7 +206,7 @@ let evaluable_constant cst env =
 let lookup_mind = lookup_mind
 
 let add_mind_key kn mind_key env =
-  let new_inds = Inductives.add kn mind_key env.env_globals.env_inductives in
+  let new_inds = Mindmap_env.add kn mind_key env.env_globals.env_inductives in
   let new_globals =
     { env.env_globals with
 	env_inductives = new_inds } in
