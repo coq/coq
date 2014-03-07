@@ -374,8 +374,11 @@ let defs _ rdefs _ _ =
   !rdefs
 
 let enter f = (); fun env rdefs gl info ->
-  let info = Evarutil.nf_evar_info !rdefs info in
-  f env !rdefs (Evd.evar_hyps info) (Evd.evar_concl info) gl
+  let sigma = !rdefs in
+  let concl = Reductionops.nf_evar sigma (Evd.evar_concl info) in
+  let map_nf c = Reductionops.nf_evar sigma c in
+  let hyps = Environ.map_named_val map_nf (Evd.evar_hyps info) in
+  f env sigma hyps concl gl
 
 (*** Conversion in goals ***)
 
