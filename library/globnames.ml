@@ -26,7 +26,7 @@ let isIndRef = function IndRef _ -> true | _ -> false
 let isConstructRef = function ConstructRef _ -> true | _ -> false
 
 let eq_gr gr1 gr2 =
-  match gr1,gr2 with
+  gr1 == gr2 || match gr1,gr2 with
     | ConstRef con1, ConstRef con2 -> eq_constant con1 con2
     | IndRef kn1, IndRef kn2 -> eq_ind kn1 kn2
     | ConstructRef kn1, ConstructRef kn2 -> eq_constructor kn1 kn2
@@ -77,7 +77,9 @@ let constr_of_global = function
 let constr_of_reference = constr_of_global
 let reference_of_constr = global_of_constr
 
-let global_ord_gen ord_cst ord_ind ord_cons = (); fun x y -> match x, y with
+let global_ord_gen ord_cst ord_ind ord_cons x y =
+  if x == y then 0
+  else match x, y with
   | ConstRef cx, ConstRef cy -> ord_cst cx cy
   | IndRef indx, IndRef indy -> ord_ind indx indy
   | ConstructRef consx, ConstructRef consy -> ord_cons consx consy
@@ -90,30 +92,39 @@ let global_ord_gen ord_cst ord_ind ord_cons = (); fun x y -> match x, y with
   | IndRef _, ConstructRef _ -> -1
   | ConstructRef _, (VarRef _ | ConstRef _ | IndRef _) -> 1
 
-let global_ord_can =
-  global_ord_gen Constant.CanOrd.compare ind_ord constructor_ord
-let global_ord_user =
-  global_ord_gen Constant.UserOrd.compare ind_user_ord constructor_user_ord
+let global_hash_gen hash_cst hash_ind hash_cons gr =
+  let open Hashset.Combine in
+  match gr with
+  | ConstRef c -> combinesmall 1 (hash_cst c)
+  | IndRef i -> combinesmall 2 (hash_ind i)
+  | ConstructRef c -> combinesmall 3 (hash_cons c)
+  | VarRef id -> combinesmall 4 (Id.hash id)
 
 (* By default, [global_reference] are ordered on their canonical part *)
 
 module RefOrdered = struct
+  open Constant.CanOrd
   type t = global_reference
-  let compare = global_ord_can
+  let compare gr1 gr2 =
+    global_ord_gen compare ind_ord constructor_ord gr1 gr2
+  let hash gr = global_hash_gen hash ind_hash constructor_hash gr
 end
 
 module RefOrdered_env = struct
+  open Constant.UserOrd
   type t = global_reference
-  let compare = global_ord_user
+  let compare gr1 gr2 =
+    global_ord_gen compare ind_user_ord constructor_user_ord gr1 gr2
+  let hash gr = global_hash_gen hash ind_user_hash constructor_user_hash gr
 end
 
-module Refset = Set.Make(RefOrdered)
-module Refmap = Map.Make(RefOrdered)
+module Refmap = HMap.Make(RefOrdered)
+module Refset = Refmap.Set
 
 (* Alternative sets and maps indexed by the user part of the kernel names *)
 
-module Refset_env = Set.Make(RefOrdered_env)
-module Refmap_env = Map.Make(RefOrdered_env)
+module Refmap_env = HMap.Make(RefOrdered_env)
+module Refset_env = Refmap_env.Set
 
 (* Extended global references *)
 
@@ -128,12 +139,21 @@ type extended_global_reference =
 
 module ExtRefOrdered = struct
   type t = extended_global_reference
+
   let compare x y =
-    match x, y with
-      | TrueGlobal rx, TrueGlobal ry -> global_ord_user rx ry
+    if x == y then 0
+    else match x, y with
+      | TrueGlobal rx, TrueGlobal ry -> RefOrdered_env.compare rx ry
       | SynDef knx, SynDef kny -> kn_ord knx kny
       | TrueGlobal _, SynDef _ -> -1
       | SynDef _, TrueGlobal _ -> 1
+
+  open Hashset.Combine
+
+  let hash = function
+  | TrueGlobal gr -> combinesmall 1 (RefOrdered_env.hash gr)
+  | SynDef kn -> combinesmall 2 (KerName.hash kn)
+
 end
 
 type global_reference_or_constr = 

@@ -561,6 +561,8 @@ let ind_user_ord (m1, i1) (m2, i2) =
   if Int.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
 let ind_hash (m, i) =
   Hashset.Combine.combine (MutInd.hash m) (Int.hash i)
+let ind_user_hash (m, i) =
+  Hashset.Combine.combine (MutInd.UserOrd.hash m) (Int.hash i)
 
 let eq_constructor (ind1, j1) (ind2, j2) = Int.equal j1 j2 && eq_ind ind1 ind2
 let constructor_ord (ind1, j1) (ind2, j2) =
@@ -571,6 +573,8 @@ let constructor_user_ord (ind1, j1) (ind2, j2) =
   if Int.equal c 0 then ind_user_ord ind1 ind2 else c
 let constructor_hash (ind, i) =
   Hashset.Combine.combine (ind_hash ind) (Int.hash i)
+let constructor_user_hash (ind, i) =
+  Hashset.Combine.combine (ind_user_hash ind) (Int.hash i)
 
 module InductiveOrdered = struct
   type t = inductive

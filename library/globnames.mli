@@ -48,19 +48,21 @@ val reference_of_constr : constr -> global_reference
 
 module RefOrdered : sig
   type t = global_reference
-  val compare : global_reference -> global_reference -> int
+  val compare : t -> t -> int
+  val hash : t -> int
 end
 
 module RefOrdered_env : sig
   type t = global_reference
-  val compare : global_reference -> global_reference -> int
+  val compare : t -> t -> int
+  val hash : t -> int
 end
 
-module Refset : Set.S with type elt = global_reference
+module Refset : CSig.SetS with type elt = global_reference
 module Refmap : Map.ExtS
   with type key = global_reference and module Set := Refset
 
-module Refset_env : Set.S with type elt = global_reference
+module Refset_env : CSig.SetS with type elt = global_reference
 module Refmap_env : Map.ExtS
   with type key = global_reference and module Set := Refset_env
 
@@ -75,6 +77,7 @@ type extended_global_reference =
 module ExtRefOrdered : sig
   type t = extended_global_reference
   val compare : t -> t -> int
+  val hash : t -> int
 end
 
 type global_reference_or_constr = 

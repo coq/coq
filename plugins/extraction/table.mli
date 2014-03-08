@@ -12,7 +12,7 @@ open Globnames
 open Miniml
 open Declarations
 
-module Refset' : Set.S with type elt = global_reference
+module Refset' : CSig.SetS with type elt = global_reference
 module Refmap' : Map.S with type key = global_reference
 
 val safe_basename_of_global : global_reference -> Id.t
