@@ -245,7 +245,7 @@ sig
   val equal : t -> t -> bool
 end
 
-module KNset  : Set.S with type elt = KerName.t
+module KNset  : CSig.SetS with type elt = KerName.t
 module KNpred : Predicate.S with type elt = KerName.t
 module KNmap  : Map.ExtS with type key = KerName.t and module Set := KNset
 

@@ -409,9 +409,9 @@ module KerName = struct
 
 end
 
-module KNmap = CMap.Make(KerName)
+module KNmap = HMap.Make(KerName)
 module KNpred = Predicate.Make(KerName)
-module KNset = Set.Make(KerName)
+module KNset = KNmap.Set
 
 (** {6 Kernel pairs } *)
 
