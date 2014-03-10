@@ -229,8 +229,34 @@ let ise_stack2 no_app env evd f sk1 sk2 =
 
 (* Make sure that the matching suffix is the all stack *)
 let exact_ise_stack2 env evd f sk1 sk2 =
+  let rec ise_stack2 i sk1 sk2 =
+    match sk1, sk2 with
+    | [], [] -> Success i
+    | Stack.Case (_,t1,c1,_)::q1, Stack.Case (_,t2,c2,_)::q2 ->
+      ise_and i [
+      (fun i -> ise_stack2 i q1 q2);
+      (fun i -> ise_array2 i (fun ii -> f env ii CONV) c1 c2);
+      (fun i -> f env i CONV t1 t2)]
+    | Stack.Fix (((li1, i1),(_,tys1,bds1 as recdef1)),a1,_)::q1,
+      Stack.Fix (((li2, i2),(_,tys2,bds2)),a2,_)::q2 ->
+      if Int.equal i1 i2 && Array.equal Int.equal li1 li2 then
+	ise_and i [
+	  (fun i -> ise_stack2 i q1 q2);
+	  (fun i -> ise_array2 i (fun ii -> f env ii CONV) tys1 tys2);
+	  (fun i -> ise_array2 i (fun ii -> f (push_rec_types recdef1 env) ii CONV) bds1 bds2);
+	  (fun i -> ise_stack2 i a1 a2)]
+      else UnifFailure (i,NotSameHead)
+    | Stack.Update _ :: _, _ | Stack.Shift _ :: _, _
+    | _, Stack.Update _ :: _ | _, Stack.Shift _ :: _ -> assert false
+    | Stack.App _ :: _, Stack.App _ :: _ ->
+	 begin match ise_app_stack2 env f i sk1 sk2 with
+	       |_,(UnifFailure _ as x) -> x
+	       |(l1, l2), Success i' -> ise_stack2 i' l1 l2
+	 end
+    |_, _ -> UnifFailure (i,(* Maybe improve: *) NotSameHead)
+  in
   if Reductionops.Stack.compare_shape sk1 sk2 then
-    ise_exact (ise_stack2 false env evd f) sk1 sk2
+    ise_stack2 evd (List.rev sk1) (List.rev sk2)
   else UnifFailure (evd, (* Dummy *) NotSameHead)
 
 let rec evar_conv_x ts env evd pbty term1 term2 =
