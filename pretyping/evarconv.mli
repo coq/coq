@@ -20,13 +20,13 @@ exception UnableToUnify of evar_map * Pretype_errors.unification_error
 (** {6 Main unification algorithm for type inference. } *)
 
 (** returns exception NotUnifiable with best known evar_map if not unifiable *)
-val the_conv_x     : ?ts:transparent_state -> env -> constr -> constr -> evar_map -> evar_map
-val the_conv_x_leq : ?ts:transparent_state -> env -> constr -> constr -> evar_map -> evar_map
+val the_conv_x     : env -> ?ts:transparent_state -> constr -> constr -> evar_map -> evar_map
+val the_conv_x_leq : env -> ?ts:transparent_state -> constr -> constr -> evar_map -> evar_map
 
 (** The same function resolving evars by side-effect and
    catching the exception *)
-val e_conv  : ?ts:transparent_state -> env -> evar_map ref -> constr -> constr -> bool
-val e_cumul : ?ts:transparent_state -> env -> evar_map ref -> constr -> constr -> bool
+val e_conv  : env -> ?ts:transparent_state -> evar_map ref -> constr -> constr -> bool
+val e_cumul : env -> ?ts:transparent_state -> evar_map ref -> constr -> constr -> bool
 
 (** {6 Unification heuristics. } *)
 
