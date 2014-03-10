@@ -184,30 +184,26 @@ let judge_of_letin env name defj typj j =
 (* Type of an application. *)
 
 let judge_of_apply env funj argjv =
-  let rec apply_rec n typ cst = function
-    | [] ->
-	{ uj_val  = mkApp (j_val funj, Array.map j_val argjv);
-          uj_type = typ },
-	cst
-    | hj::restjl ->
-        (match kind_of_term (whd_betadeltaiota env typ) with
-          | Prod (_,c1,c2) ->
-	      (try
-		let c = conv_leq false env hj.uj_type c1 in
-		let cst' = union_constraints cst c in
-		apply_rec (n+1) (subst1 hj.uj_val c2) cst' restjl
-	      with NotConvertible ->
-		error_cant_apply_bad_type env
-		  (n,c1, hj.uj_type)
-		  funj argjv)
-
-          | _ ->
-	      error_cant_apply_not_functional env funj argjv)
+  let len = Array.length argjv in
+  let rec apply_rec n typ cst =
+    if len <= n then
+      { uj_val  = mkApp (j_val funj, Array.map j_val argjv); uj_type = typ },
+      cst
+    else
+      let hj = Array.unsafe_get argjv n in
+      match kind_of_term (whd_betadeltaiota env typ) with
+      | Prod (_,c1,c2) ->
+        let c =
+          try conv_leq false env hj.uj_type c1
+          with NotConvertible ->
+            error_cant_apply_bad_type env (n + 1, c1, hj.uj_type) funj argjv
+        in
+        let cst' = union_constraints cst c in
+        apply_rec (n+1) (subst1 hj.uj_val c2) cst'
+      | _ ->
+        error_cant_apply_not_functional env funj argjv
   in
-  apply_rec 1
-    funj.uj_type
-    empty_constraint
-    (Array.to_list argjv)
+  apply_rec 0 funj.uj_type empty_constraint
 
 (* Type of product *)
 
