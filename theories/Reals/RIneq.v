@@ -415,7 +415,14 @@ Hint Resolve f_equal_R : real.
 
 Lemma Rplus_eq_compat_l : forall r r1 r2, r1 = r2 -> r + r1 = r + r2.
 Proof.
-  auto with real.
+  intros r r1 r2.
+  apply f_equal.
+Qed.
+
+Lemma Rplus_eq_compat_r : forall r r1 r2, r1 = r2 -> r1 + r = r2 + r.
+Proof.
+  intros r r1 r2.
+  apply (f_equal (fun v => v + r)).
 Qed.
 
 (*i Old i*)Hint Resolve Rplus_eq_compat_l: v62.
@@ -430,6 +437,13 @@ Proof.
   ring.
 Qed.
 Hint Resolve Rplus_eq_reg_l: real.
+
+Lemma Rplus_eq_reg_r : forall r r1 r2, r1 + r = r2 + r -> r1 = r2.
+Proof.
+  intros r r1 r2 H.
+  apply Rplus_eq_reg_l with r.
+  now rewrite 2!(Rplus_comm r).
+Qed.
 
 (**********)
 Lemma Rplus_0_r_uniq : forall r r1, r + r1 = r -> r1 = 0.
