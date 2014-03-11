@@ -11,13 +11,12 @@ open Util
 (* Type of regular trees:
    - Param denotes tree variables (like de Bruijn indices)
      the first int is the depth of the occurrence, and the second int
-     is the index in the array of trees introduced at that depth
+     is the index in the array of trees introduced at that depth.
+     Warning: Param's indices both start at 0!
    - Node denotes the usual tree node, labelled with 'a
    - Rec(j,v1..vn) introduces infinite tree. It denotes
      v(j+1) with parameters 0..n-1 replaced by
      Rec(0,v1..vn)..Rec(n-1,v1..vn) respectively.
-     Parameters n and higher denote parameters global to the
-     current Rec node (as usual in de Bruijn binding system)
  *)
 type 'a t =
     Param of int * int
@@ -145,21 +144,28 @@ let equal cmp t t' =
 (** Deprecated alias *)
 let eq_rtree = equal
 
-(* Intersection of rtrees of same arity *)
-let rec inter interlbl def t t' =
+(** Intersection of rtrees of same arity *)
+let rec inter cmp interlbl def n histo t t' =
+  try
+    let (i,j) = List.assoc_f (raw_eq2 cmp) (t,t') histo in
+    Param (n-i-1,j)
+  with Not_found ->
   match t, t' with
   | Param (i,j), Param (i',j') ->
       assert (Int.equal i i' && Int.equal j j'); t
   | Node (x, a), Node (x', a') ->
       (match interlbl x x' with
       | None -> mk_node def [||]
-      | Some x'' -> Node (x'', Array.map2 (inter interlbl def) a a'))
-  | Rec (i, a), Rec (i', a') ->
-      if Int.equal i i' then Rec(i, Array.map2 (inter interlbl def) a a')
-      else mk_node def [||]
-  | Rec _, _ -> inter interlbl def (expand t) t'
-  | _ , Rec _ -> inter interlbl def t (expand t')
+      | Some x'' -> Node (x'', Array.map2 (inter cmp interlbl def n histo) a a'))
+  (* Mutually recursive trees are transformed into nested trees *)
+  | Rec _, Rec _ ->
+     let histo = ((t,t'),(n,0))::histo in
+     Rec(0, [|inter cmp interlbl def (n+1) histo (expand t) (expand t')|])
+  | Rec _, _ -> inter cmp interlbl def n histo (expand t) t'
+  | _ , Rec _ -> inter cmp interlbl def n histo t (expand t')
   | _ -> assert false
+
+let inter cmp interlbl def t t' = inter cmp interlbl def 0 [] t t'
 
 (** Tests if a given tree is infinite, i.e. has a branch of infinite length.
    This corresponds to a cycle when visiting the expanded tree.

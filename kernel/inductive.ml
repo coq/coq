@@ -508,7 +508,7 @@ let inter_recarg r1 r2 = match r1, r2 with
 | Imbr i1, Mrec i2 -> if Names.eq_ind i1 i2 then Some r2 else None
 | _ -> None
 
-let inter_wf_paths = Rtree.inter inter_recarg Norec
+let inter_wf_paths = Rtree.inter Declareops.eq_recarg inter_recarg Norec
 
 let spec_of_tree t =
   if eq_wf_paths t mk_norec
