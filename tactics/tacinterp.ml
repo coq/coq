@@ -944,7 +944,7 @@ let val_interp_glob ist (tac:glob_tactic_expr) : typed_generic_argument =
 module GenargTac = Genarg.Monadic(Proofview.Monad)
 
 (* Interprets an l-tac expression into a value *)
-let rec val_interp ist (tac:glob_tactic_expr) (gl:Proofview.Goal.t) : typed_generic_argument Proofview.tactic =
+let rec val_interp ist (tac:glob_tactic_expr) (gl:'a Proofview.Goal.t) : typed_generic_argument Proofview.tactic =
   let value_interp ist =
     try Proofview.tclUNIT (val_interp_glob ist tac)
     with NeedsAGoal ->

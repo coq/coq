@@ -212,6 +212,8 @@ module New = struct
     f { Evd.it = Proofview.Goal.goal gl ; sigma = Proofview.Goal.sigma gl }
 
   let pf_global id gl =
+    (** We only check for the existence of an [id] in [hyps] *)
+    let gl = Proofview.Goal.assume gl in
     let hyps = Proofview.Goal.hyps gl in
     Constrintern.construct_reference hyps id
 
@@ -221,6 +223,8 @@ module New = struct
 
 
   let pf_ids_of_hyps gl =
+    (** We only get the identifiers in [hyps] *)
+    let gl = Proofview.Goal.assume gl in
     let hyps = Proofview.Goal.hyps gl in
     ids_of_named_context hyps
 

@@ -768,13 +768,15 @@ end
 
 module Goal = struct
 
-  type t = {
+  type 'a t = {
     env : Environ.env;
     sigma : Evd.evar_map;
     hyps : Environ.named_context_val;
     concl : Term.constr ;
     self : Goal.goal ; (* for compatibility with old-style definitions *)
   }
+
+  let assume (gl : 'a t) = (gl :> [ `NF ] t)
 
   let env { env=env } = env
   let sigma { sigma=sigma } = sigma
@@ -800,8 +802,12 @@ module Goal = struct
       tclZERO e
 
   let enter_t f = Goal.enter begin fun env sigma hyps concl self ->
+    let concl = Reductionops.nf_evar sigma concl in
+    let map_nf c = Reductionops.nf_evar sigma c in
+    let hyps = Environ.map_named_val map_nf hyps in
     f {env=env;sigma=sigma;hyps=hyps;concl=concl;self=self}
   end
+
   let enter f =
     list_iter_goal () begin fun goal () ->
       Proof.current >>= fun env ->
@@ -815,6 +821,22 @@ module Goal = struct
         tclZERO e
     end
 
+  let raw_enter_t f = Goal.enter begin fun env sigma hyps concl self ->
+    f {env=env;sigma=sigma;hyps=hyps;concl=concl;self=self}
+  end
+
+  let raw_enter f =
+    list_iter_goal () begin fun goal () ->
+      Proof.current >>= fun env ->
+      tclEVARMAP >>= fun sigma ->
+      try
+        (* raw_enter_t cannot modify the sigma. *)
+        let (t,_) = Goal.eval (raw_enter_t f) env sigma goal in
+        t
+      with e when catchable_exception e ->
+        let e = Errors.push e in
+        tclZERO e
+    end
 
   (* compatibility *)
   let goal { self=self } = self

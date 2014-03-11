@@ -66,10 +66,10 @@ val interp_genarg : interp_sign -> Environ.env -> Evd.evar_map -> Term.constr ->
   glob_generic_argument -> Evd.evar_map * typed_generic_argument
 
 (** Interprets any expression *)
-val val_interp : interp_sign -> glob_tactic_expr -> Proofview.Goal.t -> value Proofview.tactic
+val val_interp : interp_sign -> glob_tactic_expr -> [ `NF ] Proofview.Goal.t -> value Proofview.tactic
 
 (** Interprets an expression that evaluates to a constr *)
-val interp_ltac_constr : interp_sign -> glob_tactic_expr -> Proofview.Goal.t -> constr Proofview.tactic
+val interp_ltac_constr : interp_sign -> glob_tactic_expr -> [ `NF ] Proofview.Goal.t -> constr Proofview.tactic
 
 (** Interprets redexp arguments *)
 val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map * red_expr
