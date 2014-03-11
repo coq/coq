@@ -143,4 +143,6 @@ module New : sig
   val pf_get_hyp : identifier -> [ `NF ] Proofview.Goal.t -> named_declaration
   val pf_get_hyp_typ        : identifier -> [ `NF ] Proofview.Goal.t -> types
   val pf_last_hyp           : [ `NF ] Proofview.Goal.t -> named_declaration
+
+  val pf_nf_concl : [ `LZ ] Proofview.Goal.t -> types
 end

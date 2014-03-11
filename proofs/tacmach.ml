@@ -253,4 +253,11 @@ module New = struct
     let hyps = Proofview.Goal.hyps gl in
     List.hd hyps
 
+  let pf_nf_concl gl =
+    (** We normalize the conclusion just after *)
+    let gl = Proofview.Goal.assume gl in
+    let concl = Proofview.Goal.concl gl in
+    let sigma = Proofview.Goal.sigma gl in
+    nf_evar sigma concl
+
 end
