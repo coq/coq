@@ -311,7 +311,7 @@ let main =
     Xml_parser.check_eof ip false;
     { xml_printer = op; xml_parser = ip } in
   let init () =
-    match base_eval_call ~print:false (Serialize.init ()) coq with
+    match base_eval_call ~print:false (Serialize.init None) coq with
     | Interface.Good id ->
         let dir = Filename.dirname input_file in
         let phrase = Printf.sprintf "Add LoadPath \"%s\". " dir in
