@@ -327,7 +327,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	let f1 evd =
 	  miller_pfenning on_left
 	    (fun () -> (* Postpone the use of an heuristic *)
-	      switch (fun x y -> Success (add_conv_pb (pbty,env,Stack.zip x,Stack.zip y) evd)) apprF apprR)
+	      switch (fun x y ->
+		Success (add_conv_pb (pbty,env,Stack.zip x,Stack.zip y) evd)) apprF apprR)
 	    ev lF apprR evd
 	and f2 evd =
 	  if isLambda termR then
@@ -837,7 +838,7 @@ let max_undefined_with_candidates evd =
   | [] -> None
   | a::l -> Some (List.last (a::l))
 
-let rec solve_unconstrained_evars_with_canditates evd =
+let rec solve_unconstrained_evars_with_canditates ts evd =
   (* max_undefined is supposed to return the most recent, hence
      possibly most dependent evar *)
   match max_undefined_with_candidates evd with
@@ -847,11 +848,11 @@ let rec solve_unconstrained_evars_with_canditates evd =
       | [] -> error "Unsolvable existential variables."
       | a::l ->
           try
-            let conv_algo = evar_conv_x full_transparent_state in
+            let conv_algo = evar_conv_x ts in
             let evd = check_evar_instance evd evk a conv_algo in
             let evd = Evd.define evk a evd in
             match reconsider_conv_pbs conv_algo evd with
-            | Success evd -> solve_unconstrained_evars_with_canditates evd
+            | Success evd -> solve_unconstrained_evars_with_canditates ts evd
             | UnifFailure _ -> aux l
           with
           | IllTypedInstance _ -> aux l
@@ -859,7 +860,7 @@ let rec solve_unconstrained_evars_with_canditates evd =
       (* List.rev is there to favor most dependent solutions *)
       (* and favor progress when used with the refine tactics *)
       let evd = aux (List.rev l) in
-      solve_unconstrained_evars_with_canditates evd
+      solve_unconstrained_evars_with_canditates ts evd
 
 let solve_unconstrained_impossible_cases evd =
   Evd.fold_undefined (fun evk ev_info evd' ->
@@ -867,8 +868,9 @@ let solve_unconstrained_impossible_cases evd =
     | _,Evar_kinds.ImpossibleCase -> Evd.define evk (j_type (coq_unit_judge ())) evd'
     | _ -> evd') evd evd
 
-let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =
-  let evd = solve_unconstrained_evars_with_canditates evd in
+let consider_remaining_unif_problems env
+    ?(ts=Conv_oracle.get_transp_state (Environ.oracle env)) evd =
+  let evd = solve_unconstrained_evars_with_canditates ts evd in
   let rec aux evd pbs progress stuck =
     match pbs with
     | (pbty,env,t1,t2 as pb) :: pbs ->
