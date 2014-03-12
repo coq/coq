@@ -13,17 +13,14 @@ let prefs = Preferences.current
 (** A session is a script buffer + proof + messages,
     interacting with a coqtop, and a few other elements around *)
 
-class type errpage =
+class type ['a] page =
   object
     inherit GObj.widget
-    method update : (int * string) list -> unit
+    method update : 'a -> unit
   end
 
-class type jobpage =
-  object
-    inherit GObj.widget
-    method update : string Int.Map.t -> unit
-  end
+type errpage = (int * string) list page
+type jobpage = string Int.Map.t page
 
 type session = {
   buffer : GText.buffer;
@@ -399,9 +396,30 @@ let build_layout (sn:session) =
   let proof_scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:proof_frame#add () in
   let message_frame = GPack.notebook ~packing:state_paned#add () in
-  let add_msg_page text w =
-    ignore (message_frame#append_page
-	      ~tab_label:(GMisc.label ~text ())#coerce w#coerce) in
+  let add_detachable_msg_page pos name text (w : GObj.widget) =
+    let name = Filename.basename (Option.default "*scratch*" name) in
+    let detachable =
+      Wg_Detachable.detachable ~title:(text^" ("^name^")") () in
+    detachable#add w#coerce;
+    let label = GPack.hbox ~spacing:5 () in
+    label#add (GMisc.label ~text ())#coerce;
+    let but = GButton.button () in
+    but#add (GMisc.label ~markup:"<small>↗</small>" ())#coerce;
+    label#add but#coerce;
+    ignore(message_frame#insert_page ~pos
+      ~tab_label:label#coerce detachable#coerce);
+    ignore(but#connect#clicked ~callback:(fun _ ->
+      message_frame#remove_page (message_frame#page_num detachable#coerce);
+      detachable#button#clicked ()));
+    detachable#connect#detached ~callback:(fun _ ->
+      if message_frame#all_children = [] then message_frame#misc#hide ();
+      w#misc#set_size_request  ~width:500 ~height:400 ());
+    detachable#connect#attached ~callback:(fun _ ->
+      ignore(message_frame#insert_page ~pos
+        ~tab_label:label#coerce detachable#coerce);
+      message_frame#misc#show ();
+      detachable#show);
+    detachable#button#misc#hide () in
   let session_tab = GPack.hbox ~homogeneous:false () in
   let img = GMisc.image ~icon_size:`SMALL_TOOLBAR
     ~packing:session_tab#pack () in
@@ -431,9 +449,9 @@ let build_layout (sn:session) =
   sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
   script_scroll#add sn.script#coerce;
   proof_scroll#add sn.proof#coerce;
-  add_msg_page "Messages" sn.messages;
-  add_msg_page "Errors" sn.errpage;
-  add_msg_page "Jobs" sn.jobpage;
+  add_detachable_msg_page 0 sn.fileops#filename "Messages" sn.messages#coerce;
+  add_detachable_msg_page 1 sn.fileops#filename "Errors" sn.errpage#coerce;
+  add_detachable_msg_page 2 sn.fileops#filename "Jobs" sn.jobpage#coerce;
   session_tab#pack sn.tab_label#coerce;
   img#set_stock `YES;
   eval_paned#set_position 1;

@@ -50,6 +50,8 @@ class detachable (obj : ([> Gtk.box] as 'a) Gobject.obj) =
 
     method visible = win#misc#visible || self#misc#visible
 
+    method button = but
+
     initializer
       self#set_homogeneous false;
       super#pack ~expand:false but#coerce;

@@ -24,6 +24,7 @@ class detachable : ([> Gtk.box] as 'a) Gobject.obj ->
     method visible : bool
     method title : string
     method set_title : string -> unit
+    method button : GButton.button
 
   end
 

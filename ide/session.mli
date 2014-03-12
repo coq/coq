@@ -9,17 +9,14 @@
 (** A session is a script buffer + proof + messages,
     interacting with a coqtop, and a few other elements around *)
 
-class type errpage =
+class type ['a] page =
   object
     inherit GObj.widget
-    method update : (int * string) list -> unit
+    method update : 'a -> unit
   end
 
-class type jobpage =
-  object
-    inherit GObj.widget
-    method update : string Int.Map.t -> unit
-  end
+type errpage = (int * string) list page
+type jobpage = string Int.Map.t page
 
 type session = {
   buffer : GText.buffer;
