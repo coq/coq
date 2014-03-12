@@ -13,6 +13,7 @@ class type ['a] page =
   object
     inherit GObj.widget
     method update : 'a -> unit
+    method on_update : callback:('a -> unit) -> unit
   end
 
 type errpage = (int * string) list page

@@ -17,6 +17,7 @@ class type ['a] page =
   object
     inherit GObj.widget
     method update : 'a -> unit
+    method on_update : callback:('a -> unit) -> unit
   end
 
 type errpage = (int * string) list page
@@ -275,6 +276,7 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
   let () = box#pack ~expand:true table#coerce in
   let () = box#pack ~expand:false ~padding:2 tip#coerce in
   let last_update = ref [] in
+  let callback = ref (fun _ -> ()) in
   object (self)
     inherit GObj.widget box#as_widget
     method update errs =
@@ -282,12 +284,14 @@ let create_errpage (script : Wg_ScriptView.script_view) : errpage =
       else begin
 	last_update := errs;
 	access (fun _ store -> store#clear ());
+        !callback errs;
 	List.iter (fun (lno, msg) -> access (fun columns store ->
           let line = store#append () in
           store#set line (find_int_col "Line" columns) lno;
           store#set line (find_string_col "Error message" columns) msg))
           errs
       end
+    method on_update ~callback:cb = callback := cb
   end
 
 let create_jobpage coqtop coqops : jobpage =
@@ -305,6 +309,7 @@ let create_jobpage coqtop coqops : jobpage =
   let () = box#pack ~expand:true table#coerce in
   let () = box#pack ~expand:false ~padding:2 tip#coerce in
   let last_update = ref Int.Map.empty in
+  let callback = ref (fun _ -> ()) in
   object (self)
     inherit GObj.widget box#as_widget
     method update jobs =
@@ -312,12 +317,14 @@ let create_jobpage coqtop coqops : jobpage =
       else begin
 	last_update := jobs;
 	access (fun _ store -> store#clear ());
+        !callback jobs;
 	Int.Map.iter (fun id job -> access (fun columns store ->
           let line = store#append () in
           store#set line (find_int_col "Worker" columns) id;
           store#set line (find_string_col "Job name" columns) job))
           jobs
       end
+    method on_update ~callback:cb = callback := cb
   end
 
 let create_proof () =
@@ -396,13 +403,12 @@ let build_layout (sn:session) =
   let proof_scroll = GBin.scrolled_window
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:proof_frame#add () in
   let message_frame = GPack.notebook ~packing:state_paned#add () in
-  let add_detachable_msg_page pos name text (w : GObj.widget) =
-    let name = Filename.basename (Option.default "*scratch*" name) in
+  let add_msg_page pos name text (w : GObj.widget) =
     let detachable =
       Wg_Detachable.detachable ~title:(text^" ("^name^")") () in
     detachable#add w#coerce;
     let label = GPack.hbox ~spacing:5 () in
-    label#add (GMisc.label ~text ())#coerce;
+    let lbl = GMisc.label ~text ~packing:label#add () in
     let but = GButton.button () in
     but#add (GMisc.label ~markup:"<small>↗</small>" ())#coerce;
     label#add but#coerce;
@@ -419,7 +425,8 @@ let build_layout (sn:session) =
         ~tab_label:label#coerce detachable#coerce);
       message_frame#misc#show ();
       detachable#show);
-    detachable#button#misc#hide () in
+    detachable#button#misc#hide ();
+    lbl in
   let session_tab = GPack.hbox ~homogeneous:false () in
   let img = GMisc.image ~icon_size:`SMALL_TOOLBAR
     ~packing:session_tab#pack () in
@@ -449,9 +456,14 @@ let build_layout (sn:session) =
   sn.command#pack_in (session_paned#pack2 ~shrink:false ~resize:false);
   script_scroll#add sn.script#coerce;
   proof_scroll#add sn.proof#coerce;
-  add_detachable_msg_page 0 sn.fileops#filename "Messages" sn.messages#coerce;
-  add_detachable_msg_page 1 sn.fileops#filename "Errors" sn.errpage#coerce;
-  add_detachable_msg_page 2 sn.fileops#filename "Jobs" sn.jobpage#coerce;
+  ignore(add_msg_page 0 sn.tab_label#text "Messages" sn.messages#coerce);
+  let label = add_msg_page 1 sn.tab_label#text "Errors" sn.errpage#coerce in
+  ignore(add_msg_page 2 sn.tab_label#text "Jobs" sn.jobpage#coerce);
+  let txt = label#text in
+  let red s = "<span foreground=\"#FF0000\">" ^ s ^ "</span>" in
+  sn.errpage#on_update ~callback:(fun l ->
+    if l = [] then (label#set_use_markup false; label#set_text txt)
+    else (label#set_text (red txt);label#set_use_markup true));
   session_tab#pack sn.tab_label#coerce;
   img#set_stock `YES;
   eval_paned#set_position 1;
