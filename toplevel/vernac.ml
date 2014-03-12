@@ -336,7 +336,7 @@ let compile verbosely f =
   | BuildVi ->
       let ldir, long_f_dot_v = Flags.verbosely Library.start_library f in
       Dumpglob.noglob ();
-      Stm.set_compilation_hints (Aux_file.load_aux_file_for long_f_dot_v);
+      Stm.set_compilation_hints long_f_dot_v;
       let _ = load_vernac verbosely long_f_dot_v in
       Stm.finish ();
       check_pending_proofs ();
@@ -347,7 +347,7 @@ let compile verbosely f =
       Dumpglob.noglob ();
       let f = if check_suffix f ".vi" then chop_extension f else f in
       let lfdv, lib, univs, disch, tasks, proofs = load_library_todo f in
-      Stm.set_compilation_hints (Aux_file.load_aux_file_for lfdv);
+      Stm.set_compilation_hints lfdv;
       let univs, proofs = Stm.finish_tasks lfdv univs disch proofs tasks in
       Library.save_library_raw lfdv lib univs proofs
 

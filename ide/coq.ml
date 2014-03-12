@@ -511,7 +511,6 @@ let eval_call ?(logger=default_logger) call handle k =
 let add ?(logger=default_logger) x = eval_call ~logger (Serialize.add x)
 let edit_at i = eval_call (Serialize.edit_at i)
 let query ?(logger=default_logger) x = eval_call ~logger (Serialize.query x)
-let inloadpath s = eval_call (Serialize.inloadpath s)
 let mkcases s = eval_call (Serialize.mkcases s)
 let status ?logger force = eval_call ?logger (Serialize.status force)
 let hints x = eval_call (Serialize.hints x)

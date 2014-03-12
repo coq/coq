@@ -60,7 +60,8 @@ val init : unit -> unit
 val slave_main_loop : unit -> unit
 val slave_init_stdout : unit -> unit
 
-val set_compilation_hints : Aux_file.aux_file -> unit
+(* Filename *)
+val set_compilation_hints : string -> unit
 
 (** read-eval-print loop compatible interface ****************************** **)
 

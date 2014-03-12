@@ -126,7 +126,6 @@ val goals      : ?logger:Ideutils.logger ->
                  Interface.goals_sty      -> Interface.goals_rty query
 val evars      : Interface.evars_sty      -> Interface.evars_rty query
 val hints      : Interface.hints_sty      -> Interface.hints_rty query
-val inloadpath : Interface.inloadpath_sty -> Interface.inloadpath_rty query
 val mkcases    : Interface.mkcases_sty    -> Interface.mkcases_rty query
 val search     : Interface.search_sty     -> Interface.search_rty query
 val init       : Interface.init_sty       -> Interface.init_rty query

@@ -11,7 +11,7 @@ open Util
 let check_vi (ts,f) =
   Dumpglob.noglob ();
   let long_f_dot_v, _, _, _, tasks, _ = Library.load_library_todo f in
-  Stm.set_compilation_hints (Aux_file.load_aux_file_for long_f_dot_v);
+  Stm.set_compilation_hints long_f_dot_v;
   List.fold_left (fun acc ids -> Stm.check_task f tasks ids && acc) true ts
 
 module Worker = Spawn.Sync(struct 
@@ -39,7 +39,7 @@ let schedule_vi_checking j fs =
       if Filename.check_suffix f ".vi" then Filename.chop_extension f
       else f in
     let long_f_dot_v, _,_,_, tasks, _ = Library.load_library_todo f in
-    Stm.set_compilation_hints (Aux_file.load_aux_file_for long_f_dot_v);
+    Stm.set_compilation_hints long_f_dot_v;
     let infos = Stm.info_tasks tasks in
     let eta = List.fold_left (fun a (_,t,_) -> a +. t) 0.0 infos in
     if infos <> [] then jobs := (f, eta, infos) :: !jobs)

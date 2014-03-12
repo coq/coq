@@ -10,7 +10,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20130918"
+let protocol_version = "20140312"
 
 (** * Interface of calls to Coq by CoqIde *)
 
@@ -617,11 +617,10 @@ let search_sty_t : search_sty val_t = list_t (pair_t search_cst_t bool_t)
 let get_options_sty_t : get_options_sty val_t = unit_t
 let set_options_sty_t : set_options_sty val_t =
   list_t (pair_t (list_t string_t) option_value_t)
-let inloadpath_sty_t : inloadpath_sty val_t = string_t
 let mkcases_sty_t : mkcases_sty val_t = string_t
 let quit_sty_t : quit_sty val_t = unit_t
 let about_sty_t : about_sty val_t = unit_t
-let init_sty_t : init_sty val_t = unit_t
+let init_sty_t : init_sty val_t = option_t string_t
 let interp_sty_t : interp_sty val_t = pair_t (pair_t bool_t bool_t) string_t
 let stop_worker_sty_t : stop_worker_sty val_t = int_t
 
@@ -640,7 +639,6 @@ let search_rty_t : search_rty val_t = list_t (coq_object_t string_t)
 let get_options_rty_t : get_options_rty val_t =
   list_t (pair_t (list_t string_t) option_state_t) 
 let set_options_rty_t : set_options_rty val_t = unit_t
-let inloadpath_rty_t : inloadpath_rty val_t = bool_t
 let mkcases_rty_t : mkcases_rty val_t = list_t (list_t string_t)
 let quit_rty_t : quit_rty val_t = unit_t
 let about_rty_t : about_rty val_t = coq_info_t
@@ -660,7 +658,6 @@ let calls = [|
   "Search",     ($)search_sty_t,      ($)search_rty_t;
   "GetOptions", ($)get_options_sty_t, ($)get_options_rty_t;
   "SetOptions", ($)set_options_sty_t, ($)set_options_rty_t;
-  "InLoadPath", ($)inloadpath_sty_t,  ($)inloadpath_rty_t;
   "MkCases",    ($)mkcases_sty_t,     ($)mkcases_rty_t;
   "Quit",       ($)quit_sty_t,        ($)quit_rty_t;
   "About",      ($)about_sty_t,       ($)about_rty_t;
@@ -680,7 +677,6 @@ type 'a call =
   | Search     of search_sty
   | GetOptions of get_options_sty
   | SetOptions of set_options_sty
-  | InLoadPath of inloadpath_sty
   | MkCases    of mkcases_sty
   | Quit       of quit_sty
   | About      of about_sty
@@ -700,13 +696,12 @@ let id_of_call = function
   | Search _     -> 7
   | GetOptions _ -> 8
   | SetOptions _ -> 9
-  | InLoadPath _ -> 10
-  | MkCases _    -> 11
-  | Quit _       -> 12
-  | About _      -> 13
-  | Init _       -> 14
-  | Interp _     -> 15
-  | StopWorker _ -> 16
+  | MkCases _    -> 10
+  | Quit _       -> 11
+  | About _      -> 12
+  | Init _       -> 13
+  | Interp _     -> 14
+  | StopWorker _ -> 15
 
 let str_of_call c = pi1 calls.(id_of_call c)
 
@@ -722,7 +717,6 @@ let hints x       : hints_rty call       = Hints x
 let status x      : status_rty call      = Status x
 let get_options x : get_options_rty call = GetOptions x
 let set_options x : set_options_rty call = SetOptions x
-let inloadpath x  : inloadpath_rty call  = InLoadPath x
 let mkcases x     : mkcases_rty call     = MkCases x
 let search x      : search_rty call      = Search x
 let quit x        : quit_rty call        = Quit x
@@ -744,7 +738,6 @@ let abstract_eval_call handler (c : 'a call) : 'a value =
     | Search x     -> mkGood (handler.search x)
     | GetOptions x -> mkGood (handler.get_options x)
     | SetOptions x -> mkGood (handler.set_options x)
-    | InLoadPath x -> mkGood (handler.inloadpath x)
     | MkCases x    -> mkGood (handler.mkcases x)
     | Quit x       -> mkGood (handler.quit x)
     | About x      -> mkGood (handler.about x)
@@ -766,7 +759,6 @@ let of_answer (q : 'a call) (v : 'a value) : xml = match q with
   | Search _     -> of_value (of_value_type search_rty_t     ) (Obj.magic v)
   | GetOptions _ -> of_value (of_value_type get_options_rty_t) (Obj.magic v)
   | SetOptions _ -> of_value (of_value_type set_options_rty_t) (Obj.magic v)
-  | InLoadPath _ -> of_value (of_value_type inloadpath_rty_t ) (Obj.magic v)
   | MkCases _    -> of_value (of_value_type mkcases_rty_t    ) (Obj.magic v)
   | Quit _       -> of_value (of_value_type quit_rty_t       ) (Obj.magic v)
   | About _      -> of_value (of_value_type about_rty_t      ) (Obj.magic v)
@@ -785,7 +777,6 @@ let to_answer (q : 'a call) (x : xml) : 'a value = match q with
   | Search _     -> Obj.magic (to_value (to_value_type search_rty_t     ) x)
   | GetOptions _ -> Obj.magic (to_value (to_value_type get_options_rty_t) x)
   | SetOptions _ -> Obj.magic (to_value (to_value_type set_options_rty_t) x)
-  | InLoadPath _ -> Obj.magic (to_value (to_value_type inloadpath_rty_t ) x)
   | MkCases _    -> Obj.magic (to_value (to_value_type mkcases_rty_t    ) x)
   | Quit _       -> Obj.magic (to_value (to_value_type quit_rty_t       ) x)
   | About _      -> Obj.magic (to_value (to_value_type about_rty_t      ) x)
@@ -806,7 +797,6 @@ let of_call (q : 'a call) : xml =
   | Search x     -> mkCall (of_value_type search_sty_t      x) 
   | GetOptions x -> mkCall (of_value_type get_options_sty_t x) 
   | SetOptions x -> mkCall (of_value_type set_options_sty_t x) 
-  | InLoadPath x -> mkCall (of_value_type inloadpath_sty_t  x) 
   | MkCases x    -> mkCall (of_value_type mkcases_sty_t     x) 
   | Quit x       -> mkCall (of_value_type quit_sty_t        x) 
   | About x      -> mkCall (of_value_type about_sty_t       x) 
@@ -828,7 +818,6 @@ let to_call : xml -> unknown call =
     | "Search"     -> Search     (mkCallArg search_sty_t      a)
     | "GetOptions" -> GetOptions (mkCallArg get_options_sty_t a)
     | "SetOptions" -> SetOptions (mkCallArg set_options_sty_t a)
-    | "InLoadPath" -> InLoadPath (mkCallArg inloadpath_sty_t  a)
     | "MkCases"    -> MkCases    (mkCallArg mkcases_sty_t     a)
     | "Quit"       -> Quit       (mkCallArg quit_sty_t        a)
     | "About"      -> About      (mkCallArg about_sty_t       a)
@@ -864,7 +853,6 @@ let pr_full_value call value = match call with
   | Search _     -> pr_value_gen (print search_rty_t     ) (Obj.magic value) 
   | GetOptions _ -> pr_value_gen (print get_options_rty_t) (Obj.magic value) 
   | SetOptions _ -> pr_value_gen (print set_options_rty_t) (Obj.magic value) 
-  | InLoadPath _ -> pr_value_gen (print inloadpath_rty_t ) (Obj.magic value) 
   | MkCases _    -> pr_value_gen (print mkcases_rty_t    ) (Obj.magic value) 
   | Quit _       -> pr_value_gen (print quit_rty_t       ) (Obj.magic value) 
   | About _      -> pr_value_gen (print about_rty_t      ) (Obj.magic value) 
@@ -882,7 +870,6 @@ let pr_call call = match call with
   | Search x     -> str_of_call call ^ " " ^ print search_sty_t      x
   | GetOptions x -> str_of_call call ^ " " ^ print get_options_sty_t x
   | SetOptions x -> str_of_call call ^ " " ^ print set_options_sty_t x
-  | InLoadPath x -> str_of_call call ^ " " ^ print inloadpath_sty_t  x
   | MkCases x    -> str_of_call call ^ " " ^ print mkcases_sty_t     x
   | Quit x       -> str_of_call call ^ " " ^ print quit_sty_t        x
   | About x      -> str_of_call call ^ " " ^ print about_sty_t       x

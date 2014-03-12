@@ -11,6 +11,7 @@ type aux_file
 val load_aux_file_for : string -> aux_file
 val get : aux_file -> Loc.t -> string -> string
 val empty_aux_file : aux_file
+val set : aux_file -> Loc.t -> string -> string -> aux_file
 
 val start_aux_file_for : string -> unit
 val stop_aux_file : unit -> unit 

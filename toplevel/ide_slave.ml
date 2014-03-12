@@ -233,9 +233,6 @@ let hints () =
 
 (** Other API calls *)
 
-let inloadpath dir =
-  Loadpath.is_in_load_paths (CUnix.physical_path_of_string dir)
-
 let status force =
   (** We remove the initial part of the current [DirPath.t]
       (usually Top in an interactive session, cf "coqtop -top"),
@@ -301,9 +298,23 @@ let handle_exn e =
 
 let init =
   let initialized = ref false in
-  fun () ->
+  fun file ->
    if !initialized then anomaly (str "Already initialized")
-   else (initialized := true; Stm.get_current_state ())
+   else begin
+     initialized := true;
+     match file with
+     | None -> Stm.get_current_state ()
+     | Some file ->
+         let dir = Filename.dirname file in
+         let open Loadpath in let open CUnix in
+         let initial_id, _ =
+           if not (is_in_load_paths (physical_path_of_string dir)) then
+             Stm.add false ~ontop:(Stm.get_current_state ())
+               0 (Printf.sprintf "Add LoadPath \"%s\". " dir)
+           else Stm.get_current_state (), `NewTip in
+         Stm.set_compilation_hints file;
+         initial_id
+   end
 
 (* Retrocompatibility stuff *)
 let interp ((_raw, verbose), s) =
@@ -344,7 +355,6 @@ let eval_call xml_oc log c =
     Interface.hints = interruptible hints;
     Interface.status = interruptible status;
     Interface.search = interruptible search;
-    Interface.inloadpath = interruptible inloadpath;
     Interface.get_options = interruptible get_options;
     Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible Vernacentries.make_cases;

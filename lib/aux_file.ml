@@ -20,10 +20,16 @@ let oc = ref None
 let aux_file_name_for vfile =
   dirname vfile ^ "/." ^ chop_extension(basename vfile) ^ ".aux"
 
+let mk_absolute vfile =
+  let vfile = CUnix.remove_path_dot vfile in
+  if Filename.is_relative vfile then CUnix.correct_path vfile (Sys.getcwd ())
+  else vfile
+
 let start_aux_file_for vfile =
+  let vfile = mk_absolute vfile in
   oc := Some (open_out (aux_file_name_for vfile));
   Printf.fprintf (Option.get !oc) "COQAUX%d %s %s\n"
-    version (Digest.to_hex (Digest.file vfile)) (CUnix.strip_path vfile)
+    version (Digest.to_hex (Digest.file vfile)) vfile
 
 let stop_aux_file () =
   close_out (Option.get !oc);
@@ -52,33 +58,35 @@ let record_in_aux_set_at loc = current_loc := loc
 
 let record_in_aux key v = record_in_aux_at !current_loc key v
 
-exception Outdated
+let set h loc k v =
+  let m = try H.find loc h with Not_found -> M.empty in
+  H.add loc (M.add k v m) h
 
 let load_aux_file_for vfile =
+  let vfile = mk_absolute vfile in
   let ret3 x y z = x, y, z in
   let ret4 x y z t = x, y, z, t in
   let h = ref empty_aux_file in
-  let add loc k v =
-    let m = try H.find loc !h with Not_found -> M.empty in
-    h := H.add loc (M.add k v m) !h in
+  let add loc k v = h := set !h loc k v in
   let aux_fname = aux_file_name_for vfile in
   try
     let ic = open_in aux_fname in
     let ver, hash, fname = Scanf.fscanf ic "COQAUX%d %s %s\n" ret3 in
     if ver <> version then raise (Failure "aux file version mismatch");
-    if fname <> CUnix.strip_path vfile then
+    if fname <> vfile then
       raise (Failure "aux file name mismatch");
-    if Digest.to_hex (Digest.file vfile) <> hash then raise Outdated;
+    let only_dummyloc = Digest.to_hex (Digest.file vfile) <> hash in
     while true do
       let i, j, k, v = Scanf.fscanf ic "%d %d %s %S\n" ret4 in
-      add (i,j) k v;
+      if not only_dummyloc || (i = 0 && j = 0) then add (i,j) k v;
     done;
     raise End_of_file
   with
   | End_of_file -> !h
-  | Outdated -> empty_aux_file
   | Sys_error s | Scanf.Scan_failure s
   | Failure s | Invalid_argument s ->
      Flags.if_verbose
        Pp.msg_warning Pp.(str"Loading file "++str aux_fname++str": "++str s);
      empty_aux_file
+
+let set h loc k v = set h (Loc.unloc loc) k v

@@ -212,10 +212,6 @@ type get_options_rty = (option_name * option_state) list
 type set_options_sty = (option_name * option_value) list
 type set_options_rty = unit
 
-(** Is a directory part of Coq's loadpath ? *)
-type inloadpath_sty = string
-type inloadpath_rty = bool
-
 (** Create a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name
     followed by enough pattern variables. *)
@@ -226,8 +222,10 @@ type mkcases_rty = string list list
 type quit_sty = unit
 type quit_rty = unit
 
-(* Initialize, and return the initial state id *)
-type init_sty = unit
+(* Initialize, and return the initial state id.  The argument is the filename.
+ * If its directory is not in dirpath, it adds it.  It also loads
+ * compilation hints for the filename. *)
+type init_sty = string option
 type init_rty = state_id
 
 type about_sty = unit
@@ -256,7 +254,6 @@ type handler = {
   search      : search_sty      -> search_rty;
   get_options : get_options_sty -> get_options_rty;
   set_options : set_options_sty -> set_options_rty;
-  inloadpath  : inloadpath_sty  -> inloadpath_rty;
   mkcases     : mkcases_sty     -> mkcases_rty;
   about       : about_sty       -> about_rty;
   stop_worker : stop_worker_sty -> stop_worker_rty;

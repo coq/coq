@@ -21,7 +21,6 @@ val query       : query_sty       -> query_rty call
 val goals       : goals_sty       -> goals_rty call
 val hints       : hints_sty       -> hints_rty call
 val status      : status_sty      -> status_rty call
-val inloadpath  : inloadpath_sty  -> inloadpath_rty call
 val mkcases     : mkcases_sty     -> mkcases_rty call
 val evars       : evars_sty       -> evars_rty call
 val search      : search_sty      -> search_rty call

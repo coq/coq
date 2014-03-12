@@ -502,8 +502,8 @@ module State : sig
   val install_cached : Stateid.t -> unit
   val is_cached : Stateid.t -> bool
 
-  val exn_on : Stateid.t -> ?valid:Stateid.t -> exn -> exn
 
+  val exn_on : Stateid.t -> ?valid:Stateid.t -> exn -> exn
   (* to send states across worker/master *)
   type frozen_state
   val get_cached : Stateid.t -> frozen_state
@@ -595,12 +595,17 @@ end
 (* }}} *)
 
 let hints = ref Aux_file.empty_aux_file
-let set_compilation_hints h = hints := h
+let set_compilation_hints file =
+  hints := Aux_file.load_aux_file_for file
 let get_hint_ctx loc =
   let s = Aux_file.get !hints loc "context_used" in
   let ids = List.map Names.Id.of_string (Str.split (Str.regexp " ") s) in
   let ids = List.map (fun id -> Loc.ghost, id) ids in
   SsExpr (SsSet ids)
+
+let get_hint_bp_time proof_name =
+  try float_of_string (Aux_file.get !hints Loc.ghost proof_name)
+  with Not_found -> 1.0
 
 module Worker = Spawn.Sync(struct 
   let add_timeout ~sec f =
@@ -611,6 +616,14 @@ module Worker = Spawn.Sync(struct
       done)
     ())
 end)
+
+let record_pb_time proof_name loc time =
+  let proof_build_time = Printf.sprintf "%.3f" time in
+  Aux_file.record_in_aux_at loc "proof_build_time" proof_build_time;
+  if proof_name <> "" then begin
+    Aux_file.record_in_aux_at Loc.ghost proof_name proof_build_time;
+    hints := Aux_file.set !hints Loc.ghost proof_name proof_build_time
+  end
 
 (* Slave processes (if initialized, otherwise local lazy evaluation) *)
 module Slaves : sig
@@ -773,7 +786,7 @@ end = struct (* {{{ *)
   let name_of_request (ReqBuildProof (_,_,_,_,_,s)) = s
 
   type response =
-    | RespBuiltProof of Entries.proof_output list 
+    | RespBuiltProof of Entries.proof_output list * float
     | RespError of (* err, safe, msg, safe_state *)
         Stateid.t * Stateid.t * std_ppcmds * State.frozen_state option
     | RespFeedback of Interface.feedback
@@ -825,7 +838,8 @@ end = struct (* {{{ *)
     | ReqBuildProof(exn_info,eop,vcs,loc,_,_) ->
         VCS.restore vcs;
         VCS.print ();
-        let r = RespBuiltProof (
+        let rc, time =
+          let wall_clock = Unix.gettimeofday () in
           let l = Future.force (build_proof_here exn_info loc eop) in
           List.iter (fun (_,se) -> Declareops.iter_side_effects (function
             | Declarations.SEsubproof(_,
@@ -833,9 +847,9 @@ end = struct (* {{{ *)
                Opaqueproof.join_opaque f
             | _ -> ())
           se) l;
-          l) in
+          l, Unix.gettimeofday () -. wall_clock in
         VCS.print ();
-        r
+        RespBuiltProof(rc,time)
 
   let check_task_aux extra name l i =
     match List.nth l i with
@@ -974,8 +988,8 @@ end = struct (* {{{ *)
           try `Val (build_proof_here_core loc stop ()) with e -> `Exn e in
         let f,assign = Future.create_delegate ~force (State.exn_on id ~valid) in
         let uuid = Future.uuid f in
-        TQueue.push queue
-          (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,loc,uuid,name));
+        TQueue.push queue (TaskBuildProof
+          (exn_info,start,stop,assign,cancel_switch,loc,uuid,name));
         f, cancel_switch
       end else
         build_proof_here exn_info loc stop, cancel_switch
@@ -983,8 +997,8 @@ end = struct (* {{{ *)
       let f, assign = Future.create_delegate (State.exn_on id ~valid) in
       let uuid = Future.uuid f in
       Pp.feedback (Interface.InProgress 1);
-      TQueue.push queue
-        (TaskBuildProof(exn_info,start,stop,assign,cancel_switch,loc,uuid,name));
+      TQueue.push queue (TaskBuildProof
+        (exn_info,start,stop,assign,cancel_switch,loc,uuid,name));
       f, cancel_switch
 
   exception RemoteException of std_ppcmds
@@ -1028,13 +1042,16 @@ end = struct (* {{{ *)
           let rec loop () =
             let response = unmarshal_response ic in
             match task, response with
-            | TaskBuildProof(_,_,_, assign,_,_,_,_), RespBuiltProof pl ->
+            | TaskBuildProof(_,_,_, assign,_,loc,_,s),
+              RespBuiltProof(pl, time)->
                 assign (`Val pl);
                 (* We restart the slave, to avoid memory leaks.  We could just
                    Pp.feedback (Interface.InProgress ~-1) *)
+                record_pb_time s loc time;
                 last_task := None;
                 raise KillRespawn
-            | TaskBuildProof(_,_,_, assign,_,_,_,_),RespError(err_id,valid,e,s) ->
+            | TaskBuildProof(_,_,_, assign,_,_,_,_),
+              RespError(err_id,valid,e,s) ->
                 let e = Stateid.add ~valid (RemoteException e) err_id in
                 assign (`Exn e);
                 Option.iter (State.assign valid) s;
@@ -1216,15 +1233,19 @@ end = struct (* {{{ *)
 
 let pstate = ["meta counter"; "evar counter"; "program-tcc-table"]
 
-let delegate_policy_check () =
+let delegate_policy_check time =
   if interactive () = `Yes then
-    !Flags.async_proofs_mode = Flags.APonParallel 0 ||
-    !Flags.async_proofs_mode = Flags.APonLazy
+    (!Flags.async_proofs_mode = Flags.APonParallel 0 ||
+    !Flags.async_proofs_mode = Flags.APonLazy) && time >= 1.0
   else if !Flags.compilation_mode = Flags.BuildVi then true
   else !Flags.async_proofs_mode <> Flags.APoff
 
 let collect_proof cur hd brkind id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id);
+ let no_name = "" in
+ let name = function
+   | [] -> no_name
+   | id :: _ -> Id.to_string id in
  let loc = (snd cur).loc in
  let is_defined = function
    | _, { expr = VernacEndProof (Proved (false,_)) } -> true
@@ -1233,40 +1254,54 @@ let collect_proof cur hd brkind id =
     let view = VCS.visit id in
     match last, view.step with
     | _, `Cmd (x, _) -> collect (Some (id,x)) (id::accn) view.next
-    | _, `Alias _ -> `Sync `Alias
-    | _, `Fork(_,_,_,_::_::_)-> `Sync `MutualProofs
+    | _, `Alias _ -> `Sync (no_name,`Alias)
+    | _, `Fork(_,_,_,_::_::_)-> `Sync (no_name,`MutualProofs)
     | _, `Fork(_,_,Doesn'tGuaranteeOpacity,_) ->
-        `Sync `Doesn'tGuaranteeOpacity
+        `Sync (no_name,`Doesn'tGuaranteeOpacity)
     | Some (parent, ({ expr = VernacProof(_,Some _)} as v)),
       `Fork (_, hd', GuaranteesOpacity, ids) ->
+        let name = name ids in
+        let time = get_hint_bp_time name in
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
-        if delegate_policy_check () then `ASync (parent,Some v,accn,ids)
-        else `Sync `Policy
+        if delegate_policy_check time
+        then `ASync (parent,Some v,accn,name)
+        else `Sync (name,`Policy)
     | Some (parent, ({ expr = VernacProof(t,None)} as v)),
       `Fork (_, hd', GuaranteesOpacity, ids) when
        not (State.is_cached parent) &&
        !Flags.compilation_mode = Flags.BuildVi ->
         (try
-          let hint = get_hint_ctx loc in
+          let name = name ids in
+          let hint, time = get_hint_ctx loc, get_hint_bp_time name in
           assert (VCS.Branch.equal hd hd'||VCS.Branch.equal hd VCS.edit_branch);
           v.expr <- VernacProof(t, Some hint);
-          if delegate_policy_check () then `ASync (parent,Some v,accn,ids)
-          else `Sync `Policy
-        with Not_found -> `Sync `NoHint)
+          if delegate_policy_check time
+          then `ASync (parent,Some v,accn,name)
+          else `Sync (name,`Policy)
+        with Not_found -> `Sync (no_name,`NoHint))
     | Some (parent, _), `Fork (_, hd', GuaranteesOpacity, ids) ->
         assert (VCS.Branch.equal hd hd' || VCS.Branch.equal hd VCS.edit_branch);
-        if delegate_policy_check () then `MaybeASync (parent, accn, ids)
-        else `Sync `Policy
-    | _, `Sideff _ -> `Sync `NestedProof
-    | _ -> `Sync `Unknown in
+        let name = name ids in
+        let time = get_hint_bp_time name in
+        if delegate_policy_check time
+        then `MaybeASync (parent, accn, name)
+        else `Sync (name,`Policy)
+    | _, `Sideff _ -> `Sync (no_name,`NestedProof)
+    | _ -> `Sync (no_name,`Unknown) in
  match cur, (VCS.visit id).step, brkind with
  |( parent, { expr = VernacExactProof _ }), `Fork _, _ ->
-     `Sync `Immediate
+     `Sync (no_name,`Immediate)
  | _, _, { VCS.kind = `Edit _ }  -> collect (Some cur) [] id
  | _ ->
-     if State.is_cached id then `Sync `AlreadyEvaluated
-     else if is_defined cur then `Sync `Transparent
-     else collect (Some cur) [] id
+     if is_defined cur then `Sync (no_name,`Transparent)
+     else
+       let rc = collect (Some cur) [] id in
+       if not (State.is_cached id) then rc
+       else (* we already have the proof, no gain in delaying *)
+         match rc with
+         | `Sync(name,_) -> `Sync (name,`AlreadyEvaluated)
+         | `MaybeASync(_,_,name) -> `Sync (name,`AlreadyEvaluated)
+         | `ASync(_,_,_,name) -> `Sync (name,`AlreadyEvaluated)
 
 let string_of_reason = function
   | `Transparent -> "Transparent"
@@ -1318,7 +1353,7 @@ let known_state ?(redefine_qed=false) ~cache id =
           ), `Yes
       | `Qed ({ qast = x; keep; brinfo; brname } as qed, eop) ->
           let rec aux = function
-          | `ASync (start, proof_using_ast, nodes,ids) -> (fun () ->
+          | `ASync (start, proof_using_ast, nodes, name) -> (fun () ->
                 prerr_endline ("Asynchronous " ^ Stateid.to_string id);
                 VCS.create_cluster nodes ~tip:id;
                 begin match keep, brinfo, qed.fproof with
@@ -1327,16 +1362,14 @@ let known_state ?(redefine_qed=false) ~cache id =
                     assert(redefine_qed = true);
                     VCS.create_cluster nodes ~tip:id;
                     let fp, cancel = Slaves.build_proof
-                        ~loc:x.loc ~exn_info:(id,eop) ~start ~stop:eop
-                        ~name:(String.concat " " (List.map Id.to_string ids)) in
+                      ~loc:x.loc ~exn_info:(id,eop) ~start ~stop:eop ~name in
                     Future.replace ofp fp;
                     qed.fproof <- Some (fp, cancel)
                 | VtKeep, { VCS.kind = `Proof _ }, Some _ -> assert false
                 | VtKeep, { VCS.kind = `Proof _ }, None ->
                     reach ~cache:`Shallow start;
                     let fp, cancel = Slaves.build_proof
-                      ~loc:x.loc ~exn_info:(id,eop) ~start ~stop:eop
-                      ~name:(String.concat " " (List.map Id.to_string ids)) in
+                      ~loc:x.loc ~exn_info:(id,eop) ~start ~stop:eop ~name in
                     qed.fproof <- Some (fp, cancel);
                     let proof =
                       Proof_global.close_future_proof ~feedback_id:id fp in
@@ -1351,17 +1384,16 @@ let known_state ?(redefine_qed=false) ~cache id =
                 end;
                 Proof_global.discard_all ()
               ), if redefine_qed then `No else `Yes
-          | `Sync `Immediate -> (fun () -> 
+          | `Sync (name, `Immediate) -> (fun () -> 
                 assert (Stateid.equal view.next eop);
                 reach eop; vernac_interp id x; Proof_global.discard_all ()
               ), `Yes
-          | `Sync reason -> (fun () ->
+          | `Sync (name, reason) -> (fun () ->
                 prerr_endline ("Synchronous " ^ Stateid.to_string id ^ " " ^
                   string_of_reason reason);
                 reach eop;
                 let wall_clock = Unix.gettimeofday () in
-                Aux_file.record_in_aux_at x.loc "proof_build_time"
-                  (Printf.sprintf "%.3f" (wall_clock -. !wall_clock_last_fork));
+                record_pb_time name x.loc (wall_clock -. !wall_clock_last_fork);
                 begin match keep with
                 | VtKeep ->
                     let proof =
@@ -1378,16 +1410,13 @@ let known_state ?(redefine_qed=false) ~cache id =
                 end;
                 Proof_global.discard_all ()
               ), `Yes
-          | `MaybeASync (start, nodes, ids) -> (fun () ->
+          | `MaybeASync (start, nodes, name) -> (fun () ->
                 prerr_endline ("MaybeAsynchronous " ^ Stateid.to_string id);
                 reach ~cache:`Shallow start;
                 (* no sections *)
                 if List.is_empty (Environ.named_context (Global.env ()))
-                   (* && Safe_typing.is_curmod_library (Global.safe_env ()) *)
-                then
-                  fst (aux (`ASync (start, None, nodes,ids))) ()
-                else
-                  fst (aux (`Sync `Unknown)) ()
+                then fst (aux (`ASync (start, None, nodes, name))) ()
+                else fst (aux (`Sync (name, `Unknown))) ()
               ), if redefine_qed then `No else `Yes
           in
           aux (collect_proof (view.next, x) brname brinfo eop)

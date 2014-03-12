@@ -764,32 +764,7 @@ object(self)
       let next = function
       | Fail _ -> messages#set ("Couln't initialize Coq"); Coq.return ()
       | Good id -> initial_state <- id; Coq.return () in
-      Coq.bind (Coq.init ()) next in
-    let add_load_path = match get_filename () with
-    | None -> Coq.return ()
-    | Some f ->
-      let dir = Filename.dirname f in
-      let loadpath = Coq.inloadpath dir in
-      let next = function
-      | Fail (_, _, s) ->
-        messages#set
-          ("Could not determine lodpath, this might lead to problems:\n"^s);
-        Coq.return ()
-      | Good true -> Coq.return ()
-      | Good false ->
-        let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
-        let cmd = Coq.add ((cmd,hidden_edit_id ()),(Stateid.initial,false)) in
-        let next = function
-        | Fail (_, l, str) ->
-          messages#set ("Couln't add loadpath:\n"^str);
-          Coq.return ()
-        | Good (id, _) ->
-          initial_state <- id; Coq.return ()
-        in
-        Coq.bind cmd next
-      in
-      Coq.bind loadpath next
-    in
-    Coq.seq get_initial_state (Coq.seq add_load_path Coq.PrintOpt.enforce)
+      Coq.bind (Coq.init (get_filename ())) next in
+    Coq.seq get_initial_state Coq.PrintOpt.enforce
 
 end
