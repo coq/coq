@@ -1036,10 +1036,11 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
     if Int.equal siglen 0 then
       (* is the default value typable with the expected type *)
       let dflt_typ = type_of env sigma dflt in
-      if Evarconv.e_cumul env evdref dflt_typ p_i then
-	(* the_conv_x had a side-effect on evdref *)
+      try
+	let () = evdref := Evarconv.the_conv_x_leq env dflt_typ p_i !evdref in
+	let () = evdref := Evarconv.consider_remaining_unif_problems env !evdref in
 	dflt
-      else
+      with Evarconv.UnableToUnify _ ->
 	error "Cannot solve a unification problem."
     else
       let (a,p_i_minus_1) = match whd_beta_stack !evdref p_i with
