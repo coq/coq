@@ -341,13 +341,14 @@ Hint Extern 3 (PartialOrder (flip _)) => class_apply PartialOrder_inverse : type
 
 (** The partial order defined by subrelation and crelation equivalence. *)
 
-Program Instance subrelation_partial_order :
-  ! PartialOrder (crelation A) relation_equivalence subrelation.
+(* Program Instance subrelation_partial_order : *)
+(*   ! PartialOrder (crelation A) relation_equivalence subrelation. *)
+(* Obligation Tactic := idtac. *)
 
-Next Obligation.
-Proof.
-  unfold relation_equivalence in *. compute; firstorder.
-Qed.
+(* Next Obligation. *)
+(* Proof. *)
+(*   intros x. refine (fun x => x). *)
+(* Qed. *)
 
 Typeclasses Opaque relation_equivalence.
 

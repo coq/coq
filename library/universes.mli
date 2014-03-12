@@ -78,7 +78,7 @@ val make_opt_subst : universe_opt_subst -> universe_subst_fn
 
 val subst_opt_univs_constr : universe_opt_subst -> constr -> constr
 
-val choose_canonical : universe_set -> universe_opt_subst -> universe_set -> universe_set -> 
+val choose_canonical : universe_set -> (Level.t -> bool) (* flexibles *) -> universe_set -> universe_set -> 
   universe_level * (universe_set * universe_set * universe_set)
 
 val instantiate_with_lbound : 
@@ -171,6 +171,8 @@ val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
 val universes_of_constr : constr -> universe_set
 val shrink_universe_context : universe_context_set -> universe_set -> universe_context_set
 val restrict_universe_context : universe_context_set -> universe_set -> universe_context_set
+val simplify_universe_context : universe_context_set -> universe_set -> 
+  universe_context_set * universe_level_subst
 
 val refresh_constraints : universes -> universe_context_set -> universe_context_set * universes
 

@@ -251,7 +251,7 @@ type universe_full_subst = (universe_level * universe) list
 (** Precondition: flexible <= ctx *)
 let choose_canonical ctx flexible algs s =
   let global = LSet.diff s ctx in
-  let flexible, rigid = LSet.partition (fun x -> LMap.mem x flexible) (LSet.inter s ctx) in
+  let flexible, rigid = LSet.partition flexible (LSet.inter s ctx) in
     (** If there is a global universe in the set, choose it *)
     if not (LSet.is_empty global) then
       let canon = LSet.choose global in
@@ -589,8 +589,9 @@ let normalize_context_set ctx us algs =
     csts Constraint.empty
   in
   let partition = UF.partition uf in
+  let flex x = LMap.mem x us in
   let subst, eqs = List.fold_left (fun (subst, cstrs) s -> 
-    let canon, (global, rigid, flexible) = choose_canonical ctx us algs s in
+    let canon, (global, rigid, flexible) = choose_canonical ctx flex algs s in
     (* Add equalities for globals which can't be merged anymore. *)
     let cstrs = LSet.fold (fun g cst -> 
       Constraint.add (canon, Univ.Eq, g) cst) global cstrs 
@@ -674,6 +675,34 @@ let restrict_universe_context (univs,csts) s =
       else Constraint.add c csts)
       csts Constraint.empty
   in (univs', csts')
+
+let simplify_universe_context (univs,csts) s =
+  let uf = UF.create () in
+  let noneqs =
+    Constraint.fold (fun (l,d,r) noneqs ->
+      if d == Eq && (LSet.mem l univs || LSet.mem r univs) then 
+	(UF.union l r uf; noneqs)
+      else Constraint.add (l,d,r) noneqs)
+      csts Constraint.empty
+  in
+  let partition = UF.partition uf in
+  let flex x = LSet.mem x univs in
+  let subst, univs', csts' = List.fold_left (fun (subst, univs, cstrs) s -> 
+    let canon, (global, rigid, flexible) = choose_canonical univs flex LSet.empty s in
+    (* Add equalities for globals which can't be merged anymore. *)
+    let cstrs = LSet.fold (fun g cst -> 
+      Constraint.add (canon, Univ.Eq, g) cst) (LSet.union global rigid)
+      cstrs 
+    in
+    let subst = LSet.fold (fun f -> LMap.add f canon)
+      flexible subst
+    in (subst, LSet.diff univs flexible, cstrs))
+    (LMap.empty, univs, noneqs) partition
+  in
+  (* Noneqs is now in canonical form w.r.t. equality constraints, 
+     and contains only inequality constraints. *)
+  let csts' = subst_univs_level_constraints subst csts' in
+    (univs', csts'), subst
 
 let is_small_leq (l,d,r) =
   Level.is_small l && d == Univ.Le

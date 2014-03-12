@@ -192,6 +192,9 @@ let ppevar_universe_context l = pp (Evd.pr_evar_universe_context l)
 let ppconstraints_map c = pp (Universes.pr_constraints_map c)
 let ppconstraints c = pp (pr_constraints c)
 let ppuniverseconstraints c = pp (UniverseConstraints.pr c)
+let ppuniverse_context_future c = 
+  let ctx = Future.force c in
+    ppuniverse_context ctx
 
 let ppenv e = pp
   (str "[" ++ pr_named_context_of e ++ str "]" ++ spc() ++

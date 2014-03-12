@@ -274,7 +274,7 @@ let close_proof ?feedback_id ~now fpl =
   let () = if poly || now then ignore (Future.compute univs) in
   let entries = Future.map2 (fun p (c, (t, octx)) ->
     let compute_univs (usubst, uctx) = 
-      let nf = Universes.nf_evars_and_universes_opt_subst (fun _ -> None) usubst in
+      let nf x = Universes.nf_evars_and_universes_opt_subst (fun _ -> None) usubst x in
       let compute_c_t (c, eff) =
 	let c, t = 
 	  if not now then nf c, nf t
@@ -283,9 +283,12 @@ let close_proof ?feedback_id ~now fpl =
 	let univs =
 	  Univ.LSet.union (Universes.universes_of_constr c)
 	    (Universes.universes_of_constr t)
-	in 
-	let ctx = Universes.restrict_universe_context (Univ.ContextSet.of_context uctx) univs in
-	  (c, eff), t, Univ.ContextSet.to_context ctx
+	in
+	let ctx, subst = 
+	  Universes.simplify_universe_context (Univ.ContextSet.of_context uctx) univs 
+	in
+	let nf x = Vars.subst_univs_level_constr subst x in
+	  (nf c, eff), nf t, Univ.ContextSet.to_context ctx
       in
         Future.chain ~pure:true p compute_c_t
     in
