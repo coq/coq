@@ -32,34 +32,29 @@ Definition UIP_nat:= Eqdep_dec.UIP_dec Nat.eq_dec.
 
 Import EqNotations.
 
-Lemma le_unique: forall m n (h1 h2: m <= n), h1 = h2.
+Lemma le_unique: forall m n (le_mn1 le_mn2 : m <= n), le_mn1 = le_mn2.
 Proof.
-fix 3.
-destruct h1 as [ | i h1 ]; intros h2.
-- set (Return k (le:m<=k) :=
-       forall (eq:m=k),
-         le_n m = (rew eq in fun (le':m<=m) => le') le).
-  refine
-     (match h2 as h2' return (Return _ h2') with
-        | le_n _ => fun eq => _
-        | le_S _ j h2 => fun eq => _
-      end eq_refl).
-  + rewrite (UIP_nat _ _ eq eq_refl). simpl. reflexivity.
-  + exfalso. revert h2. rewrite eq. apply Nat.lt_irrefl.
-- set (Return k (le:m<=k) :=
-       match k as k' return (m <= k' -> Prop) with
-         | 0 => fun _ => True
-         | S i' => fun (le':m<=S i') => forall (H':m<=i'), le_S _ _ H' = le'
-       end le).
-  refine
-    (match h2 as h2' return (Return _ h2') with
-       | le_n _ => _
-       | le_S _ j h2 => fun h1' => _
-     end h1).
-  + unfold Return; clear. destruct m; simpl.
-    * exact I.
-    * intros h1'. destruct (Nat.lt_irrefl _ h1').
-  + f_equal. apply le_unique.
+intros m n.
+generalize (eq_refl (S n)).
+generalize n at -1.
+induction (S n) as [|n0 IHn0]; try discriminate.
+clear n; intros n H; injection H; clear H; intro H.
+rewrite <- H; intros le_mn1 le_mn2; clear n H.
+pose (def_n2 := eq_refl n0); transitivity (eq_ind _ _ le_mn2 _ def_n2).
+  2: reflexivity.
+generalize def_n2; revert le_mn1 le_mn2.
+generalize n0 at 1 4 5 7; intros n1 le_mn1.
+destruct le_mn1; intros le_mn2; destruct le_mn2.
++ now intros def_n0; rewrite (UIP_nat _ _ def_n0 eq_refl).
++ intros def_n0; generalize le_mn2; rewrite <-def_n0; intros le_mn0.
+  now destruct (Nat.nle_succ_diag_l _ le_mn0).
++ intros def_n0; generalize le_mn1; rewrite def_n0; intros le_mn0.
+  now destruct (Nat.nle_succ_diag_l _ le_mn0).
++ intros def_n0; injection def_n0; intros ->.
+  rewrite (UIP_nat _ _ def_n0 eq_refl); simpl.
+  assert (H : le_mn1 = le_mn2).
+    now apply IHn0.
+now rewrite H.
 Qed.
 
 (** For compatibility *)
