@@ -13,6 +13,8 @@ type t
 val equal : t -> t -> bool
 val compare : t -> t -> int
 
+module Set : Set.S with type elt = t
+
 val initial : t
 val dummy : t
 val fresh : unit -> t

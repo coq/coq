@@ -36,3 +36,6 @@ let get exn = Exninfo.get exn state_id_info
 
 let equal = Int.equal
 let compare = Int.compare
+
+module Set = Set.Make(struct type t = int let compare = compare end)
+
