@@ -660,6 +660,8 @@ module Slaves : sig
 
   val cancel_worker : int -> unit
 
+  val set_perspective : Stateid.t list -> unit
+
 end = struct (* {{{ *)
 
 
@@ -863,6 +865,17 @@ end = struct (* {{{ *)
       marshal_err ("unmarshal_more_data: "^s)
 
   let queue : task TQueue.t = TQueue.create ()
+
+  let set_perspective idl =
+    let open Stateid in
+    let p = List.fold_right Set.add idl Set.empty in
+    TQueue.reorder queue (fun task1 task2 ->
+      let TaskBuildProof (_, a1, b1, _, _,_,_,_) = task1 in
+      let TaskBuildProof (_, a2, b2, _, _,_,_,_) = task2 in
+      match Set.mem a1 p || Set.mem b1 p, Set.mem a2 p || Set.mem b2 p with
+      | true, true | false, false -> 0
+      | true, false -> -1
+      | false, true -> 1)
 
   let wait_all_done () =
     if not (WorkersPool.is_empty ()) then
@@ -1788,6 +1801,8 @@ let add ~ontop ?(check=ignore) verb eid s =
     (* For now, arbitrary edits should be announced with edit_at *)
     anomaly(str"Not yet implemented, the GUI should not try this")
   end
+
+let set_perspective id_list = Slaves.set_perspective id_list
 
 type focus = {
   start : Stateid.t;

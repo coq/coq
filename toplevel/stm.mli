@@ -63,6 +63,9 @@ val slave_init_stdout : unit -> unit
 (* Filename *)
 val set_compilation_hints : string -> unit
 
+(* Reorders the task queue putting forward what is in the perspective *)
+val set_perspective : Stateid.t list -> unit
+
 (** read-eval-print loop compatible interface ****************************** **)
 
 (* Adds a new line to the document.  It replaces the core of Vernac.interp.
