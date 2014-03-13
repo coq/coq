@@ -34,6 +34,18 @@ let pr_status { move; kill; sel } =
   let kill = Option.cata (fun (s,b) -> sprintf "kill(%b) %S" b s) "" kill in
   let sel = string_of_bool sel in
   Printf.sprintf "{ move: %s; kill: %s; sel: %s }" move kill sel
+let pr_key t =
+  let kv = GdkEvent.Key.keyval t in
+  let str = GdkEvent.Key.string t in
+  let str_of_mod = function
+  | `SHIFT -> "SHIFT" | `LOCK -> "LOCK" | `CONTROL -> "CONTROL"
+  | `MOD1 -> "MOD1" | `MOD2 -> "MOD2" | `MOD3 -> "MOD3" | `MOD4 -> "MOD4"
+  | `MOD5 -> "MOD5" | `BUTTON1 -> "BUTTON1" | `BUTTON2 -> "BUTTON2"
+  | `BUTTON3 -> "BUTTON3" | `BUTTON4 -> "BUTTON4" | `BUTTON5 -> "BUTTON5"
+  | `SUPER -> "SUPER" | `HYPER -> "HYPER" | `META -> "META"
+  | `RELEASE -> "RELEASE" in
+  let mods = String.concat " " (List.map str_of_mod (GdkEvent.Key.state t)) in
+  Printf.sprintf "'%s' (%d, %s)" str kv mods
 
 type action =
   | Action of string * string
@@ -103,21 +115,26 @@ let insert kps name enter_syms bindings =
 let run_action gui group name =
   ((actiong gui group)#get_action name)#activate ()
 
-let run gui action status =
+let run key gui action status =
   match action with
   | Callback f -> f gui; status
   | Action(group, name) -> run_action gui group name; status
   | Edit f ->
       let b = (ct gui).script#source_buffer in
       let i = b#get_iter_at_mark `INSERT in
-      f status b i (run_action gui)
+      let status = f status b i (run_action gui) in
+      if not status.sel then
+        b#place_cursor ~where:(b#get_iter_at_mark `SEL_BOUND);
+      status
   | Motion f ->
       let b = (ct gui).script#source_buffer in
+      let sel_mode = status.sel || List.mem `SHIFT (GdkEvent.Key.state key) in
       let i =
-        if status.sel then b#get_iter_at_mark `SEL_BOUND
+        if sel_mode then b#get_iter_at_mark `SEL_BOUND
         else b#get_iter_at_mark `INSERT in
       let where, status = f status i in
-      if status.sel then b#move_mark `SEL_BOUND ~where
+      let sel_mode = status.sel || List.mem `SHIFT (GdkEvent.Key.state key) in
+      if sel_mode then b#move_mark `SEL_BOUND ~where
       else b#place_cursor ~where;
       status
 
@@ -126,13 +143,14 @@ let emacs = empty
 let emacs = insert emacs "Emacs" [] [
   (* motion *)
   mkE _e "e" "Move to end of line" (Motion(fun s i ->
-    (if not i#ends_line then i#forward_to_line_end else i), s));
+    (if not i#ends_line then i#forward_to_line_end else i),
+    { s with move = None }));
   mkE _a "a" "Move to beginning of line" (Motion(fun s i ->
-    (i#set_line_offset 0), s));
+    (i#set_line_offset 0), { s with move = None }));
   mkE ~mods:mM _e "e" "Move to end of sentence" (Motion(fun s i ->
-    i#forward_sentence_end, s));
+    i#forward_sentence_end, { s with move = None }));
   mkE ~mods:mM _a "a" "Move to beginning of sentence" (Motion(fun s i ->
-    i#backward_sentence_start, s));
+    i#backward_sentence_start, { s with move = None }));
   mkE _n "n" "Move to next line" ~alias:[[],_Down,"DOWN"] (Motion(fun s i ->
     let orig_off = Option.default i#line_offset s.move in
     let i = i#forward_line in
@@ -146,13 +164,13 @@ let emacs = insert emacs "Emacs" [] [
     (if new_off > 0 then i#set_line_offset new_off else i),
     { s with move = Some orig_off }));
   mkE _f "f" "Forward char" ~alias:[[],_Right,"RIGHT"]
-    (Motion(fun s i -> i#forward_char, s));
+    (Motion(fun s i -> i#forward_char, { s with move = None }));
   mkE _b "b" "Backward char" ~alias:[[],_Left,"LEFT"]
-    (Motion(fun s i -> i#backward_char, s));
+    (Motion(fun s i -> i#backward_char, { s with move = None }));
   mkE ~mods:mM _f "f" "Forward word" ~alias:[mC,_Right,"RIGHT"]
-    (Motion(fun s i -> i#forward_word_end, s));
+    (Motion(fun s i -> i#forward_word_end, { s with move = None }));
   mkE ~mods:mM _b "b" "Backward word" ~alias:[mC,_Left,"LEFT"]
-    (Motion(fun s i -> i#backward_word_start, s));
+    (Motion(fun s i -> i#backward_word_start, { s with move = None }));
   mkE _space "SPC" "Set mark" ~alias:[mC,_at,"@"] (Motion(fun s i ->
     if s.sel = false then i, { s with sel = true }
     else i, { s with sel = false } ));
@@ -262,10 +280,10 @@ let find gui (Step(here,konts)) t =
   let sel_nonempty () = sel_nonempty (ct gui).script#source_buffer in
   let k = GdkEvent.Key.keyval t in
   if k = _x && mod_of t mC && sel_nonempty () then
-    ignore(run gui (Action("Edit","Cut")) empty)
+    ignore(run t gui (Action("Edit","Cut")) empty)
   else
     if k = _c && mod_of t mC && sel_nonempty () then
-      ignore(run gui (Action("Edit","Copy")) empty);
+      ignore(run t gui (Action("Edit","Copy")) empty);
     let cmp { key; mods } = key = k && mod_of t mods in
     try `Do (List.find cmp here) with Not_found ->
     try `Cont (List.find cmp konts).contents with Not_found -> `NotFound
@@ -276,11 +294,12 @@ let init w nb ags =
   let status = ref empty in
   let reset () = eprintf "reset\n%!"; cur := pg in
   ignore(w#event#connect#key_press ~callback:(fun t ->
+    eprintf "got key %s\n%!" (pr_key t);
     if current.nanoPG then begin
       match find gui !cur t with
       | `Do e ->
            eprintf "run (%s) %s on %s\n%!" e.keyname e.doc (pr_status !status);
-           status := run gui e.contents !status; reset (); true
+           status := run t gui e.contents !status; reset (); true
       | `Cont c ->
            flash_info ("Waiting one of " ^ String.concat " " (frontier c));
            cur := c; true
