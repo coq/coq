@@ -1012,11 +1012,11 @@ end = struct (* {{{ *)
     | KillRespawn ->
         Pp.feedback (Interface.InProgress ~-1);
         Worker.kill proc; ignore(Worker.wait proc);
-        manage_slave cancel_user_req id_slave respawn
+        manage_slave ~cancel:cancel_user_req id_slave respawn
     | Sys_error _ | Invalid_argument _ | End_of_file when !task_expired ->
         Pp.feedback (Interface.InProgress ~-1);
         ignore(Worker.wait proc);
-        manage_slave cancel_user_req id_slave respawn
+        manage_slave ~cancel:cancel_user_req id_slave respawn
     | Sys_error _ | Invalid_argument _ | End_of_file when !task_cancelled ->
         msg_warning(strbrk "The worker was cancelled.");
         Option.iter (fun task ->
@@ -1028,7 +1028,7 @@ end = struct (* {{{ *)
           Pp.feedback (Interface.InProgress ~-1);
         ) !last_task;
         Worker.kill proc; ignore(Worker.wait proc);
-        manage_slave cancel_user_req id_slave respawn
+        manage_slave ~cancel:cancel_user_req id_slave respawn
     | Sys_error _ | Invalid_argument _ | End_of_file
       when !fallback_to_lazy_if_slave_dies ->
         msg_warning(strbrk "The worker process died badly.");
@@ -1039,7 +1039,7 @@ end = struct (* {{{ *)
           Pp.feedback (Interface.InProgress ~-1);
         ) !last_task;
         Worker.kill proc; ignore(Worker.wait proc);
-        manage_slave cancel_user_req id_slave respawn
+        manage_slave ~cancel:cancel_user_req id_slave respawn
     | Sys_error _ | Invalid_argument _ | End_of_file ->
         Worker.kill proc;
         let exit_status proc = match Worker.wait proc with
