@@ -26,42 +26,41 @@ Section SCHEMES.
 Definition case0 P (p: t 0): P p :=
   match p with | F1 | FS  _ => fun devil => False_rect (@IDProp) devil (* subterm !!! *) end.
 
+Definition caseS' {n : nat} (p : t (S n)) : forall (P : t (S n) -> Type) 
+  (P1 : P F1) (PS : forall (p : t n), P (FS p)), P p :=
+  match p with
+  | @F1 k => fun P P1 PS => P1
+  | FS pp => fun P P1 PS => PS pp
+  end.
+
 Definition caseS (P: forall {n}, t (S n) -> Type)
   (P1: forall n, @P n F1) (PS : forall {n} (p: t n), P (FS p))
-  {n} (p: t (S n)): P p :=
-  match p with
-  |@F1 k => P1 k
-  |FS pp => PS pp
-  end.
+  {n} (p: t (S n)) : P p := caseS' p P (P1 n) PS.
 
 Definition rectS (P: forall {n}, t (S n) -> Type)
   (P1: forall n, @P n F1) (PS : forall {n} (p: t (S n)), P p -> P (FS p)):
   forall {n} (p: t (S n)), P p :=
 fix rectS_fix {n} (p: t (S n)): P p:=
   match p with
-  |@F1 k => P1 k
-  |@FS 0 pp => case0 (fun f => P (FS f)) pp
-  |@FS (S k) pp => PS pp (rectS_fix pp)
+  | @F1 k => P1 k
+  | @FS 0 pp => case0 (fun f => P (FS f)) pp
+  | @FS (S k) pp => PS pp (rectS_fix pp)
   end.
 
-Definition rect2 (P: forall {n} (a b: t n), Type)
-  (H0: forall n, @P (S n) F1 F1)
-  (H1: forall {n} (f: t n), P F1 (FS f))
-  (H2: forall {n} (f: t n), P (FS f) F1)
-  (HS: forall {n} (f g : t n), P f g -> P (FS f) (FS g)):
-    forall {n} (a b: t n), P a b :=
-fix rect2_fix {n} (a: t n): forall (b: t n), P a b :=
-match a with
-  |@F1 m => fun (b: t (S m)) => match b as b' in t (S n')
-                   return P F1 b' with
-                     |@F1 m' => H0 m'
-                     |FS b' => H1 b'
-                   end
-  |@FS m a' => fun (b: t (S m)) => match b with
-                         |@F1 m' => fun aa: t m' => H2 aa
-                         |FS b' => fun aa => HS aa b' (rect2_fix aa b')
-                       end a'
-end.
+Definition rect2 (P : forall {n} (a b : t n), Type)
+  (H0 : forall n, @P (S n) F1 F1)
+  (H1 : forall {n} (f : t n), P F1 (FS f))
+  (H2 : forall {n} (f : t n), P (FS f) F1)
+  (HS : forall {n} (f g : t n), P f g -> P (FS f) (FS g)) :
+    forall {n} (a b : t n), P a b :=
+  fix rect2_fix {n} (a : t n) {struct a} : forall (b : t n), P a b :=
+    match a with
+    | @F1 m => fun (b : t (S m)) => caseS' b (P F1) (H0 _) H1
+    | @FS m a' => fun (b : t (S m)) =>
+      caseS' b (fun b => forall a' : t m, (forall b' : t m, P a' b') -> P (@FS m a') b)
+      (fun a' _ => H2 a') (fun b' a' F => HS _ _ (F b')) a' (rect2_fix a')
+    end.
+
 End SCHEMES.
 
 Definition FS_inj {n} (x y: t n) (eq: FS x = FS y): x = y :=
