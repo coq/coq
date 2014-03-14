@@ -57,8 +57,7 @@ Definition rect2 (P : forall {n} (a b : t n), Type)
     match a with
     | @F1 m => fun (b : t (S m)) => caseS' b (P F1) (H0 _) H1
     | @FS m a' => fun (b : t (S m)) =>
-      caseS' b (fun b => forall a' : t m, (forall b' : t m, P a' b') -> P (@FS m a') b)
-      (fun a' _ => H2 a') (fun b' a' F => HS _ _ (F b')) a' (rect2_fix a')
+      caseS' b (fun b => P (@FS m a') b) (H2 a') (fun b' => HS _ _ (rect2_fix a' b'))
     end.
 
 End SCHEMES.
