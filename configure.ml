@@ -384,7 +384,7 @@ let coq_annotate_flag =
   then if program_in_path "ocamlmerlin" then "-bin-annot" else "-dtypes"
   else ""
 
-let cflags = "-fno-defer-pop -Wall -Wno-unused"
+let cflags = "-Wall -Wno-unused"
 
 
 (** * Architecture *)
