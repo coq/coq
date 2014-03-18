@@ -126,8 +126,8 @@ let scrape_mind env kn=
       Not_found -> kn
 
 let mind_equiv env (kn1,i1) (kn2,i2) =
-  i1 = i2 && 
-  scrape_mind env (user_mind kn1) = scrape_mind env (user_mind kn2)
+  Int.equal i1 i2 &&
+  KerName.equal (scrape_mind env (user_mind kn1)) (scrape_mind env (user_mind kn2))
 
 
 let lookup_mind kn env =
@@ -139,7 +139,7 @@ let add_mind kn mib env =
       (string_of_mind kn);
   let new_inds = Mindmap_env.add kn mib env.env_globals.env_inductives in
   let kn1,kn2 =  user_mind kn,canonical_mind kn in
-  let new_inds_eq = if kn1=kn2 then 
+  let new_inds_eq = if KerName.equal kn1 kn2 then
     env.env_globals.env_inductives_eq
   else
     KNmap.add kn1 kn2  env.env_globals.env_inductives_eq in

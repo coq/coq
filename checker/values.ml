@@ -13,7 +13,7 @@
 To ensure this file is up-to-date, 'make' now compares the md5 of cic.mli
 with a copy we maintain here:
 
-MD5 96dc15ee04e3baa6502b4d78c35d4b76 checker/cic.mli
+MD5 c0f79d23d0eb5d2e4cfb53ead514fcf5  checker/cic.mli
 
 *)
 
@@ -65,6 +65,9 @@ let v_map vk vd =
     [|[|m; Annot("key",vk); Annot("data",vd); m; Annot("bal",Int)|]|])
   in m
 
+let v_hset v = v_map Int (v_set v)
+let v_hmap vk vd = v_map Int (v_map vk vd)
+
 (* lib/future *)
 let v_computation f =
   Annot ("Future.computation",
@@ -82,7 +85,7 @@ let rec v_mp = Sum("module_path",0,
   [|[|v_dp|];
     [|v_uid|];
     [|v_mp;v_id|]|])
-let v_kn = v_tuple "kernel_name" [|v_mp;v_dp;v_id|]
+let v_kn = v_tuple "kernel_name" [|Any;v_mp;v_dp;v_id;Int|]
 let v_cst = v_sum "cst|mind" 0 [|[|v_kn|];[|v_kn;v_kn|]|]
 let v_ind = v_tuple "inductive" [|v_cst;Int|]
 let v_cons = v_tuple "constructor" [|v_ind;Int|]
@@ -157,7 +160,7 @@ let v_delta_hint =
 let v_resolver =
   v_tuple "delta_resolver"
     [|v_map v_mp v_mp;
-      v_map v_kn v_delta_hint|]
+      v_hmap v_kn v_delta_hint|]
 
 let v_mp_resolver = v_tuple "" [|v_mp;v_resolver|]
 

@@ -38,7 +38,7 @@ let prkn kn =
 let prcon c =
   let ck = canonical_con c in
   let uk = user_con c in
-  if ck=uk then prkn uk else (prkn uk ++str"(="++prkn ck++str")")
+  if KerName.equal ck uk then prkn uk else (prkn uk ++str"(="++prkn ck++str")")
 
 (* Same as noccur_between but may perform reductions.
    Could be refined more...  *)
@@ -109,7 +109,9 @@ let is_small_sort = function
   | Prop _ -> true
   | _ -> false
 
-let is_logic_sort s = (s = Prop Null)
+let is_logic_sort = function
+| Prop Null -> true
+| _ -> false
 
 (* [infos] is a sequence of pair [islogic,issmall] for each type in
    the product of a constructor or arity *)
@@ -402,7 +404,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp (_,i as ind) indlc
     let x,largs = decompose_app (whd_betadeltaiota env c) in
       match x with
 	| Prod (na,b,d) ->
-	    assert (largs = []);
+	    assert (List.is_empty largs);
             (match weaker_noccur_between env n ntypes b with
 		None -> failwith_non_pos_list n ntypes [b]
               | Some b ->
@@ -471,16 +473,17 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp (_,i as ind) indlc
       let x,largs = decompose_app (whd_betadeltaiota env c) in
 	match x with
           | Prod (na,b,d) ->
-	      assert (largs = []);
+	      assert (List.is_empty largs);
               let recarg = check_pos ienv b in
               let ienv' = ienv_push_var ienv (na,b,mk_norec) in
 		check_constr_rec ienv' (recarg::lrec) d
 
 	  | hd ->
 	      if check_head then
-		if hd = Rel (n+ntypes-i-1) then
+                match hd with
+		| Rel j when j = (n + ntypes - i - 1) ->
 		  check_correct_par ienv hyps (ntypes-i) largs
-		else
+		| _ ->
 		  raise (IllFormedInd LocalNotConstructor)
 	      else
 		if not (List.for_all (noccur_between n ntypes) largs)

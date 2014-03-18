@@ -165,16 +165,35 @@ type table_key =
   | VarKey of Id.t
   | RelKey of int
 
+module KeyHash =
+struct
+  type t = table_key
+  let equal k1 k2 = match k1, k2 with
+  | ConstKey c1, ConstKey c2 -> Constant.equal c1 c2
+  | VarKey id1, VarKey id2 -> Id.equal id1 id2
+  | RelKey i1, RelKey i2 -> Int.equal i1 i2
+  | (ConstKey _ | VarKey _ | RelKey _), _ -> false
+
+  open Hashset.Combine
+
+  let hash = function
+  | ConstKey c -> combinesmall 1 (Constant.hash c)
+  | VarKey id -> combinesmall 2 (Id.hash id)
+  | RelKey i -> combinesmall 3 (Int.hash i)
+end
+
+module KeyTable = Hashtbl.Make(KeyHash)
+
 type 'a infos = {
   i_flags : reds;
   i_repr : 'a infos -> constr -> 'a;
   i_env : env;
   i_rels : int * (int * constr) list;
-  i_tab : (table_key, 'a) Hashtbl.t }
+  i_tab : 'a KeyTable.t }
 
 let ref_value_cache info ref =
   try
-    Some (Hashtbl.find info.i_tab ref)
+    Some (KeyTable.find info.i_tab ref)
   with Not_found ->
   try
     let body =
@@ -185,7 +204,7 @@ let ref_value_cache info ref =
 	| ConstKey cst -> constant_value info.i_env cst
     in
     let v = info.i_repr info body in
-    Hashtbl.add info.i_tab ref v;
+    KeyTable.add info.i_tab ref v;
     Some v
   with
     | Not_found (* List.assoc *)
@@ -214,7 +233,7 @@ let create mk_cl flgs env =
     i_repr = mk_cl;
     i_env = env;
     i_rels = defined_rels flgs env;
-    i_tab = Hashtbl.create 17 }
+    i_tab = KeyTable.create 17 }
 
 
 (**********************************************************************)

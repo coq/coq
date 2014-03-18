@@ -320,7 +320,7 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
          else raise NotConvertible
 
      | (FConstruct (ind1,j1), FConstruct (ind2,j2)) ->
-	 if j1 = j2 && mind_equiv_infos infos ind1 ind2
+	 if Int.equal j1 j2 && mind_equiv_infos infos ind1 ind2
 	 then
            convert_stacks univ infos lft1 lft2 v1 v2
          else raise NotConvertible
