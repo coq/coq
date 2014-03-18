@@ -358,6 +358,7 @@ let init_with_argv argv =
     Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
     try
       parse_args argv;
+      if !Flags.debug then Printexc.record_backtrace true;
       Envars.set_coqlib ~fail:Errors.error;
       if_verbose print_header ();
       init_load_path ();
@@ -373,6 +374,7 @@ let run () =
     compile_files ();
     flush_all()
   with e ->
+    if !Flags.debug then Printexc.print_backtrace stderr;
     fatal_error (explain_exn e)
 
 let start () = init(); run(); Check_stat.stats(); exit 0
