@@ -409,22 +409,24 @@ end = struct (* {{{ *)
         | _ -> anomaly(str("Cannot slice from "^ Stateid.to_string start ^
                            " to "^Stateid.to_string stop))
       in aux start in
+    let copy_info v id =
+      Vcs_.set_info v id
+        { (get_info id) with state = None; vcs_backup = None,None } in
+    let copy_info_w_state v id =
+      Vcs_.set_info v id { (get_info id) with vcs_backup = None,None } in
     let v = Vcs_.empty stop in
-    let info = get_info stop in
-    (* Stm should have reached the beginning of proof *)
-    assert (not (Option.is_empty info.state));
-    (* This may be expensive *)
-    let info = { info with vcs_backup = None, None } in
-    let v = Vcs_.set_info v stop info in
-    List.fold_right (fun (id,tr) v ->
+    let v = copy_info v stop in
+    let v = List.fold_right (fun (id,tr) v ->
       let v = Vcs_.commit v id tr in
-      let info = get_info id in
-      (* TODO: we could drop all of them but for the last one and purify it,
-       * so that proofs partially executed in the main process are not
-       * completely re-executed in the slave process *)
-      let info = { info with state = None; vcs_backup = None,None } in
-      let v = Vcs_.set_info v id info in
-      v) l v
+      let v = copy_info v id in
+      v) l v in
+    (* Stm should have reached the beginning of proof *)
+    assert (not (Option.is_empty (get_info stop).state));
+    (* We put in the new dag the most recent state known to master *)
+    let rec fill id =
+      if (get_info id).state = None then fill (Vcs_aux.visit v id).next
+      else copy_info_w_state v id in
+    fill start
 
   let create_cluster l ~tip = vcs := create_cluster !vcs l tip
   let cluster_of id = Option.map Dag.Cluster.data (cluster_of !vcs id)
