@@ -373,8 +373,6 @@ module OpaqueTables = struct
  module FMap = Map.Make(Future.UUID)
  let f2t = ref FMap.empty
 
- let get_opaque_nolib _ i = (!local_opaque_table).(i)
-
  let get_opaque dp i =
    if DirPath.equal dp (Lib.library_dp ())
    then (!local_opaque_table).(i)
@@ -382,13 +380,11 @@ module OpaqueTables = struct
  
  let join_local_opaque dp i =
    if DirPath.equal dp (Lib.library_dp ()) then
-    Future.sink (!local_opaque_table).(i)
+    ignore(Future.force (!local_opaque_table).(i))
 
  let join_local_univ dp i =
    if DirPath.equal dp (Lib.library_dp ()) then
-    Future.sink (!local_univ_table).(i)
-
- let get_univ_nolib _ i = Some (!local_univ_table).(i)
+    ignore(Future.join (!local_univ_table).(i))
 
  let get_univ dp i =
    if DirPath.equal dp (Lib.library_dp ())
@@ -410,8 +406,8 @@ module OpaqueTables = struct
     local_discharge_table := t
   end;
   let c, u = Future.split2 ~greedy:true cu in
-  if Future.is_val u then ignore(Future.join u);
-  if Future.is_val c then ignore(Future.join c);
+  Future.sink u;
+  Future.sink c;
   (!local_opaque_table).(n) <- c;
   (!local_univ_table).(n) <- u;
   (!local_discharge_table).(n) <- d;
@@ -737,11 +733,6 @@ let save_library_to ?todo dir f =
         f ^ "i", (fun x -> Some (d x)),
           (fun x -> Some (x,Univ.empty_constraint,false)), (fun x -> Some x) in
   Opaqueproof.reset_indirect_creator ();
-  (* HACK: end_library resets Lib and then joins the safe env.  To join the
-   * env one needs to access the futures stored in the tables.  Standard
-   * accessors use Lib.  Hence *)
-  Opaqueproof.set_indirect_opaque_accessor OpaqueTables.get_opaque_nolib;
-  Opaqueproof.set_indirect_univ_accessor OpaqueTables.get_univ_nolib;
   let cenv, seg, ast = Declaremods.end_library dir in
   let opaque_table, univ_table, disch_table, f2t_map =
     OpaqueTables.dump () in

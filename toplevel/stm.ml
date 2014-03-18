@@ -1144,7 +1144,7 @@ let delegate_policy_check time =
     (!Flags.async_proofs_mode = Flags.APonParallel 0 ||
     !Flags.async_proofs_mode = Flags.APonLazy) && time >= 1.0
   else if !Flags.compilation_mode = Flags.BuildVi then true
-  else !Flags.async_proofs_mode <> Flags.APoff
+  else !Flags.async_proofs_mode <> Flags.APoff && time >= 1.0
 
 let collect_proof cur hd brkind id =
  prerr_endline ("Collecting proof ending at "^Stateid.to_string id);

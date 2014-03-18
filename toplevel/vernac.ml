@@ -318,6 +318,7 @@ let compile verbosely f =
   match !Flags.compilation_mode with
   | BuildVo ->
       let ldir,long_f_dot_v = Flags.verbosely Library.start_library f in
+      Stm.set_compilation_hints long_f_dot_v;
       Aux_file.start_aux_file_for long_f_dot_v;
       Dumpglob.start_dump_glob long_f_dot_v;
       Dumpglob.dump_string ("F" ^ Names.DirPath.to_string ldir ^ "\n");
