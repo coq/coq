@@ -35,5 +35,8 @@ val get_strategy : oracle -> 'a tableKey -> level
  * Level of RelKey constant cannot be set. *)
 val set_strategy : oracle -> 'a tableKey -> level -> oracle
 
+(** Fold over the non-transparent levels of the oracle. Order unspecified. *)
+val fold_strategy : (unit tableKey -> level -> 'a -> 'a) -> oracle -> 'a -> 'a
+
 val get_transp_state : oracle -> transparent_state
 

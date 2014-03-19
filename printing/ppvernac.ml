@@ -459,6 +459,8 @@ let pr_printable = function
   in
   str cmd ++ spc() ++ pr_smart_global qid
 | PrintNamespace dp -> str "Print Namespace" ++ pr_dirpath dp
+| PrintStrategy None -> str "Print Strategies"
+| PrintStrategy (Some qid) -> str "Print Strategy" ++ pr_smart_global qid
 in
 
 let pr_using e = str (Proof_using.to_string e) in

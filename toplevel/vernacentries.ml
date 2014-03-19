@@ -274,6 +274,45 @@ let print_namespace ns =
   in
   msg_notice ((print_list pr_id ns)++str":"++fnl()++constants_in_namespace)
 
+let print_strategy r =
+  let open Conv_oracle in
+  let pr_level = function
+  | Expand -> str "expand"
+  | Level 0 -> str "transparent"
+  | Level n -> str "level" ++ spc() ++ int n
+  | Opaque -> str "opaque"
+  in
+  let pr_strategy (ref, lvl) = pr_global ref ++ str " : " ++ pr_level lvl in
+  let oracle = Environ.oracle (Global.env ()) in
+  match r with
+  | None ->
+    let fold key lvl (vacc, cacc) = match key with
+    | VarKey id -> ((VarRef id, lvl) :: vacc, cacc)
+    | ConstKey cst -> (vacc, (ConstRef cst, lvl) :: cacc)
+    | RelKey _ -> (vacc, cacc)
+    in
+    let var_lvl, cst_lvl = fold_strategy fold oracle ([], []) in
+    let var_msg =
+      if List.is_empty var_lvl then mt ()
+      else str "Variable strategies" ++ fnl () ++
+        hov 0 (prlist_with_sep fnl pr_strategy var_lvl) ++ fnl ()
+    in
+    let cst_msg =
+      if List.is_empty cst_lvl then mt ()
+      else str "Constant strategies" ++ fnl () ++
+        hov 0 (prlist_with_sep fnl pr_strategy cst_lvl)
+    in
+    msg_notice (var_msg ++ cst_msg)
+  | Some r ->
+    let r = Smartlocate.smart_global r in
+    let key = match r with
+    | VarRef id -> VarKey id
+    | ConstRef cst -> ConstKey cst
+    | IndRef _ | ConstructRef _ -> error "The reference is not unfoldable"
+    in
+    let lvl = get_strategy oracle key in
+    msg_notice (pr_strategy (r, lvl))
+
 let dump_universes_gen g s =
   let output = open_out s in
   let output_constraint, close =
@@ -1417,6 +1456,7 @@ let vernac_print = function
       let nassums =
 	Assumptions.assumptions st ~add_opaque:o ~add_transparent:t cstr in
       msg_notice (Printer.pr_assumptionset (Global.env ()) nassums)
+  | PrintStrategy r -> print_strategy r
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in

@@ -54,6 +54,12 @@ let set_strategy ({ var_opacity; cst_opacity } as oracle) k l =
           else Cmap.add c l cst_opacity }
   | RelKey _ -> Errors.error "set_strategy: RelKey"
 
+let fold_strategy f { var_opacity; cst_opacity; } accu =
+  let fvar id lvl accu = f (VarKey id) lvl accu in
+  let fcst cst lvl accu = f (ConstKey cst) lvl accu in
+  let accu = Id.Map.fold fvar var_opacity accu in
+  Cmap.fold fcst cst_opacity accu
+
 let get_transp_state { var_opacity; cst_opacity } =
   (Id.Map.fold
     (fun id l ts -> if  l=Opaque then Id.Pred.remove id ts else ts)

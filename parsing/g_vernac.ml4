@@ -878,8 +878,9 @@ GEXTEND Gram
       | IDENT "Assumptions"; qid = smart_global -> PrintAssumptions (false, false, qid)
       | IDENT "Opaque"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (true, false, qid)
       | IDENT "Transparent"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (false, true, qid)
-      | IDENT "All"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (true, true, qid) ] ]
-
+      | IDENT "All"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (true, true, qid)
+      | IDENT "Strategy"; qid = smart_global -> PrintStrategy (Some qid)
+      | IDENT "Strategies" -> PrintStrategy None ] ]
   ;
   class_rawexpr:
     [ [ IDENT "Funclass" -> FunClass
