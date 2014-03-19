@@ -206,6 +206,7 @@ module VCS : sig
   val reached : id -> bool -> unit
   val goals : id -> int -> unit
   val set_state : id -> state -> unit
+  val get_state : id -> state option
   val forget_state : id -> unit
 
   (* cuts from start -> stop, raising Expired if some nodes are not there *)
@@ -359,6 +360,7 @@ end = struct (* {{{ *)
     | Some x -> x
     | None -> raise Vcs_aux.Expired
   let set_state id s = (get_info id).state <- Some s
+  let get_state id = (get_info id).state
   let forget_state id = (get_info id).state <- None
   let reached id b =
     let info = get_info id in
@@ -554,7 +556,7 @@ end = struct (* {{{ *)
     with VCS.Expired -> anomaly (str "not a cached state (expired)")
 
   let assign id s =
-    try VCS.set_state id s
+    try if VCS.get_state id = None then VCS.set_state id s
     with VCS.Expired -> ()
 
   let freeze marhallable id = VCS.set_state id (freeze_global_state marhallable)
@@ -680,8 +682,9 @@ end = struct (* {{{ *)
 
   type response =
     | RespBuiltProof of Entries.proof_output list * float
-    | RespError of (* err, safe, msg, safe_state *)
-        Stateid.t * Stateid.t * std_ppcmds * State.frozen_state option
+    | RespError of (* err, safe, msg, safe_states *)
+        Stateid.t * Stateid.t * std_ppcmds *
+          (Stateid.t * State.frozen_state) list
     | RespFeedback of Interface.feedback
     | RespGetCounterFreshLocalUniv
     | RespGetCounterNewUnivLevel
@@ -967,10 +970,10 @@ end = struct (* {{{ *)
                 last_task := None;
                 raise KillRespawn
             | TaskBuildProof(_,_,_, assign,_,_,_,_),
-              RespError(err_id,valid,e,s) ->
+              RespError(err_id,valid,e,valid_states) ->
                 let e = Stateid.add ~valid (RemoteException e) err_id in
                 assign (`Exn e);
-                Option.iter (State.assign valid) s;
+                List.iter (fun (id,s) -> State.assign id s) valid_states;
                 (* We restart the slave, to avoid memory leaks.  We could just
                    Pp.feedback (Interface.InProgress ~-1) *)
                 last_task := None;
@@ -1110,10 +1113,24 @@ end = struct (* {{{ *)
         prerr_endline (string_of_ppcmds (print e));
         prerr_endline ("last safe id is: " ^ Stateid.to_string safe_id);
         prerr_endline ("cached? " ^ string_of_bool (State.is_cached safe_id));
-        let state =
-          if State.is_cached safe_id then Some (State.get_cached safe_id)
-          else None in
-        marshal_response !slave_oc (RespError (err_id, safe_id, print e, state))
+        let prog old_v n =
+          if n < 3 then n else old_v + n/3 + if n mod 3 > 0 then 1 else 0 in
+        let states =
+          let open State in
+          let rec aux n m prev_id =
+            let next =
+              try Some (VCS.visit prev_id).next
+              with VCS.Expired -> None in
+            match next with
+            | None -> []
+            | Some id when n = m ->
+                prerr_endline ("sending back state " ^  string_of_int m);
+                let tail = aux (n+1) (prog m (n+1)) id in
+                if is_cached id then (id, get_cached id) :: tail else tail
+            | Some id -> aux (n+1) m id in
+          (if is_cached safe_id then [safe_id,get_cached safe_id] else [])
+          @ aux 1 (prog 1 1) safe_id in
+        marshal_response !slave_oc (RespError(err_id, safe_id, print e, states))
       | e ->
         pr_err ("Slave: critical exception: " ^ Pp.string_of_ppcmds (print e));
         flush_all (); exit 1
