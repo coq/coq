@@ -288,16 +288,14 @@ object(self)
     let all_tags = [
       error_bg; to_process; incomplete; processed; unjustified; error ] in
     let tags =
-      (if has_flag sentence `PROCESSING then to_process else
-       if has_flag sentence `ERROR then error_bg else
-       processed)
-      ::
+      (if has_flag sentence `PROCESSING then [to_process]
+       else if has_flag sentence `ERROR then [error_bg]
+       else if has_flag sentence `INCOMPLETE then [incomplete]
+       else [processed]) @
       (if [ `UNSAFE ] = sentence.flags then [unjustified] else [])
     in
     List.iter (fun t -> buffer#remove_tag t ~start ~stop) all_tags;
-    List.iter (fun t -> buffer#apply_tag t ~start ~stop) tags;
-    if has_flag sentence `INCOMPLETE then
-      buffer#apply_tag incomplete ~start ~stop
+    List.iter (fun t -> buffer#apply_tag t ~start ~stop) tags
 
   method private attach_tooltip sentence loc text =
     let start_sentence, stop_sentence, phrase = self#get_sentence sentence in
