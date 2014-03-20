@@ -1111,6 +1111,21 @@ command is prefixed by {\tt Local}. In the latter case, the behavior
 regarding sections and modules is the same as for the {\tt
   Transparent} and {\tt Opaque} commands.
 
+\subsection{{\tt Print Strategy} \qualid{\tt .}\comindex{Print Strategy}\label{PrintStrategy}}
+
+This command prints the strategy currently associated to \qualid{}. It fails if
+\qualid{} is not an unfoldable reference, that is, neither a variable nor a
+constant.
+
+\begin{ErrMsgs}
+\item The reference is not unfoldable.
+\end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt Print Strategies}\comindex{Print Strategies}\\
+  Print all the currently non-transparent strategies.
+\end{Variants}
+
 \subsection{\tt Declare Reduction \ident\ := {\rm\sl convtactic}.}
 
 This command allows to give a short name to a reduction expression,
