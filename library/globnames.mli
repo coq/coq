@@ -77,6 +77,7 @@ type extended_global_reference =
 module ExtRefOrdered : sig
   type t = extended_global_reference
   val compare : t -> t -> int
+  val equal : t -> t -> bool
   val hash : t -> int
 end
 

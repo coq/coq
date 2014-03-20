@@ -77,6 +77,15 @@ let constr_of_global = function
 let constr_of_reference = constr_of_global
 let reference_of_constr = global_of_constr
 
+let global_eq_gen eq_cst eq_ind eq_cons x y =
+  x == y ||
+  match x, y with
+  | ConstRef cx, ConstRef cy -> eq_cst cx cy
+  | IndRef indx, IndRef indy -> eq_ind indx indy
+  | ConstructRef consx, ConstructRef consy -> eq_cons consx consy
+  | VarRef v1, VarRef v2 -> Id.equal v1 v2
+  | (VarRef _ | ConstRef _ | IndRef _ | ConstructRef _), _ -> false
+
 let global_ord_gen ord_cst ord_ind ord_cons x y =
   if x == y then 0
   else match x, y with
@@ -107,6 +116,7 @@ module RefOrdered = struct
   type t = global_reference
   let compare gr1 gr2 =
     global_ord_gen compare ind_ord constructor_ord gr1 gr2
+  let equal gr1 gr2 = global_eq_gen equal eq_ind eq_constructor gr1 gr2
   let hash gr = global_hash_gen hash ind_hash constructor_hash gr
 end
 
@@ -115,6 +125,8 @@ module RefOrdered_env = struct
   type t = global_reference
   let compare gr1 gr2 =
     global_ord_gen compare ind_user_ord constructor_user_ord gr1 gr2
+  let equal gr1 gr2 =
+    global_eq_gen equal eq_user_ind eq_user_constructor gr1 gr2
   let hash gr = global_hash_gen hash ind_user_hash constructor_user_hash gr
 end
 
@@ -139,6 +151,13 @@ type extended_global_reference =
 
 module ExtRefOrdered = struct
   type t = extended_global_reference
+
+  let equal x y =
+    x == y ||
+    match x, y with
+    | TrueGlobal rx, TrueGlobal ry -> RefOrdered_env.equal rx ry
+    | SynDef knx, SynDef kny -> KerName.equal knx kny
+    | (TrueGlobal _ | SynDef _), _ -> false
 
   let compare x y =
     if x == y then 0

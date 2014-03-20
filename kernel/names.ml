@@ -147,7 +147,10 @@ struct
       if Int.equal c 0 then compare p1 p2 else c
     end
 
-  let equal p1 p2 = Int.equal (compare p1 p2) 0
+  let rec equal p1 p2 = p1 == p2 || match p1, p2 with
+  | [], [] -> true
+  | id1 :: p1, id2 :: p2 -> Id.equal id1 id2 && equal p1 p2
+  | _ -> false
 
   let rec hash accu = function
   | [] -> accu
@@ -210,7 +213,10 @@ struct
         else
           DirPath.compare dpl dpr
 
-  let equal x y = Int.equal (compare x y) 0
+  let equal x y = x == y ||
+    let (i1, id1, p1) = x in
+    let (i2, id2, p2) = y in
+    Int.equal i1 i2 && Id.equal id1 id2 && DirPath.equal p1 p2
 
   let to_id (_, s, _) = s
 
@@ -286,7 +292,12 @@ module ModPath = struct
       | MPbound _, MPdot _ -> -1
       | MPdot _, _ -> 1
 
-  let equal mp1 mp2 = Int.equal (compare mp1 mp2) 0
+  let rec equal mp1 mp2 = mp1 == mp2 ||
+    match mp1, mp2 with
+    | MPfile p1, MPfile p2 -> DirPath.equal p1 p2
+    | MPbound id1, MPbound id2 -> MBId.equal id1 id2
+    | MPdot (mp1, l1), MPdot (mp2, l2) -> String.equal l1 l2 && equal mp1 mp2
+    | (MPfile _ | MPbound _ | MPdot _), _ -> false
 
   open Hashset.Combine
 
@@ -373,7 +384,14 @@ module KerName = struct
         if not (Int.equal c 0) then c
         else ModPath.compare kn1.modpath kn2.modpath
 
-  let equal kn1 kn2 = Int.equal (compare kn1 kn2) 0
+  let equal kn1 kn2 =
+    let h1 = kn1.refhash in
+    let h2 = kn2.refhash in
+    if 0 <= h1 && 0 <= h2 && not (Int.equal h1 h2) then false
+    else
+      Label.equal kn1.knlabel kn2.knlabel &&
+      DirPath.equal kn1.dirpath kn2.dirpath &&
+      ModPath.equal kn1.modpath kn2.modpath
 
   open Hashset.Combine
 
@@ -553,24 +571,32 @@ let inductive_of_constructor (ind, i) = ind
 let index_of_constructor (ind, i) = i
 
 let eq_ind (m1, i1) (m2, i2) = Int.equal i1 i2 && MutInd.equal m1 m2
+let eq_user_ind (m1, i1) (m2, i2) =
+  Int.equal i1 i2 && MutInd.UserOrd.equal m1 m2
+
 let ind_ord (m1, i1) (m2, i2) =
   let c = Int.compare i1 i2 in
   if Int.equal c 0 then MutInd.CanOrd.compare m1 m2 else c
 let ind_user_ord (m1, i1) (m2, i2) =
   let c = Int.compare i1 i2 in
   if Int.equal c 0 then MutInd.UserOrd.compare m1 m2 else c
+
 let ind_hash (m, i) =
   Hashset.Combine.combine (MutInd.hash m) (Int.hash i)
 let ind_user_hash (m, i) =
   Hashset.Combine.combine (MutInd.UserOrd.hash m) (Int.hash i)
 
 let eq_constructor (ind1, j1) (ind2, j2) = Int.equal j1 j2 && eq_ind ind1 ind2
+let eq_user_constructor (ind1, j1) (ind2, j2) =
+  Int.equal j1 j2 && eq_user_ind ind1 ind2
+
 let constructor_ord (ind1, j1) (ind2, j2) =
   let c = Int.compare j1 j2 in
   if Int.equal c 0 then ind_ord ind1 ind2 else c
 let constructor_user_ord (ind1, j1) (ind2, j2) =
   let c = Int.compare j1 j2 in
   if Int.equal c 0 then ind_user_ord ind1 ind2 else c
+
 let constructor_hash (ind, i) =
   Hashset.Combine.combine (ind_hash ind) (Int.hash i)
 let constructor_user_hash (ind, i) =

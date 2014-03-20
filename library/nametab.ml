@@ -276,14 +276,8 @@ struct
       id, (DirPath.repr dir)
 end
 
-module ExtRefEqual =
-struct
-  type t = extended_global_reference
-  let equal e1 e2 = Int.equal (ExtRefOrdered.compare e1 e2) 0
-end
-
+module ExtRefEqual = ExtRefOrdered
 module KnEqual = Names.KerName
-
 module MPEqual = Names.ModPath
 
 module ExtRefTab = Make(FullPath)(ExtRefEqual)
