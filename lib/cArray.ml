@@ -313,15 +313,14 @@ let smartmap f (ar : 'a array) =
   done;
   if !i < len then begin
     (** The array is not the same as the original one *)
-    let ans : 'a array = Array.make len (Array.unsafe_get ar 0) in
-    (** TODO: use unsafe_blit in 4.01 *)
-    Array.blit ar 0 ans 0 !i;
+    let ans : 'a array = Array.copy ar in
     let v = match !temp with None -> assert false | Some x -> x in
     Array.unsafe_set ans !i v;
     incr i;
     while !i < len do
       let v = Array.unsafe_get ar !i in
-      Array.unsafe_set ans !i (f v);
+      let v' = f v in
+      if v != v' then Array.unsafe_set ans !i v';
       incr i
     done;
     ans
@@ -346,9 +345,7 @@ let smartfoldmap f accu (ar : 'a array) =
     end
   done;
   if !i < len then begin
-    let ans : 'a array = Array.make len (Array.unsafe_get ar 0) in
-    (** TODO: use unsafe_blit in 4.01 *)
-    Array.blit ar 0 ans 0 !i;
+    let ans : 'a array = Array.copy ar in
     let v = match !temp with None -> assert false | Some x -> x in
     Array.unsafe_set ans !i v;
     incr i;
@@ -356,7 +353,7 @@ let smartfoldmap f accu (ar : 'a array) =
       let v = Array.unsafe_get ar !i in
       let (accu, v') = f !r v in
       r := accu;
-      Array.unsafe_set ans !i v';
+      if v != v' then Array.unsafe_set ans !i v';
       incr i
     done;
     !r, ans
@@ -483,28 +480,34 @@ struct
     done;
     ans
 
-  exception Local of int * Obj.t
-
-  let smartmap f arg v =
-    let len = Array.length v in
-    try
-      for i = 0 to len - 1 do
-        let x = uget v i in
-        let y = f arg x in
-        if x != y then (* pointer (in)equality *)
-          raise (Local (i, Obj.repr y))
-      done;
-      v
-    with Local (i, x) ->
-      (** FIXME: use Array.unsafe_blit from OCAML 4.00 *)
-      let ans : 'a array = Array.make len (uget v 0) in
-      let () = Array.blit v 0 ans 0 i in
-      let () = Array.unsafe_set ans i (Obj.obj x) in
-      for j = succ i to pred len do
-        let y = f arg (uget v j) in
-        Array.unsafe_set ans j y
+  let smartmap f arg (ar : 'a array) =
+    let len = Array.length ar in
+    let i = ref 0 in
+    let break = ref true in
+    let temp = ref None in
+    while !break && (!i < len) do
+      let v = Array.unsafe_get ar !i in
+      let v' = f arg v in
+      if v == v' then incr i
+      else begin
+        break := false;
+        temp := Some v';
+      end
+    done;
+    if !i < len then begin
+      (** The array is not the same as the original one *)
+      let ans : 'a array = Array.copy ar in
+      let v = match !temp with None -> assert false | Some x -> x in
+      Array.unsafe_set ans !i v;
+      incr i;
+      while !i < len do
+        let v = Array.unsafe_get ar !i in
+        let v' = f arg v in
+        if v != v' then Array.unsafe_set ans !i v';
+        incr i
       done;
       ans
+    end else ar
 
   let iter f arg v =
     let len = Array.length v in
