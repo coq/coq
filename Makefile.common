@@ -59,21 +59,16 @@ COQBINARIES:= $(COQMKTOP) \
 
 CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 
-# Minimal set of source directories for building grammar.cma
-# Invariant: the .ml4 there shouldn't use grammar.cma
-# (the grammar-dependent .ml4 are in tactics, toplevel, plugins)
-GRAMSRCDIRS:=\
-  config     lib     intf    kernel   kernel/byterun  library \
-  pretyping  interp  proofs  parsing  grammar
-
-CORESRCDIRS:= $(GRAMSRCDIRS)  printing  tactics  toplevel
+CORESRCDIRS:=\
+  config 	lib		kernel		kernel/byterun	library \
+  proofs 	tactics 	pretyping	interp		toplevel \
+  parsing	printing	grammar	        intf
 
 PLUGINS:=\
   omega		romega 		micromega 	quote \
   setoid_ring 	xml 		extraction 	fourier \
   cc 		funind 		firstorder 	Derive \
-  rtauto 	nsatz           syntax          decl_mode \
-  btauto
+  rtauto 	nsatz           syntax          decl_mode	btauto
 
 SRCDIRS:=\
   $(CORESRCDIRS)  \
