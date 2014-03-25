@@ -417,4 +417,5 @@ module New : sig
 
   open Proofview
   val exact_proof : Constrexpr.constr_expr -> unit tactic
+  val tclZEROMSG : Pp.std_ppcmds -> unit tactic
 end

@@ -221,6 +221,7 @@ module New = struct
   let pf_type_of gl t =
     pf_apply type_of gl t
 
+  let pf_conv_x gl t1 t2 = pf_apply is_conv gl t1 t2
 
   let pf_ids_of_hyps gl =
     (** We only get the identifiers in [hyps] *)
@@ -253,11 +254,21 @@ module New = struct
     let hyps = Proofview.Goal.hyps gl in
     List.hd hyps
 
-  let pf_nf_concl gl =
+  let pf_nf_concl (gl : [ `LZ ] Proofview.Goal.t) =
     (** We normalize the conclusion just after *)
     let gl = Proofview.Goal.assume gl in
     let concl = Proofview.Goal.concl gl in
     let sigma = Proofview.Goal.sigma gl in
     nf_evar sigma concl
+
+  let pf_whd_betadeltaiota gl t = pf_apply whd_betadeltaiota gl t
+
+  let pf_get_type_of gl t = pf_apply Retyping.get_type_of gl t
+
+  let pf_reduce_to_quantified_ind gl t =
+    pf_apply reduce_to_quantified_ind gl t
+
+  let pf_hnf_type_of gl t =
+    pf_whd_betadeltaiota gl (pf_get_type_of gl t)
 
 end

@@ -496,8 +496,8 @@ let make_clenv_binding_gen hyps_only n env sigma (c,t) = function
 let make_clenv_binding_env_apply env sigma n =
   make_clenv_binding_gen true n env sigma
 	
-let make_clenv_binding_apply gls n = make_clenv_binding_gen true n (pf_env gls) gls.sigma
-let make_clenv_binding gls = make_clenv_binding_gen false None (pf_env gls) gls.sigma
+let make_clenv_binding_apply env sigma n = make_clenv_binding_gen true n env sigma
+let make_clenv_binding env sigma = make_clenv_binding_gen false None env sigma
 
 (****************************************************************)
 (* Pretty-print *)

@@ -396,10 +396,10 @@ let find_eq_data eqn = (* fails with PatternMatchingFailure *)
 
 let extract_eq_args gl = function
   | MonomorphicLeibnizEq (e1,e2) ->
-      let t = Tacmach.pf_type_of gl e1 in (t,e1,e2)
+      let t = Tacmach.New.pf_type_of gl e1 in (t,e1,e2)
   | PolymorphicLeibnizEq (t,e1,e2) -> (t,e1,e2)
   | HeterogenousEq (t1,e1,t2,e2) ->
-      if Tacmach.pf_conv_x gl t1 t2 then (t1,e1,e2)
+      if Tacmach.New.pf_conv_x gl t1 t2 then (t1,e1,e2)
       else raise PatternMatchingFailure
 
 let find_eq_data_decompose gl eqn =

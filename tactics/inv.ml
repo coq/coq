@@ -300,7 +300,7 @@ let remember_first_eq id x = if !x == MoveLast then x := MoveAfter id
 
 let projectAndApply thin id eqname names depids =
   let subst_hyp l2r id =
-    tclTHEN (tclTRY(rewriteInConcl l2r (mkVar id)))
+    tclTHEN (tclTRY(Proofview.V82.of_tactic (rewriteInConcl l2r (mkVar id))))
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
   in
   let substHypIfVariable tac id =

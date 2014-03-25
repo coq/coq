@@ -94,15 +94,15 @@ val make_iterated_tuple :
   env -> evar_map -> constr -> (constr * types) -> constr * constr * constr
 
 (* The family cutRewriteIn expect an equality statement *)
-val cutRewriteInHyp : bool -> types -> Id.t -> tactic
-val cutRewriteInConcl : bool -> constr -> tactic
+val cutRewriteInHyp : bool -> types -> Id.t -> unit Proofview.tactic
+val cutRewriteInConcl : bool -> constr -> unit Proofview.tactic
 
 (* The family rewriteIn expect the proof of an equality *)
-val rewriteInHyp : bool -> constr -> Id.t -> tactic
-val rewriteInConcl : bool -> constr -> tactic
+val rewriteInHyp : bool -> constr -> Id.t -> unit Proofview.tactic
+val rewriteInConcl : bool -> constr -> unit Proofview.tactic
 
 (* Expect the proof of an equality; fails with raw internal errors *)
-val substClause : bool -> constr -> Id.t option -> tactic
+val substClause : bool -> constr -> Id.t option -> unit Proofview.tactic
 
 val discriminable : env -> evar_map -> constr -> constr -> bool
 val injectable : env -> evar_map -> constr -> constr -> bool

@@ -165,15 +165,15 @@ let injHyp id =
   injection_main { it = Term.mkVar id,NoBindings; sigma = sigma; }
 
 TACTIC EXTEND dependent_rewrite
-| [ "dependent" "rewrite" orient(b) constr(c) ] -> [ Proofview.V82.tactic (rewriteInConcl b c) ]
+| [ "dependent" "rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
 | [ "dependent" "rewrite" orient(b) constr(c) "in" hyp(id) ]
-    -> [ Proofview.V82.tactic (rewriteInHyp b c id) ]
+    -> [ rewriteInHyp b c id ]
 END
 
 TACTIC EXTEND cut_rewrite
-| [ "cutrewrite" orient(b) constr(eqn) ] -> [ Proofview.V82.tactic (cutRewriteInConcl b eqn) ]
+| [ "cutrewrite" orient(b) constr(eqn) ] -> [ cutRewriteInConcl b eqn ]
 | [ "cutrewrite" orient(b) constr(eqn) "in" hyp(id) ]
-    -> [ Proofview.V82.tactic (cutRewriteInHyp b eqn id) ]
+    -> [ cutRewriteInHyp b eqn id ]
 END
 
 (**********************************************************************)

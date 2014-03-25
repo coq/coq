@@ -100,10 +100,10 @@ val make_clenv_binding_env_apply :
    clausenv
 
 val make_clenv_binding_apply :
-  Goal.goal sigma -> int option -> constr * constr -> constr bindings ->
+  env -> evar_map -> int option -> constr * constr -> constr bindings ->
    clausenv
 val make_clenv_binding :
-  Goal.goal sigma -> constr * constr -> constr bindings -> clausenv
+  env -> evar_map -> constr * constr -> constr bindings -> clausenv
 
 (** if the clause is a product, add an extra meta for this product *)
 exception NotExtensibleClause

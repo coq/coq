@@ -134,7 +134,7 @@ let side_tac tac sidetac =
   | Some sidetac -> Tacticals.New.tclTHENSFIRSTn tac [|Proofview.tclUNIT ()|] sidetac
 
 let instantiate_lemma_all frzevars env gl c ty l l2r concl =
-  let eqclause = Clenv.make_clenv_binding gl (c,ty) l in
+  let eqclause = pf_apply Clenv.make_clenv_binding gl (c,ty) l in
   let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
   let rec split_last_two = function
       | [c1;c2] -> [],(c1, c2)
@@ -154,7 +154,7 @@ let instantiate_lemma_all frzevars env gl c ty l l2r concl =
 let instantiate_lemma env gl c ty l l2r concl =
   let ct = pf_type_of gl c in
   let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
-  let eqclause = Clenv.make_clenv_binding gl (c,t) l in
+  let eqclause = pf_apply Clenv.make_clenv_binding gl (c,t) l in
    [eqclause]
 
 let rewrite_conv_closed_unif_flags = {
@@ -880,13 +880,11 @@ let onEquality with_evars tac (c,lbindc) =
   try (* type_of can raise exceptions *)
   let t = type_of c in
   let t' = try snd (reduce_to_quantified_ind t) with UserError _ -> t in
-  let eq_clause = Tacmach.New.of_old (fun gl -> make_clenv_binding gl (c,t') lbindc) gl in
+  let eq_clause = Tacmach.New.pf_apply make_clenv_binding gl (c,t') lbindc in
   begin try (* clenv_pose_dependent_evars can raise exceptions *)
   let eq_clause' = clenv_pose_dependent_evars with_evars eq_clause in
   let eqn = clenv_type eq_clause' in
-  let (eq,eq_args) =
-    Tacmach.New.of_old (fun gl -> find_this_eq_data_decompose gl eqn) gl
-  in
+  let (eq,eq_args) = find_this_eq_data_decompose gl eqn in
   Tacticals.New.tclTHEN
     (Proofview.V82.tactic (Refiner.tclEVARS eq_clause'.evd))
     (tac (eq,eqn,eq_args) eq_clause')
@@ -1319,7 +1317,7 @@ let swap_equality_args = function
   | PolymorphicLeibnizEq (t,e1,e2) -> [t;e2;e1]
   | HeterogenousEq (t1,e1,t2,e2) -> [t2;e2;t1;e1]
 
-let swap_equands gls eqn =
+let swap_equands eqn =
   let (lbeq,eq_args) = find_eq_data eqn in
   applist(lbeq.eq,swap_equality_args eq_args)
 
@@ -1416,69 +1414,80 @@ let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
 
 exception NothingToRewrite
 
-let cutSubstInConcl_RL eqn gls =
-  let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose gls eqn in
-  let body,expected_goal = pf_apply subst_tuple_term gls e2 e1 (pf_concl gls) in
+let cutSubstInConcl_RL eqn =
+  Proofview.Goal.enter begin fun gl ->
+  let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose gl eqn in
+  let concl = Proofview.Goal.concl gl in
+  let body,expected_goal = Tacmach.New.pf_apply subst_tuple_term gl e2 e1 concl in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
-  tclTHENFIRST
+  Proofview.V82.tactic (fun gl -> tclTHENFIRST
     (bareRevSubstInConcl lbeq body eq)
-    (convert_concl expected_goal DEFAULTcast) gls
+    (convert_concl expected_goal DEFAULTcast) gl)
+  end
 
 (* |- (P e1)
      BY CutSubstInConcl_LR (eq T e1 e2)
      |- (P e2)
      |- (eq T e1 e2)
  *)
-let cutSubstInConcl_LR eqn gls =
-  (tclTHENS (cutSubstInConcl_RL (swap_equands gls eqn))
+let cutSubstInConcl_LR eqn =
+  Proofview.V82.tactic (fun gl ->
+  (tclTHENS (Proofview.V82.of_tactic (cutSubstInConcl_RL (swap_equands eqn)))
      ([tclIDTAC;
-       swapEquandsInConcl])) gls
+       swapEquandsInConcl])) gl)
 
 let cutSubstInConcl l2r =if l2r then cutSubstInConcl_LR else cutSubstInConcl_RL
 
-let cutSubstInHyp_LR eqn id gls =
-  let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose gls eqn in
-  let idtyp = pf_get_hyp_typ gls id in
-  let body,expected_goal = pf_apply subst_tuple_term gls e1 e2 idtyp in
+let cutSubstInHyp_LR eqn id =
+  Proofview.Goal.enter begin fun gl ->
+  let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose gl eqn in
+  let idtyp = Tacmach.New.pf_get_hyp_typ id gl in
+  let body,expected_goal = Tacmach.New.pf_apply subst_tuple_term gl e1 e2 idtyp in
   if not (dependent (mkRel 1) body) then raise NothingToRewrite;
-  cut_replacing id expected_goal
+  Proofview.V82.tactic (fun gl -> cut_replacing id expected_goal
     (tclTHENFIRST
       (bareRevSubstInConcl lbeq body eq)
-      (refine_no_check (mkVar id))) gls
+      (refine_no_check (mkVar id))) gl)
+  end
 
-let cutSubstInHyp_RL eqn id gls =
-  (tclTHENS (cutSubstInHyp_LR (swap_equands gls eqn) id)
+let cutSubstInHyp_RL eqn id =
+  Proofview.V82.tactic (fun gl ->
+  (tclTHENS (Proofview.V82.of_tactic (cutSubstInHyp_LR (swap_equands eqn) id))
      ([tclIDTAC;
-       swapEquandsInConcl])) gls
+       swapEquandsInConcl])) gl)
 
 let cutSubstInHyp l2r = if l2r then cutSubstInHyp_LR else cutSubstInHyp_RL
 
-let try_rewrite tac gls =
-  try
-    tac gls
-  with
+let try_rewrite tac =
+  Proofview.tclORELSE tac begin function
     | ConstrMatching.PatternMatchingFailure ->
-	errorlabstrm "try_rewrite" (str "Not a primitive equality here.")
+	Tactics.New.tclZEROMSG (str "Not a primitive equality here.")
     | e when catchable_exception e ->
-	errorlabstrm "try_rewrite"
+	Tactics.New.tclZEROMSG
           (strbrk "Cannot find a well-typed generalization of the goal that makes the proof progress.")
     | NothingToRewrite ->
-	errorlabstrm "try_rewrite"
+	Tactics.New.tclZEROMSG
           (strbrk "Nothing to rewrite.")
+    | e -> Proofview.tclZERO e
+  end
 
-let cutSubstClause l2r eqn cls gls =
+let cutSubstClause l2r eqn cls =
   match cls with
-    | None ->    cutSubstInConcl l2r eqn gls
-    | Some id -> cutSubstInHyp l2r eqn id gls
+    | None ->    cutSubstInConcl l2r eqn
+    | Some id -> cutSubstInHyp l2r eqn id
 
 let cutRewriteClause l2r eqn cls = try_rewrite (cutSubstClause l2r eqn cls)
 let cutRewriteInHyp l2r eqn id = cutRewriteClause l2r eqn (Some id)
 let cutRewriteInConcl l2r eqn = cutRewriteClause l2r eqn None
 
-let substClause l2r c cls gls =
-  let eq = pf_apply get_type_of gls c in
+let substClause l2r c cls =
+  let open Tacmach.New in
+  let open Tacticals.New in
+  Proofview.Goal.raw_enter begin fun gl ->
+  let eq = pf_apply get_type_of gl c in
   tclTHENS (cutSubstClause l2r eq cls)
-    [tclIDTAC; exact_no_check c] gls
+    [Proofview.tclUNIT (); Proofview.V82.tactic (exact_no_check c)]
+  end
 
 let rewriteClause l2r c cls = try_rewrite (substClause l2r c cls)
 let rewriteInHyp l2r c id = rewriteClause l2r c (Some id)
@@ -1591,7 +1600,7 @@ let subst_one_var dep_proof_ok x =
       (* x is a variable: *)
       let varx = mkVar x in
       (* Find a non-recursive definition for x *)
-      let found gl =
+      let res =
         try
           let test hyp _ = is_eq_x gl varx hyp in
           Context.fold_named_context test ~init:() hyps;
@@ -1599,8 +1608,7 @@ let subst_one_var dep_proof_ok x =
             (str "Cannot find any non-recursive equality over " ++ pr_id x ++
 	       str".")
         with FoundHyp res -> res in
-      let (hyp,rhs,dir) = Tacmach.New.of_old found gl in
-      subst_one dep_proof_ok x (hyp,rhs,dir)
+      subst_one dep_proof_ok x res
   end
 
 let subst_gen dep_proof_ok ids =
@@ -1625,7 +1633,7 @@ let default_subst_tactic_flags () =
 
 let subst_all ?(flags=default_subst_tactic_flags ()) () =
   Proofview.Goal.enter begin fun gl ->
-  let find_eq_data_decompose = Tacmach.New.of_old find_eq_data_decompose gl in
+  let find_eq_data_decompose = find_eq_data_decompose gl in
   let test (_,c) =
     try
       let lbeq,(_,x,y) = find_eq_data_decompose c in
@@ -1649,26 +1657,22 @@ let subst_all ?(flags=default_subst_tactic_flags ()) () =
 let cond_eq_term_left c t gl =
   try
     let (_,x,_) = snd (find_eq_data_decompose gl t) in
-    if pf_conv_x gl c x then true else failwith "not convertible"
+    if Tacmach.New.pf_conv_x gl c x then true else failwith "not convertible"
   with ConstrMatching.PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term_right c t gl =
   try
     let (_,_,x) = snd (find_eq_data_decompose gl t) in
-    if pf_conv_x gl c x then false else failwith "not convertible"
+    if Tacmach.New.pf_conv_x gl c x then false else failwith "not convertible"
   with ConstrMatching.PatternMatchingFailure -> failwith "not an equality"
 
 let cond_eq_term c t gl =
   try
     let (_,x,y) = snd (find_eq_data_decompose gl t) in
-    if pf_conv_x gl c x then true
-    else if pf_conv_x gl c y then false
+    if Tacmach.New.pf_conv_x gl c x then true
+    else if Tacmach.New.pf_conv_x gl c y then false
     else failwith "not convertible"
   with ConstrMatching.PatternMatchingFailure -> failwith "not an equality"
-
-let cond_eq_term_left c t = Tacmach.New.of_old (cond_eq_term_left c t)
-let cond_eq_term_right c t = Tacmach.New.of_old (cond_eq_term_right c t)
-let cond_eq_term c t = Tacmach.New.of_old (cond_eq_term c t)
 
 let rewrite_multi_assumption_cond cond_eq_term cl =
   let rec arec hyps gl = match hyps with
