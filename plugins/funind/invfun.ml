@@ -1117,7 +1117,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
     let schemes =
       Array.of_list scheme
     in
-    let proving_tac =
+    let _proving_tac =
       prove_fun_complete funs_constr mib.Declarations.mind_packets schemes lemmas_types_infos
     in
     Array.iteri

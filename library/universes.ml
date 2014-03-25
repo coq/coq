@@ -63,7 +63,7 @@ let unsafe_instance_from ctx =
 let fresh_constant_instance env c =
   let cb = lookup_constant c env in
     if cb.Declarations.const_polymorphic then
-      let (inst,_), ctx = fresh_instance_from (Future.force cb.Declarations.const_universes) in
+      let (inst,_), ctx = fresh_instance_from (Declareops.universes_of_constant cb) in
 	((c, inst), ctx)
     else ((c,Instance.empty), ContextSet.empty)
 
@@ -84,7 +84,7 @@ let fresh_constructor_instance env (ind,i) =
 let unsafe_constant_instance env c =
   let cb = lookup_constant c env in
     if cb.Declarations.const_polymorphic then
-      let inst, ctx = unsafe_instance_from (Future.force cb.Declarations.const_universes) in
+      let inst, ctx = unsafe_instance_from (Declareops.universes_of_constant cb) in
 	((c, inst), ctx)
     else ((c,Instance.empty), UContext.empty)
 
@@ -183,7 +183,7 @@ let type_of_reference env r =
      let cb = Environ.lookup_constant c env in
      let ty = Typeops.type_of_constant_type env cb.const_type in
        if cb.const_polymorphic then
-	 let (inst, subst), ctx = fresh_instance_from (Future.force cb.const_universes) in
+	 let (inst, subst), ctx = fresh_instance_from (Declareops.universes_of_constant cb) in
 	   Vars.subst_univs_constr subst ty, ctx
        else ty, ContextSet.empty
 
@@ -676,7 +676,7 @@ let restrict_universe_context (univs,csts) s =
       csts Constraint.empty
   in (univs', csts')
 
-let simplify_universe_context (univs,csts) s =
+let simplify_universe_context (univs,csts) =
   let uf = UF.create () in
   let noneqs =
     Constraint.fold (fun (l,d,r) noneqs ->

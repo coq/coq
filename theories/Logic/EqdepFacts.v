@@ -119,7 +119,7 @@ Lemma eq_sigT_eq_dep :
     existT P p x = existT P q y -> eq_dep p x q y.
 Proof.
   intros.
-  dependent rewrite H. 
+  dependent rewrite H.
   apply eq_dep_intro.
 Qed.
 

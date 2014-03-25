@@ -72,8 +72,8 @@ let rec check_with_def env struc (idl,c) mp equiv =
       (* In the spirit of subtyping.check_constant, we accept
          any implementations of parameters and opaques terms,
 	 as long as they have the right type *)
-      let env' = Environ.add_constraints 
-	(Univ.UContext.constraints (Future.force cb.const_universes)) env' in
+      let ccst = Declareops.constraints_of_constant cb in
+      let env' = Environ.add_constraints ccst env' in
       let c',cst = match cb.const_body with
 	| Undef _ | OpaqueDef _ ->
 	  let j = Typeops.infer env' c in
@@ -84,10 +84,9 @@ let rec check_with_def env struc (idl,c) mp equiv =
 	| Def cs ->
 	  let cst = Reduction.infer_conv env' (Environ.universes env') c
 	    (Mod_subst.force_constr cs) in
-	  let cst = 
+	  let cst = (*FIXME MS: what to check here? subtyping of polymorphic constants... *)
 	    if cb.const_polymorphic then cst
-	    else (*FIXME MS: computed above *)
-	      (Univ.UContext.constraints (Future.force cb.const_universes)) +++ cst 
+	    else ccst +++ cst 
 	  in
             c, cst
       in

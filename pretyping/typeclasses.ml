@@ -99,7 +99,7 @@ let typeclass_univ_instance (cl,u') =
       match cl.cl_impl with
       | ConstRef c -> 
         let cb = Global.lookup_constant c in
-	  if cb.const_polymorphic then Univ.UContext.instance (Future.force cb.const_universes)
+	  if cb.const_polymorphic then Univ.UContext.instance cb.const_universes
 	  else Univ.Instance.empty
       | IndRef c ->
          let mib,oib = Global.lookup_inductive c in

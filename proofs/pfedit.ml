@@ -36,8 +36,8 @@ let start_proof (id : Id.t) str hyps c ?init_tac terminator =
 
 let cook_this_proof p =
   match p with
-  | { Proof_global.id;entries=[constr];persistence;constraints } ->
-      (id,(constr,constraints,persistence))
+  | { Proof_global.id;entries=[constr];persistence;universes } ->
+      (id,(constr,universes,persistence))
   | _ -> Errors.anomaly ~label:"Pfedit.cook_proof" (Pp.str "more than one proof term.")
 
 let cook_proof () =

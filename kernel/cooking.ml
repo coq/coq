@@ -213,7 +213,7 @@ let cook_constant env { from = cb; info = { Opaqueproof.modlist; abstract } } =
       { proj_ind = mind; proj_npars = pb.proj_npars + n'; proj_arg = pb.proj_arg;
 	proj_type = ty'; proj_body = c' }
   in
-  let univs = Future.from_val (UContext.union abs_ctx (Future.force cb.const_universes)) in
+  let univs = UContext.union abs_ctx cb.const_universes in
     (body, typ, Option.map projection cb.const_proj, 
      cb.const_polymorphic, univs, cb.const_inline_code, 
      Some const_hyps)

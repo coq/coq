@@ -64,7 +64,7 @@ let cache_variable ((sp,_),o) =
     | SectionLocalDef (de) ->
       let () = Global.push_named_def (id,de) in
         Explicit, de.const_entry_opaque, de.const_entry_polymorphic, 
-	(Univ.ContextSet.of_context (Future.force de.const_entry_universes)) in
+	(Univ.ContextSet.of_context de.const_entry_universes) in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl poly ctx;
   Dischargedhypsmap.set_discharged_hyps sp [];
@@ -126,7 +126,7 @@ let open_constant i ((sp,kn), obj) =
     | (Def _ | Undef _) -> ()
     | OpaqueDef lc ->
         match Opaqueproof.get_constraints lc with
-        | Some f when Future.is_val f -> Global.add_constraints (Future.force f)
+        | Some f when Future.is_val f -> Global.push_context (Future.force f)
         | _ -> ()
 
 let exists_name id =
@@ -201,7 +201,7 @@ let definition_entry ?(opaque=false) ?(inline=false) ?types
     const_entry_type = types;
     const_entry_proj = None;
     const_entry_polymorphic = poly;
-    const_entry_universes = Future.from_val univs;
+    const_entry_universes = univs;
     const_entry_opaque = opaque;
     const_entry_feedback = None;
     const_entry_inline_code = inline}

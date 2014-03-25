@@ -46,10 +46,6 @@ exception NoCurrentProof
 val give_me_the_proof : unit -> Proof.proof
 (** @raise NoCurrentProof when outside proof mode. *)
 
-type 'a proof_decl_hook =
-  Universes.universe_opt_subst Univ.in_universe_context -> 
-  Decl_kinds.locality -> Globnames.global_reference -> 'a
-
 (** When a proof is closed, it is reified into a [proof_object], where
     [id] is the name of the proof, [entries] the list of the proof terms
     (in a form suitable for definitions). Together with the [terminator]
@@ -57,11 +53,13 @@ type 'a proof_decl_hook =
     (i.e. an proof ending command) and registers the appropriate
     values. *)
 type lemma_possible_guards = int list list
+type proof_universes = Universes.universe_opt_subst Univ.in_universe_context
 type proof_object = {
   id : Names.Id.t;
   entries : Entries.definition_entry list;
   persistence : Decl_kinds.goal_kind;
-  constraints : Univ.constraints;
+  universes: proof_universes;
+  (* constraints : Univ.constraints; *)
   (** guards : lemma_possible_guards; *)
 }
 

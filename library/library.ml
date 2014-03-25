@@ -39,7 +39,7 @@ type library_t = {
   library_deps : (compilation_unit_name * Safe_typing.vodigest) array;
   library_imports : compilation_unit_name array;
   library_digests : Safe_typing.vodigest;
-  library_extra_univs : Univ.constraints;
+  library_extra_univs : Univ.universe_context;
 }
 
 module LibraryOrdered = DirPath
@@ -329,7 +329,7 @@ type 'a table_status =
 let opaque_tables =
   ref (LibraryMap.empty : (Term.constr table_status) LibraryMap.t)
 let univ_tables =
-  ref (LibraryMap.empty : (Univ.constraints table_status) LibraryMap.t)
+  ref (LibraryMap.empty : (Univ.universe_context table_status) LibraryMap.t)
 
 let add_opaque_table dp st =
   opaque_tables := LibraryMap.add dp st !opaque_tables
@@ -354,7 +354,7 @@ let access_opaque_table dp i =
     add_opaque_table !opaque_tables dp i
 let access_univ_table dp i =
   access_table
-    (fetch_table "universe constraints of opaque proofs")
+    (fetch_table "universe contexts of opaque proofs")
     add_univ_table !univ_tables dp i
 
 (** Table of opaque terms from the library currently being compiled *)
@@ -362,7 +362,7 @@ let access_univ_table dp i =
 module OpaqueTables = struct
 
  let a_constr = Future.from_val (Term.mkRel 1)
- let a_univ = Future.from_val Univ.empty_constraint
+ let a_univ = Future.from_val Univ.UContext.empty
  let a_discharge : Opaqueproof.cooking_info list = []
 
  let local_opaque_table = ref (Array.make 100 a_constr)
@@ -440,7 +440,7 @@ let () =
 
 type seg_lib = library_disk
 type seg_univ = (* true = vivo, false = vi *)
-  Univ.constraints Future.computation array * Univ.constraints * bool
+  Univ.universe_context Future.computation array * Univ.universe_context * bool
 type seg_discharge = Opaqueproof.cooking_info list array
 type seg_proofs = Term.constr Future.computation array
 
@@ -466,13 +466,13 @@ let intern_from_file f =
   add_opaque_table lmd.md_name (ToFetch (f,pos,digest));
   let open Safe_typing in
   match univs with
-  | None -> mk_library lmd (Dvo_or_vi digest_lmd) Univ.empty_constraint
+  | None -> mk_library lmd (Dvo_or_vi digest_lmd) Univ.UContext.empty
   | Some (utab,uall,true) ->
       add_univ_table lmd.md_name (Fetched utab);
       mk_library lmd (Dvivo (digest_lmd,digest_u)) uall
   | Some (utab,_,false) ->
       add_univ_table lmd.md_name (Fetched utab);
-      mk_library lmd (Dvo_or_vi digest_lmd) Univ.empty_constraint
+      mk_library lmd (Dvo_or_vi digest_lmd) Univ.UContext.empty
 
 let rec intern_library needed (dir, f) =
   (* Look if in the current logical environment *)
@@ -731,7 +731,7 @@ let save_library_to ?todo dir f =
     | Some d ->
         assert(!Flags.compilation_mode = Flags.BuildVi);
         f ^ "i", (fun x -> Some (d x)),
-          (fun x -> Some (x,Univ.empty_constraint,false)), (fun x -> Some x) in
+          (fun x -> Some (x,Univ.UContext.empty,false)), (fun x -> Some x) in
   Opaqueproof.reset_indirect_creator ();
   let cenv, seg, ast = Declaremods.end_library dir in
   let opaque_table, univ_table, disch_table, f2t_map =

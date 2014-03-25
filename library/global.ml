@@ -172,10 +172,8 @@ let type_of_global_in_context env r =
   | VarRef id -> Environ.named_type id env, Univ.UContext.empty
   | ConstRef c -> 
      let cb = Environ.lookup_constant c env in 
-     let univs = 
-       if cb.const_polymorphic then Future.force cb.const_universes 
-       else Univ.UContext.empty
-     in Typeops.type_of_constant_type env cb.Declarations.const_type, univs
+     let univs = Declareops.universes_of_polymorphic_constant cb in
+       Typeops.type_of_constant_type env cb.Declarations.const_type, univs
   | IndRef ind ->
      let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
      let univs = 

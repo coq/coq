@@ -69,11 +69,11 @@ val start_proof :
 val cook_this_proof :
     Proof_global.proof_object ->
   (Id.t *
-    (Entries.definition_entry * Univ.constraints * goal_kind))
+    (Entries.definition_entry * Proof_global.proof_universes * goal_kind))
 
 val cook_proof : unit ->
   (Id.t *
-    (Entries.definition_entry * Univ.constraints * goal_kind))
+    (Entries.definition_entry * Proof_global.proof_universes * goal_kind))
 
 (** {6 ... } *)
 (** [get_pftreestate ()] returns the current focused pending proof.

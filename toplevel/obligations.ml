@@ -786,8 +786,8 @@ let rec string_of_list sep f = function
 
 (* Solve an obligation using tactics, return the corresponding proof term *)
 
-let solve_by_tac evi t poly subst ctx =
-  let id = Id.of_string "H" in
+let solve_by_tac name evi t poly subst ctx =
+  let id = name in
   let concl = Universes.subst_opt_univs_constr subst evi.evar_concl in
   (* spiwack: the status is dropped *)
   let (entry,_,subst) = Pfedit.build_constant_by_tactic 
@@ -905,7 +905,7 @@ and solve_obligation_by_tac prg obls i tac =
 		  | None -> snd (get_default_tactic ())
 	    in
 	    let t, subst, ctx = 
-	      solve_by_tac (evar_of_obligation obl) tac 
+	      solve_by_tac obl.obl_name (evar_of_obligation obl) tac 
 	        (pi2 prg.prg_kind) prg.prg_subst prg.prg_ctx
 	    in
 	      obls.(i) <- declare_obligation {prg with prg_subst = subst} obl t ctx;

@@ -89,7 +89,7 @@ let handle_side_effects env body side_eff =
               let t = sub c 1 (Vars.lift 1 t) in
 		mkLetIn (cname c, b, b_ty, t)
 	    else 
-	      let univs = Future.force cb.const_universes in
+	      let univs = cb.const_universes in
 		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t)
       | OpaqueDef b -> 
           let b = Opaqueproof.force_proof b in
@@ -99,7 +99,7 @@ let handle_side_effects env body side_eff =
               let t = sub c 1 (Vars.lift 1 t) in
 		mkApp (mkLambda (cname c, b_ty, t), [|b|]) 
 	    else
-	      let univs = Future.force cb.const_universes in
+	      let univs = cb.const_universes in
 		sub_body c (Univ.UContext.instance univs) b 1 (Vars.lift 1 t)
     in
       List.fold_right fix_body cbl t
@@ -120,10 +120,10 @@ let infer_declaration env kn dcl =
       let env = push_context uctx env in
       let j = infer env t in
       let t = hcons_constr (Typeops.assumption_of_judgment env j) in
-      Undef nl, RegularArity t, None, poly, Future.from_val uctx, false, ctx
+      Undef nl, RegularArity t, None, poly, uctx, false, ctx
   | DefinitionEntry ({ const_entry_type = Some typ;
                        const_entry_opaque = true } as c) ->
-      let env = push_context (Future.join c.const_entry_universes) env in (* FIXME *)
+      let env = push_context c.const_entry_universes env in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let tyj = infer_type env typ in
       let proofterm =
@@ -133,12 +133,13 @@ let infer_declaration env kn dcl =
           let j = hcons_j j in
           let _typ = constrain_type env j c.const_entry_polymorphic (`SomeWJ (typ,tyj)) in
           feedback_completion_typecheck feedback_id;
-          j.uj_val, Univ.empty_constraint) in
+          j.uj_val, Univ.UContext.empty) in
       let def = OpaqueDef (Opaqueproof.create proofterm) in
-      def, RegularArity typ, None, c.const_entry_polymorphic, c.const_entry_universes,
+      def, RegularArity typ, None, c.const_entry_polymorphic, 
+	c.const_entry_universes,
 	c.const_entry_inline_code, c.const_entry_secctx
   | DefinitionEntry c ->
-      let env = push_context (Future.join c.const_entry_universes) env in (* FIXME *)
+      let env = push_context c.const_entry_universes env in
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let body, side_eff = Future.join body in
@@ -211,7 +212,7 @@ let build_constant_declaration kn env (def,typ,proj,poly,univs,inline_code,ctx) 
         | OpaqueDef lc ->
             let vars = global_vars_set env (Opaqueproof.force_proof lc) in
             (* we force so that cst are added to the env immediately after *)
-            ignore(Future.join univs);
+            ignore(Opaqueproof.force_constraints lc);
             !suggest_proof_using kn env vars ids_typ context_ids;
             if !Flags.compilation_mode = Flags.BuildVo then
               record_aux env ids_typ vars;

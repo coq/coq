@@ -61,7 +61,7 @@ type constant_def =
   | Def of constr Mod_subst.substituted
   | OpaqueDef of Opaqueproof.opaque
 
-type constant_universes = Univ.universe_context Future.computation
+type constant_universes = Univ.universe_context
 
 (* some contraints are in constant_constraints, some other may be in
  * the OpaueDef *)

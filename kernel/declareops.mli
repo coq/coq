@@ -30,6 +30,12 @@ val constant_has_body : constant_body -> bool
 
 val body_of_constant : constant_body -> Term.constr option
 val constraints_of_constant : constant_body -> Univ.constraints
+val universes_of_constant : constant_body -> Univ.universe_context
+
+(** Return the universe context, in case the definition is polymorphic, otherwise
+    the context is empty. *)
+
+val universes_of_polymorphic_constant : constant_body -> Univ.universe_context
 
 val is_opaque : constant_body -> bool
 

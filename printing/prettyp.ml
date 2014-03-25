@@ -378,17 +378,18 @@ let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = Declareops.body_of_constant cb in
   let typ = ungeneralized_type_of_constant_type cb.const_type in
+  let univs = Declareops.universes_of_constant cb in
   hov 0 (pr_polymorphic cb.const_polymorphic ++
     match val_0 with
     | None ->
 	str"*** [ " ++
 	print_basename sp ++ str " : " ++ cut () ++ pr_ltype typ ++
 	str" ]" ++
-	Printer.pr_universe_ctx (Future.force cb.const_universes)
+	Printer.pr_universe_ctx univs
     | _ ->
 	print_basename sp ++ str sep ++ cut () ++
 	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ)++
-        Printer.pr_universe_ctx (Future.force cb.const_universes))
+        Printer.pr_universe_ctx univs)
 
 let gallina_print_constant_with_infos sp =
   print_constant true " = " sp ++

@@ -43,11 +43,20 @@ let body_of_constant cb = match cb.const_body with
   | OpaqueDef o -> Some (Opaqueproof.force_proof o)
 
 let constraints_of_constant cb = Univ.Constraint.union 
-  (Univ.UContext.constraints (Future.force cb.const_universes))
+  (Univ.UContext.constraints cb.const_universes)
   (match cb.const_body with
   | Undef _ -> Univ.empty_constraint
   | Def c -> Univ.empty_constraint
-  | OpaqueDef o -> Opaqueproof.force_constraints o)
+  | OpaqueDef o -> Univ.UContext.constraints (Opaqueproof.force_constraints o))
+
+let universes_of_constant cb = 
+  match cb.const_body with
+  | Undef _ | Def _ -> cb.const_universes
+  | OpaqueDef o -> Opaqueproof.force_constraints o
+
+let universes_of_polymorphic_constant cb = 
+  if cb.const_polymorphic then universes_of_constant cb
+  else Univ.UContext.empty
 
 let constant_has_body cb = match cb.const_body with
   | Undef _ -> false
@@ -139,11 +148,7 @@ let hcons_const_body cb =
   { cb with
     const_body = hcons_const_def cb.const_body;
     const_type = hcons_const_type cb.const_type;
-    const_universes =
-      if Future.is_val cb.const_universes then
-        Future.from_val
-          (Univ.hcons_universe_context (Future.force cb.const_universes))
-      else (* FIXME: Why not? *) cb.const_universes }
+    const_universes = Univ.hcons_universe_context cb.const_universes }
 
 (** {6 Inductive types } *)
 
@@ -265,7 +270,6 @@ let hcons_mind mib =
 (** {6 Stm machinery } *)
 
 let join_constant_body cb =
-  ignore(Future.join cb.const_universes);
   match cb.const_body with
   | OpaqueDef o -> Opaqueproof.join_opaque o
   | _ -> ()

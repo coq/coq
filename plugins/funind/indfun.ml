@@ -183,7 +183,6 @@ let is_rec names =
     | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ -> false
     | GProj (loc, p, c) -> lookup names c
     | GCast(_,b,_) -> lookup names b
-    | GProj _ -> error "GProj not handled"
     | GRec _ -> error "GRec not handled"
     | GIf(_,b,_,lhs,rhs) ->
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)

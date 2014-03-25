@@ -171,7 +171,7 @@ let save id const cstrs do_guard (locality,poly,kind) hook =
   let const = adjust_guardness_conditions const do_guard in
   let k = Kindops.logical_kind_of_goal_kind kind in
   (* Add global constraints necessary to check the type of the proof *)
-  let () = Global.add_constraints cstrs in
+  let () = Global.push_context (snd cstrs) in
   let l,r = match locality with
     | Discharge when Lib.sections_are_opened () ->
 	let c = SectionLocalDef const in

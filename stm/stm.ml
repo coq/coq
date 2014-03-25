@@ -744,7 +744,7 @@ end = struct
             | Declarations.SEsubproof(_,
                { Declarations.const_body = Declarations.OpaqueDef f;
 		 const_universes = univs } ) ->
-                Opaqueproof.join_opaque f; ignore (Future.join univs) (* FIXME: MS: needed?*)
+                Opaqueproof.join_opaque f
             | _ -> ())
           se) (fst l);
           l, Unix.gettimeofday () -. wall_clock in
@@ -808,7 +808,7 @@ end = struct
         | Declarations.OpaqueDef lc ->
             let uc = Option.get (Opaqueproof.get_constraints lc) in
             let uc =
-              Future.chain ~greedy:true ~pure:true uc Univ.hcons_constraints in
+              Future.chain ~greedy:true ~pure:true uc Univ.hcons_universe_context in
             let pr = Opaqueproof.get_proof lc in
             let pr = Future.chain ~greedy:true ~pure:true pr discharge in
             let pr = Future.chain ~greedy:true ~pure:true pr Constr.hcons in
@@ -816,7 +816,7 @@ end = struct
             let extra = Future.join uc in
             u.(bucket) <- uc;
             p.(bucket) <- pr;
-            u, Univ.union_constraint cst extra, false
+            u, Univ.UContext.union cst extra, false
         | _ -> assert false
   
   let check_task name l i =

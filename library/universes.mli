@@ -171,7 +171,7 @@ val pr_universe_opt_subst : universe_opt_subst -> Pp.std_ppcmds
 val universes_of_constr : constr -> universe_set
 val shrink_universe_context : universe_context_set -> universe_set -> universe_context_set
 val restrict_universe_context : universe_context_set -> universe_set -> universe_context_set
-val simplify_universe_context : universe_context_set -> universe_set -> 
+val simplify_universe_context : universe_context_set -> 
   universe_context_set * universe_level_subst
 
 val refresh_constraints : universes -> universe_context_set -> universe_context_set * universes

@@ -298,11 +298,11 @@ let safe_push_named (id,_,_ as d) env =
 
 let push_named_def (id,de) senv =
   let c,typ,univs = Term_typing.translate_local_def senv.env id de in
-  let c = match c with
-    | Def c -> Mod_subst.force_constr c
-    | OpaqueDef o -> Opaqueproof.force_proof o
+  let c, univs = match c with
+    | Def c -> Mod_subst.force_constr c, univs
+    | OpaqueDef o -> Opaqueproof.force_proof o, Opaqueproof.force_constraints o
     | _ -> assert false in
-  let senv' = push_context (Future.join de.Entries.const_entry_universes) senv in
+  let senv' = push_context univs senv in
   let env'' = safe_push_named (id,Some c,typ) senv'.env in
     {senv' with env=env''}
 
@@ -332,9 +332,15 @@ let globalize_constant_universes cb =
   if cb.const_polymorphic then
     Now Univ.Constraint.empty
   else
-    (match Future.peek_val cb.const_universes with
-    | Some c -> Now (Univ.UContext.constraints c)
-    | None -> Later (Future.chain ~pure:true cb.const_universes Univ.UContext.constraints))
+    match cb.const_body with
+    | (Undef _ | Def _) -> Now (Univ.UContext.constraints cb.const_universes)
+    | OpaqueDef lc ->
+      match Opaqueproof.get_constraints lc with
+      | None -> Now (Univ.UContext.constraints cb.const_universes)
+      | Some fc ->
+        match Future.peek_val fc with
+        | None -> Later (Future.chain ~pure:true fc Univ.UContext.constraints)
+        | Some c -> Now (Univ.UContext.constraints c)
       
 let globalize_mind_universes mb =
   if mb.mind_polymorphic then
@@ -751,7 +757,7 @@ let import lib cst vodigest senv =
   let mp = MPfile lib.comp_name in
   let mb = lib.comp_mod in
   let env = Environ.add_constraints mb.mod_constraints senv.env in
-  let env = Environ.add_constraints cst env in
+  let env = Environ.push_context cst env in
   (mp, lib.comp_natsymbs),
   { senv with
     env =
