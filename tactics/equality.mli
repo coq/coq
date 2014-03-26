@@ -109,7 +109,7 @@ val injectable : env -> evar_map -> constr -> constr -> bool
 
 (* Subst *)
 
-val unfold_body : Id.t -> tactic
+(* val unfold_body : Id.t -> tactic *)
 
 type subst_tactic_flags = {
   only_leibniz : bool;

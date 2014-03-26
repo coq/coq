@@ -371,6 +371,7 @@ let case_on_ba tac ba gl = tac (make_case_branch_assumptions ba gl) gl
 module New = struct
   open Proofview
   open Proofview.Notations
+  open Tacmach.New
 
   let tclIDTAC = tclUNIT ()
 
@@ -682,9 +683,7 @@ module New = struct
 
   let elimination_then_using tac predicate bindings c =
     Proofview.Goal.enter begin fun gl ->
-    let (ind,t) =
-      Tacmach.New.of_old (fun gl -> pf_reduce_to_quantified_ind gl (pf_type_of gl c)) gl
-    in
+    let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
     let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) gl in
     let isrec,mkelim =
       if (Global.lookup_mind (fst ind)).mind_record
@@ -715,4 +714,19 @@ module New = struct
     let branches = Tacmach.New.of_old (make_case_branch_assumptions ba) gl in
     tac branches
     end
+
+  let elimination_sort_of_goal gl =
+    (** Retyping will expand evars anyway. *)
+    let c = Proofview.Goal.concl (Goal.assume gl) in
+    pf_apply Retyping.get_sort_family_of gl c
+
+  let elimination_sort_of_hyp id gl =
+    (** Retyping will expand evars anyway. *)
+    let c = pf_get_hyp_typ id (Goal.assume gl) in
+    pf_apply Retyping.get_sort_family_of gl c
+
+  let elimination_sort_of_clause id gl = match id with
+  | None -> elimination_sort_of_goal gl
+  | Some id -> elimination_sort_of_hyp id gl
+
 end

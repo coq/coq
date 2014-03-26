@@ -261,6 +261,10 @@ module New : sig
   val tryAllHypsAndConcl  : (identifier option -> unit tactic) -> unit tactic
   val onClause   : (identifier option -> unit tactic) -> clause -> unit tactic
 
+  val elimination_sort_of_goal : 'a Proofview.Goal.t -> sorts_family
+  val elimination_sort_of_hyp  : Id.t -> 'a Proofview.Goal.t -> sorts_family
+  val elimination_sort_of_clause : Id.t option -> 'a Proofview.Goal.t -> sorts_family
+
   val elimination_then :
     (branch_args -> unit Proofview.tactic) ->
     (arg_bindings * arg_bindings) -> constr -> unit Proofview.tactic
