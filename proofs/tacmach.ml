@@ -271,4 +271,10 @@ module New = struct
   let pf_hnf_type_of gl t =
     pf_whd_betadeltaiota gl (pf_get_type_of gl t)
 
+  let pf_matches gl pat t = pf_apply ConstrMatching.matches_conv gl pat t
+
+  let pf_whd_betadeltaiota gl t = pf_apply whd_betadeltaiota gl t
+
+  let pf_nf_evar gl t = nf_evar (Proofview.Goal.sigma gl) t
+
 end

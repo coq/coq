@@ -380,6 +380,9 @@ module New = struct
   let tclFAIL lvl msg =
     tclZERO (Refiner.FailError (lvl,lazy msg))
 
+  let tclZEROMSG msg =
+    tclZERO (UserError ("", msg))
+
   let catch_failerror e =
     try
       Refiner.catch_failerror e;

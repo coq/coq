@@ -194,6 +194,10 @@ module New : sig
      (meaning that it will jump over [n] error catching tacticals FROM
      THIS MODULE. *)
   val tclFAIL : int -> Pp.std_ppcmds -> 'a tactic
+
+  val tclZEROMSG : Pp.std_ppcmds -> unit tactic
+  (** Fail with a [User_Error] containing the given message. *)
+
   val tclOR : unit tactic -> unit tactic -> unit tactic
   val tclONCE : unit tactic -> unit tactic
   val tclEXACTLY_ONCE : unit tactic -> unit tactic

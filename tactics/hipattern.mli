@@ -147,7 +147,7 @@ val match_eqdec : constr -> bool * constr * constr * constr * constr
 (** Match an equality up to conversion; returns [(eq,t1,t2)] in normal form *)
 open Proof_type
 open Tacmach
-val dest_nf_eq : goal sigma -> constr -> (constr * constr * constr)
+val dest_nf_eq : 'a Proofview.Goal.t -> constr -> (constr * constr * constr)
 
 (** Match a negation *)
 val is_matching_not : constr -> bool

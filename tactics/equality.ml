@@ -1461,12 +1461,12 @@ let cutSubstInHyp l2r = if l2r then cutSubstInHyp_LR else cutSubstInHyp_RL
 let try_rewrite tac =
   Proofview.tclORELSE tac begin function
     | ConstrMatching.PatternMatchingFailure ->
-	Tactics.New.tclZEROMSG (str "Not a primitive equality here.")
+	Tacticals.New.tclZEROMSG (str "Not a primitive equality here.")
     | e when catchable_exception e ->
-	Tactics.New.tclZEROMSG
+	Tacticals.New.tclZEROMSG
           (strbrk "Cannot find a well-typed generalization of the goal that makes the proof progress.")
     | NothingToRewrite ->
-	Tactics.New.tclZEROMSG
+	Tacticals.New.tclZEROMSG
           (strbrk "Nothing to rewrite.")
     | e -> Proofview.tclZERO e
   end

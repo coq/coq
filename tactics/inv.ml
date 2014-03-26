@@ -20,7 +20,7 @@ open Environ
 open Inductiveops
 open Printer
 open Retyping
-open Tacmach
+open Tacmach.New
 open Clenv
 open Tacticals.New
 open Tactics
@@ -192,7 +192,7 @@ let dependent_hyps id idlist gl =
     | [] -> []
     | (id1,_,_)::l ->
 	(* Update the type of id1: it may have been subject to rewriting *)
-	let d = Tacmach.New.pf_get_hyp id1 gl in
+	let d = pf_get_hyp id1 gl in
 	if occur_var_in_decl (Global.env()) id d
         then d :: dep_rec l
         else dep_rec l
@@ -307,10 +307,10 @@ let projectAndApply thin id eqname names depids =
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
   in
   let substHypIfVariable tac id =
-    Proofview.Goal.enter begin fun gl ->
-    let (t,t1,t2) =
-      Tacmach.New.of_old (fun gls -> Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id)) gl
-    in
+    Proofview.Goal.raw_enter begin fun gl ->
+    (** We only look at the type of hypothesis "id" *)
+    let hyp = pf_nf_evar gl (pf_get_hyp_typ id (Proofview.Goal.assume gl)) in
+    let (t,t1,t2) = Hipattern.dest_nf_eq gl hyp in
     match (kind_of_term t1, kind_of_term t2) with
     | Var id1, _ -> generalizeRewriteIntros (subst_hyp true id) depids id1
     | _, Var id2 -> generalizeRewriteIntros (subst_hyp false id) depids id2
@@ -461,8 +461,8 @@ let raw_inversion inv_kind id status names =
     let env = Proofview.Goal.env gl in
     let concl = Proofview.Goal.concl gl in
     let c = mkVar id in
-    let reduce_to_atomic_ind = Tacmach.New.pf_apply Tacred.reduce_to_atomic_ind gl in
-    let type_of = Tacmach.New.pf_type_of gl in
+    let reduce_to_atomic_ind = pf_apply Tacred.reduce_to_atomic_ind gl in
+    let type_of = pf_type_of gl in
     begin
       try
         Proofview.tclUNIT (reduce_to_atomic_ind (type_of c))
@@ -543,12 +543,12 @@ let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
 
 let invIn k names ids id =
   Proofview.Goal.enter begin fun gl ->
-    let hyps = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) ids in
+    let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let concl = Proofview.Goal.concl gl in
     let nb_prod_init = nb_prod concl in
     let intros_replace_ids =
       Proofview.Goal.raw_enter begin fun gl ->
-        let concl = Tacmach.New.pf_nf_concl gl in
+        let concl = pf_nf_concl gl in
         let nb_of_new_hyp =
           nb_prod concl - (List.length hyps + nb_prod_init)
         in

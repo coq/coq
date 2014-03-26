@@ -46,9 +46,6 @@ open Proofview.Notations
 
 exception Bound
 
-let tclZEROMSG msg =
-  Proofview.tclZERO (UserError ("", msg))
-
 let nb_prod x =
   let rec count n c =
     match kind_of_term c with
@@ -724,7 +721,7 @@ let cut c =
       let r = Goal.bind c Goal.refine in
       Proofview.tclSENSITIVE r
     else
-      tclZEROMSG (str "Not a proposition or a type.")
+      Tacticals.New.tclZEROMSG (str "Not a proposition or a type.")
   end
 
 let cut_intro t = Tacticals.New.tclTHENFIRST (cut t) intro
@@ -1188,7 +1185,7 @@ let assumption =
     if only_eq then
       let hyps = Proofview.Goal.hyps gl in
       arec gl false hyps
-    else tclZEROMSG (str "No such assumption.")
+    else Tacticals.New.tclZEROMSG (str "No such assumption.")
   | (id, c, t)::rest ->
     let concl = Proofview.Goal.concl gl in
     let is_same_type =
@@ -3926,7 +3923,5 @@ module New = struct
          {onhyps=None; concl_occs=AllOccurrences }
       )
     end
-
-  let tclZEROMSG = tclZEROMSG
 
 end

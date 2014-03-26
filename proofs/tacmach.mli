@@ -148,5 +148,13 @@ module New : sig
 
   val pf_nf_concl : [ `LZ ] Proofview.Goal.t -> types
   val pf_reduce_to_quantified_ind : 'a Proofview.Goal.t -> types -> inductive * types
+
   val pf_hnf_type_of : 'a Proofview.Goal.t -> constr -> types
+
+  val pf_whd_betadeltaiota : 'a Proofview.Goal.t -> constr -> constr
+
+  val pf_matches : 'a Proofview.Goal.t -> constr_pattern -> constr -> patvar_map
+
+  val pf_nf_evar : 'a Proofview.Goal.t -> constr -> constr
+
 end
