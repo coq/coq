@@ -7,3 +7,4 @@ Rewrite
 G_rewrite
 Tauto
 Eqdecide
+G_eqdecide

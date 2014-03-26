@@ -206,14 +206,3 @@ let compare c1 c2 =
                        (Proofview.V82.tactic clear_last)));
              decideEquality rectype])
   end
-
-
-(* User syntax *)
-
-TACTIC EXTEND decide_equality
-| [ "decide" "equality" ] -> [ decideEqualityGoal ]
-END
-
-TACTIC EXTEND compare
-| [ "compare" constr(c1) constr(c2) ] -> [ compare c1 c2 ]
-END
