@@ -343,7 +343,7 @@ let leibniz_rewrite_ebindings_clause cls lft2rgt tac c t l with_evars frzevars d
   let type_of_cls = type_of_clause cls gl in
   let dep = dep_proof_ok && dep_fun c type_of_cls in
   let (elim,effs) = find_elim hdcncl lft2rgt dep cls (Some t) gl in
-  Proofview.V82.tactic (Tactics.emit_side_effects effs) <*>
+  Proofview.tclEFFECTS effs <*>
   general_elim_clause with_evars frzevars tac cls c t l
     (match lft2rgt with None -> false | Some b -> b)
     {elimindex = None; elimbody = (elim,NoBindings)}
@@ -861,7 +861,7 @@ let discr_positions env sigma (lbeq,eqn,(t,t1,t2)) eq_clause cpath dirn sort =
   let pf_ty = mkArrow eqn absurd_term in
   let absurd_clause = apply_on_clause (pf,pf_ty) eq_clause in
   let pf = clenv_value_cast_meta absurd_clause in
-  Proofview.V82.tactic (Tactics.emit_side_effects eff) <*>
+  Proofview.tclEFFECTS eff <*>
   tclTHENS (cut_intro absurd_term)
     [onLastHypId gen_absurdity; (Proofview.V82.tactic (refine pf))]
 
@@ -1231,9 +1231,8 @@ let inject_if_homogenous_dependent_pair env sigma (eq,_,(t,t1,t2)) =
     let inj2 = Coqlib.coq_constant "inj_pair2_eq_dec is missing"
       ["Logic";"Eqdep_dec"] "inj_pair2_eq_dec" in
     let c, eff = find_scheme (!eq_dec_scheme_kind_name()) ind in
-    let sigma = Evd.emit_side_effects eff (Proofview.Goal.sigma gl) in
       (* cut with the good equality and prove the requested goal *)
-    tclTHENS (tclTHEN (Proofview.V82.tclEVARS sigma) (cut (mkApp (ceq,new_eq_args))))
+    tclTHENS (tclTHEN (Proofview.tclEFFECTS eff) (cut (mkApp (ceq,new_eq_args))))
       [tclIDTAC; tclTHEN (Proofview.V82.tactic (apply (
         mkApp(inj2,[|ar1.(0);mkConst c;ar1.(1);ar1.(2);ar1.(3);ar2.(3)|])
        ))) (Auto.trivial [] [])

@@ -234,6 +234,9 @@ val tclEVARMAP : Evd.evar_map tactic
    environment is returned by {!Proofview.Goal.env}. *)
 val tclENV : Environ.env tactic
 
+(* [tclEFFECTS eff] add the effects [eff] to the current state. *)
+val tclEFFECTS : Declareops.side_effects -> unit tactic
+
 (* Shelves all the goals under focus. The goals are placed on the
    shelf for later use (or being solved by side-effects). *)
 val shelve : unit tactic

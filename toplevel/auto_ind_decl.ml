@@ -378,7 +378,7 @@ let do_replace_lb lb_scheme_key aavoid narg p q =
                        then lb_type_of_p else mkApp (lb_type_of_p,lb_args)
            in
            Tacticals.New.tclTHENLIST [
-             Proofview.V82.tactic (Tactics.emit_side_effects eff);
+             Proofview.tclEFFECTS eff;
              Equality.replace p q ; Proofview.V82.tactic (apply app) ; Auto.default_auto]
   end
 
@@ -448,7 +448,7 @@ let do_replace_bl bl_scheme_key ind aavoid narg lft rgt =
                            then bl_t1 else mkApp (bl_t1,bl_args)
                 in
                 Tacticals.New.tclTHENLIST [
-                  Proofview.V82.tactic (Tactics.emit_side_effects eff) ;
+                  Proofview.tclEFFECTS eff;
                   Equality.replace_by t1 t2
                     (Tacticals.New.tclTHEN (Proofview.V82.tactic (apply app)) (Auto.default_auto)) ;
                   aux q1 q2 ]
@@ -861,10 +861,9 @@ let compute_dec_tact ind lnamesparrec nparrec =
       Proofview.tclZERO (UserError ("",str"Error during the decidability part, leibniz to boolean"++
         str" equality is required."))
   end >>= fun (lbI,eff'') ->
+  let eff = (Declareops.union_side_effects eff'' (Declareops.union_side_effects eff' eff)) in
   Tacticals.New.tclTHENLIST [
-        Proofview.V82.tactic (Tactics.emit_side_effects
-          (Declareops.union_side_effects eff''
-            (Declareops.union_side_effects eff' eff)));
+        Proofview.tclEFFECTS eff;
         intros_using fresh_first_intros;
         intros_using [freshn;freshm];
 	(*we do this so we don't have to prove the same goal twice *)

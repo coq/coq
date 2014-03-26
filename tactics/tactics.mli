@@ -394,8 +394,6 @@ val declare_intro_decomp_eq :
    (types * constr * constr) ->
    clausenv -> unit Proofview.tactic) -> unit
 
-val emit_side_effects : Declareops.side_effects -> tactic
-
 module Simple : sig
   (** Simplified version of some of the above tactics *)
 

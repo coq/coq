@@ -555,6 +555,12 @@ let tclEVARMAP =
 
 let tclENV = Proof.current
 
+let tclEFFECTS eff =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Proof.bind in
+  Proof.get >>= fun initial ->
+  Proof.set (emit_side_effects eff initial)
+
 exception Timeout
 let _ = Errors.register_handler begin function
   | Timeout -> Errors.errorlabstrm "Proofview.tclTIMEOUT" (Pp.str"Tactic timeout!")
