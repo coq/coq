@@ -188,6 +188,7 @@ module New : sig
       Ltac error with level more than 0. Otherwise succeeds. *)
   val catch_failerror : exn -> unit tactic
 
+  val tclIDTAC : unit tactic
   val tclTHEN : unit tactic -> unit tactic -> unit tactic
   (* [tclFAIL n msg] fails with [msg] as an error message at level [n]
      (meaning that it will jump over [n] error catching tacticals FROM
@@ -239,6 +240,7 @@ module New : sig
 
   val tclTIMEOUT : int -> unit tactic -> unit tactic
 
+  val nLastDecls  : int -> (named_context -> unit tactic) -> unit tactic
 
   val ifOnHyp     : (identifier * types -> bool) ->
     (identifier -> unit Proofview.tactic) -> (identifier -> unit Proofview.tactic) ->
@@ -248,6 +250,8 @@ module New : sig
   val onLastHypId      : (identifier -> unit tactic) -> unit tactic
   val onLastHyp        : (constr -> unit tactic) -> unit tactic
   val onLastDecl       : (named_declaration -> unit tactic) -> unit tactic
+
+  val afterHyp    : Id.t -> (named_context -> unit tactic) -> unit tactic
 
   val tryAllHyps          : (identifier -> unit tactic) -> unit tactic
   val tryAllHypsAndConcl  : (identifier option -> unit tactic) -> unit tactic

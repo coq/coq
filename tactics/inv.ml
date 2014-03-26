@@ -22,13 +22,16 @@ open Printer
 open Retyping
 open Tacmach
 open Clenv
-open Tacticals
+open Tacticals.New
 open Tactics
 open Elim
 open Equality
 open Misctypes
 open Tacexpr
 open Proofview.Notations
+
+let bring_hyps hyps = Proofview.V82.tactic (bring_hyps hyps)
+let clear hyps = Proofview.V82.tactic (clear hyps)
 
 let collect_meta_variables c =
   let rec collrec acc c = match kind_of_term c with
@@ -49,9 +52,9 @@ let check_no_metas clenv ccl =
 	 (* ajouter "in " ++ pr_lconstr ccl mais il faut le bon contexte *))
 
 let var_occurs_in_pf gl id =
-  let env = pf_env gl in
-  occur_var env id (pf_concl gl) ||
-  List.exists (occur_var_in_decl env id) (pf_hyps gl)
+  let env = Proofview.Goal.env gl in
+  occur_var env id (Proofview.Goal.concl gl) ||
+  List.exists (occur_var_in_decl env id) (Proofview.Goal.hyps gl)
 
 (* [make_inv_predicate (ity,args) C]
 
@@ -189,7 +192,7 @@ let dependent_hyps id idlist gl =
     | [] -> []
     | (id1,_,_)::l ->
 	(* Update the type of id1: it may have been subject to rewriting *)
-	let d = pf_get_hyp gl id1 in
+	let d = Tacmach.New.pf_get_hyp id1 gl in
 	if occur_var_in_decl (Global.env()) id d
         then d :: dep_rec l
         else dep_rec l
@@ -275,18 +278,18 @@ Nota: with Inversion_clear, only four useless hypotheses
 
 let generalizeRewriteIntros tac depids id =
   Proofview.Goal.enter begin fun gl ->
-  let dids = Tacmach.New.of_old (dependent_hyps id depids) gl in
-  (Tacticals.New.tclTHENLIST
-    [Proofview.V82.tactic (bring_hyps dids); tac;
+  let dids = dependent_hyps id depids gl in
+  (tclTHENLIST
+    [bring_hyps dids; tac;
      (* may actually fail to replace if dependent in a previous eq *)
      intros_replacing (ids_of_named_context dids)])
   end
 
 let rec tclMAP_i n tacfun = function
-  | [] -> Tacticals.New.tclDO n (tacfun None)
+  | [] -> tclDO n (tacfun None)
   | a::l ->
       if Int.equal n 0 then Proofview.tclZERO (Errors.UserError ("", Pp.str"Too many names."))
-      else Tacticals.New.tclTHEN (tacfun (Some a)) (tclMAP_i (n-1) tacfun l)
+      else tclTHEN (tacfun (Some a)) (tclMAP_i (n-1) tacfun l)
 
 let remember_first_eq id x = if !x == MoveLast then x := MoveAfter id
 
@@ -300,7 +303,7 @@ let remember_first_eq id x = if !x == MoveLast then x := MoveAfter id
 
 let projectAndApply thin id eqname names depids =
   let subst_hyp l2r id =
-    tclTHEN (tclTRY(Proofview.V82.of_tactic (rewriteInConcl l2r (mkVar id))))
+    tclTHEN (tclTRY(rewriteInConcl l2r (mkVar id)))
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
   in
   let substHypIfVariable tac id =
@@ -309,22 +312,22 @@ let projectAndApply thin id eqname names depids =
       Tacmach.New.of_old (fun gls -> Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id)) gl
     in
     match (kind_of_term t1, kind_of_term t2) with
-    | Var id1, _ -> generalizeRewriteIntros (Proofview.V82.tactic (subst_hyp true id)) depids id1
-    | _, Var id2 -> generalizeRewriteIntros (Proofview.V82.tactic (subst_hyp false id)) depids id2
+    | Var id1, _ -> generalizeRewriteIntros (subst_hyp true id) depids id1
+    | _, Var id2 -> generalizeRewriteIntros (subst_hyp false id) depids id2
     | _ -> tac id
     end
   in
   let deq_trailer id _ neqns =
-    Tacticals.New.tclTHENLIST
-      [Proofview.V82.tactic (if not (List.is_empty names) then clear [id] else tclIDTAC);
+    tclTHENLIST
+      [(if not (List.is_empty names) then clear [id] else tclIDTAC);
        (tclMAP_i neqns (fun idopt ->
-	 Tacticals.New.tclTRY (Tacticals.New.tclTHEN
+	 tclTRY (tclTHEN
 	   (intro_move idopt MoveLast)
 	   (* try again to substitute and if still not a variable after *)
 	   (* decomposition, arbitrarily try to rewrite RL !? *)
-	   (Tacticals.New.tclTRY (Tacticals.New.onLastHypId (substHypIfVariable (fun id -> Proofview.V82.tactic (subst_hyp false id)))))))
+	   (tclTRY (onLastHypId (substHypIfVariable (fun id -> subst_hyp false id))))))
 	 names);
-       Proofview.V82.tactic (if List.is_empty names then clear [id] else tclIDTAC)]
+       (if List.is_empty names then clear [id] else tclIDTAC)]
   in
   substHypIfVariable
     (* If no immediate variable in the equation, try to decompose it *)
@@ -338,35 +341,33 @@ let projectAndApply thin id eqname names depids =
    soi-meme (proposition de Valerie). *)
 let rewrite_equations_gene othin neqns ba =
   Proofview.Goal.enter begin fun gl ->
-  let (depids,nodepids) =
-    Tacmach.New.of_old (fun gl -> split_dep_and_nodep ba.assums gl) gl
-  in
+  let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let rewrite_eqns =
     match othin with
       | Some thin ->
-          Tacticals.New.onLastHypId
+          onLastHypId
             (fun last ->
-              Tacticals.New.tclTHENLIST
-                [Tacticals.New.tclDO neqns
-                     (Tacticals.New.tclTHEN intro
-                        (Tacticals.New.onLastHypId
+              tclTHENLIST
+                [tclDO neqns
+                     (tclTHEN intro
+                        (onLastHypId
                            (fun id ->
-                              Tacticals.New.tclTRY
+                              tclTRY
 			        (projectAndApply thin id (ref MoveLast)
 				  [] depids))));
-                 Proofview.V82.tactic (onHyps (compose List.rev (afterHyp last)) bring_hyps);
-                 Proofview.V82.tactic (onHyps (afterHyp last)
-                   (compose clear ids_of_named_context))])
-      | None -> Proofview.tclUNIT ()
+
+                  afterHyp last (fun ctx -> bring_hyps (List.rev ctx));
+                  afterHyp last (fun ctx -> clear (ids_of_named_context ctx)) ])
+      | None -> tclIDTAC
   in
-  (Tacticals.New.tclTHENLIST
-    [Tacticals.New.tclDO neqns intro;
-     Proofview.V82.tactic (bring_hyps nodepids);
-     Proofview.V82.tactic (clear (ids_of_named_context nodepids));
-     Proofview.V82.tactic (onHyps (compose List.rev (nLastDecls neqns)) bring_hyps);
-     Proofview.V82.tactic (onHyps (nLastDecls neqns) (compose clear ids_of_named_context));
+  (tclTHENLIST
+    [tclDO neqns intro;
+     bring_hyps nodepids;
+     clear (ids_of_named_context nodepids);
+     (nLastDecls neqns (fun ctx -> bring_hyps (List.rev ctx)));
+     (nLastDecls neqns (fun ctx -> clear (ids_of_named_context ctx)));
      rewrite_eqns;
-     Proofview.V82.tactic (tclMAP (fun (id,_,_ as d) ->
+     (tclMAP (fun (id,_,_ as d) ->
                (tclORELSE (clear [id])
                  (tclTHEN (bring_hyps [d]) (clear [id]))))
        depids)])
@@ -409,33 +410,31 @@ let extract_eqn_names = function
 let rewrite_equations othin neqns names ba =
   Proofview.Goal.enter begin fun gl ->
   let names = List.map (get_names true) names in
-  let (depids,nodepids) =
-    Tacmach.New.of_old (fun gl -> split_dep_and_nodep ba.assums gl) gl
-  in
+  let (depids,nodepids) = split_dep_and_nodep ba.Tacticals.assums gl in
   let rewrite_eqns =
     let first_eq = ref MoveLast in
     match othin with
       | Some thin ->
-          Tacticals.New.tclTHENLIST
-            [Proofview.V82.tactic (onHyps (compose List.rev (nLastDecls neqns)) bring_hyps);
-             Proofview.V82.tactic (onHyps (nLastDecls neqns) (compose clear ids_of_named_context));
+          tclTHENLIST
+            [(nLastDecls neqns (fun ctx -> bring_hyps (List.rev ctx)));
+             (nLastDecls neqns (fun ctx -> clear (ids_of_named_context ctx)));
 	     tclMAP_i neqns (fun o ->
 	       let idopt,names = extract_eqn_names o in
-               (Tacticals.New.tclTHEN
+               (tclTHEN
 		 (intro_move idopt MoveLast)
-		 (Tacticals.New.onLastHypId (fun id ->
-		   Tacticals.New.tclTRY (projectAndApply thin id first_eq names depids)))))
+		 (onLastHypId (fun id ->
+		   tclTRY (projectAndApply thin id first_eq names depids)))))
 	       names;
-	     Tacticals.New.tclMAP (fun (id,_,_) -> Proofview.tclUNIT () >>= fun () -> (* delay for [first_eq]. *)
+	     tclMAP (fun (id,_,_) -> tclIDTAC >>= fun () -> (* delay for [first_eq]. *)
 	       intro_move None (if thin then MoveLast else !first_eq))
 	       nodepids;
-	     Proofview.V82.tactic (tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids)]
-      | None -> Proofview.tclUNIT ()
+	     (tclMAP (fun (id,_,_) -> tclTRY (clear [id])) depids)]
+      | None -> tclIDTAC
   in
-  (Tacticals.New.tclTHENLIST
-    [Tacticals.New.tclDO neqns intro;
-     Proofview.V82.tactic (bring_hyps nodepids);
-     Proofview.V82.tactic (clear (ids_of_named_context nodepids));
+  (tclTHENLIST
+    [tclDO neqns intro;
+     bring_hyps nodepids;
+     clear (ids_of_named_context nodepids);
      rewrite_eqns])
   end
 
@@ -451,7 +450,7 @@ let rewrite_equations_tac (gene, othin) id neqns names ba =
     else rewrite_equations othin neqns names ba in
   match othin with
   | Some true (* if Inversion_clear, clear the hypothesis *) ->
-    Tacticals.New.tclTHEN tac (Proofview.V82.tactic (tclTRY (clear [id])))
+    tclTHEN tac (tclTRY (clear [id]))
   | _ ->
     tac
 
@@ -481,19 +480,19 @@ let raw_inversion inv_kind id status names =
       let (cut_concl,case_tac) =
         if status != NoDep && (dependent c concl) then
           Reduction.beta_appvect elim_predicate (Array.of_list (realargs@[c])),
-          Tacticals.New.case_then_using
+          case_then_using
         else
           Reduction.beta_appvect elim_predicate (Array.of_list realargs),
-          Tacticals.New.case_nodep_then_using
+          case_nodep_then_using
       in
-      (Tacticals.New.tclTHENS
+      (tclTHENS
          (assert_tac Anonymous cut_concl)
          [case_tac names
              (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
              (Some elim_predicate) ([],[]) ind indclause;
-          Tacticals.New.onLastHypId
+          onLastHypId
             (fun id ->
-              (Tacticals.New.tclTHEN
+              (tclTHEN
                  (Proofview.V82.tactic (apply_term (mkVar id)
                                           (List.init neqns (fun _ -> Evarutil.mk_new_meta()))))
                  reflexivity))])
@@ -548,20 +547,20 @@ let invIn k names ids id =
     let concl = Proofview.Goal.concl gl in
     let nb_prod_init = nb_prod concl in
     let intros_replace_ids =
-      Proofview.Goal.enter begin fun gl ->
-        let concl = Proofview.Goal.concl gl in
+      Proofview.Goal.raw_enter begin fun gl ->
+        let concl = Tacmach.New.pf_nf_concl gl in
         let nb_of_new_hyp =
           nb_prod concl - (List.length hyps + nb_prod_init)
         in
         if nb_of_new_hyp < 1 then
           intros_replacing ids
         else
-          Tacticals.New.tclTHEN (Tacticals.New.tclDO nb_of_new_hyp intro) (intros_replacing ids)
+          tclTHEN (tclDO nb_of_new_hyp intro) (intros_replacing ids)
       end
     in
     Proofview.tclORELSE
-      (Tacticals.New.tclTHENLIST
-         [Proofview.V82.tactic (bring_hyps hyps);
+      (tclTHENLIST
+         [bring_hyps hyps;
           inversion (false,k) NoDep names id;
           intros_replace_ids])
       (wrap_inv_error id)
