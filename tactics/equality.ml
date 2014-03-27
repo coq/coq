@@ -79,6 +79,9 @@ let _ =
 
 let clear ids = Proofview.V82.tactic (clear ids)
 
+let tclNOTSAMEGOAL tac =
+  Proofview.V82.tactic (Tacticals.tclNOTSAMEGOAL (Proofview.V82.of_tactic tac))
+
 type dep_proof_flag = bool (* true = support rewriting dependent proofs *)
 type freeze_evars_flag = bool (* true = don't instantiate existing evars *)
 
@@ -206,19 +209,19 @@ let rewrite_elim_in with_evars frzevars id c e =
 
 (* Ad hoc asymmetric general_elim_clause *)
 let general_elim_clause with_evars frzevars cls rew elim =
+  let open Pretype_errors in
   Proofview.tclORELSE
     begin match cls with
     | None ->
       (* was tclWEAK_PROGRESS which only fails for tactics generating one
           subgoal and did not fail for useless conditional rewritings generating
           an extra condition *)
-      let tac = Proofview.V82.of_tactic (rewrite_elim with_evars frzevars rew elim) in
-      Proofview.V82.tactic (fun gl -> Tacticals.tclNOTSAMEGOAL tac gl)
+      tclNOTSAMEGOAL (rewrite_elim with_evars frzevars rew elim)
     | Some id -> rewrite_elim_in with_evars frzevars id rew elim
     end
     begin function
-    | Pretype_errors.PretypeError (env, evd, Pretype_errors.NoOccurrenceFound (c', _)) ->
-      Proofview.tclZERO (Pretype_errors.PretypeError (env, evd, Pretype_errors.NoOccurrenceFound (c', cls)))
+    | PretypeError (env, evd, NoOccurrenceFound (c', _)) ->
+      Proofview.tclZERO (PretypeError (env, evd, NoOccurrenceFound (c', cls)))
     | e -> Proofview.tclZERO e
     end
 
@@ -230,17 +233,6 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
     | Some (tac, FirstSolved) -> true, true, Some (tclCOMPLETE tac)
     | Some (tac, AllMatches) -> true, false, Some (tclCOMPLETE tac)
   in
-  let cs gl =
-    let env = Proofview.Goal.env gl in
-    let concl = Proofview.Goal.concl gl in
-    let instantiate_lemma =
-      if not all then instantiate_lemma env gl else instantiate_lemma_all frzevars env gl
-    in
-    let typ =
-      match cls with None -> concl | Some id -> pf_get_hyp_typ id gl
-    in
-    instantiate_lemma c t l l2r typ
-  in
   let try_clause c =
     side_tac
       (tclTHEN
@@ -248,12 +240,19 @@ let general_elim_clause with_evars frzevars tac cls c t l l2r elim =
          (general_elim_clause with_evars frzevars cls c elim))
       tac
   in
-  Proofview.Goal.enter begin fun gl ->
-    let cs = cs gl in
-    if firstonly then
-      tclFIRST (List.map try_clause cs)
-    else
-      tclMAP try_clause cs
+  Proofview.Goal.raw_enter begin fun gl ->
+    let env = Proofview.Goal.env gl in
+    let instantiate_lemma concl =
+      if not all then instantiate_lemma env gl c t l l2r concl
+      else instantiate_lemma_all frzevars env gl c t l l2r concl
+    in
+    let typ = match cls with
+    | None -> pf_nf_concl gl
+    | Some id -> pf_get_hyp_typ id (Proofview.Goal.assume gl)
+    in
+    let cs = instantiate_lemma typ in
+    if firstonly then tclFIRST (List.map try_clause cs)
+    else tclMAP try_clause cs
   end
 
 (* The next function decides in particular whether to try a regular
@@ -1485,8 +1484,6 @@ let cutRewriteInHyp l2r eqn id = cutRewriteClause l2r eqn (Some id)
 let cutRewriteInConcl l2r eqn = cutRewriteClause l2r eqn None
 
 let substClause l2r c cls =
-  let open Tacmach.New in
-  let open Tacticals.New in
   Proofview.Goal.raw_enter begin fun gl ->
   let eq = pf_apply get_type_of gl c in
   tclTHENS (cutSubstClause l2r eq cls)
