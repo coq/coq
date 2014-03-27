@@ -162,7 +162,7 @@ let induction_trailer abs_i abs_j bargs =
 	  in
           let ids = List.rev (ids_of_named_context hyps) in
 	  (tclTHENSEQ
-            [bring_hyps hyps; tclTRY (clear ids);
+            [Proofview.V82.of_tactic (bring_hyps hyps); tclTRY (clear ids);
 	     simple_elimination (mkVar id)]) gls
           end
           ))

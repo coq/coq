@@ -172,7 +172,7 @@ val revert        : Id.t list -> tactic
 
 val apply_type : constr -> constr list -> tactic
 val apply_term : constr -> constr list -> tactic
-val bring_hyps : named_context -> tactic
+val bring_hyps : named_context -> unit Proofview.tactic
 
 val apply                 : constr -> tactic
 val eapply                : constr -> tactic

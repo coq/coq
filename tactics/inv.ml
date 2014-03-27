@@ -30,7 +30,6 @@ open Misctypes
 open Tacexpr
 open Proofview.Notations
 
-let bring_hyps hyps = Proofview.V82.tactic (bring_hyps hyps)
 let clear hyps = Proofview.V82.tactic (clear hyps)
 
 let collect_meta_variables c =

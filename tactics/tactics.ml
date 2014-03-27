@@ -672,13 +672,21 @@ let apply_term hdc argl gl =
   refine (applist (hdc,argl)) gl
 
 let bring_hyps hyps =
-  if List.is_empty hyps then Refiner.tclIDTAC
+  if List.is_empty hyps then Tacticals.New.tclIDTAC
   else
-    (fun gl ->
-      let newcl = List.fold_right mkNamedProd_or_LetIn hyps (pf_concl gl) in
-      let f = mkCast (Evarutil.mk_new_meta(),DEFAULTcast, newcl) in
+    Proofview.Goal.enter begin fun gl ->
+      let env = Proofview.Goal.env gl in
+      let concl = Proofview.Goal.concl gl in
+      let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
       let args = Array.of_list (instance_from_named_context hyps) in
-      refine_no_check (mkApp (f, args)) gl)
+      let c = Goal.Refinable.make begin fun h ->
+        Goal.bind (Goal.Refinable.mkEvar h env newcl) begin fun ev ->
+          Goal.return (mkApp (ev, args))
+        end
+      end in
+      let c = Goal.bind c Goal.refine in
+      Proofview.tclSENSITIVE c
+    end
 
 let resolve_classes gl =
   let env = pf_env gl and evd = project gl in

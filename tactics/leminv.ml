@@ -294,7 +294,7 @@ let lemInvIn id c ids =
       else
         (Tacticals.New.tclTHEN (Tacticals.New.tclDO nb_of_new_hyp intro) (intros_replacing ids))
     in
-    ((Tacticals.New.tclTHEN (Proofview.V82.tactic (tclTHEN (bring_hyps hyps) (lemInv id c)))
+    ((Tacticals.New.tclTHEN (Tacticals.New.tclTHEN (bring_hyps hyps) (Proofview.V82.tactic (lemInv id c)))
         (intros_replace_ids)))
   end
 
