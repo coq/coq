@@ -149,7 +149,7 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
   | RedExprArgType ->
       pr_red_expr (prc,prlc,pr_or_by_notation prref,prpat)
         (out_gen rawwit_red_expr x)
-  | OpenConstrArgType b -> prc (snd (out_gen (rawwit_open_constr_gen b) x))
+  | OpenConstrArgType (b1,b2) -> prc (snd (out_gen (rawwit_open_constr_gen (b1,b2)) x))
   | ConstrWithBindingsArgType ->
       pr_with_bindings prc prlc (out_gen rawwit_constr_with_bindings x)
   | BindingsArgType ->
@@ -195,7 +195,7 @@ let rec pr_glob_generic prc prlc prtac prpat x =
       pr_red_expr
         (prc,prlc,pr_or_var (pr_and_short_name pr_evaluable_reference),prpat)
         (out_gen globwit_red_expr x)
-  | OpenConstrArgType b -> prc (snd (out_gen (globwit_open_constr_gen b) x))
+  | OpenConstrArgType (b1,b2) -> prc (snd (out_gen (globwit_open_constr_gen (b1,b2)) x))
   | ConstrWithBindingsArgType ->
       pr_with_bindings prc prlc (out_gen globwit_constr_with_bindings x)
   | BindingsArgType ->
@@ -236,7 +236,7 @@ let rec pr_generic prc prlc prtac prpat x =
   | RedExprArgType ->
       pr_red_expr (prc,prlc,pr_evaluable_reference,prpat)
         (out_gen wit_red_expr x)
-  | OpenConstrArgType b -> prc (snd (out_gen (wit_open_constr_gen b) x))
+  | OpenConstrArgType (b1,b2) -> prc (snd (out_gen (wit_open_constr_gen (b1,b2)) x))
   | ConstrWithBindingsArgType ->
       let (c,b) = (out_gen wit_constr_with_bindings x).Evd.it in
       pr_with_bindings prc prlc (c,b)

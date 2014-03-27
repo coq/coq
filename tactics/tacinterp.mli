@@ -134,7 +134,8 @@ val interp_hyp :  interp_sign -> goal sigma -> identifier located -> identifier
 
 val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map -> glob_constr_and_expr Glob_term.bindings -> Evd.evar_map * constr Glob_term.bindings
 
-val interp_open_constr_with_bindings : interp_sign -> Environ.env -> Evd.evar_map -> 
+(* first arguments mean wTC (with type classes resolution) *)
+val interp_open_constr_with_bindings : bool -> interp_sign -> Environ.env -> Evd.evar_map -> 
   glob_constr_and_expr Glob_term.with_bindings -> Evd.evar_map * constr Glob_term.with_bindings
 
 (** Initial call for interpretation *)

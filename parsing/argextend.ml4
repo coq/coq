@@ -32,7 +32,7 @@ let rec make_rawwit loc = function
   | ConstrMayEvalArgType -> <:expr< Genarg.rawwit_constr_may_eval >>
   | QuantHypArgType -> <:expr< Genarg.rawwit_quant_hyp >>
   | RedExprArgType -> <:expr< Genarg.rawwit_red_expr >>
-  | OpenConstrArgType b -> <:expr< Genarg.rawwit_open_constr_gen $mlexpr_of_bool b$ >>
+  | OpenConstrArgType (b1,b2) -> <:expr< Genarg.rawwit_open_constr_gen ($mlexpr_of_bool b1$,$mlexpr_of_bool b2$) >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.rawwit_constr_with_bindings >>
   | BindingsArgType -> <:expr< Genarg.rawwit_bindings >>
   | List0ArgType t -> <:expr< Genarg.wit_list0 $make_rawwit loc t$ >>
@@ -62,7 +62,7 @@ let rec make_globwit loc = function
   | ConstrArgType -> <:expr< Genarg.globwit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.globwit_constr_may_eval >>
   | RedExprArgType -> <:expr< Genarg.globwit_red_expr >>
-  | OpenConstrArgType b -> <:expr< Genarg.globwit_open_constr_gen $mlexpr_of_bool b$ >>
+  | OpenConstrArgType (b1,b2) -> <:expr< Genarg.globwit_open_constr_gen ($mlexpr_of_bool b1$,$mlexpr_of_bool b2$) >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.globwit_constr_with_bindings >>
   | BindingsArgType -> <:expr< Genarg.globwit_bindings >>
   | List0ArgType t -> <:expr< Genarg.wit_list0 $make_globwit loc t$ >>
@@ -92,7 +92,7 @@ let rec make_wit loc = function
   | ConstrArgType -> <:expr< Genarg.wit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.wit_constr_may_eval >>
   | RedExprArgType -> <:expr< Genarg.wit_red_expr >>
-  | OpenConstrArgType b -> <:expr< Genarg.wit_open_constr_gen $mlexpr_of_bool b$ >>
+  | OpenConstrArgType (b1,b2) -> <:expr< Genarg.wit_open_constr_gen ($mlexpr_of_bool b1$,$mlexpr_of_bool b2$) >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.wit_constr_with_bindings >>
   | BindingsArgType -> <:expr< Genarg.wit_bindings >>
   | List0ArgType t -> <:expr< Genarg.wit_list0 $make_wit loc t$ >>

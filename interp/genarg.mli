@@ -183,9 +183,9 @@ val rawwit_constr_may_eval : ((constr_expr,reference or_by_notation,constr_expr)
 val globwit_constr_may_eval : ((glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) may_eval,glevel) abstract_argument_type
 val wit_constr_may_eval : (constr,tlevel) abstract_argument_type
 
-val rawwit_open_constr_gen : bool -> (open_constr_expr,rlevel) abstract_argument_type
-val globwit_open_constr_gen : bool -> (open_glob_constr,glevel) abstract_argument_type
-val wit_open_constr_gen : bool -> (open_constr,tlevel) abstract_argument_type
+val rawwit_open_constr_gen : bool * bool -> (open_constr_expr,rlevel) abstract_argument_type
+val globwit_open_constr_gen : bool * bool -> (open_glob_constr,glevel) abstract_argument_type
+val wit_open_constr_gen : bool * bool -> (open_constr,tlevel) abstract_argument_type
 
 val rawwit_open_constr : (open_constr_expr,rlevel) abstract_argument_type
 val globwit_open_constr : (open_glob_constr,glevel) abstract_argument_type
@@ -194,6 +194,10 @@ val wit_open_constr : (open_constr,tlevel) abstract_argument_type
 val rawwit_casted_open_constr : (open_constr_expr,rlevel) abstract_argument_type
 val globwit_casted_open_constr : (open_glob_constr,glevel) abstract_argument_type
 val wit_casted_open_constr : (open_constr,tlevel) abstract_argument_type
+
+val rawwit_open_constr_wTC : (open_constr_expr,rlevel) abstract_argument_type
+val globwit_open_constr_wTC : (open_glob_constr,glevel) abstract_argument_type
+val wit_open_constr_wTC : (open_constr,tlevel) abstract_argument_type
 
 val rawwit_constr_with_bindings : (constr_expr with_bindings,rlevel) abstract_argument_type
 val globwit_constr_with_bindings : (glob_constr_and_expr with_bindings,glevel) abstract_argument_type
@@ -280,7 +284,7 @@ type argument_type =
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
-  | OpenConstrArgType of bool
+  | OpenConstrArgType of bool * bool
   | ConstrWithBindingsArgType
   | BindingsArgType
   | RedExprArgType

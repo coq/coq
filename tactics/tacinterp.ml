@@ -967,9 +967,9 @@ and intern_genarg ist x =
         (intern_quantified_hypothesis ist (out_gen rawwit_quant_hyp x))
   | RedExprArgType ->
       in_gen globwit_red_expr (intern_red_expr ist (out_gen rawwit_red_expr x))
-  | OpenConstrArgType b ->
-      in_gen (globwit_open_constr_gen b)
-        ((),intern_constr ist (snd (out_gen (rawwit_open_constr_gen b) x)))
+  | OpenConstrArgType (b1,b2) ->
+      in_gen (globwit_open_constr_gen (b1,b2))
+        ((),intern_constr ist (snd (out_gen (rawwit_open_constr_gen (b1,b2)) x)))
   | ConstrWithBindingsArgType ->
       in_gen globwit_constr_with_bindings
         (intern_constr_with_bindings ist (out_gen rawwit_constr_with_bindings x))
@@ -1290,8 +1290,11 @@ let interp_type = interp_constr_gen IsType
 let interp_open_constr_gen kind ist =
   interp_gen kind ist false true false false
 
-let interp_open_constr ccl ist =
-  interp_gen (OfType ccl) ist false true false (ccl<>None)
+(* wTC is for retrocompatibility: TC resolution started only if needed *)
+let interp_open_constr ccl wTC ist e s t =
+  try interp_gen (OfType ccl) ist false true false (ccl<>None) e s t
+  with ex when Pretype_errors.precatchable_exception ex && ccl = None && wTC ->
+    interp_gen (OfType ccl) ist false true false true e s t
 
 let interp_pure_open_constr ist =
   interp_gen (OfType None) ist false false false false
@@ -1333,7 +1336,7 @@ let interp_constr_list ist env sigma c =
 
 let interp_open_constr_list =
   interp_constr_in_compound_list (fun x -> x) (fun x -> x)
-    (interp_open_constr None)
+    (interp_open_constr None false)
 
 let interp_auto_lemmas ist env sigma lems =
   let local_sigma, lems = interp_open_constr_list ist env sigma lems in
@@ -1526,7 +1529,7 @@ let interp_declared_or_quantified_hypothesis ist gl = function
       with Not_found -> NamedHyp id
 
 let interp_binding ist env sigma (loc,b,c) =
-  let sigma, c = interp_open_constr None ist env sigma c in
+  let sigma, c = interp_open_constr None false ist env sigma c in
   sigma, (loc,interp_binding_name ist b,c)
 
 let interp_bindings ist env sigma = function
@@ -1541,12 +1544,12 @@ let interp_bindings ist env sigma = function
 
 let interp_constr_with_bindings ist env sigma (c,bl) =
   let sigma, bl = interp_bindings ist env sigma bl in
-  let sigma, c = interp_open_constr None ist env sigma c in
+  let sigma, c = interp_open_constr None false ist env sigma c in
   sigma, (c,bl)
 
-let interp_open_constr_with_bindings ist env sigma (c,bl) =
+let interp_open_constr_with_bindings wTC ist env sigma (c,bl) =
   let sigma, bl = interp_bindings ist env sigma bl in
-  let sigma, c = interp_open_constr None ist env sigma c in
+  let sigma, c = interp_open_constr None wTC ist env sigma c in
   sigma, (c, bl)
 
 let loc_of_bindings = function
@@ -1554,11 +1557,11 @@ let loc_of_bindings = function
 | ImplicitBindings l -> loc_of_glob_constr (fst (list_last l))
 | ExplicitBindings l -> pi1 (list_last l)
 
-let interp_open_constr_with_bindings_loc ist env sigma ((c,_),bl as cb) =
+let interp_open_constr_with_bindings_loc wTC ist env sigma ((c,_),bl as cb) =
   let loc1 = loc_of_glob_constr c in
   let loc2 = loc_of_bindings bl in
   let loc = if loc2 = dummy_loc then loc1 else join_loc loc1 loc2 in
-  let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
+  let sigma, cb = interp_open_constr_with_bindings wTC ist env sigma cb in
   sigma, (loc,cb)
 
 let interp_induction_arg ist gl arg =
@@ -1754,8 +1757,8 @@ let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
 let mk_constr_value ist gl c =
   let (sigma,c_interp) = pf_interp_constr ist gl c in
   sigma,VConstr ([],c_interp)
-let mk_open_constr_value ist gl c = 
-  let (sigma,c_interp) = pf_apply (interp_open_constr None ist) gl c in
+let mk_open_constr_value wTC ist gl c = 
+  let (sigma,c_interp) = pf_apply (interp_open_constr None wTC ist) gl c in
   sigma,VConstr ([],c_interp)
 let mk_hyp_value ist gl c = VConstr ([],mkVar (interp_hyp ist gl c))
 let mk_int_or_var_value ist c = VInteger (interp_int_or_var ist c)
@@ -2132,11 +2135,11 @@ and interp_genarg ist gl x =
       let (sigma,r_interp) = pf_interp_red_expr ist gl (out_gen globwit_red_expr x) in
       evdref := sigma;
       in_gen wit_red_expr r_interp
-    | OpenConstrArgType casted ->
-      in_gen (wit_open_constr_gen casted)
-        (interp_open_constr (if casted then Some (pf_concl gl) else None)
+    | OpenConstrArgType (casted,wTC) ->
+      in_gen (wit_open_constr_gen (casted,wTC))
+        (interp_open_constr (if casted then Some (pf_concl gl) else None) wTC
            ist (pf_env gl) (project gl)
-           (snd (out_gen (globwit_open_constr_gen casted) x)))
+           (snd (out_gen (globwit_open_constr_gen (casted,wTC)) x)))
     | ConstrWithBindingsArgType ->
       in_gen wit_constr_with_bindings
         (pack_sigma (interp_constr_with_bindings ist (pf_env gl) (project gl)
@@ -2332,7 +2335,7 @@ and interp_atomic ist gl tac =
 	(h_vm_cast_no_check c_interp)
   | TacApply (a,ev,cb,cl) ->
       let sigma, l =
-        list_fold_map (interp_open_constr_with_bindings_loc ist env) sigma cb
+        list_fold_map (interp_open_constr_with_bindings_loc true ist env) sigma cb
       in
       let tac = match cl with
         | None -> h_apply a ev
@@ -2547,7 +2550,7 @@ and interp_atomic ist gl tac =
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
       let l = List.map (fun (b,m,c) ->
-        let f env sigma = interp_open_constr_with_bindings ist env sigma c in
+        let f env sigma = interp_open_constr_with_bindings false ist env sigma c in
 	(b,m,f)) l in
       let cl = interp_clause ist gl cl in
       Equality.general_multi_multi_rewrite ev l cl
@@ -2610,8 +2613,12 @@ and interp_atomic ist gl tac =
         let (sigma,v) = mk_constr_value ist gl (out_gen globwit_constr x) in
 	evdref := sigma;
 	v
-    | OpenConstrArgType false ->
-        let (sigma,v) = mk_open_constr_value ist gl (snd (out_gen globwit_open_constr x)) in
+    | OpenConstrArgType (false,true) ->
+        let (sigma,v) = mk_open_constr_value true ist gl (snd (out_gen globwit_open_constr_wTC x)) in
+	evdref := sigma;
+	v
+    | OpenConstrArgType (false,false) ->
+        let (sigma,v) = mk_open_constr_value false ist gl (snd (out_gen globwit_open_constr x)) in
 	evdref := sigma;
 	v
     | ConstrMayEvalArgType ->
@@ -3013,9 +3020,9 @@ and subst_genarg subst (x:glob_generic_argument) =
           (out_gen globwit_quant_hyp x))
   | RedExprArgType ->
       in_gen globwit_red_expr (subst_redexp subst (out_gen globwit_red_expr x))
-  | OpenConstrArgType b ->
-      in_gen (globwit_open_constr_gen b)
-        ((),subst_glob_constr subst (snd (out_gen (globwit_open_constr_gen b) x)))
+  | OpenConstrArgType (b1,b2) ->
+      in_gen (globwit_open_constr_gen (b1,b2))
+        ((),subst_glob_constr subst (snd (out_gen (globwit_open_constr_gen (b1,b2)) x)))
   | ConstrWithBindingsArgType ->
       in_gen globwit_constr_with_bindings
         (subst_glob_with_bindings subst (out_gen globwit_constr_with_bindings x))

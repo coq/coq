@@ -32,7 +32,7 @@ type argument_type =
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
-  | OpenConstrArgType of bool
+  | OpenConstrArgType of bool * bool (* casted, TC resolution *)
   | ConstrWithBindingsArgType
   | BindingsArgType
   | RedExprArgType
@@ -156,17 +156,21 @@ let rawwit_constr_may_eval = ConstrMayEvalArgType
 let globwit_constr_may_eval = ConstrMayEvalArgType
 let wit_constr_may_eval = ConstrMayEvalArgType
 
-let rawwit_open_constr_gen b = OpenConstrArgType b
-let globwit_open_constr_gen b = OpenConstrArgType b
-let wit_open_constr_gen b = OpenConstrArgType b
+let rawwit_open_constr_gen (b1,b2) = OpenConstrArgType (b1,b2)
+let globwit_open_constr_gen (b1,b2) = OpenConstrArgType (b1,b2)
+let wit_open_constr_gen (b1,b2) = OpenConstrArgType (b1,b2)
 
-let rawwit_open_constr = rawwit_open_constr_gen false
-let globwit_open_constr = globwit_open_constr_gen false
-let wit_open_constr = wit_open_constr_gen false
+let rawwit_open_constr = rawwit_open_constr_gen (false,false)
+let globwit_open_constr = globwit_open_constr_gen (false,false)
+let wit_open_constr = wit_open_constr_gen (false,false)
 
-let rawwit_casted_open_constr = rawwit_open_constr_gen true
-let globwit_casted_open_constr = globwit_open_constr_gen true
-let wit_casted_open_constr = wit_open_constr_gen true
+let rawwit_casted_open_constr = rawwit_open_constr_gen (true,false)
+let globwit_casted_open_constr = globwit_open_constr_gen (true,false)
+let wit_casted_open_constr = wit_open_constr_gen (true,false)
+
+let rawwit_open_constr_wTC = rawwit_open_constr_gen (false,true)
+let globwit_open_constr_wTC = globwit_open_constr_gen (false,true)
+let wit_open_constr_wTC = wit_open_constr_gen (false,true)
 
 let rawwit_constr_with_bindings = ConstrWithBindingsArgType
 let globwit_constr_with_bindings = ConstrWithBindingsArgType

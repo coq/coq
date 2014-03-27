@@ -380,9 +380,11 @@ module Tactic =
     (* Entries that can be refered via the string -> Gram.entry table *)
     (* Typically for tactic user extensions *)
     let open_constr =
-      make_gen_entry utactic (rawwit_open_constr_gen false) "open_constr"
+      make_gen_entry utactic (rawwit_open_constr_gen (false,false)) "open_constr"
     let casted_open_constr =
-      make_gen_entry utactic (rawwit_open_constr_gen true) "casted_open_constr"
+      make_gen_entry utactic (rawwit_open_constr_gen (true,false)) "casted_open_constr"
+    let open_constr_wTC =
+      make_gen_entry utactic (rawwit_open_constr_gen (false,true)) "open_constr_wTC"
     let constr_with_bindings =
       make_gen_entry utactic rawwit_constr_with_bindings "constr_with_bindings"
     let bindings =

@@ -1,3 +1,13 @@
+Changes from V8.4pl4 to V8.4pl5
+===============================
+
+Tactics
+
+- The interpretation of the open_constr tactic argument was erroneously
+  firing type classes resolution in some corner cases.  This has been
+  fixed.  The tactic argument type open_constr_wTC is provided for retro
+  compatibility purposes. 
+
 Changes from V8.4pl3 to V8.4pl4
 ===============================
 
