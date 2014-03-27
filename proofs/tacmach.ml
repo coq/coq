@@ -274,6 +274,7 @@ module New = struct
   let pf_matches gl pat t = pf_apply ConstrMatching.matches_conv gl pat t
 
   let pf_whd_betadeltaiota gl t = pf_apply whd_betadeltaiota gl t
+  let pf_compute gl t = pf_apply compute gl t
 
   let pf_nf_evar gl t = nf_evar (Proofview.Goal.sigma gl) t
 

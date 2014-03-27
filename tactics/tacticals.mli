@@ -195,7 +195,7 @@ module New : sig
      THIS MODULE. *)
   val tclFAIL : int -> Pp.std_ppcmds -> 'a tactic
 
-  val tclZEROMSG : Pp.std_ppcmds -> unit tactic
+  val tclZEROMSG : Pp.std_ppcmds -> 'a tactic
   (** Fail with a [User_Error] containing the given message. *)
 
   val tclOR : unit tactic -> unit tactic -> unit tactic

@@ -152,6 +152,7 @@ module New : sig
   val pf_hnf_type_of : 'a Proofview.Goal.t -> constr -> types
 
   val pf_whd_betadeltaiota : 'a Proofview.Goal.t -> constr -> constr
+  val pf_compute : 'a Proofview.Goal.t -> constr -> constr
 
   val pf_matches : 'a Proofview.Goal.t -> constr_pattern -> constr -> patvar_map
 
