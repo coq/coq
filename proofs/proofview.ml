@@ -771,6 +771,9 @@ module V82 = struct
 
 end
 
+type goal = Goal.goal
+let build_goal = Goal.build
+let partial_solution = Goal.V82.partial_solution
 
 module Goal = struct
 
@@ -849,6 +852,27 @@ module Goal = struct
   let refresh_sigma g =
     tclEVARMAP >>= fun sigma ->
     tclUNIT { g with sigma }
+
+end
+
+module Refine =
+struct
+  type handle = Evd.evar_map * goal list
+
+  let new_evar (evd, evs) env typ =
+    let (evd, ev) = Evarutil.new_evar evd env typ in
+    let (evk, _) = Term.destEvar ev in
+    let h = (evd, build_goal evk :: evs) in
+    (h, ev)
+
+  let refine f = Goal.raw_enter begin fun gl ->
+    let sigma = Goal.sigma gl in
+    let handle = (sigma, []) in
+    let ((sigma, evs), c) = f handle in
+    let sigma = partial_solution sigma gl.Goal.self c in
+    Proof.get >>= fun start ->
+    Proof.set { start with solution = sigma; comb = List.rev evs; }
+  end
 
 end
 

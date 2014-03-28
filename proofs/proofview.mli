@@ -376,6 +376,24 @@ module Goal : sig
   val refresh_sigma : 'a t -> 'a t tactic
 end
 
+(** A light interface for building tactics out of partial term. It should be
+    easier to use than the {!Goal} one. *)
+module Refine : sig
+
+  type handle
+  (** A handle to thread along in state-passing style. *)
+
+  val new_evar : handle -> Environ.env -> Constr.types -> handle * Constr.t
+  (** Create a new hole that will be added to the goals to solve. *)
+
+  val refine : (handle -> handle * Constr.t) -> unit tactic
+  (** Given a term with holes that have been generated through {!new_evar}, this
+      function fills the current hole with the given constr and creates goals
+      for all the holes in their generation order. Exceptions raised by the
+      function are caught. *)
+
+end
+
 (* The [NonLogical] module allows to execute side effects in tactics
    (non-logical side-effects are not discarded at failures). *)
 module NonLogical : sig
