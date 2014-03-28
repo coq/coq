@@ -679,13 +679,10 @@ let bring_hyps hyps =
       let concl = Proofview.Goal.concl gl in
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps concl in
       let args = Array.of_list (instance_from_named_context hyps) in
-      let c = Goal.Refinable.make begin fun h ->
-        Goal.bind (Goal.Refinable.mkEvar h env newcl) begin fun ev ->
-          Goal.return (mkApp (ev, args))
-        end
-      end in
-      let c = Goal.bind c Goal.refine in
-      Proofview.tclSENSITIVE c
+      Proofview.Refine.refine begin fun h ->
+        let (h, ev) = Proofview.Refine.new_evar h env newcl in
+        (h, (mkApp (ev, args)))
+      end
     end
 
 let resolve_classes gl =
@@ -718,16 +715,12 @@ let cut c =
       let id = next_name_away_with_default "H" Anonymous (Tacmach.New.pf_ids_of_hyps gl) in
       (** Backward compat: normalize [c]. *)
       let c = local_strong whd_betaiota sigma c in
-      let c = Goal.Refinable.make begin fun h ->
-        let f = Goal.Refinable.mkEvar h env (mkArrow c (Vars.lift 1 concl)) in
-        let x = Goal.Refinable.mkEvar h env c in
-        Goal.bind f (fun f -> Goal.bind x (fun x ->
-          let f = mkLambda (Name id, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
-          Goal.return (mkApp (f, [|x|]))
-        ))
-      end in
-      let r = Goal.bind c Goal.refine in
-      Proofview.tclSENSITIVE r
+      Proofview.Refine.refine begin fun h ->
+        let (h, f) = Proofview.Refine.new_evar h env (mkArrow c (Vars.lift 1 concl)) in
+        let (h, x) = Proofview.Refine.new_evar h env c in
+        let f = mkLambda (Name id, c, mkApp (Vars.lift 1 f, [|mkRel 1|])) in
+        (h, mkApp (f, [|x|]))
+      end
     else
       Tacticals.New.tclZEROMSG (str "Not a proposition or a type.")
   end
@@ -1203,10 +1196,7 @@ let assumption =
         let env = Proofview.Goal.env gl in
         is_conv_leq env sigma t concl
     in
-    if is_same_type then
-      let c = Goal.Refinable.make (fun _ -> Goal.return (mkVar id)) in
-      let r = Goal.bind c Goal.refine in
-      Proofview.tclSENSITIVE r
+    if is_same_type then Proofview.Refine.refine (fun h -> (h, mkVar id))
     else arec gl only_eq rest
   in
   let assumption_tac gl =
