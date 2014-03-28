@@ -463,7 +463,7 @@ let rec parse = function
   | "-suffix" :: s :: ll -> suffixe := s ; parse ll
   | "-suffix" :: [] -> usage ()
   | "-slash" :: ll ->
-    Printf.eprintf "warning: option -slash has no effect and is deprecated.";
+    Printf.eprintf "warning: option -slash has no effect and is deprecated.\n";
     parse ll
   | ("-h"|"--help"|"-help") :: _ -> usage ()
   | f :: ll -> treat_file None f; parse ll
