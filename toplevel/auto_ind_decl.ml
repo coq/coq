@@ -584,7 +584,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)
                     Tacticals.New.tclREPEAT (
                       Tacticals.New.tclTHENLIST [
-                         simple_apply_in freshz (andb_prop());
+                         apply_in false false freshz [Loc.ghost, (andb_prop(), NoBindings)] None;
                          Proofview.Goal.enter begin fun gl ->
                            let fresht = fresh_id (Id.of_string "Z") gl in
                             (new_destruct false [Tacexpr.ElimOnConstr

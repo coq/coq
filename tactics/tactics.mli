@@ -26,7 +26,6 @@ open Locus
 
 (** {6 General functions. } *)
 
-val string_of_inductive : constr -> string
 val head_constr       : constr -> constr * constr list
 val head_constr_bound : constr -> constr * constr list
 val is_quantified_hypothesis : Id.t -> goal sigma -> bool
@@ -75,7 +74,6 @@ val intros               : unit Proofview.tactic
 val depth_of_quantified_hypothesis :
   bool -> quantified_hypothesis -> goal sigma -> int
 
-val intros_until_n_wored : int -> unit Proofview.tactic
 val intros_until         : quantified_hypothesis -> unit Proofview.tactic
 
 val intros_clearing      : bool list -> unit Proofview.tactic
@@ -159,7 +157,6 @@ val unfold_constr     : global_reference -> tactic
 val clear         : Id.t list -> tactic
 val clear_body    : Id.t list -> tactic
 val keep          : Id.t list -> tactic
-val clear_if_overwritten : constr -> intro_pattern_expr located list -> tactic
 
 val specialize    : int option -> constr with_bindings -> tactic
 
@@ -189,8 +186,6 @@ val apply_in :
   advanced_flag -> evars_flag -> Id.t -> 
     constr with_bindings located list ->
     intro_pattern_expr located option -> unit Proofview.tactic
-
-val simple_apply_in : Id.t -> constr -> unit Proofview.tactic
 
 (** {6 Elimination tactics. } *)
 
@@ -243,7 +238,6 @@ type elim_scheme = {
 
 
 val compute_elim_sig : ?elimc: constr with_bindings -> types -> elim_scheme
-val rebuild_elimtype_from_scheme: elim_scheme -> types
 
 (** elim principle with the index of its inductive arg *)
 type eliminator = {
@@ -303,16 +297,6 @@ val induction_destruct : rec_flag -> evars_flag ->
 
 val case_type         : constr  -> tactic
 val elim_type         : constr  -> tactic
-
-(** {6 Some eliminations which are frequently used. } *)
-
-val impE : Id.t -> unit Proofview.tactic
-val andE : Id.t -> unit Proofview.tactic
-val orE  : Id.t -> unit Proofview.tactic
-val dImp : clause -> unit Proofview.tactic
-val dAnd : clause -> unit Proofview.tactic
-val dorE : bool -> clause -> unit Proofview.tactic
-
 
 (** {6 Introduction tactics. } *)
 

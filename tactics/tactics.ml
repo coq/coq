@@ -107,14 +107,6 @@ let finish_evar_resolution env initial_sigma (sigma,c) =
 (* General functions                    *)
 (****************************************)
 
-let string_of_inductive c =
-  try match kind_of_term c with
-  | Ind ind_sp ->
-      let (mib,mip) = Global.lookup_inductive ind_sp in
-      Id.to_string mip.mind_typename
-  | _ -> raise Bound
-  with Bound -> error "Bound head variable."
-
 let head_constr_bound t =
   let t = strip_outer_cast t in
   let _,ccl = decompose_prod_assum t in
@@ -609,7 +601,6 @@ let intros_until_n_gen red n = intros_until_gen red (AnonHyp n)
 
 let intros_until = intros_until_gen true
 let intros_until_n = intros_until_n_gen true
-let intros_until_n_wored = intros_until_n_gen false
 
 let tclCHECKVAR id gl = ignore (pf_get_hyp gl id); tclIDTAC gl
 
@@ -1599,11 +1590,6 @@ let allow_replace c = function (* A rather arbitrary condition... *)
   | _ ->
       None
 
-let clear_if_overwritten c ipats =
-  match List.map_filter (fun ipat -> allow_replace c (Some ipat)) ipats with
-  | [id] -> thin [id]
-  | _ -> tclIDTAC
-
 let assert_as first ipat c =
   Proofview.Goal.raw_enter begin fun gl ->
   let hnf_type_of = Tacmach.New.pf_hnf_type_of gl in
@@ -1664,9 +1650,6 @@ let general_apply_in sidecond_first with_delta with_destruct with_evars
 
 let apply_in simple with_evars id lemmas ipat =
   general_apply_in false simple simple with_evars id lemmas ipat
-
-let simple_apply_in id c =
-  general_apply_in false false false false id [dloc,(c,NoBindings)] None
 
 (**************************)
 (*   Generalize tactics   *)
@@ -1746,13 +1729,10 @@ let generalize_gen lconstr =
 let generalize l =
   generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
 
-let pf_get_hyp_val gl id =
-  let (_, b, _) = pf_get_hyp gl id in
-    b
-
 let revert hyps gl = 
   let lconstr = List.map (fun id -> 
-    ((AllOccurrences, mkVar id, pf_get_hyp_val gl id), Anonymous))
+    let (_, b, _) = pf_get_hyp gl id in
+    ((AllOccurrences, mkVar id, b), Anonymous))
     hyps 
   in tclTHEN (generalize_gen_let lconstr) (clear hyps) gl
 
@@ -1811,61 +1791,6 @@ let occurrences_of_goal cls =
   else Some (occurrences_map (List.map out_arg) cls.concl_occs)
 
 let in_every_hyp cls = Option.is_empty cls.onhyps
-
-(*
-(* Implementation with generalisation then re-intro: introduces noise *)
-(* in proofs *)
-
-let letin_abstract id c occs gl =
-  let env = pf_env gl in
-  let compute_dependency _ (hyp,_,_ as d) ctxt =
-    let d' =
-      try
-	match occurrences_of_hyp hyp occs with
-	  | None -> raise Not_found
-	  | Some occ ->
-              let newdecl = subst_term_occ_decl occ c d in
-              if occ = [] & d = newdecl then
-		if not (in_every_hyp occs)
-		then raise (RefinerError (DoesNotOccurIn (c,hyp)))
-		else raise Not_found
-              else
-		(subst1_named_decl (mkVar id) newdecl, true)
-	with Not_found ->
-	  (d,List.exists
-	      (fun ((id,_,_),dep) -> dep && occur_var_in_decl env id d) ctxt)
-    in d'::ctxt
-  in
-  let ctxt' = fold_named_context compute_dependency env ~init:[] in
-  let compute_marks ((depdecls,marks as accu),lhyp) ((hyp,_,_) as d,b) =
-    if b then ((d::depdecls,(hyp,lhyp)::marks), lhyp)
-    else (accu, Some hyp) in
-  let (depdecls,marks),_ = List.fold_left compute_marks (([],[]),None) ctxt' in
-  let ccl = match occurrences_of_goal occs with
-    | None -> pf_concl gl
-    | Some occ -> subst1 (mkVar id) (subst_term_occ occ c (pf_concl gl))
-  in
-  (depdecls,marks,ccl)
-
-let letin_tac with_eq name c occs gl =
-  let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
-  let id =
-    if name = Anonymous then fresh_id [] x gl else
-      if not (mem_named_context x (pf_hyps gl)) then x else
-	error ("The variable "^(Id.to_string x)^" is already declared") in
-  let (depdecls,marks,ccl)= letin_abstract id c occs gl in
-  let t = pf_type_of gl c in
-  let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
-  let args = instance_from_named_context depdecls in
-  let newcl = mkNamedLetIn id c t tmpcl in
-  let lastlhyp = if marks=[] then None else snd (List.hd marks) in
-  tclTHENLIST
-    [ apply_type newcl args;
-      thin (List.map (fun (id,_,_) -> id) depdecls);
-      intro_gen (IntroMustBe id) lastlhyp false;
-      if with_eq then tclIDTAC else thin_body [id];
-      intros_move marks ] gl
-*)
 
 (* Implementation without generalisation: abbrev will be lost in hyps in *)
 (* in the extracted proof *)
@@ -2856,24 +2781,6 @@ let decompose_paramspred_branch_args elimt =
 let exchange_hd_app subst_hd t =
   let hd,args= decompose_app t in mkApp (subst_hd,Array.of_list args)
 
-
-
-(* [rebuild_elimtype_from_scheme scheme] rebuilds the type of an
-   eliminator from its [scheme_info]. The idea is to build variants of
-   eliminator by modifying their scheme_info, then rebuild the
-   eliminator type, then prove it (with tactics). *)
-let rebuild_elimtype_from_scheme (scheme:elim_scheme): types =
-  let hiconcl =
-    match scheme.indarg with
-      | None -> scheme.concl
-      | Some x -> mkProd_or_LetIn x scheme.concl in
-  let xihiconcl = it_mkProd_or_LetIn hiconcl scheme.args in
-  let brconcl = it_mkProd_or_LetIn xihiconcl scheme.branches in
-  let predconcl = it_mkProd_or_LetIn brconcl scheme.predicates in
-  let paramconcl = it_mkProd_or_LetIn predconcl scheme.params in
-  paramconcl
-
-
 (* Builds an elim_scheme from its type and calling form (const+binding). We
    first separate branches.  We obtain branches, hyps before (params + preds),
    hyps after (args <+ indarg if present>) and conclusion.  Then we proceed as
@@ -3528,78 +3435,6 @@ let case_type t gl =
   let elimc = pf_apply build_case_analysis_scheme_default gl ind (elimination_sort_of_goal gl) in
   elim_scheme_type elimc t gl
 
-
-(* Some eliminations frequently used *)
-
-(* These elimination tactics are particularly adapted for sequent
-   calculus.  They take a clause as argument, and yield the
-   elimination rule if the clause is of the form (Some id) and a
-   suitable introduction rule otherwise. They do not depend on
-   the name of the eliminated constant, so they can be also
-   used on ad-hoc disjunctions and conjunctions introduced by
-   the user.
-   -- Eduardo Gimenez (11/8/97)
-
-   HH (29/5/99) replaces failures by specific error messages
- *)
-
-let andE id =
-  Proofview.Goal.enter begin fun gl ->
-  let t = Tacmach.New.pf_get_hyp_typ id gl in
-  let hnf_constr = Tacmach.New.of_old pf_hnf_constr gl in
-  if is_conjunction (hnf_constr t) then
-    (Tacticals.New.tclTHEN (simplest_elim (mkVar id)) (Tacticals.New.tclDO 2 intro))
-  else
-    Proofview.tclZERO (Errors.UserError (
-      "andE" , (str("Tactic andE expects "^(Id.to_string id)^" is a conjunction."))))
-  end
-
-let dAnd cls =
-  Tacticals.New.onClause
-    (function
-      | None    -> simplest_split
-      | Some id -> andE id)
-    cls
-
-let orE id =
-  Proofview.Goal.enter begin fun gl ->
-  let t = Tacmach.New.pf_get_hyp_typ id gl in
-  let hnf_constr = Tacmach.New.of_old pf_hnf_constr gl in
-  if is_disjunction (hnf_constr t) then
-    (Tacticals.New.tclTHEN (simplest_elim (mkVar id)) intro)
-  else
-    Proofview.tclZERO (Errors.UserError (
-      "orE" , (str("Tactic orE expects "^(Id.to_string id)^" is a disjunction."))))
-  end
-
-let dorE b cls =
-  Tacticals.New.onClause
-    (function
-      | Some id -> orE id
-      | None    -> (if b then right else left) NoBindings)
-    cls
-
-let impE id =
-  Proofview.Goal.enter begin fun gl ->
-  let t = Tacmach.New.pf_get_hyp_typ id gl in
-  let hnf_constr = Tacmach.New.of_old pf_hnf_constr gl in
-  if is_imp_term (hnf_constr t) then
-    let (dom, _, rng) = destProd (hnf_constr t) in
-    Tacticals.New.tclTHENLAST
-      (cut_intro rng)
-      (Proofview.V82.tactic (apply_term (mkVar id) [mkMeta (new_meta())]))
-  else
-    Proofview.tclZERO (Errors.UserError (
-      "impE" , (str("Tactic impE expects "^(Id.to_string id)^
-	      " is a an implication."))))
-  end
-
-let dImp cls =
-  Tacticals.New.onClause
-    (function
-      | None    -> intro
-      | Some id -> impE id)
-    cls
 
 (************************************************)
 (*  Tactics related with logic connectives      *)
