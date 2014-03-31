@@ -27,8 +27,6 @@ let refiner pr goal_sigma =
   let (sgl,sigma') = prim_refiner pr goal_sigma.sigma goal_sigma.it in
   { it = sgl; sigma = sigma'; }
 
-let norm_evar_tac gl = refiner (Change_evars) gl
-
 (*********************)
 (*   Tacticals       *)
 (*********************)
@@ -46,9 +44,6 @@ let apply_sig_tac r tac g =
 
 (* [goal_goal_list : goal sigma -> goal list sigma] *)
 let goal_goal_list gls = {it=[gls.it]; sigma=gls.sigma; }
-
-(* forces propagation of evar constraints *)
-let tclNORMEVAR = norm_evar_tac
 
 (* identity tactic without any message *)
 let tclIDTAC gls = goal_goal_list gls

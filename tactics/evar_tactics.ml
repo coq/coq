@@ -17,7 +17,8 @@ open Locus
 
 (* The instantiate tactic *)
 
-let instantiate n (ist,rawc) ido gl =
+let instantiate_tac n (ist,rawc) ido =
+  Proofview.V82.tactic begin fun gl ->
   let sigma = gl.sigma in
   let evl =
     match ido with
@@ -44,14 +45,12 @@ let instantiate n (ist,rawc) ido gl =
     let filtered = Evd.evar_filtered_env evi in
     let constrvars = Tacinterp.extract_ltac_constr_values ist filtered in
     let sigma' = w_refine (evk,evi) ((constrvars, ist.Geninterp.lfun),rawc) sigma in
-      tclTHEN
-        (tclEVARS sigma')
-        tclNORMEVAR
-        gl
+    tclEVARS sigma' gl
+  end
 
 let let_evar name typ =
   let src = (Loc.ghost,Evar_kinds.GoalEvar) in
-  Proofview.Goal.enter begin fun gl ->
+  Proofview.Goal.raw_enter begin fun gl ->
     let sigma = Proofview.Goal.sigma gl in
     let env = Proofview.Goal.env gl in
     let sigma',evar = Evarutil.new_evar sigma env ~src typ in

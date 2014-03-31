@@ -23,7 +23,6 @@ open Misctypes
 (* Tacticals re-exported from the Refiner module                        *)
 (************************************************************************)
 
-let tclNORMEVAR      = Refiner.tclNORMEVAR
 let tclIDTAC         = Refiner.tclIDTAC
 let tclIDTAC_MESSAGE = Refiner.tclIDTAC_MESSAGE
 let tclORELSE0       = Refiner.tclORELSE0

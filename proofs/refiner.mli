@@ -27,9 +27,6 @@ val refiner : rule -> tactic
 
 (** {6 Tacticals. } *)
 
-(** [tclNORMEVAR] forces propagation of evar constraints *)
-val tclNORMEVAR       : tactic
-
 (** [tclIDTAC] is the identity tactic without message printing*)
 val tclIDTAC          : tactic
 val tclIDTAC_MESSAGE  : Pp.std_ppcmds -> tactic

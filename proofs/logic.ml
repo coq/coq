@@ -713,8 +713,3 @@ let prim_refiner r sigma goal =
 	let ev = Vars.replace_vars [(id2,mkVar id1)] ev in
 	let sigma = Goal.V82.partial_solution sigma goal ev in
           ([gl], sigma)
-
-    | Change_evars ->
-	(* Normalises evars in goals. Used by instantiate. *)
-        let (goal,sigma) = Goal.V82.nf_evar sigma goal in
-	([goal],sigma)

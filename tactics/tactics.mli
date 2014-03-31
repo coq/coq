@@ -357,7 +357,6 @@ val generalize_gen  : ((occurrences * constr) * Name.t) list -> tactic
 val generalize_dep  : ?with_let:bool (** Don't lose let bindings *) -> constr  -> tactic
 
 val unify           : ?state:Names.transparent_state -> constr -> constr -> tactic
-val resolve_classes : tactic
 
 val tclABSTRACT : Id.t option -> unit Proofview.tactic -> tactic
 

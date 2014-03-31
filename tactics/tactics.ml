@@ -676,13 +676,6 @@ let bring_hyps hyps =
       end
     end
 
-let resolve_classes gl =
-  let env = pf_env gl and evd = project gl in
-    if Evd.is_empty evd then tclIDTAC gl
-    else
-      let evd' = Typeclasses.resolve_typeclasses env evd in
-	(tclTHEN (tclEVARS evd') tclNORMEVAR) gl
-
 (**************************)
 (*     Cut tactics        *)
 (**************************)
