@@ -838,6 +838,8 @@ struct
   let new_evar (evd, evs) env typ =
     let src = (Loc.ghost, Evar_kinds.GoalEvar) in
     let (evd, ev) = Evarutil.new_evar evd env ~src typ in
+    let evd = Typeclasses.mark_unresolvables 
+      ~filter:(fun ev' _ -> Evar.equal (fst (Term.destEvar ev)) ev') evd in
     let (evk, _) = Term.destEvar ev in
     let h = (evd, build_goal evk :: evs) in
     (h, ev)

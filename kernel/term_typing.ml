@@ -146,7 +146,7 @@ let infer_declaration env kn dcl =
       let { const_entry_type = typ; const_entry_opaque = opaque } = c in
       let { const_entry_body = body; const_entry_feedback = feedback_id } = c in
       let (body, ctx), side_eff = Future.join body in
-      let env = push_context_set ctx env in
+      assert(Univ.ContextSet.is_empty ctx);
       let body = handle_side_effects env body side_eff in
       let def, typ, proj = 
 	match c.const_entry_proj with
@@ -172,9 +172,7 @@ let infer_declaration env kn dcl =
 	  let def = Def (Mod_subst.from_val j.uj_val) in
 	    def, typ, None
       in
-      let univs = Univ.UContext.union c.const_entry_universes 
-	(Univ.ContextSet.to_context ctx)
-      in
+      let univs = c.const_entry_universes in
 	feedback_completion_typecheck feedback_id;
 	def, typ, proj, c.const_entry_polymorphic,
         univs, c.const_entry_inline_code, c.const_entry_secctx

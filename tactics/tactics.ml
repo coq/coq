@@ -3720,7 +3720,7 @@ let interpretable_as_section_decl d1 d2 = match d2,d1 with
   | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr b1 b2 && eq_constr t1 t2
   | (_,None,t1), (_,_,t2) -> eq_constr t1 t2
 
-let abstract_subproof id tac =
+let abstract_subproof id gk tac =
   let open Tacticals.New in
   let open Tacmach.New in
   let open Proofview.Notations in
@@ -3749,8 +3749,8 @@ let abstract_subproof id tac =
       evd, ctx, nf concl
   in
   let solve_tac = tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac) in
-  let (const, safe, subst) =
-    try Pfedit.build_constant_by_tactic id secsign (concl, ctx) solve_tac
+  let (const, safe, (subst, ctx)) =
+    try Pfedit.build_constant_by_tactic ~goal_kind:gk id secsign (concl, ctx) solve_tac
     with Proof_errors.TacticFailure e as src ->
     (* if the tactic [tac] fails, it reports a [TacticFailure e],
        which is an error irrelevant to the proof system (in fact it
@@ -3766,7 +3766,8 @@ let abstract_subproof id tac =
   let cst = Declare.declare_constant ~internal:Declare.KernelSilent ~local:true id decl in
   (* let evd, lem = Evd.fresh_global (Global.env ()) evd (ConstRef cst) in *)
   let lem, ctx = Universes.unsafe_constr_of_global (ConstRef cst) in
-  let evd = Evd.merge_context_set Evd.univ_flexible evd (Univ.ContextSet.of_context ctx) in
+  let evd = Evd.merge_context_set Evd.univ_rigid evd (Univ.ContextSet.of_context ctx) in
+  let evd = Evd.merge_universe_subst evd subst in
   let open Declareops in
   let eff = Safe_typing.sideff_of_con (Global.safe_env ()) cst in
   let effs = cons_side_effects eff no_seff in
@@ -3780,14 +3781,18 @@ let anon_id = Id.of_string "anonymous"
 
 let tclABSTRACT name_op tac =
   let open Proof_global in
-  let s = match name_op with
-    | Some s -> s
+  let default_gk = (Global, false, Proof Theorem) in
+  let s, gk = match name_op with
+    | Some s -> 
+      (try let _, gk, _ = current_proof_statement () in s, gk
+       with NoCurrentProof -> s, default_gk)
     | None   ->
-      let name = try get_current_proof_name () with NoCurrentProof -> anon_id in
-      add_suffix name "_subproof"
+      let name, gk = 
+	try let name, gk, _ = current_proof_statement () in name, gk
+	with NoCurrentProof -> anon_id, default_gk in
+      add_suffix name "_subproof", gk
   in
-  abstract_subproof s tac
-
+  abstract_subproof s gk tac
 
 let admit_as_an_axiom =
   Proofview.tclUNIT () >>= fun () -> (* delay for Coqlib.build_coq_proof_admitted *)

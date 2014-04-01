@@ -1807,14 +1807,16 @@ and interp_atomic ist tac =
 	   extend_gl_hyps) is incorrect.  This means that evar
 	   instantiated by pf_interp_constr may be lost, there. *)
           let to_catch = function Not_found -> true | e -> Errors.is_anomaly e in
-          let (_,c_interp) =
+          let (sigma',c_interp) =
 	    try pf_interp_constr ist (extend_gl_hyps gl sign) c
 	    with e when to_catch e (* Hack *) ->
 	      errorlabstrm "" (strbrk "Failed to get enough information from the left-hand side to type the right-hand side.")
           in
           tclTHEN
 	    (tclEVARS sigma)
-	    (Tactics.change (Some op) c_interp (interp_clause ist env cl))
+	    (tclTHEN (* At least recover the declared universes *)
+	       (tclPUSHEVARUNIVCONTEXT (Evd.evar_universe_context sigma'))
+	       (Tactics.change (Some op) c_interp (interp_clause ist env cl)))
             gl
         end
       end

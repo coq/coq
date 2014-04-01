@@ -932,6 +932,12 @@ let merge_uctx rigid uctx ctx' =
 let merge_context_set rigid evd ctx' = 
   {evd with universes = merge_uctx rigid evd.universes ctx'}
 
+let merge_uctx_subst uctx s =
+  { uctx with uctx_univ_variables = Univ.LMap.subst_union uctx.uctx_univ_variables s }
+      
+let merge_universe_subst evd subst = 
+  {evd with universes = merge_uctx_subst evd.universes subst }
+
 let with_context_set rigid d (a, ctx) = 
   (merge_context_set rigid d ctx, a)
 

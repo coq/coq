@@ -471,7 +471,7 @@ let compare_head_gen eq_universes eq_sorts f t1 t2 =
   | Rel n1, Rel n2 -> Int.equal n1 n2
   | Meta m1, Meta m2 -> Int.equal m1 m2
   | Var id1, Var id2 -> Id.equal id1 id2
-  | Sort s1, Sort s2 -> Sorts.equal s1 s2
+  | Sort s1, Sort s2 -> eq_sorts s1 s2
   | Cast (c1,_,_), _ -> f c1 t2
   | _, Cast (c2,_,_) -> f t1 c2
   | Prod (_,t1,c1), Prod (_,t2,c2) -> f t1 t2 && f c1 c2

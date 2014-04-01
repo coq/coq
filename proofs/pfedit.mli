@@ -149,7 +149,9 @@ val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
 
 val build_constant_by_tactic :
   Id.t -> named_context_val -> ?goal_kind:goal_kind ->
-    types Univ.in_universe_context_set -> unit Proofview.tactic -> Entries.definition_entry * bool * Universes.universe_opt_subst
+    types Univ.in_universe_context_set -> unit Proofview.tactic -> 
+  Entries.definition_entry * bool * Universes.universe_opt_subst Univ.in_universe_context
+
 val build_by_tactic : env -> ?poly:polymorphic -> 
   types Univ.in_universe_context_set -> unit Proofview.tactic -> 
   constr Univ.in_universe_context_set * bool * Universes.universe_opt_subst

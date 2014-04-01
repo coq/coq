@@ -791,8 +791,8 @@ let rec string_of_list sep f = function
 let solve_by_tac name evi t poly subst ctx =
   let id = name in
   let concl = Universes.subst_opt_univs_constr subst evi.evar_concl in
-  (* spiwack: the status is dropped *)
-  let (entry,_,subst) = Pfedit.build_constant_by_tactic 
+  (* spiwack: the status is dropped. MS: the ctx is dropped too *)
+  let (entry,_,(subst,ctx)) = Pfedit.build_constant_by_tactic 
     id ~goal_kind:(goal_kind poly) evi.evar_hyps (concl, ctx) (Tacticals.New.tclCOMPLETE t) in
   let env = Global.env () in
   let entry = Term_typing.handle_side_effects env entry in

@@ -264,16 +264,12 @@ let get_open_goals () =
     (List.map (fun (l1,l2) -> List.length l1 + List.length l2) gll) +
     List.length shelf
 
-let nf_body nf b =
-  let aux ((c, ctx), t) = ((nf c, ctx), t) in
-    Future.chain ~pure:true b aux
-
 let close_proof ?feedback_id ~now fpl =
   let { pid; section_vars; strength; proof; terminator } = cur_pstate () in
   let poly = pi2 strength (* Polymorphic *) in
   let initial_goals = Proof.initial_goals proof in
   let fpl, univs = Future.split2 fpl in
-  let (subst, univs as univsubst), nf = 
+  let univsubst, make_body =
     if poly || now then
       let usubst, uctx = Future.force univs in
       let ctx, subst = 
@@ -286,29 +282,43 @@ let close_proof ?feedback_id ~now fpl =
       let subst = 
 	Univ.LMap.union usubst (Univ.LMap.map (fun v -> Some (Univ.Universe.make v)) subst)
       in
-	(subst, Univ.ContextSet.to_context ctx), nf
+      let univsubst = (subst, Univ.ContextSet.to_context ctx) in
+      let make_body p _c t _octx =
+	let (c, ctx), eff = Future.force p in
+	let body = nf c and typ = nf t in
+	let used_univs = 
+	  Univ.LSet.union (Universes.universes_of_constr body)
+	    (Universes.universes_of_constr typ)
+	in
+	let ctx = Universes.restrict_universe_context ctx used_univs in
+	let p = Future.from_val ((body, Univ.ContextSet.empty),eff) in
+	let univs = Univ.ContextSet.to_context ctx in
+	  univs, p, typ
+      in univsubst, make_body
     else
       let ctx = 
 	List.fold_left (fun acc (c, (t, octx)) -> 
 	  Univ.ContextSet.union octx acc)
 	  Univ.ContextSet.empty initial_goals
       in
-	(Univ.LMap.empty, Univ.ContextSet.to_context ctx), (fun x -> x)
+      let univs = Univ.ContextSet.to_context ctx in
+      let univsubst = (Univ.LMap.empty, univs) in
+	univsubst, (fun p c t octx -> univs, p, t)
   in
   let entries =
-    Future.map2 (fun p (c, (t, octx)) -> { Entries.
-      const_entry_body = nf_body nf p;
+    Future.map2 (fun p (c, (t, octx)) -> 
+      let univs, body, typ = make_body p c t octx in
+      { Entries.
+      const_entry_body = body;
       const_entry_secctx = section_vars;
       const_entry_feedback = feedback_id;
-      const_entry_type  = Some (nf t);
+      const_entry_type  = Some typ;
       const_entry_inline_code = false;
       const_entry_opaque = true;
       const_entry_universes = univs;
       const_entry_polymorphic = poly;
       const_entry_proj = None})
     fpl initial_goals in
-  if now then
-    List.iter (fun x ->ignore(Future.force x.Entries.const_entry_body)) entries;
   { id = pid; entries = entries; persistence = strength; universes = univsubst },
   Ephemeron.get terminator
 

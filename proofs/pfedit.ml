@@ -119,13 +119,12 @@ open Decl_kinds
 let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id sign ?(goal_kind = Global, false, Proof Theorem) typ tac =
-  let substref = ref Univ.LMap.empty in (** FIXME: Something wrong here with subst *)
   start_proof id goal_kind sign typ (fun _ -> ());
   try
     let status = by tac in
-    let _,(const,_,_) = cook_proof () in
+    let _,(const,univs,_) = cook_proof () in
     delete_current_proof ();
-    const, status, !substref
+    const, status, univs
   with reraise ->
     let reraise = Errors.push reraise in
     delete_current_proof ();
@@ -135,11 +134,11 @@ let build_by_tactic env ?(poly=false) typ tac =
   let id = Id.of_string ("temporary_proof"^string_of_int (next())) in
   let sign = val_of_named_context (named_context env) in
   let gk = Global, poly, Proof Theorem in
-  let ce, status, subst = build_constant_by_tactic id sign ~goal_kind:gk typ tac in
+  let ce, status, univs = build_constant_by_tactic id sign ~goal_kind:gk typ tac in
   let ce = Term_typing.handle_side_effects env ce in
   let cb, se = Future.force ce.const_entry_body in
   assert(Declareops.side_effects_is_empty se);
-  cb, status, subst
+  cb, status, fst univs
 
 (**********************************************************************)
 (* Support for resolution of evars in tactic interpretation, including
