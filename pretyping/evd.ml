@@ -265,7 +265,6 @@ let instantiate_evar_array info c args =
 (* 2nd part used to check consistency on the fly. *)
 type evar_universe_context = 
   { uctx_local : Univ.universe_context_set; (** The local context of variables *)
-    uctx_postponed : Univ.universe_constraints;
     uctx_univ_variables : Universes.universe_opt_subst;
       (** The local universes that are unification variables *)
     uctx_univ_algebraic : Univ.universe_set; 
@@ -278,7 +277,6 @@ type evar_universe_context =
   
 let empty_evar_universe_context = 
   { uctx_local = Univ.ContextSet.empty;
-    uctx_postponed = Univ.UniverseConstraints.empty;
     uctx_univ_variables = Univ.LMap.empty;
     uctx_univ_algebraic = Univ.LSet.empty;
     uctx_universes = Univ.initial_universes;
@@ -303,7 +301,6 @@ let union_evar_universe_context ctx ctx' =
       else Univ.ContextSet.union ctx.uctx_local ctx'.uctx_local
     in
       { uctx_local = local;
-	uctx_postponed = Univ.UniverseConstraints.union ctx.uctx_postponed ctx'.uctx_postponed;
 	uctx_univ_variables = 
 	  Univ.LMap.subst_union ctx.uctx_univ_variables ctx'.uctx_univ_variables;
 	uctx_univ_algebraic = 
@@ -324,7 +321,6 @@ let diff_evar_universe_context ctx' ctx  =
   else
     let local = Univ.ContextSet.diff ctx'.uctx_local ctx.uctx_local in
       { uctx_local = local;
-	uctx_postponed = Univ.UniverseConstraints.diff ctx'.uctx_postponed ctx.uctx_postponed;
 	uctx_univ_variables = 
 	  Univ.LMap.diff ctx'.uctx_univ_variables ctx.uctx_univ_variables;
 	uctx_univ_algebraic = 
@@ -352,12 +348,12 @@ let instantiate_variable l b v =
 
 exception UniversesDiffer
 
-let process_universe_constraints univs postponed vars alg local cstrs =
+let process_universe_constraints univs vars alg local cstrs =
   let vars = ref vars in
   let normalize = Universes.normalize_universe_opt_subst vars in
-  let rec unify_universes fo l d r local postponed =
+  let rec unify_universes fo l d r local =
     let l = normalize l and r = normalize r in
-      if Univ.Universe.equal l r then local, postponed 
+      if Univ.Universe.equal l r then local
       else 
 	let varinfo x = 
 	  match Univ.Universe.level x with
@@ -370,24 +366,22 @@ let process_universe_constraints univs postponed vars alg local cstrs =
 		  later. *)
 	      if Univ.is_small_univ l && not (Univ.is_small_univ r) then
 		match Univ.Universe.level l, Univ.Universe.level r with
-		| Some l, Some r -> Univ.Constraint.add (l,Univ.Le,r) local, postponed
-		| _, _ -> local, postponed
-	      else local, postponed
+		| Some l, Some r -> Univ.Constraint.add (l,Univ.Le,r) local
+		| _, _ -> local
+	      else local
 	    else
 	      match Univ.Universe.level r with
-	      | None -> (local, Univ.UniverseConstraints.add (l,d,r) postponed)
-	      | Some _ -> (Univ.enforce_leq l r local, postponed)
+	      | None -> error ("Algebraic universe on the right")
+	      | Some _ -> Univ.enforce_leq l r local
 	  else if d == Univ.ULub then
 	    match varinfo l, varinfo r with
 	    | (Inr (l, true, _), Inr (r, _, _)) 
 	    | (Inr (r, _, _), Inr (l, true, _)) -> 
 	      instantiate_variable l (Univ.Universe.make r) vars; 
-	      Univ.enforce_eq_level l r local, postponed
+	      Univ.enforce_eq_level l r local
 	    | Inr (_, _, _), Inr (_, _, _) ->
-	      unify_universes true l Univ.UEq r local postponed
-	    | _, _ -> (* Dead code *)
-	      if Univ.check_eq univs l r then local, postponed
-	      else local, Univ.UniverseConstraints.add (l,d,r) postponed
+	      unify_universes true l Univ.UEq r local
+	    | _, _ -> assert false
 	  else (* d = Univ.UEq *)
 	    match varinfo l, varinfo r with
 	    | Inr (l', lloc, _), Inr (r', rloc, _) ->
@@ -405,28 +399,16 @@ let process_universe_constraints univs postponed vars alg local cstrs =
 		    if not (Univ.check_eq univs l r) then 
 		      raise UniversesDiffer
 	      in
-	        Univ.enforce_eq_level l' r' local, postponed
-           | _, _ (* Algebraic or globals: 
-                               try first-order unification of formal expressions.
-			       THIS IS WRONG: it should be postponed and the equality
-			       turned into a common lub constraint. *) -> 
-	   if Univ.check_eq univs l r then local, postponed
-	   else raise UniversesDiffer
-	      (* anomaly (Pp.str"Trying to equate algebraic universes") *)
-	     (* local, Univ.UniverseConstraints.add (l,d,r) postponed *)
+	        Univ.enforce_eq_level l' r' local
+           | _, _ (* One of the two is algebraic or global *) -> 
+	     if Univ.check_eq univs l r then local
+	     else raise UniversesDiffer
   in
-  let rec fixpoint local postponed cstrs =
-    let local, postponed' =
-      Univ.UniverseConstraints.fold (fun (l,d,r) (local, p) -> unify_universes false l d r local p)
-        cstrs (local, postponed)
-    in
-      if Univ.UniverseConstraints.is_empty postponed' then local, postponed'
-      else if Univ.UniverseConstraints.equal cstrs postponed' then local, postponed'
-      else (* Progress: *)
-	 fixpoint local Univ.UniverseConstraints.empty postponed'
+  let local = 
+    Univ.UniverseConstraints.fold (fun (l,d,r) local -> unify_universes false l d r local)
+      cstrs local
   in
-  let local, pbs = fixpoint Univ.Constraint.empty postponed cstrs in
-    !vars, local, pbs
+    !vars, local
 
 let add_constraints_context ctx cstrs =
   let univs, local = ctx.uctx_local in
@@ -438,13 +420,12 @@ let add_constraints_context ctx cstrs =
     in Univ.UniverseConstraints.add cstr' acc)
     cstrs Univ.UniverseConstraints.empty
   in
-  let vars, local', pbs = 
-    process_universe_constraints ctx.uctx_universes ctx.uctx_postponed
+  let vars, local' =
+    process_universe_constraints ctx.uctx_universes
       ctx.uctx_univ_variables ctx.uctx_univ_algebraic
       local cstrs'
   in
     { ctx with uctx_local = (univs, Univ.Constraint.union local local');
-      uctx_postponed = pbs;
       uctx_univ_variables = vars;
       uctx_universes = Univ.merge_constraints cstrs ctx.uctx_universes }
 
@@ -453,12 +434,11 @@ let add_constraints_context ctx cstrs =
 
 let add_universe_constraints_context ctx cstrs =
   let univs, local = ctx.uctx_local in
-  let vars, local', pbs = 
-    process_universe_constraints ctx.uctx_universes ctx.uctx_postponed
+  let vars, local' = 
+    process_universe_constraints ctx.uctx_universes 
       ctx.uctx_univ_variables ctx.uctx_univ_algebraic local cstrs 
   in
     { ctx with uctx_local = (univs, Univ.Constraint.union local local');
-      uctx_postponed = pbs;
       uctx_univ_variables = vars;
       uctx_universes = Univ.merge_constraints local' ctx.uctx_universes }
 
@@ -1195,7 +1175,6 @@ let refresh_undefined_univ_variables uctx =
       uctx.uctx_univ_variables Univ.LMap.empty
   in 
   let uctx' = {uctx_local = ctx'; 
-	       uctx_postponed = Univ.UniverseConstraints.empty;(*FIXME*)
 	       uctx_univ_variables = vars; uctx_univ_algebraic = alg;
 	       uctx_universes = Univ.initial_universes;
 	       uctx_initial_universes = uctx.uctx_initial_universes } in
@@ -1226,16 +1205,10 @@ let normalize_evar_universe_context uctx =
         uctx
       else
 	let us', universes = Universes.refresh_constraints uctx.uctx_initial_universes us' in
-	(* let universes = subst_univs_opt_universes vars' uctx.uctx_universes in *)
-	let postponed = 
-	  Univ.subst_univs_universe_constraints (Universes.make_opt_subst vars') 
-	  uctx.uctx_postponed 
-	in
 	let uctx' = 
 	  { uctx_local = us'; 
 	    uctx_univ_variables = vars'; 
 	    uctx_univ_algebraic = algs';
-	    uctx_postponed = postponed;
 	    uctx_universes = universes;
 	    uctx_initial_universes = uctx.uctx_initial_universes }
 	in fixpoint uctx'
@@ -1602,8 +1575,6 @@ let pr_evar_universe_context ctx =
   if is_empty_evar_universe_context ctx then mt ()
   else
     (str"UNIVERSES:"++brk(0,1)++ h 0 (Univ.pr_universe_context_set ctx.uctx_local) ++ fnl () ++
-     str"POSTPONED CONSTRAINTS:"++brk(0,1)++
-       h 0 (Univ.UniverseConstraints.pr ctx.uctx_postponed) ++ fnl () ++
      str"ALGEBRAIC UNIVERSES:"++brk(0,1)++h 0 (Univ.LSet.pr ctx.uctx_univ_algebraic) ++ fnl() ++
      str"UNDEFINED UNIVERSES:"++brk(0,1)++
        h 0 (Universes.pr_universe_opt_subst ctx.uctx_univ_variables))
