@@ -860,7 +860,8 @@ struct
   type handle = Evd.evar_map * goal list
 
   let new_evar (evd, evs) env typ =
-    let (evd, ev) = Evarutil.new_evar evd env typ in
+    let src = (Loc.ghost, Evar_kinds.GoalEvar) in
+    let (evd, ev) = Evarutil.new_evar evd env ~src typ in
     let (evk, _) = Term.destEvar ev in
     let h = (evd, build_goal evk :: evs) in
     (h, ev)
