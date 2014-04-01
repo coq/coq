@@ -1211,11 +1211,9 @@ Ltac assert_later t := cut t;[intro|idtac].
 These two commands perform type checking, but when {\Defined} is used the new definition is set as transparent, otherwise it is defined as opaque (see \ref{opaque}).
 
 
-\Question{How can I know what a tactic does?}
+\Question{How can I know what an automation tactic does in my example?}
 
-You can use the {\tt info} command.
-
-
+You can use its {\tt info} variant: info\_auto, info\_trivial, info\_eauto.
 
 \Question{Why {\auto} does not work? How can I fix it?}
 
@@ -1228,7 +1226,7 @@ This is the same tactic as \auto, but it relies on {\eapply} instead of \apply.
 
 \Question{How can I speed up {\auto}?}
 
-You can use \texttt{info }{\auto} to replace {\auto} by the tactics it generates.
+You can use \texttt{info\_}{\auto} to replace {\auto} by the tactics it generates.
 You can split your hint bases into smaller ones.
 
 
