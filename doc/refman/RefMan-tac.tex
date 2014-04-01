@@ -3589,7 +3589,7 @@ Hint Extern 5   ({?X1 = ?X2} + {?X1 <> ?X2}) =>
  generalize X1, X2; decide equality : eqdec.
 Goal
 forall a b:list (nat * nat), {a = b} + {a <> b}.
-info auto with eqdec.
+info_auto with eqdec.
 \end{coq_example}
 \begin{coq_eval}
 Abort.

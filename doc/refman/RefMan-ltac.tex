@@ -68,7 +68,7 @@ form {\tt ltac :} {\qualid}. To force the resolution as a reference to
 a term, use the syntax {\tt ({\qualid})}.
 
 \item As shown by the figure, tactical {\tt ||} binds more than the
-prefix tacticals {\tt try}, {\tt repeat}, {\tt do}, {\tt info} and
+prefix tacticals {\tt try}, {\tt repeat}, {\tt do} and
 {\tt abstract} which themselves bind more than the postfix tactical
 ``{\tt \dots\ ;[ \dots\ ]}'' which binds more than ``\dots\ {\tt ;}
 \dots''.
@@ -96,7 +96,6 @@ is understood as
 \\
 {\tacexprpref} & ::= &
            {\tt do} {\it (}{\naturalnumber} {\it |} {\ident}{\it )} {\tacexprpref}\\
-& | & {\tt info} {\tacexprpref}\\
 & | & {\tt progress} {\tacexprpref}\\
 & | & {\tt repeat} {\tacexprpref}\\
 & | & {\tt try} {\tacexprpref}\\
@@ -838,14 +837,6 @@ The following returns the type of {\term}:
 \begin{quote}
 {\tt type of} {\term}
 \end{quote}
-
-\subsubsection[Accessing tactic decomposition]{Accessing tactic decomposition\tacindex{info}
-\index{Tacticals!info@{\tt info}}}
-
-Tactical ``{\tt info} {\tacexpr}'' is not really a tactical. For
-elementary tactics, this is equivalent to \tacexpr. For complex tactic
-like \texttt{auto}, it displays the operations performed by the
-tactic.
 
 \subsubsection[Proving a subgoal as a separate lemma]{Proving a subgoal as a separate lemma\tacindex{abstract}
 \index{Tacticals!abstract@{\tt abstract}}}
