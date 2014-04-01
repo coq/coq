@@ -1109,6 +1109,7 @@ let solve_candidates conv_algo env evd (evk,argsv) rhs =
 
 exception NotInvertibleUsingOurAlgorithm of constr
 exception NotEnoughInformationToProgress of (Id.t * evar_projection) list
+exception NotEnoughInformationEvarEvar of constr
 exception OccurCheckIn of evar_map * constr
 exception MetaOccurInBodyInternal
 
@@ -1187,7 +1188,8 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
         with
         | EvarSolvedOnTheFly (evd,t) -> evdref:=evd; imitate envk t
         | CannotProject filter' ->
-          assert !progress;
+          if not !progress then
+            raise (NotEnoughInformationEvarEvar t);
           (* Make the virtual left evar real *)
           let ty = get_type_of env' !evdref t in
           let (evd,evar'',ev'') =
@@ -1311,6 +1313,8 @@ and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
   with
     | NotEnoughInformationToProgress sols ->
         postpone_non_unique_projection env evd ev sols rhs
+    | NotEnoughInformationEvarEvar t ->
+        add_conv_pb (Reduction.CONV,env,mkEvar ev,t) evd
     | NotInvertibleUsingOurAlgorithm _ | MetaOccurInBodyInternal as e ->
         raise e
     | OccurCheckIn (evd,rhs) ->
