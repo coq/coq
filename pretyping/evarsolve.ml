@@ -39,6 +39,12 @@ let is_success = function Success _ -> true | UnifFailure _ -> false
 let test_success conv_algo env evd c c' rhs =
   is_success (conv_algo env evd c c' rhs)
 
+let add_conv_oriented_pb (pbty,env,t1,t2) evd =
+  match pbty with
+  | Some true -> add_conv_pb (Reduction.CUMUL,env,t2,t1) evd
+  | Some false -> add_conv_pb (Reduction.CUMUL,env,t2,t1) evd
+  | None -> add_conv_pb (Reduction.CONV,env,t2,t1) evd
+
 (*------------------------------------*
  * Restricting existing evars         *
  *------------------------------------*)
@@ -442,7 +448,7 @@ let define_evar_from_virtual_equation define_fun env evd t_in_env sign filter in
   let ty_t_in_env = Retyping.get_type_of env evd t_in_env in
   let evd,evar_in_env = new_evar_instance sign evd ty_t_in_env ~filter inst_in_env in
   let t_in_env = whd_evar evd t_in_env in
-  let evd = define_fun env evd (destEvar evar_in_env) t_in_env in
+  let evd = define_fun env evd None (destEvar evar_in_env) t_in_env in
   let ctxt = named_context_of_val sign in
   let inst_in_sign = inst_of_vars (Filter.filter_list filter ctxt) in
   let evar_in_sign = mkEvar (fst (destEvar evar_in_env), inst_in_sign) in
@@ -649,7 +655,7 @@ let rec do_projection_effects define_fun env ty evd = function
         let subst = make_pure_subst evi argsv in
         let ty' = replace_vars subst evi.evar_concl in
         let ty' = whd_evar evd ty' in
-        if isEvar ty' then define_fun env evd (destEvar ty') ty else evd
+        if isEvar ty' then define_fun env evd (Some false) (destEvar ty') ty else evd
       else
         evd
 
@@ -809,7 +815,7 @@ let do_restrict_hyps evd (evk,args as ev) filter candidates =
 (* [postpone_non_unique_projection] postpones equation of the form ?e[?] = c *)
 (* ?e is assumed to have no candidates *)
 
-let postpone_non_unique_projection env evd (evk,argsv as ev) sols rhs =
+let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
   let rhs = expand_vars_in_term env rhs in
   let filter =
     restrict_upon_filter evd evk
@@ -829,26 +835,26 @@ let postpone_non_unique_projection env evd (evk,argsv as ev) sols rhs =
   | None ->
     (* We made an approximation by not expanding a local definition *)
     let evd,ev = restrict_applied_evar evd ev filter None in
-    let pb = (Reduction.CONV,env,mkEvar ev,rhs) in
-    Evd.add_conv_pb pb evd
+    let pb = (pbty,env,mkEvar ev,rhs) in
+    add_conv_oriented_pb pb evd
   | Some _ ->
     restrict_evar evd evk filter candidates
 
 (* [postpone_evar_evar] postpones an equation of the form ?e1[?1] = ?e2[?2] *)
 
-let postpone_evar_evar f env evd filter1 ev1 filter2 ev2 =
+let postpone_evar_evar f env evd pbty filter1 ev1 filter2 ev2 =
   (* Leave an equation between (restrictions of) ev1 andv ev2 *)
   try
     let evd,ev1' = do_restrict_hyps evd ev1 filter1 None in
     try
       let evd,ev2' = do_restrict_hyps evd ev2 filter2 None in
-      add_conv_pb (Reduction.CONV,env,mkEvar ev1',mkEvar ev2') evd
+      add_conv_oriented_pb (pbty,env,mkEvar ev1',mkEvar ev2') evd
     with EvarSolvedWhileRestricting (evd,ev2) ->
       (* ev2 solved on the fly *)
-      f env evd ev1' ev2
+      f env evd pbty ev1' ev2
   with EvarSolvedWhileRestricting (evd,ev1) ->
     (* ev1 solved on the fly *)
-    f env evd ev2 ev1
+    f env evd pbty ev2 ev1
 
 (* [solve_evar_evar f Γ Σ ?e1[u1..un] ?e2[v1..vp]] applies an heuristic
  * to solve the equation Σ; Γ ⊢ ?e1[u1..un] = ?e2[v1..vp]:
@@ -988,14 +994,14 @@ let project_evar_on_evar g env evd aliases k2 (evk1,argsv1 as ev1) (evk2,argsv2 
   else
     raise (CannotProject filter1)
 
-let solve_evar_evar_l2r f g env evd aliases ev1 (evk2,_ as ev2) =
+let solve_evar_evar_l2r f g env evd aliases pbty ev1 (evk2,_ as ev2) =
   try
     let evd,body = project_evar_on_evar g env evd aliases 0 ev1 ev2 in
     Evd.define evk2 body evd
   with EvarSolvedOnTheFly (evd,c) ->
-    f env evd ev2 c
+    f env evd pbty ev2 c
 
-let solve_evar_evar ?(force=false) f g env evd (evk1,args1 as ev1) (evk2,args2 as ev2) =
+let solve_evar_evar ?(force=false) f g env evd pbty (evk1,args1 as ev1) (evk2,args2 as ev2) =
   if are_canonical_instances args1 args2 env then
     (* If instances are canonical, we solve the problem in linear time *)
     let sign = evar_filtered_context (Evd.find evd evk2) in
@@ -1007,11 +1013,11 @@ let solve_evar_evar ?(force=false) f g env evd (evk1,args1 as ev1) (evk2,args2 a
          use of an heuristic is forced, we restrict *)
       if force then ensure_evar_independent g env evd ev1 ev2 else (evd,ev1,ev2) in
     let aliases = make_alias_map env in
-    try solve_evar_evar_l2r f g env evd aliases ev1 ev2
+    try solve_evar_evar_l2r f g env evd aliases pbty ev1 ev2
     with CannotProject filter1 ->
-    try solve_evar_evar_l2r f g env evd aliases ev2 ev1
+    try solve_evar_evar_l2r f g env evd aliases pbty ev2 ev1
     with CannotProject filter2 ->
-    postpone_evar_evar f env evd filter1 ev1 filter2 ev2
+    postpone_evar_evar f env evd pbty filter1 ev1 filter2 ev2
 
 type conv_fun =
   env ->  evar_map -> conv_pb -> constr -> constr -> unification_result
@@ -1039,7 +1045,7 @@ let check_evar_instance evd evk1 body conv_algo =
  * that don't unify are discarded (i.e. ?e is redefined so that it does not
  * depend on these args). *)
 
-let solve_refl ?(can_drop=false) conv_algo env evd evk argsv1 argsv2 =
+let solve_refl ?(can_drop=false) conv_algo env evd pbty evk argsv1 argsv2 =
   if Array.equal eq_constr argsv1 argsv2 then evd else
   (* Filter and restrict if needed *)
   let args = Array.map2 (fun a1 a2 -> (a1, a2)) argsv1 argsv2 in
@@ -1057,7 +1063,7 @@ let solve_refl ?(can_drop=false) conv_algo env evd evk argsv1 argsv2 =
   let argsv2 = restrict_instance evd evk filter argsv2 in
   let ev2 = (fst ev1,argsv2) in
   (* Leave a unification problem *)
-  Evd.add_conv_pb (Reduction.CONV,env,mkEvar ev1,mkEvar ev2) evd
+  add_conv_oriented_pb (pbty,env,mkEvar ev1,mkEvar ev2) evd
 
 (* If the evar can be instantiated by a finite set of candidates known
    in advance, we check which of them apply *)
@@ -1113,7 +1119,7 @@ exception NotEnoughInformationEvarEvar of constr
 exception OccurCheckIn of evar_map * constr
 exception MetaOccurInBodyInternal
 
-let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
+let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
   let aliases = make_alias_map env in
   let evdref = ref evd in
   let progress = ref false in
@@ -1205,7 +1211,7 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
             | EvarSolvedOnTheFly _ -> assert false (* ev has no candidates *)
             | CannotProject filter'' ->
               (* ... or postpone the problem *)
-              postpone_evar_evar (evar_define conv_algo) env' evd filter'' ev'' filter' ev' in
+              postpone_evar_evar (evar_define conv_algo) env' evd None filter'' ev'' filter' ev' in
           evdref := evd;
           evar'')
     | _ ->
@@ -1272,20 +1278,20 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
  * context "hyps" and not referring to itself.
  *)
 
-and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
+and evar_define conv_algo ?(choose=false) env evd pbty (evk,argsv as ev) rhs =
   match kind_of_term rhs with
   | Evar (evk2,argsv2 as ev2) ->
       if Evar.equal evk evk2 then
         solve_refl ~can_drop:choose
-          (test_success conv_algo) env evd evk argsv argsv2
+          (test_success conv_algo) env evd pbty evk argsv argsv2
       else
         solve_evar_evar ~force:choose
-          (evar_define conv_algo) conv_algo env evd ev ev2
+          (evar_define conv_algo) conv_algo env evd pbty ev ev2
   | _ ->
   try solve_candidates conv_algo env evd ev rhs
   with NoCandidates ->
   try
-    let (evd',body) = invert_definition conv_algo choose env evd ev rhs in
+    let (evd',body) = invert_definition conv_algo choose env evd pbty ev rhs in
     if occur_meta body then raise MetaOccurInBodyInternal;
     (* invert_definition may have instantiate some evars of rhs with evk *)
     (* so we recheck acyclicity *)
@@ -1312,9 +1318,9 @@ and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
     Evd.define evk body evd'
   with
     | NotEnoughInformationToProgress sols ->
-        postpone_non_unique_projection env evd ev sols rhs
+        postpone_non_unique_projection env evd pbty ev sols rhs
     | NotEnoughInformationEvarEvar t ->
-        add_conv_pb (Reduction.CONV,env,mkEvar ev,t) evd
+        add_conv_oriented_pb (pbty,env,mkEvar ev,t) evd
     | NotInvertibleUsingOurAlgorithm _ | MetaOccurInBodyInternal as e ->
         raise e
     | OccurCheckIn (evd,rhs) ->
@@ -1323,7 +1329,7 @@ and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
         match kind_of_term c with
         | Evar (evk',argsv2) when Evar.equal evk evk' ->
 	    solve_refl (fun env sigma pb c c' -> is_fconv pb env sigma c c')
-              env evd evk argsv argsv2
+              env evd pbty evk argsv argsv2
         | _ ->
 	    raise (OccurCheckIn (evd,rhs))
 
@@ -1375,14 +1381,7 @@ let reconsider_conv_pbs conv_algo evd =
 let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1),t2) =
   try
     let t2 = whd_betaiota evd t2 in (* includes whd_evar *)
-    let evd =
-      match pbty with
-      | Some true when isEvar t2 ->
-          add_conv_pb (Reduction.CUMUL,env,mkEvar ev1,t2) evd
-      | Some false when isEvar t2 ->
-          add_conv_pb (Reduction.CUMUL,env,t2,mkEvar ev1) evd
-      | _ ->
-          evar_define conv_algo ~choose env evd ev1 t2 in
+    let evd = evar_define conv_algo ~choose env evd pbty ev1 t2 in
     reconsider_conv_pbs conv_algo evd
   with
     | NotInvertibleUsingOurAlgorithm t ->

@@ -385,7 +385,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 	    |None, Success i' ->
               Success (solve_refl (fun env i pbty a1 a2 ->
                 is_success (evar_conv_x ts env i pbty a1 a2))
-                env i' sp1 al1 al2)
+                env i' (position_problem true pbty) sp1 al1 al2)
 	    |_, (UnifFailure _ as x) -> x
             |Some _, _ -> UnifFailure (i,NotSameArgSize)
           else UnifFailure (i,NotSameHead)
@@ -816,10 +816,12 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       | None -> UnifFailure (evd, ConversionFailed (env,term1,term2)))
   | Evar (evk1,args1), Evar (evk2,args2) when Evar.equal evk1 evk2 ->
       let f env evd pbty x y = is_trans_fconv pbty ts env evd x y in
-      Success (solve_refl ~can_drop:true f env evd evk1 args1 args2)
+      Success (solve_refl ~can_drop:true f env evd
+                 (position_problem true pbty) evk1 args1 args2)
   | Evar ev1, Evar ev2 ->
       Success (solve_evar_evar ~force:true
-        (evar_define (evar_conv_x ts)) (evar_conv_x ts) env evd ev1 ev2)
+        (evar_define (evar_conv_x ts)) (evar_conv_x ts) env evd
+        (position_problem true pbty) ev1 ev2)
   | Evar ev1,_ when Array.length l1 <= Array.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
       (* and otherwise second-order matching *)
