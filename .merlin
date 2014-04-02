@@ -26,20 +26,10 @@ S parsing
 B parsing
 S toplevel
 B toplevel
-S plugins
-B plugins
 
-PKG lablgtk2.sourceview2
-S ide
-B ide
-S ide/utils
-B ide/utils
 S tools
 B tools
 S tools/coqdoc
 B tools/coqdoc
 S dev
 B dev
-
-S checker
-B checker
