@@ -664,16 +664,16 @@ let shrink_universe_context (univs,csts) s =
       csts (univs',Constraint.empty)
 
 let restrict_universe_context (univs,csts) s =
-  let univs' = LSet.inter univs s in
   (* Universes that are not necessary to typecheck the term.
      E.g. univs introduced by tactics and not used in the proof term. *)
   let diff = LSet.diff univs s in
-  let csts' = 
-    Constraint.fold (fun (l,d,r as c) csts ->
-      if LSet.mem l diff || LSet.mem r diff then csts
-      else Constraint.add c csts)
-      csts Constraint.empty
-  in (univs', csts')
+  let (univscstrs, csts) =
+    Constraint.fold
+      (fun (l,d,r as c) (univs, csts) ->
+        if LSet.mem l diff && LSet.mem r diff then (univs, csts)
+	else (LSet.add l (LSet.add r univs), Constraint.add c csts))
+    csts (LSet.empty, Constraint.empty)
+  in (LSet.inter univs univscstrs, csts)
 
 let simplify_universe_context (univs,csts) =
   let uf = UF.create () in
