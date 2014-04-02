@@ -58,10 +58,12 @@ let gen_constant_in_modules locstr dirs s =
 	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
 	prlist_with_sep pr_comma pr_dirpath dirs)
     | l ->
-	anomaly ~label:locstr
-	(str ("found more than once object of name "^s^
-	" in module"^(if List.length dirs > 1 then "s " else " ")) ++
-	prlist_with_sep pr_comma pr_dirpath dirs)
+      anomaly ~label:locstr
+	(str ("ambiguous name "^s^" can represent ") ++
+	   prlist_with_sep pr_comma
+	   (fun x -> Libnames.pr_path (Nametab.path_of_global x)) l ++
+	   str (" in module"^(if List.length dirs > 1 then "s " else " ")) ++
+	   prlist_with_sep pr_comma pr_dirpath dirs)
 
 
 (* For tactics/commands requiring vernacular libraries *)
