@@ -79,18 +79,6 @@ let dft = default_unify_flags
 let res_pf clenv ?(with_evars=false) ?(flags=dft) gls =
   clenv_refine with_evars (clenv_unique_resolver ~flags clenv gls) gls
 
-let elim_res_pf_THEN_i clenv tac gls =
-  let clenv' = (clenv_unique_resolver ~flags:elim_flags clenv gls) in
-  tclTHENLASTn (clenv_refine false clenv') (tac clenv') gls
-
-let new_elim_res_pf_THEN_i clenv tac =
-  Proofview.Goal.enter begin fun gl ->
-    let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags:elim_flags clenv) gl in
-    Proofview.tclTHEN
-      (Proofview.V82.tactic (clenv_refine false clenv'))
-      (Proofview.tclEXTEND [] (Proofview.tclUNIT()) (Array.to_list (tac clenv')))
-  end
-
 let e_res_pf clenv = res_pf clenv ~with_evars:true ~flags:dft
 
 

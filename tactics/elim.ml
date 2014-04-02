@@ -63,7 +63,7 @@ Another example :
 *)
 
 let elimHypThen tac id =
-  Tacticals.New.elimination_then tac ([],[]) (mkVar id)
+  Tacticals.New.elimination_then tac (mkVar id)
 
 let rec general_decompose_on_hyp recognizer =
   Tacticals.New.ifOnHyp recognizer (general_decompose_aux recognizer) (fun _ -> Proofview.tclUNIT())
@@ -138,8 +138,8 @@ let h_decompose_and = decompose_and
 
 (* The tactic Double performs a double induction *)
 
-let simple_elimination c gls =
-  simple_elimination_then (fun _ -> tclIDTAC) c gls
+let simple_elimination c =
+  Tacticals.New.elimination_then (fun _ -> Tacticals.New.tclIDTAC) c
 
 let induction_trailer abs_i abs_j bargs =
   Tacticals.New.tclTHEN
@@ -163,7 +163,7 @@ let induction_trailer abs_i abs_j bargs =
           let ids = List.rev (ids_of_named_context hyps) in
 	  (tclTHENSEQ
             [Proofview.V82.of_tactic (bring_hyps hyps); tclTRY (clear ids);
-	     simple_elimination (mkVar id)]) gls
+	     Proofview.V82.of_tactic (simple_elimination (mkVar id))]) gls
           end
           ))
 
@@ -180,8 +180,7 @@ let double_ind h1 h2 =
      (Tacticals.New.onLastHypId
        	(fun id ->
            Tacticals.New.elimination_then
-             (introElimAssumsThen (induction_trailer abs_i abs_j))
-             ([],[]) (mkVar id))))
+             (introElimAssumsThen (induction_trailer abs_i abs_j)) (mkVar id))))
   end
 
 let h_double_induction = double_ind

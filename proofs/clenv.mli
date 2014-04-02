@@ -85,9 +85,6 @@ val clenv_missing : clausenv -> metavariable list
 exception NoSuchBinding
 val clenv_constrain_last_binding : constr -> clausenv -> clausenv
 
-(** defines metas corresponding to the name of the bindings *)
-val clenv_match_args : arg_bindings -> clausenv -> clausenv
-
 val clenv_unify_meta_types : ?flags:unify_flags -> clausenv -> clausenv
 
 (** start with a clenv to refine with a given term with bindings *)

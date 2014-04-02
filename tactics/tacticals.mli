@@ -137,33 +137,6 @@ val elimination_sort_of_goal : goal sigma -> sorts_family
 val elimination_sort_of_hyp  : Id.t -> goal sigma -> sorts_family
 val elimination_sort_of_clause : Id.t option -> goal sigma -> sorts_family
 
-val general_elim_then_using :
-  (inductive -> goal sigma -> constr) -> rec_flag ->
-  intro_pattern_expr located option -> (branch_args -> tactic) ->
-    constr option -> (arg_bindings * arg_bindings) -> inductive -> clausenv ->
-    tactic
-
-val elimination_then_using :
-  (branch_args -> tactic) -> constr option ->
-    (arg_bindings * arg_bindings) -> constr -> tactic
-
-val elimination_then :
-  (branch_args -> tactic) ->
-    (arg_bindings * arg_bindings) -> constr -> tactic
-
-val case_then_using :
-  intro_pattern_expr located option -> (branch_args -> tactic) ->
-    constr option -> (arg_bindings * arg_bindings) ->
-      inductive -> clausenv -> tactic
-
-val case_nodep_then_using :
-  intro_pattern_expr located option -> (branch_args -> tactic) ->
-    constr option -> (arg_bindings * arg_bindings) ->
-      inductive -> clausenv -> tactic
-
-val simple_elimination_then :
-  (branch_args -> tactic) -> constr -> tactic
-
 val elim_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
 val case_on_ba : (branch_assumptions -> tactic) -> branch_args  -> tactic
 
@@ -266,17 +239,15 @@ module New : sig
 
   val elimination_then :
     (branch_args -> unit Proofview.tactic) ->
-    (arg_bindings * arg_bindings) -> constr -> unit Proofview.tactic
+    constr -> unit Proofview.tactic
 
   val case_then_using :
     intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
-    constr option -> (arg_bindings * arg_bindings) ->
-    inductive -> clausenv -> unit Proofview.tactic
+    constr option -> inductive -> clausenv -> unit Proofview.tactic
 
   val case_nodep_then_using :
     intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
-    constr option -> (arg_bindings * arg_bindings) ->
-    inductive -> clausenv -> unit Proofview.tactic
+    constr option -> inductive -> clausenv -> unit Proofview.tactic
 
   val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
   val case_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic

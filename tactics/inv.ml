@@ -488,7 +488,7 @@ let raw_inversion inv_kind id status names =
          (assert_tac Anonymous cut_concl)
          [case_tac names
              (introCaseAssumsThen (rewrite_equations_tac inv_kind id neqns))
-             (Some elim_predicate) ([],[]) ind indclause;
+             (Some elim_predicate) ind indclause;
           onLastHypId
             (fun id ->
               (tclTHEN

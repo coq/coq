@@ -224,63 +224,6 @@ let elimination_sort_of_clause = function
   | None -> elimination_sort_of_goal
   | Some id -> elimination_sort_of_hyp id
 
-(* Find the right elimination suffix corresponding to the sort of the goal *)
-(* c should be of type A1->.. An->B with B an inductive definition *)
-
-let general_elim_then_using mk_elim
-  isrec allnames tac predicate (indbindings,elimbindings)
-  ind indclause gl =
-  let elim = mk_elim ind gl in
-  (* applying elimination_scheme just a little modified *)
-  let indclause' = clenv_match_args indbindings indclause in
-  let elimclause = mk_clenv_from gl (elim,pf_type_of gl elim) in
-  let indmv =
-    match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
-      | Meta mv -> mv
-      | _         -> anomaly (Pp.str "elimination")
-  in
-  let pmv =
-    let p, _ = decompose_app elimclause.templtyp.Evd.rebus in
-    match kind_of_term p with
-      | Meta p -> p
-      | _ ->
-	  let name_elim =
-	    match kind_of_term elim with
-	      | Const kn -> string_of_con kn
-	      | Var id -> Id.to_string id
-	      | _ -> "\b"
-	  in
-	  error ("The elimination combinator " ^ name_elim ^ " is unknown.")
-  in
-  let elimclause' = clenv_fchain indmv elimclause indclause' in
-  let elimclause' = clenv_match_args elimbindings elimclause' in
-  let branchsigns = compute_construtor_signatures isrec ind in
-  let brnames = compute_induction_names (Array.length branchsigns) allnames in
-  let after_tac ce i gl =
-    let (hd,largs) = decompose_app ce.templtyp.Evd.rebus in
-    let ba = { branchsign = branchsigns.(i);
-               branchnames = brnames.(i);
-               nassums =
-		 List.fold_left
-                   (fun acc b -> if b then acc+2 else acc+1)
-                   0 branchsigns.(i);
-               branchnum = i+1;
-               ity = ind;
-               largs = List.map (clenv_nf_meta ce) largs;
-               pred = clenv_nf_meta ce hd }
-    in
-    tac ba gl
-  in
-  let branchtacs ce = Array.init (Array.length branchsigns) (after_tac ce) in
-  let elimclause' =
-    match predicate with
-       | None   -> elimclause'
-       | Some p ->
-           clenv_unify ~flags:Unification.elim_flags
-             Reduction.CONV (mkMeta pmv) p elimclause'
-  in
-  elim_res_pf_THEN_i elimclause' branchtacs gl
-
 (* computing the case/elim combinators *)
 
 let gl_make_elim ind gl =
@@ -293,27 +236,6 @@ let gl_make_case_dep ind gl =
 let gl_make_case_nodep ind gl =
   pf_apply Indrec.build_case_analysis_scheme gl ind false
     (elimination_sort_of_goal gl)
-
-let elimination_then_using tac predicate bindings c gl =
-  let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let indclause  = mk_clenv_from gl (c,t) in
-  let isrec,mkelim =
-    if (Global.lookup_mind (fst ind)).mind_record
-    then false,gl_make_case_dep
-    else true,gl_make_elim
-  in
-  general_elim_then_using mkelim isrec
-    None tac predicate bindings ind indclause gl
-
-let case_then_using =
-  general_elim_then_using gl_make_case_dep false
-
-let case_nodep_then_using =
-  general_elim_then_using gl_make_case_nodep false
-
-let elimination_then tac        = elimination_then_using tac None
-let simple_elimination_then tac = elimination_then tac ([],[])
-
 
 let make_elim_branch_assumptions ba gl =
   let rec makerec (assums,cargs,constargs,recargs,indargs) lb lc =
@@ -622,15 +544,22 @@ module New = struct
     tclMAP tac (Locusops.simple_clause_of (fun () -> hyps) cl)
     end
 
+  let elim_res_pf_THEN_i clenv tac =
+    Proofview.Goal.enter begin fun gl ->
+      let flags = Unification.elim_flags in
+      let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags clenv) gl in
+      Proofview.tclTHEN
+        (Proofview.V82.tactic (clenv_refine false clenv'))
+        (Proofview.tclEXTEND [] (Proofview.tclUNIT()) (Array.to_list (tac clenv')))
+    end
+
   (* Find the right elimination suffix corresponding to the sort of the goal *)
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
-      isrec allnames tac predicate (indbindings,elimbindings)
-      ind indclause =
+      isrec allnames tac predicate ind indclause =
     Proofview.Goal.enter begin fun gl ->
     let elim = Tacmach.New.of_old (mk_elim ind) gl in
     (* applying elimination_scheme just a little modified *)
-    let indclause' = clenv_match_args indbindings indclause in
     let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_type_of gl elim)) gl in
     let indmv =
       match kind_of_term (last_arg elimclause.templval.Evd.rebus) with
@@ -650,8 +579,7 @@ module New = struct
 	  in
 	  error ("The elimination combinator " ^ name_elim ^ " is unknown.")
     in
-    let elimclause' = clenv_fchain indmv elimclause indclause' in
-    let elimclause' = clenv_match_args elimbindings elimclause' in
+    let elimclause' = clenv_fchain indmv elimclause indclause in
     let branchsigns = compute_construtor_signatures isrec ind in
     let brnames = compute_induction_names (Array.length branchsigns) allnames in
     let after_tac ce i =
@@ -677,10 +605,10 @@ module New = struct
           clenv_unify ~flags:Unification.elim_flags
             Reduction.CONV (mkMeta pmv) p elimclause'
     in
-    new_elim_res_pf_THEN_i elimclause' branchtacs
+    elim_res_pf_THEN_i elimclause' branchtacs
     end
 
-  let elimination_then_using tac predicate bindings c =
+  let elimination_then tac c =
     Proofview.Goal.enter begin fun gl ->
     let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
     let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) gl in
@@ -689,8 +617,7 @@ module New = struct
       then false,gl_make_case_dep
       else true,gl_make_elim
     in
-    general_elim_then_using mkelim isrec
-      None tac predicate bindings ind indclause
+    general_elim_then_using mkelim isrec None tac None ind indclause
     end
 
   let case_then_using =
@@ -698,9 +625,6 @@ module New = struct
 
   let case_nodep_then_using =
     general_elim_then_using gl_make_case_nodep false
-
-
-  let elimination_then tac        = elimination_then_using tac None
 
   let elim_on_ba tac ba =
     Proofview.Goal.enter begin fun gl ->
