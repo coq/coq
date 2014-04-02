@@ -1391,7 +1391,9 @@ end = struct (* {{{ *)
   let backto oid =
     let info = VCS.get_info oid in
     match info.vcs_backup with
-    | None, _ -> anomaly(str"Backtrack.backto to a state with no vcs_backup")
+    | None, _ ->
+       anomaly(str"Backtrack.backto "++str(Stateid.to_string oid)++
+               str": a state with no vcs_backup")
     | Some vcs, _ ->
         VCS.restore vcs;
         let id = VCS.get_branch_pos (VCS.current_branch ()) in
@@ -1402,7 +1404,8 @@ end = struct (* {{{ *)
     let info = VCS.get_info id in
     match info.vcs_backup with
     | _, None ->
-       anomaly(str"Backtrack.branches_of on a state with no vcs_backup")
+       anomaly(str"Backtrack.backto "++str(Stateid.to_string id)++
+               str": a state with no vcs_backup")
     | _, Some x -> x
 
   let rec fold_until f acc id =
@@ -1664,6 +1667,14 @@ let process_transaction ~tty verbose c (loc, expr) =
           List.iter (fun branch ->
             if not (List.mem_assoc branch (mine::others)) then
               ignore(merge_proof_branch x VtDrop branch))
+            (VCS.branches ());
+          VCS.checkout_shallowest_proof_branch ();
+          let head = VCS.current_branch () in
+          List.iter (fun b ->
+            if not(VCS.Branch.equal b head) then begin
+              VCS.checkout b;
+              VCS.commit (VCS.new_node ()) (Alias oid);
+            end)
             (VCS.branches ());
           VCS.checkout_shallowest_proof_branch ();
           VCS.commit id (Alias oid);
