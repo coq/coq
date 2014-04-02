@@ -207,7 +207,8 @@ let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
     | _ ->
         iter_constr_with_full_binders push_lift (frec rig) ed c
   in
-  frec true (env,1) m; acc
+  let () = if not (Vars.noccur_between 1 bound m) then frec true (env,1) m in
+  acc
 
 let rec is_rigid_head t = match kind_of_term t with
   | Rel _ | Evar _ -> false
