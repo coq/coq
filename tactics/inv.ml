@@ -336,6 +336,9 @@ let projectAndApply thin id eqname names depids =
 	(Some (ElimOnConstr (mkVar id,NoBindings))))
     id
 
+let nLastDecls i tac =
+  Proofview.Goal.enter (fun gl -> tac (nLastDecls gl i))
+
 (* Inversion qui n'introduit pas les hypotheses, afin de pouvoir les nommer
    soi-meme (proposition de Valerie). *)
 let rewrite_equations_gene othin neqns ba =

@@ -122,6 +122,8 @@ module New : sig
   val pf_global : identifier -> 'a Proofview.Goal.t -> constr
   val of_old : (Proof_type.goal Evd.sigma -> 'a) -> [ `NF ] Proofview.Goal.t -> 'a
 
+  val pf_env : 'a Proofview.Goal.t -> Environ.env
+
   val pf_type_of : 'a Proofview.Goal.t -> Term.constr -> Term.types
   val pf_get_type_of : 'a Proofview.Goal.t -> Term.constr -> Term.types
   val pf_conv_x : 'a Proofview.Goal.t -> Term.constr -> Term.constr -> bool

@@ -475,14 +475,9 @@ module New = struct
       List.nth hyps (m-1)
     with Failure _ -> Errors.error "No such assumption."
 
-  let nLastDecls n tac =
-    Proofview.Goal.enter begin fun gl ->
-      let hyps =
-        try List.firstn n (Proofview.Goal.hyps gl)
-        with Failure _ -> error "Not enough hypotheses in the goal."
-      in
-      tac hyps
-    end
+  let nLastDecls gl n =
+    try List.firstn n (Proofview.Goal.hyps gl)
+    with Failure _ -> error "Not enough hypotheses in the goal."
 
   let nthHypId m gl =
     (** We only use [id] *)

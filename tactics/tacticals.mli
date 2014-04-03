@@ -216,7 +216,7 @@ module New : sig
 
   val tclTIMEOUT : int -> unit tactic -> unit tactic
 
-  val nLastDecls  : int -> (named_context -> unit tactic) -> unit tactic
+  val nLastDecls  : [ `NF ] Proofview.Goal.t -> int -> named_context
 
   val ifOnHyp     : (identifier * types -> bool) ->
     (identifier -> unit Proofview.tactic) -> (identifier -> unit Proofview.tactic) ->
