@@ -544,15 +544,6 @@ module New = struct
     tclMAP tac (Locusops.simple_clause_of (fun () -> hyps) cl)
     end
 
-  let elim_res_pf_THEN_i clenv tac =
-    Proofview.Goal.enter begin fun gl ->
-      let flags = Unification.elim_flags in
-      let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags clenv) gl in
-      Proofview.tclTHEN
-        (Proofview.V82.tactic (clenv_refine false clenv'))
-        (Proofview.tclEXTEND [] (Proofview.tclUNIT()) (Array.to_list (tac clenv')))
-    end
-
   (* Find the right elimination suffix corresponding to the sort of the goal *)
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
@@ -582,30 +573,32 @@ module New = struct
     let elimclause' = clenv_fchain indmv elimclause indclause in
     let branchsigns = compute_construtor_signatures isrec ind in
     let brnames = compute_induction_names (Array.length branchsigns) allnames in
-    let after_tac ce i =
-      let (hd,largs) = decompose_app ce.templtyp.Evd.rebus in
+    let flags = Unification.elim_flags in
+    let elimclause' =
+      match predicate with
+      | None   -> elimclause'
+      | Some p -> clenv_unify ~flags Reduction.CONV (mkMeta pmv) p elimclause'
+    in
+    let clenv' = Tacmach.New.of_old (clenv_unique_resolver ~flags elimclause') gl in
+    let after_tac i =
+      let (hd,largs) = decompose_app clenv'.templtyp.Evd.rebus in
       let ba = { branchsign = branchsigns.(i);
                  branchnames = brnames.(i);
                  nassums =
-	  List.fold_left
+          List.fold_left
             (fun acc b -> if b then acc+2 else acc+1)
             0 branchsigns.(i);
                  branchnum = i+1;
                  ity = ind;
-                 largs = List.map (clenv_nf_meta ce) largs;
-                 pred = clenv_nf_meta ce hd }
+                 largs = List.map (clenv_nf_meta clenv') largs;
+                 pred = clenv_nf_meta clenv' hd }
       in
       tac ba
     in
-    let branchtacs ce = Array.init (Array.length branchsigns) (after_tac ce) in
-    let elimclause' =
-      match predicate with
-      | None   -> elimclause'
-      | Some p ->
-          clenv_unify ~flags:Unification.elim_flags
-            Reduction.CONV (mkMeta pmv) p elimclause'
-    in
-    elim_res_pf_THEN_i elimclause' branchtacs
+    let branchtacs = List.init (Array.length branchsigns) after_tac in
+    Proofview.tclTHEN
+      (Proofview.V82.tactic (clenv_refine false clenv'))
+      (Proofview.tclEXTEND [] tclIDTAC branchtacs)
     end
 
   let elimination_then tac c =
