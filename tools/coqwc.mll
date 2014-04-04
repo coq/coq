@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (* coqwc - counts the lines of spec, proof and comments in Coq sources
- * Copyright (C) 2003 Jean-Christophe Filli‚tre *)
+ * Copyright (C) 2003 Jean-Christophe Filli√¢tre *)
 
 (*s {\bf coqwc.} Counts the lines of spec, proof and comments in a Coq source.
     It assumes the files to be lexically well-formed. *)
@@ -95,6 +95,8 @@ let stars = "(*" '*'* "*)"
 let dot = '.' (' ' | '\t' | '\n' | '\r' | eof)
 let proof_start =
   "Theorem" | "Lemma" | "Fact" | "Remark" | "Goal" | "Correctness" | "Obligation" | "Next"
+let def_start =
+  "Definition" | "Fixpoint" | "Instance"
 let proof_end =
   ("Save" | "Qed" | "Defined" | "Abort" | "Admitted") [^'.']* '.'
 
@@ -107,14 +109,10 @@ rule spec = parse
   | '\n'   { newline (); spec lexbuf }
   | space+ | stars
            { spec lexbuf }
-  | proof_start space
+  | proof_start
            { seen_spec := true; spec_to_dot lexbuf; proof lexbuf }
-  | proof_start '\n'
-           { seen_spec := true; newline (); spec_to_dot lexbuf; proof lexbuf }
-  | "Program"? "Definition" space
+  | def_start
            { seen_spec := true; definition lexbuf }
-  | "Program"? "Fixpoint" space
-  	   { seen_spec := true; definition lexbuf }
   | character | _
 	   { seen_spec := true; spec lexbuf }
   | eof    { () }
@@ -133,7 +131,7 @@ and spec_to_dot = parse
 	   { seen_spec := true; spec_to_dot lexbuf }
   | eof    { () }
 
-(*s [definition] scans a definition; passes to [proof] is the body is
+(*s [definition] scans a definition; passes to [proof] if the body is
     absent, and to [spec] otherwise *)
 
 and definition = parse
