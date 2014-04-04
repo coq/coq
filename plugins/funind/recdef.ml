@@ -1180,7 +1180,8 @@ let build_and_l l =
       | App(_,_) -> 
 	let (f,_) = decompose_app t in 
 	eq_constr f (well_founded ())
-      | _ -> assert false
+      | _ -> 
+	false
   in
   let compare t1 t2 = 
     let b1,b2= is_well_founded t1,is_well_founded t2 in 
@@ -1225,9 +1226,9 @@ let clear_goals =
 
 let build_new_goal_type () =
   let sub_gls_types = get_current_subgoals_types () in
-  (* Pp.msgnl (str "sub_gls_types1 := " ++ Util.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
+  (* Pp.msgnl (str "sub_gls_types1 := " ++ Pp.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
   let sub_gls_types = clear_goals sub_gls_types in
-  (* Pp.msgnl (str "sub_gls_types2 := " ++ Util.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
+  (* Pp.msgnl (str "sub_gls_types2 := " ++ Pp.prlist_with_sep (fun () -> Pp.fnl () ++ Pp.fnl ()) Printer.pr_lconstr sub_gls_types); *)
   let res = build_and_l sub_gls_types in
   res
 
