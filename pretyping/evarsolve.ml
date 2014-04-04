@@ -49,24 +49,28 @@ let add_conv_oriented_pb (pbty,env,t1,t2) evd =
  * Restricting existing evars         *
  *------------------------------------*)
 
+type 'a update =
+| UpdateWith of 'a
+| NoUpdate
+
 let inst_of_vars sign = Array.map_of_list (fun (id,_,_) -> mkVar id) sign
 
 let restrict_evar_key evd evk filter candidates =
   match filter, candidates with
-  | None, None -> evd, evk
+  | None, NoUpdate -> evd, evk
   | _ ->
     let evi = Evd.find_undefined evd evk in
     let oldfilter = evar_filter evi in
     begin match filter, candidates with
-    | Some filter, None when Filter.equal oldfilter filter ->
+    | Some filter, NoUpdate when Filter.equal oldfilter filter ->
       evd, evk
     | _ ->
       let filter = match filter with
       | None -> evar_filter evi
       | Some filter -> filter in
       let candidates = match candidates with
-      | None -> evi.evar_candidates
-      | Some _ -> candidates in
+      | NoUpdate -> evi.evar_candidates
+      | UpdateWith c -> Some c in
       let ccl = evi.evar_concl in
       let sign = evar_hyps evi in
       let src = evi.evar_source in
@@ -732,10 +736,10 @@ let extract_unique_projection = function
 
 let extract_candidates sols =
   try
-    Some
+    UpdateWith
       (List.map (function (id,ProjectVar) -> mkVar id | _ -> raise Exit) sols)
   with Exit ->
-    None
+    NoUpdate
 
 let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
   let evi = Evd.find_undefined evd evk in
@@ -762,17 +766,27 @@ let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
 let set_of_evctx l =
   List.fold_left (fun s (id,_,_) -> Id.Set.add id s) Id.Set.empty l
 
-let filter_candidates evd evk filter candidates =
-  let evi = Evd.find_undefined evd evk in
-  let candidates = match candidates with
-  | None -> evi.evar_candidates
-  | Some _ -> candidates
-  in
-  match candidates,filter with
-  | None,_ | _, None -> candidates
-  | Some l, Some filter ->
+let filter_effective_candidates evi filter candidates =
+  match filter with
+  | None -> candidates
+  | Some filter ->
       let ids = set_of_evctx (Filter.filter_list filter (evar_context evi)) in
-      Some (List.filter (fun a -> Id.Set.subset (collect_vars a) ids) l)
+      List.filter (fun a -> Id.Set.subset (collect_vars a) ids) candidates
+
+let filter_candidates evd evk filter candidates_update =
+  let evi = Evd.find_undefined evd evk in
+  let candidates = match candidates_update with
+  | NoUpdate -> evi.evar_candidates
+  | UpdateWith c -> Some c
+  in
+  match candidates with
+  | None -> NoUpdate
+  | Some l ->
+      let l' = filter_effective_candidates evi filter l in
+      if List.length l = List.length l' && candidates_update = NoUpdate then
+        NoUpdate
+      else
+        UpdateWith l'
 
 let closure_of_filter evd evk = function
   | None -> None
@@ -805,11 +819,11 @@ let do_restrict_hyps evd (evk,args as ev) filter candidates =
   | None -> None,candidates
   | Some filter -> restrict_hyps evd evk filter candidates in
   match candidates,filter with
-  | Some [], _ -> error "Not solvable."
-  | Some [nc],_ ->
+  | UpdateWith [], _ -> error "Not solvable."
+  | UpdateWith [nc],_ ->
       let evd = Evd.define evk nc evd in
       raise (EvarSolvedWhileRestricting (evd,whd_evar evd (mkEvar ev)))
-  | None, None -> evd,ev
+  | NoUpdate, None -> evd,ev
   | _ -> restrict_applied_evar evd ev filter candidates
 
 (* [postpone_non_unique_projection] postpones equation of the form ?e[?] = c *)
@@ -832,22 +846,22 @@ let postpone_non_unique_projection env evd pbty (evk,argsv as ev) sols rhs =
   let filter = closure_of_filter evd evk filter in
   let candidates = extract_candidates sols in
   match candidates with
-  | None ->
+  | NoUpdate ->
     (* We made an approximation by not expanding a local definition *)
-    let evd,ev = restrict_applied_evar evd ev filter None in
+    let evd,ev = restrict_applied_evar evd ev filter NoUpdate in
     let pb = (pbty,env,mkEvar ev,rhs) in
     add_conv_oriented_pb pb evd
-  | Some _ ->
-    restrict_evar evd evk filter candidates
+  | UpdateWith c ->
+    restrict_evar evd evk filter (UpdateWith c)
 
 (* [postpone_evar_evar] postpones an equation of the form ?e1[?1] = ?e2[?2] *)
 
 let postpone_evar_evar f env evd pbty filter1 ev1 filter2 ev2 =
   (* Leave an equation between (restrictions of) ev1 andv ev2 *)
   try
-    let evd,ev1' = do_restrict_hyps evd ev1 filter1 None in
+    let evd,ev1' = do_restrict_hyps evd ev1 filter1 NoUpdate in
     try
-      let evd,ev2' = do_restrict_hyps evd ev2 filter2 None in
+      let evd,ev2' = do_restrict_hyps evd ev2 filter2 NoUpdate in
       add_conv_oriented_pb (pbty,env,mkEvar ev1',mkEvar ev2') evd
     with EvarSolvedWhileRestricting (evd,ev2) ->
       (* ev2 solved on the fly *)
@@ -895,17 +909,20 @@ let filter_compatible_candidates conv_algo env evd evi args rhs c =
   | Success evd -> Some (c,evd)
   | UnifFailure _ -> None
 
+(* [restrict_candidates ... filter ev1 ev2] restricts the candidates
+   of ev1, removing those not compatible with the filter, as well as
+   those not convertible to some candidate of ev2 *)
+
 exception DoesNotPreserveCandidateRestriction
 
 let restrict_candidates conv_algo env evd filter1 (evk1,argsv1) (evk2,argsv2) =
   let evi1 = Evd.find evd evk1 in
   let evi2 = Evd.find evd evk2 in
-  let cand1 = filter_candidates evd evk1 filter1 None in
-  let cand2 = evi2.evar_candidates in
-  match cand1, cand2 with
-  | _, None -> cand1
+  match evi1.evar_candidates, evi2.evar_candidates with
+  | _, None -> filter_candidates evd evk1 filter1 NoUpdate
   | None, Some _ -> raise DoesNotPreserveCandidateRestriction
   | Some l1, Some l2 ->
+      let l1 = filter_effective_candidates evi1 filter1 l1 in
       let l1' = List.filter (fun c1 ->
         let c1' = instantiate_evar_array evi1 c1 argsv1 in
         let filter c2 =
@@ -916,7 +933,8 @@ let restrict_candidates conv_algo env evd filter1 (evk1,argsv1) (evk2,argsv2) =
         in
         let filtered = List.filter filter l2 in
         match filtered with [] -> false | _ -> true) l1 in
-      if Int.equal (List.length l1) (List.length l1') then None else Some l1'
+      if Int.equal (List.length l1) (List.length l1') then NoUpdate
+      else UpdateWith l1'
 
 exception CannotProject of Filter.t option
 
@@ -1052,7 +1070,7 @@ let solve_refl ?(can_drop=false) conv_algo env evd pbty evk argsv1 argsv2 =
   let untypedfilter =
     restrict_upon_filter evd evk
       (fun (a1,a2) -> conv_algo env evd Reduction.CONV a1 a2) args in
-  let candidates = filter_candidates evd evk untypedfilter None in
+  let candidates = filter_candidates evd evk untypedfilter NoUpdate in
   let filter = closure_of_filter evd evk untypedfilter in
   let evd,ev1 = restrict_applied_evar evd (evk,argsv1) filter candidates in
   if Evar.equal (fst ev1) evk && can_drop then (* No refinement *) evd else
@@ -1087,7 +1105,7 @@ let solve_candidates conv_algo env evd (evk,argsv) rhs =
           if Evd.is_undefined evd evk then Evd.define evk c evd else evd
       | l when List.length l < List.length l' ->
           let candidates = List.map fst l in
-          restrict_evar evd evk None (Some candidates)
+          restrict_evar evd evk None (UpdateWith candidates)
       | l -> evd
 
 (* We try to instantiate the evar assuming the body won't depend
@@ -1158,10 +1176,10 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
           let filter = closure_of_filter evd evk' filter in
           let candidates = extract_candidates sols in
           let evd = match candidates with
-          | None ->
-            let evd, ev'' = restrict_applied_evar evd ev' filter None in
+          | NoUpdate ->
+            let evd, ev'' = restrict_applied_evar evd ev' filter NoUpdate in
             Evd.add_conv_pb (Reduction.CONV,env,mkEvar ev'',t) evd
-          | Some _ ->
+          | UpdateWith _ ->
             restrict_evar evd evk' filter candidates
           in
           evdref := evd;
@@ -1243,7 +1261,7 @@ let rec invert_definition conv_algo choose env evd pbty (evk,argsv as ev) rhs =
             | _ ->
               let (evd,evar'',ev'') =
                 materialize_evar (evar_define conv_algo) env' !evdref k ev ty in
-              evdref := restrict_evar evd (fst ev'') None (Some candidates);
+              evdref := restrict_evar evd (fst ev'') None (UpdateWith candidates);
               evar'')
         | None ->
           (* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
