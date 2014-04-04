@@ -914,6 +914,7 @@ and verbatim inline = parse
   | nl ">>" space* nl { Output.verbatim_char inline '\n'; Output.stop_verbatim inline }
   | nl ">>" { Output.verbatim_char inline '\n'; Output.stop_verbatim inline }
   | ">>" { Output.stop_verbatim inline }
+  | "*)" { Output.stop_verbatim inline; backtrack lexbuf }
   | eof { Output.stop_verbatim inline }
   | _ { Output.verbatim_char inline (lexeme_char lexbuf 0); verbatim inline lexbuf }
 
