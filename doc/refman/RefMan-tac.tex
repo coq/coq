@@ -3020,7 +3020,7 @@ After that command, the expression {\tt (minus (S x) y)} is left untouched by
 A special heuristic to determine if a constant has to be unfolded can be
 activated with the following command:
 \begin{coq_example*}
-Arguments minus x y : simpl nomatch
+Arguments minus x y : simpl nomatch.
 \end{coq_example*}
 The heuristic avoids to perform a simplification step that would
 expose a {\tt match} construct in head position. For example the
@@ -3272,6 +3272,9 @@ against the hints rather than pattern-matching
 {\tt apply}).
 As a consequence, {\tt eauto} can solve such a goal:
 
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
 \begin{coq_example}
 Hint Resolve ex_intro.
 Goal forall P:nat -> Prop, P 0 ->  exists n, P n.
