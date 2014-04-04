@@ -913,7 +913,7 @@ let build_and_l l =
       | App(_,_) -> 
 	let (f,_) = decompose_app t in 
 	eq_constr f (well_founded ())
-      | _ -> assert false
+      | _ -> false
   in
   let compare t1 t2 = 
     let b1,b2= is_well_founded t1,is_well_founded t2 in 
