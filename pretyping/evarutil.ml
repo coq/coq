@@ -1180,17 +1180,28 @@ let invert_invertible_arg fullenv evd aliases k (evk,argsv) args' =
  * such that "hyps' |- ?e : T"
  *)
 
-let filter_candidates evd evk filter candidates =
-  let evi = Evd.find_undefined evd evk in
-  let candidates = match candidates with
-  | None -> evi.evar_candidates
-  | Some _ -> candidates in
-  match candidates,filter with
-  | None,_ | _, None -> candidates
-  | Some l, Some filter ->
+let filter_effective_candidates evi filter candidates =
+  match filter with
+  | None -> candidates
+  | Some filter ->
       let ids = List.map pi1 (list_filter_with filter (evar_context evi)) in
-      Some (List.filter (fun a ->
-        list_subset (Idset.elements (collect_vars a)) ids) l)
+      List.filter (fun a -> list_subset (Idset.elements (collect_vars a)) ids)
+        candidates
+
+let filter_candidates evd evk filter candidates_update =
+  let evi = Evd.find_undefined evd evk in
+  let candidates = match candidates_update with
+  | None -> evi.evar_candidates
+  | Some _ -> candidates_update
+  in
+  match candidates with
+  | None -> None
+  | Some l ->
+      let l' = filter_effective_candidates evi filter l in
+      if List.length l = List.length l' && candidates_update = None then
+        None
+      else
+        Some l'
 
 let closure_of_filter evd evk filter =
   let evi = Evd.find_undefined evd evk in
