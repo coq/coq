@@ -159,6 +159,8 @@ and proof = parse
            { proof lexbuf }
   | '\n'   { newline (); proof lexbuf }
   | "Proof" space* '.'
+  | "Proof" space+ "with"
+  | "Proof" space+ "using"
            { seen_proof := true; proof lexbuf }
   | "Proof" space
            { proof_term lexbuf }
