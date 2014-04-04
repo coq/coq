@@ -216,7 +216,7 @@ Lemma Fin_Finite n : Finite (Fin.t n).
 Proof.
  induction n.
  - exists nil.
-   inversion a.
+   red;inversion a.
  - destruct IHn as (l,Hl).
    exists (Fin.F1 :: map Fin.FS l).
    intros a. revert n a l Hl.

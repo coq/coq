@@ -596,7 +596,7 @@ let intros_until_gen red h =
   Tacticals.New.tclDO n (if red then introf else intro)
   end
 
-let intros_until_id id = intros_until_gen true (NamedHyp id)
+let intros_until_id id = intros_until_gen false (NamedHyp id)
 let intros_until_n_gen red n = intros_until_gen red (AnonHyp n)
 
 let intros_until = intros_until_gen true
