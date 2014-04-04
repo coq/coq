@@ -169,7 +169,7 @@ module KeyHash =
 struct
   type t = table_key
   let equal k1 k2 = match k1, k2 with
-  | ConstKey c1, ConstKey c2 -> Constant.equal c1 c2
+  | ConstKey c1, ConstKey c2 -> Constant.UserOrd.equal c1 c2
   | VarKey id1, VarKey id2 -> Id.equal id1 id2
   | RelKey i1, RelKey i2 -> Int.equal i1 i2
   | (ConstKey _ | VarKey _ | RelKey _), _ -> false
@@ -177,7 +177,7 @@ struct
   open Hashset.Combine
 
   let hash = function
-  | ConstKey c -> combinesmall 1 (Constant.hash c)
+  | ConstKey c -> combinesmall 1 (Constant.UserOrd.hash c)
   | VarKey id -> combinesmall 2 (Id.hash id)
   | RelKey i -> combinesmall 3 (Int.hash i)
 end

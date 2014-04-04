@@ -214,7 +214,7 @@ struct
   let equal = Names.eq_id_key
   open Hashset.Combine
   let hash = function
-  | ConstKey c -> combinesmall 1 (Constant.hash c)
+  | ConstKey c -> combinesmall 1 (Constant.UserOrd.hash c)
   | VarKey id -> combinesmall 2 (Id.hash id)
   | RelKey i -> combinesmall 3 (Int.hash i)
 end
