@@ -249,16 +249,16 @@ let pretype_id loc env sigma (lvar,unbndltacvars) id =
       let c = substl subst c in
 	{ uj_val = c; uj_type = protected_get_type_of env sigma c }
     with Not_found ->
+        (* Check if [id] is a ltac variable not bound to a term *)
+	(* and build a nice error message *)
+      if Id.Map.mem id unbndltacvars then
+	user_err_loc (loc,"",
+          str "Variable " ++ pr_id id ++ str " should be bound to a term.");
       (* Check if [id] is a section or goal variable *)
       try
 	let (_,_,typ) = lookup_named id env in
 	  { uj_val  = mkVar id; uj_type = typ }
       with Not_found ->
-	(* [id] not found, build nice error message if [id] yet known from ltac *)
-	if Id.Map.mem id unbndltacvars then
-	  user_err_loc (loc,"",
-            str "Variable " ++ pr_id id ++ str " should be bound to a term.")
-        else
 	  (* [id] not found, standard error message *)
 	  error_var_not_found_loc loc id
 
