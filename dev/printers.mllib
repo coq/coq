@@ -50,6 +50,7 @@ Monad
 Names
 Univ
 Esubst
+Uint31
 Sorts
 Evar
 Constr
