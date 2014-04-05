@@ -251,15 +251,15 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       let c = substl subst c in
       { uj_val = c; uj_type = protected_get_type_of env sigma c }
     with Not_found ->
-    try
-      let (_,_,typ) = lookup_named id env in
-      { uj_val  = mkVar id; uj_type = typ }
-    with Not_found ->
-    try (* To build a nicer ltac error message *)
+    try (* To build a nice ltac error message *)
       match List.assoc id unbndltacvars with
       | None -> user_err_loc (loc,"",
 	  str "Variable " ++ pr_id id ++ str " should be bound to a term.")
       | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
+    with Not_found ->
+    try
+      let (_,_,typ) = lookup_named id env in
+      { uj_val  = mkVar id; uj_type = typ }
     with Not_found ->
       error_var_not_found_loc loc id
 
