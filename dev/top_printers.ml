@@ -88,6 +88,14 @@ let ppevarsubst = ppidmap (fun id0 -> prset (fun (c,copt,id) ->
    (if id = id0 then mt ()
     else spc () ++ str "<canonical: " ++ pr_id id ++ str ">"))))
 
+let ppconstrunderbindersidmap l = ppidmap (fun id (l,c) ->
+  Id.print id ++ str "->" ++ hov 1 (str"[" ++  prlist Id.print l ++ str"]")
+  ++ str "," ++ spc () ++ Termops.print_constr c)
+
+let ppunbound_ltac_var_map l = ppidmap (fun id arg ->
+  Id.print id ++ str "->" ++
+  str"<genarg:" ++ pr_argument_type(genarg_tag arg) ++ str">")
+
 let pP s = pp (hov 0 s)
 
 let safe_pr_global = function
