@@ -783,11 +783,44 @@ paradox \cite{Gir70,Coq85}.
 \Question{Is Coq's logic conservative over Coquand's Calculus of 
 Constructions?}
 
-Yes for the non Set-impredicative version of the Calculus of Inductive
-Constructions. Indeed, the impredicative sort of the Calculus of
-Constructions can only be interpreted as the sort {\Prop} since {\Set}
-is predicative. But {\Prop} can be 
+In the {\Set}-impredicative version of the Calculus of Inductive
+Constructions (CIC), there are two ways to interpret the Calculus of
+Constructions (CC) since the impredicative sort of CC can be
+interpreted either as {\Prop} or as {\Set}. In the {\Set}-predicative
+CIC, the impredicative sort of CC can only be interpreted as {\Prop}.
 
+If the impredicative sort of CC is interpreted as {\Set}, there is no
+conservativity of CIC over CC as the discrimination of
+constructors of inductive types in {\Set} transports to a
+discrimination of constructors of inductive types encoded
+impredicatively. Concretely, considering the impredicative encoding of
+Boolean, equality and falsity, we can prove the following CC statement
+DISCR in CIC which is not provable in CC, as CC has a
+``term-irrelevant'' model.
+
+\begin{coq_example*}
+Definition BOOL := forall X:Set, X -> X -> X.
+Definition TRUE : BOOL := fun X x1 x2 => x1.
+Definition FALSE : BOOL := fun X x1 x2 => x2.
+Definition EQBOOL (x1 x2:BOOL) := forall P:BOOL->Set, P x1 -> P x2.
+Definition BOT := forall X:Set, X.
+
+Definition BOOL2bool : BOOL -> bool := fun b => b bool true false.
+
+Theorem DISCR : EQBOOL TRUE FALSE -> BOT.
+intro X.
+assert (H : BOOL2bool TRUE = BOOL2bool FALSE).
+{ apply X. trivial. }
+discriminate H.
+Qed.
+\end{coq_example*}
+
+If the impredicative sort of CC is interpreted as {\Prop}, CIC is
+presumably conservative over CC. The general idea is that no
+proof-relevant information can flow from {\Prop} to {\Set}, even
+though singleton elimination can be used. Hence types in {\Set} should
+be smashable to the unit type and {\Set} and {\Type} themselves be
+mapped to {\Prop}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Talkin' with the Rooster}
