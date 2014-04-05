@@ -132,8 +132,7 @@ type reactive_end = {(*information required by the compiler of the VM *)
        int->Cbytecodes.bytecodes->Cbytecodes.bytecodes)
       option;
   native_constant_static :
-      (bool->constr array->Cbytecodes.structured_constant)
-      option;
+      (bool -> constr array -> Nativeinstr.lambda) option;
   native_constant_dynamic :
       (bool->Cbytecodes.comp_env->Cbytecodes.block array->int->
          Cbytecodes.bytecodes->Cbytecodes.bytecodes)
@@ -239,7 +238,37 @@ let get_vm_decompile_constant_info knowledge key =
     | None -> raise Not_found
     | Some f -> f
 
+let get_native_compiling_info knowledge key =
+  match (Reactive.find key knowledge.reactive).native_compiling
+  with
+    | None -> raise Not_found
+    | Some f -> f knowledge.flags.fastcomputation
 
+(* used for compilation of fully applied constructors *)
+let get_native_constant_static_info knowledge key =
+  match (Reactive.find key knowledge.reactive).native_constant_static
+  with
+    | None -> raise Not_found
+    | Some f -> f knowledge.flags.fastcomputation
+
+(* used for compilation of partially applied constructors *)
+let get_native_constant_dynamic_info knowledge key =
+  match (Reactive.find key knowledge.reactive).native_constant_dynamic
+  with
+    | None -> raise Not_found
+    | Some f -> f knowledge.flags.fastcomputation
+
+let get_native_before_match_info knowledge key =
+  match (Reactive.find key knowledge.reactive).native_before_match
+  with
+    | None -> raise Not_found
+    | Some f -> f knowledge.flags.fastcomputation
+
+let get_native_decompile_constant_info knowledge key =
+  match (Reactive.find key knowledge.reactive).native_decompile_const
+  with
+    | None -> raise Not_found
+    | Some f -> f
 
 (* functions manipulating reactive knowledge *)
 let add_vm_compiling_info knowledge value nfo =
@@ -294,6 +323,61 @@ let add_vm_decompile_constant_info knowledge value nfo =
        knowledge.reactive
    with Not_found ->
      Reactive.add value {empty_reactive_end with vm_decompile_const = Some nfo}
+       knowledge.reactive
+  }
+
+let add_native_compiling_info knowledge value nfo =
+  {knowledge with reactive =
+   try
+     Reactive.add value
+       {(Reactive.find value (knowledge.reactive)) with native_compiling = Some nfo}
+       knowledge.reactive
+   with Not_found ->
+     Reactive.add value {empty_reactive_end with native_compiling = Some nfo}
+       knowledge.reactive
+  }
+
+let add_native_constant_static_info knowledge value nfo =
+  {knowledge with reactive =
+   try
+     Reactive.add value
+       {(Reactive.find value (knowledge.reactive)) with native_constant_static = Some nfo}
+       knowledge.reactive
+   with Not_found ->
+     Reactive.add value {empty_reactive_end with native_constant_static = Some nfo}
+       knowledge.reactive
+  }
+
+let add_native_constant_dynamic_info knowledge value nfo =
+  {knowledge with reactive =
+   try
+     Reactive.add value
+       {(Reactive.find value (knowledge.reactive)) with native_constant_dynamic = Some nfo}
+       knowledge.reactive
+   with Not_found ->
+     Reactive.add value {empty_reactive_end with native_constant_dynamic = Some nfo}
+       knowledge.reactive
+  }
+
+let add_native_before_match_info knowledge value nfo =
+  {knowledge with reactive =
+   try
+     Reactive.add value
+       {(Reactive.find value (knowledge.reactive)) with native_before_match = Some nfo}
+       knowledge.reactive
+   with Not_found ->
+     Reactive.add value {empty_reactive_end with native_before_match = Some nfo}
+       knowledge.reactive
+  }
+
+let add_native_decompile_constant_info knowledge value nfo =
+  {knowledge with reactive =
+   try
+     Reactive.add value
+       {(Reactive.find value (knowledge.reactive)) with native_decompile_const = Some nfo}
+       knowledge.reactive
+   with Not_found ->
+     Reactive.add value {empty_reactive_end with native_decompile_const = Some nfo}
        knowledge.reactive
   }
 

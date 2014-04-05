@@ -62,6 +62,7 @@ Cbytecodes
 Copcodes
 Cemitcodes
 Nativevalues
+Nativeinstr
 Future
 Opaqueproof
 Declareops

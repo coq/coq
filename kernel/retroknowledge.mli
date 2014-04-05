@@ -117,6 +117,23 @@ val get_vm_before_match_info : retroknowledge -> entry -> Cbytecodes.bytecodes
 val get_vm_decompile_constant_info : retroknowledge -> entry -> int -> Term.constr
 
 
+val get_native_compiling_info  : retroknowledge -> entry -> Cbytecodes.comp_env ->
+                             constr array ->
+                             int -> Cbytecodes.bytecodes-> Cbytecodes.bytecodes
+
+val get_native_constant_static_info : retroknowledge -> entry ->
+                                   constr array -> Nativeinstr.lambda
+
+val get_native_constant_dynamic_info : retroknowledge -> entry ->
+                                Cbytecodes.comp_env ->
+                                Cbytecodes.block array ->
+                                int -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes
+
+val get_native_before_match_info : retroknowledge -> entry -> Cbytecodes.bytecodes
+                                                       -> Cbytecodes.bytecodes
+
+val get_native_decompile_constant_info : retroknowledge -> entry -> int -> Term.constr
+
 (** the following functions are solely used in Pre_env and Environ to implement
    the functions  register and unregister (and mem) of Environ *)
 val add_field : retroknowledge -> field -> entry -> retroknowledge
@@ -147,6 +164,25 @@ val add_vm_before_match_info : retroknowledge -> entry ->
 val add_vm_decompile_constant_info : retroknowledge -> entry ->
                                     (int -> constr) -> retroknowledge
 
+val add_native_compiling_info : retroknowledge-> entry ->
+                            (bool -> Cbytecodes.comp_env -> constr array -> int ->
+                            Cbytecodes.bytecodes -> Cbytecodes.bytecodes) ->
+                            retroknowledge
+val add_native_constant_static_info : retroknowledge -> entry ->
+                                  (bool -> constr array ->
+                                      Nativeinstr.lambda) ->
+                                  retroknowledge
+val add_native_constant_dynamic_info : retroknowledge-> entry ->
+                                   (bool -> Cbytecodes.comp_env ->
+                                   Cbytecodes.block array -> int ->
+                                   Cbytecodes.bytecodes -> Cbytecodes.bytecodes) ->
+                                   retroknowledge
+val add_native_before_match_info : retroknowledge -> entry ->
+                              (bool->Cbytecodes.bytecodes->Cbytecodes.bytecodes) ->
+                              retroknowledge
+
+val add_native_decompile_constant_info : retroknowledge -> entry ->
+                                    (int -> constr) -> retroknowledge
 
 val clear_info : retroknowledge-> entry -> retroknowledge
 

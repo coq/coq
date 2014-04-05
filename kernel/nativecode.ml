@@ -12,6 +12,7 @@ open Context
 open Declarations
 open Util
 open Nativevalues
+open Nativeinstr
 open Nativelambda
 open Pre_env
 
