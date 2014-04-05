@@ -688,7 +688,7 @@ let get_recargs_approx env ind args =
         assert (List.is_empty largs);
 	    build_recargs (ienv_push_var ienv (na, b, mk_norec)) d
 	| Rel k ->
-        (* Free variable are allowed and assigned Norec *)
+        (* Free variables are allowed and assigned Norec *)
         (try snd (List.nth ra_env (k-1))
           with Failure _ | Invalid_argument _ -> mk_norec)
 	| Ind ind_kn ->
