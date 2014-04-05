@@ -243,11 +243,11 @@ module New : sig
 
   val case_then_using :
     intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
-    constr option -> inductive -> clausenv -> unit Proofview.tactic
+    constr option -> inductive -> Term.constr * Term.types -> unit Proofview.tactic
 
   val case_nodep_then_using :
     intro_pattern_expr located option -> (branch_args -> unit Proofview.tactic) ->
-    constr option -> inductive -> clausenv -> unit Proofview.tactic
+    constr option -> inductive -> Term.constr * Term.types -> unit Proofview.tactic
 
   val elim_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic
   val case_on_ba : (branch_assumptions -> unit Proofview.tactic) -> branch_args  -> unit Proofview.tactic

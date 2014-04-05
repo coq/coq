@@ -542,8 +542,9 @@ module New = struct
   (* Find the right elimination suffix corresponding to the sort of the goal *)
   (* c should be of type A1->.. An->B with B an inductive definition *)
   let general_elim_then_using mk_elim
-      isrec allnames tac predicate ind indclause =
+      isrec allnames tac predicate ind (c, t) =
     Proofview.Goal.enter begin fun gl ->
+    let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c, t)) gl in
     let elim = Tacmach.New.of_old (mk_elim ind) gl in
     (* applying elimination_scheme just a little modified *)
     let elimclause = Tacmach.New.of_old (fun gls -> mk_clenv_from gls (elim,Tacmach.New.pf_type_of gl elim)) gl in
@@ -599,13 +600,12 @@ module New = struct
   let elimination_then tac c =
     Proofview.Goal.enter begin fun gl ->
     let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-    let indclause = Tacmach.New.of_old (fun gl -> mk_clenv_from gl (c,t)) gl in
     let isrec,mkelim =
       if (Global.lookup_mind (fst ind)).mind_record
       then false,gl_make_case_dep
       else true,gl_make_elim
     in
-    general_elim_then_using mkelim isrec None tac None ind indclause
+    general_elim_then_using mkelim isrec None tac None ind (c, t)
     end
 
   let case_then_using =
