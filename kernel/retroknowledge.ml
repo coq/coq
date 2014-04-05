@@ -126,7 +126,21 @@ type reactive_end = {(*information required by the compiler of the VM *)
   (* fastcomputation flag -> cont -> result *)
   vm_before_match : (bool -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes) option;
   (* tag (= compiled int for instance) -> result *)
-  vm_decompile_const : (int -> Term.constr) option}
+  vm_decompile_const : (int -> Term.constr) option;
+  native_compiling :
+      (bool->Cbytecodes.comp_env->constr array ->
+       int->Cbytecodes.bytecodes->Cbytecodes.bytecodes)
+      option;
+  native_constant_static :
+      (bool->constr array->Cbytecodes.structured_constant)
+      option;
+  native_constant_dynamic :
+      (bool->Cbytecodes.comp_env->Cbytecodes.block array->int->
+         Cbytecodes.bytecodes->Cbytecodes.bytecodes)
+      option;
+  native_before_match : (bool -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes) option;
+  native_decompile_const : (int -> Term.constr) option
+}
 
 
 
@@ -162,7 +176,13 @@ let empty_reactive_end =
     vm_constant_static = None;
     vm_constant_dynamic = None;
     vm_before_match = None;
-    vm_decompile_const = None }
+    vm_decompile_const = None;
+    native_compiling = None;
+    native_constant_static = None;
+    native_constant_dynamic = None;
+    native_before_match = None;
+    native_decompile_const = None
+  }
 
 
 

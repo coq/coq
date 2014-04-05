@@ -117,7 +117,7 @@ let le_32 x y =
 let le_64 (x:int) (y:int) = x <= y
 let le = select le_32 le_64
 
-let eq x y = x == y
+let equal (x:int) (y:int) = x == y
     
 let cmp_32 x y = Int32.compare (uint_32 x) (uint_32 y)
 (* Do not remove the type information it is really important for 

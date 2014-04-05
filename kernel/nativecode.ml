@@ -257,6 +257,7 @@ type primitive =
   | Cast_accu
   | Upd_cofix
   | Force_cofix
+  | Mk_uint
   | Mk_meta
   | Mk_evar
 
@@ -298,8 +299,9 @@ let primitive_hash = function
 | Cast_accu -> 11
 | Upd_cofix -> 12
 | Force_cofix -> 13
-| Mk_meta -> 14
-| Mk_evar -> 15
+| Mk_uint -> 14
+| Mk_meta -> 15
+| Mk_evar -> 16
 
 type mllambda =
   | MLlocal        of lname 
@@ -314,7 +316,8 @@ type mllambda =
                               (* argument, prefix, accu branch, branches *)
   | MLconstruct    of string * constructor * mllambda array
                    (* prefix, constructor name, arguments *)
-  | MLint          of bool * int   (* true if the type sould be int *)
+  | MLint          of int
+  | MLuint         of Uint31.t
   | MLsetref       of string * mllambda
   | MLsequence     of mllambda * mllambda
 
@@ -371,8 +374,10 @@ let rec eq_mllambda gn1 gn2 n env1 env2 t1 t2 =
       String.equal pf1 pf2 &&
       eq_constructor cs1 cs2 &&
       Array.equal (eq_mllambda gn1 gn2 n env1 env2) args1 args2
-  | MLint (ty1,v1), MLint (ty2,v2) ->
-      ty1 == ty2 && Int.equal v1 v2
+  | MLint i1, MLint i2 ->
+      Int.equal i1 i2
+  | MLuint i1, MLuint i2 ->
+      Uint31.equal i1 i2
   | MLsetref (id1, ml1), MLsetref (id2, ml2) ->
       String.equal id1 id2 &&
       eq_mllambda gn1 gn2 n env1 env2 ml1 ml2
@@ -440,16 +445,18 @@ let rec hash_mllambda gn n env t =
       let hpf = String.hash pf in
       let hcs = constructor_hash cs in
       combinesmall 10 (hash_mllambda_array gn n env (combine hpf hcs) args)
-  | MLint (ty,v) ->
-      combinesmall 11 (combine (if ty then 0 else 1) v)
+  | MLint i ->
+      combinesmall 11 i
+  | MLuint i ->
+      combinesmall 12 (Uint31.to_int i)
   | MLsetref (id, ml) ->
       let hid = String.hash id in
       let hml = hash_mllambda gn n env ml in
-      combinesmall 12 (combine hid hml)
+      combinesmall 13 (combine hid hml)
   | MLsequence (ml, ml') ->
       let hml = hash_mllambda gn n env ml in
       let hml' = hash_mllambda gn n env ml' in
-      combinesmall 13 (combine hml hml')
+      combinesmall 14 (combine hml hml')
 
 and hash_mllambda_letrec gn n env init defs =
   let hash_def (_,args,ml) =
@@ -480,7 +487,7 @@ let fv_lam l =
     match l with
     | MLlocal l ->
 	if LNset.mem l bind then fv else LNset.add l fv
-    | MLglobal _ | MLprimitive _  | MLint _ -> fv
+    | MLglobal _ | MLprimitive _  | MLint _ | MLuint _ -> fv
     | MLlam (ln,body) ->
 	let bind = Array.fold_right LNset.add ln bind in
 	aux body bind fv
@@ -731,7 +738,7 @@ let fv_args env fvn fvr =
   if Int.equal size 0 then empty_args 
   else 
     begin
-      let args = Array.make size (MLint (false,0)) in
+      let args = Array.make size (MLint 0) in
       let fvn = ref fvn in
       let i = ref 0 in
       while not (List.is_empty !fvn) do
@@ -751,28 +758,36 @@ let fv_args env fvn fvr =
     end
 
 let get_value_code i =
-  MLapp (MLglobal (Ginternal "get_value"), [|MLglobal symbols_tbl_name;MLint(true,i)|])
+  MLapp (MLglobal (Ginternal "get_value"),
+    [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_sort_code i =
-  MLapp (MLglobal (Ginternal "get_sort"), [|MLglobal symbols_tbl_name;MLint(true,i)|])
+  MLapp (MLglobal (Ginternal "get_sort"),
+    [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_name_code i =
-  MLapp (MLglobal (Ginternal "get_name"), [|MLglobal symbols_tbl_name;MLint(true,i)|])
+  MLapp (MLglobal (Ginternal "get_name"),
+    [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_const_code i =
-  MLapp (MLglobal (Ginternal "get_const"), [|MLglobal symbols_tbl_name;MLint(true,i)|])
+  MLapp (MLglobal (Ginternal "get_const"),
+    [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_match_code i =
-  MLapp (MLglobal (Ginternal "get_match"), [|MLglobal symbols_tbl_name;MLint(true,i)|])
+  MLapp (MLglobal (Ginternal "get_match"),
+    [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_ind_code i =
-  MLapp (MLglobal (Ginternal "get_ind"), [|MLglobal symbols_tbl_name;MLint(true,i)|])
+  MLapp (MLglobal (Ginternal "get_ind"),
+    [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_meta_code i =
-  MLapp (MLglobal (Ginternal "get_meta"), [|MLglobal symbols_tbl_name;MLint(true,i)|])
+  MLapp (MLglobal (Ginternal "get_meta"),
+    [|MLglobal symbols_tbl_name; MLint i|])
 
 let get_evar_code i =
-  MLapp (MLglobal (Ginternal "get_evar"), [|MLglobal symbols_tbl_name;MLint(true,i)|])
+  MLapp (MLglobal (Ginternal "get_evar"),
+    [|MLglobal symbols_tbl_name; MLint i|])
 
 type rlist =
   | Rnil 
@@ -1042,6 +1057,7 @@ let merge_branches t =
       MLconstruct(prefix,cn,Array.map (ml_of_lam env l) args)
   | Lconstruct (prefix, cn) ->
       MLglobal (Gconstruct (prefix, cn))
+  | Luint i -> MLapp(MLprimitive Mk_uint, [|MLuint i|])
   | Lval v ->
       let i = push_symbol (SymbValue v) in get_value_code i
   | Lsort s ->
@@ -1077,7 +1093,7 @@ let mllambda_of_lambda auxdefs l t =
 
 let can_subst l = 
   match l with
-  | MLlocal _ | MLint _ | MLglobal _ -> true
+  | MLlocal _ | MLint _ | MLuint _ | MLglobal _ -> true
   | _ -> false
 
 let subst s l =
@@ -1086,7 +1102,7 @@ let subst s l =
     let rec aux l =
       match l with
       | MLlocal id -> (try LNmap.find id s with Not_found -> l)
-      | MLglobal _ | MLprimitive _ | MLint _ -> l
+      | MLglobal _ | MLprimitive _ | MLint _ | MLuint _ -> l
       | MLlam(params,body) -> MLlam(params, aux body)
       | MLletrec(defs,body) ->
 	let arec (f,params,body) = (f,params,aux body) in
@@ -1154,7 +1170,7 @@ let optimize gdef l =
   let rec optimize s l =
     match l with
     | MLlocal id -> (try LNmap.find id s with Not_found -> l)
-    | MLglobal _ | MLprimitive _ | MLint _ -> l
+    | MLglobal _ | MLprimitive _ | MLint _ | MLuint _ -> l
     | MLlam(params,body) -> 
 	MLlam(params, optimize s body)
     | MLletrec(decls,body) ->
@@ -1352,9 +1368,8 @@ let pp_mllam fmt l =
     | MLconstruct(prefix,c,args) ->
         Format.fprintf fmt "@[(Obj.magic (%s%a) : Nativevalues.t)@]" 
           (string_of_construct prefix c) pp_cargs args
-    | MLint(int, i) ->
-	if int then pp_int fmt i
-	else Format.fprintf fmt "(val_of_int %a)" pp_int i
+    | MLint i -> pp_int fmt i
+    | MLuint i -> Format.fprintf fmt "(Uint31.of_int %a)" pp_int (Uint31.to_int i)
     | MLsetref (s, body) ->
 	Format.fprintf fmt "@[%s@ :=@\n %a@]" s pp_mllam body
     | MLsequence(l1,l2) ->
@@ -1454,6 +1469,7 @@ let pp_mllam fmt l =
     | Cast_accu -> Format.fprintf fmt "cast_accu"
     | Upd_cofix -> Format.fprintf fmt "upd_cofix"
     | Force_cofix -> Format.fprintf fmt "force_cofix"
+    | Mk_uint -> Format.fprintf fmt "mk_uint"
     | Mk_meta -> Format.fprintf fmt "mk_meta_accu"
     | Mk_evar -> Format.fprintf fmt "mk_evar_accu"
   in

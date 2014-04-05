@@ -29,7 +29,7 @@ val div21   : t -> t -> t -> t * t
       
       (* comparison *)
 val lt      : t -> t -> bool
-val eq      : t -> t -> bool
+val equal   : t -> t -> bool
 val le      : t -> t -> bool
 val compare : t -> t -> int
 

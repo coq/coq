@@ -34,6 +34,7 @@ type lambda =
 	(* A fully applied constructor *)
   | Lconstruct    of string * constructor (* prefix, constructor name *)
 	(* A partially applied constructor *)
+  | Luint          of Uint31.t
   | Lval          of Nativevalues.t
   | Lsort         of sorts
   | Lind          of string * inductive (* prefix, inductive name *)
@@ -110,8 +111,8 @@ let get_const_prefix env c =
 
 let map_lam_with_binders g f n lam =
   match lam with
-  | Lrel _ | Lvar _  | Lconst _ | Lval _ | Lsort _ | Lind _ | Lconstruct _
-  | Llazy | Lforce | Lmeta _ | Levar _ -> lam
+  | Lrel _ | Lvar _  | Lconst _ | Luint _ | Lval _ | Lsort _ | Lind _
+  | Lconstruct _ | Llazy | Lforce | Lmeta _ | Levar _ -> lam
   | Lprod(dom,codom) -> 
       let dom' = f n dom in
       let codom' = f n codom in
@@ -313,7 +314,7 @@ let rec occurence k kind lam =
       if Int.equal n k then 
 	if kind then false else raise Not_found
       else kind
-  | Lvar _  | Lconst _  | Lval _ | Lsort _ | Lind _
+  | Lvar _  | Lconst _  | Luint _ | Lval _ | Lsort _ | Lind _
   | Lconstruct _ | Llazy | Lforce | Lmeta _ | Levar _ -> kind
   | Lprod(dom, codom) ->
       occurence k (occurence k kind dom) codom
@@ -666,8 +667,23 @@ and lambda_of_app env sigma f args =
       let expected = nparams + arity in
       let nargs = Array.length args in
       if Int.equal nargs expected then 
-	let args = lambda_of_args env sigma nparams args in
-	makeblock !global_env c tag args
+(*        try
+	  try
+	    Bstrconst (Retroknowledge.get_vm_constant_static_info
+                         (!global_env).retroknowledge
+                         f args)
+          with NotClosed -> assert false
+(*
+    let rargs = Array.sub args nparams arity in
+    let b_args = Array.map str_const rargs in
+    Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
+                                           (!global_env).retroknowledge
+                                           f),
+                           b_args)
+ *)
+        with Not_found -> *)
+	  let args = lambda_of_args env sigma nparams args in
+	  makeblock !global_env c tag args
       else
         let prefix = get_mind_prefix !global_env (fst (fst c)) in
         mkLapp (Lconstruct (prefix, c)) (lambda_of_args env sigma 0 args)
