@@ -130,7 +130,8 @@ Notation "'do' M x ':=' e 'in' u" := (bind _ M e (fun x => u)).
 
 Record State (S:Set) (T:Set->Set) := {
   set : S -> T unit;
-  get : T S
+  get : T S ;
+  modify : (S -> S) -> T unit
 }.
 
 (* spiwack: Environment and Writer are given distinct interfaces from
@@ -318,7 +319,8 @@ Section Common.
 
  Definition State : State S T := {|
    set s := (fun R k _ => k () s) : T unit  ;
-   get := fun R k s => k s s
+   get := fun R k s => k s s ;
+   modify := fun f R k s => k () (f s)
  |}.
 
  Definition lift {A} (x:T₀ A) : T A := fun R k s =>
@@ -681,6 +683,7 @@ Module Logical.
 
  Definition set (s:LogicalState) : t unit := Eval compute in freeze _ (set _ _ LogicalStateM s).
  Definition get : t LogicalState := Eval compute in get _ _ LogicalStateM.
+ Definition modify (f : LogicalState -> LogicalState) : t unit := Eval compute in freeze _ (modify _ _ LogicalStateM f).
  Definition put (m:LogicalMessageType) : t unit := Eval compute in freeze _ (put _ _ LogicalWriter m).
  Definition current : t LogicalEnvironment := Eval compute in current _ _ LogicalReader.
 

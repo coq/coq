@@ -345,6 +345,30 @@ module Logical =
   let get r k s =
     Obj.magic k s s
   
+  (** val modify :
+      (logicalState -> logicalState) -> __ -> (unit -> proofview -> __ ->
+      ('a1 -> __ -> (__ -> (bool*(Goal.goal list*Goal.goal list)) -> __ ->
+      (__ -> (exn -> __ IOBase.coq_T) -> __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> __ -> (__ -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> Environ.env -> __ -> (__ -> (bool*(Goal.goal
+      list*Goal.goal list)) -> __ -> (__ -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __ IOBase.coq_T) -> __ IOBase.coq_T) -> __ ->
+      (__ -> (exn -> __ IOBase.coq_T) -> __ IOBase.coq_T) -> (exn -> __
+      IOBase.coq_T) -> __ IOBase.coq_T) -> proofview -> __ -> ('a1 -> __ ->
+      ('a2 -> (bool*(Goal.goal list*Goal.goal list)) -> __ -> (__ -> (exn ->
+      __ IOBase.coq_T) -> __ IOBase.coq_T) -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> __ -> (__ -> (exn -> __ IOBase.coq_T) -> __
+      IOBase.coq_T) -> (exn -> __ IOBase.coq_T) -> __ IOBase.coq_T) ->
+      Environ.env -> __ -> ('a2 -> (bool*(Goal.goal list*Goal.goal list)) ->
+      __ -> ('a3 -> (exn -> __ IOBase.coq_T) -> __ IOBase.coq_T) -> (exn ->
+      __ IOBase.coq_T) -> __ IOBase.coq_T) -> __ -> ('a3 -> (exn -> 'a4
+      IOBase.coq_T) -> 'a4 IOBase.coq_T) -> (exn -> 'a4 IOBase.coq_T) -> 'a4
+      IOBase.coq_T **)
+  
+  let modify f =
+    (); (fun _ k s -> Obj.magic k () (f s))
+  
   (** val put :
       logicalMessageType -> __ -> (unit -> proofview -> __ -> ('a1 -> __ ->
       (__ -> (bool*(Goal.goal list*Goal.goal list)) -> __ -> (__ -> (exn ->

@@ -57,6 +57,7 @@ module Logical : sig
 
   val set : logicalState -> unit t
   val get : logicalState t
+  val modify : (logicalState -> logicalState) -> unit t
   val put : logicalMessageType -> unit t
   val current : logicalEnvironment t
 
@@ -68,22 +69,3 @@ module Logical : sig
 
   val run : 'a t -> logicalEnvironment -> logicalState -> (('a*logicalState)*logicalMessageType) NonLogical.t
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
