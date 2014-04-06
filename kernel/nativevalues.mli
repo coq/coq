@@ -75,6 +75,7 @@ val mk_block : tag -> t array -> t
 
 
 val mk_int : int -> t
+val mk_uint : Uint31.t -> t
 
 val napply : t -> t array -> t
 (* Functions over accumulators *)
@@ -110,3 +111,5 @@ val is_accu : t -> bool
 
 val str_encode : 'a -> string
 val str_decode : string -> 'a
+
+val mk_I31_accu : t

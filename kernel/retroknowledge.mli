@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Names
 open Term
 
 type retroknowledge
@@ -122,12 +123,12 @@ val get_native_compiling_info  : retroknowledge -> entry -> Cbytecodes.comp_env 
                              int -> Cbytecodes.bytecodes-> Cbytecodes.bytecodes
 
 val get_native_constant_static_info : retroknowledge -> entry ->
-                                   constr array -> Nativeinstr.lambda
+                                      constr array -> Nativeinstr.lambda
 
 val get_native_constant_dynamic_info : retroknowledge -> entry ->
-                                Cbytecodes.comp_env ->
-                                Cbytecodes.block array ->
-                                int -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes
+                                       Nativeinstr.prefix -> constructor ->
+				       Nativeinstr.lambda array ->
+				       Nativeinstr.lambda
 
 val get_native_before_match_info : retroknowledge -> entry -> Cbytecodes.bytecodes
                                                        -> Cbytecodes.bytecodes
@@ -168,15 +169,18 @@ val add_native_compiling_info : retroknowledge-> entry ->
                             (bool -> Cbytecodes.comp_env -> constr array -> int ->
                             Cbytecodes.bytecodes -> Cbytecodes.bytecodes) ->
                             retroknowledge
+
 val add_native_constant_static_info : retroknowledge -> entry ->
                                   (bool -> constr array ->
                                       Nativeinstr.lambda) ->
                                   retroknowledge
-val add_native_constant_dynamic_info : retroknowledge-> entry ->
-                                   (bool -> Cbytecodes.comp_env ->
-                                   Cbytecodes.block array -> int ->
-                                   Cbytecodes.bytecodes -> Cbytecodes.bytecodes) ->
+
+val add_native_constant_dynamic_info : retroknowledge -> entry ->
+                                   (bool -> Nativeinstr.prefix -> constructor ->
+				      Nativeinstr.lambda array ->
+				      Nativeinstr.lambda) ->
                                    retroknowledge
+
 val add_native_before_match_info : retroknowledge -> entry ->
                               (bool->Cbytecodes.bytecodes->Cbytecodes.bytecodes) ->
                               retroknowledge

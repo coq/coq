@@ -36,4 +36,6 @@ val compare : t -> t -> int
       (* head and tail *)
 val head0   : t -> t
 val tail0   : t -> t
-  
+
+(** Used by retroknowledge *)
+val add_digit : t -> t -> t

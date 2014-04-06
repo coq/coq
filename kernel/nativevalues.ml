@@ -221,7 +221,8 @@ let dummy_value : unit -> t =
 
 let cast_accu v = (Obj.magic v:accumulator)
 
-let mk_int x = Obj.magic x
+let mk_int (x : int) = (Obj.magic x : t)
+let mk_uint (x : Uint31.t) = (Obj.magic x : t)
 
 type block
 
@@ -253,6 +254,12 @@ let kind_of_value (v:t) =
            or ??? what is 1002*)
         Vfun v
 
+(** Support for machine integers *)
+
+let is_int (x:t) =
+  let o = Obj.repr x in
+  Obj.is_int o
+
 let hobcnv = Array.init 256 (fun i -> Printf.sprintf "%.2x" i)
 let bohcnv = Array.init 256 (fun i -> i -
                                       (if 0x30 <= i then 0x30 else 0) -
@@ -278,4 +285,52 @@ let str_decode s =
   done;
   Marshal.from_string (Buffer.contents mshl_expr) 0
 
+(** Retroknowledge, to be removed when we switch to primitive integers *)
 
+(* This will be unsafe with 63-bits integers *)
+let digit_to_uint d = (Obj.magic d : Uint31.t)
+
+let mk_I31_accu c x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17
+		  x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 x30 =
+  if is_int x0 && is_int x1 && is_int x2 && is_int x3 && is_int x4 && is_int x5
+     && is_int x6 && is_int x7 && is_int x8 && is_int x9 && is_int x10
+     && is_int x11 && is_int x12 && is_int x13 && is_int x14 && is_int x15
+     && is_int x16 && is_int x17 && is_int x18 && is_int x19 && is_int x20
+     && is_int x21 && is_int x22 && is_int x23 && is_int x24 && is_int x25
+     && is_int x26 && is_int x27 && is_int x28 && is_int x29 && is_int x30
+  then
+    let r = digit_to_uint x0 in
+    let r = Uint31.add_digit r (digit_to_uint x1) in
+    let r = Uint31.add_digit r (digit_to_uint x2) in
+    let r = Uint31.add_digit r (digit_to_uint x3) in
+    let r = Uint31.add_digit r (digit_to_uint x4) in
+    let r = Uint31.add_digit r (digit_to_uint x5) in
+    let r = Uint31.add_digit r (digit_to_uint x6) in
+    let r = Uint31.add_digit r (digit_to_uint x7) in
+    let r = Uint31.add_digit r (digit_to_uint x8) in
+    let r = Uint31.add_digit r (digit_to_uint x9) in
+    let r = Uint31.add_digit r (digit_to_uint x10) in
+    let r = Uint31.add_digit r (digit_to_uint x11) in
+    let r = Uint31.add_digit r (digit_to_uint x12) in
+    let r = Uint31.add_digit r (digit_to_uint x13) in
+    let r = Uint31.add_digit r (digit_to_uint x14) in
+    let r = Uint31.add_digit r (digit_to_uint x15) in
+    let r = Uint31.add_digit r (digit_to_uint x16) in
+    let r = Uint31.add_digit r (digit_to_uint x17) in
+    let r = Uint31.add_digit r (digit_to_uint x18) in
+    let r = Uint31.add_digit r (digit_to_uint x19) in
+    let r = Uint31.add_digit r (digit_to_uint x20) in
+    let r = Uint31.add_digit r (digit_to_uint x21) in
+    let r = Uint31.add_digit r (digit_to_uint x22) in
+    let r = Uint31.add_digit r (digit_to_uint x23) in
+    let r = Uint31.add_digit r (digit_to_uint x24) in
+    let r = Uint31.add_digit r (digit_to_uint x25) in
+    let r = Uint31.add_digit r (digit_to_uint x26) in
+    let r = Uint31.add_digit r (digit_to_uint x27) in
+    let r = Uint31.add_digit r (digit_to_uint x28) in
+    let r = Uint31.add_digit r (digit_to_uint x29) in
+    let r = Uint31.add_digit r (digit_to_uint x30) in
+    mk_uint r
+  else
+    c x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20
+      x21 x22 x23 x24 x25 x26 x27 x28 x29 x30

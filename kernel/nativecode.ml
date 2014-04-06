@@ -259,6 +259,7 @@ type primitive =
   | Upd_cofix
   | Force_cofix
   | Mk_uint
+  | Mk_I31_accu
   | Mk_meta
   | Mk_evar
 
@@ -301,8 +302,9 @@ let primitive_hash = function
 | Upd_cofix -> 12
 | Force_cofix -> 13
 | Mk_uint -> 14
-| Mk_meta -> 15
-| Mk_evar -> 16
+| Mk_I31_accu -> 15
+| Mk_meta -> 16
+| Mk_evar -> 17
 
 type mllambda =
   | MLlocal        of lname 
@@ -1053,12 +1055,19 @@ let merge_branches t =
 			       Array.concat [fv_args;lf_args;pargsi]))|]) in
 	(lname, paramsi, body) in
       MLletrec(Array.mapi mkrec lf, lf_args.(start)) *)
-   
+
   | Lmakeblock (prefix,cn,_,args) ->
       MLconstruct(prefix,cn,Array.map (ml_of_lam env l) args)
   | Lconstruct (prefix, cn) ->
       MLglobal (Gconstruct (prefix, cn))
-  | Luint i -> MLapp(MLprimitive Mk_uint, [|MLuint i|])
+  | Luint v ->
+     (match v with
+     | UintVal i -> MLapp(MLprimitive Mk_uint, [|MLuint i|])
+     | UintDigits (prefix,cn,ds) ->
+	let c = MLglobal (Gconstruct (prefix, cn)) in
+	let ds = Array.map (ml_of_lam env l) ds in
+	let i31 = MLapp (MLprimitive Mk_I31_accu, [|c|]) in
+	MLapp(i31, ds))
   | Lval v ->
       let i = push_symbol (SymbValue v) in get_value_code i
   | Lsort s ->
@@ -1471,6 +1480,7 @@ let pp_mllam fmt l =
     | Upd_cofix -> Format.fprintf fmt "upd_cofix"
     | Force_cofix -> Format.fprintf fmt "force_cofix"
     | Mk_uint -> Format.fprintf fmt "mk_uint"
+    | Mk_I31_accu -> Format.fprintf fmt "mk_I31_accu"
     | Mk_meta -> Format.fprintf fmt "mk_meta_accu"
     | Mk_evar -> Format.fprintf fmt "mk_evar_accu"
   in

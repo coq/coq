@@ -13,6 +13,7 @@
 (* This file defines the knowledge that the kernel is able to optimize
    for evaluation in the bytecode virtual machine *)
 
+open Names
 open Term
 
 (* Type declarations, these types shouldn't be exported they are accessed
@@ -127,17 +128,21 @@ type reactive_end = {(*information required by the compiler of the VM *)
   vm_before_match : (bool -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes) option;
   (* tag (= compiled int for instance) -> result *)
   vm_decompile_const : (int -> Term.constr) option;
+
   native_compiling :
       (bool->Cbytecodes.comp_env->constr array ->
        int->Cbytecodes.bytecodes->Cbytecodes.bytecodes)
       option;
+
   native_constant_static :
       (bool -> constr array -> Nativeinstr.lambda) option;
+
   native_constant_dynamic :
-      (bool->Cbytecodes.comp_env->Cbytecodes.block array->int->
-         Cbytecodes.bytecodes->Cbytecodes.bytecodes)
-      option;
+      (bool -> Nativeinstr.prefix -> constructor ->
+       Nativeinstr.lambda array -> Nativeinstr.lambda) option;
+
   native_before_match : (bool -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes) option;
+
   native_decompile_const : (int -> Term.constr) option
 }
 

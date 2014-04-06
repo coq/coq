@@ -639,26 +639,21 @@ and lambda_of_app env sigma f args =
       let tag, nparams, arity = Renv.get_construct_info env c in
       let expected = nparams + arity in
       let nargs = Array.length args in
+      let prefix = get_mind_prefix !global_env (fst (fst c)) in
       if Int.equal nargs expected then 
       try
 	try
 	  Retroknowledge.get_native_constant_static_info
                          (!global_env).retroknowledge
                          f args
-          with NotClosed -> assert false
-(*
-    let rargs = Array.sub args nparams arity in
-    let b_args = Array.map str_const rargs in
-    Bspecial ((Retroknowledge.get_vm_constant_dynamic_info
-                                           (!global_env).retroknowledge
-                                           f),
-                           b_args)
- *)
+          with NotClosed ->
+	    let args = lambda_of_args env sigma nparams args in
+	    Retroknowledge.get_native_constant_dynamic_info
+                           (!global_env).retroknowledge f prefix c args
         with Not_found ->
 	  let args = lambda_of_args env sigma nparams args in
 	  makeblock !global_env c tag args
       else
-        let prefix = get_mind_prefix !global_env (fst (fst c)) in
         mkLapp (Lconstruct (prefix, c)) (lambda_of_args env sigma 0 args)
   | _ -> 
       let f = lambda_of_constr env sigma f in
@@ -695,3 +690,17 @@ let lambda_of_constr env sigma c =
 
 let mk_lazy c =
   mkLapp Llazy [|c|]
+
+(** Retroknowledge, to be removed once we move to primitive machine integers *)
+let compile_static_int31 fc args =
+  if not fc then raise Not_found else
+    Luint (UintVal
+    (Uint31.of_int (Array.fold_left
+       (fun temp_i -> fun t -> match kind_of_term t with
+          | Construct (_,d) -> 2*temp_i+d-1
+          | _ -> raise NotClosed)
+       0 args)))
+
+let compile_dynamic_int31 fc prefix c args =
+  if not fc then raise Not_found else
+  Luint (UintDigits (prefix,c,args))

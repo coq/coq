@@ -465,7 +465,13 @@ let register =
     let rk = add_vm_constant_static_info retroknowledge c
                                          Cbytegen.compile_structured_int31
     in
-    add_vm_constant_dynamic_info rk c Cbytegen.dynamic_int31_compilation
+    let rk =
+      add_vm_constant_dynamic_info rk c Cbytegen.dynamic_int31_compilation
+    in
+    let rk =
+      add_native_constant_static_info rk c Nativelambda.compile_static_int31
+    in
+    add_native_constant_dynamic_info rk c Nativelambda.compile_dynamic_int31
   in
 
   (* subfunction which adds the compiling information of an

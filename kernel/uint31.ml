@@ -149,5 +149,5 @@ let tail0 x =
   if !x land 0x1 = 0    then (                r := !r + 1);
   !r
 
-
- 
+let add_digit x d =
+  (x lsl 1) lor d

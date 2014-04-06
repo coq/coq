@@ -29,3 +29,8 @@ val mk_lazy : lambda -> lambda
 val get_allias : env -> constant -> constant
 
 val lambda_of_constr : env -> evars -> Constr.constr -> lambda
+
+val compile_static_int31 : bool -> Constr.constr array -> lambda
+
+val compile_dynamic_int31 : bool -> Nativeinstr.prefix -> Names.constructor ->
+			    Nativeinstr.lambda array -> Nativeinstr.lambda
