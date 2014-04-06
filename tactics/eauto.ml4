@@ -56,6 +56,27 @@ let registered_e_assumption gl =
 (*   PROLOG tactic                                                      *)
 (************************************************************************)
 
+(*s Tactics handling a list of goals. *)
+
+type tactic_list = (goal list sigma) -> (goal list sigma)
+
+(* first_goal : goal list sigma -> goal sigma *)
+
+let first_goal gls =
+  let gl = gls.Evd.it and sig_0 = gls.Evd.sigma in
+  if List.is_empty gl then error "first_goal";
+  { Evd.it = List.hd gl; Evd.sigma = sig_0; }
+
+(* tactic -> tactic_list : Apply a tactic to the first goal in the list *)
+
+let apply_tac_list tac glls =
+  let (sigr,lg) = unpackage glls in
+  match lg with
+  | (g1::rest) ->
+      let gl = apply_sig_tac sigr tac g1 in
+      repackage sigr (gl@rest)
+  | _ -> error "apply_tac_list"
+
 let one_step l gl =
   [Proofview.V82.of_tactic Tactics.intro]
   @ (List.map Tactics.Simple.eapply (List.map mkVar (pf_ids_of_hyps gl)))

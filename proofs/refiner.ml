@@ -315,49 +315,6 @@ let rec tclREPEAT_MAIN t g =
   (tclORELSE (tclTHEN_i t (fun i -> if Int.equal i 1 then (tclREPEAT_MAIN t) else
     tclIDTAC)) tclIDTAC) g
 
-(*s Tactics handling a list of goals. *)
-
-type tactic_list = (goal list sigma) -> (goal list sigma)
-
-(* Functions working on goal list for correct backtracking in Prolog *)
-
-let tclFIRSTLIST = tclFIRST
-let tclIDTAC_list gls = gls
-
-(* first_goal : goal list sigma -> goal sigma *)
-
-let first_goal gls =
-  let gl = gls.it and sig_0 = gls.sigma in
-  if List.is_empty gl then error "first_goal";
-  { it = List.hd gl; sigma = sig_0; }
-
-(* goal_goal_list : goal sigma -> goal list sigma *)
-
-let goal_goal_list gls =
-  let gl = gls.it and sig_0 = gls.sigma in 
-  { it = [gl]; sigma = sig_0; }
-
-(* tactic -> tactic_list : Apply a tactic to the first goal in the list *)
-
-let apply_tac_list tac glls =
-  let (sigr,lg) = unpackage glls in
-  match lg with
-  | (g1::rest) ->
-      let gl = apply_sig_tac sigr tac g1 in
-      repackage sigr (gl@rest)
-  | _ -> error "apply_tac_list"
-
-let then_tactic_list tacl1 tacl2 glls =
-  let glls1 = tacl1 glls in
-  let glls2 = tacl2 glls1 in
-  glls2
-
-(* Transform a tactic_list into a tactic *)
-
-let tactic_list_tactic tac gls =
-    let glres = tac (goal_goal_list gls) in
-    glres
-
 (* Change evars *)
 let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}
 

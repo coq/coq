@@ -112,18 +112,6 @@ val thin_body        : Id.t list -> tactic
 val move_hyp         : bool -> Id.t -> Id.t move_location -> tactic
 val rename_hyp       : (Id.t*Id.t) list -> tactic
 
-(** {6 Tactics handling a list of goals. } *)
-
-type tactic_list = Refiner.tactic_list
-
-val first_goal         : 'a list sigma -> 'a sigma
-val goal_goal_list     : 'a sigma -> 'a list sigma
-val apply_tac_list     : tactic -> tactic_list
-val then_tactic_list   : tactic_list -> tactic_list -> tactic_list
-val tactic_list_tactic : tactic_list -> tactic
-val tclFIRSTLIST       : tactic_list list -> tactic_list
-val tclIDTAC_list      : tactic_list
-
 (** {6 Pretty-printing functions (debug only). } *)
 val pr_gls    : goal sigma -> Pp.std_ppcmds
 val pr_glls   : goal list sigma -> Pp.std_ppcmds

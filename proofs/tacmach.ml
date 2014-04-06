@@ -104,21 +104,6 @@ let pf_check_type gls c1 c2 =
 let pf_is_matching              = pf_apply ConstrMatching.is_matching_conv
 let pf_matches                  = pf_apply ConstrMatching.matches_conv
 
-(************************************)
-(* Tactics handling a list of goals *)
-(************************************)
-
-type tactic_list = Refiner.tactic_list 
-
-let first_goal         = first_goal
-let goal_goal_list     = goal_goal_list
-let apply_tac_list     = apply_tac_list
-let then_tactic_list   = then_tactic_list
-let tactic_list_tactic = tactic_list_tactic
-let tclFIRSTLIST       = tclFIRSTLIST
-let tclIDTAC_list      = tclIDTAC_list
-
-
 (********************************************)
 (* Definition of the most primitive tactics *)
 (********************************************)

@@ -133,19 +133,6 @@ val tclIFTHENSVELSE   : tactic -> tactic array -> tactic ->tactic
 
 val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 
-(** {6 Tactics handling a list of goals. } *)
-
-type tactic_list = goal list sigma -> goal list sigma
-
-val tclFIRSTLIST       : tactic_list list -> tactic_list
-val tclIDTAC_list      : tactic_list
-val first_goal         : 'a list sigma -> 'a sigma
-val apply_tac_list     : tactic -> tactic_list
-val then_tactic_list   : tactic_list -> tactic_list -> tactic_list
-val tactic_list_tactic : tactic_list -> tactic
-val goal_goal_list     : 'a sigma -> 'a list sigma
-
-
 (* Check that holes in arguments have been resolved *)
 (* spiwack: used in [tclWITHHOLES] both newer and older copy. *)
 val check_evars : Environ.env -> evar_map -> evar_map -> evar_map -> unit
