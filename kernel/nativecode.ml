@@ -260,6 +260,7 @@ type primitive =
   | Force_cofix
   | Mk_uint
   | Mk_I31_accu
+  | Decomp_uint
   | Mk_meta
   | Mk_evar
 
@@ -303,8 +304,9 @@ let primitive_hash = function
 | Force_cofix -> 13
 | Mk_uint -> 14
 | Mk_I31_accu -> 15
-| Mk_meta -> 16
-| Mk_evar -> 17
+| Decomp_uint -> 16
+| Mk_meta -> 17
+| Mk_evar -> 18
 
 type mllambda =
   | MLlocal        of lname 
@@ -1067,7 +1069,11 @@ let merge_branches t =
 	let c = MLglobal (Gconstruct (prefix, cn)) in
 	let ds = Array.map (ml_of_lam env l) ds in
 	let i31 = MLapp (MLprimitive Mk_I31_accu, [|c|]) in
-	MLapp(i31, ds))
+	MLapp(i31, ds)
+     | UintDecomp (prefix,cn,t) ->
+	let c = MLglobal (Gconstruct (prefix, cn)) in
+	let t = ml_of_lam env l t in
+	MLapp (MLprimitive Decomp_uint, [|c;t|]))
   | Lval v ->
       let i = push_symbol (SymbValue v) in get_value_code i
   | Lsort s ->
@@ -1481,6 +1487,7 @@ let pp_mllam fmt l =
     | Force_cofix -> Format.fprintf fmt "force_cofix"
     | Mk_uint -> Format.fprintf fmt "mk_uint"
     | Mk_I31_accu -> Format.fprintf fmt "mk_I31_accu"
+    | Decomp_uint -> Format.fprintf fmt "decomp_uint"
     | Mk_meta -> Format.fprintf fmt "mk_meta_accu"
     | Mk_evar -> Format.fprintf fmt "mk_evar_accu"
   in

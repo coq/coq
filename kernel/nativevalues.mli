@@ -113,3 +113,4 @@ val str_encode : 'a -> string
 val str_decode : string -> 'a
 
 val mk_I31_accu : t
+val decomp_uint : t -> t -> t

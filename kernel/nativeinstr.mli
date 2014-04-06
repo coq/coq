@@ -17,6 +17,7 @@ type prefix = string
 type uint =
   | UintVal of Uint31.t
   | UintDigits of prefix * constructor * lambda array
+  | UintDecomp of prefix * constructor * lambda
 
 and lambda =
   | Lrel          of name * int 

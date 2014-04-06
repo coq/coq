@@ -581,6 +581,13 @@ let rec lambda_of_constr env sigma c =
       in
       (* translation of the argument *)
       let la = lambda_of_constr env sigma a in
+      let entry = mkInd ind in
+      let la =
+	try
+	  Retroknowledge.get_native_before_match_info (!global_env).retroknowledge
+						      entry prefix (ind,1) la
+	with Not_found -> la
+      in
       (* translation of the type *)
       let lt = lambda_of_constr env sigma t in
       (* translation of branches *)
@@ -647,6 +654,7 @@ and lambda_of_app env sigma f args =
                          (!global_env).retroknowledge
                          f args
           with NotClosed ->
+	    assert (Int.equal nparams 0); (* should be fine for int31 *)
 	    let args = lambda_of_args env sigma nparams args in
 	    Retroknowledge.get_native_constant_dynamic_info
                            (!global_env).retroknowledge f prefix c args
@@ -654,7 +662,12 @@ and lambda_of_app env sigma f args =
 	  let args = lambda_of_args env sigma nparams args in
 	  makeblock !global_env c tag args
       else
-        mkLapp (Lconstruct (prefix, c)) (lambda_of_args env sigma 0 args)
+	let args = lambda_of_args env sigma 0 args in
+	(try
+	    Retroknowledge.get_native_constant_dynamic_info
+              (!global_env).retroknowledge f prefix c args
+	  with Not_found ->
+            mkLapp (Lconstruct (prefix, c)) args)
   | _ -> 
       let f = lambda_of_constr env sigma f in
       let args = lambda_of_args env sigma 0 args in
@@ -704,3 +717,12 @@ let compile_static_int31 fc args =
 let compile_dynamic_int31 fc prefix c args =
   if not fc then raise Not_found else
   Luint (UintDigits (prefix,c,args))
+
+let before_match_int31 fc prefix c t =
+  if not fc then
+    raise Not_found
+  else
+  match t with
+  | Luint (UintVal i) -> assert false
+  | Luint (UintDigits (prefix,c,args)) -> assert false
+  | _ -> Luint (UintDecomp (prefix,c,t))

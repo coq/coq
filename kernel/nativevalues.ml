@@ -260,6 +260,8 @@ let is_int (x:t) =
   let o = Obj.repr x in
   Obj.is_int o
 
+let to_int (x:t) = (Obj.magic x : int)
+
 let hobcnv = Array.init 256 (fun i -> Printf.sprintf "%.2x" i)
 let bohcnv = Array.init 256 (fun i -> i -
                                       (if 0x30 <= i then 0x30 else 0) -
@@ -334,3 +336,13 @@ let mk_I31_accu c x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17
   else
     c x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20
       x21 x22 x23 x24 x25 x26 x27 x28 x29 x30
+
+let decomp_uint c v =
+  if is_int v then
+    let r = ref c in
+    let v = to_int v in
+    for i = 30 downto 0 do
+      r := (!r) (mk_int ((v lsr i) land 1));
+    done;
+    !r
+  else v

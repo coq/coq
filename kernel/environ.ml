@@ -481,6 +481,12 @@ let register =
     add_vm_compiling_info retroknowledge v (Cbytegen.op_compilation n op kn)
   in
 
+  let add_int31_before_match rk v =
+    let rk = add_vm_before_match_info rk v Cbytegen.int31_escape_before_match in
+    let rk = add_native_before_match_info rk v Nativelambda.before_match_int31 in
+    rk
+  in
+
 fun env field value ->
   (* subfunction which shortens the (very often use) registration of binary
      operators to the reactive retroknowledge. *)
@@ -522,9 +528,8 @@ fun env field value ->
 		     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type")
 	in
 	add_int31_decompilation_from_type
-	  (add_vm_before_match_info
-	     (retroknowledge add_int31c env i31c)
-	     value Cbytegen.int31_escape_before_match)
+	  (add_int31_before_match
+	     (retroknowledge add_int31c env i31c) value)
     | KInt31 (_, Int31Plus) -> add_int31_binop_from_const Cbytecodes.Kaddint31
     | KInt31 (_, Int31PlusC) -> add_int31_binop_from_const Cbytecodes.Kaddcint31
     | KInt31 (_, Int31PlusCarryC) -> add_int31_binop_from_const Cbytecodes.Kaddcarrycint31

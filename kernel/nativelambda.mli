@@ -32,5 +32,8 @@ val lambda_of_constr : env -> evars -> Constr.constr -> lambda
 
 val compile_static_int31 : bool -> Constr.constr array -> lambda
 
-val compile_dynamic_int31 : bool -> Nativeinstr.prefix -> Names.constructor ->
-			    Nativeinstr.lambda array -> Nativeinstr.lambda
+val compile_dynamic_int31 : bool -> prefix -> constructor -> lambda array ->
+			    lambda
+
+val before_match_int31 : bool -> prefix -> constructor -> lambda -> lambda
+

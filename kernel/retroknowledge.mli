@@ -130,8 +130,9 @@ val get_native_constant_dynamic_info : retroknowledge -> entry ->
 				       Nativeinstr.lambda array ->
 				       Nativeinstr.lambda
 
-val get_native_before_match_info : retroknowledge -> entry -> Cbytecodes.bytecodes
-                                                       -> Cbytecodes.bytecodes
+val get_native_before_match_info : retroknowledge -> entry ->
+				   Nativeinstr.prefix -> constructor ->
+				   Nativeinstr.lambda -> Nativeinstr.lambda
 
 val get_native_decompile_constant_info : retroknowledge -> entry -> int -> Term.constr
 
@@ -182,8 +183,9 @@ val add_native_constant_dynamic_info : retroknowledge -> entry ->
                                    retroknowledge
 
 val add_native_before_match_info : retroknowledge -> entry ->
-                              (bool->Cbytecodes.bytecodes->Cbytecodes.bytecodes) ->
-                              retroknowledge
+				   (bool -> Nativeinstr.prefix -> constructor ->
+				      Nativeinstr.lambda -> Nativeinstr.lambda) ->
+				   retroknowledge
 
 val add_native_decompile_constant_info : retroknowledge -> entry ->
                                     (int -> constr) -> retroknowledge

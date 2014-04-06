@@ -141,7 +141,8 @@ type reactive_end = {(*information required by the compiler of the VM *)
       (bool -> Nativeinstr.prefix -> constructor ->
        Nativeinstr.lambda array -> Nativeinstr.lambda) option;
 
-  native_before_match : (bool -> Cbytecodes.bytecodes -> Cbytecodes.bytecodes) option;
+  native_before_match : (bool -> Nativeinstr.prefix -> constructor ->
+			 Nativeinstr.lambda -> Nativeinstr.lambda) option;
 
   native_decompile_const : (int -> Term.constr) option
 }
