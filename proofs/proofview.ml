@@ -317,8 +317,7 @@ let tclFOCUS_gen nosuchgoal i j t =
     let (focused,context) = focus i j initial in
     Proof.set focused >>
     t >>= fun result ->
-    Proof.get >>= fun next ->
-    Proof.set (unfocus context next) >>
+    Proof.modify (fun next -> unfocus context next) >>
     Proof.ret result
   with IndexOutOfRange -> nosuchgoal
 
@@ -371,10 +370,7 @@ let rec list_iter2 l1 l2 s i =
 (* A variant of [Proof.set] specialized on the comb. Doesn't change
    the underlying "solution" (i.e. [evar_map]) *)
 let set_comb c =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Proof.bind in
-  Proof.get >>= fun step ->
-  Proof.set { step with comb = c }
+  Proof.modify (fun step -> { step with comb = c })
 
 let on_advance g ~solved ~adv =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
@@ -556,10 +552,7 @@ let tclEVARMAP =
 let tclENV = Proof.current
 
 let tclEFFECTS eff =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Proof.bind in
-  Proof.get >>= fun initial ->
-  Proof.set (emit_side_effects eff initial)
+  Proof.modify (fun initial -> emit_side_effects eff initial)
 
 exception Timeout
 let _ = Errors.register_handler begin function
@@ -691,21 +684,15 @@ module V82 = struct
   (* normalises the evars in the goals, and stores the result in
      solution. *)
   let nf_evar_goals =
-    (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-    let (>>=) = Proof.bind in
-    Proof.get >>= fun ps ->
-    let (goals,evd) =
-      Evd.Monad.List.map (fun g s -> Goal.V82.nf_evar s g) ps.comb ps.solution
-    in
-    Proof.set { ps with solution=evd ; comb=goals }
+    Proof.modify begin fun ps ->
+    let map g s = Goal.V82.nf_evar s g in
+    let (goals,evd) = Evd.Monad.List.map map ps.comb ps.solution in
+    { ps with solution=evd ; comb=goals }
+    end
 
   (* A [Proofview.tactic] version of [Refiner.tclEVARS] *)
   let tclEVARS evd =
-    (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-    let (>>=) = Proof.bind in
-    Proof.get >>= fun ps ->
-    Proof.set { ps with solution = evd }
-    
+    Proof.modify (fun ps -> { ps with solution = evd })
 
   let has_unresolved_evar pv =
     Evd.has_undefined pv.solution
@@ -871,8 +858,8 @@ struct
     let handle = (sigma, []) in
     let ((sigma, evs), c) = f handle in
     let sigma = partial_solution sigma gl.Goal.self c in
-    Proof.get >>= fun start ->
-    Proof.set { start with solution = sigma; comb = List.rev evs; }
+    let modify start = { start with solution = sigma; comb = List.rev evs; } in
+    Proof.modify modify
   end
 
 end
