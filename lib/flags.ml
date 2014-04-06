@@ -42,7 +42,7 @@ let with_extra_values o l f x =
     raise reraise
 
 let boot = ref false
-
+let load_init = ref true
 let batch_mode = ref false
 
 type compilation_mode = BuildVo | BuildVi | Vi2Vo

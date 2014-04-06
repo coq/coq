@@ -9,6 +9,7 @@
 (** Global options of the system. *)
 
 val boot : bool ref
+val load_init : bool ref
 
 val batch_mode : bool ref
 type compilation_mode = BuildVo | BuildVi | Vi2Vo

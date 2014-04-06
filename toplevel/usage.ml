@@ -18,9 +18,9 @@ let print_usage_channel co command =
   output_string co command;
   output_string co "Coq options are:\n";
   output_string co
-"  -I dir -as coqdir      map physical dir to logical coqdir\
-\n  -I dir                 map directory dir to the empty logical path\
+"  -I dir                 look for ML files in dir\
 \n  -include dir           (idem)\
+\n  -I dir -as coqdir      map physical dir to logical coqdir\
 \n  -R dir -as coqdir      recursively map physical dir to logical coqdir\
 \n  -R dir coqdir          (idem)\
 \n  -top coqdir            set the toplevel name to be coqdir instead of Top\

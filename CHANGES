@@ -13,6 +13,10 @@ Vernacular commands
 - Command "Search" has been renamed into "SearchHead". The command
   name "Search" now behaves like former "SearchAbout". The latter name
   is deprecated.
+- The coq/user-contrib directory and the XDG directories are no longer
+  recursively added to the load path, so files from installed libraries
+  now need   to be fully qualified for the "Require" command to find
+  them. The tools/update-require script can be used to convert a development.
 
 Notations
 
@@ -68,7 +72,7 @@ Tactics
   independently of the number of ipats, which has itself to be less
   than the number of new hypotheses (possible source of incompatibilities;
   former behavior obtainable by "Unset Injection L2R Pattern Order").
-- New tactic "rewrite_strat" for generalized rewriting with user-defined 
+- New tactic "rewrite_strat" for generalized rewriting with user-defined
   strategies, subsumming autorewrite.
 
 Program
@@ -88,6 +92,16 @@ Notations
   or error when this notation is used.
 - More systematic insertion of spaces as a default for printing
   notations ("format" still available to override the default).
+
+Tools
+
+- Option -I now only adds directories to the ml path. To add to both
+  the load path and the ml path, use -I -as.
+- Option -R no longer adds recursively to the ml path; only the root
+  directory is added. (Behavior with respect to the load path is
+  unchanged.)
+- Option -nois prevents coq/theories and coq/plugins to be recursively
+  added to the load path. (Same behavior as with coq/user-contrib.)
 
 Internal Infrastructure
 
@@ -109,7 +123,7 @@ Internal Infrastructure
   * The -coqrunbyteflags and its blank-separated argument is replaced
     by option -vmbyteflags which expects a comma-separated argument.
   * The -coqtoolsbyteflags option is discontinued, see -no-custom instead.
- 
+
 Changes from V8.4beta2 to V8.4
 ==============================
 

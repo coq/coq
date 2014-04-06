@@ -59,41 +59,28 @@ let load_rcfile() =
 
 (* Puts dir in the path of ML and in the LoadPath *)
 let coq_add_path unix_path s =
-  Mltop.add_path ~unix_path ~coq_root:(Names.DirPath.make [Nameops.coq_root;Names.Id.of_string s])
-let coq_add_rec_path unix_path = Mltop.add_rec_path ~unix_path ~coq_root:(Names.DirPath.make [Nameops.coq_root])
+  Mltop.add_path ~unix_path ~coq_root:(Names.DirPath.make [Nameops.coq_root;Names.Id.of_string s]);
+  Mltop.add_ml_dir unix_path
 
-(* By the option -include -I or -R of the command line *)
+(* Recursively puts dir in the LoadPath if -nois was not passed *)
+let add_stdlib_path ~unix_path ~coq_root ~with_ml =
+  if !Flags.load_init then
+    Mltop.add_rec_path ~unix_path ~coq_root
+  else
+    Mltop.add_path ~unix_path ~coq_root;
+  if with_ml then
+    Mltop.add_rec_ml_dir unix_path
+
+let add_userlib_path ~unix_path =
+  Mltop.add_path ~unix_path ~coq_root:Nameops.default_root_prefix;
+  Mltop.add_rec_ml_dir unix_path
+
+(* Options -I, -I-as, and -R of the command line *)
 let includes = ref []
 let push_include (s, alias) = includes := (s,alias,false) :: !includes
 let push_rec_include (s, alias) = includes := (s,alias,true) :: !includes
-
-(* The list of all theories in the standard library /!\ order does matter *)
-let theories_dirs_map = [
-    "theories/Unicode", "Unicode" ;
-    "theories/Classes", "Classes" ;
-    "theories/Program", "Program" ;
-    "theories/MSets", "MSets" ;
-    "theories/FSets", "FSets" ;
-    "theories/Reals", "Reals" ;
-    "theories/Strings", "Strings" ;
-    "theories/Sorting", "Sorting" ;
-    "theories/Setoids", "Setoids" ;
-    "theories/Sets", "Sets" ;
-    "theories/Structures", "Structures" ;
-    "theories/Lists", "Lists" ;
-    "theories/Vectors", "Vectors" ;
-    "theories/Wellfounded", "Wellfounded" ;
-    "theories/Relations", "Relations" ;
-    "theories/Numbers", "Numbers" ;
-    "theories/QArith", "QArith" ;
-    "theories/PArith", "PArith" ;
-    "theories/NArith", "NArith" ;
-    "theories/ZArith", "ZArith" ;
-    "theories/Arith", "Arith" ;
-    "theories/Bool", "Bool" ;
-    "theories/Logic", "Logic" ;
-    "theories/Init", "Init"
-  ]
+let ml_includes = ref []
+let push_ml_include s = ml_includes := s :: !ml_includes
 
 (* Initializes the LoadPath *)
 let init_load_path () =
@@ -101,30 +88,30 @@ let init_load_path () =
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs ~warn:(fun x -> msg_warning (str x)) in
   let coqpath = Envars.coqpath in
-  let dirs = ["plugins"] in
+  let coq_root = Names.DirPath.make [Nameops.coq_root] in
     (* NOTE: These directories are searched from last to first *)
     (* first, developer specific directory to open *)
     if Coq_config.local then coq_add_path (coqlib/"dev") "dev";
     (* then standard library *)
-    List.iter
-      (fun (s,alias) -> Mltop.add_rec_path ~unix_path:(coqlib/s) ~coq_root:(Names.DirPath.make [Names.Id.of_string alias; Nameops.coq_root]))
-      theories_dirs_map;
+    add_stdlib_path ~unix_path:(coqlib/"theories") ~coq_root ~with_ml:false;
     (* then plugins *)
-    List.iter (fun s -> coq_add_rec_path (coqlib/s)) dirs;
+    add_stdlib_path ~unix_path:(coqlib/"plugins") ~coq_root ~with_ml:true;
     (* then user-contrib *)
     if Sys.file_exists user_contrib then
-      Mltop.add_rec_path ~unix_path:user_contrib ~coq_root:Nameops.default_root_prefix;
+      add_userlib_path ~unix_path:user_contrib;
     (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME *)
-    List.iter (fun s -> Mltop.add_rec_path ~unix_path:s ~coq_root:Nameops.default_root_prefix) xdg_dirs;
+    List.iter (fun s -> add_userlib_path ~unix_path:s) xdg_dirs;
     (* then directories in COQPATH *)
-    List.iter (fun s -> Mltop.add_rec_path ~unix_path:s ~coq_root:Nameops.default_root_prefix) coqpath;
+    List.iter (fun s -> add_userlib_path ~unix_path:s) coqpath;
     (* then current directory *)
     Mltop.add_path ~unix_path:"." ~coq_root:Nameops.default_root_prefix;
-    (* additional loadpath, given with -I -include -R options *)
+    (* additional loadpath, given with options -I-as and -R *)
     List.iter
       (fun (unix_path, coq_root, reci) ->
 	if reci then Mltop.add_rec_path ~unix_path ~coq_root else Mltop.add_path ~unix_path ~coq_root)
-      (List.rev !includes)
+      (List.rev !includes);
+    (* additional ml directories, given with option -I *)
+    List.iter Mltop.add_ml_dir (List.rev !ml_includes)
 
 let init_library_roots () =
   includes := []

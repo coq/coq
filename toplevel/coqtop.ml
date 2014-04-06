@@ -99,8 +99,6 @@ let load_vernac_obj () =
   List.iter (fun f -> Library.require_library_from_file None f None)
     (List.rev !load_vernacular_obj)
 
-let load_init = ref true
-
 let require_prelude () =
   let vo = Envars.coqlib () / "theories/Init/Prelude.vo" in
   Library.require_library_from_dirpath [Coqlib.prelude_module,vo] (Some true)
@@ -309,7 +307,7 @@ let parse_args arglist =
       begin match rem with
       | d :: "-as" :: p :: rem -> set_include d p; args := rem
       | d :: "-as" :: [] -> error_missing_arg "-as"
-      | d :: rem -> set_default_include d; args := rem
+      | d :: rem -> push_ml_include d; args := rem
       | [] -> error_missing_arg opt
       end
     |"-R" ->
@@ -319,7 +317,7 @@ let parse_args arglist =
       | d :: p :: rem -> set_rec_include d p; args := rem
       | _ -> error_missing_arg opt
       end
-    
+
     (* Options with two arg *)
     |"-check-vi-tasks" ->
         let tno = get_task_list (next ()) in
