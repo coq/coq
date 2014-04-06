@@ -1,0 +1,103 @@
+#!/bin/sh
+
+# This script fully qualifies all the 'Require' statements of the given
+# targets (or the current directory if none).
+#
+# It assumes that all the prerequisites are already installed. The
+# install location is found using the COQLIB, COQC, COQBIN variables if
+# set, 'coqc' otherwise.
+#
+# Option --exclude can be used to ignore a given user contribution. In
+# particular, it can be used to ignore the current set of files if it
+# happens to be already installed.
+#
+# Option --stdlib can be used to also qualify the files from the standard
+# library.
+
+if test ! "$COQLIB"; then
+  if test ${COQBIN##*/}; then COQBIN=$COQBIN/; fi
+  if test ! "$COQC"; then COQC=`which ${COQBIN}coqc`; fi
+  COQLIB=`"$COQC" -where`
+fi
+
+stdlib=no
+exclude=""
+
+scan_dir () {
+  (cd $1 ; find $3 -name '*.vo' |
+  sed -e "s,^./,$2,;s,\([^./]*\)/,\1.,g;s,\([^.]*\).vo,\1,")
+}
+
+scan_all_dir () {
+  if test $stdlib = yes; then
+    scan_dir "$COQLIB/theories" "Coq."
+    scan_dir "$COQLIB/plugins" "Coq."
+  fi
+  scan_dir "$COQLIB/user-contrib" "" "$exclude"
+}
+
+create_script () {
+  echo "BEGIN {"
+  scan_all_dir |
+  while read file ; do
+    echo $file | sed -e "s,\(.*\)[.]\([^.]*\),  t[\"\2\"] = \"\1.\2\","
+  done
+  cat <<EOF
+}
+
+\$1 ~ "Require" {
+  for (i = 2; i <= NF; ++i) {
+    if (\$i ~ /[.]\$/) {
+      s = substr(\$i,1,length(\$i)-1)
+      if (t[s]) \$i = t[s] "."
+      break
+    } else if (t[\$i]) \$i = t[\$i]
+  }
+  print
+  next
+}
+
+{ print }
+EOF
+}
+
+usage () {
+  cat <<EOF
+Usage: $0 [OPTION...] [TARGET...]
+The default TARGET is the current directory.
+Available options:
+  --exclude CONTRIB        Do not qualify path to the given CONTRIB
+  --stdlib                 Qualify files from the standard library
+  --help                   Display this message
+EOF
+}
+
+dir=""
+while : ; do
+  case "$1" in
+    "")
+      break;;
+    -h|--help)
+      usage
+      exit 0;;
+    --exclude)
+      exclude="$exclude -path ./$2 -prune -type f -o"
+      shift;;
+    --stdlib)
+      stdlib=yes;;
+    -*)
+      echo "Unknown option $1" 1>&2
+      exit 1;;
+    *)
+      dir="$dir $1";;
+  esac
+  shift
+done
+
+script=`tempfile`
+create_script > $script
+find $dir -name '*.v' |
+while read file; do
+  mv $file $file.bak
+  awk -f $script $file.bak > $file
+done
