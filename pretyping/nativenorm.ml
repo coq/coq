@@ -70,8 +70,15 @@ let type_constructor mind mib typ params =
 let construct_of_constr_notnative const env tag (mind, _ as ind) allargs =
   let mib,mip = lookup_mind_specif env ind in
   let nparams = mib.mind_nparams in
-  let i = invert_tag const tag mip.mind_reloc_tbl in
   let params = Array.sub allargs 0 nparams in
+  try
+    if const then
+      let ctyp = type_constructor mind mib (mip.mind_nf_lc.(0)) params in
+      retroknowledge Retroknowledge.get_vm_decompile_constant_info env (mkInd ind) tag, ctyp
+    else
+      raise Not_found
+  with Not_found ->
+  let i = invert_tag const tag mip.mind_reloc_tbl in
   let ctyp = type_constructor mind mib (mip.mind_nf_lc.(i-1)) params in
   (mkApp(mkConstruct(ind,i), params), ctyp)
  
