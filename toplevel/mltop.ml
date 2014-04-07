@@ -178,6 +178,7 @@ let add_rec_path ~unix_path ~coq_root =
       with Exit -> None
     in
     let dirs = List.map_filter convert_dirs dirs in
+    let () = List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs in
     let () = add_ml_dir unix_path in
     let add (path, dir) = Loadpath.add_load_path path false dir in
     let () = List.iter add dirs in

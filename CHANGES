@@ -97,9 +97,6 @@ Tools
 
 - Option -I now only adds directories to the ml path. To add to both
   the load path and the ml path, use -I -as.
-- Option -R no longer adds recursively to the ml path; only the root
-  directory is added. (Behavior with respect to the load path is
-  unchanged.)
 - Option -nois prevents coq/theories and coq/plugins to be recursively
   added to the load path. (Same behavior as with coq/user-contrib.)
 
