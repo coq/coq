@@ -477,8 +477,11 @@ let register =
   (* subfunction which adds the compiling information of an
      int31 operation which has a specific vm instruction (associates
      it to the name of the coq definition in the reactive retroknowledge) *)
-  let add_int31_op retroknowledge v n op kn =
-    add_vm_compiling_info retroknowledge v (Cbytegen.op_compilation n op kn)
+  let add_int31_op retroknowledge v n op prim kn =
+    let rk =
+      add_vm_compiling_info retroknowledge v (Cbytegen.op_compilation n op kn)
+    in
+    add_native_compiling_info rk v (Nativelambda.compile_prim prim kn)
   in
 
   let add_int31_before_match rk v =
@@ -490,16 +493,16 @@ let register =
 fun env field value ->
   (* subfunction which shortens the (very often use) registration of binary
      operators to the reactive retroknowledge. *)
-  let add_int31_binop_from_const op =
+  let add_int31_binop_from_const op prim =
     match kind_of_term value with
       | Const kn ->  retroknowledge add_int31_op env value 2
-	                               op kn
+	                               op prim kn
       | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant")
   in
-  let add_int31_unop_from_const op =
+  let add_int31_unop_from_const op prim =
     match kind_of_term value with
       | Const kn ->  retroknowledge add_int31_op env value 1
-	                               op kn
+	                               op prim kn
       | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant")
   in
   (* subfunction which completes the function constr_of_int31 above
@@ -531,33 +534,47 @@ fun env field value ->
 	  (add_int31_before_match
 	     (retroknowledge add_int31c env i31c) value)
     | KInt31 (_, Int31Plus) -> add_int31_binop_from_const Cbytecodes.Kaddint31
+							  Primitives.Int31add
     | KInt31 (_, Int31PlusC) -> add_int31_binop_from_const Cbytecodes.Kaddcint31
+							   Primitives.Int31addc
     | KInt31 (_, Int31PlusCarryC) -> add_int31_binop_from_const Cbytecodes.Kaddcarrycint31
+								Primitives.Int31addcarryc
     | KInt31 (_, Int31Minus) -> add_int31_binop_from_const Cbytecodes.Ksubint31
+							   Primitives.Int31sub
     | KInt31 (_, Int31MinusC) -> add_int31_binop_from_const Cbytecodes.Ksubcint31
+							    Primitives.Int31subc
     | KInt31 (_, Int31MinusCarryC) -> add_int31_binop_from_const
-	                                           Cbytecodes.Ksubcarrycint31
+	                                Cbytecodes.Ksubcarrycint31 Primitives.Int31subcarryc
     | KInt31 (_, Int31Times) -> add_int31_binop_from_const Cbytecodes.Kmulint31
+							   Primitives.Int31mul
     | KInt31 (_, Int31TimesC) -> add_int31_binop_from_const Cbytecodes.Kmulcint31
+							    Primitives.Int31mulc
     | KInt31 (_, Int31Div21) -> (* this is a ternary operation *)
                                 (match kind_of_term value with
 				 | Const kn ->
 				     retroknowledge add_int31_op env value 3
-	                               Cbytecodes.Kdiv21int31 kn
+	                               Cbytecodes.Kdiv21int31 Primitives.Int31div21 kn
 				 | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant"))
     | KInt31 (_, Int31Div) -> add_int31_binop_from_const Cbytecodes.Kdivint31
+							 Primitives.Int31div
     | KInt31 (_, Int31AddMulDiv) -> (* this is a ternary operation *)
                                 (match kind_of_term value with
 				 | Const kn ->
 				     retroknowledge add_int31_op env value 3
-	                               Cbytecodes.Kaddmuldivint31 kn
+	                               Cbytecodes.Kaddmuldivint31 Primitives.Int31addmuldiv kn
 				 | _ -> anomaly ~label:"Environ.register" (Pp.str "should be a constant"))
     | KInt31 (_, Int31Compare) -> add_int31_binop_from_const Cbytecodes.Kcompareint31
+							     Primitives.Int31compare
     | KInt31 (_, Int31Head0) -> add_int31_unop_from_const Cbytecodes.Khead0int31
+							  Primitives.Int31head0
     | KInt31 (_, Int31Tail0) -> add_int31_unop_from_const Cbytecodes.Ktail0int31
+							  Primitives.Int31tail0
     | KInt31 (_, Int31Lor) -> add_int31_binop_from_const Cbytecodes.Klorint31
+							 Primitives.Int31lor
     | KInt31 (_, Int31Land) -> add_int31_binop_from_const Cbytecodes.Klandint31
+							  Primitives.Int31land
     | KInt31 (_, Int31Lxor) -> add_int31_binop_from_const Cbytecodes.Klxorint31
+							  Primitives.Int31lxor
     | _ -> env.retroknowledge
   in
   Retroknowledge.add_field retroknowledge_with_reactive_info field value

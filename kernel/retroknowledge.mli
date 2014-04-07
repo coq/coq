@@ -118,9 +118,8 @@ val get_vm_before_match_info : retroknowledge -> entry -> Cbytecodes.bytecodes
 val get_vm_decompile_constant_info : retroknowledge -> entry -> int -> Term.constr
 
 
-val get_native_compiling_info  : retroknowledge -> entry -> Cbytecodes.comp_env ->
-                             constr array ->
-                             int -> Cbytecodes.bytecodes-> Cbytecodes.bytecodes
+val get_native_compiling_info  : retroknowledge -> entry -> Nativeinstr.prefix ->
+				 Nativeinstr.lambda array -> Nativeinstr.lambda
 
 val get_native_constant_static_info : retroknowledge -> entry ->
                                       constr array -> Nativeinstr.lambda
@@ -133,8 +132,6 @@ val get_native_constant_dynamic_info : retroknowledge -> entry ->
 val get_native_before_match_info : retroknowledge -> entry ->
 				   Nativeinstr.prefix -> constructor ->
 				   Nativeinstr.lambda -> Nativeinstr.lambda
-
-val get_native_decompile_constant_info : retroknowledge -> entry -> int -> Term.constr
 
 (** the following functions are solely used in Pre_env and Environ to implement
    the functions  register and unregister (and mem) of Environ *)
@@ -167,9 +164,9 @@ val add_vm_decompile_constant_info : retroknowledge -> entry ->
                                     (int -> constr) -> retroknowledge
 
 val add_native_compiling_info : retroknowledge-> entry ->
-                            (bool -> Cbytecodes.comp_env -> constr array -> int ->
-                            Cbytecodes.bytecodes -> Cbytecodes.bytecodes) ->
-                            retroknowledge
+				(bool -> Nativeinstr.prefix ->
+			         Nativeinstr.lambda array -> Nativeinstr.lambda) ->
+				retroknowledge
 
 val add_native_constant_static_info : retroknowledge -> entry ->
                                   (bool -> constr array ->
@@ -186,9 +183,6 @@ val add_native_before_match_info : retroknowledge -> entry ->
 				   (bool -> Nativeinstr.prefix -> constructor ->
 				      Nativeinstr.lambda -> Nativeinstr.lambda) ->
 				   retroknowledge
-
-val add_native_decompile_constant_info : retroknowledge -> entry ->
-                                    (int -> constr) -> retroknowledge
 
 val clear_info : retroknowledge-> entry -> retroknowledge
 

@@ -130,9 +130,8 @@ type reactive_end = {(*information required by the compiler of the VM *)
   vm_decompile_const : (int -> Term.constr) option;
 
   native_compiling :
-      (bool->Cbytecodes.comp_env->constr array ->
-       int->Cbytecodes.bytecodes->Cbytecodes.bytecodes)
-      option;
+      (bool -> Nativeinstr.prefix -> Nativeinstr.lambda array ->
+       Nativeinstr.lambda) option;
 
   native_constant_static :
       (bool -> constr array -> Nativeinstr.lambda) option;
@@ -142,9 +141,8 @@ type reactive_end = {(*information required by the compiler of the VM *)
        Nativeinstr.lambda array -> Nativeinstr.lambda) option;
 
   native_before_match : (bool -> Nativeinstr.prefix -> constructor ->
-			 Nativeinstr.lambda -> Nativeinstr.lambda) option;
+			 Nativeinstr.lambda -> Nativeinstr.lambda) option
 
-  native_decompile_const : (int -> Term.constr) option
 }
 
 
@@ -186,7 +184,6 @@ let empty_reactive_end =
     native_constant_static = None;
     native_constant_dynamic = None;
     native_before_match = None;
-    native_decompile_const = None
   }
 
 
@@ -269,12 +266,6 @@ let get_native_before_match_info knowledge key =
   with
     | None -> raise Not_found
     | Some f -> f knowledge.flags.fastcomputation
-
-let get_native_decompile_constant_info knowledge key =
-  match (Reactive.find key knowledge.reactive).native_decompile_const
-  with
-    | None -> raise Not_found
-    | Some f -> f
 
 (* functions manipulating reactive knowledge *)
 let add_vm_compiling_info knowledge value nfo =
@@ -373,17 +364,6 @@ let add_native_before_match_info knowledge value nfo =
        knowledge.reactive
    with Not_found ->
      Reactive.add value {empty_reactive_end with native_before_match = Some nfo}
-       knowledge.reactive
-  }
-
-let add_native_decompile_constant_info knowledge value nfo =
-  {knowledge with reactive =
-   try
-     Reactive.add value
-       {(Reactive.find value (knowledge.reactive)) with native_decompile_const = Some nfo}
-       knowledge.reactive
-   with Not_found ->
-     Reactive.add value {empty_reactive_end with native_decompile_const = Some nfo}
        knowledge.reactive
   }
 

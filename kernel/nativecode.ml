@@ -12,6 +12,7 @@ open Context
 open Declarations
 open Util
 open Nativevalues
+open Primitives
 open Nativeinstr
 open Nativelambda
 open Pre_env
@@ -255,14 +256,32 @@ type primitive =
   | Mk_rel of int
   | Mk_var of identifier
   | Is_accu
+  | Is_int
   | Cast_accu
   | Upd_cofix
   | Force_cofix
   | Mk_uint
+  | Mk_int
+  | Mk_bool
+  | Val_to_int
   | Mk_I31_accu
   | Decomp_uint
   | Mk_meta
   | Mk_evar
+  | MLand
+  | MLle
+  | MLlt
+  | MLinteq
+  | MLlsl
+  | MLlsr
+  | MLland
+  | MLlor
+  | MLlxor
+  | MLadd
+  | MLsub
+  | MLmul
+  | MLmagic
+  | Coq_primitive of Primitives.t * (prefix * constant) option
 
 let eq_primitive p1 p2 =
   match p1, p2 with
@@ -284,29 +303,49 @@ let eq_primitive p1 p2 =
   | _ -> false
 
 let primitive_hash = function
-| Mk_prod -> 1
-| Mk_sort -> 2
-| Mk_ind -> 3
-| Mk_const -> 4
-| Mk_sw -> 5
-| Mk_fix (r, i) ->
-  let h = Array.fold_left (fun h i -> combine h (Int.hash i)) 0 r in
-  combinesmall 6 (combine h (Int.hash i))
-| Mk_cofix i ->
-  combinesmall 7 (Int.hash i)
-| Mk_rel i ->
-  combinesmall 8 (Int.hash i)
-| Mk_var id ->
-  combinesmall 9 (Id.hash id)
-| Is_accu -> 10
-| Cast_accu -> 11
-| Upd_cofix -> 12
-| Force_cofix -> 13
-| Mk_uint -> 14
-| Mk_I31_accu -> 15
-| Decomp_uint -> 16
-| Mk_meta -> 17
-| Mk_evar -> 18
+  | Mk_prod -> 1
+  | Mk_sort -> 2
+  | Mk_ind -> 3
+  | Mk_const -> 4
+  | Mk_sw -> 5
+  | Mk_fix (r, i) ->
+     let h = Array.fold_left (fun h i -> combine h (Int.hash i)) 0 r in
+     combinesmall 6 (combine h (Int.hash i))
+  | Mk_cofix i ->
+     combinesmall 7 (Int.hash i)
+  | Mk_rel i ->
+     combinesmall 8 (Int.hash i)
+  | Mk_var id ->
+     combinesmall 9 (Id.hash id)
+  | Is_accu -> 10
+  | Is_int -> 11
+  | Cast_accu -> 12
+  | Upd_cofix -> 13
+  | Force_cofix -> 14
+  | Mk_uint -> 15
+  | Mk_int -> 16
+  | Mk_bool -> 17
+  | Val_to_int -> 18
+  | Mk_I31_accu -> 19
+  | Decomp_uint -> 20
+  | Mk_meta -> 21
+  | Mk_evar -> 22
+  | MLand -> 23
+  | MLle -> 24
+  | MLlt -> 25
+  | MLinteq -> 26
+  | MLlsl -> 27
+  | MLlsr -> 28
+  | MLland -> 29
+  | MLlor -> 30
+  | MLlxor -> 31
+  | MLadd -> 32
+  | MLsub -> 33
+  | MLmul -> 34
+  | MLmagic -> 35
+  | Coq_primitive (prim, None) -> combinesmall 36 (Primitives.hash prim)
+  | Coq_primitive (prim, Some (prefix,kn)) ->
+     combinesmall 37 (combine3 (String.hash prefix) (Constant.hash kn) (Primitives.hash prim))
 
 type mllambda =
   | MLlocal        of lname 
@@ -828,6 +867,113 @@ let merge_branches t =
   Array.iter (fun (c,args,body) -> insert (c,args) body newt) t;
   Array.of_list (to_list newt)
 
+
+type prim_aux = 
+  | PAprim of string * constant * Primitives.t * prim_aux array
+  | PAml of mllambda
+
+let add_check cond args =
+  let aux cond a = 
+    match a with
+    | PAml(MLint _) -> cond
+    | PAml ml ->
+       (* FIXME: use explicit equality function *)
+       if List.mem ml cond then cond else ml::cond 
+    | _ -> cond
+  in
+  Array.fold_left aux cond args
+  
+let extract_prim ml_of l =
+  let decl = ref [] in
+  let cond = ref [] in
+  let rec aux l = 
+    match l with
+    | Lprim(prefix,kn,p,args) ->
+	let args = Array.map aux args in
+	cond := add_check !cond args;
+	PAprim(prefix,kn,p,args)
+    | Lrel _ | Lvar _ | Luint _ | Lval _ | Lconst _ -> PAml (ml_of l)
+    | _ -> 
+	let x = fresh_lname Anonymous in
+	decl := (x,ml_of l)::!decl;
+	PAml (MLlocal x) in
+  let res = aux l in
+  (!decl, !cond, res)
+
+let app_prim p args = MLapp(MLprimitive p, args)
+
+let to_int v =
+  match v with
+  | MLapp(MLprimitive Mk_uint, t) ->
+     begin match t.(0) with
+     | MLuint i -> MLint (Uint31.to_int i)
+     | _ -> MLapp(MLprimitive Val_to_int, [|v|])
+     end
+  | MLapp(MLprimitive Mk_int, t) -> t.(0)
+  | _ -> MLapp(MLprimitive Val_to_int, [|v|]) 
+
+let of_int v = 
+  match v with
+  | MLapp(MLprimitive Val_to_int, t) -> t.(0)
+  | _ -> MLapp(MLprimitive Mk_int,[|v|]) 
+
+let compile_prim decl cond paux =
+(*
+  let args_to_int args = 
+    for i = 0 to Array.length args - 1 do
+      args.(i) <- to_int args.(i)
+    done;
+    args in
+ *)
+  let rec opt_prim_aux paux =
+    match paux with
+    | PAprim(prefix, kn, op, args) ->
+	let args = Array.map opt_prim_aux args in
+	app_prim (Coq_primitive(op,None)) args
+(*
+    TODO: check if this inling was useful
+	begin match op with
+        | Int31lt -> 
+           if Sys.word_size = 64 then
+             app_prim Mk_bool [|(app_prim MLlt (args_to_int args))|]
+           else app_prim (Coq_primitive (Primitives.Int31lt,None)) args
+        | Int31le ->
+           if Sys.word_size = 64 then
+             app_prim Mk_bool [|(app_prim MLle (args_to_int args))|]
+           else app_prim (Coq_primitive (Primitives.Int31le, None)) args
+	| Int31lsl  -> of_int (mk_lsl (args_to_int args))
+	| Int31lsr  -> of_int (mk_lsr (args_to_int args))
+	| Int31land -> of_int (mk_land (args_to_int args))
+	| Int31lor  -> of_int (mk_lor (args_to_int args))
+	| Int31lxor -> of_int (mk_lxor (args_to_int args))
+	| Int31add  -> of_int (mk_add (args_to_int args))
+	| Int31sub  -> of_int (mk_sub (args_to_int args))
+	| Int31mul  -> of_int (mk_mul (args_to_int args))
+	| _ -> app_prim (Coq_primitive(op,None)) args
+	end *)
+    | PAml ml -> ml 
+  and naive_prim_aux paux = 
+    match paux with
+    | PAprim(prefix, kn, op, args) ->
+        app_prim (Coq_primitive(op, Some (prefix, kn))) (Array.map naive_prim_aux args)
+    | PAml ml -> ml in
+
+  let compile_cond cond paux = 
+    match cond with
+    | [] -> opt_prim_aux paux 
+    | [c1] ->
+        MLif(app_prim Is_int [|c1|], opt_prim_aux paux, naive_prim_aux paux) 
+    | c1::cond ->
+	let cond = 
+	  List.fold_left 
+	    (fun ml c -> app_prim MLland [| ml; to_int c|])
+            (app_prim MLland [|to_int c1; MLint 0 |]) cond in
+        let cond = app_prim MLmagic [|cond|] in
+	MLif(cond, naive_prim_aux paux, opt_prim_aux paux) in
+  let add_decl decl body =
+    List.fold_left (fun body (x,d) -> MLlet(x,d,body)) body decl in
+  add_decl decl (compile_cond cond paux)
+
  let rec ml_of_lam env l t =
   match t with
   | Lrel(id ,i) -> get_rel env id i
@@ -858,6 +1004,9 @@ let merge_branches t =
   | Lapp(f,args) ->
       MLapp(ml_of_lam env l f, Array.map (ml_of_lam env l) args)
   | Lconst (prefix,c) -> MLglobal(Gconstant (prefix,c))
+  | Lprim _ ->
+      let decl,cond,paux = extract_prim (ml_of_lam env l) t in
+      compile_prim decl cond paux
   | Lcase (annot,p,a,bs) ->
       (* let predicate_uid fv_pred = compilation of p 
          let rec case_uid fv a_uid = 
@@ -1482,14 +1631,36 @@ let pp_mllam fmt l =
     | Mk_var id ->
         Format.fprintf fmt "mk_var_accu (Names.id_of_string \"%s\")" (string_of_id id)
     | Is_accu -> Format.fprintf fmt "is_accu"
+    | Is_int -> Format.fprintf fmt "is_int"
     | Cast_accu -> Format.fprintf fmt "cast_accu"
     | Upd_cofix -> Format.fprintf fmt "upd_cofix"
     | Force_cofix -> Format.fprintf fmt "force_cofix"
     | Mk_uint -> Format.fprintf fmt "mk_uint"
+    | Mk_int -> Format.fprintf fmt "mk_int"
+    | Mk_bool -> Format.fprintf fmt "mk_bool"
+    | Val_to_int -> Format.fprintf fmt "val_to_int"
     | Mk_I31_accu -> Format.fprintf fmt "mk_I31_accu"
     | Decomp_uint -> Format.fprintf fmt "decomp_uint"
     | Mk_meta -> Format.fprintf fmt "mk_meta_accu"
     | Mk_evar -> Format.fprintf fmt "mk_evar_accu"
+    | MLand -> Format.fprintf fmt "(&&)"
+    | MLle -> Format.fprintf fmt "(<=)"
+    | MLlt -> Format.fprintf fmt "(<)"
+    | MLinteq -> Format.fprintf fmt "(==)"
+    | MLlsl -> Format.fprintf fmt "(lsl)"
+    | MLlsr -> Format.fprintf fmt "(lsr)"
+    | MLland -> Format.fprintf fmt "(land)"
+    | MLlor -> Format.fprintf fmt "(lor)"
+    | MLlxor -> Format.fprintf fmt "(lxor)"
+    | MLadd -> Format.fprintf fmt "(+)"
+    | MLsub -> Format.fprintf fmt "(-)"
+    | MLmul -> Format.fprintf fmt "( * )"
+    | MLmagic -> Format.fprintf fmt "Obj.magic"
+    | Coq_primitive (op,None) ->
+       Format.fprintf fmt "no_check_%s" (Primitives.to_string op)
+    | Coq_primitive (op, Some (prefix,kn)) ->
+        Format.fprintf fmt "%s %a" (Primitives.to_string op)
+		       pp_mllam (MLglobal (Gconstant (prefix,kn)))
   in
   Format.fprintf fmt "@[%a@]" pp_mllam l
   

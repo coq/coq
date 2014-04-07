@@ -73,7 +73,7 @@ val force_cofix : t -> t
 val mk_const : tag -> t
 val mk_block : tag -> t array -> t
 
-
+val mk_bool : bool -> t
 val mk_int : int -> t
 val mk_uint : Uint31.t -> t
 
@@ -111,6 +111,75 @@ val is_accu : t -> bool
 
 val str_encode : 'a -> string
 val str_decode : string -> 'a
+
+(** Support for machine integers *)
+
+val val_to_int : t -> int
+val is_int : t -> bool
+
+(* function with check *)
+val head0 : t -> t -> t
+val tail0 : t -> t -> t
+
+val add : t -> t -> t -> t
+val sub : t -> t -> t -> t
+val mul : t -> t -> t -> t
+val div : t -> t -> t -> t
+val rem : t -> t -> t -> t
+
+val l_sr  : t -> t -> t -> t
+val l_sl  : t -> t -> t -> t
+val l_and : t -> t -> t -> t
+val l_xor : t -> t -> t -> t
+val l_or  : t -> t -> t -> t
+
+val addc      : t -> t -> t -> t
+val subc      : t -> t -> t -> t
+val addCarryC : t -> t -> t -> t
+val subCarryC : t -> t -> t -> t
+
+val mulc    : t -> t -> t -> t
+val diveucl : t -> t -> t -> t
+
+val div21     : t -> t -> t -> t -> t
+val addMulDiv : t -> t -> t -> t -> t
+
+val eq      : t -> t -> t -> t
+val lt      : t -> t -> t -> t
+val le      : t -> t -> t -> t
+val compare : t -> t -> t -> t 
+
+(* Function without check *)
+val no_check_head0 : t -> t
+val no_check_tail0 : t -> t
+
+val no_check_add : t -> t -> t
+val no_check_sub : t -> t -> t
+val no_check_mul : t -> t -> t
+val no_check_div : t -> t -> t
+val no_check_rem : t -> t -> t
+
+val no_check_l_sr  : t -> t -> t
+val no_check_l_sl  : t -> t -> t
+val no_check_l_and : t -> t -> t
+val no_check_l_xor : t -> t -> t
+val no_check_l_or  : t -> t -> t
+
+val no_check_addc      : t -> t -> t
+val no_check_subc      : t -> t -> t
+val no_check_addCarryC : t -> t -> t
+val no_check_subCarryC : t -> t -> t
+
+val no_check_mulc    : t -> t -> t
+val no_check_diveucl : t -> t -> t
+
+val no_check_div21     : t -> t -> t -> t
+val no_check_addMulDiv : t -> t -> t -> t
+
+val no_check_eq      : t -> t -> t
+val no_check_lt      : t -> t -> t
+val no_check_le      : t -> t -> t
+val no_check_compare : t -> t -> t 
 
 val mk_I31_accu : t
 val decomp_uint : t -> t -> t

@@ -101,6 +101,9 @@ let map_lam_with_binders g f n lam =
       let fct' = f n fct in
       let args' = Array.smartmap (f n) args in
       if fct == fct' && args == args' then lam else mkLapp fct' args'
+  | Lprim(prefix,kn,op,args) ->
+      let args' = Array.smartmap (f n) args in
+      if args == args' then lam else Lprim(prefix,kn,op,args')
   | Lcase(annot,t,a,br) ->
       let t' = f n t in
       let a' = f n a in
@@ -297,7 +300,7 @@ let rec occurence k kind lam =
       occurence (k+1) (occurence k kind def) body
   | Lapp(f, args) ->
       occurence_args k (occurence k kind f) args
-  | Lmakeblock(_,_,_,args) ->
+  | Lprim(_,_,_,args) | Lmakeblock(_,_,_,args) ->
       occurence_args k kind args
   | Lcase(_,t,a,br) ->
       let kind = occurence k (occurence k kind t) a in
@@ -626,6 +629,12 @@ and lambda_of_app env sigma f args =
   | Const kn ->
       let kn = get_allias !global_env kn in
       let cb = lookup_constant kn !global_env in
+      (try
+          let prefix = get_const_prefix !global_env kn in
+	  let args = lambda_of_args env sigma 0 args in
+	  Retroknowledge.get_native_compiling_info
+		    (!global_env).retroknowledge (mkConst kn) prefix args
+      with Not_found ->
       begin match cb.const_body with
       | Def csubst ->
           if cb.const_inline_code then
@@ -641,7 +650,7 @@ and lambda_of_app env sigma f args =
       | OpaqueDef _ | Undef _ ->
           let prefix = get_const_prefix !global_env kn in
           mkLapp (Lconst (prefix, kn)) (lambda_of_args env sigma 0 args)
-      end
+      end)
   | Construct c ->
       let tag, nparams, arity = Renv.get_construct_info env c in
       let expected = nparams + arity in
@@ -726,3 +735,8 @@ let before_match_int31 fc prefix c t =
   | Luint (UintVal i) -> assert false
   | Luint (UintDigits (prefix,c,args)) -> assert false
   | _ -> Luint (UintDecomp (prefix,c,t))
+
+let compile_prim prim kn fc prefix args =
+  if not fc then raise Not_found
+  else
+    Lprim(prefix, kn, prim, args)

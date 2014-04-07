@@ -29,6 +29,7 @@ and lambda =
   | Llet          of name * lambda * lambda
   | Lapp          of lambda * lambda array
   | Lconst        of prefix * constant
+  | Lprim         of prefix * constant * Primitives.t * lambda array
   | Lcase         of annot_sw * lambda * lambda * lam_branches 
                   (* annotations, term being matched, accu, branches *)
   | Lif           of lambda * lambda * lambda
