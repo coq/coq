@@ -838,9 +838,11 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
 	  [| argtyp ; wf_rel ;
 	     Evarutil.e_new_evar evdref env 
 	       ~src:(Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define false)) wf_proof;
-	     prop ; intern_body_lam |])
+	     prop |])
   in
+  let def = Typing.solve_evars env evdref def in
   let _ = evdref := Evarutil.nf_evar_map !evdref in
+  let def = mkApp (def, [|intern_body_lam|]) in
   let binders_rel = nf_evar_context !evdref binders_rel in
   let binders = nf_evar_context !evdref binders in
   let top_arity = Evarutil.nf_evar !evdref top_arity in
