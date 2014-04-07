@@ -351,11 +351,11 @@ let do_mutual_induction_scheme lnamedepindsort =
   let lrecnames = List.map (fun ((_,f),_,_,_) -> f) lnamedepindsort
   and env0 = Global.env() in
   let sigma, lrecspec =
-    List.fold_left
-      (fun (evd, l) (_,dep,ind,sort) -> 
+    List.fold_right
+      (fun (_,dep,ind,sort) (evd, l) -> 
         let evd, indu = Evd.fresh_inductive_instance env0 evd ind in
           (evd, (indu,dep,interp_elimination_sort sort) :: l))
-    (Evd.from_env env0,[]) lnamedepindsort
+    lnamedepindsort (Evd.from_env env0,[])
   in
   let sigma, listdecl = Indrec.build_mutual_induction_scheme env0 sigma lrecspec in
   let declare decl fi lrecref =

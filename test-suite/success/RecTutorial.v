@@ -520,8 +520,7 @@ Inductive  typ : Type :=
 
 Definition typ_inject: typ.
 split.
-exact typ.
-Fail Defined.
+Fail exact typ.
 (*
 Error: Universe Inconsistency.
 *)
