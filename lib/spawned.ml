@@ -31,7 +31,6 @@ let open_bin_connection h p =
   let cin, cout = open_connection (ADDR_INET (inet_addr_of_string h,p)) in
   set_binary_mode_in cin true;
   set_binary_mode_out cout true;
-  handshake cin cout;
   cin, cout
 
 let controller h p =
@@ -59,24 +58,24 @@ let channels = ref None
 
 let init_channels () =
   if !channels <> None then Errors.anomaly(Pp.str "init_channels called twice");
-  match !main_channel, !control_channel with
-  | None, None -> ()
-  | None, Some _ | Some _, None ->
-      Errors.anomaly (Pp.str "incomplete channels options")
-  | _, Some AnonPipe ->
-      Errors.anomaly (Pp.str "control channel cannot be a pipe")
-  | Some (Socket(mh,mp)), Some (Socket(ch,cp)) ->
-      channels := Some (open_bin_connection mh mp);
-      controller ch cp
-  | Some AnonPipe, Some (Socket (ch,cp)) ->
-      let stdin = Unix.in_channel_of_descr (Unix.dup Unix.stdin) in
-      let stdout = Unix.out_channel_of_descr (Unix.dup Unix.stdout) in
-      Unix.dup2 Unix.stderr Unix.stdout;
-      set_binary_mode_in stdin true;
-      set_binary_mode_out stdout true;
-      channels := Some (stdin, stdout);
-      handshake stdin stdout;
-      controller ch cp
+  let () = match !main_channel with
+  | None -> ()
+  | Some (Socket(mh,mp)) ->
+    channels := Some (open_bin_connection mh mp);
+  | Some AnonPipe ->
+    let stdin = Unix.in_channel_of_descr (Unix.dup Unix.stdin) in
+    let stdout = Unix.out_channel_of_descr (Unix.dup Unix.stdout) in
+    Unix.dup2 Unix.stderr Unix.stdout;
+    set_binary_mode_in stdin true;
+    set_binary_mode_out stdout true;
+    channels := Some (stdin, stdout);
+  in
+  match !control_channel with
+  | None -> ()
+  | Some (Socket (ch, cp)) ->
+    controller ch cp
+  | Some AnonPipe ->
+    Errors.anomaly (Pp.str "control channel cannot be a pipe")
 
 let get_channels () =
   match !channels with

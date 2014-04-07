@@ -97,8 +97,7 @@ let spawn_sock env prog args =
     raise (Failure "create_process failed")
   end;
   let cs, cin, cout = accept main_sock in
-  let winpid = handshake cin cout in
-  pid, winpid, cin, cout, cs
+  pid, cin, cout, cs
 
 let spawn_pipe env prog args =
   let master2worker_r,master2worker_w = Unix.pipe () in
@@ -122,8 +121,7 @@ let spawn_pipe env prog args =
   let cout = Unix.out_channel_of_descr master2worker_w in
   set_binary_mode_in cin true;
   set_binary_mode_out cout true;
-  let winpid = handshake cin cout in
-  pid, winpid, cin, cout, worker2master_r
+  pid, cin, cout, worker2master_r
 
 let filter_args args =
   let rec aux = function
@@ -137,13 +135,12 @@ let spawn_with_control prefer_sock env prog args =
   let control_sock, control_sock_name = mk_socket_channel () in
   let extra = [| "-control-channel"; control_sock_name |] in
   let args = Array.append extra (filter_args args) in
-  let (pid, winpid, cin, cout, s), is_sock =
+  let (pid, cin, cout, s), is_sock =
     if Sys.os_type <> "Unix" || prefer_sock
     then spawn_sock env prog args, true
     else spawn_pipe env prog args, false in
   let _, oob_resp, oob_req = accept control_sock in
-  let _ = handshake oob_resp oob_req in
-  (pid, winpid), oob_resp, oob_req, cin, cout, s, is_sock
+  pid, oob_resp, oob_req, cin, cout, s, is_sock
 
 let output_death_sentence pid oob_req =
   prerr_endline ("death sentence for " ^ pid);
@@ -159,7 +156,7 @@ type process = {
   oob_resp : in_channel;
   oob_req  : out_channel;
   gchan : ML.async_chan;
-  pid : int * int;
+  pid : int;
   mutable watch : ML.watch_id option;
   mutable alive : bool;
 }
@@ -167,10 +164,10 @@ type process = {
 type callback = ML.condition list -> read_all:(unit -> string) -> bool
 type handle = process
 
-let uid { pid = (_, winpid) } = string_of_int winpid
-let unixpid { pid = (unixpid, _) } = unixpid
+let uid { pid; } = string_of_int pid
+let unixpid { pid; } = pid
 
-let kill ({ pid = (unixpid, _winpid); oob_req; cin; cout; alive; watch } as p) =
+let kill ({ pid = unixpid; oob_req; cin; cout; alive; watch } as p) =
   p.alive <- false;
   if not alive then prerr_endline "This process is already dead"
   else begin try
@@ -222,7 +219,7 @@ let kill_if p ~sec test =
     end else true)
 
 let rec wait p =
-  try snd (Unix.waitpid [] (fst p.pid))
+  try snd (Unix.waitpid [] p.pid)
   with
   | Unix.Unix_error (Unix.EINTR, _, _) -> wait p
   | Unix.Unix_error _ -> Unix.WEXITED 0o400
@@ -236,7 +233,7 @@ type process = {
   cout : out_channel;
   oob_resp : in_channel;
   oob_req  : out_channel;
-  pid : int * int;
+  pid : int;
   mutable alive : bool;
 }
 
@@ -247,10 +244,10 @@ let spawn ?(prefer_sock=prefer_sock) ?(env=Unix.environment ()) prog args =
     spawn_with_control prefer_sock env prog args in
   { cin; cout; pid; oob_resp; oob_req; alive = true }, cin, cout
 
-let uid { pid = (_, winpid) } = string_of_int winpid
-let unixpid { pid = (unixpid, _) } = unixpid
+let uid { pid; } = string_of_int pid
+let unixpid { pid = pid; } = pid
 
-let kill ({ pid = (unixpid, _winpid); oob_req; cin; cout; alive } as p) =
+let kill ({ pid = unixpid; oob_req; cin; cout; alive } as p) =
   p.alive <- false;
   if not alive then prerr_endline "This process is already dead"
   else begin try
@@ -275,7 +272,7 @@ let kill_if p ~sec test =
       false
     end else true)
 
-let wait { pid = (unixpid, _) } =
+let wait { pid = unixpid } =
   try snd (Unix.waitpid [] unixpid)
   with Unix.Unix_error _ -> Unix.WEXITED 0o400
 
