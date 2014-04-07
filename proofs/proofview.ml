@@ -26,6 +26,8 @@ open Util
 type proofview = Proofview_monad.proofview
 open Proofview_monad
 
+type entry = (Term.constr * Term.types) list
+
 let proofview p =
   p.comb , p.solution
 
@@ -33,25 +35,19 @@ let proofview p =
    conclusion types, and optional names, creating that many initial goals. *)
 let init sigma =
   let rec aux = function
-  | [] ->  { initial = [] ; 
-	     solution = sigma ;
-             comb = [];
-	   }
-  | (env,typ)::l -> let { initial = ret ; solution = sol ; comb = comb } =
-                           aux l
-                         in
-                         let ( new_defs , econstr ) = 
-			   Evarutil.new_evar sol env typ
-			 in
-			 let (e,_) = Term.destEvar econstr in
-			 let gl = Goal.build e in
-			 { initial = (econstr,typ)::ret;
-			   solution = new_defs ;
-                           comb = gl::comb; }
+  | [] ->  [], { solution = sigma; comb = []; }
+  | (env, typ) :: l ->
+    let ret, { solution = sol; comb = comb } = aux l in
+    let (new_defs , econstr) = Evarutil.new_evar sol env typ in
+    let (e, _) = Term.destEvar econstr in
+    let gl = Goal.build e in
+    let entry = (econstr, typ) :: ret in
+    entry, { solution = new_defs; comb = gl::comb; }
   in
-  fun l -> let v = aux l in
+  fun l ->
+    let entry, v = aux l in
     (* Marks all the goal unresolvable for typeclasses. *)
-    { v with solution = Typeclasses.mark_unresolvables v.solution }
+    entry, { v with solution = Typeclasses.mark_unresolvables v.solution }
 
 type telescope =
   | TNil
@@ -59,27 +55,21 @@ type telescope =
 
 let dependent_init =
   let rec aux sigma = function
-  | TNil -> { initial = [] ;
-	     solution = sigma ;
-             comb = [];
-	   }
-  | TCons (env,typ,t) -> let ( sigma , econstr ) =
-			  Evarutil.new_evar sigma env typ
-			in
-                        let { initial = ret ; solution = sol ; comb = comb } =
-                          aux sigma (t econstr)
-                        in
-			let (e,_) = Term.destEvar econstr in
-			let gl = Goal.build e in
-			{ initial = (econstr,typ)::ret;
-			   solution = sol ;
-                           comb = gl::comb; }
+  | TNil -> [], { solution = sigma; comb = []; }
+  | TCons (env, typ, t) ->
+    let (sigma, econstr ) = Evarutil.new_evar sigma env typ in
+    let ret, { solution = sol; comb = comb } = aux sigma (t econstr) in
+    let (e, _) = Term.destEvar econstr in
+    let gl = Goal.build e in
+    let entry = (econstr, typ) :: ret in
+    entry, { solution = sol; comb = gl :: comb; }
   in
-  fun sigma t -> let v = aux sigma t in
+  fun sigma t ->
+    let entry, v = aux sigma t in
     (* Marks all the goal unresolvable for typeclasses. *)
-    { v with solution = Typeclasses.mark_unresolvables v.solution }
+    entry, { v with solution = Typeclasses.mark_unresolvables v.solution }
 
-let initial_goals { initial } = initial
+let initial_goals initial = initial
 
 (* Returns whether this proofview is finished or not. That is,
    if it has empty subgoals in the comb. There could still be unsolved
@@ -93,8 +83,7 @@ let return { solution=defs } = defs
 
 let return_constr { solution = defs } c = Evarutil.nf_evar defs c
 
-let partial_proof pv =
-  List.map (return_constr pv) (List.map fst (initial_goals pv))
+let partial_proof entry pv = List.map (return_constr pv) (List.map fst entry)
 
 let emit_side_effects eff x =
   { x with solution = Evd.emit_side_effects eff x.solution }
@@ -513,9 +502,8 @@ let sensitive_on_proofview s env step =
   let ( new_defs , combed_subgoals ) = 
     List.fold_right wrap step.comb (step.solution,[])
   in
-  { step with
-     solution = new_defs;
-     comb = List.flatten combed_subgoals; }
+  { solution = new_defs; comb = List.flatten combed_subgoals; }
+
 let tclSENSITIVE s =
   (* spiwack: convenience notations, waiting for ocaml 3.12 *)
   let (>>=) = Proof.bind in
@@ -675,7 +663,7 @@ module V82 = struct
       in
       let (goalss,evd) = Evd.Monad.List.map tac initgoals initevd in
       let sgs = List.flatten goalss in
-      Proof.set { ps with solution=evd ; comb=sgs; }
+      Proof.set { solution = evd; comb = sgs; }
     with e when catchable_exception e ->
       let e = Errors.push e in
       tclZERO e
@@ -687,7 +675,7 @@ module V82 = struct
     Proof.modify begin fun ps ->
     let map g s = Goal.V82.nf_evar s g in
     let (goals,evd) = Evd.Monad.List.map map ps.comb ps.solution in
-    { ps with solution=evd ; comb=goals }
+    { solution = evd; comb = goals; }
     end
 
   (* A [Proofview.tactic] version of [Refiner.tclEVARS] *)
@@ -714,11 +702,11 @@ module V82 = struct
   let goals { comb = comb ; solution = solution; } =
    { Evd.it = comb ; sigma = solution }
 
-  let top_goals { initial=initial ; solution=solution; } =
+  let top_goals initial { solution=solution; } =
     let goals = List.map (fun (t,_) -> Goal.V82.build (fst (Term.destEvar t))) initial in
     { Evd.it = goals ; sigma=solution; }
 
-  let top_evars { initial=initial } =
+  let top_evars initial =
     let evars_of_initial (c,_) =
       Evar.Set.elements (Evarutil.evars_of_term c)
     in
@@ -740,7 +728,7 @@ module V82 = struct
 
   let of_tactic t gls =
     try
-      let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] ; initial = [] } in
+      let init = { solution = gls.Evd.sigma ; comb = [gls.Evd.it] } in
       let (_,final,_) = apply (Goal.V82.env gls.Evd.sigma gls.Evd.it) t init in
       { Evd.sigma = final.solution ; it = final.comb }
     with Proof_errors.TacticFailure e ->
@@ -858,7 +846,7 @@ struct
     let handle = (sigma, []) in
     let ((sigma, evs), c) = f handle in
     let sigma = partial_solution sigma gl.Goal.self c in
-    let modify start = { start with solution = sigma; comb = List.rev evs; } in
+    let modify start = { solution = sigma; comb = List.rev evs; } in
     Proof.modify modify
   end
 

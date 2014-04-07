@@ -87,6 +87,8 @@ let done_cond ?(loose_end=false) k = CondDone (loose_end,k)
 type proof = {
   (* Current focused proofview *)
   proofview: Proofview.proofview;
+  (* Entry for the proofview *)
+  entry : Proofview.entry;
   (* History of the focusings, provides information on how
      to unfocus the proof and the extra information stored while focusing.
      The list is empty when the proof is fully unfocused. *)
@@ -131,7 +133,7 @@ let has_unresolved_evar p =
   Proofview.V82.has_unresolved_evar p.proofview
 
 (* Returns the list of partial proofs to initial goals *)
-let partial_proof p = Proofview.partial_proof p.proofview
+let partial_proof p = Proofview.partial_proof p.entry p.proofview
 
 (*** The following functions implement the basic internal mechanisms
      of proofs, they are not meant to be exported in the .mli ***)
@@ -227,19 +229,23 @@ let end_of_stack = CondEndStack end_of_stack_kind
 let unfocused = is_last_focus end_of_stack_kind
 
 let start sigma goals =
+  let entry, proofview = Proofview.init sigma goals in
   let pr = {
-    proofview = Proofview.init sigma goals ;
+    proofview;
+    entry;
     focus_stack = [] ;
     shelf = [] ;
     given_up = [] } in
   _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr
 let dependent_start sigma goals =
+  let entry, proofview = Proofview.dependent_init sigma goals in
   let pr = {
-    proofview = Proofview.dependent_init sigma goals ;
+    proofview;
+    entry;
     focus_stack = [] ;
     shelf = [] ;
     given_up = [] } in
-  let number_of_goals = List.length (Proofview.initial_goals pr.proofview) in
+  let number_of_goals = List.length (Proofview.initial_goals pr.entry) in
   _focus end_of_stack (Obj.repr ()) 1 number_of_goals pr
 
 exception UnfinishedProof
@@ -268,7 +274,7 @@ let return p =
     let p = unfocus end_of_stack_kind p () in
     Proofview.return p.proofview
 
-let initial_goals p = Proofview.initial_goals p.proofview
+let initial_goals p = Proofview.initial_goals p.entry
 
 (*** Function manipulation proof extra informations ***)
 
@@ -312,12 +318,12 @@ module V82 = struct
 
   let top_goal p =
     let { Evd.it=gls ; sigma=sigma; } =
-	Proofview.V82.top_goals p.proofview
+	Proofview.V82.top_goals p.entry p.proofview
     in
     { Evd.it=List.hd gls ; sigma=sigma; }
 
   let top_evars p =
-    Proofview.V82.top_evars p.proofview
+    Proofview.V82.top_evars p.entry
 
   let grab_evars p =
     if not (is_done p) then

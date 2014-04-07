@@ -567,7 +567,6 @@ Extract Inlined Constant goal => "Goal.goal".
 Extract Inlined Constant env => "Environ.env".
 
 Record proofview := {
-  initial : list (constr*types);
   solution : evar_map;
   comb : list goal
 }.

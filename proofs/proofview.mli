@@ -22,8 +22,7 @@
 
 open Term
 
-type proofview 
-
+type proofview
 
 (* Returns a stylised view of a proofview for use by, for instance,
    ide-s. *)
@@ -34,9 +33,11 @@ type proofview
    the [evar_map] context. *)
 val proofview : proofview -> Goal.goal list * Evd.evar_map
 
+type entry
+
 (* Initialises a proofview, the argument is a list of environement, 
    conclusion types, creating that many initial goals. *)
-val init : Evd.evar_map -> (Environ.env * Term.types) list -> proofview
+val init : Evd.evar_map -> (Environ.env * Term.types) list -> entry * proofview
 
 type telescope =
   | TNil
@@ -45,7 +46,7 @@ type telescope =
 (* Like [init], but goals are allowed to be depedenent on one
    another. Dependencies between goals is represented with the type
    [telescope] instead of [list]. *)
-val dependent_init  : Evd.evar_map -> telescope -> proofview
+val dependent_init  : Evd.evar_map -> telescope -> entry * proofview
 
 (* Returns whether this proofview is finished or not. That is,
    if it has empty subgoals in the comb. There could still be unsolved
@@ -55,8 +56,8 @@ val finished : proofview -> bool
 (* Returns the current value of the proofview partial proofs. *)
 val return : proofview -> Evd.evar_map
 
-val partial_proof : proofview -> constr list
-val initial_goals : proofview -> (constr * types) list
+val partial_proof : entry -> proofview -> constr list
+val initial_goals : entry -> (constr * types) list
 val emit_side_effects : Declareops.side_effects -> proofview -> proofview
 
 (*** Focusing operations ***)
@@ -308,10 +309,10 @@ module V82 : sig
      interprete them. *)
   val goals : proofview -> Goal.goal list Evd.sigma
 
-  val top_goals : proofview -> Goal.goal list Evd.sigma
+  val top_goals : entry -> proofview -> Goal.goal list Evd.sigma
   
   (* returns the existential variable used to start the proof *)
-  val top_evars : proofview -> Evd.evar list
+  val top_evars : entry -> Evd.evar list
     
   (* Implements the Existential command *)
   val instantiate_evar : int -> Constrexpr.constr_expr -> proofview -> proofview

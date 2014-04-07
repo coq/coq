@@ -5,8 +5,7 @@ type ('a, 'b) list_view =
 | Nil of exn
 | Cons of 'a * 'b
 
-type proofview = { initial : (Term.constr * Term.types) list;
-                   solution : Evd.evar_map; comb : Goal.goal list }
+type proofview = { solution : Evd.evar_map; comb : Goal.goal list }
 
 type logicalState = proofview
 
