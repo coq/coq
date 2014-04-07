@@ -14,7 +14,7 @@ Hint Resolve L.
 
 Goal G unit Q -> F (Q tt).
   intro.
-  auto.
+  eauto. 
 Qed.
 
 (* Test implicit arguments in "using" clause *)

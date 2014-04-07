@@ -220,7 +220,11 @@ let declare_assumption is_coe (local,p,kind) (c,ctx) imps impl nl (_,ident) = ma
   let () = assumption_message ident in
   let () = Typeclasses.declare_instance None false gr in
   let () = if is_coe then Class.try_add_new_coercion gr local p in
-  (gr,Univ.UContext.instance ctx,Lib.is_modtype_strict ())
+  let inst = 
+    if p (* polymorphic *) then Univ.UContext.instance ctx 
+    else Univ.Instance.empty
+  in
+    (gr,inst,Lib.is_modtype_strict ())
 
 let declare_assumptions_hook = ref ignore
 let set_declare_assumptions_hook = (:=) declare_assumptions_hook
