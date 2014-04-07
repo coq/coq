@@ -76,11 +76,6 @@ let sort_of_atomic_type env sigma ft args =
     | _ -> retype_error NotASort
   in concl_of_arity env ft (Array.to_list args)
 
-let decomp_sort env sigma t =
-  match kind_of_term (whd_betadeltaiota env sigma t) with
-  | Sort s -> s
-  | _ -> retype_error NotASort
-
 let type_of_var env id =
   try let (_,_,ty) = lookup_named id env in ty
   with Not_found -> retype_error (BadVariable id)
