@@ -243,7 +243,7 @@ Polymorphic Definition fun_ext (A B : Type) :=
 
 Polymorphic Class Funext A B := extensional : fun_ext A B.
 
-Section foo. 
+Section foo2. 
   Context `{forall A B, Funext A B}.
   Print Universes.
-End foo.
+End foo2.

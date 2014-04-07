@@ -257,7 +257,7 @@ let do_assumptions kind nl l =
     let t = replace_vars subst t in
     let (refs,status') = declare_assumptions idl is_coe kind (t,ctx) imps false nl in
     let subst' = List.map2 
-      (fun (_,id) (c,u) -> (id,Universes.constr_of_global_univ (c,u))) (*FIXME incorrect should also enrich the context of the current assumption with c's context *)
+      (fun (_,id) (c,u) -> (id,Universes.constr_of_global_univ (c,u)))
       idl refs 
     in
       (subst'@subst, status' && status)) ([],true) l)

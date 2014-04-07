@@ -673,7 +673,7 @@ let restrict_universe_context (univs,csts) s =
         if LSet.mem l diff && LSet.mem r diff then (univs, csts)
 	else (LSet.add l (LSet.add r univs), Constraint.add c csts))
     csts (LSet.empty, Constraint.empty)
-  in (LSet.inter univs univscstrs, csts)
+  in (LSet.union s (LSet.inter univs univscstrs), csts)
 
 let simplify_universe_context (univs,csts) =
   let uf = UF.create () in
