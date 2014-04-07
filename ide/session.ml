@@ -20,6 +20,11 @@ class type ['a] page =
     method on_update : callback:('a -> unit) -> unit
   end
 
+class type control =
+  object
+    method detach : unit -> unit
+  end
+
 type errpage = (int * string) list page
 type jobpage = string Int.Map.t page
 
@@ -36,6 +41,7 @@ type session = {
   tab_label : GMisc.label;
   errpage : errpage;
   jobpage : jobpage;
+  mutable control : control;
 }
 
 let create_buffer () =
@@ -340,6 +346,11 @@ let create_messages () =
   let _ = messages#misc#set_can_focus true in
   messages
 
+let dummy_control : control =
+  object
+    method detach () = ()
+  end
+
 let create file coqtop_args =
   let basename = match file with
     |None -> "*scratch*"
@@ -374,7 +385,8 @@ let create file coqtop_args =
     finder=finder;
     tab_label= GMisc.label ~text:basename ();
     errpage=errpage;
-    jobpage=jobpage
+    jobpage=jobpage;
+    control = dummy_control;
   }
 
 let kill (sn:session) =
@@ -390,6 +402,9 @@ let build_layout (sn:session) =
   let session_box =
     GPack.vbox ~packing:(session_paned#pack1 ~shrink:false ~resize:true) ()
   in
+
+  (** Right part of the window. *)
+
   let eval_paned = GPack.paned `HORIZONTAL ~border_width:5
     ~packing:(session_box#pack ~expand:true) () in
   let script_frame = GBin.frame ~shadow_type:`IN
@@ -398,10 +413,25 @@ let build_layout (sn:session) =
     ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:script_frame#add () in
   let state_paned = GPack.paned `VERTICAL
     ~packing:eval_paned#add2 () in
-  let proof_frame = GBin.frame ~shadow_type:`IN
-    ~packing:state_paned#add1 () in
+
+  (** Proof buffer. *)
+
+  let title = Printf.sprintf "Proof (%s)" sn.tab_label#text in
+  let proof_detachable = Wg_Detachable.detachable ~title () in
+  let () = proof_detachable#button#misc#hide () in
+  let () = proof_detachable#frame#set_shadow_type `IN in
+  let () = state_paned#add1 proof_detachable#coerce in
+  let callback _ = proof_detachable#show in
+  let () = proof_detachable#connect#attached ~callback in
+  let callback _ =
+    sn.proof#coerce#misc#set_size_request ~width:500 ~height:400 ()
+  in
+  let () = proof_detachable#connect#detached ~callback in
   let proof_scroll = GBin.scrolled_window
-    ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:proof_frame#add () in
+    ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC ~packing:proof_detachable#pack () in
+
+  (** Message buffer. *)
+
   let message_frame = GPack.notebook ~packing:state_paned#add () in
   let add_msg_page pos name text (w : GObj.widget) =
     let detachable =
@@ -468,4 +498,10 @@ let build_layout (sn:session) =
   img#set_stock `YES;
   eval_paned#set_position 1;
   state_paned#set_position 1;
+  let control =
+    object
+      method detach () = proof_detachable#detach ()
+    end
+  in
+  let () = sn.control <- control in
   (Some session_tab#coerce,None,session_paned#coerce)

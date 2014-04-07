@@ -653,24 +653,7 @@ end
 
 module MiscMenu = struct
 
-let detach_view sn =
-  (* Open a separate window containing the current buffer *)
-  let file = match sn.fileops#filename with
-    |None -> "*scratch*"
-    |Some f -> f
-  in
-  let w = GWindow.window ~show:true ~title:file ~position:`CENTER
-    ~width:(prefs.window_width*2/3)
-    ~height:(prefs.window_height*2/3)
-    ()
-  in
-  let sb = GBin.scrolled_window ~packing:w#add ()
-  in
-  let nv = GText.view ~buffer:sn.buffer ~packing:sb#add ()
-  in
-  nv#misc#modify_font prefs.text_font;
-  (* If the buffer in the main window is closed, destroy this detached view *)
-  ignore (sn.script#connect#destroy ~callback:w#destroy)
+let detach_view sn = sn.control#detach ()
 
 let detach_view = cb_on_current_term detach_view
 

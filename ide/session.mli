@@ -16,6 +16,11 @@ class type ['a] page =
     method on_update : callback:('a -> unit) -> unit
   end
 
+class type control =
+  object
+    method detach : unit -> unit
+  end
+
 type errpage = (int * string) list page
 type jobpage = string Int.Map.t page
 
@@ -32,6 +37,7 @@ type session = {
   tab_label : GMisc.label;
   errpage : errpage;
   jobpage : jobpage;
+  mutable control : control;
 }
 
 (** [create filename coqtop_args] *)

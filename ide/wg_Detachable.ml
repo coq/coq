@@ -50,7 +50,22 @@ class detachable (obj : ([> Gtk.box] as 'a) Gobject.obj) =
 
     method visible = win#misc#visible || self#misc#visible
 
+    method frame = frame
+
     method button = but
+
+    method attach () =
+      win#misc#hide ();
+      frame#misc#reparent self#coerce;
+      detached <- false;
+      attached_cb self#child
+
+    method detach () =
+      frame#misc#reparent win#coerce;
+      self#misc#hide ();
+      win#present ();
+      detached <- true;
+      detached_cb self#child
 
     initializer
       self#set_homogeneous false;
@@ -59,19 +74,8 @@ class detachable (obj : ([> Gtk.box] as 'a) Gobject.obj) =
       win#misc#hide ();
       but#add (GMisc.label
         ~markup:"<span size='x-small'>D\nE\nT\nA\nC\nH</span>" ())#coerce;
-      ignore(win#event#connect#delete ~callback:(fun _ ->
-        win#misc#hide ();
-        frame#misc#reparent self#coerce;
-        detached <- false;
-        attached_cb self#child;
-        true));
-      ignore(but#connect#clicked ~callback:(fun _ ->
-        frame#misc#reparent win#coerce;
-        self#misc#hide ();
-        win#present ();
-        detached <- true;
-        detached_cb self#child;
-        ))
+      ignore(win#event#connect#delete ~callback:(fun _ -> self#attach (); true));
+      ignore(but#connect#clicked ~callback:(fun _ -> self#detach ()))
 
   end
 
