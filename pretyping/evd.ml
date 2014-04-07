@@ -390,19 +390,20 @@ let process_universe_constraints univs vars alg local cstrs =
 		  instantiate_variable l' (Univ.Universe.make r') vars
 		else if rloc then 
 		  instantiate_variable r' (Univ.Universe.make l') vars
-		else 
-		  (* Two rigid/global levels, one of them being Prop/Set, disallow *)
-		  (* if Univ.is_small_univ l' || Univ.is_small_univ r' then *)
-		  (*   raise UniversesDiffer *)
-		  (* else *)
-		  if fo then 
-		    if not (Univ.check_eq univs l r) then 
+		else if not (Univ.check_eq univs l r) then
+		  (* Two rigid/global levels, none of them being local,
+		     one of them being Prop/Set, disallow *)
+		  if Univ.Level.is_small l' || Univ.Level.is_small r' then
+		    raise (Univ.UniverseInconsistency (Univ.Eq, l, r, []))
+		  else
+		    if fo then 
 		      raise UniversesDiffer
 	      in
 	        Univ.enforce_eq_level l' r' local
            | _, _ (* One of the two is algebraic or global *) -> 
 	     if Univ.check_eq univs l r then local
-	     else raise UniversesDiffer
+	     else 
+	       raise UniversesDiffer
   in
   let local = 
     Univ.UniverseConstraints.fold (fun (l,d,r) local -> unify_universes false l d r local)

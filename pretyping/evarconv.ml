@@ -127,7 +127,7 @@ let check_conv_record (t1,sk1) (t2,sk2) =
     with Not_found ->
       lookup_canonical_conversion (proji,Default_cs),[]
   in
-  let { o_DEF = c; o_CTX = ctx; o_INJ=n; o_TABS = bs;
+  let t', { o_DEF = c; o_CTX = ctx; o_INJ=n; o_TABS = bs;
         o_TPARAMS = params; o_NPARAMS = nparams; o_TCOMPS = us } = canon_s in
   let params1, c1, extra_args1 =
     match arg with
@@ -145,8 +145,10 @@ let check_conv_record (t1,sk1) (t2,sk2) =
       | Some (l',el,s') -> (l'@Stack.append_app [|el|] Stack.empty,s') in
   let subst, ctx' = Universes.fresh_universe_context_set_instance ctx in
   let c' = subst_univs_level_constr subst c in
+  let t' = subst_univs_level_constr subst t' in
   let bs' = List.map (subst_univs_level_constr subst) bs in
-    ctx',c',bs',(Stack.append_app_list params Stack.empty,params1),(Stack.append_app_list us Stack.empty,us2),(extra_args1,extra_args2),c1,
+    ctx',t',c',bs',(Stack.append_app_list params Stack.empty,params1),
+    (Stack.append_app_list us Stack.empty,us2),(extra_args1,extra_args2),c1,
     (n,Stack.zip(t2,sk2))
 
 (* Precondition: one of the terms of the pb is an uninstantiated evar,
@@ -666,21 +668,26 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false) ts env evd pbty
 
       end
 
-and conv_record trs env evd (ctx,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
+and conv_record trs env evd (ctx,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
   let evd = Evd.merge_context_set Evd.univ_flexible evd ctx in
   if Reductionops.Stack.compare_shape ts ts1 then
-    let (evd',ks,_) =
+    let (evd',ks,_,test) =
       List.fold_left
-	(fun (i,ks,m) b ->
-	  if Int.equal m n then (i,t2::ks, m-1) else
+	(fun (i,ks,m,test) b ->
+	  if Int.equal m n then 
+	    let ty = Retyping.get_type_of env i t2 in
+	    let test i = evar_conv_x trs env i CUMUL ty (substl ks b) in
+	      (i,t2::ks, m-1, test)
+	  else
 	    let dloc = (Loc.ghost,Evar_kinds.InternalHole) in
             let (i',ev) = new_evar i env ~src:dloc (substl ks b) in
-	    (i', ev :: ks, m - 1))
-	(evd,[],List.length bs - 1) bs
+	    (i', ev :: ks, m - 1,test))
+	(evd,[],List.length bs - 1,fun i -> Success i) bs
     in
     let app = mkApp (c, Array.rev_of_list ks) in
     ise_and evd'
-      [(fun i ->
+      [test;
+       (fun i ->
 	exact_ise_stack2 env i
           (fun env' i' cpb x1 x -> evar_conv_x trs env' i' cpb x1 (substl ks x))
           params1 params);
@@ -689,7 +696,8 @@ and conv_record trs env evd (ctx,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t
            (fun env' i' cpb u1 u -> evar_conv_x trs env' i' cpb u1 (substl ks u))
            us2 us);
        (fun i -> evar_conv_x trs env i CONV c1 app);
-       (fun i -> exact_ise_stack2 env i (evar_conv_x trs) ts ts1)]
+       (fun i -> exact_ise_stack2 env i (evar_conv_x trs) ts ts1);
+       (fun i -> evar_conv_x trs env i CONV (substl ks t) t2)]
   else UnifFailure(evd,(*dummy*)NotSameHead)
 
 and eta_constructor ts env evd ((ind, i), u) l1 csts1 (c, csts2) =

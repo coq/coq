@@ -1024,6 +1024,7 @@ let check_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y 
     | Reduction.CUMUL -> Reduction.trans_conv_leq_universes in
     try f ~evars:(safe_evar_value sigma) ts env (Evd.universes sigma) x y; true
     with Reduction.NotConvertible -> false
+    | Univ.UniverseInconsistency _ -> false
     | e when is_anomaly e -> error "Conversion test raised an anomaly"
 
 let infer_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y = 
@@ -1034,6 +1035,7 @@ let infer_conv ?(pb=Reduction.CUMUL) ?(ts=full_transparent_state) env sigma x y 
       let cstrs = f ~evars:(safe_evar_value sigma) ~ts env (Evd.universes sigma) x y in
 	Evd.add_constraints sigma cstrs, true
     with Reduction.NotConvertible -> sigma, false
+    | Univ.UniverseInconsistency _ -> sigma, false
     | e when is_anomaly e -> error "Conversion test raised an anomaly"
     
 (********************************************************************)

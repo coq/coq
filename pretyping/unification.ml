@@ -706,7 +706,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
 
   and solve_canonical_projection curenvnb pb b cM f1l1 cN f2l2 (sigma,ms,es) =
-    let (ctx,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
+    let (ctx,t,c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
       try Evarconv.check_conv_record f1l1 f2l2
       with Not_found -> error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
@@ -730,6 +730,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 			   substn params1 params in
       let (substn,_,_) = Reductionops.Stack.fold2 (unirec_rec curenvnb pb b false) substn ts ts1 in
       let app = mkApp (c, Array.rev_of_list ks) in
+      (* let substn = unirec_rec curenvnb pb b false substn t cN in *)
 	unirec_rec curenvnb pb b false substn c1 app
       with Invalid_argument "Reductionops.Stack.fold2" ->
 	error_cannot_unify (fst curenvnb) sigma (cM,cN)

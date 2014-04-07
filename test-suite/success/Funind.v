@@ -23,6 +23,7 @@ Function ftest (n m : nat) : nat :=
          end
   | S p => 0
   end.
+(* MS: FIXME: apparently can't define R_ftest_complete *)
 
 Lemma test1 : forall n m : nat, ftest n m <= 2.
 intros n m.

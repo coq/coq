@@ -160,12 +160,17 @@ let eq_cs_pattern p1 p2 = match p1, p2 with
 | Default_cs, Default_cs -> true
 | _ -> false
 
+let rec assoc_pat a = function
+  | ((pat, t), e) :: xs -> if eq_cs_pattern pat a then (t, e) else assoc_pat a xs
+  | [] -> raise Not_found
+
+
 let object_table =
-  Summary.ref (Refmap.empty : (cs_pattern * obj_typ) list Refmap.t)
+  Summary.ref (Refmap.empty : ((cs_pattern * constr) * obj_typ) list Refmap.t)
     ~name:"record-canonical-structs"
 
 let canonical_projections () =
-  Refmap.fold (fun x -> List.fold_right (fun (y,c) acc -> ((x,y),c)::acc))
+  Refmap.fold (fun x -> List.fold_right (fun ((y,_),c) acc -> ((x,y),c)::acc))
     !object_table []
 
 let keep_true_projections projs kinds =
@@ -212,7 +217,7 @@ let compute_canonical_projections (con,ind) =
 	       begin
 		 try
 		   let patt, n , args = cs_pattern_of_constr t in
-		     ((ConstRef proji_sp, patt, n, args) :: l)
+		     ((ConstRef proji_sp, patt, t, n, args) :: l)
 		 with Not_found ->
                    if Flags.is_verbose () then
                      (let con_pp = Nametab.pr_global_env Id.Set.empty (ConstRef con)
@@ -224,8 +229,8 @@ let compute_canonical_projections (con,ind) =
 	       end
 	   | _ -> l)
       [] lps in
-  List.map (fun (refi,c,inj,argj) ->
-    (refi,c),
+  List.map (fun (refi,c,t,inj,argj) ->
+    (refi,(c,t)),
     {o_DEF=v; o_CTX=ctx; o_INJ=inj; o_TABS=lt;
      o_TPARAMS=params; o_NPARAMS=List.length params; o_TCOMPS=argj})
     comp
@@ -236,16 +241,18 @@ let pr_cs_pattern = function
   | Default_cs -> str "_"
   | Sort_cs s -> Termops.pr_sort_family s
 
+let pr_pattern (p,c) = pr_cs_pattern p
+
 let open_canonical_structure i (_,o) =
   if Int.equal i 1 then
     let lo = compute_canonical_projections o in
-    List.iter (fun ((proj,cs_pat),s) ->
+    List.iter (fun ((proj,(cs_pat,_ as pat)),s) ->
       let l = try Refmap.find proj !object_table with Not_found -> [] in
-      let ocs = try Some (List.assoc_f eq_cs_pattern cs_pat l)
+      let ocs = try Some (assoc_pat cs_pat l)
       with Not_found -> None
       in match ocs with
-        | None -> object_table := Refmap.add proj ((cs_pat,s)::l) !object_table;
-        | Some cs ->
+        | None -> object_table := Refmap.add proj ((pat,s)::l) !object_table;
+        | Some (c, cs) ->
             if Flags.is_verbose () then
               let old_can_s = (Termops.print_constr cs.o_DEF)
               and new_can_s = (Termops.print_constr s.o_DEF) in
@@ -309,7 +316,7 @@ let declare_canonical_structure ref =
   add_canonical_structure (check_and_decompose_canonical_structure ref)
 
 let lookup_canonical_conversion (proj,pat) =
-  List.assoc_f eq_cs_pattern pat (Refmap.find proj !object_table)
+  assoc_pat pat (Refmap.find proj !object_table)
 
   (* let cst, u' = destConst cs.o_DEF in *)
   (*   { cs with o_DEF = mkConstU (cst, u) } *)

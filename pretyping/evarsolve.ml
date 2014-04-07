@@ -30,8 +30,8 @@ let refresh_universes dir evd t =
   let evdref = ref evd in
   let modified = ref false in
   let rec refresh t = match kind_of_term t with
-    | Sort (Type u as s) when Univ.universe_level u = None ||
-			   Evd.is_sort_variable evd s = None ->
+    | Sort (Type u as s) when Univ.universe_level u = None
+			 (* || Evd.is_sort_variable evd s = None *) ->
       (modified := true;
        (* s' will appear in the term, it can't be algebraic *)
        let s' = evd_comb0 (new_sort_variable Evd.univ_flexible) evdref in
