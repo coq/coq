@@ -38,6 +38,7 @@ Names
 Univ
 Esubst
 Term
+Print
 Declarations
 Environ
 Closure

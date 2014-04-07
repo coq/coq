@@ -275,7 +275,26 @@ let rec explain_exn = function
       | IllFormedBranch _ -> str"IllFormedBranch"
       | Generalization _ -> str"Generalization"
       | ActualType _ -> str"ActualType"
-      | CantApplyBadType _ -> str"CantApplyBadType"
+      | CantApplyBadType ((n,a,b),(hd,hdty),args) ->
+          Format.printf "====== ill-typed term ====@\n";
+          Format.printf "@[<hov 2>application head=@ ";
+          Print.print_pure_constr hd;
+          Format.printf "@]@\n@[<hov 2>head type=@ ";
+          Print.print_pure_constr hdty;
+          Format.printf "@]@\narguments:@\n@[<hv>";
+          Array.iteri (fun i (t,ty) ->
+            Format.printf "@[<hov 2>arg %d=@ " (i+1);
+            Print.print_pure_constr t;
+            Format.printf "@ type=@ ";
+            Print.print_pure_constr ty) args;
+          Format.printf "@]@\n====== type error ====@\n";
+          Print.print_pure_constr b;
+          Format.printf "@\nis not convertible with@\n";
+          Print.print_pure_constr a;
+          Format.printf "@\n====== universes ====@\n";
+          Pp.pp (Univ.pr_universes
+            (ctx.Environ.env_stratification.Environ.env_universes));
+          str("\nCantApplyBadType at argument " ^ string_of_int n)
       | CantApplyNonFunctional _ -> str"CantApplyNonFunctional"
       | IllFormedRecBody _ -> str"IllFormedRecBody"
       | IllTypedRecBody _ -> str"IllTypedRecBody"))
