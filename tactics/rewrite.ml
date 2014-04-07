@@ -633,12 +633,12 @@ let unify_eqn env (sigma, cstrs) hypinfo by t =
 	  and ty2 = Typing.type_of env'.env env'.evd c2
 	  in
 	    if convertible env env'.evd ty1 ty2 then 
-	      (if occur_meta_or_existential prf then
+	      (* (if occur_meta_or_existential prf then *)
 		(hypinfo := refresh_hypinfo env env'.evd !hypinfo;
 		 env'.evd, prf, c1, c2, car, rel)
-	       else (** Evars have been solved, we can go back to the initial evd,
-			but keep the potential refinement of existing evars. *)
-		  env'.evd, prf, c1, c2, car, rel)
+	       (* else (\** Evars have been solved, we can go back to the initial evd, *)
+	       (* 		but keep the potential refinement of existing evars. *\) *)
+	       (* 	  env'.evd, prf, c1, c2, car, rel) *)
 	    else raise Reduction.NotConvertible
     in
     let evars = evd', Evar.Set.empty in

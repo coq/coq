@@ -11,7 +11,7 @@ Parameter π : ℝ.
 
 (** Check indices *)
 Definition test_indices : nat -> nat := fun x₁ => x₁.
-Definition π₂ := snd.
+Definition π₂ := @snd.
 
 (** More unicode in identifiers *)
 Definition αβ_áà_אב := 0.

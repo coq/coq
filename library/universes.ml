@@ -645,7 +645,7 @@ let universes_of_constr c =
     match kind_of_term c with
     | Const (_, u) | Ind (_, u) | Construct (_, u) ->
       LSet.union (Instance.levels u) s
-    | Sort u -> 
+    | Sort u when not (Sorts.is_small u) -> 
       let u = univ_of_sort u in
 	LSet.union (Universe.levels u) s
     | _ -> fold_constr aux s c
