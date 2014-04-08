@@ -12,3 +12,5 @@ Fail induction 1.
 refine (fun p => match p with _ => _ end).
 Undo.
 refine (fun p => match p with foo_intro _ _ => _ end).
+admit.
+Qed.
