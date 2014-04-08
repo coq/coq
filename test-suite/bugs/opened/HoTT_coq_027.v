@@ -20,9 +20,10 @@ Identity Coercion FunctorToType_Id : FunctorToType >-> Functor.
 
 Definition FunctorTo_Set2Type `(C : @Category objC) (F : FunctorToSet C)
 : FunctorToType C.
-  refine (@Build_Functor _ C _ TypeCat
+  Fail refine (@Build_Functor _ C _ TypeCat
                          (fun x => F.(ObjectOf) x)
                          (fun s d m => F.(MorphismOf) _ _ m)).
+  admit.
 Defined. (* Toplevel input, characters 0-8:
 Error:
 The term

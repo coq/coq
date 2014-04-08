@@ -116,7 +116,7 @@ Notation "[ C , D ]" := (FunctorCategory C D) : category_scope.
 Variable C : PreCategory.
 Variable D : PreCategory.
 Variable E : PreCategory.
-Definition NTWhiskerR_Functorial (G : [C, D]%category)
+Fail Definition NTWhiskerR_Functorial (G : [C, D]%category)
 : [[D, E], [C, E]]%category
   := Build_Functor
        [C, D] [C, E]

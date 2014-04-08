@@ -19,5 +19,9 @@ Definition focus A (_ : A) := True.
 
 Definition CommaCategory_Object (A : Category) (S : Functor TerminalCategory A) : Type.
   assert (Hf : focus ((S tt) = (S tt))) by constructor.
-  progress change CObject with (fun C => @Object (CObject C) C) in *.
+  let C1 := constr:(CObject) in
+  let C2 := constr:(fun C => @Object (CObject C) C) in
+  let check := constr:(eq_refl : C1 = C2) in
+  unify C1 C2.
+  Fail progress change CObject with (fun C => @Object (CObject C) C) in *.
   (* not convertible *)

@@ -11,7 +11,7 @@ Check comp_type_paths.
 
 Inductive type_paths' (A : Type) : Type -> Prop
   := idtypepath' : type_paths' A A
-   | other_type_path : False -> forall B : Set, type_paths' A B.
+   | other_type_path : False -> forall B : Type, type_paths' A B.
 Monomorphic Definition comp_type_paths' := Eval compute in type_paths'.
 Check comp_type_paths'.
 (* comp_type_paths'
@@ -29,7 +29,7 @@ Defined.
 
 Goal Type.
 Proof.
-  match type of comp_type_paths with
+  Fail match type of comp_type_paths with
     | ?U0 -> ?U1 -> ?R
       => exact (@comp_type_paths nat U0)
   end.
@@ -39,4 +39,5 @@ The term "Type (* Top.51 *)" has type "Type (* Top.51+1 *)"
 while it is expected to have type "Type (* Top.51 *)"
 (Universe inconsistency: Cannot enforce Top.51 < Top.51 because Top.51
 = Top.51)). *)
+  admit.
 Defined.

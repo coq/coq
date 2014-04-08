@@ -7,13 +7,16 @@ Goal Prop.
 Abort.
 
 Goal Prop = Set.
-  Fail match goal with |- ?x = ?x => idtac end.
+  (* This should fail *)
+  Fail Fail match goal with |- ?x = ?x => idtac end.
 Abort.
 
 Goal Type = Prop.
-  Fail match goal with |- ?x = ?x => idtac end.
+  (* This should fail *)
+  Fail Fail match goal with |- ?x = ?x => idtac end.
 Abort.
 
 Goal Type = Set.
-  Fail match goal with |- ?x = ?x => idtac end.
+  (* This should fail *)
+  Fail Fail match goal with |- ?x = ?x => idtac end.
 Abort.

@@ -11,7 +11,7 @@ Record category :=
     hom : ob -> ob -> Type
   }.
 Set Printing All.
-Definition sum_category (C D : category) : category :=
+Fail Definition sum_category (C D : category) : category :=
   {|
     ob := sum (ob C) (ob D);
     hom x y := match x, y with

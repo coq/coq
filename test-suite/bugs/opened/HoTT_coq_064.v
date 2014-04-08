@@ -180,7 +180,7 @@ Section bar.
 
   Variable D : PreCategory.
 
-  Context `(has_colimits
+  Fail Context `(has_colimits
             : forall F : Functor D C,
                 @IsColimit _ C D F (colimits F)).
 (* Error: Unsatisfied constraints: Top.3773 <= Set

@@ -140,9 +140,9 @@ Module FirstComment.
   Section MonoidalCategory.
     Variable objC : Type.
 
-    Let AssociatorCoherenceCondition' := Eval unfold AssociatorCoherenceCondition in @AssociatorCoherenceCondition.
+    Fail Let AssociatorCoherenceCondition' := Eval unfold AssociatorCoherenceCondition in @AssociatorCoherenceCondition.
 
-    Record MonoidalCategory :=
+    Fail Record MonoidalCategory :=
       {
         MonoidalUnderlyingCategory :> @Category objC;
         TensorProduct : Functor (MonoidalUnderlyingCategory * MonoidalUnderlyingCategory) MonoidalUnderlyingCategory;
@@ -153,8 +153,8 @@ Module FirstComment.
   End MonoidalCategory.
 
   Section EnrichedCategory.
-    Context `(M : @MonoidalCategory objM).
-    Let x : M := IdentityObject M.
+    Fail Context `(M : @MonoidalCategory objM).
+    Fail Let x : M := IdentityObject M.
     (* Anomaly: apply_coercion_args: mismatch between arguments and coercion. Please report.  *)
   End EnrichedCategory.
 End FirstComment.
@@ -301,7 +301,7 @@ Module SecondComment.
     Definition CommaCategoryProjection : Functor (CommaCategory S T) (ProductCategory A B).
     Admitted.
 
-    Definition CommaCategoryProjectionFunctor_ObjectOf
+    Fail Definition CommaCategoryProjectionFunctor_ObjectOf
     : @SliceCategoryOver _ LocallySmallCat (ProductCategory A B : Category _)
       :=
         existT _

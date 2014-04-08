@@ -12,7 +12,7 @@ Proof.
   admit.
 Defined.
 Definition foo := @Bar nat.
-Check @foo Set.
+Fail Check @foo Set.
 (* Toplevel input, characters 26-29:
 Error:
 The term "Set" has type "Type (* Set+1 *)" while it is expected to have type

@@ -65,9 +65,18 @@ Section Law0.
   Set Printing Universes.
   Set Printing Existential Instances.
 
-  Polymorphic Definition ExponentialLaw0Functor_Inverse_ObjectOf : Object (FunctorCategory Cat0 C).
-    hnf.
-    refine (@FunctorFrom0 _ _).
+  Fail Polymorphic Definition ExponentialLaw0Functor_Inverse_ObjectOf' : Object (@FunctorCategory Empty_set Cat0 objC C).
+  (* In environment
+objC : Type (* Top.154 *)
+C : Category (* Top.155 Top.154 *) objC
+The term "objC" has type "Type (* Top.154 *)"
+while it is expected to have type "Type (* Top.184 *)"
+(Universe inconsistency: Cannot enforce Top.154 <= Set)). *)
+  Fail Admitted.
+
+  Fail Polymorphic Definition ExponentialLaw0Functor_Inverse_ObjectOf : Object (FunctorCategory Cat0 C).
+  Fail hnf.
+  Fail refine (@FunctorFrom0 _ _).
     (* Toplevel input, characters 23-40:
 Error:
 In environment
@@ -81,3 +90,6 @@ The term
  while it is expected to have type
  "@Functor (* Set Prop Set Prop *) Empty_set Cat0 objC C".
 *)
+  Fail admit.
+  Fail Defined.
+End Law0.

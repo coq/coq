@@ -118,14 +118,14 @@ Section fully_faithful_helpers.
   Let isequiv_isepi_ismono_helper ua := (@isequiv_isepi_ismono ua fs0 x y m : isepi m -> ismono m -> IsEquiv m).
 
   Goal True.
-  set (isequiv_isepimorphism_ismonomorphism
+  Fail set (isequiv_isepimorphism_ismonomorphism
        := fun `{Univalence}
               (Hepi : IsEpimorphism (m : morphism set_cat x y))
               (Hmono : IsMonomorphism (m : morphism set_cat x y))
           => (@isequiv_isepi_ismono_helper _ Hepi Hmono : @IsEquiv _ _ m)).
   admit.
   Undo.
-  set (isequiv_isepimorphism_ismonomorphism'
+  Fail set (isequiv_isepimorphism_ismonomorphism'
        := fun `{Univalence}
               (Hepi : IsEpimorphism (m : morphism set_cat x y))
               (Hmono : IsMonomorphism (m : morphism set_cat x y))

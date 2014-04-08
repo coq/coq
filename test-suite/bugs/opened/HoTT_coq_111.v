@@ -6,9 +6,10 @@ Module X.
   Axioms A B : Type.
   Axiom P : A = B.
   Definition foo : A = B.
-    abstract (rewrite <- P; reflexivity).
+    Fail abstract (rewrite <- P; reflexivity).
   (* Error: internal_paths_rew already exists. *)
-  Defined. (* Anomaly: Uncaught exception Not_found(_). Please report. *)
+  Admitted.
+  Fail Defined. (* Anomaly: Uncaught exception Not_found(_). Please report. *)
 End X.
 
 Module Y.
@@ -19,7 +20,7 @@ Module Y.
   Axioms A B : Type.
   Axiom P : A = B.
   Definition foo : (A = B) * (A = B).
-    split; abstract (rewrite <- P; reflexivity).
+    Fail split; abstract (rewrite <- P; reflexivity).
   (* Error: internal_paths_rew already exists. *)
-  Defined. (* Anomaly: Uncaught exception Not_found(_). Please report. *)
-End Y.
+  Fail Defined. (* Anomaly: Uncaught exception Not_found(_). Please report. *)
+Fail End Y.

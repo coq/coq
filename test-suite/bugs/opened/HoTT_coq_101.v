@@ -72,6 +72,6 @@ Section FullyFaithful.
   Let TypeCatC := FunctorCategory C TypeCat.
   Let YC := (Yoneda C).
   Set Printing Universes.
-  Check @FunctorProduct' C TypeCatC YC. (* Toplevel input, characters 0-37:
+  Fail Check @FunctorProduct' C TypeCatC YC. (* Toplevel input, characters 0-37:
 Error: Universe inconsistency. Cannot enforce Top.187 = Top.186 because
 Top.186 <= Top.189 < Top.191 <= Top.187). *)
