@@ -165,7 +165,9 @@ and coerce loc env evdref (x : Term.constr) (y : Term.constr)
 		in
 		  aux (hdy :: tele) (subst1 hdx restT) 
 		    (subst1 hdy restT') (succ i)  (fun x -> eq_app (co x))
-	else Some co
+	else Some (fun x -> 
+	  let term = co x in
+	    Typing.solve_evars env evdref term)
       in
 	if isEvar c || isEvar c' then
 	  (* Second-order unification needed. *)
