@@ -30,8 +30,8 @@
 BIN := ../bin/
 LIB := ..
 
-coqtop := $(BIN)coqtop -boot -q -batch -I prerequisite
-bincoqc := $(BIN)coqc -coqlib $(LIB) -I prerequisite
+coqtop := $(BIN)coqtop -boot -q -batch -R prerequisite TestSuite
+bincoqc := $(BIN)coqc -coqlib $(LIB) -R prerequisite TestSuite
 
 command := $(coqtop) -top Top -load-vernac-source
 coqc := $(coqtop) -compile
@@ -201,7 +201,7 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 $(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.v
 	@echo "TEST      $<"
 	$(HIDE){ \
-	  opts="$(if $(findstring modules/,$<),-I modules -impredicative-set)"; \
+	  opts="$(if $(findstring modules/,$<),-R modules Mods -impredicative-set)"; \
 	  echo $(call log_intro,$<); \
 	  $(command) "$<" $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
@@ -330,8 +330,8 @@ $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v
 
 # Additionnal dependencies for module tests
 $(addsuffix .log,$(wildcard modules/*.v)): %.v.log: modules/Nat.vo modules/plik.vo
-%.vo: %.v
-	$(HIDE)$(coqtop) -compile $*
+modules/%.vo: modules/%.v
+	$(HIDE)$(coqtop) -R modules Mods -compile $(<:.v=)
 
 #######################################################################
 # Miscellaneous tests
@@ -357,8 +357,8 @@ misc/xml.log:
 	  fi; rm -rf misc/xml; \
 	} > "$@"
 
-# Check that both coqdep and coqtop/coqc takes the later -I/-R
-# Check that both coqdep and coqtop/coqc supports both -R and -I dir -as lib
+# Check that both coqdep and coqtop/coqc supports -R
+# Check that both coqdep and coqtop/coqc takes the later -R
 # See bugs 2242, 2337, 2339
 deps-order: misc/deps-order.log
 misc/deps-order.log:
@@ -367,12 +367,12 @@ misc/deps-order.log:
 	  echo $(call log_intro,deps-order); \
 	  rm -f misc/deps/*/*.vo; \
 	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
-	  $(coqdep) -I misc/deps/lib -as lib -R misc/deps/client client misc/deps/client/bar.v 2>&1 \
+	  $(coqdep) -R misc/deps/lib lib -R misc/deps/client client misc/deps/client/bar.v 2>&1 \
 	    | head -n 1 > $$tmpoutput; \
 	  diff -u misc/deps/deps.out $$tmpoutput 2>&1; R=$$?; times; \
-	  $(bincoqc) -I misc/deps/lib -as lib misc/deps/lib/foo.v 2>&1; \
-	  $(bincoqc) -I misc/deps/lib -as lib -R misc/deps/client client misc/deps/client/foo.v 2>&1; \
-	  $(coqtop) -I misc/deps/lib -as lib -R misc/deps/client client -load-vernac-source misc/deps/client/bar.v 2>&1; \
+	  $(bincoqc) -R misc/deps/lib lib misc/deps/lib/foo.v 2>&1; \
+	  $(bincoqc) -R misc/deps/lib lib -R misc/deps/client client misc/deps/client/foo.v 2>&1; \
+	  $(coqtop) -R misc/deps/lib lib -R misc/deps/client client -load-vernac-source misc/deps/client/bar.v 2>&1; \
 	  S=$$?; times; \
 	  if [ $$R = 0 -a $$S = 0 ]; then \
 	    echo $(log_success); \
@@ -390,8 +390,8 @@ universes: misc/universes.log
 misc/universes.log: misc/universes/all_stdlib.v
 	@echo "TEST      misc/universes"
 	$(HIDE){ \
-	  $(bincoqc) -I misc/universes misc/universes/all_stdlib 2>&1; \
-	  $(bincoqc) -I misc/universes misc/universes/universes 2>&1; \
+	  $(bincoqc) -R misc/universes Universes misc/universes/all_stdlib 2>&1; \
+	  $(bincoqc) -R misc/universes Universes misc/universes/universes 2>&1; \
 	  mv universes.txt misc/universes; \
 	  N=`awk '{print $$3}' misc/universes/universes.txt | sort -u | wc -l`; \
 	  times; \
