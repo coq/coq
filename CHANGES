@@ -99,8 +99,11 @@ Tools
   the load path and the ml path, use -I -as.
 - Option -Q behaves as -I -as and -R, except that the logical path of
   any loaded file has to be fully qualified.
-- Option -nois loads coq/theories and coq/plugins as if using -Q rather
-  than -R. (Same behavior as with coq/user-contrib.)
+- Option -R no longer adds recursively to the ml path; only the root
+  directory is added. (Behavior with respect to the load path is
+  unchanged.)
+- Option -nois prevents coq/theories and coq/plugins to be recursively
+  added to the load path. (Same behavior as with coq/user-contrib.)
 
 Internal Infrastructure
 
