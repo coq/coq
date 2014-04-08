@@ -469,16 +469,14 @@ let include_dirs (inc_i,inc_r) =
     List.map (fun (p,l,_) ->
       let l' = if l = "" then "\"\"" else l in "-R " ^ p ^ " " ^ l')
       l in
-  let inc_i' = List.filter (fun (_,i) -> not (List.exists (fun (_,_,i') -> is_prefix i' i) inc_r)) inc_i in
   let str_i = parse_includes inc_i in
-  let str_i' = parse_includes inc_i' in
   let str_r = parse_rec_includes inc_r in
     section "Libraries definitions.";
     if !some_ml4file || !some_mlfile || !some_mlifile then begin
       print "OCAMLLIBS?="; print_list "\\\n  " str_i; print "\n";
     end;
     if !some_vfile || !some_mllibfile || !some_mlpackfile then begin
-      print "COQLIBS?="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
+      print "COQLIBS?="; print_list "\\\n  " str_i; print " "; print_list "\\\n  " str_r; print "\n";
       print "COQDOCLIBS?=";   print_list "\\\n  " str_r; print "\n\n";
     end
 
