@@ -4,5 +4,5 @@
 Parameter A : Set.
 Parameter B : A -> Set.
 Parameter F : Set -> Prop. 
-Check (F (forall x, B x)). 
+Check (F (forall x, B x)).
 
