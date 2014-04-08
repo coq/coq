@@ -12,12 +12,14 @@ open Errors
 open Names
 open Libnames
 
+type path_type = ImplicitPath | ImplicitRootPath | RootPath
+
 (** Load paths. Mapping from physical to logical paths. *)
 
 type t = {
   path_physical : CUnix.physical_path;
   path_logical : DirPath.t;
-  path_is_root : bool;
+  path_type : path_type;
 }
 
 let load_paths = Summary.ref ([] : t list) ~name:"LOADPATHS"
@@ -57,18 +59,18 @@ let remove_load_path dir =
   let filter p = not (String.equal p.path_physical dir) in
   load_paths := List.filter filter !load_paths
 
-let add_load_path phys_path isroot coq_path =
+let add_load_path phys_path path_type coq_path =
   let phys_path = CUnix.canonical_path_name phys_path in
   let filter p = String.equal p.path_physical phys_path in
   let binding = {
     path_logical = coq_path;
     path_physical = phys_path;
-    path_is_root = isroot;
+    path_type = path_type;
   } in
   match List.filter filter !load_paths with
   | [] ->
     load_paths := binding :: !load_paths;
-    if isroot then
+    if path_type <> ImplicitPath then
       accessible_paths := List.fold_left (fun acc v -> (fst v) :: acc)
 	(phys_path :: !accessible_paths) (System.all_subdirs phys_path)
   | [p] ->
@@ -99,7 +101,7 @@ let expand_root_path dir =
   let rec aux = function
   | [] -> []
   | p :: l ->
-    if p.path_is_root && is_dirpath_prefix_of p.path_logical dir then
+    if p.path_type <> ImplicitPath && is_dirpath_prefix_of p.path_logical dir then
       let suffix = drop_dirpath_prefix p.path_logical dir in
       extend_path_with_dirpath p.path_physical suffix :: aux l
     else aux l
@@ -129,9 +131,13 @@ let expand_path dir =
   let rec aux = function
   | [] -> []
   | p :: l ->
-    if p.path_is_root then
+    match p.path_type with
+    | ImplicitPath -> expand p dir :: aux l
+    | ImplicitRootPath ->
       let inters = intersections p.path_logical dir in
       List.map (expand p) inters @ aux l
-    else
-      expand p dir :: aux l in
+    | RootPath ->
+      if is_dirpath_prefix_of p.path_logical dir then
+	expand p (drop_dirpath_prefix p.path_logical dir) :: aux l
+      else aux l in
   aux !load_paths

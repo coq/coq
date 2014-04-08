@@ -152,11 +152,13 @@ let add_rec_ml_dir unix_path =
 
 (* Adding files to Coq and ML loadpath *)
 
-let add_path ~unix_path:dir ~coq_root:coq_dirpath =
+let add_path ~unix_path:dir ~coq_root:coq_dirpath ~implicit =
   if exists_dir dir then
     begin
       add_ml_dir dir;
-      Loadpath.add_load_path dir true coq_dirpath
+      Loadpath.add_load_path dir
+        (if implicit then Loadpath.ImplicitRootPath else Loadpath.RootPath)
+        coq_dirpath
     end
   else
     msg_warning (str ("Cannot open " ^ dir))
@@ -167,7 +169,7 @@ let convert_string d =
     msg_warning (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
     raise Exit
 
-let add_rec_path ~unix_path ~coq_root =
+let add_rec_path ~unix_path ~coq_root ~implicit =
   if exists_dir unix_path then
     let dirs = all_subdirs ~unix_path in
     let prefix = Names.DirPath.repr coq_root in
@@ -180,9 +182,12 @@ let add_rec_path ~unix_path ~coq_root =
     let dirs = List.map_filter convert_dirs dirs in
     let () = List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs in
     let () = add_ml_dir unix_path in
-    let add (path, dir) = Loadpath.add_load_path path false dir in
-    let () = List.iter add dirs in
-    Loadpath.add_load_path unix_path true coq_root
+    let add (path, dir) =
+      Loadpath.add_load_path path Loadpath.ImplicitPath dir in
+    let () = if implicit then List.iter add dirs in
+    Loadpath.add_load_path unix_path
+      (if implicit then Loadpath.ImplicitRootPath else Loadpath.RootPath)
+      coq_root
   else
     msg_warning (str ("Cannot open " ^ unix_path))
 

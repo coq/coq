@@ -15,6 +15,11 @@ open Names
 
 *)
 
+type path_type =
+  | ImplicitPath     (** Can be implicitly appended to a logical path. *)
+  | ImplicitRootPath (** Can be implicitly appended to the suffix of a logical path. *)
+  | RootPath         (** Can only be a prefix of a logical path. *)
+
 type t
 (** Type of loadpath bindings. *)
 
@@ -33,10 +38,9 @@ val get_paths : unit -> CUnix.physical_path list
 val get_accessible_paths : unit -> CUnix.physical_path list
 (** Same as [get_paths] but also get paths that can be relatively accessed. *)
 
-val add_load_path : CUnix.physical_path -> bool -> DirPath.t -> unit
-(** [add_load_path root phys log] adds the binding [phys := log] to the current
-    loadpaths. The [root] flag indicates whether this loadpath has to be treated
-    as a root one. *)
+val add_load_path : CUnix.physical_path -> path_type -> DirPath.t -> unit
+(** [add_load_path phys type log] adds the binding [phys := log] to the current
+    loadpaths. *)
 
 val remove_load_path : CUnix.physical_path -> unit
 (** Remove the current logical path binding associated to a given physical path,

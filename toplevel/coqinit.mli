@@ -15,8 +15,9 @@ val set_rcfile : string -> unit
 val no_load_rc : unit -> unit
 val load_rcfile : unit -> unit
 
-val push_include : string * Names.DirPath.t -> unit
-val push_rec_include : string * Names.DirPath.t -> unit
+val push_include : string -> Names.DirPath.t -> bool -> bool -> unit
+(** [push_include phys_path log_path recursive implicit] *)
+
 val push_ml_include : string -> unit
 
 val init_load_path : unit -> unit

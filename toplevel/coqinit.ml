@@ -59,26 +59,26 @@ let load_rcfile() =
 
 (* Puts dir in the path of ML and in the LoadPath *)
 let coq_add_path unix_path s =
-  Mltop.add_path ~unix_path ~coq_root:(Names.DirPath.make [Nameops.coq_root;Names.Id.of_string s]);
+  Mltop.add_path ~unix_path ~coq_root:(Names.DirPath.make [Nameops.coq_root;Names.Id.of_string s]) ~implicit:true;
   Mltop.add_ml_dir unix_path
 
 (* Recursively puts dir in the LoadPath if -nois was not passed *)
 let add_stdlib_path ~unix_path ~coq_root ~with_ml =
   if !Flags.load_init then
-    Mltop.add_rec_path ~unix_path ~coq_root
+    Mltop.add_rec_path ~unix_path ~coq_root ~implicit:true
   else
-    Mltop.add_path ~unix_path ~coq_root;
+    Mltop.add_path ~unix_path ~coq_root ~implicit:false;
   if with_ml then
     Mltop.add_rec_ml_dir unix_path
 
 let add_userlib_path ~unix_path =
-  Mltop.add_path ~unix_path ~coq_root:Nameops.default_root_prefix;
+  Mltop.add_path ~unix_path ~coq_root:Nameops.default_root_prefix ~implicit:false;
   Mltop.add_rec_ml_dir unix_path
 
 (* Options -I, -I-as, and -R of the command line *)
 let includes = ref []
-let push_include (s, alias) = includes := (s,alias,false) :: !includes
-let push_rec_include (s, alias) = includes := (s,alias,true) :: !includes
+let push_include s alias recursive implicit =
+  includes := (s,alias,recursive,implicit) :: !includes
 let ml_includes = ref []
 let push_ml_include s = ml_includes := s :: !ml_includes
 
@@ -104,11 +104,12 @@ let init_load_path () =
     (* then directories in COQPATH *)
     List.iter (fun s -> add_userlib_path ~unix_path:s) coqpath;
     (* then current directory *)
-    Mltop.add_path ~unix_path:"." ~coq_root:Nameops.default_root_prefix;
-    (* additional loadpath, given with options -I-as and -R *)
+    Mltop.add_path ~unix_path:"." ~coq_root:Nameops.default_root_prefix ~implicit:false;
+    (* additional loadpath, given with options -I-as, -Q, and -R *)
     List.iter
-      (fun (unix_path, coq_root, reci) ->
-	if reci then Mltop.add_rec_path ~unix_path ~coq_root else Mltop.add_path ~unix_path ~coq_root)
+      (fun (unix_path, coq_root, reci, implicit) ->
+        (if reci then Mltop.add_rec_path else Mltop.add_path)
+          ~unix_path ~coq_root ~implicit)
       (List.rev !includes);
     (* additional ml directories, given with option -I *)
     List.iter Mltop.add_ml_dir (List.rev !ml_includes)

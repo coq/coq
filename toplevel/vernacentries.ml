@@ -857,7 +857,7 @@ let vernac_add_loadpath isrec pdir ldiropt =
   let pdir = expand pdir in
   let alias = Option.default Nameops.default_root_prefix ldiropt in
   (if isrec then Mltop.add_rec_path else Mltop.add_path)
-    ~unix_path:pdir ~coq_root:alias
+    ~unix_path:pdir ~coq_root:alias ~implicit:true
 
 let vernac_remove_loadpath path =
   Loadpath.remove_load_path (expand path)

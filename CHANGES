@@ -15,8 +15,8 @@ Vernacular commands
   is deprecated.
 - The coq/user-contrib directory and the XDG directories are no longer
   recursively added to the load path, so files from installed libraries
-  now need   to be fully qualified for the "Require" command to find
-  them. The tools/update-require script can be used to convert a development.
+  now need to be fully qualified for the "Require" command to find them.
+  The tools/update-require script can be used to convert a development.
 
 Notations
 
@@ -97,8 +97,10 @@ Tools
 
 - Option -I now only adds directories to the ml path. To add to both
   the load path and the ml path, use -I -as.
-- Option -nois prevents coq/theories and coq/plugins to be recursively
-  added to the load path. (Same behavior as with coq/user-contrib.)
+- Option -Q behaves as -I -as and -R, except that the logical path of
+  any loaded file has to be fully qualified.
+- Option -nois loads coq/theories and coq/plugins as if using -Q rather
+  than -R. (Same behavior as with coq/user-contrib.)
 
 Internal Infrastructure
 

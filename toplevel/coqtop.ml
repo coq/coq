@@ -73,13 +73,11 @@ let outputstate = ref ""
 let set_outputstate s = outputstate:=s
 let outputstate () = if not (String.is_empty !outputstate) then extern_state !outputstate
 
-let set_default_include d = push_include (d,Nameops.default_root_prefix)
-let set_include d p =
+let set_default_include d =
+  push_include d Nameops.default_root_prefix false false
+let set_include d p recursive implicit =
   let p = dirpath_of_string p in
-  push_include (d,p)
-let set_rec_include d p =
-  let p = dirpath_of_string p in
-  push_rec_include(d,p)
+  push_include d p recursive implicit
 
 let load_vernacular_list = ref ([] : (string * bool) list)
 let add_load_vernacular verb s =
@@ -305,16 +303,21 @@ let parse_args arglist =
     (* Complex options with many args *)
     |"-I"|"-include" ->
       begin match rem with
-      | d :: "-as" :: p :: rem -> set_include d p; args := rem
+      | d :: "-as" :: p :: rem -> set_include d p false true; args := rem
       | d :: "-as" :: [] -> error_missing_arg "-as"
       | d :: rem -> push_ml_include d; args := rem
       | [] -> error_missing_arg opt
       end
+    |"-Q" ->
+      begin match rem with
+      | d :: p :: rem -> set_include d p true false; args := rem
+      | _ -> error_missing_arg opt
+      end
     |"-R" ->
       begin match rem with
-      | d :: "-as" :: p :: rem -> set_rec_include d p; args := rem
       | d :: "-as" :: [] -> error_missing_arg "-as"
-      | d :: p :: rem -> set_rec_include d p; args := rem
+      | d :: "-as" :: p :: rem
+      | d :: p :: rem -> set_include d p true true; args := rem
       | _ -> error_missing_arg opt
       end
 
