@@ -905,7 +905,9 @@ let interp_recursive isfix fixl notations =
 	 if Flags.is_program_mode () then
 	   let sort = Retyping.get_type_of env !evdref t in
 	   let fixprot =
-	     try mkApp (delayed_force fix_proto, [|sort; t|])
+	     try 
+	       let app = mkApp (delayed_force fix_proto, [|sort; t|]) in
+		 Typing.solve_evars env evdref app
 	     with e  when Errors.noncritical e -> t
 	   in
 	     (id,None,fixprot) :: env'

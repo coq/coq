@@ -92,7 +92,7 @@ Next Obligation. intro H; inversion H; subst. Defined.
 Next Obligation.
   intro H1; contradict H. inversion H1; subst. assumption.
   contradict H0; assumption. Defined.
-Next Obligation.
+Next Obligation. 
   intro H1; contradict H0. inversion H1; subst. assumption. Defined.
 Next Obligation.
   intro H1; contradict H. inversion H1; subst. assumption. Defined.
