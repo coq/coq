@@ -41,6 +41,15 @@ SHOW := $(if $(VERBOSE),@true,@echo)
 HIDE := $(if $(VERBOSE),,@)
 REDIR := $(if $(VERBOSE),,> /dev/null 2>&1)
 
+# read out an emacs config and look for coq-prog-args; if such exists, return it
+get_coq_prog_args_helper = sed -n s'/^.*coq-prog-args:\s*(\([^)]*\)).*/\1/p' $(1)
+get_coq_prog_args = $(strip $(filter-out "-emacs-U" "-emacs",$(shell $(call get_coq_prog_args_helper,$(1)))))
+SINGLE_QUOTE="
+#" # double up on the quotes, in a comment, to appease the emacs syntax highlighter
+# wrap the arguments in parens, but only if they exist
+get_coq_prog_args_in_parens = $(subst $(SINGLE_QUOTE),,$(if $(call get_coq_prog_args,$(1)), ($(call get_coq_prog_args,$(1)))))
+
+
 bogomips:=
 ifneq (,$(wildcard /proc/cpuinfo))
   sedbogo := -e "s/bogomips.*: \([0-9]*\).*/\1/p" # i386, ppc
@@ -152,10 +161,10 @@ summary.log:
 
 # Opened bugs that should not fail
 $(addsuffix .log,$(wildcard bugs/opened/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
+	@echo "TEST      $<  $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(command) "$<" 2>&1; R=$$?; times; \
+	  $(command) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...still active"; \
@@ -167,10 +176,10 @@ $(addsuffix .log,$(wildcard bugs/opened/*.v)): %.v.log: %.v
 
 # Closed bugs that should succeed
 $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(command) "$<" 2>&1; R=$$?; times; \
+	  $(command) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -185,10 +194,10 @@ $(addsuffix .log,$(wildcard bugs/closed/*.v)): %.v.log: %.v
 #######################################################################
 
 $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) "$*" 2>&1; R=$$?; times; \
+	  $(coqc) "$*" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
 	    echo "    $<...could not be prepared" ; \
@@ -199,11 +208,11 @@ $(addsuffix .log,$(wildcard prerequisite/*.v)): %.v.log: %.v
 	} > "$@"
 
 $(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  opts="$(if $(findstring modules/,$<),-R modules Mods -impredicative-set)"; \
 	  echo $(call log_intro,$<); \
-	  $(command) "$<" $$opts 2>&1; R=$$?; times; \
+	  $(command) "$<" $(call get_coq_prog_args,"$<") $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -215,10 +224,10 @@ $(addsuffix .log,$(wildcard success/*.v micromega/*.v modules/*.v)): %.v.log: %.
 
 stm: $(wildcard stm/*.v:%.v=%.v.log)
 $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqc) "$*" -async-proofs on \
+	  $(coqc) "$*" $(call get_coq_prog_args,"$<") -async-proofs on \
 	    -async-proofs-worker-flags fallback-to-lazy-if-marshal-error=no,fallback-to-lazy-if-slave-dies=no \
 	    $$opts 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
@@ -231,10 +240,10 @@ $(addsuffix .log,$(wildcard stm/*.v)): %.v.log: %.v
 	} > "$@"
 
 $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(command) "$<" 2>&1; R=$$?; times; \
+	  $(command) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -245,11 +254,11 @@ $(addsuffix .log,$(wildcard failure/*.v)): %.v.log: %.v
 	} > "$@"
 
 $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
-	  $(command) "$<" 2>&1 \
+	  $(command) "$<" $(call get_coq_prog_args,"$<") 2>&1 \
 	    | grep -v "Welcome to Coq" \
 	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
@@ -266,10 +275,10 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v
 	} > "$@"
 
 $(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(coqtop) < "$<" 2>&1; R=$$?; times; \
+	  $(coqtop) $(call get_coq_prog_args,"$<") < "$<" 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
 	    echo $(log_success); \
 	    echo "    $<...Ok"; \
@@ -284,11 +293,11 @@ $(addsuffix .log,$(wildcard interactive/*.v)): %.v.log: %.v
 # time is a 6120 bogomips cpu.
 ifneq (,$(bogomips))
 $(addsuffix .log,$(wildcard complexity/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
 	  true "extract effective user time"; \
-	  res=`$(command) "$<" 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1`; \
+	  res=`$(command) "$<" $(call get_coq_prog_args,"$<") 2>&1 | sed -n -e "s/Finished transaction in .*(\([0-9]*\.[0-9]*\)u.*)/\1/p" | head -1`; \
 	  R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	    echo $(log_failure); \
@@ -315,10 +324,10 @@ endif
 
 # Ideal-features tests
 $(addsuffix .log,$(wildcard ideal-features/*.v)): %.v.log: %.v
-	@echo "TEST      $<"
+	@echo "TEST      $< $(call get_coq_prog_args_in_parens,"$<")"
 	$(HIDE){ \
 	  echo $(call log_intro,$<); \
-	  $(command) "$<" 2>&1; R=$$?; times; \
+	  $(command) "$<" $(call get_coq_prog_args,"$<") 2>&1; R=$$?; times; \
 	  if [ $$R != 0 ]; then \
 	      echo $(log_success); \
 	      echo "    $<...still wished"; \
