@@ -341,12 +341,15 @@ let interp_cstrs evdref env impls mldata arity ind =
 
 let sign_level env evd sign =
   fst (List.fold_right
-    (fun (_,_,t as d) (lev,env) ->
-      let s = destSort (Reduction.whd_betadeltaiota env 
-			  (nf_evar evd (Retyping.get_type_of env evd t)))
-      in
-      let u = univ_of_sort s in
-	(Univ.sup u lev, push_rel d env))
+    (fun (_,b,t as d) (lev,env) ->
+      match b with
+      | Some _ -> (lev, push_rel d env)
+      | None ->
+	let s = destSort (Reduction.whd_betadeltaiota env 
+			    (nf_evar evd (Retyping.get_type_of env evd t)))
+	in
+	let u = univ_of_sort s in
+	  (Univ.sup u lev, push_rel d env))
     sign (Univ.type0m_univ,env))
 
 let sup_list = List.fold_left Univ.sup Univ.type0m_univ
