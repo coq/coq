@@ -37,7 +37,7 @@ Module failure.
     Variable g : group.
     Variable comp : carrier g -> carrier g -> carrier g.
 
-    Check comp 1 1.
+    Fail Check comp 1 1.
     (* Toplevel input, characters 11-12:
 Error:
 In environment

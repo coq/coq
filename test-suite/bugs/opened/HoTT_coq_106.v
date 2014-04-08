@@ -8,7 +8,7 @@ Instance ispointed_forall `{H : forall a : A, IsPointed (B a)}
 : IsPointed (forall a, B a)
   := fun a => @point (B a) (H a).
 
-Instance ispointed_sigma `{IsPointed A} `{IsPointed (B (point A))}
+Fail Instance ispointed_sigma `{IsPointed A} `{IsPointed (B (point A))}
 : IsPointed (sigT B).
 (* Toplevel input, characters 20-108:
 Error: Unable to satisfy the following constraints:

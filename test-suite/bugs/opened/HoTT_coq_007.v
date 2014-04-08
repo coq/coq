@@ -36,9 +36,14 @@ Module Comment1.
   Set Printing All.
   Set Printing Universes.
 
-  Lemma foo objC (C : @Category objC) (C0 : Category (Functor Cat0 C)) (x : Functor Cat0 Cat0) : forall (y : Functor C0 Cat0) z, (ComposeFunctors y z = x).
-    intro. (* Illegal application (Type Error) *)
-  Abort.
+  Fail Lemma foo objC (C : @Category objC) (C0 : Category (Functor Cat0 C)) (x : Functor Cat0 Cat0) : forall (y : Functor C0 Cat0) z, (ComposeFunctors y z = x). (** ??? The term "y" has type
+ "@Functor (* Top.448 Top.449 Top.450 Top.451 *)
+    (@Functor (* Set Top.441 Top.442 Top.336 *) Empty_set Cat0 objC C) C0
+    Empty_set Cat0" while it is expected to have type
+ "@Functor (* Top.295 Top.296 Top.295 Top.296 *) ?46 ?47 ?48 ?49"
+(Universe inconsistency: Cannot enforce Set = Top.295)). *)
+  Fail intro. (* Illegal application (Type Error) *)
+  Fail Abort.
 End Comment1.
 
 Module Comment2.
@@ -106,5 +111,5 @@ Module Comment3.
   Polymorphic Hint Resolve foo. (* success *)
   Polymorphic Hint Rewrite @foo. (* Success *)
   Polymorphic Hint Resolve @foo. (* Error: @foo is a term and cannot be made a polymorphic hint, only global references can be polymorphic hints. *)
-  Polymorphic Hint Rewrite foo. (* Error: Cannot infer the implicit parameter obj of foo. *)
+  Fail Polymorphic Hint Rewrite foo. (* Error: Cannot infer the implicit parameter obj of foo. *)
 End Comment3.

@@ -14,7 +14,7 @@ Module Short.
 
   Set Printing Universes.
   Check bar nat Set : Set. (* success *)
-  Check foo nat Set : Set. (* Toplevel input, characters 6-17:
+  Fail Check foo nat Set : Set. (* Toplevel input, characters 6-17:
 Error:
 The term "foo (* Top.303 Top.304 *) nat Set" has type
 "Type (* Top.304 *)" while it is expected to have type
@@ -97,8 +97,8 @@ SpecializedFunctor C D.] gets rid of the universe inconsistency. *)
     Let TypeCatC := FunctorCategory C TypeCat.
     Let YC := (Yoneda C).
     Set Printing Universes.
-    Check @FunctorProduct' C TypeCatC (Yoneda C).
-    (* Toplevel input, characters 35-43:
+    Fail Check @FunctorProduct' C TypeCatC (Yoneda C).
+  (* Toplevel input, characters 35-43:
 Error:
 In environment
 objC : Type (* Top.186 *)
@@ -123,5 +123,6 @@ while it is expected to have type
  "Functor (* Top.216 Top.219 Top.217 Top.220 *) C TypeCatC"
 (Universe inconsistency: Cannot enforce Top.230 = Top.217 because Top.217
 <= Top.227 < Top.225 <= Top.231 <= Top.230)).
-     *)
+   *)
+  End FullyFaithful.
 End Long.

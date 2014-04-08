@@ -7,6 +7,6 @@ Record category :=
     hom : ob -> ob -> Type
   }.
 
-Record foo := { C : category; x :> ob C }.
+Fail Record foo := { C : category; x :> ob C }.
 (* Toplevel input, characters 0-42:
 Error: Cannot find the target class. *)

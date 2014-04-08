@@ -158,7 +158,28 @@ Section GraphObj.
   Defined.
 End GraphObj.
 
+Set Printing Universes.
+Set Printing All.
+Fail Polymorphic Definition UnderlyingGraphFunctor_MorphismOf' (C D : SmallCategory) (F : SpecializedFunctor C D) :
+  Morphism (FunctorCategory TypeCat GraphIndexingCategory) (@UnderlyingGraph (SObject C) (C:SpecializedCategory (SObject C))) (UnderlyingGraph D). (* Toplevel input, characters 216-249:
+Error:
+In environment
+C : SmallCategory (* Top.594 *)
+D : SmallCategory (* Top.595 *)
+F :
+@SpecializedFunctor (* Top.25 Set Top.25 Set *) (SObject (* Top.25 *) C)
+  (SUnderlyingCategory (* Top.25 *) C) (SObject (* Top.25 *) D)
+  (SUnderlyingCategory (* Top.25 *) D)
+The term
+ "SUnderlyingCategory (* Top.25 *) C
+  :SpecializedCategory (* Top.25 Set *) (SObject (* Top.25 *) C)" has type
+ "SpecializedCategory (* Top.618 Top.619 *) (SObject (* Top.25 *) C)"
+while it is expected to have type
+ "SpecializedCategory (* Top.224 Top.225 *) (SObject (* Top.617 *) C)"
+(Universe inconsistency: Cannot enforce Set = Top.225)).
+ *)
+Fail Admitted.
 
-Polymorphic Definition UnderlyingGraphFunctor_MorphismOf (C D : SmallCategory) (F : SpecializedFunctor C D) :
+Fail Polymorphic Definition UnderlyingGraphFunctor_MorphismOf (C D : SmallCategory) (F : SpecializedFunctor C D) :
   Morphism (FunctorCategory TypeCat GraphIndexingCategory) (UnderlyingGraph C) (UnderlyingGraph D). (* Anomaly: apply_coercion. Please report.*)
-Admitted.
+Fail Admitted.

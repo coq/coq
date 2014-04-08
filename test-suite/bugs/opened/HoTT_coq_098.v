@@ -62,8 +62,8 @@ End failure.
 
 Module polycontext.
   Section SpecializedFunctor.
-    Polymorphic Context `(C : @SpecializedCategory objC).
-    Polymorphic Context `(D : @SpecializedCategory objD).
+    Context `(C : @SpecializedCategory objC).
+    Context `(D : @SpecializedCategory objD).
 
     Polymorphic Record SpecializedFunctor
       := {

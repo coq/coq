@@ -1,4 +1,4 @@
-(* -*- mode: coq; coq-prog-args: ("-xml") -*- *)
+(* -*- mode: coq; coq-prog-args: ("-emacs" "-xml") -*- *)
 Set Implicit Arguments.
 Generalizable All Variables.
 Set Asymmetric Patterns.
@@ -11,7 +11,7 @@ Delimit Scope functor_scope with functor.
 
 Local Open Scope category_scope.
 
-Record SpecializedCategory (obj : Type) :=
+Fail Record SpecializedCategory (obj : Type) :=
   {
     Object :> _ := obj;
     Morphism : obj -> obj -> Type;

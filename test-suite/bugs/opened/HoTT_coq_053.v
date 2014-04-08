@@ -29,7 +29,7 @@ Definition IndiscreteCategory X : PreCategory
   := @Build_PreCategory X
                          (fun _ _ => Unit).
 
-Definition NatCategory (n : nat) :=
+Fail Definition NatCategory (n : nat) :=
   match n with
     | 0 => IndiscreteCategory Unit
     | _ => DiscreteCategory Bool
@@ -43,7 +43,7 @@ Definition NatCategory' (n : nat) :=
     | _ => DiscreteCategory Bool
   end.
 
-Definition NatCategory'' (n : nat) :=
+Fail Definition NatCategory'' (n : nat) :=
   match n with
     | 0 => IndiscreteCategory Unit
     | _ => DiscreteCategory Bool

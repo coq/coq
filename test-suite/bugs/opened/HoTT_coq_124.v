@@ -9,7 +9,7 @@ Monomorphic Record prodm (A B : Type) : Type := pairm { fstm : A; sndm : B }.
 
 Check eqm_refl _ : eqm (fun x : prodm Set Set => pairm (fstm x) (sndm x)) (fun x => x). (* success *)
 Check eqp_refl _ : eqp (fun x : prodm Set Set => pairm (fstm x) (sndm x)) (fun x => x). (* success *)
-Check eqm_refl _ : eqm (fun x : prodp Set Set => pairp (fstp x) (sndp x)) (fun x => x). (* Error:
+Fail Check eqm_refl _ : eqm (fun x : prodp Set Set => pairp (fstp x) (sndp x)) (fun x => x). (* Error:
 The term
  "eqm_refl (fun x : prodp Set Set => {| fstp := fstp x; sndp := sndp x |})"
 has type
@@ -18,7 +18,7 @@ has type
 while it is expected to have type
  "eqm (fun x : prodp Set Set => {| fstp := fstp x; sndp := sndp x |})
     (fun x : prodp Set Set => x)". *)
-Check eqp_refl _ : eqp (fun x : prodp Set Set => pairp (fstp x) (sndp x)) (fun x => x). (* Error:
+Fail Check eqp_refl _ : eqp (fun x : prodp Set Set => pairp (fstp x) (sndp x)) (fun x => x). (* Error:
 The term
  "eqp_refl (fun x : prodp Set Set => {| fstp := fstp x; sndp := sndp x |})"
 has type

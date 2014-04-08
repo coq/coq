@@ -235,6 +235,7 @@ Section FullyFaithful.
   Context `(C : @SpecializedCategory objC).
 
   Set Printing Universes.
-  Check InducedHomNaturalTransformation (Yoneda C).
+  Fail Check InducedHomNaturalTransformation (Yoneda C).
   (* Error: Universe inconsistency (cannot enforce Top.865 = Top.851 because
 Top.851 < Top.869 <= Top.864 <= Top.865). *)
+End FullyFaithful.

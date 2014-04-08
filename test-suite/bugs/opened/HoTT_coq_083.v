@@ -24,6 +24,6 @@ generalize dependent (@ob C).
   ============================
    Type -> ob C
 (dependent evars:) *)
-intros T t.
+Fail intros T t.
 (* Toplevel input, characters 9-10:
 Error: No product even after head-reduction. *)

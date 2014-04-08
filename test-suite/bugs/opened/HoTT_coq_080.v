@@ -23,7 +23,7 @@ Definition sum_category (C D : category) : category :=
 Goal forall C D (x y : ob (sum_category C D)), Type.
 intros C D x y.
 hnf in x, y.
-exact (hom x y). (* Toplevel input, characters 26-27:
+Fail exact (hom x y). (* Toplevel input, characters 26-27:
 Error:
 In environment
 C : category
