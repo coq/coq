@@ -14,8 +14,8 @@ let interp_init_def_and_relation env sigma init_def r =
     let open Term in
     mkProd (Names.Anonymous,init_type, mkProd (Names.Anonymous,init_type,mkProp))
   in
-  let r, _ = Constrintern.interp_casted_constr sigma env r r_type in
-  init_def , init_type , r
+  let r, ctx = Constrintern.interp_casted_constr sigma env r r_type in
+  init_def , init_type , r, Evd.evar_universe_context_set ctx
   
 
 (** [start_deriving f init r lemma] starts a proof of [r init
@@ -24,13 +24,13 @@ let interp_init_def_and_relation env sigma init_def r =
 let start_deriving f init_def r lemma =
   let env = Global.env () in
   let kind = Decl_kinds.(Global,false,DefinitionBody Definition) in
-  let ( init_def , init_type , r ) =
+  let ( init_def , init_type , r , ctx ) =
     interp_init_def_and_relation env Evd.empty init_def r
   in
   let goals =
     let open Proofview in
-    TCons ( env , init_type , (fun ef ->
-      TCons ( env , Term.mkApp ( r , [| init_def ; ef |] ) , (fun _ -> TNil))))
+    TCons ( env , (init_type , ctx ) , (fun ef ->
+      TCons ( env , ( Term.mkApp ( r , [| init_def ; ef |] ) , Univ.ContextSet.empty) , (fun _ -> TNil))))
   in
   let terminator com =
     let open Proof_global in
