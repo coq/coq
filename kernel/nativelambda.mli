@@ -23,7 +23,7 @@ val empty_evars : evars
 val decompose_Llam : lambda -> Names.name array * lambda
 val decompose_Llam_Llet : lambda -> (Names.name * lambda option) array * lambda
 
-val is_lazy : constr -> bool
+val is_lazy : prefix -> constr -> bool
 val mk_lazy : lambda -> lambda
 
 val get_allias : env -> constant -> constant

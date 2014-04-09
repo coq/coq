@@ -499,8 +499,24 @@ module Renv =
 	r
   end
 
-let is_lazy t = (* APPROXIMATION *)
-  isApp t || isLetIn t
+(* What about pattern matching ?*)
+let is_lazy prefix t =
+  match kind_of_term t with
+  | App (f,args) ->
+     begin match kind_of_term f with
+     | Construct c ->
+	let entry = mkInd (fst c) in
+	(try
+	    let _ =
+	      Retroknowledge.get_native_before_match_info (!global_env).retroknowledge
+							  entry prefix c Llazy;
+	    in
+	    false
+	  with Not_found -> true)
+     | _ -> true
+     end
+  | LetIn _ -> true
+  | _ -> false
 
 let evar_value sigma ev = sigma.evars_val ev
 
@@ -642,7 +658,7 @@ and lambda_of_app env sigma f args =
           else
           let prefix = get_const_prefix !global_env kn in
           let t =
-            if is_lazy (Mod_subst.force_constr csubst) then
+            if is_lazy prefix (Mod_subst.force_constr csubst) then
               mkLapp Lforce [|Lconst (prefix, kn)|]
             else Lconst (prefix, kn)
           in

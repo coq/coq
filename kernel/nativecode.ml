@@ -1767,7 +1767,7 @@ let compile_constant env sigma prefix ~interactive con body =
   | Def t ->
       let t = Mod_subst.force_constr t in
       let code = lambda_of_constr env sigma t in
-      let is_lazy = is_lazy t in
+      let is_lazy = is_lazy prefix t in
       let code = if is_lazy then mk_lazy code else code in
       let name =
         if interactive then LinkedInteractive prefix
