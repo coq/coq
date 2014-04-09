@@ -380,24 +380,24 @@ let subc accu x y =
   if is_int x && is_int y then no_check_subc x y
   else accu x y
 
-let no_check_addCarryC x y =
+let no_check_addcarryc x y =
   let s = 
     Uint31.add (Uint31.add (to_uint x) (to_uint y))
       (Uint31.of_int 1) in
   mkCarry (Uint31.le s (to_uint x)) s
 
-let addCarryC accu x y =
-  if is_int x && is_int y then no_check_addCarryC x y
+let addcarryc accu x y =
+  if is_int x && is_int y then no_check_addcarryc x y
   else accu x y 
 
-let no_check_subCarryC x y =
+let no_check_subcarryc x y =
   let s = 
     Uint31.sub (Uint31.sub (to_uint x) (to_uint y))
       (Uint31.of_int 1) in
   mkCarry (Uint31.le (to_uint x) (to_uint y)) s
 
-let subCarryC accu x y =
-  if is_int x && is_int y then no_check_subCarryC x y
+let subcarryc accu x y =
+  if is_int x && is_int y then no_check_subcarryc x y
   else accu x y 
 
 let of_pair (x, y) =
@@ -426,15 +426,15 @@ let div21 accu x y z =
   if is_int x && is_int y && is_int z then no_check_div21 x y z
   else accu x y z
 
-let no_check_addMulDiv x y z =
+let no_check_addmuldiv x y z =
   let p, i, j = to_uint x, to_uint y, to_uint z in
   let p' = Uint31.to_int p in
   of_uint (Uint31.l_or 
 	     (Uint31.l_sl i p) 
 	     (Uint31.l_sr j (Uint31.of_int (31 - p'))))
 
-let addMulDiv accu x y z =
-  if is_int x && is_int y && is_int z then no_check_addMulDiv x y z
+let addmuldiv accu x y z =
+  if is_int x && is_int y && is_int z then no_check_addmuldiv x y z
   else accu x y z
 
 
