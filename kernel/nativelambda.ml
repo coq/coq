@@ -647,9 +647,11 @@ and lambda_of_app env sigma f args =
       let cb = lookup_constant kn !global_env in
       (try
           let prefix = get_const_prefix !global_env kn in
+	  (* We delay the compilation of arguments to avoid an exponential behavior *)
+	  let f = Retroknowledge.get_native_compiling_info
+		    (!global_env).retroknowledge (mkConst kn) prefix in
 	  let args = lambda_of_args env sigma 0 args in
-	  Retroknowledge.get_native_compiling_info
-		    (!global_env).retroknowledge (mkConst kn) prefix args
+	  f args
       with Not_found ->
       begin match cb.const_body with
       | Def csubst ->

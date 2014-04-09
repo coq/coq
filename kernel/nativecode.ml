@@ -1767,6 +1767,7 @@ let compile_constant env sigma prefix ~interactive con body =
   | Def t ->
       let t = Mod_subst.force_constr t in
       let code = lambda_of_constr env sigma t in
+      if !Flags.debug then Pp.msg_debug (Pp.str "Generated lambda code");
       let is_lazy = is_lazy prefix t in
       let code = if is_lazy then mk_lazy code else code in
       let name =
@@ -1775,9 +1776,11 @@ let compile_constant env sigma prefix ~interactive con body =
       in
       let l = con_label con in
       let auxdefs,code = compile_with_fv env sigma [] (Some l) code in
+      if !Flags.debug then Pp.msg_debug (Pp.str "Generated mllambda code");
       let code =
         optimize_stk (Glet(Gconstant ("",con),code)::auxdefs)
       in
+      if !Flags.debug then Pp.msg_debug (Pp.str "Optimized mllambda code");
       code, name
   | _ -> 
       let i = push_symbol (SymbConst con) in
