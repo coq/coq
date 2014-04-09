@@ -294,6 +294,10 @@ let init w nb ags =
   let status = ref empty in
   let reset () = eprintf "reset\n%!"; cur := pg in
   ignore(w#event#connect#key_press ~callback:(fun t ->
+    if nb#current_term.script#misc#get_property "has-focus" <>
+       `BOOL true
+    then false
+    else begin
     eprintf "got key %s\n%!" (pr_key t);
     if current.nanoPG then begin
       match find gui !cur t with
@@ -305,7 +309,7 @@ let init w nb ags =
            cur := c; true
       | `NotFound -> reset (); false
     end else false
-  ));
+  end));
   ignore(w#event#connect#button_press ~callback:(fun t -> reset (); false))
 
 
