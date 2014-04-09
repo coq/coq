@@ -335,7 +335,7 @@ let apply_coercion env sigma p hj typ_cl =
 	  let sigma = Evd.merge_context_set Evd.univ_flexible sigma ctx in
 	  let argl = (class_args_of env sigma typ_cl)@[ja.uj_val] in
 	  let sigma, jres = 
-	    apply_coercion_args env sigma (not (Univ.ContextSet.is_empty ctx)) argl fv 
+	    apply_coercion_args env sigma true argl fv 
 	  in
 	    (if isid then
 	      { uj_val = ja.uj_val; uj_type = jres.uj_type }
