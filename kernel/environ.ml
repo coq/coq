@@ -484,10 +484,13 @@ let register =
     add_native_compiling_info rk v (Nativelambda.compile_prim prim kn)
   in
 
-  let add_int31_before_match rk v =
+  let add_int31_before_match rk grp v =
     let rk = add_vm_before_match_info rk v Cbytegen.int31_escape_before_match in
-    let rk = add_native_before_match_info rk v Nativelambda.before_match_int31 in
-    rk
+    match kind_of_term (Retroknowledge.find rk (KInt31 (grp,Int31Bits))) with
+    | Ind i31bit_type ->
+    add_native_before_match_info rk v (Nativelambda.before_match_int31 i31bit_type)
+    | _ ->
+       anomaly ~label:"Environ.register" (Pp.str "Int31Bits should be an inductive type")
   in
 
 fun env field value ->
@@ -525,14 +528,14 @@ fun env field value ->
   {env with retroknowledge =
   let retroknowledge_with_reactive_info =
   match field with
-    | KInt31 (_, Int31Type) ->
+    | KInt31 (grp, Int31Type) ->
         let i31c = match kind_of_term value with
                      | Ind i31t -> mkConstruct (i31t, 1)
 		     | _ -> anomaly ~label:"Environ.register" (Pp.str "should be an inductive type")
 	in
 	add_int31_decompilation_from_type
 	  (add_int31_before_match
-	     (retroknowledge add_int31c env i31c) value)
+	     (retroknowledge add_int31c env i31c) grp value)
     | KInt31 (_, Int31Plus) -> add_int31_binop_from_const Cbytecodes.Kaddint31
 							  Primitives.Int31add
     | KInt31 (_, Int31PlusC) -> add_int31_binop_from_const Cbytecodes.Kaddcint31
