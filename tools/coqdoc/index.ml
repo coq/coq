@@ -339,9 +339,6 @@ let read_glob vfile f =
 		    done)
 	       with _ -> ())
 	  | _ ->
-	      try Scanf.sscanf s "not %d %s %s"
-		(fun loc sp id -> add_def loc loc (type_of_string "not") sp id)
-	      with Scanf.Scan_failure _ ->
 	      try Scanf.sscanf s "%s %d:%d %s %s"
 		(fun ty loc1 loc2 sp id ->
                   add_def loc1 loc2 (type_of_string ty) sp id)
