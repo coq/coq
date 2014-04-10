@@ -22,6 +22,7 @@ type glob_output_t =
     | NoGlob
     | StdOut
     | MultFiles
+    | Feedback
     | File of string
 
 let glob_output = ref NoGlob
@@ -38,8 +39,11 @@ let dump_into_file f =
   else
     (glob_output := File f; open_glob_file f)
 
+let feedback_glob () = glob_output := Feedback
+
 let dump_string s =
-  if dump () then Pervasives.output_string !glob_file s
+  if dump () && !glob_output != Feedback then 
+    Pervasives.output_string !glob_file s
 
 let start_dump_glob vfile =
   match !glob_output with
@@ -51,13 +55,13 @@ let start_dump_glob vfile =
   | File f ->
       open_glob_file f;
       output_string !glob_file "DIGEST NO\n"
-  | NoGlob | StdOut ->
+  | NoGlob | Feedback | StdOut ->
       ()
 
 let end_dump_glob () =
   match !glob_output with
   | MultFiles | File _ -> close_glob_file ()
-  | NoGlob | StdOut -> ()
+  | NoGlob | Feedback | StdOut -> ()
 
 let previous_state = ref MultFiles
 let pause () = previous_state := !glob_output; glob_output := NoGlob
@@ -126,8 +130,11 @@ let interval loc =
   loc1, loc2-1
 
 let dump_ref loc filepath modpath ident ty =
-  let bl,el = interval loc in
-  dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
+  if !glob_output = Feedback then
+    Pp.feedback (Interface.GlobRef (loc, filepath, modpath, ident, ty))
+  else
+    let bl,el = interval loc in
+    dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
 		  bl el filepath modpath ident ty)
 
 let dump_reference loc modpath ident ty =
@@ -220,9 +227,12 @@ let add_glob_kn loc kn =
 
 let dump_binding loc id = ()
 
-let dump_definition (loc, id) sec s =
-  let bl,el = interval loc in
-  dump_string (Printf.sprintf "%s %d:%d %s %s\n" ty bl el secpath id)
+let dump_def ty loc secpath id =
+  if !glob_output = Feedback then
+    Pp.feedback (Interface.GlobDef (loc, id, secpath, ty))
+  else
+    let bl,el = interval loc in
+    dump_string (Printf.sprintf "%s %d:%d %s %s\n" ty bl el secpath id)
 
 let dump_definition (loc, id) sec s =
   dump_def s loc (Names.DirPath.to_string (Lib.current_dirpath sec)) (Names.Id.to_string id)

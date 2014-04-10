@@ -323,6 +323,8 @@ let to_feedback_content = do_match "feedback_content" (fun s a -> match s,a with
   | "globref", [loc; filepath; modpath; ident; ty] ->
        GlobRef(to_loc loc, to_string filepath,
          to_string modpath, to_string ident, to_string ty)
+  | "globdef", [loc; ident; secpath; ty] ->
+       GlobDef(to_loc loc, to_string ident, to_string secpath, to_string ty)
   | "errormsg", [loc;  s] -> ErrorMsg (to_loc loc, to_string s)
   | "inprogress", [n] -> InProgress (to_int n)
   | "slavestatus", [ns] ->
@@ -341,6 +343,12 @@ let of_feedback_content = function
         of_string filepath;
         of_string modpath;
         of_string ident;
+        of_string ty ]
+  | GlobDef(loc, ident, secpath, ty) ->
+      constructor "feedback_content" "globdef" [
+        of_loc loc;
+        of_string ident;
+        of_string secpath;
         of_string ty ]
   | ErrorMsg(loc, s) ->
       constructor "feedback_content" "errormsg" [of_loc loc; of_string s]

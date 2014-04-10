@@ -130,6 +130,7 @@ type feedback_content =
   | Incomplete
   | Complete
   | GlobRef of Loc.t * string * string * string * string
+  | GlobDef of Loc.t * string * string * string
   | ErrorMsg of Loc.t * string
   | InProgress of int
   | SlaveStatus of int * string

@@ -17,6 +17,7 @@ val dump : unit -> bool
 val noglob : unit -> unit
 val dump_into_file : string -> unit (** special handling of "stdout" *)
 val dump_to_dotglob : unit -> unit
+val feedback_glob : unit -> unit
 
 val pause : unit -> unit
 val continue : unit -> unit

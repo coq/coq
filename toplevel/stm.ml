@@ -928,7 +928,7 @@ end = struct (* {{{ *)
   let rec manage_slave ~cancel:cancel_user_req id_slave respawn =
     let ic, oc, proc =
       let rec set_slave_opt = function
-        | [] -> ["-async-proofs"; "worker"; string_of_int id_slave]
+        | [] -> ["-async-proofs"; "worker"; string_of_int id_slave; "-feedback-glob"]
         | ("-ideslave"|"-emacs"|"-emacs-U")::tl -> set_slave_opt tl
         | ("-async-proofs"
           |"-compile"

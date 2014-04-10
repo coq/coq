@@ -348,6 +348,7 @@ let parse_args arglist =
     |"-compile" -> add_compile false (next ())
     |"-compile-verbose" -> add_compile true (next ())
     |"-dump-glob" -> Dumpglob.dump_into_file (next ()); glob_opt := true
+    |"-feedback-glob" -> Dumpglob.feedback_glob ()
     |"-exclude-dir" -> exclude_search_in_dirname (next ())
     |"-init-file" -> set_rcfile (next ())
     |"-inputstate"|"-is" -> set_inputstate (next ())
@@ -500,14 +501,14 @@ let start () =
   let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in
   (* In batch mode, Coqtop has already exited at this point. In interactive one,
      dump glob is nothing but garbage ...  *)
-  let () = if Dumpglob.dump () then
-    let () = if_verbose warning "Dumpglob cannot be used in interactive mode." in
-    Dumpglob.noglob () in
   if !Flags.ide_slave then
     Ide_slave.loop ()
   else if Flags.async_proofs_is_worker () then
     Stm.slave_main_loop ()
   else
+    let () = if Dumpglob.dump () then
+      let () = if_verbose warning "Dumpglob cannot be used in interactive mode." in
+      Dumpglob.noglob () in
     Coqloop.loop();
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();
