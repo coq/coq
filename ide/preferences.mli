@@ -95,6 +95,7 @@ val configure : ?apply:(unit -> unit) -> unit -> unit
 (* Hooks *)
 val refresh_editor_hook : (unit -> unit) ref
 val refresh_style_hook : (unit -> unit) ref
+val refresh_language_hook : (unit -> unit) ref
 val refresh_toolbar_hook : (unit -> unit) ref
 val resize_window_hook : (unit -> unit) ref
 val refresh_tabs_hook : (unit -> unit) ref

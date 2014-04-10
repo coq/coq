@@ -78,6 +78,7 @@ let inputenc_of_string s =
 (** Hooks *)
 
 let refresh_style_hook = ref (fun () -> ())
+let refresh_language_hook = ref (fun () -> ())
 let refresh_editor_hook = ref (fun () -> ())
 let refresh_toolbar_hook = ref (fun () -> ())
 let contextual_menus_on_goal_hook = ref (fun x -> ())
@@ -657,6 +658,19 @@ let configure ?(apply=(fun () -> ())) () =
       style_manager#style_scheme_ids current.source_style
   in
 
+  let source_language =
+    let f s =
+      current.source_language <- s;
+      !refresh_language_hook ()
+    in
+    combo "Language:"
+      ~f ~new_allowed:false
+      (List.filter
+        (fun x -> Str.string_match (Str.regexp "^coq") x 0)
+        lang_manager#language_ids)
+      current.source_language
+  in
+
   let read_project =
     combo
       "Project file options are"
@@ -794,7 +808,8 @@ let configure ?(apply=(fun () -> ())) () =
   let cmds =
     [Section("Fonts", Some `SELECT_FONT,
 	     [config_font]);
-     Section("Colors", Some `SELECT_COLOR, [config_color; source_style]);
+     Section("Colors", Some `SELECT_COLOR,
+             [config_color; source_language; source_style]);
      Section("Editor", Some `EDIT, [config_editor]);
      Section("Files", Some `DIRECTORY,
 	     [global_auto_revert;global_auto_revert_delay;

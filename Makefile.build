@@ -297,7 +297,7 @@ COQIDEFLAGS=$(addprefix -I , $(IDESRCDIRS)) $(COQIDEINCLUDES)
 
 .SUFFIXES:.vo
 
-IDEFILES=ide/coq.lang ide/coq_style.xml ide/coq.png ide/mac_default_accel_map
+IDEFILES=$(wildcard ide/coq*.lang) ide/coq_style.xml ide/coq.png ide/mac_default_accel_map
 
 coqide-binaries: coqide-$(HASCOQIDE)
 coqide-no:

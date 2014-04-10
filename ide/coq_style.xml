@@ -11,4 +11,16 @@
 <style name="coq:identifier" foreground="#navy"/>
 <style name="coq:constr-keyword" foreground="#dark green"/>
 <style name="coq:constr-sort" foreground="#008080"/>
+
+<style name="coq-ssreflect:comment" foreground="#b22222"/>
+<style name="coq-ssreflect:coqdoc" foreground="#b22222" italic="true"/>
+<style name="coq-ssreflect:vernac-keyword" bold="true" foreground="#a021f0"/>
+<style name="coq-ssreflect:gallina-keyword" bold="true" foreground="#a021f0"/>
+<style name="coq-ssreflect:identifier" bold="true" foreground="#0000ff"/>
+<style name="coq-ssreflect:constr-keyword" foreground="#228b22"/>
+<style name="coq-ssreflect:constr-sort" foreground="#228b22"/>
+<style name="coq-ssreflect:tactic" foreground="#101092"/>
+<style name="coq-ssreflect:endtactic" foreground="#ff3f3f"/>
+<style name="coq-ssreflect:iterator" foreground="#be6ad4"/>
+<style name="coq-ssreflect:string" foreground="#8b2252"/>
 </style-scheme>

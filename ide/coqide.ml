@@ -1267,12 +1267,18 @@ let build_ui () =
     let iter_session v = v.script#source_buffer#set_style_scheme style in
     List.iter iter_session notebook#pages
   in
+  let refresh_language () =
+    let lang =  lang_manager#language prefs.source_language in
+    let iter_session v = v.script#source_buffer#set_language lang in
+    List.iter iter_session notebook#pages
+  in
   let resize_window () =
     w#resize ~width:prefs.window_width ~height:prefs.window_height
   in
   refresh_toolbar ();
   refresh_toolbar_hook := refresh_toolbar;
   refresh_style_hook := refresh_style;
+  refresh_language_hook := refresh_language;
   refresh_editor_hook := refresh_editor_prefs;
   resize_window_hook := resize_window;
   refresh_tabs_hook := refresh_notebook_pos;
