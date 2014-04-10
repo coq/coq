@@ -202,12 +202,12 @@ val kind : constr -> (constr, types) kind_of_term
    and application grouping *)
 val equal : constr -> constr -> bool
 
-(** [eq_constr_univs a b] [true, c] if [a] equals [b] modulo alpha, casts,
-   application grouping and the universe equalities in [c]. *)
+(** [eq_constr_univs u a b] is [true] if [a] equals [b] modulo alpha, casts,
+   application grouping and the universe equalities in [u]. *)
 val eq_constr_univs : constr Univ.check_function
 
-(** [leq_constr_univs a b] [true, c] if [a] is convertible to [b] modulo 
-    alpha, casts, application grouping and the universe inequalities in [c]. *)
+(** [leq_constr_univs u a b] is [true] if [a] is convertible to [b] modulo 
+    alpha, casts, application grouping and the universe inequalities in [u]. *)
 val leq_constr_univs : constr Univ.check_function
 
 (** [eq_constr_universes a b] [true, c] if [a] equals [b] modulo alpha, casts,
