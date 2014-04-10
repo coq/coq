@@ -27,7 +27,7 @@ Lemma growing_cv :
   forall Un:nat -> R, Un_growing Un -> has_ub Un -> { l:R | Un_cv Un l }.
 Proof.
   intros Un Hug Heub.
-  exists (projT1 (completeness (EUn Un) Heub (EUn_noempty Un))).
+  exists (proj1_sig (completeness (EUn Un) Heub (EUn_noempty Un))).
   destruct (completeness _ Heub (EUn_noempty Un)) as (l, H).
   now apply Un_cv_crit_lub.
 Qed.

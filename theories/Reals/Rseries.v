@@ -261,7 +261,7 @@ Section sequence.
   Lemma Un_cv_crit : Un_growing -> bound EUn ->  exists l : R, Un_cv l.
   Proof.
     intros Hug Heub.
-    exists (projT1 (completeness EUn Heub EUn_noempty)).
+    exists (proj1_sig (completeness EUn Heub EUn_noempty)).
     destruct (completeness EUn Heub EUn_noempty) as (l, H).
     now apply Un_cv_crit_lub.
   Qed.
