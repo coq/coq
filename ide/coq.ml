@@ -196,7 +196,7 @@ module GlibMainLoop = struct
   type condition = Glib.Io.condition
   let add_watch ~callback chan =
     Glib.Io.add_watch ~cond:[`ERR; `HUP; `IN; `NVAL; `PRI] ~callback chan
-  let remove_watch = Glib.Io.remove
+  let remove_watch x = try Glib.Io.remove x with Glib.GError _ -> ()
   let read_all = Ideutils.io_read_all
   let async_chan_of_file fd = Glib.Io.channel_of_descr fd
   let async_chan_of_socket s = !gio_channel_of_descr_socket s

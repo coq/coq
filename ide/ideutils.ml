@@ -130,7 +130,10 @@ let mktimer () =
     kill =
       (fun () -> match !timer with
         | None -> ()
-        | Some id -> GMain.Timeout.remove id; timer := None) }
+        | Some id ->
+            (try GMain.Timeout.remove id
+             with Glib.GError _ -> ());
+             timer := None) }
 
 let last_dir = ref ""
 
