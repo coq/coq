@@ -791,14 +791,13 @@ let check_one_cofix env nbfix def deftype =
 	      
 	| CoFix (j,(_,varit,vdefs as recdef)) ->
             if (List.for_all (noccur_with_meta n nbfix) args)
-            then 
-              let nbfix = Array.length vdefs in
+            then
 	      if (array_for_all (noccur_with_meta n nbfix) varit) then
+		let nbfix = Array.length vdefs in
 		let env' = push_rec_types recdef env in
 		(array_for_all
-		   (check_rec_call env' alreadygrd (n+1) vlra) vdefs)
-		&&
-		(List.for_all (check_rec_call env alreadygrd (n+1) vlra) args) 
+                   (check_rec_call env' alreadygrd (n+nbfix) vlra) vdefs &&
+		 List.for_all (check_rec_call env alreadygrd n vlra) args)
               else 
 		raise (CoFixGuardError (env,RecCallInTypeOfDef c))
 	    else
