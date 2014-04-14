@@ -30,9 +30,30 @@ TACTIC EXTEND admit
   [ "admit" ] -> [ admit_as_an_axiom ]
 END
 
-let replace_in_clause_maybe_by (sigma1,c1) c2 in_hyp tac =
+
+
+let classes_dirpath =
+  make_dirpath (List.map id_of_string ["Classes";"Coq"])
+
+let init_setoid () =
+  if Libnames.is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
+  else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
+
+
+let occurrences_of occs = 
+  let loccs = match occs with 
+  | n::_ as nl when n < 0 -> (false,List.map (fun n -> ArgArg (abs n)) nl)
+  | nl ->
+      if List.exists (fun n -> n < 0) nl then
+	error "Illegal negative occurrence number.";
+      (true, List.map (fun n -> (ArgArg n)) nl)
+  in 
+  init_setoid ();
+  {onhyps = Some []; concl_occs =loccs}
+
+let replace_in_clause_maybe_by (sigma1,c1) c2 cl tac =
   Refiner.tclWITHHOLES false
-    (replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp))
+    (replace_in_clause_maybe_by c1 c2 cl)
     sigma1
     (Option.map Tacinterp.eval_tactic tac)
 
@@ -44,8 +65,14 @@ let replace_multi_term dir_opt (sigma,c) in_hyp =
 
 TACTIC EXTEND replace
    ["replace" open_constr(c1) "with" constr(c2) in_arg_hyp(in_hyp) by_arg_tac(tac) ]
--> [ replace_in_clause_maybe_by c1 c2 in_hyp tac ]
+-> [ replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp) tac ]
 END
+
+TACTIC EXTEND replace_at
+   ["replace" open_constr(c1) "with" constr(c2) "at" occurrences(occs) by_arg_tac(tac) ]
+-> [ replace_in_clause_maybe_by c1 c2 (occurrences_of occs) tac ]
+END
+
 
 TACTIC EXTEND replace_term_left
   [ "replace"  "->" open_constr(c) in_arg_hyp(in_hyp) ]
