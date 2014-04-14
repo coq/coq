@@ -793,6 +793,13 @@ let () =
   Genintern.register_intern0 wit_intro_pattern intern_intro_pattern
 
 let () =
+  let intern_clause ist cl =
+    let ans = clause_app (intern_hyp_location ist) cl in
+    (ist, ans)
+  in
+  Genintern.register_intern0 wit_clause_dft_concl intern_clause
+
+let () =
   Genintern.register_intern0 wit_ref (lift intern_global_reference);
   Genintern.register_intern0 wit_tactic (lift intern_tactic_or_tacarg);
   Genintern.register_intern0 wit_sort (fun ist s -> (ist, s))

@@ -388,6 +388,9 @@ module Tactic =
     let red_expr = make_gen_entry utactic (rawwit wit_red_expr) "red_expr"
     let simple_intropattern =
       make_gen_entry utactic (rawwit wit_intro_pattern) "simple_intropattern"
+    let clause_dft_concl = 
+      make_gen_entry utactic (rawwit wit_clause_dft_concl) "clause"
+
 
     (* Main entries for ltac *)
     let tactic_arg = Gram.entry_create "tactic:tactic_arg"

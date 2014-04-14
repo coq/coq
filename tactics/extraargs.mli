@@ -43,17 +43,6 @@ val wit_hloc : (loc_place, loc_place, place) Genarg.genarg_type
 val hloc : loc_place Pcoq.Gram.entry
 val pr_hloc : loc_place -> Pp.std_ppcmds
 
-val in_arg_hyp:  (Names.Id.t Loc.located list option * bool)  Pcoq.Gram.entry
-
-val wit_in_arg_hyp :
-  ((Names.Id.t Loc.located list option * bool),
-  (Names.Id.t Loc.located list option * bool),
-  (Names.Id.t list option * bool)) Genarg.genarg_type
-
-val raw_in_arg_hyp_to_clause : (Names.Id.t Loc.located list option * bool) -> Locus.clause
-val glob_in_arg_hyp_to_clause :  (Names.Id.t list option * bool)  -> Locus.clause
-val pr_in_arg_hyp : (Names.Id.t list option * bool) -> Pp.std_ppcmds
-
 val by_arg_tac : Tacexpr.raw_tactic_expr option Pcoq.Gram.entry
 val wit_by_arg_tac :
   (raw_tactic_expr option,

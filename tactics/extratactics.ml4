@@ -30,36 +30,36 @@ TACTIC EXTEND admit
   [ "admit" ] -> [ admit_as_an_axiom ]
 END
 
-let replace_in_clause_maybe_by (sigma1,c1) c2 in_hyp tac =
+let replace_in_clause_maybe_by (sigma1,c1) c2 cl  tac =
   Tacticals.New.tclWITHHOLES false
-    (replace_in_clause_maybe_by c1 c2 (glob_in_arg_hyp_to_clause in_hyp))
+    (replace_in_clause_maybe_by c1 c2 cl)
     sigma1
     (Option.map Tacinterp.eval_tactic tac)
 
-let replace_multi_term dir_opt (sigma,c) in_hyp =
+let replace_multi_term dir_opt (sigma,c) cl =
   Tacticals.New.tclWITHHOLES false
     (replace_multi_term dir_opt c)
     sigma
-    (glob_in_arg_hyp_to_clause in_hyp)
+    cl
 
 TACTIC EXTEND replace
-   ["replace" open_constr(c1) "with" constr(c2) in_arg_hyp(in_hyp) by_arg_tac(tac) ]
--> [ replace_in_clause_maybe_by c1 c2 in_hyp tac ]
+   ["replace" open_constr(c1) "with" constr(c2) clause(cl) by_arg_tac(tac) ]
+-> [ replace_in_clause_maybe_by c1 c2 cl tac ]
 END
 
 TACTIC EXTEND replace_term_left
-  [ "replace"  "->" open_constr(c) in_arg_hyp(in_hyp) ]
-  -> [ replace_multi_term (Some true) c in_hyp ]
+  [ "replace"  "->" open_constr(c) clause(cl) ]
+  -> [ replace_multi_term (Some true) c cl ]
 END
 
 TACTIC EXTEND replace_term_right
-  [ "replace"  "<-" open_constr(c) in_arg_hyp(in_hyp) ]
-  -> [ replace_multi_term (Some false) c in_hyp ]
+  [ "replace"  "<-" open_constr(c) clause(cl) ]
+  -> [ replace_multi_term (Some false) c cl ]
 END
 
 TACTIC EXTEND replace_term
-  [ "replace" open_constr(c) in_arg_hyp(in_hyp) ]
-  -> [ replace_multi_term None c in_hyp ]
+  [ "replace" open_constr(c) clause(cl) ]
+  -> [ replace_multi_term None c cl ]
 END
 
 let induction_arg_of_quantified_hyp = function
@@ -211,22 +211,19 @@ ARGUMENT EXTEND orient_string TYPED AS (bool * string) PRINTED BY pr_orient_stri
 END
 
 TACTIC EXTEND autorewrite
-| [ "autorewrite" "with" ne_preident_list(l) in_arg_hyp(cl) ] ->
-    [ auto_multi_rewrite  l (glob_in_arg_hyp_to_clause  cl) ]
-| [ "autorewrite" "with" ne_preident_list(l) in_arg_hyp(cl) "using" tactic(t) ] ->
+| [ "autorewrite" "with" ne_preident_list(l) clause(cl) ] ->
+    [ auto_multi_rewrite  l ( cl) ]
+| [ "autorewrite" "with" ne_preident_list(l) clause(cl) "using" tactic(t) ] ->
     [
-      let cl =  glob_in_arg_hyp_to_clause cl in
       auto_multi_rewrite_with (Tacinterp.eval_tactic t) l cl
-
     ]
 END
 
 TACTIC EXTEND autorewrite_star
-| [ "autorewrite" "*" "with" ne_preident_list(l) in_arg_hyp(cl) ] ->
-    [ auto_multi_rewrite ~conds:AllMatches l (glob_in_arg_hyp_to_clause  cl) ]
-| [ "autorewrite" "*" "with" ne_preident_list(l) in_arg_hyp(cl) "using" tactic(t) ] ->
-    [ let cl =  glob_in_arg_hyp_to_clause cl in
-	auto_multi_rewrite_with ~conds:AllMatches (Tacinterp.eval_tactic t) l cl ]
+| [ "autorewrite" "*" "with" ne_preident_list(l) clause(cl) ] ->
+    [ auto_multi_rewrite ~conds:AllMatches l cl ]
+| [ "autorewrite" "*" "with" ne_preident_list(l) clause(cl) "using" tactic(t) ] ->
+  [ auto_multi_rewrite_with ~conds:AllMatches (Tacinterp.eval_tactic t) l cl ]
 END
 
 (**********************************************************************)

@@ -487,12 +487,12 @@ let autounfold_tac db cls gl =
   | Some [] -> ["core"]
   | Some l -> l
   in
-  autounfold dbs (Extraargs.glob_in_arg_hyp_to_clause cls) gl
+  autounfold dbs  cls gl
 
 open Extraargs
 
 TACTIC EXTEND autounfold
-| [ "autounfold" hintbases(db) in_arg_hyp(id) ] -> [ Proofview.V82.tactic (autounfold_tac db id) ]
+| [ "autounfold" hintbases(db) clause(cl) ] -> [ Proofview.V82.tactic (autounfold_tac db cl) ]
 END
 
 let unfold_head env (ids, csts) c = 

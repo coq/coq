@@ -218,6 +218,7 @@ module Tactic :
     val red_expr : raw_red_expr Gram.entry
     val simple_tactic : raw_atomic_tactic_expr Gram.entry
     val simple_intropattern : intro_pattern_expr located Gram.entry
+    val clause_dft_concl : Names.Id.t Loc.located Tacexpr.or_metaid Locus.clause_expr Gram.entry
     val tactic_arg : raw_tactic_arg Gram.entry
     val tactic_expr : raw_tactic_expr Gram.entry
     val binder_tactic : raw_tactic_expr Gram.entry

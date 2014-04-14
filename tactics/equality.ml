@@ -505,6 +505,24 @@ let rewriteRL = general_rewrite false AllOccurrences true true
 
 (* Replacing tactics *)
 
+let classes_dirpath =
+  DirPath.make (List.map Id.of_string ["Classes";"Coq"])
+
+let init_setoid () =
+  if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
+  else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
+
+let check_setoid cl = 
+  Option.fold_left
+    ( List.fold_left 
+	(fun b ((occ,_),_) -> 
+	  b||(Locusops.occurrences_map (fun x -> x) occ <> AllOccurrences)
+	)
+    )
+    ((Locusops.occurrences_map (fun x -> x) cl.concl_occs <> AllOccurrences) &&
+	(Locusops.occurrences_map (fun x -> x) cl.concl_occs <> NoOccurrences))
+    cl.onhyps
+    
 (* eq,sym_eq : equality on Type and its symmetry theorem
    c2 c1 : c1 is to be replaced by c2
    unsafe : If true, do not check that c1 and c2 are convertible
@@ -526,6 +544,8 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt =
     let e = build_coq_eq () in
     let sym = build_coq_eq_sym () in
     let eq = applist (e, [t1;c1;c2]) in
+    if check_setoid clause
+    then init_setoid ();
     tclTHENS (assert_as false None eq)
       [onLastHypId (fun id ->
 	tclTHEN

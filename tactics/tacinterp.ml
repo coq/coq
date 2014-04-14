@@ -393,7 +393,7 @@ let interp_occurrences ist occs =
 let interp_hyp_location ist gl ((occs,id),hl) =
   ((interp_occurrences ist occs,interp_hyp ist gl id),hl)
 
-let interp_clause ist gl { onhyps=ol; concl_occs=occs } =
+let interp_clause ist gl { onhyps=ol; concl_occs=occs } : clause =
   { onhyps=Option.map(List.map (interp_hyp_location ist gl)) ol;
     concl_occs=interp_occurrences ist occs }
 
@@ -2123,6 +2123,9 @@ let () =
   Geninterp.register_interp0 wit_ref interp;
   let interp ist gl pat = (project gl, interp_intro_pattern ist (pf_env gl) pat) in
   Geninterp.register_interp0 wit_intro_pattern interp;
+  let interp ist gl pat = (project gl, interp_clause ist (pf_env gl) pat) in
+  Geninterp.register_interp0 wit_clause_dft_concl interp;
+
   let interp ist gl s = (project gl, interp_sort s) in
   Geninterp.register_interp0 wit_sort interp
 

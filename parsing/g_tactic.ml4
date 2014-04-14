@@ -216,7 +216,7 @@ let merge_occurrences loc cl = function
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
   bindings red_expr int_or_var open_constr
-  simple_intropattern;
+  simple_intropattern clause_dft_concl;
 
   int_or_var:
     [ [ n = integer  -> ArgArg n

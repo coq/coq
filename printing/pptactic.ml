@@ -1034,6 +1034,12 @@ let () =
     Miscprint.pr_intro_pattern
     Miscprint.pr_intro_pattern
     Miscprint.pr_intro_pattern;
+  Genprint.register_print0
+    Constrarg.wit_clause_dft_concl
+    (pr_clauses (Some true) (pr_or_metaid pr_lident))
+    (pr_clauses (Some true) pr_lident)
+    (pr_clauses (Some true) (fun id -> pr_lident (Loc.ghost,id)))
+  ;
   Genprint.register_print0 Constrarg.wit_sort
     pr_glob_sort pr_glob_sort pr_sort;
   Genprint.register_print0 Stdarg.wit_int int int int;

@@ -330,6 +330,7 @@ let () =
   Genintern.register_subst0 wit_ref subst_global_reference;
   Genintern.register_subst0 wit_intro_pattern (fun _ v -> v);
   Genintern.register_subst0 wit_tactic subst_tactic;
-  Genintern.register_subst0 wit_sort (fun _ v -> v)
+  Genintern.register_subst0 wit_sort (fun _ v -> v);
+  Genintern.register_subst0 wit_clause_dft_concl (fun _ v -> v)
 
 let _ = Hook.set Auto.extern_subst_tactic subst_tactic

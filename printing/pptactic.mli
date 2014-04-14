@@ -55,6 +55,8 @@ type pp_tactic = {
 val declare_ml_tactic_pprule : string -> pp_tactic -> unit
 val declare_notation_tactic_pprule : KerName.t -> pp_tactic -> unit
 
+val pr_clauses :  bool option ->
+           ('a -> Pp.std_ppcmds) -> 'a Locus.clause_expr -> Pp.std_ppcmds
 val pr_raw_generic :
   (constr_expr -> std_ppcmds) ->
   (constr_expr -> std_ppcmds) ->

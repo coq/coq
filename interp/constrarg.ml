@@ -55,6 +55,9 @@ let wit_bindings = unsafe_of_type BindingsArgType
 
 let wit_red_expr = unsafe_of_type RedExprArgType
 
+let wit_clause_dft_concl  =
+  Genarg.make0 None "clause_dft_concl"
+
 (** Register location *)
 
 let () =
@@ -62,3 +65,4 @@ let () =
   register_name0 wit_intro_pattern "Constrarg.wit_intro_pattern";
   register_name0 wit_tactic "Constrarg.wit_tactic";
   register_name0 wit_sort "Constrarg.wit_sort";
+  register_name0 wit_clause_dft_concl "Constrarg.wit_clause_dft_concl";

@@ -30,6 +30,7 @@ val wit_int_or_var : int or_var uniform_genarg_type
 
 val wit_intro_pattern : intro_pattern_expr located uniform_genarg_type
 
+
 val wit_ident : Id.t uniform_genarg_type
 
 val wit_var : (Id.t located, Id.t located, Id.t) genarg_type
@@ -68,3 +69,5 @@ val wit_red_expr :
   (constr,evaluable_global_reference,constr_pattern) red_expr_gen) genarg_type
 
 val wit_tactic : (raw_tactic_expr, glob_tactic_expr, glob_tactic_expr) genarg_type
+
+val wit_clause_dft_concl :  (Names.Id.t Loc.located Tacexpr.or_metaid Locus.clause_expr,Names.Id.t Loc.located Locus.clause_expr,Names.Id.t Locus.clause_expr) genarg_type
