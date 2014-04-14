@@ -463,16 +463,19 @@ exception Stays
 let compute_lbound left =
  (** The universe variable was not fixed yet.
      Compute its level using its lower bound. *)
-  if CList.is_empty left then None
-  else
-    let lbound = List.fold_left (fun lbound (d, l) -> 
-      if d == Le (* l <= ?u *) then (Universe.sup l lbound)
+  let sup l lbound = 
+    match lbound with
+    | None -> Some l
+    | Some l' -> Some (Universe.sup l l')
+  in
+    List.fold_left (fun lbound (d, l) -> 
+      if d == Le (* l <= ?u *) then sup l lbound
       else (* l < ?u *) 
 	(assert (d == Lt); 
-	 (Universe.sup (Universe.super l) lbound)))	    
-      Universe.type0m left
-    in 
-      Some lbound
+	 if not (Universe.level l == None) then
+	   sup (Universe.super l) lbound
+	 else None))
+      None left
   
 let maybe_enforce_leq lbound u cstrs = 
   match lbound with

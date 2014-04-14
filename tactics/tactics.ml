@@ -435,7 +435,8 @@ let id_of_name_with_default id = function
 let hid = Id.of_string "H"
 let xid = Id.of_string "X"
 
-let default_id_of_sort = function Prop _ -> hid | Type _ -> xid
+let default_id_of_sort s =
+  if Sorts.is_small s then hid else xid
 
 let default_id env sigma = function
   | (name,None,t) ->
