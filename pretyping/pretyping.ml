@@ -507,7 +507,6 @@ let rec pretype resolve_tc (tycon : type_constraint) env evdref lvar t =
 	    if Int.equal npars 0 then []
 	    else
 	      try
-		let ty = evd_comb1 (Coercion.inh_coerce_to_prod loc env) evdref ty in
 	  	let IndType (indf, args) = find_rectype env !evdref ty in
 	  	let ((ind',u'),pars) = dest_ind_family indf in
 	  	  if eq_ind ind ind' then pars

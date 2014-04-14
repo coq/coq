@@ -143,6 +143,8 @@ let constr_of_global gr =
 			" would forget universes."))
     else c
 
+let constr_of_reference = constr_of_global
+
 let unsafe_constr_of_global gr =
   unsafe_global_instance (Global.env ()) gr
 
@@ -204,6 +206,25 @@ let type_of_reference env r =
        else Inductive.type_of_constructor (cstr,Instance.empty) specif, ContextSet.empty
 
 let type_of_global t = type_of_reference (Global.env ()) t
+
+let unsafe_type_of_reference env r =
+  match r with
+  | VarRef id -> Environ.named_type id env
+  | ConstRef c ->
+     let cb = Environ.lookup_constant c env in
+       Typeops.type_of_constant_type env cb.const_type
+
+  | IndRef ind ->
+     let (mib, oib as specif) = Inductive.lookup_mind_specif env ind in
+     let (_, inst), _ = unsafe_inductive_instance env ind in
+       Inductive.type_of_inductive env (specif, inst)
+
+  | ConstructRef (ind, _ as cstr) ->
+     let (mib,oib as specif) = Inductive.lookup_mind_specif env (inductive_of_constructor cstr) in
+     let (_, inst), _ = unsafe_inductive_instance env ind in
+       Inductive.type_of_constructor (cstr,inst) specif
+
+let unsafe_type_of_global t = unsafe_type_of_reference (Global.env ()) t
 
 let fresh_sort_in_family env = function
   | InProp -> prop_sort, ContextSet.empty
