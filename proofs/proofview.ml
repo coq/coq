@@ -385,8 +385,7 @@ let list_iter_goal s i =
       ~adv: begin fun goal ->
         set_comb [goal] >>
         i goal r >>= fun r ->
-        Proof.get >>= fun step ->
-        Proof.ret ( r , step.comb::subgoals )
+        Proof.map (fun step -> (r, step.comb :: subgoals)) Proof.get
       end
   end >>= fun (r,subgoals) ->
   set_comb (List.flatten (List.rev subgoals)) >>
@@ -405,8 +404,7 @@ let list_iter_goal2 l s i =
       ~adv: begin fun goal ->
         set_comb [goal] >>
         i goal a r >>= fun r ->
-        Proof.get >>= fun step ->
-        Proof.ret ( r , step.comb::subgoals )
+        Proof.map (fun step -> (r, step.comb :: subgoals)) Proof.get
       end
   end >>= fun (r,subgoals) ->
   set_comb (List.flatten (List.rev subgoals)) >>
@@ -434,17 +432,14 @@ let tclDISPATCHGEN f join tacs =
             on_advance goal
               ~solved:( tclUNIT (join []) )
               ~adv:begin fun _ ->
-                f tac >>= fun res ->
-                Proof.ret (join [res])
+                Proof.map (fun res -> join [res]) (f tac)
               end
         | _ -> tclZERO SizeMismatch
       end
   | _ ->
-      list_iter_goal2 tacs [] begin fun _ t cur ->
-        f t >>= fun y ->
-        Proof.ret ( y :: cur )
-      end >>= fun res ->
-      Proof.ret (join res)
+      let iter _ t cur = Proof.map (fun y -> y :: cur) (f t) in
+      let ans = list_iter_goal2 tacs [] iter in
+      Proof.map join ans
 
 let tclDISPATCH tacs = tclDISPATCHGEN Util.identity ignore tacs
 
@@ -532,10 +527,7 @@ let tclPROGRESS t =
     tclZERO (Errors.UserError ("Proofview.tclPROGRESS" , Pp.str"Failed to progress."))
 
 let tclEVARMAP =
-  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
-  let (>>=) = Proof.bind in
-  Proof.get >>= fun initial ->
-  Proof.ret (initial.solution)
+  Proof.map (fun initial -> initial.solution) Proof.get
 
 let tclENV = Proof.current
 

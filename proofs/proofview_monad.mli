@@ -23,6 +23,7 @@ module NonLogical : sig
 
   val ret : 'a -> 'a t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val map : ('a -> 'b) -> 'a t -> 'b t
   val ignore : 'a t -> unit t
   val seq : unit t -> 'a t -> 'a t
 
@@ -51,6 +52,7 @@ module Logical : sig
 
   val ret : 'a -> 'a t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val map : ('a -> 'b) -> 'a t -> 'b t
   val ignore : 'a t -> unit t
   val seq : unit t -> 'a t -> 'a t
 
