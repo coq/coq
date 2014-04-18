@@ -210,16 +210,19 @@ let oib_equal o1 o2 =
     end &&
     Array.equal Id.equal o1.mind_consnames o2.mind_consnames
 
+let eq_record x y =
+  Option.equal (fun (x, y) (x', y') -> eq_constr x x') x y
+
 let mib_equal m1 m2 =
   Array.equal oib_equal m1.mind_packets m1.mind_packets &&
-  (m1.mind_record) = m2.mind_record && (*FIXME*)
+  eq_record m1.mind_record m2.mind_record &&
   (m1.mind_finite : bool) == m2.mind_finite &&
   Int.equal m1.mind_ntypes m2.mind_ntypes &&
   List.equal eq_named_declaration m1.mind_hyps m2.mind_hyps &&
   Int.equal m1.mind_nparams m2.mind_nparams &&
   Int.equal m1.mind_nparams_rec m2.mind_nparams_rec &&
   List.equal eq_rel_declaration m1.mind_params_ctxt m2.mind_params_ctxt &&
-  Pervasives.(=) m1.mind_universes m2.mind_universes (** FIXME *)
+  (* Univ.UContext.eq *) m1.mind_universes == m2.mind_universes (** FIXME *)
   (* m1.mind_universes = m2.mind_universes *)
 
 (*S Extraction of a type. *)
