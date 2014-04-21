@@ -425,6 +425,10 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
       str "Sub-expression " ++ pr_lconstr_env env c ++
       strbrk " not in guarded form (should be a constructor," ++
       strbrk " an abstraction, a match, a cofix or a recursive call)"
+  | ReturnPredicateNotCoInductive c ->
+     str "The return clause of the following pattern matching should be" ++
+     strbrk "a coinductive type:" ++
+     spc () ++ pr_lconstr_env env c
   in
   prt_name i ++ str " is ill-formed." ++ fnl () ++
   pr_ne_context_of (str "In environment") env ++

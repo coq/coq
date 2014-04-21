@@ -1171,6 +1171,8 @@ let check_one_cofix env nbfix def deftype =
 	      raise (CoFixGuardError (env,UnguardedRecursiveCall c))
 
 	| Case (_,p,tm,vrest) ->
+	   begin
+	   try let _ = codomain_is_coind env p in
             if (noccur_with_meta n nbfix p) then
               if (noccur_with_meta n nbfix tm) then
 		if (List.for_all (noccur_with_meta n nbfix) args) then
@@ -1181,6 +1183,9 @@ let check_one_cofix env nbfix def deftype =
 		raise (CoFixGuardError (env,RecCallInCaseArg c))
             else
 	      raise (CoFixGuardError (env,RecCallInCasePred c))
+	   with CoFixGuardError _ ->
+		raise (CoFixGuardError (env, ReturnPredicateNotCoInductive c))
+	   end
 
 	| Meta _ -> ()
         | Evar _ ->
