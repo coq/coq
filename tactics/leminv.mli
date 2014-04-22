@@ -18,9 +18,6 @@ val lemInvIn_gen : quantified_hypothesis -> constr -> Id.t list -> unit Proofvie
 val lemInv_clause :
   quantified_hypothesis -> constr -> Id.t list -> unit Proofview.tactic
 
-val inversion_lemma_from_goal :
-  int -> Id.t -> Id.t located -> sorts -> bool ->
-    (Id.t -> unit Proofview.tactic) -> unit
 val add_inversion_lemma_exn :
   Id.t -> constr_expr -> glob_sort -> bool -> (Id.t -> unit Proofview.tactic) ->
     unit

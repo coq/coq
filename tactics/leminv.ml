@@ -21,11 +21,11 @@ open Reductionops
 open Entries
 open Inductiveops
 open Environ
-open Tacmach
+open Tacmach.New
 open Pfedit
 open Clenv
 open Declare
-open Tacticals
+open Tacticals.New
 open Tactics
 open Decl_kinds
 
@@ -198,7 +198,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   let pf = Proof.start Evd.empty [invEnv,invGoal] in
   let pf =
     fst (Proof.run_tactic env (
-      Tacticals.New.tclTHEN intro (Tacticals.New.onLastHypId inv_op)) pf)
+      tclTHEN intro (onLastHypId inv_op)) pf)
   in
   let pfterm = List.hd (Proof.partial_proof pf) in
   let global_named_context = Global.named_context () in
@@ -243,16 +243,6 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
 (* inv_op = Inv (derives de complete inv. lemma)
  * inv_op = InvNoThining (derives de semi inversion lemma) *)
 
-let inversion_lemma_from_goal n na (loc,id) sort dep_option inv_op =
-  let pts = get_pftreestate() in
-  let { it=gls ; sigma=sigma; } = Proof.V82.subgoals pts in
-  let gl = { it = List.nth gls (n-1) ; sigma=sigma; } in
-  let t =
-    try pf_get_hyp_typ gl id
-    with Not_found -> Pretype_errors.error_var_not_found_loc loc id in
-  let env = pf_env gl and sigma = project gl in
-  add_inversion_lemma na env sigma t sort dep_option inv_op
-
 let add_inversion_lemma_exn na com comsort bool tac =
   let env = Global.env () and sigma = Evd.empty in
   let c = Constrintern.interp_type sigma env com in
@@ -285,16 +275,16 @@ let lemInv_gen id c = try_intros_until (fun id -> Proofview.V82.tactic (lemInv i
 
 let lemInvIn id c ids =
   Proofview.Goal.enter begin fun gl ->
-    let hyps = List.map (fun id -> Tacmach.New.pf_get_hyp id gl) ids in
+    let hyps = List.map (fun id -> pf_get_hyp id gl) ids in
     let intros_replace_ids =
       let concl = Proofview.Goal.concl gl in
       let nb_of_new_hyp  = nb_prod concl - List.length ids in
       if nb_of_new_hyp < 1  then
         intros_replacing ids
       else
-        (Tacticals.New.tclTHEN (Tacticals.New.tclDO nb_of_new_hyp intro) (intros_replacing ids))
+        (tclTHEN (tclDO nb_of_new_hyp intro) (intros_replacing ids))
     in
-    ((Tacticals.New.tclTHEN (Tacticals.New.tclTHEN (bring_hyps hyps) (Proofview.V82.tactic (lemInv id c)))
+    ((tclTHEN (tclTHEN (bring_hyps hyps) (Proofview.V82.tactic (lemInv id c)))
         (intros_replace_ids)))
   end
 

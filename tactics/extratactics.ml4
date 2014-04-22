@@ -359,12 +359,6 @@ open Leminv
 let seff id = Vernacexpr.VtSideff [id], Vernacexpr.VtLater
 
 VERNAC COMMAND EXTEND DeriveInversionClear
-  [ "Derive" "Inversion_clear" ident(na) hyp(id) ] => [ seff na ]
-  -> [ inversion_lemma_from_goal 1 na id Term.prop_sort false inv_clear_tac ]
-
-| [ "Derive" "Inversion_clear" natural(n) ident(na) hyp(id) ] => [ seff na ]
-  -> [ inversion_lemma_from_goal n na id Term.prop_sort false inv_clear_tac ]
-
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
   => [ seff na ]
   -> [ add_inversion_lemma_exn na c s false inv_clear_tac ]
@@ -382,12 +376,6 @@ VERNAC COMMAND EXTEND DeriveInversion
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ] => [ seff na ]
   -> [ add_inversion_lemma_exn na c GProp false inv_tac ]
-
-| [ "Derive" "Inversion" ident(na) hyp(id) ] => [ seff na ]
-  -> [ inversion_lemma_from_goal 1 na id Term.prop_sort false inv_tac ]
-
-| [ "Derive" "Inversion" natural(n) ident(na) hyp(id) ] => [ seff na ]
-  -> [ inversion_lemma_from_goal n na id Term.prop_sort false inv_tac ]
 END
 
 VERNAC COMMAND EXTEND DeriveDependentInversion
