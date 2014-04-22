@@ -708,25 +708,6 @@ let check_no_explicitation l =
   | (_, Some (loc, _)) :: _ ->
     user_err_loc (loc,"",str"Unexpected explicitation of the argument of an abbreviation.")
 
-(* This code is taken from dumpglob, and should be shared with it *)
-let feedback_global loc ref =
-  if !Flags.ide_slave || !Flags.print_emacs then
-    let remove_sections dir =
-      if Libnames.is_dirpath_prefix_of dir (Lib.cwd ()) then
-        Libnames.pop_dirpath_n (Lib.sections_depth ()) (Lib.cwd ())
-      else
-        dir in
-    let sp = Nametab.path_of_global ref in
-    let lib_dp = Lib.library_part ref in
-    let ty = "" in
-    let mod_dp,id = Libnames.repr_path sp in
-    let mod_dp = remove_sections mod_dp in
-    let mod_dp_trunc = Libnames.drop_dirpath_prefix lib_dp mod_dp in
-    let filepath = Names.DirPath.to_string lib_dp in
-    let modpath = Names.DirPath.to_string mod_dp_trunc in
-    let ident = Names.Id.to_string id in
-    Pp.feedback (Interface.GlobRef (loc, filepath, modpath, ident, ty))
-
 let dump_extended_global loc = function
   | TrueGlobal ref -> (*feedback_global loc ref;*) Dumpglob.add_glob loc ref
   | SynDef sp -> Dumpglob.add_glob_kn loc sp

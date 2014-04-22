@@ -64,7 +64,6 @@ val intro_using          : Id.t -> unit Proofview.tactic
 val intro_mustbe_force   : Id.t -> unit Proofview.tactic
 val intro_then           : (Id.t -> unit Proofview.tactic) -> unit Proofview.tactic
 val intros_using         : Id.t list -> unit Proofview.tactic
-val intro_erasing        : Id.t -> tactic
 val intros_replacing     : Id.t list -> unit Proofview.tactic
 
 val intros               : unit Proofview.tactic
@@ -256,8 +255,6 @@ val general_elim_clause_gen : (int -> Clenv.clausenv -> 'a -> tactic) ->
 
 val general_elim  : evars_flag ->
   constr with_bindings -> eliminator -> tactic
-val general_elim_in : evars_flag -> Id.t ->
-  constr with_bindings -> eliminator -> tactic
 
 val default_elim  : evars_flag -> constr with_bindings -> unit Proofview.tactic
 val simplest_elim : constr -> unit Proofview.tactic
@@ -328,7 +325,6 @@ val setoid_symmetry : unit Proofview.tactic Hook.t
 val symmetry_red                : bool -> unit Proofview.tactic
 val symmetry                    : unit Proofview.tactic
 val setoid_symmetry_in : (Id.t -> unit Proofview.tactic) Hook.t
-val symmetry_in                 : Id.t -> unit Proofview.tactic
 val intros_symmetry             : clause -> unit Proofview.tactic
 
 val setoid_transitivity : (constr option -> unit Proofview.tactic) Hook.t

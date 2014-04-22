@@ -1064,23 +1064,6 @@ let explain_wrong_numarg_inductive env ind n =
   str "The inductive type " ++ pr_inductive env ind ++
   str " expects " ++ str (decline_string n "argument") ++ str "."
 
-let explain_wrong_predicate_arity env pred nondep_arity dep_arity=
-  let env = make_all_name_different env in
-  let pp = pr_lconstr_env env pred in
-  str "The elimination predicate " ++ spc () ++ pp ++ fnl () ++
-  str "should be of arity" ++ spc () ++
-  pr_lconstr_env env nondep_arity ++ spc () ++
-  str "(for non dependent case) or" ++
-  spc () ++ pr_lconstr_env env dep_arity ++ spc () ++
-  str "(for dependent case)."
-
-let explain_needs_inversion env x t =
-  let env = make_all_name_different env in
-  let px = pr_lconstr_env env x in
-  let pt = pr_lconstr_env env t in
-  str "Sorry, I need inversion to compile pattern matching on term " ++
-  px ++ str " of type: " ++ pt ++ str "."
-
 let explain_unused_clause env pats =
 (* Without localisation
   let s = if List.length pats > 1 then "s" else "" in
@@ -1112,10 +1095,6 @@ let explain_pattern_matching_error env = function
       explain_wrong_numarg_constructor env c n
   | WrongNumargInductive (c,n) ->
       explain_wrong_numarg_inductive env c n
-  | WrongPredicateArity (pred,n,dep) ->
-      explain_wrong_predicate_arity env pred n dep
-  | NeedsInversion (x,t) ->
-      explain_needs_inversion env x t
   | UnusedClause tms ->
       explain_unused_clause env tms
   | NonExhaustive tms ->

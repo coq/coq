@@ -23,11 +23,6 @@ type clausenv = {
 				    out *)
   templtyp : constr freelisted (** its type *)}
 
-(** Substitution is not applied on templenv (because [subst_clenv] is
-   applied only on hints which typing env is overwritten by the
-   goal env) *)
-val subst_clenv : substitution -> clausenv -> clausenv
-
 (** subject of clenv (instantiated) *)
 val clenv_value     : clausenv -> constr
 
@@ -60,11 +55,6 @@ val clenv_unify :
 
 (** unifies the concl of the goal with the type of the clenv *)
 val clenv_unique_resolver :
-  ?flags:unify_flags -> clausenv -> Goal.goal sigma -> clausenv
-
-(** same as above ([allow_K=false]) but replaces remaining metas
-   with fresh evars if [evars_flag] is [true] *)
-val evar_clenv_unique_resolver :
   ?flags:unify_flags -> clausenv -> Goal.goal sigma -> clausenv
 
 val clenv_dependent : clausenv -> metavariable list

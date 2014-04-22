@@ -19,6 +19,3 @@ val res_pf : clausenv -> ?with_evars:evars_flag -> ?flags:unify_flags -> tactic
 
 val clenv_pose_dependent_evars : evars_flag -> clausenv -> clausenv
 val clenv_value_cast_meta : clausenv -> constr
-
-(** Compatibility, use res_pf ?with_evars:true instead *)
-val e_res_pf : clausenv -> tactic

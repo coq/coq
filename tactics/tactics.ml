@@ -490,8 +490,6 @@ let rec intros_using = function
 
 let intros = Tacticals.New.tclREPEAT intro
 
-let intro_erasing id = tclTHEN (thin [id]) (introduction id)
-
 let intro_forthcoming_then_gen loc name_flag move_flag dep_flag tac =
   let rec aux ids =
     Proofview.tclORELSE
@@ -931,9 +929,6 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags) id i elimclause 
     errorlabstrm "general_rewrite_in"
       (str "Nothing to rewrite in " ++ pr_id id ++ str".");
   clenv_refine_in with_evars id elimclause'' gl
-
-let general_elim_in with_evars id =
-  general_elim_clause (elimination_in_clause_scheme with_evars id)
 
 (* Apply a tactic below the products of the conclusion of a lemma *)
 

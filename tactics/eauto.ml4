@@ -58,8 +58,6 @@ let registered_e_assumption gl =
 
 (*s Tactics handling a list of goals. *)
 
-type tactic_list = (goal list sigma) -> (goal list sigma)
-
 (* first_goal : goal list sigma -> goal sigma *)
 
 let first_goal gls =
@@ -200,10 +198,6 @@ module SearchProblem = struct
   let success s = List.is_empty (sig_it s.tacres)
 
   let pr_ev evs ev = Printer.pr_constr_env (Evd.evar_env ev) (Evarutil.nf_evar evs ev.Evd.evar_concl)
-
-  let pr_goals gls =
-    let evars = Evarutil.nf_evar_map (Refiner.project gls) in
-      prlist (pr_ev evars) (sig_it gls)
 
   let filter_tactics glls l =
 (*     let _ = Proof_trees.db_pr_goal (List.hd (sig_it glls)) in *)
@@ -488,8 +482,6 @@ let autounfold_tac db cls gl =
   | Some l -> l
   in
   autounfold dbs  cls gl
-
-open Extraargs
 
 TACTIC EXTEND autounfold
 | [ "autounfold" hintbases(db) clause(cl) ] -> [ Proofview.V82.tactic (autounfold_tac db cl) ]

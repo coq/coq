@@ -65,10 +65,6 @@ val tclTHENSV         : tactic -> tactic array -> tactic
 (** Same with a list of tactics *)
 val tclTHENS         : tactic -> tactic list -> tactic
 
-(** [tclTHENST] is renamed [tclTHENSFIRSTn]
-val tclTHENST        : tactic -> tactic array -> tactic -> tactic
-*)
-
 (** [tclTHENS3PARTS tac1 [|t1 ; ... ; tn|] tac2 [|t'1 ; ... ; t'm|] gls]
    applies the tactic [tac1] to [gls] then, applies [t1], ..., [tn] to
    the first [n] resulting subgoals, [t'1], ..., [t'm] to the last [m]

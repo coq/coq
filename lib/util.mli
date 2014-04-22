@@ -87,7 +87,6 @@ val compose : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
 val const : 'a -> 'b -> 'a
 val iterate : ('a -> 'a) -> int -> 'a -> 'a
 val repeat : int -> ('a -> unit) -> 'a -> unit
-val iterate_for : int -> int -> (int -> 'a -> 'a) -> 'a -> 'a
 val app_opt : ('a -> 'a) option -> 'a -> 'a
 
 (** {6 Delayed computations. } *)

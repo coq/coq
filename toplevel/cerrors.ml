@@ -102,10 +102,6 @@ let process_vernac_interp_error exn = match exn with
         (str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
 	 spc () ++ str "was not found" ++
 	 spc () ++ str "in the current" ++ spc () ++ str "environment.")
-  | Nametab.GlobalizationConstantError q ->
-      wrap_vernac_error exn
-        (str "No constant of this name:" ++ spc () ++
-         Libnames.pr_qualid q ++ str ".")
   | Refiner.FailError (i,s) ->
       let s = Lazy.force s in
       wrap_vernac_error exn

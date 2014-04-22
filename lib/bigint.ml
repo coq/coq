@@ -63,7 +63,6 @@ module ArrayInt = struct
 
 (* Basic numbers *)
 let zero = [||]
-let neg_one = [|-1|]
 
 let is_zero = function
 | [||] -> true
@@ -74,7 +73,7 @@ let is_zero = function
    - it is [|-1|]
    - its first bloc is in [-base;-1[U]0;base[
      and the other blocs are in [0;base[. *)
-
+(*
 let canonical n =
   let ok x = (0 <= x && x < base) in
   let rec ok_tail k = (Int.equal k 0) || (ok n.(k) && ok_tail (k-1)) in
@@ -82,6 +81,7 @@ let canonical n =
   in
   (is_zero n) || (match n with [|-1|] -> true | _ -> false) ||
     (ok_init n.(0) && ok_tail (Array.length n - 1))
+*)
 
 (* [normalize_pos] : removing initial blocks of 0 *)
 

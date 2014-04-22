@@ -21,7 +21,6 @@ open Inductiveops
 open Printer
 open Retyping
 open Tacmach.New
-open Clenv
 open Tacticals.New
 open Tactics
 open Elim
@@ -31,24 +30,6 @@ open Tacexpr
 open Proofview.Notations
 
 let clear hyps = Proofview.V82.tactic (clear hyps)
-
-let collect_meta_variables c =
-  let rec collrec acc c = match kind_of_term c with
-    | Meta mv -> mv::acc
-    | _ -> fold_constr collrec acc c
-  in
-  collrec [] c
-
-let check_no_metas clenv ccl =
-  if occur_meta ccl then
-    let metas = List.filter (fun m -> not (Evd.meta_defined clenv.evd m))
-      (collect_meta_variables ccl) in
-    let metas = List.map (Evd.meta_name clenv.evd) metas in
-    let opts = match metas with [_] -> " " | _ -> "s " in
-    errorlabstrm "inversion"
-      (str ("Cannot find an instantiation for variable"^opts) ++
-	 prlist_with_sep pr_comma pr_name metas
-	 (* ajouter "in " ++ pr_lconstr ccl mais il faut le bon contexte *))
 
 let var_occurs_in_pf gl id =
   let env = Proofview.Goal.env gl in
@@ -518,13 +499,11 @@ open Tacexpr
 
 let inv k = inv_gen false k NoDep
 
-let half_inv_tac id  = inv SimpleInversion None (NamedHyp id)
 let inv_tac id       = inv FullInversion None (NamedHyp id)
 let inv_clear_tac id = inv FullInversionClear None (NamedHyp id)
 
 let dinv k c = inv_gen false k (Dep c)
 
-let half_dinv_tac id  = dinv SimpleInversion None None (NamedHyp id)
 let dinv_tac id       = dinv FullInversion None None (NamedHyp id)
 let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
 

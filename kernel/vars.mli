@@ -53,6 +53,7 @@ val substnl_decl : constr list -> int -> rel_declaration -> rel_declaration
 val substl_decl : constr list -> rel_declaration -> rel_declaration
 val subst1_decl : constr -> rel_declaration -> rel_declaration
 
+val substnl_named_decl : constr list -> int -> named_declaration -> named_declaration
 val subst1_named_decl : constr -> named_declaration -> named_declaration
 val substl_named_decl : constr list -> named_declaration -> named_declaration
 

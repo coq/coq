@@ -113,11 +113,6 @@ let decompose_these c l =
   general_decompose (fun (_,t) -> head_in indl t gl) c
   end
 
-let decompose_nonrec c =
-  general_decompose
-    (fun (_,t) -> is_non_recursive_type t)
-    c
-
 let decompose_and c =
   general_decompose
     (fun (_,t) -> is_record t)

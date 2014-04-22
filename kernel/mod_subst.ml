@@ -38,7 +38,6 @@ module Deltamap = struct
   let find_mp mp map = MPmap.find mp (fst map)
   let find_kn kn map = KNmap.find kn (snd map)
   let mem_mp mp map = MPmap.mem mp (fst map)
-  let mem_kn kn map = KNmap.mem kn (snd map)
   let fold_kn f map i = KNmap.fold f (snd map) i
   let fold fmp fkn (mm,km) i =
     MPmap.fold fmp mm (KNmap.fold fkn km i)

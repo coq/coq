@@ -35,9 +35,6 @@ val get_sort_of :
 val get_sort_family_of :
   ?polyprop:bool -> env -> evar_map -> types -> sorts_family
 
-(** Makes an assumption from a constr *)
-val get_assumption_of : env -> evar_map -> constr -> types
-
 (** Makes an unsafe judgment from a constr *)
 val get_judgment_of : env -> evar_map -> constr -> unsafe_judgment
 

@@ -18,6 +18,7 @@ open Inductiveops
 open ConstrMatching
 open Coqlib
 open Declarations
+open Tacmach.New
 
 (* I implemented the following functions which test whether a term t
    is an inductive but non-recursive type, a general conjuction, a
@@ -396,10 +397,10 @@ let find_eq_data eqn = (* fails with PatternMatchingFailure *)
 
 let extract_eq_args gl = function
   | MonomorphicLeibnizEq (e1,e2) ->
-      let t = Tacmach.New.pf_type_of gl e1 in (t,e1,e2)
+      let t = pf_type_of gl e1 in (t,e1,e2)
   | PolymorphicLeibnizEq (t,e1,e2) -> (t,e1,e2)
   | HeterogenousEq (t1,e1,t2,e2) ->
-      if Tacmach.New.pf_conv_x gl t1 t2 then (t1,e1,e2)
+      if pf_conv_x gl t1 t2 then (t1,e1,e2)
       else raise PatternMatchingFailure
 
 let find_eq_data_decompose gl eqn =
@@ -418,13 +419,11 @@ let find_this_eq_data_decompose gl eqn =
       error "Don't know what to do with JMeq on arguments not of same type." in
   (lbeq,eq_args)
 
-open Tacmach
-
 let match_eq_nf gls eqn eq_pat =
-  match Id.Map.bindings (Tacmach.New.pf_matches gls (Lazy.force eq_pat) eqn) with
+  match Id.Map.bindings (pf_matches gls (Lazy.force eq_pat) eqn) with
     | [(m1,t);(m2,x);(m3,y)] ->
         assert (Id.equal m1 meta1 && Id.equal m2 meta2 && Id.equal m3 meta3);
-	(t,Tacmach.New.pf_whd_betadeltaiota gls x,Tacmach.New.pf_whd_betadeltaiota gls y)
+	(t,pf_whd_betadeltaiota gls x,pf_whd_betadeltaiota gls y)
     | _ -> anomaly ~label:"match_eq" (Pp.str "an eq pattern should match 3 terms")
 
 let dest_nf_eq gls eqn =

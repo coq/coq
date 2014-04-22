@@ -63,13 +63,6 @@ let tclIFTHENTRYELSEMUST = Refiner.tclIFTHENTRYELSEMUST
 
 let tclTHENSEQ       = tclTHENLIST
 
-(* Experimental *)
-
-let rec tclFIRST_PROGRESS_ON tac = function
-  | []    -> tclFAIL 0 (str "No applicable tactic")
-  | [a]   -> tac a (* so that returned failure is the one from last item *)
-  | a::tl -> tclORELSE (tac a) (tclFIRST_PROGRESS_ON tac tl)
-
 (************************************************************************)
 (* Tacticals applying on hypotheses                                     *)
 (************************************************************************)
@@ -125,9 +118,6 @@ let fullGoal gl = None :: List.map Option.make (pf_ids_of_hyps gl)
 
 let onAllHyps tac gl = tclMAP tac (pf_ids_of_hyps gl) gl
 let onAllHypsAndConcl tac gl = tclMAP tac (fullGoal gl) gl
-
-let tryAllHyps tac gl = tclFIRST_PROGRESS_ON tac (pf_ids_of_hyps gl) gl
-let tryAllHypsAndConcl tac gl = tclFIRST_PROGRESS_ON tac (fullGoal gl) gl
 
 let onClause tac cl gls =
   let hyps () = pf_ids_of_hyps gls in

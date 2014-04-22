@@ -37,8 +37,6 @@ type pattern_matching_error =
   | BadConstructor of constructor * inductive
   | WrongNumargConstructor of constructor * int
   | WrongNumargInductive of inductive * int
-  | WrongPredicateArity of constr * constr * constr
-  | NeedsInversion of constr * constr
   | UnusedClause of cases_pattern list
   | NonExhaustive of cases_pattern list
   | CannotInferPredicate of (constr * types) array
@@ -59,12 +57,6 @@ let error_wrong_numarg_constructor_loc loc env c n =
 
 let error_wrong_numarg_inductive_loc loc env c n =
   raise_pattern_matching_error (loc, env, WrongNumargInductive(c,n))
-
-let error_wrong_predicate_arity_loc loc env c n1 n2 =
-  raise_pattern_matching_error (loc, env, WrongPredicateArity (c,n1,n2))
-
-let error_needs_inversion env x t =
-  raise (PatternMatchingError (env, NeedsInversion (x,t)))
 
 let rec list_try_compile f = function
   | [a] -> f a

@@ -49,12 +49,14 @@ val reference_of_constr : constr -> global_reference
 module RefOrdered : sig
   type t = global_reference
   val compare : t -> t -> int
+  val equal : t -> t -> bool
   val hash : t -> int
 end
 
 module RefOrdered_env : sig
   type t = global_reference
   val compare : t -> t -> int
+  val equal : t -> t -> bool
   val hash : t -> int
 end
 

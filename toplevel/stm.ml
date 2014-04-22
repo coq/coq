@@ -332,7 +332,6 @@ end = struct (* {{{ *)
   let current_branch () = current_branch !vcs
 
   let checkout head = vcs := checkout !vcs head
-  let master = Branch.master
   let branches () = branches !vcs
   let get_branch head = get_branch !vcs head
   let get_branch_pos head = (get_branch head).pos

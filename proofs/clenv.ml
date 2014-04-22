@@ -23,7 +23,6 @@ open Tacred
 open Pretype_errors
 open Evarutil
 open Unification
-open Mod_subst
 open Misctypes
 
 (* Abbreviations *)
@@ -42,12 +41,6 @@ type clausenv = {
 
 let cl_env ce = ce.env
 let cl_sigma ce =  ce.evd
-
-let subst_clenv sub clenv =
-  { templval = map_fl (subst_mps sub) clenv.templval;
-    templtyp = map_fl (subst_mps sub) clenv.templtyp;
-    evd = subst_evar_defs_light sub clenv.evd;
-    env = clenv.env }
 
 let clenv_nf_meta clenv c = nf_meta clenv.evd c
 let clenv_term clenv c = meta_instance clenv.evd c
@@ -303,8 +296,6 @@ let clenv_pose_metas_as_evars clenv dep_mvs =
 	let clenv = clenv_assign mv evar {clenv with evd=evd} in
 	fold clenv mvs in
   fold clenv dep_mvs
-
-let evar_clenv_unique_resolver = clenv_unique_resolver
 
 (******************************************************************)
 

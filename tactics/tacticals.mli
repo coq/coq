@@ -58,8 +58,6 @@ val tclIFTHENSELSE       : tactic -> tactic list -> tactic -> tactic
 val tclIFTHENSVELSE      : tactic -> tactic array -> tactic -> tactic
 val tclIFTHENTRYELSEMUST : tactic -> tactic -> tactic
 
-val tclFIRST_PROGRESS_ON : ('a -> tactic) -> 'a list -> tactic
-
 (** {6 Tacticals applying to hypotheses } *)
 
 val onNthHypId       : int -> (Id.t -> tactic) -> tactic
@@ -93,9 +91,6 @@ val onHyps      : (goal sigma -> named_context) ->
 (** A [clause] denotes occurrences and hypotheses in a
    goal; in particular, it can abstractly refer to the set of
    hypotheses independently of the effective contents of the current goal *)
-
-val tryAllHyps          : (Id.t -> tactic) -> tactic
-val tryAllHypsAndConcl  : (Id.t option -> tactic) -> tactic
 
 val onAllHyps           : (Id.t -> tactic) -> tactic
 val onAllHypsAndConcl   : (Id.t option -> tactic) -> tactic
@@ -200,7 +195,6 @@ module New : sig
 
   val tclTRY : unit tactic -> unit tactic
   val tclFIRST : unit tactic list -> unit tactic
-  val tclFIRST_PROGRESS_ON : ('a -> unit tactic) -> 'a list -> unit tactic
   val tclIFTHENELSE : unit tactic -> unit tactic -> unit tactic -> unit tactic
   val tclIFTHENSVELSE : unit tactic -> unit tactic array -> unit tactic -> unit tactic
   val tclIFTHENTRYELSEMUST : unit tactic -> unit tactic -> unit tactic

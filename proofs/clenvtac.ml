@@ -79,9 +79,6 @@ let dft = default_unify_flags
 let res_pf clenv ?(with_evars=false) ?(flags=dft) gls =
   clenv_refine with_evars (clenv_unique_resolver ~flags clenv gls) gls
 
-let e_res_pf clenv = res_pf clenv ~with_evars:true ~flags:dft
-
-
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
    particulier ne semblent pas vérifier que des instances différentes
    d'une même Meta sont compatibles. D'ailleurs le "fst" jette les metas

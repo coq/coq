@@ -23,27 +23,15 @@ type pattern_matching_error =
   | BadConstructor of constructor * inductive
   | WrongNumargConstructor of constructor * int
   | WrongNumargInductive of inductive * int
-  | WrongPredicateArity of constr * constr * constr
-  | NeedsInversion of constr * constr
   | UnusedClause of cases_pattern list
   | NonExhaustive of cases_pattern list
   | CannotInferPredicate of (constr * types) array
 
 exception PatternMatchingError of env * pattern_matching_error
 
-val raise_pattern_matching_error : (Loc.t * env * pattern_matching_error) -> 'a
-
 val error_wrong_numarg_constructor_loc : Loc.t -> env -> constructor -> int -> 'a
 
 val error_wrong_numarg_inductive_loc : Loc.t -> env -> inductive -> int -> 'a
-
-val error_bad_constructor_loc : Loc.t -> constructor -> inductive -> 'a
-
-val error_bad_pattern_loc : Loc.t -> constructor -> constr -> 'a
-
-val error_wrong_predicate_arity_loc : Loc.t -> env -> constr -> constr -> constr -> 'a
-
-val error_needs_inversion : env -> constr -> types -> 'a
 
 (** {6 Compilation primitive. } *)
 

@@ -58,12 +58,10 @@ open Globnames
 
 
 exception GlobalizationError of qualid
-exception GlobalizationConstantError of qualid
 
 (** Raises a globalization error *)
 val error_global_not_found_loc : Loc.t -> qualid -> 'a
 val error_global_not_found     : qualid -> 'a
-val error_global_constant_not_found_loc : Loc.t -> qualid -> 'a
 
 (** {6 Register visibility of things } *)
 

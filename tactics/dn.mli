@@ -36,6 +36,4 @@ sig
 
   val app : (Z.t -> unit) -> t -> unit
 
-  val skip_arg : int -> t -> (t * bool) list
-
 end

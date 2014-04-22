@@ -1004,7 +1004,6 @@ let w_unify_core_0 env evd with_types cv_pb flags m n =
   let evd = w_merge env with_types flags subst2 in
   try_resolve_typeclasses env evd flags m n
 
-let w_unify_0 env evd = w_unify_core_0 env evd false
 let w_typed_unify env evd = w_unify_core_0 env evd true
 
 let w_typed_unify_array env evd flags f1 l1 f2 l2 =

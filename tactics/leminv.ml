@@ -22,7 +22,6 @@ open Entries
 open Inductiveops
 open Environ
 open Tacmach.New
-open Pfedit
 open Clenv
 open Declare
 open Tacticals.New

@@ -12,9 +12,6 @@ open Term
 open Constrexpr
 open Misctypes
 
-val lemInv_gen : quantified_hypothesis -> constr -> unit Proofview.tactic
-val lemInvIn_gen : quantified_hypothesis -> constr -> Id.t list -> unit Proofview.tactic
-
 val lemInv_clause :
   quantified_hypothesis -> constr -> Id.t list -> unit Proofview.tactic
 

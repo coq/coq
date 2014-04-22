@@ -221,9 +221,6 @@ let get_type_of ?(polyprop=true) ?(refresh=true) ?(lax=false) env sigma c =
   let t = if lax then f env c else anomaly_on_error (f env) c in
   if refresh then refresh_universes t else t
 
-(* Makes an assumption from a constr *)
-let get_assumption_of env evc c = c
-
 (* Makes an unsafe judgment from a constr *)
 let get_judgment_of env evc c = { uj_val = c; uj_type = get_type_of env evc c }
 

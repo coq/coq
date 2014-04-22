@@ -60,8 +60,6 @@ val w_coerce_to_type : env -> evar_map -> constr -> types -> types ->
    (exported for inv.ml) *)
 val abstract_list_all :
   env -> evar_map -> constr -> constr -> constr list -> constr * types
-val abstract_list_all_with_dependencies :
-  env -> evar_map -> types -> constr -> constr list -> constr
 
 
 (* For tracing *)

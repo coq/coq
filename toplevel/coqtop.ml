@@ -73,8 +73,6 @@ let outputstate = ref ""
 let set_outputstate s = outputstate:=s
 let outputstate () = if not (String.is_empty !outputstate) then extern_state !outputstate
 
-let set_default_include d =
-  push_include d Nameops.default_root_prefix false false
 let set_include d p recursive implicit =
   let p = dirpath_of_string p in
   push_include d p recursive implicit

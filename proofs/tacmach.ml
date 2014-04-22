@@ -71,8 +71,6 @@ let pf_get_new_ids ids gls =
 
 let pf_global gls id = Constrintern.construct_reference (pf_hyps gls) id
 
-let pf_parse_const gls = compose (pf_global gls) Id.of_string
-
 let pf_reduction_of_red_expr gls re c =
   (fst (reduction_of_red_expr (pf_env gls) re)) (pf_env gls) (project gls) c
 
@@ -80,9 +78,7 @@ let pf_apply f gls = f (pf_env gls) (project gls)
 let pf_reduce = pf_apply
 
 let pf_whd_betadeltaiota         = pf_reduce whd_betadeltaiota
-let pf_whd_betadeltaiota_stack   = pf_reduce whd_betadeltaiota_stack
 let pf_hnf_constr                = pf_reduce hnf_constr
-let pf_red_product               = pf_reduce red_product
 let pf_nf                        = pf_reduce simpl
 let pf_nf_betaiota               = pf_reduce (fun _ -> nf_betaiota)
 let pf_compute                   = pf_reduce compute
@@ -92,14 +88,10 @@ let pf_get_type_of               = pf_reduce Retyping.get_type_of
 
 let pf_conv_x                   = pf_reduce is_conv
 let pf_conv_x_leq               = pf_reduce is_conv_leq
-let pf_const_value              = pf_reduce (fun env _ -> constant_value env)
 let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
 let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
 let pf_hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_get_type_of gls)
-
-let pf_check_type gls c1 c2 =
-  ignore (pf_type_of gls (mkCast (c1, DEFAULTcast, c2)))
 
 let pf_is_matching              = pf_apply ConstrMatching.is_matching_conv
 let pf_matches                  = pf_apply ConstrMatching.matches_conv
@@ -139,9 +131,6 @@ let thin_body_no_check ids gl =
 
 let move_hyp_no_check with_dep id1 id2 gl =
   refiner (Move (with_dep,id1,id2)) gl
-
-let order_hyps idl gl =
-  refiner (Order idl) gl
 
 let rec rename_hyp_no_check l gl = match l with
   | [] -> tclIDTAC gl

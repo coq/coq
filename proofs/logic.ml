@@ -695,12 +695,6 @@ let prim_refiner r sigma goal =
 	let sigma = Goal.V82.partial_solution sigma goal ev in
   	  ([gl], sigma)
 
-    | Order ord ->
-        let hyps' = reorder_val_context env sign ord in
-	let (gl,ev,sigma) = mk_goal hyps' cl in
-	let sigma = Goal.V82.partial_solution sigma goal ev in
-        ([gl], sigma)
-
     | Rename (id1,id2) ->
         if !check && not (Id.equal id1 id2) &&
 	  Id.List.mem id2

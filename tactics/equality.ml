@@ -563,11 +563,7 @@ let multi_replace clause c2 c1 unsafe try_prove_eq_opt =
 
 let replace c2 c1 = multi_replace onConcl c2 c1 false None
 
-let replace_in id c2 c1 = multi_replace (onHyp id) c2 c1 false None
-
 let replace_by c2 c1 tac = multi_replace onConcl c2 c1 false (Some tac)
-
-let replace_in_by id c2 c1 tac = multi_replace (onHyp id) c2 c1 false (Some tac)
 
 let replace_in_clause_maybe_by c2 c1 cl tac_opt =
   multi_replace cl c2 c1 false tac_opt

@@ -41,9 +41,7 @@ val pf_nth_hyp_id         : goal sigma -> int -> Id.t
 val pf_last_hyp           : goal sigma -> named_declaration
 val pf_ids_of_hyps        : goal sigma -> Id.t list
 val pf_global             : goal sigma -> Id.t -> constr
-val pf_parse_const        : goal sigma -> string -> constr
 val pf_type_of            : goal sigma -> constr -> types
-val pf_check_type         : goal sigma -> constr -> types -> unit
 val pf_hnf_type_of        : goal sigma -> constr -> types
 
 val pf_get_hyp            : goal sigma -> Id.t -> named_declaration
@@ -61,9 +59,7 @@ val pf_reduce :
   goal sigma -> constr -> constr
 
 val pf_whd_betadeltaiota       : goal sigma -> constr -> constr
-val pf_whd_betadeltaiota_stack : goal sigma -> constr -> constr * constr list
 val pf_hnf_constr              : goal sigma -> constr -> constr
-val pf_red_product             : goal sigma -> constr -> constr
 val pf_nf                      : goal sigma -> constr -> constr
 val pf_nf_betaiota             : goal sigma -> constr -> constr
 val pf_reduce_to_quantified_ind : goal sigma -> types -> inductive * types
@@ -72,7 +68,6 @@ val pf_compute                 : goal sigma -> constr -> constr
 val pf_unfoldn    : (occurrences * evaluable_global_reference) list
   -> goal sigma -> constr -> constr
 
-val pf_const_value : goal sigma -> constant -> constr
 val pf_conv_x      : goal sigma -> constr -> constr -> bool
 val pf_conv_x_leq  : goal sigma -> constr -> constr -> bool
 
@@ -85,16 +80,10 @@ val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 val refiner                   : rule -> tactic
 val introduction_no_check     : Id.t -> tactic
 val internal_cut_no_check     : bool -> Id.t -> types -> tactic
-val internal_cut_rev_no_check : bool -> Id.t -> types -> tactic
 val refine_no_check           : constr -> tactic
 val convert_concl_no_check    : types -> cast_kind -> tactic
 val convert_hyp_no_check      : named_declaration -> tactic
 val thin_no_check             : Id.t list -> tactic
-val thin_body_no_check        : Id.t list -> tactic
-val move_hyp_no_check         :
-  bool -> Id.t -> Id.t move_location -> tactic
-val rename_hyp_no_check       : (Id.t*Id.t) list -> tactic
-val order_hyps : Id.t list -> tactic
 val mutual_fix      :
   Id.t -> int -> (Id.t * int * constr) list -> int -> tactic
 val mutual_cofix    : Id.t -> (Id.t * constr) list -> int -> tactic
@@ -125,7 +114,6 @@ module New : sig
   val pf_env : 'a Proofview.Goal.t -> Environ.env
 
   val pf_type_of : 'a Proofview.Goal.t -> Term.constr -> Term.types
-  val pf_get_type_of : 'a Proofview.Goal.t -> Term.constr -> Term.types
   val pf_conv_x : 'a Proofview.Goal.t -> Term.constr -> Term.constr -> bool
 
   val pf_get_new_id  : identifier -> [ `NF ] Proofview.Goal.t -> identifier

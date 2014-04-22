@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Term
 open Environ
 
 (** We introduce here the global environment of the system,
