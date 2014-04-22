@@ -12,8 +12,6 @@ Require Import SeqSeries.
 Require Import Ranalysis_reg.
 Require Import Rbase.
 Require Import RiemannInt_SF.
-Require Import Classical_Prop.
-Require Import Classical_Pred_Type.
 Require Import Max.
 Local Open Scope R_scope.
 
@@ -511,18 +509,20 @@ Proof.
   intro; elim H4; clear H4; intros; exists (mkposreal _ H4); split.
   apply H5.
   unfold is_lub in p; elim p; intros; unfold is_upper_bound in H6;
-    set (D := Rabs (x0 - y)); elim (classic (exists y : R, D < y /\ E y));
-      intro.
+    set (D := Rabs (x0 - y)).
+  assert (H11: ((exists y : R, D < y /\ E y) \/ (forall y : R, not (D < y /\ E y)) -> False) -> False).
+    clear; intros H; apply H.
+    right; intros y0 H0; apply H.
+    left; now exists y0.
+  apply Rnot_le_lt; intros H30.
+  apply H11; clear H11; intros H11.
+  revert H30; apply Rlt_not_le.
+  destruct H11 as [H11|H12].
   elim H11; intros; elim H12; clear H12; intros; unfold E in H13; elim H13;
     intros; apply H15; assumption.
-  assert (H12 := not_ex_all_not _ (fun y:R => D < y /\ E y) H11);
-    assert (H13 : is_upper_bound E D).
+  assert (H13 : is_upper_bound E D).
   unfold is_upper_bound; intros; assert (H14 := H12 x1);
-    elim (not_and_or (D < x1) (E x1) H14); intro.
-  case (Rle_dec x1 D); intro.
-  assumption.
-  elim H15; auto with real.
-  elim H15; assumption.
+    apply Rnot_lt_le; contradict H14; now split.
   assert (H14 := H7 _ H13); elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H14 H10)).
   unfold is_lub in p; unfold is_upper_bound in p; elim p; clear p; intros;
     split.
