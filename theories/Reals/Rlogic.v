@@ -8,13 +8,14 @@
 
 (** This module proves some logical properties of the axiomatic of Reals.
 
-- Decidability of arithmetical statements from the axioms of Reals.
+- Decidability of arithmetical statements.
 - Derivability of the Archimedean "axiom".
+- Decidability of negated formulas.
 *)
 
 Require Import RIneq.
 
-(** * Decidability of arithmetical statements from the axioms of Reals *)
+(** * Decidability of arithmetical statements *)
 
 (** One can iterate this lemma and use classical logic to decide any
 statement in the arithmetical hierarchy. *)
@@ -170,4 +171,34 @@ rewrite Rplus_opp_r in H6.
 rewrite (Rplus_comm (INR n) 0) in H6.
 rewrite Rplus_0_l in H6.
 assumption.
+Qed.
+
+(** * Decidability of negated formulas *)
+
+Lemma sig_not_dec : forall P : Prop, {not (not P)} + {not P}.
+Proof.
+intros P.
+set (E := fun x => x = R0 \/ (x = R1 /\ P)).
+destruct (completeness E) as [x H].
+  exists R1.
+  intros x [->|[-> _]].
+  apply Rle_0_1.
+  apply Rle_refl.
+  exists R0.
+  now left.
+destruct (Rle_lt_dec 1 x) as [H'|H'].
+- left.
+  intros HP.
+  elim Rle_not_lt with (1 := H').
+  apply Rle_lt_trans with (2 := Rlt_0_1).
+  apply H.
+  intros y [->|[_ Hy]].
+  apply Rle_refl.
+  now elim HP.
+- right.
+  intros HP.
+  apply Rlt_not_le with (1 := H').
+  apply H.
+  right.
+  now split.
 Qed.
