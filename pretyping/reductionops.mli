@@ -29,6 +29,21 @@ module ReductionBehaviour : sig
   val print : Globnames.global_reference -> Pp.std_ppcmds
 end
 
+(** {6 Machinery about a stack of unfolded constant }
+
+    cst applied to params must convertible to term of the state applied to args
+*)
+module Cst_stack : sig
+  type 'a t
+  val empty : 'a t
+  val add_param : constr -> constr t -> constr t
+  val add_args : 'a array -> 'a t -> 'a t
+  val add_cst : 'a -> 'a t -> 'a t
+  val best_cst : 'a t -> ('a * 'a list) option
+  val pr : constr t -> Pp.std_ppcmds
+end
+
+
 module Stack : sig
   type 'a app_node
 
@@ -100,21 +115,6 @@ type local_state_reduction_function = evar_map -> state -> state
 
 val pr_state : state -> Pp.std_ppcmds
 
-(** {6 Machinery about a stack of unfolded constant }
-
-    cst applied to params must convertible to term of the state applied to args
-*)
-module Cst_stack : sig
-  type t
-  val empty : t
-  val add_param : constr -> t -> t
-  val add_args : constr array -> t -> t
-  val add_cst : constr -> t -> t
-  val best_cst : t -> (constr * constr list) option
-  val best_state : state -> t -> state
-  val pr : t -> Pp.std_ppcmds
-end
-
 (** {6 Reduction Function Operators } *)
 
 val strong : reduction_function -> reduction_function
@@ -126,8 +126,8 @@ val stack_reduction_of_reduction :
 i*)
 val stacklam : (state -> 'a) -> constr list -> constr -> constr Stack.t -> 'a
 
-val whd_state_gen : ?csts:Cst_stack.t -> bool -> Closure.RedFlags.reds ->
-  Environ.env -> Evd.evar_map -> state -> state * Cst_stack.t
+val whd_state_gen : ?csts:constr Cst_stack.t -> bool -> Closure.RedFlags.reds ->
+  Environ.env -> Evd.evar_map -> state -> state * constr Cst_stack.t
 
 val iterate_whd_gen : bool -> Closure.RedFlags.reds ->
   Environ.env -> Evd.evar_map -> Term.constr -> Term.constr
@@ -274,8 +274,8 @@ val head_unfold_under_prod : transparent_state -> reduction_function
 (** {6 Heuristic for Conversion with Evar } *)
 
 val whd_betaiota_deltazeta_for_iota_state :
-  transparent_state -> Environ.env -> Evd.evar_map -> Cst_stack.t -> state ->
-  state * Cst_stack.t
+  transparent_state -> Environ.env -> Evd.evar_map -> constr Cst_stack.t -> state ->
+  state * constr Cst_stack.t
 
 (** {6 Meta-related reduction functions } *)
 val meta_instance : evar_map -> constr freelisted -> constr

@@ -134,6 +134,56 @@ module ReductionBehaviour = struct
 		 | _ -> str "unfold " ++ pr_global ref ++ pp_nomatch )
 end
 
+(** Machinery about stack of unfolded constants *)
+module Cst_stack = struct
+(** constant * params * args
+
+- constant applied to params = term in head applied to args
+- there is at most one arguments with an empty list of args, it must be the first.
+- in args, the int represents the indice of the first arg to consider *)
+  type 'a t = ('a * 'a list * (int * 'a array) list)  list
+
+  let empty = []
+
+  let sanity x y =
+    assert (Constr.equal x y)
+
+  let drop_useless = function
+    | _ :: ((_,_,[])::_ as q) -> q
+    | l -> l
+
+  let add_param h cst_l =
+    let append2cst = function
+      | (c,params,[]) -> (c, h::params, [])
+      | (c,params,((i,t)::q)) when i = pred (Array.length t) ->
+	 let () = sanity h t.(i) in (c, params, q)
+      | (c,params,(i,t)::q) ->
+	 let () = sanity h t.(i) in (c, params, (succ i,t)::q)
+ in
+    drop_useless (List.map append2cst cst_l)
+
+  let add_args cl =
+    List.map (fun (a,b,args) -> (a,b,(0,cl)::args))
+
+  let add_cst cst = function
+    | (_,_,[]) :: q as l -> l
+    | l -> (cst,[],[])::l
+
+  let best_cst = function
+    | (cst,params,[])::_ -> Some(cst,params)
+    | _ -> None
+
+  let pr l =
+    let open Pp in
+    let p_c = Termops.print_constr in
+    prlist_with_sep pr_semicolon
+      (fun (c,params,args) ->
+	hov 1 (p_c c ++ spc () ++ pr_sequence p_c params ++ spc () ++ str "(args:" ++
+		 pr_sequence (fun (i,el) -> prvect_with_sep spc p_c (Array.sub el i (Array.length el - i))) args ++
+		 str ")")) l
+end
+
+
 (** The type of (machine) stacks (= lambda-bar-calculus' contexts) *)
 module Stack :
 sig
@@ -478,67 +528,6 @@ let betadeltaiota = Closure.RedFlags.red_add betadelta Closure.RedFlags.fIOTA
 let betadeltaiota_nolet = Closure.betadeltaiotanolet
 let betadeltaiotaeta = Closure.RedFlags.red_add betadeltaiota Closure.RedFlags.fETA
 
-(** Machinery about stack of unfolded constants *)
-module Cst_stack = struct
-(** constant * params * args
-
-- constant applied to params = term in head applied to args
-- there is at most one arguments with an empty list of args, it must be the first.
-- in args, the int represents the indice of the first arg to consider *)
-  type t = (Term.constr * Term.constr list * (int * Term.constr array) list)  list
-
-  let empty = []
-
-  let sanity x y =
-    assert (Constr.equal x y)
-
-  let drop_useless = function
-    | _ :: ((_,_,[])::_ as q) -> q
-    | l -> l
-
-  let add_param h cst_l =
-    let append2cst = function
-      | (c,params,[]) -> (c, h::params, [])
-      | (c,params,((i,t)::q)) when i = pred (Array.length t) ->
-	 let () = sanity h t.(i) in (c, params, q)
-      | (c,params,(i,t)::q) ->
-	 let () = sanity h t.(i) in (c, params, (succ i,t)::q)
- in
-    drop_useless (List.map append2cst cst_l)
-
-  let add_args cl =
-    List.map (fun (a,b,args) -> (a,b,(0,cl)::args))
-
-  let add_cst cst = function
-    | (_,_,[]) :: q as l -> l
-    | l -> (cst,[],[])::l
-
-  let best_cst = function
-    | (cst,params,[])::_ -> Some(cst,params)
-    | _ -> None
-
-  let best_state (_,sk as s) l =
-    let rec aux sk def = function
-    |(cst, params, []) -> (cst, Stack.append_app_list (List.rev params) sk)
-    |(cst, params, (i,t)::q) -> match Stack.decomp sk with
-				| None -> def
-				| Some (el,sk') ->
-				   let () = sanity el t.(i) in
-				   if i = pred (Array.length t)
-				   then aux sk' def (cst, params, q)
-				   else aux sk' def (cst, params, (succ i,t)::q)
-    in List.fold_left (aux sk) s l
-
-  let pr l =
-    let open Pp in
-    let p_c = Termops.print_constr in
-    prlist_with_sep pr_semicolon
-		    (fun (c,params,args) ->
-		     hov 1 (p_c c ++ spc () ++ pr_sequence p_c params ++ spc () ++ str "(args:" ++
-			      pr_sequence (fun (i,el) -> prvect_with_sep spc p_c (Array.sub el i (Array.length el - i))) args ++
-			      str ")")) l
-end
-
 (* Beta Reduction tools *)
 
 let apply_subst recfun env cst_l t stack =
@@ -668,8 +657,19 @@ type 'a reduced_state =
 *)
 let rec whd_state_gen ?csts tactic_mode flags env sigma =
   let rec whrec cst_l (x, stack as s) =
+    let best_state (_,sk as s) l =
+      let rec aux sk def = function
+	|(cst, params, []) -> (cst, Stack.append_app_list (List.rev params) sk)
+	|(cst, params, (i,t)::q) -> match Stack.decomp sk with
+	  | None -> def
+	  | Some (el,sk') ->
+	    let () = Cst_stack.sanity el t.(i) in
+	    if i = pred (Array.length t)
+	    then aux sk' def (cst, params, q)
+	    else aux sk' def (cst, params, (succ i,t)::q)
+      in List.fold_left (aux sk) s l in
     let fold () =
-      if tactic_mode then (Cst_stack.best_state s cst_l,Cst_stack.empty) else (s,cst_l)
+      if tactic_mode then (best_state s cst_l,Cst_stack.empty) else (s,cst_l)
     in
     match kind_of_term x with
     | Rel n when Closure.RedFlags.red_set flags Closure.RedFlags.fDELTA ->
